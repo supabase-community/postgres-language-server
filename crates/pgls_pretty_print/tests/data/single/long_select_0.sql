@@ -1,0 +1,1 @@
+SELECT first_name, last_name, email, phone_number, address FROM customers WHERE city = 'New York';

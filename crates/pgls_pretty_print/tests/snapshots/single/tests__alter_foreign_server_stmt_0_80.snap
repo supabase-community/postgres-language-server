@@ -1,0 +1,6 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/single/alter_foreign_server_stmt_0.sql
+snapshot_kind: text
+---
+alter server myserver version '1.2' options (host 'new.example.com');

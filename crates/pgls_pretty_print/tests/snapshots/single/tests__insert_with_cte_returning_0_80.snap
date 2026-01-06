@@ -1,0 +1,11 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/single/insert_with_cte_returning_0.sql
+snapshot_kind: text
+---
+with
+src as (select 1 as id, 'alpha' as name)
+insert into audit.log (id, name)
+select id, name from src
+returning id,
+name;

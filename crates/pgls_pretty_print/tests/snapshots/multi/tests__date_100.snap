@@ -1,0 +1,566 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/date.sql
+snapshot_kind: text
+---
+create table date_tbl (f1 DATE);
+
+insert into date_tbl values ('1957-04-09');
+
+insert into date_tbl values ('1957-06-13');
+
+insert into date_tbl values ('1996-02-28');
+
+insert into date_tbl values ('1996-02-29');
+
+insert into date_tbl values ('1996-03-01');
+
+insert into date_tbl values ('1996-03-02');
+
+insert into date_tbl values ('1997-02-28');
+
+insert into date_tbl values ('1997-02-29');
+
+insert into date_tbl values ('1997-03-01');
+
+insert into date_tbl values ('1997-03-02');
+
+insert into date_tbl values ('2000-04-01');
+
+insert into date_tbl values ('2000-04-02');
+
+insert into date_tbl values ('2000-04-03');
+
+insert into date_tbl values ('2038-04-08');
+
+insert into date_tbl values ('2039-04-09');
+
+insert into date_tbl values ('2040-04-10');
+
+insert into date_tbl values ('2040-04-10 BC');
+
+select f1 from date_tbl;
+
+select f1 from date_tbl where f1 < '2000-01-01';
+
+select f1 from date_tbl where f1 between '2000-01-01' and '2001-01-01';
+
+set datestyle = iso;
+
+set datestyle = ymd;
+
+select cast('January 8, 1999' as DATE);
+
+select cast('1999-01-08' as DATE);
+
+select cast('1999-01-18' as DATE);
+
+select cast('1/8/1999' as DATE);
+
+select cast('1/18/1999' as DATE);
+
+select cast('18/1/1999' as DATE);
+
+select cast('01/02/03' as DATE);
+
+select cast('19990108' as DATE);
+
+select cast('990108' as DATE);
+
+select cast('1999.008' as DATE);
+
+select cast('J2451187' as DATE);
+
+select cast('January 8, 99 BC' as DATE);
+
+select cast('99-Jan-08' as DATE);
+
+select cast('1999-Jan-08' as DATE);
+
+select cast('08-Jan-99' as DATE);
+
+select cast('08-Jan-1999' as DATE);
+
+select cast('Jan-08-99' as DATE);
+
+select cast('Jan-08-1999' as DATE);
+
+select cast('99-08-Jan' as DATE);
+
+select cast('1999-08-Jan' as DATE);
+
+select cast('99 Jan 08' as DATE);
+
+select cast('1999 Jan 08' as DATE);
+
+select cast('08 Jan 99' as DATE);
+
+select cast('08 Jan 1999' as DATE);
+
+select cast('Jan 08 99' as DATE);
+
+select cast('Jan 08 1999' as DATE);
+
+select cast('99 08 Jan' as DATE);
+
+select cast('1999 08 Jan' as DATE);
+
+select cast('99-01-08' as DATE);
+
+select cast('1999-01-08' as DATE);
+
+select cast('08-01-99' as DATE);
+
+select cast('08-01-1999' as DATE);
+
+select cast('01-08-99' as DATE);
+
+select cast('01-08-1999' as DATE);
+
+select cast('99-08-01' as DATE);
+
+select cast('1999-08-01' as DATE);
+
+select cast('99 01 08' as DATE);
+
+select cast('1999 01 08' as DATE);
+
+select cast('08 01 99' as DATE);
+
+select cast('08 01 1999' as DATE);
+
+select cast('01 08 99' as DATE);
+
+select cast('01 08 1999' as DATE);
+
+select cast('99 08 01' as DATE);
+
+select cast('1999 08 01' as DATE);
+
+set datestyle = dmy;
+
+select cast('January 8, 1999' as DATE);
+
+select cast('1999-01-08' as DATE);
+
+select cast('1999-01-18' as DATE);
+
+select cast('1/8/1999' as DATE);
+
+select cast('1/18/1999' as DATE);
+
+select cast('18/1/1999' as DATE);
+
+select cast('01/02/03' as DATE);
+
+select cast('19990108' as DATE);
+
+select cast('990108' as DATE);
+
+select cast('1999.008' as DATE);
+
+select cast('J2451187' as DATE);
+
+select cast('January 8, 99 BC' as DATE);
+
+select cast('99-Jan-08' as DATE);
+
+select cast('1999-Jan-08' as DATE);
+
+select cast('08-Jan-99' as DATE);
+
+select cast('08-Jan-1999' as DATE);
+
+select cast('Jan-08-99' as DATE);
+
+select cast('Jan-08-1999' as DATE);
+
+select cast('99-08-Jan' as DATE);
+
+select cast('1999-08-Jan' as DATE);
+
+select cast('99 Jan 08' as DATE);
+
+select cast('1999 Jan 08' as DATE);
+
+select cast('08 Jan 99' as DATE);
+
+select cast('08 Jan 1999' as DATE);
+
+select cast('Jan 08 99' as DATE);
+
+select cast('Jan 08 1999' as DATE);
+
+select cast('99 08 Jan' as DATE);
+
+select cast('1999 08 Jan' as DATE);
+
+select cast('99-01-08' as DATE);
+
+select cast('1999-01-08' as DATE);
+
+select cast('08-01-99' as DATE);
+
+select cast('08-01-1999' as DATE);
+
+select cast('01-08-99' as DATE);
+
+select cast('01-08-1999' as DATE);
+
+select cast('99-08-01' as DATE);
+
+select cast('1999-08-01' as DATE);
+
+select cast('99 01 08' as DATE);
+
+select cast('1999 01 08' as DATE);
+
+select cast('08 01 99' as DATE);
+
+select cast('08 01 1999' as DATE);
+
+select cast('01 08 99' as DATE);
+
+select cast('01 08 1999' as DATE);
+
+select cast('99 08 01' as DATE);
+
+select cast('1999 08 01' as DATE);
+
+set datestyle = mdy;
+
+select cast('January 8, 1999' as DATE);
+
+select cast('1999-01-08' as DATE);
+
+select cast('1999-01-18' as DATE);
+
+select cast('1/8/1999' as DATE);
+
+select cast('1/18/1999' as DATE);
+
+select cast('18/1/1999' as DATE);
+
+select cast('01/02/03' as DATE);
+
+select cast('19990108' as DATE);
+
+select cast('990108' as DATE);
+
+select cast('1999.008' as DATE);
+
+select cast('J2451187' as DATE);
+
+select cast('January 8, 99 BC' as DATE);
+
+select cast('99-Jan-08' as DATE);
+
+select cast('1999-Jan-08' as DATE);
+
+select cast('08-Jan-99' as DATE);
+
+select cast('08-Jan-1999' as DATE);
+
+select cast('Jan-08-99' as DATE);
+
+select cast('Jan-08-1999' as DATE);
+
+select cast('99-08-Jan' as DATE);
+
+select cast('1999-08-Jan' as DATE);
+
+select cast('99 Jan 08' as DATE);
+
+select cast('1999 Jan 08' as DATE);
+
+select cast('08 Jan 99' as DATE);
+
+select cast('08 Jan 1999' as DATE);
+
+select cast('Jan 08 99' as DATE);
+
+select cast('Jan 08 1999' as DATE);
+
+select cast('99 08 Jan' as DATE);
+
+select cast('1999 08 Jan' as DATE);
+
+select cast('99-01-08' as DATE);
+
+select cast('1999-01-08' as DATE);
+
+select cast('08-01-99' as DATE);
+
+select cast('08-01-1999' as DATE);
+
+select cast('01-08-99' as DATE);
+
+select cast('01-08-1999' as DATE);
+
+select cast('99-08-01' as DATE);
+
+select cast('1999-08-01' as DATE);
+
+select cast('99 01 08' as DATE);
+
+select cast('1999 01 08' as DATE);
+
+select cast('08 01 99' as DATE);
+
+select cast('08 01 1999' as DATE);
+
+select cast('01 08 99' as DATE);
+
+select cast('01 08 1999' as DATE);
+
+select cast('99 08 01' as DATE);
+
+select cast('1999 08 01' as DATE);
+
+select cast('4714-11-24 BC' as DATE);
+
+select cast('4714-11-23 BC' as DATE);
+
+select cast('5874897-12-31' as DATE);
+
+select cast('5874898-01-01' as DATE);
+
+select pg_input_is_valid('now', 'date');
+
+select pg_input_is_valid('garbage', 'date');
+
+select pg_input_is_valid('6874898-01-01', 'date');
+
+select * from pg_input_error_info('garbage', 'date');
+
+select * from pg_input_error_info('6874898-01-01', 'date');
+
+reset datestyle;
+
+select f1 - cast('2000-01-01' as DATE) as "Days From 2K" from date_tbl;
+
+select f1 - cast('epoch' as DATE) as "Days From Epoch" from date_tbl;
+
+select cast('yesterday' as DATE) - cast('today' as DATE) as "One day";
+
+select cast('today' as DATE) - cast('tomorrow' as DATE) as "One day";
+
+select cast('yesterday' as DATE) - cast('tomorrow' as DATE) as "Two days";
+
+select cast('tomorrow' as DATE) - cast('today' as DATE) as "One day";
+
+select cast('today' as DATE) - cast('yesterday' as DATE) as "One day";
+
+select cast('tomorrow' as DATE) - cast('yesterday' as DATE) as "Two days";
+
+select
+  f1 as date,
+  date_part('year', f1) as year,
+  date_part('month', f1) as month,
+  date_part('day', f1) as day,
+  date_part('quarter', f1) as quarter,
+  date_part('decade', f1) as decade,
+  date_part('century', f1) as century,
+  date_part('millennium', f1) as millennium,
+  date_part('isoyear', f1) as isoyear,
+  date_part('week', f1) as week,
+  date_part('dow', f1) as dow,
+  date_part('isodow', f1) as isodow,
+  date_part('doy', f1) as doy,
+  date_part('julian', f1) as julian,
+  date_part('epoch', f1) as epoch
+from
+  date_tbl;
+
+select EXTRACT('epoch' from cast('1970-01-01' as DATE));
+
+select EXTRACT('century' from cast('0101-12-31 BC' as DATE));
+
+select EXTRACT('century' from cast('0100-12-31 BC' as DATE));
+
+select EXTRACT('century' from cast('0001-12-31 BC' as DATE));
+
+select EXTRACT('century' from cast('0001-01-01' as DATE));
+
+select EXTRACT('century' from cast('0001-01-01 AD' as DATE));
+
+select EXTRACT('century' from cast('1900-12-31' as DATE));
+
+select EXTRACT('century' from cast('1901-01-01' as DATE));
+
+select EXTRACT('century' from cast('2000-12-31' as DATE));
+
+select EXTRACT('century' from cast('2001-01-01' as DATE));
+
+select EXTRACT('century' from current_date) >= 21 as "true";
+
+select EXTRACT('millennium' from cast('0001-12-31 BC' as DATE));
+
+select EXTRACT('millennium' from cast('0001-01-01 AD' as DATE));
+
+select EXTRACT('millennium' from cast('1000-12-31' as DATE));
+
+select EXTRACT('millennium' from cast('1001-01-01' as DATE));
+
+select EXTRACT('millennium' from cast('2000-12-31' as DATE));
+
+select EXTRACT('millennium' from cast('2001-01-01' as DATE));
+
+select EXTRACT('millennium' from current_date);
+
+select EXTRACT('decade' from cast('1994-12-25' as DATE));
+
+select EXTRACT('decade' from cast('0010-01-01' as DATE));
+
+select EXTRACT('decade' from cast('0009-12-31' as DATE));
+
+select EXTRACT('decade' from cast('0001-01-01 BC' as DATE));
+
+select EXTRACT('decade' from cast('0002-12-31 BC' as DATE));
+
+select EXTRACT('decade' from cast('0011-01-01 BC' as DATE));
+
+select EXTRACT('decade' from cast('0012-12-31 BC' as DATE));
+
+select EXTRACT('microseconds' from cast('2020-08-11' as DATE));
+
+select EXTRACT('milliseconds' from cast('2020-08-11' as DATE));
+
+select EXTRACT('second' from cast('2020-08-11' as DATE));
+
+select EXTRACT('minute' from cast('2020-08-11' as DATE));
+
+select EXTRACT('hour' from cast('2020-08-11' as DATE));
+
+select EXTRACT('day' from cast('2020-08-11' as DATE));
+
+select EXTRACT('month' from cast('2020-08-11' as DATE));
+
+select EXTRACT('year' from cast('2020-08-11' as DATE));
+
+select EXTRACT('year' from cast('2020-08-11 BC' as DATE));
+
+select EXTRACT('decade' from cast('2020-08-11' as DATE));
+
+select EXTRACT('century' from cast('2020-08-11' as DATE));
+
+select EXTRACT('millennium' from cast('2020-08-11' as DATE));
+
+select EXTRACT('isoyear' from cast('2020-08-11' as DATE));
+
+select EXTRACT('isoyear' from cast('2020-08-11 BC' as DATE));
+
+select EXTRACT('quarter' from cast('2020-08-11' as DATE));
+
+select EXTRACT('week' from cast('2020-08-11' as DATE));
+
+select EXTRACT('dow' from cast('2020-08-11' as DATE));
+
+select EXTRACT('dow' from cast('2020-08-16' as DATE));
+
+select EXTRACT('isodow' from cast('2020-08-11' as DATE));
+
+select EXTRACT('isodow' from cast('2020-08-16' as DATE));
+
+select EXTRACT('doy' from cast('2020-08-11' as DATE));
+
+select EXTRACT('timezone' from cast('2020-08-11' as DATE));
+
+select EXTRACT('timezone_m' from cast('2020-08-11' as DATE));
+
+select EXTRACT('timezone_h' from cast('2020-08-11' as DATE));
+
+select EXTRACT('epoch' from cast('2020-08-11' as DATE));
+
+select EXTRACT('julian' from cast('2020-08-11' as DATE));
+
+select date_trunc('MILLENNIUM', cast('1970-03-20 04:30:00.00000' as TIMESTAMP));
+
+select date_trunc('MILLENNIUM', cast('1970-03-20' as DATE));
+
+select date_trunc('CENTURY', cast('1970-03-20 04:30:00.00000' as TIMESTAMP));
+
+select date_trunc('CENTURY', cast('1970-03-20' as DATE));
+
+select date_trunc('CENTURY', cast('2004-08-10' as DATE));
+
+select date_trunc('CENTURY', cast('0002-02-04' as DATE));
+
+select date_trunc('CENTURY', cast('0055-08-10 BC' as DATE));
+
+select date_trunc('DECADE', cast('1993-12-25' as DATE));
+
+select date_trunc('DECADE', cast('0004-12-25' as DATE));
+
+select date_trunc('DECADE', cast('0002-12-31 BC' as DATE));
+
+select cast('infinity' as DATE), cast('-infinity' as DATE);
+
+select cast('infinity' as DATE) > cast('today' as DATE) as t;
+
+select cast('-infinity' as DATE) < cast('today' as DATE) as t;
+
+select
+  isfinite(cast('infinity' as DATE)),
+  isfinite(cast('-infinity' as DATE)),
+  isfinite(cast('today' as DATE));
+
+select cast('infinity' as DATE) = cast('+infinity' as DATE) as t;
+
+select EXTRACT('day' from cast('infinity' as DATE));
+
+select EXTRACT('day' from cast('-infinity' as DATE));
+
+select EXTRACT('day' from cast('infinity' as DATE));
+
+select EXTRACT('month' from cast('infinity' as DATE));
+
+select EXTRACT('quarter' from cast('infinity' as DATE));
+
+select EXTRACT('week' from cast('infinity' as DATE));
+
+select EXTRACT('dow' from cast('infinity' as DATE));
+
+select EXTRACT('isodow' from cast('infinity' as DATE));
+
+select EXTRACT('doy' from cast('infinity' as DATE));
+
+select EXTRACT('epoch' from cast('infinity' as DATE));
+
+select EXTRACT('epoch' from cast('-infinity' as DATE));
+
+select EXTRACT('year' from cast('infinity' as DATE));
+
+select EXTRACT('decade' from cast('infinity' as DATE));
+
+select EXTRACT('century' from cast('infinity' as DATE));
+
+select EXTRACT('millennium' from cast('infinity' as DATE));
+
+select EXTRACT('julian' from cast('infinity' as DATE));
+
+select EXTRACT('isoyear' from cast('infinity' as DATE));
+
+select EXTRACT('epoch' from cast('infinity' as DATE));
+
+select EXTRACT('microsec' from cast('infinity' as DATE));
+
+select make_date(2013, 7, 15);
+
+select make_date(-44, 3, 15);
+
+select make_time(8, 20, 0.0);
+
+select make_date(0, 7, 15);
+
+select make_date(2013, 2, 30);
+
+select make_date(2013, 13, 1);
+
+select make_date(2013, 11, -1);
+
+select make_date(-2147483648, 1, 1);
+
+select make_time(10, 55, 100.1);
+
+select make_time(24, 0, 2.1);

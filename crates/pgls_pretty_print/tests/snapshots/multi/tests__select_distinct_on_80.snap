@@ -1,0 +1,143 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/select_distinct_on.sql
+snapshot_kind: text
+---
+select distinct on (
+  string4)
+  string4,
+  two,
+  ten
+from
+  onek
+order by string4 using <,
+  two using >,
+  ten using <;
+
+select distinct on (
+  string4,
+  ten)
+  string4,
+  two,
+  ten
+from
+  onek
+order by string4 using <,
+  two using <,
+  ten using <;
+
+select distinct on (
+  string4,
+  ten)
+  string4,
+  ten,
+  two
+from
+  onek
+order by string4 using <,
+  ten using >,
+  two using <;
+
+select distinct on (1) floor(random()) as r, f1 from int4_tbl order by 1, 2;
+
+select distinct on (four) four, two from tenk1 where four = 0 order by 1;
+
+select distinct on (four) four, two from tenk1 where four = 0 order by 1;
+
+select distinct on (four) four, two from tenk1 where four = 0 order by 1, 2;
+
+select distinct on (four) four, hundred from tenk1 where four = 0 order by 1, 2;
+
+create table distinct_on_tbl (
+  x INT,
+  y INT,
+  z INT
+);
+
+insert into distinct_on_tbl
+select
+  i % 10,
+  i % 10,
+  i % 10
+from
+  generate_series(1, 1000) as i;
+
+create index "distinct_on_tbl_x_y_idx" on distinct_on_tbl using btree (x, y);
+
+analyze distinct_on_tbl;
+
+set enable_hashagg = off;
+
+select distinct on (y, x) x, y from distinct_on_tbl;
+
+select distinct on (y, x) x, y from distinct_on_tbl;
+
+select distinct on (
+  y,
+  x)
+  x,
+  y
+from
+  (
+    select * from distinct_on_tbl order by x
+  )
+  as s;
+
+select distinct on (
+  y,
+  x)
+  x,
+  y
+from
+  (
+    select * from distinct_on_tbl order by x
+  )
+  as s;
+
+select distinct on (y, x) x, y from distinct_on_tbl order by y;
+
+select distinct on (y, x) x, y from distinct_on_tbl order by y;
+
+select distinct on (
+  y,
+  x)
+  x,
+  y
+from
+  (
+    select
+      *
+    from
+      distinct_on_tbl
+    order by x,
+      z,
+      y
+  )
+  as s
+order by y,
+  x,
+  z;
+
+select distinct on (
+  y,
+  x)
+  x,
+  y
+from
+  (
+    select
+      *
+    from
+      distinct_on_tbl
+    order by x,
+      z,
+      y
+  )
+  as s
+order by y,
+  x,
+  z;
+
+reset enable_hashagg;
+
+drop TABLE "distinct_on_tbl";

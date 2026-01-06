@@ -1,0 +1,352 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/drop_if_exists.sql
+snapshot_kind: text
+---
+drop TABLE "test_exists";
+
+drop TABLE if exists "test_exists";
+
+create table test_exists (
+  a INT,
+  b TEXT
+);
+
+drop VIEW "test_view_exists";
+
+drop VIEW if exists "test_view_exists";
+
+create view test_view_exists
+as select * from test_exists;
+
+drop VIEW if exists "test_view_exists";
+
+drop VIEW "test_view_exists";
+
+drop INDEX "test_index_exists";
+
+drop INDEX if exists "test_index_exists";
+
+create index "test_index_exists" on test_exists using btree (a);
+
+drop INDEX if exists "test_index_exists";
+
+drop INDEX "test_index_exists";
+
+drop SEQUENCE "test_sequence_exists";
+
+drop SEQUENCE if exists "test_sequence_exists";
+
+create sequence test_sequence_exists;
+
+drop SEQUENCE if exists "test_sequence_exists";
+
+drop SEQUENCE "test_sequence_exists";
+
+drop SCHEMA test_schema_exists;
+
+drop SCHEMA if exists test_schema_exists;
+
+create schema "test_schema_exists";
+
+drop SCHEMA if exists test_schema_exists;
+
+drop SCHEMA test_schema_exists;
+
+drop TYPE test_type_exists;
+
+drop TYPE if exists test_type_exists;
+
+create type test_type_exists as (a INT, b TEXT);
+
+drop TYPE if exists test_type_exists;
+
+drop TYPE test_type_exists;
+
+drop DOMAIN test_domain_exists;
+
+drop DOMAIN if exists test_domain_exists;
+
+create domain test_domain_exists as INT not null check (value > 0);
+
+drop DOMAIN if exists test_domain_exists;
+
+drop DOMAIN test_domain_exists;
+
+create user regress_test_u1;
+
+create role regress_test_r1;
+
+create group regress_test_g1;
+
+drop role regress_test_u2;
+
+drop role if exists regress_test_u1, regress_test_u2;
+
+drop role regress_test_u1;
+
+drop role regress_test_r2;
+
+drop role if exists regress_test_r1, regress_test_r2;
+
+drop role regress_test_r1;
+
+drop role regress_test_g2;
+
+drop role if exists regress_test_g1, regress_test_g2;
+
+drop role regress_test_g1;
+
+drop COLLATION if exists "test_collation_exists";
+
+drop CONVERSION "test_conversion_exists";
+
+drop CONVERSION if exists "test_conversion_exists";
+
+create conversion test_conversion_exists for 'LATIN1' to 'UTF8' from iso8859_1_to_utf8;
+
+drop CONVERSION "test_conversion_exists";
+
+drop TEXT SEARCH PARSER "test_tsparser_exists";
+
+drop TEXT SEARCH PARSER if exists "test_tsparser_exists";
+
+drop TEXT SEARCH DICTIONARY "test_tsdict_exists";
+
+drop TEXT SEARCH DICTIONARY if exists "test_tsdict_exists";
+
+create TEXT SEARCH DICTIONARY test_tsdict_exists (
+  template = ispell,
+  dictfile = ispell_sample,
+  afffile = ispell_sample
+);
+
+drop TEXT SEARCH DICTIONARY "test_tsdict_exists";
+
+drop TEXT SEARCH TEMPLATE "test_tstemplate_exists";
+
+drop TEXT SEARCH TEMPLATE if exists "test_tstemplate_exists";
+
+drop TEXT SEARCH CONFIGURATION "test_tsconfig_exists";
+
+drop TEXT SEARCH CONFIGURATION if exists "test_tsconfig_exists";
+
+create TEXT SEARCH CONFIGURATION test_tsconfig_exists (copy = english);
+
+drop TEXT SEARCH CONFIGURATION "test_tsconfig_exists";
+
+drop EXTENSION test_extension_exists;
+
+drop EXTENSION if exists test_extension_exists;
+
+drop FUNCTION test_function_exists();
+
+drop FUNCTION if exists test_function_exists();
+
+drop FUNCTION test_function_exists(INT, TEXT, INT[]);
+
+drop FUNCTION if exists test_function_exists(INT, TEXT, INT[]);
+
+drop AGGREGATE test_aggregate_exists(*);
+
+drop AGGREGATE if exists test_aggregate_exists(*);
+
+drop AGGREGATE test_aggregate_exists(INT);
+
+drop AGGREGATE if exists test_aggregate_exists(INT);
+
+drop OPERATOR @#@ (INT, INT);
+
+drop OPERATOR if exists @#@ (INT, INT);
+
+create operator @#@ (LEFTARG = BIGINT, RIGHTARG = BIGINT, PROCEDURE = int8xor);
+
+drop OPERATOR @#@ (BIGINT, BIGINT);
+
+drop LANGUAGE test_language_exists;
+
+drop LANGUAGE if exists test_language_exists;
+
+drop CAST (TEXT as TEXT);
+
+drop CAST if exists (TEXT as TEXT);
+
+drop TRIGGER "test_trigger_exists" on "test_exists";
+
+drop TRIGGER if exists "test_trigger_exists" on "test_exists";
+
+drop TRIGGER "test_trigger_exists" on "no_such_table";
+
+drop TRIGGER if exists "test_trigger_exists" on "no_such_table";
+
+drop TRIGGER "test_trigger_exists" on "no_such_schema"."no_such_table";
+
+drop TRIGGER if exists "test_trigger_exists" on "no_such_schema"."no_such_table";
+
+create TRIGGER test_trigger_exists
+  before update
+  on test_exists
+  for EACH ROW
+  EXECUTE FUNCTION suppress_redundant_updates_trigger();
+
+drop TRIGGER "test_trigger_exists" on "test_exists";
+
+drop RULE "test_rule_exists" on "test_exists";
+
+drop RULE if exists "test_rule_exists" on "test_exists";
+
+drop RULE "test_rule_exists" on "no_such_table";
+
+drop RULE if exists "test_rule_exists" on "no_such_table";
+
+drop RULE "test_rule_exists" on "no_such_schema"."no_such_table";
+
+drop RULE if exists "test_rule_exists" on "no_such_schema"."no_such_table";
+
+create rule test_rule_exists
+as on insert to test_exists
+do instead
+  insert into test_exists
+  values (new.a, new.b || cast(new.a as TEXT));;
+
+drop RULE "test_rule_exists" on "test_exists";
+
+drop FOREIGN DATA WRAPPER test_fdw_exists;
+
+drop FOREIGN DATA WRAPPER if exists test_fdw_exists;
+
+drop SERVER test_server_exists;
+
+drop SERVER if exists test_server_exists;
+
+drop OPERATOR CLASS "test_operator_class" USING "btree";
+
+drop OPERATOR CLASS if exists "test_operator_class" USING "btree";
+
+drop OPERATOR CLASS "test_operator_class" USING "no_such_am";
+
+drop OPERATOR CLASS if exists "test_operator_class" USING "no_such_am";
+
+drop OPERATOR FAMILY "test_operator_family" USING "btree";
+
+drop OPERATOR FAMILY if exists "test_operator_family" USING "btree";
+
+drop OPERATOR FAMILY "test_operator_family" USING "no_such_am";
+
+drop OPERATOR FAMILY if exists "test_operator_family" USING "no_such_am";
+
+drop ACCESS METHOD no_such_am;
+
+drop ACCESS METHOD if exists no_such_am;
+
+drop TABLE if exists "test_exists";
+
+drop TABLE "test_exists";
+
+drop AGGREGATE if exists no_such_schema.foo(INT);
+
+drop AGGREGATE if exists foo(no_such_type);
+
+drop AGGREGATE if exists foo(no_such_schema.no_such_type);
+
+drop CAST if exists (INT as no_such_type2);
+
+drop CAST if exists (no_such_type1 as INT);
+
+drop CAST if exists (INT as no_such_schema.bar);
+
+drop CAST if exists (no_such_schema.foo as INT);
+
+drop COLLATION if exists "no_such_schema"."foo";
+
+drop CONVERSION if exists "no_such_schema"."foo";
+
+drop DOMAIN if exists no_such_schema.foo;
+
+drop FOREIGN TABLE if exists "no_such_schema"."foo";
+
+drop FUNCTION if exists no_such_schema.foo();
+
+drop FUNCTION if exists foo(no_such_type);
+
+drop FUNCTION if exists foo(no_such_schema.no_such_type);
+
+drop INDEX if exists "no_such_schema"."foo";
+
+drop MATERIALIZED VIEW if exists "no_such_schema"."foo";
+
+drop OPERATOR if exists no_such_schema.+ (INT, INT);
+
+drop OPERATOR if exists + (no_such_type, no_such_type);
+
+drop OPERATOR if exists + (no_such_schema.no_such_type, no_such_schema.no_such_type);
+
+drop OPERATOR if exists # (NONE, no_such_schema.no_such_type);
+
+drop OPERATOR CLASS if exists "no_such_schema"."widget_ops" USING "btree";
+
+drop OPERATOR FAMILY if exists "no_such_schema"."float_ops" USING "btree";
+
+drop RULE if exists "foo" on "no_such_schema"."bar";
+
+drop SEQUENCE if exists "no_such_schema"."foo";
+
+drop TABLE if exists "no_such_schema"."foo";
+
+drop TEXT SEARCH CONFIGURATION if exists "no_such_schema"."foo";
+
+drop TEXT SEARCH DICTIONARY if exists "no_such_schema"."foo";
+
+drop TEXT SEARCH PARSER if exists "no_such_schema"."foo";
+
+drop TEXT SEARCH TEMPLATE if exists "no_such_schema"."foo";
+
+drop TRIGGER if exists "foo" on "no_such_schema"."bar";
+
+drop TYPE if exists no_such_schema.foo;
+
+drop VIEW if exists "no_such_schema"."foo";
+
+create function test_ambiguous_funcname(INT)
+returns INT
+as ' select $1; '
+language "sql";
+
+create function test_ambiguous_funcname(TEXT)
+returns TEXT
+as ' select $1; '
+language "sql";
+
+drop FUNCTION test_ambiguous_funcname;
+
+drop FUNCTION if exists test_ambiguous_funcname;
+
+drop FUNCTION test_ambiguous_funcname(INT);
+
+drop FUNCTION test_ambiguous_funcname(TEXT);
+
+create procedure test_ambiguous_procname(INT)
+as ' begin end; '
+language "plpgsql";
+
+create procedure test_ambiguous_procname(TEXT)
+as ' begin end; '
+language "plpgsql";
+
+drop PROCEDURE test_ambiguous_procname;
+
+drop PROCEDURE if exists test_ambiguous_procname;
+
+drop ROUTINE if exists test_ambiguous_procname;
+
+drop PROCEDURE test_ambiguous_procname(INT);
+
+drop PROCEDURE test_ambiguous_procname(TEXT);
+
+drop database test_database_exists (FORCE);
+
+drop database test_database_exists;
+
+drop database if exists test_database_exists (FORCE);
+
+drop database if exists test_database_exists;

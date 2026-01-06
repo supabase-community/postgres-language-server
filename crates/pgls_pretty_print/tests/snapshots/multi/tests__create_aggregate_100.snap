@@ -1,0 +1,325 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/create_aggregate.sql
+snapshot_kind: text
+---
+create aggregate newavg (
+  sfunc = int4_avg_accum,
+  basetype = INT,
+  stype = _int8,
+  finalfunc = int8_avg,
+  initcond1 = '{0,0}'
+);
+
+comment on aggregate newavg_wrong(INT) is 'an agg comment';
+
+comment on aggregate newavg(INT) is 'an agg comment';
+
+comment on aggregate newavg(INT) is null;
+
+create aggregate newsum (sfunc1 = int4pl, basetype = INT, stype1 = INT, initcond1 = '0');
+
+create aggregate newcnt (*) (sfunc = int8inc, stype = BIGINT, initcond = '0', parallel = safe);
+
+create aggregate oldcnt (sfunc = int8inc, basetype = 'ANY', stype = BIGINT, initcond = '0');
+
+create aggregate newcnt ("any") (sfunc = int8inc_any, stype = BIGINT, initcond = '0');
+
+comment on aggregate nosuchagg(*) is 'should fail';
+
+comment on aggregate newcnt(*) is 'an agg(*) comment';
+
+comment on aggregate newcnt("any") is 'an agg(any) comment';
+
+create function sum3(BIGINT, BIGINT, BIGINT)
+returns BIGINT
+as 'select $1 + $2 + $3'
+language "sql"
+STRICT
+immutable;
+
+create aggregate sum2 (BIGINT, BIGINT) (sfunc = sum3, stype = BIGINT, initcond = '0');
+
+create type aggtype as (a INT, b INT, c TEXT);
+
+create function aggf_trans(aggtype[], INT, INT, TEXT)
+returns aggtype[]
+as 'select array_append($1,ROW($2,$3,$4)::aggtype)'
+language "sql"
+STRICT
+immutable;
+
+create function aggfns_trans(aggtype[], INT, INT, TEXT)
+returns aggtype[]
+as 'select array_append($1,ROW($2,$3,$4)::aggtype)'
+language "sql"
+immutable;
+
+create aggregate aggfstr (INT, INT, TEXT) (sfunc = aggf_trans, stype = aggtype[], initcond = '{}');
+
+create aggregate aggfns (
+  INT, INT, TEXT
+) (
+  sfunc = aggfns_trans,
+  stype = aggtype[],
+  sspace = 10000,
+  initcond = '{}'
+);
+
+create function least_accum(BIGINT, BIGINT)
+returns BIGINT
+language "sql"
+as 'select least($1, $2)';
+
+create aggregate least_agg (INT) (stype = BIGINT, sfunc = least_accum);
+
+drop FUNCTION least_accum(BIGINT, BIGINT);
+
+create function least_accum(anycompatible, anycompatible)
+returns anycompatible
+language "sql"
+as 'select least($1, $2)';
+
+create aggregate least_agg (INT) (stype = BIGINT, sfunc = least_accum);
+
+create aggregate least_agg (BIGINT) (stype = BIGINT, sfunc = least_accum);
+
+drop FUNCTION least_accum(anycompatible, anycompatible) cascade;
+
+create function least_accum(ANYELEMENT, variadic ANYARRAY)
+returns ANYELEMENT
+language "sql"
+as 'select least($1, min($2[i])) from generate_subscripts($2,1) g(i)';
+
+create aggregate least_agg (variadic items ANYARRAY) (stype = ANYELEMENT, sfunc = least_accum);
+
+create function cleast_accum(anycompatible, variadic anycompatiblearray)
+returns anycompatible
+language "sql"
+as 'select least($1, min($2[i])) from generate_subscripts($2,1) g(i)';
+
+create aggregate cleast_agg (
+  variadic items anycompatiblearray
+) (
+  stype = anycompatible,
+  sfunc = cleast_accum
+);
+
+create aggregate my_percentile_disc (
+  DOUBLE PRECISION, ANYELEMENT
+) (
+  stype = internal,
+  sfunc = ordered_set_transition,
+  finalfunc = percentile_disc_final,
+  finalfunc_extra = 'true',
+  finalfunc_modify = read_write
+);
+
+create aggregate my_rank (
+  variadic "any"
+) (
+  stype = internal,
+  sfunc = ordered_set_transition_multi,
+  finalfunc = rank_final,
+  finalfunc_extra = 'true',
+  hypothetical
+);
+
+alter aggregate my_percentile_disc(DOUBLE PRECISION, ANYELEMENT) rename to test_percentile_disc;
+
+alter aggregate my_rank("any") rename to test_rank;
+
+create aggregate sumdouble (
+  DOUBLE PRECISION
+) (
+  stype = DOUBLE PRECISION,
+  sfunc = float8pl,
+  mstype = DOUBLE PRECISION,
+  msfunc = float8pl,
+  minvfunc = float8mi
+);
+
+create aggregate myavg (
+  NUMERIC
+) (
+  stype = internal,
+  sfunc = numeric_avg_accum,
+  serialfunc = numeric_avg_serialize
+);
+
+create aggregate myavg (
+  NUMERIC
+) (
+  stype = internal,
+  sfunc = numeric_avg_accum,
+  serialfunc = numeric_avg_deserialize,
+  deserialfunc = numeric_avg_deserialize
+);
+
+create aggregate myavg (
+  NUMERIC
+) (
+  stype = internal,
+  sfunc = numeric_avg_accum,
+  serialfunc = numeric_avg_serialize,
+  deserialfunc = numeric_avg_serialize
+);
+
+create aggregate myavg (
+  NUMERIC
+) (
+  stype = internal,
+  sfunc = numeric_avg_accum,
+  serialfunc = numeric_avg_serialize,
+  deserialfunc = numeric_avg_deserialize,
+  combinefunc = int4larger
+);
+
+create aggregate myavg (
+  NUMERIC
+) (
+  stype = internal,
+  sfunc = numeric_avg_accum,
+  finalfunc = numeric_avg,
+  serialfunc = numeric_avg_serialize,
+  deserialfunc = numeric_avg_deserialize,
+  combinefunc = numeric_avg_combine,
+  finalfunc_modify = shareable
+);
+
+select
+  aggfnoid,
+  aggtransfn,
+  aggcombinefn,
+  cast(aggtranstype as REGTYPE),
+  aggserialfn,
+  aggdeserialfn,
+  aggfinalmodify
+from
+  pg_aggregate
+where
+  aggfnoid = cast('myavg' as REGPROC);
+
+drop AGGREGATE myavg(NUMERIC);
+
+create aggregate myavg (
+  NUMERIC
+) (
+  stype = internal,
+  sfunc = numeric_avg_accum,
+  finalfunc = numeric_avg
+);
+
+create or replace aggregate myavg (
+  NUMERIC
+) (
+  stype = internal,
+  sfunc = numeric_avg_accum,
+  finalfunc = numeric_avg,
+  serialfunc = numeric_avg_serialize,
+  deserialfunc = numeric_avg_deserialize,
+  combinefunc = numeric_avg_combine,
+  finalfunc_modify = shareable
+);
+
+select
+  aggfnoid,
+  aggtransfn,
+  aggcombinefn,
+  cast(aggtranstype as REGTYPE),
+  aggserialfn,
+  aggdeserialfn,
+  aggfinalmodify
+from
+  pg_aggregate
+where
+  aggfnoid = cast('myavg' as REGPROC);
+
+create or replace aggregate myavg (NUMERIC) (stype = NUMERIC, sfunc = numeric_add);
+
+select
+  aggfnoid,
+  aggtransfn,
+  aggcombinefn,
+  cast(aggtranstype as REGTYPE),
+  aggserialfn,
+  aggdeserialfn,
+  aggfinalmodify
+from
+  pg_aggregate
+where
+  aggfnoid = cast('myavg' as REGPROC);
+
+create or replace aggregate myavg (
+  NUMERIC
+) (
+  stype = NUMERIC,
+  sfunc = numeric_add,
+  finalfunc = numeric_out
+);
+
+create or replace aggregate myavg (NUMERIC) (stype = NUMERIC, sfunc = numeric_add);
+
+create function sum4(BIGINT, BIGINT, BIGINT, BIGINT)
+returns BIGINT
+as 'select $1 + $2 + $3 + $4'
+language "sql"
+STRICT
+immutable;
+
+create or replace aggregate sum3 (BIGINT, BIGINT, BIGINT) (stype = BIGINT, sfunc = sum4);
+
+drop FUNCTION sum4(BIGINT, BIGINT, BIGINT, BIGINT);
+
+drop AGGREGATE myavg(NUMERIC);
+
+create aggregate mysum (INT) (stype = INT, sfunc = int4pl, parallel = pear);
+
+create function float8mi_n(DOUBLE PRECISION, DOUBLE PRECISION)
+returns DOUBLE PRECISION
+as ' SELECT $1 - $2; '
+language "sql";
+
+create aggregate invalidsumdouble (
+  DOUBLE PRECISION
+) (
+  stype = DOUBLE PRECISION,
+  sfunc = float8pl,
+  mstype = DOUBLE PRECISION,
+  msfunc = float8pl,
+  minvfunc = float8mi_n
+);
+
+create function float8mi_int(DOUBLE PRECISION, DOUBLE PRECISION)
+returns INT
+as ' SELECT CAST($1 - $2 AS INT); '
+language "sql";
+
+create aggregate wrongreturntype (
+  DOUBLE PRECISION
+) (
+  stype = DOUBLE PRECISION,
+  sfunc = float8pl,
+  mstype = DOUBLE PRECISION,
+  msfunc = float8pl,
+  minvfunc = float8mi_int
+);
+
+create aggregate case_agg (
+  "Sfunc1" = int4pl,
+  "Basetype" = INT,
+  "Stype1" = INT,
+  "Initcond1" = '0',
+  "Parallel" = safe
+);
+
+create aggregate case_agg (
+  DOUBLE PRECISION
+) (
+  "Stype" = internal,
+  "Sfunc" = ordered_set_transition,
+  "Finalfunc" = percentile_disc_final,
+  "Finalfunc_extra" = 'true',
+  "Finalfunc_modify" = read_write,
+  "Parallel" = safe
+);

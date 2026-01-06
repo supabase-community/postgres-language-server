@@ -1,0 +1,165 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/prepare.sql
+snapshot_kind: text
+---
+select
+  name,
+  statement,
+  parameter_types,
+  result_types
+from
+  pg_prepared_statements;
+
+prepare q1 as select 1 as a;;
+
+execute q1;
+
+select
+  name,
+  statement,
+  parameter_types,
+  result_types
+from
+  pg_prepared_statements;
+
+prepare q1 as select 2;;
+
+deallocate q1;
+
+prepare q1 as select 2;;
+
+execute q1;
+
+prepare q2 as select 2 as b;;
+
+select
+  name,
+  statement,
+  parameter_types,
+  result_types
+from
+  pg_prepared_statements;
+
+deallocate q1;
+
+select
+  name,
+  statement,
+  parameter_types,
+  result_types
+from
+  pg_prepared_statements;
+
+deallocate q2;
+
+select
+  name,
+  statement,
+  parameter_types,
+  result_types
+from
+  pg_prepared_statements;
+
+prepare q2
+(TEXT)
+as select
+  datname,
+  datistemplate,
+  datallowconn
+from
+  pg_database
+where
+  datname = $1;;
+
+execute q2 ('postgres');
+
+prepare q3
+(TEXT,
+INT,
+DOUBLE PRECISION,
+BOOLEAN,
+SMALLINT)
+as select
+  *
+from
+  tenk1
+where
+  string4 = $1 and
+  (four = $2 or
+  ten = cast($3 as BIGINT) or
+  true = $4 or
+  odd = cast($5 as INT))
+order by unique1;;
+
+execute q3
+('AAAAxx',
+cast(5 as SMALLINT),
+cast(10.5 as DOUBLE PRECISION),
+false,
+cast(4 as BIGINT));
+
+execute q3 ('bool');
+
+execute q3
+('bytea',
+cast(5 as SMALLINT),
+cast(10.5 as DOUBLE PRECISION),
+false,
+cast(4 as BIGINT),
+true);
+
+execute q3
+(cast(5 as SMALLINT),
+cast(10.5 as DOUBLE PRECISION),
+false,
+cast(4 as BIGINT),
+'bytea');
+
+prepare q4 (nonexistenttype) as select $1;;
+
+prepare q5
+(INT,
+TEXT)
+as select
+  *
+from
+  tenk1
+where
+  unique1 = $1 or stringu1 = $2
+order by unique1;;
+
+create temporary table q5_prep_results as execute q5 (200, 'DTAAAA');
+
+select * from q5_prep_results;
+
+create temporary table q5_prep_nodata
+as
+  execute q5 (200, 'DTAAAA') with no data;
+
+select * from q5_prep_nodata;
+
+prepare q6 as select * from tenk1 where unique1 = $1 and stringu1 = $2;;
+
+prepare q7 (unknown) as select * from road where thepath = $1;;
+
+update tenk1 set stringu1 = $2 where unique1 = $1;
+
+select
+  name,
+  statement,
+  parameter_types,
+  result_types
+from
+  pg_prepared_statements
+order by name;
+
+deallocate all;
+
+select
+  name,
+  statement,
+  parameter_types
+from
+  pg_prepared_statements
+order by name;

@@ -1,0 +1,170 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/prepared_xacts.sql
+snapshot_kind: text
+---
+create table pxtest1 (foobar VARCHAR(10));
+
+insert into pxtest1 values ('aaa');
+
+begin isolation level serializable;
+
+update pxtest1 set foobar = 'bbb' where foobar = 'aaa';
+
+select * from pxtest1;
+
+prepare transaction 'regress_foo1';
+
+select * from pxtest1;
+
+select gid from pg_prepared_xacts where gid ~ '^regress_' order by gid;
+
+rollback prepared 'regress_foo1';
+
+select * from pxtest1;
+
+select gid from pg_prepared_xacts where gid ~ '^regress_' order by gid;
+
+begin isolation level serializable;
+
+insert into pxtest1 values ('ddd');
+
+select * from pxtest1;
+
+prepare transaction 'regress_foo2';
+
+select * from pxtest1;
+
+commit prepared 'regress_foo2';
+
+select * from pxtest1;
+
+begin isolation level serializable;
+
+update pxtest1 set foobar = 'eee' where foobar = 'ddd';
+
+select * from pxtest1;
+
+prepare transaction 'regress_foo3';
+
+select gid from pg_prepared_xacts where gid ~ '^regress_' order by gid;
+
+begin isolation level serializable;
+
+insert into pxtest1 values ('fff');
+
+prepare transaction 'regress_foo3';
+
+select * from pxtest1;
+
+rollback prepared 'regress_foo3';
+
+select * from pxtest1;
+
+begin isolation level serializable;
+
+update pxtest1 set foobar = 'eee' where foobar = 'ddd';
+
+select * from pxtest1;
+
+prepare transaction 'regress_foo4';
+
+select gid from pg_prepared_xacts where gid ~ '^regress_' order by gid;
+
+begin isolation level serializable;
+
+select * from pxtest1;
+
+insert into pxtest1 values ('fff');
+
+prepare transaction 'regress_foo5';
+
+select gid from pg_prepared_xacts where gid ~ '^regress_' order by gid;
+
+rollback prepared 'regress_foo4';
+
+select gid from pg_prepared_xacts where gid ~ '^regress_' order by gid;
+
+drop TABLE "pxtest1";
+
+begin;
+
+select pg_advisory_lock(1);
+
+select pg_advisory_xact_lock_shared(1);
+
+prepare transaction 'regress_foo6';
+
+begin isolation level serializable;
+
+create table pxtest2 (a INT);
+
+insert into pxtest2 values (1);
+
+savepoint a;
+
+insert into pxtest2 values (2);
+
+rollback to savepoint a;
+
+savepoint b;
+
+insert into pxtest2 values (3);
+
+prepare transaction 'regress_sub1';
+
+create table pxtest3 (fff INT);
+
+begin isolation level serializable;
+
+drop TABLE "pxtest3";
+
+create table pxtest4 (a INT);
+
+insert into pxtest4 values (1);
+
+insert into pxtest4 values (2);
+
+declare "foo" cursor for select * from pxtest4;;
+
+fetch next from foo;
+
+prepare transaction 'regress_sub2';
+
+fetch next from foo;
+
+select * from pxtest2;
+
+select gid from pg_prepared_xacts where gid ~ '^regress_' order by gid;
+
+begin;
+
+lock table pxtest3 in ACCESS SHARE mode NOWAIT;
+
+rollback;
+
+select gid from pg_prepared_xacts where gid ~ '^regress_' order by gid;
+
+begin;
+
+lock table pxtest3 in ACCESS SHARE mode NOWAIT;
+
+rollback;
+
+commit prepared 'regress_sub1';
+
+select * from pxtest2;
+
+select gid from pg_prepared_xacts where gid ~ '^regress_' order by gid;
+
+commit prepared 'regress_sub2';
+
+select * from pxtest3;
+
+select gid from pg_prepared_xacts where gid ~ '^regress_' order by gid;
+
+drop TABLE "pxtest2";
+
+drop TABLE "pxtest3";
+
+drop TABLE "pxtest4";

@@ -1,0 +1,145 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/txid.sql
+snapshot_kind: text
+---
+select cast('12:13:' as TXID_SNAPSHOT);
+
+select cast('12:18:14,16' as TXID_SNAPSHOT);
+
+select cast('12:16:14,14' as TXID_SNAPSHOT);
+
+select cast('31:12:' as TXID_SNAPSHOT);
+
+select cast('0:1:' as TXID_SNAPSHOT);
+
+select cast('12:13:0' as TXID_SNAPSHOT);
+
+select cast('12:16:14,13' as TXID_SNAPSHOT);
+
+create temporary table snapshot_test (
+  nr INT,
+  snap TXID_SNAPSHOT
+);
+
+insert into snapshot_test values (1, '12:13:');
+
+insert into snapshot_test values (2, '12:20:13,15,18');
+
+insert into snapshot_test values (3, '100001:100009:100005,100007,100008');
+
+insert into snapshot_test
+values
+  (
+    4,
+    '100:150:101,102,103,104,105,106,107,108,109,110,111,112,113,114,115,116,117,118,119,120,121,122,123,124,125,126,127,128,129,130,131'
+  );
+
+select snap from snapshot_test order by nr;
+
+select
+  txid_snapshot_xmin(snap),
+  txid_snapshot_xmax(snap),
+  txid_snapshot_xip(snap)
+from
+  snapshot_test
+order by nr;
+
+select
+  id,
+  txid_visible_in_snapshot(id, snap)
+from
+  snapshot_test,
+  generate_series(11, 21) as id
+where
+  nr = 2;
+
+select
+  id,
+  txid_visible_in_snapshot(id, snap)
+from
+  snapshot_test,
+  generate_series(90, 160) as id
+where
+  nr = 4;
+
+select txid_current() >= txid_snapshot_xmin(txid_current_snapshot());
+
+select txid_visible_in_snapshot(txid_current(), txid_current_snapshot());
+
+select cast('1000100010001000:1000100010001100:1000100010001012,1000100010001013' as TXID_SNAPSHOT);
+
+select
+  txid_visible_in_snapshot(
+    '1000100010001012',
+    '1000100010001000:1000100010001100:1000100010001012,1000100010001013'
+  );
+
+select
+  txid_visible_in_snapshot(
+    '1000100010001015',
+    '1000100010001000:1000100010001100:1000100010001012,1000100010001013'
+  );
+
+select cast('1:9223372036854775807:3' as TXID_SNAPSHOT);
+
+select cast('1:9223372036854775808:3' as TXID_SNAPSHOT);
+
+begin;
+
+select txid_current_if_assigned() is null;
+
+select txid_current();
+
+select txid_current_if_assigned() is not distinct from cast('txid_current' as BIGINT);
+
+commit;
+
+begin;
+
+select txid_current() as committed;
+
+commit;
+
+begin;
+
+select txid_current() as rolledback;
+
+rollback;
+
+begin;
+
+select txid_current() as inprogress;
+
+select txid_status('committed') as committed;
+
+select txid_status('rolledback') as rolledback;
+
+select txid_status('inprogress') as inprogress;
+
+select txid_status(1);
+
+select txid_status(2);
+
+select txid_status(3);
+
+commit;
+
+begin;
+
+create function test_future_xid_status(BIGINT)
+returns VOID
+language "plpgsql"
+as '
+BEGIN
+  PERFORM txid_status($1);
+  RAISE EXCEPTION ''didn''''t ERROR at xid in the future as expected'';
+EXCEPTION
+  WHEN invalid_parameter_value THEN
+    RAISE NOTICE ''Got expected error for xid in the future'';
+END;
+';
+
+select test_future_xid_status('inprogress' + 10000);
+
+rollback;

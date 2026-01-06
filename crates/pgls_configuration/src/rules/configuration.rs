@@ -58,15 +58,6 @@ impl<T: Clone + Default + 'static> RuleConfiguration<T> {
         }
     }
 }
-impl<T: Default> RuleConfiguration<T> {
-    /// Get a reference to the typed options if present
-    pub fn get_options_ref(&self) -> Option<&T> {
-        match self {
-            Self::Plain(_) => None,
-            Self::WithOptions(options) => Some(&options.options),
-        }
-    }
-}
 impl<T: Default> Default for RuleConfiguration<T> {
     fn default() -> Self {
         Self::Plain(RulePlainConfiguration::Error)

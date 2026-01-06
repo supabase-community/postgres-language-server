@@ -1,0 +1,200 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/portals.sql
+snapshot_kind: text
+---
+begin;
+
+declare "foo1" SCROLL cursor for select * from tenk1 order by unique2;;
+
+declare "foo2" SCROLL cursor for select * from tenk2;;
+
+declare "foo3" SCROLL cursor for select * from tenk1 order by unique2;;
+
+declare "foo4" SCROLL cursor for select * from tenk2;;
+
+declare "foo5" SCROLL cursor for select * from tenk1 order by unique2;;
+
+declare "foo6" SCROLL cursor for select * from tenk2;;
+
+declare "foo7" SCROLL cursor for select * from tenk1 order by unique2;;
+
+declare "foo8" SCROLL cursor for select * from tenk2;;
+
+declare "foo9" SCROLL cursor for select * from tenk1 order by unique2;;
+
+declare "foo10" SCROLL cursor for select * from tenk2;;
+
+declare "foo11" SCROLL cursor for select * from tenk1 order by unique2;;
+
+declare "foo12" SCROLL cursor for select * from tenk2;;
+
+declare "foo13" SCROLL cursor for select * from tenk1 order by unique2;;
+
+declare "foo14" SCROLL cursor for select * from tenk2;;
+
+declare "foo15" SCROLL cursor for select * from tenk1 order by unique2;;
+
+declare "foo16" SCROLL cursor for select * from tenk2;;
+
+declare "foo17" SCROLL cursor for select * from tenk1 order by unique2;;
+
+declare "foo18" SCROLL cursor for select * from tenk2;;
+
+declare "foo19" SCROLL cursor for select * from tenk1 order by unique2;;
+
+declare "foo20" SCROLL cursor for select * from tenk2;;
+
+declare "foo21" SCROLL cursor for select * from tenk1 order by unique2;;
+
+declare "foo22" SCROLL cursor for select * from tenk2;;
+
+declare "foo23" SCROLL cursor for select * from tenk1 order by unique2;;
+
+fetch next from foo1;
+
+fetch FORWARD 2 from foo2;
+
+fetch FORWARD 3 from foo3;
+
+fetch FORWARD 4 from foo4;
+
+fetch FORWARD 5 from foo5;
+
+fetch FORWARD 6 from foo6;
+
+fetch FORWARD 7 from foo7;
+
+fetch FORWARD 8 from foo8;
+
+fetch FORWARD 9 from foo9;
+
+fetch FORWARD 10 from foo10;
+
+fetch FORWARD 11 from foo11;
+
+fetch FORWARD 12 from foo12;
+
+fetch FORWARD 13 from foo13;
+
+fetch FORWARD 14 from foo14;
+
+fetch FORWARD 15 from foo15;
+
+fetch FORWARD 16 from foo16;
+
+fetch FORWARD 17 from foo17;
+
+fetch FORWARD 18 from foo18;
+
+fetch FORWARD 19 from foo19;
+
+fetch FORWARD 20 from foo20;
+
+fetch FORWARD 21 from foo21;
+
+fetch FORWARD 22 from foo22;
+
+fetch FORWARD 23 from foo23;
+
+fetch PRIOR from foo23;
+
+fetch BACKWARD 2 from foo22;
+
+fetch BACKWARD 3 from foo21;
+
+fetch BACKWARD 4 from foo20;
+
+fetch BACKWARD 5 from foo19;
+
+fetch BACKWARD 6 from foo18;
+
+fetch BACKWARD 7 from foo17;
+
+fetch BACKWARD 8 from foo16;
+
+fetch BACKWARD 9 from foo15;
+
+fetch BACKWARD 10 from foo14;
+
+fetch BACKWARD 11 from foo13;
+
+fetch BACKWARD 12 from foo12;
+
+fetch BACKWARD 13 from foo11;
+
+fetch BACKWARD 14 from foo10;
+
+fetch BACKWARD 15 from foo9;
+
+fetch BACKWARD 16 from foo8;
+
+fetch BACKWARD 17 from foo7;
+
+fetch BACKWARD 18 from foo6;
+
+fetch BACKWARD 19 from foo5;
+
+fetch BACKWARD 20 from foo4;
+
+fetch BACKWARD 21 from foo3;
+
+fetch BACKWARD 22 from foo2;
+
+fetch BACKWARD 23 from foo1;
+
+close foo1;
+
+close foo2;
+
+close foo3;
+
+close foo4;
+
+close foo5;
+
+close foo6;
+
+close foo7;
+
+close foo8;
+
+close foo9;
+
+close foo10;
+
+close foo11;
+
+close foo12;
+
+select name, statement, is_holdable, is_binary, is_scrollable from pg_cursors order by 1;
+
+commit;
+
+select name, statement, is_holdable, is_binary, is_scrollable from pg_cursors;
+
+begin;
+
+declare "foo24" no SCROLL cursor for select * from tenk1 order by unique2;;
+
+fetch next from foo24;
+
+fetch PRIOR from foo24;
+
+commit;
+
+begin;
+
+declare "foo24" no SCROLL cursor for select * from tenk1 order by unique2;;
+
+fetch next from foo24;
+
+fetch ABSOLUTE 2 from foo24;
+
+fetch ABSOLUTE 1 from foo24;
+
+commit;
+
+select name, statement, is_holdable, is_binary, is_scrollable from pg_cursors;
+
+begin;

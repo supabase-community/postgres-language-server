@@ -1,0 +1,159 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/name.sql
+snapshot_kind: text
+---
+select cast('name string' as NAME) = cast('name string' as NAME) as "True";
+
+select cast('name string' as NAME) = cast('name string ' as NAME) as "False";
+
+create table name_tbl (f1 NAME);
+
+insert into name_tbl (f1)
+values
+  (
+    '1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890ABCDEFGHIJKLMNOPQR'
+  );
+
+insert into name_tbl (f1)
+values
+  (
+    '1234567890abcdefghijklmnopqrstuvwxyz1234567890abcdefghijklmnopqr'
+  );
+
+insert into name_tbl (f1) values ('asdfghjkl;');
+
+insert into name_tbl (f1) values ('343f%2a');
+
+insert into name_tbl (f1) values ('d34aaasdf');
+
+insert into name_tbl (f1) values ('');
+
+insert into name_tbl (f1)
+values
+  (
+    '1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+  );
+
+select * from name_tbl;
+
+select
+  c.f1
+from
+  name_tbl as c
+where
+  c.f1 <>
+  '1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890ABCDEFGHIJKLMNOPQR';
+
+select
+  c.f1
+from
+  name_tbl as c
+where
+  c.f1 =
+  '1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890ABCDEFGHIJKLMNOPQR';
+
+select
+  c.f1
+from
+  name_tbl as c
+where
+  c.f1 <
+  '1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890ABCDEFGHIJKLMNOPQR';
+
+select
+  c.f1
+from
+  name_tbl as c
+where
+  c.f1 <=
+  '1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890ABCDEFGHIJKLMNOPQR';
+
+select
+  c.f1
+from
+  name_tbl as c
+where
+  c.f1 >
+  '1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890ABCDEFGHIJKLMNOPQR';
+
+select
+  c.f1
+from
+  name_tbl as c
+where
+  c.f1 >=
+  '1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890ABCDEFGHIJKLMNOPQR';
+
+select c.f1 from name_tbl as c where c.f1 ~ '.*';
+
+select c.f1 from name_tbl as c where c.f1 !~ '.*';
+
+select c.f1 from name_tbl as c where c.f1 ~ '[0-9]';
+
+select c.f1 from name_tbl as c where c.f1 ~ '.*asdf.*';
+
+drop TABLE "name_tbl";
+
+do
+$$
+DECLARE r text[];
+BEGIN
+  r := parse_ident('Schemax.Tabley');
+  RAISE NOTICE '%', format('%I.%I', r[1], r[2]);
+  r := parse_ident('"SchemaX"."TableY"');
+  RAISE NOTICE '%', format('%I.%I', r[1], r[2]);
+END;
+$$;
+
+select parse_ident('foo.boo');
+
+select parse_ident('foo.boo[]');
+
+select parse_ident('foo.boo[]', "strict" := false);
+
+select parse_ident(' ');
+
+select parse_ident(' .aaa');
+
+select parse_ident(' aaa . ');
+
+select parse_ident('aaa.a%b');
+
+select parse_ident('XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX');
+
+select
+  length(a[1]),
+  length(a[2])
+from
+  parse_ident(
+    '"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx".yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy'
+  )
+  as a;
+
+select
+  parse_ident(
+    ' first . "  second  " ."   third   ". "  ' ||
+    repeat('x', 66) ||
+    '"'
+  );
+
+select
+  cast(parse_ident(
+    ' first . "  second  " ."   third   ". "  ' ||
+    repeat('x', 66) ||
+    '"'
+  )
+  as NAME[]);
+
+select parse_ident('"c".X XXXXXXXXXX');
+
+select parse_ident('1020');
+
+select parse_ident('10.20');
+
+select parse_ident('.');
+
+select parse_ident('.1020');
+
+select parse_ident('xxx.1020');

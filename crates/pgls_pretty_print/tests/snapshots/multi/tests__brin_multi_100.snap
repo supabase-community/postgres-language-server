@@ -1,0 +1,1037 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/brin_multi.sql
+snapshot_kind: text
+---
+create table brintest_multi (
+  int8col BIGINT,
+  int2col SMALLINT,
+  int4col INT,
+  oidcol OID,
+  tidcol TID,
+  float4col REAL,
+  float8col DOUBLE PRECISION,
+  macaddrcol MACADDR,
+  macaddr8col MACADDR8,
+  inetcol INET,
+  cidrcol CIDR,
+  datecol DATE,
+  timecol TIME,
+  timestampcol TIMESTAMP,
+  timestamptzcol timestamp with time ZONE,
+  intervalcol INTERVAL,
+  timetzcol time with time ZONE,
+  numericcol NUMERIC,
+  uuidcol UUID,
+  lsncol PG_LSN
+)
+with (fillfactor = 10);
+
+insert into brintest_multi
+select
+  142857 * tenthous,
+  thousand,
+  twothousand,
+  cast(unique1 as OID),
+  cast(format('(%s,%s)', tenthous, twenty) as TID),
+  (four + 1.0) / (hundred + 1),
+  cast(odd as DOUBLE PRECISION) / (tenthous + 1),
+  cast(format(
+    '%s:00:%s:00:%s:00',
+    to_hex(odd),
+    to_hex(even),
+    to_hex(hundred)
+  )
+  as MACADDR),
+  cast(substr(fipshash(cast(unique1 as TEXT)), 1, 16)
+  as MACADDR8),
+  cast('10.2.3.4/24' as INET) + tenthous,
+  cast('10.2.3/24' as CIDR) + tenthous,
+  cast('1995-08-15' as DATE) + tenthous,
+  cast('01:20:30' as TIME) +
+  thousand * cast('18.5 second' as INTERVAL),
+  cast('1942-07-23 03:05:09' as TIMESTAMP) +
+  tenthous * cast('36.38 hours' as INTERVAL),
+  cast('1972-10-10 03:00'
+  as timestamp with time ZONE) +
+  thousand * cast('1 hour' as INTERVAL),
+  justify_days(
+    justify_hours(
+      tenthous * cast('12 minutes' as INTERVAL)
+    )
+  ),
+  cast('01:30:20+02' as time with time ZONE) +
+  hundred * cast('15 seconds' as INTERVAL),
+  cast(tenthous as NUMERIC(36, 30)) * fivethous *
+  even /
+  (hundred + 1),
+  cast(format(
+    '%s%s-%s-%s-%s-%s%s%s',
+    to_char(tenthous, 'FM0000'),
+    to_char(tenthous, 'FM0000'),
+    to_char(tenthous, 'FM0000'),
+    to_char(tenthous, 'FM0000'),
+    to_char(tenthous, 'FM0000'),
+    to_char(tenthous, 'FM0000'),
+    to_char(tenthous, 'FM0000'),
+    to_char(tenthous, 'FM0000')
+  )
+  as UUID),
+  cast(format('%s/%s%s', odd, even, tenthous)
+  as PG_LSN)
+from
+  tenk1
+order by unique2
+limit 100;
+
+insert into brintest_multi (inetcol, cidrcol)
+select
+  cast('fe80::6e40:8ff:fea9:8c46' as INET) +
+  tenthous,
+  cast('fe80::6e40:8ff:fea9:8c46' as CIDR) +
+  tenthous
+from
+  tenk1
+order by thousand,
+  tenthous
+limit 25;
+
+create index "brinidx_multi"
+on brintest_multi
+using brin
+(
+  int8col
+  int8_minmax_multi_ops(values_per_range = 7)
+);
+
+create index "brinidx_multi"
+on brintest_multi
+using brin
+(
+  int8col
+  int8_minmax_multi_ops(values_per_range = 257)
+);
+
+create index "brinidx_multi"
+on brintest_multi
+using brin
+(
+  int8col int8_minmax_multi_ops,
+  int2col int2_minmax_multi_ops,
+  int4col int4_minmax_multi_ops,
+  oidcol oid_minmax_multi_ops,
+  tidcol tid_minmax_multi_ops,
+  float4col float4_minmax_multi_ops,
+  float8col float8_minmax_multi_ops,
+  macaddrcol macaddr_minmax_multi_ops,
+  macaddr8col macaddr8_minmax_multi_ops,
+  inetcol inet_minmax_multi_ops,
+  cidrcol inet_minmax_multi_ops,
+  datecol date_minmax_multi_ops,
+  timecol time_minmax_multi_ops,
+  timestampcol timestamp_minmax_multi_ops,
+  timestamptzcol timestamptz_minmax_multi_ops,
+  intervalcol interval_minmax_multi_ops,
+  timetzcol timetz_minmax_multi_ops,
+  numericcol numeric_minmax_multi_ops,
+  uuidcol uuid_minmax_multi_ops,
+  lsncol pg_lsn_minmax_multi_ops
+);
+
+drop INDEX "brinidx_multi";
+
+create index "brinidx_multi"
+on brintest_multi
+using brin
+(
+  int8col int8_minmax_multi_ops,
+  int2col int2_minmax_multi_ops,
+  int4col int4_minmax_multi_ops,
+  oidcol oid_minmax_multi_ops,
+  tidcol tid_minmax_multi_ops,
+  float4col float4_minmax_multi_ops,
+  float8col float8_minmax_multi_ops,
+  macaddrcol macaddr_minmax_multi_ops,
+  macaddr8col macaddr8_minmax_multi_ops,
+  inetcol inet_minmax_multi_ops,
+  cidrcol inet_minmax_multi_ops,
+  datecol date_minmax_multi_ops,
+  timecol time_minmax_multi_ops,
+  timestampcol timestamp_minmax_multi_ops,
+  timestamptzcol timestamptz_minmax_multi_ops,
+  intervalcol interval_minmax_multi_ops,
+  timetzcol timetz_minmax_multi_ops,
+  numericcol numeric_minmax_multi_ops,
+  uuidcol uuid_minmax_multi_ops,
+  lsncol pg_lsn_minmax_multi_ops
+)
+with (pages_per_range = 1);
+
+create table brinopers_multi (
+  colname NAME,
+  typ TEXT,
+  op TEXT[],
+  value TEXT[],
+  matches INT[],
+  check (cardinality(op) = cardinality(value)),
+  check (cardinality(op) = cardinality(matches))
+);
+
+insert into brinopers_multi
+values
+  (
+    'int2col',
+    'int2',
+    '{>, >=, =, <=, <}',
+    '{0, 0, 800, 999, 999}',
+    '{100, 100, 1, 100, 100}'
+  ),
+  (
+    'int2col',
+    'int4',
+    '{>, >=, =, <=, <}',
+    '{0, 0, 800, 999, 1999}',
+    '{100, 100, 1, 100, 100}'
+  ),
+  (
+    'int2col',
+    'int8',
+    '{>, >=, =, <=, <}',
+    '{0, 0, 800, 999, 1428427143}',
+    '{100, 100, 1, 100, 100}'
+  ),
+  (
+    'int4col',
+    'int2',
+    '{>, >=, =, <=, <}',
+    '{0, 0, 800, 1999, 1999}',
+    '{100, 100, 1, 100, 100}'
+  ),
+  (
+    'int4col',
+    'int4',
+    '{>, >=, =, <=, <}',
+    '{0, 0, 800, 1999, 1999}',
+    '{100, 100, 1, 100, 100}'
+  ),
+  (
+    'int4col',
+    'int8',
+    '{>, >=, =, <=, <}',
+    '{0, 0, 800, 1999, 1428427143}',
+    '{100, 100, 1, 100, 100}'
+  ),
+  (
+    'int8col',
+    'int2',
+    '{>, >=}',
+    '{0, 0}',
+    '{100, 100}'
+  ),
+  (
+    'int8col',
+    'int4',
+    '{>, >=}',
+    '{0, 0}',
+    '{100, 100}'
+  ),
+  (
+    'int8col',
+    'int8',
+    '{>, >=, =, <=, <}',
+    '{0, 0, 1257141600, 1428427143, 1428427143}',
+    '{100, 100, 1, 100, 100}'
+  ),
+  (
+    'oidcol',
+    'oid',
+    '{>, >=, =, <=, <}',
+    '{0, 0, 8800, 9999, 9999}',
+    '{100, 100, 1, 100, 100}'
+  ),
+  (
+    'tidcol',
+    'tid',
+    '{>, >=, =, <=, <}',
+    '{"(0,0)", "(0,0)", "(8800,0)", "(9999,19)", "(9999,19)"}',
+    '{100, 100, 1, 100, 100}'
+  ),
+  (
+    'float4col',
+    'float4',
+    '{>, >=, =, <=, <}',
+    '{0.0103093, 0.0103093, 1, 1, 1}',
+    '{100, 100, 4, 100, 96}'
+  ),
+  (
+    'float4col',
+    'float8',
+    '{>, >=, =, <=, <}',
+    '{0.0103093, 0.0103093, 1, 1, 1}',
+    '{100, 100, 4, 100, 96}'
+  ),
+  (
+    'float8col',
+    'float4',
+    '{>, >=, =, <=, <}',
+    '{0, 0, 0, 1.98, 1.98}',
+    '{99, 100, 1, 100, 100}'
+  ),
+  (
+    'float8col',
+    'float8',
+    '{>, >=, =, <=, <}',
+    '{0, 0, 0, 1.98, 1.98}',
+    '{99, 100, 1, 100, 100}'
+  ),
+  (
+    'macaddrcol',
+    'macaddr',
+    '{>, >=, =, <=, <}',
+    '{00:00:01:00:00:00, 00:00:01:00:00:00, 2c:00:2d:00:16:00, ff:fe:00:00:00:00, ff:fe:00:00:00:00}',
+    '{99, 100, 2, 100, 100}'
+  ),
+  (
+    'macaddr8col',
+    'macaddr8',
+    '{>, >=, =, <=, <}',
+    '{b1:d1:0e:7b:af:a4:42:12, d9:35:91:bd:f7:86:0e:1e, 72:8f:20:6c:2a:01:bf:57, 23:e8:46:63:86:07:ad:cb, 13:16:8e:6a:2e:6c:84:b4}',
+    '{31, 17, 1, 11, 4}'
+  ),
+  (
+    'inetcol',
+    'inet',
+    '{=, <, <=, >, >=}',
+    '{10.2.14.231/24, 255.255.255.255, 255.255.255.255, 0.0.0.0, 0.0.0.0}',
+    '{1, 100, 100, 125, 125}'
+  ),
+  (
+    'inetcol',
+    'cidr',
+    '{<, <=, >, >=}',
+    '{255.255.255.255, 255.255.255.255, 0.0.0.0, 0.0.0.0}',
+    '{100, 100, 125, 125}'
+  ),
+  (
+    'cidrcol',
+    'inet',
+    '{=, <, <=, >, >=}',
+    '{10.2.14/24, 255.255.255.255, 255.255.255.255, 0.0.0.0, 0.0.0.0}',
+    '{2, 100, 100, 125, 125}'
+  ),
+  (
+    'cidrcol',
+    'cidr',
+    '{=, <, <=, >, >=}',
+    '{10.2.14/24, 255.255.255.255, 255.255.255.255, 0.0.0.0, 0.0.0.0}',
+    '{2, 100, 100, 125, 125}'
+  ),
+  (
+    'datecol',
+    'date',
+    '{>, >=, =, <=, <}',
+    '{1995-08-15, 1995-08-15, 2009-12-01, 2022-12-30, 2022-12-30}',
+    '{100, 100, 1, 100, 100}'
+  ),
+  (
+    'timecol',
+    'time',
+    '{>, >=, =, <=, <}',
+    '{01:20:30, 01:20:30, 02:28:57, 06:28:31.5, 06:28:31.5}',
+    '{100, 100, 1, 100, 100}'
+  ),
+  (
+    'timestampcol',
+    'timestamp',
+    '{>, >=, =, <=, <}',
+    '{1942-07-23 03:05:09, 1942-07-23 03:05:09, 1964-03-24 19:26:45, 1984-01-20 22:42:21, 1984-01-20 22:42:21}',
+    '{100, 100, 1, 100, 100}'
+  ),
+  (
+    'timestampcol',
+    'timestamptz',
+    '{>, >=, =, <=, <}',
+    '{1942-07-23 03:05:09, 1942-07-23 03:05:09, 1964-03-24 19:26:45, 1984-01-20 22:42:21, 1984-01-20 22:42:21}',
+    '{100, 100, 1, 100, 100}'
+  ),
+  (
+    'timestamptzcol',
+    'timestamptz',
+    '{>, >=, =, <=, <}',
+    '{1972-10-10 03:00:00-04, 1972-10-10 03:00:00-04, 1972-10-19 09:00:00-07, 1972-11-20 19:00:00-03, 1972-11-20 19:00:00-03}',
+    '{100, 100, 1, 100, 100}'
+  ),
+  (
+    'intervalcol',
+    'interval',
+    '{>, >=, =, <=, <}',
+    '{00:00:00, 00:00:00, 1 mons 13 days 12:24, 2 mons 23 days 07:48:00, 1 year}',
+    '{100, 100, 1, 100, 100}'
+  ),
+  (
+    'timetzcol',
+    'timetz',
+    '{>, >=, =, <=, <}',
+    '{01:30:20+02, 01:30:20+02, 01:35:50+02, 23:55:05+02, 23:55:05+02}',
+    '{99, 100, 2, 100, 100}'
+  ),
+  (
+    'numericcol',
+    'numeric',
+    '{>, >=, =, <=, <}',
+    '{0.00, 0.01, 2268164.347826086956521739130434782609, 99470151.9, 99470151.9}',
+    '{100, 100, 1, 100, 100}'
+  ),
+  (
+    'uuidcol',
+    'uuid',
+    '{>, >=, =, <=, <}',
+    '{00040004-0004-0004-0004-000400040004, 00040004-0004-0004-0004-000400040004, 52225222-5222-5222-5222-522252225222, 99989998-9998-9998-9998-999899989998, 99989998-9998-9998-9998-999899989998}',
+    '{100, 100, 1, 100, 100}'
+  ),
+  (
+    'lsncol',
+    'pg_lsn',
+    '{>, >=, =, <=, <, IS, IS NOT}',
+    '{0/1200, 0/1200, 44/455222, 198/1999799, 198/1999799, NULL, NULL}',
+    '{100, 100, 1, 100, 100, 25, 100}'
+  );
+
+do
+$$
+DECLARE
+	r record;
+	r2 record;
+	cond text;
+	idx_ctids tid[];
+	ss_ctids tid[];
+	count int;
+	plan_ok bool;
+	plan_line text;
+BEGIN
+	FOR r IN SELECT colname, oper, typ, value[ordinality], matches[ordinality] FROM brinopers_multi, unnest(op) WITH ORDINALITY AS oper LOOP
+
+		-- prepare the condition
+		IF r.value IS NULL THEN
+			cond := format('%I %s %L', r.colname, r.oper, r.value);
+		ELSE
+			cond := format('%I %s %L::%s', r.colname, r.oper, r.value, r.typ);
+		END IF;
+
+		-- run the query using the brin index
+		SET enable_seqscan = 0;
+		SET enable_bitmapscan = 1;
+
+		plan_ok := false;
+		FOR plan_line IN EXECUTE format($y$EXPLAIN SELECT array_agg(ctid) FROM brintest_multi WHERE %s $y$, cond) LOOP
+			IF plan_line LIKE '%Bitmap Heap Scan on brintest_multi%' THEN
+				plan_ok := true;
+			END IF;
+		END LOOP;
+		IF NOT plan_ok THEN
+			RAISE WARNING 'did not get bitmap indexscan plan for %', r;
+		END IF;
+
+		EXECUTE format($y$SELECT array_agg(ctid) FROM brintest_multi WHERE %s $y$, cond)
+			INTO idx_ctids;
+
+		-- run the query using a seqscan
+		SET enable_seqscan = 1;
+		SET enable_bitmapscan = 0;
+
+		plan_ok := false;
+		FOR plan_line IN EXECUTE format($y$EXPLAIN SELECT array_agg(ctid) FROM brintest_multi WHERE %s $y$, cond) LOOP
+			IF plan_line LIKE '%Seq Scan on brintest_multi%' THEN
+				plan_ok := true;
+			END IF;
+		END LOOP;
+		IF NOT plan_ok THEN
+			RAISE WARNING 'did not get seqscan plan for %', r;
+		END IF;
+
+		EXECUTE format($y$SELECT array_agg(ctid) FROM brintest_multi WHERE %s $y$, cond)
+			INTO ss_ctids;
+
+		-- make sure both return the same results
+		count := array_length(idx_ctids, 1);
+
+		IF NOT (count = array_length(ss_ctids, 1) AND
+				idx_ctids @> ss_ctids AND
+				idx_ctids <@ ss_ctids) THEN
+			-- report the results of each scan to make the differences obvious
+			RAISE WARNING 'something not right in %: count %', r, count;
+			SET enable_seqscan = 1;
+			SET enable_bitmapscan = 0;
+			FOR r2 IN EXECUTE 'SELECT ' || r.colname || ' FROM brintest_multi WHERE ' || cond LOOP
+				RAISE NOTICE 'seqscan: %', r2;
+			END LOOP;
+
+			SET enable_seqscan = 0;
+			SET enable_bitmapscan = 1;
+			FOR r2 IN EXECUTE 'SELECT ' || r.colname || ' FROM brintest_multi WHERE ' || cond LOOP
+				RAISE NOTICE 'bitmapscan: %', r2;
+			END LOOP;
+		END IF;
+
+		-- make sure we found expected number of matches
+		IF count != r.matches THEN RAISE WARNING 'unexpected number of results % for %', count, r; END IF;
+	END LOOP;
+END;
+$$;
+
+reset enable_seqscan;
+
+reset enable_bitmapscan;
+
+insert into brintest_multi
+select
+  142857 * tenthous,
+  thousand,
+  twothousand,
+  cast(unique1 as OID),
+  cast(format('(%s,%s)', tenthous, twenty) as TID),
+  (four + 1.0) / (hundred + 1),
+  cast(odd as DOUBLE PRECISION) / (tenthous + 1),
+  cast(format(
+    '%s:00:%s:00:%s:00',
+    to_hex(odd),
+    to_hex(even),
+    to_hex(hundred)
+  )
+  as MACADDR),
+  cast(substr(fipshash(cast(unique1 as TEXT)), 1, 16)
+  as MACADDR8),
+  cast('10.2.3.4' as INET) + tenthous,
+  cast('10.2.3/24' as CIDR) + tenthous,
+  cast('1995-08-15' as DATE) + tenthous,
+  cast('01:20:30' as TIME) +
+  thousand * cast('18.5 second' as INTERVAL),
+  cast('1942-07-23 03:05:09' as TIMESTAMP) +
+  tenthous * cast('36.38 hours' as INTERVAL),
+  cast('1972-10-10 03:00'
+  as timestamp with time ZONE) +
+  thousand * cast('1 hour' as INTERVAL),
+  justify_days(
+    justify_hours(
+      tenthous * cast('12 minutes' as INTERVAL)
+    )
+  ),
+  cast('01:30:20' as time with time ZONE) +
+  hundred * cast('15 seconds' as INTERVAL),
+  cast(tenthous as NUMERIC(36, 30)) * fivethous *
+  even /
+  (hundred + 1),
+  cast(format(
+    '%s%s-%s-%s-%s-%s%s%s',
+    to_char(tenthous, 'FM0000'),
+    to_char(tenthous, 'FM0000'),
+    to_char(tenthous, 'FM0000'),
+    to_char(tenthous, 'FM0000'),
+    to_char(tenthous, 'FM0000'),
+    to_char(tenthous, 'FM0000'),
+    to_char(tenthous, 'FM0000'),
+    to_char(tenthous, 'FM0000')
+  )
+  as UUID),
+  cast(format('%s/%s%s', odd, even, tenthous)
+  as PG_LSN)
+from
+  tenk1
+order by unique2
+limit 5
+offset 5;
+
+select brin_desummarize_range('brinidx_multi', 0);
+
+vacuum brintest_multi;
+
+insert into public.brintest_multi (float4col) values (cast('nan' as REAL));
+
+insert into public.brintest_multi (float8col) values (cast('nan' as REAL));
+
+update brintest_multi set int8col = int8col * int4col;
+
+create table brin_test_inet (a INET);
+
+create index on brin_test_inet using brin (a inet_minmax_multi_ops);
+
+insert into brin_test_inet values ('127.0.0.1/0');
+
+insert into brin_test_inet values ('0.0.0.0/12');
+
+drop TABLE "brin_test_inet";
+
+select brin_summarize_new_values('brintest_multi');
+
+select brin_summarize_new_values('tenk1_unique1');
+
+select brin_summarize_new_values('brinidx_multi');
+
+select brin_desummarize_range('brinidx_multi', -1);
+
+select brin_desummarize_range('brinidx_multi', 0);
+
+select brin_desummarize_range('brinidx_multi', 0);
+
+select brin_desummarize_range('brinidx_multi', 100000000);
+
+create table brin_large_range (a INT);
+
+insert into brin_large_range select i from generate_series(1, 10000) as s (i);
+
+create index "brin_large_range_idx" on brin_large_range using brin (a int4_minmax_multi_ops);
+
+drop TABLE "brin_large_range";
+
+create table brin_summarize_multi (value INT) with (fillfactor = 10, autovacuum_enabled = 'false');
+
+create index "brin_summarize_multi_idx"
+on brin_summarize_multi
+using brin
+(
+  value
+)
+with (pages_per_range = 2);
+
+do
+$$
+DECLARE curtid tid;
+BEGIN
+  LOOP
+    INSERT INTO brin_summarize_multi VALUES (1) RETURNING ctid INTO curtid;
+    EXIT WHEN curtid > tid '(2, 0)';
+  END LOOP;
+END;
+$$;
+
+select brin_summarize_range('brin_summarize_multi_idx', 0);
+
+select brin_summarize_range('brin_summarize_multi_idx', 1);
+
+select brin_summarize_range('brin_summarize_multi_idx', 2);
+
+select brin_summarize_range('brin_summarize_multi_idx', 4294967295);
+
+select brin_summarize_range('brin_summarize_multi_idx', -1);
+
+select brin_summarize_range('brin_summarize_multi_idx', 4294967296);
+
+create table brin_test_multi (
+  a INT,
+  b INT
+);
+
+insert into brin_test_multi select x / 100, x % 100 from generate_series(1, 10000) as x (x);
+
+create index "brin_test_multi_a_idx"
+on brin_test_multi
+using brin
+(
+  a
+)
+with (pages_per_range = 2);
+
+create index "brin_test_multi_b_idx"
+on brin_test_multi
+using brin
+(
+  b
+)
+with (pages_per_range = 2);
+
+vacuum (ANALYZE) brin_test_multi;
+
+select * from brin_test_multi where a = 1;
+
+select * from brin_test_multi where b = 1;
+
+create table brin_test_multi_1 (
+  a INT,
+  b BIGINT
+)
+with (fillfactor = 10);
+
+insert into brin_test_multi_1
+select
+  i / 5 + mod(911 * i + 483, 25),
+  i / 10 + mod(751 * i + 221, 41)
+from
+  generate_series(1, 1000) as s (i);
+
+create index "brin_test_multi_1_idx_1"
+on brin_test_multi_1
+using brin
+(
+  a int4_minmax_multi_ops
+)
+with (pages_per_range = 5);
+
+create index "brin_test_multi_1_idx_2"
+on brin_test_multi_1
+using brin
+(
+  b int8_minmax_multi_ops
+)
+with (pages_per_range = 5);
+
+set enable_seqscan = off;
+
+select COUNT(*) from brin_test_multi_1 where a < 37;
+
+select COUNT(*) from brin_test_multi_1 where a < 113;
+
+select COUNT(*) from brin_test_multi_1 where a <= 177;
+
+select COUNT(*) from brin_test_multi_1 where a <= 25;
+
+select COUNT(*) from brin_test_multi_1 where a > 120;
+
+select COUNT(*) from brin_test_multi_1 where a >= 180;
+
+select COUNT(*) from brin_test_multi_1 where a > 71;
+
+select COUNT(*) from brin_test_multi_1 where a >= 63;
+
+select COUNT(*) from brin_test_multi_1 where a = 207;
+
+select COUNT(*) from brin_test_multi_1 where a = 177;
+
+select COUNT(*) from brin_test_multi_1 where b < 73;
+
+select COUNT(*) from brin_test_multi_1 where b <= 47;
+
+select COUNT(*) from brin_test_multi_1 where b < 199;
+
+select COUNT(*) from brin_test_multi_1 where b <= 150;
+
+select COUNT(*) from brin_test_multi_1 where b > 93;
+
+select COUNT(*) from brin_test_multi_1 where b > 37;
+
+select COUNT(*) from brin_test_multi_1 where b >= 215;
+
+select COUNT(*) from brin_test_multi_1 where b > 201;
+
+select COUNT(*) from brin_test_multi_1 where b = 88;
+
+select COUNT(*) from brin_test_multi_1 where b = 103;
+
+truncate brin_test_multi_1;
+
+insert into brin_test_multi_1
+select
+  i / 5 + mod(911 * i + 483, 25),
+  i / 10 + mod(751 * i + 221, 41)
+from
+  generate_series(1, 1000) as s (i);
+
+select COUNT(*) from brin_test_multi_1 where a < 37;
+
+select COUNT(*) from brin_test_multi_1 where a < 113;
+
+select COUNT(*) from brin_test_multi_1 where a <= 177;
+
+select COUNT(*) from brin_test_multi_1 where a <= 25;
+
+select COUNT(*) from brin_test_multi_1 where a > 120;
+
+select COUNT(*) from brin_test_multi_1 where a >= 180;
+
+select COUNT(*) from brin_test_multi_1 where a > 71;
+
+select COUNT(*) from brin_test_multi_1 where a >= 63;
+
+select COUNT(*) from brin_test_multi_1 where a = 207;
+
+select COUNT(*) from brin_test_multi_1 where a = 177;
+
+select COUNT(*) from brin_test_multi_1 where b < 73;
+
+select COUNT(*) from brin_test_multi_1 where b <= 47;
+
+select COUNT(*) from brin_test_multi_1 where b < 199;
+
+select COUNT(*) from brin_test_multi_1 where b <= 150;
+
+select COUNT(*) from brin_test_multi_1 where b > 93;
+
+select COUNT(*) from brin_test_multi_1 where b > 37;
+
+select COUNT(*) from brin_test_multi_1 where b >= 215;
+
+select COUNT(*) from brin_test_multi_1 where b > 201;
+
+select COUNT(*) from brin_test_multi_1 where b = 88;
+
+select COUNT(*) from brin_test_multi_1 where b = 103;
+
+drop TABLE "brin_test_multi_1";
+
+reset enable_seqscan;
+
+create table brin_test_multi_2 (a UUID) with (fillfactor = 10);
+
+insert into brin_test_multi_2
+select
+  cast(v as UUID)
+from
+  (
+    select
+      ROW_NUMBER() over (order by v) as c,
+      v
+    from
+      (
+        select
+          fipshash(cast(i / 13 as TEXT)) as v
+        from
+          generate_series(1, 1000) as s (i)
+      )
+      as foo
+  )
+  as bar
+order by c + 25 * random();
+
+create index "brin_test_multi_2_idx"
+on brin_test_multi_2
+using brin
+(
+  a uuid_minmax_multi_ops
+)
+with (pages_per_range = 5);
+
+set enable_seqscan = off;
+
+select COUNT(*) from brin_test_multi_2 where a < '3d914f93-48c9-cc0f-f8a7-9716700b9fcd';
+
+select COUNT(*) from brin_test_multi_2 where a > '3d914f93-48c9-cc0f-f8a7-9716700b9fcd';
+
+select COUNT(*) from brin_test_multi_2 where a <= 'f369cb89-fc62-7e66-8987-007d121ed1ea';
+
+select COUNT(*) from brin_test_multi_2 where a >= 'aea92132-c4cb-eb26-3e6a-c2bf6c183b5d';
+
+select COUNT(*) from brin_test_multi_2 where a = '5feceb66-ffc8-6f38-d952-786c6d696c79';
+
+select COUNT(*) from brin_test_multi_2 where a = '86e50149-6586-6131-2a9e-0b35558d84f6';
+
+truncate brin_test_multi_2;
+
+insert into brin_test_multi_2
+select
+  cast(v as UUID)
+from
+  (
+    select
+      ROW_NUMBER() over (order by v) as c,
+      v
+    from
+      (
+        select
+          fipshash(cast(i / 13 as TEXT)) as v
+        from
+          generate_series(1, 1000) as s (i)
+      )
+      as foo
+  )
+  as bar
+order by c + 25 * random();
+
+select COUNT(*) from brin_test_multi_2 where a < '3d914f93-48c9-cc0f-f8a7-9716700b9fcd';
+
+select COUNT(*) from brin_test_multi_2 where a > '3d914f93-48c9-cc0f-f8a7-9716700b9fcd';
+
+select COUNT(*) from brin_test_multi_2 where a <= 'f369cb89-fc62-7e66-8987-007d121ed1ea';
+
+select COUNT(*) from brin_test_multi_2 where a >= 'aea92132-c4cb-eb26-3e6a-c2bf6c183b5d';
+
+select COUNT(*) from brin_test_multi_2 where a = '5feceb66-ffc8-6f38-d952-786c6d696c79';
+
+select COUNT(*) from brin_test_multi_2 where a = '86e50149-6586-6131-2a9e-0b35558d84f6';
+
+drop TABLE "brin_test_multi_2";
+
+reset enable_seqscan;
+
+create table brin_timestamp_test (a timestamp with time ZONE);
+
+set datestyle = iso;
+
+insert into brin_timestamp_test
+select
+  cast('4713-01-01 00:00:01 BC'
+  as timestamp with time ZONE) +
+  cast(i || ' seconds' as INTERVAL)
+from
+  generate_series(1, 30) as s (i);
+
+insert into brin_timestamp_test
+select
+  cast('294276-12-01 00:00:01'
+  as timestamp with time ZONE) +
+  cast(i || ' seconds' as INTERVAL)
+from
+  generate_series(1, 30) as s (i);
+
+create index
+on brin_timestamp_test
+using brin
+(
+  a timestamptz_minmax_multi_ops
+)
+with (pages_per_range = 1);
+
+drop TABLE "brin_timestamp_test";
+
+create table brin_date_test (a DATE);
+
+insert into brin_date_test
+select
+  cast('4713-01-01 BC' as DATE) + i
+from
+  generate_series(1, 30) as s (i);
+
+insert into brin_date_test
+select
+  cast('5874897-12-01' as DATE) + i
+from
+  generate_series(1, 30) as s (i);
+
+create index
+on brin_date_test
+using brin
+(
+  a date_minmax_multi_ops
+)
+with (pages_per_range = 1);
+
+set enable_seqscan = off;
+
+select * from brin_date_test where a = cast('2023-01-01' as DATE);
+
+drop TABLE "brin_date_test";
+
+reset enable_seqscan;
+
+create table brin_timestamp_test (a TIMESTAMP);
+
+insert into brin_timestamp_test values ('-infinity'), ('infinity');
+
+insert into brin_timestamp_test
+select
+  i
+from
+  generate_series(
+    cast('2000-01-01' as TIMESTAMP),
+    cast('2000-02-09' as TIMESTAMP),
+    cast('1 day' as INTERVAL)
+  )
+  as s (i);
+
+create index
+on brin_timestamp_test
+using brin
+(
+  a timestamp_minmax_multi_ops
+)
+with (pages_per_range = 1);
+
+set enable_seqscan = off;
+
+select * from brin_timestamp_test where a = cast('2023-01-01' as TIMESTAMP);
+
+select * from brin_timestamp_test where a = cast('1900-01-01' as TIMESTAMP);
+
+drop TABLE "brin_timestamp_test";
+
+reset enable_seqscan;
+
+create table brin_date_test (a DATE);
+
+insert into brin_date_test values ('-infinity'), ('infinity');
+
+insert into brin_date_test
+select
+  cast('2000-01-01' as DATE) + i
+from
+  generate_series(1, 40) as s (i);
+
+create index
+on brin_date_test
+using brin
+(
+  a date_minmax_multi_ops
+)
+with (pages_per_range = 1);
+
+set enable_seqscan = off;
+
+select * from brin_date_test where a = cast('2023-01-01' as DATE);
+
+select * from brin_date_test where a = cast('1900-01-01' as DATE);
+
+drop TABLE "brin_date_test";
+
+reset enable_seqscan;
+
+reset datestyle;
+
+create table brin_interval_test (a INTERVAL);
+
+insert into brin_interval_test
+select
+  cast(i || ' years' as INTERVAL)
+from
+  generate_series(-178000000, -177999980) as s (i);
+
+insert into brin_interval_test
+select
+  cast(i || ' years' as INTERVAL)
+from
+  generate_series(177999980, 178000000) as s (i);
+
+create index
+on brin_interval_test
+using brin
+(
+  a interval_minmax_multi_ops
+)
+with (pages_per_range = 1);
+
+set enable_seqscan = off;
+
+select * from brin_interval_test where a = cast('-30 years' as INTERVAL);
+
+select * from brin_interval_test where a = cast('30 years' as INTERVAL);
+
+drop TABLE "brin_interval_test";
+
+reset enable_seqscan;
+
+create table brin_interval_test (a INTERVAL);
+
+insert into brin_interval_test values ('-infinity'), ('infinity');
+
+insert into brin_interval_test
+select
+  cast(i || ' days' as INTERVAL)
+from
+  generate_series(100, 140) as s (i);
+
+create index
+on brin_interval_test
+using brin
+(
+  a interval_minmax_multi_ops
+)
+with (pages_per_range = 1);
+
+set enable_seqscan = off;
+
+select * from brin_interval_test where a = cast('-30 years' as INTERVAL);
+
+select * from brin_interval_test where a = cast('30 years' as INTERVAL);
+
+drop TABLE "brin_interval_test";
+
+reset enable_seqscan;
+
+reset datestyle;

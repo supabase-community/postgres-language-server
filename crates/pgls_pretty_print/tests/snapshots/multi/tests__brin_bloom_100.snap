@@ -1,0 +1,510 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/brin_bloom.sql
+snapshot_kind: text
+---
+create table brintest_bloom (
+  byteacol BYTEA,
+  charcol CHAR,
+  namecol NAME,
+  int8col BIGINT,
+  int2col SMALLINT,
+  int4col INT,
+  textcol TEXT,
+  oidcol OID,
+  float4col REAL,
+  float8col DOUBLE PRECISION,
+  macaddrcol MACADDR,
+  inetcol INET,
+  cidrcol CIDR,
+  bpcharcol CHAR(1),
+  datecol DATE,
+  timecol TIME,
+  timestampcol TIMESTAMP,
+  timestamptzcol timestamp with time ZONE,
+  intervalcol INTERVAL,
+  timetzcol time with time ZONE,
+  numericcol NUMERIC,
+  uuidcol UUID,
+  lsncol PG_LSN
+)
+with (fillfactor = 10);
+
+insert into brintest_bloom
+select
+  cast(repeat(stringu1, 8) as BYTEA),
+  cast(substr(stringu1, 1, 1) as CHAR),
+  cast(stringu1 as NAME),
+  142857 * tenthous,
+  thousand,
+  twothousand,
+  repeat(stringu1, 8),
+  cast(unique1 as OID),
+  (four + 1.0) / (hundred + 1),
+  cast(odd as DOUBLE PRECISION) / (tenthous + 1),
+  cast(format(
+    '%s:00:%s:00:%s:00',
+    to_hex(odd),
+    to_hex(even),
+    to_hex(hundred)
+  )
+  as MACADDR),
+  cast('10.2.3.4/24' as INET) + tenthous,
+  cast('10.2.3/24' as CIDR) + tenthous,
+  cast(substr(stringu1, 1, 1) as CHAR),
+  cast('1995-08-15' as DATE) + tenthous,
+  cast('01:20:30' as TIME) +
+  thousand * cast('18.5 second' as INTERVAL),
+  cast('1942-07-23 03:05:09' as TIMESTAMP) +
+  tenthous * cast('36.38 hours' as INTERVAL),
+  cast('1972-10-10 03:00'
+  as timestamp with time ZONE) +
+  thousand * cast('1 hour' as INTERVAL),
+  justify_days(
+    justify_hours(
+      tenthous * cast('12 minutes' as INTERVAL)
+    )
+  ),
+  cast('01:30:20+02' as time with time ZONE) +
+  hundred * cast('15 seconds' as INTERVAL),
+  cast(tenthous as NUMERIC(36, 30)) * fivethous *
+  even /
+  (hundred + 1),
+  cast(format(
+    '%s%s-%s-%s-%s-%s%s%s',
+    to_char(tenthous, 'FM0000'),
+    to_char(tenthous, 'FM0000'),
+    to_char(tenthous, 'FM0000'),
+    to_char(tenthous, 'FM0000'),
+    to_char(tenthous, 'FM0000'),
+    to_char(tenthous, 'FM0000'),
+    to_char(tenthous, 'FM0000'),
+    to_char(tenthous, 'FM0000')
+  )
+  as UUID),
+  cast(format('%s/%s%s', odd, even, tenthous)
+  as PG_LSN)
+from
+  tenk1
+order by unique2
+limit 100;
+
+insert into brintest_bloom (inetcol, cidrcol)
+select
+  cast('fe80::6e40:8ff:fea9:8c46' as INET) +
+  tenthous,
+  cast('fe80::6e40:8ff:fea9:8c46' as CIDR) +
+  tenthous
+from
+  tenk1
+order by thousand,
+  tenthous
+limit 25;
+
+create index "brinidx_bloom"
+on brintest_bloom
+using brin
+(
+  byteacol
+  bytea_bloom_ops(n_distinct_per_range = -1.1)
+);
+
+create index "brinidx_bloom"
+on brintest_bloom
+using brin
+(
+  byteacol
+  bytea_bloom_ops(false_positive_rate = 0.00009)
+);
+
+create index "brinidx_bloom"
+on brintest_bloom
+using brin
+(
+  byteacol
+  bytea_bloom_ops(false_positive_rate = 0.26)
+);
+
+create index "brinidx_bloom"
+on brintest_bloom
+using brin
+(
+  byteacol bytea_bloom_ops,
+  charcol char_bloom_ops,
+  namecol name_bloom_ops,
+  int8col int8_bloom_ops,
+  int2col int2_bloom_ops,
+  int4col int4_bloom_ops,
+  textcol text_bloom_ops,
+  oidcol oid_bloom_ops,
+  float4col float4_bloom_ops,
+  float8col float8_bloom_ops,
+  macaddrcol macaddr_bloom_ops,
+  inetcol inet_bloom_ops,
+  cidrcol inet_bloom_ops,
+  bpcharcol bpchar_bloom_ops,
+  datecol date_bloom_ops,
+  timecol time_bloom_ops,
+  timestampcol timestamp_bloom_ops,
+  timestamptzcol timestamptz_bloom_ops,
+  intervalcol interval_bloom_ops,
+  timetzcol timetz_bloom_ops,
+  numericcol numeric_bloom_ops,
+  uuidcol uuid_bloom_ops,
+  lsncol pg_lsn_bloom_ops
+)
+with (pages_per_range = 1);
+
+create table brinopers_bloom (
+  colname NAME,
+  typ TEXT,
+  op TEXT[],
+  value TEXT[],
+  matches INT[],
+  check (cardinality(op) = cardinality(value)),
+  check (cardinality(op) = cardinality(matches))
+);
+
+insert into brinopers_bloom
+values
+  (
+    'byteacol',
+    'bytea',
+    '{=}',
+    '{BNAAAABNAAAABNAAAABNAAAABNAAAABNAAAABNAAAABNAAAA}',
+    '{1}'
+  ),
+  ('charcol', '"char"', '{=}', '{M}', '{6}'),
+  ('namecol', 'name', '{=}', '{MAAAAA}', '{2}'),
+  ('int2col', 'int2', '{=}', '{800}', '{1}'),
+  ('int4col', 'int4', '{=}', '{800}', '{1}'),
+  ('int8col', 'int8', '{=}', '{1257141600}', '{1}'),
+  (
+    'textcol',
+    'text',
+    '{=}',
+    '{BNAAAABNAAAABNAAAABNAAAABNAAAABNAAAABNAAAABNAAAA}',
+    '{1}'
+  ),
+  ('oidcol', 'oid', '{=}', '{8800}', '{1}'),
+  ('float4col', 'float4', '{=}', '{1}', '{4}'),
+  ('float8col', 'float8', '{=}', '{0}', '{1}'),
+  (
+    'macaddrcol',
+    'macaddr',
+    '{=}',
+    '{2c:00:2d:00:16:00}',
+    '{2}'
+  ),
+  (
+    'inetcol',
+    'inet',
+    '{=}',
+    '{10.2.14.231/24}',
+    '{1}'
+  ),
+  (
+    'inetcol',
+    'cidr',
+    '{=}',
+    '{fe80::6e40:8ff:fea9:8c46}',
+    '{1}'
+  ),
+  ('cidrcol', 'inet', '{=}', '{10.2.14/24}', '{2}'),
+  (
+    'cidrcol',
+    'inet',
+    '{=}',
+    '{fe80::6e40:8ff:fea9:8c46}',
+    '{1}'
+  ),
+  ('cidrcol', 'cidr', '{=}', '{10.2.14/24}', '{2}'),
+  (
+    'cidrcol',
+    'cidr',
+    '{=}',
+    '{fe80::6e40:8ff:fea9:8c46}',
+    '{1}'
+  ),
+  ('bpcharcol', 'bpchar', '{=}', '{W}', '{6}'),
+  ('datecol', 'date', '{=}', '{2009-12-01}', '{1}'),
+  ('timecol', 'time', '{=}', '{02:28:57}', '{1}'),
+  (
+    'timestampcol',
+    'timestamp',
+    '{=}',
+    '{1964-03-24 19:26:45}',
+    '{1}'
+  ),
+  (
+    'timestamptzcol',
+    'timestamptz',
+    '{=}',
+    '{1972-10-19 09:00:00-07}',
+    '{1}'
+  ),
+  (
+    'intervalcol',
+    'interval',
+    '{=}',
+    '{1 mons 13 days 12:24}',
+    '{1}'
+  ),
+  (
+    'timetzcol',
+    'timetz',
+    '{=}',
+    '{01:35:50+02}',
+    '{2}'
+  ),
+  (
+    'numericcol',
+    'numeric',
+    '{=}',
+    '{2268164.347826086956521739130434782609}',
+    '{1}'
+  ),
+  (
+    'uuidcol',
+    'uuid',
+    '{=}',
+    '{52225222-5222-5222-5222-522252225222}',
+    '{1}'
+  ),
+  (
+    'lsncol',
+    'pg_lsn',
+    '{=, IS, IS NOT}',
+    '{44/455222, NULL, NULL}',
+    '{1, 25, 100}'
+  );
+
+do
+$$
+DECLARE
+	r record;
+	r2 record;
+	cond text;
+	idx_ctids tid[];
+	ss_ctids tid[];
+	count int;
+	plan_ok bool;
+	plan_line text;
+BEGIN
+	FOR r IN SELECT colname, oper, typ, value[ordinality], matches[ordinality] FROM brinopers_bloom, unnest(op) WITH ORDINALITY AS oper LOOP
+
+		-- prepare the condition
+		IF r.value IS NULL THEN
+			cond := format('%I %s %L', r.colname, r.oper, r.value);
+		ELSE
+			cond := format('%I %s %L::%s', r.colname, r.oper, r.value, r.typ);
+		END IF;
+
+		-- run the query using the brin index
+		SET enable_seqscan = 0;
+		SET enable_bitmapscan = 1;
+
+		plan_ok := false;
+		FOR plan_line IN EXECUTE format($y$EXPLAIN SELECT array_agg(ctid) FROM brintest_bloom WHERE %s $y$, cond) LOOP
+			IF plan_line LIKE '%Bitmap Heap Scan on brintest_bloom%' THEN
+				plan_ok := true;
+			END IF;
+		END LOOP;
+		IF NOT plan_ok THEN
+			RAISE WARNING 'did not get bitmap indexscan plan for %', r;
+		END IF;
+
+		EXECUTE format($y$SELECT array_agg(ctid) FROM brintest_bloom WHERE %s $y$, cond)
+			INTO idx_ctids;
+
+		-- run the query using a seqscan
+		SET enable_seqscan = 1;
+		SET enable_bitmapscan = 0;
+
+		plan_ok := false;
+		FOR plan_line IN EXECUTE format($y$EXPLAIN SELECT array_agg(ctid) FROM brintest_bloom WHERE %s $y$, cond) LOOP
+			IF plan_line LIKE '%Seq Scan on brintest_bloom%' THEN
+				plan_ok := true;
+			END IF;
+		END LOOP;
+		IF NOT plan_ok THEN
+			RAISE WARNING 'did not get seqscan plan for %', r;
+		END IF;
+
+		EXECUTE format($y$SELECT array_agg(ctid) FROM brintest_bloom WHERE %s $y$, cond)
+			INTO ss_ctids;
+
+		-- make sure both return the same results
+		count := array_length(idx_ctids, 1);
+
+		IF NOT (count = array_length(ss_ctids, 1) AND
+				idx_ctids @> ss_ctids AND
+				idx_ctids <@ ss_ctids) THEN
+			-- report the results of each scan to make the differences obvious
+			RAISE WARNING 'something not right in %: count %', r, count;
+			SET enable_seqscan = 1;
+			SET enable_bitmapscan = 0;
+			FOR r2 IN EXECUTE 'SELECT ' || r.colname || ' FROM brintest_bloom WHERE ' || cond LOOP
+				RAISE NOTICE 'seqscan: %', r2;
+			END LOOP;
+
+			SET enable_seqscan = 0;
+			SET enable_bitmapscan = 1;
+			FOR r2 IN EXECUTE 'SELECT ' || r.colname || ' FROM brintest_bloom WHERE ' || cond LOOP
+				RAISE NOTICE 'bitmapscan: %', r2;
+			END LOOP;
+		END IF;
+
+		-- make sure we found expected number of matches
+		IF count != r.matches THEN RAISE WARNING 'unexpected number of results % for %', count, r; END IF;
+	END LOOP;
+END;
+$$;
+
+reset enable_seqscan;
+
+reset enable_bitmapscan;
+
+insert into brintest_bloom
+select
+  cast(repeat(stringu1, 42) as BYTEA),
+  cast(substr(stringu1, 1, 1) as CHAR),
+  cast(stringu1 as NAME),
+  142857 * tenthous,
+  thousand,
+  twothousand,
+  repeat(stringu1, 42),
+  cast(unique1 as OID),
+  (four + 1.0) / (hundred + 1),
+  cast(odd as DOUBLE PRECISION) / (tenthous + 1),
+  cast(format(
+    '%s:00:%s:00:%s:00',
+    to_hex(odd),
+    to_hex(even),
+    to_hex(hundred)
+  )
+  as MACADDR),
+  cast('10.2.3.4' as INET) + tenthous,
+  cast('10.2.3/24' as CIDR) + tenthous,
+  cast(substr(stringu1, 1, 1) as CHAR),
+  cast('1995-08-15' as DATE) + tenthous,
+  cast('01:20:30' as TIME) +
+  thousand * cast('18.5 second' as INTERVAL),
+  cast('1942-07-23 03:05:09' as TIMESTAMP) +
+  tenthous * cast('36.38 hours' as INTERVAL),
+  cast('1972-10-10 03:00'
+  as timestamp with time ZONE) +
+  thousand * cast('1 hour' as INTERVAL),
+  justify_days(
+    justify_hours(
+      tenthous * cast('12 minutes' as INTERVAL)
+    )
+  ),
+  cast('01:30:20' as time with time ZONE) +
+  hundred * cast('15 seconds' as INTERVAL),
+  cast(tenthous as NUMERIC(36, 30)) * fivethous *
+  even /
+  (hundred + 1),
+  cast(format(
+    '%s%s-%s-%s-%s-%s%s%s',
+    to_char(tenthous, 'FM0000'),
+    to_char(tenthous, 'FM0000'),
+    to_char(tenthous, 'FM0000'),
+    to_char(tenthous, 'FM0000'),
+    to_char(tenthous, 'FM0000'),
+    to_char(tenthous, 'FM0000'),
+    to_char(tenthous, 'FM0000'),
+    to_char(tenthous, 'FM0000')
+  )
+  as UUID),
+  cast(format('%s/%s%s', odd, even, tenthous)
+  as PG_LSN)
+from
+  tenk1
+order by unique2
+limit 5
+offset 5;
+
+select brin_desummarize_range('brinidx_bloom', 0);
+
+vacuum brintest_bloom;
+
+update brintest_bloom set int8col = int8col * int4col;
+
+update brintest_bloom set textcol = '' where textcol is not null;
+
+select brin_summarize_new_values('brintest_bloom');
+
+select brin_summarize_new_values('tenk1_unique1');
+
+select brin_summarize_new_values('brinidx_bloom');
+
+select brin_desummarize_range('brinidx_bloom', -1);
+
+select brin_desummarize_range('brinidx_bloom', 0);
+
+select brin_desummarize_range('brinidx_bloom', 0);
+
+select brin_desummarize_range('brinidx_bloom', 100000000);
+
+create table brin_summarize_bloom (value INT) with (fillfactor = 10, autovacuum_enabled = 'false');
+
+create index "brin_summarize_bloom_idx"
+on brin_summarize_bloom
+using brin
+(
+  value
+)
+with (pages_per_range = 2);
+
+do
+$$
+DECLARE curtid tid;
+BEGIN
+  LOOP
+    INSERT INTO brin_summarize_bloom VALUES (1) RETURNING ctid INTO curtid;
+    EXIT WHEN curtid > tid '(2, 0)';
+  END LOOP;
+END;
+$$;
+
+select brin_summarize_range('brin_summarize_bloom_idx', 0);
+
+select brin_summarize_range('brin_summarize_bloom_idx', 1);
+
+select brin_summarize_range('brin_summarize_bloom_idx', 2);
+
+select brin_summarize_range('brin_summarize_bloom_idx', 4294967295);
+
+select brin_summarize_range('brin_summarize_bloom_idx', -1);
+
+select brin_summarize_range('brin_summarize_bloom_idx', 4294967296);
+
+create table brin_test_bloom (
+  a INT,
+  b INT
+);
+
+insert into brin_test_bloom select x / 100, x % 100 from generate_series(1, 10000) as x (x);
+
+create index "brin_test_bloom_a_idx"
+on brin_test_bloom
+using brin
+(
+  a
+)
+with (pages_per_range = 2);
+
+create index "brin_test_bloom_b_idx"
+on brin_test_bloom
+using brin
+(
+  b
+)
+with (pages_per_range = 2);
+
+vacuum (ANALYZE) brin_test_bloom;
+
+select * from brin_test_bloom where a = 1;
+
+select * from brin_test_bloom where b = 1;

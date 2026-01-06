@@ -1,0 +1,2879 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/inherit.sql
+snapshot_kind: text
+---
+create table a (aa TEXT);
+
+create table b (bb TEXT)
+inherits (a);
+
+create table c (cc TEXT)
+inherits (a);
+
+create table d (dd TEXT)
+inherits (b,
+c,
+a);
+
+insert into a (aa) values ('aaa');
+
+insert into a (aa) values ('aaaa');
+
+insert into a (aa) values ('aaaaa');
+
+insert into a (aa) values ('aaaaaa');
+
+insert into a (aa) values ('aaaaaaa');
+
+insert into a (aa) values ('aaaaaaaa');
+
+insert into b (aa) values ('bbb');
+
+insert into b (aa) values ('bbbb');
+
+insert into b (aa) values ('bbbbb');
+
+insert into b (aa) values ('bbbbbb');
+
+insert into b (aa) values ('bbbbbbb');
+
+insert into b (aa) values ('bbbbbbbb');
+
+insert into c (aa) values ('ccc');
+
+insert into c (aa) values ('cccc');
+
+insert into c (aa) values ('ccccc');
+
+insert into c (aa) values ('cccccc');
+
+insert into c (aa) values ('ccccccc');
+
+insert into c (aa) values ('cccccccc');
+
+insert into d (aa) values ('ddd');
+
+insert into d (aa) values ('dddd');
+
+insert into d (aa) values ('ddddd');
+
+insert into d (aa) values ('dddddd');
+
+insert into d (aa) values ('ddddddd');
+
+insert into d (aa) values ('dddddddd');
+
+select relname, a.* from a, pg_class where a.tableoid = pg_class.oid;
+
+select relname, b.* from b, pg_class where b.tableoid = pg_class.oid;
+
+select relname, c.* from c, pg_class where c.tableoid = pg_class.oid;
+
+select relname, d.* from d, pg_class where d.tableoid = pg_class.oid;
+
+select relname, a.* from only a, pg_class where a.tableoid = pg_class.oid;
+
+select relname, b.* from only b, pg_class where b.tableoid = pg_class.oid;
+
+select relname, c.* from only c, pg_class where c.tableoid = pg_class.oid;
+
+select relname, d.* from only d, pg_class where d.tableoid = pg_class.oid;
+
+update a set aa = 'zzzz' where aa = 'aaaa';
+
+update only a set aa = 'zzzzz' where aa = 'aaaaa';
+
+update b set aa = 'zzz' where aa = 'aaa';
+
+update only b set aa = 'zzz' where aa = 'aaa';
+
+update a set aa = 'zzzzzz' where aa like 'aaa%';
+
+select relname, a.* from a, pg_class where a.tableoid = pg_class.oid;
+
+select relname, b.* from b, pg_class where b.tableoid = pg_class.oid;
+
+select relname, c.* from c, pg_class where c.tableoid = pg_class.oid;
+
+select relname, d.* from d, pg_class where d.tableoid = pg_class.oid;
+
+select relname, a.* from only a, pg_class where a.tableoid = pg_class.oid;
+
+select relname, b.* from only b, pg_class where b.tableoid = pg_class.oid;
+
+select relname, c.* from only c, pg_class where c.tableoid = pg_class.oid;
+
+select relname, d.* from only d, pg_class where d.tableoid = pg_class.oid;
+
+update b set aa = 'new';
+
+select relname, a.* from a, pg_class where a.tableoid = pg_class.oid;
+
+select relname, b.* from b, pg_class where b.tableoid = pg_class.oid;
+
+select relname, c.* from c, pg_class where c.tableoid = pg_class.oid;
+
+select relname, d.* from d, pg_class where d.tableoid = pg_class.oid;
+
+select relname, a.* from only a, pg_class where a.tableoid = pg_class.oid;
+
+select relname, b.* from only b, pg_class where b.tableoid = pg_class.oid;
+
+select relname, c.* from only c, pg_class where c.tableoid = pg_class.oid;
+
+select relname, d.* from only d, pg_class where d.tableoid = pg_class.oid;
+
+update a set aa = 'new';
+
+delete from only c where aa = 'new';
+
+select relname, a.* from a, pg_class where a.tableoid = pg_class.oid;
+
+select relname, b.* from b, pg_class where b.tableoid = pg_class.oid;
+
+select relname, c.* from c, pg_class where c.tableoid = pg_class.oid;
+
+select relname, d.* from d, pg_class where d.tableoid = pg_class.oid;
+
+select relname, a.* from only a, pg_class where a.tableoid = pg_class.oid;
+
+select relname, b.* from only b, pg_class where b.tableoid = pg_class.oid;
+
+select relname, c.* from only c, pg_class where c.tableoid = pg_class.oid;
+
+select relname, d.* from only d, pg_class where d.tableoid = pg_class.oid;
+
+delete from a;
+
+select relname, a.* from a, pg_class where a.tableoid = pg_class.oid;
+
+select relname, b.* from b, pg_class where b.tableoid = pg_class.oid;
+
+select relname, c.* from c, pg_class where c.tableoid = pg_class.oid;
+
+select relname, d.* from d, pg_class where d.tableoid = pg_class.oid;
+
+select relname, a.* from only a, pg_class where a.tableoid = pg_class.oid;
+
+select relname, b.* from only b, pg_class where b.tableoid = pg_class.oid;
+
+select relname, c.* from only c, pg_class where c.tableoid = pg_class.oid;
+
+select relname, d.* from only d, pg_class where d.tableoid = pg_class.oid;
+
+create temporary table z (
+  b TEXT,
+  primary key (aa, b)
+)
+inherits (a);
+
+insert into z values (null, 'text');
+
+create temporary table z2 (
+  b TEXT,
+  unique (aa, b)
+)
+inherits (a);
+
+insert into z2 values (null, 'text');
+
+create table some_tab (
+  f1 INT,
+  f2 INT,
+  f3 INT,
+  check (f1 < 10) no inherit
+);
+
+create table some_tab_child ()
+inherits (some_tab);
+
+insert into some_tab_child select i, i + 1, 0 from generate_series(1, 1000) as i;
+
+create index on some_tab_child using btree (f1, f2);
+
+create function some_tab_stmt_trig_func()
+returns trigger
+as 'begin raise notice ''updating some_tab''; return NULL; end;'
+language "plpgsql";
+
+create TRIGGER some_tab_stmt_trig
+  before update
+  on some_tab
+  for EACH STATEMENT
+  EXECUTE FUNCTION some_tab_stmt_trig_func();
+
+update some_tab set f3 = 11 where f1 = 12 and f2 = 13;
+
+update some_tab set f3 = 11 where f1 = 12 and f2 = 13;
+
+drop TABLE "some_tab" cascade;
+
+drop FUNCTION some_tab_stmt_trig_func();
+
+create table some_tab (
+  a INT,
+  b INT
+);
+
+create table some_tab_child ()
+inherits (some_tab);
+
+insert into some_tab_child values (1, 2);
+
+update some_tab set a = a + 1 where false;
+
+update some_tab set a = a + 1 where false;
+
+update some_tab set a = a + 1 where false returning b, a;
+
+update some_tab set a = a + 1 where false returning b, a;
+
+select * from some_tab;
+
+drop TABLE "some_tab" cascade;
+
+create temporary table foo (
+  f1 INT,
+  f2 INT
+);
+
+create temporary table foo2 (f3 INT)
+inherits (foo);
+
+create temporary table bar (
+  f1 INT,
+  f2 INT
+);
+
+create temporary table bar2 (f3 INT)
+inherits (bar);
+
+insert into foo values (1, 1);
+
+insert into foo values (3, 3);
+
+insert into foo2 values (2, 2, 2);
+
+insert into foo2 values (3, 3, 3);
+
+insert into bar values (1, 1);
+
+insert into bar values (2, 2);
+
+insert into bar values (3, 3);
+
+insert into bar values (4, 4);
+
+insert into bar2 values (1, 1, 1);
+
+insert into bar2 values (2, 2, 2);
+
+insert into bar2 values (3, 3, 3);
+
+insert into bar2 values (4, 4, 4);
+
+update bar set f2 = f2 + 100 where f1 in (select f1 from foo);
+
+select cast(cast(tableoid as REGCLASS) as TEXT) as relname, bar.* from bar order by 1, 2;
+
+update bar
+set f2 = f2 + 100
+from (
+  select f1 from foo
+  union all
+  select f1 + 3 from foo
+)
+as ss
+where
+  bar.f1 = ss.f1;
+
+select cast(cast(tableoid as REGCLASS) as TEXT) as relname, bar.* from bar order by 1, 2;
+
+create table some_tab (a INT);
+
+insert into some_tab values (0);
+
+create table some_tab_child ()
+inherits (some_tab);
+
+insert into some_tab_child values (1);
+
+create table parted_tab (
+  a INT,
+  b CHAR(1)
+)
+partition by LIST(a);
+
+create table parted_tab_part1 partition of parted_tab for values in (1);
+
+create table parted_tab_part2 partition of parted_tab for values in (2);
+
+create table parted_tab_part3 partition of parted_tab for values in (3);
+
+insert into parted_tab values (1, 'a'), (2, 'a'), (3, 'a');
+
+update parted_tab
+set b = 'b'
+from (
+  select a from some_tab
+  union all
+  select a + 1 from some_tab
+)
+as ss (a)
+where
+  parted_tab.a = ss.a;
+
+select
+  cast(cast(tableoid as REGCLASS) as TEXT)
+  as relname,
+  parted_tab.*
+from
+  parted_tab
+order by 1,
+  2;
+
+truncate parted_tab;
+
+insert into parted_tab values (1, 'a'), (2, 'a'), (3, 'a');
+
+update parted_tab
+set b = 'b'
+from (
+  select 0 from parted_tab
+  union all
+  select 1 from parted_tab
+)
+as ss (a)
+where
+  parted_tab.a = ss.a;
+
+select
+  cast(cast(tableoid as REGCLASS) as TEXT)
+  as relname,
+  parted_tab.*
+from
+  parted_tab
+order by 1,
+  2;
+
+update parted_tab set a = 2 where false;
+
+drop TABLE "parted_tab";
+
+create table mlparted_tab (
+  a INT,
+  b CHAR(1),
+  c TEXT
+)
+partition by LIST(a);
+
+create table mlparted_tab_part1 partition of mlparted_tab for values in (1);
+
+create table mlparted_tab_part2 partition of mlparted_tab for values in (2) partition by LIST(b);
+
+create table mlparted_tab_part3 partition of mlparted_tab for values in (3);
+
+create table mlparted_tab_part2a partition of mlparted_tab_part2 for values in ('a');
+
+create table mlparted_tab_part2b partition of mlparted_tab_part2 for values in ('b');
+
+insert into mlparted_tab values (1, 'a'), (2, 'a'), (2, 'b'), (3, 'a');
+
+update mlparted_tab as mlp
+set c = 'xxx'
+from (
+  select a from some_tab
+  union all
+  select a + 1 from some_tab
+)
+as ss (a)
+where
+  mlp.a = ss.a and mlp.b = 'b' or mlp.a = 3;
+
+select
+  cast(cast(tableoid as REGCLASS) as TEXT)
+  as relname,
+  mlparted_tab.*
+from
+  mlparted_tab
+order by 1,
+  2;
+
+drop TABLE "mlparted_tab";
+
+drop TABLE "some_tab" cascade;
+
+create table firstparent (tomorrow DATE default (cast(NOW() as DATE) + 1));
+
+create table secondparent (tomorrow DATE default (cast(NOW() as DATE) + 1));
+
+create table jointchild ()
+inherits (firstparent,
+secondparent);
+
+create table thirdparent (tomorrow DATE default (cast(NOW() as DATE) - 1));
+
+create table otherchild ()
+inherits (firstparent,
+thirdparent);
+
+create table otherchild (tomorrow DATE default NOW())
+inherits (firstparent,
+thirdparent);
+
+drop TABLE "firstparent", "secondparent", "jointchild", "thirdparent", "otherchild";
+
+insert into d values ('test', 'one', 'two', 'three');
+
+alter table a
+  alter column aa type INT using bit_length(aa);
+
+select * from d;
+
+create temporary table parent1 (
+  f1 INT,
+  f2 INT
+);
+
+create temporary table parent2 (
+  f1 INT,
+  f3 BIGINT
+);
+
+create temporary table childtab (f4 INT)
+inherits (parent1,
+parent2);
+
+alter table parent1
+  alter column f1 type BIGINT;
+
+alter table parent1
+  alter column f2 type BIGINT;
+
+create table p1 (ff1 INT);
+
+alter table p1
+  add constraint "p1chk" check (ff1 > 0) no inherit;
+
+alter table p1
+  add constraint "p2chk" check (ff1 > 10);
+
+select
+  pc.relname,
+  pgc.conname,
+  pgc.contype,
+  pgc.conislocal,
+  pgc.coninhcount,
+  pgc.connoinherit
+from
+  pg_class as pc
+  inner join
+    pg_constraint as pgc
+  on pgc.conrelid = pc.oid
+where
+  pc.relname = 'p1'
+order by 1,
+  2;
+
+create table c1 ()
+inherits (p1);
+
+create table c2 (constraint "p2chk" check (ff1 > 10) no inherit)
+inherits (p1);
+
+drop TABLE "p1" cascade;
+
+create table base (i INT);
+
+create table derived ()
+inherits (base);
+
+create table more_derived (
+  like derived,
+  b INT
+)
+inherits (derived);
+
+insert into derived (i) values (0);
+
+select cast(derived as base) from derived;
+
+select cast(cast(null as derived) as base);
+
+select cast(cast(cast(row(i, b) as more_derived) as derived) as base) from more_derived;
+
+select cast(cast(cast((1, 2) as more_derived) as derived) as base);
+
+drop TABLE "more_derived";
+
+drop TABLE "derived";
+
+drop TABLE "base";
+
+create table p1 (ff1 INT);
+
+create table p2 (f1 TEXT);
+
+create function p2text(p2)
+returns TEXT
+as 'select $1.f1'
+language "sql";
+
+create table c1 (f3 INT)
+inherits (p1,
+p2);
+
+insert into c1 values (123456789, 'hi', 42);
+
+select p2text(c1.*) from c1;
+
+drop FUNCTION p2text(p2);
+
+drop TABLE "c1";
+
+drop TABLE "p2";
+
+drop TABLE "p1";
+
+create table ac (aa TEXT);
+
+alter table ac
+  add constraint "ac_check" check (aa is not null);
+
+create table bc (bb TEXT)
+inherits (ac);
+
+select
+  pc.relname,
+  pgc.conname,
+  pgc.contype,
+  pgc.conislocal,
+  pgc.coninhcount,
+  pg_get_expr(pgc.conbin, pc.oid) as consrc
+from
+  pg_class as pc
+  inner join
+    pg_constraint as pgc
+  on pgc.conrelid = pc.oid
+where
+  pc.relname in ('ac', 'bc')
+order by 1,
+  2;
+
+insert into ac (aa) values (null);
+
+insert into bc (aa) values (null);
+
+alter table bc
+  drop constraint ac_check;
+
+alter table ac
+  drop constraint ac_check;
+
+select
+  pc.relname,
+  pgc.conname,
+  pgc.contype,
+  pgc.conislocal,
+  pgc.coninhcount,
+  pg_get_expr(pgc.conbin, pc.oid) as consrc
+from
+  pg_class as pc
+  inner join
+    pg_constraint as pgc
+  on pgc.conrelid = pc.oid
+where
+  pc.relname in ('ac', 'bc')
+order by 1,
+  2;
+
+alter table ac
+  add check (aa is not null);
+
+select
+  pc.relname,
+  pgc.conname,
+  pgc.contype,
+  pgc.conislocal,
+  pgc.coninhcount,
+  pg_get_expr(pgc.conbin, pc.oid) as consrc
+from
+  pg_class as pc
+  inner join
+    pg_constraint as pgc
+  on pgc.conrelid = pc.oid
+where
+  pc.relname in ('ac', 'bc')
+order by 1,
+  2;
+
+insert into ac (aa) values (null);
+
+insert into bc (aa) values (null);
+
+alter table bc
+  drop constraint ac_aa_check;
+
+alter table ac
+  drop constraint ac_aa_check;
+
+select
+  pc.relname,
+  pgc.conname,
+  pgc.contype,
+  pgc.conislocal,
+  pgc.coninhcount,
+  pg_get_expr(pgc.conbin, pc.oid) as consrc
+from
+  pg_class as pc
+  inner join
+    pg_constraint as pgc
+  on pgc.conrelid = pc.oid
+where
+  pc.relname in ('ac', 'bc')
+order by 1,
+  2;
+
+alter table ac
+  add constraint "ac_check" check (aa is not null);
+
+alter table bc
+  NO INHERIT ac;
+
+select
+  pc.relname,
+  pgc.conname,
+  pgc.contype,
+  pgc.conislocal,
+  pgc.coninhcount,
+  pg_get_expr(pgc.conbin, pc.oid) as consrc
+from
+  pg_class as pc
+  inner join
+    pg_constraint as pgc
+  on pgc.conrelid = pc.oid
+where
+  pc.relname in ('ac', 'bc')
+order by 1,
+  2;
+
+alter table bc
+  drop constraint ac_check;
+
+select
+  pc.relname,
+  pgc.conname,
+  pgc.contype,
+  pgc.conislocal,
+  pgc.coninhcount,
+  pg_get_expr(pgc.conbin, pc.oid) as consrc
+from
+  pg_class as pc
+  inner join
+    pg_constraint as pgc
+  on pgc.conrelid = pc.oid
+where
+  pc.relname in ('ac', 'bc')
+order by 1,
+  2;
+
+alter table ac
+  drop constraint ac_check;
+
+select
+  pc.relname,
+  pgc.conname,
+  pgc.contype,
+  pgc.conislocal,
+  pgc.coninhcount,
+  pg_get_expr(pgc.conbin, pc.oid) as consrc
+from
+  pg_class as pc
+  inner join
+    pg_constraint as pgc
+  on pgc.conrelid = pc.oid
+where
+  pc.relname in ('ac', 'bc')
+order by 1,
+  2;
+
+drop TABLE "bc";
+
+drop TABLE "ac";
+
+create table ac (a INT constraint "check_a" check (a <> 0));
+
+create table bc (
+  a INT constraint "check_a" check (a <> 0),
+  b INT constraint "check_b" check (b <> 0)
+)
+inherits (ac);
+
+select
+  pc.relname,
+  pgc.conname,
+  pgc.contype,
+  pgc.conislocal,
+  pgc.coninhcount,
+  pg_get_expr(pgc.conbin, pc.oid) as consrc
+from
+  pg_class as pc
+  inner join
+    pg_constraint as pgc
+  on pgc.conrelid = pc.oid
+where
+  pc.relname in ('ac', 'bc')
+order by 1,
+  2;
+
+drop TABLE "bc";
+
+drop TABLE "ac";
+
+create table ac (a INT constraint "check_a" check (a <> 0));
+
+create table bc (b INT constraint "check_b" check (b <> 0));
+
+create table cc (c INT constraint "check_c" check (c <> 0))
+inherits (ac,
+bc);
+
+select
+  pc.relname,
+  pgc.conname,
+  pgc.contype,
+  pgc.conislocal,
+  pgc.coninhcount,
+  pg_get_expr(pgc.conbin, pc.oid) as consrc
+from
+  pg_class as pc
+  inner join
+    pg_constraint as pgc
+  on pgc.conrelid = pc.oid
+where
+  pc.relname in ('ac', 'bc', 'cc')
+order by 1,
+  2;
+
+alter table cc
+  NO INHERIT bc;
+
+select
+  pc.relname,
+  pgc.conname,
+  pgc.contype,
+  pgc.conislocal,
+  pgc.coninhcount,
+  pg_get_expr(pgc.conbin, pc.oid) as consrc
+from
+  pg_class as pc
+  inner join
+    pg_constraint as pgc
+  on pgc.conrelid = pc.oid
+where
+  pc.relname in ('ac', 'bc', 'cc')
+order by 1,
+  2;
+
+drop TABLE "cc";
+
+drop TABLE "bc";
+
+drop TABLE "ac";
+
+create table p1 (f1 INT);
+
+create table p2 (f2 INT);
+
+create table c1 (f3 INT)
+inherits (p1,
+p2);
+
+insert into c1 values (1, -1, 2);
+
+alter table p2
+  add constraint "cc" check (f2 > 0);
+
+alter table p2
+  add check (f2 > 0);
+
+delete from c1;
+
+insert into c1 values (1, 1, 2);
+
+alter table p2
+  add check (f2 > 0);
+
+insert into c1 values (1, -1, 2);
+
+create table c2 (f3 INT)
+inherits (p1,
+p2);
+
+create table c3 (f4 INT)
+inherits (c1,
+c2);
+
+drop TABLE "p1" cascade;
+
+drop TABLE "p2" cascade;
+
+create table pp1 (f1 INT);
+
+create table cc1 (
+  f2 TEXT,
+  f3 INT
+)
+inherits (pp1);
+
+alter table pp1
+  add column a1 INT check (a1 > 0);
+
+create table cc2 (f4 DOUBLE PRECISION)
+inherits (pp1,
+cc1);
+
+alter table pp1
+  add column a2 INT check (a2 > 0);
+
+drop TABLE "pp1" cascade;
+
+create table inht1 (
+  a INT,
+  b INT
+);
+
+create table inhs1 (
+  b INT,
+  c INT
+);
+
+create table inhts (d INT)
+inherits (inht1,
+inhs1);
+
+alter table inht1 rename column a to aa;
+
+alter table inht1 rename column b to bb;
+
+alter table inhts rename column aa to aaa;
+
+alter table inhts rename column d to dd;
+
+drop TABLE "inhts";
+
+create table inhta ();
+
+create table inhtb ()
+inherits (inhta);
+
+create table inhtc ()
+inherits (inhtb);
+
+create table inhtd ()
+inherits (inhta,
+inhtb,
+inhtc);
+
+alter table inhta
+  add column i INT,
+  add column j BIGINT default 1;
+
+drop TABLE "inhta", "inhtb", "inhtc", "inhtd";
+
+create table inht2 (x INT)
+inherits (inht1);
+
+create table inht3 (y INT)
+inherits (inht1);
+
+create table inht4 (z INT)
+inherits (inht2,
+inht3);
+
+alter table inht1 rename column aa to aaa;
+
+create table inhts (d INT)
+inherits (inht2,
+inhs1);
+
+alter table inht1 rename column aaa to aaaa;
+
+alter table inht1 rename column b to bb;
+
+with recursive
+r
+as (
+  select cast('inht1' as REGCLASS) as inhrelid
+  union all
+  select
+    c.inhrelid
+  from
+    pg_inherits as c,
+    r
+  where
+    r.inhrelid = c.inhparent
+)
+select
+  cast(a.attrelid as REGCLASS),
+  a.attname,
+  a.attinhcount,
+  e.expected
+from
+  (
+    select
+      inhrelid,
+      COUNT(*) as expected
+    from
+      pg_inherits
+    where
+      inhparent in (select inhrelid from r)
+    group by inhrelid
+  )
+  as e
+  inner join
+    pg_attribute as a
+  on e.inhrelid = a.attrelid
+where
+  not attislocal
+order by cast(cast(a.attrelid as REGCLASS) as NAME),
+  a.attnum;
+
+drop TABLE "inht1", "inhs1" cascade;
+
+create table test_constraints (
+  id INT,
+  val1 VARCHAR,
+  val2 INT,
+  unique (val1, val2)
+);
+
+create table test_constraints_inh ()
+inherits (test_constraints);
+
+alter table only test_constraints
+  drop constraint test_constraints_val1_val2_key;
+
+drop TABLE "test_constraints_inh";
+
+drop TABLE "test_constraints";
+
+create table test_ex_constraints (
+  c circle,
+  exclude using gist (c with &&)
+);
+
+create table test_ex_constraints_inh ()
+inherits (test_ex_constraints);
+
+alter table test_ex_constraints
+  drop constraint test_ex_constraints_c_excl;
+
+drop TABLE "test_ex_constraints_inh";
+
+drop TABLE "test_ex_constraints";
+
+create table test_primary_constraints (id INT primary key);
+
+create table test_foreign_constraints (id1 INT references test_primary_constraints (id));
+
+create table test_foreign_constraints_inh ()
+inherits (test_foreign_constraints);
+
+alter table test_foreign_constraints
+  drop constraint test_foreign_constraints_id1_fkey;
+
+drop TABLE "test_foreign_constraints_inh";
+
+drop TABLE "test_foreign_constraints";
+
+drop TABLE "test_primary_constraints";
+
+create table inh_fk_1 (a INT primary key);
+
+insert into inh_fk_1 values (1), (2), (3);
+
+create table inh_fk_2 (
+  x INT primary key,
+  y INT references inh_fk_1 on DELETE cascade
+);
+
+insert into inh_fk_2 values (11, 1), (22, 2), (33, 3);
+
+create table inh_fk_2_child ()
+inherits (inh_fk_2);
+
+insert into inh_fk_2_child values (111, 1), (222, 2);
+
+delete from inh_fk_1 where a = 1;
+
+select * from inh_fk_1 order by 1;
+
+select * from inh_fk_2 order by 1, 2;
+
+drop TABLE "inh_fk_1", "inh_fk_2", "inh_fk_2_child";
+
+create table p1 (f1 INT);
+
+create table p1_c1 ()
+inherits (p1);
+
+alter table p1
+  add constraint "inh_check_constraint1" check (f1 > 0);
+
+alter table p1_c1
+  add constraint "inh_check_constraint1" check (f1 > 0);
+
+alter table p1_c1
+  add constraint "inh_check_constraint2" check (f1 < 10);
+
+alter table p1
+  add constraint "inh_check_constraint2" check (f1 < 10);
+
+create table p1_c2 (f1 INT constraint "inh_check_constraint4" check (f1 < 10))
+inherits (p1);
+
+create table p1_c3 ()
+inherits (p1,
+p1_c1);
+
+select
+  cast(cast(conrelid as REGCLASS) as TEXT)
+  as relname,
+  conname,
+  conislocal,
+  coninhcount,
+  conenforced,
+  convalidated
+from
+  pg_constraint
+where
+  conname like 'inh\_check\_constraint%'
+order by 1,
+  2;
+
+drop TABLE "p1" cascade;
+
+alter table p1_c1
+  INHERIT p1;
+
+drop TABLE "p1" cascade;
+
+alter table p1_c1
+  INHERIT p1;
+
+drop TABLE "p1", "p1_c1";
+
+create table p1 (f1 INT constraint "f1_pos" check (f1 > 0));
+
+create table p1_c1 (f1 INT constraint "f1_pos" check (f1 > 0))
+inherits (p1);
+
+alter table p1_c1
+  drop constraint f1_pos;
+
+alter table p1
+  drop constraint f1_pos;
+
+drop TABLE "p1" cascade;
+
+create table p1 (f1 INT constraint "f1_pos" check (f1 > 0));
+
+create table p2 (f1 INT constraint "f1_pos" check (f1 > 0));
+
+create table p1p2_c1 (f1 INT)
+inherits (p1,
+p2);
+
+create table p1p2_c2 (f1 INT constraint "f1_pos" check (f1 > 0))
+inherits (p1,
+p2);
+
+alter table p2
+  drop constraint f1_pos;
+
+alter table p1
+  drop constraint f1_pos;
+
+drop TABLE "p1", "p2" cascade;
+
+create table p1 (f1 INT constraint "f1_pos" check (f1 > 0));
+
+create table p1_c1 ()
+inherits (p1);
+
+create table p1_c2 ()
+inherits (p1);
+
+create table p1_c1c2 ()
+inherits (p1_c1,
+p1_c2);
+
+alter table p1
+  drop constraint f1_pos;
+
+drop TABLE "p1" cascade;
+
+create table p1 (f1 INT constraint "f1_pos" check (f1 > 0));
+
+create table p1_c1 ()
+inherits (p1);
+
+create table p1_c2 (constraint "f1_pos" check (f1 > 0))
+inherits (p1);
+
+create table p1_c1c2 ()
+inherits (p1_c1,
+p1_c2,
+p1);
+
+alter table p1_c2
+  drop constraint f1_pos;
+
+alter table p1
+  drop constraint f1_pos;
+
+alter table p1_c1c2
+  drop constraint f1_pos;
+
+alter table p1_c2
+  drop constraint f1_pos;
+
+drop TABLE "p1" cascade;
+
+create table invalid_check_con (f1 INT);
+
+create table invalid_check_con_child ()
+inherits (invalid_check_con);
+
+alter table invalid_check_con_child
+  add constraint "inh_check_constraint" check (f1 > 0) not valid;
+
+alter table invalid_check_con
+  add constraint "inh_check_constraint" check (f1 > 0);
+
+alter table invalid_check_con_child
+  drop constraint inh_check_constraint;
+
+insert into invalid_check_con values (0);
+
+alter table invalid_check_con_child
+  add constraint "inh_check_constraint" check (f1 > 0);
+
+alter table invalid_check_con
+  add constraint "inh_check_constraint" check (f1 > 0) not valid;
+
+insert into invalid_check_con values (0);
+
+insert into invalid_check_con_child values (0);
+
+select
+  cast(cast(conrelid as REGCLASS) as TEXT)
+  as relname,
+  conname,
+  convalidated,
+  conislocal,
+  coninhcount,
+  connoinherit
+from
+  pg_constraint
+where
+  conname like 'inh\_check\_constraint%'
+order by 1,
+  2;
+
+create temporary table patest0 (id, x) as select x, x from generate_series(0, 1000) as x;
+
+create temporary table patest1 ()
+inherits (patest0);
+
+insert into patest1 select x, x from generate_series(0, 1000) as x;
+
+create temporary table patest2 ()
+inherits (patest0);
+
+insert into patest2 select x, x from generate_series(0, 1000) as x;
+
+create index "patest0i" on patest0 using btree (id);
+
+create index "patest1i" on patest1 using btree (id);
+
+create index "patest2i" on patest2 using btree (id);
+
+analyze patest0;
+
+analyze patest1;
+
+analyze patest2;
+
+select * from patest0 inner join (select f1 from int4_tbl limit 1) as ss on id = f1;
+
+select * from patest0 inner join (select f1 from int4_tbl limit 1) as ss on id = f1;
+
+drop INDEX "patest2i";
+
+select * from patest0 inner join (select f1 from int4_tbl limit 1) as ss on id = f1;
+
+select * from patest0 inner join (select f1 from int4_tbl limit 1) as ss on id = f1;
+
+drop TABLE "patest0" cascade;
+
+create table matest0 (
+  id serial primary key,
+  name TEXT
+);
+
+create table matest1 (id INT primary key)
+inherits (matest0);
+
+create table matest2 (id INT primary key)
+inherits (matest0);
+
+create table matest3 (id INT primary key)
+inherits (matest0);
+
+create index "matest0i" on matest0 using btree ((1 - id));
+
+create index "matest1i" on matest1 using btree ((1 - id));
+
+create index "matest3i" on matest3 using btree ((1 - id));
+
+insert into matest1 (name) values ('Test 1');
+
+insert into matest1 (name) values ('Test 2');
+
+insert into matest2 (name) values ('Test 3');
+
+insert into matest2 (name) values ('Test 4');
+
+insert into matest3 (name) values ('Test 5');
+
+insert into matest3 (name) values ('Test 6');
+
+set enable_indexscan = off;
+
+select * from matest0 order by 1 - id;
+
+select * from matest0 order by 1 - id;
+
+select MIN(1 - id) from matest0;
+
+select MIN(1 - id) from matest0;
+
+reset enable_indexscan;
+
+set enable_seqscan = off;
+
+set enable_parallel_append = off;
+
+select * from matest0 order by 1 - id;
+
+select * from matest0 order by 1 - id;
+
+select MIN(1 - id) from matest0;
+
+select MIN(1 - id) from matest0;
+
+reset enable_seqscan;
+
+reset enable_parallel_append;
+
+select
+  1 - id as c
+from
+  (
+    select id from matest3 as t1
+    union all
+    select id * 2 from matest3 as t2
+  )
+  as ss
+order by c;
+
+select
+  1 - id as c
+from
+  (
+    select id from matest3 as t1
+    union all
+    select id * 2 from matest3 as t2
+  )
+  as ss
+order by c;
+
+drop TABLE "matest0" cascade;
+
+create table matest0 (
+  a INT,
+  b INT,
+  c INT,
+  d INT
+);
+
+create table matest1 ()
+inherits (matest0);
+
+create index "matest0i" on matest0 using btree (b, c);
+
+create index "matest1i" on matest1 using btree (b, c);
+
+set enable_nestloop = off;
+
+select
+  t1.*
+from
+  matest0 as t1,
+  matest0 as t2
+where
+  t1.b = t2.b and t2.c = t2.d
+order by t1.b
+limit 10;
+
+reset enable_nestloop;
+
+drop TABLE "matest0" cascade;
+
+create table matest0 (a INT primary key);
+
+create table matest1 ()
+inherits (matest0);
+
+insert into matest0 select generate_series(1, 400);
+
+insert into matest1 select generate_series(1, 200);
+
+analyze matest0;
+
+analyze matest1;
+
+select * from matest0 where a < 100 order by a;
+
+drop TABLE "matest0" cascade;
+
+set enable_seqscan = off;
+
+set enable_indexscan = 'on';
+
+set enable_bitmapscan = off;
+
+select thousand, tenthous from tenk1
+union all
+select thousand, thousand from tenk1
+order by thousand,
+  tenthous;
+
+select
+  thousand,
+  tenthous,
+  thousand + tenthous as x
+from
+  tenk1
+union all
+select 42, 42, hundred from tenk1
+order by thousand,
+  tenthous;
+
+select thousand, tenthous from tenk1
+union all
+select thousand, cast(random() as INT) from tenk1
+order by thousand,
+  tenthous;
+
+select
+  MIN(x)
+from
+  (
+    select unique1 as x from tenk1 as a
+    union all
+    select unique2 as x from tenk1 as b
+  )
+  as s;
+
+select
+  MIN(y)
+from
+  (
+    select unique1 as x, unique1 as y from tenk1 as a
+    union all
+    select unique2 as x, unique2 as y from tenk1 as b
+  )
+  as s;
+
+select
+  x,
+  y
+from
+  (
+    select
+      thousand as x,
+      tenthous as y
+    from
+      tenk1 as a
+    union all
+    select unique2 as x, unique2 as y from tenk1 as b
+  )
+  as s
+order by x,
+  y;
+
+select
+  array(
+    select
+      f.i
+    from
+      (
+        (select
+          d + g.i
+        from
+          generate_series(4, 30, 3) as d
+        order by 1)
+        union all
+        (select
+          d + g.i
+        from
+          generate_series(0, 30, 5) as d
+        order by 1)
+      )
+      as f (i)
+    order by f.i
+    limit 10
+  )
+from
+  generate_series(1, 3) as g (i);
+
+select
+  array(
+    select
+      f.i
+    from
+      (
+        (select
+          d + g.i
+        from
+          generate_series(4, 30, 3) as d
+        order by 1)
+        union all
+        (select
+          d + g.i
+        from
+          generate_series(0, 30, 5) as d
+        order by 1)
+      )
+      as f (i)
+    order by f.i
+    limit 10
+  )
+from
+  generate_series(1, 3) as g (i);
+
+reset enable_seqscan;
+
+reset enable_indexscan;
+
+reset enable_bitmapscan;
+
+create table inhpar (
+  f1 INT,
+  f2 NAME
+);
+
+create table inhcld (
+  f2 NAME,
+  f1 INT
+);
+
+alter table inhcld
+  INHERIT inhpar;
+
+insert into inhpar select x, cast(x as TEXT) from generate_series(1, 5) as x;
+
+insert into inhcld select cast(x as TEXT), x from generate_series(6, 10) as x;
+
+update inhpar as i set (f1, f2) = (select i.f1, i.f2 || '-' from int4_tbl limit 1);
+
+update inhpar as i set (f1, f2) = (select i.f1, i.f2 || '-' from int4_tbl limit 1);
+
+select * from inhpar;
+
+drop TABLE "inhpar" cascade;
+
+create table inhpar (
+  f1 INT primary key,
+  f2 NAME
+)
+partition by range(f1);
+
+create table inhcld1 (
+  f2 NAME,
+  f1 INT primary key
+);
+
+create table inhcld2 (
+  f1 INT primary key,
+  f2 NAME
+);
+
+alter table inhpar
+  ATTACH partition
+  inhcld1 for values from (1) to (5);
+
+alter table inhpar
+  ATTACH partition
+  inhcld2 for values from (5) to (100);
+
+insert into inhpar select x, cast(x as TEXT) from generate_series(1, 10) as x;
+
+update inhpar as i set (f1, f2) = (select i.f1, i.f2 || '-' from int4_tbl limit 1);
+
+update inhpar as i set (f1, f2) = (select i.f1, i.f2 || '-' from int4_tbl limit 1);
+
+select * from inhpar;
+
+insert into inhpar as i
+values (3), (7)
+on conflict
+(f1)
+do
+update
+set (f1, f2) = (select i.f1, i.f2 || '+');
+
+select * from inhpar order by f1;
+
+drop TABLE "inhpar" cascade;
+
+create table cnullparent (f1 INT);
+
+create table cnullchild (check (f1 = 1 or f1 = null))
+inherits (cnullparent);
+
+insert into cnullchild values (1);
+
+insert into cnullchild values (2);
+
+insert into cnullchild values (null);
+
+select * from cnullparent;
+
+select * from cnullparent where f1 = 2;
+
+drop TABLE "cnullparent" cascade;
+
+create table pp1 (f1 INT);
+
+create table cc1 (
+  f2 TEXT,
+  f3 INT
+)
+inherits (pp1);
+
+create table cc2 (f4 DOUBLE PRECISION)
+inherits (pp1,
+cc1);
+
+create table cc3 ()
+inherits (pp1,
+cc1,
+cc2);
+
+alter table pp1
+  alter column f1 set not null;
+
+alter table cc3
+  NO INHERIT pp1;
+
+alter table cc3
+  NO INHERIT cc1;
+
+alter table cc3
+  NO INHERIT cc2;
+
+drop TABLE "cc3";
+
+alter table cc1
+  add column a2 INT constraint "nn" not null;
+
+alter table pp1
+  alter column f1 set not null;
+
+alter table cc2
+  alter column a2 drop not null;
+
+alter table cc1
+  alter column a2 drop not null;
+
+alter table cc2
+  alter column f1 drop not null;
+
+alter table cc1
+  alter column f1 drop not null;
+
+alter table pp1
+  alter column f1 drop not null;
+
+alter table pp1
+  add primary key (f1);
+
+alter table inh_child
+  INHERIT inh_parent;
+
+alter table inh_child
+  NO INHERIT inh_parent;
+
+drop TABLE "inh_parent", "inh_child";
+
+create table inh_pp1 (f1 INT);
+
+create table inh_cc1 (
+  f2 TEXT,
+  f3 INT
+)
+inherits (inh_pp1);
+
+create table inh_cc2 (f4 DOUBLE PRECISION)
+inherits (inh_pp1,
+inh_cc1);
+
+alter table inh_pp1
+  alter column f1 set not null;
+
+alter table inh_cc2
+  NO INHERIT inh_pp1;
+
+alter table inh_cc2
+  NO INHERIT inh_cc1;
+
+drop TABLE "inh_pp1", "inh_cc1", "inh_cc2";
+
+create table inh_pp1 (f1 INT not null);
+
+create table inh_cc1 (
+  f2 TEXT,
+  f3 INT
+)
+inherits (inh_pp1);
+
+create table inh_cc2 (f4 DOUBLE PRECISION)
+inherits (inh_pp1,
+inh_cc1);
+
+alter table inh_pp1
+  alter column f1 drop not null;
+
+drop TABLE "inh_pp1", "inh_cc1", "inh_cc2";
+
+create table inh_parent ();
+
+create table inh_child (i INT)
+inherits (inh_parent);
+
+create table inh_grandchild ()
+inherits (inh_parent,
+inh_child);
+
+alter table inh_parent
+  add column i INT not null;
+
+drop TABLE "inh_parent", "inh_child", "inh_grandchild";
+
+create table inh_parent1 (a INT constraint "nn" not null);
+
+create table inh_parent2 (b INT constraint "nn" not null);
+
+create table inh_child1 ()
+inherits (inh_parent1,
+inh_parent2);
+
+alter table inh_child2
+  NO INHERIT inh_parent2;
+
+drop TABLE "inh_parent1", "inh_parent2", "inh_child1", "inh_child2";
+
+create table inh_parent1 (
+  a INT,
+  b INT,
+  c INT,
+  primary key (a, b)
+);
+
+create table inh_parent2 (
+  d INT,
+  e INT,
+  b INT,
+  primary key (d, b)
+);
+
+create table inh_child ()
+inherits (inh_parent1,
+inh_parent2);
+
+select
+  cast(conrelid as REGCLASS),
+  conname,
+  contype,
+  conkey,
+  coninhcount,
+  conislocal,
+  connoinherit
+from
+  pg_constraint
+where
+  contype in ('n', 'p') and
+  cast(cast(conrelid as REGCLASS) as TEXT)
+  in (
+    'inh_child', 'inh_parent1', 'inh_parent2'
+  )
+order by 1,
+  2;
+
+drop TABLE "inh_parent1", "inh_parent2", "inh_child";
+
+create table inh_nn_parent (a INT);
+
+create table inh_nn_child ()
+inherits (inh_nn_parent);
+
+create table inh_nn_child2 ()
+inherits (inh_nn_parent);
+
+select
+  cast(conrelid as REGCLASS),
+  conname,
+  contype,
+  conkey,
+  (
+    select
+      attname
+    from
+      pg_attribute
+    where
+      attrelid = conrelid and attnum = conkey[1]
+  ),
+  coninhcount,
+  conislocal,
+  connoinherit
+from
+  pg_constraint
+where
+  contype = 'n' and
+  cast(cast(conrelid as REGCLASS) as TEXT) like 'inh\_nn\_%'
+order by 2,
+  1;
+
+drop TABLE "inh_nn_parent", "inh_nn_child", "inh_nn_child2";
+
+create table inh_nn_child ()
+inherits (inh_nn_parent);
+
+alter table inh_nn_parent
+  alter column a set not null;
+
+drop TABLE "inh_nn_parent" cascade;
+
+create table inh_nn_lvl1 (a INT);
+
+create table inh_nn_lvl2 ()
+inherits (inh_nn_lvl1);
+
+alter table inh_nn_lvl1
+  add primary key (a);
+
+drop TABLE "inh_nn_lvl1", "inh_nn_lvl2", "inh_nn_lvl3";
+
+create table inh_nn1 (a INT not null);
+
+drop TABLE if exists "inh_nn1", "inh_nn2", "inh_nn3", "inh_nn4";
+
+create table inh_parent (f1 INT);
+
+create table inh_child1 (f1 INT not null);
+
+create table inh_child2 (f1 INT);
+
+alter table inh_child1
+  INHERIT inh_parent;
+
+alter table inh_child2
+  INHERIT inh_child1;
+
+alter table inh_child2
+  alter column f1 set not null;
+
+alter table inh_child2
+  INHERIT inh_child1;
+
+alter table inh_parent
+  alter column f1 set not null;
+
+select
+  cast(conrelid as REGCLASS),
+  conname,
+  contype,
+  coninhcount,
+  conislocal
+from
+  pg_constraint
+where
+  contype = 'n' and
+  conrelid
+  in (
+    cast('inh_parent' as REGCLASS),
+    cast('inh_child1' as REGCLASS),
+    cast('inh_child2' as REGCLASS)
+  )
+order by 2,
+  1;
+
+create table inh_child3 ()
+inherits (inh_child1);
+
+alter table inh_child1
+  NO INHERIT inh_parent;
+
+select
+  cast(conrelid as REGCLASS),
+  conname,
+  contype,
+  coninhcount,
+  conislocal
+from
+  pg_constraint
+where
+  contype = 'n' and
+  cast(cast(conrelid as REGCLASS) as TEXT)
+  in (
+    'inh_parent',
+    'inh_child1',
+    'inh_child2',
+    'inh_child3'
+  )
+order by 2,
+  1;
+
+drop TABLE "inh_parent", "inh_child1", "inh_child2", "inh_child3";
+
+create table inh_parent (a INT not null);
+
+create table inh_child (a INT);
+
+alter table inh_child
+  INHERIT inh_parent;
+
+drop TABLE "inh_parent", "inh_child";
+
+create table inh_parent (a INT not null);
+
+alter table inh_child
+  INHERIT inh_parent;
+
+drop TABLE "inh_parent", "inh_child";
+
+create table inh_parent (a INT primary key);
+
+create table inh_child (a INT primary key)
+inherits (inh_parent);
+
+alter table inh_parent
+  add constraint "inh_parent_excl" exclude using btree ((1) with =);
+
+alter table inh_parent
+  add constraint "inh_parent_uq" unique (a);
+
+alter table inh_parent
+  add constraint "inh_parent_fk"
+  foreign key
+  (a)
+  references inh_parent (a);
+
+create table inh_child2 ()
+inherits (inh_parent);
+
+create table inh_child3 (like inh_parent);
+
+alter table inh_child3
+  INHERIT inh_parent;
+
+select
+  cast(conrelid as REGCLASS),
+  conname,
+  contype,
+  coninhcount,
+  conislocal
+from
+  pg_constraint
+where
+  cast(cast(conrelid as REGCLASS) as TEXT)
+  in (
+    'inh_parent',
+    'inh_child',
+    'inh_child2',
+    'inh_child3'
+  )
+order by 2,
+  1;
+
+drop TABLE "inh_parent", "inh_child", "inh_child2", "inh_child3";
+
+create table inh_parent (f1 INT not null);
+
+create table inh_child1 ()
+inherits (inh_parent);
+
+create table inh_child2 ()
+inherits (inh_parent);
+
+create table inh_child3 ()
+inherits (inh_child1,
+inh_child2);
+
+select
+  cast(conrelid as REGCLASS),
+  conname,
+  contype,
+  coninhcount,
+  conislocal
+from
+  pg_constraint
+where
+  contype = 'n' and
+  conrelid
+  in (
+    cast('inh_parent' as REGCLASS),
+    cast('inh_child1' as REGCLASS),
+    cast('inh_child2' as REGCLASS),
+    cast('inh_child3' as REGCLASS)
+  )
+order by 2,
+  cast(cast(conrelid as REGCLASS) as TEXT);
+
+drop TABLE "inh_parent" cascade;
+
+create table inh_parent_1 (f1 INT);
+
+create table inh_parent_2 (f2 TEXT);
+
+create table inh_child (
+  f1 INT not null,
+  f2 TEXT not null
+)
+inherits (inh_parent_1,
+inh_parent_2);
+
+select
+  cast(conrelid as REGCLASS),
+  conname,
+  contype,
+  coninhcount,
+  conislocal
+from
+  pg_constraint
+where
+  contype = 'n' and
+  conrelid
+  in (
+    cast('inh_parent_1' as REGCLASS),
+    cast('inh_parent_2' as REGCLASS),
+    cast('inh_child' as REGCLASS)
+  )
+order by 2,
+  cast(cast(conrelid as REGCLASS) as TEXT);
+
+drop TABLE "inh_parent_1" cascade;
+
+drop TABLE "inh_parent_2";
+
+create table inh_p1 (f1 INT not null);
+
+create table inh_p2 (f1 INT not null);
+
+create table inh_p3 (f2 INT);
+
+create table inh_p4 (
+  f1 INT not null,
+  f3 TEXT not null
+);
+
+create table inh_multiparent ()
+inherits (inh_p1,
+inh_p2,
+inh_p3,
+inh_p4);
+
+select
+  cast(conrelid as REGCLASS),
+  contype,
+  conname,
+  (
+    select
+      attname
+    from
+      pg_attribute
+    where
+      attrelid = conrelid and attnum = conkey[1]
+  ),
+  coninhcount,
+  conislocal
+from
+  pg_constraint
+where
+  contype = 'n' and
+  cast(conrelid as REGCLASS)
+  in (
+    'inh_p1',
+    'inh_p2',
+    'inh_p3',
+    'inh_p4',
+    'inh_multiparent'
+  )
+order by cast(cast(conrelid as REGCLASS) as TEXT),
+  conname;
+
+create table inh_multiparent2 (
+  a INT not null,
+  f1 INT
+)
+inherits (inh_p3,
+inh_multiparent);
+
+select
+  cast(conrelid as REGCLASS),
+  contype,
+  conname,
+  (
+    select
+      attname
+    from
+      pg_attribute
+    where
+      attrelid = conrelid and attnum = conkey[1]
+  ),
+  coninhcount,
+  conislocal
+from
+  pg_constraint
+where
+  contype = 'n' and
+  cast(conrelid as REGCLASS)
+  in (
+    'inh_p3', 'inh_multiparent', 'inh_multiparent2'
+  )
+order by cast(cast(conrelid as REGCLASS) as TEXT),
+  conname;
+
+drop TABLE "inh_p1", "inh_p2", "inh_p3", "inh_p4" cascade;
+
+create table inh_nn2 (
+  f2 TEXT,
+  f3 INT,
+  f1 INT
+);
+
+alter table inh_nn2
+  INHERIT inh_nn1;
+
+create table inh_nn3 (f4 DOUBLE PRECISION)
+inherits (inh_nn2);
+
+create table inh_nn4 (
+  f5 INT,
+  f4 DOUBLE PRECISION,
+  f2 TEXT,
+  f3 INT,
+  f1 INT
+);
+
+alter table inh_nn4
+  INHERIT inh_nn2,
+  INHERIT inh_nn1,
+  INHERIT inh_nn3;
+
+select
+  cast(conrelid as REGCLASS),
+  conname,
+  conkey,
+  coninhcount,
+  conislocal,
+  connoinherit
+from
+  pg_constraint
+where
+  contype = 'n' and
+  cast(cast(conrelid as REGCLASS) as TEXT)
+  in (
+    'inh_nn1', 'inh_nn2', 'inh_nn3', 'inh_nn4'
+  )
+order by 2,
+  1;
+
+select
+  cast(conrelid as REGCLASS),
+  conname,
+  conkey,
+  coninhcount,
+  conislocal,
+  connoinherit
+from
+  pg_constraint
+where
+  contype = 'n' and
+  cast(cast(conrelid as REGCLASS) as TEXT)
+  in (
+    'inh_nn1', 'inh_nn2', 'inh_nn3', 'inh_nn4'
+  )
+order by 2,
+  1;
+
+alter table inh_nn1
+  drop constraint inh_nn1_f1_not_null;
+
+select
+  cast(conrelid as REGCLASS),
+  conname,
+  coninhcount,
+  conislocal,
+  connoinherit
+from
+  pg_constraint
+where
+  contype = 'n' and
+  cast(cast(conrelid as REGCLASS) as TEXT)
+  in (
+    'inh_nn1', 'inh_nn2', 'inh_nn3', 'inh_nn4'
+  )
+order by 2,
+  1;
+
+drop TABLE "inh_nn1", "inh_nn2", "inh_nn3", "inh_nn4";
+
+create table inh_nn2 (
+  f2 TEXT,
+  f3 INT
+)
+inherits (inh_nn1);
+
+insert into inh_nn2 values (null, 'sample', 1);
+
+delete from inh_nn2;
+
+create table inh_nn3 ()
+inherits (inh_nn2);
+
+create table inh_nn4 ()
+inherits (inh_nn1,
+inh_nn2);
+
+select
+  cast(conrelid as REGCLASS),
+  conname,
+  coninhcount,
+  conislocal,
+  connoinherit
+from
+  pg_constraint
+where
+  contype = 'n' and
+  cast(cast(conrelid as REGCLASS) as TEXT)
+  in (
+    'inh_nn1', 'inh_nn2', 'inh_nn3', 'inh_nn4'
+  )
+order by 2,
+  1;
+
+drop TABLE "inh_nn1", "inh_nn2", "inh_nn3", "inh_nn4";
+
+create table inh_nn2 (
+  f2 TEXT,
+  f3 INT
+)
+inherits (inh_nn1);
+
+select
+  cast(conrelid as REGCLASS),
+  conname,
+  conkey,
+  coninhcount,
+  conislocal,
+  connoinherit
+from
+  pg_constraint
+where
+  contype = 'n' and
+  cast(cast(conrelid as REGCLASS) as TEXT)
+  in (
+    'inh_nn1', 'inh_nn2', 'inh_nn3'
+  )
+order by 2,
+  1;
+
+select
+  cast(conrelid as REGCLASS),
+  conname,
+  conkey,
+  coninhcount,
+  conislocal,
+  connoinherit
+from
+  pg_constraint
+where
+  contype = 'n' and
+  cast(cast(conrelid as REGCLASS) as TEXT)
+  in (
+    'inh_nn1', 'inh_nn2', 'inh_nn3'
+  )
+order by 2,
+  1;
+
+drop TABLE "inh_nn1", "inh_nn2", "inh_nn3";
+
+create table inh_nn1 (
+  f1 INT
+  check (f1 > 5)
+  primary key
+  references inh_nn1,
+  f2 INT not null
+);
+
+create table inh_nn2 ()
+inherits (inh_nn1);
+
+drop TABLE "inh_nn1", "inh_nn2";
+
+create role regress_alice;
+
+create role regress_bob;
+
+grant all on schema public to regress_alice, regress_bob;
+
+grant REGRESS_ALICE to regress_bob;
+
+set session authorization regress_alice;
+
+create table inh_parent (a INT not null);
+
+set session authorization regress_bob;
+
+create table inh_child ()
+inherits (inh_parent);
+
+set session authorization regress_alice;
+
+alter table inh_parent
+  alter column a drop not null;
+
+set session authorization regress_bob;
+
+alter table inh_parent
+  alter column a drop not null;
+
+reset session_authorization;
+
+drop TABLE "inh_parent", "inh_child";
+
+revoke all on schema public from regress_alice, regress_bob;
+
+drop role regress_alice, regress_bob;
+
+create table inh_perm_parent (a1 INT);
+
+create temporary table inh_temp_parent (a1 INT);
+
+create temporary table inh_temp_child ()
+inherits (inh_perm_parent);
+
+create table inh_perm_child ()
+inherits (inh_temp_parent);
+
+create temporary table inh_temp_child_2 ()
+inherits (inh_temp_parent);
+
+insert into inh_perm_parent values (1);
+
+insert into inh_temp_parent values (2);
+
+insert into inh_temp_child values (3);
+
+insert into inh_temp_child_2 values (4);
+
+select cast(tableoid as REGCLASS), a1 from inh_perm_parent;
+
+select cast(tableoid as REGCLASS), a1 from inh_temp_parent;
+
+drop TABLE "inh_perm_parent" cascade;
+
+drop TABLE "inh_temp_parent" cascade;
+
+create table list_parted (a VARCHAR)
+partition by LIST(a);
+
+create table part_ab_cd partition of list_parted for values in ('ab', 'cd');
+
+create table part_ef_gh partition of list_parted for values in ('ef', 'gh');
+
+create table part_null_xy partition of list_parted for values in (null, 'xy');
+
+select * from list_parted;
+
+select * from list_parted where a is null;
+
+select * from list_parted where a is not null;
+
+select * from list_parted where a in ('ab', 'cd', 'ef');
+
+select * from list_parted where a = 'ab' or a in (null, 'cd');
+
+select * from list_parted where a = 'ab';
+
+create table range_list_parted (
+  a INT,
+  b CHAR(2)
+)
+partition by range(a);
+
+create table part_1_10
+partition of range_list_parted
+for values from (1) to (10)
+partition by LIST(b);
+
+create table part_1_10_ab partition of part_1_10 for values in ('ab');
+
+create table part_1_10_cd partition of part_1_10 for values in ('cd');
+
+create table part_10_20
+partition of range_list_parted
+for values from (10) to (20)
+partition by LIST(b);
+
+create table part_10_20_ab partition of part_10_20 for values in ('ab');
+
+create table part_10_20_cd partition of part_10_20 for values in ('cd');
+
+create table part_21_30
+partition of range_list_parted
+for values from (21) to (30)
+partition by LIST(b);
+
+create table part_21_30_ab partition of part_21_30 for values in ('ab');
+
+create table part_21_30_cd partition of part_21_30 for values in ('cd');
+
+create table part_40_inf
+partition of range_list_parted
+for values from (40) to (maxvalue)
+partition by LIST(b);
+
+create table part_40_inf_ab partition of part_40_inf for values in ('ab');
+
+create table part_40_inf_cd partition of part_40_inf for values in ('cd');
+
+create table part_40_inf_null partition of part_40_inf for values in (null);
+
+select * from range_list_parted;
+
+select * from range_list_parted where a = 5;
+
+select * from range_list_parted where b = 'ab';
+
+select * from range_list_parted where a between 3 and 23 and b in ('ab');
+
+select * from range_list_parted where a is null;
+
+select * from range_list_parted where b is null;
+
+select * from range_list_parted where a is not null and a < 67;
+
+select * from range_list_parted where a >= 30;
+
+drop TABLE "list_parted";
+
+drop TABLE "range_list_parted";
+
+create table mcrparted (
+  a INT,
+  b INT,
+  c INT
+)
+partition by range(a, (abs(b)), c);
+
+create table mcrparted_def partition of mcrparted default;
+
+create table mcrparted0
+partition of mcrparted
+for values from (minvalue,
+minvalue,
+minvalue) to (1,
+1,
+1);
+
+create table mcrparted1 partition of mcrparted for values from (1, 1, 1) to (10, 5, 10);
+
+create table mcrparted2 partition of mcrparted for values from (10, 5, 10) to (10, 10, 10);
+
+create table mcrparted3 partition of mcrparted for values from (11, 1, 1) to (20, 10, 10);
+
+create table mcrparted4 partition of mcrparted for values from (20, 10, 10) to (20, 20, 20);
+
+create table mcrparted5
+partition of mcrparted
+for values from (20,
+20,
+20) to (maxvalue,
+maxvalue,
+maxvalue);
+
+select * from mcrparted where a = 0;
+
+select * from mcrparted where a = 10 and abs(b) < 5;
+
+select * from mcrparted where a = 10 and abs(b) = 5;
+
+select * from mcrparted where abs(b) = 5;
+
+select * from mcrparted where a > -1;
+
+select * from mcrparted where a = 20 and abs(b) = 10 and c > 10;
+
+select * from mcrparted where a = 20 and c > 20;
+
+create table parted_minmax (
+  a INT,
+  b VARCHAR(16)
+)
+partition by range(a);
+
+create table parted_minmax1 partition of parted_minmax for values from (1) to (10);
+
+create index "parted_minmax1i" on parted_minmax1 using btree (a, b);
+
+insert into parted_minmax values (1, '12345');
+
+select MIN(a), MAX(a) from parted_minmax where b = '12345';
+
+select MIN(a), MAX(a) from parted_minmax where b = '12345';
+
+drop TABLE "parted_minmax";
+
+create index "mcrparted_a_abs_c_idx" on mcrparted using btree (a, (abs(b)), c);
+
+select * from mcrparted order by a, abs(b), c;
+
+drop TABLE "mcrparted_def";
+
+select * from mcrparted order by a, abs(b), c;
+
+select * from mcrparted order by a desc, abs(b) desc, c desc;
+
+drop TABLE "mcrparted5";
+
+create table mcrparted5
+partition of mcrparted
+for values from (20,
+20,
+20) to (maxvalue,
+maxvalue,
+maxvalue)
+partition by LIST(a);
+
+create table mcrparted5a partition of mcrparted5 for values in (20);
+
+create table mcrparted5_def partition of mcrparted5 default;
+
+select * from mcrparted order by a, abs(b), c;
+
+drop TABLE "mcrparted5_def";
+
+select a, abs(b) from mcrparted order by a, abs(b), c;
+
+select * from mcrparted where a < 20 order by a, abs(b), c;
+
+set enable_bitmapscan = off;
+
+set enable_sort = off;
+
+create table mclparted (a INT)
+partition by LIST(a);
+
+create table mclparted1 partition of mclparted for values in (1);
+
+create table mclparted2 partition of mclparted for values in (2);
+
+create index on mclparted using btree (a);
+
+select * from mclparted order by a;
+
+create table mclparted3_5 partition of mclparted for values in (3, 5);
+
+create table mclparted4 partition of mclparted for values in (4);
+
+select * from mclparted order by a;
+
+select * from mclparted where a in (3, 4, 5) order by a;
+
+create table mclparted_null partition of mclparted for values in (null);
+
+create table mclparted_def partition of mclparted default;
+
+select * from mclparted where a in (1, 2, 4) order by a;
+
+select * from mclparted where a in (1, 2, 4) or a is null order by a;
+
+drop TABLE "mclparted_null";
+
+create table mclparted_0_null partition of mclparted for values in (0, null);
+
+select * from mclparted where a in (1, 2, 4) or a is null order by a;
+
+select * from mclparted where a in (0, 1, 2, 4) order by a;
+
+select * from mclparted where a in (1, 2, 4) order by a;
+
+select * from mclparted where a in (1, 2, 4, 100) order by a;
+
+drop TABLE "mclparted";
+
+reset enable_sort;
+
+reset enable_bitmapscan;
+
+drop INDEX "mcrparted_a_abs_c_idx";
+
+create index on mcrparted1 using btree (a, (abs(b)), c);
+
+create index on mcrparted2 using btree (a, (abs(b)), c);
+
+create index on mcrparted3 using btree (a, (abs(b)), c);
+
+create index on mcrparted4 using btree (a, (abs(b)), c);
+
+select * from mcrparted where a < 20 order by a, abs(b), c limit 1;
+
+set enable_bitmapscan = 0;
+
+select * from mcrparted where a = 10 order by a, abs(b), c;
+
+reset enable_bitmapscan;
+
+drop TABLE "mcrparted";
+
+create table bool_lp (b BOOLEAN)
+partition by LIST(b);
+
+create table bool_lp_true partition of bool_lp for values in (true);
+
+create table bool_lp_false partition of bool_lp for values in (false);
+
+create index on bool_lp using btree (b);
+
+select * from bool_lp order by b;
+
+drop TABLE "bool_lp";
+
+create table bool_rp (
+  b BOOLEAN,
+  a INT
+)
+partition by range(b, a);
+
+create table bool_rp_false_1k partition of bool_rp for values from (false, 0) to (false, 1000);
+
+create table bool_rp_true_1k partition of bool_rp for values from (true, 0) to (true, 1000);
+
+create table bool_rp_false_2k partition of bool_rp for values from (false, 1000) to (false, 2000);
+
+create table bool_rp_true_2k partition of bool_rp for values from (true, 1000) to (true, 2000);
+
+create index on bool_rp using btree (b, a);
+
+select * from bool_rp where b = true order by b, a;
+
+select * from bool_rp where b = false order by b, a;
+
+select * from bool_rp where b = true order by a;
+
+select * from bool_rp where b = false order by a;
+
+drop TABLE "bool_rp";
+
+create table range_parted (
+  a INT,
+  b INT,
+  c INT
+)
+partition by range(a, b);
+
+create table range_parted1 partition of range_parted for values from (0, 0) to (10, 10);
+
+create table range_parted2 partition of range_parted for values from (10, 10) to (20, 20);
+
+create index on range_parted using btree (a, b, c);
+
+select * from range_parted order by a, b, c;
+
+select * from range_parted order by a desc, b desc, c desc;
+
+drop TABLE "range_parted";
+
+create table permtest_parent (
+  a INT,
+  b TEXT,
+  c TEXT
+)
+partition by LIST(a);
+
+create table permtest_child (
+  b TEXT,
+  c TEXT,
+  a INT
+)
+partition by LIST(b);
+
+create table permtest_grandchild (
+  c TEXT,
+  b TEXT,
+  a INT
+);
+
+alter table permtest_child
+  ATTACH partition
+  permtest_grandchild for values in ('a');
+
+alter table permtest_parent
+  ATTACH partition
+  permtest_child for values in (1);
+
+create index on permtest_parent using btree ((left(c, 3)));
+
+insert into permtest_parent
+select
+  1,
+  'a',
+  left(fipshash(cast(i as TEXT)), 5)
+from
+  generate_series(0, 100) as i;
+
+analyze permtest_parent;
+
+create role regress_no_child_access;
+
+revoke all on table permtest_grandchild from regress_no_child_access;
+
+grant SELECT on table permtest_parent to regress_no_child_access;
+
+set session authorization regress_no_child_access;
+
+select
+  *
+from
+  permtest_parent as p1
+  inner join
+    permtest_parent as p2
+  on p1.a = p2.a and p1.c ~ 'a1$';
+
+select
+  *
+from
+  permtest_parent as p1
+  inner join
+    permtest_parent as p2
+  on p1.a = p2.a and left(p1.c, 3) ~ 'a1$';
+
+reset session_authorization;
+
+revoke all on table permtest_parent from regress_no_child_access;
+
+grant SELECT (a, c) on table permtest_parent to regress_no_child_access;
+
+set session authorization regress_no_child_access;
+
+select
+  p2.a,
+  p1.c
+from
+  permtest_parent as p1
+  inner join
+    permtest_parent as p2
+  on p1.a = p2.a and p1.c ~ 'a1$';
+
+select
+  p2.a,
+  p1.c
+from
+  permtest_parent as p1
+  inner join
+    permtest_parent as p2
+  on p1.a = p2.a and left(p1.c, 3) ~ 'a1$';
+
+reset session_authorization;
+
+revoke all on table permtest_parent from regress_no_child_access;
+
+drop role regress_no_child_access;
+
+drop TABLE "permtest_parent";
+
+create table errtst_parent (
+  partid INT not null,
+  shdata INT not null,
+  data INT not null default 0,
+  constraint "shdata_small" check (shdata < 3)
+)
+partition by range(partid);
+
+create table errtst_child_fastdef (
+  partid INT not null,
+  shdata INT not null,
+  constraint "shdata_small" check (shdata < 3)
+);
+
+create table errtst_child_plaindef (
+  partid INT not null,
+  shdata INT not null,
+  data INT not null default 0,
+  constraint "shdata_small" check (shdata < 3),
+  check (data < 10)
+);
+
+create table errtst_child_reorder (
+  data INT not null default 0,
+  shdata INT not null,
+  partid INT not null,
+  constraint "shdata_small" check (shdata < 3),
+  check (data < 10)
+);
+
+alter table errtst_child_fastdef
+  add column data INT not null default 0;
+
+alter table errtst_child_fastdef
+  add constraint "errtest_child_fastdef_data_check" check (data < 10);
+
+alter table errtst_parent
+  ATTACH partition
+  errtst_child_fastdef for values from (0) to (10);
+
+alter table errtst_parent
+  ATTACH partition
+  errtst_child_plaindef for values from (10) to (20);
+
+alter table errtst_parent
+  ATTACH partition
+  errtst_child_reorder for values from (20) to (30);
+
+insert into errtst_parent (partid, shdata, data) values ('0', '1', '5');
+
+insert into errtst_parent (partid, shdata, data) values ('10', '1', '5');
+
+insert into errtst_parent (partid, shdata, data) values ('20', '1', '5');
+
+insert into errtst_parent (partid, shdata, data) values ('0', '1', '10');
+
+insert into errtst_parent (partid, shdata, data) values ('10', '1', '10');
+
+insert into errtst_parent (partid, shdata, data) values ('20', '1', '10');
+
+insert into errtst_parent (partid, shdata, data) values ('0', '1', null);
+
+insert into errtst_parent (partid, shdata, data) values ('10', '1', null);
+
+insert into errtst_parent (partid, shdata, data) values ('20', '1', null);
+
+insert into errtst_parent (partid, shdata, data) values ('0', '5', '5');
+
+insert into errtst_parent (partid, shdata, data) values ('10', '5', '5');
+
+insert into errtst_parent (partid, shdata, data) values ('20', '5', '5');
+
+begin;
+
+update errtst_parent set data = data + 1 where partid = 0;
+
+update errtst_parent set data = data + 1 where partid = 10;
+
+update errtst_parent set data = data + 1 where partid = 20;
+
+rollback;
+
+update errtst_parent set data = data + 10 where partid = 0;
+
+update errtst_parent set data = data + 10 where partid = 10;
+
+update errtst_parent set data = data + 10 where partid = 20;
+
+begin;
+
+update errtst_child_fastdef set partid = 1 where partid = 0;
+
+update errtst_child_plaindef set partid = 11 where partid = 10;
+
+update errtst_child_reorder set partid = 21 where partid = 20;
+
+rollback;
+
+update errtst_child_fastdef set partid = partid + 10 where partid = 0;
+
+update errtst_child_plaindef set partid = partid + 10 where partid = 10;
+
+update errtst_child_reorder set partid = partid + 10 where partid = 20;
+
+begin;
+
+update errtst_parent set partid = 10, data = data + 1 where partid = 0;
+
+update errtst_parent set partid = 20, data = data + 1 where partid = 10;
+
+update errtst_parent set partid = 0, data = data + 1 where partid = 20;
+
+rollback;
+
+update errtst_parent set partid = 10, data = data + 10 where partid = 0;
+
+update errtst_parent set partid = 20, data = data + 10 where partid = 10;
+
+update errtst_parent set partid = 0, data = data + 10 where partid = 20;
+
+update errtst_parent set partid = 30, data = data + 10 where partid = 20;
+
+drop TABLE "errtst_parent";
+
+create table tuplesest_parted (
+  a INT,
+  b INT,
+  c DOUBLE PRECISION
+)
+partition by range(a);
+
+create table tuplesest_parted1 partition of tuplesest_parted for values from (0) to (100);
+
+create table tuplesest_parted2 partition of tuplesest_parted for values from (100) to (200);
+
+create table tuplesest_tab (
+  a INT,
+  b INT
+);
+
+insert into tuplesest_parted select i % 200, i % 300, i % 400 from generate_series(1, 1000) as i;
+
+insert into tuplesest_tab select i, i from generate_series(1, 100) as i;
+
+analyze tuplesest_parted;
+
+analyze tuplesest_tab;
+
+select
+  *
+from
+  tuplesest_tab
+  inner join
+    (
+      select
+        b
+      from
+        tuplesest_parted
+      where
+        c < 100
+      group by b
+    )
+    as sub
+  on tuplesest_tab.a = sub.b;
+
+drop TABLE "tuplesest_parted";
+
+drop TABLE "tuplesest_tab";

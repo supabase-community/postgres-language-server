@@ -1,0 +1,745 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/collate.linux.utf8.sql
+snapshot_kind: text
+---
+select
+  getdatabaseencoding() <> 'UTF8' or
+  (
+    select
+      COUNT(*)
+    from
+      pg_collation
+    where
+      collname
+      in (
+        'de_DE', 'en_US', 'sv_SE', 'tr_TR'
+      ) and
+      collencoding =
+      pg_char_to_encoding('UTF8')
+  ) <>
+  4 or
+  version() !~ 'linux-gnu'
+  as skip_test;
+
+set client_encoding to utf8;
+
+create schema "collate_tests";
+
+set search_path to collate_tests;
+
+create table collate_test1 (
+  a INT,
+  b TEXT collate "en_US" not null
+);
+
+create table collate_test_fail (
+  a INT,
+  b TEXT collate "ja_JP.eucjp"
+);
+
+create table collate_test_fail (
+  a INT,
+  b TEXT collate "foo"
+);
+
+create table collate_test_fail (
+  a INT collate "en_US",
+  b TEXT
+);
+
+create table collate_test_like (like collate_test1);
+
+create table collate_test2 (
+  a INT,
+  b TEXT collate "sv_SE"
+);
+
+create table collate_test3 (
+  a INT,
+  b TEXT collate "C"
+);
+
+insert into collate_test1
+values
+  (1, 'abc'),
+  (2, 'Ã¤bc'),
+  (3, 'bbc'),
+  (4, 'ABC');
+
+insert into collate_test2 select * from collate_test1;
+
+insert into collate_test3 select * from collate_test1;
+
+select * from collate_test1 where b >= 'bbc';
+
+select * from collate_test2 where b >= 'bbc';
+
+select * from collate_test3 where b >= 'bbc';
+
+select * from collate_test3 where b >= 'BBC';
+
+select * from collate_test1 where b collate "C" >= 'bbc';
+
+select * from collate_test1 where b >= 'bbc' collate "C";
+
+select * from collate_test1 where b collate "C" >= 'bbc' collate "C";
+
+select * from collate_test1 where b collate "C" >= 'bbc' collate "en_US";
+
+create domain testdomain_sv as TEXT collate "sv_SE";
+
+create domain testdomain_i as INT collate "sv_SE";
+
+create table collate_test4 (
+  a INT,
+  b testdomain_sv
+);
+
+insert into collate_test4 select * from collate_test1;
+
+select a, b from collate_test4 order by b;
+
+create table collate_test5 (
+  a INT,
+  b testdomain_sv collate "en_US"
+);
+
+insert into collate_test5 select * from collate_test1;
+
+select a, b from collate_test5 order by b;
+
+select a, b from collate_test1 order by b;
+
+select a, b from collate_test2 order by b;
+
+select a, b from collate_test3 order by b;
+
+select a, b from collate_test1 order by b collate "C";
+
+select * from collate_test1 order by b;
+
+select * from collate_test2 order by b;
+
+select * from collate_test3 order by b;
+
+select 'bbc' collate "en_US" > 'Ã¤bc' collate "en_US" as "true";
+
+select 'bbc' collate "sv_SE" > 'Ã¤bc' collate "sv_SE" as "false";
+
+create table collate_test10 (
+  a INT,
+  x TEXT collate "en_US",
+  y TEXT collate "tr_TR"
+);
+
+insert into collate_test10 values (1, 'hij', 'hij'), (2, 'HIJ', 'HIJ');
+
+select
+  a,
+  lower(x),
+  lower(y),
+  upper(x),
+  upper(y),
+  initcap(x),
+  initcap(y)
+from
+  collate_test10;
+
+select a, lower(x collate "C"), lower(y collate "C") from collate_test10;
+
+select a, x, y from collate_test10 order by lower(y), a;
+
+select * from collate_test1 where b like 'abc';
+
+select * from collate_test1 where b like 'abc%';
+
+select * from collate_test1 where b like '%bc%';
+
+select * from collate_test1 where b ilike 'abc';
+
+select * from collate_test1 where b ilike 'abc%';
+
+select * from collate_test1 where b ilike '%bc%';
+
+select 'TÃ¼rkiye' collate "en_US" ilike '%KI%' as "true";
+
+select 'TÃ¼rkiye' collate "tr_TR" ilike '%KI%' as "false";
+
+select 'bÄ±t' ilike 'BIT' collate "en_US" as "false";
+
+select 'bÄ±t' ilike 'BIT' collate "tr_TR" as "true";
+
+select relname from pg_class where relname ilike 'abc%';
+
+select * from collate_test1 where b ~ '^abc$';
+
+select * from collate_test1 where b ~ '^abc';
+
+select * from collate_test1 where b ~ 'bc';
+
+select * from collate_test1 where b ~* '^abc$';
+
+select * from collate_test1 where b ~* '^abc';
+
+select * from collate_test1 where b ~* 'bc';
+
+create table collate_test6 (
+  a INT,
+  b TEXT collate "en_US"
+);
+
+insert into collate_test6
+values
+  (1, 'abc'),
+  (2, 'ABC'),
+  (3, '123'),
+  (4, 'ab1'),
+  (5, 'a1!'),
+  (6, 'a c'),
+  (7, '!.;'),
+  (8, '   '),
+  (9, 'Ã¤bÃ§'),
+  (10, 'ÃBÃ');
+
+select
+  b,
+  b ~ '^[[:alpha:]]+$' as is_alpha,
+  b ~ '^[[:upper:]]+$' as is_upper,
+  b ~ '^[[:lower:]]+$' as is_lower,
+  b ~ '^[[:digit:]]+$' as is_digit,
+  b ~ '^[[:alnum:]]+$' as is_alnum,
+  b ~ '^[[:graph:]]+$' as is_graph,
+  b ~ '^[[:print:]]+$' as is_print,
+  b ~ '^[[:punct:]]+$' as is_punct,
+  b ~ '^[[:space:]]+$' as is_space
+from
+  collate_test6;
+
+select 'TÃ¼rkiye' collate "en_US" ~* 'KI' as "true";
+
+select 'TÃ¼rkiye' collate "tr_TR" ~* 'KI' as "false";
+
+select 'bÄ±t' ~* 'BIT' collate "en_US" as "false";
+
+select 'bÄ±t' ~* 'BIT' collate "tr_TR" as "true";
+
+select relname from pg_class where relname ~* '^abc';
+
+set lc_time = tr_TR;
+
+select to_char(cast('2010-02-01' as DATE), 'DD TMMON YYYY');
+
+select to_char(cast('2010-02-01' as DATE), 'DD TMMON YYYY' collate "tr_TR");
+
+select to_char(cast('2010-04-01' as DATE), 'DD TMMON YYYY');
+
+select to_char(cast('2010-04-01' as DATE), 'DD TMMON YYYY' collate "tr_TR");
+
+select to_date('01 ÅUB 2010', 'DD TMMON YYYY');
+
+select to_date('01 Åub 2010', 'DD TMMON YYYY');
+
+select to_date('1234567890ab 2010', 'TMMONTH YYYY');
+
+create view collview1
+as select
+  *
+from
+  collate_test1
+where
+  b collate "C" >= 'bbc';
+
+create view collview2
+as select
+  a,
+  b
+from
+  collate_test1
+order by b collate "C";
+
+create view collview3
+as select
+  a,
+  lower((x || x) collate "C")
+from
+  collate_test10;
+
+select
+  table_name,
+  view_definition
+from
+  information_schema.views
+where
+  table_name like 'collview%'
+order by 1;
+
+select a, coalesce(b, 'foo') from collate_test1 order by 2;
+
+select a, coalesce(b, 'foo') from collate_test2 order by 2;
+
+select a, coalesce(b, 'foo') from collate_test3 order by 2;
+
+select
+  a,
+  lower(coalesce(x, 'foo')),
+  lower(coalesce(y, 'foo'))
+from
+  collate_test10;
+
+select a, b, greatest(b, 'CCC') from collate_test1 order by 3;
+
+select a, b, greatest(b, 'CCC') from collate_test2 order by 3;
+
+select a, b, greatest(b, 'CCC') from collate_test3 order by 3;
+
+select
+  a,
+  x,
+  y,
+  lower(greatest(x, 'foo')),
+  lower(greatest(y, 'foo'))
+from
+  collate_test10;
+
+select a, nullif(b, 'abc') from collate_test1 order by 2;
+
+select a, nullif(b, 'abc') from collate_test2 order by 2;
+
+select a, nullif(b, 'abc') from collate_test3 order by 2;
+
+select a, lower(nullif(x, 'foo')), lower(nullif(y, 'foo')) from collate_test10;
+
+select
+  a,
+  case b when 'abc' then 'abcd' else b end
+from
+  collate_test1
+order by 2;
+
+select
+  a,
+  case b when 'abc' then 'abcd' else b end
+from
+  collate_test2
+order by 2;
+
+select
+  a,
+  case b when 'abc' then 'abcd' else b end
+from
+  collate_test3
+order by 2;
+
+create domain testdomain as TEXT;
+
+select a, cast(b as testdomain) from collate_test1 order by 2;
+
+select a, cast(b as testdomain) from collate_test2 order by 2;
+
+select a, cast(b as testdomain) from collate_test3 order by 2;
+
+select a, cast(b as testdomain_sv) from collate_test3 order by 2;
+
+select
+  a,
+  lower(cast(x as testdomain)),
+  lower(cast(y as testdomain))
+from
+  collate_test10;
+
+select MIN(b), MAX(b) from collate_test1;
+
+select MIN(b), MAX(b) from collate_test2;
+
+select MIN(b), MAX(b) from collate_test3;
+
+select array_agg(b order by b) from collate_test1;
+
+select array_agg(b order by b) from collate_test2;
+
+select array_agg(b order by b) from collate_test3;
+
+select a, b from collate_test1
+union all
+select a, b from collate_test1
+order by 2;
+
+select a, b from collate_test2 union select a, b from collate_test2 order by 2;
+
+select a, b from collate_test3 where a > 1 order by 2;
+
+select a, b from collate_test3
+except
+select
+  a,
+  b
+from
+  collate_test3
+where
+  a < 2
+order by 2;
+
+select a, b from collate_test1
+union all
+select a, b from collate_test3
+order by 2;
+
+select a, b from collate_test1 union all select a, b from collate_test3;
+
+select a, b from collate_test1 union select a, b from collate_test3 order by 2;
+
+select
+  a,
+  b collate "C"
+from
+  collate_test1
+union
+select a, b from collate_test3
+order by 2;
+
+select a, b from collate_test3 order by 2;
+
+select a, b from collate_test1 except select a, b from collate_test3 order by 2;
+
+create table test_u
+as
+  select a, b from collate_test1
+  union all
+  select a, b from collate_test3;
+
+select x < y from collate_test10;
+
+select x || y from collate_test10;
+
+select x, y from collate_test10 order by x || y;
+
+with recursive
+foo (x)
+as (
+  select
+    x
+  from
+    (
+      values ('a' collate "en_US"), ('b')
+    )
+    as t (x)
+  union all
+  select
+    (x || 'c') collate "de_DE"
+  from
+    foo
+  where
+    length(x) < 10
+)
+select
+  *
+from
+  foo;
+
+select a, cast(b as VARCHAR) from collate_test1 order by 2;
+
+select a, cast(b as VARCHAR) from collate_test2 order by 2;
+
+select a, cast(b as VARCHAR) from collate_test3 order by 2;
+
+create function mylt(TEXT, TEXT)
+returns BOOLEAN
+language "sql"
+as ' select $1 < $2 ';
+
+create function mylt_noninline(TEXT, TEXT)
+returns BOOLEAN
+language "sql"
+as ' select $1 < $2 limit 1 ';
+
+create function mylt_plpgsql(TEXT, TEXT)
+returns BOOLEAN
+language "plpgsql"
+as ' begin return $1 < $2; end ';
+
+select
+  a.b as a,
+  b.b as b,
+  a.b < b.b as lt,
+  mylt(a.b, b.b),
+  mylt_noninline(a.b, b.b),
+  mylt_plpgsql(a.b, b.b)
+from
+  collate_test1 as a,
+  collate_test1 as b
+order by a.b,
+  b.b;
+
+select
+  a.b as a,
+  b.b as b,
+  a.b < b.b collate "C" as lt,
+  mylt(a.b, b.b collate "C"),
+  mylt_noninline(a.b, b.b collate "C"),
+  mylt_plpgsql(a.b, b.b collate "C")
+from
+  collate_test1 as a,
+  collate_test1 as b
+order by a.b,
+  b.b;
+
+create function mylt2(x TEXT, y TEXT)
+returns BOOLEAN
+language "plpgsql"
+as '
+declare
+  xx text := x;
+  yy text := y;
+begin
+  return xx < yy;
+end
+';
+
+select mylt2('a', 'B' collate "en_US") as t, mylt2('a', 'B' collate "C") as f;
+
+create or replace function mylt2(x TEXT, y TEXT)
+returns BOOLEAN
+language "plpgsql"
+as '
+declare
+  xx text COLLATE "POSIX" := x;
+  yy text := y;
+begin
+  return xx < yy;
+end
+';
+
+select mylt2('a', 'B') as f;
+
+select mylt2('a', 'B' collate "C") as fail;
+
+select mylt2('a', 'B' collate "POSIX") as f;
+
+select
+  *
+from
+  unnest(
+    (
+      select
+        array_agg(b order by b)
+      from
+        collate_test1
+    )
+  )
+order by 1;
+
+select
+  *
+from
+  unnest(
+    (
+      select
+        array_agg(b order by b)
+      from
+        collate_test2
+    )
+  )
+order by 1;
+
+select
+  *
+from
+  unnest(
+    (
+      select
+        array_agg(b order by b)
+      from
+        collate_test3
+    )
+  )
+order by 1;
+
+create function dup(ANYELEMENT)
+returns ANYELEMENT
+as 'select $1'
+language "sql";
+
+select a, dup(b) from collate_test1 order by 2;
+
+select a, dup(b) from collate_test2 order by 2;
+
+select a, dup(b) from collate_test3 order by 2;
+
+create index "collate_test1_idx1" on collate_test1 using btree (b);
+
+create index "collate_test1_idx2" on collate_test1 using btree (b collate "C");
+
+create index "collate_test1_idx3"
+on collate_test1
+using btree
+(
+  (b collate "C")
+);
+
+create index "collate_test1_idx4"
+on collate_test1
+using btree
+(
+  ((b || 'foo') collate "POSIX")
+);
+
+create index "collate_test1_idx5" on collate_test1 using btree (a collate "C");
+
+create index "collate_test1_idx6"
+on collate_test1
+using btree
+(
+  (a collate "C")
+);
+
+select
+  relname,
+  pg_get_indexdef(oid)
+from
+  pg_class
+where
+  relname like 'collate_test%_idx%'
+order by 1;
+
+create role regress_test_role;
+
+create schema "test_schema";
+
+do
+$$
+BEGIN
+  EXECUTE 'CREATE COLLATION test0 (locale = ' ||
+          quote_literal((SELECT datcollate FROM pg_database WHERE datname = current_database())) || ');';
+END
+$$;
+
+create collation test0 from "C";
+
+create collation if not exists test0 from "C";
+
+create collation if not exists test0 (locale = 'foo');
+
+do
+$$
+BEGIN
+  EXECUTE 'CREATE COLLATION test1 (lc_collate = ' ||
+          quote_literal((SELECT datcollate FROM pg_database WHERE datname = current_database())) ||
+          ', lc_ctype = ' ||
+          quote_literal((SELECT datctype FROM pg_database WHERE datname = current_database())) || ');';
+END
+$$;
+
+create collation test3 (lc_collate = 'en_US.utf8');
+
+create collation testx (locale = 'nonsense');
+
+create collation test4 from "nonsense";
+
+create collation test5 from "test0";
+
+select collname from pg_collation where collname like 'test%' order by 1;
+
+alter collation test1 rename to test11;
+
+alter collation test0 rename to test11;
+
+alter collation test1 rename to test22;
+
+alter collation test11 owner to regress_test_role;
+
+alter collation test11 owner to nonsense;
+
+alter COLLATION test11 set SCHEMA test_schema;
+
+comment on collation test0 is 'US English';
+
+select
+  collname,
+  nspname,
+  obj_description(
+    pg_collation.oid,
+    'pg_collation'
+  )
+from
+  pg_collation
+  inner join
+    pg_namespace
+  on collnamespace = pg_namespace.oid
+where
+  collname like 'test%'
+order by 1;
+
+drop COLLATION "test0", "test_schema"."test11", "test5";
+
+drop COLLATION "test0";
+
+drop COLLATION if exists "test0";
+
+select collname from pg_collation where collname like 'test%';
+
+drop SCHEMA test_schema;
+
+drop role regress_test_role;
+
+alter COLLATION "en_US" REFRESH VERSION;
+
+select current_database() as datname;
+
+create collation test0 from "C";
+
+create table collate_dep_test1 (
+  a INT,
+  b TEXT collate "test0"
+);
+
+create domain collate_dep_dom1 as TEXT collate "test0";
+
+create type collate_dep_test2 as (x INT, y TEXT collate "test0");
+
+create view collate_dep_test3
+as select
+  cast('foo' as TEXT) collate "test0"
+  as foo;
+
+create table collate_dep_test4t (
+  a INT,
+  b TEXT
+);
+
+create index "collate_dep_test4i"
+on collate_dep_test4t
+using btree
+(
+  b collate test0
+);
+
+drop COLLATION "test0";
+
+drop COLLATION "test0" cascade;
+
+drop TABLE "collate_dep_test1", "collate_dep_test4t";
+
+drop TYPE collate_dep_test2;
+
+create type textrange_c as RANGE (subtype = TEXT, collation = "C");
+
+create type textrange_en_us as RANGE (subtype = TEXT, collation = "en_US");
+
+select textrange_c('A', 'Z') @> cast('b' as TEXT);
+
+select textrange_en_us('A', 'Z') @> cast('b' as TEXT);
+
+drop TYPE textrange_c;
+
+drop TYPE textrange_en_us;
+
+select * from collate_test2 order by b collate "ucs_basic";
+
+create collation ctest_det (locale = 'en_US.utf8', deterministic = 'true');
+
+create collation ctest_nondet (locale = 'en_US.utf8', deterministic = 'false');
+
+set client_min_messages = warning;
+
+drop SCHEMA collate_tests cascade;

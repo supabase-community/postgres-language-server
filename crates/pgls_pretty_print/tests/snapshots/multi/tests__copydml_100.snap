@@ -1,0 +1,191 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/copydml.sql
+snapshot_kind: text
+---
+create table copydml_test (
+  id serial,
+  t TEXT
+);
+
+insert into copydml_test (t) values ('a');
+
+insert into copydml_test (t) values ('b');
+
+insert into copydml_test (t) values ('c');
+
+insert into copydml_test (t) values ('d');
+
+insert into copydml_test (t) values ('e');
+
+copy (insert into copydml_test (t) values ('f') returning id) to stdout;
+
+copy (update copydml_test set t = 'g' where t = 'f' returning id) to stdout;
+
+copy (delete from copydml_test where t = 'g' returning id) to stdout;
+
+copy (insert into copydml_test default values) to stdout;
+
+copy (update copydml_test set t = 'g') to stdout;
+
+copy (delete from copydml_test) to stdout;
+
+create rule qqq
+as on insert to copydml_test
+do instead
+  nothing;
+
+copy (insert into copydml_test default values) to stdout;
+
+drop RULE "qqq" on "copydml_test";
+
+create rule qqq
+as on insert to copydml_test
+do
+  delete from copydml_test;;
+
+copy (insert into copydml_test default values) to stdout;
+
+drop RULE "qqq" on "copydml_test";
+
+create rule qqq
+as on insert to copydml_test
+do instead
+  (delete from copydml_test;;
+  delete from copydml_test;);
+
+copy (insert into copydml_test default values) to stdout;
+
+drop RULE "qqq" on "copydml_test";
+
+create rule qqq
+as on insert to copydml_test where
+  new.t <> 'f'
+do instead
+  delete from copydml_test;;
+
+copy (insert into copydml_test default values) to stdout;
+
+drop RULE "qqq" on "copydml_test";
+
+create rule qqq
+as on update to copydml_test
+do instead
+  nothing;
+
+copy (update copydml_test set t = 'f') to stdout;
+
+drop RULE "qqq" on "copydml_test";
+
+create rule qqq
+as on update to copydml_test
+do
+  delete from copydml_test;;
+
+copy (update copydml_test set t = 'f') to stdout;
+
+drop RULE "qqq" on "copydml_test";
+
+create rule qqq
+as on update to copydml_test
+do instead
+  (delete from copydml_test;;
+  delete from copydml_test;);
+
+copy (update copydml_test set t = 'f') to stdout;
+
+drop RULE "qqq" on "copydml_test";
+
+create rule qqq
+as on update to copydml_test where
+  new.t <> 'f'
+do instead
+  delete from copydml_test;;
+
+copy (update copydml_test set t = 'f') to stdout;
+
+drop RULE "qqq" on "copydml_test";
+
+create rule qqq
+as on delete to copydml_test
+do instead
+  nothing;
+
+copy (delete from copydml_test) to stdout;
+
+drop RULE "qqq" on "copydml_test";
+
+create rule qqq
+as on delete to copydml_test
+do
+  insert into copydml_test default values;;
+
+copy (delete from copydml_test) to stdout;
+
+drop RULE "qqq" on "copydml_test";
+
+create rule qqq
+as on delete to copydml_test
+do instead
+  (insert into copydml_test default values;;
+  insert into copydml_test default values;);
+
+copy (delete from copydml_test) to stdout;
+
+drop RULE "qqq" on "copydml_test";
+
+create rule qqq
+as on delete to copydml_test where
+  old.t <> 'f'
+do instead
+  insert into copydml_test default values;;
+
+copy (delete from copydml_test) to stdout;
+
+drop RULE "qqq" on "copydml_test";
+
+create rule qqq
+as on insert to copydml_test
+do instead
+  notify "copydml_test";;
+
+copy (insert into copydml_test default values) to stdout;
+
+drop RULE "qqq" on "copydml_test";
+
+create function qqq_trig()
+returns trigger
+as '
+begin
+if tg_op in (''INSERT'', ''UPDATE'') then
+    raise notice ''% % %'', tg_when, tg_op, new.id;
+    return new;
+else
+    raise notice ''% % %'', tg_when, tg_op, old.id;
+    return old;
+end if;
+end
+'
+language "plpgsql";
+
+create TRIGGER qqqbef
+  before insert or delete or update
+  on copydml_test
+  for EACH ROW
+  EXECUTE FUNCTION qqq_trig();
+
+create TRIGGER qqqaf
+  after insert or delete or update
+  on copydml_test
+  for EACH ROW
+  EXECUTE FUNCTION qqq_trig();
+
+copy (insert into copydml_test (t) values ('f') returning id) to stdout;
+
+copy (update copydml_test set t = 'g' where t = 'f' returning id) to stdout;
+
+copy (delete from copydml_test where t = 'g' returning id) to stdout;
+
+drop TABLE "copydml_test";
+
+drop FUNCTION qqq_trig();

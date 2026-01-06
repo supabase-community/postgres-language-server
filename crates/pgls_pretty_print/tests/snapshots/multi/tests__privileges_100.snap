@@ -1,0 +1,3392 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/privileges.sql
+snapshot_kind: text
+---
+set client_min_messages = warning;
+
+drop role if exists regress_priv_group1;
+
+drop role if exists regress_priv_group2;
+
+drop role if exists regress_priv_user1;
+
+drop role if exists regress_priv_user2;
+
+drop role if exists regress_priv_user3;
+
+drop role if exists regress_priv_user4;
+
+drop role if exists regress_priv_user5;
+
+drop role if exists regress_priv_user6;
+
+drop role if exists regress_priv_user7;
+
+select lo_unlink(oid) from pg_largeobject_metadata where oid >= 1000 and oid < 3000 order by oid;
+
+reset client_min_messages;
+
+create user regress_priv_user1;
+
+create user regress_priv_user2;
+
+create user regress_priv_user3;
+
+create user regress_priv_user4;
+
+create user regress_priv_user5;
+
+create user regress_priv_user5;
+
+create user regress_priv_user6;
+
+create user regress_priv_user7;
+
+create user regress_priv_user8;
+
+create user regress_priv_user9;
+
+create user regress_priv_user10;
+
+create role regress_priv_role;
+
+grant REGRESS_PRIV_USER1 to regress_priv_user2 with ADMIN true;
+
+grant REGRESS_PRIV_USER1 to regress_priv_user3 with ADMIN true GRANTED by regress_priv_user2;
+
+grant REGRESS_PRIV_USER1 to regress_priv_user2 with ADMIN true GRANTED by regress_priv_user3;
+
+revoke ADMIN OPTION for REGRESS_PRIV_USER1 from regress_priv_user2 restrict;
+
+revoke REGRESS_PRIV_USER1 from regress_priv_user2 restrict;
+
+select
+  cast(member as regrole),
+  admin_option
+from
+  pg_auth_members
+where
+  roleid = cast('regress_priv_user1' as regrole);
+
+begin;
+
+revoke ADMIN OPTION for REGRESS_PRIV_USER1 from regress_priv_user2 cascade;
+
+select
+  cast(member as regrole),
+  admin_option
+from
+  pg_auth_members
+where
+  roleid = cast('regress_priv_user1' as regrole);
+
+rollback;
+
+revoke REGRESS_PRIV_USER1 from regress_priv_user2 cascade;
+
+select
+  cast(member as regrole),
+  admin_option
+from
+  pg_auth_members
+where
+  roleid = cast('regress_priv_user1' as regrole);
+
+grant REGRESS_PRIV_USER1 to regress_priv_user2 with ADMIN true;
+
+grant REGRESS_PRIV_USER2 to regress_priv_user3;
+
+set role to regress_priv_user3;
+
+grant REGRESS_PRIV_USER1 to regress_priv_user4;
+
+select
+  cast(grantor as regrole)
+from
+  pg_auth_members
+where
+  roleid = cast('regress_priv_user1' as regrole) and
+  member = cast('regress_priv_user4' as regrole);
+
+reset role;
+
+revoke REGRESS_PRIV_USER2 from regress_priv_user3 restrict;
+
+revoke REGRESS_PRIV_USER1 from regress_priv_user2 cascade;
+
+grant REGRESS_PRIV_USER1 to regress_priv_user2 with ADMIN true;
+
+grant REGRESS_PRIV_USER1 to regress_priv_user3 GRANTED by regress_priv_user2;
+
+drop role regress_priv_user2;
+
+reassign owned by regress_priv_user2 to regress_priv_user4;
+
+drop role regress_priv_user2;
+
+drop OWNED by regress_priv_user2;
+
+drop role regress_priv_user2;
+
+grant REGRESS_PRIV_USER1 to regress_priv_user3 with ADMIN true;
+
+grant REGRESS_PRIV_USER1 to regress_priv_user4 GRANTED by regress_priv_user3;
+
+drop role regress_priv_user3;
+
+drop role regress_priv_user4;
+
+drop role regress_priv_user3;
+
+grant REGRESS_PRIV_USER1 to regress_priv_user5 with ADMIN true;
+
+grant REGRESS_PRIV_USER1 to regress_priv_user6 GRANTED by regress_priv_user5;
+
+drop role regress_priv_user5;
+
+drop role regress_priv_user1, regress_priv_user5;
+
+create user regress_priv_user1;
+
+create user regress_priv_user2;
+
+create user regress_priv_user3;
+
+create user regress_priv_user4;
+
+create user regress_priv_user5;
+
+grant PG_READ_ALL_DATA to regress_priv_user6;
+
+grant PG_WRITE_ALL_DATA to regress_priv_user7;
+
+grant PG_READ_ALL_SETTINGS to regress_priv_user8 with ADMIN true;
+
+grant REGRESS_PRIV_USER9 to regress_priv_user8;
+
+set session authorization regress_priv_user8;
+
+grant PG_READ_ALL_SETTINGS to regress_priv_user9 with ADMIN true;
+
+set session authorization regress_priv_user9;
+
+grant PG_READ_ALL_SETTINGS to regress_priv_user10;
+
+set session authorization regress_priv_user8;
+
+revoke PG_READ_ALL_SETTINGS from regress_priv_user10 GRANTED by regress_priv_user9 restrict;
+
+revoke ADMIN OPTION for PG_READ_ALL_SETTINGS from regress_priv_user9 restrict;
+
+revoke PG_READ_ALL_SETTINGS from regress_priv_user9 restrict;
+
+reset session_authorization;
+
+revoke REGRESS_PRIV_USER9 from regress_priv_user8 restrict;
+
+revoke ADMIN OPTION for PG_READ_ALL_SETTINGS from regress_priv_user8 restrict;
+
+set session authorization regress_priv_user8;
+
+set role to pg_read_all_settings;
+
+reset role;
+
+reset session_authorization;
+
+revoke SET OPTION for PG_READ_ALL_SETTINGS from regress_priv_user8 restrict;
+
+grant PG_READ_ALL_STATS to regress_priv_user8 with SET false;
+
+set session authorization regress_priv_user8;
+
+set role to pg_read_all_settings;
+
+set role to pg_read_all_stats;
+
+reset role;
+
+reset session_authorization;
+
+grant REGRESS_PRIV_USER9 to regress_priv_user8;
+
+set session authorization regress_priv_user8;
+
+set role to regress_priv_user9;
+
+set debug_parallel_query = 0;
+
+select session_user, current_role, current_user, current_setting('role') as role;
+
+set debug_parallel_query = 1;
+
+select session_user, current_role, current_user, current_setting('role') as role;
+
+begin;
+
+set session authorization regress_priv_user10;
+
+set debug_parallel_query = 0;
+
+select session_user, current_role, current_user, current_setting('role') as role;
+
+set debug_parallel_query = 1;
+
+select session_user, current_role, current_user, current_setting('role') as role;
+
+rollback;
+
+set debug_parallel_query = 0;
+
+select session_user, current_role, current_user, current_setting('role') as role;
+
+set debug_parallel_query = 1;
+
+select session_user, current_role, current_user, current_setting('role') as role;
+
+reset session_authorization;
+
+set debug_parallel_query = 0;
+
+select
+  session_user = current_role as c_r_ok,
+  session_user = current_user as c_u_ok,
+  current_setting('role') as role;
+
+set debug_parallel_query = 1;
+
+select
+  session_user = current_role as c_r_ok,
+  session_user = current_user as c_u_ok,
+  current_setting('role') as role;
+
+reset debug_parallel_query;
+
+revoke PG_READ_ALL_SETTINGS from regress_priv_user8 restrict;
+
+drop role regress_priv_user10;
+
+drop role regress_priv_user9;
+
+drop role regress_priv_user8;
+
+create group regress_priv_group1;
+
+create group regress_priv_group2 admin regress_priv_user1 role regress_priv_user2;
+
+alter GROUP regress_priv_group1 ADD USER regress_priv_user4;
+
+grant REGRESS_PRIV_GROUP2 to regress_priv_user2 GRANTED by regress_priv_user1;
+
+set session authorization regress_priv_user3;
+
+alter GROUP regress_priv_group2 ADD USER regress_priv_user2;
+
+alter GROUP regress_priv_group2 drop USER regress_priv_user2;
+
+set session authorization regress_priv_user1;
+
+alter GROUP regress_priv_group2 ADD USER regress_priv_user2;
+
+alter GROUP regress_priv_group2 ADD USER regress_priv_user2;
+
+alter GROUP regress_priv_group2 drop USER regress_priv_user2;
+
+alter role regress_priv_user2 password 'verysecret';
+
+reset session_authorization;
+
+alter GROUP regress_priv_group2 drop USER regress_priv_user2;
+
+revoke ADMIN OPTION for REGRESS_PRIV_GROUP2 from regress_priv_user1 restrict;
+
+grant REGRESS_PRIV_GROUP2 to regress_priv_user4 with ADMIN true;
+
+create function leak(INT, INT)
+returns BOOLEAN
+as 'int4lt'
+language "internal"
+immutable
+STRICT;
+
+alter function leak(INT, INT) owner to regress_priv_user1;
+
+grant REGRESS_PRIV_ROLE to regress_priv_user1 with ADMIN true GRANTED by regress_priv_role;
+
+grant REGRESS_PRIV_ROLE to regress_priv_user1 with ADMIN true GRANTED by current_role;
+
+revoke ADMIN OPTION for REGRESS_PRIV_ROLE from regress_priv_user1 GRANTED by foo restrict;
+
+revoke ADMIN OPTION for REGRESS_PRIV_ROLE
+from regress_priv_user1
+GRANTED by regress_priv_user2
+restrict;
+
+revoke ADMIN OPTION for REGRESS_PRIV_ROLE from regress_priv_user1 GRANTED by current_user restrict;
+
+revoke REGRESS_PRIV_ROLE from regress_priv_user1 GRANTED by current_role restrict;
+
+drop role regress_priv_role;
+
+set session authorization regress_priv_user1;
+
+select session_user, current_user;
+
+create table atest1 (
+  a INT,
+  b TEXT
+);
+
+select * from atest1;
+
+insert into atest1 values (1, 'one');
+
+delete from atest1;
+
+update atest1 set a = 1 where b = 'blech';
+
+truncate atest1;
+
+begin;
+
+lock table atest1 in ACCESS EXCLUSIVE mode;
+
+commit;
+
+revoke all on table atest1 from PUBLIC;
+
+select * from atest1;
+
+grant all on table atest1 to regress_priv_user2;
+
+grant SELECT on table atest1 to regress_priv_user3, regress_priv_user4;
+
+select * from atest1;
+
+create table atest2 (
+  col1 VARCHAR(10),
+  col2 BOOLEAN
+);
+
+select pg_get_acl(cast('pg_class' as REGCLASS), cast(cast('atest2' as REGCLASS) as OID), 0);
+
+grant SELECT on table atest2 to regress_priv_user2;
+
+grant UPDATE on table atest2 to regress_priv_user3;
+
+grant INSERT on table atest2 to regress_priv_user4 GRANTED by current_user;
+
+grant TRUNCATE on table atest2 to regress_priv_user5 GRANTED by current_role;
+
+select unnest(pg_get_acl(cast('pg_class' as REGCLASS), cast(cast('atest2' as REGCLASS) as OID), 0));
+
+select pg_get_acl(cast('pg_class' as REGCLASS), 0, 0);
+
+select pg_get_acl(0, 0, 0);
+
+grant TRUNCATE on table atest2 to regress_priv_user4 GRANTED by regress_priv_user5;
+
+set session authorization regress_priv_user2;
+
+select session_user, current_user;
+
+select * from atest1;
+
+select * from atest2;
+
+insert into atest1 values (2, 'two');
+
+insert into atest2 values ('foo', true);
+
+insert into atest1 select 1, b from atest1;
+
+update atest1 set a = 1 where a = 2;
+
+update atest2 set col2 = not col2;
+
+select * from atest1 for update;
+
+select * from atest2 for update;
+
+delete from atest2;
+
+truncate atest2;
+
+begin;
+
+lock table atest2 in ACCESS EXCLUSIVE mode;
+
+commit;
+
+select * from atest1 where b in (select col1 from atest2);
+
+select * from atest2 where col1 in (select b from atest1);
+
+set session authorization regress_priv_user6;
+
+select * from atest1;
+
+select * from atest2;
+
+insert into atest2 values ('foo', true);
+
+set session authorization regress_priv_user7;
+
+select * from atest1;
+
+select * from atest2;
+
+insert into atest2 values ('foo', true);
+
+update atest2 set col2 = true;
+
+delete from atest2;
+
+update pg_catalog.pg_class set relname = '123';
+
+delete from pg_catalog.pg_class;
+
+update pg_toast.pg_toast_1213 set chunk_id = 1;
+
+set session authorization regress_priv_user3;
+
+select session_user, current_user;
+
+select * from atest1;
+
+select * from atest2;
+
+insert into atest1 values (2, 'two');
+
+insert into atest2 values ('foo', true);
+
+insert into atest1 select 1, b from atest1;
+
+update atest1 set a = 1 where a = 2;
+
+update atest2 set col2 = null;
+
+update atest2 set col2 = not col2;
+
+update atest2 set col2 = true from atest1 where atest1.a = 5;
+
+select * from atest1 for update;
+
+select * from atest2 for update;
+
+delete from atest2;
+
+truncate atest2;
+
+begin;
+
+lock table atest2 in ACCESS EXCLUSIVE mode;
+
+commit;
+
+select * from atest1 where b in (select col1 from atest2);
+
+select * from atest2 where col1 in (select b from atest1);
+
+set session authorization regress_priv_user4;
+
+select * from atest1;
+
+set session authorization regress_priv_user1;
+
+create table atest12 as select x as a, 10001 - x as b from generate_series(1, 10000) as x;
+
+create index on atest12 using btree (a);
+
+create index on atest12 using btree ((abs(a)));
+
+alter table atest12
+  set (autovacuum_enabled = off);
+
+set default_statistics_target = 10000;
+
+vacuum (ANALYZE) atest12;
+
+reset default_statistics_target;
+
+create operator <<< (PROCEDURE = leak, LEFTARG = INT, RIGHTARG = INT, RESTRICT = scalarltsel);
+
+create view atest12v
+as select * from atest12 where b <<< 5;
+
+create view atest12sbv
+  with (security_barrier = 'true')
+as select * from atest12 where b <<< 5;
+
+select * from atest12v as x, atest12v as y where x.a = y.b;
+
+select * from atest12 as x, atest12 as y where x.a = y.b and abs(y.a) <<< 5;
+
+select * from atest12sbv as x, atest12sbv as y where x.a = y.b;
+
+set session authorization regress_priv_user2;
+
+create function leak2(INT, INT)
+returns BOOLEAN
+as 'begin raise notice ''leak % %'', $1, $2; return $1 > $2; end'
+language "plpgsql"
+immutable;
+
+create operator >>> (PROCEDURE = leak2, LEFTARG = INT, RIGHTARG = INT, RESTRICT = scalargtsel);
+
+select * from atest12 where a >>> 0;
+
+select * from atest12v where a >>> 0;
+
+select * from atest12sbv where a >>> 0;
+
+set session authorization regress_priv_user1;
+
+grant SELECT on table atest12v to PUBLIC;
+
+grant SELECT on table atest12sbv to PUBLIC;
+
+set session authorization regress_priv_user2;
+
+select * from atest12v as x, atest12v as y where x.a = y.b;
+
+select * from atest12sbv as x, atest12sbv as y where x.a = y.b;
+
+select * from atest12v as x, atest12v as y where x.a = y.b and abs(y.a) <<< 5;
+
+select * from atest12sbv as x, atest12sbv as y where x.a = y.b and abs(y.a) <<< 5;
+
+set session authorization regress_priv_user1;
+
+grant SELECT (a, b) on table atest12 to PUBLIC;
+
+set session authorization regress_priv_user2;
+
+select * from atest12v as x, atest12v as y where x.a = y.b;
+
+select * from atest12 as x, atest12 as y where x.a = y.b and abs(y.a) <<< 5;
+
+drop FUNCTION leak2(INT, INT) cascade;
+
+set session authorization regress_priv_user3;
+
+create table atest3 (
+  one INT,
+  two INT,
+  three INT
+);
+
+grant DELETE on table atest3 to regress_priv_group2;
+
+set session authorization regress_priv_user1;
+
+select * from atest3;
+
+delete from atest3;
+
+begin;
+
+reset session_authorization;
+
+alter role regress_priv_user1 NOINHERIT;
+
+set session authorization regress_priv_user1;
+
+savepoint s1;
+
+delete from atest3;
+
+rollback to savepoint s1;
+
+reset session_authorization;
+
+grant REGRESS_PRIV_GROUP2 to regress_priv_user1 with INHERIT false;
+
+set session authorization regress_priv_user1;
+
+delete from atest3;
+
+rollback to savepoint s1;
+
+reset session_authorization;
+
+revoke INHERIT OPTION for REGRESS_PRIV_GROUP2 from regress_priv_user1 restrict;
+
+set session authorization regress_priv_user1;
+
+delete from atest3;
+
+rollback;
+
+set session authorization regress_priv_user3;
+
+create view atestv1
+as select * from atest1;
+
+create view atestv2
+as select * from atest2;
+
+create view atestv3
+as select * from atest3;
+
+create view atestv0
+as select 0 as x where false;
+
+select * from atestv1;
+
+select * from atestv2;
+
+grant SELECT on table atestv1, atestv3 to regress_priv_user4;
+
+grant SELECT on table atestv2 to regress_priv_user2;
+
+set session authorization regress_priv_user4;
+
+select * from atestv1;
+
+select * from atestv2;
+
+select * from atestv3;
+
+select * from atestv0;
+
+select
+  *
+from
+  (
+    (select a.q1 as x from int8_tbl as a offset 0)
+    union all
+    (select b.q2 as x from int8_tbl as b offset 0)
+  )
+  as ss
+where
+  false;
+
+set constraint_exclusion = 'on';
+
+select
+  *
+from
+  (
+    select
+      a.q1 as x,
+      random()
+    from
+      int8_tbl as a
+    where
+      q1 > 0
+    union all
+    select
+      b.q2 as x,
+      random()
+    from
+      int8_tbl as b
+    where
+      q2 > 0
+  )
+  as ss
+where
+  x < 0;
+
+reset constraint_exclusion;
+
+create view atestv4
+as select * from atestv3;
+
+select * from atestv4;
+
+grant SELECT on table atestv4 to regress_priv_user2;
+
+set session authorization regress_priv_user2;
+
+select * from atestv3;
+
+select * from atestv4;
+
+select * from atest2;
+
+select * from atestv2;
+
+set session authorization regress_priv_user1;
+
+create table atest5 (
+  one INT,
+  two INT unique,
+  three INT,
+  four INT unique
+);
+
+create table atest6 (
+  one INT,
+  two INT,
+  blue INT
+);
+
+grant SELECT (one), INSERT (two), UPDATE (three) on table atest5 to regress_priv_user4;
+
+grant all (one) on table atest5 to regress_priv_user3;
+
+select unnest(pg_get_acl(cast('pg_class' as REGCLASS), cast(cast('atest5' as REGCLASS) as OID), 1));
+
+select unnest(pg_get_acl(cast('pg_class' as REGCLASS), cast(cast('atest5' as REGCLASS) as OID), 2));
+
+select unnest(pg_get_acl(cast('pg_class' as REGCLASS), cast(cast('atest5' as REGCLASS) as OID), 3));
+
+select unnest(pg_get_acl(cast('pg_class' as REGCLASS), cast(cast('atest5' as REGCLASS) as OID), 4));
+
+insert into atest5 values (1, 2, 3);
+
+set session authorization regress_priv_user4;
+
+select * from atest5;
+
+select one from atest5;
+
+copy atest5 (one) to stdout;
+
+select two from atest5;
+
+copy atest5 (two) to stdout;
+
+select atest5 from atest5;
+
+copy atest5 (one, two) to stdout;
+
+select 1 from atest5;
+
+select 1 from atest5 as a inner join atest5 as b using ("one");
+
+select 1 from atest5 as a inner join atest5 as b using ("two");
+
+select 1 from atest5 as a natural join atest5 as b;
+
+select * from (atest5 as a inner join atest5 as b using ("one")) as "j";
+
+select j.* from (atest5 as a inner join atest5 as b using ("one")) as "j";
+
+select j.* is null from (atest5 as a inner join atest5 as b using ("one")) as "j";
+
+select one from (atest5 as a inner join atest5 as b (one, x, y, z) using ("one")) as "j";
+
+select j.one from (atest5 as a inner join atest5 as b (one, x, y, z) using ("one")) as "j";
+
+select two from (atest5 as a inner join atest5 as b (one, x, y, z) using ("one")) as "j";
+
+select j.two from (atest5 as a inner join atest5 as b (one, x, y, z) using ("one")) as "j";
+
+select y from (atest5 as a inner join atest5 as b (one, x, y, z) using ("one")) as "j";
+
+select j.y from (atest5 as a inner join atest5 as b (one, x, y, z) using ("one")) as "j";
+
+select * from atest5 as a inner join atest5 as b using ("one");
+
+select a.* from atest5 as a inner join atest5 as b using ("one");
+
+select a.* is null from atest5 as a inner join atest5 as b using ("one");
+
+select two from atest5 as a inner join atest5 as b (one, x, y, z) using ("one");
+
+select a.two from atest5 as a inner join atest5 as b (one, x, y, z) using ("one");
+
+select y from atest5 as a inner join atest5 as b (one, x, y, z) using ("one");
+
+select b.y from atest5 as a inner join atest5 as b (one, x, y, z) using ("one");
+
+select y from atest5 as a left outer join atest5 as b (one, x, y, z) using ("one");
+
+select b.y from atest5 as a left outer join atest5 as b (one, x, y, z) using ("one");
+
+select y from atest5 as a full outer join atest5 as b (one, x, y, z) using ("one");
+
+select b.y from atest5 as a full outer join atest5 as b (one, x, y, z) using ("one");
+
+select 1 from atest5 where two = 2;
+
+select * from atest1, atest5;
+
+select atest1.* from atest1, atest5;
+
+select atest1.*, atest5.one from atest1, atest5;
+
+select atest1.*, atest5.one from atest1 inner join atest5 on atest1.a = atest5.two;
+
+select atest1.*, atest5.one from atest1 inner join atest5 on atest1.a = atest5.one;
+
+select one, two from atest5;
+
+set session authorization regress_priv_user1;
+
+grant SELECT (one, two) on table atest6 to regress_priv_user4;
+
+set session authorization regress_priv_user4;
+
+select one, two from atest5 natural join atest6;
+
+set session authorization regress_priv_user1;
+
+grant SELECT (two) on table atest5 to regress_priv_user4;
+
+set session authorization regress_priv_user4;
+
+select one, two from atest5 natural join atest6;
+
+insert into atest5 (two) values (3);
+
+insert into atest5 (three) values (4);
+
+insert into atest5 values (5, 5, 5);
+
+update atest5 set three = 10;
+
+update atest5 set one = 8;
+
+update atest5 set three = 5, one = 2;
+
+insert into atest5 (two) values (6) on conflict (two) do update set three = 10;
+
+insert into atest5 (two)
+values (6)
+on conflict (two) do update set three = 10
+returning atest5.three;
+
+insert into atest5 (two) values (6) on conflict (two) do update set three = 10 returning atest5.one;
+
+insert into atest5 (two) values (6) on conflict (two) do update set three = excluded.one;
+
+insert into atest5 (two) values (6) on conflict (two) do update set three = excluded.three;
+
+insert into atest5 (two) values (6) on conflict (two) do update set one = 8;
+
+insert into atest5 (three) values (4) on conflict (two) do update set three = 10;
+
+insert into atest5 (four) values (4);
+
+set session authorization regress_priv_user1;
+
+grant INSERT (four) on table atest5 to regress_priv_user4;
+
+set session authorization regress_priv_user4;
+
+insert into atest5 (four) values (4) on conflict (four) do update set three = 3;
+
+insert into atest5 (four)
+values (4)
+on conflict
+on constraint atest5_four_key
+do
+update
+set three = 3;
+
+insert into atest5 (four) values (4);
+
+set session authorization regress_priv_user1;
+
+grant SELECT (four) on table atest5 to regress_priv_user4;
+
+set session authorization regress_priv_user4;
+
+insert into atest5 (four) values (4) on conflict (four) do update set three = 3;
+
+insert into atest5 (four)
+values (4)
+on conflict
+on constraint atest5_four_key
+do
+update
+set three = 3;
+
+set session authorization regress_priv_user1;
+
+revoke all (one) on table atest5 from regress_priv_user4;
+
+grant SELECT (one, two, blue) on table atest6 to regress_priv_user4;
+
+set session authorization regress_priv_user4;
+
+select one from atest5;
+
+update atest5 set one = 1;
+
+select atest6 from atest6;
+
+copy atest6 to stdout;
+
+set session authorization regress_priv_user1;
+
+create table mtarget (
+  a INT,
+  b TEXT
+);
+
+create table msource (
+  a INT,
+  b TEXT
+);
+
+insert into mtarget values (1, 'init1'), (2, 'init2');
+
+insert into msource values (1, 'source1'), (2, 'source2'), (3, 'source3');
+
+grant SELECT (a) on table msource to regress_priv_user4;
+
+grant SELECT (a) on table mtarget to regress_priv_user4;
+
+grant INSERT (a, b) on table mtarget to regress_priv_user4;
+
+grant UPDATE (b) on table mtarget to regress_priv_user4;
+
+set session authorization regress_priv_user4;
+
+begin;
+
+rollback;
+
+set session authorization regress_priv_user1;
+
+grant SELECT (b) on table msource to regress_priv_user4;
+
+set session authorization regress_priv_user4;
+
+begin;
+
+rollback;
+
+begin;
+
+rollback;
+
+set session authorization regress_priv_user1;
+
+grant DELETE on table mtarget to regress_priv_user4;
+
+begin;
+
+rollback;
+
+set session authorization regress_priv_user1;
+
+create table t1 (
+  c1 INT,
+  c2 INT,
+  c3 INT check (c3 < 5),
+  primary key (c1, c2)
+);
+
+grant SELECT (c1) on table t1 to regress_priv_user2;
+
+grant INSERT (c1, c2, c3) on table t1 to regress_priv_user2;
+
+grant UPDATE (c1, c2, c3) on table t1 to regress_priv_user2;
+
+insert into t1 values (1, 1, 1);
+
+insert into t1 values (1, 2, 1);
+
+insert into t1 values (2, 1, 2);
+
+insert into t1 values (2, 2, 2);
+
+insert into t1 values (3, 1, 3);
+
+set session authorization regress_priv_user2;
+
+insert into t1 (c1, c2) values (1, 1);
+
+update t1 set c2 = 1;
+
+insert into t1 (c1, c2) values (null, null);
+
+insert into t1 (c3) values (null);
+
+insert into t1 (c1) values (5);
+
+update t1 set c3 = 10;
+
+set session authorization regress_priv_user1;
+
+drop TABLE "t1";
+
+create table errtst (
+  a TEXT,
+  b TEXT not null,
+  c TEXT,
+  secret1 TEXT,
+  secret2 TEXT
+)
+partition by LIST(a);
+
+create table errtst_part_1 (
+  secret2 TEXT,
+  c TEXT,
+  a TEXT,
+  b TEXT not null,
+  secret1 TEXT
+);
+
+create table errtst_part_2 (
+  secret1 TEXT,
+  secret2 TEXT,
+  a TEXT,
+  c TEXT,
+  b TEXT not null
+);
+
+alter table errtst
+  ATTACH partition
+  errtst_part_1 for values in ('aaa');
+
+alter table errtst
+  ATTACH partition
+  errtst_part_2 for values in ('aaaa');
+
+grant SELECT (a, b, c) on table errtst to regress_priv_user2;
+
+grant UPDATE (a, b, c) on table errtst to regress_priv_user2;
+
+grant INSERT (a, b, c) on table errtst to regress_priv_user2;
+
+insert into errtst_part_1 (a, b, c, secret1, secret2)
+values
+  (
+    'aaa', 'bbb', 'ccc', 'the body', 'is in the attic'
+  );
+
+set session authorization regress_priv_user2;
+
+insert into errtst (a, b) values ('aaa', null);
+
+update errtst set b = null;
+
+update errtst set a = 'aaa', b = null;
+
+update errtst set a = 'aaaa', b = null;
+
+update errtst set a = 'aaaa', b = null where a = 'aaa';
+
+set session authorization regress_priv_user1;
+
+drop TABLE "errtst";
+
+set session authorization regress_priv_user1;
+
+alter table atest6
+  add column three INT;
+
+grant DELETE on table atest5 to regress_priv_user3;
+
+grant SELECT (two) on table atest5 to regress_priv_user3;
+
+revoke all (one) on table atest5 from regress_priv_user3;
+
+grant SELECT (one) on table atest5 to regress_priv_user4;
+
+set session authorization regress_priv_user4;
+
+select atest6 from atest6;
+
+select one from atest5 natural join atest6;
+
+set session authorization regress_priv_user1;
+
+alter table atest6
+  drop column three;
+
+set session authorization regress_priv_user4;
+
+select atest6 from atest6;
+
+select one from atest5 natural join atest6;
+
+set session authorization regress_priv_user1;
+
+alter table atest6
+  drop column two;
+
+revoke SELECT (one, blue) on table atest6 from regress_priv_user4;
+
+set session authorization regress_priv_user4;
+
+select * from atest6;
+
+select 1 from atest6;
+
+set session authorization regress_priv_user3;
+
+delete from atest5 where one = 1;
+
+delete from atest5 where two = 2;
+
+set session authorization regress_priv_user1;
+
+create table atestp1 (
+  f1 INT,
+  f2 INT
+);
+
+create table atestp2 (
+  fx INT,
+  fy INT
+);
+
+create table atestc (fz INT)
+inherits (atestp1,
+atestp2);
+
+grant SELECT (fx, fy, tableoid) on table atestp2 to regress_priv_user2;
+
+grant SELECT (fx) on table atestc to regress_priv_user2;
+
+set session authorization regress_priv_user2;
+
+select fx from atestp2;
+
+select fy from atestp2;
+
+select atestp2 from atestp2;
+
+select tableoid from atestp2;
+
+select fy from atestc;
+
+set session authorization regress_priv_user1;
+
+grant SELECT (fy, tableoid) on table atestc to regress_priv_user2;
+
+set session authorization regress_priv_user2;
+
+select fx from atestp2;
+
+select fy from atestp2;
+
+select atestp2 from atestp2;
+
+select tableoid from atestp2;
+
+set session authorization regress_priv_user1;
+
+revoke all on table atestc from regress_priv_user2;
+
+grant all on table atestp1 to regress_priv_user2;
+
+set session authorization regress_priv_user2;
+
+select f2 from atestp1;
+
+select f2 from atestc;
+
+delete from atestp1;
+
+delete from atestc;
+
+update atestp1 set f1 = 1;
+
+update atestc set f1 = 1;
+
+truncate atestp1;
+
+truncate atestc;
+
+begin;
+
+lock table atestp1 in ACCESS EXCLUSIVE mode;
+
+commit;
+
+begin;
+
+lock table atestc in ACCESS EXCLUSIVE mode;
+
+commit;
+
+revoke all on language sql from PUBLIC;
+
+grant USAGE on language sql to regress_priv_user1;
+
+grant USAGE on language c to PUBLIC;
+
+set session authorization regress_priv_user1;
+
+grant USAGE on language sql to regress_priv_user2;
+
+create function priv_testfunc1(INT)
+returns INT
+as 'select 2 * $1;'
+language "sql";
+
+create function priv_testfunc2(INT)
+returns INT
+as 'select 3 * $1;'
+language "sql";
+
+create aggregate priv_testagg1 (INT) (sfunc = int4pl, stype = INT);
+
+create procedure priv_testproc1(INT)
+as 'select $1;'
+language "sql";
+
+revoke all on function priv_testfunc1(INT), priv_testfunc2(INT), priv_testagg1(INT) from PUBLIC;
+
+grant EXECUTE
+on function priv_testfunc1(INT),
+priv_testfunc2(INT),
+priv_testagg1(INT)
+to regress_priv_user2;
+
+revoke all on function priv_testproc1(INT) from PUBLIC;
+
+revoke all on procedure priv_testproc1(INT) from PUBLIC;
+
+grant EXECUTE on procedure priv_testproc1(INT) to regress_priv_user2;
+
+grant USAGE on function priv_testfunc1(INT) to regress_priv_user3;
+
+grant USAGE on function priv_testagg1(INT) to regress_priv_user3;
+
+grant USAGE on procedure priv_testproc1(INT) to regress_priv_user3;
+
+grant all on function priv_testfunc1(INT) to regress_priv_user4;
+
+grant all on function priv_testfunc_nosuch(INT) to regress_priv_user4;
+
+grant all on function priv_testagg1(INT) to regress_priv_user4;
+
+grant all on procedure priv_testproc1(INT) to regress_priv_user4;
+
+create function priv_testfunc4(BOOLEAN)
+returns TEXT
+as 'select col1 from atest2 where col2 = $1;'
+language "sql"
+security DEFINER;
+
+grant EXECUTE on function priv_testfunc4(BOOLEAN) to regress_priv_user3;
+
+set session authorization regress_priv_user2;
+
+select priv_testfunc1(5), priv_testfunc2(5);
+
+create function priv_testfunc3(INT)
+returns INT
+as 'select 2 * $1;'
+language "sql";
+
+select priv_testagg1(x) from (values (1), (2), (3)) as _ (x);
+
+call priv_testproc1(6);
+
+set session authorization regress_priv_user3;
+
+select priv_testfunc1(5);
+
+select priv_testagg1(x) from (values (1), (2), (3)) as _ (x);
+
+call priv_testproc1(6);
+
+select col1 from atest2 where col2 = true;
+
+select priv_testfunc4(true);
+
+set session authorization regress_priv_user4;
+
+select priv_testfunc1(5);
+
+select priv_testagg1(x) from (values (1), (2), (3)) as _ (x);
+
+call priv_testproc1(6);
+
+drop FUNCTION priv_testfunc1(INT);
+
+drop AGGREGATE priv_testagg1(INT);
+
+drop PROCEDURE priv_testproc1(INT);
+
+drop FUNCTION priv_testfunc1(INT);
+
+grant all on language sql to PUBLIC;
+
+begin;
+
+select cast(cast('{1}' as INT[]) as BIGINT[]);
+
+revoke all on function int8(INT) from PUBLIC;
+
+select cast(cast('{1}' as INT[]) as BIGINT[]);
+
+set session authorization regress_priv_user4;
+
+select cast(cast('{1}' as INT[]) as BIGINT[]);
+
+rollback;
+
+create type priv_testtype1 as (a INT, b TEXT);
+
+revoke USAGE on type priv_testtype1 from PUBLIC;
+
+grant USAGE on type priv_testtype1 to regress_priv_user2;
+
+grant USAGE on type _priv_testtype1 to regress_priv_user2;
+
+grant USAGE on domain priv_testtype1 to regress_priv_user2;
+
+create domain priv_testdomain1 as INT;
+
+revoke USAGE on domain priv_testdomain1 from PUBLIC;
+
+grant USAGE on domain priv_testdomain1 to regress_priv_user2;
+
+grant USAGE on type priv_testdomain1 to regress_priv_user2;
+
+set session authorization regress_priv_user1;
+
+create aggregate priv_testagg1a (priv_testdomain1) (sfunc = int4_sum, stype = BIGINT);
+
+create domain priv_testdomain2a as priv_testdomain1;
+
+create domain priv_testdomain3a as INT;
+
+create function castfunc(INT)
+returns priv_testdomain3a
+as ' SELECT $1::priv_testdomain3a '
+language "sql";
+
+create cast (priv_testdomain1 as priv_testdomain3a) with function castfunc(INT);
+
+drop FUNCTION castfunc(INT) cascade;
+
+drop DOMAIN priv_testdomain3a;
+
+create function priv_testfunc5a(a priv_testdomain1)
+returns INT
+language "sql"
+as ' SELECT $1 ';
+
+create function priv_testfunc6a(b INT)
+returns priv_testdomain1
+language "sql"
+as ' SELECT $1::priv_testdomain1 ';
+
+create operator !+! (PROCEDURE = int4pl, LEFTARG = priv_testdomain1, RIGHTARG = priv_testdomain1);
+
+create table test5a (
+  a INT,
+  b priv_testdomain1
+);
+
+create table test6a of priv_testtype1;
+
+create table test10a (
+  a INT[],
+  b priv_testtype1[]
+);
+
+create table test9a (
+  a INT,
+  b INT
+);
+
+alter table test9a
+  add column c priv_testdomain1;
+
+alter table test9a
+  alter column b type priv_testdomain1;
+
+create type test7a as (a INT, b priv_testdomain1);
+
+create type test8a as (a INT, b INT);
+
+alter type test8a
+  add ATTRIBUTE c priv_testdomain1;
+
+alter type test8a
+  alter ATTRIBUTE b type priv_testdomain1;
+
+create table test11a as select cast(1 as priv_testdomain1) as a;
+
+revoke all on type priv_testtype1 from PUBLIC;
+
+set session authorization regress_priv_user2;
+
+create aggregate priv_testagg1b (priv_testdomain1) (sfunc = int4_sum, stype = BIGINT);
+
+create domain priv_testdomain2b as priv_testdomain1;
+
+create domain priv_testdomain3b as INT;
+
+create function castfunc(INT)
+returns priv_testdomain3b
+as ' SELECT $1::priv_testdomain3b '
+language "sql";
+
+create cast (priv_testdomain1 as priv_testdomain3b) with function castfunc(INT);
+
+create function priv_testfunc5b(a priv_testdomain1)
+returns INT
+language "sql"
+as ' SELECT $1 ';
+
+create function priv_testfunc6b(b INT)
+returns priv_testdomain1
+language "sql"
+as ' SELECT $1::priv_testdomain1 ';
+
+create operator !! (PROCEDURE = priv_testfunc5b, RIGHTARG = priv_testdomain1);
+
+create table test5b (
+  a INT,
+  b priv_testdomain1
+);
+
+create table test6b of priv_testtype1;
+
+create table test10b (
+  a INT[],
+  b priv_testtype1[]
+);
+
+create table test9b (
+  a INT,
+  b INT
+);
+
+alter table test9b
+  add column c priv_testdomain1;
+
+alter table test9b
+  alter column b type priv_testdomain1;
+
+create type test7b as (a INT, b priv_testdomain1);
+
+create type test8b as (a INT, b INT);
+
+alter type test8b
+  add ATTRIBUTE c priv_testdomain1;
+
+alter type test8b
+  alter ATTRIBUTE b type priv_testdomain1;
+
+create table test11b as select cast(1 as priv_testdomain1) as a;
+
+revoke all on type priv_testtype1 from PUBLIC;
+
+drop AGGREGATE priv_testagg1b(priv_testdomain1);
+
+drop DOMAIN priv_testdomain2b;
+
+drop OPERATOR !! (NONE, priv_testdomain1);
+
+drop FUNCTION priv_testfunc5b(priv_testdomain1);
+
+drop FUNCTION priv_testfunc6b(INT);
+
+drop TABLE "test5b";
+
+drop TABLE "test6b";
+
+drop TABLE "test9b";
+
+drop TABLE "test10b";
+
+drop TYPE test7b;
+
+drop TYPE test8b;
+
+drop CAST (priv_testdomain1 as priv_testdomain3b);
+
+drop FUNCTION castfunc(INT) cascade;
+
+drop DOMAIN priv_testdomain3b;
+
+drop TABLE "test11b";
+
+drop TYPE priv_testtype1;
+
+drop DOMAIN priv_testdomain1;
+
+set session authorization regress_priv_user5;
+
+truncate atest2;
+
+truncate atest3;
+
+select has_table_privilege(null, 'pg_authid', 'select');
+
+select has_table_privilege('pg_shad', 'select');
+
+select has_table_privilege('nosuchuser', 'pg_authid', 'select');
+
+select has_table_privilege('pg_authid', 'sel');
+
+select has_table_privilege(-999999, 'pg_authid', 'update');
+
+select has_table_privilege(1, 'select');
+
+select has_table_privilege(current_user, 'pg_authid', 'select');
+
+select has_table_privilege(current_user, 'pg_authid', 'insert');
+
+select
+  has_table_privilege(t2.oid, 'pg_authid', 'update')
+from
+  (
+    select
+      oid
+    from
+      pg_roles
+    where
+      rolname = current_user
+  )
+  as t2;
+
+select
+  has_table_privilege(t2.oid, 'pg_authid', 'delete')
+from
+  (
+    select
+      oid
+    from
+      pg_roles
+    where
+      rolname = current_user
+  )
+  as t2;
+
+select
+  has_table_privilege(
+    current_user,
+    t1.oid,
+    'references'
+  )
+from
+  (
+    select
+      oid
+    from
+      pg_class
+    where
+      relname = 'pg_authid'
+  )
+  as t1;
+
+select
+  has_table_privilege(t2.oid, t1.oid, 'select')
+from
+  (
+    select
+      oid
+    from
+      pg_class
+    where
+      relname = 'pg_authid'
+  )
+  as t1,
+  (
+    select
+      oid
+    from
+      pg_roles
+    where
+      rolname = current_user
+  )
+  as t2;
+
+select
+  has_table_privilege(t2.oid, t1.oid, 'insert')
+from
+  (
+    select
+      oid
+    from
+      pg_class
+    where
+      relname = 'pg_authid'
+  )
+  as t1,
+  (
+    select
+      oid
+    from
+      pg_roles
+    where
+      rolname = current_user
+  )
+  as t2;
+
+select has_table_privilege('pg_authid', 'update');
+
+select has_table_privilege('pg_authid', 'delete');
+
+select has_table_privilege('pg_authid', 'truncate');
+
+select
+  has_table_privilege(t1.oid, 'select')
+from
+  (
+    select
+      oid
+    from
+      pg_class
+    where
+      relname = 'pg_authid'
+  )
+  as t1;
+
+select
+  has_table_privilege(t1.oid, 'trigger')
+from
+  (
+    select
+      oid
+    from
+      pg_class
+    where
+      relname = 'pg_authid'
+  )
+  as t1;
+
+set session authorization regress_priv_user3;
+
+select has_table_privilege(current_user, 'pg_class', 'select');
+
+select has_table_privilege(current_user, 'pg_class', 'insert');
+
+select
+  has_table_privilege(t2.oid, 'pg_class', 'update')
+from
+  (
+    select
+      oid
+    from
+      pg_roles
+    where
+      rolname = current_user
+  )
+  as t2;
+
+select
+  has_table_privilege(t2.oid, 'pg_class', 'delete')
+from
+  (
+    select
+      oid
+    from
+      pg_roles
+    where
+      rolname = current_user
+  )
+  as t2;
+
+select
+  has_table_privilege(
+    current_user,
+    t1.oid,
+    'references'
+  )
+from
+  (
+    select
+      oid
+    from
+      pg_class
+    where
+      relname = 'pg_class'
+  )
+  as t1;
+
+select
+  has_table_privilege(t2.oid, t1.oid, 'select')
+from
+  (
+    select
+      oid
+    from
+      pg_class
+    where
+      relname = 'pg_class'
+  )
+  as t1,
+  (
+    select
+      oid
+    from
+      pg_roles
+    where
+      rolname = current_user
+  )
+  as t2;
+
+select
+  has_table_privilege(t2.oid, t1.oid, 'insert')
+from
+  (
+    select
+      oid
+    from
+      pg_class
+    where
+      relname = 'pg_class'
+  )
+  as t1,
+  (
+    select
+      oid
+    from
+      pg_roles
+    where
+      rolname = current_user
+  )
+  as t2;
+
+select has_table_privilege('pg_class', 'update');
+
+select has_table_privilege('pg_class', 'delete');
+
+select has_table_privilege('pg_class', 'truncate');
+
+select
+  has_table_privilege(t1.oid, 'select')
+from
+  (
+    select
+      oid
+    from
+      pg_class
+    where
+      relname = 'pg_class'
+  )
+  as t1;
+
+select
+  has_table_privilege(t1.oid, 'trigger')
+from
+  (
+    select
+      oid
+    from
+      pg_class
+    where
+      relname = 'pg_class'
+  )
+  as t1;
+
+select has_table_privilege(current_user, 'atest1', 'select');
+
+select has_table_privilege(current_user, 'atest1', 'insert');
+
+select
+  has_table_privilege(t2.oid, 'atest1', 'update')
+from
+  (
+    select
+      oid
+    from
+      pg_roles
+    where
+      rolname = current_user
+  )
+  as t2;
+
+select
+  has_table_privilege(t2.oid, 'atest1', 'delete')
+from
+  (
+    select
+      oid
+    from
+      pg_roles
+    where
+      rolname = current_user
+  )
+  as t2;
+
+select
+  has_table_privilege(
+    current_user,
+    t1.oid,
+    'references'
+  )
+from
+  (
+    select oid from pg_class where relname = 'atest1'
+  )
+  as t1;
+
+select
+  has_table_privilege(t2.oid, t1.oid, 'select')
+from
+  (
+    select oid from pg_class where relname = 'atest1'
+  )
+  as t1,
+  (
+    select
+      oid
+    from
+      pg_roles
+    where
+      rolname = current_user
+  )
+  as t2;
+
+select
+  has_table_privilege(t2.oid, t1.oid, 'insert')
+from
+  (
+    select oid from pg_class where relname = 'atest1'
+  )
+  as t1,
+  (
+    select
+      oid
+    from
+      pg_roles
+    where
+      rolname = current_user
+  )
+  as t2;
+
+select has_table_privilege('atest1', 'update');
+
+select has_table_privilege('atest1', 'delete');
+
+select has_table_privilege('atest1', 'truncate');
+
+select
+  has_table_privilege(t1.oid, 'select')
+from
+  (
+    select oid from pg_class where relname = 'atest1'
+  )
+  as t1;
+
+select
+  has_table_privilege(t1.oid, 'trigger')
+from
+  (
+    select oid from pg_class where relname = 'atest1'
+  )
+  as t1;
+
+select has_column_privilege('pg_authid', null, 'select');
+
+select has_column_privilege('pg_authid', 'nosuchcol', 'select');
+
+select has_column_privilege(9999, 'nosuchcol', 'select');
+
+select has_column_privilege(9999, cast(99 as SMALLINT), 'select');
+
+select has_column_privilege('pg_authid', cast(99 as SMALLINT), 'select');
+
+select has_column_privilege(9999, cast(99 as SMALLINT), 'select');
+
+create temporary table mytable (
+  f1 INT,
+  f2 INT,
+  f3 INT
+);
+
+alter table mytable
+  drop column f2;
+
+select has_column_privilege('mytable', 'f2', 'select');
+
+select has_column_privilege('mytable', '........pg.dropped.2........', 'select');
+
+select has_column_privilege('mytable', cast(2 as SMALLINT), 'select');
+
+select has_column_privilege('mytable', cast(99 as SMALLINT), 'select');
+
+revoke SELECT on table mytable from regress_priv_user3;
+
+select has_column_privilege('mytable', cast(2 as SMALLINT), 'select');
+
+select has_column_privilege('mytable', cast(99 as SMALLINT), 'select');
+
+drop TABLE "mytable";
+
+set session authorization regress_priv_user1;
+
+create table atest4 (a INT);
+
+grant SELECT on table atest4 to regress_priv_user2 with grant option;
+
+grant UPDATE on table atest4 to regress_priv_user2;
+
+grant SELECT on table atest4 to regress_priv_group1 with grant option;
+
+set session authorization regress_priv_user2;
+
+grant SELECT on table atest4 to regress_priv_user3;
+
+grant UPDATE on table atest4 to regress_priv_user3;
+
+set session authorization regress_priv_user1;
+
+revoke SELECT on table atest4 from regress_priv_user3;
+
+select has_table_privilege('regress_priv_user3', 'atest4', 'SELECT');
+
+revoke SELECT on table atest4 from regress_priv_user2;
+
+revoke grant option for SELECT on table atest4 from regress_priv_user2 cascade;
+
+select has_table_privilege('regress_priv_user2', 'atest4', 'SELECT');
+
+select has_table_privilege('regress_priv_user3', 'atest4', 'SELECT');
+
+select has_table_privilege('regress_priv_user1', 'atest4', 'SELECT WITH GRANT OPTION');
+
+create role regress_sro_user;
+
+create function sro_ifun(INT)
+returns INT
+as '
+BEGIN
+	-- Below we set the table''s owner to regress_sro_user
+	ASSERT current_user = ''regress_sro_user'',
+		format(''sro_ifun(%s) called by %s'', $1, current_user);
+	RETURN $1;
+END;
+'
+language "plpgsql"
+immutable;
+
+create table sro_tab (a INT);
+
+alter table sro_tab
+  OWNER to regress_sro_user;
+
+insert into sro_tab values (1), (2), (3);
+
+create index "sro_idx"
+on sro_tab
+using btree
+(
+  (sro_ifun(a) + sro_ifun(0))
+)
+where
+  sro_ifun(a + 10) > sro_ifun(10);
+
+drop INDEX "sro_idx";
+
+create index concurrently "sro_idx"
+on sro_tab
+using btree
+(
+  (sro_ifun(a) + sro_ifun(0))
+)
+where
+  sro_ifun(a + 10) > sro_ifun(10);
+
+reindex table sro_tab;
+
+reindex index sro_idx;
+
+reindex (CONCURRENTLY) table sro_tab;
+
+drop INDEX "sro_idx";
+
+create index "sro_cluster_idx" on sro_tab using btree ((sro_ifun(a) + sro_ifun(0)));
+
+CLUSTER sro_tab using sro_cluster_idx;
+
+drop INDEX "sro_cluster_idx";
+
+create index "sro_brin" on sro_tab using brin ((sro_ifun(a) + sro_ifun(0)));
+
+select brin_desummarize_range('sro_brin', 0);
+
+select brin_summarize_range('sro_brin', 0);
+
+drop TABLE "sro_tab";
+
+create table sro_ptab (a INT)
+partition by range(a);
+
+alter table sro_ptab
+  OWNER to regress_sro_user;
+
+create table sro_part partition of sro_ptab for values from (1) to (10);
+
+alter table sro_part
+  OWNER to regress_sro_user;
+
+insert into sro_ptab values (1), (2), (3);
+
+create index "sro_pidx"
+on sro_ptab
+using btree
+(
+  (sro_ifun(a) + sro_ifun(0))
+)
+where
+  sro_ifun(a + 10) > sro_ifun(10);
+
+reindex table sro_ptab;
+
+reindex (CONCURRENTLY) index sro_pidx;
+
+set session authorization regress_sro_user;
+
+create function unwanted_grant()
+returns VOID
+language "sql"
+as 'GRANT regress_priv_group2 TO regress_sro_user';
+
+create function mv_action()
+returns BOOLEAN
+language "sql"
+as 'DECLARE c CURSOR WITH HOLD FOR SELECT public.unwanted_grant(); SELECT true';
+
+create materialized view sro_mv as select mv_action() with no data;
+
+refresh materialized view sro_mv;
+
+refresh materialized view sro_mv;
+
+set session authorization regress_sro_user;
+
+create table sro_trojan_table ();
+
+create function sro_trojan()
+returns trigger
+language "plpgsql"
+as 'BEGIN PERFORM public.unwanted_grant(); RETURN NULL; END';
+
+create CONSTRAINT TRIGGER t
+  after insert
+  on sro_trojan_table
+  DEFERRABLE
+  INITIALLY DEFERRED
+  for EACH ROW
+  EXECUTE FUNCTION sro_trojan();
+
+create or replace function mv_action()
+returns BOOLEAN
+language "sql"
+as 'INSERT INTO public.sro_trojan_table DEFAULT VALUES; SELECT true';
+
+refresh materialized view sro_mv;
+
+refresh materialized view sro_mv;
+
+begin;
+
+set CONSTRAINTS all IMMEDIATE;
+
+refresh materialized view sro_mv;
+
+commit;
+
+set session authorization regress_sro_user;
+
+create function unwanted_grant_nofail(INT)
+returns INT
+immutable
+language "plpgsql"
+as '
+BEGIN
+	PERFORM public.unwanted_grant();
+	RAISE WARNING ''owned'';
+	RETURN 1;
+EXCEPTION WHEN OTHERS THEN
+	RETURN 2;
+END';
+
+create materialized view sro_index_mv as select 1 as c;
+
+create unique index
+on sro_index_mv
+using btree
+(
+  c
+)
+where
+  unwanted_grant_nofail(1) > 0;
+
+refresh materialized view concurrently sro_index_mv;
+
+refresh materialized view sro_index_mv;
+
+drop OWNED by regress_sro_user;
+
+drop role regress_sro_user;
+
+set session authorization regress_priv_user4;
+
+create function dogrant_ok()
+returns VOID
+language "sql"
+security DEFINER
+as 'GRANT regress_priv_group2 TO regress_priv_user5';
+
+grant REGRESS_PRIV_GROUP2 to regress_priv_user5;
+
+set role to regress_priv_group2;
+
+grant REGRESS_PRIV_GROUP2 to regress_priv_user5;
+
+set session authorization regress_priv_user1;
+
+grant REGRESS_PRIV_GROUP2 to regress_priv_user5;
+
+select dogrant_ok();
+
+set role to regress_priv_group2;
+
+grant REGRESS_PRIV_GROUP2 to regress_priv_user5;
+
+set session authorization regress_priv_group2;
+
+grant REGRESS_PRIV_GROUP2 to regress_priv_user5;
+
+set session authorization regress_priv_user4;
+
+drop FUNCTION dogrant_ok();
+
+revoke REGRESS_PRIV_GROUP2 from regress_priv_user5 restrict;
+
+create sequence x_seq;
+
+grant USAGE on table x_seq to regress_priv_user2;
+
+select has_sequence_privilege('regress_priv_user1', 'atest1', 'SELECT');
+
+select has_sequence_privilege('regress_priv_user1', 'x_seq', 'INSERT');
+
+select has_sequence_privilege('regress_priv_user1', 'x_seq', 'SELECT');
+
+set session authorization regress_priv_user2;
+
+select has_sequence_privilege('x_seq', 'USAGE');
+
+set session authorization regress_priv_user1;
+
+select lo_create(1001);
+
+select lo_create(1002);
+
+select lo_create(1003);
+
+select lo_create(1004);
+
+select lo_create(1005);
+
+grant all on LARGE object 1001 to PUBLIC;
+
+grant SELECT on LARGE object 1003 to regress_priv_user2;
+
+grant SELECT, UPDATE on LARGE object 1004 to regress_priv_user2;
+
+grant all on LARGE object 1005 to regress_priv_user2;
+
+grant SELECT on LARGE object 1005 to regress_priv_user2 with grant option;
+
+grant SELECT, INSERT on LARGE object 1001 to PUBLIC;
+
+grant SELECT, UPDATE on LARGE object 1001 to nosuchuser;
+
+grant SELECT, UPDATE on LARGE object 999 to PUBLIC;
+
+set session authorization regress_priv_user2;
+
+select lo_create(2001);
+
+select lo_create(2002);
+
+select loread(lo_open(1001, cast(X'20000' as INT)), 32);
+
+select lowrite(lo_open(1001, cast(X'40000' as INT)), 'abcd');
+
+select loread(lo_open(1001, cast(X'40000' as INT)), 32);
+
+select loread(lo_open(1002, cast(X'40000' as INT)), 32);
+
+select loread(lo_open(1003, cast(X'40000' as INT)), 32);
+
+select loread(lo_open(1004, cast(X'40000' as INT)), 32);
+
+select lowrite(lo_open(1001, cast(X'20000' as INT)), 'abcd');
+
+select lowrite(lo_open(1002, cast(X'20000' as INT)), 'abcd');
+
+select lowrite(lo_open(1003, cast(X'20000' as INT)), 'abcd');
+
+select lowrite(lo_open(1004, cast(X'20000' as INT)), 'abcd');
+
+grant SELECT on LARGE object 1005 to regress_priv_user3;
+
+grant UPDATE on LARGE object 1006 to regress_priv_user3;
+
+revoke all on LARGE object 2001, 2002 from PUBLIC;
+
+grant all on LARGE object 2001 to regress_priv_user3;
+
+select lo_unlink(1001);
+
+select lo_unlink(2002);
+
+select
+  oid,
+  pg_get_userbyid(lomowner) as ownername,
+  lomacl
+from
+  pg_largeobject_metadata
+where
+  oid >= 1000 and oid < 3000
+order by oid;
+
+set session authorization regress_priv_user3;
+
+select loread(lo_open(1001, cast(X'40000' as INT)), 32);
+
+select loread(lo_open(1003, cast(X'40000' as INT)), 32);
+
+select loread(lo_open(1005, cast(X'40000' as INT)), 32);
+
+select lo_truncate(lo_open(1005, cast(X'20000' as INT)), 10);
+
+select lo_truncate(lo_open(2001, cast(X'20000' as INT)), 10);
+
+select has_largeobject_privilege(1001, 'SELECT');
+
+select has_largeobject_privilege(1002, 'SELECT');
+
+select has_largeobject_privilege(1003, 'SELECT');
+
+select has_largeobject_privilege(1004, 'SELECT');
+
+select has_largeobject_privilege(1001, 'UPDATE');
+
+select has_largeobject_privilege(1002, 'UPDATE');
+
+select has_largeobject_privilege(1003, 'UPDATE');
+
+select has_largeobject_privilege(1004, 'UPDATE');
+
+select has_largeobject_privilege(9999, 'SELECT');
+
+set session authorization regress_priv_user2;
+
+select has_largeobject_privilege(1001, 'SELECT');
+
+select has_largeobject_privilege(1002, 'SELECT');
+
+select has_largeobject_privilege(1003, 'SELECT');
+
+select has_largeobject_privilege(1004, 'SELECT');
+
+select has_largeobject_privilege(1001, 'UPDATE');
+
+select has_largeobject_privilege(1002, 'UPDATE');
+
+select has_largeobject_privilege(1003, 'UPDATE');
+
+select has_largeobject_privilege(1004, 'UPDATE');
+
+select has_largeobject_privilege('regress_priv_user3', 1001, 'SELECT');
+
+select has_largeobject_privilege('regress_priv_user3', 1003, 'SELECT');
+
+select has_largeobject_privilege('regress_priv_user3', 1005, 'SELECT');
+
+select has_largeobject_privilege('regress_priv_user3', 1005, 'UPDATE');
+
+select has_largeobject_privilege('regress_priv_user3', 2001, 'UPDATE');
+
+set lo_compat_privileges = 'false';
+
+set session authorization regress_priv_user4;
+
+select has_largeobject_privilege(1002, 'SELECT');
+
+select has_largeobject_privilege(1002, 'UPDATE');
+
+select loread(lo_open(1002, cast(X'40000' as INT)), 32);
+
+select lowrite(lo_open(1002, cast(X'20000' as INT)), 'abcd');
+
+select lo_truncate(lo_open(1002, cast(X'20000' as INT)), 10);
+
+select lo_put(1002, 1, 'abcd');
+
+select lo_unlink(1002);
+
+select lo_export(1001, '/dev/null');
+
+select lo_import('/dev/null');
+
+select lo_import('/dev/null', 2003);
+
+set lo_compat_privileges = 'true';
+
+set session authorization regress_priv_user4;
+
+select has_largeobject_privilege(1002, 'SELECT');
+
+select has_largeobject_privilege(1002, 'UPDATE');
+
+select loread(lo_open(1002, cast(X'40000' as INT)), 32);
+
+select lowrite(lo_open(1002, cast(X'20000' as INT)), 'abcd');
+
+select lo_truncate(lo_open(1002, cast(X'20000' as INT)), 10);
+
+select lo_unlink(1002);
+
+select lo_export(1001, '/dev/null');
+
+select * from pg_largeobject limit 0;
+
+set session authorization regress_priv_user1;
+
+select * from pg_largeobject limit 0;
+
+reset session_authorization;
+
+begin;
+
+create or replace function terminate_nothrow(pid INT)
+returns BOOLEAN
+language "plpgsql"
+security DEFINER
+set client_min_messages = error
+as '
+BEGIN
+	RETURN pg_terminate_backend($1);
+EXCEPTION WHEN OTHERS THEN
+	RETURN false;
+END';
+
+alter function terminate_nothrow owner to pg_signal_backend;
+
+select
+  backend_type
+from
+  pg_stat_activity
+where
+  case
+    when coalesce(usesysid, 10) = 10
+    then terminate_nothrow(pid)
+  end;
+
+rollback;
+
+reset session_authorization;
+
+grant PG_DATABASE_OWNER to regress_priv_user1;
+
+grant REGRESS_PRIV_USER1 to pg_database_owner;
+
+create table datdba_only ();
+
+alter table datdba_only
+  OWNER to pg_database_owner;
+
+revoke DELETE on table datdba_only from pg_database_owner;
+
+select
+  pg_has_role(
+    'regress_priv_user1',
+    'pg_database_owner',
+    'USAGE'
+  )
+  as priv,
+  pg_has_role(
+    'regress_priv_user1',
+    'pg_database_owner',
+    'MEMBER'
+  )
+  as mem,
+  pg_has_role(
+    'regress_priv_user1',
+    'pg_database_owner',
+    'MEMBER WITH ADMIN OPTION'
+  )
+  as admin;
+
+begin;
+
+do
+$$BEGIN EXECUTE format(
+	'ALTER DATABASE %I OWNER TO regress_priv_group2', current_catalog); END$$;
+
+select
+  pg_has_role(
+    'regress_priv_user1',
+    'pg_database_owner',
+    'USAGE'
+  )
+  as priv,
+  pg_has_role(
+    'regress_priv_user1',
+    'pg_database_owner',
+    'MEMBER'
+  )
+  as mem,
+  pg_has_role(
+    'regress_priv_user1',
+    'pg_database_owner',
+    'MEMBER WITH ADMIN OPTION'
+  )
+  as admin;
+
+set session authorization regress_priv_user1;
+
+select * from information_schema.enabled_roles order by role_name collate "C";
+
+select * from information_schema.applicable_roles order by role_name collate "C";
+
+insert into datdba_only default values;
+
+savepoint q;
+
+delete from datdba_only;
+
+rollback to savepoint q;
+
+set session authorization regress_priv_user2;
+
+select * from information_schema.enabled_roles;
+
+insert into datdba_only default values;
+
+rollback;
+
+create schema "testns";
+
+grant all on schema testns to regress_priv_user1;
+
+create table testns.acltest1 (x INT);
+
+select has_table_privilege('regress_priv_user1', 'testns.acltest1', 'SELECT');
+
+select has_table_privilege('regress_priv_user1', 'testns.acltest1', 'INSERT');
+
+alter default PRIVILEGES in schema testns, testns grant SELECT on TABLES to PUBLIC, PUBLIC;
+
+select has_table_privilege('regress_priv_user1', 'testns.acltest1', 'SELECT');
+
+select has_table_privilege('regress_priv_user1', 'testns.acltest1', 'INSERT');
+
+drop TABLE "testns"."acltest1";
+
+create table testns.acltest1 (x INT);
+
+select has_table_privilege('regress_priv_user1', 'testns.acltest1', 'SELECT');
+
+select has_table_privilege('regress_priv_user1', 'testns.acltest1', 'INSERT');
+
+alter default PRIVILEGES in schema testns grant INSERT on TABLES to regress_priv_user1;
+
+drop TABLE "testns"."acltest1";
+
+create table testns.acltest1 (x INT);
+
+select has_table_privilege('regress_priv_user1', 'testns.acltest1', 'SELECT');
+
+select has_table_privilege('regress_priv_user1', 'testns.acltest1', 'INSERT');
+
+alter default PRIVILEGES in schema testns revoke INSERT on TABLES from regress_priv_user1;
+
+drop TABLE "testns"."acltest1";
+
+create table testns.acltest1 (x INT);
+
+select has_table_privilege('regress_priv_user1', 'testns.acltest1', 'SELECT');
+
+select has_table_privilege('regress_priv_user1', 'testns.acltest1', 'INSERT');
+
+alter default PRIVILEGES for role regress_priv_user1 revoke EXECUTE on FUNCTIONS from PUBLIC;
+
+alter default PRIVILEGES in schema testns grant USAGE on SCHEMAS to regress_priv_user2;
+
+select
+  makeaclitem(
+    cast('regress_priv_user1' as regrole),
+    cast('regress_priv_user2' as regrole),
+    'SELECT',
+    true
+  );
+
+select
+  makeaclitem(
+    cast('regress_priv_user1' as regrole),
+    cast('regress_priv_user2' as regrole),
+    'SELECT, INSERT,  UPDATE , DELETE  ',
+    false
+  );
+
+select
+  makeaclitem(
+    cast('regress_priv_user1' as regrole),
+    cast('regress_priv_user2' as regrole),
+    'SELECT, fake_privilege',
+    false
+  );
+
+create role "regress_""quoted";
+
+select
+  makeaclitem(
+    cast('regress_"quoted' as regrole),
+    cast('regress_"quoted' as regrole),
+    'SELECT',
+    true
+  );
+
+select cast('"regress_""quoted"=r*/"regress_""quoted"' as aclitem);
+
+select cast('""=r*/""' as aclitem);
+
+drop role "regress_""quoted";
+
+select pg_input_is_valid('regress_priv_user1=r/regress_priv_user2', 'aclitem');
+
+select pg_input_is_valid('regress_priv_user1=r/', 'aclitem');
+
+select * from pg_input_error_info('regress_priv_user1=r/', 'aclitem');
+
+select pg_input_is_valid('regress_priv_user1=r/regress_no_such_user', 'aclitem');
+
+select * from pg_input_error_info('regress_priv_user1=r/regress_no_such_user', 'aclitem');
+
+select pg_input_is_valid('regress_priv_user1=rY', 'aclitem');
+
+select * from pg_input_error_info('regress_priv_user1=rY', 'aclitem');
+
+begin;
+
+alter default PRIVILEGES grant USAGE on SCHEMAS to regress_priv_user2;
+
+create schema "testns2";
+
+select has_schema_privilege('regress_priv_user2', 'testns2', 'USAGE');
+
+select has_schema_privilege('regress_priv_user6', 'testns2', 'USAGE');
+
+select has_schema_privilege('regress_priv_user2', 'testns2', 'CREATE');
+
+alter default PRIVILEGES revoke USAGE on SCHEMAS from regress_priv_user2;
+
+create schema "testns3";
+
+select has_schema_privilege('regress_priv_user2', 'testns3', 'USAGE');
+
+select has_schema_privilege('regress_priv_user2', 'testns3', 'CREATE');
+
+alter default PRIVILEGES grant all on SCHEMAS to regress_priv_user2;
+
+create schema "testns4";
+
+select has_schema_privilege('regress_priv_user2', 'testns4', 'USAGE');
+
+select has_schema_privilege('regress_priv_user2', 'testns4', 'CREATE');
+
+alter default PRIVILEGES revoke all on SCHEMAS from regress_priv_user2;
+
+commit;
+
+begin;
+
+select lo_create(1007);
+
+select has_largeobject_privilege('regress_priv_user2', 1007, 'SELECT');
+
+select has_largeobject_privilege('regress_priv_user2', 1007, 'UPDATE');
+
+select lo_create(1008);
+
+select has_largeobject_privilege('regress_priv_user2', 1008, 'SELECT');
+
+select has_largeobject_privilege('regress_priv_user6', 1008, 'SELECT');
+
+select has_largeobject_privilege('regress_priv_user2', 1008, 'UPDATE');
+
+select lo_create(1009);
+
+select has_largeobject_privilege('regress_priv_user2', 1009, 'SELECT');
+
+select has_largeobject_privilege('regress_priv_user2', 1009, 'UPDATE');
+
+select lo_create(1010);
+
+select has_largeobject_privilege('regress_priv_user2', 1010, 'SELECT');
+
+select has_largeobject_privilege('regress_priv_user2', 1010, 'UPDATE');
+
+rollback;
+
+begin;
+
+alter default PRIVILEGES grant all on FUNCTIONS to regress_priv_user2;
+
+alter default PRIVILEGES grant all on SCHEMAS to regress_priv_user2;
+
+alter default PRIVILEGES grant all on SEQUENCES to regress_priv_user2;
+
+alter default PRIVILEGES grant all on TABLES to regress_priv_user2;
+
+alter default PRIVILEGES grant all on TYPES to regress_priv_user2;
+
+select
+  COUNT(*)
+from
+  pg_shdepend
+where
+  deptype = 'a' and
+  refobjid = cast('regress_priv_user2' as regrole) and
+  classid = cast('pg_default_acl' as REGCLASS);
+
+drop OWNED by regress_priv_user2, regress_priv_user2;
+
+select
+  COUNT(*)
+from
+  pg_shdepend
+where
+  deptype = 'a' and
+  refobjid = cast('regress_priv_user2' as regrole) and
+  classid = cast('pg_default_acl' as REGCLASS);
+
+rollback;
+
+create schema "testns5";
+
+select has_schema_privilege('regress_priv_user2', 'testns5', 'USAGE');
+
+select has_schema_privilege('regress_priv_user2', 'testns5', 'CREATE');
+
+set role to regress_priv_user1;
+
+create function testns.foo()
+returns INT
+as 'select 1'
+language "sql";
+
+create aggregate testns.agg1 (INT) (sfunc = int4pl, stype = INT);
+
+create procedure testns.bar()
+as 'select 1'
+language "sql";
+
+select has_function_privilege('regress_priv_user2', 'testns.foo()', 'EXECUTE');
+
+select has_function_privilege('regress_priv_user2', 'testns.agg1(int)', 'EXECUTE');
+
+select has_function_privilege('regress_priv_user2', 'testns.bar()', 'EXECUTE');
+
+alter default PRIVILEGES in schema testns grant EXECUTE on FUNCTIONS to PUBLIC;
+
+drop FUNCTION testns.foo();
+
+create function testns.foo()
+returns INT
+as 'select 1'
+language "sql";
+
+drop AGGREGATE testns.agg1(INT);
+
+create aggregate testns.agg1 (INT) (sfunc = int4pl, stype = INT);
+
+drop PROCEDURE testns.bar();
+
+create procedure testns.bar()
+as 'select 1'
+language "sql";
+
+select has_function_privilege('regress_priv_user2', 'testns.foo()', 'EXECUTE');
+
+select has_function_privilege('regress_priv_user2', 'testns.agg1(int)', 'EXECUTE');
+
+select has_function_privilege('regress_priv_user2', 'testns.bar()', 'EXECUTE');
+
+drop FUNCTION testns.foo();
+
+drop AGGREGATE testns.agg1(INT);
+
+drop PROCEDURE testns.bar();
+
+alter default PRIVILEGES for role regress_priv_user1 revoke USAGE on TYPES from PUBLIC;
+
+create domain testns.priv_testdomain1 as INT;
+
+select has_type_privilege('regress_priv_user2', 'testns.priv_testdomain1', 'USAGE');
+
+alter default PRIVILEGES in schema testns grant USAGE on TYPES to PUBLIC;
+
+drop DOMAIN testns.priv_testdomain1;
+
+create domain testns.priv_testdomain1 as INT;
+
+select has_type_privilege('regress_priv_user2', 'testns.priv_testdomain1', 'USAGE');
+
+drop DOMAIN testns.priv_testdomain1;
+
+reset role;
+
+select
+  COUNT(*)
+from
+  pg_default_acl as d
+  left outer join
+    pg_namespace as n
+  on defaclnamespace = n.oid
+where
+  nspname = 'testns';
+
+drop SCHEMA testns cascade;
+
+drop SCHEMA testns2 cascade;
+
+drop SCHEMA testns3 cascade;
+
+drop SCHEMA testns4 cascade;
+
+drop SCHEMA testns5 cascade;
+
+select
+  d.*
+from
+  pg_default_acl as d
+  left outer join
+    pg_namespace as n
+  on defaclnamespace = n.oid
+where
+  nspname is null and defaclnamespace <> 0;
+
+create schema "testns";
+
+create table testns.t1 (f1 INT);
+
+create table testns.t2 (f1 INT);
+
+select has_table_privilege('regress_priv_user1', 'testns.t1', 'SELECT');
+
+grant all on all TABLES in schema testns to regress_priv_user1;
+
+select has_table_privilege('regress_priv_user1', 'testns.t1', 'SELECT');
+
+select has_table_privilege('regress_priv_user1', 'testns.t2', 'SELECT');
+
+revoke all on all TABLES in schema testns from regress_priv_user1;
+
+select has_table_privilege('regress_priv_user1', 'testns.t1', 'SELECT');
+
+select has_table_privilege('regress_priv_user1', 'testns.t2', 'SELECT');
+
+create function testns.priv_testfunc(INT)
+returns INT
+as 'select 3 * $1;'
+language "sql";
+
+create aggregate testns.priv_testagg (INT) (sfunc = int4pl, stype = INT);
+
+create procedure testns.priv_testproc(INT)
+as 'select 3'
+language "sql";
+
+select has_function_privilege('regress_priv_user1', 'testns.priv_testfunc(int)', 'EXECUTE');
+
+select has_function_privilege('regress_priv_user1', 'testns.priv_testagg(int)', 'EXECUTE');
+
+select has_function_privilege('regress_priv_user1', 'testns.priv_testproc(int)', 'EXECUTE');
+
+revoke all on all FUNCTIONS in schema testns from PUBLIC;
+
+select has_function_privilege('regress_priv_user1', 'testns.priv_testfunc(int)', 'EXECUTE');
+
+select has_function_privilege('regress_priv_user1', 'testns.priv_testagg(int)', 'EXECUTE');
+
+select has_function_privilege('regress_priv_user1', 'testns.priv_testproc(int)', 'EXECUTE');
+
+revoke all on all PROCEDURES in schema testns from PUBLIC;
+
+select has_function_privilege('regress_priv_user1', 'testns.priv_testproc(int)', 'EXECUTE');
+
+grant all on all ROUTINES in schema testns to PUBLIC;
+
+select has_function_privilege('regress_priv_user1', 'testns.priv_testfunc(int)', 'EXECUTE');
+
+select has_function_privilege('regress_priv_user1', 'testns.priv_testagg(int)', 'EXECUTE');
+
+select has_function_privilege('regress_priv_user1', 'testns.priv_testproc(int)', 'EXECUTE');
+
+drop SCHEMA testns cascade;
+
+create role regress_schemauser1 SUPERUSER LOGIN;
+
+create role regress_schemauser2 SUPERUSER LOGIN;
+
+set role to regress_schemauser1;
+
+create schema "testns";
+
+select
+  nspname,
+  rolname
+from
+  pg_namespace,
+  pg_roles
+where
+  pg_namespace.nspname = 'testns' and
+  pg_namespace.nspowner = pg_roles.oid;
+
+alter schema testns owner to regress_schemauser2;
+
+alter role regress_schemauser2 rename to regress_schemauser_renamed;
+
+select
+  nspname,
+  rolname
+from
+  pg_namespace,
+  pg_roles
+where
+  pg_namespace.nspname = 'testns' and
+  pg_namespace.nspowner = pg_roles.oid;
+
+set role to regress_schemauser_renamed;
+
+drop SCHEMA testns cascade;
+
+drop role regress_schemauser1;
+
+drop role regress_schemauser_renamed;
+
+set role to regress_priv_user1;
+
+create table dep_priv_test (a INT);
+
+grant SELECT on table dep_priv_test to regress_priv_user2 with grant option;
+
+grant SELECT on table dep_priv_test to regress_priv_user3 with grant option;
+
+set role to regress_priv_user2;
+
+grant SELECT on table dep_priv_test to regress_priv_user4 with grant option;
+
+set role to regress_priv_user3;
+
+grant SELECT on table dep_priv_test to regress_priv_user4 with grant option;
+
+set role to regress_priv_user4;
+
+grant SELECT on table dep_priv_test to regress_priv_user5;
+
+set role to regress_priv_user2;
+
+revoke SELECT on table dep_priv_test from regress_priv_user4 cascade;
+
+set role to regress_priv_user3;
+
+revoke SELECT on table dep_priv_test from regress_priv_user4 cascade;
+
+set role to regress_priv_user1;
+
+drop TABLE "dep_priv_test";
+
+drop SEQUENCE "x_seq";
+
+drop AGGREGATE priv_testagg1(INT);
+
+drop FUNCTION priv_testfunc2(INT);
+
+drop FUNCTION priv_testfunc4(BOOLEAN);
+
+drop PROCEDURE priv_testproc1(INT);
+
+drop VIEW "atestv0";
+
+drop VIEW "atestv1";
+
+drop VIEW "atestv2";
+
+drop VIEW "atestv3" cascade;
+
+drop VIEW "atestv4";
+
+drop TABLE "atest1";
+
+drop TABLE "atest2";
+
+drop TABLE "atest3";
+
+drop TABLE "atest4";
+
+drop TABLE "atest5";
+
+drop TABLE "atest6";
+
+drop TABLE "atestc";
+
+drop TABLE "atestp1";
+
+drop TABLE "atestp2";
+
+select lo_unlink(oid) from pg_largeobject_metadata where oid >= 1000 and oid < 3000 order by oid;
+
+drop role regress_priv_group1;
+
+drop role regress_priv_group2;
+
+revoke USAGE on language sql from regress_priv_user1;
+
+drop OWNED by regress_priv_user1;
+
+drop role regress_priv_user1;
+
+drop role regress_priv_user2;
+
+drop role regress_priv_user3;
+
+drop role regress_priv_user4;
+
+drop role regress_priv_user5;
+
+drop role regress_priv_user6;
+
+drop role regress_priv_user7;
+
+drop role regress_priv_user8;
+
+alter default PRIVILEGES for role pg_signal_backend revoke USAGE on TYPES from pg_signal_backend;
+
+alter default PRIVILEGES
+for role pg_read_all_settings
+revoke USAGE on TYPES from pg_read_all_settings;
+
+create user regress_locktable_user;
+
+create table lock_table (a INT);
+
+grant SELECT on table lock_table to regress_locktable_user;
+
+set session authorization regress_locktable_user;
+
+begin;
+
+lock table lock_table in ACCESS SHARE mode;
+
+commit;
+
+begin;
+
+lock table lock_table in ROW EXCLUSIVE mode;
+
+rollback;
+
+begin;
+
+lock table lock_table in ACCESS EXCLUSIVE mode;
+
+rollback;
+
+revoke SELECT on table lock_table from regress_locktable_user;
+
+grant INSERT on table lock_table to regress_locktable_user;
+
+set session authorization regress_locktable_user;
+
+begin;
+
+lock table lock_table in ACCESS SHARE mode;
+
+rollback;
+
+begin;
+
+lock table lock_table in ROW EXCLUSIVE mode;
+
+commit;
+
+begin;
+
+lock table lock_table in ACCESS EXCLUSIVE mode;
+
+rollback;
+
+revoke INSERT on table lock_table from regress_locktable_user;
+
+grant UPDATE on table lock_table to regress_locktable_user;
+
+set session authorization regress_locktable_user;
+
+begin;
+
+lock table lock_table in ACCESS SHARE mode;
+
+rollback;
+
+begin;
+
+lock table lock_table in ROW EXCLUSIVE mode;
+
+commit;
+
+begin;
+
+lock table lock_table in ACCESS EXCLUSIVE mode;
+
+commit;
+
+revoke UPDATE on table lock_table from regress_locktable_user;
+
+grant DELETE on table lock_table to regress_locktable_user;
+
+set session authorization regress_locktable_user;
+
+begin;
+
+lock table lock_table in ACCESS SHARE mode;
+
+rollback;
+
+begin;
+
+lock table lock_table in ROW EXCLUSIVE mode;
+
+commit;
+
+begin;
+
+lock table lock_table in ACCESS EXCLUSIVE mode;
+
+commit;
+
+revoke DELETE on table lock_table from regress_locktable_user;
+
+grant TRUNCATE on table lock_table to regress_locktable_user;
+
+set session authorization regress_locktable_user;
+
+begin;
+
+lock table lock_table in ACCESS SHARE mode;
+
+rollback;
+
+begin;
+
+lock table lock_table in ROW EXCLUSIVE mode;
+
+commit;
+
+begin;
+
+lock table lock_table in ACCESS EXCLUSIVE mode;
+
+commit;
+
+revoke TRUNCATE on table lock_table from regress_locktable_user;
+
+grant MAINTAIN on table lock_table to regress_locktable_user;
+
+set session authorization regress_locktable_user;
+
+begin;
+
+lock table lock_table in ACCESS SHARE mode;
+
+rollback;
+
+begin;
+
+lock table lock_table in ROW EXCLUSIVE mode;
+
+commit;
+
+begin;
+
+lock table lock_table in ACCESS EXCLUSIVE mode;
+
+commit;
+
+revoke MAINTAIN on table lock_table from regress_locktable_user;
+
+drop TABLE "lock_table";
+
+drop role regress_locktable_user;
+
+create role regress_readallstats;
+
+select has_table_privilege('regress_readallstats', 'pg_aios', 'SELECT');
+
+select has_table_privilege('regress_readallstats', 'pg_backend_memory_contexts', 'SELECT');
+
+select has_table_privilege('regress_readallstats', 'pg_shmem_allocations', 'SELECT');
+
+select has_table_privilege('regress_readallstats', 'pg_shmem_allocations_numa', 'SELECT');
+
+select has_table_privilege('regress_readallstats', 'pg_dsm_registry_allocations', 'SELECT');
+
+grant PG_READ_ALL_STATS to regress_readallstats;
+
+select has_table_privilege('regress_readallstats', 'pg_aios', 'SELECT');
+
+select has_table_privilege('regress_readallstats', 'pg_backend_memory_contexts', 'SELECT');
+
+select has_table_privilege('regress_readallstats', 'pg_shmem_allocations', 'SELECT');
+
+select has_table_privilege('regress_readallstats', 'pg_shmem_allocations_numa', 'SELECT');
+
+select has_table_privilege('regress_readallstats', 'pg_dsm_registry_allocations', 'SELECT');
+
+set role to regress_readallstats;
+
+select COUNT(*) >= 0 as ok from pg_aios;
+
+select COUNT(*) >= 0 as ok from pg_backend_memory_contexts;
+
+select COUNT(*) >= 0 as ok from pg_shmem_allocations;
+
+reset role;
+
+drop role regress_readallstats;
+
+create role regress_group;
+
+create role regress_group_direct_manager;
+
+create role regress_group_indirect_manager;
+
+create role regress_group_member;
+
+grant REGRESS_GROUP to regress_group_direct_manager with INHERIT false, ADMIN true;
+
+grant REGRESS_GROUP_DIRECT_MANAGER to regress_group_indirect_manager;
+
+set session authorization regress_group_direct_manager;
+
+grant REGRESS_GROUP to regress_group_member;
+
+select
+  cast(cast(member as regrole) as TEXT),
+  case
+    when grantor = 10 then 'BOOTSTRAP SUPERUSER'
+    else cast(cast(grantor as regrole) as TEXT)
+  end
+from
+  pg_auth_members
+where
+  roleid = cast('regress_group' as regrole)
+order by 1,
+  2;
+
+revoke REGRESS_GROUP from regress_group_member restrict;
+
+set session authorization regress_group_indirect_manager;
+
+grant REGRESS_GROUP to regress_group_member;
+
+select
+  cast(cast(member as regrole) as TEXT),
+  case
+    when grantor = 10 then 'BOOTSTRAP SUPERUSER'
+    else cast(cast(grantor as regrole) as TEXT)
+  end
+from
+  pg_auth_members
+where
+  roleid = cast('regress_group' as regrole)
+order by 1,
+  2;
+
+revoke REGRESS_GROUP from regress_group_member restrict;
+
+reset session_authorization;
+
+drop role regress_group;
+
+drop role regress_group_direct_manager;
+
+drop role regress_group_indirect_manager;
+
+drop role regress_group_member;
+
+create role regress_roleoption_protagonist;
+
+create role regress_roleoption_donor;
+
+create role regress_roleoption_recipient;
+
+create schema "regress_roleoption";
+
+grant CREATE, USAGE on schema regress_roleoption to PUBLIC;
+
+grant REGRESS_ROLEOPTION_DONOR to regress_roleoption_protagonist with INHERIT true, SET false;
+
+grant REGRESS_ROLEOPTION_RECIPIENT to regress_roleoption_protagonist with INHERIT false, SET true;
+
+set session authorization regress_roleoption_protagonist;
+
+create table regress_roleoption.t1 (a INT);
+
+create table regress_roleoption.t2 (a INT);
+
+set session authorization regress_roleoption_donor;
+
+create table regress_roleoption.t3 (a INT);
+
+set session authorization regress_roleoption_recipient;
+
+create table regress_roleoption.t4 (a INT);
+
+set session authorization regress_roleoption_protagonist;
+
+alter table regress_roleoption.t1
+  OWNER to regress_roleoption_donor;
+
+alter table regress_roleoption.t2
+  OWNER to regress_roleoption_recipient;
+
+alter table regress_roleoption.t3
+  OWNER to regress_roleoption_protagonist;
+
+alter table regress_roleoption.t4
+  OWNER to regress_roleoption_protagonist;
+
+reset session_authorization;
+
+drop TABLE "regress_roleoption"."t1";
+
+drop TABLE "regress_roleoption"."t2";
+
+drop TABLE "regress_roleoption"."t3";
+
+drop TABLE "regress_roleoption"."t4";
+
+drop SCHEMA regress_roleoption;
+
+drop role regress_roleoption_protagonist;
+
+drop role regress_roleoption_donor;
+
+drop role regress_roleoption_recipient;
+
+create role regress_no_maintain;
+
+create role regress_maintain;
+
+create role regress_maintain_all in role pg_maintain;
+
+create table maintain_test (a INT);
+
+create index on maintain_test using btree (a);
+
+grant MAINTAIN on table maintain_test to regress_maintain;
+
+create materialized view refresh_test as select 1;
+
+grant MAINTAIN on table refresh_test to regress_maintain;
+
+create schema "reindex_test";
+
+set role to regress_no_maintain;
+
+vacuum maintain_test;
+
+analyze maintain_test;
+
+vacuum (ANALYZE) maintain_test;
+
+CLUSTER maintain_test using maintain_test_a_idx;
+
+refresh materialized view refresh_test;
+
+reindex table maintain_test;
+
+reindex index maintain_test_a_idx;
+
+reindex schema reindex_test;
+
+reset role;
+
+set role to regress_maintain;
+
+vacuum maintain_test;
+
+analyze maintain_test;
+
+vacuum (ANALYZE) maintain_test;
+
+CLUSTER maintain_test using maintain_test_a_idx;
+
+refresh materialized view refresh_test;
+
+reindex table maintain_test;
+
+reindex index maintain_test_a_idx;
+
+reindex schema reindex_test;
+
+reset role;
+
+set role to regress_maintain_all;
+
+vacuum maintain_test;
+
+analyze maintain_test;
+
+vacuum (ANALYZE) maintain_test;
+
+CLUSTER maintain_test using maintain_test_a_idx;
+
+refresh materialized view refresh_test;
+
+reindex table maintain_test;
+
+reindex index maintain_test_a_idx;
+
+reindex schema reindex_test;
+
+reset role;
+
+drop TABLE "maintain_test";
+
+drop MATERIALIZED VIEW "refresh_test";
+
+drop SCHEMA reindex_test;
+
+drop role regress_no_maintain;
+
+drop role regress_maintain;
+
+drop role regress_maintain_all;
+
+create role regress_grantor1;
+
+create role regress_grantor2 role regress_grantor1;
+
+create role regress_grantor3;
+
+create table grantor_test1 ();
+
+create table grantor_test2 ();
+
+create table grantor_test3 ();
+
+grant SELECT on table grantor_test2 to regress_grantor1 with grant option;
+
+grant SELECT, UPDATE on table grantor_test3 to regress_grantor2 with grant option;
+
+set role to regress_grantor1;
+
+grant SELECT, UPDATE on table grantor_test1 to regress_grantor3;
+
+grant SELECT, UPDATE on table grantor_test2 to regress_grantor3;
+
+grant SELECT, UPDATE on table grantor_test3 to regress_grantor3;
+
+reset role;
+
+select
+  *
+from
+  information_schema.table_privileges as t
+where
+  grantor like 'regress_grantor%'
+order by row(t.*);
+
+drop TABLE "grantor_test1", "grantor_test2", "grantor_test3";
+
+drop role regress_grantor1, regress_grantor2, regress_grantor3;

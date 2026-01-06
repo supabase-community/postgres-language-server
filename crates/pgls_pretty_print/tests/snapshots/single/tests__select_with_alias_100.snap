@@ -1,0 +1,6 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/single/select_with_alias.sql
+snapshot_kind: text
+---
+select a as x, b as y, c from t;

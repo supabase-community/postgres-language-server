@@ -1,0 +1,727 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/create_function_sql.sql
+snapshot_kind: text
+---
+create user regress_unpriv_user;
+
+create schema "temp_func_test";
+
+grant all on schema temp_func_test to PUBLIC;
+
+set search_path to temp_func_test, public;
+
+create function functest_a_1(TEXT, DATE)
+returns BOOLEAN
+language "sql"
+as 'SELECT $1 = ''abcd'' AND $2 > ''2001-01-01''';
+
+create function functest_a_2(TEXT[])
+returns INT
+language "sql"
+as 'SELECT $1[1]::int';
+
+create function functest_a_3()
+returns BOOLEAN
+language "sql"
+as 'SELECT false';
+
+select
+  proname,
+  cast(prorettype as REGTYPE),
+  cast(proargtypes as REGTYPE[])
+from
+  pg_proc
+where
+  oid
+  in (
+    cast('functest_A_1' as REGPROC),
+    cast('functest_A_2' as REGPROC),
+    cast('functest_A_3' as REGPROC)
+  )
+order by proname;
+
+select functest_a_1('abcd', '2020-01-01');
+
+select functest_a_2(array['1', '2', '3']);
+
+select functest_a_3();
+
+create function functest_b_1(INT)
+returns BOOLEAN
+language "sql"
+as 'SELECT $1 > 0';
+
+create function functest_b_2(INT)
+returns BOOLEAN
+language "sql"
+immutable
+as 'SELECT $1 > 0';
+
+create function functest_b_3(INT)
+returns BOOLEAN
+language "sql"
+stable
+as 'SELECT $1 = 0';
+
+create function functest_b_4(INT)
+returns BOOLEAN
+language "sql"
+volatile
+as 'SELECT $1 < 0';
+
+select
+  proname,
+  provolatile
+from
+  pg_proc
+where
+  oid
+  in (
+    cast('functest_B_1' as REGPROC),
+    cast('functest_B_2' as REGPROC),
+    cast('functest_B_3' as REGPROC),
+    cast('functest_B_4' as REGPROC)
+  )
+order by proname;
+
+alter FUNCTION functest_b_2(INT) volatile;
+
+alter FUNCTION functest_b_3(INT) cost 100;
+
+select
+  proname,
+  provolatile
+from
+  pg_proc
+where
+  oid
+  in (
+    cast('functest_B_1' as REGPROC),
+    cast('functest_B_2' as REGPROC),
+    cast('functest_B_3' as REGPROC),
+    cast('functest_B_4' as REGPROC)
+  )
+order by proname;
+
+create function functest_c_1(INT)
+returns BOOLEAN
+language "sql"
+as 'SELECT $1 > 0';
+
+create function functest_c_2(INT)
+returns BOOLEAN
+language "sql"
+security DEFINER
+as 'SELECT $1 = 0';
+
+create function functest_c_3(INT)
+returns BOOLEAN
+language "sql"
+security INVOKER
+as 'SELECT $1 < 0';
+
+select
+  proname,
+  prosecdef
+from
+  pg_proc
+where
+  oid
+  in (
+    cast('functest_C_1' as REGPROC),
+    cast('functest_C_2' as REGPROC),
+    cast('functest_C_3' as REGPROC)
+  )
+order by proname;
+
+alter FUNCTION functest_c_1(INT) immutable;
+
+alter FUNCTION functest_c_2(INT) security INVOKER;
+
+alter FUNCTION functest_c_3(INT) security DEFINER;
+
+select
+  proname,
+  prosecdef
+from
+  pg_proc
+where
+  oid
+  in (
+    cast('functest_C_1' as REGPROC),
+    cast('functest_C_2' as REGPROC),
+    cast('functest_C_3' as REGPROC)
+  )
+order by proname;
+
+create function functest_e_1(INT)
+returns BOOLEAN
+language "sql"
+as 'SELECT $1 > 100';
+
+create function functest_e_2(INT)
+returns BOOLEAN
+language "sql"
+leakproof
+as 'SELECT $1 > 100';
+
+select
+  proname,
+  proleakproof
+from
+  pg_proc
+where
+  oid
+  in (
+    cast('functest_E_1' as REGPROC),
+    cast('functest_E_2' as REGPROC)
+  )
+order by proname;
+
+alter FUNCTION functest_e_1(INT) leakproof;
+
+alter FUNCTION functest_e_2(INT) stable;
+
+select
+  proname,
+  proleakproof
+from
+  pg_proc
+where
+  oid
+  in (
+    cast('functest_E_1' as REGPROC),
+    cast('functest_E_2' as REGPROC)
+  )
+order by proname;
+
+alter FUNCTION functest_e_2(INT) NOT LEAKPROOF;
+
+select
+  proname,
+  proleakproof
+from
+  pg_proc
+where
+  oid
+  in (
+    cast('functest_E_1' as REGPROC),
+    cast('functest_E_2' as REGPROC)
+  )
+order by proname;
+
+alter function functest_e_1(INT) owner to regress_unpriv_user;
+
+alter function functest_e_2(INT) owner to regress_unpriv_user;
+
+set session authorization regress_unpriv_user;
+
+set search_path to temp_func_test, public;
+
+alter FUNCTION functest_e_1(INT) NOT LEAKPROOF;
+
+alter FUNCTION functest_e_2(INT) leakproof;
+
+create function functest_e_3(INT)
+returns BOOLEAN
+language "sql"
+leakproof
+as 'SELECT $1 < 200';
+
+reset session_authorization;
+
+create function functest_f_1(INT)
+returns BOOLEAN
+language "sql"
+as 'SELECT $1 > 50';
+
+create function functest_f_2(INT)
+returns BOOLEAN
+language "sql"
+CALLED ON NULL INPUT
+as 'SELECT $1 = 50';
+
+create function functest_f_3(INT)
+returns BOOLEAN
+language "sql"
+STRICT
+as 'SELECT $1 < 50';
+
+create function functest_f_4(INT)
+returns BOOLEAN
+language "sql"
+STRICT
+as 'SELECT $1 = 50';
+
+select
+  proname,
+  proisstrict
+from
+  pg_proc
+where
+  oid
+  in (
+    cast('functest_F_1' as REGPROC),
+    cast('functest_F_2' as REGPROC),
+    cast('functest_F_3' as REGPROC),
+    cast('functest_F_4' as REGPROC)
+  )
+order by proname;
+
+alter FUNCTION functest_f_1(INT) immutable;
+
+alter FUNCTION functest_f_2(INT) STRICT;
+
+alter FUNCTION functest_f_3(INT) CALLED ON NULL INPUT;
+
+select
+  proname,
+  proisstrict
+from
+  pg_proc
+where
+  oid
+  in (
+    cast('functest_F_1' as REGPROC),
+    cast('functest_F_2' as REGPROC),
+    cast('functest_F_3' as REGPROC),
+    cast('functest_F_4' as REGPROC)
+  )
+order by proname;
+
+select pg_get_functiondef(cast('functest_A_1' as REGPROC));
+
+select pg_get_functiondef(cast('functest_B_3' as REGPROC));
+
+select pg_get_functiondef(cast('functest_C_3' as REGPROC));
+
+select pg_get_functiondef(cast('functest_F_2' as REGPROC));
+
+create function functest_s_1(a TEXT, b DATE)
+returns BOOLEAN
+language "sql" return a = 'abcd' and b > '2001-01-01';;
+
+create function functest_s_2(a TEXT[])
+returns INT return cast(a[1] as INT);;
+
+create function functest_s_3()
+returns BOOLEAN return false;;
+
+commit;
+
+select a = 'abcd' and b > '2001-01-01';
+
+commit;
+
+select 1;
+
+select false;
+
+commit;
+
+create table functest1 (i INT);
+
+insert into functest1 select a + $2;
+
+commit;
+
+create function functest_s_xxx(x INT)
+returns INT
+language "sql"
+as ' SELECT x * 2 ' return x * 3;;
+
+create function functest_s_xx(x ANYARRAY)
+returns ANYELEMENT
+language "sql" return x[1];;
+
+create function functest_s_xx(x DATE)
+returns BOOLEAN
+language "sql" return x > 1;;
+
+select case when x % 2 = 0 then true else false end;
+
+commit;
+
+select functest_s_1('abcd', '2020-01-01');
+
+select functest_s_2(array['1', '2', '3']);
+
+select functest_s_3();
+
+select functest_s_10('abcd', '2020-01-01');
+
+select functest_s_13();
+
+select pg_get_functiondef(cast('functest_S_1' as REGPROC));
+
+select pg_get_functiondef(cast('functest_S_2' as REGPROC));
+
+select pg_get_functiondef(cast('functest_S_3' as REGPROC));
+
+select pg_get_functiondef(cast('functest_S_3a' as REGPROC));
+
+select pg_get_functiondef(cast('functest_S_10' as REGPROC));
+
+select pg_get_functiondef(cast('functest_S_13' as REGPROC));
+
+select pg_get_functiondef(cast('functest_S_15' as REGPROC));
+
+select pg_get_functiondef(cast('functest_S_16' as REGPROC));
+
+drop TABLE "functest1" cascade;
+
+create table functest3 (a INT);
+
+insert into functest3 values (1), (2);
+
+create view functestv3
+as select * from functest3;
+
+create function functest_s_14()
+returns BIGINT return (select COUNT(*) from functestv3);;
+
+select functest_s_14();
+
+drop TABLE "functest3" cascade;
+
+create function functest_is_1(a INT, b INT default 1, c TEXT default 'foo')
+returns INT
+language "sql"
+as 'SELECT $1 + $2';
+
+create function functest_is_2(out a INT, b INT default 1)
+returns INT
+language "sql"
+as 'SELECT $1';
+
+create function functest_is_3(a INT default 1, out b INT)
+returns INT
+language "sql"
+as 'SELECT $1';
+
+select
+  routine_name,
+  ordinal_position,
+  parameter_name,
+  parameter_default
+from
+  information_schema.parameters
+  inner join
+    information_schema.routines
+  using (
+    "specific_schema",
+    "specific_name")
+where
+  routine_schema = 'temp_func_test' and
+  routine_name ~ '^functest_is_'
+order by 1,
+  2;
+
+drop FUNCTION
+  functest_is_1(INT, INT, TEXT),
+  functest_is_2(INT),
+  functest_is_3(INT);
+
+create function functest_is_4a()
+returns INT
+language "sql"
+as 'SELECT 1';
+
+create function functest_is_4b(x INT default functest_is_4a())
+returns INT
+language "sql"
+as 'SELECT x';
+
+create sequence functest1;
+
+create function functest_is_5(x INT default nextval('functest1'))
+returns INT
+language "sql"
+as 'SELECT x';
+
+create function functest_is_6()
+returns INT
+language "sql" return nextval('functest1');;
+
+create table functest2 (
+  a INT,
+  b INT
+);
+
+create function functest_is_7()
+returns INT
+language "sql" return (select COUNT(a) from functest2);;
+
+select
+  r0.routine_name,
+  r1.routine_name
+from
+  information_schema.routine_routine_usage
+  as rru
+  inner join
+    information_schema.routines as r0
+  on r0.specific_name = rru.specific_name
+  inner join
+    information_schema.routines as r1
+  on r1.specific_name = rru.routine_name
+where
+  r0.routine_schema = 'temp_func_test' and
+  r1.routine_schema = 'temp_func_test'
+order by 1,
+  2;
+
+select
+  routine_name,
+  sequence_name
+from
+  information_schema.routine_sequence_usage
+where
+  routine_schema = 'temp_func_test'
+order by 1,
+  2;
+
+select
+  routine_name,
+  table_name,
+  column_name
+from
+  information_schema.routine_column_usage
+where
+  routine_schema = 'temp_func_test'
+order by 1,
+  2;
+
+select
+  routine_name,
+  table_name
+from
+  information_schema.routine_table_usage
+where
+  routine_schema = 'temp_func_test'
+order by 1,
+  2;
+
+drop FUNCTION functest_is_4a cascade;
+
+drop SEQUENCE "functest1" cascade;
+
+drop TABLE "functest2" cascade;
+
+create function functest_b_2(BIGINT)
+returns BOOLEAN
+language "sql"
+immutable
+as 'SELECT $1 > 0';
+
+drop FUNCTION functest_b_1;
+
+drop FUNCTION functest_b_1;
+
+drop FUNCTION functest_b_2;
+
+create function functest1(a INT)
+returns INT
+language "sql"
+as 'SELECT $1';
+
+create or replace function functest1(a INT)
+returns INT
+language "sql"
+window
+as 'SELECT $1';
+
+create or replace procedure functest1(a INT)
+language "sql"
+as 'SELECT $1';
+
+drop FUNCTION functest1(INT);
+
+create function functest_srf0()
+returns setof INT
+language "sql"
+as ' SELECT i FROM generate_series(1, 100) i ';
+
+select functest_srf0() limit 5;
+
+create table functest3 (a INT);
+
+insert into functest3 values (1), (2), (3);
+
+create function functest_sri1()
+returns setof INT
+language "sql"
+stable
+as '
+    SELECT * FROM functest3;
+';
+
+select * from functest_sri1();
+
+select * from functest_sri1();
+
+select * from functest3;
+
+commit;
+
+select * from functest_sri2();
+
+select * from functest_sri2();
+
+drop TABLE "functest3" cascade;
+
+create function voidtest1(a INT)
+returns VOID
+language "sql"
+as ' SELECT a + 1 ';
+
+select voidtest1(42);
+
+create function voidtest2(a INT, b INT)
+returns VOID
+language "sql"
+as ' SELECT voidtest1(a + b) ';
+
+select voidtest2(11, 22);
+
+select voidtest2(11, 22);
+
+create temporary table sometable (f1 INT);
+
+create function voidtest3(a INT)
+returns VOID
+language "sql"
+as ' INSERT INTO sometable VALUES(a + 1) ';
+
+select voidtest3(17);
+
+create function voidtest4(a INT)
+returns VOID
+language "sql"
+as ' INSERT INTO sometable VALUES(a - 1) RETURNING f1 ';
+
+select voidtest4(39);
+
+select * from sometable;
+
+create function voidtest5(a INT)
+returns setof VOID
+language "sql"
+as ' SELECT generate_series(1, a) '
+stable;
+
+select * from voidtest5(3);
+
+set check_function_bodies = off;
+
+create function create_and_insert()
+returns VOID
+language "sql"
+as '
+  create table ddl_test (f1 int);
+  insert into ddl_test values (1.2);
+';
+
+select create_and_insert();
+
+select * from ddl_test;
+
+create function alter_and_insert()
+returns VOID
+language "sql"
+as '
+  alter table ddl_test alter column f1 type numeric;
+  insert into ddl_test values (1.2);
+';
+
+select alter_and_insert();
+
+select * from ddl_test;
+
+reset check_function_bodies;
+
+create function double_append(ANYARRAY, ANYELEMENT)
+returns setof ANYARRAY
+language "sql"
+immutable
+as ' SELECT array_append($1, $2) || array_append($1, $2) ';
+
+select
+  double_append(
+    array_append(array[q1], q2),
+    q3
+  )
+from
+  (
+    values (1, 2, 3), (4, 5, 6)
+  )
+  as v (q1, q2, q3);
+
+create function part_hashint4_error(value INT, seed BIGINT)
+returns BIGINT
+language "sql"
+STRICT
+immutable
+parallel SAFE
+as ' SELECT value + seed + random()::int/0 ';
+
+create OPERATOR class part_test_int4_ops_bad
+  for type INT
+  using hash
+  as FUNCTION 2 part_hashint4_error(INT, BIGINT);
+
+create table pt (i INT)
+partition by HASH(i part_test_int4_ops_bad);
+
+create table p1 partition of pt for values with (MODULUS 4, REMAINDER 0);
+
+insert into pt values (1);
+
+insert into pt values (1);
+
+create function test1(INT)
+returns INT
+language "sql"
+as 'SELECT ''not an integer'';';
+
+create function test1(INT)
+returns INT
+language "sql"
+as 'not even SQL';
+
+create function test1(INT)
+returns INT
+language "sql"
+as 'SELECT 1, 2, 3;';
+
+create function test1(INT)
+returns INT
+language "sql"
+as 'SELECT $2;';
+
+create function test1(INT)
+returns INT
+language "sql"
+as 'a', 'b';
+
+create function test1(INT)
+returns INT
+language "sql"
+as '';
+
+set check_function_bodies = off;
+
+create function test1(ANYELEMENT)
+returns ANYARRAY
+language "sql"
+as '';
+
+select test1(0);
+
+reset check_function_bodies;
+
+drop SCHEMA temp_func_test cascade;
+
+drop role regress_unpriv_user;
+
+reset search_path;

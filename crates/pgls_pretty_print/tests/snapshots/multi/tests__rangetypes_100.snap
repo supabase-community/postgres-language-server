@@ -1,0 +1,1131 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/rangetypes.sql
+snapshot_kind: text
+---
+select cast('' as textrange);
+
+select cast('-[a,z)' as textrange);
+
+select cast('[a,z) - ' as textrange);
+
+select cast('(",a)' as textrange);
+
+select cast('(,,a)' as textrange);
+
+select cast('(),a)' as textrange);
+
+select cast('(a,))' as textrange);
+
+select cast('(],a)' as textrange);
+
+select cast('(a,])' as textrange);
+
+select cast('[z,a]' as textrange);
+
+select cast('  empty  ' as textrange);
+
+select cast(' ( empty, empty )  ' as textrange);
+
+select cast(' ( " a " " a ", " z " " z " )  ' as textrange);
+
+select cast('(a,)' as textrange);
+
+select cast('[,z]' as textrange);
+
+select cast('[a,]' as textrange);
+
+select cast('(,)' as textrange);
+
+select cast('[ , ]' as textrange);
+
+select cast('["",""]' as textrange);
+
+select cast('[",",","]' as textrange);
+
+select cast('["\\","\\"]' as textrange);
+
+select cast('(\\,a)' as textrange);
+
+select cast('((,z)' as textrange);
+
+select cast('([,z)' as textrange);
+
+select cast('(!,()' as textrange);
+
+select cast('(!,[)' as textrange);
+
+select cast('[a,a]' as textrange);
+
+select cast('[a,a)' as textrange);
+
+select cast('(a,a]' as textrange);
+
+select cast('(a,a)' as textrange);
+
+select pg_input_is_valid('(1,4)', 'int4range');
+
+select pg_input_is_valid('(1,4', 'int4range');
+
+select * from pg_input_error_info('(1,4', 'int4range');
+
+select pg_input_is_valid('(4,1)', 'int4range');
+
+select * from pg_input_error_info('(4,1)', 'int4range');
+
+select pg_input_is_valid('(4,zed)', 'int4range');
+
+select * from pg_input_error_info('(4,zed)', 'int4range');
+
+select pg_input_is_valid('[1,2147483647]', 'int4range');
+
+select * from pg_input_error_info('[1,2147483647]', 'int4range');
+
+select pg_input_is_valid('[2000-01-01,5874897-12-31]', 'daterange');
+
+select * from pg_input_error_info('[2000-01-01,5874897-12-31]', 'daterange');
+
+create table numrange_test (nr NUMRANGE);
+
+create index "numrange_test_btree" on numrange_test using btree (nr);
+
+insert into numrange_test values ('[,)');
+
+insert into numrange_test values ('[3,]');
+
+insert into numrange_test values ('[, 5)');
+
+insert into numrange_test values (numrange(1.1, 2.2));
+
+insert into numrange_test values ('empty');
+
+insert into numrange_test values (numrange(1.7, 1.7, '[]'));
+
+select nr, isempty(nr), lower(nr), upper(nr) from numrange_test;
+
+select nr, lower_inc(nr), lower_inf(nr), upper_inc(nr), upper_inf(nr) from numrange_test;
+
+select * from numrange_test where range_contains(nr, numrange(1.9, 1.91));
+
+select * from numrange_test where nr @> numrange(1.0, 10000.1);
+
+select * from numrange_test where range_contained_by(numrange(-1e7, -10000.1), nr);
+
+select * from numrange_test where 1.9 <@ nr;
+
+select * from numrange_test where nr = 'empty';
+
+select * from numrange_test where nr = '(1.1, 2.2)';
+
+select * from numrange_test where nr = '[1.1, 2.2)';
+
+select * from numrange_test where nr < 'empty';
+
+select * from numrange_test where nr < numrange(-1000.0, -1000.0, '[]');
+
+select * from numrange_test where nr < numrange(0.0, 1.0, '[]');
+
+select * from numrange_test where nr < numrange(1000.0, 1001.0, '[]');
+
+select * from numrange_test where nr <= 'empty';
+
+select * from numrange_test where nr >= 'empty';
+
+select * from numrange_test where nr > 'empty';
+
+select * from numrange_test where nr > numrange(-1001.0, -1000.0, '[]');
+
+select * from numrange_test where nr > numrange(0.0, 1.0, '[]');
+
+select * from numrange_test where nr > numrange(1000.0, 1000.0, '[]');
+
+select numrange(2.0, 1.0);
+
+select numrange(2.0, 3.0) -|- numrange(3.0, 4.0);
+
+select range_adjacent(numrange(2.0, 3.0), numrange(3.1, 4.0));
+
+select range_adjacent(numrange(2.0, 3.0), numrange(3.1, null));
+
+select numrange(2.0, 3.0, '[]') -|- numrange(3.0, 4.0, '()');
+
+select numrange(1.0, 2.0) -|- numrange(2.0, 3.0, '[]');
+
+select range_adjacent(numrange(2.0, 3.0, '(]'), numrange(1.0, 2.0, '(]'));
+
+select numrange(1.1, 3.3) <@ numrange(0.1, 10.1);
+
+select numrange(0.1, 10.1) <@ numrange(1.1, 3.3);
+
+select numrange(1.1, 2.2) - numrange(2.0, 3.0);
+
+select numrange(1.1, 2.2) - numrange(2.2, 3.0);
+
+select numrange(1.1, 2.2, '[]') - numrange(2.0, 3.0);
+
+select range_minus(numrange(10.1, 12.2, '[]'), numrange(110.0, 120.2, '(]'));
+
+select range_minus(numrange(10.1, 12.2, '[]'), numrange(0.0, 120.2, '(]'));
+
+select numrange(4.5, 5.5, '[]') && numrange(5.5, 6.5);
+
+select numrange(1.0, 2.0) << numrange(3.0, 4.0);
+
+select numrange(1.0, 3.0, '[]') << numrange(3.0, 4.0, '[]');
+
+select numrange(1.0, 3.0, '()') << numrange(3.0, 4.0, '()');
+
+select numrange(1.0, 2.0) >> numrange(3.0, 4.0);
+
+select numrange(3.0, 70.0) &< numrange(6.6, 100.0);
+
+select numrange(1.1, 2.2) < numrange(1.0, 200.2);
+
+select numrange(1.1, 2.2) < numrange(1.1, 1.2);
+
+select numrange(1.0, 2.0) + numrange(2.0, 3.0);
+
+select numrange(1.0, 2.0) + numrange(1.5, 3.0);
+
+select numrange(1.0, 2.0) + numrange(2.5, 3.0);
+
+select range_merge(numrange(1.0, 2.0), numrange(2.0, 3.0));
+
+select range_merge(numrange(1.0, 2.0), numrange(1.5, 3.0));
+
+select range_merge(numrange(1.0, 2.0), numrange(2.5, 3.0));
+
+select numrange(1.0, 2.0) * numrange(2.0, 3.0);
+
+select numrange(1.0, 2.0) * numrange(1.5, 3.0);
+
+select numrange(1.0, 2.0) * numrange(2.5, 3.0);
+
+select range_intersect_agg(nr) from numrange_test;
+
+select range_intersect_agg(nr) from numrange_test where false;
+
+select range_intersect_agg(nr) from numrange_test where nr @> 4.0;
+
+analyze numrange_test;
+
+create table numrange_test2 (nr NUMRANGE);
+
+create index "numrange_test2_hash_idx" on numrange_test2 using hash (nr);
+
+insert into numrange_test2 values ('[, 5)');
+
+insert into numrange_test2 values (numrange(1.1, 2.2));
+
+insert into numrange_test2 values (numrange(1.1, 2.2));
+
+insert into numrange_test2 values (numrange(1.1, 2.2, '()'));
+
+insert into numrange_test2 values ('empty');
+
+select * from numrange_test2 where nr = cast('empty' as NUMRANGE);
+
+select * from numrange_test2 where nr = numrange(1.1, 2.2);
+
+select * from numrange_test2 where nr = numrange(1.1, 2.3);
+
+set enable_nestloop = t;
+
+set enable_hashjoin = f;
+
+set enable_mergejoin = f;
+
+select * from numrange_test natural join numrange_test2 order by nr;
+
+set enable_nestloop = f;
+
+set enable_hashjoin = t;
+
+set enable_mergejoin = f;
+
+select * from numrange_test natural join numrange_test2 order by nr;
+
+set enable_nestloop = f;
+
+set enable_hashjoin = f;
+
+set enable_mergejoin = t;
+
+select * from numrange_test natural join numrange_test2 order by nr;
+
+set enable_nestloop = default;
+
+set enable_hashjoin = default;
+
+set enable_mergejoin = default;
+
+drop TABLE "numrange_test2";
+
+create table textrange_test (tr textrange);
+
+create index "textrange_test_btree" on textrange_test using btree (tr);
+
+insert into textrange_test values ('[,)');
+
+insert into textrange_test values ('["a",]');
+
+insert into textrange_test values ('[,"q")');
+
+insert into textrange_test values (textrange('b', 'g'));
+
+insert into textrange_test values ('empty');
+
+insert into textrange_test values (textrange('d', 'd', '[]'));
+
+select tr, isempty(tr), lower(tr), upper(tr) from textrange_test;
+
+select tr, lower_inc(tr), lower_inf(tr), upper_inc(tr), upper_inf(tr) from textrange_test;
+
+select * from textrange_test where range_contains(tr, textrange('f', 'fx'));
+
+select * from textrange_test where tr @> textrange('a', 'z');
+
+select * from textrange_test where range_contained_by(textrange('0', '9'), tr);
+
+select * from textrange_test where cast('e' as TEXT) <@ tr;
+
+select * from textrange_test where tr = 'empty';
+
+select * from textrange_test where tr = '("b","g")';
+
+select * from textrange_test where tr = '["b","g")';
+
+select * from textrange_test where tr < 'empty';
+
+select int4range(1, 10, '[]');
+
+select int4range(1, 10, '[)');
+
+select int4range(1, 10, '(]');
+
+select int4range(1, 10, '()');
+
+select int4range(1, 2, '()');
+
+select daterange(cast('2000-01-10' as DATE), cast('2000-01-20' as DATE), '[]');
+
+select daterange(cast('2000-01-10' as DATE), cast('2000-01-20' as DATE), '[)');
+
+select daterange(cast('2000-01-10' as DATE), cast('2000-01-20' as DATE), '(]');
+
+select daterange(cast('2000-01-10' as DATE), cast('2000-01-20' as DATE), '()');
+
+select daterange(cast('2000-01-10' as DATE), cast('2000-01-11' as DATE), '()');
+
+select daterange(cast('2000-01-10' as DATE), cast('2000-01-11' as DATE), '(]');
+
+select daterange(cast('-infinity' as DATE), cast('2000-01-01' as DATE), '()');
+
+select daterange(cast('-infinity' as DATE), cast('2000-01-01' as DATE), '[)');
+
+select daterange(cast('2000-01-01' as DATE), cast('infinity' as DATE), '[)');
+
+select daterange(cast('2000-01-01' as DATE), cast('infinity' as DATE), '[]');
+
+create table test_range_gist (ir INT4RANGE);
+
+create index "test_range_gist_idx" on test_range_gist using gist (ir);
+
+insert into test_range_gist select int4range(g, g + 10) from generate_series(1, 2000) as g;
+
+insert into test_range_gist select cast('empty' as INT4RANGE) from generate_series(1, 500) as g;
+
+insert into test_range_gist select int4range(g, g + 10000) from generate_series(1, 1000) as g;
+
+insert into test_range_gist select cast('empty' as INT4RANGE) from generate_series(1, 500) as g;
+
+insert into test_range_gist select int4range(null, g * 10, '(]') from generate_series(1, 100) as g;
+
+insert into test_range_gist select int4range(g * 10, null, '(]') from generate_series(1, 100) as g;
+
+insert into test_range_gist select int4range(g, g + 10) from generate_series(1, 2000) as g;
+
+analyze test_range_gist;
+
+set enable_seqscan = t;
+
+set enable_indexscan = f;
+
+set enable_bitmapscan = f;
+
+select COUNT(*) from test_range_gist where ir @> cast('empty' as INT4RANGE);
+
+select COUNT(*) from test_range_gist where ir = int4range(10, 20);
+
+select COUNT(*) from test_range_gist where ir @> 10;
+
+select COUNT(*) from test_range_gist where ir @> int4range(10, 20);
+
+select COUNT(*) from test_range_gist where ir && int4range(10, 20);
+
+select COUNT(*) from test_range_gist where ir <@ int4range(10, 50);
+
+select COUNT(*) from test_range_gist where ir << int4range(100, 500);
+
+select COUNT(*) from test_range_gist where ir >> int4range(100, 500);
+
+select COUNT(*) from test_range_gist where ir &< int4range(100, 500);
+
+select COUNT(*) from test_range_gist where ir &> int4range(100, 500);
+
+select COUNT(*) from test_range_gist where ir -|- int4range(100, 500);
+
+select COUNT(*) from test_range_gist where ir @> cast('{}' as int4multirange);
+
+select
+  COUNT(*)
+from
+  test_range_gist
+where
+  ir @>
+  int4multirange(
+    int4range(10, 20),
+    int4range(30, 40)
+  );
+
+select
+  COUNT(*)
+from
+  test_range_gist
+where
+  ir &&
+  cast('{(10,20),(30,40),(50,60)}'
+  as int4multirange);
+
+select
+  COUNT(*)
+from
+  test_range_gist
+where
+  ir <@
+  cast('{(10,30),(40,60),(70,90)}'
+  as int4multirange);
+
+select
+  COUNT(*)
+from
+  test_range_gist
+where
+  ir <<
+  int4multirange(
+    int4range(100, 200),
+    int4range(400, 500)
+  );
+
+select
+  COUNT(*)
+from
+  test_range_gist
+where
+  ir >>
+  int4multirange(
+    int4range(100, 200),
+    int4range(400, 500)
+  );
+
+select
+  COUNT(*)
+from
+  test_range_gist
+where
+  ir &<
+  int4multirange(
+    int4range(100, 200),
+    int4range(400, 500)
+  );
+
+select
+  COUNT(*)
+from
+  test_range_gist
+where
+  ir &>
+  int4multirange(
+    int4range(100, 200),
+    int4range(400, 500)
+  );
+
+select
+  COUNT(*)
+from
+  test_range_gist
+where
+  ir -|-
+  int4multirange(
+    int4range(100, 200),
+    int4range(400, 500)
+  );
+
+set enable_seqscan = f;
+
+set enable_indexscan = t;
+
+set enable_bitmapscan = f;
+
+select COUNT(*) from test_range_gist where ir @> cast('empty' as INT4RANGE);
+
+select COUNT(*) from test_range_gist where ir = int4range(10, 20);
+
+select COUNT(*) from test_range_gist where ir @> 10;
+
+select COUNT(*) from test_range_gist where ir @> int4range(10, 20);
+
+select COUNT(*) from test_range_gist where ir && int4range(10, 20);
+
+select COUNT(*) from test_range_gist where ir <@ int4range(10, 50);
+
+select COUNT(*) from test_range_gist where ir << int4range(100, 500);
+
+select COUNT(*) from test_range_gist where ir >> int4range(100, 500);
+
+select COUNT(*) from test_range_gist where ir &< int4range(100, 500);
+
+select COUNT(*) from test_range_gist where ir &> int4range(100, 500);
+
+select COUNT(*) from test_range_gist where ir -|- int4range(100, 500);
+
+select COUNT(*) from test_range_gist where ir @> cast('{}' as int4multirange);
+
+select
+  COUNT(*)
+from
+  test_range_gist
+where
+  ir @>
+  int4multirange(
+    int4range(10, 20),
+    int4range(30, 40)
+  );
+
+select
+  COUNT(*)
+from
+  test_range_gist
+where
+  ir &&
+  cast('{(10,20),(30,40),(50,60)}'
+  as int4multirange);
+
+select
+  COUNT(*)
+from
+  test_range_gist
+where
+  ir <@
+  cast('{(10,30),(40,60),(70,90)}'
+  as int4multirange);
+
+select
+  COUNT(*)
+from
+  test_range_gist
+where
+  ir <<
+  int4multirange(
+    int4range(100, 200),
+    int4range(400, 500)
+  );
+
+select
+  COUNT(*)
+from
+  test_range_gist
+where
+  ir >>
+  int4multirange(
+    int4range(100, 200),
+    int4range(400, 500)
+  );
+
+select
+  COUNT(*)
+from
+  test_range_gist
+where
+  ir &<
+  int4multirange(
+    int4range(100, 200),
+    int4range(400, 500)
+  );
+
+select
+  COUNT(*)
+from
+  test_range_gist
+where
+  ir &>
+  int4multirange(
+    int4range(100, 200),
+    int4range(400, 500)
+  );
+
+select
+  COUNT(*)
+from
+  test_range_gist
+where
+  ir -|-
+  int4multirange(
+    int4range(100, 200),
+    int4range(400, 500)
+  );
+
+drop INDEX "test_range_gist_idx";
+
+create index "test_range_gist_idx" on test_range_gist using gist (ir);
+
+select COUNT(*) from test_range_gist where ir @> cast('empty' as INT4RANGE);
+
+select COUNT(*) from test_range_gist where ir = int4range(10, 20);
+
+select COUNT(*) from test_range_gist where ir @> 10;
+
+select COUNT(*) from test_range_gist where ir @> int4range(10, 20);
+
+select COUNT(*) from test_range_gist where ir && int4range(10, 20);
+
+select COUNT(*) from test_range_gist where ir <@ int4range(10, 50);
+
+select COUNT(*) from test_range_gist where ir << int4range(100, 500);
+
+select COUNT(*) from test_range_gist where ir >> int4range(100, 500);
+
+select COUNT(*) from test_range_gist where ir &< int4range(100, 500);
+
+select COUNT(*) from test_range_gist where ir &> int4range(100, 500);
+
+select COUNT(*) from test_range_gist where ir -|- int4range(100, 500);
+
+select COUNT(*) from test_range_gist where ir @> cast('{}' as int4multirange);
+
+select
+  COUNT(*)
+from
+  test_range_gist
+where
+  ir @>
+  int4multirange(
+    int4range(10, 20),
+    int4range(30, 40)
+  );
+
+select
+  COUNT(*)
+from
+  test_range_gist
+where
+  ir &&
+  cast('{(10,20),(30,40),(50,60)}'
+  as int4multirange);
+
+select
+  COUNT(*)
+from
+  test_range_gist
+where
+  ir <@
+  cast('{(10,30),(40,60),(70,90)}'
+  as int4multirange);
+
+select
+  COUNT(*)
+from
+  test_range_gist
+where
+  ir <<
+  int4multirange(
+    int4range(100, 200),
+    int4range(400, 500)
+  );
+
+select
+  COUNT(*)
+from
+  test_range_gist
+where
+  ir >>
+  int4multirange(
+    int4range(100, 200),
+    int4range(400, 500)
+  );
+
+select
+  COUNT(*)
+from
+  test_range_gist
+where
+  ir &<
+  int4multirange(
+    int4range(100, 200),
+    int4range(400, 500)
+  );
+
+select
+  COUNT(*)
+from
+  test_range_gist
+where
+  ir &>
+  int4multirange(
+    int4range(100, 200),
+    int4range(400, 500)
+  );
+
+select
+  COUNT(*)
+from
+  test_range_gist
+where
+  ir -|-
+  int4multirange(
+    int4range(100, 200),
+    int4range(400, 500)
+  );
+
+create table test_range_spgist (ir INT4RANGE);
+
+create index "test_range_spgist_idx" on test_range_spgist using spgist (ir);
+
+insert into test_range_spgist select int4range(g, g + 10) from generate_series(1, 2000) as g;
+
+insert into test_range_spgist select cast('empty' as INT4RANGE) from generate_series(1, 500) as g;
+
+insert into test_range_spgist select int4range(g, g + 10000) from generate_series(1, 1000) as g;
+
+insert into test_range_spgist select cast('empty' as INT4RANGE) from generate_series(1, 500) as g;
+
+insert into test_range_spgist
+select
+  int4range(null, g * 10, '(]')
+from
+  generate_series(1, 100) as g;
+
+insert into test_range_spgist
+select
+  int4range(g * 10, null, '(]')
+from
+  generate_series(1, 100) as g;
+
+insert into test_range_spgist select int4range(g, g + 10) from generate_series(1, 2000) as g;
+
+set enable_seqscan = t;
+
+set enable_indexscan = f;
+
+set enable_bitmapscan = f;
+
+select COUNT(*) from test_range_spgist where ir @> cast('empty' as INT4RANGE);
+
+select COUNT(*) from test_range_spgist where ir = int4range(10, 20);
+
+select COUNT(*) from test_range_spgist where ir @> 10;
+
+select COUNT(*) from test_range_spgist where ir @> int4range(10, 20);
+
+select COUNT(*) from test_range_spgist where ir && int4range(10, 20);
+
+select COUNT(*) from test_range_spgist where ir <@ int4range(10, 50);
+
+select COUNT(*) from test_range_spgist where ir << int4range(100, 500);
+
+select COUNT(*) from test_range_spgist where ir >> int4range(100, 500);
+
+select COUNT(*) from test_range_spgist where ir &< int4range(100, 500);
+
+select COUNT(*) from test_range_spgist where ir &> int4range(100, 500);
+
+select COUNT(*) from test_range_spgist where ir -|- int4range(100, 500);
+
+set enable_seqscan = f;
+
+set enable_indexscan = t;
+
+set enable_bitmapscan = f;
+
+select COUNT(*) from test_range_spgist where ir @> cast('empty' as INT4RANGE);
+
+select COUNT(*) from test_range_spgist where ir = int4range(10, 20);
+
+select COUNT(*) from test_range_spgist where ir @> 10;
+
+select COUNT(*) from test_range_spgist where ir @> int4range(10, 20);
+
+select COUNT(*) from test_range_spgist where ir && int4range(10, 20);
+
+select COUNT(*) from test_range_spgist where ir <@ int4range(10, 50);
+
+select COUNT(*) from test_range_spgist where ir << int4range(100, 500);
+
+select COUNT(*) from test_range_spgist where ir >> int4range(100, 500);
+
+select COUNT(*) from test_range_spgist where ir &< int4range(100, 500);
+
+select COUNT(*) from test_range_spgist where ir &> int4range(100, 500);
+
+select COUNT(*) from test_range_spgist where ir -|- int4range(100, 500);
+
+drop INDEX "test_range_spgist_idx";
+
+create index "test_range_spgist_idx" on test_range_spgist using spgist (ir);
+
+select COUNT(*) from test_range_spgist where ir @> cast('empty' as INT4RANGE);
+
+select COUNT(*) from test_range_spgist where ir = int4range(10, 20);
+
+select COUNT(*) from test_range_spgist where ir @> 10;
+
+select COUNT(*) from test_range_spgist where ir @> int4range(10, 20);
+
+select COUNT(*) from test_range_spgist where ir && int4range(10, 20);
+
+select COUNT(*) from test_range_spgist where ir <@ int4range(10, 50);
+
+select COUNT(*) from test_range_spgist where ir << int4range(100, 500);
+
+select COUNT(*) from test_range_spgist where ir >> int4range(100, 500);
+
+select COUNT(*) from test_range_spgist where ir &< int4range(100, 500);
+
+select COUNT(*) from test_range_spgist where ir &> int4range(100, 500);
+
+select COUNT(*) from test_range_spgist where ir -|- int4range(100, 500);
+
+select ir from test_range_spgist where ir -|- int4range(10, 20) order by ir;
+
+select ir from test_range_spgist where ir -|- int4range(10, 20) order by ir;
+
+reset enable_seqscan;
+
+reset enable_indexscan;
+
+reset enable_bitmapscan;
+
+create table test_range_elem (i INT);
+
+create index "test_range_elem_idx" on test_range_elem using btree (i);
+
+insert into test_range_elem select i from generate_series(1, 100) as i;
+
+set enable_seqscan = f;
+
+select COUNT(*) from test_range_elem where i <@ int4range(10, 50);
+
+create index on test_range_elem using spgist ((int4range(i, i + 10)));
+
+select COUNT(*) from test_range_elem where int4range(i, i + 10) <@ int4range(10, 30);
+
+select COUNT(*) from test_range_elem where int4range(i, i + 10) <@ int4range(10, 30);
+
+reset enable_seqscan;
+
+drop TABLE "test_range_elem";
+
+create table test_range_excl (
+  room INT4RANGE,
+  speaker INT4RANGE,
+  during TSRANGE,
+  exclude using gist (room with =, during with &&),
+  exclude using gist (speaker with =,
+  during with &&)
+);
+
+insert into test_range_excl
+values
+  (
+    int4range(123, 123, '[]'),
+    int4range(1, 1, '[]'),
+    '[2010-01-02 10:00, 2010-01-02 11:00)'
+  );
+
+insert into test_range_excl
+values
+  (
+    int4range(123, 123, '[]'),
+    int4range(2, 2, '[]'),
+    '[2010-01-02 11:00, 2010-01-02 12:00)'
+  );
+
+insert into test_range_excl
+values
+  (
+    int4range(123, 123, '[]'),
+    int4range(3, 3, '[]'),
+    '[2010-01-02 10:10, 2010-01-02 11:00)'
+  );
+
+insert into test_range_excl
+values
+  (
+    int4range(124, 124, '[]'),
+    int4range(3, 3, '[]'),
+    '[2010-01-02 10:10, 2010-01-02 11:10)'
+  );
+
+insert into test_range_excl
+values
+  (
+    int4range(125, 125, '[]'),
+    int4range(1, 1, '[]'),
+    '[2010-01-02 10:10, 2010-01-02 11:00)'
+  );
+
+select int8range(cast(10000000000 as BIGINT), cast(20000000000 as BIGINT), '(]');
+
+set time zone '-08';
+
+select cast('[2010-01-01 01:00:00 -05, 2010-01-01 02:00:00 -08)' as TSTZRANGE);
+
+select cast('[2010-01-01 01:00:00 -08, 2010-01-01 02:00:00 -05)' as TSTZRANGE);
+
+set timezone to default;
+
+create type bogus_float8range as RANGE (subtype = DOUBLE PRECISION, subtype_diff = float4mi);
+
+select cast('[123.001, 5.e9)' as float8range) @> cast(888.882 as DOUBLE PRECISION);
+
+create table float8range_test (
+  f8r float8range,
+  i INT
+);
+
+insert into float8range_test values (float8range(-100.00007, '1.111113e9'), 42);
+
+select * from float8range_test;
+
+drop TABLE "float8range_test";
+
+create domain mydomain as INT;
+
+create type mydomainrange as RANGE (subtype = mydomain);
+
+select cast('[4,50)' as mydomainrange) @> cast(7 as mydomain);
+
+drop DOMAIN mydomain;
+
+drop DOMAIN mydomain cascade;
+
+create domain restrictedrange as INT4RANGE check (upper(value) < 10);
+
+select cast('[4,5)' as restrictedrange) @> 7;
+
+select cast('[4,50)' as restrictedrange) @> 7;
+
+drop DOMAIN restrictedrange;
+
+create type textrange1 as RANGE (subtype = TEXT, collation = "C");
+
+create type textrange2 as RANGE (subtype = TEXT, collation = "C");
+
+select textrange1('a', 'Z') @> cast('b' as TEXT);
+
+select textrange2('a', 'z') @> cast('b' as TEXT);
+
+drop TYPE textrange1;
+
+drop TYPE textrange2;
+
+create function anyarray_anyrange_func(a ANYARRAY, r ANYRANGE)
+returns ANYELEMENT
+as 'select $1[1] + lower($2);'
+language "sql";
+
+select anyarray_anyrange_func(array[1, 2], int4range(10, 20));
+
+select anyarray_anyrange_func(array[1, 2], numrange(10, 20));
+
+drop FUNCTION anyarray_anyrange_func(ANYARRAY, ANYRANGE);
+
+create function bogus_func(ANYELEMENT)
+returns ANYRANGE
+as 'select int4range(1,10)'
+language "sql";
+
+create function bogus_func(INT)
+returns ANYRANGE
+as 'select int4range(1,10)'
+language "sql";
+
+create function range_add_bounds(ANYRANGE)
+returns ANYELEMENT
+as 'select lower($1) + upper($1)'
+language "sql";
+
+select range_add_bounds(int4range(1, 17));
+
+select range_add_bounds(numrange(1.0001, 123.123));
+
+create function rangetypes_sql(q ANYRANGE, b ANYARRAY, out c ANYELEMENT)
+as ' select upper($1) + $2[1] '
+language "sql";
+
+select rangetypes_sql(int4range(1, 10), array[2, 20]);
+
+select rangetypes_sql(numrange(1, 10), array[2, 20]);
+
+create function
+anycompatiblearray_anycompatiblerange_func(
+  a anycompatiblearray,
+  r anycompatiblerange
+)
+returns anycompatible
+as 'select $1[1] + lower($2);'
+language "sql";
+
+select anycompatiblearray_anycompatiblerange_func(array[1, 2], int4range(10, 20));
+
+select anycompatiblearray_anycompatiblerange_func(array[1, 2], numrange(10, 20));
+
+select anycompatiblearray_anycompatiblerange_func(array[1.1, 2], int4range(10, 20));
+
+drop FUNCTION anycompatiblearray_anycompatiblerange_func(anycompatiblearray, anycompatiblerange);
+
+create function bogus_func(anycompatible)
+returns anycompatiblerange
+as 'select int4range(1,10)'
+language "sql";
+
+select array[numrange(1.1, 1.2), numrange(12.3, 155.5)];
+
+create table i8r_array (
+  f1 INT,
+  f2 INT8RANGE[]
+);
+
+insert into i8r_array values (42, array[int8range(1, 10), int8range(2, 20)]);
+
+select * from i8r_array;
+
+drop TABLE "i8r_array";
+
+create type arrayrange as RANGE (subtype = INT[]);
+
+select arrayrange(array[1, 2], array[2, 1]);
+
+select arrayrange(array[2, 1], array[1, 2]);
+
+select array[1, 1] <@ arrayrange(array[1, 2], array[2, 1]);
+
+select array[1, 3] <@ arrayrange(array[1, 2], array[2, 1]);
+
+create type two_ints as (a INT, b INT);
+
+create type two_ints_range as RANGE (subtype = two_ints);
+
+select
+  *,
+  row_to_json(upper(t)) as u
+from
+  (
+    values
+      (two_ints_range(row(1, 2), row(3, 4))),
+      (two_ints_range(row(5, 6), row(7, 8)))
+  )
+  as v (t);
+
+alter type two_ints
+  add ATTRIBUTE c two_ints_range;
+
+drop TYPE two_ints cascade;
+
+create type varbitrange as RANGE (subtype = BIT VARYING);
+
+set enable_sort = off;
+
+select cast('(01,10)' as varbitrange) except select cast('(10,11)' as varbitrange);
+
+reset enable_sort;
+
+create function outparam_succeed(i ANYRANGE, out r ANYRANGE, out t TEXT)
+as ' select $1, ''foo''::text '
+language "sql";
+
+select * from outparam_succeed(int4range(1, 2));
+
+create function outparam2_succeed(r ANYRANGE, out lu ANYARRAY, out ul ANYARRAY)
+as ' select array[lower($1), upper($1)], array[upper($1), lower($1)] '
+language "sql";
+
+select * from outparam2_succeed(int4range(1, 11));
+
+create function outparam_succeed2(i ANYRANGE, out r ANYARRAY, out t TEXT)
+as ' select ARRAY[upper($1)], ''foo''::text '
+language "sql";
+
+select * from outparam_succeed2(int4range(int4range(1, 2)));
+
+create function inoutparam_succeed(out i ANYELEMENT, inout r ANYRANGE)
+as ' select upper($1), $1 '
+language "sql";
+
+select * from inoutparam_succeed(int4range(1, 2));
+
+create function table_succeed(r ANYRANGE)
+returns table (
+  l ANYELEMENT,
+  u ANYELEMENT
+)
+as ' select lower($1), upper($1) '
+language "sql";
+
+select * from table_succeed(int4range(1, 11));
+
+create function outparam_fail(i ANYELEMENT, out r ANYRANGE, out t TEXT)
+as ' select ''[1,10]'', ''foo'' '
+language "sql";
+
+create function inoutparam_fail(inout i ANYELEMENT, out r ANYRANGE)
+as ' select $1, ''[1,10]'' '
+language "sql";
+
+create function table_fail(i ANYELEMENT)
+returns table (
+  i ANYELEMENT,
+  r ANYRANGE
+)
+as ' select $1, ''[1,10]'' '
+language "sql";
+
+select current_date <@ cast('empty' as DATERANGE);
+
+select current_date <@ daterange(null, null);
+
+select current_date <@ daterange('2000-01-01', null, '[)');
+
+select current_date <@ daterange(null, '2000-01-01', '(]');
+
+select current_date <@ daterange('-Infinity', cast('1997-04-10' as DATE), '()');
+
+select current_date <@ daterange('-Infinity', cast('1997-04-10' as DATE), '[)');
+
+select current_date <@ daterange(cast('2002-09-25' as DATE), 'Infinity', '[)');
+
+select current_date <@ daterange(cast('2002-09-25' as DATE), 'Infinity', '[]');
+
+select daterange('-Infinity', cast('1997-04-10' as DATE), '()') @> current_date;
+
+select daterange(cast('2002-09-25' as DATE), 'Infinity', '[]') @> current_date;
+
+select NOW() <@ tstzrange('2024-01-20 00:00', '2024-01-21 00:00');
+
+select clock_timestamp() <@ tstzrange('2024-01-20 00:00', '2024-01-21 00:00');
+
+select clock_timestamp() <@ tstzrange('2024-01-20 00:00', null);
+
+create type textrange_supp as RANGE (subtype = TEXT, subtype_opclass = text_pattern_ops);
+
+create temporary table text_support_test (t TEXT collate "C");
+
+insert into text_support_test values ('a'), ('c'), ('d'), ('ch');
+
+select * from text_support_test where t <@ textrange_supp('a', 'd');
+
+select * from text_support_test where t <@ textrange_supp('a', 'd');
+
+drop TABLE "text_support_test";
+
+drop TYPE textrange_supp;

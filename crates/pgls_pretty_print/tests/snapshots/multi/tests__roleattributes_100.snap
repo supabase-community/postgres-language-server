@@ -1,0 +1,44 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/roleattributes.sql
+snapshot_kind: text
+---
+create role regress_test_def_superuser;
+
+select
+  rolname,
+  rolsuper,
+  rolinherit,
+  rolcreaterole,
+  rolcreatedb,
+  rolcanlogin,
+  rolreplication,
+  rolbypassrls,
+  rolconnlimit,
+  rolpassword,
+  rolvaliduntil
+from
+  pg_authid
+where
+  rolname = 'regress_test_def_superuser';
+
+create role regress_test_superuser SUPERUSER;
+
+select
+  rolname,
+  rolsuper,
+  rolinherit,
+  rolcreaterole,
+  rolcreatedb,
+  rolcanlogin,
+  rolreplication,
+  rolbypassrls,
+  rolconnlimit,
+  rolpassword,
+  rolvaliduntil
+from
+  pg_authid
+where
+  rolname = 'regress_test_superuser';
+
+alter role regress_test_superuser;

@@ -1,0 +1,17 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/single/select_window_clause_0.sql
+snapshot_kind: text
+---
+select
+  total,
+  running_total
+from
+  metrics
+where
+  total > 0
+window
+  w as (
+    partition by series_id
+    order by captured_at
+  );

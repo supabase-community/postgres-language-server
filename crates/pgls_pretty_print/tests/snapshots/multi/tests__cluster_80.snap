@@ -1,0 +1,595 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/cluster.sql
+snapshot_kind: text
+---
+create table clstr_tst_s (
+  rf_a serial primary key,
+  b INT
+);
+
+create table clstr_tst (
+  a serial primary key,
+  b INT,
+  c TEXT,
+  d TEXT,
+  constraint "clstr_tst_con"
+  foreign key
+  (b)
+  references clstr_tst_s
+);
+
+create index "clstr_tst_b" on clstr_tst using btree (b);
+
+create index "clstr_tst_c" on clstr_tst using btree (c);
+
+create index "clstr_tst_c_b" on clstr_tst using btree (c, b);
+
+create index "clstr_tst_b_c" on clstr_tst using btree (b, c);
+
+insert into clstr_tst_s (b) values (0);
+
+insert into clstr_tst_s (b) select b from clstr_tst_s;
+
+insert into clstr_tst_s (b) select b from clstr_tst_s;
+
+insert into clstr_tst_s (b) select b from clstr_tst_s;
+
+insert into clstr_tst_s (b) select b from clstr_tst_s;
+
+insert into clstr_tst_s (b) select b from clstr_tst_s;
+
+create table clstr_tst_inh ()
+inherits (clstr_tst);
+
+insert into clstr_tst (b, c) values (11, 'once');
+
+insert into clstr_tst (b, c) values (10, 'diez');
+
+insert into clstr_tst (b, c) values (31, 'treinta y uno');
+
+insert into clstr_tst (b, c) values (22, 'veintidos');
+
+insert into clstr_tst (b, c) values (3, 'tres');
+
+insert into clstr_tst (b, c) values (20, 'veinte');
+
+insert into clstr_tst (b, c) values (23, 'veintitres');
+
+insert into clstr_tst (b, c) values (21, 'veintiuno');
+
+insert into clstr_tst (b, c) values (4, 'cuatro');
+
+insert into clstr_tst (b, c) values (14, 'catorce');
+
+insert into clstr_tst (b, c) values (2, 'dos');
+
+insert into clstr_tst (b, c) values (18, 'dieciocho');
+
+insert into clstr_tst (b, c) values (27, 'veintisiete');
+
+insert into clstr_tst (b, c) values (25, 'veinticinco');
+
+insert into clstr_tst (b, c) values (13, 'trece');
+
+insert into clstr_tst (b, c) values (28, 'veintiocho');
+
+insert into clstr_tst (b, c) values (32, 'treinta y dos');
+
+insert into clstr_tst (b, c) values (5, 'cinco');
+
+insert into clstr_tst (b, c) values (29, 'veintinueve');
+
+insert into clstr_tst (b, c) values (1, 'uno');
+
+insert into clstr_tst (b, c) values (24, 'veinticuatro');
+
+insert into clstr_tst (b, c) values (30, 'treinta');
+
+insert into clstr_tst (b, c) values (12, 'doce');
+
+insert into clstr_tst (b, c) values (17, 'diecisiete');
+
+insert into clstr_tst (b, c) values (9, 'nueve');
+
+insert into clstr_tst (b, c) values (19, 'diecinueve');
+
+insert into clstr_tst (b, c) values (26, 'veintiseis');
+
+insert into clstr_tst (b, c) values (15, 'quince');
+
+insert into clstr_tst (b, c) values (7, 'siete');
+
+insert into clstr_tst (b, c) values (16, 'dieciseis');
+
+insert into clstr_tst (b, c) values (8, 'ocho');
+
+insert into clstr_tst (b, c, d) values (6, 'seis', repeat('xyzzy', 100000));
+
+CLUSTER clstr_tst using clstr_tst_c;
+
+select
+  a,
+  b,
+  c,
+  SUBSTRING(d from 1 for cast(30 as INT)),
+  length(d)
+from
+  clstr_tst;
+
+select
+  a,
+  b,
+  c,
+  SUBSTRING(d from 1 for cast(30 as INT)),
+  length(d)
+from
+  clstr_tst
+order by a;
+
+select
+  a,
+  b,
+  c,
+  SUBSTRING(d from 1 for cast(30 as INT)),
+  length(d)
+from
+  clstr_tst
+order by b;
+
+select
+  a,
+  b,
+  c,
+  SUBSTRING(d from 1 for cast(30 as INT)),
+  length(d)
+from
+  clstr_tst
+order by c;
+
+insert into clstr_tst_inh values (0, 100, 'in child table');
+
+select
+  a,
+  b,
+  c,
+  SUBSTRING(d from 1 for cast(30 as INT)),
+  length(d)
+from
+  clstr_tst;
+
+insert into clstr_tst (b, c) values (1111, 'this should fail');
+
+select
+  conname
+from
+  pg_constraint
+where
+  conrelid = cast('clstr_tst' as REGCLASS)
+order by 1;
+
+select
+  relname,
+  relkind,
+  exists
+  (
+    select
+      1
+    from
+      pg_class
+    where
+      oid = c.reltoastrelid
+  )
+  as hastoast
+from
+  pg_class as c
+where
+  relname like 'clstr_tst%'
+order by relname;
+
+select
+  pg_class.relname
+from
+  pg_index,
+  pg_class,
+  pg_class as pg_class_2
+where
+  pg_class.oid = indexrelid and
+  indrelid = pg_class_2.oid and
+  pg_class_2.relname = 'clstr_tst' and
+  indisclustered;
+
+alter table clstr_tst
+  cluster on clstr_tst_b_c;
+
+select
+  pg_class.relname
+from
+  pg_index,
+  pg_class,
+  pg_class as pg_class_2
+where
+  pg_class.oid = indexrelid and
+  indrelid = pg_class_2.oid and
+  pg_class_2.relname = 'clstr_tst' and
+  indisclustered;
+
+alter table clstr_tst
+  set without cluster;
+
+select
+  pg_class.relname
+from
+  pg_index,
+  pg_class,
+  pg_class as pg_class_2
+where
+  pg_class.oid = indexrelid and
+  indrelid = pg_class_2.oid and
+  pg_class_2.relname = 'clstr_tst' and
+  indisclustered;
+
+CLUSTER pg_toast.pg_toast_826 using pg_toast_826_index;
+
+create user regress_clstr_user;
+
+create table clstr_1 (a INT primary key);
+
+create table clstr_2 (a INT primary key);
+
+create table clstr_3 (a INT primary key);
+
+alter table clstr_1
+  OWNER to regress_clstr_user;
+
+alter table clstr_3
+  OWNER to regress_clstr_user;
+
+grant SELECT on table clstr_2 to regress_clstr_user;
+
+insert into clstr_1 values (2);
+
+insert into clstr_1 values (1);
+
+insert into clstr_2 values (2);
+
+insert into clstr_2 values (1);
+
+insert into clstr_3 values (2);
+
+insert into clstr_3 values (1);
+
+CLUSTER clstr_2;
+
+CLUSTER clstr_1 using clstr_1_pkey;
+
+CLUSTER clstr_2 using clstr_2_pkey;
+
+select * from clstr_1
+union all
+select * from clstr_2
+union all
+select * from clstr_3;
+
+delete from clstr_1;
+
+delete from clstr_2;
+
+delete from clstr_3;
+
+insert into clstr_1 values (2);
+
+insert into clstr_1 values (1);
+
+insert into clstr_2 values (2);
+
+insert into clstr_2 values (1);
+
+insert into clstr_3 values (2);
+
+insert into clstr_3 values (1);
+
+set session authorization regress_clstr_user;
+
+set client_min_messages = error;
+
+CLUSTER;
+
+reset client_min_messages;
+
+select * from clstr_1
+union all
+select * from clstr_2
+union all
+select * from clstr_3;
+
+delete from clstr_1;
+
+insert into clstr_1 values (2);
+
+insert into clstr_1 values (1);
+
+CLUSTER clstr_1;
+
+select * from clstr_1;
+
+create table clustertest (key INT primary key);
+
+insert into clustertest values (10);
+
+insert into clustertest values (20);
+
+insert into clustertest values (30);
+
+insert into clustertest values (40);
+
+insert into clustertest values (50);
+
+begin;
+
+update clustertest set key = 100 where key = 10;
+
+update clustertest set key = 35 where key = 40;
+
+update clustertest set key = 60 where key = 50;
+
+update clustertest set key = 70 where key = 60;
+
+update clustertest set key = 80 where key = 70;
+
+select * from clustertest;
+
+CLUSTER clustertest using clustertest_pkey;
+
+select * from clustertest;
+
+commit;
+
+select * from clustertest;
+
+create temporary table clstr_temp (
+  col1 INT primary key,
+  col2 TEXT
+);
+
+insert into clstr_temp values (2, 'two'), (1, 'one');
+
+CLUSTER clstr_temp using clstr_temp_pkey;
+
+select * from clstr_temp;
+
+drop TABLE "clstr_temp";
+
+reset session_authorization;
+
+drop TABLE "clustertest";
+
+create table clustertest (f1 INT primary key);
+
+CLUSTER clustertest using clustertest_pkey;
+
+CLUSTER clustertest;
+
+create table clstrpart (a INT)
+partition by range(a);
+
+create table clstrpart1
+partition of clstrpart
+for values from (1) to (10)
+partition by range(a);
+
+create table clstrpart11 partition of clstrpart1 for values from (1) to (5);
+
+create table clstrpart12
+partition of clstrpart1
+for values from (5) to (10)
+partition by range(a);
+
+create table clstrpart2 partition of clstrpart for values from (10) to (20);
+
+create table clstrpart3 partition of clstrpart default partition by range(a);
+
+create table clstrpart33 partition of clstrpart3 default;
+
+create index "clstrpart_only_idx" on only clstrpart using btree (a);
+
+CLUSTER clstrpart using clstrpart_only_idx;
+
+drop INDEX "clstrpart_only_idx";
+
+create index "clstrpart_idx" on clstrpart using btree (a);
+
+create temporary table old_cluster_info
+as
+  select
+    relname,
+    level,
+    relfilenode,
+    relkind
+  from
+    pg_partition_tree(
+      cast('clstrpart' as REGCLASS)
+    )
+    as tree
+    inner join
+      pg_class as c
+    on c.oid = tree.relid;
+
+CLUSTER clstrpart using clstrpart_idx;
+
+create temporary table new_cluster_info
+as
+  select
+    relname,
+    level,
+    relfilenode,
+    relkind
+  from
+    pg_partition_tree(
+      cast('clstrpart' as REGCLASS)
+    )
+    as tree
+    inner join
+      pg_class as c
+    on c.oid = tree.relid;
+
+select
+  relname,
+  old.level,
+  old.relkind,
+  old.relfilenode = new.relfilenode
+from
+  old_cluster_info as old
+  inner join
+    new_cluster_info as new
+  using ("relname")
+order by relname collate "C";
+
+CLUSTER clstrpart;
+
+alter table clstrpart
+  set without cluster;
+
+alter table clstrpart
+  cluster on clstrpart_idx;
+
+drop TABLE "clstrpart";
+
+create table ptnowner (i INT unique)
+partition by LIST(i);
+
+create index "ptnowner_i_idx" on ptnowner using btree (i);
+
+create table ptnowner1 partition of ptnowner for values in (1);
+
+create role regress_ptnowner;
+
+create table ptnowner2 partition of ptnowner for values in (2);
+
+alter table ptnowner1
+  OWNER to regress_ptnowner;
+
+set session authorization regress_ptnowner;
+
+CLUSTER ptnowner using ptnowner_i_idx;
+
+reset session_authorization;
+
+alter table ptnowner
+  OWNER to regress_ptnowner;
+
+create temporary table ptnowner_oldnodes
+as
+  select
+    oid,
+    relname,
+    relfilenode
+  from
+    pg_partition_tree('ptnowner') as tree
+    inner join
+      pg_class as c
+    on c.oid = tree.relid;
+
+set session authorization regress_ptnowner;
+
+CLUSTER ptnowner using ptnowner_i_idx;
+
+reset session_authorization;
+
+select
+  a.relname,
+  a.relfilenode = b.relfilenode
+from
+  pg_class as a
+  inner join
+    ptnowner_oldnodes as b
+  using ("oid")
+order by a.relname collate "C";
+
+drop TABLE "ptnowner";
+
+drop role regress_ptnowner;
+
+create table clstr_4 as select * from tenk1;
+
+create index "cluster_sort"
+on clstr_4
+using btree
+(
+  hundred,
+  thousand,
+  tenthous
+);
+
+set enable_indexscan = off;
+
+set maintenance_work_mem = '1MB';
+
+CLUSTER clstr_4 using cluster_sort;
+
+select
+  *
+from
+  (
+    select
+      hundred,
+      LAG(hundred) over () as lhundred,
+      thousand,
+      LAG(thousand) over () as lthousand,
+      tenthous,
+      LAG(tenthous) over () as ltenthous
+    from
+      clstr_4
+  )
+  as ss
+where
+  row(hundred, thousand, tenthous) <=
+  row(lhundred, lthousand, ltenthous);
+
+reset enable_indexscan;
+
+reset maintenance_work_mem;
+
+create table clstr_expression (
+  id serial primary key,
+  a INT,
+  b TEXT collate "C"
+);
+
+insert into clstr_expression (a, b)
+select
+  g.i % 42,
+  'prefix' || g.i
+from
+  generate_series(1, 133) as g (i);
+
+create index "clstr_expression_minus_a"
+on clstr_expression
+using btree
+(
+  (-a),
+  b
+);
+
+create index "clstr_expression_upper_b"
+on clstr_expression
+using btree
+(
+  (upper(b))
+);
+
+begin;
+
+set local enable_seqscan = 'false';
+
+select * from clstr_expression where upper(b) = 'PREFIX3';
+
+select * from clstr_expression where upper(b) = 'PREFIX3';
+
+select * from clstr_expression where -a = -3 order by -a, b;
+
+select * from clstr_expression where -a = -3 order by -a, b;
+
+commit;
+
+CLUSTER clstr_expression using clstr_expression_minus_a;

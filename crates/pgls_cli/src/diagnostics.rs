@@ -2,8 +2,11 @@ use pgls_console::markup;
 use pgls_diagnostics::adapters::{BpafError, IoError, SerdeJsonError};
 use pgls_diagnostics::{
     Advices, Category, Diagnostic, Error, LogCategory, MessageAndDescription, Severity, Visit,
+    category,
 };
+use pgls_text_edit::TextEdit;
 use pgls_workspace::WorkspaceError;
+use std::fmt::{self, Formatter};
 use std::process::{ExitCode, Termination};
 use std::{env::current_exe, fmt::Debug};
 
@@ -446,6 +449,41 @@ impl Termination for CliDiagnostic {
     message = "The contents aren't fixed. Use the `--fix` flag to fix them."
 )]
 pub struct StdinDiagnostic {}
+
+#[derive(Debug)]
+pub struct FormatDiffDiagnostic {
+    pub file_name: String,
+    pub diff: TextEdit,
+    pub start_line: u32,
+}
+
+impl Diagnostic for FormatDiffDiagnostic {
+    fn category(&self) -> Option<&'static Category> {
+        Some(category!("format"))
+    }
+
+    fn severity(&self) -> Severity {
+        Severity::Error
+    }
+
+    fn location(&self) -> pgls_diagnostics::Location<'_> {
+        pgls_diagnostics::Location::builder()
+            .resource(&self.file_name)
+            .build()
+    }
+
+    fn description(&self, fmt: &mut Formatter<'_>) -> fmt::Result {
+        write!(fmt, "File could be formatted using `--write`")
+    }
+
+    fn message(&self, fmt: &mut pgls_console::fmt::Formatter<'_>) -> std::io::Result<()> {
+        fmt.write_str("File could be formatted using `--write`")
+    }
+
+    fn advices(&self, visitor: &mut dyn Visit) -> std::io::Result<()> {
+        visitor.record_diff_with_offset(&self.diff, self.start_line)
+    }
+}
 
 #[cfg(test)]
 mod test {

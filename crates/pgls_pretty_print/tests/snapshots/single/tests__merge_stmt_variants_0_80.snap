@@ -1,0 +1,24 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/single/merge_stmt_variants_0.sql
+snapshot_kind: text
+---
+merge into inventories as t
+using staging_inventory as s
+on t.sku = s.sku
+when matched and
+  s.operation = 'delete'
+then delete
+when matched and
+  s.operation = 'update'
+then update set quantity = s.quantity,
+updated_at = clock_timestamp()
+when not matched and
+  s.operation = 'insert'
+then insert (sku, quantity, created_at)
+values (s.sku, s.quantity, clock_timestamp())
+when not matched by TARGET
+then do NOTHING
+when not matched by SOURCE and
+  t.discontinued is false
+then delete;

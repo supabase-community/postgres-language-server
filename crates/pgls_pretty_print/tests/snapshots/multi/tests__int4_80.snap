@@ -1,0 +1,332 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/int4.sql
+snapshot_kind: text
+---
+insert into int4_tbl (f1) values ('34.5');
+
+insert into int4_tbl (f1) values ('1000000000000');
+
+insert into int4_tbl (f1) values ('asdf');
+
+insert into int4_tbl (f1) values ('     ');
+
+insert into int4_tbl (f1) values ('   asdf   ');
+
+insert into int4_tbl (f1) values ('- 1234');
+
+insert into int4_tbl (f1) values ('123       5');
+
+insert into int4_tbl (f1) values ('');
+
+select * from int4_tbl;
+
+select pg_input_is_valid('34', 'int4');
+
+select pg_input_is_valid('asdf', 'int4');
+
+select pg_input_is_valid('1000000000000', 'int4');
+
+select * from pg_input_error_info('1000000000000', 'int4');
+
+select i.* from int4_tbl as i where i.f1 <> cast('0' as SMALLINT);
+
+select i.* from int4_tbl as i where i.f1 <> cast('0' as INT);
+
+select i.* from int4_tbl as i where i.f1 = cast('0' as SMALLINT);
+
+select i.* from int4_tbl as i where i.f1 = cast('0' as INT);
+
+select i.* from int4_tbl as i where i.f1 < cast('0' as SMALLINT);
+
+select i.* from int4_tbl as i where i.f1 < cast('0' as INT);
+
+select i.* from int4_tbl as i where i.f1 <= cast('0' as SMALLINT);
+
+select i.* from int4_tbl as i where i.f1 <= cast('0' as INT);
+
+select i.* from int4_tbl as i where i.f1 > cast('0' as SMALLINT);
+
+select i.* from int4_tbl as i where i.f1 > cast('0' as INT);
+
+select i.* from int4_tbl as i where i.f1 >= cast('0' as SMALLINT);
+
+select i.* from int4_tbl as i where i.f1 >= cast('0' as INT);
+
+select
+  i.*
+from
+  int4_tbl as i
+where
+  i.f1 % cast('2' as SMALLINT) =
+  cast('1' as SMALLINT);
+
+select
+  i.*
+from
+  int4_tbl as i
+where
+  i.f1 % cast('2' as INT) =
+  cast('0' as SMALLINT);
+
+select i.f1, i.f1 * cast('2' as SMALLINT) as x from int4_tbl as i;
+
+select
+  i.f1,
+  i.f1 * cast('2' as SMALLINT) as x
+from
+  int4_tbl as i
+where
+  abs(f1) < 1073741824;
+
+select i.f1, i.f1 * cast('2' as INT) as x from int4_tbl as i;
+
+select
+  i.f1,
+  i.f1 * cast('2' as INT) as x
+from
+  int4_tbl as i
+where
+  abs(f1) < 1073741824;
+
+select i.f1, i.f1 + cast('2' as SMALLINT) as x from int4_tbl as i;
+
+select
+  i.f1,
+  i.f1 + cast('2' as SMALLINT) as x
+from
+  int4_tbl as i
+where
+  f1 < 2147483646;
+
+select i.f1, i.f1 + cast('2' as INT) as x from int4_tbl as i;
+
+select
+  i.f1,
+  i.f1 + cast('2' as INT) as x
+from
+  int4_tbl as i
+where
+  f1 < 2147483646;
+
+select i.f1, i.f1 - cast('2' as SMALLINT) as x from int4_tbl as i;
+
+select
+  i.f1,
+  i.f1 - cast('2' as SMALLINT) as x
+from
+  int4_tbl as i
+where
+  f1 > -2147483647;
+
+select i.f1, i.f1 - cast('2' as INT) as x from int4_tbl as i;
+
+select
+  i.f1,
+  i.f1 - cast('2' as INT) as x
+from
+  int4_tbl as i
+where
+  f1 > -2147483647;
+
+select i.f1, i.f1 / cast('2' as SMALLINT) as x from int4_tbl as i;
+
+select i.f1, i.f1 / cast('2' as INT) as x from int4_tbl as i;
+
+select -2 + 3 as one;
+
+select 4 - 2 as two;
+
+select 2 - -1 as three;
+
+select 2 - -2 as four;
+
+select
+  cast('2' as SMALLINT) *
+  cast('2' as SMALLINT) =
+  cast('16' as SMALLINT) /
+  cast('4' as SMALLINT)
+  as "true";
+
+select
+  cast('2' as INT) * cast('2' as SMALLINT) =
+  cast('16' as SMALLINT) /
+  cast('4' as INT)
+  as "true";
+
+select
+  cast('2' as SMALLINT) * cast('2' as INT) =
+  cast('16' as INT) /
+  cast('4' as SMALLINT)
+  as "true";
+
+select cast('1000' as INT) < cast('999' as INT) as "false";
+
+select 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 as ten;
+
+select 2 + 2 / 2 as three;
+
+select (2 + 2) / 2 as two;
+
+select cast(-cast(1 as INT) << 31 as TEXT);
+
+select cast((-cast(1 as INT) << 31) + 1 as TEXT);
+
+select cast(-2147483648 as INT) * cast(-1 as INT);
+
+select cast(-2147483648 as INT) / cast(-1 as INT);
+
+select cast(-2147483648 as INT) % cast(-1 as INT);
+
+select cast(-2147483648 as INT) * cast(-1 as SMALLINT);
+
+select cast(-2147483648 as INT) / cast(-1 as SMALLINT);
+
+select cast(-2147483648 as INT) % cast(-1 as SMALLINT);
+
+select
+  x,
+  cast(x as INT) as int4_value
+from
+  (
+    values
+      (-cast(2.5 as DOUBLE PRECISION)),
+      (-cast(1.5 as DOUBLE PRECISION)),
+      (-cast(0.5 as DOUBLE PRECISION)),
+      (cast(0.0 as DOUBLE PRECISION)),
+      (cast(0.5 as DOUBLE PRECISION)),
+      (cast(1.5 as DOUBLE PRECISION)),
+      (cast(2.5 as DOUBLE PRECISION))
+  )
+  as t (x);
+
+select
+  x,
+  cast(x as INT) as int4_value
+from
+  (
+    values
+      (-cast(2.5 as NUMERIC)),
+      (-cast(1.5 as NUMERIC)),
+      (-cast(0.5 as NUMERIC)),
+      (cast(0.0 as NUMERIC)),
+      (cast(0.5 as NUMERIC)),
+      (cast(1.5 as NUMERIC)),
+      (cast(2.5 as NUMERIC))
+  )
+  as t (x);
+
+select
+  a,
+  b,
+  gcd(a, b),
+  gcd(a, -b),
+  gcd(b, a),
+  gcd(-b, a)
+from
+  (
+    values
+      (cast(0 as INT), cast(0 as INT)),
+      (cast(0 as INT), cast(6410818 as INT)),
+      (
+        cast(61866666 as INT),
+        cast(6410818 as INT)
+      ),
+      (
+        -cast(61866666 as INT),
+        cast(6410818 as INT)
+      ),
+      (
+        cast(-2147483648 as INT), cast(1 as INT)
+      ),
+      (
+        cast(-2147483648 as INT),
+        cast(2147483647 as INT)
+      ),
+      (
+        cast(-2147483648 as INT),
+        cast(1073741824 as INT)
+      )
+  )
+  as v (a, b);
+
+select gcd(cast(-2147483648 as INT), cast(0 as INT));
+
+select gcd(cast(-2147483648 as INT), cast(-2147483648 as INT));
+
+select
+  a,
+  b,
+  lcm(a, b),
+  lcm(a, -b),
+  lcm(b, a),
+  lcm(-b, a)
+from
+  (
+    values
+      (cast(0 as INT), cast(0 as INT)),
+      (cast(0 as INT), cast(42 as INT)),
+      (cast(42 as INT), cast(42 as INT)),
+      (cast(330 as INT), cast(462 as INT)),
+      (-cast(330 as INT), cast(462 as INT)),
+      (
+        cast(-2147483648 as INT), cast(0 as INT)
+      )
+  )
+  as v (a, b);
+
+select lcm(cast(-2147483648 as INT), cast(1 as INT));
+
+select lcm(cast(2147483647 as INT), cast(2147483646 as INT));
+
+select cast('0b100101' as INT);
+
+select cast('0o273' as INT);
+
+select cast('0x42F' as INT);
+
+select cast('0b' as INT);
+
+select cast('0o' as INT);
+
+select cast('0x' as INT);
+
+select cast('0b1111111111111111111111111111111' as INT);
+
+select cast('0b10000000000000000000000000000000' as INT);
+
+select cast('0o17777777777' as INT);
+
+select cast('0o20000000000' as INT);
+
+select cast('0x7FFFFFFF' as INT);
+
+select cast('0x80000000' as INT);
+
+select cast('-0b10000000000000000000000000000000' as INT);
+
+select cast('-0b10000000000000000000000000000001' as INT);
+
+select cast('-0o20000000000' as INT);
+
+select cast('-0o20000000001' as INT);
+
+select cast('-0x80000000' as INT);
+
+select cast('-0x80000001' as INT);
+
+select cast('1_000_000' as INT);
+
+select cast('1_2_3' as INT);
+
+select cast('0x1EEE_FFFF' as INT);
+
+select cast('0o2_73' as INT);
+
+select cast('0b_10_0101' as INT);
+
+select cast('_100' as INT);
+
+select cast('100_' as INT);
+
+select cast('100__000' as INT);

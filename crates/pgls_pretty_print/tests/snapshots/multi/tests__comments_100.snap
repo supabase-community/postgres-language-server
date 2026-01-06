@@ -1,0 +1,16 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/comments.sql
+snapshot_kind: text
+---
+select 'trailing' as first;
+
+select 'embedded' as second;
+
+select 'both' as third;
+
+select 'before multi-line' as fourth;
+
+select 'after multi-line' as fifth;
+
+select 'deeply nested example' as sixth;

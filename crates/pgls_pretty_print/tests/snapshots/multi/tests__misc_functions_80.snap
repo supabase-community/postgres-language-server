@@ -1,0 +1,688 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/misc_functions.sql
+snapshot_kind: text
+---
+create function
+explain_mask_costs(
+  query TEXT,
+  do_analyze BOOLEAN,
+  hide_costs BOOLEAN,
+  hide_row_est BOOLEAN,
+  hide_width BOOLEAN
+)
+returns setof TEXT
+language "plpgsql"
+as '
+DECLARE
+    ln text;
+    analyze_str text;
+BEGIN
+    IF do_analyze = true THEN
+        analyze_str := ''on'';
+    ELSE
+        analyze_str := ''off'';
+    END IF;
+
+    -- avoid jit related output by disabling it
+    SET LOCAL jit = 0;
+
+    FOR ln IN
+        EXECUTE format(''explain (analyze %s, costs on, summary off, timing off, buffers off) %s'',
+            analyze_str, query)
+    LOOP
+        IF hide_costs = true THEN
+            ln := regexp_replace(ln, ''cost=\d+\.\d\d\.\.\d+\.\d\d'', ''cost=N..N'');
+        END IF;
+
+        IF hide_row_est = true THEN
+            -- don''t use ''g'' so that we leave the actual rows intact
+            ln := regexp_replace(ln, ''rows=\d+'', ''rows=N'');
+        END IF;
+
+        IF hide_width = true THEN
+            ln := regexp_replace(ln, ''width=\d+'', ''width=N'');
+        END IF;
+
+        RETURN NEXT ln;
+    END LOOP;
+END;
+';
+
+select num_nonnulls(null);
+
+select num_nonnulls('1');
+
+select num_nonnulls(cast(null as TEXT));
+
+select num_nonnulls(cast(null as TEXT), cast(null as INT));
+
+select
+  num_nonnulls(
+    1,
+    2,
+    cast(null as TEXT),
+    cast(null as point),
+    '',
+    cast('9' as BIGINT),
+    1.0 / null
+  );
+
+select num_nonnulls(variadic cast('{1,2,NULL,3}' as INT[]));
+
+select num_nonnulls(variadic cast('{"1","2","3","4"}' as TEXT[]));
+
+select
+  num_nonnulls(
+    variadic array(
+      select
+        case when i <> 40 then i end
+      from
+        generate_series(1, 100) as i
+    )
+  );
+
+select num_nulls(null);
+
+select num_nulls('1');
+
+select num_nulls(cast(null as TEXT));
+
+select num_nulls(cast(null as TEXT), cast(null as INT));
+
+select
+  num_nulls(
+    1,
+    2,
+    cast(null as TEXT),
+    cast(null as point),
+    '',
+    cast('9' as BIGINT),
+    1.0 / null
+  );
+
+select num_nulls(variadic cast('{1,2,NULL,3}' as INT[]));
+
+select num_nulls(variadic cast('{"1","2","3","4"}' as TEXT[]));
+
+select
+  num_nulls(
+    variadic array(
+      select
+        case when i <> 40 then i end
+      from
+        generate_series(1, 100) as i
+    )
+  );
+
+select num_nonnulls(variadic cast(null as TEXT[]));
+
+select num_nonnulls(variadic cast('{}' as INT[]));
+
+select num_nulls(variadic cast(null as TEXT[]));
+
+select num_nulls(variadic cast('{}' as INT[]));
+
+select num_nonnulls();
+
+select num_nulls();
+
+create function test_canonicalize_path(TEXT)
+returns TEXT
+as 'regresslib'
+language "c"
+STRICT
+immutable;
+
+select test_canonicalize_path('/');
+
+select test_canonicalize_path('/./abc/def/');
+
+select test_canonicalize_path('/./../abc/def');
+
+select test_canonicalize_path('/./../../abc/def/');
+
+select test_canonicalize_path('/abc/.././def/ghi');
+
+select test_canonicalize_path('/abc/./../def/ghi//');
+
+select test_canonicalize_path('/abc/def/../..');
+
+select test_canonicalize_path('/abc/def/../../..');
+
+select test_canonicalize_path('/abc/def/../../../../ghi/jkl');
+
+select test_canonicalize_path('.');
+
+select test_canonicalize_path('./');
+
+select test_canonicalize_path('./abc/..');
+
+select test_canonicalize_path('abc/../');
+
+select test_canonicalize_path('abc/../def');
+
+select test_canonicalize_path('..');
+
+select test_canonicalize_path('../abc/def');
+
+select test_canonicalize_path('../abc/..');
+
+select test_canonicalize_path('../abc/../def');
+
+select test_canonicalize_path('../abc/../../def/ghi');
+
+select test_canonicalize_path('./abc/./def/.');
+
+select test_canonicalize_path('./abc/././def/.');
+
+select test_canonicalize_path('./abc/./def/.././ghi/../../../jkl/mno');
+
+select pg_log_backend_memory_contexts(pg_backend_pid());
+
+select
+  pg_log_backend_memory_contexts(pid)
+from
+  pg_stat_activity
+where
+  backend_type = 'checkpointer';
+
+create role regress_log_memory;
+
+select
+  has_function_privilege(
+    'regress_log_memory',
+    'pg_log_backend_memory_contexts(integer)',
+    'EXECUTE'
+  );
+
+grant EXECUTE
+on function pg_log_backend_memory_contexts(INT)
+to regress_log_memory;
+
+select
+  has_function_privilege(
+    'regress_log_memory',
+    'pg_log_backend_memory_contexts(integer)',
+    'EXECUTE'
+  );
+
+set role to regress_log_memory;
+
+select pg_log_backend_memory_contexts(pg_backend_pid());
+
+reset role;
+
+revoke EXECUTE
+on function pg_log_backend_memory_contexts(INT)
+from regress_log_memory;
+
+drop role regress_log_memory;
+
+select setting as segsize from pg_settings where name = 'wal_segment_size';
+
+select COUNT(*) > 0 as ok from pg_ls_waldir();
+
+select COUNT(*) > 0 as ok from (select pg_ls_waldir()) as ss;
+
+select * from pg_ls_waldir() limit 0;
+
+select COUNT(*) > 0 as ok from (select * from pg_ls_waldir() limit 1) as ss;
+
+select
+  w.size = 'segsize' as ok
+from
+  (select pg_ls_waldir() as w) as ss
+where
+  length(w.name) = 24
+limit 1;
+
+select COUNT(*) >= 0 as ok from pg_ls_archive_statusdir();
+
+select COUNT(*) >= 0 as ok from pg_ls_summariesdir();
+
+select length(pg_read_file('postmaster.pid')) > 20;
+
+select length(pg_read_file('postmaster.pid', 1, 20));
+
+select pg_read_file('does not exist');
+
+select pg_read_file('does not exist', true) is null;
+
+select pg_read_file('does not exist', 0, -1);
+
+select pg_read_file('does not exist', 0, -1, true);
+
+select length(pg_read_binary_file('postmaster.pid')) > 20;
+
+select length(pg_read_binary_file('postmaster.pid', 1, 20));
+
+select pg_read_binary_file('does not exist');
+
+select pg_read_binary_file('does not exist', true) is null;
+
+select pg_read_binary_file('does not exist', 0, -1);
+
+select pg_read_binary_file('does not exist', 0, -1, true);
+
+select size > 20, isdir from pg_stat_file('postmaster.pid');
+
+select * from (select pg_ls_dir('.') as a) as a where a = 'base' limit 1;
+
+select pg_ls_dir('does not exist', false, false);
+
+select pg_ls_dir('does not exist', true, false);
+
+select
+  COUNT(*) = 1 as dot_found
+from
+  pg_ls_dir('.', false, true) as ls
+where
+  ls = '.';
+
+select
+  COUNT(*) = 1 as dot_found
+from
+  pg_ls_dir('.', false, false) as ls
+where
+  ls = '.';
+
+select
+  *
+from
+  (
+    select (pg_timezone_names()).name
+  )
+  as ptn
+where
+  name = 'UTC'
+limit 1;
+
+select
+  COUNT(*) > 0
+from
+  (
+    select
+      pg_tablespace_databases(oid) as pts
+    from
+      pg_tablespace
+    where
+      spcname = 'pg_default'
+  )
+  as pts
+  inner join
+    pg_database as db
+  on pts.pts = db.oid;
+
+create role regress_slot_dir_funcs;
+
+select
+  has_function_privilege(
+    'regress_slot_dir_funcs',
+    'pg_ls_logicalsnapdir()',
+    'EXECUTE'
+  );
+
+select
+  has_function_privilege(
+    'regress_slot_dir_funcs',
+    'pg_ls_logicalmapdir()',
+    'EXECUTE'
+  );
+
+select
+  has_function_privilege(
+    'regress_slot_dir_funcs',
+    'pg_ls_replslotdir(text)',
+    'EXECUTE'
+  );
+
+grant PG_MONITOR to regress_slot_dir_funcs;
+
+select
+  has_function_privilege(
+    'regress_slot_dir_funcs',
+    'pg_ls_logicalsnapdir()',
+    'EXECUTE'
+  );
+
+select
+  has_function_privilege(
+    'regress_slot_dir_funcs',
+    'pg_ls_logicalmapdir()',
+    'EXECUTE'
+  );
+
+select
+  has_function_privilege(
+    'regress_slot_dir_funcs',
+    'pg_ls_replslotdir(text)',
+    'EXECUTE'
+  );
+
+drop role regress_slot_dir_funcs;
+
+create function my_int_eq(INT, INT)
+returns BOOLEAN
+language "internal"
+STRICT
+immutable
+parallel SAFE
+as 'int4eq';
+
+select
+  *
+from
+  tenk1 as a
+  inner join
+    tenk1 as b
+  on a.unique1 = b.unique1
+where
+  my_int_eq(a.unique2, 42);
+
+create function test_support_func(internal)
+returns internal
+as 'regresslib', 'test_support_func'
+language "c"
+STRICT;
+
+alter FUNCTION my_int_eq(INT, INT) SUPPORT test_support_func;
+
+select
+  *
+from
+  tenk1 as a
+  inner join
+    tenk1 as b
+  on a.unique1 = b.unique1
+where
+  my_int_eq(a.unique2, 42);
+
+create function my_gen_series(INT, INT)
+returns setof INT
+language "internal"
+STRICT
+immutable
+parallel SAFE
+as 'generate_series_int4'
+SUPPORT test_support_func;
+
+select
+  *
+from
+  tenk1 as a
+  inner join
+    my_gen_series(1, 1000) as g
+  on a.unique1 = g;
+
+select * from tenk1 as a inner join my_gen_series(1, 10) as g on a.unique1 = g;
+
+select
+  explain_mask_costs(
+    '
+SELECT * FROM generate_series(TIMESTAMPTZ ''2024-02-01'', TIMESTAMPTZ ''2024-03-01'', INTERVAL ''1 day'') g(s);',
+    true,
+    true,
+    false,
+    true
+  );
+
+select
+  explain_mask_costs(
+    '
+SELECT * FROM generate_series(TIMESTAMP ''2024-02-01'', TIMESTAMP ''2024-03-01'', INTERVAL ''1 day'') g(s);',
+    true,
+    true,
+    false,
+    true
+  );
+
+select
+  explain_mask_costs(
+    '
+SELECT * FROM generate_series(TIMESTAMPTZ ''2024-02-01'', TIMESTAMPTZ ''2024-03-01'', INTERVAL ''1 day'', ''UTC'') g(s);',
+    true,
+    true,
+    false,
+    true
+  );
+
+select
+  explain_mask_costs(
+    '
+SELECT * FROM generate_series(TIMESTAMPTZ ''2024-02-01'', TIMESTAMPTZ ''2024-03-01'', INTERVAL ''7 day'') g(s);',
+    true,
+    true,
+    false,
+    true
+  );
+
+select
+  explain_mask_costs(
+    '
+SELECT * FROM generate_series(TIMESTAMPTZ ''2024-03-01'', TIMESTAMPTZ ''2024-02-01'', INTERVAL ''-1 day'') g(s);',
+    true,
+    true,
+    false,
+    true
+  );
+
+select
+  explain_mask_costs(
+    '
+SELECT * FROM generate_series(TIMESTAMPTZ ''2024-03-01'', TIMESTAMPTZ ''2024-02-01'', INTERVAL ''1 day'') g(s);',
+    true,
+    true,
+    false,
+    true
+  );
+
+select
+  explain_mask_costs(
+    '
+SELECT * FROM generate_series(TIMESTAMPTZ ''-infinity'', TIMESTAMPTZ ''infinity'', INTERVAL ''1 day'') g(s);',
+    false,
+    true,
+    false,
+    true
+  );
+
+select
+  *
+from
+  generate_series(
+    cast('2024-02-01'
+    as timestamp with time ZONE),
+    cast('2024-03-01'
+    as timestamp with time ZONE),
+    cast('0 day' as INTERVAL)
+  )
+  as g (s);
+
+select
+  explain_mask_costs(
+    '
+SELECT * FROM generate_series(1.0, 25.0) g(s);',
+    true,
+    true,
+    false,
+    true
+  );
+
+select
+  explain_mask_costs(
+    '
+SELECT * FROM generate_series(1.0, 25.0, 2.0) g(s);',
+    true,
+    true,
+    false,
+    true
+  );
+
+select
+  explain_mask_costs(
+    '
+SELECT * FROM generate_series(25.0, 1.0, -1.0) g(s);',
+    true,
+    true,
+    false,
+    true
+  );
+
+select
+  explain_mask_costs(
+    '
+SELECT * FROM generate_series(25.0, 1.0, 1.0) g(s);',
+    true,
+    true,
+    false,
+    true
+  );
+
+select
+  explain_mask_costs(
+    '
+SELECT * FROM generate_series(''-infinity''::NUMERIC, ''infinity''::NUMERIC, 1.0) g(s);',
+    false,
+    true,
+    false,
+    true
+  );
+
+select
+  explain_mask_costs(
+    '
+SELECT * FROM generate_series(1.0, 25.0, ''NaN''::NUMERIC) g(s);',
+    false,
+    true,
+    false,
+    true
+  );
+
+select
+  explain_mask_costs(
+    '
+SELECT * FROM generate_series(25.0, 2.0, 0.0) g(s);',
+    false,
+    true,
+    false,
+    true
+  );
+
+select COUNT(*) > 0 as ok from pg_control_checkpoint();
+
+select COUNT(*) > 0 as ok from pg_control_init();
+
+select COUNT(*) > 0 as ok from pg_control_recovery();
+
+select COUNT(*) > 0 as ok from pg_control_system();
+
+select * from pg_split_walfile_name(null);
+
+select * from pg_split_walfile_name('invalid');
+
+select
+  segment_number > 0 as ok_segment_number,
+  timeline_id
+from
+  pg_split_walfile_name(
+    '000000010000000100000000'
+  );
+
+select
+  segment_number > 0 as ok_segment_number,
+  timeline_id
+from
+  pg_split_walfile_name(
+    'ffffffFF00000001000000af'
+  );
+
+select
+  cast(setting as BIGINT) as segment_size
+from
+  pg_settings
+where
+  name = 'wal_segment_size';
+
+select
+  segment_number,
+  file_offset
+from
+  pg_walfile_name_offset(
+    cast('0/0' as PG_LSN) + 'segment_size'
+  ),
+  pg_split_walfile_name(file_name);
+
+select
+  segment_number,
+  file_offset
+from
+  pg_walfile_name_offset(
+    cast('0/0' as PG_LSN) + 'segment_size' +
+    1
+  ),
+  pg_split_walfile_name(file_name);
+
+select
+  segment_number,
+  file_offset = 'segment_size' - 1
+from
+  pg_walfile_name_offset(
+    cast('0/0' as PG_LSN) + 'segment_size' -
+    1
+  ),
+  pg_split_walfile_name(file_name);
+
+create role regress_current_logfile;
+
+select
+  has_function_privilege(
+    'regress_current_logfile',
+    'pg_current_logfile()',
+    'EXECUTE'
+  );
+
+grant PG_MONITOR to regress_current_logfile;
+
+select
+  has_function_privilege(
+    'regress_current_logfile',
+    'pg_current_logfile()',
+    'EXECUTE'
+  );
+
+drop role regress_current_logfile;
+
+create table test_chunk_id (
+  a TEXT,
+  b TEXT storage external
+);
+
+insert into test_chunk_id values ('x', repeat('x', 8192));
+
+select
+  t.relname as toastrel
+from
+  pg_class as c
+  left outer join
+    pg_class as t
+  on c.reltoastrelid = t.oid
+where
+  c.relname = 'test_chunk_id';
+
+drop TABLE "test_chunk_id";
+
+drop FUNCTION explain_mask_costs(TEXT, BOOLEAN, BOOLEAN, BOOLEAN, BOOLEAN);
+
+select gist_translate_cmptype_common(7);
+
+select gist_translate_cmptype_common(3);
+
+create function test_relpath()
+returns VOID
+as 'regresslib'
+language "c";
+
+select test_relpath();
+
+select pg_replication_origin_create('regress_' || repeat('a', 505));

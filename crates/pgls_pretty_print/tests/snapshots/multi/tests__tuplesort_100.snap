@@ -1,0 +1,569 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/tuplesort.sql
+snapshot_kind: text
+---
+set max_parallel_maintenance_workers = 0;
+
+set max_parallel_workers = 0;
+
+create temporary table abbrev_abort_uuids (
+  id serial not null,
+  abort_increasing UUID,
+  abort_decreasing UUID,
+  noabort_increasing UUID,
+  noabort_decreasing UUID
+);
+
+insert into abbrev_abort_uuids (
+  abort_increasing,
+  abort_decreasing,
+  noabort_increasing,
+  noabort_decreasing
+)
+select
+  cast('00000000-0000-0000-0000-' ||
+  to_char(g.i, '000000000000FM')
+  as UUID)
+  as abort_increasing,
+  cast('00000000-0000-0000-0000-' ||
+  to_char(20000 - g.i, '000000000000FM')
+  as UUID)
+  as abort_decreasing,
+  cast(to_char(g.i % 10009, '00000000FM') ||
+  '-0000-0000-0000-' ||
+  to_char(g.i, '000000000000FM')
+  as UUID)
+  as noabort_increasing,
+  cast(to_char((20000 - g.i) % 10009, '00000000FM') ||
+  '-0000-0000-0000-' ||
+  to_char(20000 - g.i, '000000000000FM')
+  as UUID)
+  as noabort_decreasing
+from
+  generate_series(0, 20000, 1) as g (i);
+
+insert into abbrev_abort_uuids (id) values (0);
+
+insert into abbrev_abort_uuids default values;
+
+insert into abbrev_abort_uuids default values;
+
+insert into abbrev_abort_uuids (
+  abort_increasing,
+  abort_decreasing,
+  noabort_increasing,
+  noabort_decreasing
+)
+select
+  abort_increasing,
+  abort_decreasing,
+  noabort_increasing,
+  noabort_decreasing
+from
+  abbrev_abort_uuids
+where
+  (id < 10 or id > 19990) and
+  id % 3 = 0 and
+  abort_increasing is not null;
+
+select
+  abort_increasing,
+  abort_decreasing
+from
+  abbrev_abort_uuids
+order by abort_increasing
+offset 20000 - 4;
+
+select
+  abort_increasing,
+  abort_decreasing
+from
+  abbrev_abort_uuids
+order by abort_decreasing nulls first
+offset 20000 - 4;
+
+select
+  noabort_increasing,
+  noabort_decreasing
+from
+  abbrev_abort_uuids
+order by noabort_increasing
+offset 20000 - 4;
+
+select
+  noabort_increasing,
+  noabort_decreasing
+from
+  abbrev_abort_uuids
+order by noabort_decreasing nulls first
+offset 20000 - 4;
+
+select
+  abort_increasing,
+  noabort_increasing
+from
+  abbrev_abort_uuids
+order by abort_increasing
+limit 5;
+
+select
+  abort_increasing,
+  noabort_increasing
+from
+  abbrev_abort_uuids
+order by noabort_increasing nulls first
+limit 5;
+
+create index "abbrev_abort_uuids__noabort_increasing_idx"
+on abbrev_abort_uuids
+using btree
+(
+  noabort_increasing
+);
+
+create index "abbrev_abort_uuids__noabort_decreasing_idx"
+on abbrev_abort_uuids
+using btree
+(
+  noabort_decreasing
+);
+
+select
+  id,
+  noabort_increasing,
+  noabort_decreasing
+from
+  abbrev_abort_uuids
+order by noabort_increasing
+limit 5;
+
+select
+  id,
+  noabort_increasing,
+  noabort_decreasing
+from
+  abbrev_abort_uuids
+order by noabort_increasing
+limit 5;
+
+select
+  id,
+  noabort_increasing,
+  noabort_decreasing
+from
+  abbrev_abort_uuids
+order by noabort_decreasing
+limit 5;
+
+select
+  id,
+  noabort_increasing,
+  noabort_decreasing
+from
+  abbrev_abort_uuids
+order by noabort_decreasing
+limit 5;
+
+create index "abbrev_abort_uuids__abort_increasing_idx"
+on abbrev_abort_uuids
+using btree
+(
+  abort_increasing
+);
+
+create index "abbrev_abort_uuids__abort_decreasing_idx"
+on abbrev_abort_uuids
+using btree
+(
+  abort_decreasing
+);
+
+select
+  id,
+  abort_increasing,
+  abort_decreasing
+from
+  abbrev_abort_uuids
+order by abort_increasing
+limit 5;
+
+select
+  id,
+  abort_increasing,
+  abort_decreasing
+from
+  abbrev_abort_uuids
+order by abort_increasing
+limit 5;
+
+select
+  id,
+  abort_increasing,
+  abort_decreasing
+from
+  abbrev_abort_uuids
+order by abort_decreasing
+limit 5;
+
+select
+  id,
+  abort_increasing,
+  abort_decreasing
+from
+  abbrev_abort_uuids
+order by abort_decreasing
+limit 5;
+
+begin;
+
+set local enable_indexscan = 'false';
+
+CLUSTER abbrev_abort_uuids using abbrev_abort_uuids__abort_increasing_idx;
+
+select
+  id,
+  abort_increasing,
+  abort_decreasing,
+  noabort_increasing,
+  noabort_decreasing
+from
+  abbrev_abort_uuids
+order by ctid
+limit 5;
+
+select
+  id,
+  abort_increasing,
+  abort_decreasing,
+  noabort_increasing,
+  noabort_decreasing
+from
+  abbrev_abort_uuids
+order by ctid desc
+limit 5;
+
+rollback;
+
+begin;
+
+set local enable_indexscan = 'false';
+
+CLUSTER abbrev_abort_uuids using abbrev_abort_uuids__abort_decreasing_idx;
+
+select
+  id,
+  abort_increasing,
+  abort_decreasing,
+  noabort_increasing,
+  noabort_decreasing
+from
+  abbrev_abort_uuids
+order by ctid
+limit 5;
+
+select
+  id,
+  abort_increasing,
+  abort_decreasing,
+  noabort_increasing,
+  noabort_decreasing
+from
+  abbrev_abort_uuids
+order by ctid desc
+limit 5;
+
+rollback;
+
+begin;
+
+set local enable_indexscan = 'false';
+
+CLUSTER abbrev_abort_uuids using abbrev_abort_uuids__noabort_increasing_idx;
+
+select
+  id,
+  abort_increasing,
+  abort_decreasing,
+  noabort_increasing,
+  noabort_decreasing
+from
+  abbrev_abort_uuids
+order by ctid
+limit 5;
+
+select
+  id,
+  abort_increasing,
+  abort_decreasing,
+  noabort_increasing,
+  noabort_decreasing
+from
+  abbrev_abort_uuids
+order by ctid desc
+limit 5;
+
+rollback;
+
+begin;
+
+set local enable_indexscan = 'false';
+
+CLUSTER abbrev_abort_uuids using abbrev_abort_uuids__noabort_decreasing_idx;
+
+select
+  id,
+  abort_increasing,
+  abort_decreasing,
+  noabort_increasing,
+  noabort_decreasing
+from
+  abbrev_abort_uuids
+order by ctid
+limit 5;
+
+select
+  id,
+  abort_increasing,
+  abort_decreasing,
+  noabort_increasing,
+  noabort_decreasing
+from
+  abbrev_abort_uuids
+order by ctid desc
+limit 5;
+
+rollback;
+
+select
+  left(a, 10),
+  b
+from
+  (
+    values
+      (repeat('a', 512 * 1024), 1),
+      (repeat('b', 512 * 1024), 2)
+  )
+  as v (a, b)
+order by v.a desc;
+
+begin;
+
+set local enable_indexscan = 'false';
+
+explain (COSTS 'off')
+declare "c" SCROLL
+cursor
+for select
+  noabort_decreasing
+from
+  abbrev_abort_uuids
+order by noabort_decreasing;;
+
+declare "c" SCROLL
+cursor
+for select
+  noabort_decreasing
+from
+  abbrev_abort_uuids
+order by noabort_decreasing;;
+
+fetch next from c;
+
+fetch next from c;
+
+fetch PRIOR from c;
+
+fetch PRIOR from c;
+
+fetch PRIOR from c;
+
+fetch PRIOR from c;
+
+fetch next from c;
+
+fetch ABSOLUTE -1 from c;
+
+fetch PRIOR from c;
+
+fetch next from c;
+
+fetch next from c;
+
+fetch next from c;
+
+fetch PRIOR from c;
+
+fetch next from c;
+
+commit;
+
+begin;
+
+set local enable_indexscan = 'false';
+
+set local work_mem = '100kB';
+
+explain (COSTS 'off')
+declare "c" SCROLL
+cursor
+for select
+  noabort_decreasing
+from
+  abbrev_abort_uuids
+order by noabort_decreasing;;
+
+declare "c" SCROLL
+cursor
+for select
+  noabort_decreasing
+from
+  abbrev_abort_uuids
+order by noabort_decreasing;;
+
+fetch next from c;
+
+fetch next from c;
+
+fetch PRIOR from c;
+
+fetch PRIOR from c;
+
+fetch PRIOR from c;
+
+fetch PRIOR from c;
+
+fetch next from c;
+
+fetch ABSOLUTE -1 from c;
+
+fetch PRIOR from c;
+
+fetch next from c;
+
+fetch next from c;
+
+fetch next from c;
+
+fetch PRIOR from c;
+
+fetch next from c;
+
+commit;
+
+select
+  (array_agg(id order by id desc nulls first))[0:5],
+  (array_agg(
+    abort_increasing order by abort_increasing desc nulls last
+  ))[0:5],
+  (array_agg(
+    cast(id as TEXT) order by cast(id as TEXT) desc nulls last
+  ))[0:5],
+  percentile_disc(0.99) within group (order by id),
+  percentile_disc(0.01) within group (order by id),
+  percentile_disc(
+    0.8
+  )
+  within group (order by abort_increasing),
+  percentile_disc(
+    0.2
+  )
+  within group (order by cast(id as TEXT)),
+  RANK(
+    '00000000-0000-0000-0000-000000000000',
+    '2',
+    '2'
+  )
+  within group (
+    order by noabort_increasing,
+    id,
+    cast(id as TEXT)
+  )
+from
+  (
+    select * from abbrev_abort_uuids
+    union all
+    select null, null, null, null, null
+  )
+  as s;
+
+begin;
+
+set local work_mem = '100kB';
+
+select
+  (array_agg(id order by id desc nulls first))[0:5],
+  (array_agg(
+    abort_increasing order by abort_increasing desc nulls last
+  ))[0:5],
+  (array_agg(
+    cast(id as TEXT) order by cast(id as TEXT) desc nulls last
+  ))[0:5],
+  percentile_disc(0.99) within group (order by id),
+  percentile_disc(0.01) within group (order by id),
+  percentile_disc(
+    0.8
+  )
+  within group (order by abort_increasing),
+  percentile_disc(
+    0.2
+  )
+  within group (order by cast(id as TEXT)),
+  RANK(
+    '00000000-0000-0000-0000-000000000000',
+    '2',
+    '2'
+  )
+  within group (
+    order by noabort_increasing,
+    id,
+    cast(id as TEXT)
+  )
+from
+  (
+    select * from abbrev_abort_uuids
+    union all
+    select null, null, null, null, null
+  )
+  as s;
+
+rollback;
+
+create temporary table test_mark_restore (
+  col1 INT,
+  col2 INT,
+  col12 INT
+);
+
+insert into test_mark_restore (col1, col2, col12)
+select
+  a.i,
+  b.i,
+  a.i * b.i
+from
+  generate_series(1, 500) as a (i),
+  generate_series(1, 5) as b (i);
+
+begin;
+
+set local enable_nestloop = off;
+
+set local enable_hashjoin = off;
+
+set local enable_material = off;
+
+select
+  '
+    SELECT col12, count(distinct a.col1), count(distinct a.col2), count(distinct b.col1), count(distinct b.col2), count(*)
+    FROM test_mark_restore a
+        JOIN test_mark_restore b USING(col12)
+    GROUP BY 1
+    HAVING count(*) > 1
+    ORDER BY 2 DESC, 1 DESC, 3 DESC, 4 DESC, 5 DESC, 6 DESC
+    LIMIT 10
+'
+  as qry;
+
+set local work_mem = '100kB';
+
+commit;

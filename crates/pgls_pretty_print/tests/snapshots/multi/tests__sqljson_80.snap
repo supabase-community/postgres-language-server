@@ -1,0 +1,843 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/sqljson.sql
+snapshot_kind: text
+---
+select JSON(null);
+
+select JSON('{ "a" : 1 } ');
+
+select JSON('{ "a" : 1 } ' format json);
+
+select JSON('{ "a" : 1 } ' format json encoding UTF8);
+
+select JSON(cast('{ "a" : 1 } ' as BYTEA) format json encoding UTF8);
+
+select pg_typeof(JSON('{ "a" : 1 } '));
+
+select JSON(cast('   1   ' as JSON));
+
+select JSON(cast('   1   ' as JSONB));
+
+select JSON(cast('   1   ' as JSON) with unique keys);
+
+select JSON(123);
+
+select JSON('{"a": 1, "a": 2}');
+
+select JSON('{"a": 1, "a": 2}' with unique keys);
+
+select JSON('{"a": 1, "a": 2}');
+
+select JSON('123');
+
+select JSON('123' format json);
+
+select JSON(cast('123' as BYTEA) format json);
+
+select JSON(cast('123' as BYTEA) format json encoding UTF8);
+
+select JSON('123' with unique keys);
+
+select JSON('123');
+
+select JSON('123');
+
+select pg_typeof(JSON('123'));
+
+select JSON_SCALAR(null);
+
+select JSON_SCALAR(cast(null as INT));
+
+select JSON_SCALAR(123);
+
+select JSON_SCALAR(123.45);
+
+select JSON_SCALAR(cast(123.45 as NUMERIC));
+
+select JSON_SCALAR(true);
+
+select JSON_SCALAR(false);
+
+select JSON_SCALAR(' 123.45');
+
+select JSON_SCALAR(cast('2020-06-07' as DATE));
+
+select JSON_SCALAR(cast('2020-06-07 01:02:03' as TIMESTAMP));
+
+select JSON_SCALAR(cast('{}' as JSON));
+
+select JSON_SCALAR(cast('{}' as JSONB));
+
+select JSON_SCALAR(123);
+
+select JSON_SCALAR('123');
+
+select JSON_SERIALIZE(null);
+
+select JSON_SERIALIZE(JSON('{ "a" : 1 } '));
+
+select JSON_SERIALIZE('{ "a" : 1 } ');
+
+select JSON_SERIALIZE('1');
+
+select JSON_SERIALIZE('1' format json);
+
+select JSON_SERIALIZE('{ "a" : 1 } ' returning BYTEA);
+
+select JSON_SERIALIZE('{ "a" : 1 } ' returning VARCHAR);
+
+select pg_typeof(JSON_SERIALIZE(null));
+
+select JSON_SERIALIZE('{ "a" : 1 } ' returning JSONB);
+
+select JSON_SERIALIZE('{}');
+
+select JSON_SERIALIZE('{}' returning BYTEA);
+
+select JSON_OBJECT();
+
+select JSON_OBJECT(returning JSON);
+
+select JSON_OBJECT(returning JSON format json);
+
+select JSON_OBJECT(returning JSONB);
+
+select JSON_OBJECT(returning JSONB format json);
+
+select JSON_OBJECT(returning TEXT);
+
+select JSON_OBJECT(returning TEXT format json);
+
+select JSON_OBJECT(returning TEXT format json encoding UTF8);
+
+select JSON_OBJECT(returning BYTEA);
+
+select JSON_OBJECT(returning BYTEA format json);
+
+select JSON_OBJECT(returning BYTEA format json encoding UTF8);
+
+select JSON_OBJECT(returning BYTEA format json encoding UTF16);
+
+select JSON_OBJECT(returning BYTEA format json encoding UTF32);
+
+select JSON_OBJECT('foo' : cast(null as INT) format json);
+
+select JSON_OBJECT('foo' : cast(null as INT) format json encoding UTF8);
+
+select JSON_OBJECT('foo' : cast(null as JSON) format json);
+
+select JSON_OBJECT('foo' : cast(null as JSON) format json encoding UTF8);
+
+select JSON_OBJECT('foo' : cast(null as JSONB) format json);
+
+select JSON_OBJECT('foo' : cast(null as JSONB) format json encoding UTF8);
+
+select JSON_OBJECT(null : 1);
+
+select JSON_OBJECT('a' : 2 + 3);
+
+select JSON_OBJECT('a' : 2 + 3);
+
+select JSON_OBJECT('a' || 2 : 1);
+
+select JSON_OBJECT('a' || 2 : 1);
+
+select JSON_OBJECT('a' : cast(2 as TEXT));
+
+select JSON_OBJECT('a' : cast(2 as TEXT));
+
+select JSON_OBJECT(cast(1 as TEXT) : 2);
+
+select JSON_OBJECT(cast(1 as TEXT) : 2);
+
+select JSON_OBJECT(cast('[1]' as JSON) : 123);
+
+select JSON_OBJECT(array[1, 2, 3] : 'aaa');
+
+select
+  JSON_OBJECT('a' : '123',
+  1.23 : 123,
+  'c' : cast('[ 1,true,{ } ]' as JSON),
+  'd' : cast('{ "x" : 123.45 }' as JSONB));
+
+select
+  JSON_OBJECT('a' : '123',
+  1.23 : 123,
+  'c' : cast('[ 1,true,{ } ]' as JSON),
+  'd' : cast('{ "x" : 123.45 }' as JSONB) returning JSONB);
+
+select JSON_OBJECT('a' : '123', 'b' : JSON_OBJECT('a' : 111, 'b' : 'aaa'));
+
+select
+  JSON_OBJECT('a' : '123',
+  'b' : JSON_OBJECT('a' : 111,
+  'b' : 'aaa' returning JSONB));
+
+select JSON_OBJECT('a' : JSON_OBJECT('b' : 1 returning TEXT));
+
+select JSON_OBJECT('a' : JSON_OBJECT('b' : 1 returning TEXT) format json);
+
+select JSON_OBJECT('a' : JSON_OBJECT('b' : 1 returning BYTEA));
+
+select JSON_OBJECT('a' : JSON_OBJECT('b' : 1 returning BYTEA) format json);
+
+select JSON_OBJECT('a' : '1', 'b' : null, 'c' : 2);
+
+select JSON_OBJECT('a' : '1', 'b' : null, 'c' : 2);
+
+select JSON_OBJECT('a' : '1', 'b' : null, 'c' : 2 absent on null);
+
+select
+  JSON_OBJECT(1 : 1,
+  '2' : null,
+  '3' : 1,
+  repeat('x', 1000) : 1,
+  2 : repeat('a', 100) with unique keys);
+
+select JSON_OBJECT(1 : 1, '1' : null with unique keys);
+
+select JSON_OBJECT(1 : 1, '1' : null absent on null with unique keys);
+
+select JSON_OBJECT(1 : 1, '1' : null with unique keys returning JSONB);
+
+select
+  JSON_OBJECT(1 : 1,
+  '1' : null absent on null with unique keys returning JSONB);
+
+select JSON_OBJECT(1 : 1, '2' : null, '1' : 1 with unique keys);
+
+select JSON_OBJECT(1 : 1, '2' : null, '1' : 1 absent on null with unique keys);
+
+select JSON_OBJECT(1 : 1, '2' : null, '1' : 1 absent on null);
+
+select
+  JSON_OBJECT(1 : 1,
+  '2' : null,
+  '1' : 1 absent on null with unique keys returning JSONB);
+
+select JSON_OBJECT(1 : 1, '2' : null, '1' : 1 absent on null returning JSONB);
+
+select
+  JSON_OBJECT(1 : 1,
+  '2' : null,
+  '3' : 1,
+  4 : null,
+  '5' : 'a' absent on null with unique keys returning JSONB);
+
+create type mood as enum ('happy', 'sad', 'neutral');
+
+create function mood_to_json(mood)
+returns JSON
+as '
+  SELECT to_json($1::text);
+'
+language "sql"
+immutable;
+
+create cast (mood as JSON) with function mood_to_json(mood) as IMPLICIT;
+
+select JSON_OBJECT(cast('happy' as mood) : cast('123' as JSONB));
+
+drop CAST (mood as JSON);
+
+drop FUNCTION mood_to_json;
+
+drop TYPE mood;
+
+select JSON_ARRAY();
+
+select JSON_ARRAY(returning JSON);
+
+select JSON_ARRAY(returning JSON format json);
+
+select JSON_ARRAY(returning JSONB);
+
+select JSON_ARRAY(returning JSONB format json);
+
+select JSON_ARRAY(returning TEXT);
+
+select JSON_ARRAY(returning TEXT format json);
+
+select JSON_ARRAY(returning TEXT format json encoding UTF8);
+
+select JSON_ARRAY(returning BYTEA);
+
+select JSON_ARRAY(returning BYTEA format json);
+
+select JSON_ARRAY(returning BYTEA format json encoding UTF8);
+
+select JSON_ARRAY(returning BYTEA format json encoding UTF16);
+
+select JSON_ARRAY(returning BYTEA format json encoding UTF32);
+
+select
+  JSON_ARRAY('aaa',
+  111,
+  true,
+  array[1, 2, 3],
+  null,
+  cast('{"a": [1]}' as JSON),
+  cast('["a",3]' as JSONB)
+  absent on null);
+
+select JSON_ARRAY('a', null, 'b' null on null);
+
+select JSON_ARRAY('a', null, 'b' absent on null);
+
+select JSON_ARRAY(null, null, 'b' absent on null);
+
+select JSON_ARRAY('a', null, 'b' null on null returning JSONB);
+
+select JSON_ARRAY('a', null, 'b' absent on null returning JSONB);
+
+select JSON_ARRAY(null, null, 'b' absent on null returning JSONB);
+
+select
+  JSON_ARRAY(JSON_ARRAY('{ "a" : 123 }'
+  absent on null returning TEXT)
+  absent on null);
+
+select
+  JSON_ARRAY(JSON_ARRAY('{ "a" : 123 }' format json
+  absent on null returning TEXT)
+  absent on null);
+
+select
+  JSON_ARRAY(JSON_ARRAY('{ "a" : 123 }' format json
+  absent on null returning TEXT) format json
+  absent on null);
+
+select JSON_ARRAY(select i from (values (1), (2), (null), (4)) as foo (i));
+
+select
+  JSON_ARRAY(select
+    i
+  from
+    (
+      values
+        (cast(null as INT[])),
+        ('{1,2}'),
+        (null),
+        (null),
+        ('{3,4}'),
+        (null)
+    )
+    as foo (i));
+
+select
+  JSON_ARRAY(select
+    i
+  from
+    (
+      values
+        (cast(null as INT[])),
+        ('{1,2}'),
+        (null),
+        (null),
+        ('{3,4}'),
+        (null)
+    )
+    as foo (i) returning JSONB);
+
+select
+  JSON_ARRAY(select
+    i
+  from
+    (
+      values (3), (1), (null), (2)
+    )
+    as foo (i)
+  order by i);
+
+select JSON_ARRAY(with x as (select 1) values (true));
+
+select JSON_ARRAY(select from (values (1)) as foo (i));
+
+select JSON_ARRAY(select i, i from (values (1)) as foo (i));
+
+select JSON_ARRAY(select * from (values (1, 2)) as foo (i, j));
+
+select
+  JSON_ARRAYAGG(i absent on null) is null,
+  JSON_ARRAYAGG(i
+  absent on null
+  returning JSONB) is null
+from
+  generate_series(1, 0) as i;
+
+select
+  JSON_ARRAYAGG(i absent on null),
+  JSON_ARRAYAGG(i
+  absent on null
+  returning JSONB)
+from
+  generate_series(1, 5) as i;
+
+select
+  JSON_ARRAYAGG(i
+  order by i desc
+  absent on null)
+from
+  generate_series(1, 5) as i;
+
+select
+  JSON_ARRAYAGG(cast(cast(i as TEXT) as JSON)
+  absent on null)
+from
+  generate_series(1, 5) as i;
+
+select
+  JSON_ARRAYAGG(JSON_ARRAY(i,
+  i + 1
+  absent on null returning TEXT) format json
+  absent on null)
+from
+  generate_series(1, 5) as i;
+
+select
+  JSON_ARRAYAGG(null absent on null),
+  JSON_ARRAYAGG(null
+  absent on null
+  returning JSONB)
+from
+  generate_series(1, 5);
+
+select
+  JSON_ARRAYAGG(null null on null),
+  JSON_ARRAYAGG(null
+  null on null
+  returning JSONB)
+from
+  generate_series(1, 5);
+
+select
+  JSON_ARRAYAGG(bar absent on null)
+  as no_options,
+  JSON_ARRAYAGG(bar
+  absent on null
+  returning JSONB)
+  as returning_jsonb,
+  JSON_ARRAYAGG(bar absent on null)
+  as absent_on_null,
+  JSON_ARRAYAGG(bar
+  absent on null
+  returning JSONB)
+  as absentonnull_returning_jsonb,
+  JSON_ARRAYAGG(bar null on null)
+  as null_on_null,
+  JSON_ARRAYAGG(bar
+  null on null
+  returning JSONB)
+  as nullonnull_returning_jsonb,
+  JSON_ARRAYAGG(foo absent on null)
+  as row_no_options,
+  JSON_ARRAYAGG(foo
+  absent on null
+  returning JSONB)
+  as row_returning_jsonb,
+  JSON_ARRAYAGG(foo
+  order by bar
+  absent on null)
+  filter (where
+    bar > 2)
+  as row_filtered_agg,
+  JSON_ARRAYAGG(foo
+  order by bar
+  absent on null
+  returning JSONB)
+  filter (where
+    bar > 2)
+  as row_filtered_agg_returning_jsonb
+from
+  (
+    values
+      (null),
+      (3),
+      (1),
+      (null),
+      (null),
+      (5),
+      (2),
+      (4),
+      (null)
+  )
+  as foo (bar);
+
+select
+  bar,
+  JSON_ARRAYAGG(bar
+  absent on null)
+  filter (where
+    bar > 2)
+  over (
+    partition by foo.bar % 2
+  )
+from
+  (
+    values
+      (null),
+      (3),
+      (1),
+      (null),
+      (null),
+      (5),
+      (2),
+      (4),
+      (null),
+      (5),
+      (4)
+  )
+  as foo (bar);
+
+select
+  JSON_OBJECTAGG('key' : 1 null on null) is null,
+  JSON_OBJECTAGG('key' : 1
+  null on null
+  returning JSONB) is null
+where
+  false;
+
+select JSON_OBJECTAGG(null : 1 null on null);
+
+select JSON_OBJECTAGG(null : 1 null on null  returning JSONB);
+
+select
+  JSON_OBJECTAGG(i : i null on null),
+  JSON_OBJECTAGG(i : i
+  null on null
+  returning JSONB)
+from
+  generate_series(1, 5) as i;
+
+select
+  JSON_OBJECTAGG(k : v null on null),
+  JSON_OBJECTAGG(k : v null on null),
+  JSON_OBJECTAGG(k : v absent on null),
+  JSON_OBJECTAGG(k : v
+  null on null
+  returning JSONB),
+  JSON_OBJECTAGG(k : v
+  null on null
+  returning JSONB),
+  JSON_OBJECTAGG(k : v
+  absent on null
+  returning JSONB)
+from
+  (
+    values
+      (1, 1),
+      (1, null),
+      (2, null),
+      (3, 3)
+  )
+  as foo (k, v);
+
+select
+  JSON_OBJECTAGG(k : v
+  null on null
+  with unique keys)
+from
+  (
+    values (1, 1), (1, null), (2, 2)
+  )
+  as foo (k, v);
+
+select
+  JSON_OBJECTAGG(k : v
+  absent on null
+  with unique keys)
+from
+  (
+    values (1, 1), (1, null), (2, 2)
+  )
+  as foo (k, v);
+
+select
+  JSON_OBJECTAGG(k : v
+  absent on null
+  with unique keys)
+from
+  (
+    values
+      (1, 1),
+      (0, null),
+      (3, null),
+      (2, 2),
+      (4, null)
+  )
+  as foo (k, v);
+
+select
+  JSON_OBJECTAGG(k : v
+  null on null
+  with unique keys
+  returning JSONB)
+from
+  (
+    values (1, 1), (1, null), (2, 2)
+  )
+  as foo (k, v);
+
+select
+  JSON_OBJECTAGG(k : v
+  absent on null
+  with unique keys
+  returning JSONB)
+from
+  (
+    values (1, 1), (1, null), (2, 2)
+  )
+  as foo (k, v);
+
+select
+  JSON_OBJECTAGG(k : v
+  absent on null
+  with unique keys
+  returning JSONB)
+from
+  (
+    values
+      (1, 1),
+      (0, null),
+      (4, null),
+      (5, null),
+      (6, null),
+      (2, 2)
+  )
+  as foo (k, v);
+
+select
+  JSON_OBJECTAGG(mod(i, 100) : cast(i as TEXT) format json
+  null on null
+  with unique keys)
+from
+  generate_series(0, 199) as i;
+
+select JSON_OBJECT('foo' : '1' format json, 'bar' : 'baz' returning JSON);
+
+create view json_object_view
+as select
+  JSON_OBJECT('foo' : '1' format json,
+  'bar' : 'baz' returning JSON);
+
+drop VIEW "json_object_view";
+
+select
+  to_json(a) as a,
+  JSON_OBJECTAGG(k : v
+  null on null
+  with unique keys)
+  over (
+    order by k
+  )
+from
+  (values (1, 1), (2, 2)) as a (k, v);
+
+select
+  to_json(a) as a,
+  JSON_OBJECTAGG(k : v
+  null on null
+  with unique keys)
+  over (
+    order by k
+  )
+from
+  (
+    values (1, 1), (1, 2), (2, 2)
+  )
+  as a (k, v);
+
+select
+  to_json(a) as a,
+  JSON_OBJECTAGG(k : v
+  absent on null
+  with unique keys)
+  over (
+    order by k
+  )
+from
+  (
+    values (1, 1), (1, null), (2, 2)
+  )
+  as a (k, v);
+
+select
+  to_json(a) as a,
+  JSON_OBJECTAGG(k : v
+  absent on null)
+  over (
+    order by k
+  )
+from
+  (
+    values (1, 1), (1, null), (2, 2)
+  )
+  as a (k, v);
+
+select
+  to_json(a) as a,
+  JSON_OBJECTAGG(k : v
+  absent on null)
+  over (
+    order by k
+    range between
+    unbounded preceding
+    and
+    unbounded following
+  )
+from
+  (
+    values (1, 1), (1, null), (2, 2)
+  )
+  as a (k, v);
+
+select JSON_ARRAY('1' format json, 2 absent on null returning JSON);
+
+create view json_array_view
+as select
+  JSON_ARRAY('1' format json,
+  2
+  absent on null returning JSON);
+
+drop VIEW "json_array_view";
+
+select
+  JSON_OBJECTAGG(i : cast('111' || i as BYTEA) format json
+  null on null
+  with unique keys
+  returning TEXT)
+  filter (where
+    i > 3)
+from
+  generate_series(1, 5) as i;
+
+select
+  JSON_OBJECTAGG(i : cast('111' || i as BYTEA) format json
+  null on null
+  with unique keys
+  returning TEXT)
+  over (
+    partition by i % 2
+  )
+from
+  generate_series(1, 5) as i;
+
+create view json_objectagg_view
+as select
+  JSON_OBJECTAGG(i : cast('111' || i as BYTEA) format json
+  null on null
+  with unique keys
+  returning TEXT)
+  filter (where
+    i > 3)
+from
+  generate_series(1, 5) as i;
+
+drop VIEW "json_objectagg_view";
+
+select
+  JSON_ARRAYAGG(cast('111' || i as BYTEA) format json
+  null on null
+  returning TEXT)
+  filter (where
+    i > 3)
+from
+  generate_series(1, 5) as i;
+
+select
+  JSON_ARRAYAGG(cast('111' || i as BYTEA) format json
+  null on null
+  returning TEXT)
+  over (
+    partition by i % 2
+  )
+from
+  generate_series(1, 5) as i;
+
+create view json_arrayagg_view
+as select
+  JSON_ARRAYAGG(cast('111' || i as BYTEA) format json
+  null on null
+  returning TEXT)
+  filter (where
+    i > 3)
+from
+  generate_series(1, 5) as i;
+
+drop VIEW "json_arrayagg_view";
+
+select
+  JSON_ARRAY(select
+    i
+  from
+    (
+      values (1), (2), (null), (4)
+    )
+    as foo (i) returning JSONB);
+
+create view json_array_subquery_view
+as select
+  JSON_ARRAY(select
+    i
+  from
+    (
+      values (1), (2), (null), (4)
+    )
+    as foo (i) returning JSONB);
+
+drop VIEW "json_array_subquery_view";
+
+select null is JSON;
+
+select not null is JSON;
+
+select cast(null as JSON) is JSON;
+
+select cast(null as JSONB) is JSON;
+
+select cast(null as TEXT) is JSON;
+
+select cast(null as BYTEA) is JSON;
+
+select cast(null as INT) is JSON;
+
+select '' is JSON;
+
+select cast('\x00' as BYTEA) is JSON;
+
+create table test_is_json (js TEXT);
+
+insert into test_is_json
+values
+  (null),
+  (''),
+  ('123'),
+  ('"aaa "'),
+  ('true'),
+  ('null'),
+  ('[]'),
+  ('[1, "2", {}]'),
+  ('{}'),
+  ('{ "a": 1, "b": null }'),
+  ('{ "a": 1, "a": null }'),
+  (
+    '{ "a": 1, "b": [{ "a": 1 }, { "a": 2 }] }'
+  ),
+  (
+    '{ "a": 1, "b": [{ "a": 1, "b": 0, "a": 2 }] }'
+  ),
+  ('aaa'),
+  ('{a:1}'),
+  ('["a",]');
+
+select
+  js,
+  js is JSON as "IS JSON",
+  not js is JSON as "IS NOT JSON",
+  js is JSON as "IS VALUE",
+  js is JSON OBJECT as "IS OBJECT",
+  js is JSON ARRAY as "IS ARRAY",
+  js is JSON SCALAR as "IS SCALAR",
+  js is JSON as "WITHOUT UNIQUE",
+  js is JSON;

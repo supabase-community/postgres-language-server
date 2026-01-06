@@ -1,0 +1,1197 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/horology.sql
+snapshot_kind: text
+---
+show "timezone";
+
+show "datestyle";
+
+select cast('20011227 040506+08' as timestamp with time ZONE);
+
+select cast('20011227 040506-08' as timestamp with time ZONE);
+
+select cast('20011227 040506.789+08' as timestamp with time ZONE);
+
+select cast('20011227 040506.789-08' as timestamp with time ZONE);
+
+select cast('20011227T040506+08' as timestamp with time ZONE);
+
+select cast('20011227T040506-08' as timestamp with time ZONE);
+
+select cast('20011227T040506.789+08' as timestamp with time ZONE);
+
+select cast('20011227T040506.789-08' as timestamp with time ZONE);
+
+select cast('2001-12-27 04:05:06.789-08' as timestamp with time ZONE);
+
+select cast('2001.12.27 04:05:06.789-08' as timestamp with time ZONE);
+
+select cast('2001/12/27 04:05:06.789-08' as timestamp with time ZONE);
+
+select cast('12/27/2001 04:05:06.789-08' as timestamp with time ZONE);
+
+select cast('2001-12-27 04:05:06.789 MET DST' as timestamp with time ZONE);
+
+select cast('2001-12-27 allballs' as timestamp with time ZONE);
+
+select cast('27/12/2001 04:05:06.789-08' as timestamp with time ZONE);
+
+set datestyle = dmy;
+
+select cast('27/12/2001 04:05:06.789-08' as timestamp with time ZONE);
+
+reset datestyle;
+
+select cast('J2452271+08' as timestamp with time ZONE);
+
+select cast('J2452271-08' as timestamp with time ZONE);
+
+select cast('J2452271.5+08' as timestamp with time ZONE);
+
+select cast('J2452271.5-08' as timestamp with time ZONE);
+
+select cast('J2452271 04:05:06+08' as timestamp with time ZONE);
+
+select cast('J2452271 04:05:06-08' as timestamp with time ZONE);
+
+select cast('J2452271T040506+08' as timestamp with time ZONE);
+
+select cast('J2452271T040506-08' as timestamp with time ZONE);
+
+select cast('J2452271T040506.789+08' as timestamp with time ZONE);
+
+select cast('J2452271T040506.789-08' as timestamp with time ZONE);
+
+select cast('12.27.2001 04:05:06.789+08' as timestamp with time ZONE);
+
+select cast('12.27.2001 04:05:06.789-08' as timestamp with time ZONE);
+
+set datestyle = German;
+
+select cast('27.12.2001 04:05:06.789+08' as timestamp with time ZONE);
+
+select cast('27.12.2001 04:05:06.789-08' as timestamp with time ZONE);
+
+set datestyle = ISO;
+
+select cast('040506.789+08' as TIME);
+
+select cast('040506.789-08' as TIME);
+
+select cast('T040506.789+08' as TIME);
+
+select cast('T040506.789-08' as TIME);
+
+select cast('040506.789+08' as time with time ZONE);
+
+select cast('040506.789-08' as time with time ZONE);
+
+select cast('T040506.789+08' as time with time ZONE);
+
+select cast('T040506.789-08' as time with time ZONE);
+
+select cast('T040506.789 +08' as time with time ZONE);
+
+select cast('T040506.789 -08' as time with time ZONE);
+
+select cast('T040506.789 America/Los_Angeles' as time with time ZONE);
+
+select cast('2001-12-27 T040506.789 America/Los_Angeles' as time with time ZONE);
+
+select cast('J2452271 T040506.789 America/Los_Angeles' as time with time ZONE);
+
+select cast('040506.07' as TIME);
+
+select cast('04:05:06.07' as TIME);
+
+select cast('040506' as TIME);
+
+select cast('04:05:06' as TIME);
+
+select cast('0405' as TIME);
+
+select cast('04:05' as TIME);
+
+select cast('T040506.07' as TIME);
+
+select cast('T04:05:06.07' as TIME);
+
+select cast('T040506' as TIME);
+
+select cast('T04:05:06' as TIME);
+
+select cast('T0405' as TIME);
+
+select cast('T04:05' as TIME);
+
+select cast('T04' as TIME);
+
+select cast('040506.07+08' as time with time ZONE);
+
+select cast('04:05:06.07+08' as time with time ZONE);
+
+select cast('040506+08' as time with time ZONE);
+
+select cast('04:05:06+08' as time with time ZONE);
+
+select cast('0405+08' as time with time ZONE);
+
+select cast('04:05+08' as time with time ZONE);
+
+select cast('T040506.07+08' as time with time ZONE);
+
+select cast('T04:05:06.07+08' as time with time ZONE);
+
+select cast('T040506+08' as time with time ZONE);
+
+select cast('T04:05:06+08' as time with time ZONE);
+
+select cast('T0405+08' as time with time ZONE);
+
+select cast('T04:05+08' as time with time ZONE);
+
+select cast('T04+08' as time with time ZONE);
+
+set datestyle = 'Postgres, MDY';
+
+select cast('J1520447' as DATE) as "Confucius' Birthday";
+
+select cast('J0' as DATE) as "Julian Epoch";
+
+select cast('1995-08-06  J J J' as DATE);
+
+select cast('J J 1520447' as DATE);
+
+select cast('Y2001M12D27H04M05S06.789+08' as timestamp with time ZONE);
+
+select cast('Y2001M12D27H04MM05S06.789-08' as timestamp with time ZONE);
+
+select cast('J2452271 T X03456-08' as timestamp with time ZONE);
+
+select cast('J2452271 T X03456.001e6-08' as timestamp with time ZONE);
+
+select cast('1995-08-06 epoch' as DATE);
+
+select cast('1995-08-06 infinity' as DATE);
+
+select cast('1995-08-06 -infinity' as DATE);
+
+select cast('today infinity' as DATE);
+
+select cast('-infinity infinity' as DATE);
+
+select cast('1995-08-06 epoch' as TIMESTAMP);
+
+select cast('1995-08-06 infinity' as TIMESTAMP);
+
+select cast('1995-08-06 -infinity' as TIMESTAMP);
+
+select cast('epoch 01:01:01' as TIMESTAMP);
+
+select cast('infinity 01:01:01' as TIMESTAMP);
+
+select cast('-infinity 01:01:01' as TIMESTAMP);
+
+select cast('now epoch' as TIMESTAMP);
+
+select cast('-infinity infinity' as TIMESTAMP);
+
+select cast('1995-08-06 epoch' as timestamp with time ZONE);
+
+select cast('1995-08-06 infinity' as timestamp with time ZONE);
+
+select cast('1995-08-06 -infinity' as timestamp with time ZONE);
+
+select cast('epoch 01:01:01' as timestamp with time ZONE);
+
+select cast('infinity 01:01:01' as timestamp with time ZONE);
+
+select cast('-infinity 01:01:01' as timestamp with time ZONE);
+
+select cast('now epoch' as timestamp with time ZONE);
+
+select cast('-infinity infinity' as timestamp with time ZONE);
+
+select cast('1981-02-03' as DATE) + cast('04:05:06' as TIME) as "Date + Time";
+
+select
+  cast('1991-02-03' as DATE) +
+  cast('04:05:06 PST' as time with time ZONE)
+  as "Date + Time PST";
+
+select
+  cast('2001-02-03' as DATE) +
+  cast('04:05:06 UTC' as time with time ZONE)
+  as "Date + Time UTC";
+
+select cast('1991-02-03' as DATE) + cast('2 years' as INTERVAL) as "Add Two Years";
+
+select cast('2001-12-13' as DATE) - cast('2 years' as INTERVAL) as "Subtract Two Years";
+
+select cast('1991-02-03' as DATE) - cast('04:05:06' as TIME) as "Subtract Time";
+
+select
+  cast('1991-02-03' as DATE) -
+  cast('04:05:06 UTC' as time with time ZONE)
+  as "Subtract Time UTC";
+
+select cast('1996-03-01' as TIMESTAMP) - cast('1 second' as INTERVAL) as "Feb 29";
+
+select cast('1999-03-01' as TIMESTAMP) - cast('1 second' as INTERVAL) as "Feb 28";
+
+select cast('2000-03-01' as TIMESTAMP) - cast('1 second' as INTERVAL) as "Feb 29";
+
+select cast('1999-12-01' as TIMESTAMP) + cast('1 month - 1 second' as INTERVAL) as "Dec 31";
+
+select cast('Jan 1, 4713 BC' as TIMESTAMP) + cast('106000000 days' as INTERVAL) as "Feb 23, 285506";
+
+select cast('Jan 1, 4713 BC' as TIMESTAMP) + cast('107000000 days' as INTERVAL) as "Jan 20, 288244";
+
+select cast('Jan 1, 4713 BC' as TIMESTAMP) + cast('109203489 days' as INTERVAL) as "Dec 31, 294276";
+
+select cast('2000-01-01' as TIMESTAMP) - cast('2483590 days' as INTERVAL) as "out of range";
+
+select
+  cast('294276-12-31 23:59:59' as TIMESTAMP) +
+  cast('9223372036854775807 microseconds'
+  as INTERVAL)
+  as "out of range";
+
+select cast('12/31/294276' as TIMESTAMP) - cast('12/23/1999' as TIMESTAMP) as "106751991 Days";
+
+select
+  cast('today' as TIMESTAMP) =
+  cast('yesterday' as TIMESTAMP) +
+  cast('1 day' as INTERVAL)
+  as "True";
+
+select
+  cast('today' as TIMESTAMP) =
+  cast('tomorrow' as TIMESTAMP) -
+  cast('1 day' as INTERVAL)
+  as "True";
+
+select
+  cast('today 10:30' as TIMESTAMP) =
+  cast('yesterday' as TIMESTAMP) +
+  cast('1 day 10 hr 30 min' as INTERVAL)
+  as "True";
+
+select
+  cast('10:30 today' as TIMESTAMP) =
+  cast('yesterday' as TIMESTAMP) +
+  cast('1 day 10 hr 30 min' as INTERVAL)
+  as "True";
+
+select
+  cast('tomorrow' as TIMESTAMP) =
+  cast('yesterday' as TIMESTAMP) +
+  cast('2 days' as INTERVAL)
+  as "True";
+
+select
+  cast('tomorrow 16:00:00' as TIMESTAMP) =
+  cast('today' as TIMESTAMP) +
+  cast('1 day 16 hours' as INTERVAL)
+  as "True";
+
+select
+  cast('16:00:00 tomorrow' as TIMESTAMP) =
+  cast('today' as TIMESTAMP) +
+  cast('1 day 16 hours' as INTERVAL)
+  as "True";
+
+select
+  cast('yesterday 12:34:56' as TIMESTAMP) =
+  cast('tomorrow' as TIMESTAMP) -
+  cast('2 days - 12:34:56' as INTERVAL)
+  as "True";
+
+select
+  cast('12:34:56 yesterday' as TIMESTAMP) =
+  cast('tomorrow' as TIMESTAMP) -
+  cast('2 days - 12:34:56' as INTERVAL)
+  as "True";
+
+select cast('tomorrow' as TIMESTAMP) > 'now' as "True";
+
+select cast('1994-01-01' as DATE) + cast('11:00' as TIME) as "Jan_01_1994_11am";
+
+select cast('1994-01-01' as DATE) + cast('10:00' as TIME) as "Jan_01_1994_10am";
+
+select cast('1994-01-01' as DATE) + cast('11:00-5' as time with time ZONE) as "Jan_01_1994_8am";
+
+select
+  timestamptz(
+    cast('1994-01-01' as DATE),
+    cast('11:00-5' as time with time ZONE)
+  )
+  as "Jan_01_1994_8am";
+
+select d1 + cast('1 year' as INTERVAL) as one_year from timestamp_tbl;
+
+select d1 - cast('1 year' as INTERVAL) as one_year from timestamp_tbl;
+
+select cast('1996-03-01' as timestamp with time ZONE) - cast('1 second' as INTERVAL) as "Feb 29";
+
+select cast('1999-03-01' as timestamp with time ZONE) - cast('1 second' as INTERVAL) as "Feb 28";
+
+select cast('2000-03-01' as timestamp with time ZONE) - cast('1 second' as INTERVAL) as "Feb 29";
+
+select
+  cast('1999-12-01' as timestamp with time ZONE) +
+  cast('1 month - 1 second' as INTERVAL)
+  as "Dec 31";
+
+select
+  cast('2000-01-01' as timestamp with time ZONE) -
+  cast('2483590 days' as INTERVAL)
+  as "out of range";
+
+select
+  cast('294276-12-31 23:59:59 UTC'
+  as timestamp with time ZONE) +
+  cast('9223372036854775807 microseconds'
+  as INTERVAL)
+  as "out of range";
+
+select
+  cast('today' as timestamp with time ZONE) =
+  cast('yesterday' as timestamp with time ZONE) +
+  cast('1 day' as INTERVAL)
+  as "True";
+
+select
+  cast('today' as timestamp with time ZONE) =
+  cast('tomorrow' as timestamp with time ZONE) -
+  cast('1 day' as INTERVAL)
+  as "True";
+
+select
+  cast('tomorrow' as timestamp with time ZONE) =
+  cast('yesterday' as timestamp with time ZONE) +
+  cast('2 days' as INTERVAL)
+  as "True";
+
+select cast('tomorrow' as timestamp with time ZONE) > 'now' as "True";
+
+set time zone 'CST7CDT,M4.1.0,M10.5.0';
+
+select
+  cast('2005-04-02 12:00-07'
+  as timestamp with time ZONE) +
+  cast('1 day' as INTERVAL)
+  as "Apr 3, 12:00";
+
+select
+  cast('2005-04-02 12:00-07'
+  as timestamp with time ZONE) +
+  cast('24 hours' as INTERVAL)
+  as "Apr 3, 13:00";
+
+select
+  cast('2005-04-03 12:00-06'
+  as timestamp with time ZONE) -
+  cast('1 day' as INTERVAL)
+  as "Apr 2, 12:00";
+
+select
+  cast('2005-04-03 12:00-06'
+  as timestamp with time ZONE) -
+  cast('24 hours' as INTERVAL)
+  as "Apr 2, 11:00";
+
+reset timezone;
+
+select timestamptz(cast('1994-01-01' as DATE), cast('11:00' as TIME)) as "Jan_01_1994_10am";
+
+select timestamptz(cast('1994-01-01' as DATE), cast('10:00' as TIME)) as "Jan_01_1994_9am";
+
+select
+  timestamptz(
+    cast('1994-01-01' as DATE),
+    cast('11:00-8' as time with time ZONE)
+  )
+  as "Jan_01_1994_11am";
+
+select
+  timestamptz(
+    cast('1994-01-01' as DATE),
+    cast('10:00-8' as time with time ZONE)
+  )
+  as "Jan_01_1994_10am";
+
+select
+  timestamptz(
+    cast('1994-01-01' as DATE),
+    cast('11:00-5' as time with time ZONE)
+  )
+  as "Jan_01_1994_8am";
+
+select d1 + cast('1 year' as INTERVAL) as one_year from timestamptz_tbl;
+
+select d1 - cast('1 year' as INTERVAL) as one_year from timestamptz_tbl;
+
+select cast(cast('01:02' as TIME) as INTERVAL) as "+01:02";
+
+select cast(cast('02:03' as INTERVAL) as TIME) as "02:03:00";
+
+select cast(cast('-02:03' as INTERVAL) as TIME) as "21:57:00";
+
+select cast(cast('-9223372022400000000 us' as INTERVAL) as TIME) as "00:00:00";
+
+select cast('01:30' as TIME) + cast('02:01' as INTERVAL) as "03:31:00";
+
+select cast('01:30' as TIME) - cast('02:01' as INTERVAL) as "23:29:00";
+
+select cast('02:30' as TIME) + cast('36:01' as INTERVAL) as "14:31:00";
+
+select cast('03:30' as TIME) + cast('1 month 04:01' as INTERVAL) as "07:31:00";
+
+select cast(cast('01:02-08' as time with time ZONE) as INTERVAL) as "+00:01";
+
+select cast(cast('02:03' as INTERVAL) as time with time ZONE) as "02:03:00-08";
+
+select cast('01:30-08' as time with time ZONE) - cast('02:01' as INTERVAL) as "23:29:00-08";
+
+select cast('02:30-08' as time with time ZONE) + cast('36:01' as INTERVAL) as "14:31:00-08";
+
+select
+  cast(cast(cast('today' as DATE) +
+  cast('05:30' as time with time ZONE) +
+  cast('02:01' as INTERVAL)
+  as time with time ZONE)
+  as TIME)
+  as "07:31:00";
+
+select
+  cast(cast(cast('today' as DATE) +
+  cast('03:30' as time with time ZONE) +
+  cast('1 month 04:01' as INTERVAL)
+  as TIMESTAMP)
+  as TIME)
+  as "07:31:00";
+
+select
+  t.d1 as t,
+  i.f1 as i,
+  t.d1 + i.f1 as add,
+  t.d1 - i.f1 as subtract
+from
+  timestamp_tbl as t,
+  interval_tbl as i
+where
+  t.d1 between '1990-01-01' and '2001-01-01' and
+  i.f1 between '00:00' and '23:00'
+order by 1,
+  2;
+
+select
+  t.f1 as t,
+  i.f1 as i,
+  t.f1 + i.f1 as add,
+  t.f1 - i.f1 as subtract
+from
+  time_tbl as t,
+  interval_tbl as i
+where
+  isfinite(i.f1)
+order by 1,
+  2;
+
+select
+  t.f1 as t,
+  i.f1 as i,
+  t.f1 + i.f1 as add,
+  t.f1 - i.f1 as subtract
+from
+  timetz_tbl as t,
+  interval_tbl as i
+where
+  isfinite(i.f1)
+order by 1,
+  2;
+
+select
+  overlaps(
+    cast('2000-11-27' as timestamp with time ZONE),
+    cast('2000-11-28' as timestamp with time ZONE),
+    cast('2000-11-27 12:00'
+    as timestamp with time ZONE),
+    cast('2000-11-30' as timestamp with time ZONE)
+  )
+  as "True";
+
+select
+  overlaps(
+    cast('2000-11-26' as timestamp with time ZONE),
+    cast('2000-11-27' as timestamp with time ZONE),
+    cast('2000-11-27 12:00'
+    as timestamp with time ZONE),
+    cast('2000-11-30' as timestamp with time ZONE)
+  )
+  as "False";
+
+select
+  overlaps(
+    cast('2000-11-27' as timestamp with time ZONE),
+    cast('2000-11-28' as timestamp with time ZONE),
+    cast('2000-11-27 12:00'
+    as timestamp with time ZONE),
+    cast('1 day' as INTERVAL)
+  )
+  as "True";
+
+select
+  overlaps(
+    cast('2000-11-27' as timestamp with time ZONE),
+    cast('12 hours' as INTERVAL),
+    cast('2000-11-27 12:00'
+    as timestamp with time ZONE),
+    cast('2000-11-30' as timestamp with time ZONE)
+  )
+  as "False";
+
+select
+  overlaps(
+    cast('2000-11-27' as timestamp with time ZONE),
+    cast('12 hours' as INTERVAL),
+    cast('2000-11-27' as timestamp with time ZONE),
+    cast('12 hours' as INTERVAL)
+  )
+  as "True";
+
+select
+  overlaps(
+    cast('2000-11-27' as timestamp with time ZONE),
+    cast('12 hours' as INTERVAL),
+    cast('2000-11-27 12:00'
+    as timestamp with time ZONE),
+    cast('12 hours' as INTERVAL)
+  )
+  as "False";
+
+select
+  overlaps(
+    cast('2000-11-27' as TIMESTAMP),
+    cast('2000-11-28' as TIMESTAMP),
+    cast('2000-11-27 12:00' as TIMESTAMP),
+    cast('2000-11-30' as TIMESTAMP)
+  )
+  as "True";
+
+select
+  overlaps(
+    cast('2000-11-26' as TIMESTAMP),
+    cast('2000-11-27' as TIMESTAMP),
+    cast('2000-11-27 12:00' as TIMESTAMP),
+    cast('2000-11-30' as TIMESTAMP)
+  )
+  as "False";
+
+select
+  overlaps(
+    cast('2000-11-27' as TIMESTAMP),
+    cast('2000-11-28' as TIMESTAMP),
+    cast('2000-11-27 12:00' as TIMESTAMP),
+    cast('1 day' as INTERVAL)
+  )
+  as "True";
+
+select
+  overlaps(
+    cast('2000-11-27' as TIMESTAMP),
+    cast('12 hours' as INTERVAL),
+    cast('2000-11-27 12:00' as TIMESTAMP),
+    cast('2000-11-30' as TIMESTAMP)
+  )
+  as "False";
+
+select
+  overlaps(
+    cast('2000-11-27' as TIMESTAMP),
+    cast('12 hours' as INTERVAL),
+    cast('2000-11-27' as TIMESTAMP),
+    cast('12 hours' as INTERVAL)
+  )
+  as "True";
+
+select
+  overlaps(
+    cast('2000-11-27' as TIMESTAMP),
+    cast('12 hours' as INTERVAL),
+    cast('2000-11-27 12:00' as TIMESTAMP),
+    cast('12 hours' as INTERVAL)
+  )
+  as "False";
+
+select
+  overlaps(
+    cast('00:00' as TIME),
+    cast('01:00' as TIME),
+    cast('00:30' as TIME),
+    cast('01:30' as TIME)
+  )
+  as "True";
+
+select
+  overlaps(
+    cast('00:00' as TIME),
+    cast('1 hour' as INTERVAL),
+    cast('00:30' as TIME),
+    cast('1 hour' as INTERVAL)
+  )
+  as "True";
+
+select
+  overlaps(
+    cast('00:00' as TIME),
+    cast('1 hour' as INTERVAL),
+    cast('01:30' as TIME),
+    cast('1 hour' as INTERVAL)
+  )
+  as "False";
+
+select
+  overlaps(
+    cast('00:00' as TIME),
+    cast('1 hour' as INTERVAL),
+    cast('01:30' as TIME),
+    cast('1 day' as INTERVAL)
+  )
+  as "False";
+
+create table temp_timestamp (f1 timestamp with time ZONE);
+
+insert into temp_timestamp (f1)
+select
+  d1
+from
+  timestamp_tbl
+where
+  d1 between '13-jun-1957' and '1-jan-1997' or
+  d1 between '1-jan-1999' and '1-jan-2010';
+
+select f1 as timestamp from temp_timestamp order by timestamp;
+
+select
+  d.f1 as timestamp,
+  t.f1 as interval,
+  d.f1 + t.f1 as plus
+from
+  temp_timestamp as d,
+  interval_tbl as t
+order by plus,
+  timestamp,
+  interval;
+
+select
+  d.f1 as timestamp,
+  t.f1 as interval,
+  d.f1 - t.f1 as minus
+from
+  temp_timestamp as d,
+  interval_tbl as t
+order by minus,
+  timestamp,
+  interval;
+
+select
+  d.f1 as timestamp,
+  cast('1980-01-06 00:00 GMT'
+  as timestamp with time ZONE)
+  as gpstime_zero,
+  d.f1 -
+  cast('1980-01-06 00:00 GMT'
+  as timestamp with time ZONE)
+  as difference
+from
+  temp_timestamp as d
+order by difference;
+
+select
+  d1.f1 as timestamp1,
+  d2.f1 as timestamp2,
+  d1.f1 - d2.f1 as difference
+from
+  temp_timestamp as d1,
+  temp_timestamp as d2
+order by timestamp1,
+  timestamp2,
+  difference;
+
+select
+  f1 as timestamp,
+  date(f1) as date
+from
+  temp_timestamp
+where
+  f1 <> cast('now' as TIMESTAMP)
+order by date,
+  timestamp;
+
+drop TABLE "temp_timestamp";
+
+select cast(cast('2202020-10-05' as DATE) as TIMESTAMP);
+
+select cast('2202020-10-05' as DATE) > cast('2020-10-05' as TIMESTAMP) as t;
+
+select cast('2020-10-05' as TIMESTAMP) > cast('2202020-10-05' as DATE) as f;
+
+select cast(cast('2202020-10-05' as DATE) as timestamp with time ZONE);
+
+select cast('2202020-10-05' as DATE) > cast('2020-10-05' as timestamp with time ZONE) as t;
+
+select cast('2020-10-05' as timestamp with time ZONE) > cast('2202020-10-05' as DATE) as f;
+
+select cast(cast('4714-11-24 BC' as DATE) as timestamp with time ZONE);
+
+set time zone 'UTC-2';
+
+select cast(cast('4714-11-24 BC' as DATE) as timestamp with time ZONE);
+
+select cast('4714-11-24 BC' as DATE) < cast('2020-10-05' as timestamp with time ZONE) as t;
+
+select cast('2020-10-05' as timestamp with time ZONE) >= cast('4714-11-24 BC' as DATE) as t;
+
+select cast('4714-11-24 BC' as TIMESTAMP) < cast('2020-10-05' as timestamp with time ZONE) as t;
+
+select cast('2020-10-05' as timestamp with time ZONE) >= cast('4714-11-24 BC' as TIMESTAMP) as t;
+
+reset timezone;
+
+select COUNT(*) from date_tbl where f1 between '1997-01-01' and '1998-01-01';
+
+select COUNT(*) from date_tbl where f1 between '1997-01-01' and '1998-01-01';
+
+select COUNT(*) from date_tbl where f1 not between '1997-01-01' and '1998-01-01';
+
+select COUNT(*) from date_tbl where f1 not between '1997-01-01' and '1998-01-01';
+
+select COUNT(*) from date_tbl where f1 between symmetric '1997-01-01' and '1998-01-01';
+
+select COUNT(*) from date_tbl where f1 between symmetric '1997-01-01' and '1998-01-01';
+
+select COUNT(*) from date_tbl where f1 not between symmetric '1997-01-01' and '1998-01-01';
+
+select COUNT(*) from date_tbl where f1 not between symmetric '1997-01-01' and '1998-01-01';
+
+set datestyle = 'US,Postgres';
+
+show "datestyle";
+
+select d1 as us_postgres from timestamp_tbl;
+
+set datestyle = 'US,ISO';
+
+select d1 as us_iso from timestamp_tbl;
+
+set datestyle = 'US,SQL';
+
+show "datestyle";
+
+select d1 as us_sql from timestamp_tbl;
+
+set datestyle = 'European,Postgres';
+
+show "datestyle";
+
+insert into timestamp_tbl values ('13/06/1957');
+
+select COUNT(*) as one from timestamp_tbl where d1 = 'Jun 13 1957';
+
+select d1 as european_postgres from timestamp_tbl;
+
+set datestyle = 'European,ISO';
+
+show "datestyle";
+
+select d1 as european_iso from timestamp_tbl;
+
+set datestyle = 'European,SQL';
+
+show "datestyle";
+
+select d1 as european_sql from timestamp_tbl;
+
+reset datestyle;
+
+select to_timestamp('0097/Feb/16 --> 08:14:30', 'YYYY/Mon/DD --> HH:MI:SS');
+
+select to_timestamp('97/2/16 8:14:30', 'FMYYYY/FMMM/FMDD FMHH:FMMI:FMSS');
+
+select to_timestamp('2011$03!18 23_38_15', 'YYYY-MM-DD HH24:MI:SS');
+
+select to_timestamp('1985 January 12', 'YYYY FMMonth DD');
+
+select to_timestamp('1985 FMMonth 12', 'YYYY "FMMonth" DD');
+
+select to_timestamp('1985 \ 12', 'YYYY \\ DD');
+
+select
+  to_timestamp(
+    'My birthday-> Year: 1976, Month: May, Day: 16',
+    '"My birthday-> Year:" YYYY, "Month:" FMMonth, "Day:" DD'
+  );
+
+select to_timestamp('1,582nd VIII 21', 'Y,YYYth FMRM DD');
+
+select
+  to_timestamp(
+    '15 "text between quote marks" 98 54 45',
+    'HH24 "\"text between quote marks\"" YY MI SS'
+  );
+
+select to_timestamp('05121445482000', 'MMDDHH24MISSYYYY');
+
+select to_timestamp('2000January09Sunday', 'YYYYFMMonthDDFMDay');
+
+select to_timestamp('97/Feb/16', 'YYMonDD');
+
+select to_timestamp('97/Feb/16', 'YY:Mon:DD');
+
+select to_timestamp('97/Feb/16', 'FXYY:Mon:DD');
+
+select to_timestamp('97/Feb/16', 'FXYY/Mon/DD');
+
+select to_timestamp('19971116', 'YYYYMMDD');
+
+select to_timestamp('20000-1116', 'YYYY-MMDD');
+
+select to_timestamp('1997 AD 11 16', 'YYYY BC MM DD');
+
+select to_timestamp('1997 BC 11 16', 'YYYY BC MM DD');
+
+select to_timestamp('1997 A.D. 11 16', 'YYYY B.C. MM DD');
+
+select to_timestamp('1997 B.C. 11 16', 'YYYY B.C. MM DD');
+
+select to_timestamp('9-1116', 'Y-MMDD');
+
+select to_timestamp('95-1116', 'YY-MMDD');
+
+select to_timestamp('995-1116', 'YYY-MMDD');
+
+select to_timestamp('2005426', 'YYYYWWD');
+
+select to_timestamp('2005300', 'YYYYDDD');
+
+select to_timestamp('2005527', 'IYYYIWID');
+
+select to_timestamp('005527', 'IYYIWID');
+
+select to_timestamp('05527', 'IYIWID');
+
+select to_timestamp('5527', 'IIWID');
+
+select to_timestamp('2005364', 'IYYYIDDD');
+
+select to_timestamp('20050302', 'YYYYMMDD');
+
+select to_timestamp('2005 03 02', 'YYYYMMDD');
+
+select to_timestamp(' 2005 03 02', 'YYYYMMDD');
+
+select to_timestamp('  20050302', 'YYYYMMDD');
+
+select to_timestamp('2011-12-18 11:38 AM', 'YYYY-MM-DD HH12:MI PM');
+
+select to_timestamp('2011-12-18 11:38 PM', 'YYYY-MM-DD HH12:MI PM');
+
+select to_timestamp('2011-12-18 11:38 A.M.', 'YYYY-MM-DD HH12:MI P.M.');
+
+select to_timestamp('2011-12-18 11:38 P.M.', 'YYYY-MM-DD HH12:MI P.M.');
+
+select to_timestamp('2011-12-18 11:38 +05', 'YYYY-MM-DD HH12:MI TZH');
+
+select to_timestamp('2011-12-18 11:38 -05', 'YYYY-MM-DD HH12:MI TZH');
+
+select to_timestamp('2011-12-18 11:38 +05:20', 'YYYY-MM-DD HH12:MI TZH:TZM');
+
+select to_timestamp('2011-12-18 11:38 -05:20', 'YYYY-MM-DD HH12:MI TZH:TZM');
+
+select to_timestamp('2011-12-18 11:38 20', 'YYYY-MM-DD HH12:MI TZM');
+
+select to_timestamp('2011-12-18 11:38 EST', 'YYYY-MM-DD HH12:MI TZ');
+
+select to_timestamp('2011-12-18 11:38 -05', 'YYYY-MM-DD HH12:MI TZ');
+
+select to_timestamp('2011-12-18 11:38 +01:30', 'YYYY-MM-DD HH12:MI TZ');
+
+select to_timestamp('2011-12-18 11:38 MSK', 'YYYY-MM-DD HH12:MI TZ');
+
+select to_timestamp('2011-12-18 00:00 LMT', 'YYYY-MM-DD HH24:MI TZ');
+
+select to_timestamp('2011-12-18 11:38ESTFOO24', 'YYYY-MM-DD HH12:MITZFOOSS');
+
+select to_timestamp('2011-12-18 11:38-05FOO24', 'YYYY-MM-DD HH12:MITZFOOSS');
+
+select to_timestamp('2011-12-18 11:38 JUNK', 'YYYY-MM-DD HH12:MI TZ');
+
+select to_timestamp('2011-12-18 11:38 ...', 'YYYY-MM-DD HH12:MI TZ');
+
+select to_timestamp('2011-12-18 11:38 -05', 'YYYY-MM-DD HH12:MI OF');
+
+select to_timestamp('2011-12-18 11:38 +01:30', 'YYYY-MM-DD HH12:MI OF');
+
+select to_timestamp('2011-12-18 11:38 +xyz', 'YYYY-MM-DD HH12:MI OF');
+
+select to_timestamp('2011-12-18 11:38 +01:xyz', 'YYYY-MM-DD HH12:MI OF');
+
+select to_timestamp('2018-11-02 12:34:56.025', 'YYYY-MM-DD HH24:MI:SS.MS');
+
+select
+  i,
+  to_timestamp(
+    '2018-11-02 12:34:56',
+    'YYYY-MM-DD HH24:MI:SS.FF' || i
+  )
+from
+  generate_series(1, 6) as i;
+
+select
+  i,
+  to_timestamp(
+    '2018-11-02 12:34:56.1',
+    'YYYY-MM-DD HH24:MI:SS.FF' || i
+  )
+from
+  generate_series(1, 6) as i;
+
+select
+  i,
+  to_timestamp(
+    '2018-11-02 12:34:56.12',
+    'YYYY-MM-DD HH24:MI:SS.FF' || i
+  )
+from
+  generate_series(1, 6) as i;
+
+select
+  i,
+  to_timestamp(
+    '2018-11-02 12:34:56.123',
+    'YYYY-MM-DD HH24:MI:SS.FF' || i
+  )
+from
+  generate_series(1, 6) as i;
+
+select
+  i,
+  to_timestamp(
+    '2018-11-02 12:34:56.1234',
+    'YYYY-MM-DD HH24:MI:SS.FF' || i
+  )
+from
+  generate_series(1, 6) as i;
+
+select
+  i,
+  to_timestamp(
+    '2018-11-02 12:34:56.12345',
+    'YYYY-MM-DD HH24:MI:SS.FF' || i
+  )
+from
+  generate_series(1, 6) as i;
+
+select
+  i,
+  to_timestamp(
+    '2018-11-02 12:34:56.123456',
+    'YYYY-MM-DD HH24:MI:SS.FF' || i
+  )
+from
+  generate_series(1, 6) as i;
+
+select
+  i,
+  to_timestamp(
+    '2018-11-02 12:34:56.123456789',
+    'YYYY-MM-DD HH24:MI:SS.FF' || i
+  )
+from
+  generate_series(1, 6) as i;
+
+select
+  i,
+  to_timestamp(
+    '20181102123456123456',
+    'YYYYMMDDHH24MISSFF' || i
+  )
+from
+  generate_series(1, 6) as i;
+
+select to_date('1 4 1902', 'Q MM YYYY');
+
+select to_date('3 4 21 01', 'W MM CC YY');
+
+select to_date('2458872', 'J');
+
+select to_date('44-02-01 BC', 'YYYY-MM-DD BC');
+
+select to_date('-44-02-01', 'YYYY-MM-DD');
+
+select to_date('-44-02-01 BC', 'YYYY-MM-DD BC');
+
+select to_timestamp('44-02-01 11:12:13 BC', 'YYYY-MM-DD HH24:MI:SS BC');
+
+select to_timestamp('-44-02-01 11:12:13', 'YYYY-MM-DD HH24:MI:SS');
+
+select to_timestamp('-44-02-01 11:12:13 BC', 'YYYY-MM-DD HH24:MI:SS BC');
+
+select to_timestamp('2011-12-18 23:38:15', 'YYYY-MM-DD  HH24:MI:SS');
+
+select to_timestamp('2011-12-18  23:38:15', 'YYYY-MM-DD  HH24:MI:SS');
+
+select to_timestamp('2011-12-18   23:38:15', 'YYYY-MM-DD  HH24:MI:SS');
+
+select to_timestamp('2011-12-18  23:38:15', 'YYYY-MM-DD HH24:MI:SS');
+
+select to_timestamp('2011-12-18  23:38:15', 'YYYY-MM-DD  HH24:MI:SS');
+
+select to_timestamp('2011-12-18  23:38:15', 'YYYY-MM-DD   HH24:MI:SS');
+
+select to_timestamp('2000+   JUN', 'YYYY/MON');
+
+select to_timestamp('  2000 +JUN', 'YYYY/MON');
+
+select to_timestamp(' 2000 +JUN', 'YYYY//MON');
+
+select to_timestamp('2000  +JUN', 'YYYY//MON');
+
+select to_timestamp('2000 + JUN', 'YYYY MON');
+
+select to_timestamp('2000 ++ JUN', 'YYYY  MON');
+
+select to_timestamp('2000 + + JUN', 'YYYY  MON');
+
+select to_timestamp('2000 + + JUN', 'YYYY   MON');
+
+select to_timestamp('2000 -10', 'YYYY TZH');
+
+select to_timestamp('2000 -10', 'YYYY  TZH');
+
+select to_date('2011 12  18', 'YYYY MM DD');
+
+select to_date('2011 12  18', 'YYYY MM  DD');
+
+select to_date('2011 12  18', 'YYYY MM   DD');
+
+select to_date('2011 12 18', 'YYYY  MM DD');
+
+select to_date('2011  12 18', 'YYYY  MM DD');
+
+select to_date('2011   12 18', 'YYYY  MM DD');
+
+select to_date('2011 12 18', 'YYYYxMMxDD');
+
+select to_date('2011x 12x 18', 'YYYYxMMxDD');
+
+select to_date('2011 x12 x18', 'YYYYxMMxDD');
+
+select to_timestamp('2005527', 'YYYYIWID');
+
+select to_timestamp('19971', 'YYYYMMDD');
+
+select to_timestamp('19971)24', 'YYYYMMDD');
+
+select to_timestamp('Friday 1-January-1999', 'DY DD MON YYYY');
+
+select to_timestamp('Fri 1-January-1999', 'DY DD MON YYYY');
+
+select to_timestamp('Fri 1-Jan-1999', 'DY DD MON YYYY');
+
+select to_timestamp('1997-11-Jan-16', 'YYYY-MM-Mon-DD');
+
+select to_timestamp('199711xy', 'YYYYMMDD');
+
+select to_timestamp('10000000000', 'FMYYYY');
+
+select to_timestamp('2016-06-13 25:00:00', 'YYYY-MM-DD HH24:MI:SS');
+
+select to_timestamp('2016-06-13 15:60:00', 'YYYY-MM-DD HH24:MI:SS');
+
+select to_timestamp('2016-06-13 15:50:60', 'YYYY-MM-DD HH24:MI:SS');
+
+select to_timestamp('2016-06-13 15:50:55', 'YYYY-MM-DD HH24:MI:SS');
+
+select to_timestamp('2016-06-13 15:50:55', 'YYYY-MM-DD HH:MI:SS');
+
+select to_timestamp('2016-13-01 15:50:55', 'YYYY-MM-DD HH24:MI:SS');
+
+select to_timestamp('2016-02-30 15:50:55', 'YYYY-MM-DD HH24:MI:SS');
+
+select to_timestamp('2016-02-29 15:50:55', 'YYYY-MM-DD HH24:MI:SS');
+
+select to_timestamp('2015-02-29 15:50:55', 'YYYY-MM-DD HH24:MI:SS');
+
+select to_timestamp('2015-02-11 86000', 'YYYY-MM-DD SSSS');
+
+select to_timestamp('2015-02-11 86400', 'YYYY-MM-DD SSSS');
+
+select to_timestamp('2015-02-11 86000', 'YYYY-MM-DD SSSSS');
+
+select to_timestamp('2015-02-11 86400', 'YYYY-MM-DD SSSSS');
+
+select to_timestamp('1000000000,999', 'Y,YYY');
+
+select to_timestamp('0.-2147483648', 'SS.MS');
+
+select to_timestamp('613566758', 'W');
+
+select to_timestamp('2024 613566758 1', 'YYYY WW D');
+
+select to_date('2016-13-10', 'YYYY-MM-DD');
+
+select to_date('2016-02-30', 'YYYY-MM-DD');
+
+select to_date('2016-02-29', 'YYYY-MM-DD');
+
+select to_date('2015-02-29', 'YYYY-MM-DD');
+
+select to_date('2015 365', 'YYYY DDD');
+
+select to_date('2015 366', 'YYYY DDD');
+
+select to_date('2016 365', 'YYYY DDD');
+
+select to_date('2016 366', 'YYYY DDD');
+
+select to_date('2016 367', 'YYYY DDD');
+
+select to_date('0000-02-01', 'YYYY-MM-DD');
+
+select to_date('100000000', 'CC');
+
+select to_date('-100000000', 'CC');
+
+select to_date('-2147483648 01', 'CC YY');
+
+select to_date('2147483647 01', 'CC YY');
+
+select to_char(cast('2012-12-12 12:00' as timestamp with time ZONE), 'YYYY-MM-DD HH:MI:SS TZ');
+
+select to_char(cast('2012-12-12 12:00' as timestamp with time ZONE), 'YYYY-MM-DD HH:MI:SS tz');
+
+set time zone 'America/New_York';
+
+set time zone '-1.5';
+
+show "timezone";
+
+select cast('2012-12-12 12:00' as timestamp with time ZONE);
+
+select cast('2012-12-12 12:00 America/New_York' as timestamp with time ZONE);
+
+select to_char(cast('2012-12-12 12:00' as timestamp with time ZONE), 'YYYY-MM-DD HH:MI:SS TZ');
+
+select to_char(cast('2012-12-12 12:00' as timestamp with time ZONE), 'YYYY-MM-DD SSSS');
+
+select to_char(cast('2012-12-12 12:00' as timestamp with time ZONE), 'YYYY-MM-DD SSSSS');
+
+set time zone '+2';
+
+select to_char(cast('2012-12-12 12:00' as timestamp with time ZONE), 'YYYY-MM-DD HH:MI:SS TZ');
+
+reset timezone;

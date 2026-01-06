@@ -1,0 +1,86 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/portals_p2.sql
+snapshot_kind: text
+---
+begin;
+
+declare "foo13" cursor for select * from onek where unique1 = 50;;
+
+declare "foo14" cursor for select * from onek where unique1 = 51;;
+
+declare "foo15" cursor for select * from onek where unique1 = 52;;
+
+declare "foo16" cursor for select * from onek where unique1 = 53;;
+
+declare "foo17" cursor for select * from onek where unique1 = 54;;
+
+declare "foo18" cursor for select * from onek where unique1 = 55;;
+
+declare "foo19" cursor for select * from onek where unique1 = 56;;
+
+declare "foo20" cursor for select * from onek where unique1 = 57;;
+
+declare "foo21" cursor for select * from onek where unique1 = 58;;
+
+declare "foo22" cursor for select * from onek where unique1 = 59;;
+
+declare "foo23" cursor for select * from onek where unique1 = 60;;
+
+declare "foo24" cursor for select * from onek2 where unique1 = 50;;
+
+declare "foo25" cursor for select * from onek2 where unique1 = 60;;
+
+fetch FORWARD all from foo13;
+
+fetch FORWARD all from foo14;
+
+fetch FORWARD all from foo15;
+
+fetch FORWARD all from foo16;
+
+fetch FORWARD all from foo17;
+
+fetch FORWARD all from foo18;
+
+fetch FORWARD all from foo19;
+
+fetch FORWARD all from foo20;
+
+fetch FORWARD all from foo21;
+
+fetch FORWARD all from foo22;
+
+fetch FORWARD all from foo23;
+
+fetch FORWARD all from foo24;
+
+fetch FORWARD all from foo25;
+
+close foo13;
+
+close foo14;
+
+close foo15;
+
+close foo16;
+
+close foo17;
+
+close foo18;
+
+close foo19;
+
+close foo20;
+
+close foo21;
+
+close foo22;
+
+close foo23;
+
+close foo24;
+
+close foo25;
+
+commit;
