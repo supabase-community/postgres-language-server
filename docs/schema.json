@@ -44,6 +44,17 @@
         }
       ]
     },
+    "format": {
+      "description": "The configuration for the SQL formatter",
+      "anyOf": [
+        {
+          "$ref": "#/definitions/FormatConfiguration"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
     "linter": {
       "description": "The configuration for the linter",
       "anyOf": [
@@ -220,6 +231,131 @@
         }
       },
       "additionalProperties": false
+    },
+    "FormatConfiguration": {
+      "description": "The configuration for SQL formatting.",
+      "type": "object",
+      "properties": {
+        "constantCase": {
+          "description": "Constant casing (NULL, TRUE, FALSE): \"upper\" or \"lower\". Default: \"lower\".",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/KeywordCase"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "enabled": {
+          "description": "If `false`, it disables the formatter. `true` by default.",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "ignore": {
+          "description": "A list of Unix shell style patterns. The formatter will ignore files/folders that will match these patterns.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/StringSet"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "include": {
+          "description": "A list of Unix shell style patterns. The formatter will include files/folders that will match these patterns.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/StringSet"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "indentSize": {
+          "description": "Number of spaces (or tab width) for indentation. Default: 2.",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint8",
+          "minimum": 0.0
+        },
+        "indentStyle": {
+          "description": "Indentation style: \"spaces\" or \"tabs\". Default: \"spaces\".",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/IndentStyle"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "keywordCase": {
+          "description": "Keyword casing: \"upper\" or \"lower\". Default: \"lower\".",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/KeywordCase"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "lineWidth": {
+          "description": "Maximum line width before breaking. Default: 100.",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint16",
+          "minimum": 0.0
+        }
+      },
+      "additionalProperties": false
+    },
+    "IndentStyle": {
+      "description": "Indentation style for the formatter.",
+      "oneOf": [
+        {
+          "description": "Use spaces for indentation (default).",
+          "type": "string",
+          "enum": [
+            "spaces"
+          ]
+        },
+        {
+          "description": "Use tabs for indentation.",
+          "type": "string",
+          "enum": [
+            "tabs"
+          ]
+        }
+      ]
+    },
+    "KeywordCase": {
+      "description": "Keyword casing style for the formatter.",
+      "oneOf": [
+        {
+          "description": "Use uppercase keywords (SELECT, FROM, WHERE).",
+          "type": "string",
+          "enum": [
+            "upper"
+          ]
+        },
+        {
+          "description": "Use lowercase keywords (select, from, where). Default.",
+          "type": "string",
+          "enum": [
+            "lower"
+          ]
+        }
+      ]
     },
     "LinterConfiguration": {
       "type": "object",

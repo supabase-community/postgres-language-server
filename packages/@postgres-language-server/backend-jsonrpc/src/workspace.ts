@@ -118,6 +118,7 @@ export type Category =
 	| "splinter/security/unsupportedRegTypes"
 	| "stdin"
 	| "check"
+	| "format"
 	| "configuration"
 	| "database/connection"
 	| "internalError/io"
@@ -157,6 +158,7 @@ export type Advice =
 	| { list: MarkupBuf[] }
 	| { frame: Location }
 	| { diff: TextEdit }
+	| { diffWithOffset: [TextEdit, number] }
 	| { backtrace: [MarkupBuf, Backtrace] }
 	| { command: string }
 	| { group: [MarkupBuf, Advices] };
@@ -304,6 +306,10 @@ export interface PartialConfiguration {
 	 */
 	files?: PartialFilesConfiguration;
 	/**
+	 * The configuration for the SQL formatter
+	 */
+	format?: PartialFormatConfiguration;
+	/**
 	 * The configuration for the linter
 	 */
 	linter?: PartialLinterConfiguration;
@@ -379,6 +385,43 @@ export interface PartialFilesConfiguration {
 	 * The maximum allowed size for source code files in bytes. Files above this limit will be ignored for performance reasons. Defaults to 1 MiB
 	 */
 	maxSize?: number;
+}
+/**
+ * The configuration for SQL formatting.
+ */
+export interface PartialFormatConfiguration {
+	/**
+	 * Constant casing (NULL, TRUE, FALSE): "upper" or "lower". Default: "lower".
+	 */
+	constantCase?: KeywordCase;
+	/**
+	 * If `false`, it disables the formatter. `true` by default.
+	 */
+	enabled?: boolean;
+	/**
+	 * A list of Unix shell style patterns. The formatter will ignore files/folders that will match these patterns.
+	 */
+	ignore?: StringSet;
+	/**
+	 * A list of Unix shell style patterns. The formatter will include files/folders that will match these patterns.
+	 */
+	include?: StringSet;
+	/**
+	 * Number of spaces (or tab width) for indentation. Default: 2.
+	 */
+	indentSize?: number;
+	/**
+	 * Indentation style: "spaces" or "tabs". Default: "spaces".
+	 */
+	indentStyle?: IndentStyle;
+	/**
+	 * Keyword casing: "upper" or "lower". Default: "lower".
+	 */
+	keywordCase?: KeywordCase;
+	/**
+	 * Maximum line width before breaking. Default: 100.
+	 */
+	lineWidth?: number;
 }
 export interface PartialLinterConfiguration {
 	/**
@@ -474,6 +517,14 @@ If we can't find the configuration, it will attempt to use the current working d
 	 */
 	useIgnoreFile?: boolean;
 }
+/**
+ * Keyword casing style for the formatter.
+ */
+export type KeywordCase = "upper" | "lower";
+/**
+ * Indentation style for the formatter.
+ */
+export type IndentStyle = "spaces" | "tabs";
 export interface LinterRules {
 	/**
 	 * It enables ALL rules. The rules that belong to `nursery` won't be enabled.
