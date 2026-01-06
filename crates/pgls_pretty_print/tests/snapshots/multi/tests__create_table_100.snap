@@ -9,9 +9,9 @@ create type unknown_comptype as (u unknown);
 
 create table tas_case with (fillfactor = 10) as select 1 as a;
 
-create unlogged table unlogged1 (a INT primary key);
+create unlogged table unlogged1 (a int primary key);
 
-create temporary table unlogged2 (a INT primary key);
+create temporary table unlogged2 (a int primary key);
 
 select
   relname,
@@ -37,37 +37,37 @@ where
   relname ~ '^unlogged\d'
 order by relname;
 
-drop TABLE unlogged2;
+drop table unlogged2;
 
 insert into unlogged1 values (42);
 
-create unlogged table public.unlogged2 (a INT primary key);
+create unlogged table public.unlogged2 (a int primary key);
 
-create unlogged table pg_temp.unlogged3 (a INT primary key);
+create unlogged table pg_temp.unlogged3 (a int primary key);
 
-create table pg_temp.implicitly_temp (a INT primary key);
+create table pg_temp.implicitly_temp (a int primary key);
 
-create temporary table explicitly_temp (a INT primary key);
+create temporary table explicitly_temp (a int primary key);
 
-create temporary table pg_temp.doubly_temp (a INT primary key);
+create temporary table pg_temp.doubly_temp (a int primary key);
 
-create temporary table public.temp_to_perm (a INT primary key);
+create temporary table public.temp_to_perm (a int primary key);
 
-drop TABLE unlogged1, public.unlogged2;
+drop table unlogged1, public.unlogged2;
 
-create unlogged table unlogged1 (a INT)
+create unlogged table unlogged1 (a int)
 partition by range(a);
 
-create table unlogged1 (a INT)
+create table unlogged1 (a int)
 partition by range(a);
 
 alter table unlogged1
-  set LOGGED;
+  set logged;
 
 alter table unlogged1
   set unlogged;
 
-drop TABLE unlogged1;
+drop table unlogged1;
 
 create table as_select1 as select * from pg_class where relkind = 'r';
 
@@ -75,7 +75,7 @@ create table as_select1 as select * from pg_class where relkind = 'r';
 
 create table if not exists as_select1 as select * from pg_class where relkind = 'r';
 
-drop TABLE as_select1;
+drop table as_select1;
 
 prepare select1 as select 1 as a;;
 
@@ -87,7 +87,7 @@ select * from as_select1;
 
 create table if not exists as_select1 as execute select1;
 
-drop TABLE as_select1;
+drop table as_select1;
 
 deallocate select1;
 
@@ -111,13 +111,13 @@ create table withoid () with (oids = 'true');
 
 create temporary table withoutoid ();
 
-drop TABLE withoutoid;
+drop table withoutoid;
 
 create temporary table withoutoid () with (oids = 'false');
 
-drop TABLE withoutoid;
+drop table withoutoid;
 
-create temporary table relation_filenode_check (c1 INT);
+create temporary table relation_filenode_check (c1 int);
 
 select
   relpersistence,
@@ -130,127 +130,127 @@ from
 where
   relname = 'relation_filenode_check';
 
-drop TABLE relation_filenode_check;
+drop table relation_filenode_check;
 
-create table default_expr_column (id INT default id);
+create table default_expr_column (id int default id);
 
-create table default_expr_column (id INT default bar.id);
+create table default_expr_column (id int default bar.id);
 
-create table default_expr_agg_column (id INT default AVG(id));
+create table default_expr_agg_column (id int default AVG(id));
 
-create table default_expr_non_column (a INT default AVG(non_existent));
+create table default_expr_non_column (a int default AVG(non_existent));
 
-create table default_expr_agg (a INT default AVG(1));
+create table default_expr_agg (a int default AVG(1));
 
-create table default_expr_agg (a INT default ((select 1)));
+create table default_expr_agg (a int default ((select 1)));
 
-create table default_expr_agg (a INT default generate_series(1, 3));
+create table default_expr_agg (a int default generate_series(1, 3));
 
 begin;
 
-create table remember_create_subid (c INT);
+create table remember_create_subid (c int);
 
 savepoint q;
 
-drop TABLE remember_create_subid;
+drop table remember_create_subid;
 
 rollback to savepoint q;
 
 commit;
 
-drop TABLE remember_create_subid;
+drop table remember_create_subid;
 
-create table remember_node_subid (c INT);
+create table remember_node_subid (c int);
 
 begin;
 
 alter table remember_node_subid
-  alter column c type BIGINT;
+  alter column c type bigint;
 
 savepoint q;
 
-drop TABLE remember_node_subid;
+drop table remember_node_subid;
 
 rollback to savepoint q;
 
 commit;
 
-drop TABLE remember_node_subid;
+drop table remember_node_subid;
 
-create table partitioned (a INT)
+create table partitioned (a int)
 inherits (some_table)
 partition by LIST(a);
 
 create table partitioned (
-  a1 INT,
-  a2 INT
+  a1 int,
+  a2 int
 )
 partition by LIST(a1, a2);
 
-create function retset(a INT)
-returns setof INT
+create function retset(a int)
+returns setof int
 as $function$ SELECT 1; $function$
 language sql
 immutable;
 
-create table partitioned (a INT)
+create table partitioned (a int)
 partition by range((retset(a)));
 
-drop FUNCTION retset(INT);
+drop function retset(int);
 
-create table partitioned (a INT)
+create table partitioned (a int)
 partition by range((AVG(a)));
 
 create table partitioned (
-  a INT,
-  b INT
+  a int,
+  b int
 )
 partition by range((AVG(a) over (partition by b)));
 
-create table partitioned (a INT)
+create table partitioned (a int)
 partition by LIST((a like (select 1)));
 
-create table partitioned (a INT)
+create table partitioned (a int)
 partition by range((42));
 
 create function const_func()
-returns INT
+returns int
 as $function$ SELECT 1; $function$
 language sql
 immutable;
 
-create table partitioned (a INT)
+create table partitioned (a int)
 partition by range((const_func()));
 
-drop FUNCTION const_func();
+drop function const_func();
 
-create table partitioned (a INT)
+create table partitioned (a int)
 partition by range(b);
 
-create table partitioned (a INT)
+create table partitioned (a int)
 partition by range(xmin);
 
 create table partitioned (
-  a INT,
-  b INT
+  a int,
+  b int
 )
 partition by range(((a, b)));
 
 create table partitioned (
-  a INT,
-  b INT
+  a int,
+  b int
 )
 partition by range(a, ('unknown'));
 
-create function immut_func(a INT)
-returns INT
+create function immut_func(a int)
+returns int
 as $function$ SELECT a + random()::int; $function$
 language sql;
 
-create table partitioned (a INT)
+create table partitioned (a int)
 partition by range((immut_func(a)));
 
-drop FUNCTION immut_func(INT);
+drop function immut_func(int);
 
 create table partitioned (a point)
 partition by LIST(a);
@@ -265,21 +265,21 @@ create table partitioned (a point)
 partition by range(a point_ops);
 
 create table partitioned (
-  a INT,
+  a int,
   constraint "check_a" check (a > 0) no inherit
 )
 partition by range(a);
 
-create function plusone(a INT)
-returns INT
+create function plusone(a int)
+returns int
 as $function$ SELECT a+1; $function$
 language sql;
 
 create table partitioned (
-  a INT,
-  b INT,
-  c TEXT,
-  d TEXT
+  a int,
+  b int,
+  c text,
+  d text
 )
 partition by range(a oid_ops,
 (plusone(b)),
@@ -288,11 +288,11 @@ d collate "C");
 
 select relkind from pg_class where relname = 'partitioned';
 
-drop FUNCTION plusone(INT);
+drop function plusone(int);
 
 create table partitioned2 (
-  a INT,
-  b TEXT
+  a int,
+  b text
 )
 partition by range((a + 1), (substr(b, 1, 5)));
 
@@ -303,11 +303,11 @@ insert into partitioned2 values (1, 'hello');
 
 create table part2_1 partition of partitioned2 for values from (-1, 'aaaaa') to (100, 'ccccc');
 
-drop TABLE partitioned, partitioned2;
+drop table partitioned, partitioned2;
 
 create table partitioned (
-  a INT,
-  b INT
+  a int,
+  b int
 )
 partition by LIST((cast(row(a, b) as partitioned)));
 
@@ -317,11 +317,11 @@ create table partitioned2 partition of partitioned for values in (cast('(2,4)' a
 
 select * from partitioned where cast(row(a, b) as partitioned) = cast('(1,2)' as partitioned);
 
-drop TABLE partitioned;
+drop table partitioned;
 
 create table partitioned (
-  a INT,
-  b INT
+  a int,
+  b int
 )
 partition by LIST((partitioned));
 
@@ -331,43 +331,43 @@ create table partitioned2 partition of partitioned for values in ('(2,4)');
 
 select * from partitioned where partitioned = cast('(1,2)' as partitioned);
 
-drop TABLE partitioned;
+drop table partitioned;
 
-create domain intdom1 as INT;
+create domain intdom1 as int;
 
 create table partitioned (
   a intdom1,
-  b TEXT
+  b text
 )
 partition by range(a);
 
 alter table partitioned
   drop column a;
 
-drop DOMAIN intdom1;
+drop domain intdom1;
 
-drop DOMAIN intdom1 cascade;
+drop domain intdom1 cascade;
 
 select * from partitioned;
 
-create domain intdom1 as INT;
+create domain intdom1 as int;
 
 create table partitioned (
   a intdom1,
-  b TEXT
+  b text
 )
 partition by range((plusone(a)));
 
 alter table partitioned
   drop column a;
 
-drop DOMAIN intdom1;
+drop domain intdom1;
 
-drop DOMAIN intdom1 cascade;
+drop domain intdom1 cascade;
 
 select * from partitioned;
 
-create table list_parted (a INT)
+create table list_parted (a int)
 partition by LIST(a);
 
 create table part_p1 partition of list_parted for values in ('1');
@@ -404,34 +404,34 @@ create table part_default partition of list_parted default;
 
 create table fail_default_part partition of list_parted default;
 
-create table bools (a BOOLEAN)
+create table bools (a boolean)
 partition by LIST(a);
 
 create table bools_true partition of bools for values in (1);
 
-drop TABLE bools;
+drop table bools;
 
-create table moneyp (a MONEY)
+create table moneyp (a money)
 partition by LIST(a);
 
 create table moneyp_10 partition of moneyp for values in (10);
 
 create table moneyp_11 partition of moneyp for values in ('11');
 
-create table moneyp_12 partition of moneyp for values in (cast(to_char(12, '99') as INT));
+create table moneyp_12 partition of moneyp for values in (cast(to_char(12, '99') as int));
 
-drop TABLE moneyp;
+drop table moneyp;
 
-create table bigintp (a BIGINT)
+create table bigintp (a bigint)
 partition by LIST(a);
 
 create table bigintp_10 partition of bigintp for values in (10);
 
 create table bigintp_10_2 partition of bigintp for values in ('10');
 
-drop TABLE bigintp;
+drop table bigintp;
 
-create table range_parted (a DATE)
+create table range_parted (a date)
 partition by range(a);
 
 create table part_bogus_expr_fail
@@ -454,7 +454,7 @@ for values from (MAX(somename)) to ('2019-01-01');
 
 create table part_bogus_expr_fail
 partition of range_parted
-for values from (MAX(cast('2019-02-01' as DATE))) to ('2019-01-01');
+for values from (MAX(cast('2019-02-01' as date))) to ('2019-01-01');
 
 create table part_bogus_expr_fail
 partition of range_parted
@@ -476,7 +476,7 @@ create table fail_part partition of range_parted for values from (null) to (maxv
 
 create table fail_part partition of range_parted for values with (MODULUS 10, REMAINDER 1);
 
-create table hash_parted (a INT)
+create table hash_parted (a int)
 partition by HASH(a);
 
 create table hpart_1 partition of hash_parted for values with (MODULUS 10, REMAINDER 0);
@@ -499,22 +499,22 @@ create table fail_part partition of hash_parted for values in (1000);
 
 create table fail_default_part partition of hash_parted default;
 
-create table unparted (a INT);
+create table unparted (a int);
 
 create table fail_part partition of unparted for values in ('a');
 
 create table fail_part partition of unparted for values with (MODULUS 2, REMAINDER 1);
 
-drop TABLE unparted;
+drop table unparted;
 
-create temporary table temp_parted (a INT)
+create temporary table temp_parted (a int)
 partition by LIST(a);
 
 create table fail_part partition of temp_parted for values in ('a');
 
-drop TABLE temp_parted;
+drop table temp_parted;
 
-create table list_parted2 (a VARCHAR)
+create table list_parted2 (a varchar)
 partition by LIST(a);
 
 create table part_null_z partition of list_parted2 for values in (null, 'z');
@@ -531,7 +531,7 @@ insert into list_parted2 values ('X');
 
 create table fail_part partition of list_parted2 for values in ('W', 'X', 'Y');
 
-create table range_parted2 (a INT)
+create table range_parted2 (a int)
 partition by range(a);
 
 create table fail_part partition of range_parted2 for values from (1) to (0);
@@ -567,8 +567,8 @@ create table fail_part partition of range_parted2 for values from (80) to (90);
 create table part4 partition of range_parted2 for values from (90) to (100);
 
 create table range_parted3 (
-  a INT,
-  b INT
+  a int,
+  b int
 )
 partition by range(a, (b + 1));
 
@@ -588,7 +588,7 @@ create table range3_default partition of range_parted3 default;
 
 create table fail_part partition of range_parted3 for values from (1, minvalue) to (1, maxvalue);
 
-create table hash_parted2 (a VARCHAR)
+create table hash_parted2 (a varchar)
 partition by HASH(a);
 
 create table h2part_1 partition of hash_parted2 for values with (MODULUS 4, REMAINDER 2);
@@ -606,8 +606,8 @@ create table fail_part partition of hash_parted2 for values with (MODULUS 0, REM
 create table fail_part partition of hash_parted2 for values with (MODULUS 8, REMAINDER 8);
 
 create table parted (
-  a TEXT,
-  b INT not null default 0,
+  a text,
+  b int not null default 0,
   constraint "check_a" check (length(a) > 0)
 )
 partition by LIST(a);
@@ -621,7 +621,7 @@ select
 from
   pg_attribute
 where
-  attrelid = cast('part_a' as REGCLASS) and
+  attrelid = cast('part_a' as regclass) and
   attnum > 0
 order by attnum;
 
@@ -651,7 +651,7 @@ select
 from
   pg_constraint
 where
-  conrelid = cast('part_b' as REGCLASS)
+  conrelid = cast('part_b' as regclass)
 order by coninhcount desc,
   conname;
 
@@ -665,7 +665,7 @@ select
 from
   pg_constraint
 where
-  conrelid = cast('part_b' as REGCLASS)
+  conrelid = cast('part_b' as regclass)
 order by coninhcount desc,
   conname;
 
@@ -686,7 +686,7 @@ select
 from
   pg_constraint
 where
-  conrelid = cast('part_b' as REGCLASS)
+  conrelid = cast('part_b' as regclass)
 order by coninhcount desc,
   conname;
 
@@ -703,8 +703,8 @@ partition by range((b));
 create table part_c_1_10 partition of part_c for values from (1) to (10);
 
 create table parted_notnull_inh_test (
-  a INT default 1,
-  b INT not null default 0
+  a int default 1,
+  b int not null default 0
 )
 partition by LIST(a);
 
@@ -718,11 +718,11 @@ for values in (1);
 
 insert into parted_notnull_inh_test (b) values (null);
 
-drop TABLE parted_notnull_inh_test;
+drop table parted_notnull_inh_test;
 
 create table parted_boolean_col (
-  a BOOLEAN,
-  b TEXT
+  a boolean,
+  b text
 )
 partition by LIST(a);
 
@@ -730,11 +730,11 @@ create table parted_boolean_less partition of parted_boolean_col for values in (
 
 create table parted_boolean_greater partition of parted_boolean_col for values in ('foo' > 'bar');
 
-drop TABLE parted_boolean_col;
+drop table parted_boolean_col;
 
 create table parted_collate_must_match (
-  a TEXT collate "C",
-  b TEXT collate "C"
+  a text collate "C",
+  b text collate "C"
 )
 partition by range(a);
 
@@ -752,9 +752,9 @@ partition of parted_collate_must_match
 )
 for values from ('m') to ('z');
 
-drop TABLE parted_collate_must_match;
+drop table parted_collate_must_match;
 
-create table test_part_coll_posix (a TEXT)
+create table test_part_coll_posix (a text)
 partition by range(a collate "POSIX");
 
 create table test_part_coll
@@ -765,18 +765,18 @@ create table test_part_coll2 partition of test_part_coll_posix for values from (
 
 create table test_part_coll_cast
 partition of test_part_coll_posix
-for values from (cast('m' as NAME) collate "C") to ('s');
+for values from (cast('m' as name) collate "C") to ('s');
 
 create table test_part_coll_cast2
 partition of test_part_coll_posix
-for values from (cast('s' as NAME)) to ('z');
+for values from (cast('s' as name)) to ('z');
 
-drop TABLE test_part_coll_posix;
+drop table test_part_coll_posix;
 
 create table range_parted4 (
-  a INT,
-  b INT,
-  c INT
+  a int,
+  b int,
+  c int
 )
 partition by range((abs(a)), (abs(b)), c);
 
@@ -788,7 +788,7 @@ minvalue) to (maxvalue,
 maxvalue,
 maxvalue);
 
-drop TABLE unbounded_range_part;
+drop table unbounded_range_part;
 
 create table range_parted4_1
 partition of range_parted4
@@ -810,24 +810,24 @@ minvalue) to (9,
 maxvalue,
 maxvalue);
 
-drop TABLE range_parted4;
+drop table range_parted4;
 
-create function my_int4_sort(INT, INT)
-returns INT
+create function my_int4_sort(int, int)
+returns int
 language sql
 as $function$ SELECT CASE WHEN $1 = $2 THEN 0 WHEN $1 > $2 THEN 1 ELSE -1 END; $function$;
 
-create OPERATOR class test_int4_ops
-  for type INT
+create operator class test_int4_ops
+  for type int
   using btree
-  as OPERATOR 1 < (INT, INT),
-  OPERATOR 2 <= (INT, INT),
-  OPERATOR 3 = (INT, INT),
-  OPERATOR 4 >= (INT, INT),
-  OPERATOR 5 > (INT, INT),
-  FUNCTION 1 my_int4_sort(INT, INT);
+  as operator 1 < (int, int),
+  operator 2 <= (int, int),
+  operator 3 = (int, int),
+  operator 4 >= (int, int),
+  operator 5 > (int, int),
+  function 1 my_int4_sort(int, int);
 
-create table partkey_t (a INT)
+create table partkey_t (a int)
 partition by range(a test_int4_ops);
 
 create table partkey_t_1 partition of partkey_t for values from (0) to (1000);
@@ -836,17 +836,17 @@ insert into partkey_t values (100);
 
 insert into partkey_t values (200);
 
-drop TABLE parted, list_parted, range_parted, list_parted2, range_parted2, range_parted3;
+drop table parted, list_parted, range_parted, list_parted2, range_parted2, range_parted3;
 
-drop TABLE partkey_t, hash_parted, hash_parted2;
+drop table partkey_t, hash_parted, hash_parted2;
 
-drop OPERATOR CLASS test_int4_ops USING btree;
+drop operator class test_int4_ops using btree;
 
-drop FUNCTION my_int4_sort(INT, INT);
+drop function my_int4_sort(int, int);
 
 create table parted_col_comment (
-  a INT,
-  b TEXT
+  a int,
+  b text
 )
 partition by LIST(a);
 
@@ -854,37 +854,37 @@ comment on table parted_col_comment is 'Am partitioned table';
 
 comment on column parted_col_comment.a is 'Partition key';
 
-select obj_description(cast('parted_col_comment' as REGCLASS));
+select obj_description(cast('parted_col_comment' as regclass));
 
-drop TABLE parted_col_comment;
+drop table parted_col_comment;
 
 create table parted_col_comment (
-  a INT,
-  b TEXT
+  a int,
+  b text
 )
 partition by LIST(a)
 with (fillfactor = 100);
 
-create table arrlp (a INT[])
+create table arrlp (a int[])
 partition by LIST(a);
 
 create table arrlp12 partition of arrlp for values in ('{1}', '{2}');
 
-drop TABLE arrlp;
+drop table arrlp;
 
-create table boolspart (a BOOLEAN)
+create table boolspart (a boolean)
 partition by LIST(a);
 
 create table boolspart_t partition of boolspart for values in (true);
 
 create table boolspart_f partition of boolspart for values in (false);
 
-drop TABLE boolspart;
+drop table boolspart;
 
-create table perm_parted (a INT)
+create table perm_parted (a int)
 partition by LIST(a);
 
-create temporary table temp_parted (a INT)
+create temporary table temp_parted (a int)
 partition by LIST(a);
 
 create table perm_part partition of temp_parted default;
@@ -893,11 +893,11 @@ create temporary table temp_part partition of perm_parted default;
 
 create temporary table temp_part partition of temp_parted default;
 
-drop TABLE perm_parted cascade;
+drop table perm_parted cascade;
 
-drop TABLE temp_parted cascade;
+drop table temp_parted cascade;
 
-create table tab_part_create (a INT)
+create table tab_part_create (a int)
 partition by LIST(a);
 
 create or replace function func_part_create()
@@ -909,19 +909,19 @@ as $function$
     return null;
   end $function$;
 
-create TRIGGER trig_part_create
+create trigger trig_part_create
 before insert
 on tab_part_create
-for EACH STATEMENT
-EXECUTE FUNCTION func_part_create();
+for each statement
+execute function func_part_create();
 
 insert into tab_part_create values (1);
 
-drop TABLE tab_part_create;
+drop table tab_part_create;
 
-drop FUNCTION func_part_create();
+drop function func_part_create();
 
-create table volatile_partbound_test (partkey TIMESTAMP)
+create table volatile_partbound_test (partkey timestamp)
 partition by range(partkey);
 
 create table volatile_partbound_test1
@@ -934,27 +934,27 @@ for values from (current_timestamp) to (maxvalue);
 
 insert into volatile_partbound_test values (current_timestamp);
 
-select cast(tableoid as REGCLASS) from volatile_partbound_test;
+select cast(tableoid as regclass) from volatile_partbound_test;
 
-drop TABLE volatile_partbound_test;
+drop table volatile_partbound_test;
 
 create table defcheck (
-  a INT,
-  b INT
+  a int,
+  b int
 )
 partition by LIST(b);
 
 create table defcheck_def (
-  a INT,
-  c INT,
-  b INT
+  a int,
+  c int,
+  b int
 );
 
 alter table defcheck_def
   drop column c;
 
 alter table defcheck
-  ATTACH partition
+  attach partition
   defcheck_def default;
 
 alter table defcheck_def
@@ -966,15 +966,15 @@ insert into defcheck_def values (0, 0);
 
 create table defcheck_0 partition of defcheck for values in (0);
 
-drop TABLE defcheck;
+drop table defcheck;
 
 create table part_column_drop (
-  useless_1 INT,
-  id INT,
-  useless_2 INT,
-  d INT,
-  b INT,
-  useless_3 INT
+  useless_1 int,
+  id int,
+  useless_2 int,
+  d int,
+  b int,
+  useless_3 int
 )
 partition by range(id);
 
@@ -1011,4 +1011,4 @@ create index "part_column_drop_d_expr" on part_column_drop using btree ((d = 2))
 
 create table part_column_drop_1_10 partition of part_column_drop for values from (1) to (10);
 
-drop TABLE part_column_drop;
+drop table part_column_drop;

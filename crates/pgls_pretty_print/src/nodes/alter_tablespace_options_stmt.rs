@@ -13,13 +13,13 @@ pub(super) fn emit_alter_tablespace_options_stmt(
 
     e.token(TokenKind::ALTER_KW);
     e.space();
-    e.token(TokenKind::IDENT("TABLESPACE".to_string()));
+    e.token(TokenKind::TABLESPACE_KW);
     e.space();
     e.token(TokenKind::IDENT(n.tablespacename.clone()));
 
     e.line(LineType::SoftOrSpace);
     if n.is_reset {
-        e.token(TokenKind::IDENT("RESET".to_string()));
+        e.token(TokenKind::RESET_KW);
     } else {
         e.token(TokenKind::SET_KW);
     }

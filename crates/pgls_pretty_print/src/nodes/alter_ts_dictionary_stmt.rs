@@ -10,11 +10,11 @@ pub(super) fn emit_alter_ts_dictionary_stmt(e: &mut EventEmitter, n: &AlterTsDic
 
     e.token(TokenKind::ALTER_KW);
     e.space();
-    e.token(TokenKind::IDENT("TEXT".to_string()));
+    e.token(TokenKind::TEXT_KW);
     e.space();
-    e.token(TokenKind::IDENT("SEARCH".to_string()));
+    e.token(TokenKind::SEARCH_KW);
     e.space();
-    e.token(TokenKind::IDENT("DICTIONARY".to_string()));
+    e.token(TokenKind::DICTIONARY_KW);
     e.space();
 
     // Dictionary name

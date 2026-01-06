@@ -4,4 +4,4 @@ input_file: crates/pgls_pretty_print/tests/data/single/replica_identity_stmt_0.s
 snapshot_kind: text
 ---
 alter table mytable
-  REPLICA IDENTITY FULL;
+  replica identity full;

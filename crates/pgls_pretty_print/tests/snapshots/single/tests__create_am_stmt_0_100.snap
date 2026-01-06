@@ -3,4 +3,4 @@ source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/single/create_am_stmt_0.sql
 snapshot_kind: text
 ---
-create ACCESS METHOD myam type TABLE HANDLER amhandler;
+create access method myam type table handler amhandler;

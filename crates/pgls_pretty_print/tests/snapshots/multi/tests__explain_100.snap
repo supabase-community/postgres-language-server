@@ -3,8 +3,8 @@ source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/explain.sql
 snapshot_kind: text
 ---
-create function explain_filter(TEXT)
-returns setof TEXT
+create function explain_filter(text)
+returns setof text
 language plpgsql
 as $function$
 declare
@@ -27,8 +27,8 @@ begin
 end;
 $function$;
 
-create function explain_filter_to_json(TEXT)
-returns JSONB
+create function explain_filter_to_json(text)
+returns jsonb
 language plpgsql
 as $function$
 declare
@@ -127,8 +127,8 @@ prepare int8_query as select * from int8_tbl as i8;;
 select explain_filter('explain (memory) execute int8_query');
 
 create table gen_part (
-  key1 INT not null,
-  key2 INT not null
+  key1 int not null,
+  key2 int not null
 )
 partition by LIST(key1);
 
@@ -145,7 +145,7 @@ select
     'explain (generic_plan) select key1, key2 from gen_part where key1 = 1 and key2 = $1'
   );
 
-drop TABLE gen_part;
+drop table gen_part;
 
 begin;
 
@@ -171,10 +171,10 @@ select
 
 rollback;
 
-create temporary table t1 (f1 DOUBLE PRECISION);
+create temporary table t1 (f1 double precision);
 
-create function pg_temp.mysin(DOUBLE PRECISION)
-returns DOUBLE PRECISION
+create function pg_temp.mysin(double precision)
+returns double precision
 language plpgsql
 as $function$begin return sin($1); end$function$;
 

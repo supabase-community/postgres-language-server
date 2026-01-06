@@ -56,7 +56,7 @@ pub(super) fn emit_null_if_expr(e: &mut EventEmitter, n: &NullIfExpr) {
     e.group_start(GroupKind::NullIfExpr);
 
     // NullIfExpr is planner form of NULLIF(a, b)
-    e.token(TokenKind::IDENT("NULLIF".to_string()));
+    e.token(TokenKind::NULLIF_KW);
     e.token(TokenKind::L_PAREN);
     if n.args.len() >= 2 {
         super::emit_node(&n.args[0], e);

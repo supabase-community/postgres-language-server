@@ -4,7 +4,7 @@ input_file: crates/pgls_pretty_print/tests/data/multi/gist.sql
 snapshot_kind: text
 ---
 create table gist_point_tbl (
-  id INT,
+  id int,
   p point
 );
 
@@ -35,7 +35,7 @@ using gist
 )
 with (buffering = auto);
 
-drop INDEX gist_pointidx2, gist_pointidx3, gist_pointidx4;
+drop index gist_pointidx2, gist_pointidx3, gist_pointidx4;
 
 create index "gist_pointidx5"
 on gist_point_tbl
@@ -201,7 +201,7 @@ from
     as ss
   on true;
 
-drop INDEX gist_tbl_point_index;
+drop index gist_tbl_point_index;
 
 create index "gist_tbl_box_index" on gist_tbl using gist (b);
 
@@ -241,7 +241,7 @@ where
   b <@ box(point(5, 5), point(6, 6))
 order by point(5.2, 5.91) <-> b;
 
-drop INDEX gist_tbl_box_index;
+drop index gist_tbl_box_index;
 
 create index "gist_tbl_multi_index" on gist_tbl using gist (p, c);
 
@@ -257,7 +257,7 @@ where
   box(point(4.5, 4.5), point(5.5, 5.5)) and
   p <@ box(point(5, 5), point(6, 6));
 
-drop INDEX gist_tbl_multi_index;
+drop index gist_tbl_multi_index;
 
 create index "gist_tbl_multi_index" on gist_tbl using gist ((circle(p, 1)), p);
 
@@ -292,7 +292,7 @@ reset enable_bitmapscan;
 
 reset enable_indexonlyscan;
 
-drop TABLE gist_tbl;
+drop table gist_tbl;
 
 create unlogged table gist_tbl (b box);
 
@@ -304,4 +304,4 @@ select
 from
   generate_series(0, 10) as i;
 
-drop TABLE gist_tbl;
+drop table gist_tbl;

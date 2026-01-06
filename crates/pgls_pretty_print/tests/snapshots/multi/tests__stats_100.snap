@@ -51,14 +51,14 @@ create table trunc_stats_test (id serial);
 
 create table trunc_stats_test1 (
   id serial,
-  stuff TEXT
+  stuff text
 );
 
 create table trunc_stats_test2 (id serial);
 
 create table trunc_stats_test3 (
   id serial,
-  stuff TEXT
+  stuff text
 );
 
 create table trunc_stats_test4 (id serial);
@@ -197,18 +197,18 @@ select pr.snap_ts < pg_stat_get_snapshot_timestamp() as snapshot_newer from prev
 commit;
 
 create function stats_test_func1()
-returns VOID
+returns void
 language plpgsql
 as $function$BEGIN END;$function$;
 
-select cast(cast('stats_test_func1()' as REGPROCEDURE) as OID) as stats_test_func1_oid;
+select cast(cast('stats_test_func1()' as regprocedure) as oid) as stats_test_func1_oid;
 
 create function stats_test_func2()
-returns VOID
+returns void
 language plpgsql
 as $function$BEGIN END;$function$;
 
-select cast(cast('stats_test_func2()' as REGPROCEDURE) as OID) as stats_test_func2_oid;
+select cast(cast('stats_test_func2()' as regprocedure) as oid) as stats_test_func2_oid;
 
 begin;
 
@@ -262,7 +262,7 @@ begin;
 
 select funcname, calls from pg_stat_user_functions where funcid = 'stats_test_func1_oid';
 
-drop FUNCTION stats_test_func1();
+drop function stats_test_func1();
 
 select funcname, calls from pg_stat_user_functions where funcid = 'stats_test_func1_oid';
 
@@ -276,7 +276,7 @@ select pg_stat_get_function_calls('stats_test_func1_oid');
 
 begin;
 
-drop FUNCTION stats_test_func1();
+drop function stats_test_func1();
 
 commit;
 
@@ -294,7 +294,7 @@ select stats_test_func2();
 
 savepoint b;
 
-drop FUNCTION stats_test_func2();
+drop function stats_test_func2();
 
 commit;
 
@@ -306,25 +306,25 @@ create table drop_stats_test ();
 
 insert into drop_stats_test default values;
 
-select cast(cast('drop_stats_test' as REGCLASS) as OID) as drop_stats_test_oid;
+select cast(cast('drop_stats_test' as regclass) as oid) as drop_stats_test_oid;
 
 create table drop_stats_test_xact ();
 
 insert into drop_stats_test_xact default values;
 
-select cast(cast('drop_stats_test_xact' as REGCLASS) as OID) as drop_stats_test_xact_oid;
+select cast(cast('drop_stats_test_xact' as regclass) as oid) as drop_stats_test_xact_oid;
 
 create table drop_stats_test_subxact ();
 
 insert into drop_stats_test_subxact default values;
 
-select cast(cast('drop_stats_test_subxact' as REGCLASS) as OID) as drop_stats_test_subxact_oid;
+select cast(cast('drop_stats_test_subxact' as regclass) as oid) as drop_stats_test_subxact_oid;
 
 select pg_stat_force_next_flush();
 
 select pg_stat_get_live_tuples('drop_stats_test_oid');
 
-drop TABLE drop_stats_test;
+drop table drop_stats_test;
 
 select pg_stat_get_live_tuples('drop_stats_test_oid');
 
@@ -342,7 +342,7 @@ insert into drop_stats_test_xact default values;
 
 select pg_stat_get_xact_tuples_inserted('drop_stats_test_xact_oid');
 
-drop TABLE drop_stats_test_xact;
+drop table drop_stats_test_xact;
 
 select pg_stat_get_xact_tuples_inserted('drop_stats_test_xact_oid');
 
@@ -364,7 +364,7 @@ insert into drop_stats_test_xact default values;
 
 select pg_stat_get_xact_tuples_inserted('drop_stats_test_xact_oid');
 
-drop TABLE drop_stats_test_xact;
+drop table drop_stats_test_xact;
 
 select pg_stat_get_xact_tuples_inserted('drop_stats_test_xact_oid');
 
@@ -390,7 +390,7 @@ select pg_stat_get_xact_tuples_inserted('drop_stats_test_subxact_oid');
 
 savepoint sp2;
 
-drop TABLE drop_stats_test_subxact;
+drop table drop_stats_test_subxact;
 
 rollback to savepoint sp2;
 
@@ -408,7 +408,7 @@ begin;
 
 savepoint sp1;
 
-drop TABLE drop_stats_test_subxact;
+drop table drop_stats_test_subxact;
 
 savepoint sp2;
 
@@ -424,7 +424,7 @@ begin;
 
 savepoint sp1;
 
-drop TABLE drop_stats_test_subxact;
+drop table drop_stats_test_subxact;
 
 savepoint sp2;
 
@@ -434,20 +434,20 @@ commit;
 
 select pg_stat_get_live_tuples('drop_stats_test_subxact_oid');
 
-drop TABLE
+drop table
   trunc_stats_test,
   trunc_stats_test1,
   trunc_stats_test2,
   trunc_stats_test3,
   trunc_stats_test4;
 
-drop TABLE prevstats;
+drop table prevstats;
 
 begin;
 
 create temporary table test_last_scan (
-  idx_col INT primary key,
-  noidx_col INT
+  idx_col int primary key,
+  noidx_col int
 );
 
 insert into test_last_scan (idx_col, noidx_col) values (1, 1);
@@ -460,13 +460,13 @@ select
 from
   pg_stat_all_tables
 where
-  relid = cast('test_last_scan' as REGCLASS);
+  relid = cast('test_last_scan' as regclass);
 
 commit;
 
-select pg_stat_reset_single_table_counters(cast('test_last_scan' as REGCLASS));
+select pg_stat_reset_single_table_counters(cast('test_last_scan' as regclass));
 
-select seq_scan, idx_scan from pg_stat_all_tables where relid = cast('test_last_scan' as REGCLASS);
+select seq_scan, idx_scan from pg_stat_all_tables where relid = cast('test_last_scan' as regclass);
 
 begin;
 
@@ -496,7 +496,7 @@ select
 from
   pg_stat_all_tables
 where
-  relid = cast('test_last_scan' as REGCLASS);
+  relid = cast('test_last_scan' as regclass);
 
 select pg_sleep(0.1);
 
@@ -524,7 +524,7 @@ select
 from
   pg_stat_all_tables
 where
-  relid = cast('test_last_scan' as REGCLASS);
+  relid = cast('test_last_scan' as regclass);
 
 select
   last_seq_scan as test_last_seq,
@@ -532,7 +532,7 @@ select
 from
   pg_stat_all_tables
 where
-  relid = cast('test_last_scan' as REGCLASS);
+  relid = cast('test_last_scan' as regclass);
 
 select pg_sleep(0.1);
 
@@ -560,7 +560,7 @@ select
 from
   pg_stat_all_tables
 where
-  relid = cast('test_last_scan' as REGCLASS);
+  relid = cast('test_last_scan' as regclass);
 
 select
   last_seq_scan as test_last_seq,
@@ -568,7 +568,7 @@ select
 from
   pg_stat_all_tables
 where
-  relid = cast('test_last_scan' as REGCLASS);
+  relid = cast('test_last_scan' as regclass);
 
 select pg_sleep(0.1);
 
@@ -596,7 +596,7 @@ select
 from
   pg_stat_all_tables
 where
-  relid = cast('test_last_scan' as REGCLASS);
+  relid = cast('test_last_scan' as regclass);
 
 select
   shobj_description(d.oid, 'pg_database')
@@ -619,16 +619,16 @@ select
 from
   pg_stat_all_tables
 where
-  relid = cast('pg_shdescription' as REGCLASS);
+  relid = cast('pg_shdescription' as regclass);
 
-select pg_stat_reset_single_table_counters(cast('pg_shdescription' as REGCLASS));
+select pg_stat_reset_single_table_counters(cast('pg_shdescription' as regclass));
 
 select
   n_tup_ins + n_tup_upd > 0 as has_data
 from
   pg_stat_all_tables
 where
-  relid = cast('pg_shdescription' as REGCLASS);
+  relid = cast('pg_shdescription' as regclass);
 
 select
   sessions as db_stat_sessions
@@ -654,7 +654,7 @@ select wal_bytes as backend_wal_bytes_before from pg_stat_get_backend_wal(pg_bac
 
 create temporary table test_stats_temp as select 17;
 
-drop TABLE test_stats_temp;
+drop table test_stats_temp;
 
 select num_requested > 'rqst_ckpts_before' from pg_stat_checkpointer;
 
@@ -666,7 +666,7 @@ select wal_bytes > 'backend_wal_bytes_before' from pg_stat_get_backend_wal(pg_ba
 
 select
   (current_schemas(true))[1] =
-  'pg_temp_' || cast(beid as TEXT)
+  'pg_temp_' || cast(beid as text)
   as match
 from
   pg_stat_get_backend_idset() as beid
@@ -682,7 +682,7 @@ select pg_stat_reset_slru('commit_timestamp');
 select
   stats_reset >
   cast('slru_commit_ts_reset_ts'
-  as timestamp with time ZONE)
+  as timestamp with time zone)
 from
   pg_stat_slru
 where
@@ -695,7 +695,7 @@ select pg_stat_reset_slru();
 select
   stats_reset >
   cast('slru_commit_ts_reset_ts'
-  as timestamp with time ZONE)
+  as timestamp with time zone)
 from
   pg_stat_slru
 where
@@ -704,7 +704,7 @@ where
 select
   stats_reset >
   cast('slru_notify_reset_ts'
-  as timestamp with time ZONE)
+  as timestamp with time zone)
 from
   pg_stat_slru
 where
@@ -714,13 +714,13 @@ select stats_reset as archiver_reset_ts from pg_stat_archiver;
 
 select pg_stat_reset_shared('archiver');
 
-select stats_reset > cast('archiver_reset_ts' as timestamp with time ZONE) from pg_stat_archiver;
+select stats_reset > cast('archiver_reset_ts' as timestamp with time zone) from pg_stat_archiver;
 
 select stats_reset as bgwriter_reset_ts from pg_stat_bgwriter;
 
 select pg_stat_reset_shared('bgwriter');
 
-select stats_reset > cast('bgwriter_reset_ts' as timestamp with time ZONE) from pg_stat_bgwriter;
+select stats_reset > cast('bgwriter_reset_ts' as timestamp with time zone) from pg_stat_bgwriter;
 
 select stats_reset as checkpointer_reset_ts from pg_stat_checkpointer;
 
@@ -729,7 +729,7 @@ select pg_stat_reset_shared('checkpointer');
 select
   stats_reset >
   cast('checkpointer_reset_ts'
-  as timestamp with time ZONE)
+  as timestamp with time zone)
 from
   pg_stat_checkpointer;
 
@@ -740,7 +740,7 @@ select pg_stat_reset_shared('recovery_prefetch');
 select
   stats_reset >
   cast('recovery_prefetch_reset_ts'
-  as timestamp with time ZONE)
+  as timestamp with time zone)
 from
   pg_stat_recovery_prefetch;
 
@@ -748,13 +748,13 @@ select MAX(stats_reset) as slru_reset_ts from pg_stat_slru;
 
 select pg_stat_reset_shared('slru');
 
-select MAX(stats_reset) > cast('slru_reset_ts' as timestamp with time ZONE) from pg_stat_slru;
+select MAX(stats_reset) > cast('slru_reset_ts' as timestamp with time zone) from pg_stat_slru;
 
 select stats_reset as wal_reset_ts from pg_stat_wal;
 
 select pg_stat_reset_shared('wal');
 
-select stats_reset > cast('wal_reset_ts' as timestamp with time ZONE) from pg_stat_wal;
+select stats_reset > cast('wal_reset_ts' as timestamp with time zone) from pg_stat_wal;
 
 select pg_stat_reset_shared('unknown');
 
@@ -766,7 +766,7 @@ select pg_stat_reset();
 
 select
   stats_reset >
-  cast('db_reset_ts' as timestamp with time ZONE)
+  cast('db_reset_ts' as timestamp with time zone)
 from
   pg_stat_database
 where
@@ -826,7 +826,7 @@ create table stats_test_tab1 as select generate_series(1, 10) as a;
 
 create index "stats_test_idx1" on stats_test_tab1 using btree (a);
 
-select cast(cast('stats_test_idx1' as REGCLASS) as OID) as stats_test_idx1_oid;
+select cast(cast('stats_test_idx1' as regclass) as oid) as stats_test_idx1_oid;
 
 set enable_seqscan = off;
 
@@ -836,7 +836,7 @@ select pg_stat_have_stats('relation', 'dboid', 'stats_test_idx1_oid');
 
 select pg_stat_have_stats('relation', 'dboid', 'stats_test_idx1_oid');
 
-drop INDEX stats_test_idx1;
+drop index stats_test_idx1;
 
 select pg_stat_have_stats('relation', 'dboid', 'stats_test_idx1_oid');
 
@@ -844,7 +844,7 @@ begin;
 
 create index "stats_test_idx1" on stats_test_tab1 using btree (a);
 
-select cast(cast('stats_test_idx1' as REGCLASS) as OID) as stats_test_idx1_oid;
+select cast(cast('stats_test_idx1' as regclass) as oid) as stats_test_idx1_oid;
 
 select a from stats_test_tab1 where a = 3;
 
@@ -856,7 +856,7 @@ select pg_stat_have_stats('relation', 'dboid', 'stats_test_idx1_oid');
 
 create index "stats_test_idx1" on stats_test_tab1 using btree (a);
 
-select cast(cast('stats_test_idx1' as REGCLASS) as OID) as stats_test_idx1_oid;
+select cast(cast('stats_test_idx1' as regclass) as oid) as stats_test_idx1_oid;
 
 select a from stats_test_tab1 where a = 3;
 
@@ -866,7 +866,7 @@ reindex (CONCURRENTLY) index stats_test_idx1;
 
 select pg_stat_have_stats('relation', 'dboid', 'stats_test_idx1_oid');
 
-select cast(cast('stats_test_idx1' as REGCLASS) as OID) as stats_test_idx1_oid;
+select cast(cast('stats_test_idx1' as regclass) as oid) as stats_test_idx1_oid;
 
 select pg_stat_have_stats('relation', 'dboid', 'stats_test_idx1_oid');
 
@@ -874,7 +874,7 @@ begin;
 
 select pg_stat_have_stats('relation', 'dboid', 'stats_test_idx1_oid');
 
-drop INDEX stats_test_idx1;
+drop index stats_test_idx1;
 
 rollback;
 
@@ -920,7 +920,7 @@ from
 where
   context = 'normal' and object = 'wal';
 
-create table test_io_shared (a INT);
+create table test_io_shared (a int);
 
 insert into test_io_shared select i from generate_series(1, 100) as i;
 
@@ -944,9 +944,9 @@ where
 
 select 'my_io_sum_shared_after_extends' > 'my_io_sum_shared_before_extends';
 
-CHECKPOINT;
+checkpoint;
 
-CHECKPOINT;
+checkpoint;
 
 select SUM(writes) as writes, SUM(fsyncs) as fsyncs from pg_stat_io where object = 'relation';
 
@@ -1003,7 +1003,7 @@ where
 begin;
 
 alter table test_io_shared
-  set TABLESPACE regress_tblspace;
+  set tablespace regress_tblspace;
 
 select COUNT(*) from test_io_shared;
 
@@ -1054,13 +1054,13 @@ where
 
 select 'io_sum_shared_after_hits' > 'io_sum_shared_before_hits';
 
-drop TABLE test_io_shared;
+drop table test_io_shared;
 
 set temp_buffers = 100;
 
 create temporary table test_io_local (
-  a INT,
-  b TEXT
+  a int,
+  b text
 );
 
 select
@@ -1074,7 +1074,7 @@ where
 
 insert into test_io_local select generate_series(1, 5000) as id, repeat('a', 200);
 
-select pg_relation_size('test_io_local') / cast(current_setting('block_size') as BIGINT) > 100;
+select pg_relation_size('test_io_local') / cast(current_setting('block_size') as bigint) > 100;
 
 select
   SUM(reads) as io_sum_local_before_reads
@@ -1108,7 +1108,7 @@ select
   'io_sum_local_before_extends';
 
 alter table test_io_local
-  set TABLESPACE regress_tblspace;
+  set tablespace regress_tblspace;
 
 select pg_stat_force_next_flush();
 
@@ -1135,8 +1135,8 @@ where
   context = 'vacuum';
 
 create table test_io_vac_strategy (
-  a INT,
-  b INT
+  a int,
+  b int
 )
 with (autovacuum_enabled = 'false');
 
@@ -1263,8 +1263,8 @@ select pg_stat_get_backend_io(0);
 select pg_stat_get_backend_io('checkpointer_pid');
 
 create table brin_hot (
-  id INT primary key,
-  val INT not null
+  id int primary key,
+  val int not null
 )
 with (autovacuum_enabled = off, fillfactor = 70);
 
@@ -1273,7 +1273,7 @@ insert into brin_hot select *, 0 from generate_series(1, 235);
 create index "val_brin" on brin_hot using brin (val);
 
 create function wait_for_hot_stats()
-returns VOID
+returns void
 as $function$
 DECLARE
   start_time timestamptz := clock_timestamp();
@@ -1300,15 +1300,15 @@ update brin_hot set val = -3 where id = 42;
 
 select wait_for_hot_stats();
 
-select pg_stat_get_tuples_hot_updated(cast(cast('brin_hot' as REGCLASS) as OID));
+select pg_stat_get_tuples_hot_updated(cast(cast('brin_hot' as regclass) as oid));
 
-drop TABLE brin_hot;
+drop table brin_hot;
 
-drop FUNCTION wait_for_hot_stats();
+drop function wait_for_hot_stats();
 
 create table brin_hot_2 (
-  a INT,
-  b INT
+  a int,
+  b int
 );
 
 insert into brin_hot_2 values (1, 100);
@@ -1334,11 +1334,11 @@ select * from brin_hot_2 where a = 2 and b = 100;
 
 select COUNT(*) from brin_hot_2 where a = 2 and b = 100;
 
-drop TABLE brin_hot_2;
+drop table brin_hot_2;
 
 create table brin_hot_3 (
-  a INT,
-  filler TEXT
+  a int,
+  filler text
 )
 with (fillfactor = 10);
 
@@ -1358,14 +1358,14 @@ select * from brin_hot_3 where a = 2;
 
 select COUNT(*) from brin_hot_3 where a = 2;
 
-drop TABLE brin_hot_3;
+drop table brin_hot_3;
 
 set enable_seqscan = 'on';
 
-create table table_fillfactor (n CHAR(1000)) with (fillfactor = 10, autovacuum_enabled = off);
+create table table_fillfactor (n char(1000)) with (fillfactor = 10, autovacuum_enabled = off);
 
 insert into table_fillfactor select 'x' from generate_series(1, 1000);
 
 select * from check_estimated_rows('SELECT * FROM table_fillfactor');
 
-drop TABLE table_fillfactor;
+drop table table_fillfactor;

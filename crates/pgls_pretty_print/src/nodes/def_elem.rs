@@ -166,51 +166,51 @@ pub(super) fn emit_role_option(e: &mut EventEmitter, n: &DefElem) {
     match defname {
         "superuser" => {
             if is_true.unwrap_or(true) {
-                e.token(TokenKind::IDENT("SUPERUSER".to_string()));
+                e.token(TokenKind::IDENT("superuser".to_string()));
             } else {
-                e.token(TokenKind::IDENT("NOSUPERUSER".to_string()));
+                e.token(TokenKind::IDENT("nosuperuser".to_string()));
             }
         }
         "createdb" => {
             if is_true.unwrap_or(true) {
-                e.token(TokenKind::IDENT("CREATEDB".to_string()));
+                e.token(TokenKind::IDENT("createdb".to_string()));
             } else {
-                e.token(TokenKind::IDENT("NOCREATEDB".to_string()));
+                e.token(TokenKind::IDENT("nocreatedb".to_string()));
             }
         }
         "createrole" => {
             if is_true.unwrap_or(true) {
-                e.token(TokenKind::IDENT("CREATEROLE".to_string()));
+                e.token(TokenKind::IDENT("createrole".to_string()));
             } else {
-                e.token(TokenKind::IDENT("NOCREATEROLE".to_string()));
+                e.token(TokenKind::IDENT("nocreaterole".to_string()));
             }
         }
         "inherit" => {
             if is_true.unwrap_or(true) {
                 e.token(TokenKind::INHERIT_KW);
             } else {
-                e.token(TokenKind::IDENT("NOINHERIT".to_string()));
+                e.token(TokenKind::IDENT("noinherit".to_string()));
             }
         }
         "canlogin" | "login" => {
             if is_true.unwrap_or(true) {
-                e.token(TokenKind::IDENT("LOGIN".to_string()));
+                e.token(TokenKind::IDENT("login".to_string()));
             } else {
-                e.token(TokenKind::IDENT("NOLOGIN".to_string()));
+                e.token(TokenKind::IDENT("nologin".to_string()));
             }
         }
         "isreplication" | "replication" => {
             if is_true.unwrap_or(true) {
-                e.token(TokenKind::IDENT("REPLICATION".to_string()));
+                e.token(TokenKind::IDENT("replication".to_string()));
             } else {
-                e.token(TokenKind::IDENT("NOREPLICATION".to_string()));
+                e.token(TokenKind::IDENT("noreplication".to_string()));
             }
         }
         "bypassrls" => {
             if is_true.unwrap_or(true) {
-                e.token(TokenKind::IDENT("BYPASSRLS".to_string()));
+                e.token(TokenKind::IDENT("bypassrls".to_string()));
             } else {
-                e.token(TokenKind::IDENT("NOBYPASSRLS".to_string()));
+                e.token(TokenKind::IDENT("nobypassrls".to_string()));
             }
         }
         "connectionlimit" => {
@@ -290,7 +290,7 @@ pub(super) fn emit_role_option(e: &mut EventEmitter, n: &DefElem) {
             }
         }
         "sysid" => {
-            e.token(TokenKind::IDENT("SYSID".to_string()));
+            e.token(TokenKind::SYSID_KW);
             if let Some(ref arg) = n.arg {
                 e.space();
                 super::emit_node(arg, e);
@@ -320,7 +320,7 @@ pub(super) fn emit_sequence_option(e: &mut EventEmitter, n: &DefElem) {
 
     match defname {
         "increment" => {
-            e.token(TokenKind::IDENT("INCREMENT".to_string()));
+            e.token(TokenKind::INCREMENT_KW);
             e.space();
             e.token(TokenKind::BY_KW);
             if let Some(ref arg) = n.arg {
@@ -330,24 +330,24 @@ pub(super) fn emit_sequence_option(e: &mut EventEmitter, n: &DefElem) {
         }
         "minvalue" => {
             if let Some(ref arg) = n.arg {
-                e.token(TokenKind::IDENT("MINVALUE".to_string()));
+                e.token(TokenKind::MINVALUE_KW);
                 e.space();
                 super::emit_node(arg, e);
             } else {
                 e.token(TokenKind::NO_KW);
                 e.space();
-                e.token(TokenKind::IDENT("MINVALUE".to_string()));
+                e.token(TokenKind::MINVALUE_KW);
             }
         }
         "maxvalue" => {
             if let Some(ref arg) = n.arg {
-                e.token(TokenKind::IDENT("MAXVALUE".to_string()));
+                e.token(TokenKind::MAXVALUE_KW);
                 e.space();
                 super::emit_node(arg, e);
             } else {
                 e.token(TokenKind::NO_KW);
                 e.space();
-                e.token(TokenKind::IDENT("MAXVALUE".to_string()));
+                e.token(TokenKind::MAXVALUE_KW);
             }
         }
         "start" => {
@@ -360,7 +360,7 @@ pub(super) fn emit_sequence_option(e: &mut EventEmitter, n: &DefElem) {
             }
         }
         "restart" => {
-            e.token(TokenKind::IDENT("RESTART".to_string()));
+            e.token(TokenKind::RESTART_KW);
             if let Some(ref arg) = n.arg {
                 e.space();
                 e.token(TokenKind::WITH_KW);
@@ -369,7 +369,7 @@ pub(super) fn emit_sequence_option(e: &mut EventEmitter, n: &DefElem) {
             }
         }
         "cache" => {
-            e.token(TokenKind::IDENT("CACHE".to_string()));
+            e.token(TokenKind::CACHE_KW);
             if let Some(ref arg) = n.arg {
                 e.space();
                 super::emit_node(arg, e);
@@ -379,15 +379,15 @@ pub(super) fn emit_sequence_option(e: &mut EventEmitter, n: &DefElem) {
             if n.arg.is_some() {
                 // Check if the arg is a boolean/integer indicating CYCLE vs NO CYCLE
                 // For now, just emit CYCLE (TODO: handle NO CYCLE)
-                e.token(TokenKind::IDENT("CYCLE".to_string()));
+                e.token(TokenKind::CYCLE_KW);
             } else {
                 e.token(TokenKind::NO_KW);
                 e.space();
-                e.token(TokenKind::IDENT("CYCLE".to_string()));
+                e.token(TokenKind::CYCLE_KW);
             }
         }
         "owned_by" => {
-            e.token(TokenKind::IDENT("OWNED".to_string()));
+            e.token(TokenKind::OWNED_KW);
             e.space();
             e.token(TokenKind::BY_KW);
             if let Some(ref arg) = n.arg {

@@ -4,18 +4,18 @@ input_file: crates/pgls_pretty_print/tests/data/multi/rules.sql
 snapshot_kind: text
 ---
 create table rtest_t1 (
-  a INT,
-  b INT
+  a int,
+  b int
 );
 
 create table rtest_t2 (
-  a INT,
-  b INT
+  a int,
+  b int
 );
 
 create table rtest_t3 (
-  a INT,
-  b INT
+  a int,
+  b int
 );
 
 create view rtest_v1
@@ -47,23 +47,23 @@ comment on rule rtest_v1_del on rtest_v1 is 'delete rule';
 comment on rule rtest_v1_del on rtest_v1 is null;
 
 create table rtest_system (
-  sysname TEXT,
-  sysdesc TEXT
+  sysname text,
+  sysdesc text
 );
 
 create table rtest_interface (
-  sysname TEXT,
-  ifname TEXT
+  sysname text,
+  ifname text
 );
 
 create table rtest_person (
-  pname TEXT,
-  pdesc TEXT
+  pname text,
+  pdesc text
 );
 
 create table rtest_admin (
-  pname TEXT,
-  sysname TEXT
+  pname text,
+  sysname text
 );
 
 create rule rtest_sys_upd
@@ -102,21 +102,21 @@ do
   delete from rtest_admin where pname = old.pname;;
 
 create table rtest_emp (
-  ename CHAR(20),
-  salary NUMERIC
+  ename char(20),
+  salary numeric
 );
 
 create table rtest_emplog (
-  ename CHAR(20),
-  who NAME,
-  action CHAR(10),
-  newsal NUMERIC,
-  oldsal NUMERIC
+  ename char(20),
+  who name,
+  action char(10),
+  newsal numeric,
+  oldsal numeric
 );
 
 create table rtest_empmass (
-  ename CHAR(20),
-  salary NUMERIC
+  ename char(20),
+  salary numeric
 );
 
 create rule rtest_emp_ins
@@ -160,33 +160,33 @@ do
     );;
 
 create table rtest_t4 (
-  a INT,
-  b TEXT
+  a int,
+  b text
 );
 
 create table rtest_t5 (
-  a INT,
-  b TEXT
+  a int,
+  b text
 );
 
 create table rtest_t6 (
-  a INT,
-  b TEXT
+  a int,
+  b text
 );
 
 create table rtest_t7 (
-  a INT,
-  b TEXT
+  a int,
+  b text
 );
 
 create table rtest_t8 (
-  a INT,
-  b TEXT
+  a int,
+  b text
 );
 
 create table rtest_t9 (
-  a INT,
-  b TEXT
+  a int,
+  b text
 );
 
 create rule rtest_t4_ins1
@@ -213,12 +213,12 @@ as on insert to rtest_t6 where
 do instead
   insert into rtest_t8 values (new.a, new.b);;
 
-create table rtest_order1 (a INT);
+create table rtest_order1 (a int);
 
 create table rtest_order2 (
-  a INT,
-  b INT,
-  c TEXT
+  a int,
+  b int,
+  c text
 );
 
 create sequence rtest_seq;
@@ -269,23 +269,23 @@ do instead
     );;
 
 create table rtest_nothn1 (
-  a INT,
-  b TEXT
+  a int,
+  b text
 );
 
 create table rtest_nothn2 (
-  a INT,
-  b TEXT
+  a int,
+  b text
 );
 
 create table rtest_nothn3 (
-  a INT,
-  b TEXT
+  a int,
+  b text
 );
 
 create table rtest_nothn4 (
-  a INT,
-  b TEXT
+  a int,
+  b text
 );
 
 create rule rtest_nothn_r1

@@ -473,11 +473,11 @@ impl Diagnostic for FormatDiffDiagnostic {
     }
 
     fn description(&self, fmt: &mut Formatter<'_>) -> fmt::Result {
-        write!(fmt, "File could be formatted using `--write`")
+        write!(fmt, "Statement could be formatted using `--write`")
     }
 
     fn message(&self, fmt: &mut pgls_console::fmt::Formatter<'_>) -> std::io::Result<()> {
-        fmt.write_str("File could be formatted using `--write`")
+        fmt.write_str("Statement could be formatted using `--write`")
     }
 
     fn advices(&self, visitor: &mut dyn Visit) -> std::io::Result<()> {

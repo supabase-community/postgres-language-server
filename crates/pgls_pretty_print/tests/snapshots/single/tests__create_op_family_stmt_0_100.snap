@@ -3,4 +3,4 @@ source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/single/create_op_family_stmt_0.sql
 snapshot_kind: text
 ---
-create OPERATOR FAMILY myopfamily using btree;
+create operator family myopfamily using btree;

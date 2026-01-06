@@ -5,7 +5,7 @@ snapshot_kind: text
 ---
 select getdatabaseencoding() <> 'UTF8' as skip_test;
 
-create table copy_encoding_tab (t TEXT);
+create table copy_encoding_tab (t text);
 
 copy (select 'あ') to 'utf8_csv';
 
@@ -35,4 +35,4 @@ copy copy_encoding_tab from 'utf8_csv';
 
 reset client_encoding;
 
-drop TABLE copy_encoding_tab;
+drop table copy_encoding_tab;

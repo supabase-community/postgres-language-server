@@ -3,7 +3,7 @@ source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/truncate.sql
 snapshot_kind: text
 ---
-create table truncate_a (col1 INT primary key);
+create table truncate_a (col1 int primary key);
 
 insert into truncate_a values (1);
 
@@ -27,15 +27,15 @@ commit;
 
 select * from truncate_a;
 
-create table trunc_b (a INT references truncate_a);
+create table trunc_b (a int references truncate_a);
 
 create table trunc_c (a serial primary key);
 
-create table trunc_d (a INT references trunc_c);
+create table trunc_d (a int references trunc_c);
 
 create table trunc_e (
-  a INT references truncate_a,
-  b INT references trunc_c
+  a int references truncate_a,
+  b int references trunc_c
 );
 
 truncate truncate_a;
@@ -115,25 +115,25 @@ select * from trunc_d;
 
 select * from trunc_e;
 
-drop TABLE truncate_a, trunc_c, trunc_b, trunc_d, trunc_e cascade;
+drop table truncate_a, trunc_c, trunc_b, trunc_d, trunc_e cascade;
 
-create table trunc_f (col1 INT primary key);
+create table trunc_f (col1 int primary key);
 
 insert into trunc_f values (1);
 
 insert into trunc_f values (2);
 
-create table trunc_fa (col2a TEXT)
+create table trunc_fa (col2a text)
 inherits (trunc_f);
 
 insert into trunc_fa values (3, 'three');
 
-create table trunc_fb (col2b INT)
+create table trunc_fb (col2b int)
 inherits (trunc_f);
 
 insert into trunc_fb values (4, 444);
 
-create table trunc_faa (col3 TEXT)
+create table trunc_faa (col3 text)
 inherits (trunc_fa);
 
 insert into trunc_faa values (5, 'five', 'FIVE');
@@ -194,21 +194,21 @@ select * from trunc_faa;
 
 rollback;
 
-drop TABLE trunc_f cascade;
+drop table trunc_f cascade;
 
 create table trunc_trigger_test (
-  f1 INT,
-  f2 TEXT,
-  f3 TEXT
+  f1 int,
+  f2 text,
+  f3 text
 );
 
 create table trunc_trigger_log (
-  tgop TEXT,
-  tglevel TEXT,
-  tgwhen TEXT,
-  tgargv TEXT,
-  tgtable NAME,
-  rowcount BIGINT
+  tgop text,
+  tglevel text,
+  tgwhen text,
+  tgargv text,
+  tgtable name,
+  rowcount bigint
 );
 
 create function trunctrigger()
@@ -226,11 +226,11 @@ language plpgsql;
 
 insert into trunc_trigger_test values (1, 'foo', 'bar'), (2, 'baz', 'quux');
 
-create TRIGGER t
-before TRUNCATE
+create trigger t
+before truncate
 on trunc_trigger_test
-for EACH STATEMENT
-EXECUTE FUNCTION trunctrigger("before trigger truncate");
+for each statement
+execute function trunctrigger("before trigger truncate");
 
 select COUNT(*) as "Row count in test table" from trunc_trigger_test;
 
@@ -242,17 +242,17 @@ select COUNT(*) as "Row count in test table" from trunc_trigger_test;
 
 select * from trunc_trigger_log;
 
-drop TRIGGER t on trunc_trigger_test;
+drop trigger t on trunc_trigger_test;
 
 truncate trunc_trigger_log;
 
 insert into trunc_trigger_test values (1, 'foo', 'bar'), (2, 'baz', 'quux');
 
-create TRIGGER tt
-after TRUNCATE
+create trigger tt
+after truncate
 on trunc_trigger_test
-for EACH STATEMENT
-EXECUTE FUNCTION trunctrigger("after trigger truncate");
+for each statement
+execute function trunctrigger("after trigger truncate");
 
 select COUNT(*) as "Row count in test table" from trunc_trigger_test;
 
@@ -264,20 +264,20 @@ select COUNT(*) as "Row count in test table" from trunc_trigger_test;
 
 select * from trunc_trigger_log;
 
-drop TABLE trunc_trigger_test;
+drop table trunc_trigger_test;
 
-drop TABLE trunc_trigger_log;
+drop table trunc_trigger_log;
 
-drop FUNCTION trunctrigger();
+drop function trunctrigger();
 
 create sequence truncate_a_id1 start with 33;
 
 create table truncate_a (
   id serial,
-  id1 INT default nextval('truncate_a_id1')
+  id1 int default nextval('truncate_a_id1')
 );
 
-alter SEQUENCE truncate_a_id1 OWNED by truncate_a.id1;
+alter sequence truncate_a_id1 owned by truncate_a.id1;
 
 insert into truncate_a default values;
 
@@ -301,7 +301,7 @@ insert into truncate_a default values;
 
 select * from truncate_a;
 
-create table truncate_b (id INT generated always as identity (start with 44));
+create table truncate_b (id int generated always as identity (start with 44));
 
 insert into truncate_b default values;
 
@@ -341,13 +341,13 @@ insert into truncate_a default values;
 
 select * from truncate_a;
 
-drop TABLE truncate_a;
+drop table truncate_a;
 
 select nextval('truncate_a_id1');
 
 create table truncparted (
-  a INT,
-  b CHAR(1)
+  a int,
+  b char(1)
 )
 partition by LIST(a);
 
@@ -361,10 +361,10 @@ truncate only truncparted;
 
 truncate truncparted;
 
-drop TABLE truncparted;
+drop table truncparted;
 
 create function tp_ins_data()
-returns VOID
+returns void
 language plpgsql
 as $function$
   BEGIN
@@ -373,8 +373,8 @@ as $function$
   END
 $function$;
 
-create function tp_chk_data(out pktb REGCLASS, out pkval INT, out fktb REGCLASS, out fkval INT)
-returns setof RECORD
+create function tp_chk_data(out pktb regclass, out pkval int, out fktb regclass, out fkval int)
+returns setof record
 language plpgsql
 as $function$
   BEGIN
@@ -385,9 +385,9 @@ as $function$
   END
 $function$;
 
-create table truncprim (a INT primary key);
+create table truncprim (a int primary key);
 
-create table truncpart (a INT references truncprim)
+create table truncpart (a int references truncprim)
 partition by range(a);
 
 create table truncpart_1 partition of truncpart for values from (0) to (100);
@@ -421,11 +421,11 @@ truncate truncpart;
 
 select * from tp_chk_data();
 
-drop TABLE truncprim, truncpart;
+drop table truncprim, truncpart;
 
-drop FUNCTION tp_ins_data(), tp_chk_data();
+drop function tp_ins_data(), tp_chk_data();
 
-create table trunc_a (a INT primary key)
+create table trunc_a (a int primary key)
 partition by range(a);
 
 create table trunc_a1 partition of trunc_a for values from (0) to (10);
@@ -443,8 +443,8 @@ create table trunc_a3 partition of trunc_a for values from (20) to (30);
 insert into trunc_a values (0), (5), (10), (15), (20), (25);
 
 create table ref_b (
-  b INT primary key,
-  a INT references trunc_a (a) on DELETE cascade
+  b int primary key,
+  a int references trunc_a (a) on DELETE cascade
 );
 
 insert into ref_b values (10, 0), (50, 5), (100, 10), (150, 15);
@@ -453,11 +453,11 @@ truncate trunc_a1 cascade;
 
 select a from ref_b;
 
-drop TABLE ref_b;
+drop table ref_b;
 
 create table ref_c (
-  c INT primary key,
-  a INT references trunc_a (a) on DELETE cascade
+  c int primary key,
+  a int references trunc_a (a) on DELETE cascade
 )
 partition by range(c);
 
@@ -473,4 +473,4 @@ select a as "from table ref_c" from ref_c;
 
 select a as "from table trunc_a" from trunc_a order by a;
 
-drop TABLE trunc_a, ref_c;
+drop table trunc_a, ref_c;

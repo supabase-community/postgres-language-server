@@ -59,7 +59,7 @@ pub(super) fn emit_column_def(e: &mut EventEmitter, n: &ColumnDef) {
     // Uses SoftOrSpace to allow break if needed
     if !n.fdwoptions.is_empty() {
         e.line(LineType::SoftOrSpace);
-        e.token(TokenKind::IDENT("OPTIONS".to_string()));
+        e.token(TokenKind::OPTIONS_KW);
         e.space();
         e.token(TokenKind::L_PAREN);
         emit_comma_separated_list_with_spacing(

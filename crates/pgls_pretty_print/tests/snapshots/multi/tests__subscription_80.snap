@@ -3,13 +3,13 @@ source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/subscription.sql
 snapshot_kind: text
 ---
-create role regress_subscription_user LOGIN SUPERUSER;
+create role regress_subscription_user login superuser;
 
 create role regress_subscription_user2;
 
 create role regress_subscription_user3 in role pg_create_subscription;
 
-create role regress_subscription_user_dummy LOGIN NOSUPERUSER;
+create role regress_subscription_user_dummy login nosuperuser;
 
 set session authorization regress_subscription_user;
 
@@ -266,7 +266,7 @@ alter subscription regress_testsub refresh publication;
 commit;
 
 create function func()
-returns VOID
+returns void
 as $function$ ALTER SUBSCRIPTION regress_testsub SET PUBLICATION mypub WITH (refresh = true) $function$
 language sql;
 
@@ -278,7 +278,7 @@ alter subscription regress_testsub set (slot_name = 'none');
 
 drop subscription regress_testsub restrict;
 
-drop FUNCTION func;
+drop function func;
 
 create subscription regress_testsub connection 'dbname=regress_doesnotexist' publication testpub with (connect = 'false',
 two_phase = foo);

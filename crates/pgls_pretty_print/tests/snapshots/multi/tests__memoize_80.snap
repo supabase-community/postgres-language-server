@@ -3,8 +3,8 @@ source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/memoize.sql
 snapshot_kind: text
 ---
-create function explain_memoize(query TEXT, hide_hitmiss BOOLEAN)
-returns setof TEXT
+create function explain_memoize(query text, hide_hitmiss boolean)
+returns setof text
 language plpgsql
 as $function$
 declare
@@ -176,18 +176,18 @@ where
 set enable_mergejoin = off;
 
 create table expr_key (
-  x NUMERIC,
-  t TEXT
+  x numeric,
+  t text
 );
 
 insert into expr_key (x, t)
 select
-  cast(d1 as NUMERIC),
-  cast(d1 as TEXT)
+  cast(d1 as numeric),
+  cast(d1 as text)
 from
   (
     select
-      round(cast(d / pi() as NUMERIC), 7)
+      round(cast(d / pi() as numeric), 7)
       as d1
     from
       generate_series(1, 20) as d
@@ -208,7 +208,7 @@ ON t1.x = t2.t::numeric AND t1.t::numeric = t2.x;',
     false
   );
 
-drop TABLE expr_key;
+drop table expr_key;
 
 set work_mem = '64kB';
 
@@ -223,14 +223,14 @@ WHERE t2.unique1 < 1200;',
     true
   );
 
-create table flt (f DOUBLE PRECISION);
+create table flt (f double precision);
 
 create index "flt_f_idx" on flt using btree (f);
 
 insert into flt
 values
-  (cast('-0.0' as DOUBLE PRECISION)),
-  (cast('+0.0' as DOUBLE PRECISION));
+  (cast('-0.0' as double precision)),
+  (cast('+0.0' as double precision));
 
 analyze flt;
 
@@ -250,11 +250,11 @@ SELECT * FROM flt f1 INNER JOIN flt f2 ON f1.f >= f2.f;',
     false
   );
 
-drop TABLE flt;
+drop table flt;
 
 create table strtest (
-  n NAME,
-  t TEXT
+  n name,
+  t text
 );
 
 create index "strtest_n_idx" on strtest using btree (n);
@@ -287,11 +287,11 @@ SELECT * FROM strtest s1 INNER JOIN strtest s2 ON s1.t >= s2.t;',
     false
   );
 
-drop TABLE strtest;
+drop table strtest;
 
 set enable_partitionwise_join = 'on';
 
-create table prt (a INT)
+create table prt (a int)
 partition by range(a);
 
 create table prt_p1 partition of prt for values from (0) to (10);
@@ -326,7 +326,7 @@ ON t1.a = t2.a;',
     false
   );
 
-drop TABLE prt;
+drop table prt;
 
 reset enable_partitionwise_join;
 
@@ -433,8 +433,8 @@ reset parallel_setup_cost;
 reset min_parallel_table_scan_size;
 
 create table tab_anti (
-  a INT,
-  b BOOLEAN
+  a int,
+  b boolean
 );
 
 insert into tab_anti select i % 3, false from generate_series(1, 100) as i;
@@ -494,4 +494,4 @@ where
       )
   );
 
-drop TABLE tab_anti;
+drop table tab_anti;

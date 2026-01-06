@@ -6,18 +6,18 @@ snapshot_kind: text
 select
   *
 from
-  JSON_TABLE(
-    cast('{"outer": [{"items": [1, null]}]}' as JSONB),
+  json_table(
+    cast('{"outer": [{"items": [1, null]}]}' as jsonb),
     '$.outer[*]'
-    COLUMNS (
-      outer_row_id for ORDINALITY,
-      NESTED PATH '$.items[*]'
-      COLUMNS (
-        idx for ORDINALITY,
-        value INT PATH '$' default 0 on EMPTY,
-        raw JSON PATH '$' with UNCONDITIONAL wrapper KEEP QUOTES,
-        cond text PATH '$' default 'err' on ERROR
+    columns (
+      outer_row_id for ordinality,
+      nested path '$.items[*]'
+      columns (
+        idx for ordinality,
+        value int path '$' default 0 on empty,
+        raw json path '$' with unconditional wrapper keep quotes,
+        cond text path '$' default 'err' on error
       )
     )
-    EMPTY array on ERROR
+    empty array on error
   );

@@ -4,8 +4,8 @@ input_file: crates/pgls_pretty_print/tests/data/multi/foreign_key.sql
 snapshot_kind: text
 ---
 create table pktable (
-  ptest1 INT primary key,
-  ptest2 TEXT
+  ptest1 int primary key,
+  ptest2 text
 );
 
 insert into fktable values (1, 2);
@@ -42,21 +42,21 @@ update pktable set ptest1 = 1 where ptest1 = 2;
 
 select * from fktable;
 
-drop TABLE fktable;
+drop table fktable;
 
-drop TABLE pktable;
+drop table pktable;
 
 create table pktable (
-  ptest1 INT,
-  ptest2 INT,
-  ptest3 TEXT,
+  ptest1 int,
+  ptest2 int,
+  ptest3 text,
   primary key (ptest1, ptest2)
 );
 
 create table fktable (
-  ftest1 INT,
-  ftest2 INT,
-  ftest3 INT,
+  ftest1 int,
+  ftest2 int,
+  ftest3 int,
   constraint "constrname"
   foreign key
   (ftest1,
@@ -122,30 +122,30 @@ update fktable set ftest1 = null where ftest1 = 1;
 update fktable set ftest1 = 1 where ftest1 = 1;
 
 alter table pktable
-  alter column ptest1 type BIGINT;
+  alter column ptest1 type bigint;
 
 alter table fktable
-  alter column ftest1 type BIGINT;
+  alter column ftest1 type bigint;
 
 select * from pktable;
 
 select * from fktable;
 
-drop TABLE pktable cascade;
+drop table pktable cascade;
 
-drop TABLE fktable;
+drop table fktable;
 
 create table pktable (
-  ptest1 INT,
-  ptest2 INT,
-  ptest3 TEXT,
+  ptest1 int,
+  ptest2 int,
+  ptest3 text,
   primary key (ptest1, ptest2)
 );
 
 create table fktable (
-  ftest1 INT default -1,
-  ftest2 INT default -2,
-  ftest3 INT,
+  ftest1 int default -1,
+  ftest2 int default -2,
+  ftest3 int,
   constraint "constrname2"
   foreign key
   (ftest1,
@@ -202,20 +202,20 @@ update pktable set ptest1 = 1 where ptest1 = 2;
 
 select * from fktable;
 
-drop TABLE pktable;
+drop table pktable;
 
-drop TABLE pktable cascade;
+drop table pktable cascade;
 
-drop TABLE fktable;
+drop table fktable;
 
 create table pktable (
-  ptest1 INT primary key,
-  ptest2 TEXT
+  ptest1 int primary key,
+  ptest2 text
 );
 
 create table fktable (
-  ftest1 INT references pktable match full,
-  ftest2 INT
+  ftest1 int references pktable match full,
+  ftest2 int
 );
 
 insert into pktable values (1, 'Test1');
@@ -254,19 +254,19 @@ update pktable set ptest1 = 0 where ptest1 = 4;
 
 select * from pktable;
 
-drop TABLE fktable;
+drop table fktable;
 
-drop TABLE pktable;
+drop table pktable;
 
 create table pktable (
-  ptest1 INT,
-  ptest2 INT,
+  ptest1 int,
+  ptest2 int,
   primary key (ptest1, ptest2)
 );
 
 create table fktable (
-  ftest1 INT,
-  ftest2 INT
+  ftest1 int,
+  ftest2 int
 );
 
 insert into pktable values (1, 2);
@@ -323,23 +323,23 @@ from
 where
   conname = 'fk_con';
 
-drop TABLE fktable;
+drop table fktable;
 
-drop TABLE pktable;
+drop table pktable;
 
 create table pktable (
-  ptest1 INT,
-  ptest2 INT,
-  ptest3 INT,
-  ptest4 TEXT,
+  ptest1 int,
+  ptest2 int,
+  ptest3 int,
+  ptest4 text,
   primary key (ptest1, ptest2, ptest3)
 );
 
 create table fktable (
-  ftest1 INT,
-  ftest2 INT,
-  ftest3 INT,
-  ftest4 INT,
+  ftest1 int,
+  ftest2 int,
+  ftest3 int,
+  ftest4 int,
   constraint "constrname3"
   foreign key
   (ftest1,
@@ -382,23 +382,23 @@ select * from pktable;
 
 select * from fktable;
 
-drop TABLE fktable;
+drop table fktable;
 
-drop TABLE pktable;
+drop table pktable;
 
 create table pktable (
-  ptest1 INT,
-  ptest2 INT,
-  ptest3 INT,
-  ptest4 TEXT,
+  ptest1 int,
+  ptest2 int,
+  ptest3 int,
+  ptest4 text,
   unique (ptest1, ptest2, ptest3)
 );
 
 create table fktable (
-  ftest1 INT,
-  ftest2 INT,
-  ftest3 INT,
-  ftest4 INT,
+  ftest1 int,
+  ftest2 int,
+  ftest3 int,
+  ftest4 int,
   constraint "constrname3"
   foreign key
   (ftest1,
@@ -423,23 +423,23 @@ select * from pktable;
 
 select * from fktable;
 
-drop TABLE fktable;
+drop table fktable;
 
-drop TABLE pktable;
+drop table pktable;
 
 create table pktable (
-  ptest1 INT,
-  ptest2 INT,
-  ptest3 INT,
-  ptest4 TEXT,
+  ptest1 int,
+  ptest2 int,
+  ptest3 int,
+  ptest4 text,
   primary key (ptest1, ptest2, ptest3)
 );
 
 create table fktable (
-  ftest1 INT,
-  ftest2 INT,
-  ftest3 INT,
-  ftest4 INT,
+  ftest1 int,
+  ftest2 int,
+  ftest3 int,
+  ftest4 int,
   constraint "constrname3"
   foreign key
   (ftest1,
@@ -492,23 +492,23 @@ select * from pktable;
 
 select * from fktable;
 
-drop TABLE fktable;
+drop table fktable;
 
-drop TABLE pktable;
+drop table pktable;
 
 create table pktable (
-  ptest1 INT,
-  ptest2 INT,
-  ptest3 INT,
-  ptest4 TEXT,
+  ptest1 int,
+  ptest2 int,
+  ptest3 int,
+  ptest4 text,
   primary key (ptest1, ptest2, ptest3)
 );
 
 create table fktable (
-  ftest1 INT default 0,
-  ftest2 INT,
-  ftest3 INT,
-  ftest4 INT,
+  ftest1 int default 0,
+  ftest2 int,
+  ftest3 int,
+  ftest4 int,
   constraint "constrname3"
   foreign key
   (ftest1,
@@ -563,23 +563,23 @@ select * from pktable;
 
 select * from fktable;
 
-drop TABLE fktable;
+drop table fktable;
 
-drop TABLE pktable;
+drop table pktable;
 
 create table pktable (
-  ptest1 INT,
-  ptest2 INT,
-  ptest3 INT,
-  ptest4 TEXT,
+  ptest1 int,
+  ptest2 int,
+  ptest3 int,
+  ptest4 text,
   primary key (ptest1, ptest2, ptest3)
 );
 
 create table fktable (
-  ftest1 INT default 0,
-  ftest2 INT default -1,
-  ftest3 INT default -2,
-  ftest4 INT,
+  ftest1 int default 0,
+  ftest2 int default -1,
+  ftest3 int default -2,
+  ftest4 int,
   constraint "constrname3"
   foreign key
   (ftest1,
@@ -642,20 +642,20 @@ select * from pktable;
 
 select * from fktable;
 
-drop TABLE fktable;
+drop table fktable;
 
-drop TABLE pktable;
+drop table pktable;
 
 create table pktable (
-  tid INT,
-  id INT,
+  tid int,
+  id int,
   primary key (tid, id)
 );
 
 create table fktable (
-  tid INT,
-  id INT,
-  foo INT,
+  tid int,
+  id int,
+  foo int,
   foreign key
   (tid,
   id)
@@ -664,9 +664,9 @@ create table fktable (
 );
 
 create table fktable (
-  tid INT,
-  id INT,
-  foo INT,
+  tid int,
+  id int,
+  foo int,
   foreign key
   (tid,
   id)
@@ -675,10 +675,10 @@ create table fktable (
 );
 
 create table fktable (
-  tid INT,
-  id INT,
-  fk_id_del_set_null INT,
-  fk_id_del_set_default INT default 0,
+  tid int,
+  id int,
+  fk_id_del_set_null int,
+  fk_id_del_set_default int default 0,
   foreign key
   (tid,
   fk_id_del_set_null)
@@ -698,7 +698,7 @@ from
   pg_constraint
 where
   conrelid =
-  cast(cast('fktable' as REGCLASS) as OID)
+  cast(cast('fktable' as regclass) as oid)
 order by oid;
 
 insert into pktable values (1, 0), (1, 1), (1, 2);
@@ -709,17 +709,17 @@ delete from pktable where id = 1 or id = 2;
 
 select * from fktable order by id;
 
-drop TABLE fktable;
+drop table fktable;
 
-drop TABLE pktable;
+drop table pktable;
 
 create table pktable (
-  ptest1 INT primary key,
-  someoid OID
+  ptest1 int primary key,
+  someoid oid
 );
 
 create table fktable_fail1 (
-  ftest1 INT,
+  ftest1 int,
   constraint "fkfail1"
   foreign key
   (ftest2)
@@ -727,7 +727,7 @@ create table fktable_fail1 (
 );
 
 create table fktable_fail2 (
-  ftest1 INT,
+  ftest1 int,
   constraint "fkfail1"
   foreign key
   (ftest1)
@@ -735,7 +735,7 @@ create table fktable_fail2 (
 );
 
 create table fktable_fail3 (
-  ftest1 INT,
+  ftest1 int,
   constraint "fkfail1"
   foreign key
   (tableoid)
@@ -743,36 +743,36 @@ create table fktable_fail3 (
 );
 
 create table fktable_fail4 (
-  ftest1 OID,
+  ftest1 oid,
   constraint "fkfail1"
   foreign key
   (ftest1)
   references pktable (tableoid)
 );
 
-drop TABLE pktable;
+drop table pktable;
 
 create table pktable (
-  ptest1 INT,
-  ptest2 INT,
+  ptest1 int,
+  ptest2 int,
   unique (ptest1, ptest2)
 );
 
-create table fktable_fail1 (ftest1 INT references pktable (ptest1));
+create table fktable_fail1 (ftest1 int references pktable (ptest1));
 
-drop TABLE fktable_fail1;
+drop table fktable_fail1;
 
-drop TABLE pktable;
+drop table pktable;
 
-create table pktable (ptest1 INT primary key);
+create table pktable (ptest1 int primary key);
 
 insert into pktable values (42);
 
-create table fktable (ftest1 INET references pktable);
+create table fktable (ftest1 inet references pktable);
 
-create table fktable (ftest1 INET references pktable (ptest1));
+create table fktable (ftest1 inet references pktable (ptest1));
 
-create table fktable (ftest1 BIGINT references pktable);
+create table fktable (ftest1 bigint references pktable);
 
 insert into fktable values (42);
 
@@ -782,17 +782,17 @@ update fktable set ftest1 = ftest1;
 
 update fktable set ftest1 = ftest1 + 1;
 
-drop TABLE fktable;
+drop table fktable;
 
-create table fktable (ftest1 NUMERIC references pktable);
+create table fktable (ftest1 numeric references pktable);
 
-drop TABLE pktable;
+drop table pktable;
 
-create table pktable (ptest1 NUMERIC primary key);
+create table pktable (ptest1 numeric primary key);
 
 insert into pktable values (42);
 
-create table fktable (ftest1 INT references pktable);
+create table fktable (ftest1 int references pktable);
 
 insert into fktable values (42);
 
@@ -802,19 +802,19 @@ update fktable set ftest1 = ftest1;
 
 update fktable set ftest1 = ftest1 + 1;
 
-drop TABLE fktable;
+drop table fktable;
 
-drop TABLE pktable;
+drop table pktable;
 
 create table pktable (
-  ptest1 INT,
-  ptest2 INET,
+  ptest1 int,
+  ptest2 inet,
   primary key (ptest1, ptest2)
 );
 
 create table fktable (
-  ftest1 CIDR,
-  ftest2 TIMESTAMP,
+  ftest1 cidr,
+  ftest2 timestamp,
   foreign key
   (ftest1,
   ftest2)
@@ -822,8 +822,8 @@ create table fktable (
 );
 
 create table fktable (
-  ftest1 CIDR,
-  ftest2 TIMESTAMP,
+  ftest1 cidr,
+  ftest2 timestamp,
   foreign key
   (ftest1,
   ftest2)
@@ -832,8 +832,8 @@ create table fktable (
 );
 
 create table fktable (
-  ftest1 INT,
-  ftest2 INET,
+  ftest1 int,
+  ftest2 inet,
   foreign key
   (ftest2,
   ftest1)
@@ -841,8 +841,8 @@ create table fktable (
 );
 
 create table fktable (
-  ftest1 INT,
-  ftest2 INET,
+  ftest1 int,
+  ftest2 inet,
   foreign key
   (ftest2,
   ftest1)
@@ -851,8 +851,8 @@ create table fktable (
 );
 
 create table fktable (
-  ftest1 INT,
-  ftest2 INET,
+  ftest1 int,
+  ftest2 inet,
   foreign key
   (ftest1,
   ftest2)
@@ -861,8 +861,8 @@ create table fktable (
 );
 
 create table fktable (
-  ftest1 INT,
-  ftest2 INET,
+  ftest1 int,
+  ftest2 inet,
   foreign key
   (ftest2,
   ftest1)
@@ -870,11 +870,11 @@ create table fktable (
   ptest1)
 );
 
-drop TABLE fktable;
+drop table fktable;
 
 create table fktable (
-  ftest1 INT,
-  ftest2 INET,
+  ftest1 int,
+  ftest2 inet,
   foreign key
   (ftest1,
   ftest2)
@@ -882,15 +882,15 @@ create table fktable (
   ptest2)
 );
 
-drop TABLE fktable;
+drop table fktable;
 
-drop TABLE pktable;
+drop table pktable;
 
 create table pktable (
-  ptest1 INT,
-  ptest2 INET,
-  ptest3 INT,
-  ptest4 INET,
+  ptest1 int,
+  ptest2 inet,
+  ptest3 int,
+  ptest4 inet,
   primary key (ptest1, ptest2),
   foreign key
   (ptest3,
@@ -899,13 +899,13 @@ create table pktable (
   ptest2)
 );
 
-drop TABLE pktable;
+drop table pktable;
 
 create table pktable (
-  ptest1 INT,
-  ptest2 INET,
-  ptest3 INT,
-  ptest4 INET,
+  ptest1 int,
+  ptest2 inet,
+  ptest3 int,
+  ptest4 inet,
   primary key (ptest1, ptest2),
   foreign key
   (ptest3,
@@ -913,13 +913,13 @@ create table pktable (
   references pktable
 );
 
-drop TABLE pktable;
+drop table pktable;
 
 create table pktable (
-  ptest1 INT,
-  ptest2 INET,
-  ptest3 INT,
-  ptest4 INET,
+  ptest1 int,
+  ptest2 inet,
+  ptest3 int,
+  ptest4 inet,
   primary key (ptest1, ptest2),
   foreign key
   (ptest3,
@@ -929,10 +929,10 @@ create table pktable (
 );
 
 create table pktable (
-  ptest1 INT,
-  ptest2 INET,
-  ptest3 INT,
-  ptest4 INET,
+  ptest1 int,
+  ptest2 inet,
+  ptest3 int,
+  ptest4 inet,
   primary key (ptest1, ptest2),
   foreign key
   (ptest4,
@@ -942,10 +942,10 @@ create table pktable (
 );
 
 create table pktable (
-  ptest1 INT,
-  ptest2 INET,
-  ptest3 INT,
-  ptest4 INET,
+  ptest1 int,
+  ptest2 inet,
+  ptest3 int,
+  ptest4 inet,
   primary key (ptest1, ptest2),
   foreign key
   (ptest4,
@@ -953,16 +953,16 @@ create table pktable (
   references pktable
 );
 
-create table pktable_base (base1 INT not null);
+create table pktable_base (base1 int not null);
 
 create table pktable (
-  ptest1 INT,
+  ptest1 int,
   primary key (base1),
   unique (base1, ptest1)
 )
 inherits (pktable_base);
 
-create table fktable (ftest1 INT references pktable (base1));
+create table fktable (ftest1 int references pktable (base1));
 
 insert into pktable (base1) values (1);
 
@@ -982,13 +982,13 @@ update pktable set base1 = base1 * 4 where base1 < 3;
 
 delete from pktable where base1 > 3;
 
-drop TABLE fktable;
+drop table fktable;
 
 delete from pktable;
 
 create table fktable (
-  ftest1 INT,
-  ftest2 INT,
+  ftest1 int,
+  ftest2 int,
   foreign key
   (ftest1,
   ftest2)
@@ -1014,20 +1014,20 @@ update pktable set base1 = base1 * 4 where base1 < 3;
 
 delete from pktable where base1 > 3;
 
-drop TABLE fktable;
+drop table fktable;
 
-drop TABLE pktable;
+drop table pktable;
 
-drop TABLE pktable_base;
+drop table pktable_base;
 
 create table pktable_base (
-  base1 INT not null,
-  base2 INT
+  base1 int not null,
+  base2 int
 );
 
 create table pktable (
-  ptest1 INT,
-  ptest2 INT,
+  ptest1 int,
+  ptest2 int,
   primary key (base1, ptest1),
   foreign key
   (base2,
@@ -1055,21 +1055,21 @@ delete from pktable where base2 = 2;
 
 delete from pktable where base1 = 2;
 
-drop TABLE pktable;
+drop table pktable;
 
-drop TABLE pktable_base;
+drop table pktable_base;
 
-create table pktable_base (base1 INT not null);
+create table pktable_base (base1 int not null);
 
 create table pktable (
-  ptest1 INET,
+  ptest1 inet,
   primary key (base1, ptest1)
 )
 inherits (pktable_base);
 
 create table fktable (
-  ftest1 CIDR,
-  ftest2 INT[],
+  ftest1 cidr,
+  ftest2 int[],
   foreign key
   (ftest1,
   ftest2)
@@ -1077,8 +1077,8 @@ create table fktable (
 );
 
 create table fktable (
-  ftest1 CIDR,
-  ftest2 INT[],
+  ftest1 cidr,
+  ftest2 int[],
   foreign key
   (ftest1,
   ftest2)
@@ -1087,8 +1087,8 @@ create table fktable (
 );
 
 create table fktable (
-  ftest1 INT,
-  ftest2 INET,
+  ftest1 int,
+  ftest2 inet,
   foreign key
   (ftest2,
   ftest1)
@@ -1096,8 +1096,8 @@ create table fktable (
 );
 
 create table fktable (
-  ftest1 INT,
-  ftest2 INET,
+  ftest1 int,
+  ftest2 inet,
   foreign key
   (ftest2,
   ftest1)
@@ -1106,8 +1106,8 @@ create table fktable (
 );
 
 create table fktable (
-  ftest1 INT,
-  ftest2 INET,
+  ftest1 int,
+  ftest2 inet,
   foreign key
   (ftest1,
   ftest2)
@@ -1115,18 +1115,18 @@ create table fktable (
   base1)
 );
 
-drop TABLE pktable;
+drop table pktable;
 
-drop TABLE pktable_base;
+drop table pktable_base;
 
 create table pktable_base (
-  base1 INT not null,
-  base2 INT
+  base1 int not null,
+  base2 int
 );
 
 create table pktable (
-  ptest1 INET,
-  ptest2 INET[],
+  ptest1 inet,
+  ptest2 inet[],
   primary key (base1, ptest1),
   foreign key
   (base2,
@@ -1137,8 +1137,8 @@ create table pktable (
 inherits (pktable_base);
 
 create table pktable (
-  ptest1 INET,
-  ptest2 INET,
+  ptest1 inet,
+  ptest2 inet,
   primary key (base1, ptest1),
   foreign key
   (base2,
@@ -1149,8 +1149,8 @@ create table pktable (
 inherits (pktable_base);
 
 create table pktable (
-  ptest1 INET,
-  ptest2 INET,
+  ptest1 inet,
+  ptest2 inet,
   primary key (base1, ptest1),
   foreign key
   (ptest2,
@@ -1161,8 +1161,8 @@ create table pktable (
 inherits (pktable_base);
 
 create table pktable (
-  ptest1 INET,
-  ptest2 INET,
+  ptest1 inet,
+  ptest2 inet,
   primary key (base1, ptest1),
   foreign key
   (ptest2,
@@ -1172,25 +1172,25 @@ create table pktable (
 )
 inherits (pktable_base);
 
-drop TABLE pktable;
+drop table pktable;
 
-drop TABLE pktable_base;
+drop table pktable_base;
 
 create table pktable (
-  id INT primary key,
-  other INT
+  id int primary key,
+  other int
 );
 
 create table fktable (
-  id INT primary key,
-  fk INT references pktable deferrable
+  id int primary key,
+  fk int references pktable deferrable
 );
 
 insert into fktable values (5, 10);
 
 begin;
 
-set CONSTRAINTS all DEFERRED;
+set constraints all deferred;
 
 insert into fktable values (10, 15);
 
@@ -1198,16 +1198,16 @@ insert into pktable values (15, 0);
 
 commit;
 
-drop TABLE fktable, pktable;
+drop table fktable, pktable;
 
 create table pktable (
-  id INT primary key,
-  other INT
+  id int primary key,
+  other int
 );
 
 create table fktable (
-  id INT primary key,
-  fk INT
+  id int primary key,
+  fk int
   references pktable
   deferrable
   initially deferred
@@ -1223,46 +1223,46 @@ commit;
 
 begin;
 
-set CONSTRAINTS all IMMEDIATE;
+set constraints all immediate;
 
 insert into fktable values (500, 1000);
 
 commit;
 
-drop TABLE fktable, pktable;
+drop table fktable, pktable;
 
 create table pktable (
-  id INT primary key,
-  other INT
+  id int primary key,
+  other int
 );
 
 create table fktable (
-  id INT primary key,
-  fk INT references pktable deferrable
+  id int primary key,
+  fk int references pktable deferrable
 );
 
 begin;
 
-set CONSTRAINTS all DEFERRED;
+set constraints all deferred;
 
 insert into fktable values (1000, 2000);
 
-set CONSTRAINTS all IMMEDIATE;
+set constraints all immediate;
 
 insert into pktable values (2000, 3);
 
 commit;
 
-drop TABLE fktable, pktable;
+drop table fktable, pktable;
 
 create table pktable (
-  id INT primary key,
-  other INT
+  id int primary key,
+  other int
 );
 
 create table fktable (
-  id INT primary key,
-  fk INT
+  id int primary key,
+  fk int
   references pktable
   deferrable
   initially deferred
@@ -1274,21 +1274,21 @@ insert into fktable values (100, 200);
 
 commit;
 
-drop TABLE pktable, fktable;
+drop table pktable, fktable;
 
 create temporary table pktable (
-  id1 INT primary key,
-  id2 VARCHAR(4) unique,
-  id3 REAL unique,
+  id1 int primary key,
+  id2 varchar(4) unique,
+  id3 real unique,
   unique (id1, id2, id3)
 );
 
 create temporary table fktable (
-  x1 INT references pktable (id1),
-  x2 VARCHAR(4) references pktable (id2),
-  x3 REAL references pktable (id3),
-  x4 TEXT,
-  x5 SMALLINT
+  x1 int references pktable (id1),
+  x2 varchar(4) references pktable (id2),
+  x3 real references pktable (id3),
+  x4 text,
+  x5 smallint
 );
 
 alter table fktable
@@ -1383,16 +1383,16 @@ alter table fktable
   id3,
   id2);
 
-drop TABLE pktable, fktable;
+drop table pktable, fktable;
 
 create temporary table pktable (
-  id INT primary key,
-  other INT
+  id int primary key,
+  other int
 );
 
 create temporary table fktable (
-  id INT primary key,
-  fk INT
+  id int primary key,
+  fk int
   references pktable
   deferrable
   initially deferred
@@ -1471,8 +1471,8 @@ alter table fktable
   alter constraint "fktable_fk_fkey" not deferrable initially immediate;
 
 create temporary table users (
-  id INT primary key,
-  name VARCHAR not null
+  id int primary key,
+  name varchar not null
 );
 
 insert into users values (1, 'Jozko');
@@ -1482,16 +1482,16 @@ insert into users values (2, 'Ferko');
 insert into users values (3, 'Samko');
 
 create temporary table tasks (
-  id INT primary key,
-  owner INT
+  id int primary key,
+  owner int
   references users
   on DELETE set null
   on UPDATE cascade,
-  worker INT
+  worker int
   references users
   on DELETE set null
   on UPDATE cascade,
-  checked_by INT
+  checked_by int
   references users
   on DELETE set null
   on UPDATE cascade
@@ -1526,8 +1526,8 @@ select * from tasks;
 commit;
 
 create temporary table selfref (
-  a INT primary key,
-  b INT,
+  a int primary key,
+  b int,
   foreign key
   (b)
   references selfref (a)
@@ -1549,10 +1549,10 @@ select a, b from selfref;
 
 commit;
 
-create temporary table defp (f1 INT primary key);
+create temporary table defp (f1 int primary key);
 
 create temporary table defc (
-  f1 INT
+  f1 int
   default 0
   references defp on DELETE set default
 );
@@ -1578,9 +1578,9 @@ select * from defc;
 
 delete from defp where f1 = 1;
 
-create temporary table pp (f1 INT primary key);
+create temporary table pp (f1 int primary key);
 
-create temporary table cc (f1 INT references pp);
+create temporary table cc (f1 int references pp);
 
 insert into pp values (12);
 
@@ -1596,12 +1596,12 @@ update pp set f1 = f1 + 1;
 
 delete from pp where f1 = 13;
 
-drop TABLE pp, cc;
+drop table pp, cc;
 
-create temporary table pp (f1 INT primary key);
+create temporary table pp (f1 int primary key);
 
 create temporary table cc (
-  f1 INT
+  f1 int
   references pp
   on DELETE restrict
   on UPDATE restrict
@@ -1619,16 +1619,16 @@ update pp set f1 = f1 + 1;
 
 delete from pp where f1 = 13;
 
-drop TABLE pp, cc;
+drop table pp, cc;
 
 create temporary table t1 (
-  a INT primary key,
-  b TEXT
+  a int primary key,
+  b text
 );
 
 create temporary table t2 (
-  a INT primary key,
-  b INT references t1
+  a int primary key,
+  b int references t1
 );
 
 create rule r1
@@ -1641,17 +1641,17 @@ delete from t1 where a = 1;
 delete from t1 where a = 1;
 
 create table pktable2 (
-  a INT,
-  b INT,
-  c INT,
-  d INT,
-  e INT,
+  a int,
+  b int,
+  c int,
+  d int,
+  e int,
   primary key (d, e)
 );
 
 create table fktable2 (
-  d INT,
-  e INT,
+  d int,
+  e int,
   foreign key (d, e) references pktable2
 );
 
@@ -1663,20 +1663,20 @@ delete from pktable2;
 
 update pktable2 set d = 5;
 
-drop TABLE pktable2, fktable2;
+drop table pktable2, fktable2;
 
-create table pktable1 (a INT primary key);
+create table pktable1 (a int primary key);
 
 create table pktable2 (
-  a INT,
-  b INT,
+  a int,
+  b int,
   primary key (a, b)
 );
 
 create table fktable2 (
-  a INT,
-  b INT,
-  very_very_long_column_name_to_exceed_63_characters INT,
+  a int,
+  b int,
+  very_very_long_column_name_to_exceed_63_characters int,
   foreign key
   (very_very_long_column_name_to_exceed_63_characters)
   references pktable1,
@@ -1695,15 +1695,15 @@ select
 from
   pg_constraint
 where
-  conrelid = cast('fktable2' as REGCLASS)
+  conrelid = cast('fktable2' as regclass)
 order by conname;
 
-drop TABLE pktable1, pktable2, fktable2;
+drop table pktable1, pktable2, fktable2;
 
-create table pktable2 (f1 INT primary key);
+create table pktable2 (f1 int primary key);
 
 create table fktable2 (
-  f1 INT
+  f1 int
   references pktable2
   deferrable
   initially deferred
@@ -1753,17 +1753,17 @@ alter table fktable2
 
 commit;
 
-drop TABLE pktable2, fktable2;
+drop table pktable2, fktable2;
 
 create table pktable2 (
-  a DOUBLE PRECISION,
-  b DOUBLE PRECISION,
+  a double precision,
+  b double precision,
   primary key (a, b)
 );
 
 create table fktable2 (
-  x DOUBLE PRECISION,
-  y DOUBLE PRECISION,
+  x double precision,
+  y double precision,
   foreign key
   (x,
   y)
@@ -1786,13 +1786,13 @@ select * from pktable2;
 
 select * from fktable2;
 
-drop TABLE pktable2, fktable2;
+drop table pktable2, fktable2;
 
 create table fk_notpartitioned_pk (
-  fdrop1 INT,
-  a INT,
-  fdrop2 INT,
-  b INT,
+  fdrop1 int,
+  a int,
+  fdrop2 int,
+  b int,
   primary key (a, b)
 );
 
@@ -1801,9 +1801,9 @@ alter table fk_notpartitioned_pk
   drop column fdrop2;
 
 create table fk_partitioned_fk (
-  b INT,
-  fdrop1 INT,
-  a INT
+  b int,
+  fdrop1 int,
+  a int
 )
 partition by range(a, b);
 
@@ -1811,11 +1811,11 @@ alter table fk_partitioned_fk
   drop column fdrop1;
 
 create table fk_partitioned_fk_1 (
-  fdrop1 INT,
-  fdrop2 INT,
-  a INT,
-  fdrop3 INT,
-  b INT
+  fdrop1 int,
+  fdrop2 int,
+  a int,
+  fdrop3 int,
+  b int
 );
 
 alter table fk_partitioned_fk_1
@@ -1824,15 +1824,15 @@ alter table fk_partitioned_fk_1
   drop column fdrop3;
 
 alter table fk_partitioned_fk
-  ATTACH partition
+  attach partition
   fk_partitioned_fk_1
   for values from (0, 0) to (1000, 1000);
 
 create table fk_partitioned_fk_2 (
-  b INT,
-  fdrop1 INT,
-  fdrop2 INT,
-  a INT
+  b int,
+  fdrop1 int,
+  fdrop2 int,
+  a int
 );
 
 alter table fk_partitioned_fk_2
@@ -1840,19 +1840,19 @@ alter table fk_partitioned_fk_2
   drop column fdrop2;
 
 alter table fk_partitioned_fk
-  ATTACH partition
+  attach partition
   fk_partitioned_fk_2
   for values from (1000,
   1000) to (2000,
   2000);
 
 create table fk_partitioned_fk_3 (
-  fdrop1 INT,
-  fdrop2 INT,
-  fdrop3 INT,
-  fdrop4 INT,
-  b INT,
-  a INT
+  fdrop1 int,
+  fdrop2 int,
+  fdrop3 int,
+  fdrop4 int,
+  b int,
+  a int
 )
 partition by HASH(a);
 
@@ -1871,7 +1871,7 @@ partition of fk_partitioned_fk_3
 for values with (MODULUS 5, REMAINDER 1);
 
 alter table fk_partitioned_fk
-  ATTACH partition
+  attach partition
   fk_partitioned_fk_3
   for values from (2000,
   2000) to (3000,
@@ -1928,7 +1928,7 @@ update fk_notpartitioned_pk set b = 2504 where a = 2500;
 
 select
   conname,
-  cast(tgrelid as REGCLASS) as tgrel,
+  cast(tgrelid as regclass) as tgrel,
   regexp_replace(tgname, '[0-9]+', 'N')
   as tgname,
   tgtype
@@ -1944,18 +1944,18 @@ where
       relid
     from
       pg_partition_tree(
-        cast('fk_partitioned_fk' as REGCLASS)
+        cast('fk_partitioned_fk' as regclass)
       )
     union all
     select
-      cast('fk_notpartitioned_pk' as REGCLASS)
+      cast('fk_notpartitioned_pk' as regclass)
   )
 order by tgrelid,
   tgtype;
 
 select
   conname,
-  cast(tgrelid as REGCLASS) as tgrel,
+  cast(tgrelid as regclass) as tgrel,
   regexp_replace(tgname, '[0-9]+', 'N')
   as tgname,
   tgtype
@@ -1971,18 +1971,18 @@ where
       relid
     from
       pg_partition_tree(
-        cast('fk_partitioned_fk' as REGCLASS)
+        cast('fk_partitioned_fk' as regclass)
       )
     union all
     select
-      cast('fk_notpartitioned_pk' as REGCLASS)
+      cast('fk_notpartitioned_pk' as regclass)
   )
 order by tgrelid,
   tgtype;
 
 select
   conname,
-  cast(tgrelid as REGCLASS) as tgrel,
+  cast(tgrelid as regclass) as tgrel,
   regexp_replace(tgname, '[0-9]+', 'N')
   as tgname,
   tgtype
@@ -1998,11 +1998,11 @@ where
       relid
     from
       pg_partition_tree(
-        cast('fk_partitioned_fk' as REGCLASS)
+        cast('fk_partitioned_fk' as regclass)
       )
     union all
     select
-      cast('fk_notpartitioned_pk' as REGCLASS)
+      cast('fk_notpartitioned_pk' as regclass)
   )
 order by tgrelid,
   tgtype;
@@ -2010,16 +2010,16 @@ order by tgrelid,
 alter table fk_partitioned_fk
   drop constraint fk_partitioned_fk_a_b_fkey;
 
-drop TABLE fk_notpartitioned_pk, fk_partitioned_fk;
+drop table fk_notpartitioned_pk, fk_partitioned_fk;
 
 create table fk_notpartitioned_pk (
-  a INT,
+  a int,
   primary key (a),
   check (a > 0)
 );
 
 create table fk_partitioned_fk (
-  a INT
+  a int
   references fk_notpartitioned_pk (a)
   primary key
 )
@@ -2034,21 +2034,21 @@ insert into fk_notpartitioned_pk values (1);
 insert into fk_partitioned_fk values (1);
 
 alter table fk_notpartitioned_pk
-  alter column a type BIGINT;
+  alter column a type bigint;
 
 delete from fk_notpartitioned_pk where a = 1;
 
-drop TABLE fk_notpartitioned_pk, fk_partitioned_fk;
+drop table fk_notpartitioned_pk, fk_partitioned_fk;
 
 create table fk_notpartitioned_pk (
-  a INT,
-  b INT,
+  a int,
+  b int,
   primary key (a, b)
 );
 
 create table fk_partitioned_fk (
-  b INT,
-  a INT
+  b int,
+  a int
 )
 partition by range(a, b);
 
@@ -2060,8 +2060,8 @@ alter table fk_partitioned_fk
   not valid;
 
 create table fk_partitioned_fk_1 (
-  a INT,
-  b INT
+  a int,
+  b int
 );
 
 alter table fk_partitioned_fk_1
@@ -2071,19 +2071,19 @@ alter table fk_partitioned_fk_1
   references fk_notpartitioned_pk;
 
 alter table fk_partitioned_fk
-  ATTACH partition
+  attach partition
   fk_partitioned_fk_1
   for values from (0, 0) to (1000, 1000);
 
 select
   conname,
   convalidated,
-  cast(conrelid as REGCLASS)
+  cast(conrelid as regclass)
 from
   pg_constraint
 where
-  cast(cast(conrelid as REGCLASS) as TEXT) like 'fk_partitioned_fk%'
-order by cast(cast(oid as REGCLASS) as TEXT);
+  cast(cast(conrelid as regclass) as text) like 'fk_partitioned_fk%'
+order by cast(cast(oid as regclass) as text);
 
 alter table fk_partitioned_fk
   validate constraint fk_partitioned_fk_a_b_fkey;
@@ -2091,16 +2091,16 @@ alter table fk_partitioned_fk
 select
   conname,
   convalidated,
-  cast(conrelid as REGCLASS)
+  cast(conrelid as regclass)
 from
   pg_constraint
 where
-  cast(cast(conrelid as REGCLASS) as TEXT) like 'fk_partitioned_fk%'
-order by cast(cast(oid as REGCLASS) as TEXT);
+  cast(cast(conrelid as regclass) as text) like 'fk_partitioned_fk%'
+order by cast(cast(oid as regclass) as text);
 
 create table fk_partitioned_fk_2 (
-  a INT,
-  b INT
+  a int,
+  b int
 );
 
 insert into fk_partitioned_fk_2 values (1000, 1000);
@@ -2113,7 +2113,7 @@ alter table fk_partitioned_fk_2
   not valid;
 
 alter table fk_partitioned_fk
-  ATTACH partition
+  attach partition
   fk_partitioned_fk_2
   for values from (1000,
   1000) to (2000,
@@ -2122,7 +2122,7 @@ alter table fk_partitioned_fk
 truncate fk_partitioned_fk_2;
 
 alter table fk_partitioned_fk
-  ATTACH partition
+  attach partition
   fk_partitioned_fk_2
   for values from (1000,
   1000) to (2000,
@@ -2135,12 +2135,12 @@ from
   pg_constraint
 where
   conrelid =
-  cast('fk_partitioned_fk_2' as REGCLASS)
-order by cast(cast(oid as REGCLASS) as TEXT);
+  cast('fk_partitioned_fk_2' as regclass)
+order by cast(cast(oid as regclass) as text);
 
 create table fk_partitioned_fk_3 (
-  a INT,
-  b INT
+  a int,
+  b int
 )
 partition by range(a, b);
 
@@ -2152,8 +2152,8 @@ alter table fk_partitioned_fk_3
   not valid;
 
 create table fk_partitioned_fk_3_1 (
-  a INT,
-  b INT
+  a int,
+  b int
 );
 
 alter table fk_partitioned_fk_3_1
@@ -2163,14 +2163,14 @@ alter table fk_partitioned_fk_3_1
   references fk_notpartitioned_pk;
 
 alter table fk_partitioned_fk_3
-  ATTACH partition
+  attach partition
   fk_partitioned_fk_3_1
   for values from (2000,
   2000) to (3000,
   3000);
 
 alter table fk_partitioned_fk
-  ATTACH partition
+  attach partition
   fk_partitioned_fk_3
   for values from (2000,
   2000) to (3000,
@@ -2179,18 +2179,18 @@ alter table fk_partitioned_fk
 select
   conname,
   convalidated,
-  cast(conrelid as REGCLASS)
+  cast(conrelid as regclass)
 from
   pg_constraint
 where
-  cast(cast(conrelid as REGCLASS) as TEXT) like 'fk_partitioned_fk%'
-order by cast(cast(oid as REGCLASS) as TEXT);
+  cast(cast(conrelid as regclass) as text) like 'fk_partitioned_fk%'
+order by cast(cast(oid as regclass) as text);
 
-drop TABLE fk_partitioned_fk, fk_notpartitioned_pk;
+drop table fk_partitioned_fk, fk_notpartitioned_pk;
 
 create table fk_partitioned_pk (
-  a INT,
-  b INT,
+  a int,
+  b int,
   primary key (a, b)
 )
 partition by range(a, b);
@@ -2206,8 +2206,8 @@ for values from (1000,
 2000);
 
 create table fk_notpartitioned_fk (
-  b INT,
-  a INT
+  b int,
+  a int
 );
 
 insert into fk_partitioned_pk values (100, 100), (1000, 1000);
@@ -2230,8 +2230,8 @@ from
   pg_constraint
 where
   conrelid =
-  cast('fk_notpartitioned_fk' as REGCLASS)
-order by cast(cast(oid as REGCLASS) as TEXT);
+  cast('fk_notpartitioned_fk' as regclass)
+order by cast(cast(oid as regclass) as text);
 
 alter table fk_notpartitioned_fk
   validate constraint fk_notpartitioned_fk_a_b_fkey;
@@ -2244,8 +2244,8 @@ from
   pg_constraint
 where
   conrelid =
-  cast('fk_notpartitioned_fk' as REGCLASS)
-order by cast(cast(oid as REGCLASS) as TEXT);
+  cast('fk_notpartitioned_fk' as regclass)
+order by cast(cast(oid as regclass) as text);
 
 alter table fk_partitioned_pk
   add constraint "selffk"
@@ -2274,9 +2274,9 @@ from
   pg_constraint
 where
   conrelid =
-  cast('fk_partitioned_pk' as REGCLASS) and
+  cast('fk_partitioned_pk' as regclass) and
   contype = 'f'
-order by cast(cast(oid as REGCLASS) as TEXT);
+order by cast(cast(oid as regclass) as text);
 
 alter table fk_partitioned_pk_2
   validate constraint selffk;
@@ -2292,21 +2292,21 @@ from
   pg_constraint
 where
   conrelid =
-  cast('fk_partitioned_pk' as REGCLASS) and
+  cast('fk_partitioned_pk' as regclass) and
   contype = 'f'
-order by cast(cast(oid as REGCLASS) as TEXT);
+order by cast(cast(oid as regclass) as text);
 
-drop TABLE fk_notpartitioned_fk, fk_partitioned_pk;
+drop table fk_notpartitioned_fk, fk_partitioned_pk;
 
 create table fk_notpartitioned_pk (
-  a INT,
-  b INT,
+  a int,
+  b int,
   primary key (a, b)
 );
 
 create table fk_partitioned_fk (
-  a INT default 2501,
-  b INT default 142857
+  a int default 2501,
+  b int default 142857
 )
 partition by LIST(a);
 
@@ -2327,12 +2327,12 @@ partition of fk_partitioned_fk
 for values in (1500, 1502);
 
 create table fk_partitioned_fk_3 (
-  a INT,
-  b INT
+  a int,
+  b int
 );
 
 alter table fk_partitioned_fk
-  ATTACH partition
+  attach partition
   fk_partitioned_fk_3
   for values in (2500, 2501, 2502, 2503);
 
@@ -2351,8 +2351,8 @@ insert into fk_partitioned_fk (a, b) values (null, null);
 insert into fk_notpartitioned_pk values (1, 2);
 
 create table fk_partitioned_fk_full (
-  x INT,
-  y INT
+  x int,
+  y int
 )
 partition by range(x);
 
@@ -2380,10 +2380,10 @@ alter table fk_partitioned_fk_full
 
 insert into fk_partitioned_fk_full values (1, null);
 
-drop TABLE fk_partitioned_fk_full;
+drop table fk_partitioned_fk_full;
 
 select
-  cast(tableoid as REGCLASS),
+  cast(tableoid as regclass),
   a,
   b
 from
@@ -2395,7 +2395,7 @@ order by a;
 update fk_notpartitioned_pk set a = a + 1 where a = 2502;
 
 select
-  cast(tableoid as REGCLASS),
+  cast(tableoid as regclass),
   a,
   b
 from
@@ -2506,33 +2506,33 @@ delete from fk_notpartitioned_pk where b = 142857;
 
 select * from fk_partitioned_fk where a = 142857;
 
-drop TABLE fk_partitioned_fk_2;
+drop table fk_partitioned_fk_2;
 
 create table fk_partitioned_fk_2
 partition of fk_partitioned_fk
 for values in (1500, 1502);
 
 alter table fk_partitioned_fk
-  DETACH partition
+  detach partition
   fk_partitioned_fk_2;
 
 begin;
 
-drop TABLE fk_partitioned_fk;
+drop table fk_partitioned_fk;
 
 rollback;
 
 alter table fk_partitioned_fk
-  ATTACH partition
+  attach partition
   fk_partitioned_fk_2
   for values in (1500, 1502);
 
-drop TABLE fk_partitioned_fk_2;
+drop table fk_partitioned_fk_2;
 
 create table fk_partitioned_fk_2 (
-  b INT,
-  c TEXT,
-  a INT,
+  b int,
+  c text,
+  a int,
   foreign key
   (a,
   b)
@@ -2545,21 +2545,21 @@ alter table fk_partitioned_fk_2
   drop column c;
 
 alter table fk_partitioned_fk
-  ATTACH partition
+  attach partition
   fk_partitioned_fk_2
   for values in (1500, 1502);
 
-drop TABLE fk_partitioned_fk_2;
+drop table fk_partitioned_fk_2;
 
 alter table fk_partitioned_fk
-  ATTACH partition
+  attach partition
   fk_partitioned_fk_2
   for values in (1500, 1502);
 
 begin;
 
 alter table fk_partitioned_fk
-  ATTACH partition
+  attach partition
   fk_partitioned_fk_2
   for values in (1500, 1502);
 
@@ -2568,17 +2568,17 @@ rollback;
 begin;
 
 alter table fk_partitioned_fk
-  ATTACH partition
+  attach partition
   fk_partitioned_fk_2
   for values in (1500, 1502);
 
 rollback;
 
-drop TABLE fk_partitioned_fk_2;
+drop table fk_partitioned_fk_2;
 
 create table fk_partitioned_fk_4 (
-  a INT,
-  b INT,
+  a int,
+  b int,
   foreign key
   (a,
   b)
@@ -2594,8 +2594,8 @@ partition of fk_partitioned_fk_4
 for values from (1, 1) to (100, 100);
 
 create table fk_partitioned_fk_4_2 (
-  a INT,
-  b INT,
+  a int,
+  b int,
   foreign key
   (a,
   b)
@@ -2605,29 +2605,29 @@ create table fk_partitioned_fk_4_2 (
 );
 
 alter table fk_partitioned_fk_4
-  ATTACH partition
+  attach partition
   fk_partitioned_fk_4_2
   for values from (100,
   100) to (1000,
   1000);
 
 alter table fk_partitioned_fk
-  ATTACH partition
+  attach partition
   fk_partitioned_fk_4
   for values in (3500, 3502);
 
 alter table fk_partitioned_fk
-  DETACH partition
+  detach partition
   fk_partitioned_fk_4;
 
 alter table fk_partitioned_fk
-  ATTACH partition
+  attach partition
   fk_partitioned_fk_4
   for values in (3500, 3502);
 
 create table fk_partitioned_fk_5 (
-  a INT,
-  b INT,
+  a int,
+  b int,
   foreign key
   (a,
   b)
@@ -2648,8 +2648,8 @@ create table fk_partitioned_fk_5 (
 partition by range(a);
 
 create table fk_partitioned_fk_5_1 (
-  a INT,
-  b INT,
+  a int,
+  b int,
   foreign key
   (a,
   b)
@@ -2657,34 +2657,34 @@ create table fk_partitioned_fk_5_1 (
 );
 
 alter table fk_partitioned_fk
-  ATTACH partition
+  attach partition
   fk_partitioned_fk_5 for values in (4500);
 
 alter table fk_partitioned_fk_5
-  ATTACH partition
+  attach partition
   fk_partitioned_fk_5_1
   for values from (0) to (10);
 
 alter table fk_partitioned_fk
-  DETACH partition
+  detach partition
   fk_partitioned_fk_5;
 
 alter table fk_partitioned_fk
-  ATTACH partition
+  attach partition
   fk_partitioned_fk_5 for values in (4500);
 
 alter table fk_partitioned_fk_5
-  DETACH partition
+  detach partition
   fk_partitioned_fk_5_1;
 
 alter table fk_partitioned_fk_5
-  ATTACH partition
+  attach partition
   fk_partitioned_fk_5_1
   for values from (0) to (10);
 
 create table fk_partitioned_fk_2 (
-  a INT,
-  b INT
+  a int,
+  b int
 )
 partition by range(b);
 
@@ -2699,30 +2699,30 @@ for values from (1000) to (2000);
 insert into fk_partitioned_fk_2 values (1600, 601), (1600, 1601);
 
 alter table fk_partitioned_fk
-  ATTACH partition
+  attach partition
   fk_partitioned_fk_2 for values in (1600);
 
 insert into fk_notpartitioned_pk values (1600, 601), (1600, 1601);
 
 alter table fk_partitioned_fk
-  ATTACH partition
+  attach partition
   fk_partitioned_fk_2 for values in (1600);
 
-create table fk_partitioned_pk_6 (a INT primary key);
+create table fk_partitioned_pk_6 (a int primary key);
 
-create table fk_partitioned_fk_6 (a INT references fk_partitioned_pk_6)
+create table fk_partitioned_fk_6 (a int references fk_partitioned_pk_6)
 partition by LIST(a);
 
 alter table fk_partitioned_fk_6
-  ATTACH partition
+  attach partition
   fk_partitioned_pk_6 for values in (1);
 
-drop TABLE fk_partitioned_pk_6, fk_partitioned_fk_6;
+drop table fk_partitioned_pk_6, fk_partitioned_fk_6;
 
-create table fk_partitioned_pk_6 (a INT primary key);
+create table fk_partitioned_pk_6 (a int primary key);
 
 create table fk_partitioned_fk_6 (
-  a INT,
+  a int,
   foreign key
   (a)
   references fk_partitioned_pk_6,
@@ -2737,30 +2737,30 @@ partition of fk_partitioned_fk_6
 for values in (1);
 
 alter table fk_partitioned_fk_6
-  DETACH partition
+  detach partition
   fk_partitioned_fk_6_1;
 
 alter table fk_partitioned_fk_6
-  ATTACH partition
+  attach partition
   fk_partitioned_fk_6_1 for values in (1);
 
-drop TABLE fk_partitioned_pk_6, fk_partitioned_fk_6;
+drop table fk_partitioned_pk_6, fk_partitioned_fk_6;
 
-create table fk_partitioned_pk_6 (a INT primary key)
+create table fk_partitioned_pk_6 (a int primary key)
 partition by LIST(a);
 
 create table fk_partitioned_pk_61
 partition of fk_partitioned_pk_6
 for values in (1);
 
-create table fk_partitioned_fk_6 (a INT references fk_partitioned_pk_61)
+create table fk_partitioned_fk_6 (a int references fk_partitioned_pk_61)
 partition by LIST(a);
 
 alter table fk_partitioned_fk_6
-  ATTACH partition
+  attach partition
   fk_partitioned_pk_6 for values in (1);
 
-drop TABLE fk_partitioned_pk_6, fk_partitioned_fk_6;
+drop table fk_partitioned_pk_6, fk_partitioned_fk_6;
 
 create role regress_other_partitioned_fk_owner;
 
@@ -2771,8 +2771,8 @@ to regress_other_partitioned_fk_owner;
 set role to regress_other_partitioned_fk_owner;
 
 create table other_partitioned_fk (
-  a INT,
-  b INT
+  a int,
+  b int
 )
 partition by LIST(a);
 
@@ -2812,7 +2812,7 @@ alter table other_partitioned_fk
   references fk_notpartitioned_pk (a,
   b);
 
-drop TABLE other_partitioned_fk;
+drop table other_partitioned_fk;
 
 reset role;
 
@@ -2823,8 +2823,8 @@ from regress_other_partitioned_fk_owner;
 drop role regress_other_partitioned_fk_owner;
 
 create table parted_self_fk (
-  id BIGINT not null primary key,
-  id_abc BIGINT,
+  id bigint not null primary key,
+  id_abc bigint,
   foreign key
   (id_abc)
   references parted_self_fk (id)
@@ -2832,12 +2832,12 @@ create table parted_self_fk (
 partition by range(id);
 
 create table part1_self_fk (
-  id BIGINT not null primary key,
-  id_abc BIGINT
+  id bigint not null primary key,
+  id_abc bigint
 );
 
 alter table parted_self_fk
-  ATTACH partition
+  attach partition
   part1_self_fk
   for values from (0) to (10);
 
@@ -2846,8 +2846,8 @@ partition of parted_self_fk
 for values from (10) to (20);
 
 create table part3_self_fk (
-  id BIGINT not null primary key,
-  id_abc BIGINT
+  id bigint not null primary key,
+  id_abc bigint
 )
 partition by range(id);
 
@@ -2856,17 +2856,17 @@ partition of part3_self_fk
 for values from (20) to (30);
 
 alter table parted_self_fk
-  ATTACH partition
+  attach partition
   part3_self_fk
   for values from (20) to (40);
 
 create table part33_self_fk (
-  id BIGINT not null primary key,
-  id_abc BIGINT
+  id bigint not null primary key,
+  id_abc bigint
 );
 
 alter table part3_self_fk
-  ATTACH partition
+  attach partition
   part33_self_fk
   for values from (30) to (40);
 
@@ -2874,7 +2874,7 @@ insert into parted_self_fk values (1, null), (2, null), (3, null);
 
 insert into parted_self_fk
 values (10, 1), (11, 2), (12, 3)
-returning cast(tableoid as REGCLASS);
+returning cast(tableoid as regclass);
 
 insert into parted_self_fk values (4, 5);
 
@@ -2912,7 +2912,7 @@ order by cr.relname,
   p.conname;
 
 alter table parted_self_fk
-  DETACH partition
+  detach partition
   part2_self_fk;
 
 insert into part2_self_fk values (16, 9);
@@ -2920,7 +2920,7 @@ insert into part2_self_fk values (16, 9);
 delete from parted_self_fk where id = 2 returning *;
 
 alter table parted_self_fk
-  ATTACH partition
+  attach partition
   part2_self_fk
   for values from (10) to (20);
 
@@ -2929,29 +2929,29 @@ insert into parted_self_fk values (16, 9);
 delete from parted_self_fk where id = 3 returning *;
 
 alter table parted_self_fk
-  DETACH partition
+  detach partition
   part2_self_fk;
 
 alter table parted_self_fk
-  ATTACH partition
+  attach partition
   part2_self_fk
   for values from (10) to (20);
 
 alter table parted_self_fk
-  DETACH partition
+  detach partition
   part3_self_fk;
 
 alter table parted_self_fk
-  ATTACH partition
+  attach partition
   part3_self_fk
   for values from (30) to (40);
 
 alter table part3_self_fk
-  DETACH partition
+  detach partition
   part33_self_fk;
 
 alter table part3_self_fk
-  ATTACH partition
+  attach partition
   part33_self_fk
   for values from (30) to (40);
 
@@ -2988,9 +2988,9 @@ order by cr.relname,
 
 create schema "fkpart0";
 
-create table pkey (a INT primary key);
+create table pkey (a int primary key);
 
-create table fk_part (a INT)
+create table fk_part (a int)
 partition by LIST(a);
 
 create table fk_part_1
@@ -3044,9 +3044,9 @@ alter table fkpart0.fk_part_56_5
 
 create schema "fkpart1";
 
-create table pkey (a INT primary key);
+create table pkey (a int primary key);
 
-create table fk_part (a INT)
+create table fk_part (a int)
 partition by LIST(a);
 
 create table fk_part_1
@@ -3068,7 +3068,7 @@ insert into fkpart1.fk_part values (1);
 delete from fkpart1.pkey where a = 1;
 
 alter table fkpart1.fk_part
-  DETACH partition
+  detach partition
   fkpart1.fk_part_1;
 
 create table fkpart1.fk_part_1_2
@@ -3081,10 +3081,10 @@ delete from fkpart1.pkey where a = 1;
 
 create schema "fkpart2";
 
-create table pkey (a INT primary key);
+create table pkey (a int primary key);
 
 create table fk_part (
-  a INT,
+  a int,
   constraint "fkey"
   foreign key
   (a)
@@ -3098,7 +3098,7 @@ for values in (1)
 partition by LIST(a);
 
 create table fk_part_1_1 (
-  a INT,
+  a int,
   constraint "my_fkey"
   foreign key
   (a)
@@ -3106,7 +3106,7 @@ create table fk_part_1_1 (
 );
 
 alter table fkpart2.fk_part_1
-  ATTACH partition
+  attach partition
   fkpart2.fk_part_1_1 for values in (1);
 
 alter table fkpart2.fk_part_1
@@ -3116,7 +3116,7 @@ alter table fkpart2.fk_part_1_1
   drop constraint my_fkey;
 
 alter table fkpart2.fk_part
-  DETACH partition
+  detach partition
   fkpart2.fk_part_1;
 
 alter table fkpart2.fk_part_1
@@ -3127,10 +3127,10 @@ alter table fkpart2.fk_part_1_1
 
 create schema "fkpart3";
 
-create table pkey (a INT primary key);
+create table pkey (a int primary key);
 
 create table fk_part (
-  a INT,
+  a int,
   constraint "fkey"
   foreign key
   (a)
@@ -3150,7 +3150,7 @@ create table fk_part_2 partition of fkpart3.fk_part for values in (2);
 
 begin;
 
-set CONSTRAINTS fkpart3.fkey DEFERRED;
+set constraints fkpart3.fkey deferred;
 
 insert into fkpart3.fk_part values (1);
 
@@ -3160,7 +3160,7 @@ commit;
 
 begin;
 
-set CONSTRAINTS fkpart3.fkey DEFERRED;
+set constraints fkpart3.fkey deferred;
 
 delete from fkpart3.pkey;
 
@@ -3168,20 +3168,20 @@ delete from fkpart3.fk_part;
 
 commit;
 
-drop SCHEMA fkpart0, fkpart1, fkpart2, fkpart3 cascade;
+drop schema fkpart0, fkpart1, fkpart2, fkpart3 cascade;
 
 create schema "fkpart3";
 
 set search_path to fkpart3;
 
-create table pk (a INT primary key)
+create table pk (a int primary key)
 partition by range(a);
 
 create table pk1 partition of pk for values from (0) to (1000);
 
 create table pk2 (
-  b INT,
-  a INT
+  b int,
+  a int
 );
 
 alter table pk2
@@ -3191,10 +3191,10 @@ alter table pk2
   alter column a set not null;
 
 alter table pk
-  ATTACH partition
+  attach partition
   pk2 for values from (1000) to (2000);
 
-create table fk (a INT)
+create table fk (a int)
 partition by range(a);
 
 create table fk1 partition of fk for values from (0) to (750);
@@ -3203,15 +3203,15 @@ alter table fk
   add foreign key (a) references pk;
 
 create table fk2 (
-  b INT,
-  a INT
+  b int,
+  a int
 );
 
 alter table fk2
   drop column b;
 
 alter table fk
-  ATTACH partition
+  attach partition
   fk2 for values from (750) to (3500);
 
 create table pk3 partition of pk for values from (2000) to (3000);
@@ -3219,13 +3219,13 @@ create table pk3 partition of pk for values from (2000) to (3000);
 create table pk4 (like pk);
 
 alter table pk
-  ATTACH partition
+  attach partition
   pk4 for values from (3000) to (4000);
 
 create table pk5 (
-  c INT,
-  b INT,
-  a INT not null
+  c int,
+  b int,
+  a int not null
 )
 partition by range(a);
 
@@ -3238,7 +3238,7 @@ create table pk51 partition of pk5 for values from (4000) to (4500);
 create table pk52 partition of pk5 for values from (4500) to (5000);
 
 alter table pk
-  ATTACH partition
+  attach partition
   pk5 for values from (4000) to (5000);
 
 create table fk3 partition of fk for values from (3500) to (5000);
@@ -3310,8 +3310,8 @@ update pk set a = 4502 where a = 4500;
 delete from pk where a = 4502;
 
 create table ffk (
-  a INT,
-  b INT references pk
+  a int,
+  b int references pk
 )
 partition by LIST(a);
 
@@ -3321,16 +3321,16 @@ alter table ffk1
   add foreign key (a) references pk;
 
 alter table ffk
-  DETACH partition
+  detach partition
   ffk1;
 
-drop TABLE ffk, ffk1;
+drop table ffk, ffk1;
 
 create schema "fkpart4";
 
 set search_path to fkpart4;
 
-create table droppk (a INT primary key)
+create table droppk (a int primary key)
 partition by range(a);
 
 create table droppk1 partition of droppk for values from (0) to (1000);
@@ -3348,66 +3348,66 @@ create table droppk2_d partition of droppk2 default;
 
 insert into droppk values (1), (1000), (1500), (2000);
 
-create table dropfk (a INT references droppk);
+create table dropfk (a int references droppk);
 
 insert into dropfk values (1), (1000), (1500), (2000);
 
 alter table droppk
-  DETACH partition
+  detach partition
   droppk_d;
 
 alter table droppk2
-  DETACH partition
+  detach partition
   droppk2_d;
 
 alter table droppk
-  DETACH partition
+  detach partition
   droppk1;
 
 alter table droppk
-  DETACH partition
+  detach partition
   droppk2;
 
 alter table droppk2
-  DETACH partition
+  detach partition
   droppk21;
 
-drop TABLE droppk_d;
+drop table droppk_d;
 
-drop TABLE droppk2_d;
+drop table droppk2_d;
 
-drop TABLE droppk1;
+drop table droppk1;
 
-drop TABLE droppk2;
+drop table droppk2;
 
-drop TABLE droppk21;
+drop table droppk21;
 
 delete from dropfk;
 
-drop TABLE droppk_d;
+drop table droppk_d;
 
-drop TABLE droppk2_d;
+drop table droppk2_d;
 
-drop TABLE droppk1;
+drop table droppk1;
 
 alter table droppk2
-  DETACH partition
+  detach partition
   droppk21;
 
-drop TABLE droppk2;
+drop table droppk2;
 
 create schema "fkpart5";
 
 set search_path to fkpart5;
 
-create table pk (a INT primary key)
+create table pk (a int primary key)
 partition by LIST(a);
 
 create table pk1 partition of pk for values in (1) partition by LIST(a);
 
 create table pk11 partition of pk1 for values in (1);
 
-create table fk (a INT)
+create table fk (a int)
 partition by LIST(a);
 
 create table fk1 partition of fk for values in (1) partition by LIST(a);
@@ -3419,52 +3419,52 @@ alter table fk
 
 create table pk2 partition of pk for values in (2);
 
-create table pk3 (a INT not null)
+create table pk3 (a int not null)
 partition by LIST(a);
 
 create table pk31 partition of pk3 for values in (31);
 
 create table pk32 (
-  b INT,
-  a INT not null
+  b int,
+  a int not null
 );
 
 alter table pk32
   drop column b;
 
 alter table pk3
-  ATTACH partition
+  attach partition
   pk32 for values in (32);
 
 alter table pk
-  ATTACH partition
+  attach partition
   pk3 for values in (31, 32);
 
 create table fk2 partition of fk for values in (2);
 
 create table fk3 (
-  b INT,
-  a INT
+  b int,
+  a int
 );
 
 alter table fk3
   drop column b;
 
 alter table fk
-  ATTACH partition
+  attach partition
   fk3 for values in (3);
 
 select
   pg_describe_object(
-    cast('pg_constraint' as REGCLASS),
+    cast('pg_constraint' as regclass),
     oid,
     0
   ),
-  cast(confrelid as REGCLASS),
+  cast(confrelid as regclass),
   case
     when conparentid <> 0
     then pg_describe_object(
-      cast('pg_constraint' as REGCLASS),
+      cast('pg_constraint' as regclass),
       conparentid,
       0
     )
@@ -3480,7 +3480,7 @@ where
     from
       pg_partition_tree('fk')
   )
-order by cast(cast(conrelid as REGCLASS) as TEXT),
+order by cast(cast(conrelid as regclass) as text),
   conname;
 
 create table fk4 (like fk);
@@ -3488,14 +3488,14 @@ create table fk4 (like fk);
 insert into fk4 values (50);
 
 alter table fk
-  ATTACH partition
+  attach partition
   fk4 for values in (50);
 
 create schema "fkpart9";
 
 set search_path to fkpart9;
 
-create table pk (a INT primary key)
+create table pk (a int primary key)
 partition by LIST(a);
 
 create table pk1 partition of pk for values in (1, 2) partition by LIST(a);
@@ -3504,13 +3504,13 @@ create table pk11 partition of pk1 for values in (1);
 
 create table pk3 partition of pk for values in (3);
 
-create table fk (a INT references pk deferrable initially immediate);
+create table fk (a int references pk deferrable initially immediate);
 
 insert into fk values (1);
 
 begin;
 
-set CONSTRAINTS fk_a_fkey DEFERRED;
+set constraints fk_a_fkey deferred;
 
 insert into fk values (1);
 
@@ -3518,7 +3518,7 @@ commit;
 
 begin;
 
-set CONSTRAINTS fk_a_fkey DEFERRED;
+set constraints fk_a_fkey deferred;
 
 insert into fk values (1);
 
@@ -3528,7 +3528,7 @@ commit;
 
 begin;
 
-set CONSTRAINTS fk_a_fkey DEFERRED;
+set constraints fk_a_fkey deferred;
 
 delete from pk where a = 1;
 
@@ -3537,16 +3537,16 @@ delete from fk where a = 1;
 commit;
 
 create table pt (
-  f1 INT,
-  f2 INT,
-  f3 INT,
+  f1 int,
+  f2 int,
+  f3 int,
   primary key (f1, f2)
 );
 
 create table ref (
-  f1 INT,
-  f2 INT,
-  f3 INT
+  f1 int,
+  f2 int,
+  f3 int
 )
 partition by LIST(f1);
 
@@ -3572,19 +3572,19 @@ delete from ref;
 
 rollback;
 
-drop TABLE pt, ref;
+drop table pt, ref;
 
 create table pt (
-  f1 INT,
-  f2 INT,
-  f3 INT,
+  f1 int,
+  f2 int,
+  f3 int,
   primary key (f1, f2)
 );
 
 create table ref (
-  f1 INT,
-  f2 INT,
-  f3 INT
+  f1 int,
+  f2 int,
+  f3 int
 )
 partition by LIST(f1);
 
@@ -3617,12 +3617,12 @@ delete from ref;
 
 rollback;
 
-drop TABLE pt, ref;
+drop table pt, ref;
 
 create table pt (
-  f1 INT,
-  f2 INT,
-  f3 INT,
+  f1 int,
+  f2 int,
+  f3 int,
   primary key (f1, f2)
 )
 partition by LIST(f1);
@@ -3632,9 +3632,9 @@ create table pt1 partition of pt for values in (1);
 create table pt2 partition of pt for values in (2);
 
 create table ref (
-  f1 INT,
-  f2 INT,
-  f3 INT
+  f1 int,
+  f2 int,
+  f3 int
 );
 
 alter table ref
@@ -3655,12 +3655,12 @@ delete from ref;
 
 rollback;
 
-drop TABLE pt, ref;
+drop table pt, ref;
 
 create table pt (
-  f1 INT,
-  f2 INT,
-  f3 INT,
+  f1 int,
+  f2 int,
+  f3 int,
   primary key (f1, f2)
 )
 partition by LIST(f1);
@@ -3672,9 +3672,9 @@ create table pt1 partition of pt1_2 for values in (1);
 create table pt2 partition of pt1_2 for values in (2);
 
 create table ref (
-  f1 INT,
-  f2 INT,
-  f3 INT
+  f1 int,
+  f2 int,
+  f3 int
 );
 
 alter table ref
@@ -3698,15 +3698,15 @@ delete from ref;
 
 rollback;
 
-drop TABLE pt, ref;
+drop table pt, ref;
 
-drop SCHEMA fkpart9 cascade;
+drop schema fkpart9 cascade;
 
 create schema "fkpart6";
 
 set search_path to fkpart6;
 
-create table pk (a INT primary key)
+create table pk (a int primary key)
 partition by range(a);
 
 create table pk1
@@ -3718,7 +3718,7 @@ create table pk11 partition of pk1 for values from (1) to (50);
 
 create table pk12 partition of pk1 for values from (50) to (100);
 
-create table fk (a INT)
+create table fk (a int)
 partition by range(a);
 
 create table fk1
@@ -3745,19 +3745,19 @@ insert into fk values (1);
 
 update pk set a = 20;
 
-select cast(tableoid as REGCLASS), * from fk;
+select cast(tableoid as regclass), * from fk;
 
 delete from pk where a = 20;
 
-select cast(tableoid as REGCLASS), * from fk;
+select cast(tableoid as regclass), * from fk;
 
-drop TABLE fk;
+drop table fk;
 
 truncate pk;
 
 insert into pk values (20), (50);
 
-create table fk (a INT)
+create table fk (a int)
 partition by range(a);
 
 create table fk1
@@ -3784,17 +3784,17 @@ update pk set a = 21 where a = 20;
 
 delete from pk where a = 50;
 
-select cast(tableoid as REGCLASS), * from fk;
+select cast(tableoid as regclass), * from fk;
 
-drop TABLE fk;
+drop table fk;
 
 truncate pk;
 
 insert into pk values (20), (30), (50);
 
 create table fk (
-  id INT,
-  a INT default 50
+  id int,
+  a int default 50
 )
 partition by range(a);
 
@@ -3822,15 +3822,15 @@ delete from pk where a = 20 returning *;
 
 update pk set a = 90 where a = 30 returning *;
 
-select cast(tableoid as REGCLASS), * from fk;
+select cast(tableoid as regclass), * from fk;
 
-drop TABLE fk;
+drop table fk;
 
 truncate pk;
 
 insert into pk values (20), (30);
 
-create table fk (a INT default 50)
+create table fk (a int default 50)
 partition by range(a);
 
 create table fk1
@@ -3857,13 +3857,13 @@ delete from pk where a = 20;
 
 update pk set a = 90 where a = 30;
 
-select cast(tableoid as REGCLASS), * from fk;
+select cast(tableoid as regclass), * from fk;
 
-drop TABLE fk;
+drop table fk;
 
 create schema "fkpart7";
 
-create table pkpart (a INT)
+create table pkpart (a int)
 partition by LIST(a);
 
 create table pkpart1 partition of pkpart for values in (1);
@@ -3874,15 +3874,15 @@ alter table fkpart7.pkpart1
 alter table fkpart7.pkpart
   add primary key (a);
 
-create table fkpart7.fk (a INT references fkpart7.pkpart);
+create table fkpart7.fk (a int references fkpart7.pkpart);
 
-drop SCHEMA fkpart7 cascade;
+drop schema fkpart7 cascade;
 
 create schema "fkpart8";
 
-create table tbl1 (f1 INT primary key);
+create table tbl1 (f1 int primary key);
 
-create table tbl2 (f1 INT references tbl1 deferrable initially deferred)
+create table tbl2 (f1 int references tbl1 deferrable initially deferred)
 partition by range(f1);
 
 create table tbl2_p1 partition of tbl2 for values from (minvalue) to (maxvalue);
@@ -3898,14 +3898,14 @@ alter table fkpart8.tbl2
 
 commit;
 
-drop SCHEMA fkpart8 cascade;
+drop schema fkpart8 cascade;
 
 create schema "fkpart9";
 
-create table pk (a INT primary key)
+create table pk (a int primary key)
 partition by range(a);
 
-create table fk (fk_a INT references pk (a) on DELETE cascade);
+create table fk (fk_a int references pk (a) on DELETE cascade);
 
 create table pk1
 partition of pk
@@ -3924,27 +3924,27 @@ select * from fkpart9.pk;
 
 select * from fkpart9.fk;
 
-drop SCHEMA fkpart9 cascade;
+drop schema fkpart9 cascade;
 
 create schema "fkpart10";
 
-create table tbl1 (f1 INT primary key)
+create table tbl1 (f1 int primary key)
 partition by range(f1);
 
 create table tbl1_p1 partition of tbl1 for values from (minvalue) to (1);
 
 create table tbl1_p2 partition of tbl1 for values from (1) to (maxvalue);
 
-create table tbl2 (f1 INT references tbl1 deferrable initially deferred);
+create table tbl2 (f1 int references tbl1 deferrable initially deferred);
 
-create table tbl3 (f1 INT primary key)
+create table tbl3 (f1 int primary key)
 partition by range(f1);
 
 create table tbl3_p1 partition of tbl3 for values from (minvalue) to (1);
 
 create table tbl3_p2 partition of tbl3 for values from (1) to (maxvalue);
 
-create table tbl4 (f1 INT references tbl3 deferrable initially deferred);
+create table tbl4 (f1 int references tbl3 deferrable initially deferred);
 
 insert into fkpart10.tbl1 values (0), (1);
 
@@ -3998,7 +3998,7 @@ insert into fkpart10.tbl3 values (-2), (-1);
 
 commit;
 
-create table fkpart10.tbl5 (f1 INT references fkpart10.tbl3);
+create table fkpart10.tbl5 (f1 int references fkpart10.tbl3);
 
 insert into fkpart10.tbl5 values (-2), (-1);
 
@@ -4018,18 +4018,18 @@ update fkpart10.tbl3 set f1 = f1 * -3;
 
 commit;
 
-drop SCHEMA fkpart10 cascade;
+drop schema fkpart10 cascade;
 
 create schema "fkpart11";
 
 create table pk (
-  a INT primary key,
-  b TEXT
+  a int primary key,
+  b text
 )
 partition by LIST(a);
 
 create table fk (
-  a INT,
+  a int,
   constraint "fkey"
   foreign key
   (a)
@@ -4039,7 +4039,7 @@ create table fk (
 );
 
 create table fk_parted (
-  a INT primary key,
+  a int primary key,
   constraint "fkey"
   foreign key
   (a)
@@ -4050,7 +4050,7 @@ create table fk_parted (
 partition by LIST(a);
 
 create table fk_another (
-  a INT,
+  a int,
   constraint "fkey"
   foreign key
   (a)
@@ -4072,25 +4072,25 @@ create table fk2 partition of fk_parted for values in (3);
 create table fk3 partition of fk_parted for values in (4);
 
 create table fkpart11.pk11 (
-  b TEXT,
-  a INT not null
+  b text,
+  a int not null
 );
 
 alter table fkpart11.pk1
-  ATTACH partition
+  attach partition
   fkpart11.pk11 for values in (1);
 
 create table fkpart11.pk12 (
-  b TEXT,
-  c INT,
-  a INT not null
+  b text,
+  c int,
+  a int not null
 );
 
 alter table fkpart11.pk12
   drop column c;
 
 alter table fkpart11.pk1
-  ATTACH partition
+  attach partition
   fkpart11.pk12 for values in (2);
 
 insert into fkpart11.pk values (1, 'xxx'), (3, 'yyy');
@@ -4101,13 +4101,13 @@ insert into fkpart11.fk_parted values (1), (3);
 
 insert into fkpart11.fk_another values (1), (3);
 
-update fkpart11.pk set a = a + 1 returning cast(tableoid as REGCLASS), *;
+update fkpart11.pk set a = a + 1 returning cast(tableoid as regclass), *;
 
-select cast(tableoid as REGCLASS), * from fkpart11.fk;
+select cast(tableoid as regclass), * from fkpart11.fk;
 
-select cast(tableoid as REGCLASS), * from fkpart11.fk_parted;
+select cast(tableoid as regclass), * from fkpart11.fk_parted;
 
-select cast(tableoid as REGCLASS), * from fkpart11.fk_another;
+select cast(tableoid as regclass), * from fkpart11.fk_another;
 
 alter table fkpart11.fk
   drop constraint fkey;
@@ -4126,13 +4126,13 @@ update fkpart11.pk set a = a - 1;
 
 update fkpart11.pk1 set a = a - 1;
 
-select cast(tableoid as REGCLASS), * from fkpart11.pk;
+select cast(tableoid as regclass), * from fkpart11.pk;
 
-select cast(tableoid as REGCLASS), * from fkpart11.fk;
+select cast(tableoid as regclass), * from fkpart11.fk;
 
-select cast(tableoid as REGCLASS), * from fkpart11.fk_parted;
+select cast(tableoid as regclass), * from fkpart11.fk_parted;
 
-select cast(tableoid as REGCLASS), * from fkpart11.fk_another;
+select cast(tableoid as regclass), * from fkpart11.fk_another;
 
 alter table fkpart11.fk
   drop constraint fkey;
@@ -4147,9 +4147,9 @@ alter table fkpart11.fk
 
 update fkpart11.pk set a = a + 1 where a = 1;
 
-select cast(tableoid as REGCLASS), * from fkpart11.fk;
+select cast(tableoid as regclass), * from fkpart11.fk;
 
-drop TABLE fkpart11.fk;
+drop table fkpart11.fk;
 
 create function fkpart11.print_row()
 returns trigger
@@ -4161,59 +4161,59 @@ as $function$
   END;
 $function$;
 
-create TRIGGER trig_upd_pk
+create trigger trig_upd_pk
 after update
 on fkpart11.pk
-for EACH ROW
-EXECUTE FUNCTION fkpart11.print_row();
+for each row
+execute function fkpart11.print_row();
 
-create TRIGGER trig_del_pk
+create trigger trig_del_pk
 after delete
 on fkpart11.pk
-for EACH ROW
-EXECUTE FUNCTION fkpart11.print_row();
+for each row
+execute function fkpart11.print_row();
 
-create TRIGGER trig_ins_pk
+create trigger trig_ins_pk
 after insert
 on fkpart11.pk
-for EACH ROW
-EXECUTE FUNCTION fkpart11.print_row();
+for each row
+execute function fkpart11.print_row();
 
-create CONSTRAINT TRIGGER trig_upd_fk_parted
+create constraint trigger trig_upd_fk_parted
 after update
 on fkpart11.fk_parted
-DEFERRABLE
-INITIALLY DEFERRED
-for EACH ROW
-EXECUTE FUNCTION fkpart11.print_row();
+deferrable
+initially deferred
+for each row
+execute function fkpart11.print_row();
 
-create CONSTRAINT TRIGGER trig_del_fk_parted
+create constraint trigger trig_del_fk_parted
 after delete
 on fkpart11.fk_parted
-DEFERRABLE
-INITIALLY DEFERRED
-for EACH ROW
-EXECUTE FUNCTION fkpart11.print_row();
+deferrable
+initially deferred
+for each row
+execute function fkpart11.print_row();
 
-create CONSTRAINT TRIGGER trig_ins_fk_parted
+create constraint trigger trig_ins_fk_parted
 after insert
 on fkpart11.fk_parted
-DEFERRABLE
-INITIALLY DEFERRED
-for EACH ROW
-EXECUTE FUNCTION fkpart11.print_row();
+deferrable
+initially deferred
+for each row
+execute function fkpart11.print_row();
 
 update fkpart11.pk set a = 3 where a = 4;
 
 update fkpart11.pk set a = 1 where a = 2;
 
-drop SCHEMA fkpart11 cascade;
+drop schema fkpart11 cascade;
 
 create schema "fkpart12";
 
 create table fk_p (
-  id INT,
-  jd INT,
+  id int,
+  jd int,
   primary key (id, jd)
 )
 partition by LIST(id);
@@ -4223,10 +4223,10 @@ create table fk_p_1 partition of fk_p for values in (1) partition by LIST(jd);
 create table fk_p_1_1 partition of fk_p_1 for values in (1);
 
 create table fk_p_1_2 (
-  x INT,
-  y INT,
-  jd INT not null,
-  id INT not null
+  x int,
+  y int,
+  jd int not null,
+  id int not null
 );
 
 create table fk_p_2 partition of fk_p for values in (2) partition by LIST(jd);
@@ -4236,25 +4236,25 @@ create table fk_p_2_1 partition of fk_p_2 for values in (1);
 create table fk_p_2_2 partition of fk_p_2 for values in (2);
 
 create table fk_r_1 (
-  p_jd INT not null,
-  x INT,
-  id INT primary key,
-  p_id INT not null
+  p_jd int not null,
+  x int,
+  id int primary key,
+  p_id int not null
 );
 
 create table fk_r_2 (
-  id INT primary key,
-  p_id INT not null,
-  p_jd INT not null
+  id int primary key,
+  p_id int not null,
+  p_jd int not null
 )
 partition by LIST(id);
 
 create table fk_r_2_1 partition of fk_r_2 for values in (2, 1);
 
 create table fk_r (
-  id INT primary key,
-  p_id INT not null,
-  p_jd INT not null,
+  id int primary key,
+  p_id int not null,
+  p_jd int not null,
   foreign key
   (p_id,
   p_jd)
@@ -4270,7 +4270,7 @@ alter table fk_p_1_2
   drop column y;
 
 alter table fk_p_1
-  ATTACH partition
+  attach partition
   fk_p_1_2 for values in (2);
 
 alter table fk_r_1
@@ -4279,11 +4279,11 @@ alter table fk_r_1
 insert into fk_p values (1, 1);
 
 alter table fk_r
-  ATTACH partition
+  attach partition
   fk_r_1 for values in (1);
 
 alter table fk_r
-  ATTACH partition
+  attach partition
   fk_r_2 for values in (2);
 
 insert into fk_r values (1, 1, 1);
@@ -4291,11 +4291,11 @@ insert into fk_r values (1, 1, 1);
 insert into fk_r values (2, 2, 1);
 
 alter table fk_r
-  DETACH partition
+  detach partition
   fk_r_1;
 
 alter table fk_r
-  DETACH partition
+  detach partition
   fk_r_2;
 
 insert into fk_r_1 (id, p_id, p_jd) values (2, 1, 2);
@@ -4303,11 +4303,11 @@ insert into fk_r_1 (id, p_id, p_jd) values (2, 1, 2);
 delete from fk_p;
 
 alter table fk_r
-  ATTACH partition
+  attach partition
   fk_r_1 for values in (1);
 
 alter table fk_r
-  ATTACH partition
+  attach partition
   fk_r_2 for values in (2);
 
 delete from fk_p;
@@ -4323,7 +4323,7 @@ alter table fk_r_2
 
 set client_min_messages = warning;
 
-drop SCHEMA fkpart12 cascade;
+drop schema fkpart12 cascade;
 
 reset client_min_messages;
 

@@ -3,23 +3,23 @@ source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/txid.sql
 snapshot_kind: text
 ---
-select cast('12:13:' as TXID_SNAPSHOT);
+select cast('12:13:' as txid_snapshot);
 
-select cast('12:18:14,16' as TXID_SNAPSHOT);
+select cast('12:18:14,16' as txid_snapshot);
 
-select cast('12:16:14,14' as TXID_SNAPSHOT);
+select cast('12:16:14,14' as txid_snapshot);
 
-select cast('31:12:' as TXID_SNAPSHOT);
+select cast('31:12:' as txid_snapshot);
 
-select cast('0:1:' as TXID_SNAPSHOT);
+select cast('0:1:' as txid_snapshot);
 
-select cast('12:13:0' as TXID_SNAPSHOT);
+select cast('12:13:0' as txid_snapshot);
 
-select cast('12:16:14,13' as TXID_SNAPSHOT);
+select cast('12:16:14,13' as txid_snapshot);
 
 create temporary table snapshot_test (
-  nr INT,
-  snap TXID_SNAPSHOT
+  nr int,
+  snap txid_snapshot
 );
 
 insert into snapshot_test values (1, '12:13:');
@@ -69,7 +69,7 @@ select txid_visible_in_snapshot(txid_current(), txid_current_snapshot());
 
 select
   cast('1000100010001000:1000100010001100:1000100010001012,1000100010001013'
-  as TXID_SNAPSHOT);
+  as txid_snapshot);
 
 select
   txid_visible_in_snapshot(
@@ -83,9 +83,9 @@ select
     '1000100010001000:1000100010001100:1000100010001012,1000100010001013'
   );
 
-select cast('1:9223372036854775807:3' as TXID_SNAPSHOT);
+select cast('1:9223372036854775807:3' as txid_snapshot);
 
-select cast('1:9223372036854775808:3' as TXID_SNAPSHOT);
+select cast('1:9223372036854775808:3' as txid_snapshot);
 
 begin;
 
@@ -94,7 +94,7 @@ select txid_current_if_assigned() is null;
 select txid_current();
 
 select
-  txid_current_if_assigned() is not distinct from cast('txid_current' as BIGINT);
+  txid_current_if_assigned() is not distinct from cast('txid_current' as bigint);
 
 commit;
 
@@ -130,8 +130,8 @@ commit;
 
 begin;
 
-create function test_future_xid_status(BIGINT)
-returns VOID
+create function test_future_xid_status(bigint)
+returns void
 language plpgsql
 as $function$
 BEGIN

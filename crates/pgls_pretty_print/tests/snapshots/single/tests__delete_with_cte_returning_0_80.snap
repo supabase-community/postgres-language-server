@@ -12,7 +12,7 @@ as (
     sessions
   where
     last_seen <
-    NOW() - cast('30 days' as INTERVAL)
+    NOW() - cast('30 days' as interval)
 )
 delete from sessions
 using stale

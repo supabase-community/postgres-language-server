@@ -6,8 +6,8 @@ snapshot_kind: text
 set extra_float_digits = 0;
 
 create table aggtest (
-  a SMALLINT,
-  b REAL
+  a smallint,
+  b real
 );
 
 copy aggtest from 'filename';
@@ -26,7 +26,7 @@ select any_value(v) from (values (null), (1), (2)) as v (v);
 
 select any_value(v) from (values (array['hello', 'world'])) as v (v);
 
-select cast(AVG(b) as NUMERIC(10, 3)) as avg_107_943 from aggtest;
+select cast(AVG(b) as numeric(10, 3)) as avg_107_943 from aggtest;
 
 select AVG(gpa) as avg_3_4 from only student;
 
@@ -54,77 +54,77 @@ select var_pop(b) from aggtest;
 
 select var_samp(b) from aggtest;
 
-select stddev_pop(cast(b as NUMERIC)) from aggtest;
+select stddev_pop(cast(b as numeric)) from aggtest;
 
-select stddev_samp(cast(b as NUMERIC)) from aggtest;
+select stddev_samp(cast(b as numeric)) from aggtest;
 
-select var_pop(cast(b as NUMERIC)) from aggtest;
+select var_pop(cast(b as numeric)) from aggtest;
 
-select var_samp(cast(b as NUMERIC)) from aggtest;
+select var_samp(cast(b as numeric)) from aggtest;
 
 select
-  var_pop(cast(1.0 as DOUBLE PRECISION)),
-  var_samp(cast(2.0 as DOUBLE PRECISION));
+  var_pop(cast(1.0 as double precision)),
+  var_samp(cast(2.0 as double precision));
 
 select
   stddev_pop(
-    cast(3.0 as DOUBLE PRECISION)
+    cast(3.0 as double precision)
   ),
   stddev_samp(
-    cast(4.0 as DOUBLE PRECISION)
+    cast(4.0 as double precision)
   );
 
 select
-  var_pop(cast('inf' as DOUBLE PRECISION)),
+  var_pop(cast('inf' as double precision)),
   var_samp(
-    cast('inf' as DOUBLE PRECISION)
+    cast('inf' as double precision)
   );
 
 select
   stddev_pop(
-    cast('inf' as DOUBLE PRECISION)
+    cast('inf' as double precision)
   ),
   stddev_samp(
-    cast('inf' as DOUBLE PRECISION)
+    cast('inf' as double precision)
   );
 
 select
-  var_pop(cast('nan' as DOUBLE PRECISION)),
+  var_pop(cast('nan' as double precision)),
   var_samp(
-    cast('nan' as DOUBLE PRECISION)
+    cast('nan' as double precision)
   );
 
 select
   stddev_pop(
-    cast('nan' as DOUBLE PRECISION)
+    cast('nan' as double precision)
   ),
   stddev_samp(
-    cast('nan' as DOUBLE PRECISION)
+    cast('nan' as double precision)
   );
 
-select var_pop(cast(1.0 as REAL)), var_samp(cast(2.0 as REAL));
+select var_pop(cast(1.0 as real)), var_samp(cast(2.0 as real));
 
-select stddev_pop(cast(3.0 as REAL)), stddev_samp(cast(4.0 as REAL));
+select stddev_pop(cast(3.0 as real)), stddev_samp(cast(4.0 as real));
 
-select var_pop(cast('inf' as REAL)), var_samp(cast('inf' as REAL));
+select var_pop(cast('inf' as real)), var_samp(cast('inf' as real));
 
-select stddev_pop(cast('inf' as REAL)), stddev_samp(cast('inf' as REAL));
+select stddev_pop(cast('inf' as real)), stddev_samp(cast('inf' as real));
 
-select var_pop(cast('nan' as REAL)), var_samp(cast('nan' as REAL));
+select var_pop(cast('nan' as real)), var_samp(cast('nan' as real));
 
-select stddev_pop(cast('nan' as REAL)), stddev_samp(cast('nan' as REAL));
+select stddev_pop(cast('nan' as real)), stddev_samp(cast('nan' as real));
 
-select var_pop(cast(1.0 as NUMERIC)), var_samp(cast(2.0 as NUMERIC));
+select var_pop(cast(1.0 as numeric)), var_samp(cast(2.0 as numeric));
 
-select stddev_pop(cast(3.0 as NUMERIC)), stddev_samp(cast(4.0 as NUMERIC));
+select stddev_pop(cast(3.0 as numeric)), stddev_samp(cast(4.0 as numeric));
 
-select var_pop(cast('inf' as NUMERIC)), var_samp(cast('inf' as NUMERIC));
+select var_pop(cast('inf' as numeric)), var_samp(cast('inf' as numeric));
 
-select stddev_pop(cast('inf' as NUMERIC)), stddev_samp(cast('inf' as NUMERIC));
+select stddev_pop(cast('inf' as numeric)), stddev_samp(cast('inf' as numeric));
 
-select var_pop(cast('nan' as NUMERIC)), var_samp(cast('nan' as NUMERIC));
+select var_pop(cast('nan' as numeric)), var_samp(cast('nan' as numeric));
 
-select stddev_pop(cast('nan' as NUMERIC)), stddev_samp(cast('nan' as NUMERIC));
+select stddev_pop(cast('nan' as numeric)), stddev_samp(cast('nan' as numeric));
 
 select MAX(row(a, b)) from aggtest;
 
@@ -134,44 +134,44 @@ select MIN(row(a, b)) from aggtest;
 
 select MIN(row(b, a)) from aggtest;
 
-select SUM(cast(null as INT)) from generate_series(1, 3);
+select SUM(cast(null as int)) from generate_series(1, 3);
 
-select SUM(cast(null as BIGINT)) from generate_series(1, 3);
+select SUM(cast(null as bigint)) from generate_series(1, 3);
 
-select SUM(cast(null as NUMERIC)) from generate_series(1, 3);
+select SUM(cast(null as numeric)) from generate_series(1, 3);
 
-select SUM(cast(null as DOUBLE PRECISION)) from generate_series(1, 3);
+select SUM(cast(null as double precision)) from generate_series(1, 3);
 
-select AVG(cast(null as INT)) from generate_series(1, 3);
+select AVG(cast(null as int)) from generate_series(1, 3);
 
-select AVG(cast(null as BIGINT)) from generate_series(1, 3);
+select AVG(cast(null as bigint)) from generate_series(1, 3);
 
-select AVG(cast(null as NUMERIC)) from generate_series(1, 3);
+select AVG(cast(null as numeric)) from generate_series(1, 3);
 
-select AVG(cast(null as DOUBLE PRECISION)) from generate_series(1, 3);
+select AVG(cast(null as double precision)) from generate_series(1, 3);
 
-select SUM(cast('NaN' as NUMERIC)) from generate_series(1, 3);
+select SUM(cast('NaN' as numeric)) from generate_series(1, 3);
 
-select AVG(cast('NaN' as NUMERIC)) from generate_series(1, 3);
+select AVG(cast('NaN' as numeric)) from generate_series(1, 3);
 
 select
-  SUM(cast(x as DOUBLE PRECISION)),
-  AVG(cast(x as DOUBLE PRECISION)),
-  var_pop(cast(x as DOUBLE PRECISION))
+  SUM(cast(x as double precision)),
+  AVG(cast(x as double precision)),
+  var_pop(cast(x as double precision))
 from
   (values ('1'), ('infinity')) as v (x);
 
 select
-  SUM(cast(x as DOUBLE PRECISION)),
-  AVG(cast(x as DOUBLE PRECISION)),
-  var_pop(cast(x as DOUBLE PRECISION))
+  SUM(cast(x as double precision)),
+  AVG(cast(x as double precision)),
+  var_pop(cast(x as double precision))
 from
   (values ('infinity'), ('1')) as v (x);
 
 select
-  SUM(cast(x as DOUBLE PRECISION)),
-  AVG(cast(x as DOUBLE PRECISION)),
-  var_pop(cast(x as DOUBLE PRECISION))
+  SUM(cast(x as double precision)),
+  AVG(cast(x as double precision)),
+  var_pop(cast(x as double precision))
 from
   (
     values ('infinity'), ('infinity')
@@ -179,9 +179,9 @@ from
   as v (x);
 
 select
-  SUM(cast(x as DOUBLE PRECISION)),
-  AVG(cast(x as DOUBLE PRECISION)),
-  var_pop(cast(x as DOUBLE PRECISION))
+  SUM(cast(x as double precision)),
+  AVG(cast(x as double precision)),
+  var_pop(cast(x as double precision))
 from
   (
     values ('-infinity'), ('infinity')
@@ -189,9 +189,9 @@ from
   as v (x);
 
 select
-  SUM(cast(x as DOUBLE PRECISION)),
-  AVG(cast(x as DOUBLE PRECISION)),
-  var_pop(cast(x as DOUBLE PRECISION))
+  SUM(cast(x as double precision)),
+  AVG(cast(x as double precision)),
+  var_pop(cast(x as double precision))
 from
   (
     values ('-infinity'), ('-infinity')
@@ -199,23 +199,23 @@ from
   as v (x);
 
 select
-  SUM(cast(x as NUMERIC)),
-  AVG(cast(x as NUMERIC)),
-  var_pop(cast(x as NUMERIC))
+  SUM(cast(x as numeric)),
+  AVG(cast(x as numeric)),
+  var_pop(cast(x as numeric))
 from
   (values ('1'), ('infinity')) as v (x);
 
 select
-  SUM(cast(x as NUMERIC)),
-  AVG(cast(x as NUMERIC)),
-  var_pop(cast(x as NUMERIC))
+  SUM(cast(x as numeric)),
+  AVG(cast(x as numeric)),
+  var_pop(cast(x as numeric))
 from
   (values ('infinity'), ('1')) as v (x);
 
 select
-  SUM(cast(x as NUMERIC)),
-  AVG(cast(x as NUMERIC)),
-  var_pop(cast(x as NUMERIC))
+  SUM(cast(x as numeric)),
+  AVG(cast(x as numeric)),
+  var_pop(cast(x as numeric))
 from
   (
     values ('infinity'), ('infinity')
@@ -223,9 +223,9 @@ from
   as v (x);
 
 select
-  SUM(cast(x as NUMERIC)),
-  AVG(cast(x as NUMERIC)),
-  var_pop(cast(x as NUMERIC))
+  SUM(cast(x as numeric)),
+  AVG(cast(x as numeric)),
+  var_pop(cast(x as numeric))
 from
   (
     values ('-infinity'), ('infinity')
@@ -233,9 +233,9 @@ from
   as v (x);
 
 select
-  SUM(cast(x as NUMERIC)),
-  AVG(cast(x as NUMERIC)),
-  var_pop(cast(x as NUMERIC))
+  SUM(cast(x as numeric)),
+  AVG(cast(x as numeric)),
+  var_pop(cast(x as numeric))
 from
   (
     values ('-infinity'), ('-infinity')
@@ -243,8 +243,8 @@ from
   as v (x);
 
 select
-  AVG(cast(x as DOUBLE PRECISION)),
-  var_pop(cast(x as DOUBLE PRECISION))
+  AVG(cast(x as double precision)),
+  var_pop(cast(x as double precision))
 from
   (
     values
@@ -256,8 +256,8 @@ from
   as v (x);
 
 select
-  AVG(cast(x as DOUBLE PRECISION)),
-  var_pop(cast(x as DOUBLE PRECISION))
+  AVG(cast(x as double precision)),
+  var_pop(cast(x as double precision))
 from
   (
     values (7000000000005), (7000000000007)
@@ -284,37 +284,37 @@ select corr(b, a) from aggtest;
 
 select
   covar_pop(
-    cast(1 as DOUBLE PRECISION),
-    cast(2 as DOUBLE PRECISION)
+    cast(1 as double precision),
+    cast(2 as double precision)
   ),
   covar_samp(
-    cast(3 as DOUBLE PRECISION),
-    cast(4 as DOUBLE PRECISION)
+    cast(3 as double precision),
+    cast(4 as double precision)
   );
 
 select
   covar_pop(
-    cast(1 as DOUBLE PRECISION),
-    cast('inf' as DOUBLE PRECISION)
+    cast(1 as double precision),
+    cast('inf' as double precision)
   ),
   covar_samp(
-    cast(3 as DOUBLE PRECISION),
-    cast('inf' as DOUBLE PRECISION)
+    cast(3 as double precision),
+    cast('inf' as double precision)
   );
 
 select
   covar_pop(
-    cast(1 as DOUBLE PRECISION),
-    cast('nan' as DOUBLE PRECISION)
+    cast(1 as double precision),
+    cast('nan' as double precision)
   ),
   covar_samp(
-    cast(3 as DOUBLE PRECISION),
-    cast('nan' as DOUBLE PRECISION)
+    cast(3 as double precision),
+    cast('nan' as double precision)
   );
 
 create table regr_test (
-  x DOUBLE PRECISION,
-  y DOUBLE PRECISION
+  x double precision,
+  y double precision
 );
 
 insert into regr_test
@@ -347,12 +347,12 @@ select
 from
   regr_test;
 
-select float8_accum(cast('{4,140,2900}' as DOUBLE PRECISION[]), 100);
+select float8_accum(cast('{4,140,2900}' as double precision[]), 100);
 
 select
   float8_regr_accum(
     cast('{4,140,2900,1290,83075,15050}'
-    as DOUBLE PRECISION[]),
+    as double precision[]),
     200,
     100
   );
@@ -383,49 +383,49 @@ where
 
 select
   float8_combine(
-    cast('{3,60,200}' as DOUBLE PRECISION[]),
-    cast('{0,0,0}' as DOUBLE PRECISION[])
+    cast('{3,60,200}' as double precision[]),
+    cast('{0,0,0}' as double precision[])
   );
 
 select
   float8_combine(
-    cast('{0,0,0}' as DOUBLE PRECISION[]),
+    cast('{0,0,0}' as double precision[]),
     cast('{2,180,200}'
-    as DOUBLE PRECISION[])
+    as double precision[])
   );
 
 select
   float8_combine(
-    cast('{3,60,200}' as DOUBLE PRECISION[]),
+    cast('{3,60,200}' as double precision[]),
     cast('{2,180,200}'
-    as DOUBLE PRECISION[])
+    as double precision[])
   );
 
 select
   float8_regr_combine(
     cast('{3,60,200,750,20000,2000}'
-    as DOUBLE PRECISION[]),
+    as double precision[]),
     cast('{0,0,0,0,0,0}'
-    as DOUBLE PRECISION[])
+    as double precision[])
   );
 
 select
   float8_regr_combine(
     cast('{0,0,0,0,0,0}'
-    as DOUBLE PRECISION[]),
+    as double precision[]),
     cast('{2,180,200,740,57800,-3400}'
-    as DOUBLE PRECISION[])
+    as double precision[])
   );
 
 select
   float8_regr_combine(
     cast('{3,60,200,750,20000,2000}'
-    as DOUBLE PRECISION[]),
+    as double precision[]),
     cast('{2,180,200,740,57800,-3400}'
-    as DOUBLE PRECISION[])
+    as double precision[])
   );
 
-drop TABLE regr_test;
+drop table regr_test;
 
 select COUNT(four) as cnt_1000 from onek;
 
@@ -565,12 +565,12 @@ from
   generate_series(1, 3) as x;
 
 create temporary table bitwise_test (
-  i2 SMALLINT,
-  i4 INT,
-  i8 BIGINT,
-  i INT,
-  x SMALLINT,
-  y BIT(4)
+  i2 smallint,
+  i4 int,
+  i8 bigint,
+  i int,
+  x smallint,
+  y bit(4)
 );
 
 select
@@ -635,10 +635,10 @@ select
   not boolor_statefunc(false, false) as t;
 
 create temporary table bool_test (
-  b1 BOOLEAN,
-  b2 BOOLEAN,
-  b3 BOOLEAN,
-  b4 BOOLEAN
+  b1 boolean,
+  b2 boolean,
+  b3 boolean,
+  b4 boolean
 );
 
 select bool_and(b1) as n, bool_or(b3) as n from bool_test;
@@ -759,7 +759,7 @@ select MAX(100) from tenk1;
 
 select MAX(100) from tenk1;
 
-create table minmaxtest (f1 INT);
+create table minmaxtest (f1 int);
 
 create table minmaxtest1 ()
 inherits (minmaxtest);
@@ -801,7 +801,7 @@ select distinct MIN(f1), MAX(f1) from minmaxtest;
 
 select distinct MIN(f1), MAX(f1) from minmaxtest;
 
-drop TABLE minmaxtest cascade;
+drop table minmaxtest cascade;
 
 begin;
 
@@ -854,24 +854,24 @@ from
   tenk1 as a2 (col2);
 
 create temporary table t1 (
-  a INT,
-  b INT,
-  c INT,
-  d INT,
+  a int,
+  b int,
+  c int,
+  d int,
   primary key (a, b)
 );
 
 create temporary table t2 (
-  x INT,
-  y INT,
-  z INT,
+  x int,
+  y int,
+  z int,
   primary key (x, y)
 );
 
 create temporary table t3 (
-  a INT,
-  b INT,
-  c INT,
+  a int,
+  b int,
+  c int,
   primary key (a, b) deferrable
 );
 
@@ -920,10 +920,10 @@ select * from t1 group by a, b, c, d;
 select * from only t1 group by a, b, c, d;
 
 create temporary table p_t1 (
-  a INT,
-  b INT,
-  c INT,
-  d INT,
+  a int,
+  b int,
+  c int,
+  d int,
   primary key (a, b)
 )
 partition by LIST(a);
@@ -947,7 +947,7 @@ select x, y, z from t2 group by x, y, z;
 
 select x, y, z from t2 group by z, x, y;
 
-drop INDEX t2_z_uidx;
+drop index t2_z_uidx;
 
 create index "t2_z_uidx"
 on t2
@@ -960,7 +960,7 @@ where
 
 select y, z from t2 group by y, z;
 
-drop INDEX t2_z_uidx;
+drop index t2_z_uidx;
 
 alter table t2
   alter column z drop not null;
@@ -969,22 +969,22 @@ create unique index "t2_z_uidx" on t2 using btree (z) nulls not distinct;
 
 select y, z from t2 group by y, z;
 
-drop TABLE t1 cascade;
+drop table t1 cascade;
 
-drop TABLE t2;
+drop table t2;
 
-drop TABLE t3;
+drop table t3;
 
-drop TABLE p_t1;
+drop table p_t1;
 
 create temporary table t1 (
-  f1 INT,
-  f2 INT
+  f1 int,
+  f2 int
 );
 
 create temporary table t2 (
-  f1 BIGINT,
-  f2 OID
+  f1 bigint,
+  f2 oid
 );
 
 select f1 from t1 left outer join t2 using ("f1") group by f1;
@@ -1015,7 +1015,7 @@ from
   on x0 = 0
 group by f2;
 
-drop TABLE t1, t2;
+drop table t1, t2;
 
 select
   SUM(two order by two),
@@ -1103,7 +1103,7 @@ from
 
 select
   string_agg(
-    distinct cast(f1 as VARCHAR(2)),
+    distinct cast(f1 as varchar(2)),
     ','
   )
   filter (where
@@ -1350,7 +1350,7 @@ from
 
 select * from agg_view1;
 
-select pg_get_viewdef(cast('agg_view1' as REGCLASS));
+select pg_get_viewdef(cast('agg_view1' as regclass));
 
 create or replace view agg_view1
 as select
@@ -1368,7 +1368,7 @@ from
 
 select * from agg_view1;
 
-select pg_get_viewdef(cast('agg_view1' as REGCLASS));
+select pg_get_viewdef(cast('agg_view1' as regclass));
 
 create or replace view agg_view1
 as select
@@ -1386,7 +1386,7 @@ from
 
 select * from agg_view1;
 
-select pg_get_viewdef(cast('agg_view1' as REGCLASS));
+select pg_get_viewdef(cast('agg_view1' as regclass));
 
 create or replace view agg_view1
 as select
@@ -1403,7 +1403,7 @@ from
 
 select * from agg_view1;
 
-select pg_get_viewdef(cast('agg_view1' as REGCLASS));
+select pg_get_viewdef(cast('agg_view1' as regclass));
 
 create or replace view agg_view1
 as select
@@ -1420,7 +1420,7 @@ from
 
 select * from agg_view1;
 
-select pg_get_viewdef(cast('agg_view1' as REGCLASS));
+select pg_get_viewdef(cast('agg_view1' as regclass));
 
 create or replace view agg_view1
 as select
@@ -1437,7 +1437,7 @@ from
 
 select * from agg_view1;
 
-select pg_get_viewdef(cast('agg_view1' as REGCLASS));
+select pg_get_viewdef(cast('agg_view1' as regclass));
 
 create or replace view agg_view1
 as select
@@ -1461,9 +1461,9 @@ from
 
 select * from agg_view1;
 
-select pg_get_viewdef(cast('agg_view1' as REGCLASS));
+select pg_get_viewdef(cast('agg_view1' as regclass));
 
-drop VIEW agg_view1;
+drop view agg_view1;
 
 select
   aggfns(distinct a, b, c order by i)
@@ -1531,19 +1531,19 @@ select string_agg(a, ',') from (values (null), (null)) as g (a);
 
 select string_agg(distinct f1, ',' order by f1) from varchar_tbl;
 
-select string_agg(distinct cast(f1 as TEXT), ',' order by f1) from varchar_tbl;
+select string_agg(distinct cast(f1 as text), ',' order by f1) from varchar_tbl;
 
-select string_agg(distinct f1, ',' order by cast(f1 as TEXT)) from varchar_tbl;
+select string_agg(distinct f1, ',' order by cast(f1 as text)) from varchar_tbl;
 
 select
   string_agg(
-    distinct cast(f1 as TEXT),
-    ',' order by cast(f1 as TEXT)
+    distinct cast(f1 as text),
+    ',' order by cast(f1 as text)
   )
 from
   varchar_tbl;
 
-create table bytea_test_table (v BYTEA);
+create table bytea_test_table (v bytea);
 
 select string_agg(v, '') from bytea_test_table;
 
@@ -1571,11 +1571,11 @@ select MIN(v) from bytea_test_table;
 
 select MAX(v) from bytea_test_table;
 
-drop TABLE bytea_test_table;
+drop table bytea_test_table;
 
 create table pagg_test (
-  x INT,
-  y INT
+  x int,
+  y int
 )
 with (autovacuum_enabled = off);
 
@@ -1618,11 +1618,11 @@ from
     select
       y,
       cast(unnest(regexp_split_to_array(a1.t, ','))
-      as INT)
+      as int)
       as t,
       unnest(
         regexp_split_to_array(
-          cast(a1.b as TEXT),
+          cast(a1.b as text),
           ','
         )
       )
@@ -1633,9 +1633,9 @@ from
       (
         select
           y,
-          string_agg(cast(x as TEXT), ',') as t,
+          string_agg(cast(x as text), ',') as t,
           string_agg(
-            cast(cast(x as TEXT) as BYTEA),
+            cast(cast(x as text) as bytea),
             ','
           )
           as b,
@@ -1676,9 +1676,9 @@ reset parallel_tuple_cost;
 
 reset parallel_setup_cost;
 
-drop VIEW v_pagg_test;
+drop view v_pagg_test;
 
-drop TABLE pagg_test;
+drop table pagg_test;
 
 select MIN(unique1) filter (where unique1 > 100) from tenk1;
 
@@ -1690,7 +1690,7 @@ select
     distinct four
   )
   filter (where
-    cast(four as TEXT) ~ '123')
+    cast(four as text) ~ '123')
 from
   onek as a
 group by ten;
@@ -1855,12 +1855,12 @@ select
   percentile_cont(
     p
   )
-  within group (order by cast(x as DOUBLE PRECISION))
+  within group (order by cast(x as double precision))
 from
   generate_series(1, 5) as x,
   (
     values
-      (cast(0 as DOUBLE PRECISION)),
+      (cast(0 as double precision)),
       (0.1),
       (0.25),
       (0.4),
@@ -1877,12 +1877,12 @@ order by p;
 select
   p,
   SUM()
-  within group (order by cast(x as DOUBLE PRECISION))
+  within group (order by cast(x as double precision))
 from
   generate_series(1, 5) as x,
   (
     values
-      (cast(0 as DOUBLE PRECISION)),
+      (cast(0 as double precision)),
       (0.1),
       (0.25),
       (0.4),
@@ -1903,7 +1903,7 @@ from
   generate_series(1, 5) as x,
   (
     values
-      (cast(0 as DOUBLE PRECISION)),
+      (cast(0 as double precision)),
       (0.1),
       (0.25),
       (0.4),
@@ -2021,7 +2021,7 @@ select
 from
   unnest(
     cast('{fred,jim,fred,jack,jill,fred,jill,jim,jim,sheila,jim,sheila}'
-    as TEXT[])
+    as text[])
   )
   as u (x);
 
@@ -2074,7 +2074,7 @@ select RANK('fred') within group (order by x) from generate_series(1, 5) as x;
 
 select
   RANK(
-    cast('adam' as TEXT) collate "C"
+    cast('adam' as text) collate "C"
   )
   within group (order by x collate "POSIX")
 from
@@ -2082,7 +2082,7 @@ from
 
 select
   RANK(
-    cast('adam' as VARCHAR)
+    cast('adam' as varchar)
   )
   within group (order by x)
 from
@@ -2132,7 +2132,7 @@ select pg_get_viewdef('aggordview1');
 
 select * from aggordview1 order by ten;
 
-drop VIEW aggordview1;
+drop view aggordview1;
 
 select least_agg(q1, q2) from int8_tbl;
 
@@ -2148,9 +2148,9 @@ select pg_typeof(cleast_agg(variadic array[4.5, f1])) from int4_tbl;
 
 begin;
 
-create type avg_state as (total BIGINT, count BIGINT);
+create type avg_state as (total bigint, count bigint);
 
-create or replace function avg_transfn(state avg_state, n INT)
+create or replace function avg_transfn(state avg_state, n int)
 returns avg_state
 as $function$
 declare new_state avg_state;
@@ -2175,7 +2175,7 @@ $function$
 language plpgsql;
 
 create function avg_finalfn(state avg_state)
-returns INT
+returns int
 as $function$
 begin
 	if state is null then
@@ -2188,7 +2188,7 @@ $function$
 language plpgsql;
 
 create function sum_finalfn(state avg_state)
-returns INT
+returns int
 as $function$
 begin
 	if state is null then
@@ -2201,7 +2201,7 @@ $function$
 language plpgsql;
 
 create aggregate my_avg (
-  INT
+  int
 ) (
   stype = avg_state,
   sfunc = avg_transfn,
@@ -2209,7 +2209,7 @@ create aggregate my_avg (
 );
 
 create aggregate my_sum (
-  INT
+  int
 ) (
   stype = avg_state,
   sfunc = avg_transfn,
@@ -2248,7 +2248,7 @@ select
 from
   (
     values
-      (cast(1 as DOUBLE PRECISION)),
+      (cast(1 as double precision)),
       (3),
       (5),
       (7)
@@ -2267,7 +2267,7 @@ select
 from
   (
     values
-      (cast(1 as DOUBLE PRECISION)),
+      (cast(1 as double precision)),
       (3),
       (5),
       (7)
@@ -2281,7 +2281,7 @@ from
   (values (1), (3), (5), (7)) as t (a);
 
 create aggregate my_sum_init (
-  INT
+  int
 ) (
   stype = avg_state,
   sfunc = avg_transfn,
@@ -2290,7 +2290,7 @@ create aggregate my_sum_init (
 );
 
 create aggregate my_avg_init (
-  INT
+  int
 ) (
   stype = avg_state,
   sfunc = avg_transfn,
@@ -2299,7 +2299,7 @@ create aggregate my_avg_init (
 );
 
 create aggregate my_avg_init2 (
-  INT
+  int
 ) (
   stype = avg_state,
   sfunc = avg_transfn,
@@ -2315,8 +2315,8 @@ rollback;
 
 begin;
 
-create or replace function sum_transfn(state INT, n INT)
-returns INT
+create or replace function sum_transfn(state int, n int)
+returns int
 as $function$
 declare new_state int4;
 begin
@@ -2337,8 +2337,8 @@ end
 $function$
 language plpgsql;
 
-create function halfsum_finalfn(state INT)
-returns INT
+create function halfsum_finalfn(state int)
+returns int
 as $function$
 begin
 	if state is null then
@@ -2350,12 +2350,12 @@ end
 $function$
 language plpgsql;
 
-create aggregate my_sum (INT) (stype = INT, sfunc = sum_transfn);
+create aggregate my_sum (int) (stype = int, sfunc = sum_transfn);
 
 create aggregate my_half_sum (
-  INT
+  int
 ) (
-  stype = INT,
+  stype = int,
   sfunc = sum_transfn,
   finalfunc = halfsum_finalfn
 );
@@ -2370,9 +2370,9 @@ rollback;
 
 begin;
 
-create function balkifnull(BIGINT, INT)
-returns BIGINT
-STRICT
+create function balkifnull(bigint, int)
+returns bigint
+strict
 language plpgsql
 as $function$
 BEGIN
@@ -2383,10 +2383,10 @@ BEGIN
 END$function$;
 
 create aggregate balk (
-  INT
+  int
 ) (
   sfunc = balkifnull(int8, int4),
-  stype = BIGINT,
+  stype = bigint,
   parallel = safe,
   initcond = '0'
 );
@@ -2523,11 +2523,11 @@ reset enable_nestloop;
 
 reset enable_hashjoin;
 
-drop TABLE group_agg_pk;
+drop table group_agg_pk;
 
 create table agg_sort_order (
-  c1 INT primary key,
-  c2 INT
+  c1 int primary key,
+  c2 int
 );
 
 create unique index "agg_sort_order_c2_idx" on agg_sort_order using btree (c2);
@@ -2546,9 +2546,9 @@ where
 group by c1
 order by 2;
 
-drop TABLE agg_sort_order cascade;
+drop table agg_sort_order cascade;
 
-drop TABLE btg;
+drop table btg;
 
 reset enable_hashagg;
 
@@ -2556,10 +2556,10 @@ reset enable_seqscan;
 
 begin;
 
-create function balkifnull(BIGINT, BIGINT)
-returns BIGINT
+create function balkifnull(bigint, bigint)
+returns bigint
 parallel SAFE
-STRICT
+strict
 language plpgsql
 as $function$
 BEGIN
@@ -2570,10 +2570,10 @@ BEGIN
 END$function$;
 
 create aggregate balk (
-  INT
+  int
 ) (
   sfunc = int4_sum(int8, int4),
-  stype = BIGINT,
+  stype = bigint,
   combinefunc = balkifnull(int8, int8),
   parallel = safe,
   initcond = '0'
@@ -2594,8 +2594,8 @@ rollback;
 
 begin;
 
-create function rwagg_sfunc(x ANYARRAY, y ANYARRAY)
-returns ANYARRAY
+create function rwagg_sfunc(x anyarray, y anyarray)
+returns anyarray
 language plpgsql
 immutable
 as $function$
@@ -2604,10 +2604,10 @@ BEGIN
 END;
 $function$;
 
-create function rwagg_finalfunc(x ANYARRAY)
-returns ANYARRAY
+create function rwagg_finalfunc(x anyarray)
+returns anyarray
 language plpgsql
-STRICT
+strict
 immutable
 as $function$
 DECLARE
@@ -2620,17 +2620,17 @@ END;
 $function$;
 
 create aggregate rwagg (
-  ANYARRAY
+  anyarray
 ) (
-  stype = ANYARRAY,
+  stype = anyarray,
   sfunc = rwagg_sfunc,
   finalfunc = rwagg_finalfunc
 );
 
-create function eatarray(x REAL[])
-returns REAL[]
+create function eatarray(x real[])
+returns real[]
 language plpgsql
-STRICT
+strict
 immutable
 as $function$
 BEGIN
@@ -2641,10 +2641,10 @@ $function$;
 
 select
   eatarray(
-    rwagg(array[cast(1.0 as REAL)])
+    rwagg(array[cast(1.0 as real)])
   ),
   eatarray(
-    rwagg(array[cast(1.0 as REAL)])
+    rwagg(array[cast(1.0 as real)])
   );
 
 rollback;
@@ -2664,11 +2664,11 @@ set parallel_leader_participation = off;
 set enable_indexonlyscan = off;
 
 select
-  variance(cast(unique1 as INT)),
-  SUM(cast(unique1 as BIGINT)),
+  variance(cast(unique1 as int)),
+  SUM(cast(unique1 as bigint)),
   regr_count(
-    cast(unique1 as DOUBLE PRECISION),
-    cast(unique1 as DOUBLE PRECISION)
+    cast(unique1 as double precision),
+    cast(unique1 as double precision)
   )
 from
   (
@@ -2683,11 +2683,11 @@ from
   as u;
 
 select
-  variance(cast(unique1 as INT)),
-  SUM(cast(unique1 as BIGINT)),
+  variance(cast(unique1 as int)),
+  SUM(cast(unique1 as bigint)),
   regr_count(
-    cast(unique1 as DOUBLE PRECISION),
-    cast(unique1 as DOUBLE PRECISION)
+    cast(unique1 as double precision),
+    cast(unique1 as double precision)
   )
 from
   (
@@ -2702,8 +2702,8 @@ from
   as u;
 
 select
-  variance(cast(unique1 as BIGINT)),
-  AVG(cast(unique1 as NUMERIC))
+  variance(cast(unique1 as bigint)),
+  AVG(cast(unique1 as numeric))
 from
   (
     select * from tenk1
@@ -2717,8 +2717,8 @@ from
   as u;
 
 select
-  variance(cast(unique1 as BIGINT)),
-  AVG(cast(unique1 as NUMERIC))
+  variance(cast(unique1 as bigint)),
+  AVG(cast(unique1 as numeric))
 from
   (
     select * from tenk1
@@ -2806,7 +2806,7 @@ set jit_above_cost = 0;
 
 select
   g % 10000 as c1,
-  SUM(cast(g as NUMERIC)) as c2,
+  SUM(cast(g as numeric)) as c2,
   COUNT(*) as c3
 from
   agg_data_20k
@@ -2816,7 +2816,7 @@ create table agg_group_1
 as
   select
     g % 10000 as c1,
-    SUM(cast(g as NUMERIC)) as c2,
+    SUM(cast(g as numeric)) as c2,
     COUNT(*) as c3
   from
     agg_data_20k
@@ -2830,8 +2830,8 @@ as
     (values (100), (300), (500)) as r (a),
     lateral (
       select
-        cast(g / 2 as NUMERIC) as c1,
-        array_agg(cast(g as NUMERIC)) as c2,
+        cast(g / 2 as numeric) as c1,
+        array_agg(cast(g as numeric)) as c2,
         COUNT(*) as c3
       from
         agg_data_2k
@@ -2846,8 +2846,8 @@ set jit_above_cost = default;
 create table agg_group_3
 as
   select
-    cast(g / 2 as NUMERIC) as c1,
-    SUM(cast(7 as INT)) as c2,
+    cast(g / 2 as numeric) as c1,
+    SUM(cast(7 as int)) as c2,
     COUNT(*) as c3
   from
     agg_data_2k
@@ -2856,8 +2856,8 @@ as
 create table agg_group_4
 as
   select
-    cast(g / 2 as NUMERIC) as c1,
-    array_agg(cast(g as NUMERIC)) as c2,
+    cast(g / 2 as numeric) as c1,
+    array_agg(cast(g as numeric)) as c2,
     COUNT(*) as c3
   from
     agg_data_2k
@@ -2871,7 +2871,7 @@ set jit_above_cost = 0;
 
 select
   g % 10000 as c1,
-  SUM(cast(g as NUMERIC)) as c2,
+  SUM(cast(g as numeric)) as c2,
   COUNT(*) as c3
 from
   agg_data_20k
@@ -2881,7 +2881,7 @@ create table agg_hash_1
 as
   select
     g % 10000 as c1,
-    SUM(cast(g as NUMERIC)) as c2,
+    SUM(cast(g as numeric)) as c2,
     COUNT(*) as c3
   from
     agg_data_20k
@@ -2895,8 +2895,8 @@ as
     (values (100), (300), (500)) as r (a),
     lateral (
       select
-        cast(g / 2 as NUMERIC) as c1,
-        array_agg(cast(g as NUMERIC)) as c2,
+        cast(g / 2 as numeric) as c1,
+        array_agg(cast(g as numeric)) as c2,
         COUNT(*) as c3
       from
         agg_data_2k
@@ -2911,8 +2911,8 @@ set jit_above_cost = default;
 create table agg_hash_3
 as
   select
-    cast(g / 2 as NUMERIC) as c1,
-    SUM(cast(7 as INT)) as c2,
+    cast(g / 2 as numeric) as c1,
+    SUM(cast(7 as int)) as c2,
     COUNT(*) as c3
   from
     agg_data_2k
@@ -2921,8 +2921,8 @@ as
 create table agg_hash_4
 as
   select
-    cast(g / 2 as NUMERIC) as c1,
-    array_agg(cast(g as NUMERIC)) as c2,
+    cast(g / 2 as numeric) as c1,
+    array_agg(cast(g as numeric)) as c2,
     COUNT(*) as c3
   from
     agg_data_2k
@@ -2964,18 +2964,18 @@ union all
 except
 select * from agg_hash_4);
 
-drop TABLE agg_group_1;
+drop table agg_group_1;
 
-drop TABLE agg_group_2;
+drop table agg_group_2;
 
-drop TABLE agg_group_3;
+drop table agg_group_3;
 
-drop TABLE agg_group_4;
+drop table agg_group_4;
 
-drop TABLE agg_hash_1;
+drop table agg_hash_1;
 
-drop TABLE agg_hash_2;
+drop table agg_hash_2;
 
-drop TABLE agg_hash_3;
+drop table agg_hash_3;
 
-drop TABLE agg_hash_4;
+drop table agg_hash_4;

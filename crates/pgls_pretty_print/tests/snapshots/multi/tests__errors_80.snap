@@ -19,11 +19,11 @@ select distinct on (foobar) * from pg_database;
 
 select null from pg_database group by datname for update;
 
-select null from pg_database group by GROUPING SETS (()) for update;
+select null from pg_database group by grouping sets (()) for update;
 
 delete from nonesuch;
 
-drop TABLE nonesuch;
+drop table nonesuch;
 
 alter table nonesuch rename to newnonesuch;
 
@@ -47,52 +47,52 @@ commit;
 
 create aggregate newavg2 (
   sfunc = int4pl,
-  basetype = INT,
-  stype = INT,
+  basetype = int,
+  stype = int,
   finalfunc = int2um,
   initcond = '0'
 );
 
-create aggregate newcnt1 (sfunc = int4inc, stype = INT, initcond = '0');
+create aggregate newcnt1 (sfunc = int4inc, stype = int, initcond = '0');
 
-drop INDEX nonesuch;
+drop index nonesuch;
 
-drop AGGREGATE newcnt(nonesuch);
+drop aggregate newcnt(nonesuch);
 
-drop AGGREGATE nonesuch(INT);
+drop aggregate nonesuch(int);
 
-drop AGGREGATE newcnt(REAL);
+drop aggregate newcnt(real);
 
-drop FUNCTION nonesuch();
+drop function nonesuch();
 
-drop TYPE nonesuch;
+drop type nonesuch;
 
-drop OPERATOR === (INT, INT);
+drop operator === (int, int);
 
-drop OPERATOR = (nonesuch, INT);
+drop operator = (nonesuch, int);
 
-drop OPERATOR = (INT, nonesuch);
+drop operator = (int, nonesuch);
 
-drop RULE nonesuch on noplace;
+drop rule nonesuch on noplace;
 
 select 1 / 0;
 
-select cast(1 as BIGINT) / 0;
+select cast(1 as bigint) / 0;
 
-select 1 / cast(0 as BIGINT);
+select 1 / cast(0 as bigint);
 
-select cast(1 as SMALLINT) / 0;
+select cast(1 as smallint) / 0;
 
-select 1 / cast(0 as SMALLINT);
+select 1 / cast(0 as smallint);
 
-select cast(1 as NUMERIC) / 0;
+select cast(1 as numeric) / 0;
 
-select 1 / cast(0 as NUMERIC);
+select 1 / cast(0 as numeric);
 
-select cast(1 as DOUBLE PRECISION) / 0;
+select cast(1 as double precision) / 0;
 
-select 1 / cast(0 as DOUBLE PRECISION);
+select 1 / cast(0 as double precision);
 
-select cast(1 as REAL) / 0;
+select cast(1 as real) / 0;
 
-select 1 / cast(0 as REAL);
+select 1 / cast(0 as real);

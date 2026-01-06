@@ -16,9 +16,9 @@ create index on past_inh_db_parent using btree ((1));
 
 analyze past_inh_db_parent;
 
-select reltuples, relhassubclass from pg_class where oid = cast('past_inh_db_parent' as REGCLASS);
+select reltuples, relhassubclass from pg_class where oid = cast('past_inh_db_parent' as regclass);
 
-drop TABLE past_inh_db_child;
+drop table past_inh_db_child;
 
 set client_min_messages = error;
 
@@ -26,9 +26,9 @@ analyze;
 
 reset client_min_messages;
 
-select reltuples, relhassubclass from pg_class where oid = cast('past_inh_db_parent' as REGCLASS);
+select reltuples, relhassubclass from pg_class where oid = cast('past_inh_db_parent' as regclass);
 
-drop TABLE past_inh_db_parent, past_inh_db_other;
+drop table past_inh_db_parent, past_inh_db_other;
 
 reset role;
 

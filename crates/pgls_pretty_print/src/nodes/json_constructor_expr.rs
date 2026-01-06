@@ -62,11 +62,11 @@ pub(super) fn emit_json_constructor_expr(e: &mut EventEmitter, n: &JsonConstruct
         if has_content {
             e.space();
         }
-        e.token(TokenKind::IDENT("WITH".to_string()));
+        e.token(TokenKind::WITH_KW);
         e.space();
-        e.token(TokenKind::IDENT("UNIQUE".to_string()));
+        e.token(TokenKind::UNIQUE_KW);
         e.space();
-        e.token(TokenKind::IDENT("KEYS".to_string()));
+        e.token(TokenKind::KEYS_KW);
     }
 
     e.token(TokenKind::R_PAREN);

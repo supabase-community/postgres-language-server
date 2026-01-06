@@ -9,13 +9,12 @@ pub(super) fn emit_alter_object_depends_stmt(e: &mut EventEmitter, n: &AlterObje
     e.space();
 
     // Object type
-    let object_type_str = match n.object_type() {
-        ObjectType::ObjectFunction => "FUNCTION",
-        ObjectType::ObjectProcedure => "PROCEDURE",
-        ObjectType::ObjectRoutine => "ROUTINE",
-        _ => "UNKNOWN",
-    };
-    e.token(TokenKind::IDENT(object_type_str.to_string()));
+    match n.object_type() {
+        ObjectType::ObjectFunction => e.token(TokenKind::FUNCTION_KW),
+        ObjectType::ObjectProcedure => e.token(TokenKind::PROCEDURE_KW),
+        ObjectType::ObjectRoutine => e.token(TokenKind::ROUTINE_KW),
+        _ => e.token(TokenKind::IDENT("UNKNOWN".to_string())),
+    }
     e.space();
 
     // Object name
@@ -26,15 +25,15 @@ pub(super) fn emit_alter_object_depends_stmt(e: &mut EventEmitter, n: &AlterObje
     e.line(LineType::SoftOrSpace);
 
     if n.remove {
-        e.token(TokenKind::IDENT("NO".to_string()));
+        e.token(TokenKind::NO_KW);
         e.space();
     }
 
-    e.token(TokenKind::IDENT("DEPENDS".to_string()));
+    e.token(TokenKind::DEPENDS_KW);
     e.space();
     e.token(TokenKind::ON_KW);
     e.space();
-    e.token(TokenKind::IDENT("EXTENSION".to_string()));
+    e.token(TokenKind::EXTENSION_KW);
 
     if let Some(ref extname) = n.extname {
         e.space();

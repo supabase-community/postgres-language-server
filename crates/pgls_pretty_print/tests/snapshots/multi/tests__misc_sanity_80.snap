@@ -31,7 +31,7 @@ where
 select
   relname,
   attname,
-  cast(atttypid as REGTYPE)
+  cast(atttypid as regtype)
 from
   pg_class as c
   inner join

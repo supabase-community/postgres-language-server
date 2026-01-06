@@ -4,74 +4,74 @@ input_file: crates/pgls_pretty_print/tests/data/multi/tablesample.sql
 snapshot_kind: text
 ---
 create table test_tablesample (
-  id INT,
-  name TEXT
+  id int,
+  name text
 )
 with (fillfactor = 10);
 
 insert into test_tablesample
 select
   i,
-  repeat(cast(i as TEXT), 200)
+  repeat(cast(i as text), 200)
 from
   generate_series(0, 9) as s (i);
 
-select t.id from test_tablesample as t TABLESAMPLE system (50) REPEATABLE (0);
+select t.id from test_tablesample as t tablesample system (50) repeatable (0);
 
-select id from test_tablesample TABLESAMPLE system (100.0 / 11) REPEATABLE (0);
+select id from test_tablesample tablesample system (100.0 / 11) repeatable (0);
 
-select id from test_tablesample TABLESAMPLE system (50) REPEATABLE (0);
+select id from test_tablesample tablesample system (50) repeatable (0);
 
-select id from test_tablesample TABLESAMPLE bernoulli (50) REPEATABLE (0);
+select id from test_tablesample tablesample bernoulli (50) repeatable (0);
 
-select id from test_tablesample TABLESAMPLE bernoulli (5.5) REPEATABLE (0);
+select id from test_tablesample tablesample bernoulli (5.5) repeatable (0);
 
-select COUNT(*) from test_tablesample TABLESAMPLE system (100);
+select COUNT(*) from test_tablesample tablesample system (100);
 
-select COUNT(*) from test_tablesample TABLESAMPLE system (100) REPEATABLE (1 + 2);
+select COUNT(*) from test_tablesample tablesample system (100) repeatable (1 + 2);
 
-select COUNT(*) from test_tablesample TABLESAMPLE system (100) REPEATABLE (0.4);
+select COUNT(*) from test_tablesample tablesample system (100) repeatable (0.4);
 
 create view test_tablesample_v1
 as select
   id
 from
   test_tablesample
-  TABLESAMPLE system (10 * 2)
-  REPEATABLE (2);
+  tablesample system (10 * 2)
+  repeatable (2);
 
 create view test_tablesample_v2
 as select
   id
 from
-  test_tablesample TABLESAMPLE system (99);
+  test_tablesample tablesample system (99);
 
 begin;
 
-declare "tablesample_cur" SCROLL
+declare "tablesample_cur" scroll
 cursor
 for select
   id
 from
   test_tablesample
-  TABLESAMPLE system (50)
-  REPEATABLE (0);;
+  tablesample system (50)
+  repeatable (0);;
 
-fetch ABSOLUTE 1 from tablesample_cur;
-
-fetch next from tablesample_cur;
-
-fetch next from tablesample_cur;
-
-select id from test_tablesample TABLESAMPLE system (50) REPEATABLE (0);
+fetch absolute 1 from tablesample_cur;
 
 fetch next from tablesample_cur;
 
 fetch next from tablesample_cur;
 
+select id from test_tablesample tablesample system (50) repeatable (0);
+
 fetch next from tablesample_cur;
 
-fetch ABSOLUTE 1 from tablesample_cur;
+fetch next from tablesample_cur;
+
+fetch next from tablesample_cur;
+
+fetch absolute 1 from tablesample_cur;
 
 fetch next from tablesample_cur;
 
@@ -87,13 +87,13 @@ close tablesample_cur;
 
 commit;
 
-select id from test_tablesample TABLESAMPLE system (50) REPEATABLE (2);
+select id from test_tablesample tablesample system (50) repeatable (2);
 
 select * from test_tablesample_v1;
 
-select COUNT(*) from person TABLESAMPLE bernoulli (100);
+select COUNT(*) from person tablesample bernoulli (100);
 
-select COUNT(*) from person TABLESAMPLE bernoulli (100);
+select COUNT(*) from person tablesample bernoulli (100);
 
 select COUNT(*) from person;
 
@@ -101,7 +101,7 @@ select
   COUNT(*)
 from
   test_tablesample
-  TABLESAMPLE bernoulli (cast(cast('1' as TEXT) < cast('0' as TEXT) as INT));
+  tablesample bernoulli (cast(cast('1' as text) < cast('0' as text) as int));
 
 select
   *
@@ -111,7 +111,7 @@ from
     select
       COUNT(*)
     from
-      tenk1 TABLESAMPLE bernoulli (pct)
+      tenk1 tablesample bernoulli (pct)
   )
   as ss;
 
@@ -123,7 +123,7 @@ from
     select
       COUNT(*)
     from
-      tenk1 TABLESAMPLE system (pct)
+      tenk1 tablesample system (pct)
   )
   as ss;
 
@@ -133,7 +133,7 @@ select
 from
   (values (0), (100)) as v (pct),
   lateral (
-    select * from tenk1 TABLESAMPLE bernoulli (pct)
+    select * from tenk1 tablesample bernoulli (pct)
   )
   as ss
 group by pct;
@@ -144,7 +144,7 @@ select
 from
   (values (0), (100)) as v (pct),
   lateral (
-    select * from tenk1 TABLESAMPLE bernoulli (pct)
+    select * from tenk1 tablesample bernoulli (pct)
   )
   as ss
 group by pct;
@@ -155,26 +155,26 @@ select
 from
   (values (0), (100)) as v (pct),
   lateral (
-    select * from tenk1 TABLESAMPLE system (pct)
+    select * from tenk1 tablesample system (pct)
   )
   as ss
 group by pct;
 
-select id from test_tablesample TABLESAMPLE foobar (1);
+select id from test_tablesample tablesample foobar (1);
 
-select id from test_tablesample TABLESAMPLE system (null);
+select id from test_tablesample tablesample system (null);
 
-select id from test_tablesample TABLESAMPLE system (50) REPEATABLE (null);
+select id from test_tablesample tablesample system (50) repeatable (null);
 
-select id from test_tablesample TABLESAMPLE bernoulli (-1);
+select id from test_tablesample tablesample bernoulli (-1);
 
-select id from test_tablesample TABLESAMPLE bernoulli (200);
+select id from test_tablesample tablesample bernoulli (200);
 
-select id from test_tablesample TABLESAMPLE system (-1);
+select id from test_tablesample tablesample system (-1);
 
-select id from test_tablesample TABLESAMPLE system (200);
+select id from test_tablesample tablesample system (200);
 
-select id from test_tablesample_v1 TABLESAMPLE bernoulli (1);
+select id from test_tablesample_v1 tablesample bernoulli (1);
 
 insert into test_tablesample_v1 values (1);
 
@@ -184,16 +184,16 @@ select
   *
 from
   query_select
-  TABLESAMPLE bernoulli (5.5)
-  REPEATABLE (1);
+  tablesample bernoulli (5.5)
+  repeatable (1);
 
-create table parted_sample (a INT)
+create table parted_sample (a int)
 partition by LIST(a);
 
 create table parted_sample_1 partition of parted_sample for values in (1);
 
 create table parted_sample_2 partition of parted_sample for values in (2);
 
-select * from parted_sample TABLESAMPLE bernoulli (100);
+select * from parted_sample tablesample bernoulli (100);
 
-drop TABLE parted_sample, parted_sample_1, parted_sample_2;
+drop table parted_sample, parted_sample_1, parted_sample_2;

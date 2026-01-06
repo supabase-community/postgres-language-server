@@ -7,11 +7,11 @@ create function interpt_pp(path, path)
 returns point
 as $function$regresslib$function$
 language c
-STRICT;
+strict;
 
 create table real_city (
-  pop INT,
-  cname TEXT,
+  pop int,
+  cname text,
   outline path
 );
 
@@ -60,8 +60,8 @@ comment on view toyemp is 'is a view';
 comment on view toyemp is null;
 
 create table view_base_table (
-  key INT primary key,
-  data VARCHAR(20)
+  key int primary key,
+  data varchar(20)
 );
 
 create view key_dependent_view
@@ -83,10 +83,10 @@ having
   length(data) > 0;
 
 create table viewtest_tbl (
-  a INT,
-  b INT,
-  c NUMERIC(10, 1),
-  d TEXT collate "C"
+  a int,
+  b int,
+  c numeric(10, 1),
+  d text collate "C"
 );
 
 create or replace view viewtest
@@ -120,7 +120,7 @@ as select 1, * from viewtest_tbl;
 create or replace view viewtest
 as select
   a,
-  cast(b as NUMERIC),
+  cast(b as numeric),
   c,
   d
 from
@@ -130,7 +130,7 @@ create or replace view viewtest
 as select
   a,
   b,
-  cast(c as NUMERIC(10, 2)),
+  cast(c as numeric(10, 2)),
   d
 from
   viewtest_tbl;
@@ -154,27 +154,27 @@ as select
 from
   viewtest_tbl;
 
-drop VIEW viewtest;
+drop view viewtest;
 
-drop TABLE viewtest_tbl;
+drop table viewtest_tbl;
 
 create schema "temp_view_test";
 
 create table base_table (
-  a INT,
-  id INT
+  a int,
+  id int
 );
 
 create table base_table2 (
-  a INT,
-  id INT
+  a int,
+  id int
 );
 
 set search_path to temp_view_test, public;
 
 create temporary table temp_table (
-  a INT,
-  id INT
+  a int,
+  id int
 );
 
 create view v1
@@ -367,18 +367,18 @@ create schema "testviewschm2";
 set search_path to testviewschm2, public;
 
 create table t1 (
-  num INT,
-  name TEXT
+  num int,
+  name text
 );
 
 create table t2 (
-  num2 INT,
-  value TEXT
+  num2 int,
+  value text
 );
 
 create temporary table tt (
-  num2 INT,
-  value TEXT
+  num2 int,
+  value text
 );
 
 create view nontemp1
@@ -470,28 +470,28 @@ where
 order by relname;
 
 create table tbl1 (
-  a INT,
-  b INT
+  a int,
+  b int
 );
 
 create table tbl2 (
-  c INT,
-  d INT
+  c int,
+  d int
 );
 
 create table tbl3 (
-  e INT,
-  f INT
+  e int,
+  f int
 );
 
 create table tbl4 (
-  g INT,
-  h INT
+  g int,
+  h int
 );
 
 create temporary table tmptbl (
-  i INT,
-  j INT
+  i int,
+  j int
 );
 
 create view pubview
@@ -625,13 +625,13 @@ from
 where
   oid
   in (
-    cast('mysecview1' as REGCLASS),
-    cast('mysecview2' as REGCLASS),
-    cast('mysecview3' as REGCLASS),
-    cast('mysecview4' as REGCLASS),
-    cast('mysecview7' as REGCLASS),
-    cast('mysecview8' as REGCLASS),
-    cast('mysecview9' as REGCLASS)
+    cast('mysecview1' as regclass),
+    cast('mysecview2' as regclass),
+    cast('mysecview3' as regclass),
+    cast('mysecview4' as regclass),
+    cast('mysecview7' as regclass),
+    cast('mysecview8' as regclass),
+    cast('mysecview9' as regclass)
   )
 order by relname;
 
@@ -670,13 +670,13 @@ from
 where
   oid
   in (
-    cast('mysecview1' as REGCLASS),
-    cast('mysecview2' as REGCLASS),
-    cast('mysecview3' as REGCLASS),
-    cast('mysecview4' as REGCLASS),
-    cast('mysecview7' as REGCLASS),
-    cast('mysecview8' as REGCLASS),
-    cast('mysecview9' as REGCLASS)
+    cast('mysecview1' as regclass),
+    cast('mysecview2' as regclass),
+    cast('mysecview3' as regclass),
+    cast('mysecview4' as regclass),
+    cast('mysecview7' as regclass),
+    cast('mysecview8' as regclass),
+    cast('mysecview9' as regclass)
   )
 order by relname;
 
@@ -697,42 +697,42 @@ from
   (
     values
       (
-        cast('abc' as VARCHAR(3)),
+        cast('abc' as varchar(3)),
         '0123456789',
         42,
-        cast('abcd' as VARCHAR(4))
+        cast('abcd' as varchar(4))
       ),
       (
         '0123456789',
-        cast('abc' as VARCHAR(3)),
+        cast('abc' as varchar(3)),
         42.12,
-        cast('abc' as VARCHAR(4))
+        cast('abc' as varchar(4))
       )
   )
   as vv (a, b, c, d);
 
 select * from tt1;
 
-select cast(a as VARCHAR(3)) from tt1;
+select cast(a as varchar(3)) from tt1;
 
-drop VIEW tt1;
+drop view tt1;
 
 create table tt1 (
-  f1 INT,
-  f2 INT,
-  f3 TEXT
+  f1 int,
+  f2 int,
+  f3 text
 );
 
 create table tx1 (
-  x1 INT,
-  x2 INT,
-  x3 TEXT
+  x1 int,
+  x2 int,
+  x3 text
 );
 
 create table temp_view_test.tt1 (
-  y1 INT,
-  f2 INT,
-  f3 TEXT
+  y1 int,
+  f2 int,
+  f3 text
 );
 
 create view aliased_view_1
@@ -797,11 +797,11 @@ alter table a1 rename to tt1;
 
 alter table a2 rename to tx1;
 
-alter TABLE tx1 set SCHEMA temp_view_test;
+alter table tx1 set schema temp_view_test;
 
 alter table temp_view_test.tt1 rename to tmp1;
 
-alter TABLE temp_view_test.tmp1 set SCHEMA testviewschm2;
+alter table temp_view_test.tmp1 set schema testviewschm2;
 
 alter table tmp1 rename to tx1;
 
@@ -832,8 +832,8 @@ from
   (tbl3 inner join tbl4 on true) as "same";
 
 create table tbl1a (
-  a INT,
-  c INT
+  a int,
+  c int
 );
 
 create view view_of_joins_2a
@@ -875,21 +875,21 @@ select pg_get_viewdef('view_of_joins_2c', true);
 select pg_get_viewdef('view_of_joins_2d', true);
 
 create table tt2 (
-  a INT,
-  b INT,
-  c INT
+  a int,
+  b int,
+  c int
 );
 
 create table tt3 (
-  ax BIGINT,
-  b SMALLINT,
-  c NUMERIC
+  ax bigint,
+  b smallint,
+  c numeric
 );
 
 create table tt4 (
-  ay INT,
-  b INT,
-  q INT
+  ay int,
+  b int,
+  q int
 );
 
 create view v1
@@ -939,10 +939,10 @@ select pg_get_viewdef('v2a', true);
 select pg_get_viewdef('v3', true);
 
 alter table tt2
-  add column d INT;
+  add column d int;
 
 alter table tt2
-  add column e INT;
+  add column e int;
 
 select pg_get_viewdef('v1', true);
 
@@ -967,10 +967,10 @@ select pg_get_viewdef('v2a', true);
 select pg_get_viewdef('v3', true);
 
 alter table tt3
-  add column c INT;
+  add column c int;
 
 alter table tt3
-  add column e INT;
+  add column e int;
 
 select pg_get_viewdef('v1', true);
 
@@ -996,13 +996,13 @@ select pg_get_viewdef('v2a', true);
 select pg_get_viewdef('v3', true);
 
 create table tt5 (
-  a INT,
-  b INT
+  a int,
+  b int
 );
 
 create table tt6 (
-  c INT,
-  d INT
+  c int,
+  d int
 );
 
 create view vv1
@@ -1020,12 +1020,12 @@ from
 select pg_get_viewdef('vv1', true);
 
 alter table tt5
-  add column c INT;
+  add column c int;
 
 select pg_get_viewdef('vv1', true);
 
 alter table tt5
-  add column cc INT;
+  add column cc int;
 
 select pg_get_viewdef('vv1', true);
 
@@ -1044,17 +1044,17 @@ select pg_get_viewdef('v1', true);
 select pg_get_viewdef('v4', true);
 
 create table tt7 (
-  x INT,
-  xx INT,
-  y INT
+  x int,
+  xx int,
+  y int
 );
 
 alter table tt7
   drop column xx;
 
 create table tt8 (
-  x INT,
-  z INT
+  x int,
+  z int
 );
 
 create view vv2
@@ -1118,16 +1118,16 @@ from
 select pg_get_viewdef('vv4', true);
 
 alter table tt7
-  add column zz INT;
+  add column zz int;
 
 alter table tt7
-  add column z INT;
+  add column z int;
 
 alter table tt7
   drop column zz;
 
 alter table tt8
-  add column z2 INT;
+  add column z2 int;
 
 select pg_get_viewdef('vv2', true);
 
@@ -1136,17 +1136,17 @@ select pg_get_viewdef('vv3', true);
 select pg_get_viewdef('vv4', true);
 
 create table tt7a (
-  x DATE,
-  xx INT,
-  y INT
+  x date,
+  xx int,
+  y int
 );
 
 alter table tt7a
   drop column xx;
 
 create table tt8a (
-  x timestamp with time ZONE,
-  z INT
+  x timestamp with time zone,
+  z int
 );
 
 create view vv2a
@@ -1167,14 +1167,14 @@ from
 select pg_get_viewdef('vv2a', true);
 
 create table tt9 (
-  x INT,
-  xx INT,
-  y INT
+  x int,
+  xx int,
+  y int
 );
 
 create table tt10 (
-  x INT,
-  z INT
+  x int,
+  z int
 );
 
 create view vv5
@@ -1193,18 +1193,18 @@ alter table tt9
 select pg_get_viewdef('vv5', true);
 
 create table tt11 (
-  x INT,
-  y INT
+  x int,
+  y int
 );
 
 create table tt12 (
-  x INT,
-  z INT
+  x int,
+  z int
 );
 
 create table tt13 (
-  z INT,
-  q INT
+  z int,
+  q int
 );
 
 create view vv6
@@ -1222,15 +1222,15 @@ from
 select pg_get_viewdef('vv6', true);
 
 alter table tt11
-  add column z INT;
+  add column z int;
 
 select pg_get_viewdef('vv6', true);
 
 create table tt14t (
-  f1 TEXT,
-  f2 TEXT,
-  f3 TEXT,
-  f4 TEXT
+  f1 text,
+  f2 text,
+  f3 text,
+  f4 text
 );
 
 insert into tt14t values ('foo', 'bar', 'baz', '42');
@@ -1273,7 +1273,7 @@ where
     from
       pg_rewrite
     where
-      ev_class = cast('tt14v' as REGCLASS) and
+      ev_class = cast('tt14v' as regclass) and
       rulename = '_RETURN'
   ) and
   refobjsubid = 3
@@ -1305,7 +1305,7 @@ select * from tt14v;
 rollback;
 
 alter table tt14t
-  alter column f4 type INT using cast(f4 as INT);
+  alter column f4 type int using cast(f4 as int);
 
 begin;
 
@@ -1318,7 +1318,7 @@ where
     from
       pg_rewrite
     where
-      ev_class = cast('tt14v' as REGCLASS) and
+      ev_class = cast('tt14v' as regclass) and
       rulename = '_RETURN'
   ) and
   refobjsubid = 4
@@ -1337,7 +1337,7 @@ as ref,
 deptype;
 
 alter table tt14t
-  alter column f4 type INT using cast(f4 as INT);
+  alter column f4 type int using cast(f4 as int);
 
 select pg_get_viewdef('tt14v', true);
 
@@ -1347,7 +1347,7 @@ select * from tt14v;
 
 rollback;
 
-drop VIEW tt14v;
+drop view tt14v;
 
 create view tt14v
 as select t.f1, t.f4 from tt14f() as t;
@@ -1409,7 +1409,7 @@ select * from int8_tbl as i where i.* in (values (cast(i.* as int8_tbl)));
 create table tt15v_log (
   o tt15v,
   n tt15v,
-  incr BOOLEAN
+  incr boolean
 );
 
 create rule updlog
@@ -1438,35 +1438,35 @@ select pg_get_viewdef('tt18v', true);
 
 select * from tt18v;
 
-select cast('foo' as TEXT) = any (cast(array['abc', 'def', 'foo'] as TEXT[]));
+select cast('foo' as text) = any (cast(array['abc', 'def', 'foo'] as text[]));
 
 select
-  cast('foo' as TEXT) = any
+  cast('foo' as text) = any
   (
     select
       cast(array['abc', 'def', 'foo']
-      as TEXT[])
+      as text[])
   );
 
 select
-  cast('foo' as TEXT) = any (cast((
+  cast('foo' as text) = any (cast((
     select
       cast(array['abc', 'def', 'foo']
-      as TEXT[])
+      as text[])
   )
-  as TEXT[]));
+  as text[]));
 
 create view tt19v
 as select
-  cast('foo' as TEXT) = any (cast(array['abc', 'def', 'foo']
-  as TEXT[]))
+  cast('foo' as text) = any (cast(array['abc', 'def', 'foo']
+  as text[]))
   as c1,
-  cast('foo' as TEXT) = any (cast((
+  cast('foo' as text) = any (cast((
     select
       cast(array['abc', 'def', 'foo']
-      as TEXT[])
+      as text[])
   )
-  as TEXT[]))
+  as text[]))
   as c2;
 
 select pg_get_viewdef('tt19v', true);
@@ -1476,12 +1476,12 @@ as select
   *
 from
   coalesce(1, 2) as c,
-  pg_collation_for(cast('x' as TEXT))
+  pg_collation_for(cast('x' as text))
   as col,
   current_date as d,
   localtimestamp(3) as t,
-  cast(1 + 2 as INT) as i4,
-  cast(1 + 2 as BIGINT) as i8;
+  cast(1 + 2 as int) as i4,
+  cast(1 + 2 as bigint) as i8;
 
 select pg_get_viewdef('tt20v', true);
 
@@ -1489,25 +1489,25 @@ create view tt201v
 as select
   timezone(
     'UTC',
-    cast('2022-12-01' as DATE) +
-    cast('1 day' as INTERVAL)
+    cast('2022-12-01' as date) +
+    cast('1 day' as interval)
   )
   as atz,
   EXTRACT('day' from NOW()) as extr,
   overlaps(
     NOW(),
-    cast('1 day' as INTERVAL),
+    cast('1 day' as interval),
     current_timestamp(2),
-    cast('1 day' as INTERVAL)
+    cast('1 day' as interval)
   )
   as o,
   is_normalized('foo') as isn,
   is_normalized('foo', 'NFKC') as isnn,
   NORMALIZE('foo') as n,
   NORMALIZE('foo', NFKD) as nfkd,
-  OVERLAY('foo' PLACING 'bar' from 2)
+  OVERLAY('foo' placing 'bar' from 2)
   as ovl,
-  OVERLAY('foo' PLACING 'bar' from 2 for 3)
+  OVERLAY('foo' placing 'bar' from 2 for 3)
   as ovl2,
   POSITION('foo' in 'foobar') as p,
   SUBSTRING('foo' from 2 for 3) as s,
@@ -1517,18 +1517,18 @@ as select
   ltrim(' foo ', ' ') as lt,
   rtrim(' foo ') as rt,
   btrim(
-    cast('\000Tom\000' as BYTEA),
-    cast('\000' as BYTEA)
+    cast('\000Tom\000' as bytea),
+    cast('\000' as bytea)
   )
   as btb,
   ltrim(
-    cast('\000Tom\000' as BYTEA),
-    cast('\000' as BYTEA)
+    cast('\000Tom\000' as bytea),
+    cast('\000' as bytea)
   )
   as ltb,
   rtrim(
-    cast('\000Tom\000' as BYTEA),
-    cast('\000' as BYTEA)
+    cast('\000Tom\000' as bytea),
+    cast('\000' as bytea)
   )
   as rtb,
   current_date as cd,
@@ -1597,7 +1597,7 @@ select
 from
   pg_rewrite
 where
-  ev_class = cast('tt23v' as REGCLASS) and
+  ev_class = cast('tt23v' as regclass) and
   ev_type = '1';
 
 select
@@ -1656,7 +1656,7 @@ from
 
 select pg_get_viewdef('tt26v', true);
 
-create table tt27v_tbl (a INT);
+create table tt27v_tbl (a int);
 
 create view tt27v
 as select a from tt27v_tbl;
@@ -1671,6 +1671,6 @@ select viewname from pg_views where viewname = 'tt27v';
 
 reset restrict_nonsystem_relation_kind;
 
-drop SCHEMA temp_view_test cascade;
+drop schema temp_view_test cascade;
 
-drop SCHEMA testviewschm2 cascade;
+drop schema testviewschm2 cascade;

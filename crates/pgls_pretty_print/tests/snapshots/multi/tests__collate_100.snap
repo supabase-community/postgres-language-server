@@ -8,20 +8,20 @@ create schema "collate_tests";
 set search_path to collate_tests;
 
 create table collate_test1 (
-  a INT,
-  b TEXT collate "C" not null
+  a int,
+  b text collate "C" not null
 );
 
 create table collate_test_fail (
-  a INT collate "C",
-  b TEXT
+  a int collate "C",
+  b text
 );
 
 create table collate_test_like (like collate_test1);
 
 create table collate_test2 (
-  a INT,
-  b TEXT collate "POSIX"
+  a int,
+  b text collate "POSIX"
 );
 
 insert into collate_test1 values (1, 'abc'), (2, 'Abc'), (3, 'bbc'), (4, 'ABD');
@@ -36,12 +36,12 @@ select * from collate_test1 where b collate "C" >= 'abc' collate "C";
 
 select * from collate_test1 where b collate "C" >= 'bbc' collate "POSIX";
 
-create domain testdomain_p as TEXT collate "POSIX";
+create domain testdomain_p as text collate "POSIX";
 
-create domain testdomain_i as INT collate "POSIX";
+create domain testdomain_i as int collate "POSIX";
 
 create table collate_test4 (
-  a INT,
+  a int,
   b testdomain_p
 );
 
@@ -50,7 +50,7 @@ insert into collate_test4 select * from collate_test1;
 select a, b from collate_test4 order by b;
 
 create table collate_test5 (
-  a INT,
+  a int,
   b testdomain_p collate "C"
 );
 
@@ -73,9 +73,9 @@ select 'bbc' collate "C" > 'Abc' collate "C" as "true";
 select 'bbc' collate "POSIX" < 'Abc' collate "POSIX" as "false";
 
 create table collate_test10 (
-  a INT,
-  x TEXT collate "C",
-  y TEXT collate "POSIX"
+  a int,
+  x text collate "C",
+  y text collate "POSIX"
 );
 
 insert into collate_test10 values (1, 'hij', 'hij'), (2, 'HIJ', 'HIJ');
@@ -140,7 +140,7 @@ select a, case b when 'abc' then 'abcd' else b end from collate_test1 order by 2
 
 select a, case b when 'abc' then 'abcd' else b end from collate_test2 order by 2;
 
-create domain testdomain as TEXT;
+create domain testdomain as text;
 
 select a, cast(b as testdomain) from collate_test1 order by 2;
 
@@ -242,12 +242,12 @@ where
       collate_test10
   );
 
-select a, cast(b as VARCHAR) from collate_test1 order by 2;
+select a, cast(b as varchar) from collate_test1 order by 2;
 
-select a, cast(b as VARCHAR) from collate_test2 order by 2;
+select a, cast(b as varchar) from collate_test2 order by 2;
 
-create function vc(TEXT)
-returns TEXT
+create function vc(text)
+returns text
 language sql
 as $function$select $1::varchar$function$;
 
@@ -257,8 +257,8 @@ select * from unnest((select array_agg(b order by b) from collate_test1)) order 
 
 select * from unnest((select array_agg(b order by b) from collate_test2)) order by 1;
 
-create function dup(ANYELEMENT)
-returns ANYELEMENT
+create function dup(anyelement)
+returns anyelement
 as $function$select $1$function$
 language sql;
 
@@ -293,17 +293,17 @@ set enable_hashjoin = 0;
 
 set enable_nestloop = 0;
 
-create table collate_test20 (f1 TEXT collate "C" primary key);
+create table collate_test20 (f1 text collate "C" primary key);
 
 insert into collate_test20 values ('foo'), ('bar');
 
-create table collate_test21 (f2 TEXT collate "POSIX" references collate_test20);
+create table collate_test21 (f2 text collate "POSIX" references collate_test20);
 
 insert into collate_test21 values ('foo'), ('bar');
 
 insert into collate_test21 values ('baz');
 
-create table collate_test22 (f2 TEXT collate "POSIX");
+create table collate_test22 (f2 text collate "POSIX");
 
 insert into collate_test22 values ('foo'), ('bar'), ('baz');
 
@@ -341,21 +341,21 @@ create collation mycoll2 (lc_collate = "POSIX", lc_ctype = "POSIX");
 
 create collation mycoll3 from "default";
 
-drop COLLATION mycoll1;
+drop collation mycoll1;
 
-create table collate_test23 (f1 TEXT collate "mycoll2");
+create table collate_test23 (f1 text collate "mycoll2");
 
-drop COLLATION mycoll2;
+drop collation mycoll2;
 
 create collation case_coll ("Lc_Collate" = "POSIX", "Lc_Ctype" = "POSIX");
 
-create temporary table vctable (f1 VARCHAR(25));
+create temporary table vctable (f1 varchar(25));
 
 insert into vctable values ('foo' collate "C");
 
 select pg_collation_for('foo');
 
-select pg_collation_for(cast('foo' as TEXT));
+select pg_collation_for(cast('foo' as text));
 
 select pg_collation_for((select a from collate_test1 limit 1));
 
@@ -365,7 +365,7 @@ create view collate_on_int
 as select
   c1 + 1 as c1p
 from
-  (select cast('4' collate "C" as INT) as c1) as ss;
+  (select cast('4' collate "C" as int) as c1) as ss;
 
 create collation coll_dup_chk (lc_collate = "POSIX", lc_collate = "NONSENSE", lc_ctype = "POSIX");
 
@@ -392,4 +392,4 @@ create collation coll_dup_chk (lc_ctype = "POSIX", locale = '');
 
 create collation coll_dup_chk ("from" = "C", version = "1");
 
-drop SCHEMA collate_tests cascade;
+drop schema collate_tests cascade;

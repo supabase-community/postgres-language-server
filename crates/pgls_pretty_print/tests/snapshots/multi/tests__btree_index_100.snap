@@ -4,23 +4,23 @@ input_file: crates/pgls_pretty_print/tests/data/multi/btree_index.sql
 snapshot_kind: text
 ---
 create table bt_i4_heap (
-  seqno INT,
-  random INT
+  seqno int,
+  random int
 );
 
 create table bt_name_heap (
-  seqno NAME,
-  random INT
+  seqno name,
+  random int
 );
 
 create table bt_txt_heap (
-  seqno TEXT,
-  random INT
+  seqno text,
+  random int
 );
 
 create table bt_f8_heap (
-  seqno DOUBLE PRECISION,
-  random INT
+  seqno double precision,
+  random int
 );
 
 copy bt_i4_heap from 'filename';
@@ -53,23 +53,23 @@ select b.* from bt_i4_heap as b where b.seqno >= 9999;
 
 select b.* from bt_i4_heap as b where b.seqno = 4500;
 
-select b.* from bt_name_heap as b where b.seqno < cast('1' as NAME);
+select b.* from bt_name_heap as b where b.seqno < cast('1' as name);
 
-select b.* from bt_name_heap as b where b.seqno >= cast('9999' as NAME);
+select b.* from bt_name_heap as b where b.seqno >= cast('9999' as name);
 
-select b.* from bt_name_heap as b where b.seqno = cast('4500' as NAME);
+select b.* from bt_name_heap as b where b.seqno = cast('4500' as name);
 
-select b.* from bt_txt_heap as b where b.seqno < cast('1' as TEXT);
+select b.* from bt_txt_heap as b where b.seqno < cast('1' as text);
 
-select b.* from bt_txt_heap as b where b.seqno >= cast('9999' as TEXT);
+select b.* from bt_txt_heap as b where b.seqno >= cast('9999' as text);
 
-select b.* from bt_txt_heap as b where b.seqno = cast('4500' as TEXT);
+select b.* from bt_txt_heap as b where b.seqno = cast('4500' as text);
 
-select b.* from bt_f8_heap as b where b.seqno < cast('1' as DOUBLE PRECISION);
+select b.* from bt_f8_heap as b where b.seqno < cast('1' as double precision);
 
-select b.* from bt_f8_heap as b where b.seqno >= cast('9999' as DOUBLE PRECISION);
+select b.* from bt_f8_heap as b where b.seqno >= cast('9999' as double precision);
 
-select b.* from bt_f8_heap as b where b.seqno = cast('4500' as DOUBLE PRECISION);
+select b.* from bt_f8_heap as b where b.seqno = cast('4500' as double precision);
 
 select
   proname,
@@ -323,7 +323,7 @@ reset enable_indexscan;
 
 reset enable_bitmapscan;
 
-create temporary table btree_bpchar (f1 TEXT collate "C");
+create temporary table btree_bpchar (f1 text collate "C");
 
 create index
 on btree_bpchar
@@ -343,17 +343,17 @@ select * from btree_bpchar where f1 like 'foo%';
 
 select * from btree_bpchar where f1 like 'foo%';
 
-select * from btree_bpchar where cast(f1 as CHAR) like 'foo';
+select * from btree_bpchar where cast(f1 as char) like 'foo';
 
-select * from btree_bpchar where cast(f1 as CHAR) like 'foo';
+select * from btree_bpchar where cast(f1 as char) like 'foo';
 
-select * from btree_bpchar where cast(f1 as CHAR) like 'foo%';
+select * from btree_bpchar where cast(f1 as char) like 'foo%';
 
-select * from btree_bpchar where cast(f1 as CHAR) like 'foo%';
+select * from btree_bpchar where cast(f1 as char) like 'foo%';
 
 insert into btree_bpchar select 'foo' from generate_series(1, 1500);
 
-create table dedup_unique_test_table (a INT) with (autovacuum_enabled = 'false');
+create table dedup_unique_test_table (a int) with (autovacuum_enabled = 'false');
 
 create unique index "dedup_unique"
 on dedup_unique_test_table
@@ -380,19 +380,19 @@ BEGIN
     END LOOP;
 END$do$;
 
-drop INDEX plain_unique;
+drop index plain_unique;
 
 delete from dedup_unique_test_table where a = 1;
 
 insert into dedup_unique_test_table select i from generate_series(0, 450) as i;
 
 create table btree_tall_tbl (
-  id INT,
-  t TEXT
+  id int,
+  t text
 );
 
 alter table btree_tall_tbl
-  alter column t set STORAGE plain;
+  alter column t set storage plain;
 
 create index "btree_tall_idx"
 on btree_tall_tbl
@@ -424,10 +424,10 @@ reset enable_seqscan;
 reset enable_bitmapscan;
 
 create table delete_test_table (
-  a BIGINT,
-  b BIGINT,
-  c BIGINT,
-  d BIGINT
+  a bigint,
+  b bigint,
+  c bigint,
+  d bigint
 );
 
 insert into delete_test_table select i, 1, 2, 3 from generate_series(1, 80000) as i;
@@ -443,10 +443,10 @@ insert into delete_test_table select i, 1, 2, 3 from generate_series(1, 1000) as
 
 create index on btree_tall_tbl using btree (id int4_ops(foo = 1));
 
-create table btree_test_expr (n INT);
+create table btree_test_expr (n int);
 
 create function btree_test_func()
-returns INT
+returns int
 language sql
 immutable return 0;;
 
@@ -460,18 +460,18 @@ create index "btree_test_expr_idx" on btree_test_expr using btree ((btree_test_f
 
 commit;
 
-drop TABLE btree_test_expr;
+drop table btree_test_expr;
 
-drop FUNCTION btree_test_func();
+drop function btree_test_func();
 
 create index "btree_tall_idx2" on btree_tall_tbl using btree (id);
 
 alter index btree_tall_idx2
   alter column id set (n_distinct = 100);
 
-drop INDEX btree_tall_idx2;
+drop index btree_tall_idx2;
 
-create table btree_part (id INT)
+create table btree_part (id int)
 partition by range(id);
 
 create index "btree_part_idx" on btree_part using btree (id);
@@ -479,4 +479,4 @@ create index "btree_part_idx" on btree_part using btree (id);
 alter index btree_part_idx
   alter column id set (n_distinct = 100);
 
-drop TABLE btree_part;
+drop table btree_part;

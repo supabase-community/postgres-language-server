@@ -4,9 +4,9 @@ input_file: crates/pgls_pretty_print/tests/data/multi/index_including.sql
 snapshot_kind: text
 ---
 create table tbl_include_reg (
-  c1 INT,
-  c2 INT,
-  c3 INT,
+  c1 int,
+  c2 int,
+  c3 int,
   c4 box
 );
 
@@ -40,13 +40,13 @@ from
   on i.indexrelid = c.oid
 where
   i.indrelid =
-  cast('tbl_include_reg' as REGCLASS)
+  cast('tbl_include_reg' as regclass)
 order by c.relname;
 
 create table tbl_include_unique1 (
-  c1 INT,
-  c2 INT,
-  c3 INT,
+  c1 int,
+  c2 int,
+  c3 int,
   c4 box
 );
 
@@ -74,7 +74,7 @@ alter table tbl_include_unique1
   add unique using index "tbl_include_unique1_idx_unique";
 
 alter table tbl_include_unique1
-  add unique (c1, c2) INCLUDE ("c3", "c4");
+  add unique (c1, c2) include ("c3", "c4");
 
 select
   pg_get_indexdef(i.indexrelid)
@@ -85,13 +85,13 @@ from
   on i.indexrelid = c.oid
 where
   i.indrelid =
-  cast('tbl_include_unique1' as REGCLASS)
+  cast('tbl_include_unique1' as regclass)
 order by c.relname;
 
 create table tbl_include_unique2 (
-  c1 INT,
-  c2 INT,
-  c3 INT,
+  c1 int,
+  c2 int,
+  c3 int,
   c4 box
 );
 
@@ -116,12 +116,12 @@ include (c3,
 c4);
 
 alter table tbl_include_unique2
-  add unique (c1, c2) INCLUDE ("c3", "c4");
+  add unique (c1, c2) include ("c3", "c4");
 
 create table tbl_include_pk (
-  c1 INT,
-  c2 INT,
-  c3 INT,
+  c1 int,
+  c2 int,
+  c3 int,
   c4 box
 );
 
@@ -137,7 +137,7 @@ from
 alter table tbl_include_pk
   add primary key (c1,
   c2)
-  INCLUDE ("c3",
+  include ("c3",
   "c4");
 
 select
@@ -149,13 +149,13 @@ from
   on i.indexrelid = c.oid
 where
   i.indrelid =
-  cast('tbl_include_pk' as REGCLASS)
+  cast('tbl_include_pk' as regclass)
 order by c.relname;
 
 create table tbl_include_box (
-  c1 INT,
-  c2 INT,
-  c3 INT,
+  c1 int,
+  c2 int,
+  c3 int,
   c4 box
 );
 
@@ -191,13 +191,13 @@ from
   on i.indexrelid = c.oid
 where
   i.indrelid =
-  cast('tbl_include_box' as REGCLASS)
+  cast('tbl_include_box' as regclass)
 order by c.relname;
 
 create table tbl_include_box_pk (
-  c1 INT,
-  c2 INT,
-  c3 INT,
+  c1 int,
+  c2 int,
+  c3 int,
   c4 box
 );
 
@@ -213,22 +213,22 @@ from
 alter table tbl_include_box_pk
   add primary key (c1,
   c2)
-  INCLUDE ("c3",
+  include ("c3",
   "c4");
 
 create table tbl (
-  c1 INT,
-  c2 INT,
-  c3 INT,
+  c1 int,
+  c2 int,
+  c3 int,
   c4 box,
   constraint "covering" unique (c1,
   c2)
-  INCLUDE ("c3",
+  include ("c3",
   "c4")
 );
 
 select
-  cast(indexrelid as REGCLASS),
+  cast(indexrelid as regclass),
   indnatts,
   indnkeyatts,
   indisunique,
@@ -239,7 +239,7 @@ from
   pg_index
 where
   indrelid =
-  cast(cast('tbl' as REGCLASS) as OID);
+  cast(cast('tbl' as regclass) as oid);
 
 select
   pg_get_constraintdef(oid),
@@ -249,7 +249,7 @@ from
   pg_constraint
 where
   conrelid =
-  cast(cast('tbl' as REGCLASS) as OID);
+  cast(cast('tbl' as regclass) as oid);
 
 insert into tbl
 select
@@ -260,21 +260,21 @@ select
 from
   generate_series(1, 10) as x;
 
-drop TABLE tbl;
+drop table tbl;
 
 create table tbl (
-  c1 INT,
-  c2 INT,
-  c3 INT,
+  c1 int,
+  c2 int,
+  c3 int,
   c4 box,
   constraint "covering" primary key (c1,
   c2)
-  INCLUDE ("c3",
+  include ("c3",
   "c4")
 );
 
 select
-  cast(indexrelid as REGCLASS),
+  cast(indexrelid as regclass),
   indnatts,
   indnkeyatts,
   indisunique,
@@ -285,7 +285,7 @@ from
   pg_index
 where
   indrelid =
-  cast(cast('tbl' as REGCLASS) as OID);
+  cast(cast('tbl' as regclass) as oid);
 
 select
   pg_get_constraintdef(oid),
@@ -295,7 +295,7 @@ from
   pg_constraint
 where
   conrelid =
-  cast(cast('tbl' as REGCLASS) as OID) and
+  cast(cast('tbl' as regclass) as oid) and
   contype = 'p';
 
 insert into tbl
@@ -328,20 +328,20 @@ select * from tbl where (c1, c2, c3) < (262, 1, 1) limit 1;
 
 select * from tbl where (c1, c2, c3) < (262, 1, 1) limit 1;
 
-drop TABLE tbl;
+drop table tbl;
 
 reset enable_seqscan;
 
 create table tbl (
-  c1 INT,
-  c2 INT,
-  c3 INT,
+  c1 int,
+  c2 int,
+  c3 int,
   c4 box,
-  unique (c1, c2) INCLUDE ("c3", "c4")
+  unique (c1, c2) include ("c3", "c4")
 );
 
 select
-  cast(indexrelid as REGCLASS),
+  cast(indexrelid as regclass),
   indnatts,
   indnkeyatts,
   indisunique,
@@ -352,7 +352,7 @@ from
   pg_index
 where
   indrelid =
-  cast(cast('tbl' as REGCLASS) as OID);
+  cast(cast('tbl' as regclass) as oid);
 
 select
   pg_get_constraintdef(oid),
@@ -362,7 +362,7 @@ from
   pg_constraint
 where
   conrelid =
-  cast(cast('tbl' as REGCLASS) as OID);
+  cast(cast('tbl' as regclass) as oid);
 
 insert into tbl
 select
@@ -373,21 +373,21 @@ select
 from
   generate_series(1, 10) as x;
 
-drop TABLE tbl;
+drop table tbl;
 
 create table tbl (
-  c1 INT,
-  c2 INT,
-  c3 INT,
+  c1 int,
+  c2 int,
+  c3 int,
   c4 box,
   primary key (c1,
   c2)
-  INCLUDE ("c3",
+  include ("c3",
   "c4")
 );
 
 select
-  cast(indexrelid as REGCLASS),
+  cast(indexrelid as regclass),
   indnatts,
   indnkeyatts,
   indisunique,
@@ -398,7 +398,7 @@ from
   pg_index
 where
   indrelid =
-  cast(cast('tbl' as REGCLASS) as OID);
+  cast(cast('tbl' as regclass) as oid);
 
 select
   pg_get_constraintdef(oid),
@@ -408,7 +408,7 @@ from
   pg_constraint
 where
   conrelid =
-  cast(cast('tbl' as REGCLASS) as OID) and
+  cast(cast('tbl' as regclass) as oid) and
   contype = 'p';
 
 insert into tbl
@@ -431,20 +431,20 @@ from
 
 insert into tbl select x, 2 * x, null, null from generate_series(1, 10) as x;
 
-drop TABLE tbl;
+drop table tbl;
 
 create table tbl (
-  c1 INT,
-  c2 INT,
-  c3 INT,
+  c1 int,
+  c2 int,
+  c3 int,
   c4 box,
   exclude using btree (c1 with =)
-  INCLUDE ("c3",
+  include ("c3",
   "c4")
 );
 
 select
-  cast(indexrelid as REGCLASS),
+  cast(indexrelid as regclass),
   indnatts,
   indnkeyatts,
   indisunique,
@@ -455,7 +455,7 @@ from
   pg_index
 where
   indrelid =
-  cast(cast('tbl' as REGCLASS) as OID);
+  cast(cast('tbl' as regclass) as oid);
 
 select
   pg_get_constraintdef(oid),
@@ -465,7 +465,7 @@ from
   pg_constraint
 where
   conrelid =
-  cast(cast('tbl' as REGCLASS) as OID);
+  cast(cast('tbl' as regclass) as oid);
 
 insert into tbl
 select
@@ -478,13 +478,13 @@ from
 
 insert into tbl select x, 2 * x, null, null from generate_series(1, 10) as x;
 
-drop TABLE tbl;
+drop table tbl;
 
 create table tbl (
-  c1 INT,
-  c2 INT,
-  c3 INT,
-  c4 INT
+  c1 int,
+  c2 int,
+  c3 int,
+  c4 int
 );
 
 create unique index "tbl_idx" on tbl using btree (c1, c2, c3, c4);
@@ -496,12 +496,12 @@ alter table tbl
 
 select indexdef from pg_indexes where tablename = 'tbl' order by indexname;
 
-drop TABLE tbl;
+drop table tbl;
 
 create table tbl (
-  c1 INT,
-  c2 INT,
-  c3 INT,
+  c1 int,
+  c2 int,
+  c3 int,
   c4 box
 );
 
@@ -514,14 +514,14 @@ alter table tbl
 
 select indexdef from pg_indexes where tablename = 'tbl' order by indexname;
 
-drop TABLE tbl;
+drop table tbl;
 
 create table tbl (
-  c1 INT,
-  c2 INT,
-  c3 INT,
+  c1 int,
+  c2 int,
+  c3 int,
   c4 box,
-  unique (c1, c2) INCLUDE ("c3", "c4")
+  unique (c1, c2) include ("c3", "c4")
 );
 
 select indexdef from pg_indexes where tablename = 'tbl' order by indexname;
@@ -536,35 +536,35 @@ alter table tbl
 
 select indexdef from pg_indexes where tablename = 'tbl' order by indexname;
 
-drop TABLE tbl;
+drop table tbl;
 
 create table tbl (
-  c1 INT,
-  c2 INT
+  c1 int,
+  c2 int
 );
 
 create index "tbl_idx" on tbl using btree (c1, (c1 + 0)) include (c2);
 
 alter index tbl_idx
-  alter column 1 set STATISTICS 1000;
+  alter column 1 set statistics 1000;
 
 alter index tbl_idx
-  alter column 2 set STATISTICS 1000;
+  alter column 2 set statistics 1000;
 
 alter index tbl_idx
-  alter column 3 set STATISTICS 1000;
+  alter column 3 set statistics 1000;
 
 alter index tbl_idx
-  alter column 4 set STATISTICS 1000;
+  alter column 4 set statistics 1000;
 
-drop TABLE tbl;
+drop table tbl;
 
 create table tbl (
-  c1 INT,
-  c2 INT,
-  c3 INT,
+  c1 int,
+  c2 int,
+  c3 int,
   c4 box,
-  unique (c1, c2) INCLUDE ("c3", "c4")
+  unique (c1, c2) include ("c3", "c4")
 );
 
 insert into tbl
@@ -580,14 +580,14 @@ create unique index concurrently on tbl using btree (c1, c2) include (c3, c4);
 
 select indexdef from pg_indexes where tablename = 'tbl' order by indexname;
 
-drop TABLE tbl;
+drop table tbl;
 
 create table tbl (
-  c1 INT,
-  c2 INT,
-  c3 INT,
+  c1 int,
+  c2 int,
+  c3 int,
   c4 box,
-  unique (c1, c2) INCLUDE ("c3", "c4")
+  unique (c1, c2) include ("c3", "c4")
 );
 
 select indexdef from pg_indexes where tablename = 'tbl' order by indexname;
@@ -606,11 +606,11 @@ alter table tbl
 
 select indexdef from pg_indexes where tablename = 'tbl' order by indexname;
 
-drop TABLE tbl;
+drop table tbl;
 
 create table tbl (
-  c1 INT,
-  c2 INT,
+  c1 int,
+  c2 int,
   c3 box,
   c4 box
 );
@@ -629,12 +629,12 @@ create index on tbl using rtree (c3) include (c1, c4);
 
 create index on tbl using btree (c1, c2) include (c3, c4);
 
-drop TABLE tbl;
+drop table tbl;
 
 create table tbl (
-  c1 INT,
-  c2 INT,
-  c3 INT,
+  c1 int,
+  c2 int,
+  c3 int,
   c4 box
 );
 
@@ -667,14 +667,14 @@ update tbl set c3 = 1;
 
 delete from tbl where c1 = 5 or c3 = 12;
 
-drop TABLE tbl;
+drop table tbl;
 
 create table tbl (
-  c1 INT,
-  c2 INT,
-  c3 INT,
+  c1 int,
+  c2 int,
+  c3 int,
   c4 box,
-  unique (c1, c2) INCLUDE ("c3", "c4")
+  unique (c1, c2) include ("c3", "c4")
 );
 
 insert into tbl
@@ -687,17 +687,17 @@ from
   generate_series(1, 10) as x;
 
 alter table tbl
-  alter column c1 type BIGINT;
+  alter column c1 type bigint;
 
 alter table tbl
-  alter column c3 type BIGINT;
+  alter column c3 type bigint;
 
-drop TABLE tbl;
+drop table tbl;
 
 create table nametbl (
-  c1 INT,
-  c2 NAME,
-  c3 DOUBLE PRECISION
+  c1 int,
+  c2 name,
+  c3 double precision
 );
 
 create index "nametbl_c1_c2_idx" on nametbl using btree (c2, c1) include (c3);
@@ -714,4 +714,4 @@ select c2, c1, c3 from nametbl where c2 = 'two' and c1 = 1;
 
 reset enable_seqscan;
 
-drop TABLE nametbl;
+drop table nametbl;

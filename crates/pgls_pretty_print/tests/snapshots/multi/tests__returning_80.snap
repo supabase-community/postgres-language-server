@@ -5,8 +5,8 @@ snapshot_kind: text
 ---
 create temporary table foo (
   f1 serial,
-  f2 TEXT,
-  f3 INT default 42
+  f2 text,
+  f3 int default 42
 );
 
 insert into foo (f2, f3)
@@ -73,13 +73,13 @@ i.f1 as "i.f1";
 
 select * from foo;
 
-create temporary table foochild (fc INT)
+create temporary table foochild (fc int)
 inherits (foo);
 
 insert into foochild values (123, 'child', 999, -123);
 
 alter table foo
-  add column f4 BIGINT default 99;
+  add column f4 bigint default 99;
 
 select * from foo;
 
@@ -103,7 +103,7 @@ select * from foo;
 
 select * from foochild;
 
-drop TABLE foochild;
+drop table foochild;
 
 create temporary view voo
 as select f1, f2 from foo;
@@ -198,9 +198,9 @@ returning foo_f;
 
 select * from foo;
 
-drop FUNCTION foo_f();
+drop function foo_f();
 
-create type foo_t as (f1 INT, f2 TEXT, f3 INT, f4 BIGINT);
+create type foo_t as (f1 int, f2 text, f3 int, f4 bigint);
 
 create function foo_f()
 returns setof foo_t
@@ -217,13 +217,13 @@ returning foo_f;
 
 select * from foo;
 
-drop FUNCTION foo_f();
+drop function foo_f();
 
-drop TYPE foo_t;
+drop type foo_t;
 
 create temporary table joinme (
-  f2j TEXT,
-  other INT
+  f2j text,
+  other int
 );
 
 insert into joinme values ('more', 12345);
@@ -279,20 +279,20 @@ values
 
 insert into foo
 values (4)
-returning cast(old.tableoid as REGCLASS),
+returning cast(old.tableoid as regclass),
 old.ctid,
 old.*,
-cast(new.tableoid as REGCLASS),
+cast(new.tableoid as regclass),
 new.ctid,
 new.*,
 *;
 
 insert into foo
 values (4)
-returning cast(old.tableoid as REGCLASS),
+returning cast(old.tableoid as regclass),
 old.ctid,
 old.*,
-cast(new.tableoid as REGCLASS),
+cast(new.tableoid as regclass),
 new.ctid,
 new.*,
 *;
@@ -303,41 +303,41 @@ update foo
 set f4 = 100
 where
   f1 = 5
-returning cast(old.tableoid as REGCLASS),
+returning cast(old.tableoid as regclass),
 old.ctid,
 old.*,
 old,
-cast(new.tableoid as REGCLASS),
+cast(new.tableoid as regclass),
 new.ctid,
 new.*,
 new,
-cast(old.f4 as TEXT) || '->' ||
-cast(new.f4 as TEXT)
+cast(old.f4 as text) || '->' ||
+cast(new.f4 as text)
 as change;
 
 update foo
 set f4 = 100
 where
   f1 = 5
-returning cast(old.tableoid as REGCLASS),
+returning cast(old.tableoid as regclass),
 old.ctid,
 old.*,
 old,
-cast(new.tableoid as REGCLASS),
+cast(new.tableoid as regclass),
 new.ctid,
 new.*,
 new,
-cast(old.f4 as TEXT) || '->' ||
-cast(new.f4 as TEXT)
+cast(old.f4 as text) || '->' ||
+cast(new.f4 as text)
 as change;
 
 delete from foo
 where
   f1 = 5
-returning cast(old.tableoid as REGCLASS),
+returning cast(old.tableoid as regclass),
 old.ctid,
 old.*,
-cast(new.tableoid as REGCLASS),
+cast(new.tableoid as regclass),
 new.ctid,
 new.*,
 *;
@@ -345,10 +345,10 @@ new.*,
 delete from foo
 where
   f1 = 5
-returning cast(old.tableoid as REGCLASS),
+returning cast(old.tableoid as regclass),
 old.ctid,
 old.*,
-cast(new.tableoid as REGCLASS),
+cast(new.tableoid as regclass),
 new.ctid,
 new.*,
 *;
@@ -509,13 +509,13 @@ BEGIN
 END;
 $function$;
 
-create TRIGGER joinview_upd_trig
+create trigger joinview_upd_trig
 instead of update
 on joinview
-for EACH ROW
-EXECUTE FUNCTION joinview_upd_trig_fn();
+for each row
+execute function joinview_upd_trig_fn();
 
-drop RULE joinview_u on joinview;
+drop rule joinview_u on joinview;
 
 update joinview
 set f3 = f3 + 1,
@@ -573,38 +573,38 @@ insert into zerocol select returning old.*, new.*, *;
 
 insert into zerocol
 select
-returning cast(old.tableoid as REGCLASS),
+returning cast(old.tableoid as regclass),
 old.ctid,
-cast(new.tableoid as REGCLASS),
+cast(new.tableoid as regclass),
 new.ctid,
 ctid,
 *;
 
 delete from zerocol
-returning cast(old.tableoid as REGCLASS),
+returning cast(old.tableoid as regclass),
 old.ctid,
-cast(new.tableoid as REGCLASS),
+cast(new.tableoid as regclass),
 new.ctid,
 ctid,
 *;
 
-drop TABLE zerocol;
+drop table zerocol;
 
 create table public.tt (
-  a INT,
-  b INT
+  a int,
+  b int
 );
 
 insert into public.tt values (1, 10);
 
 update public.tt set b = b * 2 returning a, b, old.b, new.b, tt.b, public.tt.b;
 
-drop TABLE public.tt;
+drop table public.tt;
 
 create table foo_parted (
-  a INT,
-  b DOUBLE PRECISION,
-  c TEXT
+  a int,
+  b double precision,
+  c text
 )
 partition by LIST(a);
 
@@ -613,23 +613,23 @@ create table foo_part_s1 partition of foo_parted for values in (1);
 create table foo_part_s2 partition of foo_parted for values in (2);
 
 create table foo_part_d1 (
-  c TEXT,
-  a INT,
-  b DOUBLE PRECISION
+  c text,
+  a int,
+  b double precision
 );
 
 alter table foo_parted
-  ATTACH partition
+  attach partition
   foo_part_d1 for values in (3);
 
 create table foo_part_d2 (
-  b DOUBLE PRECISION,
-  c TEXT,
-  a INT
+  b double precision,
+  c text,
+  a int
 );
 
 alter table foo_parted
-  ATTACH partition
+  attach partition
   foo_part_d2 for values in (4);
 
 insert into foo_parted
@@ -638,10 +638,10 @@ values
   (2, 17.2, 'P2'),
   (3, 17.3, 'P3'),
   (4, 17.4, 'P4')
-returning cast(old.tableoid as REGCLASS),
+returning cast(old.tableoid as regclass),
 old.ctid,
 old.*,
-cast(new.tableoid as REGCLASS),
+cast(new.tableoid as regclass),
 new.ctid,
 new.*,
 *;
@@ -652,10 +652,10 @@ b = b + 1,
 c = c || '->P2'
 where
   a = 1
-returning cast(old.tableoid as REGCLASS),
+returning cast(old.tableoid as regclass),
 old.ctid,
 old.*,
-cast(new.tableoid as REGCLASS),
+cast(new.tableoid as regclass),
 new.ctid,
 new.*,
 *;
@@ -666,10 +666,10 @@ b = b + 1,
 c = c || '->P1'
 where
   a = 3
-returning cast(old.tableoid as REGCLASS),
+returning cast(old.tableoid as regclass),
 old.ctid,
 old.*,
-cast(new.tableoid as REGCLASS),
+cast(new.tableoid as regclass),
 new.ctid,
 new.*,
 *;
@@ -680,10 +680,10 @@ b = b + 1,
 c = c || '->P3'
 where
   a = 1
-returning cast(old.tableoid as REGCLASS),
+returning cast(old.tableoid as regclass),
 old.ctid,
 old.*,
-cast(new.tableoid as REGCLASS),
+cast(new.tableoid as regclass),
 new.ctid,
 new.*,
 *;
@@ -694,10 +694,10 @@ b = b + 1,
 c = c || '->P4'
 where
   a = 3
-returning cast(old.tableoid as REGCLASS),
+returning cast(old.tableoid as regclass),
 old.ctid,
 old.*,
-cast(new.tableoid as REGCLASS),
+cast(new.tableoid as regclass),
 new.ctid,
 new.*,
 *;
@@ -714,16 +714,16 @@ returning 'P2:' || old.dummy,
 'P1:' || new.dummy;
 
 delete from foo_parted
-returning cast(old.tableoid as REGCLASS),
+returning cast(old.tableoid as regclass),
 old.ctid,
 old.*,
-cast(new.tableoid as REGCLASS),
+cast(new.tableoid as regclass),
 new.ctid,
 new.*,
 *;
 
-drop TABLE foo_parted cascade;
+drop table foo_parted cascade;
 
 commit;
 
-drop FUNCTION foo_update;
+drop function foo_update;

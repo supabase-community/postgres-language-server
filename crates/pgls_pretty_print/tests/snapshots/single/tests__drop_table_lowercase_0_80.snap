@@ -3,4 +3,4 @@ source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/single/drop_table_lowercase_0.sql
 snapshot_kind: text
 ---
-drop TABLE my_table;
+drop table my_table;

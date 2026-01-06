@@ -4,26 +4,26 @@ input_file: crates/pgls_pretty_print/tests/data/multi/brin_multi.sql
 snapshot_kind: text
 ---
 create table brintest_multi (
-  int8col BIGINT,
-  int2col SMALLINT,
-  int4col INT,
-  oidcol OID,
-  tidcol TID,
-  float4col REAL,
-  float8col DOUBLE PRECISION,
-  macaddrcol MACADDR,
-  macaddr8col MACADDR8,
-  inetcol INET,
-  cidrcol CIDR,
-  datecol DATE,
-  timecol TIME,
-  timestampcol TIMESTAMP,
-  timestamptzcol timestamp with time ZONE,
-  intervalcol INTERVAL,
-  timetzcol time with time ZONE,
-  numericcol NUMERIC,
-  uuidcol UUID,
-  lsncol PG_LSN
+  int8col bigint,
+  int2col smallint,
+  int4col int,
+  oidcol oid,
+  tidcol tid,
+  float4col real,
+  float8col double precision,
+  macaddrcol macaddr,
+  macaddr8col macaddr8,
+  inetcol inet,
+  cidrcol cidr,
+  datecol date,
+  timecol time,
+  timestampcol timestamp,
+  timestamptzcol timestamp with time zone,
+  intervalcol interval,
+  timetzcol time with time zone,
+  numericcol numeric,
+  uuidcol uuid,
+  lsncol pg_lsn
 )
 with (fillfactor = 10);
 
@@ -32,37 +32,37 @@ select
   142857 * tenthous,
   thousand,
   twothousand,
-  cast(unique1 as OID),
-  cast(format('(%s,%s)', tenthous, twenty) as TID),
+  cast(unique1 as oid),
+  cast(format('(%s,%s)', tenthous, twenty) as tid),
   (four + 1.0) / (hundred + 1),
-  cast(odd as DOUBLE PRECISION) / (tenthous + 1),
+  cast(odd as double precision) / (tenthous + 1),
   cast(format(
     '%s:00:%s:00:%s:00',
     to_hex(odd),
     to_hex(even),
     to_hex(hundred)
   )
-  as MACADDR),
-  cast(substr(fipshash(cast(unique1 as TEXT)), 1, 16)
-  as MACADDR8),
-  cast('10.2.3.4/24' as INET) + tenthous,
-  cast('10.2.3/24' as CIDR) + tenthous,
-  cast('1995-08-15' as DATE) + tenthous,
-  cast('01:20:30' as TIME) +
-  thousand * cast('18.5 second' as INTERVAL),
-  cast('1942-07-23 03:05:09' as TIMESTAMP) +
-  tenthous * cast('36.38 hours' as INTERVAL),
+  as macaddr),
+  cast(substr(fipshash(cast(unique1 as text)), 1, 16)
+  as macaddr8),
+  cast('10.2.3.4/24' as inet) + tenthous,
+  cast('10.2.3/24' as cidr) + tenthous,
+  cast('1995-08-15' as date) + tenthous,
+  cast('01:20:30' as time) +
+  thousand * cast('18.5 second' as interval),
+  cast('1942-07-23 03:05:09' as timestamp) +
+  tenthous * cast('36.38 hours' as interval),
   cast('1972-10-10 03:00'
-  as timestamp with time ZONE) +
-  thousand * cast('1 hour' as INTERVAL),
+  as timestamp with time zone) +
+  thousand * cast('1 hour' as interval),
   justify_days(
     justify_hours(
-      tenthous * cast('12 minutes' as INTERVAL)
+      tenthous * cast('12 minutes' as interval)
     )
   ),
-  cast('01:30:20+02' as time with time ZONE) +
-  hundred * cast('15 seconds' as INTERVAL),
-  cast(tenthous as NUMERIC(36, 30)) * fivethous *
+  cast('01:30:20+02' as time with time zone) +
+  hundred * cast('15 seconds' as interval),
+  cast(tenthous as numeric(36, 30)) * fivethous *
   even /
   (hundred + 1),
   cast(format(
@@ -76,9 +76,9 @@ select
     to_char(tenthous, 'FM0000'),
     to_char(tenthous, 'FM0000')
   )
-  as UUID),
+  as uuid),
   cast(format('%s/%s%s', odd, even, tenthous)
-  as PG_LSN)
+  as pg_lsn)
 from
   tenk1
 order by unique2
@@ -86,9 +86,9 @@ limit 100;
 
 insert into brintest_multi (inetcol, cidrcol)
 select
-  cast('fe80::6e40:8ff:fea9:8c46' as INET) +
+  cast('fe80::6e40:8ff:fea9:8c46' as inet) +
   tenthous,
-  cast('fe80::6e40:8ff:fea9:8c46' as CIDR) +
+  cast('fe80::6e40:8ff:fea9:8c46' as cidr) +
   tenthous
 from
   tenk1
@@ -138,7 +138,7 @@ using brin
   lsncol pg_lsn_minmax_multi_ops
 );
 
-drop INDEX brinidx_multi;
+drop index brinidx_multi;
 
 create index "brinidx_multi"
 on brintest_multi
@@ -168,11 +168,11 @@ using brin
 with (pages_per_range = 1);
 
 create table brinopers_multi (
-  colname NAME,
-  typ TEXT,
-  op TEXT[],
-  value TEXT[],
-  matches INT[],
+  colname name,
+  typ text,
+  op text[],
+  value text[],
+  matches int[],
   check (cardinality(op) = cardinality(value)),
   check (cardinality(op) = cardinality(matches))
 );
@@ -488,37 +488,37 @@ select
   142857 * tenthous,
   thousand,
   twothousand,
-  cast(unique1 as OID),
-  cast(format('(%s,%s)', tenthous, twenty) as TID),
+  cast(unique1 as oid),
+  cast(format('(%s,%s)', tenthous, twenty) as tid),
   (four + 1.0) / (hundred + 1),
-  cast(odd as DOUBLE PRECISION) / (tenthous + 1),
+  cast(odd as double precision) / (tenthous + 1),
   cast(format(
     '%s:00:%s:00:%s:00',
     to_hex(odd),
     to_hex(even),
     to_hex(hundred)
   )
-  as MACADDR),
-  cast(substr(fipshash(cast(unique1 as TEXT)), 1, 16)
-  as MACADDR8),
-  cast('10.2.3.4' as INET) + tenthous,
-  cast('10.2.3/24' as CIDR) + tenthous,
-  cast('1995-08-15' as DATE) + tenthous,
-  cast('01:20:30' as TIME) +
-  thousand * cast('18.5 second' as INTERVAL),
-  cast('1942-07-23 03:05:09' as TIMESTAMP) +
-  tenthous * cast('36.38 hours' as INTERVAL),
+  as macaddr),
+  cast(substr(fipshash(cast(unique1 as text)), 1, 16)
+  as macaddr8),
+  cast('10.2.3.4' as inet) + tenthous,
+  cast('10.2.3/24' as cidr) + tenthous,
+  cast('1995-08-15' as date) + tenthous,
+  cast('01:20:30' as time) +
+  thousand * cast('18.5 second' as interval),
+  cast('1942-07-23 03:05:09' as timestamp) +
+  tenthous * cast('36.38 hours' as interval),
   cast('1972-10-10 03:00'
-  as timestamp with time ZONE) +
-  thousand * cast('1 hour' as INTERVAL),
+  as timestamp with time zone) +
+  thousand * cast('1 hour' as interval),
   justify_days(
     justify_hours(
-      tenthous * cast('12 minutes' as INTERVAL)
+      tenthous * cast('12 minutes' as interval)
     )
   ),
-  cast('01:30:20' as time with time ZONE) +
-  hundred * cast('15 seconds' as INTERVAL),
-  cast(tenthous as NUMERIC(36, 30)) * fivethous *
+  cast('01:30:20' as time with time zone) +
+  hundred * cast('15 seconds' as interval),
+  cast(tenthous as numeric(36, 30)) * fivethous *
   even /
   (hundred + 1),
   cast(format(
@@ -532,9 +532,9 @@ select
     to_char(tenthous, 'FM0000'),
     to_char(tenthous, 'FM0000')
   )
-  as UUID),
+  as uuid),
   cast(format('%s/%s%s', odd, even, tenthous)
-  as PG_LSN)
+  as pg_lsn)
 from
   tenk1
 order by unique2
@@ -545,13 +545,13 @@ select brin_desummarize_range('brinidx_multi', 0);
 
 vacuum brintest_multi;
 
-insert into public.brintest_multi (float4col) values (cast('nan' as REAL));
+insert into public.brintest_multi (float4col) values (cast('nan' as real));
 
-insert into public.brintest_multi (float8col) values (cast('nan' as REAL));
+insert into public.brintest_multi (float8col) values (cast('nan' as real));
 
 update brintest_multi set int8col = int8col * int4col;
 
-create table brin_test_inet (a INET);
+create table brin_test_inet (a inet);
 
 create index on brin_test_inet using brin (a inet_minmax_multi_ops);
 
@@ -559,7 +559,7 @@ insert into brin_test_inet values ('127.0.0.1/0');
 
 insert into brin_test_inet values ('0.0.0.0/12');
 
-drop TABLE brin_test_inet;
+drop table brin_test_inet;
 
 select brin_summarize_new_values('brintest_multi');
 
@@ -575,15 +575,15 @@ select brin_desummarize_range('brinidx_multi', 0);
 
 select brin_desummarize_range('brinidx_multi', 100000000);
 
-create table brin_large_range (a INT);
+create table brin_large_range (a int);
 
 insert into brin_large_range select i from generate_series(1, 10000) as s (i);
 
 create index "brin_large_range_idx" on brin_large_range using brin (a int4_minmax_multi_ops);
 
-drop TABLE brin_large_range;
+drop table brin_large_range;
 
-create table brin_summarize_multi (value INT) with (fillfactor = 10, autovacuum_enabled = 'false');
+create table brin_summarize_multi (value int) with (fillfactor = 10, autovacuum_enabled = 'false');
 
 create index "brin_summarize_multi_idx"
 on brin_summarize_multi
@@ -617,8 +617,8 @@ select brin_summarize_range('brin_summarize_multi_idx', -1);
 select brin_summarize_range('brin_summarize_multi_idx', 4294967296);
 
 create table brin_test_multi (
-  a INT,
-  b INT
+  a int,
+  b int
 );
 
 insert into brin_test_multi select x / 100, x % 100 from generate_series(1, 10000) as x (x);
@@ -646,8 +646,8 @@ select * from brin_test_multi where a = 1;
 select * from brin_test_multi where b = 1;
 
 create table brin_test_multi_1 (
-  a INT,
-  b BIGINT
+  a int,
+  b bigint
 )
 with (fillfactor = 10);
 
@@ -765,15 +765,15 @@ select COUNT(*) from brin_test_multi_1 where b = 88;
 
 select COUNT(*) from brin_test_multi_1 where b = 103;
 
-drop TABLE brin_test_multi_1;
+drop table brin_test_multi_1;
 
 reset enable_seqscan;
 
-create table brin_test_multi_2 (a UUID) with (fillfactor = 10);
+create table brin_test_multi_2 (a uuid) with (fillfactor = 10);
 
 insert into brin_test_multi_2
 select
-  cast(v as UUID)
+  cast(v as uuid)
 from
   (
     select
@@ -782,7 +782,7 @@ from
     from
       (
         select
-          fipshash(cast(i / 13 as TEXT)) as v
+          fipshash(cast(i / 13 as text)) as v
         from
           generate_series(1, 1000) as s (i)
       )
@@ -817,7 +817,7 @@ truncate brin_test_multi_2;
 
 insert into brin_test_multi_2
 select
-  cast(v as UUID)
+  cast(v as uuid)
 from
   (
     select
@@ -826,7 +826,7 @@ from
     from
       (
         select
-          fipshash(cast(i / 13 as TEXT)) as v
+          fipshash(cast(i / 13 as text)) as v
         from
           generate_series(1, 1000) as s (i)
       )
@@ -847,27 +847,27 @@ select COUNT(*) from brin_test_multi_2 where a = '5feceb66-ffc8-6f38-d952-786c6d
 
 select COUNT(*) from brin_test_multi_2 where a = '86e50149-6586-6131-2a9e-0b35558d84f6';
 
-drop TABLE brin_test_multi_2;
+drop table brin_test_multi_2;
 
 reset enable_seqscan;
 
-create table brin_timestamp_test (a timestamp with time ZONE);
+create table brin_timestamp_test (a timestamp with time zone);
 
 set datestyle = iso;
 
 insert into brin_timestamp_test
 select
   cast('4713-01-01 00:00:01 BC'
-  as timestamp with time ZONE) +
-  cast(i || ' seconds' as INTERVAL)
+  as timestamp with time zone) +
+  cast(i || ' seconds' as interval)
 from
   generate_series(1, 30) as s (i);
 
 insert into brin_timestamp_test
 select
   cast('294276-12-01 00:00:01'
-  as timestamp with time ZONE) +
-  cast(i || ' seconds' as INTERVAL)
+  as timestamp with time zone) +
+  cast(i || ' seconds' as interval)
 from
   generate_series(1, 30) as s (i);
 
@@ -879,19 +879,19 @@ using brin
 )
 with (pages_per_range = 1);
 
-drop TABLE brin_timestamp_test;
+drop table brin_timestamp_test;
 
-create table brin_date_test (a DATE);
+create table brin_date_test (a date);
 
 insert into brin_date_test
 select
-  cast('4713-01-01 BC' as DATE) + i
+  cast('4713-01-01 BC' as date) + i
 from
   generate_series(1, 30) as s (i);
 
 insert into brin_date_test
 select
-  cast('5874897-12-01' as DATE) + i
+  cast('5874897-12-01' as date) + i
 from
   generate_series(1, 30) as s (i);
 
@@ -905,13 +905,13 @@ with (pages_per_range = 1);
 
 set enable_seqscan = off;
 
-select * from brin_date_test where a = cast('2023-01-01' as DATE);
+select * from brin_date_test where a = cast('2023-01-01' as date);
 
-drop TABLE brin_date_test;
+drop table brin_date_test;
 
 reset enable_seqscan;
 
-create table brin_timestamp_test (a TIMESTAMP);
+create table brin_timestamp_test (a timestamp);
 
 insert into brin_timestamp_test values ('-infinity'), ('infinity');
 
@@ -920,9 +920,9 @@ select
   i
 from
   generate_series(
-    cast('2000-01-01' as TIMESTAMP),
-    cast('2000-02-09' as TIMESTAMP),
-    cast('1 day' as INTERVAL)
+    cast('2000-01-01' as timestamp),
+    cast('2000-02-09' as timestamp),
+    cast('1 day' as interval)
   )
   as s (i);
 
@@ -936,21 +936,21 @@ with (pages_per_range = 1);
 
 set enable_seqscan = off;
 
-select * from brin_timestamp_test where a = cast('2023-01-01' as TIMESTAMP);
+select * from brin_timestamp_test where a = cast('2023-01-01' as timestamp);
 
-select * from brin_timestamp_test where a = cast('1900-01-01' as TIMESTAMP);
+select * from brin_timestamp_test where a = cast('1900-01-01' as timestamp);
 
-drop TABLE brin_timestamp_test;
+drop table brin_timestamp_test;
 
 reset enable_seqscan;
 
-create table brin_date_test (a DATE);
+create table brin_date_test (a date);
 
 insert into brin_date_test values ('-infinity'), ('infinity');
 
 insert into brin_date_test
 select
-  cast('2000-01-01' as DATE) + i
+  cast('2000-01-01' as date) + i
 from
   generate_series(1, 40) as s (i);
 
@@ -964,27 +964,27 @@ with (pages_per_range = 1);
 
 set enable_seqscan = off;
 
-select * from brin_date_test where a = cast('2023-01-01' as DATE);
+select * from brin_date_test where a = cast('2023-01-01' as date);
 
-select * from brin_date_test where a = cast('1900-01-01' as DATE);
+select * from brin_date_test where a = cast('1900-01-01' as date);
 
-drop TABLE brin_date_test;
+drop table brin_date_test;
 
 reset enable_seqscan;
 
 reset datestyle;
 
-create table brin_interval_test (a INTERVAL);
+create table brin_interval_test (a interval);
 
 insert into brin_interval_test
 select
-  cast(i || ' years' as INTERVAL)
+  cast(i || ' years' as interval)
 from
   generate_series(-178000000, -177999980) as s (i);
 
 insert into brin_interval_test
 select
-  cast(i || ' years' as INTERVAL)
+  cast(i || ' years' as interval)
 from
   generate_series(177999980, 178000000) as s (i);
 
@@ -998,21 +998,21 @@ with (pages_per_range = 1);
 
 set enable_seqscan = off;
 
-select * from brin_interval_test where a = cast('-30 years' as INTERVAL);
+select * from brin_interval_test where a = cast('-30 years' as interval);
 
-select * from brin_interval_test where a = cast('30 years' as INTERVAL);
+select * from brin_interval_test where a = cast('30 years' as interval);
 
-drop TABLE brin_interval_test;
+drop table brin_interval_test;
 
 reset enable_seqscan;
 
-create table brin_interval_test (a INTERVAL);
+create table brin_interval_test (a interval);
 
 insert into brin_interval_test values ('-infinity'), ('infinity');
 
 insert into brin_interval_test
 select
-  cast(i || ' days' as INTERVAL)
+  cast(i || ' days' as interval)
 from
   generate_series(100, 140) as s (i);
 
@@ -1026,11 +1026,11 @@ with (pages_per_range = 1);
 
 set enable_seqscan = off;
 
-select * from brin_interval_test where a = cast('-30 years' as INTERVAL);
+select * from brin_interval_test where a = cast('-30 years' as interval);
 
-select * from brin_interval_test where a = cast('30 years' as INTERVAL);
+select * from brin_interval_test where a = cast('30 years' as interval);
 
-drop TABLE brin_interval_test;
+drop table brin_interval_test;
 
 reset enable_seqscan;
 

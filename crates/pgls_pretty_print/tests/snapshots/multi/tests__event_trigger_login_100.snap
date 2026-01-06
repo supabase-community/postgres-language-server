@@ -5,10 +5,10 @@ snapshot_kind: text
 ---
 create table user_logins (
   id serial,
-  who TEXT
+  who text
 );
 
-grant SELECT on table user_logins to PUBLIC;
+grant SELECT on table user_logins to public;
 
 create function on_login_proc()
 returns event_trigger
@@ -22,7 +22,7 @@ language plpgsql;
 
 create event trigger "on_login_trigger" on login execute function on_login_proc();
 
-alter EVENT TRIGGER on_login_trigger ENABLE ALWAYS;
+alter event trigger on_login_trigger enable always;
 
 select COUNT(*) from user_logins;
 
@@ -30,8 +30,8 @@ select COUNT(*) from user_logins;
 
 select dathasloginevt from pg_database where datname = 'DBNAME';
 
-drop TABLE user_logins;
+drop table user_logins;
 
-drop EVENT TRIGGER on_login_trigger;
+drop event trigger on_login_trigger;
 
-drop FUNCTION on_login_proc();
+drop function on_login_proc();

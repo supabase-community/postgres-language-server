@@ -305,7 +305,7 @@ fn emit_overlay_function(e: &mut EventEmitter, n: &FuncCall) {
     super::emit_node(&n.args[0], e);
 
     e.space();
-    e.token(TokenKind::IDENT("PLACING".to_string()));
+    e.token(TokenKind::PLACING_KW);
     e.space();
     // Second arg: newstring
     super::emit_node(&n.args[1], e);
@@ -495,7 +495,7 @@ fn emit_xmlexists_function(e: &mut EventEmitter, n: &FuncCall) {
     super::emit_node(&n.args[0], e);
 
     e.space();
-    e.token(TokenKind::IDENT("PASSING".to_string()));
+    e.token(TokenKind::PASSING_KW);
     e.space();
 
     // Second arg: xml value

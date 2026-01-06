@@ -4,9 +4,9 @@ input_file: crates/pgls_pretty_print/tests/data/multi/index_including_gist.sql
 snapshot_kind: text
 ---
 create table tbl_gist (
-  c1 INT,
-  c2 INT,
-  c3 INT,
+  c1 int,
+  c2 int,
+  c3 int,
   c4 box
 );
 
@@ -29,7 +29,7 @@ from
     pg_class as c
   on i.indexrelid = c.oid
 where
-  i.indrelid = cast('tbl_gist' as REGCLASS)
+  i.indrelid = cast('tbl_gist' as regclass)
 order by c.relname;
 
 select * from tbl_gist where c4 <@ box(point(1, 1), point(10, 10));
@@ -40,12 +40,12 @@ select * from tbl_gist where c4 <@ box(point(1, 1), point(10, 10));
 
 set enable_bitmapscan = default;
 
-drop TABLE tbl_gist;
+drop table tbl_gist;
 
 create table tbl_gist (
-  c1 INT,
-  c2 INT,
-  c3 INT,
+  c1 int,
+  c2 int,
+  c3 int,
   c4 box
 );
 
@@ -68,7 +68,7 @@ from
     pg_class as c
   on i.indexrelid = c.oid
 where
-  i.indrelid = cast('tbl_gist' as REGCLASS)
+  i.indrelid = cast('tbl_gist' as regclass)
 order by c.relname;
 
 select * from tbl_gist where c4 <@ box(point(1, 1), point(10, 10));
@@ -79,12 +79,12 @@ select * from tbl_gist where c4 <@ box(point(1, 1), point(10, 10));
 
 set enable_bitmapscan = default;
 
-drop TABLE tbl_gist;
+drop table tbl_gist;
 
 create table tbl_gist (
-  c1 INT,
-  c2 INT,
-  c3 INT,
+  c1 int,
+  c2 int,
+  c3 int,
   c4 box
 );
 
@@ -101,12 +101,12 @@ create index concurrently "tbl_gist_idx" on tbl_gist using gist (c4) include (c1
 
 select indexdef from pg_indexes where tablename = 'tbl_gist' order by indexname;
 
-drop TABLE tbl_gist;
+drop table tbl_gist;
 
 create table tbl_gist (
-  c1 INT,
-  c2 INT,
-  c3 INT,
+  c1 int,
+  c2 int,
+  c3 int,
   c4 box
 );
 
@@ -132,12 +132,12 @@ alter table tbl_gist
 
 select indexdef from pg_indexes where tablename = 'tbl_gist' order by indexname;
 
-drop TABLE tbl_gist;
+drop table tbl_gist;
 
 create table tbl_gist (
-  c1 INT,
-  c2 INT,
-  c3 INT,
+  c1 int,
+  c2 int,
+  c3 int,
   c4 box
 );
 
@@ -158,12 +158,12 @@ update tbl_gist set c1 = 1 where c1 = 3;
 
 delete from tbl_gist where c1 = 5 or c3 = 12;
 
-drop TABLE tbl_gist;
+drop table tbl_gist;
 
 create table tbl_gist (
-  c1 INT,
-  c2 INT,
-  c3 INT,
+  c1 int,
+  c2 int,
+  c3 int,
   c4 box
 );
 
@@ -179,20 +179,20 @@ from
 create index "tbl_gist_idx" on tbl_gist using gist (c4) include (c1, c3);
 
 alter table tbl_gist
-  alter column c1 type BIGINT;
+  alter column c1 type bigint;
 
 alter table tbl_gist
-  alter column c3 type BIGINT;
+  alter column c3 type bigint;
 
-drop TABLE tbl_gist;
+drop table tbl_gist;
 
 create table tbl_gist (
-  c1 INT,
-  c2 INT,
-  c3 INT,
+  c1 int,
+  c2 int,
+  c3 int,
   c4 box,
   exclude using gist (c4 with &&)
-  INCLUDE ("c1",
+  include ("c1",
   "c2",
   "c3")
 );
@@ -220,4 +220,4 @@ from
 
 select * from tbl_gist where c4 <@ box(point(1, 1), point(10, 10));
 
-drop TABLE tbl_gist;
+drop table tbl_gist;

@@ -4,9 +4,9 @@ input_file: crates/pgls_pretty_print/tests/data/multi/predicate.sql
 snapshot_kind: text
 ---
 create table pred_tab (
-  a INT not null,
-  b INT,
-  c INT not null
+  a int not null,
+  b int,
+  c int not null
 );
 
 select * from pred_tab as t where t.a is not null;
@@ -115,9 +115,9 @@ from
         t1.a = t3.a and t6.a is null
     );
 
-drop TABLE pred_tab;
+drop table pred_tab;
 
-create table pred_parent (a INT);
+create table pred_parent (a int);
 
 create table pred_child ()
 inherits (pred_parent);
@@ -139,16 +139,16 @@ select * from pred_parent where a is not null;
 
 select * from pred_parent where a is null;
 
-drop TABLE pred_parent, pred_child;
+drop table pred_parent, pred_child;
 
 create table pred_tab (
-  a INT,
-  b INT
+  a int,
+  b int
 );
 
 create table pred_tab_notnull (
-  a INT,
-  b INT not null
+  a int,
+  b int not null
 );
 
 insert into pred_tab values (1, 1);
@@ -219,19 +219,19 @@ from
     pred_tab as t4
   on t3.b is null and t3.a is not null;
 
-drop TABLE pred_tab;
+drop table pred_tab;
 
-drop TABLE pred_tab_notnull;
+drop table pred_tab_notnull;
 
 create table pred_tab1 (
-  a INT not null,
-  b INT,
+  a int not null,
+  b int,
   constraint "check_tab1" check (a is null or b > 2)
 );
 
 create table pred_tab2 (
-  a INT,
-  b INT,
+  a int,
+  b int,
   constraint "check_a" check (a is not null)
 );
 
@@ -243,6 +243,6 @@ select * from pred_tab2, pred_tab1 where pred_tab1.a is null or pred_tab1.b < 2;
 
 reset constraint_exclusion;
 
-drop TABLE pred_tab1;
+drop table pred_tab1;
 
-drop TABLE pred_tab2;
+drop table pred_tab2;

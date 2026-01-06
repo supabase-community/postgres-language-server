@@ -8,9 +8,9 @@ use crate::{
 pub(super) fn emit_replica_identity_stmt(e: &mut EventEmitter, n: &ReplicaIdentityStmt) {
     e.group_start(GroupKind::ReplicaIdentityStmt);
 
-    e.token(TokenKind::IDENT("REPLICA".to_string()));
+    e.token(TokenKind::REPLICA_KW);
     e.space();
-    e.token(TokenKind::IDENT("IDENTITY".to_string()));
+    e.token(TokenKind::IDENTITY_KW);
     e.line(LineType::SoftOrSpace);
 
     // identity_type: 'd' = DEFAULT, 'f' = FULL, 'i' = USING INDEX, 'n' = NOTHING
@@ -19,10 +19,10 @@ pub(super) fn emit_replica_identity_stmt(e: &mut EventEmitter, n: &ReplicaIdenti
             e.token(TokenKind::DEFAULT_KW);
         }
         "f" => {
-            e.token(TokenKind::IDENT("FULL".to_string()));
+            e.token(TokenKind::FULL_KW);
         }
         "n" => {
-            e.token(TokenKind::IDENT("NOTHING".to_string()));
+            e.token(TokenKind::NOTHING_KW);
         }
         "i" => {
             // USING INDEX index_name

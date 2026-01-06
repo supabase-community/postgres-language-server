@@ -315,6 +315,17 @@
           ],
           "format": "uint16",
           "minimum": 0.0
+        },
+        "typeCase": {
+          "description": "Data type casing (text, varchar, int): \"upper\" or \"lower\". Default: \"lower\".",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/KeywordCase"
+            },
+            {
+              "type": "null"
+            }
+          ]
         }
       },
       "additionalProperties": false

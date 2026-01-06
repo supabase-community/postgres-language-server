@@ -10,7 +10,7 @@ pub(super) fn emit_create_policy_stmt(e: &mut EventEmitter, n: &CreatePolicyStmt
 
     e.token(TokenKind::CREATE_KW);
     e.space();
-    e.token(TokenKind::IDENT("POLICY".to_string()));
+    e.token(TokenKind::POLICY_KW);
     e.space();
     e.token(TokenKind::IDENT(n.policy_name.clone()));
 
@@ -26,9 +26,9 @@ pub(super) fn emit_create_policy_stmt(e: &mut EventEmitter, n: &CreatePolicyStmt
     e.token(TokenKind::AS_KW);
     e.space();
     if n.permissive {
-        e.token(TokenKind::IDENT("PERMISSIVE".to_string()));
+        e.token(TokenKind::IDENT("permissive".to_string()));
     } else {
-        e.token(TokenKind::IDENT("RESTRICTIVE".to_string()));
+        e.token(TokenKind::IDENT("restrictive".to_string()));
     }
 
     // Command: SELECT, INSERT, UPDATE, DELETE, ALL
@@ -60,7 +60,7 @@ pub(super) fn emit_create_policy_stmt(e: &mut EventEmitter, n: &CreatePolicyStmt
 
     if let Some(ref qual) = n.qual {
         e.line(LineType::SoftOrSpace);
-        e.token(TokenKind::IDENT("USING".to_string()));
+        e.token(TokenKind::USING_KW);
         e.space();
         e.token(TokenKind::L_PAREN);
         super::emit_node(qual, e);
@@ -71,7 +71,7 @@ pub(super) fn emit_create_policy_stmt(e: &mut EventEmitter, n: &CreatePolicyStmt
         e.line(LineType::SoftOrSpace);
         e.token(TokenKind::WITH_KW);
         e.space();
-        e.token(TokenKind::IDENT("CHECK".to_string()));
+        e.token(TokenKind::CHECK_KW);
         e.space();
         e.token(TokenKind::L_PAREN);
         super::emit_node(with_check, e);

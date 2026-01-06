@@ -9,7 +9,7 @@ use super::json_value_expr::{emit_json_output, emit_json_value_expr};
 pub(super) fn emit_json_parse_expr(e: &mut EventEmitter, n: &JsonParseExpr) {
     e.group_start(GroupKind::JsonParseExpr);
 
-    e.token(TokenKind::IDENT("JSON".to_string()));
+    e.token(TokenKind::JSON_KW);
     e.token(TokenKind::L_PAREN);
 
     let mut has_content = false;

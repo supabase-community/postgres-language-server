@@ -5,7 +5,7 @@ snapshot_kind: text
 ---
 create table ttable1 of nothing;
 
-create type person_type as (id INT, name TEXT);
+create type person_type as (id int, name text);
 
 create table persons of person_type;
 
@@ -23,7 +23,7 @@ $function$;
 select * from get_all_persons();
 
 alter table persons
-  add column comment TEXT;
+  add column comment text;
 
 alter table persons
   drop column name;
@@ -31,24 +31,24 @@ alter table persons
 alter table persons rename column id to num;
 
 alter table persons
-  alter column name type VARCHAR;
+  alter column name type varchar;
 
-create table stuff (id INT);
+create table stuff (id int);
 
 alter table persons
-  INHERIT stuff;
+  inherit stuff;
 
-create table personsx of person_type (myname with OPTIONS not null );
+create table personsx of person_type (myname with options not null );
 
-create table persons2 of person_type (id with OPTIONS primary key, unique (name) );
+create table persons2 of person_type (id with options primary key, unique (name) );
 
-create table persons3 of person_type (primary key (id), name with OPTIONS default '' );
+create table persons3 of person_type (primary key (id), name with options default '' );
 
-create table persons4 of person_type (name with OPTIONS not null, name with OPTIONS default '' );
+create table persons4 of person_type (name with options not null, name with options default '' );
 
-drop TYPE person_type;
+drop type person_type;
 
-drop TYPE person_type cascade;
+drop type person_type cascade;
 
 create table persons5 of stuff;
 
@@ -56,23 +56,23 @@ create type tt_enum_type as enum ('a');
 
 create table of_tt_enum_type of tt_enum_type;
 
-drop TYPE tt_enum_type;
+drop type tt_enum_type;
 
-drop TABLE stuff;
+drop table stuff;
 
-create type person_type as (id INT, name TEXT);
+create type person_type as (id int, name text);
 
 create table persons of person_type;
 
 insert into persons values (1, 'test');
 
 create function namelen(person_type)
-returns INT
+returns int
 language sql
 as $function$ SELECT length($1.name) $function$;
 
 select id, namelen(persons) from persons;
 
-create table persons2 of person_type (id with OPTIONS primary key, unique (name) );
+create table persons2 of person_type (id with options primary key, unique (name) );
 
-create table persons3 of person_type (primary key (id), name with OPTIONS not null default '' );
+create table persons3 of person_type (primary key (id), name with options not null default '' );

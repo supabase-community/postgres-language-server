@@ -19,20 +19,20 @@ fn emit_json_behavior(e: &mut EventEmitter, behavior: &JsonBehavior) {
             e.token(TokenKind::FALSE_KW);
         }
         JsonBehaviorType::JsonBehaviorEmpty => {
-            e.token(TokenKind::IDENT("EMPTY".to_string()));
+            e.token(TokenKind::EMPTY_KW);
         }
         JsonBehaviorType::JsonBehaviorEmptyArray => {
-            e.token(TokenKind::IDENT("EMPTY".to_string()));
+            e.token(TokenKind::EMPTY_KW);
             e.space();
-            e.token(TokenKind::IDENT("ARRAY".to_string()));
+            e.token(TokenKind::ARRAY_KW);
         }
         JsonBehaviorType::JsonBehaviorEmptyObject => {
-            e.token(TokenKind::IDENT("EMPTY".to_string()));
+            e.token(TokenKind::EMPTY_KW);
             e.space();
-            e.token(TokenKind::IDENT("OBJECT".to_string()));
+            e.token(TokenKind::OBJECT_KW);
         }
         JsonBehaviorType::JsonBehaviorUnknown => {
-            e.token(TokenKind::IDENT("UNKNOWN".to_string()));
+            e.token(TokenKind::UNKNOWN_KW);
         }
         JsonBehaviorType::JsonBehaviorDefault => {
             e.token(TokenKind::DEFAULT_KW);
@@ -53,7 +53,7 @@ pub(super) fn emit_json_func_expr(e: &mut EventEmitter, n: &JsonFuncExpr) {
     match n.op {
         1 => {
             // JSON_EXISTS
-            e.token(TokenKind::IDENT("JSON_EXISTS".to_string()));
+            e.token(TokenKind::JSON_EXISTS_KW);
             e.token(TokenKind::L_PAREN);
 
             if let Some(ref context) = n.context_item {
@@ -94,7 +94,7 @@ pub(super) fn emit_json_func_expr(e: &mut EventEmitter, n: &JsonFuncExpr) {
         }
         2 => {
             // JSON_QUERY
-            e.token(TokenKind::IDENT("JSON_QUERY".to_string()));
+            e.token(TokenKind::JSON_QUERY_KW);
             e.token(TokenKind::L_PAREN);
 
             if let Some(ref context) = n.context_item {
@@ -136,25 +136,25 @@ pub(super) fn emit_json_func_expr(e: &mut EventEmitter, n: &JsonFuncExpr) {
                     e.line(LineType::SoftOrSpace);
                     e.token(TokenKind::WITHOUT_KW);
                     e.space();
-                    e.token(TokenKind::IDENT("WRAPPER".to_string()));
+                    e.token(TokenKind::WRAPPER_KW);
                 }
                 3 => {
                     // JswConditional = WITH CONDITIONAL WRAPPER
                     e.line(LineType::SoftOrSpace);
                     e.token(TokenKind::WITH_KW);
                     e.space();
-                    e.token(TokenKind::IDENT("CONDITIONAL".to_string()));
+                    e.token(TokenKind::CONDITIONAL_KW);
                     e.space();
-                    e.token(TokenKind::IDENT("WRAPPER".to_string()));
+                    e.token(TokenKind::WRAPPER_KW);
                 }
                 4 => {
                     // JswUnconditional = WITH UNCONDITIONAL WRAPPER / WITH WRAPPER
                     e.line(LineType::SoftOrSpace);
                     e.token(TokenKind::WITH_KW);
                     e.space();
-                    e.token(TokenKind::IDENT("UNCONDITIONAL".to_string()));
+                    e.token(TokenKind::UNCONDITIONAL_KW);
                     e.space();
-                    e.token(TokenKind::IDENT("WRAPPER".to_string()));
+                    e.token(TokenKind::WRAPPER_KW);
                 }
                 _ => {}
             }
@@ -164,15 +164,15 @@ pub(super) fn emit_json_func_expr(e: &mut EventEmitter, n: &JsonFuncExpr) {
             match n.quotes {
                 2 => {
                     e.line(LineType::SoftOrSpace);
-                    e.token(TokenKind::IDENT("KEEP".to_string()));
+                    e.token(TokenKind::KEEP_KW);
                     e.space();
-                    e.token(TokenKind::IDENT("QUOTES".to_string()));
+                    e.token(TokenKind::QUOTES_KW);
                 }
                 3 => {
                     e.line(LineType::SoftOrSpace);
-                    e.token(TokenKind::IDENT("OMIT".to_string()));
+                    e.token(TokenKind::OMIT_KW);
                     e.space();
-                    e.token(TokenKind::IDENT("QUOTES".to_string()));
+                    e.token(TokenKind::QUOTES_KW);
                 }
                 _ => {}
             }
@@ -184,7 +184,7 @@ pub(super) fn emit_json_func_expr(e: &mut EventEmitter, n: &JsonFuncExpr) {
                 e.space();
                 e.token(TokenKind::ON_KW);
                 e.space();
-                e.token(TokenKind::IDENT("EMPTY".to_string()));
+                e.token(TokenKind::EMPTY_KW);
             }
 
             // ON ERROR clause
@@ -201,7 +201,7 @@ pub(super) fn emit_json_func_expr(e: &mut EventEmitter, n: &JsonFuncExpr) {
         }
         3 => {
             // JSON_VALUE
-            e.token(TokenKind::IDENT("JSON_VALUE".to_string()));
+            e.token(TokenKind::JSON_VALUE_KW);
             e.token(TokenKind::L_PAREN);
 
             if let Some(ref context) = n.context_item {
@@ -242,7 +242,7 @@ pub(super) fn emit_json_func_expr(e: &mut EventEmitter, n: &JsonFuncExpr) {
                 e.space();
                 e.token(TokenKind::ON_KW);
                 e.space();
-                e.token(TokenKind::IDENT("EMPTY".to_string()));
+                e.token(TokenKind::EMPTY_KW);
             }
 
             // ON ERROR clause
@@ -259,7 +259,7 @@ pub(super) fn emit_json_func_expr(e: &mut EventEmitter, n: &JsonFuncExpr) {
         }
         _ => {
             // Unknown JSON function - emit placeholder
-            e.token(TokenKind::IDENT("JSON_FUNC".to_string()));
+            e.token(TokenKind::IDENT("json_func".to_string()));
             e.token(TokenKind::L_PAREN);
             e.token(TokenKind::R_PAREN);
         }

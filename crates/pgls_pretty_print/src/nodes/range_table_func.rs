@@ -9,11 +9,11 @@ pub(super) fn emit_range_table_func(e: &mut EventEmitter, n: &RangeTableFunc) {
     e.group_start(GroupKind::RangeTableFunc);
 
     if n.lateral {
-        e.token(TokenKind::IDENT("LATERAL".to_string()));
+        e.token(TokenKind::LATERAL_KW);
         e.space();
     }
 
-    e.token(TokenKind::IDENT("XMLTABLE".to_string()));
+    e.token(TokenKind::XMLTABLE_KW);
     e.token(TokenKind::L_PAREN);
     e.line(LineType::Soft);
     e.indent_start();
@@ -22,7 +22,7 @@ pub(super) fn emit_range_table_func(e: &mut EventEmitter, n: &RangeTableFunc) {
     // Namespaces are stored as ResTarget nodes with name=prefix, val=URI
     if !n.namespaces.is_empty() {
         e.line(LineType::SoftOrSpace);
-        e.token(TokenKind::IDENT("XMLNAMESPACES".to_string()));
+        e.token(TokenKind::XMLNAMESPACES_KW);
         e.token(TokenKind::L_PAREN);
         emit_comma_separated_list(e, &n.namespaces, |node, emitter| {
             // Each namespace is a ResTarget with val=URI, name=prefix
@@ -74,7 +74,7 @@ pub(super) fn emit_range_table_func(e: &mut EventEmitter, n: &RangeTableFunc) {
     // PASSING clause (document expression)
     if let Some(ref docexpr) = n.docexpr {
         e.line(LineType::SoftOrSpace);
-        e.token(TokenKind::IDENT("PASSING".to_string()));
+        e.token(TokenKind::PASSING_KW);
         e.space();
         super::emit_node(docexpr, e);
     }
@@ -82,7 +82,7 @@ pub(super) fn emit_range_table_func(e: &mut EventEmitter, n: &RangeTableFunc) {
     // COLUMNS clause
     if !n.columns.is_empty() {
         e.line(LineType::SoftOrSpace);
-        e.token(TokenKind::IDENT("COLUMNS".to_string()));
+        e.token(TokenKind::COLUMNS_KW);
         e.indent_start();
         e.line(LineType::SoftOrSpace);
         emit_comma_separated_list(e, &n.columns, |node, emitter| {

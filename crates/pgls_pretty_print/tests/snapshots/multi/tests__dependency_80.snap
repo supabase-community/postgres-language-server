@@ -13,7 +13,7 @@ create group regress_dep_group;
 
 create table deptest (
   f1 serial primary key,
-  f2 TEXT
+  f2 text
 );
 
 grant SELECT on table deptest to regress_dep_group;
@@ -49,11 +49,11 @@ revoke all on table deptest from regress_dep_user2;
 drop role regress_dep_user2;
 
 alter table deptest
-  OWNER to regress_dep_user3;
+  owner to regress_dep_user3;
 
 drop role regress_dep_user3;
 
-drop TABLE deptest;
+drop table deptest;
 
 drop role regress_dep_user3;
 
@@ -65,17 +65,17 @@ create user regress_dep_user2;
 
 set session authorization regress_dep_user0;
 
-drop OWNED by regress_dep_user1;
+drop owned by regress_dep_user1;
 
-drop OWNED by regress_dep_user0, regress_dep_user2;
+drop owned by regress_dep_user0, regress_dep_user2;
 
 reassign owned by regress_dep_user0 to regress_dep_user1;
 
 reassign owned by regress_dep_user1 to regress_dep_user0;
 
-drop OWNED by regress_dep_user0;
+drop owned by regress_dep_user0;
 
-create table deptest1 (f1 INT unique);
+create table deptest1 (f1 int unique);
 
 grant all on table deptest1 to regress_dep_user1 with grant option;
 
@@ -83,14 +83,14 @@ set session authorization regress_dep_user1;
 
 create table deptest (
   a serial primary key,
-  b TEXT
+  b text
 );
 
 grant all on table deptest1 to regress_dep_user2;
 
 reset session_authorization;
 
-drop OWNED by regress_dep_user1;
+drop owned by regress_dep_user1;
 
 grant all on table deptest1 to regress_dep_user1;
 
@@ -102,35 +102,35 @@ create schema "deptest";
 
 create table deptest (
   a serial primary key,
-  b TEXT
+  b text
 );
 
-alter default PRIVILEGES
+alter default privileges
 for role regress_dep_user1
 in schema deptest
 grant all
-on TABLES
+on tables
 to regress_dep_user2;
 
 create function deptest_func()
-returns VOID
+returns void
 language plpgsql
 as $function$ BEGIN END; $function$;
 
 create type deptest_enum as enum ('red');
 
-create type deptest_range as RANGE (subtype = INT);
+create type deptest_range as range (subtype = int);
 
-create table deptest2 (f1 INT);
+create table deptest2 (f1 int);
 
 create sequence ss1;
 
 alter table deptest2
   alter column f1 set default nextval('ss1');
 
-alter SEQUENCE ss1 OWNED by deptest2.f1;
+alter sequence ss1 owned by deptest2.f1;
 
-create type deptest_t as (a INT);
+create type deptest_t as (a int);
 
 select
   typowner = relowner
@@ -158,13 +158,13 @@ where
 
 drop role regress_dep_user1;
 
-drop OWNED by regress_dep_user1;
+drop owned by regress_dep_user1;
 
 drop role regress_dep_user1;
 
 drop role regress_dep_user2;
 
-drop OWNED by regress_dep_user2, regress_dep_user0;
+drop owned by regress_dep_user2, regress_dep_user0;
 
 drop role regress_dep_user2;
 

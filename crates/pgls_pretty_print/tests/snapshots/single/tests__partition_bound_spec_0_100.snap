@@ -4,7 +4,7 @@ input_file: crates/pgls_pretty_print/tests/data/single/partition_bound_spec_0.sq
 snapshot_kind: text
 ---
 create table measurement (
-  id INT,
-  logdate DATE
+  id int,
+  logdate date
 )
 partition by range(logdate);

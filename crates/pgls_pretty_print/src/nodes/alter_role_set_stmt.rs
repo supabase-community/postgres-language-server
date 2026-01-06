@@ -9,7 +9,7 @@ pub(super) fn emit_alter_role_set_stmt(e: &mut EventEmitter, n: &AlterRoleSetStm
 
     e.token(TokenKind::ALTER_KW);
     e.space();
-    e.token(TokenKind::IDENT("ROLE".to_string()));
+    e.token(TokenKind::ROLE_KW);
     e.space();
 
     if let Some(ref role) = n.role {
@@ -21,7 +21,7 @@ pub(super) fn emit_alter_role_set_stmt(e: &mut EventEmitter, n: &AlterRoleSetStm
         e.line(LineType::SoftOrSpace);
         e.token(TokenKind::IN_KW);
         e.space();
-        e.token(TokenKind::IDENT("DATABASE".to_string()));
+        e.token(TokenKind::DATABASE_KW);
         e.space();
         e.token(TokenKind::IDENT(n.database.clone()));
     }

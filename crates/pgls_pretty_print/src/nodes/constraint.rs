@@ -173,7 +173,7 @@ pub(super) fn emit_constraint(e: &mut EventEmitter, n: &Constraint) {
             // INCLUDE (columns)
             if !n.including.is_empty() {
                 e.line(LineType::SoftOrSpace);
-                e.token(TokenKind::IDENT("INCLUDE".to_string()));
+                e.token(TokenKind::INCLUDE_KW);
                 e.space();
                 e.token(TokenKind::L_PAREN);
                 emit_comma_separated_list(e, &n.including, |node, emitter| {
@@ -241,7 +241,7 @@ pub(super) fn emit_constraint(e: &mut EventEmitter, n: &Constraint) {
             // INCLUDE (columns)
             if !n.including.is_empty() {
                 e.line(LineType::SoftOrSpace);
-                e.token(TokenKind::IDENT("INCLUDE".to_string()));
+                e.token(TokenKind::INCLUDE_KW);
                 e.space();
                 e.token(TokenKind::L_PAREN);
                 emit_comma_separated_list(e, &n.including, |node, emitter| {
@@ -349,7 +349,7 @@ pub(super) fn emit_constraint(e: &mut EventEmitter, n: &Constraint) {
             // INCLUDE (columns)
             if !n.including.is_empty() {
                 e.line(LineType::SoftOrSpace);
-                e.token(TokenKind::IDENT("INCLUDE".to_string()));
+                e.token(TokenKind::INCLUDE_KW);
                 e.space();
                 e.token(TokenKind::L_PAREN);
                 emit_comma_separated_list(e, &n.including, |node, emitter| {

@@ -9,71 +9,71 @@ create function casttesttype_in(cstring)
 returns casttesttype
 as $function$textin$function$
 language internal
-STRICT
+strict
 immutable;
 
 create function casttesttype_out(casttesttype)
 returns cstring
 as $function$textout$function$
 language internal
-STRICT
+strict
 immutable;
 
 create type casttesttype (
   internallength = variable,
   input = casttesttype_in,
   output = casttesttype_out,
-  alignment = INT
+  alignment = int
 );
 
 create function casttestfunc(casttesttype)
-returns INT
+returns int
 language sql
 as $function$ SELECT 1; $function$;
 
-select casttestfunc(cast('foo' as TEXT));
+select casttestfunc(cast('foo' as text));
 
-create cast (TEXT as casttesttype) without function;
+create cast (text as casttesttype) without function;
 
-select casttestfunc(cast('foo' as TEXT));
+select casttestfunc(cast('foo' as text));
 
-select casttestfunc(cast(cast('foo' as TEXT) as casttesttype));
+select casttestfunc(cast(cast('foo' as text) as casttesttype));
 
-drop CAST (TEXT as casttesttype);
+drop cast (text as casttesttype);
 
-create cast (TEXT as casttesttype) without function as IMPLICIT;
+create cast (text as casttesttype) without function as implicit;
 
-select casttestfunc(cast('foo' as TEXT));
+select casttestfunc(cast('foo' as text));
 
-select cast(cast(1234 as INT) as casttesttype);
+select cast(cast(1234 as int) as casttesttype);
 
-create cast (INT as casttesttype) with INOUT;
+create cast (int as casttesttype) with inout;
 
-select cast(cast(1234 as INT) as casttesttype);
+select cast(cast(1234 as int) as casttesttype);
 
-drop CAST (INT as casttesttype);
+drop cast (int as casttesttype);
 
-create function int4_casttesttype(INT)
+create function int4_casttesttype(int)
 returns casttesttype
 language sql
 as $function$ SELECT ('foo'::text || $1::text)::casttesttype; $function$;
 
-create cast (INT as casttesttype)
-with function int4_casttesttype(INT)
-as IMPLICIT;
+create cast (int as casttesttype)
+with function int4_casttesttype(int)
+as implicit;
 
-select cast(cast(1234 as INT) as casttesttype);
+select cast(cast(1234 as int) as casttesttype);
 
-drop FUNCTION int4_casttesttype(INT) cascade;
+drop function int4_casttesttype(int) cascade;
 
-create function bar_int4_text(INT)
-returns TEXT
+create function bar_int4_text(int)
+returns text
 language sql
 as $function$ SELECT ('bar'::text || $1::text); $function$;
 
-create cast (INT as casttesttype) with function bar_int4_text(INT) as IMPLICIT;
+create cast (int as casttesttype) with function bar_int4_text(int) as implicit;
 
-select cast(cast(1234 as INT) as casttesttype);
+select cast(cast(1234 as int) as casttesttype);
 
 select
   pg_describe_object(
@@ -92,7 +92,7 @@ select
 from
   pg_depend
 where
-  classid = cast('pg_cast' as REGCLASS) and
+  classid = cast('pg_cast' as regclass) and
   objid =
   (
     select
@@ -100,8 +100,8 @@ where
     from
       pg_cast
     where
-      castsource = cast('int4' as REGTYPE) and
+      castsource = cast('int4' as regtype) and
       casttarget =
-      cast('casttesttype' as REGTYPE)
+      cast('casttesttype' as regtype)
   )
 order by refclassid;

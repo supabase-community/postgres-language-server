@@ -3,112 +3,112 @@ source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/jsonb.sql
 snapshot_kind: text
 ---
-create table testjsonb (j JSONB);
+create table testjsonb (j jsonb);
 
 copy testjsonb from 'filename';
 
-select cast('""' as JSONB);
+select cast('""' as jsonb);
 
-select cast('''''' as JSONB);
+select cast('''''' as jsonb);
 
-select cast('"abc"' as JSONB);
+select cast('"abc"' as jsonb);
 
-select cast('"abc' as JSONB);
+select cast('"abc' as jsonb);
 
 select cast('"abc
-def"' as JSONB);
+def"' as jsonb);
 
-select cast('"\n\"\\"' as JSONB);
+select cast('"\n\"\\"' as jsonb);
 
-select cast('"\v"' as JSONB);
+select cast('"\v"' as jsonb);
 
-select cast('1' as JSONB);
+select cast('1' as jsonb);
 
-select cast('0' as JSONB);
+select cast('0' as jsonb);
 
-select cast('01' as JSONB);
+select cast('01' as jsonb);
 
-select cast('0.1' as JSONB);
+select cast('0.1' as jsonb);
 
-select cast('9223372036854775808' as JSONB);
+select cast('9223372036854775808' as jsonb);
 
-select cast('1e100' as JSONB);
+select cast('1e100' as jsonb);
 
-select cast('1.3e100' as JSONB);
+select cast('1.3e100' as jsonb);
 
-select cast('1f2' as JSONB);
+select cast('1f2' as jsonb);
 
-select cast('0.x1' as JSONB);
+select cast('0.x1' as jsonb);
 
-select cast('1.3ex100' as JSONB);
+select cast('1.3ex100' as jsonb);
 
-select cast('[]' as JSONB);
+select cast('[]' as jsonb);
 
 select
   cast('[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]'
-  as JSONB);
+  as jsonb);
 
-select cast('[1,2]' as JSONB);
+select cast('[1,2]' as jsonb);
 
-select cast('[1,2,]' as JSONB);
+select cast('[1,2,]' as jsonb);
 
-select cast('[1,2' as JSONB);
+select cast('[1,2' as jsonb);
 
-select cast('[1,[2]' as JSONB);
+select cast('[1,[2]' as jsonb);
 
-select cast('{}' as JSONB);
+select cast('{}' as jsonb);
 
-select cast('{"abc"}' as JSONB);
+select cast('{"abc"}' as jsonb);
 
-select cast('{"abc":1}' as JSONB);
+select cast('{"abc":1}' as jsonb);
 
-select cast('{1:"abc"}' as JSONB);
+select cast('{1:"abc"}' as jsonb);
 
-select cast('{"abc",1}' as JSONB);
+select cast('{"abc",1}' as jsonb);
 
-select cast('{"abc"=1}' as JSONB);
+select cast('{"abc"=1}' as jsonb);
 
-select cast('{"abc"::1}' as JSONB);
+select cast('{"abc"::1}' as jsonb);
 
-select cast('{"abc":1,"def":2,"ghi":[3,4],"hij":{"klm":5,"nop":[6]}}' as JSONB);
+select cast('{"abc":1,"def":2,"ghi":[3,4],"hij":{"klm":5,"nop":[6]}}' as jsonb);
 
-select cast('{"abc":1:2}' as JSONB);
+select cast('{"abc":1:2}' as jsonb);
 
-select cast('{"abc":1,3}' as JSONB);
+select cast('{"abc":1,3}' as jsonb);
 
 set max_stack_depth = '100kB';
 
-select cast(repeat('[', 10000) as JSONB);
+select cast(repeat('[', 10000) as jsonb);
 
-select cast(repeat('{"a":', 10000) as JSONB);
+select cast(repeat('{"a":', 10000) as jsonb);
 
 reset max_stack_depth;
 
-select cast('true' as JSONB);
+select cast('true' as jsonb);
 
-select cast('false' as JSONB);
+select cast('false' as jsonb);
 
-select cast('null' as JSONB);
+select cast('null' as jsonb);
 
-select cast(' true ' as JSONB);
+select cast(' true ' as jsonb);
 
-select cast('true false' as JSONB);
+select cast('true false' as jsonb);
 
-select cast('true, false' as JSONB);
+select cast('true, false' as jsonb);
 
-select cast('truf' as JSONB);
+select cast('truf' as jsonb);
 
-select cast('trues' as JSONB);
+select cast('trues' as jsonb);
 
-select cast('' as JSONB);
+select cast('' as jsonb);
 
-select cast('    ' as JSONB);
+select cast('    ' as jsonb);
 
 select cast('{
 		"one": 1,
 		"two":"two",
 		"three":
-		true}' as JSONB);
+		true}' as jsonb);
 
 select
   cast('{
@@ -116,14 +116,14 @@ select
 		"two":,"two",  -- ERROR extraneous comma before field "two"
 		"three":
 		true}'
-  as JSONB);
+  as jsonb);
 
 select
   cast('{
 		"one": 1,
 		"two":"two",
 		"averyveryveryveryveryveryveryveryveryverylongfieldname":}'
-  as JSONB);
+  as jsonb);
 
 select pg_input_is_valid('{"a":true}', 'jsonb');
 
@@ -135,8 +135,8 @@ select * from pg_input_error_info('{"a":1e1000000}', 'jsonb');
 
 select
   array_to_json(
-    array[cast('{"a":1}' as JSONB),
-    cast('{"b":[2,3]}' as JSONB)]
+    array[cast('{"a":1}' as jsonb),
+    cast('{"b":[2,3]}' as jsonb)]
   );
 
 create temporary table rows
@@ -160,10 +160,10 @@ where
   schemaname =
   cast(cast(pg_my_temp_schema()
   as regnamespace)
-  as TEXT)
+  as text)
 order by 1;
 
-select to_jsonb(cast('2014-05-28 12:22:35.614298' as TIMESTAMP));
+select to_jsonb(cast('2014-05-28 12:22:35.614298' as timestamp));
 
 begin;
 
@@ -172,7 +172,7 @@ set local time zone 10.5;
 select
   to_jsonb(
     cast('2014-05-28 12:22:35.614298-04'
-    as timestamp with time ZONE)
+    as timestamp with time zone)
   );
 
 set local time zone -8;
@@ -180,24 +180,24 @@ set local time zone -8;
 select
   to_jsonb(
     cast('2014-05-28 12:22:35.614298-04'
-    as timestamp with time ZONE)
+    as timestamp with time zone)
   );
 
 commit;
 
-select to_jsonb(cast('2014-05-28' as DATE));
+select to_jsonb(cast('2014-05-28' as date));
 
-select to_jsonb(cast('Infinity' as DATE));
+select to_jsonb(cast('Infinity' as date));
 
-select to_jsonb(cast('-Infinity' as DATE));
+select to_jsonb(cast('-Infinity' as date));
 
-select to_jsonb(cast('Infinity' as TIMESTAMP));
+select to_jsonb(cast('Infinity' as timestamp));
 
-select to_jsonb(cast('-Infinity' as TIMESTAMP));
+select to_jsonb(cast('-Infinity' as timestamp));
 
-select to_jsonb(cast('Infinity' as timestamp with time ZONE));
+select to_jsonb(cast('Infinity' as timestamp with time zone));
 
-select to_jsonb(cast('-Infinity' as timestamp with time ZONE));
+select to_jsonb(cast('-Infinity' as timestamp with time zone));
 
 select
   jsonb_agg(q)
@@ -222,8 +222,8 @@ update rows set x = null where x = 1;
 select jsonb_agg(q order by x nulls first, y) from rows as q;
 
 create temporary table test_jsonb (
-  json_type TEXT,
-  test_json JSONB
+  json_type text,
+  test_json jsonb
 );
 
 insert into test_jsonb
@@ -312,61 +312,61 @@ from
 where
   json_type = 'array';
 
-select cast('{"a": [{"b": "c"}, {"b": "cc"}]}' as JSONB) -> cast(null as TEXT);
+select cast('{"a": [{"b": "c"}, {"b": "cc"}]}' as jsonb) -> cast(null as text);
 
-select cast('{"a": [{"b": "c"}, {"b": "cc"}]}' as JSONB) -> cast(null as INT);
+select cast('{"a": [{"b": "c"}, {"b": "cc"}]}' as jsonb) -> cast(null as int);
 
-select cast('{"a": [{"b": "c"}, {"b": "cc"}]}' as JSONB) -> 1;
+select cast('{"a": [{"b": "c"}, {"b": "cc"}]}' as jsonb) -> 1;
 
-select cast('{"a": [{"b": "c"}, {"b": "cc"}]}' as JSONB) -> 'z';
+select cast('{"a": [{"b": "c"}, {"b": "cc"}]}' as jsonb) -> 'z';
 
-select cast('{"a": [{"b": "c"}, {"b": "cc"}]}' as JSONB) -> '';
+select cast('{"a": [{"b": "c"}, {"b": "cc"}]}' as jsonb) -> '';
 
-select cast('[{"b": "c"}, {"b": "cc"}]' as JSONB) -> 1;
+select cast('[{"b": "c"}, {"b": "cc"}]' as jsonb) -> 1;
 
-select cast('[{"b": "c"}, {"b": "cc"}]' as JSONB) -> 3;
+select cast('[{"b": "c"}, {"b": "cc"}]' as jsonb) -> 3;
 
-select cast('[{"b": "c"}, {"b": "cc"}]' as JSONB) -> 'z';
+select cast('[{"b": "c"}, {"b": "cc"}]' as jsonb) -> 'z';
 
-select cast('{"a": "c", "b": null}' as JSONB) -> 'b';
+select cast('{"a": "c", "b": null}' as jsonb) -> 'b';
 
-select cast('"foo"' as JSONB) -> 1;
+select cast('"foo"' as jsonb) -> 1;
 
-select cast('"foo"' as JSONB) -> 'z';
+select cast('"foo"' as jsonb) -> 'z';
 
-select cast('[]' as JSONB) -> -2147483648;
+select cast('[]' as jsonb) -> -2147483648;
 
-select cast('{"a": [{"b": "c"}, {"b": "cc"}]}' as JSONB) ->> cast(null as TEXT);
+select cast('{"a": [{"b": "c"}, {"b": "cc"}]}' as jsonb) ->> cast(null as text);
 
-select cast('{"a": [{"b": "c"}, {"b": "cc"}]}' as JSONB) ->> cast(null as INT);
+select cast('{"a": [{"b": "c"}, {"b": "cc"}]}' as jsonb) ->> cast(null as int);
 
-select cast('{"a": [{"b": "c"}, {"b": "cc"}]}' as JSONB) ->> 1;
+select cast('{"a": [{"b": "c"}, {"b": "cc"}]}' as jsonb) ->> 1;
 
-select cast('{"a": [{"b": "c"}, {"b": "cc"}]}' as JSONB) ->> 'z';
+select cast('{"a": [{"b": "c"}, {"b": "cc"}]}' as jsonb) ->> 'z';
 
-select cast('{"a": [{"b": "c"}, {"b": "cc"}]}' as JSONB) ->> '';
+select cast('{"a": [{"b": "c"}, {"b": "cc"}]}' as jsonb) ->> '';
 
-select cast('[{"b": "c"}, {"b": "cc"}]' as JSONB) ->> 1;
+select cast('[{"b": "c"}, {"b": "cc"}]' as jsonb) ->> 1;
 
-select cast('[{"b": "c"}, {"b": "cc"}]' as JSONB) ->> 3;
+select cast('[{"b": "c"}, {"b": "cc"}]' as jsonb) ->> 3;
 
-select cast('[{"b": "c"}, {"b": "cc"}]' as JSONB) ->> 'z';
+select cast('[{"b": "c"}, {"b": "cc"}]' as jsonb) ->> 'z';
 
-select cast('{"a": "c", "b": null}' as JSONB) ->> 'b';
+select cast('{"a": "c", "b": null}' as jsonb) ->> 'b';
 
-select cast('"foo"' as JSONB) ->> 1;
+select cast('"foo"' as jsonb) ->> 1;
 
-select cast('"foo"' as JSONB) ->> 'z';
+select cast('"foo"' as jsonb) ->> 'z';
 
-select cast('[]' as JSONB) ->> -2147483648;
+select cast('[]' as jsonb) ->> -2147483648;
 
-select cast('{"x":"y"}' as JSONB) = cast('{"x":"y"}' as JSONB);
+select cast('{"x":"y"}' as jsonb) = cast('{"x":"y"}' as jsonb);
 
-select cast('{"x":"y"}' as JSONB) = cast('{"x":"z"}' as JSONB);
+select cast('{"x":"y"}' as jsonb) = cast('{"x":"z"}' as jsonb);
 
-select cast('{"x":"y"}' as JSONB) <> cast('{"x":"y"}' as JSONB);
+select cast('{"x":"y"}' as jsonb) <> cast('{"x":"y"}' as jsonb);
 
-select cast('{"x":"y"}' as JSONB) <> cast('{"x":"z"}' as JSONB);
+select cast('{"x":"y"}' as jsonb) <> cast('{"x":"z"}' as jsonb);
 
 select jsonb_contains('{"a":"b", "b":1, "c":null}', '{"a":"b"}');
 
@@ -382,31 +382,31 @@ select jsonb_contains('{"a":"b", "b":1, "c":null}', '{"a":"b"}');
 
 select jsonb_contains('{"a":"b", "b":1, "c":null}', '{"a":"b", "c":"q"}');
 
-select cast('{"a":"b", "b":1, "c":null}' as JSONB) @> '{"a":"b"}';
+select cast('{"a":"b", "b":1, "c":null}' as jsonb) @> '{"a":"b"}';
 
-select cast('{"a":"b", "b":1, "c":null}' as JSONB) @> '{"a":"b", "c":null}';
+select cast('{"a":"b", "b":1, "c":null}' as jsonb) @> '{"a":"b", "c":null}';
 
-select cast('{"a":"b", "b":1, "c":null}' as JSONB) @> '{"a":"b", "g":null}';
+select cast('{"a":"b", "b":1, "c":null}' as jsonb) @> '{"a":"b", "g":null}';
 
-select cast('{"a":"b", "b":1, "c":null}' as JSONB) @> '{"g":null}';
+select cast('{"a":"b", "b":1, "c":null}' as jsonb) @> '{"g":null}';
 
-select cast('{"a":"b", "b":1, "c":null}' as JSONB) @> '{"a":"c"}';
+select cast('{"a":"b", "b":1, "c":null}' as jsonb) @> '{"a":"c"}';
 
-select cast('{"a":"b", "b":1, "c":null}' as JSONB) @> '{"a":"b"}';
+select cast('{"a":"b", "b":1, "c":null}' as jsonb) @> '{"a":"b"}';
 
-select cast('{"a":"b", "b":1, "c":null}' as JSONB) @> '{"a":"b", "c":"q"}';
+select cast('{"a":"b", "b":1, "c":null}' as jsonb) @> '{"a":"b", "c":"q"}';
 
-select cast('[1,2]' as JSONB) @> cast('[1,2,2]' as JSONB);
+select cast('[1,2]' as jsonb) @> cast('[1,2,2]' as jsonb);
 
-select cast('[1,1,2]' as JSONB) @> cast('[1,2,2]' as JSONB);
+select cast('[1,1,2]' as jsonb) @> cast('[1,2,2]' as jsonb);
 
-select cast('[[1,2]]' as JSONB) @> cast('[[1,2,2]]' as JSONB);
+select cast('[[1,2]]' as jsonb) @> cast('[[1,2,2]]' as jsonb);
 
-select cast('[1,2,2]' as JSONB) <@ cast('[1,2]' as JSONB);
+select cast('[1,2,2]' as jsonb) <@ cast('[1,2]' as jsonb);
 
-select cast('[1,2,2]' as JSONB) <@ cast('[1,1,2]' as JSONB);
+select cast('[1,2,2]' as jsonb) <@ cast('[1,1,2]' as jsonb);
 
-select cast('[[1,2,2]]' as JSONB) <@ cast('[[1,2]]' as JSONB);
+select cast('[[1,2,2]]' as jsonb) <@ cast('[[1,2]]' as jsonb);
 
 select jsonb_contained('{"a":"b"}', '{"a":"b", "b":1, "c":null}');
 
@@ -422,41 +422,41 @@ select jsonb_contained('{"a":"b"}', '{"a":"b", "b":1, "c":null}');
 
 select jsonb_contained('{"a":"b", "c":"q"}', '{"a":"b", "b":1, "c":null}');
 
-select cast('{"a":"b"}' as JSONB) <@ '{"a":"b", "b":1, "c":null}';
+select cast('{"a":"b"}' as jsonb) <@ '{"a":"b", "b":1, "c":null}';
 
-select cast('{"a":"b", "c":null}' as JSONB) <@ '{"a":"b", "b":1, "c":null}';
+select cast('{"a":"b", "c":null}' as jsonb) <@ '{"a":"b", "b":1, "c":null}';
 
-select cast('{"a":"b", "g":null}' as JSONB) <@ '{"a":"b", "b":1, "c":null}';
+select cast('{"a":"b", "g":null}' as jsonb) <@ '{"a":"b", "b":1, "c":null}';
 
-select cast('{"g":null}' as JSONB) <@ '{"a":"b", "b":1, "c":null}';
+select cast('{"g":null}' as jsonb) <@ '{"a":"b", "b":1, "c":null}';
 
-select cast('{"a":"c"}' as JSONB) <@ '{"a":"b", "b":1, "c":null}';
+select cast('{"a":"c"}' as jsonb) <@ '{"a":"b", "b":1, "c":null}';
 
-select cast('{"a":"b"}' as JSONB) <@ '{"a":"b", "b":1, "c":null}';
+select cast('{"a":"b"}' as jsonb) <@ '{"a":"b", "b":1, "c":null}';
 
-select cast('{"a":"b", "c":"q"}' as JSONB) <@ '{"a":"b", "b":1, "c":null}';
+select cast('{"a":"b", "c":"q"}' as jsonb) <@ '{"a":"b", "b":1, "c":null}';
 
-select cast('[5]' as JSONB) @> '[5]';
+select cast('[5]' as jsonb) @> '[5]';
 
-select cast('5' as JSONB) @> '5';
+select cast('5' as jsonb) @> '5';
 
-select cast('[5]' as JSONB) @> '5';
+select cast('[5]' as jsonb) @> '5';
 
-select cast('5' as JSONB) @> '[5]';
+select cast('5' as jsonb) @> '[5]';
 
 select
-  cast('["9", ["7", "3"], 1]' as JSONB) @>
-  cast('["9", ["7", "3"], 1]' as JSONB);
+  cast('["9", ["7", "3"], 1]' as jsonb) @>
+  cast('["9", ["7", "3"], 1]' as jsonb);
 
 select
   cast('["9", ["7", "3"], ["1"]]'
-  as JSONB) @>
+  as jsonb) @>
   cast('["9", ["7", "3"], ["1"]]'
-  as JSONB);
+  as jsonb);
 
 select
   cast('{ "name": "Bob", "tags": [ "enim", "qui"]}'
-  as JSONB) @>
+  as jsonb) @>
   '{"tags":["qu"]}';
 
 select jsonb_array_length('[1,2,3,{"f1":1,"f2":[5,6]},4]');
@@ -472,7 +472,7 @@ select jsonb_each('{"f1":[1,2,3],"f2":{"f3":1},"f4":null}');
 select
   jsonb_each(
     cast('{"a":{"b":"c","c":"b","1":"first"},"b":[1,2],"c":"cc","1":"first","n":null}'
-    as JSONB)
+    as jsonb)
   )
   as q;
 
@@ -489,7 +489,7 @@ select
 from
   jsonb_each(
     cast('{"a":{"b":"c","c":"b","1":"first"},"b":[1,2],"c":"cc","1":"first","n":null}'
-    as JSONB)
+    as jsonb)
   )
   as q;
 
@@ -498,7 +498,7 @@ select jsonb_each_text('{"f1":[1,2,3],"f2":{"f3":1},"f4":null,"f5":"null"}');
 select
   jsonb_each_text(
     cast('{"a":{"b":"c","c":"b","1":"first"},"b":[1,2],"c":"cc","1":"first","n":null}'
-    as JSONB)
+    as jsonb)
   )
   as q;
 
@@ -515,7 +515,7 @@ select
 from
   jsonb_each_text(
     cast('{"a":{"b":"c","c":"b","1":"first"},"b":[1,2],"c":"cc","1":"first","n":null}'
-    as JSONB)
+    as jsonb)
   )
   as q;
 
@@ -527,19 +527,19 @@ select jsonb_exists('{"a":null, "b":"qq"}', 'c');
 
 select jsonb_exists('{"a":"null", "b":"qq"}', 'a');
 
-select cast('{"a":null, "b":"qq"}' as JSONB) ? 'a';
+select cast('{"a":null, "b":"qq"}' as jsonb) ? 'a';
 
-select cast('{"a":null, "b":"qq"}' as JSONB) ? 'b';
+select cast('{"a":null, "b":"qq"}' as jsonb) ? 'b';
 
-select cast('{"a":null, "b":"qq"}' as JSONB) ? 'c';
+select cast('{"a":null, "b":"qq"}' as jsonb) ? 'c';
 
-select cast('{"a":"null", "b":"qq"}' as JSONB) ? 'a';
+select cast('{"a":"null", "b":"qq"}' as jsonb) ? 'a';
 
 select COUNT(*) from testjsonb where j -> 'array' ? 'bar';
 
-select COUNT(*) from testjsonb where j -> 'array' ? cast('5' as TEXT);
+select COUNT(*) from testjsonb where j -> 'array' ? cast('5' as text);
 
-select COUNT(*) from testjsonb where j -> 'array' @> cast('5' as JSONB);
+select COUNT(*) from testjsonb where j -> 'array' @> cast('5' as jsonb);
 
 select jsonb_exists_any('{"a":null, "b":"qq"}', array['a', 'b']);
 
@@ -549,17 +549,17 @@ select jsonb_exists_any('{"a":null, "b":"qq"}', array['c', 'a']);
 
 select jsonb_exists_any('{"a":null, "b":"qq"}', array['c', 'd']);
 
-select jsonb_exists_any('{"a":null, "b":"qq"}', cast('{}' as TEXT[]));
+select jsonb_exists_any('{"a":null, "b":"qq"}', cast('{}' as text[]));
 
-select cast('{"a":null, "b":"qq"}' as JSONB) ?| array['a', 'b'];
+select cast('{"a":null, "b":"qq"}' as jsonb) ?| array['a', 'b'];
 
-select cast('{"a":null, "b":"qq"}' as JSONB) ?| array['b', 'a'];
+select cast('{"a":null, "b":"qq"}' as jsonb) ?| array['b', 'a'];
 
-select cast('{"a":null, "b":"qq"}' as JSONB) ?| array['c', 'a'];
+select cast('{"a":null, "b":"qq"}' as jsonb) ?| array['c', 'a'];
 
-select cast('{"a":null, "b":"qq"}' as JSONB) ?| array['c', 'd'];
+select cast('{"a":null, "b":"qq"}' as jsonb) ?| array['c', 'd'];
 
-select cast('{"a":null, "b":"qq"}' as JSONB) ?| cast('{}' as TEXT[]);
+select cast('{"a":null, "b":"qq"}' as jsonb) ?| cast('{}' as text[]);
 
 select jsonb_exists_all('{"a":null, "b":"qq"}', array['a', 'b']);
 
@@ -569,19 +569,19 @@ select jsonb_exists_all('{"a":null, "b":"qq"}', array['c', 'a']);
 
 select jsonb_exists_all('{"a":null, "b":"qq"}', array['c', 'd']);
 
-select jsonb_exists_all('{"a":null, "b":"qq"}', cast('{}' as TEXT[]));
+select jsonb_exists_all('{"a":null, "b":"qq"}', cast('{}' as text[]));
 
-select cast('{"a":null, "b":"qq"}' as JSONB) ?& array['a', 'b'];
+select cast('{"a":null, "b":"qq"}' as jsonb) ?& array['a', 'b'];
 
-select cast('{"a":null, "b":"qq"}' as JSONB) ?& array['b', 'a'];
+select cast('{"a":null, "b":"qq"}' as jsonb) ?& array['b', 'a'];
 
-select cast('{"a":null, "b":"qq"}' as JSONB) ?& array['c', 'a'];
+select cast('{"a":null, "b":"qq"}' as jsonb) ?& array['c', 'a'];
 
-select cast('{"a":null, "b":"qq"}' as JSONB) ?& array['c', 'd'];
+select cast('{"a":null, "b":"qq"}' as jsonb) ?& array['c', 'd'];
 
-select cast('{"a":null, "b":"qq"}' as JSONB) ?& array['a', 'a', 'b', 'b', 'b'];
+select cast('{"a":null, "b":"qq"}' as jsonb) ?& array['a', 'a', 'b', 'b', 'b'];
 
-select cast('{"a":null, "b":"qq"}' as JSONB) ?& cast('{}' as TEXT[]);
+select cast('{"a":null, "b":"qq"}' as jsonb) ?& cast('{}' as text[]);
 
 select jsonb_typeof('{}') as object;
 
@@ -624,24 +624,24 @@ select
     'd',
     null,
     'e',
-    cast('{"x": 3, "y": [1,2,3]}' as JSON)
+    cast('{"x": 3, "y": [1,2,3]}' as json)
   );
 
 select jsonb_build_array('a', null);
 
-select jsonb_build_array(variadic cast(null as TEXT[]));
+select jsonb_build_array(variadic cast(null as text[]));
 
-select jsonb_build_array(variadic cast('{}' as TEXT[]));
+select jsonb_build_array(variadic cast('{}' as text[]));
 
-select jsonb_build_array(variadic cast('{a,b,c}' as TEXT[]));
+select jsonb_build_array(variadic cast('{a,b,c}' as text[]));
 
-select jsonb_build_array(variadic cast(array['a', null] as TEXT[]));
+select jsonb_build_array(variadic cast(array['a', null] as text[]));
 
-select jsonb_build_array(variadic cast('{1,2,3,4}' as TEXT[]));
+select jsonb_build_array(variadic cast('{1,2,3,4}' as text[]));
 
-select jsonb_build_array(variadic cast('{1,2,3,4}' as INT[]));
+select jsonb_build_array(variadic cast('{1,2,3,4}' as int[]));
 
-select jsonb_build_array(variadic cast('{{1,4},{2,5},{3,6}}' as INT[][]));
+select jsonb_build_array(variadic cast('{{1,4},{2,5},{3,6}}' as int[][]));
 
 select
   jsonb_build_object(
@@ -654,7 +654,7 @@ select
     'd',
     null,
     'e',
-    cast('{"x": 3, "y": [1,2,3]}' as JSON)
+    cast('{"x": 3, "y": [1,2,3]}' as json)
   );
 
 select
@@ -664,7 +664,7 @@ select
     'd',
     jsonb_build_object(
       'e',
-      cast(array[9, 8, 7] as INT[]),
+      cast(array[9, 8, 7] as int[]),
       'f',
       (
         select
@@ -673,7 +673,7 @@ select
           (
             select
               relkind,
-              cast(oid as REGCLASS) as name
+              cast(oid as regclass) as name
             from
               pg_class
             where
@@ -684,9 +684,9 @@ select
     )
   );
 
-select jsonb_build_object(cast('{a,b,c}' as TEXT[]));
+select jsonb_build_object(cast('{a,b,c}' as text[]));
 
-select jsonb_build_object(cast('{a,b,c}' as TEXT[]), cast('{d,e,f}' as TEXT[]));
+select jsonb_build_object(cast('{a,b,c}' as text[]), cast('{d,e,f}' as text[]));
 
 select jsonb_build_object('a', 'b', 'c');
 
@@ -694,21 +694,21 @@ select jsonb_build_object(null, 'a');
 
 select jsonb_build_object('a', null);
 
-select jsonb_build_object(variadic cast(null as TEXT[]));
+select jsonb_build_object(variadic cast(null as text[]));
 
-select jsonb_build_object(variadic cast('{}' as TEXT[]));
+select jsonb_build_object(variadic cast('{}' as text[]));
 
-select jsonb_build_object(variadic cast('{a,b,c}' as TEXT[]));
+select jsonb_build_object(variadic cast('{a,b,c}' as text[]));
 
-select jsonb_build_object(variadic cast(array['a', null] as TEXT[]));
+select jsonb_build_object(variadic cast(array['a', null] as text[]));
 
-select jsonb_build_object(variadic cast(array[null, 'a'] as TEXT[]));
+select jsonb_build_object(variadic cast(array[null, 'a'] as text[]));
 
-select jsonb_build_object(variadic cast('{1,2,3,4}' as TEXT[]));
+select jsonb_build_object(variadic cast('{1,2,3,4}' as text[]));
 
-select jsonb_build_object(variadic cast('{1,2,3,4}' as INT[]));
+select jsonb_build_object(variadic cast('{1,2,3,4}' as int[]));
 
-select jsonb_build_object(variadic cast('{{1,4},{2,5},{3,6}}' as INT[][]));
+select jsonb_build_object(variadic cast('{{1,4},{2,5},{3,6}}' as int[][]));
 
 select jsonb_build_array();
 
@@ -720,18 +720,18 @@ select jsonb_build_object(null, 2);
 
 select jsonb_build_object(r, 2) from (select 1 as a, 2 as b) as r;
 
-select jsonb_build_object(cast('{"a":1,"b":2}' as JSON), 3);
+select jsonb_build_object(cast('{"a":1,"b":2}' as json), 3);
 
-select jsonb_build_object(cast('{1,2,3}' as INT[]), 3);
+select jsonb_build_object(cast('{1,2,3}' as int[]), 3);
 
-select jsonb_object_agg(1, cast(null as JSONB));
+select jsonb_object_agg(1, cast(null as jsonb));
 
 select jsonb_object_agg(null, '{"a":1}');
 
 create temporary table foo (
-  serial_num INT,
-  name TEXT,
-  type TEXT
+  serial_num int,
+  name text,
+  type text
 );
 
 insert into foo values (847001, 't15', 'GE1043');
@@ -813,14 +813,14 @@ select
   jsonb_extract_path(
     '{"f2":["f3",1],"f4":{"f5":99,"f6":"stringy"}}',
     'f2',
-    cast(0 as TEXT)
+    cast(0 as text)
   );
 
 select
   jsonb_extract_path(
     '{"f2":["f3",1],"f4":{"f5":99,"f6":"stringy"}}',
     'f2',
-    cast(1 as TEXT)
+    cast(1 as text)
   );
 
 select
@@ -840,14 +840,14 @@ select
   jsonb_extract_path_text(
     '{"f2":["f3",1],"f4":{"f5":99,"f6":"stringy"}}',
     'f2',
-    cast(0 as TEXT)
+    cast(0 as text)
   );
 
 select
   jsonb_extract_path_text(
     '{"f2":["f3",1],"f4":{"f5":99,"f6":"stringy"}}',
     'f2',
-    cast(1 as TEXT)
+    cast(1 as text)
   );
 
 select
@@ -884,135 +884,135 @@ select
 
 select
   cast('{"f2":{"f3":1},"f4":{"f5":99,"f6":"stringy"}}'
-  as JSONB) #>
+  as jsonb) #>
   array['f4', 'f6'];
 
 select
   cast('{"f2":{"f3":1},"f4":{"f5":99,"f6":"stringy"}}'
-  as JSONB) #>
+  as jsonb) #>
   array['f2'];
 
 select
   cast('{"f2":["f3",1],"f4":{"f5":99,"f6":"stringy"}}'
-  as JSONB) #>
+  as jsonb) #>
   array['f2', '0'];
 
 select
   cast('{"f2":["f3",1],"f4":{"f5":99,"f6":"stringy"}}'
-  as JSONB) #>
+  as jsonb) #>
   array['f2', '1'];
 
 select
   cast('{"f2":{"f3":1},"f4":{"f5":99,"f6":"stringy"}}'
-  as JSONB) #>>
+  as jsonb) #>>
   array['f4', 'f6'];
 
 select
   cast('{"f2":{"f3":1},"f4":{"f5":99,"f6":"stringy"}}'
-  as JSONB) #>>
+  as jsonb) #>>
   array['f2'];
 
 select
   cast('{"f2":["f3",1],"f4":{"f5":99,"f6":"stringy"}}'
-  as JSONB) #>>
+  as jsonb) #>>
   array['f2', '0'];
 
 select
   cast('{"f2":["f3",1],"f4":{"f5":99,"f6":"stringy"}}'
-  as JSONB) #>>
+  as jsonb) #>>
   array['f2', '1'];
 
-select cast('{"a": {"b":{"c": "foo"}}}' as JSONB) #> '{}';
+select cast('{"a": {"b":{"c": "foo"}}}' as jsonb) #> '{}';
 
-select cast('[1,2,3]' as JSONB) #> '{}';
+select cast('[1,2,3]' as jsonb) #> '{}';
 
-select cast('"foo"' as JSONB) #> '{}';
+select cast('"foo"' as jsonb) #> '{}';
 
-select cast('42' as JSONB) #> '{}';
+select cast('42' as jsonb) #> '{}';
 
-select cast('null' as JSONB) #> '{}';
+select cast('null' as jsonb) #> '{}';
 
-select cast('{"a": {"b":{"c": "foo"}}}' as JSONB) #> array['a'];
+select cast('{"a": {"b":{"c": "foo"}}}' as jsonb) #> array['a'];
 
-select cast('{"a": {"b":{"c": "foo"}}}' as JSONB) #> array['a', null];
+select cast('{"a": {"b":{"c": "foo"}}}' as jsonb) #> array['a', null];
 
-select cast('{"a": {"b":{"c": "foo"}}}' as JSONB) #> array['a', ''];
+select cast('{"a": {"b":{"c": "foo"}}}' as jsonb) #> array['a', ''];
 
-select cast('{"a": {"b":{"c": "foo"}}}' as JSONB) #> array['a', 'b'];
+select cast('{"a": {"b":{"c": "foo"}}}' as jsonb) #> array['a', 'b'];
 
-select cast('{"a": {"b":{"c": "foo"}}}' as JSONB) #> array['a', 'b', 'c'];
+select cast('{"a": {"b":{"c": "foo"}}}' as jsonb) #> array['a', 'b', 'c'];
 
-select cast('{"a": {"b":{"c": "foo"}}}' as JSONB) #> array['a', 'b', 'c', 'd'];
+select cast('{"a": {"b":{"c": "foo"}}}' as jsonb) #> array['a', 'b', 'c', 'd'];
 
-select cast('{"a": {"b":{"c": "foo"}}}' as JSONB) #> array['a', 'z', 'c'];
+select cast('{"a": {"b":{"c": "foo"}}}' as jsonb) #> array['a', 'z', 'c'];
 
 select
   cast('{"a": [{"b": "c"}, {"b": "cc"}]}'
-  as JSONB) #>
+  as jsonb) #>
   array['a', '1', 'b'];
 
 select
   cast('{"a": [{"b": "c"}, {"b": "cc"}]}'
-  as JSONB) #>
+  as jsonb) #>
   array['a', 'z', 'b'];
 
-select cast('[{"b": "c"}, {"b": "cc"}]' as JSONB) #> array['1', 'b'];
+select cast('[{"b": "c"}, {"b": "cc"}]' as jsonb) #> array['1', 'b'];
 
-select cast('[{"b": "c"}, {"b": "cc"}]' as JSONB) #> array['z', 'b'];
+select cast('[{"b": "c"}, {"b": "cc"}]' as jsonb) #> array['z', 'b'];
 
-select cast('[{"b": "c"}, {"b": null}]' as JSONB) #> array['1', 'b'];
+select cast('[{"b": "c"}, {"b": null}]' as jsonb) #> array['1', 'b'];
 
-select cast('"foo"' as JSONB) #> array['z'];
+select cast('"foo"' as jsonb) #> array['z'];
 
-select cast('42' as JSONB) #> array['f2'];
+select cast('42' as jsonb) #> array['f2'];
 
-select cast('42' as JSONB) #> array['0'];
+select cast('42' as jsonb) #> array['0'];
 
-select cast('{"a": {"b":{"c": "foo"}}}' as JSONB) #>> '{}';
+select cast('{"a": {"b":{"c": "foo"}}}' as jsonb) #>> '{}';
 
-select cast('[1,2,3]' as JSONB) #>> '{}';
+select cast('[1,2,3]' as jsonb) #>> '{}';
 
-select cast('"foo"' as JSONB) #>> '{}';
+select cast('"foo"' as jsonb) #>> '{}';
 
-select cast('42' as JSONB) #>> '{}';
+select cast('42' as jsonb) #>> '{}';
 
-select cast('null' as JSONB) #>> '{}';
+select cast('null' as jsonb) #>> '{}';
 
-select cast('{"a": {"b":{"c": "foo"}}}' as JSONB) #>> array['a'];
+select cast('{"a": {"b":{"c": "foo"}}}' as jsonb) #>> array['a'];
 
-select cast('{"a": {"b":{"c": "foo"}}}' as JSONB) #>> array['a', null];
+select cast('{"a": {"b":{"c": "foo"}}}' as jsonb) #>> array['a', null];
 
-select cast('{"a": {"b":{"c": "foo"}}}' as JSONB) #>> array['a', ''];
+select cast('{"a": {"b":{"c": "foo"}}}' as jsonb) #>> array['a', ''];
 
-select cast('{"a": {"b":{"c": "foo"}}}' as JSONB) #>> array['a', 'b'];
+select cast('{"a": {"b":{"c": "foo"}}}' as jsonb) #>> array['a', 'b'];
 
-select cast('{"a": {"b":{"c": "foo"}}}' as JSONB) #>> array['a', 'b', 'c'];
+select cast('{"a": {"b":{"c": "foo"}}}' as jsonb) #>> array['a', 'b', 'c'];
 
-select cast('{"a": {"b":{"c": "foo"}}}' as JSONB) #>> array['a', 'b', 'c', 'd'];
+select cast('{"a": {"b":{"c": "foo"}}}' as jsonb) #>> array['a', 'b', 'c', 'd'];
 
-select cast('{"a": {"b":{"c": "foo"}}}' as JSONB) #>> array['a', 'z', 'c'];
+select cast('{"a": {"b":{"c": "foo"}}}' as jsonb) #>> array['a', 'z', 'c'];
 
 select
   cast('{"a": [{"b": "c"}, {"b": "cc"}]}'
-  as JSONB) #>>
+  as jsonb) #>>
   array['a', '1', 'b'];
 
 select
   cast('{"a": [{"b": "c"}, {"b": "cc"}]}'
-  as JSONB) #>>
+  as jsonb) #>>
   array['a', 'z', 'b'];
 
-select cast('[{"b": "c"}, {"b": "cc"}]' as JSONB) #>> array['1', 'b'];
+select cast('[{"b": "c"}, {"b": "cc"}]' as jsonb) #>> array['1', 'b'];
 
-select cast('[{"b": "c"}, {"b": "cc"}]' as JSONB) #>> array['z', 'b'];
+select cast('[{"b": "c"}, {"b": "cc"}]' as jsonb) #>> array['z', 'b'];
 
-select cast('[{"b": "c"}, {"b": null}]' as JSONB) #>> array['1', 'b'];
+select cast('[{"b": "c"}, {"b": null}]' as jsonb) #>> array['1', 'b'];
 
-select cast('"foo"' as JSONB) #>> array['z'];
+select cast('"foo"' as jsonb) #>> array['z'];
 
-select cast('42' as JSONB) #>> array['f2'];
+select cast('42' as jsonb) #>> array['f2'];
 
-select cast('42' as JSONB) #>> array['0'];
+select cast('42' as jsonb) #>> array['0'];
 
 select
   jsonb_array_elements(
@@ -1040,34 +1040,34 @@ from
   )
   as q;
 
-create type jbpop as (a TEXT, b INT, c TIMESTAMP);
+create type jbpop as (a text, b int, c timestamp);
 
-create domain jsb_int_not_null as INT not null;
+create domain jsb_int_not_null as int not null;
 
-create domain jsb_int_array_1d as INT[] check (array_length(value, 1) = 3);
+create domain jsb_int_array_1d as int[] check (array_length(value, 1) = 3);
 
-create domain jsb_int_array_2d as INT[][] check (array_length(value, 2) = 3);
+create domain jsb_int_array_2d as int[][] check (array_length(value, 2) = 3);
 
-create type jb_unordered_pair as (x INT, y INT);
+create type jb_unordered_pair as (x int, y int);
 
 create domain jb_ordered_pair as jb_unordered_pair check (value.x <= value.y);
 
 create type jsbrec as (
-  i INT,
+  i int,
   ia _int4,
-  ia1 INT[],
-  ia2 INT[][],
-  ia3 INT[][][],
+  ia1 int[],
+  ia2 int[][],
+  ia3 int[][][],
   ia1d jsb_int_array_1d,
   ia2d jsb_int_array_2d,
-  t TEXT,
-  ta TEXT[],
-  c CHAR(10),
-  ca CHAR(10)[],
-  ts TIMESTAMP,
-  js JSON,
-  jsb JSONB,
-  jsa JSON[],
+  t text,
+  ta text[],
+  c char(10),
+  ca char(10)[],
+  ts timestamp,
+  js json,
+  jsb jsonb,
+  jsa json[],
   rec jbpop,
   reca jbpop[]
 );
@@ -1747,7 +1747,7 @@ from
   )
   as q;
 
-create type jsb_char2 as (a CHAR(2));
+create type jsb_char2 as (a char(2));
 
 select jsonb_populate_record_valid(cast(null as jsb_char2), '{"a": "aaa"}');
 
@@ -1771,9 +1771,9 @@ from
   )
   as q;
 
-create type jsb_ia as (a INT[]);
+create type jsb_ia as (a int[]);
 
-create type jsb_ia2 as (a INT[][]);
+create type jsb_ia2 as (a int[][]);
 
 select jsonb_populate_record_valid(cast(null as jsb_ia), '{"a": 43.2}');
 
@@ -1813,9 +1813,9 @@ from
   )
   as q;
 
-create domain jsb_i_not_null as INT not null;
+create domain jsb_i_not_null as int not null;
 
-create domain jsb_i_gt_1 as INT check (value > 1);
+create domain jsb_i_gt_1 as int check (value > 1);
 
 create type jsb_i_not_null_rec as (a jsb_i_not_null);
 
@@ -1873,11 +1873,11 @@ from
   )
   as q;
 
-drop TYPE jsb_ia, jsb_ia2, jsb_char2, jsb_i_not_null_rec, jsb_i_gt_1_rec;
+drop type jsb_ia, jsb_ia2, jsb_char2, jsb_i_not_null_rec, jsb_i_gt_1_rec;
 
-drop DOMAIN jsb_i_not_null, jsb_i_gt_1;
+drop domain jsb_i_not_null, jsb_i_gt_1;
 
-select jsonb_populate_record(cast(null as RECORD), '{"x": 0, "y": 1}');
+select jsonb_populate_record(cast(null as record), '{"x": 0, "y": 1}');
 
 select jsonb_populate_record(row(1, 2), '{"f1": 0, "f2": 1}');
 
@@ -1885,10 +1885,10 @@ select
   *
 from
   jsonb_populate_record(
-    cast(null as RECORD),
+    cast(null as record),
     '{"x": 776}'
   ) as
-  (x INT, y INT);
+  (x int, y int);
 
 select jsonb_populate_record(cast(null as jb_ordered_pair), '{"x": 0, "y": 1}');
 
@@ -1981,7 +1981,7 @@ from
   )
   as q;
 
-select jsonb_populate_recordset(cast(null as RECORD), '[{"x": 0, "y": 1}]');
+select jsonb_populate_recordset(cast(null as record), '[{"x": 0, "y": 1}]');
 
 select jsonb_populate_recordset(row(1, 2), '[{"f1": 0, "f2": 1}]');
 
@@ -1998,12 +1998,12 @@ select
   *
 from
   jsonb_populate_recordset(
-    cast(null as RECORD),
+    cast(null as record),
     '[{"x": 776}]'
   ) as
-  (x INT, y INT);
+  (x int, y int);
 
-select jsonb_populate_recordset(cast(null as RECORD), '[]');
+select jsonb_populate_recordset(cast(null as record), '[]');
 
 select jsonb_populate_recordset(row(1, 2), '[]');
 
@@ -2013,10 +2013,10 @@ select
   *
 from
   jsonb_populate_recordset(
-    cast(null as RECORD),
+    cast(null as record),
     '[]'
   ) as
-  (x INT, y INT);
+  (x int, y int);
 
 select
   jsonb_populate_recordset(
@@ -2040,44 +2040,44 @@ select
   *
 from
   jsonb_populate_recordset(
-    row(cast(0 as INT)),
+    row(cast(0 as int)),
     '[{"a":"1","b":"2"},{"a":"3"}]'
   )
   as q
-  (a TEXT, b TEXT);
+  (a text, b text);
 
 select
   *
 from
   jsonb_populate_recordset(
-    row(cast(0 as INT), cast(0 as INT)),
+    row(cast(0 as int), cast(0 as int)),
     '[{"a":"1","b":"2"},{"a":"3"}]'
   )
   as q
-  (a TEXT, b TEXT);
+  (a text, b text);
 
 select
   *
 from
   jsonb_populate_recordset(
-    row(cast(0 as INT),
-    cast(0 as INT),
-    cast(0 as INT)),
+    row(cast(0 as int),
+    cast(0 as int),
+    cast(0 as int)),
     '[{"a":"1","b":"2"},{"a":"3"}]'
   )
   as q
-  (a TEXT, b TEXT);
+  (a text, b text);
 
 select
   *
 from
   jsonb_populate_recordset(
-    row(cast(1000000000 as INT),
-    cast(50 as INT)),
+    row(cast(1000000000 as int),
+    cast(50 as int)),
     '[{"b":"2"},{"a":"3"}]'
   )
   as q
-  (a TEXT, b TEXT);
+  (a text, b text);
 
 select
   *
@@ -2086,7 +2086,7 @@ from
     '{"a":1,"b":"foo","c":"bar"}'
   )
   as x
-  (a INT, b TEXT, d TEXT);
+  (a int, b text, d text);
 
 select
   *
@@ -2095,7 +2095,7 @@ from
     '[{"a":1,"b":"foo","d":false},{"a":2,"b":"bar","c":true}]'
   )
   as x
-  (a INT, b TEXT, c BOOLEAN);
+  (a int, b text, c boolean);
 
 select
   *,
@@ -2103,16 +2103,16 @@ select
 from
   jsonb_to_record(
     cast('{"a":1, "b":{"c":16, "d":2}, "x":8, "ca": ["1 2", 3], "ia": [[1,2],[3,4]], "r": {"a": "aaa", "b": 123}}'
-    as JSONB)
+    as jsonb)
   )
   as t
   (
-    a INT,
-    b JSONB,
-    c TEXT,
-    x INT,
-    ca CHAR(5)[],
-    ia INT[][],
+    a int,
+    b jsonb,
+    c text,
+    x int,
+    ca char(5)[],
+    ia int[][],
     r jbpop
   );
 
@@ -2122,10 +2122,10 @@ select
 from
   jsonb_to_recordset(
     cast('[{"a":1, "b":{"c":16, "d":2}, "x":8}]'
-    as JSONB)
+    as jsonb)
   )
   as t
-  (a INT, b JSONB, c TEXT, x INT);
+  (a int, b jsonb, c text, x int);
 
 select * from jsonb_to_record('{"ia": null}') as x (ia _int4);
 
@@ -2139,25 +2139,25 @@ select * from jsonb_to_record('{"ia": [[1], 2]}') as x (ia _int4);
 
 select * from jsonb_to_record('{"ia": [[1], [2, 3]]}') as x (ia _int4);
 
-select * from jsonb_to_record('{"ia2": [1, 2, 3]}') as x (ia2 INT[][]);
+select * from jsonb_to_record('{"ia2": [1, 2, 3]}') as x (ia2 int[][]);
 
-select * from jsonb_to_record('{"ia2": [[1, 2], [3, 4]]}') as x (ia2 INT[][]);
+select * from jsonb_to_record('{"ia2": [[1, 2], [3, 4]]}') as x (ia2 int[][]);
 
-select * from jsonb_to_record('{"ia2": [[[1], [2], [3]]]}') as x (ia2 INT[][]);
+select * from jsonb_to_record('{"ia2": [[[1], [2], [3]]]}') as x (ia2 int[][]);
 
-select * from jsonb_to_record('{"out": {"key": 1}}') as x (out JSON);
+select * from jsonb_to_record('{"out": {"key": 1}}') as x (out json);
 
-select * from jsonb_to_record('{"out": [{"key": 1}]}') as x (out JSON);
+select * from jsonb_to_record('{"out": [{"key": 1}]}') as x (out json);
 
-select * from jsonb_to_record('{"out": "{\"key\": 1}"}') as x (out JSON);
+select * from jsonb_to_record('{"out": "{\"key\": 1}"}') as x (out json);
 
-select * from jsonb_to_record('{"out": {"key": 1}}') as x (out JSONB);
+select * from jsonb_to_record('{"out": {"key": 1}}') as x (out jsonb);
 
-select * from jsonb_to_record('{"out": [{"key": 1}]}') as x (out JSONB);
+select * from jsonb_to_record('{"out": [{"key": 1}]}') as x (out jsonb);
 
-select * from jsonb_to_record('{"out": "{\"key\": 1}"}') as x (out JSONB);
+select * from jsonb_to_record('{"out": "{\"key\": 1}"}') as x (out jsonb);
 
-create temporary table jsbpoptest (js JSONB);
+create temporary table jsbpoptest (js jsonb);
 
 insert into jsbpoptest
 select
@@ -2166,25 +2166,25 @@ select
 	"rec": {"a": "abc", "c": "01.02.2003", "x": 43.2},
 	"reca": [{"a": "abc", "b": 456}, null, {"c": "01.02.2003", "x": 43.2}]
 }'
-  as JSONB)
+  as jsonb)
 from
   generate_series(1, 3);
 
 select (jsonb_populate_record(cast(null as jsbrec), js)).* from jsbpoptest;
 
-drop TYPE jsbrec;
+drop type jsbrec;
 
-drop TYPE jsbrec_i_not_null;
+drop type jsbrec_i_not_null;
 
-drop DOMAIN jsb_int_not_null;
+drop domain jsb_int_not_null;
 
-drop DOMAIN jsb_int_array_1d;
+drop domain jsb_int_array_1d;
 
-drop DOMAIN jsb_int_array_2d;
+drop domain jsb_int_array_2d;
 
-drop DOMAIN jb_ordered_pair;
+drop domain jb_ordered_pair;
 
-drop TYPE jb_unordered_pair;
+drop type jb_unordered_pair;
 
 select COUNT(*) from testjsonb where j @> '{"wait":null}';
 
@@ -2368,9 +2368,9 @@ create index "jidx_array" on testjsonb using gin ((j -> 'array'));
 
 select COUNT(*) from testjsonb where j -> 'array' ? 'bar';
 
-select COUNT(*) from testjsonb where j -> 'array' ? cast('5' as TEXT);
+select COUNT(*) from testjsonb where j -> 'array' ? cast('5' as text);
 
-select COUNT(*) from testjsonb where j -> 'array' @> cast('5' as JSONB);
+select COUNT(*) from testjsonb where j -> 'array' @> cast('5' as jsonb);
 
 reset enable_seqscan;
 
@@ -2439,7 +2439,7 @@ from
   (
     values
       (
-        cast('{}' as JSONB) || cast('' as TEXT)
+        cast('{}' as jsonb) || cast('' as text)
       ),
       ('{}')
   )
@@ -2451,9 +2451,9 @@ reset enable_hashagg;
 
 reset enable_sort;
 
-drop INDEX jidx;
+drop index jidx;
 
-drop INDEX jidx_array;
+drop index jidx_array;
 
 create index "jidx" on testjsonb using btree (j);
 
@@ -2469,7 +2469,7 @@ where
   j =
   '{"pos":98, "line":371, "node":"CBA", "indexed":true}';
 
-drop INDEX jidx;
+drop index jidx;
 
 create index "jidx" on testjsonb using gin (j jsonb_path_ops);
 
@@ -2545,86 +2545,86 @@ select COUNT(*) from testjsonb where j @? '$.bar';
 
 reset enable_seqscan;
 
-drop INDEX jidx;
+drop index jidx;
 
-select cast('{"ff":{"a":12,"b":16}}' as JSONB);
+select cast('{"ff":{"a":12,"b":16}}' as jsonb);
 
-select cast('{"ff":{"a":12,"b":16},"qq":123}' as JSONB);
+select cast('{"ff":{"a":12,"b":16},"qq":123}' as jsonb);
 
 select
   cast('{"aa":["a","aaa"],"qq":{"a":12,"b":16,"c":["c1","c2"],"d":{"d1":"d1","d2":"d2","d1":"d3"}}}'
-  as JSONB);
+  as jsonb);
 
 select
   cast('{"aa":["a","aaa"],"qq":{"a":"12","b":"16","c":["c1","c2"],"d":{"d1":"d1","d2":"d2"}}}'
-  as JSONB);
+  as jsonb);
 
 select
   cast('{"aa":["a","aaa"],"qq":{"a":"12","b":"16","c":["c1","c2",["c3"],{"c4":4}],"d":{"d1":"d1","d2":"d2"}}}'
-  as JSONB);
+  as jsonb);
 
-select cast('{"ff":["a","aaa"]}' as JSONB);
+select cast('{"ff":["a","aaa"]}' as jsonb);
 
 select
   cast('{"ff":{"a":12,"b":16},"qq":123,"x":[1,2],"Y":null}'
-  as JSONB) ->
+  as jsonb) ->
   'ff',
   cast('{"ff":{"a":12,"b":16},"qq":123,"x":[1,2],"Y":null}'
-  as JSONB) ->
+  as jsonb) ->
   'qq',
   cast('{"ff":{"a":12,"b":16},"qq":123,"x":[1,2],"Y":null}'
-  as JSONB) ->
+  as jsonb) ->
   'Y' is null
   as f,
   cast('{"ff":{"a":12,"b":16},"qq":123,"x":[1,2],"Y":null}'
-  as JSONB) ->>
+  as jsonb) ->>
   'Y' is null
   as t,
   cast('{"ff":{"a":12,"b":16},"qq":123,"x":[1,2],"Y":null}'
-  as JSONB) ->
+  as jsonb) ->
   'x';
 
-select cast('{"a":[1,2],"c":"b"}' as JSONB) @> '{"a":[1,2]}';
+select cast('{"a":[1,2],"c":"b"}' as jsonb) @> '{"a":[1,2]}';
 
-select cast('{"a":[2,1],"c":"b"}' as JSONB) @> '{"a":[1,2]}';
+select cast('{"a":[2,1],"c":"b"}' as jsonb) @> '{"a":[1,2]}';
 
-select cast('{"a":{"1":2},"c":"b"}' as JSONB) @> '{"a":[1,2]}';
+select cast('{"a":{"1":2},"c":"b"}' as jsonb) @> '{"a":[1,2]}';
 
-select cast('{"a":{"2":1},"c":"b"}' as JSONB) @> '{"a":[1,2]}';
+select cast('{"a":{"2":1},"c":"b"}' as jsonb) @> '{"a":[1,2]}';
 
-select cast('{"a":{"1":2},"c":"b"}' as JSONB) @> '{"a":{"1":2}}';
+select cast('{"a":{"1":2},"c":"b"}' as jsonb) @> '{"a":{"1":2}}';
 
-select cast('{"a":{"2":1},"c":"b"}' as JSONB) @> '{"a":{"1":2}}';
+select cast('{"a":{"2":1},"c":"b"}' as jsonb) @> '{"a":{"1":2}}';
 
-select cast('["a","b"]' as JSONB) @> '["a","b","c","b"]';
+select cast('["a","b"]' as jsonb) @> '["a","b","c","b"]';
 
-select cast('["a","b","c","b"]' as JSONB) @> '["a","b"]';
+select cast('["a","b","c","b"]' as jsonb) @> '["a","b"]';
 
-select cast('["a","b","c",[1,2]]' as JSONB) @> '["a",[1,2]]';
+select cast('["a","b","c",[1,2]]' as jsonb) @> '["a",[1,2]]';
 
-select cast('["a","b","c",[1,2]]' as JSONB) @> '["b",[1,2]]';
+select cast('["a","b","c",[1,2]]' as jsonb) @> '["b",[1,2]]';
 
-select cast('{"a":[1,2],"c":"b"}' as JSONB) @> '{"a":[1]}';
+select cast('{"a":[1,2],"c":"b"}' as jsonb) @> '{"a":[1]}';
 
-select cast('{"a":[1,2],"c":"b"}' as JSONB) @> '{"a":[2]}';
+select cast('{"a":[1,2],"c":"b"}' as jsonb) @> '{"a":[2]}';
 
-select cast('{"a":[1,2],"c":"b"}' as JSONB) @> '{"a":[3]}';
+select cast('{"a":[1,2],"c":"b"}' as jsonb) @> '{"a":[3]}';
 
-select cast('{"a":[1,2,{"c":3,"x":4}],"c":"b"}' as JSONB) @> '{"a":[{"c":3}]}';
+select cast('{"a":[1,2,{"c":3,"x":4}],"c":"b"}' as jsonb) @> '{"a":[{"c":3}]}';
 
-select cast('{"a":[1,2,{"c":3,"x":4}],"c":"b"}' as JSONB) @> '{"a":[{"x":4}]}';
+select cast('{"a":[1,2,{"c":3,"x":4}],"c":"b"}' as jsonb) @> '{"a":[{"x":4}]}';
 
 select
   cast('{"a":[1,2,{"c":3,"x":4}],"c":"b"}'
-  as JSONB) @>
+  as jsonb) @>
   '{"a":[{"x":4},3]}';
 
 select
   cast('{"a":[1,2,{"c":3,"x":4}],"c":"b"}'
-  as JSONB) @>
+  as jsonb) @>
   '{"a":[{"x":4},1]}';
 
-create temporary table nestjsonb (j JSONB);
+create temporary table nestjsonb (j jsonb);
 
 insert into nestjsonb (j) values ('{"a":[["b",{"x":1}],["b",{"x":2}]],"c":3}');
 
@@ -2638,7 +2638,7 @@ set enable_seqscan = 'on';
 
 set enable_bitmapscan = off;
 
-select * from nestjsonb where j @> cast('{"a":[[{"x":2}]]}' as JSONB);
+select * from nestjsonb where j @> cast('{"a":[[{"x":2}]]}' as jsonb);
 
 select * from nestjsonb where j @> '{"c":3}';
 
@@ -2648,7 +2648,7 @@ set enable_seqscan = off;
 
 set enable_bitmapscan = 'on';
 
-select * from nestjsonb where j @> cast('{"a":[[{"x":2}]]}' as JSONB);
+select * from nestjsonb where j @> cast('{"a":[[{"x":2}]]}' as jsonb);
 
 select * from nestjsonb where j @> '{"c":3}';
 
@@ -2660,121 +2660,121 @@ reset enable_bitmapscan;
 
 select
   cast('{"n":null,"a":1,"b":[1,2],"c":{"1":2},"d":{"1":[2,3]}}'
-  as JSONB) ->
+  as jsonb) ->
   'n';
 
 select
   cast('{"n":null,"a":1,"b":[1,2],"c":{"1":2},"d":{"1":[2,3]}}'
-  as JSONB) ->
+  as jsonb) ->
   'a';
 
 select
   cast('{"n":null,"a":1,"b":[1,2],"c":{"1":2},"d":{"1":[2,3]}}'
-  as JSONB) ->
+  as jsonb) ->
   'b';
 
 select
   cast('{"n":null,"a":1,"b":[1,2],"c":{"1":2},"d":{"1":[2,3]}}'
-  as JSONB) ->
+  as jsonb) ->
   'c';
 
 select
   cast('{"n":null,"a":1,"b":[1,2],"c":{"1":2},"d":{"1":[2,3]}}'
-  as JSONB) ->
+  as jsonb) ->
   'd';
 
 select
   cast('{"n":null,"a":1,"b":[1,2],"c":{"1":2},"d":{"1":[2,3]}}'
-  as JSONB) ->
+  as jsonb) ->
   'd' ->
   '1';
 
 select
   cast('{"n":null,"a":1,"b":[1,2],"c":{"1":2},"d":{"1":[2,3]}}'
-  as JSONB) ->
+  as jsonb) ->
   'e';
 
 select
   cast('{"n":null,"a":1,"b":[1,2],"c":{"1":2},"d":{"1":[2,3]}}'
-  as JSONB) ->
+  as jsonb) ->
   0;
 
-select cast('["a","b","c",[1,2],null]' as JSONB) -> 0;
+select cast('["a","b","c",[1,2],null]' as jsonb) -> 0;
 
-select cast('["a","b","c",[1,2],null]' as JSONB) -> 1;
+select cast('["a","b","c",[1,2],null]' as jsonb) -> 1;
 
-select cast('["a","b","c",[1,2],null]' as JSONB) -> 2;
+select cast('["a","b","c",[1,2],null]' as jsonb) -> 2;
 
-select cast('["a","b","c",[1,2],null]' as JSONB) -> 3;
+select cast('["a","b","c",[1,2],null]' as jsonb) -> 3;
 
-select cast('["a","b","c",[1,2],null]' as JSONB) -> 3 -> 1;
+select cast('["a","b","c",[1,2],null]' as jsonb) -> 3 -> 1;
 
-select cast('["a","b","c",[1,2],null]' as JSONB) -> 4;
+select cast('["a","b","c",[1,2],null]' as jsonb) -> 4;
 
-select cast('["a","b","c",[1,2],null]' as JSONB) -> 5;
+select cast('["a","b","c",[1,2],null]' as jsonb) -> 5;
 
-select cast('["a","b","c",[1,2],null]' as JSONB) -> -1;
+select cast('["a","b","c",[1,2],null]' as jsonb) -> -1;
 
-select cast('["a","b","c",[1,2],null]' as JSONB) -> -5;
+select cast('["a","b","c",[1,2],null]' as jsonb) -> -5;
 
-select cast('["a","b","c",[1,2],null]' as JSONB) -> -6;
+select cast('["a","b","c",[1,2],null]' as jsonb) -> -6;
 
-select cast('{"a":"b","c":[1,2,3]}' as JSONB) #> '{0}';
+select cast('{"a":"b","c":[1,2,3]}' as jsonb) #> '{0}';
 
-select cast('{"a":"b","c":[1,2,3]}' as JSONB) #> '{a}';
+select cast('{"a":"b","c":[1,2,3]}' as jsonb) #> '{a}';
 
-select cast('{"a":"b","c":[1,2,3]}' as JSONB) #> '{c}';
+select cast('{"a":"b","c":[1,2,3]}' as jsonb) #> '{c}';
 
-select cast('{"a":"b","c":[1,2,3]}' as JSONB) #> '{c,0}';
+select cast('{"a":"b","c":[1,2,3]}' as jsonb) #> '{c,0}';
 
-select cast('{"a":"b","c":[1,2,3]}' as JSONB) #> '{c,1}';
+select cast('{"a":"b","c":[1,2,3]}' as jsonb) #> '{c,1}';
 
-select cast('{"a":"b","c":[1,2,3]}' as JSONB) #> '{c,2}';
+select cast('{"a":"b","c":[1,2,3]}' as jsonb) #> '{c,2}';
 
-select cast('{"a":"b","c":[1,2,3]}' as JSONB) #> '{c,3}';
+select cast('{"a":"b","c":[1,2,3]}' as jsonb) #> '{c,3}';
 
-select cast('{"a":"b","c":[1,2,3]}' as JSONB) #> '{c,-1}';
+select cast('{"a":"b","c":[1,2,3]}' as jsonb) #> '{c,-1}';
 
-select cast('{"a":"b","c":[1,2,3]}' as JSONB) #> '{c,-3}';
+select cast('{"a":"b","c":[1,2,3]}' as jsonb) #> '{c,-3}';
 
-select cast('{"a":"b","c":[1,2,3]}' as JSONB) #> '{c,-4}';
+select cast('{"a":"b","c":[1,2,3]}' as jsonb) #> '{c,-4}';
 
-select cast('[0,1,2,[3,4],{"5":"five"}]' as JSONB) #> '{0}';
+select cast('[0,1,2,[3,4],{"5":"five"}]' as jsonb) #> '{0}';
 
-select cast('[0,1,2,[3,4],{"5":"five"}]' as JSONB) #> '{3}';
+select cast('[0,1,2,[3,4],{"5":"five"}]' as jsonb) #> '{3}';
 
-select cast('[0,1,2,[3,4],{"5":"five"}]' as JSONB) #> '{4}';
+select cast('[0,1,2,[3,4],{"5":"five"}]' as jsonb) #> '{4}';
 
-select cast('[0,1,2,[3,4],{"5":"five"}]' as JSONB) #> '{4,5}';
+select cast('[0,1,2,[3,4],{"5":"five"}]' as jsonb) #> '{4,5}';
 
 select
   cast('{"n":null,"a":1,"b":[1,2],"c":{"1":2},"d":{"1":[2,3]}}'
-  as JSONB) ?
+  as jsonb) ?
   'n';
 
 select
   cast('{"n":null,"a":1,"b":[1,2],"c":{"1":2},"d":{"1":[2,3]}}'
-  as JSONB) ?
+  as jsonb) ?
   'a';
 
 select
   cast('{"n":null,"a":1,"b":[1,2],"c":{"1":2},"d":{"1":[2,3]}}'
-  as JSONB) ?
+  as jsonb) ?
   'b';
 
 select
   cast('{"n":null,"a":1,"b":[1,2],"c":{"1":2},"d":{"1":[2,3]}}'
-  as JSONB) ?
+  as jsonb) ?
   'c';
 
 select
   cast('{"n":null,"a":1,"b":[1,2],"c":{"1":2},"d":{"1":[2,3]}}'
-  as JSONB) ?
+  as jsonb) ?
   'd';
 
 select
   cast('{"n":null,"a":1,"b":[1,2],"c":{"1":2},"d":{"1":[2,3]}}'
-  as JSONB) ?
+  as jsonb) ?
   'e';
 
 select jsonb_strip_nulls(null);
@@ -2833,144 +2833,144 @@ select
 
 select
   cast('{"aa":1 , "b":2, "cq":3}'
-  as JSONB) ||
+  as jsonb) ||
   '{"cq":"l", "b":"g", "fg":false}';
 
-select cast('{"aa":1 , "b":2, "cq":3}' as JSONB) || '{"aq":"l"}';
+select cast('{"aa":1 , "b":2, "cq":3}' as jsonb) || '{"aq":"l"}';
 
-select cast('{"aa":1 , "b":2, "cq":3}' as JSONB) || '{"aa":"l"}';
+select cast('{"aa":1 , "b":2, "cq":3}' as jsonb) || '{"aa":"l"}';
 
-select cast('{"aa":1 , "b":2, "cq":3}' as JSONB) || '{}';
+select cast('{"aa":1 , "b":2, "cq":3}' as jsonb) || '{}';
 
-select cast('["a", "b"]' as JSONB) || '["c"]';
+select cast('["a", "b"]' as jsonb) || '["c"]';
 
-select cast('["a", "b"]' as JSONB) || '["c", "d"]';
+select cast('["a", "b"]' as jsonb) || '["c", "d"]';
 
-select '["c"]' || cast('["a", "b"]' as JSONB);
+select '["c"]' || cast('["a", "b"]' as jsonb);
 
-select cast('["a", "b"]' as JSONB) || '"c"';
+select cast('["a", "b"]' as jsonb) || '"c"';
 
-select '"c"' || cast('["a", "b"]' as JSONB);
+select '"c"' || cast('["a", "b"]' as jsonb);
 
-select cast('[]' as JSONB) || cast('["a"]' as JSONB);
+select cast('[]' as jsonb) || cast('["a"]' as jsonb);
 
-select cast('[]' as JSONB) || cast('"a"' as JSONB);
+select cast('[]' as jsonb) || cast('"a"' as jsonb);
 
-select cast('"b"' as JSONB) || cast('"a"' as JSONB);
+select cast('"b"' as jsonb) || cast('"a"' as jsonb);
 
-select cast('{}' as JSONB) || cast('{"a":"b"}' as JSONB);
+select cast('{}' as jsonb) || cast('{"a":"b"}' as jsonb);
 
-select cast('[]' as JSONB) || cast('{"a":"b"}' as JSONB);
+select cast('[]' as jsonb) || cast('{"a":"b"}' as jsonb);
 
-select cast('{"a":"b"}' as JSONB) || cast('[]' as JSONB);
+select cast('{"a":"b"}' as jsonb) || cast('[]' as jsonb);
 
-select cast('"a"' as JSONB) || '{"a":1}';
+select cast('"a"' as jsonb) || '{"a":1}';
 
-select '{"a":1}' || cast('"a"' as JSONB);
+select '{"a":1}' || cast('"a"' as jsonb);
 
-select cast('[3]' as JSONB) || cast('{}' as JSONB);
+select cast('[3]' as jsonb) || cast('{}' as jsonb);
 
-select cast('3' as JSONB) || cast('[]' as JSONB);
+select cast('3' as jsonb) || cast('[]' as jsonb);
 
-select cast('3' as JSONB) || cast('4' as JSONB);
+select cast('3' as jsonb) || cast('4' as jsonb);
 
-select cast('3' as JSONB) || cast('{}' as JSONB);
+select cast('3' as jsonb) || cast('{}' as jsonb);
 
-select cast('["a", "b"]' as JSONB) || '{"c":1}';
+select cast('["a", "b"]' as jsonb) || '{"c":1}';
 
-select cast('{"c": 1}' as JSONB) || '["a", "b"]';
+select cast('{"c": 1}' as jsonb) || '["a", "b"]';
 
-select cast('{}' as JSONB) || '{"cq":"l", "b":"g", "fg":false}';
-
-select
-  pg_column_size(
-    cast('{}' as JSONB) ||
-    cast('{}' as JSONB)
-  ) =
-  pg_column_size(cast('{}' as JSONB));
+select cast('{}' as jsonb) || '{"cq":"l", "b":"g", "fg":false}';
 
 select
   pg_column_size(
-    cast('{"aa":1}' as JSONB) ||
-    cast('{"b":2}' as JSONB)
+    cast('{}' as jsonb) ||
+    cast('{}' as jsonb)
+  ) =
+  pg_column_size(cast('{}' as jsonb));
+
+select
+  pg_column_size(
+    cast('{"aa":1}' as jsonb) ||
+    cast('{"b":2}' as jsonb)
   ) =
   pg_column_size(
-    cast('{"aa":1, "b":2}' as JSONB)
+    cast('{"aa":1, "b":2}' as jsonb)
   );
 
 select
   pg_column_size(
-    cast('{"aa":1, "b":2}' as JSONB) ||
-    cast('{}' as JSONB)
+    cast('{"aa":1, "b":2}' as jsonb) ||
+    cast('{}' as jsonb)
   ) =
   pg_column_size(
-    cast('{"aa":1, "b":2}' as JSONB)
+    cast('{"aa":1, "b":2}' as jsonb)
   );
 
 select
   pg_column_size(
-    cast('{}' as JSONB) ||
-    cast('{"aa":1, "b":2}' as JSONB)
+    cast('{}' as jsonb) ||
+    cast('{"aa":1, "b":2}' as jsonb)
   ) =
   pg_column_size(
-    cast('{"aa":1, "b":2}' as JSONB)
+    cast('{"aa":1, "b":2}' as jsonb)
   );
 
-select jsonb_delete(cast('{"a":1 , "b":2, "c":3}' as JSONB), 'a');
+select jsonb_delete(cast('{"a":1 , "b":2, "c":3}' as jsonb), 'a');
 
-select jsonb_delete(cast('{"a":null , "b":2, "c":3}' as JSONB), 'a');
+select jsonb_delete(cast('{"a":null , "b":2, "c":3}' as jsonb), 'a');
 
-select jsonb_delete(cast('{"a":1 , "b":2, "c":3}' as JSONB), 'b');
+select jsonb_delete(cast('{"a":1 , "b":2, "c":3}' as jsonb), 'b');
 
-select jsonb_delete(cast('{"a":1 , "b":2, "c":3}' as JSONB), 'c');
+select jsonb_delete(cast('{"a":1 , "b":2, "c":3}' as jsonb), 'c');
 
-select jsonb_delete(cast('{"a":1 , "b":2, "c":3}' as JSONB), 'd');
+select jsonb_delete(cast('{"a":1 , "b":2, "c":3}' as jsonb), 'd');
 
-select cast('{"a":1 , "b":2, "c":3}' as JSONB) - 'a';
+select cast('{"a":1 , "b":2, "c":3}' as jsonb) - 'a';
 
-select cast('{"a":null , "b":2, "c":3}' as JSONB) - 'a';
+select cast('{"a":null , "b":2, "c":3}' as jsonb) - 'a';
 
-select cast('{"a":1 , "b":2, "c":3}' as JSONB) - 'b';
+select cast('{"a":1 , "b":2, "c":3}' as jsonb) - 'b';
 
-select cast('{"a":1 , "b":2, "c":3}' as JSONB) - 'c';
+select cast('{"a":1 , "b":2, "c":3}' as jsonb) - 'c';
 
-select cast('{"a":1 , "b":2, "c":3}' as JSONB) - 'd';
+select cast('{"a":1 , "b":2, "c":3}' as jsonb) - 'd';
 
 select
   pg_column_size(
-    cast('{"a":1 , "b":2, "c":3}' as JSONB) -
+    cast('{"a":1 , "b":2, "c":3}' as jsonb) -
     'b'
   ) =
   pg_column_size(
-    cast('{"a":1, "b":2}' as JSONB)
+    cast('{"a":1, "b":2}' as jsonb)
   );
 
-select cast('["a","b","c"]' as JSONB) - 3;
+select cast('["a","b","c"]' as jsonb) - 3;
 
-select cast('["a","b","c"]' as JSONB) - 2;
+select cast('["a","b","c"]' as jsonb) - 2;
 
-select cast('["a","b","c"]' as JSONB) - 1;
+select cast('["a","b","c"]' as jsonb) - 1;
 
-select cast('["a","b","c"]' as JSONB) - 0;
+select cast('["a","b","c"]' as jsonb) - 0;
 
-select cast('["a","b","c"]' as JSONB) - -1;
+select cast('["a","b","c"]' as jsonb) - -1;
 
-select cast('["a","b","c"]' as JSONB) - -2;
+select cast('["a","b","c"]' as jsonb) - -2;
 
-select cast('["a","b","c"]' as JSONB) - -3;
+select cast('["a","b","c"]' as jsonb) - -3;
 
-select cast('["a","b","c"]' as JSONB) - -4;
+select cast('["a","b","c"]' as jsonb) - -4;
 
-select cast('{"a":1 , "b":2, "c":3}' as JSONB) - cast('{b}' as TEXT[]);
+select cast('{"a":1 , "b":2, "c":3}' as jsonb) - cast('{b}' as text[]);
 
-select cast('{"a":1 , "b":2, "c":3}' as JSONB) - cast('{c,b}' as TEXT[]);
+select cast('{"a":1 , "b":2, "c":3}' as jsonb) - cast('{c,b}' as text[]);
 
-select cast('{"a":1 , "b":2, "c":3}' as JSONB) - cast('{}' as TEXT[]);
+select cast('{"a":1 , "b":2, "c":3}' as jsonb) - cast('{}' as text[]);
 
 select
   jsonb_set(
     cast('{"n":null, "a":1, "b":[1,2], "c":{"1":2}, "d":{"1":[2,3]}}'
-    as JSONB),
+    as jsonb),
     '{n}',
     '[1,2,3]'
   );
@@ -2978,7 +2978,7 @@ select
 select
   jsonb_set(
     cast('{"n":null, "a":1, "b":[1,2], "c":{"1":2}, "d":{"1":[2,3]}}'
-    as JSONB),
+    as jsonb),
     '{b,-1}',
     '[1,2,3]'
   );
@@ -2986,7 +2986,7 @@ select
 select
   jsonb_set(
     cast('{"n":null, "a":1, "b":[1,2], "c":{"1":2}, "d":{"1":[2,3]}}'
-    as JSONB),
+    as jsonb),
     '{d,1,0}',
     '[1,2,3]'
   );
@@ -2994,7 +2994,7 @@ select
 select
   jsonb_set(
     cast('{"n":null, "a":1, "b":[1,2], "c":{"1":2}, "d":{"1":[2,3]}}'
-    as JSONB),
+    as jsonb),
     '{d,NULL,0}',
     '[1,2,3]'
   );
@@ -3002,7 +3002,7 @@ select
 select
   jsonb_set(
     cast('{"n":null, "a":1, "b":[1,2], "c":{"1":2}, "d":{"1":[2,3]}}'
-    as JSONB),
+    as jsonb),
     '{n}',
     '{"1": 2}'
   );
@@ -3010,7 +3010,7 @@ select
 select
   jsonb_set(
     cast('{"n":null, "a":1, "b":[1,2], "c":{"1":2}, "d":{"1":[2,3]}}'
-    as JSONB),
+    as jsonb),
     '{b,-1}',
     '{"1": 2}'
   );
@@ -3018,7 +3018,7 @@ select
 select
   jsonb_set(
     cast('{"n":null, "a":1, "b":[1,2], "c":{"1":2}, "d":{"1":[2,3]}}'
-    as JSONB),
+    as jsonb),
     '{d,1,0}',
     '{"1": 2}'
   );
@@ -3026,7 +3026,7 @@ select
 select
   jsonb_set(
     cast('{"n":null, "a":1, "b":[1,2], "c":{"1":2}, "d":{"1":[2,3]}}'
-    as JSONB),
+    as jsonb),
     '{d,NULL,0}',
     '{"1": 2}'
   );
@@ -3034,7 +3034,7 @@ select
 select
   jsonb_set(
     cast('{"n":null, "a":1, "b":[1,2], "c":{"1":2}, "d":{"1":[2,3]}}'
-    as JSONB),
+    as jsonb),
     '{b,-1}',
     '"test"'
   );
@@ -3042,7 +3042,7 @@ select
 select
   jsonb_set(
     cast('{"n":null, "a":1, "b":[1,2], "c":{"1":2}, "d":{"1":[2,3]}}'
-    as JSONB),
+    as jsonb),
     '{b,-1}',
     '{"f": "test"}'
   );
@@ -3069,41 +3069,41 @@ select jsonb_delete_path('{"a":[]}', '{"a",-2147483648}');
 
 select
   cast('{"n":null, "a":1, "b":[1,2], "c":{"1":2}, "d":{"1":[2,3]}}'
-  as JSONB) #-
+  as jsonb) #-
   '{n}';
 
 select
   cast('{"n":null, "a":1, "b":[1,2], "c":{"1":2}, "d":{"1":[2,3]}}'
-  as JSONB) #-
+  as jsonb) #-
   '{b,-1}';
 
 select
   cast('{"n":null, "a":1, "b":[1,2], "c":{"1":2}, "d":{"1":[2,3]}}'
-  as JSONB) #-
+  as jsonb) #-
   '{b,-1e}';
 
 select
   cast('{"n":null, "a":1, "b":[1,2], "c":{"1":2}, "d":{"1":[2,3]}}'
-  as JSONB) #-
+  as jsonb) #-
   '{d,1,0}';
 
-select cast('"a"' as JSONB) - 'a';
+select cast('"a"' as jsonb) - 'a';
 
-select cast('{}' as JSONB) - 'a';
+select cast('{}' as jsonb) - 'a';
 
-select cast('[]' as JSONB) - 'a';
+select cast('[]' as jsonb) - 'a';
 
-select cast('"a"' as JSONB) - 1;
+select cast('"a"' as jsonb) - 1;
 
-select cast('{}' as JSONB) - 1;
+select cast('{}' as jsonb) - 1;
 
-select cast('[]' as JSONB) - 1;
+select cast('[]' as jsonb) - 1;
 
-select cast('"a"' as JSONB) #- '{a}';
+select cast('"a"' as jsonb) #- '{a}';
 
-select cast('{}' as JSONB) #- '{a}';
+select cast('{}' as jsonb) #- '{a}';
 
-select cast('[]' as JSONB) #- '{a}';
+select cast('[]' as jsonb) #- '{a}';
 
 select jsonb_set('"a"', '{a}', '"b"');
 
@@ -3252,79 +3252,79 @@ select jsonb_insert('{"a": {"b": "value"}}', '{a, b}', '"new_value"');
 
 select jsonb_insert('{"a": {"b": "value"}}', '{a, b}', '"new_value"', true);
 
-select (cast('123' as JSONB))['a'];
+select (cast('123' as jsonb))['a'];
 
-select (cast('123' as JSONB))[0];
+select (cast('123' as jsonb))[0];
 
-select (cast('123' as JSONB))[null];
+select (cast('123' as jsonb))[null];
 
-select (cast('{"a": 1}' as JSONB))['a'];
+select (cast('{"a": 1}' as jsonb))['a'];
 
-select (cast('{"a": 1}' as JSONB))[0];
+select (cast('{"a": 1}' as jsonb))[0];
 
-select (cast('{"a": 1}' as JSONB))['not_exist'];
+select (cast('{"a": 1}' as jsonb))['not_exist'];
 
-select (cast('{"a": 1}' as JSONB))[null];
+select (cast('{"a": 1}' as jsonb))[null];
 
-select (cast('[1, "2", null]' as JSONB))['a'];
+select (cast('[1, "2", null]' as jsonb))['a'];
 
-select (cast('[1, "2", null]' as JSONB))[0];
+select (cast('[1, "2", null]' as jsonb))[0];
 
-select (cast('[1, "2", null]' as JSONB))['1'];
+select (cast('[1, "2", null]' as jsonb))['1'];
 
-select (cast('[1, "2", null]' as JSONB))[1.0];
+select (cast('[1, "2", null]' as jsonb))[1.0];
 
-select (cast('[1, "2", null]' as JSONB))[2];
+select (cast('[1, "2", null]' as jsonb))[2];
 
-select (cast('[1, "2", null]' as JSONB))[3];
+select (cast('[1, "2", null]' as jsonb))[3];
 
-select (cast('[1, "2", null]' as JSONB))[-2];
+select (cast('[1, "2", null]' as jsonb))[-2];
 
-select (cast('[1, "2", null]' as JSONB))[1]['a'];
+select (cast('[1, "2", null]' as jsonb))[1]['a'];
 
-select (cast('[1, "2", null]' as JSONB))[1][0];
+select (cast('[1, "2", null]' as jsonb))[1][0];
 
-select (cast('{"a": 1, "b": "c", "d": [1, 2, 3]}' as JSONB))['b'];
+select (cast('{"a": 1, "b": "c", "d": [1, 2, 3]}' as jsonb))['b'];
 
-select (cast('{"a": 1, "b": "c", "d": [1, 2, 3]}' as JSONB))['d'];
+select (cast('{"a": 1, "b": "c", "d": [1, 2, 3]}' as jsonb))['d'];
 
-select (cast('{"a": 1, "b": "c", "d": [1, 2, 3]}' as JSONB))['d'][1];
+select (cast('{"a": 1, "b": "c", "d": [1, 2, 3]}' as jsonb))['d'][1];
 
-select (cast('{"a": 1, "b": "c", "d": [1, 2, 3]}' as JSONB))['d']['a'];
-
-select
-  (cast('{"a": {"a1": {"a2": "aaa"}}, "b": "bbb", "c": "ccc"}'
-  as JSONB))['a']['a1'];
+select (cast('{"a": 1, "b": "c", "d": [1, 2, 3]}' as jsonb))['d']['a'];
 
 select
   (cast('{"a": {"a1": {"a2": "aaa"}}, "b": "bbb", "c": "ccc"}'
-  as JSONB))['a']['a1']['a2'];
+  as jsonb))['a']['a1'];
 
 select
   (cast('{"a": {"a1": {"a2": "aaa"}}, "b": "bbb", "c": "ccc"}'
-  as JSONB))['a']['a1']['a2']['a3'];
+  as jsonb))['a']['a1']['a2'];
+
+select
+  (cast('{"a": {"a1": {"a2": "aaa"}}, "b": "bbb", "c": "ccc"}'
+  as jsonb))['a']['a1']['a2']['a3'];
 
 select
   (cast('{"a": ["a1", {"b1": ["aaa", "bbb", "ccc"]}], "b": "bb"}'
-  as JSONB))['a'][1]['b1'];
+  as jsonb))['a'][1]['b1'];
 
 select
   (cast('{"a": ["a1", {"b1": ["aaa", "bbb", "ccc"]}], "b": "bb"}'
-  as JSONB))['a'][1]['b1'][2];
+  as jsonb))['a'][1]['b1'][2];
 
-select (cast('{"a": 1}' as JSONB))['a':'b'];
+select (cast('{"a": 1}' as jsonb))['a':'b'];
 
-select (cast('[1, "2", null]' as JSONB))[1:2];
+select (cast('[1, "2", null]' as jsonb))[1:2];
 
-select (cast('[1, "2", null]' as JSONB))[:2];
+select (cast('[1, "2", null]' as jsonb))[:2];
 
-select (cast('[1, "2", null]' as JSONB))[1:];
+select (cast('[1, "2", null]' as jsonb))[1:];
 
-select (cast('[1, "2", null]' as JSONB))[:];
+select (cast('[1, "2", null]' as jsonb))[:];
 
 create temporary table test_jsonb_subscript (
-  id INT,
-  test_json JSONB
+  id int,
+  test_json jsonb
 );
 
 insert into test_jsonb_subscript values (1, '{}'), (2, '{"key": "value"}');
@@ -3341,11 +3341,11 @@ update test_jsonb_subscript set test_json['a'] = '"test"';
 
 select * from test_jsonb_subscript;
 
-update test_jsonb_subscript set test_json['a'] = cast('{"b": 1}' as JSONB);
+update test_jsonb_subscript set test_json['a'] = cast('{"b": 1}' as jsonb);
 
 select * from test_jsonb_subscript;
 
-update test_jsonb_subscript set test_json['a'] = cast('[1, 2, 3]' as JSONB);
+update test_jsonb_subscript set test_json['a'] = cast('[1, 2, 3]' as jsonb);
 
 select * from test_jsonb_subscript;
 
@@ -3513,11 +3513,11 @@ update test_jsonb_subscript set test_json[0] = '1';
 
 update test_jsonb_subscript set test_json[0][0] = '1';
 
-drop TABLE test_jsonb_subscript;
+drop table test_jsonb_subscript;
 
 create temporary table test_jsonb_subscript (
-  id TEXT,
-  test_json JSONB
+  id text,
+  test_json jsonb
 );
 
 insert into test_jsonb_subscript values ('foo', '{"foo": "bar"}');
@@ -3525,7 +3525,7 @@ insert into test_jsonb_subscript values ('foo', '{"foo": "bar"}');
 insert into test_jsonb_subscript
 select
   s,
-  cast('{"' || s || '": "bar"}' as JSONB)
+  cast('{"' || s || '": "bar"}' as jsonb)
 from
   repeat('xyzzy', 500) as s;
 
@@ -3540,35 +3540,35 @@ select * from test_jsonb_subscript;
 select
   to_tsvector(
     cast('{"a": "aaa bbb ddd ccc", "b": ["eee fff ggg"], "c": {"d": "hhh iii"}}'
-    as JSONB)
+    as jsonb)
   );
 
 select
   to_tsvector(
     'simple',
     cast('{"a": "aaa bbb ddd ccc", "b": ["eee fff ggg"], "c": {"d": "hhh iii"}}'
-    as JSONB)
+    as jsonb)
   );
 
 select
   to_tsvector(
     'english',
     cast('{"a": "aaa in bbb ddd ccc", "b": ["the eee fff ggg"], "c": {"d": "hhh. iii"}}'
-    as JSONB)
+    as jsonb)
   );
 
 select
   to_tsvector(
     'english',
     cast('{"a": "aaa in bbb ddd ccc", "b": 123, "c": 456}'
-    as JSONB)
+    as jsonb)
   );
 
 select
   jsonb_to_tsvector(
     'english',
     cast('{"a": "aaa in bbb", "b": 123, "c": 456, "d": true, "f": false, "g": null}'
-    as JSONB),
+    as jsonb),
     '"all"'
   );
 
@@ -3576,7 +3576,7 @@ select
   jsonb_to_tsvector(
     'english',
     cast('{"a": "aaa in bbb", "b": 123, "c": 456, "d": true, "f": false, "g": null}'
-    as JSONB),
+    as jsonb),
     '"key"'
   );
 
@@ -3584,7 +3584,7 @@ select
   jsonb_to_tsvector(
     'english',
     cast('{"a": "aaa in bbb", "b": 123, "c": 456, "d": true, "f": false, "g": null}'
-    as JSONB),
+    as jsonb),
     '"string"'
   );
 
@@ -3592,7 +3592,7 @@ select
   jsonb_to_tsvector(
     'english',
     cast('{"a": "aaa in bbb", "b": 123, "c": 456, "d": true, "f": false, "g": null}'
-    as JSONB),
+    as jsonb),
     '"numeric"'
   );
 
@@ -3600,7 +3600,7 @@ select
   jsonb_to_tsvector(
     'english',
     cast('{"a": "aaa in bbb", "b": 123, "c": 456, "d": true, "f": false, "g": null}'
-    as JSONB),
+    as jsonb),
     '"boolean"'
   );
 
@@ -3608,7 +3608,7 @@ select
   jsonb_to_tsvector(
     'english',
     cast('{"a": "aaa in bbb", "b": 123, "c": 456, "d": true, "f": false, "g": null}'
-    as JSONB),
+    as jsonb),
     '["string", "numeric"]'
   );
 
@@ -3616,7 +3616,7 @@ select
   jsonb_to_tsvector(
     'english',
     cast('{"a": "aaa in bbb", "b": 123, "c": 456, "d": true, "f": false, "g": null}'
-    as JSONB),
+    as jsonb),
     '"all"'
   );
 
@@ -3624,7 +3624,7 @@ select
   jsonb_to_tsvector(
     'english',
     cast('{"a": "aaa in bbb", "b": 123, "c": 456, "d": true, "f": false, "g": null}'
-    as JSONB),
+    as jsonb),
     '"key"'
   );
 
@@ -3632,7 +3632,7 @@ select
   jsonb_to_tsvector(
     'english',
     cast('{"a": "aaa in bbb", "b": 123, "c": 456, "d": true, "f": false, "g": null}'
-    as JSONB),
+    as jsonb),
     '"string"'
   );
 
@@ -3640,7 +3640,7 @@ select
   jsonb_to_tsvector(
     'english',
     cast('{"a": "aaa in bbb", "b": 123, "c": 456, "d": true, "f": false, "g": null}'
-    as JSONB),
+    as jsonb),
     '"numeric"'
   );
 
@@ -3648,7 +3648,7 @@ select
   jsonb_to_tsvector(
     'english',
     cast('{"a": "aaa in bbb", "b": 123, "c": 456, "d": true, "f": false, "g": null}'
-    as JSONB),
+    as jsonb),
     '"boolean"'
   );
 
@@ -3656,31 +3656,31 @@ select
   jsonb_to_tsvector(
     'english',
     cast('{"a": "aaa in bbb", "b": 123, "c": 456, "d": true, "f": false, "g": null}'
-    as JSONB),
+    as jsonb),
     '["string", "numeric"]'
   );
 
-select to_tsvector(cast('""' as JSONB));
+select to_tsvector(cast('""' as jsonb));
 
-select to_tsvector(cast('{}' as JSONB));
+select to_tsvector(cast('{}' as jsonb));
 
-select to_tsvector(cast('[]' as JSONB));
+select to_tsvector(cast('[]' as jsonb));
 
-select to_tsvector(cast('null' as JSONB));
+select to_tsvector(cast('null' as jsonb));
 
-select jsonb_to_tsvector(cast('""' as JSONB), '"all"');
+select jsonb_to_tsvector(cast('""' as jsonb), '"all"');
 
-select jsonb_to_tsvector(cast('{}' as JSONB), '"all"');
+select jsonb_to_tsvector(cast('{}' as jsonb), '"all"');
 
-select jsonb_to_tsvector(cast('[]' as JSONB), '"all"');
+select jsonb_to_tsvector(cast('[]' as jsonb), '"all"');
 
-select jsonb_to_tsvector(cast('null' as JSONB), '"all"');
+select jsonb_to_tsvector(cast('null' as jsonb), '"all"');
 
 select
   jsonb_to_tsvector(
     'english',
     cast('{"a": "aaa in bbb", "b": 123, "c": 456, "d": true, "f": false, "g": null}'
-    as JSONB),
+    as jsonb),
     '""'
   );
 
@@ -3688,7 +3688,7 @@ select
   jsonb_to_tsvector(
     'english',
     cast('{"a": "aaa in bbb", "b": 123, "c": 456, "d": true, "f": false, "g": null}'
-    as JSONB),
+    as jsonb),
     '{}'
   );
 
@@ -3696,7 +3696,7 @@ select
   jsonb_to_tsvector(
     'english',
     cast('{"a": "aaa in bbb", "b": 123, "c": 456, "d": true, "f": false, "g": null}'
-    as JSONB),
+    as jsonb),
     '[]'
   );
 
@@ -3704,7 +3704,7 @@ select
   jsonb_to_tsvector(
     'english',
     cast('{"a": "aaa in bbb", "b": 123, "c": 456, "d": true, "f": false, "g": null}'
-    as JSONB),
+    as jsonb),
     'null'
   );
 
@@ -3712,14 +3712,14 @@ select
   jsonb_to_tsvector(
     'english',
     cast('{"a": "aaa in bbb", "b": 123, "c": 456, "d": true, "f": false, "g": null}'
-    as JSONB),
+    as jsonb),
     '["all", null]'
   );
 
 select
   ts_headline(
     cast('{"a": "aaa bbb", "b": {"c": "ccc ddd fff", "c1": "ccc1 ddd1"}, "d": ["ggg hhh", "iii jjj"]}'
-    as JSONB),
+    as jsonb),
     tsquery('bbb & ddd & hhh')
   );
 
@@ -3727,14 +3727,14 @@ select
   ts_headline(
     'english',
     cast('{"a": "aaa bbb", "b": {"c": "ccc ddd fff"}, "d": ["ggg hhh", "iii jjj"]}'
-    as JSONB),
+    as jsonb),
     tsquery('bbb & ddd & hhh')
   );
 
 select
   ts_headline(
     cast('{"a": "aaa bbb", "b": {"c": "ccc ddd fff", "c1": "ccc1 ddd1"}, "d": ["ggg hhh", "iii jjj"]}'
-    as JSONB),
+    as jsonb),
     tsquery('bbb & ddd & hhh'),
     'StartSel = <, StopSel = >'
   );
@@ -3743,97 +3743,97 @@ select
   ts_headline(
     'english',
     cast('{"a": "aaa bbb", "b": {"c": "ccc ddd fff", "c1": "ccc1 ddd1"}, "d": ["ggg hhh", "iii jjj"]}'
-    as JSONB),
+    as jsonb),
     tsquery('bbb & ddd & hhh'),
     'StartSel = <, StopSel = >'
   );
 
-select ts_headline(cast('null' as JSONB), tsquery('aaa & bbb'));
+select ts_headline(cast('null' as jsonb), tsquery('aaa & bbb'));
 
-select ts_headline(cast('{}' as JSONB), tsquery('aaa & bbb'));
+select ts_headline(cast('{}' as jsonb), tsquery('aaa & bbb'));
 
-select ts_headline(cast('[]' as JSONB), tsquery('aaa & bbb'));
+select ts_headline(cast('[]' as jsonb), tsquery('aaa & bbb'));
 
-select cast(cast('true' as JSONB) as BOOLEAN);
+select cast(cast('true' as jsonb) as boolean);
 
-select cast(cast('null' as JSONB) as BOOLEAN);
+select cast(cast('null' as jsonb) as boolean);
 
-select cast(cast('[]' as JSONB) as BOOLEAN);
+select cast(cast('[]' as jsonb) as boolean);
 
-select cast(cast('1.0' as JSONB) as DOUBLE PRECISION);
+select cast(cast('1.0' as jsonb) as double precision);
 
-select cast(cast('null' as JSONB) as DOUBLE PRECISION);
+select cast(cast('null' as jsonb) as double precision);
 
-select cast(cast('[1.0]' as JSONB) as DOUBLE PRECISION);
+select cast(cast('[1.0]' as jsonb) as double precision);
 
-select cast(cast('1.0' as JSONB) as REAL);
+select cast(cast('1.0' as jsonb) as real);
 
-select cast(cast('null' as JSONB) as REAL);
+select cast(cast('null' as jsonb) as real);
 
-select cast(cast('[1.0]' as JSONB) as REAL);
+select cast(cast('[1.0]' as jsonb) as real);
 
-select cast(cast('12345' as JSONB) as SMALLINT);
+select cast(cast('12345' as jsonb) as smallint);
 
-select cast(cast('null' as JSONB) as SMALLINT);
+select cast(cast('null' as jsonb) as smallint);
 
-select cast(cast('"hello"' as JSONB) as SMALLINT);
+select cast(cast('"hello"' as jsonb) as smallint);
 
-select cast(cast('12345' as JSONB) as INT);
+select cast(cast('12345' as jsonb) as int);
 
-select cast(cast('null' as JSONB) as INT);
+select cast(cast('null' as jsonb) as int);
 
-select cast(cast('"hello"' as JSONB) as INT);
+select cast(cast('"hello"' as jsonb) as int);
 
-select cast(cast('12345' as JSONB) as BIGINT);
+select cast(cast('12345' as jsonb) as bigint);
 
-select cast(cast('null' as JSONB) as BIGINT);
+select cast(cast('null' as jsonb) as bigint);
 
-select cast(cast('"hello"' as JSONB) as BIGINT);
+select cast(cast('"hello"' as jsonb) as bigint);
 
-select cast(cast('12345' as JSONB) as NUMERIC);
+select cast(cast('12345' as jsonb) as numeric);
 
-select cast(cast('null' as JSONB) as NUMERIC);
+select cast(cast('null' as jsonb) as numeric);
 
-select cast(cast('{}' as JSONB) as NUMERIC);
+select cast(cast('{}' as jsonb) as numeric);
 
-select cast(cast('12345.05' as JSONB) as NUMERIC);
+select cast(cast('12345.05' as jsonb) as numeric);
 
-select cast(cast('12345.05' as JSONB) as REAL);
+select cast(cast('12345.05' as jsonb) as real);
 
-select cast(cast('12345.05' as JSONB) as DOUBLE PRECISION);
+select cast(cast('12345.05' as jsonb) as double precision);
 
-select cast(cast('12345.05' as JSONB) as SMALLINT);
+select cast(cast('12345.05' as jsonb) as smallint);
 
-select cast(cast('12345.05' as JSONB) as INT);
+select cast(cast('12345.05' as jsonb) as int);
 
-select cast(cast('12345.05' as JSONB) as BIGINT);
-
-select
-  cast(cast('12345.0000000000000000000000000000000000000000000005'
-  as JSONB)
-  as NUMERIC);
+select cast(cast('12345.05' as jsonb) as bigint);
 
 select
   cast(cast('12345.0000000000000000000000000000000000000000000005'
-  as JSONB)
-  as REAL);
+  as jsonb)
+  as numeric);
 
 select
   cast(cast('12345.0000000000000000000000000000000000000000000005'
-  as JSONB)
-  as DOUBLE PRECISION);
+  as jsonb)
+  as real);
 
 select
   cast(cast('12345.0000000000000000000000000000000000000000000005'
-  as JSONB)
-  as SMALLINT);
+  as jsonb)
+  as double precision);
 
 select
   cast(cast('12345.0000000000000000000000000000000000000000000005'
-  as JSONB)
-  as INT);
+  as jsonb)
+  as smallint);
 
 select
   cast(cast('12345.0000000000000000000000000000000000000000000005'
-  as JSONB)
-  as BIGINT);
+  as jsonb)
+  as int);
+
+select
+  cast(cast('12345.0000000000000000000000000000000000000000000005'
+  as jsonb)
+  as bigint);

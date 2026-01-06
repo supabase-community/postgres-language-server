@@ -459,7 +459,7 @@ select
 from
   unnest(
     array[cast('$ ? (@ like_regex "pattern" flag "smixq")'
-    as TEXT),
+    as text),
     '$ ? (@ like_regex "pattern" flag "a")',
     '@ + 1',
     '00',

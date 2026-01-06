@@ -22,7 +22,7 @@ from
 where
   rolname = 'regress_test_def_superuser';
 
-create role regress_test_superuser SUPERUSER;
+create role regress_test_superuser superuser;
 
 select
   rolname,

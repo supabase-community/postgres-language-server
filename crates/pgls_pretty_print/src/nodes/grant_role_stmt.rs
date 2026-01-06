@@ -31,7 +31,7 @@ pub(super) fn emit_grant_role_stmt(e: &mut EventEmitter, n: &GrantRoleStmt) {
                 };
                 e.token(TokenKind::IDENT(opt_name.to_string()));
                 e.space();
-                e.token(TokenKind::IDENT("OPTION".to_string()));
+                e.token(TokenKind::OPTION_KW);
                 e.space();
                 e.token(TokenKind::FOR_KW);
             }
@@ -82,7 +82,7 @@ pub(super) fn emit_grant_role_stmt(e: &mut EventEmitter, n: &GrantRoleStmt) {
     // GRANTED BY
     if let Some(ref grantor) = n.grantor {
         e.line(LineType::SoftOrSpace);
-        e.token(TokenKind::IDENT("GRANTED".to_string()));
+        e.token(TokenKind::GRANTED_KW);
         e.space();
         e.token(TokenKind::BY_KW);
         e.space();

@@ -3,48 +3,48 @@ source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/create_am.sql
 snapshot_kind: text
 ---
-create ACCESS METHOD gist2 type INDEX HANDLER gisthandler;
+create access method gist2 type index handler gisthandler;
 
-create ACCESS METHOD bogus type INDEX HANDLER int4in;
+create access method bogus type index handler int4in;
 
-create ACCESS METHOD bogus type INDEX HANDLER heap_tableam_handler;
+create access method bogus type index handler heap_tableam_handler;
 
 create index "grect2ind2" on fast_emp4000 using gist2 (home_base);
 
-create OPERATOR class box_ops default
+create operator class box_ops default
   for type box
   using gist2
-  as OPERATOR 1 <<,
-  OPERATOR 2 &<,
-  OPERATOR 3 &&,
-  OPERATOR 4 &>,
-  OPERATOR 5 >>,
-  OPERATOR 6 ~=,
-  OPERATOR 7 @>,
-  OPERATOR 8 <@,
-  OPERATOR 9 &<|,
-  OPERATOR 10 <<|,
-  OPERATOR 11 |>>,
-  OPERATOR 12 |&>,
-  FUNCTION 1 gist_box_consistent(
+  as operator 1 <<,
+  operator 2 &<,
+  operator 3 &&,
+  operator 4 &>,
+  operator 5 >>,
+  operator 6 ~=,
+  operator 7 @>,
+  operator 8 <@,
+  operator 9 &<|,
+  operator 10 <<|,
+  operator 11 |>>,
+  operator 12 |&>,
+  function 1 gist_box_consistent(
     internal,
     box,
-    SMALLINT,
-    OID,
+    smallint,
+    oid,
     internal),
-  FUNCTION 2 gist_box_union(internal, internal),
-  FUNCTION 5 gist_box_penalty(
+  function 2 gist_box_union(internal, internal),
+  function 5 gist_box_penalty(
     internal,
     internal,
     internal),
-  FUNCTION 6 gist_box_picksplit(internal, internal),
-  FUNCTION 7 gist_box_same(box, box, internal);
+  function 6 gist_box_picksplit(internal, internal),
+  function 7 gist_box_same(box, box, internal);
 
 create index "grect2ind2" on fast_emp4000 using gist2 (home_base);
 
 begin;
 
-drop INDEX grect2ind;
+drop index grect2ind;
 
 set enable_seqscan = off;
 
@@ -92,13 +92,13 @@ select COUNT(*) from fast_emp4000 where home_base is null;
 
 rollback;
 
-drop ACCESS METHOD gist2;
+drop access method gist2;
 
 begin;
 
 lock table fast_emp4000 in ACCESS EXCLUSIVE mode;
 
-drop ACCESS METHOD gist2 cascade;
+drop access method gist2 cascade;
 
 commit;
 
@@ -108,15 +108,15 @@ set default_table_access_method = 'I do not exist AM';
 
 set default_table_access_method = btree;
 
-create ACCESS METHOD heap2 type TABLE HANDLER heap_tableam_handler;
+create access method heap2 type table handler heap_tableam_handler;
 
-create ACCESS METHOD bogus type TABLE HANDLER int4in;
+create access method bogus type table handler int4in;
 
-create ACCESS METHOD bogus type TABLE HANDLER bthandler;
+create access method bogus type table handler bthandler;
 
 select amname, amhandler, amtype from pg_am where amtype = 't' order by 1, 2;
 
-create table tableam_tbl_heap2 (f1 INT) using heap2;
+create table tableam_tbl_heap2 (f1 int) using heap2;
 
 insert into tableam_tbl_heap2 values (1);
 
@@ -133,8 +133,8 @@ as
 select f1 from tableam_tblmv_heap2 order by f1;
 
 create table tableam_parted_heap2 (
-  a TEXT,
-  b INT
+  a text,
+  b int
 )
 partition by LIST(a) using heap2;
 
@@ -147,11 +147,11 @@ where
   c.relname = 'tableam_parted_heap2' and
   a.oid = c.relam;
 
-drop TABLE tableam_parted_heap2;
+drop table tableam_parted_heap2;
 
 create table tableam_parted_heap2 (
-  a TEXT,
-  b INT
+  a text,
+  b int
 )
 partition by LIST(a);
 
@@ -185,13 +185,13 @@ select
     then (
       select
         'toast for ' ||
-        cast(relname as REGCLASS)
+        cast(relname as regclass)
       from
         pg_class as pcm
       where
         pcm.reltoastrelid = pc.oid
     )
-    else cast(cast(relname as REGCLASS) as TEXT)
+    else cast(cast(relname as regclass) as text)
   end) collate "C"
   as relname
 from
@@ -216,7 +216,7 @@ from
   pg_am
 where
   pg_depend.refclassid =
-  cast('pg_am' as REGCLASS) and
+  cast('pg_am' as regclass) and
   pg_am.oid = pg_depend.refobjid and
   pg_am.amname = 'heap2'
 order by classid,
@@ -227,7 +227,7 @@ create table heaptable using heap
 as
   select
     a,
-    repeat(cast(a as TEXT), 100)
+    repeat(cast(a as text), 100)
   from
     generate_series(1, 9) as a;
 
@@ -238,10 +238,10 @@ from
   pg_am as am
 where
   c.relam = am.oid and
-  c.oid = cast('heaptable' as REGCLASS);
+  c.oid = cast('heaptable' as regclass);
 
 alter table heaptable
-  set ACCESS METHOD heap2;
+  set access method heap2;
 
 select
   pg_describe_object(
@@ -260,13 +260,13 @@ select
 from
   pg_depend
 where
-  classid = cast('pg_class' as REGCLASS) and
-  objid = cast('heaptable' as REGCLASS)
+  classid = cast('pg_class' as regclass) and
+  objid = cast('heaptable' as regclass)
 order by 1,
   2;
 
 alter table heaptable
-  set ACCESS METHOD heap;
+  set access method heap;
 
 select
   pg_describe_object(
@@ -285,13 +285,13 @@ select
 from
   pg_depend
 where
-  classid = cast('pg_class' as REGCLASS) and
-  objid = cast('heaptable' as REGCLASS)
+  classid = cast('pg_class' as regclass) and
+  objid = cast('heaptable' as regclass)
 order by 1,
   2;
 
 alter table heaptable
-  set ACCESS METHOD heap2;
+  set access method heap2;
 
 select
   amname
@@ -300,7 +300,7 @@ from
   pg_am as am
 where
   c.relam = am.oid and
-  c.oid = cast('heaptable' as REGCLASS);
+  c.oid = cast('heaptable' as regclass);
 
 select COUNT(a), COUNT(1) filter (where a = 1) from heaptable;
 
@@ -309,7 +309,7 @@ begin;
 set local default_table_access_method = heap2;
 
 alter table heaptable
-  set ACCESS METHOD default;
+  set access method default;
 
 select
   amname
@@ -318,12 +318,12 @@ from
   pg_am as am
 where
   c.relam = am.oid and
-  c.oid = cast('heaptable' as REGCLASS);
+  c.oid = cast('heaptable' as regclass);
 
 set local default_table_access_method = heap;
 
 alter table heaptable
-  set ACCESS METHOD default;
+  set access method default;
 
 select
   amname
@@ -332,7 +332,7 @@ from
   pg_am as am
 where
   c.relam = am.oid and
-  c.oid = cast('heaptable' as REGCLASS);
+  c.oid = cast('heaptable' as regclass);
 
 rollback;
 
@@ -345,10 +345,10 @@ from
   pg_am as am
 where
   c.relam = am.oid and
-  c.oid = cast('heapmv' as REGCLASS);
+  c.oid = cast('heapmv' as regclass);
 
 alter materialized view heapmv
-  set ACCESS METHOD heap2;
+  set access method heap2;
 
 select
   amname
@@ -357,29 +357,29 @@ from
   pg_am as am
 where
   c.relam = am.oid and
-  c.oid = cast('heapmv' as REGCLASS);
+  c.oid = cast('heapmv' as regclass);
 
 select COUNT(a), COUNT(1) filter (where a = 1) from heapmv;
 
 alter table heaptable
-  set ACCESS METHOD heap,
-  set ACCESS METHOD heap2;
+  set access method heap,
+  set access method heap2;
 
 alter table heaptable
-  set ACCESS METHOD default,
-  set ACCESS METHOD heap2;
+  set access method default,
+  set access method heap2;
 
 alter materialized view heapmv
-  set ACCESS METHOD heap,
-  set ACCESS METHOD heap2;
+  set access method heap,
+  set access method heap2;
 
-drop MATERIALIZED VIEW heapmv;
+drop materialized view heapmv;
 
-drop TABLE heaptable;
+drop table heaptable;
 
 create table am_partitioned (
-  x INT,
-  y INT
+  x int,
+  y int
 )
 partition by HASH(x) using heap2;
 
@@ -401,20 +401,20 @@ from
   pg_am
 where
   pg_depend.refclassid =
-  cast('pg_am' as REGCLASS) and
+  cast('pg_am' as regclass) and
   pg_am.oid = pg_depend.refobjid and
   pg_depend.objid =
-  cast('am_partitioned' as REGCLASS);
+  cast('am_partitioned' as regclass);
 
-drop TABLE am_partitioned;
+drop table am_partitioned;
 
 begin;
 
 set local default_table_access_method = heap;
 
 create table am_partitioned (
-  x INT,
-  y INT
+  x int,
+  y int
 )
 partition by HASH(x);
 
@@ -438,13 +438,13 @@ from
   pg_am
 where
   pg_depend.refclassid =
-  cast('pg_am' as REGCLASS) and
+  cast('pg_am' as regclass) and
   pg_am.oid = pg_depend.refobjid and
   pg_depend.objid =
-  cast('am_partitioned' as REGCLASS);
+  cast('am_partitioned' as regclass);
 
 alter table am_partitioned
-  set ACCESS METHOD heap2;
+  set access method heap2;
 
 select
   a.amname
@@ -473,15 +473,15 @@ from
   pg_am
 where
   pg_depend.refclassid =
-  cast('pg_am' as REGCLASS) and
+  cast('pg_am' as regclass) and
   pg_am.oid = pg_depend.refobjid and
   pg_depend.objid =
-  cast('am_partitioned' as REGCLASS);
+  cast('am_partitioned' as regclass);
 
 set local default_table_access_method = heap2;
 
 alter table am_partitioned
-  set ACCESS METHOD heap;
+  set access method heap;
 
 select
   a.amname
@@ -510,15 +510,15 @@ from
   pg_am
 where
   pg_depend.refclassid =
-  cast('pg_am' as REGCLASS) and
+  cast('pg_am' as regclass) and
   pg_am.oid = pg_depend.refobjid and
   pg_depend.objid =
-  cast('am_partitioned' as REGCLASS);
+  cast('am_partitioned' as regclass);
 
 set local default_table_access_method = heap2;
 
 alter table am_partitioned
-  set ACCESS METHOD heap2;
+  set access method heap2;
 
 select
   a.amname
@@ -530,7 +530,7 @@ where
   a.oid = c.relam;
 
 alter table am_partitioned
-  set ACCESS METHOD default;
+  set access method default;
 
 select relam from pg_class where relname = 'am_partitioned';
 
@@ -551,14 +551,14 @@ for values with (MODULUS 10, REMAINDER 1);
 set local default_table_access_method = heap;
 
 alter table am_partitioned
-  set ACCESS METHOD heap2;
+  set access method heap2;
 
 create table am_partitioned_2
 partition of am_partitioned
 for values with (MODULUS 10, REMAINDER 2);
 
 alter table am_partitioned
-  set ACCESS METHOD default;
+  set access method default;
 
 select relam from pg_class where relname = 'am_partitioned';
 
@@ -567,7 +567,7 @@ partition of am_partitioned
 for values with (MODULUS 10, REMAINDER 3);
 
 alter table am_partitioned
-  set ACCESS METHOD default;
+  set access method default;
 
 create table am_partitioned_5p
 partition of am_partitioned
@@ -579,7 +579,7 @@ partition of am_partitioned_5p
 for values with (MODULUS 10, REMAINDER 1);
 
 alter table am_partitioned
-  set ACCESS METHOD heap2;
+  set access method heap2;
 
 create table am_partitioned_6p
 partition of am_partitioned
@@ -610,7 +610,7 @@ where
   c.relname like 'am_partitioned%'
 order by 1;
 
-drop TABLE am_partitioned;
+drop table am_partitioned;
 
 commit;
 
@@ -618,7 +618,7 @@ begin;
 
 set local default_table_access_method = heap2;
 
-create table tableam_tbl_heapx (f1 INT);
+create table tableam_tbl_heapx (f1 int);
 
 create table tableam_tblas_heapx as select * from tableam_tbl_heapx;
 
@@ -629,8 +629,8 @@ as
   select * from tableam_tbl_heapx;
 
 create table tableam_parted_heapx (
-  a TEXT,
-  b INT
+  a text,
+  b int
 )
 partition by LIST(a);
 
@@ -647,11 +647,11 @@ as select * from tableam_tbl_heapx;
 
 create sequence tableam_seq_heapx;
 
-create FOREIGN DATA WRAPPER fdw_heap2 VALIDATOR postgresql_fdw_validator ;
+create foreign data wrapper fdw_heap2 validator postgresql_fdw_validator ;
 
 create server fs_heap2 foreign data wrapper fdw_heap2;
 
-create foreign table tableam_fdw_heapx () SERVER fs_heap2;
+create foreign table tableam_fdw_heapx () server fs_heap2;
 
 select
   pc.relkind,
@@ -661,13 +661,13 @@ select
     then (
       select
         'toast for ' ||
-        cast(relname as REGCLASS)
+        cast(relname as regclass)
       from
         pg_class as pcm
       where
         pcm.reltoastrelid = pc.oid
     )
-    else cast(cast(relname as REGCLASS) as TEXT)
+    else cast(cast(relname as regclass) as text)
   end) collate "C"
   as relname
 from
@@ -689,6 +689,6 @@ create table i_am_a_failure () using "I do not exist AM";
 
 create table i_am_a_failure () using btree;
 
-create foreign table fp partition of tableam_parted_a_heap2 default SERVER x;
+create foreign table fp partition of tableam_parted_a_heap2 default server x;
 
-drop ACCESS METHOD heap2;
+drop access method heap2;

@@ -8,6 +8,6 @@ using new_products as np
 on p.product_id = np.product_id
 when matched
 then update set price = np.price
-when not matched by TARGET
+when not matched by target
 then insert
 values (np.product_id, np.price);

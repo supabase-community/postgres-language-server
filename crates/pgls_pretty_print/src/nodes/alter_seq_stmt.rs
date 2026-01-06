@@ -7,7 +7,7 @@ pub(super) fn emit_alter_seq_stmt(e: &mut EventEmitter, n: &AlterSeqStmt) {
 
     e.token(TokenKind::ALTER_KW);
     e.space();
-    e.token(TokenKind::IDENT("SEQUENCE".to_string()));
+    e.token(TokenKind::SEQUENCE_KW);
     e.space();
 
     if n.missing_ok {

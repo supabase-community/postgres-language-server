@@ -3,4 +3,4 @@ source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/single/alter_extension_stmt_0.sql
 snapshot_kind: text
 ---
-alter EXTENSION hstore update to '1.8';
+alter extension hstore update to '1.8';

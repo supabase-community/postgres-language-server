@@ -4,17 +4,17 @@ input_file: crates/pgls_pretty_print/tests/data/multi/functional_deps.sql
 snapshot_kind: text
 ---
 create temporary table articles (
-  id INT constraint "articles_pkey" primary key,
-  keywords TEXT,
-  title TEXT unique not null,
-  body TEXT unique,
-  created DATE
+  id int constraint "articles_pkey" primary key,
+  keywords text,
+  title text unique not null,
+  body text unique,
+  created date
 );
 
 create temporary table articles_in_category (
-  article_id INT,
-  category_id INT,
-  changed DATE,
+  article_id int,
+  category_id int,
+  changed date,
   primary key (article_id, category_id)
 );
 
@@ -110,14 +110,14 @@ where
 group by aic.article_id;
 
 create temporary table products (
-  product_id INT,
-  name TEXT,
-  price NUMERIC
+  product_id int,
+  name text,
+  price numeric
 );
 
 create temporary table sales (
-  product_id INT,
-  units INT
+  product_id int,
+  units int
 );
 
 select
@@ -160,19 +160,19 @@ group by product_id;
 
 create temporary table node (
   nid serial,
-  vid INT not null default '0',
-  type VARCHAR(32) not null default '',
-  title VARCHAR(128) not null default '',
-  uid INT not null default '0',
-  status INT not null default '1',
-  created INT not null default '0',
+  vid int not null default '0',
+  type varchar(32) not null default '',
+  title varchar(128) not null default '',
+  uid int not null default '0',
+  status int not null default '1',
+  created int not null default '0',
   primary key (nid, vid)
 );
 
 create temporary table users (
-  uid INT not null default '0',
-  name VARCHAR(60) not null default '',
-  pass VARCHAR(32) not null default '',
+  uid int not null default '0',
+  name varchar(60) not null default '',
+  pass varchar(32) not null default '',
   primary key (uid),
   unique (name)
 );
@@ -221,7 +221,7 @@ group by id;
 alter table articles
   drop constraint articles_pkey;
 
-drop VIEW fdv1;
+drop view fdv1;
 
 create temporary view fdv2
 as select
@@ -247,7 +247,7 @@ alter table articles
 alter table articles_in_category
   drop constraint articles_in_category_pkey;
 
-drop VIEW fdv2;
+drop view fdv2;
 
 create temporary view fdv3
 as select
@@ -273,7 +273,7 @@ group by id;
 alter table articles
   drop constraint articles_pkey;
 
-drop VIEW fdv3;
+drop view fdv3;
 
 create temporary view fdv4
 as select
@@ -286,7 +286,7 @@ where
 alter table articles
   drop constraint articles_pkey;
 
-drop VIEW fdv4;
+drop view fdv4;
 
 prepare foo as select id, keywords, title, body, created from articles group by id;;
 

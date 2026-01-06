@@ -3,4 +3,4 @@ source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/single/create_publication_stmt_0.sql
 snapshot_kind: text
 ---
-create PUBLICATION mypub for all TABLES;
+create publication mypub for all tables;

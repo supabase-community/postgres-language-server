@@ -171,7 +171,7 @@ insert into nocols default values;
 
 select * from nocols as n, lateral (values (n.*)) as v;
 
-create temporary table foo (f1 INT);
+create temporary table foo (f1 int);
 
 insert into foo values (42), (3), (10), (7), (null), (null), (1);
 
@@ -197,7 +197,7 @@ select * from foo order by f1 desc;
 
 select * from foo order by f1 desc nulls last;
 
-drop INDEX fooi;
+drop index fooi;
 
 create index "fooi" on foo using btree (f1 desc);
 
@@ -209,7 +209,7 @@ select * from foo order by f1 desc;
 
 select * from foo order by f1 desc nulls last;
 
-drop INDEX fooi;
+drop index fooi;
 
 create index "fooi" on foo using btree (f1 desc nulls last);
 
@@ -293,8 +293,8 @@ where
 
 select 1 as x order by x;
 
-create function sillysrf(INT)
-returns setof INT
+create function sillysrf(int)
+returns setof int
 as $function$values (1),(10),(2),($1)$function$
 language sql
 immutable;
@@ -303,15 +303,15 @@ select sillysrf(42);
 
 select sillysrf(-1) order by 1;
 
-drop FUNCTION sillysrf(INT);
+drop function sillysrf(int);
 
 select * from (values (2), (null), (1)) as v (k) where k = k order by k;
 
 select * from (values (2), (null), (1)) as v (k) where k = k;
 
 create table list_parted_tbl (
-  a INT,
-  b INT
+  a int,
+  b int
 )
 partition by LIST(a);
 
@@ -322,4 +322,4 @@ partition by LIST(b);
 
 select * from list_parted_tbl;
 
-drop TABLE list_parted_tbl;
+drop table list_parted_tbl;

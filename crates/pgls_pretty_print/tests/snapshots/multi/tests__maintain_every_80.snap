@@ -23,9 +23,9 @@ from
   pg_class
 where
   oid =
-  cast('past_inh_db_parent' as REGCLASS);
+  cast('past_inh_db_parent' as regclass);
 
-drop TABLE past_inh_db_child;
+drop table past_inh_db_child;
 
 set client_min_messages = error;
 
@@ -40,9 +40,9 @@ from
   pg_class
 where
   oid =
-  cast('past_inh_db_parent' as REGCLASS);
+  cast('past_inh_db_parent' as regclass);
 
-drop TABLE past_inh_db_parent, past_inh_db_other;
+drop table past_inh_db_parent, past_inh_db_other;
 
 reset role;
 

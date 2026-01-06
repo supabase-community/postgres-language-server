@@ -4,7 +4,7 @@ input_file: crates/pgls_pretty_print/tests/data/single/dollar_quoted_function_0.
 snapshot_kind: text
 ---
 create function test_func()
-returns VOID
+returns void
 language plpgsql
 as $function$
 BEGIN

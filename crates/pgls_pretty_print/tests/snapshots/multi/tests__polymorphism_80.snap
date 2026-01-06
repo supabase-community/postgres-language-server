@@ -3,8 +3,8 @@ source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/polymorphism.sql
 snapshot_kind: text
 ---
-create function polyf(x ANYELEMENT)
-returns ANYELEMENT
+create function polyf(x anyelement)
+returns anyelement
 as $function$
   select x + 1
 $function$
@@ -14,10 +14,10 @@ select polyf(42) as int, polyf(4.5) as num;
 
 select polyf(point(3, 4));
 
-drop FUNCTION polyf(ANYELEMENT);
+drop function polyf(anyelement);
 
-create function polyf(x ANYELEMENT)
-returns ANYARRAY
+create function polyf(x anyelement)
+returns anyarray
 as $function$
   select array[x + 1, x + 2]
 $function$
@@ -25,10 +25,10 @@ language sql;
 
 select polyf(42) as int, polyf(4.5) as num;
 
-drop FUNCTION polyf(ANYELEMENT);
+drop function polyf(anyelement);
 
-create function polyf(x ANYARRAY)
-returns ANYELEMENT
+create function polyf(x anyarray)
+returns anyelement
 as $function$
   select x[1]
 $function$
@@ -38,10 +38,10 @@ select polyf(array[2, 4]) as int, polyf(array[4.5, 7.7]) as num;
 
 select polyf(stavalues1) from pg_statistic;
 
-drop FUNCTION polyf(ANYARRAY);
+drop function polyf(anyarray);
 
-create function polyf(x ANYARRAY)
-returns ANYARRAY
+create function polyf(x anyarray)
+returns anyarray
 as $function$
   select x
 $function$
@@ -51,17 +51,17 @@ select polyf(array[2, 4]) as int, polyf(array[4.5, 7.7]) as num;
 
 select polyf(stavalues1) from pg_statistic;
 
-drop FUNCTION polyf(ANYARRAY);
+drop function polyf(anyarray);
 
-create function polyf(x ANYELEMENT)
-returns ANYRANGE
+create function polyf(x anyelement)
+returns anyrange
 as $function$
   select array[x + 1, x + 2]
 $function$
 language sql;
 
-create function polyf(x ANYRANGE)
-returns ANYARRAY
+create function polyf(x anyrange)
+returns anyarray
 as $function$
   select array[lower(x), upper(x)]
 $function$
@@ -69,7 +69,7 @@ language sql;
 
 select polyf(int4range(42, 49)) as int, polyf(float8range(4.5, 7.8)) as num;
 
-drop FUNCTION polyf(ANYRANGE);
+drop function polyf(anyrange);
 
 create function polyf(x anycompatible, y anycompatible)
 returns anycompatiblearray
@@ -80,7 +80,7 @@ language sql;
 
 select polyf(2, 4) as int, polyf(2, 4.5) as num;
 
-drop FUNCTION polyf(anycompatible, anycompatible);
+drop function polyf(anycompatible, anycompatible);
 
 create function polyf(x anycompatiblerange, y anycompatible, z anycompatible)
 returns anycompatiblearray
@@ -93,19 +93,19 @@ select
   polyf(
     int4range(42, 49),
     11,
-    cast(2 as SMALLINT)
+    cast(2 as smallint)
   )
   as int,
   polyf(
     float8range(4.5, 7.8),
     7.8,
-    cast(11 as REAL)
+    cast(11 as real)
   )
   as num;
 
 select polyf(int4range(42, 49), 11, 4.5) as fail;
 
-drop FUNCTION polyf(anycompatiblerange, anycompatible, anycompatible);
+drop function polyf(anycompatiblerange, anycompatible, anycompatible);
 
 create function
 polyf(
@@ -123,19 +123,19 @@ select
   polyf(
     multirange(int4range(42, 49)),
     11,
-    cast(2 as SMALLINT)
+    cast(2 as smallint)
   )
   as int,
   polyf(
     multirange(float8range(4.5, 7.8)),
     7.8,
-    cast(11 as REAL)
+    cast(11 as real)
   )
   as num;
 
 select polyf(multirange(int4range(42, 49)), 11, 4.5) as fail;
 
-drop FUNCTION polyf(anycompatiblemultirange, anycompatible, anycompatible);
+drop function polyf(anycompatiblemultirange, anycompatible, anycompatible);
 
 create function polyf(x anycompatible)
 returns anycompatiblerange
@@ -157,7 +157,7 @@ select
   polyf(float8range(4.5, 7.8), array[7])
   as num;
 
-drop FUNCTION polyf(anycompatiblerange, anycompatiblearray);
+drop function polyf(anycompatiblerange, anycompatiblearray);
 
 create function polyf(x anycompatible)
 returns anycompatiblemultirange
@@ -185,15 +185,15 @@ select
   )
   as num;
 
-drop FUNCTION polyf(anycompatiblemultirange, anycompatiblearray);
+drop function polyf(anycompatiblemultirange, anycompatiblearray);
 
 create function
 polyf(
-  a ANYELEMENT,
-  b ANYARRAY,
+  a anyelement,
+  b anyarray,
   c anycompatible,
   d anycompatible,
-  out x ANYARRAY,
+  out x anyarray,
   out y anycompatiblearray
 )
 as $function$
@@ -226,9 +226,9 @@ from
 
 select x, pg_typeof(x), y, pg_typeof(y) from polyf(11, array[1, 2.2], 42, 34.5);
 
-drop FUNCTION polyf(ANYELEMENT, ANYARRAY, anycompatible, anycompatible);
+drop function polyf(anyelement, anyarray, anycompatible, anycompatible);
 
-create function polyf(ANYRANGE)
+create function polyf(anyrange)
 returns anymultirange
 as $function$select multirange($1);$function$
 language sql;
@@ -237,10 +237,10 @@ select polyf(int4range(1, 10));
 
 select polyf(null);
 
-drop FUNCTION polyf(ANYRANGE);
+drop function polyf(anyrange);
 
 create function polyf(anymultirange)
-returns ANYELEMENT
+returns anyelement
 as $function$select lower($1);$function$
 language sql;
 
@@ -248,7 +248,7 @@ select polyf(int4multirange(int4range(1, 10), int4range(20, 30)));
 
 select polyf(null);
 
-drop FUNCTION polyf(anymultirange);
+drop function polyf(anymultirange);
 
 create function polyf(anycompatiblerange)
 returns anycompatiblemultirange
@@ -259,10 +259,10 @@ select polyf(int4range(1, 10));
 
 select polyf(null);
 
-drop FUNCTION polyf(anycompatiblerange);
+drop function polyf(anycompatiblerange);
 
 create function polyf(anymultirange)
-returns ANYRANGE
+returns anyrange
 as $function$select range_merge($1);$function$
 language sql;
 
@@ -270,7 +270,7 @@ select polyf(int4multirange(int4range(1, 10), int4range(20, 30)));
 
 select polyf(null);
 
-drop FUNCTION polyf(anymultirange);
+drop function polyf(anymultirange);
 
 create function polyf(anycompatiblemultirange)
 returns anycompatiblerange
@@ -281,7 +281,7 @@ select polyf(int4multirange(int4range(1, 10), int4range(20, 30)));
 
 select polyf(null);
 
-drop FUNCTION polyf(anycompatiblemultirange);
+drop function polyf(anycompatiblemultirange);
 
 create function polyf(anycompatiblemultirange)
 returns anycompatible
@@ -292,51 +292,51 @@ select polyf(int4multirange(int4range(1, 10), int4range(20, 30)));
 
 select polyf(null);
 
-drop FUNCTION polyf(anycompatiblemultirange);
+drop function polyf(anycompatiblemultirange);
 
-create function stfp(ANYARRAY)
-returns ANYARRAY
+create function stfp(anyarray)
+returns anyarray
 as $function$select $1$function$
 language sql;
 
-create function stfnp(INT[])
-returns INT[]
+create function stfnp(int[])
+returns int[]
 as $function$select $1$function$
 language sql;
 
-create function tfp(ANYARRAY, ANYELEMENT)
-returns ANYARRAY
+create function tfp(anyarray, anyelement)
+returns anyarray
 as $function$select $1 || $2$function$
 language sql;
 
-create function tfnp(INT[], INT)
-returns INT[]
+create function tfnp(int[], int)
+returns int[]
 as $function$select $1 || $2$function$
 language sql;
 
-create function tf1p(ANYARRAY, INT)
-returns ANYARRAY
+create function tf1p(anyarray, int)
+returns anyarray
 as $function$select $1$function$
 language sql;
 
-create function tf2p(INT[], ANYELEMENT)
-returns INT[]
+create function tf2p(int[], anyelement)
+returns int[]
 as $function$select $1$function$
 language sql;
 
-create function sum3(ANYELEMENT, ANYELEMENT, ANYELEMENT)
-returns ANYELEMENT
+create function sum3(anyelement, anyelement, anyelement)
+returns anyelement
 as $function$select $1+$2+$3$function$
 language sql
-STRICT;
+strict;
 
-create function ffp(ANYARRAY)
-returns ANYARRAY
+create function ffp(anyarray)
+returns anyarray
 as $function$select $1$function$
 language sql;
 
-create function ffnp(INT[])
-returns INT[]
+create function ffnp(int[])
+returns int[]
 as $function$select $1$function$
 language sql;
 
@@ -344,7 +344,7 @@ create aggregate myaggp01a (
   *
 ) (
   sfunc = stfnp,
-  stype = INT[],
+  stype = int[],
   finalfunc = ffp,
   initcond = '{}'
 );
@@ -353,7 +353,7 @@ create aggregate myaggp02a (
   *
 ) (
   sfunc = stfnp,
-  stype = ANYARRAY,
+  stype = anyarray,
   finalfunc = ffp,
   initcond = '{}'
 );
@@ -362,18 +362,18 @@ create aggregate myaggp03a (
   *
 ) (
   sfunc = stfp,
-  stype = INT[],
+  stype = int[],
   finalfunc = ffp,
   initcond = '{}'
 );
 
-create aggregate myaggp03b (*) (sfunc = stfp, stype = INT[], initcond = '{}');
+create aggregate myaggp03b (*) (sfunc = stfp, stype = int[], initcond = '{}');
 
 create aggregate myaggp04a (
   *
 ) (
   sfunc = stfp,
-  stype = ANYARRAY,
+  stype = anyarray,
   finalfunc = ffp,
   initcond = '{}'
 );
@@ -382,191 +382,191 @@ create aggregate myaggp04b (
   *
 ) (
   sfunc = stfp,
-  stype = ANYARRAY,
+  stype = anyarray,
   initcond = '{}'
 );
 
 create aggregate myaggp05a (
-  basetype = INT,
+  basetype = int,
   sfunc = tfnp,
-  stype = INT[],
+  stype = int[],
   finalfunc = ffp,
   initcond = '{}'
 );
 
 create aggregate myaggp06a (
-  basetype = INT,
+  basetype = int,
   sfunc = tf2p,
-  stype = INT[],
+  stype = int[],
   finalfunc = ffp,
   initcond = '{}'
 );
 
 create aggregate myaggp07a (
-  basetype = ANYELEMENT,
+  basetype = anyelement,
   sfunc = tfnp,
-  stype = INT[],
+  stype = int[],
   finalfunc = ffp,
   initcond = '{}'
 );
 
 create aggregate myaggp08a (
-  basetype = ANYELEMENT,
+  basetype = anyelement,
   sfunc = tf2p,
-  stype = INT[],
+  stype = int[],
   finalfunc = ffp,
   initcond = '{}'
 );
 
 create aggregate myaggp09a (
-  basetype = INT,
+  basetype = int,
   sfunc = tf1p,
-  stype = INT[],
+  stype = int[],
   finalfunc = ffp,
   initcond = '{}'
 );
 
 create aggregate myaggp09b (
-  basetype = INT,
+  basetype = int,
   sfunc = tf1p,
-  stype = INT[],
+  stype = int[],
   initcond = '{}'
 );
 
 create aggregate myaggp10a (
-  basetype = INT,
+  basetype = int,
   sfunc = tfp,
-  stype = INT[],
+  stype = int[],
   finalfunc = ffp,
   initcond = '{}'
 );
 
 create aggregate myaggp10b (
-  basetype = INT,
+  basetype = int,
   sfunc = tfp,
-  stype = INT[],
+  stype = int[],
   initcond = '{}'
 );
 
 create aggregate myaggp11a (
-  basetype = ANYELEMENT,
+  basetype = anyelement,
   sfunc = tf1p,
-  stype = INT[],
+  stype = int[],
   finalfunc = ffp,
   initcond = '{}'
 );
 
 create aggregate myaggp11b (
-  basetype = ANYELEMENT,
+  basetype = anyelement,
   sfunc = tf1p,
-  stype = INT[],
+  stype = int[],
   initcond = '{}'
 );
 
 create aggregate myaggp12a (
-  basetype = ANYELEMENT,
+  basetype = anyelement,
   sfunc = tfp,
-  stype = INT[],
+  stype = int[],
   finalfunc = ffp,
   initcond = '{}'
 );
 
 create aggregate myaggp12b (
-  basetype = ANYELEMENT,
+  basetype = anyelement,
   sfunc = tfp,
-  stype = INT[],
+  stype = int[],
   initcond = '{}'
 );
 
 create aggregate myaggp13a (
-  basetype = INT,
+  basetype = int,
   sfunc = tfnp,
-  stype = ANYARRAY,
+  stype = anyarray,
   finalfunc = ffp,
   initcond = '{}'
 );
 
 create aggregate myaggp14a (
-  basetype = INT,
+  basetype = int,
   sfunc = tf2p,
-  stype = ANYARRAY,
+  stype = anyarray,
   finalfunc = ffp,
   initcond = '{}'
 );
 
 create aggregate myaggp15a (
-  basetype = ANYELEMENT,
+  basetype = anyelement,
   sfunc = tfnp,
-  stype = ANYARRAY,
+  stype = anyarray,
   finalfunc = ffp,
   initcond = '{}'
 );
 
 create aggregate myaggp16a (
-  basetype = ANYELEMENT,
+  basetype = anyelement,
   sfunc = tf2p,
-  stype = ANYARRAY,
+  stype = anyarray,
   finalfunc = ffp,
   initcond = '{}'
 );
 
 create aggregate myaggp17a (
-  basetype = INT,
+  basetype = int,
   sfunc = tf1p,
-  stype = ANYARRAY,
+  stype = anyarray,
   finalfunc = ffp,
   initcond = '{}'
 );
 
 create aggregate myaggp17b (
-  basetype = INT,
+  basetype = int,
   sfunc = tf1p,
-  stype = ANYARRAY,
+  stype = anyarray,
   initcond = '{}'
 );
 
 create aggregate myaggp18a (
-  basetype = INT,
+  basetype = int,
   sfunc = tfp,
-  stype = ANYARRAY,
+  stype = anyarray,
   finalfunc = ffp,
   initcond = '{}'
 );
 
 create aggregate myaggp18b (
-  basetype = INT,
+  basetype = int,
   sfunc = tfp,
-  stype = ANYARRAY,
+  stype = anyarray,
   initcond = '{}'
 );
 
 create aggregate myaggp19a (
-  basetype = ANYELEMENT,
+  basetype = anyelement,
   sfunc = tf1p,
-  stype = ANYARRAY,
+  stype = anyarray,
   finalfunc = ffp,
   initcond = '{}'
 );
 
 create aggregate myaggp19b (
-  basetype = ANYELEMENT,
+  basetype = anyelement,
   sfunc = tf1p,
-  stype = ANYARRAY,
+  stype = anyarray,
   initcond = '{}'
 );
 
 create aggregate myaggp20a (
-  basetype = ANYELEMENT,
+  basetype = anyelement,
   sfunc = tfp,
-  stype = ANYARRAY,
+  stype = anyarray,
   finalfunc = ffp,
   initcond = '{}'
 );
 
 create aggregate myaggp20b (
-  basetype = ANYELEMENT,
+  basetype = anyelement,
   sfunc = tfp,
-  stype = ANYARRAY,
+  stype = anyarray,
   initcond = '{}'
 );
 
@@ -574,18 +574,18 @@ create aggregate myaggn01a (
   *
 ) (
   sfunc = stfnp,
-  stype = INT[],
+  stype = int[],
   finalfunc = ffnp,
   initcond = '{}'
 );
 
-create aggregate myaggn01b (*) (sfunc = stfnp, stype = INT[], initcond = '{}');
+create aggregate myaggn01b (*) (sfunc = stfnp, stype = int[], initcond = '{}');
 
 create aggregate myaggn02a (
   *
 ) (
   sfunc = stfnp,
-  stype = ANYARRAY,
+  stype = anyarray,
   finalfunc = ffnp,
   initcond = '{}'
 );
@@ -594,7 +594,7 @@ create aggregate myaggn02b (
   *
 ) (
   sfunc = stfnp,
-  stype = ANYARRAY,
+  stype = anyarray,
   initcond = '{}'
 );
 
@@ -602,7 +602,7 @@ create aggregate myaggn03a (
   *
 ) (
   sfunc = stfp,
-  stype = INT[],
+  stype = int[],
   finalfunc = ffnp,
   initcond = '{}'
 );
@@ -611,207 +611,207 @@ create aggregate myaggn04a (
   *
 ) (
   sfunc = stfp,
-  stype = ANYARRAY,
+  stype = anyarray,
   finalfunc = ffnp,
   initcond = '{}'
 );
 
 create aggregate myaggn05a (
-  basetype = INT,
+  basetype = int,
   sfunc = tfnp,
-  stype = INT[],
+  stype = int[],
   finalfunc = ffnp,
   initcond = '{}'
 );
 
 create aggregate myaggn05b (
-  basetype = INT,
+  basetype = int,
   sfunc = tfnp,
-  stype = INT[],
+  stype = int[],
   initcond = '{}'
 );
 
 create aggregate myaggn06a (
-  basetype = INT,
+  basetype = int,
   sfunc = tf2p,
-  stype = INT[],
+  stype = int[],
   finalfunc = ffnp,
   initcond = '{}'
 );
 
 create aggregate myaggn06b (
-  basetype = INT,
+  basetype = int,
   sfunc = tf2p,
-  stype = INT[],
+  stype = int[],
   initcond = '{}'
 );
 
 create aggregate myaggn07a (
-  basetype = ANYELEMENT,
+  basetype = anyelement,
   sfunc = tfnp,
-  stype = INT[],
+  stype = int[],
   finalfunc = ffnp,
   initcond = '{}'
 );
 
 create aggregate myaggn07b (
-  basetype = ANYELEMENT,
+  basetype = anyelement,
   sfunc = tfnp,
-  stype = INT[],
+  stype = int[],
   initcond = '{}'
 );
 
 create aggregate myaggn08a (
-  basetype = ANYELEMENT,
+  basetype = anyelement,
   sfunc = tf2p,
-  stype = INT[],
+  stype = int[],
   finalfunc = ffnp,
   initcond = '{}'
 );
 
 create aggregate myaggn08b (
-  basetype = ANYELEMENT,
+  basetype = anyelement,
   sfunc = tf2p,
-  stype = INT[],
+  stype = int[],
   initcond = '{}'
 );
 
 create aggregate myaggn09a (
-  basetype = INT,
+  basetype = int,
   sfunc = tf1p,
-  stype = INT[],
+  stype = int[],
   finalfunc = ffnp,
   initcond = '{}'
 );
 
 create aggregate myaggn10a (
-  basetype = INT,
+  basetype = int,
   sfunc = tfp,
-  stype = INT[],
+  stype = int[],
   finalfunc = ffnp,
   initcond = '{}'
 );
 
 create aggregate myaggn11a (
-  basetype = ANYELEMENT,
+  basetype = anyelement,
   sfunc = tf1p,
-  stype = INT[],
+  stype = int[],
   finalfunc = ffnp,
   initcond = '{}'
 );
 
 create aggregate myaggn12a (
-  basetype = ANYELEMENT,
+  basetype = anyelement,
   sfunc = tfp,
-  stype = INT[],
+  stype = int[],
   finalfunc = ffnp,
   initcond = '{}'
 );
 
 create aggregate myaggn13a (
-  basetype = INT,
+  basetype = int,
   sfunc = tfnp,
-  stype = ANYARRAY,
+  stype = anyarray,
   finalfunc = ffnp,
   initcond = '{}'
 );
 
 create aggregate myaggn13b (
-  basetype = INT,
+  basetype = int,
   sfunc = tfnp,
-  stype = ANYARRAY,
+  stype = anyarray,
   initcond = '{}'
 );
 
 create aggregate myaggn14a (
-  basetype = INT,
+  basetype = int,
   sfunc = tf2p,
-  stype = ANYARRAY,
+  stype = anyarray,
   finalfunc = ffnp,
   initcond = '{}'
 );
 
 create aggregate myaggn14b (
-  basetype = INT,
+  basetype = int,
   sfunc = tf2p,
-  stype = ANYARRAY,
+  stype = anyarray,
   initcond = '{}'
 );
 
 create aggregate myaggn15a (
-  basetype = ANYELEMENT,
+  basetype = anyelement,
   sfunc = tfnp,
-  stype = ANYARRAY,
+  stype = anyarray,
   finalfunc = ffnp,
   initcond = '{}'
 );
 
 create aggregate myaggn15b (
-  basetype = ANYELEMENT,
+  basetype = anyelement,
   sfunc = tfnp,
-  stype = ANYARRAY,
+  stype = anyarray,
   initcond = '{}'
 );
 
 create aggregate myaggn16a (
-  basetype = ANYELEMENT,
+  basetype = anyelement,
   sfunc = tf2p,
-  stype = ANYARRAY,
+  stype = anyarray,
   finalfunc = ffnp,
   initcond = '{}'
 );
 
 create aggregate myaggn16b (
-  basetype = ANYELEMENT,
+  basetype = anyelement,
   sfunc = tf2p,
-  stype = ANYARRAY,
+  stype = anyarray,
   initcond = '{}'
 );
 
 create aggregate myaggn17a (
-  basetype = INT,
+  basetype = int,
   sfunc = tf1p,
-  stype = ANYARRAY,
+  stype = anyarray,
   finalfunc = ffnp,
   initcond = '{}'
 );
 
 create aggregate myaggn18a (
-  basetype = INT,
+  basetype = int,
   sfunc = tfp,
-  stype = ANYARRAY,
+  stype = anyarray,
   finalfunc = ffnp,
   initcond = '{}'
 );
 
 create aggregate myaggn19a (
-  basetype = ANYELEMENT,
+  basetype = anyelement,
   sfunc = tf1p,
-  stype = ANYARRAY,
+  stype = anyarray,
   finalfunc = ffnp,
   initcond = '{}'
 );
 
 create aggregate myaggn20a (
-  basetype = ANYELEMENT,
+  basetype = anyelement,
   sfunc = tfp,
-  stype = ANYARRAY,
+  stype = anyarray,
   finalfunc = ffnp,
   initcond = '{}'
 );
 
 create aggregate mysum2 (
-  ANYELEMENT, ANYELEMENT
+  anyelement, anyelement
 ) (
   sfunc = sum3,
-  stype = ANYELEMENT,
+  stype = anyelement,
   initcond = '0'
 );
 
 create temporary table t (
-  f1 INT,
-  f2 INT[],
-  f3 TEXT
+  f1 int,
+  f2 int[],
+  f3 text
 );
 
 insert into t values (1, array[1], 'a');
@@ -878,8 +878,8 @@ select f3, myaggn10a(f1) from t group by f3 order by f3;
 
 select mysum2(f1, f1 + 1) from t;
 
-create function bleat(INT)
-returns INT
+create function bleat(int)
+returns int
 as $function$
 begin
   raise notice 'bleat %', $1;
@@ -887,8 +887,8 @@ begin
 end$function$
 language plpgsql;
 
-create function sql_if(BOOLEAN, ANYELEMENT, ANYELEMENT)
-returns ANYELEMENT
+create function sql_if(boolean, anyelement, anyelement)
+returns anyelement
 as $function$
 select case when $1 then $2 else $3 end $function$
 language sql;
@@ -898,10 +898,10 @@ select f1, sql_if(f1 > 0, bleat(f1), bleat(f1 + 1)) from int4_tbl;
 select q2, sql_if(q2 > 0, q2, q2 + 1) from int8_tbl;
 
 create aggregate array_larger_accum (
-  ANYARRAY
+  anyarray
 ) (
   sfunc = array_larger,
-  stype = ANYARRAY,
+  stype = anyarray,
   initcond = '{}'
 );
 
@@ -923,8 +923,8 @@ from
   )
   as t (i);
 
-create function add_group(grp ANYARRAY, ad ANYELEMENT, size INT)
-returns ANYARRAY
+create function add_group(grp anyarray, ad anyelement, size int)
+returns anyarray
 as $function$
 begin
   if grp is null then
@@ -940,60 +940,60 @@ language plpgsql
 immutable;
 
 create aggregate build_group (
-  ANYELEMENT, INT
+  anyelement, int
 ) (
   sfunc = add_group,
-  stype = ANYARRAY
+  stype = anyarray
 );
 
 select build_group(q1, 3) from int8_tbl;
 
 create aggregate build_group (
-  BIGINT, INT
+  bigint, int
 ) (
   sfunc = add_group,
-  stype = SMALLINT[]
+  stype = smallint[]
 );
 
 create aggregate build_group (
-  BIGINT, INT
+  bigint, int
 ) (
   sfunc = add_group,
-  stype = BIGINT[]
+  stype = bigint[]
 );
 
-create function first_el_transfn(ANYARRAY, ANYELEMENT)
-returns ANYARRAY
+create function first_el_transfn(anyarray, anyelement)
+returns anyarray
 as $function$select $1 || $2$function$
 language sql
 immutable;
 
-create function first_el(ANYARRAY)
-returns ANYELEMENT
+create function first_el(anyarray)
+returns anyelement
 as $function$select $1[1]$function$
 language sql
-STRICT
+strict
 immutable;
 
 create aggregate first_el_agg_f8 (
-  DOUBLE PRECISION
+  double precision
 ) (
   sfunc = array_append,
-  stype = DOUBLE PRECISION[],
+  stype = double precision[],
   finalfunc = first_el
 );
 
 create aggregate first_el_agg_any (
-  ANYELEMENT
+  anyelement
 ) (
   sfunc = first_el_transfn,
-  stype = ANYARRAY,
+  stype = anyarray,
   finalfunc = first_el
 );
 
 select
   first_el_agg_f8(
-    cast(x as DOUBLE PRECISION)
+    cast(x as double precision)
   )
 from
   generate_series(1, 10) as x;
@@ -1002,7 +1002,7 @@ select first_el_agg_any(x) from generate_series(1, 10) as x;
 
 select
   first_el_agg_f8(
-    cast(x as DOUBLE PRECISION)
+    cast(x as double precision)
   )
   over (
     order by x
@@ -1021,26 +1021,26 @@ where
 
 select MAX(histogram_bounds) from pg_stats where tablename = 'pg_am';
 
-select array_in('{1,2,3}', cast('int4' as REGTYPE), -1);
+select array_in('{1,2,3}', cast('int4' as regtype), -1);
 
-select * from array_in('{1,2,3}', cast('int4' as REGTYPE), -1);
+select * from array_in('{1,2,3}', cast('int4' as regtype), -1);
 
-select anyrange_in('[10,20)', cast('int4range' as REGTYPE), -1);
+select anyrange_in('[10,20)', cast('int4range' as regtype), -1);
 
-create function myleast(variadic ANYARRAY)
-returns ANYELEMENT
+create function myleast(variadic anyarray)
+returns anyelement
 as $function$
   select min($1[i]) from generate_subscripts($1,1) g(i)
 $function$
 language sql
 immutable
-STRICT;
+strict;
 
 select myleast(10, 1, 20, 33);
 
 select myleast(1.1, 0.22, 0.55);
 
-select myleast(cast('z' as TEXT));
+select myleast(cast('z' as text));
 
 select myleast();
 
@@ -1048,35 +1048,35 @@ select myleast(variadic array[1, 2, 3, 4, -1]);
 
 select myleast(variadic array[1.1, -5.5]);
 
-select myleast(variadic cast(array[] as INT[]));
+select myleast(variadic cast(array[] as int[]));
 
-create function concat(TEXT, variadic ANYARRAY)
-returns TEXT
+create function concat(text, variadic anyarray)
+returns text
 as $function$
   select array_to_string($2, $1);
 $function$
 language sql
 immutable
-STRICT;
+strict;
 
 select concat('%', 1, 2, 3, 4, 5);
 
-select concat('|', cast('a' as TEXT), 'b', 'c');
+select concat('|', cast('a' as text), 'b', 'c');
 
 select concat('|', variadic array[1, 2, 33]);
 
-select concat('|', variadic cast(array[] as INT[]));
+select concat('|', variadic cast(array[] as int[]));
 
-drop FUNCTION concat(TEXT, ANYARRAY);
+drop function concat(text, anyarray);
 
-create function formarray(ANYELEMENT, variadic ANYARRAY)
-returns ANYARRAY
+create function formarray(anyelement, variadic anyarray)
+returns anyarray
 as $function$
   select array_prepend($1, $2);
 $function$
 language sql
 immutable
-STRICT;
+strict;
 
 select formarray(1, 2, 3, 4, 5);
 
@@ -1084,11 +1084,11 @@ select formarray(1.1, variadic array[1.2, 55.5]);
 
 select formarray(1.1, array[1.2, 55.5]);
 
-select formarray(1, cast('x' as TEXT));
+select formarray(1, cast('x' as text));
 
-select formarray(1, variadic array[cast('x' as TEXT)]);
+select formarray(1, variadic array[cast('x' as text)]);
 
-drop FUNCTION formarray(ANYELEMENT, ANYARRAY);
+drop function formarray(anyelement, anyarray);
 
 select pg_typeof(null);
 
@@ -1108,8 +1108,8 @@ select pg_typeof(array[1.2, 55.5]);
 
 select pg_typeof(myleast(10, 1, 20, 33));
 
-create function dfunc(a INT default 1, INT default 2)
-returns INT
+create function dfunc(a int default 1, int default 2)
+returns int
 as $function$
   select $1 + $2;
 $function$
@@ -1123,31 +1123,20 @@ select dfunc(10, 20);
 
 select dfunc(10, 20, 30);
 
-drop FUNCTION dfunc();
+drop function dfunc();
 
-drop FUNCTION dfunc(INT);
+drop function dfunc(int);
 
-drop FUNCTION dfunc(INT, INT);
+drop function dfunc(int, int);
 
-create function dfunc(a INT default 1, b INT)
-returns INT
+create function dfunc(a int default 1, b int)
+returns int
 as $function$
   select $1 + $2;
 $function$
 language sql;
 
-create function dfunc(a INT default 1, out sum INT, b INT default 2)
-as $function$
-  select $1 + $2;
-$function$
-language sql;
-
-select dfunc();
-
-drop FUNCTION dfunc(INT, INT);
-
-create function dfunc(a INT default 1.0, INT default '-1')
-returns INT
+create function dfunc(a int default 1, out sum int, b int default 2)
 as $function$
   select $1 + $2;
 $function$
@@ -1155,8 +1144,19 @@ language sql;
 
 select dfunc();
 
-create function dfunc(a TEXT default 'Hello', b TEXT default 'World')
-returns TEXT
+drop function dfunc(int, int);
+
+create function dfunc(a int default 1.0, int default '-1')
+returns int
+as $function$
+  select $1 + $2;
+$function$
+language sql;
+
+select dfunc();
+
+create function dfunc(a text default 'Hello', b text default 'World')
+returns text
 as $function$
   select $1 || ', ' || $2;
 $function$
@@ -1172,12 +1172,12 @@ select dfunc(0);
 
 select dfunc(10, 20);
 
-drop FUNCTION dfunc(INT, INT);
+drop function dfunc(int, int);
 
-drop FUNCTION dfunc(TEXT, TEXT);
+drop function dfunc(text, text);
 
-create function dfunc(INT default 1, INT default 2)
-returns INT
+create function dfunc(int default 1, int default 2)
+returns int
 as $function$
   select 2;
 $function$
@@ -1185,12 +1185,12 @@ language sql;
 
 create function
 dfunc(
-  INT default 1,
-  INT default 2,
-  INT default 3,
-  INT default 4
+  int default 1,
+  int default 2,
+  int default 3,
+  int default 4
 )
-returns INT
+returns int
 as $function$
   select 4;
 $function$
@@ -1206,19 +1206,19 @@ select dfunc(1, 2, 3);
 
 select dfunc(1, 2, 3, 4);
 
-drop FUNCTION dfunc(INT, INT);
+drop function dfunc(int, int);
 
-drop FUNCTION dfunc(INT, INT, INT, INT);
+drop function dfunc(int, int, int, int);
 
-create function dfunc(out INT default 20)
-returns INT
+create function dfunc(out int default 20)
+returns int
 as $function$
   select 1;
 $function$
 language sql;
 
-create function dfunc(ANYELEMENT default cast('World' as TEXT))
-returns TEXT
+create function dfunc(anyelement default cast('World' as text))
+returns text
 as $function$
   select 'Hello, ' || $1::text;
 $function$
@@ -1230,12 +1230,12 @@ select dfunc(0);
 
 select dfunc(to_date('20081215', 'YYYYMMDD'));
 
-select dfunc(cast('City' as TEXT));
+select dfunc(cast('City' as text));
 
-drop FUNCTION dfunc(ANYELEMENT);
+drop function dfunc(anyelement);
 
-create function dfunc(variadic a INT[])
-returns INT
+create function dfunc(variadic a int[])
+returns int
 as $function$ select array_upper($1, 1) $function$
 language sql;
 
@@ -1247,9 +1247,9 @@ select dfunc(10, 20);
 
 create or replace function
 dfunc(
-  variadic a INT[] default cast(array[] as INT[])
+  variadic a int[] default cast(array[] as int[])
 )
-returns INT
+returns int
 as $function$ select array_upper($1, 1) $function$
 language sql;
 
@@ -1259,29 +1259,29 @@ select dfunc(10);
 
 select dfunc(10, 20);
 
-create or replace function dfunc(variadic a INT[])
-returns INT
+create or replace function dfunc(variadic a int[])
+returns int
 as $function$ select array_upper($1, 1) $function$
 language sql;
 
-drop FUNCTION dfunc(INT[]);
+drop function dfunc(int[]);
 
-create function dfunc(INT default 1, INT default 2, INT default 3)
-returns INT
+create function dfunc(int default 1, int default 2, int default 3)
+returns int
 as $function$
   select 3;
 $function$
 language sql;
 
-create function dfunc(INT default 1, INT default 2)
-returns INT
+create function dfunc(int default 1, int default 2)
+returns int
 as $function$
   select 2;
 $function$
 language sql;
 
-create function dfunc(TEXT)
-returns TEXT
+create function dfunc(text)
+returns text
 as $function$
   select $1;
 $function$
@@ -1291,18 +1291,18 @@ select dfunc(1);
 
 select dfunc('Hi');
 
-drop FUNCTION dfunc(INT, INT, INT);
+drop function dfunc(int, int, int);
 
-drop FUNCTION dfunc(INT, INT);
+drop function dfunc(int, int);
 
-drop FUNCTION dfunc(TEXT);
+drop function dfunc(text);
 
-create function dfunc(a INT, b INT, c INT default 0, d INT default 0)
+create function dfunc(a int, b int, c int default 0, d int default 0)
 returns table (
-  a INT,
-  b INT,
-  c INT,
-  d INT
+  a int,
+  b int,
+  c int,
+  d int
 )
 as $function$
   select $1, $2, $3, $4;
@@ -1335,10 +1335,10 @@ select * from dfunc(10, 10, "a" := 20);
 
 select * from dfunc(1, "c" := 2, "d" := 3);
 
-drop FUNCTION dfunc(INT, INT, INT, INT);
+drop function dfunc(int, int, int, int);
 
-create function xleast(x NUMERIC, variadic arr NUMERIC[])
-returns NUMERIC
+create function xleast(x numeric, variadic arr numeric[])
+returns numeric
 as $function$
   select least(x, min(arr[i])) from generate_subscripts(arr, 1) g(i);
 $function$
@@ -1366,28 +1366,28 @@ select xleast("arr" := array[1], "x" := 3);
 
 select xleast("arr" := 1, variadic "x" := array[2, 3]);
 
-drop FUNCTION xleast(NUMERIC, NUMERIC[]);
+drop function xleast(numeric, numeric[]);
 
-create function dfunc(a VARCHAR, b NUMERIC, c DATE default current_date)
+create function dfunc(a varchar, b numeric, c date default current_date)
 returns table (
-  a VARCHAR,
-  b NUMERIC,
-  c DATE
+  a varchar,
+  b numeric,
+  c date
 )
 as $function$
   select $1, $2, $3;
 $function$
 language sql;
 
-select (dfunc('Hello World', 20, cast('2009-07-25' as DATE))).*;
+select (dfunc('Hello World', 20, cast('2009-07-25' as date))).*;
 
-select * from dfunc('Hello World', 20, cast('2009-07-25' as DATE));
+select * from dfunc('Hello World', 20, cast('2009-07-25' as date));
 
 select
   *
 from
   dfunc(
-    "c" := cast('2009-07-25' as DATE),
+    "c" := cast('2009-07-25' as date),
     "a" := 'Hello World',
     "b" := 20
   );
@@ -1398,7 +1398,7 @@ from
   dfunc(
     'Hello World',
     "b" := 20,
-    "c" := cast('2009-07-25' as DATE)
+    "c" := cast('2009-07-25' as date)
   );
 
 select
@@ -1406,7 +1406,7 @@ select
 from
   dfunc(
     'Hello World',
-    "c" := cast('2009-07-25' as DATE),
+    "c" := cast('2009-07-25' as date),
     "b" := 20
   );
 
@@ -1416,19 +1416,19 @@ from
   dfunc(
     'Hello World',
     "c" := 20,
-    "b" := cast('2009-07-25' as DATE)
+    "b" := cast('2009-07-25' as date)
   );
 
-drop FUNCTION dfunc(VARCHAR, NUMERIC, DATE);
+drop function dfunc(varchar, numeric, date);
 
 create function
 dfunc(
-  a VARCHAR default 'def a',
-  out _a VARCHAR,
-  c NUMERIC default null,
-  out _c NUMERIC
+  a varchar default 'def a',
+  out _a varchar,
+  c numeric default null,
+  out _c numeric
 )
-returns RECORD
+returns record
 as $function$
   select $1, $2;
 $function$
@@ -1452,12 +1452,12 @@ select * from dfunc("c" := 100);
 
 create or replace function
 dfunc(
-  a VARCHAR default 'def a',
-  out _a VARCHAR,
-  x NUMERIC default null,
-  out _c NUMERIC
+  a varchar default 'def a',
+  out _a varchar,
+  x numeric default null,
+  out _c numeric
 )
-returns RECORD
+returns record
 as $function$
   select $1, $2;
 $function$
@@ -1465,66 +1465,66 @@ language sql;
 
 create or replace function
 dfunc(
-  a VARCHAR default 'def a',
-  out _a VARCHAR,
-  NUMERIC default null,
-  out _c NUMERIC
+  a varchar default 'def a',
+  out _a varchar,
+  numeric default null,
+  out _c numeric
 )
-returns RECORD
+returns record
 as $function$
   select $1, $2;
 $function$
 language sql;
 
-drop FUNCTION dfunc(VARCHAR, NUMERIC);
+drop function dfunc(varchar, numeric);
 
-create function testpolym(a INT, a INT)
-returns INT
+create function testpolym(a int, a int)
+returns int
 as $function$ select 1;$function$
 language sql;
 
-create function testpolym(INT, out a INT, out a INT)
-returns INT
+create function testpolym(int, out a int, out a int)
+returns int
 as $function$ select 1;$function$
 language sql;
 
-create function testpolym(out a INT, inout a INT)
-returns INT
+create function testpolym(out a int, inout a int)
+returns int
 as $function$ select 1;$function$
 language sql;
 
-create function testpolym(a INT, inout a INT)
-returns INT
+create function testpolym(a int, inout a int)
+returns int
 as $function$ select 1;$function$
 language sql;
 
-create function testpolym(a INT, out a INT)
-returns INT
+create function testpolym(a int, out a int)
+returns int
 as $function$ select $1;$function$
 language sql;
 
 select testpolym(37);
 
-drop FUNCTION testpolym(INT);
+drop function testpolym(int);
 
-create function testpolym(a INT)
+create function testpolym(a int)
 returns table (
-  a INT
+  a int
 )
 as $function$ select $1;$function$
 language sql;
 
 select * from testpolym(37);
 
-drop FUNCTION testpolym(INT);
+drop function testpolym(int);
 
 create function
 dfunc(
-  a ANYELEMENT,
-  b ANYELEMENT default null,
-  flag BOOLEAN default true
+  a anyelement,
+  b anyelement default null,
+  flag boolean default true
 )
-returns ANYELEMENT
+returns anyelement
 as $function$
   select case when $3 then $1 else $2 end;
 $function$
@@ -1532,51 +1532,51 @@ language sql;
 
 select dfunc(1, 2);
 
-select dfunc(cast('a' as TEXT), 'b');
+select dfunc(cast('a' as text), 'b');
 
 select dfunc("a" := 1, "b" := 2);
 
-select dfunc("a" := cast('a' as TEXT), "b" := 'b');
+select dfunc("a" := cast('a' as text), "b" := 'b');
 
-select dfunc("a" := cast('a' as TEXT), "b" := 'b', "flag" := false);
+select dfunc("a" := cast('a' as text), "b" := 'b', "flag" := false);
 
-select dfunc("b" := cast('b' as TEXT), "a" := 'a');
+select dfunc("b" := cast('b' as text), "a" := 'a');
 
-select dfunc("a" := cast('a' as TEXT), "flag" := true);
+select dfunc("a" := cast('a' as text), "flag" := true);
 
-select dfunc("a" := cast('a' as TEXT), "flag" := false);
+select dfunc("a" := cast('a' as text), "flag" := false);
 
-select dfunc("b" := cast('b' as TEXT), "a" := 'a', "flag" := true);
+select dfunc("b" := cast('b' as text), "a" := 'a', "flag" := true);
 
-select dfunc(cast('a' as TEXT), 'b', false);
+select dfunc(cast('a' as text), 'b', false);
 
-select dfunc(cast('a' as TEXT), 'b', "flag" := false);
+select dfunc(cast('a' as text), 'b', "flag" := false);
 
-select dfunc(cast('a' as TEXT), 'b', true);
+select dfunc(cast('a' as text), 'b', true);
 
-select dfunc(cast('a' as TEXT), 'b', "flag" := true);
+select dfunc(cast('a' as text), 'b', "flag" := true);
 
 select dfunc("a" := 1, "b" := 2);
 
-select dfunc("a" := cast('a' as TEXT), "b" := 'b');
+select dfunc("a" := cast('a' as text), "b" := 'b');
 
-select dfunc("a" := cast('a' as TEXT), "b" := 'b', "flag" := false);
+select dfunc("a" := cast('a' as text), "b" := 'b', "flag" := false);
 
-select dfunc("b" := cast('b' as TEXT), "a" := 'a');
+select dfunc("b" := cast('b' as text), "a" := 'a');
 
-select dfunc("a" := cast('a' as TEXT), "flag" := true);
+select dfunc("a" := cast('a' as text), "flag" := true);
 
-select dfunc("a" := cast('a' as TEXT), "flag" := false);
+select dfunc("a" := cast('a' as text), "flag" := false);
 
-select dfunc("b" := cast('b' as TEXT), "a" := 'a', "flag" := true);
+select dfunc("b" := cast('b' as text), "a" := 'a', "flag" := true);
 
-select dfunc(cast('a' as TEXT), 'b', false);
+select dfunc(cast('a' as text), 'b', false);
 
-select dfunc(cast('a' as TEXT), 'b', "flag" := false);
+select dfunc(cast('a' as text), 'b', "flag" := false);
 
-select dfunc(cast('a' as TEXT), 'b', true);
+select dfunc(cast('a' as text), 'b', true);
 
-select dfunc(cast('a' as TEXT), 'b', "flag" := true);
+select dfunc(cast('a' as text), 'b', "flag" := true);
 
 select dfunc("a" := -1);
 
@@ -1608,9 +1608,9 @@ from
 
 select * from dfview;
 
-drop VIEW dfview;
+drop view dfview;
 
-drop FUNCTION dfunc(ANYELEMENT, ANYELEMENT, BOOLEAN);
+drop function dfunc(anyelement, anyelement, boolean);
 
 create function anyctest(anycompatible, anycompatible)
 returns anycompatible
@@ -1627,7 +1627,7 @@ select x, pg_typeof(x) from anyctest(11, point(1, 2)) as x;
 
 select x, pg_typeof(x) from anyctest('11', '12.3') as x;
 
-drop FUNCTION anyctest(anycompatible, anycompatible);
+drop function anyctest(anycompatible, anycompatible);
 
 create function anyctest(anycompatible, anycompatible)
 returns anycompatiblearray
@@ -1642,7 +1642,7 @@ select x, pg_typeof(x) from anyctest(11, 12.3) as x;
 
 select x, pg_typeof(x) from anyctest(11, array[1, 2]) as x;
 
-drop FUNCTION anyctest(anycompatible, anycompatible);
+drop function anyctest(anycompatible, anycompatible);
 
 create function anyctest(anycompatible, anycompatiblearray)
 returns anycompatiblearray
@@ -1663,7 +1663,7 @@ select x, pg_typeof(x) from anyctest(11, array[point(1, 2)]) as x;
 
 select x, pg_typeof(x) from anyctest(11, 12) as x;
 
-drop FUNCTION anyctest(anycompatible, anycompatiblearray);
+drop function anyctest(anycompatible, anycompatiblearray);
 
 create function anyctest(anycompatible, anycompatiblerange)
 returns anycompatiblerange
@@ -1682,7 +1682,7 @@ select x, pg_typeof(x) from anyctest(11.2, int4range(4, 7)) as x;
 
 select x, pg_typeof(x) from anyctest(11.2, '[4,7)') as x;
 
-drop FUNCTION anyctest(anycompatible, anycompatiblerange);
+drop function anyctest(anycompatible, anycompatiblerange);
 
 create function anyctest(anycompatiblerange, anycompatiblerange)
 returns anycompatible
@@ -1695,7 +1695,7 @@ select x, pg_typeof(x) from anyctest(int4range(11, 12), int4range(4, 7)) as x;
 
 select x, pg_typeof(x) from anyctest(int4range(11, 12), numrange(4, 7)) as x;
 
-drop FUNCTION anyctest(anycompatiblerange, anycompatiblerange);
+drop function anyctest(anycompatiblerange, anycompatiblerange);
 
 create function anyctest(anycompatible)
 returns anycompatiblerange
@@ -1721,7 +1721,7 @@ select x, pg_typeof(x) from anyctest(11.2, multirange(int4range(4, 7))) as x;
 
 select x, pg_typeof(x) from anyctest(11.2, '{[4,7)}') as x;
 
-drop FUNCTION anyctest(anycompatible, anycompatiblemultirange);
+drop function anyctest(anycompatible, anycompatiblemultirange);
 
 create function anyctest(anycompatiblemultirange, anycompatiblemultirange)
 returns anycompatible
@@ -1750,7 +1750,7 @@ from
   )
   as x;
 
-drop FUNCTION anyctest(anycompatiblemultirange, anycompatiblemultirange);
+drop function anyctest(anycompatiblemultirange, anycompatiblemultirange);
 
 create function anyctest(anycompatible)
 returns anycompatiblemultirange
@@ -1772,12 +1772,12 @@ select x, pg_typeof(x) from anyctest(11, 12.3) as x;
 
 select x, pg_typeof(x) from anyctest(array[11], array[1, 2]) as x;
 
-drop FUNCTION anyctest(anycompatiblenonarray, anycompatiblenonarray);
+drop function anyctest(anycompatiblenonarray, anycompatiblenonarray);
 
 create function
 anyctest(
-  a ANYELEMENT,
-  b ANYARRAY,
+  a anyelement,
+  b anyarray,
   c anycompatible,
   d anycompatible
 )
@@ -1805,7 +1805,7 @@ select x, pg_typeof(x) from anyctest(11, '{1,2}', point(1, 2), '(3,4)') as x;
 
 select x, pg_typeof(x) from anyctest(11, array[1, 2.2], 42, 34.5) as x;
 
-drop FUNCTION anyctest(ANYELEMENT, ANYARRAY, anycompatible, anycompatible);
+drop function anyctest(anyelement, anyarray, anycompatible, anycompatible);
 
 create function anyctest(variadic anycompatiblearray)
 returns anycompatiblearray
@@ -1826,4 +1826,4 @@ select x, pg_typeof(x) from anyctest(variadic array[11, 12]) as x;
 
 select x, pg_typeof(x) from anyctest(variadic array[11, 12.2]) as x;
 
-drop FUNCTION anyctest(anycompatiblearray);
+drop function anyctest(anycompatiblearray);

@@ -94,32 +94,32 @@ pub(super) fn emit_define_stmt(e: &mut EventEmitter, n: &DefineStmt) {
         ObjectType::ObjectType => e.token(TokenKind::TYPE_KW),
         ObjectType::ObjectCollation => e.token(TokenKind::COLLATION_KW),
         ObjectType::ObjectTsdictionary => {
-            e.token(TokenKind::IDENT("TEXT".to_string()));
+            e.token(TokenKind::TEXT_KW);
             e.space();
-            e.token(TokenKind::IDENT("SEARCH".to_string()));
+            e.token(TokenKind::SEARCH_KW);
             e.space();
-            e.token(TokenKind::IDENT("DICTIONARY".to_string()));
+            e.token(TokenKind::DICTIONARY_KW);
         }
         ObjectType::ObjectTsconfiguration => {
-            e.token(TokenKind::IDENT("TEXT".to_string()));
+            e.token(TokenKind::TEXT_KW);
             e.space();
-            e.token(TokenKind::IDENT("SEARCH".to_string()));
+            e.token(TokenKind::SEARCH_KW);
             e.space();
-            e.token(TokenKind::IDENT("CONFIGURATION".to_string()));
+            e.token(TokenKind::CONFIGURATION_KW);
         }
         ObjectType::ObjectTsparser => {
-            e.token(TokenKind::IDENT("TEXT".to_string()));
+            e.token(TokenKind::TEXT_KW);
             e.space();
-            e.token(TokenKind::IDENT("SEARCH".to_string()));
+            e.token(TokenKind::SEARCH_KW);
             e.space();
-            e.token(TokenKind::IDENT("PARSER".to_string()));
+            e.token(TokenKind::PARSER_KW);
         }
         ObjectType::ObjectTstemplate => {
-            e.token(TokenKind::IDENT("TEXT".to_string()));
+            e.token(TokenKind::TEXT_KW);
             e.space();
-            e.token(TokenKind::IDENT("SEARCH".to_string()));
+            e.token(TokenKind::SEARCH_KW);
             e.space();
-            e.token(TokenKind::IDENT("TEMPLATE".to_string()));
+            e.token(TokenKind::TEMPLATE_KW);
         }
         _ => e.token(TokenKind::IDENT(format!("{kind:?}"))),
     }

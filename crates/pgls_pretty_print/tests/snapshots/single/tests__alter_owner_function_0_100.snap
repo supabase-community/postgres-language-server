@@ -3,4 +3,4 @@ source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/single/alter_owner_function_0.sql
 snapshot_kind: text
 ---
-alter function public.sum_two(INT, INT) owner to app_user;
+alter function public.sum_two(int, int) owner to app_user;

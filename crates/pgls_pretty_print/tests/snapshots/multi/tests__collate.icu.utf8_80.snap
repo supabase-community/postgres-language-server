@@ -24,35 +24,35 @@ create schema "collate_tests";
 set search_path to collate_tests;
 
 create table collate_test1 (
-  a INT,
-  b TEXT collate "en-x-icu" not null
+  a int,
+  b text collate "en-x-icu" not null
 );
 
 create table collate_test_fail (
-  a INT,
-  b TEXT collate "ja_JP.eucjp-x-icu"
+  a int,
+  b text collate "ja_JP.eucjp-x-icu"
 );
 
 create table collate_test_fail (
-  a INT,
-  b TEXT collate "foo-x-icu"
+  a int,
+  b text collate "foo-x-icu"
 );
 
 create table collate_test_fail (
-  a INT collate "en-x-icu",
-  b TEXT
+  a int collate "en-x-icu",
+  b text
 );
 
 create table collate_test_like (like collate_test1);
 
 create table collate_test2 (
-  a INT,
-  b TEXT collate "sv-x-icu"
+  a int,
+  b text collate "sv-x-icu"
 );
 
 create table collate_test3 (
-  a INT,
-  b TEXT collate "C"
+  a int,
+  b text collate "C"
 );
 
 insert into collate_test1
@@ -82,12 +82,12 @@ select * from collate_test1 where b collate "C" >= 'bbc' collate "C";
 
 select * from collate_test1 where b collate "C" >= 'bbc' collate "en-x-icu";
 
-create domain testdomain_sv as TEXT collate "sv-x-icu";
+create domain testdomain_sv as text collate "sv-x-icu";
 
-create domain testdomain_i as INT collate "sv-x-icu";
+create domain testdomain_i as int collate "sv-x-icu";
 
 create table collate_test4 (
-  a INT,
+  a int,
   b testdomain_sv
 );
 
@@ -96,7 +96,7 @@ insert into collate_test4 select * from collate_test1;
 select a, b from collate_test4 order by b;
 
 create table collate_test5 (
-  a INT,
+  a int,
   b testdomain_sv collate "en-x-icu"
 );
 
@@ -123,9 +123,9 @@ select 'bbc' collate "en-x-icu" > 'Ã¤bc' collate "en-x-icu" as "true";
 select 'bbc' collate "sv-x-icu" > 'Ã¤bc' collate "sv-x-icu" as "false";
 
 create table collate_test10 (
-  a INT,
-  x TEXT collate "en-x-icu",
-  y TEXT collate "tr-x-icu"
+  a int,
+  x text collate "en-x-icu",
+  y text collate "tr-x-icu"
 );
 
 insert into collate_test10 values (1, 'hij', 'hij'), (2, 'HIJ', 'HIJ');
@@ -200,8 +200,8 @@ select * from collate_test1 where b ~* '^abc';
 select * from collate_test1 where b ~* 'bc';
 
 create table collate_test6 (
-  a INT,
-  b TEXT collate "en-x-icu"
+  a int,
+  b text collate "en-x-icu"
 );
 
 insert into collate_test6
@@ -330,7 +330,7 @@ from
   collate_test3
 order by 2;
 
-create domain testdomain as TEXT;
+create domain testdomain as text;
 
 select a, cast(b as testdomain) from collate_test1 order by 2;
 
@@ -436,24 +436,24 @@ select
 from
   foo;
 
-select a, cast(b as VARCHAR) from collate_test1 order by 2;
+select a, cast(b as varchar) from collate_test1 order by 2;
 
-select a, cast(b as VARCHAR) from collate_test2 order by 2;
+select a, cast(b as varchar) from collate_test2 order by 2;
 
-select a, cast(b as VARCHAR) from collate_test3 order by 2;
+select a, cast(b as varchar) from collate_test3 order by 2;
 
-create function mylt(TEXT, TEXT)
-returns BOOLEAN
+create function mylt(text, text)
+returns boolean
 language sql
 as $function$ select $1 < $2 $function$;
 
-create function mylt_noninline(TEXT, TEXT)
-returns BOOLEAN
+create function mylt_noninline(text, text)
+returns boolean
 language sql
 as $function$ select $1 < $2 limit 1 $function$;
 
-create function mylt_plpgsql(TEXT, TEXT)
-returns BOOLEAN
+create function mylt_plpgsql(text, text)
+returns boolean
 language plpgsql
 as $function$ begin return $1 < $2; end $function$;
 
@@ -483,8 +483,8 @@ from
 order by a.b,
   b.b;
 
-create function mylt2(x TEXT, y TEXT)
-returns BOOLEAN
+create function mylt2(x text, y text)
+returns boolean
 language plpgsql
 as $function$
 declare
@@ -499,8 +499,8 @@ select
   mylt2('a', 'B' collate "en-x-icu") as t,
   mylt2('a', 'B' collate "C") as f;
 
-create or replace function mylt2(x TEXT, y TEXT)
-returns BOOLEAN
+create or replace function mylt2(x text, y text)
+returns boolean
 language plpgsql
 as $function$
 declare
@@ -556,8 +556,8 @@ from
   )
 order by 1;
 
-create function dup(ANYELEMENT)
-returns ANYELEMENT
+create function dup(anyelement)
+returns anyelement
 as $function$select $1$function$
 language sql;
 
@@ -663,11 +663,11 @@ create collation testx (
   locale = '@colStrength=primary;nonsense=yes'
 );
 
-drop COLLATION testx;
+drop collation testx;
 
 create collation testx (provider = icu, locale = 'nonsense-nowhere');
 
-drop COLLATION testx;
+drop collation testx;
 
 create collation test4 from "nonsense";
 
@@ -685,7 +685,7 @@ alter collation test11 owner to regress_test_role;
 
 alter collation test11 owner to nonsense;
 
-alter COLLATION test11 set SCHEMA test_schema;
+alter collation test11 set schema test_schema;
 
 comment on collation test0 is 'US English';
 
@@ -705,41 +705,41 @@ where
   collname like 'test%'
 order by 1;
 
-drop COLLATION test0, test_schema.test11, test5;
+drop collation test0, test_schema.test11, test5;
 
-drop COLLATION test0;
+drop collation test0;
 
-drop COLLATION if exists test0;
+drop collation if exists test0;
 
 select collname from pg_collation where collname like 'test%';
 
-drop SCHEMA test_schema;
+drop schema test_schema;
 
 drop role regress_test_role;
 
-alter COLLATION "en-x-icu" REFRESH VERSION;
+alter collation "en-x-icu" refresh version;
 
 select current_database() as datname;
 
 create collation test0 from "C";
 
 create table collate_dep_test1 (
-  a INT,
-  b TEXT collate "test0"
+  a int,
+  b text collate "test0"
 );
 
-create domain collate_dep_dom1 as TEXT collate "test0";
+create domain collate_dep_dom1 as text collate "test0";
 
-create type collate_dep_test2 as (x INT, y TEXT collate "test0");
+create type collate_dep_test2 as (x int, y text collate "test0");
 
 create view collate_dep_test3
 as select
-  cast('foo' as TEXT) collate "test0"
+  cast('foo' as text) collate "test0"
   as foo;
 
 create table collate_dep_test4t (
-  a INT,
-  b TEXT
+  a int,
+  b text
 );
 
 create index "collate_dep_test4i"
@@ -749,25 +749,25 @@ using btree
   b collate test0
 );
 
-drop COLLATION test0;
+drop collation test0;
 
-drop COLLATION test0 cascade;
+drop collation test0 cascade;
 
-drop TABLE collate_dep_test1, collate_dep_test4t;
+drop table collate_dep_test1, collate_dep_test4t;
 
-drop TYPE collate_dep_test2;
+drop type collate_dep_test2;
 
-create type textrange_c as RANGE (subtype = TEXT, collation = "C");
+create type textrange_c as range (subtype = text, collation = "C");
 
-create type textrange_en_us as RANGE (subtype = TEXT, collation = "en-x-icu");
+create type textrange_en_us as range (subtype = text, collation = "en-x-icu");
 
-select textrange_c('A', 'Z') @> cast('b' as TEXT);
+select textrange_c('A', 'Z') @> cast('b' as text);
 
-select textrange_en_us('A', 'Z') @> cast('b' as TEXT);
+select textrange_en_us('A', 'Z') @> cast('b' as text);
 
-drop TYPE textrange_c;
+drop type textrange_c;
 
-drop TYPE textrange_en_us;
+drop type textrange_en_us;
 
 select * from collate_test2 order by b collate "ucs_basic";
 
@@ -858,7 +858,7 @@ create collation testcoll_rules1 (
   rules = '&a < g'
 );
 
-create table test7 (a TEXT);
+create table test7 (a text);
 
 insert into test7
 values
@@ -873,7 +873,7 @@ select * from test7 order by a collate "en-x-icu";
 
 select * from test7 order by a collate "testcoll_rules1";
 
-drop TABLE test7;
+drop table test7;
 
 create collation testcoll_rulesx (
   provider = icu,
@@ -902,8 +902,8 @@ select 'abc' like 'abc' collate "ctest_nondet";
 select 'abc' like 'a\bc' collate "ctest_nondet";
 
 create table test6 (
-  a INT,
-  b TEXT
+  a int,
+  b text
 );
 
 insert into test6 values (1, 'zyäbc');
@@ -941,8 +941,8 @@ select * from test6 where b like 'zyÃ¤bc' collate "ctest_det";
 select * from test6 where b like 'zyÃ¤bc' collate "ctest_nondet";
 
 create table test6a (
-  a INT,
-  b TEXT[]
+  a int,
+  b text[]
 );
 
 insert into test6a values (1, array['äbc']);
@@ -973,9 +973,9 @@ select
   'abc' >=
   'ABC' collate "case_insensitive";
 
-select array_sort(cast('{a,B}' as TEXT[]) collate "case_insensitive");
+select array_sort(cast('{a,B}' as text[]) collate "case_insensitive");
 
-select array_sort(cast('{a,B}' as TEXT[]) collate "C");
+select array_sort(cast('{a,B}' as text[]) collate "C");
 
 create collation lt_insensitive (
   provider = icu,
@@ -989,11 +989,11 @@ create collation lt_upperfirst (provider = icu, locale = 'und-u-kf-upper');
 
 select 'Z' collate "lt_upperfirst" < 'z' collate "lt_upperfirst";
 
-create table test1cs (x TEXT collate "case_sensitive");
+create table test1cs (x text collate "case_sensitive");
 
-create table test2cs (x TEXT collate "case_sensitive");
+create table test2cs (x text collate "case_sensitive");
 
-create table test3cs (x TEXT collate "case_sensitive");
+create table test3cs (x text collate "case_sensitive");
 
 insert into test1cs values ('abc'), ('def'), ('ghi');
 
@@ -1053,11 +1053,11 @@ select string_to_array('ABC,DEF,GHI' collate "case_sensitive", ',', 'abc');
 
 select string_to_array('ABCDEFGHI' collate "case_sensitive", null, 'b');
 
-create table test1ci (x TEXT collate "case_insensitive");
+create table test1ci (x text collate "case_insensitive");
 
-create table test2ci (x TEXT collate "case_insensitive");
+create table test2ci (x text collate "case_insensitive");
 
-create table test3ci (x TEXT collate "case_insensitive");
+create table test3ci (x text collate "case_insensitive");
 
 create index on test3ci using btree (x text_pattern_ops);
 
@@ -1115,11 +1115,11 @@ select string_to_array('ABC,DEF,GHI' collate "case_insensitive", ',', 'abc');
 
 select string_to_array('ABCDEFGHI' collate "case_insensitive", null, 'b');
 
-create table test1bpci (x CHAR(3) collate "case_insensitive");
+create table test1bpci (x char(3) collate "case_insensitive");
 
-create table test2bpci (x CHAR(3) collate "case_insensitive");
+create table test2bpci (x char(3) collate "case_insensitive");
 
-create table test3bpci (x CHAR(3) collate "case_insensitive");
+create table test3bpci (x char(3) collate "case_insensitive");
 
 create index on test3bpci using btree (x bpchar_pattern_ops);
 
@@ -1175,19 +1175,19 @@ create unique index on test3bpci using btree (x);
 
 select
   string_to_array(
-    cast('ABC,DEF,GHI' as CHAR(11)) collate "case_insensitive",
+    cast('ABC,DEF,GHI' as char(11)) collate "case_insensitive",
     ',',
     'abc'
   );
 
 select
   string_to_array(
-    cast('ABCDEFGHI' as CHAR(9)) collate "case_insensitive",
+    cast('ABCDEFGHI' as char(9)) collate "case_insensitive",
     null,
     'b'
   );
 
-create table test4c (x TEXT collate "case_insensitive");
+create table test4c (x text collate "case_insensitive");
 
 insert into test4c values ('abc');
 
@@ -1219,14 +1219,14 @@ from
   pg_class
 where
   relname =
-  cast('PG_CLASS' as TEXT) collate "case_insensitive";
+  cast('PG_CLASS' as text) collate "case_insensitive";
 
 select
   relname
 from
   pg_class
 where
-  cast('PG_CLASS' as TEXT) =
+  cast('PG_CLASS' as text) =
   relname collate "case_insensitive";
 
 select
@@ -1236,7 +1236,7 @@ from
 where
   typname like 'int_' and
   typname <>
-  cast('INT2' as TEXT) collate "case_insensitive"
+  cast('INT2' as text) collate "case_insensitive"
 order by typname;
 
 select
@@ -1245,13 +1245,13 @@ from
   pg_type
 where
   typname like 'int_' and
-  cast('INT2' as TEXT) <>
+  cast('INT2' as text) <>
   typname collate "case_insensitive"
 order by typname;
 
 create temporary table outer_text (
-  f1 TEXT collate "case_insensitive",
-  f2 TEXT
+  f1 text collate "case_insensitive",
+  f2 text
 );
 
 insert into outer_text values ('a', 'a');
@@ -1263,8 +1263,8 @@ insert into outer_text values ('A', null);
 insert into outer_text values ('B', null);
 
 create temporary table inner_text (
-  c1 TEXT collate "case_insensitive",
-  c2 TEXT
+  c1 text collate "case_insensitive",
+  c2 text
 );
 
 insert into inner_text values ('a', null);
@@ -1282,8 +1282,8 @@ create collation ignore_accents (
 reset client_min_messages;
 
 create table test4 (
-  a INT,
-  b TEXT
+  a int,
+  b text
 );
 
 insert into test4
@@ -1302,8 +1302,8 @@ select * from test4 where b = 'Cote' collate "ignore_accents";
 select * from test4 where b = 'Cote' collate "case_insensitive";
 
 create table test4nfd (
-  a INT,
-  b TEXT
+  a int,
+  b text
 );
 
 insert into test4nfd
@@ -1353,31 +1353,31 @@ select 'äbc' like '_äbc' collate "ignore_accents";
 
 select 'foox' like 'foo\' collate "ignore_accents";
 
-create table test10pk (x TEXT collate "case_sensitive" primary key);
+create table test10pk (x text collate "case_sensitive" primary key);
 
 create table test10fk (
-  x TEXT
+  x text
   collate "case_insensitive"
   references test10pk (x)
   on DELETE cascade
   on UPDATE cascade
 );
 
-create table test11pk (x TEXT collate "case_insensitive" primary key);
+create table test11pk (x text collate "case_insensitive" primary key);
 
 create table test11fk (
-  x TEXT
+  x text
   collate "case_sensitive"
   references test11pk (x)
   on DELETE cascade
   on UPDATE cascade
 );
 
-create table test12pk (x TEXT collate "case_insensitive" primary key);
+create table test12pk (x text collate "case_insensitive" primary key);
 
 create table test12fk (
-  a INT,
-  b TEXT
+  a int,
+  b text
   collate "case_insensitive"
   references test12pk (x)
 );
@@ -1392,13 +1392,13 @@ select * from test12pk;
 
 select * from test12fk;
 
-drop TABLE test12pk, test12fk;
+drop table test12pk, test12fk;
 
-create table test12pk (x TEXT collate "case_insensitive" primary key);
+create table test12pk (x text collate "case_insensitive" primary key);
 
 create table test12fk (
-  a INT,
-  b TEXT
+  a int,
+  b text
   collate "case_insensitive"
   references test12pk (x)
   on UPDATE restrict
@@ -1414,13 +1414,13 @@ select * from test12pk;
 
 select * from test12fk;
 
-drop TABLE test12pk, test12fk;
+drop table test12pk, test12fk;
 
-create table test12pk (x TEXT collate "case_insensitive" primary key);
+create table test12pk (x text collate "case_insensitive" primary key);
 
 create table test12fk (
-  a INT,
-  b TEXT
+  a int,
+  b text
   collate "case_insensitive"
   references test12pk (x)
   on UPDATE cascade
@@ -1436,11 +1436,11 @@ select * from test12pk;
 
 select * from test12fk;
 
-drop TABLE test12pk, test12fk;
+drop table test12pk, test12fk;
 
 create table test20 (
-  a INT,
-  b TEXT collate "case_insensitive"
+  a int,
+  b text collate "case_insensitive"
 )
 partition by LIST(b);
 
@@ -1453,8 +1453,8 @@ insert into test20 values (2, 'ABC');
 select * from test20_1;
 
 create table test21 (
-  a INT,
-  b TEXT collate "case_insensitive"
+  a int,
+  b text collate "case_insensitive"
 )
 partition by range(b);
 
@@ -1467,8 +1467,8 @@ insert into test21 values (2, 'ABC');
 select * from test21_1;
 
 create table test22 (
-  a INT,
-  b TEXT collate "case_sensitive"
+  a int,
+  b text collate "case_sensitive"
 )
 partition by HASH(b);
 
@@ -1487,8 +1487,8 @@ insert into test22 values (2, 'DEF');
 select (select COUNT(*) from test22_0) = (select COUNT(*) from test22_1);
 
 create table test22a (
-  a INT,
-  b TEXT[] collate "case_sensitive"
+  a int,
+  b text[] collate "case_sensitive"
 )
 partition by HASH(b);
 
@@ -1507,8 +1507,8 @@ insert into test22a values (2, array['DEF']);
 select (select COUNT(*) from test22a_0) = (select COUNT(*) from test22a_1);
 
 create table test23 (
-  a INT,
-  b TEXT collate "case_insensitive"
+  a int,
+  b text collate "case_insensitive"
 )
 partition by HASH(b);
 
@@ -1527,8 +1527,8 @@ insert into test23 values (2, 'DEF');
 select (select COUNT(*) from test23_0) <> (select COUNT(*) from test23_1);
 
 create table test23a (
-  a INT,
-  b TEXT[] collate "case_insensitive"
+  a int,
+  b text[] collate "case_insensitive"
 )
 partition by HASH(b);
 
@@ -1547,8 +1547,8 @@ insert into test23a values (2, array['DEF']);
 select (select COUNT(*) from test23a_0) <> (select COUNT(*) from test23a_1);
 
 create table test30 (
-  a INT,
-  b CHAR(3) collate "case_insensitive"
+  a int,
+  b char(3) collate "case_insensitive"
 )
 partition by LIST(b);
 
@@ -1561,8 +1561,8 @@ insert into test30 values (2, 'ABC');
 select * from test30_1;
 
 create table test31 (
-  a INT,
-  b CHAR(3) collate "case_insensitive"
+  a int,
+  b char(3) collate "case_insensitive"
 )
 partition by range(b);
 
@@ -1575,8 +1575,8 @@ insert into test31 values (2, 'ABC');
 select * from test31_1;
 
 create table test32 (
-  a INT,
-  b CHAR(3) collate "case_sensitive"
+  a int,
+  b char(3) collate "case_sensitive"
 )
 partition by HASH(b);
 
@@ -1595,8 +1595,8 @@ insert into test32 values (2, 'DEF');
 select (select COUNT(*) from test32_0) = (select COUNT(*) from test32_1);
 
 create table test33 (
-  a INT,
-  b CHAR(3) collate "case_insensitive"
+  a int,
+  b char(3) collate "case_insensitive"
 )
 partition by HASH(b);
 
@@ -1619,8 +1619,8 @@ set max_parallel_workers_per_gather = 0;
 set enable_incremental_sort = off;
 
 create table pagg_tab3 (
-  a TEXT,
-  c TEXT collate "case_insensitive"
+  a text,
+  c text collate "case_insensitive"
 )
 partition by LIST(c collate "C");
 
@@ -1774,8 +1774,8 @@ order by t1.c collate "C";
 set enable_partitionwise_join = 'true';
 
 create table pagg_tab4 (
-  c TEXT collate "case_insensitive",
-  b TEXT collate "case_insensitive"
+  c text collate "case_insensitive",
+  b text collate "case_insensitive"
 )
 partition by LIST(b collate "C");
 
@@ -1815,8 +1815,8 @@ group by 1
 order by t1.c collate "C";
 
 create table pagg_tab5 (
-  c TEXT collate "case_insensitive",
-  b TEXT collate "case_insensitive"
+  c text collate "case_insensitive",
+  b text collate "case_insensitive"
 )
 partition by LIST(c collate case_insensitive);
 
@@ -1841,8 +1841,8 @@ from
 analyze pagg_tab5;
 
 create table pagg_tab6 (
-  c TEXT collate "case_insensitive",
-  b TEXT collate "case_insensitive"
+  c text collate "case_insensitive",
+  b text collate "case_insensitive"
 )
 partition by LIST(b collate case_insensitive);
 
@@ -1912,13 +1912,13 @@ from
 group by 1
 order by t1.c collate "C";
 
-drop TABLE pagg_tab3;
+drop table pagg_tab3;
 
-drop TABLE pagg_tab4;
+drop table pagg_tab4;
 
-drop TABLE pagg_tab5;
+drop table pagg_tab5;
 
-drop TABLE pagg_tab6;
+drop table pagg_tab6;
 
 reset enable_partitionwise_aggregate;
 
@@ -1934,7 +1934,7 @@ reset search_path;
 
 set client_min_messages = warning;
 
-drop SCHEMA collate_tests cascade;
+drop schema collate_tests cascade;
 
 reset client_min_messages;
 

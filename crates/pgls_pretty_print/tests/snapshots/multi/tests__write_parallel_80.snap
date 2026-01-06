@@ -29,7 +29,7 @@ as
     tenk1
   group by length(stringu1);
 
-drop TABLE parallel_write;
+drop table parallel_write;
 
 select
   length(stringu1)
@@ -45,7 +45,7 @@ from
   tenk1
 group by length(stringu1);
 
-drop TABLE parallel_write;
+drop table parallel_write;
 
 create materialized view parallel_mat_view
 as
@@ -69,7 +69,7 @@ refresh materialized view parallel_mat_view;
 
 refresh materialized view concurrently parallel_mat_view;
 
-drop MATERIALIZED VIEW parallel_mat_view;
+drop materialized view parallel_mat_view;
 
 prepare prep_stmt
 as select
@@ -82,6 +82,6 @@ create table parallel_write as execute prep_stmt;
 
 create table parallel_write as execute prep_stmt;
 
-drop TABLE parallel_write;
+drop table parallel_write;
 
 rollback;

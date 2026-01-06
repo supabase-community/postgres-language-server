@@ -3,4 +3,4 @@ source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/single/alter_seq_stmt_0.sql
 snapshot_kind: text
 ---
-alter SEQUENCE myseq RESTART with 100;
+alter sequence myseq restart with 100;

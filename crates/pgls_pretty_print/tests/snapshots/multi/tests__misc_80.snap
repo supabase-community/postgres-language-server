@@ -4,16 +4,16 @@ input_file: crates/pgls_pretty_print/tests/data/multi/misc.sql
 snapshot_kind: text
 ---
 create function overpaid(emp)
-returns BOOLEAN
+returns boolean
 as $function$regresslib$function$
 language c
-STRICT;
+strict;
 
-create function reverse_name(NAME)
-returns NAME
+create function reverse_name(name)
+returns name
 as $function$regresslib$function$
 language c
-STRICT;
+strict;
 
 update onek set unique1 = onek.unique1 + 1;
 
@@ -35,7 +35,7 @@ where
   onek2.stringu1 = 'JCAAAA' and
   onek2.stringu1 = tmp.stringu1;
 
-drop TABLE tmp;
+drop table tmp;
 
 copy onek to 'filename';
 
@@ -56,13 +56,13 @@ copy stud_emp_copy from 'filename' with (FORMAT 'binary');
 select * from stud_emp_copy;
 
 create table hobbies_r (
-  name TEXT,
-  person TEXT
+  name text,
+  person text
 );
 
 create table equipment_r (
-  name TEXT,
-  hobby TEXT
+  name text,
+  hobby text
 );
 
 insert into hobbies_r (name, person)
@@ -98,12 +98,12 @@ returns setof hobbies_r
 as $function$select * from hobbies_r where person = $1.name$function$
 language sql;
 
-create function hobby_construct(TEXT, TEXT)
+create function hobby_construct(text, text)
 returns hobbies_r
 as $function$select $1 as name, $2 as hobby$function$
 language sql;
 
-create function hobby_construct_named(name TEXT, hobby TEXT)
+create function hobby_construct_named(name text, hobby text)
 returns hobbies_r
 as $function$select name, hobby$function$
 language sql;
@@ -138,12 +138,12 @@ returns setof equipment_r
 as $function$select * from equipment_r where hobby = hobby.name$function$
 language sql;
 
-create function equipment_named_ambiguous_2a(hobby TEXT)
+create function equipment_named_ambiguous_2a(hobby text)
 returns setof equipment_r
 as $function$select * from equipment_r where hobby = equipment_named_ambiguous_2a.hobby$function$
 language sql;
 
-create function equipment_named_ambiguous_2b(hobby TEXT)
+create function equipment_named_ambiguous_2b(hobby text)
 returns setof equipment_r
 as $function$select * from equipment_r where equipment_r.hobby = hobby$function$
 language sql;
@@ -188,8 +188,8 @@ select
   name(
     equipment(
       hobby_construct(
-        cast('skywalking' as TEXT),
-        cast('mer' as TEXT)
+        cast('skywalking' as text),
+        cast('mer' as text)
       )
     )
   );
@@ -198,8 +198,8 @@ select
   name(
     equipment(
       hobby_construct_named(
-        cast('skywalking' as TEXT),
-        cast('mer' as TEXT)
+        cast('skywalking' as text),
+        cast('mer' as text)
       )
     )
   );
@@ -208,8 +208,8 @@ select
   name(
     equipment_named(
       hobby_construct_named(
-        cast('skywalking' as TEXT),
-        cast('mer' as TEXT)
+        cast('skywalking' as text),
+        cast('mer' as text)
       )
     )
   );
@@ -218,8 +218,8 @@ select
   name(
     equipment_named_ambiguous_1a(
       hobby_construct_named(
-        cast('skywalking' as TEXT),
-        cast('mer' as TEXT)
+        cast('skywalking' as text),
+        cast('mer' as text)
       )
     )
   );
@@ -228,8 +228,8 @@ select
   name(
     equipment_named_ambiguous_1b(
       hobby_construct_named(
-        cast('skywalking' as TEXT),
-        cast('mer' as TEXT)
+        cast('skywalking' as text),
+        cast('mer' as text)
       )
     )
   );
@@ -238,15 +238,15 @@ select
   name(
     equipment_named_ambiguous_1c(
       hobby_construct_named(
-        cast('skywalking' as TEXT),
-        cast('mer' as TEXT)
+        cast('skywalking' as text),
+        cast('mer' as text)
       )
     )
   );
 
-select name(equipment_named_ambiguous_2a(cast('skywalking' as TEXT)));
+select name(equipment_named_ambiguous_2a(cast('skywalking' as text)));
 
-select name(equipment_named_ambiguous_2b(cast('skywalking' as TEXT)));
+select name(equipment_named_ambiguous_2b(cast('skywalking' as text)));
 
 select hobbies_by_name('basketball');
 

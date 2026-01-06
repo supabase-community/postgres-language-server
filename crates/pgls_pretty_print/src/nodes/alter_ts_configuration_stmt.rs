@@ -10,11 +10,11 @@ pub(super) fn emit_alter_ts_configuration_stmt(e: &mut EventEmitter, n: &AlterTs
 
     e.token(TokenKind::ALTER_KW);
     e.space();
-    e.token(TokenKind::IDENT("TEXT".to_string()));
+    e.token(TokenKind::TEXT_KW);
     e.space();
-    e.token(TokenKind::IDENT("SEARCH".to_string()));
+    e.token(TokenKind::SEARCH_KW);
     e.space();
-    e.token(TokenKind::IDENT("CONFIGURATION".to_string()));
+    e.token(TokenKind::CONFIGURATION_KW);
     e.space();
 
     // Configuration name
@@ -24,15 +24,15 @@ pub(super) fn emit_alter_ts_configuration_stmt(e: &mut EventEmitter, n: &AlterTs
     match n.kind {
         1 => {
             e.line(LineType::SoftOrSpace);
-            e.token(TokenKind::IDENT("ADD".to_string()));
+            e.token(TokenKind::ADD_KW);
             e.space();
-            e.token(TokenKind::IDENT("MAPPING".to_string()));
+            e.token(TokenKind::MAPPING_KW);
         }
         2 | 4 => {
             e.line(LineType::SoftOrSpace);
             e.token(TokenKind::ALTER_KW);
             e.space();
-            e.token(TokenKind::IDENT("MAPPING".to_string()));
+            e.token(TokenKind::MAPPING_KW);
         }
         3 => {
             // REPLACE dict (without MAPPING keyword)
@@ -42,7 +42,7 @@ pub(super) fn emit_alter_ts_configuration_stmt(e: &mut EventEmitter, n: &AlterTs
             e.line(LineType::SoftOrSpace);
             e.token(TokenKind::DROP_KW);
             e.space();
-            e.token(TokenKind::IDENT("MAPPING".to_string()));
+            e.token(TokenKind::MAPPING_KW);
         }
         _ => {}
     }
@@ -66,7 +66,7 @@ pub(super) fn emit_alter_ts_configuration_stmt(e: &mut EventEmitter, n: &AlterTs
     // REPLACE flag (for ALTER MAPPING ... REPLACE)
     if n.replace && (n.kind == 2 || n.kind == 4) {
         e.space();
-        e.token(TokenKind::IDENT("REPLACE".to_string()));
+        e.token(TokenKind::REPLACE_KW);
     }
 
     e.token(TokenKind::SEMICOLON);

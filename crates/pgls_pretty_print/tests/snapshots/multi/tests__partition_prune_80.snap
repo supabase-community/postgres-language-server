@@ -3,8 +3,8 @@ source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/partition_prune.sql
 snapshot_kind: text
 ---
-create function explain_analyze(query TEXT)
-returns setof TEXT
+create function explain_analyze(query text)
+returns setof text
 language plpgsql
 as $function$
 declare
@@ -22,7 +22,7 @@ $function$;
 
 set plan_cache_mode = force_generic_plan;
 
-create table lp (a CHAR(1))
+create table lp (a char(1))
 partition by LIST(a);
 
 create table lp_default partition of lp default;
@@ -61,7 +61,7 @@ select * from lp where a <> 'a' and a <> 'd';
 
 select * from lp where a not in ('a', 'd');
 
-create table coll_pruning (a TEXT collate "C")
+create table coll_pruning (a text collate "C")
 partition by LIST(a);
 
 create table coll_pruning_a partition of coll_pruning for values in ('a');
@@ -75,8 +75,8 @@ select * from coll_pruning where a collate "C" = 'a' collate "C";
 select * from coll_pruning where a collate "POSIX" = 'a' collate "POSIX";
 
 create table rlp (
-  a INT,
-  b VARCHAR
+  a int,
+  b varchar
 )
 partition by range(a);
 
@@ -95,8 +95,8 @@ create table rlp1 partition of rlp for values from (minvalue) to (1);
 create table rlp2 partition of rlp for values from (1) to (10);
 
 create table rlp3 (
-  b VARCHAR,
-  a INT
+  b varchar,
+  a int
 )
 partition by LIST(b varchar_ops);
 
@@ -109,7 +109,7 @@ create table rlp3efgh partition of rlp3 for values in ('ef', 'gh');
 create table rlp3nullxy partition of rlp3 for values in (null, 'xy');
 
 alter table rlp
-  ATTACH partition
+  attach partition
   rlp3 for values from (15) to (20);
 
 create table rlp4
@@ -140,9 +140,9 @@ select * from rlp where a <= 1;
 
 select * from rlp where a = 1;
 
-select * from rlp where a = cast(1 as BIGINT);
+select * from rlp where a = cast(1 as bigint);
 
-select * from rlp where a = cast(1 as NUMERIC);
+select * from rlp where a = cast(1 as numeric);
 
 select * from rlp where a <= 10;
 
@@ -201,9 +201,9 @@ select * from rlp where a = 1 and a = 3;
 select * from rlp where a = 1 and a = 3 or a > 1 and a = 15;
 
 create table mc3p (
-  a INT,
-  b INT,
-  c INT
+  a int,
+  b int,
+  c int
 )
 partition by range(a, (abs(b)), c);
 
@@ -324,8 +324,8 @@ select * from mc3p where a = 1 and abs(b) = 1 or a = 10 and abs(b) = 10;
 select * from mc3p where a = 1 and abs(b) = 1 or a = 10 and abs(b) = 9;
 
 create table mc2p (
-  a INT,
-  b INT
+  a int,
+  b int
 )
 partition by range(a, b);
 
@@ -369,7 +369,7 @@ select * from mc2p where a is null;
 
 select * from mc2p where b is null;
 
-create table boolpart (a BOOLEAN)
+create table boolpart (a boolean)
 partition by LIST(a);
 
 create table boolpart_default partition of boolpart default;
@@ -440,7 +440,7 @@ select * from boolpart where a is false and a is unknown;
 
 select * from boolpart where a is true and a is unknown;
 
-create table iboolpart (a BOOLEAN)
+create table iboolpart (a boolean)
 partition by LIST((not a));
 
 create table iboolpart_default partition of iboolpart default;
@@ -496,9 +496,9 @@ select * from iboolpart where a is not true and a is not false;
 select * from iboolpart where a is not false;
 
 create table boolrangep (
-  a BOOLEAN,
-  b BOOLEAN,
-  c INT
+  a boolean,
+  b boolean,
+  c int
 )
 partition by range(a, b, c);
 
@@ -542,7 +542,7 @@ select * from boolrangep where a is not true and not b and c = 25;
 
 select * from boolrangep where a is not false and not b and c = 25;
 
-create table coercepart (a VARCHAR)
+create table coercepart (a varchar)
 partition by LIST(a);
 
 create table coercepart_ab partition of coercepart for values in ('ab');
@@ -565,7 +565,7 @@ select * from coercepart where a = any ('{ab,bc}');
 
 select * from coercepart where a = any ('{ab,null}');
 
-select * from coercepart where a = any (cast(null as TEXT[]));
+select * from coercepart where a = any (cast(null as text[]));
 
 select * from coercepart where a = all ('{ab}');
 
@@ -573,13 +573,13 @@ select * from coercepart where a = all ('{ab,bc}');
 
 select * from coercepart where a = all ('{ab,null}');
 
-select * from coercepart where a = all (cast(null as TEXT[]));
+select * from coercepart where a = all (cast(null as text[]));
 
-drop TABLE coercepart;
+drop table coercepart;
 
 create table part (
-  a INT,
-  b INT
+  a int,
+  b int
 )
 partition by LIST(a);
 
@@ -590,26 +590,26 @@ create table part_p2 partition of part default partition by range(a);
 create table part_p2_p1 partition of part_p2 default;
 
 create table part_rev (
-  b INT,
-  c INT,
-  a INT
+  b int,
+  c int,
+  a int
 );
 
 alter table part
-  ATTACH partition
+  attach partition
   part_rev for values in (3);
 
 alter table part_rev
   drop column c;
 
 alter table part
-  ATTACH partition
+  attach partition
   part_rev for values in (3);
 
 insert into part values (-1, -1), (1, 1), (2, null), (null, -2), (null, null);
 
 select
-  cast(tableoid as REGCLASS) as part,
+  cast(tableoid as regclass) as part,
   a,
   b
 from
@@ -674,7 +674,7 @@ from
 where
   t1.a = 1;
 
-create table rp (a INT)
+create table rp (a int)
 partition by range(a);
 
 create table rp0 partition of rp for values from (minvalue) to (1);
@@ -704,7 +704,7 @@ where
   b <> 'xy' and
   b is not null;
 
-create table coll_pruning_multi (a TEXT)
+create table coll_pruning_multi (a text)
 partition by range((substr(a, 1)) collate "POSIX",
 (substr(a, 1)) collate "C");
 
@@ -732,7 +732,7 @@ where
   substr(a, 1) = 'e' collate "C" and
   substr(a, 1) = 'a' collate "POSIX";
 
-create table like_op_noprune (a TEXT)
+create table like_op_noprune (a text)
 partition by LIST(a);
 
 create table like_op_noprune1
@@ -745,7 +745,7 @@ for values in ('BCD');
 
 select * from like_op_noprune where a like '%BC';
 
-create table lparted_by_int2 (a SMALLINT)
+create table lparted_by_int2 (a smallint)
 partition by LIST(a);
 
 create table lparted_by_int2_1 partition of lparted_by_int2 for values in (1);
@@ -756,7 +756,7 @@ for values in (16384);
 
 select * from lparted_by_int2 where a = 100_000_000_000_000;
 
-create table rparted_by_int2 (a SMALLINT)
+create table rparted_by_int2 (a smallint)
 partition by range(a);
 
 create table rparted_by_int2_1
@@ -775,7 +775,7 @@ for values from (16384) to (maxvalue);
 
 select * from rparted_by_int2 where a > 100_000_000_000_000;
 
-drop TABLE
+drop table
   lp,
   coll_pruning,
   rlp,
@@ -790,7 +790,7 @@ drop TABLE
   lparted_by_int2,
   rparted_by_int2;
 
-create table asptab (id INT primary key)
+create table asptab (id int primary key)
 partition by range(id);
 
 create table asptab0 partition of asptab for values from (0) to (1);
@@ -818,14 +818,14 @@ from
   as ss,
   asptab
 where
-  asptab.id > cast(ss.b as INT);
+  asptab.id > cast(ss.b as int);
 
-drop TABLE asptab;
+drop table asptab;
 
 create table hp (
-  a INT,
-  b TEXT,
-  c INT
+  a int,
+  b text,
+  c int
 )
 partition by HASH(a part_test_int4_ops,
 b part_test_text_ops);
@@ -850,7 +850,7 @@ insert into hp values (2, 'xxx', 4);
 
 insert into hp values (1, 'abcde', 5);
 
-select cast(tableoid as REGCLASS), * from hp order by c;
+select cast(tableoid as regclass), * from hp order by c;
 
 select * from hp where a = 1;
 
@@ -887,21 +887,21 @@ where
   a = 2 and b = 'xxx' or
   a is null and b is null;
 
-drop TABLE hp1;
+drop table hp1;
 
-drop TABLE hp3;
+drop table hp3;
 
 select * from hp where a = 1 and b = 'abcde';
 
 select * from hp where a = 1 and b = 'abcde' and (c = 2 or c = 3);
 
-drop TABLE hp2;
+drop table hp2;
 
 select * from hp where a = 1 and b = 'abcde' and (c = 2 or c = 3);
 
 create table ab (
-  a INT not null,
-  b INT not null
+  a int not null,
+  b int not null
 )
 partition by LIST(a);
 
@@ -932,9 +932,9 @@ create table ab_a3_b3 partition of ab_a3 for values in (3);
 set enable_indexonlyscan = off;
 
 prepare ab_q1
-(INT,
-INT,
-INT)
+(int,
+int,
+int)
 as select
   *
 from
@@ -951,8 +951,8 @@ execute ab_q1 (1, 2, 3);
 deallocate ab_q1;
 
 prepare ab_q1
-(INT,
-INT)
+(int,
+int)
 as select
   a
 from
@@ -967,8 +967,8 @@ explain (ANALYZE, COSTS 'off', SUMMARY 'off', TIMING 'off', BUFFERS 'off')
 execute ab_q1 (2, 4);
 
 prepare ab_q2
-(INT,
-INT)
+(int,
+int)
 as select
   a
 from
@@ -980,8 +980,8 @@ explain (ANALYZE, COSTS 'off', SUMMARY 'off', TIMING 'off', BUFFERS 'off')
 execute ab_q2 (2, 2);
 
 prepare ab_q3
-(INT,
-INT)
+(int,
+int)
 as select
   a
 from
@@ -998,15 +998,15 @@ create table hp2 partition of hp for values with (MODULUS 4, REMAINDER 2);
 
 create table hp3 partition of hp for values with (MODULUS 4, REMAINDER 3);
 
-prepare hp_q1 (TEXT) as select * from hp where a is null and b = $1;;
+prepare hp_q1 (text) as select * from hp where a is null and b = $1;;
 
 explain (COSTS 'off') execute hp_q1 ('xxx');
 
 deallocate hp_q1;
 
-drop TABLE hp;
+drop table hp;
 
-create table list_part (a INT)
+create table list_part (a int)
 partition by LIST(a);
 
 create table list_part1 partition of list_part for values in (1);
@@ -1021,7 +1021,7 @@ insert into list_part select generate_series(1, 4);
 
 begin;
 
-declare "cur" SCROLL
+declare "cur" scroll
 cursor
 for select
   1
@@ -1030,16 +1030,16 @@ from
 where
   a > (select 1) and a < (select 4);;
 
-move FORWARD 3 from cur;
+move forward 3 from cur;
 
-fetch BACKWARD all from cur;
+fetch backward all from cur;
 
 commit;
 
 begin;
 
-create function list_part_fn(INT)
-returns INT
+create function list_part_fn(int)
+returns int
 as $function$ begin return $1; end;$function$
 language plpgsql
 stable;
@@ -1052,10 +1052,10 @@ select * from list_part where a = list_part_fn(1) + a;
 
 rollback;
 
-drop TABLE list_part;
+drop table list_part;
 
-create function explain_parallel_append(TEXT)
-returns setof TEXT
+create function explain_parallel_append(text)
+returns setof text
 language plpgsql
 as $function$
 declare
@@ -1078,8 +1078,8 @@ end;
 $function$;
 
 prepare ab_q4
-(INT,
-INT)
+(int,
+int)
 as select
   AVG(a)
 from
@@ -1098,9 +1098,9 @@ set max_parallel_workers_per_gather = 2;
 select explain_parallel_append('execute ab_q4 (2, 2)');
 
 prepare ab_q5
-(INT,
-INT,
-INT)
+(int,
+int,
+int)
 as select
   AVG(a)
 from
@@ -1119,7 +1119,7 @@ select
     'select count(*) from ab where (a = (select 1) or a = (select 3)) and b = 2'
   );
 
-create table lprt_a (a INT not null);
+create table lprt_a (a int not null);
 
 insert into lprt_a select 0 from generate_series(1, 100);
 
@@ -1229,8 +1229,8 @@ where
   b = (select 1);
 
 create table xy_1 (
-  x INT,
-  y INT
+  x int,
+  y int
 );
 
 insert into xy_1 values (100, -10);
@@ -1245,21 +1245,21 @@ as select
 from
   (
     select
-      cast(tableoid as REGCLASS),
+      cast(tableoid as regclass),
       a,
       b
     from
       ab
     union all
     select
-      cast(tableoid as REGCLASS),
+      cast(tableoid as regclass),
       x,
       y
     from
       xy_1
     union all
     select
-      cast(tableoid as REGCLASS),
+      cast(tableoid as regclass),
       a,
       b
     from
@@ -1310,15 +1310,15 @@ select
 update ab_a1 set b = 3 from ab_a2 where ab_a2.b = (select 1);'
   );
 
-select cast(tableoid as REGCLASS), * from ab;
+select cast(tableoid as regclass), * from ab;
 
-drop TABLE ab, lprt_a;
+drop table ab, lprt_a;
 
-create table tbl1 (col1 INT);
+create table tbl1 (col1 int);
 
 insert into tbl1 values (501), (505);
 
-create table tprt (col1 INT)
+create table tprt (col1 int)
 partition by range(col1);
 
 create table tprt_1 partition of tprt for values from (1) to (501);
@@ -1439,51 +1439,51 @@ from
 order by tbl1.col1,
   tprt.col1;
 
-drop TABLE tbl1, tprt;
+drop table tbl1, tprt;
 
 create table part_abc (
-  a INT not null,
-  b INT not null,
-  c INT not null
+  a int not null,
+  b int not null,
+  c int not null
 )
 partition by LIST(a);
 
 create table part_bac (
-  b INT not null,
-  a INT not null,
-  c INT not null
+  b int not null,
+  a int not null,
+  c int not null
 )
 partition by LIST(b);
 
 create table part_cab (
-  c INT not null,
-  a INT not null,
-  b INT not null
+  c int not null,
+  a int not null,
+  b int not null
 )
 partition by LIST(c);
 
 create table part_abc_p1 (
-  a INT not null,
-  b INT not null,
-  c INT not null
+  a int not null,
+  b int not null,
+  c int not null
 );
 
 alter table part_abc
-  ATTACH partition
+  attach partition
   part_bac for values in (1);
 
 alter table part_bac
-  ATTACH partition
+  attach partition
   part_cab for values in (2);
 
 alter table part_cab
-  ATTACH partition
+  attach partition
   part_abc_p1 for values in (3);
 
 prepare part_abc_q1
-(INT,
-INT,
-INT)
+(int,
+int,
+int)
 as select
   *
 from
@@ -1496,11 +1496,11 @@ execute part_abc_q1 (1, 2, 3);
 
 deallocate part_abc_q1;
 
-drop TABLE part_abc;
+drop table part_abc;
 
 create table listp (
-  a INT,
-  b INT
+  a int,
+  b int
 )
 partition by LIST(a);
 
@@ -1514,7 +1514,7 @@ create table listp_2_1 partition of listp_2 for values in (2);
 
 select * from listp where b = 1;
 
-prepare q1 (INT, INT) as select * from listp where b in ($1, $2);;
+prepare q1 (int, int) as select * from listp where b in ($1, $2);;
 
 explain (ANALYZE, COSTS 'off', SUMMARY 'off', TIMING 'off', BUFFERS 'off')
 execute q1 (1, 1);
@@ -1528,10 +1528,10 @@ execute q1 (0, 0);
 deallocate q1;
 
 prepare q1
-(INT,
-INT,
-INT,
-INT)
+(int,
+int,
+int,
+int)
 as select
   *
 from
@@ -1545,11 +1545,11 @@ execute q1 (1, 2, 2, 0);
 explain (ANALYZE, COSTS 'off', SUMMARY 'off', TIMING 'off', BUFFERS 'off')
 execute q1 (1, 2, 2, 1);
 
-select * from listp where a = (select cast(null as INT));
+select * from listp where a = (select cast(null as int));
 
-drop TABLE listp;
+drop table listp;
 
-create table stable_qual_pruning (a TIMESTAMP)
+create table stable_qual_pruning (a timestamp)
 partition by range(a);
 
 create table stable_qual_pruning1
@@ -1573,7 +1573,7 @@ from
 where
   a <
   cast('2000-02-01'
-  as timestamp with time ZONE);
+  as timestamp with time zone);
 
 select
   *
@@ -1581,7 +1581,7 @@ from
   stable_qual_pruning
 where
   a = any (cast(array['2010-02-01', '2020-01-01']
-  as TIMESTAMP[]));
+  as timestamp[]));
 
 select
   *
@@ -1589,7 +1589,7 @@ from
   stable_qual_pruning
 where
   a = any (cast(array['2000-02-01', '2010-01-01']
-  as TIMESTAMP[]));
+  as timestamp[]));
 
 select
   *
@@ -1597,7 +1597,7 @@ from
   stable_qual_pruning
 where
   a = any (cast(array['2000-02-01', localtimestamp]
-  as TIMESTAMP[]));
+  as timestamp[]));
 
 select
   *
@@ -1605,7 +1605,7 @@ from
   stable_qual_pruning
 where
   a = any (cast(array['2010-02-01', '2020-01-01']
-  as timestamp with time ZONE[]));
+  as timestamp with time zone[]));
 
 select
   *
@@ -1613,21 +1613,21 @@ from
   stable_qual_pruning
 where
   a = any (cast(array['2000-02-01', '2010-01-01']
-  as timestamp with time ZONE[]));
+  as timestamp with time zone[]));
 
 select
   *
 from
   stable_qual_pruning
 where
-  a = any (cast(null as timestamp with time ZONE[]));
+  a = any (cast(null as timestamp with time zone[]));
 
-drop TABLE stable_qual_pruning;
+drop table stable_qual_pruning;
 
 create table mc3p (
-  a INT,
-  b INT,
-  c INT
+  a int,
+  b int,
+  c int
 )
 partition by range(a, (abs(b)), c);
 
@@ -1673,13 +1673,13 @@ execute ps2 (1);
 
 deallocate ps2;
 
-drop TABLE mc3p;
+drop table mc3p;
 
-create table boolvalues (value BOOLEAN not null);
+create table boolvalues (value boolean not null);
 
 insert into boolvalues values ('t'), ('f');
 
-create table boolp (a BOOLEAN)
+create table boolp (a boolean)
 partition by LIST(a);
 
 create table boolp_t partition of boolp for values in ('t');
@@ -1690,15 +1690,15 @@ select * from boolp where a = (select value from boolvalues where value);
 
 select * from boolp where a = (select value from boolvalues where not value);
 
-drop TABLE boolp;
+drop table boolp;
 
 set enable_seqscan = off;
 
 set enable_sort = off;
 
 create table ma_test (
-  a INT,
-  b INT
+  a int,
+  b int
 )
 partition by range(a);
 
@@ -1715,7 +1715,7 @@ create index on ma_test using btree (b);
 analyze ma_test;
 
 prepare mt_q1
-(INT)
+(int)
 as select
   a
 from
@@ -1741,7 +1741,7 @@ execute mt_q1 (35);
 
 deallocate mt_q1;
 
-prepare mt_q2 (INT) as select * from ma_test where a >= $1 order by b limit 1;;
+prepare mt_q2 (int) as select * from ma_test where a >= $1 order by b limit 1;;
 
 explain (ANALYZE, VERBOSE, COSTS 'off', SUMMARY 'off', TIMING 'off', BUFFERS 'off')
 execute mt_q2 (35);
@@ -1754,11 +1754,11 @@ reset enable_seqscan;
 
 reset enable_sort;
 
-drop TABLE ma_test;
+drop table ma_test;
 
 reset enable_indexonlyscan;
 
-create table pp_arrpart (a INT[])
+create table pp_arrpart (a int[])
 partition by LIST(a);
 
 create table pp_arrpart1 partition of pp_arrpart for values in ('{1}');
@@ -1777,9 +1777,9 @@ update pp_arrpart set a = a where a = '{1}';
 
 delete from pp_arrpart where a = '{1}';
 
-drop TABLE pp_arrpart;
+drop table pp_arrpart;
 
-create table pph_arrpart (a INT[])
+create table pph_arrpart (a int[])
 partition by HASH(a);
 
 create table pph_arrpart1
@@ -1792,7 +1792,7 @@ for values with (MODULUS 2, REMAINDER 1);
 
 insert into pph_arrpart values ('{1}'), ('{1, 2}'), ('{4, 5}');
 
-select cast(tableoid as REGCLASS), * from pph_arrpart order by 1;
+select cast(tableoid as regclass), * from pph_arrpart order by 1;
 
 select * from pph_arrpart where a = '{1}';
 
@@ -1800,7 +1800,7 @@ select * from pph_arrpart where a = '{1, 2}';
 
 select * from pph_arrpart where a in ('{4, 5}', '{1}');
 
-drop TABLE pph_arrpart;
+drop table pph_arrpart;
 
 create type pp_colors as enum ('green', 'blue', 'black');
 
@@ -1815,11 +1815,11 @@ select * from pp_enumpart where a = 'blue';
 
 select * from pp_enumpart where a = 'black';
 
-drop TABLE pp_enumpart;
+drop table pp_enumpart;
 
-drop TYPE pp_colors;
+drop type pp_colors;
 
-create type pp_rectype as (a INT, b INT);
+create type pp_rectype as (a int, b int);
 
 create table pp_recpart (a pp_rectype)
 partition by LIST(a);
@@ -1832,11 +1832,11 @@ select * from pp_recpart where a = cast('(1,1)' as pp_rectype);
 
 select * from pp_recpart where a = cast('(1,2)' as pp_rectype);
 
-drop TABLE pp_recpart;
+drop table pp_recpart;
 
-drop TYPE pp_rectype;
+drop type pp_rectype;
 
-create table pp_intrangepart (a INT4RANGE)
+create table pp_intrangepart (a int4range)
 partition by LIST(a);
 
 create table pp_intrangepart12
@@ -1847,15 +1847,15 @@ create table pp_intrangepart2inf
 partition of pp_intrangepart
 for values in ('[2,)');
 
-select * from pp_intrangepart where a = cast('[1,2]' as INT4RANGE);
+select * from pp_intrangepart where a = cast('[1,2]' as int4range);
 
-select * from pp_intrangepart where a = cast('(1,2)' as INT4RANGE);
+select * from pp_intrangepart where a = cast('(1,2)' as int4range);
 
-drop TABLE pp_intrangepart;
+drop table pp_intrangepart;
 
 create table pp_lp (
-  a INT,
-  value INT
+  a int,
+  value int
 )
 partition by LIST(a);
 
@@ -1887,23 +1887,23 @@ update pp_lp set value = 10 where a = 1;
 
 delete from pp_lp where a = 1;
 
-drop TABLE pp_lp;
+drop table pp_lp;
 
 create table inh_lp (
-  a INT,
-  value INT
+  a int,
+  value int
 );
 
 create table inh_lp1 (
-  a INT,
-  value INT,
+  a int,
+  value int,
   check (a = 1)
 )
 inherits (inh_lp);
 
 create table inh_lp2 (
-  a INT,
-  value INT,
+  a int,
+  value int,
   check (a = 2)
 )
 inherits (inh_lp);
@@ -1918,13 +1918,13 @@ delete from inh_lp where a = 1;
 
 update inh_lp1 set value = 10 where a = 2;
 
-drop TABLE inh_lp cascade;
+drop table inh_lp cascade;
 
 reset enable_partition_pruning;
 
 reset constraint_exclusion;
 
-create temporary table pp_temp_parent (a INT)
+create temporary table pp_temp_parent (a int)
 partition by LIST(a);
 
 create temporary table pp_temp_part_1
@@ -1937,12 +1937,12 @@ select * from pp_temp_parent where true;
 
 select * from pp_temp_parent where a = 2;
 
-drop TABLE pp_temp_parent;
+drop table pp_temp_parent;
 
 create temporary table p (
-  a INT,
-  b INT,
-  c INT
+  a int,
+  b int,
+  c int
 )
 partition by LIST(a);
 
@@ -1951,9 +1951,9 @@ create temporary table p1 partition of p for values in (1);
 create temporary table p2 partition of p for values in (2);
 
 create temporary table q (
-  a INT,
-  b INT,
-  c INT
+  a int,
+  b int,
+  c int
 )
 partition by LIST(a);
 
@@ -2003,8 +2003,8 @@ where
   s.a = 1 and s.b = 1 and s.c = (select 1);
 
 prepare q
-(INT,
-INT)
+(int,
+int)
 as select
   *
 from
@@ -2025,11 +2025,11 @@ explain (COSTS 'off') execute q (1, 1);
 
 execute q (1, 1);
 
-drop TABLE p, q;
+drop table p, q;
 
 create table listp (
-  a INT,
-  b INT
+  a int,
+  b int
 )
 partition by LIST(a);
 
@@ -2059,13 +2059,13 @@ reset constraint_exclusion;
 
 reset enable_partition_pruning;
 
-drop TABLE listp;
+drop table listp;
 
 set parallel_setup_cost = 0;
 
 set parallel_tuple_cost = 0;
 
-create table listp (a INT)
+create table listp (a int)
 partition by LIST(a);
 
 create table listp_12
@@ -2089,7 +2089,7 @@ select
 select * from listp where a = (select 2);'
   );
 
-drop TABLE listp;
+drop table listp;
 
 reset parallel_tuple_cost;
 
@@ -2098,8 +2098,8 @@ reset parallel_setup_cost;
 set enable_sort = 0;
 
 create table rangep (
-  a INT,
-  b INT
+  a int,
+  b int
 )
 partition by range(a);
 
@@ -2124,11 +2124,11 @@ select * from rangep where b in ((select 1), (select 2)) order by a;
 
 reset enable_sort;
 
-drop TABLE rangep;
+drop table rangep;
 
 create table rp_prefix_test1 (
-  a INT,
-  b VARCHAR
+  a int,
+  b varchar
 )
 partition by range(a, b);
 
@@ -2143,9 +2143,9 @@ for values from (2, 'a') to (2, 'b');
 select * from rp_prefix_test1 where a <= 1 and b = 'a';
 
 create table rp_prefix_test2 (
-  a INT,
-  b INT,
-  c INT
+  a int,
+  b int,
+  c int
 )
 partition by range(a, b, c);
 
@@ -2160,10 +2160,10 @@ for values from (2, 2, 0) to (2, 2, 10);
 select * from rp_prefix_test2 where a <= 1 and b = 1 and c >= 0;
 
 create table rp_prefix_test3 (
-  a INT,
-  b INT,
-  c INT,
-  d INT
+  a int,
+  b int,
+  c int,
+  d int
 )
 partition by range(a, b, c, d);
 
@@ -2209,17 +2209,17 @@ where
   c = 2 and
   d >= 0;
 
-drop TABLE rp_prefix_test1;
+drop table rp_prefix_test1;
 
-drop TABLE rp_prefix_test2;
+drop table rp_prefix_test2;
 
-drop TABLE rp_prefix_test3;
+drop table rp_prefix_test3;
 
 create table hp_prefix_test (
-  a INT,
-  b INT,
-  c INT,
-  d INT
+  a int,
+  b int,
+  c int,
+  d int
 )
 partition by HASH(a part_test_int4_ops,
 b part_test_int4_ops,
@@ -2228,9 +2228,9 @@ d part_test_int4_ops);
 
 select
   'create table hp_prefix_test_p' ||
-  cast(x as TEXT) ||
+  cast(x as text) ||
   ' partition of hp_prefix_test for values with (modulus 8, remainder ' ||
-  cast(x as TEXT) ||
+  cast(x as text) ||
   ');'
 from
   generate_series(0, 7) as x;
@@ -2254,7 +2254,7 @@ select
     case
       when g.s & (1 << c.colpos) = 0
       then ' is null'
-      else ' = ' || cast(colpos + 1 as TEXT)
+      else ' = ' || cast(colpos + 1 as text)
     end,
     ' and ' order by c.colpos
   )
@@ -2278,7 +2278,7 @@ select
     case
       when g.s & (1 << c.colpos) = 0
       then ' is null'
-      else ' = ' || cast(colpos + 1 as TEXT)
+      else ' = ' || cast(colpos + 1 as text)
     end,
     ' and ' order by c.colpos
   )
@@ -2295,23 +2295,23 @@ from
 group by g.s
 order by g.s;
 
-drop TABLE hp_prefix_test;
+drop table hp_prefix_test;
 
-create operator === (LEFTARG = INT,
-RIGHTARG = INT,
+create operator === (LEFTARG = int,
+RIGHTARG = int,
 PROCEDURE = int4eq,
 COMMUTATOR = ===,
 HASHES);
 
-create OPERATOR class part_test_int4_ops2
-  for type INT
+create operator class part_test_int4_ops2
+  for type int
   using hash
-  as OPERATOR 1 ===,
-  FUNCTION 2 part_hashint4_noop(INT, BIGINT);
+  as operator 1 ===,
+  function 2 part_hashint4_noop(int, bigint);
 
 create table hp_contradict_test (
-  a INT,
-  b INT
+  a int,
+  b int
 )
 partition by HASH(a part_test_int4_ops2,
 b part_test_int4_ops2);
@@ -2328,39 +2328,39 @@ select * from hp_contradict_test where a is null and a === 1 and b === 1;
 
 select * from hp_contradict_test where a === 1 and b === 1 and a is null;
 
-drop TABLE hp_contradict_test;
+drop table hp_contradict_test;
 
-drop OPERATOR CLASS part_test_int4_ops2 USING hash;
+drop operator class part_test_int4_ops2 using hash;
 
-drop OPERATOR === (INT, INT);
+drop operator === (int, int);
 
-drop FUNCTION explain_analyze(TEXT);
+drop function explain_analyze(text);
 
 create table part_abc (
-  a INT,
-  b TEXT,
-  c BOOLEAN
+  a int,
+  b text,
+  c boolean
 )
 partition by LIST(a);
 
 create table part_abc_1 (
-  b TEXT,
-  a INT,
-  c BOOLEAN
+  b text,
+  a int,
+  c boolean
 );
 
 create table part_abc_2 (
-  a INT,
-  c BOOLEAN,
-  b TEXT
+  a int,
+  c boolean,
+  b text
 );
 
 alter table part_abc
-  ATTACH partition
+  attach partition
   part_abc_1 for values in (1);
 
 alter table part_abc
-  ATTACH partition
+  attach partition
   part_abc_2 for values in (2);
 
 insert into part_abc values (1, 'b', true);
@@ -2388,7 +2388,7 @@ execute update_part_abc_view (3, 'a');
 deallocate update_part_abc_view;
 
 create function stable_one()
-returns INT
+returns int
 as $function$ begin return 1; end; $function$
 language plpgsql
 stable;
@@ -2406,10 +2406,10 @@ rollback;
 begin;
 
 create table part_abc_log (
-  action TEXT,
-  a INT,
-  b TEXT,
-  c BOOLEAN
+  action text,
+  a int,
+  b text,
+  c boolean
 );
 
 with
@@ -2421,7 +2421,7 @@ as (
     part_abc_2 as pt2
   on q.pid = pt2.a
   on pt.a = stable_one() + 2
-  when not matched by TARGET
+  when not matched by target
   then insert
   values (1, 'd', false)
   returning "mergesupport#25",
@@ -2440,7 +2440,7 @@ as (
     part_abc_2 as pt2
   on q.pid = pt2.a
   on pt.a = stable_one() + 2
-  when not matched by TARGET
+  when not matched by target
   then insert
   values (1, 'd', false)
   returning "mergesupport#25",
@@ -2459,7 +2459,7 @@ rollback;
 create index on part_abc using btree (a);
 
 alter table part_abc
-  add column d INT;
+  add column d int;
 
 create table part_abc_3
 partition of part_abc
@@ -2492,6 +2492,6 @@ where
   a >= stable_one() + 1 and
   d >= stable_one();
 
-drop VIEW part_abc_view;
+drop view part_abc_view;
 
-drop TABLE part_abc;
+drop table part_abc;

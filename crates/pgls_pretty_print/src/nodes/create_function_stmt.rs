@@ -261,15 +261,21 @@ pub(super) fn format_function_option(
             if let Some(ref arg) = d.arg {
                 if let Some(pgls_query::NodeEnum::Boolean(b)) = &arg.node {
                     if b.boolval {
-                        e.token(TokenKind::IDENT("STRICT".to_string()));
+                        e.token(TokenKind::STRICT_KW);
                     } else {
-                        e.token(TokenKind::IDENT("CALLED ON NULL INPUT".to_string()));
+                        e.token(TokenKind::CALLED_KW);
+                        e.space();
+                        e.token(TokenKind::ON_KW);
+                        e.space();
+                        e.token(TokenKind::NULL);
+                        e.space();
+                        e.token(TokenKind::INPUT_KW);
                     }
                 } else {
-                    e.token(TokenKind::IDENT("STRICT".to_string()));
+                    e.token(TokenKind::STRICT_KW);
                 }
             } else {
-                e.token(TokenKind::IDENT("STRICT".to_string()));
+                e.token(TokenKind::STRICT_KW);
             }
         }
         "security" => {
@@ -278,9 +284,9 @@ pub(super) fn format_function_option(
             if let Some(ref arg) = d.arg {
                 if let Some(pgls_query::NodeEnum::Boolean(b)) = &arg.node {
                     if b.boolval {
-                        e.token(TokenKind::IDENT("DEFINER".to_string()));
+                        e.token(TokenKind::DEFINER_KW);
                     } else {
-                        e.token(TokenKind::IDENT("INVOKER".to_string()));
+                        e.token(TokenKind::INVOKER_KW);
                     }
                 } else {
                     super::emit_node(arg, e);
@@ -293,7 +299,9 @@ pub(super) fn format_function_option(
                     if b.boolval {
                         e.token(TokenKind::LEAKPROOF_KW);
                     } else {
-                        e.token(TokenKind::IDENT("NOT LEAKPROOF".to_string()));
+                        e.token(TokenKind::NOT_KW);
+                        e.space();
+                        e.token(TokenKind::LEAKPROOF_KW);
                     }
                 } else {
                     e.token(TokenKind::LEAKPROOF_KW);
@@ -329,7 +337,7 @@ pub(super) fn format_function_option(
             }
         }
         "support" => {
-            e.token(TokenKind::IDENT("SUPPORT".to_string()));
+            e.token(TokenKind::IDENT("support".to_string()));
             e.space();
             if let Some(ref arg) = d.arg {
                 super::emit_node(arg, e);

@@ -4,7 +4,7 @@ input_file: crates/pgls_pretty_print/tests/data/single/nested_dollar_quotes_0.sq
 snapshot_kind: text
 ---
 create function test_nested()
-returns VOID
+returns void
 language plpgsql
 as $function$
 BEGIN

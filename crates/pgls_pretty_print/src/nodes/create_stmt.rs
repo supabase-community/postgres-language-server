@@ -16,7 +16,7 @@ fn emit_typed_table_column_override(e: &mut EventEmitter, item: &pgls_query::pro
         e.space();
         e.token(TokenKind::WITH_KW);
         e.space();
-        e.token(TokenKind::IDENT("OPTIONS".to_string()));
+        e.token(TokenKind::OPTIONS_KW);
 
         // Emit constraints (e.g., GENERATED ALWAYS AS ... STORED)
         for constraint in &col.constraints {

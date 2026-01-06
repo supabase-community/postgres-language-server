@@ -4,59 +4,59 @@ input_file: crates/pgls_pretty_print/tests/data/multi/plpgsql.sql
 snapshot_kind: text
 ---
 create table room (
-  roomno CHAR(8),
-  comment TEXT
+  roomno char(8),
+  comment text
 );
 
 create unique index "room_rno" on room using btree (roomno bpchar_ops);
 
 create table wslot (
-  slotname CHAR(20),
-  roomno CHAR(8),
-  slotlink CHAR(20),
-  backlink CHAR(20)
+  slotname char(20),
+  roomno char(8),
+  slotlink char(20),
+  backlink char(20)
 );
 
 create unique index "wslot_name" on wslot using btree (slotname bpchar_ops);
 
 create table pfield (
-  name TEXT,
-  comment TEXT
+  name text,
+  comment text
 );
 
 create unique index "pfield_name" on pfield using btree (name text_ops);
 
 create table pslot (
-  slotname CHAR(20),
-  pfname TEXT,
-  slotlink CHAR(20),
-  backlink CHAR(20)
+  slotname char(20),
+  pfname text,
+  slotlink char(20),
+  backlink char(20)
 );
 
 create unique index "pslot_name" on pslot using btree (slotname bpchar_ops);
 
 create table pline (
-  slotname CHAR(20),
-  phonenumber CHAR(20),
-  comment TEXT,
-  backlink CHAR(20)
+  slotname char(20),
+  phonenumber char(20),
+  comment text,
+  backlink char(20)
 );
 
 create unique index "pline_name" on pline using btree (slotname bpchar_ops);
 
 create table hub (
-  name CHAR(14),
-  comment TEXT,
-  nslots INT
+  name char(14),
+  comment text,
+  nslots int
 );
 
 create unique index "hub_name" on hub using btree (name bpchar_ops);
 
 create table hslot (
-  slotname CHAR(20),
-  hubname CHAR(14),
-  slotno INT,
-  slotlink CHAR(20)
+  slotname char(20),
+  hubname char(14),
+  slotno int,
+  slotlink char(20)
 );
 
 create unique index "hslot_name" on hslot using btree (slotname bpchar_ops);
@@ -64,25 +64,25 @@ create unique index "hslot_name" on hslot using btree (slotname bpchar_ops);
 create index "hslot_hubname" on hslot using btree (hubname bpchar_ops);
 
 create table system (
-  name TEXT,
-  comment TEXT
+  name text,
+  comment text
 );
 
 create unique index "system_name" on system using btree (name text_ops);
 
 create table iface (
-  slotname CHAR(20),
-  sysname TEXT,
-  ifname TEXT,
-  slotlink CHAR(20)
+  slotname char(20),
+  sysname text,
+  ifname text,
+  slotlink char(20)
 );
 
 create unique index "iface_name" on iface using btree (slotname bpchar_ops);
 
 create table phone (
-  slotname CHAR(20),
-  comment TEXT,
-  slotlink CHAR(20)
+  slotname char(20),
+  comment text,
+  slotlink char(20)
 );
 
 create unique index "phone_name" on phone using btree (slotname bpchar_ops);
@@ -99,7 +99,7 @@ end;
 $function$
 language plpgsql;
 
-create TRIGGER tg_room_au after update on room for EACH ROW EXECUTE FUNCTION tg_room_au();
+create trigger tg_room_au after update on room for each row execute function tg_room_au();
 
 create function tg_room_ad()
 returns trigger
@@ -111,7 +111,7 @@ end;
 $function$
 language plpgsql;
 
-create TRIGGER tg_room_ad after delete on room for EACH ROW EXECUTE FUNCTION tg_room_ad();
+create trigger tg_room_ad after delete on room for each row execute function tg_room_ad();
 
 create function tg_wslot_biu()
 returns trigger
@@ -125,11 +125,11 @@ end;
 $function$
 language plpgsql;
 
-create TRIGGER tg_wslot_biu
+create trigger tg_wslot_biu
 before insert or update
 on wslot
-for EACH ROW
-EXECUTE FUNCTION tg_wslot_biu();
+for each row
+execute function tg_wslot_biu();
 
 create function tg_pfield_au()
 returns trigger
@@ -143,7 +143,7 @@ end;
 $function$
 language plpgsql;
 
-create TRIGGER tg_pfield_au after update on pfield for EACH ROW EXECUTE FUNCTION tg_pfield_au();
+create trigger tg_pfield_au after update on pfield for each row execute function tg_pfield_au();
 
 create function tg_pfield_ad()
 returns trigger
@@ -155,7 +155,7 @@ end;
 $function$
 language plpgsql;
 
-create TRIGGER tg_pfield_ad after delete on pfield for EACH ROW EXECUTE FUNCTION tg_pfield_ad();
+create trigger tg_pfield_ad after delete on pfield for each row execute function tg_pfield_ad();
 
 create function tg_pslot_biu()
 returns trigger
@@ -173,11 +173,11 @@ end;
 $function$
 language plpgsql;
 
-create TRIGGER tg_pslot_biu
+create trigger tg_pslot_biu
 before insert or update
 on pslot
-for EACH ROW
-EXECUTE FUNCTION tg_pslot_biu();
+for each row
+execute function tg_pslot_biu();
 
 create function tg_system_au()
 returns trigger
@@ -191,7 +191,7 @@ end;
 $function$
 language plpgsql;
 
-create TRIGGER tg_system_au after update on system for EACH ROW EXECUTE FUNCTION tg_system_au();
+create trigger tg_system_au after update on system for each row execute function tg_system_au();
 
 create function tg_iface_biu()
 returns trigger
@@ -216,11 +216,11 @@ end;
 $function$
 language plpgsql;
 
-create TRIGGER tg_iface_biu
+create trigger tg_iface_biu
 before insert or update
 on iface
-for EACH ROW
-EXECUTE FUNCTION tg_iface_biu();
+for each row
+execute function tg_iface_biu();
 
 create function tg_hub_a()
 returns trigger
@@ -248,14 +248,14 @@ end;
 $function$
 language plpgsql;
 
-create TRIGGER tg_hub_a
+create trigger tg_hub_a
 after insert or delete or update
 on hub
-for EACH ROW
-EXECUTE FUNCTION tg_hub_a();
+for each row
+execute function tg_hub_a();
 
-create function tg_hub_adjustslots(hname CHAR, oldnslots INT, newnslots INT)
-returns INT
+create function tg_hub_adjustslots(hname char, oldnslots int, newnslots int)
+returns int
 as $function$
 begin
     if newnslots = oldnslots then
@@ -274,11 +274,11 @@ end
 $function$
 language plpgsql;
 
-comment on function tg_hub_adjustslots_wrong(CHAR, INT, INT) is 'function with args';
+comment on function tg_hub_adjustslots_wrong(char, int, int) is 'function with args';
 
-comment on function tg_hub_adjustslots(CHAR, INT, INT) is 'function with args';
+comment on function tg_hub_adjustslots(char, int, int) is 'function with args';
 
-comment on function tg_hub_adjustslots(CHAR, INT, INT) is null;
+comment on function tg_hub_adjustslots(char, int, int) is null;
 
 create function tg_hslot_biu()
 returns trigger
@@ -312,11 +312,11 @@ end;
 $function$
 language plpgsql;
 
-create TRIGGER tg_hslot_biu
+create trigger tg_hslot_biu
 before insert or update
 on hslot
-for EACH ROW
-EXECUTE FUNCTION tg_hslot_biu();
+for each row
+execute function tg_hslot_biu();
 
 create function tg_hslot_bd()
 returns trigger
@@ -336,7 +336,7 @@ end;
 $function$
 language plpgsql;
 
-create TRIGGER tg_hslot_bd before delete on hslot for EACH ROW EXECUTE FUNCTION tg_hslot_bd();
+create trigger tg_hslot_bd before delete on hslot for each row execute function tg_hslot_bd();
 
 create function tg_chkslotname()
 returns trigger
@@ -350,35 +350,35 @@ end;
 $function$
 language plpgsql;
 
-create TRIGGER tg_chkslotname
+create trigger tg_chkslotname
 before insert
 on pslot
-for EACH ROW
-EXECUTE FUNCTION tg_chkslotname("PS");
+for each row
+execute function tg_chkslotname("PS");
 
-create TRIGGER tg_chkslotname
+create trigger tg_chkslotname
 before insert
 on wslot
-for EACH ROW
-EXECUTE FUNCTION tg_chkslotname("WS");
+for each row
+execute function tg_chkslotname("WS");
 
-create TRIGGER tg_chkslotname
+create trigger tg_chkslotname
 before insert
 on pline
-for EACH ROW
-EXECUTE FUNCTION tg_chkslotname("PL");
+for each row
+execute function tg_chkslotname("PL");
 
-create TRIGGER tg_chkslotname
+create trigger tg_chkslotname
 before insert
 on iface
-for EACH ROW
-EXECUTE FUNCTION tg_chkslotname("IF");
+for each row
+execute function tg_chkslotname("IF");
 
-create TRIGGER tg_chkslotname
+create trigger tg_chkslotname
 before insert
 on phone
-for EACH ROW
-EXECUTE FUNCTION tg_chkslotname("PH");
+for each row
+execute function tg_chkslotname("PH");
 
 create function tg_chkslotlink()
 returns trigger
@@ -392,35 +392,35 @@ end;
 $function$
 language plpgsql;
 
-create TRIGGER tg_chkslotlink
+create trigger tg_chkslotlink
 before insert or update
 on pslot
-for EACH ROW
-EXECUTE FUNCTION tg_chkslotlink();
+for each row
+execute function tg_chkslotlink();
 
-create TRIGGER tg_chkslotlink
+create trigger tg_chkslotlink
 before insert or update
 on wslot
-for EACH ROW
-EXECUTE FUNCTION tg_chkslotlink();
+for each row
+execute function tg_chkslotlink();
 
-create TRIGGER tg_chkslotlink
+create trigger tg_chkslotlink
 before insert or update
 on iface
-for EACH ROW
-EXECUTE FUNCTION tg_chkslotlink();
+for each row
+execute function tg_chkslotlink();
 
-create TRIGGER tg_chkslotlink
+create trigger tg_chkslotlink
 before insert or update
 on hslot
-for EACH ROW
-EXECUTE FUNCTION tg_chkslotlink();
+for each row
+execute function tg_chkslotlink();
 
-create TRIGGER tg_chkslotlink
+create trigger tg_chkslotlink
 before insert or update
 on phone
-for EACH ROW
-EXECUTE FUNCTION tg_chkslotlink();
+for each row
+execute function tg_chkslotlink();
 
 create function tg_chkbacklink()
 returns trigger
@@ -434,23 +434,23 @@ end;
 $function$
 language plpgsql;
 
-create TRIGGER tg_chkbacklink
+create trigger tg_chkbacklink
 before insert or update
 on pslot
-for EACH ROW
-EXECUTE FUNCTION tg_chkbacklink();
+for each row
+execute function tg_chkbacklink();
 
-create TRIGGER tg_chkbacklink
+create trigger tg_chkbacklink
 before insert or update
 on wslot
-for EACH ROW
-EXECUTE FUNCTION tg_chkbacklink();
+for each row
+execute function tg_chkbacklink();
 
-create TRIGGER tg_chkbacklink
+create trigger tg_chkbacklink
 before insert or update
 on pline
-for EACH ROW
-EXECUTE FUNCTION tg_chkbacklink();
+for each row
+execute function tg_chkbacklink();
 
 create function tg_pslot_bu()
 returns trigger
@@ -476,7 +476,7 @@ end;
 $function$
 language plpgsql;
 
-create TRIGGER tg_pslot_bu before update on pslot for EACH ROW EXECUTE FUNCTION tg_pslot_bu();
+create trigger tg_pslot_bu before update on pslot for each row execute function tg_pslot_bu();
 
 create function tg_wslot_bu()
 returns trigger
@@ -502,7 +502,7 @@ end;
 $function$
 language plpgsql;
 
-create TRIGGER tg_wslot_bu before update on wslot for EACH ROW EXECUTE FUNCTION tg_wslot_bu();
+create trigger tg_wslot_bu before update on wslot for each row execute function tg_wslot_bu();
 
 create function tg_pline_bu()
 returns trigger
@@ -528,7 +528,7 @@ end;
 $function$
 language plpgsql;
 
-create TRIGGER tg_pline_bu before update on pline for EACH ROW EXECUTE FUNCTION tg_pline_bu();
+create trigger tg_pline_bu before update on pline for each row execute function tg_pline_bu();
 
 create function tg_iface_bu()
 returns trigger
@@ -554,7 +554,7 @@ end;
 $function$
 language plpgsql;
 
-create TRIGGER tg_iface_bu before update on iface for EACH ROW EXECUTE FUNCTION tg_iface_bu();
+create trigger tg_iface_bu before update on iface for each row execute function tg_iface_bu();
 
 create function tg_hslot_bu()
 returns trigger
@@ -580,7 +580,7 @@ end;
 $function$
 language plpgsql;
 
-create TRIGGER tg_hslot_bu before update on hslot for EACH ROW EXECUTE FUNCTION tg_hslot_bu();
+create trigger tg_hslot_bu before update on hslot for each row execute function tg_hslot_bu();
 
 create function tg_phone_bu()
 returns trigger
@@ -604,7 +604,7 @@ end;
 $function$
 language plpgsql;
 
-create TRIGGER tg_phone_bu before update on phone for EACH ROW EXECUTE FUNCTION tg_phone_bu();
+create trigger tg_phone_bu before update on phone for each row execute function tg_phone_bu();
 
 create function tg_backlink_a()
 returns trigger
@@ -643,26 +643,26 @@ end;
 $function$
 language plpgsql;
 
-create TRIGGER tg_backlink_a
+create trigger tg_backlink_a
 after insert or delete or update
 on pslot
-for EACH ROW
-EXECUTE FUNCTION tg_backlink_a("PS");
+for each row
+execute function tg_backlink_a("PS");
 
-create TRIGGER tg_backlink_a
+create trigger tg_backlink_a
 after insert or delete or update
 on wslot
-for EACH ROW
-EXECUTE FUNCTION tg_backlink_a("WS");
+for each row
+execute function tg_backlink_a("WS");
 
-create TRIGGER tg_backlink_a
+create trigger tg_backlink_a
 after insert or delete or update
 on pline
-for EACH ROW
-EXECUTE FUNCTION tg_backlink_a("PL");
+for each row
+execute function tg_backlink_a("PL");
 
-create function tg_backlink_set(myname CHAR, blname CHAR)
-returns INT
+create function tg_backlink_set(myname char, blname char)
+returns int
 as $function$
 declare
     mytype	char(2);
@@ -714,8 +714,8 @@ end;
 $function$
 language plpgsql;
 
-create function tg_backlink_unset(CHAR, CHAR)
-returns INT
+create function tg_backlink_unset(char, char)
+returns int
 as $function$
 declare
     myname	alias for $1;
@@ -795,38 +795,38 @@ end;
 $function$
 language plpgsql;
 
-create TRIGGER tg_slotlink_a
+create trigger tg_slotlink_a
 after insert or delete or update
 on pslot
-for EACH ROW
-EXECUTE FUNCTION tg_slotlink_a("PS");
+for each row
+execute function tg_slotlink_a("PS");
 
-create TRIGGER tg_slotlink_a
+create trigger tg_slotlink_a
 after insert or delete or update
 on wslot
-for EACH ROW
-EXECUTE FUNCTION tg_slotlink_a("WS");
+for each row
+execute function tg_slotlink_a("WS");
 
-create TRIGGER tg_slotlink_a
+create trigger tg_slotlink_a
 after insert or delete or update
 on iface
-for EACH ROW
-EXECUTE FUNCTION tg_slotlink_a("IF");
+for each row
+execute function tg_slotlink_a("IF");
 
-create TRIGGER tg_slotlink_a
+create trigger tg_slotlink_a
 after insert or delete or update
 on hslot
-for EACH ROW
-EXECUTE FUNCTION tg_slotlink_a("HS");
+for each row
+execute function tg_slotlink_a("HS");
 
-create TRIGGER tg_slotlink_a
+create trigger tg_slotlink_a
 after insert or delete or update
 on phone
-for EACH ROW
-EXECUTE FUNCTION tg_slotlink_a("PH");
+for each row
+execute function tg_slotlink_a("PH");
 
-create function tg_slotlink_set(CHAR, CHAR)
-returns INT
+create function tg_slotlink_set(char, char)
+returns int
 as $function$
 declare
     myname	alias for $1;
@@ -908,8 +908,8 @@ end;
 $function$
 language plpgsql;
 
-create function tg_slotlink_unset(CHAR, CHAR)
-returns INT
+create function tg_slotlink_unset(char, char)
+returns int
 as $function$
 declare
     myname	alias for $1;
@@ -972,8 +972,8 @@ end;
 $function$
 language plpgsql;
 
-create function pslot_backlink_view(CHAR)
-returns TEXT
+create function pslot_backlink_view(char)
+returns text
 as $function$
 <<outer>>
 declare
@@ -1015,8 +1015,8 @@ end;
 $function$
 language plpgsql;
 
-create function pslot_slotlink_view(CHAR)
-returns TEXT
+create function pslot_slotlink_view(char)
+returns text
 as $function$
 declare
     psrec	record;
@@ -1049,8 +1049,8 @@ end;
 $function$
 language plpgsql;
 
-create function wslot_slotlink_view(CHAR)
-returns TEXT
+create function wslot_slotlink_view(char)
+returns text
 as $function$
 declare
     rec		record;
@@ -1484,8 +1484,8 @@ insert into iface values ('IF', 'notthere', 'eth0', '');
 
 insert into iface values ('IF', 'orion', 'ethernet_interface_name_too_long', '');
 
-create function recursion_test(INT, INT)
-returns TEXT
+create function recursion_test(int, int)
+returns text
 as $function$
 DECLARE rslt text;
 BEGIN
@@ -1500,10 +1500,10 @@ language plpgsql;
 
 select recursion_test(4, 3);
 
-create table found_test_tbl (a INT);
+create table found_test_tbl (a int);
 
 create function test_found()
-returns BOOLEAN
+returns boolean
 as $function$
   declare
   begin
@@ -1574,8 +1574,8 @@ language plpgsql;
 
 select * from test_table_func_row();
 
-create function test_ret_set_scalar(INT, INT)
-returns setof INT
+create function test_ret_set_scalar(int, int)
+returns setof int
 as $function$
 DECLARE
 	i int;
@@ -1589,8 +1589,8 @@ language plpgsql;
 
 select * from test_ret_set_scalar(1, 10);
 
-create function test_ret_set_rec_dyn(INT)
-returns setof RECORD
+create function test_ret_set_rec_dyn(int)
+returns setof record
 as $function$
 DECLARE
 	retval RECORD;
@@ -1608,12 +1608,12 @@ BEGIN
 END;$function$
 language plpgsql;
 
-select * from test_ret_set_rec_dyn(1500) as (a INT, b INT, c INT);
+select * from test_ret_set_rec_dyn(1500) as (a int, b int, c int);
 
-select * from test_ret_set_rec_dyn(5) as (a INT, b NUMERIC, c TEXT);
+select * from test_ret_set_rec_dyn(5) as (a int, b numeric, c text);
 
-create function test_ret_rec_dyn(INT)
-returns RECORD
+create function test_ret_rec_dyn(int)
+returns record
 as $function$
 DECLARE
 	retval RECORD;
@@ -1628,12 +1628,12 @@ BEGIN
 END;$function$
 language plpgsql;
 
-select * from test_ret_rec_dyn(1500) as (a INT, b INT, c INT);
+select * from test_ret_rec_dyn(1500) as (a int, b int, c int);
 
-select * from test_ret_rec_dyn(5) as (a INT, b NUMERIC, c TEXT);
+select * from test_ret_rec_dyn(5) as (a int, b numeric, c text);
 
-create function f1(x ANYELEMENT)
-returns ANYELEMENT
+create function f1(x anyelement)
+returns anyelement
 as $function$
 begin
   return x + 1;
@@ -1644,10 +1644,10 @@ select f1(42) as int, f1(4.5) as num;
 
 select f1(point(3, 4));
 
-drop FUNCTION f1(ANYELEMENT);
+drop function f1(anyelement);
 
-create function f1(x ANYELEMENT)
-returns ANYARRAY
+create function f1(x anyelement)
+returns anyarray
 as $function$
 begin
   return array[x + 1, x + 2];
@@ -1656,10 +1656,10 @@ language plpgsql;
 
 select f1(42) as int, f1(4.5) as num;
 
-drop FUNCTION f1(ANYELEMENT);
+drop function f1(anyelement);
 
-create function f1(x ANYARRAY)
-returns ANYELEMENT
+create function f1(x anyarray)
+returns anyelement
 as $function$
 begin
   return x[1];
@@ -1670,10 +1670,10 @@ select f1(array[2, 4]) as int, f1(array[4.5, 7.7]) as num;
 
 select f1(stavalues1) from pg_statistic;
 
-drop FUNCTION f1(ANYARRAY);
+drop function f1(anyarray);
 
-create function f1(x ANYARRAY)
-returns ANYARRAY
+create function f1(x anyarray)
+returns anyarray
 as $function$
 begin
   return x;
@@ -1684,18 +1684,18 @@ select f1(array[2, 4]) as int, f1(array[4.5, 7.7]) as num;
 
 select f1(stavalues1) from pg_statistic;
 
-drop FUNCTION f1(ANYARRAY);
+drop function f1(anyarray);
 
-create function f1(x ANYELEMENT)
-returns ANYRANGE
+create function f1(x anyelement)
+returns anyrange
 as $function$
 begin
   return array[x + 1, x + 2];
 end$function$
 language plpgsql;
 
-create function f1(x ANYRANGE)
-returns ANYARRAY
+create function f1(x anyrange)
+returns anyarray
 as $function$
 begin
   return array[lower(x), upper(x)];
@@ -1704,7 +1704,7 @@ language plpgsql;
 
 select f1(int4range(42, 49)) as int, f1(float8range(4.5, 7.8)) as num;
 
-drop FUNCTION f1(ANYRANGE);
+drop function f1(anyrange);
 
 create function f1(x anycompatible, y anycompatible)
 returns anycompatiblearray
@@ -1716,7 +1716,7 @@ language plpgsql;
 
 select f1(2, 4) as int, f1(2, 4.5) as num;
 
-drop FUNCTION f1(anycompatible, anycompatible);
+drop function f1(anycompatible, anycompatible);
 
 create function f1(x anycompatiblerange, y anycompatible, z anycompatible)
 returns anycompatiblearray
@@ -1727,14 +1727,14 @@ end$function$
 language plpgsql;
 
 select
-  f1(int4range(42, 49), 11, cast(2 as SMALLINT))
+  f1(int4range(42, 49), 11, cast(2 as smallint))
   as int,
-  f1(float8range(4.5, 7.8), 7.8, cast(11 as REAL))
+  f1(float8range(4.5, 7.8), 7.8, cast(11 as real))
   as num;
 
 select f1(int4range(42, 49), 11, 4.5) as fail;
 
-drop FUNCTION f1(anycompatiblerange, anycompatible, anycompatible);
+drop function f1(anycompatiblerange, anycompatible, anycompatible);
 
 create function f1(x anycompatible)
 returns anycompatiblerange
@@ -1754,15 +1754,15 @@ language plpgsql;
 
 select f1(int4range(42, 49), array[11]) as int, f1(float8range(4.5, 7.8), array[7]) as num;
 
-drop FUNCTION f1(anycompatiblerange, anycompatiblearray);
+drop function f1(anycompatiblerange, anycompatiblearray);
 
 create function
 f1(
-  a ANYELEMENT,
-  b ANYARRAY,
+  a anyelement,
+  b anyarray,
   c anycompatible,
   d anycompatible,
-  out x ANYARRAY,
+  out x anyarray,
   out y anycompatiblearray
 )
 as $function$
@@ -1780,17 +1780,17 @@ select x, pg_typeof(x), y, pg_typeof(y) from f1(11, '{1,2}', point(1, 2), '(3,4)
 
 select x, pg_typeof(x), y, pg_typeof(y) from f1(11, array[1, 2.2], 42, 34.5);
 
-drop FUNCTION f1(ANYELEMENT, ANYARRAY, anycompatible, anycompatible);
+drop function f1(anyelement, anyarray, anycompatible, anycompatible);
 
-create function f1(in i INT, out j INT)
-returns INT
+create function f1(in i int, out j int)
+returns int
 as $function$
 begin
   return i+1;
 end$function$
 language plpgsql;
 
-create function f1(in i INT, out j INT)
+create function f1(in i int, out j int)
 as $function$
 begin
   j := i+1;
@@ -1802,7 +1802,7 @@ select f1(42);
 
 select * from f1(42);
 
-create or replace function f1(inout i INT)
+create or replace function f1(inout i int)
 as $function$
 begin
   i := i+1;
@@ -1813,10 +1813,10 @@ select f1(42);
 
 select * from f1(42);
 
-drop FUNCTION f1(INT);
+drop function f1(int);
 
-create function f1(in i INT, out j INT)
-returns setof INT
+create function f1(in i int, out j int)
+returns setof int
 as $function$
 begin
   j := i+1;
@@ -1829,9 +1829,9 @@ language plpgsql;
 
 select * from f1(42);
 
-drop FUNCTION f1(INT);
+drop function f1(int);
 
-create function f1(in i INT, out j INT, out k TEXT)
+create function f1(in i int, out j int, out k text)
 as $function$
 begin
   j := i;
@@ -1844,10 +1844,10 @@ select f1(42);
 
 select * from f1(42);
 
-drop FUNCTION f1(INT);
+drop function f1(int);
 
-create function f1(in i INT, out j INT, out k TEXT)
-returns setof RECORD
+create function f1(in i int, out j int, out k text)
+returns setof record
 as $function$
 begin
   j := i+1;
@@ -1861,9 +1861,9 @@ language plpgsql;
 
 select * from f1(42);
 
-drop FUNCTION f1(INT);
+drop function f1(int);
 
-create function duplic(in i ANYELEMENT, out j ANYELEMENT, out k ANYARRAY)
+create function duplic(in i anyelement, out j anyelement, out k anyarray)
 as $function$
 begin
   j := i;
@@ -1874,9 +1874,9 @@ language plpgsql;
 
 select * from duplic(42);
 
-select * from duplic(cast('foo' as TEXT));
+select * from duplic(cast('foo' as text));
 
-drop FUNCTION duplic(ANYELEMENT);
+drop function duplic(anyelement);
 
 create function duplic(in i anycompatiblerange, out j anycompatible, out k anycompatiblearray)
 as $function$
@@ -1891,15 +1891,15 @@ select * from duplic(int4range(42, 49));
 
 select * from duplic(textrange('aaa', 'bbb'));
 
-drop FUNCTION duplic(anycompatiblerange);
+drop function duplic(anycompatiblerange);
 
 create table perform_test (
-  a INT,
-  b INT
+  a int,
+  b int
 );
 
-create function perform_simple_func(INT)
-returns BOOLEAN
+create function perform_simple_func(int)
+returns boolean
 as $function$
 BEGIN
 	IF $1 < 20 THEN
@@ -1912,7 +1912,7 @@ END;$function$
 language plpgsql;
 
 create function perform_test_func()
-returns VOID
+returns void
 as $function$
 BEGIN
 	IF FOUND then
@@ -1939,15 +1939,15 @@ select perform_test_func();
 
 select * from perform_test;
 
-drop TABLE perform_test;
+drop table perform_test;
 
 create temporary table users (
-  login TEXT,
+  login text,
   id serial
 );
 
-create function sp_id_user(a_login TEXT)
-returns INT
+create function sp_id_user(a_login text)
+returns int
 as $function$
 declare x int;
 begin
@@ -1964,8 +1964,8 @@ select sp_id_user('user1');
 
 select sp_id_user('userx');
 
-create function sp_add_user(a_login TEXT)
-returns INT
+create function sp_add_user(a_login text)
+returns int
 as $function$
 declare my_id_user int;
 begin
@@ -1992,13 +1992,13 @@ select sp_add_user('user3');
 
 select sp_add_user('user3');
 
-drop FUNCTION sp_add_user(TEXT);
+drop function sp_add_user(text);
 
-drop FUNCTION sp_id_user(TEXT);
+drop function sp_id_user(text);
 
 create table rc_test (
-  a INT,
-  b INT
+  a int,
+  b int
 );
 
 copy rc_test from stdout;
@@ -2016,7 +2016,7 @@ $function$
 language plpgsql;
 
 create function use_refcursor(rc refcursor)
-returns INT
+returns int
 as $function$
 declare
     rc refcursor;
@@ -2059,14 +2059,14 @@ fetch next from test1;
 
 select refcursor_test1('test2');
 
-fetch FORWARD all from test2;
+fetch forward all from test2;
 
 commit;
 
 fetch next from test1;
 
-create function refcursor_test2(INT, INT)
-returns BOOLEAN
+create function refcursor_test2(int, int)
+returns boolean
 as $function$
 declare
     c1 cursor (param1 int, param2 int) for select * from rc_test where a > param1 and b > param2;
@@ -2116,8 +2116,8 @@ language plpgsql;
 
 select constant_refcursor();
 
-create function namedparmcursor_test1(INT, INT)
-returns BOOLEAN
+create function namedparmcursor_test1(int, int)
+returns boolean
 as $function$
 declare
     c1 cursor (param1 int, param12 int) for select * from rc_test where a > param1 and b > param12;
@@ -2140,8 +2140,8 @@ select
   as "Should be false",
   namedparmcursor_test1(20, 20) as "Should be true";
 
-create function namedparmcursor_test2(INT, INT)
-returns BOOLEAN
+create function namedparmcursor_test2(int, int)
+returns boolean
 as $function$
 declare
     c1 cursor (param1 int, param2 int) for select * from rc_test where a > param1 and b > param2;
@@ -2162,7 +2162,7 @@ language plpgsql;
 select namedparmcursor_test2(20, 20);
 
 create function namedparmcursor_test3()
-returns VOID
+returns void
 as $function$
 declare
     c1 cursor (param1 int, param2 int) for select * from rc_test where a > param1 and b > param2;
@@ -2173,7 +2173,7 @@ $function$
 language plpgsql;
 
 create function namedparmcursor_test4()
-returns VOID
+returns void
 as $function$
 declare
     c1 cursor (param1 int, param2 int) for select * from rc_test where a > param1 and b > param2;
@@ -2184,7 +2184,7 @@ $function$
 language plpgsql;
 
 create function namedparmcursor_test5()
-returns VOID
+returns void
 as $function$
 declare
   c1 cursor (p1 int, p2 int) for
@@ -2196,7 +2196,7 @@ $function$
 language plpgsql;
 
 create function namedparmcursor_test6()
-returns VOID
+returns void
 as $function$
 declare
   c1 cursor (p1 int, p2 int) for
@@ -2208,7 +2208,7 @@ $function$
 language plpgsql;
 
 create function namedparmcursor_test7()
-returns VOID
+returns void
 as $function$
 declare
   c1 cursor (p1 int, p2 int) for
@@ -2221,7 +2221,7 @@ language plpgsql;
 select namedparmcursor_test7();
 
 create function namedparmcursor_test8()
-returns INT
+returns int
 as $function$
 declare
   c1 cursor (p1 int, p2 int) for
@@ -2237,8 +2237,8 @@ language plpgsql;
 
 select namedparmcursor_test8();
 
-create function namedparmcursor_test9(p1 INT)
-returns INT
+create function namedparmcursor_test9(p1 int)
+returns int
 as $function$
 declare
   c1 cursor (p1 int, p2 int, debug int) for
@@ -2256,8 +2256,8 @@ language plpgsql;
 
 select namedparmcursor_test9(6);
 
-create function raise_test1(INT)
-returns INT
+create function raise_test1(int)
+returns int
 as $function$
 begin
     raise notice 'This message has too many parameters!', $1;
@@ -2266,8 +2266,8 @@ end;
 $function$
 language plpgsql;
 
-create function raise_test2(INT)
-returns INT
+create function raise_test2(int)
+returns int
 as $function$
 begin
     raise notice 'This message has too few parameters: %, %, %', $1, $1;
@@ -2276,8 +2276,8 @@ end;
 $function$
 language plpgsql;
 
-create function raise_test3(INT)
-returns INT
+create function raise_test3(int)
+returns int
 as $function$
 begin
     raise notice 'This message has no parameters (despite having %% signs in it)!';
@@ -2289,7 +2289,7 @@ language plpgsql;
 select raise_test3(1);
 
 create function reraise_test()
-returns VOID
+returns void
 as $function$
 BEGIN
    BEGIN
@@ -2314,7 +2314,7 @@ language plpgsql;
 select reraise_test();
 
 create function bad_sql1()
-returns INT
+returns int
 as $function$
 declare a int;
 begin
@@ -2326,7 +2326,7 @@ end$function$
 language plpgsql;
 
 create function bad_sql2()
-returns INT
+returns int
 as $function$
 declare r record;
 begin
@@ -2338,7 +2338,7 @@ end;$function$
 language plpgsql;
 
 create function missing_return_expr()
-returns INT
+returns int
 as $function$
 begin
     return ;
@@ -2346,7 +2346,7 @@ end;$function$
 language plpgsql;
 
 create function void_return_expr()
-returns VOID
+returns void
 as $function$
 begin
     return 5;
@@ -2354,7 +2354,7 @@ end;$function$
 language plpgsql;
 
 create function void_return_expr()
-returns VOID
+returns void
 as $function$
 begin
     perform 2+2;
@@ -2364,7 +2364,7 @@ language plpgsql;
 select void_return_expr();
 
 create function missing_return_expr()
-returns INT
+returns int
 as $function$
 begin
     perform 2+2;
@@ -2373,19 +2373,19 @@ language plpgsql;
 
 select missing_return_expr();
 
-drop FUNCTION void_return_expr();
+drop function void_return_expr();
 
-drop FUNCTION missing_return_expr();
+drop function missing_return_expr();
 
 create table eifoo (
-  i INT,
-  y INT
+  i int,
+  y int
 );
 
-create type eitype as (i INT, y INT);
+create type eitype as (i int, y int);
 
-create or replace function execute_into_test(VARCHAR)
-returns RECORD
+create or replace function execute_into_test(varchar)
+returns record
 as $function$
 declare
     _r record;
@@ -2409,12 +2409,12 @@ language plpgsql;
 
 select execute_into_test('eifoo');
 
-drop TABLE eifoo cascade;
+drop table eifoo cascade;
 
-drop TYPE eitype cascade;
+drop type eitype cascade;
 
 create function excpt_test1()
-returns VOID
+returns void
 as $function$
 begin
     raise notice '% %', sqlstate, sqlerrm;
@@ -2424,7 +2424,7 @@ language plpgsql;
 select excpt_test1();
 
 create function excpt_test2()
-returns VOID
+returns void
 as $function$
 begin
     begin
@@ -2438,7 +2438,7 @@ language plpgsql;
 select excpt_test2();
 
 create function excpt_test3()
-returns VOID
+returns void
 as $function$
 begin
     begin
@@ -2463,7 +2463,7 @@ language plpgsql;
 select excpt_test3();
 
 create function excpt_test4()
-returns TEXT
+returns text
 as $function$
 begin
 	begin perform 1/0;
@@ -2473,16 +2473,16 @@ language plpgsql;
 
 select excpt_test4();
 
-drop FUNCTION excpt_test1();
+drop function excpt_test1();
 
-drop FUNCTION excpt_test2();
+drop function excpt_test2();
 
-drop FUNCTION excpt_test3();
+drop function excpt_test3();
 
-drop FUNCTION excpt_test4();
+drop function excpt_test4();
 
 create function raise_exprs()
-returns VOID
+returns void
 as $function$
 declare
     a integer[] = '{10,20,30}';
@@ -2496,10 +2496,10 @@ language plpgsql;
 
 select raise_exprs();
 
-drop FUNCTION raise_exprs();
+drop function raise_exprs();
 
-create function multi_datum_use(p1 INT)
-returns BOOLEAN
+create function multi_datum_use(p1 int)
+returns boolean
 as $function$
 declare
   x int;
@@ -2513,14 +2513,14 @@ language plpgsql;
 select multi_datum_use(42);
 
 create temporary table foo (
-  f1 INT,
-  f2 INT
+  f1 int,
+  f2 int
 );
 
 insert into foo values (1, 2), (3, 4);
 
 create or replace function stricttest()
-returns VOID
+returns void
 as $function$
 declare x record;
 begin
@@ -2533,7 +2533,7 @@ language plpgsql;
 select stricttest();
 
 create or replace function stricttest()
-returns VOID
+returns void
 as $function$
 declare x record;
 begin
@@ -2546,7 +2546,7 @@ language plpgsql;
 select stricttest();
 
 create or replace function stricttest()
-returns VOID
+returns void
 as $function$
 declare x record;
 begin
@@ -2559,7 +2559,7 @@ language plpgsql;
 select stricttest();
 
 create or replace function stricttest()
-returns VOID
+returns void
 as $function$
 declare x record;
 begin
@@ -2574,7 +2574,7 @@ select stricttest();
 select * from foo;
 
 create or replace function stricttest()
-returns VOID
+returns void
 as $function$
 declare x record;
 begin
@@ -2587,7 +2587,7 @@ language plpgsql;
 select stricttest();
 
 create or replace function stricttest()
-returns VOID
+returns void
 as $function$
 declare x record;
 begin
@@ -2600,7 +2600,7 @@ language plpgsql;
 select stricttest();
 
 create or replace function stricttest()
-returns VOID
+returns void
 as $function$
 declare x record;
 begin
@@ -2613,7 +2613,7 @@ language plpgsql;
 select stricttest();
 
 create or replace function stricttest()
-returns VOID
+returns void
 as $function$
 declare x record;
 begin
@@ -2626,7 +2626,7 @@ language plpgsql;
 select stricttest();
 
 create or replace function stricttest()
-returns VOID
+returns void
 as $function$
 declare x record;
 begin
@@ -2639,7 +2639,7 @@ language plpgsql;
 select stricttest();
 
 create or replace function stricttest()
-returns VOID
+returns void
 as $function$
 declare x record;
 begin
@@ -2651,12 +2651,12 @@ language plpgsql;
 
 select stricttest();
 
-drop FUNCTION stricttest();
+drop function stricttest();
 
 set plpgsql.print_strict_params = 'true';
 
 create or replace function stricttest()
-returns VOID
+returns void
 as $function$
 declare
 x record;
@@ -2672,7 +2672,7 @@ language plpgsql;
 select stricttest();
 
 create or replace function stricttest()
-returns VOID
+returns void
 as $function$
 declare
 x record;
@@ -2688,7 +2688,7 @@ language plpgsql;
 select stricttest();
 
 create or replace function stricttest()
-returns VOID
+returns void
 as $function$
 declare
 x record;
@@ -2704,7 +2704,7 @@ language plpgsql;
 select stricttest();
 
 create or replace function stricttest()
-returns VOID
+returns void
 as $function$
 declare x record;
 begin
@@ -2717,7 +2717,7 @@ language plpgsql;
 select stricttest();
 
 create or replace function stricttest()
-returns VOID
+returns void
 as $function$
 declare x record;
 begin
@@ -2730,7 +2730,7 @@ language plpgsql;
 select stricttest();
 
 create or replace function stricttest()
-returns VOID
+returns void
 as $function$
 declare x record;
 begin
@@ -2743,7 +2743,7 @@ language plpgsql;
 select stricttest();
 
 create or replace function stricttest()
-returns VOID
+returns void
 as $function$
 declare x record;
 begin
@@ -2756,7 +2756,7 @@ language plpgsql;
 select stricttest();
 
 create or replace function stricttest()
-returns VOID
+returns void
 as $function$
 -- override the global
 #print_strict_params off
@@ -2776,7 +2776,7 @@ select stricttest();
 reset plpgsql.print_strict_params;
 
 create or replace function stricttest()
-returns VOID
+returns void
 as $function$
 -- override the global
 #print_strict_params on
@@ -2803,9 +2803,9 @@ set plpgsql.extra_errors = 'none';
 
 set plpgsql.extra_warnings = shadowed_variables;
 
-create or replace function shadowtest(in1 INT)
+create or replace function shadowtest(in1 int)
 returns table (
-  out1 INT
+  out1 int
 )
 as $function$
 declare
@@ -2822,9 +2822,9 @@ set plpgsql.extra_warnings = shadowed_variables;
 
 select shadowtest(1);
 
-create or replace function shadowtest(in1 INT)
+create or replace function shadowtest(in1 int)
 returns table (
-  out1 INT
+  out1 int
 )
 as $function$
 declare
@@ -2837,10 +2837,10 @@ language plpgsql;
 
 select shadowtest(1);
 
-drop FUNCTION shadowtest(INT);
+drop function shadowtest(int);
 
 create or replace function shadowtest()
-returns VOID
+returns void
 as $function$
 declare
 f1 int;
@@ -2852,10 +2852,10 @@ begin
 end$function$
 language plpgsql;
 
-drop FUNCTION shadowtest();
+drop function shadowtest();
 
-create or replace function shadowtest(in1 INT)
-returns VOID
+create or replace function shadowtest(in1 int)
+returns void
 as $function$
 declare
 in1 int;
@@ -2867,10 +2867,10 @@ begin
 end$function$
 language plpgsql;
 
-drop FUNCTION shadowtest(INT);
+drop function shadowtest(int);
 
 create or replace function shadowtest()
-returns VOID
+returns void
 as $function$
 declare
 f1 int;
@@ -2879,12 +2879,12 @@ begin
 end$function$
 language plpgsql;
 
-drop FUNCTION shadowtest();
+drop function shadowtest();
 
 set plpgsql.extra_errors = shadowed_variables;
 
-create or replace function shadowtest(f1 INT)
-returns BOOLEAN
+create or replace function shadowtest(f1 int)
+returns boolean
 as $function$
 declare f1 int; begin return 1; end $function$
 language plpgsql;
@@ -2895,8 +2895,8 @@ reset plpgsql.extra_errors;
 
 reset plpgsql.extra_warnings;
 
-create or replace function shadowtest(f1 INT)
-returns BOOLEAN
+create or replace function shadowtest(f1 int)
+returns boolean
 as $function$
 declare f1 int; begin return 1; end $function$
 language plpgsql;
@@ -2954,9 +2954,9 @@ end
 $do$;
 
 create table test_01 (
-  a INT,
-  b INT,
-  c INT
+  a int,
+  b int,
+  c int
 );
 
 alter table test_01
@@ -2995,14 +2995,14 @@ begin
 end;
 $do$;
 
-drop TABLE test_01;
+drop table test_01;
 
 reset plpgsql.extra_errors;
 
 reset plpgsql.extra_warnings;
 
 create function sc_test()
-returns setof INT
+returns setof int
 as $function$
 declare
   c scroll cursor for select f1 from int4_tbl;
@@ -3022,7 +3022,7 @@ language plpgsql;
 select * from sc_test();
 
 create or replace function sc_test()
-returns setof INT
+returns setof int
 as $function$
 declare
   c no scroll cursor for select f1 from int4_tbl;
@@ -3042,7 +3042,7 @@ language plpgsql;
 select * from sc_test();
 
 create or replace function sc_test()
-returns setof INT
+returns setof int
 as $function$
 declare
   c refcursor;
@@ -3062,7 +3062,7 @@ language plpgsql;
 select * from sc_test();
 
 create or replace function sc_test()
-returns setof INT
+returns setof int
 as $function$
 declare
   c refcursor;
@@ -3082,7 +3082,7 @@ language plpgsql;
 select * from sc_test();
 
 create or replace function sc_test()
-returns setof INT
+returns setof int
 as $function$
 declare
   c refcursor;
@@ -3103,7 +3103,7 @@ language plpgsql;
 select * from sc_test();
 
 create or replace function sc_test()
-returns setof INT
+returns setof int
 as $function$
 declare
   c cursor for select * from generate_series(1, 10);
@@ -3128,7 +3128,7 @@ language plpgsql;
 select * from sc_test();
 
 create or replace function sc_test()
-returns setof INT
+returns setof int
 as $function$
 declare
   c cursor for select * from generate_series(1, 10);
@@ -3147,10 +3147,10 @@ language plpgsql;
 
 select * from sc_test();
 
-drop FUNCTION sc_test();
+drop function sc_test();
 
-create function pl_qual_names(param1 INT)
-returns VOID
+create function pl_qual_names(param1 int)
+returns void
 as $function$
 <<outerblock>>
 declare
@@ -3171,10 +3171,10 @@ language plpgsql;
 
 select pl_qual_names(42);
 
-drop FUNCTION pl_qual_names(INT);
+drop function pl_qual_names(int);
 
-create function ret_query1(out INT, out INT)
-returns setof RECORD
+create function ret_query1(out int, out int)
+returns setof record
 as $function$
 begin
     $1 := -1;
@@ -3188,9 +3188,9 @@ language plpgsql;
 
 select * from ret_query1();
 
-create type record_type as (x TEXT, y INT, z BOOLEAN);
+create type record_type as (x text, y int, z boolean);
 
-create or replace function ret_query2(lim INT)
+create or replace function ret_query2(lim int)
 returns setof record_type
 as $function$
 begin
@@ -3202,8 +3202,8 @@ language plpgsql;
 
 select * from ret_query2(8);
 
-create function exc_using(INT, TEXT)
-returns INT
+create function exc_using(int, text)
+returns int
 as $function$
 declare i int;
 begin
@@ -3218,10 +3218,10 @@ language plpgsql;
 
 select exc_using(5, 'foobar');
 
-drop FUNCTION exc_using(INT, TEXT);
+drop function exc_using(int, text);
 
-create or replace function exc_using(INT)
-returns VOID
+create or replace function exc_using(int)
+returns void
 as $function$
 declare
   c refcursor;
@@ -3241,10 +3241,10 @@ language plpgsql;
 
 select exc_using(5);
 
-drop FUNCTION exc_using(INT);
+drop function exc_using(int);
 
 create or replace function forc01()
-returns VOID
+returns void
 as $function$
 declare
   c cursor(r1 integer, r2 integer)
@@ -3291,7 +3291,7 @@ select forc01();
 create temporary table forc_test as select n as i, n as j from generate_series(1, 10) as n;
 
 create or replace function forc01()
-returns VOID
+returns void
 as $function$
 declare
   c cursor for select * from forc_test;
@@ -3309,7 +3309,7 @@ select forc01();
 select * from forc_test;
 
 create or replace function forc01()
-returns VOID
+returns void
 as $function$
 declare
   c refcursor := 'fooled_ya';
@@ -3330,7 +3330,7 @@ select forc01();
 
 select * from forc_test;
 
-drop FUNCTION forc01();
+drop function forc01();
 
 do
 $do$
@@ -3349,7 +3349,7 @@ begin
 end $do$;
 
 create or replace function forc_bad()
-returns VOID
+returns void
 as $function$
 declare
   c refcursor;
@@ -3362,7 +3362,7 @@ $function$
 language plpgsql;
 
 create or replace function return_dquery()
-returns setof INT
+returns setof int
 as $function$
 begin
   return query execute 'select * from (values(10),(20)) f';
@@ -3373,13 +3373,13 @@ language plpgsql;
 
 select * from return_dquery();
 
-drop FUNCTION return_dquery();
+drop function return_dquery();
 
 create table tabwithcols (
-  a INT,
-  b INT,
-  c INT,
-  d INT
+  a int,
+  b int,
+  c int,
+  d int
 );
 
 insert into tabwithcols values (10, 20, 30, 40), (50, 60, 70, 80);
@@ -3407,15 +3407,15 @@ alter table tabwithcols
 select * from returnqueryf();
 
 alter table tabwithcols
-  add column d INT;
+  add column d int;
 
 select * from returnqueryf();
 
-drop FUNCTION returnqueryf();
+drop function returnqueryf();
 
-drop TABLE tabwithcols;
+drop table tabwithcols;
 
-create type compostype as (x INT, y VARCHAR);
+create type compostype as (x int, y varchar);
 
 create or replace function compos()
 returns compostype
@@ -3478,10 +3478,10 @@ language plpgsql;
 
 select compos();
 
-drop FUNCTION compos();
+drop function compos();
 
 create or replace function composrec()
-returns RECORD
+returns record
 as $function$
 declare
   v record;
@@ -3495,7 +3495,7 @@ language plpgsql;
 select composrec();
 
 create or replace function composrec()
-returns RECORD
+returns record
 as $function$
 begin
   return (1, 'hello');
@@ -3505,7 +3505,7 @@ language plpgsql;
 
 select composrec();
 
-drop FUNCTION composrec();
+drop function composrec();
 
 create or replace function compos()
 returns setof compostype
@@ -3523,7 +3523,7 @@ language plpgsql;
 
 select * from compos();
 
-drop FUNCTION compos();
+drop function compos();
 
 create or replace function compos()
 returns compostype
@@ -3548,10 +3548,10 @@ language plpgsql;
 
 select * from compos();
 
-drop FUNCTION compos();
+drop function compos();
 
 create or replace function compos()
-returns INT
+returns int
 as $function$
 declare
   v compostype;
@@ -3565,7 +3565,7 @@ language plpgsql;
 select compos();
 
 create or replace function compos()
-returns INT
+returns int
 as $function$
 begin
   return (1, 'hello')::compostype;
@@ -3575,12 +3575,12 @@ language plpgsql;
 
 select compos();
 
-drop FUNCTION compos();
+drop function compos();
 
-drop TYPE compostype;
+drop type compostype;
 
 create or replace function raise_test()
-returns VOID
+returns void
 as $function$
 begin
   raise notice '% % %', 1, 2, 3
@@ -3594,7 +3594,7 @@ language plpgsql;
 select raise_test();
 
 create or replace function raise_test()
-returns VOID
+returns void
 as $function$
 begin
   raise 'check me'
@@ -3610,7 +3610,7 @@ language plpgsql;
 select raise_test();
 
 create or replace function raise_test()
-returns VOID
+returns void
 as $function$
 begin
   raise 'check me'
@@ -3626,7 +3626,7 @@ language plpgsql;
 select raise_test();
 
 create or replace function raise_test()
-returns VOID
+returns void
 as $function$
 begin
   raise 'check me'
@@ -3642,7 +3642,7 @@ language plpgsql;
 select raise_test();
 
 create or replace function raise_test()
-returns VOID
+returns void
 as $function$
 begin
   raise division_by_zero using detail = 'some detail info';
@@ -3657,7 +3657,7 @@ language plpgsql;
 select raise_test();
 
 create or replace function raise_test()
-returns VOID
+returns void
 as $function$
 begin
   raise division_by_zero;
@@ -3668,7 +3668,7 @@ language plpgsql;
 select raise_test();
 
 create or replace function raise_test()
-returns VOID
+returns void
 as $function$
 begin
   raise sqlstate '1234F';
@@ -3679,7 +3679,7 @@ language plpgsql;
 select raise_test();
 
 create or replace function raise_test()
-returns VOID
+returns void
 as $function$
 begin
   raise division_by_zero using message = 'custom' || ' message';
@@ -3690,7 +3690,7 @@ language plpgsql;
 select raise_test();
 
 create or replace function raise_test()
-returns VOID
+returns void
 as $function$
 begin
   raise using message = 'custom' || ' message', errcode = '22012';
@@ -3701,7 +3701,7 @@ language plpgsql;
 select raise_test();
 
 create or replace function raise_test()
-returns VOID
+returns void
 as $function$
 begin
   raise notice 'some message' using message = 'custom' || ' message', errcode = '22012';
@@ -3712,7 +3712,7 @@ language plpgsql;
 select raise_test();
 
 create or replace function raise_test()
-returns VOID
+returns void
 as $function$
 begin
   raise division_by_zero using message = 'custom' || ' message', errcode = '22012';
@@ -3723,7 +3723,7 @@ language plpgsql;
 select raise_test();
 
 create or replace function raise_test()
-returns VOID
+returns void
 as $function$
 begin
   raise;
@@ -3734,7 +3734,7 @@ language plpgsql;
 select raise_test();
 
 create function zero_divide()
-returns INT
+returns int
 as $function$
 declare v int := 0;
 begin
@@ -3745,7 +3745,7 @@ language plpgsql
 parallel SAFE;
 
 create or replace function raise_test()
-returns VOID
+returns void
 as $function$
 begin
   raise exception 'custom exception'
@@ -3756,7 +3756,7 @@ $function$
 language plpgsql;
 
 create function stacked_diagnostics_test()
-returns VOID
+returns void
 as $function$
 declare _sqlstate text;
         _message text;
@@ -3777,7 +3777,7 @@ language plpgsql;
 select stacked_diagnostics_test();
 
 create or replace function stacked_diagnostics_test()
-returns VOID
+returns void
 as $function$
 declare _detail text;
         _hint text;
@@ -3797,7 +3797,7 @@ language plpgsql;
 select stacked_diagnostics_test();
 
 create or replace function stacked_diagnostics_test()
-returns VOID
+returns void
 as $function$
 declare _detail text;
         _hint text;
@@ -3814,10 +3814,10 @@ language plpgsql;
 
 select stacked_diagnostics_test();
 
-drop FUNCTION stacked_diagnostics_test();
+drop function stacked_diagnostics_test();
 
 create function error_trap_test()
-returns TEXT
+returns text
 as $function$
 begin
   perform zero_divide();
@@ -3837,12 +3837,12 @@ select error_trap_test();
 
 reset debug_parallel_query;
 
-drop FUNCTION error_trap_test();
+drop function error_trap_test();
 
-drop FUNCTION zero_divide();
+drop function zero_divide();
 
 create or replace function raise_test()
-returns VOID
+returns void
 as $function$
 begin
   perform 1/0;
@@ -3856,10 +3856,10 @@ language plpgsql;
 
 select raise_test();
 
-drop FUNCTION raise_test();
+drop function raise_test();
 
 create or replace function stacked_diagnostics_test()
-returns VOID
+returns void
 as $function$
 declare _column_name text;
         _constraint_name text;
@@ -3888,10 +3888,10 @@ language plpgsql;
 
 select stacked_diagnostics_test();
 
-drop FUNCTION stacked_diagnostics_test();
+drop function stacked_diagnostics_test();
 
-create or replace function vari(variadic INT[])
-returns VOID
+create or replace function vari(variadic int[])
+returns void
 as $function$
 begin
   for i in array_lower($1,1)..array_upper($1,1) loop
@@ -3906,10 +3906,10 @@ select vari(3, 4, 5);
 
 select vari(variadic array[5, 6, 7]);
 
-drop FUNCTION vari(INT[]);
+drop function vari(int[]);
 
-create or replace function pleast(variadic NUMERIC[])
-returns NUMERIC
+create or replace function pleast(variadic numeric[])
+returns numeric
 as $function$
 declare aux numeric = $1[array_lower($1,1)];
 begin
@@ -3921,7 +3921,7 @@ end;
 $function$
 language plpgsql
 immutable
-STRICT;
+strict;
 
 select pleast(10, 1, 2, 3, -16);
 
@@ -3931,8 +3931,8 @@ select pleast(10.2, 10, -20);
 
 select pleast(10, 20, -1.0);
 
-create or replace function pleast(NUMERIC)
-returns NUMERIC
+create or replace function pleast(numeric)
+returns numeric
 as $function$
 begin
   raise notice 'non-variadic function called';
@@ -3941,18 +3941,18 @@ end;
 $function$
 language plpgsql
 immutable
-STRICT;
+strict;
 
 select pleast(10);
 
-drop FUNCTION pleast(NUMERIC[]);
+drop function pleast(numeric[]);
 
-drop FUNCTION pleast(NUMERIC);
+drop function pleast(numeric);
 
-create function tftest(INT)
+create function tftest(int)
 returns table (
-  a INT,
-  b INT
+  a int,
+  b int
 )
 as $function$
 begin
@@ -3961,14 +3961,14 @@ end;
 $function$
 language plpgsql
 immutable
-STRICT;
+strict;
 
 select * from tftest(10);
 
-create or replace function tftest(a1 INT)
+create or replace function tftest(a1 int)
 returns table (
-  a INT,
-  b INT
+  a int,
+  b int
 )
 as $function$
 begin
@@ -3980,14 +3980,14 @@ end;
 $function$
 language plpgsql
 immutable
-STRICT;
+strict;
 
 select * from tftest(10);
 
-drop FUNCTION tftest(INT);
+drop function tftest(int);
 
 create function rttest()
-returns setof INT
+returns setof int
 as $function$
 declare rc int;
 begin
@@ -4010,7 +4010,7 @@ language plpgsql;
 select * from rttest();
 
 create or replace function rttest()
-returns setof INT
+returns setof int
 as $function$
 begin
   return query select 10 into no_such_table;
@@ -4021,7 +4021,7 @@ language plpgsql;
 select * from rttest();
 
 create or replace function rttest()
-returns setof INT
+returns setof int
 as $function$
 begin
   return query execute 'select 10 into no_such_table';
@@ -4033,10 +4033,10 @@ select * from rttest();
 
 select * from no_such_table;
 
-drop FUNCTION rttest();
+drop function rttest();
 
-create function leaker_1(fail BOOLEAN)
-returns INT
+create function leaker_1(fail boolean)
+returns int
 as $function$
 DECLARE
   v_var INTEGER;
@@ -4051,8 +4051,8 @@ END;
 $function$
 language plpgsql;
 
-create function leaker_2(fail BOOLEAN, out error_code INT, out new_id INT)
-returns RECORD
+create function leaker_2(fail boolean, out error_code int, out new_id int)
+returns record
 as $function$
 BEGIN
   IF fail THEN
@@ -4069,12 +4069,12 @@ select * from leaker_1(false);
 
 select * from leaker_1(true);
 
-drop FUNCTION leaker_1(BOOLEAN);
+drop function leaker_1(boolean);
 
-drop FUNCTION leaker_2(BOOLEAN);
+drop function leaker_2(boolean);
 
 create function nonsimple_expr_test()
-returns TEXT[]
+returns text[]
 as $function$
 DECLARE
   arr text[];
@@ -4093,10 +4093,10 @@ language plpgsql;
 
 select nonsimple_expr_test();
 
-drop FUNCTION nonsimple_expr_test();
+drop function nonsimple_expr_test();
 
 create function nonsimple_expr_test()
-returns INT
+returns int
 as $function$
 declare
    i integer NOT NULL := 0;
@@ -4114,10 +4114,10 @@ language plpgsql;
 
 select nonsimple_expr_test();
 
-drop FUNCTION nonsimple_expr_test();
+drop function nonsimple_expr_test();
 
-create function recurse(DOUBLE PRECISION)
-returns DOUBLE PRECISION
+create function recurse(double precision)
+returns double precision
 as $function$
 begin
   if ($1 > 0) then
@@ -4129,20 +4129,20 @@ end;
 $function$
 language plpgsql;
 
-create function sql_recurse(DOUBLE PRECISION)
-returns DOUBLE PRECISION
+create function sql_recurse(double precision)
+returns double precision
 as $function$ select recurse($1) limit 1; $function$
 language sql;
 
 select recurse(10);
 
-create function error1(TEXT)
-returns TEXT
+create function error1(text)
+returns text
 language sql
 as $function$ SELECT relname::text FROM pg_class c WHERE c.oid = $1::regclass $function$;
 
-create function error2(p_name_table TEXT)
-returns TEXT
+create function error2(p_name_table text)
+returns text
 language plpgsql
 as $function$
 begin
@@ -4151,7 +4151,7 @@ end$function$;
 
 begin;
 
-create table public.stuffs (stuff TEXT);
+create table public.stuffs (stuff text);
 
 savepoint a;
 
@@ -4163,23 +4163,23 @@ select error2('public.stuffs');
 
 rollback;
 
-drop FUNCTION error2(TEXT);
+drop function error2(text);
 
-drop FUNCTION error1(TEXT);
+drop function error1(text);
 
-create function sql_to_date(INT)
-returns DATE
+create function sql_to_date(int)
+returns date
 as $function$
 select $1::text::date
 $function$
 language sql
 immutable
-STRICT;
+strict;
 
-create cast (INT as DATE) with function sql_to_date(INT) as ASSIGNMENT;
+create cast (int as date) with function sql_to_date(int) as assignment;
 
-create function cast_invoker(INT)
-returns DATE
+create function cast_invoker(int)
+returns date
 as $function$
 begin
   return $1;
@@ -4210,9 +4210,9 @@ select cast_invoker(20150720);
 
 commit;
 
-drop FUNCTION cast_invoker(INT);
+drop function cast_invoker(int);
 
-drop FUNCTION sql_to_date(INT) cascade;
+drop function sql_to_date(int) cascade;
 
 begin;
 
@@ -4223,7 +4223,7 @@ do $do$ declare x text[]; begin x := '{1.23, 4.56}'::numeric[]; end $do$;
 commit;
 
 create function fail()
-returns INT
+returns int
 language plpgsql
 as $function$
 begin
@@ -4235,12 +4235,12 @@ select fail();
 
 select fail();
 
-drop FUNCTION fail();
+drop function fail();
 
 set standard_conforming_strings = off;
 
 create or replace function strtest()
-returns TEXT
+returns text
 as $function$
 begin
   raise notice 'foo\\bar\041baz';
@@ -4252,7 +4252,7 @@ language plpgsql;
 select strtest();
 
 create or replace function strtest()
-returns TEXT
+returns text
 as $function$
 begin
   raise notice E'foo\\bar\041baz';
@@ -4266,7 +4266,7 @@ select strtest();
 set standard_conforming_strings = 'on';
 
 create or replace function strtest()
-returns TEXT
+returns text
 as $function$
 begin
   raise notice 'foo\\bar\041baz\';
@@ -4278,7 +4278,7 @@ language plpgsql;
 select strtest();
 
 create or replace function strtest()
-returns TEXT
+returns text
 as $function$
 begin
   raise notice E'foo\\bar\041baz';
@@ -4289,7 +4289,7 @@ language plpgsql;
 
 select strtest();
 
-drop FUNCTION strtest();
+drop function strtest();
 
 do
 $do$
@@ -4420,10 +4420,10 @@ language plpgsql;
 
 select * from conflict_test();
 
-drop FUNCTION conflict_test();
+drop function conflict_test();
 
 create function unreserved_test()
-returns INT
+returns int
 as $function$
 declare
   forward int := 21;
@@ -4437,7 +4437,7 @@ language plpgsql;
 select unreserved_test();
 
 create or replace function unreserved_test()
-returns INT
+returns int
 as $function$
 declare
   return int := 42;
@@ -4451,7 +4451,7 @@ language plpgsql;
 select unreserved_test();
 
 create or replace function unreserved_test()
-returns INT
+returns int
 as $function$
 declare
   comment int := 21;
@@ -4465,12 +4465,12 @@ language plpgsql;
 
 select unreserved_test();
 
-select obj_description(cast('unreserved_test()' as REGPROCEDURE), 'pg_proc');
+select obj_description(cast('unreserved_test()' as regprocedure), 'pg_proc');
 
-drop FUNCTION unreserved_test();
+drop function unreserved_test();
 
-create function foreach_test(ANYARRAY)
-returns VOID
+create function foreach_test(anyarray)
+returns void
 as $function$
 declare x int;
 begin
@@ -4486,8 +4486,8 @@ select foreach_test(array[1, 2, 3, 4]);
 
 select foreach_test(array[array[1, 2], array[3, 4]]);
 
-create or replace function foreach_test(ANYARRAY)
-returns VOID
+create or replace function foreach_test(anyarray)
+returns void
 as $function$
 declare x int;
 begin
@@ -4503,8 +4503,8 @@ select foreach_test(array[1, 2, 3, 4]);
 
 select foreach_test(array[array[1, 2], array[3, 4]]);
 
-create or replace function foreach_test(ANYARRAY)
-returns VOID
+create or replace function foreach_test(anyarray)
+returns void
 as $function$
 declare x int[];
 begin
@@ -4520,8 +4520,8 @@ select foreach_test(array[1, 2, 3, 4]);
 
 select foreach_test(array[array[1, 2], array[3, 4]]);
 
-create or replace function foreach_test(ANYARRAY)
-returns VOID
+create or replace function foreach_test(anyarray)
+returns void
 as $function$
 declare x int[];
 begin
@@ -4539,10 +4539,10 @@ select foreach_test(array[array[1, 2], array[3, 4]]);
 
 select foreach_test(array[array[array[1, 2]], array[array[3, 4]]]);
 
-create type xy_tuple as (x INT, y INT);
+create type xy_tuple as (x int, y int);
 
-create or replace function foreach_test(ANYARRAY)
-returns VOID
+create or replace function foreach_test(anyarray)
+returns void
 as $function$
 declare r record;
 begin
@@ -4563,8 +4563,8 @@ select
     as xy_tuple[])
   );
 
-create or replace function foreach_test(ANYARRAY)
-returns VOID
+create or replace function foreach_test(anyarray)
+returns void
 as $function$
 declare x int; y int;
 begin
@@ -4585,8 +4585,8 @@ select
     as xy_tuple[])
   );
 
-create or replace function foreach_test(ANYARRAY)
-returns VOID
+create or replace function foreach_test(anyarray)
+returns void
 as $function$
 declare x xy_tuple[];
 begin
@@ -4607,17 +4607,17 @@ select
     as xy_tuple[])
   );
 
-drop FUNCTION foreach_test(ANYARRAY);
+drop function foreach_test(anyarray);
 
-drop TYPE xy_tuple;
+drop type xy_tuple;
 
 create temporary table rtype (
-  id INT,
-  ar TEXT[]
+  id int,
+  ar text[]
 );
 
 create function arrayassign1()
-returns TEXT[]
+returns text[]
 language plpgsql
 as $function$
 declare
@@ -4632,13 +4632,13 @@ select arrayassign1();
 
 select arrayassign1();
 
-create domain orderedarray as INT[2] constraint "sorted" check (value[1] < value[2]);
+create domain orderedarray as int[2] constraint "sorted" check (value[1] < value[2]);
 
 select cast('{1,2}' as orderedarray);
 
 select cast('{2,1}' as orderedarray);
 
-create function testoa(x1 INT, x2 INT, x3 INT)
+create function testoa(x1 int, x2 int, x3 int)
 returns orderedarray
 language plpgsql
 as $function$
@@ -4657,12 +4657,12 @@ select testoa(2, 1, 3);
 
 select testoa(1, 2, 1);
 
-drop FUNCTION arrayassign1();
+drop function arrayassign1();
 
-drop FUNCTION testoa(INT, INT, INT);
+drop function testoa(int, int, int);
 
-create function returns_rw_array(INT)
-returns INT[]
+create function returns_rw_array(int)
+returns int[]
 language plpgsql
 as $function$
   declare r int[];
@@ -4670,8 +4670,8 @@ as $function$
 $function$
 stable;
 
-create function consumes_rw_array(INT[])
-returns INT
+create function consumes_rw_array(int[])
+returns int
 language plpgsql
 as $function$
   begin return $1[1]; end;
@@ -4709,8 +4709,8 @@ begin
   raise notice 'a = %', a;
 end$do$;
 
-create function inner_func(INT)
-returns INT
+create function inner_func(int)
+returns int
 as $function$
 declare _context text;
 begin
@@ -4725,8 +4725,8 @@ end;
 $function$
 language plpgsql;
 
-create or replace function outer_func(INT)
-returns INT
+create or replace function outer_func(int)
+returns int
 as $function$
 declare
   myresult int;
@@ -4739,8 +4739,8 @@ end;
 $function$
 language plpgsql;
 
-create or replace function outer_outer_func(INT)
-returns INT
+create or replace function outer_outer_func(int)
+returns int
 as $function$
 declare
   myresult int;
@@ -4757,14 +4757,14 @@ select outer_outer_func(10);
 
 select outer_outer_func(20);
 
-drop FUNCTION outer_outer_func(INT);
+drop function outer_outer_func(int);
 
-drop FUNCTION outer_func(INT);
+drop function outer_func(int);
 
-drop FUNCTION inner_func(INT);
+drop function inner_func(int);
 
-create function inner_func(INT)
-returns INT
+create function inner_func(int)
+returns int
 as $function$
 declare
   _context text;
@@ -4787,8 +4787,8 @@ end;
 $function$
 language plpgsql;
 
-create or replace function outer_func(INT)
-returns INT
+create or replace function outer_func(int)
+returns int
 as $function$
 declare
   myresult int;
@@ -4801,8 +4801,8 @@ end;
 $function$
 language plpgsql;
 
-create or replace function outer_outer_func(INT)
-returns INT
+create or replace function outer_outer_func(int)
+returns int
 as $function$
 declare
   myresult int;
@@ -4819,14 +4819,14 @@ select outer_outer_func(10);
 
 select outer_outer_func(20);
 
-drop FUNCTION outer_outer_func(INT);
+drop function outer_outer_func(int);
 
-drop FUNCTION outer_func(INT);
+drop function outer_func(int);
 
-drop FUNCTION inner_func(INT);
+drop function inner_func(int);
 
-create function current_function(TEXT)
-returns REGPROCEDURE
+create function current_function(text)
+returns regprocedure
 as $function$
 declare
   fn_oid regprocedure;
@@ -4839,7 +4839,7 @@ language plpgsql;
 
 select current_function('foo');
 
-drop FUNCTION current_function(TEXT);
+drop function current_function(text);
 
 do
 $do$
@@ -4896,15 +4896,15 @@ exception when others then
 end;
 $do$;
 
-create function plpgsql_domain_check(val INT)
-returns BOOLEAN
+create function plpgsql_domain_check(val int)
+returns boolean
 as $function$
 begin return val > 0; end
 $function$
 language plpgsql
 immutable;
 
-create domain plpgsql_domain as INT check (plpgsql_domain_check(value));
+create domain plpgsql_domain as int check (plpgsql_domain_check(value));
 
 do $do$
 declare v_test plpgsql_domain;
@@ -4920,15 +4920,15 @@ begin
 end;
 $do$;
 
-create function plpgsql_arr_domain_check(val INT[])
-returns BOOLEAN
+create function plpgsql_arr_domain_check(val int[])
+returns boolean
 as $function$
 begin return val[1] > 0; end
 $function$
 language plpgsql
 immutable;
 
-create domain plpgsql_arr_domain as INT[] check (plpgsql_arr_domain_check(value));
+create domain plpgsql_arr_domain as int[] check (plpgsql_arr_domain_check(value));
 
 do
 $do$
@@ -4948,8 +4948,8 @@ end;
 $do$;
 
 create table transition_table_base (
-  id INT primary key,
-  val TEXT
+  id int primary key,
+  val text
 );
 
 create function transition_table_base_ins_func()
@@ -4974,20 +4974,20 @@ BEGIN
 END;
 $function$;
 
-create TRIGGER transition_table_base_ins_trig
+create trigger transition_table_base_ins_trig
 after insert
 on transition_table_base
-REFERENCING old table as oldtable
+referencing old table as oldtable
 new table as newtable
-for EACH STATEMENT
-EXECUTE FUNCTION transition_table_base_ins_func();
+for each statement
+execute function transition_table_base_ins_func();
 
-create TRIGGER transition_table_base_ins_trig
+create trigger transition_table_base_ins_trig
 after insert
 on transition_table_base
-REFERENCING new table as newtable
-for EACH STATEMENT
-EXECUTE FUNCTION transition_table_base_ins_func();
+referencing new table as newtable
+for each statement
+execute function transition_table_base_ins_func();
 
 insert into transition_table_base values (1, 'One'), (2, 'Two');
 
@@ -5015,33 +5015,33 @@ BEGIN
 END;
 $function$;
 
-create TRIGGER transition_table_base_upd_trig
+create trigger transition_table_base_upd_trig
 after update
 on transition_table_base
-REFERENCING old table as oldtable
+referencing old table as oldtable
 new table as newtable
-for EACH STATEMENT
-EXECUTE FUNCTION transition_table_base_upd_func();
+for each statement
+execute function transition_table_base_upd_func();
 
 update transition_table_base set val = '*' || val || '*' where id between 2 and 3;
 
 create table transition_table_level1 (
   level1_no serial not null,
-  level1_node_name VARCHAR(255),
+  level1_node_name varchar(255),
   primary key (level1_no)
 );
 
 create table transition_table_level2 (
   level2_no serial not null,
-  parent_no INT not null,
-  level1_node_name VARCHAR(255),
+  parent_no int not null,
+  level1_node_name varchar(255),
   primary key (level2_no)
 );
 
 create table transition_table_status (
-  level INT not null,
-  node_no INT not null,
-  status INT,
+  level int not null,
+  node_no int not null,
+  status int,
   primary key (level, node_no)
 );
 
@@ -5059,12 +5059,12 @@ as $function$
   END;
 $function$;
 
-create TRIGGER transition_table_level1_ri_parent_del_trigger
+create trigger transition_table_level1_ri_parent_del_trigger
 after delete
 on transition_table_level1
-REFERENCING old table as p
-for EACH STATEMENT
-EXECUTE FUNCTION transition_table_level1_ri_parent_del_func();
+referencing old table as p
+for each statement
+execute function transition_table_level1_ri_parent_del_func();
 
 create function transition_table_level1_ri_parent_upd_func()
 returns trigger
@@ -5089,13 +5089,13 @@ as $function$
   END;
 $function$;
 
-create TRIGGER transition_table_level1_ri_parent_upd_trigger
+create trigger transition_table_level1_ri_parent_upd_trigger
 after update
 on transition_table_level1
-REFERENCING old table as d
+referencing old table as d
 new table as i
-for EACH STATEMENT
-EXECUTE FUNCTION transition_table_level1_ri_parent_upd_func();
+for each statement
+execute function transition_table_level1_ri_parent_upd_func();
 
 create function transition_table_level2_ri_child_insupd_func()
 returns trigger
@@ -5113,19 +5113,19 @@ as $function$
   END;
 $function$;
 
-create TRIGGER transition_table_level2_ri_child_ins_trigger
+create trigger transition_table_level2_ri_child_ins_trigger
 after insert
 on transition_table_level2
-REFERENCING new table as i
-for EACH STATEMENT
-EXECUTE FUNCTION transition_table_level2_ri_child_insupd_func();
+referencing new table as i
+for each statement
+execute function transition_table_level2_ri_child_insupd_func();
 
-create TRIGGER transition_table_level2_ri_child_upd_trigger
+create trigger transition_table_level2_ri_child_upd_trigger
 after update
 on transition_table_level2
-REFERENCING new table as i
-for EACH STATEMENT
-EXECUTE FUNCTION transition_table_level2_ri_child_insupd_func();
+referencing new table as i
+for each statement
+execute function transition_table_level2_ri_child_insupd_func();
 
 insert into transition_table_level1 (level1_no) select generate_series(1, 200);
 
@@ -5172,16 +5172,16 @@ as $function$
   END;
 $function$;
 
-create TRIGGER transition_table_level2_bad_usage_trigger
+create trigger transition_table_level2_bad_usage_trigger
 after delete
 on transition_table_level2
-REFERENCING old table as dx
-for EACH STATEMENT
-EXECUTE FUNCTION transition_table_level2_bad_usage_func();
+referencing old table as dx
+for each statement
+execute function transition_table_level2_bad_usage_func();
 
 delete from transition_table_level2 where level2_no between 301 and 305;
 
-drop TRIGGER transition_table_level2_bad_usage_trigger on transition_table_level2;
+drop trigger transition_table_level2_bad_usage_trigger on transition_table_level2;
 
 delete from transition_table_level1 where level1_no = 25;
 
@@ -5202,8 +5202,8 @@ delete from transition_table_level2 where level2_no between 211 and 220;
 select COUNT(*) from transition_table_level2;
 
 create table alter_table_under_transition_tables (
-  id INT primary key,
-  name TEXT
+  id int primary key,
+  name text
 );
 
 create function alter_table_under_transition_tables_upd_func()
@@ -5219,39 +5219,39 @@ BEGIN
 END;
 $function$;
 
-create TRIGGER alter_table_under_transition_tables_upd_trigger
-after update or TRUNCATE
+create trigger alter_table_under_transition_tables_upd_trigger
+after update or truncate
 on alter_table_under_transition_tables
-REFERENCING old table as d
+referencing old table as d
 new table as i
-for EACH STATEMENT
-EXECUTE FUNCTION alter_table_under_transition_tables_upd_func();
+for each statement
+execute function alter_table_under_transition_tables_upd_func();
 
-create TRIGGER alter_table_under_transition_tables_upd_trigger
+create trigger alter_table_under_transition_tables_upd_trigger
 after update
 on alter_table_under_transition_tables
-REFERENCING old table as d
+referencing old table as d
 new table as i
-for EACH STATEMENT
-EXECUTE FUNCTION alter_table_under_transition_tables_upd_func();
+for each statement
+execute function alter_table_under_transition_tables_upd_func();
 
 insert into alter_table_under_transition_tables values (1, '1'), (2, '2'), (3, '3');
 
 update alter_table_under_transition_tables set name = name || name;
 
 alter table alter_table_under_transition_tables
-  alter column name type INT using cast(name as INT);
+  alter column name type int using cast(name as int);
 
 update alter_table_under_transition_tables
-set name = cast(cast(name as TEXT) || cast(name as TEXT)
-as INT);
+set name = cast(cast(name as text) || cast(name as text)
+as int);
 
 alter table alter_table_under_transition_tables
   drop column name;
 
 update alter_table_under_transition_tables set id = id;
 
-create table multi_test (i INT);
+create table multi_test (i int);
 
 insert into multi_test values (1);
 
@@ -5267,23 +5267,23 @@ BEGIN
     RETURN NULL;
 END$function$;
 
-create TRIGGER my_trigger
+create trigger my_trigger
 after update
 on multi_test
-REFERENCING new table as new_test
+referencing new table as new_test
 old table as old_test
-for EACH STATEMENT
-EXECUTE FUNCTION multi_test_trig();
+for each statement
+execute function multi_test_trig();
 
 update multi_test set i = i;
 
-drop TABLE multi_test;
+drop table multi_test;
 
-drop FUNCTION multi_test_trig();
+drop function multi_test_trig();
 
 create table partitioned_table (
-  a INT,
-  b TEXT
+  a int,
+  b text
 )
 partition by LIST(a);
 
@@ -5328,7 +5328,7 @@ language plpgsql;
 select * from list_partitioned_table() as t;
 
 create function fx(x wslot)
-returns VOID
+returns void
 as $function$
 BEGIN
   GET DIAGNOSTICS x = ROW_COUNT;

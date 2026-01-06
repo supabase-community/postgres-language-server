@@ -4,7 +4,7 @@ input_file: crates/pgls_pretty_print/tests/data/single/complex_select_part_0.sql
 snapshot_kind: text
 ---
 select
-  cast(contype as TEXT) as contype,
+  cast(contype as text) as contype,
   conname,
   array_length(conkey, 1) as ncol,
   conrelid as resorigtbl,

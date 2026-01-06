@@ -15,17 +15,17 @@ create schema "addr_nsp";
 
 set search_path to addr_nsp;
 
-create FOREIGN DATA WRAPPER addr_fdw;
+create foreign data wrapper addr_fdw;
 
 create server addr_fserv foreign data wrapper addr_fdw;
 
-create TEXT SEARCH DICTIONARY addr_ts_dict (template = simple);
+create text search dictionary addr_ts_dict (template = simple);
 
-create TEXT SEARCH CONFIGURATION addr_ts_conf (copy = english);
+create text search configuration addr_ts_conf (copy = english);
 
-create TEXT SEARCH TEMPLATE addr_ts_temp (lexize = dsimple_lexize);
+create text search template addr_ts_temp (lexize = dsimple_lexize);
 
-create TEXT SEARCH PARSER addr_ts_prs (
+create text search parser addr_ts_prs (
   start = prsd_start,
   gettoken = prsd_nexttoken,
   "end" = prsd_end,
@@ -36,10 +36,10 @@ create table addr_nsp.gentable (
   a serial
   primary key
   constraint "a_chk" check (a > 0),
-  b TEXT default 'hello'
+  b text default 'hello'
 );
 
-create table addr_nsp.parttable (a INT primary key)
+create table addr_nsp.parttable (a int primary key)
 partition by range(a);
 
 create view addr_nsp.genview
@@ -47,58 +47,58 @@ as select * from addr_nsp.gentable;
 
 create materialized view addr_nsp.genmatview as select * from addr_nsp.gentable;
 
-create type addr_nsp.gencomptype as (a INT);
+create type addr_nsp.gencomptype as (a int);
 
 create type addr_nsp.genenum as enum ('one', 'two');
 
-create foreign table addr_nsp.genftable ( a INT ) SERVER addr_fserv;
+create foreign table addr_nsp.genftable ( a int ) server addr_fserv;
 
-create aggregate addr_nsp.genaggr (INT) (sfunc = int4pl, stype = INT);
+create aggregate addr_nsp.genaggr (int) (sfunc = int4pl, stype = int);
 
-create domain addr_nsp.gendomain as INT constraint "domconstr" check (value > 0);
+create domain addr_nsp.gendomain as int constraint "domconstr" check (value > 0);
 
 create function addr_nsp.trig()
 returns trigger
 language plpgsql
 as $function$ BEGIN END; $function$;
 
-create TRIGGER t before insert on addr_nsp.gentable for EACH ROW EXECUTE FUNCTION addr_nsp.trig();
+create trigger t before insert on addr_nsp.gentable for each row execute function addr_nsp.trig();
 
-create POLICY genpol on addr_nsp.gentable as PERMISSIVE for all to PUBLIC;
+create policy genpol on addr_nsp.gentable as permissive for all to public;
 
-create procedure addr_nsp.proc(INT)
+create procedure addr_nsp.proc(int)
 language sql
 as $procedure$ $procedure$;
 
 create server integer foreign data wrapper addr_fdw;
 
-create USER MAPPING for regress_addr_user SERVER integer;
+create user mapping for regress_addr_user server integer;
 
-alter default PRIVILEGES
+alter default privileges
 for role regress_addr_user
 in schema public
-grant all on TABLES to regress_addr_user;
+grant all on tables to regress_addr_user;
 
-alter default PRIVILEGES for role regress_addr_user revoke DELETE on TABLES from regress_addr_user;
+alter default privileges for role regress_addr_user revoke DELETE on tables from regress_addr_user;
 
-create TRANSFORM for INT LANGUAGE sql
+create transform for int language sql
 (
-  from SQL with FUNCTION prsd_lextype(internal),
-  to SQL with FUNCTION int4recv(internal)
+  from sql with function prsd_lextype(internal),
+  to sql with function int4recv(internal)
 );
 
 set client_min_messages = ERROR;
 
-create PUBLICATION addr_pub for table addr_nsp.gentable;
+create publication addr_pub for table addr_nsp.gentable;
 
-create PUBLICATION addr_pub_schema for TABLES in SCHEMA addr_nsp;
+create publication addr_pub_schema for tables in schema addr_nsp;
 
 reset client_min_messages;
 
 create subscription regress_addr_sub connection '' publication bar with (connect = 'false',
 slot_name = 'none');
 
-create STATISTICS addr_nsp.gentable_stat on "a", "b" from addr_nsp.gentable;
+create statistics addr_nsp.gentable_stat on "a", "b" from addr_nsp.gentable;
 
 select pg_get_object_address('stone', '{}', '{}');
 
@@ -256,13 +256,13 @@ as (
   values
     (
       'table',
-      cast('{addr_nsp, gentable}' as TEXT[]),
-      cast('{}' as TEXT[])
+      cast('{addr_nsp, gentable}' as text[]),
+      cast('{}' as text[])
     ),
     (
       'table',
-      cast('{addr_nsp, parttable}' as TEXT[]),
-      cast('{}' as TEXT[])
+      cast('{addr_nsp, parttable}' as text[]),
+      cast('{}' as text[])
     ),
     ('index', '{addr_nsp, gentable_pkey}', '{}'),
     ('index', '{addr_nsp, parttable_pkey}', '{}'),
@@ -394,17 +394,17 @@ order by addr1.classid,
   addr1.objid,
   addr1.objsubid;
 
-drop FOREIGN DATA WRAPPER addr_fdw cascade;
+drop foreign data wrapper addr_fdw cascade;
 
-drop PUBLICATION addr_pub;
+drop publication addr_pub;
 
-drop PUBLICATION addr_pub_schema;
+drop publication addr_pub_schema;
 
 drop subscription regress_addr_sub restrict;
 
-drop SCHEMA addr_nsp cascade;
+drop schema addr_nsp cascade;
 
-drop OWNED by regress_addr_user;
+drop owned by regress_addr_user;
 
 drop role regress_addr_user;
 
@@ -414,56 +414,56 @@ objid,
 objsubid)
 as (
   values
-    (cast('pg_class' as REGCLASS), 0, 0),
+    (cast('pg_class' as regclass), 0, 0),
     (
-      cast('pg_class' as REGCLASS),
-      cast('pg_class' as REGCLASS),
+      cast('pg_class' as regclass),
+      cast('pg_class' as regclass),
       100
     ),
-    (cast('pg_proc' as REGCLASS), 0, 0),
-    (cast('pg_type' as REGCLASS), 0, 0),
-    (cast('pg_cast' as REGCLASS), 0, 0),
-    (cast('pg_collation' as REGCLASS), 0, 0),
-    (cast('pg_constraint' as REGCLASS), 0, 0),
-    (cast('pg_conversion' as REGCLASS), 0, 0),
-    (cast('pg_attrdef' as REGCLASS), 0, 0),
-    (cast('pg_language' as REGCLASS), 0, 0),
-    (cast('pg_largeobject' as REGCLASS), 0, 0),
-    (cast('pg_operator' as REGCLASS), 0, 0),
-    (cast('pg_opclass' as REGCLASS), 0, 0),
-    (cast('pg_opfamily' as REGCLASS), 0, 0),
-    (cast('pg_am' as REGCLASS), 0, 0),
-    (cast('pg_amop' as REGCLASS), 0, 0),
-    (cast('pg_amproc' as REGCLASS), 0, 0),
-    (cast('pg_rewrite' as REGCLASS), 0, 0),
-    (cast('pg_trigger' as REGCLASS), 0, 0),
-    (cast('pg_namespace' as REGCLASS), 0, 0),
-    (cast('pg_statistic_ext' as REGCLASS), 0, 0),
-    (cast('pg_ts_parser' as REGCLASS), 0, 0),
-    (cast('pg_ts_dict' as REGCLASS), 0, 0),
-    (cast('pg_ts_template' as REGCLASS), 0, 0),
-    (cast('pg_ts_config' as REGCLASS), 0, 0),
-    (cast('pg_authid' as REGCLASS), 0, 0),
-    (cast('pg_auth_members' as REGCLASS), 0, 0),
-    (cast('pg_database' as REGCLASS), 0, 0),
-    (cast('pg_tablespace' as REGCLASS), 0, 0),
+    (cast('pg_proc' as regclass), 0, 0),
+    (cast('pg_type' as regclass), 0, 0),
+    (cast('pg_cast' as regclass), 0, 0),
+    (cast('pg_collation' as regclass), 0, 0),
+    (cast('pg_constraint' as regclass), 0, 0),
+    (cast('pg_conversion' as regclass), 0, 0),
+    (cast('pg_attrdef' as regclass), 0, 0),
+    (cast('pg_language' as regclass), 0, 0),
+    (cast('pg_largeobject' as regclass), 0, 0),
+    (cast('pg_operator' as regclass), 0, 0),
+    (cast('pg_opclass' as regclass), 0, 0),
+    (cast('pg_opfamily' as regclass), 0, 0),
+    (cast('pg_am' as regclass), 0, 0),
+    (cast('pg_amop' as regclass), 0, 0),
+    (cast('pg_amproc' as regclass), 0, 0),
+    (cast('pg_rewrite' as regclass), 0, 0),
+    (cast('pg_trigger' as regclass), 0, 0),
+    (cast('pg_namespace' as regclass), 0, 0),
+    (cast('pg_statistic_ext' as regclass), 0, 0),
+    (cast('pg_ts_parser' as regclass), 0, 0),
+    (cast('pg_ts_dict' as regclass), 0, 0),
+    (cast('pg_ts_template' as regclass), 0, 0),
+    (cast('pg_ts_config' as regclass), 0, 0),
+    (cast('pg_authid' as regclass), 0, 0),
+    (cast('pg_auth_members' as regclass), 0, 0),
+    (cast('pg_database' as regclass), 0, 0),
+    (cast('pg_tablespace' as regclass), 0, 0),
     (
-      cast('pg_foreign_data_wrapper' as REGCLASS), 0, 0
+      cast('pg_foreign_data_wrapper' as regclass), 0, 0
     ),
-    (cast('pg_foreign_server' as REGCLASS), 0, 0),
-    (cast('pg_user_mapping' as REGCLASS), 0, 0),
-    (cast('pg_default_acl' as REGCLASS), 0, 0),
-    (cast('pg_extension' as REGCLASS), 0, 0),
-    (cast('pg_event_trigger' as REGCLASS), 0, 0),
-    (cast('pg_parameter_acl' as REGCLASS), 0, 0),
-    (cast('pg_policy' as REGCLASS), 0, 0),
-    (cast('pg_publication' as REGCLASS), 0, 0),
+    (cast('pg_foreign_server' as regclass), 0, 0),
+    (cast('pg_user_mapping' as regclass), 0, 0),
+    (cast('pg_default_acl' as regclass), 0, 0),
+    (cast('pg_extension' as regclass), 0, 0),
+    (cast('pg_event_trigger' as regclass), 0, 0),
+    (cast('pg_parameter_acl' as regclass), 0, 0),
+    (cast('pg_policy' as regclass), 0, 0),
+    (cast('pg_publication' as regclass), 0, 0),
     (
-      cast('pg_publication_namespace' as REGCLASS), 0, 0
+      cast('pg_publication_namespace' as regclass), 0, 0
     ),
-    (cast('pg_publication_rel' as REGCLASS), 0, 0),
-    (cast('pg_subscription' as REGCLASS), 0, 0),
-    (cast('pg_transform' as REGCLASS), 0, 0)
+    (cast('pg_publication_rel' as regclass), 0, 0),
+    (cast('pg_subscription' as regclass), 0, 0),
+    (cast('pg_transform' as regclass), 0, 0)
 )
 select
   row(pg_identify_object(

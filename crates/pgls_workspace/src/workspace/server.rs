@@ -884,6 +884,7 @@ impl Workspace for WorkspaceServer {
             indent_style: settings.formatter.indent_style.into(),
             keyword_case: settings.formatter.keyword_case.into(),
             constant_case: settings.formatter.constant_case.into(),
+            type_case: settings.formatter.type_case.into(),
         };
 
         let mut diagnostics = Vec::new();

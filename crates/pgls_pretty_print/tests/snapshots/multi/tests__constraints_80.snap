@@ -4,9 +4,9 @@ input_file: crates/pgls_pretty_print/tests/data/multi/constraints.sql
 snapshot_kind: text
 ---
 create table default_tbl (
-  i INT default 100,
-  x TEXT default 'vadim',
-  f DOUBLE PRECISION default 123.456
+  i int default 100,
+  x text default 'vadim',
+  f double precision default 123.456
 );
 
 insert into default_tbl values (1, 'thomas', 57.0613);
@@ -24,8 +24,8 @@ select * from default_tbl;
 create sequence default_seq;
 
 create table defaultexpr_tbl (
-  i1 INT default (100 + (200 - 199) * 2),
-  i2 INT default nextval('default_seq')
+  i1 int default (100 + (200 - 199) * 2),
+  i2 int default nextval('default_seq')
 );
 
 insert into defaultexpr_tbl values (-1, -2);
@@ -38,12 +38,12 @@ insert into defaultexpr_tbl (i2) values (null);
 
 select * from defaultexpr_tbl;
 
-create table error_tbl (b1 BOOLEAN default (1 in (1, 2)));
+create table error_tbl (b1 boolean default (1 in (1, 2)));
 
-drop TABLE error_tbl;
+drop table error_tbl;
 
 create table check_tbl (
-  x INT,
+  x int,
   constraint "check_con" check (x > 3)
 );
 
@@ -78,9 +78,9 @@ select * from ne_check_tbl;
 create sequence check_seq;
 
 create table check2_tbl (
-  x INT,
-  y TEXT,
-  z INT,
+  x int,
+  y text,
+  z int,
   constraint "sequence_con" check (x > 3 and y <> 'check failed' and z < 8)
 );
 
@@ -143,12 +143,12 @@ insert into insert_tbl values (null, null, null);
 select * from insert_tbl;
 
 create table sys_col_check_tbl (
-  city TEXT,
-  state TEXT,
-  is_capital BOOLEAN,
-  altitude INT,
+  city text,
+  state text,
+  is_capital boolean,
+  altitude int,
   check (not (is_capital and
-  cast(cast(tableoid as REGCLASS) as TEXT) =
+  cast(cast(tableoid as regclass) as text) =
   'sys_col_check_tbl'))
 );
 
@@ -156,22 +156,22 @@ insert into sys_col_check_tbl values ('Seattle', 'Washington', false, 100);
 
 insert into sys_col_check_tbl values ('Olympia', 'Washington', true, 100);
 
-select *, cast(cast(tableoid as REGCLASS) as TEXT) from sys_col_check_tbl;
+select *, cast(cast(tableoid as regclass) as text) from sys_col_check_tbl;
 
-drop TABLE sys_col_check_tbl;
+drop table sys_col_check_tbl;
 
 create table sys_col_check_tbl (
-  city TEXT,
-  state TEXT,
-  is_capital BOOLEAN,
-  altitude INT,
+  city text,
+  state text,
+  is_capital boolean,
+  altitude int,
   check (not (is_capital and
-  cast(ctid as TEXT) = 'sys_col_check_tbl'))
+  cast(ctid as text) = 'sys_col_check_tbl'))
 );
 
 create table insert_child (
-  cx INT default 42,
-  cy INT check (cy > x)
+  cx int default 42,
+  cy int check (cy > x)
 )
 inherits (insert_tbl);
 
@@ -185,22 +185,22 @@ insert into insert_child (x, y, z, cy) values (6, 'check failed', -6, 7);
 
 select * from insert_child;
 
-drop TABLE insert_child;
+drop table insert_child;
 
-create table atacc1 (test INT check (test > 0) no inherit);
+create table atacc1 (test int check (test > 0) no inherit);
 
-create table atacc2 (test2 INT)
+create table atacc2 (test2 int)
 inherits (atacc1);
 
 insert into atacc2 (test) values (-3);
 
 insert into atacc1 (test) values (-3);
 
-drop TABLE atacc1 cascade;
+drop table atacc1 cascade;
 
 create table atacc1 (
-  test INT,
-  test2 INT check (test > 0),
+  test int,
+  test2 int check (test > 0),
   check (test2 > 10) no inherit
 );
 
@@ -215,8 +215,8 @@ insert into atacc2 (test2) values (3);
 
 insert into atacc1 (test2) values (3);
 
-drop TABLE atacc1 cascade;
+drop table atacc1 cascade;
 
 delete from insert_tbl;
 
-alter SEQUENCE insert_seq RESTART;
+alter sequence insert_seq restart;

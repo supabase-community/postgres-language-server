@@ -6,32 +6,32 @@ snapshot_kind: text
 create schema "testxmlschema";
 
 create table testxmlschema.test1 (
-  a INT,
-  b TEXT
+  a int,
+  b text
 );
 
 insert into testxmlschema.test1 values (1, 'one'), (2, 'two'), (-1, null);
 
-create domain testxmldomain as VARCHAR;
+create domain testxmldomain as varchar;
 
 create table testxmlschema.test2 (
-  z INT,
-  y VARCHAR(500),
-  x CHAR(6),
-  w NUMERIC(9, 2),
-  v SMALLINT,
-  u BIGINT,
-  t REAL,
-  s TIME,
-  stz time with time ZONE,
-  r TIMESTAMP,
-  rtz timestamp with time ZONE,
-  q DATE,
-  p XML,
+  z int,
+  y varchar(500),
+  x char(6),
+  w numeric(9, 2),
+  v smallint,
+  u bigint,
+  t real,
+  s time,
+  stz time with time zone,
+  r timestamp,
+  rtz timestamp with time zone,
+  q date,
+  p xml,
   o testxmldomain,
-  n BOOLEAN,
-  m BYTEA,
-  aaa TEXT
+  n boolean,
+  m bytea,
+  aaa text
 );
 
 alter table testxmlschema.test2

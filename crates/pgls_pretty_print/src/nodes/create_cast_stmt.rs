@@ -40,7 +40,7 @@ pub(super) fn emit_create_cast_stmt(e: &mut EventEmitter, n: &CreateCastStmt) {
     } else if n.inout {
         e.token(TokenKind::WITH_KW);
         e.space();
-        e.token(TokenKind::IDENT("INOUT".to_string()));
+        e.token(TokenKind::INOUT_KW);
     } else {
         e.token(TokenKind::WITHOUT_KW);
         e.space();
@@ -53,13 +53,13 @@ pub(super) fn emit_create_cast_stmt(e: &mut EventEmitter, n: &CreateCastStmt) {
             e.line(LineType::SoftOrSpace);
             e.token(TokenKind::AS_KW);
             e.space();
-            e.token(TokenKind::IDENT("IMPLICIT".to_string()));
+            e.token(TokenKind::IMPLICIT_KW);
         }
         CoercionContext::CoercionAssignment => {
             e.line(LineType::SoftOrSpace);
             e.token(TokenKind::AS_KW);
             e.space();
-            e.token(TokenKind::IDENT("ASSIGNMENT".to_string()));
+            e.token(TokenKind::ASSIGNMENT_KW);
         }
         _ => {}
     }

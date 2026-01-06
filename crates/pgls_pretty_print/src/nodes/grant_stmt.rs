@@ -52,19 +52,19 @@ pub(super) fn emit_grant_stmt(e: &mut EventEmitter, n: &GrantStmt) {
         e.space();
         match objtype {
             ObjectType::ObjectTable => {
-                e.token(TokenKind::IDENT("TABLES".to_string()));
+                e.token(TokenKind::TABLES_KW);
             }
             ObjectType::ObjectSequence => {
-                e.token(TokenKind::IDENT("SEQUENCES".to_string()));
+                e.token(TokenKind::SEQUENCES_KW);
             }
             ObjectType::ObjectFunction => {
-                e.token(TokenKind::IDENT("FUNCTIONS".to_string()));
+                e.token(TokenKind::FUNCTIONS_KW);
             }
             ObjectType::ObjectProcedure => {
-                e.token(TokenKind::IDENT("PROCEDURES".to_string()));
+                e.token(TokenKind::PROCEDURES_KW);
             }
             ObjectType::ObjectRoutine => {
-                e.token(TokenKind::IDENT("ROUTINES".to_string()));
+                e.token(TokenKind::ROUTINES_KW);
             }
             _ => {}
         }
@@ -77,25 +77,25 @@ pub(super) fn emit_grant_stmt(e: &mut EventEmitter, n: &GrantStmt) {
         // For ALTER DEFAULT PRIVILEGES, use plural object types
         match objtype {
             ObjectType::ObjectTable => {
-                e.token(TokenKind::IDENT("TABLES".to_string()));
+                e.token(TokenKind::TABLES_KW);
             }
             ObjectType::ObjectSequence => {
-                e.token(TokenKind::IDENT("SEQUENCES".to_string()));
+                e.token(TokenKind::SEQUENCES_KW);
             }
             ObjectType::ObjectFunction => {
-                e.token(TokenKind::IDENT("FUNCTIONS".to_string()));
+                e.token(TokenKind::FUNCTIONS_KW);
             }
             ObjectType::ObjectProcedure => {
-                e.token(TokenKind::IDENT("PROCEDURES".to_string()));
+                e.token(TokenKind::PROCEDURES_KW);
             }
             ObjectType::ObjectRoutine => {
-                e.token(TokenKind::IDENT("ROUTINES".to_string()));
+                e.token(TokenKind::ROUTINES_KW);
             }
             ObjectType::ObjectType => {
-                e.token(TokenKind::IDENT("TYPES".to_string()));
+                e.token(TokenKind::TYPES_KW);
             }
             ObjectType::ObjectSchema => {
-                e.token(TokenKind::IDENT("SCHEMAS".to_string()));
+                e.token(TokenKind::SCHEMAS_KW);
             }
             _ => {}
         }
@@ -132,21 +132,21 @@ pub(super) fn emit_grant_stmt(e: &mut EventEmitter, n: &GrantStmt) {
                 e.space();
             }
             ObjectType::ObjectLargeobject => {
-                e.token(TokenKind::IDENT("LARGE".to_string()));
+                e.token(TokenKind::LARGE_KW);
                 e.space();
                 e.token(TokenKind::OBJECT_KW);
                 e.space();
             }
             ObjectType::ObjectFdw => {
-                e.token(TokenKind::IDENT("FOREIGN".to_string()));
+                e.token(TokenKind::FOREIGN_KW);
                 e.space();
-                e.token(TokenKind::IDENT("DATA".to_string()));
+                e.token(TokenKind::DATA_KW);
                 e.space();
-                e.token(TokenKind::IDENT("WRAPPER".to_string()));
+                e.token(TokenKind::WRAPPER_KW);
                 e.space();
             }
             ObjectType::ObjectForeignServer => {
-                e.token(TokenKind::IDENT("FOREIGN".to_string()));
+                e.token(TokenKind::FOREIGN_KW);
                 e.space();
                 e.token(TokenKind::SERVER_KW);
                 e.space();
@@ -205,7 +205,7 @@ pub(super) fn emit_grant_stmt(e: &mut EventEmitter, n: &GrantStmt) {
     // GRANTED BY
     if let Some(ref grantor) = n.grantor {
         e.line(LineType::SoftOrSpace);
-        e.token(TokenKind::IDENT("GRANTED".to_string()));
+        e.token(TokenKind::GRANTED_KW);
         e.space();
         e.token(TokenKind::BY_KW);
         e.space();

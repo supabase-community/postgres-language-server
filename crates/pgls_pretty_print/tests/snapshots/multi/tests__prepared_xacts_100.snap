@@ -3,7 +3,7 @@ source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/prepared_xacts.sql
 snapshot_kind: text
 ---
-create table pxtest1 (foobar VARCHAR(10));
+create table pxtest1 (foobar varchar(10));
 
 insert into pxtest1 values ('aaa');
 
@@ -85,7 +85,7 @@ rollback prepared 'regress_foo4';
 
 select gid from pg_prepared_xacts where gid ~ '^regress_' order by gid;
 
-drop TABLE pxtest1;
+drop table pxtest1;
 
 begin;
 
@@ -97,7 +97,7 @@ prepare transaction 'regress_foo6';
 
 begin isolation level serializable;
 
-create table pxtest2 (a INT);
+create table pxtest2 (a int);
 
 insert into pxtest2 values (1);
 
@@ -113,13 +113,13 @@ insert into pxtest2 values (3);
 
 prepare transaction 'regress_sub1';
 
-create table pxtest3 (fff INT);
+create table pxtest3 (fff int);
 
 begin isolation level serializable;
 
-drop TABLE pxtest3;
+drop table pxtest3;
 
-create table pxtest4 (a INT);
+create table pxtest4 (a int);
 
 insert into pxtest4 values (1);
 
@@ -139,7 +139,7 @@ select gid from pg_prepared_xacts where gid ~ '^regress_' order by gid;
 
 begin;
 
-lock table pxtest3 in ACCESS SHARE mode NOWAIT;
+lock table pxtest3 in ACCESS SHARE mode nowait;
 
 rollback;
 
@@ -147,7 +147,7 @@ select gid from pg_prepared_xacts where gid ~ '^regress_' order by gid;
 
 begin;
 
-lock table pxtest3 in ACCESS SHARE mode NOWAIT;
+lock table pxtest3 in ACCESS SHARE mode nowait;
 
 rollback;
 
@@ -163,8 +163,8 @@ select * from pxtest3;
 
 select gid from pg_prepared_xacts where gid ~ '^regress_' order by gid;
 
-drop TABLE pxtest2;
+drop table pxtest2;
 
-drop TABLE pxtest3;
+drop table pxtest3;
 
-drop TABLE pxtest4;
+drop table pxtest4;

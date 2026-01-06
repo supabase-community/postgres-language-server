@@ -39,7 +39,7 @@ pub(super) fn emit_range_tbl_function(e: &mut EventEmitter, n: &RangeTblFunction
 
     if !n.funcparams.is_empty() {
         e.space();
-        e.token(TokenKind::IDENT("PARAMS".to_string()));
+        e.token(TokenKind::IDENT("params".to_string()));
         e.space();
         e.token(TokenKind::L_PAREN);
         let mut first = true;

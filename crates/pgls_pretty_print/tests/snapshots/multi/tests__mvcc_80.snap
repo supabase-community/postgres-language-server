@@ -12,8 +12,8 @@ set local enable_indexonlyscan = 'false';
 set local enable_bitmapscan = 'false';
 
 create table clean_aborted_self (
-  key INT,
-  data TEXT
+  key int,
+  data text
 );
 
 create index "clean_aborted_self_key" on clean_aborted_self using btree (key);

@@ -14,10 +14,10 @@ pub(super) fn emit_alter_function_stmt(e: &mut EventEmitter, n: &AlterFunctionSt
     // ObjectType: ObjectFunction=20, ObjectProcedure=30
     match n.objtype {
         30 => {
-            e.token(TokenKind::IDENT("PROCEDURE".to_string()));
+            e.token(TokenKind::PROCEDURE_KW);
         }
         _ => {
-            e.token(TokenKind::IDENT("FUNCTION".to_string()));
+            e.token(TokenKind::FUNCTION_KW);
         }
     }
     e.line(LineType::SoftOrSpace);

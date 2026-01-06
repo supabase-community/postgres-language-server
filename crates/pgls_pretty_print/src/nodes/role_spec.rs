@@ -25,7 +25,7 @@ pub(super) fn emit_role_spec(e: &mut EventEmitter, n: &RoleSpec) {
             e.token(TokenKind::CURRENT_ROLE_KW);
         }
         RoleSpecType::RolespecPublic => {
-            e.token(TokenKind::IDENT("PUBLIC".to_string()));
+            e.token(TokenKind::IDENT("public".to_string()));
         }
         RoleSpecType::Undefined => {
             if !n.rolename.is_empty() {

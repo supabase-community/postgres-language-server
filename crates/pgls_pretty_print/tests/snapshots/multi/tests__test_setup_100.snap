@@ -5,19 +5,19 @@ snapshot_kind: text
 ---
 set synchronous_commit = 'on';
 
-grant all on schema public to PUBLIC;
+grant all on schema public to public;
 
 set allow_in_place_tablespaces = 'true';
 
 create tablespace regress_tblspace location '';
 
-create table char_tbl (f1 CHAR(4));
+create table char_tbl (f1 char(4));
 
 insert into char_tbl (f1) values ('a'), ('ab'), ('abcd'), ('abcd    ');
 
 vacuum char_tbl;
 
-create table float8_tbl (f1 DOUBLE PRECISION);
+create table float8_tbl (f1 double precision);
 
 insert into float8_tbl (f1)
 values
@@ -29,13 +29,13 @@ values
 
 vacuum float8_tbl;
 
-create table int2_tbl (f1 SMALLINT);
+create table int2_tbl (f1 smallint);
 
 insert into int2_tbl (f1) values ('0   '), ('  1234 '), ('    -1234'), ('32767'), ('-32767');
 
 vacuum int2_tbl;
 
-create table int4_tbl (f1 INT);
+create table int4_tbl (f1 int);
 
 insert into int4_tbl (f1)
 values
@@ -48,8 +48,8 @@ values
 vacuum int4_tbl;
 
 create table int8_tbl (
-  q1 BIGINT,
-  q2 BIGINT
+  q1 bigint,
+  q2 bigint
 );
 
 insert into int8_tbl
@@ -77,35 +77,35 @@ values
   (' ( Nan , NaN ) '),
   ('10.0,10.0');
 
-create table text_tbl (f1 TEXT);
+create table text_tbl (f1 text);
 
 insert into text_tbl values ('doh!'), ('hi de ho neighbor');
 
 vacuum text_tbl;
 
-create table varchar_tbl (f1 VARCHAR(4));
+create table varchar_tbl (f1 varchar(4));
 
 insert into varchar_tbl (f1) values ('a'), ('ab'), ('abcd'), ('abcd    ');
 
 vacuum varchar_tbl;
 
 create table onek (
-  unique1 INT,
-  unique2 INT,
-  two INT,
-  four INT,
-  ten INT,
-  twenty INT,
-  hundred INT,
-  thousand INT,
-  twothousand INT,
-  fivethous INT,
-  tenthous INT,
-  odd INT,
-  even INT,
-  stringu1 NAME,
-  stringu2 NAME,
-  string4 NAME
+  unique1 int,
+  unique2 int,
+  two int,
+  four int,
+  ten int,
+  twenty int,
+  hundred int,
+  thousand int,
+  twothousand int,
+  fivethous int,
+  tenthous int,
+  odd int,
+  even int,
+  stringu1 name,
+  stringu2 name,
+  string4 name
 );
 
 copy onek from 'filename';
@@ -117,22 +117,22 @@ create table onek2 as select * from onek;
 vacuum (ANALYZE) onek2;
 
 create table tenk1 (
-  unique1 INT,
-  unique2 INT,
-  two INT,
-  four INT,
-  ten INT,
-  twenty INT,
-  hundred INT,
-  thousand INT,
-  twothousand INT,
-  fivethous INT,
-  tenthous INT,
-  odd INT,
-  even INT,
-  stringu1 NAME,
-  stringu2 NAME,
-  string4 NAME
+  unique1 int,
+  unique2 int,
+  two int,
+  four int,
+  ten int,
+  twenty int,
+  hundred int,
+  thousand int,
+  twothousand int,
+  fivethous int,
+  tenthous int,
+  odd int,
+  even int,
+  stringu1 name,
+  stringu2 name,
+  string4 name
 );
 
 copy tenk1 from 'filename';
@@ -144,8 +144,8 @@ create table tenk2 as select * from tenk1;
 vacuum (ANALYZE) tenk2;
 
 create table person (
-  name TEXT,
-  age INT,
+  name text,
+  age int,
   location point
 );
 
@@ -154,8 +154,8 @@ copy person from 'filename';
 vacuum (ANALYZE) person;
 
 create table emp (
-  salary INT,
-  manager NAME
+  salary int,
+  manager name
 )
 inherits (person);
 
@@ -163,14 +163,14 @@ copy emp from 'filename';
 
 vacuum (ANALYZE) emp;
 
-create table student (gpa DOUBLE PRECISION)
+create table student (gpa double precision)
 inherits (person);
 
 copy student from 'filename';
 
 vacuum (ANALYZE) student;
 
-create table stud_emp (percent INT)
+create table stud_emp (percent int)
 inherits (emp,
 student);
 
@@ -179,7 +179,7 @@ copy stud_emp from 'filename';
 vacuum (ANALYZE) stud_emp;
 
 create table road (
-  name TEXT,
+  name text,
   thepath path
 );
 
@@ -194,7 +194,7 @@ insert into ihighway select * from only road where name ~ 'I- .*';
 
 vacuum (ANALYZE) ihighway;
 
-create table shighway (surface TEXT)
+create table shighway (surface text)
 inherits (road);
 
 insert into shighway select *, 'asphalt' from only road where name ~ 'State Hwy.*';
@@ -203,64 +203,64 @@ vacuum (ANALYZE) shighway;
 
 create type stoplight as enum ('red', 'yellow', 'green');
 
-create type float8range as RANGE (subtype = DOUBLE PRECISION, subtype_diff = float8mi);
+create type float8range as range (subtype = double precision, subtype_diff = float8mi);
 
-create type textrange as RANGE (subtype = TEXT, collation = "C");
+create type textrange as range (subtype = text, collation = "C");
 
-create function binary_coercible(OID, OID)
-returns BOOLEAN
+create function binary_coercible(oid, oid)
+returns boolean
 as 'regresslib', 'binary_coercible'
 language c
-STRICT
+strict
 stable
 parallel SAFE;
 
-create function part_hashint4_noop(value INT, seed BIGINT)
-returns BIGINT
+create function part_hashint4_noop(value int, seed bigint)
+returns bigint
 as $function$
     select value + seed;
     $function$
 language sql
-STRICT
+strict
 immutable
 parallel SAFE;
 
-create OPERATOR class part_test_int4_ops
-  for type INT
+create operator class part_test_int4_ops
+  for type int
   using hash
-  as OPERATOR 1 =,
-  FUNCTION 2 part_hashint4_noop(INT, BIGINT);
+  as operator 1 =,
+  function 2 part_hashint4_noop(int, bigint);
 
-create function part_hashtext_length(value TEXT, seed BIGINT)
-returns BIGINT
+create function part_hashtext_length(value text, seed bigint)
+returns bigint
 as $function$
     select length(coalesce(value, ''))::int8
     $function$
 language sql
-STRICT
+strict
 immutable
 parallel SAFE;
 
-create OPERATOR class part_test_text_ops
-  for type TEXT
+create operator class part_test_text_ops
+  for type text
   using hash
-  as OPERATOR 1 =,
-  FUNCTION 2 part_hashtext_length(TEXT, BIGINT);
+  as operator 1 =,
+  function 2 part_hashtext_length(text, bigint);
 
-create function fipshash(BYTEA)
-returns TEXT
-STRICT
+create function fipshash(bytea)
+returns text
+strict
 immutable
 parallel SAFE
 leakproof return substr(encode(sha256($1), 'hex'), 1, 32);;
 
-create function fipshash(TEXT)
-returns TEXT
-STRICT
+create function fipshash(text)
+returns text
+strict
 immutable
 parallel SAFE
 leakproof return substr(
-  encode(sha256(cast($1 as BYTEA)), 'hex'),
+  encode(sha256(cast($1 as bytea)), 'hex'),
   1,
   32
 );;

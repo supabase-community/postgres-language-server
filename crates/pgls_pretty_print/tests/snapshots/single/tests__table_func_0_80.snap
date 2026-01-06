@@ -6,12 +6,12 @@ snapshot_kind: text
 select
   *
 from
-  JSON_TABLE(
+  json_table(
     cast('{"employees":[{"name":"Al","age":1}]}'
-    as JSONB),
+    as jsonb),
     '$.employees[*]'
-    COLUMNS (
-      name text PATH '$.name',
-      age INT PATH '$.age'
+    columns (
+      name text path '$.name',
+      age int path '$.age'
     )
   ) as jt;

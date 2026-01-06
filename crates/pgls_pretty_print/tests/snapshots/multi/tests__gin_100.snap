@@ -3,7 +3,7 @@ source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/gin.sql
 snapshot_kind: text
 ---
-create table gin_test_tbl (i INT[]) with (autovacuum_enabled = off);
+create table gin_test_tbl (i int[]) with (autovacuum_enabled = off);
 
 create index "gin_test_idx"
 on gin_test_tbl
@@ -54,8 +54,8 @@ select COUNT(*) > 0 as ok from gin_test_tbl where i @> array[1];
 reset gin_fuzzy_search_limit;
 
 create temporary table t_gin_test_tbl (
-  i INT[],
-  j INT[]
+  i int[],
+  j int[]
 );
 
 create index on t_gin_test_tbl using gin (i, j);
@@ -79,15 +79,15 @@ select * from t_gin_test_tbl where array[0] <@ i;
 
 select * from t_gin_test_tbl where array[0] <@ i;
 
-select * from t_gin_test_tbl where array[0] <@ i and cast('{}' as INT[]) <@ j;
+select * from t_gin_test_tbl where array[0] <@ i and cast('{}' as int[]) <@ j;
 
 select * from t_gin_test_tbl where i @> '{}';
 
 select * from t_gin_test_tbl where i @> '{}';
 
-create function explain_query_json(query_sql TEXT)
+create function explain_query_json(query_sql text)
 returns table (
-  explain_line JSON
+  explain_line json
 )
 language plpgsql
 as $function$
@@ -98,8 +98,8 @@ begin
 end;
 $function$;
 
-create function execute_text_query_index(query_sql TEXT)
-returns setof TEXT
+create function execute_text_query_index(query_sql text)
+returns setof text
 language plpgsql
 as $function$
 begin
@@ -109,8 +109,8 @@ begin
 end;
 $function$;
 
-create function execute_text_query_heap(query_sql TEXT)
-returns setof TEXT
+create function execute_text_query_heap(query_sql text)
+returns setof text
 language plpgsql
 as $function$
 begin
@@ -187,9 +187,9 @@ select COUNT(*) from t_gin_test_tbl where j @> array[2];
 
 select COUNT(*) from t_gin_test_tbl where j @> array[2];
 
-select COUNT(*) from t_gin_test_tbl where j @> cast('{}' as INT[]);
+select COUNT(*) from t_gin_test_tbl where j @> cast('{}' as int[]);
 
-select COUNT(*) from t_gin_test_tbl where j @> cast('{}' as INT[]);
+select COUNT(*) from t_gin_test_tbl where j @> cast('{}' as int[]);
 
 delete from t_gin_test_tbl where j @> array[2];
 
@@ -199,21 +199,21 @@ select COUNT(*) from t_gin_test_tbl where j @> array[50];
 
 select COUNT(*) from t_gin_test_tbl where j @> array[2];
 
-select COUNT(*) from t_gin_test_tbl where j @> cast('{}' as INT[]);
+select COUNT(*) from t_gin_test_tbl where j @> cast('{}' as int[]);
 
 reset enable_seqscan;
 
 reset enable_bitmapscan;
 
-drop TABLE t_gin_test_tbl;
+drop table t_gin_test_tbl;
 
 create unlogged table t_gin_test_tbl (
-  i INT[],
-  j INT[]
+  i int[],
+  j int[]
 );
 
 create index on t_gin_test_tbl using gin (i, j);
 
 insert into t_gin_test_tbl values (null, null), ('{}', null), ('{1}', '{2,3}');
 
-drop TABLE t_gin_test_tbl;
+drop table t_gin_test_tbl;

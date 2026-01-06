@@ -3,79 +3,79 @@ source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/numeric_big.sql
 snapshot_kind: text
 ---
-drop TABLE num_data;
+drop table num_data;
 
-drop TABLE num_exp_add;
+drop table num_exp_add;
 
-drop TABLE num_exp_sub;
+drop table num_exp_sub;
 
-drop TABLE num_exp_div;
+drop table num_exp_div;
 
-drop TABLE num_exp_mul;
+drop table num_exp_mul;
 
-drop TABLE num_exp_sqrt;
+drop table num_exp_sqrt;
 
-drop TABLE num_exp_ln;
+drop table num_exp_ln;
 
-drop TABLE num_exp_log10;
+drop table num_exp_log10;
 
-drop TABLE num_exp_power_10_ln;
+drop table num_exp_power_10_ln;
 
-drop TABLE num_result;
+drop table num_result;
 
 create table num_data (
-  id INT,
-  val NUMERIC(1000, 800)
+  id int,
+  val numeric(1000, 800)
 );
 
 create table num_exp_add (
-  id1 INT,
-  id2 INT,
-  expected NUMERIC(1000, 800)
+  id1 int,
+  id2 int,
+  expected numeric(1000, 800)
 );
 
 create table num_exp_sub (
-  id1 INT,
-  id2 INT,
-  expected NUMERIC(1000, 800)
+  id1 int,
+  id2 int,
+  expected numeric(1000, 800)
 );
 
 create table num_exp_div (
-  id1 INT,
-  id2 INT,
-  expected NUMERIC(1000, 800)
+  id1 int,
+  id2 int,
+  expected numeric(1000, 800)
 );
 
 create table num_exp_mul (
-  id1 INT,
-  id2 INT,
-  expected NUMERIC(1000, 800)
+  id1 int,
+  id2 int,
+  expected numeric(1000, 800)
 );
 
 create table num_exp_sqrt (
-  id INT,
-  expected NUMERIC(1000, 800)
+  id int,
+  expected numeric(1000, 800)
 );
 
 create table num_exp_ln (
-  id INT,
-  expected NUMERIC(1000, 800)
+  id int,
+  expected numeric(1000, 800)
 );
 
 create table num_exp_log10 (
-  id INT,
-  expected NUMERIC(1000, 800)
+  id int,
+  expected numeric(1000, 800)
 );
 
 create table num_exp_power_10_ln (
-  id INT,
-  expected NUMERIC(1000, 800)
+  id int,
+  expected numeric(1000, 800)
 );
 
 create table num_result (
-  id1 INT,
-  id2 INT,
-  result NUMERIC(1000, 800)
+  id1 int,
+  id2 int,
+  result numeric(1000, 800)
 );
 
 begin;
@@ -3570,7 +3570,7 @@ insert into num_result
 select
   id,
   0,
-  log(cast('10' as NUMERIC), abs(val))
+  log(cast('10' as numeric), abs(val))
 from
   num_data
 where
@@ -3594,7 +3594,7 @@ select
   id,
   0,
   pow(
-    cast('10' as NUMERIC),
+    cast('10' as numeric),
     ln(abs(round(val, 1000)))
   )
 from
@@ -4493,8 +4493,8 @@ as (
 select
   x,
   bc_result,
-  ln(cast(x as NUMERIC)),
-  ln(cast(x as NUMERIC)) - bc_result
+  ln(cast(x as numeric)),
+  ln(cast(x as numeric)) - bc_result
   as diff
 from
   t;
@@ -4639,8 +4639,8 @@ as (
 select
   '1-' || x,
   bc_result,
-  ln(1.0 - cast(x as NUMERIC)),
-  ln(1.0 - cast(x as NUMERIC)) - bc_result
+  ln(1.0 - cast(x as numeric)),
+  ln(1.0 - cast(x as numeric)) - bc_result
   as diff
 from
   t;
@@ -4782,8 +4782,8 @@ as (
 select
   '1+' || x,
   bc_result,
-  ln(1.0 + cast(x as NUMERIC)),
-  ln(1.0 + cast(x as NUMERIC)) - bc_result
+  ln(1.0 + cast(x as numeric)),
+  ln(1.0 + cast(x as numeric)) - bc_result
   as diff
 from
   t;
@@ -4837,8 +4837,8 @@ as (
 select
   x,
   bc_result,
-  ln(cast(x as NUMERIC)),
-  ln(cast(x as NUMERIC)) - bc_result
+  ln(cast(x as numeric)),
+  ln(cast(x as numeric)) - bc_result
   as diff
 from
   t;
@@ -4862,8 +4862,8 @@ as (
 select
   x,
   bc_result,
-  ln(cast(x as NUMERIC)),
-  ln(cast(x as NUMERIC)) - bc_result
+  ln(cast(x as numeric)),
+  ln(cast(x as numeric)) - bc_result
   as diff
 from
   t;
@@ -4888,7 +4888,7 @@ as (
 )
 select
   trim_scale(
-    ln(cast(x as NUMERIC)) - bc_result
+    ln(cast(x as numeric)) - bc_result
   )
   as diff
 from
@@ -4904,7 +4904,7 @@ as (
 )
 select
   x,
-  log(cast(x as NUMERIC))
+  log(cast(x as numeric))
 from
   t;
 
@@ -4977,8 +4977,8 @@ as (
 select
   x,
   bc_result,
-  log(cast(x as NUMERIC)),
-  log(cast(x as NUMERIC)) - bc_result
+  log(cast(x as numeric)),
+  log(cast(x as numeric)) - bc_result
   as diff
 from
   t;
@@ -5046,8 +5046,8 @@ as (
 select
   '1-' || x,
   bc_result,
-  log(1.0 - cast(x as NUMERIC)),
-  log(1.0 - cast(x as NUMERIC)) -
+  log(1.0 - cast(x as numeric)),
+  log(1.0 - cast(x as numeric)) -
   bc_result
   as diff
 from
@@ -5116,8 +5116,8 @@ as (
 select
   '1+' || x,
   bc_result,
-  log(1.0 + cast(x as NUMERIC)),
-  log(1.0 + cast(x as NUMERIC)) -
+  log(1.0 + cast(x as numeric)),
+  log(1.0 + cast(x as numeric)) -
   bc_result
   as diff
 from
@@ -5133,7 +5133,7 @@ as (
 )
 select
   x,
-  log(cast(x as NUMERIC))
+  log(cast(x as numeric))
 from
   t;
 
@@ -5164,8 +5164,8 @@ as (
 select
   x,
   bc_result,
-  log(cast(x as NUMERIC)),
-  log(cast(x as NUMERIC)) - bc_result
+  log(cast(x as numeric)),
+  log(cast(x as numeric)) - bc_result
   as diff
 from
   t;

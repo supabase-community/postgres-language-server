@@ -10,7 +10,7 @@ pub(super) fn emit_alter_extension_contents_stmt(
 
     e.token(TokenKind::ALTER_KW);
     e.space();
-    e.token(TokenKind::IDENT("EXTENSION".to_string()));
+    e.token(TokenKind::EXTENSION_KW);
     e.space();
 
     if !n.extname.is_empty() {
@@ -29,14 +29,13 @@ pub(super) fn emit_alter_extension_contents_stmt(
     e.space();
 
     // Object type
-    let object_type_str = match n.objtype() {
-        ObjectType::ObjectTable => "TABLE",
-        ObjectType::ObjectFunction => "FUNCTION",
-        ObjectType::ObjectType => "TYPE",
-        ObjectType::ObjectOperator => "OPERATOR",
-        _ => "OBJECT",
-    };
-    e.token(TokenKind::IDENT(object_type_str.to_string()));
+    match n.objtype() {
+        ObjectType::ObjectTable => e.token(TokenKind::TABLE_KW),
+        ObjectType::ObjectFunction => e.token(TokenKind::FUNCTION_KW),
+        ObjectType::ObjectType => e.token(TokenKind::TYPE_KW),
+        ObjectType::ObjectOperator => e.token(TokenKind::OPERATOR_KW),
+        _ => e.token(TokenKind::OBJECT_KW),
+    }
     e.space();
 
     // Object name

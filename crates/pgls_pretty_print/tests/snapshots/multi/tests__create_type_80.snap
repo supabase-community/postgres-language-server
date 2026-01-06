@@ -7,28 +7,28 @@ create function widget_in(cstring)
 returns widget
 as $function$regresslib$function$
 language c
-STRICT
+strict
 immutable;
 
 create function widget_out(widget)
 returns cstring
 as $function$regresslib$function$
 language c
-STRICT
+strict
 immutable;
 
 create function int44in(cstring)
 returns city_budget
 as $function$regresslib$function$
 language c
-STRICT
+strict
 immutable;
 
 create function int44out(city_budget)
 returns cstring
 as $function$regresslib$function$
 language c
-STRICT
+strict
 immutable;
 
 create type widget (
@@ -44,7 +44,7 @@ create type city_budget (
   internallength = 16,
   input = int44in,
   output = int44out,
-  element = INT,
+  element = int,
   category = 'x',
   preferred = 'true'
 );
@@ -53,9 +53,9 @@ create type shell;
 
 create type shell;
 
-drop TYPE shell;
+drop type shell;
 
-drop TYPE shell;
+drop type shell;
 
 create type myshell;
 
@@ -67,35 +67,35 @@ create function int42_in(cstring)
 returns int42
 as $function$int4in$function$
 language internal
-STRICT
+strict
 immutable;
 
 create function int42_out(int42)
 returns cstring
 as $function$int4out$function$
 language internal
-STRICT
+strict
 immutable;
 
 create function text_w_default_in(cstring)
 returns text_w_default
 as $function$textin$function$
 language internal
-STRICT
+strict
 immutable;
 
 create function text_w_default_out(text_w_default)
 returns cstring
 as $function$textout$function$
 language internal
-STRICT
+strict
 immutable;
 
 create type int42 (
   internallength = 4,
   input = int42_in,
   output = int42_out,
-  alignment = INT,
+  alignment = int,
   "default" = 42,
   passedbyvalue
 );
@@ -104,7 +104,7 @@ create type text_w_default (
   internallength = variable,
   input = text_w_default_in,
   output = text_w_default_out,
-  alignment = INT,
+  alignment = int,
   "default" = 'zippo'
 );
 
@@ -123,7 +123,7 @@ create type bogus_type (
   "Internallength" = 4,
   "Input" = int42_in,
   "Output" = int42_out,
-  "Alignment" = INT,
+  "Alignment" = int,
   "Default" = 42,
   "Passedbyvalue"
 );
@@ -131,16 +131,16 @@ create type bogus_type (
 create type bogus_type (
   input = array_in,
   output = array_out,
-  element = INT,
+  element = int,
   internallength = 32
 );
 
-drop TYPE bogus_type;
+drop type bogus_type;
 
 create type bogus_type (
   input = array_in,
   output = array_out,
-  element = INT,
+  element = int,
   internallength = 32
 );
 
@@ -169,9 +169,9 @@ comment on column default_test_row.f1 is null;
 
 create type text_w_default;
 
-drop TYPE default_test_row cascade;
+drop type default_test_row cascade;
 
-drop TABLE default_test;
+drop table default_test;
 
 create type base_type;
 
@@ -180,24 +180,24 @@ returns base_type
 as $function$boolin$function$
 language internal
 immutable
-STRICT;
+strict;
 
 create function base_fn_out(base_type)
 returns cstring
 as $function$boolout$function$
 language internal
 immutable
-STRICT;
+strict;
 
 create type base_type (input = base_fn_in, output = base_fn_out);
 
-drop FUNCTION base_fn_in(cstring);
+drop function base_fn_in(cstring);
 
-drop FUNCTION base_fn_out(base_type);
+drop function base_fn_out(base_type);
 
-drop TYPE base_type;
+drop type base_type;
 
-drop TYPE base_type cascade;
+drop type base_type cascade;
 
 create temporary table mytab (foo widget(42, 13, 7));
 
@@ -208,18 +208,18 @@ select
 from
   pg_attribute
 where
-  attrelid = cast('mytab' as REGCLASS) and
+  attrelid = cast('mytab' as regclass) and
   attnum > 0;
 
 insert into mytab values ('(1,2,3)'), ('(-44,5.5,12)');
 
 select * from mytab;
 
-select format_type(cast('varchar' as REGTYPE), 42);
+select format_type(cast('varchar' as regtype), 42);
 
-select format_type(cast('bpchar' as REGTYPE), null);
+select format_type(cast('bpchar' as regtype), null);
 
-select format_type(cast('bpchar' as REGTYPE), -1);
+select format_type(cast('bpchar' as regtype), -1);
 
 select pg_input_is_valid('(1,2,3)', 'widget');
 
@@ -234,10 +234,10 @@ select pg_input_is_valid('("(1,2,3)")', 'mytab');
 select pg_input_is_valid('("(1,2)")', 'mytab');
 
 create function pt_in_widget(point, widget)
-returns BOOLEAN
+returns boolean
 as $function$regresslib$function$
 language c
-STRICT;
+strict;
 
 create operator <% (LEFTARG = point,
 RIGHTARG = widget,
@@ -254,7 +254,7 @@ select
   as f;
 
 create table city (
-  name NAME,
+  name name,
   location box,
   budget city_budget
 );
@@ -274,12 +274,12 @@ select * from city;
 
 create type myvarchar;
 
-create function myvarcharin(cstring, OID, INT)
+create function myvarcharin(cstring, oid, int)
 returns myvarchar
 language internal
 immutable
 parallel SAFE
-STRICT
+strict
 as $function$varcharin$function$;
 
 create function myvarcharout(myvarchar)
@@ -287,23 +287,23 @@ returns cstring
 language internal
 immutable
 parallel SAFE
-STRICT
+strict
 as $function$varcharout$function$;
 
 create function myvarcharsend(myvarchar)
-returns BYTEA
+returns bytea
 language internal
 stable
 parallel SAFE
-STRICT
+strict
 as $function$varcharsend$function$;
 
-create function myvarcharrecv(internal, OID, INT)
+create function myvarcharrecv(internal, oid, int)
 returns myvarchar
 language internal
 stable
 parallel SAFE
-STRICT
+strict
 as $function$varcharrecv$function$;
 
 alter type myvarchar set (storage = extended);
@@ -311,7 +311,7 @@ alter type myvarchar set (storage = extended);
 create type myvarchar (
   input = myvarcharin,
   output = myvarcharout,
-  alignment = INT,
+  alignment = int,
   storage = main
 );
 
@@ -389,8 +389,8 @@ from
 where
   typname = '_myvarchardom';
 
-drop FUNCTION myvarcharsend(myvarchar);
+drop function myvarcharsend(myvarchar);
 
-drop TYPE myvarchar;
+drop type myvarchar;
 
-drop TYPE myvarchar cascade;
+drop type myvarchar cascade;

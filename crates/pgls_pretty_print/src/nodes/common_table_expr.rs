@@ -31,13 +31,13 @@ pub(super) fn emit_common_table_expr(e: &mut EventEmitter, n: &CommonTableExpr) 
     // Materialization hint (PostgreSQL 12+)
     match n.ctematerialized() {
         CteMaterialize::Always => {
-            e.token(TokenKind::IDENT("MATERIALIZED".to_string()));
+            e.token(TokenKind::MATERIALIZED_KW);
             e.space();
         }
         CteMaterialize::Never => {
             e.token(TokenKind::NOT_KW);
             e.space();
-            e.token(TokenKind::IDENT("MATERIALIZED".to_string()));
+            e.token(TokenKind::MATERIALIZED_KW);
             e.space();
         }
         CteMaterialize::Default | CteMaterialize::CtematerializeUndefined => {

@@ -5,14 +5,14 @@ snapshot_kind: text
 ---
 create schema "stats_import";
 
-create type stats_import.complex_type as (a INT, b REAL, c TEXT, d DATE, e JSONB);
+create type stats_import.complex_type as (a int, b real, c text, d date, e jsonb);
 
 create table stats_import.test (
-  id INT primary key,
-  name TEXT,
+  id int primary key,
+  name text,
   comp stats_import.complex_type,
-  arange INT4RANGE,
-  tags TEXT[]
+  arange int4range,
+  tags text[]
 )
 with (autovacuum_enabled = 'false');
 
@@ -23,13 +23,13 @@ select
     'relname',
     'test',
     'relpages',
-    cast(18 as INT),
+    cast(18 as int),
     'reltuples',
-    cast(21 as REAL),
+    cast(21 as real),
     'relallvisible',
-    cast(24 as INT),
+    cast(24 as int),
     'relallfrozen',
-    cast(27 as INT)
+    cast(27 as int)
   );
 
 create index "test_i" on stats_import.test using btree (id);
@@ -43,23 +43,23 @@ select
 from
   pg_class
 where
-  oid = cast('stats_import.test' as REGCLASS)
+  oid = cast('stats_import.test' as regclass)
 order by relname;
 
 select pg_clear_relation_stats('stats_import', 'test');
 
-select pg_restore_relation_stats('relname', 'test', 'relpages', cast(17 as INT));
+select pg_restore_relation_stats('relname', 'test', 'relpages', cast(17 as int));
 
-select pg_restore_relation_stats('schemaname', 'stats_import', 'relpages', cast(17 as INT));
+select pg_restore_relation_stats('schemaname', 'stats_import', 'relpages', cast(17 as int));
 
 select
   pg_restore_relation_stats(
     'schemaname',
-    cast(3.6 as DOUBLE PRECISION),
+    cast(3.6 as double precision),
     'relname',
     'test',
     'relpages',
-    cast(17 as INT)
+    cast(17 as int)
   );
 
 select
@@ -67,9 +67,9 @@ select
     'schemaname',
     'stats_import',
     'relname',
-    cast(0 as OID),
+    cast(0 as oid),
     'relpages',
-    cast(17 as INT)
+    cast(17 as int)
   );
 
 select
@@ -79,7 +79,7 @@ select
     'relname',
     'nope',
     'relpages',
-    cast(17 as INT)
+    cast(17 as int)
   );
 
 select pg_restore_relation_stats('schemaname', 'stats_import', 'relname', 'test', 'relallvisible');
@@ -91,7 +91,7 @@ select
     'relname',
     'test',
     null,
-    cast('17' as INT)
+    cast('17' as int)
   );
 
 select
@@ -102,7 +102,7 @@ select
 from
   pg_class
 where
-  oid = cast('stats_import.test_i' as REGCLASS);
+  oid = cast('stats_import.test_i' as regclass);
 
 begin;
 
@@ -113,7 +113,7 @@ select
     'relname',
     'test_i',
     'relpages',
-    cast(18 as INT)
+    cast(18 as int)
   );
 
 select
@@ -121,7 +121,7 @@ select
 from
   pg_locks
 where
-  relation = cast('stats_import.test' as REGCLASS) and
+  relation = cast('stats_import.test' as regclass) and
   pid = pg_backend_pid() and
   granted;
 
@@ -130,13 +130,13 @@ select
 from
   pg_locks
 where
-  relation = cast('stats_import.test_i' as REGCLASS) and
+  relation = cast('stats_import.test_i' as regclass) and
   pid = pg_backend_pid() and
   granted;
 
 commit;
 
-create table stats_import.part_parent (i INT)
+create table stats_import.part_parent (i int)
 partition by range(i);
 
 create table stats_import.part_child_1
@@ -148,7 +148,7 @@ create index "part_parent_i" on stats_import.part_parent using btree (i);
 
 analyze stats_import.part_parent;
 
-select relpages from pg_class where oid = cast('stats_import.part_parent' as REGCLASS);
+select relpages from pg_class where oid = cast('stats_import.part_parent' as regclass);
 
 begin;
 
@@ -159,7 +159,7 @@ select
     'relname',
     'part_parent_i',
     'relpages',
-    cast(2 as INT)
+    cast(2 as int)
   );
 
 select
@@ -168,7 +168,7 @@ from
   pg_locks
 where
   relation =
-  cast('stats_import.part_parent' as REGCLASS) and
+  cast('stats_import.part_parent' as regclass) and
   pid = pg_backend_pid() and
   granted;
 
@@ -178,13 +178,13 @@ from
   pg_locks
 where
   relation =
-  cast('stats_import.part_parent_i' as REGCLASS) and
+  cast('stats_import.part_parent_i' as regclass) and
   pid = pg_backend_pid() and
   granted;
 
 commit;
 
-select relpages from pg_class where oid = cast('stats_import.part_parent_i' as REGCLASS);
+select relpages from pg_class where oid = cast('stats_import.part_parent_i' as regclass);
 
 select
   pg_restore_relation_stats(
@@ -193,15 +193,15 @@ select
     'relname',
     'test',
     'version',
-    cast(150000 as INT),
+    cast(150000 as int),
     'relpages',
-    cast('-17' as INT),
+    cast('-17' as int),
     'reltuples',
-    cast(400 as REAL),
+    cast(400 as real),
     'relallvisible',
-    cast(4 as INT),
+    cast(4 as int),
     'relallfrozen',
-    cast(2 as INT)
+    cast(2 as int)
   );
 
 select
@@ -212,7 +212,7 @@ select
 from
   pg_class
 where
-  oid = cast('stats_import.test' as REGCLASS);
+  oid = cast('stats_import.test' as regclass);
 
 select
   pg_restore_relation_stats(
@@ -221,7 +221,7 @@ select
     'relname',
     'test',
     'relpages',
-    cast('16' as INT)
+    cast('16' as int)
   );
 
 select
@@ -232,7 +232,7 @@ select
 from
   pg_class
 where
-  oid = cast('stats_import.test' as REGCLASS);
+  oid = cast('stats_import.test' as regclass);
 
 select
   pg_restore_relation_stats(
@@ -241,7 +241,7 @@ select
     'relname',
     'test',
     'reltuples',
-    cast('500' as REAL)
+    cast('500' as real)
   );
 
 select
@@ -252,7 +252,7 @@ select
 from
   pg_class
 where
-  oid = cast('stats_import.test' as REGCLASS);
+  oid = cast('stats_import.test' as regclass);
 
 select
   pg_restore_relation_stats(
@@ -261,7 +261,7 @@ select
     'relname',
     'test',
     'relallvisible',
-    cast(5 as INT)
+    cast(5 as int)
   );
 
 select
@@ -272,7 +272,7 @@ select
 from
   pg_class
 where
-  oid = cast('stats_import.test' as REGCLASS);
+  oid = cast('stats_import.test' as regclass);
 
 select
   pg_restore_relation_stats(
@@ -281,9 +281,9 @@ select
     'relname',
     'test',
     'version',
-    cast(150000 as INT),
+    cast(150000 as int),
     'relallfrozen',
-    cast(3 as INT)
+    cast(3 as int)
   );
 
 select
@@ -294,7 +294,7 @@ select
 from
   pg_class
 where
-  oid = cast('stats_import.test' as REGCLASS);
+  oid = cast('stats_import.test' as regclass);
 
 select
   pg_restore_relation_stats(
@@ -303,13 +303,13 @@ select
     'relname',
     'test',
     'relpages',
-    cast('nope' as TEXT),
+    cast('nope' as text),
     'reltuples',
-    cast(400.0 as REAL),
+    cast(400.0 as real),
     'relallvisible',
-    cast(4 as INT),
+    cast(4 as int),
     'relallfrozen',
-    cast(3 as INT)
+    cast(3 as int)
   );
 
 select
@@ -320,7 +320,7 @@ select
 from
   pg_class
 where
-  oid = cast('stats_import.test' as REGCLASS);
+  oid = cast('stats_import.test' as regclass);
 
 select
   pg_restore_relation_stats(
@@ -329,9 +329,9 @@ select
     'relname',
     'test',
     'relpages',
-    cast('171' as INT),
+    cast('171' as int),
     'nope',
-    cast(10 as INT)
+    cast(10 as int)
   );
 
 select
@@ -341,7 +341,7 @@ select
 from
   pg_class
 where
-  oid = cast('stats_import.test' as REGCLASS);
+  oid = cast('stats_import.test' as regclass);
 
 select pg_clear_relation_stats("schemaname" := 'stats_import', "relname" := 'test');
 
@@ -352,7 +352,7 @@ select
 from
   pg_class
 where
-  oid = cast('stats_import.test' as REGCLASS);
+  oid = cast('stats_import.test' as regclass);
 
 create sequence stats_import.testseq;
 
@@ -372,9 +372,9 @@ select
     'attname',
     'id',
     'inherited',
-    cast(false as BOOLEAN),
+    cast(false as boolean),
     'null_frac',
-    cast(0.1 as REAL)
+    cast(0.1 as real)
   );
 
 select
@@ -386,9 +386,9 @@ select
     'attname',
     'id',
     'inherited',
-    cast(false as BOOLEAN),
+    cast(false as boolean),
     'null_frac',
-    cast(0.1 as REAL)
+    cast(0.1 as real)
   );
 
 select
@@ -398,9 +398,9 @@ select
     'attname',
     'id',
     'inherited',
-    cast(false as BOOLEAN),
+    cast(false as boolean),
     'null_frac',
-    cast(0.1 as REAL)
+    cast(0.1 as real)
   );
 
 select
@@ -412,9 +412,9 @@ select
     'attname',
     'id',
     'inherited',
-    cast(false as BOOLEAN),
+    cast(false as boolean),
     'null_frac',
-    cast(0.1 as REAL)
+    cast(0.1 as real)
   );
 
 select
@@ -426,9 +426,9 @@ select
     'attname',
     'id',
     'inherited',
-    cast(false as BOOLEAN),
+    cast(false as boolean),
     'null_frac',
-    cast(0.1 as REAL)
+    cast(0.1 as real)
   );
 
 select
@@ -440,9 +440,9 @@ select
     'attname',
     null,
     'inherited',
-    cast(false as BOOLEAN),
+    cast(false as boolean),
     'null_frac',
-    cast(0.1 as REAL)
+    cast(0.1 as real)
   );
 
 select
@@ -454,13 +454,13 @@ select
     'attname',
     'nope',
     'inherited',
-    cast(false as BOOLEAN),
+    cast(false as boolean),
     'null_frac',
-    cast(0.1 as REAL),
+    cast(0.1 as real),
     'avg_width',
-    cast(2 as INT),
+    cast(2 as int),
     'n_distinct',
-    cast(0.3 as REAL)
+    cast(0.3 as real)
   );
 
 select
@@ -472,11 +472,11 @@ select
     'attname',
     'id',
     'attnum',
-    cast(1 as SMALLINT),
+    cast(1 as smallint),
     'inherited',
-    cast(false as BOOLEAN),
+    cast(false as boolean),
     'null_frac',
-    cast(0.1 as REAL)
+    cast(0.1 as real)
   );
 
 select
@@ -486,9 +486,9 @@ select
     'relname',
     'test',
     'inherited',
-    cast(false as BOOLEAN),
+    cast(false as boolean),
     'null_frac',
-    cast(0.1 as REAL)
+    cast(0.1 as real)
   );
 
 select
@@ -500,9 +500,9 @@ select
     'attname',
     'xmin',
     'inherited',
-    cast(false as BOOLEAN),
+    cast(false as boolean),
     'null_frac',
-    cast(0.1 as REAL)
+    cast(0.1 as real)
   );
 
 select
@@ -514,9 +514,9 @@ select
     'attname',
     'id',
     'inherited',
-    cast(null as BOOLEAN),
+    cast(null as boolean),
     'null_frac',
-    cast(0.1 as REAL)
+    cast(0.1 as real)
   );
 
 select
@@ -528,15 +528,15 @@ select
     'attname',
     'id',
     'inherited',
-    cast(false as BOOLEAN),
+    cast(false as boolean),
     'version',
-    cast(150000 as INT),
+    cast(150000 as int),
     'null_frac',
-    cast(0.2 as REAL),
+    cast(0.2 as real),
     'avg_width',
-    cast(5 as INT),
+    cast(5 as int),
     'n_distinct',
-    cast(0.6 as REAL)
+    cast(0.6 as real)
   );
 
 select
@@ -556,11 +556,11 @@ select
     'relname',
     'test',
     'attnum',
-    cast(1 as SMALLINT),
+    cast(1 as smallint),
     'inherited',
-    cast(false as BOOLEAN),
+    cast(false as boolean),
     'null_frac',
-    cast(0.4 as REAL)
+    cast(0.4 as real)
   );
 
 select
@@ -582,11 +582,11 @@ select
     'attname',
     'id',
     'inherited',
-    cast(false as BOOLEAN),
+    cast(false as boolean),
     'null_frac',
-    cast(0.2 as REAL),
+    cast(0.2 as real),
     'nope',
-    cast(0.5 as REAL)
+    cast(0.5 as real)
   );
 
 select
@@ -608,11 +608,11 @@ select
     'attname',
     'id',
     'inherited',
-    cast(false as BOOLEAN),
+    cast(false as boolean),
     'null_frac',
-    cast(0.21 as REAL),
+    cast(0.21 as real),
     'most_common_freqs',
-    cast('{0.1,0.2,0.3}' as REAL[])
+    cast('{0.1,0.2,0.3}' as real[])
   );
 
 select
@@ -634,11 +634,11 @@ select
     'attname',
     'id',
     'inherited',
-    cast(false as BOOLEAN),
+    cast(false as boolean),
     'null_frac',
-    cast(0.21 as REAL),
+    cast(0.21 as real),
     'most_common_vals',
-    cast('{1,2,3}' as TEXT)
+    cast('{1,2,3}' as text)
   );
 
 select
@@ -660,13 +660,13 @@ select
     'attname',
     'id',
     'inherited',
-    cast(false as BOOLEAN),
+    cast(false as boolean),
     'null_frac',
-    cast(0.22 as REAL),
+    cast(0.22 as real),
     'most_common_vals',
-    cast('{2,1,3}' as TEXT),
+    cast('{2,1,3}' as text),
     'most_common_freqs',
-    cast('{0.2,0.1}' as DOUBLE PRECISION[])
+    cast('{0.2,0.1}' as double precision[])
   );
 
 select
@@ -688,13 +688,13 @@ select
     'attname',
     'id',
     'inherited',
-    cast(false as BOOLEAN),
+    cast(false as boolean),
     'null_frac',
-    cast(0.23 as REAL),
+    cast(0.23 as real),
     'most_common_vals',
-    cast('{2,four,3}' as TEXT),
+    cast('{2,four,3}' as text),
     'most_common_freqs',
-    cast('{0.3,0.25,0.05}' as REAL[])
+    cast('{0.3,0.25,0.05}' as real[])
   );
 
 select
@@ -716,11 +716,11 @@ select
     'attname',
     'id',
     'inherited',
-    cast(false as BOOLEAN),
+    cast(false as boolean),
     'most_common_vals',
-    cast('{2,1,3}' as TEXT),
+    cast('{2,1,3}' as text),
     'most_common_freqs',
-    cast('{0.3,0.25,0.05}' as REAL[])
+    cast('{0.3,0.25,0.05}' as real[])
   );
 
 select
@@ -742,11 +742,11 @@ select
     'attname',
     'id',
     'inherited',
-    cast(false as BOOLEAN),
+    cast(false as boolean),
     'null_frac',
-    cast(0.24 as REAL),
+    cast(0.24 as real),
     'histogram_bounds',
-    cast('{1,NULL,3,4}' as TEXT)
+    cast('{1,NULL,3,4}' as text)
   );
 
 select
@@ -768,9 +768,9 @@ select
     'attname',
     'id',
     'inherited',
-    cast(false as BOOLEAN),
+    cast(false as boolean),
     'histogram_bounds',
-    cast('{1,2,3,4}' as TEXT)
+    cast('{1,2,3,4}' as text)
   );
 
 select
@@ -792,11 +792,11 @@ select
     'attname',
     'tags',
     'inherited',
-    cast(false as BOOLEAN),
+    cast(false as boolean),
     'null_frac',
-    cast(0.25 as REAL),
+    cast(0.25 as real),
     'elem_count_histogram',
-    cast('{1,1,NULL,1,1,1,1,1}' as REAL[])
+    cast('{1,1,NULL,1,1,1,1,1}' as real[])
   );
 
 select
@@ -818,12 +818,12 @@ select
     'attname',
     'tags',
     'inherited',
-    cast(false as BOOLEAN),
+    cast(false as boolean),
     'null_frac',
-    cast(0.26 as REAL),
+    cast(0.26 as real),
     'elem_count_histogram',
     cast('{1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1}'
-    as REAL[])
+    as real[])
   );
 
 select
@@ -845,13 +845,13 @@ select
     'attname',
     'id',
     'inherited',
-    cast(false as BOOLEAN),
+    cast(false as boolean),
     'null_frac',
-    cast(0.27 as REAL),
+    cast(0.27 as real),
     'range_empty_frac',
-    cast(0.5 as REAL),
+    cast(0.5 as real),
     'range_length_histogram',
-    cast('{399,499,Infinity}' as TEXT)
+    cast('{399,499,Infinity}' as text)
   );
 
 select
@@ -873,11 +873,11 @@ select
     'attname',
     'arange',
     'inherited',
-    cast(false as BOOLEAN),
+    cast(false as boolean),
     'null_frac',
-    cast(0.28 as REAL),
+    cast(0.28 as real),
     'range_length_histogram',
-    cast('{399,499,Infinity}' as TEXT)
+    cast('{399,499,Infinity}' as text)
   );
 
 select
@@ -899,11 +899,11 @@ select
     'attname',
     'arange',
     'inherited',
-    cast(false as BOOLEAN),
+    cast(false as boolean),
     'null_frac',
-    cast(0.29 as REAL),
+    cast(0.29 as real),
     'range_empty_frac',
-    cast(0.5 as REAL)
+    cast(0.5 as real)
   );
 
 select
@@ -925,11 +925,11 @@ select
     'attname',
     'arange',
     'inherited',
-    cast(false as BOOLEAN),
+    cast(false as boolean),
     'range_empty_frac',
-    cast(0.5 as REAL),
+    cast(0.5 as real),
     'range_length_histogram',
-    cast('{399,499,Infinity}' as TEXT)
+    cast('{399,499,Infinity}' as text)
   );
 
 select
@@ -951,12 +951,12 @@ select
     'attname',
     'id',
     'inherited',
-    cast(false as BOOLEAN),
+    cast(false as boolean),
     'null_frac',
-    cast(0.31 as REAL),
+    cast(0.31 as real),
     'range_bounds_histogram',
     cast('{"[-1,1)","[0,4)","[1,4)","[1,100)"}'
-    as TEXT)
+    as text)
   );
 
 select
@@ -978,10 +978,10 @@ select
     'attname',
     'arange',
     'inherited',
-    cast(false as BOOLEAN),
+    cast(false as boolean),
     'range_bounds_histogram',
     cast('{"[-1,1)","[0,4)","[1,4)","[1,100)"}'
-    as TEXT)
+    as text)
   );
 
 select
@@ -1003,13 +1003,13 @@ select
     'attname',
     'arange',
     'inherited',
-    cast(false as BOOLEAN),
+    cast(false as boolean),
     'null_frac',
-    cast(0.32 as REAL),
+    cast(0.32 as real),
     'most_common_elems',
-    cast('{3,1}' as TEXT),
+    cast('{3,1}' as text),
     'most_common_elem_freqs',
-    cast('{0.3,0.2,0.2,0.3,0.0}' as REAL[])
+    cast('{0.3,0.2,0.2,0.3,0.0}' as real[])
   );
 
 select
@@ -1031,13 +1031,13 @@ select
     'attname',
     'id',
     'inherited',
-    cast(false as BOOLEAN),
+    cast(false as boolean),
     'null_frac',
-    cast(0.33 as REAL),
+    cast(0.33 as real),
     'most_common_elems',
-    cast('{1,3}' as TEXT),
+    cast('{1,3}' as text),
     'most_common_elem_freqs',
-    cast('{0.3,0.2,0.2,0.3,0.0}' as REAL[])
+    cast('{0.3,0.2,0.2,0.3,0.0}' as real[])
   );
 
 select
@@ -1059,11 +1059,11 @@ select
     'attname',
     'tags',
     'inherited',
-    cast(false as BOOLEAN),
+    cast(false as boolean),
     'null_frac',
-    cast(0.34 as REAL),
+    cast(0.34 as real),
     'most_common_elems',
-    cast('{one,two}' as TEXT)
+    cast('{one,two}' as text)
   );
 
 select
@@ -1085,11 +1085,11 @@ select
     'attname',
     'tags',
     'inherited',
-    cast(false as BOOLEAN),
+    cast(false as boolean),
     'null_frac',
-    cast(0.35 as REAL),
+    cast(0.35 as real),
     'most_common_elem_freqs',
-    cast('{0.3,0.2,0.2,0.3}' as REAL[])
+    cast('{0.3,0.2,0.2,0.3}' as real[])
   );
 
 select
@@ -1111,11 +1111,11 @@ select
     'attname',
     'tags',
     'inherited',
-    cast(false as BOOLEAN),
+    cast(false as boolean),
     'most_common_elems',
-    cast('{one,three}' as TEXT),
+    cast('{one,three}' as text),
     'most_common_elem_freqs',
-    cast('{0.3,0.2,0.2,0.3,0.0}' as REAL[])
+    cast('{0.3,0.2,0.2,0.3,0.0}' as real[])
   );
 
 select
@@ -1137,11 +1137,11 @@ select
     'attname',
     'id',
     'inherited',
-    cast(false as BOOLEAN),
+    cast(false as boolean),
     'null_frac',
-    cast(0.36 as REAL),
+    cast(0.36 as real),
     'elem_count_histogram',
-    cast('{1,1,1,1,1,1,1,1,1,1}' as REAL[])
+    cast('{1,1,1,1,1,1,1,1,1,1}' as real[])
   );
 
 select
@@ -1206,9 +1206,9 @@ from
       'schemaname',
       'stats_import',
       'relname',
-      cast(s.tablename as TEXT) || '_clone',
+      cast(s.tablename as text) || '_clone',
       'attname',
-      cast(s.attname as TEXT),
+      cast(s.attname as text),
       'inherited',
       s.inherited,
       'version',
@@ -1220,25 +1220,25 @@ from
       'n_distinct',
       s.n_distinct,
       'most_common_vals',
-      cast(s.most_common_vals as TEXT),
+      cast(s.most_common_vals as text),
       'most_common_freqs',
       s.most_common_freqs,
       'histogram_bounds',
-      cast(s.histogram_bounds as TEXT),
+      cast(s.histogram_bounds as text),
       'correlation',
       s.correlation,
       'most_common_elems',
-      cast(s.most_common_elems as TEXT),
+      cast(s.most_common_elems as text),
       'most_common_elem_freqs',
       s.most_common_elem_freqs,
       'elem_count_histogram',
       s.elem_count_histogram,
       'range_bounds_histogram',
-      cast(s.range_bounds_histogram as TEXT),
+      cast(s.range_bounds_histogram as text),
       'range_empty_frac',
       s.range_empty_frac,
       'range_length_histogram',
-      cast(s.range_length_histogram as TEXT)
+      cast(s.range_length_histogram as text)
     )
     as r
   on true
@@ -1293,11 +1293,11 @@ select
   s.stanumbers3,
   s.stanumbers4,
   s.stanumbers5,
-  cast(s.stavalues1 as TEXT) as sv1,
-  cast(s.stavalues2 as TEXT) as sv2,
-  cast(s.stavalues3 as TEXT) as sv3,
-  cast(s.stavalues4 as TEXT) as sv4,
-  cast(s.stavalues5 as TEXT) as sv5,
+  cast(s.stavalues1 as text) as sv1,
+  cast(s.stavalues2 as text) as sv2,
+  cast(s.stavalues3 as text) as sv3,
+  cast(s.stavalues4 as text) as sv4,
+  cast(s.stavalues5 as text) as sv5,
   'test' as direction
 from
   pg_statistic as s
@@ -1305,7 +1305,7 @@ from
     pg_attribute as a
   on a.attrelid = s.starelid and a.attnum = s.staattnum
 where
-  s.starelid = cast('stats_import.test' as REGCLASS)
+  s.starelid = cast('stats_import.test' as regclass)
 except
 select
   a.attname,
@@ -1333,11 +1333,11 @@ select
   s.stanumbers3,
   s.stanumbers4,
   s.stanumbers5,
-  cast(s.stavalues1 as TEXT) as sv1,
-  cast(s.stavalues2 as TEXT) as sv2,
-  cast(s.stavalues3 as TEXT) as sv3,
-  cast(s.stavalues4 as TEXT) as sv4,
-  cast(s.stavalues5 as TEXT) as sv5,
+  cast(s.stavalues1 as text) as sv1,
+  cast(s.stavalues2 as text) as sv2,
+  cast(s.stavalues3 as text) as sv3,
+  cast(s.stavalues4 as text) as sv4,
+  cast(s.stavalues5 as text) as sv5,
   'test' as direction
 from
   pg_statistic as s
@@ -1346,7 +1346,7 @@ from
   on a.attrelid = s.starelid and a.attnum = s.staattnum
 where
   s.starelid =
-  cast('stats_import.test_clone' as REGCLASS);
+  cast('stats_import.test_clone' as regclass);
 
 select
   a.attname,
@@ -1374,11 +1374,11 @@ select
   s.stanumbers3,
   s.stanumbers4,
   s.stanumbers5,
-  cast(s.stavalues1 as TEXT) as sv1,
-  cast(s.stavalues2 as TEXT) as sv2,
-  cast(s.stavalues3 as TEXT) as sv3,
-  cast(s.stavalues4 as TEXT) as sv4,
-  cast(s.stavalues5 as TEXT) as sv5,
+  cast(s.stavalues1 as text) as sv1,
+  cast(s.stavalues2 as text) as sv2,
+  cast(s.stavalues3 as text) as sv3,
+  cast(s.stavalues4 as text) as sv4,
+  cast(s.stavalues5 as text) as sv5,
   'test_clone' as direction
 from
   pg_statistic as s
@@ -1387,7 +1387,7 @@ from
   on a.attrelid = s.starelid and a.attnum = s.staattnum
 where
   s.starelid =
-  cast('stats_import.test_clone' as REGCLASS)
+  cast('stats_import.test_clone' as regclass)
 except
 select
   a.attname,
@@ -1415,11 +1415,11 @@ select
   s.stanumbers3,
   s.stanumbers4,
   s.stanumbers5,
-  cast(s.stavalues1 as TEXT) as sv1,
-  cast(s.stavalues2 as TEXT) as sv2,
-  cast(s.stavalues3 as TEXT) as sv3,
-  cast(s.stavalues4 as TEXT) as sv4,
-  cast(s.stavalues5 as TEXT) as sv5,
+  cast(s.stavalues1 as text) as sv1,
+  cast(s.stavalues2 as text) as sv2,
+  cast(s.stavalues3 as text) as sv3,
+  cast(s.stavalues4 as text) as sv4,
+  cast(s.stavalues5 as text) as sv5,
   'test_clone' as direction
 from
   pg_statistic as s
@@ -1427,7 +1427,7 @@ from
     pg_attribute as a
   on a.attrelid = s.starelid and a.attnum = s.staattnum
 where
-  s.starelid = cast('stats_import.test' as REGCLASS);
+  s.starelid = cast('stats_import.test' as regclass);
 
 select
   a.attname,
@@ -1455,11 +1455,11 @@ select
   s.stanumbers3,
   s.stanumbers4,
   s.stanumbers5,
-  cast(s.stavalues1 as TEXT) as sv1,
-  cast(s.stavalues2 as TEXT) as sv2,
-  cast(s.stavalues3 as TEXT) as sv3,
-  cast(s.stavalues4 as TEXT) as sv4,
-  cast(s.stavalues5 as TEXT) as sv5,
+  cast(s.stavalues1 as text) as sv1,
+  cast(s.stavalues2 as text) as sv2,
+  cast(s.stavalues3 as text) as sv3,
+  cast(s.stavalues4 as text) as sv4,
+  cast(s.stavalues5 as text) as sv5,
   'is_odd' as direction
 from
   pg_statistic as s
@@ -1468,7 +1468,7 @@ from
   on a.attrelid = s.starelid and a.attnum = s.staattnum
 where
   s.starelid =
-  cast('stats_import.is_odd' as REGCLASS)
+  cast('stats_import.is_odd' as regclass)
 except
 select
   a.attname,
@@ -1496,11 +1496,11 @@ select
   s.stanumbers3,
   s.stanumbers4,
   s.stanumbers5,
-  cast(s.stavalues1 as TEXT) as sv1,
-  cast(s.stavalues2 as TEXT) as sv2,
-  cast(s.stavalues3 as TEXT) as sv3,
-  cast(s.stavalues4 as TEXT) as sv4,
-  cast(s.stavalues5 as TEXT) as sv5,
+  cast(s.stavalues1 as text) as sv1,
+  cast(s.stavalues2 as text) as sv2,
+  cast(s.stavalues3 as text) as sv3,
+  cast(s.stavalues4 as text) as sv4,
+  cast(s.stavalues5 as text) as sv5,
   'is_odd' as direction
 from
   pg_statistic as s
@@ -1509,7 +1509,7 @@ from
   on a.attrelid = s.starelid and a.attnum = s.staattnum
 where
   s.starelid =
-  cast('stats_import.is_odd_clone' as REGCLASS);
+  cast('stats_import.is_odd_clone' as regclass);
 
 select
   a.attname,
@@ -1537,11 +1537,11 @@ select
   s.stanumbers3,
   s.stanumbers4,
   s.stanumbers5,
-  cast(s.stavalues1 as TEXT) as sv1,
-  cast(s.stavalues2 as TEXT) as sv2,
-  cast(s.stavalues3 as TEXT) as sv3,
-  cast(s.stavalues4 as TEXT) as sv4,
-  cast(s.stavalues5 as TEXT) as sv5,
+  cast(s.stavalues1 as text) as sv1,
+  cast(s.stavalues2 as text) as sv2,
+  cast(s.stavalues3 as text) as sv3,
+  cast(s.stavalues4 as text) as sv4,
+  cast(s.stavalues5 as text) as sv5,
   'is_odd_clone' as direction
 from
   pg_statistic as s
@@ -1550,7 +1550,7 @@ from
   on a.attrelid = s.starelid and a.attnum = s.staattnum
 where
   s.starelid =
-  cast('stats_import.is_odd_clone' as REGCLASS)
+  cast('stats_import.is_odd_clone' as regclass)
 except
 select
   a.attname,
@@ -1578,11 +1578,11 @@ select
   s.stanumbers3,
   s.stanumbers4,
   s.stanumbers5,
-  cast(s.stavalues1 as TEXT) as sv1,
-  cast(s.stavalues2 as TEXT) as sv2,
-  cast(s.stavalues3 as TEXT) as sv3,
-  cast(s.stavalues4 as TEXT) as sv4,
-  cast(s.stavalues5 as TEXT) as sv5,
+  cast(s.stavalues1 as text) as sv1,
+  cast(s.stavalues2 as text) as sv2,
+  cast(s.stavalues3 as text) as sv3,
+  cast(s.stavalues4 as text) as sv4,
+  cast(s.stavalues5 as text) as sv5,
   'is_odd_clone' as direction
 from
   pg_statistic as s
@@ -1591,7 +1591,7 @@ from
   on a.attrelid = s.starelid and a.attnum = s.staattnum
 where
   s.starelid =
-  cast('stats_import.is_odd' as REGCLASS);
+  cast('stats_import.is_odd' as regclass);
 
 select
   COUNT(*)
@@ -1621,7 +1621,7 @@ where
   inherited = false and
   attname = 'arange';
 
-create temporary table stats_temp (i INT);
+create temporary table stats_temp (i int);
 
 select
   pg_restore_relation_stats(
@@ -1630,13 +1630,13 @@ select
     'relname',
     'stats_temp',
     'relpages',
-    cast('-19' as INT),
+    cast('-19' as int),
     'reltuples',
-    cast(401 as REAL),
+    cast(401 as real),
     'relallvisible',
-    cast(5 as INT),
+    cast(5 as int),
     'relallfrozen',
-    cast(3 as INT)
+    cast(3 as int)
   );
 
 select
@@ -1648,7 +1648,7 @@ select
 from
   pg_class
 where
-  oid = cast('pg_temp.stats_temp' as REGCLASS)
+  oid = cast('pg_temp.stats_temp' as regclass)
 order by relname;
 
 select
@@ -1660,9 +1660,9 @@ select
     'attname',
     'i',
     'inherited',
-    cast(false as BOOLEAN),
+    cast(false as boolean),
     'null_frac',
-    cast(0.0123 as REAL)
+    cast(0.0123 as real)
   );
 
 select
@@ -1676,6 +1676,6 @@ where
   inherited = false and
   attname = 'i';
 
-drop TABLE stats_temp;
+drop table stats_temp;
 
-drop SCHEMA stats_import cascade;
+drop schema stats_import cascade;

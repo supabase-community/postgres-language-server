@@ -23,20 +23,20 @@ select 1.1 as two union select 2 order by 1;
 
 select 1 as two union select 2.2 order by 1;
 
-select 1 as one union select cast(1.0 as DOUBLE PRECISION) order by 1;
+select 1 as one union select cast(1.0 as double precision) order by 1;
 
 select 1.1 as two union all select 2 order by 1;
 
-select cast(1.0 as DOUBLE PRECISION) as two union all select 1 order by 1;
+select cast(1.0 as double precision) as two union all select 1 order by 1;
 
 select 1.1 as three union select 2 union select 3 order by 1;
 
 select
-  cast(1.1 as DOUBLE PRECISION) as two
+  cast(1.1 as double precision) as two
 union
 select 2
 union
-select cast(2.0 as DOUBLE PRECISION)
+select cast(2.0 as double precision)
 order by 1;
 
 select 1.1 as three union select 2 union all select 2 order by 1;
@@ -67,7 +67,7 @@ where
 order by 1;
 
 select
-  cast(f1 as CHAR(4)) as three
+  cast(f1 as char(4)) as three
 from
   varchar_tbl
 union
@@ -76,7 +76,7 @@ order by 1;
 
 select f1 as three from varchar_tbl
 union
-select cast(f1 as VARCHAR) from char_tbl
+select cast(f1 as varchar) from char_tbl
 order by 1;
 
 select f1 as eight from varchar_tbl union all select f1 from char_tbl;
@@ -231,8 +231,8 @@ select
 from
   (
     values
-      (cast('11' as BIT VARYING)),
-      (cast('10' as BIT VARYING))
+      (cast('11' as bit varying)),
+      (cast('10' as bit varying))
   )
   as _ (x)
 union
@@ -241,8 +241,8 @@ select
 from
   (
     values
-      (cast('11' as BIT VARYING)),
-      (cast('10' as BIT VARYING))
+      (cast('11' as bit varying)),
+      (cast('10' as bit varying))
   )
   as _ (x);
 
@@ -253,8 +253,8 @@ select
 from
   (
     values
-      (cast('11' as BIT VARYING)),
-      (cast('10' as BIT VARYING))
+      (cast('11' as bit varying)),
+      (cast('10' as bit varying))
   )
   as _ (x)
 union
@@ -263,8 +263,8 @@ select
 from
   (
     values
-      (cast('11' as BIT VARYING)),
-      (cast('10' as BIT VARYING))
+      (cast('11' as bit varying)),
+      (cast('10' as bit varying))
   )
   as _ (x);
 
@@ -345,8 +345,8 @@ select
 from
   (
     values
-      (array[cast('10' as BIT VARYING)]),
-      (array[cast('11' as BIT VARYING)])
+      (array[cast('10' as bit varying)]),
+      (array[cast('11' as bit varying)])
   )
   as _ (x)
 union
@@ -355,8 +355,8 @@ select
 from
   (
     values
-      (array[cast('10' as BIT VARYING)]),
-      (array[cast('01' as BIT VARYING)])
+      (array[cast('10' as bit varying)]),
+      (array[cast('01' as bit varying)])
   )
   as _ (x);
 
@@ -365,8 +365,8 @@ select
 from
   (
     values
-      (array[cast('10' as BIT VARYING)]),
-      (array[cast('11' as BIT VARYING)])
+      (array[cast('10' as bit varying)]),
+      (array[cast('11' as bit varying)])
   )
   as _ (x)
 union
@@ -375,8 +375,8 @@ select
 from
   (
     values
-      (array[cast('10' as BIT VARYING)]),
-      (array[cast('01' as BIT VARYING)])
+      (array[cast('10' as bit varying)]),
+      (array[cast('01' as bit varying)])
   )
   as _ (x);
 
@@ -527,8 +527,8 @@ select
 from
   (
     values
-      (row(cast('10' as BIT VARYING))),
-      (row(cast('11' as BIT VARYING)))
+      (row(cast('10' as bit varying))),
+      (row(cast('11' as bit varying)))
   )
   as _ (x)
 union
@@ -537,8 +537,8 @@ select
 from
   (
     values
-      (row(cast('10' as BIT VARYING))),
-      (row(cast('01' as BIT VARYING)))
+      (row(cast('10' as bit varying))),
+      (row(cast('01' as bit varying)))
   )
   as _ (x);
 
@@ -547,8 +547,8 @@ select
 from
   (
     values
-      (row(cast('10' as BIT VARYING))),
-      (row(cast('11' as BIT VARYING)))
+      (row(cast('10' as bit varying))),
+      (row(cast('11' as bit varying)))
   )
   as _ (x)
 union
@@ -557,12 +557,12 @@ select
 from
   (
     values
-      (row(cast('10' as BIT VARYING))),
-      (row(cast('01' as BIT VARYING)))
+      (row(cast('10' as bit varying))),
+      (row(cast('01' as bit varying)))
   )
   as _ (x);
 
-create type ct1 as (f1 BIT VARYING);
+create type ct1 as (f1 bit varying);
 
 select
   x
@@ -570,11 +570,11 @@ from
   (
     values
       (
-        cast(row(cast('10' as BIT VARYING))
+        cast(row(cast('10' as bit varying))
         as ct1)
       ),
       (
-        cast(row(cast('11' as BIT VARYING))
+        cast(row(cast('11' as bit varying))
         as ct1)
       )
   )
@@ -586,11 +586,11 @@ from
   (
     values
       (
-        cast(row(cast('10' as BIT VARYING))
+        cast(row(cast('10' as bit varying))
         as ct1)
       ),
       (
-        cast(row(cast('01' as BIT VARYING))
+        cast(row(cast('01' as bit varying))
         as ct1)
       )
   )
@@ -602,11 +602,11 @@ from
   (
     values
       (
-        cast(row(cast('10' as BIT VARYING))
+        cast(row(cast('10' as bit varying))
         as ct1)
       ),
       (
-        cast(row(cast('11' as BIT VARYING))
+        cast(row(cast('11' as bit varying))
         as ct1)
       )
   )
@@ -618,17 +618,17 @@ from
   (
     values
       (
-        cast(row(cast('10' as BIT VARYING))
+        cast(row(cast('10' as bit varying))
         as ct1)
       ),
       (
-        cast(row(cast('01' as BIT VARYING))
+        cast(row(cast('01' as bit varying))
         as ct1)
       )
   )
   as _ (x);
 
-drop TYPE ct1;
+drop type ct1;
 
 set enable_hashagg = off;
 
@@ -700,7 +700,7 @@ from
   )
   as _ (x);
 
-select cast('123' as XID) union select cast('123' as XID);
+select cast('123' as xid) union select cast('123' as xid);
 
 reset enable_hashagg;
 

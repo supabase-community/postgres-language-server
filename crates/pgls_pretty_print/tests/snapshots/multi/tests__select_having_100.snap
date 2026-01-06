@@ -4,10 +4,10 @@ input_file: crates/pgls_pretty_print/tests/data/multi/select_having.sql
 snapshot_kind: text
 ---
 create table test_having (
-  a INT,
-  b INT,
-  c CHAR(8),
-  d CHAR(1)
+  a int,
+  b int,
+  c char(8),
+  d char(1)
 );
 
 insert into test_having values (0, 1, 'XXXX', 'A');
@@ -60,4 +60,4 @@ select 1 as one from test_having having 1 < 2;
 
 select 1 as one from test_having where 1 / a = 1 having 1 < 2;
 
-drop TABLE test_having;
+drop table test_having;

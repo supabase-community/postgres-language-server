@@ -23,6 +23,8 @@ pub struct RenderConfig {
     pub keyword_case: KeywordCase,
     /// Casing for constants (NULL, TRUE, FALSE)
     pub constant_case: KeywordCase,
+    /// Casing for data types (text, varchar, int, etc.)
+    pub type_case: KeywordCase,
 }
 
 impl Default for RenderConfig {
@@ -33,6 +35,7 @@ impl Default for RenderConfig {
             indent_style: IndentStyle::Spaces,
             keyword_case: KeywordCase::default(),
             constant_case: KeywordCase::default(),
+            type_case: KeywordCase::default(),
         }
     }
 }

@@ -4,10 +4,10 @@ input_file: crates/pgls_pretty_print/tests/data/multi/select_implicit.sql
 snapshot_kind: text
 ---
 create table test_missing_target (
-  a INT,
-  b INT,
-  c CHAR(8),
-  d CHAR(1)
+  a int,
+  b int,
+  c char(8),
+  d char(1)
 );
 
 insert into test_missing_target values (0, 1, 'XXXX', 'A');
@@ -176,8 +176,8 @@ as
 
 select * from test_missing_target3;
 
-drop TABLE test_missing_target;
+drop table test_missing_target;
 
-drop TABLE test_missing_target2;
+drop table test_missing_target2;
 
-drop TABLE test_missing_target3;
+drop table test_missing_target3;

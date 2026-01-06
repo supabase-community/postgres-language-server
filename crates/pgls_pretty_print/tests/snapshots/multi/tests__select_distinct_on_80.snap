@@ -49,9 +49,9 @@ select distinct on (four) four, two from tenk1 where four = 0 order by 1, 2;
 select distinct on (four) four, hundred from tenk1 where four = 0 order by 1, 2;
 
 create table distinct_on_tbl (
-  x INT,
-  y INT,
-  z INT
+  x int,
+  y int,
+  z int
 );
 
 insert into distinct_on_tbl
@@ -140,4 +140,4 @@ order by y,
 
 reset enable_hashagg;
 
-drop TABLE distinct_on_tbl;
+drop table distinct_on_tbl;

@@ -10,7 +10,7 @@ pub(super) fn emit_alter_stats_stmt(e: &mut EventEmitter, n: &AlterStatsStmt) {
 
     e.token(TokenKind::ALTER_KW);
     e.space();
-    e.token(TokenKind::IDENT("STATISTICS".to_string()));
+    e.token(TokenKind::STATISTICS_KW);
     e.space();
 
     // IF EXISTS
@@ -29,7 +29,7 @@ pub(super) fn emit_alter_stats_stmt(e: &mut EventEmitter, n: &AlterStatsStmt) {
         e.line(LineType::SoftOrSpace);
         e.token(TokenKind::SET_KW);
         e.space();
-        e.token(TokenKind::IDENT("STATISTICS".to_string()));
+        e.token(TokenKind::STATISTICS_KW);
         e.space();
         super::emit_node(target, e);
     }

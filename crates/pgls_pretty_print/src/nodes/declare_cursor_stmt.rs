@@ -28,25 +28,25 @@ pub(super) fn emit_declare_cursor_stmt(e: &mut EventEmitter, n: &DeclareCursorSt
     // Cursor options
     if n.options & CURSOR_OPT_BINARY != 0 {
         e.space();
-        e.token(TokenKind::IDENT("BINARY".to_string()));
+        e.token(TokenKind::BINARY_KW);
     }
     if n.options & CURSOR_OPT_INSENSITIVE != 0 {
         e.space();
-        e.token(TokenKind::IDENT("INSENSITIVE".to_string()));
+        e.token(TokenKind::INSENSITIVE_KW);
     }
     if n.options & CURSOR_OPT_ASENSITIVE != 0 {
         e.space();
-        e.token(TokenKind::IDENT("ASENSITIVE".to_string()));
+        e.token(TokenKind::ASENSITIVE_KW);
     }
     if n.options & CURSOR_OPT_SCROLL != 0 {
         e.space();
-        e.token(TokenKind::IDENT("SCROLL".to_string()));
+        e.token(TokenKind::SCROLL_KW);
     }
     if n.options & CURSOR_OPT_NO_SCROLL != 0 {
         e.space();
         e.token(TokenKind::NO_KW);
         e.space();
-        e.token(TokenKind::IDENT("SCROLL".to_string()));
+        e.token(TokenKind::SCROLL_KW);
     }
 
     e.line(LineType::SoftOrSpace);
@@ -57,7 +57,7 @@ pub(super) fn emit_declare_cursor_stmt(e: &mut EventEmitter, n: &DeclareCursorSt
         e.space();
         e.token(TokenKind::WITH_KW);
         e.space();
-        e.token(TokenKind::IDENT("HOLD".to_string()));
+        e.token(TokenKind::HOLD_KW);
     }
 
     // FOR query

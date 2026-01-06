@@ -16,16 +16,16 @@ pub(super) fn emit_create_trig_stmt(e: &mut EventEmitter, n: &CreateTrigStmt) {
     if n.replace {
         e.token(TokenKind::OR_KW);
         e.space();
-        e.token(TokenKind::IDENT("REPLACE".to_string()));
+        e.token(TokenKind::REPLACE_KW);
         e.space();
     }
 
     if n.isconstraint {
-        e.token(TokenKind::IDENT("CONSTRAINT".to_string()));
+        e.token(TokenKind::CONSTRAINT_KW);
         e.space();
     }
 
-    e.token(TokenKind::IDENT("TRIGGER".to_string()));
+    e.token(TokenKind::TRIGGER_KW);
     e.space();
     e.token(TokenKind::IDENT(n.trigname.clone()));
 
@@ -75,7 +75,7 @@ pub(super) fn emit_create_trig_stmt(e: &mut EventEmitter, n: &CreateTrigStmt) {
             e.token(TokenKind::OR_KW);
             e.space();
         }
-        e.token(TokenKind::IDENT("TRUNCATE".to_string()));
+        e.token(TokenKind::TRUNCATE_KW);
     }
 
     // OF columns (for UPDATE triggers) - keep on same line as events
@@ -104,20 +104,20 @@ pub(super) fn emit_create_trig_stmt(e: &mut EventEmitter, n: &CreateTrigStmt) {
 
     if n.deferrable {
         e.line(LineType::SoftOrSpace);
-        e.token(TokenKind::IDENT("DEFERRABLE".to_string()));
+        e.token(TokenKind::DEFERRABLE_KW);
     }
 
     if n.initdeferred {
         e.line(LineType::SoftOrSpace);
-        e.token(TokenKind::IDENT("INITIALLY".to_string()));
+        e.token(TokenKind::INITIALLY_KW);
         e.space();
-        e.token(TokenKind::IDENT("DEFERRED".to_string()));
+        e.token(TokenKind::DEFERRED_KW);
     }
 
     // Referencing clause for transition tables
     if !n.transition_rels.is_empty() {
         e.line(LineType::SoftOrSpace);
-        e.token(TokenKind::IDENT("REFERENCING".to_string()));
+        e.token(TokenKind::REFERENCING_KW);
         e.space();
         emit_trigger_transitions(e, &n.transition_rels);
     }
@@ -126,12 +126,12 @@ pub(super) fn emit_create_trig_stmt(e: &mut EventEmitter, n: &CreateTrigStmt) {
     e.line(LineType::SoftOrSpace);
     e.token(TokenKind::FOR_KW);
     e.space();
-    e.token(TokenKind::IDENT("EACH".to_string()));
+    e.token(TokenKind::EACH_KW);
     e.space();
     if n.row {
-        e.token(TokenKind::IDENT("ROW".to_string()));
+        e.token(TokenKind::ROW_KW);
     } else {
-        e.token(TokenKind::IDENT("STATEMENT".to_string()));
+        e.token(TokenKind::STATEMENT_KW);
     }
 
     // WHEN condition
@@ -146,9 +146,9 @@ pub(super) fn emit_create_trig_stmt(e: &mut EventEmitter, n: &CreateTrigStmt) {
 
     // EXECUTE FUNCTION
     e.line(LineType::SoftOrSpace);
-    e.token(TokenKind::IDENT("EXECUTE".to_string()));
+    e.token(TokenKind::EXECUTE_KW);
     e.space();
-    e.token(TokenKind::IDENT("FUNCTION".to_string()));
+    e.token(TokenKind::FUNCTION_KW);
     e.space();
     emit_dot_separated_list(e, &n.funcname);
     e.token(TokenKind::L_PAREN);

@@ -7,14 +7,14 @@ create type int8alias1;
 
 create function int8alias1in(cstring)
 returns int8alias1
-STRICT
+strict
 immutable
 language internal
 as $function$int8in$function$;
 
 create function int8alias1out(int8alias1)
 returns cstring
-STRICT
+strict
 immutable
 language internal
 as $function$int8out$function$;
@@ -22,21 +22,21 @@ as $function$int8out$function$;
 create type int8alias1 (
   input = int8alias1in,
   output = int8alias1out,
-  like = BIGINT
+  like = bigint
 );
 
 create type int8alias2;
 
 create function int8alias2in(cstring)
 returns int8alias2
-STRICT
+strict
 immutable
 language internal
 as $function$int8in$function$;
 
 create function int8alias2out(int8alias2)
 returns cstring
-STRICT
+strict
 immutable
 language internal
 as $function$int8out$function$;
@@ -44,20 +44,20 @@ as $function$int8out$function$;
 create type int8alias2 (
   input = int8alias2in,
   output = int8alias2out,
-  like = BIGINT
+  like = bigint
 );
 
-create cast (BIGINT as int8alias1) without function;
+create cast (bigint as int8alias1) without function;
 
-create cast (BIGINT as int8alias2) without function;
+create cast (bigint as int8alias2) without function;
 
-create cast (int8alias1 as BIGINT) without function;
+create cast (int8alias1 as bigint) without function;
 
-create cast (int8alias2 as BIGINT) without function;
+create cast (int8alias2 as bigint) without function;
 
 create function int8alias1eq(int8alias1, int8alias1)
-returns BOOLEAN
-STRICT
+returns boolean
+strict
 immutable
 language internal
 as $function$int8eq$function$;
@@ -70,12 +70,12 @@ RESTRICT = eqsel,
 JOIN = eqjoinsel,
 MERGES);
 
-alter OPERATOR FAMILY integer_ops USING btree
-  add OPERATOR 3 = (int8alias1, int8alias1);
+alter operator family integer_ops using btree
+  add operator 3 = (int8alias1, int8alias1);
 
 create function int8alias2eq(int8alias2, int8alias2)
-returns BOOLEAN
-STRICT
+returns boolean
+strict
 immutable
 language internal
 as $function$int8eq$function$;
@@ -88,29 +88,29 @@ RESTRICT = eqsel,
 JOIN = eqjoinsel,
 MERGES);
 
-alter OPERATOR FAMILY integer_ops USING btree
-  add OPERATOR 3 = (int8alias2, int8alias2);
+alter operator family integer_ops using btree
+  add operator 3 = (int8alias2, int8alias2);
 
-create function int8alias1eq(BIGINT, int8alias1)
-returns BOOLEAN
-STRICT
+create function int8alias1eq(bigint, int8alias1)
+returns boolean
+strict
 immutable
 language internal
 as $function$int8eq$function$;
 
 create operator = (PROCEDURE = int8alias1eq,
-LEFTARG = BIGINT,
+LEFTARG = bigint,
 RIGHTARG = int8alias1,
 RESTRICT = eqsel,
 JOIN = eqjoinsel,
 MERGES);
 
-alter OPERATOR FAMILY integer_ops USING btree
-  add OPERATOR 3 = (BIGINT, int8alias1);
+alter operator family integer_ops using btree
+  add operator 3 = (bigint, int8alias1);
 
 create function int8alias1eq(int8alias1, int8alias2)
-returns BOOLEAN
-STRICT
+returns boolean
+strict
 immutable
 language internal
 as $function$int8eq$function$;
@@ -122,12 +122,12 @@ RESTRICT = eqsel,
 JOIN = eqjoinsel,
 MERGES);
 
-alter OPERATOR FAMILY integer_ops USING btree
-  add OPERATOR 3 = (int8alias1, int8alias2);
+alter operator family integer_ops using btree
+  add operator 3 = (int8alias1, int8alias2);
 
 create function int8alias1lt(int8alias1, int8alias1)
-returns BOOLEAN
-STRICT
+returns boolean
+strict
 immutable
 language internal
 as $function$int8lt$function$;
@@ -136,33 +136,33 @@ create operator < (PROCEDURE = int8alias1lt,
 LEFTARG = int8alias1,
 RIGHTARG = int8alias1);
 
-alter OPERATOR FAMILY integer_ops USING btree
-  add OPERATOR 1 < (int8alias1, int8alias1);
+alter operator family integer_ops using btree
+  add operator 1 < (int8alias1, int8alias1);
 
-create function int8alias1cmp(BIGINT, int8alias1)
-returns INT
-STRICT
+create function int8alias1cmp(bigint, int8alias1)
+returns int
+strict
 immutable
 language internal
 as $function$btint8cmp$function$;
 
-alter OPERATOR FAMILY integer_ops USING btree
-  add FUNCTION 1 int8alias1cmp(BIGINT, int8alias1);
+alter operator family integer_ops using btree
+  add function 1 int8alias1cmp(bigint, int8alias1);
 
 create table ec0 (
-  ff BIGINT primary key,
-  f1 BIGINT,
-  f2 BIGINT
+  ff bigint primary key,
+  f1 bigint,
+  f2 bigint
 );
 
 create table ec1 (
-  ff BIGINT primary key,
+  ff bigint primary key,
   f1 int8alias1,
   f2 int8alias2
 );
 
 create table ec2 (
-  xf BIGINT primary key,
+  xf bigint primary key,
   x1 int8alias1,
   x2 int8alias2
 );
@@ -171,7 +171,7 @@ set enable_hashjoin = off;
 
 set enable_mergejoin = off;
 
-select * from ec0 where ff = f1 and f1 = cast('42' as BIGINT);
+select * from ec0 where ff = f1 and f1 = cast('42' as bigint);
 
 select * from ec0 where ff = f1 and f1 = cast('42' as int8alias1);
 
@@ -179,11 +179,11 @@ select * from ec1 where ff = f1 and f1 = cast('42' as int8alias1);
 
 select * from ec1 where ff = f1 and f1 = cast('42' as int8alias2);
 
-select * from ec1, ec2 where ff = x1 and ff = cast('42' as BIGINT);
+select * from ec1, ec2 where ff = x1 and ff = cast('42' as bigint);
 
 select * from ec1, ec2 where ff = x1 and ff = cast('42' as int8alias1);
 
-select * from ec1, ec2 where ff = x1 and cast('42' as BIGINT) = x1;
+select * from ec1, ec2 where ff = x1 and cast('42' as bigint) = x1;
 
 select * from ec1, ec2 where ff = x1 and x1 = cast('42' as int8alias1);
 
@@ -217,7 +217,7 @@ from
   as ss1
 where
   ss1.x = ec1.f1 and
-  ec1.ff = cast(42 as BIGINT);
+  ec1.ff = cast(42 as bigint);
 
 select
   *
@@ -239,7 +239,7 @@ from
   as ss1
 where
   ss1.x = ec1.f1 and
-  ec1.ff = cast(42 as BIGINT) and
+  ec1.ff = cast(42 as bigint) and
   ec1.ff = ec1.f1;
 
 select
@@ -277,7 +277,7 @@ from
 where
   ss1.x = ec1.f1 and
   ss1.x = ss2.x and
-  ec1.ff = cast(42 as BIGINT);
+  ec1.ff = cast(42 as bigint);
 
 set enable_mergejoin = 'on';
 
@@ -318,13 +318,13 @@ from
 where
   ss1.x = ec1.f1 and
   ss1.x = ss2.x and
-  ec1.ff = cast(42 as BIGINT);
+  ec1.ff = cast(42 as bigint);
 
 set enable_nestloop = 'on';
 
 set enable_mergejoin = off;
 
-drop INDEX ec1_expr3;
+drop index ec1_expr3;
 
 select
   *
@@ -346,7 +346,7 @@ from
   as ss1
 where
   ss1.x = ec1.f1 and
-  ec1.ff = cast(42 as BIGINT);
+  ec1.ff = cast(42 as bigint);
 
 set enable_mergejoin = 'on';
 
@@ -372,21 +372,21 @@ from
   as ss1
 where
   ss1.x = ec1.f1 and
-  ec1.ff = cast(42 as BIGINT);
+  ec1.ff = cast(42 as bigint);
 
 set enable_nestloop = 'on';
 
 set enable_mergejoin = off;
 
 alter table ec1
-  enable ROW LEVEL SECURITY;
+  enable row level security;
 
-create POLICY p1
+create policy p1
 on ec1
-as PERMISSIVE
+as permissive
 for all
-to PUBLIC
-USING (f1 < cast('5' as int8alias1));
+to public
+using (f1 < cast('5' as int8alias1));
 
 create user regress_user_ectest;
 
@@ -402,7 +402,7 @@ from
 where
   a.ff = b.ff and
   a.ff =
-  cast(cast(43 as BIGINT) as int8alias1);
+  cast(cast(43 as bigint) as int8alias1);
 
 set session authorization regress_user_ectest;
 
@@ -414,7 +414,7 @@ from
 where
   a.ff = b.ff and
   a.ff =
-  cast(cast(43 as BIGINT) as int8alias1);
+  cast(cast(43 as bigint) as int8alias1);
 
 reset session_authorization;
 
@@ -448,7 +448,7 @@ from
   on m.ff = n.ff
   inner join
     ec1 as p
-  on cast(p.f1 as BIGINT) =
+  on cast(p.f1 as bigint) =
     cast(m.ff + n.ff as int8alias1);
 
 reset enable_mergejoin;
@@ -456,8 +456,8 @@ reset enable_mergejoin;
 select * from tenk1 where unique1 = unique1 or unique2 = unique2;
 
 create temporary table undername (
-  f1 NAME,
-  f2 INT
+  f1 name,
+  f2 int
 );
 
 create temporary view overview
@@ -474,7 +474,7 @@ select * from overview where sqli = 'foo' order by sqli;
 begin;
 
 create table tbl_nocom (
-  a BIGINT,
+  a bigint,
   b int8alias1
 );
 
@@ -484,20 +484,20 @@ set enable_mergejoin = 'on';
 
 select * from tbl_nocom as t1 full outer join tbl_nocom as t2 on t2.a = t1.b;
 
-alter operator = (BIGINT, int8alias1) set (hashes);
+alter operator = (bigint, int8alias1) set (hashes);
 
-alter OPERATOR FAMILY integer_ops USING hash
-  add OPERATOR 1 = (BIGINT, int8alias1);
+alter operator family integer_ops using hash
+  add operator 1 = (bigint, int8alias1);
 
 create function hashint8alias1(int8alias1)
-returns INT
-STRICT
+returns int
+strict
 immutable
 language internal
 as $function$hashint8$function$;
 
-alter OPERATOR FAMILY integer_ops USING hash
-  add FUNCTION 1 hashint8alias1(int8alias1);
+alter operator family integer_ops using hash
+  add function 1 hashint8alias1(int8alias1);
 
 set enable_hashjoin = 'on';
 

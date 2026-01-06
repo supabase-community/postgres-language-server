@@ -3,4 +3,4 @@ source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/single/alter_policy_stmt_0.sql
 snapshot_kind: text
 ---
-alter POLICY mypolicy on mytable to PUBLIC;
+alter policy mypolicy on mytable to public;

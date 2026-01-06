@@ -5,14 +5,14 @@ snapshot_kind: text
 ---
 create table clstr_tst_s (
   rf_a serial primary key,
-  b INT
+  b int
 );
 
 create table clstr_tst (
   a serial primary key,
-  b INT,
-  c TEXT,
-  d TEXT,
+  b int,
+  c text,
+  d text,
   constraint "clstr_tst_con"
   foreign key
   (b)
@@ -106,13 +106,13 @@ insert into clstr_tst (b, c) values (8, 'ocho');
 
 insert into clstr_tst (b, c, d) values (6, 'seis', repeat('xyzzy', 100000));
 
-CLUSTER clstr_tst using clstr_tst_c;
+cluster clstr_tst using clstr_tst_c;
 
 select
   a,
   b,
   c,
-  SUBSTRING(d from 1 for cast(30 as INT)),
+  SUBSTRING(d from 1 for cast(30 as int)),
   length(d)
 from
   clstr_tst;
@@ -121,7 +121,7 @@ select
   a,
   b,
   c,
-  SUBSTRING(d from 1 for cast(30 as INT)),
+  SUBSTRING(d from 1 for cast(30 as int)),
   length(d)
 from
   clstr_tst
@@ -131,7 +131,7 @@ select
   a,
   b,
   c,
-  SUBSTRING(d from 1 for cast(30 as INT)),
+  SUBSTRING(d from 1 for cast(30 as int)),
   length(d)
 from
   clstr_tst
@@ -141,7 +141,7 @@ select
   a,
   b,
   c,
-  SUBSTRING(d from 1 for cast(30 as INT)),
+  SUBSTRING(d from 1 for cast(30 as int)),
   length(d)
 from
   clstr_tst
@@ -153,7 +153,7 @@ select
   a,
   b,
   c,
-  SUBSTRING(d from 1 for cast(30 as INT)),
+  SUBSTRING(d from 1 for cast(30 as int)),
   length(d)
 from
   clstr_tst;
@@ -165,7 +165,7 @@ select
 from
   pg_constraint
 where
-  conrelid = cast('clstr_tst' as REGCLASS)
+  conrelid = cast('clstr_tst' as regclass)
 order by 1;
 
 select
@@ -229,21 +229,21 @@ where
   pg_class_2.relname = 'clstr_tst' and
   indisclustered;
 
-CLUSTER pg_toast.pg_toast_826 using pg_toast_826_index;
+cluster pg_toast.pg_toast_826 using pg_toast_826_index;
 
 create user regress_clstr_user;
 
-create table clstr_1 (a INT primary key);
+create table clstr_1 (a int primary key);
 
-create table clstr_2 (a INT primary key);
+create table clstr_2 (a int primary key);
 
-create table clstr_3 (a INT primary key);
+create table clstr_3 (a int primary key);
 
 alter table clstr_1
-  OWNER to regress_clstr_user;
+  owner to regress_clstr_user;
 
 alter table clstr_3
-  OWNER to regress_clstr_user;
+  owner to regress_clstr_user;
 
 grant SELECT on table clstr_2 to regress_clstr_user;
 
@@ -259,11 +259,11 @@ insert into clstr_3 values (2);
 
 insert into clstr_3 values (1);
 
-CLUSTER clstr_2;
+cluster clstr_2;
 
-CLUSTER clstr_1 using clstr_1_pkey;
+cluster clstr_1 using clstr_1_pkey;
 
-CLUSTER clstr_2 using clstr_2_pkey;
+cluster clstr_2 using clstr_2_pkey;
 
 select * from clstr_1
 union all
@@ -293,7 +293,7 @@ set session authorization regress_clstr_user;
 
 set client_min_messages = error;
 
-CLUSTER;
+cluster;
 
 reset client_min_messages;
 
@@ -309,11 +309,11 @@ insert into clstr_1 values (2);
 
 insert into clstr_1 values (1);
 
-CLUSTER clstr_1;
+cluster clstr_1;
 
 select * from clstr_1;
 
-create table clustertest (key INT primary key);
+create table clustertest (key int primary key);
 
 insert into clustertest values (10);
 
@@ -339,7 +339,7 @@ update clustertest set key = 80 where key = 70;
 
 select * from clustertest;
 
-CLUSTER clustertest using clustertest_pkey;
+cluster clustertest using clustertest_pkey;
 
 select * from clustertest;
 
@@ -348,29 +348,29 @@ commit;
 select * from clustertest;
 
 create temporary table clstr_temp (
-  col1 INT primary key,
-  col2 TEXT
+  col1 int primary key,
+  col2 text
 );
 
 insert into clstr_temp values (2, 'two'), (1, 'one');
 
-CLUSTER clstr_temp using clstr_temp_pkey;
+cluster clstr_temp using clstr_temp_pkey;
 
 select * from clstr_temp;
 
-drop TABLE clstr_temp;
+drop table clstr_temp;
 
 reset session_authorization;
 
-drop TABLE clustertest;
+drop table clustertest;
 
-create table clustertest (f1 INT primary key);
+create table clustertest (f1 int primary key);
 
-CLUSTER clustertest using clustertest_pkey;
+cluster clustertest using clustertest_pkey;
 
-CLUSTER clustertest;
+cluster clustertest;
 
-create table clstrpart (a INT)
+create table clstrpart (a int)
 partition by range(a);
 
 create table clstrpart1
@@ -393,9 +393,9 @@ create table clstrpart33 partition of clstrpart3 default;
 
 create index "clstrpart_only_idx" on only clstrpart using btree (a);
 
-CLUSTER clstrpart using clstrpart_only_idx;
+cluster clstrpart using clstrpart_only_idx;
 
-drop INDEX clstrpart_only_idx;
+drop index clstrpart_only_idx;
 
 create index "clstrpart_idx" on clstrpart using btree (a);
 
@@ -408,14 +408,14 @@ as
     relkind
   from
     pg_partition_tree(
-      cast('clstrpart' as REGCLASS)
+      cast('clstrpart' as regclass)
     )
     as tree
     inner join
       pg_class as c
     on c.oid = tree.relid;
 
-CLUSTER clstrpart using clstrpart_idx;
+cluster clstrpart using clstrpart_idx;
 
 create temporary table new_cluster_info
 as
@@ -426,7 +426,7 @@ as
     relkind
   from
     pg_partition_tree(
-      cast('clstrpart' as REGCLASS)
+      cast('clstrpart' as regclass)
     )
     as tree
     inner join
@@ -445,7 +445,7 @@ from
   using ("relname")
 order by relname collate "C";
 
-CLUSTER clstrpart;
+cluster clstrpart;
 
 alter table clstrpart
   set without cluster;
@@ -453,9 +453,9 @@ alter table clstrpart
 alter table clstrpart
   cluster on clstrpart_idx;
 
-drop TABLE clstrpart;
+drop table clstrpart;
 
-create table ptnowner (i INT unique)
+create table ptnowner (i int unique)
 partition by LIST(i);
 
 create index "ptnowner_i_idx" on ptnowner using btree (i);
@@ -467,16 +467,16 @@ create role regress_ptnowner;
 create table ptnowner2 partition of ptnowner for values in (2);
 
 alter table ptnowner1
-  OWNER to regress_ptnowner;
+  owner to regress_ptnowner;
 
 set session authorization regress_ptnowner;
 
-CLUSTER ptnowner using ptnowner_i_idx;
+cluster ptnowner using ptnowner_i_idx;
 
 reset session_authorization;
 
 alter table ptnowner
-  OWNER to regress_ptnowner;
+  owner to regress_ptnowner;
 
 create temporary table ptnowner_oldnodes
 as
@@ -492,7 +492,7 @@ as
 
 set session authorization regress_ptnowner;
 
-CLUSTER ptnowner using ptnowner_i_idx;
+cluster ptnowner using ptnowner_i_idx;
 
 reset session_authorization;
 
@@ -506,7 +506,7 @@ from
   using ("oid")
 order by a.relname collate "C";
 
-drop TABLE ptnowner;
+drop table ptnowner;
 
 drop role regress_ptnowner;
 
@@ -525,7 +525,7 @@ set enable_indexscan = off;
 
 set maintenance_work_mem = '1MB';
 
-CLUSTER clstr_4 using cluster_sort;
+cluster clstr_4 using cluster_sort;
 
 select
   *
@@ -552,8 +552,8 @@ reset maintenance_work_mem;
 
 create table clstr_expression (
   id serial primary key,
-  a INT,
-  b TEXT collate "C"
+  a int,
+  b text collate "C"
 );
 
 insert into clstr_expression (a, b)
@@ -592,4 +592,4 @@ select * from clstr_expression where -a = -3 order by -a, b;
 
 commit;
 
-CLUSTER clstr_expression using clstr_expression_minus_a;
+cluster clstr_expression using clstr_expression_minus_a;

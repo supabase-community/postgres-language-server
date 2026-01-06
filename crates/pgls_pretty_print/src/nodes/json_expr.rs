@@ -10,7 +10,7 @@ use pgls_query::{
 pub(super) fn emit_json_expr(e: &mut EventEmitter, n: &JsonExpr) {
     e.group_start(GroupKind::JsonExpr);
 
-    e.token(TokenKind::IDENT(keyword_for_op(n.op()).to_string()));
+    e.token(token_for_op(n.op()));
     e.token(TokenKind::L_PAREN);
 
     let mut wrote_value = false;
@@ -47,7 +47,7 @@ pub(super) fn emit_json_expr(e: &mut EventEmitter, n: &JsonExpr) {
         if clause_has_content {
             e.space();
         }
-        e.token(TokenKind::IDENT("PASSING".to_string()));
+        e.token(TokenKind::PASSING_KW);
         e.space();
 
         for (idx, (name, value)) in n
@@ -96,7 +96,7 @@ pub(super) fn emit_json_expr(e: &mut EventEmitter, n: &JsonExpr) {
         e.space();
         e.token(TokenKind::ON_KW);
         e.space();
-        e.token(TokenKind::IDENT("EMPTY".to_string()));
+        e.token(TokenKind::EMPTY_KW);
         clause_has_content = true;
     }
 
@@ -129,9 +129,9 @@ pub(super) fn emit_json_expr(e: &mut EventEmitter, n: &JsonExpr) {
         if clause_has_content {
             e.space();
         }
-        e.token(TokenKind::IDENT("OMIT".to_string()));
+        e.token(TokenKind::OMIT_KW);
         e.space();
-        e.token(TokenKind::IDENT("QUOTES".to_string()));
+        e.token(TokenKind::QUOTES_KW);
         clause_has_content = true;
     }
 
@@ -139,9 +139,9 @@ pub(super) fn emit_json_expr(e: &mut EventEmitter, n: &JsonExpr) {
         if clause_has_content {
             e.space();
         }
-        e.token(TokenKind::IDENT("JSON".to_string()));
+        e.token(TokenKind::JSON_KW);
         e.space();
-        e.token(TokenKind::IDENT("COERCION".to_string()));
+        e.token(TokenKind::IDENT("coercion".to_string()));
         clause_has_content = true;
     }
 
@@ -149,9 +149,9 @@ pub(super) fn emit_json_expr(e: &mut EventEmitter, n: &JsonExpr) {
         if clause_has_content {
             e.space();
         }
-        e.token(TokenKind::IDENT("IO".to_string()));
+        e.token(TokenKind::IDENT("io".to_string()));
         e.space();
-        e.token(TokenKind::IDENT("COERCION".to_string()));
+        e.token(TokenKind::IDENT("coercion".to_string()));
     }
 
     e.token(TokenKind::R_PAREN);
@@ -164,31 +164,28 @@ pub(super) fn emit_json_expr(e: &mut EventEmitter, n: &JsonExpr) {
     e.group_end();
 }
 
-fn keyword_for_op(op: JsonExprOp) -> &'static str {
+fn token_for_op(op: JsonExprOp) -> TokenKind {
     match op {
-        JsonExprOp::JsonExistsOp => "JSON_EXISTS",
-        JsonExprOp::JsonQueryOp => "JSON_QUERY",
-        JsonExprOp::JsonValueOp => "JSON_VALUE",
-        JsonExprOp::JsonTableOp => "JSON_TABLE",
-        JsonExprOp::Undefined => "JSON_EXPR",
+        JsonExprOp::JsonExistsOp => TokenKind::JSON_EXISTS_KW,
+        JsonExprOp::JsonQueryOp => TokenKind::JSON_QUERY_KW,
+        JsonExprOp::JsonValueOp => TokenKind::JSON_VALUE_KW,
+        JsonExprOp::JsonTableOp => TokenKind::JSON_TABLE_KW,
+        JsonExprOp::Undefined => TokenKind::IDENT("json_expr".to_string()),
     }
 }
 
 fn wrapper_clause(wrapper: JsonWrapper) -> Option<Vec<TokenKind>> {
     match wrapper {
-        JsonWrapper::JswNone => Some(vec![
-            TokenKind::IDENT("WITHOUT".into()),
-            TokenKind::IDENT("WRAPPER".into()),
-        ]),
+        JsonWrapper::JswNone => Some(vec![TokenKind::WITHOUT_KW, TokenKind::WRAPPER_KW]),
         JsonWrapper::JswConditional => Some(vec![
-            TokenKind::IDENT("WITH".into()),
-            TokenKind::IDENT("CONDITIONAL".into()),
-            TokenKind::IDENT("WRAPPER".into()),
+            TokenKind::WITH_KW,
+            TokenKind::CONDITIONAL_KW,
+            TokenKind::WRAPPER_KW,
         ]),
         JsonWrapper::JswUnconditional => Some(vec![
-            TokenKind::IDENT("WITH".into()),
-            TokenKind::IDENT("UNCONDITIONAL".into()),
-            TokenKind::IDENT("WRAPPER".into()),
+            TokenKind::WITH_KW,
+            TokenKind::UNCONDITIONAL_KW,
+            TokenKind::WRAPPER_KW,
         ]),
         JsonWrapper::JswUnspec | JsonWrapper::Undefined => None,
     }

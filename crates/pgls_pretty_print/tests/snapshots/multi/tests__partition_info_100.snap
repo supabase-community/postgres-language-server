@@ -16,8 +16,8 @@ select pg_partition_root(null);
 select pg_partition_root(0);
 
 create table ptif_test (
-  a INT,
-  b INT
+  a int,
+  b int
 )
 partition by range(a);
 
@@ -52,37 +52,37 @@ create index "ptif_test_index" on only ptif_test using btree (a);
 create index "ptif_test0_index" on only ptif_test0 using btree (a);
 
 alter index ptif_test_index
-  ATTACH partition
+  attach partition
   ptif_test0_index;
 
 create index "ptif_test01_index" on ptif_test01 using btree (a);
 
 alter index ptif_test0_index
-  ATTACH partition
+  attach partition
   ptif_test01_index;
 
 create index "ptif_test1_index" on only ptif_test1 using btree (a);
 
 alter index ptif_test_index
-  ATTACH partition
+  attach partition
   ptif_test1_index;
 
 create index "ptif_test11_index" on ptif_test11 using btree (a);
 
 alter index ptif_test1_index
-  ATTACH partition
+  attach partition
   ptif_test11_index;
 
 create index "ptif_test2_index" on ptif_test2 using btree (a);
 
 alter index ptif_test_index
-  ATTACH partition
+  attach partition
   ptif_test2_index;
 
 create index "ptif_test3_index" on ptif_test3 using btree (a);
 
 alter index ptif_test_index
-  ATTACH partition
+  attach partition
   ptif_test3_index;
 
 select pg_partition_root('ptif_test_index');
@@ -199,9 +199,9 @@ select * from pg_partition_ancestors('ptif_test01_index');
 
 select * from pg_partition_ancestors('ptif_test_index');
 
-drop TABLE ptif_test;
+drop table ptif_test;
 
-create table ptif_normal_table (a INT);
+create table ptif_normal_table (a int);
 
 select relid, parentrelid, level, isleaf from pg_partition_tree('ptif_normal_table');
 
@@ -209,7 +209,7 @@ select * from pg_partition_ancestors('ptif_normal_table');
 
 select pg_partition_root('ptif_normal_table');
 
-drop TABLE ptif_normal_table;
+drop table ptif_normal_table;
 
 create view ptif_test_view
 as select 1;
@@ -245,8 +245,8 @@ select pg_partition_root('ptif_li_parent');
 
 select pg_partition_root('ptif_li_child');
 
-drop VIEW ptif_test_view;
+drop view ptif_test_view;
 
-drop MATERIALIZED VIEW ptif_test_matview;
+drop materialized view ptif_test_matview;
 
-drop TABLE ptif_li_parent, ptif_li_child;
+drop table ptif_li_parent, ptif_li_child;

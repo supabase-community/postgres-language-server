@@ -4,7 +4,7 @@ input_file: crates/pgls_pretty_print/tests/data/single/partition_elem_0.sql
 snapshot_kind: text
 ---
 create table measurement (
-  city_id INT,
-  logdate DATE
+  city_id int,
+  logdate date
 )
 partition by range(logdate);

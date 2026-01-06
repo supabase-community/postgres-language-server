@@ -25,7 +25,7 @@ pub(super) fn emit_import_foreign_schema_stmt(e: &mut EventEmitter, n: &ImportFo
         e.line(LineType::SoftOrSpace);
         if n.list_type == 2 {
             // LIMIT TO
-            e.token(TokenKind::IDENT("LIMIT".to_string()));
+            e.token(TokenKind::LIMIT_KW);
             e.space();
             e.token(TokenKind::TO_KW);
         } else {
@@ -59,7 +59,7 @@ pub(super) fn emit_import_foreign_schema_stmt(e: &mut EventEmitter, n: &ImportFo
     // OPTIONS
     if !n.options.is_empty() {
         e.line(LineType::SoftOrSpace);
-        e.token(TokenKind::IDENT("OPTIONS".to_string()));
+        e.token(TokenKind::OPTIONS_KW);
         e.space();
         e.token(TokenKind::L_PAREN);
         super::node_list::emit_comma_separated_list(e, &n.options, |n, e| {

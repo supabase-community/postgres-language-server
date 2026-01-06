@@ -3,7 +3,7 @@ source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/tidscan.sql
 snapshot_kind: text
 ---
-create table tidscan (id INT);
+create table tidscan (id int);
 
 insert into tidscan values (1), (2), (3);
 
@@ -27,7 +27,7 @@ select
 from
   tidscan
 where
-  ctid = any (cast(array['(0,1)', '(0,2)'] as TID[]));
+  ctid = any (cast(array['(0,1)', '(0,2)'] as tid[]));
 
 select
   ctid,
@@ -35,7 +35,7 @@ select
 from
   tidscan
 where
-  ctid = any (cast(array['(0,1)', '(0,2)'] as TID[]));
+  ctid = any (cast(array['(0,1)', '(0,2)'] as tid[]));
 
 select
   ctid,
@@ -43,7 +43,7 @@ select
 from
   tidscan
 where
-  ctid <> any (cast(array['(0,1)', '(0,2)'] as TID[]));
+  ctid <> any (cast(array['(0,1)', '(0,2)'] as tid[]));
 
 select
   ctid,
@@ -51,7 +51,7 @@ select
 from
   tidscan
 where
-  ctid <> any (cast(array['(0,1)', '(0,2)'] as TID[]));
+  ctid <> any (cast(array['(0,1)', '(0,2)'] as tid[]));
 
 select
   ctid,
@@ -137,13 +137,13 @@ for select
 from
   tidscan
 where
-  ctid = any (cast(array['(0,1)', '(0,2)'] as TID[]));;
+  ctid = any (cast(array['(0,1)', '(0,2)'] as tid[]));;
 
-fetch FORWARD all from c;
+fetch forward all from c;
 
-fetch PRIOR from c;
+fetch prior from c;
 
-fetch ABSOLUTE 1 from c;
+fetch absolute 1 from c;
 
 rollback;
 
@@ -196,4 +196,4 @@ where
 
 rollback;
 
-drop TABLE tidscan;
+drop table tidscan;

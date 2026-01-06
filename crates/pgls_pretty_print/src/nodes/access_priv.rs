@@ -13,7 +13,7 @@ pub(super) fn emit_access_priv(e: &mut EventEmitter, n: &AccessPriv) {
         // Empty priv_name means ALL privileges
         e.token(TokenKind::ALL_KW);
         e.space();
-        e.token(TokenKind::IDENT("PRIVILEGES".to_string()));
+        e.token(TokenKind::PRIVILEGES_KW);
     }
 
     // Optional column list for column-level privileges

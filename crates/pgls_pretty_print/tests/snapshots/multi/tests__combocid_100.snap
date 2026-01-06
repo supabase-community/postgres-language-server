@@ -3,7 +3,7 @@ source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/combocid.sql
 snapshot_kind: text
 ---
-create temporary table combocidtest (foobar INT);
+create temporary table combocidtest (foobar int);
 
 begin;
 
@@ -55,7 +55,7 @@ declare "c" cursor for select ctid, cmin, * from combocidtest;;
 
 delete from combocidtest;
 
-fetch FORWARD all from c;
+fetch forward all from c;
 
 rollback;
 
@@ -106,8 +106,8 @@ commit;
 select ctid, cmin, * from combocidtest;
 
 create table if not exists testcase (
-  id INT primary key,
-  balance NUMERIC
+  id int primary key,
+  balance numeric
 );
 
 insert into testcase values (1, 0);
@@ -128,4 +128,4 @@ select * from testcase where id = 1 for update;
 
 rollback;
 
-drop TABLE testcase;
+drop table testcase;

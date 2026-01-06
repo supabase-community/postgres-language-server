@@ -3,4 +3,4 @@ source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/single/alter_tablespace_options_stmt_0.sql
 snapshot_kind: text
 ---
-alter TABLESPACE myspace set (seq_page_cost = 1.5);
+alter tablespace myspace set (seq_page_cost = 1.5);

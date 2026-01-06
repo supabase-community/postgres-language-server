@@ -4,13 +4,13 @@ input_file: crates/pgls_pretty_print/tests/data/multi/case.sql
 snapshot_kind: text
 ---
 create table case_tbl (
-  i INT,
-  f DOUBLE PRECISION
+  i int,
+  f double precision
 );
 
 create table case2_tbl (
-  i INT,
-  j INT
+  i int,
+  j int
 );
 
 insert into case_tbl values (1, 10.1);
@@ -133,8 +133,8 @@ select * from case_tbl;
 
 begin;
 
-create function vol(TEXT)
-returns TEXT
+create function vol(text)
+returns text
 as $function$begin return $1; end$function$
 language plpgsql
 volatile;
@@ -150,16 +150,16 @@ select
     else 'unrecognized'
   end;
 
-create domain foodomain as TEXT;
+create domain foodomain as text;
 
-create function volfoo(TEXT)
+create function volfoo(text)
 returns foodomain
 as $function$begin return $1::foodomain; end$function$
 language plpgsql
 volatile;
 
 create function inline_eq(foodomain, foodomain)
-returns BOOLEAN
+returns boolean
 as $function$SELECT CASE $2::text WHEN $1::text THEN true ELSE false END$function$
 language sql;
 
@@ -178,9 +178,9 @@ rollback;
 
 begin;
 
-create domain arrdomain as INT[];
+create domain arrdomain as int[];
 
-create function make_ad(INT, INT)
+create function make_ad(int, int)
 returns arrdomain
 as $function$declare x arrdomain;
    begin
@@ -191,7 +191,7 @@ language plpgsql
 volatile;
 
 create function ad_eq(arrdomain, arrdomain)
-returns BOOLEAN
+returns boolean
 as $function$begin return array_eq($1, $2); end$function$
 language plpgsql;
 
@@ -218,16 +218,16 @@ begin;
 create type casetestenum as enum ('e', 'f', 'g');
 
 select
-  case cast('foo' as TEXT)
+  case cast('foo' as text)
     when 'foo'
     then array['a', 'b', 'c', 'd'] ||
     cast(enum_range(cast(null as casetestenum))
-    as TEXT[])
+    as text[])
     else array['x', 'y']
   end;
 
 rollback;
 
-drop TABLE case_tbl;
+drop table case_tbl;
 
-drop TABLE case2_tbl;
+drop table case2_tbl;

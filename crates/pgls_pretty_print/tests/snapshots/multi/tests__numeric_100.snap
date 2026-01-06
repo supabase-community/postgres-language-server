@@ -4,58 +4,58 @@ input_file: crates/pgls_pretty_print/tests/data/multi/numeric.sql
 snapshot_kind: text
 ---
 create table num_data (
-  id INT,
-  val NUMERIC(210, 10)
+  id int,
+  val numeric(210, 10)
 );
 
 create table num_exp_add (
-  id1 INT,
-  id2 INT,
-  expected NUMERIC(210, 10)
+  id1 int,
+  id2 int,
+  expected numeric(210, 10)
 );
 
 create table num_exp_sub (
-  id1 INT,
-  id2 INT,
-  expected NUMERIC(210, 10)
+  id1 int,
+  id2 int,
+  expected numeric(210, 10)
 );
 
 create table num_exp_div (
-  id1 INT,
-  id2 INT,
-  expected NUMERIC(210, 10)
+  id1 int,
+  id2 int,
+  expected numeric(210, 10)
 );
 
 create table num_exp_mul (
-  id1 INT,
-  id2 INT,
-  expected NUMERIC(210, 10)
+  id1 int,
+  id2 int,
+  expected numeric(210, 10)
 );
 
 create table num_exp_sqrt (
-  id INT,
-  expected NUMERIC(210, 10)
+  id int,
+  expected numeric(210, 10)
 );
 
 create table num_exp_ln (
-  id INT,
-  expected NUMERIC(210, 10)
+  id int,
+  expected numeric(210, 10)
 );
 
 create table num_exp_log10 (
-  id INT,
-  expected NUMERIC(210, 10)
+  id int,
+  expected numeric(210, 10)
 );
 
 create table num_exp_power_10_ln (
-  id INT,
-  expected NUMERIC(210, 10)
+  id int,
+  expected numeric(210, 10)
 );
 
 create table num_result (
-  id1 INT,
-  id2 INT,
-  result NUMERIC(210, 10)
+  id1 int,
+  id2 int,
+  result numeric(210, 10)
 );
 
 begin;
@@ -1223,7 +1223,7 @@ insert into num_result
 select
   id,
   0,
-  log(cast('10' as NUMERIC), abs(val))
+  log(cast('10' as numeric), abs(val))
 from
   num_data
 where
@@ -1246,7 +1246,7 @@ select
   id,
   0,
   power(
-    cast('10' as NUMERIC),
+    cast('10' as numeric),
     ln(abs(round(val, 200)))
   )
 from
@@ -1268,7 +1268,7 @@ with
 v (x)
 as (
   values
-    (cast('0' as NUMERIC)),
+    (cast('0' as numeric)),
     ('1'),
     ('-1'),
     ('4.2'),
@@ -1290,7 +1290,7 @@ with
 v (x)
 as (
   values
-    (cast('0' as NUMERIC)),
+    (cast('0' as numeric)),
     ('1'),
     ('-1'),
     ('4.2'),
@@ -1310,35 +1310,35 @@ from
 where
   x2 <> 0;
 
-select cast('inf' as NUMERIC) / '0';
+select cast('inf' as numeric) / '0';
 
-select cast('-inf' as NUMERIC) / '0';
+select cast('-inf' as numeric) / '0';
 
-select cast('nan' as NUMERIC) / '0';
+select cast('nan' as numeric) / '0';
 
-select cast('0' as NUMERIC) / '0';
+select cast('0' as numeric) / '0';
 
-select cast('inf' as NUMERIC) % '0';
+select cast('inf' as numeric) % '0';
 
-select cast('-inf' as NUMERIC) % '0';
+select cast('-inf' as numeric) % '0';
 
-select cast('nan' as NUMERIC) % '0';
+select cast('nan' as numeric) % '0';
 
-select cast('0' as NUMERIC) % '0';
+select cast('0' as numeric) % '0';
 
-select div(cast('inf' as NUMERIC), '0');
+select div(cast('inf' as numeric), '0');
 
-select div(cast('-inf' as NUMERIC), '0');
+select div(cast('-inf' as numeric), '0');
 
-select div(cast('nan' as NUMERIC), '0');
+select div(cast('nan' as numeric), '0');
 
-select div(cast('0' as NUMERIC), '0');
+select div(cast('0' as numeric), '0');
 
 with
 v (x)
 as (
   values
-    (cast('0' as NUMERIC)),
+    (cast('0' as numeric)),
     ('1'),
     ('-1'),
     ('4.2'),
@@ -1362,7 +1362,7 @@ with
 v (x)
 as (
   values
-    (cast('0' as NUMERIC)),
+    (cast('0' as numeric)),
     ('1'),
     ('-1'),
     ('4.2'),
@@ -1384,7 +1384,7 @@ with
 v (x)
 as (
   values
-    (cast('0' as NUMERIC)),
+    (cast('0' as numeric)),
     ('1'),
     ('-1'),
     ('4.2'),
@@ -1399,7 +1399,7 @@ as (
     ('nan')
 )
 select
-  SUBSTRING(cast(x as TEXT) from 1 for 32)
+  SUBSTRING(cast(x as text) from 1 for 32)
 from
   v
 order by x;
@@ -1408,7 +1408,7 @@ with
 v (x)
 as (
   values
-    (cast('0' as NUMERIC)),
+    (cast('0' as numeric)),
     ('1'),
     ('4.2'),
     ('inf'),
@@ -1420,15 +1420,15 @@ select
 from
   v;
 
-select sqrt(cast('-1' as NUMERIC));
+select sqrt(cast('-1' as numeric));
 
-select sqrt(cast('-inf' as NUMERIC));
+select sqrt(cast('-inf' as numeric));
 
 with
 v (x)
 as (
   values
-    (cast('1' as NUMERIC)),
+    (cast('1' as numeric)),
     ('4.2'),
     ('inf'),
     ('nan')
@@ -1441,17 +1441,17 @@ select
 from
   v;
 
-select ln(cast('0' as NUMERIC));
+select ln(cast('0' as numeric));
 
-select ln(cast('-1' as NUMERIC));
+select ln(cast('-1' as numeric));
 
-select ln(cast('-inf' as NUMERIC));
+select ln(cast('-inf' as numeric));
 
 with
 v (x)
 as (
   values
-    (cast('2' as NUMERIC)),
+    (cast('2' as numeric)),
     ('4.2'),
     ('inf'),
     ('nan')
@@ -1464,25 +1464,25 @@ from
   v as v1 (x1),
   v as v2 (x2);
 
-select log(cast('0' as NUMERIC), '10');
+select log(cast('0' as numeric), '10');
 
-select log(cast('10' as NUMERIC), '0');
+select log(cast('10' as numeric), '0');
 
-select log(cast('-inf' as NUMERIC), '10');
+select log(cast('-inf' as numeric), '10');
 
-select log(cast('10' as NUMERIC), '-inf');
+select log(cast('10' as numeric), '-inf');
 
-select log(cast('inf' as NUMERIC), '0');
+select log(cast('inf' as numeric), '0');
 
-select log(cast('inf' as NUMERIC), '-inf');
+select log(cast('inf' as numeric), '-inf');
 
-select log(cast('-inf' as NUMERIC), 'inf');
+select log(cast('-inf' as numeric), 'inf');
 
 with
 v (x)
 as (
   values
-    (cast('0' as NUMERIC)),
+    (cast('0' as numeric)),
     ('1'),
     ('2'),
     ('4.2'),
@@ -1499,43 +1499,43 @@ from
 where
   x1 <> 0 or x2 >= 0;
 
-select power(cast('0' as NUMERIC), '-1');
+select power(cast('0' as numeric), '-1');
 
-select power(cast('0' as NUMERIC), '-inf');
+select power(cast('0' as numeric), '-inf');
 
-select power(cast('-1' as NUMERIC), 'inf');
+select power(cast('-1' as numeric), 'inf');
 
-select power(cast('-2' as NUMERIC), '3');
+select power(cast('-2' as numeric), '3');
 
-select power(cast('-2' as NUMERIC), '3.3');
+select power(cast('-2' as numeric), '3.3');
 
-select power(cast('-2' as NUMERIC), '-1');
+select power(cast('-2' as numeric), '-1');
 
-select power(cast('-2' as NUMERIC), '-1.5');
+select power(cast('-2' as numeric), '-1.5');
 
-select power(cast('-2' as NUMERIC), 'inf');
+select power(cast('-2' as numeric), 'inf');
 
-select power(cast('-2' as NUMERIC), '-inf');
+select power(cast('-2' as numeric), '-inf');
 
-select power(cast('inf' as NUMERIC), '-2');
+select power(cast('inf' as numeric), '-2');
 
-select power(cast('inf' as NUMERIC), '-inf');
+select power(cast('inf' as numeric), '-inf');
 
-select power(cast('-inf' as NUMERIC), '2');
+select power(cast('-inf' as numeric), '2');
 
-select power(cast('-inf' as NUMERIC), '3');
+select power(cast('-inf' as numeric), '3');
 
-select power(cast('-inf' as NUMERIC), '4.5');
+select power(cast('-inf' as numeric), '4.5');
 
-select power(cast('-inf' as NUMERIC), '-2');
+select power(cast('-inf' as numeric), '-2');
 
-select power(cast('-inf' as NUMERIC), '-3');
+select power(cast('-inf' as numeric), '-3');
 
-select power(cast('-inf' as NUMERIC), '0');
+select power(cast('-inf' as numeric), '0');
 
-select power(cast('-inf' as NUMERIC), 'inf');
+select power(cast('-inf' as numeric), 'inf');
 
-select power(cast('-inf' as NUMERIC), '-inf');
+select power(cast('-inf' as numeric), '-inf');
 
 select AVG(val) from num_data;
 
@@ -1548,8 +1548,8 @@ select stddev(val) from num_data;
 select variance(val) from num_data;
 
 create table fract_only (
-  id INT,
-  val NUMERIC(4, 4)
+  id int,
+  val numeric(4, 4)
 );
 
 insert into fract_only values (1, '0.0');
@@ -1576,77 +1576,77 @@ insert into fract_only values (11, '-Inf');
 
 select * from fract_only;
 
-drop TABLE fract_only;
+drop table fract_only;
 
-select cast(-9223372036854775808.5 as BIGINT);
+select cast(-9223372036854775808.5 as bigint);
 
-select cast(-9223372036854775808.4 as BIGINT);
+select cast(-9223372036854775808.4 as bigint);
 
-select cast(9223372036854775807.4 as BIGINT);
+select cast(9223372036854775807.4 as bigint);
 
-select cast(9223372036854775807.5 as BIGINT);
+select cast(9223372036854775807.5 as bigint);
 
-select cast(-2147483648.5 as INT);
+select cast(-2147483648.5 as int);
 
-select cast(-2147483648.4 as INT);
+select cast(-2147483648.4 as int);
 
-select cast(2147483647.4 as INT);
+select cast(2147483647.4 as int);
 
-select cast(2147483647.5 as INT);
+select cast(2147483647.5 as int);
 
-select cast(-32768.5 as SMALLINT);
+select cast(-32768.5 as smallint);
 
-select cast(-32768.4 as SMALLINT);
+select cast(-32768.4 as smallint);
 
-select cast(32767.4 as SMALLINT);
+select cast(32767.4 as smallint);
 
-select cast(32767.5 as SMALLINT);
+select cast(32767.5 as smallint);
 
-select cast(cast('NaN' as DOUBLE PRECISION) as NUMERIC);
+select cast(cast('NaN' as double precision) as numeric);
 
-select cast(cast('Infinity' as DOUBLE PRECISION) as NUMERIC);
+select cast(cast('Infinity' as double precision) as numeric);
 
-select cast(cast('-Infinity' as DOUBLE PRECISION) as NUMERIC);
+select cast(cast('-Infinity' as double precision) as numeric);
 
-select cast(cast('NaN' as NUMERIC) as DOUBLE PRECISION);
+select cast(cast('NaN' as numeric) as double precision);
 
-select cast(cast('Infinity' as NUMERIC) as DOUBLE PRECISION);
+select cast(cast('Infinity' as numeric) as double precision);
 
-select cast(cast('-Infinity' as NUMERIC) as DOUBLE PRECISION);
+select cast(cast('-Infinity' as numeric) as double precision);
 
-select cast(cast('NaN' as REAL) as NUMERIC);
+select cast(cast('NaN' as real) as numeric);
 
-select cast(cast('Infinity' as REAL) as NUMERIC);
+select cast(cast('Infinity' as real) as numeric);
 
-select cast(cast('-Infinity' as REAL) as NUMERIC);
+select cast(cast('-Infinity' as real) as numeric);
 
-select cast(cast('NaN' as NUMERIC) as REAL);
+select cast(cast('NaN' as numeric) as real);
 
-select cast(cast('Infinity' as NUMERIC) as REAL);
+select cast(cast('Infinity' as numeric) as real);
 
-select cast(cast('-Infinity' as NUMERIC) as REAL);
+select cast(cast('-Infinity' as numeric) as real);
 
-select cast(cast('42' as SMALLINT) as NUMERIC);
+select cast(cast('42' as smallint) as numeric);
 
-select cast(cast('NaN' as NUMERIC) as SMALLINT);
+select cast(cast('NaN' as numeric) as smallint);
 
-select cast(cast('Infinity' as NUMERIC) as SMALLINT);
+select cast(cast('Infinity' as numeric) as smallint);
 
-select cast(cast('-Infinity' as NUMERIC) as SMALLINT);
+select cast(cast('-Infinity' as numeric) as smallint);
 
-select cast(cast('NaN' as NUMERIC) as INT);
+select cast(cast('NaN' as numeric) as int);
 
-select cast(cast('Infinity' as NUMERIC) as INT);
+select cast(cast('Infinity' as numeric) as int);
 
-select cast(cast('-Infinity' as NUMERIC) as INT);
+select cast(cast('-Infinity' as numeric) as int);
 
-select cast(cast('NaN' as NUMERIC) as BIGINT);
+select cast(cast('NaN' as numeric) as bigint);
 
-select cast(cast('Infinity' as NUMERIC) as BIGINT);
+select cast(cast('Infinity' as numeric) as bigint);
 
-select cast(cast('-Infinity' as NUMERIC) as BIGINT);
+select cast(cast('-Infinity' as numeric) as bigint);
 
-create table ceil_floor_round (a NUMERIC);
+create table ceil_floor_round (a numeric);
 
 insert into ceil_floor_round values ('-5.5');
 
@@ -1664,16 +1664,16 @@ insert into ceil_floor_round values ('-0.000001');
 
 select a, ceil(a), ceiling(a), floor(a), round(a) from ceil_floor_round;
 
-drop TABLE ceil_floor_round;
+drop table ceil_floor_round;
 
 select
   i as pow,
-  round(cast(-2.5 * 10 ^ i as NUMERIC), -i),
-  round(cast(-1.5 * 10 ^ i as NUMERIC), -i),
-  round(cast(-0.5 * 10 ^ i as NUMERIC), -i),
-  round(cast(0.5 * 10 ^ i as NUMERIC), -i),
-  round(cast(1.5 * 10 ^ i as NUMERIC), -i),
-  round(cast(2.5 * 10 ^ i as NUMERIC), -i)
+  round(cast(-2.5 * 10 ^ i as numeric), -i),
+  round(cast(-1.5 * 10 ^ i as numeric), -i),
+  round(cast(-0.5 * 10 ^ i as numeric), -i),
+  round(cast(0.5 * 10 ^ i as numeric), -i),
+  round(cast(1.5 * 10 ^ i as numeric), -i),
+  round(cast(2.5 * 10 ^ i as numeric), -i)
 from
   generate_series(-5, 5) as t (i);
 
@@ -1719,25 +1719,25 @@ select width_bucket(3.5, 3.0, 3.0, 888);
 
 select
   width_bucket(
-    cast(5.0 as DOUBLE PRECISION),
-    cast(3.0 as DOUBLE PRECISION),
-    cast(4.0 as DOUBLE PRECISION),
+    cast(5.0 as double precision),
+    cast(3.0 as double precision),
+    cast(4.0 as double precision),
     0
   );
 
 select
   width_bucket(
-    cast(5.0 as DOUBLE PRECISION),
-    cast(3.0 as DOUBLE PRECISION),
-    cast(4.0 as DOUBLE PRECISION),
+    cast(5.0 as double precision),
+    cast(3.0 as double precision),
+    cast(4.0 as double precision),
     -5
   );
 
 select
   width_bucket(
-    cast(3.5 as DOUBLE PRECISION),
-    cast(3.0 as DOUBLE PRECISION),
-    cast(3.0 as DOUBLE PRECISION),
+    cast(3.5 as double precision),
+    cast(3.0 as double precision),
+    cast(3.0 as double precision),
     888
   );
 
@@ -1745,26 +1745,26 @@ select width_bucket('NaN', 3.0, 4.0, 888);
 
 select
   width_bucket(
-    cast('NaN' as DOUBLE PRECISION),
-    cast(3.0 as DOUBLE PRECISION),
-    cast(4.0 as DOUBLE PRECISION),
+    cast('NaN' as double precision),
+    cast(3.0 as double precision),
+    cast(4.0 as double precision),
     888
   );
 
 select width_bucket(0, 'NaN', 4.0, 888);
 
-select width_bucket(cast(0 as DOUBLE PRECISION), 'NaN', cast(4.0 as DOUBLE PRECISION), 888);
+select width_bucket(cast(0 as double precision), 'NaN', cast(4.0 as double precision), 888);
 
 select width_bucket(2.0, 3.0, '-inf', 888);
 
-select width_bucket(cast(0 as DOUBLE PRECISION), '-inf', cast(4.0 as DOUBLE PRECISION), 888);
+select width_bucket(cast(0 as double precision), '-inf', cast(4.0 as double precision), 888);
 
 create table width_bucket_test (
-  operand_num NUMERIC,
-  operand_f8 DOUBLE PRECISION
+  operand_num numeric,
+  operand_f8 double precision
 );
 
-update width_bucket_test set operand_f8 = cast(operand_num as DOUBLE PRECISION);
+update width_bucket_test set operand_f8 = cast(operand_num as double precision);
 
 select
   operand_num,
@@ -1781,54 +1781,54 @@ select
 from
   width_bucket_test;
 
-select width_bucket(cast(0.0 as NUMERIC), cast('Infinity' as NUMERIC), 5, 10);
+select width_bucket(cast(0.0 as numeric), cast('Infinity' as numeric), 5, 10);
 
-select width_bucket(cast(0.0 as NUMERIC), 5, cast('-Infinity' as NUMERIC), 20);
+select width_bucket(cast(0.0 as numeric), 5, cast('-Infinity' as numeric), 20);
 
 select
   width_bucket(
-    cast('Infinity' as NUMERIC),
+    cast('Infinity' as numeric),
     1,
     10,
     10
   ),
   width_bucket(
-    cast('-Infinity' as NUMERIC),
+    cast('-Infinity' as numeric),
     1,
     10,
     10
   );
 
-select width_bucket(cast(0.0 as DOUBLE PRECISION), cast('Infinity' as DOUBLE PRECISION), 5, 10);
+select width_bucket(cast(0.0 as double precision), cast('Infinity' as double precision), 5, 10);
 
-select width_bucket(cast(0.0 as DOUBLE PRECISION), 5, cast('-Infinity' as DOUBLE PRECISION), 20);
+select width_bucket(cast(0.0 as double precision), 5, cast('-Infinity' as double precision), 20);
 
 select
   width_bucket(
-    cast('Infinity' as DOUBLE PRECISION),
+    cast('Infinity' as double precision),
     1,
     10,
     10
   ),
   width_bucket(
-    cast('-Infinity' as DOUBLE PRECISION),
+    cast('-Infinity' as double precision),
     1,
     10,
     10
   );
 
-drop TABLE width_bucket_test;
+drop table width_bucket_test;
 
 select
   x,
   width_bucket(
-    cast(x as DOUBLE PRECISION),
+    cast(x as double precision),
     10,
     100,
     9
   )
   as flt,
-  width_bucket(cast(x as NUMERIC), 10, 100, 9)
+  width_bucket(cast(x as numeric), 10, 100, 9)
   as num
 from
   generate_series(0, 110, 10) as x;
@@ -1836,24 +1836,24 @@ from
 select
   x,
   width_bucket(
-    cast(x as DOUBLE PRECISION),
+    cast(x as double precision),
     100,
     10,
     9
   )
   as flt,
-  width_bucket(cast(x as NUMERIC), 100, 10, 9)
+  width_bucket(cast(x as numeric), 100, 10, 9)
   as num
 from
   generate_series(0, 110, 10) as x;
 
-select width_bucket(0, -cast(1e100 as NUMERIC), 1, 10);
+select width_bucket(0, -cast(1e100 as numeric), 1, 10);
 
-select width_bucket(0, -cast(1e100 as DOUBLE PRECISION), 1, 10);
+select width_bucket(0, -cast(1e100 as double precision), 1, 10);
 
-select width_bucket(1, cast(1e100 as NUMERIC), 0, 10);
+select width_bucket(1, cast(1e100 as numeric), 0, 10);
 
-select width_bucket(1, cast(1e100 as DOUBLE PRECISION), 0, 10);
+select width_bucket(1, cast(1e100 as double precision), 0, 10);
 
 select
   oper,
@@ -1864,19 +1864,19 @@ select
 from
   (
     select
-      cast(1.797e+308 as DOUBLE PRECISION) as big,
-      cast(5e-324 as DOUBLE PRECISION) as tiny
+      cast(1.797e+308 as double precision) as big,
+      cast(5e-324 as double precision) as tiny
   )
   as v,
   lateral (
     values
-      (cast(10.5 as DOUBLE PRECISION), -big, big, 1),
-      (cast(10.5 as DOUBLE PRECISION), -big, big, 2),
-      (cast(10.5 as DOUBLE PRECISION), -big, big, 3),
+      (cast(10.5 as double precision), -big, big, 1),
+      (cast(10.5 as double precision), -big, big, 2),
+      (cast(10.5 as double precision), -big, big, 3),
       (big / 4, -big / 2, big / 2, 10),
-      (cast(10.5 as DOUBLE PRECISION), big, -big, 1),
-      (cast(10.5 as DOUBLE PRECISION), big, -big, 2),
-      (cast(10.5 as DOUBLE PRECISION), big, -big, 3),
+      (cast(10.5 as double precision), big, -big, 1),
+      (cast(10.5 as double precision), big, -big, 2),
+      (cast(10.5 as double precision), big, -big, 3),
       (big / 4, big / 2, -big / 2, 10),
       (0, 0, tiny, 4),
       (tiny, 0, tiny, 4),
@@ -1885,9 +1885,9 @@ from
   )
   as sample (oper, low, high, cnt);
 
-select width_bucket(cast(1 as DOUBLE PRECISION), 0, 1, 2147483647);
+select width_bucket(cast(1 as double precision), 0, 1, 2147483647);
 
-select width_bucket(cast(0 as DOUBLE PRECISION), 1, 0, 2147483647);
+select width_bucket(cast(0 as double precision), 1, 0, 2147483647);
 
 select to_char(val, '9G999G999G999G999G999') from num_data;
 
@@ -1959,7 +1959,7 @@ with
 v (val)
 as (
   values
-    (cast('0' as NUMERIC)),
+    (cast('0' as numeric)),
     ('-4.2'),
     ('4.2e9'),
     ('1.2e-5'),
@@ -1971,11 +1971,11 @@ select
   val,
   to_char(val, '9.999EEEE') as numeric,
   to_char(
-    cast(val as DOUBLE PRECISION),
+    cast(val as double precision),
     '9.999EEEE'
   )
   as float8,
-  to_char(cast(val as REAL), '9.999EEEE') as float4
+  to_char(cast(val as real), '9.999EEEE') as float4
 from
   v;
 
@@ -2009,7 +2009,7 @@ as (
 select
   exp,
   to_char(
-    cast('1.2345e' || exp as NUMERIC),
+    cast('1.2345e' || exp as numeric),
     '9.999EEEE'
   )
   as numeric
@@ -2020,7 +2020,7 @@ with
 v (val)
 as (
   values
-    (cast('0' as NUMERIC)),
+    (cast('0' as numeric)),
     ('-4.2'),
     ('4.2e9'),
     ('1.2e-5'),
@@ -2032,11 +2032,11 @@ select
   val,
   to_char(val, 'MI9999999999.99') as numeric,
   to_char(
-    cast(val as DOUBLE PRECISION),
+    cast(val as double precision),
     'MI9999999999.99'
   )
   as float8,
-  to_char(cast(val as REAL), 'MI9999999999.99')
+  to_char(cast(val as real), 'MI9999999999.99')
   as float4
 from
   v;
@@ -2045,7 +2045,7 @@ with
 v (val)
 as (
   values
-    (cast('0' as NUMERIC)),
+    (cast('0' as numeric)),
     ('-4.2'),
     ('4.2e9'),
     ('1.2e-5'),
@@ -2056,61 +2056,61 @@ as (
 select
   val,
   to_char(val, 'MI99.99') as numeric,
-  to_char(cast(val as DOUBLE PRECISION), 'MI99.99')
+  to_char(cast(val as double precision), 'MI99.99')
   as float8,
-  to_char(cast(val as REAL), 'MI99.99') as float4
+  to_char(cast(val as real), 'MI99.99') as float4
 from
   v;
 
-select to_char(cast('100' as NUMERIC), 'FM999.9');
+select to_char(cast('100' as numeric), 'FM999.9');
 
-select to_char(cast('100' as NUMERIC), 'FM999.');
+select to_char(cast('100' as numeric), 'FM999.');
 
-select to_char(cast('100' as NUMERIC), 'FM999');
+select to_char(cast('100' as numeric), 'FM999');
 
-select to_char(cast('12345678901' as DOUBLE PRECISION), 'FM9999999999D9999900000000000000000');
+select to_char(cast('12345678901' as double precision), 'FM9999999999D9999900000000000000000');
 
-select to_char(cast('100' as NUMERIC), 'rn');
+select to_char(cast('100' as numeric), 'rn');
 
-select to_char(cast('1234' as NUMERIC), 'rn');
+select to_char(cast('1234' as numeric), 'rn');
 
-select to_char(cast('1235' as REAL), 'rn');
+select to_char(cast('1235' as real), 'rn');
 
-select to_char(cast('1236' as DOUBLE PRECISION), 'rn');
+select to_char(cast('1236' as double precision), 'rn');
 
-select to_char(cast('1237' as DOUBLE PRECISION), 'fmrn');
+select to_char(cast('1237' as double precision), 'fmrn');
 
-select to_char(cast('100e9' as NUMERIC), 'RN');
+select to_char(cast('100e9' as numeric), 'RN');
 
-select to_char(cast('100e9' as REAL), 'RN');
+select to_char(cast('100e9' as real), 'RN');
 
-select to_char(cast('100e9' as DOUBLE PRECISION), 'RN');
+select to_char(cast('100e9' as double precision), 'RN');
 
-select to_char(cast(1234.56 as NUMERIC), '99999V99');
+select to_char(cast(1234.56 as numeric), '99999V99');
 
-select to_char(cast(1234.56 as REAL), '99999V99');
+select to_char(cast(1234.56 as real), '99999V99');
 
-select to_char(cast(1234.56 as DOUBLE PRECISION), '99999V99');
+select to_char(cast(1234.56 as double precision), '99999V99');
 
-select to_char(cast('100' as NUMERIC), 'foo999');
+select to_char(cast('100' as numeric), 'foo999');
 
-select to_char(cast('100' as NUMERIC), 'f\oo999');
+select to_char(cast('100' as numeric), 'f\oo999');
 
-select to_char(cast('100' as NUMERIC), 'f\\oo999');
+select to_char(cast('100' as numeric), 'f\\oo999');
 
-select to_char(cast('100' as NUMERIC), 'f\"oo999');
+select to_char(cast('100' as numeric), 'f\"oo999');
 
-select to_char(cast('100' as NUMERIC), 'f\\"oo999');
+select to_char(cast('100' as numeric), 'f\\"oo999');
 
-select to_char(cast('100' as NUMERIC), 'f"ool"999');
+select to_char(cast('100' as numeric), 'f"ool"999');
 
-select to_char(cast('100' as NUMERIC), 'f"\ool"999');
+select to_char(cast('100' as numeric), 'f"\ool"999');
 
-select to_char(cast('100' as NUMERIC), 'f"\\ool"999');
+select to_char(cast('100' as numeric), 'f"\\ool"999');
 
-select to_char(cast('100' as NUMERIC), 'f"ool\"999');
+select to_char(cast('100' as numeric), 'f"ool\"999');
 
-select to_char(cast('100' as NUMERIC), 'f"ool\\"999');
+select to_char(cast('100' as numeric), 'f"ool\\"999');
 
 set lc_numeric = C;
 

@@ -3,21 +3,21 @@ source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/expressions.sql
 snapshot_kind: text
 ---
-select cast(date(NOW()) as TEXT) = cast(current_date as TEXT);
+select cast(date(NOW()) as text) = cast(current_date as text);
 
-select cast(cast(NOW() as time with time ZONE) as TEXT) = cast(current_time as TEXT);
+select cast(cast(NOW() as time with time zone) as text) = cast(current_time as text);
 
-select cast(cast(NOW() as time(4) with time ZONE) as TEXT) = cast(current_time(4) as TEXT);
+select cast(cast(NOW() as time(4) with time zone) as text) = cast(current_time(4) as text);
 
-select cast(cast(NOW() as TIME) as TEXT) = cast(localtime as TEXT);
+select cast(cast(NOW() as time) as text) = cast(localtime as text);
 
-select cast(cast(NOW() as TIME(3)) as TEXT) = cast(localtime(3) as TEXT);
+select cast(cast(NOW() as time(3)) as text) = cast(localtime(3) as text);
 
 select current_timestamp = NOW();
 
-select length(cast(current_timestamp as TEXT)) >= length(cast(current_timestamp(0) as TEXT));
+select length(cast(current_timestamp as text)) >= length(cast(current_timestamp(0) as text));
 
-select cast(cast(NOW() as TIMESTAMP) as TEXT) = cast(localtimestamp as TEXT);
+select cast(cast(NOW() as timestamp) as text) = cast(localtimestamp as text);
 
 select current_time = current_time(7);
 
@@ -44,53 +44,53 @@ reset search_path;
 begin;
 
 create table numeric_tbl (
-  f1 NUMERIC(18, 3),
-  f2 NUMERIC
+  f1 numeric(18, 3),
+  f2 numeric
 );
 
 create view numeric_view
 as select
   f1,
-  cast(f1 as NUMERIC(16, 4)) as f1164,
-  cast(f1 as NUMERIC) as f1n,
+  cast(f1 as numeric(16, 4)) as f1164,
+  cast(f1 as numeric) as f1n,
   f2,
-  cast(f2 as NUMERIC(16, 4)) as f2164,
-  cast(f2 as NUMERIC) as f2n
+  cast(f2 as numeric(16, 4)) as f2164,
+  cast(f2 as numeric) as f2n
 from
   numeric_tbl;
 
 select * from numeric_view;
 
 create table bpchar_tbl (
-  f1 CHAR(16) unique,
-  f2 CHAR
+  f1 char(16) unique,
+  f2 char
 );
 
 create view bpchar_view
 as select
   f1,
-  cast(f1 as CHAR(14)) as f114,
-  cast(f1 as CHAR) as f1n,
+  cast(f1 as char(14)) as f114,
+  cast(f1 as char) as f1n,
   f2,
-  cast(f2 as CHAR(14)) as f214,
-  cast(f2 as CHAR) as f2n
+  cast(f2 as char(14)) as f214,
+  cast(f2 as char) as f2n
 from
   bpchar_tbl;
 
-select * from bpchar_view where cast(f1 as CHAR) = 'foo';
+select * from bpchar_view where cast(f1 as char) = 'foo';
 
 rollback;
 
 select random() in (1, 4, 8.0);
 
-select cast(random() as INT) in (1, 4, 8.0);
+select cast(random() as int) in (1, 4, 8.0);
 
 select cast('(0,0)' as point) in (cast('(0,0,0,0)' as box), point(0, 0));
 
 begin;
 
-create function return_int_input(INT)
-returns INT
+create function return_int_input(int)
+returns int
 as $function$
 begin
 	return $1;
@@ -99,8 +99,8 @@ $function$
 language plpgsql
 stable;
 
-create function return_text_input(TEXT)
-returns TEXT
+create function return_text_input(text)
+returns text
 as $function$
 begin
 	return $1;
@@ -117,9 +117,9 @@ select return_int_input(1) in (null, null, null, null, null, null, null, null, n
 
 select return_int_input(1) in (10, 9, 2, 8, 3, 7, 4, 6, 5, 1, null);
 
-select return_int_input(cast(null as INT)) in (10, 9, 2, 8, 3, 7, 4, 6, 5, 1);
+select return_int_input(cast(null as int)) in (10, 9, 2, 8, 3, 7, 4, 6, 5, 1);
 
-select return_int_input(cast(null as INT)) in (10, 9, 2, 8, 3, 7, 4, 6, 5, null);
+select return_int_input(cast(null as int)) in (10, 9, 2, 8, 3, 7, 4, 6, 5, null);
 
 select return_text_input('a') in ('a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j');
 
@@ -147,9 +147,9 @@ select
     null
   );
 
-select return_int_input(cast(null as INT)) not in (10, 9, 2, 8, 3, 7, 4, 6, 5, 1);
+select return_int_input(cast(null as int)) not in (10, 9, 2, 8, 3, 7, 4, 6, 5, 1);
 
-select return_int_input(cast(null as INT)) not in (10, 9, 2, 8, 3, 7, 4, 6, 5, null);
+select return_int_input(cast(null as int)) not in (10, 9, 2, 8, 3, 7, 4, 6, 5, null);
 
 select return_text_input('a') not in ('a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j');
 
@@ -161,33 +161,33 @@ create type myint;
 
 create function myintin(cstring)
 returns myint
-STRICT
+strict
 immutable
 language internal
 as $function$int4in$function$;
 
 create function myintout(myint)
 returns cstring
-STRICT
+strict
 immutable
 language internal
 as $function$int4out$function$;
 
 create function myinthash(myint)
-returns INT
-STRICT
+returns int
+strict
 immutable
 language internal
 as $function$hashint4$function$;
 
-create type myint (input = myintin, output = myintout, like = INT);
+create type myint (input = myintin, output = myintout, like = int);
 
-create cast (INT as myint) without function;
+create cast (int as myint) without function;
 
-create cast (myint as INT) without function;
+create cast (myint as int) without function;
 
 create function myinteq(myint, myint)
-returns BOOLEAN
+returns boolean
 as $function$
 begin
   if $1 is null and $2 is null then
@@ -201,7 +201,7 @@ language plpgsql
 immutable;
 
 create function myintne(myint, myint)
-returns BOOLEAN
+returns boolean
 as $function$
 begin
   return not myinteq($1, $2);
@@ -228,11 +228,11 @@ RESTRICT = eqsel,
 JOIN = eqjoinsel,
 MERGES);
 
-create OPERATOR class myint_ops default
+create operator class myint_ops default
   for type myint
   using hash
-  as OPERATOR 1 = (myint, myint),
-  FUNCTION 1 myinthash(myint);
+  as operator 1 = (myint, myint),
+  function 1 myinthash(myint);
 
 create table inttest (a myint);
 

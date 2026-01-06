@@ -3,7 +3,7 @@ source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/float8.sql
 snapshot_kind: text
 ---
-create temporary table float8_tbl (f1 DOUBLE PRECISION);
+create temporary table float8_tbl (f1 double precision);
 
 insert into float8_tbl (f1) values ('    0.0   ');
 
@@ -15,15 +15,15 @@ insert into float8_tbl (f1) values ('1.2345678901234e+200');
 
 insert into float8_tbl (f1) values ('1.2345678901234e-200');
 
-select cast('10e400' as DOUBLE PRECISION);
+select cast('10e400' as double precision);
 
-select cast('-10e400' as DOUBLE PRECISION);
+select cast('-10e400' as double precision);
 
-select cast('10e-400' as DOUBLE PRECISION);
+select cast('10e-400' as double precision);
 
-select cast('-10e-400' as DOUBLE PRECISION);
+select cast('-10e-400' as double precision);
 
-select float8send(cast('2.2250738585072014E-308' as DOUBLE PRECISION));
+select float8send(cast('2.2250738585072014E-308' as double precision));
 
 insert into float8_tbl (f1) values ('');
 
@@ -49,33 +49,33 @@ select pg_input_is_valid('1e4000', 'float8');
 
 select * from pg_input_error_info('1e4000', 'float8');
 
-select cast('NaN' as DOUBLE PRECISION);
+select cast('NaN' as double precision);
 
-select cast('nan' as DOUBLE PRECISION);
+select cast('nan' as double precision);
 
-select cast('   NAN  ' as DOUBLE PRECISION);
+select cast('   NAN  ' as double precision);
 
-select cast('infinity' as DOUBLE PRECISION);
+select cast('infinity' as double precision);
 
-select cast('          -INFINiTY   ' as DOUBLE PRECISION);
+select cast('          -INFINiTY   ' as double precision);
 
-select cast('N A N' as DOUBLE PRECISION);
+select cast('N A N' as double precision);
 
-select cast('NaN x' as DOUBLE PRECISION);
+select cast('NaN x' as double precision);
 
-select cast(' INFINITY    x' as DOUBLE PRECISION);
+select cast(' INFINITY    x' as double precision);
 
-select cast('Infinity' as DOUBLE PRECISION) + 100.0;
+select cast('Infinity' as double precision) + 100.0;
 
-select cast('Infinity' as DOUBLE PRECISION) / cast('Infinity' as DOUBLE PRECISION);
+select cast('Infinity' as double precision) / cast('Infinity' as double precision);
 
-select cast('42' as DOUBLE PRECISION) / cast('Infinity' as DOUBLE PRECISION);
+select cast('42' as double precision) / cast('Infinity' as double precision);
 
-select cast('nan' as DOUBLE PRECISION) / cast('nan' as DOUBLE PRECISION);
+select cast('nan' as double precision) / cast('nan' as double precision);
 
-select cast('nan' as DOUBLE PRECISION) / cast('0' as DOUBLE PRECISION);
+select cast('nan' as double precision) / cast('0' as double precision);
 
-select cast(cast('nan' as NUMERIC) as DOUBLE PRECISION);
+select cast(cast('nan' as numeric) as double precision);
 
 select * from float8_tbl;
 
@@ -117,88 +117,88 @@ select sign(f1) as sign_f1 from float8_tbl as f;
 
 set extra_float_digits = 0;
 
-select sqrt(cast('64' as DOUBLE PRECISION)) as eight;
+select sqrt(cast('64' as double precision)) as eight;
 
-select |/cast('64' as DOUBLE PRECISION) as eight;
+select |/cast('64' as double precision) as eight;
 
 select f.f1, |/f.f1 as sqrt_f1 from float8_tbl as f where f.f1 > '0.0';
 
-select power(cast('144' as DOUBLE PRECISION), cast('0.5' as DOUBLE PRECISION));
+select power(cast('144' as double precision), cast('0.5' as double precision));
 
-select power(cast('NaN' as DOUBLE PRECISION), cast('0.5' as DOUBLE PRECISION));
+select power(cast('NaN' as double precision), cast('0.5' as double precision));
 
-select power(cast('144' as DOUBLE PRECISION), cast('NaN' as DOUBLE PRECISION));
+select power(cast('144' as double precision), cast('NaN' as double precision));
 
-select power(cast('NaN' as DOUBLE PRECISION), cast('NaN' as DOUBLE PRECISION));
+select power(cast('NaN' as double precision), cast('NaN' as double precision));
 
-select power(cast('-1' as DOUBLE PRECISION), cast('NaN' as DOUBLE PRECISION));
+select power(cast('-1' as double precision), cast('NaN' as double precision));
 
-select power(cast('1' as DOUBLE PRECISION), cast('NaN' as DOUBLE PRECISION));
+select power(cast('1' as double precision), cast('NaN' as double precision));
 
-select power(cast('NaN' as DOUBLE PRECISION), cast('0' as DOUBLE PRECISION));
+select power(cast('NaN' as double precision), cast('0' as double precision));
 
-select power(cast('inf' as DOUBLE PRECISION), cast('0' as DOUBLE PRECISION));
+select power(cast('inf' as double precision), cast('0' as double precision));
 
-select power(cast('-inf' as DOUBLE PRECISION), cast('0' as DOUBLE PRECISION));
+select power(cast('-inf' as double precision), cast('0' as double precision));
 
-select power(cast('0' as DOUBLE PRECISION), cast('inf' as DOUBLE PRECISION));
+select power(cast('0' as double precision), cast('inf' as double precision));
 
-select power(cast('0' as DOUBLE PRECISION), cast('-inf' as DOUBLE PRECISION));
+select power(cast('0' as double precision), cast('-inf' as double precision));
 
-select power(cast('1' as DOUBLE PRECISION), cast('inf' as DOUBLE PRECISION));
+select power(cast('1' as double precision), cast('inf' as double precision));
 
-select power(cast('1' as DOUBLE PRECISION), cast('-inf' as DOUBLE PRECISION));
+select power(cast('1' as double precision), cast('-inf' as double precision));
 
-select power(cast('-1' as DOUBLE PRECISION), cast('inf' as DOUBLE PRECISION));
+select power(cast('-1' as double precision), cast('inf' as double precision));
 
-select power(cast('-1' as DOUBLE PRECISION), cast('-inf' as DOUBLE PRECISION));
+select power(cast('-1' as double precision), cast('-inf' as double precision));
 
-select power(cast('0.1' as DOUBLE PRECISION), cast('inf' as DOUBLE PRECISION));
+select power(cast('0.1' as double precision), cast('inf' as double precision));
 
-select power(cast('-0.1' as DOUBLE PRECISION), cast('inf' as DOUBLE PRECISION));
+select power(cast('-0.1' as double precision), cast('inf' as double precision));
 
-select power(cast('1.1' as DOUBLE PRECISION), cast('inf' as DOUBLE PRECISION));
+select power(cast('1.1' as double precision), cast('inf' as double precision));
 
-select power(cast('-1.1' as DOUBLE PRECISION), cast('inf' as DOUBLE PRECISION));
+select power(cast('-1.1' as double precision), cast('inf' as double precision));
 
-select power(cast('0.1' as DOUBLE PRECISION), cast('-inf' as DOUBLE PRECISION));
+select power(cast('0.1' as double precision), cast('-inf' as double precision));
 
-select power(cast('-0.1' as DOUBLE PRECISION), cast('-inf' as DOUBLE PRECISION));
+select power(cast('-0.1' as double precision), cast('-inf' as double precision));
 
-select power(cast('1.1' as DOUBLE PRECISION), cast('-inf' as DOUBLE PRECISION));
+select power(cast('1.1' as double precision), cast('-inf' as double precision));
 
-select power(cast('-1.1' as DOUBLE PRECISION), cast('-inf' as DOUBLE PRECISION));
+select power(cast('-1.1' as double precision), cast('-inf' as double precision));
 
-select power(cast('inf' as DOUBLE PRECISION), cast('-2' as DOUBLE PRECISION));
+select power(cast('inf' as double precision), cast('-2' as double precision));
 
-select power(cast('inf' as DOUBLE PRECISION), cast('2' as DOUBLE PRECISION));
+select power(cast('inf' as double precision), cast('2' as double precision));
 
-select power(cast('inf' as DOUBLE PRECISION), cast('inf' as DOUBLE PRECISION));
+select power(cast('inf' as double precision), cast('inf' as double precision));
 
-select power(cast('inf' as DOUBLE PRECISION), cast('-inf' as DOUBLE PRECISION));
+select power(cast('inf' as double precision), cast('-inf' as double precision));
 
-select power(cast('-inf' as DOUBLE PRECISION), cast('-2' as DOUBLE PRECISION)) = '0';
+select power(cast('-inf' as double precision), cast('-2' as double precision)) = '0';
 
-select power(cast('-inf' as DOUBLE PRECISION), cast('-3' as DOUBLE PRECISION));
+select power(cast('-inf' as double precision), cast('-3' as double precision));
 
-select power(cast('-inf' as DOUBLE PRECISION), cast('2' as DOUBLE PRECISION));
+select power(cast('-inf' as double precision), cast('2' as double precision));
 
-select power(cast('-inf' as DOUBLE PRECISION), cast('3' as DOUBLE PRECISION));
+select power(cast('-inf' as double precision), cast('3' as double precision));
 
-select power(cast('-inf' as DOUBLE PRECISION), cast('3.5' as DOUBLE PRECISION));
+select power(cast('-inf' as double precision), cast('3.5' as double precision));
 
-select power(cast('-inf' as DOUBLE PRECISION), cast('inf' as DOUBLE PRECISION));
+select power(cast('-inf' as double precision), cast('inf' as double precision));
 
-select power(cast('-inf' as DOUBLE PRECISION), cast('-inf' as DOUBLE PRECISION));
+select power(cast('-inf' as double precision), cast('-inf' as double precision));
 
 select f.f1, exp(ln(f.f1)) as exp_ln_f1 from float8_tbl as f where f.f1 > '0.0';
 
 select
-  exp(cast('inf' as DOUBLE PRECISION)),
-  exp(cast('-inf' as DOUBLE PRECISION)),
-  exp(cast('nan' as DOUBLE PRECISION));
+  exp(cast('inf' as double precision)),
+  exp(cast('-inf' as double precision)),
+  exp(cast('nan' as double precision));
 
-select ||/cast('27' as DOUBLE PRECISION) as three;
+select ||/cast('27' as double precision) as three;
 
 select f.f1, ||/f.f1 as cbrt_f1 from float8_tbl as f;
 
@@ -222,51 +222,51 @@ select f.f1 / '0.0' from float8_tbl as f;
 
 select * from float8_tbl order by 1;
 
-select sinh(cast('1' as DOUBLE PRECISION));
+select sinh(cast('1' as double precision));
 
-select cosh(cast('1' as DOUBLE PRECISION));
+select cosh(cast('1' as double precision));
 
-select tanh(cast('1' as DOUBLE PRECISION));
+select tanh(cast('1' as double precision));
 
-select asinh(cast('1' as DOUBLE PRECISION));
+select asinh(cast('1' as double precision));
 
-select acosh(cast('2' as DOUBLE PRECISION));
+select acosh(cast('2' as double precision));
 
-select atanh(cast('0.5' as DOUBLE PRECISION));
+select atanh(cast('0.5' as double precision));
 
-select sinh(cast('infinity' as DOUBLE PRECISION));
+select sinh(cast('infinity' as double precision));
 
-select sinh(cast('-infinity' as DOUBLE PRECISION));
+select sinh(cast('-infinity' as double precision));
 
-select sinh(cast('nan' as DOUBLE PRECISION));
+select sinh(cast('nan' as double precision));
 
-select cosh(cast('infinity' as DOUBLE PRECISION));
+select cosh(cast('infinity' as double precision));
 
-select cosh(cast('-infinity' as DOUBLE PRECISION));
+select cosh(cast('-infinity' as double precision));
 
-select cosh(cast('nan' as DOUBLE PRECISION));
+select cosh(cast('nan' as double precision));
 
-select tanh(cast('infinity' as DOUBLE PRECISION));
+select tanh(cast('infinity' as double precision));
 
-select tanh(cast('-infinity' as DOUBLE PRECISION));
+select tanh(cast('-infinity' as double precision));
 
-select tanh(cast('nan' as DOUBLE PRECISION));
+select tanh(cast('nan' as double precision));
 
-select asinh(cast('infinity' as DOUBLE PRECISION));
+select asinh(cast('infinity' as double precision));
 
-select asinh(cast('-infinity' as DOUBLE PRECISION));
+select asinh(cast('-infinity' as double precision));
 
-select asinh(cast('nan' as DOUBLE PRECISION));
+select asinh(cast('nan' as double precision));
 
-select acosh(cast('-infinity' as DOUBLE PRECISION));
+select acosh(cast('-infinity' as double precision));
 
-select acosh(cast('nan' as DOUBLE PRECISION));
+select acosh(cast('nan' as double precision));
 
-select atanh(cast('infinity' as DOUBLE PRECISION));
+select atanh(cast('infinity' as double precision));
 
-select atanh(cast('-infinity' as DOUBLE PRECISION));
+select atanh(cast('-infinity' as double precision));
 
-select atanh(cast('nan' as DOUBLE PRECISION));
+select atanh(cast('nan' as double precision));
 
 set extra_float_digits = -1;
 
@@ -277,7 +277,7 @@ select
 from
   (
     values
-      (cast('-infinity' as DOUBLE PRECISION)),
+      (cast('-infinity' as double precision)),
       (-28),
       (-6),
       (-3.4),
@@ -297,8 +297,8 @@ from
       (3.4),
       (6),
       (28),
-      (cast('infinity' as DOUBLE PRECISION)),
-      (cast('nan' as DOUBLE PRECISION))
+      (cast('infinity' as double precision)),
+      (cast('nan' as double precision))
   )
   as t (x);
 
@@ -319,32 +319,32 @@ from
       (3),
       (4),
       (5),
-      (cast('infinity' as DOUBLE PRECISION)),
-      (cast('nan' as DOUBLE PRECISION))
+      (cast('infinity' as double precision)),
+      (cast('nan' as double precision))
   )
   as t (x);
 
-select gamma(cast('-infinity' as DOUBLE PRECISION));
+select gamma(cast('-infinity' as double precision));
 
-select lgamma(cast('-infinity' as DOUBLE PRECISION));
+select lgamma(cast('-infinity' as double precision));
 
-select gamma(cast('-1000.5' as DOUBLE PRECISION));
+select gamma(cast('-1000.5' as double precision));
 
-select lgamma(cast('-1000.5' as DOUBLE PRECISION));
+select lgamma(cast('-1000.5' as double precision));
 
-select gamma(cast('-1' as DOUBLE PRECISION));
+select gamma(cast('-1' as double precision));
 
-select lgamma(cast('-1' as DOUBLE PRECISION));
+select lgamma(cast('-1' as double precision));
 
-select gamma(cast('0' as DOUBLE PRECISION));
+select gamma(cast('0' as double precision));
 
-select lgamma(cast('0' as DOUBLE PRECISION));
+select lgamma(cast('0' as double precision));
 
-select gamma(cast('1000' as DOUBLE PRECISION));
+select gamma(cast('1000' as double precision));
 
-select lgamma(cast('1000' as DOUBLE PRECISION));
+select lgamma(cast('1000' as double precision));
 
-select lgamma(cast('1e308' as DOUBLE PRECISION));
+select lgamma(cast('1e308' as double precision));
 
 reset extra_float_digits;
 
@@ -356,33 +356,33 @@ insert into float8_tbl (f1) values ('10e-400');
 
 insert into float8_tbl (f1) values ('-10e-400');
 
-drop TABLE float8_tbl;
+drop table float8_tbl;
 
 select * from float8_tbl;
 
-select cast(cast('32767.4' as DOUBLE PRECISION) as SMALLINT);
+select cast(cast('32767.4' as double precision) as smallint);
 
-select cast(cast('32767.6' as DOUBLE PRECISION) as SMALLINT);
+select cast(cast('32767.6' as double precision) as smallint);
 
-select cast(cast('-32768.4' as DOUBLE PRECISION) as SMALLINT);
+select cast(cast('-32768.4' as double precision) as smallint);
 
-select cast(cast('-32768.6' as DOUBLE PRECISION) as SMALLINT);
+select cast(cast('-32768.6' as double precision) as smallint);
 
-select cast(cast('2147483647.4' as DOUBLE PRECISION) as INT);
+select cast(cast('2147483647.4' as double precision) as int);
 
-select cast(cast('2147483647.6' as DOUBLE PRECISION) as INT);
+select cast(cast('2147483647.6' as double precision) as int);
 
-select cast(cast('-2147483648.4' as DOUBLE PRECISION) as INT);
+select cast(cast('-2147483648.4' as double precision) as int);
 
-select cast(cast('-2147483648.6' as DOUBLE PRECISION) as INT);
+select cast(cast('-2147483648.6' as double precision) as int);
 
-select cast(cast('9223372036854773760' as DOUBLE PRECISION) as BIGINT);
+select cast(cast('9223372036854773760' as double precision) as bigint);
 
-select cast(cast('9223372036854775807' as DOUBLE PRECISION) as BIGINT);
+select cast(cast('9223372036854775807' as double precision) as bigint);
 
-select cast(cast('-9223372036854775808.5' as DOUBLE PRECISION) as BIGINT);
+select cast(cast('-9223372036854775808.5' as double precision) as bigint);
 
-select cast(cast('-9223372036854780000' as DOUBLE PRECISION) as BIGINT);
+select cast(cast('-9223372036854780000' as double precision) as bigint);
 
 select
   x,
@@ -427,21 +427,21 @@ select
   tand(x),
   tand(x)
   in (
-    cast('-Infinity' as DOUBLE PRECISION),
+    cast('-Infinity' as double precision),
     -1,
     0,
     1,
-    cast('Infinity' as DOUBLE PRECISION)
+    cast('Infinity' as double precision)
   )
   as tand_exact,
   cotd(x),
   cotd(x)
   in (
-    cast('-Infinity' as DOUBLE PRECISION),
+    cast('-Infinity' as double precision),
     -1,
     0,
     1,
-    cast('Infinity' as DOUBLE PRECISION)
+    cast('Infinity' as double precision)
   )
   as cotd_exact
 from
@@ -475,11 +475,11 @@ select
 from
   (
     values
-      (cast('-Infinity' as DOUBLE PRECISION)),
+      (cast('-Infinity' as double precision)),
       (-1),
       (0),
       (1),
-      (cast('Infinity' as DOUBLE PRECISION))
+      (cast('Infinity' as double precision))
   )
   as t (x);
 
@@ -503,28 +503,28 @@ create type xfloat8;
 create function xfloat8in(cstring)
 returns xfloat8
 immutable
-STRICT
+strict
 language internal
 as $function$int8in$function$;
 
 create function xfloat8out(xfloat8)
 returns cstring
 immutable
-STRICT
+strict
 language internal
 as $function$int8out$function$;
 
 create type xfloat8 (input = xfloat8in, output = xfloat8out, like = no_such_type);
 
-create type xfloat8 (input = xfloat8in, output = xfloat8out, like = DOUBLE PRECISION);
+create type xfloat8 (input = xfloat8in, output = xfloat8out, like = double precision);
 
-create cast (xfloat8 as DOUBLE PRECISION) without function;
+create cast (xfloat8 as double precision) without function;
 
-create cast (DOUBLE PRECISION as xfloat8) without function;
+create cast (double precision as xfloat8) without function;
 
-create cast (xfloat8 as BIGINT) without function;
+create cast (xfloat8 as bigint) without function;
 
-create cast (BIGINT as xfloat8) without function;
+create cast (bigint as xfloat8) without function;
 
 with
 testdata (bits)
@@ -555,8 +555,8 @@ select
 from
   (
     select
-      cast(cast(cast(bits as BIGINT) as xfloat8)
-      as DOUBLE PRECISION)
+      cast(cast(cast(bits as bigint) as xfloat8)
+      as double precision)
       as flt
     from
       testdata
@@ -781,22 +781,22 @@ as (
 select
   float8send(flt) as ibits,
   flt,
-  cast(cast(flt as TEXT) as DOUBLE PRECISION)
+  cast(cast(flt as text) as double precision)
   as r_flt,
   float8send(
-    cast(cast(flt as TEXT) as DOUBLE PRECISION)
+    cast(cast(flt as text) as double precision)
   )
   as obits,
   float8send(
-    cast(cast(flt as TEXT) as DOUBLE PRECISION)
+    cast(cast(flt as text) as double precision)
   ) =
   float8send(flt)
   as correct
 from
   (
     select
-      cast(cast(cast(bits as BIGINT) as xfloat8)
-      as DOUBLE PRECISION)
+      cast(cast(cast(bits as bigint) as xfloat8)
+      as double precision)
       as flt
     from
       testdata
@@ -804,4 +804,4 @@ from
   )
   as s;
 
-drop TYPE xfloat8 cascade;
+drop type xfloat8 cascade;

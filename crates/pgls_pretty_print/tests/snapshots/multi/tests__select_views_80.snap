@@ -11,29 +11,29 @@ select * from toyemp where name = 'sharon';
 
 create role regress_alice;
 
-create function f_leak(TEXT)
-returns BOOLEAN
+create function f_leak(text)
+returns boolean
 language plpgsql
 cost 0.0000001
 as $function$BEGIN RAISE NOTICE 'f_leak => %', $1; RETURN true; END$function$;
 
 create table customer (
-  cid INT primary key,
-  name TEXT not null,
-  tel TEXT,
-  passwd TEXT
+  cid int primary key,
+  name text not null,
+  tel text,
+  passwd text
 );
 
 create table credit_card (
-  cid INT references customer (cid),
-  cnum TEXT,
-  climit INT
+  cid int references customer (cid),
+  cnum text,
+  climit int
 );
 
 create table credit_usage (
-  cid INT references customer (cid),
-  ymd DATE,
-  usage INT
+  cid int references customer (cid),
+  ymd date,
+  usage int
 );
 
 insert into customer
@@ -130,17 +130,17 @@ from
   natural join
     credit_usage as r;
 
-grant SELECT on table my_property_normal to PUBLIC;
+grant SELECT on table my_property_normal to public;
 
-grant SELECT on table my_property_secure to PUBLIC;
+grant SELECT on table my_property_secure to public;
 
-grant SELECT on table my_credit_card_normal to PUBLIC;
+grant SELECT on table my_credit_card_normal to public;
 
-grant SELECT on table my_credit_card_secure to PUBLIC;
+grant SELECT on table my_credit_card_secure to public;
 
-grant SELECT on table my_credit_card_usage_normal to PUBLIC;
+grant SELECT on table my_credit_card_usage_normal to public;
 
-grant SELECT on table my_credit_card_usage_secure to PUBLIC;
+grant SELECT on table my_credit_card_usage_secure to public;
 
 set session authorization regress_alice;
 

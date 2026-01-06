@@ -76,7 +76,7 @@ fn emit_objarg_or_none(node: &pgls_query::Node, e: &mut EventEmitter) {
     } else {
         // A Node with node: None represents NONE (no argument type)
         // Used for unary operators
-        e.token(TokenKind::IDENT("NONE".to_string()));
+        e.token(TokenKind::NONE_KW);
     }
 }
 

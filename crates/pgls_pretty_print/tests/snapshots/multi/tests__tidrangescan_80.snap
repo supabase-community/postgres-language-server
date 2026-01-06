@@ -6,8 +6,8 @@ snapshot_kind: text
 set enable_seqscan = off;
 
 create table tidrangescan (
-  id INT,
-  data TEXT
+  id int,
+  data text
 );
 
 select ctid from tidrangescan where ctid < '(1, 0)';
@@ -27,13 +27,13 @@ from
 
 delete from tidrangescan
 where
-  cast(SUBSTRING(cast(ctid as TEXT)
+  cast(SUBSTRING(cast(ctid as text)
   from ',(\d+)\)')
-  as INT) >
+  as int) >
   10 or
-  cast(SUBSTRING(cast(ctid as TEXT)
+  cast(SUBSTRING(cast(ctid as text)
   from '\((\d+),')
-  as INT) >
+  as int) >
   2;
 
 vacuum tidrangescan;
@@ -88,7 +88,7 @@ select ctid from tidrangescan where ctid > '(4294967295,65535)';
 
 select ctid from tidrangescan where ctid < '(0,0)';
 
-select ctid from tidrangescan where ctid >= (select cast(null as TID));
+select ctid from tidrangescan where ctid >= (select cast(null as tid));
 
 select
   t.ctid,
@@ -125,7 +125,7 @@ where
   t.ctid < '(1,0)';
 
 explain (COSTS 'off')
-declare "c" SCROLL
+declare "c" scroll
 cursor
 for select
   ctid
@@ -136,7 +136,7 @@ where
 
 begin;
 
-declare "c" SCROLL
+declare "c" scroll
 cursor
 for select
   ctid
@@ -149,14 +149,14 @@ fetch next from c;
 
 fetch next from c;
 
-fetch PRIOR from c;
+fetch prior from c;
 
-fetch ABSOLUTE 1 from c;
+fetch absolute 1 from c;
 
-fetch ABSOLUTE -1 from c;
+fetch absolute -1 from c;
 
 commit;
 
-drop TABLE tidrangescan;
+drop table tidrangescan;
 
 reset enable_seqscan;

@@ -35,49 +35,49 @@ reset standard_conforming_strings;
 
 set bytea_output = hex;
 
-select cast('\xDeAdBeEf' as BYTEA);
+select cast('\xDeAdBeEf' as bytea);
 
-select cast('\x De Ad Be Ef ' as BYTEA);
+select cast('\x De Ad Be Ef ' as bytea);
 
-select cast('\xDeAdBeE' as BYTEA);
+select cast('\xDeAdBeE' as bytea);
 
-select cast('\xDeAdBeEx' as BYTEA);
+select cast('\xDeAdBeEx' as bytea);
 
-select cast('\xDe00BeEf' as BYTEA);
+select cast('\xDe00BeEf' as bytea);
 
-select cast('DeAdBeEf' as BYTEA);
+select cast('DeAdBeEf' as bytea);
 
-select cast('De\000dBeEf' as BYTEA);
+select cast('De\000dBeEf' as bytea);
 
-select cast('DeSdBeEf' as BYTEA);
+select cast('DeSdBeEf' as bytea);
 
-select cast('De\123dBeEf' as BYTEA);
+select cast('De\123dBeEf' as bytea);
 
-select cast('De\678dBeEf' as BYTEA);
+select cast('De\678dBeEf' as bytea);
 
-select cast('DeAd\\BeEf' as BYTEA);
+select cast('DeAd\\BeEf' as bytea);
 
-select reverse(cast('' as BYTEA));
+select reverse(cast('' as bytea));
 
-select reverse(cast('\xaa' as BYTEA));
+select reverse(cast('\xaa' as bytea));
 
-select reverse(cast('\xabcd' as BYTEA));
+select reverse(cast('\xabcd' as bytea));
 
 set bytea_output = escape;
 
-select cast('\xDeAdBeEf' as BYTEA);
+select cast('\xDeAdBeEf' as bytea);
 
-select cast('\x De Ad Be Ef ' as BYTEA);
+select cast('\x De Ad Be Ef ' as bytea);
 
-select cast('\xDe00BeEf' as BYTEA);
+select cast('\xDe00BeEf' as bytea);
 
-select cast('DeAdBeEf' as BYTEA);
+select cast('DeAdBeEf' as bytea);
 
-select cast('De\000dBeEf' as BYTEA);
+select cast('De\000dBeEf' as bytea);
 
-select cast('De\123dBeEf' as BYTEA);
+select cast('De\123dBeEf' as bytea);
 
-select cast('DeAd\\BeEf' as BYTEA);
+select cast('DeAd\\BeEf' as bytea);
 
 select pg_input_is_valid('\xDeAdBeE', 'bytea');
 
@@ -87,25 +87,25 @@ select * from pg_input_error_info('\xDeAdBeEx', 'bytea');
 
 select * from pg_input_error_info('foo\99bar', 'bytea');
 
-select cast(f1 as TEXT) as "text(char)" from char_tbl;
+select cast(f1 as text) as "text(char)" from char_tbl;
 
-select cast(f1 as TEXT) as "text(varchar)" from varchar_tbl;
+select cast(f1 as text) as "text(varchar)" from varchar_tbl;
 
-select cast(cast('namefield' as NAME) as TEXT) as "text(name)";
+select cast(cast('namefield' as name) as text) as "text(name)";
 
-select cast(f1 as CHAR(10)) as "char(text)" from text_tbl;
+select cast(f1 as char(10)) as "char(text)" from text_tbl;
 
-select cast(f1 as CHAR(20)) as "char(text)" from text_tbl;
+select cast(f1 as char(20)) as "char(text)" from text_tbl;
 
-select cast(f1 as CHAR(10)) as "char(varchar)" from varchar_tbl;
+select cast(f1 as char(10)) as "char(varchar)" from varchar_tbl;
 
-select cast(cast('namefield' as NAME) as CHAR(10)) as "char(name)";
+select cast(cast('namefield' as name) as char(10)) as "char(name)";
 
-select cast(f1 as VARCHAR) as "varchar(text)" from text_tbl;
+select cast(f1 as varchar) as "varchar(text)" from text_tbl;
 
-select cast(f1 as VARCHAR) as "varchar(char)" from char_tbl;
+select cast(f1 as varchar) as "varchar(char)" from char_tbl;
 
-select cast(cast('namefield' as NAME) as VARCHAR) as "varchar(name)";
+select cast(cast('namefield' as name) as varchar) as "varchar(name)";
 
 select btrim('  bunch o blanks  ') = 'bunch o blanks' as "bunch o blanks";
 
@@ -564,26 +564,26 @@ select POSITION('4' in '1234567890') = '4' as "4";
 
 select POSITION('5' in '1234567890') = '5' as "5";
 
-select POSITION(cast('\x11' as BYTEA) in cast('' as BYTEA)) = 0 as "0";
+select POSITION(cast('\x11' as bytea) in cast('' as bytea)) = 0 as "0";
 
-select POSITION(cast('\x33' as BYTEA) in cast('\x1122' as BYTEA)) = 0 as "0";
+select POSITION(cast('\x33' as bytea) in cast('\x1122' as bytea)) = 0 as "0";
 
-select POSITION(cast('' as BYTEA) in cast('\x1122' as BYTEA)) = 1 as "1";
+select POSITION(cast('' as bytea) in cast('\x1122' as bytea)) = 1 as "1";
 
-select POSITION(cast('\x22' as BYTEA) in cast('\x1122' as BYTEA)) = 2 as "2";
+select POSITION(cast('\x22' as bytea) in cast('\x1122' as bytea)) = 2 as "2";
 
 select
-  POSITION(cast('\x5678' as BYTEA) in cast('\x1234567890' as BYTEA)) =
+  POSITION(cast('\x5678' as bytea) in cast('\x1234567890' as bytea)) =
   3
   as "3";
 
-select OVERLAY('abcdef' PLACING '45' from 4) as abc45f;
+select OVERLAY('abcdef' placing '45' from 4) as abc45f;
 
-select OVERLAY('yabadoo' PLACING 'daba' from 5) as yabadaba;
+select OVERLAY('yabadoo' placing 'daba' from 5) as yabadaba;
 
-select OVERLAY('yabadoo' PLACING 'daba' from 5 for 0) as yabadabadoo;
+select OVERLAY('yabadoo' placing 'daba' from 5 for 0) as yabadabadoo;
 
-select OVERLAY('babosa' PLACING 'ubb' from 2 for 4) as bubba;
+select OVERLAY('babosa' placing 'ubb' from 2 for 4) as bubba;
 
 select 'hawkeye' like 'h%' as "true";
 
@@ -613,13 +613,13 @@ select 'indio' like 'in_o' as "false";
 
 select 'indio' not like 'in_o' as "true";
 
-select cast('abc' as NAME) like '_b_' as "true";
+select cast('abc' as name) like '_b_' as "true";
 
-select cast('abc' as NAME) not like '_b_' as "false";
+select cast('abc' as name) not like '_b_' as "false";
 
-select cast('abc' as BYTEA) like cast('_b_' as BYTEA) as "true";
+select cast('abc' as bytea) like cast('_b_' as bytea) as "true";
 
-select cast('abc' as BYTEA) not like cast('_b_' as BYTEA) as "false";
+select cast('abc' as bytea) not like cast('_b_' as bytea) as "false";
 
 select 'hawkeye' like like_escape('h%', '#') as "true";
 
@@ -662,16 +662,16 @@ select 'i_dio' like like_escape('i$_d%o', '$') as "true";
 select 'i_dio' not like like_escape('i$_d%o', '$') as "false";
 
 select
-  cast('a_c' as BYTEA) like like_escape(
-    cast('a$__' as BYTEA),
-    cast('$' as BYTEA)
+  cast('a_c' as bytea) like like_escape(
+    cast('a$__' as bytea),
+    cast('$' as bytea)
   )
   as "true";
 
 select
-  cast('a_c' as BYTEA) not like like_escape(
-    cast('a$__' as BYTEA),
-    cast('$' as BYTEA)
+  cast('a_c' as bytea) not like like_escape(
+    cast('a$__' as bytea),
+    cast('$' as bytea)
   )
   as "false";
 
@@ -711,9 +711,9 @@ select 'Hawkeye' ilike 'h%' as "true";
 
 select 'Hawkeye' not ilike 'h%' as "false";
 
-select cast('ABC' as NAME) ilike '_b_' as "true";
+select cast('ABC' as name) ilike '_b_' as "true";
 
-select cast('ABC' as NAME) not ilike '_b_' as "false";
+select cast('ABC' as name) not ilike '_b_' as "false";
 
 select 'foo' like '_%' as t, 'f' like '_%' as t, '' like '_%' as f;
 
@@ -726,48 +726,48 @@ select 'foo' like '%__' as t, 'foo' like '%___' as t, 'foo' like '%____' as f;
 select 'jack' like '%____%' as t;
 
 create table texttest (
-  a TEXT primary key,
-  b INT
+  a text primary key,
+  b int
 );
 
 select * from texttest where a like '%1%';
 
 create table byteatest (
-  a BYTEA primary key,
-  b INT
+  a bytea primary key,
+  b int
 );
 
 select * from byteatest where a like '%1%';
 
-drop TABLE texttest, byteatest;
+drop table texttest, byteatest;
 
 select 'unknown' || ' and unknown' as "Concat unknown types";
 
-select cast('text' as TEXT) || ' and unknown' as "Concat text to unknown type";
+select cast('text' as text) || ' and unknown' as "Concat text to unknown type";
 
 select
-  cast('characters' as CHAR(20)) ||
+  cast('characters' as char(20)) ||
   ' and text'
   as "Concat char to unknown type";
 
 select
-  cast('text' as TEXT) ||
-  cast(' and characters' as CHAR(20))
+  cast('text' as text) ||
+  cast(' and characters' as char(20))
   as "Concat text to char";
 
 select
-  cast('text' as TEXT) ||
-  cast(' and varchar' as VARCHAR)
+  cast('text' as text) ||
+  cast(' and varchar' as varchar)
   as "Concat text to varchar";
 
-create table toasttest (f1 TEXT);
+create table toasttest (f1 text);
 
 insert into toasttest values (repeat('1234567890', 10000));
 
 insert into toasttest values (repeat('1234567890', 10000));
 
 alter table toasttest
-  alter column f1 set STORAGE external;
+  alter column f1 set storage external;
 
 insert into toasttest values (repeat('1234567890', 10000));
 
@@ -820,16 +820,16 @@ from
 where
   relname = 'toasttest';
 
-drop TABLE toasttest;
+drop table toasttest;
 
-create table toasttest (f1 BYTEA);
+create table toasttest (f1 bytea);
 
 insert into toasttest values (decode(repeat('1234567890', 10000), 'escape'));
 
 insert into toasttest values (decode(repeat('1234567890', 10000), 'escape'));
 
 alter table toasttest
-  alter column f1 set STORAGE external;
+  alter column f1 set storage external;
 
 insert into toasttest values (decode(repeat('1234567890', 10000), 'escape'));
 
@@ -843,41 +843,41 @@ select substr(f1, 99995) from toasttest;
 
 select substr(f1, 99995, 10) from toasttest;
 
-drop TABLE toasttest;
+drop table toasttest;
 
-create table toasttest (c CHAR(4096));
+create table toasttest (c char(4096));
 
 insert into toasttest values ('x');
 
-select length(c), cast(c as TEXT) from toasttest;
+select length(c), cast(c as text) from toasttest;
 
 select c from toasttest;
 
-drop TABLE toasttest;
+drop table toasttest;
 
 create table toasttest (
-  f1 TEXT,
-  f2 TEXT
+  f1 text,
+  f2 text
 );
 
 alter table toasttest
   set (toast_tuple_target = 128);
 
 alter table toasttest
-  alter column f1 set STORAGE external;
+  alter column f1 set storage external;
 
 alter table toasttest
-  alter column f2 set STORAGE external;
+  alter column f2 set storage external;
 
 insert into toasttest values (repeat('1234', 1000), repeat('5678', 30));
 
 select
-  cast(reltoastrelid as REGCLASS)
+  cast(reltoastrelid as regclass)
   as reltoastname
 from
   pg_class
 where
-  oid = cast('toasttest' as REGCLASS);
+  oid = cast('toasttest' as regclass);
 
 select
   substr(f1, 5, 10) as f1_data,
@@ -891,7 +891,7 @@ select
 from
   toasttest;
 
-drop TABLE toasttest;
+drop table toasttest;
 
 select length('abcdef') as length_6;
 
@@ -947,48 +947,48 @@ select split_part('@joeuser@mydatabase@', '@', -2) as mydatabase;
 
 select to_bin(-1234) as "11111111111111111111101100101110";
 
-select to_bin(-cast(1234 as BIGINT));
+select to_bin(-cast(1234 as bigint));
 
 select to_bin(256 * 256 * 256 - 1) as "111111111111111111111111";
 
 select
   to_bin(
-    cast(256 as BIGINT) *
-    cast(256 as BIGINT) *
-    cast(256 as BIGINT) *
-    cast(256 as BIGINT) -
+    cast(256 as bigint) *
+    cast(256 as bigint) *
+    cast(256 as bigint) *
+    cast(256 as bigint) -
     1
   )
   as "11111111111111111111111111111111";
 
 select to_oct(-1234) as "37777775456";
 
-select to_oct(-cast(1234 as BIGINT)) as "1777777777777777775456";
+select to_oct(-cast(1234 as bigint)) as "1777777777777777775456";
 
 select to_oct(256 * 256 * 256 - 1) as "77777777";
 
 select
   to_oct(
-    cast(256 as BIGINT) *
-    cast(256 as BIGINT) *
-    cast(256 as BIGINT) *
-    cast(256 as BIGINT) -
+    cast(256 as bigint) *
+    cast(256 as bigint) *
+    cast(256 as bigint) *
+    cast(256 as bigint) -
     1
   )
   as "37777777777";
 
 select to_hex(-1234) as fffffb2e;
 
-select to_hex(-cast(1234 as BIGINT)) as fffffffffffffb2e;
+select to_hex(-cast(1234 as bigint)) as fffffffffffffb2e;
 
 select to_hex(256 * 256 * 256 - 1) as ffffff;
 
 select
   to_hex(
-    cast(256 as BIGINT) *
-    cast(256 as BIGINT) *
-    cast(256 as BIGINT) *
-    cast(256 as BIGINT) -
+    cast(256 as bigint) *
+    cast(256 as bigint) *
+    cast(256 as bigint) *
+    cast(256 as bigint) -
     1
   )
   as ffffffff;
@@ -1019,13 +1019,13 @@ select crc32c('');
 
 select crc32c('The quick brown fox jumps over the lazy dog.');
 
-select crc32c(cast(repeat('A', 127) as BYTEA));
+select crc32c(cast(repeat('A', 127) as bytea));
 
-select crc32c(cast(repeat('A', 128) as BYTEA));
+select crc32c(cast(repeat('A', 128) as bytea));
 
-select crc32c(cast(repeat('A', 129) as BYTEA));
+select crc32c(cast(repeat('A', 129) as bytea));
 
-select crc32c(cast(repeat('A', 800) as BYTEA));
+select crc32c(cast(repeat('A', 800) as bytea));
 
 select encode('\x1234567890abcdef00', 'hex');
 
@@ -1035,7 +1035,7 @@ select
   encode(
     cast('\x' ||
     repeat('1234567890abcdef0001', 7)
-    as BYTEA),
+    as bytea),
     'base64'
   );
 
@@ -1044,7 +1044,7 @@ select
     encode(
       cast('\x' ||
       repeat('1234567890abcdef0001', 7)
-      as BYTEA),
+      as bytea),
       'base64'
     ),
     'base64'
@@ -1070,15 +1070,15 @@ select encode('\x01', 'base64url');
 
 select decode('AQ', 'base64url');
 
-select encode(cast('\x0102' as BYTEA), 'base64url');
+select encode(cast('\x0102' as bytea), 'base64url');
 
 select decode('AQI', 'base64url');
 
-select encode(cast('\x010203' as BYTEA), 'base64url');
+select encode(cast('\x010203' as bytea), 'base64url');
 
 select decode('AQID', 'base64url');
 
-select encode(cast('\xdeadbeef' as BYTEA), 'base64url');
+select encode(cast('\xdeadbeef' as bytea), 'base64url');
 
 select decode('3q2-7w', 'base64url');
 
@@ -1118,89 +1118,89 @@ select decode('=QQQ', 'base64url');
 
 select decode('abc-_w==', 'base64url');
 
-select get_bit(cast('\x1234567890abcdef00' as BYTEA), 43);
+select get_bit(cast('\x1234567890abcdef00' as bytea), 43);
 
-select get_bit(cast('\x1234567890abcdef00' as BYTEA), 99);
+select get_bit(cast('\x1234567890abcdef00' as bytea), 99);
 
-select set_bit(cast('\x1234567890abcdef00' as BYTEA), 43, 0);
+select set_bit(cast('\x1234567890abcdef00' as bytea), 43, 0);
 
-select set_bit(cast('\x1234567890abcdef00' as BYTEA), 99, 0);
+select set_bit(cast('\x1234567890abcdef00' as bytea), 99, 0);
 
-select get_byte(cast('\x1234567890abcdef00' as BYTEA), 3);
+select get_byte(cast('\x1234567890abcdef00' as bytea), 3);
 
-select get_byte(cast('\x1234567890abcdef00' as BYTEA), 99);
+select get_byte(cast('\x1234567890abcdef00' as bytea), 99);
 
-select set_byte(cast('\x1234567890abcdef00' as BYTEA), 7, 11);
+select set_byte(cast('\x1234567890abcdef00' as bytea), 7, 11);
 
-select set_byte(cast('\x1234567890abcdef00' as BYTEA), 99, 11);
+select set_byte(cast('\x1234567890abcdef00' as bytea), 99, 11);
 
 select
-  cast(cast(4660 as SMALLINT) as BYTEA)
+  cast(cast(4660 as smallint) as bytea)
   as "\x1234",
-  cast(cast(-4660 as SMALLINT) as BYTEA)
+  cast(cast(-4660 as smallint) as bytea)
   as "\xedcc";
 
 select
-  cast(cast(305419896 as INT) as BYTEA)
+  cast(cast(305419896 as int) as bytea)
   as "\x12345678",
-  cast(cast(-305419896 as INT) as BYTEA)
+  cast(cast(-305419896 as int) as bytea)
   as "\xedcba988";
 
 select
-  cast(cast(0x1122334455667788 as BIGINT)
-  as BYTEA)
+  cast(cast(0x1122334455667788 as bigint)
+  as bytea)
   as "\x1122334455667788",
-  cast(cast(-0x1122334455667788 as BIGINT)
-  as BYTEA)
+  cast(cast(-0x1122334455667788 as bigint)
+  as bytea)
   as "\xeeddccbbaa998878";
 
-select cast(cast('' as BYTEA) as SMALLINT) as "0";
+select cast(cast('' as bytea) as smallint) as "0";
 
-select cast(cast('\x12' as BYTEA) as SMALLINT) as "18";
+select cast(cast('\x12' as bytea) as smallint) as "18";
 
-select cast(cast('\x1234' as BYTEA) as SMALLINT) as "4460";
+select cast(cast('\x1234' as bytea) as smallint) as "4460";
 
-select cast(cast('\x123456' as BYTEA) as SMALLINT);
+select cast(cast('\x123456' as bytea) as smallint);
 
-select cast(cast('' as BYTEA) as INT) as "0";
+select cast(cast('' as bytea) as int) as "0";
 
-select cast(cast('\x12' as BYTEA) as INT) as "18";
+select cast(cast('\x12' as bytea) as int) as "18";
 
-select cast(cast('\x12345678' as BYTEA) as INT) as "305419896";
+select cast(cast('\x12345678' as bytea) as int) as "305419896";
 
-select cast(cast('\x123456789A' as BYTEA) as INT);
+select cast(cast('\x123456789A' as bytea) as int);
 
-select cast(cast('' as BYTEA) as BIGINT) as "0";
+select cast(cast('' as bytea) as bigint) as "0";
 
-select cast(cast('\x12' as BYTEA) as BIGINT) as "18";
+select cast(cast('\x12' as bytea) as bigint) as "18";
 
 select
-  cast(cast('\x1122334455667788' as BYTEA)
-  as BIGINT)
+  cast(cast('\x1122334455667788' as bytea)
+  as bigint)
   as "1234605616436508552";
 
-select cast(cast('\x112233445566778899' as BYTEA) as BIGINT);
+select cast(cast('\x112233445566778899' as bytea) as bigint);
 
 select
-  cast(cast('\x8000' as BYTEA)
-  as SMALLINT)
+  cast(cast('\x8000' as bytea)
+  as smallint)
   as "-32768",
-  cast(cast('\x7FFF' as BYTEA)
-  as SMALLINT)
+  cast(cast('\x7FFF' as bytea)
+  as smallint)
   as "32767";
 
 select
-  cast(cast('\x80000000' as BYTEA) as INT)
+  cast(cast('\x80000000' as bytea) as int)
   as "-2147483648",
-  cast(cast('\x7FFFFFFF' as BYTEA) as INT)
+  cast(cast('\x7FFFFFFF' as bytea) as int)
   as "2147483647";
 
 select
-  cast(cast('\x8000000000000000' as BYTEA)
-  as BIGINT)
+  cast(cast('\x8000000000000000' as bytea)
+  as bigint)
   as "-9223372036854775808",
-  cast(cast('\x7FFFFFFFFFFFFFFF' as BYTEA)
-  as BIGINT)
+  cast(cast('\x7FFFFFFFFFFFFFFF' as bytea)
+  as bigint)
   as "9223372036854775807";
 
 set escape_string_warning = off;
@@ -1275,47 +1275,47 @@ select repeat('Pg', 4);
 
 select repeat('Pg', -4);
 
-select SUBSTRING(cast('1234567890' as BYTEA) from 3) as "34567890";
+select SUBSTRING(cast('1234567890' as bytea) from 3) as "34567890";
 
-select SUBSTRING(cast('1234567890' as BYTEA) from 4 for 3) as "456";
+select SUBSTRING(cast('1234567890' as bytea) from 4 for 3) as "456";
 
-select SUBSTRING(cast('string' as BYTEA) from 2 for 2147483646) as tring;
+select SUBSTRING(cast('string' as bytea) from 2 for 2147483646) as tring;
 
-select SUBSTRING(cast('string' as BYTEA) from -10 for 2147483646) as string;
+select SUBSTRING(cast('string' as bytea) from -10 for 2147483646) as string;
 
-select SUBSTRING(cast('string' as BYTEA) from -10 for -2147483646) as error;
+select SUBSTRING(cast('string' as bytea) from -10 for -2147483646) as error;
 
-select btrim(cast('\000Tom\000' as BYTEA), cast('\000' as BYTEA));
+select btrim(cast('\000Tom\000' as bytea), cast('\000' as bytea));
 
-select ltrim(cast('\000Tom\000' as BYTEA), cast('\000' as BYTEA));
+select ltrim(cast('\000Tom\000' as bytea), cast('\000' as bytea));
 
-select rtrim(cast('\000Tom\000' as BYTEA), cast('\000' as BYTEA));
+select rtrim(cast('\000Tom\000' as bytea), cast('\000' as bytea));
 
-select btrim(cast('\000trim\000' as BYTEA), cast('\000' as BYTEA));
+select btrim(cast('\000trim\000' as bytea), cast('\000' as bytea));
 
-select btrim(cast('' as BYTEA), cast('\000' as BYTEA));
+select btrim(cast('' as bytea), cast('\000' as bytea));
 
-select btrim(cast('\000trim\000' as BYTEA), cast('' as BYTEA));
+select btrim(cast('\000trim\000' as bytea), cast('' as bytea));
 
 select
   encode(
-    OVERLAY(cast('Th\000omas' as BYTEA) PLACING cast('Th\001omas' as BYTEA) from 2),
+    OVERLAY(cast('Th\000omas' as bytea) placing cast('Th\001omas' as bytea) from 2),
     'escape'
   );
 
 select
   encode(
-    OVERLAY(cast('Th\000omas' as BYTEA) PLACING cast('\002\003' as BYTEA) from 8),
+    OVERLAY(cast('Th\000omas' as bytea) placing cast('\002\003' as bytea) from 8),
     'escape'
   );
 
 select
   encode(
-    OVERLAY(cast('Th\000omas' as BYTEA) PLACING cast('\002\003' as BYTEA) from 5 for 3),
+    OVERLAY(cast('Th\000omas' as bytea) placing cast('\002\003' as bytea) from 5 for 3),
     'escape'
   );
 
-select bit_count(cast('\x1234567890' as BYTEA));
+select bit_count(cast('\x1234567890' as bytea));
 
 select unistr('\0064at\+0000610');
 

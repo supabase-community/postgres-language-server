@@ -3,4 +3,4 @@ source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/single/prepare_stmt_0.sql
 snapshot_kind: text
 ---
-prepare my_insert (INT, TEXT) as insert into users (id, name) values ($1, $2);;
+prepare my_insert (int, text) as insert into users (id, name) values ($1, $2);;

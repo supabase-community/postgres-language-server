@@ -14,7 +14,7 @@ pub(super) fn emit_range_table_sample(e: &mut EventEmitter, n: &RangeTableSample
     }
 
     e.line(LineType::SoftOrSpace);
-    e.token(TokenKind::IDENT("TABLESAMPLE".to_string()));
+    e.token(TokenKind::TABLESAMPLE_KW);
     e.space();
 
     // Sampling method
@@ -31,7 +31,7 @@ pub(super) fn emit_range_table_sample(e: &mut EventEmitter, n: &RangeTableSample
     // REPEATABLE clause
     if let Some(ref repeatable) = n.repeatable {
         e.line(LineType::SoftOrSpace);
-        e.token(TokenKind::IDENT("REPEATABLE".to_string()));
+        e.token(TokenKind::REPEATABLE_KW);
         e.space();
         e.token(TokenKind::L_PAREN);
         super::emit_node(repeatable, e);

@@ -3,71 +3,71 @@ source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/create_role.sql
 snapshot_kind: text
 ---
-create role regress_role_super SUPERUSER;
+create role regress_role_super superuser;
 
-create role regress_role_admin CREATEDB CREATEROLE REPLICATION BYPASSRLS;
+create role regress_role_admin createdb createrole replication bypassrls;
 
 grant CREATE on database regression to regress_role_admin with grant option;
 
-create role regress_role_limited_admin CREATEROLE;
+create role regress_role_limited_admin createrole;
 
 create role regress_role_normal;
 
 set session authorization regress_role_limited_admin;
 
-create role regress_nosuch_superuser SUPERUSER;
+create role regress_nosuch_superuser superuser;
 
-create role regress_nosuch_replication_bypassrls REPLICATION BYPASSRLS;
+create role regress_nosuch_replication_bypassrls replication bypassrls;
 
-create role regress_nosuch_replication REPLICATION;
+create role regress_nosuch_replication replication;
 
-create role regress_nosuch_bypassrls BYPASSRLS;
+create role regress_nosuch_bypassrls bypassrls;
 
-create role regress_nosuch_createdb CREATEDB;
+create role regress_nosuch_createdb createdb;
 
 create role regress_role_limited;
 
-alter role regress_role_limited SUPERUSER;
+alter role regress_role_limited superuser;
 
-alter role regress_role_limited REPLICATION;
+alter role regress_role_limited replication;
 
-alter role regress_role_limited CREATEDB;
+alter role regress_role_limited createdb;
 
-alter role regress_role_limited BYPASSRLS;
+alter role regress_role_limited bypassrls;
 
 drop role regress_role_limited;
 
 set session authorization regress_role_admin;
 
-create role regress_replication_bypassrls REPLICATION BYPASSRLS;
+create role regress_replication_bypassrls replication bypassrls;
 
-create role regress_replication REPLICATION;
+create role regress_replication replication;
 
-create role regress_bypassrls BYPASSRLS;
+create role regress_bypassrls bypassrls;
 
-create role regress_createdb CREATEDB;
+create role regress_createdb createdb;
 
-alter role regress_replication NOREPLICATION;
+alter role regress_replication noreplication;
 
-alter role regress_replication REPLICATION;
+alter role regress_replication replication;
 
-alter role regress_bypassrls NOBYPASSRLS;
+alter role regress_bypassrls nobypassrls;
 
-alter role regress_bypassrls BYPASSRLS;
+alter role regress_bypassrls bypassrls;
 
-alter role regress_createdb NOCREATEDB;
+alter role regress_createdb nocreatedb;
 
-alter role regress_createdb CREATEDB;
+alter role regress_createdb createdb;
 
-alter role regress_createdb SUPERUSER;
+alter role regress_createdb superuser;
 
-alter role regress_createdb NOSUPERUSER;
+alter role regress_createdb nosuperuser;
 
-create role regress_createrole CREATEROLE NOINHERIT;
+create role regress_createrole createrole noinherit;
 
 grant CREATE on database regression to regress_createrole with grant option;
 
-create role regress_login LOGIN;
+create role regress_login login;
 
 create role regress_inherit inherit;
 
@@ -113,46 +113,46 @@ create database "regress_nosuch_db";
 
 create role regress_plainrole;
 
-create role regress_rolecreator CREATEROLE;
+create role regress_rolecreator createrole;
 
-create role regress_hasprivs CREATEROLE LOGIN inherit connection limit 5;
+create role regress_hasprivs createrole login inherit connection limit 5;
 
 comment on role regress_hasprivs is 'some comment';
 
 alter role regress_hasprivs rename to regress_tenant;
 
-alter role regress_tenant NOINHERIT NOLOGIN connection limit 7;
+alter role regress_tenant noinherit nologin connection limit 7;
 
 comment on role regress_role_normal is 'some comment';
 
 alter role regress_role_normal rename to regress_role_abnormal;
 
-alter role regress_role_normal NOINHERIT NOLOGIN connection limit 7;
+alter role regress_role_normal noinherit nologin connection limit 7;
 
 set session authorization regress_tenant;
 
-create table tenant_table (i INT);
+create table tenant_table (i int);
 
 create index "tenant_idx" on tenant_table using btree (i);
 
 create view tenant_view
 as select * from pg_catalog.pg_class;
 
-revoke all on table tenant_table from PUBLIC;
+revoke all on table tenant_table from public;
 
 set session authorization regress_createrole;
 
-drop INDEX tenant_idx;
+drop index tenant_idx;
 
 alter table tenant_table
-  add column t TEXT;
+  add column t text;
 
-drop TABLE tenant_table;
+drop table tenant_table;
 
 alter view tenant_view
-  OWNER to regress_role_admin;
+  owner to regress_role_admin;
 
-drop VIEW tenant_view;
+drop view tenant_view;
 
 create schema "regress_tenant_schema" authorization regress_tenant;
 
@@ -166,9 +166,9 @@ grant CREATE on database regression to regress_tenant2;
 
 set session authorization regress_tenant2;
 
-create table tenant2_table (i INT);
+create table tenant2_table (i int);
 
-revoke all on table tenant2_table from PUBLIC;
+revoke all on table tenant2_table from public;
 
 set session authorization regress_createrole;
 
@@ -177,27 +177,27 @@ create schema "regress_tenant2_schema" authorization regress_tenant2;
 alter schema regress_tenant2_schema owner to regress_createrole;
 
 alter table tenant2_table
-  OWNER to regress_createrole;
+  owner to regress_createrole;
 
 alter table tenant2_table
-  OWNER to regress_tenant2;
+  owner to regress_tenant2;
 
-revoke INHERIT OPTION for REGRESS_TENANT2 from regress_createrole restrict;
+revoke INHERIT option for REGRESS_TENANT2 from regress_createrole restrict;
 
 alter schema regress_tenant2_schema owner to regress_tenant2;
 
 alter table tenant2_table
-  OWNER to regress_createrole;
+  owner to regress_createrole;
 
 grant REGRESS_TENANT2 to regress_createrole with INHERIT true, SET false;
 
 alter table tenant2_table
-  OWNER to regress_createrole;
+  owner to regress_createrole;
 
 alter table tenant2_table
-  OWNER to regress_tenant2;
+  owner to regress_tenant2;
 
-drop TABLE tenant2_table;
+drop table tenant2_table;
 
 create role regress_read_all_data in role pg_read_all_data;
 
@@ -279,13 +279,13 @@ reset session_authorization;
 
 revoke CREATE on database regression from regress_role_admin cascade;
 
-drop INDEX tenant_idx;
+drop index tenant_idx;
 
-drop TABLE tenant_table;
+drop table tenant_table;
 
-drop VIEW tenant_view;
+drop view tenant_view;
 
-drop SCHEMA regress_tenant2_schema;
+drop schema regress_tenant2_schema;
 
 drop role regress_tenant, regress_tenant;
 

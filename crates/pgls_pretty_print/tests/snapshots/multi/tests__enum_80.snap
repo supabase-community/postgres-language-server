@@ -10,7 +10,7 @@ create type rainbow as enum ('red',
 'blue',
 'purple');
 
-select COUNT(*) from pg_enum where enumtypid = cast('rainbow' as REGTYPE);
+select COUNT(*) from pg_enum where enumtypid = cast('rainbow' as regtype);
 
 select cast('red' as rainbow);
 
@@ -34,7 +34,7 @@ select
 from
   pg_enum
 where
-  enumtypid = cast('planets' as REGTYPE)
+  enumtypid = cast('planets' as regtype)
 order by 2;
 
 alter type planets add value 'uranus';
@@ -45,7 +45,7 @@ select
 from
   pg_enum
 where
-  enumtypid = cast('planets' as REGTYPE)
+  enumtypid = cast('planets' as regtype)
 order by 2;
 
 alter type planets add value 'mercury' before 'venus';
@@ -62,7 +62,7 @@ select
 from
   pg_enum
 where
-  enumtypid = cast('planets' as REGTYPE)
+  enumtypid = cast('planets' as regtype)
 order by 2;
 
 select
@@ -71,7 +71,7 @@ select
 from
   pg_enum
 where
-  enumtypid = cast('planets' as REGTYPE)
+  enumtypid = cast('planets' as regtype)
 order by cast(enumlabel as planets);
 
 alter type planets
@@ -161,7 +161,7 @@ select
 from
   pg_enum
 where
-  enumtypid = cast('insenum' as REGTYPE)
+  enumtypid = cast('insenum' as regtype)
 order by enumsortorder;
 
 create table enumtest (col rainbow);
@@ -182,9 +182,9 @@ select * from enumtest where col < 'green' order by col;
 
 select * from enumtest where col <= 'green' order by col;
 
-select cast(cast('red' as rainbow) as TEXT) || 'hithere';
+select cast(cast('red' as rainbow) as text) || 'hithere';
 
-select cast(cast('red' as TEXT) as rainbow) = cast('red' as rainbow);
+select cast(cast('red' as text) as rainbow) = cast('red' as rainbow);
 
 select MIN(col) from enumtest;
 
@@ -216,13 +216,13 @@ select MAX(col) from enumtest;
 
 select MAX(col) from enumtest where col < 'green';
 
-drop INDEX enumtest_btree;
+drop index enumtest_btree;
 
 create index "enumtest_hash" on enumtest using hash (col);
 
 select * from enumtest where col = 'orange';
 
-drop INDEX enumtest_hash;
+drop index enumtest_hash;
 
 reset enable_seqscan;
 
@@ -236,7 +236,7 @@ select cast('purple' as rgb);
 
 select cast(cast('purple' as rainbow) as rgb);
 
-drop DOMAIN rgb;
+drop domain rgb;
 
 select cast('{red,green,blue}' as rainbow[]);
 
@@ -264,8 +264,8 @@ select enum_range(cast('orange' as rainbow), null);
 
 select enum_range(cast(null as rainbow), null);
 
-create function echo_me(ANYENUM)
-returns TEXT
+create function echo_me(anyenum)
+returns text
 as $function$
 BEGIN
 RETURN $1::text || 'omg';
@@ -276,7 +276,7 @@ language plpgsql;
 select echo_me(cast('red' as rainbow));
 
 create function echo_me(rainbow)
-returns TEXT
+returns text
 as $function$
 BEGIN
 RETURN $1::text || 'wtf';
@@ -286,11 +286,11 @@ language plpgsql;
 
 select echo_me(cast('red' as rainbow));
 
-drop FUNCTION echo_me(ANYENUM);
+drop function echo_me(anyenum);
 
 select echo_me('red');
 
-drop FUNCTION echo_me(rainbow);
+drop function echo_me(rainbow);
 
 create table enumtest_parent (id rainbow primary key);
 
@@ -308,7 +308,7 @@ create type bogus as enum ('good', 'bad', 'ugly');
 
 create table enumtest_bogus_child (parent bogus references enumtest_parent);
 
-drop TYPE bogus;
+drop type bogus;
 
 alter type rainbow rename value 'red' to 'crimson';
 
@@ -318,7 +318,7 @@ select
 from
   pg_enum
 where
-  enumtypid = cast('rainbow' as REGTYPE)
+  enumtypid = cast('rainbow' as regtype)
 order by 2;
 
 alter type rainbow rename value 'red' to 'crimson';
@@ -357,7 +357,7 @@ select
 from
   pg_enum
 where
-  enumtypid = cast('bogus' as REGTYPE)
+  enumtypid = cast('bogus' as regtype)
 order by 2;
 
 begin;
@@ -378,7 +378,7 @@ select cast('bad' as bogus);
 
 rollback;
 
-drop TYPE bogus;
+drop type bogus;
 
 begin;
 
@@ -404,13 +404,13 @@ select enum_range(cast(null as bogon));
 
 rollback;
 
-drop TABLE enumtest_child;
+drop table enumtest_child;
 
-drop TABLE enumtest_parent;
+drop table enumtest_parent;
 
-drop TABLE enumtest;
+drop table enumtest;
 
-drop TYPE rainbow;
+drop type rainbow;
 
 select COUNT(*) from pg_type where typname = 'rainbow';
 

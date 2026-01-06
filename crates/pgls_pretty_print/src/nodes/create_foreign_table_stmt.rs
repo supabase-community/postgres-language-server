@@ -59,14 +59,14 @@ pub(super) fn emit_create_foreign_table_stmt(e: &mut EventEmitter, n: &CreateFor
 
     // SERVER clause
     e.space();
-    e.token(TokenKind::IDENT("SERVER".to_string()));
+    e.token(TokenKind::SERVER_KW);
     e.space();
     e.token(TokenKind::IDENT(n.servername.clone()));
 
     // OPTIONS clause
     if !n.options.is_empty() {
         e.space();
-        e.token(TokenKind::IDENT("OPTIONS".to_string()));
+        e.token(TokenKind::OPTIONS_KW);
         e.space();
         e.token(TokenKind::L_PAREN);
         emit_comma_separated_list(e, &n.options, |n, e| {

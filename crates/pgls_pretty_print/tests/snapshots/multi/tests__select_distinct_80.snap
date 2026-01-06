@@ -45,7 +45,7 @@ set jit_above_cost = default;
 create table distinct_group_2
 as
   select distinct
-    cast(g % 1000 as TEXT)
+    cast(g % 1000 as text)
   from
     generate_series(0, 9999) as g;
 
@@ -75,7 +75,7 @@ set jit_above_cost = default;
 create table distinct_hash_2
 as
   select distinct
-    cast(g % 1000 as TEXT)
+    cast(g % 1000 as text)
   from
     generate_series(0, 9999) as g;
 
@@ -99,13 +99,13 @@ union all
 except
 select * from distinct_hash_1);
 
-drop TABLE distinct_hash_1;
+drop table distinct_hash_1;
 
-drop TABLE distinct_hash_2;
+drop table distinct_hash_2;
 
-drop TABLE distinct_group_1;
+drop table distinct_group_1;
 
-drop TABLE distinct_group_2;
+drop table distinct_group_2;
 
 set parallel_tuple_cost = 0;
 
@@ -119,8 +119,8 @@ select distinct four from tenk1;
 
 select distinct four from tenk1;
 
-create or replace function distinct_func(a INT)
-returns INT
+create or replace function distinct_func(a int)
+returns int
 as $function$
   BEGIN
     RETURN a;
@@ -131,8 +131,8 @@ parallel UNSAFE;
 
 select distinct distinct_func(1) from tenk1;
 
-create or replace function distinct_func(a INT)
-returns INT
+create or replace function distinct_func(a int)
+returns int
 as $function$
   BEGIN
     RETURN a;
@@ -177,7 +177,7 @@ reset min_parallel_table_scan_size;
 
 reset parallel_setup_cost;
 
-create temporary table disttable (f1 INT);
+create temporary table disttable (f1 int);
 
 insert into disttable values (1);
 
@@ -212,8 +212,8 @@ select 2 is not distinct from null as no;
 select null is not distinct from null as yes;
 
 create table distinct_tbl (
-  x INT,
-  y INT
+  x int,
+  y int
 );
 
 insert into distinct_tbl
@@ -267,4 +267,4 @@ select distinct y, x from distinct_tbl order by y;
 
 reset enable_hashagg;
 
-drop TABLE distinct_tbl;
+drop table distinct_tbl;
