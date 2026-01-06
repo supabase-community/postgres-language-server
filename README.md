@@ -26,6 +26,7 @@ The following features are implemented:
 - Syntax Error Highlighting
 - Type-checking (via `EXPLAIN` error insights)
 - Linter, inspired by [Squawk](https://squawkhq.com)
+- Formatting
 
 Our current focus is on refining and enhancing these core features while building a robust and easily accessible infrastructure. For future plans and opportunities to contribute, please check out the issues and discussions. Any contributions are welcome!
 
