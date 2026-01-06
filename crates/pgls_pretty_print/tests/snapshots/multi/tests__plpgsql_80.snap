@@ -100,10 +100,10 @@ $function$
 language plpgsql;
 
 create TRIGGER tg_room_au
-  after update
-  on room
-  for EACH ROW
-  EXECUTE FUNCTION tg_room_au();
+after update
+on room
+for EACH ROW
+EXECUTE FUNCTION tg_room_au();
 
 create function tg_room_ad()
 returns trigger
@@ -116,10 +116,10 @@ $function$
 language plpgsql;
 
 create TRIGGER tg_room_ad
-  after delete
-  on room
-  for EACH ROW
-  EXECUTE FUNCTION tg_room_ad();
+after delete
+on room
+for EACH ROW
+EXECUTE FUNCTION tg_room_ad();
 
 create function tg_wslot_biu()
 returns trigger
@@ -134,10 +134,10 @@ $function$
 language plpgsql;
 
 create TRIGGER tg_wslot_biu
-  before insert or update
-  on wslot
-  for EACH ROW
-  EXECUTE FUNCTION tg_wslot_biu();
+before insert or update
+on wslot
+for EACH ROW
+EXECUTE FUNCTION tg_wslot_biu();
 
 create function tg_pfield_au()
 returns trigger
@@ -152,10 +152,10 @@ $function$
 language plpgsql;
 
 create TRIGGER tg_pfield_au
-  after update
-  on pfield
-  for EACH ROW
-  EXECUTE FUNCTION tg_pfield_au();
+after update
+on pfield
+for EACH ROW
+EXECUTE FUNCTION tg_pfield_au();
 
 create function tg_pfield_ad()
 returns trigger
@@ -168,10 +168,10 @@ $function$
 language plpgsql;
 
 create TRIGGER tg_pfield_ad
-  after delete
-  on pfield
-  for EACH ROW
-  EXECUTE FUNCTION tg_pfield_ad();
+after delete
+on pfield
+for EACH ROW
+EXECUTE FUNCTION tg_pfield_ad();
 
 create function tg_pslot_biu()
 returns trigger
@@ -190,10 +190,10 @@ $function$
 language plpgsql;
 
 create TRIGGER tg_pslot_biu
-  before insert or update
-  on pslot
-  for EACH ROW
-  EXECUTE FUNCTION tg_pslot_biu();
+before insert or update
+on pslot
+for EACH ROW
+EXECUTE FUNCTION tg_pslot_biu();
 
 create function tg_system_au()
 returns trigger
@@ -208,10 +208,10 @@ $function$
 language plpgsql;
 
 create TRIGGER tg_system_au
-  after update
-  on system
-  for EACH ROW
-  EXECUTE FUNCTION tg_system_au();
+after update
+on system
+for EACH ROW
+EXECUTE FUNCTION tg_system_au();
 
 create function tg_iface_biu()
 returns trigger
@@ -237,10 +237,10 @@ $function$
 language plpgsql;
 
 create TRIGGER tg_iface_biu
-  before insert or update
-  on iface
-  for EACH ROW
-  EXECUTE FUNCTION tg_iface_biu();
+before insert or update
+on iface
+for EACH ROW
+EXECUTE FUNCTION tg_iface_biu();
 
 create function tg_hub_a()
 returns trigger
@@ -269,10 +269,10 @@ $function$
 language plpgsql;
 
 create TRIGGER tg_hub_a
-  after insert or delete or update
-  on hub
-  for EACH ROW
-  EXECUTE FUNCTION tg_hub_a();
+after insert or delete or update
+on hub
+for EACH ROW
+EXECUTE FUNCTION tg_hub_a();
 
 create function tg_hub_adjustslots(hname CHAR, oldnslots INT, newnslots INT)
 returns INT
@@ -333,10 +333,10 @@ $function$
 language plpgsql;
 
 create TRIGGER tg_hslot_biu
-  before insert or update
-  on hslot
-  for EACH ROW
-  EXECUTE FUNCTION tg_hslot_biu();
+before insert or update
+on hslot
+for EACH ROW
+EXECUTE FUNCTION tg_hslot_biu();
 
 create function tg_hslot_bd()
 returns trigger
@@ -357,10 +357,10 @@ $function$
 language plpgsql;
 
 create TRIGGER tg_hslot_bd
-  before delete
-  on hslot
-  for EACH ROW
-  EXECUTE FUNCTION tg_hslot_bd();
+before delete
+on hslot
+for EACH ROW
+EXECUTE FUNCTION tg_hslot_bd();
 
 create function tg_chkslotname()
 returns trigger
@@ -375,34 +375,34 @@ $function$
 language plpgsql;
 
 create TRIGGER tg_chkslotname
-  before insert
-  on pslot
-  for EACH ROW
-  EXECUTE FUNCTION tg_chkslotname("PS");
+before insert
+on pslot
+for EACH ROW
+EXECUTE FUNCTION tg_chkslotname("PS");
 
 create TRIGGER tg_chkslotname
-  before insert
-  on wslot
-  for EACH ROW
-  EXECUTE FUNCTION tg_chkslotname("WS");
+before insert
+on wslot
+for EACH ROW
+EXECUTE FUNCTION tg_chkslotname("WS");
 
 create TRIGGER tg_chkslotname
-  before insert
-  on pline
-  for EACH ROW
-  EXECUTE FUNCTION tg_chkslotname("PL");
+before insert
+on pline
+for EACH ROW
+EXECUTE FUNCTION tg_chkslotname("PL");
 
 create TRIGGER tg_chkslotname
-  before insert
-  on iface
-  for EACH ROW
-  EXECUTE FUNCTION tg_chkslotname("IF");
+before insert
+on iface
+for EACH ROW
+EXECUTE FUNCTION tg_chkslotname("IF");
 
 create TRIGGER tg_chkslotname
-  before insert
-  on phone
-  for EACH ROW
-  EXECUTE FUNCTION tg_chkslotname("PH");
+before insert
+on phone
+for EACH ROW
+EXECUTE FUNCTION tg_chkslotname("PH");
 
 create function tg_chkslotlink()
 returns trigger
@@ -417,34 +417,34 @@ $function$
 language plpgsql;
 
 create TRIGGER tg_chkslotlink
-  before insert or update
-  on pslot
-  for EACH ROW
-  EXECUTE FUNCTION tg_chkslotlink();
+before insert or update
+on pslot
+for EACH ROW
+EXECUTE FUNCTION tg_chkslotlink();
 
 create TRIGGER tg_chkslotlink
-  before insert or update
-  on wslot
-  for EACH ROW
-  EXECUTE FUNCTION tg_chkslotlink();
+before insert or update
+on wslot
+for EACH ROW
+EXECUTE FUNCTION tg_chkslotlink();
 
 create TRIGGER tg_chkslotlink
-  before insert or update
-  on iface
-  for EACH ROW
-  EXECUTE FUNCTION tg_chkslotlink();
+before insert or update
+on iface
+for EACH ROW
+EXECUTE FUNCTION tg_chkslotlink();
 
 create TRIGGER tg_chkslotlink
-  before insert or update
-  on hslot
-  for EACH ROW
-  EXECUTE FUNCTION tg_chkslotlink();
+before insert or update
+on hslot
+for EACH ROW
+EXECUTE FUNCTION tg_chkslotlink();
 
 create TRIGGER tg_chkslotlink
-  before insert or update
-  on phone
-  for EACH ROW
-  EXECUTE FUNCTION tg_chkslotlink();
+before insert or update
+on phone
+for EACH ROW
+EXECUTE FUNCTION tg_chkslotlink();
 
 create function tg_chkbacklink()
 returns trigger
@@ -459,22 +459,22 @@ $function$
 language plpgsql;
 
 create TRIGGER tg_chkbacklink
-  before insert or update
-  on pslot
-  for EACH ROW
-  EXECUTE FUNCTION tg_chkbacklink();
+before insert or update
+on pslot
+for EACH ROW
+EXECUTE FUNCTION tg_chkbacklink();
 
 create TRIGGER tg_chkbacklink
-  before insert or update
-  on wslot
-  for EACH ROW
-  EXECUTE FUNCTION tg_chkbacklink();
+before insert or update
+on wslot
+for EACH ROW
+EXECUTE FUNCTION tg_chkbacklink();
 
 create TRIGGER tg_chkbacklink
-  before insert or update
-  on pline
-  for EACH ROW
-  EXECUTE FUNCTION tg_chkbacklink();
+before insert or update
+on pline
+for EACH ROW
+EXECUTE FUNCTION tg_chkbacklink();
 
 create function tg_pslot_bu()
 returns trigger
@@ -501,10 +501,10 @@ $function$
 language plpgsql;
 
 create TRIGGER tg_pslot_bu
-  before update
-  on pslot
-  for EACH ROW
-  EXECUTE FUNCTION tg_pslot_bu();
+before update
+on pslot
+for EACH ROW
+EXECUTE FUNCTION tg_pslot_bu();
 
 create function tg_wslot_bu()
 returns trigger
@@ -531,10 +531,10 @@ $function$
 language plpgsql;
 
 create TRIGGER tg_wslot_bu
-  before update
-  on wslot
-  for EACH ROW
-  EXECUTE FUNCTION tg_wslot_bu();
+before update
+on wslot
+for EACH ROW
+EXECUTE FUNCTION tg_wslot_bu();
 
 create function tg_pline_bu()
 returns trigger
@@ -561,10 +561,10 @@ $function$
 language plpgsql;
 
 create TRIGGER tg_pline_bu
-  before update
-  on pline
-  for EACH ROW
-  EXECUTE FUNCTION tg_pline_bu();
+before update
+on pline
+for EACH ROW
+EXECUTE FUNCTION tg_pline_bu();
 
 create function tg_iface_bu()
 returns trigger
@@ -591,10 +591,10 @@ $function$
 language plpgsql;
 
 create TRIGGER tg_iface_bu
-  before update
-  on iface
-  for EACH ROW
-  EXECUTE FUNCTION tg_iface_bu();
+before update
+on iface
+for EACH ROW
+EXECUTE FUNCTION tg_iface_bu();
 
 create function tg_hslot_bu()
 returns trigger
@@ -621,10 +621,10 @@ $function$
 language plpgsql;
 
 create TRIGGER tg_hslot_bu
-  before update
-  on hslot
-  for EACH ROW
-  EXECUTE FUNCTION tg_hslot_bu();
+before update
+on hslot
+for EACH ROW
+EXECUTE FUNCTION tg_hslot_bu();
 
 create function tg_phone_bu()
 returns trigger
@@ -649,10 +649,10 @@ $function$
 language plpgsql;
 
 create TRIGGER tg_phone_bu
-  before update
-  on phone
-  for EACH ROW
-  EXECUTE FUNCTION tg_phone_bu();
+before update
+on phone
+for EACH ROW
+EXECUTE FUNCTION tg_phone_bu();
 
 create function tg_backlink_a()
 returns trigger
@@ -692,22 +692,22 @@ $function$
 language plpgsql;
 
 create TRIGGER tg_backlink_a
-  after insert or delete or update
-  on pslot
-  for EACH ROW
-  EXECUTE FUNCTION tg_backlink_a("PS");
+after insert or delete or update
+on pslot
+for EACH ROW
+EXECUTE FUNCTION tg_backlink_a("PS");
 
 create TRIGGER tg_backlink_a
-  after insert or delete or update
-  on wslot
-  for EACH ROW
-  EXECUTE FUNCTION tg_backlink_a("WS");
+after insert or delete or update
+on wslot
+for EACH ROW
+EXECUTE FUNCTION tg_backlink_a("WS");
 
 create TRIGGER tg_backlink_a
-  after insert or delete or update
-  on pline
-  for EACH ROW
-  EXECUTE FUNCTION tg_backlink_a("PL");
+after insert or delete or update
+on pline
+for EACH ROW
+EXECUTE FUNCTION tg_backlink_a("PL");
 
 create function tg_backlink_set(myname CHAR, blname CHAR)
 returns INT
@@ -844,34 +844,34 @@ $function$
 language plpgsql;
 
 create TRIGGER tg_slotlink_a
-  after insert or delete or update
-  on pslot
-  for EACH ROW
-  EXECUTE FUNCTION tg_slotlink_a("PS");
+after insert or delete or update
+on pslot
+for EACH ROW
+EXECUTE FUNCTION tg_slotlink_a("PS");
 
 create TRIGGER tg_slotlink_a
-  after insert or delete or update
-  on wslot
-  for EACH ROW
-  EXECUTE FUNCTION tg_slotlink_a("WS");
+after insert or delete or update
+on wslot
+for EACH ROW
+EXECUTE FUNCTION tg_slotlink_a("WS");
 
 create TRIGGER tg_slotlink_a
-  after insert or delete or update
-  on iface
-  for EACH ROW
-  EXECUTE FUNCTION tg_slotlink_a("IF");
+after insert or delete or update
+on iface
+for EACH ROW
+EXECUTE FUNCTION tg_slotlink_a("IF");
 
 create TRIGGER tg_slotlink_a
-  after insert or delete or update
-  on hslot
-  for EACH ROW
-  EXECUTE FUNCTION tg_slotlink_a("HS");
+after insert or delete or update
+on hslot
+for EACH ROW
+EXECUTE FUNCTION tg_slotlink_a("HS");
 
 create TRIGGER tg_slotlink_a
-  after insert or delete or update
-  on phone
-  for EACH ROW
-  EXECUTE FUNCTION tg_slotlink_a("PH");
+after insert or delete or update
+on phone
+for EACH ROW
+EXECUTE FUNCTION tg_slotlink_a("PH");
 
 create function tg_slotlink_set(CHAR, CHAR)
 returns INT
@@ -5105,19 +5105,19 @@ END;
 $function$;
 
 create TRIGGER transition_table_base_ins_trig
-  after insert
-  on transition_table_base
-  REFERENCING old table as oldtable
-  new table as newtable
-  for EACH STATEMENT
-  EXECUTE FUNCTION transition_table_base_ins_func();
+after insert
+on transition_table_base
+REFERENCING old table as oldtable
+new table as newtable
+for EACH STATEMENT
+EXECUTE FUNCTION transition_table_base_ins_func();
 
 create TRIGGER transition_table_base_ins_trig
-  after insert
-  on transition_table_base
-  REFERENCING new table as newtable
-  for EACH STATEMENT
-  EXECUTE FUNCTION transition_table_base_ins_func();
+after insert
+on transition_table_base
+REFERENCING new table as newtable
+for EACH STATEMENT
+EXECUTE FUNCTION transition_table_base_ins_func();
 
 insert into transition_table_base values (1, 'One'), (2, 'Two');
 
@@ -5146,12 +5146,12 @@ END;
 $function$;
 
 create TRIGGER transition_table_base_upd_trig
-  after update
-  on transition_table_base
-  REFERENCING old table as oldtable
-  new table as newtable
-  for EACH STATEMENT
-  EXECUTE FUNCTION transition_table_base_upd_func();
+after update
+on transition_table_base
+REFERENCING old table as oldtable
+new table as newtable
+for EACH STATEMENT
+EXECUTE FUNCTION transition_table_base_upd_func();
 
 update transition_table_base
 set val = '*' || val || '*'
@@ -5193,11 +5193,11 @@ as $function$
 $function$;
 
 create TRIGGER transition_table_level1_ri_parent_del_trigger
-  after delete
-  on transition_table_level1
-  REFERENCING old table as p
-  for EACH STATEMENT
-  EXECUTE FUNCTION transition_table_level1_ri_parent_del_func();
+after delete
+on transition_table_level1
+REFERENCING old table as p
+for EACH STATEMENT
+EXECUTE FUNCTION transition_table_level1_ri_parent_del_func();
 
 create function transition_table_level1_ri_parent_upd_func()
 returns trigger
@@ -5223,12 +5223,12 @@ as $function$
 $function$;
 
 create TRIGGER transition_table_level1_ri_parent_upd_trigger
-  after update
-  on transition_table_level1
-  REFERENCING old table as d
-  new table as i
-  for EACH STATEMENT
-  EXECUTE FUNCTION transition_table_level1_ri_parent_upd_func();
+after update
+on transition_table_level1
+REFERENCING old table as d
+new table as i
+for EACH STATEMENT
+EXECUTE FUNCTION transition_table_level1_ri_parent_upd_func();
 
 create function transition_table_level2_ri_child_insupd_func()
 returns trigger
@@ -5247,18 +5247,18 @@ as $function$
 $function$;
 
 create TRIGGER transition_table_level2_ri_child_ins_trigger
-  after insert
-  on transition_table_level2
-  REFERENCING new table as i
-  for EACH STATEMENT
-  EXECUTE FUNCTION transition_table_level2_ri_child_insupd_func();
+after insert
+on transition_table_level2
+REFERENCING new table as i
+for EACH STATEMENT
+EXECUTE FUNCTION transition_table_level2_ri_child_insupd_func();
 
 create TRIGGER transition_table_level2_ri_child_upd_trigger
-  after update
-  on transition_table_level2
-  REFERENCING new table as i
-  for EACH STATEMENT
-  EXECUTE FUNCTION transition_table_level2_ri_child_insupd_func();
+after update
+on transition_table_level2
+REFERENCING new table as i
+for EACH STATEMENT
+EXECUTE FUNCTION transition_table_level2_ri_child_insupd_func();
 
 insert into transition_table_level1 (level1_no) select generate_series(1, 200);
 
@@ -5307,11 +5307,11 @@ as $function$
 $function$;
 
 create TRIGGER transition_table_level2_bad_usage_trigger
-  after delete
-  on transition_table_level2
-  REFERENCING old table as dx
-  for EACH STATEMENT
-  EXECUTE FUNCTION transition_table_level2_bad_usage_func();
+after delete
+on transition_table_level2
+REFERENCING old table as dx
+for EACH STATEMENT
+EXECUTE FUNCTION transition_table_level2_bad_usage_func();
 
 delete from transition_table_level2 where level2_no between 301 and 305;
 
@@ -5360,20 +5360,20 @@ END;
 $function$;
 
 create TRIGGER alter_table_under_transition_tables_upd_trigger
-  after update or TRUNCATE
-  on alter_table_under_transition_tables
-  REFERENCING old table as d
-  new table as i
-  for EACH STATEMENT
-  EXECUTE FUNCTION alter_table_under_transition_tables_upd_func();
+after update or TRUNCATE
+on alter_table_under_transition_tables
+REFERENCING old table as d
+new table as i
+for EACH STATEMENT
+EXECUTE FUNCTION alter_table_under_transition_tables_upd_func();
 
 create TRIGGER alter_table_under_transition_tables_upd_trigger
-  after update
-  on alter_table_under_transition_tables
-  REFERENCING old table as d
-  new table as i
-  for EACH STATEMENT
-  EXECUTE FUNCTION alter_table_under_transition_tables_upd_func();
+after update
+on alter_table_under_transition_tables
+REFERENCING old table as d
+new table as i
+for EACH STATEMENT
+EXECUTE FUNCTION alter_table_under_transition_tables_upd_func();
 
 insert into alter_table_under_transition_tables
 values (1, '1'), (2, '2'), (3, '3');
@@ -5409,12 +5409,12 @@ BEGIN
 END$function$;
 
 create TRIGGER my_trigger
-  after update
-  on multi_test
-  REFERENCING new table as new_test
-  old table as old_test
-  for EACH STATEMENT
-  EXECUTE FUNCTION multi_test_trig();
+after update
+on multi_test
+REFERENCING new table as new_test
+old table as old_test
+for EACH STATEMENT
+EXECUTE FUNCTION multi_test_trig();
 
 update multi_test set i = i;
 

@@ -184,10 +184,10 @@ drop TRIGGER test_trigger_exists on no_such_schema.no_such_table;
 drop TRIGGER if exists test_trigger_exists on no_such_schema.no_such_table;
 
 create TRIGGER test_trigger_exists
-  before update
-  on test_exists
-  for EACH ROW
-  EXECUTE FUNCTION suppress_redundant_updates_trigger();
+before update
+on test_exists
+for EACH ROW
+EXECUTE FUNCTION suppress_redundant_updates_trigger();
 
 drop TRIGGER test_trigger_exists on test_exists;
 

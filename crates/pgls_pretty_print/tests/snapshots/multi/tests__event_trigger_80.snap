@@ -487,10 +487,10 @@ create table evtrg_nontemp_table (
 );
 
 create TRIGGER evtrg_nontemp_trig
-  before insert
-  on evtrg_nontemp_table
-  for EACH STATEMENT
-  EXECUTE FUNCTION event_trigger_dummy_trigger();
+before insert
+on evtrg_nontemp_table
+for EACH STATEMENT
+EXECUTE FUNCTION event_trigger_dummy_trigger();
 
 create POLICY evtrg_nontemp_pol
 on evtrg_nontemp_table
@@ -507,10 +507,10 @@ create temporary table a_temp_tbl (
 );
 
 create TRIGGER a_temp_trig
-  before insert
-  on a_temp_tbl
-  for EACH STATEMENT
-  EXECUTE FUNCTION event_trigger_dummy_trigger();
+before insert
+on a_temp_tbl
+for EACH STATEMENT
+EXECUTE FUNCTION event_trigger_dummy_trigger();
 
 create POLICY a_temp_pol
 on a_temp_tbl

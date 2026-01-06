@@ -910,10 +910,10 @@ as $function$
   end $function$;
 
 create TRIGGER trig_part_create
-  before insert
-  on tab_part_create
-  for EACH STATEMENT
-  EXECUTE FUNCTION func_part_create();
+before insert
+on tab_part_create
+for EACH STATEMENT
+EXECUTE FUNCTION func_part_create();
 
 insert into tab_part_create values (1);
 

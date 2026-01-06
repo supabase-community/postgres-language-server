@@ -743,10 +743,10 @@ $function$
 language plpgsql;
 
 create TRIGGER rw_view1_ins_trig
-  instead of insert
-  on rw_view1
-  for EACH ROW
-  EXECUTE FUNCTION rw_view1_trig_fn();
+instead of insert
+on rw_view1
+for EACH ROW
+EXECUTE FUNCTION rw_view1_trig_fn();
 
 select
   table_name,
@@ -782,10 +782,10 @@ order by table_name,
   ordinal_position;
 
 create TRIGGER rw_view1_upd_trig
-  instead of update
-  on rw_view1
-  for EACH ROW
-  EXECUTE FUNCTION rw_view1_trig_fn();
+instead of update
+on rw_view1
+for EACH ROW
+EXECUTE FUNCTION rw_view1_trig_fn();
 
 select
   table_name,
@@ -821,10 +821,10 @@ order by table_name,
   ordinal_position;
 
 create TRIGGER rw_view1_del_trig
-  instead of delete
-  on rw_view1
-  for EACH ROW
-  EXECUTE FUNCTION rw_view1_trig_fn();
+instead of delete
+on rw_view1
+for EACH ROW
+EXECUTE FUNCTION rw_view1_trig_fn();
 
 select
   table_name,
@@ -882,10 +882,10 @@ drop TRIGGER rw_view1_del_trig on rw_view1;
 drop TRIGGER rw_view1_ins_trig on rw_view1;
 
 create TRIGGER rw_view2_upd_trig
-  instead of update
-  on rw_view2
-  for EACH ROW
-  EXECUTE FUNCTION rw_view1_trig_fn();
+instead of update
+on rw_view2
+for EACH ROW
+EXECUTE FUNCTION rw_view1_trig_fn();
 
 select * from base_tbl order by a;
 
@@ -1523,10 +1523,10 @@ $function$
 language plpgsql;
 
 create TRIGGER rw_view1_ins_trig
-  after insert
-  on base_tbl
-  for EACH ROW
-  EXECUTE FUNCTION rw_view1_trig_fn();
+after insert
+on base_tbl
+for EACH ROW
+EXECUTE FUNCTION rw_view1_trig_fn();
 
 create view rw_view1
 as select a as aa, b as bb from base_tbl;
@@ -2004,10 +2004,10 @@ $function$
 language plpgsql;
 
 create TRIGGER base_tbl_trig
-  before insert or update
-  on base_tbl
-  for EACH ROW
-  EXECUTE FUNCTION base_tbl_trig_fn();
+before insert or update
+on base_tbl
+for EACH ROW
+EXECUTE FUNCTION base_tbl_trig_fn();
 
 create view rw_view1
 as select * from base_tbl where a < b
@@ -2050,10 +2050,10 @@ $function$
 language plpgsql;
 
 create TRIGGER rw_view1_trig
-  instead of insert or delete or update
-  on rw_view1
-  for EACH ROW
-  EXECUTE FUNCTION rw_view1_trig_fn();
+instead of insert or delete or update
+on rw_view1
+for EACH ROW
+EXECUTE FUNCTION rw_view1_trig_fn();
 
 create view rw_view2
 as select * from rw_view1 where a > 0
@@ -3189,10 +3189,10 @@ $function$
 language plpgsql;
 
 create TRIGGER base_tab_def_view_instrig
-  instead of insert
-  on base_tab_def_view
-  for EACH ROW
-  EXECUTE FUNCTION base_tab_def_view_instrig_func();
+instead of insert
+on base_tab_def_view
+for EACH ROW
+EXECUTE FUNCTION base_tab_def_view_instrig_func();
 
 truncate base_tab_def;
 

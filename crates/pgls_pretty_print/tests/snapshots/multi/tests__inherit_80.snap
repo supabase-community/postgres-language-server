@@ -204,10 +204,10 @@ as $function$begin raise notice 'updating some_tab'; return NULL; end;$function$
 language plpgsql;
 
 create TRIGGER some_tab_stmt_trig
-  before update
-  on some_tab
-  for EACH STATEMENT
-  EXECUTE FUNCTION some_tab_stmt_trig_func();
+before update
+on some_tab
+for EACH STATEMENT
+EXECUTE FUNCTION some_tab_stmt_trig_func();
 
 update some_tab set f3 = 11 where f1 = 12 and f2 = 13;
 

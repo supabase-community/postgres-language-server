@@ -1226,46 +1226,46 @@ END
 $function$;
 
 create TRIGGER gtest1
-  before delete or update
-  on gtest26
-  for EACH ROW
-  when (old.b < 0)
-  EXECUTE FUNCTION gtest_trigger_func();
+before delete or update
+on gtest26
+for EACH ROW
+when (old.b < 0)
+EXECUTE FUNCTION gtest_trigger_func();
 
 create TRIGGER gtest2a
-  before insert or update
-  on gtest26
-  for EACH ROW
-  when (new.b < 0)
-  EXECUTE FUNCTION gtest_trigger_func();
+before insert or update
+on gtest26
+for EACH ROW
+when (new.b < 0)
+EXECUTE FUNCTION gtest_trigger_func();
 
 create TRIGGER gtest2b
-  before insert or update
-  on gtest26
-  for EACH ROW
-  when (new.* is not null)
-  EXECUTE FUNCTION gtest_trigger_func();
+before insert or update
+on gtest26
+for EACH ROW
+when (new.* is not null)
+EXECUTE FUNCTION gtest_trigger_func();
 
 create TRIGGER gtest2
-  before insert
-  on gtest26
-  for EACH ROW
-  when (new.a < 0)
-  EXECUTE FUNCTION gtest_trigger_func();
+before insert
+on gtest26
+for EACH ROW
+when (new.a < 0)
+EXECUTE FUNCTION gtest_trigger_func();
 
 create TRIGGER gtest3
-  after delete or update
-  on gtest26
-  for EACH ROW
-  when (old.b < 0)
-  EXECUTE FUNCTION gtest_trigger_func();
+after delete or update
+on gtest26
+for EACH ROW
+when (old.b < 0)
+EXECUTE FUNCTION gtest_trigger_func();
 
 create TRIGGER gtest4
-  after insert or update
-  on gtest26
-  for EACH ROW
-  when (new.b < 0)
-  EXECUTE FUNCTION gtest_trigger_func();
+after insert or update
+on gtest26
+for EACH ROW
+when (new.b < 0)
+EXECUTE FUNCTION gtest_trigger_func();
 
 insert into gtest26 (a) values (-2), (0), (3);
 
@@ -1296,10 +1296,10 @@ END
 $function$;
 
 create TRIGGER gtest11
-  before update of b
-  on gtest26
-  for EACH ROW
-  EXECUTE FUNCTION gtest_trigger_func3();
+before update of b
+on gtest26
+for EACH ROW
+EXECUTE FUNCTION gtest_trigger_func3();
 
 update gtest26 set a = 1 where a = 0;
 
@@ -1319,22 +1319,22 @@ END;
 $function$;
 
 create TRIGGER gtest12_01
-  before insert or update
-  on gtest26
-  for EACH ROW
-  EXECUTE FUNCTION gtest_trigger_func();
+before insert or update
+on gtest26
+for EACH ROW
+EXECUTE FUNCTION gtest_trigger_func();
 
 create TRIGGER gtest12_02
-  before insert or update
-  on gtest26
-  for EACH ROW
-  EXECUTE FUNCTION gtest_trigger_func4();
+before insert or update
+on gtest26
+for EACH ROW
+EXECUTE FUNCTION gtest_trigger_func4();
 
 create TRIGGER gtest12_03
-  before insert or update
-  on gtest26
-  for EACH ROW
-  EXECUTE FUNCTION gtest_trigger_func();
+before insert or update
+on gtest26
+for EACH ROW
+EXECUTE FUNCTION gtest_trigger_func();
 
 insert into gtest26 (a) values (1);
 

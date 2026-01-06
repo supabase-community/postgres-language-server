@@ -1179,41 +1179,41 @@ $function$
 language plpgsql;
 
 create TRIGGER trigtest_before_stmt
-  before insert or delete or update
-  on foreign_schema.foreign_table_1
-  for EACH STATEMENT
-  EXECUTE FUNCTION dummy_trigger();
+before insert or delete or update
+on foreign_schema.foreign_table_1
+for EACH STATEMENT
+EXECUTE FUNCTION dummy_trigger();
 
 create TRIGGER trigtest_after_stmt
-  after insert or delete or update
-  on foreign_schema.foreign_table_1
-  for EACH STATEMENT
-  EXECUTE FUNCTION dummy_trigger();
+after insert or delete or update
+on foreign_schema.foreign_table_1
+for EACH STATEMENT
+EXECUTE FUNCTION dummy_trigger();
 
 create TRIGGER trigtest_after_stmt_tt
-  after insert or delete or update
-  on foreign_schema.foreign_table_1
-  REFERENCING new table as new_table
-  for EACH STATEMENT
-  EXECUTE FUNCTION dummy_trigger();
+after insert or delete or update
+on foreign_schema.foreign_table_1
+REFERENCING new table as new_table
+for EACH STATEMENT
+EXECUTE FUNCTION dummy_trigger();
 
 create TRIGGER trigtest_before_row
-  before insert or delete or update
-  on foreign_schema.foreign_table_1
-  for EACH ROW
-  EXECUTE FUNCTION dummy_trigger();
+before insert or delete or update
+on foreign_schema.foreign_table_1
+for EACH ROW
+EXECUTE FUNCTION dummy_trigger();
 
 create TRIGGER trigtest_after_row
-  after insert or delete or update
-  on foreign_schema.foreign_table_1
-  for EACH ROW
-  EXECUTE FUNCTION dummy_trigger();
+after insert or delete or update
+on foreign_schema.foreign_table_1
+for EACH ROW
+EXECUTE FUNCTION dummy_trigger();
 
 create CONSTRAINT TRIGGER trigtest_constraint
-  after insert or delete or update
-  on foreign_schema.foreign_table_1
-  for EACH ROW
-  EXECUTE FUNCTION dummy_trigger();
+after insert or delete or update
+on foreign_schema.foreign_table_1
+for EACH ROW
+EXECUTE FUNCTION dummy_trigger();
 
 alter foreign table foreign_schema.foreign_table_1
   disable trigger trigtest_before_stmt;

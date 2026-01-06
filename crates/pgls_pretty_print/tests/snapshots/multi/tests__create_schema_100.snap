@@ -25,10 +25,10 @@ create index on schema_not_existing.tab using btree (id);
 create schema authorization regress_create_schema_role;
 
 create TRIGGER schema_trig
-  before insert
-  on schema_not_existing.tab
-  for EACH STATEMENT
-  EXECUTE FUNCTION schema_trig.no_func();
+before insert
+on schema_not_existing.tab
+for EACH STATEMENT
+EXECUTE FUNCTION schema_trig.no_func();
 
 set role to regress_create_schema_role;
 
@@ -52,10 +52,10 @@ create index on schema_not_existing.tab using btree (id);
 create schema authorization current_role;
 
 create TRIGGER schema_trig
-  before insert
-  on schema_not_existing.tab
-  for EACH STATEMENT
-  EXECUTE FUNCTION schema_trig.no_func();
+before insert
+on schema_not_existing.tab
+for EACH STATEMENT
+EXECUTE FUNCTION schema_trig.no_func();
 
 create schema "regress_schema_1" authorization current_role;
 
@@ -77,10 +77,10 @@ create index on schema_not_existing.tab using btree (id);
 create schema "regress_schema_1" authorization current_role;
 
 create TRIGGER schema_trig
-  before insert
-  on schema_not_existing.tab
-  for EACH STATEMENT
-  EXECUTE FUNCTION schema_trig.no_func();
+before insert
+on schema_not_existing.tab
+for EACH STATEMENT
+EXECUTE FUNCTION schema_trig.no_func();
 
 reset role;
 

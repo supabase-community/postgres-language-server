@@ -1414,12 +1414,12 @@ select plainto_tsquery('SKIES My booKs');
 select to_tsquery('SKIES & My | booKs');
 
 create TRIGGER tsvectorupdate
-  before insert or update
-  on test_tsvector
-  for EACH ROW
-  EXECUTE FUNCTION tsvector_update_trigger(a,
-  "pg_catalog.english",
-  t);
+before insert or update
+on test_tsvector
+for EACH ROW
+EXECUTE FUNCTION tsvector_update_trigger(a,
+"pg_catalog.english",
+t);
 
 select COUNT(*) from test_tsvector where a @@ to_tsquery('345&qwerty');
 

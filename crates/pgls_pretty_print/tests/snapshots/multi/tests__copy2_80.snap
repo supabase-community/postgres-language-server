@@ -32,16 +32,16 @@ $function$
 language plpgsql;
 
 create TRIGGER trg_x_after
-  after insert
-  on x
-  for EACH ROW
-  EXECUTE FUNCTION fn_x_after();
+after insert
+on x
+for EACH ROW
+EXECUTE FUNCTION fn_x_after();
 
 create TRIGGER trg_x_before
-  before insert
-  on x
-  for EACH ROW
-  EXECUTE FUNCTION fn_x_before();
+before insert
+on x
+for EACH ROW
+EXECUTE FUNCTION fn_x_before();
 
 select * from x;
 

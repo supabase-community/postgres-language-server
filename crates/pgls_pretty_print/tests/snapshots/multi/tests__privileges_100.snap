@@ -2053,12 +2053,12 @@ language plpgsql
 as $function$BEGIN PERFORM public.unwanted_grant(); RETURN NULL; END$function$;
 
 create CONSTRAINT TRIGGER t
-  after insert
-  on sro_trojan_table
-  DEFERRABLE
-  INITIALLY DEFERRED
-  for EACH ROW
-  EXECUTE FUNCTION sro_trojan();
+after insert
+on sro_trojan_table
+DEFERRABLE
+INITIALLY DEFERRED
+for EACH ROW
+EXECUTE FUNCTION sro_trojan();
 
 create or replace function mv_action()
 returns BOOLEAN

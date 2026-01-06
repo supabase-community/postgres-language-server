@@ -460,12 +460,12 @@ as $function$
 $function$;
 
 create TRIGGER trans_updatetrig
-  after update
-  on range_parted
-  REFERENCING old table as old_table
-  new table as new_table
-  for EACH STATEMENT
-  EXECUTE FUNCTION trans_updatetrigfunc();
+after update
+on range_parted
+REFERENCING old table as old_table
+new table as new_table
+for EACH STATEMENT
+EXECUTE FUNCTION trans_updatetrigfunc();
 
 update range_parted
 set c = case when c = 96 then 110 else c + 1 end
@@ -473,18 +473,18 @@ where
   a = 'b' and b > 10 and c >= 96;
 
 create TRIGGER trans_deletetrig
-  after delete
-  on range_parted
-  REFERENCING old table as old_table
-  for EACH STATEMENT
-  EXECUTE FUNCTION trans_updatetrigfunc();
+after delete
+on range_parted
+REFERENCING old table as old_table
+for EACH STATEMENT
+EXECUTE FUNCTION trans_updatetrigfunc();
 
 create TRIGGER trans_inserttrig
-  after insert
-  on range_parted
-  REFERENCING new table as new_table
-  for EACH STATEMENT
-  EXECUTE FUNCTION trans_updatetrigfunc();
+after insert
+on range_parted
+REFERENCING new table as new_table
+for EACH STATEMENT
+EXECUTE FUNCTION trans_updatetrigfunc();
 
 update range_parted set c = c + 50 where a = 'b' and b > 10 and c >= 96;
 
@@ -502,22 +502,22 @@ END $function$
 language plpgsql;
 
 create TRIGGER trig_c1_100
-  before insert or update
-  on part_c_1_100
-  for EACH ROW
-  EXECUTE FUNCTION func_parted_mod_b();
+before insert or update
+on part_c_1_100
+for EACH ROW
+EXECUTE FUNCTION func_parted_mod_b();
 
 create TRIGGER trig_d1_15
-  before insert or update
-  on part_d_1_15
-  for EACH ROW
-  EXECUTE FUNCTION func_parted_mod_b();
+before insert or update
+on part_d_1_15
+for EACH ROW
+EXECUTE FUNCTION func_parted_mod_b();
 
 create TRIGGER trig_d15_20
-  before insert or update
-  on part_d_15_20
-  for EACH ROW
-  EXECUTE FUNCTION func_parted_mod_b();
+before insert or update
+on part_d_15_20
+for EACH ROW
+EXECUTE FUNCTION func_parted_mod_b();
 
 update range_parted
 set c = case when c = 96 then 110 else c + 1 end
@@ -576,10 +576,10 @@ END $function$
 language plpgsql;
 
 create TRIGGER trig_d_1_15
-  before insert
-  on part_d_1_15
-  for EACH ROW
-  EXECUTE FUNCTION func_d_1_15();
+before insert
+on part_d_1_15
+for EACH ROW
+EXECUTE FUNCTION func_d_1_15();
 
 set session authorization regress_range_parted_user;
 
@@ -663,76 +663,76 @@ as $function$
 $function$;
 
 create TRIGGER parent_delete_trig
-  after delete
-  on range_parted
-  for EACH STATEMENT
-  EXECUTE FUNCTION trigfunc();
+after delete
+on range_parted
+for EACH STATEMENT
+EXECUTE FUNCTION trigfunc();
 
 create TRIGGER parent_update_trig
-  after update
-  on range_parted
-  for EACH STATEMENT
-  EXECUTE FUNCTION trigfunc();
+after update
+on range_parted
+for EACH STATEMENT
+EXECUTE FUNCTION trigfunc();
 
 create TRIGGER parent_insert_trig
-  after insert
-  on range_parted
-  for EACH STATEMENT
-  EXECUTE FUNCTION trigfunc();
+after insert
+on range_parted
+for EACH STATEMENT
+EXECUTE FUNCTION trigfunc();
 
 create TRIGGER c1_delete_trig
-  after delete
-  on part_c_1_100
-  for EACH STATEMENT
-  EXECUTE FUNCTION trigfunc();
+after delete
+on part_c_1_100
+for EACH STATEMENT
+EXECUTE FUNCTION trigfunc();
 
 create TRIGGER c1_update_trig
-  after update
-  on part_c_1_100
-  for EACH STATEMENT
-  EXECUTE FUNCTION trigfunc();
+after update
+on part_c_1_100
+for EACH STATEMENT
+EXECUTE FUNCTION trigfunc();
 
 create TRIGGER c1_insert_trig
-  after insert
-  on part_c_1_100
-  for EACH STATEMENT
-  EXECUTE FUNCTION trigfunc();
+after insert
+on part_c_1_100
+for EACH STATEMENT
+EXECUTE FUNCTION trigfunc();
 
 create TRIGGER d1_delete_trig
-  after delete
-  on part_d_1_15
-  for EACH STATEMENT
-  EXECUTE FUNCTION trigfunc();
+after delete
+on part_d_1_15
+for EACH STATEMENT
+EXECUTE FUNCTION trigfunc();
 
 create TRIGGER d1_update_trig
-  after update
-  on part_d_1_15
-  for EACH STATEMENT
-  EXECUTE FUNCTION trigfunc();
+after update
+on part_d_1_15
+for EACH STATEMENT
+EXECUTE FUNCTION trigfunc();
 
 create TRIGGER d1_insert_trig
-  after insert
-  on part_d_1_15
-  for EACH STATEMENT
-  EXECUTE FUNCTION trigfunc();
+after insert
+on part_d_1_15
+for EACH STATEMENT
+EXECUTE FUNCTION trigfunc();
 
 create TRIGGER d15_delete_trig
-  after delete
-  on part_d_15_20
-  for EACH STATEMENT
-  EXECUTE FUNCTION trigfunc();
+after delete
+on part_d_15_20
+for EACH STATEMENT
+EXECUTE FUNCTION trigfunc();
 
 create TRIGGER d15_update_trig
-  after update
-  on part_d_15_20
-  for EACH STATEMENT
-  EXECUTE FUNCTION trigfunc();
+after update
+on part_d_15_20
+for EACH STATEMENT
+EXECUTE FUNCTION trigfunc();
 
 create TRIGGER d15_insert_trig
-  after insert
-  on part_d_15_20
-  for EACH STATEMENT
-  EXECUTE FUNCTION trigfunc();
+after insert
+on part_d_15_20
+for EACH STATEMENT
+EXECUTE FUNCTION trigfunc();
 
 update range_parted set c = c - 50 where c > 97;
 
@@ -962,10 +962,10 @@ END $function$
 language plpgsql;
 
 create TRIGGER parted_mod_b
-  before update
-  on sub_part1
-  for EACH ROW
-  EXECUTE FUNCTION func_parted_mod_b();
+before update
+on sub_part1
+for EACH ROW
+EXECUTE FUNCTION func_parted_mod_b();
 
 select
   cast(cast(tableoid as REGCLASS) as TEXT),
@@ -1001,10 +1001,10 @@ END $function$
 language plpgsql;
 
 create TRIGGER trig_skip_delete
-  before delete
-  on sub_part2
-  for EACH ROW
-  EXECUTE FUNCTION func_parted_mod_b();
+before delete
+on sub_part2
+for EACH ROW
+EXECUTE FUNCTION func_parted_mod_b();
 
 update list_parted set b = 1 where c = 70;
 

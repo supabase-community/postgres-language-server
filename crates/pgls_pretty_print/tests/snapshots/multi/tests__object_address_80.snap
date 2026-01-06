@@ -64,10 +64,10 @@ language plpgsql
 as $function$ BEGIN END; $function$;
 
 create TRIGGER t
-  before insert
-  on addr_nsp.gentable
-  for EACH ROW
-  EXECUTE FUNCTION addr_nsp.trig();
+before insert
+on addr_nsp.gentable
+for EACH ROW
+EXECUTE FUNCTION addr_nsp.trig();
 
 create POLICY genpol on addr_nsp.gentable as PERMISSIVE for all to PUBLIC;
 
