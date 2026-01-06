@@ -230,11 +230,7 @@ impl<W: Write> Renderer<W> {
             }
         }
 
-        if has_hard_breaks {
-            None
-        } else {
-            Some(buffer)
-        }
+        if has_hard_breaks { None } else { Some(buffer) }
     }
 
     fn handle_line(&mut self, line_type: &LineType) -> Result<(), std::fmt::Error> {
