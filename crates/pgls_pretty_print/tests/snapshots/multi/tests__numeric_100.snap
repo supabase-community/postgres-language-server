@@ -1576,7 +1576,7 @@ insert into fract_only values (11, '-Inf');
 
 select * from fract_only;
 
-drop TABLE "fract_only";
+drop TABLE fract_only;
 
 select cast(-9223372036854775808.5 as BIGINT);
 
@@ -1664,7 +1664,7 @@ insert into ceil_floor_round values ('-0.000001');
 
 select a, ceil(a), ceiling(a), floor(a), round(a) from ceil_floor_round;
 
-drop TABLE "ceil_floor_round";
+drop TABLE ceil_floor_round;
 
 select
   i as pow,
@@ -1817,7 +1817,7 @@ select
     10
   );
 
-drop TABLE "width_bucket_test";
+drop TABLE width_bucket_test;
 
 select
   x,

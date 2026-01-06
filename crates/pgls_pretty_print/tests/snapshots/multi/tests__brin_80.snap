@@ -499,7 +499,7 @@ values
   );
 
 do
-$$
+$do$
 DECLARE
 	r record;
 	r2 record;
@@ -578,7 +578,7 @@ BEGIN
 		IF count != r.matches THEN RAISE WARNING 'unexpected number of results % for %', count, r; END IF;
 	END LOOP;
 END;
-$$;
+$do$;
 
 reset enable_seqscan;
 
@@ -696,7 +696,7 @@ using brin
 with (pages_per_range = 2);
 
 do
-$$
+$do$
 DECLARE curtid tid;
 BEGIN
   LOOP
@@ -704,7 +704,7 @@ BEGIN
     EXIT WHEN curtid > tid '(2, 0)';
   END LOOP;
 END;
-$$;
+$do$;
 
 select brin_summarize_range('brin_summarize_idx', 0);
 
@@ -732,7 +732,7 @@ select brin_desummarize_range('brinidx', 0);
 
 select brin_summarize_range('brinidx', 0);
 
-drop TABLE "brintest_2";
+drop TABLE brintest_2;
 
 create table brin_test (
   a INT,
@@ -802,7 +802,7 @@ delete from brintest_3;
 
 create index concurrently "brin_test_temp_idx" on brintest_3 using btree (a);
 
-drop INDEX "brin_test_temp_idx";
+drop INDEX brin_test_temp_idx;
 
 vacuum brintest_3;
 
@@ -833,7 +833,7 @@ select * from brintest_3 where b < '0';
 
 select * from brintest_3 where b < '0';
 
-drop TABLE "brintest_3";
+drop TABLE brintest_3;
 
 reset enable_seqscan;
 
@@ -841,7 +841,7 @@ create table brintest_expr (n INT);
 
 create function brintest_func()
 returns INT
-language "sql"
+language sql
 immutable return 0;;
 
 begin;
@@ -859,7 +859,7 @@ using brin
 
 commit;
 
-drop TABLE "brintest_expr";
+drop TABLE brintest_expr;
 
 drop FUNCTION brintest_func();
 
@@ -869,7 +869,7 @@ create index "brinidx_unlogged" on brintest_unlogged using brin (n);
 
 insert into brintest_unlogged values (numrange(0, 2 ^ cast(1000 as NUMERIC)));
 
-drop TABLE "brintest_unlogged";
+drop TABLE brintest_unlogged;
 
 create table brin_insert_optimization (a INT);
 
@@ -886,4 +886,4 @@ update brin_insert_optimization set a = a;
 
 reindex (CONCURRENTLY) index brin_insert_optimization_idx;
 
-drop TABLE "brin_insert_optimization";
+drop TABLE brin_insert_optimization;

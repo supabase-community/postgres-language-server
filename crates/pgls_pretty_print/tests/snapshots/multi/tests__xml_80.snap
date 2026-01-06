@@ -424,7 +424,7 @@ select xpath('/nosuchtag', '<root/>');
 select xpath('root', '<root/>');
 
 do
-$$
+$do$
 DECLARE
   xml_declaration text := '<?xml version="1.0" encoding="ISO-8859-1"?>';
   degree_symbol text;
@@ -457,7 +457,7 @@ EXCEPTION
   OR feature_not_supported THEN
     RAISE LOG 'skip: %', SQLERRM;
 END
-$$;
+$do$;
 
 select
   xmlexists('//town[text() = ''Toronto'']' PASSING '<towns><town>Bidford-on-Avon</town><town>Cwmbran</town><town>Bristol</town></towns>');

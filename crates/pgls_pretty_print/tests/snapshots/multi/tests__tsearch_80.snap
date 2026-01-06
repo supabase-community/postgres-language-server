@@ -269,7 +269,7 @@ using gist
 
 create index "wowidx2" on test_tsvector using gist (a tsvector_ops(siglen = 1));
 
-drop INDEX "wowidx";
+drop INDEX wowidx;
 
 select COUNT(*) from test_tsvector where a @@ 'wr|qh';
 
@@ -321,7 +321,7 @@ select COUNT(*) from test_tsvector where a @@ '!wd:A';
 
 select COUNT(*) from test_tsvector where a @@ '!wd:D';
 
-drop INDEX "wowidx2";
+drop INDEX wowidx2;
 
 create index "wowidx"
 on test_tsvector
@@ -386,7 +386,7 @@ reset enable_indexscan;
 
 reset enable_bitmapscan;
 
-drop INDEX "wowidx";
+drop INDEX wowidx;
 
 create index "wowidx" on test_tsvector using gin (a);
 

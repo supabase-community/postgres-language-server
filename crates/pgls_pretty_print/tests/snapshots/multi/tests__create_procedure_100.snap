@@ -9,8 +9,8 @@ call random();
 
 create function cp_testfunc1(a INT)
 returns INT
-language "sql"
-as ' SELECT a ';
+language sql
+as $function$ SELECT a $function$;
 
 create table cp_test (
   a INT,
@@ -18,10 +18,10 @@ create table cp_test (
 );
 
 create procedure ptest1(x TEXT)
-language "sql"
-as '
+language sql
+as $procedure$
 INSERT INTO cp_test VALUES (1, x);
-';
+$procedure$;
 
 select pg_get_functiondef(cast('ptest1' as REGPROC));
 
@@ -50,56 +50,56 @@ create table x (a INT);
 commit;
 
 create procedure ptest2()
-language "sql"
-as '
+language sql
+as $procedure$
 SELECT 5;
-';
+$procedure$;
 
 call ptest2();
 
 truncate cp_test;
 
 create procedure ptest3(y TEXT)
-language "sql"
-as '
+language sql
+as $procedure$
 CALL ptest1(y);
 CALL ptest1($1);
-';
+$procedure$;
 
 call ptest3('b');
 
 select * from cp_test;
 
 create procedure ptest4a(inout a INT, inout b INT)
-language "sql"
-as '
+language sql
+as $procedure$
 SELECT 1, 2;
-';
+$procedure$;
 
 call ptest4a(null, null);
 
 create procedure ptest4b(inout b INT, inout a INT)
-language "sql"
-as '
+language sql
+as $procedure$
 CALL ptest4a(a, b);  -- error, not supported
-';
+$procedure$;
 
 create procedure ptest4c(inout comp int8_tbl)
-language "sql"
-as '
+language sql
+as $procedure$
 SELECT ROW(1, 2);
-';
+$procedure$;
 
 call ptest4c(null);
 
 drop PROCEDURE ptest4a, ptest4c;
 
 create or replace procedure ptest5(a INT, b TEXT, c INT default 100)
-language "sql"
-as '
+language sql
+as $procedure$
 INSERT INTO cp_test VALUES(a, b);
 INSERT INTO cp_test VALUES(c, b);
-';
+$procedure$;
 
 truncate cp_test;
 
@@ -114,48 +114,48 @@ call ptest5("b" := 'Hello', "a" := 10);
 select * from cp_test;
 
 create procedure ptest6(a INT, b ANYELEMENT)
-language "sql"
-as '
+language sql
+as $procedure$
 SELECT NULL::int;
-';
+$procedure$;
 
 call ptest6(1, 2);
 
 create procedure ptest6a(inout a ANYELEMENT, out b ANYELEMENT)
-language "sql"
-as '
+language sql
+as $procedure$
 SELECT $1, $1;
-';
+$procedure$;
 
 call ptest6a(1, null);
 
 call ptest6a(1.1, null);
 
 create procedure ptest6b(a ANYELEMENT, out b ANYELEMENT, out c ANYARRAY)
-language "sql"
-as '
+language sql
+as $procedure$
 SELECT $1, array[$1];
-';
+$procedure$;
 
 call ptest6b(1, null, null);
 
 call ptest6b(1.1, null, null);
 
 create procedure ptest6c(inout a ANYELEMENT, inout b ANYELEMENT)
-language "sql"
-as '
+language sql
+as $procedure$
 SELECT $1, 1;
-';
+$procedure$;
 
 call ptest6c(1, null);
 
 call ptest6c(1.1, null);
 
 create procedure ptest7(a TEXT, b TEXT)
-language "sql"
-as '
+language sql
+as $procedure$
 SELECT a = b;
-';
+$procedure$;
 
 call ptest7(least('a', 'b'), 'a');
 
@@ -168,11 +168,11 @@ select pg_get_functiondef(cast('ptest8' as REGPROC));
 call ptest8('');
 
 create procedure ptest9(out a INT)
-language "sql"
-as '
-INSERT INTO cp_test VALUES (1, ''a'');
+language sql
+as $procedure$
+INSERT INTO cp_test VALUES (1, 'a');
 SELECT 1;
-';
+$procedure$;
 
 call ptest9(null);
 
@@ -181,8 +181,8 @@ call ptest9(1 / 0);
 call ptest9(1. / 0.);
 
 create procedure ptest10(out a INT, in b INT, in c INT)
-language "sql"
-as ' SELECT b - c ';
+language sql
+as $procedure$ SELECT b - c $procedure$;
 
 call ptest10(null, 7, 4);
 
@@ -195,14 +195,14 @@ call ptest10(null, "c" := 4, "b" := 11);
 call ptest10("b" := 8, "c" := 2, "a" := 0);
 
 create procedure ptest11(out a INT, variadic b INT[])
-language "sql"
-as ' SELECT b[1] + b[2] ';
+language sql
+as $procedure$ SELECT b[1] + b[2] $procedure$;
 
 call ptest11(null, 11, 12, 13);
 
 create procedure ptest10(in a INT, in b INT, in c INT)
-language "sql"
-as ' SELECT a + b - c ';
+language sql
+as $procedure$ SELECT a + b - c $procedure$;
 
 drop PROCEDURE ptest10;
 
@@ -229,22 +229,22 @@ call version();
 call SUM(1);
 
 create procedure ptestx()
-language "sql"
+language sql
 window
-as ' INSERT INTO cp_test VALUES (1, ''a'') ';
+as $procedure$ INSERT INTO cp_test VALUES (1, 'a') $procedure$;
 
 create procedure ptestx()
-language "sql"
+language sql
 STRICT
-as ' INSERT INTO cp_test VALUES (1, ''a'') ';
+as $procedure$ INSERT INTO cp_test VALUES (1, 'a') $procedure$;
 
 create procedure ptestx(variadic a INT[], out b INT)
-language "sql"
-as ' SELECT a[1] ';
+language sql
+as $procedure$ SELECT a[1] $procedure$;
 
 create procedure ptestx(a INT default 42, out b INT)
-language "sql"
-as ' SELECT a ';
+language sql
+as $procedure$ SELECT a $procedure$;
 
 alter PROCEDURE ptest1(TEXT) STRICT;
 
@@ -296,6 +296,6 @@ drop PROCEDURE ptest1s;
 
 drop PROCEDURE ptest2;
 
-drop TABLE "cp_test";
+drop TABLE cp_test;
 
 drop role regress_cp_user1;

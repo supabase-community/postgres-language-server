@@ -78,7 +78,7 @@ select pg_typeof(coalesce(cast(4 as domainint4), 7));
 
 select pg_typeof(coalesce(cast(4 as domainint4), cast(7 as domainint4)));
 
-drop TABLE "basictest";
+drop TABLE basictest;
 
 drop DOMAIN domainvarchar;
 
@@ -151,7 +151,7 @@ where
 
 select * from domarrtest where testchar4arr is null;
 
-drop TABLE "domarrtest";
+drop TABLE domarrtest;
 
 drop DOMAIN domainint4arr;
 
@@ -226,8 +226,8 @@ do instead
 
 create function makedcomp(r DOUBLE PRECISION, i DOUBLE PRECISION)
 returns dcomptype
-as 'select row(r, i)'
-language "sql";
+as $function$select row(r, i)$function$
+language sql;
 
 select makedcomp(1, 2);
 
@@ -239,7 +239,7 @@ select m, m is not null from makedcomp(1, 2) as m;
 
 drop FUNCTION makedcomp(DOUBLE PRECISION, DOUBLE PRECISION);
 
-drop TABLE "dcomptable";
+drop TABLE dcomptable;
 
 drop TYPE comptype cascade;
 
@@ -351,7 +351,7 @@ do instead
   where
     d1[1].i > 0;;
 
-drop TABLE "dcomptable";
+drop TABLE dcomptable;
 
 drop TYPE comptype cascade;
 
@@ -371,7 +371,7 @@ update pitable set f1[1] = 0;
 
 select * from pitable;
 
-drop TABLE "pitable";
+drop TABLE pitable;
 
 create domain vc4 as VARCHAR(4);
 
@@ -383,7 +383,7 @@ insert into vc4table values (cast(array['too long'] as vc4[]));
 
 select * from vc4table;
 
-drop TABLE "vc4table";
+drop TABLE vc4table;
 
 drop TYPE vc4;
 
@@ -413,7 +413,7 @@ select f1, f1[1], f1[2][1] from dposintatable;
 
 update dposintatable set f1[2][1] = array[97];
 
-drop TABLE "dposintatable";
+drop TABLE dposintatable;
 
 drop DOMAIN posint cascade;
 
@@ -441,7 +441,7 @@ update dcomptable set f1[1]."cf1" = -1;
 
 select * from dcomptable;
 
-drop TABLE "dcomptable";
+drop TABLE dcomptable;
 
 drop TYPE comptype cascade;
 
@@ -489,7 +489,7 @@ select cast(cast(null as dnull) as dnotnull);
 
 select cast(col4 as dnotnull) from nulltest;
 
-drop TABLE "nulltest";
+drop TABLE nulltest;
 
 drop DOMAIN dnotnull;
 
@@ -541,7 +541,7 @@ insert into defaulttest default values;
 
 select * from defaulttest;
 
-drop TABLE "defaulttest" cascade;
+drop TABLE defaulttest cascade;
 
 create domain dnotnulltest as INT;
 
@@ -607,7 +607,7 @@ insert into domdeftest default values;
 
 select * from domdeftest;
 
-drop TABLE "domdeftest";
+drop TABLE domdeftest;
 
 create domain con as INT;
 
@@ -684,7 +684,7 @@ update domconnotnulltest set col1 = null;
 
 drop DOMAIN connotnull cascade;
 
-drop TABLE "domconnotnulltest";
+drop TABLE domconnotnulltest;
 
 create domain things as INT;
 
@@ -741,7 +741,7 @@ drop DOMAIN ddef4;
 
 drop DOMAIN ddef5;
 
-drop SEQUENCE "ddef4_seq";
+drop SEQUENCE ddef4_seq;
 
 create domain vchar4 as VARCHAR(4);
 
@@ -775,7 +775,7 @@ insert into dtest values ('yz23');
 
 insert into dtest values ('xz23');
 
-drop TABLE "dtest";
+drop TABLE dtest;
 
 drop DOMAIN vchar4 cascade;
 
@@ -814,35 +814,35 @@ execute s1 (null);
 
 create function doubledecrement(p1 pos_int)
 returns pos_int
-as '
+as $function$
 declare v pos_int;
 begin
     return p1;
-end'
-language "plpgsql";
+end$function$
+language plpgsql;
 
 select doubledecrement(3);
 
 create or replace function doubledecrement(p1 pos_int)
 returns pos_int
-as '
+as $function$
 declare v pos_int := 0;
 begin
     return p1;
-end'
-language "plpgsql";
+end$function$
+language plpgsql;
 
 select doubledecrement(3);
 
 create or replace function doubledecrement(p1 pos_int)
 returns pos_int
-as '
+as $function$
 declare v pos_int := 1;
 begin
     v := p1 - 1;
     return v - 1;
-end'
-language "plpgsql";
+end$function$
+language plpgsql;
 
 select doubledecrement(null);
 
@@ -864,7 +864,7 @@ insert into ddtest2 values (row(-1));
 
 alter DOMAIN posint add constraint "c1" check (value >= 0);
 
-drop TABLE "ddtest2";
+drop TABLE ddtest2;
 
 create table ddtest2 (f1 ddtest1[]);
 
@@ -872,7 +872,7 @@ insert into ddtest2 values ('{(-1)}');
 
 alter DOMAIN posint add constraint "c1" check (value >= 0);
 
-drop TABLE "ddtest2";
+drop TABLE ddtest2;
 
 create domain ddtest1d as ddtest1;
 
@@ -882,7 +882,7 @@ insert into ddtest2 values ('(-1)');
 
 alter DOMAIN posint add constraint "c1" check (value >= 0);
 
-drop TABLE "ddtest2";
+drop TABLE ddtest2;
 
 drop DOMAIN ddtest1d;
 
@@ -894,7 +894,7 @@ insert into ddtest2 values ('{(-1)}');
 
 alter DOMAIN posint add constraint "c1" check (value >= 0);
 
-drop TABLE "ddtest2";
+drop TABLE ddtest2;
 
 drop DOMAIN ddtest1d;
 
@@ -906,7 +906,7 @@ insert into ddtest2 values ('(-1,3]');
 
 alter DOMAIN posint add constraint "c1" check (value >= 0);
 
-drop TABLE "ddtest2";
+drop TABLE ddtest2;
 
 drop TYPE rposint;
 
@@ -926,7 +926,7 @@ alter DOMAIN posint add constraint "c2" check (value >= 10);
 
 alter DOMAIN posint add constraint "c2" check (value > 0);
 
-drop TABLE "ddtest2";
+drop TABLE ddtest2;
 
 drop TYPE ddtest1;
 
@@ -934,14 +934,14 @@ drop DOMAIN posint cascade;
 
 create or replace function array_elem_check(NUMERIC)
 returns NUMERIC
-as '
+as $function$
 declare
   x numeric(4,2)[1];
 begin
   x[1] := $1;
   return x[1];
-end'
-language "plpgsql";
+end$function$
+language plpgsql;
 
 select array_elem_check(121.00);
 
@@ -951,14 +951,14 @@ create domain mynums as NUMERIC(4, 2)[1];
 
 create or replace function array_elem_check(NUMERIC)
 returns NUMERIC
-as '
+as $function$
 declare
   x mynums;
 begin
   x[1] := $1;
   return x[1];
-end'
-language "plpgsql";
+end$function$
+language plpgsql;
 
 select array_elem_check(121.00);
 
@@ -968,14 +968,14 @@ create domain mynums2 as mynums;
 
 create or replace function array_elem_check(NUMERIC)
 returns NUMERIC
-as '
+as $function$
 declare
   x mynums2;
 begin
   x[1] := $1;
   return x[1];
-end'
-language "plpgsql";
+end$function$
+language plpgsql;
 
 select array_elem_check(121.00);
 
@@ -1003,14 +1003,14 @@ select * from op;
 
 create or replace function array_elem_check(INT)
 returns INT
-as '
+as $function$
 declare
-  x orderedpair := ''{1,2}'';
+  x orderedpair := '{1,2}';
 begin
   x[2] := $1;
   return x[2];
-end'
-language "plpgsql";
+end$function$
+language plpgsql;
 
 select array_elem_check(3);
 
@@ -1022,14 +1022,14 @@ create domain di as INT;
 
 create function dom_check(INT)
 returns di
-as '
+as $function$
 declare d di;
 begin
   d := $1::di;
   return d;
 end
-'
-language "plpgsql"
+$function$
+language plpgsql
 immutable;
 
 select dom_check(0);
@@ -1044,14 +1044,14 @@ select dom_check(0);
 
 create or replace function dom_check(INT)
 returns di
-as '
+as $function$
 declare d di;
 begin
   d := $1;
   return d;
 end
-'
-language "plpgsql"
+$function$
+language plpgsql
 immutable;
 
 select dom_check(0);
@@ -1070,8 +1070,8 @@ drop DOMAIN di;
 
 create function sql_is_distinct_from(ANYELEMENT, ANYELEMENT)
 returns BOOLEAN
-language "sql"
-as 'select $1 is distinct from $2 limit 1';
+language sql
+as $function$select $1 is distinct from $2 limit 1$function$;
 
 create domain inotnull as INT check (sql_is_distinct_from(value, null));
 
@@ -1087,7 +1087,7 @@ insert into dom_table values (1);
 
 insert into dom_table values (null);
 
-drop TABLE "dom_table";
+drop TABLE dom_table;
 
 drop DOMAIN inotnull;
 

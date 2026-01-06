@@ -430,7 +430,7 @@ select
   );
 
 do
-$$
+$do$
 DECLARE
   o int;
   a int[] := ARRAY[1,2,3,2,3,1,2];
@@ -442,7 +442,7 @@ BEGIN
     o := array_position(a, 2, o + 1);
   END LOOP;
 END
-$$
+$do$
 language plpgsql;
 
 select array_position(cast('[2:4]={1,2,3}' as INT[]), 1);
@@ -678,11 +678,11 @@ insert into arr_pk_tbl (pk, f1[0:2147483647]) values (2, '{}');
 insert into arr_pk_tbl (pk, f1[-2147483648:2147483647]) values (2, '{}');
 
 do
-$$ declare a int[];
+$do$ declare a int[];
 begin
   a := '[-2147483648:-2147483647]={1,2}'::int[];
   a[2147483647] := 42;
-end $$;
+end $do$;
 
 select 'foo' ~~ any (array['%a', '%o']);
 
@@ -872,25 +872,25 @@ select c2[2].f2 from comptable;
 
 drop TYPE _comptype;
 
-drop TABLE "comptable";
+drop TABLE comptable;
 
 drop TYPE comptype;
 
 create or replace function unnest1(ANYARRAY)
 returns setof ANYELEMENT
-as '
+as $function$
 select $1[s] from generate_subscripts($1,1) g(s);
-'
-language "sql"
+$function$
+language sql
 immutable;
 
 create or replace function unnest2(ANYARRAY)
 returns setof ANYELEMENT
-as '
+as $function$
 select $1[s1][s2] from generate_subscripts($1,1) g1(s1),
                    generate_subscripts($1,2) g2(s2);
-'
-language "sql"
+$function$
+language sql
 immutable;
 
 select * from unnest1(array[1, 2, 3]);
@@ -1205,11 +1205,11 @@ select length(fipshash(f1[1].c2)) from dest;
 
 truncate src;
 
-drop TABLE "src";
+drop TABLE src;
 
 select length(fipshash(f1[1].c2)) from dest;
 
-drop TABLE "dest";
+drop TABLE dest;
 
 drop TYPE textandtext;
 

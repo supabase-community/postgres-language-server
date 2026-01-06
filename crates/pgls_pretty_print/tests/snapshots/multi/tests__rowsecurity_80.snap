@@ -50,8 +50,8 @@ set search_path to regress_rls_schema;
 create or replace function f_leak(TEXT)
 returns BOOLEAN
 cost 0.0000001
-language "plpgsql"
-as 'BEGIN RAISE NOTICE ''f_leak => %'', $1; RETURN true; END';
+language plpgsql
+as $function$BEGIN RAISE NOTICE 'f_leak => %', $1; RETURN true; END$function$;
 
 grant EXECUTE on function f_leak(TEXT) to PUBLIC;
 
@@ -279,7 +279,7 @@ values
 
 alter POLICY p1 on document USING (true);
 
-drop POLICY "p1" on "document";
+drop POLICY p1 on document;
 
 set session authorization regress_rls_alice;
 
@@ -750,7 +750,7 @@ select * from part_document where f_leak(dtitle);
 
 alter POLICY pp1 on part_document USING (true);
 
-drop POLICY "pp1" on "part_document";
+drop POLICY pp1 on part_document;
 
 set session authorization regress_rls_alice;
 
@@ -857,9 +857,9 @@ USING (x =
     d.y = y
 ));
 
-drop TABLE "dependee";
+drop TABLE dependee;
 
-drop TABLE "dependee" cascade;
+drop TABLE dependee cascade;
 
 select * from dependent;
 
@@ -930,7 +930,7 @@ select * from rec1;
 
 set session authorization regress_rls_bob;
 
-drop VIEW "rec1v", "rec2v" cascade;
+drop VIEW rec1v, rec2v cascade;
 
 create view rec1v
   with (security_barrier)
@@ -1032,7 +1032,7 @@ insert into s1 values (1, 'foo');
 
 set session authorization regress_rls_alice;
 
-drop POLICY "p3" on "s1";
+drop POLICY p3 on s1;
 
 alter POLICY p2 on s2 USING (x % 2 = 0);
 
@@ -1298,9 +1298,9 @@ select * from b1;
 
 set session authorization regress_rls_alice;
 
-drop POLICY "p1" on "document";
+drop POLICY p1 on document;
 
-drop POLICY "p1r" on "document";
+drop POLICY p1r on document;
 
 create POLICY p1 on document as PERMISSIVE for select to PUBLIC USING (true);
 
@@ -1529,11 +1529,11 @@ returning *;
 
 set session authorization regress_rls_alice;
 
-drop POLICY "p1" on "document";
+drop POLICY p1 on document;
 
-drop POLICY "p2" on "document";
+drop POLICY p2 on document;
 
-drop POLICY "p3" on "document";
+drop POLICY p3 on document;
 
 create POLICY p3_with_default
 on document
@@ -1601,7 +1601,7 @@ returning *;
 
 set session authorization regress_rls_alice;
 
-drop POLICY "p3_with_default" on "document";
+drop POLICY p3_with_default on document;
 
 create POLICY p3_with_all
 on document
@@ -1690,7 +1690,7 @@ set dauthor = 'regress_rls_carol';
 
 reset session_authorization;
 
-drop POLICY "p3_with_all" on "document";
+drop POLICY p3_with_all on document;
 
 alter table document
   add column dnotes TEXT default '';
@@ -1751,7 +1751,7 @@ set session authorization regress_rls_bob;
 
 reset session_authorization;
 
-drop POLICY "p1" on "document";
+drop POLICY p1 on document;
 
 create POLICY p1
 on document
@@ -1774,7 +1774,7 @@ select * from document where did = 13;
 
 reset session_authorization;
 
-drop POLICY "p1" on "document";
+drop POLICY p1 on document;
 
 select * from document;
 

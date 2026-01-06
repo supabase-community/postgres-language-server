@@ -1328,7 +1328,7 @@ select * from v_window;
 
 select pg_get_viewdef('v_window');
 
-drop VIEW "v_window";
+drop VIEW v_window;
 
 create temporary view v_window
 as select
@@ -2013,12 +2013,12 @@ returns table (
   b INT,
   c INT
 )
-language "sql"
-as '
+language sql
+as $function$
   SELECT sum(unique1) over (rows between x preceding and x following),
          unique1, four
   FROM tenk1 WHERE unique1 < 10;
-';
+$function$;
 
 select * from unbounded_syntax_test1a(2);
 
@@ -2050,12 +2050,12 @@ returns table (
   b INT,
   c INT
 )
-language "sql"
-as '
+language sql
+as $function$
   SELECT sum(unique1) over (rows between unbounded preceding and unbounded following),
          unique1, four
   FROM tenk1 WHERE unique1 < 10;
-';
+$function$;
 
 select * from unbounded_syntax_test2a(2);
 
@@ -2069,7 +2069,7 @@ drop FUNCTION
 
 create function unbounded(x INT)
 returns INT
-language "sql"
+language sql
 immutable return x;;
 
 select
@@ -5136,15 +5136,15 @@ from
 where
   first_emp = 1 or last_emp = 1;
 
-drop TABLE "empsalary";
+drop TABLE empsalary;
 
 create function nth_value_def(val ANYELEMENT, n INT default 1)
 returns ANYELEMENT
-language "internal"
+language internal
 window
 immutable
 STRICT
-as 'window_nth_value';
+as $function$window_nth_value$function$;
 
 select
   nth_value_def(
@@ -5193,20 +5193,20 @@ from
 
 create function logging_sfunc_nonstrict(TEXT, ANYELEMENT)
 returns TEXT
-as ' SELECT COALESCE($1, '''') || ''*'' || quote_nullable($2) '
-language "sql"
+as $function$ SELECT COALESCE($1, '') || '*' || quote_nullable($2) $function$
+language sql
 immutable;
 
 create function logging_msfunc_nonstrict(TEXT, ANYELEMENT)
 returns TEXT
-as ' SELECT COALESCE($1, '''') || ''+'' || quote_nullable($2) '
-language "sql"
+as $function$ SELECT COALESCE($1, '') || '+' || quote_nullable($2) $function$
+language sql
 immutable;
 
 create function logging_minvfunc_nonstrict(TEXT, ANYELEMENT)
 returns TEXT
-as ' SELECT $1 || ''-'' || quote_nullable($2) '
-language "sql"
+as $function$ SELECT $1 || '-' || quote_nullable($2) $function$
+language sql
 immutable;
 
 create aggregate logging_agg_nonstrict (
@@ -5233,22 +5233,22 @@ create aggregate logging_agg_nonstrict_initcond (
 
 create function logging_sfunc_strict(TEXT, ANYELEMENT)
 returns TEXT
-as ' SELECT $1 || ''*'' || quote_nullable($2) '
-language "sql"
+as $function$ SELECT $1 || '*' || quote_nullable($2) $function$
+language sql
 STRICT
 immutable;
 
 create function logging_msfunc_strict(TEXT, ANYELEMENT)
 returns TEXT
-as ' SELECT $1 || ''+'' || quote_nullable($2) '
-language "sql"
+as $function$ SELECT $1 || '+' || quote_nullable($2) $function$
+language sql
 STRICT
 immutable;
 
 create function logging_minvfunc_strict(TEXT, ANYELEMENT)
 returns TEXT
-as ' SELECT $1 || ''-'' || quote_nullable($2) '
-language "sql"
+as $function$ SELECT $1 || '-' || quote_nullable($2) $function$
+language sql
 STRICT
 immutable;
 
@@ -5472,8 +5472,8 @@ order by i;
 
 create function sum_int_randrestart_minvfunc(INT, INT)
 returns INT
-as ' SELECT CASE WHEN random() < 0.2 THEN NULL ELSE $1 - $2 END '
-language "sql"
+as $function$ SELECT CASE WHEN random() < 0.2 THEN NULL ELSE $1 - $2 END $function$
+language sql
 STRICT;
 
 create aggregate sum_int_randomrestart (
@@ -6703,12 +6703,12 @@ window
 
 create function pg_temp.f(group_size BIGINT)
 returns setof INT[]
-as '
+as $function$
     SELECT array_agg(s) OVER w
       FROM generate_series(1,5) s
     WINDOW w AS (ORDER BY s ROWS BETWEEN CURRENT ROW AND GROUP_SIZE FOLLOWING)
-'
-language "sql"
+$function$
+language sql
 stable;
 
 select * from pg_temp.f(2);

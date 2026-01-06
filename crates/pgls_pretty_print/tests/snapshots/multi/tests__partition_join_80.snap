@@ -2932,7 +2932,7 @@ order by t1.b,
   t2.a,
   t3.a;
 
-drop TABLE "prt2_adv_extra";
+drop TABLE prt2_adv_extra;
 
 alter table prt2_adv
   DETACH partition
@@ -3049,9 +3049,9 @@ where
 order by t1.a,
   t2.b;
 
-drop TABLE "prt2_adv_p3_1";
+drop TABLE prt2_adv_p3_1;
 
-drop TABLE "prt2_adv_p3_2";
+drop TABLE prt2_adv_p3_2;
 
 analyze prt2_adv;
 
@@ -3153,11 +3153,11 @@ where
 order by t1.a,
   t2.b;
 
-drop TABLE "prt1_adv_p3";
+drop TABLE prt1_adv_p3;
 
 analyze prt1_adv;
 
-drop TABLE "prt2_adv_p3";
+drop TABLE prt2_adv_p3;
 
 analyze prt2_adv;
 
@@ -3226,11 +3226,11 @@ order by t1.a,
   t2.b,
   t3.a;
 
-drop TABLE "prt1_adv";
+drop TABLE prt1_adv;
 
-drop TABLE "prt2_adv";
+drop TABLE prt2_adv;
 
-drop TABLE "prt3_adv";
+drop TABLE prt3_adv;
 
 create table prt1_adv (
   a INT,
@@ -3310,7 +3310,7 @@ where
 order by t1.a,
   t2.b;
 
-drop TABLE "prt1_adv_p3";
+drop TABLE prt1_adv_p3;
 
 create table prt1_adv_default partition of prt1_adv default;
 
@@ -3350,9 +3350,9 @@ where
 order by t1.a,
   t2.b;
 
-drop TABLE "prt1_adv";
+drop TABLE prt1_adv;
 
-drop TABLE "prt2_adv";
+drop TABLE prt2_adv;
 
 create table plt1_adv (
   a INT,
@@ -3737,7 +3737,7 @@ where
 order by t1.a,
   t2.a;
 
-drop TABLE "plt2_adv_extra";
+drop TABLE plt2_adv_extra;
 
 alter table plt2_adv
   DETACH partition
@@ -3837,9 +3837,9 @@ where
 order by t1.a,
   t2.a;
 
-drop TABLE "plt2_adv_p2_1";
+drop TABLE plt2_adv_p2_1;
 
-drop TABLE "plt2_adv_p2_2";
+drop TABLE plt2_adv_p2_2;
 
 alter table plt2_adv
   ATTACH partition
@@ -4046,7 +4046,7 @@ where
 order by t1.a,
   t2.a;
 
-drop TABLE "plt1_adv_p1_null";
+drop TABLE plt1_adv_p1_null;
 
 alter table plt1_adv
   ATTACH partition
@@ -4059,7 +4059,7 @@ insert into plt1_adv values (-1, -1, null);
 
 analyze plt1_adv;
 
-drop TABLE "plt2_adv_p3_null";
+drop TABLE plt2_adv_p3_null;
 
 alter table plt2_adv
   ATTACH partition
@@ -4258,9 +4258,9 @@ where
   t1.b < 10
 order by t1.a;
 
-drop TABLE "plt1_adv_extra";
+drop TABLE plt1_adv_extra;
 
-drop TABLE "plt2_adv_extra";
+drop TABLE plt2_adv_extra;
 
 alter table plt1_adv
   DETACH partition
@@ -4270,11 +4270,11 @@ alter table plt1_adv
   ATTACH partition
   plt1_adv_p1 default;
 
-drop TABLE "plt1_adv_p3";
+drop TABLE plt1_adv_p3;
 
 analyze plt1_adv;
 
-drop TABLE "plt2_adv_p3";
+drop TABLE plt2_adv_p3;
 
 analyze plt2_adv;
 
@@ -4364,7 +4364,7 @@ where
   t1.b < 10
 order by t1.a;
 
-drop TABLE "plt2_adv_p2_ext";
+drop TABLE plt2_adv_p2_ext;
 
 alter table plt2_adv
   ATTACH partition
@@ -4434,7 +4434,7 @@ where
   t1.b < 10
 order by t1.a;
 
-drop TABLE "plt2_adv_p1";
+drop TABLE plt2_adv_p1;
 
 create table plt2_adv_p1_null
 partition of plt2_adv
@@ -4482,7 +4482,7 @@ where
   t1.b < 10
 order by t1.a;
 
-drop TABLE "plt2_adv_p1_null";
+drop TABLE plt2_adv_p1_null;
 
 create table plt2_adv_p1_null partition of plt2_adv for values in (null);
 
@@ -4518,11 +4518,11 @@ where
   t1.b < 10
 order by t1.a;
 
-drop TABLE "plt1_adv";
+drop TABLE plt1_adv;
 
-drop TABLE "plt2_adv";
+drop TABLE plt2_adv;
 
-drop TABLE "plt3_adv";
+drop TABLE plt3_adv;
 
 create table plt1_adv (
   a INT,
@@ -4708,9 +4708,9 @@ where
   t1.c is null and t1.b < 10
 order by t1.a;
 
-drop TABLE "plt1_adv";
+drop TABLE plt1_adv;
 
-drop TABLE "plt2_adv";
+drop TABLE plt2_adv;
 
 create table plt1_adv (
   a INT,
@@ -4827,11 +4827,11 @@ order by t1.c,
   t2.a,
   t3.a;
 
-drop TABLE "plt1_adv";
+drop TABLE plt1_adv;
 
-drop TABLE "plt2_adv";
+drop TABLE plt2_adv;
 
-drop TABLE "plt3_adv";
+drop TABLE plt3_adv;
 
 create table alpha (
   a DOUBLE PRECISION,
@@ -5142,9 +5142,9 @@ select * from pht1 as p1 inner join pht1 as p2 using ("c") limit 100;
 
 reset debug_parallel_query;
 
-drop INDEX "pht1_c_idx" cascade;
+drop INDEX pht1_c_idx cascade;
 
-drop TABLE "fract_t";
+drop TABLE fract_t;
 
 reset max_parallel_workers_per_gather;
 

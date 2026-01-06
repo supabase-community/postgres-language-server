@@ -164,6 +164,6 @@ select * from mvtest_tvmm;
 
 select * from mvtest_tvvm;
 
-drop MATERIALIZED VIEW if exists "no_such_mv";
+drop MATERIALIZED VIEW if exists no_such_mv;
 
 refresh materialized view concurrently mvtest_tvmm;

@@ -85,7 +85,7 @@ rollback prepared 'regress_foo4';
 
 select gid from pg_prepared_xacts where gid ~ '^regress_' order by gid;
 
-drop TABLE "pxtest1";
+drop TABLE pxtest1;
 
 begin;
 
@@ -117,7 +117,7 @@ create table pxtest3 (fff INT);
 
 begin isolation level serializable;
 
-drop TABLE "pxtest3";
+drop TABLE pxtest3;
 
 create table pxtest4 (a INT);
 
@@ -163,8 +163,8 @@ select * from pxtest3;
 
 select gid from pg_prepared_xacts where gid ~ '^regress_' order by gid;
 
-drop TABLE "pxtest2";
+drop TABLE pxtest2;
 
-drop TABLE "pxtest3";
+drop TABLE pxtest3;
 
-drop TABLE "pxtest4";
+drop TABLE pxtest4;

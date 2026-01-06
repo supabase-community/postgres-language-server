@@ -101,22 +101,22 @@ begin;
 
 create function return_int_input(INT)
 returns INT
-as '
+as $function$
 begin
 	return $1;
 end;
-'
-language "plpgsql"
+$function$
+language plpgsql
 stable;
 
 create function return_text_input(TEXT)
 returns TEXT
-as '
+as $function$
 begin
 	return $1;
 end;
-'
-language "plpgsql"
+$function$
+language plpgsql
 stable;
 
 select return_int_input(1) in (10, 9, 2, 8, 3, 7, 4, 6, 5, 1);
@@ -225,22 +225,22 @@ create function myintin(cstring)
 returns myint
 STRICT
 immutable
-language "internal"
-as 'int4in';
+language internal
+as $function$int4in$function$;
 
 create function myintout(myint)
 returns cstring
 STRICT
 immutable
-language "internal"
-as 'int4out';
+language internal
+as $function$int4out$function$;
 
 create function myinthash(myint)
 returns INT
 STRICT
 immutable
-language "internal"
-as 'hashint4';
+language internal
+as $function$hashint4$function$;
 
 create type myint (input = myintin, output = myintout, like = INT);
 
@@ -250,7 +250,7 @@ create cast (myint as INT) without function;
 
 create function myinteq(myint, myint)
 returns BOOLEAN
-as '
+as $function$
 begin
   if $1 is null and $2 is null then
     return true;
@@ -258,18 +258,18 @@ begin
     return $1::int = $2::int;
   end if;
 end;
-'
-language "plpgsql"
+$function$
+language plpgsql
 immutable;
 
 create function myintne(myint, myint)
 returns BOOLEAN
-as '
+as $function$
 begin
   return not myinteq($1, $2);
 end;
-'
-language "plpgsql"
+$function$
+language plpgsql
 immutable;
 
 create operator = (LEFTARG = myint,

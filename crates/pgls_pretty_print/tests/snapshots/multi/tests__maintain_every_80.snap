@@ -25,7 +25,7 @@ where
   oid =
   cast('past_inh_db_parent' as REGCLASS);
 
-drop TABLE "past_inh_db_child";
+drop TABLE past_inh_db_child;
 
 set client_min_messages = error;
 
@@ -42,7 +42,7 @@ where
   oid =
   cast('past_inh_db_parent' as REGCLASS);
 
-drop TABLE "past_inh_db_parent", "past_inh_db_other";
+drop TABLE past_inh_db_parent, past_inh_db_other;
 
 reset role;
 

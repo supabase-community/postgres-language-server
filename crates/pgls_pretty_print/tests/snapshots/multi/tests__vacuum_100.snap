@@ -89,14 +89,14 @@ CLUSTER vaccluster;
 create function do_analyze()
 returns VOID
 volatile
-language "sql"
-as 'ANALYZE pg_am';
+language sql
+as $function$ANALYZE pg_am$function$;
 
 create function wrap_do_analyze(c INT)
 returns INT
 immutable
-language "sql"
-as 'SELECT $1 FROM public.do_analyze()';
+language sql
+as $function$SELECT $1 FROM public.do_analyze()$function$;
 
 create index on vaccluster using btree ((wrap_do_analyze(i)));
 
@@ -133,7 +133,7 @@ analyze past_inh_parent;
 
 select reltuples, relhassubclass from pg_class where oid = cast('past_inh_parent' as REGCLASS);
 
-drop TABLE "past_inh_child";
+drop TABLE past_inh_child;
 
 analyze past_inh_parent;
 
@@ -152,7 +152,7 @@ insert into past_parted values (1), (1);
 
 analyze past_parted;
 
-drop TABLE "past_part";
+drop TABLE past_part;
 
 select reltuples, relhassubclass from pg_class where oid = cast('past_parted' as REGCLASS);
 
@@ -243,9 +243,9 @@ vacuum (PARALLEL 0, FULL "true") tmp;
 
 reset min_parallel_index_scan_size;
 
-drop TABLE "pvactst";
+drop TABLE pvactst;
 
-drop TABLE "pvactst2";
+drop TABLE pvactst2;
 
 create table no_index_cleanup (
   i INT primary key,
@@ -344,7 +344,7 @@ vacuum (DISABLE_PAGE_SKIPPING) vac_truncate_test;
 
 select pg_relation_size('vac_truncate_test') = 0;
 
-drop TABLE "vac_truncate_test";
+drop TABLE vac_truncate_test;
 
 create table vacparted (
   a INT,
@@ -396,7 +396,7 @@ where
   relkind in ('p', 'r')
 order by relname;
 
-drop TABLE "vacparted_i";
+drop TABLE vacparted_i;
 
 vacuum vaccluster, vactst;
 
@@ -470,7 +470,7 @@ where
   )
 order by relname;
 
-drop TABLE "only_parted";
+drop TABLE only_parted;
 
 create table only_inh_parent (
   a INT primary key,
@@ -542,7 +542,7 @@ where
   )
 order by relname;
 
-drop TABLE "only_inh_parent" cascade;
+drop TABLE only_inh_parent cascade;
 
 analyze (VERBOSE) does_not_exist;
 
@@ -675,17 +675,17 @@ vacuum (ONLY_DATABASE_STATS);
 
 vacuum (ONLY_DATABASE_STATS) vactst;
 
-drop VIEW "vac_option_tab_counts";
+drop VIEW vac_option_tab_counts;
 
-drop TABLE "vac_option_tab";
+drop TABLE vac_option_tab;
 
-drop TABLE "vaccluster";
+drop TABLE vaccluster;
 
-drop TABLE "vactst";
+drop TABLE vactst;
 
-drop TABLE "vacparted";
+drop TABLE vacparted;
 
-drop TABLE "no_index_cleanup";
+drop TABLE no_index_cleanup;
 
 create table vacowned (a INT);
 
@@ -819,9 +819,9 @@ vacuum (ANALYZE) vacowned_part2;
 
 reset role;
 
-drop TABLE "vacowned";
+drop TABLE vacowned;
 
-drop TABLE "vacowned_parted";
+drop TABLE vacowned_parted;
 
 drop role regress_vacuum;
 
@@ -869,4 +869,4 @@ from
 where
   id = 2;
 
-drop TABLE "vac_rewrite_toast";
+drop TABLE vac_rewrite_toast;

@@ -196,4 +196,4 @@ create table parted_sample_2 partition of parted_sample for values in (2);
 
 select * from parted_sample TABLESAMPLE bernoulli (100);
 
-drop TABLE "parted_sample", "parted_sample_1", "parted_sample_2";
+drop TABLE parted_sample, parted_sample_1, parted_sample_2;

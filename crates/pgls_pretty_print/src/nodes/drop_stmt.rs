@@ -128,7 +128,7 @@ pub(super) fn emit_drop_stmt(e: &mut EventEmitter, n: &DropStmt) {
 fn emit_dot_separated_identifiers(e: &mut EventEmitter, items: &[pgls_query::protobuf::Node]) {
     emit_dot_separated_list_with(e, items, |item, e| {
         if let Some(pgls_query::NodeEnum::String(s)) = item.node.as_ref() {
-            super::string::emit_identifier(e, &s.sval);
+            super::string::emit_identifier_maybe_quoted(e, &s.sval);
         } else {
             super::emit_node(item, e);
         }
@@ -167,7 +167,7 @@ fn emit_drop_opclass_object(node: &pgls_query::protobuf::Node, e: &mut EventEmit
             e.token(TokenKind::IDENT("USING".to_string()));
             e.space();
             if let Some(pgls_query::NodeEnum::String(s)) = list.items[0].node.as_ref() {
-                super::string::emit_identifier(e, &s.sval);
+                super::string::emit_identifier_maybe_quoted(e, &s.sval);
             }
             return;
         }
@@ -190,7 +190,7 @@ fn emit_drop_on_object(node: &pgls_query::protobuf::Node, e: &mut EventEmitter) 
 
             // Emit object name first
             if let Some(pgls_query::NodeEnum::String(s)) = object_name.node.as_ref() {
-                super::string::emit_identifier(e, &s.sval);
+                super::string::emit_identifier_maybe_quoted(e, &s.sval);
             } else {
                 super::emit_node(object_name, e);
             }

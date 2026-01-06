@@ -72,12 +72,12 @@ create temporary table gstest_empty (
 
 create function gstest_data(v INT, out a INT, out b INT)
 returns setof RECORD
-as '
+as $function$
     begin
       return query select v, i from generate_series(1,3) i;
     end;
-  '
-language "plpgsql";
+  $function$
+language plpgsql;
 
 set enable_hashagg = 'false';
 
@@ -1631,9 +1631,9 @@ union all
 except
 select * from gs_hash_1);
 
-drop TABLE "gs_group_1";
+drop TABLE gs_group_1;
 
-drop TABLE "gs_hash_1";
+drop TABLE gs_hash_1;
 
 select
   a,

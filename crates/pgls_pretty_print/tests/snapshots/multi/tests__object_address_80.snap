@@ -60,8 +60,8 @@ create domain addr_nsp.gendomain as INT
 
 create function addr_nsp.trig()
 returns trigger
-language "plpgsql"
-as ' BEGIN END; ';
+language plpgsql
+as $function$ BEGIN END; $function$;
 
 create TRIGGER t
   before insert
@@ -72,8 +72,8 @@ create TRIGGER t
 create POLICY genpol on addr_nsp.gentable as PERMISSIVE for all to PUBLIC;
 
 create procedure addr_nsp.proc(INT)
-language "sql"
-as ' ';
+language sql
+as $procedure$ $procedure$;
 
 create server integer foreign data wrapper addr_fdw;
 
@@ -118,7 +118,7 @@ select pg_get_object_address('table', '{}', '{}');
 select pg_get_object_address('table', '{NULL}', '{}');
 
 do
-$$
+$do$
 DECLARE
     objtype text;
 BEGIN
@@ -132,7 +132,7 @@ BEGIN
         END;
     END LOOP;
 END;
-$$;
+$do$;
 
 select
   *
@@ -171,7 +171,7 @@ from
   );
 
 do
-$$
+$do$
 DECLARE
     objtype text;
     names   text[];
@@ -203,7 +203,7 @@ BEGIN
         END LOOP;
     END LOOP;
 END;
-$$;
+$do$;
 
 select pg_get_object_address('language', '{one}', '{}');
 

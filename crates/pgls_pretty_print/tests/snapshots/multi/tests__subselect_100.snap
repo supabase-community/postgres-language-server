@@ -179,7 +179,7 @@ order by q1,
 
 select * from view_unnamed_ss;
 
-drop VIEW "view_unnamed_ss";
+drop VIEW view_unnamed_ss;
 
 create view view_unnamed_ss_locking
 as select
@@ -191,7 +191,7 @@ where
   f1 = q1
 for update of unnamed_subquery;
 
-drop VIEW "view_unnamed_ss_locking";
+drop VIEW view_unnamed_ss_locking;
 
 select
   ss.f1 as "Correlated Field",
@@ -433,7 +433,7 @@ from
 
 select * from orders_view;
 
-drop TABLE "orderstest" cascade;
+drop TABLE orderstest cascade;
 
 create temporary table parts (
   partnum TEXT,
@@ -622,7 +622,7 @@ reset parallel_tuple_cost;
 
 reset parallel_setup_cost;
 
-drop TABLE "semijoin_unique_tbl";
+drop TABLE semijoin_unique_tbl;
 
 create table unique_tbl_p (
   a INT,
@@ -663,7 +663,7 @@ order by t1.a,
 
 reset enable_partitionwise_join;
 
-drop TABLE "unique_tbl_p";
+drop TABLE unique_tbl_p;
 
 create temporary table ta (
   id INT primary key,
@@ -891,8 +891,8 @@ begin;
 
 create function bogus_int8_text_eq(BIGINT, TEXT)
 returns BOOLEAN
-language "sql"
-as 'select $1::text = $2';
+language sql
+as $function$select $1::text = $2$function$;
 
 create operator = (PROCEDURE = bogus_int8_text_eq, LEFTARG = BIGINT, RIGHTARG = TEXT);
 
@@ -902,8 +902,8 @@ select * from int8_tbl where q1 in (select c1 from inner_text);
 
 create or replace function bogus_int8_text_eq(BIGINT, TEXT)
 returns BOOLEAN
-language "sql"
-as 'select $1::text = $2 and $1::text = $2';
+language sql
+as $function$select $1::text = $2 and $1::text = $2$function$;
 
 select * from int8_tbl where q1 in (select c1 from inner_text);
 
@@ -911,8 +911,8 @@ select * from int8_tbl where q1 in (select c1 from inner_text);
 
 create or replace function bogus_int8_text_eq(BIGINT, TEXT)
 returns BOOLEAN
-language "sql"
-as 'select $2 = $1::text';
+language sql
+as $function$select $2 = $1::text$function$;
 
 select * from int8_tbl where q1 in (select c1 from inner_text);
 
@@ -1406,12 +1406,12 @@ select nextval('ts1');
 create function tattle(x INT, y INT)
 returns BOOLEAN
 volatile
-language "plpgsql"
-as '
+language plpgsql
+as $function$
 begin
-  raise notice ''x = %, y = %'', x, y;
+  raise notice 'x = %, y = %', x, y;
   return x > y;
-end';
+end$function$;
 
 select * from (select 9 as x, unnest(array[1, 2, 3, 11, 12, 13]) as u) as ss where tattle(x, 8);
 
@@ -1448,19 +1448,19 @@ values
 
 create function explain_sq_limit()
 returns setof TEXT
-language "plpgsql"
-as '
+language plpgsql
+as $function$
 declare ln text;
 begin
     for ln in
         explain (analyze, summary off, timing off, costs off, buffers off)
         select * from (select pk,c2 from sq_limit order by c1,pk) as x limit 3
     loop
-        ln := regexp_replace(ln, ''Memory: \S*'',  ''Memory: xxx'');
+        ln := regexp_replace(ln, 'Memory: \S*',  'Memory: xxx');
         return next ln;
     end loop;
 end;
-';
+$function$;
 
 select * from explain_sq_limit();
 
@@ -1468,7 +1468,7 @@ select * from (select pk, c2 from sq_limit order by c1, pk) as x limit 3;
 
 drop FUNCTION explain_sq_limit();
 
-drop TABLE "sq_limit";
+drop TABLE sq_limit;
 
 begin;
 

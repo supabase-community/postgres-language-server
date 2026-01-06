@@ -366,18 +366,18 @@ select a, cast(b as VARCHAR) from collate_test3 order by 2;
 
 create function mylt(TEXT, TEXT)
 returns BOOLEAN
-language "sql"
-as ' select $1 < $2 ';
+language sql
+as $function$ select $1 < $2 $function$;
 
 create function mylt_noninline(TEXT, TEXT)
 returns BOOLEAN
-language "sql"
-as ' select $1 < $2 limit 1 ';
+language sql
+as $function$ select $1 < $2 limit 1 $function$;
 
 create function mylt_plpgsql(TEXT, TEXT)
 returns BOOLEAN
-language "plpgsql"
-as ' begin return $1 < $2; end ';
+language plpgsql
+as $function$ begin return $1 < $2; end $function$;
 
 select
   a.b as a,
@@ -407,29 +407,29 @@ order by a.b,
 
 create function mylt2(x TEXT, y TEXT)
 returns BOOLEAN
-language "plpgsql"
-as '
+language plpgsql
+as $function$
 declare
   xx text := x;
   yy text := y;
 begin
   return xx < yy;
 end
-';
+$function$;
 
 select mylt2('a', 'B' collate "en_US") as t, mylt2('a', 'B' collate "C") as f;
 
 create or replace function mylt2(x TEXT, y TEXT)
 returns BOOLEAN
-language "plpgsql"
-as '
+language plpgsql
+as $function$
 declare
   xx text COLLATE "POSIX" := x;
   yy text := y;
 begin
   return xx < yy;
 end
-';
+$function$;
 
 select mylt2('a', 'B') as f;
 
@@ -445,8 +445,8 @@ select * from unnest((select array_agg(b order by b) from collate_test3)) order 
 
 create function dup(ANYELEMENT)
 returns ANYELEMENT
-as 'select $1'
-language "sql";
+as $function$select $1$function$
+language sql;
 
 select a, dup(b) from collate_test1 order by 2;
 
@@ -480,12 +480,12 @@ create role regress_test_role;
 create schema "test_schema";
 
 do
-$$
+$do$
 BEGIN
   EXECUTE 'CREATE COLLATION test0 (locale = ' ||
           quote_literal((SELECT datcollate FROM pg_database WHERE datname = current_database())) || ');';
 END
-$$;
+$do$;
 
 create collation test0 from "C";
 
@@ -494,14 +494,14 @@ create collation if not exists test0 from "C";
 create collation if not exists test0 (locale = 'foo');
 
 do
-$$
+$do$
 BEGIN
   EXECUTE 'CREATE COLLATION test1 (lc_collate = ' ||
           quote_literal((SELECT datcollate FROM pg_database WHERE datname = current_database())) ||
           ', lc_ctype = ' ||
           quote_literal((SELECT datctype FROM pg_database WHERE datname = current_database())) || ');';
 END
-$$;
+$do$;
 
 create collation test3 (lc_collate = 'en_US.utf8');
 
@@ -540,11 +540,11 @@ where
   collname like 'test%'
 order by 1;
 
-drop COLLATION "test0", "test_schema"."test11", "test5";
+drop COLLATION test0, test_schema.test11, test5;
 
-drop COLLATION "test0";
+drop COLLATION test0;
 
-drop COLLATION if exists "test0";
+drop COLLATION if exists test0;
 
 select collname from pg_collation where collname like 'test%';
 
@@ -577,11 +577,11 @@ create table collate_dep_test4t (
 
 create index "collate_dep_test4i" on collate_dep_test4t using btree (b collate test0);
 
-drop COLLATION "test0";
+drop COLLATION test0;
 
-drop COLLATION "test0" cascade;
+drop COLLATION test0 cascade;
 
-drop TABLE "collate_dep_test1", "collate_dep_test4t";
+drop TABLE collate_dep_test1, collate_dep_test4t;
 
 drop TYPE collate_dep_test2;
 

@@ -140,7 +140,7 @@ values
 
 select * from attmp;
 
-drop TABLE "attmp";
+drop TABLE attmp;
 
 create table attmp (initial INT);
 
@@ -279,7 +279,7 @@ alter index attmp_idx
 alter index attmp_idx
   alter column 2 set STATISTICS -1;
 
-drop TABLE "attmp";
+drop TABLE attmp;
 
 create table attmp (regtable INT);
 
@@ -299,9 +299,9 @@ select * from attmp_new;
 
 select * from attmp_new2;
 
-drop TABLE "attmp_new";
+drop TABLE attmp_new;
 
-drop TABLE "attmp_new2";
+drop TABLE attmp_new2;
 
 create table part_attmp (a INT primary key)
 partition by range(a);
@@ -328,7 +328,7 @@ alter table part_at2tmp1 rename to fail;
 
 reset role;
 
-drop TABLE "part_at2tmp";
+drop TABLE part_at2tmp;
 
 create table attmp_array (id INT);
 
@@ -344,9 +344,9 @@ select typname from pg_type where oid = cast('attmp_array[]' as REGTYPE);
 
 select typname from pg_type where oid = cast('_attmp_array[]' as REGTYPE);
 
-drop TABLE "_attmp_array";
+drop TABLE _attmp_array;
 
-drop TABLE "attmp_array";
+drop TABLE attmp_array;
 
 create table attmp_array (id INT);
 
@@ -356,7 +356,7 @@ alter table attmp_array rename to _attmp_array;
 
 select typname from pg_type where oid = cast('_attmp_array[]' as REGTYPE);
 
-drop TABLE "_attmp_array";
+drop TABLE _attmp_array;
 
 alter index if exists __onek_unique1 rename to attmp_onek_unique1;
 
@@ -451,7 +451,7 @@ order by cast(cast(relation as REGCLASS) as TEXT) collate "C";
 
 commit;
 
-drop TABLE "alter_idx_rename_test_2";
+drop TABLE alter_idx_rename_test_2;
 
 create view attmp_view
 (
@@ -477,7 +477,7 @@ reset enable_seqscan;
 
 reset enable_bitmapscan;
 
-drop VIEW "attmp_view_new";
+drop VIEW attmp_view_new;
 
 alter table stud_emp rename to pg_toast_stud_emp;
 
@@ -504,13 +504,13 @@ alter table onek
 alter table onek
   add constraint "onek_unique1_constraint" unique (unique1);
 
-drop INDEX "onek_unique1_constraint";
+drop INDEX onek_unique1_constraint;
 
 alter table onek
 rename constraint onek_unique1_constraint
 to onek_unique1_constraint_foo;
 
-drop INDEX "onek_unique1_constraint_foo";
+drop INDEX onek_unique1_constraint_foo;
 
 alter table onek
   drop constraint onek_unique1_constraint_foo;
@@ -545,9 +545,9 @@ alter table constraint_rename_test
 
 alter table constraint_rename_test rename constraint con3 to con3foo;
 
-drop TABLE "constraint_rename_test2";
+drop TABLE constraint_rename_test2;
 
-drop TABLE "constraint_rename_test";
+drop TABLE constraint_rename_test;
 
 alter table if exists constraint_not_exist rename constraint con3 to con3foo;
 
@@ -570,9 +570,9 @@ create table like_constraint_rename_cache (
   like constraint_rename_cache including all
 );
 
-drop TABLE "constraint_rename_cache";
+drop TABLE constraint_rename_cache;
 
-drop TABLE "like_constraint_rename_cache";
+drop TABLE like_constraint_rename_cache;
 
 create table attmp2 (a INT primary key);
 
@@ -705,8 +705,8 @@ create function boo(INT)
 returns INT
 immutable
 STRICT
-language "plpgsql"
-as ' BEGIN RAISE NOTICE ''boo: %'', $1; RETURN $1; END; ';
+language plpgsql
+as $function$ BEGIN RAISE NOTICE 'boo: %', $1; RETURN $1; END; $function$;
 
 insert into attmp7 values (8, 18);
 
@@ -749,7 +749,7 @@ where
   as REGCLASS) and
   conname = 'check_a_is_2';
 
-drop TABLE "parent_noinh_convalid", "child_noinh_convalid";
+drop TABLE parent_noinh_convalid, child_noinh_convalid;
 
 alter table attmp5
   add constraint "attmpconstr"
@@ -758,17 +758,17 @@ alter table attmp5
   references attmp4 (a)
   match full;
 
-drop TABLE "attmp7";
+drop TABLE attmp7;
 
-drop TABLE "attmp6";
+drop TABLE attmp6;
 
-drop TABLE "attmp5";
+drop TABLE attmp5;
 
-drop TABLE "attmp4";
+drop TABLE attmp4;
 
-drop TABLE "attmp3";
+drop TABLE attmp3;
 
-drop TABLE "attmp2";
+drop TABLE attmp2;
 
 set constraint_exclusion = partition;
 
@@ -851,7 +851,7 @@ alter table fktable
   (ftest1)
   references pktable (ptest1);
 
-drop TABLE "fktable";
+drop TABLE fktable;
 
 create temporary table fktable (ftest1 BIGINT);
 
@@ -862,16 +862,16 @@ insert into fktable values (42);
 
 insert into fktable values (43);
 
-drop TABLE "fktable";
+drop TABLE fktable;
 
 create temporary table fktable (ftest1 NUMERIC);
 
 alter table fktable
   add foreign key (ftest1) references pktable;
 
-drop TABLE "fktable";
+drop TABLE fktable;
 
-drop TABLE "pktable";
+drop TABLE pktable;
 
 create temporary table pktable (ptest1 NUMERIC primary key);
 
@@ -886,9 +886,9 @@ insert into fktable values (42);
 
 insert into fktable values (43);
 
-drop TABLE "fktable";
+drop TABLE fktable;
 
-drop TABLE "pktable";
+drop TABLE pktable;
 
 create temporary table pktable (
   ptest1 INT,
@@ -907,7 +907,7 @@ alter table fktable
   ftest2)
   references pktable;
 
-drop TABLE "fktable";
+drop TABLE fktable;
 
 create temporary table fktable (
   ftest1 CIDR,
@@ -921,7 +921,7 @@ alter table fktable
   references pktable (ptest1,
   ptest2);
 
-drop TABLE "fktable";
+drop TABLE fktable;
 
 create temporary table fktable (
   ftest1 INT,
@@ -942,9 +942,9 @@ alter table fktable
   references pktable (ptest1,
   ptest2);
 
-drop TABLE "fktable";
+drop TABLE fktable;
 
-drop TABLE "pktable";
+drop TABLE pktable;
 
 create temporary table pktable (ptest1 INT primary key);
 
@@ -1047,7 +1047,7 @@ insert into atacc1 (test) values (2);
 
 insert into atacc1 (test) values (4);
 
-drop TABLE "atacc1";
+drop TABLE atacc1;
 
 create table atacc1 (test INT);
 
@@ -1058,14 +1058,14 @@ alter table atacc1
 
 insert into atacc1 (test) values (4);
 
-drop TABLE "atacc1";
+drop TABLE atacc1;
 
 create table atacc1 (test INT);
 
 alter table atacc1
   add constraint "atacc_test1" check (test1 > 3);
 
-drop TABLE "atacc1";
+drop TABLE atacc1;
 
 create table atacc1 (
   test INT,
@@ -1080,7 +1080,7 @@ insert into atacc1 (test, test2, test3) values (4, 4, 2);
 
 insert into atacc1 (test, test2, test3) values (4, 4, 5);
 
-drop TABLE "atacc1";
+drop TABLE atacc1;
 
 create table atacc1 (
   test INT check (test > 3),
@@ -1092,7 +1092,7 @@ alter table atacc1
 
 insert into atacc1 (test2, test) values (3, 4);
 
-drop TABLE "atacc1";
+drop TABLE atacc1;
 
 create table atacc1 (test INT);
 
@@ -1113,11 +1113,11 @@ insert into atacc3 (test2) values (-3);
 
 insert into atacc3 (test2) values (3);
 
-drop TABLE "atacc3";
+drop TABLE atacc3;
 
-drop TABLE "atacc2";
+drop TABLE atacc2;
 
-drop TABLE "atacc1";
+drop TABLE atacc1;
 
 create table atacc1 (test INT);
 
@@ -1179,9 +1179,9 @@ alter table atacc2
 
 select test2 from atacc2;
 
-drop TABLE "atacc2" cascade;
+drop TABLE atacc2 cascade;
 
-drop TABLE "atacc1";
+drop TABLE atacc1;
 
 create table atacc1 (test INT);
 
@@ -1200,9 +1200,9 @@ insert into atacc1 (test) values (3);
 alter table atacc2
   add constraint "foo" check (test > 0) no inherit;
 
-drop TABLE "atacc2";
+drop TABLE atacc2;
 
-drop TABLE "atacc1";
+drop TABLE atacc1;
 
 create table atacc1 (test INT);
 
@@ -1218,7 +1218,7 @@ insert into atacc1 (test) values (4);
 alter table atacc1
   alter column test type INT using 0;
 
-drop TABLE "atacc1";
+drop TABLE atacc1;
 
 create table atacc1 (test INT);
 
@@ -1231,14 +1231,14 @@ alter table atacc1
 
 insert into atacc1 (test) values (3);
 
-drop TABLE "atacc1";
+drop TABLE atacc1;
 
 create table atacc1 (test INT);
 
 alter table atacc1
   add constraint "atacc_test1" unique (test1);
 
-drop TABLE "atacc1";
+drop TABLE atacc1;
 
 create table atacc1 (
   test INT,
@@ -1259,7 +1259,7 @@ insert into atacc1 (test, test2) values (5, 4);
 
 insert into atacc1 (test, test2) values (5, 5);
 
-drop TABLE "atacc1";
+drop TABLE atacc1;
 
 create table atacc1 (
   test INT,
@@ -1274,7 +1274,7 @@ insert into atacc1 (test2, test) values (3, 3);
 
 insert into atacc1 (test2, test) values (2, 3);
 
-drop TABLE "atacc1";
+drop TABLE atacc1;
 
 create table atacc1 (
   id serial,
@@ -1301,7 +1301,7 @@ alter table atacc1
 alter table atacc1
   add constraint "atacc_oid1" primary key (id);
 
-drop TABLE "atacc1";
+drop TABLE atacc1;
 
 create table atacc1 (test INT);
 
@@ -1314,7 +1314,7 @@ alter table atacc1
 
 insert into atacc1 (test) values (3);
 
-drop TABLE "atacc1";
+drop TABLE atacc1;
 
 create table atacc1 (test INT);
 
@@ -1325,14 +1325,14 @@ alter table atacc1
 
 insert into atacc1 (test) values (3);
 
-drop TABLE "atacc1";
+drop TABLE atacc1;
 
 create table atacc1 (test INT);
 
 alter table atacc1
   add constraint "atacc_test1" primary key (test1);
 
-drop TABLE "atacc1";
+drop TABLE atacc1;
 
 create table atacc1 (test INT);
 
@@ -1344,7 +1344,7 @@ alter table atacc1
 alter table atacc1
   add column test2 INT default 0 primary key;
 
-drop TABLE "atacc1";
+drop TABLE atacc1;
 
 create table atacc1 (a INT);
 
@@ -1356,7 +1356,7 @@ alter table atacc1
     default random(),
   add primary key (a);
 
-drop TABLE "atacc1";
+drop TABLE atacc1;
 
 create table atacc1 (a INT primary key);
 
@@ -1371,7 +1371,7 @@ alter table atacc1
   validate constraint atacc1_fkey,
   alter column a type BIGINT;
 
-drop TABLE "atacc1";
+drop TABLE atacc1;
 
 create table atacc1 (
   a BIGINT,
@@ -1387,7 +1387,7 @@ alter table atacc1
   validate constraint atacc1_chk,
   alter column a type INT;
 
-drop TABLE "atacc1";
+drop TABLE atacc1;
 
 create table atacc1 (
   a BIGINT,
@@ -1403,7 +1403,7 @@ alter table atacc1
   validate constraint atacc1_chk,
   alter column a type INT;
 
-drop TABLE "atacc1";
+drop TABLE atacc1;
 
 create table atacc1 (
   test INT,
@@ -1433,7 +1433,7 @@ insert into atacc1 (test, test2) values (5, 4);
 
 insert into atacc1 (test, test2) values (5, 5);
 
-drop TABLE "atacc1";
+drop TABLE atacc1;
 
 create table atacc1 (
   test INT,
@@ -1447,7 +1447,7 @@ insert into atacc1 (test2, test) values (2, 3);
 
 insert into atacc1 (test2, test) values (1, null);
 
-drop TABLE "atacc1";
+drop TABLE atacc1;
 
 alter table pg_class
   alter column relname drop not null;
@@ -1500,9 +1500,9 @@ alter table myview
 alter table myview
   alter column test set not null;
 
-drop VIEW "myview";
+drop VIEW myview;
 
-drop TABLE "atacc1";
+drop TABLE atacc1;
 
 create table atacc1 (
   test_a INT,
@@ -1569,7 +1569,7 @@ alter table atacc1
   alter column test_b set not null,
   alter column test_a set not null;
 
-drop TABLE "atacc1";
+drop TABLE atacc1;
 
 create table atnnparted (
   id INT,
@@ -1621,9 +1621,9 @@ alter table only parent
 alter table child
   alter column a set not null;
 
-drop TABLE "child";
+drop TABLE child;
 
-drop TABLE "parent";
+drop TABLE parent;
 
 create table def_test (
   c1 INT default 5,
@@ -1680,11 +1680,11 @@ insert into def_view_test default values;
 
 select * from def_view_test;
 
-drop RULE "def_view_test_ins" on "def_view_test";
+drop RULE def_view_test_ins on def_view_test;
 
-drop VIEW "def_view_test";
+drop VIEW def_view_test;
 
-drop TABLE "def_test";
+drop TABLE def_test;
 
 alter table pg_class
   drop column relname;

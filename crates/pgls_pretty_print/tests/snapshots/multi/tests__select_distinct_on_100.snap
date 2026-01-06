@@ -104,4 +104,4 @@ order by y,
 
 reset enable_hashagg;
 
-drop TABLE "distinct_on_tbl";
+drop TABLE distinct_on_tbl;

@@ -4,7 +4,7 @@ input_file: crates/pgls_pretty_print/tests/data/multi/oidjoins.sql
 snapshot_kind: text
 ---
 do
-$$
+$do$
 declare
   fk record;
   nkeys integer;
@@ -49,4 +49,4 @@ begin
     end loop;
   end loop;
 end
-$$;
+$do$;

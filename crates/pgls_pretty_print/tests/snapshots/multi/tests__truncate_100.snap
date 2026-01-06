@@ -115,7 +115,7 @@ select * from trunc_d;
 
 select * from trunc_e;
 
-drop TABLE "truncate_a", "trunc_c", "trunc_b", "trunc_d", "trunc_e" cascade;
+drop TABLE truncate_a, trunc_c, trunc_b, trunc_d, trunc_e cascade;
 
 create table trunc_f (col1 INT primary key);
 
@@ -194,7 +194,7 @@ select * from trunc_faa;
 
 rollback;
 
-drop TABLE "trunc_f" cascade;
+drop TABLE trunc_f cascade;
 
 create table trunc_trigger_test (
   f1 INT,
@@ -213,16 +213,16 @@ create table trunc_trigger_log (
 
 create function trunctrigger()
 returns trigger
-as '
+as $function$
 declare c bigint;
 begin
-    execute ''select count(*) from '' || quote_ident(tg_table_name) into c;
+    execute 'select count(*) from ' || quote_ident(tg_table_name) into c;
     insert into trunc_trigger_log values
       (TG_OP, TG_LEVEL, TG_WHEN, TG_ARGV[0], tg_table_name, c);
     return null;
 end;
-'
-language "plpgsql";
+$function$
+language plpgsql;
 
 insert into trunc_trigger_test values (1, 'foo', 'bar'), (2, 'baz', 'quux');
 
@@ -242,7 +242,7 @@ select COUNT(*) as "Row count in test table" from trunc_trigger_test;
 
 select * from trunc_trigger_log;
 
-drop TRIGGER "t" on "trunc_trigger_test";
+drop TRIGGER t on trunc_trigger_test;
 
 truncate trunc_trigger_log;
 
@@ -264,9 +264,9 @@ select COUNT(*) as "Row count in test table" from trunc_trigger_test;
 
 select * from trunc_trigger_log;
 
-drop TABLE "trunc_trigger_test";
+drop TABLE trunc_trigger_test;
 
-drop TABLE "trunc_trigger_log";
+drop TABLE trunc_trigger_log;
 
 drop FUNCTION trunctrigger();
 
@@ -341,7 +341,7 @@ insert into truncate_a default values;
 
 select * from truncate_a;
 
-drop TABLE "truncate_a";
+drop TABLE truncate_a;
 
 select nextval('truncate_a_id1');
 
@@ -361,29 +361,29 @@ truncate only truncparted;
 
 truncate truncparted;
 
-drop TABLE "truncparted";
+drop TABLE truncparted;
 
 create function tp_ins_data()
 returns VOID
-language "plpgsql"
-as '
+language plpgsql
+as $function$
   BEGIN
 	INSERT INTO truncprim VALUES (1), (100), (150);
 	INSERT INTO truncpart VALUES (1), (100), (150);
   END
-';
+$function$;
 
 create function tp_chk_data(out pktb REGCLASS, out pkval INT, out fktb REGCLASS, out fkval INT)
 returns setof RECORD
-language "plpgsql"
-as '
+language plpgsql
+as $function$
   BEGIN
     RETURN QUERY SELECT
       pk.tableoid::regclass, pk.a, fk.tableoid::regclass, fk.a
     FROM truncprim pk FULL JOIN truncpart fk USING (a)
     ORDER BY 2, 4;
   END
-';
+$function$;
 
 create table truncprim (a INT primary key);
 
@@ -421,7 +421,7 @@ truncate truncpart;
 
 select * from tp_chk_data();
 
-drop TABLE "truncprim", "truncpart";
+drop TABLE truncprim, truncpart;
 
 drop FUNCTION tp_ins_data(), tp_chk_data();
 
@@ -453,7 +453,7 @@ truncate trunc_a1 cascade;
 
 select a from ref_b;
 
-drop TABLE "ref_b";
+drop TABLE ref_b;
 
 create table ref_c (
   c INT primary key,
@@ -473,4 +473,4 @@ select a as "from table ref_c" from ref_c;
 
 select a as "from table trunc_a" from trunc_a order by a;
 
-drop TABLE "trunc_a", "ref_c";
+drop TABLE trunc_a, ref_c;

@@ -47,7 +47,7 @@ insert into inserttest values (30, 50, repeat('x', 10000));
 
 select col1, col2, char_length(col3) from inserttest;
 
-drop TABLE "inserttest";
+drop TABLE inserttest;
 
 create table large_tuple_test (
   a INT,
@@ -68,7 +68,7 @@ insert into large_tuple_test select 3, null;
 
 insert into large_tuple_test select 4, repeat('a', 8126);
 
-drop TABLE "large_tuple_test";
+drop TABLE large_tuple_test;
 
 create type insert_test_type as (if1 INT, if2 TEXT[]);
 
@@ -128,9 +128,9 @@ do
 
 select new.f1, new.f2;
 
-drop TABLE "inserttest2";
+drop TABLE inserttest2;
 
-drop TABLE "inserttest";
+drop TABLE inserttest;
 
 create domain insert_pos_ints as INT[] check (value[1] > 0);
 
@@ -216,11 +216,11 @@ do
 
 select new.f1, new.f2;
 
-drop TABLE "inserttest2";
+drop TABLE inserttest2;
 
-drop TABLE "inserttesta";
+drop TABLE inserttesta;
 
-drop TABLE "inserttestb";
+drop TABLE inserttestb;
 
 drop DOMAIN insert_pos_ints;
 
@@ -243,9 +243,9 @@ insert into inserttestb (f1."if1") values (1);
 
 insert into inserttestb (f1."if1", f1."if2") values (1, '{foo}');
 
-drop TABLE "inserttesta";
+drop TABLE inserttesta;
 
-drop TABLE "inserttestb";
+drop TABLE inserttestb;
 
 drop DOMAIN insert_nnarray;
 
@@ -319,7 +319,7 @@ insert into part_default values (null, 2);
 
 insert into part_default values ('Zz', 2);
 
-drop TABLE "part_default";
+drop TABLE part_default;
 
 create table part_xx_yy partition of list_parted for values in ('xx', 'yy') partition by LIST(a);
 
@@ -465,9 +465,9 @@ from
   hash_parted
 order by part;
 
-drop TABLE "range_parted", "list_parted";
+drop TABLE range_parted, list_parted;
 
-drop TABLE "hash_parted";
+drop TABLE hash_parted;
 
 create table list_parted (a INT)
 partition by LIST(a);
@@ -482,7 +482,7 @@ insert into part_default values (-1);
 
 select cast(tableoid as REGCLASS), a from list_parted;
 
-drop TABLE "list_parted";
+drop TABLE list_parted;
 
 create table mlparted (
   a INT,
@@ -544,13 +544,13 @@ alter table mlparted
 
 create function mlparted11_trig_fn()
 returns trigger
-as '
+as $function$
 begin
   NEW.b := 4;
   return NEW;
 end;
-'
-language "plpgsql";
+$function$
+language plpgsql;
 
 create TRIGGER mlparted11_trig
   before insert
@@ -560,7 +560,7 @@ create TRIGGER mlparted11_trig
 
 insert into mlparted values (1, 2);
 
-drop TRIGGER "mlparted11_trig" on "mlparted11";
+drop TRIGGER mlparted11_trig on mlparted11;
 
 drop FUNCTION mlparted11_trig_fn();
 
@@ -576,7 +576,7 @@ create table lparted_nonullpart_a partition of lparted_nonullpart for values in 
 
 insert into lparted_nonullpart values (1);
 
-drop TABLE "lparted_nonullpart";
+drop TABLE lparted_nonullpart;
 
 alter table mlparted
   drop constraint check_b;
@@ -658,8 +658,8 @@ insert into mlparted values (1, 45, 'a');
 
 create function mlparted5abrtrig_func()
 returns trigger
-as ' begin new.c = ''b''; return new; end; '
-language "plpgsql";
+as $function$ begin new.c = 'b'; return new; end; $function$
+language plpgsql;
 
 create TRIGGER mlparted5abrtrig
   before insert
@@ -669,7 +669,7 @@ create TRIGGER mlparted5abrtrig
 
 insert into mlparted5 (a, b, c) values (1, 40, 'a');
 
-drop TABLE "mlparted5";
+drop TABLE mlparted5;
 
 alter table mlparted
   drop constraint check_b;
@@ -774,7 +774,7 @@ select cast(tableoid as REGCLASS), * from mlparted order by a, b, c, d;
 alter table mlparted
   drop column d;
 
-drop TABLE "mlparted5";
+drop TABLE mlparted5;
 
 create table key_desc (
   a INT,
@@ -812,7 +812,7 @@ revoke all on table key_desc_1 from regress_insert_other_user;
 
 drop role regress_insert_other_user;
 
-drop TABLE "key_desc", "key_desc_1";
+drop TABLE key_desc, key_desc_1;
 
 create table mcrparted (
   a INT,
@@ -919,7 +919,7 @@ insert into mcrparted4 values (30, 21, 20);
 
 select cast(cast(tableoid as REGCLASS) as TEXT), * from mcrparted order by 1;
 
-drop TABLE "mcrparted";
+drop TABLE mcrparted;
 
 create table brtrigpartcon (
   a INT,
@@ -931,8 +931,8 @@ create table brtrigpartcon1 partition of brtrigpartcon for values in (1);
 
 create or replace function brtrigpartcon1trigf()
 returns trigger
-as 'begin new.a := 2; return new; end'
-language "plpgsql";
+as $function$begin new.a := 2; return new; end$function$
+language plpgsql;
 
 create TRIGGER brtrigpartcon1trig
   before insert
@@ -978,9 +978,9 @@ revoke all on table brtrigpartcon from regress_coldesc_role;
 
 drop role regress_coldesc_role;
 
-drop TABLE "inserttest3";
+drop TABLE inserttest3;
 
-drop TABLE "brtrigpartcon";
+drop TABLE brtrigpartcon;
 
 drop FUNCTION brtrigpartcon1trigf();
 
@@ -1006,8 +1006,8 @@ alter table donothingbrtrig_test2
 
 create or replace function donothingbrtrig_func()
 returns trigger
-as 'begin raise notice ''b: %'', new.b; return NULL; end'
-language "plpgsql";
+as $function$begin raise notice 'b: %', new.b; return NULL; end$function$
+language plpgsql;
 
 create TRIGGER donothingbrtrig1
   before insert
@@ -1035,7 +1035,7 @@ copy donothingbrtrig_test from stdout;
 
 select cast(tableoid as REGCLASS), * from donothingbrtrig_test;
 
-drop TABLE "donothingbrtrig_test";
+drop TABLE donothingbrtrig_test;
 
 drop FUNCTION donothingbrtrig_func();
 
@@ -1103,7 +1103,7 @@ values
 
 select cast(tableoid as REGCLASS), * from mcrparted order by a, b;
 
-drop TABLE "mcrparted";
+drop TABLE mcrparted;
 
 create table returningwrtest (a INT)
 partition by LIST(a);
@@ -1130,4 +1130,4 @@ alter table returningwrtest
 
 insert into returningwrtest values (2, 'foo') returning returningwrtest;
 
-drop TABLE "returningwrtest";
+drop TABLE returningwrtest;

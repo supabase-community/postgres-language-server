@@ -42,9 +42,9 @@ update pktable set ptest1 = 1 where ptest1 = 2;
 
 select * from fktable;
 
-drop TABLE "fktable";
+drop TABLE fktable;
 
-drop TABLE "pktable";
+drop TABLE pktable;
 
 create table pktable (
   ptest1 INT,
@@ -131,9 +131,9 @@ select * from pktable;
 
 select * from fktable;
 
-drop TABLE "pktable" cascade;
+drop TABLE pktable cascade;
 
-drop TABLE "fktable";
+drop TABLE fktable;
 
 create table pktable (
   ptest1 INT,
@@ -202,11 +202,11 @@ update pktable set ptest1 = 1 where ptest1 = 2;
 
 select * from fktable;
 
-drop TABLE "pktable";
+drop TABLE pktable;
 
-drop TABLE "pktable" cascade;
+drop TABLE pktable cascade;
 
-drop TABLE "fktable";
+drop TABLE fktable;
 
 create table pktable (
   ptest1 INT primary key,
@@ -254,9 +254,9 @@ update pktable set ptest1 = 0 where ptest1 = 4;
 
 select * from pktable;
 
-drop TABLE "fktable";
+drop TABLE fktable;
 
-drop TABLE "pktable";
+drop TABLE pktable;
 
 create table pktable (
   ptest1 INT,
@@ -323,9 +323,9 @@ from
 where
   conname = 'fk_con';
 
-drop TABLE "fktable";
+drop TABLE fktable;
 
-drop TABLE "pktable";
+drop TABLE pktable;
 
 create table pktable (
   ptest1 INT,
@@ -382,9 +382,9 @@ select * from pktable;
 
 select * from fktable;
 
-drop TABLE "fktable";
+drop TABLE fktable;
 
-drop TABLE "pktable";
+drop TABLE pktable;
 
 create table pktable (
   ptest1 INT,
@@ -423,9 +423,9 @@ select * from pktable;
 
 select * from fktable;
 
-drop TABLE "fktable";
+drop TABLE fktable;
 
-drop TABLE "pktable";
+drop TABLE pktable;
 
 create table pktable (
   ptest1 INT,
@@ -492,9 +492,9 @@ select * from pktable;
 
 select * from fktable;
 
-drop TABLE "fktable";
+drop TABLE fktable;
 
-drop TABLE "pktable";
+drop TABLE pktable;
 
 create table pktable (
   ptest1 INT,
@@ -563,9 +563,9 @@ select * from pktable;
 
 select * from fktable;
 
-drop TABLE "fktable";
+drop TABLE fktable;
 
-drop TABLE "pktable";
+drop TABLE pktable;
 
 create table pktable (
   ptest1 INT,
@@ -642,9 +642,9 @@ select * from pktable;
 
 select * from fktable;
 
-drop TABLE "fktable";
+drop TABLE fktable;
 
-drop TABLE "pktable";
+drop TABLE pktable;
 
 create table pktable (
   tid INT,
@@ -709,9 +709,9 @@ delete from pktable where id = 1 or id = 2;
 
 select * from fktable order by id;
 
-drop TABLE "fktable";
+drop TABLE fktable;
 
-drop TABLE "pktable";
+drop TABLE pktable;
 
 create table pktable (
   ptest1 INT primary key,
@@ -750,7 +750,7 @@ create table fktable_fail4 (
   references pktable (tableoid)
 );
 
-drop TABLE "pktable";
+drop TABLE pktable;
 
 create table pktable (
   ptest1 INT,
@@ -760,9 +760,9 @@ create table pktable (
 
 create table fktable_fail1 (ftest1 INT references pktable (ptest1));
 
-drop TABLE "fktable_fail1";
+drop TABLE fktable_fail1;
 
-drop TABLE "pktable";
+drop TABLE pktable;
 
 create table pktable (ptest1 INT primary key);
 
@@ -782,11 +782,11 @@ update fktable set ftest1 = ftest1;
 
 update fktable set ftest1 = ftest1 + 1;
 
-drop TABLE "fktable";
+drop TABLE fktable;
 
 create table fktable (ftest1 NUMERIC references pktable);
 
-drop TABLE "pktable";
+drop TABLE pktable;
 
 create table pktable (ptest1 NUMERIC primary key);
 
@@ -802,9 +802,9 @@ update fktable set ftest1 = ftest1;
 
 update fktable set ftest1 = ftest1 + 1;
 
-drop TABLE "fktable";
+drop TABLE fktable;
 
-drop TABLE "pktable";
+drop TABLE pktable;
 
 create table pktable (
   ptest1 INT,
@@ -870,7 +870,7 @@ create table fktable (
   ptest1)
 );
 
-drop TABLE "fktable";
+drop TABLE fktable;
 
 create table fktable (
   ftest1 INT,
@@ -882,9 +882,9 @@ create table fktable (
   ptest2)
 );
 
-drop TABLE "fktable";
+drop TABLE fktable;
 
-drop TABLE "pktable";
+drop TABLE pktable;
 
 create table pktable (
   ptest1 INT,
@@ -899,7 +899,7 @@ create table pktable (
   ptest2)
 );
 
-drop TABLE "pktable";
+drop TABLE pktable;
 
 create table pktable (
   ptest1 INT,
@@ -913,7 +913,7 @@ create table pktable (
   references pktable
 );
 
-drop TABLE "pktable";
+drop TABLE pktable;
 
 create table pktable (
   ptest1 INT,
@@ -982,7 +982,7 @@ update pktable set base1 = base1 * 4 where base1 < 3;
 
 delete from pktable where base1 > 3;
 
-drop TABLE "fktable";
+drop TABLE fktable;
 
 delete from pktable;
 
@@ -1014,11 +1014,11 @@ update pktable set base1 = base1 * 4 where base1 < 3;
 
 delete from pktable where base1 > 3;
 
-drop TABLE "fktable";
+drop TABLE fktable;
 
-drop TABLE "pktable";
+drop TABLE pktable;
 
-drop TABLE "pktable_base";
+drop TABLE pktable_base;
 
 create table pktable_base (
   base1 INT not null,
@@ -1055,9 +1055,9 @@ delete from pktable where base2 = 2;
 
 delete from pktable where base1 = 2;
 
-drop TABLE "pktable";
+drop TABLE pktable;
 
-drop TABLE "pktable_base";
+drop TABLE pktable_base;
 
 create table pktable_base (base1 INT not null);
 
@@ -1115,9 +1115,9 @@ create table fktable (
   base1)
 );
 
-drop TABLE "pktable";
+drop TABLE pktable;
 
-drop TABLE "pktable_base";
+drop TABLE pktable_base;
 
 create table pktable_base (
   base1 INT not null,
@@ -1172,9 +1172,9 @@ create table pktable (
 )
 inherits (pktable_base);
 
-drop TABLE "pktable";
+drop TABLE pktable;
 
-drop TABLE "pktable_base";
+drop TABLE pktable_base;
 
 create table pktable (
   id INT primary key,
@@ -1198,7 +1198,7 @@ insert into pktable values (15, 0);
 
 commit;
 
-drop TABLE "fktable", "pktable";
+drop TABLE fktable, pktable;
 
 create table pktable (
   id INT primary key,
@@ -1229,7 +1229,7 @@ insert into fktable values (500, 1000);
 
 commit;
 
-drop TABLE "fktable", "pktable";
+drop TABLE fktable, pktable;
 
 create table pktable (
   id INT primary key,
@@ -1253,7 +1253,7 @@ insert into pktable values (2000, 3);
 
 commit;
 
-drop TABLE "fktable", "pktable";
+drop TABLE fktable, pktable;
 
 create table pktable (
   id INT primary key,
@@ -1274,7 +1274,7 @@ insert into fktable values (100, 200);
 
 commit;
 
-drop TABLE "pktable", "fktable";
+drop TABLE pktable, fktable;
 
 create temporary table pktable (
   id1 INT primary key,
@@ -1383,7 +1383,7 @@ alter table fktable
   id3,
   id2);
 
-drop TABLE "pktable", "fktable";
+drop TABLE pktable, fktable;
 
 create temporary table pktable (
   id INT primary key,
@@ -1596,7 +1596,7 @@ update pp set f1 = f1 + 1;
 
 delete from pp where f1 = 13;
 
-drop TABLE "pp", "cc";
+drop TABLE pp, cc;
 
 create temporary table pp (f1 INT primary key);
 
@@ -1619,7 +1619,7 @@ update pp set f1 = f1 + 1;
 
 delete from pp where f1 = 13;
 
-drop TABLE "pp", "cc";
+drop TABLE pp, cc;
 
 create temporary table t1 (
   a INT primary key,
@@ -1663,7 +1663,7 @@ delete from pktable2;
 
 update pktable2 set d = 5;
 
-drop TABLE "pktable2", "fktable2";
+drop TABLE pktable2, fktable2;
 
 create table pktable1 (a INT primary key);
 
@@ -1698,7 +1698,7 @@ where
   conrelid = cast('fktable2' as REGCLASS)
 order by conname;
 
-drop TABLE "pktable1", "pktable2", "fktable2";
+drop TABLE pktable1, pktable2, fktable2;
 
 create table pktable2 (f1 INT primary key);
 
@@ -1753,7 +1753,7 @@ alter table fktable2
 
 commit;
 
-drop TABLE "pktable2", "fktable2";
+drop TABLE pktable2, fktable2;
 
 create table pktable2 (
   a DOUBLE PRECISION,
@@ -1786,7 +1786,7 @@ select * from pktable2;
 
 select * from fktable2;
 
-drop TABLE "pktable2", "fktable2";
+drop TABLE pktable2, fktable2;
 
 create table fk_notpartitioned_pk (
   fdrop1 INT,
@@ -2010,7 +2010,7 @@ order by tgrelid,
 alter table fk_partitioned_fk
   drop constraint fk_partitioned_fk_a_b_fkey;
 
-drop TABLE "fk_notpartitioned_pk", "fk_partitioned_fk";
+drop TABLE fk_notpartitioned_pk, fk_partitioned_fk;
 
 create table fk_notpartitioned_pk (
   a INT,
@@ -2038,7 +2038,7 @@ alter table fk_notpartitioned_pk
 
 delete from fk_notpartitioned_pk where a = 1;
 
-drop TABLE "fk_notpartitioned_pk", "fk_partitioned_fk";
+drop TABLE fk_notpartitioned_pk, fk_partitioned_fk;
 
 create table fk_notpartitioned_pk (
   a INT,
@@ -2186,7 +2186,7 @@ where
   cast(cast(conrelid as REGCLASS) as TEXT) like 'fk_partitioned_fk%'
 order by cast(cast(oid as REGCLASS) as TEXT);
 
-drop TABLE "fk_partitioned_fk", "fk_notpartitioned_pk";
+drop TABLE fk_partitioned_fk, fk_notpartitioned_pk;
 
 create table fk_partitioned_pk (
   a INT,
@@ -2296,7 +2296,7 @@ where
   contype = 'f'
 order by cast(cast(oid as REGCLASS) as TEXT);
 
-drop TABLE "fk_notpartitioned_fk", "fk_partitioned_pk";
+drop TABLE fk_notpartitioned_fk, fk_partitioned_pk;
 
 create table fk_notpartitioned_pk (
   a INT,
@@ -2380,7 +2380,7 @@ alter table fk_partitioned_fk_full
 
 insert into fk_partitioned_fk_full values (1, null);
 
-drop TABLE "fk_partitioned_fk_full";
+drop TABLE fk_partitioned_fk_full;
 
 select
   cast(tableoid as REGCLASS),
@@ -2506,7 +2506,7 @@ delete from fk_notpartitioned_pk where b = 142857;
 
 select * from fk_partitioned_fk where a = 142857;
 
-drop TABLE "fk_partitioned_fk_2";
+drop TABLE fk_partitioned_fk_2;
 
 create table fk_partitioned_fk_2
 partition of fk_partitioned_fk
@@ -2518,7 +2518,7 @@ alter table fk_partitioned_fk
 
 begin;
 
-drop TABLE "fk_partitioned_fk";
+drop TABLE fk_partitioned_fk;
 
 rollback;
 
@@ -2527,7 +2527,7 @@ alter table fk_partitioned_fk
   fk_partitioned_fk_2
   for values in (1500, 1502);
 
-drop TABLE "fk_partitioned_fk_2";
+drop TABLE fk_partitioned_fk_2;
 
 create table fk_partitioned_fk_2 (
   b INT,
@@ -2549,7 +2549,7 @@ alter table fk_partitioned_fk
   fk_partitioned_fk_2
   for values in (1500, 1502);
 
-drop TABLE "fk_partitioned_fk_2";
+drop TABLE fk_partitioned_fk_2;
 
 alter table fk_partitioned_fk
   ATTACH partition
@@ -2574,7 +2574,7 @@ alter table fk_partitioned_fk
 
 rollback;
 
-drop TABLE "fk_partitioned_fk_2";
+drop TABLE fk_partitioned_fk_2;
 
 create table fk_partitioned_fk_4 (
   a INT,
@@ -2717,7 +2717,7 @@ alter table fk_partitioned_fk_6
   ATTACH partition
   fk_partitioned_pk_6 for values in (1);
 
-drop TABLE "fk_partitioned_pk_6", "fk_partitioned_fk_6";
+drop TABLE fk_partitioned_pk_6, fk_partitioned_fk_6;
 
 create table fk_partitioned_pk_6 (a INT primary key);
 
@@ -2744,7 +2744,7 @@ alter table fk_partitioned_fk_6
   ATTACH partition
   fk_partitioned_fk_6_1 for values in (1);
 
-drop TABLE "fk_partitioned_pk_6", "fk_partitioned_fk_6";
+drop TABLE fk_partitioned_pk_6, fk_partitioned_fk_6;
 
 create table fk_partitioned_pk_6 (a INT primary key)
 partition by LIST(a);
@@ -2760,7 +2760,7 @@ alter table fk_partitioned_fk_6
   ATTACH partition
   fk_partitioned_pk_6 for values in (1);
 
-drop TABLE "fk_partitioned_pk_6", "fk_partitioned_fk_6";
+drop TABLE fk_partitioned_pk_6, fk_partitioned_fk_6;
 
 create role regress_other_partitioned_fk_owner;
 
@@ -2812,7 +2812,7 @@ alter table other_partitioned_fk
   references fk_notpartitioned_pk (a,
   b);
 
-drop TABLE "other_partitioned_fk";
+drop TABLE other_partitioned_fk;
 
 reset role;
 
@@ -3324,7 +3324,7 @@ alter table ffk
   DETACH partition
   ffk1;
 
-drop TABLE "ffk", "ffk1";
+drop TABLE ffk, ffk1;
 
 create schema "fkpart4";
 
@@ -3372,29 +3372,29 @@ alter table droppk2
   DETACH partition
   droppk21;
 
-drop TABLE "droppk_d";
+drop TABLE droppk_d;
 
-drop TABLE "droppk2_d";
+drop TABLE droppk2_d;
 
-drop TABLE "droppk1";
+drop TABLE droppk1;
 
-drop TABLE "droppk2";
+drop TABLE droppk2;
 
-drop TABLE "droppk21";
+drop TABLE droppk21;
 
 delete from dropfk;
 
-drop TABLE "droppk_d";
+drop TABLE droppk_d;
 
-drop TABLE "droppk2_d";
+drop TABLE droppk2_d;
 
-drop TABLE "droppk1";
+drop TABLE droppk1;
 
 alter table droppk2
   DETACH partition
   droppk21;
 
-drop TABLE "droppk2";
+drop TABLE droppk2;
 
 create schema "fkpart5";
 
@@ -3572,7 +3572,7 @@ delete from ref;
 
 rollback;
 
-drop TABLE "pt", "ref";
+drop TABLE pt, ref;
 
 create table pt (
   f1 INT,
@@ -3617,7 +3617,7 @@ delete from ref;
 
 rollback;
 
-drop TABLE "pt", "ref";
+drop TABLE pt, ref;
 
 create table pt (
   f1 INT,
@@ -3655,7 +3655,7 @@ delete from ref;
 
 rollback;
 
-drop TABLE "pt", "ref";
+drop TABLE pt, ref;
 
 create table pt (
   f1 INT,
@@ -3698,7 +3698,7 @@ delete from ref;
 
 rollback;
 
-drop TABLE "pt", "ref";
+drop TABLE pt, ref;
 
 drop SCHEMA fkpart9 cascade;
 
@@ -3751,7 +3751,7 @@ delete from pk where a = 20;
 
 select cast(tableoid as REGCLASS), * from fk;
 
-drop TABLE "fk";
+drop TABLE fk;
 
 truncate pk;
 
@@ -3786,7 +3786,7 @@ delete from pk where a = 50;
 
 select cast(tableoid as REGCLASS), * from fk;
 
-drop TABLE "fk";
+drop TABLE fk;
 
 truncate pk;
 
@@ -3824,7 +3824,7 @@ update pk set a = 90 where a = 30 returning *;
 
 select cast(tableoid as REGCLASS), * from fk;
 
-drop TABLE "fk";
+drop TABLE fk;
 
 truncate pk;
 
@@ -3859,7 +3859,7 @@ update pk set a = 90 where a = 30;
 
 select cast(tableoid as REGCLASS), * from fk;
 
-drop TABLE "fk";
+drop TABLE fk;
 
 create schema "fkpart7";
 
@@ -4149,17 +4149,17 @@ update fkpart11.pk set a = a + 1 where a = 1;
 
 select cast(tableoid as REGCLASS), * from fkpart11.fk;
 
-drop TABLE "fkpart11"."fk";
+drop TABLE fkpart11.fk;
 
 create function fkpart11.print_row()
 returns trigger
-language "plpgsql"
-as '
+language plpgsql
+as $function$
   BEGIN
-    RAISE NOTICE ''TABLE: %, OP: %, OLD: %, NEW: %'', TG_RELNAME, TG_OP, OLD, NEW;
+    RAISE NOTICE 'TABLE: %, OP: %, OLD: %, NEW: %', TG_RELNAME, TG_OP, OLD, NEW;
     RETURN NULL;
   END;
-';
+$function$;
 
 create TRIGGER trig_upd_pk
   after update

@@ -739,7 +739,7 @@ create table byteatest (
 
 select * from byteatest where a like '%1%';
 
-drop TABLE "texttest", "byteatest";
+drop TABLE texttest, byteatest;
 
 select 'unknown' || ' and unknown' as "Concat unknown types";
 
@@ -820,7 +820,7 @@ from
 where
   relname = 'toasttest';
 
-drop TABLE "toasttest";
+drop TABLE toasttest;
 
 create table toasttest (f1 BYTEA);
 
@@ -843,7 +843,7 @@ select substr(f1, 99995) from toasttest;
 
 select substr(f1, 99995, 10) from toasttest;
 
-drop TABLE "toasttest";
+drop TABLE toasttest;
 
 create table toasttest (c CHAR(4096));
 
@@ -853,7 +853,7 @@ select length(c), cast(c as TEXT) from toasttest;
 
 select c from toasttest;
 
-drop TABLE "toasttest";
+drop TABLE toasttest;
 
 create table toasttest (
   f1 TEXT,
@@ -891,7 +891,7 @@ select
 from
   toasttest;
 
-drop TABLE "toasttest";
+drop TABLE toasttest;
 
 select length('abcdef') as length_6;
 

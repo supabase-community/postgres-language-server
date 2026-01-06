@@ -3,7 +3,7 @@ source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/inet.sql
 snapshot_kind: text
 ---
-drop TABLE "inet_tbl";
+drop TABLE inet_tbl;
 
 create table inet_tbl (
   c CIDR,
@@ -165,7 +165,7 @@ select * from inet_tbl where cast('192.168.1.0/24' as CIDR) >> i;
 
 set enable_seqscan = 'on';
 
-drop INDEX "inet_idx1";
+drop INDEX inet_idx1;
 
 create index "inet_idx2" on inet_tbl using gist (i inet_ops);
 
@@ -199,7 +199,7 @@ select i from inet_tbl where i << cast('192.168.1.0/24' as CIDR) order by i;
 
 set enable_seqscan = 'on';
 
-drop INDEX "inet_idx2";
+drop INDEX inet_idx2;
 
 create index "inet_idx3" on inet_tbl using spgist (i);
 
@@ -233,7 +233,7 @@ select i from inet_tbl where i << cast('192.168.1.0/24' as CIDR) order by i;
 
 set enable_seqscan = 'on';
 
-drop INDEX "inet_idx3";
+drop INDEX inet_idx3;
 
 select i, ~i as "~i" from inet_tbl;
 

@@ -255,10 +255,10 @@ select cast(1 as BOOLEAN);
 
 select cast(2 as BOOLEAN);
 
-drop TABLE "booltbl1";
+drop TABLE booltbl1;
 
-drop TABLE "booltbl2";
+drop TABLE booltbl2;
 
-drop TABLE "booltbl3";
+drop TABLE booltbl3;
 
-drop TABLE "booltbl4";
+drop TABLE booltbl4;

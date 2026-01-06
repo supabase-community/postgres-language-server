@@ -3,25 +3,25 @@ source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/numeric_big.sql
 snapshot_kind: text
 ---
-drop TABLE "num_data";
+drop TABLE num_data;
 
-drop TABLE "num_exp_add";
+drop TABLE num_exp_add;
 
-drop TABLE "num_exp_sub";
+drop TABLE num_exp_sub;
 
-drop TABLE "num_exp_div";
+drop TABLE num_exp_div;
 
-drop TABLE "num_exp_mul";
+drop TABLE num_exp_mul;
 
-drop TABLE "num_exp_sqrt";
+drop TABLE num_exp_sqrt;
 
-drop TABLE "num_exp_ln";
+drop TABLE num_exp_ln;
 
-drop TABLE "num_exp_log10";
+drop TABLE num_exp_log10;
 
-drop TABLE "num_exp_power_10_ln";
+drop TABLE num_exp_power_10_ln;
 
-drop TABLE "num_result";
+drop TABLE num_result;
 
 create table num_data (
   id INT,

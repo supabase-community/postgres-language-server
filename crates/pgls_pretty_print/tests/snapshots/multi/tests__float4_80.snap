@@ -187,15 +187,15 @@ create function xfloat4in(cstring)
 returns xfloat4
 immutable
 STRICT
-language "internal"
-as 'int4in';
+language internal
+as $function$int4in$function$;
 
 create function xfloat4out(xfloat4)
 returns cstring
 immutable
 STRICT
-language "internal"
-as 'int4out';
+language internal
+as $function$int4out$function$;
 
 create type xfloat4 (input = xfloat4in, output = xfloat4out, like = REAL);
 

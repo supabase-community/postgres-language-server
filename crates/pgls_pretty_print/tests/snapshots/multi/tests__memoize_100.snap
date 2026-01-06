@@ -5,32 +5,32 @@ snapshot_kind: text
 ---
 create function explain_memoize(query TEXT, hide_hitmiss BOOLEAN)
 returns setof TEXT
-language "plpgsql"
-as '
+language plpgsql
+as $function$
 declare
     ln text;
 begin
     for ln in
-        execute format(''explain (analyze, costs off, summary off, timing off, buffers off) %s'',
+        execute format('explain (analyze, costs off, summary off, timing off, buffers off) %s',
             query)
     loop
         if hide_hitmiss = true then
-                ln := regexp_replace(ln, ''Hits: 0'', ''Hits: Zero'');
-                ln := regexp_replace(ln, ''Hits: \d+'', ''Hits: N'');
-                ln := regexp_replace(ln, ''Misses: 0'', ''Misses: Zero'');
-                ln := regexp_replace(ln, ''Misses: \d+'', ''Misses: N'');
+                ln := regexp_replace(ln, 'Hits: 0', 'Hits: Zero');
+                ln := regexp_replace(ln, 'Hits: \d+', 'Hits: N');
+                ln := regexp_replace(ln, 'Misses: 0', 'Misses: Zero');
+                ln := regexp_replace(ln, 'Misses: \d+', 'Misses: N');
         end if;
-        ln := regexp_replace(ln, ''Evictions: 0'', ''Evictions: Zero'');
-        ln := regexp_replace(ln, ''Evictions: \d+'', ''Evictions: N'');
-        ln := regexp_replace(ln, ''Memory Usage: \d+'', ''Memory Usage: N'');
-        ln := regexp_replace(ln, ''Heap Fetches: \d+'', ''Heap Fetches: N'');
-        ln := regexp_replace(ln, ''loops=\d+'', ''loops=N'');
-        ln := regexp_replace(ln, ''Index Searches: \d+'', ''Index Searches: N'');
-        ln := regexp_replace(ln, ''Memory: \d+kB'', ''Memory: NkB'');
+        ln := regexp_replace(ln, 'Evictions: 0', 'Evictions: Zero');
+        ln := regexp_replace(ln, 'Evictions: \d+', 'Evictions: N');
+        ln := regexp_replace(ln, 'Memory Usage: \d+', 'Memory Usage: N');
+        ln := regexp_replace(ln, 'Heap Fetches: \d+', 'Heap Fetches: N');
+        ln := regexp_replace(ln, 'loops=\d+', 'loops=N');
+        ln := regexp_replace(ln, 'Index Searches: \d+', 'Index Searches: N');
+        ln := regexp_replace(ln, 'Memory: \d+kB', 'Memory: NkB');
         return next ln;
     end loop;
 end;
-';
+$function$;
 
 set enable_hashjoin = off;
 
@@ -207,7 +207,7 @@ ON t1.x = t2.t::numeric AND t1.t::numeric = t2.x;',
     false
   );
 
-drop TABLE "expr_key";
+drop TABLE expr_key;
 
 set work_mem = '64kB';
 
@@ -238,7 +238,7 @@ SELECT * FROM flt f1 INNER JOIN flt f2 ON f1.f = f2.f;', false);
 select explain_memoize('
 SELECT * FROM flt f1 INNER JOIN flt f2 ON f1.f >= f2.f;', false);
 
-drop TABLE "flt";
+drop TABLE flt;
 
 create table strtest (
   n NAME,
@@ -265,7 +265,7 @@ SELECT * FROM strtest s1 INNER JOIN strtest s2 ON s1.n >= s2.n;', false);
 select explain_memoize('
 SELECT * FROM strtest s1 INNER JOIN strtest s2 ON s1.t >= s2.t;', false);
 
-drop TABLE "strtest";
+drop TABLE strtest;
 
 set enable_partitionwise_join = 'on';
 
@@ -300,7 +300,7 @@ ON t1.a = t2.a;',
     false
   );
 
-drop TABLE "prt";
+drop TABLE prt;
 
 reset enable_partitionwise_join;
 
@@ -468,4 +468,4 @@ where
       )
   );
 
-drop TABLE "tab_anti";
+drop TABLE tab_anti;

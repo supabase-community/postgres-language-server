@@ -93,10 +93,10 @@ select c.f1 from name_tbl as c where c.f1 ~ '[0-9]';
 
 select c.f1 from name_tbl as c where c.f1 ~ '.*asdf.*';
 
-drop TABLE "name_tbl";
+drop TABLE name_tbl;
 
 do
-$$
+$do$
 DECLARE r text[];
 BEGIN
   r := parse_ident('Schemax.Tabley');
@@ -104,7 +104,7 @@ BEGIN
   r := parse_ident('"SchemaX"."TableY"');
   RAISE NOTICE '%', format('%I.%I', r[1], r[2]);
 END;
-$$;
+$do$;
 
 select parse_ident('foo.boo');
 

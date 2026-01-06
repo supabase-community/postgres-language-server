@@ -167,7 +167,7 @@ select * from foo order by f1 desc;
 
 select * from foo order by f1 desc nulls last;
 
-drop INDEX "fooi";
+drop INDEX fooi;
 
 create index "fooi" on foo using btree (f1 desc);
 
@@ -179,7 +179,7 @@ select * from foo order by f1 desc;
 
 select * from foo order by f1 desc nulls last;
 
-drop INDEX "fooi";
+drop INDEX fooi;
 
 create index "fooi" on foo using btree (f1 desc nulls last);
 
@@ -237,8 +237,8 @@ select 1 as x order by x;
 
 create function sillysrf(INT)
 returns setof INT
-as 'values (1),(10),(2),($1)'
-language "sql"
+as $function$values (1),(10),(2),($1)$function$
+language sql
 immutable;
 
 select sillysrf(42);
@@ -261,4 +261,4 @@ create table list_parted_tbl1 partition of list_parted_tbl for values in (1) par
 
 select * from list_parted_tbl;
 
-drop TABLE "list_parted_tbl";
+drop TABLE list_parted_tbl;

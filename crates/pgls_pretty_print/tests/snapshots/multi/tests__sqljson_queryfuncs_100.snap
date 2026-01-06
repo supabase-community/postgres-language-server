@@ -679,7 +679,7 @@ insert into test_jsonb_constraints values ('{"a": 1}', 1);
 
 insert into test_jsonb_constraints values ('{"a": 10}', 1);
 
-drop TABLE "test_jsonb_constraints";
+drop TABLE test_jsonb_constraints;
 
 create table test_jsonb_mutability (
   js JSONB,
@@ -918,12 +918,12 @@ using btree
 
 create or replace function ret_setint()
 returns setof INT
-as '
+as $function$
 BEGIN
-    RETURN QUERY EXECUTE ''select 1 union all select 1'';
+    RETURN QUERY EXECUTE 'select 1 union all select 1';
 END;
-'
-language "plpgsql"
+$function$
+language plpgsql
 immutable;
 
 select JSON_QUERY(js, '$'  returning INT default ret_setint() on error) from test_jsonb_mutability;
@@ -939,7 +939,7 @@ from
 
 select JSON_QUERY(js, '$'  returning INT default (select 1) on error) from test_jsonb_mutability;
 
-drop TABLE "test_jsonb_mutability";
+drop TABLE test_jsonb_mutability;
 
 drop FUNCTION ret_setint;
 
@@ -1000,7 +1000,7 @@ select
 
 drop DOMAIN queryfuncs_test_domain;
 
-drop TABLE "someparent", "somechild";
+drop TABLE someparent, somechild;
 
 select JSON_EXISTS(cast('{"a": 123}' as JSONB), '$' || '.' || 'a');
 

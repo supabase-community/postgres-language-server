@@ -80,14 +80,14 @@ select .000_005;
 select 1_000.5e0_1;
 
 do
-$$
+$do$
 DECLARE
   i int;
 BEGIN
   FOR i IN 1_001..1_003 LOOP
     RAISE NOTICE 'i = %', i;
   END LOOP;
-END $$;
+END $do$;
 
 select _100;
 
@@ -177,10 +177,10 @@ group by f1
 order by two,
   min_minus_1;
 
-drop TABLE "temp_int2";
+drop TABLE temp_int2;
 
-drop TABLE "temp_int4";
+drop TABLE temp_int4;
 
-drop TABLE "temp_float";
+drop TABLE temp_float;
 
-drop TABLE "temp_group";
+drop TABLE temp_group;

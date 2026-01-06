@@ -161,12 +161,12 @@ truncate parted_copytest;
 
 create function part_ins_func()
 returns trigger
-language "plpgsql"
-as '
+language plpgsql
+as $function$
 begin
   return new;
 end;
-';
+$function$;
 
 create TRIGGER part_ins_trig
   before insert
@@ -189,7 +189,7 @@ truncate parted_copytest;
 
 create index on parted_copytest using btree (b);
 
-drop TRIGGER "part_ins_trig" on "parted_copytest_a2";
+drop TRIGGER part_ins_trig on parted_copytest_a2;
 
 copy parted_copytest from stdout;
 
@@ -197,7 +197,7 @@ select * from parted_copytest where b = 1;
 
 select * from parted_copytest where b = 2;
 
-drop TABLE "parted_copytest";
+drop TABLE parted_copytest;
 
 create table tab_progress_reporting (
   name TEXT,
@@ -209,7 +209,7 @@ create table tab_progress_reporting (
 
 create function notice_after_tab_progress_reporting()
 returns trigger
-as '
+as $function$
 declare report record;
 begin
   -- The fields ignored here are the ones that may not remain
@@ -230,11 +230,11 @@ begin
   select into report (to_jsonb(r)) as value
     from progress_data r;
 
-  raise info ''progress: %'', report.value::text;
+  raise info 'progress: %', report.value::text;
   return new;
 end;
-'
-language "plpgsql";
+$function$
+language plpgsql;
 
 create TRIGGER check_after_tab_progress_reporting
   after insert
@@ -250,11 +250,11 @@ copy tab_progress_reporting from 'filename' where salary < 2000;
 
 copy tab_progress_reporting from stdout with (ON_ERROR 'ignore');
 
-drop TRIGGER "check_after_tab_progress_reporting" on "tab_progress_reporting";
+drop TRIGGER check_after_tab_progress_reporting on tab_progress_reporting;
 
 drop FUNCTION notice_after_tab_progress_reporting();
 
-drop TABLE "tab_progress_reporting";
+drop TABLE tab_progress_reporting;
 
 create table header_copytest (
   a INT,
@@ -283,7 +283,7 @@ copy header_copytest (c, a) from stdout;
 
 select * from header_copytest order by a;
 
-drop TABLE "header_copytest";
+drop TABLE header_copytest;
 
 create temporary table oversized_column_default (
   col1 VARCHAR(5)
@@ -297,7 +297,7 @@ copy oversized_column_default (col2) from stdout;
 
 copy oversized_column_default from stdout with (DEFAULT '');
 
-drop TABLE "oversized_column_default";
+drop TABLE oversized_column_default;
 
 create table parted_si (
   id INT not null,
@@ -324,7 +324,7 @@ group by 1,
   2
 order by 1;
 
-drop TABLE "parted_si";
+drop TABLE parted_si;
 
 begin;
 
@@ -344,4 +344,4 @@ refresh materialized view copytest_mv;
 
 copy copytest_mv (id) to stdout;
 
-drop MATERIALIZED VIEW "copytest_mv";
+drop MATERIALIZED VIEW copytest_mv;

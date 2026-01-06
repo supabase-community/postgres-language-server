@@ -221,7 +221,7 @@ group by id;
 alter table articles
   drop constraint articles_pkey;
 
-drop VIEW "fdv1";
+drop VIEW fdv1;
 
 create temporary view fdv2
 as select
@@ -247,7 +247,7 @@ alter table articles
 alter table articles_in_category
   drop constraint articles_in_category_pkey;
 
-drop VIEW "fdv2";
+drop VIEW fdv2;
 
 create temporary view fdv3
 as select
@@ -273,7 +273,7 @@ group by id;
 alter table articles
   drop constraint articles_pkey;
 
-drop VIEW "fdv3";
+drop VIEW fdv3;
 
 create temporary view fdv4
 as select
@@ -286,7 +286,7 @@ where
 alter table articles
   drop constraint articles_pkey;
 
-drop VIEW "fdv4";
+drop VIEW fdv4;
 
 prepare foo as select id, keywords, title, body, created from articles group by id;;
 

@@ -83,11 +83,18 @@ pub(super) fn emit_create_function_stmt(e: &mut EventEmitter, n: &CreateFunction
         }
     }
 
+    // Determine the dollar quote hint based on whether this is a procedure or function
+    let dollar_hint = if n.is_procedure {
+        super::DollarQuoteHint::Procedure
+    } else {
+        super::DollarQuoteHint::Function
+    };
+
     // Options
     for option in &n.options {
         if let Some(pgls_query::NodeEnum::DefElem(def_elem)) = &option.node {
             e.line(LineType::Hard);
-            format_function_option(e, def_elem);
+            format_function_option(e, def_elem, dollar_hint);
         }
     }
 
@@ -176,7 +183,11 @@ fn emit_function_parameter_list(e: &mut EventEmitter, params: &[&FunctionParamet
     }
 }
 
-pub(super) fn format_function_option(e: &mut EventEmitter, d: &pgls_query::protobuf::DefElem) {
+pub(super) fn format_function_option(
+    e: &mut EventEmitter,
+    d: &pgls_query::protobuf::DefElem,
+    hint: super::DollarQuoteHint,
+) {
     let defname_lower = d.defname.to_lowercase();
 
     match defname_lower.as_str() {
@@ -190,12 +201,14 @@ pub(super) fn format_function_option(e: &mut EventEmitter, d: &pgls_query::proto
                     if list.items.len() == 1 {
                         // Single item: either library name (C) or SQL body (SQL/plpgsql)
                         if let Some(pgls_query::NodeEnum::String(s)) = &list.items[0].node {
-                            super::emit_string_literal(e, s);
+                            // Use dollar quotes for function bodies (they handle embedded quotes better)
+                            super::emit_dollar_quoted_str_with_hint(e, &s.sval, hint);
                         } else {
                             super::emit_node(&list.items[0], e);
                         }
                     } else if list.items.len() == 2 {
                         // Two items: library and symbol for C functions
+                        // C functions use regular string literals for library paths
                         if let Some(pgls_query::NodeEnum::String(s)) = &list.items[0].node {
                             super::emit_string_literal(e, s);
                         } else {
@@ -222,7 +235,8 @@ pub(super) fn format_function_option(e: &mut EventEmitter, d: &pgls_query::proto
             e.space();
             if let Some(ref arg) = d.arg {
                 if let Some(pgls_query::NodeEnum::String(s)) = &arg.node {
-                    super::emit_identifier(e, &s.sval);
+                    // Language names like 'sql', 'plpgsql', 'c' don't need quotes
+                    super::emit_identifier_maybe_quoted(e, &s.sval);
                 } else {
                     super::emit_node(arg, e);
                 }

@@ -30,8 +30,8 @@ as select * from seclabel_tbl2;
 
 create function seclabel_four()
 returns INT
-as 'SELECT 4'
-language "sql";
+as $function$SELECT 4$function$
+language sql;
 
 create domain seclabel_domain as TEXT;
 
@@ -61,11 +61,11 @@ drop FUNCTION seclabel_four();
 
 drop DOMAIN seclabel_domain;
 
-drop VIEW "seclabel_view1";
+drop VIEW seclabel_view1;
 
-drop TABLE "seclabel_tbl1";
+drop TABLE seclabel_tbl1;
 
-drop TABLE "seclabel_tbl2";
+drop TABLE seclabel_tbl2;
 
 drop role regress_seclabel_user1;
 

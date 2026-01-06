@@ -126,13 +126,13 @@ set search_path to test_maint_search_path;
 create function fn(INT)
 returns INT
 immutable
-language "plpgsql"
-as '
+language plpgsql
+as $function$
   BEGIN
-    RAISE NOTICE ''current search_path: %'', current_setting(''search_path'');
+    RAISE NOTICE 'current search_path: %', current_setting('search_path');
     RETURN $1;
   END;
-';
+$function$;
 
 create table test_maint (i INT);
 

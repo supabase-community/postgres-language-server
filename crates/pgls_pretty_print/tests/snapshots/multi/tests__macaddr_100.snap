@@ -66,7 +66,7 @@ select b & '00:00:00:ff:ff:ff' from macaddr_data;
 
 select b | '01:02:03:04:05:06' from macaddr_data;
 
-drop TABLE "macaddr_data";
+drop TABLE macaddr_data;
 
 select pg_input_is_valid('08:00:2b:01:02:ZZ', 'macaddr');
 

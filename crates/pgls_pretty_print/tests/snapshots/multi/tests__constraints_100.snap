@@ -40,7 +40,7 @@ select * from defaultexpr_tbl;
 
 create table error_tbl (b1 BOOLEAN default (1 in (1, 2)));
 
-drop TABLE "error_tbl";
+drop TABLE error_tbl;
 
 create table check_tbl (
   x INT,
@@ -158,7 +158,7 @@ insert into sys_col_check_tbl values ('Olympia', 'Washington', true, 100);
 
 select *, cast(cast(tableoid as REGCLASS) as TEXT) from sys_col_check_tbl;
 
-drop TABLE "sys_col_check_tbl";
+drop TABLE sys_col_check_tbl;
 
 create table sys_col_check_tbl (
   city TEXT,
@@ -185,7 +185,7 @@ insert into insert_child (x, y, z, cy) values (6, 'check failed', -6, 7);
 
 select * from insert_child;
 
-drop TABLE "insert_child";
+drop TABLE insert_child;
 
 create table atacc1 (test INT check (test > 0) no inherit);
 
@@ -196,7 +196,7 @@ insert into atacc2 (test) values (-3);
 
 insert into atacc1 (test) values (-3);
 
-drop TABLE "atacc1" cascade;
+drop TABLE atacc1 cascade;
 
 create table atacc1 (
   test INT,
@@ -215,7 +215,7 @@ insert into atacc2 (test2) values (3);
 
 insert into atacc1 (test2) values (3);
 
-drop TABLE "atacc1" cascade;
+drop TABLE atacc1 cascade;
 
 delete from insert_tbl;
 

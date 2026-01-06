@@ -5,5 +5,5 @@ snapshot_kind: text
 ---
 create function add(a INT, b INT)
 returns INT
-as 'SELECT $1 + $2'
-language "sql";
+as $function$SELECT $1 + $2$function$
+language sql;

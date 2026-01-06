@@ -28,7 +28,7 @@ from
 
 create function ks_test_uniform_random()
 returns BOOLEAN
-as '
+as $function$
 DECLARE
   n int := 1000;        -- Number of samples
   c float8 := 1.94947;  -- Critical value for 99.9% confidence
@@ -44,8 +44,8 @@ BEGIN
   );
   RETURN ok;
 END
-'
-language "plpgsql";
+$function$
+language plpgsql;
 
 select ks_test_uniform_random() or ks_test_uniform_random() or ks_test_uniform_random() as uniform;
 
@@ -92,7 +92,7 @@ group by r;
 
 create function ks_test_normal_random()
 returns BOOLEAN
-as '
+as $function$
 DECLARE
   n int := 1000;        -- Number of samples
   c float8 := 1.94947;  -- Critical value for 99.9% confidence
@@ -109,8 +109,8 @@ BEGIN
   );
   RETURN ok;
 END
-'
-language "plpgsql";
+$function$
+language plpgsql;
 
 select
   ks_test_normal_random() or
@@ -310,7 +310,7 @@ from
 
 create function ks_test_uniform_random_int_in_range()
 returns BOOLEAN
-as '
+as $function$
 DECLARE
   n int := 1000;        -- Number of samples
   c float8 := 1.94947;  -- Critical value for 99.9% confidence
@@ -326,8 +326,8 @@ BEGIN
   );
   RETURN ok;
 END
-'
-language "plpgsql";
+$function$
+language plpgsql;
 
 select
   ks_test_uniform_random_int_in_range() or
@@ -337,7 +337,7 @@ select
 
 create function ks_test_uniform_random_bigint_in_range()
 returns BOOLEAN
-as '
+as $function$
 DECLARE
   n int := 1000;        -- Number of samples
   c float8 := 1.94947;  -- Critical value for 99.9% confidence
@@ -353,8 +353,8 @@ BEGIN
   );
   RETURN ok;
 END
-'
-language "plpgsql";
+$function$
+language plpgsql;
 
 select
   ks_test_uniform_random_bigint_in_range() or
@@ -364,7 +364,7 @@ select
 
 create function ks_test_uniform_random_numeric_in_range()
 returns BOOLEAN
-as '
+as $function$
 DECLARE
   n int := 1000;        -- Number of samples
   c float8 := 1.94947;  -- Critical value for 99.9% confidence
@@ -380,8 +380,8 @@ BEGIN
   );
   RETURN ok;
 END
-'
-language "plpgsql";
+$function$
+language plpgsql;
 
 select
   ks_test_uniform_random_numeric_in_range() or

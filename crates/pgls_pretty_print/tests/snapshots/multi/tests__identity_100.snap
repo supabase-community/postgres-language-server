@@ -156,7 +156,7 @@ insert into itest5 overriding user value values (default, 'hhh'), (default, 'iii
 
 select * from itest5;
 
-drop TABLE "itest5";
+drop TABLE itest5;
 
 insert into itest3 values (default, 'a');
 
@@ -260,7 +260,7 @@ insert into itestv11 overriding system value values (11, 'xyz');
 
 select * from itestv11;
 
-drop VIEW "itestv10", "itestv11";
+drop VIEW itestv10, itestv11;
 
 create table itest13 (a INT);
 

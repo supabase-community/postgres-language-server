@@ -1,8 +1,8 @@
 use pgls_query::protobuf::String as PgString;
 
 use crate::{
-    TokenKind,
     emitter::{EventEmitter, GroupKind},
+    TokenKind,
 };
 
 const RESERVED_KEYWORDS: &[&str] = &[
@@ -142,8 +142,24 @@ pub(super) fn emit_single_quoted_str(e: &mut EventEmitter, value: &str) {
     e.token(TokenKind::STRING(format!("'{escaped}'")));
 }
 
-pub(super) fn emit_dollar_quoted_str(e: &mut EventEmitter, value: &str) {
-    let delimiter = pick_dollar_delimiter(value);
+/// Hint for what kind of dollar-quoted content we're emitting.
+/// Used to pick a more meaningful delimiter tag.
+#[derive(Debug, Clone, Copy)]
+pub enum DollarQuoteHint {
+    /// Function body - prefer $function$ or $body$
+    Function,
+    /// Procedure body - prefer $procedure$ or $body$
+    Procedure,
+    /// DO block - prefer $do$ or $body$
+    Do,
+}
+
+pub(super) fn emit_dollar_quoted_str_with_hint(
+    e: &mut EventEmitter,
+    value: &str,
+    hint: DollarQuoteHint,
+) {
+    let delimiter = pick_dollar_delimiter(value, hint);
     e.token(TokenKind::DOLLAR_QUOTED_STRING(format!(
         "{delimiter}{value}{delimiter}"
     )));
@@ -179,23 +195,56 @@ fn needs_quoting(value: &str) -> bool {
     RESERVED_KEYWORDS.binary_search(&lower.as_str()).is_ok()
 }
 
-fn pick_dollar_delimiter(body: &str) -> String {
-    if !body.contains("$$") {
-        return "$$".to_string();
+/// Pick a dollar quote delimiter that doesn't conflict with the body content.
+/// Uses the hint to prefer context-appropriate tags.
+fn pick_dollar_delimiter(body: &str, hint: DollarQuoteHint) -> String {
+    // Order tags based on the hint - put the most appropriate ones first
+    let preferred_tags: &[&str] = match hint {
+        DollarQuoteHint::Function => &[
+            "$function$",
+            "$body$",
+            "$$",
+            "$procedure$",
+            "$do$",
+            "$sql$",
+            "$code$",
+            "$_$",
+        ],
+        DollarQuoteHint::Procedure => &[
+            "$procedure$",
+            "$body$",
+            "$$",
+            "$function$",
+            "$do$",
+            "$sql$",
+            "$code$",
+            "$_$",
+        ],
+        DollarQuoteHint::Do => &[
+            "$do$",
+            "$body$",
+            "$$",
+            "$function$",
+            "$procedure$",
+            "$sql$",
+            "$code$",
+            "$_$",
+        ],
+    };
+
+    for tag in preferred_tags {
+        if !body.contains(tag) {
+            return (*tag).to_string();
+        }
     }
 
+    // Fall back to numbered tags if all preferred ones conflict
     let mut counter = 0usize;
     loop {
-        let tag = if counter == 0 {
-            "$pg$".to_string()
-        } else {
-            format!("$pg{counter}$")
-        };
-
+        let tag = format!("$f{counter}$");
         if !body.contains(&tag) {
             return tag;
         }
-
         counter += 1;
     }
 }

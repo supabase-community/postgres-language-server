@@ -157,6 +157,6 @@ fetch ABSOLUTE -1 from c;
 
 commit;
 
-drop TABLE "tidrangescan";
+drop TABLE tidrangescan;
 
 reset enable_seqscan;

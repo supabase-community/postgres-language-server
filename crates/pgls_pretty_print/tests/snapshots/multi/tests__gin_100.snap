@@ -89,36 +89,36 @@ create function explain_query_json(query_sql TEXT)
 returns table (
   explain_line JSON
 )
-language "plpgsql"
-as '
+language plpgsql
+as $function$
 begin
   set enable_seqscan = off;
   set enable_bitmapscan = on;
-  return query execute ''EXPLAIN (ANALYZE, FORMAT json) '' || query_sql;
+  return query execute 'EXPLAIN (ANALYZE, FORMAT json) ' || query_sql;
 end;
-';
+$function$;
 
 create function execute_text_query_index(query_sql TEXT)
 returns setof TEXT
-language "plpgsql"
-as '
+language plpgsql
+as $function$
 begin
   set enable_seqscan = off;
   set enable_bitmapscan = on;
   return query execute query_sql;
 end;
-';
+$function$;
 
 create function execute_text_query_heap(query_sql TEXT)
 returns setof TEXT
-language "plpgsql"
-as '
+language plpgsql
+as $function$
 begin
   set enable_seqscan = on;
   set enable_bitmapscan = off;
   return query execute query_sql;
 end;
-';
+$function$;
 
 select
   query,
@@ -205,7 +205,7 @@ reset enable_seqscan;
 
 reset enable_bitmapscan;
 
-drop TABLE "t_gin_test_tbl";
+drop TABLE t_gin_test_tbl;
 
 create unlogged table t_gin_test_tbl (
   i INT[],
@@ -216,4 +216,4 @@ create index on t_gin_test_tbl using gin (i, j);
 
 insert into t_gin_test_tbl values (null, null), ('{}', null), ('{1}', '{2,3}');
 
-drop TABLE "t_gin_test_tbl";
+drop TABLE t_gin_test_tbl;

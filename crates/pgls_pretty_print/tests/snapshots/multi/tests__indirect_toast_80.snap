@@ -5,8 +5,8 @@ snapshot_kind: text
 ---
 create function make_tuple_indirect(RECORD)
 returns RECORD
-as 'regresslib'
-language "c"
+as $function$regresslib$function$
+language c
 STRICT;
 
 set default_toast_compression = pglz;
@@ -94,12 +94,12 @@ select SUBSTRING(cast(indtoasttest as TEXT) from 1 for 200) from indtoasttest;
 
 create function update_using_indirect()
 returns trigger
-language "plpgsql"
-as '
+language plpgsql
+as $function$
 BEGIN
     NEW := make_tuple_indirect(NEW);
     RETURN NEW;
-END';
+END$function$;
 
 create TRIGGER indtoasttest_update_indirect
   before insert or update
@@ -148,7 +148,7 @@ vacuum (FREEZE) indtoasttest;
 
 select SUBSTRING(cast(indtoasttest as TEXT) from 1 for 200) from indtoasttest;
 
-drop TABLE "indtoasttest";
+drop TABLE indtoasttest;
 
 drop FUNCTION update_using_indirect();
 

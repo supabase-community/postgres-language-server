@@ -9,15 +9,15 @@ create function int8alias1in(cstring)
 returns int8alias1
 STRICT
 immutable
-language "internal"
-as 'int8in';
+language internal
+as $function$int8in$function$;
 
 create function int8alias1out(int8alias1)
 returns cstring
 STRICT
 immutable
-language "internal"
-as 'int8out';
+language internal
+as $function$int8out$function$;
 
 create type int8alias1 (
   input = int8alias1in,
@@ -31,15 +31,15 @@ create function int8alias2in(cstring)
 returns int8alias2
 STRICT
 immutable
-language "internal"
-as 'int8in';
+language internal
+as $function$int8in$function$;
 
 create function int8alias2out(int8alias2)
 returns cstring
 STRICT
 immutable
-language "internal"
-as 'int8out';
+language internal
+as $function$int8out$function$;
 
 create type int8alias2 (
   input = int8alias2in,
@@ -59,8 +59,8 @@ create function int8alias1eq(int8alias1, int8alias1)
 returns BOOLEAN
 STRICT
 immutable
-language "internal"
-as 'int8eq';
+language internal
+as $function$int8eq$function$;
 
 create operator = (PROCEDURE = int8alias1eq,
 LEFTARG = int8alias1,
@@ -77,8 +77,8 @@ create function int8alias2eq(int8alias2, int8alias2)
 returns BOOLEAN
 STRICT
 immutable
-language "internal"
-as 'int8eq';
+language internal
+as $function$int8eq$function$;
 
 create operator = (PROCEDURE = int8alias2eq,
 LEFTARG = int8alias2,
@@ -95,8 +95,8 @@ create function int8alias1eq(BIGINT, int8alias1)
 returns BOOLEAN
 STRICT
 immutable
-language "internal"
-as 'int8eq';
+language internal
+as $function$int8eq$function$;
 
 create operator = (PROCEDURE = int8alias1eq,
 LEFTARG = BIGINT,
@@ -112,8 +112,8 @@ create function int8alias1eq(int8alias1, int8alias2)
 returns BOOLEAN
 STRICT
 immutable
-language "internal"
-as 'int8eq';
+language internal
+as $function$int8eq$function$;
 
 create operator = (PROCEDURE = int8alias1eq,
 LEFTARG = int8alias1,
@@ -129,8 +129,8 @@ create function int8alias1lt(int8alias1, int8alias1)
 returns BOOLEAN
 STRICT
 immutable
-language "internal"
-as 'int8lt';
+language internal
+as $function$int8lt$function$;
 
 create operator < (PROCEDURE = int8alias1lt,
 LEFTARG = int8alias1,
@@ -143,8 +143,8 @@ create function int8alias1cmp(BIGINT, int8alias1)
 returns INT
 STRICT
 immutable
-language "internal"
-as 'btint8cmp';
+language internal
+as $function$btint8cmp$function$;
 
 alter OPERATOR FAMILY integer_ops USING btree
   add FUNCTION 1 int8alias1cmp(BIGINT, int8alias1);
@@ -324,7 +324,7 @@ set enable_nestloop = 'on';
 
 set enable_mergejoin = off;
 
-drop INDEX "ec1_expr3";
+drop INDEX ec1_expr3;
 
 select
   *
@@ -493,8 +493,8 @@ create function hashint8alias1(int8alias1)
 returns INT
 STRICT
 immutable
-language "internal"
-as 'hashint8';
+language internal
+as $function$hashint8$function$;
 
 alter OPERATOR FAMILY integer_ops USING hash
   add FUNCTION 1 hashint8alias1(int8alias1);

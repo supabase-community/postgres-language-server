@@ -18,7 +18,7 @@ analyze past_inh_db_parent;
 
 select reltuples, relhassubclass from pg_class where oid = cast('past_inh_db_parent' as REGCLASS);
 
-drop TABLE "past_inh_db_child";
+drop TABLE past_inh_db_child;
 
 set client_min_messages = error;
 
@@ -28,7 +28,7 @@ reset client_min_messages;
 
 select reltuples, relhassubclass from pg_class where oid = cast('past_inh_db_parent' as REGCLASS);
 
-drop TABLE "past_inh_db_parent", "past_inh_db_other";
+drop TABLE past_inh_db_parent, past_inh_db_other;
 
 reset role;
 

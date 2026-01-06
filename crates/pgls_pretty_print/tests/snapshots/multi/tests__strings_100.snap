@@ -683,7 +683,7 @@ create table byteatest (
 
 select * from byteatest where a like '%1%';
 
-drop TABLE "texttest", "byteatest";
+drop TABLE texttest, byteatest;
 
 select 'unknown' || ' and unknown' as "Concat unknown types";
 
@@ -743,7 +743,7 @@ insert into toasttest values (repeat('1234567890', 300));
 
 select pg_relation_size(reltoastrelid) = 0 as is_empty from pg_class where relname = 'toasttest';
 
-drop TABLE "toasttest";
+drop TABLE toasttest;
 
 create table toasttest (f1 BYTEA);
 
@@ -766,7 +766,7 @@ select substr(f1, 99995) from toasttest;
 
 select substr(f1, 99995, 10) from toasttest;
 
-drop TABLE "toasttest";
+drop TABLE toasttest;
 
 create table toasttest (c CHAR(4096));
 
@@ -776,7 +776,7 @@ select length(c), cast(c as TEXT) from toasttest;
 
 select c from toasttest;
 
-drop TABLE "toasttest";
+drop TABLE toasttest;
 
 create table toasttest (
   f1 TEXT,
@@ -805,7 +805,7 @@ select substr(f1, 5, 10) as f1_data, substr(f2, 5, 10) as f2_data from toasttest
 
 select pg_column_compression(f1) as f1_comp, pg_column_compression(f2) as f2_comp from toasttest;
 
-drop TABLE "toasttest";
+drop TABLE toasttest;
 
 select length('abcdef') as length_6;
 

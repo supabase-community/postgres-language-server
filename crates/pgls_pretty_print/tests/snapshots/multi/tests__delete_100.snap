@@ -25,4 +25,4 @@ delete from delete_test where a > 25;
 
 select id, a, char_length(b) from delete_test;
 
-drop TABLE "delete_test";
+drop TABLE delete_test;

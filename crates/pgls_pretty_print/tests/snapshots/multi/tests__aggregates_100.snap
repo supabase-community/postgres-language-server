@@ -352,7 +352,7 @@ select
     as DOUBLE PRECISION[])
   );
 
-drop TABLE "regr_test";
+drop TABLE regr_test;
 
 select COUNT(four) as cnt_1000 from onek;
 
@@ -674,7 +674,7 @@ select distinct MIN(f1), MAX(f1) from minmaxtest;
 
 select distinct MIN(f1), MAX(f1) from minmaxtest;
 
-drop TABLE "minmaxtest" cascade;
+drop TABLE minmaxtest cascade;
 
 begin;
 
@@ -792,7 +792,7 @@ select x, y, z from t2 group by x, y, z;
 
 select x, y, z from t2 group by z, x, y;
 
-drop INDEX "t2_z_uidx";
+drop INDEX t2_z_uidx;
 
 create index "t2_z_uidx"
 on t2
@@ -805,7 +805,7 @@ where
 
 select y, z from t2 group by y, z;
 
-drop INDEX "t2_z_uidx";
+drop INDEX t2_z_uidx;
 
 alter table t2
   alter column z drop not null;
@@ -814,13 +814,13 @@ create unique index "t2_z_uidx" on t2 using btree (z) nulls not distinct;
 
 select y, z from t2 group by y, z;
 
-drop TABLE "t1" cascade;
+drop TABLE t1 cascade;
 
-drop TABLE "t2";
+drop TABLE t2;
 
-drop TABLE "t3";
+drop TABLE t3;
 
-drop TABLE "p_t1";
+drop TABLE p_t1;
 
 create temporary table t1 (
   f1 INT,
@@ -860,7 +860,7 @@ from
   on x0 = 0
 group by f2;
 
-drop TABLE "t1", "t2";
+drop TABLE t1, t2;
 
 select SUM(two order by two), MAX(four order by four), MIN(four order by four) from tenk1;
 
@@ -1227,7 +1227,7 @@ select * from agg_view1;
 
 select pg_get_viewdef(cast('agg_view1' as REGCLASS));
 
-drop VIEW "agg_view1";
+drop VIEW agg_view1;
 
 select
   aggfns(distinct a, b, c order by i)
@@ -1297,7 +1297,7 @@ select MIN(v) from bytea_test_table;
 
 select MAX(v) from bytea_test_table;
 
-drop TABLE "bytea_test_table";
+drop TABLE bytea_test_table;
 
 create table pagg_test (
   x INT,
@@ -1396,9 +1396,9 @@ reset parallel_tuple_cost;
 
 reset parallel_setup_cost;
 
-drop VIEW "v_pagg_test";
+drop VIEW v_pagg_test;
 
-drop TABLE "pagg_test";
+drop TABLE pagg_test;
 
 select MIN(unique1) filter (where unique1 > 100) from tenk1;
 
@@ -1772,7 +1772,7 @@ select pg_get_viewdef('aggordview1');
 
 select * from aggordview1 order by ten;
 
-drop VIEW "aggordview1";
+drop VIEW aggordview1;
 
 select least_agg(q1, q2) from int8_tbl;
 
@@ -1792,10 +1792,10 @@ create type avg_state as (total BIGINT, count BIGINT);
 
 create or replace function avg_transfn(state avg_state, n INT)
 returns avg_state
-as '
+as $function$
 declare new_state avg_state;
 begin
-	raise notice ''avg_transfn called with %'', n;
+	raise notice 'avg_transfn called with %', n;
 	if state is null then
 		if n is not null then
 			new_state.total := n;
@@ -1811,12 +1811,12 @@ begin
 
 	return null;
 end
-'
-language "plpgsql";
+$function$
+language plpgsql;
 
 create function avg_finalfn(state avg_state)
 returns INT
-as '
+as $function$
 begin
 	if state is null then
 		return NULL;
@@ -1824,12 +1824,12 @@ begin
 		return state.total / state.count;
 	end if;
 end
-'
-language "plpgsql";
+$function$
+language plpgsql;
 
 create function sum_finalfn(state avg_state)
 returns INT
-as '
+as $function$
 begin
 	if state is null then
 		return NULL;
@@ -1837,8 +1837,8 @@ begin
 		return state.total;
 	end if;
 end
-'
-language "plpgsql";
+$function$
+language plpgsql;
 
 create aggregate my_avg (INT) (stype = avg_state, sfunc = avg_transfn, finalfunc = avg_finalfn);
 
@@ -1925,10 +1925,10 @@ begin;
 
 create or replace function sum_transfn(state INT, n INT)
 returns INT
-as '
+as $function$
 declare new_state int4;
 begin
-	raise notice ''sum_transfn called with %'', n;
+	raise notice 'sum_transfn called with %', n;
 	if state is null then
 		if n is not null then
 			new_state := n;
@@ -1942,12 +1942,12 @@ begin
 
 	return null;
 end
-'
-language "plpgsql";
+$function$
+language plpgsql;
 
 create function halfsum_finalfn(state INT)
 returns INT
-as '
+as $function$
 begin
 	if state is null then
 		return NULL;
@@ -1955,8 +1955,8 @@ begin
 		return state / 2;
 	end if;
 end
-'
-language "plpgsql";
+$function$
+language plpgsql;
 
 create aggregate my_sum (INT) (stype = INT, sfunc = sum_transfn);
 
@@ -1971,14 +1971,14 @@ begin;
 create function balkifnull(BIGINT, INT)
 returns BIGINT
 STRICT
-language "plpgsql"
-as '
+language plpgsql
+as $function$
 BEGIN
     IF $1 IS NULL THEN
-       RAISE ''erroneously called with NULL argument'';
+       RAISE 'erroneously called with NULL argument';
     END IF;
     RETURN NULL;
-END';
+END$function$;
 
 create aggregate balk (
   INT
@@ -2109,7 +2109,7 @@ reset enable_nestloop;
 
 reset enable_hashjoin;
 
-drop TABLE "group_agg_pk";
+drop TABLE group_agg_pk;
 
 create table agg_sort_order (
   c1 INT primary key,
@@ -2124,9 +2124,9 @@ analyze agg_sort_order;
 
 select array_agg(c1 order by c2), c2 from agg_sort_order where c2 < 100 group by c1 order by 2;
 
-drop TABLE "agg_sort_order" cascade;
+drop TABLE agg_sort_order cascade;
 
-drop TABLE "btg";
+drop TABLE btg;
 
 reset enable_hashagg;
 
@@ -2138,14 +2138,14 @@ create function balkifnull(BIGINT, BIGINT)
 returns BIGINT
 parallel SAFE
 STRICT
-language "plpgsql"
-as '
+language plpgsql
+as $function$
 BEGIN
     IF $1 IS NULL THEN
-       RAISE ''erroneously called with NULL argument'';
+       RAISE 'erroneously called with NULL argument';
     END IF;
     RETURN NULL;
-END';
+END$function$;
 
 create aggregate balk (
   INT
@@ -2174,20 +2174,20 @@ begin;
 
 create function rwagg_sfunc(x ANYARRAY, y ANYARRAY)
 returns ANYARRAY
-language "plpgsql"
+language plpgsql
 immutable
-as '
+as $function$
 BEGIN
     RETURN array_fill(y[1], ARRAY[4]);
 END;
-';
+$function$;
 
 create function rwagg_finalfunc(x ANYARRAY)
 returns ANYARRAY
-language "plpgsql"
+language plpgsql
 STRICT
 immutable
-as '
+as $function$
 DECLARE
     res x%TYPE;
 BEGIN
@@ -2195,7 +2195,7 @@ BEGIN
     res := array_fill(x[1], ARRAY[4]);
     RETURN res;
 END;
-';
+$function$;
 
 create aggregate rwagg (
   ANYARRAY
@@ -2207,15 +2207,15 @@ create aggregate rwagg (
 
 create function eatarray(x REAL[])
 returns REAL[]
-language "plpgsql"
+language plpgsql
 STRICT
 immutable
-as '
+as $function$
 BEGIN
     x[1] := x[1] + 1;
     RETURN x;
 END;
-';
+$function$;
 
 select eatarray(rwagg(array[cast(1.0 as REAL)])), eatarray(rwagg(array[cast(1.0 as REAL)]));
 
@@ -2519,18 +2519,18 @@ union all
 except
 select * from agg_hash_4);
 
-drop TABLE "agg_group_1";
+drop TABLE agg_group_1;
 
-drop TABLE "agg_group_2";
+drop TABLE agg_group_2;
 
-drop TABLE "agg_group_3";
+drop TABLE agg_group_3;
 
-drop TABLE "agg_group_4";
+drop TABLE agg_group_4;
 
-drop TABLE "agg_hash_1";
+drop TABLE agg_hash_1;
 
-drop TABLE "agg_hash_2";
+drop TABLE agg_hash_2;
 
-drop TABLE "agg_hash_3";
+drop TABLE agg_hash_3;
 
-drop TABLE "agg_hash_4";
+drop TABLE agg_hash_4;

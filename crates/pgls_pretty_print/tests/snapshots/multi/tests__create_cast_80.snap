@@ -7,15 +7,15 @@ create type casttesttype;
 
 create function casttesttype_in(cstring)
 returns casttesttype
-as 'textin'
-language "internal"
+as $function$textin$function$
+language internal
 STRICT
 immutable;
 
 create function casttesttype_out(casttesttype)
 returns cstring
-as 'textout'
-language "internal"
+as $function$textout$function$
+language internal
 STRICT
 immutable;
 
@@ -28,8 +28,8 @@ create type casttesttype (
 
 create function casttestfunc(casttesttype)
 returns INT
-language "sql"
-as ' SELECT 1; ';
+language sql
+as $function$ SELECT 1; $function$;
 
 select casttestfunc(cast('foo' as TEXT));
 
@@ -55,8 +55,8 @@ drop CAST (INT as casttesttype);
 
 create function int4_casttesttype(INT)
 returns casttesttype
-language "sql"
-as ' SELECT (''foo''::text || $1::text)::casttesttype; ';
+language sql
+as $function$ SELECT ('foo'::text || $1::text)::casttesttype; $function$;
 
 create cast (INT as casttesttype)
 with function int4_casttesttype(INT)
@@ -68,8 +68,8 @@ drop FUNCTION int4_casttesttype(INT) cascade;
 
 create function bar_int4_text(INT)
 returns TEXT
-language "sql"
-as ' SELECT (''bar''::text || $1::text); ';
+language sql
+as $function$ SELECT ('bar'::text || $1::text); $function$;
 
 create cast (INT as casttesttype) with function bar_int4_text(INT) as IMPLICIT;
 

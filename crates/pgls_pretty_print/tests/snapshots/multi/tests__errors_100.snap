@@ -23,7 +23,7 @@ select null from pg_database group by GROUPING SETS (()) for update;
 
 delete from nonesuch;
 
-drop TABLE "nonesuch";
+drop TABLE nonesuch;
 
 alter table nonesuch rename to newnonesuch;
 
@@ -55,7 +55,7 @@ create aggregate newavg2 (
 
 create aggregate newcnt1 (sfunc = int4inc, stype = INT, initcond = '0');
 
-drop INDEX "nonesuch";
+drop INDEX nonesuch;
 
 drop AGGREGATE newcnt(nonesuch);
 
@@ -73,7 +73,7 @@ drop OPERATOR = (nonesuch, INT);
 
 drop OPERATOR = (INT, nonesuch);
 
-drop RULE "nonesuch" on "noplace";
+drop RULE nonesuch on noplace;
 
 select 1 / 0;
 

@@ -35,7 +35,7 @@ select c.* from varchar_tbl as c where c.f1 > 'a';
 
 select c.* from varchar_tbl as c where c.f1 >= 'a';
 
-drop TABLE "varchar_tbl";
+drop TABLE varchar_tbl;
 
 insert into varchar_tbl (f1) values ('abcde');
 

@@ -7,25 +7,25 @@ create event trigger "regress_event_trigger" on ddl_command_start execute functi
 
 create function test_event_trigger()
 returns event_trigger
-as '
+as $function$
 BEGIN
-    RAISE NOTICE ''test_event_trigger: % %'', tg_event, tg_tag;
+    RAISE NOTICE 'test_event_trigger: % %', tg_event, tg_tag;
 END
-'
-language "plpgsql";
+$function$
+language plpgsql;
 
 select test_event_trigger();
 
 create function test_event_trigger_arg(name TEXT)
 returns event_trigger
-as ' BEGIN RETURN 1; END '
-language "plpgsql";
+as $function$ BEGIN RETURN 1; END $function$
+language plpgsql;
 
 create function test_event_trigger_sql()
 returns event_trigger
-as '
-SELECT 1 '
-language "sql";
+as $function$
+SELECT 1 $function$
+language sql;
 
 create event trigger "regress_event_trigger"
 on elephant_bootstrap
@@ -120,33 +120,33 @@ create table event_trigger_fire5 (a INT);
 
 create function f1()
 returns INT
-language "plpgsql"
-as '
+language plpgsql
+as $function$
 begin
   create table event_trigger_fire6 (a int);
   return 0;
-end ';
+end $function$;
 
 select f1();
 
 create procedure p1()
-language "plpgsql"
-as '
+language plpgsql
+as $procedure$
 begin
   create table event_trigger_fire7 (a int);
-end ';
+end $procedure$;
 
 call p1();
 
 alter EVENT TRIGGER regress_event_trigger DISABLE;
 
 drop TABLE
-  "event_trigger_fire2",
-  "event_trigger_fire3",
-  "event_trigger_fire4",
-  "event_trigger_fire5",
-  "event_trigger_fire6",
-  "event_trigger_fire7";
+  event_trigger_fire2,
+  event_trigger_fire3,
+  event_trigger_fire4,
+  event_trigger_fire5,
+  event_trigger_fire6,
+  event_trigger_fire7;
 
 drop ROUTINE f1(), p1();
 
@@ -156,7 +156,7 @@ comment on table event_trigger_fire1 is 'here is a comment';
 
 revoke all on table event_trigger_fire1 from PUBLIC;
 
-drop TABLE "event_trigger_fire1";
+drop TABLE event_trigger_fire1;
 
 create FOREIGN DATA WRAPPER useless;
 
@@ -217,9 +217,9 @@ create table audit_tbls.schema_two_table_three (the_value TEXT);
 
 create or replace function schema_two.add(INT, INT)
 returns INT
-language "plpgsql"
+language plpgsql
 CALLED ON NULL INPUT
-as ' BEGIN RETURN coalesce($1,0) + coalesce($2,0); END; ';
+as $function$ BEGIN RETURN coalesce($1,0) + coalesce($2,0); END; $function$;
 
 create aggregate schema_two.newton (basetype = INT, sfunc = schema_two.add, stype = INT);
 
@@ -249,40 +249,40 @@ create table dropped_objects (
 
 create or replace function undroppable()
 returns event_trigger
-language "plpgsql"
-as '
+language plpgsql
+as $function$
 DECLARE
 	obj record;
 BEGIN
-	PERFORM 1 FROM pg_tables WHERE tablename = ''undroppable_objs'';
+	PERFORM 1 FROM pg_tables WHERE tablename = 'undroppable_objs';
 	IF NOT FOUND THEN
-		RAISE NOTICE ''table undroppable_objs not found, skipping'';
+		RAISE NOTICE 'table undroppable_objs not found, skipping';
 		RETURN;
 	END IF;
 	FOR obj IN
 		SELECT * FROM pg_event_trigger_dropped_objects() JOIN
 			undroppable_objs USING (object_type, object_identity)
 	LOOP
-		RAISE EXCEPTION ''object % of type % cannot be dropped'',
+		RAISE EXCEPTION 'object % of type % cannot be dropped',
 			obj.object_identity, obj.object_type;
 	END LOOP;
 END;
-';
+$function$;
 
 create event trigger "undroppable" on sql_drop execute function undroppable();
 
 create or replace function test_evtrig_dropped_objects()
 returns event_trigger
-language "plpgsql"
-as '
+language plpgsql
+as $function$
 DECLARE
     obj record;
 BEGIN
     FOR obj IN SELECT * FROM pg_event_trigger_dropped_objects()
     LOOP
-        IF obj.object_type = ''table'' THEN
-                EXECUTE format(''DROP TABLE IF EXISTS audit_tbls.%I'',
-					format(''%s_%s'', obj.schema_name, obj.object_name));
+        IF obj.object_type = 'table' THEN
+                EXECUTE format('DROP TABLE IF EXISTS audit_tbls.%I',
+					format('%s_%s', obj.schema_name, obj.object_name));
         END IF;
 
 	INSERT INTO dropped_objects
@@ -294,7 +294,7 @@ BEGIN
 		 obj.is_temporary, obj.original, obj.normal);
     END LOOP;
 END
-';
+$function$;
 
 create event trigger "regress_event_trigger_drop_objects"
 on sql_drop
@@ -328,8 +328,8 @@ drop EVENT TRIGGER undroppable;
 
 create or replace function event_trigger_report_dropped()
 returns event_trigger
-language "plpgsql"
-as '
+language plpgsql
+as $function$
 DECLARE r record;
 BEGIN
     FOR r IN SELECT * from pg_event_trigger_dropped_objects()
@@ -337,12 +337,12 @@ BEGIN
     IF NOT r.normal AND NOT r.original THEN
         CONTINUE;
     END IF;
-    RAISE NOTICE ''NORMAL: orig=% normal=% istemp=% type=% identity=% schema=% name=% addr=% args=%'',
+    RAISE NOTICE 'NORMAL: orig=% normal=% istemp=% type=% identity=% schema=% name=% addr=% args=%',
         r.original, r.normal, r.is_temporary, r.object_type,
         r.object_identity, r.schema_name, r.object_name,
         r.address_names, r.address_args;
     END LOOP;
-END; ';
+END; $function$;
 
 create event trigger "regress_event_trigger_report_dropped"
 on sql_drop
@@ -350,16 +350,16 @@ execute function event_trigger_report_dropped();
 
 create or replace function event_trigger_report_end()
 returns event_trigger
-language "plpgsql"
-as '
+language plpgsql
+as $function$
 DECLARE r RECORD;
 BEGIN
     FOR r IN SELECT * FROM pg_event_trigger_ddl_commands()
     LOOP
-        RAISE NOTICE ''END: command_tag=% type=% identity=%'',
+        RAISE NOTICE 'END: command_tag=% type=% identity=%',
             r.command_tag, r.object_type, r.object_identity;
     END LOOP;
-END; ';
+END; $function$;
 
 create event trigger "regress_event_trigger_report_end"
 on ddl_command_end
@@ -415,34 +415,34 @@ alter table evttrig.id
   alter column col_d drop IDENTITY,
   alter column col_d type INT;
 
-drop INDEX "evttrig"."one_idx";
+drop INDEX evttrig.one_idx;
 
 drop SCHEMA evttrig cascade;
 
-drop TABLE "a_temp_tbl";
+drop TABLE a_temp_tbl;
 
 create or replace function event_trigger_report_dropped()
 returns event_trigger
-language "plpgsql"
-as '
+language plpgsql
+as $function$
 DECLARE r record;
 BEGIN
     FOR r IN SELECT * from pg_event_trigger_dropped_objects()
     LOOP
-    RAISE NOTICE ''DROP: orig=% normal=% istemp=% type=% identity=% schema=% name=% addr=% args=%'',
+    RAISE NOTICE 'DROP: orig=% normal=% istemp=% type=% identity=% schema=% name=% addr=% args=%',
         r.original, r.normal, r.is_temporary, r.object_type,
         r.object_identity, r.schema_name, r.object_name,
         r.address_names, r.address_args;
     END LOOP;
-END; ';
+END; $function$;
 
 create function event_trigger_dummy_trigger()
 returns trigger
-language "plpgsql"
-as '
+language plpgsql
+as $function$
 BEGIN
     RETURN new;
-END; ';
+END; $function$;
 
 create table evtrg_nontemp_table (
   f1 INT primary key,
@@ -462,7 +462,7 @@ for all
 to PUBLIC
 USING (f2 > 0);
 
-drop TABLE "evtrg_nontemp_table";
+drop TABLE evtrg_nontemp_table;
 
 create temporary table a_temp_tbl (
   f1 INT primary key,
@@ -477,7 +477,7 @@ create TRIGGER a_temp_trig
 
 create POLICY a_temp_pol on a_temp_tbl as PERMISSIVE for all to PUBLIC USING (f2 > 0);
 
-drop TABLE "a_temp_tbl";
+drop TABLE a_temp_tbl;
 
 drop FUNCTION event_trigger_dummy_trigger();
 
@@ -491,12 +491,12 @@ select pg_event_trigger_table_rewrite_oid();
 
 create or replace function test_evtrig_no_rewrite()
 returns event_trigger
-language "plpgsql"
-as '
+language plpgsql
+as $function$
 BEGIN
-  RAISE EXCEPTION ''rewrites not allowed'';
+  RAISE EXCEPTION 'rewrites not allowed';
 END;
-';
+$function$;
 
 create event trigger "no_rewrite_allowed"
 on table_rewrite
@@ -518,14 +518,14 @@ alter table rewriteme
 
 create or replace function test_evtrig_no_rewrite()
 returns event_trigger
-language "plpgsql"
-as '
+language plpgsql
+as $function$
 BEGIN
-  RAISE NOTICE ''Table ''''%'''' is being rewritten (reason = %)'',
+  RAISE NOTICE 'Table ''%'' is being rewritten (reason = %)',
                pg_event_trigger_table_rewrite_oid()::regclass,
                pg_event_trigger_table_rewrite_reason();
 END;
-';
+$function$;
 
 alter table rewriteme
   add column onemore INT default 0,
@@ -537,7 +537,7 @@ create materialized view heapmv using heap as select 1 as a;
 alter materialized view heapmv
   set ACCESS METHOD heap2;
 
-drop MATERIALIZED VIEW "heapmv";
+drop MATERIALIZED VIEW heapmv;
 
 alter table rewriteme
   alter column foo type NUMERIC(12, 4);
@@ -563,13 +563,13 @@ rollback;
 
 create or replace function test_evtrig_no_rewrite()
 returns event_trigger
-language "plpgsql"
-as '
+language plpgsql
+as $function$
 BEGIN
-  RAISE NOTICE ''Table is being rewritten (reason = %)'',
+  RAISE NOTICE 'Table is being rewritten (reason = %)',
                pg_event_trigger_table_rewrite_reason();
 END;
-';
+$function$;
 
 create type rewritetype as (a INT);
 
@@ -585,7 +585,7 @@ create table rewritemetoo3 (a rewritetype);
 alter type rewritetype
   alter ATTRIBUTE a type VARCHAR cascade;
 
-drop TABLE "rewriteme";
+drop TABLE rewriteme;
 
 drop EVENT TRIGGER no_rewrite_allowed;
 
@@ -593,12 +593,12 @@ drop FUNCTION test_evtrig_no_rewrite();
 
 create or replace function reindex_start_command()
 returns event_trigger
-as '
+as $function$
 BEGIN
-    RAISE NOTICE ''REINDEX START: % %'', tg_event, tg_tag;
+    RAISE NOTICE 'REINDEX START: % %', tg_event, tg_tag;
 END;
-'
-language "plpgsql";
+$function$
+language plpgsql;
 
 create event trigger "regress_reindex_start"
 on ddl_command_start
@@ -607,18 +607,18 @@ execute function reindex_start_command();
 
 create function reindex_end_command()
 returns event_trigger
-as '
+as $function$
 DECLARE
     obj record;
 BEGIN
     FOR obj IN SELECT * FROM pg_event_trigger_ddl_commands()
     LOOP
-        RAISE NOTICE ''REINDEX END: command_tag=% type=% identity=%'',
+        RAISE NOTICE 'REINDEX END: command_tag=% type=% identity=%',
 	    obj.command_tag, obj.object_type, obj.object_identity;
     END LOOP;
 END;
-'
-language "plpgsql";
+$function$
+language plpgsql;
 
 create event trigger "regress_reindex_end"
 on ddl_command_end
@@ -627,8 +627,8 @@ execute function reindex_end_command();
 
 create function reindex_end_command_snap()
 returns event_trigger
-as ' BEGIN PERFORM 1; END '
-language "plpgsql";
+as $function$ BEGIN PERFORM 1; END $function$
+language plpgsql;
 
 create event trigger "regress_reindex_end_snap"
 on ddl_command_end
@@ -652,7 +652,7 @@ reindex index concur_reindex_ind;
 
 reindex (CONCURRENTLY) index concur_reindex_ind;
 
-drop INDEX "concur_reindex_ind";
+drop INDEX concur_reindex_ind;
 
 reindex table concur_reindex_tab;
 
@@ -672,7 +672,7 @@ reindex schema concur_reindex_schema;
 
 reindex (CONCURRENTLY) schema concur_reindex_schema;
 
-drop INDEX "concur_reindex_schema"."ind";
+drop INDEX concur_reindex_schema.ind;
 
 reindex schema concur_reindex_schema;
 
@@ -703,7 +703,7 @@ reindex table concur_reindex_part;
 
 reindex (CONCURRENTLY) table concur_reindex_part;
 
-drop TABLE "concur_reindex_part";
+drop TABLE concur_reindex_part;
 
 drop EVENT TRIGGER regress_reindex_start;
 
@@ -717,7 +717,7 @@ drop FUNCTION reindex_end_command_snap();
 
 drop FUNCTION reindex_start_command();
 
-drop TABLE "concur_reindex_tab";
+drop TABLE concur_reindex_tab;
 
 reset session_authorization;
 
@@ -728,30 +728,30 @@ create table event_trigger_test (
 
 create or replace function start_command()
 returns event_trigger
-as '
+as $function$
 BEGIN
-RAISE NOTICE ''% - ddl_command_start'', tg_tag;
+RAISE NOTICE '% - ddl_command_start', tg_tag;
 END;
-'
-language "plpgsql";
+$function$
+language plpgsql;
 
 create or replace function end_command()
 returns event_trigger
-as '
+as $function$
 BEGIN
-RAISE NOTICE ''% - ddl_command_end'', tg_tag;
+RAISE NOTICE '% - ddl_command_end', tg_tag;
 END;
-'
-language "plpgsql";
+$function$
+language plpgsql;
 
 create or replace function drop_sql_command()
 returns event_trigger
-as '
+as $function$
 BEGIN
-RAISE NOTICE ''% - sql_drop'', tg_tag;
+RAISE NOTICE '% - sql_drop', tg_tag;
 END;
-'
-language "plpgsql";
+$function$
+language plpgsql;
 
 create event trigger "start_rls_command"
 on ddl_command_start
@@ -774,7 +774,7 @@ alter POLICY p1 on event_trigger_test USING (true);
 
 alter policy p1 on event_trigger_test rename to p2;
 
-drop POLICY "p2" on "event_trigger_test";
+drop POLICY p2 on event_trigger_test;
 
 select
   e.evtname,
@@ -813,17 +813,17 @@ drop EVENT TRIGGER sql_drop_command;
 
 create function test_event_trigger_guc()
 returns event_trigger
-language "plpgsql"
-as '
+language plpgsql
+as $function$
 DECLARE
 	obj record;
 BEGIN
 	FOR obj IN SELECT * FROM pg_event_trigger_dropped_objects()
 	LOOP
-		RAISE NOTICE ''% dropped %'', tg_tag, obj.object_type;
+		RAISE NOTICE '% dropped %', tg_tag, obj.object_type;
 	END LOOP;
 END;
-';
+$function$;
 
 create event trigger "test_event_trigger_guc"
 on sql_drop
@@ -834,10 +834,10 @@ set event_triggers = 'on';
 
 create POLICY pguc on event_trigger_test as PERMISSIVE for all to PUBLIC USING (false);
 
-drop POLICY "pguc" on "event_trigger_test";
+drop POLICY pguc on event_trigger_test;
 
 create POLICY pguc on event_trigger_test as PERMISSIVE for all to PUBLIC USING (false);
 
 set event_triggers = off;
 
-drop POLICY "pguc" on "event_trigger_test";
+drop POLICY pguc on event_trigger_test;

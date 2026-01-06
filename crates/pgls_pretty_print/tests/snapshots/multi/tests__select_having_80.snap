@@ -68,4 +68,4 @@ select 1 as one from test_having having 1 < 2;
 
 select 1 as one from test_having where 1 / a = 1 having 1 < 2;
 
-drop TABLE "test_having";
+drop TABLE test_having;

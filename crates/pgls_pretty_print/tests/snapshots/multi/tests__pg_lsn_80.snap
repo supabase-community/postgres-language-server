@@ -25,7 +25,7 @@ select * from pg_input_error_info('16AE7F7', 'pg_lsn');
 
 select MIN(f1), MAX(f1) from pg_lsn_tbl;
 
-drop TABLE "pg_lsn_tbl";
+drop TABLE pg_lsn_tbl;
 
 select '0/16AE7F8' = cast('0/16AE7F8' as PG_LSN);
 

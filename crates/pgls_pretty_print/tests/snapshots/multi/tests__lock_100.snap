@@ -325,27 +325,27 @@ reset role;
 
 revoke UPDATE on table lock_view8 from regress_rol_lock1;
 
-drop VIEW "lock_view8";
+drop VIEW lock_view8;
 
-drop VIEW "lock_view7";
+drop VIEW lock_view7;
 
-drop VIEW "lock_view6";
+drop VIEW lock_view6;
 
-drop VIEW "lock_view5";
+drop VIEW lock_view5;
 
-drop VIEW "lock_view4";
+drop VIEW lock_view4;
 
-drop VIEW "lock_view3" cascade;
+drop VIEW lock_view3 cascade;
 
-drop VIEW "lock_view1";
+drop VIEW lock_view1;
 
-drop TABLE "lock_tbl3";
+drop TABLE lock_tbl3;
 
-drop TABLE "lock_tbl2";
+drop TABLE lock_tbl2;
 
-drop TABLE "lock_tbl1";
+drop TABLE lock_tbl1;
 
-drop TABLE "lock_tbl1a";
+drop TABLE lock_tbl1a;
 
 drop SCHEMA lock_schema1 cascade;
 
@@ -355,7 +355,7 @@ reset search_path;
 
 create function test_atomic_ops()
 returns BOOLEAN
-as 'regresslib'
-language "c";
+as $function$regresslib$function$
+language c;
 
 select test_atomic_ops();
