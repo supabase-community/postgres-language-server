@@ -772,6 +772,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "325918d6fe32f23b19878fe4b34794ae41fc19ddbe53b10571a4874d44ffd39b"
 
 [[package]]
+name = "camino"
+version = "1.2.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e629a66d692cb9ff1a1c664e41771b3dcaf961985a9774c0eb0bd1b51cf60a48"
+
+[[package]]
 name = "cast"
 version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1155,6 +1161,27 @@ dependencies = [
  "const-oid",
  "crypto-common",
  "subtle",
+]
+
+[[package]]
+name = "dir-test"
+version = "0.4.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "62c013fe825864f3e4593f36426c1fa7a74f5603f13ca8d1af7a990c1cd94a79"
+dependencies = [
+ "dir-test-macros",
+]
+
+[[package]]
+name = "dir-test-macros"
+version = "0.4.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d42f54d7b4a6bc2400fe5b338e35d1a335787585375322f49c5d5fe7b243da7e"
+dependencies = [
+ "glob",
+ "proc-macro2",
+ "quote",
+ "syn 2.0.90",
 ]
 
 [[package]]
@@ -2773,7 +2800,7 @@ dependencies = [
  "pgls_console",
  "pgls_diagnostics",
  "pgls_env",
- "pgls_matcher",
+ "pgls_pretty_print",
  "pgls_text_size",
  "rustc-hash 2.1.0",
  "schemars",
@@ -2970,6 +2997,32 @@ dependencies = [
 ]
 
 [[package]]
+name = "pgls_pretty_print"
+version = "0.0.0"
+dependencies = [
+ "camino",
+ "dir-test",
+ "insta",
+ "pgls_pretty_print_codegen",
+ "pgls_query",
+ "pgls_statement_splitter",
+ "thiserror 1.0.69",
+]
+
+[[package]]
+name = "pgls_pretty_print_codegen"
+version = "0.0.0"
+dependencies = [
+ "anyhow",
+ "convert_case",
+ "proc-macro2",
+ "prost-reflect",
+ "protox",
+ "quote",
+ "ureq",
+]
+
+[[package]]
 name = "pgls_query"
 version = "0.0.0"
 dependencies = [
@@ -3031,10 +3084,8 @@ dependencies = [
  "biome_deserialize 0.6.0",
  "insta",
  "pgls_analyse",
- "pgls_configuration",
  "pgls_console",
  "pgls_diagnostics",
- "pgls_matcher",
  "pgls_schema_cache",
  "pgls_test_utils",
  "serde",
@@ -3214,8 +3265,8 @@ dependencies = [
  "pgls_fs",
  "pgls_hover",
  "pgls_lexer",
- "pgls_matcher",
  "pgls_plpgsql_check",
+ "pgls_pretty_print",
  "pgls_query",
  "pgls_query_ext",
  "pgls_schema_cache",
@@ -3223,6 +3274,7 @@ dependencies = [
  "pgls_statement_splitter",
  "pgls_suppressions",
  "pgls_test_utils",
+ "pgls_text_edit",
  "pgls_text_size",
  "pgls_tokenizer",
  "pgls_treesitter_grammar",

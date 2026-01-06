@@ -1,0 +1,2355 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/create_index.sql
+snapshot_kind: text
+---
+create index "onek_unique1" on onek using btree (unique1 int4_ops);
+
+create index if not exists "onek_unique1" on onek using btree (unique1 int4_ops);
+
+create index "onek_unique2" on onek using btree (unique2 int4_ops);
+
+create index "onek_hundred" on onek using btree (hundred int4_ops);
+
+create index "onek_stringu1" on onek using btree (stringu1 name_ops);
+
+create index "tenk1_unique1" on tenk1 using btree (unique1 int4_ops);
+
+create index "tenk1_unique2" on tenk1 using btree (unique2 int4_ops);
+
+create index "tenk1_hundred" on tenk1 using btree (hundred int4_ops);
+
+create index "tenk1_thous_tenthous" on tenk1 using btree (thousand, tenthous);
+
+create index "tenk2_unique1" on tenk2 using btree (unique1 int4_ops);
+
+create index "tenk2_unique2" on tenk2 using btree (unique2 int4_ops);
+
+create index "tenk2_hundred" on tenk2 using btree (hundred int4_ops);
+
+create index "rix" on road using btree (name text_ops);
+
+create index "iix" on ihighway using btree (name text_ops);
+
+create index "six" on shighway using btree (name text_ops);
+
+comment on index six_wrong is 'bad index';
+
+comment on index six is 'good index';
+
+comment on index six is null;
+
+create index "onek2_u1_prtl"
+on onek2
+using btree
+(
+  unique1 int4_ops
+)
+where
+  unique1 < 20 or unique1 > 980;
+
+create index "onek2_u2_prtl"
+on onek2
+using btree
+(
+  unique2 int4_ops
+)
+where
+  stringu1 < 'B';
+
+create index "onek2_stu1_prtl"
+on onek2
+using btree
+(
+  stringu1 name_ops
+)
+where
+  onek2.stringu1 >= 'J' and onek2.stringu1 < 'K';
+
+create table slow_emp4000 (home_base box);
+
+create table fast_emp4000 (home_base box);
+
+copy slow_emp4000 from 'filename';
+
+insert into fast_emp4000 select * from slow_emp4000;
+
+analyze slow_emp4000;
+
+analyze fast_emp4000;
+
+create index "grect2ind" on fast_emp4000 using gist (home_base);
+
+create temporary table point_tbl as select * from public.point_tbl;
+
+insert into point_tbl (f1) values (null);
+
+create index "gpointind" on point_tbl using gist (f1);
+
+create temporary table gpolygon_tbl as select polygon(home_base) as f1 from slow_emp4000;
+
+insert into gpolygon_tbl values ('(1000,0,0,1000)');
+
+insert into gpolygon_tbl values ('(0,1000,1000,1000)');
+
+create temporary table gcircle_tbl as select circle(home_base) as f1 from slow_emp4000;
+
+create index "ggpolygonind" on gpolygon_tbl using gist (f1);
+
+create index "ggcircleind" on gcircle_tbl using gist (f1);
+
+set enable_seqscan = 'on';
+
+set enable_indexscan = off;
+
+set enable_bitmapscan = off;
+
+select
+  *
+from
+  fast_emp4000
+where
+  home_base <@ cast('(200,200),(2000,1000)' as box)
+order by home_base[0][0];
+
+select COUNT(*) from fast_emp4000 where home_base && cast('(1000,1000,0,0)' as box);
+
+select COUNT(*) from fast_emp4000 where home_base is null;
+
+select COUNT(*) from gpolygon_tbl where f1 && cast('(1000,1000,0,0)' as polygon);
+
+select COUNT(*) from gcircle_tbl where f1 && cast('<(500,500),500>' as circle);
+
+select COUNT(*) from point_tbl where f1 <@ cast('(0,0,100,100)' as box);
+
+select COUNT(*) from point_tbl where cast('(0,0,100,100)' as box) @> f1;
+
+select
+  COUNT(*)
+from
+  point_tbl
+where
+  f1 <@
+  cast('(0,0),(0,100),(100,100),(50,50),(100,0),(0,0)'
+  as polygon);
+
+select COUNT(*) from point_tbl where f1 <@ cast('<(50,50),50>' as circle);
+
+select COUNT(*) from point_tbl as p where p.f1 << '(0.0, 0.0)';
+
+select COUNT(*) from point_tbl as p where p.f1 >> '(0.0, 0.0)';
+
+select COUNT(*) from point_tbl as p where p.f1 <<| '(0.0, 0.0)';
+
+select COUNT(*) from point_tbl as p where p.f1 |>> '(0.0, 0.0)';
+
+select COUNT(*) from point_tbl as p where p.f1 ~= '(-5, -12)';
+
+select * from point_tbl order by f1 <-> '0,1';
+
+select * from point_tbl where f1 is null;
+
+select * from point_tbl where f1 is not null order by f1 <-> '0,1';
+
+select * from point_tbl where f1 <@ cast('(-10,-10),(10,10)' as box) order by f1 <-> '0,1';
+
+select * from gpolygon_tbl order by f1 <-> cast('(0,0)' as point) limit 10;
+
+select
+  circle_center(f1),
+  round(radius(f1)) as radius
+from
+  gcircle_tbl
+order by f1 <-> cast('(200,300)' as point)
+limit 10;
+
+set enable_seqscan = off;
+
+set enable_indexscan = 'on';
+
+set enable_bitmapscan = off;
+
+select
+  *
+from
+  fast_emp4000
+where
+  home_base <@ cast('(200,200),(2000,1000)' as box)
+order by home_base[0][0];
+
+select
+  *
+from
+  fast_emp4000
+where
+  home_base <@ cast('(200,200),(2000,1000)' as box)
+order by home_base[0][0];
+
+select COUNT(*) from fast_emp4000 where home_base && cast('(1000,1000,0,0)' as box);
+
+select COUNT(*) from fast_emp4000 where home_base && cast('(1000,1000,0,0)' as box);
+
+select COUNT(*) from fast_emp4000 where home_base is null;
+
+select COUNT(*) from fast_emp4000 where home_base is null;
+
+select COUNT(*) from gpolygon_tbl where f1 && cast('(1000,1000,0,0)' as polygon);
+
+select COUNT(*) from gpolygon_tbl where f1 && cast('(1000,1000,0,0)' as polygon);
+
+select COUNT(*) from gcircle_tbl where f1 && cast('<(500,500),500>' as circle);
+
+select COUNT(*) from gcircle_tbl where f1 && cast('<(500,500),500>' as circle);
+
+select COUNT(*) from point_tbl where f1 <@ cast('(0,0,100,100)' as box);
+
+select COUNT(*) from point_tbl where f1 <@ cast('(0,0,100,100)' as box);
+
+select COUNT(*) from point_tbl where cast('(0,0,100,100)' as box) @> f1;
+
+select COUNT(*) from point_tbl where cast('(0,0,100,100)' as box) @> f1;
+
+select
+  COUNT(*)
+from
+  point_tbl
+where
+  f1 <@
+  cast('(0,0),(0,100),(100,100),(50,50),(100,0),(0,0)'
+  as polygon);
+
+select
+  COUNT(*)
+from
+  point_tbl
+where
+  f1 <@
+  cast('(0,0),(0,100),(100,100),(50,50),(100,0),(0,0)'
+  as polygon);
+
+select COUNT(*) from point_tbl where f1 <@ cast('<(50,50),50>' as circle);
+
+select COUNT(*) from point_tbl where f1 <@ cast('<(50,50),50>' as circle);
+
+select COUNT(*) from point_tbl as p where p.f1 << '(0.0, 0.0)';
+
+select COUNT(*) from point_tbl as p where p.f1 << '(0.0, 0.0)';
+
+select COUNT(*) from point_tbl as p where p.f1 >> '(0.0, 0.0)';
+
+select COUNT(*) from point_tbl as p where p.f1 >> '(0.0, 0.0)';
+
+select COUNT(*) from point_tbl as p where p.f1 <<| '(0.0, 0.0)';
+
+select COUNT(*) from point_tbl as p where p.f1 <<| '(0.0, 0.0)';
+
+select COUNT(*) from point_tbl as p where p.f1 |>> '(0.0, 0.0)';
+
+select COUNT(*) from point_tbl as p where p.f1 |>> '(0.0, 0.0)';
+
+select COUNT(*) from point_tbl as p where p.f1 ~= '(-5, -12)';
+
+select COUNT(*) from point_tbl as p where p.f1 ~= '(-5, -12)';
+
+select * from point_tbl order by f1 <-> '0,1';
+
+select * from point_tbl order by f1 <-> '0,1';
+
+select * from point_tbl where f1 is null;
+
+select * from point_tbl where f1 is null;
+
+select * from point_tbl where f1 is not null order by f1 <-> '0,1';
+
+select * from point_tbl where f1 is not null order by f1 <-> '0,1';
+
+select * from point_tbl where f1 <@ cast('(-10,-10),(10,10)' as box) order by f1 <-> '0,1';
+
+select * from point_tbl where f1 <@ cast('(-10,-10),(10,10)' as box) order by f1 <-> '0,1';
+
+select * from gpolygon_tbl order by f1 <-> cast('(0,0)' as point) limit 10;
+
+select * from gpolygon_tbl order by f1 <-> cast('(0,0)' as point) limit 10;
+
+select
+  circle_center(f1),
+  round(radius(f1)) as radius
+from
+  gcircle_tbl
+order by f1 <-> cast('(200,300)' as point)
+limit 10;
+
+select
+  circle_center(f1),
+  round(radius(f1)) as radius
+from
+  gcircle_tbl
+order by f1 <-> cast('(200,300)' as point)
+limit 10;
+
+select
+  point(x, x),
+  (
+    select
+      f1
+    from
+      gpolygon_tbl
+    order by f1 <-> point(x, x)
+    limit 1
+  )
+  as c
+from
+  generate_series(0, 10, 1) as x;
+
+select
+  point(x, x),
+  (
+    select
+      f1
+    from
+      gpolygon_tbl
+    order by f1 <-> point(x, x)
+    limit 1
+  )
+  as c
+from
+  generate_series(0, 10, 1) as x;
+
+set enable_seqscan = off;
+
+set enable_indexscan = off;
+
+set enable_bitmapscan = 'on';
+
+select * from point_tbl where f1 <@ cast('(-10,-10),(10,10)' as box) order by f1 <-> '0,1';
+
+select * from point_tbl where f1 <@ cast('(-10,-10),(10,10)' as box) order by f1 <-> '0,1';
+
+reset enable_seqscan;
+
+reset enable_indexscan;
+
+reset enable_bitmapscan;
+
+create table array_index_op_test (
+  seqno INT,
+  i INT[],
+  t TEXT[]
+);
+
+copy array_index_op_test from 'filename';
+
+analyze array_index_op_test;
+
+select * from array_index_op_test where i = '{NULL}' order by seqno;
+
+select * from array_index_op_test where i @> '{NULL}' order by seqno;
+
+select * from array_index_op_test where i && '{NULL}' order by seqno;
+
+select * from array_index_op_test where i <@ '{NULL}' order by seqno;
+
+set enable_seqscan = off;
+
+set enable_indexscan = off;
+
+set enable_bitmapscan = 'on';
+
+create index "intarrayidx" on array_index_op_test using gin (i);
+
+select * from array_index_op_test where i @> '{32}' order by seqno;
+
+select * from array_index_op_test where i @> '{32}' order by seqno;
+
+select * from array_index_op_test where i && '{32}' order by seqno;
+
+select * from array_index_op_test where i @> '{17}' order by seqno;
+
+select * from array_index_op_test where i && '{17}' order by seqno;
+
+select * from array_index_op_test where i @> '{32,17}' order by seqno;
+
+select * from array_index_op_test where i && '{32,17}' order by seqno;
+
+select * from array_index_op_test where i <@ '{38,34,32,89}' order by seqno;
+
+select * from array_index_op_test where i = '{47,77}' order by seqno;
+
+select * from array_index_op_test where i = '{}' order by seqno;
+
+select * from array_index_op_test where i @> '{}' order by seqno;
+
+select * from array_index_op_test where i && '{}' order by seqno;
+
+select * from array_index_op_test where i <@ '{}' order by seqno;
+
+create index "textarrayidx" on array_index_op_test using gin (t);
+
+select * from array_index_op_test where t @> '{AAAAAAAA72908}' order by seqno;
+
+select * from array_index_op_test where t @> '{AAAAAAAA72908}' order by seqno;
+
+select * from array_index_op_test where t && '{AAAAAAAA72908}' order by seqno;
+
+select * from array_index_op_test where t @> '{AAAAAAAAAA646}' order by seqno;
+
+select * from array_index_op_test where t && '{AAAAAAAAAA646}' order by seqno;
+
+select * from array_index_op_test where t @> '{AAAAAAAA72908,AAAAAAAAAA646}' order by seqno;
+
+select * from array_index_op_test where t && '{AAAAAAAA72908,AAAAAAAAAA646}' order by seqno;
+
+select
+  *
+from
+  array_index_op_test
+where
+  t <@
+  '{AAAAAAAA72908,AAAAAAAAAAAAAAAAAAA17075,AA88409,AAAAAAAAAAAAAAAAAA36842,AAAAAAA48038,AAAAAAAAAAAAAA10611}'
+order by seqno;
+
+select * from array_index_op_test where t = '{AAAAAAAAAA646,A87088}' order by seqno;
+
+select * from array_index_op_test where t = '{}' order by seqno;
+
+select * from array_index_op_test where t @> '{}' order by seqno;
+
+select * from array_index_op_test where t && '{}' order by seqno;
+
+select * from array_index_op_test where t <@ '{}' order by seqno;
+
+drop INDEX "intarrayidx", "textarrayidx";
+
+create index "botharrayidx" on array_index_op_test using gin (i, t);
+
+select * from array_index_op_test where i @> '{32}' order by seqno;
+
+select * from array_index_op_test where i && '{32}' order by seqno;
+
+select * from array_index_op_test where t @> '{AAAAAAA80240}' order by seqno;
+
+select * from array_index_op_test where t && '{AAAAAAA80240}' order by seqno;
+
+select * from array_index_op_test where i @> '{32}' and t && '{AAAAAAA80240}' order by seqno;
+
+select * from array_index_op_test where i && '{32}' and t @> '{AAAAAAA80240}' order by seqno;
+
+select * from array_index_op_test where t = '{}' order by seqno;
+
+reset enable_seqscan;
+
+reset enable_indexscan;
+
+reset enable_bitmapscan;
+
+create table array_gin_test (a INT[]);
+
+insert into array_gin_test select array[1, g % 5, g] from generate_series(1, 10000) as g;
+
+create index "array_gin_test_idx" on array_gin_test using gin (a);
+
+select COUNT(*) from array_gin_test where a @> '{2}';
+
+drop TABLE "array_gin_test";
+
+create index "gin_relopts_test"
+on array_index_op_test
+using gin
+(
+  i
+)
+with (fastupdate = 'on',
+gin_pending_list_limit = 128);
+
+create unlogged table unlogged_hash_table (id INT);
+
+create index "unlogged_hash_index" on unlogged_hash_table using hash (id int4_ops);
+
+drop TABLE "unlogged_hash_table";
+
+set maintenance_work_mem = '1MB';
+
+create index "hash_tuplesort_idx"
+on tenk1
+using hash
+(
+  stringu1 name_ops
+)
+with (fillfactor = 10);
+
+select COUNT(*) from tenk1 where stringu1 = 'TVAAAA';
+
+select COUNT(*) from tenk1 where stringu1 = 'TVAAAA';
+
+set enable_seqscan = off;
+
+select COUNT(*) from tenk1 where stringu1 = 'TVAAAA' or stringu1 = 'TVAAAB';
+
+reset enable_seqscan;
+
+drop INDEX "hash_tuplesort_idx";
+
+reset maintenance_work_mem;
+
+create table unique_tbl (
+  i INT,
+  t TEXT
+);
+
+create unique index "unique_idx1" on unique_tbl using btree (i);
+
+create unique index "unique_idx2" on unique_tbl using btree (i) nulls not distinct;
+
+insert into unique_tbl values (1, 'one');
+
+insert into unique_tbl values (2, 'two');
+
+insert into unique_tbl values (3, 'three');
+
+insert into unique_tbl values (4, 'four');
+
+insert into unique_tbl values (5, 'one');
+
+insert into unique_tbl (t) values ('six');
+
+insert into unique_tbl (t) values ('seven');
+
+drop INDEX "unique_idx1", "unique_idx2";
+
+insert into unique_tbl (t) values ('seven');
+
+create unique index "unique_idx3" on unique_tbl using btree (i);
+
+create unique index "unique_idx4" on unique_tbl using btree (i) nulls not distinct;
+
+delete from unique_tbl where t = 'seven';
+
+create unique index "unique_idx4" on unique_tbl using btree (i) nulls not distinct;
+
+select pg_get_indexdef(cast('unique_idx3' as REGCLASS));
+
+select pg_get_indexdef(cast('unique_idx4' as REGCLASS));
+
+drop TABLE "unique_tbl";
+
+create table func_index_heap (
+  f1 TEXT,
+  f2 TEXT
+);
+
+create unique index "func_index_index" on func_index_heap using btree ((textcat(f1, f2)));
+
+insert into func_index_heap values ('ABC', 'DEF');
+
+insert into func_index_heap values ('AB', 'CDEFG');
+
+insert into func_index_heap values ('QWE', 'RTY');
+
+insert into func_index_heap values ('ABCD', 'EF');
+
+insert into func_index_heap values ('QWERTY');
+
+drop TABLE "func_index_heap";
+
+create table func_index_heap (
+  f1 TEXT,
+  f2 TEXT
+);
+
+create unique index "func_index_index" on func_index_heap using btree ((f1 || f2) text_ops);
+
+insert into func_index_heap values ('ABC', 'DEF');
+
+insert into func_index_heap values ('AB', 'CDEFG');
+
+insert into func_index_heap values ('QWE', 'RTY');
+
+insert into func_index_heap values ('ABCD', 'EF');
+
+insert into func_index_heap values ('QWERTY');
+
+create index on func_index_heap using btree ((f1 || f2), (row(f1, f2)));
+
+create table covering_index_heap (
+  f1 INT,
+  f2 INT,
+  f3 TEXT
+);
+
+create unique index "covering_index_index" on covering_index_heap using btree (f1, f2) include (f3);
+
+insert into covering_index_heap values (1, 1, 'AAA');
+
+insert into covering_index_heap values (1, 2, 'AAA');
+
+insert into covering_index_heap values (1, 2, 'BBB');
+
+insert into covering_index_heap values (1, 4, 'AAA');
+
+create unique index "covering_pkey" on covering_index_heap using btree (f1, f2) include (f3);
+
+alter table covering_index_heap
+  add constraint "covering_pkey" primary key using index "covering_pkey";
+
+drop TABLE "covering_index_heap";
+
+create table concur_heap (
+  f1 TEXT,
+  f2 TEXT
+);
+
+create index concurrently "concur_index1" on concur_heap using btree (f2, f1);
+
+create index concurrently if not exists "concur_index1" on concur_heap using btree (f2, f1);
+
+insert into concur_heap values ('a', 'b');
+
+insert into concur_heap values ('b', 'b');
+
+create unique index concurrently "concur_index2" on concur_heap using btree (f1);
+
+create unique index concurrently if not exists "concur_index2" on concur_heap using btree (f1);
+
+insert into concur_heap values ('b', 'x');
+
+create unique index concurrently "concur_index3" on concur_heap using btree (f2);
+
+create index concurrently "concur_index4"
+on concur_heap
+using btree
+(
+  f2
+)
+where
+  f1 = 'a';
+
+create index concurrently "concur_index5"
+on concur_heap
+using btree
+(
+  f2
+)
+where
+  f1 = 'x';
+
+create index concurrently on concur_heap using btree ((f2 || f1));
+
+begin;
+
+create index concurrently "concur_index7" on concur_heap using btree (f1);
+
+commit;
+
+create function predicate_stable()
+returns BOOLEAN
+immutable
+language "plpgsql"
+as '
+BEGIN
+  EXECUTE ''SELECT txid_current()'';
+  RETURN true;
+END; ';
+
+create index concurrently "concur_index8"
+on concur_heap
+using btree
+(
+  f1
+)
+where
+  predicate_stable();
+
+drop INDEX "concur_index8";
+
+drop FUNCTION predicate_stable();
+
+begin;
+
+create index "std_index" on concur_heap using btree (f2);
+
+commit;
+
+vacuum (FULL) concur_heap;
+
+reindex table concur_heap;
+
+delete from concur_heap where f1 = 'b';
+
+vacuum (FULL) concur_heap;
+
+reindex table concur_heap;
+
+create temporary table concur_temp (
+  f1 INT,
+  f2 TEXT
+)
+on commit preserve rows;
+
+insert into concur_temp values (1, 'foo'), (2, 'bar');
+
+create index concurrently "concur_temp_ind" on concur_temp using btree (f1);
+
+drop INDEX concurrently "concur_temp_ind";
+
+drop TABLE "concur_temp";
+
+begin;
+
+create temporary table concur_temp (
+  f1 INT,
+  f2 TEXT
+)
+on commit drop;
+
+insert into concur_temp values (1, 'foo'), (2, 'bar');
+
+create index concurrently "concur_temp_ind" on concur_temp using btree (f1);
+
+commit;
+
+insert into concur_temp values (1, 'foo'), (2, 'bar');
+
+create index concurrently "concur_temp_ind" on concur_temp using btree (f1);
+
+drop INDEX concurrently "concur_temp_ind";
+
+drop TABLE "concur_temp";
+
+drop INDEX concurrently "concur_index2";
+
+drop INDEX concurrently if exists "concur_index2";
+
+drop INDEX concurrently "concur_index2", "concur_index3";
+
+begin;
+
+drop INDEX concurrently "concur_index5";
+
+rollback;
+
+drop INDEX concurrently if exists "concur_index3";
+
+drop INDEX concurrently "concur_index4";
+
+drop INDEX concurrently "concur_index5";
+
+drop INDEX concurrently "concur_index1";
+
+drop INDEX concurrently "concur_heap_expr_idx";
+
+drop TABLE "concur_heap";
+
+create table cwi_test (
+  a INT,
+  b VARCHAR(10),
+  c CHAR(1)
+);
+
+insert into cwi_test values (1, 2), (3, 4), (5, 6);
+
+create unique index "cwi_uniq_idx" on cwi_test using btree (a, b);
+
+alter table cwi_test
+  add primary key using index "cwi_uniq_idx";
+
+create unique index "cwi_uniq2_idx" on cwi_test using btree (b, a);
+
+alter table cwi_test
+  drop constraint cwi_uniq_idx,
+  add constraint "cwi_replaced_pkey" primary key using index "cwi_uniq2_idx";
+
+drop INDEX "cwi_replaced_pkey";
+
+create unique index "cwi_uniq3_idx" on cwi_test using btree (a desc);
+
+alter table cwi_test
+  add unique using index "cwi_uniq3_idx";
+
+create unique index "cwi_uniq4_idx" on cwi_test using btree (b collate "POSIX");
+
+alter table cwi_test
+  add unique using index "cwi_uniq4_idx";
+
+drop TABLE "cwi_test";
+
+create table cwi_test (a INT)
+partition by HASH(a);
+
+create unique index on cwi_test using btree (a);
+
+alter table cwi_test
+  add primary key using index "cwi_test_a_idx";
+
+drop TABLE "cwi_test";
+
+create table cwi_test (
+  a INT,
+  b INT
+);
+
+create unique index "cwi_a_nnd" on cwi_test using btree (a) nulls not distinct;
+
+alter table cwi_test
+  add primary key using index "cwi_a_nnd";
+
+drop TABLE "cwi_test";
+
+create table syscol_table (a INT);
+
+create index on syscol_table using btree (ctid);
+
+create index on syscol_table using btree ((ctid >= '(1000,0)'));
+
+create index
+on syscol_table
+using btree
+(
+  a
+)
+where
+  ctid >= '(1000,0)';
+
+drop TABLE "syscol_table";
+
+create table onek_with_null as select unique1, unique2 from onek;
+
+insert into onek_with_null (unique1, unique2)
+values
+  (null, -1),
+  (null, 2147483647),
+  (null, null),
+  (100, null),
+  (500, null);
+
+create unique index "onek_nulltest" on onek_with_null using btree (unique2, unique1);
+
+set enable_seqscan = off;
+
+set enable_indexscan = 'on';
+
+set enable_bitmapscan = 'on';
+
+select COUNT(*) from onek_with_null where unique1 is null;
+
+select COUNT(*) from onek_with_null where unique1 is null and unique2 is null;
+
+select COUNT(*) from onek_with_null where unique1 is not null;
+
+select COUNT(*) from onek_with_null where unique1 is null and unique2 is not null;
+
+select COUNT(*) from onek_with_null where unique1 is not null and unique1 > 500;
+
+select COUNT(*) from onek_with_null where unique1 is null and unique1 > 500;
+
+select
+  unique1,
+  unique2
+from
+  onek_with_null
+where
+  unique1 = 500
+order by unique2 desc,
+  unique1 desc
+limit 1;
+
+drop INDEX "onek_nulltest";
+
+create unique index "onek_nulltest" on onek_with_null using btree (unique2 desc, unique1);
+
+select COUNT(*) from onek_with_null where unique1 is null;
+
+select COUNT(*) from onek_with_null where unique1 is null and unique2 is null;
+
+select COUNT(*) from onek_with_null where unique1 is not null;
+
+select COUNT(*) from onek_with_null where unique1 is null and unique2 is not null;
+
+select COUNT(*) from onek_with_null where unique1 is not null and unique1 > 500;
+
+select COUNT(*) from onek_with_null where unique1 is null and unique1 > 500;
+
+select COUNT(*) from onek_with_null where unique1 is null and unique2 in (-1, 0, 1);
+
+select
+  unique1,
+  unique2
+from
+  onek_with_null
+where
+  unique1 = 500
+order by unique2 desc,
+  unique1 desc
+limit 1;
+
+drop INDEX "onek_nulltest";
+
+create unique index "onek_nulltest"
+on onek_with_null
+using btree
+(
+  unique2 desc nulls last,
+  unique1
+);
+
+select COUNT(*) from onek_with_null where unique1 is null;
+
+select COUNT(*) from onek_with_null where unique1 is null and unique2 is null;
+
+select COUNT(*) from onek_with_null where unique1 is not null;
+
+select COUNT(*) from onek_with_null where unique1 is null and unique2 is not null;
+
+select COUNT(*) from onek_with_null where unique1 is not null and unique1 > 500;
+
+select COUNT(*) from onek_with_null where unique1 is null and unique1 > 500;
+
+select
+  unique1,
+  unique2
+from
+  onek_with_null
+where
+  unique1 = 500
+order by unique2 desc,
+  unique1 desc
+limit 1;
+
+drop INDEX "onek_nulltest";
+
+create unique index "onek_nulltest" on onek_with_null using btree (unique2 nulls first, unique1);
+
+select COUNT(*) from onek_with_null where unique1 is null;
+
+select COUNT(*) from onek_with_null where unique1 is null and unique2 is null;
+
+select COUNT(*) from onek_with_null where unique1 is not null;
+
+select COUNT(*) from onek_with_null where unique1 is null and unique2 is not null;
+
+select COUNT(*) from onek_with_null where unique1 is not null and unique1 > 500;
+
+select COUNT(*) from onek_with_null where unique1 is null and unique1 > 500;
+
+select
+  unique1,
+  unique2
+from
+  onek_with_null
+where
+  unique1 = 500
+order by unique2 desc,
+  unique1 desc
+limit 1;
+
+drop INDEX "onek_nulltest";
+
+create unique index "onek_nulltest" on onek_with_null using btree (unique2);
+
+set enable_seqscan = off;
+
+set enable_indexscan = 'on';
+
+set enable_bitmapscan = off;
+
+select unique1, unique2 from onek_with_null order by unique2 limit 2;
+
+select unique1, unique2 from onek_with_null where unique2 >= -1 order by unique2 limit 2;
+
+select unique1, unique2 from onek_with_null where unique2 >= 0 order by unique2 limit 2;
+
+select unique1, unique2 from onek_with_null order by unique2 desc limit 5;
+
+select unique1, unique2 from onek_with_null where unique2 >= -1 order by unique2 desc limit 3;
+
+select unique1, unique2 from onek_with_null where unique2 < 999 order by unique2 desc limit 2;
+
+reset enable_seqscan;
+
+reset enable_indexscan;
+
+reset enable_bitmapscan;
+
+drop TABLE "onek_with_null";
+
+select
+  *
+from
+  tenk1
+where
+  thousand = 42 and
+  (tenthous = 1 or
+  tenthous = 3 or
+  tenthous = 42 or
+  tenthous = 0);
+
+select
+  *
+from
+  tenk1
+where
+  thousand = 42 and
+  (tenthous = 1 or
+  tenthous = 3 or
+  tenthous = 42 or
+  tenthous = 0);
+
+select
+  *
+from
+  tenk1
+where
+  thousand = 42 and
+  (tenthous = 1 or
+  tenthous = (select 1 + 2) or
+  tenthous = 42);
+
+select
+  *
+from
+  tenk1
+where
+  thousand = 42 and
+  (tenthous = 1 or
+  tenthous = (select 1 + 2) or
+  tenthous = 42);
+
+select
+  *
+from
+  tenk1
+where
+  thousand = 42 and
+  (tenthous = 1 or
+  tenthous = 3 or
+  tenthous = 42 or
+  tenthous is null);
+
+select
+  *
+from
+  tenk1
+where
+  thousand = 42 and
+  (tenthous = cast(1 as SMALLINT) or
+  cast(tenthous as SMALLINT) = cast(3 as BIGINT) or
+  tenthous = cast(42 as BIGINT));
+
+select
+  *
+from
+  tenk1
+where
+  thousand = 42 and
+  (tenthous = cast(1 as SMALLINT) or
+  cast(tenthous as SMALLINT) = cast(3 as BIGINT) or
+  cast(tenthous as SMALLINT) = cast(42 as BIGINT));
+
+select
+  *
+from
+  tenk1
+where
+  thousand = 42 and
+  (tenthous = cast(1 as SMALLINT) or
+  tenthous = cast(3 as BIGINT) or
+  tenthous = cast(42 as BIGINT));
+
+select COUNT(*) from tenk1 where hundred = 42 and (thousand = 42 or thousand = 99);
+
+select COUNT(*) from tenk1 where hundred = 42 and (thousand = 42 or thousand = 99);
+
+select * from tenk1 where thousand = 42 and (tenthous = 1 or tenthous = 3 or tenthous = 42);
+
+select * from tenk1 where thousand = 42 and (tenthous = 1 or tenthous = 3 or tenthous = 42);
+
+select
+  *
+from
+  tenk1
+where
+  thousand = 42 and
+  (tenthous = cast(1 as NUMERIC) or
+  tenthous = cast(3 as INT) or
+  tenthous = cast(42 as NUMERIC));
+
+select
+  *
+from
+  tenk1
+where
+  tenthous = cast(1 as NUMERIC) or
+  tenthous = cast(3 as INT) or
+  tenthous = cast(42 as NUMERIC);
+
+select
+  COUNT(*)
+from
+  tenk1 as t1
+where
+  t1.thousand = 42 or
+  t1.thousand =
+  (
+    select
+      t2.tenthous
+    from
+      tenk1 as t2
+    where
+      t2.thousand = t1.tenthous + 1
+    limit 1
+  );
+
+select
+  COUNT(*)
+from
+  tenk1 as t1
+where
+  t1.thousand = 42 or
+  t1.thousand =
+  (
+    select
+      t2.tenthous
+    from
+      tenk1 as t2
+    where
+      t2.thousand = t1.tenthous + 1
+    limit 1
+  );
+
+select COUNT(*) from tenk1 where hundred = 42 and (thousand = 42 or thousand = 99);
+
+select COUNT(*) from tenk1 where hundred = 42 and (thousand = 42 or thousand = 99);
+
+select
+  COUNT(*)
+from
+  tenk1
+where
+  hundred = 42 and
+  (thousand < 42 or
+  thousand < 99 or
+  43 > thousand or
+  42 > thousand);
+
+select
+  COUNT(*)
+from
+  tenk1
+where
+  hundred = 42 and
+  (thousand < 42 or
+  thousand < 99 or
+  43 > thousand or
+  42 > thousand);
+
+select COUNT(*) from tenk1 where thousand = 42 and (tenthous = 1 or tenthous = 3) or thousand = 41;
+
+select COUNT(*) from tenk1 where thousand = 42 and (tenthous = 1 or tenthous = 3) or thousand = 41;
+
+select
+  COUNT(*)
+from
+  tenk1
+where
+  hundred = 42 and
+  (thousand = 42 or thousand = 99 or tenthous < 2) or
+  thousand = 41;
+
+select
+  COUNT(*)
+from
+  tenk1
+where
+  hundred = 42 and
+  (thousand = 42 or thousand = 99 or tenthous < 2) or
+  thousand = 41;
+
+select
+  COUNT(*)
+from
+  tenk1
+where
+  hundred = 42 and
+  (thousand = 42 or
+  thousand = 41 or
+  thousand = 99 and tenthous = 2);
+
+select
+  COUNT(*)
+from
+  tenk1
+where
+  hundred = 42 and
+  (thousand = 42 or
+  thousand = 41 or
+  thousand = 99 and tenthous = 2);
+
+select
+  COUNT(*)
+from
+  tenk1,
+  tenk2
+where
+  tenk1.hundred = 42 and
+  (tenk2.thousand = 42 or
+  tenk1.thousand = 41 or
+  tenk2.tenthous = 2) and
+  tenk2.hundred = tenk1.hundred;
+
+select
+  COUNT(*)
+from
+  tenk1,
+  tenk2
+where
+  tenk1.hundred = 42 and
+  (tenk2.thousand = 42 or
+  tenk2.thousand = 41 or
+  tenk2.tenthous = 2) and
+  tenk2.hundred = tenk1.hundred;
+
+select
+  COUNT(*)
+from
+  tenk1
+  inner join
+    tenk2
+  on tenk1.hundred = 42 and
+    (tenk2.thousand = 42 or
+    tenk2.thousand = 41 or
+    tenk2.tenthous = 2) and
+    tenk2.hundred = tenk1.hundred;
+
+select
+  COUNT(*)
+from
+  tenk1
+  left outer join
+    tenk2
+  on tenk1.hundred = 42 and
+    (tenk2.thousand = 42 or
+    tenk2.thousand = 41 or
+    tenk2.tenthous = 2) and
+    tenk2.hundred = tenk1.hundred;
+
+create table dupindexcols as select unique1 as id, cast(stringu2 as TEXT) as f1 from tenk1;
+
+create index "dupindexcols_i" on dupindexcols using btree (f1, id, f1 text_pattern_ops);
+
+analyze dupindexcols;
+
+select COUNT(*) from dupindexcols where f1 between 'WA' and 'ZZZ' and id < 1000 and f1 ~<~ 'YX';
+
+select COUNT(*) from dupindexcols where f1 between 'WA' and 'ZZZ' and id < 1000 and f1 ~<~ 'YX';
+
+select unique1 from tenk1 where unique1 in (1, 42, 7) order by unique1;
+
+select unique1 from tenk1 where unique1 in (1, 42, 7) order by unique1;
+
+select
+  thousand,
+  tenthous
+from
+  tenk1
+where
+  thousand < 2 and tenthous in (1001, 3000)
+order by thousand;
+
+select
+  thousand,
+  tenthous
+from
+  tenk1
+where
+  thousand < 2 and tenthous in (1001, 3000)
+order by thousand;
+
+select
+  thousand,
+  tenthous
+from
+  tenk1
+where
+  thousand < 2 and tenthous in (1001, 3000)
+order by thousand desc,
+  tenthous desc;
+
+select
+  thousand,
+  tenthous
+from
+  tenk1
+where
+  thousand < 2 and tenthous in (1001, 3000)
+order by thousand desc,
+  tenthous desc;
+
+select
+  thousand,
+  tenthous
+from
+  tenk1
+where
+  thousand > 995 and tenthous in (998, 999)
+order by thousand desc;
+
+select
+  thousand,
+  tenthous
+from
+  tenk1
+where
+  thousand > 995 and tenthous in (998, 999)
+order by thousand desc;
+
+select unique1 from tenk1 where unique1 in (1, 42, 7) and unique1 = any ('{7, 8, 9}');
+
+select unique1 from tenk1 where unique1 in (1, 42, 7) and unique1 = any ('{7, 8, 9}');
+
+select
+  unique1
+from
+  tenk1
+where
+  unique1 = any ('{7, 14, 22}') and
+  unique1 = any (cast('{33, 44}' as BIGINT[]));
+
+select
+  unique1
+from
+  tenk1
+where
+  unique1 = any ('{7, 14, 22}') and
+  unique1 = any (cast('{33, 44}' as BIGINT[]));
+
+select unique1 from tenk1 where unique1 = any (null);
+
+select unique1 from tenk1 where unique1 = any (null);
+
+select unique1 from tenk1 where unique1 = any ('{NULL,NULL,NULL}');
+
+select unique1 from tenk1 where unique1 = any ('{NULL,NULL,NULL}');
+
+select unique1 from tenk1 where unique1 is null and unique1 is null;
+
+select unique1 from tenk1 where unique1 is null and unique1 is null;
+
+select unique1 from tenk1 where unique1 in (1, 42, 7) and unique1 = 1;
+
+select unique1 from tenk1 where unique1 in (1, 42, 7) and unique1 = 1;
+
+select unique1 from tenk1 where unique1 in (1, 42, 7) and unique1 = 12345;
+
+select unique1 from tenk1 where unique1 in (1, 42, 7) and unique1 = 12345;
+
+select unique1 from tenk1 where unique1 in (1, 42, 7) and unique1 >= 42;
+
+select unique1 from tenk1 where unique1 in (1, 42, 7) and unique1 >= 42;
+
+select unique1 from tenk1 where unique1 in (1, 42, 7) and unique1 > 42;
+
+select unique1 from tenk1 where unique1 in (1, 42, 7) and unique1 > 42;
+
+select unique1 from tenk1 where unique1 > 9996 and unique1 >= 9999;
+
+select unique1 from tenk1 where unique1 > 9996 and unique1 >= 9999;
+
+select unique1 from tenk1 where unique1 < 3 and unique1 <= 3;
+
+select unique1 from tenk1 where unique1 < 3 and unique1 <= 3;
+
+select unique1 from tenk1 where unique1 < 3 and unique1 < cast(-1 as BIGINT);
+
+select unique1 from tenk1 where unique1 < 3 and unique1 < cast(-1 as BIGINT);
+
+select unique1 from tenk1 where unique1 in (1, 42, 7) and unique1 < cast(-1 as BIGINT);
+
+select unique1 from tenk1 where unique1 in (1, 42, 7) and unique1 < cast(-1 as BIGINT);
+
+select unique1 from tenk1 where (thousand, tenthous) > (null, 5);
+
+select unique1 from tenk1 where (thousand, tenthous) > (null, 5);
+
+select
+  thousand,
+  tenthous
+from
+  tenk1
+where
+  thousand > -1 and
+  thousand >= 0 and
+  tenthous = 3000
+order by thousand;
+
+select
+  thousand,
+  tenthous
+from
+  tenk1
+where
+  thousand > -1 and
+  thousand >= 0 and
+  tenthous = 3000
+order by thousand;
+
+select
+  thousand,
+  tenthous
+from
+  tenk1
+where
+  thousand < 3 and thousand <= 2 and tenthous = 1001
+order by thousand;
+
+select
+  thousand,
+  tenthous
+from
+  tenk1
+where
+  thousand < 3 and thousand <= 2 and tenthous = 1001
+order by thousand;
+
+select
+  thousand,
+  tenthous
+from
+  tenk1
+where
+  thousand > -1 and tenthous in (1001, 3000)
+order by thousand
+limit 2;
+
+select
+  thousand,
+  tenthous
+from
+  tenk1
+where
+  thousand > -1 and tenthous in (1001, 3000)
+order by thousand
+limit 2;
+
+select * from tenk1 where (thousand, tenthous) in ((1, 1001), (null, null));
+
+create temporary table boolindex (
+  b BOOLEAN,
+  i INT,
+  unique (b, i),
+  junk DOUBLE PRECISION
+);
+
+select * from boolindex order by b, i limit 10;
+
+select * from boolindex where b order by i limit 10;
+
+select * from boolindex where b = true order by i desc limit 10;
+
+select * from boolindex where not b order by i limit 10;
+
+select * from boolindex where b is true order by i desc limit 10;
+
+select * from boolindex where b is false order by i desc limit 10;
+
+create table reindex_verbose (id INT primary key);
+
+reindex (VERBOSE) table reindex_verbose;
+
+drop TABLE "reindex_verbose";
+
+create table concur_reindex_tab (c1 INT);
+
+reindex table concur_reindex_tab;
+
+reindex (CONCURRENTLY) table concur_reindex_tab;
+
+alter table concur_reindex_tab
+  add column c2 TEXT;
+
+create unique index "concur_reindex_ind1" on concur_reindex_tab using btree (c1);
+
+create index "concur_reindex_ind2" on concur_reindex_tab using btree (c2);
+
+create unique index "concur_reindex_ind3" on concur_reindex_tab using btree ((abs(c1)));
+
+create index "concur_reindex_ind4" on concur_reindex_tab using btree (c1, c1, c2);
+
+alter table concur_reindex_tab
+  add primary key using index "concur_reindex_ind1";
+
+create table concur_reindex_tab2 (c1 INT references concur_reindex_tab);
+
+insert into concur_reindex_tab values (1, 'a');
+
+insert into concur_reindex_tab values (2, 'a');
+
+create table concur_reindex_tab3 (
+  c1 INT,
+  c2 INT4RANGE,
+  exclude using gist (c2 with &&)
+);
+
+insert into concur_reindex_tab3 values (3, '[1,2]');
+
+reindex (CONCURRENTLY) index concur_reindex_tab3_c2_excl;
+
+reindex (CONCURRENTLY) table concur_reindex_tab3;
+
+insert into concur_reindex_tab3 values (4, '[2,4]');
+
+create materialized view concur_reindex_matview as select * from concur_reindex_tab;
+
+select
+  pg_describe_object(classid, objid, objsubid)
+  as obj,
+  pg_describe_object(
+    refclassid,
+    refobjid,
+    refobjsubid
+  )
+  as objref,
+  deptype
+from
+  pg_depend
+where
+  classid = cast('pg_class' as REGCLASS) and
+  objid
+  in (
+    cast('concur_reindex_tab' as REGCLASS),
+    cast('concur_reindex_ind1' as REGCLASS),
+    cast('concur_reindex_ind2' as REGCLASS),
+    cast('concur_reindex_ind3' as REGCLASS),
+    cast('concur_reindex_ind4' as REGCLASS),
+    cast('concur_reindex_matview' as REGCLASS)
+  )
+order by 1,
+  2;
+
+reindex (CONCURRENTLY) index concur_reindex_ind1;
+
+reindex (CONCURRENTLY) table concur_reindex_tab;
+
+reindex (CONCURRENTLY) table concur_reindex_matview;
+
+select
+  pg_describe_object(classid, objid, objsubid)
+  as obj,
+  pg_describe_object(
+    refclassid,
+    refobjid,
+    refobjsubid
+  )
+  as objref,
+  deptype
+from
+  pg_depend
+where
+  classid = cast('pg_class' as REGCLASS) and
+  objid
+  in (
+    cast('concur_reindex_tab' as REGCLASS),
+    cast('concur_reindex_ind1' as REGCLASS),
+    cast('concur_reindex_ind2' as REGCLASS),
+    cast('concur_reindex_ind3' as REGCLASS),
+    cast('concur_reindex_ind4' as REGCLASS),
+    cast('concur_reindex_matview' as REGCLASS)
+  )
+order by 1,
+  2;
+
+create table testcomment (i INT);
+
+create index "testcomment_idx1" on testcomment using btree (i);
+
+comment on index testcomment_idx1 is 'test comment';
+
+select obj_description(cast('testcomment_idx1' as REGCLASS), 'pg_class');
+
+reindex table testcomment;
+
+select obj_description(cast('testcomment_idx1' as REGCLASS), 'pg_class');
+
+reindex (CONCURRENTLY) table testcomment;
+
+select obj_description(cast('testcomment_idx1' as REGCLASS), 'pg_class');
+
+drop TABLE "testcomment";
+
+create table concur_clustered (i INT);
+
+create index "concur_clustered_i_idx" on concur_clustered using btree (i);
+
+alter table concur_clustered
+  cluster on concur_clustered_i_idx;
+
+reindex (CONCURRENTLY) table concur_clustered;
+
+select
+  cast(indexrelid as REGCLASS),
+  indisclustered
+from
+  pg_index
+where
+  indrelid = cast('concur_clustered' as REGCLASS);
+
+drop TABLE "concur_clustered";
+
+create table concur_replident (i INT not null);
+
+create unique index "concur_replident_i_idx" on concur_replident using btree (i);
+
+alter table concur_replident
+  REPLICA IDENTITY
+  using index
+  concur_replident_i_idx;
+
+select
+  cast(indexrelid as REGCLASS),
+  indisreplident
+from
+  pg_index
+where
+  indrelid = cast('concur_replident' as REGCLASS);
+
+reindex (CONCURRENTLY) table concur_replident;
+
+select
+  cast(indexrelid as REGCLASS),
+  indisreplident
+from
+  pg_index
+where
+  indrelid = cast('concur_replident' as REGCLASS);
+
+drop TABLE "concur_replident";
+
+create table concur_appclass_tab (
+  i TSVECTOR,
+  j TSVECTOR,
+  k TSVECTOR
+);
+
+create index "concur_appclass_ind"
+on concur_appclass_tab
+using gist
+(
+  i tsvector_ops(siglen = "1000"),
+  j tsvector_ops(siglen = "500")
+);
+
+create index "concur_appclass_ind_2"
+on concur_appclass_tab
+using gist
+(
+  k tsvector_ops(siglen = "300"),
+  j tsvector_ops
+);
+
+reindex (CONCURRENTLY) table concur_appclass_tab;
+
+drop TABLE "concur_appclass_tab";
+
+create table concur_reindex_part (
+  c1 INT,
+  c2 INT
+)
+partition by range(c1);
+
+create table concur_reindex_part_0
+partition of concur_reindex_part
+for values from (0) to (10)
+partition by LIST(c2);
+
+create table concur_reindex_part_0_1 partition of concur_reindex_part_0 for values in (1);
+
+create table concur_reindex_part_0_2 partition of concur_reindex_part_0 for values in (2);
+
+create table concur_reindex_part_10
+partition of concur_reindex_part
+for values from (10) to (20)
+partition by LIST(c2);
+
+create index "concur_reindex_part_index" on only concur_reindex_part using btree (c1);
+
+create index "concur_reindex_part_index_0" on only concur_reindex_part_0 using btree (c1);
+
+alter index concur_reindex_part_index
+  ATTACH partition
+  concur_reindex_part_index_0;
+
+create index "concur_reindex_part_index_10" on only concur_reindex_part_10 using btree (c1);
+
+alter index concur_reindex_part_index
+  ATTACH partition
+  concur_reindex_part_index_10;
+
+create index "concur_reindex_part_index_0_1" on only concur_reindex_part_0_1 using btree (c1);
+
+alter index concur_reindex_part_index_0
+  ATTACH partition
+  concur_reindex_part_index_0_1;
+
+create index "concur_reindex_part_index_0_2" on only concur_reindex_part_0_2 using btree (c1);
+
+alter index concur_reindex_part_index_0
+  ATTACH partition
+  concur_reindex_part_index_0_2;
+
+select
+  relid,
+  parentrelid,
+  level
+from
+  pg_partition_tree('concur_reindex_part_index')
+order by relid,
+  level;
+
+select
+  relid,
+  parentrelid,
+  level
+from
+  pg_partition_tree('concur_reindex_part_index')
+order by relid,
+  level;
+
+select
+  pg_describe_object(classid, objid, objsubid)
+  as obj,
+  pg_describe_object(
+    refclassid,
+    refobjid,
+    refobjsubid
+  )
+  as objref,
+  deptype
+from
+  pg_depend
+where
+  classid = cast('pg_class' as REGCLASS) and
+  objid
+  in (
+    cast('concur_reindex_part' as REGCLASS),
+    cast('concur_reindex_part_0' as REGCLASS),
+    cast('concur_reindex_part_0_1' as REGCLASS),
+    cast('concur_reindex_part_0_2' as REGCLASS),
+    cast('concur_reindex_part_index' as REGCLASS),
+    cast('concur_reindex_part_index_0' as REGCLASS),
+    cast('concur_reindex_part_index_0_1' as REGCLASS),
+    cast('concur_reindex_part_index_0_2' as REGCLASS)
+  )
+order by 1,
+  2;
+
+reindex (CONCURRENTLY) index concur_reindex_part_index_0_1;
+
+reindex (CONCURRENTLY) index concur_reindex_part_index_0_2;
+
+select
+  relid,
+  parentrelid,
+  level
+from
+  pg_partition_tree('concur_reindex_part_index')
+order by relid,
+  level;
+
+reindex (CONCURRENTLY) table concur_reindex_part_0_1;
+
+reindex (CONCURRENTLY) table concur_reindex_part_0_2;
+
+select
+  pg_describe_object(classid, objid, objsubid)
+  as obj,
+  pg_describe_object(
+    refclassid,
+    refobjid,
+    refobjsubid
+  )
+  as objref,
+  deptype
+from
+  pg_depend
+where
+  classid = cast('pg_class' as REGCLASS) and
+  objid
+  in (
+    cast('concur_reindex_part' as REGCLASS),
+    cast('concur_reindex_part_0' as REGCLASS),
+    cast('concur_reindex_part_0_1' as REGCLASS),
+    cast('concur_reindex_part_0_2' as REGCLASS),
+    cast('concur_reindex_part_index' as REGCLASS),
+    cast('concur_reindex_part_index_0' as REGCLASS),
+    cast('concur_reindex_part_index_0_1' as REGCLASS),
+    cast('concur_reindex_part_index_0_2' as REGCLASS)
+  )
+order by 1,
+  2;
+
+select
+  relid,
+  parentrelid,
+  level
+from
+  pg_partition_tree('concur_reindex_part_index')
+order by relid,
+  level;
+
+reindex table concur_reindex_part_index;
+
+reindex (CONCURRENTLY) table concur_reindex_part_index;
+
+reindex table concur_reindex_part_index_10;
+
+reindex (CONCURRENTLY) table concur_reindex_part_index_10;
+
+begin;
+
+reindex index concur_reindex_part_index;
+
+rollback;
+
+create or replace function create_relfilenode_part(relname TEXT, indname TEXT)
+returns VOID
+as '
+  BEGIN
+  EXECUTE format(''
+    CREATE TABLE %I AS
+      SELECT oid, relname, relfilenode, relkind, reltoastrelid
+      FROM pg_class
+      WHERE oid IN
+         (SELECT relid FROM pg_partition_tree(''''%I''''));'',
+	 relname, indname);
+  END
+  '
+language "plpgsql";
+
+create or replace function compare_relfilenode_part(tabname TEXT)
+returns table (
+  relname NAME,
+  relkind CHAR,
+  state TEXT
+)
+as '
+  BEGIN
+    RETURN QUERY EXECUTE
+      format(
+        ''SELECT  b.relname,
+                 b.relkind,
+                 CASE WHEN a.relfilenode = b.relfilenode THEN ''''relfilenode is unchanged''''
+                 ELSE ''''relfilenode has changed'''' END
+           -- Do not join with OID here as CONCURRENTLY changes it.
+           FROM %I b JOIN pg_class a ON b.relname = a.relname
+           ORDER BY 1;'', tabname);
+  END
+  '
+language "plpgsql";
+
+select create_relfilenode_part('reindex_index_status', 'concur_reindex_part_index');
+
+reindex index concur_reindex_part_index;
+
+select * from compare_relfilenode_part('reindex_index_status');
+
+drop TABLE "reindex_index_status";
+
+select create_relfilenode_part('reindex_index_status', 'concur_reindex_part_index');
+
+reindex (CONCURRENTLY) index concur_reindex_part_index;
+
+select * from compare_relfilenode_part('reindex_index_status');
+
+drop TABLE "reindex_index_status";
+
+reindex index concur_reindex_part;
+
+reindex (CONCURRENTLY) index concur_reindex_part;
+
+reindex index concur_reindex_part_10;
+
+reindex (CONCURRENTLY) index concur_reindex_part_10;
+
+begin;
+
+reindex table concur_reindex_part;
+
+rollback;
+
+select create_relfilenode_part('reindex_index_status', 'concur_reindex_part_index');
+
+reindex table concur_reindex_part;
+
+select * from compare_relfilenode_part('reindex_index_status');
+
+drop TABLE "reindex_index_status";
+
+select create_relfilenode_part('reindex_index_status', 'concur_reindex_part_index');
+
+reindex (CONCURRENTLY) table concur_reindex_part;
+
+select * from compare_relfilenode_part('reindex_index_status');
+
+drop TABLE "reindex_index_status";
+
+drop FUNCTION create_relfilenode_part;
+
+drop FUNCTION compare_relfilenode_part;
+
+drop TABLE "concur_reindex_part";
+
+begin;
+
+reindex (CONCURRENTLY) table concur_reindex_tab;
+
+commit;
+
+reindex (CONCURRENTLY) table pg_class;
+
+reindex (CONCURRENTLY) index pg_class_oid_index;
+
+reindex (CONCURRENTLY) table pg_toast.pg_toast_1262;
+
+reindex (CONCURRENTLY) index pg_toast.pg_toast_1262_index;
+
+reindex (CONCURRENTLY) system postgres;
+
+reindex (CONCURRENTLY) system postgres;
+
+reindex (CONCURRENTLY) system ;
+
+reindex (CONCURRENTLY) schema pg_catalog;
+
+reindex database not_current_database;
+
+drop MATERIALIZED VIEW "concur_reindex_matview";
+
+drop TABLE "concur_reindex_tab", "concur_reindex_tab2", "concur_reindex_tab3";
+
+create table concur_reindex_tab4 (c1 INT);
+
+insert into concur_reindex_tab4 values (1), (1), (2);
+
+create unique index concurrently "concur_reindex_ind5" on concur_reindex_tab4 using btree (c1);
+
+reindex (CONCURRENTLY) index concur_reindex_ind5;
+
+drop INDEX "concur_reindex_ind5_ccnew";
+
+delete from concur_reindex_tab4 where c1 = 1;
+
+reindex (CONCURRENTLY) table concur_reindex_tab4;
+
+reindex (CONCURRENTLY) index concur_reindex_ind5;
+
+drop TABLE "concur_reindex_tab4";
+
+create table concur_exprs_tab (
+  c1 INT,
+  c2 BOOLEAN
+);
+
+insert into concur_exprs_tab (c1, c2)
+values
+  (1369652450, false),
+  (414515746, true),
+  (897778963, false);
+
+create unique index "concur_exprs_index_expr"
+on concur_exprs_tab
+using btree
+(
+  (cast(c1 as TEXT) collate "C")
+);
+
+create unique index "concur_exprs_index_pred"
+on concur_exprs_tab
+using btree
+(
+  c1
+)
+where
+  cast(c1 as TEXT) >
+  cast(500000000 as TEXT) collate "C";
+
+create unique index "concur_exprs_index_pred_2"
+on concur_exprs_tab
+using btree
+(
+  (1 / c1)
+)
+where
+  '-H' >= cast(c2 as TEXT) collate "C";
+
+alter index concur_exprs_index_expr
+  alter column 1 set STATISTICS 100;
+
+analyze concur_exprs_tab;
+
+select
+  cast(starelid as REGCLASS),
+  COUNT(*)
+from
+  pg_statistic
+where
+  starelid
+  in (
+    cast('concur_exprs_index_expr' as REGCLASS),
+    cast('concur_exprs_index_pred' as REGCLASS),
+    cast('concur_exprs_index_pred_2' as REGCLASS)
+  )
+group by starelid
+order by cast(cast(starelid as REGCLASS) as TEXT);
+
+select pg_get_indexdef(cast('concur_exprs_index_expr' as REGCLASS));
+
+select pg_get_indexdef(cast('concur_exprs_index_pred' as REGCLASS));
+
+select pg_get_indexdef(cast('concur_exprs_index_pred_2' as REGCLASS));
+
+reindex (CONCURRENTLY) table concur_exprs_tab;
+
+select pg_get_indexdef(cast('concur_exprs_index_expr' as REGCLASS));
+
+select pg_get_indexdef(cast('concur_exprs_index_pred' as REGCLASS));
+
+select pg_get_indexdef(cast('concur_exprs_index_pred_2' as REGCLASS));
+
+alter table concur_exprs_tab
+  alter column c2 type TEXT;
+
+select pg_get_indexdef(cast('concur_exprs_index_expr' as REGCLASS));
+
+select pg_get_indexdef(cast('concur_exprs_index_pred' as REGCLASS));
+
+select pg_get_indexdef(cast('concur_exprs_index_pred_2' as REGCLASS));
+
+select
+  cast(starelid as REGCLASS),
+  COUNT(*)
+from
+  pg_statistic
+where
+  starelid
+  in (
+    cast('concur_exprs_index_expr' as REGCLASS),
+    cast('concur_exprs_index_pred' as REGCLASS),
+    cast('concur_exprs_index_pred_2' as REGCLASS)
+  )
+group by starelid
+order by cast(cast(starelid as REGCLASS) as TEXT);
+
+select
+  cast(attrelid as REGCLASS),
+  attnum,
+  attstattarget
+from
+  pg_attribute
+where
+  attrelid
+  in (
+    cast('concur_exprs_index_expr' as REGCLASS),
+    cast('concur_exprs_index_pred' as REGCLASS),
+    cast('concur_exprs_index_pred_2' as REGCLASS)
+  )
+order by cast(cast(attrelid as REGCLASS) as TEXT),
+  attnum;
+
+drop TABLE "concur_exprs_tab";
+
+create temporary table concur_temp_tab_1 (
+  c1 INT,
+  c2 TEXT
+)
+on commit preserve rows;
+
+insert into concur_temp_tab_1 values (1, 'foo'), (2, 'bar');
+
+create index "concur_temp_ind_1" on concur_temp_tab_1 using btree (c2);
+
+reindex (CONCURRENTLY) table concur_temp_tab_1;
+
+reindex (CONCURRENTLY) index concur_temp_ind_1;
+
+begin;
+
+reindex (CONCURRENTLY) index concur_temp_ind_1;
+
+commit;
+
+create index "concur_temp_ind_2" on concur_temp_tab_2 using btree (c2);
+
+reindex (CONCURRENTLY) table concur_temp_tab_2;
+
+reindex (CONCURRENTLY) index concur_temp_ind_2;
+
+begin;
+
+create temporary table concur_temp_tab_3 (
+  c1 INT,
+  c2 TEXT
+)
+on commit preserve rows;
+
+insert into concur_temp_tab_3 values (1, 'foo'), (2, 'bar');
+
+create index "concur_temp_ind_3" on concur_temp_tab_3 using btree (c2);
+
+reindex (CONCURRENTLY) index concur_temp_ind_3;
+
+commit;
+
+create table reindex_temp_before
+as
+  select
+    oid,
+    relname,
+    relfilenode,
+    relkind,
+    reltoastrelid
+  from
+    pg_class
+  where
+    relname
+    in (
+      'concur_temp_ind_1', 'concur_temp_ind_2'
+    );
+
+select cast(pg_my_temp_schema() as regnamespace) as temp_schema_name;
+
+select
+  b.relname,
+  b.relkind,
+  case
+    when a.relfilenode = b.relfilenode
+    then 'relfilenode is unchanged'
+    else 'relfilenode has changed'
+  end
+from
+  reindex_temp_before as b
+  inner join
+    pg_class as a
+  on b.oid = a.oid
+order by 1;
+
+drop TABLE "concur_temp_tab_1", "concur_temp_tab_2", "reindex_temp_before";
+
+select * from tenk1 where unique1 < 1 or hundred < 2;
+
+select * from tenk1 where unique1 < 1 or unique1 < 3 or hundred < 2;
+
+create table bitmap_split_or (
+  a INT not null,
+  b INT not null,
+  c INT not null
+);
+
+insert into bitmap_split_or select 1, 1, i from generate_series(1, 1000) as i;
+
+insert into bitmap_split_or select i, 2, 2 from generate_series(1, 1000) as i;
+
+vacuum (ANALYZE) bitmap_split_or;
+
+create index "t_b_partial_1_idx"
+on bitmap_split_or
+using btree
+(
+  b
+)
+where
+  a = 1;
+
+create index "t_b_partial_2_idx"
+on bitmap_split_or
+using btree
+(
+  b
+)
+where
+  a = 2;
+
+select * from bitmap_split_or where (a = 1 or a = 2) and b = 2;
+
+drop INDEX "t_b_partial_1_idx";
+
+drop INDEX "t_b_partial_2_idx";
+
+create index "t_a_b_idx" on bitmap_split_or using btree (a, b);
+
+create index "t_b_c_idx" on bitmap_split_or using btree (b, c);
+
+create STATISTICS t_a_b_stat (mcv) on "a", "b" from bitmap_split_or;
+
+create STATISTICS t_b_c_stat (mcv) on "b", "c" from bitmap_split_or;
+
+analyze bitmap_split_or;
+
+select * from bitmap_split_or as t1, bitmap_split_or as t2 where t1.a = t2.b or t1.a = 2;
+
+select * from bitmap_split_or where a = 1 and (b = 1 or b = 2) and c = 2;
+
+drop TABLE "bitmap_split_or";
+
+reindex schema schema_to_reindex;
+
+create schema "schema_to_reindex";
+
+set search_path to schema_to_reindex;
+
+create table table1 (col1 serial primary key);
+
+insert into table1 select generate_series(1, 400);
+
+create table table2 (
+  col1 serial primary key,
+  col2 TEXT not null
+);
+
+insert into table2 select generate_series(1, 400), 'abc';
+
+create index on table2 using btree (col2);
+
+create materialized view matview as select col1 from table2;
+
+create index on matview using btree (col1);
+
+create view view
+as select col2 from table2;
+
+create table reindex_before
+as
+  select
+    oid,
+    relname,
+    relfilenode,
+    relkind,
+    reltoastrelid
+  from
+    pg_class
+  where
+    relnamespace =
+    (
+      select
+        oid
+      from
+        pg_namespace
+      where
+        nspname = 'schema_to_reindex'
+    );
+
+insert into reindex_before
+select
+  oid,
+  'pg_toast_TABLE',
+  relfilenode,
+  relkind,
+  reltoastrelid
+from
+  pg_class
+where
+  oid in
+  (
+    select
+      reltoastrelid
+    from
+      reindex_before
+    where
+      reltoastrelid > 0
+  );
+
+insert into reindex_before
+select
+  oid,
+  'pg_toast_TABLE_index',
+  relfilenode,
+  relkind,
+  reltoastrelid
+from
+  pg_class
+where
+  oid in
+  (
+    select
+      indexrelid
+    from
+      pg_index
+    where
+      indrelid in
+      (
+        select
+          reltoastrelid
+        from
+          reindex_before
+        where
+          reltoastrelid > 0
+      )
+  );
+
+reindex schema schema_to_reindex;
+
+create table reindex_after
+as
+  select
+    oid,
+    relname,
+    relfilenode,
+    relkind
+  from
+    pg_class
+  where
+    relnamespace =
+    (
+      select
+        oid
+      from
+        pg_namespace
+      where
+        nspname = 'schema_to_reindex'
+    );
+
+select
+  b.relname,
+  b.relkind,
+  case
+    when a.relfilenode = b.relfilenode
+    then 'relfilenode is unchanged'
+    else 'relfilenode has changed'
+  end
+from
+  reindex_before as b
+  inner join
+    pg_class as a
+  on b.oid = a.oid
+order by 1;
+
+reindex schema schema_to_reindex;
+
+begin;
+
+reindex schema schema_to_reindex;
+
+commit;
+
+reindex (CONCURRENTLY) schema schema_to_reindex;
+
+create role regress_reindexuser NOLOGIN;
+
+set role to regress_reindexuser;
+
+reindex schema schema_to_reindex;
+
+reset role;
+
+grant USAGE on schema pg_toast to regress_reindexuser;
+
+set role to regress_reindexuser;
+
+reindex table pg_toast.pg_toast_1262;
+
+reindex index pg_toast.pg_toast_1262_index;
+
+reset role;
+
+revoke USAGE on schema pg_toast from regress_reindexuser;
+
+drop role regress_reindexuser;
+
+drop SCHEMA schema_to_reindex cascade;

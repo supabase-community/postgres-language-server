@@ -1,0 +1,50 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/path.sql
+snapshot_kind: text
+---
+create table path_tbl (f1 path);
+
+insert into path_tbl values ('[(1,2),(3,4)]');
+
+insert into path_tbl values (' ( ( 1 , 2 ) , ( 3 , 4 ) ) ');
+
+insert into path_tbl values ('[ (0,0),(3,0),(4,5),(1,6) ]');
+
+insert into path_tbl values ('((1,2) ,(3,4 ))');
+
+insert into path_tbl values ('1,2 ,3,4 ');
+
+insert into path_tbl values (' [1,2,3, 4] ');
+
+insert into path_tbl values ('((10,20))');
+
+insert into path_tbl values ('[ 11,12,13,14 ]');
+
+insert into path_tbl values ('( 11,12,13,14) ');
+
+insert into path_tbl values ('[]');
+
+insert into path_tbl values ('[(,2),(3,4)]');
+
+insert into path_tbl values ('[(1,2),(3,4)');
+
+insert into path_tbl values ('(1,2,3,4');
+
+insert into path_tbl values ('(1,2),(3,4)]');
+
+select f1 as open_path from path_tbl where isopen(f1);
+
+select f1 as closed_path from path_tbl where isclosed(f1);
+
+select pclose(f1) as closed_path from path_tbl;
+
+select popen(f1) as open_path from path_tbl;
+
+select pg_input_is_valid('[(1,2),(3)]', 'path');
+
+select * from pg_input_error_info('[(1,2),(3)]', 'path');
+
+select pg_input_is_valid('[(1,2,6),(3,4,6)]', 'path');
+
+select * from pg_input_error_info('[(1,2,6),(3,4,6)]', 'path');

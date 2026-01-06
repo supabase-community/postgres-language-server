@@ -1,0 +1,1 @@
+DEALLOCATE my_insert;

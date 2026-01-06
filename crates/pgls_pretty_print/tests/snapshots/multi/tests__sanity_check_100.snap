@@ -1,0 +1,44 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/sanity_check.sql
+snapshot_kind: text
+---
+vacuum;
+
+select
+  relname,
+  nspname
+from
+  pg_class as c
+  left outer join
+    pg_namespace as n
+  on n.oid = relnamespace
+  inner join
+    pg_attribute as a
+  on attrelid = c.oid and attname = 'oid'
+where
+  relkind = 'r' and
+  c.oid < 16384 and
+  nspname ~ '^pg_' is not false and
+  not exists
+  (
+    select
+      1
+    from
+      pg_index as i
+    where
+      indrelid = c.oid and
+      indkey[0] = a.attnum and
+      indnatts = 1 and
+      indisunique and
+      indimmediate
+  );
+
+select
+  relname,
+  relkind
+from
+  pg_class
+where
+  relkind in ('v', 'c', 'f', 'p', 'I') and
+  relfilenode <> 0;

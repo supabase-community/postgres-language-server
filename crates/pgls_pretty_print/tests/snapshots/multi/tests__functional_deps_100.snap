@@ -1,0 +1,298 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/functional_deps.sql
+snapshot_kind: text
+---
+create temporary table articles (
+  id INT constraint "articles_pkey" primary key,
+  keywords TEXT,
+  title TEXT unique not null,
+  body TEXT unique,
+  created DATE
+);
+
+create temporary table articles_in_category (
+  article_id INT,
+  category_id INT,
+  changed DATE,
+  primary key (article_id, category_id)
+);
+
+select id, keywords, title, body, created from articles group by id;
+
+select id, keywords, title, body, created from articles group by title;
+
+select id, keywords, title, body, created from articles group by body;
+
+select id, keywords, title, body, created from articles group by keywords;
+
+select
+  a.id,
+  a.keywords,
+  a.title,
+  a.body,
+  a.created
+from
+  articles as a,
+  articles_in_category as aic
+where
+  a.id = aic.article_id and
+  aic.category_id in (14, 62, 70, 53, 138)
+group by a.id;
+
+select
+  a.id,
+  a.keywords,
+  a.title,
+  a.body,
+  a.created
+from
+  articles as a,
+  articles_in_category as aic
+where
+  a.id = aic.article_id and
+  aic.category_id in (14, 62, 70, 53, 138)
+group by aic.article_id,
+  aic.category_id;
+
+select
+  a.id,
+  a.keywords,
+  a.title,
+  a.body,
+  a.created
+from
+  articles as a
+  inner join
+    articles_in_category as aic
+  on a.id = aic.article_id
+where
+  aic.category_id in (14, 62, 70, 53, 138)
+group by a.id;
+
+select
+  a.id,
+  a.keywords,
+  a.title,
+  a.body,
+  a.created
+from
+  articles as a
+  inner join
+    articles_in_category as aic
+  on a.id = aic.article_id
+where
+  aic.category_id in (14, 62, 70, 53, 138)
+group by aic.article_id,
+  aic.category_id;
+
+select
+  aic.changed
+from
+  articles as a
+  inner join
+    articles_in_category as aic
+  on a.id = aic.article_id
+where
+  aic.category_id in (14, 62, 70, 53, 138)
+group by aic.category_id,
+  aic.article_id;
+
+select
+  aic.changed
+from
+  articles as a
+  inner join
+    articles_in_category as aic
+  on a.id = aic.article_id
+where
+  aic.category_id in (14, 62, 70, 53, 138)
+group by aic.article_id;
+
+create temporary table products (
+  product_id INT,
+  name TEXT,
+  price NUMERIC
+);
+
+create temporary table sales (
+  product_id INT,
+  units INT
+);
+
+select
+  product_id,
+  p.name,
+  SUM(s.units) * p.price as sales
+from
+  products as p
+  left outer join
+    sales as s
+  using ("product_id")
+group by product_id,
+  p.name,
+  p.price;
+
+select
+  product_id,
+  p.name,
+  SUM(s.units) * p.price as sales
+from
+  products as p
+  left outer join
+    sales as s
+  using ("product_id")
+group by product_id;
+
+alter table products
+  add primary key (product_id);
+
+select
+  product_id,
+  p.name,
+  SUM(s.units) * p.price as sales
+from
+  products as p
+  left outer join
+    sales as s
+  using ("product_id")
+group by product_id;
+
+create temporary table node (
+  nid serial,
+  vid INT not null default '0',
+  type VARCHAR(32) not null default '',
+  title VARCHAR(128) not null default '',
+  uid INT not null default '0',
+  status INT not null default '1',
+  created INT not null default '0',
+  primary key (nid, vid)
+);
+
+create temporary table users (
+  uid INT not null default '0',
+  name VARCHAR(60) not null default '',
+  pass VARCHAR(32) not null default '',
+  primary key (uid),
+  unique (name)
+);
+
+select
+  u.uid,
+  u.name
+from
+  node as n inner join users as u on u.uid = n.uid
+where
+  n.type = 'blog' and n.status = 1
+group by u.uid,
+  u.name;
+
+select
+  u.uid,
+  u.name
+from
+  node as n inner join users as u on u.uid = n.uid
+where
+  n.type = 'blog' and n.status = 1
+group by u.uid;
+
+create temporary view fdv1
+as select
+  id,
+  keywords,
+  title,
+  body,
+  created
+from
+  articles
+group by body;
+
+create temporary view fdv1
+as select
+  id,
+  keywords,
+  title,
+  body,
+  created
+from
+  articles
+group by id;
+
+alter table articles
+  drop constraint articles_pkey;
+
+drop VIEW "fdv1";
+
+create temporary view fdv2
+as select
+  a.id,
+  a.keywords,
+  a.title,
+  aic.category_id,
+  aic.changed
+from
+  articles as a
+  inner join
+    articles_in_category as aic
+  on a.id = aic.article_id
+where
+  aic.category_id in (14, 62, 70, 53, 138)
+group by a.id,
+  aic.category_id,
+  aic.article_id;
+
+alter table articles
+  drop constraint articles_pkey;
+
+alter table articles_in_category
+  drop constraint articles_in_category_pkey;
+
+drop VIEW "fdv2";
+
+create temporary view fdv3
+as select
+  id,
+  keywords,
+  title,
+  body,
+  created
+from
+  articles
+group by id
+union
+select
+  id,
+  keywords,
+  title,
+  body,
+  created
+from
+  articles
+group by id;
+
+alter table articles
+  drop constraint articles_pkey;
+
+drop VIEW "fdv3";
+
+create temporary view fdv4
+as select
+  *
+from
+  articles
+where
+  title in (select title from articles group by id);
+
+alter table articles
+  drop constraint articles_pkey;
+
+drop VIEW "fdv4";
+
+prepare foo as select id, keywords, title, body, created from articles group by id;;
+
+execute foo;
+
+alter table articles
+  drop constraint articles_pkey;
+
+execute foo;

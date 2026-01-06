@@ -1,0 +1,94 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/tid.sql
+snapshot_kind: text
+---
+select
+  cast('(0,0)' as TID) as tid00,
+  cast('(0,1)' as TID) as tid01,
+  cast('(-1,0)' as TID) as tidm10,
+  cast('(4294967295,65535)' as TID) as tidmax;
+
+select cast('(4294967296,1)' as TID);
+
+select cast('(1,65536)' as TID);
+
+select pg_input_is_valid('(0)', 'tid');
+
+select * from pg_input_error_info('(0)', 'tid');
+
+select pg_input_is_valid('(0,-1)', 'tid');
+
+select * from pg_input_error_info('(0,-1)', 'tid');
+
+create table tid_tab (a INT);
+
+insert into tid_tab values (1), (2);
+
+select MIN(ctid) from tid_tab;
+
+select MAX(ctid) from tid_tab;
+
+truncate tid_tab;
+
+create materialized view tid_matview as select a from tid_tab;
+
+select currtid2(cast('tid_matview' as TEXT), cast('(0,1)' as TID));
+
+insert into tid_tab values (1);
+
+refresh materialized view tid_matview;
+
+select currtid2(cast('tid_matview' as TEXT), cast('(0,1)' as TID));
+
+drop MATERIALIZED VIEW "tid_matview";
+
+truncate tid_tab;
+
+create sequence tid_seq;
+
+select currtid2(cast('tid_seq' as TEXT), cast('(0,1)' as TID));
+
+drop SEQUENCE "tid_seq";
+
+create index "tid_ind" on tid_tab using btree (a);
+
+select currtid2(cast('tid_ind' as TEXT), cast('(0,1)' as TID));
+
+drop INDEX "tid_ind";
+
+create table tid_part (a INT)
+partition by range(a);
+
+select currtid2(cast('tid_part' as TEXT), cast('(0,1)' as TID));
+
+drop TABLE "tid_part";
+
+create view tid_view_no_ctid
+as select a from tid_tab;
+
+select currtid2(cast('tid_view_no_ctid' as TEXT), cast('(0,1)' as TID));
+
+drop VIEW "tid_view_no_ctid";
+
+create view tid_view_with_ctid
+as select ctid, a from tid_tab;
+
+select currtid2(cast('tid_view_with_ctid' as TEXT), cast('(0,1)' as TID));
+
+insert into tid_tab values (1);
+
+select currtid2(cast('tid_view_with_ctid' as TEXT), cast('(0,1)' as TID));
+
+drop VIEW "tid_view_with_ctid";
+
+truncate tid_tab;
+
+create view tid_view_fake_ctid
+as select 1 as ctid, 2 as a;
+
+select currtid2(cast('tid_view_fake_ctid' as TEXT), cast('(0,1)' as TID));
+
+drop VIEW "tid_view_fake_ctid";
+
+drop TABLE "tid_tab" cascade;

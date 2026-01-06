@@ -1,0 +1,70 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/misc_sanity.sql
+snapshot_kind: text
+---
+select
+  *
+from
+  pg_depend as d1
+where
+  refclassid = 0 or
+  refobjid = 0 or
+  classid = 0 or
+  objid = 0 or
+  deptype not in ('a', 'e', 'i', 'n', 'x', 'P', 'S');
+
+select
+  *
+from
+  pg_shdepend as d1
+where
+  refclassid = 0 or
+  refobjid = 0 or
+  classid = 0 or
+  objid = 0 or
+  deptype not in ('a', 'i', 'o', 'r', 't');
+
+select
+  relname,
+  attname,
+  cast(atttypid as REGTYPE)
+from
+  pg_class as c
+  inner join
+    pg_attribute as a
+  on c.oid = attrelid
+where
+  c.oid < 16384 and
+  reltoastrelid = 0 and
+  relkind = 'r' and
+  attstorage <> 'p'
+order by 1,
+  2;
+
+select
+  relname
+from
+  pg_class
+where
+  relnamespace = cast('pg_catalog' as regnamespace) and
+  relkind = 'r' and
+  not pg_class.oid in
+  (
+    select indrelid from pg_index where indisprimary
+  )
+order by 1;
+
+select
+  relname
+from
+  pg_class as c
+  inner join
+    pg_index as i
+  on c.oid = i.indexrelid
+where
+  relnamespace = cast('pg_catalog' as regnamespace) and
+  relkind = 'i' and
+  i.indisunique and
+  not c.oid in (select conindid from pg_constraint)
+order by 1;

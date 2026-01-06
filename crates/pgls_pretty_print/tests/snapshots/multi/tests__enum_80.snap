@@ -1,0 +1,430 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/enum.sql
+snapshot_kind: text
+---
+create type rainbow as enum ('red',
+'orange',
+'yellow',
+'green',
+'blue',
+'purple');
+
+select COUNT(*) from pg_enum where enumtypid = cast('rainbow' as REGTYPE);
+
+select cast('red' as rainbow);
+
+select cast('mauve' as rainbow);
+
+select pg_input_is_valid('red', 'rainbow');
+
+select pg_input_is_valid('mauve', 'rainbow');
+
+select * from pg_input_error_info('mauve', 'rainbow');
+
+select * from pg_input_error_info(repeat('too_long', 32), 'rainbow');
+
+create type dup_enum as enum ('foo', 'bar', 'foo');
+
+create type planets as enum ('venus', 'earth', 'mars');
+
+select
+  enumlabel,
+  enumsortorder
+from
+  pg_enum
+where
+  enumtypid = cast('planets' as REGTYPE)
+order by 2;
+
+alter type planets add value 'uranus';
+
+select
+  enumlabel,
+  enumsortorder
+from
+  pg_enum
+where
+  enumtypid = cast('planets' as REGTYPE)
+order by 2;
+
+alter type planets add value 'mercury' before 'venus';
+
+alter type planets add value 'saturn' before 'uranus';
+
+alter type planets add value 'jupiter' after 'mars';
+
+alter type planets add value 'neptune' after 'uranus';
+
+select
+  enumlabel,
+  enumsortorder
+from
+  pg_enum
+where
+  enumtypid = cast('planets' as REGTYPE)
+order by 2;
+
+select
+  enumlabel,
+  enumsortorder
+from
+  pg_enum
+where
+  enumtypid = cast('planets' as REGTYPE)
+order by cast(enumlabel as planets);
+
+alter type planets
+add value 'plutoplutoplutoplutoplutoplutoplutoplutoplutoplutoplutoplutoplutopluto';
+
+alter type planets add value 'pluto' after 'zeus';
+
+alter type planets add value 'mercury';
+
+alter type planets add value if not exists 'mercury';
+
+select enum_last(cast(null as planets));
+
+alter type planets add value if not exists 'pluto';
+
+select enum_last(cast(null as planets));
+
+create type insenum as enum ('L1', 'L2');
+
+alter type insenum add value 'i1' before 'L2';
+
+alter type insenum add value 'i2' before 'L2';
+
+alter type insenum add value 'i3' before 'L2';
+
+alter type insenum add value 'i4' before 'L2';
+
+alter type insenum add value 'i5' before 'L2';
+
+alter type insenum add value 'i6' before 'L2';
+
+alter type insenum add value 'i7' before 'L2';
+
+alter type insenum add value 'i8' before 'L2';
+
+alter type insenum add value 'i9' before 'L2';
+
+alter type insenum add value 'i10' before 'L2';
+
+alter type insenum add value 'i11' before 'L2';
+
+alter type insenum add value 'i12' before 'L2';
+
+alter type insenum add value 'i13' before 'L2';
+
+alter type insenum add value 'i14' before 'L2';
+
+alter type insenum add value 'i15' before 'L2';
+
+alter type insenum add value 'i16' before 'L2';
+
+alter type insenum add value 'i17' before 'L2';
+
+alter type insenum add value 'i18' before 'L2';
+
+alter type insenum add value 'i19' before 'L2';
+
+alter type insenum add value 'i20' before 'L2';
+
+alter type insenum add value 'i21' before 'L2';
+
+alter type insenum add value 'i22' before 'L2';
+
+alter type insenum add value 'i23' before 'L2';
+
+alter type insenum add value 'i24' before 'L2';
+
+alter type insenum add value 'i25' before 'L2';
+
+alter type insenum add value 'i26' before 'L2';
+
+alter type insenum add value 'i27' before 'L2';
+
+alter type insenum add value 'i28' before 'L2';
+
+alter type insenum add value 'i29' before 'L2';
+
+alter type insenum add value 'i30' before 'L2';
+
+select
+  enumlabel,
+  case
+    when enumsortorder > 20 then null
+    else enumsortorder
+  end
+  as so
+from
+  pg_enum
+where
+  enumtypid = cast('insenum' as REGTYPE)
+order by enumsortorder;
+
+create table enumtest (col rainbow);
+
+insert into enumtest values ('red'), ('orange'), ('yellow'), ('green');
+
+select * from enumtest;
+
+select * from enumtest where col = 'orange';
+
+select * from enumtest where col <> 'orange' order by col;
+
+select * from enumtest where col > 'yellow' order by col;
+
+select * from enumtest where col >= 'yellow' order by col;
+
+select * from enumtest where col < 'green' order by col;
+
+select * from enumtest where col <= 'green' order by col;
+
+select cast(cast('red' as rainbow) as TEXT) || 'hithere';
+
+select cast(cast('red' as TEXT) as rainbow) = cast('red' as rainbow);
+
+select MIN(col) from enumtest;
+
+select MAX(col) from enumtest;
+
+select MAX(col) from enumtest where col < 'green';
+
+set enable_seqscan = off;
+
+set enable_bitmapscan = off;
+
+create unique index "enumtest_btree" on enumtest using btree (col);
+
+select * from enumtest where col = 'orange';
+
+select * from enumtest where col <> 'orange' order by col;
+
+select * from enumtest where col > 'yellow' order by col;
+
+select * from enumtest where col >= 'yellow' order by col;
+
+select * from enumtest where col < 'green' order by col;
+
+select * from enumtest where col <= 'green' order by col;
+
+select MIN(col) from enumtest;
+
+select MAX(col) from enumtest;
+
+select MAX(col) from enumtest where col < 'green';
+
+drop INDEX "enumtest_btree";
+
+create index "enumtest_hash" on enumtest using hash (col);
+
+select * from enumtest where col = 'orange';
+
+drop INDEX "enumtest_hash";
+
+reset enable_seqscan;
+
+reset enable_bitmapscan;
+
+create domain rgb as rainbow check (value in ('red', 'green', 'blue'));
+
+select cast('red' as rgb);
+
+select cast('purple' as rgb);
+
+select cast(cast('purple' as rainbow) as rgb);
+
+drop DOMAIN rgb;
+
+select cast('{red,green,blue}' as rainbow[]);
+
+select (cast('{red,green,blue}' as rainbow[]))[2];
+
+select 'red' = any (cast('{red,green,blue}' as rainbow[]));
+
+select 'yellow' = any (cast('{red,green,blue}' as rainbow[]));
+
+select 'red' = all (cast('{red,green,blue}' as rainbow[]));
+
+select 'red' = all (cast('{red,red}' as rainbow[]));
+
+select enum_first(cast(null as rainbow));
+
+select enum_last(cast('green' as rainbow));
+
+select enum_range(cast(null as rainbow));
+
+select enum_range(cast('orange' as rainbow), cast('green' as rainbow));
+
+select enum_range(null, cast('green' as rainbow));
+
+select enum_range(cast('orange' as rainbow), null);
+
+select enum_range(cast(null as rainbow), null);
+
+create function echo_me(ANYENUM)
+returns TEXT
+as '
+BEGIN
+RETURN $1::text || ''omg'';
+END
+'
+language "plpgsql";
+
+select echo_me(cast('red' as rainbow));
+
+create function echo_me(rainbow)
+returns TEXT
+as '
+BEGIN
+RETURN $1::text || ''wtf'';
+END
+'
+language "plpgsql";
+
+select echo_me(cast('red' as rainbow));
+
+drop FUNCTION echo_me(ANYENUM);
+
+select echo_me('red');
+
+drop FUNCTION echo_me(rainbow);
+
+create table enumtest_parent (id rainbow primary key);
+
+create table enumtest_child (parent rainbow references enumtest_parent);
+
+insert into enumtest_parent values ('red');
+
+insert into enumtest_child values ('red');
+
+insert into enumtest_child values ('blue');
+
+delete from enumtest_parent;
+
+create type bogus as enum ('good', 'bad', 'ugly');
+
+create table enumtest_bogus_child (parent bogus references enumtest_parent);
+
+drop TYPE bogus;
+
+alter type rainbow rename value 'red' to 'crimson';
+
+select
+  enumlabel,
+  enumsortorder
+from
+  pg_enum
+where
+  enumtypid = cast('rainbow' as REGTYPE)
+order by 2;
+
+alter type rainbow rename value 'red' to 'crimson';
+
+alter type rainbow rename value 'blue' to 'green';
+
+create type bogus as enum ('good');
+
+begin;
+
+alter type bogus add value 'new';
+
+savepoint x;
+
+select cast('new' as bogus);
+
+rollback to savepoint x;
+
+select enum_first(cast(null as bogus));
+
+select enum_last(cast(null as bogus));
+
+rollback to savepoint x;
+
+select enum_range(cast(null as bogus));
+
+rollback to savepoint x;
+
+commit;
+
+select cast('new' as bogus);
+
+select
+  enumlabel,
+  enumsortorder
+from
+  pg_enum
+where
+  enumtypid = cast('bogus' as REGTYPE)
+order by 2;
+
+begin;
+
+alter type bogus rename to bogon;
+
+alter type bogon add value 'bad';
+
+select cast('bad' as bogon);
+
+rollback;
+
+begin;
+
+alter type bogus rename value 'good' to 'bad';
+
+select cast('bad' as bogus);
+
+rollback;
+
+drop TYPE bogus;
+
+begin;
+
+create type bogus as enum ('good', 'bad', 'ugly');
+
+alter type bogus rename to bogon;
+
+select enum_range(cast(null as bogon));
+
+rollback;
+
+begin;
+
+create type bogus as enum ('good');
+
+alter type bogus rename to bogon;
+
+alter type bogon add value 'bad';
+
+alter type bogon add value 'ugly';
+
+select enum_range(cast(null as bogon));
+
+rollback;
+
+drop TABLE "enumtest_child";
+
+drop TABLE "enumtest_parent";
+
+drop TABLE "enumtest";
+
+drop TYPE rainbow;
+
+select COUNT(*) from pg_type where typname = 'rainbow';
+
+select
+  *
+from
+  pg_enum
+where
+  not exists
+  (
+    select
+      1
+    from
+      pg_type
+    where
+      pg_type.oid = enumtypid
+  );

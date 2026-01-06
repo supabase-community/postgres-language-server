@@ -1,0 +1,13 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/single/merge_stmt_0.sql
+snapshot_kind: text
+---
+merge into target_table as t
+using source_table as s
+on t.id = s.id
+when matched
+then update set value = s.value
+when not matched by TARGET
+then insert (id, value)
+values (s.id, s.value);

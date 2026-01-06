@@ -1,0 +1,1319 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/generated_stored.sql
+snapshot_kind: text
+---
+create schema "generated_stored_tests";
+
+grant USAGE on schema generated_stored_tests to PUBLIC;
+
+set search_path to generated_stored_tests;
+
+create table gtest0 (
+  a INT primary key,
+  b INT generated always as (55) stored
+);
+
+create table gtest1 (
+  a INT primary key,
+  b INT generated always as (a * 2) stored
+);
+
+select
+  table_name,
+  column_name,
+  column_default,
+  is_nullable,
+  is_generated,
+  generation_expression
+from
+  information_schema.columns
+where
+  table_schema = 'generated_stored_tests'
+order by 1,
+  2;
+
+select
+  table_name,
+  column_name,
+  dependent_column
+from
+  information_schema.column_column_usage
+where
+  table_schema = 'generated_stored_tests'
+order by 1,
+  2,
+  3;
+
+create table gtest_err_1 (
+  a INT primary key,
+  b INT
+  generated always as (a * 2) stored
+  generated always as (a * 3) stored
+);
+
+create table gtest_err_2a (
+  a INT primary key,
+  b INT generated always as (b * 2) stored
+);
+
+create table gtest_err_2b (
+  a INT primary key,
+  b INT generated always as (a * 2) stored,
+  c INT generated always as (b * 3) stored
+);
+
+create table gtest_err_2c (
+  a INT primary key,
+  b INT
+  generated always as (num_nulls(gtest_err_2c)) stored
+);
+
+create table gtest_err_3 (
+  a INT primary key,
+  b INT generated always as (c * 2) stored
+);
+
+create table gtest_err_4 (
+  a INT primary key,
+  b DOUBLE PRECISION
+  generated always as (random()) stored
+);
+
+create table gtest2 (
+  a INT,
+  b TEXT generated always as (a || ' sec') stored
+);
+
+drop TABLE "gtest2";
+
+create table gtest_err_5a (
+  a INT primary key,
+  b INT default 5 generated always as (a * 2) stored
+);
+
+create table gtest_err_5b (
+  a INT primary key,
+  b INT
+  generated always as identity
+  generated always as (a * 2) stored
+);
+
+create table gtest_err_6a (
+  a INT primary key,
+  b BOOLEAN generated always as (xmin <> 37) stored
+);
+
+create table gtest_err_7a (
+  a INT primary key,
+  b INT generated always as (AVG(a)) stored
+);
+
+create table gtest_err_7b (
+  a INT primary key,
+  b INT
+  generated always as (ROW_NUMBER() over (order by a)) stored
+);
+
+create table gtest_err_7c (
+  a INT primary key,
+  b INT generated always as ((select a)) stored
+);
+
+create table gtest_err_7d (
+  a INT primary key,
+  b INT
+  generated always as (generate_series(1, a)) stored
+);
+
+insert into gtest1 values (1);
+
+insert into gtest1 values (2, default);
+
+insert into gtest1 values (3, 33);
+
+insert into gtest1 values (3, 33), (4, 44);
+
+insert into gtest1 values (3, default), (4, 44);
+
+insert into gtest1 values (3, 33), (4, default);
+
+insert into gtest1 values (3, default), (4, default);
+
+select * from gtest1 order by a;
+
+select gtest1 from gtest1 order by a;
+
+select a, (select gtest1.b) from gtest1 order by a;
+
+delete from gtest1 where a >= 3;
+
+update gtest1 set b = default where a = 1;
+
+update gtest1 set b = 11 where a = 1;
+
+select * from gtest1 order by a;
+
+select a, b, b * 2 as b2 from gtest1 order by a;
+
+select a, b from gtest1 where b = 4 order by a;
+
+insert into gtest1 values (2000000000);
+
+select * from gtest1;
+
+delete from gtest1 where a = 2000000000;
+
+create table gtestx (
+  x INT,
+  y INT
+);
+
+insert into gtestx values (11, 1), (22, 2), (33, 3);
+
+select * from gtestx, gtest1 where gtestx.y = gtest1.a;
+
+drop TABLE "gtestx";
+
+select * from gtest1 order by a;
+
+update gtest1 set a = 3 where b = 4 returning old.*, new.*;
+
+select * from gtest1 order by a;
+
+delete from gtest1 where b = 2;
+
+select * from gtest1 order by a;
+
+create table gtestm (
+  id INT primary key,
+  f1 INT,
+  f2 INT,
+  f3 INT generated always as (f1 * 2) stored,
+  f4 INT generated always as (f2 * 2) stored
+);
+
+insert into gtestm values (1, 5, 100);
+
+select * from gtestm order by id;
+
+drop TABLE "gtestm";
+
+create table gtestm (
+  a INT primary key,
+  b INT generated always as (a * 2) stored
+);
+
+insert into gtestm (a) select g from generate_series(1, 10) as g;
+
+drop TABLE "gtestm";
+
+create view gtest1v
+as select * from gtest1;
+
+select * from gtest1v;
+
+insert into gtest1v values (4, 8);
+
+insert into gtest1v values (5, default);
+
+insert into gtest1v values (6, 66), (7, 77);
+
+insert into gtest1v values (6, default), (7, 77);
+
+insert into gtest1v values (6, 66), (7, default);
+
+insert into gtest1v values (6, default), (7, default);
+
+alter view gtest1v
+  alter column b set default 100;
+
+insert into gtest1v values (8, default);
+
+insert into gtest1v values (8, default), (9, default);
+
+select * from gtest1v;
+
+delete from gtest1v where a >= 5;
+
+drop VIEW "gtest1v";
+
+with foo as (select * from gtest1) select * from foo;
+
+create table gtest1_1 ()
+inherits (gtest1);
+
+select * from gtest1_1;
+
+insert into gtest1_1 values (4);
+
+select * from gtest1_1;
+
+select * from gtest1;
+
+create table gtest_normal (
+  a INT,
+  b INT
+);
+
+create table gtest_normal_child (
+  a INT,
+  b INT generated always as (a * 2) stored
+)
+inherits (gtest_normal);
+
+create table gtest_normal_child (
+  a INT,
+  b INT generated always as (a * 2) stored
+);
+
+alter table gtest_normal_child
+  INHERIT gtest_normal;
+
+drop TABLE "gtest_normal", "gtest_normal_child";
+
+create table gtestx (
+  x INT,
+  b INT default 10
+)
+inherits (gtest1);
+
+create table gtestx (
+  x INT,
+  b INT generated always as identity
+)
+inherits (gtest1);
+
+create table gtestx (
+  x INT,
+  b INT generated always as (a * 22) stored
+)
+inherits (gtest1);
+
+insert into gtestx (a, x) values (11, 22);
+
+select * from gtest1;
+
+select * from gtestx;
+
+create table gtestxx_1 (
+  a INT not null,
+  b INT
+);
+
+alter table gtestxx_1
+  INHERIT gtest1;
+
+create table gtestxx_3 (
+  a INT not null,
+  b INT generated always as (a * 2) stored
+);
+
+alter table gtestxx_3
+  INHERIT gtest1;
+
+create table gtestxx_4 (
+  b INT generated always as (a * 2) stored,
+  a INT not null
+);
+
+alter table gtestxx_4
+  INHERIT gtest1;
+
+create table gtesty (
+  x INT,
+  b INT default 55
+);
+
+create table gtest1_y ()
+inherits (gtest0,
+gtesty);
+
+drop TABLE "gtesty";
+
+create table gtesty (
+  x INT,
+  b INT
+);
+
+create table gtest1_y ()
+inherits (gtest1,
+gtesty);
+
+drop TABLE "gtesty";
+
+create table gtesty (
+  x INT,
+  b INT generated always as (x * 22) stored
+);
+
+create table gtest1_y ()
+inherits (gtest1,
+gtesty);
+
+create table gtest1_y (b INT generated always as (x + 1) stored)
+inherits (gtest1,
+gtesty);
+
+create table gtestp (f1 INT);
+
+create table gtestc (f2 INT generated always as (f1 + 1) stored)
+inherits (gtestp);
+
+insert into gtestc values (42);
+
+select * from gtestc;
+
+update gtestp set f1 = f1 * 10;
+
+select * from gtestc;
+
+drop TABLE "gtestp" cascade;
+
+create table gtest3 (
+  a INT,
+  b INT generated always as (a * 3) stored
+);
+
+insert into gtest3 (a) values (1), (2), (3), (null);
+
+select * from gtest3 order by a;
+
+update gtest3 set a = 22 where a = 2;
+
+select * from gtest3 order by a;
+
+create table gtest3a (
+  a TEXT,
+  b TEXT generated always as (a || '+' || a) stored
+);
+
+insert into gtest3a (a) values ('a'), ('b'), ('c'), (null);
+
+select * from gtest3a order by a;
+
+update gtest3a set a = 'bb' where a = 'b';
+
+select * from gtest3a order by a;
+
+truncate gtest1;
+
+insert into gtest1 (a) values (1), (2);
+
+copy gtest1 to stdout;
+
+copy gtest1 (a, b) to stdout;
+
+select * from gtest1 order by a;
+
+truncate gtest3;
+
+insert into gtest3 (a) values (1), (2);
+
+copy gtest3 to stdout;
+
+copy gtest3 (a, b) to stdout;
+
+select * from gtest3 order by a;
+
+create table gtest2 (
+  a INT primary key,
+  b INT generated always as (null) stored
+);
+
+insert into gtest2 values (1);
+
+select * from gtest2;
+
+create table gtest_varlena (
+  a VARCHAR,
+  b VARCHAR generated always as (a) stored
+);
+
+insert into gtest_varlena (a) values ('01234567890123456789');
+
+insert into gtest_varlena (a) values (null);
+
+select * from gtest_varlena order by a;
+
+drop TABLE "gtest_varlena";
+
+create type double_int as (a INT, b INT);
+
+create table gtest4 (
+  a INT,
+  b double_int
+  generated always as ((a * 2, a * 3)) stored
+);
+
+insert into gtest4 values (1), (6);
+
+select * from gtest4;
+
+drop TABLE "gtest4";
+
+drop TYPE double_int;
+
+create table gtest_tableoid (
+  a INT primary key,
+  b BOOLEAN
+  generated always as (tableoid = cast('gtest_tableoid' as REGCLASS)) stored
+);
+
+insert into gtest_tableoid values (1), (2);
+
+alter table gtest_tableoid
+  add column c REGCLASS generated always as (tableoid) stored;
+
+select * from gtest_tableoid;
+
+create table gtest10 (
+  a INT primary key,
+  b INT,
+  c INT generated always as (b * 2) stored
+);
+
+alter table gtest10
+  drop column b;
+
+alter table gtest10
+  drop column b cascade;
+
+create table gtest10a (
+  a INT primary key,
+  b INT generated always as (a * 2) stored
+);
+
+alter table gtest10a
+  drop column b;
+
+insert into gtest10a (a) values (1);
+
+create user regress_user11;
+
+create table gtest11 (
+  a INT primary key,
+  b INT,
+  c INT generated always as (b * 2) stored
+);
+
+insert into gtest11 values (1, 10), (2, 20);
+
+grant SELECT (a, c) on table gtest11 to regress_user11;
+
+create function gf1(a INT)
+returns INT
+as ' SELECT a * 3 '
+immutable
+language "sql";
+
+revoke all on function gf1(INT) from PUBLIC;
+
+create table gtest12 (
+  a INT primary key,
+  b INT,
+  c INT generated always as (gf1(b)) stored
+);
+
+insert into gtest12 values (1, 10), (2, 20);
+
+grant SELECT (a, c), INSERT on table gtest12 to regress_user11;
+
+set role to regress_user11;
+
+select a, b from gtest11;
+
+select a, c from gtest11;
+
+select gf1(10);
+
+insert into gtest12 values (3, 30), (4, 40);
+
+select a, c from gtest12;
+
+reset role;
+
+drop FUNCTION gf1(INT);
+
+drop TABLE "gtest11", "gtest12";
+
+drop FUNCTION gf1(INT);
+
+drop role regress_user11;
+
+create table gtest20 (
+  a INT primary key,
+  b INT
+  generated always as (a * 2) stored
+  check (b < 50)
+);
+
+insert into gtest20 (a) values (10);
+
+insert into gtest20 (a) values (30);
+
+alter table gtest20
+  alter column b set EXPRESSION
+  as (a * 100);
+
+alter table gtest20
+  alter column b set EXPRESSION
+  as (a * 3);
+
+create table gtest20a (
+  a INT primary key,
+  b INT generated always as (a * 2) stored
+);
+
+insert into gtest20a (a) values (10);
+
+insert into gtest20a (a) values (30);
+
+alter table gtest20a
+  add check (b < 50);
+
+alter table gtest20a
+  add column c DOUBLE PRECISION default random() check (b < 50);
+
+alter table gtest20a
+  add column c DOUBLE PRECISION default random() check (b < 61);
+
+create table gtest20b (
+  a INT primary key,
+  b INT generated always as (a * 2) stored
+);
+
+insert into gtest20b (a) values (10);
+
+insert into gtest20b (a) values (30);
+
+alter table gtest20b
+  add constraint "chk" check (b < 50) not valid;
+
+alter table gtest20b
+  validate constraint chk;
+
+create table gtest20c (
+  a INT,
+  b INT generated always as (a * 2) stored
+);
+
+alter table gtest20c
+  add constraint "whole_row_check" check (gtest20c is not null);
+
+insert into gtest20c values (1);
+
+insert into gtest20c values (null);
+
+create table gtest21a (
+  a INT primary key,
+  b INT
+  generated always as (nullif(a, 0)) stored
+  not null
+);
+
+insert into gtest21a (a) values (1);
+
+insert into gtest21a (a) values (0);
+
+create table gtest21b (
+  a INT primary key,
+  b INT generated always as (nullif(a, 0)) stored
+);
+
+alter table gtest21b
+  alter column b set not null;
+
+insert into gtest21b (a) values (1);
+
+insert into gtest21b (a) values (0);
+
+alter table gtest21b
+  alter column b drop not null;
+
+insert into gtest21b (a) values (0);
+
+create table gtest22a (
+  a INT primary key,
+  b INT generated always as (a / 2) stored unique
+);
+
+insert into gtest22a values (2);
+
+insert into gtest22a values (3);
+
+insert into gtest22a values (4);
+
+create table gtest22b (
+  a INT,
+  b INT generated always as (a / 2) stored,
+  primary key (a, b)
+);
+
+insert into gtest22b values (2);
+
+insert into gtest22b values (2);
+
+create table gtest22c (
+  a INT,
+  b INT generated always as (a * 2) stored
+);
+
+create index "gtest22c_b_idx" on gtest22c using btree (b);
+
+create index "gtest22c_expr_idx" on gtest22c using btree ((b * 3));
+
+create index "gtest22c_pred_idx"
+on gtest22c
+using btree
+(
+  a
+)
+where
+  b > 0;
+
+insert into gtest22c values (1), (2), (3);
+
+set enable_seqscan = off;
+
+set enable_bitmapscan = off;
+
+select * from gtest22c where b = 4;
+
+select * from gtest22c where b = 4;
+
+select * from gtest22c where b * 3 = 6;
+
+select * from gtest22c where b * 3 = 6;
+
+select * from gtest22c where a = 1 and b > 0;
+
+select * from gtest22c where a = 1 and b > 0;
+
+alter table gtest22c
+  alter column b set EXPRESSION
+  as (a * 4);
+
+analyze gtest22c;
+
+select * from gtest22c where b = 8;
+
+select * from gtest22c where b = 8;
+
+select * from gtest22c where b * 3 = 12;
+
+select * from gtest22c where b * 3 = 12;
+
+select * from gtest22c where a = 1 and b > 0;
+
+select * from gtest22c where a = 1 and b > 0;
+
+reset enable_seqscan;
+
+reset enable_bitmapscan;
+
+create table gtest23a (
+  x INT primary key,
+  y INT
+);
+
+insert into gtest23a values (1, 11), (2, 22), (3, 33);
+
+create table gtest23x (
+  a INT primary key,
+  b INT
+  generated always as (a * 2) stored
+  references gtest23a (x) on UPDATE cascade
+);
+
+create table gtest23x (
+  a INT primary key,
+  b INT
+  generated always as (a * 2) stored
+  references gtest23a (x) on DELETE set null
+);
+
+create table gtest23b (
+  a INT primary key,
+  b INT
+  generated always as (a * 2) stored
+  references gtest23a (x)
+);
+
+insert into gtest23b values (1);
+
+insert into gtest23b values (5);
+
+alter table gtest23b
+  alter column b set EXPRESSION
+  as (a * 5);
+
+alter table gtest23b
+  alter column b set EXPRESSION
+  as (a * 1);
+
+drop TABLE "gtest23b";
+
+drop TABLE "gtest23a";
+
+create table gtest23p (
+  x INT,
+  y INT generated always as (x * 2) stored,
+  primary key (y)
+);
+
+insert into gtest23p values (1), (2), (3);
+
+create table gtest23q (
+  a INT primary key,
+  b INT references gtest23p (y)
+);
+
+insert into gtest23q values (1, 2);
+
+insert into gtest23q values (2, 5);
+
+create domain gtestdomain1 as INT check (value < 10);
+
+create table gtest24 (
+  a INT primary key,
+  b gtestdomain1 generated always as (a * 2) stored
+);
+
+insert into gtest24 (a) values (4);
+
+insert into gtest24 (a) values (6);
+
+create type gtestdomain1range as RANGE (subtype = gtestdomain1);
+
+create table gtest24r (
+  a INT primary key,
+  b gtestdomain1range
+  generated always as (gtestdomain1range(a, a + 5)) stored
+);
+
+insert into gtest24r (a) values (4);
+
+insert into gtest24r (a) values (6);
+
+create domain gtestdomainnn as INT check (value is not null);
+
+create table gtest24nn (
+  a INT,
+  b gtestdomainnn generated always as (a * 2) stored
+);
+
+insert into gtest24nn (a) values (4);
+
+insert into gtest24nn (a) values (null);
+
+create type gtest_type as (f1 INT, f2 TEXT, f3 BIGINT);
+
+create table gtest28 of gtest_type (f1 with OPTIONS generated always as (f2 * 2) stored );
+
+drop TYPE gtest_type cascade;
+
+create table gtest_parent (
+  f1 DATE not null,
+  f2 BIGINT,
+  f3 BIGINT
+)
+partition by range(f1);
+
+create table gtest_child
+partition of gtest_parent
+(
+  f3 generated always as (f2 * 2) stored
+)
+for values from ('2016-07-01') to ('2016-08-01');
+
+create table gtest_child (
+  f1 DATE not null,
+  f2 BIGINT,
+  f3 BIGINT generated always as (f2 * 2) stored
+);
+
+alter table gtest_parent
+  ATTACH partition
+  gtest_child
+  for values from ('2016-07-01') to ('2016-08-01');
+
+drop TABLE "gtest_parent", "gtest_child";
+
+create table gtest_parent (
+  f1 DATE not null,
+  f2 BIGINT,
+  f3 BIGINT generated always as (f2 * 2) stored
+)
+partition by range(f1);
+
+create table gtest_child partition of gtest_parent for values from ('2016-07-01') to ('2016-08-01');
+
+create table gtest_child2
+partition of gtest_parent
+(
+  f3 generated always as (f2 * 22) stored
+)
+for values from ('2016-08-01') to ('2016-09-01');
+
+create table gtest_child3
+partition of gtest_parent
+(
+  f3 default 42
+)
+for values from ('2016-09-01') to ('2016-10-01');
+
+create table gtest_child3
+partition of gtest_parent
+(
+  f3 generated always as identity
+)
+for values from ('2016-09-01') to ('2016-10-01');
+
+create table gtest_child3 (
+  f1 DATE not null,
+  f2 BIGINT,
+  f3 BIGINT
+);
+
+alter table gtest_parent
+  ATTACH partition
+  gtest_child3
+  for values from ('2016-09-01') to ('2016-10-01');
+
+drop TABLE "gtest_child3";
+
+create table gtest_child3 (
+  f1 DATE not null,
+  f2 BIGINT,
+  f3 BIGINT default 42
+);
+
+alter table gtest_parent
+  ATTACH partition
+  gtest_child3
+  for values from ('2016-09-01') to ('2016-10-01');
+
+drop TABLE "gtest_child3";
+
+create table gtest_child3 (
+  f1 DATE not null,
+  f2 BIGINT,
+  f3 BIGINT generated always as identity
+);
+
+alter table gtest_parent
+  ATTACH partition
+  gtest_child3
+  for values from ('2016-09-01') to ('2016-10-01');
+
+drop TABLE "gtest_child3";
+
+alter table gtest_parent
+  ATTACH partition
+  gtest_child3
+  for values from ('2016-09-01') to ('2016-10-01');
+
+drop TABLE "gtest_child3";
+
+create table gtest_child3 (
+  f1 DATE not null,
+  f2 BIGINT,
+  f3 BIGINT generated always as (f2 * 33) stored
+);
+
+alter table gtest_parent
+  ATTACH partition
+  gtest_child3
+  for values from ('2016-09-01') to ('2016-10-01');
+
+insert into gtest_parent (f1, f2) values ('2016-07-15', 1);
+
+insert into gtest_parent (f1, f2) values ('2016-07-15', 2);
+
+insert into gtest_parent (f1, f2) values ('2016-08-15', 3);
+
+select cast(tableoid as REGCLASS), * from gtest_parent order by 1, 2, 3;
+
+select cast(tableoid as REGCLASS), * from gtest_child order by 1, 2, 3;
+
+select cast(tableoid as REGCLASS), * from gtest_child2 order by 1, 2, 3;
+
+select cast(tableoid as REGCLASS), * from gtest_child3 order by 1, 2, 3;
+
+update gtest_parent set f1 = f1 + 60 where f2 = 1;
+
+select cast(tableoid as REGCLASS), * from gtest_parent order by 1, 2, 3;
+
+alter table only gtest_parent
+  alter column f3 set EXPRESSION
+  as (f2 * 4);
+
+alter table gtest_child
+  alter column f3 set EXPRESSION
+  as (f2 * 10);
+
+select cast(tableoid as REGCLASS), * from gtest_parent order by 1, 2, 3;
+
+alter table gtest_parent
+  alter column f3 set EXPRESSION
+  as (f2 * 2);
+
+select cast(tableoid as REGCLASS), * from gtest_parent order by 1, 2, 3;
+
+create table gtest_part_key (
+  f1 DATE not null,
+  f2 BIGINT,
+  f3 BIGINT generated always as (f2 * 2) stored
+)
+partition by range(f3);
+
+create table gtest_part_key (
+  f1 DATE not null,
+  f2 BIGINT,
+  f3 BIGINT generated always as (f2 * 2) stored
+)
+partition by range((f3 * 3));
+
+create table gtest25 (a INT primary key);
+
+insert into gtest25 values (3), (4);
+
+alter table gtest25
+  add column b INT generated always as (a * 2) stored,
+  alter column b set EXPRESSION
+  as (a * 3);
+
+select * from gtest25 order by a;
+
+alter table gtest25
+  add column x INT generated always as (b * 4) stored;
+
+alter table gtest25
+  add column x INT generated always as (z * 4) stored;
+
+alter table gtest25
+  add column c INT default 42,
+  add column x INT generated always as (c * 4) stored;
+
+alter table gtest25
+  add column d INT default 101;
+
+alter table gtest25
+  alter column d type DOUBLE PRECISION,
+  add column y DOUBLE PRECISION
+    generated always as (d * 4) stored;
+
+select * from gtest25 order by a;
+
+create table gtest27 (
+  a INT,
+  b INT,
+  x INT generated always as ((a + b) * 2) stored
+);
+
+insert into gtest27 (a, b) values (3, 7), (4, 11);
+
+alter table gtest27
+  alter column a type TEXT;
+
+alter table gtest27
+  alter column x type NUMERIC;
+
+select * from gtest27;
+
+alter table gtest27
+  alter column x type BOOLEAN using x <> 0;
+
+alter table gtest27
+  alter column x drop default;
+
+alter table gtest27
+  drop column x,
+  alter column a type BIGINT,
+  alter column b type BIGINT,
+  add column x BIGINT generated always as ((a + b) * 2) stored;
+
+alter table gtest27
+  alter column a type DOUBLE PRECISION,
+  alter column b type DOUBLE PRECISION;
+
+select * from gtest27;
+
+create table gtest29 (
+  a INT,
+  b INT generated always as (a * 2) stored
+);
+
+insert into gtest29 (a) values (3), (4);
+
+select * from gtest29;
+
+alter table gtest29
+  alter column a set EXPRESSION
+  as (a * 3);
+
+alter table gtest29
+  alter column a drop EXPRESSION;
+
+alter table gtest29
+  alter column a drop EXPRESSION if exists;
+
+alter table gtest29
+  alter column b set EXPRESSION
+  as (a * 3);
+
+select * from gtest29;
+
+alter table gtest29
+  alter column b drop EXPRESSION;
+
+insert into gtest29 (a) values (5);
+
+insert into gtest29 (a, b) values (6, 66);
+
+select * from gtest29;
+
+alter table gtest29
+  drop column a;
+
+create table gtest30 (
+  a INT,
+  b INT generated always as (a * 2) stored
+);
+
+create table gtest30_1 ()
+inherits (gtest30);
+
+alter table gtest30
+  alter column b drop EXPRESSION;
+
+drop TABLE "gtest30" cascade;
+
+create table gtest30 (
+  a INT,
+  b INT generated always as (a * 2) stored
+);
+
+create table gtest30_1 ()
+inherits (gtest30);
+
+alter table only gtest30
+  alter column b drop EXPRESSION;
+
+alter table gtest30_1
+  alter column b drop EXPRESSION;
+
+create table gtest31_1 (
+  a INT,
+  b TEXT generated always as ('hello') stored,
+  c TEXT
+);
+
+create table gtest31_2 (
+  x INT,
+  y gtest31_1
+);
+
+alter table gtest31_1
+  alter column b type VARCHAR;
+
+alter table gtest31_2
+  add constraint "cc" check (y.b is not null);
+
+alter table gtest31_1
+  alter column b set EXPRESSION
+  as ('hello1');
+
+alter table gtest31_2
+  drop constraint cc;
+
+create STATISTICS gtest31_2_stat on (y.b is not null) from gtest31_2;
+
+alter table gtest31_1
+  alter column b set EXPRESSION
+  as ('hello2');
+
+drop STATISTICS "gtest31_2_stat";
+
+create index "gtest31_2_y_idx" on gtest31_2 using btree ((y.b));
+
+alter table gtest31_1
+  alter column b set EXPRESSION
+  as ('hello3');
+
+drop TABLE "gtest31_1", "gtest31_2";
+
+create table gtest31_1 (
+  a INT,
+  b TEXT generated always as ('hello') stored,
+  c TEXT
+)
+partition by LIST(a);
+
+create table gtest31_2 (
+  x INT,
+  y gtest31_1
+);
+
+alter table gtest31_1
+  alter column b type VARCHAR;
+
+drop TABLE "gtest31_1", "gtest31_2";
+
+create table gtest26 (
+  a INT primary key,
+  b INT generated always as (a * 2) stored
+);
+
+create function gtest_trigger_func()
+returns trigger
+language "plpgsql"
+as '
+BEGIN
+  IF tg_op IN (''DELETE'', ''UPDATE'') THEN
+    RAISE INFO ''%: %: old = %'', TG_NAME, TG_WHEN, OLD;
+  END IF;
+  IF tg_op IN (''INSERT'', ''UPDATE'') THEN
+    RAISE INFO ''%: %: new = %'', TG_NAME, TG_WHEN, NEW;
+  END IF;
+  IF tg_op = ''DELETE'' THEN
+    RETURN OLD;
+  ELSE
+    RETURN NEW;
+  END IF;
+END
+';
+
+create TRIGGER gtest1
+  before delete or update
+  on gtest26
+  for EACH ROW
+  when (old.b < 0)
+  EXECUTE FUNCTION gtest_trigger_func();
+
+create TRIGGER gtest2a
+  before insert or update
+  on gtest26
+  for EACH ROW
+  when (new.b < 0)
+  EXECUTE FUNCTION gtest_trigger_func();
+
+create TRIGGER gtest2b
+  before insert or update
+  on gtest26
+  for EACH ROW
+  when (new.* is not null)
+  EXECUTE FUNCTION gtest_trigger_func();
+
+create TRIGGER gtest2
+  before insert
+  on gtest26
+  for EACH ROW
+  when (new.a < 0)
+  EXECUTE FUNCTION gtest_trigger_func();
+
+create TRIGGER gtest3
+  after delete or update
+  on gtest26
+  for EACH ROW
+  when (old.b < 0)
+  EXECUTE FUNCTION gtest_trigger_func();
+
+create TRIGGER gtest4
+  after insert or update
+  on gtest26
+  for EACH ROW
+  when (new.b < 0)
+  EXECUTE FUNCTION gtest_trigger_func();
+
+insert into gtest26 (a) values (-2), (0), (3);
+
+select * from gtest26 order by a;
+
+update gtest26 set a = a * -2;
+
+select * from gtest26 order by a;
+
+delete from gtest26 where a = -6;
+
+select * from gtest26 order by a;
+
+drop TRIGGER "gtest1" on "gtest26";
+
+drop TRIGGER "gtest2" on "gtest26";
+
+drop TRIGGER "gtest3" on "gtest26";
+
+create function gtest_trigger_func3()
+returns trigger
+language "plpgsql"
+as '
+BEGIN
+  RAISE NOTICE ''OK'';
+  RETURN NEW;
+END
+';
+
+create TRIGGER gtest11
+  before update of b
+  on gtest26
+  for EACH ROW
+  EXECUTE FUNCTION gtest_trigger_func3();
+
+update gtest26 set a = 1 where a = 0;
+
+drop TRIGGER "gtest11" on "gtest26";
+
+truncate gtest26;
+
+create function gtest_trigger_func4()
+returns trigger
+language "plpgsql"
+as '
+BEGIN
+  NEW.a = 10;
+  NEW.b = 300;
+  RETURN NEW;
+END;
+';
+
+create TRIGGER gtest12_01
+  before insert or update
+  on gtest26
+  for EACH ROW
+  EXECUTE FUNCTION gtest_trigger_func();
+
+create TRIGGER gtest12_02
+  before insert or update
+  on gtest26
+  for EACH ROW
+  EXECUTE FUNCTION gtest_trigger_func4();
+
+create TRIGGER gtest12_03
+  before insert or update
+  on gtest26
+  for EACH ROW
+  EXECUTE FUNCTION gtest_trigger_func();
+
+insert into gtest26 (a) values (1);
+
+select * from gtest26 order by a;
+
+update gtest26 set a = 11 where a = 10;
+
+select * from gtest26 order by a;
+
+create table gtest28a (
+  a INT,
+  b INT,
+  c INT,
+  x INT generated always as (b * 2) stored
+);
+
+alter table gtest28a
+  drop column a;
+
+create table gtest28b (like gtest28a including GENERATED);
+
+select attrelid, attname, attgenerated from pg_attribute where attgenerated not in ('', 's', 'v');

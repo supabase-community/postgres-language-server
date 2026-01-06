@@ -308,6 +308,28 @@ impl LanguageServer for LSPServer {
             Err(err) => LspResult::Err(into_lsp_error(err)),
         }
     }
+
+    #[tracing::instrument(level = "trace", skip(self))]
+    async fn formatting(
+        &self,
+        params: DocumentFormattingParams,
+    ) -> LspResult<Option<Vec<TextEdit>>> {
+        match handlers::formatting::formatting(&self.session, params) {
+            Ok(result) => LspResult::Ok(result),
+            Err(e) => LspResult::Err(into_lsp_error(e)),
+        }
+    }
+
+    #[tracing::instrument(level = "trace", skip(self))]
+    async fn range_formatting(
+        &self,
+        params: DocumentRangeFormattingParams,
+    ) -> LspResult<Option<Vec<TextEdit>>> {
+        match handlers::formatting::range_formatting(&self.session, params) {
+            Ok(result) => LspResult::Ok(result),
+            Err(e) => LspResult::Err(into_lsp_error(e)),
+        }
+    }
 }
 
 impl Drop for LSPServer {

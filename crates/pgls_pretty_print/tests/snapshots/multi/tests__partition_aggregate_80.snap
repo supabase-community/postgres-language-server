@@ -1,0 +1,1111 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/partition_aggregate.sql
+snapshot_kind: text
+---
+set enable_partitionwise_aggregate = 'true';
+
+set enable_partitionwise_join = 'true';
+
+set max_parallel_workers_per_gather = 0;
+
+set enable_incremental_sort = off;
+
+create table pagg_tab (
+  a INT,
+  b INT,
+  c TEXT,
+  d INT
+)
+partition by LIST(c);
+
+create table pagg_tab_p1
+partition of pagg_tab
+for values in ('0000',
+'0001',
+'0002',
+'0003',
+'0004');
+
+create table pagg_tab_p2
+partition of pagg_tab
+for values in ('0005',
+'0006',
+'0007',
+'0008');
+
+create table pagg_tab_p3
+partition of pagg_tab
+for values in ('0009', '0010', '0011');
+
+insert into pagg_tab
+select
+  i % 20,
+  i % 30,
+  to_char(i % 12, 'FM0000'),
+  i % 30
+from
+  generate_series(0, 2999) as i;
+
+analyze pagg_tab;
+
+select
+  c,
+  SUM(a),
+  AVG(b),
+  COUNT(*),
+  MIN(a),
+  MAX(b)
+from
+  pagg_tab
+group by c
+having
+  AVG(d) < 15
+order by 1,
+  2,
+  3;
+
+select
+  c,
+  SUM(a),
+  AVG(b),
+  COUNT(*),
+  MIN(a),
+  MAX(b)
+from
+  pagg_tab
+group by c
+having
+  AVG(d) < 15
+order by 1,
+  2,
+  3;
+
+select
+  a,
+  SUM(b),
+  AVG(b),
+  COUNT(*),
+  MIN(a),
+  MAX(b)
+from
+  pagg_tab
+group by a
+having
+  AVG(d) < 15
+order by 1,
+  2,
+  3;
+
+select
+  a,
+  SUM(b),
+  AVG(b),
+  COUNT(*),
+  MIN(a),
+  MAX(b)
+from
+  pagg_tab
+group by a
+having
+  AVG(d) < 15
+order by 1,
+  2,
+  3;
+
+select a, c, COUNT(*) from pagg_tab group by a, c;
+
+select a, c, COUNT(*) from pagg_tab group by c, a;
+
+select c, a, COUNT(*) from pagg_tab group by a, c;
+
+select c, SUM(a) from pagg_tab where 1 = 2 group by c;
+
+select c, SUM(a) from pagg_tab where 1 = 2 group by c;
+
+select c, SUM(a) from pagg_tab where c = 'x' group by c;
+
+select c, SUM(a) from pagg_tab where c = 'x' group by c;
+
+set enable_hashagg = 'false';
+
+select
+  c,
+  SUM(a),
+  AVG(b),
+  COUNT(*)
+from
+  pagg_tab
+group by 1
+having
+  AVG(d) < 15
+order by 1,
+  2,
+  3;
+
+select
+  c,
+  SUM(a),
+  AVG(b),
+  COUNT(*)
+from
+  pagg_tab
+group by 1
+having
+  AVG(d) < 15
+order by 1,
+  2,
+  3;
+
+select
+  a,
+  SUM(b),
+  AVG(b),
+  COUNT(*)
+from
+  pagg_tab
+group by 1
+having
+  AVG(d) < 15
+order by 1,
+  2,
+  3;
+
+select
+  a,
+  SUM(b),
+  AVG(b),
+  COUNT(*)
+from
+  pagg_tab
+group by 1
+having
+  AVG(d) < 15
+order by 1,
+  2,
+  3;
+
+select c from pagg_tab group by c order by 1;
+
+select c from pagg_tab group by c order by 1;
+
+select a from pagg_tab where a < 3 group by a order by 1;
+
+select a from pagg_tab where a < 3 group by a order by 1;
+
+reset enable_hashagg;
+
+select c, SUM(a) from pagg_tab group by ROLLUP (c) order by 1, 2;
+
+select c, SUM(b order by a) from pagg_tab group by c order by 1, 2;
+
+select a, SUM(b order by a) from pagg_tab group by a order by 1, 2;
+
+create table pagg_tab1 (
+  x INT,
+  y INT
+)
+partition by range(x);
+
+create table pagg_tab1_p1 partition of pagg_tab1 for values from (0) to (10);
+
+create table pagg_tab1_p2 partition of pagg_tab1 for values from (10) to (20);
+
+create table pagg_tab1_p3 partition of pagg_tab1 for values from (20) to (30);
+
+create table pagg_tab2 (
+  x INT,
+  y INT
+)
+partition by range(y);
+
+create table pagg_tab2_p1 partition of pagg_tab2 for values from (0) to (10);
+
+create table pagg_tab2_p2 partition of pagg_tab2 for values from (10) to (20);
+
+create table pagg_tab2_p3 partition of pagg_tab2 for values from (20) to (30);
+
+insert into pagg_tab1
+select
+  i % 30,
+  i % 20
+from
+  generate_series(0, 299, 2) as i;
+
+insert into pagg_tab2
+select
+  i % 20,
+  i % 30
+from
+  generate_series(0, 299, 3) as i;
+
+analyze pagg_tab1;
+
+analyze pagg_tab2;
+
+select
+  t1.x,
+  SUM(t1.y),
+  COUNT(*)
+from
+  pagg_tab1 as t1,
+  pagg_tab2 as t2
+where
+  t1.x = t2.y
+group by t1.x
+order by 1,
+  2,
+  3;
+
+select
+  t1.x,
+  SUM(t1.y),
+  COUNT(*)
+from
+  pagg_tab1 as t1,
+  pagg_tab2 as t2
+where
+  t1.x = t2.y
+group by t1.x
+order by 1,
+  2,
+  3;
+
+select
+  t1.x,
+  SUM(t1.y),
+  COUNT(t1)
+from
+  pagg_tab1 as t1,
+  pagg_tab2 as t2
+where
+  t1.x = t2.y
+group by t1.x
+order by 1,
+  2,
+  3;
+
+select
+  t1.x,
+  SUM(t1.y),
+  COUNT(t1)
+from
+  pagg_tab1 as t1,
+  pagg_tab2 as t2
+where
+  t1.x = t2.y
+group by t1.x
+order by 1,
+  2,
+  3;
+
+select
+  t2.y,
+  SUM(t1.y),
+  COUNT(*)
+from
+  pagg_tab1 as t1,
+  pagg_tab2 as t2
+where
+  t1.x = t2.y
+group by t2.y
+order by 1,
+  2,
+  3;
+
+set enable_hashagg = 'false';
+
+select
+  t1.y,
+  SUM(t1.x),
+  COUNT(*)
+from
+  pagg_tab1 as t1,
+  pagg_tab2 as t2
+where
+  t1.x = t2.y
+group by t1.y
+having
+  AVG(t1.x) > 10
+order by 1,
+  2,
+  3;
+
+select
+  t1.y,
+  SUM(t1.x),
+  COUNT(*)
+from
+  pagg_tab1 as t1,
+  pagg_tab2 as t2
+where
+  t1.x = t2.y
+group by t1.y
+having
+  AVG(t1.x) > 10
+order by 1,
+  2,
+  3;
+
+reset enable_hashagg;
+
+select
+  b.y,
+  SUM(a.y)
+from
+  pagg_tab1 as a
+  left outer join
+    pagg_tab2 as b
+  on a.x = b.y
+group by b.y
+order by 1 nulls last;
+
+select
+  b.y,
+  SUM(a.y)
+from
+  pagg_tab1 as a
+  left outer join
+    pagg_tab2 as b
+  on a.x = b.y
+group by b.y
+order by 1 nulls last;
+
+select
+  b.y,
+  SUM(a.y)
+from
+  pagg_tab1 as a
+  right outer join
+    pagg_tab2 as b
+  on a.x = b.y
+group by b.y
+order by 1 nulls last;
+
+select
+  b.y,
+  SUM(a.y)
+from
+  pagg_tab1 as a
+  right outer join
+    pagg_tab2 as b
+  on a.x = b.y
+group by b.y
+order by 1 nulls last;
+
+select
+  a.x,
+  SUM(b.x)
+from
+  pagg_tab1 as a
+  full outer join
+    pagg_tab2 as b
+  on a.x = b.y
+group by a.x
+order by 1 nulls last;
+
+select
+  a.x,
+  SUM(b.x)
+from
+  pagg_tab1 as a
+  full outer join
+    pagg_tab2 as b
+  on a.x = b.y
+group by a.x
+order by 1 nulls last;
+
+select
+  a.x,
+  b.y,
+  COUNT(*)
+from
+  (
+    select * from pagg_tab1 where x < 20
+  )
+  as a
+  left outer join
+    (
+      select * from pagg_tab2 where y > 10
+    )
+    as b
+  on a.x = b.y
+where
+  a.x > 5 or b.y < 20
+group by a.x,
+  b.y
+order by 1,
+  2;
+
+select
+  a.x,
+  b.y,
+  COUNT(*)
+from
+  (
+    select * from pagg_tab1 where x < 20
+  )
+  as a
+  left outer join
+    (
+      select * from pagg_tab2 where y > 10
+    )
+    as b
+  on a.x = b.y
+where
+  a.x > 5 or b.y < 20
+group by a.x,
+  b.y
+order by 1,
+  2;
+
+select
+  a.x,
+  b.y,
+  COUNT(*)
+from
+  (
+    select * from pagg_tab1 where x < 20
+  )
+  as a
+  full outer join
+    (
+      select * from pagg_tab2 where y > 10
+    )
+    as b
+  on a.x = b.y
+where
+  a.x > 5 or b.y < 20
+group by a.x,
+  b.y
+order by 1,
+  2;
+
+select
+  a.x,
+  b.y,
+  COUNT(*)
+from
+  (
+    select * from pagg_tab1 where x < 20
+  )
+  as a
+  full outer join
+    (
+      select * from pagg_tab2 where y > 10
+    )
+    as b
+  on a.x = b.y
+where
+  a.x > 5 or b.y < 20
+group by a.x,
+  b.y
+order by 1,
+  2;
+
+select
+  a.x,
+  a.y,
+  COUNT(*)
+from
+  (
+    select
+      *
+    from
+      pagg_tab1
+    where
+      x = 1 and x = 2
+  )
+  as a
+  left outer join
+    pagg_tab2 as b
+  on a.x = b.y
+group by a.x,
+  a.y
+order by 1,
+  2;
+
+select
+  a.x,
+  a.y,
+  COUNT(*)
+from
+  (
+    select
+      *
+    from
+      pagg_tab1
+    where
+      x = 1 and x = 2
+  )
+  as a
+  left outer join
+    pagg_tab2 as b
+  on a.x = b.y
+group by a.x,
+  a.y
+order by 1,
+  2;
+
+create table pagg_tab_m (
+  a INT,
+  b INT,
+  c INT
+)
+partition by range(a, ((a + b) / 2));
+
+create table pagg_tab_m_p1
+partition of pagg_tab_m
+for values from (0, 0) to (12, 12);
+
+create table pagg_tab_m_p2
+partition of pagg_tab_m
+for values from (12, 12) to (22, 22);
+
+create table pagg_tab_m_p3
+partition of pagg_tab_m
+for values from (22, 22) to (30, 30);
+
+insert into pagg_tab_m
+select
+  i % 30,
+  i % 40,
+  i % 50
+from
+  generate_series(0, 2999) as i;
+
+analyze pagg_tab_m;
+
+select
+  a,
+  SUM(b),
+  AVG(c),
+  COUNT(*)
+from
+  pagg_tab_m
+group by a
+having
+  AVG(c) < 22
+order by 1,
+  2,
+  3;
+
+select
+  a,
+  SUM(b),
+  AVG(c),
+  COUNT(*)
+from
+  pagg_tab_m
+group by a
+having
+  AVG(c) < 22
+order by 1,
+  2,
+  3;
+
+select
+  a,
+  SUM(b),
+  AVG(c),
+  COUNT(*)
+from
+  pagg_tab_m
+group by a,
+  (a + b) / 2
+having
+  SUM(b) < 50
+order by 1,
+  2,
+  3;
+
+select
+  a,
+  SUM(b),
+  AVG(c),
+  COUNT(*)
+from
+  pagg_tab_m
+group by a,
+  (a + b) / 2
+having
+  SUM(b) < 50
+order by 1,
+  2,
+  3;
+
+select
+  a,
+  c,
+  SUM(b),
+  AVG(c),
+  COUNT(*)
+from
+  pagg_tab_m
+group by (a + b) / 2,
+  2,
+  1
+having
+  SUM(b) = 50 and AVG(c) > 25
+order by 1,
+  2,
+  3;
+
+select
+  a,
+  c,
+  SUM(b),
+  AVG(c),
+  COUNT(*)
+from
+  pagg_tab_m
+group by (a + b) / 2,
+  2,
+  1
+having
+  SUM(b) = 50 and AVG(c) > 25
+order by 1,
+  2,
+  3;
+
+create table pagg_tab_ml (
+  a INT,
+  b INT,
+  c TEXT
+)
+partition by range(a);
+
+create table pagg_tab_ml_p1
+partition of pagg_tab_ml
+for values from (0) to (12);
+
+create table pagg_tab_ml_p2
+partition of pagg_tab_ml
+for values from (12) to (20)
+partition by LIST(c);
+
+create table pagg_tab_ml_p2_s1
+partition of pagg_tab_ml_p2
+for values in ('0000', '0001', '0002');
+
+create table pagg_tab_ml_p2_s2
+partition of pagg_tab_ml_p2
+for values in ('0003');
+
+create table pagg_tab_ml_p3 (
+  b INT,
+  c TEXT,
+  a INT
+)
+partition by range(b);
+
+create table pagg_tab_ml_p3_s1 (
+  c TEXT,
+  a INT,
+  b INT
+);
+
+create table pagg_tab_ml_p3_s2
+partition of pagg_tab_ml_p3
+for values from (7) to (10);
+
+alter table pagg_tab_ml_p3
+  ATTACH partition
+  pagg_tab_ml_p3_s1
+  for values from (0) to (7);
+
+alter table pagg_tab_ml
+  ATTACH partition
+  pagg_tab_ml_p3
+  for values from (20) to (30);
+
+insert into pagg_tab_ml
+select
+  i % 30,
+  i % 10,
+  to_char(i % 4, 'FM0000')
+from
+  generate_series(0, 29999) as i;
+
+analyze pagg_tab_ml;
+
+set max_parallel_workers_per_gather = 2;
+
+set parallel_setup_cost = 0;
+
+select
+  a,
+  SUM(b),
+  array_agg(distinct c),
+  COUNT(*)
+from
+  pagg_tab_ml
+group by a
+having
+  AVG(b) < 3
+order by 1,
+  2,
+  3;
+
+select
+  a,
+  SUM(b),
+  array_agg(distinct c),
+  COUNT(*)
+from
+  pagg_tab_ml
+group by a
+having
+  AVG(b) < 3
+order by 1,
+  2,
+  3;
+
+select
+  a,
+  SUM(b),
+  array_agg(distinct c),
+  COUNT(*)
+from
+  pagg_tab_ml
+group by a
+having
+  AVG(b) < 3;
+
+reset parallel_setup_cost;
+
+select
+  a,
+  SUM(b),
+  COUNT(*)
+from
+  pagg_tab_ml
+group by a
+having
+  AVG(b) < 3
+order by 1,
+  2,
+  3;
+
+select
+  a,
+  SUM(b),
+  COUNT(*)
+from
+  pagg_tab_ml
+group by a
+having
+  AVG(b) < 3
+order by 1,
+  2,
+  3;
+
+select b, SUM(a), COUNT(*) from pagg_tab_ml group by b order by 1, 2, 3;
+
+select
+  b,
+  SUM(a),
+  COUNT(*)
+from
+  pagg_tab_ml
+group by b
+having
+  AVG(a) < 15
+order by 1,
+  2,
+  3;
+
+select
+  a,
+  SUM(b),
+  COUNT(*)
+from
+  pagg_tab_ml
+group by a,
+  b,
+  c
+having
+  AVG(b) > 7
+order by 1,
+  2,
+  3;
+
+select
+  a,
+  SUM(b),
+  COUNT(*)
+from
+  pagg_tab_ml
+group by a,
+  b,
+  c
+having
+  AVG(b) > 7
+order by 1,
+  2,
+  3;
+
+set min_parallel_table_scan_size = '8kB';
+
+set parallel_setup_cost = 0;
+
+select
+  a,
+  SUM(b),
+  COUNT(*)
+from
+  pagg_tab_ml
+group by a
+having
+  AVG(b) < 3
+order by 1,
+  2,
+  3;
+
+select
+  a,
+  SUM(b),
+  COUNT(*)
+from
+  pagg_tab_ml
+group by a
+having
+  AVG(b) < 3
+order by 1,
+  2,
+  3;
+
+select b, SUM(a), COUNT(*) from pagg_tab_ml group by b order by 1, 2, 3;
+
+select
+  b,
+  SUM(a),
+  COUNT(*)
+from
+  pagg_tab_ml
+group by b
+having
+  AVG(a) < 15
+order by 1,
+  2,
+  3;
+
+select
+  a,
+  SUM(b),
+  COUNT(*)
+from
+  pagg_tab_ml
+group by a,
+  b,
+  c
+having
+  AVG(b) > 7
+order by 1,
+  2,
+  3;
+
+select
+  a,
+  SUM(b),
+  COUNT(*)
+from
+  pagg_tab_ml
+group by a,
+  b,
+  c
+having
+  AVG(b) > 7
+order by 1,
+  2,
+  3;
+
+set parallel_setup_cost = 10;
+
+create table pagg_tab_para (
+  x INT,
+  y INT
+)
+partition by range(x);
+
+create table pagg_tab_para_p1
+partition of pagg_tab_para
+for values from (0) to (12);
+
+create table pagg_tab_para_p2
+partition of pagg_tab_para
+for values from (12) to (22);
+
+create table pagg_tab_para_p3
+partition of pagg_tab_para
+for values from (22) to (30);
+
+insert into pagg_tab_para
+select
+  i % 30,
+  i % 20
+from
+  generate_series(0, 29999) as i;
+
+analyze pagg_tab_para;
+
+select
+  x,
+  SUM(y),
+  AVG(y),
+  COUNT(*)
+from
+  pagg_tab_para
+group by x
+having
+  AVG(y) < 7
+order by 1,
+  2,
+  3;
+
+select
+  x,
+  SUM(y),
+  AVG(y),
+  COUNT(*)
+from
+  pagg_tab_para
+group by x
+having
+  AVG(y) < 7
+order by 1,
+  2,
+  3;
+
+select
+  y,
+  SUM(x),
+  AVG(x),
+  COUNT(*)
+from
+  pagg_tab_para
+group by y
+having
+  AVG(x) < 12
+order by 1,
+  2,
+  3;
+
+select
+  y,
+  SUM(x),
+  AVG(x),
+  COUNT(*)
+from
+  pagg_tab_para
+group by y
+having
+  AVG(x) < 12
+order by 1,
+  2,
+  3;
+
+alter table pagg_tab_para_p1
+  set (parallel_workers = 0);
+
+alter table pagg_tab_para_p3
+  set (parallel_workers = 0);
+
+analyze pagg_tab_para;
+
+select
+  x,
+  SUM(y),
+  AVG(y),
+  SUM(x + y),
+  COUNT(*)
+from
+  pagg_tab_para
+group by x
+having
+  AVG(y) < 7
+order by 1,
+  2,
+  3;
+
+select
+  x,
+  SUM(y),
+  AVG(y),
+  SUM(x + y),
+  COUNT(*)
+from
+  pagg_tab_para
+group by x
+having
+  AVG(y) < 7
+order by 1,
+  2,
+  3;
+
+alter table pagg_tab_para_p2
+  set (parallel_workers = 0);
+
+analyze pagg_tab_para;
+
+select
+  x,
+  SUM(y),
+  AVG(y),
+  SUM(x + y),
+  COUNT(*)
+from
+  pagg_tab_para
+group by x
+having
+  AVG(y) < 7
+order by 1,
+  2,
+  3;
+
+select
+  x,
+  SUM(y),
+  AVG(y),
+  SUM(x + y),
+  COUNT(*)
+from
+  pagg_tab_para
+group by x
+having
+  AVG(y) < 7
+order by 1,
+  2,
+  3;
+
+reset min_parallel_table_scan_size;
+
+reset parallel_setup_cost;
+
+select
+  x,
+  SUM(y),
+  AVG(y),
+  COUNT(*)
+from
+  pagg_tab_para
+group by x
+having
+  AVG(y) < 7
+order by 1,
+  2,
+  3;
+
+select
+  x,
+  SUM(y),
+  AVG(y),
+  COUNT(*)
+from
+  pagg_tab_para
+group by x
+having
+  AVG(y) < 7
+order by 1,
+  2,
+  3;

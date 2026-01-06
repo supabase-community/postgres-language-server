@@ -3,7 +3,7 @@ use crate::handlers::code_actions::command_id;
 use pgls_workspace::features::code_actions::CommandActionCategory;
 use strum::IntoEnumIterator;
 use tower_lsp::lsp_types::{
-    ClientCapabilities, CompletionOptions, ExecuteCommandOptions, HoverProviderCapability,
+    ClientCapabilities, CompletionOptions, ExecuteCommandOptions, HoverProviderCapability, OneOf,
     PositionEncodingKind, SaveOptions, ServerCapabilities, TextDocumentSyncCapability,
     TextDocumentSyncKind, TextDocumentSyncOptions, TextDocumentSyncSaveOptions,
     WorkDoneProgressOptions,
@@ -61,8 +61,8 @@ pub(crate) fn server_capabilities(capabilities: &ClientCapabilities) -> ServerCa
                 .collect::<Vec<String>>(),
             ..Default::default()
         }),
-        document_formatting_provider: None,
-        document_range_formatting_provider: None,
+        document_formatting_provider: Some(OneOf::Left(true)),
+        document_range_formatting_provider: Some(OneOf::Left(true)),
         document_on_type_formatting_provider: None,
         code_action_provider: Some(tower_lsp::lsp_types::CodeActionProviderCapability::Simple(
             true,

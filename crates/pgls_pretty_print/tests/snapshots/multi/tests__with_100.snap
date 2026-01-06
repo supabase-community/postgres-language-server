@@ -1,0 +1,599 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/with.sql
+snapshot_kind: text
+---
+with q1 (x, y) as (select 1, 2) select * from q1, q1 as q2;
+
+select
+  COUNT(*)
+from
+  (
+    with
+    q1 (x)
+    as (
+      select random() from generate_series(1, 5)
+    )
+    select * from q1
+    union
+    select * from q1
+  )
+  as ss;
+
+with recursive
+t (n)
+as (
+  values (1)
+  union all
+  select n + 1 from t where n < 100
+)
+select
+  SUM(n)
+from
+  t;
+
+with recursive
+t (n)
+as (
+  select (values (1))
+  union all
+  select n + 1 from t where n < 5
+)
+select
+  *
+from
+  t;
+
+with recursive
+t (n)
+as (
+  values (cast('01' as BIT VARYING))
+  union
+  select
+    n || cast('10' as BIT VARYING)
+  from
+    t
+  where
+    n < cast('100' as BIT VARYING)
+)
+select
+  n
+from
+  t;
+
+create view nums
+(
+  n
+)
+as with recursive
+nums (n)
+as (
+  values (1)
+  union all
+  select n + 1 from nums where n < 5
+)
+select
+  n
+from
+  nums;
+
+select * from nums;
+
+create or replace view nums
+(
+  n
+)
+as with recursive
+nums (n)
+as (
+  values (1)
+  union all
+  select n + 1 from nums where n < 6
+)
+select
+  n
+from
+  nums;
+
+select * from nums;
+
+with recursive t (n) as (select 1 union select 10 - n from t) select * from t;
+
+with recursive t (n) as (values (1) union all select n + 1 from t) select * from t limit 10;
+
+with recursive t (n) as (select 1 union select n + 1 from t) select * from t limit 10;
+
+with q as (select 'foo' as x) select x, pg_typeof(x) from q;
+
+with recursive
+t (n)
+as (
+  select 'foo'
+  union all
+  select n || ' bar' from t where length(n) < 20
+)
+select
+  n,
+  pg_typeof(n)
+from
+  t;
+
+with recursive
+t (n)
+as (
+  select '7'
+  union all
+  select n + 1 from t where n < 10
+)
+select
+  n,
+  pg_typeof(n)
+from
+  t;
+
+with recursive
+w1 (c1)
+as (
+  with
+  w2 (c2)
+  as (
+    with
+    w3 (c3)
+    as (
+      with
+      w4 (c4)
+      as (
+        with
+        w5 (c5)
+        as (
+          with recursive
+          w6 (c6)
+          as (
+            with
+            w6 (c6)
+            as (
+              with w8 (c8) as (select 1) select * from w8
+            )
+            select
+              *
+            from
+              w6
+          )
+          select
+            *
+          from
+            w6
+        )
+        select
+          *
+        from
+          w5
+      )
+      select
+        *
+      from
+        w4
+    )
+    select
+      *
+    from
+      w3
+  )
+  select
+    *
+  from
+    w2
+)
+select
+  *
+from
+  w1;
+
+with recursive
+outermost (x)
+as (
+  select 1
+  union
+  (with
+  innermost1
+  as (
+    select 2
+    union
+    (with
+    innermost2
+    as (
+      select 3
+      union
+      (with
+      innermost3
+      as (
+        select 4
+        union
+        (with
+        innermost4
+        as (
+          select 5
+          union
+          (with
+          innermost5
+          as (
+            select 6
+            union
+            (with innermost6 as (select 7)
+            select
+              *
+            from
+              innermost6)
+          )
+          select
+            *
+          from
+            innermost5)
+        )
+        select
+          *
+        from
+          innermost4)
+      )
+      select
+        *
+      from
+        innermost3)
+    )
+    select
+      *
+    from
+      innermost2)
+  )
+  select * from outermost
+  union
+  select * from innermost1)
+)
+select
+  *
+from
+  outermost
+order by 1;
+
+create temporary table department (
+  id INT primary key,
+  parent_department INT references department,
+  name TEXT
+);
+
+insert into department values (0, null, 'ROOT');
+
+insert into department values (1, 0, 'A');
+
+insert into department values (2, 1, 'B');
+
+insert into department values (3, 2, 'C');
+
+insert into department values (4, 2, 'D');
+
+insert into department values (5, 0, 'E');
+
+insert into department values (6, 4, 'F');
+
+insert into department values (7, 5, 'G');
+
+with recursive
+subdepartment
+as (
+  select
+    name as root_name,
+    *
+  from
+    department
+  where
+    name = 'A'
+  union all
+  select
+    sd.root_name,
+    d.*
+  from
+    department as d,
+    subdepartment as sd
+  where
+    d.parent_department = sd.id
+)
+select
+  *
+from
+  subdepartment
+order by name;
+
+with recursive
+subdepartment (level,
+id,
+parent_department,
+name)
+as (
+  select 1, * from department where name = 'A'
+  union all
+  select
+    sd.level + 1,
+    d.*
+  from
+    department as d,
+    subdepartment as sd
+  where
+    d.parent_department = sd.id
+)
+select
+  *
+from
+  subdepartment
+order by name;
+
+with recursive
+subdepartment (level,
+id,
+parent_department,
+name)
+as (
+  select 1, * from department where name = 'A'
+  union all
+  select
+    sd.level + 1,
+    d.*
+  from
+    department as d,
+    subdepartment as sd
+  where
+    d.parent_department = sd.id
+)
+select
+  *
+from
+  subdepartment
+where
+  level >= 2
+order by name;
+
+with recursive
+subdepartment
+as (
+  select * from department where name = 'A'
+)
+select
+  *
+from
+  subdepartment
+order by name;
+
+with recursive
+subdepartment
+as (
+  select
+    id,
+    parent_department,
+    name
+  from
+    department
+  where
+    name = 'A'
+  union
+  select
+    d.id,
+    d.parent_department,
+    d.name
+  from
+    department as d
+    inner join
+      subdepartment as sd
+    on d.parent_department = sd.id
+)
+select
+  *
+from
+  subdepartment
+order by name;
+
+select
+  COUNT(*)
+from
+  (
+    with recursive
+    t (n)
+    as (
+      select 1
+      union all
+      select n + 1 from t where n < 500
+    )
+    select
+      *
+    from
+      t
+  )
+  as t
+where
+  n <
+  (
+    select
+      COUNT(*)
+    from
+      (
+        with recursive
+        t (n)
+        as (
+          select 1
+          union all
+          select n + 1 from t where n < 100
+        )
+        select
+          *
+        from
+          t
+        where
+          n < 50000
+      )
+      as t
+    where
+      n < 100
+  );
+
+with
+q1 (x,
+y)
+as (
+  select
+    hundred,
+    SUM(ten)
+  from
+    tenk1
+  group by hundred
+)
+select
+  COUNT(*)
+from
+  q1
+where
+  y > (select SUM(y) / 100 from q1 as qsub);
+
+select * from subdepartment;
+
+select * from vsubdepartment order by name;
+
+select pg_get_viewdef(cast('vsubdepartment' as REGCLASS));
+
+select pg_get_viewdef(cast('vsubdepartment' as REGCLASS), true);
+
+select SUM(n) from t;
+
+with recursive
+q
+as (
+  select * from department
+  union all
+  (with x as (select * from q) select * from x)
+)
+select
+  *
+from
+  q
+limit 24;
+
+with recursive
+q
+as (
+  select * from department
+  union all
+  (with recursive
+  x
+  as (
+    select * from department
+    union all
+    (select * from q union all select * from x)
+  )
+  select
+    *
+  from
+    x)
+)
+select
+  *
+from
+  q
+limit 32;
+
+select * from t;
+
+create temporary table tree (
+  id INT primary key,
+  parent_id INT references tree (id)
+);
+
+insert into tree
+values
+  (1, null),
+  (2, 1),
+  (3, 1),
+  (4, 2),
+  (5, 2),
+  (6, 2),
+  (7, 3),
+  (8, 3),
+  (9, 4),
+  (10, 4),
+  (11, 7),
+  (12, 7),
+  (13, 7),
+  (14, 9),
+  (15, 11),
+  (16, 11);
+
+with recursive
+t (id,
+path)
+as (
+  values (1, cast(array[] as INT[]))
+  union all
+  select
+    tree.id,
+    t.path || tree.id
+  from
+    tree inner join t on tree.parent_id = t.id
+)
+select
+  t1.*,
+  t2.*
+from
+  t as t1
+  inner join
+    t as t2
+  on t1.path[1] = t2.path[1] and
+    array_upper(t1.path, 1) = 1 and
+    array_upper(t2.path, 1) > 1
+order by t1.id,
+  t2.id;
+
+with recursive
+t (id,
+path)
+as (
+  values (1, cast(array[] as INT[]))
+  union all
+  select
+    tree.id,
+    t.path || tree.id
+  from
+    tree inner join t on tree.parent_id = t.id
+)
+select
+  t1.id,
+  COUNT(t2.*)
+from
+  t as t1
+  inner join
+    t as t2
+  on t1.path[1] = t2.path[1] and
+    array_upper(t1.path, 1) = 1 and
+    array_upper(t2.path, 1) > 1
+group by t1.id
+order by t1.id;
+
+with recursive
+t (id,
+path)
+as (
+  values (1, cast(array[] as INT[]))
+  union all
+  select
+    tree.id,
+    t.path || tree.id
+  from
+    tree inner join t on tree.parent_id = t.id
+)
+select
+  t1.id,
+  t2.path,
+  t2
+from
+  t as t1 inner join t as t2 on t1.id = t2.id;
+
+create temporary table duplicates (a INT not null);
+
+insert into duplicates values (1), (1);
+
+with recursive cte (a) as (select a from duplicates union select a from cte) select a from cte;

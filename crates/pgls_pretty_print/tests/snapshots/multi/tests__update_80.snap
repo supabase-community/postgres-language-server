@@ -1,0 +1,1112 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/update.sql
+snapshot_kind: text
+---
+create table update_test (
+  a INT default 10,
+  b INT,
+  c TEXT
+);
+
+create table upsert_test (
+  a INT primary key,
+  b TEXT
+);
+
+insert into update_test values (5, 10, 'foo');
+
+insert into update_test (b, a) values (15, 10);
+
+select * from update_test;
+
+update update_test set a = default, b = default;
+
+select * from update_test;
+
+update update_test as t set b = 10 where t.a = 10;
+
+select * from update_test;
+
+update update_test as t set b = t.b + 10 where t.a = 10;
+
+select * from update_test;
+
+update update_test as t set t."b" = t.b + 10 where t.a = 10;
+
+update update_test
+set a = v.i
+from (values (100, 20)) as v (i, j)
+where
+  update_test.b = v.j;
+
+select * from update_test;
+
+update update_test
+set a = v.*
+from (values (100, 20)) as v (i, j)
+where
+  update_test.b = v.j;
+
+insert into update_test select a, b + 1, c from update_test;
+
+select * from update_test;
+
+update update_test set (c, b, a) = ('bugle', b + 11, default) where c = 'foo';
+
+select * from update_test;
+
+update update_test set (c, b) = ('car', a + b), a = a + 1 where a = 10;
+
+select * from update_test;
+
+update update_test set (c, b) = ('car', a + b), b = a + 1 where a = 10;
+
+update update_test
+set (b, a) = (
+  select
+    a,
+    b
+  from
+    update_test
+  where
+    b = 41 and c = 'car'
+)
+where
+  a = 100 and b = 20;
+
+select * from update_test;
+
+update update_test as o
+set (b, a) = (
+  select
+    a + 1,
+    b
+  from
+    update_test as i
+  where
+    i.a = o.a and
+    i.b = o.b and
+    i.c is not distinct from o.c
+);
+
+select * from update_test;
+
+update update_test set (b, a) = (select a + 1, b from update_test);
+
+update update_test
+set (b, a) = (
+  select
+    a + 1,
+    b
+  from
+    update_test
+  where
+    a = 1000
+)
+where
+  a = 11;
+
+select * from update_test;
+
+update update_test
+set (a, b) = row(v.*)
+from (values (21, 100)) as v (i, j)
+where
+  update_test.a = v.i;
+
+update update_test
+set (a, b) = v.*
+from (values (21, 101)) as v (i, j)
+where
+  update_test.a = v.i;
+
+update update_test as t set b = update_test.b + 10 where t.a = 10;
+
+update update_test set c = repeat('x', 10000) where c = 'car';
+
+select a, b, char_length(c) from update_test;
+
+update update_test as t
+set (a, b) = (
+  select
+    b,
+    a
+  from
+    update_test as s
+  where
+    s.a = t.a
+)
+where
+  current_user = session_user;
+
+update update_test as t
+set (a, b) = (
+  select
+    b,
+    a
+  from
+    update_test as s
+  where
+    s.a = t.a
+)
+where
+  current_user = session_user;
+
+select a, b, char_length(c) from update_test;
+
+insert into upsert_test values (1, 'Boo'), (3, 'Zoo');
+
+with aaa as (select 1 as a, 'Foo' as b)
+insert into upsert_test
+values (1, 'Bar')
+on conflict
+(a)
+do
+update
+set (b, a) = (select b, a from aaa)
+returning *;
+
+insert into upsert_test
+values (1, 'Baz'), (3, 'Zaz')
+on conflict
+(a)
+do
+update
+set (b, a) = (
+  select
+    b || ', Correlated',
+    a
+  from
+    upsert_test as i
+  where
+    i.a = upsert_test.a
+)
+returning *;
+
+insert into upsert_test
+values (1, 'Bat'), (3, 'Zot')
+on conflict
+(a)
+do
+update
+set (b, a) = (
+  select
+    b || ', Excluded',
+    a
+  from
+    upsert_test as i
+  where
+    i.a = excluded.a
+)
+returning *;
+
+insert into upsert_test
+values (2, 'Beeble')
+on conflict
+(a)
+do
+update
+set (b, a) = (
+  select
+    b || ', Excluded',
+    a
+  from
+    upsert_test as i
+  where
+    i.a = excluded.a
+)
+returning cast(tableoid as REGCLASS),
+xmin = cast(pg_current_xact_id() as XID)
+as xmin_correct,
+xmax = 0 as xmax_correct;
+
+insert into upsert_test
+values (2, 'Brox')
+on conflict
+(a)
+do
+update
+set (b, a) = (
+  select
+    b || ', Excluded',
+    a
+  from
+    upsert_test as i
+  where
+    i.a = excluded.a
+)
+returning cast(tableoid as REGCLASS),
+xmin = cast(pg_current_xact_id() as XID)
+as xmin_correct,
+xmax = cast(pg_current_xact_id() as XID)
+as xmax_correct;
+
+drop TABLE "update_test";
+
+drop TABLE "upsert_test";
+
+create table upsert_test (
+  a INT primary key,
+  b TEXT
+)
+partition by LIST(a);
+
+create table upsert_test_1 partition of upsert_test for values in (1);
+
+create table upsert_test_2 (
+  b TEXT,
+  a INT primary key
+);
+
+alter table upsert_test
+  ATTACH partition
+  upsert_test_2 for values in (2);
+
+insert into upsert_test values (1, 'Boo'), (2, 'Zoo');
+
+with aaa as (select 1 as a, 'Foo' as b)
+insert into upsert_test
+values (1, 'Bar')
+on conflict
+(a)
+do
+update
+set (b, a) = (select b, a from aaa)
+returning *;
+
+with
+aaa
+as (
+  select 1 as ctea, ' Foo' as cteb
+)
+insert into upsert_test
+values (1, 'Bar'), (2, 'Baz')
+on conflict
+(a)
+do
+update
+set (b, a) = (
+  select
+    upsert_test.b || cteb,
+    upsert_test.a
+  from
+    aaa
+)
+returning *;
+
+drop TABLE "upsert_test";
+
+create table range_parted (
+  a TEXT,
+  b BIGINT,
+  c NUMERIC,
+  d INT,
+  e VARCHAR
+)
+partition by range(a, b);
+
+create table part_b_20_b_30 (
+  e VARCHAR,
+  c NUMERIC,
+  a TEXT,
+  b BIGINT,
+  d INT
+);
+
+alter table range_parted
+  ATTACH partition
+  part_b_20_b_30
+  for values from ('b', 20) to ('b', 30);
+
+create table part_b_10_b_20 (
+  e VARCHAR,
+  c NUMERIC,
+  a TEXT,
+  b BIGINT,
+  d INT
+)
+partition by range(c);
+
+create table part_b_1_b_10
+partition of range_parted
+for values from ('b', 1) to ('b', 10);
+
+alter table range_parted
+  ATTACH partition
+  part_b_10_b_20
+  for values from ('b', 10) to ('b', 20);
+
+create table part_a_10_a_20
+partition of range_parted
+for values from ('a', 10) to ('a', 20);
+
+create table part_a_1_a_10
+partition of range_parted
+for values from ('a', 1) to ('a', 10);
+
+update part_b_10_b_20 set b = b - 6;
+
+create table part_c_100_200 (
+  e VARCHAR,
+  c NUMERIC,
+  a TEXT,
+  b BIGINT,
+  d INT
+)
+partition by range((abs(d)));
+
+alter table part_c_100_200
+  drop column e,
+  drop column c,
+  drop column a;
+
+alter table part_c_100_200
+  add column c NUMERIC,
+  add column e VARCHAR,
+  add column a TEXT;
+
+alter table part_c_100_200
+  drop column b;
+
+alter table part_c_100_200
+  add column b BIGINT;
+
+create table part_d_1_15
+partition of part_c_100_200
+for values from (1) to (15);
+
+create table part_d_15_20
+partition of part_c_100_200
+for values from (15) to (20);
+
+alter table part_b_10_b_20
+  ATTACH partition
+  part_c_100_200
+  for values from (100) to (200);
+
+create table part_c_1_100 (
+  e VARCHAR,
+  d INT,
+  c NUMERIC,
+  b BIGINT,
+  a TEXT
+);
+
+alter table part_b_10_b_20
+  ATTACH partition
+  part_c_1_100
+  for values from (1) to (100);
+
+update range_parted set c = c - 50 where c > 97;
+
+update part_c_100_200 set c = c - 20, d = c where c = 105;
+
+update part_b_10_b_20 set a = 'a';
+
+update range_parted set d = d - 10 where d > 10;
+
+update range_parted set e = d;
+
+update part_c_1_100 set c = c + 20 where c = 98;
+
+update part_b_10_b_20 set c = c + 20 returning c, b, a;
+
+update part_b_10_b_20 set b = b - 6 where c > 116 returning *;
+
+update range_parted set b = b - 6 where c > 116 returning a, b + c;
+
+create table mintab (c1 INT);
+
+insert into mintab values (120);
+
+create view upview
+as select
+  *
+from
+  range_parted
+where
+  (select c > c1 from mintab)
+with cascaded check option;
+
+update upview set c = 199 where b = 4;
+
+update upview set c = 120 where b = 4;
+
+update upview set a = 'b', b = 15, c = 120 where b = 4;
+
+update upview set a = 'b', b = 15 where b = 4;
+
+drop VIEW "upview";
+
+update range_parted
+set c = 95
+where
+  a = 'b' and b > 10 and c > 100
+returning range_parted,
+*;
+
+create function trans_updatetrigfunc()
+returns trigger
+language "plpgsql"
+as '
+  begin
+    raise notice ''trigger = %, old table = %, new table = %'',
+                 TG_NAME,
+                 (select string_agg(old_table::text, '', '' ORDER BY a) FROM old_table),
+                 (select string_agg(new_table::text, '', '' ORDER BY a) FROM new_table);
+    return null;
+  end;
+';
+
+create TRIGGER trans_updatetrig
+  after update
+  on range_parted
+  REFERENCING old table as old_table
+  new table as new_table
+  for EACH STATEMENT
+  EXECUTE FUNCTION trans_updatetrigfunc();
+
+update range_parted
+set c = case when c = 96 then 110 else c + 1 end
+where
+  a = 'b' and b > 10 and c >= 96;
+
+create TRIGGER trans_deletetrig
+  after delete
+  on range_parted
+  REFERENCING old table as old_table
+  for EACH STATEMENT
+  EXECUTE FUNCTION trans_updatetrigfunc();
+
+create TRIGGER trans_inserttrig
+  after insert
+  on range_parted
+  REFERENCING new table as new_table
+  for EACH STATEMENT
+  EXECUTE FUNCTION trans_updatetrigfunc();
+
+update range_parted set c = c + 50 where a = 'b' and b > 10 and c >= 96;
+
+drop TRIGGER "trans_deletetrig" on "range_parted";
+
+drop TRIGGER "trans_inserttrig" on "range_parted";
+
+create function func_parted_mod_b()
+returns trigger
+as '
+BEGIN
+   NEW.b = NEW.b + 1;
+   return NEW;
+END '
+language "plpgsql";
+
+create TRIGGER trig_c1_100
+  before insert or update
+  on part_c_1_100
+  for EACH ROW
+  EXECUTE FUNCTION func_parted_mod_b();
+
+create TRIGGER trig_d1_15
+  before insert or update
+  on part_d_1_15
+  for EACH ROW
+  EXECUTE FUNCTION func_parted_mod_b();
+
+create TRIGGER trig_d15_20
+  before insert or update
+  on part_d_15_20
+  for EACH ROW
+  EXECUTE FUNCTION func_parted_mod_b();
+
+update range_parted
+set c = case when c = 96 then 110 else c + 1 end
+where
+  a = 'b' and b > 10 and c >= 96;
+
+update range_parted set c = c + 50 where a = 'b' and b > 10 and c >= 96;
+
+update range_parted set b = 15 where b = 1;
+
+drop TRIGGER "trans_updatetrig" on "range_parted";
+
+drop TRIGGER "trig_c1_100" on "part_c_1_100";
+
+drop TRIGGER "trig_d1_15" on "part_d_1_15";
+
+drop TRIGGER "trig_d15_20" on "part_d_15_20";
+
+drop FUNCTION func_parted_mod_b();
+
+alter table range_parted
+  enable ROW LEVEL SECURITY;
+
+create user regress_range_parted_user;
+
+grant all on table range_parted, mintab to regress_range_parted_user;
+
+create POLICY seeall
+on range_parted
+as PERMISSIVE
+for select
+to PUBLIC
+USING (true);
+
+create POLICY policy_range_parted
+on range_parted
+as PERMISSIVE
+for update
+to PUBLIC
+USING (true)
+with CHECK (c % 2 = 0);
+
+set session authorization regress_range_parted_user;
+
+update range_parted set a = 'b', c = 151 where a = 'a' and c = 200;
+
+reset session_authorization;
+
+create function func_d_1_15()
+returns trigger
+as '
+BEGIN
+   NEW.c = NEW.c + 1; -- Make even numbers odd, or vice versa
+   return NEW;
+END '
+language "plpgsql";
+
+create TRIGGER trig_d_1_15
+  before insert
+  on part_d_1_15
+  for EACH ROW
+  EXECUTE FUNCTION func_d_1_15();
+
+set session authorization regress_range_parted_user;
+
+update range_parted set a = 'b', c = 151 where a = 'a' and c = 200;
+
+reset session_authorization;
+
+set session authorization regress_range_parted_user;
+
+update range_parted set a = 'b', c = 150 where a = 'a' and c = 200;
+
+reset session_authorization;
+
+drop TRIGGER "trig_d_1_15" on "part_d_1_15";
+
+drop FUNCTION func_d_1_15();
+
+reset session_authorization;
+
+create POLICY policy_range_parted_subplan
+on range_parted
+as RESTRICTIVE
+for update
+to PUBLIC
+USING (true)
+with CHECK ((
+  select range_parted.c <= c1 from mintab
+));
+
+set session authorization regress_range_parted_user;
+
+update range_parted set a = 'b', c = 122 where a = 'a' and c = 200;
+
+update range_parted set a = 'b', c = 120 where a = 'a' and c = 200;
+
+reset session_authorization;
+
+create POLICY policy_range_parted_wholerow
+on range_parted
+as RESTRICTIVE
+for update
+to PUBLIC
+USING (true)
+with CHECK (range_parted =
+cast(row('b', 10, 112, 1, null)
+as range_parted));
+
+set session authorization regress_range_parted_user;
+
+update range_parted set a = 'b', c = 112 where a = 'a' and c = 200;
+
+reset session_authorization;
+
+set session authorization regress_range_parted_user;
+
+update range_parted set a = 'b', c = 116 where a = 'a' and c = 200;
+
+reset session_authorization;
+
+drop POLICY "policy_range_parted" on "range_parted";
+
+drop POLICY "policy_range_parted_subplan" on "range_parted";
+
+drop POLICY "policy_range_parted_wholerow" on "range_parted";
+
+revoke all on table range_parted, mintab from regress_range_parted_user;
+
+drop role regress_range_parted_user;
+
+drop TABLE "mintab";
+
+create function trigfunc()
+returns trigger
+language "plpgsql"
+as '
+  begin
+    raise notice ''trigger = % fired on table % during %'',
+                 TG_NAME, TG_TABLE_NAME, TG_OP;
+    return null;
+  end;
+';
+
+create TRIGGER parent_delete_trig
+  after delete
+  on range_parted
+  for EACH STATEMENT
+  EXECUTE FUNCTION trigfunc();
+
+create TRIGGER parent_update_trig
+  after update
+  on range_parted
+  for EACH STATEMENT
+  EXECUTE FUNCTION trigfunc();
+
+create TRIGGER parent_insert_trig
+  after insert
+  on range_parted
+  for EACH STATEMENT
+  EXECUTE FUNCTION trigfunc();
+
+create TRIGGER c1_delete_trig
+  after delete
+  on part_c_1_100
+  for EACH STATEMENT
+  EXECUTE FUNCTION trigfunc();
+
+create TRIGGER c1_update_trig
+  after update
+  on part_c_1_100
+  for EACH STATEMENT
+  EXECUTE FUNCTION trigfunc();
+
+create TRIGGER c1_insert_trig
+  after insert
+  on part_c_1_100
+  for EACH STATEMENT
+  EXECUTE FUNCTION trigfunc();
+
+create TRIGGER d1_delete_trig
+  after delete
+  on part_d_1_15
+  for EACH STATEMENT
+  EXECUTE FUNCTION trigfunc();
+
+create TRIGGER d1_update_trig
+  after update
+  on part_d_1_15
+  for EACH STATEMENT
+  EXECUTE FUNCTION trigfunc();
+
+create TRIGGER d1_insert_trig
+  after insert
+  on part_d_1_15
+  for EACH STATEMENT
+  EXECUTE FUNCTION trigfunc();
+
+create TRIGGER d15_delete_trig
+  after delete
+  on part_d_15_20
+  for EACH STATEMENT
+  EXECUTE FUNCTION trigfunc();
+
+create TRIGGER d15_update_trig
+  after update
+  on part_d_15_20
+  for EACH STATEMENT
+  EXECUTE FUNCTION trigfunc();
+
+create TRIGGER d15_insert_trig
+  after insert
+  on part_d_15_20
+  for EACH STATEMENT
+  EXECUTE FUNCTION trigfunc();
+
+update range_parted set c = c - 50 where c > 97;
+
+drop TRIGGER "parent_delete_trig" on "range_parted";
+
+drop TRIGGER "parent_update_trig" on "range_parted";
+
+drop TRIGGER "parent_insert_trig" on "range_parted";
+
+drop TRIGGER "c1_delete_trig" on "part_c_1_100";
+
+drop TRIGGER "c1_update_trig" on "part_c_1_100";
+
+drop TRIGGER "c1_insert_trig" on "part_c_1_100";
+
+drop TRIGGER "d1_delete_trig" on "part_d_1_15";
+
+drop TRIGGER "d1_update_trig" on "part_d_1_15";
+
+drop TRIGGER "d1_insert_trig" on "part_d_1_15";
+
+drop TRIGGER "d15_delete_trig" on "part_d_15_20";
+
+drop TRIGGER "d15_update_trig" on "part_d_15_20";
+
+drop TRIGGER "d15_insert_trig" on "part_d_15_20";
+
+create table part_def partition of range_parted default;
+
+insert into range_parted values ('c', 9);
+
+update part_def set a = 'd' where a = 'c';
+
+update part_def set a = 'a' where a = 'd';
+
+update part_a_10_a_20 set a = 'ad' where a = 'a';
+
+update range_parted set a = 'ad' where a = 'a';
+
+update range_parted set a = 'bd' where a = 'b';
+
+update range_parted set a = 'a' where a = 'ad';
+
+update range_parted set a = 'b' where a = 'bd';
+
+drop TABLE "range_parted";
+
+create table list_parted (
+  a TEXT,
+  b INT
+)
+partition by LIST(a);
+
+create table list_part1 partition of list_parted for values in ('a', 'b');
+
+create table list_default partition of list_parted default;
+
+insert into list_part1 values ('a', 1);
+
+insert into list_default values ('d', 10);
+
+update list_default set a = 'a' where a = 'd';
+
+update list_default set a = 'x' where a = 'd';
+
+drop TABLE "list_parted";
+
+create table utrtest (
+  a INT,
+  b TEXT
+)
+partition by LIST(a);
+
+create table utr1 (
+  a INT check (a in (1)),
+  q TEXT,
+  b TEXT
+);
+
+create table utr2 (
+  a INT check (a in (2)),
+  b TEXT
+);
+
+alter table utr1
+  drop column q;
+
+alter table utrtest
+  ATTACH partition
+  utr1 for values in (1);
+
+alter table utrtest
+  ATTACH partition
+  utr2 for values in (2);
+
+insert into utrtest
+values (1, 'foo')
+returning *,
+cast(tableoid as REGCLASS),
+xmin = cast(pg_current_xact_id() as XID)
+as xmin_ok;
+
+insert into utrtest
+values (2, 'bar')
+returning *,
+cast(tableoid as REGCLASS),
+xmin = cast(pg_current_xact_id() as XID)
+as xmin_ok;
+
+insert into utrtest values (2, 'bar') returning *, cast(tableoid as REGCLASS);
+
+update utrtest
+set b = b || b
+from (values (1), (2)) as s (x)
+where
+  a = s.x
+returning *,
+cast(tableoid as REGCLASS),
+xmin = cast(pg_current_xact_id() as XID)
+as xmin_ok;
+
+update utrtest
+set a = 3 - a
+from (values (1), (2)) as s (x)
+where
+  a = s.x
+returning *,
+cast(tableoid as REGCLASS),
+xmin = cast(pg_current_xact_id() as XID)
+as xmin_ok;
+
+update utrtest
+set a = 3 - a
+from (values (1), (2)) as s (x)
+where
+  a = s.x
+returning *,
+cast(tableoid as REGCLASS);
+
+delete from utrtest
+returning *,
+cast(tableoid as REGCLASS),
+xmax = cast(pg_current_xact_id() as XID)
+as xmax_ok;
+
+drop TABLE "utrtest";
+
+create table list_parted (
+  a NUMERIC,
+  b INT,
+  c BIGINT
+)
+partition by LIST(a);
+
+create table sub_parted
+partition of list_parted
+for values in (1)
+partition by LIST(b);
+
+create table sub_part1 (
+  b INT,
+  c BIGINT,
+  a NUMERIC
+);
+
+alter table sub_parted
+  ATTACH partition
+  sub_part1 for values in (1);
+
+create table sub_part2 (
+  b INT,
+  c BIGINT,
+  a NUMERIC
+);
+
+alter table sub_parted
+  ATTACH partition
+  sub_part2 for values in (2);
+
+create table list_part1 (
+  a NUMERIC,
+  b INT,
+  c BIGINT
+);
+
+alter table list_parted
+  ATTACH partition
+  list_part1 for values in (2, 3);
+
+insert into list_parted values (2, 5, 50);
+
+insert into list_parted values (3, 6, 60);
+
+insert into sub_parted values (1, 1, 60);
+
+insert into sub_parted values (1, 2, 10);
+
+update sub_parted set a = 2 where c = 10;
+
+select
+  cast(cast(tableoid as REGCLASS) as TEXT),
+  *
+from
+  list_parted
+where
+  a = 2
+order by 1;
+
+update list_parted set b = c + a where a = 2;
+
+select
+  cast(cast(tableoid as REGCLASS) as TEXT),
+  *
+from
+  list_parted
+where
+  a = 2
+order by 1;
+
+create function func_parted_mod_b()
+returns trigger
+as '
+BEGIN
+   NEW.b = 2; -- This is changing partition key column.
+   return NEW;
+END '
+language "plpgsql";
+
+create TRIGGER parted_mod_b
+  before update
+  on sub_part1
+  for EACH ROW
+  EXECUTE FUNCTION func_parted_mod_b();
+
+select
+  cast(cast(tableoid as REGCLASS) as TEXT),
+  *
+from
+  list_parted
+order by 1,
+  2,
+  3,
+  4;
+
+update list_parted set c = 70 where b = 1;
+
+select
+  cast(cast(tableoid as REGCLASS) as TEXT),
+  *
+from
+  list_parted
+order by 1,
+  2,
+  3,
+  4;
+
+drop TRIGGER "parted_mod_b" on "sub_part1";
+
+create or replace function func_parted_mod_b()
+returns trigger
+as '
+BEGIN
+   raise notice ''Trigger: Got OLD row %, but returning NULL'', OLD;
+   return NULL;
+END '
+language "plpgsql";
+
+create TRIGGER trig_skip_delete
+  before delete
+  on sub_part2
+  for EACH ROW
+  EXECUTE FUNCTION func_parted_mod_b();
+
+update list_parted set b = 1 where c = 70;
+
+select
+  cast(cast(tableoid as REGCLASS) as TEXT),
+  *
+from
+  list_parted
+order by 1,
+  2,
+  3,
+  4;
+
+drop TRIGGER "trig_skip_delete" on "sub_part2";
+
+update list_parted set b = 1 where c = 70;
+
+select
+  cast(cast(tableoid as REGCLASS) as TEXT),
+  *
+from
+  list_parted
+order by 1,
+  2,
+  3,
+  4;
+
+drop FUNCTION func_parted_mod_b();
+
+create table non_parted (id INT);
+
+insert into non_parted values (1), (1), (1), (2), (2), (2), (3), (3), (3);
+
+update list_parted as t1
+set a = 2
+from non_parted as t2
+where
+  t1.a = t2.id and a = 1;
+
+select
+  cast(cast(tableoid as REGCLASS) as TEXT),
+  *
+from
+  list_parted
+order by 1,
+  2,
+  3,
+  4;
+
+drop TABLE "non_parted";
+
+drop TABLE "list_parted";
+
+create or replace function dummy_hashint4(a INT, seed BIGINT)
+returns BIGINT
+as ' begin return (a + seed); end; '
+language "plpgsql"
+immutable;
+
+create OPERATOR class custom_opclass
+  for type INT
+  using hash
+  as OPERATOR 1 =,
+  FUNCTION 2 dummy_hashint4(INT, BIGINT);
+
+create table hash_parted (
+  a INT,
+  b INT
+)
+partition by HASH(a custom_opclass,
+b custom_opclass);
+
+create table hpart1
+partition of hash_parted
+for values with (MODULUS 2, REMAINDER 1);
+
+create table hpart2
+partition of hash_parted
+for values with (MODULUS 4, REMAINDER 2);
+
+create table hpart3
+partition of hash_parted
+for values with (MODULUS 8, REMAINDER 0);
+
+create table hpart4
+partition of hash_parted
+for values with (MODULUS 8, REMAINDER 4);
+
+insert into hpart1 values (1, 1);
+
+insert into hpart2 values (2, 5);
+
+insert into hpart4 values (3, 4);
+
+update hpart1 set a = 3, b = 4 where a = 1;
+
+update hash_parted set b = b - 1 where b = 1;
+
+update hash_parted set b = b + 8 where b = 1;
+
+drop TABLE "hash_parted";
+
+drop OPERATOR CLASS "custom_opclass" USING "hash";
+
+drop FUNCTION dummy_hashint4(INT, BIGINT);

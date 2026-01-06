@@ -1,0 +1,31 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/single/complex_select_part_5.sql
+snapshot_kind: text
+---
+select
+  r.*,
+  false,
+  array[resorigtbl]
+from
+  results as r
+where
+  true
+union all
+select
+  view.view_id,
+  view.view_schema,
+  view.view_name,
+  view.view_column,
+  tab.resorigtbl,
+  tab.resorigcol,
+  tab.resorigtbl = any (path),
+  path || tab.resorigtbl
+from
+  recursion as view
+  inner join
+    results as tab
+  on view.resorigtbl = tab.view_id and
+    view.resorigcol = tab.view_column
+where
+  not is_cycle;

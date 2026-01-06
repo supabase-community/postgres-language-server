@@ -1,0 +1,1 @@
+ALTER FOREIGN DATA WRAPPER fdw_example RENAME TO fdw_new;

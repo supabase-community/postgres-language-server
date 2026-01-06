@@ -1,0 +1,500 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/int8.sql
+snapshot_kind: text
+---
+insert into int8_tbl (q1) values ('      ');
+
+insert into int8_tbl (q1) values ('xxx');
+
+insert into int8_tbl (q1) values ('3908203590239580293850293850329485');
+
+insert into int8_tbl (q1) values ('-1204982019841029840928340329840934');
+
+insert into int8_tbl (q1) values ('- 123');
+
+insert into int8_tbl (q1) values ('  345     5');
+
+insert into int8_tbl (q1) values ('');
+
+select * from int8_tbl;
+
+select pg_input_is_valid('34', 'int8');
+
+select pg_input_is_valid('asdf', 'int8');
+
+select pg_input_is_valid('10000000000000000000', 'int8');
+
+select * from pg_input_error_info('10000000000000000000', 'int8');
+
+select * from int8_tbl where q2 = 4567890123456789;
+
+select * from int8_tbl where q2 <> 4567890123456789;
+
+select * from int8_tbl where q2 < 4567890123456789;
+
+select * from int8_tbl where q2 > 4567890123456789;
+
+select * from int8_tbl where q2 <= 4567890123456789;
+
+select * from int8_tbl where q2 >= 4567890123456789;
+
+select * from int8_tbl where q2 = 456;
+
+select * from int8_tbl where q2 <> 456;
+
+select * from int8_tbl where q2 < 456;
+
+select * from int8_tbl where q2 > 456;
+
+select * from int8_tbl where q2 <= 456;
+
+select * from int8_tbl where q2 >= 456;
+
+select * from int8_tbl where 123 = q1;
+
+select * from int8_tbl where 123 <> q1;
+
+select * from int8_tbl where 123 < q1;
+
+select * from int8_tbl where 123 > q1;
+
+select * from int8_tbl where 123 <= q1;
+
+select * from int8_tbl where 123 >= q1;
+
+select * from int8_tbl where q2 = cast('456' as SMALLINT);
+
+select * from int8_tbl where q2 <> cast('456' as SMALLINT);
+
+select * from int8_tbl where q2 < cast('456' as SMALLINT);
+
+select * from int8_tbl where q2 > cast('456' as SMALLINT);
+
+select * from int8_tbl where q2 <= cast('456' as SMALLINT);
+
+select * from int8_tbl where q2 >= cast('456' as SMALLINT);
+
+select * from int8_tbl where cast('123' as SMALLINT) = q1;
+
+select * from int8_tbl where cast('123' as SMALLINT) <> q1;
+
+select * from int8_tbl where cast('123' as SMALLINT) < q1;
+
+select * from int8_tbl where cast('123' as SMALLINT) > q1;
+
+select * from int8_tbl where cast('123' as SMALLINT) <= q1;
+
+select * from int8_tbl where cast('123' as SMALLINT) >= q1;
+
+select q1 as plus, -q1 as minus from int8_tbl;
+
+select q1, q2, q1 + q2 as plus from int8_tbl;
+
+select q1, q2, q1 - q2 as minus from int8_tbl;
+
+select q1, q2, q1 * q2 as multiply from int8_tbl;
+
+select q1, q2, q1 * q2 as multiply from int8_tbl where q1 < 1000 or q2 > 0 and q2 < 1000;
+
+select q1, q2, q1 / q2 as divide, q1 % q2 as mod from int8_tbl;
+
+select q1, float8(q1) from int8_tbl;
+
+select q2, float8(q2) from int8_tbl;
+
+select 37 + q1 as plus4 from int8_tbl;
+
+select 37 - q1 as minus4 from int8_tbl;
+
+select 2 * q1 as "twice int4" from int8_tbl;
+
+select q1 * 2 as "twice int4" from int8_tbl;
+
+select
+  q1 + cast(42 as INT) as "8plus4",
+  q1 - cast(42 as INT) as "8minus4",
+  q1 * cast(42 as INT) as "8mul4",
+  q1 / cast(42 as INT) as "8div4"
+from
+  int8_tbl;
+
+select
+  cast(246 as INT) + q1 as "4plus8",
+  cast(246 as INT) - q1 as "4minus8",
+  cast(246 as INT) * q1 as "4mul8",
+  cast(246 as INT) / q1 as "4div8"
+from
+  int8_tbl;
+
+select
+  q1 + cast(42 as SMALLINT) as "8plus2",
+  q1 - cast(42 as SMALLINT) as "8minus2",
+  q1 * cast(42 as SMALLINT) as "8mul2",
+  q1 / cast(42 as SMALLINT) as "8div2"
+from
+  int8_tbl;
+
+select
+  cast(246 as SMALLINT) + q1 as "2plus8",
+  cast(246 as SMALLINT) - q1 as "2minus8",
+  cast(246 as SMALLINT) * q1 as "2mul8",
+  cast(246 as SMALLINT) / q1 as "2div8"
+from
+  int8_tbl;
+
+select q2, abs(q2) from int8_tbl;
+
+select MIN(q1), MIN(q2) from int8_tbl;
+
+select MAX(q1), MAX(q2) from int8_tbl;
+
+select to_char(q1, '9G999G999G999G999G999'), to_char(q2, '9,999,999,999,999,999') from int8_tbl;
+
+select
+  to_char(q1, '9G999G999G999G999G999D999G999'),
+  to_char(q2, '9,999,999,999,999,999.999,999')
+from
+  int8_tbl;
+
+select
+  to_char(q1 * -1, '9999999999999999PR'),
+  to_char(q2 * -1, '9999999999999999.999PR')
+from
+  int8_tbl;
+
+select to_char(q1 * -1, '9999999999999999S'), to_char(q2 * -1, 'S9999999999999999') from int8_tbl;
+
+select to_char(q2, 'MI9999999999999999') from int8_tbl;
+
+select to_char(q2, '9999999999999999PL') from int8_tbl;
+
+select to_char(q2, 'FMS9999999999999999') from int8_tbl;
+
+select to_char(q2, 'FM9999999999999999THPR') from int8_tbl;
+
+select to_char(q2, 'SG9999999999999999th') from int8_tbl;
+
+select to_char(q2, '0999999999999999') from int8_tbl;
+
+select to_char(q2, 'S0999999999999999') from int8_tbl;
+
+select to_char(q2, 'FM0999999999999999') from int8_tbl;
+
+select to_char(q2, 'FM9999999999999999.000') from int8_tbl;
+
+select to_char(q2, 'L9999999999999999.000') from int8_tbl;
+
+select to_char(q2, 'FM9999999999999999.999') from int8_tbl;
+
+select to_char(q2, 'S 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 . 9 9 9') from int8_tbl;
+
+select
+  to_char(
+    q2,
+    '99999 "text" 9999 "9999" 999 "\"text between quote marks\"" 9999'
+  )
+from
+  int8_tbl;
+
+select to_char(q2, '999999SG9999999999') from int8_tbl;
+
+select to_char(q2, 'FMRN') from int8_tbl;
+
+select to_char(1234, '9.99EEEE');
+
+select to_char(cast(1234 as BIGINT), '9.99eeee');
+
+select to_char(-cast(1234 as BIGINT), '9.99eeee');
+
+select to_char(1234, '99999V99');
+
+select to_char(cast(1234 as BIGINT), '99999V99');
+
+select cast('-9223372036854775808' as BIGINT);
+
+select cast('-9223372036854775809' as BIGINT);
+
+select cast('9223372036854775807' as BIGINT);
+
+select cast('9223372036854775808' as BIGINT);
+
+select -cast('-9223372036854775807' as BIGINT);
+
+select -cast('-9223372036854775808' as BIGINT);
+
+select cast(0 as BIGINT) - cast('-9223372036854775808' as BIGINT);
+
+select cast('9223372036854775800' as BIGINT) + cast('9223372036854775800' as BIGINT);
+
+select cast('-9223372036854775800' as BIGINT) + cast('-9223372036854775800' as BIGINT);
+
+select cast('9223372036854775800' as BIGINT) - cast('-9223372036854775800' as BIGINT);
+
+select cast('-9223372036854775800' as BIGINT) - cast('9223372036854775800' as BIGINT);
+
+select cast('9223372036854775800' as BIGINT) * cast('9223372036854775800' as BIGINT);
+
+select cast('9223372036854775800' as BIGINT) / cast('0' as BIGINT);
+
+select cast('9223372036854775800' as BIGINT) % cast('0' as BIGINT);
+
+select abs(cast('-9223372036854775808' as BIGINT));
+
+select cast('9223372036854775800' as BIGINT) + cast('100' as INT);
+
+select cast('-9223372036854775800' as BIGINT) - cast('100' as INT);
+
+select cast('9223372036854775800' as BIGINT) * cast('100' as INT);
+
+select cast('100' as INT) + cast('9223372036854775800' as BIGINT);
+
+select cast('-100' as INT) - cast('9223372036854775800' as BIGINT);
+
+select cast('100' as INT) * cast('9223372036854775800' as BIGINT);
+
+select cast('9223372036854775800' as BIGINT) + cast('100' as SMALLINT);
+
+select cast('-9223372036854775800' as BIGINT) - cast('100' as SMALLINT);
+
+select cast('9223372036854775800' as BIGINT) * cast('100' as SMALLINT);
+
+select cast('-9223372036854775808' as BIGINT) / cast('0' as SMALLINT);
+
+select cast('100' as SMALLINT) + cast('9223372036854775800' as BIGINT);
+
+select cast('-100' as SMALLINT) - cast('9223372036854775800' as BIGINT);
+
+select cast('100' as SMALLINT) * cast('9223372036854775800' as BIGINT);
+
+select cast('100' as SMALLINT) / cast('0' as BIGINT);
+
+select cast(q1 as INT) from int8_tbl where q2 = 456;
+
+select cast(q1 as INT) from int8_tbl where q2 <> 456;
+
+select cast(q1 as SMALLINT) from int8_tbl where q2 = 456;
+
+select cast(q1 as SMALLINT) from int8_tbl where q2 <> 456;
+
+select cast(cast('42' as SMALLINT) as BIGINT), cast(cast('-37' as SMALLINT) as BIGINT);
+
+select cast(q1 as REAL), cast(q2 as DOUBLE PRECISION) from int8_tbl;
+
+select cast(cast('36854775807.0' as REAL) as BIGINT);
+
+select cast(cast('922337203685477580700.0' as DOUBLE PRECISION) as BIGINT);
+
+select cast(q1 as OID) from int8_tbl;
+
+select cast(oid as BIGINT) from pg_class where relname = 'pg_class';
+
+select q1, q2, q1 & q2 as "and", q1 | q2 as "or", q1 # q2 as xor, ~q1 as "not" from int8_tbl;
+
+select q1, q1 << 2 as shl, q1 >> 3 as shr from int8_tbl;
+
+select
+  *
+from
+  generate_series(
+    cast('+4567890123456789' as BIGINT),
+    cast('+4567890123456799' as BIGINT)
+  );
+
+select
+  *
+from
+  generate_series(
+    cast('+4567890123456789' as BIGINT),
+    cast('+4567890123456799' as BIGINT),
+    0
+  );
+
+select
+  *
+from
+  generate_series(
+    cast('+4567890123456789' as BIGINT),
+    cast('+4567890123456799' as BIGINT),
+    2
+  );
+
+select cast(-cast(1 as BIGINT) << 63 as TEXT);
+
+select cast((-cast(1 as BIGINT) << 63) + 1 as TEXT);
+
+select cast(-9223372036854775808 as BIGINT) * cast(-1 as BIGINT);
+
+select cast(-9223372036854775808 as BIGINT) / cast(-1 as BIGINT);
+
+select cast(-9223372036854775808 as BIGINT) % cast(-1 as BIGINT);
+
+select cast(-9223372036854775808 as BIGINT) * cast(-1 as INT);
+
+select cast(-9223372036854775808 as BIGINT) / cast(-1 as INT);
+
+select cast(-9223372036854775808 as BIGINT) % cast(-1 as INT);
+
+select cast(-9223372036854775808 as BIGINT) * cast(-1 as SMALLINT);
+
+select cast(-9223372036854775808 as BIGINT) / cast(-1 as SMALLINT);
+
+select cast(-9223372036854775808 as BIGINT) % cast(-1 as SMALLINT);
+
+select
+  x,
+  cast(x as BIGINT) as int8_value
+from
+  (
+    values
+      (-cast(2.5 as DOUBLE PRECISION)),
+      (-cast(1.5 as DOUBLE PRECISION)),
+      (-cast(0.5 as DOUBLE PRECISION)),
+      (cast(0.0 as DOUBLE PRECISION)),
+      (cast(0.5 as DOUBLE PRECISION)),
+      (cast(1.5 as DOUBLE PRECISION)),
+      (cast(2.5 as DOUBLE PRECISION))
+  )
+  as t (x);
+
+select
+  x,
+  cast(x as BIGINT) as int8_value
+from
+  (
+    values
+      (-cast(2.5 as NUMERIC)),
+      (-cast(1.5 as NUMERIC)),
+      (-cast(0.5 as NUMERIC)),
+      (cast(0.0 as NUMERIC)),
+      (cast(0.5 as NUMERIC)),
+      (cast(1.5 as NUMERIC)),
+      (cast(2.5 as NUMERIC))
+  )
+  as t (x);
+
+select
+  a,
+  b,
+  gcd(a, b),
+  gcd(a, -b),
+  gcd(b, a),
+  gcd(-b, a)
+from
+  (
+    values
+      (cast(0 as BIGINT), cast(0 as BIGINT)),
+      (cast(0 as BIGINT), cast(29893644334 as BIGINT)),
+      (
+        cast(288484263558 as BIGINT),
+        cast(29893644334 as BIGINT)
+      ),
+      (
+        -cast(288484263558 as BIGINT),
+        cast(29893644334 as BIGINT)
+      ),
+      (
+        cast(-9223372036854775808 as BIGINT),
+        cast(1 as BIGINT)
+      ),
+      (
+        cast(-9223372036854775808 as BIGINT),
+        cast(9223372036854775807 as BIGINT)
+      ),
+      (
+        cast(-9223372036854775808 as BIGINT),
+        cast(4611686018427387904 as BIGINT)
+      )
+  )
+  as v (a, b);
+
+select gcd(cast(-9223372036854775808 as BIGINT), cast(0 as BIGINT));
+
+select gcd(cast(-9223372036854775808 as BIGINT), cast(-9223372036854775808 as BIGINT));
+
+select
+  a,
+  b,
+  lcm(a, b),
+  lcm(a, -b),
+  lcm(b, a),
+  lcm(-b, a)
+from
+  (
+    values
+      (cast(0 as BIGINT), cast(0 as BIGINT)),
+      (cast(0 as BIGINT), cast(29893644334 as BIGINT)),
+      (
+        cast(29893644334 as BIGINT),
+        cast(29893644334 as BIGINT)
+      ),
+      (
+        cast(288484263558 as BIGINT),
+        cast(29893644334 as BIGINT)
+      ),
+      (
+        -cast(288484263558 as BIGINT),
+        cast(29893644334 as BIGINT)
+      ),
+      (
+        cast(-9223372036854775808 as BIGINT),
+        cast(0 as BIGINT)
+      )
+  )
+  as v (a, b);
+
+select lcm(cast(-9223372036854775808 as BIGINT), cast(1 as BIGINT));
+
+select lcm(cast(9223372036854775807 as BIGINT), cast(9223372036854775806 as BIGINT));
+
+select cast('0b100101' as BIGINT);
+
+select cast('0o273' as BIGINT);
+
+select cast('0x42F' as BIGINT);
+
+select cast('0b' as BIGINT);
+
+select cast('0o' as BIGINT);
+
+select cast('0x' as BIGINT);
+
+select cast('0b111111111111111111111111111111111111111111111111111111111111111' as BIGINT);
+
+select cast('0b1000000000000000000000000000000000000000000000000000000000000000' as BIGINT);
+
+select cast('0o777777777777777777777' as BIGINT);
+
+select cast('0o1000000000000000000000' as BIGINT);
+
+select cast('0x7FFFFFFFFFFFFFFF' as BIGINT);
+
+select cast('0x8000000000000000' as BIGINT);
+
+select cast('-0b1000000000000000000000000000000000000000000000000000000000000000' as BIGINT);
+
+select cast('-0b1000000000000000000000000000000000000000000000000000000000000001' as BIGINT);
+
+select cast('-0o1000000000000000000000' as BIGINT);
+
+select cast('-0o1000000000000000000001' as BIGINT);
+
+select cast('-0x8000000000000000' as BIGINT);
+
+select cast('-0x8000000000000001' as BIGINT);
+
+select cast('1_000_000' as BIGINT);
+
+select cast('1_2_3' as BIGINT);
+
+select cast('0x1EEE_FFFF' as BIGINT);
+
+select cast('0o2_73' as BIGINT);
+
+select cast('0b_10_0101' as BIGINT);
+
+select cast('_100' as BIGINT);
+
+select cast('100_' as BIGINT);
+
+select cast('100__000' as BIGINT);

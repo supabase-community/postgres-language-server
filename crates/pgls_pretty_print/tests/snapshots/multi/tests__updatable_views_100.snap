@@ -1,0 +1,3087 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/updatable_views.sql
+snapshot_kind: text
+---
+set extra_float_digits = 0;
+
+create table base_tbl (
+  a INT primary key,
+  b TEXT default 'Unspecified'
+);
+
+insert into base_tbl select i, 'Row ' || i from generate_series(-2, 2) as g (i);
+
+create view ro_view1
+as select distinct a, b from base_tbl;
+
+create view ro_view2
+as select a, b from base_tbl group by a, b;
+
+create view ro_view3
+as select 1 from base_tbl having MAX(a) > 0;
+
+create view ro_view4
+as select COUNT(*) from base_tbl;
+
+create view ro_view5
+as select a, RANK() over () from base_tbl;
+
+create view ro_view6
+as select a, b from base_tbl
+union
+select -a, b from base_tbl;
+
+select * from t;
+
+create view ro_view8
+as select a, b from base_tbl order by a offset 1;
+
+create view ro_view9
+as select a, b from base_tbl order by a limit 1;
+
+create view ro_view10
+as select 1 as a;
+
+create view ro_view11
+as select
+  b1.a,
+  b2.b
+from
+  base_tbl as b1,
+  base_tbl as b2;
+
+create view ro_view12
+as select * from generate_series(1, 10) as g (a);
+
+create view ro_view13
+as select a, b from (select * from base_tbl) as t;
+
+create view rw_view14
+as select ctid, a, b from base_tbl;
+
+create view rw_view15
+as select a, upper(b) from base_tbl;
+
+create view rw_view16
+as select a, b, a as aa from base_tbl;
+
+create view ro_view17
+as select * from ro_view1;
+
+create view ro_view18
+as select * from (values (1)) as tmp (a);
+
+create sequence uv_seq;
+
+create view ro_view19
+as select * from uv_seq;
+
+create view ro_view20
+as select
+  a,
+  b,
+  generate_series(1, a) as g
+from
+  base_tbl;
+
+select
+  table_name,
+  is_insertable_into
+from
+  information_schema.tables
+where
+  table_name like 'r_\_view%'
+order by table_name;
+
+select
+  table_name,
+  is_updatable,
+  is_insertable_into
+from
+  information_schema.views
+where
+  table_name like 'r_\_view%'
+order by table_name;
+
+select
+  table_name,
+  column_name,
+  is_updatable
+from
+  information_schema.columns
+where
+  table_name like 'r_\_view%'
+order by table_name,
+  ordinal_position;
+
+delete from ro_view1;
+
+delete from ro_view2;
+
+delete from ro_view3;
+
+delete from ro_view4;
+
+delete from ro_view5;
+
+delete from ro_view6;
+
+update ro_view7 set a = a + 1;
+
+update ro_view8 set a = a + 1;
+
+update ro_view9 set a = a + 1;
+
+update ro_view10 set a = a + 1;
+
+update ro_view11 set a = a + 1;
+
+update ro_view12 set a = a + 1;
+
+insert into ro_view13 values (3, 'Row 3');
+
+merge into ro_view13 as t
+using (values (2, 'Row 2')) as v (a, b)
+on t.a = v.a
+when matched then do NOTHING
+when not matched by TARGET then do NOTHING;
+
+merge into ro_view13 as t
+using (values (3, 'Row 3')) as v (a, b)
+on t.a = v.a
+when matched then do NOTHING
+when not matched by TARGET then do NOTHING;
+
+insert into rw_view14 values (null, 3, 'Row 3');
+
+insert into rw_view14 (a, b) values (3, 'Row 3');
+
+update rw_view14 set ctid = null where a = 3;
+
+update rw_view14 set b = 'ROW 3' where a = 3;
+
+select * from base_tbl;
+
+delete from rw_view14 where a = 3;
+
+select * from base_tbl order by a;
+
+select * from base_tbl order by a;
+
+insert into rw_view15 values (3, 'ROW 3');
+
+insert into rw_view15 (a) values (3);
+
+insert into rw_view15 (a) values (3) on conflict do nothing;
+
+select * from rw_view15;
+
+insert into rw_view15 (a) values (3) on conflict (a) do nothing;
+
+select * from rw_view15;
+
+insert into rw_view15 (a) values (3) on conflict (a) do update set a = excluded.a;
+
+select * from rw_view15;
+
+insert into rw_view15 (a) values (3) on conflict (a) do update set upper = 'blarg';
+
+select * from rw_view15;
+
+select * from rw_view15;
+
+alter view rw_view15
+  alter column upper set default 'NOT SET';
+
+insert into rw_view15 (a) values (4);
+
+update rw_view15 set upper = 'ROW 3' where a = 3;
+
+update rw_view15 set upper = default where a = 3;
+
+update rw_view15 set a = 4 where a = 3;
+
+select * from base_tbl;
+
+delete from rw_view15 where a = 4;
+
+insert into rw_view16 values (3, 'Row 3', 3);
+
+insert into rw_view16 (a, b) values (3, 'Row 3');
+
+update rw_view16 set a = 3, aa = -3 where a = 3;
+
+update rw_view16 set aa = -3 where a = 3;
+
+select * from base_tbl;
+
+delete from rw_view16 where a = -3;
+
+insert into ro_view17 values (3, 'ROW 3');
+
+delete from ro_view18;
+
+merge into ro_view18 as t
+using (values (1, 'Row 1')) as v (a, b)
+on t.a = v.a
+when matched then do NOTHING;
+
+update ro_view19 set last_value = 1000;
+
+update ro_view20 set b = upper(b);
+
+create rule rw_view16_ins_rule
+as on insert to rw_view16 where
+  new.a > 0
+do instead
+  insert into base_tbl values (new.a, new.b);;
+
+create rule rw_view16_upd_rule
+as on update to rw_view16 where
+  old.a > 0
+do instead
+  update base_tbl set b = new.b where a = old.a;;
+
+create rule rw_view16_del_rule
+as on delete to rw_view16 where
+  old.a > 0
+do instead
+  delete from base_tbl where a = old.a;;
+
+insert into rw_view16 (a, b) values (3, 'Row 3');
+
+update rw_view16 set b = 'ROW 2' where a = 2;
+
+delete from rw_view16 where a = 2;
+
+drop TABLE "base_tbl" cascade;
+
+drop VIEW "ro_view10", "ro_view12", "ro_view18";
+
+drop SEQUENCE "uv_seq" cascade;
+
+create table base_tbl (
+  a INT primary key,
+  b TEXT default 'Unspecified'
+);
+
+insert into base_tbl select i, 'Row ' || i from generate_series(-2, 2) as g (i);
+
+create view rw_view1
+as select
+  *,
+  'Const' as c,
+  (select concat('b: ', b)) as d
+from
+  base_tbl
+where
+  a > 0;
+
+select table_name, is_insertable_into from information_schema.tables where table_name = 'rw_view1';
+
+select
+  table_name,
+  is_updatable,
+  is_insertable_into
+from
+  information_schema.views
+where
+  table_name = 'rw_view1';
+
+select
+  table_name,
+  column_name,
+  is_updatable
+from
+  information_schema.columns
+where
+  table_name = 'rw_view1'
+order by ordinal_position;
+
+insert into rw_view1 values (3, 'Row 3');
+
+insert into rw_view1 (a) values (4);
+
+update rw_view1 set a = 5 where a = 4;
+
+delete from rw_view1 where b = 'Row 2';
+
+select * from base_tbl;
+
+set jit_above_cost = 0;
+
+set jit_above_cost = default;
+
+select * from base_tbl order by a;
+
+select * from base_tbl order by a;
+
+update rw_view1 set a = 6 where a = 5;
+
+delete from rw_view1 where a = 5;
+
+create table base_tbl_hist (
+  ts timestamp with time ZONE default NOW(),
+  a INT,
+  b TEXT
+);
+
+create rule base_tbl_log
+as on insert to rw_view1
+do
+  insert into base_tbl_hist (a, b)
+  values (new.a, new.b);;
+
+select
+  table_name,
+  is_updatable,
+  is_insertable_into
+from
+  information_schema.views
+where
+  table_name = 'rw_view1';
+
+insert into rw_view1 values (9, default), (10, default);
+
+select a, b from base_tbl_hist;
+
+drop TABLE "base_tbl" cascade;
+
+drop TABLE "base_tbl_hist";
+
+create table base_tbl (
+  a INT primary key,
+  b TEXT default 'Unspecified'
+);
+
+insert into base_tbl select i, 'Row ' || i from generate_series(-2, 2) as g (i);
+
+create view rw_view1
+as select
+  b as bb,
+  a as aa,
+  'Const1' as c
+from
+  base_tbl
+where
+  a > 0;
+
+create view rw_view2
+as select
+  aa as aaa,
+  bb as bbb,
+  c as c1,
+  'Const2' as c2
+from
+  rw_view1
+where
+  aa < 10;
+
+select table_name, is_insertable_into from information_schema.tables where table_name = 'rw_view2';
+
+select
+  table_name,
+  is_updatable,
+  is_insertable_into
+from
+  information_schema.views
+where
+  table_name = 'rw_view2';
+
+select
+  table_name,
+  column_name,
+  is_updatable
+from
+  information_schema.columns
+where
+  table_name = 'rw_view2'
+order by ordinal_position;
+
+insert into rw_view2 values (3, 'Row 3');
+
+insert into rw_view2 (aaa) values (4);
+
+select * from rw_view2;
+
+update rw_view2 set bbb = 'Row 4' where aaa = 4;
+
+delete from rw_view2 where aaa = 2;
+
+select * from rw_view2;
+
+select * from rw_view2 order by aaa;
+
+select * from rw_view2 order by aaa;
+
+update rw_view2 set aaa = 5 where aaa = 4;
+
+delete from rw_view2 where aaa = 4;
+
+drop TABLE "base_tbl" cascade;
+
+create table base_tbl (
+  a INT primary key,
+  b TEXT default 'Unspecified'
+);
+
+insert into base_tbl select i, 'Row ' || i from generate_series(-2, 2) as g (i);
+
+create view rw_view1
+as select * from base_tbl where a > 0 offset 0;
+
+create view rw_view2
+as select * from rw_view1 where a < 10;
+
+select
+  table_name,
+  is_insertable_into
+from
+  information_schema.tables
+where
+  table_name like 'rw_view%'
+order by table_name;
+
+select
+  table_name,
+  is_updatable,
+  is_insertable_into
+from
+  information_schema.views
+where
+  table_name like 'rw_view%'
+order by table_name;
+
+select
+  table_name,
+  column_name,
+  is_updatable
+from
+  information_schema.columns
+where
+  table_name like 'rw_view%'
+order by table_name,
+  ordinal_position;
+
+create rule rw_view1_ins_rule
+as on insert to rw_view1
+do instead
+  insert into base_tbl
+  values (new.a, new.b)
+  returning *;;
+
+select
+  table_name,
+  is_insertable_into
+from
+  information_schema.tables
+where
+  table_name like 'rw_view%'
+order by table_name;
+
+select
+  table_name,
+  is_updatable,
+  is_insertable_into
+from
+  information_schema.views
+where
+  table_name like 'rw_view%'
+order by table_name;
+
+select
+  table_name,
+  column_name,
+  is_updatable
+from
+  information_schema.columns
+where
+  table_name like 'rw_view%'
+order by table_name,
+  ordinal_position;
+
+create rule rw_view1_upd_rule
+as on update to rw_view1
+do instead
+  update base_tbl
+  set b = new.b
+  where
+    a = old.a
+  returning new.*;;
+
+select
+  table_name,
+  is_insertable_into
+from
+  information_schema.tables
+where
+  table_name like 'rw_view%'
+order by table_name;
+
+select
+  table_name,
+  is_updatable,
+  is_insertable_into
+from
+  information_schema.views
+where
+  table_name like 'rw_view%'
+order by table_name;
+
+select
+  table_name,
+  column_name,
+  is_updatable
+from
+  information_schema.columns
+where
+  table_name like 'rw_view%'
+order by table_name,
+  ordinal_position;
+
+create rule rw_view1_del_rule
+as on delete to rw_view1
+do instead
+  delete from base_tbl
+  where
+    a = old.a
+  returning old.*;;
+
+select
+  table_name,
+  is_insertable_into
+from
+  information_schema.tables
+where
+  table_name like 'rw_view%'
+order by table_name;
+
+select
+  table_name,
+  is_updatable,
+  is_insertable_into
+from
+  information_schema.views
+where
+  table_name like 'rw_view%'
+order by table_name;
+
+select
+  table_name,
+  column_name,
+  is_updatable
+from
+  information_schema.columns
+where
+  table_name like 'rw_view%'
+order by table_name,
+  ordinal_position;
+
+insert into rw_view2 values (3, 'Row 3') returning old.*, new.*;
+
+update rw_view2 set b = 'R3' where a = 3 returning old.*, new.*;
+
+drop RULE "rw_view1_upd_rule" on "rw_view1";
+
+create rule rw_view1_upd_rule
+as on update to rw_view1
+do instead
+  update base_tbl
+  set b = new.b
+  where
+    a = old.a
+  returning *;;
+
+update rw_view2 set b = 'Row three' where a = 3 returning old.*, new.*;
+
+select * from rw_view2;
+
+delete from rw_view2 where a = 3 returning old.*, new.*;
+
+select * from rw_view2;
+
+update rw_view2 set a = 3 where a = 2;
+
+delete from rw_view2 where a = 2;
+
+drop TABLE "base_tbl" cascade;
+
+create table base_tbl (
+  a INT primary key,
+  b TEXT default 'Unspecified'
+);
+
+insert into base_tbl select i, 'Row ' || i from generate_series(-2, 2) as g (i);
+
+create view rw_view1
+as select
+  *,
+  'Const1' as c1
+from
+  base_tbl
+where
+  a > 0
+offset 0;
+
+create view rw_view2
+as select
+  *,
+  'Const2' as c2
+from
+  rw_view1
+where
+  a < 10;
+
+select
+  table_name,
+  is_insertable_into
+from
+  information_schema.tables
+where
+  table_name like 'rw_view%'
+order by table_name;
+
+select
+  table_name,
+  is_updatable,
+  is_insertable_into,
+  is_trigger_updatable,
+  is_trigger_deletable,
+  is_trigger_insertable_into
+from
+  information_schema.views
+where
+  table_name like 'rw_view%'
+order by table_name;
+
+select
+  table_name,
+  column_name,
+  is_updatable
+from
+  information_schema.columns
+where
+  table_name like 'rw_view%'
+order by table_name,
+  ordinal_position;
+
+create function rw_view1_trig_fn()
+returns trigger
+as '
+BEGIN
+  IF TG_OP = ''INSERT'' THEN
+    INSERT INTO base_tbl VALUES (NEW.a, NEW.b);
+    NEW.c1 = ''Trigger Const1'';
+    RETURN NEW;
+  ELSIF TG_OP = ''UPDATE'' THEN
+    UPDATE base_tbl SET b=NEW.b WHERE a=OLD.a;
+    NEW.c1 = ''Trigger Const1'';
+    RETURN NEW;
+  ELSIF TG_OP = ''DELETE'' THEN
+    DELETE FROM base_tbl WHERE a=OLD.a;
+    RETURN OLD;
+  END IF;
+END;
+'
+language "plpgsql";
+
+create TRIGGER rw_view1_ins_trig
+  instead of insert
+  on rw_view1
+  for EACH ROW
+  EXECUTE FUNCTION rw_view1_trig_fn();
+
+select
+  table_name,
+  is_insertable_into
+from
+  information_schema.tables
+where
+  table_name like 'rw_view%'
+order by table_name;
+
+select
+  table_name,
+  is_updatable,
+  is_insertable_into,
+  is_trigger_updatable,
+  is_trigger_deletable,
+  is_trigger_insertable_into
+from
+  information_schema.views
+where
+  table_name like 'rw_view%'
+order by table_name;
+
+select
+  table_name,
+  column_name,
+  is_updatable
+from
+  information_schema.columns
+where
+  table_name like 'rw_view%'
+order by table_name,
+  ordinal_position;
+
+create TRIGGER rw_view1_upd_trig
+  instead of update
+  on rw_view1
+  for EACH ROW
+  EXECUTE FUNCTION rw_view1_trig_fn();
+
+select
+  table_name,
+  is_insertable_into
+from
+  information_schema.tables
+where
+  table_name like 'rw_view%'
+order by table_name;
+
+select
+  table_name,
+  is_updatable,
+  is_insertable_into,
+  is_trigger_updatable,
+  is_trigger_deletable,
+  is_trigger_insertable_into
+from
+  information_schema.views
+where
+  table_name like 'rw_view%'
+order by table_name;
+
+select
+  table_name,
+  column_name,
+  is_updatable
+from
+  information_schema.columns
+where
+  table_name like 'rw_view%'
+order by table_name,
+  ordinal_position;
+
+create TRIGGER rw_view1_del_trig
+  instead of delete
+  on rw_view1
+  for EACH ROW
+  EXECUTE FUNCTION rw_view1_trig_fn();
+
+select
+  table_name,
+  is_insertable_into
+from
+  information_schema.tables
+where
+  table_name like 'rw_view%'
+order by table_name;
+
+select
+  table_name,
+  is_updatable,
+  is_insertable_into,
+  is_trigger_updatable,
+  is_trigger_deletable,
+  is_trigger_insertable_into
+from
+  information_schema.views
+where
+  table_name like 'rw_view%'
+order by table_name;
+
+select
+  table_name,
+  column_name,
+  is_updatable
+from
+  information_schema.columns
+where
+  table_name like 'rw_view%'
+order by table_name,
+  ordinal_position;
+
+insert into rw_view2 values (3, 'Row 3') returning old.*, new.*;
+
+update rw_view2 set b = 'Row three' where a = 3 returning old.*, new.*;
+
+select * from rw_view2;
+
+delete from rw_view2 where a = 3 returning old.*, new.*;
+
+select * from rw_view2;
+
+select * from base_tbl order by a;
+
+select * from base_tbl order by a;
+
+update rw_view2 set a = 3 where a = 2;
+
+delete from rw_view2 where a = 2;
+
+drop TRIGGER "rw_view1_del_trig" on "rw_view1";
+
+drop TRIGGER "rw_view1_ins_trig" on "rw_view1";
+
+create TRIGGER rw_view2_upd_trig
+  instead of update
+  on rw_view2
+  for EACH ROW
+  EXECUTE FUNCTION rw_view1_trig_fn();
+
+select * from base_tbl order by a;
+
+drop TABLE "base_tbl" cascade;
+
+drop FUNCTION rw_view1_trig_fn();
+
+create table base_tbl (
+  a INT primary key,
+  b TEXT default 'Unspecified'
+);
+
+insert into base_tbl select i, 'Row ' || i from generate_series(-2, 2) as g (i);
+
+create view rw_view1
+as select b as bb, a as aa from base_tbl;
+
+create function rw_view1_aa(x rw_view1)
+returns INT
+as ' SELECT x.aa '
+language "sql";
+
+update rw_view1 as v
+set bb = 'Updated row 2'
+where
+  rw_view1_aa(v) = 2
+returning rw_view1_aa(v),
+v.bb;
+
+select * from base_tbl;
+
+update rw_view1 as v
+set bb = 'Updated row 2'
+where
+  rw_view1_aa(v) = 2
+returning rw_view1_aa(v),
+v.bb;
+
+drop TABLE "base_tbl" cascade;
+
+create user regress_view_user1;
+
+create user regress_view_user2;
+
+create user regress_view_user3;
+
+set session authorization regress_view_user1;
+
+create table base_tbl (
+  a INT,
+  b TEXT,
+  c DOUBLE PRECISION
+);
+
+insert into base_tbl values (1, 'Row 1', 1.0);
+
+create view rw_view1
+as select b as bb, c as cc, a as aa from base_tbl;
+
+insert into rw_view1 values ('Row 2', 2.0, 2);
+
+grant SELECT on table base_tbl to regress_view_user2;
+
+grant SELECT on table rw_view1 to regress_view_user2;
+
+grant UPDATE (a, c) on table base_tbl to regress_view_user2;
+
+grant UPDATE (bb, cc) on table rw_view1 to regress_view_user2;
+
+reset session_authorization;
+
+set session authorization regress_view_user2;
+
+create view rw_view2
+as select b as bb, c as cc, a as aa from base_tbl;
+
+select * from base_tbl;
+
+select * from rw_view1;
+
+select * from rw_view2;
+
+insert into base_tbl values (3, 'Row 3', 3.0);
+
+insert into rw_view1 values ('Row 3', 3.0, 3);
+
+insert into rw_view2 values ('Row 3', 3.0, 3);
+
+update base_tbl set a = a, c = c;
+
+update base_tbl set b = b;
+
+update rw_view1 set bb = bb, cc = cc;
+
+update rw_view1 set aa = aa;
+
+update rw_view2 set aa = aa, cc = cc;
+
+update rw_view2 set bb = bb;
+
+delete from base_tbl;
+
+delete from rw_view1;
+
+delete from rw_view2;
+
+reset session_authorization;
+
+set session authorization regress_view_user1;
+
+grant INSERT, DELETE on table base_tbl to regress_view_user2;
+
+reset session_authorization;
+
+set session authorization regress_view_user2;
+
+insert into base_tbl values (3, 'Row 3', 3.0);
+
+insert into rw_view1 values ('Row 4', 4.0, 4);
+
+insert into rw_view2 values ('Row 4', 4.0, 4);
+
+delete from base_tbl where a = 1;
+
+delete from rw_view1 where aa = 2;
+
+delete from rw_view2 where aa = 2;
+
+select * from base_tbl;
+
+reset session_authorization;
+
+set session authorization regress_view_user1;
+
+revoke INSERT, DELETE on table base_tbl from regress_view_user2;
+
+grant INSERT, DELETE on table rw_view1 to regress_view_user2;
+
+reset session_authorization;
+
+set session authorization regress_view_user2;
+
+insert into base_tbl values (5, 'Row 5', 5.0);
+
+insert into rw_view1 values ('Row 5', 5.0, 5);
+
+insert into rw_view2 values ('Row 6', 6.0, 6);
+
+delete from base_tbl where a = 3;
+
+delete from rw_view1 where aa = 3;
+
+delete from rw_view2 where aa = 4;
+
+select * from base_tbl;
+
+reset session_authorization;
+
+drop TABLE "base_tbl" cascade;
+
+create table base_tbl (
+  a INT,
+  b TEXT,
+  c DOUBLE PRECISION
+);
+
+insert into base_tbl values (1, 'Row 1', 1.0);
+
+set session authorization regress_view_user1;
+
+create view rw_view1
+as select * from base_tbl;
+
+select * from rw_view1;
+
+select * from rw_view1 for update;
+
+update rw_view1 set b = 'foo' where a = 1;
+
+set session authorization regress_view_user2;
+
+create view rw_view2
+as select * from rw_view1;
+
+select * from rw_view2;
+
+select * from rw_view2 for update;
+
+update rw_view2 set b = 'bar' where a = 1;
+
+reset session_authorization;
+
+grant SELECT on table base_tbl to regress_view_user1;
+
+set session authorization regress_view_user1;
+
+select * from rw_view1;
+
+select * from rw_view1 for update;
+
+update rw_view1 set b = 'foo' where a = 1;
+
+set session authorization regress_view_user2;
+
+select * from rw_view2;
+
+select * from rw_view2 for update;
+
+update rw_view2 set b = 'bar' where a = 1;
+
+set session authorization regress_view_user1;
+
+grant SELECT on table rw_view1 to regress_view_user2;
+
+set session authorization regress_view_user2;
+
+select * from rw_view2;
+
+select * from rw_view2 for update;
+
+update rw_view2 set b = 'bar' where a = 1;
+
+reset session_authorization;
+
+grant UPDATE on table base_tbl to regress_view_user1;
+
+set session authorization regress_view_user1;
+
+select * from rw_view1;
+
+select * from rw_view1 for update;
+
+update rw_view1 set b = 'foo' where a = 1;
+
+set session authorization regress_view_user2;
+
+select * from rw_view2;
+
+select * from rw_view2 for update;
+
+update rw_view2 set b = 'bar' where a = 1;
+
+set session authorization regress_view_user1;
+
+grant UPDATE on table rw_view1 to regress_view_user2;
+
+set session authorization regress_view_user2;
+
+select * from rw_view2;
+
+select * from rw_view2 for update;
+
+update rw_view2 set b = 'bar' where a = 1;
+
+reset session_authorization;
+
+revoke UPDATE on table base_tbl from regress_view_user1;
+
+set session authorization regress_view_user1;
+
+select * from rw_view1;
+
+select * from rw_view1 for update;
+
+update rw_view1 set b = 'foo' where a = 1;
+
+set session authorization regress_view_user2;
+
+select * from rw_view2;
+
+select * from rw_view2 for update;
+
+update rw_view2 set b = 'bar' where a = 1;
+
+reset session_authorization;
+
+drop TABLE "base_tbl" cascade;
+
+set session authorization regress_view_user1;
+
+create table base_tbl (
+  a INT,
+  b TEXT,
+  c DOUBLE PRECISION
+);
+
+insert into base_tbl values (1, 'Row 1', 1.0);
+
+create view rw_view1
+as select b as bb, c as cc, a as aa from base_tbl;
+
+alter view rw_view1
+  set (security_invoker = 'true');
+
+insert into rw_view1 values ('Row 2', 2.0, 2);
+
+grant SELECT on table rw_view1 to regress_view_user2;
+
+grant UPDATE (bb, cc) on table rw_view1 to regress_view_user2;
+
+set session authorization regress_view_user2;
+
+select * from base_tbl;
+
+select * from rw_view1;
+
+insert into base_tbl values (3, 'Row 3', 3.0);
+
+insert into rw_view1 values ('Row 3', 3.0, 3);
+
+update base_tbl set a = a;
+
+update rw_view1 set bb = bb, cc = cc;
+
+delete from base_tbl;
+
+delete from rw_view1;
+
+set session authorization regress_view_user1;
+
+grant SELECT on table base_tbl to regress_view_user2;
+
+grant UPDATE (a, c) on table base_tbl to regress_view_user2;
+
+set session authorization regress_view_user2;
+
+select * from base_tbl;
+
+select * from rw_view1;
+
+update base_tbl set a = a, c = c;
+
+update base_tbl set b = b;
+
+update rw_view1 set cc = cc;
+
+update rw_view1 set aa = aa;
+
+update rw_view1 set bb = bb;
+
+set session authorization regress_view_user1;
+
+grant INSERT, DELETE on table base_tbl to regress_view_user2;
+
+set session authorization regress_view_user2;
+
+insert into base_tbl values (3, 'Row 3', 3.0);
+
+insert into rw_view1 values ('Row 4', 4.0, 4);
+
+delete from base_tbl where a = 1;
+
+delete from rw_view1 where aa = 2;
+
+set session authorization regress_view_user1;
+
+revoke INSERT, DELETE on table base_tbl from regress_view_user2;
+
+grant INSERT, DELETE on table rw_view1 to regress_view_user2;
+
+set session authorization regress_view_user2;
+
+insert into rw_view1 values ('Row 4', 4.0, 4);
+
+delete from rw_view1 where aa = 2;
+
+set session authorization regress_view_user1;
+
+grant INSERT, DELETE on table base_tbl to regress_view_user2;
+
+set session authorization regress_view_user2;
+
+insert into rw_view1 values ('Row 4', 4.0, 4);
+
+delete from rw_view1 where aa = 2;
+
+select * from base_tbl;
+
+reset session_authorization;
+
+drop TABLE "base_tbl" cascade;
+
+create table base_tbl (
+  a INT,
+  b TEXT,
+  c DOUBLE PRECISION
+);
+
+insert into base_tbl values (1, 'Row 1', 1.0);
+
+set session authorization regress_view_user1;
+
+create view rw_view1
+as select b as bb, c as cc, a as aa from base_tbl;
+
+alter view rw_view1
+  set (security_invoker = 'true');
+
+select * from rw_view1;
+
+update rw_view1 set aa = aa;
+
+set session authorization regress_view_user2;
+
+create view rw_view2
+as select
+  cc as ccc,
+  aa as aaa,
+  bb as bbb
+from
+  rw_view1;
+
+grant SELECT, UPDATE on table rw_view2 to regress_view_user3;
+
+select * from rw_view2;
+
+update rw_view2 set aaa = aaa;
+
+reset session_authorization;
+
+grant SELECT on table base_tbl to regress_view_user1;
+
+grant UPDATE (a, b) on table base_tbl to regress_view_user1;
+
+set session authorization regress_view_user1;
+
+select * from rw_view1;
+
+update rw_view1 set aa = aa, bb = bb;
+
+update rw_view1 set cc = cc;
+
+set session authorization regress_view_user2;
+
+select * from rw_view2;
+
+update rw_view2 set aaa = aaa;
+
+set session authorization regress_view_user3;
+
+select * from rw_view2;
+
+update rw_view2 set aaa = aaa;
+
+set session authorization regress_view_user1;
+
+grant SELECT on table rw_view1 to regress_view_user2;
+
+grant UPDATE (bb, cc) on table rw_view1 to regress_view_user2;
+
+set session authorization regress_view_user2;
+
+select * from rw_view2;
+
+update rw_view2 set bbb = bbb;
+
+set session authorization regress_view_user3;
+
+select * from rw_view2;
+
+update rw_view2 set bbb = bbb;
+
+reset session_authorization;
+
+grant SELECT on table base_tbl to regress_view_user2;
+
+grant UPDATE (a, c) on table base_tbl to regress_view_user2;
+
+set session authorization regress_view_user2;
+
+select * from rw_view2;
+
+update rw_view2 set aaa = aaa;
+
+update rw_view2 set bbb = bbb;
+
+update rw_view2 set ccc = ccc;
+
+set session authorization regress_view_user3;
+
+select * from rw_view2;
+
+update rw_view2 set aaa = aaa;
+
+update rw_view2 set bbb = bbb;
+
+update rw_view2 set ccc = ccc;
+
+reset session_authorization;
+
+grant SELECT on table base_tbl to regress_view_user3;
+
+grant UPDATE (a, c) on table base_tbl to regress_view_user3;
+
+set session authorization regress_view_user3;
+
+select * from rw_view2;
+
+update rw_view2 set aaa = aaa;
+
+update rw_view2 set bbb = bbb;
+
+update rw_view2 set ccc = ccc;
+
+reset session_authorization;
+
+revoke SELECT, UPDATE on table base_tbl from regress_view_user1;
+
+set session authorization regress_view_user1;
+
+select * from rw_view1;
+
+update rw_view1 set aa = aa;
+
+set session authorization regress_view_user2;
+
+select * from rw_view2;
+
+update rw_view2 set aaa = aaa;
+
+update rw_view2 set bbb = bbb;
+
+update rw_view2 set ccc = ccc;
+
+set session authorization regress_view_user3;
+
+select * from rw_view2;
+
+update rw_view2 set aaa = aaa;
+
+update rw_view2 set bbb = bbb;
+
+update rw_view2 set ccc = ccc;
+
+reset session_authorization;
+
+revoke SELECT, UPDATE on table base_tbl from regress_view_user2;
+
+set session authorization regress_view_user2;
+
+select * from rw_view2;
+
+update rw_view2 set aaa = aaa;
+
+update rw_view2 set bbb = bbb;
+
+update rw_view2 set ccc = ccc;
+
+set session authorization regress_view_user3;
+
+select * from rw_view2;
+
+update rw_view2 set aaa = aaa;
+
+update rw_view2 set bbb = bbb;
+
+update rw_view2 set ccc = ccc;
+
+reset session_authorization;
+
+drop TABLE "base_tbl" cascade;
+
+drop role regress_view_user1;
+
+drop role regress_view_user2;
+
+drop role regress_view_user3;
+
+create table base_tbl (
+  a INT primary key,
+  b TEXT default 'Unspecified',
+  c serial
+);
+
+insert into base_tbl values (1, 'Row 1');
+
+insert into base_tbl values (2, 'Row 2');
+
+insert into base_tbl values (3);
+
+create view rw_view1
+as select a as aa, b as bb from base_tbl;
+
+alter view rw_view1
+  alter column bb set default 'View default';
+
+insert into rw_view1 values (4, 'Row 4');
+
+insert into rw_view1 (aa) values (5);
+
+select * from base_tbl;
+
+drop TABLE "base_tbl" cascade;
+
+create table base_tbl (
+  a INT primary key,
+  b TEXT default 'Unspecified'
+);
+
+insert into base_tbl values (1, 'Row 1');
+
+insert into base_tbl values (2, 'Row 2');
+
+create function rw_view1_trig_fn()
+returns trigger
+as '
+BEGIN
+  IF TG_OP = ''INSERT'' THEN
+    UPDATE base_tbl SET b=NEW.b WHERE a=1;
+    RETURN NULL;
+  END IF;
+  RETURN NULL;
+END;
+'
+language "plpgsql";
+
+create TRIGGER rw_view1_ins_trig
+  after insert
+  on base_tbl
+  for EACH ROW
+  EXECUTE FUNCTION rw_view1_trig_fn();
+
+create view rw_view1
+as select a as aa, b as bb from base_tbl;
+
+insert into rw_view1 values (3, 'Row 3');
+
+select * from base_tbl;
+
+drop VIEW "rw_view1";
+
+drop TRIGGER "rw_view1_ins_trig" on "base_tbl";
+
+drop FUNCTION rw_view1_trig_fn();
+
+drop TABLE "base_tbl";
+
+create table base_tbl (
+  a INT,
+  b INT
+);
+
+insert into base_tbl values (1, 2), (4, 5), (3, -3);
+
+create view rw_view1
+as select * from base_tbl order by a + b;
+
+select * from rw_view1;
+
+insert into rw_view1 values (7, -8);
+
+select * from rw_view1;
+
+update rw_view1 set b = b + 1 returning *;
+
+update rw_view1 set b = b + 1 returning *;
+
+select * from rw_view1;
+
+drop TABLE "base_tbl" cascade;
+
+create table base_tbl (
+  a INT,
+  arr INT[]
+);
+
+insert into base_tbl values (1, array[2]), (3, array[4]);
+
+create view rw_view1
+as select * from base_tbl;
+
+update rw_view1 set arr[1] = 42, arr[2] = 77 where a = 3;
+
+select * from rw_view1;
+
+drop TABLE "base_tbl" cascade;
+
+create table base_tbl (a DOUBLE PRECISION);
+
+insert into base_tbl select i / 10.0 from generate_series(1, 10) as g (i);
+
+create view rw_view1
+as select
+  ctid,
+  sin(a) as s,
+  a,
+  cos(a) as c
+from
+  base_tbl
+where
+  a <> 0
+order by abs(a);
+
+insert into rw_view1 values (null, null, 1.1, null);
+
+insert into rw_view1 (s, c, a) values (null, null, 1.1);
+
+insert into rw_view1 (s, c, a) values (default, default, 1.1);
+
+insert into rw_view1 (a) values (1.1) returning a, s, c;
+
+update rw_view1 set s = s where a = 1.1;
+
+update rw_view1 set a = 1.05 where a = 1.1 returning s;
+
+delete from rw_view1 where a = 1.05;
+
+create view rw_view2
+as select
+  s,
+  c,
+  s / c as t,
+  a as base_a,
+  ctid
+from
+  rw_view1;
+
+insert into rw_view2 values (null, null, null, 1.1, null);
+
+insert into rw_view2 (s, c, base_a) values (null, null, 1.1);
+
+insert into rw_view2 (base_a) values (1.1) returning t;
+
+update rw_view2 set s = s where base_a = 1.1;
+
+update rw_view2 set t = t where base_a = 1.1;
+
+update rw_view2 set base_a = 1.05 where base_a = 1.1;
+
+delete from rw_view2 where base_a = 1.05 returning base_a, s, c, t;
+
+create view rw_view3
+as select s, c, s / c as t, ctid from rw_view1;
+
+insert into rw_view3 values (null, null, null, null);
+
+insert into rw_view3 (s) values (null);
+
+update rw_view3 set s = s;
+
+delete from rw_view3 where s = sin(0.1);
+
+select * from base_tbl order by a;
+
+select
+  table_name,
+  is_insertable_into
+from
+  information_schema.tables
+where
+  table_name like 'r_\_view%'
+order by table_name;
+
+select
+  table_name,
+  is_updatable,
+  is_insertable_into
+from
+  information_schema.views
+where
+  table_name like 'r_\_view%'
+order by table_name;
+
+select
+  table_name,
+  column_name,
+  is_updatable
+from
+  information_schema.columns
+where
+  table_name like 'r_\_view%'
+order by table_name,
+  ordinal_position;
+
+select
+  events & 4 <> 0 as upd,
+  events & 8 <> 0 as ins,
+  events & 16 <> 0 as del
+from
+  pg_relation_is_updatable(
+    cast('rw_view3' as REGCLASS),
+    false
+  )
+  as t (events);
+
+drop TABLE "base_tbl" cascade;
+
+create table base_tbl (
+  id INT,
+  idplus1 INT generated always as (id + 1) stored
+);
+
+create view rw_view1
+as select * from base_tbl;
+
+insert into base_tbl (id) values (1);
+
+insert into rw_view1 (id) values (2);
+
+insert into base_tbl (id, idplus1) values (3, default);
+
+insert into rw_view1 (id, idplus1) values (4, default);
+
+insert into base_tbl (id, idplus1) values (5, 6);
+
+insert into rw_view1 (id, idplus1) values (6, 7);
+
+select * from base_tbl;
+
+update base_tbl set id = 2000 where id = 2;
+
+update rw_view1 set id = 3000 where id = 3;
+
+select * from base_tbl;
+
+drop TABLE "base_tbl" cascade;
+
+create table base_tbl_parent (a INT);
+
+create table base_tbl_child (check (a > 0))
+inherits (base_tbl_parent);
+
+insert into base_tbl_parent select * from generate_series(-8, -1);
+
+insert into base_tbl_child select * from generate_series(1, 8);
+
+create view rw_view1
+as select * from base_tbl_parent;
+
+create view rw_view2
+as select * from only base_tbl_parent;
+
+select * from rw_view1 order by a;
+
+select * from only rw_view1 order by a;
+
+select * from rw_view2 order by a;
+
+insert into rw_view1 values (-100), (100);
+
+insert into rw_view2 values (-200), (200);
+
+update rw_view1 set a = a * 10 where a in (-1, 1);
+
+update only rw_view1 set a = a * 10 where a in (-2, 2);
+
+update rw_view2 set a = a * 10 where a in (-3, 3);
+
+update only rw_view2 set a = a * 10 where a in (-4, 4);
+
+delete from rw_view1 where a in (-5, 5);
+
+delete from only rw_view1 where a in (-6, 6);
+
+delete from rw_view2 where a in (-7, 7);
+
+delete from only rw_view2 where a in (-8, 8);
+
+select * from only base_tbl_parent order by a;
+
+select * from base_tbl_child order by a;
+
+select * from only base_tbl_parent order by a;
+
+select * from base_tbl_child order by a;
+
+create table other_tbl_parent (id INT);
+
+create table other_tbl_child ()
+inherits (other_tbl_parent);
+
+insert into other_tbl_parent values (7), (200);
+
+insert into other_tbl_child values (8), (100);
+
+update rw_view1 set a = a + 1000 from other_tbl_parent where a = id;
+
+update rw_view1 set a = a + 1000 from other_tbl_parent where a = id;
+
+select * from only base_tbl_parent order by a;
+
+select * from base_tbl_child order by a;
+
+drop TABLE "base_tbl_parent", "base_tbl_child" cascade;
+
+drop TABLE "other_tbl_parent" cascade;
+
+create table base_tbl (
+  a INT,
+  b INT default 10
+);
+
+insert into base_tbl values (1, 2), (2, 3), (1, -1);
+
+create view rw_view1
+as select * from base_tbl where a < b
+with local check option;
+
+select * from information_schema.views where table_name = 'rw_view1';
+
+insert into rw_view1 values (3, 4);
+
+insert into rw_view1 values (4, 3);
+
+insert into rw_view1 values (5, null);
+
+update rw_view1 set b = 5 where a = 3;
+
+update rw_view1 set b = -5 where a = 3;
+
+insert into rw_view1 (a) values (9);
+
+insert into rw_view1 (a) values (10);
+
+select * from base_tbl order by a, b;
+
+select * from base_tbl order by a, b;
+
+drop TABLE "base_tbl" cascade;
+
+create table base_tbl (a INT);
+
+create view rw_view1
+as select * from base_tbl where a > 0;
+
+create view rw_view2
+as select * from rw_view1 where a < 10
+with cascaded check option;
+
+select * from information_schema.views where table_name = 'rw_view2';
+
+insert into rw_view2 values (-5);
+
+insert into rw_view2 values (5);
+
+insert into rw_view2 values (15);
+
+select * from base_tbl;
+
+update rw_view2 set a = a - 10;
+
+update rw_view2 set a = a + 10;
+
+create or replace view rw_view2
+as select * from rw_view1 where a < 10
+with local check option;
+
+select * from information_schema.views where table_name = 'rw_view2';
+
+insert into rw_view2 values (-10);
+
+insert into rw_view2 values (20);
+
+select * from base_tbl;
+
+alter view rw_view1
+  set (check_option = here);
+
+alter view rw_view1
+  set (check_option = local);
+
+insert into rw_view2 values (-20);
+
+insert into rw_view2 values (30);
+
+alter view rw_view2
+  RESET (check_option);
+
+select * from information_schema.views where table_name = 'rw_view2';
+
+insert into rw_view2 values (30);
+
+select * from base_tbl;
+
+drop TABLE "base_tbl" cascade;
+
+create table base_tbl (a INT);
+
+create view rw_view1
+as select * from base_tbl
+with cascaded check option;
+
+create view rw_view2
+as select * from rw_view1 where a > 0;
+
+create view rw_view3
+as select * from rw_view2
+with cascaded check option;
+
+select * from information_schema.views where table_name like 'rw\_view_' order by table_name;
+
+insert into rw_view1 values (-1);
+
+insert into rw_view1 values (1);
+
+insert into rw_view2 values (-2);
+
+insert into rw_view2 values (2);
+
+insert into rw_view3 values (-3);
+
+insert into rw_view3 values (3);
+
+drop TABLE "base_tbl" cascade;
+
+create table base_tbl (
+  a INT,
+  b INT[]
+);
+
+create view rw_view1
+as select * from base_tbl where a = any (b)
+with cascaded check option;
+
+insert into rw_view1 values (1, array[1, 2, 3]);
+
+insert into rw_view1 values (10, array[4, 5]);
+
+update rw_view1 set b[2] = -b[2] where a = 1;
+
+update rw_view1 set b[1] = -b[1] where a = 1;
+
+insert into rw_view1 values ($1, $2);
+
+execute ins (2, array[1, 2, 3]);
+
+execute ins (10, array[4, 5]);
+
+deallocate ins;
+
+drop TABLE "base_tbl" cascade;
+
+create table base_tbl (a INT);
+
+create table ref_tbl (a INT primary key);
+
+insert into ref_tbl select * from generate_series(1, 10);
+
+create view rw_view1
+as select
+  *
+from
+  base_tbl as b
+where
+  exists
+  (
+    select 1 from ref_tbl as r where r.a = b.a
+  )
+with cascaded check option;
+
+insert into rw_view1 values (5);
+
+insert into rw_view1 values (15);
+
+update rw_view1 set a = a + 5;
+
+update rw_view1 set a = a + 5;
+
+insert into rw_view1 values (5);
+
+update rw_view1 set a = a + 5;
+
+drop TABLE "base_tbl", "ref_tbl" cascade;
+
+create table base_tbl (
+  a INT,
+  b INT
+);
+
+create function base_tbl_trig_fn()
+returns trigger
+as '
+BEGIN
+  NEW.b := 10;
+  RETURN NEW;
+END;
+'
+language "plpgsql";
+
+create TRIGGER base_tbl_trig
+  before insert or update
+  on base_tbl
+  for EACH ROW
+  EXECUTE FUNCTION base_tbl_trig_fn();
+
+create view rw_view1
+as select * from base_tbl where a < b
+with cascaded check option;
+
+insert into rw_view1 values (5, 0);
+
+insert into rw_view1 values (15, 20);
+
+update rw_view1 set a = 20, b = 30;
+
+drop TABLE "base_tbl" cascade;
+
+drop FUNCTION base_tbl_trig_fn();
+
+create table base_tbl (
+  a INT,
+  b INT
+);
+
+create view rw_view1
+as select a from base_tbl where a < b;
+
+create function rw_view1_trig_fn()
+returns trigger
+as '
+BEGIN
+  IF TG_OP = ''INSERT'' THEN
+    INSERT INTO base_tbl VALUES (NEW.a, 10);
+    RETURN NEW;
+  ELSIF TG_OP = ''UPDATE'' THEN
+    UPDATE base_tbl SET a=NEW.a WHERE a=OLD.a;
+    RETURN NEW;
+  ELSIF TG_OP = ''DELETE'' THEN
+    DELETE FROM base_tbl WHERE a=OLD.a;
+    RETURN OLD;
+  END IF;
+END;
+'
+language "plpgsql";
+
+create TRIGGER rw_view1_trig
+  instead of insert or delete or update
+  on rw_view1
+  for EACH ROW
+  EXECUTE FUNCTION rw_view1_trig_fn();
+
+create view rw_view2
+as select * from rw_view1 where a > 0
+with local check option;
+
+insert into rw_view2 values (-5);
+
+insert into rw_view2 values (5);
+
+insert into rw_view2 values (50);
+
+update rw_view2 set a = a - 10;
+
+select * from base_tbl;
+
+alter view rw_view2
+  set (check_option = cascaded);
+
+insert into rw_view2 values (100);
+
+update rw_view2 set a = 200 where a = 5;
+
+select * from base_tbl;
+
+drop TRIGGER "rw_view1_trig" on "rw_view1";
+
+create rule rw_view1_ins_rule
+as on insert to rw_view1
+do instead
+  insert into base_tbl values (new.a, 10);;
+
+create rule rw_view1_upd_rule
+as on update to rw_view1
+do instead
+  update base_tbl set a = new.a where a = old.a;;
+
+insert into rw_view2 values (-10);
+
+insert into rw_view2 values (5);
+
+insert into rw_view2 values (20);
+
+update rw_view2 set a = 30 where a = 5;
+
+insert into rw_view2 values (5);
+
+update rw_view2 set a = -5 where a = 5;
+
+select * from base_tbl;
+
+drop TABLE "base_tbl" cascade;
+
+drop FUNCTION rw_view1_trig_fn();
+
+create table base_tbl (a INT);
+
+create view rw_view1
+as select a, 10 as b from base_tbl;
+
+create rule rw_view1_ins_rule
+as on insert to rw_view1
+do instead
+  insert into base_tbl values (new.a);;
+
+create view rw_view2
+as select * from rw_view1 where a > b
+with local check option;
+
+insert into rw_view2 values (2, 3);
+
+drop TABLE "base_tbl" cascade;
+
+create table base_tbl (
+  person TEXT,
+  visibility TEXT
+);
+
+insert into base_tbl values ('Tom', 'public'), ('Dick', 'private'), ('Harry', 'public');
+
+create view rw_view1
+as select
+  person
+from
+  base_tbl
+where
+  visibility = 'public';
+
+create function snoop(ANYELEMENT)
+returns BOOLEAN
+as '
+BEGIN
+  RAISE NOTICE ''snooped value: %'', $1;
+  RETURN true;
+END;
+'
+language "plpgsql"
+cost 0.000001;
+
+create or replace function leakproof(ANYELEMENT)
+returns BOOLEAN
+as '
+BEGIN
+  RETURN true;
+END;
+'
+language "plpgsql"
+STRICT
+immutable
+leakproof;
+
+select * from rw_view1 where snoop(person);
+
+update rw_view1 set person = person where snoop(person);
+
+delete from rw_view1 where not snoop(person);
+
+alter view rw_view1
+  set (security_barrier = 'true');
+
+select table_name, is_insertable_into from information_schema.tables where table_name = 'rw_view1';
+
+select
+  table_name,
+  is_updatable,
+  is_insertable_into
+from
+  information_schema.views
+where
+  table_name = 'rw_view1';
+
+select
+  table_name,
+  column_name,
+  is_updatable
+from
+  information_schema.columns
+where
+  table_name = 'rw_view1'
+order by ordinal_position;
+
+select * from rw_view1 where snoop(person);
+
+update rw_view1 set person = person where snoop(person);
+
+delete from rw_view1 where not snoop(person);
+
+select * from rw_view1 where snoop(person);
+
+update rw_view1 set person = person where snoop(person);
+
+delete from rw_view1 where not snoop(person);
+
+create view rw_view2
+  with (security_barrier = 'true')
+as select * from rw_view1 where snoop(person);
+
+select table_name, is_insertable_into from information_schema.tables where table_name = 'rw_view2';
+
+select
+  table_name,
+  is_updatable,
+  is_insertable_into
+from
+  information_schema.views
+where
+  table_name = 'rw_view2';
+
+select
+  table_name,
+  column_name,
+  is_updatable
+from
+  information_schema.columns
+where
+  table_name = 'rw_view2'
+order by ordinal_position;
+
+select * from rw_view2 where snoop(person);
+
+update rw_view2 set person = person where snoop(person);
+
+delete from rw_view2 where not snoop(person);
+
+select * from rw_view2 where snoop(person);
+
+update rw_view2 set person = person where snoop(person);
+
+delete from rw_view2 where not snoop(person);
+
+drop TABLE "base_tbl" cascade;
+
+create table base_tbl (
+  id INT primary key,
+  data TEXT,
+  deleted BOOLEAN
+);
+
+insert into base_tbl values (1, 'Row 1', false), (2, 'Row 2', true);
+
+create rule base_tbl_ins_rule
+as on insert to base_tbl where
+  exists
+  (
+    select 1 from base_tbl as t where t.id = new.id
+  )
+do instead
+  update base_tbl
+  set data = new.data,
+  deleted = false
+  where
+    id = new.id;;
+
+create rule base_tbl_del_rule
+as on delete to base_tbl
+do instead
+  update base_tbl
+  set deleted = true
+  where
+    id = old.id;;
+
+create view rw_view1
+  with (security_barrier = 'true')
+as select id, data from base_tbl where not deleted;
+
+select * from rw_view1;
+
+delete from rw_view1 where id = 1 and snoop(data);
+
+delete from rw_view1 where id = 1 and snoop(data);
+
+insert into rw_view1 values (2, 'New row 2');
+
+insert into rw_view1 values (2, 'New row 2');
+
+select * from base_tbl;
+
+drop TABLE "base_tbl" cascade;
+
+create table t1 (
+  a INT,
+  b DOUBLE PRECISION,
+  c TEXT
+);
+
+create index "t1_a_idx" on t1 using btree (a);
+
+insert into t1 select i, i, 't1' from generate_series(1, 10) as g (i);
+
+analyze t1;
+
+create table t11 (d TEXT)
+inherits (t1);
+
+create index "t11_a_idx" on t11 using btree (a);
+
+insert into t11 select i, i, 't11', 't11d' from generate_series(1, 10) as g (i);
+
+analyze t11;
+
+create table t12 (e INT[])
+inherits (t1);
+
+create index "t12_a_idx" on t12 using btree (a);
+
+insert into t12 select i, i, 't12', cast('{1,2}' as INT[]) from generate_series(1, 10) as g (i);
+
+analyze t12;
+
+create table t111 ()
+inherits (t11,
+t12);
+
+create index "t111_a_idx" on t111 using btree (a);
+
+insert into t111
+select
+  i,
+  i,
+  't111',
+  't111d',
+  cast('{1,1,1}' as INT[])
+from
+  generate_series(1, 10) as g (i);
+
+analyze t111;
+
+create view v1
+  with (security_barrier = 'true')
+as select
+  *,
+  (select d from t11 where t11.a = t1.a limit 1)
+  as d
+from
+  t1
+where
+  a > 5 and
+  exists (select 1 from t12 where t12.a = t1.a);
+
+select * from v1 where a = 3;
+
+select * from v1 where a = 8;
+
+update v1 set a = 100 where snoop(a) and leakproof(a) and a < 7 and a <> 6;
+
+update v1 set a = 100 where snoop(a) and leakproof(a) and a < 7 and a <> 6;
+
+select * from v1 where a = 100;
+
+select * from t1 where a = 100;
+
+update v1 set a = a + 1 where snoop(a) and leakproof(a) and a = 8;
+
+update v1 set a = a + 1 where snoop(a) and leakproof(a) and a = 8;
+
+select * from v1 where b = 8;
+
+delete from v1 where snoop(a) and leakproof(a);
+
+select * from t1;
+
+drop TABLE "t1", "t11", "t12", "t111" cascade;
+
+drop FUNCTION snoop(ANYELEMENT);
+
+drop FUNCTION leakproof(ANYELEMENT);
+
+create table tx1 (a INT);
+
+create table tx2 (b INT);
+
+create table tx3 (c INT);
+
+create view vx1
+as select
+  a
+from
+  tx1
+where
+  exists (select 1 from tx2 inner join tx3 on b = c);
+
+insert into vx1 values (1);
+
+select * from tx1;
+
+select * from vx1;
+
+drop VIEW "vx1";
+
+drop TABLE "tx1";
+
+drop TABLE "tx2";
+
+drop TABLE "tx3";
+
+create table tx1 (a INT);
+
+create table tx2 (b INT);
+
+create table tx3 (c INT);
+
+create view vx1
+as select
+  a
+from
+  tx1
+where
+  exists (select 1 from tx2 inner join tx3 on b = c);
+
+insert into vx1 values (1);
+
+insert into vx1 values (1);
+
+select * from tx1;
+
+select * from vx1;
+
+drop VIEW "vx1";
+
+drop TABLE "tx1";
+
+drop TABLE "tx2";
+
+drop TABLE "tx3";
+
+create table tx1 (
+  a INT,
+  b INT
+);
+
+create table tx2 (
+  b INT,
+  c INT
+);
+
+create table tx3 (
+  c INT,
+  d INT
+);
+
+alter table tx1
+  drop column b;
+
+alter table tx2
+  drop column c;
+
+alter table tx3
+  drop column d;
+
+create view vx1
+as select
+  a
+from
+  tx1
+where
+  exists (select 1 from tx2 inner join tx3 on b = c);
+
+insert into vx1 values (1);
+
+insert into vx1 values (1);
+
+select * from tx1;
+
+select * from vx1;
+
+drop VIEW "vx1";
+
+drop TABLE "tx1";
+
+drop TABLE "tx2";
+
+drop TABLE "tx3";
+
+create table t1 (
+  a INT,
+  b TEXT,
+  c INT
+);
+
+insert into t1 values (1, 'one', 10);
+
+create table t2 (cc INT);
+
+insert into t2 values (10), (20);
+
+create view v1
+  with (security_barrier = 'true')
+as select * from t1 where a > 0
+with cascaded check option;
+
+create view v2
+  with (security_barrier = 'true')
+as select
+  *
+from
+  v1
+where
+  exists (select 1 from t2 where t2.cc = v1.c)
+with cascaded check option;
+
+insert into v2 values (2, 'two', 20);
+
+insert into v2 values (-2, 'minus two', 20);
+
+insert into v2 values (3, 'three', 30);
+
+update v2 set b = 'ONE' where a = 1;
+
+update v2 set a = -1 where a = 1;
+
+update v2 set c = 30 where a = 1;
+
+delete from v2 where a = 2;
+
+select * from v2;
+
+drop VIEW "v2";
+
+drop VIEW "v1";
+
+drop TABLE "t2";
+
+drop TABLE "t1";
+
+create table t1 (a INT);
+
+create view v1
+  with (security_barrier = 'true')
+as select * from t1;
+
+create rule v1_upd_rule
+as on update to v1
+do instead
+  update t1 set a = new.a where a = old.a;;
+
+create view v2
+  with (security_barrier = 'true')
+as select * from v1 where exists (select 1);
+
+update v2 set a = 1;
+
+drop VIEW "v2";
+
+drop VIEW "v1";
+
+drop TABLE "t1";
+
+create table t1 (
+  a INT,
+  b TEXT
+);
+
+create view v1
+as select cast(null as INT) as a;
+
+create or replace view v1
+as select * from t1 where a > 0
+with cascaded check option;
+
+insert into v1 values (1, 'ok');
+
+insert into v1 values (-1, 'invalid');
+
+drop VIEW "v1";
+
+drop TABLE "t1";
+
+create table uv_pt (
+  a INT,
+  b INT,
+  v VARCHAR
+)
+partition by range(a, b);
+
+create table uv_pt1 (
+  b INT not null,
+  v VARCHAR,
+  a INT not null
+)
+partition by range(b);
+
+create table uv_pt11 (like uv_pt1);
+
+alter table uv_pt11
+  drop column a;
+
+alter table uv_pt11
+  add column a INT;
+
+alter table uv_pt11
+  drop column a;
+
+alter table uv_pt11
+  add column a INT not null;
+
+alter table uv_pt1
+  ATTACH partition
+  uv_pt11 for values from (2) to (5);
+
+alter table uv_pt
+  ATTACH partition
+  uv_pt1 for values from (1, 2) to (1, 10);
+
+create view uv_ptv
+as select * from uv_pt;
+
+select
+  events & 4 <> 0 as upd,
+  events & 8 <> 0 as ins,
+  events & 16 <> 0 as del
+from
+  pg_relation_is_updatable(
+    cast('uv_pt' as REGCLASS),
+    false
+  )
+  as t (events);
+
+select pg_column_is_updatable(cast('uv_pt' as REGCLASS), cast(1 as SMALLINT), false);
+
+select pg_column_is_updatable(cast('uv_pt' as REGCLASS), cast(2 as SMALLINT), false);
+
+select
+  table_name,
+  is_updatable,
+  is_insertable_into
+from
+  information_schema.views
+where
+  table_name = 'uv_ptv';
+
+select
+  table_name,
+  column_name,
+  is_updatable
+from
+  information_schema.columns
+where
+  table_name = 'uv_ptv'
+order by column_name;
+
+insert into uv_ptv values (1, 2);
+
+select cast(tableoid as REGCLASS), * from uv_pt;
+
+create view uv_ptv_wco
+as select * from uv_pt where a = 0
+with cascaded check option;
+
+insert into uv_ptv_wco values (1, 2);
+
+select cast(tableoid as REGCLASS), * from uv_pt order by a, b;
+
+drop VIEW "uv_ptv", "uv_ptv_wco";
+
+drop TABLE "uv_pt", "uv_pt1", "uv_pt11";
+
+create table wcowrtest (a INT)
+partition by LIST(a);
+
+create table wcowrtest1 partition of wcowrtest for values in (1);
+
+create view wcowrtest_v
+as select
+  *
+from
+  wcowrtest
+where
+  wcowrtest = cast('(2)' as wcowrtest)
+with cascaded check option;
+
+insert into wcowrtest_v values (1);
+
+alter table wcowrtest
+  add column b TEXT;
+
+create table wcowrtest2 (
+  b TEXT,
+  c INT,
+  a INT
+);
+
+alter table wcowrtest2
+  drop column c;
+
+alter table wcowrtest
+  ATTACH partition
+  wcowrtest2 for values in (2);
+
+create table sometable (
+  a INT,
+  b TEXT
+);
+
+insert into sometable values (1, 'a'), (2, 'b');
+
+create view wcowrtest_v2
+as select
+  *
+from
+  wcowrtest as r
+where
+  r in
+  (
+    select s from sometable as s where r.a = s.a
+  )
+with cascaded check option;
+
+insert into wcowrtest_v2 values (2, 'no such row in sometable');
+
+drop VIEW "wcowrtest_v", "wcowrtest_v2";
+
+drop TABLE "wcowrtest", "sometable";
+
+create table uv_iocu_tab (
+  a TEXT unique,
+  b DOUBLE PRECISION
+);
+
+insert into uv_iocu_tab values ('xyxyxy', 0);
+
+create view uv_iocu_view
+as select
+  b,
+  b + 1 as c,
+  a,
+  cast('2.0' as TEXT) as two
+from
+  uv_iocu_tab;
+
+insert into uv_iocu_view (a, b)
+values ('xyxyxy', 1)
+on conflict (a) do update set b = uv_iocu_view.b;
+
+select * from uv_iocu_tab;
+
+insert into uv_iocu_view (a, b) values ('xyxyxy', 1) on conflict (a) do update set b = excluded.b;
+
+select * from uv_iocu_tab;
+
+insert into uv_iocu_view (a, b)
+values ('xyxyxy', 3)
+on conflict
+(a)
+do
+update
+set b = cast(excluded.two as DOUBLE PRECISION);
+
+select * from uv_iocu_tab;
+
+insert into uv_iocu_view (a, b)
+values ('xyxyxy', 3)
+on conflict
+(a)
+do
+update
+set b = excluded.b
+where
+  excluded.c > 0;
+
+insert into uv_iocu_view (a, b)
+values ('xyxyxy', 3)
+on conflict
+(a)
+do
+update
+set b = excluded.b
+where
+  excluded.c > 0;
+
+select * from uv_iocu_tab;
+
+drop VIEW "uv_iocu_view";
+
+drop TABLE "uv_iocu_tab";
+
+create table uv_iocu_tab (
+  a INT unique,
+  b TEXT
+);
+
+create view uv_iocu_view
+as select
+  b as bb,
+  a as aa,
+  cast(uv_iocu_tab as TEXT) as cc
+from
+  uv_iocu_tab;
+
+insert into uv_iocu_view (aa, bb) values (1, 'x');
+
+insert into uv_iocu_view (aa, bb)
+values (1, 'y')
+on conflict
+(aa)
+do
+update
+set bb = 'Rejected: ' || excluded.*
+where
+  excluded.aa > 0 and
+  excluded.bb <> '' and
+  excluded.cc is not null;
+
+insert into uv_iocu_view (aa, bb)
+values (1, 'y')
+on conflict
+(aa)
+do
+update
+set bb = 'Rejected: ' || excluded.*
+where
+  excluded.aa > 0 and
+  excluded.bb <> '' and
+  excluded.cc is not null;
+
+select * from uv_iocu_view;
+
+delete from uv_iocu_view;
+
+insert into uv_iocu_view (aa, bb) values (1, 'x');
+
+insert into uv_iocu_view (aa)
+values (1)
+on conflict
+(aa)
+do
+update
+set bb = 'Rejected: ' || excluded.*;
+
+select * from uv_iocu_view;
+
+alter table uv_iocu_tab
+  alter column b set default 'table default';
+
+insert into uv_iocu_view (aa)
+values (1)
+on conflict
+(aa)
+do
+update
+set bb = 'Rejected: ' || excluded.*;
+
+select * from uv_iocu_view;
+
+alter view uv_iocu_view
+  alter column bb set default 'view default';
+
+insert into uv_iocu_view (aa)
+values (1)
+on conflict
+(aa)
+do
+update
+set bb = 'Rejected: ' || excluded.*;
+
+select * from uv_iocu_view;
+
+insert into uv_iocu_view (aa) values (1) on conflict (aa) do update set cc = 'XXX';
+
+drop VIEW "uv_iocu_view";
+
+drop TABLE "uv_iocu_tab";
+
+create user regress_view_user1;
+
+create user regress_view_user2;
+
+set session authorization regress_view_user1;
+
+create table base_tbl (
+  a INT unique,
+  b TEXT,
+  c DOUBLE PRECISION
+);
+
+insert into base_tbl values (1, 'xxx', 1.0);
+
+create view rw_view1
+as select b as bb, c as cc, a as aa from base_tbl;
+
+grant SELECT (aa, bb) on table rw_view1 to regress_view_user2;
+
+grant INSERT on table rw_view1 to regress_view_user2;
+
+grant UPDATE (bb) on table rw_view1 to regress_view_user2;
+
+set session authorization regress_view_user2;
+
+insert into rw_view1 values ('yyy', 2.0, 1) on conflict (aa) do update set bb = excluded.cc;
+
+insert into rw_view1 values ('yyy', 2.0, 1) on conflict (aa) do update set bb = rw_view1.cc;
+
+insert into rw_view1 values ('yyy', 2.0, 1) on conflict (aa) do update set bb = excluded.bb;
+
+insert into rw_view1
+values ('zzz', 2.0, 1)
+on conflict
+(aa)
+do
+update
+set bb = rw_view1.bb || 'xxx';
+
+insert into rw_view1 values ('zzz', 2.0, 1) on conflict (aa) do update set cc = 3.0;
+
+reset session_authorization;
+
+select * from base_tbl;
+
+set session authorization regress_view_user1;
+
+grant SELECT (a, b) on table base_tbl to regress_view_user2;
+
+grant INSERT (a, b) on table base_tbl to regress_view_user2;
+
+grant UPDATE (a, b) on table base_tbl to regress_view_user2;
+
+set session authorization regress_view_user2;
+
+create view rw_view2
+as select b as bb, c as cc, a as aa from base_tbl;
+
+insert into rw_view2 (aa, bb) values (1, 'xxx') on conflict (aa) do update set bb = excluded.bb;
+
+create view rw_view3
+as select b as bb, a as aa from base_tbl;
+
+insert into rw_view3 (aa, bb) values (1, 'xxx') on conflict (aa) do update set bb = excluded.bb;
+
+reset session_authorization;
+
+select * from base_tbl;
+
+set session authorization regress_view_user2;
+
+create view rw_view4
+as select aa, bb, cc from rw_view1;
+
+insert into rw_view4 (aa, bb) values (1, 'yyy') on conflict (aa) do update set bb = excluded.bb;
+
+create view rw_view5
+as select aa, bb from rw_view1;
+
+insert into rw_view5 (aa, bb) values (1, 'yyy') on conflict (aa) do update set bb = excluded.bb;
+
+reset session_authorization;
+
+select * from base_tbl;
+
+drop VIEW "rw_view5";
+
+drop VIEW "rw_view4";
+
+drop VIEW "rw_view3";
+
+drop VIEW "rw_view2";
+
+drop VIEW "rw_view1";
+
+drop TABLE "base_tbl";
+
+drop role regress_view_user1;
+
+drop role regress_view_user2;
+
+create table base_tab_def (
+  a INT,
+  b TEXT default 'Table default',
+  c TEXT default 'Table default',
+  d TEXT,
+  e TEXT
+);
+
+create view base_tab_def_view
+as select * from base_tab_def;
+
+alter view base_tab_def_view
+  alter column b set default 'View default';
+
+alter view base_tab_def_view
+  alter column d set default 'View default';
+
+insert into base_tab_def values (1);
+
+insert into base_tab_def values (2), (3);
+
+insert into base_tab_def values (4, default, default, default, default);
+
+insert into base_tab_def
+values
+  (5, default, default, default, default),
+  (6, default, default, default, default);
+
+insert into base_tab_def_view values (11);
+
+insert into base_tab_def_view values (12), (13);
+
+insert into base_tab_def_view values (14, default, default, default, default);
+
+insert into base_tab_def_view
+values
+  (15, default, default, default, default),
+  (16, default, default, default, default);
+
+insert into base_tab_def_view values (17), (default);
+
+select * from base_tab_def order by a;
+
+create function base_tab_def_view_instrig_func()
+returns trigger
+as '
+begin
+  insert into base_tab_def values (new.a, new.b, new.c, new.d, new.e);
+  return new;
+end;
+'
+language "plpgsql";
+
+create TRIGGER base_tab_def_view_instrig
+  instead of insert
+  on base_tab_def_view
+  for EACH ROW
+  EXECUTE FUNCTION base_tab_def_view_instrig_func();
+
+truncate base_tab_def;
+
+insert into base_tab_def values (1);
+
+insert into base_tab_def values (2), (3);
+
+insert into base_tab_def values (4, default, default, default, default);
+
+insert into base_tab_def
+values
+  (5, default, default, default, default),
+  (6, default, default, default, default);
+
+insert into base_tab_def_view values (11);
+
+insert into base_tab_def_view values (12), (13);
+
+insert into base_tab_def_view values (14, default, default, default, default);
+
+insert into base_tab_def_view
+values
+  (15, default, default, default, default),
+  (16, default, default, default, default);
+
+insert into base_tab_def_view values (17), (default);
+
+select * from base_tab_def order by a;
+
+drop TRIGGER "base_tab_def_view_instrig" on "base_tab_def_view";
+
+drop FUNCTION base_tab_def_view_instrig_func;
+
+create rule base_tab_def_view_ins_rule
+as on insert to base_tab_def_view
+do instead
+  insert into base_tab_def
+  values (new.a, new.b, new.c, new.d, new.e);;
+
+truncate base_tab_def;
+
+insert into base_tab_def values (1);
+
+insert into base_tab_def values (2), (3);
+
+insert into base_tab_def values (4, default, default, default, default);
+
+insert into base_tab_def
+values
+  (5, default, default, default, default),
+  (6, default, default, default, default);
+
+insert into base_tab_def_view values (11);
+
+insert into base_tab_def_view values (12), (13);
+
+insert into base_tab_def_view values (14, default, default, default, default);
+
+insert into base_tab_def_view
+values
+  (15, default, default, default, default),
+  (16, default, default, default, default);
+
+insert into base_tab_def_view values (17), (default);
+
+select * from base_tab_def order by a;
+
+drop RULE "base_tab_def_view_ins_rule" on "base_tab_def_view";
+
+create rule base_tab_def_view_ins_rule
+as on insert to base_tab_def_view
+do
+  insert into base_tab_def
+  values (new.a, new.b, new.c, new.d, new.e);;
+
+truncate base_tab_def;
+
+insert into base_tab_def values (1);
+
+insert into base_tab_def values (2), (3);
+
+insert into base_tab_def values (4, default, default, default, default);
+
+insert into base_tab_def
+values
+  (5, default, default, default, default),
+  (6, default, default, default, default);
+
+insert into base_tab_def_view values (11);
+
+insert into base_tab_def_view values (12), (13);
+
+insert into base_tab_def_view values (14, default, default, default, default);
+
+insert into base_tab_def_view
+values
+  (15, default, default, default, default),
+  (16, default, default, default, default);
+
+insert into base_tab_def_view values (17), (default);
+
+select * from base_tab_def order by a, c nulls last;
+
+drop RULE "base_tab_def_view_ins_rule" on "base_tab_def_view";
+
+select new.a, new.b, 'xxx';
+
+truncate base_tab_def;
+
+insert into base_tab_def_view values (1, default, default, default, default);
+
+insert into base_tab_def_view
+values
+  (2, default, default, default, default),
+  (3, default, default, default, default);
+
+select * from base_tab_def order by a, e nulls first;
+
+drop VIEW "base_tab_def_view";
+
+drop TABLE "base_tab_def";
+
+create table base_tab (
+  a serial,
+  b INT[],
+  c TEXT,
+  d TEXT default 'Table default'
+);
+
+create view base_tab_view
+as select c, a, b from base_tab;
+
+alter view base_tab_view
+  alter column c set default 'View default';
+
+insert into base_tab_view (b[1], b[2], c, b[5], b[4], a, b[3])
+values
+  (1, 2, default, 5, 4, default, 3),
+  (10, 11, 'C value', 14, 13, 100, 12);
+
+select * from base_tab order by a;
+
+drop VIEW "base_tab_view";
+
+drop TABLE "base_tab";

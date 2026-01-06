@@ -1,0 +1,404 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/subscription.sql
+snapshot_kind: text
+---
+create role regress_subscription_user LOGIN SUPERUSER;
+
+create role regress_subscription_user2;
+
+create role regress_subscription_user3 in role pg_create_subscription;
+
+create role regress_subscription_user_dummy LOGIN NOSUPERUSER;
+
+set session authorization regress_subscription_user;
+
+begin;
+
+create subscription regress_testsub connection 'testconn' publication testpub with (create_slot);
+
+commit;
+
+create subscription regress_testsub connection 'testconn' publication testpub;
+
+create subscription regress_testsub connection 'dbname=regress_doesnotexist' publication foo,
+testpub,
+foo with (connect = 'false');
+
+create subscription regress_testsub connection 'dbname=regress_doesnotexist' publication testpub with (connect = 'false');
+
+comment on subscription regress_testsub is 'test subscription';
+
+select obj_description(s.oid, 'pg_subscription') from pg_subscription as s;
+
+select
+  subname,
+  stats_reset is null
+  as stats_reset_is_null
+from
+  pg_stat_subscription_stats
+where
+  subname = 'regress_testsub';
+
+select
+  pg_stat_reset_subscription_stats(oid)
+from
+  pg_subscription
+where
+  subname = 'regress_testsub';
+
+select
+  subname,
+  stats_reset is null
+  as stats_reset_is_null
+from
+  pg_stat_subscription_stats
+where
+  subname = 'regress_testsub';
+
+select
+  stats_reset as prev_stats_reset
+from
+  pg_stat_subscription_stats
+where
+  subname = 'regress_testsub';
+
+select
+  pg_stat_reset_subscription_stats(oid)
+from
+  pg_subscription
+where
+  subname = 'regress_testsub';
+
+select
+  'prev_stats_reset' < stats_reset
+from
+  pg_stat_subscription_stats
+where
+  subname = 'regress_testsub';
+
+create subscription regress_testsub connection 'dbname=regress_doesnotexist' publication testpub with (connect = 'false');
+
+set session authorization regress_subscription_user2;
+
+create subscription regress_testsub2 connection 'dbname=regress_doesnotexist' publication foo with (connect = 'false');
+
+set session authorization regress_subscription_user;
+
+create subscription regress_testsub2 connection 'dbname=regress_doesnotexist' publication testpub with (connect = 'false',
+copy_data = 'true');
+
+create subscription regress_testsub2 connection 'dbname=regress_doesnotexist' publication testpub with (connect = 'false',
+enabled = 'true');
+
+create subscription regress_testsub2 connection 'dbname=regress_doesnotexist' publication testpub with (connect = 'false',
+create_slot = 'true');
+
+create subscription regress_testsub2 connection 'dbname=regress_doesnotexist' publication testpub with (slot_name = 'none',
+enabled = 'true');
+
+create subscription regress_testsub2 connection 'dbname=regress_doesnotexist' publication testpub with (slot_name = 'none',
+enabled = 'false',
+create_slot = 'true');
+
+create subscription regress_testsub2 connection 'dbname=regress_doesnotexist' publication testpub with (slot_name = 'none');
+
+create subscription regress_testsub2 connection 'dbname=regress_doesnotexist' publication testpub with (slot_name = 'none',
+enabled = 'false');
+
+create subscription regress_testsub2 connection 'dbname=regress_doesnotexist' publication testpub with (slot_name = 'none',
+create_slot = 'false');
+
+create subscription regress_testsub3 connection 'dbname=regress_doesnotexist' publication testpub with (slot_name = 'none',
+connect = 'false');
+
+alter subscription regress_testsub3 enable;
+
+alter subscription regress_testsub3 refresh publication;
+
+create subscription regress_testsub4 connection 'dbname=regress_doesnotexist' publication testpub with (slot_name = 'none',
+connect = 'false',
+origin = foo);
+
+create subscription regress_testsub4 connection 'dbname=regress_doesnotexist' publication testpub with (slot_name = 'none',
+connect = 'false',
+origin = 'none');
+
+alter subscription regress_testsub4 set (origin = 'any');
+
+drop subscription regress_testsub3 restrict;
+
+drop subscription regress_testsub4 restrict;
+
+create subscription regress_testsub5 connection 'i_dont_exist=param' publication testpub;
+
+create subscription regress_testsub5 connection 'port=-1' publication testpub;
+
+alter subscription regress_testsub connection 'foobar';
+
+alter subscription regress_testsub set publication testpub2, testpub3;
+
+alter subscription regress_testsub connection 'dbname=regress_doesnotexist2';
+
+alter subscription regress_testsub set (slot_name = 'newname');
+
+alter subscription regress_testsub set (password_required = 'false');
+
+alter subscription regress_testsub set (run_as_owner = 'true');
+
+alter subscription regress_testsub set (password_required = 'true');
+
+alter subscription regress_testsub set (run_as_owner = 'false');
+
+alter subscription regress_testsub set (slot_name = '');
+
+alter subscription regress_doesnotexist
+connection 'dbname=regress_doesnotexist2';
+
+alter subscription regress_testsub set (create_slot = 'false');
+
+alter subscription regress_testsub skip (lsn = '0/12345');
+
+alter subscription regress_testsub skip (lsn = 'none');
+
+alter subscription regress_testsub skip (lsn = '0/0');
+
+begin;
+
+alter subscription regress_testsub enable;
+
+alter subscription regress_testsub disable;
+
+commit;
+
+set role to regress_subscription_user_dummy;
+
+alter subscription regress_testsub rename to regress_testsub_dummy;
+
+reset role;
+
+alter subscription regress_testsub rename to regress_testsub_foo;
+
+alter subscription regress_testsub_foo set (synchronous_commit = local);
+
+alter subscription regress_testsub_foo set (synchronous_commit = foobar);
+
+alter subscription regress_testsub_foo rename to regress_testsub;
+
+alter subscription regress_testsub owner to regress_subscription_user2;
+
+begin;
+
+drop subscription regress_testsub restrict;
+
+commit;
+
+alter subscription regress_testsub set (slot_name = 'none');
+
+begin;
+
+drop subscription regress_testsub restrict;
+
+commit;
+
+drop subscription if exists regress_testsub restrict;
+
+drop subscription regress_testsub restrict;
+
+create subscription regress_testsub connection 'dbname=regress_doesnotexist' publication testpub with (connect = 'false',
+binary = foo);
+
+create subscription regress_testsub connection 'dbname=regress_doesnotexist' publication testpub with (connect = 'false',
+binary = 'true');
+
+alter subscription regress_testsub set (binary = 'false');
+
+alter subscription regress_testsub set (slot_name = 'none');
+
+drop subscription regress_testsub restrict;
+
+create subscription regress_testsub connection 'dbname=regress_doesnotexist' publication testpub with (connect = 'false',
+streaming = foo);
+
+create subscription regress_testsub connection 'dbname=regress_doesnotexist' publication testpub with (connect = 'false',
+streaming = 'true');
+
+alter subscription regress_testsub set (streaming = parallel);
+
+alter subscription regress_testsub set (streaming = 'false');
+
+alter subscription regress_testsub set (slot_name = 'none');
+
+alter subscription regress_testsub add publication testpub;
+
+alter subscription regress_testsub add publication testpub1, testpub1;
+
+alter subscription regress_testsub add publication testpub1, testpub2;
+
+alter subscription regress_testsub add publication testpub1, testpub2;
+
+alter subscription regress_testsub drop publication testpub1, testpub1;
+
+alter subscription regress_testsub drop publication testpub, testpub1, testpub2;
+
+alter subscription regress_testsub drop publication testpub3;
+
+alter subscription regress_testsub drop publication testpub1, testpub2;
+
+drop subscription regress_testsub restrict;
+
+create subscription regress_testsub connection 'dbname=regress_doesnotexist' publication mypub with (connect = 'false',
+create_slot = 'false',
+copy_data = 'false');
+
+alter subscription regress_testsub enable;
+
+begin;
+
+alter subscription regress_testsub set publication mypub;
+
+commit;
+
+begin;
+
+alter subscription regress_testsub refresh publication;
+
+commit;
+
+create function func()
+returns VOID
+as ' ALTER SUBSCRIPTION regress_testsub SET PUBLICATION mypub WITH (refresh = true) '
+language "sql";
+
+select func();
+
+alter subscription regress_testsub disable;
+
+alter subscription regress_testsub set (slot_name = 'none');
+
+drop subscription regress_testsub restrict;
+
+drop FUNCTION func;
+
+create subscription regress_testsub connection 'dbname=regress_doesnotexist' publication testpub with (connect = 'false',
+two_phase = foo);
+
+create subscription regress_testsub connection 'dbname=regress_doesnotexist' publication testpub with (connect = 'false',
+two_phase = 'true');
+
+alter subscription regress_testsub set (streaming = 'true');
+
+alter subscription regress_testsub set (slot_name = 'none');
+
+drop subscription regress_testsub restrict;
+
+create subscription regress_testsub connection 'dbname=regress_doesnotexist' publication testpub with (connect = 'false',
+streaming = 'true',
+two_phase = 'true');
+
+alter subscription regress_testsub set (slot_name = 'none');
+
+drop subscription regress_testsub restrict;
+
+create subscription regress_testsub connection 'dbname=regress_doesnotexist' publication testpub with (connect = 'false',
+disable_on_error = foo);
+
+create subscription regress_testsub connection 'dbname=regress_doesnotexist' publication testpub with (connect = 'false',
+disable_on_error = 'false');
+
+alter subscription regress_testsub set (disable_on_error = 'true');
+
+alter subscription regress_testsub set (slot_name = 'none');
+
+drop subscription regress_testsub restrict;
+
+create subscription regress_testsub connection 'dbname=regress_doesnotexist' publication testpub with (connect = 'false',
+retain_dead_tuples = foo);
+
+create subscription regress_testsub connection 'dbname=regress_doesnotexist' publication testpub with (connect = 'false',
+retain_dead_tuples = 'false');
+
+alter subscription regress_testsub set (slot_name = 'none');
+
+drop subscription regress_testsub restrict;
+
+create subscription regress_testsub connection 'dbname=regress_doesnotexist' publication testpub with (connect = 'false',
+max_retention_duration = foo);
+
+create subscription regress_testsub connection 'dbname=regress_doesnotexist' publication testpub with (connect = 'false',
+max_retention_duration = 1000);
+
+alter subscription regress_testsub set (max_retention_duration = 0);
+
+alter subscription regress_testsub set (slot_name = 'none');
+
+drop subscription regress_testsub restrict;
+
+set session authorization regress_subscription_user3;
+
+create subscription regress_testsub connection 'dbname=regress_doesnotexist' publication testpub with (connect = 'false');
+
+reset session_authorization;
+
+grant CREATE on database regression to regress_subscription_user3;
+
+set session authorization regress_subscription_user3;
+
+create subscription regress_testsub connection 'dbname=regress_doesnotexist' publication testpub with (connect = 'false');
+
+reset session_authorization;
+
+grant CREATE on database regression to regress_subscription_user3;
+
+set session authorization regress_subscription_user3;
+
+create subscription regress_testsub connection 'dbname=regress_doesnotexist' publication testpub with (connect = 'false',
+password_required = 'false');
+
+reset session_authorization;
+
+grant CREATE on database regression to regress_subscription_user3;
+
+set session authorization regress_subscription_user3;
+
+create subscription regress_testsub connection 'dbname=regress_doesnotexist password=regress_fakepassword' publication testpub with (connect = 'false');
+
+alter subscription regress_testsub owner to regress_subscription_user;
+
+alter subscription regress_testsub rename to regress_testsub2;
+
+reset session_authorization;
+
+revoke PG_CREATE_SUBSCRIPTION from regress_subscription_user3 restrict;
+
+set session authorization regress_subscription_user3;
+
+alter subscription regress_testsub2 rename to regress_testsub;
+
+reset session_authorization;
+
+revoke CREATE on database regression from regress_subscription_user3;
+
+set session authorization regress_subscription_user3;
+
+alter subscription regress_testsub rename to regress_testsub2;
+
+begin;
+
+alter subscription regress_testsub set (failover);
+
+commit;
+
+alter subscription regress_testsub set (slot_name = 'none');
+
+drop subscription regress_testsub restrict;
+
+reset session_authorization;
+
+drop role regress_subscription_user;
+
+drop role regress_subscription_user2;
+
+drop role regress_subscription_user3;
+
+drop role regress_subscription_user_dummy;

@@ -1,0 +1,184 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/int2.sql
+snapshot_kind: text
+---
+insert into int2_tbl (f1) values ('34.5');
+
+insert into int2_tbl (f1) values ('100000');
+
+insert into int2_tbl (f1) values ('asdf');
+
+insert into int2_tbl (f1) values ('    ');
+
+insert into int2_tbl (f1) values ('- 1234');
+
+insert into int2_tbl (f1) values ('4 444');
+
+insert into int2_tbl (f1) values ('123 dt');
+
+insert into int2_tbl (f1) values ('');
+
+select * from int2_tbl;
+
+select pg_input_is_valid('34', 'int2');
+
+select pg_input_is_valid('asdf', 'int2');
+
+select pg_input_is_valid('50000', 'int2');
+
+select * from pg_input_error_info('50000', 'int2');
+
+select pg_input_is_valid(' 1 3  5 ', 'int2vector');
+
+select * from pg_input_error_info('1 asdf', 'int2vector');
+
+select * from pg_input_error_info('50000', 'int2vector');
+
+select * from int2_tbl as f (a, b);
+
+select * from (select * from int2_tbl) as s (a, b);
+
+select i.* from int2_tbl as i where i.f1 <> cast('0' as SMALLINT);
+
+select i.* from int2_tbl as i where i.f1 <> cast('0' as INT);
+
+select i.* from int2_tbl as i where i.f1 = cast('0' as SMALLINT);
+
+select i.* from int2_tbl as i where i.f1 = cast('0' as INT);
+
+select i.* from int2_tbl as i where i.f1 < cast('0' as SMALLINT);
+
+select i.* from int2_tbl as i where i.f1 < cast('0' as INT);
+
+select i.* from int2_tbl as i where i.f1 <= cast('0' as SMALLINT);
+
+select i.* from int2_tbl as i where i.f1 <= cast('0' as INT);
+
+select i.* from int2_tbl as i where i.f1 > cast('0' as SMALLINT);
+
+select i.* from int2_tbl as i where i.f1 > cast('0' as INT);
+
+select i.* from int2_tbl as i where i.f1 >= cast('0' as SMALLINT);
+
+select i.* from int2_tbl as i where i.f1 >= cast('0' as INT);
+
+select i.* from int2_tbl as i where i.f1 % cast('2' as SMALLINT) = cast('1' as SMALLINT);
+
+select i.* from int2_tbl as i where i.f1 % cast('2' as INT) = cast('0' as SMALLINT);
+
+select i.f1, i.f1 * cast('2' as SMALLINT) as x from int2_tbl as i;
+
+select i.f1, i.f1 * cast('2' as SMALLINT) as x from int2_tbl as i where abs(f1) < 16384;
+
+select i.f1, i.f1 * cast('2' as INT) as x from int2_tbl as i;
+
+select i.f1, i.f1 + cast('2' as SMALLINT) as x from int2_tbl as i;
+
+select i.f1, i.f1 + cast('2' as SMALLINT) as x from int2_tbl as i where f1 < 32766;
+
+select i.f1, i.f1 + cast('2' as INT) as x from int2_tbl as i;
+
+select i.f1, i.f1 - cast('2' as SMALLINT) as x from int2_tbl as i;
+
+select i.f1, i.f1 - cast('2' as SMALLINT) as x from int2_tbl as i where f1 > -32767;
+
+select i.f1, i.f1 - cast('2' as INT) as x from int2_tbl as i;
+
+select i.f1, i.f1 / cast('2' as SMALLINT) as x from int2_tbl as i;
+
+select i.f1, i.f1 / cast('2' as INT) as x from int2_tbl as i;
+
+select cast(-cast(1 as SMALLINT) << 15 as TEXT);
+
+select cast((-cast(1 as SMALLINT) << 15) + cast(1 as SMALLINT) as TEXT);
+
+select cast(-32768 as SMALLINT) * cast(-1 as SMALLINT);
+
+select cast(-32768 as SMALLINT) / cast(-1 as SMALLINT);
+
+select cast(-32768 as SMALLINT) % cast(-1 as SMALLINT);
+
+select
+  x,
+  cast(x as SMALLINT) as int2_value
+from
+  (
+    values
+      (-cast(2.5 as DOUBLE PRECISION)),
+      (-cast(1.5 as DOUBLE PRECISION)),
+      (-cast(0.5 as DOUBLE PRECISION)),
+      (cast(0.0 as DOUBLE PRECISION)),
+      (cast(0.5 as DOUBLE PRECISION)),
+      (cast(1.5 as DOUBLE PRECISION)),
+      (cast(2.5 as DOUBLE PRECISION))
+  )
+  as t (x);
+
+select
+  x,
+  cast(x as SMALLINT) as int2_value
+from
+  (
+    values
+      (-cast(2.5 as NUMERIC)),
+      (-cast(1.5 as NUMERIC)),
+      (-cast(0.5 as NUMERIC)),
+      (cast(0.0 as NUMERIC)),
+      (cast(0.5 as NUMERIC)),
+      (cast(1.5 as NUMERIC)),
+      (cast(2.5 as NUMERIC))
+  )
+  as t (x);
+
+select cast('0b100101' as SMALLINT);
+
+select cast('0o273' as SMALLINT);
+
+select cast('0x42F' as SMALLINT);
+
+select cast('0b' as SMALLINT);
+
+select cast('0o' as SMALLINT);
+
+select cast('0x' as SMALLINT);
+
+select cast('0b111111111111111' as SMALLINT);
+
+select cast('0b1000000000000000' as SMALLINT);
+
+select cast('0o77777' as SMALLINT);
+
+select cast('0o100000' as SMALLINT);
+
+select cast('0x7FFF' as SMALLINT);
+
+select cast('0x8000' as SMALLINT);
+
+select cast('-0b1000000000000000' as SMALLINT);
+
+select cast('-0b1000000000000001' as SMALLINT);
+
+select cast('-0o100000' as SMALLINT);
+
+select cast('-0o100001' as SMALLINT);
+
+select cast('-0x8000' as SMALLINT);
+
+select cast('-0x8001' as SMALLINT);
+
+select cast('1_000' as SMALLINT);
+
+select cast('1_2_3' as SMALLINT);
+
+select cast('0xE_FF' as SMALLINT);
+
+select cast('0o2_73' as SMALLINT);
+
+select cast('0b_10_0101' as SMALLINT);
+
+select cast('_100' as SMALLINT);
+
+select cast('100_' as SMALLINT);
+
+select cast('10__000' as SMALLINT);

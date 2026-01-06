@@ -1,0 +1,100 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/create_cast.sql
+snapshot_kind: text
+---
+create type casttesttype;
+
+create function casttesttype_in(cstring)
+returns casttesttype
+as 'textin'
+language "internal"
+STRICT
+immutable;
+
+create function casttesttype_out(casttesttype)
+returns cstring
+as 'textout'
+language "internal"
+STRICT
+immutable;
+
+create type casttesttype (
+  internallength = variable,
+  input = casttesttype_in,
+  output = casttesttype_out,
+  alignment = INT
+);
+
+create function casttestfunc(casttesttype)
+returns INT
+language "sql"
+as ' SELECT 1; ';
+
+select casttestfunc(cast('foo' as TEXT));
+
+create cast (TEXT as casttesttype) without function;
+
+select casttestfunc(cast('foo' as TEXT));
+
+select casttestfunc(cast(cast('foo' as TEXT) as casttesttype));
+
+drop CAST (TEXT as casttesttype);
+
+create cast (TEXT as casttesttype) without function as IMPLICIT;
+
+select casttestfunc(cast('foo' as TEXT));
+
+select cast(cast(1234 as INT) as casttesttype);
+
+create cast (INT as casttesttype) with INOUT;
+
+select cast(cast(1234 as INT) as casttesttype);
+
+drop CAST (INT as casttesttype);
+
+create function int4_casttesttype(INT)
+returns casttesttype
+language "sql"
+as ' SELECT (''foo''::text || $1::text)::casttesttype; ';
+
+create cast (INT as casttesttype) with function int4_casttesttype(INT) as IMPLICIT;
+
+select cast(cast(1234 as INT) as casttesttype);
+
+drop FUNCTION int4_casttesttype(INT) cascade;
+
+create function bar_int4_text(INT)
+returns TEXT
+language "sql"
+as ' SELECT (''bar''::text || $1::text); ';
+
+create cast (INT as casttesttype) with function bar_int4_text(INT) as IMPLICIT;
+
+select cast(cast(1234 as INT) as casttesttype);
+
+select
+  pg_describe_object(classid, objid, objsubid)
+  as obj,
+  pg_describe_object(
+    refclassid,
+    refobjid,
+    refobjsubid
+  )
+  as objref,
+  deptype
+from
+  pg_depend
+where
+  classid = cast('pg_cast' as REGCLASS) and
+  objid =
+  (
+    select
+      oid
+    from
+      pg_cast
+    where
+      castsource = cast('int4' as REGTYPE) and
+      casttarget = cast('casttesttype' as REGTYPE)
+  )
+order by refclassid;

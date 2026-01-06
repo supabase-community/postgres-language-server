@@ -1,0 +1,6 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/single/into_clause_0.sql
+snapshot_kind: text
+---
+select * into new_table from old_table;

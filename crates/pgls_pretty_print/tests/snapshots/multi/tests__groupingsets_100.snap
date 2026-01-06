@@ -1,0 +1,1572 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/groupingsets.sql
+snapshot_kind: text
+---
+create temporary view gstest1
+(
+  a,
+  b,
+  v
+)
+as values
+  (1, 1, 10),
+  (1, 1, 11),
+  (1, 2, 12),
+  (1, 2, 13),
+  (1, 3, 14),
+  (2, 3, 15),
+  (3, 3, 16),
+  (3, 4, 17),
+  (4, 1, 18),
+  (4, 1, 19);
+
+create temporary table gstest2 (
+  a INT,
+  b INT,
+  c INT,
+  d INT,
+  e INT,
+  f INT,
+  g INT,
+  h INT
+);
+
+copy gstest2 from stdout;
+
+create temporary table gstest3 (
+  a INT,
+  b INT,
+  c INT,
+  d INT
+);
+
+copy gstest3 from stdout;
+
+alter table gstest3
+  add primary key (a);
+
+create temporary table gstest4 (
+  id INT,
+  v INT,
+  unhashable_col BIT(4),
+  unsortable_col XID
+);
+
+insert into gstest4
+values
+  (1, 1, B'0000', '1'),
+  (2, 2, B'0001', '1'),
+  (3, 4, B'0010', '2'),
+  (4, 8, B'0011', '2'),
+  (5, 16, B'0000', '2'),
+  (6, 32, B'0001', '2'),
+  (7, 64, B'0010', '1'),
+  (8, 128, B'0011', '1');
+
+create temporary table gstest_empty (
+  a INT,
+  b INT,
+  v INT
+);
+
+create function gstest_data(v INT, out a INT, out b INT)
+returns setof RECORD
+as '
+    begin
+      return query select v, i from generate_series(1,3) i;
+    end;
+  '
+language "plpgsql";
+
+set enable_hashagg = 'false';
+
+select a, b, GROUPING(a, b), SUM(v), COUNT(*), MAX(v) from gstest1 group by ROLLUP (a, b);
+
+select
+  a,
+  b,
+  GROUPING(a, b),
+  SUM(v),
+  COUNT(*),
+  MAX(v)
+from
+  gstest1
+group by ROLLUP (a, b)
+order by a,
+  b;
+
+select
+  a,
+  b,
+  GROUPING(a, b),
+  SUM(v),
+  COUNT(*),
+  MAX(v)
+from
+  gstest1
+group by ROLLUP (a, b)
+order by b desc,
+  a;
+
+select
+  a,
+  b,
+  GROUPING(a, b),
+  SUM(v),
+  COUNT(*),
+  MAX(v)
+from
+  gstest1
+group by ROLLUP (a, b)
+order by coalesce(a, 0) + coalesce(b, 0);
+
+select
+  a,
+  b,
+  GROUPING(a, b),
+  array_agg(v order by v),
+  string_agg(cast(v as TEXT), ':' order by v desc),
+  percentile_disc(0.5) within group (order by v),
+  RANK(1, 2, 12) within group (order by a, b, v)
+from
+  gstest1
+group by ROLLUP (a, b)
+order by a,
+  b;
+
+select
+  GROUPING(a),
+  a,
+  array_agg(b),
+  RANK(a) within group (order by b nulls first),
+  RANK(a) within group (order by b nulls last)
+from
+  (
+    values (1, 1), (1, 4), (1, 5), (3, 1), (3, 2)
+  )
+  as v (a, b)
+group by ROLLUP (a)
+order by a;
+
+select
+  a,
+  b,
+  SUM(c),
+  SUM(SUM(c)) over (order by a, b) as rsum
+from
+  gstest2
+group by ROLLUP (a, b)
+order by rsum,
+  a,
+  b;
+
+select
+  SUM(c)
+from
+  gstest2
+group by GROUPING SETS ((),
+  GROUPING SETS ((), GROUPING SETS (())))
+order by 1 desc;
+
+select
+  SUM(c)
+from
+  gstest2
+group by GROUPING SETS ((),
+  GROUPING SETS ((), GROUPING SETS ((a, b))))
+order by 1 desc;
+
+select
+  SUM(c)
+from
+  gstest2
+group by GROUPING SETS (GROUPING SETS (ROLLUP (c),
+  GROUPING SETS (CUBE (c))))
+order by 1 desc;
+
+select SUM(c) from gstest2 group by GROUPING SETS (a, GROUPING SETS (a, CUBE (b))) order by 1 desc;
+
+select SUM(c) from gstest2 group by GROUPING SETS (GROUPING SETS ((a, b))) order by 1 desc;
+
+select SUM(c) from gstest2 group by GROUPING SETS (GROUPING SETS ((a, b))) order by 1 desc;
+
+select
+  SUM(c)
+from
+  gstest2
+group by GROUPING SETS (GROUPING SETS (a, GROUPING SETS (a), a))
+order by 1 desc;
+
+select
+  SUM(c)
+from
+  gstest2
+group by GROUPING SETS (GROUPING SETS (a,
+  GROUPING SETS (a,
+  GROUPING SETS (a),
+  a,
+  a,
+  GROUPING SETS (a),
+  a),
+  a))
+order by 1 desc;
+
+select
+  SUM(c)
+from
+  gstest2
+group by GROUPING SETS ((a, (a, b)),
+  GROUPING SETS ((a, (a, b)), a))
+order by 1 desc;
+
+select a, b, SUM(v), COUNT(*) from gstest_empty group by GROUPING SETS ((a, b), a);
+
+select a, b, SUM(v), COUNT(*) from gstest_empty group by GROUPING SETS ((a, b), ());
+
+select a, b, SUM(v), COUNT(*) from gstest_empty group by GROUPING SETS ((a, b), (), (), ());
+
+select SUM(v), COUNT(*) from gstest_empty group by GROUPING SETS ((), (), ());
+
+select
+  t1.a,
+  t2.b,
+  SUM(t1.v),
+  COUNT(*)
+from
+  gstest_empty as t1,
+  gstest_empty as t2
+group by GROUPING SETS ((t1.a, t2.b), ());
+
+select
+  t1.a,
+  t2.b,
+  GROUPING(t1.a, t2.b),
+  SUM(t1.v),
+  MAX(t2.a)
+from
+  gstest1 as t1,
+  gstest2 as t2
+group by GROUPING SETS ((t1.a, t2.b), ());
+
+select
+  t1.a,
+  t2.b,
+  GROUPING(t1.a, t2.b),
+  SUM(t1.v),
+  MAX(t2.a)
+from
+  gstest1 as t1
+  inner join
+    gstest2 as t2
+  on t1.a = t2.a
+group by GROUPING SETS ((t1.a, t2.b), ());
+
+select
+  a,
+  b,
+  GROUPING(a, b),
+  SUM(t1.v),
+  MAX(t2.c)
+from
+  gstest1 as t1
+  inner join
+    gstest2 as t2
+  using (
+    "a",
+    "b")
+group by GROUPING SETS ((a, b), ());
+
+select a, d, GROUPING(a, b, c) from gstest3 group by GROUPING SETS ((a, b), (a, c));
+
+select g as alias1, g as alias2 from generate_series(1, 3) as g group by alias1, ROLLUP (alias2);
+
+select g as alias1, g as alias2 from generate_series(1, 3) as g group by alias1, ROLLUP (alias2);
+
+select
+  four,
+  x
+from
+  (
+    select
+      four,
+      ten,
+      cast('foo' as TEXT) as x
+    from
+      tenk1
+  )
+  as t
+group by GROUPING SETS (four, x)
+having
+  x = 'foo';
+
+select
+  four,
+  x || 'x'
+from
+  (
+    select
+      four,
+      ten,
+      cast('foo' as TEXT) as x
+    from
+      tenk1
+  )
+  as t
+group by GROUPING SETS (four, x)
+order by four;
+
+select
+  (x + y) * 1,
+  SUM(z)
+from
+  (select 1 as x, 2 as y, 3 as z) as s
+group by GROUPING SETS (x + y, x);
+
+select
+  x,
+  not x as not_x,
+  q2
+from
+  (select *, q1 = 1 as x from int8_tbl as i1) as t
+group by GROUPING SETS (x, q2)
+order by x,
+  q2;
+
+select
+  x,
+  y
+from
+  (select four as x, four as y from tenk1) as t
+group by GROUPING SETS (x, y)
+having
+  y is null
+order by 1,
+  2;
+
+select
+  x,
+  y || 'y'
+from
+  (select four as x, four as y from tenk1) as t
+group by GROUPING SETS (x, y)
+order by 1,
+  2;
+
+select
+  *
+from
+  (
+    select
+      1 as x,
+      q1,
+      SUM(q2)
+    from
+      int8_tbl as i1
+    group by GROUPING SETS (1, 2)
+  )
+  as ss
+where
+  x = 1 and q1 = 123;
+
+select
+  *
+from
+  (
+    select
+      1 as x,
+      q1,
+      SUM(q2)
+    from
+      int8_tbl as i1
+    group by GROUPING SETS (1, 2)
+  )
+  as ss
+where
+  x = 1 and q1 = 123;
+
+select
+  GROUPING(ss.x)
+from
+  int8_tbl as i1
+  inner join
+    lateral (select (select i1.q1) as x) as ss
+  on true
+group by ss.x;
+
+select
+  GROUPING(ss.x)
+from
+  int8_tbl as i1
+  inner join
+    lateral (select (select i1.q1) as x) as ss
+  on true
+group by ss.x;
+
+select
+  (select GROUPING(ss.x))
+from
+  int8_tbl as i1
+  inner join
+    lateral (select (select i1.q1) as x) as ss
+  on true
+group by ss.x;
+
+select
+  (select GROUPING(ss.x))
+from
+  int8_tbl as i1
+  inner join
+    lateral (select (select i1.q1) as x) as ss
+  on true
+group by ss.x;
+
+select a, b, SUM(v.x) from (values (1), (2)) as v (x), gstest_data(v.x) group by ROLLUP (a, b);
+
+select
+  *
+from
+  (values (1), (2)) as v (x),
+  lateral (
+    select
+      a,
+      b,
+      SUM(v.x)
+    from
+      gstest_data(v.x)
+    group by ROLLUP (a, b)
+  )
+  as s;
+
+select MIN(unique1) from tenk1 group by ();
+
+create view gstest_view
+as select
+  a,
+  b,
+  GROUPING(a, b),
+  SUM(c),
+  COUNT(*),
+  MAX(c)
+from
+  gstest2
+group by ROLLUP ((a, b, c), (c, d));
+
+select pg_get_viewdef(cast('gstest_view' as REGCLASS), true);
+
+select
+  (
+    select
+      (
+        select GROUPING(a, b) from (values (1)) as v2 (c)
+      )
+    from
+      (values (1, 2)) as v1 (a, b)
+    group by (a, b)
+  )
+from
+  (values (6, 7)) as v3 (e, f)
+group by ROLLUP (e, f);
+
+select
+  (
+    select
+      (
+        select GROUPING(e, f) from (values (1)) as v2 (c)
+      )
+    from
+      (values (1, 2)) as v1 (a, b)
+    group by (a, b)
+  )
+from
+  (values (6, 7)) as v3 (e, f)
+group by ROLLUP (e, f);
+
+select
+  (
+    select
+      (
+        select
+          GROUPING(c)
+        from
+          (values (1)) as v2 (c)
+        group by c
+      )
+    from
+      (values (1, 2)) as v1 (a, b)
+    group by (a, b)
+  )
+from
+  (values (6, 7)) as v3 (e, f)
+group by ROLLUP (e, f);
+
+select a, b, c, d from gstest2 group by ROLLUP (a, b), GROUPING SETS (c, d);
+
+select a, b from (values (1, 2), (2, 3)) as v (a, b) group by a, b, GROUPING SETS (a);
+
+select
+  a,
+  b,
+  GROUPING(a, b),
+  SUM(v),
+  COUNT(*),
+  MAX(v)
+from
+  gstest1
+group by GROUPING SETS ((a, b),
+  (a + 1, b + 1),
+  (a + 2, b + 2))
+order by 3,
+  6;
+
+select
+  (
+    select
+      (
+        select GROUPING(a, b) from (values (1)) as v2 (c)
+      )
+    from
+      (values (1, 2)) as v1 (a, b)
+    group by (a, b)
+  )
+from
+  (values (6, 7)) as v3 (e, f)
+group by ROLLUP (e + 1, f + 1);
+
+select
+  (
+    select
+      (
+        select GROUPING(a, b) from (values (1)) as v2 (c)
+      )
+    from
+      (values (1, 2)) as v1 (a, b)
+    group by (a, b)
+  )
+from
+  (values (6, 7)) as v3 (e, f)
+group by CUBE (e + 1, f + 1)
+order by e + 1,
+  f + 1;
+
+select
+  a,
+  b,
+  SUM(c),
+  SUM(SUM(c)) over (order by a, b) as rsum
+from
+  gstest2
+group by CUBE (a, b)
+order by rsum,
+  a,
+  b;
+
+select
+  a,
+  b,
+  SUM(c)
+from
+  (
+    values
+      (1, 1, 10),
+      (1, 1, 11),
+      (1, 2, 12),
+      (1, 2, 13),
+      (1, 3, 14),
+      (2, 3, 15),
+      (3, 3, 16),
+      (3, 4, 17),
+      (4, 1, 18),
+      (4, 1, 19)
+  )
+  as v (a, b, c)
+group by ROLLUP (a, b);
+
+select
+  a,
+  b,
+  SUM(v.x)
+from
+  (values (1), (2)) as v (x),
+  gstest_data(v.x)
+group by CUBE (a, b)
+order by a,
+  b;
+
+select * from gstest1 group by GROUPING SETS ((a, b, v), v) order by v, b, a;
+
+select (select GROUPING(a, b) from gstest2) from gstest2 group by a, b;
+
+select a, b, SUM(c), COUNT(*) from gstest2 group by GROUPING SETS (ROLLUP (a, b), a);
+
+select
+  ten,
+  SUM(distinct four)
+from
+  onek as a
+group by GROUPING SETS ((ten, four), ten)
+having
+  exists
+  (
+    select
+      1
+    from
+      onek as b
+    where
+      SUM(distinct a.four) = b.four
+  );
+
+select a, COUNT(*) from gstest2 group by ROLLUP (a) order by a;
+
+select a, COUNT(*) from gstest2 group by ROLLUP (a) having a is distinct from 1 order by a;
+
+select a, COUNT(*) from gstest2 group by ROLLUP (a) having a is distinct from 1 order by a;
+
+select
+  v.c,
+  (
+    select
+      COUNT(*)
+    from
+      gstest2
+    group by ()
+    having
+      v.c
+  )
+from
+  (values (false), (true)) as v (c)
+order by v.c;
+
+select
+  v.c,
+  (
+    select
+      COUNT(*)
+    from
+      gstest2
+    group by ()
+    having
+      v.c
+  )
+from
+  (values (false), (true)) as v (c)
+order by v.c;
+
+select a, b, COUNT(*) from gstest2 group by GROUPING SETS ((a, b), a) having a > 1 and b > 1;
+
+select a, b, COUNT(*) from gstest2 group by GROUPING SETS ((a, b), a) having a > 1 and b > 1;
+
+select
+  ten,
+  GROUPING(ten)
+from
+  onek
+group by GROUPING SETS (ten)
+having
+  GROUPING(ten) >= 0
+order by 2,
+  1;
+
+select
+  ten,
+  GROUPING(ten)
+from
+  onek
+group by GROUPING SETS (ten, four)
+having
+  GROUPING(ten) > 0
+order by 2,
+  1;
+
+select ten, GROUPING(ten) from onek group by ROLLUP (ten) having GROUPING(ten) > 0 order by 2, 1;
+
+select ten, GROUPING(ten) from onek group by CUBE (ten) having GROUPING(ten) > 0 order by 2, 1;
+
+select ten, GROUPING(ten) from onek group by ten having GROUPING(ten) >= 0 order by 2, 1;
+
+select
+  ten,
+  SUM(
+    distinct four
+  )
+  filter (where
+    cast(four as TEXT) ~ '123')
+from
+  onek as a
+group by ROLLUP (ten);
+
+select
+  *
+from
+  (values (1), (2)) as v (a)
+  left outer join
+    lateral (
+      select
+        v.a,
+        four,
+        ten,
+        COUNT(*)
+      from
+        onek
+      group by CUBE (four, ten)
+    )
+    as s
+  on true
+order by v.a,
+  four,
+  ten;
+
+select
+  array(
+    select
+      row(v.a, s1.*)
+    from
+      (
+        select
+          two,
+          four,
+          COUNT(*)
+        from
+          onek
+        group by CUBE (two, four)
+        order by two,
+          four
+      )
+      as s1
+  )
+from
+  (values (1), (2)) as v (a);
+
+select SUM(ten) from onek group by two, ROLLUP (cast(four as TEXT)) order by 1;
+
+select SUM(ten) from onek group by ROLLUP (cast(four as TEXT)), two order by 1;
+
+set enable_hashagg = 'true';
+
+select COUNT(*) from gstest4 group by ROLLUP (unhashable_col, unsortable_col);
+
+select array_agg(v order by v) from gstest4 group by GROUPING SETS ((id, unsortable_col), id);
+
+select
+  a,
+  b,
+  GROUPING(a, b),
+  SUM(v),
+  COUNT(*),
+  MAX(v)
+from
+  gstest1
+group by GROUPING SETS (a, b)
+order by 3,
+  1,
+  2;
+
+select
+  a,
+  b,
+  GROUPING(a, b),
+  SUM(v),
+  COUNT(*),
+  MAX(v)
+from
+  gstest1
+group by GROUPING SETS (a, b)
+order by 3,
+  1,
+  2;
+
+select
+  a,
+  b,
+  GROUPING(a, b),
+  SUM(v),
+  COUNT(*),
+  MAX(v)
+from
+  gstest1
+group by CUBE (a, b)
+order by 3,
+  1,
+  2;
+
+select
+  a,
+  b,
+  GROUPING(a, b),
+  SUM(v),
+  COUNT(*),
+  MAX(v)
+from
+  gstest1
+group by CUBE (a, b)
+order by 3,
+  1,
+  2;
+
+select a, b, GROUPING(a, b), array_agg(v order by v) from gstest1 group by CUBE (a, b);
+
+select
+  unsortable_col,
+  COUNT(*)
+from
+  gstest4
+group by GROUPING SETS (unsortable_col, unsortable_col)
+order by cast(unsortable_col as TEXT);
+
+select
+  unhashable_col,
+  unsortable_col,
+  GROUPING(unhashable_col, unsortable_col),
+  COUNT(*),
+  SUM(v)
+from
+  gstest4
+group by GROUPING SETS (unhashable_col, unsortable_col)
+order by 3,
+  5;
+
+select
+  unhashable_col,
+  unsortable_col,
+  GROUPING(unhashable_col, unsortable_col),
+  COUNT(*),
+  SUM(v)
+from
+  gstest4
+group by GROUPING SETS (unhashable_col, unsortable_col)
+order by 3,
+  5;
+
+select
+  unhashable_col,
+  unsortable_col,
+  GROUPING(unhashable_col, unsortable_col),
+  COUNT(*),
+  SUM(v)
+from
+  gstest4
+group by GROUPING SETS ((v, unhashable_col),
+  (v, unsortable_col))
+order by 3,
+  5;
+
+select
+  unhashable_col,
+  unsortable_col,
+  GROUPING(unhashable_col, unsortable_col),
+  COUNT(*),
+  SUM(v)
+from
+  gstest4
+group by GROUPING SETS ((v, unhashable_col),
+  (v, unsortable_col))
+order by 3,
+  5;
+
+select a, b, SUM(v), COUNT(*) from gstest_empty group by GROUPING SETS ((a, b), a);
+
+select a, b, SUM(v), COUNT(*) from gstest_empty group by GROUPING SETS ((a, b), a);
+
+select a, b, SUM(v), COUNT(*) from gstest_empty group by GROUPING SETS ((a, b), ());
+
+select a, b, SUM(v), COUNT(*) from gstest_empty group by GROUPING SETS ((a, b), (), (), ());
+
+select a, b, SUM(v), COUNT(*) from gstest_empty group by GROUPING SETS ((a, b), (), (), ());
+
+select SUM(v), COUNT(*) from gstest_empty group by GROUPING SETS ((), (), ());
+
+select SUM(v), COUNT(*) from gstest_empty group by GROUPING SETS ((), (), ());
+
+select a, d, GROUPING(a, b, c) from gstest3 group by GROUPING SETS ((a, b), (a, c));
+
+select a, d, GROUPING(a, b, c) from gstest3 group by GROUPING SETS ((a, b), (a, c));
+
+select
+  a,
+  b,
+  SUM(v.x)
+from
+  (values (1), (2)) as v (x),
+  gstest_data(v.x)
+group by GROUPING SETS (a, b)
+order by 1,
+  2,
+  3;
+
+select
+  a,
+  b,
+  SUM(v.x)
+from
+  (values (1), (2)) as v (x),
+  gstest_data(v.x)
+group by GROUPING SETS (a, b)
+order by 3,
+  1,
+  2;
+
+select
+  *
+from
+  (values (1), (2)) as v (x),
+  lateral (
+    select
+      a,
+      b,
+      SUM(v.x)
+    from
+      gstest_data(v.x)
+    group by GROUPING SETS (a, b)
+  )
+  as s;
+
+select
+  *
+from
+  (values (1), (2)) as v (x),
+  lateral (
+    select
+      a,
+      b,
+      SUM(v.x)
+    from
+      gstest_data(v.x)
+    group by GROUPING SETS (a, b)
+  )
+  as s;
+
+select
+  a,
+  b,
+  GROUPING(a, b),
+  SUM(v),
+  COUNT(*),
+  MAX(v)
+from
+  gstest1
+group by GROUPING SETS ((a, b),
+  (a + 1, b + 1),
+  (a + 2, b + 2))
+order by 3,
+  6;
+
+select
+  a,
+  b,
+  GROUPING(a, b),
+  SUM(v),
+  COUNT(*),
+  MAX(v)
+from
+  gstest1
+group by GROUPING SETS ((a, b),
+  (a + 1, b + 1),
+  (a + 2, b + 2))
+order by 3,
+  6;
+
+select
+  a,
+  b,
+  SUM(c),
+  SUM(SUM(c)) over (order by a, b) as rsum
+from
+  gstest2
+group by CUBE (a, b)
+order by rsum,
+  a,
+  b;
+
+select
+  a,
+  b,
+  SUM(c),
+  SUM(SUM(c)) over (order by a, b) as rsum
+from
+  gstest2
+group by CUBE (a, b)
+order by rsum,
+  a,
+  b;
+
+select
+  a,
+  b,
+  SUM(v.x)
+from
+  (values (1), (2)) as v (x),
+  gstest_data(v.x)
+group by CUBE (a, b)
+order by a,
+  b;
+
+select
+  a,
+  b,
+  SUM(v.x)
+from
+  (values (1), (2)) as v (x),
+  gstest_data(v.x)
+group by CUBE (a, b)
+order by a,
+  b;
+
+begin;
+
+set local enable_hashagg = 'false';
+
+select a, b, COUNT(*), MAX(a), MAX(b) from gstest3 group by GROUPING SETS (a, b, ()) order by a, b;
+
+select a, b, COUNT(*), MAX(a), MAX(b) from gstest3 group by GROUPING SETS (a, b, ()) order by a, b;
+
+set local enable_seqscan = 'false';
+
+select a, b, COUNT(*), MAX(a), MAX(b) from gstest3 group by GROUPING SETS (a, b, ()) order by a, b;
+
+select a, b, COUNT(*), MAX(a), MAX(b) from gstest3 group by GROUPING SETS (a, b, ()) order by a, b;
+
+commit;
+
+select
+  *
+from
+  (values (1), (2)) as v (a)
+  left outer join
+    lateral (
+      select
+        v.a,
+        four,
+        ten,
+        COUNT(*)
+      from
+        onek
+      group by CUBE (four, ten)
+    )
+    as s
+  on true
+order by v.a,
+  four,
+  ten;
+
+select
+  array(
+    select
+      row(v.a, s1.*)
+    from
+      (
+        select
+          two,
+          four,
+          COUNT(*)
+        from
+          onek
+        group by CUBE (two, four)
+        order by two,
+          four
+      )
+      as s1
+  )
+from
+  (values (1), (2)) as v (a);
+
+select
+  *
+from
+  (values (1), (2)) as v (a)
+  left outer join
+    lateral (
+      select
+        v.a,
+        four,
+        ten,
+        COUNT(*)
+      from
+        onek
+      group by GROUPING SETS (four, ten)
+    )
+    as s
+  on true
+order by v.a,
+  four,
+  ten;
+
+select
+  array(
+    select
+      row(v.a, s1.*)
+    from
+      (
+        select
+          two,
+          four,
+          COUNT(*)
+        from
+          onek
+        group by GROUPING SETS (two, four)
+        order by two,
+          four
+      )
+      as s1
+  )
+from
+  (values (1), (2)) as v (a);
+
+set enable_indexscan = 'false';
+
+set hash_mem_multiplier = 1.0;
+
+set work_mem = '64kB';
+
+select
+  unique1,
+  COUNT(two),
+  COUNT(four),
+  COUNT(ten),
+  COUNT(hundred),
+  COUNT(thousand),
+  COUNT(twothousand),
+  COUNT(*)
+from
+  tenk1
+group by GROUPING SETS (unique1,
+  twothousand,
+  thousand,
+  hundred,
+  ten,
+  four,
+  two);
+
+select
+  unique1,
+  COUNT(two),
+  COUNT(four),
+  COUNT(ten),
+  COUNT(hundred),
+  COUNT(thousand),
+  COUNT(twothousand),
+  COUNT(*)
+from
+  tenk1
+group by GROUPING SETS (unique1, hundred, ten, four, two);
+
+set work_mem = '384kB';
+
+select
+  unique1,
+  COUNT(two),
+  COUNT(four),
+  COUNT(ten),
+  COUNT(hundred),
+  COUNT(thousand),
+  COUNT(twothousand),
+  COUNT(*)
+from
+  tenk1
+group by GROUPING SETS (unique1,
+  twothousand,
+  thousand,
+  hundred,
+  ten,
+  four,
+  two);
+
+select
+  v || 'a',
+  case GROUPING(v || 'a') when 1 then 1 else 0 end,
+  COUNT(*)
+from
+  unnest(array[1, 1], array['a', 'b']) as u (i, v)
+group by ROLLUP (i, v || 'a')
+order by 1,
+  3;
+
+select
+  v || 'a',
+  case when GROUPING(v || 'a') = 1 then 1 else 0 end,
+  COUNT(*)
+from
+  unnest(array[1, 1], array['a', 'b']) as u (i, v)
+group by ROLLUP (i, v || 'a')
+order by 1,
+  3;
+
+create table bug_16784 (
+  i INT,
+  j INT
+);
+
+analyze bug_16784;
+
+alter table bug_16784
+  set (autovacuum_enabled = 'false');
+
+update pg_class set reltuples = 10 where relname = 'bug_16784';
+
+insert into bug_16784 select g / 10, g from generate_series(1, 40) as g;
+
+set work_mem = '64kB';
+
+set enable_sort = 'false';
+
+select
+  *
+from
+  (values (1), (2)) as v (a),
+  lateral (
+    select
+      a,
+      i,
+      j,
+      COUNT(*)
+    from
+      bug_16784
+    group by CUBE (i, j)
+  )
+  as s
+order by v.a,
+  i,
+  j;
+
+create table gs_data_1
+as
+  select
+    g % 1000 as g1000,
+    g % 100 as g100,
+    g % 10 as g10,
+    g
+  from
+    generate_series(0, 1999) as g;
+
+analyze gs_data_1;
+
+alter table gs_data_1
+  set (autovacuum_enabled = 'false');
+
+update pg_class set reltuples = 10 where relname = 'gs_data_1';
+
+set work_mem = '64kB';
+
+set enable_sort = 'true';
+
+set enable_hashagg = 'false';
+
+set jit_above_cost = 0;
+
+select
+  g100,
+  g10,
+  SUM(cast(g as NUMERIC)),
+  COUNT(*),
+  MAX(cast(g as TEXT))
+from
+  gs_data_1
+group by CUBE (g1000, g100, g10);
+
+create table gs_group_1
+as
+  select
+    g100,
+    g10,
+    SUM(cast(g as NUMERIC)),
+    COUNT(*),
+    MAX(cast(g as TEXT))
+  from
+    gs_data_1
+  group by CUBE (g1000, g100, g10);
+
+set enable_hashagg = 'true';
+
+set enable_sort = 'false';
+
+select
+  g100,
+  g10,
+  SUM(cast(g as NUMERIC)),
+  COUNT(*),
+  MAX(cast(g as TEXT))
+from
+  gs_data_1
+group by CUBE (g1000, g100, g10);
+
+create table gs_hash_1
+as
+  select
+    g100,
+    g10,
+    SUM(cast(g as NUMERIC)),
+    COUNT(*),
+    MAX(cast(g as TEXT))
+  from
+    gs_data_1
+  group by CUBE (g1000, g100, g10);
+
+set enable_sort = 'true';
+
+set work_mem = default;
+
+set hash_mem_multiplier = default;
+
+select * from gs_hash_1
+except
+select * from gs_group_1
+union all
+(select * from gs_group_1
+except
+select * from gs_hash_1);
+
+drop TABLE "gs_group_1";
+
+drop TABLE "gs_hash_1";
+
+select
+  a,
+  b,
+  c
+from
+  (
+    values (1, 2, 3), (4, null, 6), (7, 8, 9)
+  )
+  as t (a, b, c)
+group by ROLLUP (a, b),
+  ROLLUP (a, c)
+order by a,
+  b,
+  c;
+
+select
+  a,
+  b,
+  c
+from
+  (
+    values (1, 2, 3), (4, null, 6), (7, 8, 9)
+  )
+  as t (a, b, c)
+group by ROLLUP (a, b),
+  ROLLUP (a, c)
+order by a,
+  b,
+  c;
+
+select
+  a,
+  b,
+  c
+from
+  (
+    values (1, 2, 3), (4, null, 6), (7, 8, 9)
+  )
+  as t (a, b, c)
+group by distinct ROLLUP (a, b),
+  ROLLUP (a, c)
+order by a,
+  b,
+  c;
+
+select distinct
+  a,
+  b,
+  c
+from
+  (
+    values (1, 2, 3), (4, null, 6), (7, 8, 9)
+  )
+  as t (a, b, c)
+group by ROLLUP (a, b),
+  ROLLUP (a, c)
+order by a,
+  b,
+  c;
+
+select (select GROUPING(v1)) from (values ((select 1))) as v (v1) group by CUBE (v1);
+
+select (select GROUPING(v1)) from (values ((select 1))) as v (v1) group by CUBE (v1);
+
+select (select GROUPING(v1)) from (values ((select 1))) as v (v1) group by v1;
+
+select (select GROUPING(v1)) from (values ((select 1))) as v (v1) group by v1;
+
+create temporary table gstest5 (
+  id INT primary key,
+  v INT
+);
+
+insert into gstest5 select i, i from generate_series(1, 5) as i;
+
+select
+  GROUPING((select t1.v from gstest5 as t2 where id = t1.id)),
+  (select t1.v from gstest5 as t2 where id = t1.id)
+  as s
+from
+  gstest5 as t1
+group by GROUPING SETS (v, s)
+order by case
+    when GROUPING((select t1.v from gstest5 as t2 where id = t1.id)) =
+    0
+    then (select t1.v from gstest5 as t2 where id = t1.id)
+    else null
+  end nulls first;
+
+select
+  GROUPING((select t1.v from gstest5 as t2 where id = t1.id)),
+  (select t1.v from gstest5 as t2 where id = t1.id)
+  as s
+from
+  gstest5 as t1
+group by GROUPING SETS (v, s)
+order by case
+    when GROUPING((select t1.v from gstest5 as t2 where id = t1.id)) =
+    0
+    then (select t1.v from gstest5 as t2 where id = t1.id)
+    else null
+  end nulls first;
+
+select
+  GROUPING((select t1.v from gstest5 as t2 where id = t1.id)),
+  (select t1.v from gstest5 as t2 where id = t1.id)
+  as s,
+  case
+    when GROUPING((select t1.v from gstest5 as t2 where id = t1.id)) =
+    0
+    then (select t1.v from gstest5 as t2 where id = t1.id)
+    else null
+  end
+  as o
+from
+  gstest5 as t1
+group by GROUPING SETS (v, s)
+order by o nulls first;
+
+select
+  GROUPING((select t1.v from gstest5 as t2 where id = t1.id)),
+  (select t1.v from gstest5 as t2 where id = t1.id)
+  as s,
+  case
+    when GROUPING((select t1.v from gstest5 as t2 where id = t1.id)) =
+    0
+    then (select t1.v from gstest5 as t2 where id = t1.id)
+    else null
+  end
+  as o
+from
+  gstest5 as t1
+group by GROUPING SETS (v, s)
+order by o nulls first;
+
+select
+  a < b and b < 3
+from
+  (values (1, 2)) as t (a, b)
+group by ROLLUP (a < b and b < 3)
+having
+  a < b and b < 3;
+
+select
+  a < b and b < 3
+from
+  (values (1, 2)) as t (a, b)
+group by ROLLUP (a < b and b < 3)
+having
+  a < b and b < 3;
+
+select not a from (values (true)) as t (a) group by ROLLUP (not a) having not not a;
+
+select not a from (values (true)) as t (a) group by ROLLUP (not a) having not not a;
+
+select distinct on (
+  a,
+  b)
+  a,
+  b
+from
+  (values (1, 1), (2, 2)) as t (a, b)
+where
+  a = b
+group by GROUPING SETS ((a, b), a)
+order by a,
+  b;
+
+select distinct on (
+  a,
+  b)
+  a,
+  b
+from
+  (values (1, 1), (2, 2)) as t (a, b)
+where
+  a = b
+group by GROUPING SETS ((a, b), a)
+order by a,
+  b;
+
+select distinct on (
+  a,
+  b + 1)
+  a,
+  b + 1
+from
+  (values (1, 0), (2, 1)) as t (a, b)
+where
+  a = b + 1
+group by GROUPING SETS ((a, b + 1), a)
+order by a,
+  b + 1;
+
+select distinct on (
+  a,
+  b + 1)
+  a,
+  b + 1
+from
+  (values (1, 0), (2, 1)) as t (a, b)
+where
+  a = b + 1
+group by GROUPING SETS ((a, b + 1), a)
+order by a,
+  b + 1;
+
+select
+  a,
+  b
+from
+  (values (1, 1), (2, 2)) as t (a, b)
+where
+  a = b
+group by GROUPING SETS ((a, b), a)
+order by a,
+  b nulls first;
+
+select
+  a,
+  b
+from
+  (values (1, 1), (2, 2)) as t (a, b)
+where
+  a = b
+group by GROUPING SETS ((a, b), a)
+order by a,
+  b nulls first;
+
+select 1 as one group by ROLLUP (one) order by one nulls first;
+
+select 1 as one group by ROLLUP (one) order by one nulls first;
+
+select
+  a,
+  b,
+  ROW_NUMBER() over (order by a, b nulls first)
+from
+  (values (1, 1), (2, 2)) as t (a, b)
+where
+  a = b
+group by GROUPING SETS ((a, b), a);
+
+select
+  a,
+  b,
+  ROW_NUMBER() over (order by a, b nulls first)
+from
+  (values (1, 1), (2, 2)) as t (a, b)
+where
+  a = b
+group by GROUPING SETS ((a, b), a);

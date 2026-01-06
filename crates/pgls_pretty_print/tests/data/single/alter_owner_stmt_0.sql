@@ -1,0 +1,1 @@
+ALTER DATABASE mydb OWNER TO postgres;

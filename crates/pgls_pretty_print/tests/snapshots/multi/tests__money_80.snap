@@ -1,0 +1,222 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/money.sql
+snapshot_kind: text
+---
+create table money_data (m MONEY);
+
+insert into money_data values ('123');
+
+select * from money_data;
+
+select m + '123' from money_data;
+
+select m + '123.45' from money_data;
+
+select m - '123.45' from money_data;
+
+select m / cast('2' as MONEY) from money_data;
+
+select m * 2 from money_data;
+
+select 2 * m from money_data;
+
+select m / 2 from money_data;
+
+select m * cast(2 as SMALLINT) from money_data;
+
+select cast(2 as SMALLINT) * m from money_data;
+
+select m / cast(2 as SMALLINT) from money_data;
+
+select m * cast(2 as BIGINT) from money_data;
+
+select cast(2 as BIGINT) * m from money_data;
+
+select m / cast(2 as BIGINT) from money_data;
+
+select m * cast(2 as DOUBLE PRECISION) from money_data;
+
+select cast(2 as DOUBLE PRECISION) * m from money_data;
+
+select m / cast(2 as DOUBLE PRECISION) from money_data;
+
+select m * cast(2 as REAL) from money_data;
+
+select cast(2 as REAL) * m from money_data;
+
+select m / cast(2 as REAL) from money_data;
+
+select m = '$123.00' from money_data;
+
+select m <> '$124.00' from money_data;
+
+select m <= '$123.00' from money_data;
+
+select m >= '$123.00' from money_data;
+
+select m < '$124.00' from money_data;
+
+select m > '$122.00' from money_data;
+
+select m = '$123.01' from money_data;
+
+select m <> '$123.00' from money_data;
+
+select m <= '$122.99' from money_data;
+
+select m >= '$123.01' from money_data;
+
+select m > '$124.00' from money_data;
+
+select m < '$122.00' from money_data;
+
+select cashlarger(m, '$124.00') from money_data;
+
+select cashsmaller(m, '$124.00') from money_data;
+
+select cash_words(m) from money_data;
+
+select cash_words(m + '1.23') from money_data;
+
+delete from money_data;
+
+insert into money_data values ('$123.45');
+
+select * from money_data;
+
+delete from money_data;
+
+insert into money_data values ('$123.451');
+
+select * from money_data;
+
+delete from money_data;
+
+insert into money_data values ('$123.454');
+
+select * from money_data;
+
+delete from money_data;
+
+insert into money_data values ('$123.455');
+
+select * from money_data;
+
+delete from money_data;
+
+insert into money_data values ('$123.456');
+
+select * from money_data;
+
+delete from money_data;
+
+insert into money_data values ('$123.459');
+
+select * from money_data;
+
+select cast('1234567890' as MONEY);
+
+select cast('12345678901234567' as MONEY);
+
+select cast('123456789012345678' as MONEY);
+
+select cast('9223372036854775807' as MONEY);
+
+select cast('-12345' as MONEY);
+
+select cast('-1234567890' as MONEY);
+
+select cast('-12345678901234567' as MONEY);
+
+select cast('-123456789012345678' as MONEY);
+
+select cast('-9223372036854775808' as MONEY);
+
+select cast('(1)' as MONEY);
+
+select cast('($123,456.78)' as MONEY);
+
+select pg_input_is_valid('\x0001', 'money');
+
+select * from pg_input_error_info('\x0001', 'money');
+
+select pg_input_is_valid('192233720368547758.07', 'money');
+
+select * from pg_input_error_info('192233720368547758.07', 'money');
+
+select cast('-92233720368547758.08' as MONEY);
+
+select cast('92233720368547758.07' as MONEY);
+
+select cast('-92233720368547758.09' as MONEY);
+
+select cast('92233720368547758.08' as MONEY);
+
+select cast('-92233720368547758.085' as MONEY);
+
+select cast('92233720368547758.075' as MONEY);
+
+select cast('878.08' as MONEY) / cast(11 as DOUBLE PRECISION);
+
+select cast('878.08' as MONEY) / cast(11 as REAL);
+
+select cast('878.08' as MONEY) / cast(11 as BIGINT);
+
+select cast('878.08' as MONEY) / cast(11 as INT);
+
+select cast('878.08' as MONEY) / cast(11 as SMALLINT);
+
+select cast('90000000000000099.00' as MONEY) / cast(10 as BIGINT);
+
+select cast('90000000000000099.00' as MONEY) / cast(10 as INT);
+
+select cast('90000000000000099.00' as MONEY) / cast(10 as SMALLINT);
+
+select cast(1234567890 as MONEY);
+
+select cast(12345678901234567 as MONEY);
+
+select cast(-12345 as MONEY);
+
+select cast(-1234567890 as MONEY);
+
+select cast(-12345678901234567 as MONEY);
+
+select cast(cast(1234567890 as INT) as MONEY);
+
+select cast(cast(12345678901234567 as BIGINT) as MONEY);
+
+select cast(cast(12345678901234567 as NUMERIC) as MONEY);
+
+select cast(cast(-1234567890 as INT) as MONEY);
+
+select cast(cast(-12345678901234567 as BIGINT) as MONEY);
+
+select cast(cast(-12345678901234567 as NUMERIC) as MONEY);
+
+select cast(cast('12345678901234567' as MONEY) as NUMERIC);
+
+select cast(cast('-12345678901234567' as MONEY) as NUMERIC);
+
+select cast(cast('92233720368547758.07' as MONEY) as NUMERIC);
+
+select cast(cast('-92233720368547758.08' as MONEY) as NUMERIC);
+
+select cast('92233720368547758.07' as MONEY) + cast('0.01' as MONEY);
+
+select cast('-92233720368547758.08' as MONEY) - cast('0.01' as MONEY);
+
+select cast('92233720368547758.07' as MONEY) * cast(2 as DOUBLE PRECISION);
+
+select cast('-1' as MONEY) / cast(1.175494e-38 as REAL);
+
+select cast('92233720368547758.07' as MONEY) * cast(2 as INT);
+
+select cast('1' as MONEY) / cast(0 as SMALLINT);
+
+select cast('42' as MONEY) * cast('inf' as DOUBLE PRECISION);
+
+select cast('42' as MONEY) * cast('-inf' as DOUBLE PRECISION);
+
+select cast('42' as MONEY) * cast('nan' as REAL);

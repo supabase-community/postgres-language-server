@@ -155,6 +155,13 @@ where
         self.request("pgls/pull_diagnostics", params)
     }
 
+    fn pull_file_formatting(
+        &self,
+        params: crate::features::format::PullFileFormattingParams,
+    ) -> Result<crate::features::format::PullFormattingResult, WorkspaceError> {
+        self.request("pgls/pull_formatting", params)
+    }
+
     fn pull_db_diagnostics(
         &self,
         params: crate::features::diagnostics::PullDatabaseDiagnosticsParams,

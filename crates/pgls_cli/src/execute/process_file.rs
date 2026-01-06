@@ -1,9 +1,11 @@
 mod check;
+mod format;
 pub(crate) mod workspace_file;
 
 use crate::execute::config::ExecutionMode;
 use crate::execute::walk::TraversalOptions;
 use check::check_file;
+use format::format_file;
 use pgls_diagnostics::Error;
 use pgls_fs::PgLSPath;
 use std::marker::PhantomData;
@@ -108,7 +110,8 @@ pub(crate) fn process_file(ctx: &TraversalOptions, pgls_path: &PgLSPath) -> File
         let shared_context = &SharedTraversalOptions::new(ctx);
 
         match ctx.config.mode {
-            ExecutionMode::Check { .. } => check_file(shared_context, pgls_path),
+            ExecutionMode::Check { .. } => check_file(shared_context, pgls_path.as_path()),
+            ExecutionMode::Format { .. } => format_file(shared_context, pgls_path.as_path()),
         }
     })
 }

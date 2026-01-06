@@ -1,0 +1,169 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/matview.sql
+snapshot_kind: text
+---
+create table mvtest_t (
+  id INT not null primary key,
+  type TEXT not null,
+  amt NUMERIC not null
+);
+
+insert into mvtest_t
+values
+  (1, 'x', 2),
+  (2, 'x', 3),
+  (3, 'y', 5),
+  (4, 'y', 7),
+  (5, 'z', 11);
+
+create view mvtest_tv
+as select
+  type,
+  SUM(amt) as totamt
+from
+  mvtest_t
+group by type;
+
+select * from mvtest_tv order by type;
+
+create materialized view mvtest_tm
+as
+  select
+    type,
+    SUM(amt) as totamt
+  from
+    mvtest_t
+  group by type with no data;
+
+create materialized view mvtest_tm
+as
+  select
+    type,
+    SUM(amt) as totamt
+  from
+    mvtest_t
+  group by type with no data;
+
+select relispopulated from pg_class where oid = cast('mvtest_tm' as REGCLASS);
+
+select * from mvtest_tm order by type;
+
+refresh materialized view mvtest_tm;
+
+select relispopulated from pg_class where oid = cast('mvtest_tm' as REGCLASS);
+
+create unique index "mvtest_tm_type" on mvtest_tm using btree (type);
+
+select * from mvtest_tm order by type;
+
+create materialized view mvtest_tvm as select * from mvtest_tv order by type;
+
+create materialized view mvtest_tvm as select * from mvtest_tv order by type;
+
+select * from mvtest_tvm;
+
+create materialized view mvtest_tmm
+as
+  select
+    SUM(totamt) as grandtot
+  from
+    mvtest_tm;
+
+create materialized view mvtest_tvmm
+as
+  select
+    SUM(totamt) as grandtot
+  from
+    mvtest_tvm;
+
+create unique index "mvtest_tvmm_expr"
+on mvtest_tvmm
+using btree
+(
+  (grandtot > 0)
+);
+
+create unique index "mvtest_tvmm_pred"
+on mvtest_tvmm
+using btree
+(
+  grandtot
+)
+where
+  grandtot < 0;
+
+create view mvtest_tvv
+as select
+  SUM(totamt) as grandtot
+from
+  mvtest_tv;
+
+create materialized view mvtest_tvvm as select * from mvtest_tvv;
+
+create materialized view mvtest_tvvm as select * from mvtest_tvv;
+
+create view mvtest_tvvmv
+as select * from mvtest_tvvm;
+
+create materialized view mvtest_bb as select * from mvtest_tvvmv;
+
+create index "mvtest_aa" on mvtest_bb using btree (grandtot);
+
+create schema "mvtest_mvschema";
+
+alter MATERIALIZED VIEW mvtest_tvm set SCHEMA mvtest_mvschema;
+
+set search_path to mvtest_mvschema, public;
+
+insert into mvtest_t values (6, 'z', 13);
+
+select * from mvtest_tm order by type;
+
+select * from mvtest_tvm order by type;
+
+refresh materialized view concurrently mvtest_tm;
+
+refresh materialized view mvtest_tvm;
+
+select * from mvtest_tm order by type;
+
+select * from mvtest_tvm order by type;
+
+reset search_path;
+
+select * from mvtest_tmm;
+
+select * from mvtest_tvmm;
+
+select * from mvtest_tvvm;
+
+select * from mvtest_tmm;
+
+select * from mvtest_tvmm;
+
+select * from mvtest_tvvm;
+
+refresh materialized view mvtest_tmm;
+
+refresh materialized view concurrently mvtest_tvmm;
+
+refresh materialized view mvtest_tvmm;
+
+refresh materialized view mvtest_tvvm;
+
+select * from mvtest_tmm;
+
+select * from mvtest_tvmm;
+
+select * from mvtest_tvvm;
+
+select * from mvtest_tmm;
+
+select * from mvtest_tvmm;
+
+select * from mvtest_tvvm;
+
+drop MATERIALIZED VIEW if exists "no_such_mv";
+
+refresh materialized view concurrently mvtest_tvmm;

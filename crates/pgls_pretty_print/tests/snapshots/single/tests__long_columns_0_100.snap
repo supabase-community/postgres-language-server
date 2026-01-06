@@ -1,0 +1,6 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/single/long_columns_0.sql
+snapshot_kind: text
+---
+select customer_id, customer_name, customer_email, customer_phone from customer_table;

@@ -1,0 +1,1 @@
+CREATE FOREIGN TABLE foreign_users (id integer) SERVER myserver;

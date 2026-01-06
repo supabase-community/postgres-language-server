@@ -451,6 +451,10 @@ impl Visit for PrintAdvices<'_, '_> {
         diff::print_diff(self.0, diff)
     }
 
+    fn record_diff_with_offset(&mut self, diff: &TextEdit, line_offset: u32) -> io::Result<()> {
+        diff::print_diff_with_offset(self.0, diff, line_offset)
+    }
+
     fn record_backtrace(
         &mut self,
         title: &dyn fmt::Display,
@@ -584,6 +588,11 @@ impl Visit for CountAdvices {
     }
 
     fn record_diff(&mut self, _: &TextEdit) -> io::Result<()> {
+        self.0 += 1;
+        Ok(())
+    }
+
+    fn record_diff_with_offset(&mut self, _: &TextEdit, _: u32) -> io::Result<()> {
         self.0 += 1;
         Ok(())
     }

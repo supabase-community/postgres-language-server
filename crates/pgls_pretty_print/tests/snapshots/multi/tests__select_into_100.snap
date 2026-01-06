@@ -1,0 +1,156 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/select_into.sql
+snapshot_kind: text
+---
+select * into sitmp1 from onek where onek.unique1 < 2;
+
+drop TABLE "sitmp1";
+
+select * into sitmp1 from onek2 where onek2.unique1 < 2;
+
+drop TABLE "sitmp1";
+
+create schema "selinto_schema";
+
+create user regress_selinto_user;
+
+alter default PRIVILEGES
+for role regress_selinto_user
+revoke INSERT on TABLES from regress_selinto_user;
+
+grant all on schema selinto_schema to PUBLIC;
+
+set session authorization regress_selinto_user;
+
+create table selinto_schema.tbl_withdata1 (a) as select generate_series(1, 3);
+
+insert into selinto_schema.tbl_withdata1 values (4);
+
+create table selinto_schema.tbl_withdata2 (a) as select generate_series(1, 3);
+
+create table selinto_schema.tbl_nodata1 (a) as select generate_series(1, 3) with no data;
+
+create table selinto_schema.tbl_nodata2 (a) as select generate_series(1, 3) with no data;
+
+prepare data_sel as select generate_series(1, 3);;
+
+create table selinto_schema.tbl_withdata3 (a) as execute data_sel;
+
+create table selinto_schema.tbl_withdata4 (a) as execute data_sel;
+
+create table selinto_schema.tbl_nodata3 (a) as execute data_sel with no data;
+
+create table selinto_schema.tbl_nodata4 (a) as execute data_sel with no data;
+
+reset session_authorization;
+
+alter default PRIVILEGES
+for role regress_selinto_user
+grant INSERT on TABLES to regress_selinto_user;
+
+set session authorization regress_selinto_user;
+
+reset session_authorization;
+
+deallocate data_sel;
+
+drop SCHEMA selinto_schema cascade;
+
+drop role regress_selinto_user;
+
+create table ctas_base (
+  i INT,
+  j INT
+);
+
+insert into ctas_base values (1, 2);
+
+create table ctas_nodata (ii, jj, kk) as select i, j from ctas_base;
+
+create table ctas_nodata (ii, jj, kk) as select i, j from ctas_base with no data;
+
+create table ctas_nodata (ii, jj) as select i, j from ctas_base;
+
+create table ctas_nodata_2 (ii, jj) as select i, j from ctas_base with no data;
+
+create table ctas_nodata_3 (ii) as select i, j from ctas_base;
+
+create table ctas_nodata_4 (ii) as select i, j from ctas_base with no data;
+
+select * from ctas_nodata;
+
+select * from ctas_nodata_2;
+
+select * from ctas_nodata_3;
+
+select * from ctas_nodata_4;
+
+drop TABLE "ctas_base";
+
+drop TABLE "ctas_nodata";
+
+drop TABLE "ctas_nodata_2";
+
+drop TABLE "ctas_nodata_3";
+
+drop TABLE "ctas_nodata_4";
+
+create function make_table()
+returns VOID
+as '
+  CREATE TABLE created_table AS SELECT * FROM int8_tbl;
+'
+language "sql";
+
+select make_table();
+
+select * from created_table;
+
+do
+$$
+BEGIN
+	EXECUTE 'EXPLAIN ANALYZE SELECT * INTO TABLE easi FROM int8_tbl';
+	EXECUTE 'EXPLAIN ANALYZE CREATE TABLE easi2 AS SELECT * FROM int8_tbl WITH NO DATA';
+END$$;
+
+drop TABLE "created_table";
+
+drop TABLE "easi", "easi2";
+
+declare "foo" cursor for select 1 into int4_tbl;;
+
+copy (select 1 into frak union select 2) to 'blob';
+
+select * from (select 1 into f) as bar;
+
+create view foo
+as select 1 into int4_tbl;
+
+insert into int4_tbl select 1 into f;
+
+create table ctas_ine_tbl as select 1;
+
+create table ctas_ine_tbl as select 1 / 0;
+
+create table if not exists ctas_ine_tbl as select 1 / 0;
+
+create table ctas_ine_tbl as select 1 / 0 with no data;
+
+create table if not exists ctas_ine_tbl as select 1 / 0 with no data;
+
+create table ctas_ine_tbl as select 1 / 0;
+
+create table if not exists ctas_ine_tbl as select 1 / 0;
+
+create table ctas_ine_tbl as select 1 / 0 with no data;
+
+create table if not exists ctas_ine_tbl as select 1 / 0 with no data;
+
+prepare ctas_ine_query as select 1 / 0;;
+
+create table ctas_ine_tbl as execute ctas_ine_query;
+
+create table if not exists ctas_ine_tbl as execute ctas_ine_query;
+
+drop TABLE "ctas_ine_tbl";

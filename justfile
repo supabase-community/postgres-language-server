@@ -158,25 +158,71 @@ quick-modify:
 show-logs:
     tail -f $(ls $PGLS_LOG_PATH/server.log.* | sort -t- -k2,2 -k3,3 -k4,4 | tail -n 1)
 
-# Run a claude agent with the given agentic prompt file.
+# Run a codex agent with the given agentic prompt file.
 # Commented out by default to avoid accidental usage that may incur costs.
-# agentic name:
-#     unset ANTHROPIC_API_KEY && claude --dangerously-skip-permissions -p "please read agentic/{{name}}.md and follow the instructions closely"
-#
-# agentic-loop name:
-#     #!/usr/bin/env bash
-#     echo "Starting agentic loop until error..."
-#     iteration=1
-#     while true; do
-#         echo "$(date): Starting iteration $iteration..."
-#         if just agentic {{name}}; then
-#             echo "$(date): Iteration $iteration completed successfully!"
-#             iteration=$((iteration + 1))
-#         else
-#             echo "$(date): Iteration $iteration failed - stopping loop"
-#             break
-#         fi
-#     done
+agentic name:
+    codex exec --yolo "please read agentic/{{name}}.md and follow the instructions closely while continueing the described task. Make sure to understand recent Session History, Implementation Learnings and read all instructions. Continue until the task is complete."
+
+# === Pretty Printer Development ===
+
+# Run pretty printer agentic task (Stop hook auto-loops until tests pass)
+pp-agentic:
+    claude --dangerously-skip-permissions "Read agentic/pretty_printer.md and agentic/session_log.md. \
+    \
+    Your goal: Complete the pretty printer by fixing node implementations until ALL tests pass. \
+    \
+    Workflow: \
+    1. Run 'just pp-status' to see current state \
+    2. Run 'just pp-failing' to find failing tests \
+    3. Pick a failing test and debug with 'just pp-debug <name>' \
+    4. Fix the emit_* function in crates/pgls_pretty_print/src/nodes/*.rs \
+    5. Verify with 'just pp-test <pattern>' \
+    6. Accept valid snapshots with 'just pp-review' \
+    7. Repeat \
+    \
+    Follow the Implementation Learnings in pretty_printer.md. Update session_log.md with your progress."
+
+# Show pretty printer implementation status
+pp-status:
+    @./scripts/pp-status.sh
+
+# Test with pattern filter (e.g., just pp-test select_stmt)
+pp-test pattern:
+    cargo test -p pgls_pretty_print -- {{pattern}} --show-output
+
+# List failing tests
+pp-failing:
+    @cargo test -p pgls_pretty_print 2>&1 | grep "FAILED" | head -30
+
+# Debug a specific test with full output
+pp-debug name:
+    cargo test -p pgls_pretty_print {{name}} -- --show-output --nocapture
+
+# Review pending snapshots
+pp-review:
+    cargo insta review -p pgls_pretty_print
+
+# Accept all pending snapshots
+pp-accept:
+    cargo insta accept -p pgls_pretty_print
+
+# Analyze failure patterns
+pp-analyze:
+    @echo "=== Failure Analysis ===" && \
+    cargo test -p pgls_pretty_print 2>&1 | grep -oE "test_(single|multi)__[a-z0-9_]+" | sort | uniq -c | sort -rn | head -20
+
+# Run only single-statement tests (faster iteration)
+pp-single:
+    cargo test -p pgls_pretty_print test_single
+
+# Run only multi-statement tests
+pp-multi:
+    cargo test -p pgls_pretty_print test_multi
+
+# Short aliases (only for commands without required args)
+pps: pp-status
+ppf: pp-failing
+ppr: pp-review
 
 # ============================================================================
 # WASM Build

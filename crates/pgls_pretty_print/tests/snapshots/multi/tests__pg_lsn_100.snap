@@ -1,0 +1,85 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/pg_lsn.sql
+snapshot_kind: text
+---
+create table pg_lsn_tbl (f1 PG_LSN);
+
+insert into pg_lsn_tbl values ('0/0');
+
+insert into pg_lsn_tbl values ('FFFFFFFF/FFFFFFFF');
+
+insert into pg_lsn_tbl values ('G/0');
+
+insert into pg_lsn_tbl values ('-1/0');
+
+insert into pg_lsn_tbl values (' 0/12345678');
+
+insert into pg_lsn_tbl values ('ABCD/');
+
+insert into pg_lsn_tbl values ('/ABCD');
+
+select pg_input_is_valid('16AE7F7', 'pg_lsn');
+
+select * from pg_input_error_info('16AE7F7', 'pg_lsn');
+
+select MIN(f1), MAX(f1) from pg_lsn_tbl;
+
+drop TABLE "pg_lsn_tbl";
+
+select '0/16AE7F8' = cast('0/16AE7F8' as PG_LSN);
+
+select cast('0/16AE7F8' as PG_LSN) <> '0/16AE7F7';
+
+select '0/16AE7F7' < cast('0/16AE7F8' as PG_LSN);
+
+select '0/16AE7F8' > cast('0/16AE7F7' as PG_LSN);
+
+select cast('0/16AE7F7' as PG_LSN) - cast('0/16AE7F8' as PG_LSN);
+
+select cast('0/16AE7F8' as PG_LSN) - cast('0/16AE7F7' as PG_LSN);
+
+select cast('0/16AE7F7' as PG_LSN) + cast(16 as NUMERIC);
+
+select cast(16 as NUMERIC) + cast('0/16AE7F7' as PG_LSN);
+
+select cast('0/16AE7F7' as PG_LSN) - cast(16 as NUMERIC);
+
+select cast('FFFFFFFF/FFFFFFFE' as PG_LSN) + cast(1 as NUMERIC);
+
+select cast('FFFFFFFF/FFFFFFFE' as PG_LSN) + cast(2 as NUMERIC);
+
+select cast('0/1' as PG_LSN) - cast(1 as NUMERIC);
+
+select cast('0/1' as PG_LSN) - cast(2 as NUMERIC);
+
+select cast('0/0' as PG_LSN) + (cast('FFFFFFFF/FFFFFFFF' as PG_LSN) - cast('0/0' as PG_LSN));
+
+select
+  cast('FFFFFFFF/FFFFFFFF' as PG_LSN) -
+  (cast('FFFFFFFF/FFFFFFFF' as PG_LSN) -
+  cast('0/0' as PG_LSN));
+
+select cast('0/16AE7F7' as PG_LSN) + cast('NaN' as NUMERIC);
+
+select cast('0/16AE7F7' as PG_LSN) - cast('NaN' as NUMERIC);
+
+select distinct
+  cast(i || '/' || j as PG_LSN) as f
+from
+  generate_series(1, 10) as i,
+  generate_series(1, 10) as j,
+  generate_series(1, 5) as k
+where
+  i <= 10 and j > 0 and j <= 10
+order by f;
+
+select distinct
+  cast(i || '/' || j as PG_LSN) as f
+from
+  generate_series(1, 10) as i,
+  generate_series(1, 10) as j,
+  generate_series(1, 5) as k
+where
+  i <= 10 and j > 0 and j <= 10
+order by f;

@@ -1,0 +1,231 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/tsdicts.sql
+snapshot_kind: text
+---
+create TEXT SEARCH DICTIONARY ispell (
+  template = ispell,
+  dictfile = ispell_sample,
+  afffile = ispell_sample
+);
+
+select ts_lexize('ispell', 'skies');
+
+select ts_lexize('ispell', 'bookings');
+
+select ts_lexize('ispell', 'booking');
+
+select ts_lexize('ispell', 'foot');
+
+select ts_lexize('ispell', 'foots');
+
+select ts_lexize('ispell', 'rebookings');
+
+select ts_lexize('ispell', 'rebooking');
+
+select ts_lexize('ispell', 'rebook');
+
+select ts_lexize('ispell', 'unbookings');
+
+select ts_lexize('ispell', 'unbooking');
+
+select ts_lexize('ispell', 'unbook');
+
+select ts_lexize('ispell', 'footklubber');
+
+select ts_lexize('ispell', 'footballklubber');
+
+select ts_lexize('ispell', 'ballyklubber');
+
+select ts_lexize('ispell', 'footballyklubber');
+
+create TEXT SEARCH DICTIONARY hunspell (
+  template = ispell,
+  dictfile = ispell_sample,
+  afffile = hunspell_sample
+);
+
+select ts_lexize('hunspell', 'skies');
+
+select ts_lexize('hunspell', 'bookings');
+
+select ts_lexize('hunspell', 'booking');
+
+select ts_lexize('hunspell', 'foot');
+
+select ts_lexize('hunspell', 'foots');
+
+select ts_lexize('hunspell', 'rebookings');
+
+select ts_lexize('hunspell', 'rebooking');
+
+select ts_lexize('hunspell', 'rebook');
+
+select ts_lexize('hunspell', 'unbookings');
+
+select ts_lexize('hunspell', 'unbooking');
+
+select ts_lexize('hunspell', 'unbook');
+
+select ts_lexize('hunspell', 'footklubber');
+
+select ts_lexize('hunspell', 'footballklubber');
+
+select ts_lexize('hunspell', 'ballyklubber');
+
+select ts_lexize('hunspell', 'footballyklubber');
+
+create TEXT SEARCH DICTIONARY hunspell_long (
+  template = ispell,
+  dictfile = hunspell_sample_long,
+  afffile = hunspell_sample_long
+);
+
+select ts_lexize('hunspell_long', 'skies');
+
+select ts_lexize('hunspell_long', 'bookings');
+
+select ts_lexize('hunspell_long', 'booking');
+
+select ts_lexize('hunspell_long', 'foot');
+
+select ts_lexize('hunspell_long', 'foots');
+
+select ts_lexize('hunspell_long', 'rebookings');
+
+select ts_lexize('hunspell_long', 'rebooking');
+
+select ts_lexize('hunspell_long', 'rebook');
+
+select ts_lexize('hunspell_long', 'unbookings');
+
+select ts_lexize('hunspell_long', 'unbooking');
+
+select ts_lexize('hunspell_long', 'unbook');
+
+select ts_lexize('hunspell_long', 'booked');
+
+select ts_lexize('hunspell_long', 'footklubber');
+
+select ts_lexize('hunspell_long', 'footballklubber');
+
+select ts_lexize('hunspell_long', 'ballyklubber');
+
+select ts_lexize('hunspell_long', 'ballsklubber');
+
+select ts_lexize('hunspell_long', 'footballyklubber');
+
+select ts_lexize('hunspell_long', 'ex-machina');
+
+create TEXT SEARCH DICTIONARY hunspell_num (
+  template = ispell,
+  dictfile = hunspell_sample_num,
+  afffile = hunspell_sample_num
+);
+
+select ts_lexize('hunspell_num', 'skies');
+
+select ts_lexize('hunspell_num', 'sk');
+
+select ts_lexize('hunspell_num', 'bookings');
+
+select ts_lexize('hunspell_num', 'booking');
+
+select ts_lexize('hunspell_num', 'foot');
+
+select ts_lexize('hunspell_num', 'foots');
+
+select ts_lexize('hunspell_num', 'rebookings');
+
+select ts_lexize('hunspell_num', 'rebooking');
+
+select ts_lexize('hunspell_num', 'rebook');
+
+select ts_lexize('hunspell_num', 'unbookings');
+
+select ts_lexize('hunspell_num', 'unbooking');
+
+select ts_lexize('hunspell_num', 'unbook');
+
+select ts_lexize('hunspell_num', 'booked');
+
+select ts_lexize('hunspell_num', 'footklubber');
+
+select ts_lexize('hunspell_num', 'footballklubber');
+
+select ts_lexize('hunspell_num', 'ballyklubber');
+
+select ts_lexize('hunspell_num', 'footballyklubber');
+
+create TEXT SEARCH DICTIONARY hunspell_err (
+  template = ispell,
+  dictfile = ispell_sample,
+  afffile = hunspell_sample_long
+);
+
+create TEXT SEARCH DICTIONARY hunspell_err (
+  template = ispell,
+  dictfile = ispell_sample,
+  afffile = hunspell_sample_num
+);
+
+create TEXT SEARCH DICTIONARY hunspell_invalid_1 (
+  template = ispell,
+  dictfile = hunspell_sample_long,
+  afffile = ispell_sample
+);
+
+create TEXT SEARCH DICTIONARY hunspell_invalid_2 (
+  template = ispell,
+  dictfile = hunspell_sample_long,
+  afffile = hunspell_sample_num
+);
+
+create TEXT SEARCH DICTIONARY hunspell_invalid_3 (
+  template = ispell,
+  dictfile = hunspell_sample_num,
+  afffile = ispell_sample
+);
+
+create TEXT SEARCH DICTIONARY hunspell_err (
+  template = ispell,
+  dictfile = hunspell_sample_num,
+  afffile = hunspell_sample_long
+);
+
+create TEXT SEARCH DICTIONARY synonym (
+  template = synonym,
+  synonyms = synonym_sample
+);
+
+select ts_lexize('synonym', 'PoStGrEs');
+
+select ts_lexize('synonym', 'Gogle');
+
+select ts_lexize('synonym', 'indices');
+
+select dictinitoption from pg_ts_dict where dictname = 'synonym';
+
+alter TEXT SEARCH DICTIONARY synonym (casesensitive = 1);
+
+select ts_lexize('synonym', 'PoStGrEs');
+
+select dictinitoption from pg_ts_dict where dictname = 'synonym';
+
+alter TEXT SEARCH DICTIONARY synonym (casesensitive = 2);
+
+alter TEXT SEARCH DICTIONARY synonym (casesensitive = off);
+
+select ts_lexize('synonym', 'PoStGrEs');
+
+select dictinitoption from pg_ts_dict where dictname = 'synonym';
+
+create TEXT SEARCH DICTIONARY thesaurus (
+  template = thesaurus,
+  dictfile = thesaurus_sample,
+  dictionary = english_stem
+);
+
+select ts_lexize('thesaurus', 'one');
+
+create TEXT SEARCH CONFIGURATION ispell_tst (copy = english);

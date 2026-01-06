@@ -1,0 +1,1 @@
+ALTER DATABASE mydb SET search_path TO myschema;

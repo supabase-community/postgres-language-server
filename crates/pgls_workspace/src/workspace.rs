@@ -19,6 +19,7 @@ use crate::{
         diagnostics::{
             PullDatabaseDiagnosticsParams, PullDiagnosticsResult, PullFileDiagnosticsParams,
         },
+        format::{PullFileFormattingParams, PullFormattingResult},
         on_hover::{OnHoverParams, OnHoverResult},
     },
 };
@@ -104,6 +105,12 @@ pub trait Workspace: Send + Sync + RefUnwindSafe {
         &self,
         params: PullFileDiagnosticsParams,
     ) -> Result<PullDiagnosticsResult, WorkspaceError>;
+
+    /// Formats a file and returns per-statement results
+    fn pull_file_formatting(
+        &self,
+        params: PullFileFormattingParams,
+    ) -> Result<PullFormattingResult, WorkspaceError>;
 
     /// Retrieves the list of diagnostics associated to a database schema
     fn pull_db_diagnostics(
@@ -238,6 +245,13 @@ impl<'app, W: Workspace + ?Sized> FileGuard<'app, W> {
                 only,
                 skip,
             })
+    }
+
+    pub fn pull_file_formatting(
+        &self,
+        params: crate::features::format::PullFileFormattingParams,
+    ) -> Result<crate::features::format::PullFormattingResult, WorkspaceError> {
+        self.workspace.pull_file_formatting(params)
     }
 }
 

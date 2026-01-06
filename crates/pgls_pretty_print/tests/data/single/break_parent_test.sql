@@ -1,0 +1,1 @@
+SELECT very_long_function_name(short_arg, other_arg) FROM test_table

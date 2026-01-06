@@ -1,0 +1,353 @@
+use pgls_query::protobuf::{CreateFunctionStmt, FunctionParameter, FunctionParameterMode};
+
+use super::node_list::emit_dot_separated_list;
+use crate::{
+    TokenKind,
+    emitter::{EventEmitter, GroupKind, LineType},
+};
+
+pub(super) fn emit_create_function_stmt(e: &mut EventEmitter, n: &CreateFunctionStmt) {
+    e.group_start(GroupKind::CreateFunctionStmt);
+
+    // Inner group for signature (CREATE [OR REPLACE] FUNCTION name(params))
+    // This allows the signature to fit on one line while RETURNS/options break
+    e.group_start(GroupKind::CreateFunctionStmt);
+
+    e.token(TokenKind::CREATE_KW);
+    e.space();
+
+    if n.replace {
+        e.token(TokenKind::OR_KW);
+        e.space();
+        e.token(TokenKind::REPLACE_KW);
+        e.space();
+    }
+
+    if n.is_procedure {
+        e.token(TokenKind::PROCEDURE_KW);
+    } else {
+        e.token(TokenKind::FUNCTION_KW);
+    }
+
+    e.line(LineType::SoftOrSpace);
+
+    // Function name (qualified name)
+    emit_dot_separated_list(e, &n.funcname);
+
+    let mut regular_params: Vec<&FunctionParameter> = Vec::new();
+    let mut table_params: Vec<&FunctionParameter> = Vec::new();
+
+    for param in &n.parameters {
+        if let Some(pgls_query::NodeEnum::FunctionParameter(fp)) = &param.node {
+            if fp.mode() == FunctionParameterMode::FuncParamTable {
+                table_params.push(fp);
+            } else {
+                regular_params.push(fp);
+            }
+        }
+    }
+
+    // Parameters
+    e.token(TokenKind::L_PAREN);
+    if !regular_params.is_empty() {
+        e.indent_start();
+        e.line(LineType::Soft);
+        emit_function_parameter_list(e, &regular_params);
+        e.indent_end();
+        e.line(LineType::Soft);
+    }
+    e.token(TokenKind::R_PAREN);
+
+    e.group_end(); // End signature group
+
+    // Return type (only for functions, not procedures)
+    if !table_params.is_empty() {
+        e.line(LineType::Hard);
+        e.token(TokenKind::RETURNS_KW);
+        e.space();
+        e.token(TokenKind::TABLE_KW);
+        e.space();
+        e.token(TokenKind::L_PAREN);
+        e.indent_start();
+        e.line(LineType::Soft);
+        emit_function_parameter_list(e, &table_params);
+        e.indent_end();
+        e.line(LineType::Soft);
+        e.token(TokenKind::R_PAREN);
+    } else if !n.is_procedure {
+        if let Some(ref return_type) = n.return_type {
+            e.line(LineType::Hard);
+            e.token(TokenKind::RETURNS_KW);
+            e.space();
+            super::emit_type_name(e, return_type);
+        }
+    }
+
+    // Options
+    for option in &n.options {
+        if let Some(pgls_query::NodeEnum::DefElem(def_elem)) = &option.node {
+            e.line(LineType::Hard);
+            format_function_option(e, def_elem);
+        }
+    }
+
+    // SQL body (if present, modern syntax)
+    if let Some(ref sql_body) = n.sql_body {
+        match sql_body.node.as_ref() {
+            Some(pgls_query::NodeEnum::ReturnStmt(_)) => {
+                e.space();
+                super::emit_node(sql_body, e);
+            }
+            _ => {
+                e.space();
+                e.token(TokenKind::BEGIN_KW);
+                e.space();
+                e.token(TokenKind::ATOMIC_KW);
+                e.indent_start();
+                e.line(LineType::Hard);
+                super::emit_node(sql_body, e);
+                e.indent_end();
+                e.line(LineType::Hard);
+                e.token(TokenKind::END_KW);
+            }
+        }
+    }
+
+    e.token(TokenKind::SEMICOLON);
+
+    e.group_end();
+}
+
+pub(super) fn emit_function_parameter(e: &mut EventEmitter, fp: &FunctionParameter) {
+    // Parameter mode (IN, OUT, INOUT, VARIADIC)
+    match fp.mode() {
+        FunctionParameterMode::FuncParamIn => {
+            e.token(TokenKind::IN_KW);
+            e.space();
+        }
+        FunctionParameterMode::FuncParamOut => {
+            e.token(TokenKind::OUT_KW);
+            e.space();
+        }
+        FunctionParameterMode::FuncParamInout => {
+            e.token(TokenKind::INOUT_KW);
+            e.space();
+        }
+        FunctionParameterMode::FuncParamVariadic => {
+            e.token(TokenKind::VARIADIC_KW);
+            e.space();
+        }
+        FunctionParameterMode::FuncParamTable => {
+            // TABLE mode is not emitted as a prefix
+        }
+        FunctionParameterMode::FuncParamDefault => {
+            // Default mode doesn't emit anything
+        }
+        FunctionParameterMode::Undefined => {}
+    }
+
+    // Parameter name
+    if !fp.name.is_empty() {
+        super::emit_identifier_maybe_quoted(e, &fp.name);
+        e.space();
+    }
+
+    // Parameter type
+    if let Some(ref arg_type) = fp.arg_type {
+        super::emit_type_name(e, arg_type);
+    }
+
+    // Default value
+    if let Some(ref defexpr) = fp.defexpr {
+        e.space();
+        e.token(TokenKind::DEFAULT_KW);
+        e.space();
+        super::emit_node(defexpr, e);
+    }
+}
+
+fn emit_function_parameter_list(e: &mut EventEmitter, params: &[&FunctionParameter]) {
+    for (index, param) in params.iter().enumerate() {
+        if index > 0 {
+            e.token(TokenKind::COMMA);
+            e.line(LineType::SoftOrSpace);
+        }
+        emit_function_parameter(e, param);
+    }
+}
+
+pub(super) fn format_function_option(e: &mut EventEmitter, d: &pgls_query::protobuf::DefElem) {
+    let defname_lower = d.defname.to_lowercase();
+
+    match defname_lower.as_str() {
+        "as" => {
+            e.token(TokenKind::AS_KW);
+            e.space();
+            if let Some(ref arg) = d.arg {
+                // AS can have a list (for C functions with library and symbol)
+                // or a single string (for SQL/plpgsql functions)
+                if let Some(pgls_query::NodeEnum::List(list)) = &arg.node {
+                    if list.items.len() == 1 {
+                        // Single item: either library name (C) or SQL body (SQL/plpgsql)
+                        if let Some(pgls_query::NodeEnum::String(s)) = &list.items[0].node {
+                            super::emit_string_literal(e, s);
+                        } else {
+                            super::emit_node(&list.items[0], e);
+                        }
+                    } else if list.items.len() == 2 {
+                        // Two items: library and symbol for C functions
+                        if let Some(pgls_query::NodeEnum::String(s)) = &list.items[0].node {
+                            super::emit_string_literal(e, s);
+                        } else {
+                            super::emit_node(&list.items[0], e);
+                        }
+                        e.token(TokenKind::COMMA);
+                        e.space();
+                        if let Some(pgls_query::NodeEnum::String(s)) = &list.items[1].node {
+                            super::emit_string_literal(e, s);
+                        } else {
+                            super::emit_node(&list.items[1], e);
+                        }
+                    } else {
+                        // Fallback: emit the list as-is
+                        super::emit_node(arg, e);
+                    }
+                } else {
+                    super::emit_node(arg, e);
+                }
+            }
+        }
+        "language" => {
+            e.token(TokenKind::LANGUAGE_KW);
+            e.space();
+            if let Some(ref arg) = d.arg {
+                if let Some(pgls_query::NodeEnum::String(s)) = &arg.node {
+                    super::emit_identifier(e, &s.sval);
+                } else {
+                    super::emit_node(arg, e);
+                }
+            }
+        }
+        "volatility" => {
+            if let Some(ref arg) = d.arg {
+                if let Some(pgls_query::NodeEnum::String(s)) = &arg.node {
+                    let volatility = s.sval.to_uppercase();
+                    match volatility.as_str() {
+                        "IMMUTABLE" => e.token(TokenKind::IMMUTABLE_KW),
+                        "STABLE" => e.token(TokenKind::STABLE_KW),
+                        "VOLATILE" => e.token(TokenKind::VOLATILE_KW),
+                        _ => e.token(TokenKind::IDENT(volatility)),
+                    }
+                } else {
+                    super::emit_node(arg, e);
+                }
+            }
+        }
+        "strict" => {
+            if let Some(ref arg) = d.arg {
+                if let Some(pgls_query::NodeEnum::Boolean(b)) = &arg.node {
+                    if b.boolval {
+                        e.token(TokenKind::IDENT("STRICT".to_string()));
+                    } else {
+                        e.token(TokenKind::IDENT("CALLED ON NULL INPUT".to_string()));
+                    }
+                } else {
+                    e.token(TokenKind::IDENT("STRICT".to_string()));
+                }
+            } else {
+                e.token(TokenKind::IDENT("STRICT".to_string()));
+            }
+        }
+        "security" => {
+            e.token(TokenKind::SECURITY_KW);
+            e.space();
+            if let Some(ref arg) = d.arg {
+                if let Some(pgls_query::NodeEnum::Boolean(b)) = &arg.node {
+                    if b.boolval {
+                        e.token(TokenKind::IDENT("DEFINER".to_string()));
+                    } else {
+                        e.token(TokenKind::IDENT("INVOKER".to_string()));
+                    }
+                } else {
+                    super::emit_node(arg, e);
+                }
+            }
+        }
+        "leakproof" => {
+            if let Some(ref arg) = d.arg {
+                if let Some(pgls_query::NodeEnum::Boolean(b)) = &arg.node {
+                    if b.boolval {
+                        e.token(TokenKind::LEAKPROOF_KW);
+                    } else {
+                        e.token(TokenKind::IDENT("NOT LEAKPROOF".to_string()));
+                    }
+                } else {
+                    e.token(TokenKind::LEAKPROOF_KW);
+                }
+            } else {
+                e.token(TokenKind::LEAKPROOF_KW);
+            }
+        }
+        "parallel" => {
+            e.token(TokenKind::PARALLEL_KW);
+            e.space();
+            if let Some(ref arg) = d.arg {
+                if let Some(pgls_query::NodeEnum::String(s)) = &arg.node {
+                    let parallel = s.sval.to_uppercase();
+                    e.token(TokenKind::IDENT(parallel));
+                } else {
+                    super::emit_node(arg, e);
+                }
+            }
+        }
+        "cost" => {
+            e.token(TokenKind::COST_KW);
+            e.space();
+            if let Some(ref arg) = d.arg {
+                super::emit_node(arg, e);
+            }
+        }
+        "rows" => {
+            e.token(TokenKind::ROWS_KW);
+            e.space();
+            if let Some(ref arg) = d.arg {
+                super::emit_node(arg, e);
+            }
+        }
+        "support" => {
+            e.token(TokenKind::IDENT("SUPPORT".to_string()));
+            e.space();
+            if let Some(ref arg) = d.arg {
+                super::emit_node(arg, e);
+            }
+        }
+        "set" => {
+            // The arg is a VariableSetStmt which will emit SET/RESET itself
+            if let Some(ref arg) = d.arg {
+                if let Some(pgls_query::NodeEnum::VariableSetStmt(setstmt)) = &arg.node {
+                    super::emit_variable_set_stmt_no_semicolon(e, setstmt);
+                } else {
+                    super::emit_node(arg, e);
+                }
+            }
+        }
+        "window" => {
+            if let Some(ref arg) = d.arg {
+                if let Some(pgls_query::NodeEnum::Boolean(b)) = &arg.node {
+                    if b.boolval {
+                        e.token(TokenKind::WINDOW_KW);
+                    }
+                }
+            }
+        }
+        _ => {
+            // Default: emit option name and value
+            let defname_upper = d.defname.to_uppercase();
+            e.token(TokenKind::IDENT(defname_upper));
+            if let Some(ref arg) = d.arg {
+                e.space();
+                super::emit_node(arg, e);
+            }
+        }
+    }
+}

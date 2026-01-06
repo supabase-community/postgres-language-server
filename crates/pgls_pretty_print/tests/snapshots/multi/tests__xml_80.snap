@@ -1,0 +1,1364 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/xml.sql
+snapshot_kind: text
+---
+create table xmltest (
+  id INT,
+  data XML
+);
+
+insert into xmltest values (1, '<value>one</value>');
+
+insert into xmltest values (2, '<value>two</value>');
+
+insert into xmltest values (3, '<wrong');
+
+select * from xmltest;
+
+select pg_input_is_valid('<value>one</value>', 'xml');
+
+select pg_input_is_valid('<value>one</', 'xml');
+
+select message from pg_input_error_info('<value>one</', 'xml');
+
+select pg_input_is_valid('<?xml version="1.0" standalone="y"?><foo/>', 'xml');
+
+select
+  message
+from
+  pg_input_error_info(
+    '<?xml version="1.0" standalone="y"?><foo/>',
+    'xml'
+  );
+
+select xmlcomment('test');
+
+select xmlcomment('-test');
+
+select xmlcomment('test-');
+
+select xmlcomment('--test');
+
+select xmlcomment('te st');
+
+select
+  XMLCONCAT(xmlcomment('hello'),
+  XMLELEMENT(NAME qux, 'foo'),
+  xmlcomment('world'));
+
+select XMLCONCAT('hello', 'you');
+
+select XMLCONCAT(1, 2);
+
+select XMLCONCAT('bad', '<syntax');
+
+select XMLCONCAT('<foo/>', null, '<?xml version="1.1" standalone="no"?><bar/>');
+
+select
+  XMLCONCAT('<?xml version="1.1"?><foo/>',
+  null,
+  '<?xml version="1.1" standalone="no"?><bar/>');
+
+select XMLCONCAT(null);
+
+select XMLCONCAT(null, null);
+
+select
+  XMLELEMENT(NAME element, XMLATTRIBUTES(1 as one,
+  'deuce' as two), 'content');
+
+select XMLELEMENT(NAME element, XMLATTRIBUTES('unnamed and wrong'));
+
+select XMLELEMENT(NAME element, XMLELEMENT(NAME nested, 'stuff'));
+
+select XMLELEMENT(NAME employee, XMLFOREST(name, age, salary as pay)) from emp;
+
+select XMLELEMENT(NAME duplicate, XMLATTRIBUTES(1 as a, 2 as b, 3 as a));
+
+select XMLELEMENT(NAME num, 37);
+
+select XMLELEMENT(NAME foo, cast('bar' as TEXT));
+
+select XMLELEMENT(NAME foo, cast('bar' as XML));
+
+select XMLELEMENT(NAME foo, cast('b<a/>r' as TEXT));
+
+select XMLELEMENT(NAME foo, cast('b<a/>r' as XML));
+
+select XMLELEMENT(NAME foo, array[1, 2, 3]);
+
+set xmlbinary = base64;
+
+select XMLELEMENT(NAME foo, cast('bar' as BYTEA));
+
+set xmlbinary = hex;
+
+select XMLELEMENT(NAME foo, cast('bar' as BYTEA));
+
+select XMLELEMENT(NAME foo, XMLATTRIBUTES(true as bar));
+
+select
+  XMLELEMENT(NAME foo, XMLATTRIBUTES(cast('2009-04-09 00:24:37' as TIMESTAMP)
+  as bar));
+
+select
+  XMLELEMENT(NAME foo, XMLATTRIBUTES(cast('infinity' as TIMESTAMP) as bar));
+
+select
+  XMLELEMENT(NAME foo, XMLATTRIBUTES('<>&"''' as funny,
+  cast('b<a/>r' as XML) as funnier));
+
+select XMLPARSE(CONTENT '');
+
+select XMLPARSE(CONTENT '  ');
+
+select XMLPARSE(CONTENT 'abc');
+
+select XMLPARSE(CONTENT '<abc>x</abc>');
+
+select XMLPARSE(CONTENT '<invalidentity>&</invalidentity>');
+
+select XMLPARSE(CONTENT '<undefinedentity>&idontexist;</undefinedentity>');
+
+select XMLPARSE(CONTENT '<invalidns xmlns=''&lt;''/>');
+
+select XMLPARSE(CONTENT '<relativens xmlns=''relative''/>');
+
+select XMLPARSE(CONTENT '<twoerrors>&idontexist;</unbalanced>');
+
+select XMLPARSE(CONTENT '<nosuchprefix:tag/>');
+
+select XMLPARSE(DOCUMENT '   ');
+
+select XMLPARSE(DOCUMENT 'abc');
+
+select XMLPARSE(DOCUMENT '<abc>x</abc>');
+
+select XMLPARSE(DOCUMENT '<invalidentity>&</abc>');
+
+select XMLPARSE(DOCUMENT '<undefinedentity>&idontexist;</abc>');
+
+select XMLPARSE(DOCUMENT '<invalidns xmlns=''&lt;''/>');
+
+select XMLPARSE(DOCUMENT '<relativens xmlns=''relative''/>');
+
+select XMLPARSE(DOCUMENT '<twoerrors>&idontexist;</unbalanced>');
+
+select XMLPARSE(DOCUMENT '<nosuchprefix:tag/>');
+
+select XMLPI(NAME foo);
+
+select XMLPI(NAME xml);
+
+select XMLPI(NAME xmlstuff);
+
+select XMLPI(NAME foo, 'bar');
+
+select XMLPI(NAME foo, 'in?>valid');
+
+select XMLPI(NAME foo, null);
+
+select XMLPI(NAME xml, null);
+
+select XMLPI(NAME xmlstuff, null);
+
+select XMLPI(NAME "xml-stylesheet", 'href="mystyle.css" type="text/css"');
+
+select XMLPI(NAME foo, '   bar');
+
+select XMLROOT(cast('<foo/>' as XML), VERSION NO VALUE, STANDALONE NO VALUE);
+
+select XMLROOT(cast('<foo/>' as XML), VERSION '2.0');
+
+select XMLROOT(cast('<foo/>' as XML), VERSION NO VALUE, STANDALONE YES);
+
+select
+  XMLROOT(cast('<?xml version="1.1"?><foo/>'
+  as XML), VERSION NO VALUE, STANDALONE YES);
+
+select
+  XMLROOT(XMLROOT(cast('<foo/>' as XML), VERSION '1.0'), VERSION '1.1', STANDALONE NO);
+
+select
+  XMLROOT('<?xml version="1.1" standalone="yes"?><foo/>', VERSION NO VALUE, STANDALONE NO);
+
+select
+  XMLROOT('<?xml version="1.1" standalone="yes"?><foo/>', VERSION NO VALUE, STANDALONE NO VALUE);
+
+select
+  XMLROOT('<?xml version="1.1" standalone="yes"?><foo/>', VERSION NO VALUE);
+
+select
+  XMLROOT(XMLELEMENT(NAME gazonk, XMLATTRIBUTES('val' as name,
+  1 + 1 as num), XMLELEMENT(NAME qux, 'foo')), VERSION '1.0', STANDALONE YES);
+
+select XMLSERIALIZE(CONTENT data as VARCHAR(20)) from xmltest;
+
+select XMLSERIALIZE(CONTENT 'good' as CHAR(10));
+
+select XMLSERIALIZE(DOCUMENT 'bad' as TEXT);
+
+select
+  XMLSERIALIZE(DOCUMENT '<foo><bar><val x="y">42</val></bar></foo>' as TEXT INDENT);
+
+select
+  XMLSERIALIZE(CONTENT '<foo><bar><val x="y">42</val></bar></foo>' as TEXT INDENT);
+
+select
+  XMLSERIALIZE(DOCUMENT '<foo><bar><val x="y">42</val></bar></foo>' as TEXT);
+
+select
+  XMLSERIALIZE(CONTENT '<foo><bar><val x="y">42</val></bar></foo>' as TEXT);
+
+select
+  XMLSERIALIZE(DOCUMENT '<foo>73</foo><bar><val x="y">42</val></bar>' as TEXT INDENT);
+
+select
+  XMLSERIALIZE(CONTENT '<foo>73</foo><bar><val x="y">42</val></bar>' as TEXT INDENT);
+
+select
+  XMLSERIALIZE(DOCUMENT 'text node<foo>73</foo>text node<bar><val x="y">42</val></bar>' as TEXT INDENT);
+
+select
+  XMLSERIALIZE(CONTENT 'text node<foo>73</foo>text node<bar><val x="y">42</val></bar>' as TEXT INDENT);
+
+select
+  XMLSERIALIZE(DOCUMENT '<foo><bar><val x="y">42</val><val x="y">text node<val>73</val></val></bar></foo>' as TEXT INDENT);
+
+select
+  XMLSERIALIZE(CONTENT '<foo><bar><val x="y">42</val><val x="y">text node<val>73</val></val></bar></foo>' as TEXT INDENT);
+
+select XMLSERIALIZE(DOCUMENT '' as TEXT INDENT);
+
+select XMLSERIALIZE(CONTENT '' as TEXT INDENT);
+
+select XMLSERIALIZE(DOCUMENT '  ' as TEXT INDENT);
+
+select XMLSERIALIZE(CONTENT '  ' as TEXT INDENT);
+
+select XMLSERIALIZE(DOCUMENT null as TEXT INDENT);
+
+select XMLSERIALIZE(CONTENT null as TEXT INDENT);
+
+select
+  XMLSERIALIZE(DOCUMENT '<?xml version="1.0" encoding="UTF-8"?><foo><bar><val>73</val></bar></foo>' as TEXT INDENT);
+
+select
+  XMLSERIALIZE(CONTENT '<?xml version="1.0" encoding="UTF-8"?><foo><bar><val>73</val></bar></foo>' as TEXT INDENT);
+
+select XMLSERIALIZE(DOCUMENT '<!DOCTYPE a><a/>' as TEXT INDENT);
+
+select XMLSERIALIZE(CONTENT '<!DOCTYPE a><a/>' as TEXT INDENT);
+
+select XMLSERIALIZE(DOCUMENT '<foo><bar></bar></foo>' as TEXT INDENT);
+
+select XMLSERIALIZE(CONTENT '<foo><bar></bar></foo>' as TEXT INDENT);
+
+select
+  XMLSERIALIZE(DOCUMENT '<foo><bar><val x="y">42</val></bar></foo>' as TEXT) =
+  XMLSERIALIZE(DOCUMENT '<foo><bar><val x="y">42</val></bar></foo>' as TEXT);
+
+select
+  XMLSERIALIZE(CONTENT '<foo><bar><val x="y">42</val></bar></foo>' as TEXT) =
+  XMLSERIALIZE(CONTENT '<foo><bar><val x="y">42</val></bar></foo>' as TEXT);
+
+select XMLSERIALIZE(DOCUMENT '<foo>   <bar></bar>    </foo>' as TEXT INDENT);
+
+select
+  XMLSERIALIZE(CONTENT 'text node<foo>    <bar></bar>   </foo>' as TEXT INDENT);
+
+select cast('<foo>bar</foo>' as XML) is DOCUMENT;
+
+select cast('<foo>bar</foo><bar>foo</bar>' as XML) is DOCUMENT;
+
+select not cast('<abc/>' as XML) is DOCUMENT;
+
+select not cast('abc' as XML) is DOCUMENT;
+
+select not '<>' is DOCUMENT;
+
+select xmlagg(data) from xmltest;
+
+select xmlagg(data) from xmltest where id > 10;
+
+select XMLELEMENT(NAME employees, xmlagg(XMLELEMENT(NAME name, name))) from emp;
+
+select XMLPI(NAME ":::_xml_abc135.%-&_");
+
+select XMLPI(NAME "123");
+
+prepare foo (XML) as select XMLCONCAT('<foo/>', $1);;
+
+set xmloption = DOCUMENT;
+
+execute foo ('<bar/>');
+
+execute foo ('bad');
+
+select cast('<!DOCTYPE a><a/><b/>' as XML);
+
+set xmloption = CONTENT;
+
+execute foo ('<bar/>');
+
+execute foo ('good');
+
+select
+  cast('<!-- in SQL:2006+ a doc is content too--> <?y z?> <!DOCTYPE a><a/>'
+  as XML);
+
+select cast('<?xml version="1.0"?> <!-- hi--> <!DOCTYPE a><a/>' as XML);
+
+select cast('<!DOCTYPE a><a/>' as XML);
+
+select cast('<!-- hi--> oops <!DOCTYPE a><a/>' as XML);
+
+select cast('<!-- hi--> <oops/> <!DOCTYPE a><a/>' as XML);
+
+select cast('<!DOCTYPE a><a/><b/>' as XML);
+
+create view xmlview1
+as select xmlcomment('test');
+
+create view xmlview2
+as select XMLCONCAT('hello', 'you');
+
+create view xmlview3
+as select
+  XMLELEMENT(NAME element, XMLATTRIBUTES(1 as ":one:",
+  'deuce' as two), 'content&');
+
+create view xmlview4
+as select
+  XMLELEMENT(NAME employee, XMLFOREST(name, age, salary as pay))
+from
+  emp;
+
+create view xmlview5
+as select XMLPARSE(CONTENT '<abc>x</abc>');
+
+create view xmlview6
+as select XMLPI(NAME foo, 'bar');
+
+create view xmlview7
+as select
+  XMLROOT(cast('<foo/>' as XML), VERSION NO VALUE, STANDALONE YES);
+
+create view xmlview8
+as select
+  XMLSERIALIZE(CONTENT 'good' as CHAR(10));
+
+create view xmlview9
+as select
+  XMLSERIALIZE(CONTENT 'good' as TEXT);
+
+create view xmlview10
+as select
+  XMLSERIALIZE(DOCUMENT '<foo><bar>42</bar></foo>' as TEXT INDENT);
+
+create view xmlview11
+as select
+  XMLSERIALIZE(DOCUMENT '<foo><bar>42</bar></foo>' as VARCHAR);
+
+select
+  table_name,
+  view_definition
+from
+  information_schema.views
+where
+  table_name like 'xmlview%'
+order by 1;
+
+select xpath('/value', data) from xmltest;
+
+select xpath(null, null) is null from xmltest;
+
+select xpath('', '<!-- error -->');
+
+select
+  xpath(
+    '//text()',
+    '<local:data xmlns:local="http://127.0.0.1"><local:piece id="1">number one</local:piece><local:piece id="2" /></local:data>'
+  );
+
+select
+  xpath(
+    '//loc:piece/@id',
+    '<local:data xmlns:local="http://127.0.0.1"><local:piece id="1">number one</local:piece><local:piece id="2" /></local:data>',
+    array[array['loc', 'http://127.0.0.1']]
+  );
+
+select
+  xpath(
+    '//loc:piece',
+    '<local:data xmlns:local="http://127.0.0.1"><local:piece id="1">number one</local:piece><local:piece id="2" /></local:data>',
+    array[array['loc', 'http://127.0.0.1']]
+  );
+
+select
+  xpath(
+    '//loc:piece',
+    '<local:data xmlns:local="http://127.0.0.1" xmlns="http://127.0.0.2"><local:piece id="1"><internal>number one</internal><internal2/></local:piece><local:piece id="2" /></local:data>',
+    array[array['loc', 'http://127.0.0.1']]
+  );
+
+select xpath('//b', '<a>one <b>two</b> three <b>etc</b></a>');
+
+select xpath('//text()', '<root>&lt;</root>');
+
+select xpath('//@value', '<root value="&lt;"/>');
+
+select xpath('''<<invalid>>''', '<root/>');
+
+select xpath('count(//*)', '<root><sub/><sub/></root>');
+
+select xpath('count(//*)=0', '<root><sub/><sub/></root>');
+
+select xpath('count(//*)=3', '<root><sub/><sub/></root>');
+
+select xpath('name(/*)', '<root><sub/><sub/></root>');
+
+select xpath('/nosuchtag', '<root/>');
+
+select xpath('root', '<root/>');
+
+do
+$$
+DECLARE
+  xml_declaration text := '<?xml version="1.0" encoding="ISO-8859-1"?>';
+  degree_symbol text;
+  res xml[];
+BEGIN
+  -- Per the documentation, except when the server encoding is UTF8, xpath()
+  -- may not work on non-ASCII data.  The untranslatable_character and
+  -- undefined_function traps below, currently dead code, will become relevant
+  -- if we remove this limitation.
+  IF current_setting('server_encoding') <> 'UTF8' THEN
+    RAISE LOG 'skip: encoding % unsupported for xpath',
+      current_setting('server_encoding');
+    RETURN;
+  END IF;
+
+  degree_symbol := convert_from('\xc2b0', 'UTF8');
+  res := xpath('text()', (xml_declaration ||
+    '<x>' || degree_symbol || '</x>')::xml);
+  IF degree_symbol <> res[1]::text THEN
+    RAISE 'expected % (%), got % (%)',
+      degree_symbol, convert_to(degree_symbol, 'UTF8'),
+      res[1], convert_to(res[1]::text, 'UTF8');
+  END IF;
+EXCEPTION
+  -- character with byte sequence 0xc2 0xb0 in encoding "UTF8" has no equivalent in encoding "LATIN8"
+  WHEN untranslatable_character
+  -- default conversion function for encoding "UTF8" to "MULE_INTERNAL" does not exist
+  OR undefined_function
+  -- unsupported XML feature
+  OR feature_not_supported THEN
+    RAISE LOG 'skip: %', SQLERRM;
+END
+$$;
+
+select
+  xmlexists('//town[text() = ''Toronto'']' PASSING '<towns><town>Bidford-on-Avon</town><town>Cwmbran</town><town>Bristol</town></towns>');
+
+select
+  xmlexists('//town[text() = ''Cwmbran'']' PASSING '<towns><town>Bidford-on-Avon</town><town>Cwmbran</town><town>Bristol</town></towns>');
+
+select xmlexists('count(/nosuchtag)' PASSING '<root/>');
+
+select
+  xpath_exists(
+    '//town[text() = ''Toronto'']',
+    cast('<towns><town>Bidford-on-Avon</town><town>Cwmbran</town><town>Bristol</town></towns>'
+    as XML)
+  );
+
+select
+  xpath_exists(
+    '//town[text() = ''Cwmbran'']',
+    cast('<towns><town>Bidford-on-Avon</town><town>Cwmbran</town><town>Bristol</town></towns>'
+    as XML)
+  );
+
+select xpath_exists('count(/nosuchtag)', cast('<root/>' as XML));
+
+insert into xmltest
+values
+  (
+    4,
+    cast('<menu><beers><name>Budvar</name><cost>free</cost><name>Carling</name><cost>lots</cost></beers></menu>'
+    as XML)
+  );
+
+insert into xmltest
+values
+  (
+    5,
+    cast('<menu><beers><name>Molson</name><cost>free</cost><name>Carling</name><cost>lots</cost></beers></menu>'
+    as XML)
+  );
+
+insert into xmltest
+values
+  (
+    6,
+    cast('<myns:menu xmlns:myns="http://myns.com"><myns:beers><myns:name>Budvar</myns:name><myns:cost>free</myns:cost><myns:name>Carling</myns:name><myns:cost>lots</myns:cost></myns:beers></myns:menu>'
+    as XML)
+  );
+
+insert into xmltest
+values
+  (
+    7,
+    cast('<myns:menu xmlns:myns="http://myns.com"><myns:beers><myns:name>Molson</myns:name><myns:cost>free</myns:cost><myns:name>Carling</myns:name><myns:cost>lots</myns:cost></myns:beers></myns:menu>'
+    as XML)
+  );
+
+select COUNT(id) from xmltest where xmlexists('/menu/beer' PASSING data);
+
+select COUNT(id) from xmltest where xmlexists('/menu/beer' PASSING data);
+
+select COUNT(id) from xmltest where xmlexists('/menu/beers' PASSING data);
+
+select
+  COUNT(id)
+from
+  xmltest
+where
+  xmlexists('/menu/beers/name[text() = ''Molson'']' PASSING data);
+
+select COUNT(id) from xmltest where xpath_exists('/menu/beer', data);
+
+select COUNT(id) from xmltest where xpath_exists('/menu/beers', data);
+
+select
+  COUNT(id)
+from
+  xmltest
+where
+  xpath_exists(
+    '/menu/beers/name[text() = ''Molson'']',
+    data
+  );
+
+select
+  COUNT(id)
+from
+  xmltest
+where
+  xpath_exists(
+    '/myns:menu/myns:beer',
+    data,
+    array[array['myns', 'http://myns.com']]
+  );
+
+select
+  COUNT(id)
+from
+  xmltest
+where
+  xpath_exists(
+    '/myns:menu/myns:beers',
+    data,
+    array[array['myns', 'http://myns.com']]
+  );
+
+select
+  COUNT(id)
+from
+  xmltest
+where
+  xpath_exists(
+    '/myns:menu/myns:beers/myns:name[text() = ''Molson'']',
+    data,
+    array[array['myns', 'http://myns.com']]
+  );
+
+create table query (expr TEXT);
+
+insert into query values ('/menu/beers/cost[text() = ''lots'']');
+
+select COUNT(id) from xmltest, query where xmlexists(expr PASSING data);
+
+select xml_is_well_formed_document('<foo>bar</foo>');
+
+select xml_is_well_formed_document('abc');
+
+select xml_is_well_formed_content('<foo>bar</foo>');
+
+select xml_is_well_formed_content('abc');
+
+set xmloption = document;
+
+select xml_is_well_formed('abc');
+
+select xml_is_well_formed('<>');
+
+select xml_is_well_formed('<abc/>');
+
+select xml_is_well_formed('<foo>bar</foo>');
+
+select xml_is_well_formed('<foo>bar</foo');
+
+select xml_is_well_formed('<foo><bar>baz</foo>');
+
+select
+  xml_is_well_formed(
+    '<local:data xmlns:local="http://127.0.0.1"><local:piece id="1">number one</local:piece><local:piece id="2" /></local:data>'
+  );
+
+select
+  xml_is_well_formed(
+    '<pg:foo xmlns:pg="http://postgresql.org/stuff">bar</my:foo>'
+  );
+
+select
+  xml_is_well_formed(
+    '<pg:foo xmlns:pg="http://postgresql.org/stuff">bar</pg:foo>'
+  );
+
+select xml_is_well_formed('<invalidentity>&</abc>');
+
+select xml_is_well_formed('<undefinedentity>&idontexist;</abc>');
+
+select xml_is_well_formed('<invalidns xmlns=''&lt;''/>');
+
+select xml_is_well_formed('<relativens xmlns=''relative''/>');
+
+select xml_is_well_formed('<twoerrors>&idontexist;</unbalanced>');
+
+set xmloption = content;
+
+select xml_is_well_formed('abc');
+
+select xpath('/*', '<invalidns xmlns=''&lt;''/>');
+
+select xpath('/*', '<nosuchprefix:tag/>');
+
+select xpath('/*', '<relativens xmlns=''relative''/>');
+
+select
+  XMLPARSE(DOCUMENT '<!DOCTYPE foo [<!ENTITY c SYSTEM "/etc/passwd">]><foo>&c;</foo>');
+
+select
+  XMLPARSE(DOCUMENT '<!DOCTYPE foo [<!ENTITY c SYSTEM "/etc/no.such.file">]><foo>&c;</foo>');
+
+select
+  XMLPARSE(DOCUMENT '<!DOCTYPE chapter PUBLIC "-//OASIS//DTD DocBook XML V4.1.2//EN" "http://www.oasis-open.org/docbook/xml/4.1.2/docbookx.dtd"><chapter>&nbsp;</chapter>');
+
+create table xmldata (data XML);
+
+insert into xmldata
+values
+  (
+    '<ROWS>
+<ROW id="1">
+  <COUNTRY_ID>AU</COUNTRY_ID>
+  <COUNTRY_NAME>Australia</COUNTRY_NAME>
+  <REGION_ID>3</REGION_ID>
+</ROW>
+<ROW id="2">
+  <COUNTRY_ID>CN</COUNTRY_ID>
+  <COUNTRY_NAME>China</COUNTRY_NAME>
+  <REGION_ID>3</REGION_ID>
+</ROW>
+<ROW id="3">
+  <COUNTRY_ID>HK</COUNTRY_ID>
+  <COUNTRY_NAME>HongKong</COUNTRY_NAME>
+  <REGION_ID>3</REGION_ID>
+</ROW>
+<ROW id="4">
+  <COUNTRY_ID>IN</COUNTRY_ID>
+  <COUNTRY_NAME>India</COUNTRY_NAME>
+  <REGION_ID>3</REGION_ID>
+</ROW>
+<ROW id="5">
+  <COUNTRY_ID>JP</COUNTRY_ID>
+  <COUNTRY_NAME>Japan</COUNTRY_NAME>
+  <REGION_ID>3</REGION_ID><PREMIER_NAME>Sinzo Abe</PREMIER_NAME>
+</ROW>
+<ROW id="6">
+  <COUNTRY_ID>SG</COUNTRY_ID>
+  <COUNTRY_NAME>Singapore</COUNTRY_NAME>
+  <REGION_ID>3</REGION_ID><SIZE unit="km">791</SIZE>
+</ROW>
+</ROWS>'
+  );
+
+select
+  xmltable.*
+from
+  (select data from xmldata) as x,
+  LATERAL XMLTABLE(
+
+    '/ROWS/ROW'
+    PASSING data
+    COLUMNS
+      id INT PATH '@id',
+      _id for ORDINALITY,
+      country_name TEXT PATH 'COUNTRY_NAME/text()' not null,
+      country_id TEXT PATH 'COUNTRY_ID',
+      region_id INT PATH 'REGION_ID',
+      size DOUBLE PRECISION PATH 'SIZE',
+      unit TEXT PATH 'SIZE/@unit',
+      premier_name TEXT PATH 'PREMIER_NAME' default 'not specified'
+  );
+
+create view xmltableview1
+as select
+  xmltable.*
+from
+  (select data from xmldata) as x,
+  LATERAL XMLTABLE(
+
+    '/ROWS/ROW'
+    PASSING data
+    COLUMNS
+      id INT PATH '@id',
+      _id for ORDINALITY,
+      country_name TEXT PATH 'COUNTRY_NAME/text()' not null,
+      country_id TEXT PATH 'COUNTRY_ID',
+      region_id INT PATH 'REGION_ID',
+      size DOUBLE PRECISION PATH 'SIZE',
+      unit TEXT PATH 'SIZE/@unit',
+      premier_name TEXT PATH 'PREMIER_NAME' default 'not specified'
+  );
+
+select * from xmltableview1;
+
+select * from xmltableview1;
+
+select * from xmltableview1;
+
+select * from XMLTABLE( row() PASSING null COLUMNS v1 TIMESTAMP) as f (v1, v2);
+
+select
+  *
+from
+  XMLTABLE(
+
+    XMLNAMESPACES('http://x.y' as zz),
+    '/zz:rows/zz:row'
+    PASSING '<rows xmlns="http://x.y"><row><a>10</a></row></rows>'
+    COLUMNS
+      a INT PATH 'zz:a'
+  );
+
+create view xmltableview2
+as select
+  *
+from
+  XMLTABLE(
+
+    XMLNAMESPACES('http://x.y' as "Zz"),
+    '/Zz:rows/Zz:row'
+    PASSING '<rows xmlns="http://x.y"><row><a>10</a></row></rows>'
+    COLUMNS
+      a INT PATH 'Zz:a'
+  );
+
+select * from xmltableview2;
+
+select
+  *
+from
+  XMLTABLE(
+
+    XMLNAMESPACES(default 'http://x.y'),
+    '/rows/row'
+    PASSING '<rows xmlns="http://x.y"><row><a>10</a></row></rows>'
+    COLUMNS
+      a INT PATH 'a'
+  );
+
+select
+  *
+from
+  XMLTABLE(
+
+    '.'
+    PASSING '<foo/>'
+    COLUMNS
+      a TEXT PATH 'foo/namespace::node()'
+  );
+
+prepare pp
+as select
+  xmltable.*
+from
+  (select data from xmldata) as x,
+  LATERAL XMLTABLE(
+
+    '/ROWS/ROW'
+    PASSING data
+    COLUMNS
+      id INT PATH '@id',
+      _id for ORDINALITY,
+      country_name TEXT PATH 'COUNTRY_NAME' not null,
+      country_id TEXT PATH 'COUNTRY_ID',
+      region_id INT PATH 'REGION_ID',
+      size DOUBLE PRECISION PATH 'SIZE',
+      unit TEXT PATH 'SIZE/@unit',
+      premier_name TEXT PATH 'PREMIER_NAME' default 'not specified'
+  );;
+
+execute pp;
+
+select
+  xmltable.*
+from
+  xmldata,
+  LATERAL XMLTABLE(
+
+    '/ROWS/ROW[COUNTRY_NAME="Japan" or COUNTRY_NAME="India"]'
+    PASSING data
+    COLUMNS
+      "COUNTRY_NAME" TEXT,
+      "REGION_ID" INT
+  );
+
+select
+  xmltable.*
+from
+  xmldata,
+  LATERAL XMLTABLE(
+
+    '/ROWS/ROW[COUNTRY_NAME="Japan" or COUNTRY_NAME="India"]'
+    PASSING data
+    COLUMNS
+      id for ORDINALITY,
+      "COUNTRY_NAME" TEXT,
+      "REGION_ID" INT
+  );
+
+select
+  xmltable.*
+from
+  xmldata,
+  LATERAL XMLTABLE(
+
+    '/ROWS/ROW[COUNTRY_NAME="Japan" or COUNTRY_NAME="India"]'
+    PASSING data
+    COLUMNS
+      id INT PATH '@id',
+      "COUNTRY_NAME" TEXT,
+      "REGION_ID" INT
+  );
+
+select
+  xmltable.*
+from
+  xmldata,
+  LATERAL XMLTABLE(
+
+    '/ROWS/ROW[COUNTRY_NAME="Japan" or COUNTRY_NAME="India"]'
+    PASSING data
+    COLUMNS
+      id INT PATH '@id'
+  );
+
+select
+  xmltable.*
+from
+  xmldata,
+  LATERAL XMLTABLE(
+
+    '/ROWS/ROW[COUNTRY_NAME="Japan" or COUNTRY_NAME="India"]'
+    PASSING data
+    COLUMNS
+      id for ORDINALITY
+  );
+
+select
+  xmltable.*
+from
+  xmldata,
+  LATERAL XMLTABLE(
+
+    '/ROWS/ROW[COUNTRY_NAME="Japan" or COUNTRY_NAME="India"]'
+    PASSING data
+    COLUMNS
+      id INT PATH '@id',
+      "COUNTRY_NAME" TEXT,
+      "REGION_ID" INT,
+      rawdata XML PATH '.'
+  );
+
+select
+  xmltable.*
+from
+  xmldata,
+  LATERAL XMLTABLE(
+
+    '/ROWS/ROW[COUNTRY_NAME="Japan" or COUNTRY_NAME="India"]'
+    PASSING data
+    COLUMNS
+      id INT PATH '@id',
+      "COUNTRY_NAME" TEXT,
+      "REGION_ID" INT,
+      rawdata XML PATH './*'
+  );
+
+select
+  *
+from
+  XMLTABLE(
+
+    '/root'
+    PASSING '<root><element>a1a<!-- aaaa -->a2a<?aaaaa?> <!--z-->  bbbb<x>xxx</x>cccc</element></root>'
+    COLUMNS
+      element TEXT
+  );
+
+select
+  *
+from
+  XMLTABLE(
+
+    '/root'
+    PASSING '<root><element>a1a<!-- aaaa -->a2a<?aaaaa?> <!--z-->  bbbb<x>xxx</x>cccc</element></root>'
+    COLUMNS
+      element TEXT PATH 'element/text()'
+  );
+
+select
+  *
+from
+  XMLTABLE(
+
+    'd/r'
+    PASSING '<d><r><c><![CDATA[<hello> &"<>!<a>foo</a>]]></c></r><r><c>2</c></r></d>'
+    COLUMNS
+      c TEXT
+  );
+
+select
+  *
+from
+  XMLTABLE(
+
+    '/x/a'
+    PASSING '<x><a><ent>&apos;</ent></a><a><ent>&quot;</ent></a><a><ent>&amp;</ent></a><a><ent>&lt;</ent></a><a><ent>&gt;</ent></a></x>'
+    COLUMNS
+      ent TEXT
+  );
+
+select
+  *
+from
+  XMLTABLE(
+
+    '/x/a'
+    PASSING '<x><a><ent>&apos;</ent></a><a><ent>&quot;</ent></a><a><ent>&amp;</ent></a><a><ent>&lt;</ent></a><a><ent>&gt;</ent></a></x>'
+    COLUMNS
+      ent XML
+  );
+
+select
+  xmltable.*
+from
+  (select data from xmldata) as x,
+  LATERAL XMLTABLE(
+
+    '/ROWS/ROW'
+    PASSING data
+    COLUMNS
+      id INT PATH '@id',
+      _id for ORDINALITY,
+      country_name TEXT PATH 'COUNTRY_NAME' not null,
+      country_id TEXT PATH 'COUNTRY_ID',
+      region_id INT PATH 'REGION_ID',
+      size DOUBLE PRECISION PATH 'SIZE',
+      unit TEXT PATH 'SIZE/@unit',
+      premier_name TEXT PATH 'PREMIER_NAME' default 'not specified'
+  );
+
+select
+  xmltable.*
+from
+  xmldata,
+  LATERAL XMLTABLE(
+
+    '/ROWS/ROW[COUNTRY_NAME="Japan" or COUNTRY_NAME="India"]'
+    PASSING data
+    COLUMNS
+      "COUNTRY_NAME" TEXT,
+      "REGION_ID" INT
+  )
+where
+  "COUNTRY_NAME" = 'Japan';
+
+select
+  f.*
+from
+  xmldata,
+  LATERAL XMLTABLE(
+
+    '/ROWS/ROW[COUNTRY_NAME="Japan" or COUNTRY_NAME="India"]'
+    PASSING data
+    COLUMNS
+      "COUNTRY_NAME" TEXT,
+      "REGION_ID" INT
+  )
+  as f
+where
+  "COUNTRY_NAME" = 'Japan';
+
+select
+  f.*
+from
+  xmldata,
+  LATERAL XMLTABLE(
+
+    '/ROWS/ROW[COUNTRY_NAME="Japan" or COUNTRY_NAME="India"]'
+    PASSING data
+    COLUMNS
+      "COUNTRY_NAME" TEXT,
+      "REGION_ID" INT
+  )
+  as f
+where
+  "COUNTRY_NAME" = 'Japan';
+
+insert into xmldata
+values
+  (
+    '<ROWS>
+<ROW id="10">
+  <COUNTRY_ID>CZ</COUNTRY_ID>
+  <COUNTRY_NAME>Czech Republic</COUNTRY_NAME>
+  <REGION_ID>2</REGION_ID><PREMIER_NAME>Milos Zeman</PREMIER_NAME>
+</ROW>
+<ROW id="11">
+  <COUNTRY_ID>DE</COUNTRY_ID>
+  <COUNTRY_NAME>Germany</COUNTRY_NAME>
+  <REGION_ID>2</REGION_ID>
+</ROW>
+<ROW id="12">
+  <COUNTRY_ID>FR</COUNTRY_ID>
+  <COUNTRY_NAME>France</COUNTRY_NAME>
+  <REGION_ID>2</REGION_ID>
+</ROW>
+</ROWS>'
+  );
+
+insert into xmldata
+values
+  (
+    '<ROWS>
+<ROW id="20">
+  <COUNTRY_ID>EG</COUNTRY_ID>
+  <COUNTRY_NAME>Egypt</COUNTRY_NAME>
+  <REGION_ID>1</REGION_ID>
+</ROW>
+<ROW id="21">
+  <COUNTRY_ID>SD</COUNTRY_ID>
+  <COUNTRY_NAME>Sudan</COUNTRY_NAME>
+  <REGION_ID>1</REGION_ID>
+</ROW>
+</ROWS>'
+  );
+
+select
+  xmltable.*
+from
+  (select data from xmldata) as x,
+  LATERAL XMLTABLE(
+
+    '/ROWS/ROW'
+    PASSING data
+    COLUMNS
+      id INT PATH '@id',
+      _id for ORDINALITY,
+      country_name TEXT PATH 'COUNTRY_NAME' not null,
+      country_id TEXT PATH 'COUNTRY_ID',
+      region_id INT PATH 'REGION_ID',
+      size DOUBLE PRECISION PATH 'SIZE',
+      unit TEXT PATH 'SIZE/@unit',
+      premier_name TEXT PATH 'PREMIER_NAME' default 'not specified'
+  );
+
+select
+  xmltable.*
+from
+  (select data from xmldata) as x,
+  LATERAL XMLTABLE(
+
+    '/ROWS/ROW'
+    PASSING data
+    COLUMNS
+      id INT PATH '@id',
+      _id for ORDINALITY,
+      country_name TEXT PATH 'COUNTRY_NAME' not null,
+      country_id TEXT PATH 'COUNTRY_ID',
+      region_id INT PATH 'REGION_ID',
+      size DOUBLE PRECISION PATH 'SIZE',
+      unit TEXT PATH 'SIZE/@unit',
+      premier_name TEXT PATH 'PREMIER_NAME' default 'not specified'
+  )
+where
+  region_id = 2;
+
+select
+  xmltable.*
+from
+  (select data from xmldata) as x,
+  LATERAL XMLTABLE(
+
+    '/ROWS/ROW'
+    PASSING data
+    COLUMNS
+      id INT PATH '@id',
+      _id for ORDINALITY,
+      country_name TEXT PATH 'COUNTRY_NAME' not null,
+      country_id TEXT PATH 'COUNTRY_ID',
+      region_id INT PATH 'REGION_ID',
+      size DOUBLE PRECISION PATH 'SIZE',
+      unit TEXT PATH 'SIZE/@unit',
+      premier_name TEXT PATH 'PREMIER_NAME' default 'not specified'
+  )
+where
+  region_id = 2;
+
+select
+  xmltable.*
+from
+  (select data from xmldata) as x,
+  LATERAL XMLTABLE(
+
+    '/ROWS/ROW'
+    PASSING data
+    COLUMNS
+      id INT PATH '@id',
+      _id for ORDINALITY,
+      country_name TEXT PATH 'COUNTRY_NAME' not null,
+      country_id TEXT PATH 'COUNTRY_ID',
+      region_id INT PATH 'REGION_ID',
+      size DOUBLE PRECISION PATH 'SIZE' not null,
+      unit TEXT PATH 'SIZE/@unit',
+      premier_name TEXT PATH 'PREMIER_NAME' default 'not specified'
+  );
+
+with
+x
+as (
+  select
+    proname,
+    proowner,
+    cast(procost as NUMERIC),
+    pronargs,
+    array_to_string(proargnames, ',')
+    as proargnames,
+    case
+      when proargtypes <> ''
+      then array_to_string(
+        cast(proargtypes as OID[]),
+        ','
+      )
+    end
+    as proargtypes
+  from
+    pg_proc
+  where
+    proname = 'f_leak'
+),
+y
+as (
+  select
+    XMLELEMENT(NAME proc, XMLFOREST(proname,
+    proowner,
+    procost,
+    pronargs,
+    proargnames,
+    proargtypes))
+    as proc
+  from
+    x
+),
+z
+as (
+  select
+    xmltable.*
+  from
+    y,
+    LATERAL XMLTABLE(
+
+      '/proc'
+      PASSING proc
+      COLUMNS
+        proname NAME,
+        proowner OID,
+        procost DOUBLE PRECISION,
+        pronargs INT,
+        proargnames TEXT,
+        proargtypes TEXT
+    )
+)
+select * from z
+except
+select * from x;
+
+with
+x
+as (
+  select
+    proname,
+    proowner,
+    cast(procost as NUMERIC),
+    pronargs,
+    array_to_string(proargnames, ',')
+    as proargnames,
+    case
+      when proargtypes <> ''
+      then array_to_string(
+        cast(proargtypes as OID[]),
+        ','
+      )
+    end
+    as proargtypes
+  from
+    pg_proc
+),
+y
+as (
+  select
+    XMLELEMENT(NAME data, xmlagg(
+      XMLELEMENT(NAME proc, XMLFOREST(proname,
+      proowner,
+      procost,
+      pronargs,
+      proargnames,
+      proargtypes))
+    ))
+    as doc
+  from
+    x
+),
+z
+as (
+  select
+    xmltable.*
+  from
+    y,
+    LATERAL XMLTABLE(
+
+      '/data/proc'
+      PASSING doc
+      COLUMNS
+        proname NAME,
+        proowner OID,
+        procost DOUBLE PRECISION,
+        pronargs INT,
+        proargnames TEXT,
+        proargtypes TEXT
+    )
+)
+select * from z
+except
+select * from x;
+
+create table xmltest2 (
+  x XML,
+  _path TEXT
+);
+
+insert into xmltest2 values ('<d><r><ac>1</ac></r></d>', 'A');
+
+insert into xmltest2 values ('<d><r><bc>2</bc></r></d>', 'B');
+
+insert into xmltest2 values ('<d><r><cc>3</cc></r></d>', 'C');
+
+insert into xmltest2 values ('<d><r><dc>2</dc></r></d>', 'D');
+
+select
+  xmltable.*
+from
+  xmltest2,
+  LATERAL XMLTABLE(
+
+    '/d/r'
+    PASSING x
+    COLUMNS
+      a INT PATH '' || lower(_path) || 'c'
+  );
+
+select
+  xmltable.*
+from
+  xmltest2,
+  LATERAL XMLTABLE(
+
+    ('/d/r/' || lower(_path) || 'c')
+    PASSING x
+    COLUMNS
+      a INT PATH '.'
+  );
+
+select
+  xmltable.*
+from
+  xmltest2,
+  LATERAL XMLTABLE(
+
+    ('/d/r/' || lower(_path) || 'c')
+    PASSING x
+    COLUMNS
+      a INT PATH 'x' default ascii(_path) - 54
+  );
+
+select
+  *
+from
+  XMLTABLE(
+
+    '*'
+    PASSING '<a>a</a>'
+    COLUMNS
+      a XML PATH '.',
+      b TEXT PATH '.',
+      c TEXT PATH '"hi"',
+      d BOOLEAN PATH '. = "a"',
+      e INT PATH 'string-length(.)'
+  );
+
+select
+  *
+from
+  XMLTABLE(
+
+    '*'
+    PASSING '<e>pre<!--c1--><?pi arg?><![CDATA[&ent1]]><n2>&amp;deep</n2>post</e>'
+    COLUMNS
+      x XML PATH '/e/n2',
+      y XML PATH '/'
+  );
+
+select
+  *
+from
+  XMLTABLE(
+
+    '.'
+    PASSING XMLELEMENT(NAME a)
+    COLUMNS
+      a VARCHAR(20) PATH '"<foo/>"',
+      b XML PATH '"<foo/>"'
+  );
+
+select xmltext(null);
+
+select xmltext('');
+
+select xmltext('  ');
+
+select xmltext('foo `$_-+?=*^%!|/\()[]{}');
+
+select xmltext('foo & <"bar">');
+
+select
+  xmltext(
+    'x' || cast('<P>73</P>' as XML) || .42 ||
+    true ||
+    cast('j' as CHAR(1))
+  );

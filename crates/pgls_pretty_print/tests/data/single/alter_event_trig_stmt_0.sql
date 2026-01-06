@@ -1,0 +1,1 @@
+ALTER EVENT TRIGGER my_event_trigger ENABLE;

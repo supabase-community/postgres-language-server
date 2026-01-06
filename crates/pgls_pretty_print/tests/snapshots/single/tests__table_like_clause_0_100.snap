@@ -1,0 +1,6 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/single/table_like_clause_0.sql
+snapshot_kind: text
+---
+create table new_table (like old_table including all);

@@ -1,0 +1,1 @@
+SELECT lower('HELLO'), upper('world'), length('test');

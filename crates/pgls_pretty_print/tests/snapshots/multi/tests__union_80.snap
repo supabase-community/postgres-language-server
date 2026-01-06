@@ -1,0 +1,808 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/union.sql
+snapshot_kind: text
+---
+select 1 as two union select 2 order by 1;
+
+select 1 as one union select 1 order by 1;
+
+select 1 as two union all select 2;
+
+select 1 as two union all select 1;
+
+select 1 as three union select 2 union select 3 order by 1;
+
+select 1 as two union select 2 union select 2 order by 1;
+
+select 1 as three union select 2 union all select 2 order by 1;
+
+select 1.1 as two union select 2.2 order by 1;
+
+select 1.1 as two union select 2 order by 1;
+
+select 1 as two union select 2.2 order by 1;
+
+select 1 as one union select cast(1.0 as DOUBLE PRECISION) order by 1;
+
+select 1.1 as two union all select 2 order by 1;
+
+select cast(1.0 as DOUBLE PRECISION) as two union all select 1 order by 1;
+
+select 1.1 as three union select 2 union select 3 order by 1;
+
+select
+  cast(1.1 as DOUBLE PRECISION) as two
+union
+select 2
+union
+select cast(2.0 as DOUBLE PRECISION)
+order by 1;
+
+select 1.1 as three union select 2 union all select 2 order by 1;
+
+select 1.1 as two union (select 2 union all select 2) order by 1;
+
+select f1 as five from float8_tbl union select f1 from float8_tbl order by 1;
+
+select f1 as ten from float8_tbl union all select f1 from float8_tbl;
+
+select f1 as nine from float8_tbl union select f1 from int4_tbl order by 1;
+
+select f1 as ten from float8_tbl union all select f1 from int4_tbl;
+
+select
+  f1 as five
+from
+  float8_tbl
+where
+  f1 between -1e6 and 1e6
+union
+select
+  f1
+from
+  int4_tbl
+where
+  f1 between 0 and 1000000
+order by 1;
+
+select
+  cast(f1 as CHAR(4)) as three
+from
+  varchar_tbl
+union
+select f1 from char_tbl
+order by 1;
+
+select f1 as three from varchar_tbl
+union
+select cast(f1 as VARCHAR) from char_tbl
+order by 1;
+
+select f1 as eight from varchar_tbl union all select f1 from char_tbl;
+
+select f1 as five from text_tbl
+union
+select f1 from varchar_tbl
+union
+select rtrim(f1) from char_tbl
+order by 1;
+
+select q1 from int8_tbl order by 1;
+
+select q2 from int8_tbl intersect all select q1 from int8_tbl order by 1;
+
+select q2 from int8_tbl except select q1 from int8_tbl order by 1;
+
+select q2 from int8_tbl except all select q1 from int8_tbl order by 1;
+
+select q2 from int8_tbl except all select distinct q1 from int8_tbl order by 1;
+
+select q1 from int8_tbl except select q2 from int8_tbl order by 1;
+
+select q1 from int8_tbl except all select q2 from int8_tbl order by 1;
+
+select q1 from int8_tbl except all select distinct q2 from int8_tbl order by 1;
+
+select q1 from int8_tbl except all select q1 from int8_tbl for no key update;
+
+select 4, 5, 6;
+
+select 4, 5, 6;
+
+select 1, 2, 3 union select 4, 5, 6 except select 4, 5, 6;
+
+(select 1, 2, 3 union select 4, 5, 6 order by 1, 2) except select 4, 5, 6;
+
+set enable_hashagg = 'on';
+
+select
+  COUNT(*)
+from
+  (
+    select unique1 from tenk1
+    union
+    select fivethous from tenk1
+  )
+  as ss;
+
+select
+  COUNT(*)
+from
+  (
+    select unique1 from tenk1
+    union
+    select fivethous from tenk1
+  )
+  as ss;
+
+select
+  COUNT(*)
+from
+  (
+    select unique1 from tenk1
+    intersect
+    select fivethous from tenk1
+  )
+  as ss;
+
+select
+  COUNT(*)
+from
+  (
+    select unique1 from tenk1
+    intersect
+    select fivethous from tenk1
+  )
+  as ss;
+
+set enable_indexscan = off;
+
+select unique1 from tenk1 except select unique2 from tenk1 where unique2 <> 10;
+
+select unique1 from tenk1 except select unique2 from tenk1 where unique2 <> 10;
+
+reset enable_indexscan;
+
+select q2, q1 from int8_tbl order by 1, 2;
+
+select q2, q1 from int8_tbl order by 1, 2;
+
+select * from int8_tbl order by 1, 2;
+
+set enable_hashagg = off;
+
+select
+  COUNT(*)
+from
+  (
+    select unique1 from tenk1
+    union
+    select fivethous from tenk1
+  )
+  as ss;
+
+select
+  COUNT(*)
+from
+  (
+    select unique1 from tenk1
+    union
+    select fivethous from tenk1
+  )
+  as ss;
+
+select
+  COUNT(*)
+from
+  (
+    select unique1 from tenk1
+    intersect
+    select fivethous from tenk1
+  )
+  as ss;
+
+select
+  COUNT(*)
+from
+  (
+    select unique1 from tenk1
+    intersect
+    select fivethous from tenk1
+  )
+  as ss;
+
+select unique1 from tenk1 except select unique2 from tenk1 where unique2 <> 10;
+
+select unique1 from tenk1 except select unique2 from tenk1 where unique2 <> 10;
+
+select f1 from int4_tbl
+union all
+(select unique1 from tenk1
+union
+select unique2 from tenk1);
+
+reset enable_hashagg;
+
+set enable_hashagg = 'on';
+
+select
+  x
+from
+  (
+    values
+      (cast('11' as BIT VARYING)),
+      (cast('10' as BIT VARYING))
+  )
+  as _ (x)
+union
+select
+  x
+from
+  (
+    values
+      (cast('11' as BIT VARYING)),
+      (cast('10' as BIT VARYING))
+  )
+  as _ (x);
+
+set enable_hashagg = off;
+
+select
+  x
+from
+  (
+    values
+      (cast('11' as BIT VARYING)),
+      (cast('10' as BIT VARYING))
+  )
+  as _ (x)
+union
+select
+  x
+from
+  (
+    values
+      (cast('11' as BIT VARYING)),
+      (cast('10' as BIT VARYING))
+  )
+  as _ (x);
+
+reset enable_hashagg;
+
+set enable_hashagg = 'on';
+
+select
+  x
+from
+  (
+    values (array[1, 2]), (array[1, 3])
+  )
+  as _ (x)
+union
+select
+  x
+from
+  (
+    values (array[1, 2]), (array[1, 4])
+  )
+  as _ (x);
+
+select
+  x
+from
+  (
+    values (array[1, 2]), (array[1, 3])
+  )
+  as _ (x)
+union
+select
+  x
+from
+  (
+    values (array[1, 2]), (array[1, 4])
+  )
+  as _ (x);
+
+select x from (values (array[1, 2]), (array[1, 4])) as _ (x);
+
+select x from (values (array[1, 2]), (array[1, 4])) as _ (x);
+
+select
+  x
+from
+  (
+    values (array[1, 2]), (array[1, 3])
+  )
+  as _ (x)
+except
+select
+  x
+from
+  (
+    values (array[1, 2]), (array[1, 4])
+  )
+  as _ (x);
+
+select
+  x
+from
+  (
+    values (array[1, 2]), (array[1, 3])
+  )
+  as _ (x)
+except
+select
+  x
+from
+  (
+    values (array[1, 2]), (array[1, 4])
+  )
+  as _ (x);
+
+select
+  x
+from
+  (
+    values
+      (array[cast('10' as BIT VARYING)]),
+      (array[cast('11' as BIT VARYING)])
+  )
+  as _ (x)
+union
+select
+  x
+from
+  (
+    values
+      (array[cast('10' as BIT VARYING)]),
+      (array[cast('01' as BIT VARYING)])
+  )
+  as _ (x);
+
+select
+  x
+from
+  (
+    values
+      (array[cast('10' as BIT VARYING)]),
+      (array[cast('11' as BIT VARYING)])
+  )
+  as _ (x)
+union
+select
+  x
+from
+  (
+    values
+      (array[cast('10' as BIT VARYING)]),
+      (array[cast('01' as BIT VARYING)])
+  )
+  as _ (x);
+
+set enable_hashagg = off;
+
+select
+  x
+from
+  (
+    values (array[1, 2]), (array[1, 3])
+  )
+  as _ (x)
+union
+select
+  x
+from
+  (
+    values (array[1, 2]), (array[1, 4])
+  )
+  as _ (x);
+
+select
+  x
+from
+  (
+    values (array[1, 2]), (array[1, 3])
+  )
+  as _ (x)
+union
+select
+  x
+from
+  (
+    values (array[1, 2]), (array[1, 4])
+  )
+  as _ (x);
+
+select x from (values (array[1, 2]), (array[1, 4])) as _ (x);
+
+select x from (values (array[1, 2]), (array[1, 4])) as _ (x);
+
+select
+  x
+from
+  (
+    values (array[1, 2]), (array[1, 3])
+  )
+  as _ (x)
+except
+select
+  x
+from
+  (
+    values (array[1, 2]), (array[1, 4])
+  )
+  as _ (x);
+
+select
+  x
+from
+  (
+    values (array[1, 2]), (array[1, 3])
+  )
+  as _ (x)
+except
+select
+  x
+from
+  (
+    values (array[1, 2]), (array[1, 4])
+  )
+  as _ (x);
+
+reset enable_hashagg;
+
+set enable_hashagg = 'on';
+
+select
+  x
+from
+  (
+    values (row(1, 2)), (row(1, 3))
+  )
+  as _ (x)
+union
+select
+  x
+from
+  (
+    values (row(1, 2)), (row(1, 4))
+  )
+  as _ (x);
+
+select
+  x
+from
+  (
+    values (row(1, 2)), (row(1, 3))
+  )
+  as _ (x)
+union
+select
+  x
+from
+  (
+    values (row(1, 2)), (row(1, 4))
+  )
+  as _ (x);
+
+select x from (values (row(1, 2)), (row(1, 4))) as _ (x);
+
+select x from (values (row(1, 2)), (row(1, 4))) as _ (x);
+
+select
+  x
+from
+  (
+    values (row(1, 2)), (row(1, 3))
+  )
+  as _ (x)
+except
+select
+  x
+from
+  (
+    values (row(1, 2)), (row(1, 4))
+  )
+  as _ (x);
+
+select
+  x
+from
+  (
+    values (row(1, 2)), (row(1, 3))
+  )
+  as _ (x)
+except
+select
+  x
+from
+  (
+    values (row(1, 2)), (row(1, 4))
+  )
+  as _ (x);
+
+select
+  x
+from
+  (
+    values
+      (row(cast('10' as BIT VARYING))),
+      (row(cast('11' as BIT VARYING)))
+  )
+  as _ (x)
+union
+select
+  x
+from
+  (
+    values
+      (row(cast('10' as BIT VARYING))),
+      (row(cast('01' as BIT VARYING)))
+  )
+  as _ (x);
+
+select
+  x
+from
+  (
+    values
+      (row(cast('10' as BIT VARYING))),
+      (row(cast('11' as BIT VARYING)))
+  )
+  as _ (x)
+union
+select
+  x
+from
+  (
+    values
+      (row(cast('10' as BIT VARYING))),
+      (row(cast('01' as BIT VARYING)))
+  )
+  as _ (x);
+
+create type ct1 as (f1 BIT VARYING);
+
+select
+  x
+from
+  (
+    values
+      (
+        cast(row(cast('10' as BIT VARYING))
+        as ct1)
+      ),
+      (
+        cast(row(cast('11' as BIT VARYING))
+        as ct1)
+      )
+  )
+  as _ (x)
+union
+select
+  x
+from
+  (
+    values
+      (
+        cast(row(cast('10' as BIT VARYING))
+        as ct1)
+      ),
+      (
+        cast(row(cast('01' as BIT VARYING))
+        as ct1)
+      )
+  )
+  as _ (x);
+
+select
+  x
+from
+  (
+    values
+      (
+        cast(row(cast('10' as BIT VARYING))
+        as ct1)
+      ),
+      (
+        cast(row(cast('11' as BIT VARYING))
+        as ct1)
+      )
+  )
+  as _ (x)
+union
+select
+  x
+from
+  (
+    values
+      (
+        cast(row(cast('10' as BIT VARYING))
+        as ct1)
+      ),
+      (
+        cast(row(cast('01' as BIT VARYING))
+        as ct1)
+      )
+  )
+  as _ (x);
+
+drop TYPE ct1;
+
+set enable_hashagg = off;
+
+select
+  x
+from
+  (
+    values (row(1, 2)), (row(1, 3))
+  )
+  as _ (x)
+union
+select
+  x
+from
+  (
+    values (row(1, 2)), (row(1, 4))
+  )
+  as _ (x);
+
+select
+  x
+from
+  (
+    values (row(1, 2)), (row(1, 3))
+  )
+  as _ (x)
+union
+select
+  x
+from
+  (
+    values (row(1, 2)), (row(1, 4))
+  )
+  as _ (x);
+
+select x from (values (row(1, 2)), (row(1, 4))) as _ (x);
+
+select x from (values (row(1, 2)), (row(1, 4))) as _ (x);
+
+select
+  x
+from
+  (
+    values (row(1, 2)), (row(1, 3))
+  )
+  as _ (x)
+except
+select
+  x
+from
+  (
+    values (row(1, 2)), (row(1, 4))
+  )
+  as _ (x);
+
+select
+  x
+from
+  (
+    values (row(1, 2)), (row(1, 3))
+  )
+  as _ (x)
+except
+select
+  x
+from
+  (
+    values (row(1, 2)), (row(1, 4))
+  )
+  as _ (x);
+
+select cast('123' as XID) union select cast('123' as XID);
+
+reset enable_hashagg;
+
+select f1 from int4_tbl order by 1;
+
+select f1 from float8_tbl except select f1 from int4_tbl order by 1;
+
+select q2 from int8_tbl union all select q2 from int8_tbl order by 1;
+
+select q1 from int8_tbl
+intersect
+(select q2 from int8_tbl
+union all
+select q2 from int8_tbl)
+order by 1;
+
+(select q1 from int8_tbl
+intersect
+select q2 from int8_tbl
+order by 1)
+union all
+select q2 from int8_tbl;
+
+select q1 from int8_tbl
+union all
+select q2 from int8_tbl
+except
+select q1 from int8_tbl
+order by 1;
+
+select q1 from int8_tbl
+union all
+(select q2 from int8_tbl
+except
+select q1 from int8_tbl
+order by 1);
+
+select q1 from int8_tbl
+union all
+select q2 from int8_tbl
+except
+select q1 from int8_tbl
+order by 1;
+
+select q1, q2 from int8_tbl except select q2, q1 from int8_tbl order by q2, q1;
+
+select q1 from int8_tbl except select q2 from int8_tbl order by q2 limit 1;
+
+select q1 from int8_tbl
+except
+(select
+  q2
+from
+  int8_tbl
+order by q2
+limit 1)
+order by 1;
+
+select * from int8_tbl;
+
+select union select;
+
+select;
+
+select except select;
+
+set enable_hashagg = 'true';
+
+set enable_sort = 'false';
+
+select from generate_series(1, 3);
+
+select from generate_series(1, 5) union all select from generate_series(1, 3);
+
+select from generate_series(1, 3);
+
+select from generate_series(1, 5)
+intersect all
+select from generate_series(1, 3);
+
+select from generate_series(1, 5) except select from generate_series(1, 3);
+
+select from generate_series(1, 5) except all select from generate_series(1, 3);
+
+set enable_hashagg = 'false';
+
+set enable_sort = 'true';
+
+select from generate_series(1, 5) union select from generate_series(1, 3);
+
+select from generate_series(1, 3);
+
+select from generate_series(1, 5) union select from generate_series(1, 3);
+
+select from generate_series(1, 5) union all select from generate_series(1, 3);
+
+select from generate_series(1, 3);
+
+select from generate_series(1, 5)
+intersect all
+select from generate_series(1, 3);
+
+select from generate_series(1, 5) except select from generate_series(1, 3);
+
+select from generate_series(1, 5) except all select from generate_series(1, 3);

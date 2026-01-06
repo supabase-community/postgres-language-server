@@ -1,0 +1,1576 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/foreign_data.sql
+snapshot_kind: text
+---
+create function test_fdw_handler()
+returns fdw_handler
+as 'regresslib', 'test_fdw_handler'
+language "c";
+
+set client_min_messages = warning;
+
+drop role if exists
+regress_foreign_data_user,
+regress_test_role,
+regress_test_role2,
+regress_test_role_super,
+regress_test_indirect,
+regress_unprivileged_role;
+
+reset client_min_messages;
+
+create role regress_foreign_data_user LOGIN SUPERUSER;
+
+set session authorization regress_foreign_data_user;
+
+create role regress_test_role;
+
+create role regress_test_role2;
+
+create role regress_test_role_super SUPERUSER;
+
+create role regress_test_indirect;
+
+create role regress_unprivileged_role;
+
+create FOREIGN DATA WRAPPER dummy;
+
+comment on foreign data wrapper dummy is 'useless';
+
+create FOREIGN DATA WRAPPER postgresql VALIDATOR postgresql_fdw_validator ;
+
+select
+  fdwname,
+  cast(fdwhandler as REGPROC),
+  cast(fdwvalidator as REGPROC),
+  fdwoptions
+from
+  pg_foreign_data_wrapper
+order by 1,
+  2,
+  3;
+
+select srvname, srvoptions from pg_foreign_server;
+
+select * from pg_user_mapping;
+
+create FOREIGN DATA WRAPPER foo VALIDATOR bar ;
+
+create FOREIGN DATA WRAPPER foo;
+
+create FOREIGN DATA WRAPPER foo;
+
+drop FOREIGN DATA WRAPPER foo;
+
+create FOREIGN DATA WRAPPER foo OPTIONS (testing '1');
+
+drop FOREIGN DATA WRAPPER foo;
+
+create FOREIGN DATA WRAPPER foo OPTIONS (testing '1', testing '2');
+
+create FOREIGN DATA WRAPPER foo OPTIONS (testing '1', another '2');
+
+drop FOREIGN DATA WRAPPER foo;
+
+set role to regress_test_role;
+
+create FOREIGN DATA WRAPPER foo;
+
+reset role;
+
+create FOREIGN DATA WRAPPER foo VALIDATOR postgresql_fdw_validator ;
+
+create function invalid_fdw_handler()
+returns INT
+language "sql"
+as 'SELECT 1;';
+
+create FOREIGN DATA WRAPPER test_fdw HANDLER invalid_fdw_handler ;
+
+create FOREIGN DATA WRAPPER test_fdw
+  HANDLER test_fdw_handler HANDLER invalid_fdw_handler ;
+
+create FOREIGN DATA WRAPPER test_fdw HANDLER test_fdw_handler ;
+
+drop FOREIGN DATA WRAPPER test_fdw;
+
+alter FOREIGN DATA WRAPPER foo OPTIONS (nonexistent 'fdw');
+
+alter FOREIGN DATA WRAPPER foo VALIDATOR bar;
+
+alter FOREIGN DATA WRAPPER foo no VALIDATOR;
+
+alter FOREIGN DATA WRAPPER foo OPTIONS (a '1', b '2');
+
+alter FOREIGN DATA WRAPPER foo OPTIONS (set c '4');
+
+alter FOREIGN DATA WRAPPER foo OPTIONS (drop c);
+
+alter FOREIGN DATA WRAPPER foo OPTIONS (add x '1', drop x);
+
+alter FOREIGN DATA WRAPPER foo OPTIONS (drop a, set b '3', add c '4');
+
+alter FOREIGN DATA WRAPPER foo OPTIONS (a '2');
+
+alter FOREIGN DATA WRAPPER foo OPTIONS (b '4');
+
+set role to regress_test_role;
+
+alter FOREIGN DATA WRAPPER foo OPTIONS (add d '5');
+
+set role to regress_test_role_super;
+
+alter FOREIGN DATA WRAPPER foo OPTIONS (add d '5');
+
+alter foreign data wrapper foo owner to regress_test_role;
+
+alter foreign data wrapper foo owner to regress_test_role_super;
+
+alter role regress_test_role_super NOSUPERUSER;
+
+set role to regress_test_role_super;
+
+alter FOREIGN DATA WRAPPER foo OPTIONS (add e '6');
+
+reset role;
+
+alter foreign data wrapper foo rename to foo1;
+
+alter foreign data wrapper foo1 rename to foo;
+
+alter FOREIGN DATA WRAPPER foo HANDLER invalid_fdw_handler;
+
+alter FOREIGN DATA WRAPPER foo HANDLER test_fdw_handler HANDLER anything;
+
+alter FOREIGN DATA WRAPPER foo HANDLER test_fdw_handler;
+
+drop FUNCTION invalid_fdw_handler();
+
+drop FOREIGN DATA WRAPPER nonexistent;
+
+drop FOREIGN DATA WRAPPER if exists nonexistent;
+
+drop role regress_test_role_super;
+
+set role to regress_test_role_super;
+
+drop FOREIGN DATA WRAPPER foo;
+
+reset role;
+
+drop role regress_test_role_super;
+
+create FOREIGN DATA WRAPPER foo;
+
+create server s1 foreign data wrapper foo;
+
+comment on server s1 is 'foreign server';
+
+create USER MAPPING for current_user SERVER s1;
+
+create USER MAPPING for current_user SERVER s1;
+
+create USER MAPPING if not exists for current_user SERVER s1;
+
+drop FOREIGN DATA WRAPPER foo;
+
+set role to regress_test_role;
+
+drop FOREIGN DATA WRAPPER foo cascade;
+
+reset role;
+
+drop FOREIGN DATA WRAPPER foo cascade;
+
+create server s1 foreign data wrapper foo;
+
+create FOREIGN DATA WRAPPER foo OPTIONS ("test wrapper" 'true');
+
+create server s1 foreign data wrapper foo;
+
+create server s1 foreign data wrapper foo;
+
+create server if not exists s1 foreign data wrapper foo;
+
+create server s2 foreign data wrapper foo options (host 'a', dbname 'b');
+
+create server s3 type 'oracle' foreign data wrapper foo;
+
+create server s4
+  type 'oracle'
+  foreign data wrapper foo
+  options (host 'a',
+  dbname 'b');
+
+create server s5 version '15.0' foreign data wrapper foo;
+
+create server s6
+  version '16.0'
+  foreign data wrapper foo
+  options (host 'a',
+  dbname 'b');
+
+create server s7
+  type 'oracle'
+  version '17.0'
+  foreign data wrapper foo
+  options (host 'a',
+  dbname 'b');
+
+create server s8 foreign data wrapper postgresql options (foo '1');
+
+create server s8
+  foreign data wrapper postgresql
+  options (host 'localhost',
+  dbname 's8db');
+
+set role to regress_test_role;
+
+create server t1 foreign data wrapper foo;
+
+reset role;
+
+grant USAGE on FOREIGN DATA WRAPPER foo to regress_test_role;
+
+set role to regress_test_role;
+
+create server t1 foreign data wrapper foo;
+
+reset role;
+
+revoke USAGE on FOREIGN DATA WRAPPER foo from regress_test_role;
+
+grant USAGE on FOREIGN DATA WRAPPER foo to regress_test_indirect;
+
+set role to regress_test_role;
+
+create server t2 foreign data wrapper foo;
+
+reset role;
+
+grant REGRESS_TEST_INDIRECT to regress_test_role;
+
+set role to regress_test_role;
+
+create server t2 foreign data wrapper foo;
+
+reset role;
+
+revoke REGRESS_TEST_INDIRECT from regress_test_role restrict;
+
+alter server s0 options (a '1');
+
+alter server s1 version '1.0' options (servername 's1');
+
+alter server s2 version '1.1';
+
+alter server s3 options ("tns name" 'orcl', port '1521');
+
+grant USAGE on FOREIGN server s1 to regress_test_role;
+
+grant USAGE on FOREIGN server s6 to regress_test_role2 with grant option;
+
+set role to regress_test_role;
+
+alter server s1 version '1.1';
+
+alter server s1 owner to regress_test_role;
+
+reset role;
+
+alter server s1 owner to regress_test_role;
+
+grant REGRESS_TEST_ROLE2 to regress_test_role;
+
+set role to regress_test_role;
+
+alter server s1 version '1.1';
+
+alter server s1 owner to regress_test_role2;
+
+reset role;
+
+alter server s8 options (foo '1');
+
+alter server s8 options (connect_timeout '30', set dbname 'db1', drop host);
+
+set role to regress_test_role;
+
+alter server s1 owner to regress_test_indirect;
+
+reset role;
+
+grant REGRESS_TEST_INDIRECT to regress_test_role;
+
+set role to regress_test_role;
+
+alter server s1 owner to regress_test_indirect;
+
+reset role;
+
+grant USAGE on FOREIGN DATA WRAPPER foo to regress_test_indirect;
+
+set role to regress_test_role;
+
+alter server s1 owner to regress_test_indirect;
+
+reset role;
+
+drop role regress_test_indirect;
+
+alter server s8 rename to s8new;
+
+alter server s8new rename to s8;
+
+drop SERVER nonexistent;
+
+drop SERVER if exists nonexistent;
+
+set role to regress_test_role;
+
+drop SERVER s2;
+
+drop SERVER s1;
+
+reset role;
+
+alter server s2 owner to regress_test_role;
+
+set role to regress_test_role;
+
+drop SERVER s2;
+
+reset role;
+
+create USER MAPPING for current_user SERVER s3;
+
+drop SERVER s3;
+
+drop SERVER s3 cascade;
+
+create USER MAPPING for regress_test_missing_role SERVER s1;
+
+create USER MAPPING for current_user SERVER s1;
+
+create USER MAPPING for current_user SERVER s4;
+
+create USER MAPPING for current_user SERVER s4;
+
+create USER MAPPING for PUBLIC SERVER s4 OPTIONS ("this mapping" 'is public');
+
+create USER MAPPING
+for current_user
+SERVER s8 OPTIONS (username 'test',
+password 'secret');
+
+create USER MAPPING
+for current_user
+SERVER s8 OPTIONS ("user" 'test',
+password 'secret');
+
+alter server s5 owner to regress_test_role;
+
+alter server s6 owner to regress_test_indirect;
+
+set role to regress_test_role;
+
+create USER MAPPING for current_user SERVER s5;
+
+create USER MAPPING for current_user SERVER s6 OPTIONS (username 'test');
+
+create USER MAPPING for current_user SERVER s7;
+
+create USER MAPPING for PUBLIC SERVER s8;
+
+reset role;
+
+alter server t1 owner to regress_test_indirect;
+
+set role to regress_test_role;
+
+create USER MAPPING
+for current_user
+SERVER t1 OPTIONS (username 'bob',
+password 'boo');
+
+create USER MAPPING for PUBLIC SERVER t1;
+
+reset role;
+
+alter USER MAPPING for regress_test_missing_role SERVER s4
+  OPTIONS (gotcha 'true');
+
+alter USER MAPPING for current_user SERVER ss4 OPTIONS (gotcha 'true');
+
+alter USER MAPPING for PUBLIC SERVER s5 OPTIONS (gotcha 'true');
+
+alter USER MAPPING for current_user SERVER s8 OPTIONS (username 'test');
+
+alter USER MAPPING for current_user SERVER s8
+  OPTIONS (drop "user",
+  set password 'public');
+
+set role to regress_test_role;
+
+alter USER MAPPING for current_user SERVER s5 OPTIONS (add modified '1');
+
+alter USER MAPPING for PUBLIC SERVER s4 OPTIONS (add modified '1');
+
+alter USER MAPPING for PUBLIC SERVER t1 OPTIONS (add modified '1');
+
+reset role;
+
+drop user mapping for regress_test_missing_role server s4;
+
+drop user mapping for current_user server ss4;
+
+drop user mapping for PUBLIC server s7;
+
+drop user mapping if exists for regress_test_missing_role server s4;
+
+drop user mapping if exists for current_user server ss4;
+
+drop user mapping if exists for PUBLIC server s7;
+
+create USER MAPPING for PUBLIC SERVER s8;
+
+set role to regress_test_role;
+
+drop user mapping for PUBLIC server s8;
+
+reset role;
+
+drop SERVER s7;
+
+create schema "foreign_schema";
+
+create server s0 foreign data wrapper dummy;
+
+create foreign table ft1 () SERVER no_server;
+
+create foreign table ft1 (
+  c1 INT
+  OPTIONS ("param 1" 'val1')
+  primary key,
+  c2 TEXT
+  OPTIONS (param2 'val2', param3 'val3'),
+  c3 DATE
+) SERVER s0 OPTIONS (delimiter ',',
+quote '"',
+"be quoted" 'value');
+
+create table ref_table (id INT primary key);
+
+create foreign table ft1 (
+  c1 INT
+  OPTIONS ("param 1" 'val1')
+  references ref_table (id),
+  c2 TEXT
+  OPTIONS (param2 'val2', param3 'val3'),
+  c3 DATE
+) SERVER s0 OPTIONS (delimiter ',',
+quote '"',
+"be quoted" 'value');
+
+drop TABLE "ref_table";
+
+create foreign table ft1 (
+  c1 INT
+  OPTIONS ("param 1" 'val1')
+  not null,
+  c2 TEXT
+  OPTIONS (param2 'val2', param3 'val3'),
+  c3 DATE,
+  unique (c3)
+) SERVER s0 OPTIONS (delimiter ',',
+quote '"',
+"be quoted" 'value');
+
+create foreign table ft1 (
+  c1 INT
+  OPTIONS ("param 1" 'val1')
+  not null,
+  c2 TEXT
+  OPTIONS (param2 'val2', param3 'val3')
+  check (c2 <> ''),
+  c3 DATE,
+  check (c3
+  between cast('1994-01-01' as DATE)
+  and cast('1994-01-31' as DATE))
+) SERVER s0 OPTIONS (delimiter ',',
+quote '"',
+"be quoted" 'value');
+
+comment on foreign table ft1 is 'ft1';
+
+comment on column ft1.c1 is 'ft1.c1';
+
+create index "id_ft1_c2" on ft1 using btree (c2);
+
+select * from ft1;
+
+select * from ft1;
+
+create table lt1 (a INT)
+partition by range(a);
+
+create foreign table ft_part1
+partition of lt1
+for values from (0) to (1000) SERVER s0;
+
+create index on lt1 using btree (a);
+
+create unique index on lt1 using btree (a);
+
+alter table lt1
+  add primary key (a);
+
+drop TABLE "lt1";
+
+create table lt1 (a INT)
+partition by range(a);
+
+create index on lt1 using btree (a);
+
+create foreign table ft_part1
+partition of lt1
+for values from (0) to (1000) SERVER s0;
+
+create foreign table ft_part2 ( a INT ) SERVER s0;
+
+alter table lt1
+  ATTACH partition
+  ft_part2
+  for values from (1000) to (2000);
+
+drop FOREIGN TABLE "ft_part1", "ft_part2";
+
+create unique index on lt1 using btree (a);
+
+alter table lt1
+  add primary key (a);
+
+create foreign table ft_part1
+partition of lt1
+for values from (0) to (1000) SERVER s0;
+
+create foreign table ft_part2 ( a INT not null ) SERVER s0;
+
+alter table lt1
+  ATTACH partition
+  ft_part2
+  for values from (1000) to (2000);
+
+drop TABLE "lt1";
+
+drop FOREIGN TABLE "ft_part2";
+
+create table lt1 (a INT)
+partition by range(a);
+
+create index on lt1 using btree (a);
+
+create table lt1_part1
+partition of lt1
+for values from (0) to (1000)
+partition by range(a);
+
+create foreign table ft_part_1_1
+partition of lt1_part1
+for values from (0) to (100) SERVER s0;
+
+create foreign table ft_part_1_2 ( a INT ) SERVER s0;
+
+alter table lt1_part1
+  ATTACH partition
+  ft_part_1_2
+  for values from (100) to (200);
+
+create unique index on lt1 using btree (a);
+
+alter table lt1
+  add primary key (a);
+
+drop FOREIGN TABLE "ft_part_1_1", "ft_part_1_2";
+
+create unique index on lt1 using btree (a);
+
+alter table lt1
+  add primary key (a);
+
+create foreign table ft_part_1_1
+partition of lt1_part1
+for values from (0) to (100) SERVER s0;
+
+create foreign table ft_part_1_2 ( a INT not null ) SERVER s0;
+
+alter table lt1_part1
+  ATTACH partition
+  ft_part_1_2
+  for values from (100) to (200);
+
+drop TABLE "lt1";
+
+drop FOREIGN TABLE "ft_part_1_2";
+
+comment on foreign table ft1 is 'foreign table';
+
+comment on foreign table ft1 is null;
+
+comment on column ft1.c1 is 'foreign column';
+
+comment on column ft1.c1 is null;
+
+alter foreign table ft1
+  add column c4 INT;
+
+alter foreign table ft1
+  add column c5 INT default 0;
+
+alter foreign table ft1
+  add column c6 INT;
+
+alter foreign table ft1
+  add column c7 INT not null;
+
+alter foreign table ft1
+  add column c8 INT;
+
+alter foreign table ft1
+  add column c9 INT;
+
+alter foreign table ft1
+  add column c10 INT OPTIONS (p1 'v1');
+
+alter foreign table ft1
+  alter column c4 set default 0;
+
+alter foreign table ft1
+  alter column c5 drop default;
+
+alter foreign table ft1
+  alter column c6 set not null;
+
+alter foreign table ft1
+  alter column c7 drop not null;
+
+alter foreign table ft1
+  alter column c8 type CHAR(10) using '0';
+
+alter foreign table ft1
+  alter column c8 type CHAR(10);
+
+alter foreign table ft1
+  alter column c8 type TEXT;
+
+alter foreign table ft1
+  alter column xmin OPTIONS (add p1 'v1');
+
+alter foreign table ft1
+  alter column c7 OPTIONS (add p1 'v1', add p2 'v2'),
+  alter column c8 OPTIONS (add p1 'v1', add p2 'v2');
+
+alter foreign table ft1
+  alter column c8 OPTIONS (set p2 'V2', drop p1);
+
+alter foreign table ft1
+  alter column c1 set STATISTICS 10000;
+
+alter foreign table ft1
+  alter column c1 set (n_distinct = 100);
+
+alter foreign table ft1
+  alter column c8 set STATISTICS -1;
+
+alter foreign table ft1
+  alter column c8 set STORAGE plain;
+
+create table use_ft1_column_type (x ft1);
+
+alter foreign table ft1
+  alter column c8 type INT;
+
+drop TABLE "use_ft1_column_type";
+
+alter foreign table ft1
+  add primary key (c7);
+
+alter foreign table ft1
+  add constraint "ft1_c9_check" check (c9 < 0) not valid;
+
+alter foreign table ft1
+  alter constraint "ft1_c9_check" deferrable initially immediate;
+
+alter foreign table ft1
+  drop constraint ft1_c9_check;
+
+alter foreign table ft1
+  drop constraint no_const;
+
+alter foreign table ft1
+  drop constraint if exists no_const;
+
+alter foreign table ft1
+  OWNER to regress_test_role;
+
+alter foreign table ft1
+  OPTIONS (drop delimiter, set quote '~', add escape '@');
+
+alter foreign table ft1
+  drop column no_column;
+
+alter foreign table ft1
+  drop column if exists no_column;
+
+alter foreign table ft1
+  drop column c9;
+
+alter foreign table ft1
+  add column c11 serial;
+
+alter FOREIGN TABLE ft1 set SCHEMA foreign_schema;
+
+alter foreign table ft1
+  set TABLESPACE ts;
+
+alter SEQUENCE foreign_schema.ft1_c11_seq set SCHEMA public;
+
+alter foreign table foreign_schema.ft1 rename column c1 to foreign_column_1;
+
+alter foreign table foreign_schema.ft1 rename to foreign_table_1;
+
+alter foreign table if exists doesnt_exist_ft1
+  add column c4 INT;
+
+alter foreign table if exists doesnt_exist_ft1
+  add column c6 INT;
+
+alter foreign table if exists doesnt_exist_ft1
+  add column c7 INT not null;
+
+alter foreign table if exists doesnt_exist_ft1
+  add column c8 INT;
+
+alter foreign table if exists doesnt_exist_ft1
+  add column c9 INT;
+
+alter foreign table if exists doesnt_exist_ft1
+  add column c10 INT OPTIONS (p1 'v1');
+
+alter foreign table if exists doesnt_exist_ft1
+  alter column c6 set not null;
+
+alter foreign table if exists doesnt_exist_ft1
+  alter column c7 drop not null;
+
+alter foreign table if exists doesnt_exist_ft1
+  alter column c8 type CHAR(10);
+
+alter foreign table if exists doesnt_exist_ft1
+  alter column c8 type TEXT;
+
+alter foreign table if exists doesnt_exist_ft1
+  alter column c7 OPTIONS (add p1 'v1', add p2 'v2'),
+  alter column c8 OPTIONS (add p1 'v1', add p2 'v2');
+
+alter foreign table if exists doesnt_exist_ft1
+  alter column c8 OPTIONS (set p2 'V2', drop p1);
+
+alter foreign table if exists doesnt_exist_ft1
+  drop constraint if exists no_const;
+
+alter foreign table if exists doesnt_exist_ft1
+  drop constraint ft1_c1_check;
+
+alter foreign table if exists doesnt_exist_ft1
+  OWNER to regress_test_role;
+
+alter foreign table if exists doesnt_exist_ft1
+  OPTIONS (drop delimiter, set quote '~', add escape '@');
+
+alter foreign table if exists doesnt_exist_ft1
+  drop column if exists no_column;
+
+alter foreign table if exists doesnt_exist_ft1
+  drop column c9;
+
+alter FOREIGN TABLE if exists doesnt_exist_ft1 set SCHEMA foreign_schema;
+
+alter foreign table if exists doesnt_exist_ft1
+rename column c1
+to foreign_column_1;
+
+alter foreign table if exists doesnt_exist_ft1 rename to foreign_table_1;
+
+select * from information_schema.foreign_data_wrappers order by 1, 2;
+
+select * from information_schema.foreign_data_wrapper_options order by 1, 2, 3;
+
+select * from information_schema.foreign_servers order by 1, 2;
+
+select * from information_schema.foreign_server_options order by 1, 2, 3;
+
+select
+  *
+from
+  information_schema.user_mappings
+order by lower(authorization_identifier),
+  2,
+  3;
+
+select
+  *
+from
+  information_schema.user_mapping_options
+order by lower(authorization_identifier),
+  2,
+  3,
+  4;
+
+select
+  *
+from
+  information_schema.usage_privileges
+where
+  object_type like 'FOREIGN%' and
+  object_name in ('s6', 'foo')
+order by 1,
+  2,
+  3,
+  4,
+  5;
+
+select
+  *
+from
+  information_schema.role_usage_grants
+where
+  object_type like 'FOREIGN%' and
+  object_name in ('s6', 'foo')
+order by 1,
+  2,
+  3,
+  4,
+  5;
+
+select * from information_schema.foreign_tables order by 1, 2, 3;
+
+select * from information_schema.foreign_table_options order by 1, 2, 3, 4;
+
+set role to regress_test_role;
+
+select * from information_schema.user_mapping_options order by 1, 2, 3, 4;
+
+select
+  *
+from
+  information_schema.usage_privileges
+where
+  object_type like 'FOREIGN%' and
+  object_name in ('s6', 'foo')
+order by 1,
+  2,
+  3,
+  4,
+  5;
+
+select
+  *
+from
+  information_schema.role_usage_grants
+where
+  object_type like 'FOREIGN%' and
+  object_name in ('s6', 'foo')
+order by 1,
+  2,
+  3,
+  4,
+  5;
+
+drop user mapping for current_user server t1;
+
+set role to regress_test_role2;
+
+select * from information_schema.user_mapping_options order by 1, 2, 3, 4;
+
+reset role;
+
+select
+  has_foreign_data_wrapper_privilege(
+    'regress_test_role',
+    (
+      select
+        oid
+      from
+        pg_foreign_data_wrapper
+      where
+        fdwname = 'foo'
+    ),
+    'USAGE'
+  );
+
+select has_foreign_data_wrapper_privilege('regress_test_role', 'foo', 'USAGE');
+
+select
+  has_foreign_data_wrapper_privilege(
+    (
+      select
+        oid
+      from
+        pg_roles
+      where
+        rolname = 'regress_test_role'
+    ),
+    (
+      select
+        oid
+      from
+        pg_foreign_data_wrapper
+      where
+        fdwname = 'foo'
+    ),
+    'USAGE'
+  );
+
+select
+  has_foreign_data_wrapper_privilege(
+    (
+      select
+        oid
+      from
+        pg_foreign_data_wrapper
+      where
+        fdwname = 'foo'
+    ),
+    'USAGE'
+  );
+
+select
+  has_foreign_data_wrapper_privilege(
+    (
+      select
+        oid
+      from
+        pg_roles
+      where
+        rolname = 'regress_test_role'
+    ),
+    'foo',
+    'USAGE'
+  );
+
+select has_foreign_data_wrapper_privilege('foo', 'USAGE');
+
+grant USAGE on FOREIGN DATA WRAPPER foo to regress_test_role;
+
+select has_foreign_data_wrapper_privilege('regress_test_role', 'foo', 'USAGE');
+
+select
+  has_server_privilege(
+    'regress_test_role',
+    (
+      select
+        oid
+      from
+        pg_foreign_server
+      where
+        srvname = 's8'
+    ),
+    'USAGE'
+  );
+
+select has_server_privilege('regress_test_role', 's8', 'USAGE');
+
+select
+  has_server_privilege(
+    (
+      select
+        oid
+      from
+        pg_roles
+      where
+        rolname = 'regress_test_role'
+    ),
+    (
+      select
+        oid
+      from
+        pg_foreign_server
+      where
+        srvname = 's8'
+    ),
+    'USAGE'
+  );
+
+select
+  has_server_privilege(
+    (
+      select
+        oid
+      from
+        pg_foreign_server
+      where
+        srvname = 's8'
+    ),
+    'USAGE'
+  );
+
+select
+  has_server_privilege(
+    (
+      select
+        oid
+      from
+        pg_roles
+      where
+        rolname = 'regress_test_role'
+    ),
+    's8',
+    'USAGE'
+  );
+
+select has_server_privilege('s8', 'USAGE');
+
+grant USAGE on FOREIGN server s8 to regress_test_role;
+
+select has_server_privilege('regress_test_role', 's8', 'USAGE');
+
+revoke USAGE on FOREIGN server s8 from regress_test_role;
+
+grant USAGE on FOREIGN server s4 to regress_test_role;
+
+drop user mapping for PUBLIC server s4;
+
+alter server s6 options (drop host, drop dbname);
+
+alter USER MAPPING for regress_test_role SERVER s6 OPTIONS (drop username);
+
+alter FOREIGN DATA WRAPPER foo VALIDATOR postgresql_fdw_validator;
+
+set role to regress_unprivileged_role;
+
+create FOREIGN DATA WRAPPER foobar;
+
+alter FOREIGN DATA WRAPPER foo OPTIONS (gotcha 'true');
+
+alter foreign data wrapper foo owner to regress_unprivileged_role;
+
+drop FOREIGN DATA WRAPPER foo;
+
+grant USAGE on FOREIGN DATA WRAPPER foo to regress_test_role;
+
+create server s9 foreign data wrapper foo;
+
+alter server s4 version '0.5';
+
+alter server s4 owner to regress_unprivileged_role;
+
+drop SERVER s4;
+
+grant USAGE on FOREIGN server s4 to regress_test_role;
+
+create USER MAPPING for PUBLIC SERVER s4;
+
+alter USER MAPPING for regress_test_role SERVER s6 OPTIONS (gotcha 'true');
+
+drop user mapping for regress_test_role server s6;
+
+reset role;
+
+grant USAGE on FOREIGN DATA WRAPPER postgresql to regress_unprivileged_role;
+
+grant USAGE
+on FOREIGN DATA WRAPPER foo
+to regress_unprivileged_role
+with grant option;
+
+set role to regress_unprivileged_role;
+
+create FOREIGN DATA WRAPPER foobar;
+
+alter FOREIGN DATA WRAPPER foo OPTIONS (gotcha 'true');
+
+drop FOREIGN DATA WRAPPER foo;
+
+grant USAGE on FOREIGN DATA WRAPPER postgresql to regress_test_role;
+
+grant USAGE on FOREIGN DATA WRAPPER foo to regress_test_role;
+
+create server s9 foreign data wrapper postgresql;
+
+alter server s6 version '0.5';
+
+drop SERVER s6;
+
+grant USAGE on FOREIGN server s6 to regress_test_role;
+
+grant USAGE on FOREIGN server s9 to regress_test_role;
+
+create USER MAPPING for PUBLIC SERVER s6;
+
+create USER MAPPING for PUBLIC SERVER s9;
+
+alter USER MAPPING for regress_test_role SERVER s6 OPTIONS (gotcha 'true');
+
+drop user mapping for regress_test_role server s6;
+
+reset role;
+
+revoke USAGE on FOREIGN DATA WRAPPER foo from regress_unprivileged_role;
+
+revoke USAGE on FOREIGN DATA WRAPPER foo from regress_unprivileged_role cascade;
+
+set role to regress_unprivileged_role;
+
+grant USAGE on FOREIGN DATA WRAPPER foo to regress_test_role;
+
+create server s10 foreign data wrapper foo;
+
+alter server s9 version '1.1';
+
+grant USAGE on FOREIGN server s9 to regress_test_role;
+
+create USER MAPPING for current_user SERVER s9;
+
+drop SERVER s9 cascade;
+
+reset role;
+
+create server s9 foreign data wrapper foo;
+
+grant USAGE on FOREIGN server s9 to regress_unprivileged_role;
+
+set role to regress_unprivileged_role;
+
+alter server s9 version '1.2';
+
+grant USAGE on FOREIGN server s9 to regress_test_role;
+
+create USER MAPPING for current_user SERVER s9;
+
+drop SERVER s9 cascade;
+
+set role to regress_test_role;
+
+create server s10 foreign data wrapper foo;
+
+create USER MAPPING for PUBLIC SERVER s10 OPTIONS ("user" 'secret');
+
+create USER MAPPING
+for regress_unprivileged_role
+SERVER s10 OPTIONS ("user" 'secret');
+
+reset role;
+
+set role to regress_unprivileged_role;
+
+reset role;
+
+drop SERVER s10 cascade;
+
+create function dummy_trigger()
+returns trigger
+as '
+  BEGIN
+    RETURN NULL;
+  END
+'
+language "plpgsql";
+
+create TRIGGER trigtest_before_stmt
+  before insert or delete or update
+  on foreign_schema.foreign_table_1
+  for EACH STATEMENT
+  EXECUTE FUNCTION dummy_trigger();
+
+create TRIGGER trigtest_after_stmt
+  after insert or delete or update
+  on foreign_schema.foreign_table_1
+  for EACH STATEMENT
+  EXECUTE FUNCTION dummy_trigger();
+
+create TRIGGER trigtest_after_stmt_tt
+  after insert or delete or update
+  on foreign_schema.foreign_table_1
+  REFERENCING new table as new_table
+  for EACH STATEMENT
+  EXECUTE FUNCTION dummy_trigger();
+
+create TRIGGER trigtest_before_row
+  before insert or delete or update
+  on foreign_schema.foreign_table_1
+  for EACH ROW
+  EXECUTE FUNCTION dummy_trigger();
+
+create TRIGGER trigtest_after_row
+  after insert or delete or update
+  on foreign_schema.foreign_table_1
+  for EACH ROW
+  EXECUTE FUNCTION dummy_trigger();
+
+create CONSTRAINT TRIGGER trigtest_constraint
+  after insert or delete or update
+  on foreign_schema.foreign_table_1
+  for EACH ROW
+  EXECUTE FUNCTION dummy_trigger();
+
+alter foreign table foreign_schema.foreign_table_1
+  disable trigger trigtest_before_stmt;
+
+alter foreign table foreign_schema.foreign_table_1
+  enable trigger trigtest_before_stmt;
+
+drop TRIGGER "trigtest_before_stmt" on "foreign_schema"."foreign_table_1";
+
+drop TRIGGER "trigtest_before_row" on "foreign_schema"."foreign_table_1";
+
+drop TRIGGER "trigtest_after_stmt" on "foreign_schema"."foreign_table_1";
+
+drop TRIGGER "trigtest_after_row" on "foreign_schema"."foreign_table_1";
+
+drop FUNCTION dummy_trigger();
+
+create table fd_pt1 (
+  c1 INT not null,
+  c2 TEXT,
+  c3 DATE
+);
+
+create foreign table ft2
+partition of fd_pt1
+default SERVER s0 OPTIONS (delimiter ',',
+quote '"',
+"be quoted" 'value');
+
+drop FOREIGN TABLE "ft2";
+
+create foreign table ft2 (
+  c1 INT not null,
+  c2 TEXT,
+  c3 DATE
+) SERVER s0 OPTIONS (delimiter ',',
+quote '"',
+"be quoted" 'value');
+
+alter foreign table ft2
+  INHERIT fd_pt1;
+
+create table ct3 ()
+inherits (ft2);
+
+create foreign table ft3 partition of ft2 default SERVER s0;
+
+alter table fd_pt1
+  add column c4 INT;
+
+alter table fd_pt1
+  add column c5 INT default 0;
+
+alter table fd_pt1
+  add column c6 INT;
+
+alter table fd_pt1
+  add column c7 INT not null;
+
+alter table fd_pt1
+  add column c8 INT;
+
+alter table fd_pt1
+  alter column c4 set default 0;
+
+alter table fd_pt1
+  alter column c5 drop default;
+
+alter table fd_pt1
+  alter column c6 set not null;
+
+alter table fd_pt1
+  alter column c7 drop not null;
+
+alter table fd_pt1
+  alter column c8 type CHAR(10) using '0';
+
+alter table fd_pt1
+  alter column c8 type CHAR(10);
+
+alter table fd_pt1
+  alter column c8 type TEXT;
+
+alter table fd_pt1
+  alter column c1 set STATISTICS 10000;
+
+alter table fd_pt1
+  alter column c1 set (n_distinct = 100);
+
+alter table fd_pt1
+  alter column c8 set STATISTICS -1;
+
+alter table fd_pt1
+  alter column c8 set STORAGE external;
+
+alter table fd_pt1
+  drop column c4;
+
+alter table fd_pt1
+  drop column c5;
+
+alter table fd_pt1
+  drop column c6;
+
+alter table fd_pt1
+  drop column c7;
+
+alter table fd_pt1
+  drop column c8;
+
+alter table fd_pt1
+  add constraint "fd_pt1chk1" check (c1 > 0) no inherit;
+
+alter table fd_pt1
+  add constraint "fd_pt1chk2" check (c2 <> '');
+
+select
+  relname,
+  conname,
+  contype,
+  conislocal,
+  coninhcount,
+  connoinherit
+from
+  pg_class as pc
+  inner join
+    pg_constraint as pgc
+  on conrelid = pc.oid
+where
+  pc.relname = 'fd_pt1'
+order by 1,
+  2;
+
+drop FOREIGN TABLE "ft2";
+
+drop FOREIGN TABLE "ft2" cascade;
+
+create foreign table ft2 (
+  c1 INT not null,
+  c2 TEXT,
+  c3 DATE
+) SERVER s0 OPTIONS (delimiter ',',
+quote '"',
+"be quoted" 'value');
+
+alter foreign table ft2
+  INHERIT fd_pt1;
+
+alter foreign table ft2
+  add constraint "fd_pt1chk2" check (c2 <> '');
+
+alter foreign table ft2
+  INHERIT fd_pt1;
+
+alter table fd_pt1
+  drop constraint fd_pt1chk1 cascade;
+
+alter table fd_pt1
+  drop constraint fd_pt1chk2 cascade;
+
+insert into fd_pt1
+values
+  (
+    1,
+    cast('fd_pt1' as TEXT),
+    cast('1994-01-01' as DATE)
+  );
+
+alter table fd_pt1
+  add constraint "fd_pt1chk3" check (c2 <> '') not valid;
+
+alter table fd_pt1
+  validate constraint fd_pt1chk3;
+
+alter table fd_pt1 rename column c1 to f1;
+
+alter table fd_pt1 rename column c2 to f2;
+
+alter table fd_pt1 rename column c3 to f3;
+
+alter table fd_pt1 rename constraint fd_pt1chk3 to f2_check;
+
+drop TABLE "fd_pt1" cascade;
+
+import foreign schema s1 from server s9 into public;
+
+import foreign schema s1 LIMIT to (t1) from server s9 into public;
+
+import foreign schema s1 except (t1) from server s9 into public;
+
+import foreign schema s1
+except (t1,
+t2)
+from server s9
+into public
+OPTIONS (option1 'value1',
+option2 'value2');
+
+drop FOREIGN TABLE "no_table";
+
+drop FOREIGN TABLE if exists "no_table";
+
+drop FOREIGN TABLE "foreign_schema"."foreign_table_1";
+
+reassign owned by regress_test_role to regress_test_role2;
+
+drop OWNED by regress_test_role2;
+
+drop OWNED by regress_test_role2 cascade;
+
+create table fd_pt2 (
+  c1 INT not null,
+  c2 TEXT,
+  c3 DATE
+)
+partition by LIST(c1);
+
+create foreign table fd_pt2_1
+partition of fd_pt2
+for values in (1) SERVER s0 OPTIONS (delimiter ',',
+quote '"',
+"be quoted" 'value');
+
+drop FOREIGN TABLE "fd_pt2_1";
+
+create foreign table fd_pt2_1 (
+  c1 INT not null,
+  c2 TEXT,
+  c3 DATE,
+  c4 CHAR(1)
+) SERVER s0 OPTIONS (delimiter ',',
+quote '"',
+"be quoted" 'value');
+
+alter table fd_pt2
+  ATTACH partition
+  fd_pt2_1 for values in (1);
+
+drop FOREIGN TABLE "fd_pt2_1";
+
+create foreign table fd_pt2_1 (
+  c1 INT not null,
+  c2 TEXT,
+  c3 DATE
+) SERVER s0 OPTIONS (delimiter ',',
+quote '"',
+"be quoted" 'value');
+
+alter table fd_pt2
+  ATTACH partition
+  fd_pt2_1 for values in (1);
+
+alter table fd_pt2_1
+  add column c4 CHAR(1);
+
+alter table fd_pt2_1
+  alter column c3 set not null;
+
+alter table fd_pt2_1
+  add constraint "p21chk" check (c2 <> '');
+
+alter table fd_pt2_1
+  alter column c1 drop not null;
+
+alter table fd_pt2
+  DETACH partition
+  fd_pt2_1;
+
+alter table fd_pt2
+  alter column c2 set not null;
+
+alter table fd_pt2
+  ATTACH partition
+  fd_pt2_1 for values in (1);
+
+alter foreign table fd_pt2_1
+  alter column c2 set not null;
+
+alter table fd_pt2
+  ATTACH partition
+  fd_pt2_1 for values in (1);
+
+alter table fd_pt2
+  DETACH partition
+  fd_pt2_1;
+
+alter table fd_pt2
+  add constraint "fd_pt2chk1" check (c1 > 0);
+
+alter table fd_pt2
+  ATTACH partition
+  fd_pt2_1 for values in (1);
+
+alter foreign table fd_pt2_1
+  add constraint "fd_pt2chk1" check (c1 > 0);
+
+alter table fd_pt2
+  ATTACH partition
+  fd_pt2_1 for values in (1);
+
+drop FOREIGN TABLE "fd_pt2_1";
+
+drop TABLE "fd_pt2";
+
+create temporary table temp_parted (a INT)
+partition by LIST(a);
+
+create foreign table foreign_part partition of temp_parted default SERVER s0;
+
+create foreign table foreign_part ( a INT ) SERVER s0;
+
+alter table temp_parted
+  ATTACH partition
+  foreign_part default;
+
+drop FOREIGN TABLE "foreign_part";
+
+drop TABLE "temp_parted";
+
+drop SCHEMA foreign_schema cascade;
+
+drop role regress_test_role;
+
+drop SERVER t1 cascade;
+
+drop user mapping for regress_test_role server s6;
+
+drop FOREIGN DATA WRAPPER foo cascade;
+
+drop SERVER s8 cascade;
+
+drop role regress_test_indirect;
+
+drop role regress_test_role;
+
+drop role regress_unprivileged_role;
+
+revoke all on FOREIGN DATA WRAPPER postgresql from regress_unprivileged_role;
+
+drop role regress_unprivileged_role;
+
+drop role regress_test_role2;
+
+drop FOREIGN DATA WRAPPER postgresql cascade;
+
+drop FOREIGN DATA WRAPPER dummy cascade;
+
+drop role regress_foreign_data_user;
+
+select
+  fdwname,
+  fdwhandler,
+  fdwvalidator,
+  fdwoptions
+from
+  pg_foreign_data_wrapper;
+
+select srvname, srvoptions from pg_foreign_server;
+
+select * from pg_user_mapping;

@@ -1,0 +1,1 @@
+REASSIGN OWNED BY olduser TO newuser;

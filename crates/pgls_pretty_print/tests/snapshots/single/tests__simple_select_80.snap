@@ -1,0 +1,6 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/single/simple_select.sql
+snapshot_kind: text
+---
+select a, b, c from t;

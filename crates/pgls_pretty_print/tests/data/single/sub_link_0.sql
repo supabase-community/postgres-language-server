@@ -1,0 +1,1 @@
+SELECT * FROM users WHERE EXISTS (SELECT 1 FROM orders);

@@ -1,0 +1,109 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/create_schema.sql
+snapshot_kind: text
+---
+create role regress_create_schema_role SUPERUSER;
+
+create schema authorization regress_create_schema_role;
+
+create sequence schema_not_existing.seq;
+
+create schema authorization regress_create_schema_role;
+
+create table schema_not_existing.tab (id INT);
+
+create schema authorization regress_create_schema_role;
+
+create view schema_not_existing.view
+as select 1;
+
+create schema authorization regress_create_schema_role;
+
+create index on schema_not_existing.tab using btree (id);
+
+create schema authorization regress_create_schema_role;
+
+create TRIGGER schema_trig
+  before insert
+  on schema_not_existing.tab
+  for EACH STATEMENT
+  EXECUTE FUNCTION schema_trig.no_func();
+
+set role to regress_create_schema_role;
+
+create schema authorization current_role;
+
+create sequence schema_not_existing.seq;
+
+create schema authorization current_role;
+
+create table schema_not_existing.tab (id INT);
+
+create schema authorization current_role;
+
+create view schema_not_existing.view
+as select 1;
+
+create schema authorization current_role;
+
+create index on schema_not_existing.tab using btree (id);
+
+create schema authorization current_role;
+
+create TRIGGER schema_trig
+  before insert
+  on schema_not_existing.tab
+  for EACH STATEMENT
+  EXECUTE FUNCTION schema_trig.no_func();
+
+create schema "regress_schema_1" authorization current_role;
+
+create sequence schema_not_existing.seq;
+
+create schema "regress_schema_1" authorization current_role;
+
+create table schema_not_existing.tab (id INT);
+
+create schema "regress_schema_1" authorization current_role;
+
+create view schema_not_existing.view
+as select 1;
+
+create schema "regress_schema_1" authorization current_role;
+
+create index on schema_not_existing.tab using btree (id);
+
+create schema "regress_schema_1" authorization current_role;
+
+create TRIGGER schema_trig
+  before insert
+  on schema_not_existing.tab
+  for EACH STATEMENT
+  EXECUTE FUNCTION schema_trig.no_func();
+
+reset role;
+
+create schema authorization regress_create_schema_role;
+
+create table regress_create_schema_role.tab (id INT);
+
+drop SCHEMA regress_create_schema_role cascade;
+
+set role to regress_create_schema_role;
+
+create schema authorization current_role;
+
+create table regress_create_schema_role.tab (id INT);
+
+drop SCHEMA regress_create_schema_role cascade;
+
+create schema "regress_schema_1" authorization current_role;
+
+create table regress_schema_1.tab (id INT);
+
+drop SCHEMA regress_schema_1 cascade;
+
+reset role;
+
+drop role regress_create_schema_role;

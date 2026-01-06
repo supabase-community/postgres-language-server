@@ -1,0 +1,43 @@
+use pgls_query::protobuf::DropSubscriptionStmt;
+
+use crate::{
+    TokenKind,
+    emitter::{EventEmitter, GroupKind},
+};
+
+pub(super) fn emit_drop_subscription_stmt(e: &mut EventEmitter, n: &DropSubscriptionStmt) {
+    e.group_start(GroupKind::DropSubscriptionStmt);
+
+    e.token(TokenKind::DROP_KW);
+    e.space();
+    e.token(TokenKind::SUBSCRIPTION_KW);
+
+    if n.missing_ok {
+        e.space();
+        e.token(TokenKind::IF_KW);
+        e.space();
+        e.token(TokenKind::EXISTS_KW);
+    }
+
+    if !n.subname.is_empty() {
+        e.space();
+        e.token(TokenKind::IDENT(n.subname.clone()));
+    }
+
+    // Add CASCADE or RESTRICT if specified
+    // DropBehavior: 0=Undefined, 1=DropRestrict, 2=DropCascade
+    match n.behavior {
+        2 => {
+            e.space();
+            e.token(TokenKind::CASCADE_KW);
+        }
+        1 => {
+            e.space();
+            e.token(TokenKind::RESTRICT_KW);
+        }
+        _ => {}
+    }
+
+    e.token(TokenKind::SEMICOLON);
+    e.group_end();
+}

@@ -1,0 +1,1 @@
+ALTER ROLE admin SET search_path TO myschema, public;

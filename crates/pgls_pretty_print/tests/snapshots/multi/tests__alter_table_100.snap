@@ -1,0 +1,1732 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/alter_table.sql
+snapshot_kind: text
+---
+set client_min_messages = warning;
+
+drop role if exists regress_alter_table_user1;
+
+reset client_min_messages;
+
+create user regress_alter_table_user1;
+
+create table attmp (initial INT);
+
+comment on table attmp_wrong is 'table comment';
+
+comment on table attmp is 'table comment';
+
+comment on table attmp is null;
+
+alter table attmp
+  add column xmin INT;
+
+alter table attmp
+  add column a INT default 3;
+
+alter table attmp
+  add column b NAME;
+
+alter table attmp
+  add column c TEXT;
+
+alter table attmp
+  add column d DOUBLE PRECISION;
+
+alter table attmp
+  add column e REAL;
+
+alter table attmp
+  add column f SMALLINT;
+
+alter table attmp
+  add column g polygon;
+
+alter table attmp
+  add column i CHAR(1);
+
+alter table attmp
+  add column k INT;
+
+alter table attmp
+  add column l TID;
+
+alter table attmp
+  add column m XID;
+
+alter table attmp
+  add column n oidvector;
+
+alter table attmp
+  add column p BOOLEAN;
+
+alter table attmp
+  add column q point;
+
+alter table attmp
+  add column r lseg;
+
+alter table attmp
+  add column s path;
+
+alter table attmp
+  add column t box;
+
+alter table attmp
+  add column v TIMESTAMP;
+
+alter table attmp
+  add column w INTERVAL;
+
+alter table attmp
+  add column x DOUBLE PRECISION[];
+
+alter table attmp
+  add column y REAL[];
+
+alter table attmp
+  add column z SMALLINT[];
+
+insert into attmp (
+  a,
+  b,
+  c,
+  d,
+  e,
+  f,
+  g,
+  i,
+  k,
+  l,
+  m,
+  n,
+  p,
+  q,
+  r,
+  s,
+  t,
+  v,
+  w,
+  x,
+  y,
+  z
+)
+values
+  (
+    4,
+    'name',
+    'text',
+    4.1,
+    4.1,
+    2,
+    '(4.1,4.1,3.1,3.1)',
+    'c',
+    314159,
+    '(1,1)',
+    '512',
+    '1 2 3 4 5 6 7 8',
+    true,
+    '(1.1,1.1)',
+    '(4.1,4.1,3.1,3.1)',
+    '(0,2,4.1,4.1,3.1,3.1)',
+    '(4.1,4.1,3.1,3.1)',
+    'epoch',
+    '01:00:10',
+    '{1.0,2.0,3.0,4.0}',
+    '{1.0,2.0,3.0,4.0}',
+    '{1,2,3,4}'
+  );
+
+select * from attmp;
+
+drop TABLE "attmp";
+
+create table attmp (initial INT);
+
+alter table attmp
+  add column a INT;
+
+alter table attmp
+  add column b NAME;
+
+alter table attmp
+  add column c TEXT;
+
+alter table attmp
+  add column d DOUBLE PRECISION;
+
+alter table attmp
+  add column e REAL;
+
+alter table attmp
+  add column f SMALLINT;
+
+alter table attmp
+  add column g polygon;
+
+alter table attmp
+  add column i CHAR(1);
+
+alter table attmp
+  add column k INT;
+
+alter table attmp
+  add column l TID;
+
+alter table attmp
+  add column m XID;
+
+alter table attmp
+  add column n oidvector;
+
+alter table attmp
+  add column p BOOLEAN;
+
+alter table attmp
+  add column q point;
+
+alter table attmp
+  add column r lseg;
+
+alter table attmp
+  add column s path;
+
+alter table attmp
+  add column t box;
+
+alter table attmp
+  add column v TIMESTAMP;
+
+alter table attmp
+  add column w INTERVAL;
+
+alter table attmp
+  add column x DOUBLE PRECISION[];
+
+alter table attmp
+  add column y REAL[];
+
+alter table attmp
+  add column z SMALLINT[];
+
+insert into attmp (
+  a,
+  b,
+  c,
+  d,
+  e,
+  f,
+  g,
+  i,
+  k,
+  l,
+  m,
+  n,
+  p,
+  q,
+  r,
+  s,
+  t,
+  v,
+  w,
+  x,
+  y,
+  z
+)
+values
+  (
+    4,
+    'name',
+    'text',
+    4.1,
+    4.1,
+    2,
+    '(4.1,4.1,3.1,3.1)',
+    'c',
+    314159,
+    '(1,1)',
+    '512',
+    '1 2 3 4 5 6 7 8',
+    true,
+    '(1.1,1.1)',
+    '(4.1,4.1,3.1,3.1)',
+    '(0,2,4.1,4.1,3.1,3.1)',
+    '(4.1,4.1,3.1,3.1)',
+    'epoch',
+    '01:00:10',
+    '{1.0,2.0,3.0,4.0}',
+    '{1.0,2.0,3.0,4.0}',
+    '{1,2,3,4}'
+  );
+
+select * from attmp;
+
+create index "attmp_idx" on attmp using btree (a, (d + e), b);
+
+alter index attmp_idx
+  alter column 1 set STATISTICS 1000;
+
+alter index attmp_idx
+  alter column 2 set STATISTICS 1000;
+
+alter index attmp_idx
+  alter column 3 set STATISTICS 1000;
+
+alter index attmp_idx
+  alter column 4 set STATISTICS 1000;
+
+alter index attmp_idx
+  alter column 2 set STATISTICS -1;
+
+drop TABLE "attmp";
+
+create table attmp (regtable INT);
+
+create temporary table attmp (attmptable INT);
+
+alter table attmp rename to attmp_new;
+
+select * from attmp;
+
+select * from attmp_new;
+
+alter table attmp rename to attmp_new2;
+
+select * from attmp;
+
+select * from attmp_new;
+
+select * from attmp_new2;
+
+drop TABLE "attmp_new";
+
+drop TABLE "attmp_new2";
+
+create table part_attmp (a INT primary key)
+partition by range(a);
+
+create table part_attmp1 partition of part_attmp for values from (0) to (100);
+
+alter index part_attmp_pkey rename to part_attmp_index;
+
+alter index part_attmp1_pkey rename to part_attmp1_index;
+
+alter table part_attmp rename to part_at2tmp;
+
+alter table part_attmp1 rename to part_at2tmp1;
+
+set role to regress_alter_table_user1;
+
+alter index part_attmp_index rename to fail;
+
+alter index part_attmp1_index rename to fail;
+
+alter table part_at2tmp rename to fail;
+
+alter table part_at2tmp1 rename to fail;
+
+reset role;
+
+drop TABLE "part_at2tmp";
+
+create table attmp_array (id INT);
+
+create table attmp_array2 (id INT);
+
+select typname from pg_type where oid = cast('attmp_array[]' as REGTYPE);
+
+select typname from pg_type where oid = cast('attmp_array2[]' as REGTYPE);
+
+alter table attmp_array2 rename to _attmp_array;
+
+select typname from pg_type where oid = cast('attmp_array[]' as REGTYPE);
+
+select typname from pg_type where oid = cast('_attmp_array[]' as REGTYPE);
+
+drop TABLE "_attmp_array";
+
+drop TABLE "attmp_array";
+
+create table attmp_array (id INT);
+
+select typname from pg_type where oid = cast('attmp_array[]' as REGTYPE);
+
+alter table attmp_array rename to _attmp_array;
+
+select typname from pg_type where oid = cast('_attmp_array[]' as REGTYPE);
+
+drop TABLE "_attmp_array";
+
+alter index if exists __onek_unique1 rename to attmp_onek_unique1;
+
+alter index if exists __attmp_onek_unique1 rename to onek_unique1;
+
+alter index onek_unique1 rename to attmp_onek_unique1;
+
+alter index attmp_onek_unique1 rename to onek_unique1;
+
+set role to regress_alter_table_user1;
+
+alter index onek_unique1 rename to fail;
+
+reset role;
+
+create table alter_idx_rename_test (a INT);
+
+create index "alter_idx_rename_test_idx" on alter_idx_rename_test using btree (a);
+
+create table alter_idx_rename_test_parted (a INT)
+partition by LIST(a);
+
+create index "alter_idx_rename_test_parted_idx" on alter_idx_rename_test_parted using btree (a);
+
+begin;
+
+alter index alter_idx_rename_test rename to alter_idx_rename_test_2;
+
+alter index alter_idx_rename_test_parted rename to alter_idx_rename_test_parted_2;
+
+select
+  cast(relation as REGCLASS),
+  mode
+from
+  pg_locks
+where
+  pid = pg_backend_pid() and
+  locktype = 'relation' and
+  cast(cast(relation as REGCLASS) as TEXT) like 'alter\_idx%'
+order by cast(cast(relation as REGCLASS) as TEXT) collate "C";
+
+commit;
+
+begin;
+
+alter index alter_idx_rename_test_idx rename to alter_idx_rename_test_idx_2;
+
+alter index alter_idx_rename_test_parted_idx rename to alter_idx_rename_test_parted_idx_2;
+
+select
+  cast(relation as REGCLASS),
+  mode
+from
+  pg_locks
+where
+  pid = pg_backend_pid() and
+  locktype = 'relation' and
+  cast(cast(relation as REGCLASS) as TEXT) like 'alter\_idx%'
+order by cast(cast(relation as REGCLASS) as TEXT) collate "C";
+
+commit;
+
+begin;
+
+alter table alter_idx_rename_test_idx_2 rename to alter_idx_rename_test_idx_3;
+
+alter table alter_idx_rename_test_parted_idx_2 rename to alter_idx_rename_test_parted_idx_3;
+
+select
+  cast(relation as REGCLASS),
+  mode
+from
+  pg_locks
+where
+  pid = pg_backend_pid() and
+  locktype = 'relation' and
+  cast(cast(relation as REGCLASS) as TEXT) like 'alter\_idx%'
+order by cast(cast(relation as REGCLASS) as TEXT) collate "C";
+
+commit;
+
+drop TABLE "alter_idx_rename_test_2";
+
+create view attmp_view
+(
+  unique1
+)
+as select unique1 from tenk1;
+
+alter table attmp_view rename to attmp_view_new;
+
+set role to regress_alter_table_user1;
+
+alter view attmp_view_new rename to fail;
+
+reset role;
+
+set enable_seqscan = off;
+
+set enable_bitmapscan = off;
+
+select unique1 from tenk1 where unique1 < 5;
+
+reset enable_seqscan;
+
+reset enable_bitmapscan;
+
+drop VIEW "attmp_view_new";
+
+alter table stud_emp rename to pg_toast_stud_emp;
+
+alter table pg_toast_stud_emp rename to stud_emp;
+
+alter table onek
+  add constraint "onek_unique1_constraint" unique (unique1);
+
+alter index onek_unique1_constraint rename to onek_unique1_constraint_foo;
+
+alter table onek
+  drop constraint onek_unique1_constraint_foo;
+
+alter table onek
+  add constraint "onek_check_constraint" check (unique1 >= 0);
+
+alter table onek rename constraint onek_check_constraint to onek_check_constraint_foo;
+
+alter table onek
+  drop constraint onek_check_constraint_foo;
+
+alter table onek
+  add constraint "onek_unique1_constraint" unique (unique1);
+
+drop INDEX "onek_unique1_constraint";
+
+alter table onek rename constraint onek_unique1_constraint to onek_unique1_constraint_foo;
+
+drop INDEX "onek_unique1_constraint_foo";
+
+alter table onek
+  drop constraint onek_unique1_constraint_foo;
+
+create table constraint_rename_test (
+  a INT constraint "con1" check (a > 0),
+  b INT,
+  c INT
+);
+
+create table constraint_rename_test2 (
+  a INT constraint "con1" check (a > 0),
+  d INT
+)
+inherits (constraint_rename_test);
+
+alter table constraint_rename_test2 rename constraint con1 to con1foo;
+
+alter table only constraint_rename_test rename constraint con1 to con1foo;
+
+alter table constraint_rename_test rename constraint con1 to con1foo;
+
+alter table constraint_rename_test
+  add constraint "con2" check (b > 0) no inherit;
+
+alter table only constraint_rename_test rename constraint con2 to con2foo;
+
+alter table constraint_rename_test rename constraint con2foo to con2bar;
+
+alter table constraint_rename_test
+  add constraint "con3" primary key (a);
+
+alter table constraint_rename_test rename constraint con3 to con3foo;
+
+drop TABLE "constraint_rename_test2";
+
+drop TABLE "constraint_rename_test";
+
+alter table if exists constraint_not_exist rename constraint con3 to con3foo;
+
+alter table if exists constraint_rename_test
+  add constraint "con4" unique (a);
+
+create table constraint_rename_cache (
+  a INT,
+  constraint "chk_a" check (a > 0),
+  primary key (a)
+);
+
+alter table constraint_rename_cache rename constraint chk_a to chk_a_new;
+
+alter table constraint_rename_cache
+rename constraint constraint_rename_cache_pkey
+to constraint_rename_pkey_new;
+
+create table like_constraint_rename_cache (like constraint_rename_cache including all);
+
+drop TABLE "constraint_rename_cache";
+
+drop TABLE "like_constraint_rename_cache";
+
+create table attmp2 (a INT primary key);
+
+create table attmp3 (
+  a INT,
+  b INT
+);
+
+create table attmp4 (
+  a INT,
+  b INT,
+  unique (a, b)
+);
+
+create table attmp5 (
+  a INT,
+  b INT
+);
+
+insert into attmp2 values (1);
+
+insert into attmp2 values (2);
+
+insert into attmp2 values (3);
+
+insert into attmp2 values (4);
+
+insert into attmp3 values (1, 10);
+
+insert into attmp3 values (1, 20);
+
+insert into attmp3 values (5, 50);
+
+alter table attmp3
+  add constraint "attmpconstr"
+  foreign key
+  (c)
+  references attmp2
+  match full;
+
+alter table attmp3
+  add constraint "attmpconstr"
+  foreign key
+  (a)
+  references attmp2 (b)
+  match full;
+
+alter table attmp3
+  add constraint "attmpconstr"
+  foreign key
+  (a)
+  references attmp2
+  match full;
+
+delete from attmp3 where a = 5;
+
+alter table attmp3
+  add constraint "attmpconstr"
+  foreign key
+  (a)
+  references attmp2
+  match full;
+
+alter table attmp3
+  drop constraint attmpconstr;
+
+insert into attmp3 values (5, 50);
+
+alter table attmp3
+  add constraint "attmpconstr"
+  foreign key
+  (a)
+  references attmp2
+  match full
+  not valid;
+
+alter table attmp3
+  validate constraint attmpconstr;
+
+delete from attmp3 where a = 5;
+
+alter table attmp3
+  validate constraint attmpconstr;
+
+alter table attmp3
+  validate constraint attmpconstr;
+
+alter table attmp3
+  add constraint "b_greater_than_ten" check (b > 10);
+
+alter table attmp3
+  add constraint "b_greater_than_ten" check (b > 10) not valid;
+
+alter table attmp3
+  validate constraint b_greater_than_ten;
+
+delete from attmp3 where not b > 10;
+
+alter table attmp3
+  validate constraint b_greater_than_ten;
+
+alter table attmp3
+  validate constraint b_greater_than_ten;
+
+alter table attmp3
+  validate constraint b_greater_than_ten_not_enforced;
+
+select * from attmp3;
+
+create table attmp6 ()
+inherits (attmp3);
+
+create table attmp7 ()
+inherits (attmp3);
+
+insert into attmp6 values (6, 30), (7, 16);
+
+alter table attmp3
+  add constraint "b_le_20" check (b <= 20) not valid;
+
+alter table attmp3
+  validate constraint b_le_20;
+
+delete from attmp6 where b > 20;
+
+alter table attmp3
+  validate constraint b_le_20;
+
+create function boo(INT)
+returns INT
+immutable
+STRICT
+language "plpgsql"
+as ' BEGIN RAISE NOTICE ''boo: %'', $1; RETURN $1; END; ';
+
+insert into attmp7 values (8, 18);
+
+alter table attmp7
+  add constraint "identity" check (b = boo(b));
+
+alter table attmp3
+  add constraint "identity" check (b = boo(b)) not valid;
+
+alter table attmp3
+  validate constraint identity;
+
+create table parent_noinh_convalid (a INT);
+
+create table child_noinh_convalid ()
+inherits (parent_noinh_convalid);
+
+insert into parent_noinh_convalid values (1);
+
+insert into child_noinh_convalid values (1);
+
+alter table parent_noinh_convalid
+  add constraint "check_a_is_2" check (a = 2) no inherit not valid;
+
+alter table parent_noinh_convalid
+  validate constraint check_a_is_2;
+
+delete from only parent_noinh_convalid;
+
+alter table parent_noinh_convalid
+  validate constraint check_a_is_2;
+
+select
+  convalidated
+from
+  pg_constraint
+where
+  conrelid =
+  cast('parent_noinh_convalid' as REGCLASS) and
+  conname = 'check_a_is_2';
+
+drop TABLE "parent_noinh_convalid", "child_noinh_convalid";
+
+alter table attmp5
+  add constraint "attmpconstr"
+  foreign key
+  (a)
+  references attmp4 (a)
+  match full;
+
+drop TABLE "attmp7";
+
+drop TABLE "attmp6";
+
+drop TABLE "attmp5";
+
+drop TABLE "attmp4";
+
+drop TABLE "attmp3";
+
+drop TABLE "attmp2";
+
+set constraint_exclusion = partition;
+
+create table nv_parent (
+  d DATE,
+  check (false) no inherit not valid
+);
+
+create table nv_child_2010 ()
+inherits (nv_parent);
+
+create table nv_child_2011 ()
+inherits (nv_parent);
+
+alter table nv_child_2010
+  add check (d
+  between cast('2010-01-01' as DATE)
+  and cast('2010-12-31' as DATE)) not valid;
+
+alter table nv_child_2011
+  add check (d
+  between cast('2011-01-01' as DATE)
+  and cast('2011-12-31' as DATE)) not valid;
+
+select * from nv_parent where d between '2011-08-01' and '2011-08-31';
+
+create table nv_child_2009 (
+  check (d
+  between cast('2009-01-01' as DATE)
+  and cast('2009-12-31' as DATE))
+)
+inherits (nv_parent);
+
+select * from nv_parent where d between cast('2011-08-01' as DATE) and cast('2011-08-31' as DATE);
+
+select * from nv_parent where d between cast('2009-08-01' as DATE) and cast('2009-08-31' as DATE);
+
+alter table nv_child_2011
+  validate constraint nv_child_2011_d_check;
+
+select * from nv_parent where d between cast('2009-08-01' as DATE) and cast('2009-08-31' as DATE);
+
+alter table nv_parent
+  add check (d
+  between cast('2001-01-01' as DATE)
+  and cast('2099-12-31' as DATE)) not valid;
+
+create temporary table pktable (ptest1 INT primary key);
+
+insert into pktable values (42);
+
+create temporary table fktable (ftest1 INET);
+
+alter table fktable
+  add foreign key (ftest1) references pktable;
+
+alter table fktable
+  add foreign key (ftest1) references pktable (ptest1);
+
+drop TABLE "fktable";
+
+create temporary table fktable (ftest1 BIGINT);
+
+alter table fktable
+  add foreign key (ftest1) references pktable;
+
+insert into fktable values (42);
+
+insert into fktable values (43);
+
+drop TABLE "fktable";
+
+create temporary table fktable (ftest1 NUMERIC);
+
+alter table fktable
+  add foreign key (ftest1) references pktable;
+
+drop TABLE "fktable";
+
+drop TABLE "pktable";
+
+create temporary table pktable (ptest1 NUMERIC primary key);
+
+insert into pktable values (42);
+
+create temporary table fktable (ftest1 INT);
+
+alter table fktable
+  add foreign key (ftest1) references pktable;
+
+insert into fktable values (42);
+
+insert into fktable values (43);
+
+drop TABLE "fktable";
+
+drop TABLE "pktable";
+
+create temporary table pktable (
+  ptest1 INT,
+  ptest2 INET,
+  primary key (ptest1, ptest2)
+);
+
+create temporary table fktable (
+  ftest1 CIDR,
+  ftest2 TIMESTAMP
+);
+
+alter table fktable
+  add foreign key (ftest1, ftest2) references pktable;
+
+drop TABLE "fktable";
+
+create temporary table fktable (
+  ftest1 CIDR,
+  ftest2 TIMESTAMP
+);
+
+alter table fktable
+  add foreign key
+  (ftest1,
+  ftest2)
+  references pktable (ptest1,
+  ptest2);
+
+drop TABLE "fktable";
+
+create temporary table fktable (
+  ftest1 INT,
+  ftest2 INET
+);
+
+alter table fktable
+  add foreign key
+  (ftest1,
+  ftest2)
+  references pktable (ptest2,
+  ptest1);
+
+alter table fktable
+  add foreign key
+  (ftest2,
+  ftest1)
+  references pktable (ptest1,
+  ptest2);
+
+drop TABLE "fktable";
+
+drop TABLE "pktable";
+
+create temporary table pktable (ptest1 INT primary key);
+
+create temporary table fktable (ftest1 INT);
+
+alter table fktable
+  add constraint "fknd"
+  foreign key
+  (ftest1)
+  references pktable
+  on DELETE cascade;
+
+alter table fktable
+  add constraint "fkdd"
+  foreign key
+  (ftest1)
+  references pktable
+  on DELETE cascade
+  deferrable initially deferred;
+
+alter table fktable
+  add constraint "fkdi"
+  foreign key
+  (ftest1)
+  references pktable
+  on DELETE cascade
+  deferrable initially immediate;
+
+alter table fktable
+  add constraint "fknd2"
+  foreign key
+  (ftest1)
+  references pktable
+  on DELETE cascade
+  deferrable initially deferred;
+
+alter table fktable
+  alter constraint "fknd2" not deferrable initially immediate;
+
+alter table fktable
+  add constraint "fkdd2"
+  foreign key
+  (ftest1)
+  references pktable
+  on DELETE cascade;
+
+alter table fktable
+  alter constraint "fkdd2" deferrable initially deferred;
+
+alter table fktable
+  add constraint "fkdi2"
+  foreign key
+  (ftest1)
+  references pktable
+  on DELETE cascade;
+
+alter table fktable
+  alter constraint "fkdi2" deferrable initially immediate;
+
+select
+  conname,
+  cast(tgfoid as REGPROC),
+  tgtype,
+  tgdeferrable,
+  tginitdeferred
+from
+  pg_trigger
+  inner join
+    pg_constraint as con
+  on con.oid = tgconstraint
+where
+  tgrelid = cast('pktable' as REGCLASS)
+order by 1,
+  2,
+  3;
+
+select
+  conname,
+  cast(tgfoid as REGPROC),
+  tgtype,
+  tgdeferrable,
+  tginitdeferred
+from
+  pg_trigger
+  inner join
+    pg_constraint as con
+  on con.oid = tgconstraint
+where
+  tgrelid = cast('fktable' as REGCLASS)
+order by 1,
+  2,
+  3;
+
+create table atacc1 (test INT);
+
+alter table atacc1
+  add constraint "atacc_test1" check (test > 3);
+
+insert into atacc1 (test) values (2);
+
+insert into atacc1 (test) values (4);
+
+drop TABLE "atacc1";
+
+create table atacc1 (test INT);
+
+insert into atacc1 (test) values (2);
+
+alter table atacc1
+  add constraint "atacc_test1" check (test > 3);
+
+insert into atacc1 (test) values (4);
+
+drop TABLE "atacc1";
+
+create table atacc1 (test INT);
+
+alter table atacc1
+  add constraint "atacc_test1" check (test1 > 3);
+
+drop TABLE "atacc1";
+
+create table atacc1 (
+  test INT,
+  test2 INT,
+  test3 INT
+);
+
+alter table atacc1
+  add constraint "atacc_test1" check (test + test2 < test3 * 4);
+
+insert into atacc1 (test, test2, test3) values (4, 4, 2);
+
+insert into atacc1 (test, test2, test3) values (4, 4, 5);
+
+drop TABLE "atacc1";
+
+create table atacc1 (
+  test INT check (test > 3),
+  test2 INT
+);
+
+alter table atacc1
+  add check (test2 > test);
+
+insert into atacc1 (test2, test) values (3, 4);
+
+drop TABLE "atacc1";
+
+create table atacc1 (test INT);
+
+create table atacc2 (test2 INT);
+
+create table atacc3 (test3 INT)
+inherits (atacc1,
+atacc2);
+
+alter table atacc2
+  add constraint "foo" check (test2 > 0);
+
+insert into atacc2 (test2) values (-3);
+
+insert into atacc2 (test2) values (3);
+
+insert into atacc3 (test2) values (-3);
+
+insert into atacc3 (test2) values (3);
+
+drop TABLE "atacc3";
+
+drop TABLE "atacc2";
+
+drop TABLE "atacc1";
+
+create table atacc1 (test INT);
+
+create table atacc2 (test2 INT);
+
+create table atacc3 (test3 INT)
+inherits (atacc1,
+atacc2);
+
+alter table atacc3
+  NO INHERIT atacc2;
+
+alter table atacc3
+  NO INHERIT atacc2;
+
+insert into atacc3 (test2) values (3);
+
+select test2 from atacc2;
+
+alter table atacc2
+  add constraint "foo" check (test2 > 0);
+
+alter table atacc3
+  INHERIT atacc2;
+
+alter table atacc3 rename column test2 to testx;
+
+alter table atacc3
+  INHERIT atacc2;
+
+alter table atacc3
+  add column test2 BOOLEAN;
+
+alter table atacc3
+  INHERIT atacc2;
+
+alter table atacc3
+  drop column test2;
+
+alter table atacc3
+  add column test2 INT;
+
+update atacc3 set test2 = 4 where test2 is null;
+
+alter table atacc3
+  add constraint "foo" check (test2 > 0);
+
+alter table atacc3
+  INHERIT atacc2;
+
+alter table atacc3
+  INHERIT atacc2;
+
+alter table atacc2
+  INHERIT atacc3;
+
+alter table atacc2
+  INHERIT atacc2;
+
+select test2 from atacc2;
+
+drop TABLE "atacc2" cascade;
+
+drop TABLE "atacc1";
+
+create table atacc1 (test INT);
+
+create table atacc2 (test2 INT)
+inherits (atacc1);
+
+alter table atacc1
+  add constraint "foo" check (test > 0) no inherit;
+
+insert into atacc2 (test) values (-3);
+
+insert into atacc1 (test) values (-3);
+
+insert into atacc1 (test) values (3);
+
+alter table atacc2
+  add constraint "foo" check (test > 0) no inherit;
+
+drop TABLE "atacc2";
+
+drop TABLE "atacc1";
+
+create table atacc1 (test INT);
+
+alter table atacc1
+  add constraint "atacc_test1" unique (test);
+
+insert into atacc1 (test) values (2);
+
+insert into atacc1 (test) values (2);
+
+insert into atacc1 (test) values (4);
+
+alter table atacc1
+  alter column test type INT using 0;
+
+drop TABLE "atacc1";
+
+create table atacc1 (test INT);
+
+insert into atacc1 (test) values (2);
+
+insert into atacc1 (test) values (2);
+
+alter table atacc1
+  add constraint "atacc_test1" unique (test);
+
+insert into atacc1 (test) values (3);
+
+drop TABLE "atacc1";
+
+create table atacc1 (test INT);
+
+alter table atacc1
+  add constraint "atacc_test1" unique (test1);
+
+drop TABLE "atacc1";
+
+create table atacc1 (
+  test INT,
+  test2 INT
+);
+
+alter table atacc1
+  add constraint "atacc_test1" unique (test, test2);
+
+insert into atacc1 (test, test2) values (4, 4);
+
+insert into atacc1 (test, test2) values (4, 4);
+
+insert into atacc1 (test, test2) values (4, 5);
+
+insert into atacc1 (test, test2) values (5, 4);
+
+insert into atacc1 (test, test2) values (5, 5);
+
+drop TABLE "atacc1";
+
+create table atacc1 (
+  test INT,
+  test2 INT,
+  unique (test)
+);
+
+alter table atacc1
+  add unique (test2);
+
+insert into atacc1 (test2, test) values (3, 3);
+
+insert into atacc1 (test2, test) values (2, 3);
+
+drop TABLE "atacc1";
+
+create table atacc1 (
+  id serial,
+  test INT
+);
+
+alter table atacc1
+  add constraint "atacc_test1" primary key (test);
+
+insert into atacc1 (test) values (2);
+
+insert into atacc1 (test) values (2);
+
+insert into atacc1 (test) values (4);
+
+insert into atacc1 (test) values (null);
+
+alter table atacc1
+  add constraint "atacc_oid1" primary key (id);
+
+alter table atacc1
+  drop constraint atacc_test1;
+
+alter table atacc1
+  add constraint "atacc_oid1" primary key (id);
+
+drop TABLE "atacc1";
+
+create table atacc1 (test INT);
+
+insert into atacc1 (test) values (2);
+
+insert into atacc1 (test) values (2);
+
+alter table atacc1
+  add constraint "atacc_test1" primary key (test);
+
+insert into atacc1 (test) values (3);
+
+drop TABLE "atacc1";
+
+create table atacc1 (test INT);
+
+insert into atacc1 (test) values (null);
+
+alter table atacc1
+  add constraint "atacc_test1" primary key (test);
+
+insert into atacc1 (test) values (3);
+
+drop TABLE "atacc1";
+
+create table atacc1 (test INT);
+
+alter table atacc1
+  add constraint "atacc_test1" primary key (test1);
+
+drop TABLE "atacc1";
+
+create table atacc1 (test INT);
+
+insert into atacc1 (test) values (0);
+
+alter table atacc1
+  add column test2 INT primary key;
+
+alter table atacc1
+  add column test2 INT default 0 primary key;
+
+drop TABLE "atacc1";
+
+create table atacc1 (a INT);
+
+insert into atacc1 values (1);
+
+alter table atacc1
+  add column b DOUBLE PRECISION not null default random(),
+  add primary key (a);
+
+drop TABLE "atacc1";
+
+create table atacc1 (a INT primary key);
+
+alter table atacc1
+  add constraint "atacc1_fkey"
+  foreign key
+  (a)
+  references atacc1 (a)
+  not valid;
+
+alter table atacc1
+  validate constraint atacc1_fkey,
+  alter column a type BIGINT;
+
+drop TABLE "atacc1";
+
+create table atacc1 (
+  a BIGINT,
+  b INT
+);
+
+insert into atacc1 values (1, 1);
+
+alter table atacc1
+  add constraint "atacc1_chk" check (b = 1) not valid;
+
+alter table atacc1
+  validate constraint atacc1_chk,
+  alter column a type INT;
+
+drop TABLE "atacc1";
+
+create table atacc1 (
+  a BIGINT,
+  b INT
+);
+
+insert into atacc1 values (1, 2);
+
+alter table atacc1
+  add constraint "atacc1_chk" check (b = 1) not valid;
+
+alter table atacc1
+  validate constraint atacc1_chk,
+  alter column a type INT;
+
+drop TABLE "atacc1";
+
+create table atacc1 (
+  test INT,
+  test2 INT
+);
+
+alter table atacc1
+  add constraint "atacc_test1" primary key (test, test2);
+
+alter table atacc1
+  add constraint "atacc_test2" primary key (test);
+
+insert into atacc1 (test, test2) values (4, 4);
+
+insert into atacc1 (test, test2) values (4, 4);
+
+insert into atacc1 (test, test2) values (null, 3);
+
+insert into atacc1 (test, test2) values (3, null);
+
+insert into atacc1 (test, test2) values (null, null);
+
+insert into atacc1 (test, test2) values (4, 5);
+
+insert into atacc1 (test, test2) values (5, 4);
+
+insert into atacc1 (test, test2) values (5, 5);
+
+drop TABLE "atacc1";
+
+create table atacc1 (
+  test INT,
+  test2 INT,
+  primary key (test)
+);
+
+insert into atacc1 (test2, test) values (3, 3);
+
+insert into atacc1 (test2, test) values (2, 3);
+
+insert into atacc1 (test2, test) values (1, null);
+
+drop TABLE "atacc1";
+
+alter table pg_class
+  alter column relname drop not null;
+
+alter table pg_class
+  alter column relname set not null;
+
+alter table non_existent
+  alter column bar set not null;
+
+alter table non_existent
+  alter column bar drop not null;
+
+create table atacc1 (test INT not null);
+
+alter table atacc1
+  add constraint "atacc1_pkey" primary key (test);
+
+alter table atacc1
+  alter column test drop not null;
+
+alter table atacc1
+  drop constraint atacc1_pkey;
+
+alter table atacc1
+  alter column test drop not null;
+
+insert into atacc1 values (null);
+
+alter table atacc1
+  alter column test set not null;
+
+delete from atacc1;
+
+alter table atacc1
+  alter column test set not null;
+
+alter table atacc1
+  alter column bar set not null;
+
+alter table atacc1
+  alter column bar drop not null;
+
+create view myview
+as select * from atacc1;
+
+alter table myview
+  alter column test drop not null;
+
+alter table myview
+  alter column test set not null;
+
+drop VIEW "myview";
+
+drop TABLE "atacc1";
+
+create table atacc1 (
+  test_a INT,
+  test_b INT
+);
+
+insert into atacc1 values (null, 1);
+
+alter table atacc1
+  add constraint "atacc1_constr_or" check (test_a is not null or test_b < 10);
+
+alter table atacc1
+  alter column test_a set not null;
+
+alter table atacc1
+  drop constraint atacc1_constr_or;
+
+alter table atacc1
+  add constraint "atacc1_constr_invalid" check (test_a is not null) not valid;
+
+alter table atacc1
+  alter column test_a set not null;
+
+alter table atacc1
+  drop constraint atacc1_constr_invalid;
+
+update atacc1 set test_a = 1;
+
+alter table atacc1
+  add constraint "atacc1_constr_a_valid" check (test_a is not null);
+
+alter table atacc1
+  alter column test_a set not null;
+
+delete from atacc1;
+
+insert into atacc1 values (2, null);
+
+alter table atacc1
+  alter column test_a drop not null;
+
+alter table atacc1
+  alter column test_a set not null,
+  alter column test_b set not null;
+
+alter table atacc1
+  alter column test_b set not null,
+  alter column test_a set not null;
+
+update atacc1 set test_b = 1;
+
+alter table atacc1
+  alter column test_b set not null,
+  alter column test_a set not null;
+
+alter table atacc1
+  alter column test_a drop not null,
+  alter column test_b drop not null;
+
+alter table atacc1
+  add constraint "atacc1_constr_b_valid" check (test_b is not null);
+
+alter table atacc1
+  alter column test_b set not null,
+  alter column test_a set not null;
+
+drop TABLE "atacc1";
+
+create table atnnparted (
+  id INT,
+  col1 INT
+)
+partition by LIST(id);
+
+create table atnnpart1 (
+  col1 INT,
+  id INT
+);
+
+alter table atnnpart1
+  add primary key (id);
+
+alter table atnnparted
+  ATTACH partition
+  atnnpart1 for values in ('1');
+
+begin;
+
+alter table atnnparted
+  validate constraint dummy_constr;
+
+rollback;
+
+create table parent (a INT);
+
+create table child (b VARCHAR(255))
+inherits (parent);
+
+alter table parent
+  alter column a set not null;
+
+insert into parent values (null);
+
+insert into child (a, b) values (null, 'foo');
+
+alter table parent
+  alter column a drop not null;
+
+insert into parent values (null);
+
+insert into child (a, b) values (null, 'foo');
+
+alter table only parent
+  alter column a set not null;
+
+alter table child
+  alter column a set not null;
+
+drop TABLE "child";
+
+drop TABLE "parent";
+
+create table def_test (
+  c1 INT default 5,
+  c2 TEXT default 'initial_default'
+);
+
+insert into def_test default values;
+
+alter table def_test
+  alter column c1 drop default;
+
+insert into def_test default values;
+
+alter table def_test
+  alter column c2 drop default;
+
+insert into def_test default values;
+
+alter table def_test
+  alter column c1 set default 10;
+
+alter table def_test
+  alter column c2 set default 'new_default';
+
+insert into def_test default values;
+
+select * from def_test;
+
+alter table def_test
+  alter column c1 set default 'wrong_datatype';
+
+alter table def_test
+  alter column c2 set default 20;
+
+alter table def_test
+  alter column c3 set default 30;
+
+create view def_view_test
+as select * from def_test;
+
+select new.*;
+
+insert into def_view_test default values;
+
+alter table def_view_test
+  alter column c1 set default 45;
+
+insert into def_view_test default values;
+
+alter table def_view_test
+  alter column c2 set default 'view_default';
+
+insert into def_view_test default values;
+
+select * from def_view_test;
+
+drop RULE "def_view_test_ins" on "def_view_test";
+
+drop VIEW "def_view_test";
+
+drop TABLE "def_test";
+
+alter table pg_class
+  drop column relname;
+
+alter table nosuchtable
+  drop column bar;
+
+create table atacc1 (
+  a INT not null,
+  b INT,
+  c INT not null,
+  d INT
+);
+
+insert into atacc1 values (1, 2, 3, 4);
+
+alter table atacc1
+  drop column a;
+
+alter table atacc1
+  drop column a;
+
+select * from atacc1;
+
+select * from atacc1 order by a;
+
+select * from atacc1 order by "........pg.dropped.1........";
+
+select * from atacc1 group by a;
+
+select * from atacc1 group by "........pg.dropped.1........";
+
+select atacc1.* from atacc1;
+
+select a from atacc1;
+
+select atacc1.a from atacc1;
+
+select b, c, d from atacc1;
+
+select a, b, c, d from atacc1;
+
+select * from atacc1 where a = 1;
+
+select "........pg.dropped.1........" from atacc1;
+
+select atacc1."........pg.dropped.1........" from atacc1;
+
+select "........pg.dropped.1........", b, c, d from atacc1;
+
+select * from atacc1 where "........pg.dropped.1........" = 1;
+
+update atacc1 set a = 3;
+
+update atacc1 set b = 2 where a = 3;
+
+update atacc1 set "........pg.dropped.1........" = 3;
+
+update atacc1 set b = 2 where "........pg.dropped.1........" = 3;
+
+insert into atacc1 values (10, 11, 12, 13);
+
+insert into atacc1 values (default, 11, 12, 13);
+
+insert into atacc1 values (11, 12, 13);
+
+insert into atacc1 (a) values (10);
+
+insert into atacc1 (a) values (default);
+
+insert into atacc1 (a, b, c, d) values (10, 11, 12, 13);
+
+insert into atacc1 (a, b, c, d) values (default, 11, 12, 13);
+
+insert into atacc1 (b, c, d) values (11, 12, 13);
+
+insert into atacc1 ("........pg.dropped.1........") values (10);
+
+insert into atacc1 ("........pg.dropped.1........") values (default);
+
+insert into atacc1 ("........pg.dropped.1........", b, c, d) values (10, 11, 12, 13);
+
+insert into atacc1 ("........pg.dropped.1........", b, c, d) values (default, 11, 12, 13);
+
+delete from atacc1 where a = 3;
+
+delete from atacc1 where "........pg.dropped.1........" = 3;
+
+delete from atacc1;
+
+alter table atacc1
+  drop column bar;
+
+alter table atacc1
+  set without OIDS;

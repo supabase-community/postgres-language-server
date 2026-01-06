@@ -1,0 +1,1 @@
+ALTER TYPE mytype ADD VALUE 'newvalue';

@@ -1,0 +1,576 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/create_index_spgist.sql
+snapshot_kind: text
+---
+create table quad_point_tbl as select point(unique1, unique2) as p from tenk1;
+
+insert into quad_point_tbl select cast('(333.0,400.0)' as point) from generate_series(1, 1000);
+
+insert into quad_point_tbl values (null), (null), (null);
+
+create index "sp_quad_ind" on quad_point_tbl using spgist (p);
+
+create table kd_point_tbl as select * from quad_point_tbl;
+
+create index "sp_kd_ind" on kd_point_tbl using spgist (p kd_point_ops);
+
+create table radix_text_tbl as select name as t from road where name !~ '^[0-9]';
+
+insert into radix_text_tbl select 'P0123456789abcdef' from generate_series(1, 1000);
+
+insert into radix_text_tbl values ('P0123456789abcde');
+
+insert into radix_text_tbl values ('P0123456789abcdefF');
+
+create index "sp_radix_ind" on radix_text_tbl using spgist (t);
+
+set enable_seqscan = 'on';
+
+set enable_indexscan = off;
+
+set enable_bitmapscan = off;
+
+select COUNT(*) from quad_point_tbl where p is null;
+
+select COUNT(*) from quad_point_tbl where p is not null;
+
+select COUNT(*) from quad_point_tbl;
+
+select COUNT(*) from quad_point_tbl where p <@ cast('(200,200,1000,1000)' as box);
+
+select COUNT(*) from quad_point_tbl where cast('(200,200,1000,1000)' as box) @> p;
+
+select COUNT(*) from quad_point_tbl where p << '(5000, 4000)';
+
+select COUNT(*) from quad_point_tbl where p >> '(5000, 4000)';
+
+select COUNT(*) from quad_point_tbl where p <<| '(5000, 4000)';
+
+select COUNT(*) from quad_point_tbl where p |>> '(5000, 4000)';
+
+select COUNT(*) from quad_point_tbl where p ~= '(4585, 365)';
+
+create temporary table quad_point_tbl_ord_seq1
+as
+  select
+    ROW_NUMBER() over (order by p <-> '0,0') as n,
+    p <-> '0,0' as dist,
+    p
+  from
+    quad_point_tbl;
+
+create temporary table quad_point_tbl_ord_seq2
+as
+  select
+    ROW_NUMBER() over (order by p <-> '0,0') as n,
+    p <-> '0,0' as dist,
+    p
+  from
+    quad_point_tbl
+  where
+    p <@ cast('(200,200,1000,1000)' as box);
+
+create temporary table quad_point_tbl_ord_seq3
+as
+  select
+    ROW_NUMBER() over (order by p <-> '333,400') as n,
+    p <-> '333,400' as dist,
+    p
+  from
+    quad_point_tbl
+  where
+    p is not null;
+
+select COUNT(*) from radix_text_tbl where t = 'P0123456789abcdef';
+
+select COUNT(*) from radix_text_tbl where t = 'P0123456789abcde';
+
+select COUNT(*) from radix_text_tbl where t = 'P0123456789abcdefF';
+
+select COUNT(*) from radix_text_tbl where t < 'Aztec                         Ct  ';
+
+select COUNT(*) from radix_text_tbl where t ~<~ 'Aztec                         Ct  ';
+
+select COUNT(*) from radix_text_tbl where t <= 'Aztec                         Ct  ';
+
+select COUNT(*) from radix_text_tbl where t ~<=~ 'Aztec                         Ct  ';
+
+select COUNT(*) from radix_text_tbl where t = 'Aztec                         Ct  ';
+
+select COUNT(*) from radix_text_tbl where t = 'Worth                         St  ';
+
+select COUNT(*) from radix_text_tbl where t >= 'Worth                         St  ';
+
+select COUNT(*) from radix_text_tbl where t ~>=~ 'Worth                         St  ';
+
+select COUNT(*) from radix_text_tbl where t > 'Worth                         St  ';
+
+select COUNT(*) from radix_text_tbl where t ~>~ 'Worth                         St  ';
+
+select COUNT(*) from radix_text_tbl where t ^@ 'Worth';
+
+set enable_seqscan = off;
+
+set enable_indexscan = 'on';
+
+set enable_bitmapscan = off;
+
+select COUNT(*) from quad_point_tbl where p is null;
+
+select COUNT(*) from quad_point_tbl where p is null;
+
+select COUNT(*) from quad_point_tbl where p is not null;
+
+select COUNT(*) from quad_point_tbl where p is not null;
+
+select COUNT(*) from quad_point_tbl;
+
+select COUNT(*) from quad_point_tbl;
+
+select COUNT(*) from quad_point_tbl where p <@ cast('(200,200,1000,1000)' as box);
+
+select COUNT(*) from quad_point_tbl where p <@ cast('(200,200,1000,1000)' as box);
+
+select COUNT(*) from quad_point_tbl where cast('(200,200,1000,1000)' as box) @> p;
+
+select COUNT(*) from quad_point_tbl where cast('(200,200,1000,1000)' as box) @> p;
+
+select COUNT(*) from quad_point_tbl where p << '(5000, 4000)';
+
+select COUNT(*) from quad_point_tbl where p << '(5000, 4000)';
+
+select COUNT(*) from quad_point_tbl where p >> '(5000, 4000)';
+
+select COUNT(*) from quad_point_tbl where p >> '(5000, 4000)';
+
+select COUNT(*) from quad_point_tbl where p <<| '(5000, 4000)';
+
+select COUNT(*) from quad_point_tbl where p <<| '(5000, 4000)';
+
+select COUNT(*) from quad_point_tbl where p |>> '(5000, 4000)';
+
+select COUNT(*) from quad_point_tbl where p |>> '(5000, 4000)';
+
+select COUNT(*) from quad_point_tbl where p ~= '(4585, 365)';
+
+select COUNT(*) from quad_point_tbl where p ~= '(4585, 365)';
+
+select ROW_NUMBER() over (order by p <-> '0,0') as n, p <-> '0,0' as dist, p from quad_point_tbl;
+
+create temporary table quad_point_tbl_ord_idx1
+as
+  select
+    ROW_NUMBER() over (order by p <-> '0,0') as n,
+    p <-> '0,0' as dist,
+    p
+  from
+    quad_point_tbl;
+
+select
+  *
+from
+  quad_point_tbl_ord_seq1 as seq
+  full outer join
+    quad_point_tbl_ord_idx1 as idx
+  on seq.n = idx.n
+where
+  seq.dist is distinct from idx.dist;
+
+select
+  ROW_NUMBER() over (order by p <-> '0,0') as n,
+  p <-> '0,0' as dist,
+  p
+from
+  quad_point_tbl
+where
+  p <@ cast('(200,200,1000,1000)' as box);
+
+create temporary table quad_point_tbl_ord_idx2
+as
+  select
+    ROW_NUMBER() over (order by p <-> '0,0') as n,
+    p <-> '0,0' as dist,
+    p
+  from
+    quad_point_tbl
+  where
+    p <@ cast('(200,200,1000,1000)' as box);
+
+select
+  *
+from
+  quad_point_tbl_ord_seq2 as seq
+  full outer join
+    quad_point_tbl_ord_idx2 as idx
+  on seq.n = idx.n
+where
+  seq.dist is distinct from idx.dist;
+
+select
+  ROW_NUMBER() over (order by p <-> '333,400') as n,
+  p <-> '333,400' as dist,
+  p
+from
+  quad_point_tbl
+where
+  p is not null;
+
+create temporary table quad_point_tbl_ord_idx3
+as
+  select
+    ROW_NUMBER() over (order by p <-> '333,400') as n,
+    p <-> '333,400' as dist,
+    p
+  from
+    quad_point_tbl
+  where
+    p is not null;
+
+select
+  *
+from
+  quad_point_tbl_ord_seq3 as seq
+  full outer join
+    quad_point_tbl_ord_idx3 as idx
+  on seq.n = idx.n
+where
+  seq.dist is distinct from idx.dist;
+
+select COUNT(*) from kd_point_tbl where p <@ cast('(200,200,1000,1000)' as box);
+
+select COUNT(*) from kd_point_tbl where p <@ cast('(200,200,1000,1000)' as box);
+
+select COUNT(*) from kd_point_tbl where cast('(200,200,1000,1000)' as box) @> p;
+
+select COUNT(*) from kd_point_tbl where cast('(200,200,1000,1000)' as box) @> p;
+
+select COUNT(*) from kd_point_tbl where p << '(5000, 4000)';
+
+select COUNT(*) from kd_point_tbl where p << '(5000, 4000)';
+
+select COUNT(*) from kd_point_tbl where p >> '(5000, 4000)';
+
+select COUNT(*) from kd_point_tbl where p >> '(5000, 4000)';
+
+select COUNT(*) from kd_point_tbl where p <<| '(5000, 4000)';
+
+select COUNT(*) from kd_point_tbl where p <<| '(5000, 4000)';
+
+select COUNT(*) from kd_point_tbl where p |>> '(5000, 4000)';
+
+select COUNT(*) from kd_point_tbl where p |>> '(5000, 4000)';
+
+select COUNT(*) from kd_point_tbl where p ~= '(4585, 365)';
+
+select COUNT(*) from kd_point_tbl where p ~= '(4585, 365)';
+
+select ROW_NUMBER() over (order by p <-> '0,0') as n, p <-> '0,0' as dist, p from kd_point_tbl;
+
+create temporary table kd_point_tbl_ord_idx1
+as
+  select
+    ROW_NUMBER() over (order by p <-> '0,0') as n,
+    p <-> '0,0' as dist,
+    p
+  from
+    kd_point_tbl;
+
+select
+  *
+from
+  quad_point_tbl_ord_seq1 as seq
+  full outer join
+    kd_point_tbl_ord_idx1 as idx
+  on seq.n = idx.n
+where
+  seq.dist is distinct from idx.dist;
+
+select
+  ROW_NUMBER() over (order by p <-> '0,0') as n,
+  p <-> '0,0' as dist,
+  p
+from
+  kd_point_tbl
+where
+  p <@ cast('(200,200,1000,1000)' as box);
+
+create temporary table kd_point_tbl_ord_idx2
+as
+  select
+    ROW_NUMBER() over (order by p <-> '0,0') as n,
+    p <-> '0,0' as dist,
+    p
+  from
+    kd_point_tbl
+  where
+    p <@ cast('(200,200,1000,1000)' as box);
+
+select
+  *
+from
+  quad_point_tbl_ord_seq2 as seq
+  full outer join
+    kd_point_tbl_ord_idx2 as idx
+  on seq.n = idx.n
+where
+  seq.dist is distinct from idx.dist;
+
+select
+  ROW_NUMBER() over (order by p <-> '333,400') as n,
+  p <-> '333,400' as dist,
+  p
+from
+  kd_point_tbl
+where
+  p is not null;
+
+create temporary table kd_point_tbl_ord_idx3
+as
+  select
+    ROW_NUMBER() over (order by p <-> '333,400') as n,
+    p <-> '333,400' as dist,
+    p
+  from
+    kd_point_tbl
+  where
+    p is not null;
+
+select
+  *
+from
+  quad_point_tbl_ord_seq3 as seq
+  full outer join
+    kd_point_tbl_ord_idx3 as idx
+  on seq.n = idx.n
+where
+  seq.dist is distinct from idx.dist;
+
+set extra_float_digits = 0;
+
+create index on quad_point_tbl_ord_seq1 using spgist (p) include (dist);
+
+select p, dist from quad_point_tbl_ord_seq1 order by p <-> '0,0' limit 10;
+
+select p, dist from quad_point_tbl_ord_seq1 order by p <-> '0,0' limit 10;
+
+reset extra_float_digits;
+
+select
+  (
+    select
+      p
+    from
+      kd_point_tbl
+    order by p <-> pt,
+      p <-> '0,0'
+    limit 1
+  )
+from
+  (
+    values
+      (cast('1,2' as point)),
+      (null),
+      ('1234,5678')
+  )
+  as pts (pt);
+
+select COUNT(*) from radix_text_tbl where t = 'P0123456789abcdef';
+
+select COUNT(*) from radix_text_tbl where t = 'P0123456789abcdef';
+
+select COUNT(*) from radix_text_tbl where t = 'P0123456789abcde';
+
+select COUNT(*) from radix_text_tbl where t = 'P0123456789abcde';
+
+select COUNT(*) from radix_text_tbl where t = 'P0123456789abcdefF';
+
+select COUNT(*) from radix_text_tbl where t = 'P0123456789abcdefF';
+
+select COUNT(*) from radix_text_tbl where t < 'Aztec                         Ct  ';
+
+select COUNT(*) from radix_text_tbl where t < 'Aztec                         Ct  ';
+
+select COUNT(*) from radix_text_tbl where t ~<~ 'Aztec                         Ct  ';
+
+select COUNT(*) from radix_text_tbl where t ~<~ 'Aztec                         Ct  ';
+
+select COUNT(*) from radix_text_tbl where t <= 'Aztec                         Ct  ';
+
+select COUNT(*) from radix_text_tbl where t <= 'Aztec                         Ct  ';
+
+select COUNT(*) from radix_text_tbl where t ~<=~ 'Aztec                         Ct  ';
+
+select COUNT(*) from radix_text_tbl where t ~<=~ 'Aztec                         Ct  ';
+
+select COUNT(*) from radix_text_tbl where t = 'Aztec                         Ct  ';
+
+select COUNT(*) from radix_text_tbl where t = 'Aztec                         Ct  ';
+
+select COUNT(*) from radix_text_tbl where t = 'Worth                         St  ';
+
+select COUNT(*) from radix_text_tbl where t = 'Worth                         St  ';
+
+select COUNT(*) from radix_text_tbl where t >= 'Worth                         St  ';
+
+select COUNT(*) from radix_text_tbl where t >= 'Worth                         St  ';
+
+select COUNT(*) from radix_text_tbl where t ~>=~ 'Worth                         St  ';
+
+select COUNT(*) from radix_text_tbl where t ~>=~ 'Worth                         St  ';
+
+select COUNT(*) from radix_text_tbl where t > 'Worth                         St  ';
+
+select COUNT(*) from radix_text_tbl where t > 'Worth                         St  ';
+
+select COUNT(*) from radix_text_tbl where t ~>~ 'Worth                         St  ';
+
+select COUNT(*) from radix_text_tbl where t ~>~ 'Worth                         St  ';
+
+select COUNT(*) from radix_text_tbl where t ^@ 'Worth';
+
+select COUNT(*) from radix_text_tbl where t ^@ 'Worth';
+
+select COUNT(*) from radix_text_tbl where starts_with(t, 'Worth');
+
+select COUNT(*) from radix_text_tbl where starts_with(t, 'Worth');
+
+set enable_seqscan = off;
+
+set enable_indexscan = off;
+
+set enable_bitmapscan = 'on';
+
+select COUNT(*) from quad_point_tbl where p is null;
+
+select COUNT(*) from quad_point_tbl where p is null;
+
+select COUNT(*) from quad_point_tbl where p is not null;
+
+select COUNT(*) from quad_point_tbl where p is not null;
+
+select COUNT(*) from quad_point_tbl;
+
+select COUNT(*) from quad_point_tbl;
+
+select COUNT(*) from quad_point_tbl where p <@ cast('(200,200,1000,1000)' as box);
+
+select COUNT(*) from quad_point_tbl where p <@ cast('(200,200,1000,1000)' as box);
+
+select COUNT(*) from quad_point_tbl where cast('(200,200,1000,1000)' as box) @> p;
+
+select COUNT(*) from quad_point_tbl where cast('(200,200,1000,1000)' as box) @> p;
+
+select COUNT(*) from quad_point_tbl where p << '(5000, 4000)';
+
+select COUNT(*) from quad_point_tbl where p << '(5000, 4000)';
+
+select COUNT(*) from quad_point_tbl where p >> '(5000, 4000)';
+
+select COUNT(*) from quad_point_tbl where p >> '(5000, 4000)';
+
+select COUNT(*) from quad_point_tbl where p <<| '(5000, 4000)';
+
+select COUNT(*) from quad_point_tbl where p <<| '(5000, 4000)';
+
+select COUNT(*) from quad_point_tbl where p |>> '(5000, 4000)';
+
+select COUNT(*) from quad_point_tbl where p |>> '(5000, 4000)';
+
+select COUNT(*) from quad_point_tbl where p ~= '(4585, 365)';
+
+select COUNT(*) from quad_point_tbl where p ~= '(4585, 365)';
+
+select COUNT(*) from kd_point_tbl where p <@ cast('(200,200,1000,1000)' as box);
+
+select COUNT(*) from kd_point_tbl where p <@ cast('(200,200,1000,1000)' as box);
+
+select COUNT(*) from kd_point_tbl where cast('(200,200,1000,1000)' as box) @> p;
+
+select COUNT(*) from kd_point_tbl where cast('(200,200,1000,1000)' as box) @> p;
+
+select COUNT(*) from kd_point_tbl where p << '(5000, 4000)';
+
+select COUNT(*) from kd_point_tbl where p << '(5000, 4000)';
+
+select COUNT(*) from kd_point_tbl where p >> '(5000, 4000)';
+
+select COUNT(*) from kd_point_tbl where p >> '(5000, 4000)';
+
+select COUNT(*) from kd_point_tbl where p <<| '(5000, 4000)';
+
+select COUNT(*) from kd_point_tbl where p <<| '(5000, 4000)';
+
+select COUNT(*) from kd_point_tbl where p |>> '(5000, 4000)';
+
+select COUNT(*) from kd_point_tbl where p |>> '(5000, 4000)';
+
+select COUNT(*) from kd_point_tbl where p ~= '(4585, 365)';
+
+select COUNT(*) from kd_point_tbl where p ~= '(4585, 365)';
+
+select COUNT(*) from radix_text_tbl where t = 'P0123456789abcdef';
+
+select COUNT(*) from radix_text_tbl where t = 'P0123456789abcdef';
+
+select COUNT(*) from radix_text_tbl where t = 'P0123456789abcde';
+
+select COUNT(*) from radix_text_tbl where t = 'P0123456789abcde';
+
+select COUNT(*) from radix_text_tbl where t = 'P0123456789abcdefF';
+
+select COUNT(*) from radix_text_tbl where t = 'P0123456789abcdefF';
+
+select COUNT(*) from radix_text_tbl where t < 'Aztec                         Ct  ';
+
+select COUNT(*) from radix_text_tbl where t < 'Aztec                         Ct  ';
+
+select COUNT(*) from radix_text_tbl where t ~<~ 'Aztec                         Ct  ';
+
+select COUNT(*) from radix_text_tbl where t ~<~ 'Aztec                         Ct  ';
+
+select COUNT(*) from radix_text_tbl where t <= 'Aztec                         Ct  ';
+
+select COUNT(*) from radix_text_tbl where t <= 'Aztec                         Ct  ';
+
+select COUNT(*) from radix_text_tbl where t ~<=~ 'Aztec                         Ct  ';
+
+select COUNT(*) from radix_text_tbl where t ~<=~ 'Aztec                         Ct  ';
+
+select COUNT(*) from radix_text_tbl where t = 'Aztec                         Ct  ';
+
+select COUNT(*) from radix_text_tbl where t = 'Aztec                         Ct  ';
+
+select COUNT(*) from radix_text_tbl where t = 'Worth                         St  ';
+
+select COUNT(*) from radix_text_tbl where t = 'Worth                         St  ';
+
+select COUNT(*) from radix_text_tbl where t >= 'Worth                         St  ';
+
+select COUNT(*) from radix_text_tbl where t >= 'Worth                         St  ';
+
+select COUNT(*) from radix_text_tbl where t ~>=~ 'Worth                         St  ';
+
+select COUNT(*) from radix_text_tbl where t ~>=~ 'Worth                         St  ';
+
+select COUNT(*) from radix_text_tbl where t > 'Worth                         St  ';
+
+select COUNT(*) from radix_text_tbl where t > 'Worth                         St  ';
+
+select COUNT(*) from radix_text_tbl where t ~>~ 'Worth                         St  ';
+
+select COUNT(*) from radix_text_tbl where t ~>~ 'Worth                         St  ';
+
+select COUNT(*) from radix_text_tbl where t ^@ 'Worth';
+
+select COUNT(*) from radix_text_tbl where t ^@ 'Worth';
+
+select COUNT(*) from radix_text_tbl where starts_with(t, 'Worth');
+
+select COUNT(*) from radix_text_tbl where starts_with(t, 'Worth');
+
+reset enable_seqscan;
+
+reset enable_indexscan;
+
+reset enable_bitmapscan;

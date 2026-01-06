@@ -1,0 +1,275 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/single/complex_select_0.sql
+snapshot_kind: text
+---
+with recursive
+pks_fks
+as (
+  select
+    cast(contype as TEXT) as contype,
+    conname,
+    array_length(conkey, 1) as ncol,
+    conrelid as resorigtbl,
+    col as resorigcol,
+    ord
+  from
+    pg_constraint
+    left outer join
+      lateral unnest(conkey)
+      with ordinality
+      as _ (col, ord)
+    on true
+  where
+    contype in ('p', 'f')
+  union
+  select
+    concat(contype, '_ref') as contype,
+    conname,
+    array_length(confkey, 1) as ncol,
+    confrelid,
+    col,
+    ord
+  from
+    pg_constraint
+    left outer join
+      lateral unnest(confkey)
+      with ordinality
+      as _ (col, ord)
+    on true
+  where
+    contype = 'f'
+),
+views
+as (
+  select
+    c.oid as view_id,
+    n.nspname as view_schema,
+    c.relname as view_name,
+    r.ev_action as view_definition
+  from
+    pg_class as c
+    inner join
+      pg_namespace as n
+    on n.oid = c.relnamespace
+    inner join
+      pg_rewrite as r
+    on r.ev_class = c.oid
+  where
+    c.relkind in ('v', 'm')
+),
+transform_json
+as (
+  select
+    view_id,
+    view_schema,
+    view_name,
+    cast(replace(
+      replace(
+        replace(
+          replace(
+            replace(
+              replace(
+                replace(
+                  regexp_replace(
+                    replace(
+                      replace(
+                        replace(
+                          replace(
+                            replace(
+                              replace(
+                                replace(
+                                  replace(
+                                    replace(
+                                      replace(
+                                        replace(cast(view_definition as TEXT), '<>', '()'),
+                                        ',',
+                                        ''
+                                      ),
+                                      '\\{',
+                                      ''
+                                    ),
+                                    '\\}',
+                                    ''
+                                  ),
+                                  ' :targetList ',
+                                  ',"targetList":'
+                                ),
+                                ' :resno ',
+                                ',"resno":'
+                              ),
+                              ' :resorigtbl ',
+                              ',"resorigtbl":'
+                            ),
+                            ' :resorigcol ',
+                            ',"resorigcol":'
+                          ),
+                          '{',
+                          '{ :'
+                        ),
+                        '((',
+                        '{(('
+                      ),
+                      '({',
+                      '{({'
+                    ),
+                    ' :[^}{,]+',
+                    ',"":',
+                    'g'
+                  ),
+                  ',"":}',
+                  '}'
+                ),
+                ',"":,',
+                ','
+              ),
+              '{(',
+              '('
+            ),
+            '{,',
+            '{'
+          ),
+          '(',
+          '['
+        ),
+        ')',
+        ']'
+      ),
+      ' ',
+      ','
+    )
+    as JSON)
+    as view_definition
+  from
+    views
+),
+target_entries
+as (
+  select
+    view_id,
+    view_schema,
+    view_name,
+    json_array_elements(
+      view_definition -> 0 -> 'targetList'
+    )
+    as entry
+  from
+    transform_json
+),
+results
+as (
+  select
+    view_id,
+    view_schema,
+    view_name,
+    cast(entry ->> 'resno' as INT) as view_column,
+    cast(entry ->> 'resorigtbl' as OID) as resorigtbl,
+    cast(entry ->> 'resorigcol' as INT) as resorigcol
+  from
+    target_entries
+),
+recursion (view_id,
+view_schema,
+view_name,
+view_column,
+resorigtbl,
+resorigcol,
+is_cycle,
+path)
+as (
+  select
+    r.*,
+    false,
+    array[resorigtbl]
+  from
+    results as r
+  where
+    true
+  union all
+  select
+    view.view_id,
+    view.view_schema,
+    view.view_name,
+    view.view_column,
+    tab.resorigtbl,
+    tab.resorigcol,
+    tab.resorigtbl = any (path),
+    path || tab.resorigtbl
+  from
+    recursion as view
+    inner join
+      results as tab
+    on view.resorigtbl = tab.view_id and
+      view.resorigcol = tab.view_column
+  where
+    not is_cycle
+),
+repeated_references
+as (
+  select
+    view_id,
+    view_schema,
+    view_name,
+    resorigtbl,
+    resorigcol,
+    array_agg(attname) as view_columns
+  from
+    recursion
+    inner join
+      pg_attribute as vcol
+    on vcol.attrelid = view_id and
+      vcol.attnum = view_column
+  group by view_id,
+    view_schema,
+    view_name,
+    resorigtbl,
+    resorigcol
+)
+select
+  sch.nspname as table_schema,
+  tbl.relname as table_name,
+  rep.view_schema,
+  rep.view_name,
+  pks_fks.conname as constraint_name,
+  pks_fks.contype as constraint_type,
+  jsonb_agg(
+    jsonb_build_object(
+      'table_column',
+      col.attname,
+      'view_columns',
+      view_columns
+    ) order by pks_fks.ord
+  )
+  as column_dependencies
+from
+  repeated_references as rep
+  inner join
+    pks_fks
+  using (
+    "resorigtbl",
+    "resorigcol")
+  inner join
+    pg_class as tbl
+  on tbl.oid = rep.resorigtbl
+  inner join
+    pg_attribute as col
+  on col.attrelid = tbl.oid and
+    col.attnum = rep.resorigcol
+  inner join
+    pg_namespace as sch
+  on sch.oid = tbl.relnamespace
+group by sch.nspname,
+  tbl.relname,
+  rep.view_schema,
+  rep.view_name,
+  pks_fks.conname,
+  pks_fks.contype,
+  pks_fks.ncol
+having
+  ncol =
+  array_length(
+    array_agg(
+      row(col.attname, view_columns) order by pks_fks.ord
+    ),
+    1
+  );

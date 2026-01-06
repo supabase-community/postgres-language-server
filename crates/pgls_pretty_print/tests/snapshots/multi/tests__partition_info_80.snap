@@ -1,0 +1,270 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/partition_info.sql
+snapshot_kind: text
+---
+select * from pg_partition_tree(null);
+
+select * from pg_partition_tree(0);
+
+select * from pg_partition_ancestors(null);
+
+select * from pg_partition_ancestors(0);
+
+select pg_partition_root(null);
+
+select pg_partition_root(0);
+
+create table ptif_test (
+  a INT,
+  b INT
+)
+partition by range(a);
+
+create table ptif_test0
+partition of ptif_test
+for values from (minvalue) to (0)
+partition by LIST(b);
+
+create table ptif_test01 partition of ptif_test0 for values in (1);
+
+create table ptif_test1
+partition of ptif_test
+for values from (0) to (100)
+partition by LIST(b);
+
+create table ptif_test11 partition of ptif_test1 for values in (1);
+
+create table ptif_test2 partition of ptif_test for values from (100) to (200);
+
+create table ptif_test3
+partition of ptif_test
+for values from (200) to (maxvalue)
+partition by LIST(b);
+
+select pg_partition_root('ptif_test');
+
+select pg_partition_root('ptif_test0');
+
+select pg_partition_root('ptif_test01');
+
+select pg_partition_root('ptif_test3');
+
+create index "ptif_test_index" on only ptif_test using btree (a);
+
+create index "ptif_test0_index" on only ptif_test0 using btree (a);
+
+alter index ptif_test_index
+  ATTACH partition
+  ptif_test0_index;
+
+create index "ptif_test01_index" on ptif_test01 using btree (a);
+
+alter index ptif_test0_index
+  ATTACH partition
+  ptif_test01_index;
+
+create index "ptif_test1_index" on only ptif_test1 using btree (a);
+
+alter index ptif_test_index
+  ATTACH partition
+  ptif_test1_index;
+
+create index "ptif_test11_index" on ptif_test11 using btree (a);
+
+alter index ptif_test1_index
+  ATTACH partition
+  ptif_test11_index;
+
+create index "ptif_test2_index" on ptif_test2 using btree (a);
+
+alter index ptif_test_index
+  ATTACH partition
+  ptif_test2_index;
+
+create index "ptif_test3_index" on ptif_test3 using btree (a);
+
+alter index ptif_test_index
+  ATTACH partition
+  ptif_test3_index;
+
+select pg_partition_root('ptif_test_index');
+
+select pg_partition_root('ptif_test0_index');
+
+select pg_partition_root('ptif_test01_index');
+
+select pg_partition_root('ptif_test3_index');
+
+select relid, parentrelid, level, isleaf from pg_partition_tree('ptif_test');
+
+select
+  relid,
+  parentrelid,
+  level,
+  isleaf
+from
+  pg_partition_tree('ptif_test0') as p
+  inner join
+    pg_class as c
+  on p.relid = c.oid;
+
+select
+  relid,
+  parentrelid,
+  level,
+  isleaf
+from
+  pg_partition_tree('ptif_test01') as p
+  inner join
+    pg_class as c
+  on p.relid = c.oid;
+
+select
+  relid,
+  parentrelid,
+  level,
+  isleaf
+from
+  pg_partition_tree('ptif_test3') as p
+  inner join
+    pg_class as c
+  on p.relid = c.oid;
+
+select * from pg_partition_ancestors('ptif_test01');
+
+select * from pg_partition_ancestors('ptif_test');
+
+select
+  relid,
+  parentrelid,
+  level,
+  isleaf
+from
+  pg_partition_tree(
+    pg_partition_root('ptif_test01')
+  )
+  as p
+  inner join
+    pg_class as c
+  on p.relid = c.oid;
+
+select
+  relid,
+  parentrelid,
+  level,
+  isleaf
+from
+  pg_partition_tree('ptif_test_index');
+
+select
+  relid,
+  parentrelid,
+  level,
+  isleaf
+from
+  pg_partition_tree('ptif_test0_index')
+  as p
+  inner join
+    pg_class as c
+  on p.relid = c.oid;
+
+select
+  relid,
+  parentrelid,
+  level,
+  isleaf
+from
+  pg_partition_tree('ptif_test01_index')
+  as p
+  inner join
+    pg_class as c
+  on p.relid = c.oid;
+
+select
+  relid,
+  parentrelid,
+  level,
+  isleaf
+from
+  pg_partition_tree('ptif_test3_index')
+  as p
+  inner join
+    pg_class as c
+  on p.relid = c.oid;
+
+select
+  relid,
+  parentrelid,
+  level,
+  isleaf
+from
+  pg_partition_tree(
+    pg_partition_root('ptif_test01_index')
+  )
+  as p
+  inner join
+    pg_class as c
+  on p.relid = c.oid;
+
+select * from pg_partition_ancestors('ptif_test01_index');
+
+select * from pg_partition_ancestors('ptif_test_index');
+
+drop TABLE "ptif_test";
+
+create table ptif_normal_table (a INT);
+
+select
+  relid,
+  parentrelid,
+  level,
+  isleaf
+from
+  pg_partition_tree('ptif_normal_table');
+
+select * from pg_partition_ancestors('ptif_normal_table');
+
+select pg_partition_root('ptif_normal_table');
+
+drop TABLE "ptif_normal_table";
+
+create view ptif_test_view
+as select 1;
+
+create materialized view ptif_test_matview as select 1;
+
+create table ptif_li_parent ();
+
+create table ptif_li_child ()
+inherits (ptif_li_parent);
+
+select * from pg_partition_tree('ptif_test_view');
+
+select * from pg_partition_tree('ptif_test_matview');
+
+select * from pg_partition_tree('ptif_li_parent');
+
+select * from pg_partition_tree('ptif_li_child');
+
+select * from pg_partition_ancestors('ptif_test_view');
+
+select * from pg_partition_ancestors('ptif_test_matview');
+
+select * from pg_partition_ancestors('ptif_li_parent');
+
+select * from pg_partition_ancestors('ptif_li_child');
+
+select pg_partition_root('ptif_test_view');
+
+select pg_partition_root('ptif_test_matview');
+
+select pg_partition_root('ptif_li_parent');
+
+select pg_partition_root('ptif_li_child');
+
+drop VIEW "ptif_test_view";
+
+drop MATERIALIZED VIEW "ptif_test_matview";
+
+drop TABLE "ptif_li_parent", "ptif_li_child";
