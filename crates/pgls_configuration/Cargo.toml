@@ -22,6 +22,7 @@ pgls_analyser            = { workspace = true }
 pgls_console             = { workspace = true }
 pgls_diagnostics         = { workspace = true }
 pgls_env                 = { workspace = true }
+pgls_matcher             = { workspace = true }
 pgls_pretty_print        = { workspace = true }
 pgls_text_size           = { workspace = true }
 rustc-hash               = { workspace = true }
