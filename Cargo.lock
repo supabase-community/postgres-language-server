@@ -2800,6 +2800,7 @@ dependencies = [
  "pgls_console",
  "pgls_diagnostics",
  "pgls_env",
+ "pgls_matcher",
  "pgls_pretty_print",
  "pgls_text_size",
  "rustc-hash 2.1.0",
