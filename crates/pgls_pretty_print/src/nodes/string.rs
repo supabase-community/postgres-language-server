@@ -1,8 +1,8 @@
 use pgls_query::protobuf::String as PgString;
 
 use crate::{
-    emitter::{EventEmitter, GroupKind},
     TokenKind,
+    emitter::{EventEmitter, GroupKind},
 };
 
 const RESERVED_KEYWORDS: &[&str] = &[
