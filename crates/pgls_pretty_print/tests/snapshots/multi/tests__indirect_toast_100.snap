@@ -101,10 +101,10 @@ BEGIN
 END$function$;
 
 create TRIGGER indtoasttest_update_indirect
-  before insert or update
-  on indtoasttest
-  for EACH ROW
-  EXECUTE FUNCTION update_using_indirect();
+before insert or update
+on indtoasttest
+for EACH ROW
+EXECUTE FUNCTION update_using_indirect();
 
 update indtoasttest
 set cnt = cnt + 1

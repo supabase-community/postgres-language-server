@@ -29,9 +29,6 @@ pub(super) fn emit_create_trig_stmt(e: &mut EventEmitter, n: &CreateTrigStmt) {
     e.space();
     e.token(TokenKind::IDENT(n.trigname.clone()));
 
-    // Indent clauses after trigger name
-    e.indent_start();
-
     // Timing: BEFORE (2), AFTER (4), INSTEAD OF (16)
     // After trigger name, break to new line for timing + events + ON table
     e.line(LineType::SoftOrSpace);
@@ -161,7 +158,6 @@ pub(super) fn emit_create_trig_stmt(e: &mut EventEmitter, n: &CreateTrigStmt) {
     }
     e.token(TokenKind::R_PAREN);
 
-    e.indent_end();
     e.token(TokenKind::SEMICOLON);
 
     e.group_end();

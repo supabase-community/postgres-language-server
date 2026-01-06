@@ -169,16 +169,16 @@ $function$
 language plpgsql;
 
 create TRIGGER qqqbef
-  before insert or delete or update
-  on copydml_test
-  for EACH ROW
-  EXECUTE FUNCTION qqq_trig();
+before insert or delete or update
+on copydml_test
+for EACH ROW
+EXECUTE FUNCTION qqq_trig();
 
 create TRIGGER qqqaf
-  after insert or delete or update
-  on copydml_test
-  for EACH ROW
-  EXECUTE FUNCTION qqq_trig();
+after insert or delete or update
+on copydml_test
+for EACH ROW
+EXECUTE FUNCTION qqq_trig();
 
 copy (insert into copydml_test (t) values ('f') returning id) to stdout;
 

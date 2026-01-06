@@ -1405,11 +1405,11 @@ $function$
 language plpgsql;
 
 create TRIGGER parted_conflict_update
-  after update
-  on parted_conflict
-  REFERENCING new table as inserted
-  for EACH STATEMENT
-  EXECUTE FUNCTION parted_conflict_update_func();
+after update
+on parted_conflict
+REFERENCING new table as inserted
+for EACH STATEMENT
+EXECUTE FUNCTION parted_conflict_update_func();
 
 truncate parted_conflict;
 

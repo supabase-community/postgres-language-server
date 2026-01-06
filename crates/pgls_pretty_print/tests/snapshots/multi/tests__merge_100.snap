@@ -366,40 +366,40 @@ END;
 $function$;
 
 create TRIGGER merge_bsi
-  before insert
-  on target
-  for EACH STATEMENT
-  EXECUTE FUNCTION merge_trigfunc();
+before insert
+on target
+for EACH STATEMENT
+EXECUTE FUNCTION merge_trigfunc();
 
 create TRIGGER merge_bsu
-  before update
-  on target
-  for EACH STATEMENT
-  EXECUTE FUNCTION merge_trigfunc();
+before update
+on target
+for EACH STATEMENT
+EXECUTE FUNCTION merge_trigfunc();
 
 create TRIGGER merge_bsd
-  before delete
-  on target
-  for EACH STATEMENT
-  EXECUTE FUNCTION merge_trigfunc();
+before delete
+on target
+for EACH STATEMENT
+EXECUTE FUNCTION merge_trigfunc();
 
 create TRIGGER merge_asi
-  after insert
-  on target
-  for EACH STATEMENT
-  EXECUTE FUNCTION merge_trigfunc();
+after insert
+on target
+for EACH STATEMENT
+EXECUTE FUNCTION merge_trigfunc();
 
 create TRIGGER merge_asu
-  after update
-  on target
-  for EACH STATEMENT
-  EXECUTE FUNCTION merge_trigfunc();
+after update
+on target
+for EACH STATEMENT
+EXECUTE FUNCTION merge_trigfunc();
 
 create TRIGGER merge_asd
-  after delete
-  on target
-  for EACH STATEMENT
-  EXECUTE FUNCTION merge_trigfunc();
+after delete
+on target
+for EACH STATEMENT
+EXECUTE FUNCTION merge_trigfunc();
 
 create TRIGGER merge_bri before insert on target for EACH ROW EXECUTE FUNCTION merge_trigfunc();
 
@@ -441,10 +441,10 @@ $function$;
 select * from target full outer join source on sid = tid;
 
 create TRIGGER merge_skip
-  before insert or delete or update
-  on target
-  for EACH ROW
-  EXECUTE FUNCTION skip_merge_op();
+before insert or delete or update
+on target
+for EACH ROW
+EXECUTE FUNCTION skip_merge_op();
 
 do
 $do$
@@ -1480,10 +1480,10 @@ $function$
 language plpgsql;
 
 create TRIGGER insert_measurement_trigger
-  before insert
-  on measurement
-  for EACH ROW
-  EXECUTE FUNCTION measurement_insert_trigger();
+before insert
+on measurement
+for EACH ROW
+EXECUTE FUNCTION measurement_insert_trigger();
 
 insert into measurement values (1, '2006-02-10', 35, 10);
 

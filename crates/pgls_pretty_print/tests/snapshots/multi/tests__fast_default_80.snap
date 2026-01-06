@@ -588,10 +588,10 @@ alter table t
   add column y INT not null default 5;
 
 create TRIGGER a
-  before update
-  on t
-  for EACH ROW
-  EXECUTE FUNCTION test_trigger();
+before update
+on t
+for EACH ROW
+EXECUTE FUNCTION test_trigger();
 
 select * from t;
 
@@ -617,10 +617,10 @@ alter table t
   add column y INT;
 
 create TRIGGER a
-  before update
-  on t
-  for EACH ROW
-  EXECUTE FUNCTION test_trigger();
+before update
+on t
+for EACH ROW
+EXECUTE FUNCTION test_trigger();
 
 select * from t;
 
@@ -646,10 +646,10 @@ alter table t
   add column y INT not null default 5;
 
 create TRIGGER a
-  before update
-  on t
-  for EACH ROW
-  EXECUTE FUNCTION test_trigger();
+before update
+on t
+for EACH ROW
+EXECUTE FUNCTION test_trigger();
 
 select * from t;
 
@@ -675,10 +675,10 @@ alter table t
   add column y INT;
 
 create TRIGGER a
-  before update
-  on t
-  for EACH ROW
-  EXECUTE FUNCTION test_trigger();
+before update
+on t
+for EACH ROW
+EXECUTE FUNCTION test_trigger();
 
 select * from t;
 
@@ -704,10 +704,10 @@ alter table t
   add column y INT not null default 5;
 
 create TRIGGER a
-  before update
-  on t
-  for EACH ROW
-  EXECUTE FUNCTION test_trigger();
+before update
+on t
+for EACH ROW
+EXECUTE FUNCTION test_trigger();
 
 select * from t;
 
@@ -733,10 +733,10 @@ alter table t
   add column y INT;
 
 create TRIGGER a
-  before update
-  on t
-  for EACH ROW
-  EXECUTE FUNCTION test_trigger();
+before update
+on t
+for EACH ROW
+EXECUTE FUNCTION test_trigger();
 
 select * from t;
 
@@ -762,10 +762,10 @@ alter table t
   add column y INT not null default 5;
 
 create TRIGGER a
-  before update
-  on t
-  for EACH ROW
-  EXECUTE FUNCTION test_trigger();
+before update
+on t
+for EACH ROW
+EXECUTE FUNCTION test_trigger();
 
 select * from t;
 
@@ -791,10 +791,10 @@ alter table t
   add column y INT;
 
 create TRIGGER a
-  before update
-  on t
-  for EACH ROW
-  EXECUTE FUNCTION test_trigger();
+before update
+on t
+for EACH ROW
+EXECUTE FUNCTION test_trigger();
 
 select * from t;
 

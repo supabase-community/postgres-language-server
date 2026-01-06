@@ -4162,46 +4162,46 @@ as $function$
 $function$;
 
 create TRIGGER trig_upd_pk
-  after update
-  on fkpart11.pk
-  for EACH ROW
-  EXECUTE FUNCTION fkpart11.print_row();
+after update
+on fkpart11.pk
+for EACH ROW
+EXECUTE FUNCTION fkpart11.print_row();
 
 create TRIGGER trig_del_pk
-  after delete
-  on fkpart11.pk
-  for EACH ROW
-  EXECUTE FUNCTION fkpart11.print_row();
+after delete
+on fkpart11.pk
+for EACH ROW
+EXECUTE FUNCTION fkpart11.print_row();
 
 create TRIGGER trig_ins_pk
-  after insert
-  on fkpart11.pk
-  for EACH ROW
-  EXECUTE FUNCTION fkpart11.print_row();
+after insert
+on fkpart11.pk
+for EACH ROW
+EXECUTE FUNCTION fkpart11.print_row();
 
 create CONSTRAINT TRIGGER trig_upd_fk_parted
-  after update
-  on fkpart11.fk_parted
-  DEFERRABLE
-  INITIALLY DEFERRED
-  for EACH ROW
-  EXECUTE FUNCTION fkpart11.print_row();
+after update
+on fkpart11.fk_parted
+DEFERRABLE
+INITIALLY DEFERRED
+for EACH ROW
+EXECUTE FUNCTION fkpart11.print_row();
 
 create CONSTRAINT TRIGGER trig_del_fk_parted
-  after delete
-  on fkpart11.fk_parted
-  DEFERRABLE
-  INITIALLY DEFERRED
-  for EACH ROW
-  EXECUTE FUNCTION fkpart11.print_row();
+after delete
+on fkpart11.fk_parted
+DEFERRABLE
+INITIALLY DEFERRED
+for EACH ROW
+EXECUTE FUNCTION fkpart11.print_row();
 
 create CONSTRAINT TRIGGER trig_ins_fk_parted
-  after insert
-  on fkpart11.fk_parted
-  DEFERRABLE
-  INITIALLY DEFERRED
-  for EACH ROW
-  EXECUTE FUNCTION fkpart11.print_row();
+after insert
+on fkpart11.fk_parted
+DEFERRABLE
+INITIALLY DEFERRED
+for EACH ROW
+EXECUTE FUNCTION fkpart11.print_row();
 
 update fkpart11.pk set a = 3 where a = 4;
 

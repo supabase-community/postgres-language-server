@@ -169,10 +169,10 @@ end;
 $function$;
 
 create TRIGGER part_ins_trig
-  before insert
-  on parted_copytest_a2
-  for EACH ROW
-  EXECUTE FUNCTION part_ins_func();
+before insert
+on parted_copytest_a2
+for EACH ROW
+EXECUTE FUNCTION part_ins_func();
 
 copy parted_copytest from 'filename';
 
@@ -237,10 +237,10 @@ $function$
 language plpgsql;
 
 create TRIGGER check_after_tab_progress_reporting
-  after insert
-  on tab_progress_reporting
-  for EACH STATEMENT
-  EXECUTE FUNCTION notice_after_tab_progress_reporting();
+after insert
+on tab_progress_reporting
+for EACH STATEMENT
+EXECUTE FUNCTION notice_after_tab_progress_reporting();
 
 copy tab_progress_reporting from stdout;
 

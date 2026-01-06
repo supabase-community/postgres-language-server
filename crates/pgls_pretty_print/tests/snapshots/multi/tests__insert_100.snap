@@ -553,10 +553,10 @@ $function$
 language plpgsql;
 
 create TRIGGER mlparted11_trig
-  before insert
-  on mlparted11
-  for EACH ROW
-  EXECUTE FUNCTION mlparted11_trig_fn();
+before insert
+on mlparted11
+for EACH ROW
+EXECUTE FUNCTION mlparted11_trig_fn();
 
 insert into mlparted values (1, 2);
 
@@ -662,10 +662,10 @@ as $function$ begin new.c = 'b'; return new; end; $function$
 language plpgsql;
 
 create TRIGGER mlparted5abrtrig
-  before insert
-  on mlparted5a
-  for EACH ROW
-  EXECUTE FUNCTION mlparted5abrtrig_func();
+before insert
+on mlparted5a
+for EACH ROW
+EXECUTE FUNCTION mlparted5abrtrig_func();
 
 insert into mlparted5 (a, b, c) values (1, 40, 'a');
 
@@ -935,10 +935,10 @@ as $function$begin new.a := 2; return new; end$function$
 language plpgsql;
 
 create TRIGGER brtrigpartcon1trig
-  before insert
-  on brtrigpartcon1
-  for EACH ROW
-  EXECUTE FUNCTION brtrigpartcon1trigf();
+before insert
+on brtrigpartcon1
+for EACH ROW
+EXECUTE FUNCTION brtrigpartcon1trigf();
 
 insert into brtrigpartcon values (1, 'hi there');
 
@@ -1010,16 +1010,16 @@ as $function$begin raise notice 'b: %', new.b; return NULL; end$function$
 language plpgsql;
 
 create TRIGGER donothingbrtrig1
-  before insert
-  on donothingbrtrig_test1
-  for EACH ROW
-  EXECUTE FUNCTION donothingbrtrig_func();
+before insert
+on donothingbrtrig_test1
+for EACH ROW
+EXECUTE FUNCTION donothingbrtrig_func();
 
 create TRIGGER donothingbrtrig2
-  before insert
-  on donothingbrtrig_test2
-  for EACH ROW
-  EXECUTE FUNCTION donothingbrtrig_func();
+before insert
+on donothingbrtrig_test2
+for EACH ROW
+EXECUTE FUNCTION donothingbrtrig_func();
 
 alter table donothingbrtrig_test
   ATTACH partition

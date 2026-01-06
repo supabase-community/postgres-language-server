@@ -510,10 +510,10 @@ END;
 $function$;
 
 create TRIGGER joinview_upd_trig
-  instead of update
-  on joinview
-  for EACH ROW
-  EXECUTE FUNCTION joinview_upd_trig_fn();
+instead of update
+on joinview
+for EACH ROW
+EXECUTE FUNCTION joinview_upd_trig_fn();
 
 drop RULE joinview_u on joinview;
 

@@ -1375,10 +1375,10 @@ end $function$
 language plpgsql;
 
 create TRIGGER tnoticetrigger
-  after insert
-  on tt
-  for EACH ROW
-  EXECUTE FUNCTION noticetrigger();
+after insert
+on tt
+for EACH ROW
+EXECUTE FUNCTION noticetrigger();
 
 select insert_tt2('foolme', 'barme') limit 1;
 

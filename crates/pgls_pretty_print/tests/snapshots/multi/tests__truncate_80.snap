@@ -227,10 +227,10 @@ language plpgsql;
 insert into trunc_trigger_test values (1, 'foo', 'bar'), (2, 'baz', 'quux');
 
 create TRIGGER t
-  before TRUNCATE
-  on trunc_trigger_test
-  for EACH STATEMENT
-  EXECUTE FUNCTION trunctrigger("before trigger truncate");
+before TRUNCATE
+on trunc_trigger_test
+for EACH STATEMENT
+EXECUTE FUNCTION trunctrigger("before trigger truncate");
 
 select COUNT(*) as "Row count in test table" from trunc_trigger_test;
 
@@ -249,10 +249,10 @@ truncate trunc_trigger_log;
 insert into trunc_trigger_test values (1, 'foo', 'bar'), (2, 'baz', 'quux');
 
 create TRIGGER tt
-  after TRUNCATE
-  on trunc_trigger_test
-  for EACH STATEMENT
-  EXECUTE FUNCTION trunctrigger("after trigger truncate");
+after TRUNCATE
+on trunc_trigger_test
+for EACH STATEMENT
+EXECUTE FUNCTION trunctrigger("after trigger truncate");
 
 select COUNT(*) as "Row count in test table" from trunc_trigger_test;
 
