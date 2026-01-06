@@ -17,6 +17,7 @@ The following features are available today:
 - [Syntax Diagnostics](/features/syntax_diagnostics)
 - [Linting](/features/linting)
 - [Type Checking](/features/type_checking)
+- [Formatting](/features/formatting) (Preview)
 - [PL/pgSQL Support](/features/plpgsql)
 - [Autocompletion & Hover](/features/editor_features)
 

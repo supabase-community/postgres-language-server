@@ -20,6 +20,7 @@ nav:
       - Syntax Diagnostics: features/syntax_diagnostics.md
       - Linting: features/linting.md
       - Type Checking: features/type_checking.md
+      - Formatting: features/formatting.md
       - PL/pgSQL Support: features/plpgsql.md
       - Autocompletion & Hover: features/editor_features.md
   - Guides:
