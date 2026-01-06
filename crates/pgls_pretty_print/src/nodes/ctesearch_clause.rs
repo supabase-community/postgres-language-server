@@ -12,9 +12,9 @@ pub(super) fn emit_ctesearch_clause(e: &mut EventEmitter, n: &CteSearchClause) {
     e.token(TokenKind::SEARCH_KW);
     e.space();
     if n.search_breadth_first {
-        e.token(TokenKind::IDENT("BREADTH".to_string()));
+        e.token(TokenKind::BREADTH_KW);
     } else {
-        e.token(TokenKind::IDENT("DEPTH".to_string()));
+        e.token(TokenKind::DEPTH_KW);
     }
     e.space();
     e.token(TokenKind::FIRST_KW);

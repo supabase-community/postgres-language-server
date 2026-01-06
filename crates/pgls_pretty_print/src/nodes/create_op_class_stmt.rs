@@ -10,7 +10,7 @@ pub(super) fn emit_create_op_class_stmt(e: &mut EventEmitter, n: &CreateOpClassS
 
     e.token(TokenKind::CREATE_KW);
     e.space();
-    e.token(TokenKind::IDENT("OPERATOR".to_string()));
+    e.token(TokenKind::OPERATOR_KW);
     e.space();
     e.token(TokenKind::CLASS_KW);
     e.space();
@@ -44,7 +44,7 @@ pub(super) fn emit_create_op_class_stmt(e: &mut EventEmitter, n: &CreateOpClassS
     // FAMILY
     if !n.opfamilyname.is_empty() {
         e.line(LineType::SoftOrSpace);
-        e.token(TokenKind::IDENT("FAMILY".to_string()));
+        e.token(TokenKind::IDENT("family".to_string()));
         e.space();
         emit_dot_separated_list(e, &n.opfamilyname);
     }

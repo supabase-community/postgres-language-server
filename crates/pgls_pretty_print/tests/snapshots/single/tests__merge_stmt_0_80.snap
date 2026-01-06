@@ -8,6 +8,6 @@ using source_table as s
 on t.id = s.id
 when matched
 then update set value = s.value
-when not matched by TARGET
+when not matched by target
 then insert (id, value)
 values (s.id, s.value);

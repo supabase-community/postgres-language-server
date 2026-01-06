@@ -6,8 +6,8 @@ snapshot_kind: text
 begin;
 
 create table xacttest (
-  a SMALLINT,
-  b REAL
+  a smallint,
+  b real
 );
 
 insert into xacttest values (56, 7.8), (100, 99.097), (0, 0.09561), (42, 324.78);
@@ -20,7 +20,7 @@ select a from xacttest where a > 100;
 
 begin;
 
-create table disappear (a INT);
+create table disappear (a int);
 
 delete from xacttest;
 
@@ -57,14 +57,14 @@ reset transaction_deferrable;
 commit;
 
 create function errfunc()
-returns INT
+returns int
 language sql
 as $function$SELECT 1$function$
 set transaction_read_only = 'on';
 
-create table writetest (a INT);
+create table writetest (a int);
 
-create temporary table temptest (a INT);
+create temporary table temptest (a int);
 
 begin;
 
@@ -144,7 +144,7 @@ commit;
 
 set session CHARACTERISTICS as transaction read only;
 
-drop TABLE writetest;
+drop table writetest;
 
 insert into writetest values (1);
 
@@ -164,23 +164,23 @@ create table test as select * from writetest;
 
 start transaction read write;
 
-drop TABLE writetest;
+drop table writetest;
 
 commit;
 
 set session CHARACTERISTICS as transaction read write;
 
-create table trans_foobar (a INT);
+create table trans_foobar (a int);
 
 begin;
 
-create table trans_foo (a INT);
+create table trans_foo (a int);
 
 savepoint one;
 
-drop TABLE trans_foo;
+drop table trans_foo;
 
-create table trans_bar (a INT);
+create table trans_bar (a int);
 
 rollback to savepoint one;
 
@@ -188,13 +188,13 @@ release savepoint one;
 
 savepoint two;
 
-create table trans_baz (a INT);
+create table trans_baz (a int);
 
 release savepoint two;
 
-drop TABLE trans_foobar;
+drop table trans_foobar;
 
-create table trans_barbaz (a INT);
+create table trans_barbaz (a int);
 
 commit;
 
@@ -256,7 +256,7 @@ release savepoint one;
 
 savepoint two;
 
-create table savepoints (a INT);
+create table savepoints (a int);
 
 savepoint three;
 
@@ -402,7 +402,7 @@ commit;
 
 select a from savepoints where a between 18 and 22;
 
-drop TABLE savepoints;
+drop table savepoints;
 
 savepoint one;
 
@@ -434,15 +434,15 @@ declare "c" cursor for select unique2 from tenk1 order by unique2;;
 
 savepoint one;
 
-fetch FORWARD 10 from c;
+fetch forward 10 from c;
 
 rollback to savepoint one;
 
-fetch FORWARD 10 from c;
+fetch forward 10 from c;
 
 release savepoint one;
 
-fetch FORWARD 10 from c;
+fetch forward 10 from c;
 
 close c;
 
@@ -450,24 +450,24 @@ declare "c" cursor for select unique2 / 0 from tenk1 order by unique2;;
 
 savepoint two;
 
-fetch FORWARD 10 from c;
+fetch forward 10 from c;
 
 rollback to savepoint two;
 
-fetch FORWARD 10 from c;
+fetch forward 10 from c;
 
 rollback to savepoint two;
 
 release savepoint two;
 
-fetch FORWARD 10 from c;
+fetch forward 10 from c;
 
 commit;
 
 select * from xacttest;
 
 create or replace function max_xacttest()
-returns SMALLINT
+returns smallint
 language sql
 as $function$select max(a) from xacttest$function$
 stable;
@@ -481,7 +481,7 @@ select * from xacttest;
 rollback;
 
 create or replace function max_xacttest()
-returns SMALLINT
+returns smallint
 language sql
 as $function$select max(a) from xacttest$function$
 volatile;
@@ -495,7 +495,7 @@ select * from xacttest;
 rollback;
 
 create or replace function max_xacttest()
-returns SMALLINT
+returns smallint
 language plpgsql
 as $function$begin return max(a) from xacttest; end$function$
 stable;
@@ -509,7 +509,7 @@ select * from xacttest;
 rollback;
 
 create or replace function max_xacttest()
-returns SMALLINT
+returns smallint
 language plpgsql
 as $function$begin return max(a) from xacttest; end$function$
 volatile;
@@ -526,7 +526,7 @@ begin;
 
 savepoint x;
 
-create table koju (a INT unique);
+create table koju (a int unique);
 
 insert into koju values (1);
 
@@ -534,7 +534,7 @@ insert into koju values (1);
 
 rollback to savepoint x;
 
-create table koju (a INT unique);
+create table koju (a int unique);
 
 insert into koju values (1);
 
@@ -542,14 +542,14 @@ insert into koju values (1);
 
 rollback;
 
-drop TABLE trans_foo;
+drop table trans_foo;
 
-drop TABLE trans_baz;
+drop table trans_baz;
 
-drop TABLE trans_barbaz;
+drop table trans_barbaz;
 
-create function inverse(INT)
-returns DOUBLE PRECISION
+create function inverse(int)
+returns double precision
 as $function$
 begin
   analyze revalidate_bug;
@@ -560,21 +560,21 @@ end$function$
 language plpgsql
 volatile;
 
-create table revalidate_bug (c DOUBLE PRECISION unique);
+create table revalidate_bug (c double precision unique);
 
 insert into revalidate_bug values (1);
 
 insert into revalidate_bug values (inverse(0));
 
-drop TABLE revalidate_bug;
+drop table revalidate_bug;
 
-drop FUNCTION inverse(INT);
+drop function inverse(int);
 
 begin;
 
 savepoint x;
 
-create table trans_abc (a INT);
+create table trans_abc (a int);
 
 insert into trans_abc values (5);
 
@@ -592,7 +592,7 @@ commit;
 
 begin;
 
-create table trans_abc (a INT);
+create table trans_abc (a int);
 
 insert into trans_abc values (5);
 
@@ -614,13 +614,13 @@ fetch next from foo;
 
 rollback;
 
-create function invert(x DOUBLE PRECISION)
-returns DOUBLE PRECISION
+create function invert(x double precision)
+returns double precision
 language plpgsql
 as $function$ begin return 1/x; end $function$;
 
 create function create_temp_tab()
-returns TEXT
+returns text
 language plpgsql
 as $function$
 BEGIN
@@ -653,11 +653,11 @@ fetch next from ctt;
 
 commit;
 
-drop FUNCTION create_temp_tab();
+drop function create_temp_tab();
 
-drop FUNCTION invert(DOUBLE PRECISION);
+drop function invert(double precision);
 
-create table trans_abc (a INT);
+create table trans_abc (a int);
 
 set default_transaction_read_only = 'on';
 
@@ -799,9 +799,9 @@ select * from trans_abc order by 1;
 
 reset default_transaction_read_only;
 
-drop TABLE trans_abc;
+drop table trans_abc;
 
-create temporary table i_table (f1 INT);
+create temporary table i_table (f1 int);
 
 select 3;
 
@@ -859,7 +859,7 @@ rollback and chain;
 
 show "transaction_read_only";
 
-create table trans_abc (a INT);
+create table trans_abc (a int);
 
 commit and chain;
 
@@ -895,7 +895,7 @@ reset default_transaction_isolation;
 
 select * from trans_abc order by 1;
 
-drop TABLE trans_abc;
+drop table trans_abc;
 
 begin isolation level repeatable read;
 

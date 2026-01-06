@@ -9,11 +9,11 @@ pub(super) fn emit_publication_obj_spec(e: &mut EventEmitter, n: &PublicationObj
     match n.pubobjtype {
         2 => {
             // TABLES IN SCHEMA schema_name
-            e.token(TokenKind::IDENT("TABLES".to_string()));
+            e.token(TokenKind::TABLES_KW);
             e.space();
             e.token(TokenKind::IN_KW);
             e.space();
-            e.token(TokenKind::IDENT("SCHEMA".to_string()));
+            e.token(TokenKind::SCHEMA_KW);
             if !n.name.is_empty() {
                 e.space();
                 e.token(TokenKind::IDENT(n.name.clone()));
@@ -21,13 +21,13 @@ pub(super) fn emit_publication_obj_spec(e: &mut EventEmitter, n: &PublicationObj
         }
         3 => {
             // TABLES IN CURRENT SCHEMA
-            e.token(TokenKind::IDENT("TABLES".to_string()));
+            e.token(TokenKind::TABLES_KW);
             e.space();
             e.token(TokenKind::IN_KW);
             e.space();
-            e.token(TokenKind::IDENT("CURRENT".to_string()));
+            e.token(TokenKind::CURRENT_KW);
             e.space();
-            e.token(TokenKind::IDENT("SCHEMA".to_string()));
+            e.token(TokenKind::SCHEMA_KW);
         }
         _ => {
             // TABLE table_name with optional columns and WHERE clause

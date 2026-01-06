@@ -3,11 +3,11 @@ source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/name.sql
 snapshot_kind: text
 ---
-select cast('name string' as NAME) = cast('name string' as NAME) as "True";
+select cast('name string' as name) = cast('name string' as name) as "True";
 
-select cast('name string' as NAME) = cast('name string ' as NAME) as "False";
+select cast('name string' as name) = cast('name string ' as name) as "False";
 
-create table name_tbl (f1 NAME);
+create table name_tbl (f1 name);
 
 insert into name_tbl (f1)
 values
@@ -93,7 +93,7 @@ select c.f1 from name_tbl as c where c.f1 ~ '[0-9]';
 
 select c.f1 from name_tbl as c where c.f1 ~ '.*asdf.*';
 
-drop TABLE name_tbl;
+drop table name_tbl;
 
 do
 $do$
@@ -144,7 +144,7 @@ select
     repeat('x', 66) ||
     '"'
   )
-  as NAME[]);
+  as name[]);
 
 select parse_ident('"c".X XXXXXXXXXX');
 

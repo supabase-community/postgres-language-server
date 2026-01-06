@@ -9,7 +9,7 @@ use super::json_value_expr::{emit_json_output, emit_json_value_expr};
 pub(super) fn emit_json_array_constructor(e: &mut EventEmitter, n: &JsonArrayConstructor) {
     e.group_start(GroupKind::JsonArrayConstructor);
 
-    e.token(TokenKind::IDENT("JSON_ARRAY".to_string()));
+    e.token(TokenKind::JSON_ARRAY_KW);
     e.token(TokenKind::L_PAREN);
 
     if !n.exprs.is_empty() {
@@ -53,7 +53,7 @@ pub(super) fn emit_json_array_query_constructor(
 ) {
     e.group_start(GroupKind::JsonArrayQueryConstructor);
 
-    e.token(TokenKind::IDENT("JSON_ARRAY".to_string()));
+    e.token(TokenKind::JSON_ARRAY_KW);
     e.token(TokenKind::L_PAREN);
 
     let mut has_content = false;
@@ -88,7 +88,7 @@ pub(super) fn emit_json_array_query_constructor(
 pub(super) fn emit_json_array_agg(e: &mut EventEmitter, n: &JsonArrayAgg) {
     e.group_start(GroupKind::JsonArrayAgg);
 
-    e.token(TokenKind::IDENT("JSON_ARRAYAGG".to_string()));
+    e.token(TokenKind::JSON_ARRAYAGG_KW);
     e.token(TokenKind::L_PAREN);
 
     if let Some(ref arg) = n.arg {

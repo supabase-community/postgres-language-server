@@ -4,20 +4,20 @@ input_file: crates/pgls_pretty_print/tests/data/multi/text.sql
 snapshot_kind: text
 ---
 select
-  cast('this is a text string' as TEXT) =
-  cast('this is a text string' as TEXT)
+  cast('this is a text string' as text) =
+  cast('this is a text string' as text)
   as "true";
 
 select
-  cast('this is a text string' as TEXT) =
-  cast('this is a text strin' as TEXT)
+  cast('this is a text string' as text) =
+  cast('this is a text strin' as text)
   as "false";
 
 select * from text_tbl;
 
 select length(42);
 
-select cast('four: ' as TEXT) || 2 + 2;
+select cast('four: ' as text) || 2 + 2;
 
 select 'four: ' || 2 + 2;
 
@@ -67,11 +67,11 @@ select concat(variadic array[1, 2, 3]);
 
 select concat_ws(',', variadic array[1, 2, 3]);
 
-select concat_ws(',', variadic cast(null as INT[]));
+select concat_ws(',', variadic cast(null as int[]));
 
-select concat(variadic cast(null as INT[])) is null;
+select concat(variadic cast(null as int[])) is null;
 
-select concat(variadic cast('{}' as INT[])) = '';
+select concat(variadic cast('{}' as int[])) = '';
 
 select concat_ws(',', variadic 10);
 
@@ -127,13 +127,13 @@ select format('%s, %s', variadic array[1, 2]);
 
 select format('%s, %s', variadic array[true, false]);
 
-select format('%s, %s', variadic cast(array[true, false] as TEXT[]));
+select format('%s, %s', variadic cast(array[true, false] as text[]));
 
 select format('%2$s, %1$s', variadic array['first', 'second']);
 
 select format('%2$s, %1$s', variadic array[1, 2]);
 
-select format('Hello', variadic cast(null as INT[]));
+select format('Hello', variadic cast(null as int[]));
 
 select
   format(

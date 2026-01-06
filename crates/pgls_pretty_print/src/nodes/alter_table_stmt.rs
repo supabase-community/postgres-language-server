@@ -99,7 +99,7 @@ fn emit_alter_table_cmd_impl(e: &mut EventEmitter, cmd: &AlterTableCmd, for_type
             e.space();
             // For ALTER TYPE, use ATTRIBUTE instead of COLUMN
             if for_type {
-                e.token(TokenKind::IDENT("ATTRIBUTE".to_string()));
+                e.token(TokenKind::ATTRIBUTE_KW);
             } else {
                 e.token(TokenKind::COLUMN_KW);
             }
@@ -115,7 +115,7 @@ fn emit_alter_table_cmd_impl(e: &mut EventEmitter, cmd: &AlterTableCmd, for_type
             e.space();
             // For ALTER TYPE, use ATTRIBUTE instead of COLUMN
             if for_type {
-                e.token(TokenKind::IDENT("ATTRIBUTE".to_string()));
+                e.token(TokenKind::ATTRIBUTE_KW);
             } else {
                 e.token(TokenKind::COLUMN_KW);
             }
@@ -139,7 +139,7 @@ fn emit_alter_table_cmd_impl(e: &mut EventEmitter, cmd: &AlterTableCmd, for_type
             e.space();
             // For ALTER TYPE, use ATTRIBUTE instead of COLUMN
             if for_type {
-                e.token(TokenKind::IDENT("ATTRIBUTE".to_string()));
+                e.token(TokenKind::ATTRIBUTE_KW);
             } else {
                 e.token(TokenKind::COLUMN_KW);
             }
@@ -252,7 +252,7 @@ fn emit_alter_table_cmd_impl(e: &mut EventEmitter, cmd: &AlterTableCmd, for_type
             e.space();
             e.token(TokenKind::SET_KW);
             e.space();
-            e.token(TokenKind::IDENT("EXPRESSION".to_string()));
+            e.token(TokenKind::EXPRESSION_KW);
             e.line(LineType::SoftOrSpace);
             e.token(TokenKind::AS_KW);
             e.space();
@@ -274,7 +274,7 @@ fn emit_alter_table_cmd_impl(e: &mut EventEmitter, cmd: &AlterTableCmd, for_type
             e.space();
             e.token(TokenKind::DROP_KW);
             e.space();
-            e.token(TokenKind::IDENT("EXPRESSION".to_string()));
+            e.token(TokenKind::EXPRESSION_KW);
             if cmd.missing_ok {
                 e.space();
                 e.token(TokenKind::IF_KW);
@@ -321,14 +321,14 @@ fn emit_alter_table_cmd_impl(e: &mut EventEmitter, cmd: &AlterTableCmd, for_type
         AlterTableType::AtSetTableSpace => {
             e.token(TokenKind::SET_KW);
             e.space();
-            e.token(TokenKind::IDENT("TABLESPACE".to_string()));
+            e.token(TokenKind::TABLESPACE_KW);
             if !cmd.name.is_empty() {
                 e.space();
                 e.token(TokenKind::IDENT(cmd.name.clone()));
             }
         }
         AlterTableType::AtChangeOwner => {
-            e.token(TokenKind::IDENT("OWNER".to_string()));
+            e.token(TokenKind::OWNER_KW);
             e.space();
             e.token(TokenKind::TO_KW);
             if let Some(ref owner) = cmd.newowner {
@@ -357,7 +357,7 @@ fn emit_alter_table_cmd_impl(e: &mut EventEmitter, cmd: &AlterTableCmd, for_type
         AlterTableType::AtSetLogged => {
             e.token(TokenKind::SET_KW);
             e.space();
-            e.token(TokenKind::IDENT("LOGGED".to_string()));
+            e.token(TokenKind::LOGGED_KW);
         }
         AlterTableType::AtSetUnLogged => {
             e.token(TokenKind::SET_KW);
@@ -380,7 +380,7 @@ fn emit_alter_table_cmd_impl(e: &mut EventEmitter, cmd: &AlterTableCmd, for_type
             e.token(TokenKind::R_PAREN);
         }
         AlterTableType::AtResetRelOptions => {
-            e.token(TokenKind::IDENT("RESET".to_string()));
+            e.token(TokenKind::RESET_KW);
             e.space();
             e.token(TokenKind::L_PAREN);
             if let Some(ref def) = cmd.def {
@@ -416,7 +416,7 @@ fn emit_alter_table_cmd_impl(e: &mut EventEmitter, cmd: &AlterTableCmd, for_type
                 e.token(TokenKind::IDENT(cmd.name.clone()));
             }
             e.space();
-            e.token(TokenKind::IDENT("RESET".to_string()));
+            e.token(TokenKind::RESET_KW);
             e.space();
             e.token(TokenKind::L_PAREN);
             if let Some(ref def) = cmd.def {
@@ -440,7 +440,7 @@ fn emit_alter_table_cmd_impl(e: &mut EventEmitter, cmd: &AlterTableCmd, for_type
             e.space();
             e.token(TokenKind::SET_KW);
             e.space();
-            e.token(TokenKind::IDENT("STATISTICS".to_string()));
+            e.token(TokenKind::STATISTICS_KW);
             if let Some(ref def) = cmd.def {
                 e.space();
                 emit_node(def, e);
@@ -458,7 +458,7 @@ fn emit_alter_table_cmd_impl(e: &mut EventEmitter, cmd: &AlterTableCmd, for_type
             e.space();
             e.token(TokenKind::SET_KW);
             e.space();
-            e.token(TokenKind::IDENT("STORAGE".to_string()));
+            e.token(TokenKind::STORAGE_KW);
             if let Some(ref def) = cmd.def {
                 e.space();
                 emit_node(def, e);
@@ -476,7 +476,7 @@ fn emit_alter_table_cmd_impl(e: &mut EventEmitter, cmd: &AlterTableCmd, for_type
             e.space();
             e.token(TokenKind::SET_KW);
             e.space();
-            e.token(TokenKind::IDENT("COMPRESSION".to_string()));
+            e.token(TokenKind::COMPRESSION_KW);
             if let Some(ref def) = cmd.def {
                 e.space();
                 emit_node(def, e);
@@ -501,9 +501,9 @@ fn emit_alter_table_cmd_impl(e: &mut EventEmitter, cmd: &AlterTableCmd, for_type
         AlterTableType::AtSetAccessMethod => {
             e.token(TokenKind::SET_KW);
             e.space();
-            e.token(TokenKind::IDENT("ACCESS".to_string()));
+            e.token(TokenKind::ACCESS_KW);
             e.space();
-            e.token(TokenKind::IDENT("METHOD".to_string()));
+            e.token(TokenKind::METHOD_KW);
             e.space();
             if !cmd.name.is_empty() {
                 e.token(TokenKind::IDENT(cmd.name.clone()));
@@ -515,52 +515,52 @@ fn emit_alter_table_cmd_impl(e: &mut EventEmitter, cmd: &AlterTableCmd, for_type
         AlterTableType::AtEnableRowSecurity => {
             e.token(TokenKind::ENABLE_KW);
             e.space();
-            e.token(TokenKind::IDENT("ROW".to_string()));
+            e.token(TokenKind::ROW_KW);
             e.space();
-            e.token(TokenKind::IDENT("LEVEL".to_string()));
+            e.token(TokenKind::LEVEL_KW);
             e.space();
-            e.token(TokenKind::IDENT("SECURITY".to_string()));
+            e.token(TokenKind::SECURITY_KW);
         }
         AlterTableType::AtDisableRowSecurity => {
             e.token(TokenKind::DISABLE_KW);
             e.space();
-            e.token(TokenKind::IDENT("ROW".to_string()));
+            e.token(TokenKind::ROW_KW);
             e.space();
-            e.token(TokenKind::IDENT("LEVEL".to_string()));
+            e.token(TokenKind::LEVEL_KW);
             e.space();
-            e.token(TokenKind::IDENT("SECURITY".to_string()));
+            e.token(TokenKind::SECURITY_KW);
         }
         AlterTableType::AtForceRowSecurity => {
-            e.token(TokenKind::IDENT("FORCE".to_string()));
+            e.token(TokenKind::FORCE_KW);
             e.space();
-            e.token(TokenKind::IDENT("ROW".to_string()));
+            e.token(TokenKind::ROW_KW);
             e.space();
-            e.token(TokenKind::IDENT("LEVEL".to_string()));
+            e.token(TokenKind::LEVEL_KW);
             e.space();
-            e.token(TokenKind::IDENT("SECURITY".to_string()));
+            e.token(TokenKind::SECURITY_KW);
         }
         AlterTableType::AtNoForceRowSecurity => {
-            e.token(TokenKind::IDENT("NO".to_string()));
+            e.token(TokenKind::NO_KW);
             e.space();
-            e.token(TokenKind::IDENT("FORCE".to_string()));
+            e.token(TokenKind::FORCE_KW);
             e.space();
-            e.token(TokenKind::IDENT("ROW".to_string()));
+            e.token(TokenKind::ROW_KW);
             e.space();
-            e.token(TokenKind::IDENT("LEVEL".to_string()));
+            e.token(TokenKind::LEVEL_KW);
             e.space();
-            e.token(TokenKind::IDENT("SECURITY".to_string()));
+            e.token(TokenKind::SECURITY_KW);
         }
         AlterTableType::AtAddInherit => {
-            e.token(TokenKind::IDENT("INHERIT".to_string()));
+            e.token(TokenKind::INHERIT_KW);
             if let Some(ref def) = cmd.def {
                 e.space();
                 emit_node(def, e);
             }
         }
         AlterTableType::AtDropInherit => {
-            e.token(TokenKind::IDENT("NO".to_string()));
+            e.token(TokenKind::NO_KW);
             e.space();
-            e.token(TokenKind::IDENT("INHERIT".to_string()));
+            e.token(TokenKind::INHERIT_KW);
             if let Some(ref def) = cmd.def {
                 e.space();
                 emit_node(def, e);
@@ -579,7 +579,7 @@ fn emit_alter_table_cmd_impl(e: &mut EventEmitter, cmd: &AlterTableCmd, for_type
             e.token(TokenKind::OF_KW);
         }
         AlterTableType::AtAttachPartition => {
-            e.token(TokenKind::IDENT("ATTACH".to_string()));
+            e.token(TokenKind::ATTACH_KW);
             e.space();
             e.token(TokenKind::PARTITION_KW);
             if let Some(ref def) = cmd.def {
@@ -588,7 +588,7 @@ fn emit_alter_table_cmd_impl(e: &mut EventEmitter, cmd: &AlterTableCmd, for_type
             }
         }
         AlterTableType::AtDetachPartition => {
-            e.token(TokenKind::IDENT("DETACH".to_string()));
+            e.token(TokenKind::DETACH_KW);
             e.space();
             e.token(TokenKind::PARTITION_KW);
             if let Some(ref def) = cmd.def {
@@ -627,7 +627,7 @@ fn emit_alter_table_cmd_impl(e: &mut EventEmitter, cmd: &AlterTableCmd, for_type
         AlterTableType::AtEnableAlwaysTrig => {
             e.token(TokenKind::ENABLE_KW);
             e.space();
-            e.token(TokenKind::IDENT("ALWAYS".to_string()));
+            e.token(TokenKind::ALWAYS_KW);
             e.space();
             e.token(TokenKind::TRIGGER_KW);
             if !cmd.name.is_empty() {
@@ -638,7 +638,7 @@ fn emit_alter_table_cmd_impl(e: &mut EventEmitter, cmd: &AlterTableCmd, for_type
         AlterTableType::AtEnableReplicaTrig => {
             e.token(TokenKind::ENABLE_KW);
             e.space();
-            e.token(TokenKind::IDENT("REPLICA".to_string()));
+            e.token(TokenKind::REPLICA_KW);
             e.space();
             e.token(TokenKind::TRIGGER_KW);
             if !cmd.name.is_empty() {
@@ -649,7 +649,7 @@ fn emit_alter_table_cmd_impl(e: &mut EventEmitter, cmd: &AlterTableCmd, for_type
         AlterTableType::AtEnableRule => {
             e.token(TokenKind::ENABLE_KW);
             e.space();
-            e.token(TokenKind::IDENT("RULE".to_string()));
+            e.token(TokenKind::RULE_KW);
             if !cmd.name.is_empty() {
                 e.space();
                 e.token(TokenKind::IDENT(cmd.name.clone()));
@@ -658,7 +658,7 @@ fn emit_alter_table_cmd_impl(e: &mut EventEmitter, cmd: &AlterTableCmd, for_type
         AlterTableType::AtDisableRule => {
             e.token(TokenKind::DISABLE_KW);
             e.space();
-            e.token(TokenKind::IDENT("RULE".to_string()));
+            e.token(TokenKind::RULE_KW);
             if !cmd.name.is_empty() {
                 e.space();
                 e.token(TokenKind::IDENT(cmd.name.clone()));
@@ -667,9 +667,9 @@ fn emit_alter_table_cmd_impl(e: &mut EventEmitter, cmd: &AlterTableCmd, for_type
         AlterTableType::AtEnableAlwaysRule => {
             e.token(TokenKind::ENABLE_KW);
             e.space();
-            e.token(TokenKind::IDENT("ALWAYS".to_string()));
+            e.token(TokenKind::ALWAYS_KW);
             e.space();
-            e.token(TokenKind::IDENT("RULE".to_string()));
+            e.token(TokenKind::RULE_KW);
             if !cmd.name.is_empty() {
                 e.space();
                 e.token(TokenKind::IDENT(cmd.name.clone()));
@@ -678,9 +678,9 @@ fn emit_alter_table_cmd_impl(e: &mut EventEmitter, cmd: &AlterTableCmd, for_type
         AlterTableType::AtEnableReplicaRule => {
             e.token(TokenKind::ENABLE_KW);
             e.space();
-            e.token(TokenKind::IDENT("REPLICA".to_string()));
+            e.token(TokenKind::REPLICA_KW);
             e.space();
-            e.token(TokenKind::IDENT("RULE".to_string()));
+            e.token(TokenKind::RULE_KW);
             if !cmd.name.is_empty() {
                 e.space();
                 e.token(TokenKind::IDENT(cmd.name.clone()));
@@ -761,7 +761,7 @@ fn emit_alter_table_cmd_impl(e: &mut EventEmitter, cmd: &AlterTableCmd, for_type
             e.space();
             e.token(TokenKind::DROP_KW);
             e.space();
-            e.token(TokenKind::IDENT("IDENTITY".to_string()));
+            e.token(TokenKind::IDENTITY_KW);
             if cmd.missing_ok {
                 e.space();
                 e.token(TokenKind::IF_KW);
@@ -813,7 +813,7 @@ fn emit_alter_table_cmd_impl(e: &mut EventEmitter, cmd: &AlterTableCmd, for_type
             e.space();
             e.token(TokenKind::WITHOUT_KW);
             e.space();
-            e.token(TokenKind::IDENT("OIDS".to_string()));
+            e.token(TokenKind::OIDS_KW);
         }
         AlterTableType::AtAlterColumnGenericOptions => {
             // ALTER COLUMN col OPTIONS (SET/ADD/DROP name 'value')
@@ -825,7 +825,7 @@ fn emit_alter_table_cmd_impl(e: &mut EventEmitter, cmd: &AlterTableCmd, for_type
                 e.token(TokenKind::IDENT(cmd.name.clone()));
             }
             e.space();
-            e.token(TokenKind::IDENT("OPTIONS".to_string()));
+            e.token(TokenKind::OPTIONS_KW);
             e.space();
             e.token(TokenKind::L_PAREN);
             if let Some(ref def) = cmd.def {
@@ -845,7 +845,7 @@ fn emit_alter_table_cmd_impl(e: &mut EventEmitter, cmd: &AlterTableCmd, for_type
         }
         AlterTableType::AtGenericOptions => {
             // OPTIONS (SET/ADD/DROP name 'value') - table-level options
-            e.token(TokenKind::IDENT("OPTIONS".to_string()));
+            e.token(TokenKind::OPTIONS_KW);
             e.space();
             e.token(TokenKind::L_PAREN);
             if let Some(ref def) = cmd.def {

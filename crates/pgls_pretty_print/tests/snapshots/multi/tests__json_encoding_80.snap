@@ -7,133 +7,133 @@ select getdatabaseencoding() not in ('UTF8', 'SQL_ASCII') as skip_test;
 
 select getdatabaseencoding();
 
-select cast('"\u"' as JSON);
+select cast('"\u"' as json);
 
-select cast('"\u00"' as JSON);
+select cast('"\u00"' as json);
 
-select cast('"\u000g"' as JSON);
+select cast('"\u000g"' as json);
 
-select cast('"\u0000"' as JSON);
+select cast('"\u0000"' as json);
 
-select cast('"\uaBcD"' as JSON);
+select cast('"\uaBcD"' as json);
 
 select
   cast('{ "a":  "\ud83d\ude04\ud83d\udc36" }'
-  as JSON) ->
+  as json) ->
   'a'
   as correct_in_utf8;
 
-select cast('{ "a":  "\ud83d\ud83d" }' as JSON) -> 'a';
+select cast('{ "a":  "\ud83d\ud83d" }' as json) -> 'a';
 
-select cast('{ "a":  "\ude04\ud83d" }' as JSON) -> 'a';
+select cast('{ "a":  "\ude04\ud83d" }' as json) -> 'a';
 
-select cast('{ "a":  "\ud83dX" }' as JSON) -> 'a';
+select cast('{ "a":  "\ud83dX" }' as json) -> 'a';
 
-select cast('{ "a":  "\ude04X" }' as JSON) -> 'a';
+select cast('{ "a":  "\ude04X" }' as json) -> 'a';
 
-select cast('{ "a":  "the Copyright \u00a9 sign" }' as JSON) as correct_in_utf8;
+select cast('{ "a":  "the Copyright \u00a9 sign" }' as json) as correct_in_utf8;
 
 select
   cast('{ "a":  "dollar \u0024 character" }'
-  as JSON)
+  as json)
   as correct_everywhere;
 
-select cast('{ "a":  "dollar \\u0024 character" }' as JSON) as not_an_escape;
+select cast('{ "a":  "dollar \\u0024 character" }' as json) as not_an_escape;
 
-select cast('{ "a":  "null \u0000 escape" }' as JSON) as not_unescaped;
+select cast('{ "a":  "null \u0000 escape" }' as json) as not_unescaped;
 
-select cast('{ "a":  "null \\u0000 escape" }' as JSON) as not_an_escape;
+select cast('{ "a":  "null \\u0000 escape" }' as json) as not_an_escape;
 
 select
   cast('{ "a":  "the Copyright \u00a9 sign" }'
-  as JSON) ->>
+  as json) ->>
   'a'
   as correct_in_utf8;
 
 select
   cast('{ "a":  "dollar \u0024 character" }'
-  as JSON) ->>
+  as json) ->>
   'a'
   as correct_everywhere;
 
 select
   cast('{ "a":  "dollar \\u0024 character" }'
-  as JSON) ->>
+  as json) ->>
   'a'
   as not_an_escape;
 
-select cast('{ "a":  "null \u0000 escape" }' as JSON) ->> 'a' as fails;
+select cast('{ "a":  "null \u0000 escape" }' as json) ->> 'a' as fails;
 
-select cast('{ "a":  "null \\u0000 escape" }' as JSON) ->> 'a' as not_an_escape;
+select cast('{ "a":  "null \\u0000 escape" }' as json) ->> 'a' as not_an_escape;
 
-select cast('"\u"' as JSONB);
+select cast('"\u"' as jsonb);
 
-select cast('"\u00"' as JSONB);
+select cast('"\u00"' as jsonb);
 
-select cast('"\u000g"' as JSONB);
+select cast('"\u000g"' as jsonb);
 
-select cast('"\u0045"' as JSONB);
+select cast('"\u0045"' as jsonb);
 
-select cast('"\u0000"' as JSONB);
+select cast('"\u0000"' as jsonb);
 
-select octet_length(cast(cast('"\uaBcD"' as JSONB) as TEXT));
+select octet_length(cast(cast('"\uaBcD"' as jsonb) as text));
 
 select
   octet_length(
     cast(cast('{ "a":  "\ud83d\ude04\ud83d\udc36" }'
-    as JSONB) ->
+    as jsonb) ->
     'a'
-    as TEXT)
+    as text)
   )
   as correct_in_utf8;
 
-select cast('{ "a":  "\ud83d\ud83d" }' as JSONB) -> 'a';
+select cast('{ "a":  "\ud83d\ud83d" }' as jsonb) -> 'a';
 
-select cast('{ "a":  "\ude04\ud83d" }' as JSONB) -> 'a';
+select cast('{ "a":  "\ude04\ud83d" }' as jsonb) -> 'a';
 
-select cast('{ "a":  "\ud83dX" }' as JSONB) -> 'a';
+select cast('{ "a":  "\ud83dX" }' as jsonb) -> 'a';
 
-select cast('{ "a":  "\ude04X" }' as JSONB) -> 'a';
+select cast('{ "a":  "\ude04X" }' as jsonb) -> 'a';
 
 select
   cast('{ "a":  "the Copyright \u00a9 sign" }'
-  as JSONB)
+  as jsonb)
   as correct_in_utf8;
 
 select
   cast('{ "a":  "dollar \u0024 character" }'
-  as JSONB)
+  as jsonb)
   as correct_everywhere;
 
-select cast('{ "a":  "dollar \\u0024 character" }' as JSONB) as not_an_escape;
+select cast('{ "a":  "dollar \\u0024 character" }' as jsonb) as not_an_escape;
 
-select cast('{ "a":  "null \u0000 escape" }' as JSONB) as fails;
+select cast('{ "a":  "null \u0000 escape" }' as jsonb) as fails;
 
-select cast('{ "a":  "null \\u0000 escape" }' as JSONB) as not_an_escape;
+select cast('{ "a":  "null \\u0000 escape" }' as jsonb) as not_an_escape;
 
 select
   cast('{ "a":  "the Copyright \u00a9 sign" }'
-  as JSONB) ->>
+  as jsonb) ->>
   'a'
   as correct_in_utf8;
 
 select
   cast('{ "a":  "dollar \u0024 character" }'
-  as JSONB) ->>
+  as jsonb) ->>
   'a'
   as correct_everywhere;
 
 select
   cast('{ "a":  "dollar \\u0024 character" }'
-  as JSONB) ->>
+  as jsonb) ->>
   'a'
   as not_an_escape;
 
-select cast('{ "a":  "null \u0000 escape" }' as JSONB) ->> 'a' as fails;
+select cast('{ "a":  "null \u0000 escape" }' as jsonb) ->> 'a' as fails;
 
 select
   cast('{ "a":  "null \\u0000 escape" }'
-  as JSONB) ->>
+  as jsonb) ->>
   'a'
   as not_an_escape;
 

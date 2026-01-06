@@ -72,8 +72,8 @@ where
   tt.cfgid is null or tt.tokid is null;
 
 create table test_tsvector (
-  t TEXT,
-  a TSVECTOR
+  t text,
+  a tsvector
 );
 
 copy test_tsvector from 'filename';
@@ -269,7 +269,7 @@ using gist
 
 create index "wowidx2" on test_tsvector using gist (a tsvector_ops(siglen = 1));
 
-drop INDEX wowidx;
+drop index wowidx;
 
 select COUNT(*) from test_tsvector where a @@ 'wr|qh';
 
@@ -321,7 +321,7 @@ select COUNT(*) from test_tsvector where a @@ '!wd:A';
 
 select COUNT(*) from test_tsvector where a @@ '!wd:D';
 
-drop INDEX wowidx2;
+drop index wowidx2;
 
 create index "wowidx"
 on test_tsvector
@@ -386,7 +386,7 @@ reset enable_indexscan;
 
 reset enable_bitmapscan;
 
-drop INDEX wowidx;
+drop index wowidx;
 
 create index "wowidx" on test_tsvector using gin (a);
 
@@ -1001,7 +1001,7 @@ ff-bg
 select
   ts_headline(
     'simple',
-    cast('1 2 3 1 3' as TEXT),
+    cast('1 2 3 1 3' as text),
     '1 <-> 3',
     'MaxWords=2, MinWords=1'
   );
@@ -1009,7 +1009,7 @@ select
 select
   ts_headline(
     'simple',
-    cast('1 2 3 1 3' as TEXT),
+    cast('1 2 3 1 3' as text),
     '1 & 3',
     'MaxWords=4, MinWords=1'
   );
@@ -1017,7 +1017,7 @@ select
 select
   ts_headline(
     'simple',
-    cast('1 2 3 1 3' as TEXT),
+    cast('1 2 3 1 3' as text),
     '1 <-> 3',
     'MaxWords=4, MinWords=1'
   );
@@ -1120,19 +1120,19 @@ select ts_headline('english', '', to_tsquery('english', ''));
 select ts_headline('english', 'foo bar', to_tsquery('english', ''));
 
 create table test_tsquery (
-  txtkeyword TEXT,
-  txtsample TEXT
+  txtkeyword text,
+  txtsample text
 );
 
 alter table test_tsquery
-  add column keyword TSQUERY;
+  add column keyword tsquery;
 
 update test_tsquery set keyword = to_tsquery('english', txtkeyword);
 
 alter table test_tsquery
-  add column sample TSQUERY;
+  add column sample tsquery;
 
-update test_tsquery set sample = to_tsquery('english', cast(txtsample as TEXT));
+update test_tsquery set sample = to_tsquery('english', cast(txtsample as text));
 
 select COUNT(*) from test_tsquery where keyword < 'new <-> york';
 
@@ -1163,7 +1163,7 @@ reset enable_seqscan;
 select
   ts_rewrite(
     'foo & bar & qq & new & york',
-    cast('new & york' as TSQUERY),
+    cast('new & york' as tsquery),
     'big & apple | nyc | new & york & city'
   );
 
@@ -1182,21 +1182,21 @@ select
   ts_rewrite(
     'moscow',
     cast('SELECT keyword, sample FROM test_tsquery'
-    as TEXT)
+    as text)
   );
 
 select
   ts_rewrite(
     'moscow & hotel',
     cast('SELECT keyword, sample FROM test_tsquery'
-    as TEXT)
+    as text)
   );
 
 select
   ts_rewrite(
     'bar & qq & foo & (new <-> york)',
     cast('SELECT keyword, sample FROM test_tsquery'
-    as TEXT)
+    as text)
   );
 
 select ts_rewrite('moscow', 'SELECT keyword, sample FROM test_tsquery');
@@ -1213,28 +1213,28 @@ select
   ts_rewrite(
     '1 & (2 <-> 3)',
     cast('SELECT keyword, sample FROM test_tsquery'
-    as TEXT)
+    as text)
   );
 
 select
   ts_rewrite(
     '1 & (2 <2> 3)',
     cast('SELECT keyword, sample FROM test_tsquery'
-    as TEXT)
+    as text)
   );
 
 select
   ts_rewrite(
     '5 <-> (1 & (2 <-> 3))',
     cast('SELECT keyword, sample FROM test_tsquery'
-    as TEXT)
+    as text)
   );
 
 select
   ts_rewrite(
     '5 <-> (6 | 8)',
     cast('SELECT keyword, sample FROM test_tsquery'
-    as TEXT)
+    as text)
   );
 
 select ts_rewrite(to_tsquery('5 & (6 | 5)'), to_tsquery('5'), to_tsquery(''));
@@ -1413,11 +1413,11 @@ select plainto_tsquery('SKIES My booKs');
 
 select to_tsquery('SKIES & My | booKs');
 
-create TRIGGER tsvectorupdate
+create trigger tsvectorupdate
 before insert or update
 on test_tsvector
-for EACH ROW
-EXECUTE FUNCTION tsvector_update_trigger(a,
+for each row
+execute function tsvector_update_trigger(a,
 "pg_catalog.english",
 t);
 
@@ -1445,7 +1445,7 @@ from
 where
   txtsample @@ q;
 
-create temporary table pendtest (ts TSVECTOR);
+create temporary table pendtest (ts tsvector);
 
 create index "pendtest_idx" on pendtest using gin (ts);
 
@@ -1453,17 +1453,17 @@ insert into pendtest values (to_tsvector('Lore ipsam'));
 
 insert into pendtest values (to_tsvector('Lore ipsum'));
 
-select * from pendtest where cast('ipsu:*' as TSQUERY) @@ ts;
+select * from pendtest where cast('ipsu:*' as tsquery) @@ ts;
 
-select * from pendtest where cast('ipsa:*' as TSQUERY) @@ ts;
+select * from pendtest where cast('ipsa:*' as tsquery) @@ ts;
 
-select * from pendtest where cast('ips:*' as TSQUERY) @@ ts;
+select * from pendtest where cast('ips:*' as tsquery) @@ ts;
 
-select * from pendtest where cast('ipt:*' as TSQUERY) @@ ts;
+select * from pendtest where cast('ipt:*' as tsquery) @@ ts;
 
-select * from pendtest where cast('ipi:*' as TSQUERY) @@ ts;
+select * from pendtest where cast('ipi:*' as tsquery) @@ ts;
 
-create temporary table phrase_index_test (fts TSVECTOR);
+create temporary table phrase_index_test (fts tsvector);
 
 insert into phrase_index_test values ('A fat cat has just eaten a rat.');
 

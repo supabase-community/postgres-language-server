@@ -4,7 +4,7 @@ input_file: crates/pgls_pretty_print/tests/data/multi/infinite_recurse.sql
 snapshot_kind: text
 ---
 create function infinite_recurse()
-returns INT
+returns int
 as $function$select infinite_recurse()$function$
 language sql;
 

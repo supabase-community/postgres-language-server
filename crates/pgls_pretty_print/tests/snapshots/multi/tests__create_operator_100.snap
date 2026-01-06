@@ -5,9 +5,9 @@ snapshot_kind: text
 ---
 create operator ## (LEFTARG = path, RIGHTARG = path, FUNCTION = path_inter, COMMUTATOR = ##);
 
-create operator @#@ (RIGHTARG = BIGINT, PROCEDURE = factorial);
+create operator @#@ (RIGHTARG = bigint, PROCEDURE = factorial);
 
-create operator #%# (LEFTARG = BIGINT, PROCEDURE = factorial);
+create operator #%# (LEFTARG = bigint, PROCEDURE = factorial);
 
 select @#@24;
 
@@ -21,19 +21,19 @@ reset search_path;
 
 select @#@24.0;
 
-comment on operator ###### (NONE, INT) is 'bad prefix';
+comment on operator ###### (none, int) is 'bad prefix';
 
-comment on operator ###### (INT, NONE) is 'bad postfix';
+comment on operator ###### (int, none) is 'bad postfix';
 
-comment on operator ###### (INT, BIGINT) is 'bad infix';
+comment on operator ###### (int, bigint) is 'bad infix';
 
-drop OPERATOR ###### (NONE, INT);
+drop operator ###### (none, int);
 
-drop OPERATOR ###### (INT, NONE);
+drop operator ###### (int, none);
 
-drop OPERATOR ###### (INT, BIGINT);
+drop operator ###### (int, bigint);
 
-create operator !=- (RIGHTARG = BIGINT, PROCEDURE = factorial);
+create operator !=- (RIGHTARG = bigint, PROCEDURE = factorial);
 
 select !=-10;
 
@@ -69,40 +69,40 @@ create role regress_rol_op1;
 
 create schema "schema_op1";
 
-grant USAGE on schema schema_op1 to PUBLIC;
+grant USAGE on schema schema_op1 to public;
 
 revoke USAGE on schema schema_op1 from regress_rol_op1;
 
 set role to regress_rol_op1;
 
-create operator schema_op1.#*# (RIGHTARG = BIGINT, PROCEDURE = factorial);
+create operator schema_op1.#*# (RIGHTARG = bigint, PROCEDURE = factorial);
 
 rollback;
 
 begin;
 
-create operator #*# (LEFTARG = setof BIGINT, PROCEDURE = factorial);
+create operator #*# (LEFTARG = setof bigint, PROCEDURE = factorial);
 
 rollback;
 
 begin;
 
-create operator #*# (RIGHTARG = setof BIGINT, PROCEDURE = factorial);
+create operator #*# (RIGHTARG = setof bigint, PROCEDURE = factorial);
 
 rollback;
 
 begin;
 
-create or replace function fn_op2(BOOLEAN, BOOLEAN)
-returns BOOLEAN
+create or replace function fn_op2(boolean, boolean)
+returns boolean
 as $function$
     SELECT NULL::BOOLEAN;
 $function$
 language sql
 immutable;
 
-create operator === (LEFTARG = BOOLEAN,
-RIGHTARG = BOOLEAN,
+create operator === (LEFTARG = boolean,
+RIGHTARG = boolean,
 PROCEDURE = fn_op2,
 COMMUTATOR = ===,
 NEGATOR = !==,
@@ -117,11 +117,11 @@ MERGES);
 
 rollback;
 
-create operator #@%# (RIGHTARG = BIGINT, PROCEDURE = factorial, INVALID_ATT = BIGINT);
+create operator #@%# (RIGHTARG = bigint, PROCEDURE = factorial, INVALID_ATT = bigint);
 
 create operator #@%# (PROCEDURE = factorial);
 
-create operator #@%# (RIGHTARG = BIGINT);
+create operator #@%# (RIGHTARG = bigint);
 
 begin;
 
@@ -129,8 +129,8 @@ create role regress_rol_op3;
 
 create type type_op3 as enum ('new', 'open', 'closed');
 
-create function fn_op3(type_op3, BIGINT)
-returns BIGINT
+create function fn_op3(type_op3, bigint)
+returns bigint
 as $function$
     SELECT NULL::int8;
 $function$
@@ -139,11 +139,11 @@ immutable;
 
 revoke USAGE on type type_op3 from regress_rol_op3;
 
-revoke USAGE on type type_op3 from PUBLIC;
+revoke USAGE on type type_op3 from public;
 
 set role to regress_rol_op3;
 
-create operator #*# (LEFTARG = type_op3, RIGHTARG = BIGINT, PROCEDURE = fn_op3);
+create operator #*# (LEFTARG = type_op3, RIGHTARG = bigint, PROCEDURE = fn_op3);
 
 rollback;
 
@@ -153,8 +153,8 @@ create role regress_rol_op4;
 
 create type type_op4 as enum ('new', 'open', 'closed');
 
-create function fn_op4(BIGINT, type_op4)
-returns BIGINT
+create function fn_op4(bigint, type_op4)
+returns bigint
 as $function$
     SELECT NULL::int8;
 $function$
@@ -163,11 +163,11 @@ immutable;
 
 revoke USAGE on type type_op4 from regress_rol_op4;
 
-revoke USAGE on type type_op4 from PUBLIC;
+revoke USAGE on type type_op4 from public;
 
 set role to regress_rol_op4;
 
-create operator #*# (LEFTARG = BIGINT, RIGHTARG = type_op4, PROCEDURE = fn_op4);
+create operator #*# (LEFTARG = bigint, RIGHTARG = type_op4, PROCEDURE = fn_op4);
 
 rollback;
 
@@ -177,21 +177,21 @@ create role regress_rol_op5;
 
 create type type_op5 as enum ('new', 'open', 'closed');
 
-create function fn_op5(BIGINT, BIGINT)
-returns BIGINT
+create function fn_op5(bigint, bigint)
+returns bigint
 as $function$
     SELECT NULL::int8;
 $function$
 language sql
 immutable;
 
-revoke EXECUTE on function fn_op5(BIGINT, BIGINT) from regress_rol_op5;
+revoke EXECUTE on function fn_op5(bigint, bigint) from regress_rol_op5;
 
-revoke EXECUTE on function fn_op5(BIGINT, BIGINT) from PUBLIC;
+revoke EXECUTE on function fn_op5(bigint, bigint) from public;
 
 set role to regress_rol_op5;
 
-create operator #*# (LEFTARG = BIGINT, RIGHTARG = BIGINT, PROCEDURE = fn_op5);
+create operator #*# (LEFTARG = bigint, RIGHTARG = bigint, PROCEDURE = fn_op5);
 
 rollback;
 
@@ -201,7 +201,7 @@ create role regress_rol_op6;
 
 create type type_op6 as enum ('new', 'open', 'closed');
 
-create function fn_op6(BIGINT, BIGINT)
+create function fn_op6(bigint, bigint)
 returns type_op6
 as $function$
     SELECT NULL::type_op6;
@@ -211,31 +211,31 @@ immutable;
 
 revoke USAGE on type type_op6 from regress_rol_op6;
 
-revoke USAGE on type type_op6 from PUBLIC;
+revoke USAGE on type type_op6 from public;
 
 set role to regress_rol_op6;
 
-create operator #*# (LEFTARG = BIGINT, RIGHTARG = BIGINT, PROCEDURE = fn_op6);
+create operator #*# (LEFTARG = bigint, RIGHTARG = bigint, PROCEDURE = fn_op6);
 
 rollback;
 
 begin;
 
-create operator === (LEFTARG = INT, RIGHTARG = INT, PROCEDURE = int4eq, NEGATOR = ===);
+create operator === (LEFTARG = int, RIGHTARG = int, PROCEDURE = int4eq, NEGATOR = ===);
 
 rollback;
 
 begin;
 
-create operator === (LEFTARG = INT, RIGHTARG = INT, PROCEDURE = int4eq, COMMUTATOR = ===!!!);
+create operator === (LEFTARG = int, RIGHTARG = int, PROCEDURE = int4eq, COMMUTATOR = ===!!!);
 
-create operator ===!!! (LEFTARG = INT, RIGHTARG = INT, PROCEDURE = int4ne, NEGATOR = ===!!!);
+create operator ===!!! (LEFTARG = int, RIGHTARG = int, PROCEDURE = int4ne, NEGATOR = ===!!!);
 
 rollback;
 
-create operator === (LEFTARG = INT, RIGHTARG = INT, PROCEDURE = int4eq, COMMUTATOR = =);
+create operator === (LEFTARG = int, RIGHTARG = int, PROCEDURE = int4eq, COMMUTATOR = =);
 
-create operator === (LEFTARG = INT, RIGHTARG = INT, PROCEDURE = int4eq, NEGATOR = <>);
+create operator === (LEFTARG = int, RIGHTARG = int, PROCEDURE = int4eq, NEGATOR = <>);
 
 create operator === (LEFTARG = box,
 RIGHTARG = box,

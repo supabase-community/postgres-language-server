@@ -7,12 +7,12 @@ use pgls_query::protobuf::ClusterStmt;
 pub(super) fn emit_cluster_stmt(e: &mut EventEmitter, n: &ClusterStmt) {
     e.group_start(GroupKind::ClusterStmt);
 
-    e.token(TokenKind::IDENT("CLUSTER".to_string()));
+    e.token(TokenKind::CLUSTER_KW);
 
     // VERBOSE option - check params
     if !n.params.is_empty() {
         e.space();
-        e.token(TokenKind::IDENT("VERBOSE".to_string()));
+        e.token(TokenKind::VERBOSE_KW);
     }
 
     // Table name

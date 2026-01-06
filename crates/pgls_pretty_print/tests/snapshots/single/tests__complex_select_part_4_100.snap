@@ -7,8 +7,8 @@ select
   view_id,
   view_schema,
   view_name,
-  cast(entry ->> 'resno' as INT) as view_column,
-  cast(entry ->> 'resorigtbl' as OID) as resorigtbl,
-  cast(entry ->> 'resorigcol' as INT) as resorigcol
+  cast(entry ->> 'resno' as int) as view_column,
+  cast(entry ->> 'resorigtbl' as oid) as resorigtbl,
+  cast(entry ->> 'resorigcol' as int) as resorigcol
 from
   target_entries;

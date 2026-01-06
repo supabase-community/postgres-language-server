@@ -44,6 +44,8 @@ pub struct FormatConfig {
     pub keyword_case: KeywordCase,
     /// Casing for constants (NULL, TRUE, FALSE). Default: Lower.
     pub constant_case: KeywordCase,
+    /// Casing for data types (text, varchar, int). Default: Lower.
+    pub type_case: KeywordCase,
 }
 
 impl Default for FormatConfig {
@@ -54,6 +56,7 @@ impl Default for FormatConfig {
             indent_style: IndentStyle::Spaces,
             keyword_case: KeywordCase::default(),
             constant_case: KeywordCase::default(),
+            type_case: KeywordCase::default(),
         }
     }
 }
@@ -66,6 +69,7 @@ impl From<FormatConfig> for RenderConfig {
             indent_style: config.indent_style,
             keyword_case: config.keyword_case,
             constant_case: config.constant_case,
+            type_case: config.type_case,
         }
     }
 }
@@ -110,6 +114,7 @@ pub fn format_statement(
         indent_style: config.indent_style.clone(),
         keyword_case: config.keyword_case.clone(),
         constant_case: config.constant_case.clone(),
+        type_case: config.type_case.clone(),
     };
 
     let mut output = String::new();

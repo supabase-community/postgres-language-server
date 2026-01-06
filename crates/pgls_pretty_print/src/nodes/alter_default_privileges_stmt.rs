@@ -14,7 +14,7 @@ pub(super) fn emit_alter_default_privileges_stmt(
     e.space();
     e.token(TokenKind::DEFAULT_KW);
     e.space();
-    e.token(TokenKind::IDENT("PRIVILEGES".to_string()));
+    e.token(TokenKind::PRIVILEGES_KW);
 
     // Options can contain FOR ROLE/USER and IN SCHEMA clauses
     for opt in &n.options {

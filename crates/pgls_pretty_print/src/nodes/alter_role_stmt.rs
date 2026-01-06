@@ -23,7 +23,7 @@ pub(super) fn emit_alter_role_stmt(e: &mut EventEmitter, n: &AlterRoleStmt) {
 
     if is_member_change {
         // This is ALTER GROUP ... ADD/DROP USER syntax (deprecated but still supported)
-        e.token(TokenKind::IDENT("GROUP".to_string()));
+        e.token(TokenKind::GROUP_KW);
         e.space();
 
         if let Some(ref role) = n.role {
@@ -32,12 +32,12 @@ pub(super) fn emit_alter_role_stmt(e: &mut EventEmitter, n: &AlterRoleStmt) {
 
         e.line(LineType::SoftOrSpace);
         if n.action > 0 {
-            e.token(TokenKind::IDENT("ADD".to_string()));
+            e.token(TokenKind::ADD_KW);
         } else {
             e.token(TokenKind::DROP_KW);
         }
         e.space();
-        e.token(TokenKind::IDENT("USER".to_string()));
+        e.token(TokenKind::USER_KW);
 
         // Emit the member list from the "rolemembers" option
         if let Some(opt) = rolemembers_opt {

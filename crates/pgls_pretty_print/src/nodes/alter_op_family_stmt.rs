@@ -9,9 +9,9 @@ pub(super) fn emit_alter_op_family_stmt(e: &mut EventEmitter, n: &AlterOpFamilyS
 
     e.token(TokenKind::ALTER_KW);
     e.space();
-    e.token(TokenKind::IDENT("OPERATOR".to_string()));
+    e.token(TokenKind::OPERATOR_KW);
     e.space();
-    e.token(TokenKind::IDENT("FAMILY".to_string()));
+    e.token(TokenKind::FAMILY_KW);
     e.space();
 
     if !n.opfamilyname.is_empty() {
@@ -19,7 +19,7 @@ pub(super) fn emit_alter_op_family_stmt(e: &mut EventEmitter, n: &AlterOpFamilyS
     }
 
     e.space();
-    e.token(TokenKind::IDENT("USING".to_string()));
+    e.token(TokenKind::USING_KW);
     e.space();
 
     if !n.amname.is_empty() {
@@ -45,7 +45,7 @@ pub(super) fn emit_alter_op_family_stmt(e: &mut EventEmitter, n: &AlterOpFamilyS
         // Each item should stay on its own line
         for (idx, item) in n.items.iter().enumerate() {
             if idx > 0 {
-                e.token(TokenKind::IDENT(",".to_string()));
+                e.token(TokenKind::COMMA);
                 e.line(crate::emitter::LineType::SoftOrSpace);
             }
             super::emit_node(item, e);

@@ -3,7 +3,7 @@ source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/varchar.sql
 snapshot_kind: text
 ---
-create temporary table varchar_tbl (f1 VARCHAR(1));
+create temporary table varchar_tbl (f1 varchar(1));
 
 insert into varchar_tbl (f1) values ('a');
 
@@ -35,7 +35,7 @@ select c.* from varchar_tbl as c where c.f1 > 'a';
 
 select c.* from varchar_tbl as c where c.f1 >= 'a';
 
-drop TABLE varchar_tbl;
+drop table varchar_tbl;
 
 insert into varchar_tbl (f1) values ('abcde');
 

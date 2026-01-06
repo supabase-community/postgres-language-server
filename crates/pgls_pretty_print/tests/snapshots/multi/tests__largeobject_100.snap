@@ -13,22 +13,22 @@ alter large object 42 owner to regress_lo_user;
 
 set session authorization regress_lo_user;
 
-grant SELECT on LARGE object 42 to PUBLIC;
+grant SELECT on large object 42 to public;
 
 comment on large object 42 is 'the ultimate answer';
 
 reset session_authorization;
 
 create table lotest_stash_values (
-  loid OID,
-  fd INT
+  loid oid,
+  fd int
 );
 
 insert into lotest_stash_values (loid) select lo_creat(42);
 
 begin;
 
-update lotest_stash_values set fd = lo_open(loid, cast(X'20000' | X'40000' as INT));
+update lotest_stash_values set fd = lo_open(loid, cast(X'20000' | X'40000' as int));
 
 select
   lowrite(
@@ -76,7 +76,7 @@ select lo_from_bytea(0, lo_get(loid)) as newloid from lotest_stash_values;
 
 begin;
 
-update lotest_stash_values set fd = lo_open(loid, cast(X'20000' | X'40000' as INT));
+update lotest_stash_values set fd = lo_open(loid, cast(X'20000' | X'40000' as int));
 
 select lo_lseek(fd, 104, 0) from lotest_stash_values;
 
@@ -98,7 +98,7 @@ commit;
 
 begin;
 
-select lo_open(loid, cast(X'40000' as INT)) from lotest_stash_values;
+select lo_open(loid, cast(X'40000' as int)) from lotest_stash_values;
 
 rollback;
 
@@ -106,7 +106,7 @@ do $do$dobody$do$;
 
 begin;
 
-update lotest_stash_values set fd = lo_open(loid, cast(X'20000' | X'40000' as INT));
+update lotest_stash_values set fd = lo_open(loid, cast(X'20000' | X'40000' as int));
 
 select lo_truncate(fd, 11) from lotest_stash_values;
 
@@ -132,7 +132,7 @@ commit;
 
 begin;
 
-update lotest_stash_values set fd = lo_open(loid, cast(X'20000' | X'40000' as INT));
+update lotest_stash_values set fd = lo_open(loid, cast(X'20000' | X'40000' as int));
 
 select lo_lseek64(fd, 4294967296, 0) from lotest_stash_values;
 
@@ -170,7 +170,7 @@ insert into lotest_stash_values (loid) select lo_import('filename');
 
 begin;
 
-update lotest_stash_values set fd = lo_open(loid, cast(X'20000' | X'40000' as INT));
+update lotest_stash_values set fd = lo_open(loid, cast(X'20000' | X'40000' as int));
 
 select lo_lseek(fd, 0, 2) from lotest_stash_values;
 
@@ -244,9 +244,9 @@ comment on large object 2121 is 'testing comments';
 
 start transaction read only;
 
-select lo_open(2121, cast(X'40000' as INT));
+select lo_open(2121, cast(X'40000' as int));
 
-select lo_open(2121, cast(X'20000' as INT));
+select lo_open(2121, cast(X'20000' as int));
 
 rollback;
 
@@ -304,6 +304,6 @@ select lo_put(42, 0, 'x');
 
 rollback;
 
-drop TABLE lotest_stash_values;
+drop table lotest_stash_values;
 
 drop role regress_lo_user;

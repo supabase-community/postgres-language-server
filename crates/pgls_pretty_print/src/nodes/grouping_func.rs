@@ -8,7 +8,7 @@ use crate::{
 pub(super) fn emit_grouping_func(e: &mut EventEmitter, n: &GroupingFunc) {
     e.group_start(GroupKind::GroupingFunc);
 
-    e.token(TokenKind::IDENT("GROUPING".to_string()));
+    e.token(TokenKind::GROUPING_KW);
     e.token(TokenKind::L_PAREN);
 
     if !n.args.is_empty() {

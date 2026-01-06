@@ -10,7 +10,7 @@ pub(super) fn emit_constraints_set_stmt(e: &mut EventEmitter, n: &ConstraintsSet
 
     e.token(TokenKind::SET_KW);
     e.space();
-    e.token(TokenKind::IDENT("CONSTRAINTS".to_string()));
+    e.token(TokenKind::CONSTRAINTS_KW);
     e.space();
 
     if n.constraints.is_empty() {
@@ -21,9 +21,9 @@ pub(super) fn emit_constraints_set_stmt(e: &mut EventEmitter, n: &ConstraintsSet
 
     e.line(LineType::SoftOrSpace);
     if n.deferred {
-        e.token(TokenKind::IDENT("DEFERRED".to_string()));
+        e.token(TokenKind::DEFERRED_KW);
     } else {
-        e.token(TokenKind::IDENT("IMMEDIATE".to_string()));
+        e.token(TokenKind::IMMEDIATE_KW);
     }
 
     e.token(TokenKind::SEMICOLON);

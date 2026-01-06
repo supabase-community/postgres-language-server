@@ -7,7 +7,7 @@ pub(super) fn emit_alter_database_set_stmt(e: &mut EventEmitter, n: &AlterDataba
 
     e.token(TokenKind::ALTER_KW);
     e.space();
-    e.token(TokenKind::IDENT("DATABASE".to_string()));
+    e.token(TokenKind::DATABASE_KW);
     e.space();
 
     if !n.dbname.is_empty() {

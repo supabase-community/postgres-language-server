@@ -5,8 +5,8 @@ snapshot_kind: text
 ---
 create table delete_test (
   id serial primary key,
-  a INT,
-  b TEXT
+  a int,
+  b text
 );
 
 insert into delete_test (a) values (10);
@@ -25,4 +25,4 @@ delete from delete_test where a > 25;
 
 select id, a, char_length(b) from delete_test;
 
-drop TABLE delete_test;
+drop table delete_test;

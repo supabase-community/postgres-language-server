@@ -4,14 +4,14 @@ input_file: crates/pgls_pretty_print/tests/data/multi/join.sql
 snapshot_kind: text
 ---
 create table j1_tbl (
-  i INT,
-  j INT,
-  t TEXT
+  i int,
+  j int,
+  t text
 );
 
 create table j2_tbl (
-  i INT,
-  k INT
+  i int,
+  k int
 );
 
 insert into j1_tbl values (1, 4, 'one');
@@ -174,18 +174,18 @@ where
   a.tenthous < 5000;
 
 create table t1 (
-  name TEXT,
-  n INT
+  name text,
+  n int
 );
 
 create table t2 (
-  name TEXT,
-  n INT
+  name text,
+  n int
 );
 
 create table t3 (
-  name TEXT,
-  n INT
+  name text,
+  n int
 );
 
 insert into t1 values ('bb', 11);
@@ -288,8 +288,8 @@ from
   on s1_n = s2_n;
 
 create temporary table x (
-  x1 INT,
-  x2 INT
+  x1 int,
+  x2 int
 );
 
 insert into x values (1, 11);
@@ -303,8 +303,8 @@ insert into x values (4, 44);
 insert into x values (5, null);
 
 create temporary table y (
-  y1 INT,
-  y2 INT
+  y1 int,
+  y2 int
 );
 
 insert into y values (1, 111);
@@ -959,29 +959,29 @@ reset enable_nestloop;
 
 reset enable_hashjoin;
 
-drop TABLE t1;
+drop table t1;
 
-drop TABLE t2;
+drop table t2;
 
-drop TABLE t3;
+drop table t3;
 
-drop TABLE j1_tbl;
+drop table j1_tbl;
 
-drop TABLE j2_tbl;
+drop table j2_tbl;
 
 create temporary table t1 (
-  a INT,
-  b INT
+  a int,
+  b int
 );
 
 create temporary table t2 (
-  a INT,
-  b INT
+  a int,
+  b int
 );
 
 create temporary table t3 (
-  x INT,
-  y INT
+  x int,
+  y int
 );
 
 insert into t1 values (5, 10);
@@ -1065,8 +1065,8 @@ from
 for update of bar;
 
 create temporary table tt1 (
-  tt1_id INT,
-  joincol INT
+  tt1_id int,
+  joincol int
 );
 
 insert into tt1 values (1, 11);
@@ -1074,8 +1074,8 @@ insert into tt1 values (1, 11);
 insert into tt1 values (2, null);
 
 create temporary table tt2 (
-  tt2_id INT,
-  joincol INT
+  tt2_id int,
+  joincol int
 );
 
 insert into tt2 values (21, 11);
@@ -1095,8 +1095,8 @@ reset enable_hashjoin;
 reset enable_nestloop;
 
 create temporary table tbl_ra (
-  a INT unique,
-  b INT
+  a int unique,
+  b int
 );
 
 insert into tbl_ra select i, i % 100 from generate_series(1, 1000) as i;
@@ -1136,8 +1136,8 @@ reset enable_hashjoin;
 reset enable_nestloop;
 
 create temporary table tbl_rs (
-  a INT,
-  b INT
+  a int,
+  b int
 );
 
 insert into tbl_rs select i, i from generate_series(1, 10) as i;
@@ -1193,15 +1193,15 @@ reset enable_mergejoin;
 reset enable_memoize;
 
 create temporary table tt3 (
-  f1 INT,
-  f2 TEXT
+  f1 int,
+  f2 text
 );
 
 insert into tt3 select x, repeat('xyzzy', 100) from generate_series(1, 10000) as x;
 
 analyze tt3;
 
-create temporary table tt4 (f1 INT);
+create temporary table tt4 (f1 int);
 
 insert into tt4 values (0), (1), (9999);
 
@@ -1290,9 +1290,9 @@ where
   );
 
 create temporary table tt4x (
-  c1 INT,
-  c2 INT,
-  c3 INT
+  c1 int,
+  c2 int,
+  c3 int
 );
 
 select
@@ -1326,13 +1326,13 @@ where
   );
 
 create temporary table tt5 (
-  f1 INT,
-  f2 INT
+  f1 int,
+  f2 int
 );
 
 create temporary table tt6 (
-  f1 INT,
-  f2 INT
+  f1 int,
+  f2 int
 );
 
 insert into tt5 values (1, 10);
@@ -1347,11 +1347,11 @@ insert into tt6 values (2, 9);
 
 select * from tt5, tt6 where tt5.f1 = tt6.f1 and tt5.f1 = tt5.f2 - tt6.f2;
 
-create temporary table xx (pkxx INT);
+create temporary table xx (pkxx int);
 
 create temporary table yy (
-  pkyy INT,
-  pkxx INT
+  pkyy int,
+  pkxx int
 );
 
 insert into xx values (1);
@@ -1384,11 +1384,11 @@ from
     xx as xxb
   on coalesce(xxa.pkxx, 1) = xxb.pkxx;
 
-create temporary table zt1 (f1 INT primary key);
+create temporary table zt1 (f1 int primary key);
 
-create temporary table zt2 (f2 INT primary key);
+create temporary table zt2 (f2 int primary key);
 
-create temporary table zt3 (f3 INT primary key);
+create temporary table zt3 (f3 int primary key);
 
 insert into zt1 values (53);
 
@@ -1397,7 +1397,7 @@ insert into zt2 values (53);
 select * from zt2 left outer join zt3 on f2 = f3 left outer join zt1 on f3 = f1 where f2 = 53;
 
 create temporary view zv1
-as select *, cast('dummy' as TEXT) as junk from zt1;
+as select *, cast('dummy' as text) as junk from zt1;
 
 select * from zt2 left outer join zt3 on f2 = f3 left outer join zv1 on f3 = f1 where f2 = 53;
 
@@ -1417,7 +1417,7 @@ where
   (b.unique2 is null and a.ten = 2 or b.hundred = 3);
 
 prepare foo
-(BOOLEAN)
+(boolean)
 as select
   COUNT(*)
 from
@@ -1447,11 +1447,11 @@ set enable_hashjoin = 0;
 
 set enable_nestloop = 0;
 
-create temporary table a (i INT);
+create temporary table a (i int);
 
 create temporary table b (
-  x INT,
-  y INT
+  x int,
+  y int
 );
 
 select * from a left outer join b on i = x and i = y and x = i;
@@ -1460,7 +1460,7 @@ rollback;
 
 begin;
 
-create type mycomptype as (id INT, v BIGINT);
+create type mycomptype as (id int, v bigint);
 
 create temporary table tidv (idv mycomptype);
 
@@ -1530,19 +1530,19 @@ order by 1;
 begin;
 
 create temporary table a (
-  code CHAR(1) not null,
+  code char(1) not null,
   constraint "a_pk" primary key (code)
 );
 
 create temporary table b (
-  a CHAR(1) not null,
-  num INT not null,
+  a char(1) not null,
+  num int not null,
   constraint "b_pk" primary key (a, num)
 );
 
 create temporary table c (
-  name CHAR(1) not null,
-  a CHAR(1),
+  name char(1) not null,
+  a char(1),
   constraint "c_pk" primary key (name)
 );
 
@@ -1683,23 +1683,23 @@ from
   on qq = unique2;
 
 create temporary table nt1 (
-  id INT primary key,
-  a1 BOOLEAN,
-  a2 BOOLEAN
+  id int primary key,
+  a1 boolean,
+  a2 boolean
 );
 
 create temporary table nt2 (
-  id INT primary key,
-  nt1_id INT,
-  b1 BOOLEAN,
-  b2 BOOLEAN,
+  id int primary key,
+  nt1_id int,
+  b1 boolean,
+  b2 boolean,
   foreign key (nt1_id) references nt1 (id)
 );
 
 create temporary table nt3 (
-  id INT primary key,
-  nt2_id INT,
-  c1 BOOLEAN,
+  id int primary key,
+  nt2_id int,
+  c1 boolean,
   foreign key (nt2_id) references nt2 (id)
 );
 
@@ -2134,7 +2134,7 @@ rollback;
 
 begin;
 
-create temporary table t (i INT primary key);
+create temporary table t (i int primary key);
 
 select
   *

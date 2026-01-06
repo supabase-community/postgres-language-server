@@ -4,18 +4,18 @@ input_file: crates/pgls_pretty_print/tests/data/multi/xid.sql
 snapshot_kind: text
 ---
 select
-  cast('010' as XID),
-  cast('42' as XID),
-  cast('0xffffffff' as XID),
-  cast('-1' as XID),
+  cast('010' as xid),
+  cast('42' as xid),
+  cast('0xffffffff' as xid),
+  cast('-1' as xid),
   cast('010' as xid8),
   cast('42' as xid8),
   cast('0xffffffffffffffff' as xid8),
   cast('-1' as xid8);
 
-select cast('' as XID);
+select cast('' as xid);
 
-select cast('asdf' as XID);
+select cast('asdf' as xid);
 
 select cast('' as xid8);
 
@@ -33,25 +33,25 @@ select pg_input_is_valid('asdf', 'xid8');
 
 select * from pg_input_error_info('0xffffffffffffffffffff', 'xid8');
 
-select cast('1' as XID) = cast('1' as XID);
+select cast('1' as xid) = cast('1' as xid);
 
-select cast('1' as XID) <> cast('1' as XID);
+select cast('1' as xid) <> cast('1' as xid);
 
 select cast('1' as xid8) = cast('1' as xid8);
 
 select cast('1' as xid8) <> cast('1' as xid8);
 
-select cast('1' as XID) = cast(cast('1' as xid8) as XID);
+select cast('1' as xid) = cast(cast('1' as xid8) as xid);
 
-select cast('1' as XID) <> cast(cast('1' as xid8) as XID);
+select cast('1' as xid) <> cast(cast('1' as xid8) as xid);
 
-select cast('1' as XID) < cast('2' as XID);
+select cast('1' as xid) < cast('2' as xid);
 
-select cast('1' as XID) <= cast('2' as XID);
+select cast('1' as xid) <= cast('2' as xid);
 
-select cast('1' as XID) > cast('2' as XID);
+select cast('1' as xid) > cast('2' as xid);
 
-select cast('1' as XID) >= cast('2' as XID);
+select cast('1' as xid) >= cast('2' as xid);
 
 select
   cast('1' as xid8) < cast('2' as xid8),
@@ -91,7 +91,7 @@ create index on xid8_t1 using btree (x);
 
 create index on xid8_t1 using hash (x);
 
-drop TABLE xid8_t1;
+drop table xid8_t1;
 
 select cast('12:13:' as pg_snapshot);
 
@@ -118,7 +118,7 @@ select pg_input_is_valid('12:16:14,13', 'pg_snapshot');
 select * from pg_input_error_info('12:16:14,13', 'pg_snapshot');
 
 create temporary table snapshot_test (
-  nr INT,
+  nr int,
   snap pg_snapshot
 );
 
@@ -148,7 +148,7 @@ order by nr;
 select
   id,
   pg_visible_in_snapshot(
-    cast(cast(id as TEXT) as xid8),
+    cast(cast(id as text) as xid8),
     snap
   )
 from
@@ -160,7 +160,7 @@ where
 select
   id,
   pg_visible_in_snapshot(
-    cast(cast(id as TEXT) as xid8),
+    cast(cast(id as text) as xid8),
     snap
   )
 from
@@ -221,11 +221,11 @@ begin;
 
 select pg_current_xact_id() as inprogress;
 
-select pg_xact_status(cast(cast('committed' as TEXT) as xid8)) as committed;
+select pg_xact_status(cast(cast('committed' as text) as xid8)) as committed;
 
-select pg_xact_status(cast(cast('rolledback' as TEXT) as xid8)) as rolledback;
+select pg_xact_status(cast(cast('rolledback' as text) as xid8)) as rolledback;
 
-select pg_xact_status(cast(cast('inprogress' as TEXT) as xid8)) as inprogress;
+select pg_xact_status(cast(cast('inprogress' as text) as xid8)) as inprogress;
 
 select pg_xact_status(cast('1' as xid8));
 
@@ -238,7 +238,7 @@ commit;
 begin;
 
 create function test_future_xid_status(xid8)
-returns VOID
+returns void
 language plpgsql
 as $function$
 BEGIN
@@ -250,6 +250,6 @@ EXCEPTION
 END;
 $function$;
 
-select test_future_xid_status(cast(cast('inprogress' + 10000 as TEXT) as xid8));
+select test_future_xid_status(cast(cast('inprogress' + 10000 as text) as xid8));
 
 rollback;

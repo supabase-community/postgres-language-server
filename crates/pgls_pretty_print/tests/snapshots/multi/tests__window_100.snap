@@ -4,10 +4,10 @@ input_file: crates/pgls_pretty_print/tests/data/multi/window.sql
 snapshot_kind: text
 ---
 create temporary table empsalary (
-  depname VARCHAR,
-  empno BIGINT,
-  salary INT,
-  enroll_date DATE
+  depname varchar,
+  empno bigint,
+  salary int,
+  enroll_date date
 );
 
 insert into empsalary
@@ -301,7 +301,7 @@ where
 select
   cast(COUNT(*) over (partition by four order by ten) +
   SUM(hundred) over (partition by four order by ten)
-  as VARCHAR)
+  as varchar)
   as cntsum
 from
   tenk1
@@ -449,7 +449,7 @@ select
 from
   (
     select
-      cast(x as NUMERIC) as x
+      cast(x as numeric) as x
     from
       generate_series(1, 10) as x
   );
@@ -1134,7 +1134,7 @@ select * from v_window;
 
 select pg_get_viewdef('v_window');
 
-drop VIEW v_window;
+drop view v_window;
 
 create temporary view v_window
 as select
@@ -1153,7 +1153,7 @@ as select
 from
   generate_series(
     NOW(),
-    NOW() + cast('100 days' as INTERVAL),
+    NOW() + cast('100 days' as interval),
     '1 hour'
   )
   as i;
@@ -1167,9 +1167,9 @@ select
   over (
     order by four
     range between
-    cast(2 as BIGINT) preceding
+    cast(2 as bigint) preceding
     and
-    cast(1 as SMALLINT) preceding
+    cast(1 as smallint) preceding
   ),
   unique1,
   four
@@ -1185,9 +1185,9 @@ select
   over (
     order by four desc
     range between
-    cast(2 as BIGINT) preceding
+    cast(2 as bigint) preceding
     and
-    cast(1 as SMALLINT) preceding
+    cast(1 as smallint) preceding
   ),
   unique1,
   four
@@ -1203,9 +1203,9 @@ select
   over (
     order by four
     range between
-    cast(2 as BIGINT) preceding
+    cast(2 as bigint) preceding
     and
-    cast(1 as SMALLINT) preceding
+    cast(1 as smallint) preceding
   ),
   unique1,
   four
@@ -1221,9 +1221,9 @@ select
   over (
     order by four
     range between
-    cast(2 as BIGINT) preceding
+    cast(2 as bigint) preceding
     and
-    cast(1 as SMALLINT) preceding
+    cast(1 as smallint) preceding
     exclude current row
   ),
   unique1,
@@ -1240,9 +1240,9 @@ select
   over (
     order by four
     range between
-    cast(2 as BIGINT) preceding
+    cast(2 as bigint) preceding
     and
-    cast(1 as SMALLINT) preceding
+    cast(1 as smallint) preceding
     exclude group
   ),
   unique1,
@@ -1259,9 +1259,9 @@ select
   over (
     order by four
     range between
-    cast(2 as BIGINT) preceding
+    cast(2 as bigint) preceding
     and
-    cast(1 as SMALLINT) preceding
+    cast(1 as smallint) preceding
     exclude ties
   ),
   unique1,
@@ -1278,9 +1278,9 @@ select
   over (
     order by four
     range between
-    cast(2 as BIGINT) preceding
+    cast(2 as bigint) preceding
     and
-    cast(6 as SMALLINT) following
+    cast(6 as smallint) following
     exclude ties
   ),
   unique1,
@@ -1297,9 +1297,9 @@ select
   over (
     order by four
     range between
-    cast(2 as BIGINT) preceding
+    cast(2 as bigint) preceding
     and
-    cast(6 as SMALLINT) following
+    cast(6 as smallint) following
     exclude group
   ),
   unique1,
@@ -1317,9 +1317,9 @@ select
     partition by four
     order by unique1
     range between
-    cast(5 as BIGINT) preceding
+    cast(5 as bigint) preceding
     and
-    cast(6 as SMALLINT) following
+    cast(6 as smallint) following
   ),
   unique1,
   four
@@ -1336,9 +1336,9 @@ select
     partition by four
     order by unique1
     range between
-    cast(5 as BIGINT) preceding
+    cast(5 as bigint) preceding
     and
-    cast(6 as SMALLINT) following
+    cast(6 as smallint) following
     exclude current row
   ),
   unique1,
@@ -1355,9 +1355,9 @@ select
   over (
     order by enroll_date
     range between
-    cast('1 year' as INTERVAL) preceding
+    cast('1 year' as interval) preceding
     and
-    cast('1 year' as INTERVAL) following
+    cast('1 year' as interval) following
   ),
   salary,
   enroll_date
@@ -1371,9 +1371,9 @@ select
   over (
     order by enroll_date desc
     range between
-    cast('1 year' as INTERVAL) preceding
+    cast('1 year' as interval) preceding
     and
-    cast('1 year' as INTERVAL) following
+    cast('1 year' as interval) following
   ),
   salary,
   enroll_date
@@ -1387,9 +1387,9 @@ select
   over (
     order by enroll_date desc
     range between
-    cast('1 year' as INTERVAL) following
+    cast('1 year' as interval) following
     and
-    cast('1 year' as INTERVAL) following
+    cast('1 year' as interval) following
   ),
   salary,
   enroll_date
@@ -1403,9 +1403,9 @@ select
   over (
     order by enroll_date
     range between
-    cast('1 year' as INTERVAL) preceding
+    cast('1 year' as interval) preceding
     and
-    cast('1 year' as INTERVAL) following
+    cast('1 year' as interval) following
     exclude current row
   ),
   salary,
@@ -1420,9 +1420,9 @@ select
   over (
     order by enroll_date
     range between
-    cast('1 year' as INTERVAL) preceding
+    cast('1 year' as interval) preceding
     and
-    cast('1 year' as INTERVAL) following
+    cast('1 year' as interval) following
     exclude group
   ),
   salary,
@@ -1437,9 +1437,9 @@ select
   over (
     order by enroll_date
     range between
-    cast('1 year' as INTERVAL) preceding
+    cast('1 year' as interval) preceding
     and
-    cast('1 year' as INTERVAL) following
+    cast('1 year' as interval) following
     exclude ties
   ),
   salary,
@@ -1583,7 +1583,7 @@ select
     range between
     unbounded preceding
     and
-    cast('1 year' as INTERVAL) following
+    cast('1 year' as interval) following
     exclude ties
   ),
   LAST_VALUE(
@@ -1594,7 +1594,7 @@ select
     range between
     unbounded preceding
     and
-    cast('1 year' as INTERVAL) following
+    cast('1 year' as interval) following
   ),
   salary,
   enroll_date
@@ -1610,7 +1610,7 @@ select
     range between
     unbounded preceding
     and
-    cast('1 year' as INTERVAL) following
+    cast('1 year' as interval) following
     exclude ties
   ),
   LAST_VALUE(
@@ -1621,7 +1621,7 @@ select
     range between
     unbounded preceding
     and
-    cast('1 year' as INTERVAL) following
+    cast('1 year' as interval) following
     exclude ties
   ),
   salary,
@@ -1638,7 +1638,7 @@ select
     range between
     unbounded preceding
     and
-    cast('1 year' as INTERVAL) following
+    cast('1 year' as interval) following
     exclude group
   ),
   LAST_VALUE(
@@ -1649,7 +1649,7 @@ select
     range between
     unbounded preceding
     and
-    cast('1 year' as INTERVAL) following
+    cast('1 year' as interval) following
     exclude group
   ),
   salary,
@@ -1666,7 +1666,7 @@ select
     range between
     unbounded preceding
     and
-    cast('1 year' as INTERVAL) following
+    cast('1 year' as interval) following
     exclude current row
   ),
   LAST_VALUE(
@@ -1677,7 +1677,7 @@ select
     range between
     unbounded preceding
     and
-    cast('1 year' as INTERVAL) following
+    cast('1 year' as interval) following
     exclude current row
   ),
   salary,
@@ -1797,11 +1797,11 @@ where
 
 commit;
 
-create function unbounded_syntax_test1b(x INT)
+create function unbounded_syntax_test1b(x int)
 returns table (
-  a INT,
-  b INT,
-  c INT
+  a int,
+  b int,
+  c int
 )
 language sql
 as $function$
@@ -1834,11 +1834,11 @@ where
 
 commit;
 
-create function unbounded_syntax_test2b(unbounded INT)
+create function unbounded_syntax_test2b(unbounded int)
 returns table (
-  a INT,
-  b INT,
-  c INT
+  a int,
+  b int,
+  c int
 )
 language sql
 as $function$
@@ -1851,14 +1851,14 @@ select * from unbounded_syntax_test2a(2);
 
 select * from unbounded_syntax_test2b(2);
 
-drop FUNCTION
+drop function
   unbounded_syntax_test1a,
   unbounded_syntax_test1b,
   unbounded_syntax_test2a,
   unbounded_syntax_test2b;
 
-create function unbounded(x INT)
-returns INT
+create function unbounded(x int)
+returns int
 language sql
 immutable return x;;
 
@@ -1917,7 +1917,7 @@ from
 where
   unique1 < 10;
 
-drop FUNCTION unbounded;
+drop function unbounded;
 
 select
   x,
@@ -1925,7 +1925,7 @@ select
     x
   )
   over (
-    order by cast(x as SMALLINT)
+    order by cast(x as smallint)
     range between
     current row
     and
@@ -1940,7 +1940,7 @@ select
     x
   )
   over (
-    order by cast(x as SMALLINT) desc
+    order by cast(x as smallint) desc
     range between
     current row
     and
@@ -2018,10 +2018,10 @@ from
   as x;
 
 create temporary table numerics (
-  id INT,
-  f_float4 REAL,
-  f_float8 DOUBLE PRECISION,
-  f_numeric NUMERIC
+  id int,
+  f_float4 real,
+  f_float8 double precision,
+  f_numeric numeric
 );
 
 insert into numerics
@@ -2066,7 +2066,7 @@ window
     range between
     1 preceding
     and
-    cast(1.1 as REAL) following
+    cast(1.1 as real) following
   );
 
 select
@@ -2162,7 +2162,7 @@ window
     range between
     1 preceding
     and
-    cast(1.1 as DOUBLE PRECISION) following
+    cast(1.1 as double precision) following
   );
 
 select
@@ -2258,7 +2258,7 @@ window
     range between
     1 preceding
     and
-    cast(1.1 as NUMERIC) following
+    cast(1.1 as numeric) following
   );
 
 select
@@ -2274,7 +2274,7 @@ window
     range between
     1 preceding
     and
-    cast(1.1 as DOUBLE PRECISION) following
+    cast(1.1 as double precision) following
   );
 
 select
@@ -2342,12 +2342,12 @@ window
   );
 
 create temporary table datetimes (
-  id INT,
-  f_time TIME,
-  f_timetz time with time ZONE,
-  f_interval INTERVAL,
-  f_timestamptz timestamp with time ZONE,
-  f_timestamp TIMESTAMP
+  id int,
+  f_time time,
+  f_timetz time with time zone,
+  f_interval interval,
+  f_timestamptz timestamp with time zone,
+  f_timestamp timestamp
 );
 
 insert into datetimes
@@ -2460,9 +2460,9 @@ window
   w as (
     order by f_time
     range between
-    cast('70 min' as INTERVAL) preceding
+    cast('70 min' as interval) preceding
     and
-    cast('2 hours' as INTERVAL) following
+    cast('2 hours' as interval) following
   );
 
 select
@@ -2508,9 +2508,9 @@ window
   w as (
     order by f_time
     range between
-    cast('infinity' as INTERVAL) preceding
+    cast('infinity' as interval) preceding
     and
-    cast('infinity' as INTERVAL) following
+    cast('infinity' as interval) following
   );
 
 select
@@ -2524,9 +2524,9 @@ window
   w as (
     order by f_time
     range between
-    cast('infinity' as INTERVAL) preceding
+    cast('infinity' as interval) preceding
     and
-    cast('infinity' as INTERVAL) preceding
+    cast('infinity' as interval) preceding
   );
 
 select
@@ -2540,9 +2540,9 @@ window
   w as (
     order by f_time
     range between
-    cast('infinity' as INTERVAL) following
+    cast('infinity' as interval) following
     and
-    cast('infinity' as INTERVAL) following
+    cast('infinity' as interval) following
   );
 
 select
@@ -2556,9 +2556,9 @@ window
   w as (
     order by f_time
     range between
-    cast('-infinity' as INTERVAL) following
+    cast('-infinity' as interval) following
     and
-    cast('infinity' as INTERVAL) following
+    cast('infinity' as interval) following
   );
 
 select
@@ -2572,9 +2572,9 @@ window
   w as (
     order by f_timetz
     range between
-    cast('70 min' as INTERVAL) preceding
+    cast('70 min' as interval) preceding
     and
-    cast('2 hours' as INTERVAL) following
+    cast('2 hours' as interval) following
   );
 
 select
@@ -2620,9 +2620,9 @@ window
   w as (
     order by f_timetz
     range between
-    cast('infinity' as INTERVAL) preceding
+    cast('infinity' as interval) preceding
     and
-    cast('infinity' as INTERVAL) following
+    cast('infinity' as interval) following
   );
 
 select
@@ -2636,9 +2636,9 @@ window
   w as (
     order by f_timetz
     range between
-    cast('infinity' as INTERVAL) preceding
+    cast('infinity' as interval) preceding
     and
-    cast('infinity' as INTERVAL) preceding
+    cast('infinity' as interval) preceding
   );
 
 select
@@ -2652,9 +2652,9 @@ window
   w as (
     order by f_timetz
     range between
-    cast('infinity' as INTERVAL) following
+    cast('infinity' as interval) following
     and
-    cast('infinity' as INTERVAL) following
+    cast('infinity' as interval) following
   );
 
 select
@@ -2668,9 +2668,9 @@ window
   w as (
     order by f_timetz
     range between
-    cast('infinity' as INTERVAL) following
+    cast('infinity' as interval) following
     and
-    cast('-infinity' as INTERVAL) following
+    cast('-infinity' as interval) following
   );
 
 select
@@ -2684,9 +2684,9 @@ window
   w as (
     order by f_interval
     range between
-    cast('1 year' as INTERVAL) preceding
+    cast('1 year' as interval) preceding
     and
-    cast('1 year' as INTERVAL) following
+    cast('1 year' as interval) following
   );
 
 select
@@ -2732,9 +2732,9 @@ window
   w as (
     order by f_interval
     range between
-    cast('infinity' as INTERVAL) preceding
+    cast('infinity' as interval) preceding
     and
-    cast('infinity' as INTERVAL) following
+    cast('infinity' as interval) following
   );
 
 select
@@ -2748,9 +2748,9 @@ window
   w as (
     order by f_interval
     range between
-    cast('infinity' as INTERVAL) preceding
+    cast('infinity' as interval) preceding
     and
-    cast('infinity' as INTERVAL) preceding
+    cast('infinity' as interval) preceding
   );
 
 select
@@ -2764,9 +2764,9 @@ window
   w as (
     order by f_interval
     range between
-    cast('infinity' as INTERVAL) following
+    cast('infinity' as interval) following
     and
-    cast('infinity' as INTERVAL) following
+    cast('infinity' as interval) following
   );
 
 select
@@ -2780,9 +2780,9 @@ window
   w as (
     order by f_interval
     range between
-    cast('-infinity' as INTERVAL) following
+    cast('-infinity' as interval) following
     and
-    cast('infinity' as INTERVAL) following
+    cast('infinity' as interval) following
   );
 
 select
@@ -2796,9 +2796,9 @@ window
   w as (
     order by f_timestamptz
     range between
-    cast('1 year' as INTERVAL) preceding
+    cast('1 year' as interval) preceding
     and
-    cast('1 year' as INTERVAL) following
+    cast('1 year' as interval) following
   );
 
 select
@@ -2844,9 +2844,9 @@ window
   w as (
     order by f_timestamptz
     range between
-    cast('infinity' as INTERVAL) preceding
+    cast('infinity' as interval) preceding
     and
-    cast('infinity' as INTERVAL) following
+    cast('infinity' as interval) following
   );
 
 select
@@ -2860,9 +2860,9 @@ window
   w as (
     order by f_timestamptz
     range between
-    cast('infinity' as INTERVAL) preceding
+    cast('infinity' as interval) preceding
     and
-    cast('infinity' as INTERVAL) preceding
+    cast('infinity' as interval) preceding
   );
 
 select
@@ -2876,9 +2876,9 @@ window
   w as (
     order by f_timestamptz
     range between
-    cast('infinity' as INTERVAL) following
+    cast('infinity' as interval) following
     and
-    cast('infinity' as INTERVAL) following
+    cast('infinity' as interval) following
   );
 
 select
@@ -2892,9 +2892,9 @@ window
   w as (
     order by f_timestamptz
     range between
-    cast('-infinity' as INTERVAL) following
+    cast('-infinity' as interval) following
     and
-    cast('infinity' as INTERVAL) following
+    cast('infinity' as interval) following
   );
 
 select
@@ -2908,9 +2908,9 @@ window
   w as (
     order by f_timestamp
     range between
-    cast('1 year' as INTERVAL) preceding
+    cast('1 year' as interval) preceding
     and
-    cast('1 year' as INTERVAL) following
+    cast('1 year' as interval) following
   );
 
 select
@@ -2956,9 +2956,9 @@ window
   w as (
     order by f_timestamp
     range between
-    cast('infinity' as INTERVAL) preceding
+    cast('infinity' as interval) preceding
     and
-    cast('infinity' as INTERVAL) following
+    cast('infinity' as interval) following
   );
 
 select
@@ -2972,9 +2972,9 @@ window
   w as (
     order by f_timestamp
     range between
-    cast('infinity' as INTERVAL) preceding
+    cast('infinity' as interval) preceding
     and
-    cast('infinity' as INTERVAL) preceding
+    cast('infinity' as interval) preceding
   );
 
 select
@@ -2988,9 +2988,9 @@ window
   w as (
     order by f_timestamp
     range between
-    cast('infinity' as INTERVAL) following
+    cast('infinity' as interval) following
     and
-    cast('infinity' as INTERVAL) following
+    cast('infinity' as interval) following
   );
 
 select
@@ -3004,9 +3004,9 @@ window
   w as (
     order by f_timestamp
     range between
-    cast('-infinity' as INTERVAL) following
+    cast('-infinity' as interval) following
     and
-    cast('infinity' as INTERVAL) following
+    cast('infinity' as interval) following
   );
 
 select
@@ -3017,9 +3017,9 @@ select
     order by enroll_date,
     salary
     range between
-    cast('1 year' as INTERVAL) preceding
+    cast('1 year' as interval) preceding
     and
-    cast('2 years' as INTERVAL) following
+    cast('2 years' as interval) following
     exclude ties
   ),
   salary,
@@ -3034,9 +3034,9 @@ select
   over (
 
     range between
-    cast('1 year' as INTERVAL) preceding
+    cast('1 year' as interval) preceding
     and
-    cast('2 years' as INTERVAL) following
+    cast('2 years' as interval) following
     exclude ties
   ),
   salary,
@@ -3051,9 +3051,9 @@ select
   over (
     order by depname
     range between
-    cast('1 year' as INTERVAL) preceding
+    cast('1 year' as interval) preceding
     and
-    cast('2 years' as INTERVAL) following
+    cast('2 years' as interval) following
     exclude ties
   ),
   salary,
@@ -3119,9 +3119,9 @@ select
   over (
     order by salary
     range between
-    cast('1 year' as INTERVAL) preceding
+    cast('1 year' as interval) preceding
     and
-    cast('2 years' as INTERVAL) following
+    cast('2 years' as interval) following
     exclude ties
   ),
   salary,
@@ -3136,9 +3136,9 @@ select
   over (
     order by enroll_date
     range between
-    cast('1 year' as INTERVAL) preceding
+    cast('1 year' as interval) preceding
     and
-    cast('-2 years' as INTERVAL) following
+    cast('-2 years' as interval) following
     exclude ties
   ),
   salary,
@@ -3709,8 +3709,8 @@ from
 limit 0;
 
 create temporary table t1 (
-  f1 INT,
-  f2 BIGINT
+  f1 int,
+  f2 bigint
 );
 
 insert into t1 values (1, 1), (1, 2), (2, 2);
@@ -4823,14 +4823,14 @@ from
 where
   first_emp = 1 or last_emp = 1;
 
-drop TABLE empsalary;
+drop table empsalary;
 
-create function nth_value_def(val ANYELEMENT, n INT default 1)
-returns ANYELEMENT
+create function nth_value_def(val anyelement, n int default 1)
+returns anyelement
 language internal
 window
 immutable
-STRICT
+strict
 as $function$window_nth_value$function$;
 
 select
@@ -4873,83 +4873,83 @@ from
   )
   as s;
 
-create function logging_sfunc_nonstrict(TEXT, ANYELEMENT)
-returns TEXT
+create function logging_sfunc_nonstrict(text, anyelement)
+returns text
 as $function$ SELECT COALESCE($1, '') || '*' || quote_nullable($2) $function$
 language sql
 immutable;
 
-create function logging_msfunc_nonstrict(TEXT, ANYELEMENT)
-returns TEXT
+create function logging_msfunc_nonstrict(text, anyelement)
+returns text
 as $function$ SELECT COALESCE($1, '') || '+' || quote_nullable($2) $function$
 language sql
 immutable;
 
-create function logging_minvfunc_nonstrict(TEXT, ANYELEMENT)
-returns TEXT
+create function logging_minvfunc_nonstrict(text, anyelement)
+returns text
 as $function$ SELECT $1 || '-' || quote_nullable($2) $function$
 language sql
 immutable;
 
 create aggregate logging_agg_nonstrict (
-  ANYELEMENT
+  anyelement
 ) (
-  stype = TEXT,
+  stype = text,
   sfunc = logging_sfunc_nonstrict,
-  mstype = TEXT,
+  mstype = text,
   msfunc = logging_msfunc_nonstrict,
   minvfunc = logging_minvfunc_nonstrict
 );
 
 create aggregate logging_agg_nonstrict_initcond (
-  ANYELEMENT
+  anyelement
 ) (
-  stype = TEXT,
+  stype = text,
   sfunc = logging_sfunc_nonstrict,
-  mstype = TEXT,
+  mstype = text,
   msfunc = logging_msfunc_nonstrict,
   minvfunc = logging_minvfunc_nonstrict,
   initcond = 'I',
   minitcond = 'MI'
 );
 
-create function logging_sfunc_strict(TEXT, ANYELEMENT)
-returns TEXT
+create function logging_sfunc_strict(text, anyelement)
+returns text
 as $function$ SELECT $1 || '*' || quote_nullable($2) $function$
 language sql
-STRICT
+strict
 immutable;
 
-create function logging_msfunc_strict(TEXT, ANYELEMENT)
-returns TEXT
+create function logging_msfunc_strict(text, anyelement)
+returns text
 as $function$ SELECT $1 || '+' || quote_nullable($2) $function$
 language sql
-STRICT
+strict
 immutable;
 
-create function logging_minvfunc_strict(TEXT, ANYELEMENT)
-returns TEXT
+create function logging_minvfunc_strict(text, anyelement)
+returns text
 as $function$ SELECT $1 || '-' || quote_nullable($2) $function$
 language sql
-STRICT
+strict
 immutable;
 
 create aggregate logging_agg_strict (
-  TEXT
+  text
 ) (
-  stype = TEXT,
+  stype = text,
   sfunc = logging_sfunc_strict,
-  mstype = TEXT,
+  mstype = text,
   msfunc = logging_msfunc_strict,
   minvfunc = logging_minvfunc_strict
 );
 
 create aggregate logging_agg_strict_initcond (
-  ANYELEMENT
+  anyelement
 ) (
-  stype = TEXT,
+  stype = text,
   sfunc = logging_sfunc_strict,
-  mstype = TEXT,
+  mstype = text,
   msfunc = logging_msfunc_strict,
   minvfunc = logging_minvfunc_strict,
   initcond = 'I',
@@ -4957,13 +4957,13 @@ create aggregate logging_agg_strict_initcond (
 );
 
 select
-  cast(p as TEXT) || ',' || cast(i as TEXT) || ':' ||
-  coalesce(cast(v as TEXT), 'NULL')
+  cast(p as text) || ',' || cast(i as text) || ':' ||
+  coalesce(cast(v as text), 'NULL')
   as row,
   logging_agg_nonstrict(v) over wnd as nstrict,
   logging_agg_nonstrict_initcond(v) over wnd
   as nstrict_init,
-  logging_agg_strict(cast(v as TEXT)) over wnd
+  logging_agg_strict(cast(v as text)) over wnd
   as strict,
   logging_agg_strict_initcond(v) over wnd
   as strict_init
@@ -4994,9 +4994,9 @@ order by p,
   i;
 
 select
-  cast(p as TEXT) || ',' || cast(i as TEXT) || ':' ||
+  cast(p as text) || ',' || cast(i as text) || ':' ||
   case
-    when f then coalesce(cast(v as TEXT), 'NULL')
+    when f then coalesce(cast(v as text), 'NULL')
     else '-'
   end
   as row,
@@ -5010,7 +5010,7 @@ select
   over wnd
   as nstrict_init_filt,
   logging_agg_strict(
-    cast(v as TEXT)
+    cast(v as text)
   )
   filter (where
     f)
@@ -5050,13 +5050,13 @@ order by p,
   i;
 
 select
-  cast(i as TEXT) || ':' ||
-  coalesce(cast(v as TEXT), 'NULL')
+  cast(i as text) || ':' ||
+  coalesce(cast(v as text), 'NULL')
   as row,
-  logging_agg_strict(cast(v as TEXT)) over wnd
+  logging_agg_strict(cast(v as text)) over wnd
   as inverse,
   logging_agg_strict(
-    cast(v as TEXT) ||
+    cast(v as text) ||
     case when random() < 0 then '?' else '' end
   )
   over wnd
@@ -5074,18 +5074,18 @@ window
 order by i;
 
 select
-  cast(i as TEXT) || ':' ||
-  coalesce(cast(v as TEXT), 'NULL')
+  cast(i as text) || ':' ||
+  coalesce(cast(v as text), 'NULL')
   as row,
   logging_agg_strict(
-    cast(v as TEXT)
+    cast(v as text)
   )
   filter (where
     true)
   over wnd
   as inverse,
   logging_agg_strict(
-    cast(v as TEXT)
+    cast(v as text)
   )
   filter (where
     random() >= 0)
@@ -5104,7 +5104,7 @@ window
 order by i;
 
 select
-  logging_agg_strict(cast(v as TEXT)) over wnd
+  logging_agg_strict(cast(v as text)) over wnd
 from
   (values (1, 'a'), (2, 'b'), (3, 'c')) as t (i, v)
 window
@@ -5117,18 +5117,18 @@ window
   )
 order by i;
 
-create function sum_int_randrestart_minvfunc(INT, INT)
-returns INT
+create function sum_int_randrestart_minvfunc(int, int)
+returns int
 as $function$ SELECT CASE WHEN random() < 0.2 THEN NULL ELSE $1 - $2 END $function$
 language sql
-STRICT;
+strict;
 
 create aggregate sum_int_randomrestart (
-  INT
+  int
 ) (
-  stype = INT,
+  stype = int,
   sfunc = int4pl,
-  mstype = INT,
+  mstype = int,
   msfunc = int4pl,
   minvfunc = sum_int_randrestart_minvfunc
 );
@@ -5138,7 +5138,7 @@ vs
 as (
   select
     i,
-    cast(random() * 100 as INT) as v
+    cast(random() * 100 as int) as v
   from
     generate_series(1, 100) as i
 ),
@@ -5169,7 +5169,7 @@ select distinct
   as eq2,
   100 * 3 + (vs.i - 1) * 3 =
   length(
-    logging_agg_nonstrict(cast('' as TEXT)) over fwd
+    logging_agg_nonstrict(cast('' as text)) over fwd
   )
   as eq3
 from
@@ -5189,7 +5189,7 @@ window
 select
   i,
   AVG(
-    cast(v as BIGINT)
+    cast(v as bigint)
   )
   over (
     order by i
@@ -5207,7 +5207,7 @@ from
 select
   i,
   AVG(
-    cast(v as INT)
+    cast(v as int)
   )
   over (
     order by i
@@ -5225,7 +5225,7 @@ from
 select
   i,
   AVG(
-    cast(v as SMALLINT)
+    cast(v as smallint)
   )
   over (
     order by i
@@ -5243,7 +5243,7 @@ from
 select
   i,
   AVG(
-    cast(v as NUMERIC)
+    cast(v as numeric)
   )
   over (
     order by i
@@ -5261,7 +5261,7 @@ from
 select
   i,
   AVG(
-    cast(v as INTERVAL)
+    cast(v as interval)
   )
   over (
     order by i
@@ -5329,20 +5329,20 @@ select
 from
   (
     values
-      (cast(null as INTERVAL)),
-      (cast('infinity' as INTERVAL)),
+      (cast(null as interval)),
+      (cast('infinity' as interval)),
       (
         '-2147483648 days -2147483648 months -9223372036854775807 usecs'
       ),
-      (cast('-infinity' as INTERVAL)),
+      (cast('-infinity' as interval)),
       (
         '2147483647 days 2147483647 months 9223372036854775806 usecs'
       ),
-      (cast('infinity' as INTERVAL)),
-      (cast('6 days' as INTERVAL)),
-      (cast('7 days' as INTERVAL)),
-      (cast(null as INTERVAL)),
-      (cast('-infinity' as INTERVAL))
+      (cast('infinity' as interval)),
+      (cast('6 days' as interval)),
+      (cast('7 days' as interval)),
+      (cast(null as interval)),
+      (cast('-infinity' as interval))
   )
   as v (x);
 
@@ -5361,14 +5361,14 @@ select
 from
   (
     values
-      (cast(null as INTERVAL)),
-      (cast('3 days' as INTERVAL)),
+      (cast(null as interval)),
+      (cast('3 days' as interval)),
       (
-        cast('infinity' as timestamp with time ZONE) -
+        cast('infinity' as timestamp with time zone) -
         NOW()
       ),
-      (cast('6 days' as INTERVAL)),
-      (cast('-infinity' as INTERVAL))
+      (cast('6 days' as interval)),
+      (cast('-infinity' as interval))
   )
   as v (x);
 
@@ -5387,21 +5387,21 @@ select
 from
   (
     values
-      (cast(null as INTERVAL)),
-      (cast('3 days' as INTERVAL)),
+      (cast(null as interval)),
+      (cast('3 days' as interval)),
       (
-        cast('infinity' as timestamp with time ZONE) -
+        cast('infinity' as timestamp with time zone) -
         NOW()
       ),
-      (cast('6 days' as INTERVAL)),
-      (cast('-infinity' as INTERVAL))
+      (cast('6 days' as interval)),
+      (cast('-infinity' as interval))
   )
   as v (x);
 
 select
   i,
   SUM(
-    cast(v as SMALLINT)
+    cast(v as smallint)
   )
   over (
     order by i
@@ -5419,7 +5419,7 @@ from
 select
   i,
   SUM(
-    cast(v as INT)
+    cast(v as int)
   )
   over (
     order by i
@@ -5437,7 +5437,7 @@ from
 select
   i,
   SUM(
-    cast(v as BIGINT)
+    cast(v as bigint)
   )
   over (
     order by i
@@ -5455,7 +5455,7 @@ from
 select
   i,
   SUM(
-    cast(v as MONEY)
+    cast(v as money)
   )
   over (
     order by i
@@ -5477,7 +5477,7 @@ from
 select
   i,
   SUM(
-    cast(v as INTERVAL)
+    cast(v as interval)
   )
   over (
     order by i
@@ -5499,7 +5499,7 @@ from
 select
   i,
   SUM(
-    cast(v as NUMERIC)
+    cast(v as numeric)
   )
   over (
     order by i
@@ -5516,7 +5516,7 @@ from
 
 select
   SUM(
-    cast(n as NUMERIC)
+    cast(n as numeric)
   )
   over (
     order by i
@@ -5566,7 +5566,7 @@ from
 
 select
   var_pop(
-    cast(n as BIGINT)
+    cast(n as bigint)
   )
   over (
     order by i
@@ -5588,7 +5588,7 @@ from
 
 select
   var_pop(
-    cast(n as INT)
+    cast(n as int)
   )
   over (
     order by i
@@ -5610,7 +5610,7 @@ from
 
 select
   var_pop(
-    cast(n as SMALLINT)
+    cast(n as smallint)
   )
   over (
     order by i
@@ -5632,7 +5632,7 @@ from
 
 select
   var_pop(
-    cast(n as NUMERIC)
+    cast(n as numeric)
   )
   over (
     order by i
@@ -5654,7 +5654,7 @@ from
 
 select
   var_samp(
-    cast(n as BIGINT)
+    cast(n as bigint)
   )
   over (
     order by i
@@ -5676,7 +5676,7 @@ from
 
 select
   var_samp(
-    cast(n as INT)
+    cast(n as int)
   )
   over (
     order by i
@@ -5698,7 +5698,7 @@ from
 
 select
   var_samp(
-    cast(n as SMALLINT)
+    cast(n as smallint)
   )
   over (
     order by i
@@ -5720,7 +5720,7 @@ from
 
 select
   var_samp(
-    cast(n as NUMERIC)
+    cast(n as numeric)
   )
   over (
     order by i
@@ -5742,7 +5742,7 @@ from
 
 select
   variance(
-    cast(n as BIGINT)
+    cast(n as bigint)
   )
   over (
     order by i
@@ -5764,7 +5764,7 @@ from
 
 select
   variance(
-    cast(n as INT)
+    cast(n as int)
   )
   over (
     order by i
@@ -5786,7 +5786,7 @@ from
 
 select
   variance(
-    cast(n as SMALLINT)
+    cast(n as smallint)
   )
   over (
     order by i
@@ -5808,7 +5808,7 @@ from
 
 select
   variance(
-    cast(n as NUMERIC)
+    cast(n as numeric)
   )
   over (
     order by i
@@ -5830,30 +5830,7 @@ from
 
 select
   stddev_pop(
-    cast(n as BIGINT)
-  )
-  over (
-    order by i
-    rows between
-    current row
-    and
-    unbounded following
-  )
-from
-  (
-    values
-      (1, null),
-      (2, 600),
-      (3, 470),
-      (4, 170),
-      (5, 430),
-      (6, 300)
-  )
-  as r (i, n);
-
-select
-  stddev_pop(
-    cast(n as INT)
+    cast(n as bigint)
   )
   over (
     order by i
@@ -5876,7 +5853,7 @@ from
 
 select
   stddev_pop(
-    cast(n as SMALLINT)
+    cast(n as int)
   )
   over (
     order by i
@@ -5899,7 +5876,30 @@ from
 
 select
   stddev_pop(
-    cast(n as NUMERIC)
+    cast(n as smallint)
+  )
+  over (
+    order by i
+    rows between
+    current row
+    and
+    unbounded following
+  )
+from
+  (
+    values
+      (1, null),
+      (2, 600),
+      (3, 470),
+      (4, 170),
+      (5, 430),
+      (6, 300)
+  )
+  as r (i, n);
+
+select
+  stddev_pop(
+    cast(n as numeric)
   )
   over (
     order by i
@@ -5922,7 +5922,7 @@ from
 
 select
   stddev_samp(
-    cast(n as BIGINT)
+    cast(n as bigint)
   )
   over (
     order by i
@@ -5945,7 +5945,7 @@ from
 
 select
   stddev_samp(
-    cast(n as INT)
+    cast(n as int)
   )
   over (
     order by i
@@ -5968,7 +5968,7 @@ from
 
 select
   stddev_samp(
-    cast(n as SMALLINT)
+    cast(n as smallint)
   )
   over (
     order by i
@@ -5991,7 +5991,7 @@ from
 
 select
   stddev_samp(
-    cast(n as NUMERIC)
+    cast(n as numeric)
   )
   over (
     order by i
@@ -6014,7 +6014,7 @@ from
 
 select
   stddev(
-    cast(n as BIGINT)
+    cast(n as bigint)
   )
   over (
     order by i
@@ -6037,7 +6037,7 @@ from
 
 select
   stddev(
-    cast(n as INT)
+    cast(n as int)
   )
   over (
     order by i
@@ -6060,7 +6060,7 @@ from
 
 select
   stddev(
-    cast(n as SMALLINT)
+    cast(n as smallint)
   )
   over (
     order by i
@@ -6083,7 +6083,7 @@ from
 
 select
   stddev(
-    cast(n as NUMERIC)
+    cast(n as numeric)
   )
   over (
     order by i
@@ -6107,7 +6107,7 @@ from
 select
   i,
   SUM(
-    cast(v as INT)
+    cast(v as int)
   )
   over (
     order by i
@@ -6125,7 +6125,7 @@ from
 select
   i,
   SUM(
-    cast(v as INT)
+    cast(v as int)
   )
   over (
     order by i
@@ -6143,7 +6143,7 @@ from
 select
   i,
   SUM(
-    cast(v as INT)
+    cast(v as int)
   )
   over (
     order by i
@@ -6174,7 +6174,7 @@ select
 from
   (
     values
-      (1, cast(1 as NUMERIC)),
+      (1, cast(1 as numeric)),
       (2, 2),
       (3, 'NaN'),
       (4, 3),
@@ -6185,7 +6185,7 @@ from
 select
   to_char(
     SUM(
-      cast(n as DOUBLE PRECISION)
+      cast(n as double precision)
     )
     over (
       order by i
@@ -6287,13 +6287,13 @@ window
   w as (
     order by i
     rows between
-    cast('foo' < 'foobar' as INT) preceding
+    cast('foo' < 'foobar' as int) preceding
     and
     current row
   );
 
-create function pg_temp.f(group_size BIGINT)
-returns setof INT[]
+create function pg_temp.f(group_size bigint)
+returns setof int[]
 as $function$
     SELECT array_agg(s) OVER w
       FROM generate_series(1,5) s

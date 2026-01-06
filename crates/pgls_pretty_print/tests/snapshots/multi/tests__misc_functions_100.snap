@@ -5,13 +5,13 @@ snapshot_kind: text
 ---
 create function
 explain_mask_costs(
-  query TEXT,
-  do_analyze BOOLEAN,
-  hide_costs BOOLEAN,
-  hide_row_est BOOLEAN,
-  hide_width BOOLEAN
+  query text,
+  do_analyze boolean,
+  hide_costs boolean,
+  hide_row_est boolean,
+  hide_width boolean
 )
-returns setof TEXT
+returns setof text
 language plpgsql
 as $function$
 DECLARE
@@ -53,24 +53,24 @@ select num_nonnulls(null);
 
 select num_nonnulls('1');
 
-select num_nonnulls(cast(null as TEXT));
+select num_nonnulls(cast(null as text));
 
-select num_nonnulls(cast(null as TEXT), cast(null as INT));
+select num_nonnulls(cast(null as text), cast(null as int));
 
 select
   num_nonnulls(
     1,
     2,
-    cast(null as TEXT),
+    cast(null as text),
     cast(null as point),
     '',
-    cast('9' as BIGINT),
+    cast('9' as bigint),
     1.0 / null
   );
 
-select num_nonnulls(variadic cast('{1,2,NULL,3}' as INT[]));
+select num_nonnulls(variadic cast('{1,2,NULL,3}' as int[]));
 
-select num_nonnulls(variadic cast('{"1","2","3","4"}' as TEXT[]));
+select num_nonnulls(variadic cast('{"1","2","3","4"}' as text[]));
 
 select
   num_nonnulls(
@@ -86,24 +86,24 @@ select num_nulls(null);
 
 select num_nulls('1');
 
-select num_nulls(cast(null as TEXT));
+select num_nulls(cast(null as text));
 
-select num_nulls(cast(null as TEXT), cast(null as INT));
+select num_nulls(cast(null as text), cast(null as int));
 
 select
   num_nulls(
     1,
     2,
-    cast(null as TEXT),
+    cast(null as text),
     cast(null as point),
     '',
-    cast('9' as BIGINT),
+    cast('9' as bigint),
     1.0 / null
   );
 
-select num_nulls(variadic cast('{1,2,NULL,3}' as INT[]));
+select num_nulls(variadic cast('{1,2,NULL,3}' as int[]));
 
-select num_nulls(variadic cast('{"1","2","3","4"}' as TEXT[]));
+select num_nulls(variadic cast('{"1","2","3","4"}' as text[]));
 
 select
   num_nulls(
@@ -115,23 +115,23 @@ select
     )
   );
 
-select num_nonnulls(variadic cast(null as TEXT[]));
+select num_nonnulls(variadic cast(null as text[]));
 
-select num_nonnulls(variadic cast('{}' as INT[]));
+select num_nonnulls(variadic cast('{}' as int[]));
 
-select num_nulls(variadic cast(null as TEXT[]));
+select num_nulls(variadic cast(null as text[]));
 
-select num_nulls(variadic cast('{}' as INT[]));
+select num_nulls(variadic cast('{}' as int[]));
 
 select num_nonnulls();
 
 select num_nulls();
 
-create function test_canonicalize_path(TEXT)
-returns TEXT
+create function test_canonicalize_path(text)
+returns text
 as $function$regresslib$function$
 language c
-STRICT
+strict
 immutable;
 
 select test_canonicalize_path('/');
@@ -196,7 +196,7 @@ select
     'EXECUTE'
   );
 
-grant EXECUTE on function pg_log_backend_memory_contexts(INT) to regress_log_memory;
+grant EXECUTE on function pg_log_backend_memory_contexts(int) to regress_log_memory;
 
 select
   has_function_privilege(
@@ -211,7 +211,7 @@ select pg_log_backend_memory_contexts(pg_backend_pid());
 
 reset role;
 
-revoke EXECUTE on function pg_log_backend_memory_contexts(INT) from regress_log_memory;
+revoke EXECUTE on function pg_log_backend_memory_contexts(int) from regress_log_memory;
 
 drop role regress_log_memory;
 
@@ -309,10 +309,10 @@ select has_function_privilege('regress_slot_dir_funcs', 'pg_ls_replslotdir(text)
 
 drop role regress_slot_dir_funcs;
 
-create function my_int_eq(INT, INT)
-returns BOOLEAN
+create function my_int_eq(int, int)
+returns boolean
 language internal
-STRICT
+strict
 immutable
 parallel SAFE
 as $function$int4eq$function$;
@@ -331,9 +331,9 @@ create function test_support_func(internal)
 returns internal
 as 'regresslib', 'test_support_func'
 language c
-STRICT;
+strict;
 
-alter FUNCTION my_int_eq(INT, INT) SUPPORT test_support_func;
+alter function my_int_eq(int, int) support test_support_func;
 
 select
   *
@@ -345,14 +345,14 @@ from
 where
   my_int_eq(a.unique2, 42);
 
-create function my_gen_series(INT, INT)
-returns setof INT
+create function my_gen_series(int, int)
+returns setof int
 language internal
-STRICT
+strict
 immutable
 parallel SAFE
 as $function$generate_series_int4$function$
-SUPPORT test_support_func;
+support test_support_func;
 
 select * from tenk1 as a inner join my_gen_series(1, 1000) as g on a.unique1 = g;
 
@@ -432,9 +432,9 @@ select
   *
 from
   generate_series(
-    cast('2024-02-01' as timestamp with time ZONE),
-    cast('2024-03-01' as timestamp with time ZONE),
-    cast('0 day' as INTERVAL)
+    cast('2024-02-01' as timestamp with time zone),
+    cast('2024-03-01' as timestamp with time zone),
+    cast('0 day' as interval)
   )
   as g (s);
 
@@ -532,14 +532,14 @@ select
 from
   pg_split_walfile_name('ffffffFF00000001000000af');
 
-select cast(setting as BIGINT) as segment_size from pg_settings where name = 'wal_segment_size';
+select cast(setting as bigint) as segment_size from pg_settings where name = 'wal_segment_size';
 
 select
   segment_number,
   file_offset
 from
   pg_walfile_name_offset(
-    cast('0/0' as PG_LSN) + 'segment_size'
+    cast('0/0' as pg_lsn) + 'segment_size'
   ),
   pg_split_walfile_name(file_name);
 
@@ -548,7 +548,7 @@ select
   file_offset
 from
   pg_walfile_name_offset(
-    cast('0/0' as PG_LSN) + 'segment_size' + 1
+    cast('0/0' as pg_lsn) + 'segment_size' + 1
   ),
   pg_split_walfile_name(file_name);
 
@@ -557,7 +557,7 @@ select
   file_offset = 'segment_size' - 1
 from
   pg_walfile_name_offset(
-    cast('0/0' as PG_LSN) + 'segment_size' - 1
+    cast('0/0' as pg_lsn) + 'segment_size' - 1
   ),
   pg_split_walfile_name(file_name);
 
@@ -572,8 +572,8 @@ select has_function_privilege('regress_current_logfile', 'pg_current_logfile()',
 drop role regress_current_logfile;
 
 create table test_chunk_id (
-  a TEXT,
-  b TEXT storage external
+  a text,
+  b text storage external
 );
 
 insert into test_chunk_id values ('x', repeat('x', 8192));
@@ -588,16 +588,16 @@ from
 where
   c.relname = 'test_chunk_id';
 
-drop TABLE test_chunk_id;
+drop table test_chunk_id;
 
-drop FUNCTION explain_mask_costs(TEXT, BOOLEAN, BOOLEAN, BOOLEAN, BOOLEAN);
+drop function explain_mask_costs(text, boolean, boolean, boolean, boolean);
 
 select gist_translate_cmptype_common(7);
 
 select gist_translate_cmptype_common(3);
 
 create function test_relpath()
-returns VOID
+returns void
 as $function$regresslib$function$
 language c;
 

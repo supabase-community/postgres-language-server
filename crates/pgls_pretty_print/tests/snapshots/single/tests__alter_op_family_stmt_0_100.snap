@@ -3,4 +3,4 @@ source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/single/alter_op_family_stmt_0.sql
 snapshot_kind: text
 ---
-alter OPERATOR FAMILY myopfamily USING btree add OPERATOR 1 < (INT, INT);
+alter operator family myopfamily using btree add operator 1 < (int, int);

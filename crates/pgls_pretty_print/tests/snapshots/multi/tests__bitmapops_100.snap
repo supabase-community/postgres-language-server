@@ -4,9 +4,9 @@ input_file: crates/pgls_pretty_print/tests/data/multi/bitmapops.sql
 snapshot_kind: text
 ---
 create table bmscantest (
-  a INT,
-  b INT,
-  t TEXT
+  a int,
+  b int,
+  t text
 )
 with (autovacuum_enabled = 'false');
 
@@ -36,4 +36,4 @@ select COUNT(*) from bmscantest where a = 1 and b = 1;
 
 select COUNT(*) from bmscantest where a = 1 or b = 1;
 
-drop TABLE bmscantest;
+drop table bmscantest;

@@ -10,7 +10,7 @@ pub(super) fn emit_create_publication_stmt(e: &mut EventEmitter, n: &CreatePubli
 
     e.token(TokenKind::CREATE_KW);
     e.space();
-    e.token(TokenKind::IDENT("PUBLICATION".to_string()));
+    e.token(TokenKind::PUBLICATION_KW);
     e.space();
     e.token(TokenKind::IDENT(n.pubname.clone()));
 
@@ -20,7 +20,7 @@ pub(super) fn emit_create_publication_stmt(e: &mut EventEmitter, n: &CreatePubli
         e.space();
         e.token(TokenKind::ALL_KW);
         e.space();
-        e.token(TokenKind::IDENT("TABLES".to_string()));
+        e.token(TokenKind::TABLES_KW);
     } else if !n.pubobjects.is_empty() {
         e.line(LineType::SoftOrSpace);
         e.token(TokenKind::FOR_KW);
@@ -59,11 +59,11 @@ pub(super) fn emit_create_publication_stmt(e: &mut EventEmitter, n: &CreatePubli
                     }
                     2 => {
                         // TABLES IN SCHEMA
-                        e.token(TokenKind::IDENT("TABLES".to_string()));
+                        e.token(TokenKind::TABLES_KW);
                         e.space();
                         e.token(TokenKind::IN_KW);
                         e.space();
-                        e.token(TokenKind::IDENT("SCHEMA".to_string()));
+                        e.token(TokenKind::SCHEMA_KW);
                         e.space();
                         if !obj.name.is_empty() {
                             e.token(TokenKind::IDENT(obj.name.clone()));
@@ -71,13 +71,13 @@ pub(super) fn emit_create_publication_stmt(e: &mut EventEmitter, n: &CreatePubli
                     }
                     3 => {
                         // TABLES IN SCHEMA CURRENT_SCHEMA
-                        e.token(TokenKind::IDENT("TABLES".to_string()));
+                        e.token(TokenKind::TABLES_KW);
                         e.space();
                         e.token(TokenKind::IN_KW);
                         e.space();
-                        e.token(TokenKind::IDENT("SCHEMA".to_string()));
+                        e.token(TokenKind::SCHEMA_KW);
                         e.space();
-                        e.token(TokenKind::IDENT("CURRENT_SCHEMA".to_string()));
+                        e.token(TokenKind::IDENT("current_schema".to_string()));
                     }
                     _ => {}
                 }

@@ -9,10 +9,10 @@ set max_parallel_workers = 0;
 
 create temporary table abbrev_abort_uuids (
   id serial not null,
-  abort_increasing UUID,
-  abort_decreasing UUID,
-  noabort_increasing UUID,
-  noabort_decreasing UUID
+  abort_increasing uuid,
+  abort_decreasing uuid,
+  noabort_increasing uuid,
+  noabort_decreasing uuid
 );
 
 insert into abbrev_abort_uuids (
@@ -24,16 +24,16 @@ insert into abbrev_abort_uuids (
 select
   cast('00000000-0000-0000-0000-' ||
   to_char(g.i, '000000000000FM')
-  as UUID)
+  as uuid)
   as abort_increasing,
   cast('00000000-0000-0000-0000-' ||
   to_char(20000 - g.i, '000000000000FM')
-  as UUID)
+  as uuid)
   as abort_decreasing,
   cast(to_char(g.i % 10009, '00000000FM') ||
   '-0000-0000-0000-' ||
   to_char(g.i, '000000000000FM')
-  as UUID)
+  as uuid)
   as noabort_increasing,
   cast(to_char(
     (20000 - g.i) % 10009,
@@ -41,7 +41,7 @@ select
   ) ||
   '-0000-0000-0000-' ||
   to_char(20000 - g.i, '000000000000FM')
-  as UUID)
+  as uuid)
   as noabort_decreasing
 from
   generate_series(0, 20000, 1) as g (i);
@@ -222,7 +222,7 @@ begin;
 
 set local enable_indexscan = 'false';
 
-CLUSTER abbrev_abort_uuids using abbrev_abort_uuids__abort_increasing_idx;
+cluster abbrev_abort_uuids using abbrev_abort_uuids__abort_increasing_idx;
 
 select
   id,
@@ -252,7 +252,7 @@ begin;
 
 set local enable_indexscan = 'false';
 
-CLUSTER abbrev_abort_uuids using abbrev_abort_uuids__abort_decreasing_idx;
+cluster abbrev_abort_uuids using abbrev_abort_uuids__abort_decreasing_idx;
 
 select
   id,
@@ -282,7 +282,7 @@ begin;
 
 set local enable_indexscan = 'false';
 
-CLUSTER abbrev_abort_uuids using abbrev_abort_uuids__noabort_increasing_idx;
+cluster abbrev_abort_uuids using abbrev_abort_uuids__noabort_increasing_idx;
 
 select
   id,
@@ -312,7 +312,7 @@ begin;
 
 set local enable_indexscan = 'false';
 
-CLUSTER abbrev_abort_uuids using abbrev_abort_uuids__noabort_decreasing_idx;
+cluster abbrev_abort_uuids using abbrev_abort_uuids__noabort_decreasing_idx;
 
 select
   id,
@@ -355,7 +355,7 @@ begin;
 set local enable_indexscan = 'false';
 
 explain (COSTS 'off')
-declare "c" SCROLL
+declare "c" scroll
 cursor
 for select
   noabort_decreasing
@@ -363,7 +363,7 @@ from
   abbrev_abort_uuids
 order by noabort_decreasing;;
 
-declare "c" SCROLL
+declare "c" scroll
 cursor
 for select
   noabort_decreasing
@@ -375,27 +375,27 @@ fetch next from c;
 
 fetch next from c;
 
-fetch PRIOR from c;
+fetch prior from c;
 
-fetch PRIOR from c;
+fetch prior from c;
 
-fetch PRIOR from c;
+fetch prior from c;
 
-fetch PRIOR from c;
-
-fetch next from c;
-
-fetch ABSOLUTE -1 from c;
-
-fetch PRIOR from c;
+fetch prior from c;
 
 fetch next from c;
 
+fetch absolute -1 from c;
+
+fetch prior from c;
+
+fetch next from c;
+
 fetch next from c;
 
 fetch next from c;
 
-fetch PRIOR from c;
+fetch prior from c;
 
 fetch next from c;
 
@@ -408,7 +408,7 @@ set local enable_indexscan = 'false';
 set local work_mem = '100kB';
 
 explain (COSTS 'off')
-declare "c" SCROLL
+declare "c" scroll
 cursor
 for select
   noabort_decreasing
@@ -416,7 +416,7 @@ from
   abbrev_abort_uuids
 order by noabort_decreasing;;
 
-declare "c" SCROLL
+declare "c" scroll
 cursor
 for select
   noabort_decreasing
@@ -428,27 +428,27 @@ fetch next from c;
 
 fetch next from c;
 
-fetch PRIOR from c;
+fetch prior from c;
 
-fetch PRIOR from c;
+fetch prior from c;
 
-fetch PRIOR from c;
+fetch prior from c;
 
-fetch PRIOR from c;
-
-fetch next from c;
-
-fetch ABSOLUTE -1 from c;
-
-fetch PRIOR from c;
+fetch prior from c;
 
 fetch next from c;
 
+fetch absolute -1 from c;
+
+fetch prior from c;
+
+fetch next from c;
+
 fetch next from c;
 
 fetch next from c;
 
-fetch PRIOR from c;
+fetch prior from c;
 
 fetch next from c;
 
@@ -462,7 +462,7 @@ select
     abort_increasing order by abort_increasing desc nulls last
   ))[0:5],
   (array_agg(
-    cast(id as TEXT) order by cast(id as TEXT) desc nulls last
+    cast(id as text) order by cast(id as text) desc nulls last
   ))[0:5],
   percentile_disc(
     0.99
@@ -479,7 +479,7 @@ select
   percentile_disc(
     0.2
   )
-  within group (order by cast(id as TEXT)),
+  within group (order by cast(id as text)),
   RANK(
     '00000000-0000-0000-0000-000000000000',
     '2',
@@ -488,7 +488,7 @@ select
   within group (
     order by noabort_increasing,
     id,
-    cast(id as TEXT)
+    cast(id as text)
   )
 from
   (
@@ -510,7 +510,7 @@ select
     abort_increasing order by abort_increasing desc nulls last
   ))[0:5],
   (array_agg(
-    cast(id as TEXT) order by cast(id as TEXT) desc nulls last
+    cast(id as text) order by cast(id as text) desc nulls last
   ))[0:5],
   percentile_disc(
     0.99
@@ -527,7 +527,7 @@ select
   percentile_disc(
     0.2
   )
-  within group (order by cast(id as TEXT)),
+  within group (order by cast(id as text)),
   RANK(
     '00000000-0000-0000-0000-000000000000',
     '2',
@@ -536,7 +536,7 @@ select
   within group (
     order by noabort_increasing,
     id,
-    cast(id as TEXT)
+    cast(id as text)
   )
 from
   (
@@ -549,9 +549,9 @@ from
 rollback;
 
 create temporary table test_mark_restore (
-  col1 INT,
-  col2 INT,
-  col12 INT
+  col1 int,
+  col2 int,
+  col12 int
 );
 
 insert into test_mark_restore (col1, col2, col12)

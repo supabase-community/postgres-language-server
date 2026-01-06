@@ -4,7 +4,7 @@ input_file: crates/pgls_pretty_print/tests/data/single/nested_dollar_quotes_conf
 snapshot_kind: text
 ---
 create function test_conflict()
-returns VOID
+returns void
 language plpgsql
 as $function$
 BEGIN

@@ -14,7 +14,7 @@ pub(super) fn emit_create_op_class_item(e: &mut EventEmitter, n: &CreateOpClassI
             // OPERATOR strategy_number [operator_name] (arg_types)
             // For DROP: no operator name, use class_args for types
             // For ADD: operator name with objargs for types
-            e.token(TokenKind::IDENT("OPERATOR".to_string()));
+            e.token(TokenKind::OPERATOR_KW);
             e.space();
             e.token(TokenKind::IDENT(n.number.to_string()));
             e.space();
@@ -55,7 +55,7 @@ pub(super) fn emit_create_op_class_item(e: &mut EventEmitter, n: &CreateOpClassI
             // FUNCTION support_number [(left_type, right_type)] function_name(arg_types)
             // For DROP: no function name, use class_args for types
             // For ADD: class_args come BEFORE function name (if present)
-            e.token(TokenKind::IDENT("FUNCTION".to_string()));
+            e.token(TokenKind::FUNCTION_KW);
             e.space();
             e.token(TokenKind::IDENT(n.number.to_string()));
 
@@ -75,7 +75,7 @@ pub(super) fn emit_create_op_class_item(e: &mut EventEmitter, n: &CreateOpClassI
         }
         3 => {
             // STORAGE storage_type
-            e.token(TokenKind::IDENT("STORAGE".to_string()));
+            e.token(TokenKind::STORAGE_KW);
             e.space();
 
             if let Some(ref storedtype) = n.storedtype {

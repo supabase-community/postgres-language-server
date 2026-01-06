@@ -83,45 +83,45 @@ select to_regdatabase('template1');
 
 select to_regdatabase('"template1"');
 
-select cast(regproc('-') as OID);
+select cast(regproc('-') as oid);
 
-select cast(regprocedure('-') as OID);
+select cast(regprocedure('-') as oid);
 
-select cast(regclass('-') as OID);
+select cast(regclass('-') as oid);
 
-select cast(regcollation('-') as OID);
+select cast(regcollation('-') as oid);
 
-select cast(regtype('-') as OID);
+select cast(regtype('-') as oid);
 
-select cast(regconfig('-') as OID);
+select cast(regconfig('-') as oid);
 
-select cast(regdictionary('-') as OID);
+select cast(regdictionary('-') as oid);
 
-select cast(regrole('-') as OID);
+select cast(regrole('-') as oid);
 
-select cast(regnamespace('-') as OID);
+select cast(regnamespace('-') as oid);
 
-select cast(regdatabase('-') as OID);
+select cast(regdatabase('-') as oid);
 
-select cast(to_regproc('-') as OID);
+select cast(to_regproc('-') as oid);
 
-select cast(to_regprocedure('-') as OID);
+select cast(to_regprocedure('-') as oid);
 
-select cast(to_regclass('-') as OID);
+select cast(to_regclass('-') as oid);
 
-select cast(to_regcollation('-') as OID);
+select cast(to_regcollation('-') as oid);
 
-select cast(to_regtype('-') as OID);
+select cast(to_regtype('-') as oid);
 
-select cast(to_regrole('-') as OID);
+select cast(to_regrole('-') as oid);
 
-select cast(to_regnamespace('-') as OID);
+select cast(to_regnamespace('-') as oid);
 
-select cast(to_regdatabase('-') as OID);
+select cast(to_regdatabase('-') as oid);
 
-create table regrole_test (rolid OID default cast('regress_regrole_test' as regrole));
+create table regrole_test (rolid oid default cast('regress_regrole_test' as regrole));
 
-create table regdatabase_test (datid OID default cast('template1' as regdatabase));
+create table regdatabase_test (datid oid default cast('template1' as regdatabase));
 
 drop role regress_regrole_test;
 

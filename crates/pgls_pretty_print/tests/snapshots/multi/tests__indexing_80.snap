@@ -4,9 +4,9 @@ input_file: crates/pgls_pretty_print/tests/data/multi/indexing.sql
 snapshot_kind: text
 ---
 create table idxpart (
-  a INT,
-  b INT,
-  c TEXT
+  a int,
+  b int,
+  c text
 )
 partition by range(a);
 
@@ -16,7 +16,7 @@ select relhassubclass from pg_class where relname = 'idxpart_idx';
 
 select indexdef from pg_indexes where indexname like 'idxpart_idx%';
 
-drop INDEX idxpart_idx;
+drop index idxpart_idx;
 
 create table idxpart1 partition of idxpart for values from (0) to (10);
 
@@ -31,7 +31,7 @@ create index "idxpart_idx" on only idxpart using btree (a);
 
 select relhassubclass from pg_class where relname = 'idxpart_idx';
 
-drop INDEX idxpart_idx;
+drop index idxpart_idx;
 
 create index on idxpart using btree (a);
 
@@ -39,7 +39,7 @@ select
   relname,
   relkind,
   relhassubclass,
-  cast(inhparent as REGCLASS)
+  cast(inhparent as regclass)
 from
   pg_class
   left outer join
@@ -52,12 +52,12 @@ where
   relname like 'idxpart%'
 order by relname;
 
-drop TABLE idxpart;
+drop table idxpart;
 
 create table idxpart (
-  a INT,
-  b INT,
-  c TEXT
+  a int,
+  b int,
+  c text
 )
 partition by range(a);
 
@@ -65,23 +65,23 @@ create table idxpart1 partition of idxpart for values from (0) to (10);
 
 create index concurrently on idxpart using btree (a);
 
-drop TABLE idxpart;
+drop table idxpart;
 
-create table idxpart (col1 INT)
+create table idxpart (col1 int)
 partition by range(col1);
 
 create index on idxpart using btree (col1);
 
-create table idxpart_two (col2 INT);
+create table idxpart_two (col2 int);
 
 select col2 from idxpart_two as fk left outer join idxpart as pk on col1 = col2;
 
-drop TABLE idxpart, idxpart_two;
+drop table idxpart, idxpart_two;
 
 create table idxpart (
-  a INT,
-  b TEXT,
-  c INT
+  a int,
+  b text,
+  c int
 )
 partition by range(a);
 
@@ -94,14 +94,14 @@ create index "partidx_abc_idx" on idxpart using btree (a, b, c);
 insert into idxpart (a, b, c) select i, i, i from generate_series(1, 50) as i;
 
 alter table idxpart
-  alter column c type NUMERIC;
+  alter column c type numeric;
 
-drop TABLE idxpart;
+drop table idxpart;
 
 create table idxpart (
-  a INT,
-  b INT,
-  c TEXT
+  a int,
+  b int,
+  c text
 )
 partition by range(a);
 
@@ -112,7 +112,7 @@ create index "idxparti2" on idxpart using btree (b, c);
 create table idxpart1 (like idxpart);
 
 alter table idxpart
-  ATTACH partition
+  attach partition
   idxpart1 for values from (0) to (10);
 
 create index "idxpart_c" on only idxpart using btree (c);
@@ -120,11 +120,11 @@ create index "idxpart_c" on only idxpart using btree (c);
 create index "idxpart1_c" on idxpart1 using btree (c);
 
 alter table idxpart_c
-  ATTACH partition
+  attach partition
   idxpart1_c for values from (10) to (20);
 
 alter index idxpart_c
-  ATTACH partition
+  attach partition
   idxpart1_c;
 
 select
@@ -137,14 +137,14 @@ where
 order by relname;
 
 alter table idxpart_c
-  DETACH partition
+  detach partition
   idxpart1_c;
 
-drop TABLE idxpart;
+drop table idxpart;
 
 create table idxpart (
-  a INT,
-  b INT
+  a int,
+  b int
 )
 partition by range(a, b);
 
@@ -158,7 +158,7 @@ select
   relname,
   relkind,
   relhassubclass,
-  cast(inhparent as REGCLASS)
+  cast(inhparent as regclass)
 from
   pg_class
   left outer join
@@ -171,20 +171,20 @@ where
   relname like 'idxpart%'
 order by relname;
 
-drop TABLE idxpart;
+drop table idxpart;
 
-create table idxpart (a INT)
+create table idxpart (a int)
 partition by range(a);
 
 create index on idxpart using btree (a);
 
 create table idxpart1 partition of idxpart for values from (0) to (10);
 
-drop INDEX idxpart1_a_idx;
+drop index idxpart1_a_idx;
 
-drop INDEX concurrently idxpart_a_idx;
+drop index concurrently idxpart_a_idx;
 
-drop INDEX idxpart_a_idx;
+drop index idxpart_a_idx;
 
 select
   relname,
@@ -197,7 +197,7 @@ order by relname;
 
 create index on idxpart using btree (a);
 
-drop TABLE idxpart1;
+drop table idxpart1;
 
 select
   relname,
@@ -208,9 +208,9 @@ where
   relname like 'idxpart%'
 order by relname;
 
-drop TABLE idxpart;
+drop table idxpart;
 
-create temporary table idxpart_temp (a INT)
+create temporary table idxpart_temp (a int)
 partition by range(a);
 
 create index on idxpart_temp using btree (a);
@@ -219,9 +219,9 @@ create temporary table idxpart1_temp
 partition of idxpart_temp
 for values from (0) to (10);
 
-drop INDEX idxpart1_temp_a_idx;
+drop index idxpart1_temp_a_idx;
 
-drop INDEX concurrently idxpart_temp_a_idx;
+drop index concurrently idxpart_temp_a_idx;
 
 select
   relname,
@@ -232,11 +232,11 @@ where
   relname like 'idxpart_temp%'
 order by relname;
 
-drop TABLE idxpart_temp;
+drop table idxpart_temp;
 
 create table idxpart (
-  a INT,
-  b INT
+  a int,
+  b int
 )
 partition by range(a, b);
 
@@ -261,67 +261,67 @@ where
   a > 10;
 
 alter index idxpart
-  ATTACH partition
+  attach partition
   idxpart1;
 
 alter index idxpart_a_b_idx
-  ATTACH partition
+  attach partition
   idxpart1;
 
 alter index idxpart_a_b_idx
-  ATTACH partition
+  attach partition
   idxpart_a_b_idx;
 
 alter index idxpart_a_b_idx
-  ATTACH partition
+  attach partition
   idxpart1_b_idx;
 
 alter index idxpart_a_b_idx
-  ATTACH partition
+  attach partition
   idxpart1_tst1;
 
 alter index idxpart_a_b_idx
-  ATTACH partition
+  attach partition
   idxpart1_tst2;
 
 alter index idxpart_a_b_idx
-  ATTACH partition
+  attach partition
   idxpart1_tst3;
 
 alter index idxpart_a_b_idx
-  ATTACH partition
+  attach partition
   idxpart1_a_b_idx;
 
 alter index idxpart_a_b_idx
-  ATTACH partition
+  attach partition
   idxpart1_a_b_idx;
 
 create index "idxpart1_2_a_b" on idxpart1 using btree (a, b);
 
 alter index idxpart_a_b_idx
-  ATTACH partition
+  attach partition
   idxpart1_2_a_b;
 
-drop TABLE idxpart;
+drop table idxpart;
 
 select
-  cast(indexrelid as REGCLASS),
-  cast(indrelid as REGCLASS)
+  cast(indexrelid as regclass),
+  cast(indrelid as regclass)
 from
   pg_index
 where
-  cast(cast(indexrelid as REGCLASS)
-  as TEXT) like 'idxpart%';
+  cast(cast(indexrelid as regclass)
+  as text) like 'idxpart%';
 
 create table idxpart (
-  a INT,
-  b INT
+  a int,
+  b int
 )
 partition by range(a);
 
 create table idxpart1 (
-  a INT,
-  b INT
+  a int,
+  b int
 );
 
 create index on idxpart1 using hash (a);
@@ -342,12 +342,12 @@ create index on idxpart1 using btree (a, a);
 create index on idxpart using btree (a);
 
 alter table idxpart
-  ATTACH partition
+  attach partition
   idxpart1 for values from (0) to (1000);
 
-drop TABLE idxpart;
+drop table idxpart;
 
-create table idxpart (a INT)
+create table idxpart (a int)
 partition by range(a);
 
 create table idxpart1 partition of idxpart for values from (0) to (100);
@@ -368,56 +368,56 @@ create index on only idxpart2 using btree (a);
 create index on idxpart using btree (a);
 
 select
-  cast(indexrelid as REGCLASS),
-  cast(indrelid as REGCLASS),
-  cast(inhparent as REGCLASS)
+  cast(indexrelid as regclass),
+  cast(indrelid as regclass),
+  cast(inhparent as regclass)
 from
   pg_index as idx
   left outer join
     pg_inherits as inh
   on idx.indexrelid = inh.inhrelid
 where
-  cast(cast(indexrelid as REGCLASS)
-  as TEXT) like 'idxpart%'
-order by cast(cast(indexrelid as REGCLASS)
-  as TEXT) collate "C";
+  cast(cast(indexrelid as regclass)
+  as text) like 'idxpart%'
+order by cast(cast(indexrelid as regclass)
+  as text) collate "C";
 
 alter index idxpart2_a_idx
-  ATTACH partition
+  attach partition
   idxpart22_a_idx;
 
 select
-  cast(indexrelid as REGCLASS),
-  cast(indrelid as REGCLASS),
-  cast(inhparent as REGCLASS)
+  cast(indexrelid as regclass),
+  cast(indrelid as regclass),
+  cast(inhparent as regclass)
 from
   pg_index as idx
   left outer join
     pg_inherits as inh
   on idx.indexrelid = inh.inhrelid
 where
-  cast(cast(indexrelid as REGCLASS)
-  as TEXT) like 'idxpart%'
-order by cast(cast(indexrelid as REGCLASS)
-  as TEXT) collate "C";
+  cast(cast(indexrelid as regclass)
+  as text) like 'idxpart%'
+order by cast(cast(indexrelid as regclass)
+  as text) collate "C";
 
 alter index idxpart2_a_idx
-  ATTACH partition
+  attach partition
   idxpart22_a_idx;
 
 create index on idxpart21 using btree (a);
 
 alter index idxpart2_a_idx
-  ATTACH partition
+  attach partition
   idxpart21_a_idx;
 
-drop TABLE idxpart;
+drop table idxpart;
 
 create table idxpart (
-  a INT,
-  b INT,
-  c TEXT,
-  d BOOLEAN
+  a int,
+  b int,
+  c text,
+  d boolean
 )
 partition by range(a);
 
@@ -430,7 +430,7 @@ create table idxpart1 (like idxpart including INDEXES);
 select
   relname,
   relkind,
-  cast(inhparent as REGCLASS)
+  cast(inhparent as regclass)
 from
   pg_class
   left outer join
@@ -444,13 +444,13 @@ where
 order by relname;
 
 alter table idxpart
-  ATTACH partition
+  attach partition
   idxpart1 for values from (0) to (10);
 
 select
   relname,
   relkind,
-  cast(inhparent as REGCLASS)
+  cast(inhparent as regclass)
 from
   pg_class
   left outer join
@@ -475,7 +475,7 @@ where
 select
   relname,
   relkind,
-  cast(inhparent as REGCLASS)
+  cast(inhparent as regclass)
 from
   pg_class
   left outer join
@@ -500,7 +500,7 @@ where
 select
   relname,
   relkind,
-  cast(inhparent as REGCLASS)
+  cast(inhparent as regclass)
 from
   pg_class
   left outer join
@@ -513,11 +513,11 @@ where
   relname like 'idxpart%'
 order by relname;
 
-drop TABLE idxpart;
+drop table idxpart;
 
 create table idxpart (
-  a INT,
-  b INT
+  a int,
+  b int
 )
 partition by range(a);
 
@@ -545,7 +545,7 @@ where
 order by relname;
 
 alter index idxpart_a_idx
-  ATTACH partition
+  attach partition
   idxpart1_a_idx;
 
 select
@@ -563,7 +563,7 @@ order by relname;
 create index on idxpart11 using btree (a);
 
 alter index idxpart1_a_idx
-  ATTACH partition
+  attach partition
   idxpart11_a_idx;
 
 select
@@ -578,9 +578,9 @@ where
   relname like 'idxpart%'
 order by relname;
 
-drop TABLE idxpart;
+drop table idxpart;
 
-create table idxpart (a INT)
+create table idxpart (a int)
 partition by range(a);
 
 create table idxpart1 (like idxpart);
@@ -592,11 +592,11 @@ create index on idxpart using btree (a);
 create table idxpart2 (like idxpart);
 
 alter table idxpart
-  ATTACH partition
+  attach partition
   idxpart1 for values from (0) to (1000);
 
 alter table idxpart
-  ATTACH partition
+  attach partition
   idxpart2
   for values from (1000) to (2000);
 
@@ -612,33 +612,22 @@ where
 order by relname;
 
 alter table idxpart
-  DETACH partition
+  detach partition
   idxpart1;
 
 alter table idxpart
-  DETACH partition
+  detach partition
   idxpart2;
 
 alter table idxpart
-  DETACH partition
+  detach partition
   idxpart3;
 
-drop INDEX idxpart1_a_idx;
+drop index idxpart1_a_idx;
 
-drop INDEX idxpart2_a_idx;
+drop index idxpart2_a_idx;
 
-drop INDEX idxpart3_a_idx;
-
-select
-  relname,
-  relkind
-from
-  pg_class
-where
-  relname like 'idxpart%'
-order by relname;
-
-drop TABLE idxpart, idxpart1, idxpart2, idxpart3;
+drop index idxpart3_a_idx;
 
 select
   relname,
@@ -649,7 +638,18 @@ where
   relname like 'idxpart%'
 order by relname;
 
-create table idxpart (a INT)
+drop table idxpart, idxpart1, idxpart2, idxpart3;
+
+select
+  relname,
+  relkind
+from
+  pg_class
+where
+  relname like 'idxpart%'
+order by relname;
+
+create table idxpart (a int)
 partition by range(a);
 
 create table idxpart1 (like idxpart);
@@ -661,11 +661,11 @@ create index on idxpart using btree (a);
 create table idxpart2 (like idxpart);
 
 alter table idxpart
-  ATTACH partition
+  attach partition
   idxpart1 for values from (0) to (1000);
 
 alter table idxpart
-  ATTACH partition
+  attach partition
   idxpart2
   for values from (1000) to (2000);
 
@@ -681,18 +681,18 @@ where
 order by relname;
 
 alter table idxpart
-  DETACH partition
+  detach partition
   idxpart1;
 
 alter table idxpart
-  DETACH partition
+  detach partition
   idxpart2;
 
 alter table idxpart
-  DETACH partition
+  detach partition
   idxpart3;
 
-drop INDEX idxpart_a_idx;
+drop index idxpart_a_idx;
 
 select
   relname,
@@ -703,7 +703,7 @@ where
   relname like 'idxpart%'
 order by relname;
 
-drop TABLE idxpart, idxpart1, idxpart2, idxpart3;
+drop table idxpart, idxpart1, idxpart2, idxpart3;
 
 select
   relname,
@@ -715,9 +715,9 @@ where
 order by relname;
 
 create table idxpart (
-  a INT,
-  b INT,
-  c INT
+  a int,
+  b int,
+  c int
 )
 partition by range(a);
 
@@ -728,17 +728,17 @@ create table idxpart1 partition of idxpart for values from (0) to (250);
 create table idxpart2 partition of idxpart for values from (250) to (500);
 
 alter table idxpart
-  DETACH partition
+  detach partition
   idxpart2;
 
 alter table idxpart2
   drop column c;
 
-drop TABLE idxpart, idxpart2;
+drop table idxpart, idxpart2;
 
 create table idxpart (
-  a INT,
-  b INT
+  a int,
+  b int
 )
 partition by range(a);
 
@@ -751,11 +751,11 @@ create index on idxpart using btree ((a + b));
 create table idxpart2 (like idxpart);
 
 alter table idxpart
-  ATTACH partition
+  attach partition
   idxpart1 for values from (0) to (1000);
 
 alter table idxpart
-  ATTACH partition
+  attach partition
   idxpart2
   for values from (1000) to (2000);
 
@@ -763,7 +763,7 @@ create table idxpart3 partition of idxpart for values from (2000) to (3000);
 
 select
   relname as child,
-  cast(inhparent as REGCLASS) as parent,
+  cast(inhparent as regclass) as parent,
   pg_get_indexdef as childdef
 from
   pg_class
@@ -776,9 +776,9 @@ where
   relname like 'idxpart%'
 order by relname;
 
-drop TABLE idxpart;
+drop table idxpart;
 
-create table idxpart (a TEXT)
+create table idxpart (a text)
 partition by range(a);
 
 create table idxpart1 (like idxpart);
@@ -792,12 +792,12 @@ create index on idxpart2 using btree (a);
 create index on idxpart2 using btree (a collate "C");
 
 alter table idxpart
-  ATTACH partition
+  attach partition
   idxpart1
   for values from ('aaa') to ('bbb');
 
 alter table idxpart
-  ATTACH partition
+  attach partition
   idxpart2
   for values from ('bbb') to ('ccc');
 
@@ -809,7 +809,7 @@ create table idxpart4 partition of idxpart for values from ('ddd') to ('eee');
 
 select
   relname as child,
-  cast(inhparent as REGCLASS) as parent,
+  cast(inhparent as regclass) as parent,
   pg_get_indexdef as childdef
 from
   pg_class
@@ -822,9 +822,9 @@ where
   relname like 'idxpart%'
 order by relname;
 
-drop TABLE idxpart;
+drop table idxpart;
 
-create table idxpart (a TEXT)
+create table idxpart (a text)
 partition by range(a);
 
 create table idxpart1 (like idxpart);
@@ -834,12 +834,12 @@ create table idxpart2 (like idxpart);
 create index on idxpart2 using btree (a);
 
 alter table idxpart
-  ATTACH partition
+  attach partition
   idxpart1
   for values from ('aaa') to ('bbb');
 
 alter table idxpart
-  ATTACH partition
+  attach partition
   idxpart2
   for values from ('bbb') to ('ccc');
 
@@ -851,7 +851,7 @@ create table idxpart4 partition of idxpart for values from ('ddd') to ('eee');
 
 select
   relname as child,
-  cast(inhparent as REGCLASS) as parent,
+  cast(inhparent as regclass) as parent,
   pg_get_indexdef as childdef
 from
   pg_class
@@ -864,30 +864,30 @@ where
   relname like 'idxpart%'
 order by relname;
 
-drop INDEX idxpart_a_idx;
+drop index idxpart_a_idx;
 
 create index on only idxpart using btree (a text_pattern_ops);
 
 alter index idxpart_a_idx
-  ATTACH partition
+  attach partition
   idxpart2_a_idx;
 
-drop TABLE idxpart;
+drop table idxpart;
 
 create table idxpart (
-  col1 INT,
-  a INT,
-  col2 INT,
-  b INT
+  col1 int,
+  a int,
+  col2 int,
+  b int
 )
 partition by range(a);
 
 create table idxpart1 (
-  b INT,
-  col1 INT,
-  col2 INT,
-  col3 INT,
-  a INT
+  b int,
+  col1 int,
+  col2 int,
+  col3 int,
+  a int
 );
 
 alter table idxpart
@@ -900,7 +900,7 @@ alter table idxpart1
   drop column col3;
 
 alter table idxpart
-  ATTACH partition
+  attach partition
   idxpart1 for values from (0) to (1000);
 
 create index "idxpart_1_idx" on only idxpart using btree (b, a);
@@ -946,28 +946,28 @@ where
   b > 1;
 
 alter index idxpart_1_idx
-  ATTACH partition
+  attach partition
   idxpart1_1b_idx;
 
 alter index idxpart_1_idx
-  ATTACH partition
+  attach partition
   idxpart1_1_idx;
 
 alter index idxpart_2_idx
-  ATTACH partition
+  attach partition
   idxpart1_2b_idx;
 
 alter index idxpart_2_idx
-  ATTACH partition
+  attach partition
   idxpart1_2c_idx;
 
 alter index idxpart_2_idx
-  ATTACH partition
+  attach partition
   idxpart1_2_idx;
 
 select
   relname as child,
-  cast(inhparent as REGCLASS) as parent,
+  cast(inhparent as regclass) as parent,
   pg_get_indexdef as childdef
 from
   pg_class
@@ -980,12 +980,12 @@ where
   relname like 'idxpart%'
 order by relname;
 
-drop TABLE idxpart;
+drop table idxpart;
 
 create table idxpart (
-  a INT,
-  b INT,
-  c TEXT
+  a int,
+  b int,
+  c text
 )
 partition by range(a);
 
@@ -994,19 +994,19 @@ create index "idxparti" on idxpart using btree (a);
 create index "idxparti2" on idxpart using btree (c, b);
 
 create table idxpart1 (
-  c TEXT,
-  a INT,
-  b INT
+  c text,
+  a int,
+  b int
 );
 
 alter table idxpart
-  ATTACH partition
+  attach partition
   idxpart1 for values from (0) to (10);
 
 create table idxpart2 (
-  c TEXT,
-  a INT,
-  b INT
+  c text,
+  a int,
+  b int
 );
 
 create index on idxpart2 using btree (a);
@@ -1014,7 +1014,7 @@ create index on idxpart2 using btree (a);
 create index on idxpart2 using btree (c, b);
 
 alter table idxpart
-  ATTACH partition
+  attach partition
   idxpart2 for values from (10) to (20);
 
 select
@@ -1026,32 +1026,32 @@ from
     pg_index as i
   on c.oid = i.indexrelid
 where
-  cast(cast(indrelid as REGCLASS) as TEXT) like 'idxpart%'
-order by cast(cast(indexrelid as REGCLASS)
-  as TEXT) collate "C";
+  cast(cast(indrelid as regclass) as text) like 'idxpart%'
+order by cast(cast(indexrelid as regclass)
+  as text) collate "C";
 
-drop TABLE idxpart;
+drop table idxpart;
 
 create table idxpart (
-  col1 INT,
-  col2 INT,
-  a INT,
-  b INT
+  col1 int,
+  col2 int,
+  a int,
+  b int
 )
 partition by range(a);
 
 create table idxpart1 (
-  col2 INT,
-  b INT,
-  col1 INT,
-  a INT
+  col2 int,
+  b int,
+  col1 int,
+  a int
 );
 
 create table idxpart2 (
-  col1 INT,
-  col2 INT,
-  b INT,
-  a INT
+  col1 int,
+  col2 int,
+  b int,
+  a int
 );
 
 alter table idxpart
@@ -1069,7 +1069,7 @@ alter table idxpart2
 create index on idxpart2 using btree ((abs(b)));
 
 alter table idxpart
-  ATTACH partition
+  attach partition
   idxpart2 for values from (0) to (1);
 
 create index on idxpart using btree ((abs(b)));
@@ -1077,7 +1077,7 @@ create index on idxpart using btree ((abs(b)));
 create index on idxpart using btree ((b + 1));
 
 alter table idxpart
-  ATTACH partition
+  attach partition
   idxpart1 for values from (1) to (2);
 
 select
@@ -1089,17 +1089,17 @@ from
     pg_index as i
   on c.oid = i.indexrelid
 where
-  cast(cast(indrelid as REGCLASS) as TEXT) like 'idxpart%'
-order by cast(cast(indexrelid as REGCLASS)
-  as TEXT) collate "C";
+  cast(cast(indrelid as regclass) as text) like 'idxpart%'
+order by cast(cast(indexrelid as regclass)
+  as text) collate "C";
 
-drop TABLE idxpart;
+drop table idxpart;
 
 create table idxpart (
-  col1 INT,
-  a INT,
-  col3 INT,
-  b INT
+  col1 int,
+  a int,
+  col3 int,
+  b int
 )
 partition by range(a);
 
@@ -1108,12 +1108,12 @@ alter table idxpart
   drop column col3;
 
 create table idxpart1 (
-  col1 INT,
-  col2 INT,
-  col3 INT,
-  col4 INT,
-  b INT,
-  a INT
+  col1 int,
+  col2 int,
+  col3 int,
+  col4 int,
+  b int,
+  a int
 );
 
 alter table idxpart1
@@ -1123,14 +1123,14 @@ alter table idxpart1
   drop column col4;
 
 alter table idxpart
-  ATTACH partition
+  attach partition
   idxpart1 for values from (0) to (1000);
 
 create table idxpart2 (
-  col1 INT,
-  col2 INT,
-  b INT,
-  a INT
+  col1 int,
+  col2 int,
+  b int,
+  a int
 );
 
 create index
@@ -1147,7 +1147,7 @@ alter table idxpart2
   drop column col2;
 
 alter table idxpart
-  ATTACH partition
+  attach partition
   idxpart2
   for values from (1000) to (2000);
 
@@ -1169,17 +1169,17 @@ from
     pg_index as i
   on c.oid = i.indexrelid
 where
-  cast(cast(indrelid as REGCLASS) as TEXT) like 'idxpart%'
-order by cast(cast(indexrelid as REGCLASS)
-  as TEXT) collate "C";
+  cast(cast(indrelid as regclass) as text) like 'idxpart%'
+order by cast(cast(indexrelid as regclass)
+  as text) collate "C";
 
-drop TABLE idxpart;
+drop table idxpart;
 
 create table idxpart1 (
-  drop_1 INT,
-  drop_2 INT,
-  col_keep INT,
-  drop_3 INT
+  drop_1 int,
+  drop_2 int,
+  col_keep int,
+  drop_3 int
 );
 
 alter table idxpart1
@@ -1193,34 +1193,34 @@ alter table idxpart1
 
 create index on idxpart1 using btree (col_keep);
 
-create table idxpart (col_keep INT)
+create table idxpart (col_keep int)
 partition by range(col_keep);
 
 create index on idxpart using btree (col_keep);
 
 alter table idxpart
-  ATTACH partition
+  attach partition
   idxpart1 for values from (0) to (1000);
 
 select
-  cast(attrelid as REGCLASS),
+  cast(attrelid as regclass),
   attname,
   attnum
 from
   pg_attribute
 where
-  cast(cast(attrelid as REGCLASS) as TEXT) like 'idxpart%' and
+  cast(cast(attrelid as regclass) as text) like 'idxpart%' and
   attnum > 0
-order by cast(attrelid as REGCLASS),
+order by cast(attrelid as regclass),
   attnum;
 
-drop TABLE idxpart;
+drop table idxpart;
 
 create table idxpart (
-  drop_1 INT,
-  drop_2 INT,
-  col_keep INT,
-  drop_3 INT
+  drop_1 int,
+  drop_2 int,
+  col_keep int,
+  drop_3 int
 )
 partition by range(col_keep);
 
@@ -1233,33 +1233,33 @@ alter table idxpart
 alter table idxpart
   drop column drop_3;
 
-create table idxpart1 (col_keep INT);
+create table idxpart1 (col_keep int);
 
 create index on idxpart1 using btree (col_keep);
 
 create index on idxpart using btree (col_keep);
 
 alter table idxpart
-  ATTACH partition
+  attach partition
   idxpart1 for values from (0) to (1000);
 
 select
-  cast(attrelid as REGCLASS),
+  cast(attrelid as regclass),
   attname,
   attnum
 from
   pg_attribute
 where
-  cast(cast(attrelid as REGCLASS) as TEXT) like 'idxpart%' and
+  cast(cast(attrelid as regclass) as text) like 'idxpart%' and
   attnum > 0
-order by cast(attrelid as REGCLASS),
+order by cast(attrelid as regclass),
   attnum;
 
-drop TABLE idxpart;
+drop table idxpart;
 
 create table idxpart (
-  a INT primary key,
-  b INT
+  a int primary key,
+  b int
 )
 partition by range(a);
 
@@ -1270,9 +1270,9 @@ partition of idxpart
 )
 for values from (0) to (100);
 
-drop TABLE idxpart;
+drop table idxpart;
 
-create table idxpart (a INT)
+create table idxpart (a int)
 partition by range(a);
 
 create table idxpart1pk
@@ -1282,126 +1282,126 @@ partition of idxpart
 )
 for values from (0) to (100);
 
-drop TABLE idxpart;
+drop table idxpart;
 
 create table idxpart (
-  a INT unique,
-  b INT
+  a int unique,
+  b int
 )
 partition by range(a, b);
 
 create table idxpart (
-  a INT,
-  b INT unique
+  a int,
+  b int unique
 )
 partition by range(a, b);
 
 create table idxpart (
-  a INT primary key,
-  b INT
+  a int primary key,
+  b int
 )
 partition by range(b, a);
 
 create table idxpart (
-  a INT,
-  b INT primary key
+  a int,
+  b int primary key
 )
 partition by range(b, a);
 
 create table idxpart (
-  a INT,
-  b INT,
-  c TEXT,
+  a int,
+  b int,
+  c text,
   primary key (a, b, c)
 )
 partition by range(b, c, a);
 
-drop TABLE idxpart;
+drop table idxpart;
 
 create table idxpart (
-  a INT4RANGE,
+  a int4range,
   exclude using gist (a with =)
 )
 partition by range(a);
 
-drop TABLE idxpart;
+drop table idxpart;
 
 create table idxpart (
-  a INT4RANGE,
-  b INT4RANGE,
+  a int4range,
+  b int4range,
   exclude using gist (a with =, b with =)
 )
 partition by range(a, b);
 
-drop TABLE idxpart;
+drop table idxpart;
 
 create table idxpart (
-  a INT4RANGE,
-  b INT4RANGE,
+  a int4range,
+  b int4range,
   exclude using gist (a with =, b with =)
 )
 partition by range(a);
 
-drop TABLE idxpart;
+drop table idxpart;
 
 create table idxpart (
-  a INT4RANGE,
-  b INT4RANGE,
+  a int4range,
+  b int4range,
   exclude using gist (a with =)
 )
 partition by range(a, b);
 
 create table idxpart (
-  a INT4RANGE,
+  a int4range,
   exclude using gist (a with -|-)
 )
 partition by range(a);
 
 create table idxpart (
-  a INT4RANGE,
-  b INT4RANGE,
+  a int4range,
+  b int4range,
   exclude using gist (a with =, b with &&)
 )
 partition by range(a);
 
-drop TABLE idxpart;
+drop table idxpart;
 
 create table idxpart (
-  a INT4RANGE,
-  b INT4RANGE,
-  c INT4RANGE,
+  a int4range,
+  b int4range,
+  c int4range,
   exclude using gist (b with =, c with &&)
 )
 partition by range(a);
 
 create table idxpart (
-  a INT4RANGE,
-  b INT4RANGE,
-  c INT4RANGE,
+  a int4range,
+  b int4range,
+  c int4range,
   exclude using gist (a with =,
   b with =,
   c with &&)
 )
 partition by range(a, b);
 
-drop TABLE idxpart;
+drop table idxpart;
 
 create table idxpart (
-  a INT primary key,
-  b INT
+  a int primary key,
+  b int
 )
 partition by range((b + a));
 
 create table idxpart (
-  a INT unique,
-  b INT
+  a int unique,
+  b int
 )
 partition by range((b + a));
 
 create table idxpart (
-  a INT,
-  b INT,
-  c TEXT
+  a int,
+  b int,
+  c text
 )
 partition by range(a, b);
 
@@ -1415,11 +1415,11 @@ create table idxpart1
 partition of idxpart
 for values from (0, 0) to (1000, 1000);
 
-drop TABLE idxpart;
+drop table idxpart;
 
 create table idxpart (
-  a INT,
-  b INT
+  a int,
+  b int
 )
 partition by range(a, b);
 
@@ -1429,90 +1429,90 @@ alter table idxpart
 alter table idxpart
   add unique (b, a);
 
-drop TABLE idxpart;
+drop table idxpart;
 
 create table idxpart (
-  a INT4RANGE,
-  b INT4RANGE
+  a int4range,
+  b int4range
 )
 partition by range(a);
 
 alter table idxpart
   add exclude using gist (a with =);
 
-drop TABLE idxpart;
+drop table idxpart;
 
 create table idxpart (
-  a INT4RANGE,
-  b INT4RANGE
+  a int4range,
+  b int4range
 )
 partition by range(a, b);
 
 alter table idxpart
   add exclude using gist (a with =, b with =);
 
-drop TABLE idxpart;
+drop table idxpart;
 
 create table idxpart (
-  a INT4RANGE,
-  b INT4RANGE
+  a int4range,
+  b int4range
 )
 partition by range(a);
 
 alter table idxpart
   add exclude using gist (a with =, b with =);
 
-drop TABLE idxpart;
+drop table idxpart;
 
 create table idxpart (
-  a INT4RANGE,
-  b INT4RANGE
+  a int4range,
+  b int4range
 )
 partition by range(a, b);
 
 alter table idxpart
   add exclude using gist (a with =);
 
-drop TABLE idxpart;
+drop table idxpart;
 
 create table idxpart (
-  a INT4RANGE,
-  b INT4RANGE
+  a int4range,
+  b int4range
 )
 partition by range(a, b);
 
 alter table idxpart
   add exclude using gist (a with -|-);
 
-drop TABLE idxpart;
+drop table idxpart;
 
 create table idxpart (
-  a INT4RANGE,
-  b INT4RANGE
+  a int4range,
+  b int4range
 )
 partition by range(a);
 
 alter table idxpart
   add exclude using gist (a with =, b with &&);
 
-drop TABLE idxpart;
+drop table idxpart;
 
 create table idxpart (
-  a INT4RANGE,
-  b INT4RANGE,
-  c INT4RANGE
+  a int4range,
+  b int4range,
+  c int4range
 )
 partition by range(a);
 
 alter table idxpart
   add exclude using gist (b with =, c with &&);
 
-drop TABLE idxpart;
+drop table idxpart;
 
 create table idxpart (
-  a INT4RANGE,
-  b INT4RANGE,
-  c INT4RANGE
+  a int4range,
+  b int4range,
+  c int4range
 )
 partition by range(a, b);
 
@@ -1521,11 +1521,11 @@ alter table idxpart
   b with =,
   c with &&);
 
-drop TABLE idxpart;
+drop table idxpart;
 
 create table idxpart (
-  a INT,
-  b INT,
+  a int,
+  b int,
   primary key (a, b)
 )
 partition by range(a, b);
@@ -1542,33 +1542,33 @@ create table idxpart21 partition of idxpart2 for values from (10) to (15);
 create table idxpart22 partition of idxpart2 for values from (15) to (20);
 
 create table idxpart3 (
-  b INT not null,
-  a INT not null
+  b int not null,
+  a int not null
 );
 
 alter table idxpart
-  ATTACH partition
+  attach partition
   idxpart3
   for values from (20, 20) to (30, 30);
 
 select
   conname,
   contype,
-  cast(conrelid as REGCLASS),
-  cast(conindid as REGCLASS),
+  cast(conrelid as regclass),
+  cast(conindid as regclass),
   conkey
 from
   pg_constraint
 where
-  cast(cast(conrelid as REGCLASS) as TEXT) like 'idxpart%'
-order by cast(cast(conrelid as REGCLASS) as TEXT),
+  cast(cast(conrelid as regclass) as text) like 'idxpart%'
+order by cast(cast(conrelid as regclass) as text),
   conname;
 
-drop TABLE idxpart;
+drop table idxpart;
 
 create table idxpart (
-  a INT,
-  b INT,
+  a int,
+  b int,
   primary key (a)
 )
 partition by range(a);
@@ -1578,30 +1578,30 @@ partition of idxpart
 for values from (0) to (1000)
 partition by range(b);
 
-drop TABLE idxpart;
+drop table idxpart;
 
 create table idxpart (
-  a INT unique,
-  b INT
+  a int unique,
+  b int
 )
 partition by range(a);
 
 create table idxpart1 (
-  a INT not null,
-  b INT,
+  a int not null,
+  b int,
   unique (a, b)
 )
 partition by range(a, b);
 
 alter table idxpart
-  ATTACH partition
+  attach partition
   idxpart1 for values from (1) to (1000);
 
-drop TABLE idxpart, idxpart1;
+drop table idxpart, idxpart1;
 
 create table idxpart (
-  a INT,
-  b INT,
+  a int,
+  b int,
   primary key (a, b)
 )
 partition by range(a);
@@ -1616,19 +1616,19 @@ create table idxpart21 partition of idxpart2 for values from (0) to (1000);
 select
   conname,
   contype,
-  cast(conrelid as REGCLASS),
-  cast(conindid as REGCLASS),
+  cast(conrelid as regclass),
+  cast(conindid as regclass),
   conkey
 from
   pg_constraint
 where
-  cast(cast(conrelid as REGCLASS) as TEXT) like 'idxpart%'
-order by cast(cast(conrelid as REGCLASS) as TEXT),
+  cast(cast(conrelid as regclass) as text) like 'idxpart%'
+order by cast(cast(conrelid as regclass) as text),
   conname;
 
-drop TABLE idxpart;
+drop table idxpart;
 
-create table idxpart (i INT)
+create table idxpart (i int)
 partition by HASH(i);
 
 create table idxpart0
@@ -1652,9 +1652,9 @@ alter table idxpart
   add primary key (i);
 
 select
-  cast(indrelid as REGCLASS),
-  cast(indexrelid as REGCLASS),
-  cast(inhparent as REGCLASS),
+  cast(indrelid as regclass),
+  cast(indexrelid as regclass),
+  cast(inhparent as regclass),
   indisvalid,
   conname,
   conislocal,
@@ -1670,13 +1670,13 @@ from
     pg_constraint as con
   on idx.indexrelid = con.conindid
 where
-  cast(cast(indrelid as REGCLASS) as TEXT) like 'idxpart%'
-order by cast(cast(indexrelid as REGCLASS)
-  as TEXT) collate "C";
+  cast(cast(indrelid as regclass) as text) like 'idxpart%'
+order by cast(cast(indexrelid as regclass)
+  as text) collate "C";
 
-drop INDEX idxpart0_pkey;
+drop index idxpart0_pkey;
 
-drop INDEX idxpart1_pkey;
+drop index idxpart1_pkey;
 
 alter table idxpart0
   drop constraint idxpart0_pkey;
@@ -1688,9 +1688,9 @@ alter table idxpart
   drop constraint idxpart_pkey;
 
 select
-  cast(indrelid as REGCLASS),
-  cast(indexrelid as REGCLASS),
-  cast(inhparent as REGCLASS),
+  cast(indrelid as regclass),
+  cast(indexrelid as regclass),
+  cast(inhparent as regclass),
   indisvalid,
   conname,
   conislocal,
@@ -1706,16 +1706,16 @@ from
     pg_constraint as con
   on idx.indexrelid = con.conindid
 where
-  cast(cast(indrelid as REGCLASS) as TEXT) like 'idxpart%'
-order by cast(cast(indexrelid as REGCLASS)
-  as TEXT) collate "C";
+  cast(cast(indrelid as regclass) as text) like 'idxpart%'
+order by cast(cast(indexrelid as regclass)
+  as text) collate "C";
 
-drop TABLE idxpart;
+drop table idxpart;
 
 create table idxpart (
-  c1 INT primary key,
-  c2 INT,
-  c3 VARCHAR(10)
+  c1 int primary key,
+  c2 int,
+  c3 varchar(10)
 )
 partition by range(c1);
 
@@ -1725,40 +1725,40 @@ alter table idxpart1
   add primary key (c1, c2);
 
 alter table idxpart
-  ATTACH partition
+  attach partition
   idxpart1 for values from (100) to (200);
 
-drop TABLE idxpart, idxpart1;
+drop table idxpart, idxpart1;
 
 create table idxpart (
-  a INT,
-  b INT,
+  a int,
+  b int,
   primary key (a)
 )
 partition by range(a);
 
 create table idxpart1 (
-  a INT not null,
-  b INT
+  a int not null,
+  b int
 )
 partition by range(a);
 
 create table idxpart11 (
-  a INT not null,
-  b INT primary key
+  a int not null,
+  b int primary key
 );
 
 alter table idxpart1
-  ATTACH partition
+  attach partition
   idxpart11 for values from (0) to (1000);
 
 alter table idxpart
-  ATTACH partition
+  attach partition
   idxpart1 for values from (0) to (10000);
 
-drop TABLE idxpart, idxpart1, idxpart11;
+drop table idxpart, idxpart1, idxpart11;
 
-create table idxpart (a INT)
+create table idxpart (a int)
 partition by range(a);
 
 create table idxpart0 (like idxpart);
@@ -1767,16 +1767,16 @@ alter table idxpart0
   add primary key (a);
 
 alter table idxpart
-  ATTACH partition
+  attach partition
   idxpart0 for values from (0) to (1000);
 
 alter table only idxpart
   add primary key (a);
 
 select
-  cast(indrelid as REGCLASS),
-  cast(indexrelid as REGCLASS),
-  cast(inhparent as REGCLASS),
+  cast(indrelid as regclass),
+  cast(indexrelid as regclass),
+  cast(inhparent as regclass),
   indisvalid,
   conname,
   conislocal,
@@ -1792,18 +1792,18 @@ from
     pg_constraint as con
   on idx.indexrelid = con.conindid
 where
-  cast(cast(indrelid as REGCLASS) as TEXT) like 'idxpart%'
-order by cast(cast(indexrelid as REGCLASS)
-  as TEXT) collate "C";
+  cast(cast(indrelid as regclass) as text) like 'idxpart%'
+order by cast(cast(indexrelid as regclass)
+  as text) collate "C";
 
 alter index idxpart_pkey
-  ATTACH partition
+  attach partition
   idxpart0_pkey;
 
 select
-  cast(indrelid as REGCLASS),
-  cast(indexrelid as REGCLASS),
-  cast(inhparent as REGCLASS),
+  cast(indrelid as regclass),
+  cast(indexrelid as regclass),
+  cast(inhparent as regclass),
   indisvalid,
   conname,
   conislocal,
@@ -1819,13 +1819,13 @@ from
     pg_constraint as con
   on idx.indexrelid = con.conindid
 where
-  cast(cast(indrelid as REGCLASS) as TEXT) like 'idxpart%'
-order by cast(cast(indexrelid as REGCLASS)
-  as TEXT) collate "C";
+  cast(cast(indrelid as regclass) as text) like 'idxpart%'
+order by cast(cast(indexrelid as regclass)
+  as text) collate "C";
 
-drop TABLE idxpart;
+drop table idxpart;
 
-create table idxpart (a INT)
+create table idxpart (a int)
 partition by range(a);
 
 create table idxpart0 (like idxpart);
@@ -1834,7 +1834,7 @@ alter table idxpart0
   add unique (a);
 
 alter table idxpart
-  ATTACH partition
+  attach partition
   idxpart0 default;
 
 alter table only idxpart
@@ -1847,20 +1847,20 @@ alter table only idxpart
   add primary key (a);
 
 alter index idxpart_pkey
-  ATTACH partition
+  attach partition
   idxpart0_a_key;
 
-drop TABLE idxpart;
+drop table idxpart;
 
 create table idxpart (
-  a INT,
-  b INT
+  a int,
+  b int
 )
 partition by range(a);
 
 create table idxpart1 (
-  a INT not null,
-  b INT
+  a int not null,
+  b int
 );
 
 create unique index on idxpart1 using btree (a);
@@ -1869,13 +1869,13 @@ alter table idxpart
   add primary key (a);
 
 alter table idxpart
-  ATTACH partition
+  attach partition
   idxpart1 for values from (1) to (1000);
 
 select
-  cast(indrelid as REGCLASS),
-  cast(indexrelid as REGCLASS),
-  cast(inhparent as REGCLASS),
+  cast(indrelid as regclass),
+  cast(indexrelid as regclass),
+  cast(inhparent as regclass),
   indisvalid,
   conname,
   conislocal,
@@ -1891,41 +1891,41 @@ from
     pg_constraint as con
   on idx.indexrelid = con.conindid
 where
-  cast(cast(indrelid as REGCLASS) as TEXT) like 'idxpart%'
-order by cast(cast(indexrelid as REGCLASS)
-  as TEXT) collate "C";
+  cast(cast(indrelid as regclass) as text) like 'idxpart%'
+order by cast(cast(indexrelid as regclass)
+  as text) collate "C";
 
-drop TABLE idxpart;
+drop table idxpart;
 
 create table idxpart (
-  a INT,
-  b INT
+  a int,
+  b int
 )
 partition by range(a);
 
 create table idxpart1 (
-  a INT not null,
-  b INT
+  a int not null,
+  b int
 );
 
 create unique index on idxpart1 using btree (a);
 
 alter table idxpart
-  ATTACH partition
+  attach partition
   idxpart1 for values from (1) to (1000);
 
 alter table only idxpart
   add primary key (a);
 
 alter index idxpart_pkey
-  ATTACH partition
+  attach partition
   idxpart1_a_idx;
 
-drop TABLE idxpart;
+drop table idxpart;
 
 create table idxpart (
-  a INT,
-  b TEXT,
+  a int,
+  b text,
   primary key (a, b)
 )
 partition by range(a);
@@ -1933,7 +1933,7 @@ partition by range(a);
 create table idxpart1 partition of idxpart for values from (0) to (100000);
 
 create table idxpart2 (
-  c INT,
+  c int,
   like idxpart
 );
 
@@ -1945,7 +1945,7 @@ alter table idxpart2
 create unique index on idxpart using btree (a);
 
 alter table idxpart
-  ATTACH partition
+  attach partition
   idxpart2
   for values from (100000) to (1000000);
 
@@ -1975,14 +1975,14 @@ insert into idxpart values (572814, 'five');
 
 insert into idxpart values (857142, 'six');
 
-select cast(tableoid as REGCLASS), * from idxpart order by a;
+select cast(tableoid as regclass), * from idxpart order by a;
 
-drop TABLE idxpart;
+drop table idxpart;
 
 create table idxpart (
-  a INT,
-  b TEXT,
-  c INT[]
+  a int,
+  b text,
+  c int[]
 )
 partition by range(a);
 
@@ -1994,25 +1994,25 @@ create index "idxpart_brin" on idxpart using brin (b);
 
 select * from idxpart where b = 'abcd';
 
-drop INDEX idxpart_brin;
+drop index idxpart_brin;
 
 create index "idxpart_spgist" on idxpart using spgist (b);
 
 select * from idxpart where b = 'abcd';
 
-drop INDEX idxpart_spgist;
+drop index idxpart_spgist;
 
 create index "idxpart_gin" on idxpart using gin (c);
 
 select * from idxpart where c @> array[42];
 
-drop INDEX idxpart_gin;
+drop index idxpart_gin;
 
 reset enable_seqscan;
 
-drop TABLE idxpart;
+drop table idxpart;
 
-create table idxpart (a INT)
+create table idxpart (a int)
 partition by range(a);
 
 create table idxpart1 partition of idxpart for values from (0) to (100);
@@ -2031,14 +2031,14 @@ create index on idxpart22 using btree (a);
 create index on only idxpart2 using btree (a);
 
 alter index idxpart2_a_idx
-  ATTACH partition
+  attach partition
   idxpart22_a_idx;
 
 create index on idxpart using btree (a);
 
 create table idxpart_another (
-  a INT,
-  b INT,
+  a int,
+  b int,
   primary key (a, b)
 )
 partition by range(a);
@@ -2048,9 +2048,9 @@ partition of idxpart_another
 for values from (0) to (100);
 
 create table idxpart3 (
-  c INT,
-  b INT,
-  a INT
+  c int,
+  b int,
+  a int
 )
 partition by range(a);
 
@@ -2063,7 +2063,7 @@ create table idxpart31 partition of idxpart3 for values from (1000) to (1200);
 create table idxpart32 partition of idxpart3 for values from (1200) to (1400);
 
 alter table idxpart
-  ATTACH partition
+  attach partition
   idxpart3
   for values from (1000) to (2000);
 
@@ -2071,14 +2071,14 @@ create schema "regress_indexing";
 
 set search_path to regress_indexing;
 
-create table pk (a INT primary key)
+create table pk (a int primary key)
 partition by range(a);
 
 create table pk1 partition of pk for values from (0) to (1000);
 
 create table pk2 (
-  b INT,
-  a INT
+  b int,
+  a int
 );
 
 alter table pk2
@@ -2088,7 +2088,7 @@ alter table pk2
   alter column a set not null;
 
 alter table pk
-  ATTACH partition
+  attach partition
   pk2 for values from (1000) to (2000);
 
 create table pk3 partition of pk for values from (2000) to (3000);
@@ -2096,7 +2096,7 @@ create table pk3 partition of pk for values from (2000) to (3000);
 create table pk4 (like pk);
 
 alter table pk
-  ATTACH partition
+  attach partition
   pk4 for values from (3000) to (4000);
 
 create table pk5 (like pk)
@@ -2107,14 +2107,14 @@ create table pk51 partition of pk5 for values from (4000) to (4500);
 create table pk52 partition of pk5 for values from (4500) to (5000);
 
 alter table pk
-  ATTACH partition
+  attach partition
   pk5 for values from (4000) to (5000);
 
 reset search_path;
 
 create table covidxpart (
-  a INT,
-  b INT
+  a int,
+  b int
 )
 partition by LIST(a);
 
@@ -2129,16 +2129,16 @@ insert into covidxpart values (1, 1);
 insert into covidxpart values (1, 1);
 
 create table covidxpart3 (
-  b INT,
-  c INT,
-  a INT
+  b int,
+  c int,
+  a int
 );
 
 alter table covidxpart3
   drop column c;
 
 alter table covidxpart
-  ATTACH partition
+  attach partition
   covidxpart3 for values in (3);
 
 insert into covidxpart values (3, 1);
@@ -2146,8 +2146,8 @@ insert into covidxpart values (3, 1);
 insert into covidxpart values (3, 1);
 
 create table covidxpart4 (
-  b INT,
-  a INT
+  b int,
+  a int
 );
 
 create unique index on covidxpart4 using btree (a) include (b);
@@ -2155,7 +2155,7 @@ create unique index on covidxpart4 using btree (a) include (b);
 create unique index on covidxpart4 using btree (a);
 
 alter table covidxpart
-  ATTACH partition
+  attach partition
   covidxpart4 for values in (4);
 
 insert into covidxpart values (4, 1);
@@ -2164,7 +2164,7 @@ insert into covidxpart values (4, 1);
 
 create unique index on covidxpart using btree (b) include (a);
 
-create table parted_pk_detach_test (a INT primary key)
+create table parted_pk_detach_test (a int primary key)
 partition by LIST(a);
 
 create table parted_pk_detach_test1
@@ -2175,15 +2175,15 @@ alter table parted_pk_detach_test1
   drop constraint parted_pk_detach_test1_pkey;
 
 alter table parted_pk_detach_test
-  DETACH partition
+  detach partition
   parted_pk_detach_test1;
 
 alter table parted_pk_detach_test1
   drop constraint parted_pk_detach_test1_pkey;
 
-drop TABLE parted_pk_detach_test, parted_pk_detach_test1;
+drop table parted_pk_detach_test, parted_pk_detach_test1;
 
-create table parted_uniq_detach_test (a INT unique)
+create table parted_uniq_detach_test (a int unique)
 partition by LIST(a);
 
 create table parted_uniq_detach_test1
@@ -2194,18 +2194,18 @@ alter table parted_uniq_detach_test1
   drop constraint parted_uniq_detach_test1_a_key;
 
 alter table parted_uniq_detach_test
-  DETACH partition
+  detach partition
   parted_uniq_detach_test1;
 
 alter table parted_uniq_detach_test1
   drop constraint parted_uniq_detach_test1_a_key;
 
-drop TABLE parted_uniq_detach_test, parted_uniq_detach_test1;
+drop table parted_uniq_detach_test, parted_uniq_detach_test1;
 
 create table parted_index_col_drop (
-  a INT,
-  b INT,
-  c INT
+  a int,
+  b int,
+  c int
 )
 partition by LIST(a);
 
@@ -2232,14 +2232,14 @@ create index on parted_index_col_drop using btree (b, c);
 alter table parted_index_col_drop
   drop column c;
 
-drop TABLE parted_index_col_drop;
+drop table parted_index_col_drop;
 
-create table parted_inval_tab (a INT)
+create table parted_inval_tab (a int)
 partition by range(a);
 
 create index "parted_inval_idx" on parted_inval_tab using btree (a);
 
-create table parted_inval_tab_1 (a INT)
+create table parted_inval_tab_1 (a int)
 partition by range(a);
 
 create table parted_inval_tab_1_1
@@ -2253,31 +2253,31 @@ for values from (10) to (20);
 create index "parted_inval_ixd_1" on only parted_inval_tab_1 using btree (a);
 
 alter table parted_inval_tab
-  ATTACH partition
+  attach partition
   parted_inval_tab_1
   for values from (1) to (100);
 
 select
-  cast(indexrelid as REGCLASS),
+  cast(indexrelid as regclass),
   indisvalid,
-  cast(indrelid as REGCLASS),
-  cast(inhparent as REGCLASS)
+  cast(indrelid as regclass),
+  cast(inhparent as regclass)
 from
   pg_index as idx
   left outer join
     pg_inherits as inh
   on idx.indexrelid = inh.inhrelid
 where
-  cast(cast(indexrelid as REGCLASS)
-  as TEXT) like 'parted_inval%'
-order by cast(cast(indexrelid as REGCLASS)
-  as TEXT) collate "C";
+  cast(cast(indexrelid as regclass)
+  as text) like 'parted_inval%'
+order by cast(cast(indexrelid as regclass)
+  as text) collate "C";
 
-drop TABLE parted_inval_tab;
+drop table parted_inval_tab;
 
 create table parted_isvalid_tab (
-  a INT,
-  b INT
+  a int,
+  b int
 )
 partition by range(a);
 
@@ -2312,26 +2312,26 @@ using btree
 create index "parted_isvalid_idx" on parted_isvalid_tab using btree ((a / b));
 
 select
-  cast(indexrelid as REGCLASS),
+  cast(indexrelid as regclass),
   indisvalid,
-  cast(indrelid as REGCLASS),
-  cast(inhparent as REGCLASS)
+  cast(indrelid as regclass),
+  cast(inhparent as regclass)
 from
   pg_index as idx
   left outer join
     pg_inherits as inh
   on idx.indexrelid = inh.inhrelid
 where
-  cast(cast(indexrelid as REGCLASS)
-  as TEXT) like 'parted_isvalid%'
-order by cast(cast(indexrelid as REGCLASS)
-  as TEXT) collate "C";
+  cast(cast(indexrelid as regclass)
+  as text) like 'parted_isvalid%'
+order by cast(cast(indexrelid as regclass)
+  as text) collate "C";
 
-drop TABLE parted_isvalid_tab;
+drop table parted_isvalid_tab;
 
 begin;
 
-create table parted_replica_tab (id INT not null)
+create table parted_replica_tab (id int not null)
 partition by range(id);
 
 create table parted_replica_tab_1
@@ -2359,7 +2359,7 @@ using btree
 );
 
 alter table only parted_replica_tab_1
-  REPLICA IDENTITY
+  replica identity
   using index
   parted_replica_idx_1;
 
@@ -2372,77 +2372,77 @@ using btree
 );
 
 select
-  cast(indexrelid as REGCLASS),
+  cast(indexrelid as regclass),
   indisvalid,
   indisreplident,
-  cast(indrelid as REGCLASS),
-  cast(inhparent as REGCLASS)
+  cast(indrelid as regclass),
+  cast(inhparent as regclass)
 from
   pg_index as idx
   left outer join
     pg_inherits as inh
   on idx.indexrelid = inh.inhrelid
 where
-  cast(cast(indexrelid as REGCLASS)
-  as TEXT) like 'parted_replica%'
-order by cast(cast(indexrelid as REGCLASS)
-  as TEXT) collate "C";
+  cast(cast(indexrelid as regclass)
+  as text) like 'parted_replica%'
+order by cast(cast(indexrelid as regclass)
+  as text) collate "C";
 
 alter index parted_replica_idx
-  ATTACH partition
+  attach partition
   parted_replica_idx_1;
 
 select
-  cast(indexrelid as REGCLASS),
+  cast(indexrelid as regclass),
   indisvalid,
   indisreplident,
-  cast(indrelid as REGCLASS),
-  cast(inhparent as REGCLASS)
+  cast(indrelid as regclass),
+  cast(inhparent as regclass)
 from
   pg_index as idx
   left outer join
     pg_inherits as inh
   on idx.indexrelid = inh.inhrelid
 where
-  cast(cast(indexrelid as REGCLASS)
-  as TEXT) like 'parted_replica%'
-order by cast(cast(indexrelid as REGCLASS)
-  as TEXT) collate "C";
+  cast(cast(indexrelid as regclass)
+  as text) like 'parted_replica%'
+order by cast(cast(indexrelid as regclass)
+  as text) collate "C";
 
 alter index parted_replica_idx_1
-  ATTACH partition
+  attach partition
   parted_replica_idx_11;
 
 alter table only parted_replica_tab_1
-  REPLICA IDENTITY
+  replica identity
   using index
   parted_replica_idx_1;
 
 commit;
 
 select
-  cast(indexrelid as REGCLASS),
+  cast(indexrelid as regclass),
   indisvalid,
   indisreplident,
-  cast(indrelid as REGCLASS),
-  cast(inhparent as REGCLASS)
+  cast(indrelid as regclass),
+  cast(inhparent as regclass)
 from
   pg_index as idx
   left outer join
     pg_inherits as inh
   on idx.indexrelid = inh.inhrelid
 where
-  cast(cast(indexrelid as REGCLASS)
-  as TEXT) like 'parted_replica%'
-order by cast(cast(indexrelid as REGCLASS)
-  as TEXT) collate "C";
+  cast(cast(indexrelid as regclass)
+  as text) like 'parted_replica%'
+order by cast(cast(indexrelid as regclass)
+  as text) collate "C";
 
-drop TABLE parted_replica_tab;
+drop table parted_replica_tab;
 
-create table test_pg_index_toast_table (a INT);
+create table test_pg_index_toast_table (a int);
 
-create or replace function test_pg_index_toast_func(a INT, b INT[])
-returns BOOLEAN
+create or replace function test_pg_index_toast_func(a int, b int[])
+returns boolean
 as $function$ select true $function$
 language sql
 immutable;
@@ -2459,7 +2459,7 @@ using btree
 
 reindex (CONCURRENTLY) index test_pg_index_toast_index;
 
-drop INDEX concurrently test_pg_index_toast_index;
+drop index concurrently test_pg_index_toast_index;
 
 create index "test_pg_index_toast_index"
 on test_pg_index_toast_table
@@ -2470,8 +2470,8 @@ using btree
 
 reindex index test_pg_index_toast_index;
 
-drop INDEX test_pg_index_toast_index;
+drop index test_pg_index_toast_index;
 
-drop FUNCTION test_pg_index_toast_func;
+drop function test_pg_index_toast_func;
 
-drop TABLE test_pg_index_toast_table;
+drop table test_pg_index_toast_table;

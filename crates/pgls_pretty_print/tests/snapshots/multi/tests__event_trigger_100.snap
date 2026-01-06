@@ -16,7 +16,7 @@ language plpgsql;
 
 select test_event_trigger();
 
-create function test_event_trigger_arg(name TEXT)
+create function test_event_trigger_arg(name text)
 returns event_trigger
 as $function$ BEGIN RETURN 1; END $function$
 language plpgsql;
@@ -96,30 +96,30 @@ execute function test_event_trigger();
 
 reset role;
 
-alter EVENT TRIGGER regress_event_trigger DISABLE;
+alter event trigger regress_event_trigger disable;
 
-create table event_trigger_fire1 (a INT);
+create table event_trigger_fire1 (a int);
 
-alter EVENT TRIGGER regress_event_trigger ENABLE;
+alter event trigger regress_event_trigger enable;
 
 set session_replication_role = replica;
 
-create table event_trigger_fire2 (a INT);
+create table event_trigger_fire2 (a int);
 
-alter EVENT TRIGGER regress_event_trigger ENABLE REPLICA;
+alter event trigger regress_event_trigger enable replica;
 
-create table event_trigger_fire3 (a INT);
+create table event_trigger_fire3 (a int);
 
-alter EVENT TRIGGER regress_event_trigger ENABLE ALWAYS;
+alter event trigger regress_event_trigger enable always;
 
-create table event_trigger_fire4 (a INT);
+create table event_trigger_fire4 (a int);
 
 reset session_replication_role;
 
-create table event_trigger_fire5 (a INT);
+create table event_trigger_fire5 (a int);
 
 create function f1()
-returns INT
+returns int
 language plpgsql
 as $function$
 begin
@@ -138,9 +138,9 @@ end $procedure$;
 
 call p1();
 
-alter EVENT TRIGGER regress_event_trigger DISABLE;
+alter event trigger regress_event_trigger disable;
 
-drop TABLE
+drop table
   event_trigger_fire2,
   event_trigger_fire3,
   event_trigger_fire4,
@@ -148,27 +148,27 @@ drop TABLE
   event_trigger_fire6,
   event_trigger_fire7;
 
-drop ROUTINE f1(), p1();
+drop routine f1(), p1();
 
-grant all on table event_trigger_fire1 to PUBLIC;
+grant all on table event_trigger_fire1 to public;
 
 comment on table event_trigger_fire1 is 'here is a comment';
 
-revoke all on table event_trigger_fire1 from PUBLIC;
+revoke all on table event_trigger_fire1 from public;
 
-drop TABLE event_trigger_fire1;
+drop table event_trigger_fire1;
 
-create FOREIGN DATA WRAPPER useless;
+create foreign data wrapper useless;
 
 create server useless_server foreign data wrapper useless;
 
-create USER MAPPING for regress_evt_user SERVER useless_server;
+create user mapping for regress_evt_user server useless_server;
 
-alter default PRIVILEGES for role regress_evt_user revoke DELETE on TABLES from regress_evt_user;
+alter default privileges for role regress_evt_user revoke DELETE on tables from regress_evt_user;
 
 alter event trigger regress_event_trigger owner to regress_evt_user;
 
-alter role regress_evt_user SUPERUSER;
+alter role regress_evt_user superuser;
 
 alter event trigger regress_event_trigger owner to regress_evt_user;
 
@@ -176,17 +176,17 @@ alter event trigger regress_event_trigger rename to regress_event_trigger2;
 
 alter event trigger regress_event_trigger rename to regress_event_trigger3;
 
-drop EVENT TRIGGER regress_event_trigger;
+drop event trigger regress_event_trigger;
 
 drop role regress_evt_user;
 
-drop EVENT TRIGGER if exists regress_event_trigger2;
+drop event trigger if exists regress_event_trigger2;
 
-drop EVENT TRIGGER if exists regress_event_trigger2;
+drop event trigger if exists regress_event_trigger2;
 
-drop EVENT TRIGGER regress_event_trigger3;
+drop event trigger regress_event_trigger3;
 
-drop EVENT TRIGGER regress_event_trigger_end;
+drop event trigger regress_event_trigger_end;
 
 create schema "schema_one" authorization regress_evt_user;
 
@@ -198,36 +198,36 @@ create temporary table a_temp_tbl ();
 
 set session authorization regress_evt_user;
 
-create table schema_one.table_one (a INT);
+create table schema_one.table_one (a int);
 
-create table schema_one."table two" (a INT);
+create table schema_one."table two" (a int);
 
-create table schema_one.table_three (a INT);
+create table schema_one.table_three (a int);
 
-create table audit_tbls.schema_one_table_two (the_value TEXT);
+create table audit_tbls.schema_one_table_two (the_value text);
 
-create table schema_two.table_two (a INT);
+create table schema_two.table_two (a int);
 
 create table schema_two.table_three (
-  a INT,
-  b TEXT
+  a int,
+  b text
 );
 
-create table audit_tbls.schema_two_table_three (the_value TEXT);
+create table audit_tbls.schema_two_table_three (the_value text);
 
-create or replace function schema_two.add(INT, INT)
-returns INT
+create or replace function schema_two.add(int, int)
+returns int
 language plpgsql
-CALLED ON NULL INPUT
+called on null input
 as $function$ BEGIN RETURN coalesce($1,0) + coalesce($2,0); END; $function$;
 
-create aggregate schema_two.newton (basetype = INT, sfunc = schema_two.add, stype = INT);
+create aggregate schema_two.newton (basetype = int, sfunc = schema_two.add, stype = int);
 
 reset session_authorization;
 
 create table undroppable_objs (
-  object_type TEXT,
-  object_identity TEXT
+  object_type text,
+  object_identity text
 );
 
 insert into undroppable_objs
@@ -236,15 +236,15 @@ values
   ('table', 'audit_tbls.schema_two_table_three');
 
 create table dropped_objects (
-  object_type TEXT,
-  schema_name TEXT,
-  object_name TEXT,
-  object_identity TEXT,
-  address_names TEXT[],
-  address_args TEXT[],
-  is_temporary BOOLEAN,
-  original BOOLEAN,
-  normal BOOLEAN
+  object_type text,
+  schema_name text,
+  object_name text,
+  object_identity text,
+  address_names text[],
+  address_args text[],
+  is_temporary boolean,
+  original boolean,
+  normal boolean
 );
 
 create or replace function undroppable()
@@ -304,27 +304,27 @@ execute function test_evtrig_dropped_objects();
 alter table schema_one.table_one
   drop column a;
 
-drop SCHEMA schema_one, schema_two cascade;
+drop schema schema_one, schema_two cascade;
 
 delete from undroppable_objs where object_identity = 'audit_tbls.schema_two_table_three';
 
-drop SCHEMA schema_one, schema_two cascade;
+drop schema schema_one, schema_two cascade;
 
 delete from undroppable_objs where object_identity = 'schema_one.table_three';
 
-drop SCHEMA schema_one, schema_two cascade;
+drop schema schema_one, schema_two cascade;
 
 select * from dropped_objects where schema_name is null or schema_name <> 'pg_toast';
 
-drop OWNED by regress_evt_user;
+drop owned by regress_evt_user;
 
 select * from dropped_objects where object_type = 'schema';
 
 drop role regress_evt_user;
 
-drop EVENT TRIGGER regress_event_trigger_drop_objects;
+drop event trigger regress_event_trigger_drop_objects;
 
-drop EVENT TRIGGER undroppable;
+drop event trigger undroppable;
 
 create or replace function event_trigger_report_dropped()
 returns event_trigger
@@ -369,17 +369,17 @@ create schema "evttrig";
 
 create table one (
   col_a serial primary key,
-  col_b TEXT default 'forty two',
+  col_b text default 'forty two',
   col_c serial
 );
 
 create index "one_idx" on one using btree (col_b);
 
-create table two (col_c INT check (col_c > 0) references one default 42);
+create table two (col_c int check (col_c > 0) references one default 42);
 
-create table id (col_d INT not null generated always as identity);
+create table id (col_d int not null generated always as identity);
 
-create table evttrig.parted (id INT primary key)
+create table evttrig.parted (id int primary key)
 partition by range(id);
 
 create table evttrig.part_1_10 partition of evttrig.parted (id) for values from (1) to (10);
@@ -409,17 +409,17 @@ alter table evttrig.one
   drop column col_c;
 
 alter table evttrig.id
-  alter column col_d type BIGINT;
+  alter column col_d type bigint;
 
 alter table evttrig.id
-  alter column col_d drop IDENTITY,
-  alter column col_d type INT;
+  alter column col_d drop identity,
+  alter column col_d type int;
 
-drop INDEX evttrig.one_idx;
+drop index evttrig.one_idx;
 
-drop SCHEMA evttrig cascade;
+drop schema evttrig cascade;
 
-drop TABLE a_temp_tbl;
+drop table a_temp_tbl;
 
 create or replace function event_trigger_report_dropped()
 returns event_trigger
@@ -445,47 +445,47 @@ BEGIN
 END; $function$;
 
 create table evtrg_nontemp_table (
-  f1 INT primary key,
-  f2 INT default 42
+  f1 int primary key,
+  f2 int default 42
 );
 
-create TRIGGER evtrg_nontemp_trig
+create trigger evtrg_nontemp_trig
 before insert
 on evtrg_nontemp_table
-for EACH STATEMENT
-EXECUTE FUNCTION event_trigger_dummy_trigger();
+for each statement
+execute function event_trigger_dummy_trigger();
 
-create POLICY evtrg_nontemp_pol
+create policy evtrg_nontemp_pol
 on evtrg_nontemp_table
-as PERMISSIVE
+as permissive
 for all
-to PUBLIC
-USING (f2 > 0);
+to public
+using (f2 > 0);
 
-drop TABLE evtrg_nontemp_table;
+drop table evtrg_nontemp_table;
 
 create temporary table a_temp_tbl (
-  f1 INT primary key,
-  f2 INT default 42
+  f1 int primary key,
+  f2 int default 42
 );
 
-create TRIGGER a_temp_trig
+create trigger a_temp_trig
 before insert
 on a_temp_tbl
-for EACH STATEMENT
-EXECUTE FUNCTION event_trigger_dummy_trigger();
+for each statement
+execute function event_trigger_dummy_trigger();
 
-create POLICY a_temp_pol on a_temp_tbl as PERMISSIVE for all to PUBLIC USING (f2 > 0);
+create policy a_temp_pol on a_temp_tbl as permissive for all to public using (f2 > 0);
 
-drop TABLE a_temp_tbl;
+drop table a_temp_tbl;
 
-drop FUNCTION event_trigger_dummy_trigger();
+drop function event_trigger_dummy_trigger();
 
-create OPERATOR class evttrigopclass for type INT using btree as STORAGE INT;
+create operator class evttrigopclass for type int using btree as storage int;
 
-drop EVENT TRIGGER regress_event_trigger_report_dropped;
+drop event trigger regress_event_trigger_report_dropped;
 
-drop EVENT TRIGGER regress_event_trigger_report_end;
+drop event trigger regress_event_trigger_report_end;
 
 select pg_event_trigger_table_rewrite_oid();
 
@@ -504,17 +504,17 @@ execute function test_evtrig_no_rewrite();
 
 create table rewriteme (
   id serial primary key,
-  foo DOUBLE PRECISION,
-  bar timestamp with time ZONE
+  foo double precision,
+  bar timestamp with time zone
 );
 
 insert into rewriteme select x * 1.001 from generate_series(1, 500) as t (x);
 
 alter table rewriteme
-  alter column foo type NUMERIC;
+  alter column foo type numeric;
 
 alter table rewriteme
-  add column baz INT default 0;
+  add column baz int default 0;
 
 create or replace function test_evtrig_no_rewrite()
 returns event_trigger
@@ -528,36 +528,36 @@ END;
 $function$;
 
 alter table rewriteme
-  add column onemore INT default 0,
-  add column another INT default -1,
-  alter column foo type NUMERIC(10, 4);
+  add column onemore int default 0,
+  add column another int default -1,
+  alter column foo type numeric(10, 4);
 
 create materialized view heapmv using heap as select 1 as a;
 
 alter materialized view heapmv
-  set ACCESS METHOD heap2;
+  set access method heap2;
 
-drop MATERIALIZED VIEW heapmv;
+drop materialized view heapmv;
 
 alter table rewriteme
-  alter column foo type NUMERIC(12, 4);
+  alter column foo type numeric(12, 4);
 
 begin;
 
 set time zone UTC;
 
 alter table rewriteme
-  alter column bar type TIMESTAMP;
+  alter column bar type timestamp;
 
 set time zone '0';
 
 alter table rewriteme
-  alter column bar type timestamp with time ZONE;
+  alter column bar type timestamp with time zone;
 
 set time zone 'Europe/London';
 
 alter table rewriteme
-  alter column bar type TIMESTAMP;
+  alter column bar type timestamp;
 
 rollback;
 
@@ -571,25 +571,25 @@ BEGIN
 END;
 $function$;
 
-create type rewritetype as (a INT);
+create type rewritetype as (a int);
 
 create table rewritemetoo1 of rewritetype;
 
 create table rewritemetoo2 of rewritetype;
 
 alter type rewritetype
-  alter ATTRIBUTE a type TEXT cascade;
+  alter attribute a type text cascade;
 
 create table rewritemetoo3 (a rewritetype);
 
 alter type rewritetype
-  alter ATTRIBUTE a type VARCHAR cascade;
+  alter attribute a type varchar cascade;
 
-drop TABLE rewriteme;
+drop table rewriteme;
 
-drop EVENT TRIGGER no_rewrite_allowed;
+drop event trigger no_rewrite_allowed;
 
-drop FUNCTION test_evtrig_no_rewrite();
+drop function test_evtrig_no_rewrite();
 
 create or replace function reindex_start_command()
 returns event_trigger
@@ -634,7 +634,7 @@ create event trigger "regress_reindex_end_snap"
 on ddl_command_end
 execute function reindex_end_command_snap();
 
-create table concur_reindex_tab (c1 INT);
+create table concur_reindex_tab (c1 int);
 
 create index "concur_reindex_ind" on concur_reindex_tab using btree (c1);
 
@@ -646,13 +646,13 @@ reindex (CONCURRENTLY) index concur_reindex_ind;
 
 reindex (CONCURRENTLY) table concur_reindex_tab;
 
-alter EVENT TRIGGER regress_reindex_start DISABLE;
+alter event trigger regress_reindex_start disable;
 
 reindex index concur_reindex_ind;
 
 reindex (CONCURRENTLY) index concur_reindex_ind;
 
-drop INDEX concur_reindex_ind;
+drop index concur_reindex_ind;
 
 reindex table concur_reindex_tab;
 
@@ -664,7 +664,7 @@ reindex schema concur_reindex_schema;
 
 reindex (CONCURRENTLY) schema concur_reindex_schema;
 
-create table concur_reindex_schema.tab (a INT);
+create table concur_reindex_schema.tab (a int);
 
 create index "ind" on concur_reindex_schema.tab using btree (a);
 
@@ -672,15 +672,15 @@ reindex schema concur_reindex_schema;
 
 reindex (CONCURRENTLY) schema concur_reindex_schema;
 
-drop INDEX concur_reindex_schema.ind;
+drop index concur_reindex_schema.ind;
 
 reindex schema concur_reindex_schema;
 
 reindex (CONCURRENTLY) schema concur_reindex_schema;
 
-drop SCHEMA concur_reindex_schema cascade;
+drop schema concur_reindex_schema cascade;
 
-create table concur_reindex_part (id INT)
+create table concur_reindex_part (id int)
 partition by range(id);
 
 reindex table concur_reindex_part;
@@ -703,27 +703,27 @@ reindex table concur_reindex_part;
 
 reindex (CONCURRENTLY) table concur_reindex_part;
 
-drop TABLE concur_reindex_part;
+drop table concur_reindex_part;
 
-drop EVENT TRIGGER regress_reindex_start;
+drop event trigger regress_reindex_start;
 
-drop EVENT TRIGGER regress_reindex_end;
+drop event trigger regress_reindex_end;
 
-drop EVENT TRIGGER regress_reindex_end_snap;
+drop event trigger regress_reindex_end_snap;
 
-drop FUNCTION reindex_end_command();
+drop function reindex_end_command();
 
-drop FUNCTION reindex_end_command_snap();
+drop function reindex_end_command_snap();
 
-drop FUNCTION reindex_start_command();
+drop function reindex_start_command();
 
-drop TABLE concur_reindex_tab;
+drop table concur_reindex_tab;
 
 reset session_authorization;
 
 create table event_trigger_test (
-  a INT,
-  b TEXT
+  a int,
+  b text
 );
 
 create or replace function start_command()
@@ -768,18 +768,18 @@ on sql_drop
 when TAG in ('DROP POLICY')
 execute function drop_sql_command();
 
-create POLICY p1 on event_trigger_test as PERMISSIVE for all to PUBLIC USING (false);
+create policy p1 on event_trigger_test as permissive for all to public using (false);
 
-alter POLICY p1 on event_trigger_test USING (true);
+alter policy p1 on event_trigger_test using (true);
 
 alter policy p1 on event_trigger_test rename to p2;
 
-drop POLICY p2 on event_trigger_test;
+drop policy p2 on event_trigger_test;
 
 select
   e.evtname,
   pg_describe_object(
-    cast('pg_event_trigger' as REGCLASS),
+    cast('pg_event_trigger' as regclass),
     e.oid,
     0
   )
@@ -792,7 +792,7 @@ select
 from
   pg_event_trigger as e,
   lateral pg_identify_object_as_address(
-    cast('pg_event_trigger' as REGCLASS),
+    cast('pg_event_trigger' as regclass),
     e.oid,
     0
   )
@@ -805,11 +805,11 @@ from
   as a
 order by e.evtname;
 
-drop EVENT TRIGGER start_rls_command;
+drop event trigger start_rls_command;
 
-drop EVENT TRIGGER end_rls_command;
+drop event trigger end_rls_command;
 
-drop EVENT TRIGGER sql_drop_command;
+drop event trigger sql_drop_command;
 
 create function test_event_trigger_guc()
 returns event_trigger
@@ -832,12 +832,12 @@ execute function test_event_trigger_guc();
 
 set event_triggers = 'on';
 
-create POLICY pguc on event_trigger_test as PERMISSIVE for all to PUBLIC USING (false);
+create policy pguc on event_trigger_test as permissive for all to public using (false);
 
-drop POLICY pguc on event_trigger_test;
+drop policy pguc on event_trigger_test;
 
-create POLICY pguc on event_trigger_test as PERMISSIVE for all to PUBLIC USING (false);
+create policy pguc on event_trigger_test as permissive for all to public using (false);
 
 set event_triggers = off;
 
-drop POLICY pguc on event_trigger_test;
+drop policy pguc on event_trigger_test;

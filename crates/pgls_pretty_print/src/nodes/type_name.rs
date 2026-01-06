@@ -80,7 +80,7 @@ fn emit_keyword_sequence(e: &mut EventEmitter, words: &[&'static str]) {
         if index > 0 {
             e.space();
         }
-        e.token(TokenKind::IDENT((*word).to_string()));
+        e.token(TokenKind::TYPE_IDENT((*word).to_string()));
     }
 }
 
@@ -107,66 +107,66 @@ fn builtin_type_keywords(name_parts: &[String]) -> Option<&'static [&'static str
     let lowered = base_name.to_ascii_lowercase();
 
     match lowered.as_str() {
-        "bool" => Some(&["BOOLEAN"]),
-        "bytea" => Some(&["BYTEA"]),
-        "char" | "bpchar" => Some(&["CHAR"]),
-        "name" => Some(&["NAME"]),
-        "int2" => Some(&["SMALLINT"]),
-        "int4" => Some(&["INT"]),
-        "int8" => Some(&["BIGINT"]),
-        "oid" => Some(&["OID"]),
-        "tid" => Some(&["TID"]),
-        "xid" => Some(&["XID"]),
-        "cid" => Some(&["CID"]),
-        "float4" => Some(&["REAL"]),
-        "float8" => Some(&["DOUBLE", "PRECISION"]),
-        "numeric" => Some(&["NUMERIC"]),
-        "decimal" => Some(&["DECIMAL"]),
-        "money" => Some(&["MONEY"]),
-        "varchar" => Some(&["VARCHAR"]),
-        "text" => Some(&["TEXT"]),
-        "json" => Some(&["JSON"]),
-        "jsonb" => Some(&["JSONB"]),
-        "uuid" => Some(&["UUID"]),
-        "xml" => Some(&["XML"]),
-        "date" => Some(&["DATE"]),
-        "time" => Some(&["TIME"]),
-        "timetz" => Some(&["TIME", "WITH", "TIME", "ZONE"]),
-        "timestamp" => Some(&["TIMESTAMP"]),
-        "timestamptz" => Some(&["TIMESTAMP", "WITH", "TIME", "ZONE"]),
-        "interval" => Some(&["INTERVAL"]),
-        "bit" => Some(&["BIT"]),
-        "varbit" => Some(&["BIT", "VARYING"]),
-        "inet" => Some(&["INET"]),
-        "cidr" => Some(&["CIDR"]),
-        "macaddr" => Some(&["MACADDR"]),
-        "macaddr8" => Some(&["MACADDR8"]),
-        "regclass" => Some(&["REGCLASS"]),
-        "regproc" => Some(&["REGPROC"]),
-        "regprocedure" => Some(&["REGPROCEDURE"]),
-        "regoper" => Some(&["REGOPER"]),
-        "regoperator" => Some(&["REGOPERATOR"]),
-        "regtype" => Some(&["REGTYPE"]),
-        "regconfig" => Some(&["REGCONFIG"]),
-        "regdictionary" => Some(&["REGDICTIONARY"]),
-        "anyarray" => Some(&["ANYARRAY"]),
-        "anyelement" => Some(&["ANYELEMENT"]),
-        "anynonarray" => Some(&["ANYNONARRAY"]),
-        "anyenum" => Some(&["ANYENUM"]),
-        "anyrange" => Some(&["ANYRANGE"]),
-        "pg_lsn" => Some(&["PG_LSN"]),
-        "tsvector" => Some(&["TSVECTOR"]),
-        "tsquery" => Some(&["TSQUERY"]),
-        "gtsvector" => Some(&["GTSVECTOR"]),
-        "txid_snapshot" => Some(&["TXID_SNAPSHOT"]),
-        "int4range" => Some(&["INT4RANGE"]),
-        "int8range" => Some(&["INT8RANGE"]),
-        "numrange" => Some(&["NUMRANGE"]),
-        "tsrange" => Some(&["TSRANGE"]),
-        "tstzrange" => Some(&["TSTZRANGE"]),
-        "daterange" => Some(&["DATERANGE"]),
-        "record" => Some(&["RECORD"]),
-        "void" => Some(&["VOID"]),
+        "bool" => Some(&["boolean"]),
+        "bytea" => Some(&["bytea"]),
+        "char" | "bpchar" => Some(&["char"]),
+        "name" => Some(&["name"]),
+        "int2" => Some(&["smallint"]),
+        "int4" => Some(&["int"]),
+        "int8" => Some(&["bigint"]),
+        "oid" => Some(&["oid"]),
+        "tid" => Some(&["tid"]),
+        "xid" => Some(&["xid"]),
+        "cid" => Some(&["cid"]),
+        "float4" => Some(&["real"]),
+        "float8" => Some(&["double", "precision"]),
+        "numeric" => Some(&["numeric"]),
+        "decimal" => Some(&["decimal"]),
+        "money" => Some(&["money"]),
+        "varchar" => Some(&["varchar"]),
+        "text" => Some(&["text"]),
+        "json" => Some(&["json"]),
+        "jsonb" => Some(&["jsonb"]),
+        "uuid" => Some(&["uuid"]),
+        "xml" => Some(&["xml"]),
+        "date" => Some(&["date"]),
+        "time" => Some(&["time"]),
+        "timetz" => Some(&["time", "with", "time", "zone"]),
+        "timestamp" => Some(&["timestamp"]),
+        "timestamptz" => Some(&["timestamp", "with", "time", "zone"]),
+        "interval" => Some(&["interval"]),
+        "bit" => Some(&["bit"]),
+        "varbit" => Some(&["bit", "varying"]),
+        "inet" => Some(&["inet"]),
+        "cidr" => Some(&["cidr"]),
+        "macaddr" => Some(&["macaddr"]),
+        "macaddr8" => Some(&["macaddr8"]),
+        "regclass" => Some(&["regclass"]),
+        "regproc" => Some(&["regproc"]),
+        "regprocedure" => Some(&["regprocedure"]),
+        "regoper" => Some(&["regoper"]),
+        "regoperator" => Some(&["regoperator"]),
+        "regtype" => Some(&["regtype"]),
+        "regconfig" => Some(&["regconfig"]),
+        "regdictionary" => Some(&["regdictionary"]),
+        "anyarray" => Some(&["anyarray"]),
+        "anyelement" => Some(&["anyelement"]),
+        "anynonarray" => Some(&["anynonarray"]),
+        "anyenum" => Some(&["anyenum"]),
+        "anyrange" => Some(&["anyrange"]),
+        "pg_lsn" => Some(&["pg_lsn"]),
+        "tsvector" => Some(&["tsvector"]),
+        "tsquery" => Some(&["tsquery"]),
+        "gtsvector" => Some(&["gtsvector"]),
+        "txid_snapshot" => Some(&["txid_snapshot"]),
+        "int4range" => Some(&["int4range"]),
+        "int8range" => Some(&["int8range"]),
+        "numrange" => Some(&["numrange"]),
+        "tsrange" => Some(&["tsrange"]),
+        "tstzrange" => Some(&["tstzrange"]),
+        "daterange" => Some(&["daterange"]),
+        "record" => Some(&["record"]),
+        "void" => Some(&["void"]),
         _ => None,
     }
 }
@@ -252,7 +252,7 @@ fn emit_time_with_tz_type(e: &mut EventEmitter, n: &TypeName, name_parts: &[Stri
             e.space();
             e.token(TokenKind::TIME_KW);
             e.space();
-            e.token(TokenKind::IDENT("ZONE".to_string()));
+            e.token(TokenKind::ZONE_KW);
         }
         "timestamptz" => {
             e.token(TokenKind::TIMESTAMP_KW);
@@ -269,7 +269,7 @@ fn emit_time_with_tz_type(e: &mut EventEmitter, n: &TypeName, name_parts: &[Stri
             e.space();
             e.token(TokenKind::TIME_KW);
             e.space();
-            e.token(TokenKind::IDENT("ZONE".to_string()));
+            e.token(TokenKind::ZONE_KW);
         }
         _ => {
             emit_normalized_type_name(e, name_parts);
@@ -323,18 +323,18 @@ fn emit_interval_type_modifiers(e: &mut EventEmitter, n: &TypeName) -> bool {
 fn interval_field_keywords(range: i32) -> Option<&'static [&'static str]> {
     match range {
         INTERVAL_FULL_RANGE => Some(&[]),
-        value if value == INTERVAL_MASK_YEAR => Some(&["YEAR"]),
-        value if value == INTERVAL_MASK_MONTH => Some(&["MONTH"]),
-        value if value == INTERVAL_MASK_DAY => Some(&["DAY"]),
-        value if value == INTERVAL_MASK_HOUR => Some(&["HOUR"]),
-        value if value == INTERVAL_MASK_MINUTE => Some(&["MINUTE"]),
-        value if value == INTERVAL_MASK_SECOND => Some(&["SECOND"]),
+        value if value == INTERVAL_MASK_YEAR => Some(&["year"]),
+        value if value == INTERVAL_MASK_MONTH => Some(&["month"]),
+        value if value == INTERVAL_MASK_DAY => Some(&["day"]),
+        value if value == INTERVAL_MASK_HOUR => Some(&["hour"]),
+        value if value == INTERVAL_MASK_MINUTE => Some(&["minute"]),
+        value if value == INTERVAL_MASK_SECOND => Some(&["second"]),
         value if value == INTERVAL_MASK_YEAR | INTERVAL_MASK_MONTH => {
-            Some(&["YEAR", "TO", "MONTH"])
+            Some(&["year", "to", "month"])
         }
-        value if value == INTERVAL_MASK_DAY | INTERVAL_MASK_HOUR => Some(&["DAY", "TO", "HOUR"]),
+        value if value == INTERVAL_MASK_DAY | INTERVAL_MASK_HOUR => Some(&["day", "to", "hour"]),
         value if value == INTERVAL_MASK_DAY | INTERVAL_MASK_HOUR | INTERVAL_MASK_MINUTE => {
-            Some(&["DAY", "TO", "MINUTE"])
+            Some(&["day", "to", "minute"])
         }
         value
             if value
@@ -343,16 +343,16 @@ fn interval_field_keywords(range: i32) -> Option<&'static [&'static str]> {
                     | INTERVAL_MASK_MINUTE
                     | INTERVAL_MASK_SECOND =>
         {
-            Some(&["DAY", "TO", "SECOND"])
+            Some(&["day", "to", "second"])
         }
         value if value == INTERVAL_MASK_HOUR | INTERVAL_MASK_MINUTE => {
-            Some(&["HOUR", "TO", "MINUTE"])
+            Some(&["hour", "to", "minute"])
         }
         value if value == INTERVAL_MASK_HOUR | INTERVAL_MASK_MINUTE | INTERVAL_MASK_SECOND => {
-            Some(&["HOUR", "TO", "SECOND"])
+            Some(&["hour", "to", "second"])
         }
         value if value == INTERVAL_MASK_MINUTE | INTERVAL_MASK_SECOND => {
-            Some(&["MINUTE", "TO", "SECOND"])
+            Some(&["minute", "to", "second"])
         }
         _ => None,
     }

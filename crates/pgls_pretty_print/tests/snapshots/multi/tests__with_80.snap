@@ -50,14 +50,14 @@ from
 with recursive
 t (n)
 as (
-  values (cast('01' as BIT VARYING))
+  values (cast('01' as bit varying))
   union
   select
-    n || cast('10' as BIT VARYING)
+    n || cast('10' as bit varying)
   from
     t
   where
-    n < cast('100' as BIT VARYING)
+    n < cast('100' as bit varying)
 )
 select
   n
@@ -286,10 +286,10 @@ from
 order by 1;
 
 create temporary table department (
-  id INT primary key,
-  parent_department INT
+  id int primary key,
+  parent_department int
   references department,
-  name TEXT
+  name text
 );
 
 insert into department values (0, null, 'ROOT');
@@ -504,9 +504,9 @@ select * from subdepartment;
 
 select * from vsubdepartment order by name;
 
-select pg_get_viewdef(cast('vsubdepartment' as REGCLASS));
+select pg_get_viewdef(cast('vsubdepartment' as regclass));
 
-select pg_get_viewdef(cast('vsubdepartment' as REGCLASS), true);
+select pg_get_viewdef(cast('vsubdepartment' as regclass), true);
 
 select SUM(n) from t;
 
@@ -555,8 +555,8 @@ limit 32;
 select * from t;
 
 create temporary table tree (
-  id INT primary key,
-  parent_id INT references tree (id)
+  id int primary key,
+  parent_id int references tree (id)
 );
 
 insert into tree
@@ -582,7 +582,7 @@ with recursive
 t (id,
 path)
 as (
-  values (1, cast(array[] as INT[]))
+  values (1, cast(array[] as int[]))
   union all
   select
     tree.id,
@@ -610,7 +610,7 @@ with recursive
 t (id,
 path)
 as (
-  values (1, cast(array[] as INT[]))
+  values (1, cast(array[] as int[]))
   union all
   select
     tree.id,
@@ -638,7 +638,7 @@ with recursive
 t (id,
 path)
 as (
-  values (1, cast(array[] as INT[]))
+  values (1, cast(array[] as int[]))
   union all
   select
     tree.id,
@@ -659,7 +659,7 @@ from
     t as t2
   on t1.id = t2.id;
 
-create temporary table duplicates (a INT not null);
+create temporary table duplicates (a int not null);
 
 insert into duplicates values (1), (1);
 

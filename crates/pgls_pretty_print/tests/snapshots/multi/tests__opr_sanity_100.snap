@@ -16,7 +16,7 @@ where
   p1.pronargdefaults > p1.pronargs or
   array_lower(p1.proargtypes, 1) <> 0 or
   array_upper(p1.proargtypes, 1) <> p1.pronargs - 1 or
-  cast(0 as OID) = any (p1.proargtypes) or
+  cast(0 as oid) = any (p1.proargtypes) or
   procost <= 0 or
   case
     when proretset then prorows <= 0
@@ -99,8 +99,8 @@ where
   p1.pronargs <> p2.pronargs);
 
 select distinct
-  cast(p1.prorettype as REGTYPE),
-  cast(p2.prorettype as REGTYPE)
+  cast(p1.prorettype as regtype),
+  cast(p2.prorettype as regtype)
 from
   pg_proc as p1,
   pg_proc as p2
@@ -120,8 +120,8 @@ order by 1,
   2;
 
 select distinct
-  cast(p1.proargtypes[0] as REGTYPE),
-  cast(p2.proargtypes[0] as REGTYPE)
+  cast(p1.proargtypes[0] as regtype),
+  cast(p2.proargtypes[0] as regtype)
 from
   pg_proc as p1,
   pg_proc as p2
@@ -141,8 +141,8 @@ order by 1,
   2;
 
 select distinct
-  cast(p1.proargtypes[1] as REGTYPE),
-  cast(p2.proargtypes[1] as REGTYPE)
+  cast(p1.proargtypes[1] as regtype),
+  cast(p2.proargtypes[1] as regtype)
 from
   pg_proc as p1,
   pg_proc as p2
@@ -162,8 +162,8 @@ order by 1,
   2;
 
 select distinct
-  cast(p1.proargtypes[2] as REGTYPE),
-  cast(p2.proargtypes[2] as REGTYPE)
+  cast(p1.proargtypes[2] as regtype),
+  cast(p2.proargtypes[2] as regtype)
 from
   pg_proc as p1,
   pg_proc as p2
@@ -179,8 +179,8 @@ order by 1,
   2;
 
 select distinct
-  cast(p1.proargtypes[3] as REGTYPE),
-  cast(p2.proargtypes[3] as REGTYPE)
+  cast(p1.proargtypes[3] as regtype),
+  cast(p2.proargtypes[3] as regtype)
 from
   pg_proc as p1,
   pg_proc as p2
@@ -196,8 +196,8 @@ order by 1,
   2;
 
 select distinct
-  cast(p1.proargtypes[4] as REGTYPE),
-  cast(p2.proargtypes[4] as REGTYPE)
+  cast(p1.proargtypes[4] as regtype),
+  cast(p2.proargtypes[4] as regtype)
 from
   pg_proc as p1,
   pg_proc as p2
@@ -213,8 +213,8 @@ order by 1,
   2;
 
 select distinct
-  cast(p1.proargtypes[5] as REGTYPE),
-  cast(p2.proargtypes[5] as REGTYPE)
+  cast(p1.proargtypes[5] as regtype),
+  cast(p2.proargtypes[5] as regtype)
 from
   pg_proc as p1,
   pg_proc as p2
@@ -230,8 +230,8 @@ order by 1,
   2;
 
 select distinct
-  cast(p1.proargtypes[6] as REGTYPE),
-  cast(p2.proargtypes[6] as REGTYPE)
+  cast(p1.proargtypes[6] as regtype),
+  cast(p2.proargtypes[6] as regtype)
 from
   pg_proc as p1,
   pg_proc as p2
@@ -247,8 +247,8 @@ order by 1,
   2;
 
 select distinct
-  cast(p1.proargtypes[7] as REGTYPE),
-  cast(p2.proargtypes[7] as REGTYPE)
+  cast(p1.proargtypes[7] as regtype),
+  cast(p2.proargtypes[7] as regtype)
 from
   pg_proc as p1,
   pg_proc as p2
@@ -269,8 +269,8 @@ select
 from
   pg_proc as p1
 where
-  p1.prorettype = cast('internal' as REGTYPE) and
-  not cast('internal' as REGTYPE) = any (p1.proargtypes);
+  p1.prorettype = cast('internal' as regtype) and
+  not cast('internal' as regtype) = any (p1.proargtypes);
 
 select
   p1.oid,
@@ -280,17 +280,17 @@ from
 where
   p1.prorettype
   in (
-    cast('anyelement' as REGTYPE),
-    cast('anyarray' as REGTYPE),
-    cast('anynonarray' as REGTYPE),
-    cast('anyenum' as REGTYPE)
+    cast('anyelement' as regtype),
+    cast('anyarray' as regtype),
+    cast('anynonarray' as regtype),
+    cast('anyenum' as regtype)
   ) and
-  not (cast('anyelement' as REGTYPE) = any (p1.proargtypes) or
-  cast('anyarray' as REGTYPE) = any (p1.proargtypes) or
-  cast('anynonarray' as REGTYPE) = any (p1.proargtypes) or
-  cast('anyenum' as REGTYPE) = any (p1.proargtypes) or
-  cast('anyrange' as REGTYPE) = any (p1.proargtypes) or
-  cast('anymultirange' as REGTYPE) = any (p1.proargtypes))
+  not (cast('anyelement' as regtype) = any (p1.proargtypes) or
+  cast('anyarray' as regtype) = any (p1.proargtypes) or
+  cast('anynonarray' as regtype) = any (p1.proargtypes) or
+  cast('anyenum' as regtype) = any (p1.proargtypes) or
+  cast('anyrange' as regtype) = any (p1.proargtypes) or
+  cast('anymultirange' as regtype) = any (p1.proargtypes))
 order by 2;
 
 select
@@ -301,11 +301,11 @@ from
 where
   p1.prorettype
   in (
-    cast('anyrange' as REGTYPE),
-    cast('anymultirange' as REGTYPE)
+    cast('anyrange' as regtype),
+    cast('anymultirange' as regtype)
   ) and
-  not (cast('anyrange' as REGTYPE) = any (p1.proargtypes) or
-  cast('anymultirange' as REGTYPE) = any (p1.proargtypes))
+  not (cast('anyrange' as regtype) = any (p1.proargtypes) or
+  cast('anymultirange' as regtype) = any (p1.proargtypes))
 order by 2;
 
 select
@@ -316,14 +316,14 @@ from
 where
   p1.prorettype
   in (
-    cast('anycompatible' as REGTYPE),
-    cast('anycompatiblearray' as REGTYPE),
-    cast('anycompatiblenonarray' as REGTYPE)
+    cast('anycompatible' as regtype),
+    cast('anycompatiblearray' as regtype),
+    cast('anycompatiblenonarray' as regtype)
   ) and
-  not (cast('anycompatible' as REGTYPE) = any (p1.proargtypes) or
-  cast('anycompatiblearray' as REGTYPE) = any (p1.proargtypes) or
-  cast('anycompatiblenonarray' as REGTYPE) = any (p1.proargtypes) or
-  cast('anycompatiblerange' as REGTYPE) = any (p1.proargtypes))
+  not (cast('anycompatible' as regtype) = any (p1.proargtypes) or
+  cast('anycompatiblearray' as regtype) = any (p1.proargtypes) or
+  cast('anycompatiblenonarray' as regtype) = any (p1.proargtypes) or
+  cast('anycompatiblerange' as regtype) = any (p1.proargtypes))
 order by 2;
 
 select
@@ -333,8 +333,8 @@ from
   pg_proc as p1
 where
   p1.prorettype =
-  cast('anycompatiblerange' as REGTYPE) and
-  not cast('anycompatiblerange' as REGTYPE) = any (p1.proargtypes)
+  cast('anycompatiblerange' as regtype) and
+  not cast('anycompatiblerange' as regtype) = any (p1.proargtypes)
 order by 2;
 
 select
@@ -343,7 +343,7 @@ select
 from
   pg_proc as p1
 where
-  cast('cstring' as REGTYPE) = any (p1.proargtypes) and
+  cast('cstring' as regtype) = any (p1.proargtypes) and
   not exists
   (
     select 1 from pg_type where typinput = p1.oid
@@ -353,7 +353,7 @@ where
     select 1 from pg_conversion where conproc = p1.oid
   ) and
   p1.oid <>
-  cast('shell_in(cstring)' as REGPROCEDURE)
+  cast('shell_in(cstring)' as regprocedure)
 order by 1;
 
 select
@@ -362,7 +362,7 @@ select
 from
   pg_proc as p1
 where
-  p1.prorettype = cast('cstring' as REGTYPE) and
+  p1.prorettype = cast('cstring' as regtype) and
   not exists
   (
     select 1 from pg_type where typoutput = p1.oid
@@ -371,7 +371,7 @@ where
   (
     select 1 from pg_type where typmodout = p1.oid
   ) and
-  p1.oid <> cast('shell_out(void)' as REGPROCEDURE)
+  p1.oid <> cast('shell_out(void)' as regprocedure)
 order by 1;
 
 select
@@ -463,20 +463,20 @@ where
   );
 
 select
-  cast(oid as REGPROCEDURE),
-  cast(provariadic as REGTYPE),
-  cast(proargtypes as REGTYPE[])
+  cast(oid as regprocedure),
+  cast(provariadic as regtype),
+  cast(proargtypes as regtype[])
 from
   pg_proc
 where
   provariadic <> 0 and
   case proargtypes[array_length(proargtypes, 1) - 1]
-    when cast('"any"' as REGTYPE)
-    then cast('"any"' as REGTYPE)
-    when cast('anyarray' as REGTYPE)
-    then cast('anyelement' as REGTYPE)
-    when cast('anycompatiblearray' as REGTYPE)
-    then cast('anycompatible' as REGTYPE)
+    when cast('"any"' as regtype)
+    then cast('"any"' as regtype)
+    when cast('anyarray' as regtype)
+    then cast('anyelement' as regtype)
+    when cast('anycompatiblearray' as regtype)
+    then cast('anycompatible' as regtype)
     else (
       select
         t.oid
@@ -490,7 +490,7 @@ where
   provariadic;
 
 select
-  cast(oid as REGPROCEDURE),
+  cast(oid as regprocedure),
   proargmodes,
   provariadic
 from
@@ -509,10 +509,10 @@ from
   pg_proc as p2
 where
   p2.oid = p1.prosupport and
-  (p2.prorettype <> cast('internal' as REGTYPE) or
+  (p2.prorettype <> cast('internal' as regtype) or
   p2.proretset or
   p2.pronargs <> 1 or
-  p2.proargtypes[0] <> cast('internal' as REGTYPE));
+  p2.proargtypes[0] <> cast('internal' as regtype));
 
 select
   p1.oid,
@@ -528,7 +528,7 @@ where
   d.classoid is null and p1.oid <= 9999;
 
 select
-  cast(p1.oid as REGPROCEDURE)
+  cast(p1.oid as regprocedure)
 from
   pg_proc as p1
   inner join
@@ -539,7 +539,7 @@ where
 order by 1;
 
 select
-  cast(p1.oid as REGPROCEDURE)
+  cast(p1.oid as regprocedure)
 from
   pg_proc as p1
   inner join
@@ -626,8 +626,8 @@ where
   (p.pronargs < 1 or
   p.pronargs > 3 or
   not (binary_coercible(c.castsource, p.proargtypes[0]) or
-  c.castsource = cast('character' as REGTYPE) and
-  p.proargtypes[0] = cast('text' as REGTYPE)) or
+  c.castsource = cast('character' as regtype) and
+  p.proargtypes[0] = cast('text' as regtype)) or
   not binary_coercible(p.prorettype, c.casttarget));
 
 select
@@ -638,13 +638,13 @@ from
 where
   c.castfunc = p.oid and
   (p.pronargs > 1 and
-  p.proargtypes[1] <> cast('int4' as REGTYPE) or
+  p.proargtypes[1] <> cast('int4' as regtype) or
   p.pronargs > 2 and
-  p.proargtypes[2] <> cast('bool' as REGTYPE));
+  p.proargtypes[2] <> cast('bool' as regtype));
 
 select
-  cast(castsource as REGTYPE),
-  cast(casttarget as REGTYPE),
+  cast(castsource as regtype),
+  cast(casttarget as regtype),
   castfunc,
   castcontext
 from
@@ -683,15 +683,15 @@ from
   pg_conversion as c
 where
   p.oid = c.conproc and
-  (p.prorettype <> cast('int4' as REGTYPE) or
+  (p.prorettype <> cast('int4' as regtype) or
   p.proretset or
   p.pronargs <> 6 or
-  p.proargtypes[0] <> cast('int4' as REGTYPE) or
-  p.proargtypes[1] <> cast('int4' as REGTYPE) or
-  p.proargtypes[2] <> cast('cstring' as REGTYPE) or
-  p.proargtypes[3] <> cast('internal' as REGTYPE) or
-  p.proargtypes[4] <> cast('int4' as REGTYPE) or
-  p.proargtypes[5] <> cast('bool' as REGTYPE));
+  p.proargtypes[0] <> cast('int4' as regtype) or
+  p.proargtypes[1] <> cast('int4' as regtype) or
+  p.proargtypes[2] <> cast('cstring' as regtype) or
+  p.proargtypes[3] <> cast('internal' as regtype) or
+  p.proargtypes[4] <> cast('int4' as regtype) or
+  p.proargtypes[5] <> cast('bool' as regtype));
 
 select
   c.oid,
@@ -701,7 +701,7 @@ from
 where
   condefault and
   convert(
-    cast('ABC' as BYTEA),
+    cast('ABC' as bytea),
     pg_encoding_to_char(conforencoding),
     pg_encoding_to_char(contoencoding)
   ) <>
@@ -771,8 +771,8 @@ where
   (o1.oprkind <> o2.oprkind or
   o1.oprleft <> o2.oprleft or
   o1.oprright <> o2.oprright or
-  o1.oprresult <> cast('bool' as REGTYPE) or
-  o2.oprresult <> cast('bool' as REGTYPE) or
+  o1.oprresult <> cast('bool' as regtype) or
+  o2.oprresult <> cast('bool' as regtype) or
   o1.oid <> o2.oprnegate or
   o1.oid = o2.oid);
 
@@ -806,7 +806,7 @@ from
 where
   (o1.oprcanmerge or o1.oprcanhash) and
   not (o1.oprkind = 'b' and
-  o1.oprresult = cast('bool' as REGTYPE) and
+  o1.oprresult = cast('bool' as regtype) and
   o1.oprcom <> 0);
 
 select
@@ -944,14 +944,14 @@ from
   pg_proc as p2
 where
   o1.oprrest = p2.oid and
-  (o1.oprresult <> cast('bool' as REGTYPE) or
-  p2.prorettype <> cast('float8' as REGTYPE) or
+  (o1.oprresult <> cast('bool' as regtype) or
+  p2.prorettype <> cast('float8' as regtype) or
   p2.proretset or
   p2.pronargs <> 4 or
-  p2.proargtypes[0] <> cast('internal' as REGTYPE) or
-  p2.proargtypes[1] <> cast('oid' as REGTYPE) or
-  p2.proargtypes[2] <> cast('internal' as REGTYPE) or
-  p2.proargtypes[3] <> cast('int4' as REGTYPE));
+  p2.proargtypes[0] <> cast('internal' as regtype) or
+  p2.proargtypes[1] <> cast('oid' as regtype) or
+  p2.proargtypes[2] <> cast('internal' as regtype) or
+  p2.proargtypes[3] <> cast('int4' as regtype));
 
 select
   o1.oid,
@@ -964,15 +964,15 @@ from
 where
   o1.oprjoin = p2.oid and
   (o1.oprkind <> 'b' or
-  o1.oprresult <> cast('bool' as REGTYPE) or
-  p2.prorettype <> cast('float8' as REGTYPE) or
+  o1.oprresult <> cast('bool' as regtype) or
+  p2.prorettype <> cast('float8' as regtype) or
   p2.proretset or
   p2.pronargs <> 5 or
-  p2.proargtypes[0] <> cast('internal' as REGTYPE) or
-  p2.proargtypes[1] <> cast('oid' as REGTYPE) or
-  p2.proargtypes[2] <> cast('internal' as REGTYPE) or
-  p2.proargtypes[3] <> cast('int2' as REGTYPE) or
-  p2.proargtypes[4] <> cast('internal' as REGTYPE));
+  p2.proargtypes[0] <> cast('internal' as regtype) or
+  p2.proargtypes[1] <> cast('oid' as regtype) or
+  p2.proargtypes[2] <> cast('internal' as regtype) or
+  p2.proargtypes[3] <> cast('int2' as regtype) or
+  p2.proargtypes[4] <> cast('internal' as regtype));
 
 select
   o1.oid,
@@ -1100,10 +1100,10 @@ where
   p1.proleakproof <> p2.proleakproof);
 
 select
-  cast(pp.oid as REGPROCEDURE) as proc,
+  cast(pp.oid as regprocedure) as proc,
   pp.provolatile as vp,
   pp.proleakproof as lp,
-  cast(po.oid as REGPROCEDURE) as opr,
+  cast(po.oid as regprocedure) as opr,
   po.provolatile as vo,
   po.proleakproof as lo
 from
@@ -1128,7 +1128,7 @@ order by 1;
 
 select
   ctid,
-  cast(aggfnoid as OID)
+  cast(aggfnoid as oid)
 from
   pg_aggregate as a
 where
@@ -1144,7 +1144,7 @@ where
   aggmtransspace < 0;
 
 select
-  cast(a.aggfnoid as OID),
+  cast(a.aggfnoid as oid),
   p.proname
 from
   pg_aggregate as a,
@@ -1173,7 +1173,7 @@ where
   );
 
 select
-  cast(a.aggfnoid as OID),
+  cast(a.aggfnoid as oid),
   p.proname
 from
   pg_aggregate as a,
@@ -1184,7 +1184,7 @@ where
   p.prorettype <> a.aggtranstype;
 
 select
-  cast(a.aggfnoid as OID),
+  cast(a.aggfnoid as oid),
   p.proname,
   ptr.oid,
   ptr.proname
@@ -1229,7 +1229,7 @@ where
   p.pronargs > 4);
 
 select
-  cast(a.aggfnoid as OID),
+  cast(a.aggfnoid as oid),
   p.proname,
   pfn.oid,
   pfn.proname
@@ -1269,7 +1269,7 @@ where
   pfn.pronargs > 4);
 
 select
-  cast(a.aggfnoid as OID),
+  cast(a.aggfnoid as oid),
   p.proname,
   ptr.oid,
   ptr.proname
@@ -1286,7 +1286,7 @@ where
 
 select
   ctid,
-  cast(aggfnoid as OID)
+  cast(aggfnoid as oid)
 from
   pg_aggregate as a
 where
@@ -1295,7 +1295,7 @@ where
 
 select
   ctid,
-  cast(aggfnoid as OID)
+  cast(aggfnoid as oid)
 from
   pg_aggregate as a
 where
@@ -1307,7 +1307,7 @@ where
   aggminitval is not null);
 
 select
-  cast(a.aggfnoid as OID),
+  cast(a.aggfnoid as oid),
   p.proname
 from
   pg_aggregate as a,
@@ -1319,7 +1319,7 @@ where
   p.prorettype <> a.aggmtranstype;
 
 select
-  cast(a.aggfnoid as OID),
+  cast(a.aggfnoid as oid),
   p.proname,
   ptr.oid,
   ptr.proname
@@ -1359,7 +1359,7 @@ where
   p.pronargs > 3);
 
 select
-  cast(a.aggfnoid as OID),
+  cast(a.aggfnoid as oid),
   p.proname,
   ptr.oid,
   ptr.proname
@@ -1399,7 +1399,7 @@ where
   p.pronargs > 3);
 
 select
-  cast(a.aggfnoid as OID),
+  cast(a.aggfnoid as oid),
   p.proname,
   pfn.oid,
   pfn.proname
@@ -1439,7 +1439,7 @@ where
   pfn.pronargs > 4);
 
 select
-  cast(a.aggfnoid as OID),
+  cast(a.aggfnoid as oid),
   p.proname,
   ptr.oid,
   ptr.proname
@@ -1458,7 +1458,7 @@ where
   );
 
 select
-  cast(a.aggfnoid as OID),
+  cast(a.aggfnoid as oid),
   p.proname,
   ptr.oid,
   ptr.proname,
@@ -1496,7 +1496,7 @@ from
   pg_proc as p
 where
   a.aggcombinefn = p.oid and
-  a.aggtranstype = cast('internal' as REGTYPE) and
+  a.aggtranstype = cast('internal' as regtype) and
   p.proisstrict;
 
 select
@@ -1508,7 +1508,7 @@ from
   pg_aggregate
 where
   (aggserialfn <> 0 or aggdeserialfn <> 0) and
-  (aggtranstype <> cast('internal' as REGTYPE) or
+  (aggtranstype <> cast('internal' as regtype) or
   aggcombinefn = 0 or
   aggserialfn = 0 or
   aggdeserialfn = 0);
@@ -1521,9 +1521,9 @@ from
   pg_proc as p
 where
   a.aggserialfn = p.oid and
-  (p.prorettype <> cast('bytea' as REGTYPE) or
+  (p.prorettype <> cast('bytea' as regtype) or
   p.pronargs <> 1 or
-  p.proargtypes[0] <> cast('internal' as REGTYPE) or
+  p.proargtypes[0] <> cast('internal' as regtype) or
   not p.proisstrict);
 
 select
@@ -1534,10 +1534,10 @@ from
   pg_proc as p
 where
   a.aggdeserialfn = p.oid and
-  (p.prorettype <> cast('internal' as REGTYPE) or
+  (p.prorettype <> cast('internal' as regtype) or
   p.pronargs <> 2 or
-  p.proargtypes[0] <> cast('bytea' as REGTYPE) or
-  p.proargtypes[1] <> cast('internal' as REGTYPE) or
+  p.proargtypes[0] <> cast('bytea' as regtype) or
+  p.proargtypes[1] <> cast('internal' as regtype) or
   not p.proisstrict);
 
 select
@@ -1572,7 +1572,7 @@ order by 1,
   2;
 
 select
-  cast(a.aggfnoid as OID),
+  cast(a.aggfnoid as oid),
   o.oid
 from
   pg_operator as o,
@@ -1582,12 +1582,12 @@ where
   a.aggfnoid = p.oid and
   a.aggsortop = o.oid and
   (oprkind <> 'b' or
-  oprresult <> cast('boolean' as REGTYPE) or
+  oprresult <> cast('boolean' as regtype) or
   oprleft <> p.proargtypes[0] or
   oprright <> p.proargtypes[0]);
 
 select
-  cast(a.aggfnoid as OID),
+  cast(a.aggfnoid as oid),
   o.oid
 from
   pg_operator as o,
@@ -1629,8 +1629,8 @@ order by 1,
   2;
 
 select
-  cast(p1.oid as REGPROCEDURE),
-  cast(p2.oid as REGPROCEDURE)
+  cast(p1.oid as regprocedure),
+  cast(p2.oid as regprocedure)
 from
   pg_proc as p1,
   pg_proc as p2
@@ -1720,10 +1720,10 @@ where
   p1.oid = a1.amhandler and
   a1.amtype = 'i' and
   (p1.prorettype <>
-  cast('index_am_handler' as REGTYPE) or
+  cast('index_am_handler' as regtype) or
   p1.proretset or
   p1.pronargs <> 1 or
-  p1.proargtypes[0] <> cast('internal' as REGTYPE));
+  p1.proargtypes[0] <> cast('internal' as regtype));
 
 select
   a1.oid,
@@ -1737,10 +1737,10 @@ where
   p1.oid = a1.amhandler and
   a1.amtype = 't' and
   (p1.prorettype <>
-  cast('table_am_handler' as REGTYPE) or
+  cast('table_am_handler' as regtype) or
   p1.proretset or
   p1.pronargs <> 1 or
-  p1.proargtypes[0] <> cast('internal' as REGTYPE));
+  p1.proargtypes[0] <> cast('internal' as regtype));
 
 select
   a1.amopfamily,
@@ -1902,10 +1902,10 @@ where
   p1.provolatile = 'v';
 
 select
-  cast(amp.amproc as REGPROC) as proc,
+  cast(amp.amproc as regproc) as proc,
   opf.opfname as opfamily_name,
   opc.opcname as opclass_name,
-  cast(opc.opcintype as REGTYPE) as opcintype
+  cast(opc.opcintype as regtype) as opcintype
 from
   pg_am as am
   inner join
@@ -1921,7 +1921,7 @@ from
     amp.amprocnum = 4
 where
   am.amname = 'btree' and
-  amp.amproc is distinct from cast('btequalimage' as REGPROC)
+  amp.amproc is distinct from cast('btequalimage' as regproc)
 order by 1,
   2,
   3;
@@ -1953,10 +1953,10 @@ where
   array_upper(indoption, 1) <> indnatts - 1;
 
 select
-  cast(indexrelid as REGCLASS),
-  cast(indrelid as REGCLASS),
+  cast(indexrelid as regclass),
+  cast(indrelid as regclass),
   attname,
-  cast(atttypid as REGTYPE),
+  cast(atttypid as regtype),
   opcname
 from
   (
@@ -1980,10 +1980,10 @@ where
   icoll <> attcollation);
 
 select
-  cast(indexrelid as REGCLASS),
-  cast(indrelid as REGCLASS),
+  cast(indexrelid as regclass),
+  cast(indrelid as regclass),
   attname,
-  cast(atttypid as REGTYPE),
+  cast(atttypid as regtype),
   opcname
 from
   (
@@ -2026,8 +2026,8 @@ where
   );
 
 select
-  cast(indexrelid as REGCLASS),
-  cast(indrelid as REGCLASS),
+  cast(indexrelid as regclass),
+  cast(indrelid as regclass),
   iclass,
   icoll
 from

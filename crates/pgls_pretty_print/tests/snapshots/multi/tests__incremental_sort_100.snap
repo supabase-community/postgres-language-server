@@ -12,13 +12,13 @@ select * from (select * from tenk1 order by four) as t order by four, ten;
 reset work_mem;
 
 create table t (
-  a INT,
-  b INT
+  a int,
+  b int
 );
 
-create or replace function explain_analyze_without_memory(query TEXT)
+create or replace function explain_analyze_without_memory(query text)
 returns table (
-  out_line TEXT
+  out_line text
 )
 language plpgsql
 as $function$
@@ -34,8 +34,8 @@ begin
 end;
 $function$;
 
-create or replace function explain_analyze_inc_sort_nodes(query TEXT)
-returns JSONB
+create or replace function explain_analyze_inc_sort_nodes(query text)
+returns jsonb
 language plpgsql
 as $function$
 declare
@@ -71,8 +71,8 @@ begin
 end;
 $function$;
 
-create or replace function explain_analyze_inc_sort_nodes_without_memory(query TEXT)
-returns JSONB
+create or replace function explain_analyze_inc_sort_nodes_without_memory(query text)
+returns jsonb
 language plpgsql
 as $function$
 declare
@@ -94,8 +94,8 @@ begin
 end;
 $function$;
 
-create or replace function explain_analyze_inc_sort_nodes_verify_invariants(query TEXT)
-returns BOOLEAN
+create or replace function explain_analyze_inc_sort_nodes_verify_invariants(query text)
+returns boolean
 language plpgsql
 as $function$
 declare
@@ -307,7 +307,7 @@ select * from (select * from t order by a) as s order by a, b limit 66;
 
 delete from t;
 
-drop TABLE t;
+drop table t;
 
 set min_parallel_table_scan_size = '1kB';
 
@@ -320,9 +320,9 @@ set parallel_tuple_cost = 0;
 set max_parallel_workers_per_gather = 2;
 
 create table t (
-  a INT,
-  b INT,
-  c INT
+  a int,
+  b int,
+  c int
 );
 
 insert into t select mod(i, 10), mod(i, 10), i from generate_series(1, 10000) as s (i);
@@ -345,7 +345,7 @@ select * from t union select * from t order by 1, 3;
 
 select distinct a, b from t;
 
-drop TABLE t;
+drop table t;
 
 set enable_hashagg = off;
 
@@ -449,7 +449,7 @@ order by 1,
 
 select distinct
   sub.unique1,
-  stringu1 || cast(random() as TEXT)
+  stringu1 || cast(random() as text)
 from
   tenk1,
   lateral (
@@ -459,7 +459,7 @@ from
 
 select
   sub.unique1,
-  stringu1 || cast(random() as TEXT)
+  stringu1 || cast(random() as text)
 from
   tenk1,
   lateral (
@@ -485,7 +485,7 @@ reset min_parallel_index_scan_size;
 
 create table point_table (
   a point,
-  b INT
+  b int
 );
 
 create index "point_table_a_idx" on point_table using gist (a);
@@ -506,8 +506,8 @@ order by t1.four,
 limit 1;
 
 create table prt_tbl (
-  a INT,
-  b INT
+  a int,
+  b int
 )
 partition by range(a);
 
@@ -535,4 +535,4 @@ reset enable_bitmapscan;
 
 reset enable_seqscan;
 
-drop TABLE prt_tbl;
+drop table prt_tbl;

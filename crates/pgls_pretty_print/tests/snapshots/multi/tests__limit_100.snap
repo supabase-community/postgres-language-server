@@ -4,7 +4,7 @@ input_file: crates/pgls_pretty_print/tests/data/multi/limit.sql
 snapshot_kind: text
 ---
 select
-  cast('' as TEXT) as two,
+  cast('' as text) as two,
   unique1,
   unique2,
   stringu1
@@ -16,7 +16,7 @@ order by unique1
 limit 2;
 
 select
-  cast('' as TEXT) as five,
+  cast('' as text) as five,
   unique1,
   unique2,
   stringu1
@@ -28,7 +28,7 @@ order by unique1
 limit 5;
 
 select
-  cast('' as TEXT) as two,
+  cast('' as text) as two,
   unique1,
   unique2,
   stringu1
@@ -40,7 +40,7 @@ order by unique1
 limit 5;
 
 select
-  cast('' as TEXT) as three,
+  cast('' as text) as three,
   unique1,
   unique2,
   stringu1
@@ -53,7 +53,7 @@ limit 3
 offset 20;
 
 select
-  cast('' as TEXT) as zero,
+  cast('' as text) as zero,
   unique1,
   unique2,
   stringu1
@@ -66,7 +66,7 @@ limit 8
 offset 99;
 
 select
-  cast('' as TEXT) as eleven,
+  cast('' as text) as eleven,
   unique1,
   unique2,
   stringu1
@@ -78,10 +78,10 @@ order by unique1 desc
 limit 20
 offset 39;
 
-select cast('' as TEXT) as ten, unique1, unique2, stringu1 from onek order by unique1 offset 990;
+select cast('' as text) as ten, unique1, unique2, stringu1 from onek order by unique1 offset 990;
 
 select
-  cast('' as TEXT) as five,
+  cast('' as text) as five,
   unique1,
   unique2,
   stringu1
@@ -92,7 +92,7 @@ limit 5
 offset 990;
 
 select
-  cast('' as TEXT) as five,
+  cast('' as text) as five,
   unique1,
   unique2,
   stringu1
@@ -102,64 +102,64 @@ order by unique1
 limit 5
 offset 900;
 
-select * from int8_tbl limit case when random() < 0.5 then cast(null as BIGINT) end;
+select * from int8_tbl limit case when random() < 0.5 then cast(null as bigint) end;
 
-select * from int8_tbl offset case when random() < 0.5 then cast(null as BIGINT) end;
+select * from int8_tbl offset case when random() < 0.5 then cast(null as bigint) end;
 
 begin;
 
 declare "c1" cursor for select * from int8_tbl limit 10;;
 
-fetch FORWARD all from c1;
+fetch forward all from c1;
 
 fetch next from c1;
 
-fetch PRIOR from c1;
+fetch prior from c1;
 
-fetch BACKWARD all from c1;
+fetch backward all from c1;
 
-fetch PRIOR from c1;
+fetch prior from c1;
 
-fetch FORWARD all from c1;
+fetch forward all from c1;
 
 declare "c2" cursor for select * from int8_tbl limit 3;;
 
-fetch FORWARD all from c2;
+fetch forward all from c2;
 
 fetch next from c2;
 
-fetch PRIOR from c2;
+fetch prior from c2;
 
-fetch BACKWARD all from c2;
+fetch backward all from c2;
 
-fetch PRIOR from c2;
+fetch prior from c2;
 
-fetch FORWARD all from c2;
+fetch forward all from c2;
 
 declare "c3" cursor for select * from int8_tbl offset 3;;
 
-fetch FORWARD all from c3;
+fetch forward all from c3;
 
 fetch next from c3;
 
-fetch PRIOR from c3;
+fetch prior from c3;
 
-fetch BACKWARD all from c3;
+fetch backward all from c3;
 
-fetch PRIOR from c3;
+fetch prior from c3;
 
-fetch FORWARD all from c3;
+fetch forward all from c3;
 
 declare "c4" cursor for select * from int8_tbl offset 10;;
 
-fetch FORWARD all from c4;
+fetch forward all from c4;
 
 fetch next from c4;
 
-fetch PRIOR from c4;
+fetch prior from c4;
 
-fetch BACKWARD all from c4;
+fetch backward all from c4;
 
-fetch PRIOR from c4;
+fetch prior from c4;
 
-fetch FORWARD all from c4;
+fetch forward all from c4;

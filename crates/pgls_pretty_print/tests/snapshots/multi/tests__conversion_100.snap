@@ -4,19 +4,19 @@ input_file: crates/pgls_pretty_print/tests/data/multi/conversion.sql
 snapshot_kind: text
 ---
 create function test_enc_setup()
-returns VOID
+returns void
 as 'regresslib', 'test_enc_setup'
 language c
-STRICT;
+strict;
 
 select from test_enc_setup();
 
-create function test_enc_conversion(BYTEA, NAME, NAME, BOOLEAN, out validlen INT, out result BYTEA)
+create function test_enc_conversion(bytea, name, name, boolean, out validlen int, out result bytea)
 as 'regresslib', 'test_enc_conversion'
 language c
-STRICT;
+strict;
 
-create user regress_conversion_user NOCREATEDB NOCREATEROLE;
+create user regress_conversion_user nocreatedb nocreaterole;
 
 set session authorization regress_conversion_user;
 
@@ -34,9 +34,9 @@ comment on conversion myconv is 'bar';
 
 comment on conversion myconv is null;
 
-drop CONVERSION myconv;
+drop conversion myconv;
 
-drop CONVERSION mydef;
+drop conversion mydef;
 
 reset session_authorization;
 
@@ -44,12 +44,12 @@ drop role regress_conversion_user;
 
 create or replace function
 test_conv(
-  in input BYTEA,
-  in src_encoding TEXT,
-  in dst_encoding TEXT,
-  out result BYTEA,
-  out errorat BYTEA,
-  out error TEXT
+  in input bytea,
+  in src_encoding text,
+  in dst_encoding text,
+  out result bytea,
+  out errorat bytea,
+  out error text
 )
 language plpgsql
 as $function$
@@ -73,8 +73,8 @@ end;
 $function$;
 
 create table utf8_verification_inputs (
-  inbytes BYTEA,
-  description TEXT primary key
+  inbytes bytea,
+  description text primary key
 );
 
 insert into utf8_verification_inputs
@@ -112,7 +112,7 @@ as (
     inbytes,
     description,
     (test_conv(
-      inbytes || cast(repeat('.', 3) as BYTEA),
+      inbytes || cast(repeat('.', 3) as bytea),
       'utf8',
       'utf8'
     )).error
@@ -124,7 +124,7 @@ as (
   select
     description,
     (test_conv(
-      inbytes || cast(repeat('.', 64) as BYTEA),
+      inbytes || cast(repeat('.', 64) as bytea),
       'utf8',
       'utf8'
     )).error
@@ -151,7 +151,7 @@ as (
     inbytes,
     description,
     (test_conv(
-      inbytes || cast(repeat('.', 3) as BYTEA),
+      inbytes || cast(repeat('.', 3) as bytea),
       'utf8',
       'utf8'
     )).error
@@ -163,9 +163,9 @@ as (
   select
     description,
     (test_conv(
-      cast(repeat('.', 64 - length(inbytes)) as BYTEA) ||
+      cast(repeat('.', 64 - length(inbytes)) as bytea) ||
       inbytes ||
-      cast(repeat('.', 64) as BYTEA),
+      cast(repeat('.', 64) as bytea),
       'utf8',
       'utf8'
     )).error
@@ -192,7 +192,7 @@ as (
     inbytes,
     description,
     (test_conv(
-      inbytes || cast(repeat('.', 3) as BYTEA),
+      inbytes || cast(repeat('.', 3) as bytea),
       'utf8',
       'utf8'
     )).error
@@ -204,8 +204,8 @@ as (
   select
     description,
     (test_conv(
-      cast(repeat('.', 64) as BYTEA) || inbytes ||
-      cast(repeat('.', 3) as BYTEA),
+      cast(repeat('.', 64) as bytea) || inbytes ||
+      cast(repeat('.', 3) as bytea),
       'utf8',
       'utf8'
     )).error
@@ -232,7 +232,7 @@ as (
     inbytes,
     description,
     (test_conv(
-      inbytes || cast(repeat('.', 3) as BYTEA),
+      inbytes || cast(repeat('.', 3) as bytea),
       'utf8',
       'utf8'
     )).error
@@ -244,9 +244,9 @@ as (
   select
     description,
     (test_conv(
-      cast(repeat('.', 64 - length(inbytes)) as BYTEA) ||
+      cast(repeat('.', 64 - length(inbytes)) as bytea) ||
       inbytes ||
-      cast(repeat('.', 3) as BYTEA),
+      cast(repeat('.', 3) as bytea),
       'utf8',
       'utf8'
     )).error
@@ -267,8 +267,8 @@ where
 order by description;
 
 create table utf8_inputs (
-  inbytes BYTEA,
-  description TEXT
+  inbytes bytea,
+  description text
 );
 
 insert into utf8_inputs
@@ -314,8 +314,8 @@ select description, inbytes, (test_conv(inbytes, 'utf8', 'koi8r')).* from utf8_i
 select description, inbytes, (test_conv(inbytes, 'utf8', 'gb18030')).* from utf8_inputs;
 
 create table euc_jis_2004_inputs (
-  inbytes BYTEA,
-  description TEXT
+  inbytes bytea,
+  description text
 );
 
 insert into euc_jis_2004_inputs
@@ -346,8 +346,8 @@ from
   euc_jis_2004_inputs;
 
 create table shiftjis2004_inputs (
-  inbytes BYTEA,
-  description TEXT
+  inbytes bytea,
+  description text
 );
 
 insert into shiftjis2004_inputs
@@ -390,8 +390,8 @@ from
   shiftjis2004_inputs;
 
 create table gb18030_inputs (
-  inbytes BYTEA,
-  description TEXT
+  inbytes bytea,
+  description text
 );
 
 insert into gb18030_inputs
@@ -419,7 +419,7 @@ select
   description,
   inbytes,
   (test_conv(
-    cast(cast(inbytes as TEXT) as BYTEA),
+    cast(cast(inbytes as text) as bytea),
     'gb18030',
     'gb18030'
   )).*
@@ -429,8 +429,8 @@ from
 select description, inbytes, (test_conv(inbytes, 'gb18030', 'utf8')).* from gb18030_inputs;
 
 create table iso8859_5_inputs (
-  inbytes BYTEA,
-  description TEXT
+  inbytes bytea,
+  description text
 );
 
 insert into iso8859_5_inputs
@@ -455,8 +455,8 @@ from
   iso8859_5_inputs;
 
 create table big5_inputs (
-  inbytes BYTEA,
-  description TEXT
+  inbytes bytea,
+  description text
 );
 
 insert into big5_inputs
@@ -474,8 +474,8 @@ select description, inbytes, (test_conv(inbytes, 'big5', 'utf8')).* from big5_in
 select description, inbytes, (test_conv(inbytes, 'big5', 'mule_internal')).* from big5_inputs;
 
 create table mic_inputs (
-  inbytes BYTEA,
-  description TEXT
+  inbytes bytea,
+  description text
 );
 
 insert into mic_inputs

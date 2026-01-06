@@ -70,7 +70,7 @@ where
       pg_type as t2
     where
       t2.typname =
-      cast('_' || t1.typname as NAME) and
+      cast('_' || t1.typname as name) and
       t2.typelem = t1.oid and
       t1.typarray = t2.oid
   )
@@ -91,7 +91,7 @@ where
   (t2.oid is null or
   t2.typsubscript <>
   cast('array_subscript_handler'
-  as REGPROC));
+  as regproc));
 
 select
   t1.oid,
@@ -129,8 +129,8 @@ where
   (t1.typalign <>
   case
     when t2.typalign = 'd'
-    then cast('d' as CHAR)
-    else cast('i' as CHAR)
+    then cast('d' as char)
+    else cast('i' as char)
   end or
   t2.oid is null);
 
@@ -154,19 +154,19 @@ where
   t1.typinput = p1.oid and
   not (p1.pronargs = 1 and
   p1.proargtypes[0] =
-  cast('cstring' as REGTYPE) or
+  cast('cstring' as regtype) or
   p1.pronargs = 2 and
   p1.proargtypes[0] =
-  cast('cstring' as REGTYPE) and
+  cast('cstring' as regtype) and
   p1.proargtypes[1] =
-  cast('oid' as REGTYPE) or
+  cast('oid' as regtype) or
   p1.pronargs = 3 and
   p1.proargtypes[0] =
-  cast('cstring' as REGTYPE) and
+  cast('cstring' as regtype) and
   p1.proargtypes[1] =
-  cast('oid' as REGTYPE) and
+  cast('oid' as regtype) and
   p1.proargtypes[2] =
-  cast('int4' as REGTYPE));
+  cast('int4' as regtype));
 
 select
   t1.oid,
@@ -195,7 +195,7 @@ from
 where
   t1.typinput = p1.oid and
   t1.typelem <> 0 and t1.typlen < 0 and
-  not p1.oid = cast('array_in' as REGPROC)
+  not p1.oid = cast('array_in' as regproc)
 order by 1;
 
 select
@@ -232,7 +232,7 @@ where
   t1.typtype in ('b', 'p') and
   not (p1.pronargs = 1 and
   (p1.proargtypes[0] = t1.oid or
-  p1.oid = cast('array_out' as REGPROC) and
+  p1.oid = cast('array_out' as regproc) and
   t1.typelem <> 0 and
   t1.typlen = -1))
 order by 1;
@@ -248,7 +248,7 @@ from
 where
   t1.typoutput = p1.oid and
   not (p1.prorettype =
-  cast('cstring' as REGTYPE) and
+  cast('cstring' as regtype) and
   not p1.proretset);
 
 select
@@ -298,19 +298,19 @@ where
   t1.typreceive = p1.oid and
   not (p1.pronargs = 1 and
   p1.proargtypes[0] =
-  cast('internal' as REGTYPE) or
+  cast('internal' as regtype) or
   p1.pronargs = 2 and
   p1.proargtypes[0] =
-  cast('internal' as REGTYPE) and
+  cast('internal' as regtype) and
   p1.proargtypes[1] =
-  cast('oid' as REGTYPE) or
+  cast('oid' as regtype) or
   p1.pronargs = 3 and
   p1.proargtypes[0] =
-  cast('internal' as REGTYPE) and
+  cast('internal' as regtype) and
   p1.proargtypes[1] =
-  cast('oid' as REGTYPE) and
+  cast('oid' as regtype) and
   p1.proargtypes[2] =
-  cast('int4' as REGTYPE));
+  cast('int4' as regtype));
 
 select
   t1.oid,
@@ -339,7 +339,7 @@ from
 where
   t1.typreceive = p1.oid and
   t1.typelem <> 0 and t1.typlen < 0 and
-  not p1.oid = cast('array_recv' as REGPROC)
+  not p1.oid = cast('array_recv' as regproc)
 order by 1;
 
 select
@@ -392,7 +392,7 @@ where
   t1.typtype in ('b', 'p') and
   not (p1.pronargs = 1 and
   (p1.proargtypes[0] = t1.oid or
-  p1.oid = cast('array_send' as REGPROC) and
+  p1.oid = cast('array_send' as regproc) and
   t1.typelem <> 0 and
   t1.typlen = -1))
 order by 1;
@@ -407,7 +407,7 @@ from
   pg_proc as p1
 where
   t1.typsend = p1.oid and
-  not (p1.prorettype = cast('bytea' as REGTYPE) and
+  not (p1.prorettype = cast('bytea' as regtype) and
   not p1.proretset);
 
 select
@@ -457,8 +457,8 @@ where
   t1.typmodin = p1.oid and
   not (p1.pronargs = 1 and
   p1.proargtypes[0] =
-  cast('cstring[]' as REGTYPE) and
-  p1.prorettype = cast('int4' as REGTYPE) and
+  cast('cstring[]' as regtype) and
+  p1.prorettype = cast('int4' as regtype) and
   not p1.proretset);
 
 select
@@ -485,9 +485,9 @@ where
   t1.typmodout = p1.oid and
   not (p1.pronargs = 1 and
   p1.proargtypes[0] =
-  cast('int4' as REGTYPE) and
+  cast('int4' as regtype) and
   p1.prorettype =
-  cast('cstring' as REGTYPE) and
+  cast('cstring' as regtype) and
   not p1.proretset);
 
 select
@@ -541,8 +541,8 @@ where
   t2.typalign <>
   case
     when t1.typalign = 'd'
-    then cast('d' as CHAR)
-    else cast('i' as CHAR)
+    then cast('d' as char)
+    else cast('i' as char)
   end;
 
 select
@@ -565,7 +565,7 @@ from
 where
   t1.typsubscript =
   cast('array_subscript_handler'
-  as REGPROC) and
+  as regproc) and
   not (t1.typelem <> 0 and
   t1.typlen = -1 and
   not t1.typbyval);
@@ -581,7 +581,7 @@ from
 where
   t1.typsubscript =
   cast('raw_array_subscript_handler'
-  as REGPROC) and
+  as regproc) and
   not (t1.typelem <> 0 and
   t1.typlen > 0 and
   not t1.typbyval);
@@ -598,8 +598,8 @@ where
   t1.typanalyze = p1.oid and
   not (p1.pronargs = 1 and
   p1.proargtypes[0] =
-  cast('internal' as REGTYPE) and
-  p1.prorettype = cast('bool' as REGTYPE) and
+  cast('internal' as regtype) and
+  p1.prorettype = cast('bool' as regtype) and
   not p1.proretset);
 
 select
@@ -629,7 +629,7 @@ from
 where
   t.typbasetype = 0 and
   (t.typanalyze =
-  cast('range_typanalyze' as REGPROC)) <>
+  cast('range_typanalyze' as regproc)) <>
   (r.rngtypid is not null);
 
 select
@@ -641,10 +641,10 @@ from
 where
   t.typbasetype = 0 and
   (t.typanalyze =
-  cast('array_typanalyze' as REGPROC)) <>
+  cast('array_typanalyze' as regproc)) <>
   (t.typsubscript =
   cast('array_subscript_handler'
-  as REGPROC))
+  as regproc))
 order by 1;
 
 select
@@ -774,14 +774,14 @@ where
   a1.attstorage <> t1.typstorage and
   a1.attstorage <> 'p');
 
-create function is_catalog_text_unique_index_oid(OID)
-returns BOOLEAN
+create function is_catalog_text_unique_index_oid(oid)
+returns boolean
 as 'regresslib', 'is_catalog_text_unique_index_oid'
 language c
-STRICT;
+strict;
 
 select
-  cast(indexrelid as REGCLASS)
+  cast(indexrelid as regclass)
 from
   pg_index
 where
@@ -798,7 +798,7 @@ where
       pg_attribute
     where
       attrelid = indexrelid and
-      atttypid = cast('text' as REGTYPE)
+      atttypid = cast('text' as regtype)
   ));
 
 select
@@ -838,7 +838,7 @@ where
   o.opcmethod <> 403 or
   o.opcintype <> r.rngsubtype and
   not (o.opcintype =
-  cast('pg_catalog.anyarray' as REGTYPE) and
+  cast('pg_catalog.anyarray' as regtype) and
   exists
   (
     select
@@ -850,7 +850,7 @@ where
       typelem <> 0 and
       typsubscript =
       cast('array_subscript_handler'
-      as REGPROC)
+      as regproc)
   ));
 
 select
@@ -881,7 +881,7 @@ where
   proargtypes[0] <> rngsubtype or
   proargtypes[1] <> rngsubtype or
   prorettype <>
-  cast('pg_catalog.float8' as REGTYPE);
+  cast('pg_catalog.float8' as regtype);
 
 select
   r.rngtypid,
@@ -909,35 +909,35 @@ as
     cast('((11,12),(13,13),(14,14))'
     as polygon),
     cast('1,1,1' as circle),
-    cast('today' as DATE),
-    cast('now' as TIME),
-    cast('now' as TIMESTAMP),
-    cast('now' as time with time ZONE),
-    cast('now' as timestamp with time ZONE),
-    cast('12 seconds' as INTERVAL),
-    cast('{"reason":"because"}' as JSON),
-    cast('{"when":"now"}' as JSONB),
+    cast('today' as date),
+    cast('now' as time),
+    cast('now' as timestamp),
+    cast('now' as time with time zone),
+    cast('now' as timestamp with time zone),
+    cast('12 seconds' as interval),
+    cast('{"reason":"because"}' as json),
+    cast('{"when":"now"}' as jsonb),
     cast('$.a[*] ? (@ > 2)' as jsonpath),
-    cast('127.0.0.1' as INET),
-    cast('127.0.0.0/8' as CIDR),
-    cast('00:01:03:86:1c:ba' as MACADDR8),
-    cast('00:01:03:86:1c:ba' as MACADDR),
-    cast(2 as SMALLINT),
-    cast(4 as INT),
-    cast(8 as BIGINT),
-    cast(4 as REAL),
-    cast('8' as DOUBLE PRECISION),
-    cast(pi() as NUMERIC),
-    cast('foo' as CHAR),
-    cast('c' as CHAR),
-    cast('abc' as VARCHAR),
-    cast('name' as NAME),
-    cast('txt' as TEXT),
-    cast(true as BOOLEAN),
-    cast('\xDEADBEEF' as BYTEA),
-    cast(B'10001' as BIT(1)),
-    cast(B'10001' as BIT VARYING) as varbit,
-    cast('12.34' as MONEY),
+    cast('127.0.0.1' as inet),
+    cast('127.0.0.0/8' as cidr),
+    cast('00:01:03:86:1c:ba' as macaddr8),
+    cast('00:01:03:86:1c:ba' as macaddr),
+    cast(2 as smallint),
+    cast(4 as int),
+    cast(8 as bigint),
+    cast(4 as real),
+    cast('8' as double precision),
+    cast(pi() as numeric),
+    cast('foo' as char),
+    cast('c' as char),
+    cast('abc' as varchar),
+    cast('name' as name),
+    cast('txt' as text),
+    cast(true as boolean),
+    cast('\xDEADBEEF' as bytea),
+    cast(B'10001' as bit(1)),
+    cast(B'10001' as bit varying) as varbit,
+    cast('12.34' as money),
     cast('abc' as refcursor),
     cast('1 2' as int2vector),
     cast('1 2' as oidvector),
@@ -945,23 +945,23 @@ as
     as aclitem)
     as aclitem,
     cast('a fat cat sat on a mat and ate a fat rat'
-    as TSVECTOR),
-    cast('fat & rat' as TSQUERY),
+    as tsvector),
+    cast('fat & rat' as tsquery),
     cast('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11'
-    as UUID),
+    as uuid),
     cast('11' as xid8),
-    cast('pg_class' as REGCLASS),
-    cast('regtype' as REGTYPE) as type,
+    cast('pg_class' as regclass),
+    cast('regtype' as regtype) as type,
     cast('pg_monitor' as regrole),
-    cast(cast('pg_class' as REGCLASS)
-    as OID),
+    cast(cast('pg_class' as regclass)
+    as oid),
     cast('template1' as regdatabase),
-    cast('(1,1)' as TID),
-    cast('2' as XID),
-    cast('3' as CID),
-    cast('10:20:10,14,15' as TXID_SNAPSHOT),
+    cast('(1,1)' as tid),
+    cast('2' as xid),
+    cast('3' as cid),
+    cast('10:20:10,14,15' as txid_snapshot),
     cast('10:20:10,14,15' as pg_snapshot),
-    cast('16/B374D848' as PG_LSN),
+    cast('16/B374D848' as pg_lsn),
     cast(1
     as information_schema.cardinal_number),
     cast('l'
@@ -972,22 +972,22 @@ as
     as information_schema.time_stamp),
     cast('YES'
     as information_schema.yes_or_no),
-    cast('(1,2)' as INT4RANGE),
+    cast('(1,2)' as int4range),
     cast('{(1,2)}' as int4multirange),
-    cast('(3,4)' as INT8RANGE),
+    cast('(3,4)' as int8range),
     cast('{(3,4)}' as int8multirange),
-    cast('(3,4)' as NUMRANGE),
+    cast('(3,4)' as numrange),
     cast('{(3,4)}' as nummultirange),
     cast('(2020-01-02, 2021-02-03)'
-    as DATERANGE),
+    as daterange),
     cast('{(2020-01-02, 2021-02-03)}'
     as datemultirange),
     cast('(2020-01-02 03:04:05, 2021-02-03 06:07:08)'
-    as TSRANGE),
+    as tsrange),
     cast('{(2020-01-02 03:04:05, 2021-02-03 06:07:08)}'
     as tsmultirange),
     cast('(2020-01-02 03:04:05, 2021-02-03 06:07:08)'
-    as TSTZRANGE),
+    as tstzrange),
     cast('{(2020-01-02 03:04:05, 2021-02-03 06:07:08)}'
     as tstzmultirange);
 
@@ -1010,7 +1010,7 @@ where
   'regdictionary',
   'regnamespace',
   'regcollation']
-  as REGTYPE[])) and
+  as regtype[])) and
   oid <> all (cast(array['gtsvector',
   'pg_node_tree',
   'pg_ndistinct',
@@ -1019,7 +1019,7 @@ where
   'pg_brin_bloom_summary',
   'pg_brin_minmax_multi_summary',
   'xml']
-  as REGTYPE[])) and
+  as regtype[])) and
   not exists
   (
     select
@@ -1039,5 +1039,5 @@ where
       a.atttypid = t.oid and
       a.attnum > 0 and
       a.attrelid =
-      cast('tab_core_types' as REGCLASS)
+      cast('tab_core_types' as regclass)
   );

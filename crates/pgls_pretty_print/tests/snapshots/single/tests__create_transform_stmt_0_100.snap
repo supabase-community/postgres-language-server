@@ -3,8 +3,8 @@ source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/single/create_transform_stmt_0.sql
 snapshot_kind: text
 ---
-create TRANSFORM for hstore LANGUAGE sql
+create transform for hstore language sql
 (
-  from SQL with FUNCTION hstore_to_sql(internal),
-  to SQL with FUNCTION sql_to_hstore(internal)
+  from sql with function hstore_to_sql(internal),
+  to sql with function sql_to_hstore(internal)
 );

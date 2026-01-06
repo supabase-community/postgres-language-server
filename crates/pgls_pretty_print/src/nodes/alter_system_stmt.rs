@@ -9,7 +9,7 @@ pub(super) fn emit_alter_system_stmt(e: &mut EventEmitter, n: &AlterSystemStmt) 
 
     e.token(TokenKind::ALTER_KW);
     e.space();
-    e.token(TokenKind::IDENT("SYSTEM".to_string()));
+    e.token(TokenKind::SYSTEM_KW);
     e.line(LineType::SoftOrSpace);
 
     // Emit the SET statement

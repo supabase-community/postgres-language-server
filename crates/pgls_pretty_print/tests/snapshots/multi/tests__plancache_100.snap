@@ -9,11 +9,11 @@ prepare prepstmt as select * from pcachetest;;
 
 execute prepstmt;
 
-prepare prepstmt2 (BIGINT) as select * from pcachetest where q1 = $1;;
+prepare prepstmt2 (bigint) as select * from pcachetest where q1 = $1;;
 
 execute prepstmt2 (123);
 
-drop TABLE pcachetest;
+drop table pcachetest;
 
 execute prepstmt;
 
@@ -26,7 +26,7 @@ execute prepstmt;
 execute prepstmt2 (123);
 
 alter table pcachetest
-  add column q3 BIGINT;
+  add column q3 bigint;
 
 execute prepstmt;
 
@@ -51,8 +51,8 @@ as select q1, q2 / 2 as q2 from pcachetest;
 
 execute vprep;
 
-create function cache_test(INT)
-returns INT
+create function cache_test(int)
+returns int
 as $function$
 declare total int;
 begin
@@ -78,7 +78,7 @@ create temporary view v1
 as select 2 + 2 as f1;
 
 create function cache_test_2()
-returns INT
+returns int
 as $function$
 begin
 	return f1 from v1;
@@ -100,11 +100,11 @@ select cache_test_2();
 
 create schema "s1";
 
-create table abc (f1 INT);
+create table abc (f1 int);
 
 create schema "s2";
 
-create table abc (f1 INT);
+create table abc (f1 int);
 
 insert into s1.abc values (123);
 
@@ -123,13 +123,13 @@ select f1 from abc;
 execute p1;
 
 alter table s1.abc
-  add column f2 DOUBLE PRECISION;
+  add column f2 double precision;
 
 execute p1;
 
-drop SCHEMA s1 cascade;
+drop schema s1 cascade;
 
-drop SCHEMA s2 cascade;
+drop schema s2 cascade;
 
 reset search_path;
 
@@ -139,14 +139,14 @@ prepare p2 as select nextval('seq');;
 
 execute p2;
 
-drop SEQUENCE seq;
+drop sequence seq;
 
 create temporary sequence seq;
 
 execute p2;
 
 create function cachebug()
-returns VOID
+returns void
 as $function$
 declare r int;
 begin
@@ -163,7 +163,7 @@ select cachebug();
 
 select cachebug();
 
-create table pc_list_parted (a INT)
+create table pc_list_parted (a int)
 partition by LIST(a);
 
 create table pc_list_part_null partition of pc_list_parted for values in (null);
@@ -183,20 +183,20 @@ create table pc_list_part_2 partition of pc_list_parted for values in (2);
 execute pstmt_def_insert (2);
 
 alter table pc_list_parted
-  DETACH partition
+  detach partition
   pc_list_part_null;
 
 execute pstmt_def_insert (null);
 
-drop TABLE pc_list_part_1;
+drop table pc_list_part_1;
 
 execute pstmt_def_insert (1);
 
-drop TABLE pc_list_parted, pc_list_part_null;
+drop table pc_list_parted, pc_list_part_null;
 
 deallocate pstmt_def_insert;
 
-create table test_mode (a INT);
+create table test_mode (a int);
 
 insert into test_mode select 1 from generate_series(1, 1000) union all select 2;
 
@@ -204,7 +204,7 @@ create index on test_mode using btree (a);
 
 analyze test_mode;
 
-prepare test_mode_pp (INT) as select COUNT(*) from test_mode where a = $1;;
+prepare test_mode_pp (int) as select COUNT(*) from test_mode where a = $1;;
 
 select name, generic_plans, custom_plans from pg_prepared_statements where name = 'test_mode_pp';
 
@@ -244,4 +244,4 @@ explain (COSTS 'off') execute test_mode_pp (2);
 
 select name, generic_plans, custom_plans from pg_prepared_statements where name = 'test_mode_pp';
 
-drop TABLE test_mode;
+drop table test_mode;

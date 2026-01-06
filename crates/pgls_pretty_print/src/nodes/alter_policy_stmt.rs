@@ -9,7 +9,7 @@ pub(super) fn emit_alter_policy_stmt(e: &mut EventEmitter, n: &AlterPolicyStmt) 
 
     e.token(TokenKind::ALTER_KW);
     e.space();
-    e.token(TokenKind::IDENT("POLICY".to_string()));
+    e.token(TokenKind::POLICY_KW);
     e.space();
 
     // Policy name
@@ -36,7 +36,7 @@ pub(super) fn emit_alter_policy_stmt(e: &mut EventEmitter, n: &AlterPolicyStmt) 
     // Optional: USING clause
     if let Some(ref qual) = n.qual {
         e.line(LineType::SoftOrSpace);
-        e.token(TokenKind::IDENT("USING".to_string()));
+        e.token(TokenKind::USING_KW);
         e.space();
         e.token(TokenKind::L_PAREN);
         super::emit_node(qual, e);
@@ -48,7 +48,7 @@ pub(super) fn emit_alter_policy_stmt(e: &mut EventEmitter, n: &AlterPolicyStmt) 
         e.line(LineType::SoftOrSpace);
         e.token(TokenKind::WITH_KW);
         e.space();
-        e.token(TokenKind::IDENT("CHECK".to_string()));
+        e.token(TokenKind::CHECK_KW);
         e.space();
         e.token(TokenKind::L_PAREN);
         super::emit_node(with_check, e);

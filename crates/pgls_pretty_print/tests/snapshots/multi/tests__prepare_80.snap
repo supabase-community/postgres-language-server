@@ -62,7 +62,7 @@ from
   pg_prepared_statements;
 
 prepare q2
-(TEXT)
+(text)
 as select
   datname,
   datistemplate,
@@ -75,11 +75,11 @@ where
 execute q2 ('postgres');
 
 prepare q3
-(TEXT,
-INT,
-DOUBLE PRECISION,
-BOOLEAN,
-SMALLINT)
+(text,
+int,
+double precision,
+boolean,
+smallint)
 as select
   *
 from
@@ -87,40 +87,40 @@ from
 where
   string4 = $1 and
   (four = $2 or
-  ten = cast($3 as BIGINT) or
+  ten = cast($3 as bigint) or
   true = $4 or
-  odd = cast($5 as INT))
+  odd = cast($5 as int))
 order by unique1;;
 
 execute q3
 ('AAAAxx',
-cast(5 as SMALLINT),
-cast(10.5 as DOUBLE PRECISION),
+cast(5 as smallint),
+cast(10.5 as double precision),
 false,
-cast(4 as BIGINT));
+cast(4 as bigint));
 
 execute q3 ('bool');
 
 execute q3
 ('bytea',
-cast(5 as SMALLINT),
-cast(10.5 as DOUBLE PRECISION),
+cast(5 as smallint),
+cast(10.5 as double precision),
 false,
-cast(4 as BIGINT),
+cast(4 as bigint),
 true);
 
 execute q3
-(cast(5 as SMALLINT),
-cast(10.5 as DOUBLE PRECISION),
+(cast(5 as smallint),
+cast(10.5 as double precision),
 false,
-cast(4 as BIGINT),
+cast(4 as bigint),
 'bytea');
 
 prepare q4 (nonexistenttype) as select $1;;
 
 prepare q5
-(INT,
-TEXT)
+(int,
+text)
 as select
   *
 from

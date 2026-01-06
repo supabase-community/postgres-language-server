@@ -10,12 +10,12 @@ select
 from
   (
     values
-      (cast(10 as BIGINT)),
-      (cast(1000 as BIGINT)),
-      (cast(1000000 as BIGINT)),
-      (cast(1000000000 as BIGINT)),
-      (cast(1000000000000 as BIGINT)),
-      (cast(1000000000000000 as BIGINT))
+      (cast(10 as bigint)),
+      (cast(1000 as bigint)),
+      (cast(1000000 as bigint)),
+      (cast(1000000000 as bigint)),
+      (cast(1000000000000 as bigint)),
+      (cast(1000000000000000 as bigint))
   )
   as x (size);
 
@@ -26,18 +26,18 @@ select
 from
   (
     values
-      (cast(10 as NUMERIC)),
-      (cast(1000 as NUMERIC)),
-      (cast(1000000 as NUMERIC)),
-      (cast(1000000000 as NUMERIC)),
-      (cast(1000000000000 as NUMERIC)),
-      (cast(1000000000000000 as NUMERIC)),
-      (cast(10.5 as NUMERIC)),
-      (cast(1000.5 as NUMERIC)),
-      (cast(1000000.5 as NUMERIC)),
-      (cast(1000000000.5 as NUMERIC)),
-      (cast(1000000000000.5 as NUMERIC)),
-      (cast(1000000000000000.5 as NUMERIC))
+      (cast(10 as numeric)),
+      (cast(1000 as numeric)),
+      (cast(1000000 as numeric)),
+      (cast(1000000000 as numeric)),
+      (cast(1000000000000 as numeric)),
+      (cast(1000000000000000 as numeric)),
+      (cast(10.5 as numeric)),
+      (cast(1000.5 as numeric)),
+      (cast(1000000.5 as numeric)),
+      (cast(1000000000.5 as numeric)),
+      (cast(1000000000000.5 as numeric)),
+      (cast(1000000000000000.5 as numeric))
   )
   as x (size);
 
@@ -48,16 +48,16 @@ select
 from
   (
     values
-      (cast(10239 as BIGINT)),
-      (cast(10240 as BIGINT)),
-      (cast(10485247 as BIGINT)),
-      (cast(10485248 as BIGINT)),
-      (cast(10736893951 as BIGINT)),
-      (cast(10736893952 as BIGINT)),
-      (cast(10994579406847 as BIGINT)),
-      (cast(10994579406848 as BIGINT)),
-      (cast(11258449312612351 as BIGINT)),
-      (cast(11258449312612352 as BIGINT))
+      (cast(10239 as bigint)),
+      (cast(10240 as bigint)),
+      (cast(10485247 as bigint)),
+      (cast(10485248 as bigint)),
+      (cast(10736893951 as bigint)),
+      (cast(10736893952 as bigint)),
+      (cast(10994579406847 as bigint)),
+      (cast(10994579406848 as bigint)),
+      (cast(11258449312612351 as bigint)),
+      (cast(11258449312612352 as bigint))
   )
   as x (size);
 
@@ -68,27 +68,27 @@ select
 from
   (
     values
-      (cast(10239 as NUMERIC)),
-      (cast(10240 as NUMERIC)),
-      (cast(10485247 as NUMERIC)),
-      (cast(10485248 as NUMERIC)),
-      (cast(10736893951 as NUMERIC)),
-      (cast(10736893952 as NUMERIC)),
-      (cast(10994579406847 as NUMERIC)),
-      (cast(10994579406848 as NUMERIC)),
-      (cast(11258449312612351 as NUMERIC)),
-      (cast(11258449312612352 as NUMERIC)),
-      (cast(11528652096115048447 as NUMERIC)),
-      (cast(11528652096115048448 as NUMERIC))
+      (cast(10239 as numeric)),
+      (cast(10240 as numeric)),
+      (cast(10485247 as numeric)),
+      (cast(10485248 as numeric)),
+      (cast(10736893951 as numeric)),
+      (cast(10736893952 as numeric)),
+      (cast(10994579406847 as numeric)),
+      (cast(10994579406848 as numeric)),
+      (cast(11258449312612351 as numeric)),
+      (cast(11258449312612352 as numeric)),
+      (cast(11528652096115048447 as numeric)),
+      (cast(11528652096115048448 as numeric))
   )
   as x (size);
 
 select
   pg_size_pretty(
-    cast('-9223372036854775808' as BIGINT)
+    cast('-9223372036854775808' as bigint)
   ),
   pg_size_pretty(
-    cast('9223372036854775807' as BIGINT)
+    cast('9223372036854775807' as bigint)
   );
 
 select

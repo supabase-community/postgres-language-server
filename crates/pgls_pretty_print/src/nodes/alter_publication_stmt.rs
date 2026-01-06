@@ -9,7 +9,7 @@ pub(super) fn emit_alter_publication_stmt(e: &mut EventEmitter, n: &AlterPublica
 
     e.token(TokenKind::ALTER_KW);
     e.space();
-    e.token(TokenKind::IDENT("PUBLICATION".to_string()));
+    e.token(TokenKind::PUBLICATION_KW);
     e.space();
 
     // Publication name
@@ -49,7 +49,7 @@ pub(super) fn emit_alter_publication_stmt(e: &mut EventEmitter, n: &AlterPublica
             e.space();
             e.token(TokenKind::ALL_KW);
             e.space();
-            e.token(TokenKind::IDENT("TABLES".to_string()));
+            e.token(TokenKind::TABLES_KW);
         } else if !n.pubobjects.is_empty() {
             e.line(LineType::SoftOrSpace);
             emit_comma_separated_list(e, &n.pubobjects, super::emit_node);

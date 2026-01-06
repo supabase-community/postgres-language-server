@@ -4,9 +4,9 @@ input_file: crates/pgls_pretty_print/tests/data/multi/matview.sql
 snapshot_kind: text
 ---
 create table mvtest_t (
-  id INT not null primary key,
-  type TEXT not null,
-  amt NUMERIC not null
+  id int not null primary key,
+  type text not null,
+  amt numeric not null
 );
 
 insert into mvtest_t values (1, 'x', 2), (2, 'x', 3), (3, 'y', 5), (4, 'y', 7), (5, 'z', 11);
@@ -39,13 +39,13 @@ as
     mvtest_t
   group by type with no data;
 
-select relispopulated from pg_class where oid = cast('mvtest_tm' as REGCLASS);
+select relispopulated from pg_class where oid = cast('mvtest_tm' as regclass);
 
 select * from mvtest_tm order by type;
 
 refresh materialized view mvtest_tm;
 
-select relispopulated from pg_class where oid = cast('mvtest_tm' as REGCLASS);
+select relispopulated from pg_class where oid = cast('mvtest_tm' as regclass);
 
 create unique index "mvtest_tm_type" on mvtest_tm using btree (type);
 
@@ -88,7 +88,7 @@ create index "mvtest_aa" on mvtest_bb using btree (grandtot);
 
 create schema "mvtest_mvschema";
 
-alter MATERIALIZED VIEW mvtest_tvm set SCHEMA mvtest_mvschema;
+alter materialized view mvtest_tvm set schema mvtest_mvschema;
 
 set search_path to mvtest_mvschema, public;
 
@@ -140,6 +140,6 @@ select * from mvtest_tvmm;
 
 select * from mvtest_tvvm;
 
-drop MATERIALIZED VIEW if exists no_such_mv;
+drop materialized view if exists no_such_mv;
 
 refresh materialized view concurrently mvtest_tvmm;

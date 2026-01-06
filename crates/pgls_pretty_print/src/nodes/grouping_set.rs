@@ -11,23 +11,23 @@ pub(super) fn emit_grouping_set(e: &mut EventEmitter, n: &GroupingSet) {
 
     match n.kind {
         kind if kind == GroupingSetKind::GroupingSetRollup as i32 => {
-            e.token(TokenKind::IDENT("ROLLUP".to_string()));
+            e.token(TokenKind::ROLLUP_KW);
             e.space();
             e.token(TokenKind::L_PAREN);
             emit_comma_separated_list(e, &n.content, super::emit_node);
             e.token(TokenKind::R_PAREN);
         }
         kind if kind == GroupingSetKind::GroupingSetCube as i32 => {
-            e.token(TokenKind::IDENT("CUBE".to_string()));
+            e.token(TokenKind::CUBE_KW);
             e.space();
             e.token(TokenKind::L_PAREN);
             emit_comma_separated_list(e, &n.content, super::emit_node);
             e.token(TokenKind::R_PAREN);
         }
         kind if kind == GroupingSetKind::GroupingSetSets as i32 => {
-            e.token(TokenKind::IDENT("GROUPING".to_string()));
+            e.token(TokenKind::GROUPING_KW);
             e.space();
-            e.token(TokenKind::IDENT("SETS".to_string()));
+            e.token(TokenKind::SETS_KW);
             e.space();
             e.token(TokenKind::L_PAREN);
             emit_comma_separated_list(e, &n.content, super::emit_node);

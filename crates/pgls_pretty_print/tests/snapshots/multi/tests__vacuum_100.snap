@@ -3,7 +3,7 @@ source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/vacuum.sql
 snapshot_kind: text
 ---
-create table vactst (i INT);
+create table vactst (i int);
 
 insert into vactst values (1);
 
@@ -79,21 +79,21 @@ vacuum (FULL, FREEZE) vactst;
 
 vacuum (ANALYZE, FULL) vactst;
 
-create table vaccluster (i INT primary key);
+create table vaccluster (i int primary key);
 
 alter table vaccluster
   cluster on vaccluster_pkey;
 
-CLUSTER vaccluster;
+cluster vaccluster;
 
 create function do_analyze()
-returns VOID
+returns void
 volatile
 language sql
 as $function$ANALYZE pg_am$function$;
 
-create function wrap_do_analyze(c INT)
-returns INT
+create function wrap_do_analyze(c int)
+returns int
 immutable
 language sql
 as $function$SELECT $1 FROM public.do_analyze()$function$;
@@ -131,19 +131,19 @@ insert into past_inh_child default values;
 
 analyze past_inh_parent;
 
-select reltuples, relhassubclass from pg_class where oid = cast('past_inh_parent' as REGCLASS);
+select reltuples, relhassubclass from pg_class where oid = cast('past_inh_parent' as regclass);
 
-drop TABLE past_inh_child;
+drop table past_inh_child;
 
 analyze past_inh_parent;
 
-select reltuples, relhassubclass from pg_class where oid = cast('past_inh_parent' as REGCLASS);
+select reltuples, relhassubclass from pg_class where oid = cast('past_inh_parent' as regclass);
 
 commit;
 
 begin;
 
-create table past_parted (i INT)
+create table past_parted (i int)
 partition by LIST(i);
 
 create table past_part partition of past_parted for values in (1);
@@ -152,13 +152,13 @@ insert into past_parted values (1), (1);
 
 analyze past_parted;
 
-drop TABLE past_part;
+drop table past_part;
 
-select reltuples, relhassubclass from pg_class where oid = cast('past_parted' as REGCLASS);
+select reltuples, relhassubclass from pg_class where oid = cast('past_parted' as regclass);
 
 analyze past_parted;
 
-select reltuples, relhassubclass from pg_class where oid = cast('past_parted' as REGCLASS);
+select reltuples, relhassubclass from pg_class where oid = cast('past_parted' as regclass);
 
 commit;
 
@@ -175,8 +175,8 @@ vacuum (FULL) vactst;
 vacuum (DISABLE_PAGE_SKIPPING) vaccluster;
 
 create table pvactst (
-  i INT,
-  a INT[],
+  i int,
+  a int[],
   p point
 )
 with (autovacuum_enabled = off);
@@ -195,7 +195,7 @@ create index "gist_pvactst" on pvactst using gist (p);
 
 create index "spgist_pvactst" on pvactst using spgist (p);
 
-create table pvactst2 (i INT) with (autovacuum_enabled = off);
+create table pvactst2 (i int) with (autovacuum_enabled = off);
 
 insert into pvactst2 select generate_series(1, 1000);
 
@@ -233,7 +233,7 @@ vacuum (PARALLEL 2) pvactst2;
 
 reset maintenance_work_mem;
 
-create temporary table tmp (a INT primary key);
+create temporary table tmp (a int primary key);
 
 create index "tmp_idx1" on tmp using btree (a);
 
@@ -243,19 +243,19 @@ vacuum (PARALLEL 0, FULL "true") tmp;
 
 reset min_parallel_index_scan_size;
 
-drop TABLE pvactst;
+drop table pvactst;
 
-drop TABLE pvactst2;
+drop table pvactst2;
 
 create table no_index_cleanup (
-  i INT primary key,
-  t TEXT
+  i int primary key,
+  t text
 );
 
 create index "no_index_cleanup_idx" on no_index_cleanup using btree (t);
 
 alter table no_index_cleanup
-  alter column t set STORAGE external;
+  alter column t set storage external;
 
 insert into no_index_cleanup (i, t) values (generate_series(1, 30), repeat('1234567890', 269));
 
@@ -303,8 +303,8 @@ vacuum (INDEX_CLEANUP auto) vactst;
 vacuum (INDEX_CLEANUP "false", FREEZE "true") vaccluster;
 
 create temporary table vac_truncate_test (
-  i INT not null,
-  j TEXT
+  i int not null,
+  j text
 )
 with (
   vacuum_truncate = 'true',
@@ -326,7 +326,7 @@ select pg_relation_size('vac_truncate_test') = 0;
 vacuum (TRUNCATE "false", FULL "true") vac_truncate_test;
 
 alter table vac_truncate_test
-  RESET (vacuum_truncate);
+  reset (vacuum_truncate);
 
 insert into vac_truncate_test values (1, null), (null, null);
 
@@ -344,11 +344,11 @@ vacuum (DISABLE_PAGE_SKIPPING) vac_truncate_test;
 
 select pg_relation_size('vac_truncate_test') = 0;
 
-drop TABLE vac_truncate_test;
+drop table vac_truncate_test;
 
 create table vacparted (
-  a INT,
-  b CHAR(1)
+  a int,
+  b char(1)
 )
 partition by LIST(a);
 
@@ -369,8 +369,8 @@ vacuum (ANALYZE) vacparted (a, b, a);
 analyze vacparted (a, b, b);
 
 create table vacparted_i (
-  a INT primary key,
-  b VARCHAR(100)
+  a int primary key,
+  b varchar(100)
 )
 partition by HASH(a);
 
@@ -396,7 +396,7 @@ where
   relkind in ('p', 'r')
 order by relname;
 
-drop TABLE vacparted_i;
+drop table vacparted_i;
 
 vacuum vaccluster, vactst;
 
@@ -431,8 +431,8 @@ analyze vactst, vactst;
 commit;
 
 create table only_parted (
-  a INT,
-  b TEXT
+  a int,
+  b text
 )
 partition by LIST(a);
 
@@ -449,8 +449,8 @@ from
 where
   relid
   in (
-    cast('only_parted' as REGCLASS),
-    cast('only_parted1' as REGCLASS)
+    cast('only_parted' as regclass),
+    cast('only_parted1' as regclass)
   )
 order by relname;
 
@@ -465,16 +465,16 @@ from
 where
   relid
   in (
-    cast('only_parted' as REGCLASS),
-    cast('only_parted1' as REGCLASS)
+    cast('only_parted' as regclass),
+    cast('only_parted1' as regclass)
   )
 order by relname;
 
-drop TABLE only_parted;
+drop table only_parted;
 
 create table only_inh_parent (
-  a INT primary key,
-  b TEXT
+  a int primary key,
+  b text
 );
 
 create table only_inh_child ()
@@ -491,8 +491,8 @@ from
 where
   relid
   in (
-    cast('only_inh_parent' as REGCLASS),
-    cast('only_inh_child' as REGCLASS)
+    cast('only_inh_parent' as regclass),
+    cast('only_inh_child' as regclass)
   )
 order by relname;
 
@@ -507,8 +507,8 @@ from
 where
   relid
   in (
-    cast('only_inh_parent' as REGCLASS),
-    cast('only_inh_child' as REGCLASS)
+    cast('only_inh_parent' as regclass),
+    cast('only_inh_child' as regclass)
   )
 order by relname;
 
@@ -521,8 +521,8 @@ from
 where
   relid
   in (
-    cast('only_inh_parent' as REGCLASS),
-    cast('only_inh_child' as REGCLASS)
+    cast('only_inh_parent' as regclass),
+    cast('only_inh_child' as regclass)
   )
 order by relname;
 
@@ -537,12 +537,12 @@ from
 where
   relid
   in (
-    cast('only_inh_parent' as REGCLASS),
-    cast('only_inh_child' as REGCLASS)
+    cast('only_inh_parent' as regclass),
+    cast('only_inh_child' as regclass)
   )
 order by relname;
 
-drop TABLE only_inh_parent cascade;
+drop table only_inh_parent cascade;
 
 analyze (VERBOSE) does_not_exist;
 
@@ -577,14 +577,14 @@ analyze vactst;
 commit;
 
 create table vac_option_tab (
-  a INT,
-  t TEXT
+  a int,
+  t text
 );
 
 insert into vac_option_tab select a, 't' || a from generate_series(1, 10) as a;
 
 alter table vac_option_tab
-  alter column t set STORAGE external;
+  alter column t set storage external;
 
 create view vac_option_tab_counts
 as select
@@ -675,21 +675,21 @@ vacuum (ONLY_DATABASE_STATS);
 
 vacuum (ONLY_DATABASE_STATS) vactst;
 
-drop VIEW vac_option_tab_counts;
+drop view vac_option_tab_counts;
 
-drop TABLE vac_option_tab;
+drop table vac_option_tab;
 
-drop TABLE vaccluster;
+drop table vaccluster;
 
-drop TABLE vactst;
+drop table vactst;
 
-drop TABLE vacparted;
+drop table vacparted;
 
-drop TABLE no_index_cleanup;
+drop table no_index_cleanup;
 
-create table vacowned (a INT);
+create table vacowned (a int);
 
-create table vacowned_parted (a INT)
+create table vacowned_parted (a int)
 partition by LIST(a);
 
 create table vacowned_part1 partition of vacowned_parted for values in (1);
@@ -739,10 +739,10 @@ vacuum (ANALYZE) vacowned_part2;
 reset role;
 
 alter table vacowned_parted
-  OWNER to regress_vacuum;
+  owner to regress_vacuum;
 
 alter table vacowned_part1
-  OWNER to regress_vacuum;
+  owner to regress_vacuum;
 
 set role to regress_vacuum;
 
@@ -767,7 +767,7 @@ vacuum (ANALYZE) vacowned_part2;
 reset role;
 
 alter table vacowned_parted
-  OWNER to current_user;
+  owner to current_user;
 
 set role to regress_vacuum;
 
@@ -792,10 +792,10 @@ vacuum (ANALYZE) vacowned_part2;
 reset role;
 
 alter table vacowned_parted
-  OWNER to regress_vacuum;
+  owner to regress_vacuum;
 
 alter table vacowned_part1
-  OWNER to current_user;
+  owner to current_user;
 
 set role to regress_vacuum;
 
@@ -819,21 +819,21 @@ vacuum (ANALYZE) vacowned_part2;
 
 reset role;
 
-drop TABLE vacowned;
+drop table vacowned;
 
-drop TABLE vacowned_parted;
+drop table vacowned_parted;
 
 drop role regress_vacuum;
 
 create table vac_rewrite_toast (
-  id INT,
-  f1 TEXT storage plain
+  id int,
+  f1 text storage plain
 );
 
 insert into vac_rewrite_toast values (1, repeat('a', 7000));
 
 alter table vac_rewrite_toast
-  alter column f1 set STORAGE external;
+  alter column f1 set storage external;
 
 insert into vac_rewrite_toast values (2, repeat('a', 7000));
 
@@ -869,4 +869,4 @@ from
 where
   id = 2;
 
-drop TABLE vac_rewrite_toast;
+drop table vac_rewrite_toast;

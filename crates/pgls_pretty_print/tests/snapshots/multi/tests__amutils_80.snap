@@ -8,12 +8,12 @@ select
   pg_indexam_has_property(a.oid, prop)
   as "AM",
   pg_index_has_property(
-    cast('onek_hundred' as REGCLASS),
+    cast('onek_hundred' as regclass),
     prop
   )
   as "Index",
   pg_index_column_has_property(
-    cast('onek_hundred' as REGCLASS),
+    cast('onek_hundred' as regclass),
     1,
     prop
   )
@@ -40,7 +40,7 @@ from
     'can_exclude',
     'can_include',
     'bogus']
-    as TEXT[])
+    as text[])
   )
   with ordinality
   as u (prop, ord)
@@ -53,12 +53,12 @@ select
   pg_indexam_has_property(a.oid, prop)
   as "AM",
   pg_index_has_property(
-    cast('gcircleind' as REGCLASS),
+    cast('gcircleind' as regclass),
     prop
   )
   as "Index",
   pg_index_column_has_property(
-    cast('gcircleind' as REGCLASS),
+    cast('gcircleind' as regclass),
     1,
     prop
   )
@@ -85,7 +85,7 @@ from
     'can_exclude',
     'can_include',
     'bogus']
-    as TEXT[])
+    as text[])
   )
   with ordinality
   as u (prop, ord)
@@ -96,43 +96,43 @@ order by ord;
 select
   prop,
   pg_index_column_has_property(
-    cast('onek_hundred' as REGCLASS),
+    cast('onek_hundred' as regclass),
     1,
     prop
   )
   as btree,
   pg_index_column_has_property(
-    cast('hash_i4_index' as REGCLASS),
+    cast('hash_i4_index' as regclass),
     1,
     prop
   )
   as hash,
   pg_index_column_has_property(
-    cast('gcircleind' as REGCLASS),
+    cast('gcircleind' as regclass),
     1,
     prop
   )
   as gist,
   pg_index_column_has_property(
-    cast('sp_radix_ind' as REGCLASS),
+    cast('sp_radix_ind' as regclass),
     1,
     prop
   )
   as spgist_radix,
   pg_index_column_has_property(
-    cast('sp_quad_ind' as REGCLASS),
+    cast('sp_quad_ind' as regclass),
     1,
     prop
   )
   as spgist_quad,
   pg_index_column_has_property(
-    cast('botharrayidx' as REGCLASS),
+    cast('botharrayidx' as regclass),
     1,
     prop
   )
   as gin,
   pg_index_column_has_property(
-    cast('brinidx' as REGCLASS),
+    cast('brinidx' as regclass),
     1,
     prop
   )
@@ -149,7 +149,7 @@ from
     'search_array',
     'search_nulls',
     'bogus']
-    as TEXT[])
+    as text[])
   )
   with ordinality
   as u (prop, ord)
@@ -158,32 +158,32 @@ order by ord;
 select
   prop,
   pg_index_has_property(
-    cast('onek_hundred' as REGCLASS),
+    cast('onek_hundred' as regclass),
     prop
   )
   as btree,
   pg_index_has_property(
-    cast('hash_i4_index' as REGCLASS),
+    cast('hash_i4_index' as regclass),
     prop
   )
   as hash,
   pg_index_has_property(
-    cast('gcircleind' as REGCLASS),
+    cast('gcircleind' as regclass),
     prop
   )
   as gist,
   pg_index_has_property(
-    cast('sp_radix_ind' as REGCLASS),
+    cast('sp_radix_ind' as regclass),
     prop
   )
   as spgist,
   pg_index_has_property(
-    cast('botharrayidx' as REGCLASS),
+    cast('botharrayidx' as regclass),
     prop
   )
   as gin,
   pg_index_has_property(
-    cast('brinidx' as REGCLASS),
+    cast('brinidx' as regclass),
     prop
   )
   as brin
@@ -194,7 +194,7 @@ from
     'bitmap_scan',
     'backward_scan',
     'bogus']
-    as TEXT[])
+    as text[])
   )
   with ordinality
   as u (prop, ord)
@@ -214,7 +214,7 @@ from
     'can_exclude',
     'can_include',
     'bogus']
-    as TEXT[])
+    as text[])
   )
   with ordinality
   as u (prop, ord)
@@ -224,10 +224,10 @@ order by amname,
   ord;
 
 create temporary table foo (
-  f1 INT,
-  f2 INT,
-  f3 INT,
-  f4 INT
+  f1 int,
+  f2 int,
+  f3 int,
+  f4 int
 );
 
 create index "fooindex"
@@ -250,7 +250,7 @@ select
   )
 from
   (
-    values (cast('fooindex' as REGCLASS))
+    values (cast('fooindex' as regclass))
   )
   as v1 (o),
   (
@@ -279,7 +279,7 @@ select
   )
 from
   (
-    values (cast('foocover' as REGCLASS))
+    values (cast('foocover' as regclass))
   )
   as v1 (o),
   (

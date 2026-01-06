@@ -4,8 +4,8 @@ input_file: crates/pgls_pretty_print/tests/data/multi/insert_conflict.sql
 snapshot_kind: text
 ---
 create table insertconflicttest (
-  key INT,
-  fruit TEXT
+  key int,
+  fruit text
 );
 
 create view insertconflictview
@@ -145,13 +145,13 @@ key,
 key)
 do nothing;
 
-drop INDEX op_index_key;
+drop index op_index_key;
 
-drop INDEX collation_index_key;
+drop index collation_index_key;
 
-drop INDEX both_index_key;
+drop index both_index_key;
 
-drop INDEX both_index_expr_key;
+drop index both_index_expr_key;
 
 create unique index "cross_match"
 on insertconflicttest
@@ -175,7 +175,7 @@ on conflict
 (upper(fruit)) text_pattern_ops)
 do nothing;
 
-drop INDEX cross_match;
+drop index cross_match;
 
 create unique index "key_index" on insertconflicttest using btree (key);
 
@@ -338,7 +338,7 @@ do
 update
 set insertconflicttest."fruit" = 'Mango';
 
-drop INDEX key_index;
+drop index key_index;
 
 create unique index "comp_key_index"
 on insertconflicttest
@@ -396,7 +396,7 @@ do
 update
 set fruit = excluded.fruit;
 
-drop INDEX comp_key_index;
+drop index comp_key_index;
 
 create unique
 index "part_comp_key_index"
@@ -468,9 +468,9 @@ do
 update
 set fruit = excluded.fruit;
 
-drop INDEX part_comp_key_index;
+drop index part_comp_key_index;
 
-drop INDEX expr_part_comp_key_index;
+drop index expr_part_comp_key_index;
 
 create unique index "expr_key_index"
 on insertconflicttest
@@ -511,7 +511,7 @@ do
 update
 set fruit = excluded.fruit;
 
-drop INDEX expr_key_index;
+drop index expr_key_index;
 
 create unique
 index "expr_comp_key_index"
@@ -583,9 +583,9 @@ do
 update
 set fruit = excluded.fruit;
 
-drop INDEX expr_comp_key_index;
+drop index expr_comp_key_index;
 
-drop INDEX tricky_expr_comp_key_index;
+drop index tricky_expr_comp_key_index;
 
 create unique index "key_index" on insertconflicttest using btree (key);
 
@@ -615,9 +615,9 @@ do
 update
 set fruit = excluded.fruit;
 
-drop INDEX key_index;
+drop index key_index;
 
-drop INDEX fruit_index;
+drop index fruit_index;
 
 create unique index "partial_key_index"
 on insertconflicttest
@@ -679,7 +679,7 @@ do
 update
 set fruit = excluded.fruit;
 
-drop INDEX partial_key_index;
+drop index partial_key_index;
 
 create unique index "plain" on insertconflicttest using btree (key);
 
@@ -722,7 +722,7 @@ on conflict
 (key)
 do
 update
-set fruit = cast(excluded.* as TEXT)
+set fruit = cast(excluded.* as text)
 returning *;
 
 insert into insertconflicttest as i
@@ -741,17 +741,17 @@ on conflict
 (key)
 do
 update
-set fruit = cast(excluded.* as TEXT);
+set fruit = cast(excluded.* as text);
 
-drop INDEX plain;
+drop index plain;
 
-drop VIEW insertconflictview;
+drop view insertconflictview;
 
-drop TABLE insertconflicttest;
+drop table insertconflicttest;
 
 create table syscolconflicttest (
-  key INT,
-  data TEXT
+  key int,
+  data text
 );
 
 insert into syscolconflicttest values (1);
@@ -762,13 +762,13 @@ on conflict
 (key)
 do
 update
-set data = cast(excluded.ctid as TEXT);
+set data = cast(excluded.ctid as text);
 
-drop TABLE syscolconflicttest;
+drop table syscolconflicttest;
 
 create table insertconflict (
-  a BIGINT,
-  b BIGINT
+  a bigint,
+  b bigint
 );
 
 create unique index "insertconflicti1"
@@ -805,11 +805,11 @@ on conflict
 (b) where coalesce(a, 1) > 1
 do nothing;
 
-drop TABLE insertconflict;
+drop table insertconflict;
 
 create table insertconflict (
-  f1 INT primary key,
-  f2 TEXT
+  f1 int primary key,
+  f2 text
 );
 
 create view insertconflictv
@@ -836,17 +836,17 @@ set f2 = excluded.f2;
 
 select * from insertconflict;
 
-drop VIEW insertconflictv;
+drop view insertconflictv;
 
-drop TABLE insertconflict;
+drop table insertconflict;
 
 create table cities (
-  name TEXT,
-  population DOUBLE PRECISION,
-  altitude INT
+  name text,
+  population double precision,
+  altitude int
 );
 
-create table capitals (state CHAR(2))
+create table capitals (state char(2))
 inherits (cities);
 
 create unique index "cities_names_unique" on cities using btree (name);
@@ -891,7 +891,7 @@ update
 set population = excluded.population,
 altitude = excluded.altitude;
 
-select cast(tableoid as REGCLASS), * from cities;
+select cast(tableoid as regclass), * from cities;
 
 insert into capitals
 values
@@ -904,7 +904,7 @@ set population = excluded.population;
 
 select * from capitals;
 
-select cast(tableoid as REGCLASS), * from cities;
+select cast(tableoid as regclass), * from cities;
 
 insert into cities
 values ('Las Vegas', 5.86E+5, 2223)
@@ -915,15 +915,15 @@ update
 set population = excluded.population,
 altitude = excluded.altitude;
 
-select cast(tableoid as REGCLASS), * from cities;
+select cast(tableoid as regclass), * from cities;
 
-drop TABLE capitals;
+drop table capitals;
 
-drop TABLE cities;
+drop table cities;
 
 create table excluded (
-  key INT primary key,
-  data TEXT
+  key int primary key,
+  data text
 );
 
 insert into excluded values (1, '1');
@@ -960,14 +960,14 @@ values (1, '2')
 on conflict (key) do update set data = 3
 returning excluded.*;
 
-drop TABLE excluded;
+drop table excluded;
 
 create table dropcol (
-  key INT primary key,
-  drop1 INT,
-  keep1 TEXT,
-  drop2 NUMERIC,
-  keep2 DOUBLE PRECISION
+  key int primary key,
+  drop1 int,
+  keep1 text,
+  drop2 numeric,
+  keep2 double precision
 );
 
 insert into dropcol (key, drop1, keep1, drop2, keep2)
@@ -1035,10 +1035,10 @@ set keep1 = dropcol.keep1,
 keep2 = dropcol.keep2
 returning *;
 
-drop TABLE dropcol;
+drop table dropcol;
 
 create table twoconstraints (
-  f1 INT unique,
+  f1 int unique,
   f2 box,
   exclude using gist (f2 with &&)
 );
@@ -1063,11 +1063,11 @@ do nothing;
 
 select * from twoconstraints;
 
-drop TABLE twoconstraints;
+drop table twoconstraints;
 
 create table selfconflict (
-  f1 INT primary key,
-  f2 INT
+  f1 int primary key,
+  f2 int
 );
 
 begin isolation level read committed;
@@ -1114,11 +1114,11 @@ commit;
 
 select * from selfconflict;
 
-drop TABLE selfconflict;
+drop table selfconflict;
 
 create table parted_conflict_test (
-  a INT unique,
-  b CHAR(1)
+  a int unique,
+  b char(1)
 )
 partition by LIST(a);
 
@@ -1170,12 +1170,12 @@ set a = excluded.a;
 select * from parted_conflict_test order by a;
 
 create table parted_conflict_test_2 (
-  b CHAR(1),
-  a INT unique
+  b char(1),
+  a int unique
 );
 
 alter table parted_conflict_test
-  ATTACH partition
+  attach partition
   parted_conflict_test_2 for values in (3);
 
 truncate parted_conflict_test;
@@ -1200,7 +1200,7 @@ select * from parted_conflict_test order by a;
 
 alter table parted_conflict_test
   drop column b,
-  add column b CHAR(1);
+  add column b char(1);
 
 create table parted_conflict_test_3
 partition of parted_conflict_test
@@ -1283,11 +1283,11 @@ where
 
 select * from parted_conflict_test order by a;
 
-drop TABLE parted_conflict_test;
+drop table parted_conflict_test;
 
 create table parted_conflict (
-  a INT primary key,
-  b TEXT
+  a int primary key,
+  b text
 )
 partition by range(a);
 
@@ -1310,11 +1310,11 @@ do
 update
 set b = excluded.b;
 
-drop TABLE parted_conflict;
+drop table parted_conflict;
 
 create table parted_conflict (
-  a INT,
-  b TEXT
+  a int,
+  b text
 )
 partition by range(a);
 
@@ -1332,7 +1332,7 @@ create unique index on only parted_conflict_1 using btree (a);
 create unique index on only parted_conflict using btree (a);
 
 alter index parted_conflict_a_idx
-  ATTACH partition
+  attach partition
   parted_conflict_1_a_idx;
 
 insert into parted_conflict values (40, 'forty');
@@ -1345,20 +1345,20 @@ do
 update
 set b = excluded.b;
 
-drop TABLE parted_conflict;
+drop table parted_conflict;
 
 create table parted_conflict (
-  a INT,
-  b TEXT,
-  c INT
+  a int,
+  b text,
+  c int
 )
 partition by range(a);
 
 create table parted_conflict_1 (
-  drp TEXT,
-  c INT,
-  a INT,
-  b TEXT
+  drp text,
+  c int,
+  a int,
+  b text
 );
 
 alter table parted_conflict_1
@@ -1367,7 +1367,7 @@ alter table parted_conflict_1
 create unique index on parted_conflict using btree (a, b);
 
 alter table parted_conflict
-  ATTACH partition
+  attach partition
   parted_conflict_1
   for values from (0) to (1000);
 
@@ -1384,9 +1384,9 @@ update
 set (a, b, c) = row(excluded.*)
 where
   parted_conflict =
-  (50, cast('cincuenta' as TEXT), 1) and
+  (50, cast('cincuenta' as text), 1) and
   excluded =
-  (50, cast('cincuenta' as TEXT), 2);
+  (50, cast('cincuenta' as text), 2);
 
 select * from parted_conflict order by a;
 
@@ -1404,12 +1404,12 @@ end;
 $function$
 language plpgsql;
 
-create TRIGGER parted_conflict_update
+create trigger parted_conflict_update
 after update
 on parted_conflict
-REFERENCING new table as inserted
-for EACH STATEMENT
-EXECUTE FUNCTION parted_conflict_update_func();
+referencing new table as inserted
+for each statement
+execute function parted_conflict_update_func();
 
 truncate parted_conflict;
 
@@ -1423,6 +1423,6 @@ do
 update
 set c = parted_conflict.c + 1;
 
-drop TABLE parted_conflict;
+drop table parted_conflict;
 
-drop FUNCTION parted_conflict_update_func();
+drop function parted_conflict_update_func();

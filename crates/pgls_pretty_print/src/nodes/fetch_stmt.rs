@@ -33,34 +33,34 @@ pub(super) fn emit_fetch_stmt(e: &mut EventEmitter, n: &FetchStmt) {
             // FetchForward - emit explicit FORWARD for ALL, or NEXT for single row
             if is_all {
                 e.space();
-                e.token(TokenKind::IDENT("FORWARD".to_string()));
+                e.token(TokenKind::FORWARD_KW);
             } else if n.how_many == 1 {
                 e.space();
                 e.token(TokenKind::NEXT_KW);
             } else if n.how_many > 1 {
                 e.space();
-                e.token(TokenKind::IDENT("FORWARD".to_string()));
+                e.token(TokenKind::FORWARD_KW);
             }
         }
         2 => {
             // FetchBackward
             if n.how_many == 1 {
                 e.space();
-                e.token(TokenKind::IDENT("PRIOR".to_string()));
+                e.token(TokenKind::PRIOR_KW);
             } else {
                 e.space();
-                e.token(TokenKind::IDENT("BACKWARD".to_string()));
+                e.token(TokenKind::BACKWARD_KW);
             }
         }
         3 => {
             // FetchAbsolute
             e.space();
-            e.token(TokenKind::IDENT("ABSOLUTE".to_string()));
+            e.token(TokenKind::ABSOLUTE_KW);
         }
         4 => {
             // FetchRelative
             e.space();
-            e.token(TokenKind::IDENT("RELATIVE".to_string()));
+            e.token(TokenKind::RELATIVE_KW);
         }
         _ => {
             // Undefined - should not normally happen

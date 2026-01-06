@@ -32,6 +32,7 @@ const LITERALS: &[&str] = &[
     "STRING",
     "IDENT",
     "BOOLEAN",
+    "TYPE_IDENT", // Data type names (text, varchar, int, etc.)
 ];
 
 const VARIANT_DATA: &[(&str, &str)] = &[
@@ -46,6 +47,7 @@ const VARIANT_DATA: &[(&str, &str)] = &[
     ("POSITIONAL_PARAM", "u32"),        // $1, $2, $3 (the number matters!)
     ("COMMENT", "String"),              // /* comment text */
     ("BOOLEAN", "bool"),                // true, false
+    ("TYPE_IDENT", "String"),           // text, varchar, int (data type names)
 ];
 
 pub fn token_kind_mod() -> proc_macro2::TokenStream {
@@ -141,6 +143,10 @@ pub fn token_kind_mod() -> proc_macro2::TokenStream {
                     TokenKind::DOUBLE_COLON => "::".to_string(),
                     TokenKind::DOLLAR => "$".to_string(),
                     TokenKind::IDENT(ident) => ident.clone(),
+                    TokenKind::TYPE_IDENT(type_name) => match config.type_case {
+                        crate::renderer::KeywordCase::Upper => type_name.to_uppercase(),
+                        crate::renderer::KeywordCase::Lower => type_name.to_lowercase(),
+                    },
                     TokenKind::STRING(s) => s.clone(),
                     TokenKind::ESC_STRING(s) => s.clone(),
                     TokenKind::DOLLAR_QUOTED_STRING(s) => s.clone(),

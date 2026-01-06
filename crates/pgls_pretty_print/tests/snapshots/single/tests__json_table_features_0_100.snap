@@ -7,16 +7,16 @@ create view jsonb_table_view2
 as select
   *
 from
-  JSON_TABLE(
-    cast('null' as JSONB),
+  json_table(
+    cast('null' as jsonb),
     'lax $[*]'
-    PASSING 1 + 2 as a,
-    cast('"foo"' as JSON) as "b c"
-    COLUMNS (
-      int INT PATH '$',
-      text text PATH '$',
-      js JSON PATH '$',
-      jsb jsonb PATH '$'
+    passing 1 + 2 as a,
+    cast('"foo"' as json) as "b c"
+    columns (
+      int int path '$',
+      text text path '$',
+      js json path '$',
+      jsb jsonb path '$'
     )
-    null on ERROR
+    null on error
   );

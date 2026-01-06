@@ -5,7 +5,7 @@ snapshot_kind: text
 ---
 create table copydml_test (
   id serial,
-  t TEXT
+  t text
 );
 
 insert into copydml_test (t) values ('a');
@@ -37,7 +37,7 @@ do instead
 
 copy (insert into copydml_test default values) to stdout;
 
-drop RULE qqq on copydml_test;
+drop rule qqq on copydml_test;
 
 create rule qqq
 as on insert to copydml_test
@@ -46,7 +46,7 @@ do
 
 copy (insert into copydml_test default values) to stdout;
 
-drop RULE qqq on copydml_test;
+drop rule qqq on copydml_test;
 
 create rule qqq
 as on insert to copydml_test
@@ -56,7 +56,7 @@ do instead
 
 copy (insert into copydml_test default values) to stdout;
 
-drop RULE qqq on copydml_test;
+drop rule qqq on copydml_test;
 
 create rule qqq
 as on insert to copydml_test where
@@ -66,7 +66,7 @@ do instead
 
 copy (insert into copydml_test default values) to stdout;
 
-drop RULE qqq on copydml_test;
+drop rule qqq on copydml_test;
 
 create rule qqq
 as on update to copydml_test
@@ -75,7 +75,7 @@ do instead
 
 copy (update copydml_test set t = 'f') to stdout;
 
-drop RULE qqq on copydml_test;
+drop rule qqq on copydml_test;
 
 create rule qqq
 as on update to copydml_test
@@ -84,7 +84,7 @@ do
 
 copy (update copydml_test set t = 'f') to stdout;
 
-drop RULE qqq on copydml_test;
+drop rule qqq on copydml_test;
 
 create rule qqq
 as on update to copydml_test
@@ -94,7 +94,7 @@ do instead
 
 copy (update copydml_test set t = 'f') to stdout;
 
-drop RULE qqq on copydml_test;
+drop rule qqq on copydml_test;
 
 create rule qqq
 as on update to copydml_test where
@@ -104,7 +104,7 @@ do instead
 
 copy (update copydml_test set t = 'f') to stdout;
 
-drop RULE qqq on copydml_test;
+drop rule qqq on copydml_test;
 
 create rule qqq
 as on delete to copydml_test
@@ -113,7 +113,7 @@ do instead
 
 copy (delete from copydml_test) to stdout;
 
-drop RULE qqq on copydml_test;
+drop rule qqq on copydml_test;
 
 create rule qqq
 as on delete to copydml_test
@@ -122,7 +122,7 @@ do
 
 copy (delete from copydml_test) to stdout;
 
-drop RULE qqq on copydml_test;
+drop rule qqq on copydml_test;
 
 create rule qqq
 as on delete to copydml_test
@@ -132,7 +132,7 @@ do instead
 
 copy (delete from copydml_test) to stdout;
 
-drop RULE qqq on copydml_test;
+drop rule qqq on copydml_test;
 
 create rule qqq
 as on delete to copydml_test where
@@ -142,7 +142,7 @@ do instead
 
 copy (delete from copydml_test) to stdout;
 
-drop RULE qqq on copydml_test;
+drop rule qqq on copydml_test;
 
 create rule qqq
 as on insert to copydml_test
@@ -151,7 +151,7 @@ do instead
 
 copy (insert into copydml_test default values) to stdout;
 
-drop RULE qqq on copydml_test;
+drop rule qqq on copydml_test;
 
 create function qqq_trig()
 returns trigger
@@ -168,17 +168,17 @@ end
 $function$
 language plpgsql;
 
-create TRIGGER qqqbef
+create trigger qqqbef
 before insert or delete or update
 on copydml_test
-for EACH ROW
-EXECUTE FUNCTION qqq_trig();
+for each row
+execute function qqq_trig();
 
-create TRIGGER qqqaf
+create trigger qqqaf
 after insert or delete or update
 on copydml_test
-for EACH ROW
-EXECUTE FUNCTION qqq_trig();
+for each row
+execute function qqq_trig();
 
 copy (insert into copydml_test (t) values ('f') returning id) to stdout;
 
@@ -186,6 +186,6 @@ copy (update copydml_test set t = 'g' where t = 'f' returning id) to stdout;
 
 copy (delete from copydml_test where t = 'g' returning id) to stdout;
 
-drop TABLE copydml_test;
+drop table copydml_test;
 
-drop FUNCTION qqq_trig();
+drop function qqq_trig();

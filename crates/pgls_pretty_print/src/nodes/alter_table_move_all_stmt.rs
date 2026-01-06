@@ -27,14 +27,14 @@ pub(super) fn emit_alter_table_move_all_stmt(e: &mut EventEmitter, n: &AlterTabl
     e.line(LineType::SoftOrSpace);
     e.token(TokenKind::IN_KW);
     e.space();
-    e.token(TokenKind::IDENT("TABLESPACE".to_string()));
+    e.token(TokenKind::TABLESPACE_KW);
     e.space();
     e.token(TokenKind::IDENT(n.orig_tablespacename.clone()));
 
     // Emit OWNED BY roles if specified
     if !n.roles.is_empty() {
         e.line(LineType::SoftOrSpace);
-        e.token(TokenKind::IDENT("OWNED".to_string()));
+        e.token(TokenKind::OWNED_KW);
         e.space();
         e.token(TokenKind::BY_KW);
         e.space();
@@ -47,13 +47,13 @@ pub(super) fn emit_alter_table_move_all_stmt(e: &mut EventEmitter, n: &AlterTabl
     e.line(LineType::SoftOrSpace);
     e.token(TokenKind::SET_KW);
     e.space();
-    e.token(TokenKind::IDENT("TABLESPACE".to_string()));
+    e.token(TokenKind::TABLESPACE_KW);
     e.space();
     e.token(TokenKind::IDENT(n.new_tablespacename.clone()));
 
     if n.nowait {
         e.space();
-        e.token(TokenKind::IDENT("NOWAIT".to_string()));
+        e.token(TokenKind::NOWAIT_KW);
     }
 
     e.token(TokenKind::SEMICOLON);

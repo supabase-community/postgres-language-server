@@ -20,7 +20,7 @@ pub(super) fn emit_json_table(e: &mut EventEmitter, n: &JsonTable) {
         e.space();
     }
 
-    e.token(TokenKind::IDENT("JSON_TABLE".to_string()));
+    e.token(TokenKind::JSON_TABLE_KW);
     e.token(TokenKind::L_PAREN);
     e.indent_start();
 
@@ -37,7 +37,7 @@ pub(super) fn emit_json_table(e: &mut EventEmitter, n: &JsonTable) {
 
     if !n.passing.is_empty() {
         e.line(LineType::SoftOrSpace);
-        e.token(TokenKind::IDENT("PASSING".to_string()));
+        e.token(TokenKind::PASSING_KW);
         e.space();
         emit_comma_separated_list(e, &n.passing, |node, e| {
             let argument = assert_node_variant!(JsonArgument, node);
@@ -47,7 +47,7 @@ pub(super) fn emit_json_table(e: &mut EventEmitter, n: &JsonTable) {
 
     if !n.columns.is_empty() {
         e.line(LineType::SoftOrSpace);
-        e.token(TokenKind::IDENT("COLUMNS".to_string()));
+        e.token(TokenKind::COLUMNS_KW);
         e.space();
         e.token(TokenKind::L_PAREN);
         e.indent_start();
@@ -102,9 +102,9 @@ pub(super) fn emit_json_table_column(e: &mut EventEmitter, col: &JsonTableColumn
     e.group_start(GroupKind::JsonTableColumn);
 
     if col.coltype() == JsonTableColumnType::JtcNested {
-        e.token(TokenKind::IDENT("NESTED".to_string()));
+        e.token(TokenKind::NESTED_KW);
         e.space();
-        e.token(TokenKind::IDENT("PATH".to_string()));
+        e.token(TokenKind::PATH_KW);
         e.space();
         if let Some(pathspec) = col.pathspec.as_ref() {
             emit_json_table_path_spec(e, pathspec);
@@ -112,7 +112,7 @@ pub(super) fn emit_json_table_column(e: &mut EventEmitter, col: &JsonTableColumn
 
         if !col.columns.is_empty() {
             e.line(LineType::SoftOrSpace);
-            e.token(TokenKind::IDENT("COLUMNS".to_string()));
+            e.token(TokenKind::COLUMNS_KW);
             e.space();
             e.token(TokenKind::L_PAREN);
             e.indent_start();
@@ -141,7 +141,7 @@ pub(super) fn emit_json_table_column(e: &mut EventEmitter, col: &JsonTableColumn
         e.space();
         e.token(TokenKind::FOR_KW);
         e.space();
-        e.token(TokenKind::IDENT("ORDINALITY".to_string()));
+        e.token(TokenKind::ORDINALITY_KW);
         e.group_end();
         return;
     }
@@ -155,7 +155,7 @@ pub(super) fn emit_json_table_column(e: &mut EventEmitter, col: &JsonTableColumn
 
     if col.coltype() == JsonTableColumnType::JtcExists {
         e.space();
-        e.token(TokenKind::IDENT("EXISTS".to_string()));
+        e.token(TokenKind::EXISTS_KW);
     }
 
     if let Some(format) = col.format.as_ref() {
@@ -164,7 +164,7 @@ pub(super) fn emit_json_table_column(e: &mut EventEmitter, col: &JsonTableColumn
 
     if let Some(pathspec) = col.pathspec.as_ref() {
         e.space();
-        e.token(TokenKind::IDENT("PATH".to_string()));
+        e.token(TokenKind::PATH_KW);
         e.space();
         emit_json_table_path_spec(e, pathspec);
     }
@@ -187,7 +187,7 @@ pub(super) fn emit_json_table_column(e: &mut EventEmitter, col: &JsonTableColumn
             e.space();
             e.token(TokenKind::WITH_KW);
             e.space();
-            e.token(TokenKind::IDENT("CONDITIONAL".to_string()));
+            e.token(TokenKind::CONDITIONAL_KW);
             e.space();
             e.token(TokenKind::WRAPPER_KW);
         }
@@ -195,7 +195,7 @@ pub(super) fn emit_json_table_column(e: &mut EventEmitter, col: &JsonTableColumn
             e.space();
             e.token(TokenKind::WITH_KW);
             e.space();
-            e.token(TokenKind::IDENT("UNCONDITIONAL".to_string()));
+            e.token(TokenKind::UNCONDITIONAL_KW);
             e.space();
             e.token(TokenKind::WRAPPER_KW);
         }
@@ -205,15 +205,15 @@ pub(super) fn emit_json_table_column(e: &mut EventEmitter, col: &JsonTableColumn
     match col.quotes() {
         JsonQuotes::JsQuotesKeep => {
             e.space();
-            e.token(TokenKind::IDENT("KEEP".to_string()));
+            e.token(TokenKind::KEEP_KW);
             e.space();
-            e.token(TokenKind::IDENT("QUOTES".to_string()));
+            e.token(TokenKind::QUOTES_KW);
         }
         JsonQuotes::JsQuotesOmit => {
             e.space();
-            e.token(TokenKind::IDENT("OMIT".to_string()));
+            e.token(TokenKind::OMIT_KW);
             e.space();
-            e.token(TokenKind::IDENT("QUOTES".to_string()));
+            e.token(TokenKind::QUOTES_KW);
         }
         JsonQuotes::JsQuotesUnspec | JsonQuotes::Undefined => {}
     }
@@ -279,18 +279,18 @@ pub(super) fn emit_json_behavior(e: &mut EventEmitter, behavior: &JsonBehavior) 
 
     match JsonBehaviorType::try_from(behavior.btype).unwrap_or(JsonBehaviorType::Undefined) {
         JsonBehaviorType::JsonBehaviorNull => e.token(TokenKind::NULL_KW),
-        JsonBehaviorType::JsonBehaviorError => e.token(TokenKind::IDENT("ERROR".to_string())),
-        JsonBehaviorType::JsonBehaviorEmpty => e.token(TokenKind::IDENT("EMPTY".to_string())),
+        JsonBehaviorType::JsonBehaviorError => e.token(TokenKind::ERROR_KW),
+        JsonBehaviorType::JsonBehaviorEmpty => e.token(TokenKind::EMPTY_KW),
         JsonBehaviorType::JsonBehaviorTrue => e.token(TokenKind::TRUE_KW),
         JsonBehaviorType::JsonBehaviorFalse => e.token(TokenKind::FALSE_KW),
         JsonBehaviorType::JsonBehaviorUnknown => e.token(TokenKind::UNKNOWN_KW),
         JsonBehaviorType::JsonBehaviorEmptyArray => {
-            e.token(TokenKind::IDENT("EMPTY".to_string()));
+            e.token(TokenKind::EMPTY_KW);
             e.space();
             e.token(TokenKind::ARRAY_KW);
         }
         JsonBehaviorType::JsonBehaviorEmptyObject => {
-            e.token(TokenKind::IDENT("EMPTY".to_string()));
+            e.token(TokenKind::EMPTY_KW);
             e.space();
             e.token(TokenKind::OBJECT_KW);
         }
@@ -331,7 +331,7 @@ fn emit_json_behavior_clause(
     e.token(TokenKind::ON_KW);
     e.space();
     match clause {
-        JsonBehaviorClause::OnEmpty => e.token(TokenKind::IDENT("EMPTY".to_string())),
-        JsonBehaviorClause::OnError => e.token(TokenKind::IDENT("ERROR".to_string())),
+        JsonBehaviorClause::OnEmpty => e.token(TokenKind::EMPTY_KW),
+        JsonBehaviorClause::OnError => e.token(TokenKind::ERROR_KW),
     }
 }

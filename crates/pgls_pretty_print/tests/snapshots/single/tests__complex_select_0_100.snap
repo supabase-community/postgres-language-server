@@ -7,7 +7,7 @@ with recursive
 pks_fks
 as (
   select
-    cast(contype as TEXT) as contype,
+    cast(contype as text) as contype,
     conname,
     array_length(conkey, 1) as ncol,
     conrelid as resorigtbl,
@@ -82,7 +82,7 @@ as (
                                   replace(
                                     replace(
                                       replace(
-                                        replace(cast(view_definition as TEXT), '<>', '()'),
+                                        replace(cast(view_definition as text), '<>', '()'),
                                         ',',
                                         ''
                                       ),
@@ -138,7 +138,7 @@ as (
       ' ',
       ','
     )
-    as JSON)
+    as json)
     as view_definition
   from
     views
@@ -162,9 +162,9 @@ as (
     view_id,
     view_schema,
     view_name,
-    cast(entry ->> 'resno' as INT) as view_column,
-    cast(entry ->> 'resorigtbl' as OID) as resorigtbl,
-    cast(entry ->> 'resorigcol' as INT) as resorigcol
+    cast(entry ->> 'resno' as int) as view_column,
+    cast(entry ->> 'resorigtbl' as oid) as resorigtbl,
+    cast(entry ->> 'resorigcol' as int) as resorigcol
   from
     target_entries
 ),

@@ -17,7 +17,7 @@ when not matched and
   s.operation = 'insert'
 then insert (sku, quantity, created_at)
 values (s.sku, s.quantity, clock_timestamp())
-when not matched by TARGET then do NOTHING
-when not matched by SOURCE and
+when not matched by target then do nothing
+when not matched by source and
   t.discontinued is false
 then delete;

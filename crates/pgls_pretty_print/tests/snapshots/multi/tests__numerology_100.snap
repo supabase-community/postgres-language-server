@@ -93,7 +93,7 @@ select _100;
 
 prepare p1 as select $0 as _1;;
 
-create table temp_float (f1 DOUBLE PRECISION);
+create table temp_float (f1 double precision);
 
 insert into temp_float (f1) select float8(f1) from int4_tbl;
 
@@ -101,7 +101,7 @@ insert into temp_float (f1) select float8(f1) from int2_tbl;
 
 select f1 from temp_float order by f1;
 
-create table temp_int4 (f1 INT);
+create table temp_int4 (f1 int);
 
 insert into temp_int4 (f1)
 select
@@ -115,7 +115,7 @@ insert into temp_int4 (f1) select int4(f1) from int2_tbl;
 
 select f1 from temp_int4 order by f1;
 
-create table temp_int2 (f1 SMALLINT);
+create table temp_int2 (f1 smallint);
 
 insert into temp_int2 (f1) select int2(f1) from float8_tbl where f1 >= -32767 and f1 <= 32767;
 
@@ -124,9 +124,9 @@ insert into temp_int2 (f1) select int2(f1) from int4_tbl where f1 >= -32767 and 
 select f1 from temp_int2 order by f1;
 
 create table temp_group (
-  f1 INT,
-  f2 INT,
-  f3 DOUBLE PRECISION
+  f1 int,
+  f2 int,
+  f3 double precision
 );
 
 insert into temp_group select 1, -i.f1, -f.f1 from int4_tbl as i, float8_tbl as f;
@@ -177,10 +177,10 @@ group by f1
 order by two,
   min_minus_1;
 
-drop TABLE temp_int2;
+drop table temp_int2;
 
-drop TABLE temp_int4;
+drop table temp_int4;
 
-drop TABLE temp_float;
+drop table temp_float;
 
-drop TABLE temp_group;
+drop table temp_group;

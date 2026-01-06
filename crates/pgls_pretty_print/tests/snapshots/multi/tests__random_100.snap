@@ -27,7 +27,7 @@ from
   as ss;
 
 create function ks_test_uniform_random()
-returns BOOLEAN
+returns boolean
 as $function$
 DECLARE
   n int := 1000;        -- Number of samples
@@ -91,7 +91,7 @@ from
 group by r;
 
 create function ks_test_normal_random()
-returns BOOLEAN
+returns boolean
 as $function$
 DECLARE
   n int := 1000;        -- Number of samples
@@ -124,13 +124,13 @@ select random(1000000000001, 1000000000000);
 
 select random(-2.0, -3.0);
 
-select random(cast('NaN' as NUMERIC), 10);
+select random(cast('NaN' as numeric), 10);
 
-select random(cast('-Inf' as NUMERIC), 0);
+select random(cast('-Inf' as numeric), 0);
 
-select random(0, cast('NaN' as NUMERIC));
+select random(0, cast('NaN' as numeric));
 
-select random(0, cast('Inf' as NUMERIC));
+select random(0, cast('Inf' as numeric));
 
 select random(101, 101);
 
@@ -309,7 +309,7 @@ from
   );
 
 create function ks_test_uniform_random_int_in_range()
-returns BOOLEAN
+returns boolean
 as $function$
 DECLARE
   n int := 1000;        -- Number of samples
@@ -336,7 +336,7 @@ select
   as uniform_int;
 
 create function ks_test_uniform_random_bigint_in_range()
-returns BOOLEAN
+returns boolean
 as $function$
 DECLARE
   n int := 1000;        -- Number of samples
@@ -363,7 +363,7 @@ select
   as uniform_bigint;
 
 create function ks_test_uniform_random_numeric_in_range()
-returns BOOLEAN
+returns boolean
 as $function$
 DECLARE
   n int := 1000;        -- Number of samples
@@ -413,103 +413,103 @@ select random(0, 1 - 1e-30) from generate_series(1, 10);
 
 select n, random(0, trim_scale(abs(1 - 10.0 ^ -n))) from generate_series(-20, 20) as n;
 
-select random(cast('1979-02-08' as DATE), cast('2025-07-03' as DATE)) as random_date_multiple_years;
+select random(cast('1979-02-08' as date), cast('2025-07-03' as date)) as random_date_multiple_years;
 
 select
   random(
-    cast('4714-11-24 BC' as DATE),
-    cast('5874897-12-31 AD' as DATE)
+    cast('4714-11-24 BC' as date),
+    cast('5874897-12-31 AD' as date)
   )
   as random_date_maximum_range;
 
-select random(cast('1979-02-08' as DATE), cast('1979-02-08' as DATE)) as random_date_empty_range;
+select random(cast('1979-02-08' as date), cast('1979-02-08' as date)) as random_date_empty_range;
 
-select random(cast('2024-12-31' as DATE), cast('2024-01-01' as DATE));
+select random(cast('2024-12-31' as date), cast('2024-01-01' as date));
 
-select random(cast('-infinity' as DATE), cast('2024-01-01' as DATE));
+select random(cast('-infinity' as date), cast('2024-01-01' as date));
 
-select random(cast('2024-12-31' as DATE), cast('infinity' as DATE));
+select random(cast('2024-12-31' as date), cast('infinity' as date));
 
 select
   random(
-    cast('1979-02-08' as TIMESTAMP),
-    cast('2025-07-03' as TIMESTAMP)
+    cast('1979-02-08' as timestamp),
+    cast('2025-07-03' as timestamp)
   )
   as random_timestamp_multiple_years;
 
 select
   random(
-    cast('4714-11-24 BC' as TIMESTAMP),
-    cast('294276-12-31 23:59:59.999999' as TIMESTAMP)
+    cast('4714-11-24 BC' as timestamp),
+    cast('294276-12-31 23:59:59.999999' as timestamp)
   )
   as random_timestamp_maximum_range;
 
 select
   random(
-    cast('2024-07-01 12:00:00.000001' as TIMESTAMP),
-    cast('2024-07-01 12:00:00.999999' as TIMESTAMP)
+    cast('2024-07-01 12:00:00.000001' as timestamp),
+    cast('2024-07-01 12:00:00.999999' as timestamp)
   )
   as random_narrow_range;
 
 select
   random(
-    cast('1979-02-08' as TIMESTAMP),
-    cast('1979-02-08' as TIMESTAMP)
+    cast('1979-02-08' as timestamp),
+    cast('1979-02-08' as timestamp)
   )
   as random_timestamp_empty_range;
 
-select random(cast('2024-12-31' as TIMESTAMP), cast('2024-01-01' as TIMESTAMP));
+select random(cast('2024-12-31' as timestamp), cast('2024-01-01' as timestamp));
 
-select random(cast('-infinity' as TIMESTAMP), cast('2024-01-01' as TIMESTAMP));
+select random(cast('-infinity' as timestamp), cast('2024-01-01' as timestamp));
 
-select random(cast('2024-12-31' as TIMESTAMP), cast('infinity' as TIMESTAMP));
+select random(cast('2024-12-31' as timestamp), cast('infinity' as timestamp));
 
 select
   random(
-    cast('1979-02-08 +01' as timestamp with time ZONE),
-    cast('2025-07-03 +02' as timestamp with time ZONE)
+    cast('1979-02-08 +01' as timestamp with time zone),
+    cast('2025-07-03 +02' as timestamp with time zone)
   )
   as random_timestamptz_multiple_years;
 
 select
   random(
     cast('4714-11-24 BC +00'
-    as timestamp with time ZONE),
+    as timestamp with time zone),
     cast('294276-12-31 23:59:59.999999 +00'
-    as timestamp with time ZONE)
+    as timestamp with time zone)
   )
   as random_timestamptz_maximum_range;
 
 select
   random(
     cast('2024-07-01 12:00:00.000001 +04'
-    as timestamp with time ZONE),
+    as timestamp with time zone),
     cast('2024-07-01 12:00:00.999999 +04'
-    as timestamp with time ZONE)
+    as timestamp with time zone)
   )
   as random_timestamptz_narrow_range;
 
 select
   random(
-    cast('1979-02-08 +05' as timestamp with time ZONE),
-    cast('1979-02-08 +05' as timestamp with time ZONE)
+    cast('1979-02-08 +05' as timestamp with time zone),
+    cast('1979-02-08 +05' as timestamp with time zone)
   )
   as random_timestamptz_empty_range;
 
 select
   random(
-    cast('2024-01-01 +06' as timestamp with time ZONE),
-    cast('2024-01-01 +07' as timestamp with time ZONE)
+    cast('2024-01-01 +06' as timestamp with time zone),
+    cast('2024-01-01 +07' as timestamp with time zone)
   );
 
 select
   random(
-    cast('-infinity' as timestamp with time ZONE),
-    cast('2024-01-01 +07' as timestamp with time ZONE)
+    cast('-infinity' as timestamp with time zone),
+    cast('2024-01-01 +07' as timestamp with time zone)
   );
 
 select
   random(
-    cast('2024-01-01 +06' as timestamp with time ZONE),
-    cast('infinity' as timestamp with time ZONE)
+    cast('2024-01-01 +06' as timestamp with time zone),
+    cast('infinity' as timestamp with time zone)
   );

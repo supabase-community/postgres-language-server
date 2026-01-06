@@ -11,35 +11,35 @@ drop role if exists regress_seclabel_user2;
 
 reset client_min_messages;
 
-create user regress_seclabel_user1 CREATEROLE;
+create user regress_seclabel_user1 createrole;
 
 create user regress_seclabel_user2;
 
 create table seclabel_tbl1 (
-  a INT,
-  b TEXT
+  a int,
+  b text
 );
 
 create table seclabel_tbl2 (
-  x INT,
-  y TEXT
+  x int,
+  y text
 );
 
 create view seclabel_view1
 as select * from seclabel_tbl2;
 
 create function seclabel_four()
-returns INT
+returns int
 as $function$SELECT 4$function$
 language sql;
 
-create domain seclabel_domain as TEXT;
+create domain seclabel_domain as text;
 
 alter table seclabel_tbl1
-  OWNER to regress_seclabel_user1;
+  owner to regress_seclabel_user1;
 
 alter table seclabel_tbl2
-  OWNER to regress_seclabel_user2;
+  owner to regress_seclabel_user2;
 
 security label on table seclabel_tbl1 is 'classified';
 
@@ -57,15 +57,15 @@ security label on role regress_seclabel_user1 is '...invalid label...';
 
 security label on role regress_seclabel_user3 is 'unclassified';
 
-drop FUNCTION seclabel_four();
+drop function seclabel_four();
 
-drop DOMAIN seclabel_domain;
+drop domain seclabel_domain;
 
-drop VIEW seclabel_view1;
+drop view seclabel_view1;
 
-drop TABLE seclabel_tbl1;
+drop table seclabel_tbl1;
 
-drop TABLE seclabel_tbl2;
+drop table seclabel_tbl2;
 
 drop role regress_seclabel_user1;
 

@@ -9,11 +9,11 @@ pub(super) fn emit_alter_fdw_stmt(e: &mut EventEmitter, n: &AlterFdwStmt) {
 
     e.token(TokenKind::ALTER_KW);
     e.space();
-    e.token(TokenKind::IDENT("FOREIGN".to_string()));
+    e.token(TokenKind::FOREIGN_KW);
     e.space();
-    e.token(TokenKind::IDENT("DATA".to_string()));
+    e.token(TokenKind::DATA_KW);
     e.space();
-    e.token(TokenKind::IDENT("WRAPPER".to_string()));
+    e.token(TokenKind::WRAPPER_KW);
     e.space();
 
     if !n.fdwname.is_empty() {
@@ -30,24 +30,24 @@ pub(super) fn emit_alter_fdw_stmt(e: &mut EventEmitter, n: &AlterFdwStmt) {
             match def_elem.defname.as_str() {
                 "handler" => {
                     if let Some(ref arg) = def_elem.arg {
-                        e.token(TokenKind::IDENT("HANDLER".to_string()));
+                        e.token(TokenKind::HANDLER_KW);
                         e.space();
                         super::emit_node(arg, e);
                     } else {
                         e.token(TokenKind::NO_KW);
                         e.space();
-                        e.token(TokenKind::IDENT("HANDLER".to_string()));
+                        e.token(TokenKind::HANDLER_KW);
                     }
                 }
                 "validator" => {
                     if let Some(ref arg) = def_elem.arg {
-                        e.token(TokenKind::IDENT("VALIDATOR".to_string()));
+                        e.token(TokenKind::VALIDATOR_KW);
                         e.space();
                         super::emit_node(arg, e);
                     } else {
                         e.token(TokenKind::NO_KW);
                         e.space();
-                        e.token(TokenKind::IDENT("VALIDATOR".to_string()));
+                        e.token(TokenKind::VALIDATOR_KW);
                     }
                 }
                 _ => {
@@ -63,7 +63,7 @@ pub(super) fn emit_alter_fdw_stmt(e: &mut EventEmitter, n: &AlterFdwStmt) {
     if !n.options.is_empty() {
         e.line(LineType::SoftOrSpace);
         e.indent_start();
-        e.token(TokenKind::IDENT("OPTIONS".to_string()));
+        e.token(TokenKind::OPTIONS_KW);
         e.space();
         e.token(TokenKind::L_PAREN);
         emit_comma_separated_list(e, &n.options, |n, e| {

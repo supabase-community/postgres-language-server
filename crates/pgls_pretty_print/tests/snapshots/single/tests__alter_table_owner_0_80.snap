@@ -4,4 +4,4 @@ input_file: crates/pgls_pretty_print/tests/data/single/alter_table_owner_0.sql
 snapshot_kind: text
 ---
 alter table users
-  OWNER to postgres;
+  owner to postgres;

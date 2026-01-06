@@ -4,21 +4,21 @@ input_file: crates/pgls_pretty_print/tests/data/multi/create_misc.sql
 snapshot_kind: text
 ---
 create table a_star (
-  class CHAR(1),
-  a INT
+  class char(1),
+  a int
 );
 
-create table b_star (b TEXT)
+create table b_star (b text)
 inherits (a_star);
 
-create table c_star (c NAME)
+create table c_star (c name)
 inherits (a_star);
 
-create table d_star (d DOUBLE PRECISION)
+create table d_star (d double precision)
 inherits (b_star,
 c_star);
 
-create table e_star (e SMALLINT)
+create table e_star (e smallint)
 inherits (c_star);
 
 create table f_star (f polygon)
@@ -30,19 +30,19 @@ insert into a_star (class, a) values ('a', 2);
 
 insert into a_star (class) values ('a');
 
-insert into b_star (class, a, b) values ('b', 3, cast('mumble' as TEXT));
+insert into b_star (class, a, b) values ('b', 3, cast('mumble' as text));
 
 insert into b_star (class, a) values ('b', 4);
 
-insert into b_star (class, b) values ('b', cast('bumble' as TEXT));
+insert into b_star (class, b) values ('b', cast('bumble' as text));
 
 insert into b_star (class) values ('b');
 
-insert into c_star (class, a, c) values ('c', 5, cast('hi mom' as NAME));
+insert into c_star (class, a, c) values ('c', 5, cast('hi mom' as name));
 
 insert into c_star (class, a) values ('c', 6);
 
-insert into c_star (class, c) values ('c', cast('hi paul' as NAME));
+insert into c_star (class, c) values ('c', cast('hi paul' as name));
 
 insert into c_star (class) values ('c');
 
@@ -51,9 +51,9 @@ values
   (
     'd',
     7,
-    cast('grumble' as TEXT),
-    cast('hi sunita' as NAME),
-    cast('0.0' as DOUBLE PRECISION)
+    cast('grumble' as text),
+    cast('hi sunita' as name),
+    cast('0.0' as double precision)
   );
 
 insert into d_star (class, a, b, c)
@@ -61,8 +61,8 @@ values
   (
     'd',
     8,
-    cast('stumble' as TEXT),
-    cast('hi koko' as NAME)
+    cast('stumble' as text),
+    cast('hi koko' as name)
   );
 
 insert into d_star (class, a, b, d)
@@ -70,8 +70,8 @@ values
   (
     'd',
     9,
-    cast('rumble' as TEXT),
-    cast('1.1' as DOUBLE PRECISION)
+    cast('rumble' as text),
+    cast('1.1' as double precision)
   );
 
 insert into d_star (class, a, c, d)
@@ -79,50 +79,50 @@ values
   (
     'd',
     10,
-    cast('hi kristin' as NAME),
-    cast('10.01' as DOUBLE PRECISION)
+    cast('hi kristin' as name),
+    cast('10.01' as double precision)
   );
 
 insert into d_star (class, b, c, d)
 values
   (
     'd',
-    cast('crumble' as TEXT),
-    cast('hi boris' as NAME),
-    cast('100.001' as DOUBLE PRECISION)
+    cast('crumble' as text),
+    cast('hi boris' as name),
+    cast('100.001' as double precision)
   );
 
-insert into d_star (class, a, b) values ('d', 11, cast('fumble' as TEXT));
+insert into d_star (class, a, b) values ('d', 11, cast('fumble' as text));
 
-insert into d_star (class, a, c) values ('d', 12, cast('hi avi' as NAME));
+insert into d_star (class, a, c) values ('d', 12, cast('hi avi' as name));
 
-insert into d_star (class, a, d) values ('d', 13, cast('1000.0001' as DOUBLE PRECISION));
+insert into d_star (class, a, d) values ('d', 13, cast('1000.0001' as double precision));
 
-insert into d_star (class, b, c) values ('d', cast('tumble' as TEXT), cast('hi andrew' as NAME));
+insert into d_star (class, b, c) values ('d', cast('tumble' as text), cast('hi andrew' as name));
 
 insert into d_star (class, b, d)
 values
   (
     'd',
-    cast('humble' as TEXT),
-    cast('10000.00001' as DOUBLE PRECISION)
+    cast('humble' as text),
+    cast('10000.00001' as double precision)
   );
 
 insert into d_star (class, c, d)
 values
   (
     'd',
-    cast('hi ginger' as NAME),
-    cast('100000.000001' as DOUBLE PRECISION)
+    cast('hi ginger' as name),
+    cast('100000.000001' as double precision)
   );
 
 insert into d_star (class, a) values ('d', 14);
 
-insert into d_star (class, b) values ('d', cast('jumble' as TEXT));
+insert into d_star (class, b) values ('d', cast('jumble' as text));
 
-insert into d_star (class, c) values ('d', cast('hi jolly' as NAME));
+insert into d_star (class, c) values ('d', cast('hi jolly' as name));
 
-insert into d_star (class, d) values ('d', cast('1000000.0000001' as DOUBLE PRECISION));
+insert into d_star (class, d) values ('d', cast('1000000.0000001' as double precision));
 
 insert into d_star (class) values ('d');
 
@@ -131,29 +131,29 @@ values
   (
     'e',
     15,
-    cast('hi carol' as NAME),
-    cast('-1' as SMALLINT)
+    cast('hi carol' as name),
+    cast('-1' as smallint)
   );
 
-insert into e_star (class, a, c) values ('e', 16, cast('hi bob' as NAME));
+insert into e_star (class, a, c) values ('e', 16, cast('hi bob' as name));
 
-insert into e_star (class, a, e) values ('e', 17, cast('-2' as SMALLINT));
+insert into e_star (class, a, e) values ('e', 17, cast('-2' as smallint));
 
-insert into e_star (class, c, e) values ('e', cast('hi michelle' as NAME), cast('-3' as SMALLINT));
+insert into e_star (class, c, e) values ('e', cast('hi michelle' as name), cast('-3' as smallint));
 
 insert into e_star (class, a) values ('e', 18);
 
-insert into e_star (class, c) values ('e', cast('hi elisa' as NAME));
+insert into e_star (class, c) values ('e', cast('hi elisa' as name));
 
-insert into e_star (class, e) values ('e', cast('-4' as SMALLINT));
+insert into e_star (class, e) values ('e', cast('-4' as smallint));
 
 insert into f_star (class, a, c, e, f)
 values
   (
     'f',
     19,
-    cast('hi claire' as NAME),
-    cast('-5' as SMALLINT),
+    cast('hi claire' as name),
+    cast('-5' as smallint),
     cast('(1,3),(2,4)' as polygon)
   );
 
@@ -162,8 +162,8 @@ values
   (
     'f',
     20,
-    cast('hi mike' as NAME),
-    cast('-6' as SMALLINT)
+    cast('hi mike' as name),
+    cast('-6' as smallint)
   );
 
 insert into f_star (class, a, c, f)
@@ -171,7 +171,7 @@ values
   (
     'f',
     21,
-    cast('hi marcel' as NAME),
+    cast('hi marcel' as name),
     cast('(11,44),(22,55),(33,66)' as polygon)
   );
 
@@ -180,7 +180,7 @@ values
   (
     'f',
     22,
-    cast('-7' as SMALLINT),
+    cast('-7' as smallint),
     cast('(111,555),(222,666),(333,777),(444,888)'
     as polygon)
   );
@@ -189,24 +189,24 @@ insert into f_star (class, c, e, f)
 values
   (
     'f',
-    cast('hi keith' as NAME),
-    cast('-8' as SMALLINT),
+    cast('hi keith' as name),
+    cast('-8' as smallint),
     cast('(1111,3333),(2222,4444)' as polygon)
   );
 
-insert into f_star (class, a, c) values ('f', 24, cast('hi marc' as NAME));
+insert into f_star (class, a, c) values ('f', 24, cast('hi marc' as name));
 
-insert into f_star (class, a, e) values ('f', 25, cast('-9' as SMALLINT));
+insert into f_star (class, a, e) values ('f', 25, cast('-9' as smallint));
 
 insert into f_star (class, a, f) values ('f', 26, cast('(11111,33333),(22222,44444)' as polygon));
 
-insert into f_star (class, c, e) values ('f', cast('hi allison' as NAME), cast('-10' as SMALLINT));
+insert into f_star (class, c, e) values ('f', cast('hi allison' as name), cast('-10' as smallint));
 
 insert into f_star (class, c, f)
 values
   (
     'f',
-    cast('hi jeff' as NAME),
+    cast('hi jeff' as name),
     cast('(111111,333333),(222222,444444)' as polygon)
   );
 
@@ -214,16 +214,16 @@ insert into f_star (class, e, f)
 values
   (
     'f',
-    cast('-11' as SMALLINT),
+    cast('-11' as smallint),
     cast('(1111111,3333333),(2222222,4444444)'
     as polygon)
   );
 
 insert into f_star (class, a) values ('f', 27);
 
-insert into f_star (class, c) values ('f', cast('hi carl' as NAME));
+insert into f_star (class, c) values ('f', cast('hi carl' as name));
 
-insert into f_star (class, e) values ('f', cast('-12' as SMALLINT));
+insert into f_star (class, e) values ('f', cast('-12' as smallint));
 
 insert into f_star (class, f)
 values
@@ -249,9 +249,9 @@ analyze f_star;
 
 select * from a_star;
 
-select * from b_star as x where x.b = cast('bumble' as TEXT) or x.a < 3;
+select * from b_star as x where x.b = cast('bumble' as text) or x.a < 3;
 
-select class, a from c_star as x where x.c ~ cast('hi' as TEXT);
+select class, a from c_star as x where x.c ~ cast('hi' as text);
 
 select class, b, c from d_star as x where x.a < 100;
 
@@ -286,17 +286,17 @@ alter table a_star rename column foo to aa;
 select * from a_star where aa < 1000;
 
 alter table f_star
-  add column f INT;
+  add column f int;
 
 update f_star set f = 10;
 
 alter table e_star
-  add column e INT;
+  add column e int;
 
 select * from e_star;
 
 alter table a_star
-  add column a TEXT;
+  add column a text;
 
 select
   relname,
@@ -304,7 +304,7 @@ select
 from
   pg_class
 where
-  cast(oid as REGCLASS) in ('a_star', 'c_star')
+  cast(oid as regclass) in ('a_star', 'c_star')
 order by 1;
 
 select class, aa, a from a_star;

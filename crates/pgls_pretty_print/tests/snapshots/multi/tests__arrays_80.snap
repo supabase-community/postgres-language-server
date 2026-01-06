@@ -4,19 +4,19 @@ input_file: crates/pgls_pretty_print/tests/data/multi/arrays.sql
 snapshot_kind: text
 ---
 create table arrtest (
-  a SMALLINT[],
-  b INT[][][],
-  c NAME[],
-  d TEXT[][],
-  e DOUBLE PRECISION[],
-  f CHAR(5)[],
-  g VARCHAR(5)[]
+  a smallint[],
+  b int[][][],
+  c name[],
+  d text[][],
+  e double precision[],
+  f char(5)[],
+  g varchar(5)[]
 );
 
 create table array_op_test (
-  seqno INT,
-  i INT[],
-  t TEXT[]
+  seqno int,
+  i int[],
+  t text[]
 );
 
 copy array_op_test from 'filename';
@@ -124,21 +124,21 @@ select pg_input_is_valid('{1,zed}', 'integer[]');
 
 select * from pg_input_error_info('{1,zed}', 'integer[]');
 
-select cast('{{1,2,3},{4,5,6},{7,8,9}}' as INT[]);
+select cast('{{1,2,3},{4,5,6},{7,8,9}}' as int[]);
 
-select (cast('{{1,2,3},{4,5,6},{7,8,9}}' as INT[]))[1:2][2];
+select (cast('{{1,2,3},{4,5,6},{7,8,9}}' as int[]))[1:2][2];
 
-select cast('[0:2][0:2]={{1,2,3},{4,5,6},{7,8,9}}' as INT[]);
+select cast('[0:2][0:2]={{1,2,3},{4,5,6},{7,8,9}}' as int[]);
 
-select (cast('[0:2][0:2]={{1,2,3},{4,5,6},{7,8,9}}' as INT[]))[1:2][2];
+select (cast('[0:2][0:2]={{1,2,3},{4,5,6},{7,8,9}}' as int[]))[1:2][2];
 
-select (cast('{}' as INT[]))[1][2][3][4][5][6][7];
+select (cast('{}' as int[]))[1][2][3][4][5][6][7];
 
-select (cast('{{{1},{2},{3}},{{4},{5},{6}}}' as INT[]))[1][null][1];
+select (cast('{{{1},{2},{3}},{{4},{5},{6}}}' as int[]))[1][null][1];
 
-select (cast('{{{1},{2},{3}},{{4},{5},{6}}}' as INT[]))[1][null:1][1];
+select (cast('{{{1},{2},{3}},{{4},{5},{6}}}' as int[]))[1][null:1][1];
 
-select (cast('{{{1},{2},{3}},{{4},{5},{6}}}' as INT[]))[1][1:null][1];
+select (cast('{{{1},{2},{3}},{{4},{5},{6}}}' as int[]))[1][1:null][1];
 
 update arrtest
 set c[null] = '{"can''t assign"}'
@@ -158,8 +158,8 @@ where
 select (NOW())[1];
 
 create temporary table arrtest_s (
-  a SMALLINT[],
-  b SMALLINT[][]
+  a smallint[],
+  b smallint[][]
 );
 
 insert into arrtest_s values ('{1,2,3,4,5}', '{{1,2,3}, {4,5,6}, {7,8,9}}');
@@ -220,28 +220,28 @@ insert into point_tbl (f1[0]) values (0) returning *;
 update point_tbl
 set f1[0] = null
 where
-  cast(f1 as TEXT) =
-  cast(cast('(10,10)' as point) as TEXT)
+  cast(f1 as text) =
+  cast(cast('(10,10)' as point) as text)
 returning *;
 
 update point_tbl
 set f1[0] = -10,
 f1[1] = -10
 where
-  cast(f1 as TEXT) =
-  cast(cast('(10,10)' as point) as TEXT)
+  cast(f1 as text) =
+  cast(cast('(10,10)' as point) as text)
 returning *;
 
 update point_tbl
 set f1[3] = 10
 where
-  cast(f1 as TEXT) =
-  cast(cast('(-10,-10)' as point) as TEXT)
+  cast(f1 as text) =
+  cast(cast('(-10,-10)' as point) as text)
 returning *;
 
 create temporary table arrtest1 (
-  i INT[],
-  t TEXT[]
+  i int[],
+  t text[]
 );
 
 insert into arrtest1
@@ -327,11 +327,11 @@ t[0:5] = array['z', 'p1', 'p2', null, 'p4', 'p5'];
 select * from arrtest1;
 
 create temporary table arrtest2 (
-  i INT[4],
-  f DOUBLE PRECISION[],
-  n NUMERIC[],
-  t TEXT[],
-  d TIMESTAMP[]
+  i int[4],
+  f double precision[],
+  n numeric[],
+  t text[],
+  d timestamp[]
 );
 
 insert into arrtest2
@@ -339,7 +339,7 @@ values
   (
     array[array[array[113, 142], array[1, 147]]],
     cast(array[1.1, 1.2, 1.3]
-    as DOUBLE PRECISION[]),
+    as double precision[]),
     array[1.1, 1.2, 1.3],
     array[array[array['aaa', 'aab'],
     array['aba', 'abb'],
@@ -350,13 +350,13 @@ values
     cast(array['19620326',
     '19931223',
     '19970117']
-    as TIMESTAMP[])
+    as timestamp[])
   );
 
 create temporary table arrtest_f (
-  f0 INT,
-  f1 TEXT,
-  f2 DOUBLE PRECISION
+  f0 int,
+  f1 text,
+  f2 double precision
 );
 
 insert into arrtest_f values (1, 'cat1', 1.21);
@@ -378,9 +378,9 @@ insert into arrtest_f values (8, 'cat2', 1.32);
 insert into arrtest_f values (9, 'cat2', 1.30);
 
 create temporary table arrtest_i (
-  f0 INT,
-  f1 TEXT,
-  f2 INT
+  f0 int,
+  f1 text,
+  f2 int
 );
 
 insert into arrtest_i values (1, 'cat1', 21);
@@ -423,7 +423,7 @@ select array[array['hello'], array['world']];
 
 select array(select f2 from arrtest_f order by f2) as "ARRAY";
 
-select cast('{1,null,3}' as INT[]);
+select cast('{1,null,3}' as int[]);
 
 select array[1, null, 3];
 
@@ -517,7 +517,7 @@ select
 
 select array_positions(null, 10);
 
-select array_positions(null, cast(null as INT));
+select array_positions(null, cast(null as int));
 
 select array_positions(array[1, 2, 3, 4, 5, 6, 1, 2, 3, 4, 5, 6], 4);
 
@@ -533,7 +533,7 @@ select
       array(
         select
           cast('AAAAAAAAAAAAAAAAAAAAAAAAA'
-          as TEXT) ||
+          as text) ||
           i % 10
         from
           generate_series(1, 100) as g (i)
@@ -559,9 +559,9 @@ END
 $do$
 language plpgsql;
 
-select array_position(cast('[2:4]={1,2,3}' as INT[]), 1);
+select array_position(cast('[2:4]={1,2,3}' as int[]), 1);
 
-select array_positions(cast('[2:4]={1,2,3}' as INT[]), 1);
+select array_positions(cast('[2:4]={1,2,3}' as int[]), 1);
 
 select
   array_position(ids, (1, 1)),
@@ -685,41 +685,41 @@ select * from array_op_test where t && '{}' order by seqno;
 select * from array_op_test where t <@ '{}' order by seqno;
 
 select
-  cast(cast(cast(array[1, 2, 3] as TEXT[])
-  as INT[])
-  as DOUBLE PRECISION[])
+  cast(cast(cast(array[1, 2, 3] as text[])
+  as int[])
+  as double precision[])
   as "{1,2,3}";
 
 select
   pg_typeof(
-    cast(cast(cast(array[1, 2, 3] as TEXT[])
-    as INT[])
-    as DOUBLE PRECISION[])
+    cast(cast(cast(array[1, 2, 3] as text[])
+    as int[])
+    as double precision[])
   )
   as "double precision[]";
 
 select
   cast(cast(array[array['a', 'bc'],
   array['def', 'hijk']]
-  as TEXT[])
-  as VARCHAR[])
+  as text[])
+  as varchar[])
   as "{{a,bc},{def,hijk}}";
 
 select
   pg_typeof(
     cast(cast(array[array['a', 'bc'],
     array['def', 'hijk']]
-    as TEXT[])
-    as VARCHAR[])
+    as text[])
+    as varchar[])
   )
   as "character varying[]";
 
 select
   cast(array[array[array[array[array[array['a', 'bb', 'ccc']]]]]]
-  as TEXT[])
+  as text[])
   as "{{{{{{a,bb,ccc}}}}}}";
 
-select cast(cast(null as TEXT[]) as INT[]) as "NULL";
+select cast(cast(null as text[]) as int[]) as "NULL";
 
 select 33 = any ('{1,2,3}');
 
@@ -729,11 +729,11 @@ select 33 = all ('{1,2,33}');
 
 select 33 >= all ('{1,2,33}');
 
-select cast(null as INT) >= all ('{1,2,33}');
+select cast(null as int) >= all ('{1,2,33}');
 
-select cast(null as INT) >= all ('{}');
+select cast(null as int) >= all ('{}');
 
-select cast(null as INT) >= any ('{}');
+select cast(null as int) >= any ('{}');
 
 select 33.4 = any (array[1, 2, 3]);
 
@@ -743,17 +743,17 @@ select 33 * any ('{1,2,3}');
 
 select 33 * any (44);
 
-select 33 = any (cast(null as INT[]));
+select 33 = any (cast(null as int[]));
 
-select cast(null as INT) = any ('{1,2,3}');
+select cast(null as int) = any ('{1,2,3}');
 
 select 33 = any ('{1,null,3}');
 
 select 33 = any ('{1,null,33}');
 
-select 33 = all (cast(null as INT[]));
+select 33 = all (cast(null as int[]));
 
-select cast(null as INT) = all ('{1,2,3}');
+select cast(null as int) = all ('{1,2,3}');
 
 select 33 = all ('{1,null,3}');
 
@@ -767,7 +767,7 @@ select
       generate_series(1, 1000) as g (i)
   ));
 
-create temporary table arr_tbl (f1 INT[] unique);
+create temporary table arr_tbl (f1 int[] unique);
 
 insert into arr_tbl values ('{1,2,3}');
 
@@ -790,8 +790,8 @@ select * from arr_tbl where f1 > '{1,2,3}' and f1 <= '{1,5,3}';
 select * from arr_tbl where f1 >= '{1,2,3}' and f1 < '{1,5,3}';
 
 create temporary table arr_pk_tbl (
-  pk INT primary key,
-  f1 INT[]
+  pk int primary key,
+  f1 int[]
 );
 
 insert into arr_pk_tbl values (1, '{1,2,3}');
@@ -856,107 +856,107 @@ select 'foo' ~~* any (array['%A', '%O']);
 
 select 'foo' ~~* all (array['F%', '%O']);
 
-select cast('{{1,{2}},{2,3}}' as TEXT[]);
+select cast('{{1,{2}},{2,3}}' as text[]);
 
-select cast('{{1,2},\{2,3}}' as TEXT[]);
+select cast('{{1,2},\{2,3}}' as text[]);
 
-select cast('{"a"b}' as TEXT[]);
+select cast('{"a"b}' as text[]);
 
-select cast('{a"b"}' as TEXT[]);
+select cast('{a"b"}' as text[]);
 
-select cast('{"a""b"}' as TEXT[]);
+select cast('{"a""b"}' as text[]);
 
-select cast('{{"1 2" x},{3}}' as TEXT[]);
+select cast('{{"1 2" x},{3}}' as text[]);
 
-select cast('{{"1 2"} x,{3}}' as TEXT[]);
+select cast('{{"1 2"} x,{3}}' as text[]);
 
-select cast('{}}' as TEXT[]);
+select cast('{}}' as text[]);
 
-select cast('{ }}' as TEXT[]);
+select cast('{ }}' as text[]);
 
-select cast('}{' as TEXT[]);
+select cast('}{' as text[]);
 
-select cast('{foo{}}' as TEXT[]);
+select cast('{foo{}}' as text[]);
 
-select cast('{"foo"{}}' as TEXT[]);
+select cast('{"foo"{}}' as text[]);
 
-select cast('{foo,,bar}' as TEXT[]);
+select cast('{foo,,bar}' as text[]);
 
-select cast('{{1},{{2}}}' as TEXT[]);
+select cast('{{1},{{2}}}' as text[]);
 
-select cast('{{{1}},{2}}' as TEXT[]);
+select cast('{{{1}},{2}}' as text[]);
 
-select cast('{{},{{}}}' as TEXT[]);
+select cast('{{},{{}}}' as text[]);
 
-select cast('{{{}},{}}' as TEXT[]);
+select cast('{{{}},{}}' as text[]);
 
-select cast('{{1},{}}' as TEXT[]);
+select cast('{{1},{}}' as text[]);
 
-select cast('{{},{1}}' as TEXT[]);
+select cast('{{},{1}}' as text[]);
 
-select cast('[1:0]={}' as INT[]);
+select cast('[1:0]={}' as int[]);
 
-select cast('[2147483646:2147483647]={1,2}' as INT[]);
+select cast('[2147483646:2147483647]={1,2}' as int[]);
 
-select cast('[1:-1]={}' as INT[]);
+select cast('[1:-1]={}' as int[]);
 
-select cast('[2]={1}' as INT[]);
+select cast('[2]={1}' as int[]);
 
-select cast('[1:]={1}' as INT[]);
+select cast('[1:]={1}' as int[]);
 
-select cast('[:1]={1}' as INT[]);
+select cast('[:1]={1}' as int[]);
 
 select array[];
 
-select cast('{{1,},{1},}' as TEXT[]);
+select cast('{{1,},{1},}' as text[]);
 
-select cast('{{1,},{1}}' as TEXT[]);
+select cast('{{1,},{1}}' as text[]);
 
-select cast('{{1,}}' as TEXT[]);
+select cast('{{1,}}' as text[]);
 
-select cast('{1,}' as TEXT[]);
+select cast('{1,}' as text[]);
 
-select cast('[21474836488:21474836489]={1,2}' as INT[]);
+select cast('[21474836488:21474836489]={1,2}' as int[]);
 
-select cast('[-2147483649:-2147483648]={1,2}' as INT[]);
+select cast('[-2147483649:-2147483648]={1,2}' as int[]);
 
-select cast('{}' as TEXT[]);
+select cast('{}' as text[]);
 
-select cast('{{},{}}' as TEXT[]);
+select cast('{{},{}}' as text[]);
 
-select cast('{{{1,2,3,4},{2,3,4,5}},{{3,4,5,6},{4,5,6,7}}}' as TEXT[]);
+select cast('{{{1,2,3,4},{2,3,4,5}},{{3,4,5,6},{4,5,6,7}}}' as text[]);
 
-select cast('{null,n\ull,"null"}' as TEXT[]);
+select cast('{null,n\ull,"null"}' as text[]);
 
-select cast('{ ab\c , "ab\"c" }' as TEXT[]);
+select cast('{ ab\c , "ab\"c" }' as text[]);
 
-select cast('{0 second  ,0 second}' as INTERVAL[]);
+select cast('{0 second  ,0 second}' as interval[]);
 
-select cast('{ { "," } , { 3 } }' as TEXT[]);
+select cast('{ { "," } , { 3 } }' as text[]);
 
-select cast('  {   {  "  0 second  "   ,  0 second  }   }' as TEXT[]);
+select cast('  {   {  "  0 second  "   ,  0 second  }   }' as text[]);
 
 select
   cast('{
            0 second,
            @ 1 hour @ 42 minutes @ 20 seconds
          }'
-  as INTERVAL[]);
+  as interval[]);
 
-select cast(array[] as TEXT[]);
+select cast(array[] as text[]);
 
-select cast('[2]={1,7}' as INT[]);
+select cast('[2]={1,7}' as int[]);
 
-select cast('[0:1]={1.1,2.2}' as DOUBLE PRECISION[]);
+select cast('[0:1]={1.1,2.2}' as double precision[]);
 
-select cast('[2147483646:2147483646]={1}' as INT[]);
+select cast('[2147483646:2147483646]={1}' as int[]);
 
-select cast('[-2147483648:-2147483647]={1,2}' as INT[]);
+select cast('[-2147483648:-2147483647]={1,2}' as int[]);
 
 create temporary table arraggtest (
-  f1 INT[],
-  f2 TEXT[][],
-  f3 DOUBLE PRECISION[]
+  f1 int[],
+  f2 text[][],
+  f3 double precision[]
 );
 
 insert into arraggtest (f1, f2, f3)
@@ -1017,7 +1017,7 @@ values
 
 select MAX(f1), MIN(f1), MAX(f2), MIN(f2), MAX(f3), MIN(f3) from arraggtest;
 
-create type comptype as (f1 INT, f2 TEXT);
+create type comptype as (f1 int, f2 text);
 
 create table comptable (
   c1 comptype,
@@ -1038,22 +1038,22 @@ select * from comptable;
 
 select c2[2].f2 from comptable;
 
-drop TYPE _comptype;
+drop type _comptype;
 
-drop TABLE comptable;
+drop table comptable;
 
-drop TYPE comptype;
+drop type comptype;
 
-create or replace function unnest1(ANYARRAY)
-returns setof ANYELEMENT
+create or replace function unnest1(anyarray)
+returns setof anyelement
 as $function$
 select $1[s] from generate_subscripts($1,1) g(s);
 $function$
 language sql
 immutable;
 
-create or replace function unnest2(ANYARRAY)
-returns setof ANYELEMENT
+create or replace function unnest2(anyarray)
+returns setof anyelement
 as $function$
 select $1[s1][s2] from generate_subscripts($1,1) g1(s1),
                    generate_subscripts($1,2) g2(s2);
@@ -1065,25 +1065,25 @@ select * from unnest1(array[1, 2, 3]);
 
 select * from unnest2(array[array[1, 2, 3], array[4, 5, 6]]);
 
-drop FUNCTION unnest1(ANYARRAY);
+drop function unnest1(anyarray);
 
-drop FUNCTION unnest2(ANYARRAY);
+drop function unnest2(anyarray);
 
-select array_fill(cast(null as INT), array[3, 3], array[2, 2]);
+select array_fill(cast(null as int), array[3, 3], array[2, 2]);
 
-select array_fill(cast(null as INT), array[3, 3]);
+select array_fill(cast(null as int), array[3, 3]);
 
-select array_fill(cast(null as TEXT), array[3, 3], array[2, 2]);
+select array_fill(cast(null as text), array[3, 3], array[2, 2]);
 
-select array_fill(cast(null as TEXT), array[3, 3]);
+select array_fill(cast(null as text), array[3, 3]);
 
 select array_fill(7, array[3, 3], array[2, 2]);
 
 select array_fill(7, array[3, 3]);
 
-select array_fill(cast('juhu' as TEXT), array[3, 3], array[2, 2]);
+select array_fill(cast('juhu' as text), array[3, 3], array[2, 2]);
 
-select array_fill(cast('juhu' as TEXT), array[3, 3]);
+select array_fill(cast('juhu' as text), array[3, 3]);
 
 select
   a,
@@ -1210,9 +1210,9 @@ from
   string_to_table('1,2,3,4,*,6', ',', '*')
   as g (v);
 
-select array_to_string(cast(null as INT[]), ',') is null;
+select array_to_string(cast(null as int[]), ',') is null;
 
-select array_to_string(cast('{}' as INT[]), ',');
+select array_to_string(cast('{}' as int[]), ',');
 
 select array_to_string(array[1, 2, 3, 4, null, 6], ',');
 
@@ -1234,19 +1234,19 @@ select array_length(array[array[1, 2, 3], array[4, 5, 6]], 2);
 
 select array_length(array[array[1, 2, 3], array[4, 5, 6]], 3);
 
-select cardinality(cast(null as INT[]));
+select cardinality(cast(null as int[]));
 
-select cardinality(cast('{}' as INT[]));
+select cardinality(cast('{}' as int[]));
 
 select cardinality(array[1, 2, 3]);
 
-select cardinality(cast('[2:4]={5,6,7}' as INT[]));
+select cardinality(cast('[2:4]={5,6,7}' as int[]));
 
-select cardinality(cast('{{1,2}}' as INT[]));
+select cardinality(cast('{{1,2}}' as int[]));
 
-select cardinality(cast('{{1,2},{3,4},{5,6}}' as INT[]));
+select cardinality(cast('{{1,2},{3,4},{5,6}}' as int[]));
 
-select cardinality(cast('{{{1,9},{5,6}},{{2,3},{3,4}}}' as INT[]));
+select cardinality(cast('{{{1,9},{5,6}},{{2,3},{3,4}}}' as int[]));
 
 select
   array_agg(unique1)
@@ -1297,8 +1297,8 @@ select
 from
   (
     values
-      (cast('{1,2}' as INT[])),
-      (cast('{3,4}' as INT[]))
+      (cast('{1,2}' as int[])),
+      (cast('{3,4}' as int[]))
   )
   as v (ar);
 
@@ -1333,7 +1333,7 @@ from
 
 select
   array_agg(
-    array['Hello', cast(i as TEXT)]
+    array['Hello', cast(i as text)]
   )
 from
   generate_series(9, 11) as g (i);
@@ -1343,17 +1343,17 @@ select
 from
   generate_series(1, 4) as g (i);
 
-select array_agg(cast('{}' as INT[])) from generate_series(1, 2);
+select array_agg(cast('{}' as int[])) from generate_series(1, 2);
 
-select array_agg(cast(null as INT[])) from generate_series(1, 2);
+select array_agg(cast(null as int[])) from generate_series(1, 2);
 
 select
   array_agg(ar)
 from
   (
     values
-      (cast('{1,2}' as INT[])),
-      (cast('{3}' as INT[]))
+      (cast('{1,2}' as int[])),
+      (cast('{3}' as int[]))
   )
   as v (ar);
 
@@ -1361,13 +1361,13 @@ select unnest(array[1, 2, 3]);
 
 select * from unnest(array[1, 2, 3]);
 
-select unnest(cast(array[1, 2, 3, 4.5] as DOUBLE PRECISION[]));
+select unnest(cast(array[1, 2, 3, 4.5] as double precision[]));
 
-select unnest(cast(array[1, 2, 3, 4.5] as NUMERIC[]));
+select unnest(cast(array[1, 2, 3, 4.5] as numeric[]));
 
 select unnest(array[1, 2, 3, null, 4, null, null, 5, 6]);
 
-select unnest(cast(array[1, 2, 3, null, 4, null, null, 5, 6] as TEXT[]));
+select unnest(cast(array[1, 2, 3, null, 4, null, null, 5, 6] as text[]));
 
 select abs(unnest(array[1, 2, null, -3]));
 
@@ -1402,7 +1402,7 @@ select array(select array[i, i / 2] from generate_series(1, 5) as i);
 select
   array(
     select
-      array['Hello', cast(i as TEXT)]
+      array['Hello', cast(i as text)]
     from
       generate_series(9, 11) as i
   );
@@ -1485,15 +1485,15 @@ update t1 set f1[5]."q2" = 43;
 
 select * from t1;
 
-create temporary table src (f1 TEXT);
+create temporary table src (f1 text);
 
 insert into src
 select
-  string_agg(cast(random() as TEXT), '')
+  string_agg(cast(random() as text), '')
 from
   generate_series(1, 10000);
 
-create type textandtext as (c1 TEXT, c2 TEXT);
+create type textandtext as (c1 text, c2 text);
 
 create temporary table dest (f1 textandtext[]);
 
@@ -1507,47 +1507,47 @@ select length(fipshash(f1[1].c2)) from dest;
 
 truncate src;
 
-drop TABLE src;
+drop table src;
 
 select length(fipshash(f1[1].c2)) from dest;
 
-drop TABLE dest;
+drop table dest;
 
-drop TYPE textandtext;
+drop type textandtext;
 
 select
   op,
   width_bucket(
-    cast(op as NUMERIC),
-    cast(array[1, 3, 5, 10.0] as NUMERIC[])
+    cast(op as numeric),
+    cast(array[1, 3, 5, 10.0] as numeric[])
   )
   as wb_n1,
   width_bucket(
-    cast(op as NUMERIC),
-    cast(array[0, 5.5, 9.99] as NUMERIC[])
+    cast(op as numeric),
+    cast(array[0, 5.5, 9.99] as numeric[])
   )
   as wb_n2,
   width_bucket(
-    cast(op as NUMERIC),
-    cast(array[-6, -5, 2.0] as NUMERIC[])
+    cast(op as numeric),
+    cast(array[-6, -5, 2.0] as numeric[])
   )
   as wb_n3,
   width_bucket(
-    cast(op as DOUBLE PRECISION),
+    cast(op as double precision),
     cast(array[1, 3, 5, 10.0]
-    as DOUBLE PRECISION[])
+    as double precision[])
   )
   as wb_f1,
   width_bucket(
-    cast(op as DOUBLE PRECISION),
+    cast(op as double precision),
     cast(array[0, 5.5, 9.99]
-    as DOUBLE PRECISION[])
+    as double precision[])
   )
   as wb_f2,
   width_bucket(
-    cast(op as DOUBLE PRECISION),
+    cast(op as double precision),
     cast(array[-6, -5, 2.0]
-    as DOUBLE PRECISION[])
+    as double precision[])
   )
   as wb_f3
 from
@@ -1580,16 +1580,16 @@ select
   width_bucket(
     op,
     cast(array[1, 3, 9, 'NaN', 'NaN']
-    as DOUBLE PRECISION[])
+    as double precision[])
   )
   as wb
 from
   (
     values
-      (-cast(5.2 as DOUBLE PRECISION)),
-      (cast(4 as DOUBLE PRECISION)),
-      (cast(77 as DOUBLE PRECISION)),
-      (cast('NaN' as DOUBLE PRECISION))
+      (-cast(5.2 as double precision)),
+      (cast(4 as double precision)),
+      (cast(77 as double precision)),
+      (cast('NaN' as double precision))
   )
   as v (op);
 
@@ -1604,14 +1604,14 @@ select
   width_bucket(
     NOW(),
     cast(array['yesterday', 'today', 'tomorrow']
-    as timestamp with time ZONE[])
+    as timestamp with time zone[])
   );
 
 select width_bucket(5, array[3]);
 
 select width_bucket(5, '{}');
 
-select width_bucket(cast('5' as TEXT), cast(array[3, 4] as INT[]));
+select width_bucket(cast('5' as text), cast(array[3, 4] as int[]));
 
 select width_bucket(5, array[3, 4, null]);
 
@@ -1623,7 +1623,7 @@ select
 from
   (
     values
-      (cast('{1,2,3,4,5,6}' as BIGINT[])),
+      (cast('{1,2,3,4,5,6}' as bigint[])),
       ('{1,2}'),
       ('[10:16]={1,2,3,4,5,6,7}'),
       ('[-15:-10]={1,2,3,4,5,6}'),
@@ -1635,17 +1635,17 @@ select trim_array(array[1, 2, 3], -1);
 
 select trim_array(array[1, 2, 3], 10);
 
-select trim_array(cast(array[] as INT[]), 1);
+select trim_array(cast(array[] as int[]), 1);
 
-select array_shuffle(cast('{1,2,3,4,5,6}' as INT[])) <@ '{1,2,3,4,5,6}';
+select array_shuffle(cast('{1,2,3,4,5,6}' as int[])) <@ '{1,2,3,4,5,6}';
 
-select array_shuffle(cast('{1,2,3,4,5,6}' as INT[])) @> '{1,2,3,4,5,6}';
+select array_shuffle(cast('{1,2,3,4,5,6}' as int[])) @> '{1,2,3,4,5,6}';
 
 select
   array_dims(
     array_shuffle(
       cast('[-1:2][2:3]={{1,2},{3,NULL},{5,6},{7,8}}'
-      as INT[])
+      as int[])
     )
   );
 
@@ -1653,19 +1653,19 @@ select
   array_dims(
     array_shuffle(
       cast('{{{1,2},{3,NULL}},{{5,6},{7,8}},{{9,10},{11,12}}}'
-      as INT[])
+      as int[])
     )
   );
 
-select array_sample(cast('{1,2,3,4,5,6}' as INT[]), 3) <@ '{1,2,3,4,5,6}';
+select array_sample(cast('{1,2,3,4,5,6}' as int[]), 3) <@ '{1,2,3,4,5,6}';
 
-select array_length(array_sample(cast('{1,2,3,4,5,6}' as INT[]), 3), 1);
+select array_length(array_sample(cast('{1,2,3,4,5,6}' as int[]), 3), 1);
 
 select
   array_dims(
     array_sample(
       cast('[-1:2][2:3]={{1,2},{3,NULL},{5,6},{7,8}}'
-      as INT[]),
+      as int[]),
       3
     )
   );
@@ -1674,36 +1674,36 @@ select
   array_dims(
     array_sample(
       cast('{{{1,2},{3,NULL}},{{5,6},{7,8}},{{9,10},{11,12}}}'
-      as INT[]),
+      as int[]),
       2
     )
   );
 
-select array_sample(cast('{1,2,3,4,5,6}' as INT[]), -1);
+select array_sample(cast('{1,2,3,4,5,6}' as int[]), -1);
 
-select array_sample(cast('{1,2,3,4,5,6}' as INT[]), 7);
+select array_sample(cast('{1,2,3,4,5,6}' as int[]), 7);
 
-select array_reverse(cast('{}' as INT[]));
+select array_reverse(cast('{}' as int[]));
 
-select array_reverse(cast('{1}' as INT[]));
+select array_reverse(cast('{1}' as int[]));
 
-select array_reverse(cast('{1,2}' as INT[]));
+select array_reverse(cast('{1,2}' as int[]));
 
-select array_reverse(cast('{1,2,3,NULL,4,5,6}' as INT[]));
+select array_reverse(cast('{1,2,3,NULL,4,5,6}' as int[]));
 
-select array_reverse(cast('{{1,2},{3,4},{5,6},{7,8}}' as INT[]));
+select array_reverse(cast('{{1,2},{3,4},{5,6},{7,8}}' as int[]));
 
-select array_sort(cast('{}' as INT[]));
+select array_sort(cast('{}' as int[]));
 
-select array_sort(cast('{1}' as INT[]));
+select array_sort(cast('{1}' as int[]));
 
-select array_sort(cast('{1,3,5,2,4,6}' as INT[]));
+select array_sort(cast('{1,3,5,2,4,6}' as int[]));
 
-select array_sort(cast('{1.1,3.3,5.5,2.2,4.4,6.6}' as NUMERIC[]));
+select array_sort(cast('{1.1,3.3,5.5,2.2,4.4,6.6}' as numeric[]));
 
-select array_sort(cast('{foo,bar,CCC,Abc,bbc}' as TEXT[]) collate "C");
+select array_sort(cast('{foo,bar,CCC,Abc,bbc}' as text[]) collate "C");
 
-select array_sort(cast('{foo,bar,null,CCC,Abc,bbc}' as TEXT[]) collate "C");
+select array_sort(cast('{foo,bar,null,CCC,Abc,bbc}' as text[]) collate "C");
 
 select
   array_sort(
@@ -1717,21 +1717,21 @@ select
 select
   array_sort(
     cast('{1.1,3.3,5.5,2.2,null,4.4,6.6}'
-    as DOUBLE PRECISION[]),
+    as double precision[]),
     true
   );
 
 select
   array_sort(
     cast('{1.1,3.3,5.5,2.2,null,4.4,6.6}'
-    as DOUBLE PRECISION[]),
+    as double precision[]),
     false
   );
 
 select
   array_sort(
     cast('{1.1,3.3,5.5,2.2,null,4.4,6.6}'
-    as DOUBLE PRECISION[]),
+    as double precision[]),
     true,
     true
   );
@@ -1739,7 +1739,7 @@ select
 select
   array_sort(
     cast('{1.1,3.3,5.5,2.2,null,4.4,6.6}'
-    as DOUBLE PRECISION[]),
+    as double precision[]),
     true,
     false
   );
@@ -1747,7 +1747,7 @@ select
 select
   array_sort(
     cast('{1.1,3.3,5.5,2.2,null,4.4,6.6}'
-    as DOUBLE PRECISION[]),
+    as double precision[]),
     false,
     true
   );
@@ -1755,22 +1755,22 @@ select
 select
   array_sort(
     cast('{1.1,3.3,5.5,2.2,null,4.4,6.6}'
-    as DOUBLE PRECISION[]),
+    as double precision[]),
     false,
     false
   );
 
-select array_sort(cast('{{1}}' as INT[]));
+select array_sort(cast('{{1}}' as int[]));
 
 select array_sort(array[array[2, 4], array[2, 1], array[6, 5]]);
 
 select array_sort(cast('{{"1 2","3 4"}, {"1 -2","-1 4"}}' as int2vector[]));
 
-select array_sort(cast('{1}' as XID[]));
+select array_sort(cast('{1}' as xid[]));
 
-select array_sort(cast('{1,2,3}' as XID[]));
+select array_sort(cast('{1,2,3}' as xid[]));
 
-select array_sort(cast('{{1,2,3},{2,3,4}}' as XID[]));
+select array_sort(cast('{{1,2,3},{2,3,4}}' as xid[]));
 
 select
   array_sort(a)
@@ -1779,12 +1779,12 @@ from
     values
       (
         cast('[10:12][20:21]={{1,2},{10,20},{3,4}}'
-        as INT[])
+        as int[])
       )
   )
   as v (a);
 
-select array_sort(a) from (values (cast('[-1:0]={7,1}' as INT[]))) as v (a);
+select array_sort(a) from (values (cast('[-1:0]={7,1}' as int[]))) as v (a);
 
 select
   array_sort(a)
@@ -1793,7 +1793,7 @@ from
     values
       (
         cast('[-2:0][20:21]={{1,2},{10,20},{1,-4}}'
-        as INT[])
+        as int[])
       )
   )
   as v (a);
@@ -1805,7 +1805,7 @@ from
     values
       (
         cast('[-2:0][20:21]={{1,2},{10,20},{1,-4}}'
-        as INT[])
+        as int[])
       )
   )
   as v (a);
@@ -1817,7 +1817,7 @@ from
     values
       (
         cast('[-2:0][20:21]={{1,2},{10,20},{1,-4}}'
-        as INT[])
+        as int[])
       )
   )
   as v (a);

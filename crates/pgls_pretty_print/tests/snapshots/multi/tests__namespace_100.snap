@@ -14,7 +14,7 @@ as select a + 1 as a, b + 1 as b from abc;
 
 create table abc (
   a serial,
-  b INT unique
+  b int unique
 );
 
 set search_path to public;
@@ -47,7 +47,7 @@ commit;
 
 show "search_path";
 
-drop SCHEMA test_ns_schema_2 cascade;
+drop schema test_ns_schema_2 cascade;
 
 select
   COUNT(*)
@@ -99,10 +99,10 @@ create schema if not exists "test_ns_schema_renamed";
 
 create table abc (
   a serial,
-  b INT unique
+  b int unique
 );
 
-drop SCHEMA test_ns_schema_renamed cascade;
+drop schema test_ns_schema_renamed cascade;
 
 select
   COUNT(*)
@@ -123,8 +123,8 @@ create schema "test_maint_search_path";
 
 set search_path to test_maint_search_path;
 
-create function fn(INT)
-returns INT
+create function fn(int)
+returns int
 immutable
 language plpgsql
 as $function$
@@ -134,7 +134,7 @@ as $function$
   END;
 $function$;
 
-create table test_maint (i INT);
+create table test_maint (i int);
 
 insert into test_maint values (1), (2);
 
@@ -148,10 +148,10 @@ analyze test_maint_search_path.test_maint;
 
 vacuum (FULL) test_maint_search_path.test_maint;
 
-CLUSTER test_maint_search_path.test_maint using test_maint_idx;
+cluster test_maint_search_path.test_maint using test_maint_idx;
 
 refresh materialized view test_maint_search_path.test_maint_mv;
 
 reset search_path;
 
-drop SCHEMA test_maint_search_path cascade;
+drop schema test_maint_search_path cascade;

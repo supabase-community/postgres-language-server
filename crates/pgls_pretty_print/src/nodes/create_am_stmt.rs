@@ -10,9 +10,9 @@ pub(super) fn emit_create_am_stmt(e: &mut EventEmitter, n: &CreateAmStmt) {
 
     e.token(TokenKind::CREATE_KW);
     e.space();
-    e.token(TokenKind::IDENT("ACCESS".to_string()));
+    e.token(TokenKind::ACCESS_KW);
     e.space();
-    e.token(TokenKind::IDENT("METHOD".to_string()));
+    e.token(TokenKind::METHOD_KW);
 
     if !n.amname.is_empty() {
         e.space();
@@ -25,18 +25,17 @@ pub(super) fn emit_create_am_stmt(e: &mut EventEmitter, n: &CreateAmStmt) {
         e.line(LineType::SoftOrSpace);
         e.token(TokenKind::TYPE_KW);
         e.space();
-        let type_str = match n.amtype.as_str() {
-            "i" => "INDEX",
-            "t" => "TABLE",
-            _ => &n.amtype, // fallback to original value
+        match n.amtype.as_str() {
+            "i" => e.token(TokenKind::INDEX_KW),
+            "t" => e.token(TokenKind::TABLE_KW),
+            _ => e.token(TokenKind::IDENT(n.amtype.clone())), // fallback to original value
         };
-        e.token(TokenKind::IDENT(type_str.to_string()));
     }
 
     // HANDLER
     if !n.handler_name.is_empty() {
         e.line(LineType::SoftOrSpace);
-        e.token(TokenKind::IDENT("HANDLER".to_string()));
+        e.token(TokenKind::HANDLER_KW);
         e.space();
         super::node_list::emit_dot_separated_list(e, &n.handler_name);
     }

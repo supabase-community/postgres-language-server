@@ -14,9 +14,9 @@ pub(super) fn emit_discard_stmt(e: &mut EventEmitter, n: &DiscardStmt) {
     // DiscardMode: Undefined=0, DiscardAll=1, DiscardPlans=2, DiscardSequences=3, DiscardTemp=4
     match n.target {
         1 => e.token(TokenKind::ALL_KW),
-        2 => e.token(TokenKind::IDENT("PLANS".to_string())),
-        3 => e.token(TokenKind::IDENT("SEQUENCES".to_string())),
-        4 => e.token(TokenKind::IDENT("TEMP".to_string())),
+        2 => e.token(TokenKind::PLANS_KW),
+        3 => e.token(TokenKind::SEQUENCES_KW),
+        4 => e.token(TokenKind::TEMP_KW),
         _ => e.token(TokenKind::ALL_KW),
     }
 

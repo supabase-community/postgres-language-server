@@ -25,7 +25,7 @@ select
                                 replace(
                                   replace(
                                     replace(
-                                      replace(cast(view_definition as TEXT), '<>', '()'),
+                                      replace(cast(view_definition as text), '<>', '()'),
                                       ',',
                                       ''
                                     ),
@@ -81,7 +81,7 @@ select
     ' ',
     ','
   )
-  as JSON)
+  as json)
   as view_definition
 from
   views;

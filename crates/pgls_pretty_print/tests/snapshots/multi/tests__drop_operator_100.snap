@@ -3,15 +3,15 @@ source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/drop_operator.sql
 snapshot_kind: text
 ---
-create operator === (PROCEDURE = int8eq, LEFTARG = BIGINT, RIGHTARG = BIGINT, COMMUTATOR = ===);
+create operator === (PROCEDURE = int8eq, LEFTARG = bigint, RIGHTARG = bigint, COMMUTATOR = ===);
 
 create operator !== (PROCEDURE = int8ne,
-LEFTARG = BIGINT,
-RIGHTARG = BIGINT,
+LEFTARG = bigint,
+RIGHTARG = bigint,
 NEGATOR = ===,
 COMMUTATOR = !==);
 
-drop OPERATOR !== (BIGINT, BIGINT);
+drop operator !== (bigint, bigint);
 
 select
   ctid,
@@ -47,17 +47,17 @@ where
       pk.oid = fk.oprnegate
   );
 
-drop OPERATOR === (BIGINT, BIGINT);
+drop operator === (bigint, bigint);
 
-create operator <| (PROCEDURE = int8lt, LEFTARG = BIGINT, RIGHTARG = BIGINT);
+create operator <| (PROCEDURE = int8lt, LEFTARG = bigint, RIGHTARG = bigint);
 
 create operator |> (PROCEDURE = int8gt,
-LEFTARG = BIGINT,
-RIGHTARG = BIGINT,
+LEFTARG = bigint,
+RIGHTARG = bigint,
 NEGATOR = <|,
 COMMUTATOR = <|);
 
-drop OPERATOR |> (BIGINT, BIGINT);
+drop operator |> (bigint, bigint);
 
 select
   ctid,
@@ -93,4 +93,4 @@ where
       pk.oid = fk.oprnegate
   );
 
-drop OPERATOR <| (BIGINT, BIGINT);
+drop operator <| (bigint, bigint);

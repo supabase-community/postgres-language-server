@@ -7,7 +7,7 @@ use pgls_query::protobuf::{JsonObjectAgg, JsonObjectConstructor};
 pub(super) fn emit_json_object_constructor(e: &mut EventEmitter, n: &JsonObjectConstructor) {
     e.group_start(GroupKind::JsonObjectConstructor);
 
-    e.token(TokenKind::IDENT("JSON_OBJECT".to_string()));
+    e.token(TokenKind::JSON_OBJECT_KW);
     e.token(TokenKind::L_PAREN);
 
     let mut has_content = false;
@@ -53,7 +53,7 @@ pub(super) fn emit_json_object_constructor(e: &mut EventEmitter, n: &JsonObjectC
 pub(super) fn emit_json_object_agg(e: &mut EventEmitter, n: &JsonObjectAgg) {
     e.group_start(GroupKind::JsonObjectAgg);
 
-    e.token(TokenKind::IDENT("JSON_OBJECTAGG".to_string()));
+    e.token(TokenKind::JSON_OBJECTAGG_KW);
     e.token(TokenKind::L_PAREN);
 
     let has_arg = n.arg.is_some();

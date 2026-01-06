@@ -337,6 +337,7 @@ fn to_formatter_settings(
         indent_style: conf.indent_style,
         keyword_case: conf.keyword_case,
         constant_case: conf.constant_case,
+        type_case: conf.type_case,
         ignored_files: to_matcher(working_directory.clone(), Some(&conf.ignore))?,
         included_files: to_matcher(working_directory.clone(), Some(&conf.include))?,
     })
@@ -483,6 +484,9 @@ pub struct FormatterSettings {
     /// Constant casing (NULL, TRUE, FALSE): upper or lower. Default: lower.
     pub constant_case: KeywordCase,
 
+    /// Data type casing (text, varchar, int): upper or lower. Default: lower.
+    pub type_case: KeywordCase,
+
     /// List of ignored paths/files to match
     pub ignored_files: Matcher,
 
@@ -499,6 +503,7 @@ impl Default for FormatterSettings {
             indent_style: IndentStyle::Spaces,
             keyword_case: KeywordCase::default(),
             constant_case: KeywordCase::default(),
+            type_case: KeywordCase::default(),
             ignored_files: Matcher::empty(),
             included_files: Matcher::empty(),
         }

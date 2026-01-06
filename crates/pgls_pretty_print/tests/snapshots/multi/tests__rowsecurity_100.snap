@@ -19,23 +19,23 @@ drop role if exists regress_rls_group1;
 
 drop role if exists regress_rls_group2;
 
-drop SCHEMA if exists regress_rls_schema cascade;
+drop schema if exists regress_rls_schema cascade;
 
 reset client_min_messages;
 
-create user regress_rls_alice NOLOGIN;
+create user regress_rls_alice nologin;
 
-create user regress_rls_bob NOLOGIN;
+create user regress_rls_bob nologin;
 
-create user regress_rls_carol NOLOGIN;
+create user regress_rls_carol nologin;
 
-create user regress_rls_dave NOLOGIN;
+create user regress_rls_dave nologin;
 
-create user regress_rls_exempt_user BYPASSRLS NOLOGIN;
+create user regress_rls_exempt_user bypassrls nologin;
 
-create role regress_rls_group1 NOLOGIN;
+create role regress_rls_group1 nologin;
 
-create role regress_rls_group2 NOLOGIN;
+create role regress_rls_group2 nologin;
 
 grant REGRESS_RLS_GROUP1 to regress_rls_bob;
 
@@ -43,26 +43,26 @@ grant REGRESS_RLS_GROUP2 to regress_rls_carol;
 
 create schema "regress_rls_schema";
 
-grant all on schema regress_rls_schema to PUBLIC;
+grant all on schema regress_rls_schema to public;
 
 set search_path to regress_rls_schema;
 
-create or replace function f_leak(TEXT)
-returns BOOLEAN
+create or replace function f_leak(text)
+returns boolean
 cost 0.0000001
 language plpgsql
 as $function$BEGIN RAISE NOTICE 'f_leak => %', $1; RETURN true; END$function$;
 
-grant EXECUTE on function f_leak(TEXT) to PUBLIC;
+grant EXECUTE on function f_leak(text) to public;
 
 set session authorization regress_rls_alice;
 
 create table uaccount (
-  pguser NAME primary key,
-  seclv INT
+  pguser name primary key,
+  seclv int
 );
 
-grant SELECT on table uaccount to PUBLIC;
+grant SELECT on table uaccount to public;
 
 insert into uaccount
 values
@@ -72,11 +72,11 @@ values
   ('regress_rls_dave', 3);
 
 create table category (
-  cid INT primary key,
-  cname TEXT
+  cid int primary key,
+  cname text
 );
 
-grant all on table category to PUBLIC;
+grant all on table category to public;
 
 insert into category
 values
@@ -86,14 +86,14 @@ values
   (44, 'manga');
 
 create table document (
-  did INT primary key,
-  cid INT references category (cid),
-  dlevel INT not null,
-  dauthor NAME,
-  dtitle TEXT
+  did int primary key,
+  cid int references category (cid),
+  dlevel int not null,
+  dauthor name,
+  dtitle text
 );
 
-grant all on table document to PUBLIC;
+grant all on table document to public;
 
 insert into document
 values
@@ -135,14 +135,14 @@ values
   );
 
 alter table document
-  enable ROW LEVEL SECURITY;
+  enable row level security;
 
-create POLICY p1
+create policy p1
 on document
-as PERMISSIVE
+as permissive
 for all
-to PUBLIC
-USING (dlevel <=
+to public
+using (dlevel <=
 (
   select
     seclv
@@ -152,14 +152,14 @@ USING (dlevel <=
     pguser = current_user
 ));
 
-create POLICY p2r
+create policy p2r
 on document
-as RESTRICTIVE
+as restrictive
 for all
 to regress_rls_dave
-USING (cid <> 44 and cid < 50);
+using (cid <> 44 and cid < 50);
 
-create POLICY p1r on document as RESTRICTIVE for all to regress_rls_dave USING (cid <> 44);
+create policy p1r on document as restrictive for all to regress_rls_dave using (cid <> 44);
 
 select
   *
@@ -178,7 +178,7 @@ select * from document where f_leak(dtitle) order by did;
 
 select * from document natural join category where f_leak(dtitle) order by did;
 
-select * from document TABLESAMPLE bernoulli (50) REPEATABLE (0) where f_leak(dtitle) order by did;
+select * from document tablesample bernoulli (50) repeatable (0) where f_leak(dtitle) order by did;
 
 set session authorization regress_rls_carol;
 
@@ -186,7 +186,7 @@ select * from document where f_leak(dtitle) order by did;
 
 select * from document natural join category where f_leak(dtitle) order by did;
 
-select * from document TABLESAMPLE bernoulli (50) REPEATABLE (0) where f_leak(dtitle) order by did;
+select * from document tablesample bernoulli (50) repeatable (0) where f_leak(dtitle) order by did;
 
 select * from document where f_leak(dtitle);
 
@@ -206,13 +206,13 @@ insert into document values (100, 44, 1, 'regress_rls_dave', 'testing sorting of
 
 insert into document values (100, 55, 1, 'regress_rls_dave', 'testing sorting of policies');
 
-alter POLICY p1 on document USING (true);
+alter policy p1 on document using (true);
 
-drop POLICY p1 on document;
+drop policy p1 on document;
 
 set session authorization regress_rls_alice;
 
-alter POLICY p1 on document USING (dauthor = current_user);
+alter policy p1 on document using (dauthor = current_user);
 
 set session authorization regress_rls_bob;
 
@@ -232,12 +232,12 @@ select * from document natural join category where f_leak(dtitle);
 
 set session authorization regress_rls_alice;
 
-create POLICY p2
+create policy p2
 on category
-as PERMISSIVE
+as permissive
 for all
-to PUBLIC
-USING (case
+to public
+using (case
   when current_user = 'regress_rls_bob'
   then cid in (11, 33)
   when current_user = 'regress_rls_carol'
@@ -246,7 +246,7 @@ USING (case
 end);
 
 alter table category
-  enable ROW LEVEL SECURITY;
+  enable row level security;
 
 set session authorization regress_rls_bob;
 
@@ -315,43 +315,43 @@ set session authorization regress_rls_alice;
 set row_security = 'on';
 
 create table t1 (
-  id INT not null primary key,
-  a INT,
-  junk1 TEXT,
-  b TEXT
+  id int not null primary key,
+  a int,
+  junk1 text,
+  b text
 );
 
 alter table t1
   drop column junk1;
 
-grant all on table t1 to PUBLIC;
+grant all on table t1 to public;
 
-create table t2 (c DOUBLE PRECISION)
+create table t2 (c double precision)
 inherits (t1);
 
-grant all on table t2 to PUBLIC;
+grant all on table t2 to public;
 
 create table t3 (
-  id INT not null primary key,
-  c TEXT,
-  b TEXT,
-  a INT
+  id int not null primary key,
+  c text,
+  b text,
+  a int
 );
 
 alter table t3
-  INHERIT t1;
+  inherit t1;
 
-grant all on table t3 to PUBLIC;
+grant all on table t3 to public;
 
-create POLICY p1 on t1 as PERMISSIVE for all to PUBLIC USING (a % 2 = 0);
+create policy p1 on t1 as permissive for all to public using (a % 2 = 0);
 
-create POLICY p2 on t2 as PERMISSIVE for all to PUBLIC USING (a % 2 = 1);
+create policy p2 on t2 as permissive for all to public using (a % 2 = 1);
 
 alter table t1
-  enable ROW LEVEL SECURITY;
+  enable row level security;
 
 alter table t2
-  enable ROW LEVEL SECURITY;
+  enable row level security;
 
 set session authorization regress_rls_bob;
 
@@ -363,7 +363,7 @@ select * from t1 where f_leak(b);
 
 select * from t1 where f_leak(b);
 
-select cast(tableoid as REGCLASS), * from t1;
+select cast(tableoid as regclass), * from t1;
 
 select *, t1 from t1;
 
@@ -379,13 +379,13 @@ select * from t1 where f_leak(b) for share;
 
 select * from t1 where f_leak(b) for share;
 
-select a, b, cast(tableoid as REGCLASS) from t2
+select a, b, cast(tableoid as regclass) from t2
 union all
-select a, b, cast(tableoid as REGCLASS) from t3;
+select a, b, cast(tableoid as regclass) from t3;
 
-select a, b, cast(tableoid as REGCLASS) from t2
+select a, b, cast(tableoid as regclass) from t2
 union all
-select a, b, cast(tableoid as REGCLASS) from t3;
+select a, b, cast(tableoid as regclass) from t3;
 
 reset session_authorization;
 
@@ -406,15 +406,15 @@ select * from t1 where f_leak(b);
 set session authorization regress_rls_alice;
 
 create table part_document (
-  did INT,
-  cid INT,
-  dlevel INT not null,
-  dauthor NAME,
-  dtitle TEXT
+  did int,
+  cid int,
+  dlevel int not null,
+  dauthor name,
+  dtitle text
 )
 partition by range(cid);
 
-grant all on table part_document to PUBLIC;
+grant all on table part_document to public;
 
 create table part_document_fiction partition of part_document for values from (11) to (12);
 
@@ -422,11 +422,11 @@ create table part_document_satire partition of part_document for values from (55
 
 create table part_document_nonfiction partition of part_document for values from (99) to (100);
 
-grant all on table part_document_fiction to PUBLIC;
+grant all on table part_document_fiction to public;
 
-grant all on table part_document_satire to PUBLIC;
+grant all on table part_document_satire to public;
 
-grant all on table part_document_nonfiction to PUBLIC;
+grant all on table part_document_nonfiction to public;
 
 insert into part_document
 values
@@ -468,14 +468,14 @@ values
   );
 
 alter table part_document
-  enable ROW LEVEL SECURITY;
+  enable row level security;
 
-create POLICY pp1
+create policy pp1
 on part_document
-as PERMISSIVE
+as permissive
 for all
-to PUBLIC
-USING (dlevel <=
+to public
+using (dlevel <=
 (
   select
     seclv
@@ -485,7 +485,7 @@ USING (dlevel <=
     pguser = current_user
 ));
 
-create POLICY pp1r on part_document as RESTRICTIVE for all to regress_rls_dave USING (cid < 55);
+create policy pp1r on part_document as restrictive for all to regress_rls_dave using (cid < 55);
 
 select
   *
@@ -539,9 +539,9 @@ select * from part_document_satire where f_leak(dtitle) order by did;
 set session authorization regress_rls_alice;
 
 alter table part_document_satire
-  enable ROW LEVEL SECURITY;
+  enable row level security;
 
-create POLICY pp3 on part_document_satire as RESTRICTIVE for all to PUBLIC USING (cid < 55);
+create policy pp3 on part_document_satire as restrictive for all to public using (cid < 55);
 
 set session authorization regress_rls_dave;
 
@@ -567,13 +567,13 @@ select * from part_document where f_leak(dtitle) order by did;
 
 select * from part_document where f_leak(dtitle);
 
-alter POLICY pp1 on part_document USING (true);
+alter policy pp1 on part_document using (true);
 
-drop POLICY pp1 on part_document;
+drop policy pp1 on part_document;
 
 set session authorization regress_rls_alice;
 
-alter POLICY pp1 on part_document USING (dauthor = current_user);
+alter policy pp1 on part_document using (dauthor = current_user);
 
 set session authorization regress_rls_bob;
 
@@ -621,12 +621,12 @@ set session authorization regress_rls_alice;
 
 set row_security = 'on';
 
-create POLICY pp3
+create policy pp3
 on part_document
-as RESTRICTIVE
+as restrictive
 for all
-to PUBLIC
-USING ((
+to public
+using ((
   select
     dlevel <= seclv
   from
@@ -644,44 +644,44 @@ set session authorization regress_rls_alice;
 set row_security = 'on';
 
 create table dependee (
-  x INT,
-  y INT
+  x int,
+  y int
 );
 
 create table dependent (
-  x INT,
-  y INT
+  x int,
+  y int
 );
 
-create POLICY d1
+create policy d1
 on dependent
-as PERMISSIVE
+as permissive
 for all
-to PUBLIC
-USING (x = (select d.x from dependee as d where d.y = y));
+to public
+using (x = (select d.x from dependee as d where d.y = y));
 
-drop TABLE dependee;
+drop table dependee;
 
-drop TABLE dependee cascade;
+drop table dependee cascade;
 
 select * from dependent;
 
 set session authorization regress_rls_alice;
 
 create table rec1 (
-  x INT,
-  y INT
+  x int,
+  y int
 );
 
-create POLICY r1
+create policy r1
 on rec1
-as PERMISSIVE
+as permissive
 for all
-to PUBLIC
-USING (x = (select r.x from rec1 as r where y = r.y));
+to public
+using (x = (select r.x from rec1 as r where y = r.y));
 
 alter table rec1
-  enable ROW LEVEL SECURITY;
+  enable row level security;
 
 set session authorization regress_rls_bob;
 
@@ -690,21 +690,21 @@ select * from rec1;
 set session authorization regress_rls_alice;
 
 create table rec2 (
-  a INT,
-  b INT
+  a int,
+  b int
 );
 
-alter POLICY r1 on rec1 USING (x = (select a from rec2 where b = y));
+alter policy r1 on rec1 using (x = (select a from rec2 where b = y));
 
-create POLICY r2
+create policy r2
 on rec2
-as PERMISSIVE
+as permissive
 for all
-to PUBLIC
-USING (a = (select x from rec1 where y = b));
+to public
+using (a = (select x from rec1 where y = b));
 
 alter table rec2
-  enable ROW LEVEL SECURITY;
+  enable row level security;
 
 set session authorization regress_rls_bob;
 
@@ -720,9 +720,9 @@ as select * from rec2;
 
 set session authorization regress_rls_alice;
 
-alter POLICY r1 on rec1 USING (x = (select a from rec2v where b = y));
+alter policy r1 on rec1 using (x = (select a from rec2v where b = y));
 
-alter POLICY r2 on rec2 USING (a = (select x from rec1v where y = b));
+alter policy r2 on rec2 using (a = (select x from rec1v where y = b));
 
 set session authorization regress_rls_bob;
 
@@ -730,7 +730,7 @@ select * from rec1;
 
 set session authorization regress_rls_bob;
 
-drop VIEW rec1v, rec2v cascade;
+drop view rec1v, rec2v cascade;
 
 create view rec1v
   with (security_barrier)
@@ -742,19 +742,19 @@ as select * from rec2;
 
 set session authorization regress_rls_alice;
 
-create POLICY r1
+create policy r1
 on rec1
-as PERMISSIVE
+as permissive
 for all
-to PUBLIC
-USING (x = (select a from rec2v where b = y));
+to public
+using (x = (select a from rec2v where b = y));
 
-create POLICY r2
+create policy r2
 on rec2
-as PERMISSIVE
+as permissive
 for all
-to PUBLIC
-USING (a = (select x from rec1v where y = b));
+to public
+using (a = (select x from rec1v where y = b));
 
 set session authorization regress_rls_bob;
 
@@ -763,42 +763,42 @@ select * from rec1;
 set session authorization regress_rls_alice;
 
 create table s1 (
-  a INT,
-  b TEXT
+  a int,
+  b text
 );
 
-insert into s1 select x, public.fipshash(cast(x as TEXT)) from generate_series(-10, 10) as x;
+insert into s1 select x, public.fipshash(cast(x as text)) from generate_series(-10, 10) as x;
 
 create table s2 (
-  x INT,
-  y TEXT
+  x int,
+  y text
 );
 
-insert into s2 select x, public.fipshash(cast(x as TEXT)) from generate_series(-6, 6) as x;
+insert into s2 select x, public.fipshash(cast(x as text)) from generate_series(-6, 6) as x;
 
 grant SELECT on table s1, s2 to regress_rls_bob;
 
-create POLICY p1
+create policy p1
 on s1
-as PERMISSIVE
+as permissive
 for all
-to PUBLIC
-USING (a in (select x from s2 where y like '%2f%'));
+to public
+using (a in (select x from s2 where y like '%2f%'));
 
-create POLICY p2
+create policy p2
 on s2
-as PERMISSIVE
+as permissive
 for all
-to PUBLIC
-USING (x in (select a from s1 where b like '%22%'));
+to public
+using (x in (select a from s1 where b like '%22%'));
 
-create POLICY p3 on s1 as PERMISSIVE for insert to PUBLIC with CHECK (a = (select a from s1));
+create policy p3 on s1 as permissive for insert to public with check (a = (select a from s1));
 
 alter table s1
-  enable ROW LEVEL SECURITY;
+  enable row level security;
 
 alter table s2
-  enable ROW LEVEL SECURITY;
+  enable row level security;
 
 set session authorization regress_rls_bob;
 
@@ -811,9 +811,9 @@ insert into s1 values (1, 'foo');
 
 set session authorization regress_rls_alice;
 
-drop POLICY p3 on s1;
+drop policy p3 on s1;
 
-alter POLICY p2 on s2 USING (x % 2 = 0);
+alter policy p2 on s2 using (x % 2 = 0);
 
 set session authorization regress_rls_bob;
 
@@ -823,7 +823,7 @@ select * from only s1 where f_leak(b);
 
 set session authorization regress_rls_alice;
 
-alter POLICY p1 on s1 USING (a in (select x from v2));
+alter policy p1 on s1 using (a in (select x from v2));
 
 set session authorization regress_rls_bob;
 
@@ -837,13 +837,13 @@ select (select x from s1 limit 1) as xx, * from s2 where y like '%28%';
 
 set session authorization regress_rls_alice;
 
-alter POLICY p2 on s2 USING (x in (select a from s1 where b like '%d2%'));
+alter policy p2 on s2 using (x in (select a from s1 where b like '%d2%'));
 
 set session authorization regress_rls_bob;
 
 select * from s1 where f_leak(b);
 
-prepare p1 (INT) as select * from t1 where a <= $1;;
+prepare p1 (int) as select * from t1 where a <= $1;;
 
 execute p1 (2);
 
@@ -861,7 +861,7 @@ execute p1 (2);
 
 explain (COSTS 'off') execute p1 (2);
 
-prepare p2 (INT) as select * from t1 where a = $1;;
+prepare p2 (int) as select * from t1 where a = $1;;
 
 execute p2 (2);
 
@@ -885,11 +885,11 @@ update only t1 set b = b || '_updt' where f_leak(b);
 
 update only t1 set b = b || '_updt' where f_leak(b);
 
-update only t1 set b = b where f_leak(b) returning cast(tableoid as REGCLASS), *, t1;
+update only t1 set b = b where f_leak(b) returning cast(tableoid as regclass), *, t1;
 
 update t1 set b = b where f_leak(b) returning *;
 
-update t1 set b = b where f_leak(b) returning cast(tableoid as REGCLASS), *, t1;
+update t1 set b = b where f_leak(b) returning cast(tableoid as regclass), *, t1;
 
 update t2 set b = t2.b from t3 where t2.a = 3 and t3.a = 2 and f_leak(t2.b) and f_leak(t3.b);
 
@@ -969,23 +969,23 @@ delete from only t1 where f_leak(b);
 
 delete from t1 where f_leak(b);
 
-delete from only t1 where f_leak(b) returning cast(tableoid as REGCLASS), *, t1;
+delete from only t1 where f_leak(b) returning cast(tableoid as regclass), *, t1;
 
-delete from t1 where f_leak(b) returning cast(tableoid as REGCLASS), *, t1;
+delete from t1 where f_leak(b) returning cast(tableoid as regclass), *, t1;
 
 set session authorization regress_rls_alice;
 
 create table b1 (
-  a INT,
-  b TEXT
+  a int,
+  b text
 );
 
-insert into b1 select x, public.fipshash(cast(x as TEXT)) from generate_series(-10, 10) as x;
+insert into b1 select x, public.fipshash(cast(x as text)) from generate_series(-10, 10) as x;
 
-create POLICY p1 on b1 as PERMISSIVE for all to PUBLIC USING (a % 2 = 0);
+create policy p1 on b1 as permissive for all to public using (a % 2 = 0);
 
 alter table b1
-  enable ROW LEVEL SECURITY;
+  enable row level security;
 
 grant all on table b1 to regress_rls_bob;
 
@@ -1024,22 +1024,22 @@ select * from b1;
 
 set session authorization regress_rls_alice;
 
-drop POLICY p1 on document;
+drop policy p1 on document;
 
-drop POLICY p1r on document;
+drop policy p1r on document;
 
-create POLICY p1 on document as PERMISSIVE for select to PUBLIC USING (true);
+create policy p1 on document as permissive for select to public using (true);
 
-create POLICY p2 on document as PERMISSIVE for insert to PUBLIC with CHECK (dauthor = current_user);
+create policy p2 on document as permissive for insert to public with check (dauthor = current_user);
 
-create POLICY p3
+create policy p3
 on document
-as PERMISSIVE
+as permissive
 for update
-to PUBLIC
-USING (cid =
+to public
+using (cid =
 (select cid from category where cname = 'novel'))
-with CHECK (dauthor = current_user);
+with check (dauthor = current_user);
 
 set session authorization regress_rls_bob;
 
@@ -1193,18 +1193,18 @@ returning *;
 
 set session authorization regress_rls_alice;
 
-drop POLICY p1 on document;
+drop policy p1 on document;
 
-drop POLICY p2 on document;
+drop policy p2 on document;
 
-drop POLICY p3 on document;
+drop policy p3 on document;
 
-create POLICY p3_with_default
+create policy p3_with_default
 on document
-as PERMISSIVE
+as permissive
 for update
-to PUBLIC
-USING (cid =
+to public
+using (cid =
 (select cid from category where cname = 'novel'));
 
 set session authorization regress_rls_bob;
@@ -1258,16 +1258,16 @@ returning *;
 
 set session authorization regress_rls_alice;
 
-drop POLICY p3_with_default on document;
+drop policy p3_with_default on document;
 
-create POLICY p3_with_all
+create policy p3_with_all
 on document
-as PERMISSIVE
+as permissive
 for all
-to PUBLIC
-USING (cid =
+to public
+using (cid =
 (select cid from category where cname = 'novel'))
-with CHECK (dauthor = current_user);
+with check (dauthor = current_user);
 
 set session authorization regress_rls_bob;
 
@@ -1319,30 +1319,30 @@ set dauthor = 'regress_rls_carol';
 
 reset session_authorization;
 
-drop POLICY p3_with_all on document;
+drop policy p3_with_all on document;
 
 alter table document
-  add column dnotes TEXT default '';
+  add column dnotes text default '';
 
-create POLICY p1 on document as PERMISSIVE for select to PUBLIC USING (true);
+create policy p1 on document as permissive for select to public using (true);
 
-create POLICY p2 on document as PERMISSIVE for insert to PUBLIC with CHECK (dauthor = current_user);
+create policy p2 on document as permissive for insert to public with check (dauthor = current_user);
 
-create POLICY p3
+create policy p3
 on document
-as PERMISSIVE
+as permissive
 for update
-to PUBLIC
-USING (cid =
+to public
+using (cid =
 (select cid from category where cname = 'novel'))
-with CHECK (dlevel > 0);
+with check (dlevel > 0);
 
-create POLICY p4
+create policy p4
 on document
-as PERMISSIVE
+as permissive
 for delete
-to PUBLIC
-USING (cid =
+to public
+using (cid =
 (select cid from category where cname = 'manga'));
 
 select * from document;
@@ -1361,14 +1361,14 @@ set session authorization regress_rls_bob;
 
 reset session_authorization;
 
-drop POLICY p1 on document;
+drop policy p1 on document;
 
-create POLICY p1
+create policy p1
 on document
-as PERMISSIVE
+as permissive
 for select
-to PUBLIC
-USING (cid =
+to public
+using (cid =
 (select cid from category where cname = 'novel'));
 
 set session authorization regress_rls_bob;
@@ -1377,20 +1377,20 @@ select * from document where did = 13;
 
 reset session_authorization;
 
-drop POLICY p1 on document;
+drop policy p1 on document;
 
 select * from document;
 
 set session authorization regress_rls_alice;
 
 create table z1 (
-  a INT,
-  b TEXT
+  a int,
+  b text
 );
 
 create table z2 (
-  a INT,
-  b TEXT
+  a int,
+  b text
 );
 
 grant SELECT
@@ -1403,12 +1403,12 @@ regress_rls_carol;
 
 insert into z1 values (1, 'aba'), (2, 'bbb'), (3, 'ccc'), (4, 'dad');
 
-create POLICY p1 on z1 as PERMISSIVE for all to regress_rls_group1 USING (a % 2 = 0);
+create policy p1 on z1 as permissive for all to regress_rls_group1 using (a % 2 = 0);
 
-create POLICY p2 on z1 as PERMISSIVE for all to regress_rls_group2 USING (a % 2 = 1);
+create policy p2 on z1 as permissive for all to regress_rls_group2 using (a % 2 = 1);
 
 alter table z1
-  enable ROW LEVEL SECURITY;
+  enable row level security;
 
 set session authorization regress_rls_bob;
 

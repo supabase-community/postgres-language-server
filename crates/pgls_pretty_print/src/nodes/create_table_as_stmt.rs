@@ -106,7 +106,7 @@ pub(super) fn emit_create_table_as_stmt(e: &mut EventEmitter, n: &CreateTableAsS
                 e.space();
                 e.token(TokenKind::COMMIT_KW);
                 e.space();
-                e.token(TokenKind::IDENT("PRESERVE".to_string()));
+                e.token(TokenKind::IDENT("preserve".to_string()));
                 e.space();
                 e.token(TokenKind::ROWS_KW);
             }
@@ -117,7 +117,7 @@ pub(super) fn emit_create_table_as_stmt(e: &mut EventEmitter, n: &CreateTableAsS
                 e.space();
                 e.token(TokenKind::COMMIT_KW);
                 e.space();
-                e.token(TokenKind::IDENT("DELETE".to_string()));
+                e.token(TokenKind::DELETE_KW);
                 e.space();
                 e.token(TokenKind::ROWS_KW);
             }

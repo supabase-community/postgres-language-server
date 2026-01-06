@@ -23,7 +23,7 @@ select
 from
   (
     values
-      (cast('1 hour' as INTERVAL)),
-      (cast('2 hours' as INTERVAL))
+      (cast('1 hour' as interval)),
+      (cast('2 hours' as interval))
   )
   as durations (duration);

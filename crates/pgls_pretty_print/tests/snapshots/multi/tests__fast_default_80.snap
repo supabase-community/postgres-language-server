@@ -7,12 +7,12 @@ set search_path to fast_default;
 
 create schema "fast_default";
 
-create table m (id OID);
+create table m (id oid);
 
-insert into m values (cast(null as OID));
+insert into m values (cast(null as oid));
 
-create function set(tabname NAME)
-returns VOID
+create function set(tabname name)
+returns void
 as $function$
 BEGIN
   UPDATE m
@@ -26,7 +26,7 @@ $function$
 language plpgsql;
 
 create function comp()
-returns TEXT
+returns text
 as $function$
 BEGIN
   RETURN (SELECT CASE
@@ -68,34 +68,34 @@ on table_rewrite
 execute function log_rewrite();
 
 alter table has_volatile
-  add column col1 INT;
+  add column col1 int;
 
 alter table has_volatile
-  add column col2 INT default 1;
+  add column col2 int default 1;
 
 alter table has_volatile
-  add column col3 timestamp with time ZONE
+  add column col3 timestamp with time zone
     default current_timestamp;
 
 alter table has_volatile
-  add column col4 INT
-    default cast(random() * 10000 as INT);
+  add column col4 int
+    default cast(random() * 10000 as int);
 
 alter table has_volatile
-  alter column col5 type DOUBLE PRECISION;
+  alter column col5 type double precision;
 
 alter table has_volatile
-  alter column col5 type NUMERIC;
+  alter column col5 type numeric;
 
 alter table has_volatile
-  alter column col5 type NUMERIC;
+  alter column col5 type numeric;
 
 alter table has_volatile
-  add column col7 INT generated always as (55) stored;
+  add column col7 int generated always as (55) stored;
 
 create table t (
-  pk INT not null primary key,
-  c_int INT default 1
+  pk int not null primary key,
+  c_int int default 1
 );
 
 select set('t');
@@ -103,33 +103,33 @@ select set('t');
 insert into t values (1), (2);
 
 alter table t
-  add column c_bpchar CHAR(5) default 'hello',
+  add column c_bpchar char(5) default 'hello',
   alter column c_int set default 2;
 
 insert into t values (3), (4);
 
 alter table t
-  add column c_text TEXT default 'world',
+  add column c_text text default 'world',
   alter column c_bpchar set default 'dog';
 
 insert into t values (5), (6);
 
 alter table t
-  add column c_date DATE default '2016-06-02',
+  add column c_date date default '2016-06-02',
   alter column c_text set default 'cat';
 
 insert into t values (7), (8);
 
 alter table t
-  add column c_timestamp TIMESTAMP
+  add column c_timestamp timestamp
     default '2016-09-01 12:00:00',
-  add column c_timestamp_null TIMESTAMP,
+  add column c_timestamp_null timestamp,
   alter column c_date set default '2010-01-01';
 
 insert into t values (9), (10);
 
 alter table t
-  add column c_array TEXT[]
+  add column c_array text[]
     default '{"This", "is", "the", "real", "world"}',
   alter column c_timestamp set default '1970-12-31 11:12:13',
   alter column c_timestamp_null set default '2016-09-29 12:00:00';
@@ -137,39 +137,39 @@ alter table t
 insert into t values (11), (12);
 
 alter table t
-  add column c_small SMALLINT default -5,
-  add column c_small_null SMALLINT,
+  add column c_small smallint default -5,
+  add column c_small_null smallint,
   alter column c_array set default '{"This", "is", "no", "fantasy"}';
 
 insert into t values (13), (14);
 
 alter table t
-  add column c_big BIGINT default 180000000000018,
+  add column c_big bigint default 180000000000018,
   alter column c_small set default 9,
   alter column c_small_null set default 13;
 
 insert into t values (15), (16);
 
 alter table t
-  add column c_num NUMERIC default 1.00000000001,
+  add column c_num numeric default 1.00000000001,
   alter column c_big set default -9999999999999999;
 
 insert into t values (17), (18);
 
 alter table t
-  add column c_time TIME default '12:00:00',
+  add column c_time time default '12:00:00',
   alter column c_num set default 2.000000000000002;
 
 insert into t values (19), (20);
 
 alter table t
-  add column c_interval INTERVAL default '1 day',
+  add column c_interval interval default '1 day',
   alter column c_time set default '23:59:59';
 
 insert into t values (21), (22);
 
 alter table t
-  add column c_hugetext TEXT
+  add column c_hugetext text
     default repeat('abcdefg', 1000),
   alter column c_interval set default '3 hours';
 
@@ -220,10 +220,10 @@ order by pk;
 
 select comp();
 
-drop TABLE t;
+drop table t;
 
-create or replace function foo(a INT)
-returns TEXT
+create or replace function foo(a int)
+returns text
 as $function$
 DECLARE res TEXT := '';
         i INT;
@@ -239,8 +239,8 @@ language plpgsql
 stable;
 
 create table t (
-  pk INT not null primary key,
-  c_int INT default length(foo(6))
+  pk int not null primary key,
+  c_int int default length(foo(6))
 );
 
 select set('t');
@@ -248,40 +248,40 @@ select set('t');
 insert into t values (1), (2);
 
 alter table t
-  add column c_bpchar CHAR(5) default foo(4),
+  add column c_bpchar char(5) default foo(4),
   alter column c_int set default length(foo(8));
 
 insert into t values (3), (4);
 
 alter table t
-  add column c_text TEXT default foo(6),
+  add column c_text text default foo(6),
   alter column c_bpchar set default foo(3);
 
 insert into t values (5), (6);
 
 alter table t
-  add column c_date DATE
-    default (cast('2016-06-02' as DATE) +
+  add column c_date date
+    default (cast('2016-06-02' as date) +
     length(foo(10))),
   alter column c_text set default foo(12);
 
 insert into t values (7), (8);
 
 alter table t
-  add column c_timestamp TIMESTAMP
-    default (cast('2016-09-01' as DATE) +
+  add column c_timestamp timestamp
+    default (cast('2016-09-01' as date) +
     length(foo(10))),
-  alter column c_date set default cast('2010-01-01' as DATE) -
+  alter column c_date set default cast('2010-01-01' as date) -
   length(foo(4));
 
 insert into t values (9), (10);
 
 alter table t
-  add column c_array TEXT[]
+  add column c_array text[]
     default cast('{"This", "is", "' || foo(4) ||
     '","the", "real", "world"}'
-    as TEXT[]),
-  alter column c_timestamp set default cast('1970-12-31' as DATE) +
+    as text[]),
+  alter column c_timestamp set default cast('1970-12-31' as date) +
   length(foo(30));
 
 insert into t values (11), (12);
@@ -290,7 +290,7 @@ alter table t
   alter column c_int drop default,
   alter column c_array set default cast('{"This", "is", "' || foo(1) ||
   '", "fantasy"}'
-  as TEXT[]);
+  as text[]);
 
 insert into t values (13), (14);
 
@@ -307,18 +307,18 @@ select * from t;
 
 select comp();
 
-drop TABLE t;
+drop table t;
 
-create domain domain1 as INT default 11;
+create domain domain1 as int default 11;
 
-create domain domain2 as INT default random("min" := 10, "max" := 100);
+create domain domain2 as int default random("min" := 10, "max" := 100);
 
-create domain domain3 as TEXT default foo(4);
+create domain domain3 as text default foo(4);
 
-create domain domain4 as TEXT[]
+create domain domain4 as text[]
   default cast('{"This", "is", "' || foo(4) ||
   '","the", "real", "world"}'
-  as TEXT[]);
+  as text[]);
 
 create table t2 (a domain1);
 
@@ -337,12 +337,12 @@ from
   pg_attribute
 where
   attnum > 0 and
-  attrelid = cast('t2' as REGCLASS)
+  attrelid = cast('t2' as regclass)
 order by attnum;
 
 alter table t2
   add column c domain3
-    default left(cast(random() as TEXT), 3);
+    default left(cast(random() as text), 3);
 
 alter table t2
   add column d domain4;
@@ -357,7 +357,7 @@ from
   pg_attribute
 where
   attnum > 0 and
-  attrelid = cast('t2' as REGCLASS)
+  attrelid = cast('t2' as regclass)
 order by attnum;
 
 alter table t2
@@ -373,47 +373,47 @@ from
   pg_attribute
 where
   attnum > 0 and
-  attrelid = cast('t2' as REGCLASS)
+  attrelid = cast('t2' as regclass)
 order by attnum;
 
 select a, b, length(c) = 3 as c_ok, d, e >= 10 as e_ok from t2;
 
-drop TABLE t2;
+drop table t2;
 
-drop DOMAIN domain1;
+drop domain domain1;
 
-drop DOMAIN domain2;
+drop domain domain2;
 
-drop DOMAIN domain3;
+drop domain domain3;
 
-drop DOMAIN domain4;
+drop domain domain4;
 
-drop FUNCTION foo(INT);
+drop function foo(int);
 
-create table t (pk INT not null primary key);
+create table t (pk int not null primary key);
 
 insert into t values (1);
 
 select set('t');
 
 alter table t
-  add column c1 TIMESTAMP default NOW();
+  add column c1 timestamp default NOW();
 
 select comp();
 
 alter table t
-  add column c2 TIMESTAMP default clock_timestamp();
+  add column c2 timestamp default clock_timestamp();
 
 select comp();
 
-create function foolme(timestamp with time ZONE default clock_timestamp())
-returns timestamp with time ZONE
+create function foolme(timestamp with time zone default clock_timestamp())
+returns timestamp with time zone
 immutable
 as $function$select $1$function$
 language sql;
 
 alter table t
-  add column c3 timestamp with time ZONE
+  add column c3 timestamp with time zone
     default foolme();
 
 select
@@ -423,33 +423,33 @@ select
 from
   pg_attribute
 where
-  attrelid = cast('t' as REGCLASS) and
+  attrelid = cast('t' as regclass) and
   attnum > 0
 order by attnum;
 
-drop TABLE t;
+drop table t;
 
-drop FUNCTION foolme(timestamp with time ZONE);
+drop function foolme(timestamp with time zone);
 
-create table t (pk INT not null primary key);
+create table t (pk int not null primary key);
 
 select set('t');
 
 insert into t select * from generate_series(1, 10) as a;
 
 alter table t
-  add column c_bigint BIGINT not null default -1;
+  add column c_bigint bigint not null default -1;
 
 insert into t select b, b - 10 from generate_series(11, 20) as a (b);
 
 alter table t
-  add column c_text TEXT default 'hello';
+  add column c_text text default 'hello';
 
 insert into t
 select
   b,
   b - 10,
-  cast(b + 10 as TEXT)
+  cast(b + 10 as text)
 from
   generate_series(21, 30) as a (b);
 
@@ -463,7 +463,7 @@ select c_bigint, c_text from t where c_text = 'hello' limit 1;
 
 select
   coalesce(c_bigint, pk),
-  coalesce(c_text, cast(pk as TEXT))
+  coalesce(c_text, cast(pk as text))
 from
   t
 order by pk
@@ -489,21 +489,21 @@ select * from t where c_text like '"%"' order by pk;
 
 select comp();
 
-drop TABLE t;
+drop table t;
 
-create table t (pk INT not null primary key);
+create table t (pk int not null primary key);
 
 select set('t');
 
 insert into t values (1), (2);
 
 alter table t
-  add column c_int INT not null default -1;
+  add column c_int int not null default -1;
 
 insert into t values (3), (4);
 
 alter table t
-  add column c_text TEXT default 'Hello';
+  add column c_text text default 'Hello';
 
 insert into t values (5), (6);
 
@@ -524,13 +524,13 @@ select comp();
 create table t1
 as
   select
-    cast(1 as INT) as a,
-    cast(2 as INT) as b
+    cast(1 as int) as a,
+    cast(2 as int) as b
   from
     generate_series(1, 20) as q;
 
 alter table t1
-  add column c TEXT;
+  add column c text;
 
 select
   a,
@@ -541,7 +541,7 @@ select
       from
         generate_series(1, 20) as x
     )
-    as REAL)
+    as real)
   )
   over (
     partition by a,
@@ -553,7 +553,7 @@ select
 from
   t1;
 
-drop TABLE t;
+drop table t;
 
 create function test_trigger()
 returns trigger
@@ -574,24 +574,24 @@ $function$;
 
 create table t (
   id serial primary key,
-  a INT,
-  b INT,
-  c INT
+  a int,
+  b int,
+  c int
 );
 
 insert into t (a, b, c) values (1, 2, 3);
 
 alter table t
-  add column x INT not null default 4;
+  add column x int not null default 4;
 
 alter table t
-  add column y INT not null default 5;
+  add column y int not null default 5;
 
-create TRIGGER a
+create trigger a
 before update
 on t
-for EACH ROW
-EXECUTE FUNCTION test_trigger();
+for each row
+execute function test_trigger();
 
 select * from t;
 
@@ -599,28 +599,28 @@ update t set y = 2;
 
 select * from t;
 
-drop TABLE t;
+drop table t;
 
 create table t (
   id serial primary key,
-  a INT,
-  b INT,
-  c INT
+  a int,
+  b int,
+  c int
 );
 
 insert into t (a, b, c) values (1, 2, 3);
 
 alter table t
-  add column x INT not null default 4;
+  add column x int not null default 4;
 
 alter table t
-  add column y INT;
+  add column y int;
 
-create TRIGGER a
+create trigger a
 before update
 on t
-for EACH ROW
-EXECUTE FUNCTION test_trigger();
+for each row
+execute function test_trigger();
 
 select * from t;
 
@@ -628,28 +628,28 @@ update t set y = 2;
 
 select * from t;
 
-drop TABLE t;
+drop table t;
 
 create table t (
   id serial primary key,
-  a INT,
-  b INT,
-  c INT
+  a int,
+  b int,
+  c int
 );
 
 insert into t (a, b, c) values (1, 2, 3);
 
 alter table t
-  add column x INT;
+  add column x int;
 
 alter table t
-  add column y INT not null default 5;
+  add column y int not null default 5;
 
-create TRIGGER a
+create trigger a
 before update
 on t
-for EACH ROW
-EXECUTE FUNCTION test_trigger();
+for each row
+execute function test_trigger();
 
 select * from t;
 
@@ -657,28 +657,28 @@ update t set y = 2;
 
 select * from t;
 
-drop TABLE t;
+drop table t;
 
 create table t (
   id serial primary key,
-  a INT,
-  b INT,
-  c INT
+  a int,
+  b int,
+  c int
 );
 
 insert into t (a, b, c) values (1, 2, 3);
 
 alter table t
-  add column x INT;
+  add column x int;
 
 alter table t
-  add column y INT;
+  add column y int;
 
-create TRIGGER a
+create trigger a
 before update
 on t
-for EACH ROW
-EXECUTE FUNCTION test_trigger();
+for each row
+execute function test_trigger();
 
 select * from t;
 
@@ -686,28 +686,28 @@ update t set y = 2;
 
 select * from t;
 
-drop TABLE t;
+drop table t;
 
 create table t (
   id serial primary key,
-  a INT,
-  b INT,
-  c INT
+  a int,
+  b int,
+  c int
 );
 
 insert into t (a, b, c) values (1, 2, null);
 
 alter table t
-  add column x INT not null default 4;
+  add column x int not null default 4;
 
 alter table t
-  add column y INT not null default 5;
+  add column y int not null default 5;
 
-create TRIGGER a
+create trigger a
 before update
 on t
-for EACH ROW
-EXECUTE FUNCTION test_trigger();
+for each row
+execute function test_trigger();
 
 select * from t;
 
@@ -715,28 +715,28 @@ update t set y = 2;
 
 select * from t;
 
-drop TABLE t;
+drop table t;
 
 create table t (
   id serial primary key,
-  a INT,
-  b INT,
-  c INT
+  a int,
+  b int,
+  c int
 );
 
 insert into t (a, b, c) values (1, 2, null);
 
 alter table t
-  add column x INT not null default 4;
+  add column x int not null default 4;
 
 alter table t
-  add column y INT;
+  add column y int;
 
-create TRIGGER a
+create trigger a
 before update
 on t
-for EACH ROW
-EXECUTE FUNCTION test_trigger();
+for each row
+execute function test_trigger();
 
 select * from t;
 
@@ -744,28 +744,28 @@ update t set y = 2;
 
 select * from t;
 
-drop TABLE t;
+drop table t;
 
 create table t (
   id serial primary key,
-  a INT,
-  b INT,
-  c INT
+  a int,
+  b int,
+  c int
 );
 
 insert into t (a, b, c) values (1, 2, null);
 
 alter table t
-  add column x INT;
+  add column x int;
 
 alter table t
-  add column y INT not null default 5;
+  add column y int not null default 5;
 
-create TRIGGER a
+create trigger a
 before update
 on t
-for EACH ROW
-EXECUTE FUNCTION test_trigger();
+for each row
+execute function test_trigger();
 
 select * from t;
 
@@ -773,28 +773,28 @@ update t set y = 2;
 
 select * from t;
 
-drop TABLE t;
+drop table t;
 
 create table t (
   id serial primary key,
-  a INT,
-  b INT,
-  c INT
+  a int,
+  b int,
+  c int
 );
 
 insert into t (a, b, c) values (1, 2, null);
 
 alter table t
-  add column x INT;
+  add column x int;
 
 alter table t
-  add column y INT;
+  add column y int;
 
-create TRIGGER a
+create trigger a
 before update
 on t
-for EACH ROW
-EXECUTE FUNCTION test_trigger();
+for each row
+execute function test_trigger();
 
 select * from t;
 
@@ -802,53 +802,53 @@ update t set y = 2;
 
 select * from t;
 
-drop TABLE t;
+drop table t;
 
 create table leader (
-  a INT primary key,
-  b INT
+  a int primary key,
+  b int
 );
 
 create table follower (
-  a INT
+  a int
   references leader on DELETE cascade,
-  b INT
+  b int
 );
 
 insert into leader values (1, 1), (2, 2);
 
 alter table leader
-  add column c INT;
+  add column c int;
 
 alter table leader
   drop column c;
 
 delete from leader;
 
-create table vtype (a INT);
+create table vtype (a int);
 
 insert into vtype values (1);
 
 alter table vtype
-  add column b DOUBLE PRECISION default 0.2;
+  add column b double precision default 0.2;
 
 alter table vtype
-  add column c BOOLEAN default true;
+  add column c boolean default true;
 
 select * from vtype;
 
 alter table vtype
-  alter column b type TEXT using cast(b as TEXT),
-  alter column c type TEXT using cast(c as TEXT);
+  alter column b type text using cast(b as text),
+  alter column c type text using cast(c as text);
 
 select * from vtype;
 
-create table vtype2 (a INT);
+create table vtype2 (a int);
 
 insert into vtype2 values (1);
 
 alter table vtype2
-  add column b VARCHAR(10) default 'xxx';
+  add column b varchar(10) default 'xxx';
 
 alter table vtype2
   alter column b set default 'yyy';
@@ -856,7 +856,7 @@ alter table vtype2
 insert into vtype2 values (2);
 
 alter table vtype2
-  alter column b type VARCHAR(20) using cast(b as VARCHAR(20));
+  alter column b type varchar(20) using cast(b as varchar(20));
 
 select * from vtype2;
 
@@ -867,7 +867,7 @@ create table t ();
 insert into t default values;
 
 alter table t
-  add column a INT default 1;
+  add column a int default 1;
 
 create index on t using btree (a);
 
@@ -883,66 +883,66 @@ select * from t where a is null;
 
 rollback;
 
-create FOREIGN DATA WRAPPER dummy;
+create foreign data wrapper dummy;
 
 create server s0 foreign data wrapper dummy;
 
-create foreign table ft1 ( c1 INT not null ) SERVER s0;
+create foreign table ft1 ( c1 int not null ) server s0;
 
 alter foreign table ft1
-  add column c8 INT default 0;
+  add column c8 int default 0;
 
 alter foreign table ft1
-  alter column c8 type CHAR(10);
+  alter column c8 type char(10);
 
 select
   COUNT(*)
 from
   pg_attribute
 where
-  attrelid = cast('ft1' as REGCLASS) and
+  attrelid = cast('ft1' as regclass) and
   (attmissingval is not null or
   atthasmissing);
 
-drop FOREIGN TABLE ft1;
+drop foreign table ft1;
 
-drop SERVER s0;
+drop server s0;
 
-drop FOREIGN DATA WRAPPER dummy;
+drop foreign data wrapper dummy;
 
-drop TABLE vtype;
+drop table vtype;
 
-drop TABLE vtype2;
+drop table vtype2;
 
-drop TABLE follower;
+drop table follower;
 
-drop TABLE leader;
+drop table leader;
 
-drop FUNCTION test_trigger();
+drop function test_trigger();
 
-drop TABLE t1;
+drop table t1;
 
-drop FUNCTION set(NAME);
+drop function set(name);
 
-drop FUNCTION comp();
+drop function comp();
 
-drop TABLE m;
+drop table m;
 
-drop TABLE has_volatile;
+drop table has_volatile;
 
-drop EVENT TRIGGER has_volatile_rewrite;
+drop event trigger has_volatile_rewrite;
 
-drop FUNCTION log_rewrite;
+drop function log_rewrite;
 
-drop SCHEMA fast_default;
+drop schema fast_default;
 
 set search_path to public;
 
-create table has_fast_default (f1 INT);
+create table has_fast_default (f1 int);
 
 insert into has_fast_default values (1);
 
 alter table has_fast_default
-  add column f2 INT default 42;
+  add column f2 int default 42;
 
 select * from has_fast_default;

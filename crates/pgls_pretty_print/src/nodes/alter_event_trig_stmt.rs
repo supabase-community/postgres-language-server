@@ -7,9 +7,9 @@ pub(super) fn emit_alter_event_trig_stmt(e: &mut EventEmitter, n: &AlterEventTri
 
     e.token(TokenKind::ALTER_KW);
     e.space();
-    e.token(TokenKind::IDENT("EVENT".to_string()));
+    e.token(TokenKind::EVENT_KW);
     e.space();
-    e.token(TokenKind::IDENT("TRIGGER".to_string()));
+    e.token(TokenKind::TRIGGER_KW);
     e.space();
 
     if !n.trigname.is_empty() {
@@ -20,17 +20,17 @@ pub(super) fn emit_alter_event_trig_stmt(e: &mut EventEmitter, n: &AlterEventTri
 
     // tgenabled: 'O'=ENABLE, 'D'=DISABLE, 'R'=ENABLE REPLICA, 'A'=ENABLE ALWAYS
     match n.tgenabled.as_str() {
-        "O" => e.token(TokenKind::IDENT("ENABLE".to_string())),
-        "D" => e.token(TokenKind::IDENT("DISABLE".to_string())),
+        "O" => e.token(TokenKind::ENABLE_KW),
+        "D" => e.token(TokenKind::DISABLE_KW),
         "R" => {
-            e.token(TokenKind::IDENT("ENABLE".to_string()));
+            e.token(TokenKind::ENABLE_KW);
             e.space();
-            e.token(TokenKind::IDENT("REPLICA".to_string()));
+            e.token(TokenKind::REPLICA_KW);
         }
         "A" => {
-            e.token(TokenKind::IDENT("ENABLE".to_string()));
+            e.token(TokenKind::ENABLE_KW);
             e.space();
-            e.token(TokenKind::IDENT("ALWAYS".to_string()));
+            e.token(TokenKind::ALWAYS_KW);
         }
         _ => {}
     }

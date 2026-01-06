@@ -6,10 +6,10 @@ snapshot_kind: text
 select
   *
 from
-  XMLTABLE(
+  xmltable(
 
     '/root'
-    PASSING '<root><item>value</item></root>'
-    COLUMNS
-      item TEXT PATH 'item'
+    passing '<root><item>value</item></root>'
+    columns
+      item text path 'item'
   );

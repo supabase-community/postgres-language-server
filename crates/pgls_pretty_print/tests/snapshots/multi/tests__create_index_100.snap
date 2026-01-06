@@ -332,9 +332,9 @@ reset enable_indexscan;
 reset enable_bitmapscan;
 
 create table array_index_op_test (
-  seqno INT,
-  i INT[],
-  t TEXT[]
+  seqno int,
+  i int[],
+  t text[]
 );
 
 copy array_index_op_test from 'filename';
@@ -418,7 +418,7 @@ select * from array_index_op_test where t && '{}' order by seqno;
 
 select * from array_index_op_test where t <@ '{}' order by seqno;
 
-drop INDEX intarrayidx, textarrayidx;
+drop index intarrayidx, textarrayidx;
 
 create index "botharrayidx" on array_index_op_test using gin (i, t);
 
@@ -442,7 +442,7 @@ reset enable_indexscan;
 
 reset enable_bitmapscan;
 
-create table array_gin_test (a INT[]);
+create table array_gin_test (a int[]);
 
 insert into array_gin_test select array[1, g % 5, g] from generate_series(1, 10000) as g;
 
@@ -450,7 +450,7 @@ create index "array_gin_test_idx" on array_gin_test using gin (a);
 
 select COUNT(*) from array_gin_test where a @> '{2}';
 
-drop TABLE array_gin_test;
+drop table array_gin_test;
 
 create index "gin_relopts_test"
 on array_index_op_test
@@ -461,11 +461,11 @@ using gin
 with (fastupdate = 'on',
 gin_pending_list_limit = 128);
 
-create unlogged table unlogged_hash_table (id INT);
+create unlogged table unlogged_hash_table (id int);
 
 create index "unlogged_hash_index" on unlogged_hash_table using hash (id int4_ops);
 
-drop TABLE unlogged_hash_table;
+drop table unlogged_hash_table;
 
 set maintenance_work_mem = '1MB';
 
@@ -487,13 +487,13 @@ select COUNT(*) from tenk1 where stringu1 = 'TVAAAA' or stringu1 = 'TVAAAB';
 
 reset enable_seqscan;
 
-drop INDEX hash_tuplesort_idx;
+drop index hash_tuplesort_idx;
 
 reset maintenance_work_mem;
 
 create table unique_tbl (
-  i INT,
-  t TEXT
+  i int,
+  t text
 );
 
 create unique index "unique_idx1" on unique_tbl using btree (i);
@@ -514,7 +514,7 @@ insert into unique_tbl (t) values ('six');
 
 insert into unique_tbl (t) values ('seven');
 
-drop INDEX unique_idx1, unique_idx2;
+drop index unique_idx1, unique_idx2;
 
 insert into unique_tbl (t) values ('seven');
 
@@ -526,15 +526,15 @@ delete from unique_tbl where t = 'seven';
 
 create unique index "unique_idx4" on unique_tbl using btree (i) nulls not distinct;
 
-select pg_get_indexdef(cast('unique_idx3' as REGCLASS));
+select pg_get_indexdef(cast('unique_idx3' as regclass));
 
-select pg_get_indexdef(cast('unique_idx4' as REGCLASS));
+select pg_get_indexdef(cast('unique_idx4' as regclass));
 
-drop TABLE unique_tbl;
+drop table unique_tbl;
 
 create table func_index_heap (
-  f1 TEXT,
-  f2 TEXT
+  f1 text,
+  f2 text
 );
 
 create unique index "func_index_index" on func_index_heap using btree ((textcat(f1, f2)));
@@ -549,11 +549,11 @@ insert into func_index_heap values ('ABCD', 'EF');
 
 insert into func_index_heap values ('QWERTY');
 
-drop TABLE func_index_heap;
+drop table func_index_heap;
 
 create table func_index_heap (
-  f1 TEXT,
-  f2 TEXT
+  f1 text,
+  f2 text
 );
 
 create unique index "func_index_index" on func_index_heap using btree ((f1 || f2) text_ops);
@@ -571,9 +571,9 @@ insert into func_index_heap values ('QWERTY');
 create index on func_index_heap using btree ((f1 || f2), (row(f1, f2)));
 
 create table covering_index_heap (
-  f1 INT,
-  f2 INT,
-  f3 TEXT
+  f1 int,
+  f2 int,
+  f3 text
 );
 
 create unique index "covering_index_index" on covering_index_heap using btree (f1, f2) include (f3);
@@ -591,11 +591,11 @@ create unique index "covering_pkey" on covering_index_heap using btree (f1, f2) 
 alter table covering_index_heap
   add constraint "covering_pkey" primary key using index "covering_pkey";
 
-drop TABLE covering_index_heap;
+drop table covering_index_heap;
 
 create table concur_heap (
-  f1 TEXT,
-  f2 TEXT
+  f1 text,
+  f2 text
 );
 
 create index concurrently "concur_index1" on concur_heap using btree (f2, f1);
@@ -641,7 +641,7 @@ create index concurrently "concur_index7" on concur_heap using btree (f1);
 commit;
 
 create function predicate_stable()
-returns BOOLEAN
+returns boolean
 immutable
 language plpgsql
 as $function$
@@ -659,9 +659,9 @@ using btree
 where
   predicate_stable();
 
-drop INDEX concur_index8;
+drop index concur_index8;
 
-drop FUNCTION predicate_stable();
+drop function predicate_stable();
 
 begin;
 
@@ -680,8 +680,8 @@ vacuum (FULL) concur_heap;
 reindex table concur_heap;
 
 create temporary table concur_temp (
-  f1 INT,
-  f2 TEXT
+  f1 int,
+  f2 text
 )
 on commit preserve rows;
 
@@ -689,15 +689,15 @@ insert into concur_temp values (1, 'foo'), (2, 'bar');
 
 create index concurrently "concur_temp_ind" on concur_temp using btree (f1);
 
-drop INDEX concurrently concur_temp_ind;
+drop index concurrently concur_temp_ind;
 
-drop TABLE concur_temp;
+drop table concur_temp;
 
 begin;
 
 create temporary table concur_temp (
-  f1 INT,
-  f2 TEXT
+  f1 int,
+  f2 text
 )
 on commit drop;
 
@@ -711,38 +711,38 @@ insert into concur_temp values (1, 'foo'), (2, 'bar');
 
 create index concurrently "concur_temp_ind" on concur_temp using btree (f1);
 
-drop INDEX concurrently concur_temp_ind;
+drop index concurrently concur_temp_ind;
 
-drop TABLE concur_temp;
+drop table concur_temp;
 
-drop INDEX concurrently concur_index2;
+drop index concurrently concur_index2;
 
-drop INDEX concurrently if exists concur_index2;
+drop index concurrently if exists concur_index2;
 
-drop INDEX concurrently concur_index2, concur_index3;
+drop index concurrently concur_index2, concur_index3;
 
 begin;
 
-drop INDEX concurrently concur_index5;
+drop index concurrently concur_index5;
 
 rollback;
 
-drop INDEX concurrently if exists concur_index3;
+drop index concurrently if exists concur_index3;
 
-drop INDEX concurrently concur_index4;
+drop index concurrently concur_index4;
 
-drop INDEX concurrently concur_index5;
+drop index concurrently concur_index5;
 
-drop INDEX concurrently concur_index1;
+drop index concurrently concur_index1;
 
-drop INDEX concurrently concur_heap_expr_idx;
+drop index concurrently concur_heap_expr_idx;
 
-drop TABLE concur_heap;
+drop table concur_heap;
 
 create table cwi_test (
-  a INT,
-  b VARCHAR(10),
-  c CHAR(1)
+  a int,
+  b varchar(10),
+  c char(1)
 );
 
 insert into cwi_test values (1, 2), (3, 4), (5, 6);
@@ -758,7 +758,7 @@ alter table cwi_test
   drop constraint cwi_uniq_idx,
   add constraint "cwi_replaced_pkey" primary key using index "cwi_uniq2_idx";
 
-drop INDEX cwi_replaced_pkey;
+drop index cwi_replaced_pkey;
 
 create unique index "cwi_uniq3_idx" on cwi_test using btree (a desc);
 
@@ -770,9 +770,9 @@ create unique index "cwi_uniq4_idx" on cwi_test using btree (b collate "POSIX");
 alter table cwi_test
   add unique using index "cwi_uniq4_idx";
 
-drop TABLE cwi_test;
+drop table cwi_test;
 
-create table cwi_test (a INT)
+create table cwi_test (a int)
 partition by HASH(a);
 
 create unique index on cwi_test using btree (a);
@@ -780,11 +780,11 @@ create unique index on cwi_test using btree (a);
 alter table cwi_test
   add primary key using index "cwi_test_a_idx";
 
-drop TABLE cwi_test;
+drop table cwi_test;
 
 create table cwi_test (
-  a INT,
-  b INT
+  a int,
+  b int
 );
 
 create unique index "cwi_a_nnd" on cwi_test using btree (a) nulls not distinct;
@@ -792,9 +792,9 @@ create unique index "cwi_a_nnd" on cwi_test using btree (a) nulls not distinct;
 alter table cwi_test
   add primary key using index "cwi_a_nnd";
 
-drop TABLE cwi_test;
+drop table cwi_test;
 
-create table syscol_table (a INT);
+create table syscol_table (a int);
 
 create index on syscol_table using btree (ctid);
 
@@ -809,7 +809,7 @@ using btree
 where
   ctid >= '(1000,0)';
 
-drop TABLE syscol_table;
+drop table syscol_table;
 
 create table onek_with_null as select unique1, unique2 from onek;
 
@@ -852,7 +852,7 @@ order by unique2 desc,
   unique1 desc
 limit 1;
 
-drop INDEX onek_nulltest;
+drop index onek_nulltest;
 
 create unique index "onek_nulltest" on onek_with_null using btree (unique2 desc, unique1);
 
@@ -881,7 +881,7 @@ order by unique2 desc,
   unique1 desc
 limit 1;
 
-drop INDEX onek_nulltest;
+drop index onek_nulltest;
 
 create unique index "onek_nulltest"
 on onek_with_null
@@ -914,7 +914,7 @@ order by unique2 desc,
   unique1 desc
 limit 1;
 
-drop INDEX onek_nulltest;
+drop index onek_nulltest;
 
 create unique index "onek_nulltest" on onek_with_null using btree (unique2 nulls first, unique1);
 
@@ -941,7 +941,7 @@ order by unique2 desc,
   unique1 desc
 limit 1;
 
-drop INDEX onek_nulltest;
+drop index onek_nulltest;
 
 create unique index "onek_nulltest" on onek_with_null using btree (unique2);
 
@@ -969,7 +969,7 @@ reset enable_indexscan;
 
 reset enable_bitmapscan;
 
-drop TABLE onek_with_null;
+drop table onek_with_null;
 
 select
   *
@@ -1030,9 +1030,9 @@ from
   tenk1
 where
   thousand = 42 and
-  (tenthous = cast(1 as SMALLINT) or
-  cast(tenthous as SMALLINT) = cast(3 as BIGINT) or
-  tenthous = cast(42 as BIGINT));
+  (tenthous = cast(1 as smallint) or
+  cast(tenthous as smallint) = cast(3 as bigint) or
+  tenthous = cast(42 as bigint));
 
 select
   *
@@ -1040,9 +1040,9 @@ from
   tenk1
 where
   thousand = 42 and
-  (tenthous = cast(1 as SMALLINT) or
-  cast(tenthous as SMALLINT) = cast(3 as BIGINT) or
-  cast(tenthous as SMALLINT) = cast(42 as BIGINT));
+  (tenthous = cast(1 as smallint) or
+  cast(tenthous as smallint) = cast(3 as bigint) or
+  cast(tenthous as smallint) = cast(42 as bigint));
 
 select
   *
@@ -1050,9 +1050,9 @@ from
   tenk1
 where
   thousand = 42 and
-  (tenthous = cast(1 as SMALLINT) or
-  tenthous = cast(3 as BIGINT) or
-  tenthous = cast(42 as BIGINT));
+  (tenthous = cast(1 as smallint) or
+  tenthous = cast(3 as bigint) or
+  tenthous = cast(42 as bigint));
 
 select COUNT(*) from tenk1 where hundred = 42 and (thousand = 42 or thousand = 99);
 
@@ -1068,18 +1068,18 @@ from
   tenk1
 where
   thousand = 42 and
-  (tenthous = cast(1 as NUMERIC) or
-  tenthous = cast(3 as INT) or
-  tenthous = cast(42 as NUMERIC));
+  (tenthous = cast(1 as numeric) or
+  tenthous = cast(3 as int) or
+  tenthous = cast(42 as numeric));
 
 select
   *
 from
   tenk1
 where
-  tenthous = cast(1 as NUMERIC) or
-  tenthous = cast(3 as INT) or
-  tenthous = cast(42 as NUMERIC);
+  tenthous = cast(1 as numeric) or
+  tenthous = cast(3 as int) or
+  tenthous = cast(42 as numeric);
 
 select
   COUNT(*)
@@ -1231,7 +1231,7 @@ from
     tenk2.tenthous = 2) and
     tenk2.hundred = tenk1.hundred;
 
-create table dupindexcols as select unique1 as id, cast(stringu2 as TEXT) as f1 from tenk1;
+create table dupindexcols as select unique1 as id, cast(stringu2 as text) as f1 from tenk1;
 
 create index "dupindexcols_i" on dupindexcols using btree (f1, id, f1 text_pattern_ops);
 
@@ -1311,7 +1311,7 @@ from
   tenk1
 where
   unique1 = any ('{7, 14, 22}') and
-  unique1 = any (cast('{33, 44}' as BIGINT[]));
+  unique1 = any (cast('{33, 44}' as bigint[]));
 
 select
   unique1
@@ -1319,7 +1319,7 @@ from
   tenk1
 where
   unique1 = any ('{7, 14, 22}') and
-  unique1 = any (cast('{33, 44}' as BIGINT[]));
+  unique1 = any (cast('{33, 44}' as bigint[]));
 
 select unique1 from tenk1 where unique1 = any (null);
 
@@ -1357,13 +1357,13 @@ select unique1 from tenk1 where unique1 < 3 and unique1 <= 3;
 
 select unique1 from tenk1 where unique1 < 3 and unique1 <= 3;
 
-select unique1 from tenk1 where unique1 < 3 and unique1 < cast(-1 as BIGINT);
+select unique1 from tenk1 where unique1 < 3 and unique1 < cast(-1 as bigint);
 
-select unique1 from tenk1 where unique1 < 3 and unique1 < cast(-1 as BIGINT);
+select unique1 from tenk1 where unique1 < 3 and unique1 < cast(-1 as bigint);
 
-select unique1 from tenk1 where unique1 in (1, 42, 7) and unique1 < cast(-1 as BIGINT);
+select unique1 from tenk1 where unique1 in (1, 42, 7) and unique1 < cast(-1 as bigint);
 
-select unique1 from tenk1 where unique1 in (1, 42, 7) and unique1 < cast(-1 as BIGINT);
+select unique1 from tenk1 where unique1 in (1, 42, 7) and unique1 < cast(-1 as bigint);
 
 select unique1 from tenk1 where (thousand, tenthous) > (null, 5);
 
@@ -1432,10 +1432,10 @@ limit 2;
 select * from tenk1 where (thousand, tenthous) in ((1, 1001), (null, null));
 
 create temporary table boolindex (
-  b BOOLEAN,
-  i INT,
+  b boolean,
+  i int,
   unique (b, i),
-  junk DOUBLE PRECISION
+  junk double precision
 );
 
 select * from boolindex order by b, i limit 10;
@@ -1450,20 +1450,20 @@ select * from boolindex where b is true order by i desc limit 10;
 
 select * from boolindex where b is false order by i desc limit 10;
 
-create table reindex_verbose (id INT primary key);
+create table reindex_verbose (id int primary key);
 
 reindex (VERBOSE) table reindex_verbose;
 
-drop TABLE reindex_verbose;
+drop table reindex_verbose;
 
-create table concur_reindex_tab (c1 INT);
+create table concur_reindex_tab (c1 int);
 
 reindex table concur_reindex_tab;
 
 reindex (CONCURRENTLY) table concur_reindex_tab;
 
 alter table concur_reindex_tab
-  add column c2 TEXT;
+  add column c2 text;
 
 create unique index "concur_reindex_ind1" on concur_reindex_tab using btree (c1);
 
@@ -1476,15 +1476,15 @@ create index "concur_reindex_ind4" on concur_reindex_tab using btree (c1, c1, c2
 alter table concur_reindex_tab
   add primary key using index "concur_reindex_ind1";
 
-create table concur_reindex_tab2 (c1 INT references concur_reindex_tab);
+create table concur_reindex_tab2 (c1 int references concur_reindex_tab);
 
 insert into concur_reindex_tab values (1, 'a');
 
 insert into concur_reindex_tab values (2, 'a');
 
 create table concur_reindex_tab3 (
-  c1 INT,
-  c2 INT4RANGE,
+  c1 int,
+  c2 int4range,
   exclude using gist (c2 with &&)
 );
 
@@ -1511,15 +1511,15 @@ select
 from
   pg_depend
 where
-  classid = cast('pg_class' as REGCLASS) and
+  classid = cast('pg_class' as regclass) and
   objid
   in (
-    cast('concur_reindex_tab' as REGCLASS),
-    cast('concur_reindex_ind1' as REGCLASS),
-    cast('concur_reindex_ind2' as REGCLASS),
-    cast('concur_reindex_ind3' as REGCLASS),
-    cast('concur_reindex_ind4' as REGCLASS),
-    cast('concur_reindex_matview' as REGCLASS)
+    cast('concur_reindex_tab' as regclass),
+    cast('concur_reindex_ind1' as regclass),
+    cast('concur_reindex_ind2' as regclass),
+    cast('concur_reindex_ind3' as regclass),
+    cast('concur_reindex_ind4' as regclass),
+    cast('concur_reindex_matview' as regclass)
   )
 order by 1,
   2;
@@ -1543,38 +1543,38 @@ select
 from
   pg_depend
 where
-  classid = cast('pg_class' as REGCLASS) and
+  classid = cast('pg_class' as regclass) and
   objid
   in (
-    cast('concur_reindex_tab' as REGCLASS),
-    cast('concur_reindex_ind1' as REGCLASS),
-    cast('concur_reindex_ind2' as REGCLASS),
-    cast('concur_reindex_ind3' as REGCLASS),
-    cast('concur_reindex_ind4' as REGCLASS),
-    cast('concur_reindex_matview' as REGCLASS)
+    cast('concur_reindex_tab' as regclass),
+    cast('concur_reindex_ind1' as regclass),
+    cast('concur_reindex_ind2' as regclass),
+    cast('concur_reindex_ind3' as regclass),
+    cast('concur_reindex_ind4' as regclass),
+    cast('concur_reindex_matview' as regclass)
   )
 order by 1,
   2;
 
-create table testcomment (i INT);
+create table testcomment (i int);
 
 create index "testcomment_idx1" on testcomment using btree (i);
 
 comment on index testcomment_idx1 is 'test comment';
 
-select obj_description(cast('testcomment_idx1' as REGCLASS), 'pg_class');
+select obj_description(cast('testcomment_idx1' as regclass), 'pg_class');
 
 reindex table testcomment;
 
-select obj_description(cast('testcomment_idx1' as REGCLASS), 'pg_class');
+select obj_description(cast('testcomment_idx1' as regclass), 'pg_class');
 
 reindex (CONCURRENTLY) table testcomment;
 
-select obj_description(cast('testcomment_idx1' as REGCLASS), 'pg_class');
+select obj_description(cast('testcomment_idx1' as regclass), 'pg_class');
 
-drop TABLE testcomment;
+drop table testcomment;
 
-create table concur_clustered (i INT);
+create table concur_clustered (i int);
 
 create index "concur_clustered_i_idx" on concur_clustered using btree (i);
 
@@ -1584,48 +1584,48 @@ alter table concur_clustered
 reindex (CONCURRENTLY) table concur_clustered;
 
 select
-  cast(indexrelid as REGCLASS),
+  cast(indexrelid as regclass),
   indisclustered
 from
   pg_index
 where
-  indrelid = cast('concur_clustered' as REGCLASS);
+  indrelid = cast('concur_clustered' as regclass);
 
-drop TABLE concur_clustered;
+drop table concur_clustered;
 
-create table concur_replident (i INT not null);
+create table concur_replident (i int not null);
 
 create unique index "concur_replident_i_idx" on concur_replident using btree (i);
 
 alter table concur_replident
-  REPLICA IDENTITY
+  replica identity
   using index
   concur_replident_i_idx;
 
 select
-  cast(indexrelid as REGCLASS),
+  cast(indexrelid as regclass),
   indisreplident
 from
   pg_index
 where
-  indrelid = cast('concur_replident' as REGCLASS);
+  indrelid = cast('concur_replident' as regclass);
 
 reindex (CONCURRENTLY) table concur_replident;
 
 select
-  cast(indexrelid as REGCLASS),
+  cast(indexrelid as regclass),
   indisreplident
 from
   pg_index
 where
-  indrelid = cast('concur_replident' as REGCLASS);
+  indrelid = cast('concur_replident' as regclass);
 
-drop TABLE concur_replident;
+drop table concur_replident;
 
 create table concur_appclass_tab (
-  i TSVECTOR,
-  j TSVECTOR,
-  k TSVECTOR
+  i tsvector,
+  j tsvector,
+  k tsvector
 );
 
 create index "concur_appclass_ind"
@@ -1646,11 +1646,11 @@ using gist
 
 reindex (CONCURRENTLY) table concur_appclass_tab;
 
-drop TABLE concur_appclass_tab;
+drop table concur_appclass_tab;
 
 create table concur_reindex_part (
-  c1 INT,
-  c2 INT
+  c1 int,
+  c2 int
 )
 partition by range(c1);
 
@@ -1673,25 +1673,25 @@ create index "concur_reindex_part_index" on only concur_reindex_part using btree
 create index "concur_reindex_part_index_0" on only concur_reindex_part_0 using btree (c1);
 
 alter index concur_reindex_part_index
-  ATTACH partition
+  attach partition
   concur_reindex_part_index_0;
 
 create index "concur_reindex_part_index_10" on only concur_reindex_part_10 using btree (c1);
 
 alter index concur_reindex_part_index
-  ATTACH partition
+  attach partition
   concur_reindex_part_index_10;
 
 create index "concur_reindex_part_index_0_1" on only concur_reindex_part_0_1 using btree (c1);
 
 alter index concur_reindex_part_index_0
-  ATTACH partition
+  attach partition
   concur_reindex_part_index_0_1;
 
 create index "concur_reindex_part_index_0_2" on only concur_reindex_part_0_2 using btree (c1);
 
 alter index concur_reindex_part_index_0
-  ATTACH partition
+  attach partition
   concur_reindex_part_index_0_2;
 
 select
@@ -1725,17 +1725,17 @@ select
 from
   pg_depend
 where
-  classid = cast('pg_class' as REGCLASS) and
+  classid = cast('pg_class' as regclass) and
   objid
   in (
-    cast('concur_reindex_part' as REGCLASS),
-    cast('concur_reindex_part_0' as REGCLASS),
-    cast('concur_reindex_part_0_1' as REGCLASS),
-    cast('concur_reindex_part_0_2' as REGCLASS),
-    cast('concur_reindex_part_index' as REGCLASS),
-    cast('concur_reindex_part_index_0' as REGCLASS),
-    cast('concur_reindex_part_index_0_1' as REGCLASS),
-    cast('concur_reindex_part_index_0_2' as REGCLASS)
+    cast('concur_reindex_part' as regclass),
+    cast('concur_reindex_part_0' as regclass),
+    cast('concur_reindex_part_0_1' as regclass),
+    cast('concur_reindex_part_0_2' as regclass),
+    cast('concur_reindex_part_index' as regclass),
+    cast('concur_reindex_part_index_0' as regclass),
+    cast('concur_reindex_part_index_0_1' as regclass),
+    cast('concur_reindex_part_index_0_2' as regclass)
   )
 order by 1,
   2;
@@ -1770,17 +1770,17 @@ select
 from
   pg_depend
 where
-  classid = cast('pg_class' as REGCLASS) and
+  classid = cast('pg_class' as regclass) and
   objid
   in (
-    cast('concur_reindex_part' as REGCLASS),
-    cast('concur_reindex_part_0' as REGCLASS),
-    cast('concur_reindex_part_0_1' as REGCLASS),
-    cast('concur_reindex_part_0_2' as REGCLASS),
-    cast('concur_reindex_part_index' as REGCLASS),
-    cast('concur_reindex_part_index_0' as REGCLASS),
-    cast('concur_reindex_part_index_0_1' as REGCLASS),
-    cast('concur_reindex_part_index_0_2' as REGCLASS)
+    cast('concur_reindex_part' as regclass),
+    cast('concur_reindex_part_0' as regclass),
+    cast('concur_reindex_part_0_1' as regclass),
+    cast('concur_reindex_part_0_2' as regclass),
+    cast('concur_reindex_part_index' as regclass),
+    cast('concur_reindex_part_index_0' as regclass),
+    cast('concur_reindex_part_index_0_1' as regclass),
+    cast('concur_reindex_part_index_0_2' as regclass)
   )
 order by 1,
   2;
@@ -1808,8 +1808,8 @@ reindex index concur_reindex_part_index;
 
 rollback;
 
-create or replace function create_relfilenode_part(relname TEXT, indname TEXT)
-returns VOID
+create or replace function create_relfilenode_part(relname text, indname text)
+returns void
 as $function$
   BEGIN
   EXECUTE format('
@@ -1823,11 +1823,11 @@ as $function$
   $function$
 language plpgsql;
 
-create or replace function compare_relfilenode_part(tabname TEXT)
+create or replace function compare_relfilenode_part(tabname text)
 returns table (
-  relname NAME,
-  relkind CHAR,
-  state TEXT
+  relname name,
+  relkind char,
+  state text
 )
 as $function$
   BEGIN
@@ -1850,7 +1850,7 @@ reindex index concur_reindex_part_index;
 
 select * from compare_relfilenode_part('reindex_index_status');
 
-drop TABLE reindex_index_status;
+drop table reindex_index_status;
 
 select create_relfilenode_part('reindex_index_status', 'concur_reindex_part_index');
 
@@ -1858,7 +1858,7 @@ reindex (CONCURRENTLY) index concur_reindex_part_index;
 
 select * from compare_relfilenode_part('reindex_index_status');
 
-drop TABLE reindex_index_status;
+drop table reindex_index_status;
 
 reindex index concur_reindex_part;
 
@@ -1880,7 +1880,7 @@ reindex table concur_reindex_part;
 
 select * from compare_relfilenode_part('reindex_index_status');
 
-drop TABLE reindex_index_status;
+drop table reindex_index_status;
 
 select create_relfilenode_part('reindex_index_status', 'concur_reindex_part_index');
 
@@ -1888,13 +1888,13 @@ reindex (CONCURRENTLY) table concur_reindex_part;
 
 select * from compare_relfilenode_part('reindex_index_status');
 
-drop TABLE reindex_index_status;
+drop table reindex_index_status;
 
-drop FUNCTION create_relfilenode_part;
+drop function create_relfilenode_part;
 
-drop FUNCTION compare_relfilenode_part;
+drop function compare_relfilenode_part;
 
-drop TABLE concur_reindex_part;
+drop table concur_reindex_part;
 
 begin;
 
@@ -1920,11 +1920,11 @@ reindex (CONCURRENTLY) schema pg_catalog;
 
 reindex database not_current_database;
 
-drop MATERIALIZED VIEW concur_reindex_matview;
+drop materialized view concur_reindex_matview;
 
-drop TABLE concur_reindex_tab, concur_reindex_tab2, concur_reindex_tab3;
+drop table concur_reindex_tab, concur_reindex_tab2, concur_reindex_tab3;
 
-create table concur_reindex_tab4 (c1 INT);
+create table concur_reindex_tab4 (c1 int);
 
 insert into concur_reindex_tab4 values (1), (1), (2);
 
@@ -1932,7 +1932,7 @@ create unique index concurrently "concur_reindex_ind5" on concur_reindex_tab4 us
 
 reindex (CONCURRENTLY) index concur_reindex_ind5;
 
-drop INDEX concur_reindex_ind5_ccnew;
+drop index concur_reindex_ind5_ccnew;
 
 delete from concur_reindex_tab4 where c1 = 1;
 
@@ -1940,11 +1940,11 @@ reindex (CONCURRENTLY) table concur_reindex_tab4;
 
 reindex (CONCURRENTLY) index concur_reindex_ind5;
 
-drop TABLE concur_reindex_tab4;
+drop table concur_reindex_tab4;
 
 create table concur_exprs_tab (
-  c1 INT,
-  c2 BOOLEAN
+  c1 int,
+  c2 boolean
 );
 
 insert into concur_exprs_tab (c1, c2)
@@ -1957,7 +1957,7 @@ create unique index "concur_exprs_index_expr"
 on concur_exprs_tab
 using btree
 (
-  (cast(c1 as TEXT) collate "C")
+  (cast(c1 as text) collate "C")
 );
 
 create unique index "concur_exprs_index_pred"
@@ -1967,8 +1967,8 @@ using btree
   c1
 )
 where
-  cast(c1 as TEXT) >
-  cast(500000000 as TEXT) collate "C";
+  cast(c1 as text) >
+  cast(500000000 as text) collate "C";
 
 create unique index "concur_exprs_index_pred_2"
 on concur_exprs_tab
@@ -1977,68 +1977,68 @@ using btree
   (1 / c1)
 )
 where
-  '-H' >= cast(c2 as TEXT) collate "C";
+  '-H' >= cast(c2 as text) collate "C";
 
 alter index concur_exprs_index_expr
-  alter column 1 set STATISTICS 100;
+  alter column 1 set statistics 100;
 
 analyze concur_exprs_tab;
 
 select
-  cast(starelid as REGCLASS),
+  cast(starelid as regclass),
   COUNT(*)
 from
   pg_statistic
 where
   starelid
   in (
-    cast('concur_exprs_index_expr' as REGCLASS),
-    cast('concur_exprs_index_pred' as REGCLASS),
-    cast('concur_exprs_index_pred_2' as REGCLASS)
+    cast('concur_exprs_index_expr' as regclass),
+    cast('concur_exprs_index_pred' as regclass),
+    cast('concur_exprs_index_pred_2' as regclass)
   )
 group by starelid
-order by cast(cast(starelid as REGCLASS) as TEXT);
+order by cast(cast(starelid as regclass) as text);
 
-select pg_get_indexdef(cast('concur_exprs_index_expr' as REGCLASS));
+select pg_get_indexdef(cast('concur_exprs_index_expr' as regclass));
 
-select pg_get_indexdef(cast('concur_exprs_index_pred' as REGCLASS));
+select pg_get_indexdef(cast('concur_exprs_index_pred' as regclass));
 
-select pg_get_indexdef(cast('concur_exprs_index_pred_2' as REGCLASS));
+select pg_get_indexdef(cast('concur_exprs_index_pred_2' as regclass));
 
 reindex (CONCURRENTLY) table concur_exprs_tab;
 
-select pg_get_indexdef(cast('concur_exprs_index_expr' as REGCLASS));
+select pg_get_indexdef(cast('concur_exprs_index_expr' as regclass));
 
-select pg_get_indexdef(cast('concur_exprs_index_pred' as REGCLASS));
+select pg_get_indexdef(cast('concur_exprs_index_pred' as regclass));
 
-select pg_get_indexdef(cast('concur_exprs_index_pred_2' as REGCLASS));
+select pg_get_indexdef(cast('concur_exprs_index_pred_2' as regclass));
 
 alter table concur_exprs_tab
-  alter column c2 type TEXT;
+  alter column c2 type text;
 
-select pg_get_indexdef(cast('concur_exprs_index_expr' as REGCLASS));
+select pg_get_indexdef(cast('concur_exprs_index_expr' as regclass));
 
-select pg_get_indexdef(cast('concur_exprs_index_pred' as REGCLASS));
+select pg_get_indexdef(cast('concur_exprs_index_pred' as regclass));
 
-select pg_get_indexdef(cast('concur_exprs_index_pred_2' as REGCLASS));
+select pg_get_indexdef(cast('concur_exprs_index_pred_2' as regclass));
 
 select
-  cast(starelid as REGCLASS),
+  cast(starelid as regclass),
   COUNT(*)
 from
   pg_statistic
 where
   starelid
   in (
-    cast('concur_exprs_index_expr' as REGCLASS),
-    cast('concur_exprs_index_pred' as REGCLASS),
-    cast('concur_exprs_index_pred_2' as REGCLASS)
+    cast('concur_exprs_index_expr' as regclass),
+    cast('concur_exprs_index_pred' as regclass),
+    cast('concur_exprs_index_pred_2' as regclass)
   )
 group by starelid
-order by cast(cast(starelid as REGCLASS) as TEXT);
+order by cast(cast(starelid as regclass) as text);
 
 select
-  cast(attrelid as REGCLASS),
+  cast(attrelid as regclass),
   attnum,
   attstattarget
 from
@@ -2046,18 +2046,18 @@ from
 where
   attrelid
   in (
-    cast('concur_exprs_index_expr' as REGCLASS),
-    cast('concur_exprs_index_pred' as REGCLASS),
-    cast('concur_exprs_index_pred_2' as REGCLASS)
+    cast('concur_exprs_index_expr' as regclass),
+    cast('concur_exprs_index_pred' as regclass),
+    cast('concur_exprs_index_pred_2' as regclass)
   )
-order by cast(cast(attrelid as REGCLASS) as TEXT),
+order by cast(cast(attrelid as regclass) as text),
   attnum;
 
-drop TABLE concur_exprs_tab;
+drop table concur_exprs_tab;
 
 create temporary table concur_temp_tab_1 (
-  c1 INT,
-  c2 TEXT
+  c1 int,
+  c2 text
 )
 on commit preserve rows;
 
@@ -2084,8 +2084,8 @@ reindex (CONCURRENTLY) index concur_temp_ind_2;
 begin;
 
 create temporary table concur_temp_tab_3 (
-  c1 INT,
-  c2 TEXT
+  c1 int,
+  c2 text
 )
 on commit preserve rows;
 
@@ -2130,16 +2130,16 @@ from
   on b.oid = a.oid
 order by 1;
 
-drop TABLE concur_temp_tab_1, concur_temp_tab_2, reindex_temp_before;
+drop table concur_temp_tab_1, concur_temp_tab_2, reindex_temp_before;
 
 select * from tenk1 where unique1 < 1 or hundred < 2;
 
 select * from tenk1 where unique1 < 1 or unique1 < 3 or hundred < 2;
 
 create table bitmap_split_or (
-  a INT not null,
-  b INT not null,
-  c INT not null
+  a int not null,
+  b int not null,
+  c int not null
 );
 
 insert into bitmap_split_or select 1, 1, i from generate_series(1, 1000) as i;
@@ -2168,17 +2168,17 @@ where
 
 select * from bitmap_split_or where (a = 1 or a = 2) and b = 2;
 
-drop INDEX t_b_partial_1_idx;
+drop index t_b_partial_1_idx;
 
-drop INDEX t_b_partial_2_idx;
+drop index t_b_partial_2_idx;
 
 create index "t_a_b_idx" on bitmap_split_or using btree (a, b);
 
 create index "t_b_c_idx" on bitmap_split_or using btree (b, c);
 
-create STATISTICS t_a_b_stat (mcv) on "a", "b" from bitmap_split_or;
+create statistics t_a_b_stat (mcv) on "a", "b" from bitmap_split_or;
 
-create STATISTICS t_b_c_stat (mcv) on "b", "c" from bitmap_split_or;
+create statistics t_b_c_stat (mcv) on "b", "c" from bitmap_split_or;
 
 analyze bitmap_split_or;
 
@@ -2186,7 +2186,7 @@ select * from bitmap_split_or as t1, bitmap_split_or as t2 where t1.a = t2.b or 
 
 select * from bitmap_split_or where a = 1 and (b = 1 or b = 2) and c = 2;
 
-drop TABLE bitmap_split_or;
+drop table bitmap_split_or;
 
 reindex schema schema_to_reindex;
 
@@ -2200,7 +2200,7 @@ insert into table1 select generate_series(1, 400);
 
 create table table2 (
   col1 serial primary key,
-  col2 TEXT not null
+  col2 text not null
 );
 
 insert into table2 select generate_series(1, 400), 'abc';
@@ -2330,7 +2330,7 @@ commit;
 
 reindex (CONCURRENTLY) schema schema_to_reindex;
 
-create role regress_reindexuser NOLOGIN;
+create role regress_reindexuser nologin;
 
 set role to regress_reindexuser;
 
@@ -2352,4 +2352,4 @@ revoke USAGE on schema pg_toast from regress_reindexuser;
 
 drop role regress_reindexuser;
 
-drop SCHEMA schema_to_reindex cascade;
+drop schema schema_to_reindex cascade;

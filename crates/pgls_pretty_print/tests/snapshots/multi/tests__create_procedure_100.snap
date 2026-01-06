@@ -7,23 +7,23 @@ call nonexistent();
 
 call random();
 
-create function cp_testfunc1(a INT)
-returns INT
+create function cp_testfunc1(a int)
+returns int
 language sql
 as $function$ SELECT a $function$;
 
 create table cp_test (
-  a INT,
-  b TEXT
+  a int,
+  b text
 );
 
-create procedure ptest1(x TEXT)
+create procedure ptest1(x text)
 language sql
 as $procedure$
 INSERT INTO cp_test VALUES (1, x);
 $procedure$;
 
-select pg_get_functiondef(cast('ptest1' as REGPROC));
+select pg_get_functiondef(cast('ptest1' as regproc));
 
 select ptest1('x');
 
@@ -31,7 +31,7 @@ call ptest1('a');
 
 call ptest1('xy' || 'zzy');
 
-call ptest1(SUBSTRING(cast(cast(random() as NUMERIC(20, 15)) as TEXT) from 1 for 1));
+call ptest1(SUBSTRING(cast(cast(random() as numeric(20, 15)) as text) from 1 for 1));
 
 select * from cp_test order by b collate "C";
 
@@ -39,13 +39,13 @@ insert into cp_test values (1, x);
 
 commit;
 
-select pg_get_functiondef(cast('ptest1s' as REGPROC));
+select pg_get_functiondef(cast('ptest1s' as regproc));
 
 call ptest1s('b');
 
 select * from cp_test order by b collate "C";
 
-create table x (a INT);
+create table x (a int);
 
 commit;
 
@@ -59,7 +59,7 @@ call ptest2();
 
 truncate cp_test;
 
-create procedure ptest3(y TEXT)
+create procedure ptest3(y text)
 language sql
 as $procedure$
 CALL ptest1(y);
@@ -70,7 +70,7 @@ call ptest3('b');
 
 select * from cp_test;
 
-create procedure ptest4a(inout a INT, inout b INT)
+create procedure ptest4a(inout a int, inout b int)
 language sql
 as $procedure$
 SELECT 1, 2;
@@ -78,7 +78,7 @@ $procedure$;
 
 call ptest4a(null, null);
 
-create procedure ptest4b(inout b INT, inout a INT)
+create procedure ptest4b(inout b int, inout a int)
 language sql
 as $procedure$
 CALL ptest4a(a, b);  -- error, not supported
@@ -92,9 +92,9 @@ $procedure$;
 
 call ptest4c(null);
 
-drop PROCEDURE ptest4a, ptest4c;
+drop procedure ptest4a, ptest4c;
 
-create or replace procedure ptest5(a INT, b TEXT, c INT default 100)
+create or replace procedure ptest5(a int, b text, c int default 100)
 language sql
 as $procedure$
 INSERT INTO cp_test VALUES(a, b);
@@ -113,7 +113,7 @@ call ptest5("b" := 'Hello', "a" := 10);
 
 select * from cp_test;
 
-create procedure ptest6(a INT, b ANYELEMENT)
+create procedure ptest6(a int, b anyelement)
 language sql
 as $procedure$
 SELECT NULL::int;
@@ -121,7 +121,7 @@ $procedure$;
 
 call ptest6(1, 2);
 
-create procedure ptest6a(inout a ANYELEMENT, out b ANYELEMENT)
+create procedure ptest6a(inout a anyelement, out b anyelement)
 language sql
 as $procedure$
 SELECT $1, $1;
@@ -131,7 +131,7 @@ call ptest6a(1, null);
 
 call ptest6a(1.1, null);
 
-create procedure ptest6b(a ANYELEMENT, out b ANYELEMENT, out c ANYARRAY)
+create procedure ptest6b(a anyelement, out b anyelement, out c anyarray)
 language sql
 as $procedure$
 SELECT $1, array[$1];
@@ -141,7 +141,7 @@ call ptest6b(1, null, null);
 
 call ptest6b(1.1, null, null);
 
-create procedure ptest6c(inout a ANYELEMENT, inout b ANYELEMENT)
+create procedure ptest6c(inout a anyelement, inout b anyelement)
 language sql
 as $procedure$
 SELECT $1, 1;
@@ -151,7 +151,7 @@ call ptest6c(1, null);
 
 call ptest6c(1.1, null);
 
-create procedure ptest7(a TEXT, b TEXT)
+create procedure ptest7(a text, b text)
 language sql
 as $procedure$
 SELECT a = b;
@@ -159,15 +159,15 @@ $procedure$;
 
 call ptest7(least('a', 'b'), 'a');
 
-create procedure ptest8(x TEXT) begin atomic
+create procedure ptest8(x text) begin atomic
   
 end;
 
-select pg_get_functiondef(cast('ptest8' as REGPROC));
+select pg_get_functiondef(cast('ptest8' as regproc));
 
 call ptest8('');
 
-create procedure ptest9(out a INT)
+create procedure ptest9(out a int)
 language sql
 as $procedure$
 INSERT INTO cp_test VALUES (1, 'a');
@@ -180,7 +180,7 @@ call ptest9(1 / 0);
 
 call ptest9(1. / 0.);
 
-create procedure ptest10(out a INT, in b INT, in c INT)
+create procedure ptest10(out a int, in b int, in c int)
 language sql
 as $procedure$ SELECT b - c $procedure$;
 
@@ -194,33 +194,33 @@ call ptest10(null, "c" := 4, "b" := 11);
 
 call ptest10("b" := 8, "c" := 2, "a" := 0);
 
-create procedure ptest11(out a INT, variadic b INT[])
+create procedure ptest11(out a int, variadic b int[])
 language sql
 as $procedure$ SELECT b[1] + b[2] $procedure$;
 
 call ptest11(null, 11, 12, 13);
 
-create procedure ptest10(in a INT, in b INT, in c INT)
+create procedure ptest10(in a int, in b int, in c int)
 language sql
 as $procedure$ SELECT a + b - c $procedure$;
 
-drop PROCEDURE ptest10;
+drop procedure ptest10;
 
-drop PROCEDURE ptest10(INT, INT, INT);
+drop procedure ptest10(int, int, int);
 
 begin;
 
-drop PROCEDURE ptest10(INT, INT);
+drop procedure ptest10(int, int);
 
-drop PROCEDURE ptest10(INT, INT, INT);
+drop procedure ptest10(int, int, int);
 
 rollback;
 
 begin;
 
-drop PROCEDURE ptest10(INT, INT, INT);
+drop procedure ptest10(int, int, int);
 
-drop PROCEDURE ptest10(INT, INT, INT);
+drop procedure ptest10(int, int, int);
 
 rollback;
 
@@ -235,36 +235,36 @@ as $procedure$ INSERT INTO cp_test VALUES (1, 'a') $procedure$;
 
 create procedure ptestx()
 language sql
-STRICT
+strict
 as $procedure$ INSERT INTO cp_test VALUES (1, 'a') $procedure$;
 
-create procedure ptestx(variadic a INT[], out b INT)
+create procedure ptestx(variadic a int[], out b int)
 language sql
 as $procedure$ SELECT a[1] $procedure$;
 
-create procedure ptestx(a INT default 42, out b INT)
+create procedure ptestx(a int default 42, out b int)
 language sql
 as $procedure$ SELECT a $procedure$;
 
-alter PROCEDURE ptest1(TEXT) STRICT;
+alter procedure ptest1(text) strict;
 
-alter FUNCTION ptest1(TEXT) volatile;
+alter function ptest1(text) volatile;
 
-alter PROCEDURE cp_testfunc1(INT) volatile;
+alter procedure cp_testfunc1(int) volatile;
 
-alter PROCEDURE nonexistent() volatile;
+alter procedure nonexistent() volatile;
 
-drop FUNCTION ptest1(TEXT);
+drop function ptest1(text);
 
-drop PROCEDURE cp_testfunc1(INT);
+drop procedure cp_testfunc1(int);
 
-drop PROCEDURE nonexistent();
+drop procedure nonexistent();
 
 create user regress_cp_user1;
 
 grant INSERT on table cp_test to regress_cp_user1;
 
-revoke EXECUTE on procedure ptest1(TEXT) from PUBLIC;
+revoke EXECUTE on procedure ptest1(text) from public;
 
 set role to regress_cp_user1;
 
@@ -272,7 +272,7 @@ call ptest1('a');
 
 reset role;
 
-grant EXECUTE on procedure ptest1(TEXT) to regress_cp_user1;
+grant EXECUTE on procedure ptest1(text) to regress_cp_user1;
 
 set role to regress_cp_user1;
 
@@ -280,22 +280,22 @@ call ptest1('a');
 
 reset role;
 
-alter routine cp_testfunc1(INT) rename to cp_testfunc1a;
+alter routine cp_testfunc1(int) rename to cp_testfunc1a;
 
 alter routine cp_testfunc1a rename to cp_testfunc1;
 
-alter routine ptest1(TEXT) rename to ptest1a;
+alter routine ptest1(text) rename to ptest1a;
 
 alter routine ptest1a rename to ptest1;
 
-drop ROUTINE cp_testfunc1(INT);
+drop routine cp_testfunc1(int);
 
-drop PROCEDURE ptest1;
+drop procedure ptest1;
 
-drop PROCEDURE ptest1s;
+drop procedure ptest1s;
 
-drop PROCEDURE ptest2;
+drop procedure ptest2;
 
-drop TABLE cp_test;
+drop table cp_test;
 
 drop role regress_cp_user1;

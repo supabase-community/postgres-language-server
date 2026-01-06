@@ -4,8 +4,8 @@ input_file: crates/pgls_pretty_print/tests/data/multi/rangefuncs.sql
 snapshot_kind: text
 ---
 create table rngfunc2 (
-  rngfuncid INT,
-  f2 INT
+  rngfuncid int,
+  f2 int
 );
 
 insert into rngfunc2 values (1, 11);
@@ -14,7 +14,7 @@ insert into rngfunc2 values (2, 22);
 
 insert into rngfunc2 values (1, 111);
 
-create function rngfunct(INT)
+create function rngfunct(int)
 returns setof rngfunc2
 as $function$SELECT * FROM rngfunc2 WHERE rngfuncid = $1 ORDER BY f2;$function$
 language sql;
@@ -34,7 +34,7 @@ select
   ord
 from
   unnest(
-    array[cast(1.0 as DOUBLE PRECISION)]
+    array[cast(1.0 as double precision)]
   )
   with ordinality
   as z (a, ord);
@@ -43,7 +43,7 @@ select
   *
 from
   unnest(
-    array[cast(1.0 as DOUBLE PRECISION)]
+    array[cast(1.0 as double precision)]
   )
   with ordinality
   as z (a, ord);
@@ -65,7 +65,7 @@ select * from vw_ord;
 
 select definition from pg_views where viewname = 'vw_ord';
 
-drop VIEW vw_ord;
+drop view vw_ord;
 
 select
   *
@@ -91,7 +91,7 @@ select * from vw_ord;
 
 select definition from pg_views where viewname = 'vw_ord';
 
-drop VIEW vw_ord;
+drop view vw_ord;
 
 select * from unnest(array[10, 20], array['foo', 'bar'], array[1.0]);
 
@@ -143,7 +143,7 @@ select * from vw_ord;
 
 select definition from pg_views where viewname = 'vw_ord';
 
-drop VIEW vw_ord;
+drop view vw_ord;
 
 create temporary view vw_ord
 as select
@@ -160,7 +160,7 @@ select * from vw_ord;
 
 select definition from pg_views where viewname = 'vw_ord';
 
-drop VIEW vw_ord;
+drop view vw_ord;
 
 create temporary view vw_ord
 as select
@@ -177,11 +177,11 @@ select * from vw_ord;
 
 select definition from pg_views where viewname = 'vw_ord';
 
-drop VIEW vw_ord;
+drop view vw_ord;
 
 begin;
 
-declare "rf_cur" SCROLL
+declare "rf_cur" scroll
 cursor
 for select
   *
@@ -191,31 +191,31 @@ from
   with ordinality
   as g (i, j, o);;
 
-fetch FORWARD all from rf_cur;
+fetch forward all from rf_cur;
 
-fetch BACKWARD all from rf_cur;
+fetch backward all from rf_cur;
 
-fetch FORWARD all from rf_cur;
-
-fetch next from rf_cur;
-
-fetch next from rf_cur;
-
-fetch PRIOR from rf_cur;
-
-fetch ABSOLUTE 1 from rf_cur;
+fetch forward all from rf_cur;
 
 fetch next from rf_cur;
 
 fetch next from rf_cur;
 
+fetch prior from rf_cur;
+
+fetch absolute 1 from rf_cur;
+
 fetch next from rf_cur;
 
-fetch PRIOR from rf_cur;
+fetch next from rf_cur;
 
-fetch PRIOR from rf_cur;
+fetch next from rf_cur;
 
-fetch PRIOR from rf_cur;
+fetch prior from rf_cur;
+
+fetch prior from rf_cur;
+
+fetch prior from rf_cur;
 
 commit;
 
@@ -292,14 +292,14 @@ select
   rngfunct.rngfuncid,
   rngfunct.f2
 from
-  rngfunct(cast(sin(pi() / 2) as INT))
+  rngfunct(cast(sin(pi() / 2) as int))
 order by 1,
   2;
 
 create table rngfunc (
-  rngfuncid INT,
-  rngfuncsubid INT,
-  rngfuncname TEXT,
+  rngfuncid int,
+  rngfuncsubid int,
+  rngfuncname text,
   primary key (rngfuncid, rngfuncsubid)
 );
 
@@ -309,8 +309,8 @@ insert into rngfunc values (1, 2, 'Ed');
 
 insert into rngfunc values (2, 1, 'Mary');
 
-create function getrngfunc1(INT)
-returns INT
+create function getrngfunc1(int)
+returns int
 as $function$SELECT $1;$function$
 language sql;
 
@@ -323,7 +323,7 @@ as select * from getrngfunc1(1);
 
 select * from vw_getrngfunc;
 
-drop VIEW vw_getrngfunc;
+drop view vw_getrngfunc;
 
 create view vw_getrngfunc
 as select
@@ -335,10 +335,10 @@ from
 
 select * from vw_getrngfunc;
 
-drop VIEW vw_getrngfunc;
+drop view vw_getrngfunc;
 
-create function getrngfunc2(INT)
-returns setof INT
+create function getrngfunc2(int)
+returns setof int
 as $function$SELECT rngfuncid FROM rngfunc WHERE rngfuncid = $1;$function$
 language sql;
 
@@ -351,7 +351,7 @@ as select * from getrngfunc2(1);
 
 select * from vw_getrngfunc;
 
-drop VIEW vw_getrngfunc;
+drop view vw_getrngfunc;
 
 create view vw_getrngfunc
 as select
@@ -363,10 +363,10 @@ from
 
 select * from vw_getrngfunc;
 
-drop VIEW vw_getrngfunc;
+drop view vw_getrngfunc;
 
-create function getrngfunc3(INT)
-returns setof TEXT
+create function getrngfunc3(int)
+returns setof text
 as $function$SELECT rngfuncname FROM rngfunc WHERE rngfuncid = $1;$function$
 language sql;
 
@@ -379,7 +379,7 @@ as select * from getrngfunc3(1);
 
 select * from vw_getrngfunc;
 
-drop VIEW vw_getrngfunc;
+drop view vw_getrngfunc;
 
 create view vw_getrngfunc
 as select
@@ -391,9 +391,9 @@ from
 
 select * from vw_getrngfunc;
 
-drop VIEW vw_getrngfunc;
+drop view vw_getrngfunc;
 
-create function getrngfunc4(INT)
+create function getrngfunc4(int)
 returns rngfunc
 as $function$SELECT * FROM rngfunc WHERE rngfuncid = $1;$function$
 language sql;
@@ -407,7 +407,7 @@ as select * from getrngfunc4(1);
 
 select * from vw_getrngfunc;
 
-drop VIEW vw_getrngfunc;
+drop view vw_getrngfunc;
 
 create view vw_getrngfunc
 as select
@@ -419,9 +419,9 @@ from
 
 select * from vw_getrngfunc;
 
-drop VIEW vw_getrngfunc;
+drop view vw_getrngfunc;
 
-create function getrngfunc5(INT)
+create function getrngfunc5(int)
 returns setof rngfunc
 as $function$SELECT * FROM rngfunc WHERE rngfuncid = $1;$function$
 language sql;
@@ -435,7 +435,7 @@ as select * from getrngfunc5(1);
 
 select * from vw_getrngfunc;
 
-drop VIEW vw_getrngfunc;
+drop view vw_getrngfunc;
 
 create view vw_getrngfunc
 as select
@@ -447,10 +447,10 @@ from
 
 select * from vw_getrngfunc;
 
-drop VIEW vw_getrngfunc;
+drop view vw_getrngfunc;
 
-create function getrngfunc6(INT)
-returns RECORD
+create function getrngfunc6(int)
+returns record
 as $function$SELECT * FROM rngfunc WHERE rngfuncid = $1;$function$
 language sql;
 
@@ -460,17 +460,17 @@ from
   getrngfunc6(1)
   as t1
   (
-    rngfuncid INT,
-    rngfuncsubid INT,
-    rngfuncname TEXT
+    rngfuncid int,
+    rngfuncsubid int,
+    rngfuncname text
   );
 
 select
   *
 from
-  rows from (getrngfunc6(1) as (rngfuncid INT,
-  rngfuncsubid INT,
-  rngfuncname TEXT))
+  rows from (getrngfunc6(1) as (rngfuncid int,
+  rngfuncsubid int,
+  rngfuncname text))
   with ordinality;
 
 create view vw_getrngfunc
@@ -479,30 +479,30 @@ as select
 from
   getrngfunc6(1) as
   (
-    rngfuncid INT,
-    rngfuncsubid INT,
-    rngfuncname TEXT
+    rngfuncid int,
+    rngfuncsubid int,
+    rngfuncname text
   );
 
 select * from vw_getrngfunc;
 
-drop VIEW vw_getrngfunc;
+drop view vw_getrngfunc;
 
 create view vw_getrngfunc
 as select
   *
 from
-  rows from (getrngfunc6(1) as (rngfuncid INT,
-  rngfuncsubid INT,
-  rngfuncname TEXT))
+  rows from (getrngfunc6(1) as (rngfuncid int,
+  rngfuncsubid int,
+  rngfuncname text))
   with ordinality;
 
 select * from vw_getrngfunc;
 
-drop VIEW vw_getrngfunc;
+drop view vw_getrngfunc;
 
-create function getrngfunc7(INT)
-returns setof RECORD
+create function getrngfunc7(int)
+returns setof record
 as $function$SELECT * FROM rngfunc WHERE rngfuncid = $1;$function$
 language sql;
 
@@ -512,17 +512,17 @@ from
   getrngfunc7(1)
   as t1
   (
-    rngfuncid INT,
-    rngfuncsubid INT,
-    rngfuncname TEXT
+    rngfuncid int,
+    rngfuncsubid int,
+    rngfuncname text
   );
 
 select
   *
 from
-  rows from (getrngfunc7(1) as (rngfuncid INT,
-  rngfuncsubid INT,
-  rngfuncname TEXT))
+  rows from (getrngfunc7(1) as (rngfuncid int,
+  rngfuncsubid int,
+  rngfuncname text))
   with ordinality;
 
 create view vw_getrngfunc
@@ -531,30 +531,30 @@ as select
 from
   getrngfunc7(1) as
   (
-    rngfuncid INT,
-    rngfuncsubid INT,
-    rngfuncname TEXT
+    rngfuncid int,
+    rngfuncsubid int,
+    rngfuncname text
   );
 
 select * from vw_getrngfunc;
 
-drop VIEW vw_getrngfunc;
+drop view vw_getrngfunc;
 
 create view vw_getrngfunc
 as select
   *
 from
-  rows from (getrngfunc7(1) as (rngfuncid INT,
-  rngfuncsubid INT,
-  rngfuncname TEXT))
+  rows from (getrngfunc7(1) as (rngfuncid int,
+  rngfuncsubid int,
+  rngfuncname text))
   with ordinality;
 
 select * from vw_getrngfunc;
 
-drop VIEW vw_getrngfunc;
+drop view vw_getrngfunc;
 
-create function getrngfunc8(INT)
-returns INT
+create function getrngfunc8(int)
+returns int
 as $function$DECLARE rngfuncint int; BEGIN SELECT rngfuncid into rngfuncint FROM rngfunc WHERE rngfuncid = $1; RETURN rngfuncint; END;$function$
 language plpgsql;
 
@@ -567,7 +567,7 @@ as select * from getrngfunc8(1);
 
 select * from vw_getrngfunc;
 
-drop VIEW vw_getrngfunc;
+drop view vw_getrngfunc;
 
 create view vw_getrngfunc
 as select
@@ -579,9 +579,9 @@ from
 
 select * from vw_getrngfunc;
 
-drop VIEW vw_getrngfunc;
+drop view vw_getrngfunc;
 
-create function getrngfunc9(INT)
+create function getrngfunc9(int)
 returns rngfunc
 as $function$DECLARE rngfunctup rngfunc%ROWTYPE; BEGIN SELECT * into rngfunctup FROM rngfunc WHERE rngfuncid = $1; RETURN rngfunctup; END;$function$
 language plpgsql;
@@ -595,7 +595,7 @@ as select * from getrngfunc9(1);
 
 select * from vw_getrngfunc;
 
-drop VIEW vw_getrngfunc;
+drop view vw_getrngfunc;
 
 create view vw_getrngfunc
 as select
@@ -607,7 +607,7 @@ from
 
 select * from vw_getrngfunc;
 
-drop VIEW vw_getrngfunc;
+drop view vw_getrngfunc;
 
 select
   *
@@ -617,12 +617,12 @@ from
   getrngfunc3(1),
   getrngfunc4(1),
   getrngfunc5(1),
-  getrngfunc6(1) as (rngfuncid INT,
-  rngfuncsubid INT,
-  rngfuncname TEXT),
-  getrngfunc7(1) as (rngfuncid INT,
-  rngfuncsubid INT,
-  rngfuncname TEXT),
+  getrngfunc6(1) as (rngfuncid int,
+  rngfuncsubid int,
+  rngfuncname text),
+  getrngfunc7(1) as (rngfuncid int,
+  rngfuncsubid int,
+  rngfuncname text),
   getrngfunc8(1),
   getrngfunc9(1))
   with ordinality
@@ -653,12 +653,12 @@ select
 from
   rows from (getrngfunc9(1),
   getrngfunc8(1),
-  getrngfunc7(1) as (rngfuncid INT,
-  rngfuncsubid INT,
-  rngfuncname TEXT),
-  getrngfunc6(1) as (rngfuncid INT,
-  rngfuncsubid INT,
-  rngfuncname TEXT),
+  getrngfunc7(1) as (rngfuncid int,
+  rngfuncsubid int,
+  rngfuncname text),
+  getrngfunc6(1) as (rngfuncid int,
+  rngfuncsubid int,
+  rngfuncname text),
   getrngfunc5(1),
   getrngfunc4(1),
   getrngfunc3(1),
@@ -692,9 +692,9 @@ as select
   *
 from
   rows from (getrngfunc9(1),
-  getrngfunc7(1) as (rngfuncid INT,
-  rngfuncsubid INT,
-  rngfuncname TEXT),
+  getrngfunc7(1) as (rngfuncid int,
+  rngfuncsubid int,
+  rngfuncname text),
   getrngfunc1(1))
   with ordinality
   as t1 (a, b, c, d, e, f, g, n);
@@ -703,44 +703,44 @@ select * from vw_rngfunc;
 
 select pg_get_viewdef('vw_rngfunc');
 
-drop VIEW vw_rngfunc;
+drop view vw_rngfunc;
 
-drop FUNCTION getrngfunc1(INT);
+drop function getrngfunc1(int);
 
-drop FUNCTION getrngfunc2(INT);
+drop function getrngfunc2(int);
 
-drop FUNCTION getrngfunc3(INT);
+drop function getrngfunc3(int);
 
-drop FUNCTION getrngfunc4(INT);
+drop function getrngfunc4(int);
 
-drop FUNCTION getrngfunc5(INT);
+drop function getrngfunc5(int);
 
-drop FUNCTION getrngfunc6(INT);
+drop function getrngfunc6(int);
 
-drop FUNCTION getrngfunc7(INT);
+drop function getrngfunc7(int);
 
-drop FUNCTION getrngfunc8(INT);
+drop function getrngfunc8(int);
 
-drop FUNCTION getrngfunc9(INT);
+drop function getrngfunc9(int);
 
-drop FUNCTION rngfunct(INT);
+drop function rngfunct(int);
 
-drop TABLE rngfunc2;
+drop table rngfunc2;
 
-drop TABLE rngfunc;
+drop table rngfunc;
 
 create temporary sequence rngfunc_rescan_seq1;
 
 create temporary sequence rngfunc_rescan_seq2;
 
-create type rngfunc_rescan_t as (i INT, s BIGINT);
+create type rngfunc_rescan_t as (i int, s bigint);
 
-create function rngfunc_sql(INT, INT)
+create function rngfunc_sql(int, int)
 returns setof rngfunc_rescan_t
 as $function$SELECT i, nextval('rngfunc_rescan_seq1') FROM generate_series($1,$2) i;$function$
 language sql;
 
-create function rngfunc_mat(INT, INT)
+create function rngfunc_mat(int, int)
 returns setof rngfunc_rescan_t
 as $function$begin for i in $1..$2 loop return next (i, nextval('rngfunc_rescan_seq2')); end loop; end;$function$
 language plpgsql;
@@ -1147,15 +1147,15 @@ from
     as ss0
   on true;
 
-drop FUNCTION rngfunc_sql(INT, INT);
+drop function rngfunc_sql(int, int);
 
-drop FUNCTION rngfunc_mat(INT, INT);
+drop function rngfunc_mat(int, int);
 
-drop SEQUENCE rngfunc_rescan_seq1;
+drop sequence rngfunc_rescan_seq1;
 
-drop SEQUENCE rngfunc_rescan_seq2;
+drop sequence rngfunc_rescan_seq2;
 
-create function rngfunc(in f1 INT, out f2 INT)
+create function rngfunc(in f1 int, out f2 int)
 as $function$select $1+1$function$
 language sql;
 
@@ -1165,27 +1165,27 @@ select * from rngfunc(42);
 
 select * from rngfunc(42) as p (x);
 
-create or replace function rngfunc(in f1 INT, out f2 INT)
-returns INT
+create or replace function rngfunc(in f1 int, out f2 int)
+returns int
 as $function$select $1+1$function$
 language sql;
 
-create or replace function rngfunc(in f1 INT, out f2 INT)
-returns DOUBLE PRECISION
+create or replace function rngfunc(in f1 int, out f2 int)
+returns double precision
 as $function$select $1+1$function$
 language sql;
 
-create or replace function rngfunc(in f1 INT, out f2 INT, out f3 TEXT)
-returns INT
+create or replace function rngfunc(in f1 int, out f2 int, out f3 text)
+returns int
 as $function$select $1+1$function$
 language sql;
 
-create or replace function rngfunc(in f1 INT, out f2 INT, out f3 TEXT)
-returns RECORD
+create or replace function rngfunc(in f1 int, out f2 int, out f3 text)
+returns record
 as $function$select $1+1$function$
 language sql;
 
-create or replace function rngfuncr(in f1 INT, out f2 INT, out TEXT)
+create or replace function rngfuncr(in f1 int, out f2 int, out text)
 as $function$select $1-1, $1::text || 'z'$function$
 language sql;
 
@@ -1195,7 +1195,7 @@ select * from rngfuncr(42);
 
 select * from rngfuncr(42) as p (a, b);
 
-create or replace function rngfuncb(in f1 INT, inout f2 INT, out TEXT)
+create or replace function rngfuncb(in f1 int, inout f2 int, out text)
 as $function$select $2-1, $1::text || 'z'$function$
 language sql;
 
@@ -1205,13 +1205,13 @@ select * from rngfuncb(42, 99);
 
 select * from rngfuncb(42, 99) as p (a, b);
 
-drop FUNCTION rngfunc(INT);
+drop function rngfunc(int);
 
-drop FUNCTION rngfuncr(INT);
+drop function rngfuncr(int);
 
-drop FUNCTION rngfuncb(INT, INT);
+drop function rngfuncb(int, int);
 
-create function dup(f1 ANYELEMENT, out f2 ANYELEMENT, out f3 ANYARRAY)
+create function dup(f1 anyelement, out f2 anyelement, out f3 anyarray)
 as $function$select $1, array[$1,$1]$function$
 language sql;
 
@@ -1219,25 +1219,25 @@ select dup(22);
 
 select dup('xyz');
 
-select dup(cast('xyz' as TEXT));
+select dup(cast('xyz' as text));
 
-select * from dup(cast('xyz' as TEXT));
+select * from dup(cast('xyz' as text));
 
-create or replace function dup(inout f2 ANYELEMENT, out f3 ANYARRAY)
+create or replace function dup(inout f2 anyelement, out f3 anyarray)
 as $function$select $1, array[$1,$1]$function$
 language sql;
 
-drop FUNCTION dup(ANYELEMENT);
+drop function dup(anyelement);
 
-create or replace function dup(inout f2 ANYELEMENT, out f3 ANYARRAY)
+create or replace function dup(inout f2 anyelement, out f3 anyarray)
 as $function$select $1, array[$1,$1]$function$
 language sql;
 
 select dup(22);
 
-drop FUNCTION dup(ANYELEMENT);
+drop function dup(anyelement);
 
-create function bad(f1 INT, out f2 ANYELEMENT, out f3 ANYARRAY)
+create function bad(f1 int, out f2 anyelement, out f3 anyarray)
 as $function$select $1, array[$1,$1]$function$
 language sql;
 
@@ -1255,11 +1255,11 @@ select dup(22, array[44]);
 
 select dup(4.5, array[44]);
 
-select dup(22, array[cast(44 as BIGINT)]);
+select dup(22, array[cast(44 as bigint)]);
 
-select *, pg_typeof(f3), pg_typeof(f4) from dup(22, array[cast(44 as BIGINT)]);
+select *, pg_typeof(f3), pg_typeof(f4) from dup(22, array[cast(44 as bigint)]);
 
-drop FUNCTION dup(anycompatible, anycompatiblearray);
+drop function dup(anycompatible, anycompatiblearray);
 
 create function
 dup(
@@ -1277,11 +1277,11 @@ select dup(numrange(4, 7));
 
 select dup(textrange('aaa', 'bbb'));
 
-drop FUNCTION dup(anycompatiblerange);
+drop function dup(anycompatiblerange);
 
 create function
 bad(
-  f1 ANYARRAY,
+  f1 anyarray,
   out f2 anycompatible,
   out f3 anycompatiblearray
 )
@@ -1290,19 +1290,19 @@ language sql;
 
 create or replace function rngfunc()
 returns table (
-  a INT
+  a int
 )
 as $function$ SELECT a FROM generate_series(1,5) a(a) $function$
 language sql;
 
 select * from rngfunc();
 
-drop FUNCTION rngfunc();
+drop function rngfunc();
 
-create or replace function rngfunc(INT)
+create or replace function rngfunc(int)
 returns table (
-  a INT,
-  b INT
+  a int,
+  b int
 )
 as $function$ SELECT a, b
          FROM generate_series(1,$1) a(a),
@@ -1311,11 +1311,11 @@ language sql;
 
 select * from rngfunc(3);
 
-drop FUNCTION rngfunc(INT);
+drop function rngfunc(int);
 
 create or replace function rngfunc()
 returns table (
-  a VARCHAR(5)
+  a varchar(5)
 )
 as $function$ SELECT 'hello'::varchar(5) $function$
 language sql
@@ -1323,15 +1323,15 @@ stable;
 
 select * from rngfunc() group by 1;
 
-drop FUNCTION rngfunc();
+drop function rngfunc();
 
 create temporary table tt (
   f1 serial,
-  data TEXT
+  data text
 );
 
-create function insert_tt(TEXT)
-returns INT
+create function insert_tt(text)
+returns int
 as $function$ insert into tt(data) values($1) returning f1 $function$
 language sql;
 
@@ -1341,8 +1341,8 @@ select insert_tt('bar');
 
 select * from tt;
 
-create or replace function insert_tt(TEXT)
-returns INT
+create or replace function insert_tt(text)
+returns int
 as $function$ insert into tt(data) values($1),($1||$1) returning f1 $function$
 language sql;
 
@@ -1350,8 +1350,8 @@ select insert_tt('fool');
 
 select * from tt;
 
-create or replace function insert_tt2(TEXT, TEXT)
-returns setof INT
+create or replace function insert_tt2(text, text)
+returns setof int
 as $function$ insert into tt(data) values($1),($2) returning f1 $function$
 language sql;
 
@@ -1374,19 +1374,19 @@ begin
 end $function$
 language plpgsql;
 
-create TRIGGER tnoticetrigger
+create trigger tnoticetrigger
 after insert
 on tt
-for EACH ROW
-EXECUTE FUNCTION noticetrigger();
+for each row
+execute function noticetrigger();
 
 select insert_tt2('foolme', 'barme') limit 1;
 
 select * from tt;
 
 create temporary table tt_log (
-  f1 INT,
-  data TEXT
+  f1 int,
+  data text
 );
 
 create rule insert_tt_rule
@@ -1400,8 +1400,8 @@ select * from tt;
 
 select * from tt_log;
 
-create function rngfunc1(n INT, out a TEXT, out b TEXT)
-returns setof RECORD
+create function rngfunc1(n int, out a text, out b text)
+returns setof record
 language sql
 as $function$ select 'foo ' || i, 'bar ' || i from generate_series(1,$1) i $function$;
 
@@ -1413,20 +1413,20 @@ reset work_mem;
 
 select t.a, t, t.a from rngfunc1(10000) as t limit 1;
 
-drop FUNCTION rngfunc1(INT);
+drop function rngfunc1(int);
 
-create function array_to_set(ANYARRAY)
-returns setof RECORD
+create function array_to_set(anyarray)
+returns setof record
 as $function$
   select i AS "index", $1[i] AS "value" from generate_subscripts($1, 1) i
 $function$
 language sql
-STRICT
+strict
 immutable;
 
 select array_to_set(array['one', 'two']);
 
-select * from array_to_set(array['one', 'two']) as t (f1 INT, f2 TEXT);
+select * from array_to_set(array['one', 'two']) as t (f1 int, f2 text);
 
 select * from array_to_set(array['one', 'two']);
 
@@ -1435,19 +1435,19 @@ select
 from
   array_to_set(array['one', 'two'])
   as t
-  (f1 NUMERIC(4, 2), f2 TEXT);
+  (f1 numeric(4, 2), f2 text);
 
-select * from array_to_set(array['one', 'two']) as t (f1 point, f2 TEXT);
+select * from array_to_set(array['one', 'two']) as t (f1 point, f2 text);
 
 select
   *
 from
   array_to_set(array['one', 'two'])
   as t
-  (f1 NUMERIC(4, 2), f2 TEXT);
+  (f1 numeric(4, 2), f2 text);
 
-create or replace function array_to_set(ANYARRAY)
-returns setof RECORD
+create or replace function array_to_set(anyarray)
+returns setof record
 as $function$
   select i AS "index", $1[i] AS "value" from generate_subscripts($1, 1) i
 $function$
@@ -1456,31 +1456,31 @@ immutable;
 
 select array_to_set(array['one', 'two']);
 
-select * from array_to_set(array['one', 'two']) as t (f1 INT, f2 TEXT);
+select * from array_to_set(array['one', 'two']) as t (f1 int, f2 text);
 
 select
   *
 from
   array_to_set(array['one', 'two'])
   as t
-  (f1 NUMERIC(4, 2), f2 TEXT);
+  (f1 numeric(4, 2), f2 text);
 
-select * from array_to_set(array['one', 'two']) as t (f1 point, f2 TEXT);
+select * from array_to_set(array['one', 'two']) as t (f1 point, f2 text);
 
 select
   *
 from
   array_to_set(array['one', 'two'])
   as t
-  (f1 NUMERIC(4, 2), f2 TEXT);
+  (f1 numeric(4, 2), f2 text);
 
 create temporary table rngfunc (
-  f1 BIGINT,
-  f2 BIGINT
+  f1 bigint,
+  f2 bigint
 );
 
 create function testrngfunc()
-returns RECORD
+returns record
 as $function$
   insert into rngfunc values (1,2) returning *;
 $function$
@@ -1488,14 +1488,14 @@ language sql;
 
 select testrngfunc();
 
-select * from testrngfunc() as t (f1 BIGINT, f2 BIGINT);
+select * from testrngfunc() as t (f1 bigint, f2 bigint);
 
 select * from testrngfunc();
 
-drop FUNCTION testrngfunc();
+drop function testrngfunc();
 
 create function testrngfunc()
-returns setof RECORD
+returns setof record
 as $function$
   insert into rngfunc values (1,2), (3,4) returning *;
 $function$
@@ -1503,13 +1503,13 @@ language sql;
 
 select testrngfunc();
 
-select * from testrngfunc() as t (f1 BIGINT, f2 BIGINT);
+select * from testrngfunc() as t (f1 bigint, f2 bigint);
 
 select * from testrngfunc();
 
-drop FUNCTION testrngfunc();
+drop function testrngfunc();
 
-create type rngfunc_type as (f1 NUMERIC(35, 6), f2 NUMERIC(35, 2));
+create type rngfunc_type as (f1 numeric(35, 6), f2 numeric(35, 2));
 
 create function testrngfunc()
 returns rngfunc_type
@@ -1543,7 +1543,7 @@ select * from testrngfunc();
 
 select * from testrngfunc();
 
-drop FUNCTION testrngfunc();
+drop function testrngfunc();
 
 create function testrngfunc()
 returns setof rngfunc_type
@@ -1593,21 +1593,21 @@ select * from testrngfunc();
 
 select * from testrngfunc();
 
-select * from testrngfunc() as t (f1 BIGINT, f2 BIGINT);
+select * from testrngfunc() as t (f1 bigint, f2 bigint);
 
-select * from pg_get_keywords() as t (f1 BIGINT, f2 BIGINT);
+select * from pg_get_keywords() as t (f1 bigint, f2 bigint);
 
-select * from sin(3) as t (f1 BIGINT, f2 BIGINT);
+select * from sin(3) as t (f1 bigint, f2 bigint);
 
-drop TYPE rngfunc_type cascade;
+drop type rngfunc_type cascade;
 
 create temporary table users (
-  userid TEXT,
-  seq INT,
-  email TEXT,
-  todrop BOOLEAN,
-  moredrop INT,
-  enabled BOOLEAN
+  userid text,
+  seq int,
+  email text,
+  todrop boolean,
+  moredrop int,
+  enabled boolean
 );
 
 insert into users values ('id', 1, 'email', true, 11, true);
@@ -1654,7 +1654,7 @@ from
 select * from usersview;
 
 alter table users
-  add column junk TEXT;
+  add column junk text;
 
 select * from usersview;
 
@@ -1672,7 +1672,7 @@ where
     from
       pg_rewrite
     where
-      ev_class = cast('usersview' as REGCLASS) and
+      ev_class = cast('usersview' as regclass) and
       rulename = '_RETURN'
   ) and
   refobjsubid = 5
@@ -1698,7 +1698,7 @@ select * from usersview;
 rollback;
 
 alter table users
-  alter column seq type NUMERIC;
+  alter column seq type numeric;
 
 begin;
 
@@ -1711,7 +1711,7 @@ where
     from
       pg_rewrite
     where
-      ev_class = cast('usersview' as REGCLASS) and
+      ev_class = cast('usersview' as regclass) and
       rulename = '_RETURN'
   ) and
   refobjsubid = 2
@@ -1730,22 +1730,22 @@ as ref,
 deptype;
 
 alter table users
-  alter column seq type NUMERIC;
+  alter column seq type numeric;
 
 select * from usersview;
 
 rollback;
 
-drop VIEW usersview;
+drop view usersview;
 
-drop FUNCTION get_first_user();
+drop function get_first_user();
 
-drop FUNCTION get_users();
+drop function get_users();
 
-drop TABLE users;
+drop table users;
 
 create or replace function rngfuncbar()
-returns setof TEXT
+returns setof text
 as $function$ select 'foo'::varchar union all select 'bar'::varchar ; $function$
 language sql
 stable;
@@ -1756,30 +1756,30 @@ select * from rngfuncbar();
 
 select * from rngfuncbar();
 
-drop FUNCTION rngfuncbar();
+drop function rngfuncbar();
 
-create or replace function rngfuncbar(out INT, out NUMERIC)
+create or replace function rngfuncbar(out int, out numeric)
 as $function$ select (1, 2.1) $function$
 language sql;
 
 select * from rngfuncbar();
 
-create or replace function rngfuncbar(out INT, out NUMERIC)
+create or replace function rngfuncbar(out int, out numeric)
 as $function$ select (1, 2) $function$
 language sql;
 
 select * from rngfuncbar();
 
-create or replace function rngfuncbar(out INT, out NUMERIC)
+create or replace function rngfuncbar(out int, out numeric)
 as $function$ select (1, 2.1, 3) $function$
 language sql;
 
 select * from rngfuncbar();
 
-drop FUNCTION rngfuncbar();
+drop function rngfuncbar();
 
 create function extractq2(t int8_tbl)
-returns BIGINT
+returns bigint
 as $function$
   select t.q2
 $function$
@@ -1792,7 +1792,7 @@ select x from int8_tbl, extractq2(int8_tbl) as f (x);
 
 create function extractq2_2(t int8_tbl)
 returns table (
-  ret1 BIGINT
+  ret1 bigint
 )
 as $function$
   select extractq2(t) offset 0
@@ -1806,7 +1806,7 @@ select x from int8_tbl, extractq2_2(int8_tbl) as f (x);
 
 create function extractq2_2_opt(t int8_tbl)
 returns table (
-  ret1 BIGINT
+  ret1 bigint
 )
 as $function$
   select extractq2(t)
@@ -1818,7 +1818,7 @@ select x from int8_tbl, extractq2_2_opt(int8_tbl) as f (x);
 
 select x from int8_tbl, extractq2_2_opt(int8_tbl) as f (x);
 
-create type rngfunc2 as (a INT, b TEXT);
+create type rngfunc2 as (a int, b text);
 
 select
   *,
@@ -1853,7 +1853,7 @@ from
 
 select *, row_to_json(u) from unnest(cast(array[] as rngfunc2[])) as u;
 
-drop TYPE rngfunc2;
+drop type rngfunc2;
 
 select
   *
@@ -1868,14 +1868,14 @@ from
     from
       unnest(
         array[cast('{"lectures": [{"id": "1"}]}'
-        as JSONB)]
+        as jsonb)]
       )
       as unnested_modules (module)
   )
   as ss,
   jsonb_to_recordset(ss.lecture)
   as j
-  (id TEXT);
+  (id text);
 
 select
   *
@@ -1890,30 +1890,21 @@ from
     from
       unnest(
         array[cast('{"lectures": [{"id": "1"}]}'
-        as JSONB)]
+        as jsonb)]
       )
       as unnested_modules (module)
   )
   as ss,
   jsonb_to_recordset(ss.lecture)
   as j
-  (id TEXT);
+  (id text);
 
 with a (b) as (values (row(1, 2, 3)))
 select
   *
 from
   a,
-  coalesce(b) as c (d INT, e INT);
-
-with a (b) as (values (row(1, 2, 3)))
-select
-  *
-from
-  a,
-  coalesce(b)
-  as c
-  (d INT, e INT, f INT, g INT);
+  coalesce(b) as c (d int, e int);
 
 with a (b) as (values (row(1, 2, 3)))
 select
@@ -1922,6 +1913,15 @@ from
   a,
   coalesce(b)
   as c
-  (d INT, e INT, f DOUBLE PRECISION);
+  (d int, e int, f int, g int);
 
-select * from int8_tbl, coalesce(row(1)) as (a INT, b INT);
+with a (b) as (values (row(1, 2, 3)))
+select
+  *
+from
+  a,
+  coalesce(b)
+  as c
+  (d int, e int, f double precision);
+
+select * from int8_tbl, coalesce(row(1)) as (a int, b int);

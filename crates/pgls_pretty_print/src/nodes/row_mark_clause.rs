@@ -22,13 +22,13 @@ pub(super) fn emit_row_mark_clause(e: &mut EventEmitter, n: &RowMarkClause) {
     match LockWaitPolicy::try_from(n.wait_policy).unwrap_or(LockWaitPolicy::Undefined) {
         LockWaitPolicy::LockWaitSkip => {
             e.space();
-            e.token(TokenKind::IDENT("SKIP".to_string()));
+            e.token(TokenKind::SKIP_KW);
             e.space();
-            e.token(TokenKind::IDENT("LOCKED".to_string()));
+            e.token(TokenKind::LOCKED_KW);
         }
         LockWaitPolicy::LockWaitError => {
             e.space();
-            e.token(TokenKind::IDENT("NOWAIT".to_string()));
+            e.token(TokenKind::NOWAIT_KW);
         }
         LockWaitPolicy::LockWaitBlock | LockWaitPolicy::Undefined => {}
     }
@@ -45,7 +45,7 @@ fn emit_strength(e: &mut EventEmitter, raw: i32) {
     match LockClauseStrength::try_from(raw).unwrap_or(LockClauseStrength::Undefined) {
         LockClauseStrength::LcsForupdate => e.token(TokenKind::UPDATE_KW),
         LockClauseStrength::LcsFornokeyupdate => {
-            e.token(TokenKind::IDENT("NO".to_string()));
+            e.token(TokenKind::NO_KW);
             e.space();
             e.token(TokenKind::KEY_KW);
             e.space();

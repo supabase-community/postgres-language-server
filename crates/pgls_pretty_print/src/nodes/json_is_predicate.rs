@@ -16,23 +16,21 @@ pub(super) fn emit_json_is_predicate(e: &mut EventEmitter, n: &JsonIsPredicate) 
     e.space();
 
     match n.item_type() {
-        JsonValueType::Undefined | JsonValueType::JsTypeAny => {
-            e.token(TokenKind::IDENT("JSON".to_string()))
-        }
+        JsonValueType::Undefined | JsonValueType::JsTypeAny => e.token(TokenKind::JSON_KW),
         JsonValueType::JsTypeObject => {
-            e.token(TokenKind::IDENT("JSON".to_string()));
+            e.token(TokenKind::JSON_KW);
             e.space();
-            e.token(TokenKind::IDENT("OBJECT".to_string()));
+            e.token(TokenKind::OBJECT_KW);
         }
         JsonValueType::JsTypeArray => {
-            e.token(TokenKind::IDENT("JSON".to_string()));
+            e.token(TokenKind::JSON_KW);
             e.space();
-            e.token(TokenKind::IDENT("ARRAY".to_string()));
+            e.token(TokenKind::ARRAY_KW);
         }
         JsonValueType::JsTypeScalar => {
-            e.token(TokenKind::IDENT("JSON".to_string()));
+            e.token(TokenKind::JSON_KW);
             e.space();
-            e.token(TokenKind::IDENT("SCALAR".to_string()));
+            e.token(TokenKind::SCALAR_KW);
         }
     }
 

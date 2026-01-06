@@ -98,6 +98,9 @@ pub struct FormatConfiguration {
     /// Constant casing (NULL, TRUE, FALSE): "upper" or "lower". Default: "lower".
     #[partial(bpaf(long("constant-case")))]
     pub constant_case: KeywordCase,
+    /// Data type casing (text, varchar, int): "upper" or "lower". Default: "lower".
+    #[partial(bpaf(long("type-case")))]
+    pub type_case: KeywordCase,
     /// A list of Unix shell style patterns. The formatter will ignore files/folders that will match these patterns.
     #[partial(bpaf(hide))]
     pub ignore: StringSet,
@@ -115,6 +118,7 @@ impl Default for FormatConfiguration {
             indent_style: IndentStyle::Spaces,
             keyword_case: KeywordCase::default(),
             constant_case: KeywordCase::default(),
+            type_case: KeywordCase::default(),
             ignore: Default::default(),
             include: Default::default(),
         }

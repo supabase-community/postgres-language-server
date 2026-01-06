@@ -11,7 +11,7 @@ pub(super) fn emit_drop_owned_stmt(e: &mut EventEmitter, n: &DropOwnedStmt) {
 
     e.token(TokenKind::DROP_KW);
     e.space();
-    e.token(TokenKind::IDENT("OWNED".to_string()));
+    e.token(TokenKind::OWNED_KW);
     e.space();
     e.token(TokenKind::BY_KW);
 

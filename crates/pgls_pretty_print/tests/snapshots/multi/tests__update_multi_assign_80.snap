@@ -4,15 +4,15 @@ input_file: crates/pgls_pretty_print/tests/data/multi/update_multi_assign.sql
 snapshot_kind: text
 ---
 create table ledger (
-  id INT primary key,
-  balance NUMERIC,
-  updated_at timestamp with time ZONE
+  id int primary key,
+  balance numeric,
+  updated_at timestamp with time zone
 );
 
 create table adjustments (
-  id INT,
-  delta NUMERIC,
-  seen_at timestamp with time ZONE
+  id int,
+  delta numeric,
+  seen_at timestamp with time zone
 );
 
 update ledger

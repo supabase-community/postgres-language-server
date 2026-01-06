@@ -9,7 +9,7 @@ use crate::{
 pub(super) fn emit_ctecycle_clause(e: &mut EventEmitter, n: &CteCycleClause) {
     e.group_start(GroupKind::CtecycleClause);
 
-    e.token(TokenKind::IDENT("CYCLE".to_string()));
+    e.token(TokenKind::CYCLE_KW);
 
     if !n.cycle_col_list.is_empty() {
         e.space();

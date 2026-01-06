@@ -13,11 +13,11 @@ pub(super) fn emit_create_transform_stmt(e: &mut EventEmitter, n: &CreateTransfo
     if n.replace {
         e.token(TokenKind::OR_KW);
         e.space();
-        e.token(TokenKind::IDENT("REPLACE".to_string()));
+        e.token(TokenKind::REPLACE_KW);
         e.space();
     }
 
-    e.token(TokenKind::IDENT("TRANSFORM".to_string()));
+    e.token(TokenKind::TRANSFORM_KW);
     e.space();
     e.token(TokenKind::FOR_KW);
     e.space();
@@ -27,7 +27,7 @@ pub(super) fn emit_create_transform_stmt(e: &mut EventEmitter, n: &CreateTransfo
     }
 
     e.space();
-    e.token(TokenKind::IDENT("LANGUAGE".to_string()));
+    e.token(TokenKind::LANGUAGE_KW);
     e.space();
     e.token(TokenKind::IDENT(n.lang.clone()));
 
@@ -40,11 +40,11 @@ pub(super) fn emit_create_transform_stmt(e: &mut EventEmitter, n: &CreateTransfo
     if let Some(ref fromsql) = n.fromsql {
         e.token(TokenKind::FROM_KW);
         e.space();
-        e.token(TokenKind::IDENT("SQL".to_string()));
+        e.token(TokenKind::SQL_KW);
         e.space();
         e.token(TokenKind::WITH_KW);
         e.space();
-        e.token(TokenKind::IDENT("FUNCTION".to_string()));
+        e.token(TokenKind::FUNCTION_KW);
         e.space();
         super::emit_object_with_args(e, fromsql);
         has_clause = true;
@@ -57,11 +57,11 @@ pub(super) fn emit_create_transform_stmt(e: &mut EventEmitter, n: &CreateTransfo
         }
         e.token(TokenKind::TO_KW);
         e.space();
-        e.token(TokenKind::IDENT("SQL".to_string()));
+        e.token(TokenKind::SQL_KW);
         e.space();
         e.token(TokenKind::WITH_KW);
         e.space();
-        e.token(TokenKind::IDENT("FUNCTION".to_string()));
+        e.token(TokenKind::FUNCTION_KW);
         e.space();
         super::emit_object_with_args(e, tosql);
     }

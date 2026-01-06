@@ -10,9 +10,9 @@ pub(super) fn emit_create_op_family_stmt(e: &mut EventEmitter, n: &CreateOpFamil
 
     e.token(TokenKind::CREATE_KW);
     e.space();
-    e.token(TokenKind::IDENT("OPERATOR".to_string()));
+    e.token(TokenKind::OPERATOR_KW);
     e.space();
-    e.token(TokenKind::IDENT("FAMILY".to_string()));
+    e.token(TokenKind::FAMILY_KW);
     e.space();
 
     // Operator family name

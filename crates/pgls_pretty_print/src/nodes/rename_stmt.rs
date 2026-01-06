@@ -334,7 +334,7 @@ fn emit_attribute_rename(e: &mut EventEmitter, old_name: &str, new_name: &str) {
     e.line(LineType::SoftOrSpace);
     e.token(TokenKind::RENAME_KW);
     e.space();
-    e.token(TokenKind::IDENT("ATTRIBUTE".to_string()));
+    e.token(TokenKind::ATTRIBUTE_KW);
     e.space();
     emit_identifier_maybe_quoted(e, old_name);
     e.space();

@@ -6,9 +6,9 @@ snapshot_kind: text
 set enable_partitionwise_join = 'true';
 
 create table prt1 (
-  a INT,
-  b INT,
-  c VARCHAR
+  a int,
+  b int,
+  c varchar
 )
 partition by range(a);
 
@@ -37,9 +37,9 @@ create index "iprt1_p3_a" on prt1_p3 using btree (a);
 analyze prt1;
 
 create table prt2 (
-  a INT,
-  b INT,
-  c VARCHAR
+  a int,
+  b int,
+  c varchar
 )
 partition by range(b);
 
@@ -475,8 +475,8 @@ from
         *
       from
         prt1 as t2
-        TABLESAMPLE system (t1.a)
-        REPEATABLE (t1.b)
+        tablesample system (t1.a)
+        repeatable (t1.b)
     )
     as s
   on t1.a = s.a;
@@ -583,9 +583,9 @@ where
   t1.a in (select a from prt1 as t3);
 
 create table prt1_e (
-  a INT,
-  b INT,
-  c INT
+  a int,
+  b int,
+  c int
 )
 partition by range(((a + b) / 2));
 
@@ -606,9 +606,9 @@ create index "iprt1_e_p3_ab2" on prt1_e_p3 using btree (((a + b) / 2));
 analyze prt1_e;
 
 create table prt2_e (
-  a INT,
-  b INT,
-  c INT
+  a int,
+  b int,
+  c int
 )
 partition by range(((b + a) / 2));
 
@@ -1125,7 +1125,7 @@ from
   prt1 as t1,
   prt2 as t2
 where
-  cast(t1 as TEXT) = cast(t2 as TEXT) and
+  cast(t1 as text) = cast(t2 as text) and
   t1.a = t2.b
 order by t1.a;
 
@@ -1136,7 +1136,7 @@ from
   prt1 as t1,
   prt2 as t2
 where
-  cast(t1 as TEXT) = cast(t2 as TEXT) and
+  cast(t1 as text) = cast(t2 as text) and
   t1.a = t2.b
 order by t1.a;
 
@@ -1145,9 +1145,9 @@ reset enable_hashjoin;
 reset enable_nestloop;
 
 create table prt1_m (
-  a INT,
-  b INT,
-  c INT
+  a int,
+  b int,
+  c int
 )
 partition by range(a, ((a + b) / 2));
 
@@ -1162,9 +1162,9 @@ insert into prt1_m select i, i, i % 25 from generate_series(0, 599, 2) as i;
 analyze prt1_m;
 
 create table prt2_m (
-  a INT,
-  b INT,
-  c INT
+  a int,
+  b int,
+  c int
 )
 partition by range(((b + a) / 2), b);
 
@@ -1207,9 +1207,9 @@ order by t1.a,
   t2.b;
 
 create table plt1 (
-  a INT,
-  b INT,
-  c TEXT
+  a int,
+  b int,
+  c text
 )
 partition by LIST(c);
 
@@ -1224,9 +1224,9 @@ insert into plt1 select i, i, to_char(i / 50, 'FM0000') from generate_series(0, 
 analyze plt1;
 
 create table plt2 (
-  a INT,
-  b INT,
-  c TEXT
+  a int,
+  b int,
+  c text
 )
 partition by LIST(c);
 
@@ -1241,9 +1241,9 @@ insert into plt2 select i, i, to_char(i / 50, 'FM0000') from generate_series(0, 
 analyze plt2;
 
 create table plt1_e (
-  a INT,
-  b INT,
-  c TEXT
+  a int,
+  b int,
+  c text
 )
 partition by LIST((ltrim(c, 'A')));
 
@@ -1359,9 +1359,9 @@ order by t1.a,
   t2.b;
 
 create table pht1 (
-  a INT,
-  b INT,
-  c TEXT
+  a int,
+  b int,
+  c text
 )
 partition by HASH(c);
 
@@ -1376,9 +1376,9 @@ insert into pht1 select i, i, to_char(i / 50, 'FM0000') from generate_series(0, 
 analyze pht1;
 
 create table pht2 (
-  a INT,
-  b INT,
-  c TEXT
+  a int,
+  b int,
+  c text
 )
 partition by HASH(c);
 
@@ -1393,9 +1393,9 @@ insert into pht2 select i, i, to_char(i / 50, 'FM0000') from generate_series(0, 
 analyze pht2;
 
 create table pht1_e (
-  a INT,
-  b INT,
-  c TEXT
+  a int,
+  b int,
+  c text
 )
 partition by HASH((ltrim(c, 'A')));
 
@@ -1460,21 +1460,21 @@ order by t1.c,
   t3.c;
 
 alter table prt1
-  DETACH partition
+  detach partition
   prt1_p3;
 
 alter table prt1
-  ATTACH partition
+  attach partition
   prt1_p3 default;
 
 analyze prt1;
 
 alter table prt2
-  DETACH partition
+  detach partition
   prt2_p3;
 
 alter table prt2
-  ATTACH partition
+  attach partition
   prt2_p3 default;
 
 analyze prt2;
@@ -1493,21 +1493,21 @@ order by t1.a,
   t2.b;
 
 alter table plt1
-  DETACH partition
+  detach partition
   plt1_p3;
 
 alter table plt1
-  ATTACH partition
+  attach partition
   plt1_p3 default;
 
 analyze plt1;
 
 alter table plt2
-  DETACH partition
+  detach partition
   plt2_p3;
 
 alter table plt2
-  ATTACH partition
+  attach partition
   plt2_p3 default;
 
 analyze plt2;
@@ -1530,9 +1530,9 @@ order by t1.c,
   t2.c;
 
 create table prt1_l (
-  a INT,
-  b INT,
-  c VARCHAR
+  a int,
+  b int,
+  c varchar
 )
 partition by range(a);
 
@@ -1555,9 +1555,9 @@ insert into prt1_l select i, i % 25, to_char(i % 4, 'FM0000') from generate_seri
 analyze prt1_l;
 
 create table prt2_l (
-  a INT,
-  b INT,
-  c VARCHAR
+  a int,
+  b int,
+  c varchar
 )
 partition by range(b);
 
@@ -1775,8 +1775,8 @@ from
         *
       from
         prt1_l as t2
-        TABLESAMPLE system (t1.a)
-        REPEATABLE (t1.b)
+        tablesample system (t1.a)
+        repeatable (t1.b)
     )
     as s
   on t1.a = s.a and t1.b = s.b and t1.c = s.c;
@@ -1835,9 +1835,9 @@ where
   );
 
 create table prt1_n (
-  a INT,
-  b INT,
-  c VARCHAR
+  a int,
+  b int,
+  c varchar
 )
 partition by range(c);
 
@@ -1850,9 +1850,9 @@ insert into prt1_n select i, i, to_char(i, 'FM0000') from generate_series(0, 499
 analyze prt1_n;
 
 create table prt2_n (
-  a INT,
-  b INT,
-  c TEXT
+  a int,
+  b int,
+  c text
 )
 partition by LIST(c);
 
@@ -1879,9 +1879,9 @@ insert into prt2_n select i, i, to_char(i / 50, 'FM0000') from generate_series(0
 analyze prt2_n;
 
 create table prt3_n (
-  a INT,
-  b INT,
-  c TEXT
+  a int,
+  b int,
+  c text
 )
 partition by LIST(c);
 
@@ -1896,9 +1896,9 @@ insert into prt2_n select i, i, to_char(i / 50, 'FM0000') from generate_series(0
 analyze prt3_n;
 
 create table prt4_n (
-  a INT,
-  b INT,
-  c TEXT
+  a int,
+  b int,
+  c text
 )
 partition by range(a);
 
@@ -1953,9 +1953,9 @@ from
 select t1.a, t1.c, t2.b, t2.c from prt1_n as t1 full outer join prt1 as t2 on t1.c = t2.c;
 
 create temporary table prtx1 (
-  a INT,
-  b INT,
-  c INT
+  a int,
+  b int,
+  c int
 )
 partition by range(a);
 
@@ -1966,9 +1966,9 @@ create temporary table prtx1_2 partition of prtx1 for values from (11) to (21);
 create temporary table prtx1_3 partition of prtx1 for values from (21) to (31);
 
 create temporary table prtx2 (
-  a INT,
-  b INT,
-  c INT
+  a int,
+  b int,
+  c int
 )
 partition by range(a);
 
@@ -2072,9 +2072,9 @@ where
   c = 91;
 
 create table prt1_adv (
-  a INT,
-  b INT,
-  c VARCHAR
+  a int,
+  b int,
+  c varchar
 )
 partition by range(a);
 
@@ -2091,9 +2091,9 @@ insert into prt1_adv select i, i % 25, to_char(i, 'FM0000') from generate_series
 analyze prt1_adv;
 
 create table prt2_adv (
-  a INT,
-  b INT,
-  c VARCHAR
+  a int,
+  b int,
+  c varchar
 )
 partition by range(b);
 
@@ -2503,10 +2503,10 @@ order by t1.b,
   t2.a,
   t3.a;
 
-drop TABLE prt2_adv_extra;
+drop table prt2_adv_extra;
 
 alter table prt2_adv
-  DETACH partition
+  detach partition
   prt2_adv_p3;
 
 create table prt2_adv_p3_1 partition of prt2_adv for values from (350) to (375);
@@ -2604,22 +2604,22 @@ where
 order by t1.a,
   t2.b;
 
-drop TABLE prt2_adv_p3_1;
+drop table prt2_adv_p3_1;
 
-drop TABLE prt2_adv_p3_2;
+drop table prt2_adv_p3_2;
 
 analyze prt2_adv;
 
 alter table prt1_adv
-  DETACH partition
+  detach partition
   prt1_adv_p1;
 
 alter table prt1_adv
-  ATTACH partition
+  attach partition
   prt1_adv_p1 default;
 
 alter table prt1_adv
-  DETACH partition
+  detach partition
   prt1_adv_p3;
 
 analyze prt1_adv;
@@ -2655,13 +2655,13 @@ order by t1.a,
   t2.b;
 
 alter table prt1_adv
-  ATTACH partition
+  attach partition
   prt1_adv_p3 for values from (300) to (400);
 
 analyze prt1_adv;
 
 alter table prt2_adv
-  ATTACH partition
+  attach partition
   prt2_adv_p3 for values from (350) to (500);
 
 analyze prt2_adv;
@@ -2682,11 +2682,11 @@ order by t1.a,
   t2.b;
 
 alter table prt2_adv
-  DETACH partition
+  detach partition
   prt2_adv_p3;
 
 alter table prt2_adv
-  ATTACH partition
+  attach partition
   prt2_adv_p3 default;
 
 analyze prt2_adv;
@@ -2706,18 +2706,18 @@ where
 order by t1.a,
   t2.b;
 
-drop TABLE prt1_adv_p3;
+drop table prt1_adv_p3;
 
 analyze prt1_adv;
 
-drop TABLE prt2_adv_p3;
+drop table prt2_adv_p3;
 
 analyze prt2_adv;
 
 create table prt3_adv (
-  a INT,
-  b INT,
-  c VARCHAR
+  a int,
+  b int,
+  c varchar
 )
 partition by range(a);
 
@@ -2773,16 +2773,16 @@ order by t1.a,
   t2.b,
   t3.a;
 
-drop TABLE prt1_adv;
+drop table prt1_adv;
 
-drop TABLE prt2_adv;
+drop table prt2_adv;
 
-drop TABLE prt3_adv;
+drop table prt3_adv;
 
 create table prt1_adv (
-  a INT,
-  b INT,
-  c VARCHAR
+  a int,
+  b int,
+  c varchar
 )
 partition by range(a);
 
@@ -2799,9 +2799,9 @@ insert into prt1_adv select i, i % 25, to_char(i, 'FM0000') from generate_series
 analyze prt1_adv;
 
 create table prt2_adv (
-  a INT,
-  b INT,
-  c VARCHAR
+  a int,
+  b int,
+  c varchar
 )
 partition by range(b);
 
@@ -2845,7 +2845,7 @@ where
 order by t1.a,
   t2.b;
 
-drop TABLE prt1_adv_p3;
+drop table prt1_adv_p3;
 
 create table prt1_adv_default partition of prt1_adv default;
 
@@ -2885,14 +2885,14 @@ where
 order by t1.a,
   t2.b;
 
-drop TABLE prt1_adv;
+drop table prt1_adv;
 
-drop TABLE prt2_adv;
+drop table prt2_adv;
 
 create table plt1_adv (
-  a INT,
-  b INT,
-  c TEXT
+  a int,
+  b int,
+  c text
 )
 partition by LIST(c);
 
@@ -2915,9 +2915,9 @@ where
 analyze plt1_adv;
 
 create table plt2_adv (
-  a INT,
-  b INT,
-  c TEXT
+  a int,
+  b int,
+  c text
 )
 partition by LIST(c);
 
@@ -3269,10 +3269,10 @@ where
 order by t1.a,
   t2.a;
 
-drop TABLE plt2_adv_extra;
+drop table plt2_adv_extra;
 
 alter table plt2_adv
-  DETACH partition
+  detach partition
   plt2_adv_p2;
 
 create table plt2_adv_p2_1 partition of plt2_adv for values in ('0004');
@@ -3368,16 +3368,16 @@ where
 order by t1.a,
   t2.a;
 
-drop TABLE plt2_adv_p2_1;
+drop table plt2_adv_p2_1;
 
-drop TABLE plt2_adv_p2_2;
+drop table plt2_adv_p2_2;
 
 alter table plt2_adv
-  ATTACH partition
+  attach partition
   plt2_adv_p2 for values in ('0004', '0006');
 
 alter table plt1_adv
-  DETACH partition
+  detach partition
   plt1_adv_p1;
 
 create table plt1_adv_p1_null partition of plt1_adv for values in (null, '0001', '0003');
@@ -3397,7 +3397,7 @@ insert into plt1_adv values (-1, -1, null);
 analyze plt1_adv;
 
 alter table plt2_adv
-  DETACH partition
+  detach partition
   plt2_adv_p3;
 
 create table plt2_adv_p3_null partition of plt2_adv for values in (null, '0007', '0009');
@@ -3570,10 +3570,10 @@ where
 order by t1.a,
   t2.a;
 
-drop TABLE plt1_adv_p1_null;
+drop table plt1_adv_p1_null;
 
 alter table plt1_adv
-  ATTACH partition
+  attach partition
   plt1_adv_p1 for values in ('0001', '0003');
 
 create table plt1_adv_extra partition of plt1_adv for values in (null);
@@ -3582,10 +3582,10 @@ insert into plt1_adv values (-1, -1, null);
 
 analyze plt1_adv;
 
-drop TABLE plt2_adv_p3_null;
+drop table plt2_adv_p3_null;
 
 alter table plt2_adv
-  ATTACH partition
+  attach partition
   plt2_adv_p3 for values in ('0007', '0009');
 
 analyze plt2_adv;
@@ -3777,23 +3777,23 @@ where
   t1.b < 10
 order by t1.a;
 
-drop TABLE plt1_adv_extra;
+drop table plt1_adv_extra;
 
-drop TABLE plt2_adv_extra;
+drop table plt2_adv_extra;
 
 alter table plt1_adv
-  DETACH partition
+  detach partition
   plt1_adv_p1;
 
 alter table plt1_adv
-  ATTACH partition
+  attach partition
   plt1_adv_p1 default;
 
-drop TABLE plt1_adv_p3;
+drop table plt1_adv_p3;
 
 analyze plt1_adv;
 
-drop TABLE plt2_adv_p3;
+drop table plt2_adv_p3;
 
 analyze plt2_adv;
 
@@ -3826,7 +3826,7 @@ where
 order by t1.a;
 
 alter table plt2_adv
-  DETACH partition
+  detach partition
   plt2_adv_p2;
 
 create table plt2_adv_p2_ext partition of plt2_adv for values in ('0004', '0005', '0006');
@@ -3858,11 +3858,11 @@ where
 order by t1.a;
 
 alter table plt2_adv
-  DETACH partition
+  detach partition
   plt2_adv_p2_ext;
 
 alter table plt2_adv
-  ATTACH partition
+  attach partition
   plt2_adv_p2_ext default;
 
 analyze plt2_adv;
@@ -3881,18 +3881,18 @@ where
   t1.b < 10
 order by t1.a;
 
-drop TABLE plt2_adv_p2_ext;
+drop table plt2_adv_p2_ext;
 
 alter table plt2_adv
-  ATTACH partition
+  attach partition
   plt2_adv_p2 for values in ('0004', '0006');
 
 analyze plt2_adv;
 
 create table plt3_adv (
-  a INT,
-  b INT,
-  c TEXT
+  a int,
+  b int,
+  c text
 )
 partition by LIST(c);
 
@@ -3950,7 +3950,7 @@ where
   t1.b < 10
 order by t1.a;
 
-drop TABLE plt2_adv_p1;
+drop table plt2_adv_p1;
 
 create table plt2_adv_p1_null partition of plt2_adv for values in (null, '0001', '0003');
 
@@ -3996,7 +3996,7 @@ where
   t1.b < 10
 order by t1.a;
 
-drop TABLE plt2_adv_p1_null;
+drop table plt2_adv_p1_null;
 
 create table plt2_adv_p1_null partition of plt2_adv for values in (null);
 
@@ -4032,16 +4032,16 @@ where
   t1.b < 10
 order by t1.a;
 
-drop TABLE plt1_adv;
+drop table plt1_adv;
 
-drop TABLE plt2_adv;
+drop table plt2_adv;
 
-drop TABLE plt3_adv;
+drop table plt3_adv;
 
 create table plt1_adv (
-  a INT,
-  b INT,
-  c TEXT
+  a int,
+  b int,
+  c text
 )
 partition by LIST(c);
 
@@ -4068,9 +4068,9 @@ insert into plt1_adv values (-1, -1, null);
 analyze plt1_adv;
 
 create table plt2_adv (
-  a INT,
-  b INT,
-  c TEXT
+  a int,
+  b int,
+  c text
 )
 partition by LIST(c);
 
@@ -4216,14 +4216,14 @@ where
   t1.c is null and t1.b < 10
 order by t1.a;
 
-drop TABLE plt1_adv;
+drop table plt1_adv;
 
-drop TABLE plt2_adv;
+drop table plt2_adv;
 
 create table plt1_adv (
-  a INT,
-  b INT,
-  c TEXT
+  a int,
+  b int,
+  c text
 )
 partition by LIST(c);
 
@@ -4236,9 +4236,9 @@ insert into plt1_adv select i, i, to_char(i % 5, 'FM0000') from generate_series(
 analyze plt1_adv;
 
 create table plt2_adv (
-  a INT,
-  b INT,
-  c TEXT
+  a int,
+  b int,
+  c text
 )
 partition by LIST(c);
 
@@ -4259,9 +4259,9 @@ where
 analyze plt2_adv;
 
 create table plt3_adv (
-  a INT,
-  b INT,
-  c TEXT
+  a int,
+  b int,
+  c text
 )
 partition by LIST(c);
 
@@ -4327,16 +4327,16 @@ order by t1.c,
   t2.a,
   t3.a;
 
-drop TABLE plt1_adv;
+drop table plt1_adv;
 
-drop TABLE plt2_adv;
+drop table plt2_adv;
 
-drop TABLE plt3_adv;
+drop table plt3_adv;
 
 create table alpha (
-  a DOUBLE PRECISION,
-  b INT,
-  c TEXT
+  a double precision,
+  b int,
+  c text
 )
 partition by range(a);
 
@@ -4382,9 +4382,9 @@ where
 analyze alpha;
 
 create table beta (
-  a DOUBLE PRECISION,
-  b INT,
-  c TEXT
+  a double precision,
+  b int,
+  c text
 )
 partition by range(a);
 
@@ -4563,7 +4563,7 @@ order by t1.a,
   t1.b;
 
 create table fract_t (
-  id BIGINT,
+  id bigint,
   primary key (id)
 )
 partition by range(id);
@@ -4629,9 +4629,9 @@ select * from pht1 as p1 inner join pht1 as p2 using ("c") limit 100;
 
 reset debug_parallel_query;
 
-drop INDEX pht1_c_idx cascade;
+drop index pht1_c_idx cascade;
 
-drop TABLE fract_t;
+drop table fract_t;
 
 reset max_parallel_workers_per_gather;
 

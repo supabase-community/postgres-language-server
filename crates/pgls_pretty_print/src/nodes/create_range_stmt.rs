@@ -18,7 +18,7 @@ pub(super) fn emit_create_range_stmt(e: &mut EventEmitter, n: &CreateRangeStmt) 
     e.space();
     e.token(TokenKind::AS_KW);
     e.space();
-    e.token(TokenKind::IDENT("RANGE".to_string()));
+    e.token(TokenKind::IDENT("range".to_string()));
 
     if !n.params.is_empty() {
         e.space();

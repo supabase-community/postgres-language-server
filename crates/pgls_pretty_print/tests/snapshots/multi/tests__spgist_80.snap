@@ -4,7 +4,7 @@ input_file: crates/pgls_pretty_print/tests/data/multi/spgist.sql
 snapshot_kind: text
 ---
 create table spgist_point_tbl (
-  id INT,
+  id int,
   p point
 );
 
@@ -84,8 +84,8 @@ where
   );
 
 create table spgist_text_tbl (
-  id INT,
-  t TEXT
+  id int,
+  t text
 );
 
 create index "spgist_text_idx" on spgist_text_tbl using spgist (t);
@@ -132,7 +132,7 @@ alter index spgist_point_idx
 
 reindex index spgist_point_idx;
 
-create domain spgist_text as VARCHAR;
+create domain spgist_text as varchar;
 
 create table spgist_domain_tbl (f1 spgist_text);
 

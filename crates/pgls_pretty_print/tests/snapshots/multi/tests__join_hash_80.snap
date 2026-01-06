@@ -11,8 +11,8 @@ set local parallel_setup_cost = 0;
 
 set local enable_hashjoin = 'on';
 
-create or replace function find_hash(node JSON)
-returns JSON
+create or replace function find_hash(node json)
+returns json
 language plpgsql
 as $function$
 declare
@@ -34,10 +34,10 @@ begin
 end;
 $function$;
 
-create or replace function hash_join_batches(query TEXT)
+create or replace function hash_join_batches(query text)
 returns table (
-  original INT,
-  final INT
+  original int,
+  final int
 )
 language plpgsql
 as $function$
@@ -84,8 +84,8 @@ analyze bigger_than_it_looks;
 update pg_class set reltuples = 1000 where relname = 'bigger_than_it_looks';
 
 create table extremely_skewed (
-  id INT,
-  t TEXT
+  id int,
+  t text
 );
 
 alter table extremely_skewed
@@ -483,7 +483,7 @@ create table join_foo
 as
   select
     generate_series(1, 3) as id,
-    cast('xxxxx' as TEXT) as t;
+    cast('xxxxx' as text) as t;
 
 alter table join_foo
   set (parallel_workers = 0);
@@ -492,7 +492,7 @@ create table join_bar
 as
   select
     generate_series(1, 10000) as id,
-    cast('xxxxx' as TEXT) as t;
+    cast('xxxxx' as text) as t;
 
 alter table join_bar
   set (parallel_workers = 2);
@@ -915,9 +915,9 @@ set parallel_setup_cost = 0;
 
 set parallel_tuple_cost = 0;
 
-create table hjtest_matchbits_t1 (id INT);
+create table hjtest_matchbits_t1 (id int);
 
-create table hjtest_matchbits_t2 (id INT);
+create table hjtest_matchbits_t2 (id int);
 
 insert into hjtest_matchbits_t1 values (1);
 
@@ -957,17 +957,17 @@ set local enable_sort = off;
 set local from_collapse_limit = 1;
 
 create table hjtest_1 (
-  a TEXT,
-  b INT,
-  id INT,
-  c BOOLEAN
+  a text,
+  b int,
+  id int,
+  c boolean
 );
 
 create table hjtest_2 (
-  a BOOLEAN,
-  id INT,
-  b TEXT,
-  c INT
+  a boolean,
+  id int,
+  b text,
+  c int
 );
 
 insert into hjtest_1 (a, b, id, c) values ('text', 2, 1, false);
@@ -991,9 +991,9 @@ insert into hjtest_2 (a, id, b, c) values (true, 1, 'text', 1);
 select
   hjtest_1.a as a1,
   hjtest_2.a as a2,
-  cast(hjtest_1.tableoid as REGCLASS)
+  cast(hjtest_1.tableoid as regclass)
   as t1,
-  cast(hjtest_2.tableoid as REGCLASS)
+  cast(hjtest_2.tableoid as regclass)
   as t2
 from
   hjtest_1,
@@ -1010,9 +1010,9 @@ where
 select
   hjtest_1.a as a1,
   hjtest_2.a as a2,
-  cast(hjtest_1.tableoid as REGCLASS)
+  cast(hjtest_1.tableoid as regclass)
   as t1,
-  cast(hjtest_2.tableoid as REGCLASS)
+  cast(hjtest_2.tableoid as regclass)
   as t2
 from
   hjtest_1,
@@ -1029,9 +1029,9 @@ where
 select
   hjtest_1.a as a1,
   hjtest_2.a as a2,
-  cast(hjtest_1.tableoid as REGCLASS)
+  cast(hjtest_1.tableoid as regclass)
   as t1,
-  cast(hjtest_2.tableoid as REGCLASS)
+  cast(hjtest_2.tableoid as regclass)
   as t2
 from
   hjtest_2,
@@ -1048,9 +1048,9 @@ where
 select
   hjtest_1.a as a1,
   hjtest_2.a as a2,
-  cast(hjtest_1.tableoid as REGCLASS)
+  cast(hjtest_1.tableoid as regclass)
   as t1,
-  cast(hjtest_2.tableoid as REGCLASS)
+  cast(hjtest_2.tableoid as regclass)
   as t2
 from
   hjtest_2,

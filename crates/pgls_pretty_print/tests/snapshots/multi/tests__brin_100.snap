@@ -4,78 +4,78 @@ input_file: crates/pgls_pretty_print/tests/data/multi/brin.sql
 snapshot_kind: text
 ---
 create table brintest (
-  byteacol BYTEA,
-  charcol CHAR,
-  namecol NAME,
-  int8col BIGINT,
-  int2col SMALLINT,
-  int4col INT,
-  textcol TEXT,
-  oidcol OID,
-  tidcol TID,
-  float4col REAL,
-  float8col DOUBLE PRECISION,
-  macaddrcol MACADDR,
-  inetcol INET,
-  cidrcol CIDR,
-  bpcharcol CHAR(1),
-  datecol DATE,
-  timecol TIME,
-  timestampcol TIMESTAMP,
-  timestamptzcol timestamp with time ZONE,
-  intervalcol INTERVAL,
-  timetzcol time with time ZONE,
-  bitcol BIT(10),
-  varbitcol BIT VARYING(16),
-  numericcol NUMERIC,
-  uuidcol UUID,
-  int4rangecol INT4RANGE,
-  lsncol PG_LSN,
+  byteacol bytea,
+  charcol char,
+  namecol name,
+  int8col bigint,
+  int2col smallint,
+  int4col int,
+  textcol text,
+  oidcol oid,
+  tidcol tid,
+  float4col real,
+  float8col double precision,
+  macaddrcol macaddr,
+  inetcol inet,
+  cidrcol cidr,
+  bpcharcol char(1),
+  datecol date,
+  timecol time,
+  timestampcol timestamp,
+  timestamptzcol timestamp with time zone,
+  intervalcol interval,
+  timetzcol time with time zone,
+  bitcol bit(10),
+  varbitcol bit varying(16),
+  numericcol numeric,
+  uuidcol uuid,
+  int4rangecol int4range,
+  lsncol pg_lsn,
   boxcol box
 )
 with (fillfactor = 10, autovacuum_enabled = off);
 
 insert into brintest
 select
-  cast(repeat(stringu1, 8) as BYTEA),
-  cast(substr(stringu1, 1, 1) as CHAR),
-  cast(stringu1 as NAME),
+  cast(repeat(stringu1, 8) as bytea),
+  cast(substr(stringu1, 1, 1) as char),
+  cast(stringu1 as name),
   142857 * tenthous,
   thousand,
   twothousand,
   repeat(stringu1, 8),
-  cast(unique1 as OID),
-  cast(format('(%s,%s)', tenthous, twenty) as TID),
+  cast(unique1 as oid),
+  cast(format('(%s,%s)', tenthous, twenty) as tid),
   (four + 1.0) / (hundred + 1),
-  cast(odd as DOUBLE PRECISION) / (tenthous + 1),
+  cast(odd as double precision) / (tenthous + 1),
   cast(format(
     '%s:00:%s:00:%s:00',
     to_hex(odd),
     to_hex(even),
     to_hex(hundred)
   )
-  as MACADDR),
-  cast('10.2.3.4/24' as INET) + tenthous,
-  cast('10.2.3/24' as CIDR) + tenthous,
-  cast(substr(stringu1, 1, 1) as CHAR),
-  cast('1995-08-15' as DATE) + tenthous,
-  cast('01:20:30' as TIME) +
-  thousand * cast('18.5 second' as INTERVAL),
-  cast('1942-07-23 03:05:09' as TIMESTAMP) +
-  tenthous * cast('36.38 hours' as INTERVAL),
+  as macaddr),
+  cast('10.2.3.4/24' as inet) + tenthous,
+  cast('10.2.3/24' as cidr) + tenthous,
+  cast(substr(stringu1, 1, 1) as char),
+  cast('1995-08-15' as date) + tenthous,
+  cast('01:20:30' as time) +
+  thousand * cast('18.5 second' as interval),
+  cast('1942-07-23 03:05:09' as timestamp) +
+  tenthous * cast('36.38 hours' as interval),
   cast('1972-10-10 03:00'
-  as timestamp with time ZONE) +
-  thousand * cast('1 hour' as INTERVAL),
+  as timestamp with time zone) +
+  thousand * cast('1 hour' as interval),
   justify_days(
     justify_hours(
-      tenthous * cast('12 minutes' as INTERVAL)
+      tenthous * cast('12 minutes' as interval)
     )
   ),
-  cast('01:30:20+02' as time with time ZONE) +
-  hundred * cast('15 seconds' as INTERVAL),
-  cast(thousand as BIT(10)),
-  cast(cast(tenthous as BIT(16)) as BIT VARYING),
-  cast(tenthous as NUMERIC(36, 30)) * fivethous *
+  cast('01:30:20+02' as time with time zone) +
+  hundred * cast('15 seconds' as interval),
+  cast(thousand as bit(10)),
+  cast(cast(tenthous as bit(16)) as bit varying),
+  cast(tenthous as numeric(36, 30)) * fivethous *
   even /
   (hundred + 1),
   cast(format(
@@ -89,10 +89,10 @@ select
     to_char(tenthous, 'FM0000'),
     to_char(tenthous, 'FM0000')
   )
-  as UUID),
+  as uuid),
   int4range(thousand, twothousand),
   cast(format('%s/%s%s', odd, even, tenthous)
-  as PG_LSN),
+  as pg_lsn),
   box(
     point(odd, even),
     point(thousand, twothousand)
@@ -104,11 +104,11 @@ limit 100;
 
 insert into brintest (inetcol, cidrcol, int4rangecol)
 select
-  cast('fe80::6e40:8ff:fea9:8c46' as INET) +
+  cast('fe80::6e40:8ff:fea9:8c46' as inet) +
   tenthous,
-  cast('fe80::6e40:8ff:fea9:8c46' as CIDR) +
+  cast('fe80::6e40:8ff:fea9:8c46' as cidr) +
   tenthous,
-  cast('empty' as INT4RANGE)
+  cast('empty' as int4range)
 from
   tenk1
 order by thousand,
@@ -153,11 +153,11 @@ using brin
 with (pages_per_range = 1);
 
 create table brinopers (
-  colname NAME,
-  typ TEXT,
-  op TEXT[],
-  value TEXT[],
-  matches INT[],
+  colname name,
+  typ text,
+  op text[],
+  value text[],
+  matches int[],
   check (cardinality(op) = cardinality(value)),
   check (cardinality(op) = cardinality(matches))
 );
@@ -565,45 +565,45 @@ reset enable_bitmapscan;
 
 insert into brintest
 select
-  cast(repeat(stringu1, 42) as BYTEA),
-  cast(substr(stringu1, 1, 1) as CHAR),
-  cast(stringu1 as NAME),
+  cast(repeat(stringu1, 42) as bytea),
+  cast(substr(stringu1, 1, 1) as char),
+  cast(stringu1 as name),
   142857 * tenthous,
   thousand,
   twothousand,
   repeat(stringu1, 42),
-  cast(unique1 as OID),
-  cast(format('(%s,%s)', tenthous, twenty) as TID),
+  cast(unique1 as oid),
+  cast(format('(%s,%s)', tenthous, twenty) as tid),
   (four + 1.0) / (hundred + 1),
-  cast(odd as DOUBLE PRECISION) / (tenthous + 1),
+  cast(odd as double precision) / (tenthous + 1),
   cast(format(
     '%s:00:%s:00:%s:00',
     to_hex(odd),
     to_hex(even),
     to_hex(hundred)
   )
-  as MACADDR),
-  cast('10.2.3.4' as INET) + tenthous,
-  cast('10.2.3/24' as CIDR) + tenthous,
-  cast(substr(stringu1, 1, 1) as CHAR),
-  cast('1995-08-15' as DATE) + tenthous,
-  cast('01:20:30' as TIME) +
-  thousand * cast('18.5 second' as INTERVAL),
-  cast('1942-07-23 03:05:09' as TIMESTAMP) +
-  tenthous * cast('36.38 hours' as INTERVAL),
+  as macaddr),
+  cast('10.2.3.4' as inet) + tenthous,
+  cast('10.2.3/24' as cidr) + tenthous,
+  cast(substr(stringu1, 1, 1) as char),
+  cast('1995-08-15' as date) + tenthous,
+  cast('01:20:30' as time) +
+  thousand * cast('18.5 second' as interval),
+  cast('1942-07-23 03:05:09' as timestamp) +
+  tenthous * cast('36.38 hours' as interval),
   cast('1972-10-10 03:00'
-  as timestamp with time ZONE) +
-  thousand * cast('1 hour' as INTERVAL),
+  as timestamp with time zone) +
+  thousand * cast('1 hour' as interval),
   justify_days(
     justify_hours(
-      tenthous * cast('12 minutes' as INTERVAL)
+      tenthous * cast('12 minutes' as interval)
     )
   ),
-  cast('01:30:20' as time with time ZONE) +
-  hundred * cast('15 seconds' as INTERVAL),
-  cast(thousand as BIT(10)),
-  cast(cast(tenthous as BIT(16)) as BIT VARYING),
-  cast(tenthous as NUMERIC(36, 30)) * fivethous *
+  cast('01:30:20' as time with time zone) +
+  hundred * cast('15 seconds' as interval),
+  cast(thousand as bit(10)),
+  cast(cast(tenthous as bit(16)) as bit varying),
+  cast(tenthous as numeric(36, 30)) * fivethous *
   even /
   (hundred + 1),
   cast(format(
@@ -617,10 +617,10 @@ select
     to_char(tenthous, 'FM0000'),
     to_char(tenthous, 'FM0000')
   )
-  as UUID),
+  as uuid),
   int4range(thousand, twothousand),
   cast(format('%s/%s%s', odd, even, tenthous)
-  as PG_LSN),
+  as pg_lsn),
   box(
     point(odd, even),
     point(thousand, twothousand)
@@ -653,7 +653,7 @@ select brin_desummarize_range('brinidx', 0);
 
 select brin_desummarize_range('brinidx', 100000000);
 
-create table brin_summarize (value INT) with (fillfactor = 10, autovacuum_enabled = 'false');
+create table brin_summarize (value int) with (fillfactor = 10, autovacuum_enabled = 'false');
 
 create index "brin_summarize_idx"
 on brin_summarize
@@ -686,13 +686,13 @@ select brin_summarize_range('brin_summarize_idx', -1);
 
 select brin_summarize_range('brin_summarize_idx', 4294967296);
 
-create table brintest_2 (n NUMRANGE);
+create table brintest_2 (n numrange);
 
 create index "brinidx_2" on brintest_2 using brin (n);
 
 insert into brintest_2 values ('empty');
 
-insert into brintest_2 values (numrange(0, 2 ^ cast(1000 as NUMERIC)));
+insert into brintest_2 values (numrange(0, 2 ^ cast(1000 as numeric)));
 
 insert into brintest_2 values ('(-1, 0)');
 
@@ -700,11 +700,11 @@ select brin_desummarize_range('brinidx', 0);
 
 select brin_summarize_range('brinidx', 0);
 
-drop TABLE brintest_2;
+drop table brintest_2;
 
 create table brin_test (
-  a INT,
-  b INT
+  a int,
+  b int
 );
 
 insert into brin_test select x / 100, x % 100 from generate_series(1, 10000) as x (x);
@@ -732,17 +732,17 @@ select * from brin_test where a = 1;
 select * from brin_test where b = 1;
 
 create table brintest_3 (
-  a TEXT,
-  b TEXT,
-  c TEXT,
-  d TEXT
+  a text,
+  b text,
+  c text,
+  d text
 );
 
 with
 rand_value
 as (
   select
-    string_agg(fipshash(cast(i as TEXT)), '') as val
+    string_agg(fipshash(cast(i as text)), '') as val
   from
     generate_series(1, 60) as s (i)
 )
@@ -755,7 +755,7 @@ delete from brintest_3;
 
 create index concurrently "brin_test_temp_idx" on brintest_3 using btree (a);
 
-drop INDEX brin_test_temp_idx;
+drop index brin_test_temp_idx;
 
 vacuum brintest_3;
 
@@ -763,7 +763,7 @@ with
 rand_value
 as (
   select
-    string_agg(fipshash(cast(-i as TEXT)), '') as val
+    string_agg(fipshash(cast(-i as text)), '') as val
   from
     generate_series(1, 60) as s (i)
 )
@@ -776,14 +776,14 @@ select * from brintest_3 where b < '0';
 
 select * from brintest_3 where b < '0';
 
-drop TABLE brintest_3;
+drop table brintest_3;
 
 reset enable_seqscan;
 
-create table brintest_expr (n INT);
+create table brintest_expr (n int);
 
 create function brintest_func()
-returns INT
+returns int
 language sql
 immutable return 0;;
 
@@ -797,19 +797,19 @@ create index "brintest_expr_idx" on brintest_expr using brin ((brintest_func()))
 
 commit;
 
-drop TABLE brintest_expr;
+drop table brintest_expr;
 
-drop FUNCTION brintest_func();
+drop function brintest_func();
 
-create unlogged table brintest_unlogged (n NUMRANGE);
+create unlogged table brintest_unlogged (n numrange);
 
 create index "brinidx_unlogged" on brintest_unlogged using brin (n);
 
-insert into brintest_unlogged values (numrange(0, 2 ^ cast(1000 as NUMERIC)));
+insert into brintest_unlogged values (numrange(0, 2 ^ cast(1000 as numeric)));
 
-drop TABLE brintest_unlogged;
+drop table brintest_unlogged;
 
-create table brin_insert_optimization (a INT);
+create table brin_insert_optimization (a int);
 
 insert into brin_insert_optimization values (1);
 
@@ -819,4 +819,4 @@ update brin_insert_optimization set a = a;
 
 reindex (CONCURRENTLY) index brin_insert_optimization_idx;
 
-drop TABLE brin_insert_optimization;
+drop table brin_insert_optimization;

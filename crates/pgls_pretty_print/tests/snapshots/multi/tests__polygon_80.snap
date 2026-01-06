@@ -32,7 +32,7 @@ insert into polygon_tbl (f1) values ('asdf');
 select * from polygon_tbl;
 
 create table quad_poly_tbl (
-  id INT,
+  id int,
   p polygon
 );
 

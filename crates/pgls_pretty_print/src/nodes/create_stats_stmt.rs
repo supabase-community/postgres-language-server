@@ -10,7 +10,7 @@ pub(super) fn emit_create_stats_stmt(e: &mut EventEmitter, n: &CreateStatsStmt) 
 
     e.token(TokenKind::CREATE_KW);
     e.space();
-    e.token(TokenKind::IDENT("STATISTICS".to_string()));
+    e.token(TokenKind::IDENT("statistics".to_string()));
 
     if n.if_not_exists {
         e.space();

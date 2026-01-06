@@ -3,7 +3,7 @@ source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/tsdicts.sql
 snapshot_kind: text
 ---
-create TEXT SEARCH DICTIONARY ispell (
+create text search dictionary ispell (
   template = ispell,
   dictfile = ispell_sample,
   afffile = ispell_sample
@@ -39,7 +39,7 @@ select ts_lexize('ispell', 'ballyklubber');
 
 select ts_lexize('ispell', 'footballyklubber');
 
-create TEXT SEARCH DICTIONARY hunspell (
+create text search dictionary hunspell (
   template = ispell,
   dictfile = ispell_sample,
   afffile = hunspell_sample
@@ -75,7 +75,7 @@ select ts_lexize('hunspell', 'ballyklubber');
 
 select ts_lexize('hunspell', 'footballyklubber');
 
-create TEXT SEARCH DICTIONARY hunspell_long (
+create text search dictionary hunspell_long (
   template = ispell,
   dictfile = hunspell_sample_long,
   afffile = hunspell_sample_long
@@ -117,7 +117,7 @@ select ts_lexize('hunspell_long', 'footballyklubber');
 
 select ts_lexize('hunspell_long', 'ex-machina');
 
-create TEXT SEARCH DICTIONARY hunspell_num (
+create text search dictionary hunspell_num (
   template = ispell,
   dictfile = hunspell_sample_num,
   afffile = hunspell_sample_num
@@ -157,43 +157,43 @@ select ts_lexize('hunspell_num', 'ballyklubber');
 
 select ts_lexize('hunspell_num', 'footballyklubber');
 
-create TEXT SEARCH DICTIONARY hunspell_err (
+create text search dictionary hunspell_err (
   template = ispell,
   dictfile = ispell_sample,
   afffile = hunspell_sample_long
 );
 
-create TEXT SEARCH DICTIONARY hunspell_err (
+create text search dictionary hunspell_err (
   template = ispell,
   dictfile = ispell_sample,
   afffile = hunspell_sample_num
 );
 
-create TEXT SEARCH DICTIONARY hunspell_invalid_1 (
+create text search dictionary hunspell_invalid_1 (
   template = ispell,
   dictfile = hunspell_sample_long,
   afffile = ispell_sample
 );
 
-create TEXT SEARCH DICTIONARY hunspell_invalid_2 (
+create text search dictionary hunspell_invalid_2 (
   template = ispell,
   dictfile = hunspell_sample_long,
   afffile = hunspell_sample_num
 );
 
-create TEXT SEARCH DICTIONARY hunspell_invalid_3 (
+create text search dictionary hunspell_invalid_3 (
   template = ispell,
   dictfile = hunspell_sample_num,
   afffile = ispell_sample
 );
 
-create TEXT SEARCH DICTIONARY hunspell_err (
+create text search dictionary hunspell_err (
   template = ispell,
   dictfile = hunspell_sample_num,
   afffile = hunspell_sample_long
 );
 
-create TEXT SEARCH DICTIONARY synonym (template = synonym, synonyms = synonym_sample);
+create text search dictionary synonym (template = synonym, synonyms = synonym_sample);
 
 select ts_lexize('synonym', 'PoStGrEs');
 
@@ -203,21 +203,21 @@ select ts_lexize('synonym', 'indices');
 
 select dictinitoption from pg_ts_dict where dictname = 'synonym';
 
-alter TEXT SEARCH DICTIONARY synonym (casesensitive = 1);
+alter text search dictionary synonym (casesensitive = 1);
 
 select ts_lexize('synonym', 'PoStGrEs');
 
 select dictinitoption from pg_ts_dict where dictname = 'synonym';
 
-alter TEXT SEARCH DICTIONARY synonym (casesensitive = 2);
+alter text search dictionary synonym (casesensitive = 2);
 
-alter TEXT SEARCH DICTIONARY synonym (casesensitive = off);
+alter text search dictionary synonym (casesensitive = off);
 
 select ts_lexize('synonym', 'PoStGrEs');
 
 select dictinitoption from pg_ts_dict where dictname = 'synonym';
 
-create TEXT SEARCH DICTIONARY thesaurus (
+create text search dictionary thesaurus (
   template = thesaurus,
   dictfile = thesaurus_sample,
   dictionary = english_stem
@@ -225,4 +225,4 @@ create TEXT SEARCH DICTIONARY thesaurus (
 
 select ts_lexize('thesaurus', 'one');
 
-create TEXT SEARCH CONFIGURATION ispell_tst (copy = english);
+create text search configuration ispell_tst (copy = english);

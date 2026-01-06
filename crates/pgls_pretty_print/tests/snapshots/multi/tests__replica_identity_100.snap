@@ -5,9 +5,9 @@ snapshot_kind: text
 ---
 create table test_replica_identity (
   id serial primary key,
-  keya TEXT not null,
-  keyb TEXT not null,
-  nonkey TEXT,
+  keya text not null,
+  keyb text not null,
+  nonkey text,
   constraint "test_replica_identity_unique_defer" unique (keya,
   keyb) deferrable,
   constraint "test_replica_identity_unique_nondefer" unique (keya,
@@ -59,75 +59,75 @@ using btree
 where
   keyb <> '3';
 
-select relreplident from pg_class where oid = cast('test_replica_identity' as REGCLASS);
+select relreplident from pg_class where oid = cast('test_replica_identity' as regclass);
 
-select relreplident from pg_class where oid = cast('pg_class' as REGCLASS);
+select relreplident from pg_class where oid = cast('pg_class' as regclass);
 
-select relreplident from pg_class where oid = cast('pg_constraint' as REGCLASS);
+select relreplident from pg_class where oid = cast('pg_constraint' as regclass);
 
 alter table test_replica_identity
-  REPLICA IDENTITY
+  replica identity
   using index
   test_replica_identity_keyab;
 
 alter table test_replica_identity
-  REPLICA IDENTITY
+  replica identity
   using index
   test_replica_identity_nonkey;
 
 alter table test_replica_identity
-  REPLICA IDENTITY
+  replica identity
   using index
   test_replica_identity_hash;
 
 alter table test_replica_identity
-  REPLICA IDENTITY
+  replica identity
   using index
   test_replica_identity_expr;
 
 alter table test_replica_identity
-  REPLICA IDENTITY
+  replica identity
   using index
   test_replica_identity_partial;
 
 alter table test_replica_identity
-  REPLICA IDENTITY
+  replica identity
   using index
   test_replica_identity_othertable_pkey;
 
 alter table test_replica_identity
-  REPLICA IDENTITY
+  replica identity
   using index
   test_replica_identity_unique_defer;
 
 alter table test_replica_identity_t3
-  REPLICA IDENTITY using index pk;
+  replica identity using index pk;
 
-select relreplident from pg_class where oid = cast('test_replica_identity' as REGCLASS);
+select relreplident from pg_class where oid = cast('test_replica_identity' as regclass);
 
 alter table test_replica_identity
-  REPLICA IDENTITY
+  replica identity
   using index
   test_replica_identity_pkey;
 
-select relreplident from pg_class where oid = cast('test_replica_identity' as REGCLASS);
+select relreplident from pg_class where oid = cast('test_replica_identity' as regclass);
 
 alter table test_replica_identity
-  REPLICA IDENTITY
+  replica identity
   using index
   test_replica_identity_unique_nondefer;
 
 alter table test_replica_identity
-  REPLICA IDENTITY
+  replica identity
   using index
   test_replica_identity_keyab_key;
 
 alter table test_replica_identity
-  REPLICA IDENTITY
+  replica identity
   using index
   test_replica_identity_keyab_key;
 
-select relreplident from pg_class where oid = cast('test_replica_identity' as REGCLASS);
+select relreplident from pg_class where oid = cast('test_replica_identity' as regclass);
 
 select
   COUNT(*)
@@ -135,13 +135,13 @@ from
   pg_index
 where
   indrelid =
-  cast('test_replica_identity' as REGCLASS) and
+  cast('test_replica_identity' as regclass) and
   indisreplident;
 
 alter table test_replica_identity
-  REPLICA IDENTITY default;
+  replica identity default;
 
-select relreplident from pg_class where oid = cast('test_replica_identity' as REGCLASS);
+select relreplident from pg_class where oid = cast('test_replica_identity' as regclass);
 
 select
   COUNT(*)
@@ -149,64 +149,64 @@ from
   pg_index
 where
   indrelid =
-  cast('test_replica_identity' as REGCLASS) and
+  cast('test_replica_identity' as regclass) and
   indisreplident;
 
 alter table test_replica_identity
-  REPLICA IDENTITY FULL;
+  replica identity full;
 
-select relreplident from pg_class where oid = cast('test_replica_identity' as REGCLASS);
+select relreplident from pg_class where oid = cast('test_replica_identity' as regclass);
 
 alter table test_replica_identity
-  REPLICA IDENTITY NOTHING;
+  replica identity nothing;
 
-select relreplident from pg_class where oid = cast('test_replica_identity' as REGCLASS);
+select relreplident from pg_class where oid = cast('test_replica_identity' as regclass);
 
-create table test_replica_identity2 (id INT unique not null);
+create table test_replica_identity2 (id int unique not null);
 
 alter table test_replica_identity2
-  REPLICA IDENTITY
+  replica identity
   using index
   test_replica_identity2_id_key;
 
 alter table test_replica_identity2
-  alter column id type BIGINT;
+  alter column id type bigint;
 
-create table test_replica_identity3 (id INT not null);
+create table test_replica_identity3 (id int not null);
 
 create unique index "test_replica_identity3_id_key" on test_replica_identity3 using btree (id);
 
 alter table test_replica_identity3
-  REPLICA IDENTITY
+  replica identity
   using index
   test_replica_identity3_id_key;
 
 alter table test_replica_identity3
-  alter column id type BIGINT;
+  alter column id type bigint;
 
 alter table test_replica_identity3
   alter column id drop not null;
 
 alter table test_replica_identity3
-  REPLICA IDENTITY FULL;
+  replica identity full;
 
 alter table test_replica_identity3
   alter column id drop not null;
 
-create table test_replica_identity4 (id INT not null)
+create table test_replica_identity4 (id int not null)
 partition by LIST(id);
 
-create table test_replica_identity4_1 (id INT not null);
+create table test_replica_identity4_1 (id int not null);
 
 alter table only test_replica_identity4
-  ATTACH partition
+  attach partition
   test_replica_identity4_1 for values in (1);
 
 alter table only test_replica_identity4
   add constraint "test_replica_identity4_pkey" primary key (id);
 
 alter table only test_replica_identity4
-  REPLICA IDENTITY
+  replica identity
   using index
   test_replica_identity4_pkey;
 
@@ -214,20 +214,20 @@ alter table only test_replica_identity4_1
   add constraint "test_replica_identity4_1_pkey" primary key (id);
 
 alter index test_replica_identity4_pkey
-  ATTACH partition
+  attach partition
   test_replica_identity4_1_pkey;
 
 create table test_replica_identity5 (
-  a INT not null,
-  b INT,
-  c INT,
+  a int not null,
+  b int,
+  c int,
   primary key (b, c)
 );
 
 create unique index "test_replica_identity5_a_b_key" on test_replica_identity5 using btree (a, b);
 
 alter table test_replica_identity5
-  REPLICA IDENTITY
+  replica identity
   using index
   test_replica_identity5_a_b_key;
 
@@ -243,16 +243,16 @@ alter table test_replica_identity5
 alter table test_replica_identity5
   alter column b drop not null;
 
-drop TABLE test_replica_identity;
+drop table test_replica_identity;
 
-drop TABLE test_replica_identity2;
+drop table test_replica_identity2;
 
-drop TABLE test_replica_identity3;
+drop table test_replica_identity3;
 
-drop TABLE test_replica_identity4;
+drop table test_replica_identity4;
 
-drop TABLE test_replica_identity5;
+drop table test_replica_identity5;
 
-drop TABLE test_replica_identity_othertable;
+drop table test_replica_identity_othertable;
 
-drop TABLE test_replica_identity_t3;
+drop table test_replica_identity_t3;

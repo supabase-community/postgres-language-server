@@ -49,9 +49,9 @@ fn format_role_option(e: &mut EventEmitter, d: &pgls_query::protobuf::DefElem) {
             if let Some(ref arg) = d.arg {
                 if let Some(pgls_query::NodeEnum::Boolean(b)) = &arg.node {
                     if b.boolval {
-                        e.token(TokenKind::IDENT("LOGIN".to_string()));
+                        e.token(TokenKind::IDENT("login".to_string()));
                     } else {
-                        e.token(TokenKind::IDENT("NOLOGIN".to_string()));
+                        e.token(TokenKind::IDENT("nologin".to_string()));
                     }
                     return;
                 }
@@ -63,7 +63,7 @@ fn format_role_option(e: &mut EventEmitter, d: &pgls_query::protobuf::DefElem) {
                     if b.boolval {
                         e.token(TokenKind::INHERIT_KW);
                     } else {
-                        e.token(TokenKind::IDENT("NOINHERIT".to_string()));
+                        e.token(TokenKind::IDENT("noinherit".to_string()));
                     }
                     return;
                 }
@@ -73,9 +73,9 @@ fn format_role_option(e: &mut EventEmitter, d: &pgls_query::protobuf::DefElem) {
             if let Some(ref arg) = d.arg {
                 if let Some(pgls_query::NodeEnum::Boolean(b)) = &arg.node {
                     if b.boolval {
-                        e.token(TokenKind::IDENT("CREATEROLE".to_string()));
+                        e.token(TokenKind::IDENT("createrole".to_string()));
                     } else {
-                        e.token(TokenKind::IDENT("NOCREATEROLE".to_string()));
+                        e.token(TokenKind::IDENT("nocreaterole".to_string()));
                     }
                     return;
                 }
@@ -85,9 +85,9 @@ fn format_role_option(e: &mut EventEmitter, d: &pgls_query::protobuf::DefElem) {
             if let Some(ref arg) = d.arg {
                 if let Some(pgls_query::NodeEnum::Boolean(b)) = &arg.node {
                     if b.boolval {
-                        e.token(TokenKind::IDENT("CREATEDB".to_string()));
+                        e.token(TokenKind::IDENT("createdb".to_string()));
                     } else {
-                        e.token(TokenKind::IDENT("NOCREATEDB".to_string()));
+                        e.token(TokenKind::IDENT("nocreatedb".to_string()));
                     }
                     return;
                 }
@@ -97,9 +97,9 @@ fn format_role_option(e: &mut EventEmitter, d: &pgls_query::protobuf::DefElem) {
             if let Some(ref arg) = d.arg {
                 if let Some(pgls_query::NodeEnum::Boolean(b)) = &arg.node {
                     if b.boolval {
-                        e.token(TokenKind::IDENT("REPLICATION".to_string()));
+                        e.token(TokenKind::IDENT("replication".to_string()));
                     } else {
-                        e.token(TokenKind::IDENT("NOREPLICATION".to_string()));
+                        e.token(TokenKind::IDENT("noreplication".to_string()));
                     }
                     return;
                 }
@@ -109,9 +109,9 @@ fn format_role_option(e: &mut EventEmitter, d: &pgls_query::protobuf::DefElem) {
             if let Some(ref arg) = d.arg {
                 if let Some(pgls_query::NodeEnum::Boolean(b)) = &arg.node {
                     if b.boolval {
-                        e.token(TokenKind::IDENT("SUPERUSER".to_string()));
+                        e.token(TokenKind::IDENT("superuser".to_string()));
                     } else {
-                        e.token(TokenKind::IDENT("NOSUPERUSER".to_string()));
+                        e.token(TokenKind::IDENT("nosuperuser".to_string()));
                     }
                     return;
                 }
@@ -121,9 +121,9 @@ fn format_role_option(e: &mut EventEmitter, d: &pgls_query::protobuf::DefElem) {
             if let Some(ref arg) = d.arg {
                 if let Some(pgls_query::NodeEnum::Boolean(b)) = &arg.node {
                     if b.boolval {
-                        e.token(TokenKind::IDENT("BYPASSRLS".to_string()));
+                        e.token(TokenKind::IDENT("bypassrls".to_string()));
                     } else {
-                        e.token(TokenKind::IDENT("NOBYPASSRLS".to_string()));
+                        e.token(TokenKind::IDENT("nobypassrls".to_string()));
                     }
                     return;
                 }

@@ -23,7 +23,7 @@ pub(super) fn emit_merge_when_clause(e: &mut EventEmitter, clause: &MergeWhenCla
             e.space();
             e.token(TokenKind::BY_KW);
             e.space();
-            e.token(TokenKind::IDENT("SOURCE".to_string()));
+            e.token(TokenKind::SOURCE_KW);
         }
         MergeMatchKind::MergeWhenNotMatchedByTarget => {
             e.token(TokenKind::NOT_KW);
@@ -33,7 +33,7 @@ pub(super) fn emit_merge_when_clause(e: &mut EventEmitter, clause: &MergeWhenCla
                 e.space();
                 e.token(TokenKind::BY_KW);
                 e.space();
-                e.token(TokenKind::IDENT("TARGET".to_string()));
+                e.token(TokenKind::TARGET_KW);
             }
         }
         MergeMatchKind::Undefined => {}
@@ -110,12 +110,12 @@ pub(super) fn emit_merge_when_clause(e: &mut EventEmitter, clause: &MergeWhenCla
         CmdType::Undefined | CmdType::CmdUnknown => {
             e.token(TokenKind::DO_KW);
             e.space();
-            e.token(TokenKind::IDENT("NOTHING".to_string()));
+            e.token(TokenKind::NOTHING_KW);
         }
         _ => {
             e.token(TokenKind::DO_KW);
             e.space();
-            e.token(TokenKind::IDENT("NOTHING".to_string()));
+            e.token(TokenKind::NOTHING_KW);
         }
     }
 

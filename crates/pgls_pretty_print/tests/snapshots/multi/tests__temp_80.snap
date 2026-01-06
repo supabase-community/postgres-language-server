@@ -3,43 +3,43 @@ source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/temp.sql
 snapshot_kind: text
 ---
-create table temptest (col INT);
+create table temptest (col int);
 
 create index "i_temptest" on temptest using btree (col);
 
-create temporary table temptest (tcol INT);
+create temporary table temptest (tcol int);
 
 create index "i_temptest" on temptest using btree (tcol);
 
 select * from temptest;
 
-drop INDEX i_temptest;
+drop index i_temptest;
 
-drop TABLE temptest;
+drop table temptest;
 
 select * from temptest;
 
-drop INDEX i_temptest;
+drop index i_temptest;
 
-drop TABLE temptest;
+drop table temptest;
 
-create table temptest (col INT);
+create table temptest (col int);
 
 insert into temptest values (1);
 
-create temporary table temptest (tcol DOUBLE PRECISION);
+create temporary table temptest (tcol double precision);
 
 insert into temptest values (2.1);
 
 select * from temptest;
 
-drop TABLE temptest;
+drop table temptest;
 
 select * from temptest;
 
-drop TABLE temptest;
+drop table temptest;
 
-create temporary table temptest (col INT);
+create temporary table temptest (col int);
 
 select * from temptest;
 
@@ -57,7 +57,7 @@ commit;
 
 select * from temptest;
 
-drop TABLE temptest;
+drop table temptest;
 
 begin;
 
@@ -67,11 +67,11 @@ commit;
 
 select * from temptest;
 
-drop TABLE temptest;
+drop table temptest;
 
 begin;
 
-create temporary table temptest (col INT) on commit drop;
+create temporary table temptest (col int) on commit drop;
 
 insert into temptest values (1);
 
@@ -113,7 +113,7 @@ select * from temptest;
 
 begin;
 
-create temporary table temptest1 (col INT primary key);
+create temporary table temptest1 (col int primary key);
 
 insert into temptest1 values (1);
 
@@ -127,25 +127,25 @@ select * from temptest2;
 
 begin;
 
-create temporary table temptest4 (col INT references temptest3);
+create temporary table temptest4 (col int references temptest3);
 
 commit;
 
-create table public.whereami (f1 TEXT);
+create table public.whereami (f1 text);
 
 insert into public.whereami values ('public');
 
-create temporary table whereami (f1 TEXT);
+create temporary table whereami (f1 text);
 
 insert into whereami values ('temp');
 
 create function public.whoami()
-returns TEXT
+returns text
 as $function$select 'public'::text$function$
 language sql;
 
 create function pg_temp.whoami()
-returns TEXT
+returns text
 as $function$select 'temp'::text$function$
 language sql;
 
@@ -167,11 +167,11 @@ select whoami();
 
 select pg_temp.whoami();
 
-drop TABLE public.whereami;
+drop table public.whereami;
 
 set search_path to pg_temp, public;
 
-create domain pg_temp.nonempty as TEXT check (value <> '');
+create domain pg_temp.nonempty as text check (value <> '');
 
 select nonempty('');
 
@@ -189,11 +189,11 @@ commit;
 
 select * from temp_parted_oncommit;
 
-drop TABLE temp_parted_oncommit;
+drop table temp_parted_oncommit;
 
 begin;
 
-create temporary table temp_parted_oncommit_test (a INT)
+create temporary table temp_parted_oncommit_test (a int)
 partition by LIST(a)
 on commit drop;
 
@@ -234,11 +234,11 @@ where
   relname ~ '^temp_parted_oncommit_test'
 order by relname;
 
-drop TABLE temp_parted_oncommit_test;
+drop table temp_parted_oncommit_test;
 
 begin;
 
-create temporary table temp_inh_oncommit_test (a INT) on commit drop;
+create temporary table temp_inh_oncommit_test (a int) on commit drop;
 
 insert into temp_inh_oncommit_test1 values (1);
 
@@ -262,37 +262,37 @@ select * from temp_inh_oncommit_test;
 
 select relname from pg_class where relname ~ '^temp_inh_oncommit_test';
 
-drop TABLE temp_inh_oncommit_test;
+drop table temp_inh_oncommit_test;
 
 begin;
 
 create function pg_temp.twophase_func()
-returns VOID
+returns void
 as $function$ select '2pc_func'::text $function$
 language sql;
 
 prepare transaction 'twophase_func';
 
 create function pg_temp.twophase_func()
-returns VOID
+returns void
 as $function$ select '2pc_func'::text $function$
 language sql;
 
 begin;
 
-drop FUNCTION pg_temp.twophase_func();
+drop function pg_temp.twophase_func();
 
 prepare transaction 'twophase_func';
 
 begin;
 
-create operator pg_temp.@@ (LEFTARG = INT, RIGHTARG = INT, PROCEDURE = int4mi);
+create operator pg_temp.@@ (LEFTARG = int, RIGHTARG = int, PROCEDURE = int4mi);
 
 prepare transaction 'twophase_operator';
 
 begin;
 
-create type pg_temp.twophase_type as (a INT);
+create type pg_temp.twophase_type as (a int);
 
 prepare transaction 'twophase_type';
 
@@ -309,7 +309,7 @@ create sequence pg_temp.twophase_seq;
 
 prepare transaction 'twophase_sequence';
 
-create temporary table twophase_tab (a INT);
+create temporary table twophase_tab (a int);
 
 begin;
 
@@ -331,7 +331,7 @@ prepare transaction 'twophase_tab';
 
 begin;
 
-drop TABLE twophase_tab;
+drop table twophase_tab;
 
 prepare transaction 'twophase_tab';
 
@@ -346,9 +346,9 @@ prepare transaction 'twophase_search';
 set temp_buffers = 100;
 
 create temporary table test_temp (
-  a INT not null unique,
-  b TEXT not null,
-  cnt INT not null
+  a int not null unique,
+  b text not null,
+  cnt int not null
 );
 
 insert into test_temp
@@ -360,11 +360,11 @@ select
 select
   pg_relation_size('test_temp') /
   cast(current_setting('block_size')
-  as BIGINT) >
+  as bigint) >
   200;
 
-create function test_temp_pin(p_start INT, p_end INT)
-returns VOID
+create function test_temp_pin(p_start int, p_end int)
+returns void
 language plpgsql
 as $function$
   DECLARE
@@ -420,7 +420,7 @@ begin;
 
 select test_temp_pin(0, 1);
 
-drop TABLE test_temp;
+drop table test_temp;
 
 commit;
 
@@ -446,7 +446,7 @@ begin;
 
 insert into test_temp (a, b, cnt) values (-2, '', 0);
 
-drop TABLE test_temp;
+drop table test_temp;
 
 rollback;
 
@@ -462,7 +462,7 @@ update test_temp set cnt = cnt + 1 where a = -1;
 
 begin;
 
-drop TABLE test_temp;
+drop table test_temp;
 
 rollback;
 
@@ -490,4 +490,4 @@ select
 from
   test_temp;
 
-drop FUNCTION test_temp_pin(INT, INT);
+drop function test_temp_pin(int, int);

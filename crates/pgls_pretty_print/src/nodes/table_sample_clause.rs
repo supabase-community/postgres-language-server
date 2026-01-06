@@ -8,7 +8,7 @@ use pgls_query::protobuf::TableSampleClause;
 pub(super) fn emit_table_sample_clause(e: &mut EventEmitter, clause: &TableSampleClause) {
     e.group_start(GroupKind::TableSampleClause);
 
-    e.token(TokenKind::IDENT("TABLESAMPLE".to_string()));
+    e.token(TokenKind::TABLESAMPLE_KW);
     e.space();
 
     if clause.tsmhandler != 0 {
@@ -25,7 +25,7 @@ pub(super) fn emit_table_sample_clause(e: &mut EventEmitter, clause: &TableSampl
 
     if let Some(repeatable) = clause.repeatable.as_ref() {
         e.line(LineType::SoftOrSpace);
-        e.token(TokenKind::IDENT("REPEATABLE".to_string()));
+        e.token(TokenKind::REPEATABLE_KW);
         e.space();
         e.token(TokenKind::L_PAREN);
         super::emit_node(repeatable, e);

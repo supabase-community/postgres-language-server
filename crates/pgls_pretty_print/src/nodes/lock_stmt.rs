@@ -49,7 +49,7 @@ pub(super) fn emit_lock_stmt(e: &mut EventEmitter, n: &LockStmt) {
 
     if n.nowait {
         e.line(LineType::SoftOrSpace);
-        e.token(TokenKind::IDENT("NOWAIT".to_string()));
+        e.token(TokenKind::NOWAIT_KW);
     }
 
     e.token(TokenKind::SEMICOLON);

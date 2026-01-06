@@ -26,7 +26,7 @@ pub(super) fn emit_create_extension_stmt(e: &mut EventEmitter, n: &CreateExtensi
 
     if !n.options.is_empty() {
         e.line(LineType::SoftOrSpace);
-        e.token(TokenKind::IDENT("WITH".to_string()));
+        e.token(TokenKind::WITH_KW);
         e.space();
         emit_comma_separated_list(e, &n.options, super::emit_node);
     }

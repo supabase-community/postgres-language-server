@@ -17,7 +17,7 @@ pub(super) fn emit_range_table_func_col(e: &mut EventEmitter, col: &RangeTableFu
         }
         e.token(TokenKind::FOR_KW);
         e.space();
-        e.token(TokenKind::IDENT("ORDINALITY".to_string()));
+        e.token(TokenKind::ORDINALITY_KW);
         e.group_end();
         return;
     }
@@ -31,7 +31,7 @@ pub(super) fn emit_range_table_func_col(e: &mut EventEmitter, col: &RangeTableFu
 
     if let Some(expr) = col.colexpr.as_ref() {
         e.space();
-        e.token(TokenKind::IDENT("PATH".to_string()));
+        e.token(TokenKind::PATH_KW);
         e.space();
         super::emit_node(expr, e);
     }

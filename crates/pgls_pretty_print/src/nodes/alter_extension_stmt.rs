@@ -9,7 +9,7 @@ pub(super) fn emit_alter_extension_stmt(e: &mut EventEmitter, n: &AlterExtension
 
     e.token(TokenKind::ALTER_KW);
     e.space();
-    e.token(TokenKind::IDENT("EXTENSION".to_string()));
+    e.token(TokenKind::EXTENSION_KW);
     e.space();
 
     if !n.extname.is_empty() {

@@ -141,10 +141,10 @@ select * from box_temp where f1 ~= '(20,20),(40,40)';
 
 reset enable_seqscan;
 
-drop INDEX box_spgist;
+drop index box_spgist;
 
 create table quad_box_tbl (
-  id INT,
+  id int,
   b box
 );
 

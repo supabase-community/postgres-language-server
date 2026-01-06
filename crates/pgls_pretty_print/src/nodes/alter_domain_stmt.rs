@@ -9,7 +9,7 @@ pub(super) fn emit_alter_domain_stmt(e: &mut EventEmitter, n: &AlterDomainStmt) 
 
     e.token(TokenKind::ALTER_KW);
     e.space();
-    e.token(TokenKind::IDENT("DOMAIN".to_string()));
+    e.token(TokenKind::DOMAIN_KW);
     e.space();
 
     // Note: missing_ok in AlterDomainStmt is for the constraint (DROP CONSTRAINT IF EXISTS),
@@ -44,14 +44,14 @@ pub(super) fn emit_alter_domain_stmt(e: &mut EventEmitter, n: &AlterDomainStmt) 
             e.space();
             e.token(TokenKind::NOT_KW);
             e.space();
-            e.token(TokenKind::IDENT("NULL".to_string()));
+            e.token(TokenKind::NULL);
         }
         "O" => {
             e.token(TokenKind::SET_KW);
             e.space();
             e.token(TokenKind::NOT_KW);
             e.space();
-            e.token(TokenKind::IDENT("NULL".to_string()));
+            e.token(TokenKind::NULL);
         }
         "C" => {
             e.token(TokenKind::ADD_KW);
@@ -63,7 +63,7 @@ pub(super) fn emit_alter_domain_stmt(e: &mut EventEmitter, n: &AlterDomainStmt) 
         "X" => {
             e.token(TokenKind::DROP_KW);
             e.space();
-            e.token(TokenKind::IDENT("CONSTRAINT".to_string()));
+            e.token(TokenKind::CONSTRAINT_KW);
             if n.missing_ok {
                 e.space();
                 e.token(TokenKind::IF_KW);
@@ -78,13 +78,13 @@ pub(super) fn emit_alter_domain_stmt(e: &mut EventEmitter, n: &AlterDomainStmt) 
             // Only emit CASCADE explicitly; RESTRICT is the default
             if n.behavior == 2 {
                 e.space();
-                e.token(TokenKind::IDENT("CASCADE".to_string()));
+                e.token(TokenKind::CASCADE_KW);
             }
         }
         "V" => {
-            e.token(TokenKind::IDENT("VALIDATE".to_string()));
+            e.token(TokenKind::VALIDATE_KW);
             e.space();
-            e.token(TokenKind::IDENT("CONSTRAINT".to_string()));
+            e.token(TokenKind::CONSTRAINT_KW);
             if !n.name.is_empty() {
                 e.space();
                 e.token(TokenKind::IDENT(n.name.clone()));

@@ -3,78 +3,78 @@ source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/reloptions.sql
 snapshot_kind: text
 ---
-create table reloptions_test (i INT)
+create table reloptions_test (i int)
 with (
   fillfactor = 30,
   autovacuum_enabled = 'false',
   autovacuum_analyze_scale_factor = 0.2
 );
 
-select reloptions from pg_class where oid = cast('reloptions_test' as REGCLASS);
+select reloptions from pg_class where oid = cast('reloptions_test' as regclass);
 
-create table reloptions_test2 (i INT) with (fillfactor = 2);
+create table reloptions_test2 (i int) with (fillfactor = 2);
 
-create table reloptions_test2 (i INT) with (fillfactor = 110);
+create table reloptions_test2 (i int) with (fillfactor = 110);
 
-create table reloptions_test2 (i INT)
+create table reloptions_test2 (i int)
 with (
   autovacuum_analyze_scale_factor = -10.0
 );
 
-create table reloptions_test2 (i INT)
+create table reloptions_test2 (i int)
 with (
   autovacuum_analyze_scale_factor = 110.0
 );
 
-create table reloptions_test2 (i INT) with (not_existing_option = 2);
+create table reloptions_test2 (i int) with (not_existing_option = 2);
 
-create table reloptions_test2 (i INT)
+create table reloptions_test2 (i int)
 with (not_existing_namespace.fillfactor = 2);
 
-create table reloptions_test2 (i INT) with (fillfactor = -30.1);
+create table reloptions_test2 (i int) with (fillfactor = -30.1);
 
-create table reloptions_test2 (i INT) with (fillfactor = 'string');
+create table reloptions_test2 (i int) with (fillfactor = 'string');
 
-create table reloptions_test2 (i INT) with (fillfactor = 'true');
+create table reloptions_test2 (i int) with (fillfactor = 'true');
 
-create table reloptions_test2 (i INT) with (autovacuum_enabled = 12);
+create table reloptions_test2 (i int) with (autovacuum_enabled = 12);
 
-create table reloptions_test2 (i INT) with (autovacuum_enabled = 30.5);
+create table reloptions_test2 (i int) with (autovacuum_enabled = 30.5);
 
-create table reloptions_test2 (i INT) with (autovacuum_enabled = 'string');
+create table reloptions_test2 (i int) with (autovacuum_enabled = 'string');
 
-create table reloptions_test2 (i INT)
+create table reloptions_test2 (i int)
 with (
   autovacuum_analyze_scale_factor = 'string'
 );
 
-create table reloptions_test2 (i INT)
+create table reloptions_test2 (i int)
 with (
   autovacuum_analyze_scale_factor = 'true'
 );
 
-create table reloptions_test2 (i INT) with (fillfactor = 30, fillfactor = 40);
+create table reloptions_test2 (i int) with (fillfactor = 30, fillfactor = 40);
 
-create table reloptions_test2 (i INT) with (fillfactor);
+create table reloptions_test2 (i int) with (fillfactor);
 
 alter table reloptions_test
   set (fillfactor = 31,
   autovacuum_analyze_scale_factor = 0.3);
 
-select reloptions from pg_class where oid = cast('reloptions_test' as REGCLASS);
+select reloptions from pg_class where oid = cast('reloptions_test' as regclass);
 
 alter table reloptions_test
   set (autovacuum_enabled, fillfactor = 32);
 
-select reloptions from pg_class where oid = cast('reloptions_test' as REGCLASS);
+select reloptions from pg_class where oid = cast('reloptions_test' as regclass);
 
 alter table reloptions_test
-  RESET (fillfactor);
+  reset (fillfactor);
 
-select reloptions from pg_class where oid = cast('reloptions_test' as REGCLASS);
+select reloptions from pg_class where oid = cast('reloptions_test' as regclass);
 
 alter table reloptions_test
-  RESET (autovacuum_enabled,
+  reset (autovacuum_enabled,
   autovacuum_analyze_scale_factor);
 
 select
@@ -83,28 +83,28 @@ from
   pg_class
 where
   oid =
-  cast('reloptions_test' as REGCLASS) and
+  cast('reloptions_test' as regclass) and
   reloptions is null;
 
 alter table reloptions_test
-  RESET (fillfactor = 12);
+  reset (fillfactor = 12);
 
 update pg_class
 set reloptions = '{fillfactor=13,autovacuum_enabled=false,illegal_option=4}'
 where
   oid =
-  cast('reloptions_test' as REGCLASS);
+  cast('reloptions_test' as regclass);
 
 alter table reloptions_test
-  RESET (illegal_option);
+  reset (illegal_option);
 
-select reloptions from pg_class where oid = cast('reloptions_test' as REGCLASS);
+select reloptions from pg_class where oid = cast('reloptions_test' as regclass);
 
-drop TABLE reloptions_test;
+drop table reloptions_test;
 
 create temporary table reloptions_test (
-  i INT not null,
-  j TEXT
+  i int not null,
+  j text
 )
 with (
   vacuum_truncate = 'false',
@@ -112,7 +112,7 @@ with (
   autovacuum_enabled = 'false'
 );
 
-select reloptions from pg_class where oid = cast('reloptions_test' as REGCLASS);
+select reloptions from pg_class where oid = cast('reloptions_test' as regclass);
 
 insert into reloptions_test values (1, null), (null, null);
 
@@ -133,13 +133,13 @@ where
       pg_class
     where
       oid =
-      cast('reloptions_test' as REGCLASS)
+      cast('reloptions_test' as regclass)
   );
 
 alter table reloptions_test
-  RESET (vacuum_truncate);
+  reset (vacuum_truncate);
 
-select reloptions from pg_class where oid = cast('reloptions_test' as REGCLASS);
+select reloptions from pg_class where oid = cast('reloptions_test' as regclass);
 
 insert into reloptions_test values (1, null), (null, null);
 
@@ -147,9 +147,9 @@ vacuum (FREEZE, DISABLE_PAGE_SKIPPING) reloptions_test;
 
 select pg_relation_size('reloptions_test') = 0;
 
-drop TABLE reloptions_test;
+drop table reloptions_test;
 
-create table reloptions_test (s VARCHAR)
+create table reloptions_test (s varchar)
 with (
   toast.autovacuum_vacuum_cost_delay = 23
 );
@@ -160,7 +160,7 @@ from
   pg_class
 where
   oid =
-  cast('reloptions_test' as REGCLASS);
+  cast('reloptions_test' as regclass);
 
 select reloptions from pg_class where oid = 'toast_oid';
 
@@ -170,22 +170,22 @@ alter table reloptions_test
 select reloptions from pg_class where oid = 'toast_oid';
 
 alter table reloptions_test
-  RESET (toast.autovacuum_vacuum_cost_delay);
+  reset (toast.autovacuum_vacuum_cost_delay);
 
 select reloptions from pg_class where oid = 'toast_oid';
 
-create table reloptions_test2 (i INT) with (toast.not_existing_option = 42);
+create table reloptions_test2 (i int) with (toast.not_existing_option = 42);
 
-drop TABLE reloptions_test;
+drop table reloptions_test;
 
-create table reloptions_test (s VARCHAR)
+create table reloptions_test (s varchar)
 with (
   toast.autovacuum_vacuum_cost_delay = 23,
   autovacuum_vacuum_cost_delay = 24,
   fillfactor = 40
 );
 
-select reloptions from pg_class where oid = cast('reloptions_test' as REGCLASS);
+select reloptions from pg_class where oid = cast('reloptions_test' as regclass);
 
 select
   reloptions
@@ -200,7 +200,7 @@ where
       pg_class
     where
       oid =
-      cast('reloptions_test' as REGCLASS)
+      cast('reloptions_test' as regclass)
   );
 
 create index "reloptions_test_idx"
@@ -217,7 +217,7 @@ from
   pg_class
 where
   oid =
-  cast('reloptions_test_idx' as REGCLASS);
+  cast('reloptions_test_idx' as regclass);
 
 create index "reloptions_test_idx"
 on reloptions_test
@@ -260,7 +260,7 @@ from
   pg_class
 where
   oid =
-  cast('reloptions_test_idx' as REGCLASS);
+  cast('reloptions_test_idx' as regclass);
 
 create index "reloptions_test_idx3" on reloptions_test using btree (s);
 
@@ -273,4 +273,4 @@ from
   pg_class
 where
   oid =
-  cast('reloptions_test_idx3' as REGCLASS);
+  cast('reloptions_test_idx3' as regclass);
