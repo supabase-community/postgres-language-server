@@ -24,7 +24,8 @@ pub(super) fn emit_fetch_stmt(e: &mut EventEmitter, n: &FetchStmt) {
     // 4: FetchRelative
 
     // Note: PostgreSQL uses LLONG_MAX (9223372036854775807) to represent "ALL"
-    let is_all = n.how_many == 0 || n.how_many == 9223372036854775807;
+    // On some platforms/versions, INT_MAX (2147483647) may be used instead
+    let is_all = n.how_many == 0 || n.how_many == 9223372036854775807 || n.how_many == 2147483647;
 
     // Emit direction and count
     match n.direction {

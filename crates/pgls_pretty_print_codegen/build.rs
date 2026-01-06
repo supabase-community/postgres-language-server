@@ -20,14 +20,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     if !kwlist_path.exists() {
-        println!(
-            "cargo:warning=Downloading kwlist.h for libpg_query {}",
-            version
-        );
+        println!("cargo:warning=Downloading kwlist.h for libpg_query {version}");
 
         let kwlist_url = format!(
-            "https://raw.githubusercontent.com/pganalyze/libpg_query/{}/src/postgres/include/parser/kwlist.h",
-            version
+            "https://raw.githubusercontent.com/pganalyze/libpg_query/{version}/src/postgres/include/parser/kwlist.h"
         );
 
         let response = ureq::get(&kwlist_url).call()?;
@@ -40,14 +36,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     if !proto_path.exists() {
-        println!(
-            "cargo:warning=Downloading pg_query.proto for libpg_query {}",
-            version
-        );
+        println!("cargo:warning=Downloading pg_query.proto for libpg_query {version}");
 
         let proto_url = format!(
-            "https://raw.githubusercontent.com/pganalyze/libpg_query/{}/protobuf/pg_query.proto",
-            version
+            "https://raw.githubusercontent.com/pganalyze/libpg_query/{version}/protobuf/pg_query.proto"
         );
 
         let response = ureq::get(&proto_url).call()?;
