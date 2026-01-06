@@ -13,38 +13,38 @@ insert into m values (cast(null as OID));
 
 create function set(tabname NAME)
 returns VOID
-as '
+as $function$
 BEGIN
   UPDATE m
   SET id = (SELECT c.relfilenode
             FROM pg_class AS c, pg_namespace AS s
             WHERE c.relname = tabname
                 AND c.relnamespace = s.oid
-                AND s.nspname = ''fast_default'');
+                AND s.nspname = 'fast_default');
 END;
-'
-language "plpgsql";
+$function$
+language plpgsql;
 
 create function comp()
 returns TEXT
-as '
+as $function$
 BEGIN
   RETURN (SELECT CASE
-               WHEN m.id = c.relfilenode THEN ''Unchanged''
-               ELSE ''Rewritten''
+               WHEN m.id = c.relfilenode THEN 'Unchanged'
+               ELSE 'Rewritten'
                END
            FROM m, pg_class AS c, pg_namespace AS s
-           WHERE c.relname = ''t''
+           WHERE c.relname = 't'
                AND c.relnamespace = s.oid
-               AND s.nspname = ''fast_default'');
+               AND s.nspname = 'fast_default');
 END;
-'
-language "plpgsql";
+$function$
+language plpgsql;
 
 create function log_rewrite()
 returns event_trigger
-language "plpgsql"
-as '
+language plpgsql
+as $function$
 
 declare
    this_schema text;
@@ -52,14 +52,14 @@ begin
     select into this_schema relnamespace::regnamespace::text
     from pg_class
     where oid = pg_event_trigger_table_rewrite_oid();
-    if this_schema = ''fast_default''
+    if this_schema = 'fast_default'
     then
-        RAISE NOTICE ''rewriting table % for reason %'',
+        RAISE NOTICE 'rewriting table % for reason %',
           pg_event_trigger_table_rewrite_oid()::regclass,
           pg_event_trigger_table_rewrite_reason();
     end if;
 end;
-';
+$function$;
 
 create table has_volatile as select * from generate_series(1, 10) as id;
 
@@ -220,22 +220,22 @@ order by pk;
 
 select comp();
 
-drop TABLE "t";
+drop TABLE t;
 
 create or replace function foo(a INT)
 returns TEXT
-as '
-DECLARE res TEXT := '''';
+as $function$
+DECLARE res TEXT := '';
         i INT;
 BEGIN
   i := 0;
   WHILE (i < a) LOOP
-    res := res || chr(ascii(''a'') + i);
+    res := res || chr(ascii('a') + i);
     i := i + 1;
   END LOOP;
   RETURN res;
-END; '
-language "plpgsql"
+END; $function$
+language plpgsql
 stable;
 
 create table t (
@@ -307,7 +307,7 @@ select * from t;
 
 select comp();
 
-drop TABLE "t";
+drop TABLE t;
 
 create domain domain1 as INT default 11;
 
@@ -378,7 +378,7 @@ order by attnum;
 
 select a, b, length(c) = 3 as c_ok, d, e >= 10 as e_ok from t2;
 
-drop TABLE "t2";
+drop TABLE t2;
 
 drop DOMAIN domain1;
 
@@ -409,8 +409,8 @@ select comp();
 create function foolme(timestamp with time ZONE default clock_timestamp())
 returns timestamp with time ZONE
 immutable
-as 'select $1'
-language "sql";
+as $function$select $1$function$
+language sql;
 
 alter table t
   add column c3 timestamp with time ZONE
@@ -427,7 +427,7 @@ where
   attnum > 0
 order by attnum;
 
-drop TABLE "t";
+drop TABLE t;
 
 drop FUNCTION foolme(timestamp with time ZONE);
 
@@ -489,7 +489,7 @@ select * from t where c_text like '"%"' order by pk;
 
 select comp();
 
-drop TABLE "t";
+drop TABLE t;
 
 create table t (pk INT not null primary key);
 
@@ -553,16 +553,16 @@ select
 from
   t1;
 
-drop TABLE "t";
+drop TABLE t;
 
 create function test_trigger()
 returns trigger
-language "plpgsql"
-as '
+language plpgsql
+as $function$
 
 begin
-    raise notice ''old tuple: %'', to_json(OLD)::text;
-    if TG_OP = ''DELETE''
+    raise notice 'old tuple: %', to_json(OLD)::text;
+    if TG_OP = 'DELETE'
     then
        return OLD;
     else
@@ -570,7 +570,7 @@ begin
     end if;
 end;
 
-';
+$function$;
 
 create table t (
   id serial primary key,
@@ -599,7 +599,7 @@ update t set y = 2;
 
 select * from t;
 
-drop TABLE "t";
+drop TABLE t;
 
 create table t (
   id serial primary key,
@@ -628,7 +628,7 @@ update t set y = 2;
 
 select * from t;
 
-drop TABLE "t";
+drop TABLE t;
 
 create table t (
   id serial primary key,
@@ -657,7 +657,7 @@ update t set y = 2;
 
 select * from t;
 
-drop TABLE "t";
+drop TABLE t;
 
 create table t (
   id serial primary key,
@@ -686,7 +686,7 @@ update t set y = 2;
 
 select * from t;
 
-drop TABLE "t";
+drop TABLE t;
 
 create table t (
   id serial primary key,
@@ -715,7 +715,7 @@ update t set y = 2;
 
 select * from t;
 
-drop TABLE "t";
+drop TABLE t;
 
 create table t (
   id serial primary key,
@@ -744,7 +744,7 @@ update t set y = 2;
 
 select * from t;
 
-drop TABLE "t";
+drop TABLE t;
 
 create table t (
   id serial primary key,
@@ -773,7 +773,7 @@ update t set y = 2;
 
 select * from t;
 
-drop TABLE "t";
+drop TABLE t;
 
 create table t (
   id serial primary key,
@@ -802,7 +802,7 @@ update t set y = 2;
 
 select * from t;
 
-drop TABLE "t";
+drop TABLE t;
 
 create table leader (
   a INT primary key,
@@ -904,31 +904,31 @@ where
   (attmissingval is not null or
   atthasmissing);
 
-drop FOREIGN TABLE "ft1";
+drop FOREIGN TABLE ft1;
 
 drop SERVER s0;
 
 drop FOREIGN DATA WRAPPER dummy;
 
-drop TABLE "vtype";
+drop TABLE vtype;
 
-drop TABLE "vtype2";
+drop TABLE vtype2;
 
-drop TABLE "follower";
+drop TABLE follower;
 
-drop TABLE "leader";
+drop TABLE leader;
 
 drop FUNCTION test_trigger();
 
-drop TABLE "t1";
+drop TABLE t1;
 
 drop FUNCTION set(NAME);
 
 drop FUNCTION comp();
 
-drop TABLE "m";
+drop TABLE m;
 
-drop TABLE "has_volatile";
+drop TABLE has_volatile;
 
 drop EVENT TRIGGER has_volatile_rewrite;
 

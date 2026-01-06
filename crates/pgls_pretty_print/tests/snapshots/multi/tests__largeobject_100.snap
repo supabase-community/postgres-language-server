@@ -102,7 +102,7 @@ select lo_open(loid, cast(X'40000' as INT)) from lotest_stash_values;
 
 rollback;
 
-do $$dobody$$;
+do $do$dobody$do$;
 
 begin;
 
@@ -304,6 +304,6 @@ select lo_put(42, 0, 'x');
 
 rollback;
 
-drop TABLE "lotest_stash_values";
+drop TABLE lotest_stash_values;
 
 drop role regress_lo_user;

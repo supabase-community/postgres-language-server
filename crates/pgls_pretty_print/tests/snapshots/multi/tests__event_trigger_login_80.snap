@@ -12,13 +12,13 @@ grant SELECT on table user_logins to PUBLIC;
 
 create function on_login_proc()
 returns event_trigger
-as '
+as $function$
 BEGIN
   INSERT INTO user_logins (who) VALUES (SESSION_USER);
-  RAISE NOTICE ''You are welcome!'';
+  RAISE NOTICE 'You are welcome!';
 END;
-'
-language "plpgsql";
+$function$
+language plpgsql;
 
 create event trigger "on_login_trigger"
 on login
@@ -32,7 +32,7 @@ select COUNT(*) from user_logins;
 
 select dathasloginevt from pg_database where datname = 'DBNAME';
 
-drop TABLE "user_logins";
+drop TABLE user_logins;
 
 drop EVENT TRIGGER on_login_trigger;
 

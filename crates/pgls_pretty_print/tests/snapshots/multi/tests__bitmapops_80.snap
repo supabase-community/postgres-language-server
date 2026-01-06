@@ -36,4 +36,4 @@ select COUNT(*) from bmscantest where a = 1 and b = 1;
 
 select COUNT(*) from bmscantest where a = 1 or b = 1;
 
-drop TABLE "bmscantest";
+drop TABLE bmscantest;

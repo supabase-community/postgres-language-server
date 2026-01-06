@@ -99,13 +99,13 @@ union all
 except
 select * from distinct_hash_1);
 
-drop TABLE "distinct_hash_1";
+drop TABLE distinct_hash_1;
 
-drop TABLE "distinct_hash_2";
+drop TABLE distinct_hash_2;
 
-drop TABLE "distinct_group_1";
+drop TABLE distinct_group_1;
 
-drop TABLE "distinct_group_2";
+drop TABLE distinct_group_2;
 
 set parallel_tuple_cost = 0;
 
@@ -121,24 +121,24 @@ select distinct four from tenk1;
 
 create or replace function distinct_func(a INT)
 returns INT
-as '
+as $function$
   BEGIN
     RETURN a;
   END;
-'
-language "plpgsql"
+$function$
+language plpgsql
 parallel UNSAFE;
 
 select distinct distinct_func(1) from tenk1;
 
 create or replace function distinct_func(a INT)
 returns INT
-as '
+as $function$
   BEGIN
     RETURN a;
   END;
-'
-language "plpgsql"
+$function$
+language plpgsql
 parallel SAFE;
 
 select distinct distinct_func(1) from tenk1;
@@ -267,4 +267,4 @@ select distinct y, x from distinct_tbl order by y;
 
 reset enable_hashagg;
 
-drop TABLE "distinct_tbl";
+drop TABLE distinct_tbl;

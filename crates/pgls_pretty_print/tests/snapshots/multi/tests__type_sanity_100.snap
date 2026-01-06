@@ -718,7 +718,7 @@ where
 create function is_catalog_text_unique_index_oid(OID)
 returns BOOLEAN
 as 'regresslib', 'is_catalog_text_unique_index_oid'
-language "c"
+language c
 STRICT;
 
 select

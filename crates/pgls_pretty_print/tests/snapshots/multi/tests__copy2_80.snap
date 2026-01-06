@@ -13,23 +13,23 @@ create temporary table x (
 
 create function fn_x_before()
 returns trigger
-as '
+as $function$
   BEGIN
-		NEW.e := ''before trigger fired''::text;
+		NEW.e := 'before trigger fired'::text;
 		return NEW;
 	END;
-'
-language "plpgsql";
+$function$
+language plpgsql;
 
 create function fn_x_after()
 returns trigger
-as '
+as $function$
   BEGIN
-		UPDATE x set e=''after trigger fired'' where c=''stuff'';
+		UPDATE x set e='after trigger fired' where c='stuff';
 		return NULL;
 	END;
-'
-language "plpgsql";
+$function$
+language plpgsql;
 
 create TRIGGER trg_x_after
   after insert

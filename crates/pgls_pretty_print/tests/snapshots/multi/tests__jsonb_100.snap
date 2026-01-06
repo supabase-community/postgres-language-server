@@ -1769,9 +1769,9 @@ reset enable_hashagg;
 
 reset enable_sort;
 
-drop INDEX "jidx";
+drop INDEX jidx;
 
-drop INDEX "jidx_array";
+drop INDEX jidx_array;
 
 create index "jidx" on testjsonb using btree (j);
 
@@ -1781,7 +1781,7 @@ select COUNT(*) from testjsonb where j > '{"p":1}';
 
 select COUNT(*) from testjsonb where j = '{"pos":98, "line":371, "node":"CBA", "indexed":true}';
 
-drop INDEX "jidx";
+drop INDEX jidx;
 
 create index "jidx" on testjsonb using gin (j jsonb_path_ops);
 
@@ -1851,7 +1851,7 @@ select COUNT(*) from testjsonb where j @? '$.bar';
 
 reset enable_seqscan;
 
-drop INDEX "jidx";
+drop INDEX jidx;
 
 select cast('{"ff":{"a":12,"b":16}}' as JSONB);
 
@@ -2693,7 +2693,7 @@ update test_jsonb_subscript set test_json[0] = '1';
 
 update test_jsonb_subscript set test_json[0][0] = '1';
 
-drop TABLE "test_jsonb_subscript";
+drop TABLE test_jsonb_subscript;
 
 create temporary table test_jsonb_subscript (
   id TEXT,

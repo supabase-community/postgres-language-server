@@ -5,20 +5,20 @@ snapshot_kind: text
 ---
 create function explain_analyze(query TEXT)
 returns setof TEXT
-language "plpgsql"
-as '
+language plpgsql
+as $function$
 declare
     ln text;
 begin
     for ln in
-        execute format(''explain (analyze, costs off, summary off, timing off, buffers off) %s'',
+        execute format('explain (analyze, costs off, summary off, timing off, buffers off) %s',
             query)
     loop
-        ln := regexp_replace(ln, ''Maximum Storage: \d+'', ''Maximum Storage: N'');
+        ln := regexp_replace(ln, 'Maximum Storage: \d+', 'Maximum Storage: N');
         return next ln;
     end loop;
 end;
-';
+$function$;
 
 set plan_cache_mode = force_generic_plan;
 
@@ -525,7 +525,7 @@ select * from coercepart where a = all ('{ab,null}');
 
 select * from coercepart where a = all (cast(null as TEXT[]));
 
-drop TABLE "coercepart";
+drop TABLE coercepart;
 
 create table part (
   a INT,
@@ -693,19 +693,19 @@ for values from (16384) to (maxvalue);
 select * from rparted_by_int2 where a > 100_000_000_000_000;
 
 drop TABLE
-  "lp",
-  "coll_pruning",
-  "rlp",
-  "mc3p",
-  "mc2p",
-  "boolpart",
-  "iboolpart",
-  "boolrangep",
-  "rp",
-  "coll_pruning_multi",
-  "like_op_noprune",
-  "lparted_by_int2",
-  "rparted_by_int2";
+  lp,
+  coll_pruning,
+  rlp,
+  mc3p,
+  mc2p,
+  boolpart,
+  iboolpart,
+  boolrangep,
+  rp,
+  coll_pruning_multi,
+  like_op_noprune,
+  lparted_by_int2,
+  rparted_by_int2;
 
 create table asptab (id INT primary key)
 partition by range(id);
@@ -737,7 +737,7 @@ from
 where
   asptab.id > cast(ss.b as INT);
 
-drop TABLE "asptab";
+drop TABLE asptab;
 
 create table hp (
   a INT,
@@ -797,15 +797,15 @@ select * from hp where a = 1 and b = 'abcde';
 
 select * from hp where a = 1 and b = 'abcde' or a = 2 and b = 'xxx' or a is null and b is null;
 
-drop TABLE "hp1";
+drop TABLE hp1;
 
-drop TABLE "hp3";
+drop TABLE hp3;
 
 select * from hp where a = 1 and b = 'abcde';
 
 select * from hp where a = 1 and b = 'abcde' and (c = 2 or c = 3);
 
-drop TABLE "hp2";
+drop TABLE hp2;
 
 select * from hp where a = 1 and b = 'abcde' and (c = 2 or c = 3);
 
@@ -875,7 +875,7 @@ explain (COSTS 'off') execute hp_q1 ('xxx');
 
 deallocate hp_q1;
 
-drop TABLE "hp";
+drop TABLE hp;
 
 create table list_part (a INT)
 partition by LIST(a);
@@ -904,8 +904,8 @@ begin;
 
 create function list_part_fn(INT)
 returns INT
-as ' begin return $1; end;'
-language "plpgsql"
+as $function$ begin return $1; end;$function$
+language plpgsql
 stable;
 
 select * from list_part where a = list_part_fn(1);
@@ -916,30 +916,30 @@ select * from list_part where a = list_part_fn(1) + a;
 
 rollback;
 
-drop TABLE "list_part";
+drop TABLE list_part;
 
 create function explain_parallel_append(TEXT)
 returns setof TEXT
-language "plpgsql"
-as '
+language plpgsql
+as $function$
 declare
     ln text;
 begin
     for ln in
-        execute format(''explain (analyze, costs off, summary off, timing off, buffers off) %s'',
+        execute format('explain (analyze, costs off, summary off, timing off, buffers off) %s',
             $1)
     loop
-        ln := regexp_replace(ln, ''Workers Launched: \d+'', ''Workers Launched: N'');
-        ln := regexp_replace(ln, ''actual rows=\d+(?:\.\d+)? loops=\d+'', ''actual rows=N loops=N'');
-        ln := regexp_replace(ln, ''Rows Removed by Filter: \d+'', ''Rows Removed by Filter: N'');
-        perform regexp_matches(ln, ''Index Searches: \d+'');
+        ln := regexp_replace(ln, 'Workers Launched: \d+', 'Workers Launched: N');
+        ln := regexp_replace(ln, 'actual rows=\d+(?:\.\d+)? loops=\d+', 'actual rows=N loops=N');
+        ln := regexp_replace(ln, 'Rows Removed by Filter: \d+', 'Rows Removed by Filter: N');
+        perform regexp_matches(ln, 'Index Searches: \d+');
         if found then
           continue;
         end if;
         return next ln;
     end loop;
 end;
-';
+$function$;
 
 prepare ab_q4 (INT, INT) as select AVG(a) from ab where a between $1 and $2 and b < 4;;
 
@@ -1121,7 +1121,7 @@ update ab_a1 set b = 3 from ab_a2 where ab_a2.b = (select 1);');
 
 select cast(tableoid as REGCLASS), * from ab;
 
-drop TABLE "ab", "lprt_a";
+drop TABLE ab, lprt_a;
 
 create table tbl1 (col1 INT);
 
@@ -1230,7 +1230,7 @@ from
 order by tbl1.col1,
   tprt.col1;
 
-drop TABLE "tbl1", "tprt";
+drop TABLE tbl1, tprt;
 
 create table part_abc (
   a INT not null,
@@ -1278,7 +1278,7 @@ execute part_abc_q1 (1, 2, 3);
 
 deallocate part_abc_q1;
 
-drop TABLE "part_abc";
+drop TABLE part_abc;
 
 create table listp (
   a INT,
@@ -1314,7 +1314,7 @@ explain (ANALYZE, COSTS 'off', SUMMARY 'off', TIMING 'off', BUFFERS 'off') execu
 
 select * from listp where a = (select cast(null as INT));
 
-drop TABLE "listp";
+drop TABLE listp;
 
 create table stable_qual_pruning (a TIMESTAMP)
 partition by range(a);
@@ -1377,7 +1377,7 @@ where
 
 select * from stable_qual_pruning where a = any (cast(null as timestamp with time ZONE[]));
 
-drop TABLE "stable_qual_pruning";
+drop TABLE stable_qual_pruning;
 
 create table mc3p (
   a INT,
@@ -1414,7 +1414,7 @@ explain (ANALYZE, COSTS 'off', SUMMARY 'off', TIMING 'off', BUFFERS 'off') execu
 
 deallocate ps2;
 
-drop TABLE "mc3p";
+drop TABLE mc3p;
 
 create table boolvalues (value BOOLEAN not null);
 
@@ -1431,7 +1431,7 @@ select * from boolp where a = (select value from boolvalues where value);
 
 select * from boolp where a = (select value from boolvalues where not value);
 
-drop TABLE "boolp";
+drop TABLE boolp;
 
 set enable_seqscan = off;
 
@@ -1484,7 +1484,7 @@ reset enable_seqscan;
 
 reset enable_sort;
 
-drop TABLE "ma_test";
+drop TABLE ma_test;
 
 reset enable_indexonlyscan;
 
@@ -1505,7 +1505,7 @@ update pp_arrpart set a = a where a = '{1}';
 
 delete from pp_arrpart where a = '{1}';
 
-drop TABLE "pp_arrpart";
+drop TABLE pp_arrpart;
 
 create table pph_arrpart (a INT[])
 partition by HASH(a);
@@ -1524,7 +1524,7 @@ select * from pph_arrpart where a = '{1, 2}';
 
 select * from pph_arrpart where a in ('{4, 5}', '{1}');
 
-drop TABLE "pph_arrpart";
+drop TABLE pph_arrpart;
 
 create type pp_colors as enum ('green', 'blue', 'black');
 
@@ -1539,7 +1539,7 @@ select * from pp_enumpart where a = 'blue';
 
 select * from pp_enumpart where a = 'black';
 
-drop TABLE "pp_enumpart";
+drop TABLE pp_enumpart;
 
 drop TYPE pp_colors;
 
@@ -1556,7 +1556,7 @@ select * from pp_recpart where a = cast('(1,1)' as pp_rectype);
 
 select * from pp_recpart where a = cast('(1,2)' as pp_rectype);
 
-drop TABLE "pp_recpart";
+drop TABLE pp_recpart;
 
 drop TYPE pp_rectype;
 
@@ -1571,7 +1571,7 @@ select * from pp_intrangepart where a = cast('[1,2]' as INT4RANGE);
 
 select * from pp_intrangepart where a = cast('(1,2)' as INT4RANGE);
 
-drop TABLE "pp_intrangepart";
+drop TABLE pp_intrangepart;
 
 create table pp_lp (
   a INT,
@@ -1607,7 +1607,7 @@ update pp_lp set value = 10 where a = 1;
 
 delete from pp_lp where a = 1;
 
-drop TABLE "pp_lp";
+drop TABLE pp_lp;
 
 create table inh_lp (
   a INT,
@@ -1638,7 +1638,7 @@ delete from inh_lp where a = 1;
 
 update inh_lp1 set value = 10 where a = 2;
 
-drop TABLE "inh_lp" cascade;
+drop TABLE inh_lp cascade;
 
 reset enable_partition_pruning;
 
@@ -1655,7 +1655,7 @@ select * from pp_temp_parent where true;
 
 select * from pp_temp_parent where a = 2;
 
-drop TABLE "pp_temp_parent";
+drop TABLE pp_temp_parent;
 
 create temporary table p (
   a INT,
@@ -1732,7 +1732,7 @@ explain (COSTS 'off') execute q (1, 1);
 
 execute q (1, 1);
 
-drop TABLE "p", "q";
+drop TABLE p, q;
 
 create table listp (
   a INT,
@@ -1766,7 +1766,7 @@ reset constraint_exclusion;
 
 reset enable_partition_pruning;
 
-drop TABLE "listp";
+drop TABLE listp;
 
 set parallel_setup_cost = 0;
 
@@ -1793,7 +1793,7 @@ select
 select * from listp where a = (select 2);'
   );
 
-drop TABLE "listp";
+drop TABLE listp;
 
 reset parallel_tuple_cost;
 
@@ -1823,7 +1823,7 @@ select * from rangep where b in ((select 1), (select 2)) order by a;
 
 reset enable_sort;
 
-drop TABLE "rangep";
+drop TABLE rangep;
 
 create table rp_prefix_test1 (
   a INT,
@@ -1874,11 +1874,11 @@ select * from rp_prefix_test3 where a >= 1 and b >= 1 and b >= 2 and c >= 2 and 
 
 select * from rp_prefix_test3 where a >= 1 and b >= 1 and b = 2 and c = 2 and d >= 0;
 
-drop TABLE "rp_prefix_test1";
+drop TABLE rp_prefix_test1;
 
-drop TABLE "rp_prefix_test2";
+drop TABLE rp_prefix_test2;
 
-drop TABLE "rp_prefix_test3";
+drop TABLE rp_prefix_test3;
 
 create table hp_prefix_test (
   a INT,
@@ -1949,7 +1949,7 @@ from
 group by g.s
 order by g.s;
 
-drop TABLE "hp_prefix_test";
+drop TABLE hp_prefix_test;
 
 create operator === (LEFTARG = INT, RIGHTARG = INT, PROCEDURE = int4eq, COMMUTATOR = ===, HASHES);
 
@@ -1978,9 +1978,9 @@ select * from hp_contradict_test where a is null and a === 1 and b === 1;
 
 select * from hp_contradict_test where a === 1 and b === 1 and a is null;
 
-drop TABLE "hp_contradict_test";
+drop TABLE hp_contradict_test;
 
-drop OPERATOR CLASS "part_test_int4_ops2" USING "hash";
+drop OPERATOR CLASS part_test_int4_ops2 USING hash;
 
 drop OPERATOR === (INT, INT);
 
@@ -2039,8 +2039,8 @@ deallocate update_part_abc_view;
 
 create function stable_one()
 returns INT
-as ' begin return 1; end; '
-language "plpgsql"
+as $function$ begin return 1; end; $function$
+language plpgsql
 stable;
 
 select * from part_abc_view;
@@ -2133,6 +2133,6 @@ from
 where
   a >= stable_one() + 1 and d >= stable_one();
 
-drop VIEW "part_abc_view";
+drop VIEW part_abc_view;
 
-drop TABLE "part_abc";
+drop TABLE part_abc;

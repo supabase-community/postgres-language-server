@@ -37,7 +37,7 @@ select c.* from char_tbl as c where c.f1 > 'a';
 
 select c.* from char_tbl as c where c.f1 >= 'a';
 
-drop TABLE "char_tbl";
+drop TABLE char_tbl;
 
 insert into char_tbl (f1) values ('abcde');
 

@@ -200,8 +200,8 @@ create index on some_tab_child using btree (f1, f2);
 
 create function some_tab_stmt_trig_func()
 returns trigger
-as 'begin raise notice ''updating some_tab''; return NULL; end;'
-language "plpgsql";
+as $function$begin raise notice 'updating some_tab'; return NULL; end;$function$
+language plpgsql;
 
 create TRIGGER some_tab_stmt_trig
   before update
@@ -213,7 +213,7 @@ update some_tab set f3 = 11 where f1 = 12 and f2 = 13;
 
 update some_tab set f3 = 11 where f1 = 12 and f2 = 13;
 
-drop TABLE "some_tab" cascade;
+drop TABLE some_tab cascade;
 
 drop FUNCTION some_tab_stmt_trig_func();
 
@@ -237,7 +237,7 @@ update some_tab set a = a + 1 where false returning b, a;
 
 select * from some_tab;
 
-drop TABLE "some_tab" cascade;
+drop TABLE some_tab cascade;
 
 create temporary table foo (
   f1 INT,
@@ -379,7 +379,7 @@ order by 1,
 
 update parted_tab set a = 2 where false;
 
-drop TABLE "parted_tab";
+drop TABLE parted_tab;
 
 create table mlparted_tab (
   a INT,
@@ -428,9 +428,9 @@ from
 order by 1,
   2;
 
-drop TABLE "mlparted_tab";
+drop TABLE mlparted_tab;
 
-drop TABLE "some_tab" cascade;
+drop TABLE some_tab cascade;
 
 create table firstparent (tomorrow DATE default (cast(NOW() as DATE) + 1));
 
@@ -450,12 +450,7 @@ create table otherchild (tomorrow DATE default NOW())
 inherits (firstparent,
 thirdparent);
 
-drop TABLE
-  "firstparent",
-  "secondparent",
-  "jointchild",
-  "thirdparent",
-  "otherchild";
+drop TABLE firstparent, secondparent, jointchild, thirdparent, otherchild;
 
 insert into d values ('test', 'one', 'two', 'three');
 
@@ -515,7 +510,7 @@ inherits (p1);
 create table c2 (constraint "p2chk" check (ff1 > 10) no inherit)
 inherits (p1);
 
-drop TABLE "p1" cascade;
+drop TABLE p1 cascade;
 
 create table base (i INT);
 
@@ -543,11 +538,11 @@ from
 
 select cast(cast(cast((1, 2) as more_derived) as derived) as base);
 
-drop TABLE "more_derived";
+drop TABLE more_derived;
 
-drop TABLE "derived";
+drop TABLE derived;
 
-drop TABLE "base";
+drop TABLE base;
 
 create table p1 (ff1 INT);
 
@@ -555,8 +550,8 @@ create table p2 (f1 TEXT);
 
 create function p2text(p2)
 returns TEXT
-as 'select $1.f1'
-language "sql";
+as $function$select $1.f1$function$
+language sql;
 
 create table c1 (f3 INT)
 inherits (p1,
@@ -568,11 +563,11 @@ select p2text(c1.*) from c1;
 
 drop FUNCTION p2text(p2);
 
-drop TABLE "c1";
+drop TABLE c1;
 
-drop TABLE "p2";
+drop TABLE p2;
 
-drop TABLE "p1";
+drop TABLE p1;
 
 create table ac (aa TEXT);
 
@@ -743,9 +738,9 @@ where
 order by 1,
   2;
 
-drop TABLE "bc";
+drop TABLE bc;
 
-drop TABLE "ac";
+drop TABLE ac;
 
 create table ac (a INT constraint "check_a" check (a <> 0));
 
@@ -775,9 +770,9 @@ where
 order by 1,
   2;
 
-drop TABLE "bc";
+drop TABLE bc;
 
-drop TABLE "ac";
+drop TABLE ac;
 
 create table ac (a INT constraint "check_a" check (a <> 0));
 
@@ -826,11 +821,11 @@ where
 order by 1,
   2;
 
-drop TABLE "cc";
+drop TABLE cc;
 
-drop TABLE "bc";
+drop TABLE bc;
 
-drop TABLE "ac";
+drop TABLE ac;
 
 create table p1 (f1 INT);
 
@@ -865,9 +860,9 @@ create table c3 (f4 INT)
 inherits (c1,
 c2);
 
-drop TABLE "p1" cascade;
+drop TABLE p1 cascade;
 
-drop TABLE "p2" cascade;
+drop TABLE p2 cascade;
 
 create table pp1 (f1 INT);
 
@@ -887,7 +882,7 @@ cc1);
 alter table pp1
   add column a2 INT check (a2 > 0);
 
-drop TABLE "pp1" cascade;
+drop TABLE pp1 cascade;
 
 create table inht1 (
   a INT,
@@ -911,7 +906,7 @@ alter table inhts rename column aa to aaa;
 
 alter table inhts rename column d to dd;
 
-drop TABLE "inhts";
+drop TABLE inhts;
 
 create table inhta ();
 
@@ -930,7 +925,7 @@ alter table inhta
   add column i INT,
   add column j BIGINT default 1;
 
-drop TABLE "inhta", "inhtb", "inhtc", "inhtd";
+drop TABLE inhta, inhtb, inhtc, inhtd;
 
 create table inht2 (x INT)
 inherits (inht1);
@@ -992,7 +987,7 @@ order by cast(cast(a.attrelid as REGCLASS)
   as NAME),
   a.attnum;
 
-drop TABLE "inht1", "inhs1" cascade;
+drop TABLE inht1, inhs1 cascade;
 
 create table test_constraints (
   id INT,
@@ -1007,9 +1002,9 @@ inherits (test_constraints);
 alter table only test_constraints
   drop constraint test_constraints_val1_val2_key;
 
-drop TABLE "test_constraints_inh";
+drop TABLE test_constraints_inh;
 
-drop TABLE "test_constraints";
+drop TABLE test_constraints;
 
 create table test_ex_constraints (
   c circle,
@@ -1022,9 +1017,9 @@ inherits (test_ex_constraints);
 alter table test_ex_constraints
   drop constraint test_ex_constraints_c_excl;
 
-drop TABLE "test_ex_constraints_inh";
+drop TABLE test_ex_constraints_inh;
 
-drop TABLE "test_ex_constraints";
+drop TABLE test_ex_constraints;
 
 create table test_primary_constraints (id INT primary key);
 
@@ -1039,11 +1034,11 @@ inherits (test_foreign_constraints);
 alter table test_foreign_constraints
   drop constraint test_foreign_constraints_id1_fkey;
 
-drop TABLE "test_foreign_constraints_inh";
+drop TABLE test_foreign_constraints_inh;
 
-drop TABLE "test_foreign_constraints";
+drop TABLE test_foreign_constraints;
 
-drop TABLE "test_primary_constraints";
+drop TABLE test_primary_constraints;
 
 create table inh_fk_1 (a INT primary key);
 
@@ -1068,7 +1063,7 @@ select * from inh_fk_1 order by 1;
 
 select * from inh_fk_2 order by 1, 2;
 
-drop TABLE "inh_fk_1", "inh_fk_2", "inh_fk_2_child";
+drop TABLE inh_fk_1, inh_fk_2, inh_fk_2_child;
 
 create table p1 (f1 INT);
 
@@ -1109,17 +1104,17 @@ where
 order by 1,
   2;
 
-drop TABLE "p1" cascade;
+drop TABLE p1 cascade;
 
 alter table p1_c1
   INHERIT p1;
 
-drop TABLE "p1" cascade;
+drop TABLE p1 cascade;
 
 alter table p1_c1
   INHERIT p1;
 
-drop TABLE "p1", "p1_c1";
+drop TABLE p1, p1_c1;
 
 create table p1 (f1 INT constraint "f1_pos" check (f1 > 0));
 
@@ -1132,7 +1127,7 @@ alter table p1_c1
 alter table p1
   drop constraint f1_pos;
 
-drop TABLE "p1" cascade;
+drop TABLE p1 cascade;
 
 create table p1 (f1 INT constraint "f1_pos" check (f1 > 0));
 
@@ -1152,7 +1147,7 @@ alter table p2
 alter table p1
   drop constraint f1_pos;
 
-drop TABLE "p1", "p2" cascade;
+drop TABLE p1, p2 cascade;
 
 create table p1 (f1 INT constraint "f1_pos" check (f1 > 0));
 
@@ -1169,7 +1164,7 @@ p1_c2);
 alter table p1
   drop constraint f1_pos;
 
-drop TABLE "p1" cascade;
+drop TABLE p1 cascade;
 
 create table p1 (f1 INT constraint "f1_pos" check (f1 > 0));
 
@@ -1196,7 +1191,7 @@ alter table p1_c1c2
 alter table p1_c2
   drop constraint f1_pos;
 
-drop TABLE "p1" cascade;
+drop TABLE p1 cascade;
 
 create table invalid_check_con (f1 INT);
 
@@ -1286,7 +1281,7 @@ from
     (select f1 from int4_tbl limit 1) as ss
   on id = f1;
 
-drop INDEX "patest2i";
+drop INDEX patest2i;
 
 select
   *
@@ -1304,7 +1299,7 @@ from
     (select f1 from int4_tbl limit 1) as ss
   on id = f1;
 
-drop TABLE "patest0" cascade;
+drop TABLE patest0 cascade;
 
 create table matest0 (
   id serial primary key,
@@ -1388,7 +1383,7 @@ from
   as ss
 order by c;
 
-drop TABLE "matest0" cascade;
+drop TABLE matest0 cascade;
 
 create table matest0 (
   a INT,
@@ -1418,7 +1413,7 @@ limit 10;
 
 reset enable_nestloop;
 
-drop TABLE "matest0" cascade;
+drop TABLE matest0 cascade;
 
 create table matest0 (a INT primary key);
 
@@ -1435,7 +1430,7 @@ analyze matest1;
 
 select * from matest0 where a < 100 order by a;
 
-drop TABLE "matest0" cascade;
+drop TABLE matest0 cascade;
 
 set enable_seqscan = off;
 
@@ -1614,7 +1609,7 @@ set (f1, f2) = (
 
 select * from inhpar;
 
-drop TABLE "inhpar" cascade;
+drop TABLE inhpar cascade;
 
 create table inhpar (
   f1 INT primary key,
@@ -1674,7 +1669,7 @@ set (f1, f2) = (select i.f1, i.f2 || '+');
 
 select * from inhpar order by f1;
 
-drop TABLE "inhpar" cascade;
+drop TABLE inhpar cascade;
 
 create table cnullparent (f1 INT);
 
@@ -1691,7 +1686,7 @@ select * from cnullparent;
 
 select * from cnullparent where f1 = 2;
 
-drop TABLE "cnullparent" cascade;
+drop TABLE cnullparent cascade;
 
 create table pp1 (f1 INT);
 
@@ -1722,7 +1717,7 @@ alter table cc3
 alter table cc3
   NO INHERIT cc2;
 
-drop TABLE "cc3";
+drop TABLE cc3;
 
 alter table cc1
   add column a2 INT constraint "nn" not null;
@@ -1754,7 +1749,7 @@ alter table inh_child
 alter table inh_child
   NO INHERIT inh_parent;
 
-drop TABLE "inh_parent", "inh_child";
+drop TABLE inh_parent, inh_child;
 
 create table inh_pp1 (f1 INT);
 
@@ -1777,7 +1772,7 @@ alter table inh_cc2
 alter table inh_cc2
   NO INHERIT inh_cc1;
 
-drop TABLE "inh_pp1", "inh_cc1", "inh_cc2";
+drop TABLE inh_pp1, inh_cc1, inh_cc2;
 
 create table inh_pp1 (f1 INT not null);
 
@@ -1794,7 +1789,7 @@ inh_cc1);
 alter table inh_pp1
   alter column f1 drop not null;
 
-drop TABLE "inh_pp1", "inh_cc1", "inh_cc2";
+drop TABLE inh_pp1, inh_cc1, inh_cc2;
 
 create table inh_parent ();
 
@@ -1808,7 +1803,7 @@ inh_child);
 alter table inh_parent
   add column i INT not null;
 
-drop TABLE "inh_parent", "inh_child", "inh_grandchild";
+drop TABLE inh_parent, inh_child, inh_grandchild;
 
 create table inh_parent1 (a INT constraint "nn" not null);
 
@@ -1821,7 +1816,7 @@ inh_parent2);
 alter table inh_child2
   NO INHERIT inh_parent2;
 
-drop TABLE "inh_parent1", "inh_parent2", "inh_child1", "inh_child2";
+drop TABLE inh_parent1, inh_parent2, inh_child1, inh_child2;
 
 create table inh_parent1 (
   a INT,
@@ -1862,7 +1857,7 @@ where
 order by 1,
   2;
 
-drop TABLE "inh_parent1", "inh_parent2", "inh_child";
+drop TABLE inh_parent1, inh_parent2, inh_child;
 
 create table inh_nn_parent (a INT);
 
@@ -1897,7 +1892,7 @@ where
 order by 2,
   1;
 
-drop TABLE "inh_nn_parent", "inh_nn_child", "inh_nn_child2";
+drop TABLE inh_nn_parent, inh_nn_child, inh_nn_child2;
 
 create table inh_nn_child ()
 inherits (inh_nn_parent);
@@ -1905,7 +1900,7 @@ inherits (inh_nn_parent);
 alter table inh_nn_parent
   alter column a set not null;
 
-drop TABLE "inh_nn_parent" cascade;
+drop TABLE inh_nn_parent cascade;
 
 create table inh_nn_lvl1 (a INT);
 
@@ -1915,11 +1910,11 @@ inherits (inh_nn_lvl1);
 alter table inh_nn_lvl1
   add primary key (a);
 
-drop TABLE "inh_nn_lvl1", "inh_nn_lvl2", "inh_nn_lvl3";
+drop TABLE inh_nn_lvl1, inh_nn_lvl2, inh_nn_lvl3;
 
 create table inh_nn1 (a INT not null);
 
-drop TABLE if exists "inh_nn1", "inh_nn2", "inh_nn3", "inh_nn4";
+drop TABLE if exists inh_nn1, inh_nn2, inh_nn3, inh_nn4;
 
 create table inh_parent (f1 INT);
 
@@ -1987,7 +1982,7 @@ where
 order by 2,
   1;
 
-drop TABLE "inh_parent", "inh_child1", "inh_child2", "inh_child3";
+drop TABLE inh_parent, inh_child1, inh_child2, inh_child3;
 
 create table inh_parent (a INT not null);
 
@@ -1996,14 +1991,14 @@ create table inh_child (a INT);
 alter table inh_child
   INHERIT inh_parent;
 
-drop TABLE "inh_parent", "inh_child";
+drop TABLE inh_parent, inh_child;
 
 create table inh_parent (a INT not null);
 
 alter table inh_child
   INHERIT inh_parent;
 
-drop TABLE "inh_parent", "inh_child";
+drop TABLE inh_parent, inh_child;
 
 create table inh_parent (a INT primary key);
 
@@ -2049,7 +2044,7 @@ where
 order by 2,
   1;
 
-drop TABLE "inh_parent", "inh_child", "inh_child2", "inh_child3";
+drop TABLE inh_parent, inh_child, inh_child2, inh_child3;
 
 create table inh_parent (f1 INT not null);
 
@@ -2083,7 +2078,7 @@ where
 order by 2,
   cast(cast(conrelid as REGCLASS) as TEXT);
 
-drop TABLE "inh_parent" cascade;
+drop TABLE inh_parent cascade;
 
 create table inh_parent_1 (f1 INT);
 
@@ -2115,9 +2110,9 @@ where
 order by 2,
   cast(cast(conrelid as REGCLASS) as TEXT);
 
-drop TABLE "inh_parent_1" cascade;
+drop TABLE inh_parent_1 cascade;
 
-drop TABLE "inh_parent_2";
+drop TABLE inh_parent_2;
 
 create table inh_p1 (f1 INT not null);
 
@@ -2201,7 +2196,7 @@ where
 order by cast(cast(conrelid as REGCLASS) as TEXT),
   conname;
 
-drop TABLE "inh_p1", "inh_p2", "inh_p3", "inh_p4" cascade;
+drop TABLE inh_p1, inh_p2, inh_p3, inh_p4 cascade;
 
 create table inh_nn2 (
   f2 TEXT,
@@ -2293,7 +2288,7 @@ where
 order by 2,
   1;
 
-drop TABLE "inh_nn1", "inh_nn2", "inh_nn3", "inh_nn4";
+drop TABLE inh_nn1, inh_nn2, inh_nn3, inh_nn4;
 
 create table inh_nn2 (
   f2 TEXT,
@@ -2332,7 +2327,7 @@ where
 order by 2,
   1;
 
-drop TABLE "inh_nn1", "inh_nn2", "inh_nn3", "inh_nn4";
+drop TABLE inh_nn1, inh_nn2, inh_nn3, inh_nn4;
 
 create table inh_nn2 (
   f2 TEXT,
@@ -2376,7 +2371,7 @@ where
 order by 2,
   1;
 
-drop TABLE "inh_nn1", "inh_nn2", "inh_nn3";
+drop TABLE inh_nn1, inh_nn2, inh_nn3;
 
 create table inh_nn1 (
   f1 INT
@@ -2389,7 +2384,7 @@ create table inh_nn1 (
 create table inh_nn2 ()
 inherits (inh_nn1);
 
-drop TABLE "inh_nn1", "inh_nn2";
+drop TABLE inh_nn1, inh_nn2;
 
 create role regress_alice;
 
@@ -2420,7 +2415,7 @@ alter table inh_parent
 
 reset session_authorization;
 
-drop TABLE "inh_parent", "inh_child";
+drop TABLE inh_parent, inh_child;
 
 revoke all on schema public from regress_alice, regress_bob;
 
@@ -2451,9 +2446,9 @@ select cast(tableoid as REGCLASS), a1 from inh_perm_parent;
 
 select cast(tableoid as REGCLASS), a1 from inh_temp_parent;
 
-drop TABLE "inh_perm_parent" cascade;
+drop TABLE inh_perm_parent cascade;
 
-drop TABLE "inh_temp_parent" cascade;
+drop TABLE inh_temp_parent cascade;
 
 create table list_parted (a VARCHAR)
 partition by LIST(a);
@@ -2536,9 +2531,9 @@ select * from range_list_parted where a is not null and a < 67;
 
 select * from range_list_parted where a >= 30;
 
-drop TABLE "list_parted";
+drop TABLE list_parted;
 
-drop TABLE "range_list_parted";
+drop TABLE range_list_parted;
 
 create table mcrparted (
   a INT,
@@ -2625,19 +2620,19 @@ select MIN(a), MAX(a) from parted_minmax where b = '12345';
 
 select MIN(a), MAX(a) from parted_minmax where b = '12345';
 
-drop TABLE "parted_minmax";
+drop TABLE parted_minmax;
 
 create index "mcrparted_a_abs_c_idx" on mcrparted using btree (a, (abs(b)), c);
 
 select * from mcrparted order by a, abs(b), c;
 
-drop TABLE "mcrparted_def";
+drop TABLE mcrparted_def;
 
 select * from mcrparted order by a, abs(b), c;
 
 select * from mcrparted order by a desc, abs(b) desc, c desc;
 
-drop TABLE "mcrparted5";
+drop TABLE mcrparted5;
 
 create table mcrparted5
 partition of mcrparted
@@ -2654,7 +2649,7 @@ create table mcrparted5_def partition of mcrparted5 default;
 
 select * from mcrparted order by a, abs(b), c;
 
-drop TABLE "mcrparted5_def";
+drop TABLE mcrparted5_def;
 
 select a, abs(b) from mcrparted order by a, abs(b), c;
 
@@ -2691,7 +2686,7 @@ select * from mclparted where a in (1, 2, 4) order by a;
 
 select * from mclparted where a in (1, 2, 4) or a is null order by a;
 
-drop TABLE "mclparted_null";
+drop TABLE mclparted_null;
 
 create table mclparted_0_null partition of mclparted for values in (0, null);
 
@@ -2703,13 +2698,13 @@ select * from mclparted where a in (1, 2, 4) order by a;
 
 select * from mclparted where a in (1, 2, 4, 100) order by a;
 
-drop TABLE "mclparted";
+drop TABLE mclparted;
 
 reset enable_sort;
 
 reset enable_bitmapscan;
 
-drop INDEX "mcrparted_a_abs_c_idx";
+drop INDEX mcrparted_a_abs_c_idx;
 
 create index on mcrparted1 using btree (a, (abs(b)), c);
 
@@ -2727,7 +2722,7 @@ select * from mcrparted where a = 10 order by a, abs(b), c;
 
 reset enable_bitmapscan;
 
-drop TABLE "mcrparted";
+drop TABLE mcrparted;
 
 create table bool_lp (b BOOLEAN)
 partition by LIST(b);
@@ -2740,7 +2735,7 @@ create index on bool_lp using btree (b);
 
 select * from bool_lp order by b;
 
-drop TABLE "bool_lp";
+drop TABLE bool_lp;
 
 create table bool_rp (
   b BOOLEAN,
@@ -2782,7 +2777,7 @@ select * from bool_rp where b = true order by a;
 
 select * from bool_rp where b = false order by a;
 
-drop TABLE "bool_rp";
+drop TABLE bool_rp;
 
 create table range_parted (
   a INT,
@@ -2805,7 +2800,7 @@ select * from range_parted order by a, b, c;
 
 select * from range_parted order by a desc, b desc, c desc;
 
-drop TABLE "range_parted";
+drop TABLE range_parted;
 
 create table permtest_parent (
   a INT,
@@ -2903,7 +2898,7 @@ revoke all on table permtest_parent from regress_no_child_access;
 
 drop role regress_no_child_access;
 
-drop TABLE "permtest_parent";
+drop TABLE permtest_parent;
 
 create table errtst_parent (
   partid INT not null,
@@ -3030,7 +3025,7 @@ update errtst_parent set partid = 0, data = data + 10 where partid = 20;
 
 update errtst_parent set partid = 30, data = data + 10 where partid = 20;
 
-drop TABLE "errtst_parent";
+drop TABLE errtst_parent;
 
 create table tuplesest_parted (
   a INT,
@@ -3083,6 +3078,6 @@ from
     as sub
   on tuplesest_tab.a = sub.b;
 
-drop TABLE "tuplesest_parted";
+drop TABLE tuplesest_parted;
 
-drop TABLE "tuplesest_tab";
+drop TABLE tuplesest_tab;

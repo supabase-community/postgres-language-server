@@ -63,8 +63,8 @@ commit;
 
 create function errfunc()
 returns INT
-language "sql"
-as 'SELECT 1'
+language sql
+as $function$SELECT 1$function$
 set transaction_read_only = 'on';
 
 create table writetest (a INT);
@@ -149,7 +149,7 @@ commit;
 
 set session CHARACTERISTICS as transaction read only;
 
-drop TABLE "writetest";
+drop TABLE writetest;
 
 insert into writetest values (1);
 
@@ -174,7 +174,7 @@ create table test as select * from writetest;
 
 start transaction read write;
 
-drop TABLE "writetest";
+drop TABLE writetest;
 
 commit;
 
@@ -188,7 +188,7 @@ create table trans_foo (a INT);
 
 savepoint one;
 
-drop TABLE "trans_foo";
+drop TABLE trans_foo;
 
 create table trans_bar (a INT);
 
@@ -202,7 +202,7 @@ create table trans_baz (a INT);
 
 release savepoint two;
 
-drop TABLE "trans_foobar";
+drop TABLE trans_foobar;
 
 create table trans_barbaz (a INT);
 
@@ -430,7 +430,7 @@ commit;
 
 select a from savepoints where a between 18 and 22;
 
-drop TABLE "savepoints";
+drop TABLE savepoints;
 
 savepoint one;
 
@@ -496,8 +496,8 @@ select * from xacttest;
 
 create or replace function max_xacttest()
 returns SMALLINT
-language "sql"
-as 'select max(a) from xacttest'
+language sql
+as $function$select max(a) from xacttest$function$
 stable;
 
 begin;
@@ -510,8 +510,8 @@ rollback;
 
 create or replace function max_xacttest()
 returns SMALLINT
-language "sql"
-as 'select max(a) from xacttest'
+language sql
+as $function$select max(a) from xacttest$function$
 volatile;
 
 begin;
@@ -524,8 +524,8 @@ rollback;
 
 create or replace function max_xacttest()
 returns SMALLINT
-language "plpgsql"
-as 'begin return max(a) from xacttest; end'
+language plpgsql
+as $function$begin return max(a) from xacttest; end$function$
 stable;
 
 begin;
@@ -538,8 +538,8 @@ rollback;
 
 create or replace function max_xacttest()
 returns SMALLINT
-language "plpgsql"
-as 'begin return max(a) from xacttest; end'
+language plpgsql
+as $function$begin return max(a) from xacttest; end$function$
 volatile;
 
 begin;
@@ -570,22 +570,22 @@ insert into koju values (1);
 
 rollback;
 
-drop TABLE "trans_foo";
+drop TABLE trans_foo;
 
-drop TABLE "trans_baz";
+drop TABLE trans_baz;
 
-drop TABLE "trans_barbaz";
+drop TABLE trans_barbaz;
 
 create function inverse(INT)
 returns DOUBLE PRECISION
-as '
+as $function$
 begin
   analyze revalidate_bug;
   return 1::float8/$1;
 exception
   when division_by_zero then return 0;
-end'
-language "plpgsql"
+end$function$
+language plpgsql
 volatile;
 
 create table revalidate_bug (c DOUBLE PRECISION unique);
@@ -594,7 +594,7 @@ insert into revalidate_bug values (1);
 
 insert into revalidate_bug values (inverse(0));
 
-drop TABLE "revalidate_bug";
+drop TABLE revalidate_bug;
 
 drop FUNCTION inverse(INT);
 
@@ -644,20 +644,20 @@ rollback;
 
 create function invert(x DOUBLE PRECISION)
 returns DOUBLE PRECISION
-language "plpgsql"
-as ' begin return 1/x; end ';
+language plpgsql
+as $function$ begin return 1/x; end $function$;
 
 create function create_temp_tab()
 returns TEXT
-language "plpgsql"
-as '
+language plpgsql
+as $function$
 BEGIN
   CREATE TEMP TABLE new_table (f1 float8);
   -- case of interest is that we fail while holding an open
   -- relcache reference to new_table
   INSERT INTO new_table SELECT invert(0.0);
-  RETURN ''foo'';
-END ';
+  RETURN 'foo';
+END $function$;
 
 begin;
 
@@ -827,7 +827,7 @@ select * from trans_abc order by 1;
 
 reset default_transaction_read_only;
 
-drop TABLE "trans_abc";
+drop TABLE trans_abc;
 
 create temporary table i_table (f1 INT);
 
@@ -923,7 +923,7 @@ reset default_transaction_isolation;
 
 select * from trans_abc order by 1;
 
-drop TABLE "trans_abc";
+drop TABLE trans_abc;
 
 begin isolation level repeatable read;
 

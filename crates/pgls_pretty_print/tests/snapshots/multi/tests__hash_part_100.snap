@@ -106,8 +106,8 @@ select
   )
   as satisfies;
 
-drop TABLE "mchash";
+drop TABLE mchash;
 
-drop TABLE "mcinthash";
+drop TABLE mcinthash;
 
-drop TABLE "text_hashp";
+drop TABLE text_hashp;

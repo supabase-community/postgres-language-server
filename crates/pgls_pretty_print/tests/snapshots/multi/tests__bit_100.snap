@@ -73,7 +73,7 @@ select SUBSTRING(cast('01010101' as BIT VARYING) from -10 for 2147483646) as "01
 
 select SUBSTRING(cast('01010101' as BIT VARYING) from -10 for -2147483646) as error;
 
-drop TABLE "varbit_table";
+drop TABLE varbit_table;
 
 create table varbit_table (
   a BIT VARYING(16),
@@ -96,9 +96,9 @@ from
 
 select a, a << 4 as "a<<4", b, b >> 2 as "b>>2" from varbit_table;
 
-drop TABLE "varbit_table";
+drop TABLE varbit_table;
 
-drop TABLE "bit_table";
+drop TABLE bit_table;
 
 create table bit_table (
   a BIT(16),
@@ -121,7 +121,7 @@ from
 
 select a, a << 4 as "a<<4", b, b >> 2 as "b>>2" from bit_table;
 
-drop TABLE "bit_table";
+drop TABLE bit_table;
 
 select B'001' & B'10';
 
@@ -271,9 +271,9 @@ select v, v >> 1 as vsr, v << 1 as vsl from varbit_shift_table;
 
 select v, v >> 8 as vsr8, v << 8 as vsl8 from varbit_shift_table;
 
-drop TABLE "bit_shift_table";
+drop TABLE bit_shift_table;
 
-drop TABLE "varbit_shift_table";
+drop TABLE varbit_shift_table;
 
 select get_bit(B'0101011000100', 10);
 

@@ -27,12 +27,20 @@ pub(super) fn emit_alter_function_stmt(e: &mut EventEmitter, n: &AlterFunctionSt
         emit_object_with_args(e, func);
     }
 
+    // Determine the dollar quote hint based on whether this is a procedure or function
+    // ObjectType: ObjectFunction=20, ObjectProcedure=30
+    let dollar_hint = if n.objtype == 30 {
+        super::DollarQuoteHint::Procedure
+    } else {
+        super::DollarQuoteHint::Function
+    };
+
     // Emit actions (function options like IMMUTABLE, SECURITY DEFINER, etc.)
     if !n.actions.is_empty() {
         e.line(LineType::SoftOrSpace);
         emit_comma_separated_list(e, &n.actions, |node, e| {
             let def_elem = assert_node_variant!(DefElem, node);
-            super::create_function_stmt::format_function_option(e, def_elem);
+            super::create_function_stmt::format_function_option(e, def_elem, dollar_hint);
         });
     }
 

@@ -196,4 +196,4 @@ where
 
 rollback;
 
-drop TABLE "tidscan";
+drop TABLE tidscan;

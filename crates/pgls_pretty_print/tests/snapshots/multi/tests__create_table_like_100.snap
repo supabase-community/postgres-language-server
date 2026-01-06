@@ -49,7 +49,7 @@ create table inhg (like inhx);
 
 insert into inhg values ('foo');
 
-drop TABLE "inhg";
+drop TABLE inhg;
 
 create table inhg (
   x TEXT,
@@ -65,7 +65,7 @@ insert into inhg values ('x', 'foo', 'y');
 
 select * from inhg;
 
-drop TABLE "inhg";
+drop TABLE inhg;
 
 create table test_like_id_1 (
   a BIGINT generated always as identity,
@@ -88,7 +88,7 @@ insert into test_like_id_3 (b) values ('b3');
 
 select * from test_like_id_3;
 
-drop TABLE "test_like_id_1", "test_like_id_2", "test_like_id_3";
+drop TABLE test_like_id_1, test_like_id_2, test_like_id_3;
 
 insert into test_like_gen_1 (a) values (1);
 
@@ -106,7 +106,7 @@ insert into test_like_gen_3 (a) values (1);
 
 select * from test_like_gen_3;
 
-drop TABLE "test_like_gen_1", "test_like_gen_2", "test_like_gen_3";
+drop TABLE test_like_gen_1, test_like_gen_2, test_like_gen_3;
 
 create table test_like_4 (
   b INT default 42,
@@ -166,11 +166,11 @@ alter table test_like_6
 
 create table test_like_6c (like test_like_6 including all);
 
-drop TABLE "test_like_4", "test_like_4a", "test_like_4b", "test_like_4c", "test_like_4d";
+drop TABLE test_like_4, test_like_4a, test_like_4b, test_like_4c, test_like_4d;
 
-drop TABLE "test_like_5", "test_like_5x", "test_like_5c";
+drop TABLE test_like_5, test_like_5x, test_like_5c;
 
-drop TABLE "test_like_6", "test_like_6c";
+drop TABLE test_like_6, test_like_6c;
 
 create table inhg (
   x TEXT,
@@ -182,7 +182,7 @@ insert into inhg values (5, 10);
 
 insert into inhg values (20, 10);
 
-drop TABLE "inhg";
+drop TABLE inhg;
 
 create table inhg (
   x TEXT,
@@ -215,16 +215,16 @@ insert into inhg (xx, yy, x) values ('test', 10, 15);
 
 insert into inhg (xx, yy, x) values ('foo', 10, 15);
 
-drop TABLE "inhg";
+drop TABLE inhg;
 
-drop TABLE "inhz";
+drop TABLE inhz;
 
 create table inhz (
   x TEXT references inhz,
   like inhx including INDEXES
 );
 
-drop TABLE "inhz";
+drop TABLE inhz;
 
 alter table ctlt1
   add constraint "cc" check (length(b) > 100) not valid;
@@ -388,7 +388,7 @@ inherits (ctlt1);
 
 create table pg_attrdef (like ctlt1 including all);
 
-drop TABLE "public"."pg_attrdef";
+drop TABLE public.pg_attrdef;
 
 begin;
 
@@ -401,18 +401,18 @@ create table ctlt1 (like ctlt1 including all);
 rollback;
 
 drop TABLE
-  "ctlt1",
-  "ctlt2",
-  "ctlt3",
-  "ctlt4",
-  "ctlt12_storage",
-  "ctlt12_comments",
-  "ctlt1_inh",
-  "ctlt13_inh",
-  "ctlt13_like",
-  "ctlt_all",
-  "ctla",
-  "ctlb" cascade;
+  ctlt1,
+  ctlt2,
+  ctlt3,
+  ctlt4,
+  ctlt12_storage,
+  ctlt12_comments,
+  ctlt1_inh,
+  ctlt13_inh,
+  ctlt13_like,
+  ctlt_all,
+  ctla,
+  ctlb cascade;
 
 comment on constraint noinh_con_copy_b_not_null on noinh_con_copy is 'not null b';
 
@@ -435,7 +435,7 @@ order by conname collate "C";
 create table noinh_con_copy1_parted (like noinh_con_copy including all)
 partition by LIST(a);
 
-drop TABLE "noinh_con_copy", "noinh_con_copy1";
+drop TABLE noinh_con_copy, noinh_con_copy1;
 
 create table ctlt4 (
   a INT,
@@ -457,13 +457,13 @@ create type ctlty1 as (a INT, b TEXT);
 
 create table ctlt12 (like ctlty1);
 
-drop SEQUENCE "ctlseq1";
+drop SEQUENCE ctlseq1;
 
 drop TYPE ctlty1;
 
-drop VIEW "ctlv1";
+drop VIEW ctlv1;
 
-drop TABLE if exists "ctlt4", "ctlt10", "ctlt11", "ctlt11a", "ctlt12";
+drop TABLE if exists ctlt4, ctlt10, ctlt11, ctlt11a, ctlt12;
 
 create FOREIGN DATA WRAPPER ctl_dummy;
 
@@ -513,10 +513,10 @@ where
   attnum > 0
 order by attnum;
 
-drop TABLE "ctl_table";
+drop TABLE ctl_table;
 
-drop FOREIGN TABLE "ctl_foreign_table1";
+drop FOREIGN TABLE ctl_foreign_table1;
 
-drop FOREIGN TABLE "ctl_foreign_table2";
+drop FOREIGN TABLE ctl_foreign_table2;
 
 drop FOREIGN DATA WRAPPER ctl_dummy cascade;

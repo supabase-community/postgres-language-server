@@ -337,8 +337,8 @@ select a, cast(b as VARCHAR) from collate_test2 order by 2;
 
 create function vc(TEXT)
 returns TEXT
-language "sql"
-as 'select $1::varchar';
+language sql
+as $function$select $1::varchar$function$;
 
 select a, b from collate_test1 order by a, vc(b);
 
@@ -370,8 +370,8 @@ order by 1;
 
 create function dup(ANYELEMENT)
 returns ANYELEMENT
-as 'select $1'
-language "sql";
+as $function$select $1$function$
+language sql;
 
 select a, dup(b) from collate_test1 order by 2;
 
@@ -485,11 +485,11 @@ create collation mycoll2 (lc_collate = "POSIX", lc_ctype = "POSIX");
 
 create collation mycoll3 from "default";
 
-drop COLLATION "mycoll1";
+drop COLLATION mycoll1;
 
 create table collate_test23 (f1 TEXT collate "mycoll2");
 
-drop COLLATION "mycoll2";
+drop COLLATION mycoll2;
 
 create collation case_coll ("Lc_Collate" = "POSIX", "Lc_Ctype" = "POSIX");
 

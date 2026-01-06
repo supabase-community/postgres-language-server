@@ -13,15 +13,15 @@ create index "i_temptest" on temptest using btree (tcol);
 
 select * from temptest;
 
-drop INDEX "i_temptest";
+drop INDEX i_temptest;
 
-drop TABLE "temptest";
+drop TABLE temptest;
 
 select * from temptest;
 
-drop INDEX "i_temptest";
+drop INDEX i_temptest;
 
-drop TABLE "temptest";
+drop TABLE temptest;
 
 create table temptest (col INT);
 
@@ -33,11 +33,11 @@ insert into temptest values (2.1);
 
 select * from temptest;
 
-drop TABLE "temptest";
+drop TABLE temptest;
 
 select * from temptest;
 
-drop TABLE "temptest";
+drop TABLE temptest;
 
 create temporary table temptest (col INT);
 
@@ -57,7 +57,7 @@ commit;
 
 select * from temptest;
 
-drop TABLE "temptest";
+drop TABLE temptest;
 
 begin;
 
@@ -67,7 +67,7 @@ commit;
 
 select * from temptest;
 
-drop TABLE "temptest";
+drop TABLE temptest;
 
 begin;
 
@@ -96,14 +96,14 @@ select * from temptest;
 begin;
 
 do
-$$
+$do$
 begin
   execute format($cmd$
     CREATE TEMP TABLE temptest (col text CHECK (col < %L)) ON COMMIT DROP
   $cmd$,
     (SELECT string_agg(g.i::text || ':' || random()::text, '|')
      FROM generate_series(1, 100) g(i)));
-end$$;
+end$do$;
 
 select * from temptest;
 
@@ -141,13 +141,13 @@ insert into whereami values ('temp');
 
 create function public.whoami()
 returns TEXT
-as 'select ''public''::text'
-language "sql";
+as $function$select 'public'::text$function$
+language sql;
 
 create function pg_temp.whoami()
 returns TEXT
-as 'select ''temp''::text'
-language "sql";
+as $function$select 'temp'::text$function$
+language sql;
 
 select * from whereami;
 
@@ -167,7 +167,7 @@ select whoami();
 
 select pg_temp.whoami();
 
-drop TABLE "public"."whereami";
+drop TABLE public.whereami;
 
 set search_path to pg_temp, public;
 
@@ -189,7 +189,7 @@ commit;
 
 select * from temp_parted_oncommit;
 
-drop TABLE "temp_parted_oncommit";
+drop TABLE temp_parted_oncommit;
 
 begin;
 
@@ -234,7 +234,7 @@ where
   relname ~ '^temp_parted_oncommit_test'
 order by relname;
 
-drop TABLE "temp_parted_oncommit_test";
+drop TABLE temp_parted_oncommit_test;
 
 begin;
 
@@ -262,21 +262,21 @@ select * from temp_inh_oncommit_test;
 
 select relname from pg_class where relname ~ '^temp_inh_oncommit_test';
 
-drop TABLE "temp_inh_oncommit_test";
+drop TABLE temp_inh_oncommit_test;
 
 begin;
 
 create function pg_temp.twophase_func()
 returns VOID
-as ' select ''2pc_func''::text '
-language "sql";
+as $function$ select '2pc_func'::text $function$
+language sql;
 
 prepare transaction 'twophase_func';
 
 create function pg_temp.twophase_func()
 returns VOID
-as ' select ''2pc_func''::text '
-language "sql";
+as $function$ select '2pc_func'::text $function$
+language sql;
 
 begin;
 
@@ -331,7 +331,7 @@ prepare transaction 'twophase_tab';
 
 begin;
 
-drop TABLE "twophase_tab";
+drop TABLE twophase_tab;
 
 prepare transaction 'twophase_tab';
 
@@ -365,22 +365,22 @@ select
 
 create function test_temp_pin(p_start INT, p_end INT)
 returns VOID
-language "plpgsql"
-as '
+language plpgsql
+as $function$
   DECLARE
       cursorname text;
       query text;
   BEGIN
     FOR i IN p_start..p_end LOOP
-       cursorname = ''c_''||i;
-       query = format($q$DECLARE %I CURSOR FOR SELECT ctid FROM test_temp WHERE ctid >= ''( %s, 1)''::tid $q$, cursorname, i);
+       cursorname = 'c_'||i;
+       query = format($q$DECLARE %I CURSOR FOR SELECT ctid FROM test_temp WHERE ctid >= '( %s, 1)'::tid $q$, cursorname, i);
        EXECUTE query;
-       EXECUTE ''FETCH NEXT FROM ''||cursorname;
+       EXECUTE 'FETCH NEXT FROM '||cursorname;
        -- for test development
-       -- RAISE NOTICE ''%: %'', cursorname, query;
+       -- RAISE NOTICE '%: %', cursorname, query;
     END LOOP;
   END;
-';
+$function$;
 
 begin;
 
@@ -420,7 +420,7 @@ begin;
 
 select test_temp_pin(0, 1);
 
-drop TABLE "test_temp";
+drop TABLE test_temp;
 
 commit;
 
@@ -446,7 +446,7 @@ begin;
 
 insert into test_temp (a, b, cnt) values (-2, '', 0);
 
-drop TABLE "test_temp";
+drop TABLE test_temp;
 
 rollback;
 
@@ -462,7 +462,7 @@ update test_temp set cnt = cnt + 1 where a = -1;
 
 begin;
 
-drop TABLE "test_temp";
+drop TABLE test_temp;
 
 rollback;
 

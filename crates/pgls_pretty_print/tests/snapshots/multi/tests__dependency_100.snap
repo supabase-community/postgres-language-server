@@ -53,7 +53,7 @@ alter table deptest
 
 drop role regress_dep_user3;
 
-drop TABLE "deptest";
+drop TABLE deptest;
 
 drop role regress_dep_user3;
 
@@ -112,8 +112,8 @@ grant all on TABLES to regress_dep_user2;
 
 create function deptest_func()
 returns VOID
-language "plpgsql"
-as ' BEGIN END; ';
+language plpgsql
+as $function$ BEGIN END; $function$;
 
 create type deptest_enum as enum ('red');
 

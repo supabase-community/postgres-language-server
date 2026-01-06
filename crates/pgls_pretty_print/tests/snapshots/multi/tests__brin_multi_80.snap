@@ -150,7 +150,7 @@ using brin
   lsncol pg_lsn_minmax_multi_ops
 );
 
-drop INDEX "brinidx_multi";
+drop INDEX brinidx_multi;
 
 create index "brinidx_multi"
 on brintest_multi
@@ -411,7 +411,7 @@ values
   );
 
 do
-$$
+$do$
 DECLARE
 	r record;
 	r2 record;
@@ -490,7 +490,7 @@ BEGIN
 		IF count != r.matches THEN RAISE WARNING 'unexpected number of results % for %', count, r; END IF;
 	END LOOP;
 END;
-$$;
+$do$;
 
 reset enable_seqscan;
 
@@ -582,7 +582,7 @@ insert into brin_test_inet values ('127.0.0.1/0');
 
 insert into brin_test_inet values ('0.0.0.0/12');
 
-drop TABLE "brin_test_inet";
+drop TABLE brin_test_inet;
 
 select brin_summarize_new_values('brintest_multi');
 
@@ -609,7 +609,7 @@ using brin
   a int4_minmax_multi_ops
 );
 
-drop TABLE "brin_large_range";
+drop TABLE brin_large_range;
 
 create table brin_summarize_multi (value INT)
 with (
@@ -626,7 +626,7 @@ using brin
 with (pages_per_range = 2);
 
 do
-$$
+$do$
 DECLARE curtid tid;
 BEGIN
   LOOP
@@ -634,7 +634,7 @@ BEGIN
     EXIT WHEN curtid > tid '(2, 0)';
   END LOOP;
 END;
-$$;
+$do$;
 
 select brin_summarize_range('brin_summarize_multi_idx', 0);
 
@@ -802,7 +802,7 @@ select COUNT(*) from brin_test_multi_1 where b = 88;
 
 select COUNT(*) from brin_test_multi_1 where b = 103;
 
-drop TABLE "brin_test_multi_1";
+drop TABLE brin_test_multi_1;
 
 reset enable_seqscan;
 
@@ -956,7 +956,7 @@ where
   a =
   '86e50149-6586-6131-2a9e-0b35558d84f6';
 
-drop TABLE "brin_test_multi_2";
+drop TABLE brin_test_multi_2;
 
 reset enable_seqscan;
 
@@ -988,7 +988,7 @@ using brin
 )
 with (pages_per_range = 1);
 
-drop TABLE "brin_timestamp_test";
+drop TABLE brin_timestamp_test;
 
 create table brin_date_test (a DATE);
 
@@ -1016,7 +1016,7 @@ set enable_seqscan = off;
 
 select * from brin_date_test where a = cast('2023-01-01' as DATE);
 
-drop TABLE "brin_date_test";
+drop TABLE brin_date_test;
 
 reset enable_seqscan;
 
@@ -1049,7 +1049,7 @@ select * from brin_timestamp_test where a = cast('2023-01-01' as TIMESTAMP);
 
 select * from brin_timestamp_test where a = cast('1900-01-01' as TIMESTAMP);
 
-drop TABLE "brin_timestamp_test";
+drop TABLE brin_timestamp_test;
 
 reset enable_seqscan;
 
@@ -1077,7 +1077,7 @@ select * from brin_date_test where a = cast('2023-01-01' as DATE);
 
 select * from brin_date_test where a = cast('1900-01-01' as DATE);
 
-drop TABLE "brin_date_test";
+drop TABLE brin_date_test;
 
 reset enable_seqscan;
 
@@ -1113,7 +1113,7 @@ select * from brin_interval_test where a = cast('-30 years' as INTERVAL);
 
 select * from brin_interval_test where a = cast('30 years' as INTERVAL);
 
-drop TABLE "brin_interval_test";
+drop TABLE brin_interval_test;
 
 reset enable_seqscan;
 
@@ -1141,7 +1141,7 @@ select * from brin_interval_test where a = cast('-30 years' as INTERVAL);
 
 select * from brin_interval_test where a = cast('30 years' as INTERVAL);
 
-drop TABLE "brin_interval_test";
+drop TABLE brin_interval_test;
 
 reset enable_seqscan;
 

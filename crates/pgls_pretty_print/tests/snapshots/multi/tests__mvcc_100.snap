@@ -23,7 +23,7 @@ insert into clean_aborted_self (key, data) values (-1, 'just to allocate metapag
 select pg_relation_size('clean_aborted_self_key') as clean_aborted_self_key_before;
 
 do
-$$
+$do$
 BEGIN
     -- iterate often enough to see index growth even on larger-than-default page sizes
     FOR i IN 1..100 LOOP
@@ -37,7 +37,7 @@ BEGIN
 	    RAISE reading_sql_data_not_permitted USING MESSAGE = 'round and round again';
 	EXCEPTION WHEN reading_sql_data_not_permitted THEN END;
     END LOOP;
-END;$$;
+END;$do$;
 
 select
   'clean_aborted_self_key_before' as size_before,

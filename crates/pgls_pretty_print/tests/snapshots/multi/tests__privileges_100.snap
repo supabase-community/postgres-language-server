@@ -305,8 +305,8 @@ grant REGRESS_PRIV_GROUP2 to regress_priv_user4 with ADMIN true;
 
 create function leak(INT, INT)
 returns BOOLEAN
-as 'int4lt'
-language "internal"
+as $function$int4lt$function$
+language internal
 immutable
 STRICT;
 
@@ -529,8 +529,8 @@ set session authorization regress_priv_user2;
 
 create function leak2(INT, INT)
 returns BOOLEAN
-as 'begin raise notice ''leak % %'', $1, $2; return $1 > $2; end'
-language "plpgsql"
+as $function$begin raise notice 'leak % %', $1, $2; return $1 > $2; end$function$
+language plpgsql
 immutable;
 
 create operator >>> (PROCEDURE = leak2, LEFTARG = INT, RIGHTARG = INT, RESTRICT = scalargtsel);
@@ -1005,7 +1005,7 @@ update t1 set c3 = 10;
 
 set session authorization regress_priv_user1;
 
-drop TABLE "t1";
+drop TABLE t1;
 
 create table errtst (
   a TEXT,
@@ -1066,7 +1066,7 @@ update errtst set a = 'aaaa', b = null where a = 'aaa';
 
 set session authorization regress_priv_user1;
 
-drop TABLE "errtst";
+drop TABLE errtst;
 
 set session authorization regress_priv_user1;
 
@@ -1211,19 +1211,19 @@ grant USAGE on language sql to regress_priv_user2;
 
 create function priv_testfunc1(INT)
 returns INT
-as 'select 2 * $1;'
-language "sql";
+as $function$select 2 * $1;$function$
+language sql;
 
 create function priv_testfunc2(INT)
 returns INT
-as 'select 3 * $1;'
-language "sql";
+as $function$select 3 * $1;$function$
+language sql;
 
 create aggregate priv_testagg1 (INT) (sfunc = int4pl, stype = INT);
 
 create procedure priv_testproc1(INT)
-as 'select $1;'
-language "sql";
+as $procedure$select $1;$procedure$
+language sql;
 
 revoke all on function priv_testfunc1(INT), priv_testfunc2(INT), priv_testagg1(INT) from PUBLIC;
 
@@ -1255,8 +1255,8 @@ grant all on procedure priv_testproc1(INT) to regress_priv_user4;
 
 create function priv_testfunc4(BOOLEAN)
 returns TEXT
-as 'select col1 from atest2 where col2 = $1;'
-language "sql"
+as $function$select col1 from atest2 where col2 = $1;$function$
+language sql
 security DEFINER;
 
 grant EXECUTE on function priv_testfunc4(BOOLEAN) to regress_priv_user3;
@@ -1267,8 +1267,8 @@ select priv_testfunc1(5), priv_testfunc2(5);
 
 create function priv_testfunc3(INT)
 returns INT
-as 'select 2 * $1;'
-language "sql";
+as $function$select 2 * $1;$function$
+language sql;
 
 select priv_testagg1(x) from (values (1), (2), (3)) as _ (x);
 
@@ -1346,8 +1346,8 @@ create domain priv_testdomain3a as INT;
 
 create function castfunc(INT)
 returns priv_testdomain3a
-as ' SELECT $1::priv_testdomain3a '
-language "sql";
+as $function$ SELECT $1::priv_testdomain3a $function$
+language sql;
 
 create cast (priv_testdomain1 as priv_testdomain3a) with function castfunc(INT);
 
@@ -1357,13 +1357,13 @@ drop DOMAIN priv_testdomain3a;
 
 create function priv_testfunc5a(a priv_testdomain1)
 returns INT
-language "sql"
-as ' SELECT $1 ';
+language sql
+as $function$ SELECT $1 $function$;
 
 create function priv_testfunc6a(b INT)
 returns priv_testdomain1
-language "sql"
-as ' SELECT $1::priv_testdomain1 ';
+language sql
+as $function$ SELECT $1::priv_testdomain1 $function$;
 
 create operator !+! (PROCEDURE = int4pl, LEFTARG = priv_testdomain1, RIGHTARG = priv_testdomain1);
 
@@ -1414,20 +1414,20 @@ create domain priv_testdomain3b as INT;
 
 create function castfunc(INT)
 returns priv_testdomain3b
-as ' SELECT $1::priv_testdomain3b '
-language "sql";
+as $function$ SELECT $1::priv_testdomain3b $function$
+language sql;
 
 create cast (priv_testdomain1 as priv_testdomain3b) with function castfunc(INT);
 
 create function priv_testfunc5b(a priv_testdomain1)
 returns INT
-language "sql"
-as ' SELECT $1 ';
+language sql
+as $function$ SELECT $1 $function$;
 
 create function priv_testfunc6b(b INT)
 returns priv_testdomain1
-language "sql"
-as ' SELECT $1::priv_testdomain1 ';
+language sql
+as $function$ SELECT $1::priv_testdomain1 $function$;
 
 create operator !! (PROCEDURE = priv_testfunc5b, RIGHTARG = priv_testdomain1);
 
@@ -1478,13 +1478,13 @@ drop FUNCTION priv_testfunc5b(priv_testdomain1);
 
 drop FUNCTION priv_testfunc6b(INT);
 
-drop TABLE "test5b";
+drop TABLE test5b;
 
-drop TABLE "test6b";
+drop TABLE test6b;
 
-drop TABLE "test9b";
+drop TABLE test9b;
 
-drop TABLE "test10b";
+drop TABLE test10b;
 
 drop TYPE test7b;
 
@@ -1496,7 +1496,7 @@ drop FUNCTION castfunc(INT) cascade;
 
 drop DOMAIN priv_testdomain3b;
 
-drop TABLE "test11b";
+drop TABLE test11b;
 
 drop TYPE priv_testtype1;
 
@@ -1901,7 +1901,7 @@ select has_column_privilege('mytable', cast(2 as SMALLINT), 'select');
 
 select has_column_privilege('mytable', cast(99 as SMALLINT), 'select');
 
-drop TABLE "mytable";
+drop TABLE mytable;
 
 set session authorization regress_priv_user1;
 
@@ -1939,15 +1939,15 @@ create role regress_sro_user;
 
 create function sro_ifun(INT)
 returns INT
-as '
+as $function$
 BEGIN
-	-- Below we set the table''s owner to regress_sro_user
-	ASSERT current_user = ''regress_sro_user'',
-		format(''sro_ifun(%s) called by %s'', $1, current_user);
+	-- Below we set the table's owner to regress_sro_user
+	ASSERT current_user = 'regress_sro_user',
+		format('sro_ifun(%s) called by %s', $1, current_user);
 	RETURN $1;
 END;
-'
-language "plpgsql"
+$function$
+language plpgsql
 immutable;
 
 create table sro_tab (a INT);
@@ -1966,7 +1966,7 @@ using btree
 where
   sro_ifun(a + 10) > sro_ifun(10);
 
-drop INDEX "sro_idx";
+drop INDEX sro_idx;
 
 create index concurrently "sro_idx"
 on sro_tab
@@ -1983,13 +1983,13 @@ reindex index sro_idx;
 
 reindex (CONCURRENTLY) table sro_tab;
 
-drop INDEX "sro_idx";
+drop INDEX sro_idx;
 
 create index "sro_cluster_idx" on sro_tab using btree ((sro_ifun(a) + sro_ifun(0)));
 
 CLUSTER sro_tab using sro_cluster_idx;
 
-drop INDEX "sro_cluster_idx";
+drop INDEX sro_cluster_idx;
 
 create index "sro_brin" on sro_tab using brin ((sro_ifun(a) + sro_ifun(0)));
 
@@ -1997,7 +1997,7 @@ select brin_desummarize_range('sro_brin', 0);
 
 select brin_summarize_range('sro_brin', 0);
 
-drop TABLE "sro_tab";
+drop TABLE sro_tab;
 
 create table sro_ptab (a INT)
 partition by range(a);
@@ -2029,13 +2029,13 @@ set session authorization regress_sro_user;
 
 create function unwanted_grant()
 returns VOID
-language "sql"
-as 'GRANT regress_priv_group2 TO regress_sro_user';
+language sql
+as $function$GRANT regress_priv_group2 TO regress_sro_user$function$;
 
 create function mv_action()
 returns BOOLEAN
-language "sql"
-as 'DECLARE c CURSOR WITH HOLD FOR SELECT public.unwanted_grant(); SELECT true';
+language sql
+as $function$DECLARE c CURSOR WITH HOLD FOR SELECT public.unwanted_grant(); SELECT true$function$;
 
 create materialized view sro_mv as select mv_action() with no data;
 
@@ -2049,8 +2049,8 @@ create table sro_trojan_table ();
 
 create function sro_trojan()
 returns trigger
-language "plpgsql"
-as 'BEGIN PERFORM public.unwanted_grant(); RETURN NULL; END';
+language plpgsql
+as $function$BEGIN PERFORM public.unwanted_grant(); RETURN NULL; END$function$;
 
 create CONSTRAINT TRIGGER t
   after insert
@@ -2062,8 +2062,8 @@ create CONSTRAINT TRIGGER t
 
 create or replace function mv_action()
 returns BOOLEAN
-language "sql"
-as 'INSERT INTO public.sro_trojan_table DEFAULT VALUES; SELECT true';
+language sql
+as $function$INSERT INTO public.sro_trojan_table DEFAULT VALUES; SELECT true$function$;
 
 refresh materialized view sro_mv;
 
@@ -2082,15 +2082,15 @@ set session authorization regress_sro_user;
 create function unwanted_grant_nofail(INT)
 returns INT
 immutable
-language "plpgsql"
-as '
+language plpgsql
+as $function$
 BEGIN
 	PERFORM public.unwanted_grant();
-	RAISE WARNING ''owned'';
+	RAISE WARNING 'owned';
 	RETURN 1;
 EXCEPTION WHEN OTHERS THEN
 	RETURN 2;
-END';
+END$function$;
 
 create materialized view sro_index_mv as select 1 as c;
 
@@ -2115,9 +2115,9 @@ set session authorization regress_priv_user4;
 
 create function dogrant_ok()
 returns VOID
-language "sql"
+language sql
 security DEFINER
-as 'GRANT regress_priv_group2 TO regress_priv_user5';
+as $function$GRANT regress_priv_group2 TO regress_priv_user5$function$;
 
 grant REGRESS_PRIV_GROUP2 to regress_priv_user5;
 
@@ -2347,15 +2347,15 @@ begin;
 
 create or replace function terminate_nothrow(pid INT)
 returns BOOLEAN
-language "plpgsql"
+language plpgsql
 security DEFINER
 set client_min_messages = error
-as '
+as $function$
 BEGIN
 	RETURN pg_terminate_backend($1);
 EXCEPTION WHEN OTHERS THEN
 	RETURN false;
-END';
+END$function$;
 
 alter function terminate_nothrow owner to pg_signal_backend;
 
@@ -2407,8 +2407,8 @@ select
 begin;
 
 do
-$$BEGIN EXECUTE format(
-	'ALTER DATABASE %I OWNER TO regress_priv_group2', current_catalog); END$$;
+$do$BEGIN EXECUTE format(
+	'ALTER DATABASE %I OWNER TO regress_priv_group2', current_catalog); END$do$;
 
 select
   pg_has_role(
@@ -2468,7 +2468,7 @@ select has_table_privilege('regress_priv_user1', 'testns.acltest1', 'SELECT');
 
 select has_table_privilege('regress_priv_user1', 'testns.acltest1', 'INSERT');
 
-drop TABLE "testns"."acltest1";
+drop TABLE testns.acltest1;
 
 create table testns.acltest1 (x INT);
 
@@ -2478,7 +2478,7 @@ select has_table_privilege('regress_priv_user1', 'testns.acltest1', 'INSERT');
 
 alter default PRIVILEGES in schema testns grant INSERT on TABLES to regress_priv_user1;
 
-drop TABLE "testns"."acltest1";
+drop TABLE testns.acltest1;
 
 create table testns.acltest1 (x INT);
 
@@ -2488,7 +2488,7 @@ select has_table_privilege('regress_priv_user1', 'testns.acltest1', 'INSERT');
 
 alter default PRIVILEGES in schema testns revoke INSERT on TABLES from regress_priv_user1;
 
-drop TABLE "testns"."acltest1";
+drop TABLE testns.acltest1;
 
 create table testns.acltest1 (x INT);
 
@@ -2660,14 +2660,14 @@ set role to regress_priv_user1;
 
 create function testns.foo()
 returns INT
-as 'select 1'
-language "sql";
+as $function$select 1$function$
+language sql;
 
 create aggregate testns.agg1 (INT) (sfunc = int4pl, stype = INT);
 
 create procedure testns.bar()
-as 'select 1'
-language "sql";
+as $procedure$select 1$procedure$
+language sql;
 
 select has_function_privilege('regress_priv_user2', 'testns.foo()', 'EXECUTE');
 
@@ -2681,8 +2681,8 @@ drop FUNCTION testns.foo();
 
 create function testns.foo()
 returns INT
-as 'select 1'
-language "sql";
+as $function$select 1$function$
+language sql;
 
 drop AGGREGATE testns.agg1(INT);
 
@@ -2691,8 +2691,8 @@ create aggregate testns.agg1 (INT) (sfunc = int4pl, stype = INT);
 drop PROCEDURE testns.bar();
 
 create procedure testns.bar()
-as 'select 1'
-language "sql";
+as $procedure$select 1$procedure$
+language sql;
 
 select has_function_privilege('regress_priv_user2', 'testns.foo()', 'EXECUTE');
 
@@ -2776,14 +2776,14 @@ select has_table_privilege('regress_priv_user1', 'testns.t2', 'SELECT');
 
 create function testns.priv_testfunc(INT)
 returns INT
-as 'select 3 * $1;'
-language "sql";
+as $function$select 3 * $1;$function$
+language sql;
 
 create aggregate testns.priv_testagg (INT) (sfunc = int4pl, stype = INT);
 
 create procedure testns.priv_testproc(INT)
-as 'select 3'
-language "sql";
+as $procedure$select 3$procedure$
+language sql;
 
 select has_function_privilege('regress_priv_user1', 'testns.priv_testfunc(int)', 'EXECUTE');
 
@@ -2883,9 +2883,9 @@ revoke SELECT on table dep_priv_test from regress_priv_user4 cascade;
 
 set role to regress_priv_user1;
 
-drop TABLE "dep_priv_test";
+drop TABLE dep_priv_test;
 
-drop SEQUENCE "x_seq";
+drop SEQUENCE x_seq;
 
 drop AGGREGATE priv_testagg1(INT);
 
@@ -2895,33 +2895,33 @@ drop FUNCTION priv_testfunc4(BOOLEAN);
 
 drop PROCEDURE priv_testproc1(INT);
 
-drop VIEW "atestv0";
+drop VIEW atestv0;
 
-drop VIEW "atestv1";
+drop VIEW atestv1;
 
-drop VIEW "atestv2";
+drop VIEW atestv2;
 
-drop VIEW "atestv3" cascade;
+drop VIEW atestv3 cascade;
 
-drop VIEW "atestv4";
+drop VIEW atestv4;
 
-drop TABLE "atest1";
+drop TABLE atest1;
 
-drop TABLE "atest2";
+drop TABLE atest2;
 
-drop TABLE "atest3";
+drop TABLE atest3;
 
-drop TABLE "atest4";
+drop TABLE atest4;
 
-drop TABLE "atest5";
+drop TABLE atest5;
 
-drop TABLE "atest6";
+drop TABLE atest6;
 
-drop TABLE "atestc";
+drop TABLE atestc;
 
-drop TABLE "atestp1";
+drop TABLE atestp1;
 
-drop TABLE "atestp2";
+drop TABLE atestp2;
 
 select lo_unlink(oid) from pg_largeobject_metadata where oid >= 1000 and oid < 3000 order by oid;
 
@@ -3103,7 +3103,7 @@ commit;
 
 revoke MAINTAIN on table lock_table from regress_locktable_user;
 
-drop TABLE "lock_table";
+drop TABLE lock_table;
 
 drop role regress_locktable_user;
 
@@ -3247,13 +3247,13 @@ alter table regress_roleoption.t4
 
 reset session_authorization;
 
-drop TABLE "regress_roleoption"."t1";
+drop TABLE regress_roleoption.t1;
 
-drop TABLE "regress_roleoption"."t2";
+drop TABLE regress_roleoption.t2;
 
-drop TABLE "regress_roleoption"."t3";
+drop TABLE regress_roleoption.t3;
 
-drop TABLE "regress_roleoption"."t4";
+drop TABLE regress_roleoption.t4;
 
 drop SCHEMA regress_roleoption;
 
@@ -3341,9 +3341,9 @@ reindex schema reindex_test;
 
 reset role;
 
-drop TABLE "maintain_test";
+drop TABLE maintain_test;
 
-drop MATERIALIZED VIEW "refresh_test";
+drop MATERIALIZED VIEW refresh_test;
 
 drop SCHEMA reindex_test;
 
@@ -3387,6 +3387,6 @@ where
   grantor like 'regress_grantor%'
 order by row(t.*);
 
-drop TABLE "grantor_test1", "grantor_test2", "grantor_test3";
+drop TABLE grantor_test1, grantor_test2, grantor_test3;
 
 drop role regress_grantor1, regress_grantor2, regress_grantor3;

@@ -5,8 +5,8 @@ snapshot_kind: text
 ---
 create function interpt_pp(path, path)
 returns point
-as 'regresslib'
-language "c"
+as $function$regresslib$function$
+language c
 STRICT;
 
 create table real_city (
@@ -142,9 +142,9 @@ from
 create or replace view viewtest
 as select a, b, c, d, 0 as e from viewtest_tbl;
 
-drop VIEW "viewtest";
+drop VIEW viewtest;
 
-drop TABLE "viewtest_tbl";
+drop TABLE viewtest_tbl;
 
 create schema "temp_view_test";
 
@@ -674,7 +674,7 @@ select * from tt1;
 
 select cast(a as VARCHAR(3)) from tt1;
 
-drop VIEW "tt1";
+drop VIEW tt1;
 
 create table tt1 (
   f1 INT,
@@ -1167,7 +1167,7 @@ alter table tt14t
 
 create function tt14f()
 returns setof tt14t
-as '
+as $function$
 declare
     rec1 record;
 begin
@@ -1176,8 +1176,8 @@ begin
         return next rec1;
     end loop;
 end;
-'
-language "plpgsql";
+$function$
+language plpgsql;
 
 create view tt14v
 as select t.* from tt14f() as t;
@@ -1266,7 +1266,7 @@ select * from tt14v;
 
 rollback;
 
-drop VIEW "tt14v";
+drop VIEW tt14v;
 
 create view tt14v
 as select t.f1, t.f4 from tt14f() as t;

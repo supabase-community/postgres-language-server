@@ -100,7 +100,7 @@ alter table reloptions_test
 
 select reloptions from pg_class where oid = cast('reloptions_test' as REGCLASS);
 
-drop TABLE "reloptions_test";
+drop TABLE reloptions_test;
 
 create temporary table reloptions_test (
   i INT not null,
@@ -147,7 +147,7 @@ vacuum (FREEZE, DISABLE_PAGE_SKIPPING) reloptions_test;
 
 select pg_relation_size('reloptions_test') = 0;
 
-drop TABLE "reloptions_test";
+drop TABLE reloptions_test;
 
 create table reloptions_test (s VARCHAR)
 with (
@@ -176,7 +176,7 @@ select reloptions from pg_class where oid = 'toast_oid';
 
 create table reloptions_test2 (i INT) with (toast.not_existing_option = 42);
 
-drop TABLE "reloptions_test";
+drop TABLE reloptions_test;
 
 create table reloptions_test (s VARCHAR)
 with (

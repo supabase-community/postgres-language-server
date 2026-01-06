@@ -301,11 +301,11 @@ CLUSTER clstr_temp using clstr_temp_pkey;
 
 select * from clstr_temp;
 
-drop TABLE "clstr_temp";
+drop TABLE clstr_temp;
 
 reset session_authorization;
 
-drop TABLE "clustertest";
+drop TABLE clustertest;
 
 create table clustertest (f1 INT primary key);
 
@@ -332,7 +332,7 @@ create index "clstrpart_only_idx" on only clstrpart using btree (a);
 
 CLUSTER clstrpart using clstrpart_only_idx;
 
-drop INDEX "clstrpart_only_idx";
+drop INDEX clstrpart_only_idx;
 
 create index "clstrpart_idx" on clstrpart using btree (a);
 
@@ -386,7 +386,7 @@ alter table clstrpart
 alter table clstrpart
   cluster on clstrpart_idx;
 
-drop TABLE "clstrpart";
+drop TABLE clstrpart;
 
 create table ptnowner (i INT unique)
 partition by LIST(i);
@@ -439,7 +439,7 @@ from
   using ("oid")
 order by a.relname collate "C";
 
-drop TABLE "ptnowner";
+drop TABLE ptnowner;
 
 drop role regress_ptnowner;
 

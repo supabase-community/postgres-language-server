@@ -42,14 +42,14 @@ select 2 <> 1, 2 <> 2;
 select 2 <> 1;
 
 do
-$$ -- use DO to protect -- from psql
+$do$ -- use DO to protect -- from psql
   declare r boolean;
   begin
     execute $e$ select 2 !=-- comment
       1 $e$ into r;
     raise info 'r = %', r;
   end;
-$$;
+$do$;
 
 select true <> -1 between 1 and 1;
 
@@ -95,10 +95,10 @@ begin;
 
 create or replace function fn_op2(BOOLEAN, BOOLEAN)
 returns BOOLEAN
-as '
+as $function$
     SELECT NULL::BOOLEAN;
-'
-language "sql"
+$function$
+language sql
 immutable;
 
 create operator === (LEFTARG = BOOLEAN,
@@ -131,10 +131,10 @@ create type type_op3 as enum ('new', 'open', 'closed');
 
 create function fn_op3(type_op3, BIGINT)
 returns BIGINT
-as '
+as $function$
     SELECT NULL::int8;
-'
-language "sql"
+$function$
+language sql
 immutable;
 
 revoke USAGE on type type_op3 from regress_rol_op3;
@@ -155,10 +155,10 @@ create type type_op4 as enum ('new', 'open', 'closed');
 
 create function fn_op4(BIGINT, type_op4)
 returns BIGINT
-as '
+as $function$
     SELECT NULL::int8;
-'
-language "sql"
+$function$
+language sql
 immutable;
 
 revoke USAGE on type type_op4 from regress_rol_op4;
@@ -179,10 +179,10 @@ create type type_op5 as enum ('new', 'open', 'closed');
 
 create function fn_op5(BIGINT, BIGINT)
 returns BIGINT
-as '
+as $function$
     SELECT NULL::int8;
-'
-language "sql"
+$function$
+language sql
 immutable;
 
 revoke EXECUTE on function fn_op5(BIGINT, BIGINT) from regress_rol_op5;
@@ -203,10 +203,10 @@ create type type_op6 as enum ('new', 'open', 'closed');
 
 create function fn_op6(BIGINT, BIGINT)
 returns type_op6
-as '
+as $function$
     SELECT NULL::type_op6;
-'
-language "sql"
+$function$
+language sql
 immutable;
 
 revoke USAGE on type type_op6 from regress_rol_op6;

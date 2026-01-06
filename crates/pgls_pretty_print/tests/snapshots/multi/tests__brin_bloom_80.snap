@@ -348,7 +348,7 @@ values
   );
 
 do
-$$
+$do$
 DECLARE
 	r record;
 	r2 record;
@@ -427,7 +427,7 @@ BEGIN
 		IF count != r.matches THEN RAISE WARNING 'unexpected number of results % for %', count, r; END IF;
 	END LOOP;
 END;
-$$;
+$do$;
 
 reset enable_seqscan;
 
@@ -535,7 +535,7 @@ using brin
 with (pages_per_range = 2);
 
 do
-$$
+$do$
 DECLARE curtid tid;
 BEGIN
   LOOP
@@ -543,7 +543,7 @@ BEGIN
     EXIT WHEN curtid > tid '(2, 0)';
   END LOOP;
 END;
-$$;
+$do$;
 
 select brin_summarize_range('brin_summarize_bloom_idx', 0);
 

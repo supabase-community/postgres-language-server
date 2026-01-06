@@ -115,7 +115,7 @@ from
         t1.a = t3.a and t6.a is null
     );
 
-drop TABLE "pred_tab";
+drop TABLE pred_tab;
 
 create table pred_parent (a INT);
 
@@ -139,7 +139,7 @@ select * from pred_parent where a is not null;
 
 select * from pred_parent where a is null;
 
-drop TABLE "pred_parent", "pred_child";
+drop TABLE pred_parent, pred_child;
 
 create table pred_tab (
   a INT,
@@ -219,9 +219,9 @@ from
     pred_tab as t4
   on t3.b is null and t3.a is not null;
 
-drop TABLE "pred_tab";
+drop TABLE pred_tab;
 
-drop TABLE "pred_tab_notnull";
+drop TABLE pred_tab_notnull;
 
 create table pred_tab1 (
   a INT not null,
@@ -243,6 +243,6 @@ select * from pred_tab2, pred_tab1 where pred_tab1.a is null or pred_tab1.b < 2;
 
 reset constraint_exclusion;
 
-drop TABLE "pred_tab1";
+drop TABLE pred_tab1;
 
-drop TABLE "pred_tab2";
+drop TABLE pred_tab2;

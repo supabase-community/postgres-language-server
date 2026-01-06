@@ -5,14 +5,14 @@ snapshot_kind: text
 ---
 create function alter_op_test_fn(BOOLEAN, BOOLEAN)
 returns BOOLEAN
-as ' SELECT NULL::BOOLEAN; '
-language "sql"
+as $function$ SELECT NULL::BOOLEAN; $function$
+language sql
 immutable;
 
 create function customcontsel(internal, OID, internal, INT)
 returns DOUBLE PRECISION
-as 'contsel'
-language "internal"
+as $function$contsel$function$
+language internal
 stable
 STRICT;
 
@@ -169,14 +169,14 @@ reset session_authorization;
 
 create function alter_op_test_fn_bool_real(BOOLEAN, REAL)
 returns BOOLEAN
-as ' SELECT NULL::BOOLEAN; '
-language "sql"
+as $function$ SELECT NULL::BOOLEAN; $function$
+language sql
 immutable;
 
 create function alter_op_test_fn_real_bool(REAL, BOOLEAN)
 returns BOOLEAN
-as ' SELECT NULL::BOOLEAN; '
-language "sql"
+as $function$ SELECT NULL::BOOLEAN; $function$
+language sql
 immutable;
 
 create operator === (LEFTARG = BOOLEAN, RIGHTARG = REAL, PROCEDURE = alter_op_test_fn_bool_real);

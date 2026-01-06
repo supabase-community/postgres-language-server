@@ -199,7 +199,7 @@ select * from pg_partition_ancestors('ptif_test01_index');
 
 select * from pg_partition_ancestors('ptif_test_index');
 
-drop TABLE "ptif_test";
+drop TABLE ptif_test;
 
 create table ptif_normal_table (a INT);
 
@@ -209,7 +209,7 @@ select * from pg_partition_ancestors('ptif_normal_table');
 
 select pg_partition_root('ptif_normal_table');
 
-drop TABLE "ptif_normal_table";
+drop TABLE ptif_normal_table;
 
 create view ptif_test_view
 as select 1;
@@ -245,8 +245,8 @@ select pg_partition_root('ptif_li_parent');
 
 select pg_partition_root('ptif_li_child');
 
-drop VIEW "ptif_test_view";
+drop VIEW ptif_test_view;
 
-drop MATERIALIZED VIEW "ptif_test_matview";
+drop MATERIALIZED VIEW ptif_test_matview;
 
-drop TABLE "ptif_li_parent", "ptif_li_child";
+drop TABLE ptif_li_parent, ptif_li_child;

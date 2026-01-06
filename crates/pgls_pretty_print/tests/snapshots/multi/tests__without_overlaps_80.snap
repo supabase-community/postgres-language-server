@@ -21,21 +21,21 @@ where
 
 create table temporal_rng2 (like temporal_rng including all);
 
-drop TABLE "temporal_rng2";
+drop TABLE temporal_rng2;
 
 create table temporal_rng2 ()
 inherits (temporal_rng);
 
-drop TABLE "temporal_rng2";
+drop TABLE temporal_rng2;
 
-drop TABLE "temporal_rng";
+drop TABLE temporal_rng;
 
 create table temporal_rng (
   id INT4RANGE,
   valid_at DATERANGE
 );
 
-drop TABLE "temporal_rng" cascade;
+drop TABLE temporal_rng cascade;
 
 create table temporal_rng (
   id INT4RANGE,
@@ -45,9 +45,9 @@ create table temporal_rng (
 create table temporal_rng2 ()
 inherits (temporal_rng);
 
-drop TABLE "temporal_rng2";
+drop TABLE temporal_rng2;
 
-drop TABLE "temporal_rng";
+drop TABLE temporal_rng;
 
 select
   pg_get_constraintdef(oid)
@@ -68,7 +68,7 @@ create type textrange2 as RANGE (subtype = TEXT, collation = "C");
 alter table temporal_rng3
   drop constraint temporal_rng3_pk;
 
-drop TABLE "temporal_rng3";
+drop TABLE temporal_rng3;
 
 drop TYPE textrange2;
 
@@ -114,7 +114,7 @@ from
 where
   conname = 'temporal_rng3_uq';
 
-drop TABLE "temporal_rng3";
+drop TABLE temporal_rng3;
 
 select
   pg_get_constraintdef(oid)
@@ -130,14 +130,14 @@ from
 where
   conname = 'temporal_rng3_uq';
 
-drop TABLE "temporal_rng3";
+drop TABLE temporal_rng3;
 
 create type textrange2 as RANGE (subtype = TEXT, collation = "C");
 
 alter table temporal_rng3
   drop constraint temporal_rng3_uq;
 
-drop TABLE "temporal_rng3";
+drop TABLE temporal_rng3;
 
 drop TYPE textrange2;
 
@@ -156,7 +156,7 @@ create index "idx_temporal3_uq" on temporal3 using gist (id, valid_at);
 alter table temporal3
   add constraint "temporal3_pk" primary key using index "idx_temporal3_uq";
 
-drop TABLE "temporal3";
+drop TABLE temporal3;
 
 create table temporal3 (
   id INT4RANGE,
@@ -168,7 +168,7 @@ create index "idx_temporal3_uq" on temporal3 using gist (id, valid_at);
 alter table temporal3
   add constraint "temporal3_uq" unique using index "idx_temporal3_uq";
 
-drop TABLE "temporal3";
+drop TABLE temporal3;
 
 create table temporal3 (
   id INT4RANGE,
@@ -180,15 +180,15 @@ create unique index "idx_temporal3_uq" on temporal3 using btree (id, valid_at);
 alter table temporal3
   add constraint "temporal3_uq" unique using index "idx_temporal3_uq";
 
-drop TABLE "temporal3";
+drop TABLE temporal3;
 
 create table temporal3 (id INT4RANGE);
 
-drop TABLE "temporal3";
+drop TABLE temporal3;
 
 create table temporal3 (id INT4RANGE);
 
-drop TABLE "temporal3";
+drop TABLE temporal3;
 
 alter table temporal_rng
   drop constraint temporal_rng_pk;
@@ -482,7 +482,7 @@ where
 
 select * from temporal_rng3 order by id, valid_at;
 
-drop TABLE "temporal_rng3";
+drop TABLE temporal_rng3;
 
 alter table temporal_mltrng
   drop constraint temporal_mltrng_pk;
@@ -842,7 +842,7 @@ where
 
 select * from temporal_mltrng3 order by id, valid_at;
 
-drop TABLE "temporal_mltrng3";
+drop TABLE temporal_mltrng3;
 
 insert into temporal3 (id, valid_at, id2, name)
 values
@@ -859,7 +859,7 @@ values
     'bar'
   );
 
-drop TABLE "temporal3";
+drop TABLE temporal3;
 
 alter table temporal3
   alter column valid_at drop not null;
@@ -875,7 +875,7 @@ alter table temporal3 rename column valid_at to valid_thru;
 alter table temporal3
   drop column valid_thru;
 
-drop TABLE "temporal3";
+drop TABLE temporal3;
 
 create table tp1
 partition of temporal_partitioned
@@ -909,7 +909,7 @@ select * from tp1 order by id, valid_at;
 
 select * from tp2 order by id, valid_at;
 
-drop TABLE "temporal_partitioned";
+drop TABLE temporal_partitioned;
 
 create table tp1
 partition of temporal_partitioned
@@ -943,7 +943,7 @@ select * from tp1 order by id, valid_at;
 
 select * from tp2 order by id, valid_at;
 
-drop TABLE "temporal_partitioned";
+drop TABLE temporal_partitioned;
 
 alter table temporal_rng
   REPLICA IDENTITY
@@ -1360,7 +1360,7 @@ set id = excluded.id + '[4,5)';
 
 select * from temporal3 order by id, valid_at;
 
-drop TABLE "temporal3";
+drop TABLE temporal3;
 
 truncate temporal_mltrng;
 
@@ -1852,7 +1852,7 @@ set id = excluded.id + '[4,5)';
 
 select * from temporal_mltrng3 order by id, valid_at;
 
-drop TABLE "temporal_mltrng3";
+drop TABLE temporal_mltrng3;
 
 alter table temporal3
   drop column valid_at;
@@ -1860,24 +1860,24 @@ alter table temporal3
 alter table temporal3
   drop column valid_at cascade;
 
-drop TABLE "temporal_fk_rng2rng";
+drop TABLE temporal_fk_rng2rng;
 
-drop TABLE "temporal3";
+drop TABLE temporal3;
 
-drop TABLE "temporal_rng";
+drop TABLE temporal_rng;
 
 create table temporal_rng (
   id INT4RANGE,
   valid_at DATERANGE
 );
 
-drop TABLE "temporal_fk_rng2rng";
+drop TABLE temporal_fk_rng2rng;
 
-drop TABLE "temporal_fk_rng2rng";
+drop TABLE temporal_fk_rng2rng;
 
-drop TABLE "temporal_rng2";
+drop TABLE temporal_rng2;
 
-drop TABLE "temporal_fk2_rng2rng";
+drop TABLE temporal_fk2_rng2rng;
 
 alter table temporal_fk_rng2rng
   drop constraint temporal_fk_rng2rng_fk,
@@ -2316,20 +2316,20 @@ values
     '[12,13)'
   );
 
-drop TABLE "temporal_mltrng";
+drop TABLE temporal_mltrng;
 
 create table temporal_mltrng (
   id INT4RANGE,
   valid_at datemultirange
 );
 
-drop TABLE "temporal_fk_mltrng2mltrng";
+drop TABLE temporal_fk_mltrng2mltrng;
 
-drop TABLE "temporal_fk_mltrng2mltrng";
+drop TABLE temporal_fk_mltrng2mltrng;
 
-drop TABLE "temporal_mltrng2";
+drop TABLE temporal_mltrng2;
 
-drop TABLE "temporal_fk2_mltrng2mltrng";
+drop TABLE temporal_fk2_mltrng2mltrng;
 
 delete from temporal_fk_mltrng2mltrng;
 
@@ -2964,9 +2964,9 @@ where
   valid_at =
   daterange('2018-01-01', '2018-02-01');
 
-drop TABLE "temporal_partitioned_fk_rng2rng";
+drop TABLE temporal_partitioned_fk_rng2rng;
 
-drop TABLE "temporal_partitioned_rng";
+drop TABLE temporal_partitioned_rng;
 
 create table tp1
 partition of temporal_partitioned_mltrng
@@ -3227,8 +3227,8 @@ where
     daterange('2018-01-01', '2018-02-01')
   );
 
-drop TABLE "temporal_partitioned_fk_mltrng2mltrng";
+drop TABLE temporal_partitioned_fk_mltrng2mltrng;
 
-drop TABLE "temporal_partitioned_mltrng";
+drop TABLE temporal_partitioned_mltrng;
 
 reset datestyle;

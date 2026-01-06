@@ -260,7 +260,7 @@ select
 from
   generate_series(1, 10) as x;
 
-drop TABLE "tbl";
+drop TABLE tbl;
 
 create table tbl (
   c1 INT,
@@ -328,7 +328,7 @@ select * from tbl where (c1, c2, c3) < (262, 1, 1) limit 1;
 
 select * from tbl where (c1, c2, c3) < (262, 1, 1) limit 1;
 
-drop TABLE "tbl";
+drop TABLE tbl;
 
 reset enable_seqscan;
 
@@ -373,7 +373,7 @@ select
 from
   generate_series(1, 10) as x;
 
-drop TABLE "tbl";
+drop TABLE tbl;
 
 create table tbl (
   c1 INT,
@@ -431,7 +431,7 @@ from
 
 insert into tbl select x, 2 * x, null, null from generate_series(1, 10) as x;
 
-drop TABLE "tbl";
+drop TABLE tbl;
 
 create table tbl (
   c1 INT,
@@ -478,7 +478,7 @@ from
 
 insert into tbl select x, 2 * x, null, null from generate_series(1, 10) as x;
 
-drop TABLE "tbl";
+drop TABLE tbl;
 
 create table tbl (
   c1 INT,
@@ -496,7 +496,7 @@ alter table tbl
 
 select indexdef from pg_indexes where tablename = 'tbl' order by indexname;
 
-drop TABLE "tbl";
+drop TABLE tbl;
 
 create table tbl (
   c1 INT,
@@ -514,7 +514,7 @@ alter table tbl
 
 select indexdef from pg_indexes where tablename = 'tbl' order by indexname;
 
-drop TABLE "tbl";
+drop TABLE tbl;
 
 create table tbl (
   c1 INT,
@@ -536,7 +536,7 @@ alter table tbl
 
 select indexdef from pg_indexes where tablename = 'tbl' order by indexname;
 
-drop TABLE "tbl";
+drop TABLE tbl;
 
 create table tbl (
   c1 INT,
@@ -557,7 +557,7 @@ alter index tbl_idx
 alter index tbl_idx
   alter column 4 set STATISTICS 1000;
 
-drop TABLE "tbl";
+drop TABLE tbl;
 
 create table tbl (
   c1 INT,
@@ -580,7 +580,7 @@ create unique index concurrently on tbl using btree (c1, c2) include (c3, c4);
 
 select indexdef from pg_indexes where tablename = 'tbl' order by indexname;
 
-drop TABLE "tbl";
+drop TABLE tbl;
 
 create table tbl (
   c1 INT,
@@ -606,7 +606,7 @@ alter table tbl
 
 select indexdef from pg_indexes where tablename = 'tbl' order by indexname;
 
-drop TABLE "tbl";
+drop TABLE tbl;
 
 create table tbl (
   c1 INT,
@@ -629,7 +629,7 @@ create index on tbl using rtree (c3) include (c1, c4);
 
 create index on tbl using btree (c1, c2) include (c3, c4);
 
-drop TABLE "tbl";
+drop TABLE tbl;
 
 create table tbl (
   c1 INT,
@@ -667,7 +667,7 @@ update tbl set c3 = 1;
 
 delete from tbl where c1 = 5 or c3 = 12;
 
-drop TABLE "tbl";
+drop TABLE tbl;
 
 create table tbl (
   c1 INT,
@@ -692,7 +692,7 @@ alter table tbl
 alter table tbl
   alter column c3 type BIGINT;
 
-drop TABLE "tbl";
+drop TABLE tbl;
 
 create table nametbl (
   c1 INT,
@@ -714,4 +714,4 @@ select c2, c1, c3 from nametbl where c2 = 'two' and c1 = 1;
 
 reset enable_seqscan;
 
-drop TABLE "nametbl";
+drop TABLE nametbl;

@@ -15,13 +15,13 @@ select upper('á' collate "regress_builtin_c") = 'á';
 
 select 'Áá' !~ '[[:alpha:]]' collate "regress_builtin_c";
 
-drop COLLATION "regress_builtin_c";
+drop COLLATION regress_builtin_c;
 
 create collation regress_pg_c_utf8 (provider = builtin, locale = 'C_UTF8');
 
 create collation regress_pg_c_utf8 (provider = builtin, locale = 'C.UTF8');
 
-drop COLLATION "regress_pg_c_utf8";
+drop COLLATION regress_pg_c_utf8;
 
 create collation regress_pg_c_utf8 (provider = builtin, locale = 'C.UTF-8');
 
@@ -52,7 +52,7 @@ select
 from
   test_pg_c_utf8;
 
-drop TABLE "test_pg_c_utf8";
+drop TABLE test_pg_c_utf8;
 
 select lower('ÎÎ£' collate "pg_c_utf8");
 
@@ -124,7 +124,7 @@ select
 from
   test_pg_unicode_fast;
 
-drop TABLE "test_pg_unicode_fast";
+drop TABLE test_pg_unicode_fast;
 
 select lower('ÎÎ£' collate "pg_unicode_fast");
 

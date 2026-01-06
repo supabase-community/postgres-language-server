@@ -1574,7 +1574,7 @@ where
     int4range(400, 500)
   );
 
-drop TABLE "test_multirange_gist";
+drop TABLE test_multirange_gist;
 
 create table reservations (
   room_id INT not null,
@@ -1835,7 +1835,7 @@ set enable_hashjoin = default;
 
 set enable_mergejoin = default;
 
-drop TABLE "nummultirange_test2";
+drop TABLE nummultirange_test2;
 
 select
   cast('{[123.001, 5.e9)}'
@@ -1858,7 +1858,7 @@ values
 
 select * from float8multirange_test;
 
-drop TABLE "float8multirange_test";
+drop TABLE float8multirange_test;
 
 create domain mydomain as INT;
 
@@ -1948,7 +1948,7 @@ revoke USAGE on type textrange1 from regress_multirange_owner;
 
 create temporary table test2 (f1 multitextrange1[]);
 
-drop TABLE "test1";
+drop TABLE test1;
 
 drop TYPE textrange1;
 
@@ -1958,8 +1958,8 @@ drop role regress_multirange_owner;
 
 create function anyarray_anymultirange_func(a ANYARRAY, r anymultirange)
 returns ANYELEMENT
-as 'select $1[1] + lower($2);'
-language "sql";
+as $function$select $1[1] + lower($2);$function$
+language sql;
 
 select
   anyarray_anymultirange_func(
@@ -1977,18 +1977,18 @@ drop FUNCTION anyarray_anymultirange_func(ANYARRAY, anymultirange);
 
 create function bogus_func(ANYELEMENT)
 returns anymultirange
-as 'select int4multirange(int4range(1,10))'
-language "sql";
+as $function$select int4multirange(int4range(1,10))$function$
+language sql;
 
 create function bogus_func(INT)
 returns anymultirange
-as 'select int4multirange(int4range(1,10))'
-language "sql";
+as $function$select int4multirange(int4range(1,10))$function$
+language sql;
 
 create function range_add_bounds(anymultirange)
 returns ANYELEMENT
-as 'select lower($1) + upper($1)'
-language "sql";
+as $function$select lower($1) + upper($1)$function$
+language sql;
 
 select range_add_bounds(int4multirange(int4range(1, 17)));
 
@@ -2000,8 +2000,8 @@ multirangetypes_sql(
   b ANYARRAY,
   out c ANYELEMENT
 )
-as ' select upper($1) + $2[1] '
-language "sql";
+as $function$ select upper($1) + $2[1] $function$
+language sql;
 
 select multirangetypes_sql(int4multirange(int4range(1, 10)), array[2, 20]);
 
@@ -2013,8 +2013,8 @@ anycompatiblearray_anycompatiblemultirange_func(
   mr anycompatiblemultirange
 )
 returns anycompatible
-as 'select $1[1] + lower($2);'
-language "sql";
+as $function$select $1[1] + lower($2);$function$
+language sql;
 
 select
   anycompatiblearray_anycompatiblemultirange_func(
@@ -2045,8 +2045,8 @@ anycompatiblerange_anycompatiblemultirange_func(
   mr anycompatiblemultirange
 )
 returns anycompatible
-as 'select lower($1) + lower($2);'
-language "sql";
+as $function$select lower($1) + lower($2);$function$
+language sql;
 
 select
   anycompatiblerange_anycompatiblemultirange_func(
@@ -2067,8 +2067,8 @@ drop FUNCTION
 
 create function bogus_func(anycompatible)
 returns anycompatiblerange
-as 'select int4range(1,10)'
-language "sql";
+as $function$select int4range(1,10)$function$
+language sql;
 
 select
   array[nummultirange(numrange(1.1, 1.2)),
@@ -2089,7 +2089,7 @@ values
 
 select * from i8mr_array;
 
-drop TABLE "i8mr_array";
+drop TABLE i8mr_array;
 
 select arraymultirange(arrayrange(array[1, 2], array[2, 1]));
 
@@ -2140,8 +2140,8 @@ mr_outparam_succeed(
   out r anymultirange,
   out t TEXT
 )
-as ' select $1, ''foo''::text '
-language "sql";
+as $function$ select $1, 'foo'::text $function$
+language sql;
 
 select * from mr_outparam_succeed(int4multirange(int4range(1, 2)));
 
@@ -2151,8 +2151,8 @@ mr_outparam_succeed2(
   out r ANYARRAY,
   out t TEXT
 )
-as ' select ARRAY[upper($1)], ''foo''::text '
-language "sql";
+as $function$ select ARRAY[upper($1)], 'foo'::text $function$
+language sql;
 
 select * from mr_outparam_succeed2(int4multirange(int4range(1, 2)));
 
@@ -2162,8 +2162,8 @@ mr_outparam_succeed3(
   out r ANYRANGE,
   out t TEXT
 )
-as ' select range_merge($1), ''foo''::text '
-language "sql";
+as $function$ select range_merge($1), 'foo'::text $function$
+language sql;
 
 select * from mr_outparam_succeed3(int4multirange(int4range(1, 2)));
 
@@ -2173,14 +2173,14 @@ mr_outparam_succeed4(
   out r anymultirange,
   out t TEXT
 )
-as ' select multirange($1), ''foo''::text '
-language "sql";
+as $function$ select multirange($1), 'foo'::text $function$
+language sql;
 
 select * from mr_outparam_succeed4(int4range(1, 2));
 
 create function mr_inoutparam_succeed(out i ANYELEMENT, inout r anymultirange)
-as ' select upper($1), $1 '
-language "sql";
+as $function$ select upper($1), $1 $function$
+language sql;
 
 select * from mr_inoutparam_succeed(int4multirange(int4range(1, 2)));
 
@@ -2189,30 +2189,30 @@ returns table (
   i ANYELEMENT,
   r anymultirange
 )
-as ' select $1, $2 '
-language "sql";
+as $function$ select $1, $2 $function$
+language sql;
 
 select * from mr_table_succeed(123, int4multirange(int4range(1, 11)));
 
 create function mr_polymorphic(i ANYRANGE)
 returns anymultirange
-as ' begin return multirange($1); end; '
-language "plpgsql";
+as $function$ begin return multirange($1); end; $function$
+language plpgsql;
 
 select mr_polymorphic(int4range(1, 4));
 
 create function mr_outparam_fail(i ANYELEMENT, out r anymultirange, out t TEXT)
-as ' select ''[1,10]'', ''foo'' '
-language "sql";
+as $function$ select '[1,10]', 'foo' $function$
+language sql;
 
 create function mr_inoutparam_fail(inout i ANYELEMENT, out r anymultirange)
-as ' select $1, ''[1,10]'' '
-language "sql";
+as $function$ select $1, '[1,10]' $function$
+language sql;
 
 create function mr_table_fail(i ANYELEMENT)
 returns table (
   i ANYELEMENT,
   r anymultirange
 )
-as ' select $1, ''[1,10]'' '
-language "sql";
+as $function$ select $1, '[1,10]' $function$
+language sql;

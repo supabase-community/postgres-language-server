@@ -142,17 +142,17 @@ revoke all on table tenant_table from PUBLIC;
 
 set session authorization regress_createrole;
 
-drop INDEX "tenant_idx";
+drop INDEX tenant_idx;
 
 alter table tenant_table
   add column t TEXT;
 
-drop TABLE "tenant_table";
+drop TABLE tenant_table;
 
 alter view tenant_view
   OWNER to regress_role_admin;
 
-drop VIEW "tenant_view";
+drop VIEW tenant_view;
 
 create schema "regress_tenant_schema" authorization regress_tenant;
 
@@ -197,7 +197,7 @@ alter table tenant2_table
 alter table tenant2_table
   OWNER to regress_tenant2;
 
-drop TABLE "tenant2_table";
+drop TABLE tenant2_table;
 
 create role regress_read_all_data in role pg_read_all_data;
 
@@ -279,11 +279,11 @@ reset session_authorization;
 
 revoke CREATE on database regression from regress_role_admin cascade;
 
-drop INDEX "tenant_idx";
+drop INDEX tenant_idx;
 
-drop TABLE "tenant_table";
+drop TABLE tenant_table;
 
-drop VIEW "tenant_view";
+drop VIEW tenant_view;
 
 drop SCHEMA regress_tenant2_schema;
 

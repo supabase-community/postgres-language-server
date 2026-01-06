@@ -15,10 +15,10 @@ select * from persons;
 
 create function get_all_persons()
 returns setof person_type
-language "sql"
-as '
+language sql
+as $function$
     SELECT * FROM persons;
-';
+$function$;
 
 select * from get_all_persons();
 
@@ -74,7 +74,7 @@ create table of_tt_enum_type of tt_enum_type;
 
 drop TYPE tt_enum_type;
 
-drop TABLE "stuff";
+drop TABLE stuff;
 
 create type person_type as (id INT, name TEXT);
 
@@ -84,8 +84,8 @@ insert into persons values (1, 'test');
 
 create function namelen(person_type)
 returns INT
-language "sql"
-as ' SELECT length($1.name) ';
+language sql
+as $function$ SELECT length($1.name) $function$;
 
 select id, namelen(persons) from persons;
 

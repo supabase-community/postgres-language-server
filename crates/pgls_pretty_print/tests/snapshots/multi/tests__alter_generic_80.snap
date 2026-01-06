@@ -6,7 +6,7 @@ snapshot_kind: text
 create function test_opclass_options_func(internal)
 returns VOID
 as 'regresslib', 'test_opclass_options_func'
-language "c";
+language c;
 
 set client_min_messages = warning;
 
@@ -36,13 +36,13 @@ set session authorization regress_alter_generic_user1;
 
 create function alt_func1(INT)
 returns INT
-language "sql"
-as 'SELECT $1 + 1';
+language sql
+as $function$SELECT $1 + 1$function$;
 
 create function alt_func2(INT)
 returns INT
-language "sql"
-as 'SELECT $1 - 1';
+language sql
+as $function$SELECT $1 - 1$function$;
 
 create aggregate alt_agg1 (
   sfunc1 = int4pl,
@@ -90,13 +90,13 @@ set session authorization regress_alter_generic_user2;
 
 create function alt_func1(INT)
 returns INT
-language "sql"
-as 'SELECT $1 + 2';
+language sql
+as $function$SELECT $1 + 2$function$;
 
 create function alt_func2(INT)
 returns INT
-language "sql"
-as 'SELECT $1 - 2';
+language sql
+as $function$SELECT $1 - 2$function$;
 
 create aggregate alt_agg1 (
   sfunc1 = int4pl,
@@ -444,7 +444,7 @@ alter OPERATOR FAMILY alt_opf4 USING btree
   OPERATOR 5 (INT, SMALLINT),
   FUNCTION 1 (INT, SMALLINT);
 
-drop OPERATOR FAMILY "alt_opf4" USING "btree";
+drop OPERATOR FAMILY alt_opf4 USING btree;
 
 rollback;
 
@@ -467,7 +467,7 @@ alter OPERATOR FAMILY alt_opf4 USING btree
 
 alter OPERATOR FAMILY alt_opf4 USING btree add STORAGE invalid_storage;
 
-drop OPERATOR FAMILY "alt_opf4" USING "btree";
+drop OPERATOR FAMILY alt_opf4 USING btree;
 
 begin;
 
@@ -483,7 +483,7 @@ alter OPERATOR FAMILY alt_opf5 USING btree
 
 reset role;
 
-drop OPERATOR FAMILY "alt_opf5" USING "btree";
+drop OPERATOR FAMILY alt_opf5 USING btree;
 
 rollback;
 
@@ -511,27 +511,27 @@ alter OPERATOR FAMILY alt_opf7 USING btree add OPERATOR 1 < (INT, SMALLINT);
 alter OPERATOR FAMILY alt_opf7 USING btree
   drop OPERATOR 1 (INT, SMALLINT, BIGINT);
 
-drop OPERATOR FAMILY "alt_opf7" USING "btree";
+drop OPERATOR FAMILY alt_opf7 USING btree;
 
 create OPERATOR FAMILY alt_opf8 using btree;
 
 alter OPERATOR FAMILY alt_opf8 USING btree add OPERATOR 1 < (INT, INT);
 
-drop OPERATOR FAMILY "alt_opf8" USING "btree";
+drop OPERATOR FAMILY alt_opf8 USING btree;
 
 create OPERATOR FAMILY alt_opf9 using gist;
 
 alter OPERATOR FAMILY alt_opf9 USING gist
   add OPERATOR 1 < (INT, INT) for order by float_ops;
 
-drop OPERATOR FAMILY "alt_opf9" USING "gist";
+drop OPERATOR FAMILY alt_opf9 USING gist;
 
 create OPERATOR FAMILY alt_opf10 using btree;
 
 alter OPERATOR FAMILY alt_opf10 USING btree
   add OPERATOR 1 < (INT, INT) for order by float_ops;
 
-drop OPERATOR FAMILY "alt_opf10" USING "btree";
+drop OPERATOR FAMILY alt_opf10 USING btree;
 
 create OPERATOR FAMILY alt_opf11 using gist;
 
@@ -540,7 +540,7 @@ alter OPERATOR FAMILY alt_opf11 USING gist
 
 alter OPERATOR FAMILY alt_opf11 USING gist drop OPERATOR 1 (INT, INT);
 
-drop OPERATOR FAMILY "alt_opf11" USING "gist";
+drop OPERATOR FAMILY alt_opf11 USING gist;
 
 begin;
 
@@ -548,13 +548,13 @@ create OPERATOR FAMILY alt_opf12 using btree;
 
 create function fn_opf12(INT, SMALLINT)
 returns BIGINT
-as 'SELECT NULL::BIGINT;'
-language "sql";
+as $function$SELECT NULL::BIGINT;$function$
+language sql;
 
 alter OPERATOR FAMILY alt_opf12 USING btree
   add FUNCTION 1 fn_opf12(INT, SMALLINT);
 
-drop OPERATOR FAMILY "alt_opf12" USING "btree";
+drop OPERATOR FAMILY alt_opf12 USING btree;
 
 rollback;
 
@@ -564,12 +564,12 @@ create OPERATOR FAMILY alt_opf13 using hash;
 
 create function fn_opf13(INT)
 returns BIGINT
-as 'SELECT NULL::BIGINT;'
-language "sql";
+as $function$SELECT NULL::BIGINT;$function$
+language sql;
 
 alter OPERATOR FAMILY alt_opf13 USING hash add FUNCTION 1 fn_opf13(INT);
 
-drop OPERATOR FAMILY "alt_opf13" USING "hash";
+drop OPERATOR FAMILY alt_opf13 USING hash;
 
 rollback;
 
@@ -579,12 +579,12 @@ create OPERATOR FAMILY alt_opf14 using btree;
 
 create function fn_opf14(INT)
 returns BIGINT
-as 'SELECT NULL::BIGINT;'
-language "sql";
+as $function$SELECT NULL::BIGINT;$function$
+language sql;
 
 alter OPERATOR FAMILY alt_opf14 USING btree add FUNCTION 1 fn_opf14(INT);
 
-drop OPERATOR FAMILY "alt_opf14" USING "btree";
+drop OPERATOR FAMILY alt_opf14 USING btree;
 
 rollback;
 
@@ -594,13 +594,13 @@ create OPERATOR FAMILY alt_opf15 using hash;
 
 create function fn_opf15(INT, SMALLINT)
 returns BIGINT
-as 'SELECT NULL::BIGINT;'
-language "sql";
+as $function$SELECT NULL::BIGINT;$function$
+language sql;
 
 alter OPERATOR FAMILY alt_opf15 USING hash
   add FUNCTION 1 fn_opf15(INT, SMALLINT);
 
-drop OPERATOR FAMILY "alt_opf15" USING "hash";
+drop OPERATOR FAMILY alt_opf15 USING hash;
 
 rollback;
 
@@ -609,7 +609,7 @@ create OPERATOR FAMILY alt_opf16 using gist;
 alter OPERATOR FAMILY alt_opf16 USING gist
   add FUNCTION 1 btint42cmp(INT, SMALLINT);
 
-drop OPERATOR FAMILY "alt_opf16" USING "gist";
+drop OPERATOR FAMILY alt_opf16 USING gist;
 
 create OPERATOR FAMILY alt_opf17 using btree;
 
@@ -646,7 +646,7 @@ alter OPERATOR FAMILY alt_opf17 USING btree
   OPERATOR 5 > (INT, SMALLINT),
   FUNCTION 1 btint42cmp(INT, SMALLINT);
 
-drop OPERATOR FAMILY "alt_opf17" USING "btree";
+drop OPERATOR FAMILY alt_opf17 USING btree;
 
 create OPERATOR FAMILY alt_opf18 using btree;
 
@@ -670,7 +670,7 @@ alter OPERATOR FAMILY alt_opf18 USING btree
 
 alter OPERATOR FAMILY alt_opf18 USING btree drop FUNCTION 2 (INT, INT);
 
-drop OPERATOR FAMILY "alt_opf18" USING "btree";
+drop OPERATOR FAMILY alt_opf18 USING btree;
 
 create OPERATOR FAMILY alt_opf19 using btree;
 
@@ -692,7 +692,7 @@ alter OPERATOR FAMILY alt_opf19 USING btree
 
 alter OPERATOR FAMILY alt_opf19 USING btree drop FUNCTION 5 (INT, INT);
 
-drop OPERATOR FAMILY "alt_opf19" USING "btree";
+drop OPERATOR FAMILY alt_opf19 USING btree;
 
 set session authorization regress_alter_generic_user1;
 

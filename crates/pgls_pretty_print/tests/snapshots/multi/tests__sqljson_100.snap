@@ -221,10 +221,10 @@ create type mood as enum ('happy', 'sad', 'neutral');
 
 create function mood_to_json(mood)
 returns JSON
-as '
+as $function$
   SELECT to_json($1::text);
-'
-language "sql"
+$function$
+language sql
 immutable;
 
 create cast (mood as JSON) with function mood_to_json(mood) as IMPLICIT;
@@ -559,7 +559,7 @@ as select
   JSON_OBJECT('foo' : '1' format json,
   'bar' : 'baz' returning JSON);
 
-drop VIEW "json_object_view";
+drop VIEW json_object_view;
 
 select
   to_json(a) as a,
@@ -626,7 +626,7 @@ as select
   2
   absent on null returning JSON);
 
-drop VIEW "json_array_view";
+drop VIEW json_array_view;
 
 select
   JSON_OBJECTAGG(i : cast('111' || i as BYTEA) format json
@@ -660,7 +660,7 @@ as select
 from
   generate_series(1, 5) as i;
 
-drop VIEW "json_objectagg_view";
+drop VIEW json_objectagg_view;
 
 select
   JSON_ARRAYAGG(cast('111' || i as BYTEA) format json
@@ -691,7 +691,7 @@ as select
 from
   generate_series(1, 5) as i;
 
-drop VIEW "json_arrayagg_view";
+drop VIEW json_arrayagg_view;
 
 select JSON_ARRAY(select i from (values (1), (2), (null), (4)) as foo (i) returning JSONB);
 
@@ -702,7 +702,7 @@ as select
   from
     (values (1), (2), (null), (4)) as foo (i) returning JSONB);
 
-drop VIEW "json_array_subquery_view";
+drop VIEW json_array_subquery_view;
 
 select null is JSON;
 

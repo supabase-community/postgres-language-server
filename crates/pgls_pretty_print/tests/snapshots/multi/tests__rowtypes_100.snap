@@ -457,17 +457,17 @@ create type price_key as (id INT);
 
 create function price_key_from_table(price)
 returns price_key
-as '
+as $function$
     SELECT $1.id
-'
-language "sql";
+$function$
+language sql;
 
 create function price_key_from_input(price_input)
 returns price_key
-as '
+as $function$
     SELECT $1.id
-'
-language "sql";
+$function$
+language sql;
 
 insert into price values (1, false, 42), (10, false, 100), (11, true, 17.99);
 
@@ -494,31 +494,31 @@ create temporary table compos (
 
 create function fcompos1(v compos)
 returns VOID
-as '
+as $function$
 insert into compos values (v);  -- fail
-'
-language "sql";
+$function$
+language sql;
 
 create function fcompos1(v compos)
 returns VOID
-as '
+as $function$
 insert into compos values (v.*);
-'
-language "sql";
+$function$
+language sql;
 
 create function fcompos2(v compos)
 returns VOID
-as '
+as $function$
 select fcompos1(v);
-'
-language "sql";
+$function$
+language sql;
 
 create function fcompos3(v compos)
 returns VOID
-as '
+as $function$
 select fcompos1(fcompos3.v.*);
-'
-language "sql";
+$function$
+language sql;
 
 select fcompos1(row(1, 'one'));
 
@@ -552,8 +552,8 @@ select last(f) from fullname as f;
 
 create function longname(fullname)
 returns TEXT
-language "sql"
-as 'select $1.first || '' '' || $1.last';
+language sql
+as $function$select $1.first || ' ' || $1.last$function$;
 
 select f.longname from fullname as f;
 
@@ -778,7 +778,7 @@ where
 
 select pg_get_viewdef('composite_v', true);
 
-drop VIEW "composite_v";
+drop VIEW composite_v;
 
 select ss.a.x, ss.a.n from (select information_schema._pg_expandarray(array[1, 2]) as a) as ss;
 
@@ -832,4 +832,4 @@ select (cast(null as compositetable)).a;
 
 select (cast(null as compositetable)).oid;
 
-drop TABLE "compositetable";
+drop TABLE compositetable;

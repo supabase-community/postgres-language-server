@@ -40,7 +40,7 @@ select * from tbl_gist where c4 <@ box(point(1, 1), point(10, 10));
 
 set enable_bitmapscan = default;
 
-drop TABLE "tbl_gist";
+drop TABLE tbl_gist;
 
 create table tbl_gist (
   c1 INT,
@@ -79,7 +79,7 @@ select * from tbl_gist where c4 <@ box(point(1, 1), point(10, 10));
 
 set enable_bitmapscan = default;
 
-drop TABLE "tbl_gist";
+drop TABLE tbl_gist;
 
 create table tbl_gist (
   c1 INT,
@@ -101,7 +101,7 @@ create index concurrently "tbl_gist_idx" on tbl_gist using gist (c4) include (c1
 
 select indexdef from pg_indexes where tablename = 'tbl_gist' order by indexname;
 
-drop TABLE "tbl_gist";
+drop TABLE tbl_gist;
 
 create table tbl_gist (
   c1 INT,
@@ -132,7 +132,7 @@ alter table tbl_gist
 
 select indexdef from pg_indexes where tablename = 'tbl_gist' order by indexname;
 
-drop TABLE "tbl_gist";
+drop TABLE tbl_gist;
 
 create table tbl_gist (
   c1 INT,
@@ -158,7 +158,7 @@ update tbl_gist set c1 = 1 where c1 = 3;
 
 delete from tbl_gist where c1 = 5 or c3 = 12;
 
-drop TABLE "tbl_gist";
+drop TABLE tbl_gist;
 
 create table tbl_gist (
   c1 INT,
@@ -184,7 +184,7 @@ alter table tbl_gist
 alter table tbl_gist
   alter column c3 type BIGINT;
 
-drop TABLE "tbl_gist";
+drop TABLE tbl_gist;
 
 create table tbl_gist (
   c1 INT,
@@ -220,4 +220,4 @@ from
 
 select * from tbl_gist where c4 <@ box(point(1, 1), point(10, 10));
 
-drop TABLE "tbl_gist";
+drop TABLE tbl_gist;

@@ -113,13 +113,13 @@ key,
 key)
 do nothing;
 
-drop INDEX "op_index_key";
+drop INDEX op_index_key;
 
-drop INDEX "collation_index_key";
+drop INDEX collation_index_key;
 
-drop INDEX "both_index_key";
+drop INDEX both_index_key;
 
-drop INDEX "both_index_expr_key";
+drop INDEX both_index_expr_key;
 
 create unique index "cross_match"
 on insertconflicttest
@@ -143,7 +143,7 @@ on conflict
 (upper(fruit)) text_pattern_ops)
 do nothing;
 
-drop INDEX "cross_match";
+drop INDEX cross_match;
 
 create unique index "key_index" on insertconflicttest using btree (key);
 
@@ -297,7 +297,7 @@ do
 update
 set insertconflicttest."fruit" = 'Mango';
 
-drop INDEX "key_index";
+drop INDEX key_index;
 
 create unique index "comp_key_index" on insertconflicttest using btree (key, fruit);
 
@@ -349,7 +349,7 @@ do
 update
 set fruit = excluded.fruit;
 
-drop INDEX "comp_key_index";
+drop INDEX comp_key_index;
 
 create unique index "part_comp_key_index"
 on insertconflicttest
@@ -419,9 +419,9 @@ do
 update
 set fruit = excluded.fruit;
 
-drop INDEX "part_comp_key_index";
+drop INDEX part_comp_key_index;
 
-drop INDEX "expr_part_comp_key_index";
+drop INDEX expr_part_comp_key_index;
 
 create unique index "expr_key_index" on insertconflicttest using btree ((lower(fruit)));
 
@@ -457,7 +457,7 @@ do
 update
 set fruit = excluded.fruit;
 
-drop INDEX "expr_key_index";
+drop INDEX expr_key_index;
 
 create unique index "expr_comp_key_index" on insertconflicttest using btree (key, (lower(fruit)));
 
@@ -518,9 +518,9 @@ do
 update
 set fruit = excluded.fruit;
 
-drop INDEX "expr_comp_key_index";
+drop INDEX expr_comp_key_index;
 
-drop INDEX "tricky_expr_comp_key_index";
+drop INDEX tricky_expr_comp_key_index;
 
 create unique index "key_index" on insertconflicttest using btree (key);
 
@@ -550,9 +550,9 @@ do
 update
 set fruit = excluded.fruit;
 
-drop INDEX "key_index";
+drop INDEX key_index;
 
-drop INDEX "fruit_index";
+drop INDEX fruit_index;
 
 create unique index "partial_key_index"
 on insertconflicttest
@@ -613,7 +613,7 @@ do
 update
 set fruit = excluded.fruit;
 
-drop INDEX "partial_key_index";
+drop INDEX partial_key_index;
 
 create unique index "plain" on insertconflicttest using btree (key);
 
@@ -677,11 +677,11 @@ do
 update
 set fruit = cast(excluded.* as TEXT);
 
-drop INDEX "plain";
+drop INDEX plain;
 
-drop VIEW "insertconflictview";
+drop VIEW insertconflictview;
 
-drop TABLE "insertconflicttest";
+drop TABLE insertconflicttest;
 
 create table syscolconflicttest (
   key INT,
@@ -698,7 +698,7 @@ do
 update
 set data = cast(excluded.ctid as TEXT);
 
-drop TABLE "syscolconflicttest";
+drop TABLE syscolconflicttest;
 
 create table insertconflict (
   a BIGINT,
@@ -722,7 +722,7 @@ insert into insertconflict values (1, 2) on conflict (b) where coalesce(a, 1) > 
 
 insert into insertconflict values (1, 2) on conflict (b) where coalesce(a, 1) > 1 do nothing;
 
-drop TABLE "insertconflict";
+drop TABLE insertconflict;
 
 create table insertconflict (
   f1 INT primary key,
@@ -741,9 +741,9 @@ insert into insertconflictv values (1, 'bar') on conflict (f1) do update set f2 
 
 select * from insertconflict;
 
-drop VIEW "insertconflictv";
+drop VIEW insertconflictv;
 
-drop TABLE "insertconflict";
+drop TABLE insertconflict;
 
 create table cities (
   name TEXT,
@@ -818,9 +818,9 @@ altitude = excluded.altitude;
 
 select cast(tableoid as REGCLASS), * from cities;
 
-drop TABLE "capitals";
+drop TABLE capitals;
 
-drop TABLE "cities";
+drop TABLE cities;
 
 create table excluded (
   key INT primary key,
@@ -854,7 +854,7 @@ returning *;
 
 insert into excluded values (1, '2') on conflict (key) do update set data = 3 returning excluded.*;
 
-drop TABLE "excluded";
+drop TABLE excluded;
 
 create table dropcol (
   key INT primary key,
@@ -928,7 +928,7 @@ set keep1 = dropcol.keep1,
 keep2 = dropcol.keep2
 returning *;
 
-drop TABLE "dropcol";
+drop TABLE dropcol;
 
 create table twoconstraints (
   f1 INT unique,
@@ -956,7 +956,7 @@ do nothing;
 
 select * from twoconstraints;
 
-drop TABLE "twoconstraints";
+drop TABLE twoconstraints;
 
 create table selfconflict (
   f1 INT primary key,
@@ -1001,7 +1001,7 @@ commit;
 
 select * from selfconflict;
 
-drop TABLE "selfconflict";
+drop TABLE selfconflict;
 
 create table parted_conflict_test (
   a INT unique,
@@ -1122,7 +1122,7 @@ where
 
 select * from parted_conflict_test order by a;
 
-drop TABLE "parted_conflict_test";
+drop TABLE parted_conflict_test;
 
 create table parted_conflict (
   a INT primary key,
@@ -1141,7 +1141,7 @@ insert into parted_conflict values (40, 'forty');
 
 insert into parted_conflict_1 values (40, 'cuarenta') on conflict (a) do update set b = excluded.b;
 
-drop TABLE "parted_conflict";
+drop TABLE parted_conflict;
 
 create table parted_conflict (
   a INT,
@@ -1168,7 +1168,7 @@ insert into parted_conflict values (40, 'forty');
 
 insert into parted_conflict_1 values (40, 'cuarenta') on conflict (a) do update set b = excluded.b;
 
-drop TABLE "parted_conflict";
+drop TABLE parted_conflict;
 
 create table parted_conflict (
   a INT,
@@ -1213,17 +1213,17 @@ select * from parted_conflict order by a;
 
 create or replace function parted_conflict_update_func()
 returns trigger
-as '
+as $function$
 declare
     r record;
 begin
  for r in select * from inserted loop
-	raise notice ''a = %, b = %, c = %'', r.a, r.b, r.c;
+	raise notice 'a = %, b = %, c = %', r.a, r.b, r.c;
  end loop;
  return new;
 end;
-'
-language "plpgsql";
+$function$
+language plpgsql;
 
 create TRIGGER parted_conflict_update
   after update
@@ -1244,6 +1244,6 @@ do
 update
 set c = parted_conflict.c + 1;
 
-drop TABLE "parted_conflict";
+drop TABLE parted_conflict;
 
 drop FUNCTION parted_conflict_update_func();

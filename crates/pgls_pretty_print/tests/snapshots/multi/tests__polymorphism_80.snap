@@ -5,10 +5,10 @@ snapshot_kind: text
 ---
 create function polyf(x ANYELEMENT)
 returns ANYELEMENT
-as '
+as $function$
   select x + 1
-'
-language "sql";
+$function$
+language sql;
 
 select polyf(42) as int, polyf(4.5) as num;
 
@@ -18,10 +18,10 @@ drop FUNCTION polyf(ANYELEMENT);
 
 create function polyf(x ANYELEMENT)
 returns ANYARRAY
-as '
+as $function$
   select array[x + 1, x + 2]
-'
-language "sql";
+$function$
+language sql;
 
 select polyf(42) as int, polyf(4.5) as num;
 
@@ -29,10 +29,10 @@ drop FUNCTION polyf(ANYELEMENT);
 
 create function polyf(x ANYARRAY)
 returns ANYELEMENT
-as '
+as $function$
   select x[1]
-'
-language "sql";
+$function$
+language sql;
 
 select polyf(array[2, 4]) as int, polyf(array[4.5, 7.7]) as num;
 
@@ -42,10 +42,10 @@ drop FUNCTION polyf(ANYARRAY);
 
 create function polyf(x ANYARRAY)
 returns ANYARRAY
-as '
+as $function$
   select x
-'
-language "sql";
+$function$
+language sql;
 
 select polyf(array[2, 4]) as int, polyf(array[4.5, 7.7]) as num;
 
@@ -55,17 +55,17 @@ drop FUNCTION polyf(ANYARRAY);
 
 create function polyf(x ANYELEMENT)
 returns ANYRANGE
-as '
+as $function$
   select array[x + 1, x + 2]
-'
-language "sql";
+$function$
+language sql;
 
 create function polyf(x ANYRANGE)
 returns ANYARRAY
-as '
+as $function$
   select array[lower(x), upper(x)]
-'
-language "sql";
+$function$
+language sql;
 
 select polyf(int4range(42, 49)) as int, polyf(float8range(4.5, 7.8)) as num;
 
@@ -73,10 +73,10 @@ drop FUNCTION polyf(ANYRANGE);
 
 create function polyf(x anycompatible, y anycompatible)
 returns anycompatiblearray
-as '
+as $function$
   select array[x, y]
-'
-language "sql";
+$function$
+language sql;
 
 select polyf(2, 4) as int, polyf(2, 4.5) as num;
 
@@ -84,10 +84,10 @@ drop FUNCTION polyf(anycompatible, anycompatible);
 
 create function polyf(x anycompatiblerange, y anycompatible, z anycompatible)
 returns anycompatiblearray
-as '
+as $function$
   select array[lower(x), upper(x), y, z]
-'
-language "sql";
+$function$
+language sql;
 
 select
   polyf(
@@ -114,10 +114,10 @@ polyf(
   z anycompatible
 )
 returns anycompatiblearray
-as '
+as $function$
   select array[lower(x), upper(x), y, z]
-'
-language "sql";
+$function$
+language sql;
 
 select
   polyf(
@@ -139,17 +139,17 @@ drop FUNCTION polyf(anycompatiblemultirange, anycompatible, anycompatible);
 
 create function polyf(x anycompatible)
 returns anycompatiblerange
-as '
+as $function$
   select array[x + 1, x + 2]
-'
-language "sql";
+$function$
+language sql;
 
 create function polyf(x anycompatiblerange, y anycompatiblearray)
 returns anycompatiblerange
-as '
+as $function$
   select x
-'
-language "sql";
+$function$
+language sql;
 
 select
   polyf(int4range(42, 49), array[11])
@@ -161,17 +161,17 @@ drop FUNCTION polyf(anycompatiblerange, anycompatiblearray);
 
 create function polyf(x anycompatible)
 returns anycompatiblemultirange
-as '
+as $function$
   select array[x + 1, x + 2]
-'
-language "sql";
+$function$
+language sql;
 
 create function polyf(x anycompatiblemultirange, y anycompatiblearray)
 returns anycompatiblemultirange
-as '
+as $function$
   select x
-'
-language "sql";
+$function$
+language sql;
 
 select
   polyf(
@@ -196,10 +196,10 @@ polyf(
   out x ANYARRAY,
   out y anycompatiblearray
 )
-as '
+as $function$
   select a || b, array[c, d]
-'
-language "sql";
+$function$
+language sql;
 
 select x, pg_typeof(x), y, pg_typeof(y) from polyf(11, array[1, 2], 42, 34.5);
 
@@ -230,8 +230,8 @@ drop FUNCTION polyf(ANYELEMENT, ANYARRAY, anycompatible, anycompatible);
 
 create function polyf(ANYRANGE)
 returns anymultirange
-as 'select multirange($1);'
-language "sql";
+as $function$select multirange($1);$function$
+language sql;
 
 select polyf(int4range(1, 10));
 
@@ -241,8 +241,8 @@ drop FUNCTION polyf(ANYRANGE);
 
 create function polyf(anymultirange)
 returns ANYELEMENT
-as 'select lower($1);'
-language "sql";
+as $function$select lower($1);$function$
+language sql;
 
 select polyf(int4multirange(int4range(1, 10), int4range(20, 30)));
 
@@ -252,8 +252,8 @@ drop FUNCTION polyf(anymultirange);
 
 create function polyf(anycompatiblerange)
 returns anycompatiblemultirange
-as 'select multirange($1);'
-language "sql";
+as $function$select multirange($1);$function$
+language sql;
 
 select polyf(int4range(1, 10));
 
@@ -263,8 +263,8 @@ drop FUNCTION polyf(anycompatiblerange);
 
 create function polyf(anymultirange)
 returns ANYRANGE
-as 'select range_merge($1);'
-language "sql";
+as $function$select range_merge($1);$function$
+language sql;
 
 select polyf(int4multirange(int4range(1, 10), int4range(20, 30)));
 
@@ -274,8 +274,8 @@ drop FUNCTION polyf(anymultirange);
 
 create function polyf(anycompatiblemultirange)
 returns anycompatiblerange
-as 'select range_merge($1);'
-language "sql";
+as $function$select range_merge($1);$function$
+language sql;
 
 select polyf(int4multirange(int4range(1, 10), int4range(20, 30)));
 
@@ -285,8 +285,8 @@ drop FUNCTION polyf(anycompatiblemultirange);
 
 create function polyf(anycompatiblemultirange)
 returns anycompatible
-as 'select lower($1);'
-language "sql";
+as $function$select lower($1);$function$
+language sql;
 
 select polyf(int4multirange(int4range(1, 10), int4range(20, 30)));
 
@@ -296,49 +296,49 @@ drop FUNCTION polyf(anycompatiblemultirange);
 
 create function stfp(ANYARRAY)
 returns ANYARRAY
-as 'select $1'
-language "sql";
+as $function$select $1$function$
+language sql;
 
 create function stfnp(INT[])
 returns INT[]
-as 'select $1'
-language "sql";
+as $function$select $1$function$
+language sql;
 
 create function tfp(ANYARRAY, ANYELEMENT)
 returns ANYARRAY
-as 'select $1 || $2'
-language "sql";
+as $function$select $1 || $2$function$
+language sql;
 
 create function tfnp(INT[], INT)
 returns INT[]
-as 'select $1 || $2'
-language "sql";
+as $function$select $1 || $2$function$
+language sql;
 
 create function tf1p(ANYARRAY, INT)
 returns ANYARRAY
-as 'select $1'
-language "sql";
+as $function$select $1$function$
+language sql;
 
 create function tf2p(INT[], ANYELEMENT)
 returns INT[]
-as 'select $1'
-language "sql";
+as $function$select $1$function$
+language sql;
 
 create function sum3(ANYELEMENT, ANYELEMENT, ANYELEMENT)
 returns ANYELEMENT
-as 'select $1+$2+$3'
-language "sql"
+as $function$select $1+$2+$3$function$
+language sql
 STRICT;
 
 create function ffp(ANYARRAY)
 returns ANYARRAY
-as 'select $1'
-language "sql";
+as $function$select $1$function$
+language sql;
 
 create function ffnp(INT[])
 returns INT[]
-as 'select $1'
-language "sql";
+as $function$select $1$function$
+language sql;
 
 create aggregate myaggp01a (
   *
@@ -880,18 +880,18 @@ select mysum2(f1, f1 + 1) from t;
 
 create function bleat(INT)
 returns INT
-as '
+as $function$
 begin
-  raise notice ''bleat %'', $1;
+  raise notice 'bleat %', $1;
   return $1;
-end'
-language "plpgsql";
+end$function$
+language plpgsql;
 
 create function sql_if(BOOLEAN, ANYELEMENT, ANYELEMENT)
 returns ANYELEMENT
-as '
-select case when $1 then $2 else $3 end '
-language "sql";
+as $function$
+select case when $1 then $2 else $3 end $function$
+language sql;
 
 select f1, sql_if(f1 > 0, bleat(f1), bleat(f1 + 1)) from int4_tbl;
 
@@ -925,7 +925,7 @@ from
 
 create function add_group(grp ANYARRAY, ad ANYELEMENT, size INT)
 returns ANYARRAY
-as '
+as $function$
 begin
   if grp is null then
     return array[ad];
@@ -935,8 +935,8 @@ begin
   end if;
   return grp;
 end;
-'
-language "plpgsql"
+$function$
+language plpgsql
 immutable;
 
 create aggregate build_group (
@@ -964,14 +964,14 @@ create aggregate build_group (
 
 create function first_el_transfn(ANYARRAY, ANYELEMENT)
 returns ANYARRAY
-as 'select $1 || $2'
-language "sql"
+as $function$select $1 || $2$function$
+language sql
 immutable;
 
 create function first_el(ANYARRAY)
 returns ANYELEMENT
-as 'select $1[1]'
-language "sql"
+as $function$select $1[1]$function$
+language sql
 STRICT
 immutable;
 
@@ -1029,10 +1029,10 @@ select anyrange_in('[10,20)', cast('int4range' as REGTYPE), -1);
 
 create function myleast(variadic ANYARRAY)
 returns ANYELEMENT
-as '
+as $function$
   select min($1[i]) from generate_subscripts($1,1) g(i)
-'
-language "sql"
+$function$
+language sql
 immutable
 STRICT;
 
@@ -1052,10 +1052,10 @@ select myleast(variadic cast(array[] as INT[]));
 
 create function concat(TEXT, variadic ANYARRAY)
 returns TEXT
-as '
+as $function$
   select array_to_string($2, $1);
-'
-language "sql"
+$function$
+language sql
 immutable
 STRICT;
 
@@ -1071,10 +1071,10 @@ drop FUNCTION concat(TEXT, ANYARRAY);
 
 create function formarray(ANYELEMENT, variadic ANYARRAY)
 returns ANYARRAY
-as '
+as $function$
   select array_prepend($1, $2);
-'
-language "sql"
+$function$
+language sql
 immutable
 STRICT;
 
@@ -1110,10 +1110,10 @@ select pg_typeof(myleast(10, 1, 20, 33));
 
 create function dfunc(a INT default 1, INT default 2)
 returns INT
-as '
+as $function$
   select $1 + $2;
-'
-language "sql";
+$function$
+language sql;
 
 select dfunc();
 
@@ -1131,16 +1131,16 @@ drop FUNCTION dfunc(INT, INT);
 
 create function dfunc(a INT default 1, b INT)
 returns INT
-as '
+as $function$
   select $1 + $2;
-'
-language "sql";
+$function$
+language sql;
 
 create function dfunc(a INT default 1, out sum INT, b INT default 2)
-as '
+as $function$
   select $1 + $2;
-'
-language "sql";
+$function$
+language sql;
 
 select dfunc();
 
@@ -1148,19 +1148,19 @@ drop FUNCTION dfunc(INT, INT);
 
 create function dfunc(a INT default 1.0, INT default '-1')
 returns INT
-as '
+as $function$
   select $1 + $2;
-'
-language "sql";
+$function$
+language sql;
 
 select dfunc();
 
 create function dfunc(a TEXT default 'Hello', b TEXT default 'World')
 returns TEXT
-as '
-  select $1 || '', '' || $2;
-'
-language "sql";
+as $function$
+  select $1 || ', ' || $2;
+$function$
+language sql;
 
 select dfunc();
 
@@ -1178,10 +1178,10 @@ drop FUNCTION dfunc(TEXT, TEXT);
 
 create function dfunc(INT default 1, INT default 2)
 returns INT
-as '
+as $function$
   select 2;
-'
-language "sql";
+$function$
+language sql;
 
 create function
 dfunc(
@@ -1191,10 +1191,10 @@ dfunc(
   INT default 4
 )
 returns INT
-as '
+as $function$
   select 4;
-'
-language "sql";
+$function$
+language sql;
 
 select dfunc();
 
@@ -1212,17 +1212,17 @@ drop FUNCTION dfunc(INT, INT, INT, INT);
 
 create function dfunc(out INT default 20)
 returns INT
-as '
+as $function$
   select 1;
-'
-language "sql";
+$function$
+language sql;
 
 create function dfunc(ANYELEMENT default cast('World' as TEXT))
 returns TEXT
-as '
-  select ''Hello, '' || $1::text;
-'
-language "sql";
+as $function$
+  select 'Hello, ' || $1::text;
+$function$
+language sql;
 
 select dfunc();
 
@@ -1236,8 +1236,8 @@ drop FUNCTION dfunc(ANYELEMENT);
 
 create function dfunc(variadic a INT[])
 returns INT
-as ' select array_upper($1, 1) '
-language "sql";
+as $function$ select array_upper($1, 1) $function$
+language sql;
 
 select dfunc();
 
@@ -1250,8 +1250,8 @@ dfunc(
   variadic a INT[] default cast(array[] as INT[])
 )
 returns INT
-as ' select array_upper($1, 1) '
-language "sql";
+as $function$ select array_upper($1, 1) $function$
+language sql;
 
 select dfunc();
 
@@ -1261,31 +1261,31 @@ select dfunc(10, 20);
 
 create or replace function dfunc(variadic a INT[])
 returns INT
-as ' select array_upper($1, 1) '
-language "sql";
+as $function$ select array_upper($1, 1) $function$
+language sql;
 
 drop FUNCTION dfunc(INT[]);
 
 create function dfunc(INT default 1, INT default 2, INT default 3)
 returns INT
-as '
+as $function$
   select 3;
-'
-language "sql";
+$function$
+language sql;
 
 create function dfunc(INT default 1, INT default 2)
 returns INT
-as '
+as $function$
   select 2;
-'
-language "sql";
+$function$
+language sql;
 
 create function dfunc(TEXT)
 returns TEXT
-as '
+as $function$
   select $1;
-'
-language "sql";
+$function$
+language sql;
 
 select dfunc(1);
 
@@ -1304,10 +1304,10 @@ returns table (
   c INT,
   d INT
 )
-as '
+as $function$
   select $1, $2, $3, $4;
-'
-language "sql";
+$function$
+language sql;
 
 select (dfunc(10, 20, 30)).*;
 
@@ -1339,10 +1339,10 @@ drop FUNCTION dfunc(INT, INT, INT, INT);
 
 create function xleast(x NUMERIC, variadic arr NUMERIC[])
 returns NUMERIC
-as '
+as $function$
   select least(x, min(arr[i])) from generate_subscripts(arr, 1) g(i);
-'
-language "sql";
+$function$
+language sql;
 
 select xleast("x" := 1, variadic "arr" := array[2, 3]);
 
@@ -1374,10 +1374,10 @@ returns table (
   b NUMERIC,
   c DATE
 )
-as '
+as $function$
   select $1, $2, $3;
-'
-language "sql";
+$function$
+language sql;
 
 select (dfunc('Hello World', 20, cast('2009-07-25' as DATE))).*;
 
@@ -1429,10 +1429,10 @@ dfunc(
   out _c NUMERIC
 )
 returns RECORD
-as '
+as $function$
   select $1, $2;
-'
-language "sql";
+$function$
+language sql;
 
 select (dfunc()).*;
 
@@ -1458,10 +1458,10 @@ dfunc(
   out _c NUMERIC
 )
 returns RECORD
-as '
+as $function$
   select $1, $2;
-'
-language "sql";
+$function$
+language sql;
 
 create or replace function
 dfunc(
@@ -1471,37 +1471,37 @@ dfunc(
   out _c NUMERIC
 )
 returns RECORD
-as '
+as $function$
   select $1, $2;
-'
-language "sql";
+$function$
+language sql;
 
 drop FUNCTION dfunc(VARCHAR, NUMERIC);
 
 create function testpolym(a INT, a INT)
 returns INT
-as ' select 1;'
-language "sql";
+as $function$ select 1;$function$
+language sql;
 
 create function testpolym(INT, out a INT, out a INT)
 returns INT
-as ' select 1;'
-language "sql";
+as $function$ select 1;$function$
+language sql;
 
 create function testpolym(out a INT, inout a INT)
 returns INT
-as ' select 1;'
-language "sql";
+as $function$ select 1;$function$
+language sql;
 
 create function testpolym(a INT, inout a INT)
 returns INT
-as ' select 1;'
-language "sql";
+as $function$ select 1;$function$
+language sql;
 
 create function testpolym(a INT, out a INT)
 returns INT
-as ' select $1;'
-language "sql";
+as $function$ select $1;$function$
+language sql;
 
 select testpolym(37);
 
@@ -1511,8 +1511,8 @@ create function testpolym(a INT)
 returns table (
   a INT
 )
-as ' select $1;'
-language "sql";
+as $function$ select $1;$function$
+language sql;
 
 select * from testpolym(37);
 
@@ -1525,10 +1525,10 @@ dfunc(
   flag BOOLEAN default true
 )
 returns ANYELEMENT
-as '
+as $function$
   select case when $3 then $1 else $2 end;
-'
-language "sql";
+$function$
+language sql;
 
 select dfunc(1, 2);
 
@@ -1587,14 +1587,14 @@ select dfunc("a" := 1);
 select dfunc("a" := 1);
 
 do
-$$
+$do$
   declare r integer;
   begin
     select dfunc(a=>-- comment
       1) into r;
     raise info 'r = %', r;
   end;
-$$;
+$do$;
 
 create view dfview
 as select
@@ -1608,16 +1608,16 @@ from
 
 select * from dfview;
 
-drop VIEW "dfview";
+drop VIEW dfview;
 
 drop FUNCTION dfunc(ANYELEMENT, ANYELEMENT, BOOLEAN);
 
 create function anyctest(anycompatible, anycompatible)
 returns anycompatible
-as '
+as $function$
   select greatest($1, $2)
-'
-language "sql";
+$function$
+language sql;
 
 select x, pg_typeof(x) from anyctest(11, 12) as x;
 
@@ -1631,10 +1631,10 @@ drop FUNCTION anyctest(anycompatible, anycompatible);
 
 create function anyctest(anycompatible, anycompatible)
 returns anycompatiblearray
-as '
+as $function$
   select array[$1, $2]
-'
-language "sql";
+$function$
+language sql;
 
 select x, pg_typeof(x) from anyctest(11, 12) as x;
 
@@ -1646,10 +1646,10 @@ drop FUNCTION anyctest(anycompatible, anycompatible);
 
 create function anyctest(anycompatible, anycompatiblearray)
 returns anycompatiblearray
-as '
+as $function$
   select array[$1] || $2
-'
-language "sql";
+$function$
+language sql;
 
 select x, pg_typeof(x) from anyctest(11, array[12]) as x;
 
@@ -1667,10 +1667,10 @@ drop FUNCTION anyctest(anycompatible, anycompatiblearray);
 
 create function anyctest(anycompatible, anycompatiblerange)
 returns anycompatiblerange
-as '
+as $function$
   select $2
-'
-language "sql";
+$function$
+language sql;
 
 select x, pg_typeof(x) from anyctest(11, int4range(4, 7)) as x;
 
@@ -1686,10 +1686,10 @@ drop FUNCTION anyctest(anycompatible, anycompatiblerange);
 
 create function anyctest(anycompatiblerange, anycompatiblerange)
 returns anycompatible
-as '
+as $function$
   select lower($1) + upper($2)
-'
-language "sql";
+$function$
+language sql;
 
 select x, pg_typeof(x) from anyctest(int4range(11, 12), int4range(4, 7)) as x;
 
@@ -1699,17 +1699,17 @@ drop FUNCTION anyctest(anycompatiblerange, anycompatiblerange);
 
 create function anyctest(anycompatible)
 returns anycompatiblerange
-as '
+as $function$
   select $1
-'
-language "sql";
+$function$
+language sql;
 
 create function anyctest(anycompatible, anycompatiblemultirange)
 returns anycompatiblemultirange
-as '
+as $function$
   select $2
-'
-language "sql";
+$function$
+language sql;
 
 select x, pg_typeof(x) from anyctest(11, multirange(int4range(4, 7))) as x;
 
@@ -1725,10 +1725,10 @@ drop FUNCTION anyctest(anycompatible, anycompatiblemultirange);
 
 create function anyctest(anycompatiblemultirange, anycompatiblemultirange)
 returns anycompatible
-as '
+as $function$
   select lower($1) + upper($2)
-'
-language "sql";
+$function$
+language sql;
 
 select
   x,
@@ -1754,17 +1754,17 @@ drop FUNCTION anyctest(anycompatiblemultirange, anycompatiblemultirange);
 
 create function anyctest(anycompatible)
 returns anycompatiblemultirange
-as '
+as $function$
   select $1
-'
-language "sql";
+$function$
+language sql;
 
 create function anyctest(anycompatiblenonarray, anycompatiblenonarray)
 returns anycompatiblearray
-as '
+as $function$
   select array[$1, $2]
-'
-language "sql";
+$function$
+language sql;
 
 select x, pg_typeof(x) from anyctest(11, 12) as x;
 
@@ -1782,10 +1782,10 @@ anyctest(
   d anycompatible
 )
 returns anycompatiblearray
-as '
+as $function$
   select array[c, d]
-'
-language "sql";
+$function$
+language sql;
 
 select x, pg_typeof(x) from anyctest(11, array[1, 2], 42, 34.5) as x;
 
@@ -1809,10 +1809,10 @@ drop FUNCTION anyctest(ANYELEMENT, ANYARRAY, anycompatible, anycompatible);
 
 create function anyctest(variadic anycompatiblearray)
 returns anycompatiblearray
-as '
+as $function$
   select $1
-'
-language "sql";
+$function$
+language sql;
 
 select x, pg_typeof(x) from anyctest(11, 12) as x;
 

@@ -959,15 +959,15 @@ reset enable_nestloop;
 
 reset enable_hashjoin;
 
-drop TABLE "t1";
+drop TABLE t1;
 
-drop TABLE "t2";
+drop TABLE t2;
 
-drop TABLE "t3";
+drop TABLE t3;
 
-drop TABLE "j1_tbl";
+drop TABLE j1_tbl;
 
-drop TABLE "j2_tbl";
+drop TABLE j2_tbl;
 
 create temporary table t1 (
   a INT,

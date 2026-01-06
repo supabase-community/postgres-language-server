@@ -826,7 +826,7 @@ where
 order by date,
   timestamp;
 
-drop TABLE "temp_timestamp";
+drop TABLE temp_timestamp;
 
 select cast(cast('2202020-10-05' as DATE) as TIMESTAMP);
 

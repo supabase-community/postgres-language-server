@@ -27,8 +27,8 @@ create table cmdata2 (f1 INT compression pglz);
 
 create or replace function large_val()
 returns TEXT
-language "sql"
-as 'select array_agg(fipshash(g::text))::text from generate_series(1, 256) g';
+language sql
+as $function$select array_agg(fipshash(g::text))::text from generate_series(1, 256) g$function$;
 
 create table cmdata2 (f1 TEXT compression pglz);
 
@@ -38,7 +38,7 @@ select pg_column_compression(f1) from cmdata2;
 
 select substr(f1, 200, 5) from cmdata2;
 
-drop TABLE "cmdata2";
+drop TABLE cmdata2;
 
 create table cmdata2 (f1 INT);
 
@@ -76,7 +76,7 @@ set default_toast_compression = pglz;
 alter table cmdata2
   alter column f1 set COMPRESSION "default";
 
-drop TABLE "cmdata2";
+drop TABLE cmdata2;
 
 select pg_column_compression(f1) from cmdata;
 
@@ -95,4 +95,4 @@ create table badcompresstbl (a TEXT);
 alter table badcompresstbl
   alter column a set COMPRESSION i_do_not_exist_compression;
 
-drop TABLE "badcompresstbl";
+drop TABLE badcompresstbl;

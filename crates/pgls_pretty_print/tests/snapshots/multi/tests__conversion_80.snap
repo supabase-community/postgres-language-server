@@ -6,7 +6,7 @@ snapshot_kind: text
 create function test_enc_setup()
 returns VOID
 as 'regresslib', 'test_enc_setup'
-language "c"
+language c
 STRICT;
 
 select from test_enc_setup();
@@ -21,7 +21,7 @@ test_enc_conversion(
   out result BYTEA
 )
 as 'regresslib', 'test_enc_conversion'
-language "c"
+language c
 STRICT;
 
 create user regress_conversion_user NOCREATEDB NOCREATEROLE;
@@ -46,9 +46,9 @@ comment on conversion myconv is 'bar';
 
 comment on conversion myconv is null;
 
-drop CONVERSION "myconv";
+drop CONVERSION myconv;
 
-drop CONVERSION "mydef";
+drop CONVERSION mydef;
 
 reset session_authorization;
 
@@ -63,8 +63,8 @@ test_conv(
   out errorat BYTEA,
   out error TEXT
 )
-language "plpgsql"
-as '
+language plpgsql
+as $function$
 declare
   validlen int;
 begin
@@ -82,7 +82,7 @@ begin
   end;
   return;
 end;
-';
+$function$;
 
 create table utf8_verification_inputs (
   inbytes BYTEA,

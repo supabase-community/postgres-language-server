@@ -129,7 +129,7 @@ from
 where
   pubname = 'testpub_foralltables';
 
-drop TABLE "testpub_tbl2";
+drop TABLE testpub_tbl2;
 
 drop PUBLICATION
   testpub_foralltables,
@@ -150,7 +150,7 @@ create PUBLICATION testpub4 for table only testpub_tbl3;
 
 reset client_min_messages;
 
-drop TABLE "testpub_tbl3", "testpub_tbl3a";
+drop TABLE testpub_tbl3, testpub_tbl3a;
 
 drop PUBLICATION testpub3, testpub4;
 
@@ -198,7 +198,7 @@ alter PUBLICATION testpub_forparted drop table testpub_parted;
 
 update testpub_parted2 set a = 2;
 
-drop TABLE "testpub_parted1", "testpub_parted2";
+drop TABLE testpub_parted1, testpub_parted2;
 
 drop PUBLICATION testpub_forparted, testpub_forparted1;
 
@@ -305,8 +305,8 @@ alter PUBLICATION testpub5 set table testpub_rf_tbl3 where ( e < AVG(e));
 
 create function testpub_rf_func1(INT, INT)
 returns BOOLEAN
-as ' SELECT hashint4($1) > $2 '
-language "sql";
+as $function$ SELECT hashint4($1) > $2 $function$
+language sql;
 
 create operator =#> (PROCEDURE = testpub_rf_func1,
 LEFTARG = INT,
@@ -317,8 +317,8 @@ create PUBLICATION testpub6 for table testpub_rf_tbl3 where (e =#> 27);
 create function testpub_rf_func2()
 returns INT
 immutable
-as ' BEGIN RETURN 123; END; '
-language "plpgsql";
+as $function$ BEGIN RETURN 123; END; $function$
+language plpgsql;
 
 alter PUBLICATION testpub5 add
 table testpub_rf_tbl1
@@ -369,7 +369,7 @@ create PUBLICATION testpub6
 for table rf_bug where (status = 'open')
 with (publish = 'insert');
 
-drop TABLE "rf_bug";
+drop TABLE rf_bug;
 
 drop TYPE rf_bug_status;
 
@@ -438,19 +438,19 @@ alter table testpub_rf_tbl7
 
 reset client_min_messages;
 
-drop TABLE "testpub_rf_tbl1";
+drop TABLE testpub_rf_tbl1;
 
-drop TABLE "testpub_rf_tbl2";
+drop TABLE testpub_rf_tbl2;
 
-drop TABLE "testpub_rf_tbl3";
+drop TABLE testpub_rf_tbl3;
 
-drop TABLE "testpub_rf_tbl4";
+drop TABLE testpub_rf_tbl4;
 
-drop TABLE "testpub_rf_tbl5";
+drop TABLE testpub_rf_tbl5;
 
-drop TABLE "testpub_rf_schema1"."testpub_rf_tbl5";
+drop TABLE testpub_rf_schema1.testpub_rf_tbl5;
 
-drop TABLE "testpub_rf_schema2"."testpub_rf_tbl6";
+drop TABLE testpub_rf_schema2.testpub_rf_tbl6;
 
 drop SCHEMA testpub_rf_schema1;
 
@@ -462,7 +462,7 @@ drop PUBLICATION testpub6;
 
 drop PUBLICATION testpub8;
 
-drop TABLE "testpub_rf_tbl7";
+drop TABLE testpub_rf_tbl7;
 
 drop OPERATOR =#> (INT, INT);
 
@@ -470,7 +470,7 @@ drop FUNCTION testpub_rf_func1(INT, INT);
 
 drop FUNCTION testpub_rf_func2();
 
-drop COLLATION "user_collation";
+drop COLLATION user_collation;
 
 create table rf_tbl_abcd_nopk (
   a INT,
@@ -629,11 +629,11 @@ update rf_tbl_abcd_part_pk set a = 1;
 
 drop PUBLICATION testpub6;
 
-drop TABLE "rf_tbl_abcd_pk";
+drop TABLE rf_tbl_abcd_pk;
 
-drop TABLE "rf_tbl_abcd_nopk";
+drop TABLE rf_tbl_abcd_nopk;
 
-drop TABLE "rf_tbl_abcd_part_pk";
+drop TABLE rf_tbl_abcd_part_pk;
 
 set client_min_messages = ERROR;
 
@@ -670,7 +670,7 @@ update testpub_gencol set a = 100 where a = 1;
 
 drop PUBLICATION pub_gencol;
 
-drop TABLE "testpub_gencol";
+drop TABLE testpub_gencol;
 
 create PUBLICATION pub_gencol for table testpub_gencol;
 
@@ -689,7 +689,7 @@ update testpub_gencol set a = 100 where a = 1;
 
 drop PUBLICATION pub_gencol;
 
-drop TABLE "testpub_gencol";
+drop TABLE testpub_gencol;
 
 reset client_min_messages;
 
@@ -787,7 +787,7 @@ alter table testpub_tbl5d
 
 update testpub_tbl5d set a = 1;
 
-drop TABLE "testpub_tbl5d";
+drop TABLE testpub_tbl5d;
 
 create table testpub_tbl6 (
   a INT,
@@ -908,7 +908,7 @@ alter table testpub_tbl8_1
 
 update testpub_tbl8 set a = 1;
 
-drop TABLE "testpub_tbl8";
+drop TABLE testpub_tbl8;
 
 create table testpub_tbl8 (
   a INT,
@@ -981,11 +981,11 @@ table public.testpub_tbl7 (a);
 reset client_min_messages;
 
 drop TABLE
-  "testpub_tbl5",
-  "testpub_tbl6",
-  "testpub_tbl7",
-  "testpub_tbl8",
-  "testpub_tbl8_1";
+  testpub_tbl5,
+  testpub_tbl6,
+  testpub_tbl7,
+  testpub_tbl8,
+  testpub_tbl8_1;
 
 drop PUBLICATION
   testpub_table_ins,
@@ -1018,7 +1018,7 @@ c)
 where (
   c <> 1);
 
-drop TABLE "testpub_tbl_both_filters";
+drop TABLE testpub_tbl_both_filters;
 
 drop PUBLICATION testpub_both_filters;
 
@@ -1179,11 +1179,11 @@ update rf_tbl_abcd_part_pk set a = 1;
 
 drop PUBLICATION testpub6;
 
-drop TABLE "rf_tbl_abcd_pk";
+drop TABLE rf_tbl_abcd_pk;
 
-drop TABLE "rf_tbl_abcd_nopk";
+drop TABLE rf_tbl_abcd_nopk;
 
-drop TABLE "rf_tbl_abcd_part_pk";
+drop TABLE rf_tbl_abcd_part_pk;
 
 set client_min_messages = ERROR;
 
@@ -1203,7 +1203,7 @@ drop PUBLICATION testpub_foralltables;
 
 update testpub_tbl4 set a = 3;
 
-drop TABLE "testpub_tbl4";
+drop TABLE testpub_tbl4;
 
 create PUBLICATION testpub_fortbl for table testpub_view;
 
@@ -1211,13 +1211,13 @@ create temporary table testpub_temptbl (a INT);
 
 create PUBLICATION testpub_fortemptbl for table testpub_temptbl;
 
-drop TABLE "testpub_temptbl";
+drop TABLE testpub_temptbl;
 
 create unlogged table testpub_unloggedtbl (a INT);
 
 create PUBLICATION testpub_forunloggedtbl for table testpub_unloggedtbl;
 
-drop TABLE "testpub_unloggedtbl";
+drop TABLE testpub_unloggedtbl;
 
 create PUBLICATION testpub_forsystemtbl for table pg_publication;
 
@@ -1275,7 +1275,7 @@ alter table pub_test.testpub_addpk
 
 update pub_test.testpub_addpk set id = 2;
 
-drop TABLE "pub_test"."testpub_addpk";
+drop TABLE pub_test.testpub_addpk;
 
 set role to regress_publication_user2;
 
@@ -1341,9 +1341,9 @@ drop role regress_publication_user3;
 
 revoke CREATE on database regression from regress_publication_user2;
 
-drop TABLE "testpub_parted";
+drop TABLE testpub_parted;
 
-drop TABLE "testpub_tbl1";
+drop TABLE testpub_tbl1;
 
 set role to regress_publication_user_dummy;
 
@@ -1542,7 +1542,7 @@ TABLES in SCHEMA pub_test1;
 
 reset client_min_messages;
 
-drop VIEW "testpub_view";
+drop VIEW testpub_view;
 
 drop PUBLICATION testpub_default;
 
@@ -1623,9 +1623,9 @@ select * from pg_publication_tables;
 
 drop PUBLICATION pub;
 
-drop TABLE "sch2"."tbl1_part1";
+drop TABLE sch2.tbl1_part1;
 
-drop TABLE "sch1"."tbl1";
+drop TABLE sch1.tbl1;
 
 create table sch1.tbl1 (a INT)
 partition by range(a);
@@ -1654,7 +1654,7 @@ reset client_min_messages;
 
 drop PUBLICATION pub;
 
-drop TABLE "sch1"."tbl1";
+drop TABLE sch1.tbl1;
 
 drop SCHEMA sch1 cascade;
 
@@ -1698,7 +1698,7 @@ drop PUBLICATION pub1;
 
 drop PUBLICATION pub2;
 
-drop TABLE "gencols";
+drop TABLE gencols;
 
 reset client_min_messages;
 
@@ -1737,9 +1737,9 @@ insert into testpub_insert_onconfl_parted values (1, 1) on conflict do nothing;
 
 drop PUBLICATION pub1;
 
-drop TABLE "testpub_insert_onconfl_no_ri";
+drop TABLE testpub_insert_onconfl_no_ri;
 
-drop TABLE "testpub_insert_onconfl_parted";
+drop TABLE testpub_insert_onconfl_parted;
 
 create table testpub_merge_no_ri (
   a INT,
@@ -1759,9 +1759,9 @@ reset client_min_messages;
 
 drop PUBLICATION pub1;
 
-drop TABLE "testpub_merge_no_ri";
+drop TABLE testpub_merge_no_ri;
 
-drop TABLE "testpub_merge_pk";
+drop TABLE testpub_merge_pk;
 
 reset session_authorization;
 

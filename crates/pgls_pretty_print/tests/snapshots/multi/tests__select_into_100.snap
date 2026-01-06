@@ -5,11 +5,11 @@ snapshot_kind: text
 ---
 select * into sitmp1 from onek where onek.unique1 < 2;
 
-drop TABLE "sitmp1";
+drop TABLE sitmp1;
 
 select * into sitmp1 from onek2 where onek2.unique1 < 2;
 
-drop TABLE "sitmp1";
+drop TABLE sitmp1;
 
 create schema "selinto_schema";
 
@@ -86,37 +86,37 @@ select * from ctas_nodata_3;
 
 select * from ctas_nodata_4;
 
-drop TABLE "ctas_base";
+drop TABLE ctas_base;
 
-drop TABLE "ctas_nodata";
+drop TABLE ctas_nodata;
 
-drop TABLE "ctas_nodata_2";
+drop TABLE ctas_nodata_2;
 
-drop TABLE "ctas_nodata_3";
+drop TABLE ctas_nodata_3;
 
-drop TABLE "ctas_nodata_4";
+drop TABLE ctas_nodata_4;
 
 create function make_table()
 returns VOID
-as '
+as $function$
   CREATE TABLE created_table AS SELECT * FROM int8_tbl;
-'
-language "sql";
+$function$
+language sql;
 
 select make_table();
 
 select * from created_table;
 
 do
-$$
+$do$
 BEGIN
 	EXECUTE 'EXPLAIN ANALYZE SELECT * INTO TABLE easi FROM int8_tbl';
 	EXECUTE 'EXPLAIN ANALYZE CREATE TABLE easi2 AS SELECT * FROM int8_tbl WITH NO DATA';
-END$$;
+END$do$;
 
-drop TABLE "created_table";
+drop TABLE created_table;
 
-drop TABLE "easi", "easi2";
+drop TABLE easi, easi2;
 
 declare "foo" cursor for select 1 into int4_tbl;;
 
@@ -153,4 +153,4 @@ create table ctas_ine_tbl as execute ctas_ine_query;
 
 create table if not exists ctas_ine_tbl as execute ctas_ine_query;
 
-drop TABLE "ctas_ine_tbl";
+drop TABLE ctas_ine_tbl;

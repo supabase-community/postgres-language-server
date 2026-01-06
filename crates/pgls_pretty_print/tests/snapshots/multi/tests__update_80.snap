@@ -242,9 +242,9 @@ as xmin_correct,
 xmax = cast(pg_current_xact_id() as XID)
 as xmax_correct;
 
-drop TABLE "update_test";
+drop TABLE update_test;
 
-drop TABLE "upsert_test";
+drop TABLE upsert_test;
 
 create table upsert_test (
   a INT primary key,
@@ -295,7 +295,7 @@ set (b, a) = (
 )
 returning *;
 
-drop TABLE "upsert_test";
+drop TABLE upsert_test;
 
 create table range_parted (
   a TEXT,
@@ -437,7 +437,7 @@ update upview set a = 'b', b = 15, c = 120 where b = 4;
 
 update upview set a = 'b', b = 15 where b = 4;
 
-drop VIEW "upview";
+drop VIEW upview;
 
 update range_parted
 set c = 95
@@ -448,16 +448,16 @@ returning range_parted,
 
 create function trans_updatetrigfunc()
 returns trigger
-language "plpgsql"
-as '
+language plpgsql
+as $function$
   begin
-    raise notice ''trigger = %, old table = %, new table = %'',
+    raise notice 'trigger = %, old table = %, new table = %',
                  TG_NAME,
-                 (select string_agg(old_table::text, '', '' ORDER BY a) FROM old_table),
-                 (select string_agg(new_table::text, '', '' ORDER BY a) FROM new_table);
+                 (select string_agg(old_table::text, ', ' ORDER BY a) FROM old_table),
+                 (select string_agg(new_table::text, ', ' ORDER BY a) FROM new_table);
     return null;
   end;
-';
+$function$;
 
 create TRIGGER trans_updatetrig
   after update
@@ -488,18 +488,18 @@ create TRIGGER trans_inserttrig
 
 update range_parted set c = c + 50 where a = 'b' and b > 10 and c >= 96;
 
-drop TRIGGER "trans_deletetrig" on "range_parted";
+drop TRIGGER trans_deletetrig on range_parted;
 
-drop TRIGGER "trans_inserttrig" on "range_parted";
+drop TRIGGER trans_inserttrig on range_parted;
 
 create function func_parted_mod_b()
 returns trigger
-as '
+as $function$
 BEGIN
    NEW.b = NEW.b + 1;
    return NEW;
-END '
-language "plpgsql";
+END $function$
+language plpgsql;
 
 create TRIGGER trig_c1_100
   before insert or update
@@ -528,13 +528,13 @@ update range_parted set c = c + 50 where a = 'b' and b > 10 and c >= 96;
 
 update range_parted set b = 15 where b = 1;
 
-drop TRIGGER "trans_updatetrig" on "range_parted";
+drop TRIGGER trans_updatetrig on range_parted;
 
-drop TRIGGER "trig_c1_100" on "part_c_1_100";
+drop TRIGGER trig_c1_100 on part_c_1_100;
 
-drop TRIGGER "trig_d1_15" on "part_d_1_15";
+drop TRIGGER trig_d1_15 on part_d_1_15;
 
-drop TRIGGER "trig_d15_20" on "part_d_15_20";
+drop TRIGGER trig_d15_20 on part_d_15_20;
 
 drop FUNCTION func_parted_mod_b();
 
@@ -568,12 +568,12 @@ reset session_authorization;
 
 create function func_d_1_15()
 returns trigger
-as '
+as $function$
 BEGIN
    NEW.c = NEW.c + 1; -- Make even numbers odd, or vice versa
    return NEW;
-END '
-language "plpgsql";
+END $function$
+language plpgsql;
 
 create TRIGGER trig_d_1_15
   before insert
@@ -593,7 +593,7 @@ update range_parted set a = 'b', c = 150 where a = 'a' and c = 200;
 
 reset session_authorization;
 
-drop TRIGGER "trig_d_1_15" on "part_d_1_15";
+drop TRIGGER trig_d_1_15 on part_d_1_15;
 
 drop FUNCTION func_d_1_15();
 
@@ -639,28 +639,28 @@ update range_parted set a = 'b', c = 116 where a = 'a' and c = 200;
 
 reset session_authorization;
 
-drop POLICY "policy_range_parted" on "range_parted";
+drop POLICY policy_range_parted on range_parted;
 
-drop POLICY "policy_range_parted_subplan" on "range_parted";
+drop POLICY policy_range_parted_subplan on range_parted;
 
-drop POLICY "policy_range_parted_wholerow" on "range_parted";
+drop POLICY policy_range_parted_wholerow on range_parted;
 
 revoke all on table range_parted, mintab from regress_range_parted_user;
 
 drop role regress_range_parted_user;
 
-drop TABLE "mintab";
+drop TABLE mintab;
 
 create function trigfunc()
 returns trigger
-language "plpgsql"
-as '
+language plpgsql
+as $function$
   begin
-    raise notice ''trigger = % fired on table % during %'',
+    raise notice 'trigger = % fired on table % during %',
                  TG_NAME, TG_TABLE_NAME, TG_OP;
     return null;
   end;
-';
+$function$;
 
 create TRIGGER parent_delete_trig
   after delete
@@ -736,29 +736,29 @@ create TRIGGER d15_insert_trig
 
 update range_parted set c = c - 50 where c > 97;
 
-drop TRIGGER "parent_delete_trig" on "range_parted";
+drop TRIGGER parent_delete_trig on range_parted;
 
-drop TRIGGER "parent_update_trig" on "range_parted";
+drop TRIGGER parent_update_trig on range_parted;
 
-drop TRIGGER "parent_insert_trig" on "range_parted";
+drop TRIGGER parent_insert_trig on range_parted;
 
-drop TRIGGER "c1_delete_trig" on "part_c_1_100";
+drop TRIGGER c1_delete_trig on part_c_1_100;
 
-drop TRIGGER "c1_update_trig" on "part_c_1_100";
+drop TRIGGER c1_update_trig on part_c_1_100;
 
-drop TRIGGER "c1_insert_trig" on "part_c_1_100";
+drop TRIGGER c1_insert_trig on part_c_1_100;
 
-drop TRIGGER "d1_delete_trig" on "part_d_1_15";
+drop TRIGGER d1_delete_trig on part_d_1_15;
 
-drop TRIGGER "d1_update_trig" on "part_d_1_15";
+drop TRIGGER d1_update_trig on part_d_1_15;
 
-drop TRIGGER "d1_insert_trig" on "part_d_1_15";
+drop TRIGGER d1_insert_trig on part_d_1_15;
 
-drop TRIGGER "d15_delete_trig" on "part_d_15_20";
+drop TRIGGER d15_delete_trig on part_d_15_20;
 
-drop TRIGGER "d15_update_trig" on "part_d_15_20";
+drop TRIGGER d15_update_trig on part_d_15_20;
 
-drop TRIGGER "d15_insert_trig" on "part_d_15_20";
+drop TRIGGER d15_insert_trig on part_d_15_20;
 
 create table part_def partition of range_parted default;
 
@@ -778,7 +778,7 @@ update range_parted set a = 'a' where a = 'ad';
 
 update range_parted set a = 'b' where a = 'bd';
 
-drop TABLE "range_parted";
+drop TABLE range_parted;
 
 create table list_parted (
   a TEXT,
@@ -798,7 +798,7 @@ update list_default set a = 'a' where a = 'd';
 
 update list_default set a = 'x' where a = 'd';
 
-drop TABLE "list_parted";
+drop TABLE list_parted;
 
 create table utrtest (
   a INT,
@@ -878,7 +878,7 @@ cast(tableoid as REGCLASS),
 xmax = cast(pg_current_xact_id() as XID)
 as xmax_ok;
 
-drop TABLE "utrtest";
+drop TABLE utrtest;
 
 create table list_parted (
   a NUMERIC,
@@ -954,12 +954,12 @@ order by 1;
 
 create function func_parted_mod_b()
 returns trigger
-as '
+as $function$
 BEGIN
    NEW.b = 2; -- This is changing partition key column.
    return NEW;
-END '
-language "plpgsql";
+END $function$
+language plpgsql;
 
 create TRIGGER parted_mod_b
   before update
@@ -989,16 +989,16 @@ order by 1,
   3,
   4;
 
-drop TRIGGER "parted_mod_b" on "sub_part1";
+drop TRIGGER parted_mod_b on sub_part1;
 
 create or replace function func_parted_mod_b()
 returns trigger
-as '
+as $function$
 BEGIN
-   raise notice ''Trigger: Got OLD row %, but returning NULL'', OLD;
+   raise notice 'Trigger: Got OLD row %, but returning NULL', OLD;
    return NULL;
-END '
-language "plpgsql";
+END $function$
+language plpgsql;
 
 create TRIGGER trig_skip_delete
   before delete
@@ -1018,7 +1018,7 @@ order by 1,
   3,
   4;
 
-drop TRIGGER "trig_skip_delete" on "sub_part2";
+drop TRIGGER trig_skip_delete on sub_part2;
 
 update list_parted set b = 1 where c = 70;
 
@@ -1054,14 +1054,14 @@ order by 1,
   3,
   4;
 
-drop TABLE "non_parted";
+drop TABLE non_parted;
 
-drop TABLE "list_parted";
+drop TABLE list_parted;
 
 create or replace function dummy_hashint4(a INT, seed BIGINT)
 returns BIGINT
-as ' begin return (a + seed); end; '
-language "plpgsql"
+as $function$ begin return (a + seed); end; $function$
+language plpgsql
 immutable;
 
 create OPERATOR class custom_opclass
@@ -1105,8 +1105,8 @@ update hash_parted set b = b - 1 where b = 1;
 
 update hash_parted set b = b + 8 where b = 1;
 
-drop TABLE "hash_parted";
+drop TABLE hash_parted;
 
-drop OPERATOR CLASS "custom_opclass" USING "hash";
+drop OPERATOR CLASS custom_opclass USING hash;
 
 drop FUNCTION dummy_hashint4(INT, BIGINT);

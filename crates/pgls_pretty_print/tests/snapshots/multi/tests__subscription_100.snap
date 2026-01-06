@@ -254,8 +254,8 @@ commit;
 
 create function func()
 returns VOID
-as ' ALTER SUBSCRIPTION regress_testsub SET PUBLICATION mypub WITH (refresh = true) '
-language "sql";
+as $function$ ALTER SUBSCRIPTION regress_testsub SET PUBLICATION mypub WITH (refresh = true) $function$
+language sql;
 
 select func();
 

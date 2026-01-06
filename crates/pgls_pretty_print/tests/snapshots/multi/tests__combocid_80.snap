@@ -128,4 +128,4 @@ select * from testcase where id = 1 for update;
 
 rollback;
 
-drop TABLE "testcase";
+drop TABLE testcase;

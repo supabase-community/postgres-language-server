@@ -444,18 +444,18 @@ select a, cast(b as VARCHAR) from collate_test3 order by 2;
 
 create function mylt(TEXT, TEXT)
 returns BOOLEAN
-language "sql"
-as ' select $1 < $2 ';
+language sql
+as $function$ select $1 < $2 $function$;
 
 create function mylt_noninline(TEXT, TEXT)
 returns BOOLEAN
-language "sql"
-as ' select $1 < $2 limit 1 ';
+language sql
+as $function$ select $1 < $2 limit 1 $function$;
 
 create function mylt_plpgsql(TEXT, TEXT)
 returns BOOLEAN
-language "plpgsql"
-as ' begin return $1 < $2; end ';
+language plpgsql
+as $function$ begin return $1 < $2; end $function$;
 
 select
   a.b as a,
@@ -485,15 +485,15 @@ order by a.b,
 
 create function mylt2(x TEXT, y TEXT)
 returns BOOLEAN
-language "plpgsql"
-as '
+language plpgsql
+as $function$
 declare
   xx text := x;
   yy text := y;
 begin
   return xx < yy;
 end
-';
+$function$;
 
 select
   mylt2('a', 'B' collate "en-x-icu") as t,
@@ -501,15 +501,15 @@ select
 
 create or replace function mylt2(x TEXT, y TEXT)
 returns BOOLEAN
-language "plpgsql"
-as '
+language plpgsql
+as $function$
 declare
   xx text COLLATE "POSIX" := x;
   yy text := y;
 begin
   return xx < yy;
 end
-';
+$function$;
 
 select mylt2('a', 'B') as f;
 
@@ -558,8 +558,8 @@ order by 1;
 
 create function dup(ANYELEMENT)
 returns ANYELEMENT
-as 'select $1'
-language "sql";
+as $function$select $1$function$
+language sql;
 
 select a, dup(b) from collate_test1 order by 2;
 
@@ -624,22 +624,22 @@ set client_min_messages = warning;
 set icu_validation_level = disabled;
 
 do
-$$
+$do$
 BEGIN
   EXECUTE 'CREATE COLLATION test0 (provider = icu, locale = ' ||
           quote_literal((SELECT CASE WHEN datlocprovider='i' THEN datlocale ELSE datcollate END FROM pg_database WHERE datname = current_database())) || ');';
 END
-$$;
+$do$;
 
 create collation test0 from "C";
 
 do
-$$
+$do$
 BEGIN
   EXECUTE 'CREATE COLLATION test1 (provider = icu, locale = ' ||
           quote_literal((SELECT CASE WHEN datlocprovider='i' THEN datlocale ELSE datcollate END FROM pg_database WHERE datname = current_database())) || ');';
 END
-$$;
+$do$;
 
 reset icu_validation_level;
 
@@ -663,11 +663,11 @@ create collation testx (
   locale = '@colStrength=primary;nonsense=yes'
 );
 
-drop COLLATION "testx";
+drop COLLATION testx;
 
 create collation testx (provider = icu, locale = 'nonsense-nowhere');
 
-drop COLLATION "testx";
+drop COLLATION testx;
 
 create collation test4 from "nonsense";
 
@@ -705,11 +705,11 @@ where
   collname like 'test%'
 order by 1;
 
-drop COLLATION "test0", "test_schema"."test11", "test5";
+drop COLLATION test0, test_schema.test11, test5;
 
-drop COLLATION "test0";
+drop COLLATION test0;
 
-drop COLLATION if exists "test0";
+drop COLLATION if exists test0;
 
 select collname from pg_collation where collname like 'test%';
 
@@ -749,11 +749,11 @@ using btree
   b collate test0
 );
 
-drop COLLATION "test0";
+drop COLLATION test0;
 
-drop COLLATION "test0" cascade;
+drop COLLATION test0 cascade;
 
-drop TABLE "collate_dep_test1", "collate_dep_test4t";
+drop TABLE collate_dep_test1, collate_dep_test4t;
 
 drop TYPE collate_dep_test2;
 
@@ -873,7 +873,7 @@ select * from test7 order by a collate "en-x-icu";
 
 select * from test7 order by a collate "testcoll_rules1";
 
-drop TABLE "test7";
+drop TABLE test7;
 
 create collation testcoll_rulesx (
   provider = icu,
@@ -1392,7 +1392,7 @@ select * from test12pk;
 
 select * from test12fk;
 
-drop TABLE "test12pk", "test12fk";
+drop TABLE test12pk, test12fk;
 
 create table test12pk (x TEXT collate "case_insensitive" primary key);
 
@@ -1414,7 +1414,7 @@ select * from test12pk;
 
 select * from test12fk;
 
-drop TABLE "test12pk", "test12fk";
+drop TABLE test12pk, test12fk;
 
 create table test12pk (x TEXT collate "case_insensitive" primary key);
 
@@ -1436,7 +1436,7 @@ select * from test12pk;
 
 select * from test12fk;
 
-drop TABLE "test12pk", "test12fk";
+drop TABLE test12pk, test12fk;
 
 create table test20 (
   a INT,
@@ -1912,13 +1912,13 @@ from
 group by 1
 order by t1.c collate "C";
 
-drop TABLE "pagg_tab3";
+drop TABLE pagg_tab3;
 
-drop TABLE "pagg_tab4";
+drop TABLE pagg_tab4;
 
-drop TABLE "pagg_tab5";
+drop TABLE pagg_tab5;
 
-drop TABLE "pagg_tab6";
+drop TABLE pagg_tab6;
 
 reset enable_partitionwise_aggregate;
 

@@ -75,4 +75,4 @@ select o.* from oid_tbl as o where o.f1 >= '1234';
 
 select o.* from oid_tbl as o where o.f1 > '1234';
 
-drop TABLE "oid_tbl";
+drop TABLE oid_tbl;

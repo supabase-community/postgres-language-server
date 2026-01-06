@@ -165,4 +165,4 @@ select locktype, mode from pg_locks where pid = pg_backend_pid() and mode = 'SIR
 
 rollback;
 
-drop TABLE "tidscan";
+drop TABLE tidscan;

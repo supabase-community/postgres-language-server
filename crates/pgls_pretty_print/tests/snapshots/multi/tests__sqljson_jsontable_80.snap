@@ -406,15 +406,15 @@ from
     )
   ) as json_table_func;
 
-drop VIEW "jsonb_table_view2";
+drop VIEW jsonb_table_view2;
 
-drop VIEW "jsonb_table_view3";
+drop VIEW jsonb_table_view3;
 
-drop VIEW "jsonb_table_view4";
+drop VIEW jsonb_table_view4;
 
-drop VIEW "jsonb_table_view5";
+drop VIEW jsonb_table_view5;
 
-drop VIEW "jsonb_table_view6";
+drop VIEW jsonb_table_view6;
 
 drop DOMAIN jsonb_test_domain;
 
@@ -1003,7 +1003,7 @@ from
     )
   );
 
-drop VIEW "jsonb_table_view_nested";
+drop VIEW jsonb_table_view_nested;
 
 create table s (js JSONB);
 
@@ -1229,9 +1229,9 @@ from
     )
   ) as sub;
 
-drop VIEW "jsonb_table_view7";
+drop VIEW jsonb_table_view7;
 
-drop TABLE "s";
+drop TABLE s;
 
 select
   *
@@ -1303,7 +1303,7 @@ from
     ERROR on ERROR
   );
 
-drop VIEW "json_table_view8", "json_table_view9";
+drop VIEW json_table_view8, json_table_view9;
 
 create view json_table_view8
 as select
@@ -1331,4 +1331,4 @@ from
     EMPTY array on ERROR
   );
 
-drop VIEW "json_table_view8", "json_table_view9";
+drop VIEW json_table_view8, json_table_view9;

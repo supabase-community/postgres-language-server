@@ -86,7 +86,7 @@ create table gtest2 (
   generated always as (a || ' sec') stored
 );
 
-drop TABLE "gtest2";
+drop TABLE gtest2;
 
 create table gtest_err_5a (
   a INT primary key,
@@ -179,7 +179,7 @@ insert into gtestx values (11, 1), (22, 2), (33, 3);
 
 select * from gtestx, gtest1 where gtestx.y = gtest1.a;
 
-drop TABLE "gtestx";
+drop TABLE gtestx;
 
 select * from gtest1 order by a;
 
@@ -205,7 +205,7 @@ insert into gtestm values (1, 5, 100);
 
 select * from gtestm order by id;
 
-drop TABLE "gtestm";
+drop TABLE gtestm;
 
 create table gtestm (
   a INT primary key,
@@ -214,7 +214,7 @@ create table gtestm (
 
 insert into gtestm (a) select g from generate_series(1, 10) as g;
 
-drop TABLE "gtestm";
+drop TABLE gtestm;
 
 create view gtest1v
 as select * from gtest1;
@@ -244,7 +244,7 @@ select * from gtest1v;
 
 delete from gtest1v where a >= 5;
 
-drop VIEW "gtest1v";
+drop VIEW gtest1v;
 
 with foo as (select * from gtest1) select * from foo;
 
@@ -278,7 +278,7 @@ create table gtest_normal_child (
 alter table gtest_normal_child
   INHERIT gtest_normal;
 
-drop TABLE "gtest_normal", "gtest_normal_child";
+drop TABLE gtest_normal, gtest_normal_child;
 
 create table gtestx (
   x INT,
@@ -338,7 +338,7 @@ create table gtest1_y ()
 inherits (gtest0,
 gtesty);
 
-drop TABLE "gtesty";
+drop TABLE gtesty;
 
 create table gtesty (
   x INT,
@@ -349,7 +349,7 @@ create table gtest1_y ()
 inherits (gtest1,
 gtesty);
 
-drop TABLE "gtesty";
+drop TABLE gtesty;
 
 create table gtesty (
   x INT,
@@ -378,7 +378,7 @@ update gtestp set f1 = f1 * 10;
 
 select * from gtestc;
 
-drop TABLE "gtestp" cascade;
+drop TABLE gtestp cascade;
 
 create table gtest3 (
   a INT,
@@ -447,7 +447,7 @@ insert into gtest_varlena (a) values (null);
 
 select * from gtest_varlena order by a;
 
-drop TABLE "gtest_varlena";
+drop TABLE gtest_varlena;
 
 create type double_int as (a INT, b INT);
 
@@ -461,7 +461,7 @@ insert into gtest4 values (1), (6);
 
 select * from gtest4;
 
-drop TABLE "gtest4";
+drop TABLE gtest4;
 
 drop TYPE double_int;
 
@@ -516,9 +516,9 @@ grant SELECT (a, c) on table gtest11 to regress_user11;
 
 create function gf1(a INT)
 returns INT
-as ' SELECT a * 3 '
+as $function$ SELECT a * 3 $function$
 immutable
-language "sql";
+language sql;
 
 revoke all on function gf1(INT) from PUBLIC;
 
@@ -549,7 +549,7 @@ reset role;
 
 drop FUNCTION gf1(INT);
 
-drop TABLE "gtest11", "gtest12";
+drop TABLE gtest11, gtest12;
 
 drop FUNCTION gf1(INT);
 
@@ -775,9 +775,9 @@ alter table gtest23b
   alter column b set EXPRESSION
   as (a * 1);
 
-drop TABLE "gtest23b";
+drop TABLE gtest23b;
 
-drop TABLE "gtest23a";
+drop TABLE gtest23a;
 
 create table gtest23p (
   x INT,
@@ -868,7 +868,7 @@ alter table gtest_parent
   gtest_child
   for values from ('2016-07-01') to ('2016-08-01');
 
-drop TABLE "gtest_parent", "gtest_child";
+drop TABLE gtest_parent, gtest_child;
 
 create table gtest_parent (
   f1 DATE not null,
@@ -914,7 +914,7 @@ alter table gtest_parent
   gtest_child3
   for values from ('2016-09-01') to ('2016-10-01');
 
-drop TABLE "gtest_child3";
+drop TABLE gtest_child3;
 
 create table gtest_child3 (
   f1 DATE not null,
@@ -927,7 +927,7 @@ alter table gtest_parent
   gtest_child3
   for values from ('2016-09-01') to ('2016-10-01');
 
-drop TABLE "gtest_child3";
+drop TABLE gtest_child3;
 
 create table gtest_child3 (
   f1 DATE not null,
@@ -940,14 +940,14 @@ alter table gtest_parent
   gtest_child3
   for values from ('2016-09-01') to ('2016-10-01');
 
-drop TABLE "gtest_child3";
+drop TABLE gtest_child3;
 
 alter table gtest_parent
   ATTACH partition
   gtest_child3
   for values from ('2016-09-01') to ('2016-10-01');
 
-drop TABLE "gtest_child3";
+drop TABLE gtest_child3;
 
 create table gtest_child3 (
   f1 DATE not null,
@@ -1126,7 +1126,7 @@ inherits (gtest30);
 alter table gtest30
   alter column b drop EXPRESSION;
 
-drop TABLE "gtest30" cascade;
+drop TABLE gtest30 cascade;
 
 create table gtest30 (
   a INT,
@@ -1173,7 +1173,7 @@ alter table gtest31_1
   alter column b set EXPRESSION
   as ('hello2');
 
-drop STATISTICS "gtest31_2_stat";
+drop STATISTICS gtest31_2_stat;
 
 create index "gtest31_2_y_idx" on gtest31_2 using btree ((y.b));
 
@@ -1181,7 +1181,7 @@ alter table gtest31_1
   alter column b set EXPRESSION
   as ('hello3');
 
-drop TABLE "gtest31_1", "gtest31_2";
+drop TABLE gtest31_1, gtest31_2;
 
 create table gtest31_1 (
   a INT,
@@ -1199,7 +1199,7 @@ create table gtest31_2 (
 alter table gtest31_1
   alter column b type VARCHAR;
 
-drop TABLE "gtest31_1", "gtest31_2";
+drop TABLE gtest31_1, gtest31_2;
 
 create table gtest26 (
   a INT primary key,
@@ -1208,22 +1208,22 @@ create table gtest26 (
 
 create function gtest_trigger_func()
 returns trigger
-language "plpgsql"
-as '
+language plpgsql
+as $function$
 BEGIN
-  IF tg_op IN (''DELETE'', ''UPDATE'') THEN
-    RAISE INFO ''%: %: old = %'', TG_NAME, TG_WHEN, OLD;
+  IF tg_op IN ('DELETE', 'UPDATE') THEN
+    RAISE INFO '%: %: old = %', TG_NAME, TG_WHEN, OLD;
   END IF;
-  IF tg_op IN (''INSERT'', ''UPDATE'') THEN
-    RAISE INFO ''%: %: new = %'', TG_NAME, TG_WHEN, NEW;
+  IF tg_op IN ('INSERT', 'UPDATE') THEN
+    RAISE INFO '%: %: new = %', TG_NAME, TG_WHEN, NEW;
   END IF;
-  IF tg_op = ''DELETE'' THEN
+  IF tg_op = 'DELETE' THEN
     RETURN OLD;
   ELSE
     RETURN NEW;
   END IF;
 END
-';
+$function$;
 
 create TRIGGER gtest1
   before delete or update
@@ -1279,21 +1279,21 @@ delete from gtest26 where a = -6;
 
 select * from gtest26 order by a;
 
-drop TRIGGER "gtest1" on "gtest26";
+drop TRIGGER gtest1 on gtest26;
 
-drop TRIGGER "gtest2" on "gtest26";
+drop TRIGGER gtest2 on gtest26;
 
-drop TRIGGER "gtest3" on "gtest26";
+drop TRIGGER gtest3 on gtest26;
 
 create function gtest_trigger_func3()
 returns trigger
-language "plpgsql"
-as '
+language plpgsql
+as $function$
 BEGIN
-  RAISE NOTICE ''OK'';
+  RAISE NOTICE 'OK';
   RETURN NEW;
 END
-';
+$function$;
 
 create TRIGGER gtest11
   before update of b
@@ -1303,20 +1303,20 @@ create TRIGGER gtest11
 
 update gtest26 set a = 1 where a = 0;
 
-drop TRIGGER "gtest11" on "gtest26";
+drop TRIGGER gtest11 on gtest26;
 
 truncate gtest26;
 
 create function gtest_trigger_func4()
 returns trigger
-language "plpgsql"
-as '
+language plpgsql
+as $function$
 BEGIN
   NEW.a = 10;
   NEW.b = 300;
   RETURN NEW;
 END;
-';
+$function$;
 
 create TRIGGER gtest12_01
   before insert or update

@@ -125,8 +125,8 @@ begin;
 
 create function vol(TEXT)
 returns TEXT
-as 'begin return $1; end'
-language "plpgsql"
+as $function$begin return $1; end$function$
+language plpgsql
 volatile;
 
 select
@@ -144,14 +144,14 @@ create domain foodomain as TEXT;
 
 create function volfoo(TEXT)
 returns foodomain
-as 'begin return $1::foodomain; end'
-language "plpgsql"
+as $function$begin return $1::foodomain; end$function$
+language plpgsql
 volatile;
 
 create function inline_eq(foodomain, foodomain)
 returns BOOLEAN
-as 'SELECT CASE $2::text WHEN $1::text THEN true ELSE false END'
-language "sql";
+as $function$SELECT CASE $2::text WHEN $1::text THEN true ELSE false END$function$
+language sql;
 
 create operator = (PROCEDURE = inline_eq, LEFTARG = foodomain, RIGHTARG = foodomain);
 
@@ -165,18 +165,18 @@ create domain arrdomain as INT[];
 
 create function make_ad(INT, INT)
 returns arrdomain
-as 'declare x arrdomain;
+as $function$declare x arrdomain;
    begin
      x := array[$1,$2];
      return x;
-   end'
-language "plpgsql"
+   end$function$
+language plpgsql
 volatile;
 
 create function ad_eq(arrdomain, arrdomain)
 returns BOOLEAN
-as 'begin return array_eq($1, $2); end'
-language "plpgsql";
+as $function$begin return array_eq($1, $2); end$function$
+language plpgsql;
 
 create operator = (PROCEDURE = ad_eq, LEFTARG = arrdomain, RIGHTARG = arrdomain);
 
@@ -207,6 +207,6 @@ select
 
 rollback;
 
-drop TABLE "case_tbl";
+drop TABLE case_tbl;
 
-drop TABLE "case2_tbl";
+drop TABLE case2_tbl;

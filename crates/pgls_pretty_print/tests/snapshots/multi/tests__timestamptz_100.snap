@@ -749,7 +749,7 @@ insert into timestamptz_tst values (4, '1000000312 23:58:48 IST');
 
 select * from timestamptz_tst order by a;
 
-drop TABLE "timestamptz_tst";
+drop TABLE timestamptz_tst;
 
 set time zone 'America/New_York';
 
@@ -1169,7 +1169,7 @@ select pg_get_viewdef('timestamp_local_view', true);
 
 select * from timestamp_local_view;
 
-drop VIEW "timestamp_local_view";
+drop VIEW timestamp_local_view;
 
 commit;
 

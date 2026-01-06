@@ -25,7 +25,7 @@ create table sequence_test_table (a INT);
 
 create sequence sequence_testx OWNED by sequence_test_table.b;
 
-drop TABLE "sequence_test_table";
+drop TABLE sequence_test_table;
 
 create sequence sequence_test5 as INT;
 
@@ -182,7 +182,7 @@ discard SEQUENCES;
 
 select currval(cast('sequence_test' as REGCLASS));
 
-drop SEQUENCE "sequence_test";
+drop SEQUENCE sequence_test;
 
 create sequence foo_seq;
 
@@ -196,7 +196,7 @@ select nextval('foo_seq_new');
 
 select last_value, log_cnt in (31, 32) as log_cnt_ok, is_called from foo_seq_new;
 
-drop SEQUENCE "foo_seq_new";
+drop SEQUENCE foo_seq_new;
 
 alter table serialtest1_f2_seq rename to serialtest1_f2_foo;
 
@@ -214,16 +214,16 @@ create temporary table t1 (
   f3 INT default nextval(cast('myseq3' as TEXT))
 );
 
-drop SEQUENCE "t1_f1_seq";
+drop SEQUENCE t1_f1_seq;
 
-drop SEQUENCE "myseq2";
+drop SEQUENCE myseq2;
 
-drop SEQUENCE "myseq3";
+drop SEQUENCE myseq3;
 
-drop TABLE "t1";
+drop TABLE t1;
 
-drop SEQUENCE "t1_f1_seq";
+drop SEQUENCE t1_f1_seq;
 
-drop SEQUENCE "myseq2";
+drop SEQUENCE myseq2;
 
 alter SEQUENCE if exists sequence_test2 RESTART;

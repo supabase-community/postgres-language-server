@@ -210,17 +210,17 @@ create type textrange as RANGE (subtype = TEXT, collation = "C");
 create function binary_coercible(OID, OID)
 returns BOOLEAN
 as 'regresslib', 'binary_coercible'
-language "c"
+language c
 STRICT
 stable
 parallel SAFE;
 
 create function part_hashint4_noop(value INT, seed BIGINT)
 returns BIGINT
-as '
+as $function$
     select value + seed;
-    '
-language "sql"
+    $function$
+language sql
 STRICT
 immutable
 parallel SAFE;
@@ -233,10 +233,10 @@ create OPERATOR class part_test_int4_ops
 
 create function part_hashtext_length(value TEXT, seed BIGINT)
 returns BIGINT
-as '
-    select length(coalesce(value, ''''))::int8
-    '
-language "sql"
+as $function$
+    select length(coalesce(value, ''))::int8
+    $function$
+language sql
 STRICT
 immutable
 parallel SAFE;

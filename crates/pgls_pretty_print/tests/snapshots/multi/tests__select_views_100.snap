@@ -13,9 +13,9 @@ create role regress_alice;
 
 create function f_leak(TEXT)
 returns BOOLEAN
-language "plpgsql"
+language plpgsql
 cost 0.0000001
-as 'BEGIN RAISE NOTICE ''f_leak => %'', $1; RETURN true; END';
+as $function$BEGIN RAISE NOTICE 'f_leak => %', $1; RETURN true; END$function$;
 
 create table customer (
   cid INT primary key,

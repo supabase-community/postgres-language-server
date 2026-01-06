@@ -264,7 +264,7 @@ alter index hash_split_index
 
 reindex index hash_split_index;
 
-drop TABLE "hash_split_heap";
+drop TABLE hash_split_heap;
 
 create table hash_cleanup_heap (keycol INT);
 
@@ -314,7 +314,7 @@ CHECKPOINT;
 
 vacuum hash_cleanup_heap;
 
-drop TABLE "hash_cleanup_heap";
+drop TABLE hash_cleanup_heap;
 
 create temporary table hash_temp_heap (
   x INT,
@@ -325,7 +325,7 @@ insert into hash_temp_heap values (1, 1);
 
 create index "hash_idx" on hash_temp_heap using hash (x);
 
-drop TABLE "hash_temp_heap" cascade;
+drop TABLE hash_temp_heap cascade;
 
 create table hash_heap_float4 (
   x REAL,
@@ -336,7 +336,7 @@ insert into hash_heap_float4 values (1.1, 1);
 
 create index "hash_idx" on hash_heap_float4 using hash (x);
 
-drop TABLE "hash_heap_float4" cascade;
+drop TABLE hash_heap_float4 cascade;
 
 create index "hash_f8_index2"
 on hash_f8_heap

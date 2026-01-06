@@ -92,7 +92,7 @@ select * from foo;
 
 select * from foochild;
 
-drop TABLE "foochild";
+drop TABLE foochild;
 
 create temporary view voo
 as select f1, f2 from foo;
@@ -172,8 +172,8 @@ select * from foo;
 
 create function foo_f()
 returns setof foo
-as ' SELECT * FROM foo OFFSET 0 '
-language "sql"
+as $function$ SELECT * FROM foo OFFSET 0 $function$
+language sql
 stable;
 
 update foo set f2 = foo_f.f2 from foo_f() where foo_f.f1 = foo.f1 returning foo_f;
@@ -186,8 +186,8 @@ create type foo_t as (f1 INT, f2 TEXT, f3 INT, f4 BIGINT);
 
 create function foo_f()
 returns setof foo_t
-as ' SELECT * FROM foo OFFSET 0 '
-language "sql"
+as $function$ SELECT * FROM foo OFFSET 0 $function$
+language sql
 stable;
 
 update foo set f2 = foo_f.f2 from foo_f() where foo_f.f1 = foo.f1 returning foo_f;
@@ -471,16 +471,16 @@ new.f3 - old.f3 as delta_f3;
 
 create function joinview_upd_trig_fn()
 returns trigger
-language "plpgsql"
-as '
+language plpgsql
+as $function$
 BEGIN
-  RAISE NOTICE ''UPDATE: % -> %'', old, new;
+  RAISE NOTICE 'UPDATE: % -> %', old, new;
   UPDATE foo SET f1 = new.f1, f3 = new.f3, f4 = new.f4 * 10
     FROM joinme WHERE f2 = f2j AND f2 = old.f2
     RETURNING new.f1, new.f4 INTO new.f1, new.f4;  -- should fail
   RETURN NEW;
 END;
-';
+$function$;
 
 create TRIGGER joinview_upd_trig
   instead of update
@@ -488,7 +488,7 @@ create TRIGGER joinview_upd_trig
   for EACH ROW
   EXECUTE FUNCTION joinview_upd_trig_fn();
 
-drop RULE "joinview_u" on "joinview";
+drop RULE joinview_u on joinview;
 
 update joinview
 set f3 = f3 + 1,
@@ -502,16 +502,16 @@ new.f3 - old.f3 as delta_f3;
 
 create or replace function joinview_upd_trig_fn()
 returns trigger
-language "plpgsql"
-as '
+language plpgsql
+as $function$
 BEGIN
-  RAISE NOTICE ''UPDATE: % -> %'', old, new;
+  RAISE NOTICE 'UPDATE: % -> %', old, new;
   UPDATE foo SET f1 = new.f1, f3 = new.f3, f4 = new.f4 * 10
     FROM joinme WHERE f2 = f2j AND f2 = old.f2
     RETURNING WITH (new AS n) new.f1, n.f4 INTO new.f1, new.f4;  -- now ok
   RETURN NEW;
 END;
-';
+$function$;
 
 update joinview
 set f3 = f3 + 1,
@@ -561,7 +561,7 @@ new.ctid,
 ctid,
 *;
 
-drop TABLE "zerocol";
+drop TABLE zerocol;
 
 create table public.tt (
   a INT,
@@ -572,7 +572,7 @@ insert into public.tt values (1, 10);
 
 update public.tt set b = b * 2 returning a, b, old.b, new.b, tt.b, public.tt.b;
 
-drop TABLE "public"."tt";
+drop TABLE public.tt;
 
 create table foo_parted (
   a INT,
@@ -695,7 +695,7 @@ new.ctid,
 new.*,
 *;
 
-drop TABLE "foo_parted" cascade;
+drop TABLE foo_parted cascade;
 
 commit;
 

@@ -44,7 +44,7 @@ create index "grect2ind2" on fast_emp4000 using gist2 (home_base);
 
 begin;
 
-drop INDEX "grect2ind";
+drop INDEX grect2ind;
 
 set enable_seqscan = off;
 
@@ -147,7 +147,7 @@ where
   c.relname = 'tableam_parted_heap2' and
   a.oid = c.relam;
 
-drop TABLE "tableam_parted_heap2";
+drop TABLE tableam_parted_heap2;
 
 create table tableam_parted_heap2 (
   a TEXT,
@@ -373,9 +373,9 @@ alter materialized view heapmv
   set ACCESS METHOD heap,
   set ACCESS METHOD heap2;
 
-drop MATERIALIZED VIEW "heapmv";
+drop MATERIALIZED VIEW heapmv;
 
-drop TABLE "heaptable";
+drop TABLE heaptable;
 
 create table am_partitioned (
   x INT,
@@ -406,7 +406,7 @@ where
   pg_depend.objid =
   cast('am_partitioned' as REGCLASS);
 
-drop TABLE "am_partitioned";
+drop TABLE am_partitioned;
 
 begin;
 
@@ -610,7 +610,7 @@ where
   c.relname like 'am_partitioned%'
 order by 1;
 
-drop TABLE "am_partitioned";
+drop TABLE am_partitioned;
 
 commit;
 

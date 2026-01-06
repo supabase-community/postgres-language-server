@@ -6,7 +6,7 @@ snapshot_kind: text
 create function test_fdw_handler()
 returns fdw_handler
 as 'regresslib', 'test_fdw_handler'
-language "c";
+language c;
 
 set client_min_messages = warning;
 
@@ -83,8 +83,8 @@ create FOREIGN DATA WRAPPER foo VALIDATOR postgresql_fdw_validator ;
 
 create function invalid_fdw_handler()
 returns INT
-language "sql"
-as 'SELECT 1;';
+language sql
+as $function$SELECT 1;$function$;
 
 create FOREIGN DATA WRAPPER test_fdw HANDLER invalid_fdw_handler ;
 
@@ -445,7 +445,7 @@ create foreign table ft1 (
 quote '"',
 "be quoted" 'value');
 
-drop TABLE "ref_table";
+drop TABLE ref_table;
 
 create foreign table ft1 (
   c1 INT OPTIONS ("param 1" 'val1') not null,
@@ -491,7 +491,7 @@ create unique index on lt1 using btree (a);
 alter table lt1
   add primary key (a);
 
-drop TABLE "lt1";
+drop TABLE lt1;
 
 create table lt1 (a INT)
 partition by range(a);
@@ -506,7 +506,7 @@ alter table lt1
   ATTACH partition
   ft_part2 for values from (1000) to (2000);
 
-drop FOREIGN TABLE "ft_part1", "ft_part2";
+drop FOREIGN TABLE ft_part1, ft_part2;
 
 create unique index on lt1 using btree (a);
 
@@ -521,9 +521,9 @@ alter table lt1
   ATTACH partition
   ft_part2 for values from (1000) to (2000);
 
-drop TABLE "lt1";
+drop TABLE lt1;
 
-drop FOREIGN TABLE "ft_part2";
+drop FOREIGN TABLE ft_part2;
 
 create table lt1 (a INT)
 partition by range(a);
@@ -545,7 +545,7 @@ create unique index on lt1 using btree (a);
 alter table lt1
   add primary key (a);
 
-drop FOREIGN TABLE "ft_part_1_1", "ft_part_1_2";
+drop FOREIGN TABLE ft_part_1_1, ft_part_1_2;
 
 create unique index on lt1 using btree (a);
 
@@ -560,9 +560,9 @@ alter table lt1_part1
   ATTACH partition
   ft_part_1_2 for values from (100) to (200);
 
-drop TABLE "lt1";
+drop TABLE lt1;
 
-drop FOREIGN TABLE "ft_part_1_2";
+drop FOREIGN TABLE ft_part_1_2;
 
 comment on foreign table ft1 is 'foreign table';
 
@@ -641,7 +641,7 @@ create table use_ft1_column_type (x ft1);
 alter foreign table ft1
   alter column c8 type INT;
 
-drop TABLE "use_ft1_column_type";
+drop TABLE use_ft1_column_type;
 
 alter foreign table ft1
   add primary key (c7);
@@ -1097,12 +1097,12 @@ drop SERVER s10 cascade;
 
 create function dummy_trigger()
 returns trigger
-as '
+as $function$
   BEGIN
     RETURN NULL;
   END
-'
-language "plpgsql";
+$function$
+language plpgsql;
 
 create TRIGGER trigtest_before_stmt
   before insert or delete or update
@@ -1147,13 +1147,13 @@ alter foreign table foreign_schema.foreign_table_1
 alter foreign table foreign_schema.foreign_table_1
   enable trigger trigtest_before_stmt;
 
-drop TRIGGER "trigtest_before_stmt" on "foreign_schema"."foreign_table_1";
+drop TRIGGER trigtest_before_stmt on foreign_schema.foreign_table_1;
 
-drop TRIGGER "trigtest_before_row" on "foreign_schema"."foreign_table_1";
+drop TRIGGER trigtest_before_row on foreign_schema.foreign_table_1;
 
-drop TRIGGER "trigtest_after_stmt" on "foreign_schema"."foreign_table_1";
+drop TRIGGER trigtest_after_stmt on foreign_schema.foreign_table_1;
 
-drop TRIGGER "trigtest_after_row" on "foreign_schema"."foreign_table_1";
+drop TRIGGER trigtest_after_row on foreign_schema.foreign_table_1;
 
 drop FUNCTION dummy_trigger();
 
@@ -1169,7 +1169,7 @@ default SERVER s0 OPTIONS (delimiter ',',
 quote '"',
 "be quoted" 'value');
 
-drop FOREIGN TABLE "ft2";
+drop FOREIGN TABLE ft2;
 
 create foreign table ft2 (
   c1 INT not null,
@@ -1273,9 +1273,9 @@ where
 order by 1,
   2;
 
-drop FOREIGN TABLE "ft2";
+drop FOREIGN TABLE ft2;
 
-drop FOREIGN TABLE "ft2" cascade;
+drop FOREIGN TABLE ft2 cascade;
 
 create foreign table ft2 (
   c1 INT not null,
@@ -1316,7 +1316,7 @@ alter table fd_pt1 rename column c3 to f3;
 
 alter table fd_pt1 rename constraint fd_pt1chk3 to f2_check;
 
-drop TABLE "fd_pt1" cascade;
+drop TABLE fd_pt1 cascade;
 
 import foreign schema s1 from server s9 into public;
 
@@ -1332,11 +1332,11 @@ into public
 OPTIONS (option1 'value1',
 option2 'value2');
 
-drop FOREIGN TABLE "no_table";
+drop FOREIGN TABLE no_table;
 
-drop FOREIGN TABLE if exists "no_table";
+drop FOREIGN TABLE if exists no_table;
 
-drop FOREIGN TABLE "foreign_schema"."foreign_table_1";
+drop FOREIGN TABLE foreign_schema.foreign_table_1;
 
 reassign owned by regress_test_role to regress_test_role2;
 
@@ -1357,7 +1357,7 @@ for values in (1) SERVER s0 OPTIONS (delimiter ',',
 quote '"',
 "be quoted" 'value');
 
-drop FOREIGN TABLE "fd_pt2_1";
+drop FOREIGN TABLE fd_pt2_1;
 
 create foreign table fd_pt2_1 (
   c1 INT not null,
@@ -1372,7 +1372,7 @@ alter table fd_pt2
   ATTACH partition
   fd_pt2_1 for values in (1);
 
-drop FOREIGN TABLE "fd_pt2_1";
+drop FOREIGN TABLE fd_pt2_1;
 
 create foreign table fd_pt2_1 (
   c1 INT not null,
@@ -1434,9 +1434,9 @@ alter table fd_pt2
   ATTACH partition
   fd_pt2_1 for values in (1);
 
-drop FOREIGN TABLE "fd_pt2_1";
+drop FOREIGN TABLE fd_pt2_1;
 
-drop TABLE "fd_pt2";
+drop TABLE fd_pt2;
 
 create temporary table temp_parted (a INT)
 partition by LIST(a);
@@ -1449,9 +1449,9 @@ alter table temp_parted
   ATTACH partition
   foreign_part default;
 
-drop FOREIGN TABLE "foreign_part";
+drop FOREIGN TABLE foreign_part;
 
-drop TABLE "temp_parted";
+drop TABLE temp_parted;
 
 drop SCHEMA foreign_schema cascade;
 

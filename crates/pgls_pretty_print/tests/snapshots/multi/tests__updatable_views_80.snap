@@ -292,11 +292,11 @@ update rw_view16 set b = 'ROW 2' where a = 2;
 
 delete from rw_view16 where a = 2;
 
-drop TABLE "base_tbl" cascade;
+drop TABLE base_tbl cascade;
 
-drop VIEW "ro_view10", "ro_view12", "ro_view18";
+drop VIEW ro_view10, ro_view12, ro_view18;
 
-drop SEQUENCE "uv_seq" cascade;
+drop SEQUENCE uv_seq cascade;
 
 create table base_tbl (
   a INT primary key,
@@ -390,9 +390,9 @@ insert into rw_view1 values (9, default), (10, default);
 
 select a, b from base_tbl_hist;
 
-drop TABLE "base_tbl" cascade;
+drop TABLE base_tbl cascade;
 
-drop TABLE "base_tbl_hist";
+drop TABLE base_tbl_hist;
 
 create table base_tbl (
   a INT primary key,
@@ -469,7 +469,7 @@ update rw_view2 set aaa = 5 where aaa = 4;
 
 delete from rw_view2 where aaa = 4;
 
-drop TABLE "base_tbl" cascade;
+drop TABLE base_tbl cascade;
 
 create table base_tbl (
   a INT primary key,
@@ -638,7 +638,7 @@ insert into rw_view2 values (3, 'Row 3') returning old.*, new.*;
 
 update rw_view2 set b = 'R3' where a = 3 returning old.*, new.*;
 
-drop RULE "rw_view1_upd_rule" on "rw_view1";
+drop RULE rw_view1_upd_rule on rw_view1;
 
 create rule rw_view1_upd_rule
 as on update to rw_view1
@@ -661,7 +661,7 @@ update rw_view2 set a = 3 where a = 2;
 
 delete from rw_view2 where a = 2;
 
-drop TABLE "base_tbl" cascade;
+drop TABLE base_tbl cascade;
 
 create table base_tbl (
   a INT primary key,
@@ -724,23 +724,23 @@ order by table_name,
 
 create function rw_view1_trig_fn()
 returns trigger
-as '
+as $function$
 BEGIN
-  IF TG_OP = ''INSERT'' THEN
+  IF TG_OP = 'INSERT' THEN
     INSERT INTO base_tbl VALUES (NEW.a, NEW.b);
-    NEW.c1 = ''Trigger Const1'';
+    NEW.c1 = 'Trigger Const1';
     RETURN NEW;
-  ELSIF TG_OP = ''UPDATE'' THEN
+  ELSIF TG_OP = 'UPDATE' THEN
     UPDATE base_tbl SET b=NEW.b WHERE a=OLD.a;
-    NEW.c1 = ''Trigger Const1'';
+    NEW.c1 = 'Trigger Const1';
     RETURN NEW;
-  ELSIF TG_OP = ''DELETE'' THEN
+  ELSIF TG_OP = 'DELETE' THEN
     DELETE FROM base_tbl WHERE a=OLD.a;
     RETURN OLD;
   END IF;
 END;
-'
-language "plpgsql";
+$function$
+language plpgsql;
 
 create TRIGGER rw_view1_ins_trig
   instead of insert
@@ -877,9 +877,9 @@ update rw_view2 set a = 3 where a = 2;
 
 delete from rw_view2 where a = 2;
 
-drop TRIGGER "rw_view1_del_trig" on "rw_view1";
+drop TRIGGER rw_view1_del_trig on rw_view1;
 
-drop TRIGGER "rw_view1_ins_trig" on "rw_view1";
+drop TRIGGER rw_view1_ins_trig on rw_view1;
 
 create TRIGGER rw_view2_upd_trig
   instead of update
@@ -889,7 +889,7 @@ create TRIGGER rw_view2_upd_trig
 
 select * from base_tbl order by a;
 
-drop TABLE "base_tbl" cascade;
+drop TABLE base_tbl cascade;
 
 drop FUNCTION rw_view1_trig_fn();
 
@@ -905,8 +905,8 @@ as select b as bb, a as aa from base_tbl;
 
 create function rw_view1_aa(x rw_view1)
 returns INT
-as ' SELECT x.aa '
-language "sql";
+as $function$ SELECT x.aa $function$
+language sql;
 
 update rw_view1 as v
 set bb = 'Updated row 2'
@@ -924,7 +924,7 @@ where
 returning rw_view1_aa(v),
 v.bb;
 
-drop TABLE "base_tbl" cascade;
+drop TABLE base_tbl cascade;
 
 create user regress_view_user1;
 
@@ -1054,7 +1054,7 @@ select * from base_tbl;
 
 reset session_authorization;
 
-drop TABLE "base_tbl" cascade;
+drop TABLE base_tbl cascade;
 
 create table base_tbl (
   a INT,
@@ -1172,7 +1172,7 @@ update rw_view2 set b = 'bar' where a = 1;
 
 reset session_authorization;
 
-drop TABLE "base_tbl" cascade;
+drop TABLE base_tbl cascade;
 
 set session authorization regress_view_user1;
 
@@ -1281,7 +1281,7 @@ select * from base_tbl;
 
 reset session_authorization;
 
-drop TABLE "base_tbl" cascade;
+drop TABLE base_tbl cascade;
 
 create table base_tbl (
   a INT,
@@ -1466,7 +1466,7 @@ update rw_view2 set ccc = ccc;
 
 reset session_authorization;
 
-drop TABLE "base_tbl" cascade;
+drop TABLE base_tbl cascade;
 
 drop role regress_view_user1;
 
@@ -1498,7 +1498,7 @@ insert into rw_view1 (aa) values (5);
 
 select * from base_tbl;
 
-drop TABLE "base_tbl" cascade;
+drop TABLE base_tbl cascade;
 
 create table base_tbl (
   a INT primary key,
@@ -1511,16 +1511,16 @@ insert into base_tbl values (2, 'Row 2');
 
 create function rw_view1_trig_fn()
 returns trigger
-as '
+as $function$
 BEGIN
-  IF TG_OP = ''INSERT'' THEN
+  IF TG_OP = 'INSERT' THEN
     UPDATE base_tbl SET b=NEW.b WHERE a=1;
     RETURN NULL;
   END IF;
   RETURN NULL;
 END;
-'
-language "plpgsql";
+$function$
+language plpgsql;
 
 create TRIGGER rw_view1_ins_trig
   after insert
@@ -1535,13 +1535,13 @@ insert into rw_view1 values (3, 'Row 3');
 
 select * from base_tbl;
 
-drop VIEW "rw_view1";
+drop VIEW rw_view1;
 
-drop TRIGGER "rw_view1_ins_trig" on "base_tbl";
+drop TRIGGER rw_view1_ins_trig on base_tbl;
 
 drop FUNCTION rw_view1_trig_fn();
 
-drop TABLE "base_tbl";
+drop TABLE base_tbl;
 
 create table base_tbl (
   a INT,
@@ -1565,7 +1565,7 @@ update rw_view1 set b = b + 1 returning *;
 
 select * from rw_view1;
 
-drop TABLE "base_tbl" cascade;
+drop TABLE base_tbl cascade;
 
 create table base_tbl (
   a INT,
@@ -1581,7 +1581,7 @@ update rw_view1 set arr[1] = 42, arr[2] = 77 where a = 3;
 
 select * from rw_view1;
 
-drop TABLE "base_tbl" cascade;
+drop TABLE base_tbl cascade;
 
 create table base_tbl (a DOUBLE PRECISION);
 
@@ -1697,7 +1697,7 @@ from
   )
   as t (events);
 
-drop TABLE "base_tbl" cascade;
+drop TABLE base_tbl cascade;
 
 create table base_tbl (
   id INT,
@@ -1728,7 +1728,7 @@ update rw_view1 set id = 3000 where id = 3;
 
 select * from base_tbl;
 
-drop TABLE "base_tbl" cascade;
+drop TABLE base_tbl cascade;
 
 create table base_tbl_parent (a INT);
 
@@ -1796,9 +1796,9 @@ select * from only base_tbl_parent order by a;
 
 select * from base_tbl_child order by a;
 
-drop TABLE "base_tbl_parent", "base_tbl_child" cascade;
+drop TABLE base_tbl_parent, base_tbl_child cascade;
 
-drop TABLE "other_tbl_parent" cascade;
+drop TABLE other_tbl_parent cascade;
 
 create table base_tbl (
   a INT,
@@ -1831,7 +1831,7 @@ select * from base_tbl order by a, b;
 
 select * from base_tbl order by a, b;
 
-drop TABLE "base_tbl" cascade;
+drop TABLE base_tbl cascade;
 
 create table base_tbl (a INT);
 
@@ -1887,7 +1887,7 @@ insert into rw_view2 values (30);
 
 select * from base_tbl;
 
-drop TABLE "base_tbl" cascade;
+drop TABLE base_tbl cascade;
 
 create table base_tbl (a INT);
 
@@ -1922,7 +1922,7 @@ insert into rw_view3 values (-3);
 
 insert into rw_view3 values (3);
 
-drop TABLE "base_tbl" cascade;
+drop TABLE base_tbl cascade;
 
 create table base_tbl (
   a INT,
@@ -1949,7 +1949,7 @@ execute ins (10, array[4, 5]);
 
 deallocate ins;
 
-drop TABLE "base_tbl" cascade;
+drop TABLE base_tbl cascade;
 
 create table base_tbl (a INT);
 
@@ -1986,7 +1986,7 @@ insert into rw_view1 values (5);
 
 update rw_view1 set a = a + 5;
 
-drop TABLE "base_tbl", "ref_tbl" cascade;
+drop TABLE base_tbl, ref_tbl cascade;
 
 create table base_tbl (
   a INT,
@@ -1995,13 +1995,13 @@ create table base_tbl (
 
 create function base_tbl_trig_fn()
 returns trigger
-as '
+as $function$
 BEGIN
   NEW.b := 10;
   RETURN NEW;
 END;
-'
-language "plpgsql";
+$function$
+language plpgsql;
 
 create TRIGGER base_tbl_trig
   before insert or update
@@ -2019,7 +2019,7 @@ insert into rw_view1 values (15, 20);
 
 update rw_view1 set a = 20, b = 30;
 
-drop TABLE "base_tbl" cascade;
+drop TABLE base_tbl cascade;
 
 drop FUNCTION base_tbl_trig_fn();
 
@@ -2033,21 +2033,21 @@ as select a from base_tbl where a < b;
 
 create function rw_view1_trig_fn()
 returns trigger
-as '
+as $function$
 BEGIN
-  IF TG_OP = ''INSERT'' THEN
+  IF TG_OP = 'INSERT' THEN
     INSERT INTO base_tbl VALUES (NEW.a, 10);
     RETURN NEW;
-  ELSIF TG_OP = ''UPDATE'' THEN
+  ELSIF TG_OP = 'UPDATE' THEN
     UPDATE base_tbl SET a=NEW.a WHERE a=OLD.a;
     RETURN NEW;
-  ELSIF TG_OP = ''DELETE'' THEN
+  ELSIF TG_OP = 'DELETE' THEN
     DELETE FROM base_tbl WHERE a=OLD.a;
     RETURN OLD;
   END IF;
 END;
-'
-language "plpgsql";
+$function$
+language plpgsql;
 
 create TRIGGER rw_view1_trig
   instead of insert or delete or update
@@ -2078,7 +2078,7 @@ update rw_view2 set a = 200 where a = 5;
 
 select * from base_tbl;
 
-drop TRIGGER "rw_view1_trig" on "rw_view1";
+drop TRIGGER rw_view1_trig on rw_view1;
 
 create rule rw_view1_ins_rule
 as on insert to rw_view1
@@ -2107,7 +2107,7 @@ update rw_view2 set a = -5 where a = 5;
 
 select * from base_tbl;
 
-drop TABLE "base_tbl" cascade;
+drop TABLE base_tbl cascade;
 
 drop FUNCTION rw_view1_trig_fn();
 
@@ -2127,7 +2127,7 @@ with local check option;
 
 insert into rw_view2 values (2, 3);
 
-drop TABLE "base_tbl" cascade;
+drop TABLE base_tbl cascade;
 
 create table base_tbl (
   person TEXT,
@@ -2150,23 +2150,23 @@ where
 
 create function snoop(ANYELEMENT)
 returns BOOLEAN
-as '
+as $function$
 BEGIN
-  RAISE NOTICE ''snooped value: %'', $1;
+  RAISE NOTICE 'snooped value: %', $1;
   RETURN true;
 END;
-'
-language "plpgsql"
+$function$
+language plpgsql
 cost 0.000001;
 
 create or replace function leakproof(ANYELEMENT)
 returns BOOLEAN
-as '
+as $function$
 BEGIN
   RETURN true;
 END;
-'
-language "plpgsql"
+$function$
+language plpgsql
 STRICT
 immutable
 leakproof;
@@ -2267,7 +2267,7 @@ update rw_view2 set person = person where snoop(person);
 
 delete from rw_view2 where not snoop(person);
 
-drop TABLE "base_tbl" cascade;
+drop TABLE base_tbl cascade;
 
 create table base_tbl (
   id INT primary key,
@@ -2325,7 +2325,7 @@ insert into rw_view1 values (2, 'New row 2');
 
 select * from base_tbl;
 
-drop TABLE "base_tbl" cascade;
+drop TABLE base_tbl cascade;
 
 create table t1 (
   a INT,
@@ -2427,7 +2427,7 @@ delete from v1 where snoop(a) and leakproof(a);
 
 select * from t1;
 
-drop TABLE "t1", "t11", "t12", "t111" cascade;
+drop TABLE t1, t11, t12, t111 cascade;
 
 drop FUNCTION snoop(ANYELEMENT);
 
@@ -2459,13 +2459,13 @@ select * from tx1;
 
 select * from vx1;
 
-drop VIEW "vx1";
+drop VIEW vx1;
 
-drop TABLE "tx1";
+drop TABLE tx1;
 
-drop TABLE "tx2";
+drop TABLE tx2;
 
-drop TABLE "tx3";
+drop TABLE tx3;
 
 create table tx1 (a INT);
 
@@ -2495,13 +2495,13 @@ select * from tx1;
 
 select * from vx1;
 
-drop VIEW "vx1";
+drop VIEW vx1;
 
-drop TABLE "tx1";
+drop TABLE tx1;
 
-drop TABLE "tx2";
+drop TABLE tx2;
 
-drop TABLE "tx3";
+drop TABLE tx3;
 
 create table tx1 (
   a INT,
@@ -2549,13 +2549,13 @@ select * from tx1;
 
 select * from vx1;
 
-drop VIEW "vx1";
+drop VIEW vx1;
 
-drop TABLE "tx1";
+drop TABLE tx1;
 
-drop TABLE "tx2";
+drop TABLE tx2;
 
-drop TABLE "tx3";
+drop TABLE tx3;
 
 create table t1 (
   a INT,
@@ -2603,13 +2603,13 @@ delete from v2 where a = 2;
 
 select * from v2;
 
-drop VIEW "v2";
+drop VIEW v2;
 
-drop VIEW "v1";
+drop VIEW v1;
 
-drop TABLE "t2";
+drop TABLE t2;
 
-drop TABLE "t1";
+drop TABLE t1;
 
 create table t1 (a INT);
 
@@ -2628,11 +2628,11 @@ as select * from v1 where exists (select 1);
 
 update v2 set a = 1;
 
-drop VIEW "v2";
+drop VIEW v2;
 
-drop VIEW "v1";
+drop VIEW v1;
 
-drop TABLE "t1";
+drop TABLE t1;
 
 create table t1 (
   a INT,
@@ -2650,9 +2650,9 @@ insert into v1 values (1, 'ok');
 
 insert into v1 values (-1, 'invalid');
 
-drop VIEW "v1";
+drop VIEW v1;
 
-drop TABLE "t1";
+drop TABLE t1;
 
 create table uv_pt (
   a INT,
@@ -2749,9 +2749,9 @@ insert into uv_ptv_wco values (1, 2);
 
 select cast(tableoid as REGCLASS), * from uv_pt order by a, b;
 
-drop VIEW "uv_ptv", "uv_ptv_wco";
+drop VIEW uv_ptv, uv_ptv_wco;
 
-drop TABLE "uv_pt", "uv_pt1", "uv_pt11";
+drop TABLE uv_pt, uv_pt1, uv_pt11;
 
 create table wcowrtest (a INT)
 partition by LIST(a);
@@ -2811,9 +2811,9 @@ with cascaded check option;
 
 insert into wcowrtest_v2 values (2, 'no such row in sometable');
 
-drop VIEW "wcowrtest_v", "wcowrtest_v2";
+drop VIEW wcowrtest_v, wcowrtest_v2;
 
-drop TABLE "wcowrtest", "sometable";
+drop TABLE wcowrtest, sometable;
 
 create table uv_iocu_tab (
   a TEXT unique,
@@ -2883,9 +2883,9 @@ where
 
 select * from uv_iocu_tab;
 
-drop VIEW "uv_iocu_view";
+drop VIEW uv_iocu_view;
 
-drop TABLE "uv_iocu_tab";
+drop TABLE uv_iocu_tab;
 
 create table uv_iocu_tab (
   a INT unique,
@@ -2976,9 +2976,9 @@ do
 update
 set cc = 'XXX';
 
-drop VIEW "uv_iocu_view";
+drop VIEW uv_iocu_view;
 
-drop TABLE "uv_iocu_tab";
+drop TABLE uv_iocu_tab;
 
 create user regress_view_user1;
 
@@ -3119,17 +3119,17 @@ reset session_authorization;
 
 select * from base_tbl;
 
-drop VIEW "rw_view5";
+drop VIEW rw_view5;
 
-drop VIEW "rw_view4";
+drop VIEW rw_view4;
 
-drop VIEW "rw_view3";
+drop VIEW rw_view3;
 
-drop VIEW "rw_view2";
+drop VIEW rw_view2;
 
-drop VIEW "rw_view1";
+drop VIEW rw_view1;
 
-drop TABLE "base_tbl";
+drop TABLE base_tbl;
 
 drop role regress_view_user1;
 
@@ -3180,13 +3180,13 @@ select * from base_tab_def order by a;
 
 create function base_tab_def_view_instrig_func()
 returns trigger
-as '
+as $function$
 begin
   insert into base_tab_def values (new.a, new.b, new.c, new.d, new.e);
   return new;
 end;
-'
-language "plpgsql";
+$function$
+language plpgsql;
 
 create TRIGGER base_tab_def_view_instrig
   instead of insert
@@ -3222,7 +3222,7 @@ insert into base_tab_def_view values (17), (default);
 
 select * from base_tab_def order by a;
 
-drop TRIGGER "base_tab_def_view_instrig" on "base_tab_def_view";
+drop TRIGGER base_tab_def_view_instrig on base_tab_def_view;
 
 drop FUNCTION base_tab_def_view_instrig_func;
 
@@ -3261,7 +3261,7 @@ insert into base_tab_def_view values (17), (default);
 
 select * from base_tab_def order by a;
 
-drop RULE "base_tab_def_view_ins_rule" on "base_tab_def_view";
+drop RULE base_tab_def_view_ins_rule on base_tab_def_view;
 
 create rule base_tab_def_view_ins_rule
 as on insert to base_tab_def_view
@@ -3298,7 +3298,7 @@ insert into base_tab_def_view values (17), (default);
 
 select * from base_tab_def order by a, c nulls last;
 
-drop RULE "base_tab_def_view_ins_rule" on "base_tab_def_view";
+drop RULE base_tab_def_view_ins_rule on base_tab_def_view;
 
 select new.a, new.b, 'xxx';
 
@@ -3313,9 +3313,9 @@ values
 
 select * from base_tab_def order by a, e nulls first;
 
-drop VIEW "base_tab_def_view";
+drop VIEW base_tab_def_view;
 
-drop TABLE "base_tab_def";
+drop TABLE base_tab_def;
 
 create table base_tab (
   a serial,
@@ -3337,6 +3337,6 @@ values
 
 select * from base_tab order by a;
 
-drop VIEW "base_tab_view";
+drop VIEW base_tab_view;
 
-drop TABLE "base_tab";
+drop TABLE base_tab;

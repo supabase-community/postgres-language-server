@@ -215,7 +215,7 @@ where
       c.relname = 'regress_tblspace_test_tbl'
   );
 
-drop TABLE "regress_tblspace_test_tbl";
+drop TABLE regress_tblspace_test_tbl;
 
 create table tbspace_reindex_part (
   c1 INT,
@@ -338,7 +338,7 @@ from
   on b.relname = a.relname
 order by 1;
 
-drop TABLE "tbspace_reindex_part";
+drop TABLE tbspace_reindex_part;
 
 create schema "testschema";
 
@@ -478,7 +478,7 @@ order by relname;
 
 reset default_tablespace;
 
-drop TABLE "testschema"."part";
+drop TABLE testschema.part;
 
 create table testschema.part (a INT)
 partition by LIST(a);
@@ -543,7 +543,7 @@ set default_tablespace = '';
 create table testschema.dflt2 (a INT primary key)
 partition by LIST(a);
 
-drop TABLE "testschema"."dflt", "testschema"."dflt2";
+drop TABLE testschema.dflt, testschema.dflt2;
 
 create table testschema.test_default_tab (id BIGINT)
 tablespace regress_tblspace;
@@ -587,7 +587,7 @@ alter table testschema.test_default_tab
 alter table testschema.test_default_tab
   alter column id type BIGINT;
 
-drop TABLE "testschema"."test_default_tab";
+drop TABLE testschema.test_default_tab;
 
 create table testschema.test_default_tab_p (
   id BIGINT,
@@ -639,7 +639,7 @@ alter table testschema.test_default_tab_p
 alter table testschema.test_default_tab_p
   alter column val type BIGINT;
 
-drop TABLE "testschema"."test_default_tab_p";
+drop TABLE testschema.test_default_tab_p;
 
 create table testschema.test_tab (id INT) tablespace regress_tblspace;
 
@@ -657,7 +657,7 @@ alter table testschema.test_tab
 
 select * from testschema.test_tab;
 
-drop TABLE "testschema"."test_tab";
+drop TABLE testschema.test_tab;
 
 create table testschema.test_tab (
   a INT,
@@ -680,7 +680,7 @@ alter table testschema.test_tab
   alter column b type BIGINT,
   add unique (c);
 
-drop TABLE "testschema"."test_tab";
+drop TABLE testschema.test_tab;
 
 create table testschema.atable as values (1), (2);
 

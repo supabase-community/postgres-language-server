@@ -325,16 +325,16 @@ alter table test_replica_identity5
 alter table test_replica_identity5
   alter column b drop not null;
 
-drop TABLE "test_replica_identity";
+drop TABLE test_replica_identity;
 
-drop TABLE "test_replica_identity2";
+drop TABLE test_replica_identity2;
 
-drop TABLE "test_replica_identity3";
+drop TABLE test_replica_identity3;
 
-drop TABLE "test_replica_identity4";
+drop TABLE test_replica_identity4;
 
-drop TABLE "test_replica_identity5";
+drop TABLE test_replica_identity5;
 
-drop TABLE "test_replica_identity_othertable";
+drop TABLE test_replica_identity_othertable;
 
-drop TABLE "test_replica_identity_t3";
+drop TABLE test_replica_identity_t3;

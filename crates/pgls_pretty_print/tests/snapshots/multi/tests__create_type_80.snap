@@ -5,29 +5,29 @@ snapshot_kind: text
 ---
 create function widget_in(cstring)
 returns widget
-as 'regresslib'
-language "c"
+as $function$regresslib$function$
+language c
 STRICT
 immutable;
 
 create function widget_out(widget)
 returns cstring
-as 'regresslib'
-language "c"
+as $function$regresslib$function$
+language c
 STRICT
 immutable;
 
 create function int44in(cstring)
 returns city_budget
-as 'regresslib'
-language "c"
+as $function$regresslib$function$
+language c
 STRICT
 immutable;
 
 create function int44out(city_budget)
 returns cstring
-as 'regresslib'
-language "c"
+as $function$regresslib$function$
+language c
 STRICT
 immutable;
 
@@ -65,29 +65,29 @@ create type text_w_default;
 
 create function int42_in(cstring)
 returns int42
-as 'int4in'
-language "internal"
+as $function$int4in$function$
+language internal
 STRICT
 immutable;
 
 create function int42_out(int42)
 returns cstring
-as 'int4out'
-language "internal"
+as $function$int4out$function$
+language internal
 STRICT
 immutable;
 
 create function text_w_default_in(cstring)
 returns text_w_default
-as 'textin'
-language "internal"
+as $function$textin$function$
+language internal
 STRICT
 immutable;
 
 create function text_w_default_out(text_w_default)
 returns cstring
-as 'textout'
-language "internal"
+as $function$textout$function$
+language internal
 STRICT
 immutable;
 
@@ -148,10 +148,10 @@ create type default_test_row as (f1 text_w_default, f2 int42);
 
 create function get_default_test()
 returns setof default_test_row
-as '
+as $function$
   SELECT * FROM default_test;
-'
-language "sql";
+$function$
+language sql;
 
 select * from get_default_test();
 
@@ -171,21 +171,21 @@ create type text_w_default;
 
 drop TYPE default_test_row cascade;
 
-drop TABLE "default_test";
+drop TABLE default_test;
 
 create type base_type;
 
 create function base_fn_in(cstring)
 returns base_type
-as 'boolin'
-language "internal"
+as $function$boolin$function$
+language internal
 immutable
 STRICT;
 
 create function base_fn_out(base_type)
 returns cstring
-as 'boolout'
-language "internal"
+as $function$boolout$function$
+language internal
 immutable
 STRICT;
 
@@ -235,8 +235,8 @@ select pg_input_is_valid('("(1,2)")', 'mytab');
 
 create function pt_in_widget(point, widget)
 returns BOOLEAN
-as 'regresslib'
-language "c"
+as $function$regresslib$function$
+language c
 STRICT;
 
 create operator <% (LEFTARG = point,
@@ -276,35 +276,35 @@ create type myvarchar;
 
 create function myvarcharin(cstring, OID, INT)
 returns myvarchar
-language "internal"
+language internal
 immutable
 parallel SAFE
 STRICT
-as 'varcharin';
+as $function$varcharin$function$;
 
 create function myvarcharout(myvarchar)
 returns cstring
-language "internal"
+language internal
 immutable
 parallel SAFE
 STRICT
-as 'varcharout';
+as $function$varcharout$function$;
 
 create function myvarcharsend(myvarchar)
 returns BYTEA
-language "internal"
+language internal
 stable
 parallel SAFE
 STRICT
-as 'varcharsend';
+as $function$varcharsend$function$;
 
 create function myvarcharrecv(internal, OID, INT)
 returns myvarchar
-language "internal"
+language internal
 stable
 parallel SAFE
 STRICT
-as 'varcharrecv';
+as $function$varcharrecv$function$;
 
 alter type myvarchar set (storage = extended);
 

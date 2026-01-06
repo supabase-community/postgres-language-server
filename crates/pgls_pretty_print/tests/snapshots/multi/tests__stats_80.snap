@@ -210,8 +210,8 @@ commit;
 
 create function stats_test_func1()
 returns VOID
-language "plpgsql"
-as 'BEGIN END;';
+language plpgsql
+as $function$BEGIN END;$function$;
 
 select
   cast(cast('stats_test_func1()'
@@ -221,8 +221,8 @@ select
 
 create function stats_test_func2()
 returns VOID
-language "plpgsql"
-as 'BEGIN END;';
+language plpgsql
+as $function$BEGIN END;$function$;
 
 select
   cast(cast('stats_test_func2()'
@@ -393,7 +393,7 @@ select pg_stat_force_next_flush();
 
 select pg_stat_get_live_tuples('drop_stats_test_oid');
 
-drop TABLE "drop_stats_test";
+drop TABLE drop_stats_test;
 
 select pg_stat_get_live_tuples('drop_stats_test_oid');
 
@@ -411,7 +411,7 @@ insert into drop_stats_test_xact default values;
 
 select pg_stat_get_xact_tuples_inserted('drop_stats_test_xact_oid');
 
-drop TABLE "drop_stats_test_xact";
+drop TABLE drop_stats_test_xact;
 
 select pg_stat_get_xact_tuples_inserted('drop_stats_test_xact_oid');
 
@@ -433,7 +433,7 @@ insert into drop_stats_test_xact default values;
 
 select pg_stat_get_xact_tuples_inserted('drop_stats_test_xact_oid');
 
-drop TABLE "drop_stats_test_xact";
+drop TABLE drop_stats_test_xact;
 
 select pg_stat_get_xact_tuples_inserted('drop_stats_test_xact_oid');
 
@@ -459,7 +459,7 @@ select pg_stat_get_xact_tuples_inserted('drop_stats_test_subxact_oid');
 
 savepoint sp2;
 
-drop TABLE "drop_stats_test_subxact";
+drop TABLE drop_stats_test_subxact;
 
 rollback to savepoint sp2;
 
@@ -477,7 +477,7 @@ begin;
 
 savepoint sp1;
 
-drop TABLE "drop_stats_test_subxact";
+drop TABLE drop_stats_test_subxact;
 
 savepoint sp2;
 
@@ -493,7 +493,7 @@ begin;
 
 savepoint sp1;
 
-drop TABLE "drop_stats_test_subxact";
+drop TABLE drop_stats_test_subxact;
 
 savepoint sp2;
 
@@ -504,13 +504,13 @@ commit;
 select pg_stat_get_live_tuples('drop_stats_test_subxact_oid');
 
 drop TABLE
-  "trunc_stats_test",
-  "trunc_stats_test1",
-  "trunc_stats_test2",
-  "trunc_stats_test3",
-  "trunc_stats_test4";
+  trunc_stats_test,
+  trunc_stats_test1,
+  trunc_stats_test2,
+  trunc_stats_test3,
+  trunc_stats_test4;
 
-drop TABLE "prevstats";
+drop TABLE prevstats;
 
 begin;
 
@@ -753,7 +753,7 @@ from
 
 create temporary table test_stats_temp as select 17;
 
-drop TABLE "test_stats_temp";
+drop TABLE test_stats_temp;
 
 select num_requested > 'rqst_ckpts_before' from pg_stat_checkpointer;
 
@@ -982,7 +982,7 @@ select pg_stat_have_stats('relation', 'dboid', 'stats_test_idx1_oid');
 
 select pg_stat_have_stats('relation', 'dboid', 'stats_test_idx1_oid');
 
-drop INDEX "stats_test_idx1";
+drop INDEX stats_test_idx1;
 
 select pg_stat_have_stats('relation', 'dboid', 'stats_test_idx1_oid');
 
@@ -1020,7 +1020,7 @@ begin;
 
 select pg_stat_have_stats('relation', 'dboid', 'stats_test_idx1_oid');
 
-drop INDEX "stats_test_idx1";
+drop INDEX stats_test_idx1;
 
 rollback;
 
@@ -1241,7 +1241,7 @@ where
 
 select 'io_sum_shared_after_hits' > 'io_sum_shared_before_hits';
 
-drop TABLE "test_io_shared";
+drop TABLE test_io_shared;
 
 set temp_buffers = 100;
 
@@ -1488,27 +1488,27 @@ create index "val_brin" on brin_hot using brin (val);
 
 create function wait_for_hot_stats()
 returns VOID
-as '
+as $function$
 DECLARE
   start_time timestamptz := clock_timestamp();
   updated bool;
 BEGIN
-  -- we don''t want to wait forever; loop will exit after 30 seconds
+  -- we don't want to wait forever; loop will exit after 30 seconds
   FOR i IN 1 .. 300 LOOP
-    SELECT (pg_stat_get_tuples_hot_updated(''brin_hot''::regclass::oid) > 0) INTO updated;
+    SELECT (pg_stat_get_tuples_hot_updated('brin_hot'::regclass::oid) > 0) INTO updated;
     EXIT WHEN updated;
 
     -- wait a little
-    PERFORM pg_sleep_for(''100 milliseconds'');
+    PERFORM pg_sleep_for('100 milliseconds');
     -- reset stats snapshot so we can test again
     PERFORM pg_stat_clear_snapshot();
   END LOOP;
-  -- report time waited in postmaster log (where it won''t change test output)
-  RAISE log ''wait_for_hot_stats delayed % seconds'',
+  -- report time waited in postmaster log (where it won't change test output)
+  RAISE log 'wait_for_hot_stats delayed % seconds',
     EXTRACT(epoch FROM clock_timestamp() - start_time);
 END
-'
-language "plpgsql";
+$function$
+language plpgsql;
 
 update brin_hot set val = -3 where id = 42;
 
@@ -1520,7 +1520,7 @@ select
     as OID)
   );
 
-drop TABLE "brin_hot";
+drop TABLE brin_hot;
 
 drop FUNCTION wait_for_hot_stats();
 
@@ -1552,7 +1552,7 @@ select * from brin_hot_2 where a = 2 and b = 100;
 
 select COUNT(*) from brin_hot_2 where a = 2 and b = 100;
 
-drop TABLE "brin_hot_2";
+drop TABLE brin_hot_2;
 
 create table brin_hot_3 (
   a INT,
@@ -1576,7 +1576,7 @@ select * from brin_hot_3 where a = 2;
 
 select COUNT(*) from brin_hot_3 where a = 2;
 
-drop TABLE "brin_hot_3";
+drop TABLE brin_hot_3;
 
 set enable_seqscan = 'on';
 
@@ -1590,4 +1590,4 @@ insert into table_fillfactor select 'x' from generate_series(1, 1000);
 
 select * from check_estimated_rows('SELECT * FROM table_fillfactor');
 
-drop TABLE "table_fillfactor";
+drop TABLE table_fillfactor;

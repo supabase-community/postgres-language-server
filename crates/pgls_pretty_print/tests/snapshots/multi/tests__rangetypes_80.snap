@@ -274,7 +274,7 @@ set enable_hashjoin = default;
 
 set enable_mergejoin = default;
 
-drop TABLE "numrange_test2";
+drop TABLE numrange_test2;
 
 create table textrange_test (tr textrange);
 
@@ -625,7 +625,7 @@ where
     int4range(400, 500)
   );
 
-drop INDEX "test_range_gist_idx";
+drop INDEX test_range_gist_idx;
 
 create index "test_range_gist_idx" on test_range_gist using gist (ir);
 
@@ -839,7 +839,7 @@ select COUNT(*) from test_range_spgist where ir &> int4range(100, 500);
 
 select COUNT(*) from test_range_spgist where ir -|- int4range(100, 500);
 
-drop INDEX "test_range_spgist_idx";
+drop INDEX test_range_spgist_idx;
 
 create index "test_range_spgist_idx" on test_range_spgist using spgist (ir);
 
@@ -905,7 +905,7 @@ where
 
 reset enable_seqscan;
 
-drop TABLE "test_range_elem";
+drop TABLE test_range_elem;
 
 create table test_range_excl (
   room INT4RANGE,
@@ -990,7 +990,7 @@ insert into float8range_test values (float8range(-100.00007, '1.111113e9'), 42);
 
 select * from float8range_test;
 
-drop TABLE "float8range_test";
+drop TABLE float8range_test;
 
 create domain mydomain as INT;
 
@@ -1024,8 +1024,8 @@ drop TYPE textrange2;
 
 create function anyarray_anyrange_func(a ANYARRAY, r ANYRANGE)
 returns ANYELEMENT
-as 'select $1[1] + lower($2);'
-language "sql";
+as $function$select $1[1] + lower($2);$function$
+language sql;
 
 select anyarray_anyrange_func(array[1, 2], int4range(10, 20));
 
@@ -1035,26 +1035,26 @@ drop FUNCTION anyarray_anyrange_func(ANYARRAY, ANYRANGE);
 
 create function bogus_func(ANYELEMENT)
 returns ANYRANGE
-as 'select int4range(1,10)'
-language "sql";
+as $function$select int4range(1,10)$function$
+language sql;
 
 create function bogus_func(INT)
 returns ANYRANGE
-as 'select int4range(1,10)'
-language "sql";
+as $function$select int4range(1,10)$function$
+language sql;
 
 create function range_add_bounds(ANYRANGE)
 returns ANYELEMENT
-as 'select lower($1) + upper($1)'
-language "sql";
+as $function$select lower($1) + upper($1)$function$
+language sql;
 
 select range_add_bounds(int4range(1, 17));
 
 select range_add_bounds(numrange(1.0001, 123.123));
 
 create function rangetypes_sql(q ANYRANGE, b ANYARRAY, out c ANYELEMENT)
-as ' select upper($1) + $2[1] '
-language "sql";
+as $function$ select upper($1) + $2[1] $function$
+language sql;
 
 select rangetypes_sql(int4range(1, 10), array[2, 20]);
 
@@ -1066,8 +1066,8 @@ anycompatiblearray_anycompatiblerange_func(
   r anycompatiblerange
 )
 returns anycompatible
-as 'select $1[1] + lower($2);'
-language "sql";
+as $function$select $1[1] + lower($2);$function$
+language sql;
 
 select
   anycompatiblearray_anycompatiblerange_func(
@@ -1094,8 +1094,8 @@ drop FUNCTION
 
 create function bogus_func(anycompatible)
 returns anycompatiblerange
-as 'select int4range(1,10)'
-language "sql";
+as $function$select int4range(1,10)$function$
+language sql;
 
 select array[numrange(1.1, 1.2), numrange(12.3, 155.5)];
 
@@ -1108,7 +1108,7 @@ insert into i8r_array values (42, array[int8range(1, 10), int8range(2, 20)]);
 
 select * from i8r_array;
 
-drop TABLE "i8r_array";
+drop TABLE i8r_array;
 
 create type arrayrange as RANGE (subtype = INT[]);
 
@@ -1151,26 +1151,26 @@ select cast('(10,11)' as varbitrange);
 reset enable_sort;
 
 create function outparam_succeed(i ANYRANGE, out r ANYRANGE, out t TEXT)
-as ' select $1, ''foo''::text '
-language "sql";
+as $function$ select $1, 'foo'::text $function$
+language sql;
 
 select * from outparam_succeed(int4range(1, 2));
 
 create function outparam2_succeed(r ANYRANGE, out lu ANYARRAY, out ul ANYARRAY)
-as ' select array[lower($1), upper($1)], array[upper($1), lower($1)] '
-language "sql";
+as $function$ select array[lower($1), upper($1)], array[upper($1), lower($1)] $function$
+language sql;
 
 select * from outparam2_succeed(int4range(1, 11));
 
 create function outparam_succeed2(i ANYRANGE, out r ANYARRAY, out t TEXT)
-as ' select ARRAY[upper($1)], ''foo''::text '
-language "sql";
+as $function$ select ARRAY[upper($1)], 'foo'::text $function$
+language sql;
 
 select * from outparam_succeed2(int4range(int4range(1, 2)));
 
 create function inoutparam_succeed(out i ANYELEMENT, inout r ANYRANGE)
-as ' select upper($1), $1 '
-language "sql";
+as $function$ select upper($1), $1 $function$
+language sql;
 
 select * from inoutparam_succeed(int4range(1, 2));
 
@@ -1179,26 +1179,26 @@ returns table (
   l ANYELEMENT,
   u ANYELEMENT
 )
-as ' select lower($1), upper($1) '
-language "sql";
+as $function$ select lower($1), upper($1) $function$
+language sql;
 
 select * from table_succeed(int4range(1, 11));
 
 create function outparam_fail(i ANYELEMENT, out r ANYRANGE, out t TEXT)
-as ' select ''[1,10]'', ''foo'' '
-language "sql";
+as $function$ select '[1,10]', 'foo' $function$
+language sql;
 
 create function inoutparam_fail(inout i ANYELEMENT, out r ANYRANGE)
-as ' select $1, ''[1,10]'' '
-language "sql";
+as $function$ select $1, '[1,10]' $function$
+language sql;
 
 create function table_fail(i ANYELEMENT)
 returns table (
   i ANYELEMENT,
   r ANYRANGE
 )
-as ' select $1, ''[1,10]'' '
-language "sql";
+as $function$ select $1, '[1,10]' $function$
+language sql;
 
 select current_date <@ cast('empty' as DATERANGE);
 
@@ -1239,6 +1239,6 @@ select * from text_support_test where t <@ textrange_supp('a', 'd');
 
 select * from text_support_test where t <@ textrange_supp('a', 'd');
 
-drop TABLE "text_support_test";
+drop TABLE text_support_test;
 
 drop TYPE textrange_supp;

@@ -216,13 +216,13 @@ select MAX(col) from enumtest;
 
 select MAX(col) from enumtest where col < 'green';
 
-drop INDEX "enumtest_btree";
+drop INDEX enumtest_btree;
 
 create index "enumtest_hash" on enumtest using hash (col);
 
 select * from enumtest where col = 'orange';
 
-drop INDEX "enumtest_hash";
+drop INDEX enumtest_hash;
 
 reset enable_seqscan;
 
@@ -266,23 +266,23 @@ select enum_range(cast(null as rainbow), null);
 
 create function echo_me(ANYENUM)
 returns TEXT
-as '
+as $function$
 BEGIN
-RETURN $1::text || ''omg'';
+RETURN $1::text || 'omg';
 END
-'
-language "plpgsql";
+$function$
+language plpgsql;
 
 select echo_me(cast('red' as rainbow));
 
 create function echo_me(rainbow)
 returns TEXT
-as '
+as $function$
 BEGIN
-RETURN $1::text || ''wtf'';
+RETURN $1::text || 'wtf';
 END
-'
-language "plpgsql";
+$function$
+language plpgsql;
 
 select echo_me(cast('red' as rainbow));
 
@@ -404,11 +404,11 @@ select enum_range(cast(null as bogon));
 
 rollback;
 
-drop TABLE "enumtest_child";
+drop TABLE enumtest_child;
 
-drop TABLE "enumtest_parent";
+drop TABLE enumtest_parent;
 
-drop TABLE "enumtest";
+drop TABLE enumtest;
 
 drop TYPE rainbow;
 

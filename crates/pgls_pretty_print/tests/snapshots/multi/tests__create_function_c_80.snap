@@ -7,17 +7,17 @@ load 'regresslib';
 
 create function test1(INT)
 returns INT
-language "c"
-as 'nosuchfile';
+language c
+as $function$nosuchfile$function$;
 
 create function test1(INT)
 returns INT
-language "c"
+language c
 as 'regresslib', 'nosuchsymbol';
 
 select regexp_replace('LAST_ERROR_MESSAGE', 'file ".*"', 'file "..."');
 
 create function test1(INT)
 returns INT
-language "internal"
-as 'nosuch';
+language internal
+as $function$nosuch$function$;

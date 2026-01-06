@@ -372,15 +372,15 @@ using btree
 with (deduplicate_items = off);
 
 do
-$$
+$do$
 BEGIN
     FOR r IN 1..1350 LOOP
         DELETE FROM dedup_unique_test_table;
         INSERT INTO dedup_unique_test_table SELECT 1;
     END LOOP;
-END$$;
+END$do$;
 
-drop INDEX "plain_unique";
+drop INDEX plain_unique;
 
 delete from dedup_unique_test_table where a = 1;
 
@@ -447,7 +447,7 @@ create table btree_test_expr (n INT);
 
 create function btree_test_func()
 returns INT
-language "sql"
+language sql
 immutable return 0;;
 
 begin;
@@ -460,7 +460,7 @@ create index "btree_test_expr_idx" on btree_test_expr using btree ((btree_test_f
 
 commit;
 
-drop TABLE "btree_test_expr";
+drop TABLE btree_test_expr;
 
 drop FUNCTION btree_test_func();
 
@@ -469,7 +469,7 @@ create index "btree_tall_idx2" on btree_tall_tbl using btree (id);
 alter index btree_tall_idx2
   alter column id set (n_distinct = 100);
 
-drop INDEX "btree_tall_idx2";
+drop INDEX btree_tall_idx2;
 
 create table btree_part (id INT)
 partition by range(id);
@@ -479,4 +479,4 @@ create index "btree_part_idx" on btree_part using btree (id);
 alter index btree_part_idx
   alter column id set (n_distinct = 100);
 
-drop TABLE "btree_part";
+drop TABLE btree_part;

@@ -9,9 +9,9 @@ create user regress_merge_no_privs;
 
 create user regress_merge_none;
 
-drop TABLE if exists "target";
+drop TABLE if exists target;
 
-drop TABLE if exists "source";
+drop TABLE if exists source;
 
 create table target (
   tid INT,
@@ -98,7 +98,7 @@ to stdout;
 
 create materialized view mv as select * from target;
 
-drop MATERIALIZED VIEW "mv";
+drop MATERIALIZED VIEW mv;
 
 set session authorization regress_merge_none;
 
@@ -352,28 +352,28 @@ rollback;
 
 select * from wq_target;
 
-drop TABLE "wq_target", "wq_source";
+drop TABLE wq_target, wq_source;
 
 create or replace function merge_trigfunc()
 returns trigger
-language "plpgsql"
-as '
+language plpgsql
+as $function$
 DECLARE
 	line text;
 BEGIN
-	SELECT INTO line format(''%s %s %s trigger%s'',
+	SELECT INTO line format('%s %s %s trigger%s',
 		TG_WHEN, TG_OP, TG_LEVEL, CASE
-		WHEN TG_OP = ''INSERT'' AND TG_LEVEL = ''ROW''
-			THEN format('' row: %s'', NEW)
-		WHEN TG_OP = ''UPDATE'' AND TG_LEVEL = ''ROW''
-			THEN format('' row: %s -> %s'', OLD, NEW)
-		WHEN TG_OP = ''DELETE'' AND TG_LEVEL = ''ROW''
-			THEN format('' row: %s'', OLD)
+		WHEN TG_OP = 'INSERT' AND TG_LEVEL = 'ROW'
+			THEN format(' row: %s', NEW)
+		WHEN TG_OP = 'UPDATE' AND TG_LEVEL = 'ROW'
+			THEN format(' row: %s -> %s', OLD, NEW)
+		WHEN TG_OP = 'DELETE' AND TG_LEVEL = 'ROW'
+			THEN format(' row: %s', OLD)
 		END);
 
-	RAISE NOTICE ''%'', line;
-	IF (TG_WHEN = ''BEFORE'' AND TG_LEVEL = ''ROW'') THEN
-		IF (TG_OP = ''DELETE'') THEN
+	RAISE NOTICE '%', line;
+	IF (TG_WHEN = 'BEFORE' AND TG_LEVEL = 'ROW') THEN
+		IF (TG_OP = 'DELETE') THEN
 			RETURN OLD;
 		ELSE
 			RETURN NEW;
@@ -382,7 +382,7 @@ BEGIN
 		RETURN NULL;
 	END IF;
 END;
-';
+$function$;
 
 create TRIGGER merge_bsi
   before insert
@@ -474,12 +474,12 @@ rollback;
 
 create or replace function skip_merge_op()
 returns trigger
-language "plpgsql"
-as '
+language plpgsql
+as $function$
 BEGIN
 	RETURN NULL;
 END;
-';
+$function$;
 
 select * from target full outer join source on sid = tid;
 
@@ -490,7 +490,7 @@ create TRIGGER merge_skip
   EXECUTE FUNCTION skip_merge_op();
 
 do
-$$
+$do$
 DECLARE
   result integer;
 BEGIN
@@ -508,11 +508,11 @@ END IF;
 GET DIAGNOSTICS result := ROW_COUNT;
 RAISE NOTICE 'ROW_COUNT = %', result;
 END;
-$$;
+$do$;
 
 select * from target full outer join source on sid = tid;
 
-drop TRIGGER "merge_skip" on "target";
+drop TRIGGER merge_skip on target;
 
 drop FUNCTION skip_merge_op();
 
@@ -520,7 +520,7 @@ begin;
 
 do
 language plpgsql
-$$
+$do$
 BEGIN
 MERGE INTO target t
 USING source AS s
@@ -528,7 +528,7 @@ ON t.tid = s.sid
 WHEN MATCHED AND t.balance > s.delta THEN
 	UPDATE SET balance = t.balance - s.delta;
 END;
-$$;
+$do$;
 
 rollback;
 
@@ -572,8 +572,8 @@ begin;
 
 create function merge_func(p_id INT, p_bal INT)
 returns INT
-language "plpgsql"
-as '
+language plpgsql
+as $function$
 DECLARE
  result integer;
 BEGIN
@@ -587,7 +587,7 @@ IF FOUND THEN
 END IF;
 RETURN result;
 END;
-';
+$function$;
 
 select merge_func(3, 4);
 
@@ -785,8 +785,8 @@ merge_into_sq_target(
   out tid INT,
   out new_balance INT
 )
-language "sql"
-as '
+language sql
+as $function$
     MERGE INTO sq_target t
     USING (VALUES ($1, $2, $3)) AS v(sid, balance, delta)
     ON tid = v.sid
@@ -797,7 +797,7 @@ as '
     WHEN MATCHED AND tid < 2 THEN
         DELETE
     RETURNING merge_action(), t.*;
-';
+$function$;
 
 select
   m.*
@@ -833,8 +833,8 @@ returns table (
   tid INT,
   balance INT
 )
-language "sql"
-as '
+language sql
+as $function$
     MERGE INTO sq_target t
     USING sq_source s
     ON tid = sid
@@ -845,7 +845,7 @@ as '
     WHEN MATCHED AND tid < 2 THEN
         DELETE
     RETURNING merge_action(), t.*;
-';
+$function$;
 
 select * from merge_sq_source_into_sq_target();
 
@@ -862,8 +862,8 @@ merge_into_sq_target(
   out r_tid INT,
   out r_balance INT
 )
-language "plpgsql"
-as '
+language plpgsql
+as $function$
 BEGIN
     MERGE INTO sq_target t
     USING (VALUES ($1, $2, $3)) AS v(sid, balance, delta)
@@ -876,7 +876,7 @@ BEGIN
         DELETE
     RETURNING merge_action(), t.* INTO r_action, r_tid, r_balance;
 END;
-';
+$function$;
 
 select
   m.*
@@ -922,19 +922,19 @@ insert into ex_msource select i, i * 10 from generate_series(1, 100, 1) as i;
 
 create function explain_merge(query TEXT)
 returns setof TEXT
-language "plpgsql"
-as '
+language plpgsql
+as $function$
 DECLARE ln text;
 BEGIN
     FOR ln IN
-        EXECUTE ''explain (analyze, timing off, summary off, costs off, buffers off) '' ||
+        EXECUTE 'explain (analyze, timing off, summary off, costs off, buffers off) ' ||
 		  query
     LOOP
-        ln := regexp_replace(ln, ''(Memory( Usage)?|Buckets|Batches): \S*'',  ''\1: xxx'', ''g'');
+        ln := regexp_replace(ln, '(Memory( Usage)?|Buckets|Batches): \S*',  '\1: xxx', 'g');
         RETURN NEXT ln;
     END LOOP;
 END;
-';
+$function$;
 
 select
   explain_merge(
@@ -1008,7 +1008,7 @@ WHEN MATCHED AND t.a < 10 THEN
 	DO NOTHING'
   );
 
-drop TABLE "ex_msource", "ex_mtarget";
+drop TABLE ex_msource, ex_mtarget;
 
 drop FUNCTION explain_merge(TEXT);
 
@@ -1031,7 +1031,7 @@ create table ref (
   cd INT
 );
 
-drop TABLE "src", "tgt", "ref";
+drop TABLE src, tgt, ref;
 
 begin;
 
@@ -1051,7 +1051,7 @@ select * from sq_target where tid = 1;
 
 rollback;
 
-drop TABLE "sq_target", "sq_target_merge_log", "sq_source" cascade;
+drop TABLE sq_target, sq_target_merge_log, sq_source cascade;
 
 create table pa_target (
   tid INT,
@@ -1111,8 +1111,8 @@ begin;
 
 create function merge_func()
 returns INT
-language "plpgsql"
-as '
+language plpgsql
+as $function$
 DECLARE
   result integer;
 BEGIN
@@ -1120,17 +1120,17 @@ MERGE INTO pa_target t
   USING pa_source s
   ON t.tid = s.sid
   WHEN MATCHED THEN
-    UPDATE SET tid = tid + 1, balance = balance + delta, val = val || '' updated by merge''
+    UPDATE SET tid = tid + 1, balance = balance + delta, val = val || ' updated by merge'
   WHEN NOT MATCHED THEN
-    INSERT VALUES (sid, delta, ''inserted by merge'')
+    INSERT VALUES (sid, delta, 'inserted by merge')
   WHEN NOT MATCHED BY SOURCE THEN
-    UPDATE SET tid = 1, val = val || '' not matched by source'';
+    UPDATE SET tid = 1, val = val || ' not matched by source';
 IF FOUND THEN
   GET DIAGNOSTICS result := ROW_COUNT;
 END IF;
 RETURN result;
 END;
-';
+$function$;
 
 select merge_func();
 
@@ -1152,7 +1152,7 @@ select * from pa_target order by tid, val;
 
 rollback;
 
-drop TABLE "pa_target" cascade;
+drop TABLE pa_target cascade;
 
 create table pa_target (
   tid INT,
@@ -1220,7 +1220,7 @@ from
 begin;
 
 do
-$$
+$do$
 DECLARE
   result integer;
 BEGIN
@@ -1236,7 +1236,7 @@ MERGE INTO pa_target t
 GET DIAGNOSTICS result := ROW_COUNT;
 RAISE NOTICE 'ROW_COUNT = %', result;
 END;
-$$;
+$do$;
 
 select * from pa_target order by tid, val;
 
@@ -1251,7 +1251,7 @@ rollback;
 begin;
 
 do
-$$
+$do$
 DECLARE
   result integer;
 BEGIN
@@ -1267,7 +1267,7 @@ MERGE INTO pa_target t
 GET DIAGNOSTICS result := ROW_COUNT;
 RAISE NOTICE 'ROW_COUNT = %', result;
 END;
-$$;
+$do$;
 
 select * from pa_target order by tid, val;
 
@@ -1277,8 +1277,8 @@ begin;
 
 create function trig_fn()
 returns trigger
-language "plpgsql"
-as ' BEGIN RETURN NULL; END; ';
+language plpgsql
+as $function$ BEGIN RETURN NULL; END; $function$;
 
 create TRIGGER del_trig
   before delete
@@ -1287,7 +1287,7 @@ create TRIGGER del_trig
   EXECUTE FUNCTION trig_fn();
 
 do
-$$
+$do$
 DECLARE
   result integer;
 BEGIN
@@ -1303,7 +1303,7 @@ MERGE INTO pa_target t
 GET DIAGNOSTICS result := ROW_COUNT;
 RAISE NOTICE 'ROW_COUNT = %', result;
 END;
-$$;
+$do$;
 
 select * from pa_target order by tid, val;
 
@@ -1313,8 +1313,8 @@ begin;
 
 create function trig_fn()
 returns trigger
-language "plpgsql"
-as ' BEGIN RETURN NULL; END; ';
+language plpgsql
+as $function$ BEGIN RETURN NULL; END; $function$;
 
 create TRIGGER ins_trig
   before insert
@@ -1323,7 +1323,7 @@ create TRIGGER ins_trig
   EXECUTE FUNCTION trig_fn();
 
 do
-$$
+$do$
 DECLARE
   result integer;
 BEGIN
@@ -1339,7 +1339,7 @@ MERGE INTO pa_target t
 GET DIAGNOSTICS result := ROW_COUNT;
 RAISE NOTICE 'ROW_COUNT = %', result;
 END;
-$$;
+$do$;
 
 select * from pa_target order by tid, val;
 
@@ -1362,9 +1362,9 @@ USING (tid <> 0);
 
 rollback;
 
-drop TABLE "pa_source";
+drop TABLE pa_source;
 
-drop TABLE "pa_target" cascade;
+drop TABLE pa_target cascade;
 
 create table pa_target (
   logts TIMESTAMP,
@@ -1436,9 +1436,9 @@ select * from pa_target order by tid;
 
 rollback;
 
-drop TABLE "pa_source";
+drop TABLE pa_source;
 
-drop TABLE "pa_target" cascade;
+drop TABLE pa_target cascade;
 
 create table pa_target (tid INT primary key)
 partition by LIST(tid);
@@ -1451,11 +1451,11 @@ insert into pa_source values (1), (2);
 
 select * from pa_target;
 
-drop TABLE "pa_targetp";
+drop TABLE pa_targetp;
 
-drop TABLE "pa_source";
+drop TABLE pa_source;
 
-drop TABLE "pa_target" cascade;
+drop TABLE pa_target cascade;
 
 create table cj_target (
   tid INT,
@@ -1501,7 +1501,7 @@ alter table cj_source2 rename column sid2 to sid;
 
 truncate cj_target;
 
-drop TABLE "cj_source2", "cj_source1", "cj_target";
+drop TABLE cj_source2, cj_source1, cj_target;
 
 create table fs_target (
   a INT,
@@ -1512,7 +1512,7 @@ with (autovacuum_enabled = off);
 
 select COUNT(*) from fs_target;
 
-drop TABLE "fs_target";
+drop TABLE fs_target;
 
 create table measurement (
   city_id INT not null,
@@ -1557,25 +1557,25 @@ insert into measurement values (0, '2005-07-21', 5, 15);
 
 create or replace function measurement_insert_trigger()
 returns trigger
-as '
+as $function$
 BEGIN
-    IF ( NEW.logdate >= DATE ''2006-02-01'' AND
-         NEW.logdate < DATE ''2006-03-01'' ) THEN
+    IF ( NEW.logdate >= DATE '2006-02-01' AND
+         NEW.logdate < DATE '2006-03-01' ) THEN
         INSERT INTO measurement_y2006m02 VALUES (NEW.*);
-    ELSIF ( NEW.logdate >= DATE ''2006-03-01'' AND
-            NEW.logdate < DATE ''2006-04-01'' ) THEN
+    ELSIF ( NEW.logdate >= DATE '2006-03-01' AND
+            NEW.logdate < DATE '2006-04-01' ) THEN
         INSERT INTO measurement_y2006m03 VALUES (NEW.*);
-    ELSIF ( NEW.logdate >= DATE ''2007-01-01'' AND
-            NEW.logdate < DATE ''2007-02-01'' ) THEN
+    ELSIF ( NEW.logdate >= DATE '2007-01-01' AND
+            NEW.logdate < DATE '2007-02-01' ) THEN
         INSERT INTO measurement_y2007m01 (city_id, logdate, peaktemp, unitsales)
             VALUES (NEW.*);
     ELSE
-        RAISE EXCEPTION ''Date out of range.  Fix the measurement_insert_trigger() function!'';
+        RAISE EXCEPTION 'Date out of range.  Fix the measurement_insert_trigger() function!';
     END IF;
     RETURN NULL;
 END;
-'
-language "plpgsql";
+$function$
+language plpgsql;
 
 create TRIGGER insert_measurement_trigger
   before insert
@@ -1638,7 +1638,7 @@ rollback;
 
 select * from new_measurement order by city_id, logdate;
 
-drop TRIGGER "insert_measurement_trigger" on "measurement";
+drop TRIGGER insert_measurement_trigger on measurement;
 
 alter table measurement
   add constraint "mcheck" check (city_id = 0) no inherit;
@@ -1664,7 +1664,7 @@ USING (peaktemp is not null);
 
 select * from only measurement order by city_id, logdate;
 
-drop TABLE "measurement", "new_measurement" cascade;
+drop TABLE measurement, new_measurement cascade;
 
 drop FUNCTION measurement_insert_trigger();
 
@@ -1684,7 +1684,7 @@ insert into tgt values (null, 'tgt row');
 
 select * from tgt;
 
-drop TABLE "src", "tgt";
+drop TABLE src, tgt;
 
 create table bug18634t (
   a INT,
@@ -1712,18 +1712,18 @@ insert into bug18634s values (1, 2, 'src1');
 
 select * from bug18634t;
 
-drop TABLE "bug18634t" cascade;
+drop TABLE bug18634t cascade;
 
-drop TABLE "bug18634s";
+drop TABLE bug18634s;
 
 reset session_authorization;
 
 create view classv
 as select * from pg_class;
 
-drop TABLE "target", "target2";
+drop TABLE target, target2;
 
-drop TABLE "source", "source2";
+drop TABLE source, source2;
 
 drop FUNCTION merge_trigfunc();
 

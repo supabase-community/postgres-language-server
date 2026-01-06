@@ -17,8 +17,8 @@ where
 
 create function sp_parallel_restricted(INT)
 returns INT
-as 'begin return $1; end'
-language "plpgsql"
+as $function$begin return $1; end$function$
+language plpgsql
 parallel RESTRICTED;
 
 begin;
@@ -89,8 +89,8 @@ reset enable_parallel_append;
 
 create function sp_test_func()
 returns setof TEXT
-as ' select ''foo''::varchar union all select ''bar''::varchar '
-language "sql"
+as $function$ select 'foo'::varchar union all select 'bar'::varchar $function$
+language sql
 stable;
 
 select sp_test_func() order by 1;
@@ -126,7 +126,7 @@ select
 from
   part_pa_test as pa2;
 
-drop TABLE "part_pa_test";
+drop TABLE part_pa_test;
 
 set parallel_leader_participation = off;
 
@@ -443,11 +443,11 @@ set enable_mergejoin = off;
 set enable_material = off;
 
 do
-$$
+$do$
 BEGIN
  SET effective_io_concurrency = 50;
 EXCEPTION WHEN invalid_parameter_value THEN
-END $$;
+END $do$;
 
 set work_mem = '64kB';
 
@@ -503,8 +503,8 @@ reset work_mem;
 
 create function explain_parallel_sort_stats()
 returns setof TEXT
-language "plpgsql"
-as '
+language plpgsql
+as $function$
 declare ln text;
 begin
     for ln in
@@ -513,11 +513,11 @@ begin
           (select ten from tenk1 where ten < 100 order by ten) ss
           right join (values (1),(2),(3)) v(x) on true
     loop
-        ln := regexp_replace(ln, ''Memory: \S*'',  ''Memory: xxx'');
+        ln := regexp_replace(ln, 'Memory: \S*',  'Memory: xxx');
         return next ln;
     end loop;
 end;
-';
+$function$;
 
 select * from explain_parallel_sort_stats();
 
@@ -531,7 +531,7 @@ reset enable_material;
 
 reset effective_io_concurrency;
 
-drop TABLE "bmscantest";
+drop TABLE bmscantest;
 
 drop FUNCTION explain_parallel_sort_stats();
 
@@ -581,12 +581,12 @@ select COUNT(*) from tenk1 group by twenty;
 
 create function sp_simple_func(var1 INT)
 returns INT
-as '
+as $function$
 begin
         return var1 + 10;
 end;
-'
-language "plpgsql"
+$function$
+language plpgsql
 parallel SAFE;
 
 select ten, sp_simple_func(ten) from tenk1 where ten < 100 order by ten;
@@ -671,10 +671,10 @@ reset max_parallel_workers;
 
 create function parallel_safe_volatile(a INT)
 returns INT
-as ' begin return a; end; '
+as $function$ begin return a; end; $function$
 parallel SAFE
 volatile
-language "plpgsql";
+language plpgsql;
 
 select
   *
@@ -718,9 +718,9 @@ rollback to savepoint settings;
 
 create function make_record(n INT)
 returns RECORD
-language "plpgsql"
+language plpgsql
 parallel SAFE
-as '
+as $function$
 BEGIN
   RETURN CASE n
            WHEN 1 THEN ROW(1)
@@ -730,7 +730,7 @@ BEGIN
            ELSE ROW(1, 2, 3, 4, 5)
          END;
 END;
-';
+$function$;
 
 savepoint settings;
 
@@ -886,13 +886,13 @@ order by pathkey;
 
 create function make_some_array(INT, INT)
 returns INT[]
-as 'declare x int[];
+as $function$declare x int[];
   begin
     x[1] := $1;
     x[2] := $2;
     return x;
-  end'
-language "plpgsql"
+  end$function$
+language plpgsql
 parallel SAFE;
 
 create table fooarr (
@@ -950,15 +950,15 @@ create role regress_parallel_worker;
 
 create function set_and_report_role()
 returns TEXT
-as ' select current_setting(''role'') '
-language "sql"
+as $function$ select current_setting('role') $function$
+language sql
 parallel SAFE
 set role to regress_parallel_worker;
 
 create function set_role_and_error(INT)
 returns INT
-as ' select 1 / $1 '
-language "sql"
+as $function$ select 1 / $1 $function$
+language sql
 parallel SAFE
 set role to regress_parallel_worker;
 
@@ -986,14 +986,14 @@ begin;
 
 create function my_cmp(INT, INT)
 returns INT
-language "sql"
-as '
+language sql
+as $function$
 	SELECT
 		CASE WHEN $1 < $2 THEN -1
 				WHEN $1 > $2 THEN  1
 				ELSE 0
 		END;
-';
+$function$;
 
 create table parallel_hang (i INT);
 

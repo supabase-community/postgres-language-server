@@ -153,7 +153,7 @@ reset enable_seqscan;
 
 select f1 - f1 from interval_tbl_of;
 
-drop TABLE "interval_tbl_of";
+drop TABLE interval_tbl_of;
 
 create table interval_muldiv_tbl (span INTERVAL);
 
@@ -165,7 +165,7 @@ select span / 10 as quotient from interval_muldiv_tbl;
 
 select span / 100 as quotient from interval_muldiv_tbl;
 
-drop TABLE "interval_muldiv_tbl";
+drop TABLE interval_muldiv_tbl;
 
 set datestyle = postgres;
 
@@ -947,17 +947,17 @@ select i, isfinite(i) from infinite_interval_tbl;
 
 create function eval(expr TEXT)
 returns TEXT
-as '
+as $function$
 DECLARE
   result text;
 BEGIN
-  EXECUTE ''select ''||expr INTO result;
+  EXECUTE 'select '||expr INTO result;
   RETURN result;
 EXCEPTION WHEN OTHERS THEN
   RETURN SQLERRM;
 END
-'
-language "plpgsql";
+$function$
+language plpgsql;
 
 select
   d as date,

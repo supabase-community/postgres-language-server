@@ -375,7 +375,7 @@ insert into float8_tbl (f1) values ('10e-400');
 
 insert into float8_tbl (f1) values ('-10e-400');
 
-drop TABLE "float8_tbl";
+drop TABLE float8_tbl;
 
 select * from float8_tbl;
 
@@ -532,15 +532,15 @@ create function xfloat8in(cstring)
 returns xfloat8
 immutable
 STRICT
-language "internal"
-as 'int8in';
+language internal
+as $function$int8in$function$;
 
 create function xfloat8out(xfloat8)
 returns cstring
 immutable
 STRICT
-language "internal"
-as 'int8out';
+language internal
+as $function$int8out$function$;
 
 create type xfloat8 (
   input = xfloat8in,

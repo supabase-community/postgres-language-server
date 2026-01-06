@@ -35,4 +35,4 @@ copy copy_encoding_tab from 'utf8_csv';
 
 reset client_encoding;
 
-drop TABLE "copy_encoding_tab";
+drop TABLE copy_encoding_tab;

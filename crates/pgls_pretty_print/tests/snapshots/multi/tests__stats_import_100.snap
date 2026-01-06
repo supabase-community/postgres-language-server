@@ -1676,6 +1676,6 @@ where
   inherited = false and
   attname = 'i';
 
-drop TABLE "stats_temp";
+drop TABLE stats_temp;
 
 drop SCHEMA stats_import cascade;
