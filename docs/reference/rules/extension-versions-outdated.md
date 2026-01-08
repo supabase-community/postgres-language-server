@@ -8,7 +8,9 @@
 
 Detects extensions that are not using the default (recommended) version.
 
-[Learn More](https://supabase.com/docs/guides/database/database-linter?lint=0022_extension_versions_outdated)
+## Remediation
+
+https://supabase.com/docs/guides/database/database-linter?lint=0022_extension_versions_outdated
 
 ## SQL Query
 

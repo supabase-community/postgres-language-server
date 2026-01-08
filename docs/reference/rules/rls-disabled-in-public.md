@@ -11,7 +11,9 @@
 
 Detects cases where row level security (RLS) has not been enabled on tables in schemas exposed to PostgREST
 
-[Learn More](https://supabase.com/docs/guides/database/database-linter?lint=0013_rls_disabled_in_public)
+## Remediation
+
+https://supabase.com/docs/guides/database/database-linter?lint=0013_rls_disabled_in_public
 
 ## SQL Query
 

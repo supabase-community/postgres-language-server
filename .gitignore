@@ -34,3 +34,5 @@ crates/pgt_treesitter_grammar/src/node-types.json
 crates/pgt_treesitter_grammar/src/parser.c
 crates/pgt_treesitter_grammar/src/parser.c.codex-session-id
 .codex-session-id
+
+site/
