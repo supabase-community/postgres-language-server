@@ -116,7 +116,8 @@
 <p><strong>Severity</strong>: Info</p>
 <h2 id="description">Description</h2>
 <p>Identifies foreign key constraints without a covering index, which can impact database performance.</p>
-<p><a href="https://supabase.com/docs/guides/database/database-linter?lint=0001_unindexed_foreign_keys">Learn More</a></p>
+<h2 id="remediation">Remediation</h2>
+<p>https://supabase.com/docs/guides/database/database-linter?lint=0001_unindexed_foreign_keys</p>
 <h2 id="sql-query">SQL Query</h2>
 <pre><code class="language-sql">with foreign_keys as (
     select

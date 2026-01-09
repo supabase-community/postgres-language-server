@@ -116,7 +116,8 @@
 <p><strong>Severity</strong>: Info</p>
 <h2 id="description">Description</h2>
 <p>Detects if a table has excess bloat and may benefit from maintenance operations like vacuum full or cluster.</p>
-<p><a href="Consider running vacuum full (WARNING: incurs downtime) and tweaking autovacuum settings to reduce bloat.">Learn More</a></p>
+<h2 id="remediation">Remediation</h2>
+<p>Consider running vacuum full (WARNING: incurs downtime) and tweaking autovacuum settings to reduce bloat.</p>
 <h2 id="sql-query">SQL Query</h2>
 <pre><code class="language-sql">(
 with constants as (

@@ -133,167 +133,167 @@
 </thead>
 <tbody>
 <tr>
-<td><a href="./add-serial-column">addSerialColumn</a></td>
+<td><a href="add-serial-column/">addSerialColumn</a></td>
 <td>Adding a column with a SERIAL type or GENERATED ALWAYS AS ... STORED causes a full table rewrite.</td>
 <td>✅</td>
 </tr>
 <tr>
-<td><a href="./adding-field-with-default">addingFieldWithDefault</a></td>
+<td><a href="adding-field-with-default/">addingFieldWithDefault</a></td>
 <td>Adding a column with a DEFAULT value may lead to a table rewrite while holding an ACCESS EXCLUSIVE lock.</td>
 <td>✅</td>
 </tr>
 <tr>
-<td><a href="./adding-foreign-key-constraint">addingForeignKeyConstraint</a></td>
+<td><a href="adding-foreign-key-constraint/">addingForeignKeyConstraint</a></td>
 <td>Adding a foreign key constraint requires a table scan and a SHARE ROW EXCLUSIVE lock on both tables, which blocks writes.</td>
 <td>✅</td>
 </tr>
 <tr>
-<td><a href="./adding-not-null-field">addingNotNullField</a></td>
+<td><a href="adding-not-null-field/">addingNotNullField</a></td>
 <td>Setting a column NOT NULL blocks reads while the table is scanned.</td>
 <td>✅</td>
 </tr>
 <tr>
-<td><a href="./adding-primary-key-constraint">addingPrimaryKeyConstraint</a></td>
+<td><a href="adding-primary-key-constraint/">addingPrimaryKeyConstraint</a></td>
 <td>Adding a primary key constraint results in locks and table rewrites.</td>
 <td>✅</td>
 </tr>
 <tr>
-<td><a href="./adding-required-field">addingRequiredField</a></td>
+<td><a href="adding-required-field/">addingRequiredField</a></td>
 <td>Adding a new column that is NOT NULL and has no default value to an existing table effectively makes it required.</td>
 <td></td>
 </tr>
 <tr>
-<td><a href="./ban-char-field">banCharField</a></td>
+<td><a href="ban-char-field/">banCharField</a></td>
 <td>Using CHAR(n) or CHARACTER(n) types is discouraged.</td>
 <td></td>
 </tr>
 <tr>
-<td><a href="./ban-concurrent-index-creation-in-transaction">banConcurrentIndexCreationInTransaction</a></td>
+<td><a href="ban-concurrent-index-creation-in-transaction/">banConcurrentIndexCreationInTransaction</a></td>
 <td>Concurrent index creation is not allowed within a transaction.</td>
 <td>✅</td>
 </tr>
 <tr>
-<td><a href="./ban-drop-column">banDropColumn</a></td>
+<td><a href="ban-drop-column/">banDropColumn</a></td>
 <td>Dropping a column may break existing clients.</td>
 <td>✅</td>
 </tr>
 <tr>
-<td><a href="./ban-drop-database">banDropDatabase</a></td>
+<td><a href="ban-drop-database/">banDropDatabase</a></td>
 <td>Dropping a database may break existing clients (and everything else, really).</td>
 <td></td>
 </tr>
 <tr>
-<td><a href="./ban-drop-not-null">banDropNotNull</a></td>
+<td><a href="ban-drop-not-null/">banDropNotNull</a></td>
 <td>Dropping a NOT NULL constraint may break existing clients.</td>
 <td>✅</td>
 </tr>
 <tr>
-<td><a href="./ban-drop-table">banDropTable</a></td>
+<td><a href="ban-drop-table/">banDropTable</a></td>
 <td>Dropping a table may break existing clients.</td>
 <td>✅</td>
 </tr>
 <tr>
-<td><a href="./ban-truncate-cascade">banTruncateCascade</a></td>
+<td><a href="ban-truncate-cascade/">banTruncateCascade</a></td>
 <td>Using <code>TRUNCATE</code>'s <code>CASCADE</code> option will truncate any tables that are also foreign-keyed to the specified tables.</td>
 <td></td>
 </tr>
 <tr>
-<td><a href="./changing-column-type">changingColumnType</a></td>
+<td><a href="changing-column-type/">changingColumnType</a></td>
 <td>Changing a column type may break existing clients.</td>
 <td></td>
 </tr>
 <tr>
-<td><a href="./constraint-missing-not-valid">constraintMissingNotValid</a></td>
+<td><a href="constraint-missing-not-valid/">constraintMissingNotValid</a></td>
 <td>Adding constraints without NOT VALID blocks all reads and writes.</td>
 <td></td>
 </tr>
 <tr>
-<td><a href="./creating-enum">creatingEnum</a></td>
+<td><a href="creating-enum/">creatingEnum</a></td>
 <td>Creating enum types is not recommended for new applications.</td>
 <td></td>
 </tr>
 <tr>
-<td><a href="./disallow-unique-constraint">disallowUniqueConstraint</a></td>
+<td><a href="disallow-unique-constraint/">disallowUniqueConstraint</a></td>
 <td>Disallow adding a UNIQUE constraint without using an existing index.</td>
 <td></td>
 </tr>
 <tr>
-<td><a href="./lock-timeout-warning">lockTimeoutWarning</a></td>
+<td><a href="lock-timeout-warning/">lockTimeoutWarning</a></td>
 <td>Taking a dangerous lock without setting a lock timeout can cause indefinite blocking.</td>
 <td>✅</td>
 </tr>
 <tr>
-<td><a href="./multiple-alter-table">multipleAlterTable</a></td>
+<td><a href="multiple-alter-table/">multipleAlterTable</a></td>
 <td>Multiple ALTER TABLE statements on the same table should be combined into a single statement.</td>
 <td>✅</td>
 </tr>
 <tr>
-<td><a href="./prefer-big-int">preferBigInt</a></td>
+<td><a href="prefer-big-int/">preferBigInt</a></td>
 <td>Prefer BIGINT over smaller integer types.</td>
 <td></td>
 </tr>
 <tr>
-<td><a href="./prefer-bigint-over-int">preferBigintOverInt</a></td>
+<td><a href="prefer-bigint-over-int/">preferBigintOverInt</a></td>
 <td>Prefer BIGINT over INT/INTEGER types.</td>
 <td></td>
 </tr>
 <tr>
-<td><a href="./prefer-bigint-over-smallint">preferBigintOverSmallint</a></td>
+<td><a href="prefer-bigint-over-smallint/">preferBigintOverSmallint</a></td>
 <td>Prefer BIGINT over SMALLINT types.</td>
 <td></td>
 </tr>
 <tr>
-<td><a href="./prefer-identity">preferIdentity</a></td>
+<td><a href="prefer-identity/">preferIdentity</a></td>
 <td>Prefer using IDENTITY columns over serial columns.</td>
 <td></td>
 </tr>
 <tr>
-<td><a href="./prefer-jsonb">preferJsonb</a></td>
+<td><a href="prefer-jsonb/">preferJsonb</a></td>
 <td>Prefer JSONB over JSON types.</td>
 <td></td>
 </tr>
 <tr>
-<td><a href="./prefer-robust-stmts">preferRobustStmts</a></td>
+<td><a href="prefer-robust-stmts/">preferRobustStmts</a></td>
 <td>Prefer statements with guards for robustness in migrations.</td>
 <td></td>
 </tr>
 <tr>
-<td><a href="./prefer-text-field">preferTextField</a></td>
+<td><a href="prefer-text-field/">preferTextField</a></td>
 <td>Prefer using TEXT over VARCHAR(n) types.</td>
 <td></td>
 </tr>
 <tr>
-<td><a href="./prefer-timestamptz">preferTimestamptz</a></td>
+<td><a href="prefer-timestamptz/">preferTimestamptz</a></td>
 <td>Prefer TIMESTAMPTZ over TIMESTAMP types.</td>
 <td></td>
 </tr>
 <tr>
-<td><a href="./renaming-column">renamingColumn</a></td>
+<td><a href="renaming-column/">renamingColumn</a></td>
 <td>Renaming columns may break existing queries and application code.</td>
 <td></td>
 </tr>
 <tr>
-<td><a href="./renaming-table">renamingTable</a></td>
+<td><a href="renaming-table/">renamingTable</a></td>
 <td>Renaming tables may break existing queries and application code.</td>
 <td></td>
 </tr>
 <tr>
-<td><a href="./require-concurrent-index-creation">requireConcurrentIndexCreation</a></td>
+<td><a href="require-concurrent-index-creation/">requireConcurrentIndexCreation</a></td>
 <td>Creating indexes non-concurrently can lock the table for writes.</td>
 <td></td>
 </tr>
 <tr>
-<td><a href="./require-concurrent-index-deletion">requireConcurrentIndexDeletion</a></td>
+<td><a href="require-concurrent-index-deletion/">requireConcurrentIndexDeletion</a></td>
 <td>Dropping indexes non-concurrently can lock the table for reads.</td>
 <td></td>
 </tr>
 <tr>
-<td><a href="./running-statement-while-holding-access-exclusive">runningStatementWhileHoldingAccessExclusive</a></td>
+<td><a href="running-statement-while-holding-access-exclusive/">runningStatementWhileHoldingAccessExclusive</a></td>
 <td>Running additional statements while holding an ACCESS EXCLUSIVE lock blocks all table access.</td>
 <td>✅</td>
 </tr>
 <tr>
-<td><a href="./transaction-nesting">transactionNesting</a></td>
+<td><a href="transaction-nesting/">transactionNesting</a></td>
 <td>Detects problematic transaction nesting that could lead to unexpected behavior.</td>
 <td></td>
 </tr>
