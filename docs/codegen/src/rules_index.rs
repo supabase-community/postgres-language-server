@@ -69,7 +69,7 @@ fn generate_group(
 
         write!(
             content,
-            "| [{rule_name}](./{dashed_rule}) | {summary} | {properties} |"
+            "| [{rule_name}](./rules/{dashed_rule}.md) | {summary} | {properties} |"
         )?;
 
         writeln!(content)?;

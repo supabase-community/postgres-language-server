@@ -103,5 +103,5 @@ In the following example, we include all files, except those in any test/ folder
 ```
 
 #### Control files via VCS
-You can ignore files ignored by your [VCS](/guides/vcs_integration.md).
+You can ignore files ignored by your [VCS](guides/vcs_integration.md).
 

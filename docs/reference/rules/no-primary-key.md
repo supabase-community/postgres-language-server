@@ -8,7 +8,9 @@
 
 Detects if a table does not have a primary key. Tables without a primary key can be inefficient to interact with at scale.
 
-[Learn More](https://supabase.com/docs/guides/database/database-linter?lint=0004_no_primary_key)
+## Remediation
+
+https://supabase.com/docs/guides/database/database-linter?lint=0004_no_primary_key
 
 ## SQL Query
 

@@ -8,7 +8,9 @@
 
 Identifies columns using unsupported reg* types outside pg_catalog schema, which prevents database upgrades using pg_upgrade.
 
-[Learn More](https://supabase.com/docs/guides/database/database-linter?lint=unsupported_reg_types)
+## Remediation
+
+https://supabase.com/docs/guides/database/database-linter?lint=unsupported_reg_types
 
 ## SQL Query
 
