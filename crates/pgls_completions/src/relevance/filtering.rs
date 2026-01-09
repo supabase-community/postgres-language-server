@@ -536,16 +536,25 @@ impl CompletionFilter<'_> {
             }
         }
 
-        // will allow those nodes that fully exchange the clause
+        // will allow those nodes that fully exchange the clause WITHOUT changing the parent
         if let Some(current_node) = goto_node_at_position(&tree, start_byte) {
-            // replacing the start byte means full exchanging
-            if Some(current_node.start_byte()) == clause_to_investigate.map(|n| n.start_byte()) {
-                println!("fully exchange the clause.");
-                println!("current_node {}", current_node.kind());
-                println!(
-                    "investigated {}",
-                    clause_to_investigate.map(|n| n.kind()).unwrap_or("here")
-                );
+            let full_exchange =
+                // replacing the start byte means full exchanging
+                clause_to_investigate.is_some_and(|n| n.start_byte() == current_node.start_byte());
+
+            println!("current node kind {}", current_node.kind());
+
+            let parent_stays = goto_closest_parent_clause(current_node).is_some_and(|n| {
+                println!("current node parent kind {}", n.kind());
+
+                goto_closest_parent_clause(ctx.node_under_cursor).is_some_and(|ctx_node| {
+                    println!("cursor node kind {}", ctx.node_under_cursor.kind());
+                    println!("cursor node parent kind {}", ctx_node.kind());
+                    ctx_node.kind() == n.kind()
+                })
+            });
+
+            if full_exchange && parent_stays {
                 return Some(());
             }
         }
