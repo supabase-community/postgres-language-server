@@ -1,3 +1,4 @@
+use async_std::task::current;
 use pgls_schema_cache::ProcKind;
 use pgls_treesitter::{
     context::{TreesitterContext, WrappingClause, WrappingNode},
@@ -496,12 +497,6 @@ impl CompletionFilter<'_> {
             start_position,
         });
 
-        let (clause_to_investigate, clause_completed) = if ctx.node_under_cursor.kind() != "ERROR" {
-            (ctx.current_clause, ctx.current_clause_completed)
-        } else {
-            (ctx.previous_clause, ctx.previous_clause_completed)
-        };
-
         if tree.root_node().has_error() {
             return None;
         } else if ctx.previous_clause.is_some_and(|n| n.kind() == "ERROR") {
@@ -509,6 +504,12 @@ impl CompletionFilter<'_> {
             // the keyword helped treesitter recover -> suggestable keyword
             return Some(());
         }
+
+        let (clause_to_investigate, clause_completed) = if ctx.node_under_cursor.kind() != "ERROR" {
+            (ctx.current_clause, ctx.current_clause_completed)
+        } else {
+            (ctx.previous_clause, ctx.previous_clause_completed)
+        };
 
         if clause_to_investigate.is_none() {
             if keyword.starts_statement {
@@ -529,15 +530,22 @@ impl CompletionFilter<'_> {
                     && Some(current_parent.start_byte())
                         == clause_to_investigate.map(|n| n.start_byte())
                 {
+                    println!("does not change the clause");
                     return Some(());
                 }
             }
         }
 
-        // will allow those nodes that fully exchange the cluase
+        // will allow those nodes that fully exchange the clause
         if let Some(current_node) = goto_node_at_position(&tree, start_byte) {
             // replacing the start byte means full exchanging
             if Some(current_node.start_byte()) == clause_to_investigate.map(|n| n.start_byte()) {
+                println!("fully exchange the clause.");
+                println!("current_node {}", current_node.kind());
+                println!(
+                    "investigated {}",
+                    clause_to_investigate.map(|n| n.kind()).unwrap_or("here")
+                );
                 return Some(());
             }
         }

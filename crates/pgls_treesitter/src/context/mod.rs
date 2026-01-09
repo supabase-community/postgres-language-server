@@ -171,6 +171,10 @@ impl<'a> TreesitterContext<'a> {
         ctx.check_previous_clause_completed();
         ctx.check_current_clause_completed();
 
+        println!("{:#?}", ctx);
+        println!("{:#?}", ctx.previous_clause);
+        println!("{:#?}", ctx.current_clause);
+
         ctx
     }
 
@@ -427,9 +431,17 @@ impl<'a> TreesitterContext<'a> {
     fn check_current_clause_completed(&mut self) {
         if let Some(closest_parent) = helper::goto_closest_parent_clause(self.node_under_cursor) {
             self.current_clause = Some(closest_parent);
-            self.current_clause_completed = closest_parent
-                .child_by_field_name("end")
-                .is_some_and(|child| child != self.node_under_cursor)
+            self.current_clause_completed =
+                closest_parent
+                    .child_by_field_name("end")
+                    .is_some_and(|child| {
+                        let is_node_under_cursor = child == self.node_under_cursor;
+                        let matches_node_under_cursor_range = child.start_byte()
+                            == self.node_under_cursor.start_byte()
+                            && child.end_byte() == self.node_under_cursor.end_byte();
+
+                        !is_node_under_cursor && !matches_node_under_cursor_range
+                    })
         };
     }
 
@@ -439,7 +451,14 @@ impl<'a> TreesitterContext<'a> {
                 self.previous_clause = Some(closest_parent);
                 self.previous_clause_completed = closest_parent
                     .child_by_field_name("end")
-                    .is_some_and(|child| child != self.node_under_cursor)
+                    .is_some_and(|child| {
+                        let is_node_under_cursor = child == self.node_under_cursor;
+                        let matches_node_under_cursor_range = child.start_byte()
+                            == self.node_under_cursor.start_byte()
+                            && child.end_byte() == self.node_under_cursor.end_byte();
+
+                        !is_node_under_cursor && !matches_node_under_cursor_range
+                    })
             }
         };
     }

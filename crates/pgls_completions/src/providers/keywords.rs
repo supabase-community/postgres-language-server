@@ -409,9 +409,12 @@ mod tests {
     use pgls_test_utils::QueryWithCursorPosition;
     use sqlx::PgPool;
 
-    use crate::test_helper::{
-        CompletionAssertion, TestCompletionsCase, TestCompletionsSuite, assert_complete_results,
-        assert_no_complete_results,
+    use crate::{
+        CompletionItemKind,
+        test_helper::{
+            CompletionAssertion, TestCompletionsCase, TestCompletionsSuite,
+            assert_complete_results, assert_no_complete_results,
+        },
     };
 
     #[sqlx::test]
@@ -484,6 +487,28 @@ mod tests {
                     crate::CompletionItemKind::Keyword,
                 ),
             ],
+            Some(setup),
+            &pool,
+        )
+        .await;
+    }
+
+    #[sqlx::test]
+    async fn completes_columsn_after_select(pool: PgPool) {
+        let setup = r#"
+            create table public.users (
+                id serial primary key,
+                email varchar(255)
+            );
+        "#;
+
+        let query = format!("select {}", QueryWithCursorPosition::cursor_marker());
+
+        assert_complete_results(
+            query.as_str(),
+            vec![CompletionAssertion::KindNotExists(
+                CompletionItemKind::Keyword,
+            )],
             Some(setup),
             &pool,
         )
