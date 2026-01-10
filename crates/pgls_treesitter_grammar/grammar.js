@@ -806,10 +806,7 @@ module.exports = grammar({
     select_expression: ($) => field("end", comma_list($.term, true)),
 
     term: ($) =>
-      seq(
-        field("value", choice($.all_fields, $._expression)),
-        optional($.alias)
-      ),
+      seq(field("end", choice($.all_fields, $._expression)), optional($.alias)),
 
     _truncate_statement: ($) =>
       seq(

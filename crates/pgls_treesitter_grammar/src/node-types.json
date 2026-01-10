@@ -9941,7 +9941,7 @@
     "type": "term",
     "named": true,
     "fields": {
-      "value": {
+      "end": {
         "multiple": false,
         "required": true,
         "types": [

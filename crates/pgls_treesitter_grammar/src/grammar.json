@@ -4795,7 +4795,7 @@
       "members": [
         {
           "type": "FIELD",
-          "name": "value",
+          "name": "end",
           "content": {
             "type": "CHOICE",
             "members": [

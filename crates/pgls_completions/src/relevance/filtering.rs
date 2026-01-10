@@ -523,38 +523,84 @@ impl CompletionFilter<'_> {
             return Some(());
         }
 
+        println!("clause not completed");
+
         // we allow those nodes that do not change the clause
+        // e.g. `select * from table order |`; allow "by" since we remain in `order_by` clause.
         if let Some(current_node) = goto_node_at_position(&tree, start_byte) {
             if let Some(current_parent) = goto_closest_parent_clause(current_node) {
-                if Some(current_parent.kind()) == clause_to_investigate.map(|n| n.kind())
-                    && Some(current_parent.start_byte())
-                        == clause_to_investigate.map(|n| n.start_byte())
-                {
-                    println!("does not change the clause");
+                let parent_same_kind =
+                    clause_to_investigate.is_some_and(|c| c.kind() == current_parent.kind());
+
+                let parent_same_start = clause_to_investigate
+                    .is_some_and(|c| c.start_byte() == current_parent.start_byte());
+
+                if parent_same_kind && parent_same_start {
                     return Some(());
                 }
             }
         }
 
-        // will allow those nodes that fully exchange the clause WITHOUT changing the parent
+        /*
+         * Will allow those nodes that fully exchange the parent clause BUT do not leave
+         * the previous clause unfinished.
+         *
+         *
+         * Example 1, valid replacement, `select * f|`:
+         * select
+         *  keyword_select
+         *  select_expr
+         *    term (@end)
+         *      all_fields '*'
+         *    alias
+         *      any_identifier 'f' @end
+         *
+         * The `term` ends the select_expr, so it's fine to replace it with `select * from|`:
+         * select
+         *  keyword_select
+         *  select_expr
+         *    term (@end)
+         *      all_fields '*'
+         * from
+         *   keyword_from
+         *
+         * -> the select_expr still has an @end!
+         *
+         *
+         * Example 2, invalid replacement, `select f|`:
+         * select
+         *  keyword_select
+         *  select_expr (@end)
+         *    term
+         *      any_identifier 'f'
+         *
+         * The `select_expr` ends the `select`, so it's not fine to replace it with `select from|`:
+         * select
+         *  keyword_select
+         * from
+         *  keyword_from
+         *
+         * The select hasn't ended, we have invalid grammar.
+         *
+         */
         if let Some(current_node) = goto_node_at_position(&tree, start_byte) {
             let full_exchange =
                 // replacing the start byte means full exchanging
                 clause_to_investigate.is_some_and(|n| n.start_byte() == current_node.start_byte());
 
-            println!("current node kind {}", current_node.kind());
+            let is_ending_node =
+                goto_closest_parent_clause(ctx.node_under_cursor).is_some_and(|n| {
+                    println!("nuc parent {}", n.kind());
+                    n.child_by_field_name("end")
+                        .is_some_and(|end| end.start_byte() == ctx.node_under_cursor.start_byte())
+                });
 
-            let parent_stays = goto_closest_parent_clause(current_node).is_some_and(|n| {
-                println!("current node parent kind {}", n.kind());
+            println!(
+                "full exchange {}, ending node {}",
+                full_exchange, is_ending_node
+            );
 
-                goto_closest_parent_clause(ctx.node_under_cursor).is_some_and(|ctx_node| {
-                    println!("cursor node kind {}", ctx.node_under_cursor.kind());
-                    println!("cursor node parent kind {}", ctx_node.kind());
-                    ctx_node.kind() == n.kind()
-                })
-            });
-
-            if full_exchange && parent_stays {
+            if full_exchange && !is_ending_node {
                 return Some(());
             }
         }

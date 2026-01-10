@@ -66,8 +66,19 @@ pub fn goto_closest_parent_clause(node: Node<'_>) -> Option<Node<'_>> {
     while let Some(investigated) = parent {
         let kind = investigated.kind();
 
-        if !SINGLE_TOKEN_RULES.contains(&kind) && investigated.child_count() > 0 {
-            return Some(investigated);
+        let multiple_children = investigated.child_count() > 1;
+
+        let single_child_uncompleted =
+            investigated.child_count() == 1 && investigated.child_by_field_name("end").is_some();
+
+        let explicit_skip = SINGLE_TOKEN_RULES.contains(&kind);
+
+        let is_error = investigated.kind() == "ERROR";
+
+        if !explicit_skip {
+            if multiple_children || single_child_uncompleted || is_error {
+                return Some(investigated);
+            }
         }
 
         parent = investigated.parent();
