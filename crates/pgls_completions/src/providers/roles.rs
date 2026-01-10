@@ -34,7 +34,9 @@ pub fn complete_roles<'a>(
 mod tests {
     use sqlx::{Executor, PgPool};
 
-    use crate::test_helper::{CompletionAssertion, assert_complete_results};
+    use crate::test_helper::{
+        CompletionAssertion, TestCompletionsCase, TestCompletionsSuite, assert_complete_results,
+    };
 
     use pgls_test_utils::QueryWithCursorPosition;
 
@@ -89,28 +91,21 @@ mod tests {
     }
 
     #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
-    async fn works_in_set_statement(pool: PgPool) {
-        pool.execute(SETUP).await.unwrap();
+    async fn works_in_set_role_statement(pool: PgPool) {
+        TestCompletionsSuite::new(&pool, Some(SETUP))
+            .with_case(TestCompletionsCase::new().type_sql("set role anon;"))
+            .snapshot("works_in_set_role_statement")
+            .await;
+    }
 
-        assert_complete_results(
-            format!("set role {}", QueryWithCursorPosition::cursor_marker()).as_str(),
-            expected_roles(),
-            None,
-            &pool,
-        )
-        .await;
-
-        assert_complete_results(
-            format!(
-                "set session authorization {}",
-                QueryWithCursorPosition::cursor_marker()
+    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    async fn works_in_session_authorization_statement(pool: PgPool) {
+        TestCompletionsSuite::new(&pool, Some(SETUP))
+            .with_case(
+                TestCompletionsCase::new().type_sql("set session authorization authenticated;"),
             )
-            .as_str(),
-            expected_roles(),
-            None,
-            &pool,
-        )
-        .await;
+            .snapshot("works_in_session_authorization_statement")
+            .await;
     }
 
     #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
