@@ -48,7 +48,7 @@ address2 - public.users.address2 (Column)
 email2 - public.users.email2 (Column)
 name2 - public.users.name2 (Column)
 address1 - private.users.address1 (Column)
-array - .array (Keyword)
+email1 - private.users.email1 (Column)
 
 --------------
 
@@ -80,7 +80,7 @@ address1 - private.users.address1 (Column)
 email1 - private.users.email1 (Column)
 name1 - private.users.name1 (Column)
 address2 - public.users.address2 (Column)
-array - .array (Keyword)
+email2 - public.users.email2 (Column)
 
 --------------
 

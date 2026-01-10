@@ -24,14 +24,23 @@ create table public.names (
 ***Case 1:***
 
 s|
+
+Results:
+select - select (Keyword)
+set - set (Keyword)
+insert - insert (Keyword)
+reset - reset (Keyword)
+
+--------------
+
 select |
 
 Results:
 name - public.names.name (Column)
 uid - public.names.uid (Column)
 email - private.users.email (Column)
-false - Keyword.false (Keyword)
 id - private.users.id (Column)
+name - private.users.name (Column)
 
 --------------
 
@@ -41,8 +50,8 @@ Results:
 name" - public.names.name (Column)
 uid" - public.names.uid (Column)
 email" - private.users.email (Column)
-false - Keyword.false (Keyword)
 id" - private.users.id (Column)
+name" - private.users.name (Column)
 
 --------------
 
@@ -52,8 +61,8 @@ Results:
 name - public.names.name (Column)
 uid - public.names.uid (Column)
 email - private.users.email (Column)
-false - Keyword.false (Keyword)
 id - private.users.id (Column)
+name - private.users.name (Column)
 
 --------------
 
@@ -73,7 +82,19 @@ select "pr"."|
 select "pr"."|"
 select "pr"."e|"
 select "pr"."email" |
+
+Results:
+from - from (Keyword)
+
+--------------
+
 select "pr"."email" f|
+
+Results:
+from - from (Keyword)
+
+--------------
+
 select "pr"."email" from |
 
 Results:
@@ -113,26 +134,28 @@ users - private.users (Table)
 select "pr"."email" from private.users |
 
 Results:
-join - Keyword.join (Keyword)
+cross - cross (Keyword)
+full - full (Keyword)
+group - group (Keyword)
+inner - inner (Keyword)
+join - join (Keyword)
 
 --------------
 
 select "pr"."email" from private.users "|
-
-Results:
-join - Keyword.join (Keyword)
-
---------------
-
 select "pr"."email" from private.users "|"
-
-Results:
-join - Keyword.join (Keyword)
-
---------------
-
 select "pr"."email" from private.users "p|"
 select "pr"."email" from private.users "pr" |
+
+Results:
+cross - cross (Keyword)
+full - full (Keyword)
+group - group (Keyword)
+inner - inner (Keyword)
+join - join (Keyword)
+
+--------------
+
 
 
 

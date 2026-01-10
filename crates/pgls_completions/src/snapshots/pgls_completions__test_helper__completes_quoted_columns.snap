@@ -17,14 +17,23 @@ create table private.users (
 --------------
 
 s|
+
+Results:
+select - select (Keyword)
+set - set (Keyword)
+insert - insert (Keyword)
+reset - reset (Keyword)
+
+--------------
+
 select |
 
 Results:
 email - private.users.email (Column)
-false - Keyword.false (Keyword)
 id - private.users.id (Column)
 name - private.users.name (Column)
-null - Keyword.null (Keyword)
+quoted_column - private.users.quoted_column (Column)
+pg_catalog.RI_FKey_cascade_del() - Schema: pg_catalog.RI_FKey_cascade_del (Function)
 
 --------------
 
@@ -32,10 +41,10 @@ select "|
 
 Results:
 email" - private.users.email (Column)
-false - Keyword.false (Keyword)
 id" - private.users.id (Column)
 name" - private.users.name (Column)
-null - Keyword.null (Keyword)
+quoted_column" - private.users.quoted_column (Column)
+abbrev" - pg_catalog.pg_timezone_abbrevs.abbrev (Column)
 
 --------------
 
@@ -43,10 +52,10 @@ select "|"
 
 Results:
 email - private.users.email (Column)
-false - Keyword.false (Keyword)
 id - private.users.id (Column)
 name - private.users.name (Column)
-null - Keyword.null (Keyword)
+quoted_column - private.users.quoted_column (Column)
+abbrev - pg_catalog.pg_timezone_abbrevs.abbrev (Column)
 
 --------------
 
@@ -54,15 +63,27 @@ select "e|"
 
 Results:
 email - private.users.email (Column)
-false - Keyword.false (Keyword)
 name - private.users.name (Column)
 quoted_column - private.users.quoted_column (Column)
-true - Keyword.true (Keyword)
+elem_count_histogram - pg_catalog.pg_stats.elem_count_histogram (Column)
+encoding - pg_catalog.pg_database.encoding (Column)
 
 --------------
 
 select "email" |
+
+Results:
+from - from (Keyword)
+
+--------------
+
 select "email" f|
+
+Results:
+from - from (Keyword)
+
+--------------
+
 select "email" from |
 
 Results:
