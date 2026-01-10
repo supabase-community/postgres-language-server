@@ -21,7 +21,24 @@ create table others (
 --------------
 
 select name from instruments i join others o on i.z = o.a |
+
+Results:
+cross - cross (Keyword)
+full - full (Keyword)
+group - group (Keyword)
+inner - inner (Keyword)
+join - join (Keyword)
+
+--------------
+
 select name from instruments i join others o on i.z = o.a w|
+
+Results:
+where - where (Keyword)
+window - window (Keyword)
+
+--------------
+
 select name from instruments i join others o on i.z = o.a where |
 
 Results:
@@ -34,7 +51,7 @@ i.id - public.instruments.id (Column)
 --------------
 
 select name from instruments i join others o on i.z = o.a where o.|
-**should respect alias speciifcation**
+**should respect alias specification**
 
 Results:
 a - public.others.a (Column)
@@ -44,15 +61,24 @@ c - public.others.c (Column)
 --------------
 
 select name from instruments i join others o on i.z = o.a where o.a |
+
+Results:
+group - group (Keyword)
+limit - limit (Keyword)
+order - order (Keyword)
+window - window (Keyword)
+
+--------------
+
 select name from instruments i join others o on i.z = o.a where o.a = |
 **should not prioritize suggest columns or schemas (right side of binary expression)**
 
 Results:
-instruments - public.instruments (Table)
-others - public.others (Table)
-_sqlx_migrations - public._sqlx_migrations (Table)
-information_schema - information_schema (Schema)
-pg_catalog - pg_catalog (Schema)
+o.b - public.others.b (Column)
+o.c - public.others.c (Column)
+i.created_at - public.instruments.created_at (Column)
+i.id - public.instruments.id (Column)
+i.name - public.instruments.name (Column)
 
 --------------
 
@@ -67,6 +93,15 @@ z - public.instruments.z (Column)
 --------------
 
 select name from instruments i join others o on i.z = o.a where o.a = i.z |
+
+Results:
+group - group (Keyword)
+limit - limit (Keyword)
+order - order (Keyword)
+window - window (Keyword)
+
+--------------
+
 select name from instruments i join others o on i.z = o.a where o.a = i.z a|
 select name from instruments i join others o on i.z = o.a where o.a = i.z and |
 **should prioritize columns that aren't already mentioned**
@@ -98,14 +133,23 @@ id - public.instruments.id (Column)
 --------------
 
 select name from instruments i join others o on i.z = o.a where o.a = i.z and i.id |
+
+Results:
+group - group (Keyword)
+limit - limit (Keyword)
+order - order (Keyword)
+window - window (Keyword)
+
+--------------
+
 select name from instruments i join others o on i.z = o.a where o.a = i.z and i.id > |
 
 Results:
-instruments - public.instruments (Table)
-others - public.others (Table)
-_sqlx_migrations - public._sqlx_migrations (Table)
-information_schema - information_schema (Schema)
-pg_catalog - pg_catalog (Schema)
+o.b - public.others.b (Column)
+o.c - public.others.c (Column)
+i.created_at - public.instruments.created_at (Column)
+i.name - public.instruments.name (Column)
+i.z - public.instruments.z (Column)
 
 --------------
 
