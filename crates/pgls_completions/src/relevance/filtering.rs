@@ -1,4 +1,3 @@
-use async_std::task::current;
 use pgls_schema_cache::ProcKind;
 use pgls_treesitter::{
     context::{TreesitterContext, WrappingClause, WrappingNode},
@@ -524,8 +523,6 @@ impl CompletionFilter<'_> {
             return Some(());
         }
 
-        println!("clause not completed");
-
         // we allow those nodes that do not change the clause
         // e.g. `select * from table order |`; allow "by" since we remain in `order_by` clause.
         if let Some(current_node) = goto_node_at_position(&tree, start_byte) {
@@ -589,11 +586,6 @@ impl CompletionFilter<'_> {
                 // replacing the start byte means full exchanging
                 clause_to_investigate.is_some_and(|n| n.start_byte() == current_node.start_byte());
 
-            println!(
-                "clause to investigate {}",
-                clause_to_investigate.map(|n| n.kind()).unwrap_or("none")
-            );
-
             let leaves_clause_unfinished =
                 goto_closest_parent_clause_with_multiple_children(ctx.node_under_cursor)
                     .is_some_and(|n| {
@@ -601,11 +593,6 @@ impl CompletionFilter<'_> {
                             end.start_byte() == ctx.node_under_cursor.start_byte()
                         })
                     });
-
-            println!(
-                "full exchange {}, ending node {}",
-                full_exchange, leaves_clause_unfinished
-            );
 
             if full_exchange && !leaves_clause_unfinished {
                 return Some(());

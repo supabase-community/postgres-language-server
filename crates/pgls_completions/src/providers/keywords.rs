@@ -506,9 +506,7 @@ mod tests {
 
         assert_complete_results(
             query.as_str(),
-            vec![CompletionAssertion::KindNotExists(
-                CompletionItemKind::Keyword,
-            )],
+            vec![CompletionAssertion::LabelNotExists("from".into())], // keyword `false` is fine
             Some(setup),
             &pool,
         )
