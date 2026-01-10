@@ -1,0 +1,112 @@
+---
+source: crates/pgls_completions/src/test_helper.rs
+expression: final_snapshot
+---
+***Setup***
+
+create schema auth;
+
+create table auth.users (
+    uid serial primary key,
+    name text not null,
+    email text unique not null
+);
+
+create table auth.posts (
+    pid serial primary key,
+    user_id int not null references auth.users(uid),
+    title text not null,
+    content text,
+    created_at timestamp default now()
+);
+
+
+--------------
+
+a|
+
+Results:
+truncate - truncate (Keyword)
+update - update (Keyword)
+
+--------------
+
+alter |
+alter t|
+alter table |
+
+Results:
+auth - auth (Schema)
+auth.posts - auth.posts (Table)
+auth.users - auth.users (Table)
+_sqlx_migrations - public._sqlx_migrations (Table)
+information_schema - information_schema (Schema)
+
+--------------
+
+alter table i|
+
+Results:
+information_schema - information_schema (Schema)
+information_schema.information_schema_catalog_name - information_schema.information_schema_catalog_name (Table)
+public - public (Schema)
+pg_catalog.pg_ident_file_mappings - pg_catalog.pg_ident_file_mappings (Table)
+pg_catalog.pg_index - pg_catalog.pg_index (Table)
+
+--------------
+
+alter table if |
+alter table if e|
+
+Results:
+exists - exists (Keyword)
+
+--------------
+
+alter table if exists |
+
+Results:
+auth - auth (Schema)
+auth.posts - auth.posts (Table)
+auth.users - auth.users (Table)
+_sqlx_migrations - public._sqlx_migrations (Table)
+information_schema - information_schema (Schema)
+
+--------------
+
+alter table if exists a|
+
+Results:
+auth - auth (Schema)
+information_schema.administrable_role_authorizations - information_schema.administrable_role_authorizations (Table)
+information_schema.applicable_roles - information_schema.applicable_roles (Table)
+information_schema.attributes - information_schema.attributes (Table)
+information_schema.collation_character_set_applicability - information_schema.collation_character_set_applicability (Table)
+
+--------------
+
+alter table if exists auth.|
+
+Results:
+posts - auth.posts (Table)
+users - auth.users (Table)
+
+--------------
+
+alter table if exists auth.p|
+
+Results:
+posts - auth.posts (Table)
+
+--------------
+
+alter table if exists auth.posts |
+
+Results:
+add - add (Keyword)
+alter - alter (Keyword)
+drop - drop (Keyword)
+owner - owner (Keyword)
+rename - rename (Keyword)
+
+--------------
