@@ -441,6 +441,11 @@ impl CompletionFilter<'_> {
             return None;
         }
 
+        // at least require the first letter.
+        if !kw.name.starts_with(&content[..1]) {
+            return None;
+        }
+
         Some(())
     }
 

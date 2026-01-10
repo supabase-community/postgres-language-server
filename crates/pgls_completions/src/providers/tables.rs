@@ -268,70 +268,13 @@ mod tests {
           );
         "#;
 
-        pool.execute(setup).await.unwrap();
-
-        assert_complete_results(
-            format!("update {}", QueryWithCursorPosition::cursor_marker()).as_str(),
-            vec![CompletionAssertion::LabelAndKind(
-                "coos".into(),
-                CompletionItemKind::Table,
-            )],
-            None,
-            &pool,
-        )
-        .await;
-
-        assert_complete_results(
-            format!("update public.{}", QueryWithCursorPosition::cursor_marker()).as_str(),
-            vec![CompletionAssertion::LabelAndKind(
-                "coos".into(),
-                CompletionItemKind::Table,
-            )],
-            None,
-            &pool,
-        )
-        .await;
-
-        assert_no_complete_results(
-            format!(
-                "update public.coos {}",
-                QueryWithCursorPosition::cursor_marker()
+        TestCompletionsSuite::new(&pool, Some(setup))
+            .with_case(
+                TestCompletionsCase::new()
+                    .type_sql("update public.coos set name = 'cool' where id = 5;"),
             )
-            .as_str(),
-            None,
-            &pool,
-        )
-        .await;
-
-        assert_complete_results(
-            format!(
-                "update coos set {}",
-                QueryWithCursorPosition::cursor_marker()
-            )
-            .as_str(),
-            vec![
-                CompletionAssertion::Label("id".into()),
-                CompletionAssertion::Label("name".into()),
-            ],
-            None,
-            &pool,
-        )
-        .await;
-
-        assert_complete_results(
-            format!(
-                "update coos set name = 'cool' where {}",
-                QueryWithCursorPosition::cursor_marker()
-            )
-            .as_str(),
-            vec![
-                CompletionAssertion::Label("id".into()),
-                CompletionAssertion::Label("name".into()),
-            ],
-            None,
-            &pool,
-        )
-        .await;
+            .snapshot("suggests_tables_in_update")
+            .await;
     }
 
     #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]

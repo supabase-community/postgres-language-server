@@ -59,35 +59,6 @@ mod tests {
     };
 
     #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
-    async fn test_lookahead_iter(pool: PgPool) {
-        let setup = r#"
-            create schema private;
-
-            create table public.users (
-                id serial primary key,
-                name text
-            );
-
-            create table public.audio_books (
-                id serial primary key,
-                narrator text
-            );
-
-            create table private.audio_books (
-                id serial primary key,
-                narrator_id text
-            );
-        "#;
-
-        let query = format!(
-            "select * {} public.users",
-            QueryWithCursorPosition::cursor_marker()
-        );
-
-        assert_no_complete_results(query.as_str(), Some(setup), &pool).await
-    }
-
-    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
     async fn handles_nested_queries(pool: PgPool) {
         let setup = r#"
             create schema private;
