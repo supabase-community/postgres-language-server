@@ -109,8 +109,25 @@ mod tests {
     }
 
     #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
-    async fn works_in_policies(pool: PgPool) {
+    async fn works_in_policy_restrictive(pool: PgPool) {
         pool.execute(SETUP).await.unwrap();
+
+        let mut expected = vec![
+            CompletionAssertion::LabelAndKind(
+                "current_role".into(),
+                crate::CompletionItemKind::Keyword,
+            ),
+            CompletionAssertion::LabelAndKind(
+                "current_user".into(),
+                crate::CompletionItemKind::Keyword,
+            ),
+            CompletionAssertion::LabelAndKind("public".into(), crate::CompletionItemKind::Keyword),
+            CompletionAssertion::LabelAndKind(
+                "session_user".into(),
+                crate::CompletionItemKind::Keyword,
+            ),
+        ];
+        expected.append(&mut expected_roles());
 
         assert_complete_results(
             format!(
@@ -122,11 +139,33 @@ mod tests {
                 QueryWithCursorPosition::cursor_marker()
             )
             .as_str(),
-            expected_roles(),
+            expected,
             None,
             &pool,
         )
         .await;
+    }
+
+    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    async fn works_in_policy_select(pool: PgPool) {
+        pool.execute(SETUP).await.unwrap();
+
+        let mut expected = vec![
+            CompletionAssertion::LabelAndKind(
+                "current_role".into(),
+                crate::CompletionItemKind::Keyword,
+            ),
+            CompletionAssertion::LabelAndKind(
+                "current_user".into(),
+                crate::CompletionItemKind::Keyword,
+            ),
+            CompletionAssertion::LabelAndKind("public".into(), crate::CompletionItemKind::Keyword),
+            CompletionAssertion::LabelAndKind(
+                "session_user".into(),
+                crate::CompletionItemKind::Keyword,
+            ),
+        ];
+        expected.append(&mut expected_roles());
 
         assert_complete_results(
             format!(
@@ -136,7 +175,7 @@ mod tests {
                 QueryWithCursorPosition::cursor_marker()
             )
             .as_str(),
-            expected_roles(),
+            expected,
             None,
             &pool,
         )
@@ -144,8 +183,25 @@ mod tests {
     }
 
     #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
-    async fn works_in_grant_statements(pool: PgPool) {
+    async fn works_in_grant_on_table_to(pool: PgPool) {
         pool.execute(SETUP).await.unwrap();
+
+        let mut expected = vec![
+            CompletionAssertion::LabelAndKind(
+                "current_role".into(),
+                crate::CompletionItemKind::Keyword,
+            ),
+            CompletionAssertion::LabelAndKind(
+                "current_user".into(),
+                crate::CompletionItemKind::Keyword,
+            ),
+            CompletionAssertion::LabelAndKind("public".into(), crate::CompletionItemKind::Keyword),
+            CompletionAssertion::LabelAndKind(
+                "session_user".into(),
+                crate::CompletionItemKind::Keyword,
+            ),
+        ];
+        expected.append(&mut expected_roles());
 
         assert_complete_results(
             format!(
@@ -155,11 +211,33 @@ mod tests {
                 QueryWithCursorPosition::cursor_marker()
             )
             .as_str(),
-            expected_roles(),
+            expected,
             None,
             &pool,
         )
         .await;
+    }
+
+    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    async fn works_in_grant_on_table_to_multiple(pool: PgPool) {
+        pool.execute(SETUP).await.unwrap();
+
+        let mut expected = vec![
+            CompletionAssertion::LabelAndKind(
+                "current_role".into(),
+                crate::CompletionItemKind::Keyword,
+            ),
+            CompletionAssertion::LabelAndKind(
+                "current_user".into(),
+                crate::CompletionItemKind::Keyword,
+            ),
+            CompletionAssertion::LabelAndKind("public".into(), crate::CompletionItemKind::Keyword),
+            CompletionAssertion::LabelAndKind(
+                "session_user".into(),
+                crate::CompletionItemKind::Keyword,
+            ),
+        ];
+        expected.append(&mut expected_roles());
 
         assert_complete_results(
             format!(
@@ -169,11 +247,16 @@ mod tests {
                 QueryWithCursorPosition::cursor_marker()
             )
             .as_str(),
-            expected_roles(),
+            expected,
             None,
             &pool,
         )
         .await;
+    }
+
+    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    async fn works_in_grant_role_to(pool: PgPool) {
+        pool.execute(SETUP).await.unwrap();
 
         assert_complete_results(
             format!(
@@ -189,38 +272,138 @@ mod tests {
     }
 
     #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
-    async fn works_in_revoke_statements(pool: PgPool) {
+    async fn works_in_revoke_role(pool: PgPool) {
         pool.execute(SETUP).await.unwrap();
 
-        let queries = vec![
+        assert_complete_results(
             format!(
                 "revoke {} from owner",
                 QueryWithCursorPosition::cursor_marker()
-            ),
+            )
+            .as_str(),
+            expected_roles(),
+            None,
+            &pool,
+        )
+        .await;
+    }
+
+    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    async fn works_in_revoke_admin_option_for(pool: PgPool) {
+        pool.execute(SETUP).await.unwrap();
+
+        assert_complete_results(
             format!(
                 "revoke admin option for {} from owner",
                 QueryWithCursorPosition::cursor_marker()
+            )
+            .as_str(),
+            expected_roles(),
+            None,
+            &pool,
+        )
+        .await;
+    }
+
+    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    async fn works_in_revoke_from(pool: PgPool) {
+        pool.execute(SETUP).await.unwrap();
+
+        let mut expected = vec![
+            CompletionAssertion::LabelAndKind(
+                "current_role".into(),
+                crate::CompletionItemKind::Keyword,
             ),
+            CompletionAssertion::LabelAndKind(
+                "current_user".into(),
+                crate::CompletionItemKind::Keyword,
+            ),
+            CompletionAssertion::LabelAndKind("public".into(), crate::CompletionItemKind::Keyword),
+            CompletionAssertion::LabelAndKind(
+                "session_user".into(),
+                crate::CompletionItemKind::Keyword,
+            ),
+        ];
+        expected.append(&mut expected_roles());
+
+        assert_complete_results(
             format!(
                 "revoke owner from {}",
                 QueryWithCursorPosition::cursor_marker()
-            ),
+            )
+            .as_str(),
+            expected,
+            None,
+            &pool,
+        )
+        .await;
+    }
+
+    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    async fn works_in_revoke_all_on_schema_from_granted_by(pool: PgPool) {
+        pool.execute(SETUP).await.unwrap();
+
+        assert_complete_results(
             format!(
                 "revoke all on schema public from {} granted by",
                 QueryWithCursorPosition::cursor_marker()
-            ),
+            )
+            .as_str(),
+            expected_roles(),
+            None,
+            &pool,
+        )
+        .await;
+    }
+
+    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    async fn works_in_revoke_all_on_schema_from_multiple(pool: PgPool) {
+        pool.execute(SETUP).await.unwrap();
+
+        assert_complete_results(
             format!(
                 "revoke all on schema public from owner, {}",
                 QueryWithCursorPosition::cursor_marker()
+            )
+            .as_str(),
+            expected_roles(),
+            None,
+            &pool,
+        )
+        .await;
+    }
+
+    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    async fn works_in_revoke_all_on_table_from_multiple(pool: PgPool) {
+        pool.execute(SETUP).await.unwrap();
+
+        let mut expected = vec![
+            CompletionAssertion::LabelAndKind(
+                "current_role".into(),
+                crate::CompletionItemKind::Keyword,
             ),
+            CompletionAssertion::LabelAndKind(
+                "current_user".into(),
+                crate::CompletionItemKind::Keyword,
+            ),
+            CompletionAssertion::LabelAndKind("public".into(), crate::CompletionItemKind::Keyword),
+            CompletionAssertion::LabelAndKind(
+                "session_user".into(),
+                crate::CompletionItemKind::Keyword,
+            ),
+        ];
+        expected.append(&mut expected_roles());
+
+        assert_complete_results(
             format!(
                 "revoke all on table users from owner, {}",
                 QueryWithCursorPosition::cursor_marker()
-            ),
-        ];
-
-        for query in queries {
-            assert_complete_results(query.as_str(), expected_roles(), None, &pool).await;
-        }
+            )
+            .as_str(),
+            expected,
+            None,
+            &pool,
+        )
+        .await;
     }
 }
