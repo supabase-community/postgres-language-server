@@ -17,6 +17,13 @@ create table instruments (
 ***Case 1:***
 
 a|
+
+Results:
+truncate - truncate (Keyword)
+update - update (Keyword)
+
+--------------
+
 alter |
 alter t|
 alter table |
@@ -42,7 +49,24 @@ pg_catalog.pg_ident_file_mappings - pg_catalog.pg_ident_file_mappings (Table)
 --------------
 
 alter table instruments |
+
+Results:
+add - add (Keyword)
+alter - alter (Keyword)
+drop - drop (Keyword)
+owner - owner (Keyword)
+rename - rename (Keyword)
+
+--------------
+
 alter table instruments d|
+
+Results:
+drop - drop (Keyword)
+add - add (Keyword)
+
+--------------
+
 alter table instruments drop |
 
 Results:
@@ -95,6 +119,13 @@ alter table instruments drop column name |
 ***Case 2:***
 
 a|
+
+Results:
+truncate - truncate (Keyword)
+update - update (Keyword)
+
+--------------
+
 alter |
 alter t|
 alter table |
@@ -120,7 +151,24 @@ pg_catalog.pg_ident_file_mappings - pg_catalog.pg_ident_file_mappings (Table)
 --------------
 
 alter table instruments |
+
+Results:
+add - add (Keyword)
+alter - alter (Keyword)
+drop - drop (Keyword)
+owner - owner (Keyword)
+rename - rename (Keyword)
+
+--------------
+
 alter table instruments d|
+
+Results:
+drop - drop (Keyword)
+add - add (Keyword)
+
+--------------
+
 alter table instruments drop |
 
 Results:
@@ -197,6 +245,13 @@ alter table instruments drop column if exists name |
 ***Case 3:***
 
 a|
+
+Results:
+truncate - truncate (Keyword)
+update - update (Keyword)
+
+--------------
+
 alter |
 alter t|
 alter table |
@@ -222,7 +277,25 @@ pg_catalog.pg_ident_file_mappings - pg_catalog.pg_ident_file_mappings (Table)
 --------------
 
 alter table instruments |
+
+Results:
+add - add (Keyword)
+alter - alter (Keyword)
+drop - drop (Keyword)
+owner - owner (Keyword)
+rename - rename (Keyword)
+
+--------------
+
 alter table instruments a|
+
+Results:
+add - add (Keyword)
+alter - alter (Keyword)
+rename - rename (Keyword)
+
+--------------
+
 alter table instruments alter |
 
 Results:
@@ -230,7 +303,7 @@ created_at - public.instruments.created_at (Column)
 id - public.instruments.id (Column)
 name - public.instruments.name (Column)
 z - public.instruments.z (Column)
-abbrev - pg_catalog.pg_timezone_abbrevs.abbrev (Column)
+column - column (Keyword)
 
 --------------
 
@@ -238,10 +311,10 @@ alter table instruments alter c|
 
 Results:
 created_at - public.instruments.created_at (Column)
+column - column (Keyword)
 cache_size - pg_catalog.pg_sequences.cache_size (Column)
 calls - pg_catalog.pg_stat_user_functions.calls (Column)
 castcontext - pg_catalog.pg_cast.castcontext (Column)
-castfunc - pg_catalog.pg_cast.castfunc (Column)
 
 --------------
 
@@ -289,6 +362,13 @@ instruments - public.instruments (Table)
 ***Case 4:***
 
 a|
+
+Results:
+truncate - truncate (Keyword)
+update - update (Keyword)
+
+--------------
+
 alter |
 alter t|
 alter table |
@@ -314,7 +394,25 @@ pg_catalog.pg_ident_file_mappings - pg_catalog.pg_ident_file_mappings (Table)
 --------------
 
 alter table instruments |
+
+Results:
+add - add (Keyword)
+alter - alter (Keyword)
+drop - drop (Keyword)
+owner - owner (Keyword)
+rename - rename (Keyword)
+
+--------------
+
 alter table instruments a|
+
+Results:
+add - add (Keyword)
+alter - alter (Keyword)
+rename - rename (Keyword)
+
+--------------
+
 alter table instruments alter |
 
 Results:
@@ -322,7 +420,7 @@ created_at - public.instruments.created_at (Column)
 id - public.instruments.id (Column)
 name - public.instruments.name (Column)
 z - public.instruments.z (Column)
-abbrev - pg_catalog.pg_timezone_abbrevs.abbrev (Column)
+column - column (Keyword)
 
 --------------
 
@@ -330,10 +428,10 @@ alter table instruments alter n|
 
 Results:
 name - public.instruments.name (Column)
+column - column (Keyword)
 n_dead_tup - pg_catalog.pg_stat_all_tables.n_dead_tup (Column)
 n_distinct - pg_catalog.pg_stats.n_distinct (Column)
 n_ins_since_vacuum - pg_catalog.pg_stat_all_tables.n_ins_since_vacuum (Column)
-n_live_tup - pg_catalog.pg_stat_all_tables.n_live_tup (Column)
 
 --------------
 
@@ -359,6 +457,13 @@ instruments - public.instruments (Table)
 ***Case 5:***
 
 a|
+
+Results:
+truncate - truncate (Keyword)
+update - update (Keyword)
+
+--------------
+
 alter |
 alter t|
 alter table |
@@ -400,7 +505,25 @@ _sqlx_migrations - public._sqlx_migrations (Table)
 --------------
 
 alter table public.instruments |
+
+Results:
+add - add (Keyword)
+alter - alter (Keyword)
+drop - drop (Keyword)
+owner - owner (Keyword)
+rename - rename (Keyword)
+
+--------------
+
 alter table public.instruments a|
+
+Results:
+add - add (Keyword)
+alter - alter (Keyword)
+rename - rename (Keyword)
+
+--------------
+
 alter table public.instruments alter |
 
 Results:
@@ -408,7 +531,7 @@ created_at - public.instruments.created_at (Column)
 id - public.instruments.id (Column)
 name - public.instruments.name (Column)
 z - public.instruments.z (Column)
-abbrev - pg_catalog.pg_timezone_abbrevs.abbrev (Column)
+column - column (Keyword)
 
 --------------
 
@@ -416,10 +539,10 @@ alter table public.instruments alter c|
 
 Results:
 created_at - public.instruments.created_at (Column)
+column - column (Keyword)
 cache_size - pg_catalog.pg_sequences.cache_size (Column)
 calls - pg_catalog.pg_stat_user_functions.calls (Column)
 castcontext - pg_catalog.pg_cast.castcontext (Column)
-castfunc - pg_catalog.pg_cast.castfunc (Column)
 
 --------------
 
@@ -453,6 +576,13 @@ alter table public.instruments alter column name |
 ***Case 6:***
 
 a|
+
+Results:
+truncate - truncate (Keyword)
+update - update (Keyword)
+
+--------------
+
 alter |
 alter t|
 alter table |
@@ -478,7 +608,25 @@ pg_catalog.pg_ident_file_mappings - pg_catalog.pg_ident_file_mappings (Table)
 --------------
 
 alter table instruments |
+
+Results:
+add - add (Keyword)
+alter - alter (Keyword)
+drop - drop (Keyword)
+owner - owner (Keyword)
+rename - rename (Keyword)
+
+--------------
+
 alter table instruments a|
+
+Results:
+add - add (Keyword)
+alter - alter (Keyword)
+rename - rename (Keyword)
+
+--------------
+
 alter table instruments alter |
 
 Results:
@@ -486,7 +634,7 @@ created_at - public.instruments.created_at (Column)
 id - public.instruments.id (Column)
 name - public.instruments.name (Column)
 z - public.instruments.z (Column)
-abbrev - pg_catalog.pg_timezone_abbrevs.abbrev (Column)
+column - column (Keyword)
 
 --------------
 
@@ -494,10 +642,10 @@ alter table instruments alter n|
 
 Results:
 name - public.instruments.name (Column)
+column - column (Keyword)
 n_dead_tup - pg_catalog.pg_stat_all_tables.n_dead_tup (Column)
 n_distinct - pg_catalog.pg_stats.n_distinct (Column)
 n_ins_since_vacuum - pg_catalog.pg_stat_all_tables.n_ins_since_vacuum (Column)
-n_live_tup - pg_catalog.pg_stat_all_tables.n_live_tup (Column)
 
 --------------
 
@@ -509,6 +657,13 @@ alter table instruments alter name |
 ***Case 7:***
 
 a|
+
+Results:
+truncate - truncate (Keyword)
+update - update (Keyword)
+
+--------------
+
 alter |
 alter t|
 alter table |
@@ -534,7 +689,26 @@ pg_catalog.pg_ident_file_mappings - pg_catalog.pg_ident_file_mappings (Table)
 --------------
 
 alter table instruments |
+
+Results:
+add - add (Keyword)
+alter - alter (Keyword)
+drop - drop (Keyword)
+owner - owner (Keyword)
+rename - rename (Keyword)
+
+--------------
+
 alter table instruments r|
+
+Results:
+rename - rename (Keyword)
+alter - alter (Keyword)
+drop - drop (Keyword)
+owner - owner (Keyword)
+
+--------------
+
 alter table instruments rename |
 
 Results:
@@ -542,7 +716,7 @@ created_at - public.instruments.created_at (Column)
 id - public.instruments.id (Column)
 name - public.instruments.name (Column)
 z - public.instruments.z (Column)
-abbrev - pg_catalog.pg_timezone_abbrevs.abbrev (Column)
+column - column (Keyword)
 
 --------------
 
@@ -550,15 +724,27 @@ alter table instruments rename n|
 
 Results:
 name - public.instruments.name (Column)
+column - column (Keyword)
 n_dead_tup - pg_catalog.pg_stat_all_tables.n_dead_tup (Column)
 n_distinct - pg_catalog.pg_stats.n_distinct (Column)
 n_ins_since_vacuum - pg_catalog.pg_stat_all_tables.n_ins_since_vacuum (Column)
-n_live_tup - pg_catalog.pg_stat_all_tables.n_live_tup (Column)
 
 --------------
 
 alter table instruments rename name |
+
+Results:
+to - to (Keyword)
+
+--------------
+
 alter table instruments rename name t|
+
+Results:
+to - to (Keyword)
+
+--------------
+
 alter table instruments rename name to |
 alter table instruments rename name to n|
 alter table instruments rename name to new_col |
@@ -569,6 +755,13 @@ alter table instruments rename name to new_col |
 ***Case 8:***
 
 a|
+
+Results:
+truncate - truncate (Keyword)
+update - update (Keyword)
+
+--------------
+
 alter |
 alter t|
 alter table |
@@ -610,7 +803,26 @@ _sqlx_migrations - public._sqlx_migrations (Table)
 --------------
 
 alter table public.instruments |
+
+Results:
+add - add (Keyword)
+alter - alter (Keyword)
+drop - drop (Keyword)
+owner - owner (Keyword)
+rename - rename (Keyword)
+
+--------------
+
 alter table public.instruments r|
+
+Results:
+rename - rename (Keyword)
+alter - alter (Keyword)
+drop - drop (Keyword)
+owner - owner (Keyword)
+
+--------------
+
 alter table public.instruments rename |
 
 Results:
@@ -618,7 +830,7 @@ created_at - public.instruments.created_at (Column)
 id - public.instruments.id (Column)
 name - public.instruments.name (Column)
 z - public.instruments.z (Column)
-abbrev - pg_catalog.pg_timezone_abbrevs.abbrev (Column)
+column - column (Keyword)
 
 --------------
 
@@ -626,10 +838,10 @@ alter table public.instruments rename c|
 
 Results:
 created_at - public.instruments.created_at (Column)
+column - column (Keyword)
 cache_size - pg_catalog.pg_sequences.cache_size (Column)
 calls - pg_catalog.pg_stat_user_functions.calls (Column)
 castcontext - pg_catalog.pg_cast.castcontext (Column)
-castfunc - pg_catalog.pg_cast.castfunc (Column)
 
 --------------
 
@@ -656,7 +868,19 @@ n_live_tup - pg_catalog.pg_stat_all_tables.n_live_tup (Column)
 --------------
 
 alter table public.instruments rename column name |
+
+Results:
+to - to (Keyword)
+
+--------------
+
 alter table public.instruments rename column name t|
+
+Results:
+to - to (Keyword)
+
+--------------
+
 alter table public.instruments rename column name to |
 alter table public.instruments rename column name to n|
 alter table public.instruments rename column name to new_col |
