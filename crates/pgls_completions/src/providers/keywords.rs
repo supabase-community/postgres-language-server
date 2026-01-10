@@ -220,7 +220,7 @@ pub static ALL_KEYWORDS: &[SqlKeyword] = &[
     SqlKeyword::new("oids"),
     SqlKeyword::new("old"),
     SqlKeyword::new("on"),
-    SqlKeyword::new("only"),
+    SqlKeyword::new("only").require_prefix(),
     SqlKeyword::new("option"),
     SqlKeyword::new("or").require_prefix(),
     SqlKeyword::new("order"),

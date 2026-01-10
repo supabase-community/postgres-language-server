@@ -411,12 +411,6 @@ mod tests {
             );
         "#;
 
-        let query = format!(
-            // "select * from auth.users u j{}",
-            "select * from auth.users as u join client_settings c on u.id = c.client_id wh{}",
-            QueryWithCursorPosition::cursor_marker()
-        );
-
         TestCompletionsSuite::new(&pool, Some(setup))
             .with_case(
                 TestCompletionsCase::new()
