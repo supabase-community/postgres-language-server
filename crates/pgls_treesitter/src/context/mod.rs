@@ -171,6 +171,8 @@ impl<'a> TreesitterContext<'a> {
         ctx.check_previous_clause_completed();
         ctx.check_current_clause_completed();
 
+        println!("{:#?}", ctx);
+
         ctx
     }
 

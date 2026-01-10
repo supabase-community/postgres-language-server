@@ -494,6 +494,28 @@ mod tests {
     }
 
     #[sqlx::test]
+    async fn does_not_complete_from_after_select(pool: PgPool) {
+        let setup = r#"
+            create table public.users (
+                id serial primary key,
+                email varchar(255)
+            );
+        "#;
+
+        let query = format!("select f{}", QueryWithCursorPosition::cursor_marker());
+
+        assert_complete_results(
+            query.as_str(),
+            vec![CompletionAssertion::KindNotExists(
+                CompletionItemKind::Keyword,
+            )],
+            Some(setup),
+            &pool,
+        )
+        .await;
+    }
+
+    #[sqlx::test]
     async fn completes_columsn_after_select(pool: PgPool) {
         let setup = r#"
             create table public.users (

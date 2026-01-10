@@ -66,19 +66,24 @@ pub fn goto_closest_parent_clause(node: Node<'_>) -> Option<Node<'_>> {
     while let Some(investigated) = parent {
         let kind = investigated.kind();
 
-        let multiple_children = investigated.child_count() > 1;
-
-        let single_child_uncompleted =
-            investigated.child_count() == 1 && investigated.child_by_field_name("end").is_some();
-
         let explicit_skip = SINGLE_TOKEN_RULES.contains(&kind);
 
-        let is_error = investigated.kind() == "ERROR";
+        if !explicit_skip && investigated.child_count() > 0 {
+            return Some(investigated);
+        }
 
-        if !explicit_skip {
-            if multiple_children || single_child_uncompleted || is_error {
-                return Some(investigated);
-            }
+        parent = investigated.parent();
+    }
+
+    return None;
+}
+
+pub fn goto_closest_parent_clause_with_multiple_children(node: Node<'_>) -> Option<Node<'_>> {
+    let mut parent = Some(node);
+
+    while let Some(investigated) = parent {
+        if investigated.child_count() > 1 {
+            return Some(investigated);
         }
 
         parent = investigated.parent();

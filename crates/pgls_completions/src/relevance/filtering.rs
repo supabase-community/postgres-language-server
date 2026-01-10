@@ -2,7 +2,8 @@ use async_std::task::current;
 use pgls_schema_cache::ProcKind;
 use pgls_treesitter::{
     context::{TreesitterContext, WrappingClause, WrappingNode},
-    goto_closest_parent_clause, goto_node_at_position,
+    goto_closest_parent_clause, goto_closest_parent_clause_with_multiple_children,
+    goto_node_at_position,
 };
 use tree_sitter::{InputEdit, Point, Tree};
 
@@ -588,19 +589,25 @@ impl CompletionFilter<'_> {
                 // replacing the start byte means full exchanging
                 clause_to_investigate.is_some_and(|n| n.start_byte() == current_node.start_byte());
 
-            let is_ending_node =
-                goto_closest_parent_clause(ctx.node_under_cursor).is_some_and(|n| {
-                    println!("nuc parent {}", n.kind());
-                    n.child_by_field_name("end")
-                        .is_some_and(|end| end.start_byte() == ctx.node_under_cursor.start_byte())
-                });
+            println!(
+                "clause to investigate {}",
+                clause_to_investigate.map(|n| n.kind()).unwrap_or("none")
+            );
+
+            let leaves_clause_unfinished =
+                goto_closest_parent_clause_with_multiple_children(ctx.node_under_cursor)
+                    .is_some_and(|n| {
+                        n.child_by_field_name("end").is_some_and(|end| {
+                            end.start_byte() == ctx.node_under_cursor.start_byte()
+                        })
+                    });
 
             println!(
                 "full exchange {}, ending node {}",
-                full_exchange, is_ending_node
+                full_exchange, leaves_clause_unfinished
             );
 
-            if full_exchange && !is_ending_node {
+            if full_exchange && !leaves_clause_unfinished {
                 return Some(());
             }
         }
