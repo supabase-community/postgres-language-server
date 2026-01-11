@@ -36,3 +36,4 @@ crates/pgt_treesitter_grammar/src/parser.c.codex-session-id
 .codex-session-id
 
 site/
+pglinter_repo/
