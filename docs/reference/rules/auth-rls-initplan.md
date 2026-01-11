@@ -11,7 +11,9 @@
 
 Detects if calls to \`current_setting()\` and \`auth.<function>()\` in RLS policies are being unnecessarily re-evaluated for each row
 
-[Learn More](https://supabase.com/docs/guides/database/database-linter?lint=0003_auth_rls_initplan)
+## Remediation
+
+https://supabase.com/docs/guides/database/database-linter?lint=0003_auth_rls_initplan
 
 ## SQL Query
 

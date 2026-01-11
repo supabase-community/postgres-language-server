@@ -20,6 +20,7 @@ use pgls_configuration::{
     format::{FormatConfiguration, IndentStyle, KeywordCase},
     migrations::{MigrationsConfiguration, PartialMigrationsConfiguration},
     plpgsql_check::PlPgSqlCheckConfiguration,
+    splinter::SplinterConfiguration,
 };
 use pgls_fs::PgLSPath;
 use sqlx::postgres::PgConnectOptions;
@@ -217,6 +218,10 @@ pub struct Settings {
     /// Formatter settings applied to all files in the workspace
     pub formatter: FormatterSettings,
 
+    /// Splinter (database linter) settings for the workspace
+    pub splinter: SplinterSettings,
+
+
     /// Type checking settings for the workspace
     pub typecheck: TypecheckSettings,
 
@@ -266,6 +271,12 @@ impl Settings {
             )?;
         }
 
+        // splinter part
+        if let Some(splinter) = configuration.splinter {
+            self.splinter = to_splinter_settings(SplinterConfiguration::from(splinter));
+        }
+
+
         // typecheck part
         if let Some(typecheck) = configuration.typecheck {
             self.typecheck = to_typecheck_settings(TypecheckConfiguration::from(typecheck));
@@ -296,6 +307,11 @@ impl Settings {
     /// Returns linter rules.
     pub fn as_linter_rules(&self) -> Option<Cow<pgls_configuration::linter::Rules>> {
         self.linter.rules.as_ref().map(Cow::Borrowed)
+    }
+
+    /// Returns splinter rules.
+    pub fn as_splinter_rules(&self) -> Option<Cow<pgls_configuration::splinter::Rules>> {
+        self.splinter.rules.as_ref().map(Cow::Borrowed)
     }
 
     /// It retrieves the severity based on the `code` of the rule and the current configuration.
@@ -342,6 +358,14 @@ fn to_formatter_settings(
         included_files: to_matcher(working_directory.clone(), Some(&conf.include))?,
     })
 }
+
+fn to_splinter_settings(conf: SplinterConfiguration) -> SplinterSettings {
+    SplinterSettings {
+        enabled: conf.enabled,
+        rules: Some(conf.rules),
+    }
+}
+
 
 fn to_typecheck_settings(conf: TypecheckConfiguration) -> TypecheckSettings {
     TypecheckSettings {
@@ -509,6 +533,26 @@ impl Default for FormatterSettings {
         }
     }
 }
+
+/// Splinter (database linter) settings for the entire workspace
+#[derive(Debug)]
+pub struct SplinterSettings {
+    /// Enabled by default
+    pub enabled: bool,
+
+    /// List of rules
+    pub rules: Option<pgls_configuration::splinter::Rules>,
+}
+
+impl Default for SplinterSettings {
+    fn default() -> Self {
+        Self {
+            enabled: true,
+            rules: Some(pgls_configuration::splinter::Rules::default()),
+        }
+    }
+}
+
 
 /// Type checking settings for the entire workspace
 #[derive(Debug)]

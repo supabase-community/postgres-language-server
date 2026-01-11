@@ -8,7 +8,7 @@ Install via your package manager if you use one:
 pnpm add -D -E @postgres-language-server/cli
 ```
 
-Alternatively, most [editor integrations](/guides/ide_setup) will manage the installation for you, or you can install it as a [standalone executable](/manual_installation).
+Alternatively, most [editor integrations](guides/ide_setup.md) will manage the installation for you, or you can install it as a [standalone executable](manual_installation.md).
 
 ## Configuration
 
@@ -88,6 +88,6 @@ The Postgres Language Server is available as an extension in your favorite edito
 
 Run `postgres-language-server check` in your CI pipeline to lint your schema changes and enforce code quality across your team. We provide a [GitHub Action](https://github.com/supabase-community/postgres-language-server-cli-action) to setup the Postgres Language Server in your runner.
 
-See the [Continuous Integration](/guides/continuous_integration) guide for an example.
+See the [Continuous Integration](guides/continuous_integration.md) guide for an example.
 
 

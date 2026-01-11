@@ -86,9 +86,10 @@ fn generate_splinter_rule_doc(
     writeln!(content, "{}", splinter_meta.description)?;
     writeln!(content)?;
 
-    // Add "Learn More" link with remediation URL from trait
-    let remediation = splinter_meta.remediation;
-    writeln!(content, "[Learn More]({remediation})")?;
+    // Add remediation section
+    writeln!(content, "## Remediation")?;
+    writeln!(content)?;
+    writeln!(content, "{}", splinter_meta.remediation)?;
     writeln!(content)?;
 
     // Add SQL query section (with metadata stripped)

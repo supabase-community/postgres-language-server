@@ -8,7 +8,9 @@
 
 Detects cases where two ore more identical indexes exist.
 
-[Learn More](https://supabase.com/docs/guides/database/database-linter?lint=0009_duplicate_index)
+## Remediation
+
+https://supabase.com/docs/guides/database/database-linter?lint=0009_duplicate_index
 
 ## SQL Query
 

@@ -8,7 +8,9 @@
 
 Detects cases where row level security (RLS) policies have been created, but RLS has not been enabled for the underlying table.
 
-[Learn More](https://supabase.com/docs/guides/database/database-linter?lint=0007_policy_exists_rls_disabled)
+## Remediation
+
+https://supabase.com/docs/guides/database/database-linter?lint=0007_policy_exists_rls_disabled
 
 ## SQL Query
 

@@ -14,11 +14,11 @@ The language server is built on Postgres' own parser `libpg_query` to ensure 100
 
 The following features are available today:
 
-- [Syntax Diagnostics](/features/syntax_diagnostics)
-- [Linting](/features/linting)
-- [Type Checking](/features/type_checking)
-- [Formatting](/features/formatting) (Preview)
-- [PL/pgSQL Support](/features/plpgsql)
-- [Autocompletion & Hover](/features/editor_features)
+- [Syntax Diagnostics](features/syntax_diagnostics.md)
+- [Linting](features/linting.md)
+- [Type Checking](features/type_checking.md)
+- [Formatting](features/formatting.md) (Preview)
+- [PL/pgSQL Support](features/plpgsql.md)
+- [Autocompletion & Hover](features/editor_features.md)
 
 For future plans and opportunities to contribute, please check out the issues and discussions. Any contributions are welcome!

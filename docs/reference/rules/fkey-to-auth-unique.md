@@ -11,7 +11,9 @@
 
 Detects user defined foreign keys to unique constraints in the auth schema.
 
-[Learn More](Drop the foreign key constraint that references the auth schema.)
+## Remediation
+
+Drop the foreign key constraint that references the auth schema.
 
 ## SQL Query
 

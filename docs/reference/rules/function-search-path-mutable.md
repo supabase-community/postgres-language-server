@@ -8,7 +8,9 @@
 
 Detects functions where the search_path parameter is not set.
 
-[Learn More](https://supabase.com/docs/guides/database/database-linter?lint=0011_function_search_path_mutable)
+## Remediation
+
+https://supabase.com/docs/guides/database/database-linter?lint=0011_function_search_path_mutable
 
 ## SQL Query
 

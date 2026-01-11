@@ -8,7 +8,9 @@
 
 Detects if multiple permissive row level security policies are present on a table for the same \`role\` and \`action\` (e.g. insert). Multiple permissive policies are suboptimal for performance as each policy must be executed for every relevant query.
 
-[Learn More](https://supabase.com/docs/guides/database/database-linter?lint=0006_multiple_permissive_policies)
+## Remediation
+
+https://supabase.com/docs/guides/database/database-linter?lint=0006_multiple_permissive_policies
 
 ## SQL Query
 

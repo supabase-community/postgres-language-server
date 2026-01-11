@@ -11,7 +11,9 @@
 
 Detects materialized views that are accessible over the Data APIs.
 
-[Learn More](https://supabase.com/docs/guides/database/database-linter?lint=0016_materialized_view_in_api)
+## Remediation
+
+https://supabase.com/docs/guides/database/database-linter?lint=0016_materialized_view_in_api
 
 ## SQL Query
 

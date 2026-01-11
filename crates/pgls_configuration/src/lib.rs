@@ -47,6 +47,9 @@ pub use rules::{
     RuleWithFixOptions, RuleWithOptions,
 };
 use serde::{Deserialize, Serialize};
+use splinter::{
+    PartialSplinterConfiguration, SplinterConfiguration, partial_splinter_configuration,
+};
 pub use typecheck::{
     PartialTypecheckConfiguration, TypecheckConfiguration, partial_typecheck_configuration,
 };
@@ -95,6 +98,11 @@ pub struct Configuration {
     #[partial(type, bpaf(external(partial_format_configuration), optional))]
     pub format: FormatConfiguration,
 
+    /// The configuration for splinter
+    #[partial(type, bpaf(external(partial_splinter_configuration), optional))]
+    pub splinter: SplinterConfiguration,
+
+
     /// The configuration for type checking
     #[partial(type, bpaf(external(partial_typecheck_configuration), optional))]
     pub typecheck: TypecheckConfiguration,
@@ -138,6 +146,10 @@ impl PartialConfiguration {
             }),
             format: Some(PartialFormatConfiguration {
                 enabled: Some(false), // Disabled by default during beta
+                ..Default::default()
+            }),
+            splinter: Some(PartialSplinterConfiguration {
+                enabled: Some(true),
                 ..Default::default()
             }),
             typecheck: Some(PartialTypecheckConfiguration {

@@ -8,7 +8,9 @@
 
 Detects if a table has excess bloat and may benefit from maintenance operations like vacuum full or cluster.
 
-[Learn More](Consider running vacuum full (WARNING: incurs downtime) and tweaking autovacuum settings to reduce bloat.)
+## Remediation
+
+Consider running vacuum full (WARNING: incurs downtime) and tweaking autovacuum settings to reduce bloat.
 
 ## SQL Query
 
