@@ -422,6 +422,10 @@ export interface PartialFormatConfiguration {
 	 * Maximum line width before breaking. Default: 100.
 	 */
 	lineWidth?: number;
+	/**
+	 * Data type casing (text, varchar, int): "upper" or "lower". Default: "lower".
+	 */
+	typeCase?: KeywordCase;
 }
 export interface PartialLinterConfiguration {
 	/**
