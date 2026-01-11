@@ -5,8 +5,6 @@ snapshot_kind: text
 ---
 status: success
 stdout:
-Warning: Deprecated config filename detected. Use 'postgres-language-server.jsonc'.
-
 Command completed in <duration>.
 stderr:
 splinter/performance/noPrimaryKey ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
