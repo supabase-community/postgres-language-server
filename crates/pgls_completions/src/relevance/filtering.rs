@@ -1,5 +1,10 @@
 use pgls_schema_cache::ProcKind;
-use pgls_treesitter::context::{TreesitterContext, WrappingClause, WrappingNode};
+use pgls_treesitter::{
+    context::{TreesitterContext, WrappingClause, WrappingNode},
+    goto_closest_parent_clause, goto_closest_parent_clause_with_multiple_children,
+    goto_node_at_position,
+};
+use tree_sitter::{InputEdit, Point, Tree};
 
 use super::CompletionRelevanceData;
 
@@ -15,17 +20,23 @@ impl<'a> From<CompletionRelevanceData<'a>> for CompletionFilter<'a> {
 }
 
 impl CompletionFilter<'_> {
-    pub fn is_relevant(&self, ctx: &TreesitterContext) -> Option<()> {
-        self.completable_context(ctx)?;
+    pub fn is_relevant(&self, ctx: &TreesitterContext, shared_tree: &mut Tree) -> Option<()> {
+        if let CompletionRelevanceData::Keyword(kw) = self.data {
+            self.check_keyword_requires_prefix(ctx, kw)?;
+            self.valid_keyword(ctx, shared_tree)?;
+            Some(())
+        } else {
+            self.completable_context(ctx)?;
 
-        self.check_specific_node_type(ctx)
-            // we want to rely on treesitter more, so checking the clause is a fallback
-            .or_else(|| self.check_clause(ctx))?;
+            self.check_specific_node_type(ctx)
+                // we want to rely on treesitter more, so checking the clause is a fallback
+                .or_else(|| self.check_clause(ctx))?;
 
-        self.check_invocation(ctx)?;
-        self.check_mentioned_schema_or_alias(ctx)?;
+            self.check_invocation(ctx)?;
+            self.check_mentioned_schema_or_alias(ctx)?;
 
-        Some(())
+            Some(())
+        }
     }
 
     fn completable_context(&self, ctx: &TreesitterContext) -> Option<()> {
@@ -108,15 +119,18 @@ impl CompletionFilter<'_> {
 
             "any_identifier" => match self.data {
                 CompletionRelevanceData::Column(_) => {
-                    ctx.node_under_cursor_is_within_field(&[
+                    let matches_field = ctx.node_under_cursor_is_within_field(&[
                         "object_reference_1of1",
                         "object_reference_2of2",
                         "object_reference_3of3",
                         "column_reference_1of1",
                         "column_reference_2of2",
                         "column_reference_3of3",
-                    ]) && (!ctx.node_under_cursor_is_within_field(&["binary_expr_right"])
-                        || ctx.has_any_qualifier())
+                    ]);
+
+                    let has_any_qualifier = ctx.has_any_qualifier();
+
+                    matches_field || has_any_qualifier
                 }
 
                 CompletionRelevanceData::Schema(_) => ctx.node_under_cursor_is_within_field(&[
@@ -359,6 +373,8 @@ impl CompletionFilter<'_> {
 
                         _ => false,
                     },
+
+                    CompletionRelevanceData::Keyword(_) => true,
                 }
             })
             .and_then(|is_ok| if is_ok { Some(()) } else { None })
@@ -401,6 +417,7 @@ impl CompletionFilter<'_> {
             CompletionRelevanceData::Schema(_) => false,
             // no policy or row completion if user typed a schema node first.
             CompletionRelevanceData::Policy(_) | CompletionRelevanceData::Role(_) => false,
+            CompletionRelevanceData::Keyword(_) => false,
         };
 
         if !matches {
@@ -408,6 +425,186 @@ impl CompletionFilter<'_> {
         }
 
         Some(())
+    }
+
+    fn check_keyword_requires_prefix(
+        &self,
+        ctx: &TreesitterContext,
+        kw: &crate::providers::SqlKeyword,
+    ) -> Option<()> {
+        if !kw.require_prefix {
+            return Some(());
+        }
+
+        let content = ctx.get_node_under_cursor_content()?;
+        if content.is_empty() || crate::sanitization::is_sanitized_token(&content) {
+            return None;
+        }
+
+        // at least require the first letter.
+        if !kw.name.starts_with(&content[..1]) {
+            return None;
+        }
+
+        Some(())
+    }
+
+    fn valid_keyword(&self, ctx: &TreesitterContext, shared_tree: &mut Tree) -> Option<()> {
+        let keyword = if let CompletionRelevanceData::Keyword(kw) = self.data {
+            kw
+        } else {
+            return Some(());
+        };
+
+        let kw_name = keyword.name;
+
+        let start_position = ctx.node_under_cursor.start_position();
+        let start_byte = ctx.node_under_cursor.start_byte();
+        let old_end_position = ctx.node_under_cursor.end_position();
+        let old_end_byte = ctx.node_under_cursor.end_byte();
+
+        let new_end_byte = start_byte + kw_name.len();
+        let new_end_position = Point {
+            row: start_position.row,
+            column: start_position.column + kw_name.len(),
+        };
+
+        shared_tree.edit(&InputEdit {
+            new_end_byte,
+            new_end_position,
+            old_end_byte,
+            old_end_position,
+            start_byte,
+            start_position,
+        });
+
+        let mut parser = tree_sitter::Parser::new();
+        parser
+            .set_language(&pgls_treesitter_grammar::LANGUAGE.into())
+            .unwrap();
+
+        let replaced_sql = format!(
+            "{}{}{}",
+            &ctx.text[..start_byte],
+            kw_name,
+            &ctx.text[old_end_byte..]
+        );
+
+        let tree = parser.parse(replaced_sql, Some(shared_tree)).unwrap();
+
+        // undo changes to shared tree
+        shared_tree.edit(&InputEdit {
+            new_end_byte: old_end_byte,
+            new_end_position: old_end_position,
+            old_end_byte: new_end_byte,
+            old_end_position: new_end_position,
+            start_byte,
+            start_position,
+        });
+
+        if tree.root_node().has_error() {
+            return None;
+        } else if ctx.previous_clause.is_some_and(|n| n.kind() == "ERROR") {
+            // if the previous clause has an error and injecting the keyword fixes it,
+            // the keyword helped treesitter recover -> suggestable keyword
+            return Some(());
+        }
+
+        let (clause_to_investigate, clause_completed) = if ctx.node_under_cursor.kind() != "ERROR" {
+            (ctx.current_clause, ctx.current_clause_completed)
+        } else {
+            (ctx.previous_clause, ctx.previous_clause_completed)
+        };
+
+        if clause_to_investigate.is_none() {
+            if keyword.starts_statement {
+                return Some(());
+            } else {
+                return None;
+            }
+        }
+
+        if clause_completed {
+            return Some(());
+        }
+
+        // we allow those nodes that do not change the clause
+        // e.g. `select * from table order |`; allow "by" since we remain in `order_by` clause.
+        if let Some(current_node) = goto_node_at_position(&tree, start_byte) {
+            if let Some(current_parent) = goto_closest_parent_clause(current_node) {
+                let parent_same_kind =
+                    clause_to_investigate.is_some_and(|c| c.kind() == current_parent.kind());
+
+                let parent_same_start = clause_to_investigate
+                    .is_some_and(|c| c.start_byte() == current_parent.start_byte());
+
+                if parent_same_kind && parent_same_start {
+                    return Some(());
+                }
+            }
+        }
+
+        /*
+         * Will allow those nodes that fully exchange the parent clause BUT do not leave
+         * the previous clause unfinished.
+         *
+         *
+         * Example 1, valid replacement, `select * f|`:
+         * select
+         *  keyword_select
+         *  select_expr
+         *    term (@end)
+         *      all_fields '*'
+         *    alias
+         *      any_identifier 'f' @end
+         *
+         * The `term` ends the select_expr, so it's fine to replace it with `select * from|`:
+         * select
+         *  keyword_select
+         *  select_expr
+         *    term (@end)
+         *      all_fields '*'
+         * from
+         *   keyword_from
+         *
+         * -> the select_expr still has an @end!
+         *
+         *
+         * Example 2, invalid replacement, `select f|`:
+         * select
+         *  keyword_select
+         *  select_expr (@end)
+         *    term
+         *      any_identifier 'f'
+         *
+         * The `select_expr` ends the `select`, so it's not fine to replace it with `select from|`:
+         * select
+         *  keyword_select
+         * from
+         *  keyword_from
+         *
+         * The select hasn't ended, we have invalid grammar.
+         *
+         */
+        if let Some(current_node) = goto_node_at_position(&tree, start_byte) {
+            let full_exchange =
+                // replacing the start byte means full exchanging
+                clause_to_investigate.is_some_and(|n| n.start_byte() == current_node.start_byte());
+
+            let leaves_clause_unfinished =
+                goto_closest_parent_clause_with_multiple_children(ctx.node_under_cursor)
+                    .is_some_and(|n| {
+                        n.child_by_field_name("end").is_some_and(|end| {
+                            end.start_byte() == ctx.node_under_cursor.start_byte()
+                        })
+                    });
+
+            if full_exchange && !leaves_clause_unfinished {
+                return Some(());
+            }
+        }
+
+        None
     }
 }
 
@@ -433,8 +630,12 @@ mod tests {
 
         pool.execute(setup).await.unwrap();
 
-        assert_no_complete_results(
+        assert_complete_results(
             format!("select * {}", QueryWithCursorPosition::cursor_marker()).as_str(),
+            vec![CompletionAssertion::LabelAndKind(
+                "from".into(),
+                crate::CompletionItemKind::Keyword,
+            )],
             None,
             &pool,
         )

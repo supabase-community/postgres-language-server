@@ -33,6 +33,7 @@ impl CompletionScore<'_> {
     }
 
     pub fn calc_score(&mut self, ctx: &TreesitterContext) {
+        self.check_is_keyword();
         self.check_is_user_defined();
         self.check_matches_schema(ctx);
         self.check_matches_query_input(ctx);
@@ -42,6 +43,12 @@ impl CompletionScore<'_> {
         self.check_relations_in_stmt(ctx);
         self.check_columns_in_stmt(ctx);
         self.check_is_not_wellknown_migration(ctx);
+    }
+
+    fn check_is_keyword(&mut self) {
+        if matches!(self.data, CompletionRelevanceData::Keyword(_)) {
+            self.score -= 10;
+        }
     }
 
     fn check_matches_query_input(&mut self, ctx: &TreesitterContext) {
@@ -59,6 +66,7 @@ impl CompletionScore<'_> {
             CompletionRelevanceData::Schema(s) => s.name.as_str().to_ascii_lowercase(),
             CompletionRelevanceData::Policy(p) => p.name.as_str().to_ascii_lowercase(),
             CompletionRelevanceData::Role(r) => r.name.as_str().to_ascii_lowercase(),
+            CompletionRelevanceData::Keyword(k) => k.name.to_ascii_lowercase(),
         };
 
         let fz_matcher = SkimMatcherV2::default();
@@ -197,6 +205,8 @@ impl CompletionScore<'_> {
                 WrappingClause::DropRole | WrappingClause::AlterRole => 25,
                 _ => -50,
             },
+
+            CompletionRelevanceData::Keyword(_) => 0,
         }
     }
 
@@ -265,7 +275,9 @@ impl CompletionScore<'_> {
                 ctx.head_qualifier_sanitized()
             }
 
-            CompletionRelevanceData::Schema(_) | CompletionRelevanceData::Role(_) => None,
+            CompletionRelevanceData::Schema(_)
+            | CompletionRelevanceData::Role(_)
+            | CompletionRelevanceData::Keyword(_) => None,
         };
 
         if schema_from_qualifier.is_none() {
@@ -294,6 +306,7 @@ impl CompletionScore<'_> {
             CompletionRelevanceData::Schema(s) => s.name.as_str(),
             CompletionRelevanceData::Policy(p) => p.name.as_str(),
             CompletionRelevanceData::Role(r) => r.name.as_str(),
+            CompletionRelevanceData::Keyword(k) => k.name,
         }
     }
 
@@ -305,6 +318,7 @@ impl CompletionScore<'_> {
             CompletionRelevanceData::Schema(s) => Some(s.name.as_str()),
             CompletionRelevanceData::Policy(p) => Some(p.schema_name.as_str()),
             CompletionRelevanceData::Role(_) => None,
+            CompletionRelevanceData::Keyword(_) => None,
         }
     }
 

@@ -6,8 +6,8 @@ use crate::{
     builder::CompletionBuilder,
     item::CompletionItem,
     providers::{
-        complete_columns, complete_functions, complete_policies, complete_roles, complete_schemas,
-        complete_tables,
+        complete_columns, complete_functions, complete_keywords, complete_policies, complete_roles,
+        complete_schemas, complete_tables,
     },
     sanitization::SanitizedCompletionParams,
 };
@@ -27,6 +27,13 @@ pub struct CompletionParams<'a> {
     position = params.position.to_string()
 ))]
 pub fn complete(params: CompletionParams) -> Vec<CompletionItem> {
+    let uses_upper_case = params
+        .text
+        .split_ascii_whitespace()
+        // filter out special chars and numbers
+        .filter(|word| word.chars().all(|c| c.is_alphabetic()))
+        .any(|t| t == t.to_ascii_uppercase());
+
     let sanitized_params = SanitizedCompletionParams::from(params);
 
     let ctx = TreesitterContext::new(TreeSitterContextParams {
@@ -43,6 +50,7 @@ pub fn complete(params: CompletionParams) -> Vec<CompletionItem> {
     complete_schemas(&ctx, sanitized_params.schema, &mut builder);
     complete_policies(&ctx, sanitized_params.schema, &mut builder);
     complete_roles(&ctx, sanitized_params.schema, &mut builder);
+    complete_keywords(&ctx, &mut builder, uses_upper_case);
 
     builder.finish()
 }

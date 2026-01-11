@@ -1,3 +1,4 @@
 {
-  "postgres-language-server.bin": "./target/debug/postgres-language-server"
+  "postgres-language-server.bin": "./target/debug/postgres-language-server",
+  "rust-analyzer.cargo.targetDir": "./target/rust-analyzer/debug"
 }

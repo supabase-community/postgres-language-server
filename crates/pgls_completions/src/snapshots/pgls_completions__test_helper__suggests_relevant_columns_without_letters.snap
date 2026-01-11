@@ -15,6 +15,15 @@ create table users (
 --------------
 
 s|
+
+Results:
+select - select (Keyword)
+set - set (Keyword)
+insert - insert (Keyword)
+reset - reset (Keyword)
+
+--------------
+
 select |
 
 Results:
@@ -30,15 +39,27 @@ select n|
 
 Results:
 name - public.users.name (Column)
+null - null (Keyword)
+name - Schema: pg_catalog.name (Function)
 nameconcatoid - Schema: pg_catalog.nameconcatoid (Function)
 nameeq - Schema: pg_catalog.nameeq (Function)
-nameeqtext - Schema: pg_catalog.nameeqtext (Function)
-namege - Schema: pg_catalog.namege (Function)
 
 --------------
 
 select name |
+
+Results:
+from - from (Keyword)
+
+--------------
+
 select name f|
+
+Results:
+from - from (Keyword)
+
+--------------
+
 select name from |
 
 Results:
@@ -62,3 +83,12 @@ information_schema.user_defined_types - information_schema.user_defined_types (T
 --------------
 
 select name from users |
+
+Results:
+cross - cross (Keyword)
+full - full (Keyword)
+group - group (Keyword)
+inner - inner (Keyword)
+join - join (Keyword)
+
+--------------

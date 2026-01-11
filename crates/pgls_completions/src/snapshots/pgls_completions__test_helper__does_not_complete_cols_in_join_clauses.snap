@@ -30,8 +30,8 @@ Results:
 content - auth.posts.content (Column)
 created_at - auth.posts.created_at (Column)
 email - auth.users.email (Column)
+false - Keyword.false (Keyword)
 name - auth.users.name (Column)
-pid - auth.posts.pid (Column)
 
 --------------
 
@@ -43,8 +43,8 @@ Results:
 content - auth.posts.content (Column)
 created_at - auth.posts.created_at (Column)
 email - auth.users.email (Column)
+false - Keyword.false (Keyword)
 name - auth.users.name (Column)
-pid - auth.posts.pid (Column)
 
 --------------
 
@@ -94,6 +94,12 @@ users - auth.users (Table)
 --------------
 
 select u.uid, p.content from auth.users |
+
+Results:
+join - Keyword.join (Keyword)
+
+--------------
+
 select u.uid, p.content from auth.users u |
 select u.uid, p.content from auth.users u j|
 select u.uid, p.content from auth.users u join |
@@ -114,7 +120,7 @@ auth - auth (Schema)
 information_schema.administrable_role_authorizations - information_schema.administrable_role_authorizations (Table)
 information_schema.applicable_roles - information_schema.applicable_roles (Table)
 information_schema.attributes - information_schema.attributes (Table)
-information_schema - information_schema (Schema)
+lateral - Keyword.lateral (Keyword)
 
 --------------
 
@@ -134,6 +140,12 @@ posts - auth.posts (Table)
 --------------
 
 select u.uid, p.content from auth.users u join auth.posts |
+
+Results:
+join - Keyword.join (Keyword)
+
+--------------
+
 select u.uid, p.content from auth.users u join auth.posts p |
 select u.uid, p.content from auth.users u join auth.posts p o|
 select u.uid, p.content from auth.users u join auth.posts p on |

@@ -181,9 +181,10 @@ pub(crate) async fn assert_complete_results(
 
     assert!(
         items.len() >= existing.len(),
-        "Not enough items returned. Expected at least {} items, but got {}",
+        "Not enough items returned. Expected at least {} items, but got {}. query: {}",
         existing.len(),
-        items.len()
+        items.len(),
+        query
     );
 
     for item in &items {
@@ -555,7 +556,9 @@ impl TestCompletionsCase {
                 write!(writer, " - ").unwrap();
 
                 match item.kind {
-                    CompletionItemKind::Schema | CompletionItemKind::Role => {}
+                    CompletionItemKind::Schema
+                    | CompletionItemKind::Role
+                    | CompletionItemKind::Keyword => {}
                     _ => {
                         write!(writer, "{}.", item.description).unwrap();
                     }

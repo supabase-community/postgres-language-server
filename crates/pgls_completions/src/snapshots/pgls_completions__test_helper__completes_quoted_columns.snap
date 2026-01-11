@@ -17,6 +17,15 @@ create table private.users (
 --------------
 
 s|
+
+Results:
+select - select (Keyword)
+set - set (Keyword)
+insert - insert (Keyword)
+reset - reset (Keyword)
+
+--------------
+
 select |
 
 Results:
@@ -62,7 +71,19 @@ encoding - pg_catalog.pg_database.encoding (Column)
 --------------
 
 select "email" |
+
+Results:
+from - from (Keyword)
+
+--------------
+
 select "email" f|
+
+Results:
+from - from (Keyword)
+
+--------------
+
 select "email" from |
 
 Results:

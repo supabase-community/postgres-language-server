@@ -27,7 +27,7 @@ fn main() {
         .expect("Failed to parse query.");
 
     let mut result = String::new();
-    print_ts_tree(&tree.root_node(), &query, 0, &mut result);
+    print_ts_tree(&tree.root_node(), &query, &mut result);
 
     print!("{result}")
 }
