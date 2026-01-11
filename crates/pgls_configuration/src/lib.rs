@@ -102,7 +102,6 @@ pub struct Configuration {
     #[partial(type, bpaf(external(partial_splinter_configuration), optional))]
     pub splinter: SplinterConfiguration,
 
-
     /// The configuration for type checking
     #[partial(type, bpaf(external(partial_typecheck_configuration), optional))]
     pub typecheck: TypecheckConfiguration,

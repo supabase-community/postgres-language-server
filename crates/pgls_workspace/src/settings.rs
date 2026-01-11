@@ -221,7 +221,6 @@ pub struct Settings {
     /// Splinter (database linter) settings for the workspace
     pub splinter: SplinterSettings,
 
-
     /// Type checking settings for the workspace
     pub typecheck: TypecheckSettings,
 
@@ -275,7 +274,6 @@ impl Settings {
         if let Some(splinter) = configuration.splinter {
             self.splinter = to_splinter_settings(SplinterConfiguration::from(splinter));
         }
-
 
         // typecheck part
         if let Some(typecheck) = configuration.typecheck {
@@ -365,7 +363,6 @@ fn to_splinter_settings(conf: SplinterConfiguration) -> SplinterSettings {
         rules: Some(conf.rules),
     }
 }
-
 
 fn to_typecheck_settings(conf: TypecheckConfiguration) -> TypecheckSettings {
     TypecheckSettings {
@@ -552,7 +549,6 @@ impl Default for SplinterSettings {
         }
     }
 }
-
 
 /// Type checking settings for the entire workspace
 #[derive(Debug)]
