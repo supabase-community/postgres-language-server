@@ -1,0 +1,11 @@
+---
+source: crates/pgls_cli/tests/assert_dblint.rs
+expression: normalized
+snapshot_kind: text
+---
+status: success
+stdout:
+Warning: Deprecated config filename detected. Use 'postgres-language-server.jsonc'.
+
+Command completed in <duration>.
+stderr:
