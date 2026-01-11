@@ -1,0 +1,177 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/point.sql
+snapshot_kind: text
+---
+set extra_float_digits = 0;
+
+insert into point_tbl (f1) values ('asdfasdf');
+
+insert into point_tbl (f1) values ('(10.0 10.0)');
+
+insert into point_tbl (f1) values ('(10.0, 10.0) x');
+
+insert into point_tbl (f1) values ('(10.0,10.0');
+
+insert into point_tbl (f1) values ('(10.0, 1e+500)');
+
+select * from point_tbl;
+
+select p.* from point_tbl as p where p.f1 << '(0.0, 0.0)';
+
+select p.* from point_tbl as p where '(0.0,0.0)' >> p.f1;
+
+select p.* from point_tbl as p where '(0.0,0.0)' |>> p.f1;
+
+select p.* from point_tbl as p where p.f1 <<| '(0.0, 0.0)';
+
+select p.* from point_tbl as p where p.f1 ~= '(5.1, 34.5)';
+
+select p.* from point_tbl as p where p.f1 <@ cast('(0,0,100,100)' as box);
+
+select p.* from point_tbl as p where cast('(0,0,100,100)' as box) @> p.f1;
+
+select p.* from point_tbl as p where not p.f1 <@ cast('(0,0,100,100)' as box);
+
+select
+  p.*
+from
+  point_tbl as p
+where
+  p.f1 <@
+  cast('[(0,0),(-10,0),(-10,10)]' as path);
+
+select p.* from point_tbl as p where not cast('(0,0,100,100)' as box) @> p.f1;
+
+select
+  p.f1,
+  p.f1 <-> cast('(0,0)' as point) as dist
+from
+  point_tbl as p
+order by dist;
+
+select
+  p1.f1 as point1,
+  p2.f1 as point2,
+  p1.f1 <-> p2.f1 as dist
+from
+  point_tbl as p1,
+  point_tbl as p2
+order by dist,
+  p1.f1[0],
+  p2.f1[0];
+
+select
+  p1.f1 as point1,
+  p2.f1 as point2
+from
+  point_tbl as p1,
+  point_tbl as p2
+where
+  p1.f1 <-> p2.f1 > 3;
+
+select
+  p1.f1 as point1,
+  p2.f1 as point2,
+  p1.f1 <-> p2.f1 as distance
+from
+  point_tbl as p1,
+  point_tbl as p2
+where
+  p1.f1 <-> p2.f1 > 3 and p1.f1 << p2.f1
+order by distance,
+  p1.f1[0],
+  p2.f1[0];
+
+select
+  p1.f1 as point1,
+  p2.f1 as point2,
+  p1.f1 <-> p2.f1 as distance
+from
+  point_tbl as p1,
+  point_tbl as p2
+where
+  p1.f1 <-> p2.f1 > 3 and
+  p1.f1 << p2.f1 and
+  p1.f1 |>> p2.f1
+order by distance;
+
+create temporary table point_gist_tbl (f1 point);
+
+insert into point_gist_tbl select '(0,0)' from generate_series(0, 1000);
+
+create index "point_gist_tbl_index" on point_gist_tbl using gist (f1);
+
+insert into point_gist_tbl values ('(0.0000009,0.0000009)');
+
+set enable_seqscan = 'true';
+
+set enable_indexscan = 'false';
+
+set enable_bitmapscan = 'false';
+
+select
+  COUNT(*)
+from
+  point_gist_tbl
+where
+  f1 ~=
+  cast('(0.0000009,0.0000009)' as point);
+
+select
+  COUNT(*)
+from
+  point_gist_tbl
+where
+  f1 <@
+  cast('(0.0000009,0.0000009),(0.0000009,0.0000009)'
+  as box);
+
+select
+  COUNT(*)
+from
+  point_gist_tbl
+where
+  f1 ~=
+  cast('(0.0000018,0.0000018)' as point);
+
+set enable_seqscan = 'false';
+
+set enable_indexscan = 'true';
+
+set enable_bitmapscan = 'true';
+
+select
+  COUNT(*)
+from
+  point_gist_tbl
+where
+  f1 ~=
+  cast('(0.0000009,0.0000009)' as point);
+
+select
+  COUNT(*)
+from
+  point_gist_tbl
+where
+  f1 <@
+  cast('(0.0000009,0.0000009),(0.0000009,0.0000009)'
+  as box);
+
+select
+  COUNT(*)
+from
+  point_gist_tbl
+where
+  f1 ~=
+  cast('(0.0000018,0.0000018)' as point);
+
+reset enable_seqscan;
+
+reset enable_indexscan;
+
+reset enable_bitmapscan;
+
+select pg_input_is_valid('1,y', 'point');
+
+select * from pg_input_error_info('1,y', 'point');

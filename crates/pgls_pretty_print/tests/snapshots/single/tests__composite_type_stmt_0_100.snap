@@ -1,0 +1,6 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/single/composite_type_stmt_0.sql
+snapshot_kind: text
+---
+create type complex as (r double precision, i double precision);

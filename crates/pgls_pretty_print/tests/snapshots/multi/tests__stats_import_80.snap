@@ -1,0 +1,1785 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/stats_import.sql
+snapshot_kind: text
+---
+create schema "stats_import";
+
+create type stats_import.complex_type as (
+  a int,
+  b real,
+  c text,
+  d date,
+  e jsonb
+);
+
+create table stats_import.test (
+  id int primary key,
+  name text,
+  comp stats_import.complex_type,
+  arange int4range,
+  tags text[]
+)
+with (autovacuum_enabled = 'false');
+
+select
+  pg_restore_relation_stats(
+    'schemaname',
+    'stats_import',
+    'relname',
+    'test',
+    'relpages',
+    cast(18 as int),
+    'reltuples',
+    cast(21 as real),
+    'relallvisible',
+    cast(24 as int),
+    'relallfrozen',
+    cast(27 as int)
+  );
+
+create index "test_i" on stats_import.test using btree (id);
+
+select
+  relname,
+  relpages,
+  reltuples,
+  relallvisible,
+  relallfrozen
+from
+  pg_class
+where
+  oid =
+  cast('stats_import.test' as regclass)
+order by relname;
+
+select pg_clear_relation_stats('stats_import', 'test');
+
+select
+  pg_restore_relation_stats(
+    'relname',
+    'test',
+    'relpages',
+    cast(17 as int)
+  );
+
+select
+  pg_restore_relation_stats(
+    'schemaname',
+    'stats_import',
+    'relpages',
+    cast(17 as int)
+  );
+
+select
+  pg_restore_relation_stats(
+    'schemaname',
+    cast(3.6 as double precision),
+    'relname',
+    'test',
+    'relpages',
+    cast(17 as int)
+  );
+
+select
+  pg_restore_relation_stats(
+    'schemaname',
+    'stats_import',
+    'relname',
+    cast(0 as oid),
+    'relpages',
+    cast(17 as int)
+  );
+
+select
+  pg_restore_relation_stats(
+    'schemaname',
+    'stats_import',
+    'relname',
+    'nope',
+    'relpages',
+    cast(17 as int)
+  );
+
+select
+  pg_restore_relation_stats(
+    'schemaname',
+    'stats_import',
+    'relname',
+    'test',
+    'relallvisible'
+  );
+
+select
+  pg_restore_relation_stats(
+    'schemaname',
+    'stats_import',
+    'relname',
+    'test',
+    null,
+    cast('17' as int)
+  );
+
+select
+  relpages,
+  reltuples,
+  relallvisible,
+  relallfrozen
+from
+  pg_class
+where
+  oid =
+  cast('stats_import.test_i' as regclass);
+
+begin;
+
+select
+  pg_restore_relation_stats(
+    'schemaname',
+    'stats_import',
+    'relname',
+    'test_i',
+    'relpages',
+    cast(18 as int)
+  );
+
+select
+  mode
+from
+  pg_locks
+where
+  relation =
+  cast('stats_import.test' as regclass) and
+  pid = pg_backend_pid() and
+  granted;
+
+select
+  mode
+from
+  pg_locks
+where
+  relation =
+  cast('stats_import.test_i' as regclass) and
+  pid = pg_backend_pid() and
+  granted;
+
+commit;
+
+create table stats_import.part_parent (i int)
+partition by range(i);
+
+create table stats_import.part_child_1
+partition of stats_import.part_parent
+for values from (0) to (10)
+with (autovacuum_enabled = 'false');
+
+create index "part_parent_i" on stats_import.part_parent using btree (i);
+
+analyze stats_import.part_parent;
+
+select
+  relpages
+from
+  pg_class
+where
+  oid =
+  cast('stats_import.part_parent'
+  as regclass);
+
+begin;
+
+select
+  pg_restore_relation_stats(
+    'schemaname',
+    'stats_import',
+    'relname',
+    'part_parent_i',
+    'relpages',
+    cast(2 as int)
+  );
+
+select
+  mode
+from
+  pg_locks
+where
+  relation =
+  cast('stats_import.part_parent'
+  as regclass) and
+  pid = pg_backend_pid() and
+  granted;
+
+select
+  mode
+from
+  pg_locks
+where
+  relation =
+  cast('stats_import.part_parent_i'
+  as regclass) and
+  pid = pg_backend_pid() and
+  granted;
+
+commit;
+
+select
+  relpages
+from
+  pg_class
+where
+  oid =
+  cast('stats_import.part_parent_i'
+  as regclass);
+
+select
+  pg_restore_relation_stats(
+    'schemaname',
+    'stats_import',
+    'relname',
+    'test',
+    'version',
+    cast(150000 as int),
+    'relpages',
+    cast('-17' as int),
+    'reltuples',
+    cast(400 as real),
+    'relallvisible',
+    cast(4 as int),
+    'relallfrozen',
+    cast(2 as int)
+  );
+
+select
+  relpages,
+  reltuples,
+  relallvisible,
+  relallfrozen
+from
+  pg_class
+where
+  oid =
+  cast('stats_import.test' as regclass);
+
+select
+  pg_restore_relation_stats(
+    'schemaname',
+    'stats_import',
+    'relname',
+    'test',
+    'relpages',
+    cast('16' as int)
+  );
+
+select
+  relpages,
+  reltuples,
+  relallvisible,
+  relallfrozen
+from
+  pg_class
+where
+  oid =
+  cast('stats_import.test' as regclass);
+
+select
+  pg_restore_relation_stats(
+    'schemaname',
+    'stats_import',
+    'relname',
+    'test',
+    'reltuples',
+    cast('500' as real)
+  );
+
+select
+  relpages,
+  reltuples,
+  relallvisible,
+  relallfrozen
+from
+  pg_class
+where
+  oid =
+  cast('stats_import.test' as regclass);
+
+select
+  pg_restore_relation_stats(
+    'schemaname',
+    'stats_import',
+    'relname',
+    'test',
+    'relallvisible',
+    cast(5 as int)
+  );
+
+select
+  relpages,
+  reltuples,
+  relallvisible,
+  relallfrozen
+from
+  pg_class
+where
+  oid =
+  cast('stats_import.test' as regclass);
+
+select
+  pg_restore_relation_stats(
+    'schemaname',
+    'stats_import',
+    'relname',
+    'test',
+    'version',
+    cast(150000 as int),
+    'relallfrozen',
+    cast(3 as int)
+  );
+
+select
+  relpages,
+  reltuples,
+  relallvisible,
+  relallfrozen
+from
+  pg_class
+where
+  oid =
+  cast('stats_import.test' as regclass);
+
+select
+  pg_restore_relation_stats(
+    'schemaname',
+    'stats_import',
+    'relname',
+    'test',
+    'relpages',
+    cast('nope' as text),
+    'reltuples',
+    cast(400.0 as real),
+    'relallvisible',
+    cast(4 as int),
+    'relallfrozen',
+    cast(3 as int)
+  );
+
+select
+  relpages,
+  reltuples,
+  relallvisible,
+  relallfrozen
+from
+  pg_class
+where
+  oid =
+  cast('stats_import.test' as regclass);
+
+select
+  pg_restore_relation_stats(
+    'schemaname',
+    'stats_import',
+    'relname',
+    'test',
+    'relpages',
+    cast('171' as int),
+    'nope',
+    cast(10 as int)
+  );
+
+select
+  relpages,
+  reltuples,
+  relallvisible
+from
+  pg_class
+where
+  oid =
+  cast('stats_import.test' as regclass);
+
+select
+  pg_clear_relation_stats(
+    "schemaname" := 'stats_import',
+    "relname" := 'test'
+  );
+
+select
+  relpages,
+  reltuples,
+  relallvisible
+from
+  pg_class
+where
+  oid =
+  cast('stats_import.test' as regclass);
+
+create sequence stats_import.testseq;
+
+select
+  pg_restore_relation_stats(
+    'schemaname',
+    'stats_import',
+    'relname',
+    'testseq'
+  );
+
+select
+  pg_clear_relation_stats(
+    "schemaname" := 'stats_import',
+    "relname" := 'testseq'
+  );
+
+create view stats_import.testview
+as select * from stats_import.test;
+
+select
+  pg_clear_relation_stats(
+    "schemaname" := 'stats_import',
+    "relname" := 'testview'
+  );
+
+select
+  pg_restore_attribute_stats(
+    'relname',
+    'test',
+    'attname',
+    'id',
+    'inherited',
+    cast(false as boolean),
+    'null_frac',
+    cast(0.1 as real)
+  );
+
+select
+  pg_restore_attribute_stats(
+    'schemaname',
+    'nope',
+    'relname',
+    'test',
+    'attname',
+    'id',
+    'inherited',
+    cast(false as boolean),
+    'null_frac',
+    cast(0.1 as real)
+  );
+
+select
+  pg_restore_attribute_stats(
+    'schemaname',
+    'stats_import',
+    'attname',
+    'id',
+    'inherited',
+    cast(false as boolean),
+    'null_frac',
+    cast(0.1 as real)
+  );
+
+select
+  pg_restore_attribute_stats(
+    'schemaname',
+    'stats_import',
+    'relname',
+    'nope',
+    'attname',
+    'id',
+    'inherited',
+    cast(false as boolean),
+    'null_frac',
+    cast(0.1 as real)
+  );
+
+select
+  pg_restore_attribute_stats(
+    'schemaname',
+    'stats_import',
+    'relname',
+    null,
+    'attname',
+    'id',
+    'inherited',
+    cast(false as boolean),
+    'null_frac',
+    cast(0.1 as real)
+  );
+
+select
+  pg_restore_attribute_stats(
+    'schemaname',
+    'stats_import',
+    'relname',
+    'test',
+    'attname',
+    null,
+    'inherited',
+    cast(false as boolean),
+    'null_frac',
+    cast(0.1 as real)
+  );
+
+select
+  pg_restore_attribute_stats(
+    'schemaname',
+    'stats_import',
+    'relname',
+    'test',
+    'attname',
+    'nope',
+    'inherited',
+    cast(false as boolean),
+    'null_frac',
+    cast(0.1 as real),
+    'avg_width',
+    cast(2 as int),
+    'n_distinct',
+    cast(0.3 as real)
+  );
+
+select
+  pg_restore_attribute_stats(
+    'schemaname',
+    'stats_import',
+    'relname',
+    'test',
+    'attname',
+    'id',
+    'attnum',
+    cast(1 as smallint),
+    'inherited',
+    cast(false as boolean),
+    'null_frac',
+    cast(0.1 as real)
+  );
+
+select
+  pg_restore_attribute_stats(
+    'schemaname',
+    'stats_import',
+    'relname',
+    'test',
+    'inherited',
+    cast(false as boolean),
+    'null_frac',
+    cast(0.1 as real)
+  );
+
+select
+  pg_restore_attribute_stats(
+    'schemaname',
+    'stats_import',
+    'relname',
+    'test',
+    'attname',
+    'xmin',
+    'inherited',
+    cast(false as boolean),
+    'null_frac',
+    cast(0.1 as real)
+  );
+
+select
+  pg_restore_attribute_stats(
+    'schemaname',
+    'stats_import',
+    'relname',
+    'test',
+    'attname',
+    'id',
+    'inherited',
+    cast(null as boolean),
+    'null_frac',
+    cast(0.1 as real)
+  );
+
+select
+  pg_restore_attribute_stats(
+    'schemaname',
+    'stats_import',
+    'relname',
+    'test',
+    'attname',
+    'id',
+    'inherited',
+    cast(false as boolean),
+    'version',
+    cast(150000 as int),
+    'null_frac',
+    cast(0.2 as real),
+    'avg_width',
+    cast(5 as int),
+    'n_distinct',
+    cast(0.6 as real)
+  );
+
+select
+  *
+from
+  pg_stats
+where
+  schemaname = 'stats_import' and
+  tablename = 'test' and
+  inherited = false and
+  attname = 'id';
+
+select
+  pg_restore_attribute_stats(
+    'schemaname',
+    'stats_import',
+    'relname',
+    'test',
+    'attnum',
+    cast(1 as smallint),
+    'inherited',
+    cast(false as boolean),
+    'null_frac',
+    cast(0.4 as real)
+  );
+
+select
+  *
+from
+  pg_stats
+where
+  schemaname = 'stats_import' and
+  tablename = 'test' and
+  inherited = false and
+  attname = 'id';
+
+select
+  pg_restore_attribute_stats(
+    'schemaname',
+    'stats_import',
+    'relname',
+    'test',
+    'attname',
+    'id',
+    'inherited',
+    cast(false as boolean),
+    'null_frac',
+    cast(0.2 as real),
+    'nope',
+    cast(0.5 as real)
+  );
+
+select
+  *
+from
+  pg_stats
+where
+  schemaname = 'stats_import' and
+  tablename = 'test' and
+  inherited = false and
+  attname = 'id';
+
+select
+  pg_restore_attribute_stats(
+    'schemaname',
+    'stats_import',
+    'relname',
+    'test',
+    'attname',
+    'id',
+    'inherited',
+    cast(false as boolean),
+    'null_frac',
+    cast(0.21 as real),
+    'most_common_freqs',
+    cast('{0.1,0.2,0.3}' as real[])
+  );
+
+select
+  *
+from
+  pg_stats
+where
+  schemaname = 'stats_import' and
+  tablename = 'test' and
+  inherited = false and
+  attname = 'id';
+
+select
+  pg_restore_attribute_stats(
+    'schemaname',
+    'stats_import',
+    'relname',
+    'test',
+    'attname',
+    'id',
+    'inherited',
+    cast(false as boolean),
+    'null_frac',
+    cast(0.21 as real),
+    'most_common_vals',
+    cast('{1,2,3}' as text)
+  );
+
+select
+  *
+from
+  pg_stats
+where
+  schemaname = 'stats_import' and
+  tablename = 'test' and
+  inherited = false and
+  attname = 'id';
+
+select
+  pg_restore_attribute_stats(
+    'schemaname',
+    'stats_import',
+    'relname',
+    'test',
+    'attname',
+    'id',
+    'inherited',
+    cast(false as boolean),
+    'null_frac',
+    cast(0.22 as real),
+    'most_common_vals',
+    cast('{2,1,3}' as text),
+    'most_common_freqs',
+    cast('{0.2,0.1}' as double precision[])
+  );
+
+select
+  *
+from
+  pg_stats
+where
+  schemaname = 'stats_import' and
+  tablename = 'test' and
+  inherited = false and
+  attname = 'id';
+
+select
+  pg_restore_attribute_stats(
+    'schemaname',
+    'stats_import',
+    'relname',
+    'test',
+    'attname',
+    'id',
+    'inherited',
+    cast(false as boolean),
+    'null_frac',
+    cast(0.23 as real),
+    'most_common_vals',
+    cast('{2,four,3}' as text),
+    'most_common_freqs',
+    cast('{0.3,0.25,0.05}' as real[])
+  );
+
+select
+  *
+from
+  pg_stats
+where
+  schemaname = 'stats_import' and
+  tablename = 'test' and
+  inherited = false and
+  attname = 'id';
+
+select
+  pg_restore_attribute_stats(
+    'schemaname',
+    'stats_import',
+    'relname',
+    'test',
+    'attname',
+    'id',
+    'inherited',
+    cast(false as boolean),
+    'most_common_vals',
+    cast('{2,1,3}' as text),
+    'most_common_freqs',
+    cast('{0.3,0.25,0.05}' as real[])
+  );
+
+select
+  *
+from
+  pg_stats
+where
+  schemaname = 'stats_import' and
+  tablename = 'test' and
+  inherited = false and
+  attname = 'id';
+
+select
+  pg_restore_attribute_stats(
+    'schemaname',
+    'stats_import',
+    'relname',
+    'test',
+    'attname',
+    'id',
+    'inherited',
+    cast(false as boolean),
+    'null_frac',
+    cast(0.24 as real),
+    'histogram_bounds',
+    cast('{1,NULL,3,4}' as text)
+  );
+
+select
+  *
+from
+  pg_stats
+where
+  schemaname = 'stats_import' and
+  tablename = 'test' and
+  inherited = false and
+  attname = 'id';
+
+select
+  pg_restore_attribute_stats(
+    'schemaname',
+    'stats_import',
+    'relname',
+    'test',
+    'attname',
+    'id',
+    'inherited',
+    cast(false as boolean),
+    'histogram_bounds',
+    cast('{1,2,3,4}' as text)
+  );
+
+select
+  *
+from
+  pg_stats
+where
+  schemaname = 'stats_import' and
+  tablename = 'test' and
+  inherited = false and
+  attname = 'id';
+
+select
+  pg_restore_attribute_stats(
+    'schemaname',
+    'stats_import',
+    'relname',
+    'test',
+    'attname',
+    'tags',
+    'inherited',
+    cast(false as boolean),
+    'null_frac',
+    cast(0.25 as real),
+    'elem_count_histogram',
+    cast('{1,1,NULL,1,1,1,1,1}' as real[])
+  );
+
+select
+  *
+from
+  pg_stats
+where
+  schemaname = 'stats_import' and
+  tablename = 'test' and
+  inherited = false and
+  attname = 'tags';
+
+select
+  pg_restore_attribute_stats(
+    'schemaname',
+    'stats_import',
+    'relname',
+    'test',
+    'attname',
+    'tags',
+    'inherited',
+    cast(false as boolean),
+    'null_frac',
+    cast(0.26 as real),
+    'elem_count_histogram',
+    cast('{1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1}'
+    as real[])
+  );
+
+select
+  *
+from
+  pg_stats
+where
+  schemaname = 'stats_import' and
+  tablename = 'test' and
+  inherited = false and
+  attname = 'tags';
+
+select
+  pg_restore_attribute_stats(
+    'schemaname',
+    'stats_import',
+    'relname',
+    'test',
+    'attname',
+    'id',
+    'inherited',
+    cast(false as boolean),
+    'null_frac',
+    cast(0.27 as real),
+    'range_empty_frac',
+    cast(0.5 as real),
+    'range_length_histogram',
+    cast('{399,499,Infinity}' as text)
+  );
+
+select
+  *
+from
+  pg_stats
+where
+  schemaname = 'stats_import' and
+  tablename = 'test' and
+  inherited = false and
+  attname = 'id';
+
+select
+  pg_restore_attribute_stats(
+    'schemaname',
+    'stats_import',
+    'relname',
+    'test',
+    'attname',
+    'arange',
+    'inherited',
+    cast(false as boolean),
+    'null_frac',
+    cast(0.28 as real),
+    'range_length_histogram',
+    cast('{399,499,Infinity}' as text)
+  );
+
+select
+  *
+from
+  pg_stats
+where
+  schemaname = 'stats_import' and
+  tablename = 'test' and
+  inherited = false and
+  attname = 'arange';
+
+select
+  pg_restore_attribute_stats(
+    'schemaname',
+    'stats_import',
+    'relname',
+    'test',
+    'attname',
+    'arange',
+    'inherited',
+    cast(false as boolean),
+    'null_frac',
+    cast(0.29 as real),
+    'range_empty_frac',
+    cast(0.5 as real)
+  );
+
+select
+  *
+from
+  pg_stats
+where
+  schemaname = 'stats_import' and
+  tablename = 'test' and
+  inherited = false and
+  attname = 'arange';
+
+select
+  pg_restore_attribute_stats(
+    'schemaname',
+    'stats_import',
+    'relname',
+    'test',
+    'attname',
+    'arange',
+    'inherited',
+    cast(false as boolean),
+    'range_empty_frac',
+    cast(0.5 as real),
+    'range_length_histogram',
+    cast('{399,499,Infinity}' as text)
+  );
+
+select
+  *
+from
+  pg_stats
+where
+  schemaname = 'stats_import' and
+  tablename = 'test' and
+  inherited = false and
+  attname = 'arange';
+
+select
+  pg_restore_attribute_stats(
+    'schemaname',
+    'stats_import',
+    'relname',
+    'test',
+    'attname',
+    'id',
+    'inherited',
+    cast(false as boolean),
+    'null_frac',
+    cast(0.31 as real),
+    'range_bounds_histogram',
+    cast('{"[-1,1)","[0,4)","[1,4)","[1,100)"}'
+    as text)
+  );
+
+select
+  *
+from
+  pg_stats
+where
+  schemaname = 'stats_import' and
+  tablename = 'test' and
+  inherited = false and
+  attname = 'id';
+
+select
+  pg_restore_attribute_stats(
+    'schemaname',
+    'stats_import',
+    'relname',
+    'test',
+    'attname',
+    'arange',
+    'inherited',
+    cast(false as boolean),
+    'range_bounds_histogram',
+    cast('{"[-1,1)","[0,4)","[1,4)","[1,100)"}'
+    as text)
+  );
+
+select
+  *
+from
+  pg_stats
+where
+  schemaname = 'stats_import' and
+  tablename = 'test' and
+  inherited = false and
+  attname = 'arange';
+
+select
+  pg_restore_attribute_stats(
+    'schemaname',
+    'stats_import',
+    'relname',
+    'test',
+    'attname',
+    'arange',
+    'inherited',
+    cast(false as boolean),
+    'null_frac',
+    cast(0.32 as real),
+    'most_common_elems',
+    cast('{3,1}' as text),
+    'most_common_elem_freqs',
+    cast('{0.3,0.2,0.2,0.3,0.0}' as real[])
+  );
+
+select
+  *
+from
+  pg_stats
+where
+  schemaname = 'stats_import' and
+  tablename = 'test' and
+  inherited = false and
+  attname = 'arange';
+
+select
+  pg_restore_attribute_stats(
+    'schemaname',
+    'stats_import',
+    'relname',
+    'test',
+    'attname',
+    'id',
+    'inherited',
+    cast(false as boolean),
+    'null_frac',
+    cast(0.33 as real),
+    'most_common_elems',
+    cast('{1,3}' as text),
+    'most_common_elem_freqs',
+    cast('{0.3,0.2,0.2,0.3,0.0}' as real[])
+  );
+
+select
+  *
+from
+  pg_stats
+where
+  schemaname = 'stats_import' and
+  tablename = 'test' and
+  inherited = false and
+  attname = 'id';
+
+select
+  pg_restore_attribute_stats(
+    'schemaname',
+    'stats_import',
+    'relname',
+    'test',
+    'attname',
+    'tags',
+    'inherited',
+    cast(false as boolean),
+    'null_frac',
+    cast(0.34 as real),
+    'most_common_elems',
+    cast('{one,two}' as text)
+  );
+
+select
+  *
+from
+  pg_stats
+where
+  schemaname = 'stats_import' and
+  tablename = 'test' and
+  inherited = false and
+  attname = 'tags';
+
+select
+  pg_restore_attribute_stats(
+    'schemaname',
+    'stats_import',
+    'relname',
+    'test',
+    'attname',
+    'tags',
+    'inherited',
+    cast(false as boolean),
+    'null_frac',
+    cast(0.35 as real),
+    'most_common_elem_freqs',
+    cast('{0.3,0.2,0.2,0.3}' as real[])
+  );
+
+select
+  *
+from
+  pg_stats
+where
+  schemaname = 'stats_import' and
+  tablename = 'test' and
+  inherited = false and
+  attname = 'tags';
+
+select
+  pg_restore_attribute_stats(
+    'schemaname',
+    'stats_import',
+    'relname',
+    'test',
+    'attname',
+    'tags',
+    'inherited',
+    cast(false as boolean),
+    'most_common_elems',
+    cast('{one,three}' as text),
+    'most_common_elem_freqs',
+    cast('{0.3,0.2,0.2,0.3,0.0}' as real[])
+  );
+
+select
+  *
+from
+  pg_stats
+where
+  schemaname = 'stats_import' and
+  tablename = 'test' and
+  inherited = false and
+  attname = 'tags';
+
+select
+  pg_restore_attribute_stats(
+    'schemaname',
+    'stats_import',
+    'relname',
+    'test',
+    'attname',
+    'id',
+    'inherited',
+    cast(false as boolean),
+    'null_frac',
+    cast(0.36 as real),
+    'elem_count_histogram',
+    cast('{1,1,1,1,1,1,1,1,1,1}' as real[])
+  );
+
+select
+  *
+from
+  pg_stats
+where
+  schemaname = 'stats_import' and
+  tablename = 'test' and
+  inherited = false and
+  attname = 'id';
+
+insert into stats_import.test
+select
+  1,
+  'one',
+  cast((1,
+  1.1,
+  'ONE',
+  '2001-01-01',
+  '{ "xkey": "xval" }')
+  as stats_import.complex_type),
+  int4range(1, 4),
+  array['red', 'green']
+union all
+select
+  2,
+  'two',
+  cast((2,
+  2.2,
+  'TWO',
+  '2002-02-02',
+  '[true, 4, "six"]')
+  as stats_import.complex_type),
+  int4range(1, 4),
+  array['blue', 'yellow']
+union all
+select
+  3,
+  'tre',
+  cast((3, 3.3, 'TRE', '2003-03-03', null)
+  as stats_import.complex_type),
+  int4range(-1, 1),
+  array['"orange"', 'purple', 'cyan']
+union all
+select
+  4,
+  'four',
+  null,
+  int4range(0, 100),
+  null;
+
+create index "is_odd" on stats_import.test using btree ((comp.a % 2 = 1));
+
+analyze stats_import.test;
+
+create table stats_import.test_clone (like stats_import.test)
+with (autovacuum_enabled = 'false');
+
+create index "is_odd_clone"
+on stats_import.test_clone
+using btree
+(
+  (comp.a % 2 = 1)
+);
+
+select
+  s.schemaname,
+  s.tablename,
+  s.attname,
+  s.inherited,
+  r.*
+from
+  pg_catalog.pg_stats as s
+  inner join
+    lateral pg_restore_attribute_stats(
+      'schemaname',
+      'stats_import',
+      'relname',
+      cast(s.tablename as text) || '_clone',
+      'attname',
+      cast(s.attname as text),
+      'inherited',
+      s.inherited,
+      'version',
+      150000,
+      'null_frac',
+      s.null_frac,
+      'avg_width',
+      s.avg_width,
+      'n_distinct',
+      s.n_distinct,
+      'most_common_vals',
+      cast(s.most_common_vals as text),
+      'most_common_freqs',
+      s.most_common_freqs,
+      'histogram_bounds',
+      cast(s.histogram_bounds as text),
+      'correlation',
+      s.correlation,
+      'most_common_elems',
+      cast(s.most_common_elems as text),
+      'most_common_elem_freqs',
+      s.most_common_elem_freqs,
+      'elem_count_histogram',
+      s.elem_count_histogram,
+      'range_bounds_histogram',
+      cast(s.range_bounds_histogram as text),
+      'range_empty_frac',
+      s.range_empty_frac,
+      'range_length_histogram',
+      cast(s.range_length_histogram as text)
+    )
+    as r
+  on true
+where
+  s.schemaname = 'stats_import' and
+  s.tablename in ('test', 'is_odd')
+order by s.tablename,
+  s.attname,
+  s.inherited;
+
+select
+  c.relname,
+  COUNT(*) as num_stats
+from
+  pg_class as c
+  inner join
+    pg_statistic as s
+  on s.starelid = c.oid
+where
+  c.relnamespace =
+  cast('stats_import' as regnamespace) and
+  c.relname
+  in (
+    'test',
+    'test_clone',
+    'is_odd',
+    'is_odd_clone'
+  )
+group by c.relname
+order by c.relname;
+
+select
+  a.attname,
+  s.stainherit,
+  s.stanullfrac,
+  s.stawidth,
+  s.stadistinct,
+  s.stakind1,
+  s.stakind2,
+  s.stakind3,
+  s.stakind4,
+  s.stakind5,
+  s.staop1,
+  s.staop2,
+  s.staop3,
+  s.staop4,
+  s.staop5,
+  s.stacoll1,
+  s.stacoll2,
+  s.stacoll3,
+  s.stacoll4,
+  s.stacoll5,
+  s.stanumbers1,
+  s.stanumbers2,
+  s.stanumbers3,
+  s.stanumbers4,
+  s.stanumbers5,
+  cast(s.stavalues1 as text) as sv1,
+  cast(s.stavalues2 as text) as sv2,
+  cast(s.stavalues3 as text) as sv3,
+  cast(s.stavalues4 as text) as sv4,
+  cast(s.stavalues5 as text) as sv5,
+  'test' as direction
+from
+  pg_statistic as s
+  inner join
+    pg_attribute as a
+  on a.attrelid = s.starelid and
+    a.attnum = s.staattnum
+where
+  s.starelid =
+  cast('stats_import.test' as regclass)
+except
+select
+  a.attname,
+  s.stainherit,
+  s.stanullfrac,
+  s.stawidth,
+  s.stadistinct,
+  s.stakind1,
+  s.stakind2,
+  s.stakind3,
+  s.stakind4,
+  s.stakind5,
+  s.staop1,
+  s.staop2,
+  s.staop3,
+  s.staop4,
+  s.staop5,
+  s.stacoll1,
+  s.stacoll2,
+  s.stacoll3,
+  s.stacoll4,
+  s.stacoll5,
+  s.stanumbers1,
+  s.stanumbers2,
+  s.stanumbers3,
+  s.stanumbers4,
+  s.stanumbers5,
+  cast(s.stavalues1 as text) as sv1,
+  cast(s.stavalues2 as text) as sv2,
+  cast(s.stavalues3 as text) as sv3,
+  cast(s.stavalues4 as text) as sv4,
+  cast(s.stavalues5 as text) as sv5,
+  'test' as direction
+from
+  pg_statistic as s
+  inner join
+    pg_attribute as a
+  on a.attrelid = s.starelid and
+    a.attnum = s.staattnum
+where
+  s.starelid =
+  cast('stats_import.test_clone'
+  as regclass);
+
+select
+  a.attname,
+  s.stainherit,
+  s.stanullfrac,
+  s.stawidth,
+  s.stadistinct,
+  s.stakind1,
+  s.stakind2,
+  s.stakind3,
+  s.stakind4,
+  s.stakind5,
+  s.staop1,
+  s.staop2,
+  s.staop3,
+  s.staop4,
+  s.staop5,
+  s.stacoll1,
+  s.stacoll2,
+  s.stacoll3,
+  s.stacoll4,
+  s.stacoll5,
+  s.stanumbers1,
+  s.stanumbers2,
+  s.stanumbers3,
+  s.stanumbers4,
+  s.stanumbers5,
+  cast(s.stavalues1 as text) as sv1,
+  cast(s.stavalues2 as text) as sv2,
+  cast(s.stavalues3 as text) as sv3,
+  cast(s.stavalues4 as text) as sv4,
+  cast(s.stavalues5 as text) as sv5,
+  'test_clone' as direction
+from
+  pg_statistic as s
+  inner join
+    pg_attribute as a
+  on a.attrelid = s.starelid and
+    a.attnum = s.staattnum
+where
+  s.starelid =
+  cast('stats_import.test_clone'
+  as regclass)
+except
+select
+  a.attname,
+  s.stainherit,
+  s.stanullfrac,
+  s.stawidth,
+  s.stadistinct,
+  s.stakind1,
+  s.stakind2,
+  s.stakind3,
+  s.stakind4,
+  s.stakind5,
+  s.staop1,
+  s.staop2,
+  s.staop3,
+  s.staop4,
+  s.staop5,
+  s.stacoll1,
+  s.stacoll2,
+  s.stacoll3,
+  s.stacoll4,
+  s.stacoll5,
+  s.stanumbers1,
+  s.stanumbers2,
+  s.stanumbers3,
+  s.stanumbers4,
+  s.stanumbers5,
+  cast(s.stavalues1 as text) as sv1,
+  cast(s.stavalues2 as text) as sv2,
+  cast(s.stavalues3 as text) as sv3,
+  cast(s.stavalues4 as text) as sv4,
+  cast(s.stavalues5 as text) as sv5,
+  'test_clone' as direction
+from
+  pg_statistic as s
+  inner join
+    pg_attribute as a
+  on a.attrelid = s.starelid and
+    a.attnum = s.staattnum
+where
+  s.starelid =
+  cast('stats_import.test' as regclass);
+
+select
+  a.attname,
+  s.stainherit,
+  s.stanullfrac,
+  s.stawidth,
+  s.stadistinct,
+  s.stakind1,
+  s.stakind2,
+  s.stakind3,
+  s.stakind4,
+  s.stakind5,
+  s.staop1,
+  s.staop2,
+  s.staop3,
+  s.staop4,
+  s.staop5,
+  s.stacoll1,
+  s.stacoll2,
+  s.stacoll3,
+  s.stacoll4,
+  s.stacoll5,
+  s.stanumbers1,
+  s.stanumbers2,
+  s.stanumbers3,
+  s.stanumbers4,
+  s.stanumbers5,
+  cast(s.stavalues1 as text) as sv1,
+  cast(s.stavalues2 as text) as sv2,
+  cast(s.stavalues3 as text) as sv3,
+  cast(s.stavalues4 as text) as sv4,
+  cast(s.stavalues5 as text) as sv5,
+  'is_odd' as direction
+from
+  pg_statistic as s
+  inner join
+    pg_attribute as a
+  on a.attrelid = s.starelid and
+    a.attnum = s.staattnum
+where
+  s.starelid =
+  cast('stats_import.is_odd' as regclass)
+except
+select
+  a.attname,
+  s.stainherit,
+  s.stanullfrac,
+  s.stawidth,
+  s.stadistinct,
+  s.stakind1,
+  s.stakind2,
+  s.stakind3,
+  s.stakind4,
+  s.stakind5,
+  s.staop1,
+  s.staop2,
+  s.staop3,
+  s.staop4,
+  s.staop5,
+  s.stacoll1,
+  s.stacoll2,
+  s.stacoll3,
+  s.stacoll4,
+  s.stacoll5,
+  s.stanumbers1,
+  s.stanumbers2,
+  s.stanumbers3,
+  s.stanumbers4,
+  s.stanumbers5,
+  cast(s.stavalues1 as text) as sv1,
+  cast(s.stavalues2 as text) as sv2,
+  cast(s.stavalues3 as text) as sv3,
+  cast(s.stavalues4 as text) as sv4,
+  cast(s.stavalues5 as text) as sv5,
+  'is_odd' as direction
+from
+  pg_statistic as s
+  inner join
+    pg_attribute as a
+  on a.attrelid = s.starelid and
+    a.attnum = s.staattnum
+where
+  s.starelid =
+  cast('stats_import.is_odd_clone'
+  as regclass);
+
+select
+  a.attname,
+  s.stainherit,
+  s.stanullfrac,
+  s.stawidth,
+  s.stadistinct,
+  s.stakind1,
+  s.stakind2,
+  s.stakind3,
+  s.stakind4,
+  s.stakind5,
+  s.staop1,
+  s.staop2,
+  s.staop3,
+  s.staop4,
+  s.staop5,
+  s.stacoll1,
+  s.stacoll2,
+  s.stacoll3,
+  s.stacoll4,
+  s.stacoll5,
+  s.stanumbers1,
+  s.stanumbers2,
+  s.stanumbers3,
+  s.stanumbers4,
+  s.stanumbers5,
+  cast(s.stavalues1 as text) as sv1,
+  cast(s.stavalues2 as text) as sv2,
+  cast(s.stavalues3 as text) as sv3,
+  cast(s.stavalues4 as text) as sv4,
+  cast(s.stavalues5 as text) as sv5,
+  'is_odd_clone' as direction
+from
+  pg_statistic as s
+  inner join
+    pg_attribute as a
+  on a.attrelid = s.starelid and
+    a.attnum = s.staattnum
+where
+  s.starelid =
+  cast('stats_import.is_odd_clone'
+  as regclass)
+except
+select
+  a.attname,
+  s.stainherit,
+  s.stanullfrac,
+  s.stawidth,
+  s.stadistinct,
+  s.stakind1,
+  s.stakind2,
+  s.stakind3,
+  s.stakind4,
+  s.stakind5,
+  s.staop1,
+  s.staop2,
+  s.staop3,
+  s.staop4,
+  s.staop5,
+  s.stacoll1,
+  s.stacoll2,
+  s.stacoll3,
+  s.stacoll4,
+  s.stacoll5,
+  s.stanumbers1,
+  s.stanumbers2,
+  s.stanumbers3,
+  s.stanumbers4,
+  s.stanumbers5,
+  cast(s.stavalues1 as text) as sv1,
+  cast(s.stavalues2 as text) as sv2,
+  cast(s.stavalues3 as text) as sv3,
+  cast(s.stavalues4 as text) as sv4,
+  cast(s.stavalues5 as text) as sv5,
+  'is_odd_clone' as direction
+from
+  pg_statistic as s
+  inner join
+    pg_attribute as a
+  on a.attrelid = s.starelid and
+    a.attnum = s.staattnum
+where
+  s.starelid =
+  cast('stats_import.is_odd' as regclass);
+
+select
+  COUNT(*)
+from
+  pg_stats
+where
+  schemaname = 'stats_import' and
+  tablename = 'test' and
+  inherited = false and
+  attname = 'arange';
+
+select
+  pg_clear_attribute_stats(
+    "schemaname" := 'stats_import',
+    "relname" := 'test',
+    "attname" := 'arange',
+    "inherited" := false
+  );
+
+select
+  COUNT(*)
+from
+  pg_stats
+where
+  schemaname = 'stats_import' and
+  tablename = 'test' and
+  inherited = false and
+  attname = 'arange';
+
+create temporary table stats_temp (i int);
+
+select
+  pg_restore_relation_stats(
+    'schemaname',
+    'pg_temp',
+    'relname',
+    'stats_temp',
+    'relpages',
+    cast('-19' as int),
+    'reltuples',
+    cast(401 as real),
+    'relallvisible',
+    cast(5 as int),
+    'relallfrozen',
+    cast(3 as int)
+  );
+
+select
+  relname,
+  relpages,
+  reltuples,
+  relallvisible,
+  relallfrozen
+from
+  pg_class
+where
+  oid =
+  cast('pg_temp.stats_temp' as regclass)
+order by relname;
+
+select
+  pg_restore_attribute_stats(
+    'schemaname',
+    'pg_temp',
+    'relname',
+    'stats_temp',
+    'attname',
+    'i',
+    'inherited',
+    cast(false as boolean),
+    'null_frac',
+    cast(0.0123 as real)
+  );
+
+select
+  tablename,
+  null_frac
+from
+  pg_stats
+where
+  schemaname like 'pg_temp%' and
+  tablename = 'stats_temp' and
+  inherited = false and
+  attname = 'i';
+
+drop table stats_temp;
+
+drop schema stats_import cascade;

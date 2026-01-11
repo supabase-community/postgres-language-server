@@ -74,6 +74,7 @@ define_categories! {
     // General categories
     "stdin",
     "check",
+    "format",
     "configuration",
     "database/connection",
     "internalError/io",

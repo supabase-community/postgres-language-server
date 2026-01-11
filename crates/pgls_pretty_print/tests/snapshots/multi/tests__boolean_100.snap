@@ -1,0 +1,244 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/boolean.sql
+snapshot_kind: text
+---
+select 1 as one;
+
+select true as "true";
+
+select false as "false";
+
+select cast('t' as boolean) as "true";
+
+select cast('   f           ' as boolean) as "false";
+
+select cast('true' as boolean) as "true";
+
+select cast('test' as boolean) as error;
+
+select cast('false' as boolean) as "false";
+
+select cast('foo' as boolean) as error;
+
+select cast('y' as boolean) as "true";
+
+select cast('yes' as boolean) as "true";
+
+select cast('yeah' as boolean) as error;
+
+select cast('n' as boolean) as "false";
+
+select cast('no' as boolean) as "false";
+
+select cast('nay' as boolean) as error;
+
+select cast('on' as boolean) as "true";
+
+select cast('off' as boolean) as "false";
+
+select cast('of' as boolean) as "false";
+
+select cast('o' as boolean) as error;
+
+select cast('on_' as boolean) as error;
+
+select cast('off_' as boolean) as error;
+
+select cast('1' as boolean) as "true";
+
+select cast('11' as boolean) as error;
+
+select cast('0' as boolean) as "false";
+
+select cast('000' as boolean) as error;
+
+select cast('' as boolean) as error;
+
+select pg_input_is_valid('true', 'bool');
+
+select pg_input_is_valid('asdf', 'bool');
+
+select * from pg_input_error_info('junk', 'bool');
+
+select cast('t' as boolean) or cast('f' as boolean) as "true";
+
+select cast('t' as boolean) and cast('f' as boolean) as "false";
+
+select not cast('f' as boolean) as "true";
+
+select cast('t' as boolean) = cast('f' as boolean) as "false";
+
+select cast('t' as boolean) <> cast('f' as boolean) as "true";
+
+select cast('t' as boolean) > cast('f' as boolean) as "true";
+
+select cast('t' as boolean) >= cast('f' as boolean) as "true";
+
+select cast('f' as boolean) < cast('t' as boolean) as "true";
+
+select cast('f' as boolean) <= cast('t' as boolean) as "true";
+
+select
+  cast(cast('TrUe' as text) as boolean) as "true",
+  cast(cast('fAlse' as text) as boolean) as "false";
+
+select
+  cast(cast('    true   ' as text) as boolean)
+  as "true",
+  cast(cast('     FALSE' as text) as boolean)
+  as "false";
+
+select
+  cast(cast(true as boolean) as text) as "true",
+  cast(cast(false as boolean) as text) as "false";
+
+select cast(cast('  tru e ' as text) as boolean) as invalid;
+
+select cast(cast('' as text) as boolean) as invalid;
+
+create table booltbl1 (f1 boolean);
+
+insert into booltbl1 (f1) values (cast('t' as boolean));
+
+insert into booltbl1 (f1) values (cast('True' as boolean));
+
+insert into booltbl1 (f1) values (cast('true' as boolean));
+
+select booltbl1.* from booltbl1;
+
+select booltbl1.* from booltbl1 where f1 = cast('true' as boolean);
+
+select booltbl1.* from booltbl1 where f1 <> cast('false' as boolean);
+
+select booltbl1.* from booltbl1 where booleq(cast('false' as boolean), f1);
+
+insert into booltbl1 (f1) values (cast('f' as boolean));
+
+select booltbl1.* from booltbl1 where f1 = cast('false' as boolean);
+
+create table booltbl2 (f1 boolean);
+
+insert into booltbl2 (f1) values (cast('f' as boolean));
+
+insert into booltbl2 (f1) values (cast('false' as boolean));
+
+insert into booltbl2 (f1) values (cast('False' as boolean));
+
+insert into booltbl2 (f1) values (cast('FALSE' as boolean));
+
+insert into booltbl2 (f1) values (cast('XXX' as boolean));
+
+select booltbl2.* from booltbl2;
+
+select booltbl1.*, booltbl2.* from booltbl1, booltbl2 where booltbl2.f1 <> booltbl1.f1;
+
+select booltbl1.*, booltbl2.* from booltbl1, booltbl2 where boolne(booltbl2.f1, booltbl1.f1);
+
+select
+  booltbl1.*,
+  booltbl2.*
+from
+  booltbl1,
+  booltbl2
+where
+  booltbl2.f1 = booltbl1.f1 and
+  booltbl1.f1 = cast('false' as boolean);
+
+select
+  booltbl1.*,
+  booltbl2.*
+from
+  booltbl1,
+  booltbl2
+where
+  booltbl2.f1 = booltbl1.f1 or
+  booltbl1.f1 = cast('true' as boolean)
+order by booltbl1.f1,
+  booltbl2.f1;
+
+select f1 from booltbl1 where f1 is true;
+
+select f1 from booltbl1 where f1 is not false;
+
+select f1 from booltbl1 where f1 is false;
+
+select f1 from booltbl1 where f1 is not true;
+
+select f1 from booltbl2 where f1 is true;
+
+select f1 from booltbl2 where f1 is not false;
+
+select f1 from booltbl2 where f1 is false;
+
+select f1 from booltbl2 where f1 is not true;
+
+create table booltbl3 (
+  d text,
+  b boolean,
+  o int
+);
+
+insert into booltbl3 (d, b, o) values ('true', true, 1);
+
+insert into booltbl3 (d, b, o) values ('false', false, 2);
+
+insert into booltbl3 (d, b, o) values ('null', null, 3);
+
+select
+  d,
+  b is true as istrue,
+  b is not true as isnottrue,
+  b is false as isfalse,
+  b is not false as isnotfalse,
+  b is unknown as isunknown,
+  b is not unknown as isnotunknown
+from
+  booltbl3
+order by o;
+
+create table booltbl4 (
+  isfalse boolean,
+  istrue boolean,
+  isnul boolean
+);
+
+insert into booltbl4 values (false, true, null);
+
+select istrue and isnul and istrue from booltbl4;
+
+select istrue and istrue and isnul from booltbl4;
+
+select isnul and istrue and istrue from booltbl4;
+
+select isfalse and isnul and istrue from booltbl4;
+
+select istrue and isfalse and isnul from booltbl4;
+
+select isnul and istrue and isfalse from booltbl4;
+
+select isfalse or isnul or isfalse from booltbl4;
+
+select isfalse or isfalse or isnul from booltbl4;
+
+select isnul or isfalse or isfalse from booltbl4;
+
+select isfalse or isnul or istrue from booltbl4;
+
+select istrue or isfalse or isnul from booltbl4;
+
+select isnul or istrue or isfalse from booltbl4;
+
+select cast(0 as boolean);
+
+select cast(1 as boolean);
+
+select cast(2 as boolean);
+
+drop table booltbl1;
+
+drop table booltbl2;
+
+drop table booltbl3;
+
+drop table booltbl4;

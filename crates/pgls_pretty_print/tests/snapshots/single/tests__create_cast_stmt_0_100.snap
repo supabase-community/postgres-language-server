@@ -1,0 +1,6 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/single/create_cast_stmt_0.sql
+snapshot_kind: text
+---
+create cast (text as int) with function int4(text);

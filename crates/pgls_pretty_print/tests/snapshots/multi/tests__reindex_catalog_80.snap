@@ -1,0 +1,44 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/reindex_catalog.sql
+snapshot_kind: text
+---
+reindex table pg_class;
+
+reindex table pg_index;
+
+reindex table pg_operator;
+
+reindex table pg_database;
+
+reindex table pg_shdescription;
+
+reindex index pg_class_oid_index;
+
+reindex index pg_class_relname_nsp_index;
+
+reindex index pg_index_indexrelid_index;
+
+reindex index pg_index_indrelid_index;
+
+reindex index pg_database_oid_index;
+
+reindex index pg_shdescription_o_c_index;
+
+begin;
+
+set min_parallel_table_scan_size = 0;
+
+reindex index pg_class_oid_index;
+
+reindex index pg_class_relname_nsp_index;
+
+reindex index pg_index_indexrelid_index;
+
+reindex index pg_index_indrelid_index;
+
+reindex index pg_database_oid_index;
+
+reindex index pg_shdescription_o_c_index;
+
+rollback;

@@ -7,6 +7,7 @@
 use biome_deserialize::Merge;
 use cli_options::CliOptions;
 use commands::check::{self, CheckArgs};
+use commands::format::{self, FormatArgs};
 use pgls_configuration::PartialConfiguration;
 use pgls_console::{ColorMode, Console, ConsoleExt, markup};
 use pgls_fs::{ConfigName, FileSystem, OsFileSystem};
@@ -84,6 +85,26 @@ impl<'app> CliSession<'app> {
                     configuration,
                     paths,
                     stdin_file_path,
+                    staged,
+                    changed,
+                    since,
+                },
+            ),
+            PgLSCommand::Format {
+                cli_options,
+                configuration,
+                paths,
+                write,
+                staged,
+                changed,
+                since,
+            } => format::format(
+                self,
+                &cli_options,
+                FormatArgs {
+                    configuration,
+                    paths,
+                    write,
                     staged,
                     changed,
                     since,

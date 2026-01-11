@@ -204,6 +204,26 @@ impl<'a> StatementMapper<'a> for ExecuteStatementMapper {
     }
 }
 
+pub struct FormatStatementMapper;
+impl<'a> StatementMapper<'a> for FormatStatementMapper {
+    type Output = (
+        StatementId,
+        TextRange,
+        String,
+        Result<pgls_query::NodeEnum, pgls_query_ext::diagnostics::SyntaxDiagnostic>,
+    );
+
+    fn map(&self, parser: &'a Document, id: StatementId, range: TextRange) -> Self::Output {
+        let ast_result = parser.ast_db.get_or_cache_ast(&id);
+        let result = match &*ast_result {
+            Ok(node) => Ok(node.clone()),
+            Err(diag) => Err(diag.clone().span(range)),
+        };
+
+        (id.clone(), range, id.content().to_string(), result)
+    }
+}
+
 pub struct TypecheckDiagnosticsMapper;
 impl<'a> StatementMapper<'a> for TypecheckDiagnosticsMapper {
     type Output = (

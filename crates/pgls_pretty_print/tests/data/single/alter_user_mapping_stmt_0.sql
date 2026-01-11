@@ -1,0 +1,1 @@
+ALTER USER MAPPING FOR myuser SERVER myserver OPTIONS (ADD user 'newuser');

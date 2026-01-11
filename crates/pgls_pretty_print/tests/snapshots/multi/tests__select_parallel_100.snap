@@ -1,0 +1,919 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/select_parallel.sql
+snapshot_kind: text
+---
+select pg_stat_force_next_flush();
+
+select
+  parallel_workers_to_launch
+  as parallel_workers_to_launch_before,
+  parallel_workers_launched
+  as parallel_workers_launched_before
+from
+  pg_stat_database
+where
+  datname = current_database();
+
+create function sp_parallel_restricted(int)
+returns int
+as $function$begin return $1; end$function$
+language plpgsql
+parallel RESTRICTED;
+
+begin;
+
+set parallel_setup_cost = 0;
+
+set parallel_tuple_cost = 0;
+
+set min_parallel_table_scan_size = 0;
+
+set max_parallel_workers_per_gather = 4;
+
+select round(AVG(aa)), SUM(aa) from a_star;
+
+select round(AVG(aa)), SUM(aa) from a_star as a1;
+
+alter table c_star
+  set (parallel_workers = 0);
+
+alter table d_star
+  set (parallel_workers = 0);
+
+select round(AVG(aa)), SUM(aa) from a_star;
+
+select round(AVG(aa)), SUM(aa) from a_star as a2;
+
+alter table a_star
+  set (parallel_workers = 0);
+
+alter table b_star
+  set (parallel_workers = 0);
+
+alter table e_star
+  set (parallel_workers = 0);
+
+alter table f_star
+  set (parallel_workers = 0);
+
+select round(AVG(aa)), SUM(aa) from a_star;
+
+select round(AVG(aa)), SUM(aa) from a_star as a3;
+
+alter table a_star
+  reset (parallel_workers);
+
+alter table b_star
+  reset (parallel_workers);
+
+alter table c_star
+  reset (parallel_workers);
+
+alter table d_star
+  reset (parallel_workers);
+
+alter table e_star
+  reset (parallel_workers);
+
+alter table f_star
+  reset (parallel_workers);
+
+set enable_parallel_append = off;
+
+select round(AVG(aa)), SUM(aa) from a_star;
+
+select round(AVG(aa)), SUM(aa) from a_star as a4;
+
+reset enable_parallel_append;
+
+create function sp_test_func()
+returns setof text
+as $function$ select 'foo'::varchar union all select 'bar'::varchar $function$
+language sql
+stable;
+
+select sp_test_func() order by 1;
+
+create table part_pa_test (
+  a int,
+  b int
+)
+partition by range(a);
+
+create table part_pa_test_p1 partition of part_pa_test for values from (minvalue) to (0);
+
+create table part_pa_test_p2 partition of part_pa_test for values from (0) to (maxvalue);
+
+select
+  (
+    select
+      MAX(
+        (
+          select
+            pa1.b
+          from
+            part_pa_test as pa1
+          where
+            pa1.a = pa2.a
+        )
+      )
+  )
+from
+  part_pa_test as pa2;
+
+drop table part_pa_test;
+
+set parallel_leader_participation = off;
+
+select COUNT(*) from tenk1 where stringu1 = 'GRAAAA';
+
+select COUNT(*) from tenk1 where stringu1 = 'GRAAAA';
+
+set max_parallel_workers = 0;
+
+select COUNT(*) from tenk1 where stringu1 = 'GRAAAA';
+
+select COUNT(*) from tenk1 where stringu1 = 'GRAAAA';
+
+reset max_parallel_workers;
+
+reset parallel_leader_participation;
+
+alter table tenk1
+  set (parallel_workers = 4);
+
+select sp_parallel_restricted(unique1) from tenk1 where stringu1 = 'GRAAAA' order by 1;
+
+select length(stringu1) from tenk1 group by length(stringu1);
+
+select length(stringu1) from tenk1 group by length(stringu1);
+
+select stringu1, COUNT(*) from tenk1 group by stringu1 order by stringu1;
+
+select SUM(sp_parallel_restricted(unique1)) from tenk1 group by sp_parallel_restricted(unique1);
+
+prepare tenk1_count (int) as select COUNT(unique1) from tenk1 where hundred > $1;;
+
+explain (COSTS 'off') execute tenk1_count (1);
+
+execute tenk1_count (1);
+
+deallocate tenk1_count;
+
+alter table tenk2
+  set (parallel_workers = 0);
+
+select
+  COUNT(*)
+from
+  tenk1
+where
+  not (two, four) in
+  (
+    select
+      hundred,
+      thousand
+    from
+      tenk2
+    where
+      thousand > 100
+  );
+
+select
+  COUNT(*)
+from
+  tenk1
+where
+  not (two, four) in
+  (
+    select
+      hundred,
+      thousand
+    from
+      tenk2
+    where
+      thousand > 100
+  );
+
+select * from tenk1 where not cast(unique1 + random() as int) in (select ten from tenk2);
+
+alter table tenk2
+  reset (parallel_workers);
+
+set enable_indexscan = off;
+
+set enable_indexonlyscan = off;
+
+set enable_bitmapscan = off;
+
+alter table tenk2
+  set (parallel_workers = 2);
+
+select COUNT(*) from tenk1 where tenk1.unique1 = (select MAX(tenk2.unique1) from tenk2);
+
+select COUNT(*) from tenk1 where tenk1.unique1 = (select MAX(tenk2.unique1) from tenk2);
+
+reset enable_indexscan;
+
+reset enable_indexonlyscan;
+
+reset enable_bitmapscan;
+
+alter table tenk2
+  reset (parallel_workers);
+
+set enable_seqscan = off;
+
+set enable_bitmapscan = off;
+
+set random_page_cost = 2;
+
+select COUNT(unique1) from tenk1 where hundred > 1;
+
+select COUNT(unique1) from tenk1 where hundred > 1;
+
+select
+  COUNT(unique1)
+from
+  tenk1
+where
+  hundred = any (cast((
+    select
+      array_agg(i)
+    from
+      generate_series(1, 100, 15) as i
+  )
+  as int[]));
+
+select
+  COUNT(unique1)
+from
+  tenk1
+where
+  hundred = any (cast((
+    select
+      array_agg(i)
+    from
+      generate_series(1, 100, 15) as i
+  )
+  as int[]));
+
+select COUNT(*) from tenk1 where thousand > 95;
+
+select COUNT(*) from tenk1 where thousand > 95;
+
+set enable_material = 'false';
+
+select
+  *
+from
+  (
+    select
+      COUNT(unique1)
+    from
+      tenk1
+    where
+      hundred > 10
+  )
+  as ss
+  right outer join
+    (values (1), (2), (3)) as v (x)
+  on true;
+
+select
+  *
+from
+  (
+    select
+      COUNT(unique1)
+    from
+      tenk1
+    where
+      hundred > 10
+  )
+  as ss
+  right outer join
+    (values (1), (2), (3)) as v (x)
+  on true;
+
+select
+  *
+from
+  (
+    select COUNT(*) from tenk1 where thousand > 99
+  )
+  as ss
+  right outer join
+    (values (1), (2), (3)) as v (x)
+  on true;
+
+select
+  *
+from
+  (
+    select COUNT(*) from tenk1 where thousand > 99
+  )
+  as ss
+  right outer join
+    (values (1), (2), (3)) as v (x)
+  on true;
+
+reset enable_seqscan;
+
+set enable_indexonlyscan = off;
+
+set enable_indexscan = off;
+
+alter table tenk1
+  set (parallel_workers = 0);
+
+alter table tenk2
+  set (parallel_workers = 1);
+
+select
+  COUNT(*)
+from
+  tenk1
+  left outer join
+    (
+      select
+        tenk2.unique1
+      from
+        tenk2
+      order by 1
+      limit 1000
+    )
+    as ss
+  on tenk1.unique1 < ss.unique1 + 1
+where
+  tenk1.unique1 < 2;
+
+select
+  COUNT(*)
+from
+  tenk1
+  left outer join
+    (
+      select
+        tenk2.unique1
+      from
+        tenk2
+      order by 1
+      limit 1000
+    )
+    as ss
+  on tenk1.unique1 < ss.unique1 + 1
+where
+  tenk1.unique1 < 2;
+
+alter table tenk1
+  set (parallel_workers = 4);
+
+alter table tenk2
+  reset (parallel_workers);
+
+reset enable_material;
+
+reset enable_bitmapscan;
+
+reset enable_indexonlyscan;
+
+reset enable_indexscan;
+
+set enable_seqscan = off;
+
+set enable_indexscan = off;
+
+set enable_hashjoin = off;
+
+set enable_mergejoin = off;
+
+set enable_material = off;
+
+do
+$do$
+BEGIN
+ SET effective_io_concurrency = 50;
+EXCEPTION WHEN invalid_parameter_value THEN
+END $do$;
+
+set work_mem = '64kB';
+
+select COUNT(*) from tenk1, tenk2 where tenk1.hundred > 1 and tenk2.thousand = 0;
+
+select COUNT(*) from tenk1, tenk2 where tenk1.hundred > 1 and tenk2.thousand = 0;
+
+create table bmscantest (
+  a int,
+  t text
+);
+
+insert into bmscantest
+select
+  r,
+  'fooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo'
+from
+  generate_series(1, 100000) as r;
+
+create index "i_bmtest" on bmscantest using btree (a);
+
+select COUNT(*) from bmscantest where a > 1;
+
+reset enable_seqscan;
+
+alter table tenk2
+  set (parallel_workers = 0);
+
+select COUNT(*) from tenk1, tenk2 where tenk1.hundred > 1 and tenk2.thousand = 0;
+
+alter table tenk2
+  reset (parallel_workers);
+
+reset work_mem;
+
+create function explain_parallel_sort_stats()
+returns setof text
+language plpgsql
+as $function$
+declare ln text;
+begin
+    for ln in
+        explain (analyze, timing off, summary off, costs off, buffers off)
+          select * from
+          (select ten from tenk1 where ten < 100 order by ten) ss
+          right join (values (1),(2),(3)) v(x) on true
+    loop
+        ln := regexp_replace(ln, 'Memory: \S*',  'Memory: xxx');
+        return next ln;
+    end loop;
+end;
+$function$;
+
+select * from explain_parallel_sort_stats();
+
+reset enable_indexscan;
+
+reset enable_hashjoin;
+
+reset enable_mergejoin;
+
+reset enable_material;
+
+reset effective_io_concurrency;
+
+drop table bmscantest;
+
+drop function explain_parallel_sort_stats();
+
+set enable_hashjoin = off;
+
+set enable_nestloop = off;
+
+select COUNT(*) from tenk1, tenk2 where tenk1.unique1 = tenk2.unique1;
+
+select COUNT(*) from tenk1, tenk2 where tenk1.unique1 = tenk2.unique1;
+
+reset enable_hashjoin;
+
+reset enable_nestloop;
+
+alter table tenk2
+  set (parallel_workers = 0);
+
+select * from tenk1 as t1, tenk2 as t2 where t1.two > t2.two;
+
+select
+  *
+from
+  tenk1 as t1
+  left outer join
+    lateral (
+      select
+        t1.unique1 as x,
+        *
+      from
+        tenk2 as t2
+      order by 1
+    )
+    as t2
+  on true
+where
+  t1.two > t2.two;
+
+alter table tenk2
+  reset (parallel_workers);
+
+set enable_hashagg = 'false';
+
+select COUNT(*) from tenk1 group by twenty;
+
+select COUNT(*) from tenk1 group by twenty;
+
+create function sp_simple_func(var1 int)
+returns int
+as $function$
+begin
+        return var1 + 10;
+end;
+$function$
+language plpgsql
+parallel SAFE;
+
+select ten, sp_simple_func(ten) from tenk1 where ten < 100 order by ten;
+
+drop function sp_simple_func(int);
+
+select COUNT(*), generate_series(1, 2) from tenk1 group by twenty;
+
+select COUNT(*), generate_series(1, 2) from tenk1 group by twenty;
+
+set parallel_leader_participation = off;
+
+select COUNT(*) from tenk1 group by twenty;
+
+select COUNT(*) from tenk1 group by twenty;
+
+reset parallel_leader_participation;
+
+set enable_material = 'false';
+
+select
+  *
+from
+  (
+    select
+      string4,
+      COUNT(unique2)
+    from
+      tenk1
+    group by string4
+    order by string4
+  )
+  as ss
+  right outer join
+    (values (1), (2), (3)) as v (x)
+  on true;
+
+select
+  *
+from
+  (
+    select
+      string4,
+      COUNT(unique2)
+    from
+      tenk1
+    group by string4
+    order by string4
+  )
+  as ss
+  right outer join
+    (values (1), (2), (3)) as v (x)
+  on true;
+
+reset enable_material;
+
+reset enable_hashagg;
+
+select AVG(cast(unique1 as bigint)) from tenk1;
+
+select AVG(cast(unique1 as bigint)) from tenk1;
+
+select fivethous from tenk1 order by fivethous limit 4;
+
+select fivethous from tenk1 order by fivethous limit 4;
+
+set max_parallel_workers = 0;
+
+select string4 from tenk1 order by string4 limit 5;
+
+select string4 from tenk1 order by string4 limit 5;
+
+set parallel_leader_participation = off;
+
+select string4 from tenk1 order by string4 limit 5;
+
+select string4 from tenk1 order by string4 limit 5;
+
+reset parallel_leader_participation;
+
+reset max_parallel_workers;
+
+create function parallel_safe_volatile(a int)
+returns int
+as $function$ begin return a; end; $function$
+parallel SAFE
+volatile
+language plpgsql;
+
+select * from tenk1 where four = 2 order by four, hundred, parallel_safe_volatile(thousand);
+
+set min_parallel_index_scan_size = 0;
+
+set enable_seqscan = off;
+
+select * from tenk1 where four = 2 order by four, hundred, parallel_safe_volatile(thousand);
+
+reset min_parallel_index_scan_size;
+
+reset enable_seqscan;
+
+select COUNT(*) from tenk1 group by twenty, parallel_safe_volatile(two);
+
+drop function parallel_safe_volatile(int);
+
+savepoint settings;
+
+set local debug_parallel_query = 1;
+
+select cast(stringu1 as smallint) from tenk1 where unique1 = 1;
+
+rollback to savepoint settings;
+
+create function make_record(n int)
+returns record
+language plpgsql
+parallel SAFE
+as $function$
+BEGIN
+  RETURN CASE n
+           WHEN 1 THEN ROW(1)
+           WHEN 2 THEN ROW(1, 2)
+           WHEN 3 THEN ROW(1, 2, 3)
+           WHEN 4 THEN ROW(1, 2, 3, 4)
+           ELSE ROW(1, 2, 3, 4, 5)
+         END;
+END;
+$function$;
+
+savepoint settings;
+
+set local debug_parallel_query = 1;
+
+select make_record(x) from (select generate_series(1, 5) as x) as ss order by x;
+
+rollback to savepoint settings;
+
+drop function make_record(int);
+
+drop role if exists regress_parallel_worker;
+
+create role regress_parallel_worker;
+
+set role to regress_parallel_worker;
+
+reset session_authorization;
+
+drop role regress_parallel_worker;
+
+set debug_parallel_query = 1;
+
+select COUNT(*) from tenk1;
+
+reset debug_parallel_query;
+
+reset role;
+
+select
+  COUNT(*)
+from
+  tenk1 as a
+where
+  (unique1, two) in
+  (
+    select
+      unique1,
+      ROW_NUMBER() over ()
+    from
+      tenk1 as b
+  );
+
+select
+  *
+from
+  tenk1 as a
+where
+  two in
+  (
+    select
+      two
+    from
+      tenk1 as b
+    where
+      stringu1 like '%AAAA'
+    limit 3
+  );
+
+savepoint settings;
+
+set local debug_parallel_query = 1;
+
+select * from tenk1;
+
+rollback to savepoint settings;
+
+savepoint settings;
+
+set local debug_parallel_query = 1;
+
+select cast(stringu1 || repeat('abcd', 5000) as smallint) from tenk1 where unique1 = 1;
+
+rollback to savepoint settings;
+
+savepoint settings;
+
+set local parallel_setup_cost = 10;
+
+select
+  unique1
+from
+  tenk1
+where
+  fivethous = tenthous + 1
+union all
+select
+  unique1
+from
+  tenk1
+where
+  fivethous = tenthous + 1;
+
+rollback to savepoint settings;
+
+select
+  unique1
+from
+  tenk1
+where
+  fivethous =
+  (
+    select
+      unique1
+    from
+      tenk1
+    where
+      fivethous = 1
+    limit 1
+  )
+union all
+select
+  unique1
+from
+  tenk1
+where
+  fivethous =
+  (
+    select
+      unique2
+    from
+      tenk1
+    where
+      fivethous = 1
+    limit 1
+  )
+order by 1;
+
+select * from information_schema.foreign_data_wrapper_options order by 1, 2, 3;
+
+select generate_series(1, two), array(select generate_series(1, two)) from tenk1 order by tenthous;
+
+select
+  unnest(cast(array[] as int[])) + 1 as pathkey
+from
+  tenk1 as t1 inner join tenk1 as t2 on true
+order by pathkey;
+
+create function make_some_array(int, int)
+returns int[]
+as $function$declare x int[];
+  begin
+    x[1] := $1;
+    x[2] := $2;
+    return x;
+  end$function$
+language plpgsql
+parallel SAFE;
+
+create table fooarr (
+  f1 text,
+  f2 int[],
+  f3 text
+);
+
+insert into fooarr values ('1', array[1, 2], 'one');
+
+prepare pstmt (text, int[]) as select * from fooarr where f1 = $1 and f2 = $2;;
+
+explain (COSTS 'off') execute pstmt ('1', make_some_array(1, 2));
+
+execute pstmt ('1', make_some_array(1, 2));
+
+deallocate pstmt;
+
+create view tenk1_vw_sec
+  with (security_barrier)
+as select * from tenk1;
+
+select 1 from tenk1_vw_sec where (select SUM(f1) from int4_tbl where f1 < unique1) < 100;
+
+rollback;
+
+begin;
+
+create role regress_parallel_worker;
+
+set session authorization regress_parallel_worker;
+
+select current_setting('session_authorization');
+
+set debug_parallel_query = 1;
+
+select current_setting('session_authorization');
+
+rollback;
+
+create role regress_parallel_worker;
+
+create function set_and_report_role()
+returns text
+as $function$ select current_setting('role') $function$
+language sql
+parallel SAFE
+set role to regress_parallel_worker;
+
+create function set_role_and_error(int)
+returns int
+as $function$ select 1 / $1 $function$
+language sql
+parallel SAFE
+set role to regress_parallel_worker;
+
+set debug_parallel_query = 0;
+
+select set_and_report_role();
+
+select set_role_and_error(0);
+
+set debug_parallel_query = 1;
+
+select set_and_report_role();
+
+select set_role_and_error(0);
+
+reset debug_parallel_query;
+
+drop function set_and_report_role();
+
+drop function set_role_and_error(int);
+
+drop role regress_parallel_worker;
+
+begin;
+
+create function my_cmp(int, int)
+returns int
+language sql
+as $function$
+	SELECT
+		CASE WHEN $1 < $2 THEN -1
+				WHEN $1 > $2 THEN  1
+				ELSE 0
+		END;
+$function$;
+
+create table parallel_hang (i int);
+
+insert into parallel_hang select * from generate_series(1, 400) as gs;
+
+create operator class int4_custom_ops
+  for type int
+  using btree
+  as operator 1 < (int, int),
+  operator 2 <= (int, int),
+  operator 3 = (int, int),
+  operator 4 >= (int, int),
+  operator 5 > (int, int),
+  function 1 my_cmp(int, int);
+
+create unique index "parallel_hang_idx" on parallel_hang using btree (i int4_custom_ops);
+
+set debug_parallel_query = 'on';
+
+delete from parallel_hang where 380 <= i and i <= 420;
+
+rollback;
+
+select pg_stat_force_next_flush();
+
+select
+  parallel_workers_to_launch >
+  'parallel_workers_to_launch_before'
+  as wrk_to_launch,
+  parallel_workers_launched >
+  'parallel_workers_launched_before'
+  as wrk_launched
+from
+  pg_stat_database
+where
+  datname = current_database();

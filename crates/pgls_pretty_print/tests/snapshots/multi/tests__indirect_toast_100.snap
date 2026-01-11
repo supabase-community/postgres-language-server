@@ -1,0 +1,154 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/indirect_toast.sql
+snapshot_kind: text
+---
+create function make_tuple_indirect(record)
+returns record
+as $function$regresslib$function$
+language c
+strict;
+
+set default_toast_compression = pglz;
+
+create table indtoasttest (
+  descr text,
+  cnt int default 0,
+  f1 text,
+  f2 text
+);
+
+insert into indtoasttest (descr, f1, f2)
+values
+  (
+    'two-compressed',
+    repeat('1234567890', 1000),
+    repeat('1234567890', 1000)
+  );
+
+insert into indtoasttest (descr, f1, f2)
+values
+  (
+    'two-toasted',
+    repeat('1234567890', 30000),
+    repeat('1234567890', 50000)
+  );
+
+insert into indtoasttest (descr, f1, f2)
+values
+  (
+    'one-compressed,one-null',
+    null,
+    repeat('1234567890', 1000)
+  );
+
+insert into indtoasttest (descr, f1, f2)
+values
+  (
+    'one-toasted,one-null',
+    null,
+    repeat('1234567890', 50000)
+  );
+
+select
+  descr,
+  SUBSTRING(cast(make_tuple_indirect(indtoasttest) as text)
+  from 1
+  for 200)
+from
+  indtoasttest;
+
+update indtoasttest
+set cnt = cnt + 1
+returning SUBSTRING(cast(indtoasttest as text)
+from 1
+for 200);
+
+update indtoasttest
+set cnt = cnt + 1,
+f1 = f1
+returning SUBSTRING(cast(indtoasttest as text)
+from 1
+for 200);
+
+update indtoasttest
+set cnt = cnt + 1,
+f1 = f1 || ''
+returning SUBSTRING(cast(indtoasttest as text)
+from 1
+for 200);
+
+update indtoasttest
+set cnt = cnt + 1,
+f1 = '-' || f1 || '-'
+returning SUBSTRING(cast(indtoasttest as text)
+from 1
+for 200);
+
+select SUBSTRING(cast(indtoasttest as text) from 1 for 200) from indtoasttest;
+
+vacuum (FREEZE) indtoasttest;
+
+select SUBSTRING(cast(indtoasttest as text) from 1 for 200) from indtoasttest;
+
+create function update_using_indirect()
+returns trigger
+language plpgsql
+as $function$
+BEGIN
+    NEW := make_tuple_indirect(NEW);
+    RETURN NEW;
+END$function$;
+
+create trigger indtoasttest_update_indirect
+before insert or update
+on indtoasttest
+for each row
+execute function update_using_indirect();
+
+update indtoasttest
+set cnt = cnt + 1
+returning SUBSTRING(cast(indtoasttest as text)
+from 1
+for 200);
+
+update indtoasttest
+set cnt = cnt + 1,
+f1 = f1
+returning SUBSTRING(cast(indtoasttest as text)
+from 1
+for 200);
+
+update indtoasttest
+set cnt = cnt + 1,
+f1 = f1 || ''
+returning SUBSTRING(cast(indtoasttest as text)
+from 1
+for 200);
+
+update indtoasttest
+set cnt = cnt + 1,
+f1 = '-' || f1 || '-'
+returning SUBSTRING(cast(indtoasttest as text)
+from 1
+for 200);
+
+insert into indtoasttest (descr, f1, f2)
+values
+  (
+    'one-toasted,one-null, via indirect',
+    repeat('1234567890', 30000),
+    null
+  );
+
+select SUBSTRING(cast(indtoasttest as text) from 1 for 200) from indtoasttest;
+
+vacuum (FREEZE) indtoasttest;
+
+select SUBSTRING(cast(indtoasttest as text) from 1 for 200) from indtoasttest;
+
+drop table indtoasttest;
+
+drop function update_using_indirect();
+
+reset default_toast_compression;

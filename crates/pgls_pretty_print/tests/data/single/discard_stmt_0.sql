@@ -1,0 +1,1 @@
+DISCARD ALL;

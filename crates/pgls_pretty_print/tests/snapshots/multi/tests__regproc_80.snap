@@ -1,0 +1,282 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/regproc.sql
+snapshot_kind: text
+---
+create role regress_regrole_test;
+
+select regoper('||/');
+
+select regoperator('+(int4,int4)');
+
+select regproc('now');
+
+select regprocedure('abs(numeric)');
+
+select regclass('pg_class');
+
+select regtype('int4');
+
+select regcollation('"POSIX"');
+
+select to_regoper('||/');
+
+select to_regoperator('+(int4,int4)');
+
+select to_regproc('now');
+
+select to_regprocedure('abs(numeric)');
+
+select to_regclass('pg_class');
+
+select to_regtype('int4');
+
+select to_regcollation('"POSIX"');
+
+select regoper('pg_catalog.||/');
+
+select regoperator('pg_catalog.+(int4,int4)');
+
+select regproc('pg_catalog.now');
+
+select regprocedure('pg_catalog.abs(numeric)');
+
+select regclass('pg_catalog.pg_class');
+
+select regtype('pg_catalog.int4');
+
+select regcollation('pg_catalog."POSIX"');
+
+select to_regoper('pg_catalog.||/');
+
+select to_regproc('pg_catalog.now');
+
+select to_regprocedure('pg_catalog.abs(numeric)');
+
+select to_regclass('pg_catalog.pg_class');
+
+select to_regtype('pg_catalog.int4');
+
+select to_regcollation('pg_catalog."POSIX"');
+
+select regrole('regress_regrole_test');
+
+select regrole('"regress_regrole_test"');
+
+select regnamespace('pg_catalog');
+
+select regnamespace('"pg_catalog"');
+
+select regdatabase('template1');
+
+select regdatabase('"template1"');
+
+select to_regrole('regress_regrole_test');
+
+select to_regrole('"regress_regrole_test"');
+
+select to_regnamespace('pg_catalog');
+
+select to_regnamespace('"pg_catalog"');
+
+select to_regdatabase('template1');
+
+select to_regdatabase('"template1"');
+
+select cast(regproc('-') as oid);
+
+select cast(regprocedure('-') as oid);
+
+select cast(regclass('-') as oid);
+
+select cast(regcollation('-') as oid);
+
+select cast(regtype('-') as oid);
+
+select cast(regconfig('-') as oid);
+
+select cast(regdictionary('-') as oid);
+
+select cast(regrole('-') as oid);
+
+select cast(regnamespace('-') as oid);
+
+select cast(regdatabase('-') as oid);
+
+select cast(to_regproc('-') as oid);
+
+select cast(to_regprocedure('-') as oid);
+
+select cast(to_regclass('-') as oid);
+
+select cast(to_regcollation('-') as oid);
+
+select cast(to_regtype('-') as oid);
+
+select cast(to_regrole('-') as oid);
+
+select cast(to_regnamespace('-') as oid);
+
+select cast(to_regdatabase('-') as oid);
+
+create table regrole_test (
+  rolid oid
+  default cast('regress_regrole_test' as regrole)
+);
+
+create table regdatabase_test (
+  datid oid
+  default cast('template1' as regdatabase)
+);
+
+drop role regress_regrole_test;
+
+select regoper('||//');
+
+select regoperator('++(int4,int4)');
+
+select regproc('know');
+
+select regprocedure('absinthe(numeric)');
+
+select regclass('pg_classes');
+
+select regtype('int3');
+
+select regoper('ng_catalog.||/');
+
+select regoperator('ng_catalog.+(int4,int4)');
+
+select regproc('ng_catalog.now');
+
+select regprocedure('ng_catalog.abs(numeric)');
+
+select regclass('ng_catalog.pg_class');
+
+select regtype('ng_catalog.int4');
+
+select regcollation('ng_catalog."POSIX"');
+
+select regrole('regress_regrole_test');
+
+select regrole('"regress_regrole_test"');
+
+select regrole('Nonexistent');
+
+select regrole('"Nonexistent"');
+
+select regrole('foo.bar');
+
+select regnamespace('Nonexistent');
+
+select regnamespace('"Nonexistent"');
+
+select regnamespace('foo.bar');
+
+select regdatabase('Nonexistent');
+
+select regdatabase('"Nonexistent"');
+
+select regdatabase('foo.bar');
+
+select to_regoper('||//');
+
+select to_regoperator('++(int4,int4)');
+
+select to_regproc('know');
+
+select to_regprocedure('absinthe(numeric)');
+
+select to_regclass('pg_classes');
+
+select to_regtype('int3');
+
+select to_regcollation('notacollation');
+
+select to_regoper('ng_catalog.||/');
+
+select to_regoperator('ng_catalog.+(int4,int4)');
+
+select to_regproc('ng_catalog.now');
+
+select to_regprocedure('ng_catalog.abs(numeric)');
+
+select to_regclass('ng_catalog.pg_class');
+
+select to_regtype('ng_catalog.int4');
+
+select to_regcollation('ng_catalog."POSIX"');
+
+select to_regrole('regress_regrole_test');
+
+select to_regrole('"regress_regrole_test"');
+
+select to_regrole('foo.bar');
+
+select to_regrole('Nonexistent');
+
+select to_regrole('"Nonexistent"');
+
+select to_regrole('foo.bar');
+
+select to_regnamespace('Nonexistent');
+
+select to_regnamespace('"Nonexistent"');
+
+select to_regnamespace('foo.bar');
+
+select to_regdatabase('Nonexistent');
+
+select to_regdatabase('"Nonexistent"');
+
+select to_regdatabase('foo.bar');
+
+select to_regtypemod('text');
+
+select to_regtypemod('timestamp(4)');
+
+select to_regtypemod('no_such_type(4)');
+
+select format_type(to_regtype('varchar(32)'), to_regtypemod('varchar(32)'));
+
+select format_type(to_regtype('bit'), to_regtypemod('bit'));
+
+select format_type(to_regtype('"bit"'), to_regtypemod('"bit"'));
+
+select * from pg_input_error_info('ng_catalog.pg_class', 'regclass');
+
+select pg_input_is_valid('ng_catalog."POSIX"', 'regcollation');
+
+select * from pg_input_error_info('no_such_config', 'regconfig');
+
+select * from pg_input_error_info('no_such_dictionary', 'regdictionary');
+
+select * from pg_input_error_info('Nonexistent', 'regnamespace');
+
+select * from pg_input_error_info('ng_catalog.||/', 'regoper');
+
+select * from pg_input_error_info('-', 'regoper');
+
+select * from pg_input_error_info('ng_catalog.+(int4,int4)', 'regoperator');
+
+select * from pg_input_error_info('-', 'regoperator');
+
+select * from pg_input_error_info('ng_catalog.now', 'regproc');
+
+select * from pg_input_error_info('ng_catalog.abs(numeric)', 'regprocedure');
+
+select * from pg_input_error_info('ng_catalog.abs(numeric', 'regprocedure');
+
+select * from pg_input_error_info('regress_regrole_test', 'regrole');
+
+select * from pg_input_error_info('no_such_type', 'regtype');
+
+select * from pg_input_error_info('Nonexistent', 'regdatabase');
+
+select * from pg_input_error_info('incorrect type name syntax', 'regtype');
+
+select * from pg_input_error_info('numeric(1,2,3)', 'regtype');
+
+select * from pg_input_error_info('way.too.many.names', 'regtype');
+
+select * from pg_input_error_info('no_such_catalog.schema.name', 'regtype');

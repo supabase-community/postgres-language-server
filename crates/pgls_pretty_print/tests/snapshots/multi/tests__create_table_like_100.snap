@@ -1,0 +1,522 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/create_table_like.sql
+snapshot_kind: text
+---
+create table inhx (xx text default 'text');
+
+create table ctla (aa text);
+
+create table ctlb (bb text)
+inherits (ctla);
+
+create table foo (like nonexistent);
+
+create table inhe (
+  ee text,
+  like inhx
+)
+inherits (ctlb);
+
+insert into inhe values ('ee-col1', 'ee-col2', default, 'ee-col4');
+
+select * from inhe;
+
+select * from inhx;
+
+select * from ctlb;
+
+select * from ctla;
+
+create table inhf (
+  like inhx,
+  like inhx
+);
+
+create table inhf (like inhx including CONSTRAINTS including DEFAULTS);
+
+insert into inhf default values;
+
+select * from inhf;
+
+alter table inhx
+  add constraint "foo" check (xx = 'text');
+
+alter table inhx
+  add primary key (xx);
+
+create table inhg (like inhx);
+
+insert into inhg values ('foo');
+
+drop table inhg;
+
+create table inhg (
+  x text,
+  like inhx including CONSTRAINTS,
+  y text
+);
+
+insert into inhg values ('x', 'text', 'y');
+
+insert into inhg values ('x', 'text', 'y');
+
+insert into inhg values ('x', 'foo', 'y');
+
+select * from inhg;
+
+drop table inhg;
+
+create table test_like_id_1 (
+  a bigint generated always as identity,
+  b text
+);
+
+insert into test_like_id_1 (b) values ('b1');
+
+select * from test_like_id_1;
+
+create table test_like_id_2 (like test_like_id_1);
+
+insert into test_like_id_2 (b) values ('b2');
+
+select * from test_like_id_2;
+
+create table test_like_id_3 (like test_like_id_1 including IDENTITY);
+
+insert into test_like_id_3 (b) values ('b3');
+
+select * from test_like_id_3;
+
+drop table test_like_id_1, test_like_id_2, test_like_id_3;
+
+insert into test_like_gen_1 (a) values (1);
+
+select * from test_like_gen_1;
+
+create table test_like_gen_2 (like test_like_gen_1);
+
+insert into test_like_gen_2 (a) values (1);
+
+select * from test_like_gen_2;
+
+create table test_like_gen_3 (like test_like_gen_1 including GENERATED);
+
+insert into test_like_gen_3 (a) values (1);
+
+select * from test_like_gen_3;
+
+drop table test_like_gen_1, test_like_gen_2, test_like_gen_3;
+
+create table test_like_4 (
+  b int default 42,
+  c int generated always as (a * 2) stored,
+  a int check (a > 0)
+);
+
+create table test_like_4a (like test_like_4);
+
+create table test_like_4b (like test_like_4 including DEFAULTS);
+
+create table test_like_4c (like test_like_4 including GENERATED);
+
+create table test_like_4d (like test_like_4 including DEFAULTS including GENERATED);
+
+insert into test_like_4a (a) values (11);
+
+select a, b, c from test_like_4a;
+
+insert into test_like_4b (a) values (11);
+
+select a, b, c from test_like_4b;
+
+insert into test_like_4c (a) values (11);
+
+select a, b, c from test_like_4c;
+
+insert into test_like_4d (a) values (11);
+
+select a, b, c from test_like_4d;
+
+create table test_like_5 (
+  x point,
+  y point,
+  z point
+);
+
+create table test_like_5x (
+  p int check (p > 0),
+  q int generated always as (p * 2) stored
+);
+
+create table test_like_5c (like test_like_4 including all)
+inherits (test_like_5,
+test_like_5x);
+
+create table test_like_6 (
+  a int,
+  c text,
+  b text
+);
+
+create statistics ext_stat on (a || b) from test_like_6;
+
+alter table test_like_6
+  drop column c;
+
+create table test_like_6c (like test_like_6 including all);
+
+drop table test_like_4, test_like_4a, test_like_4b, test_like_4c, test_like_4d;
+
+drop table test_like_5, test_like_5x, test_like_5c;
+
+drop table test_like_6, test_like_6c;
+
+create table inhg (
+  x text,
+  like inhx including INDEXES,
+  y text
+);
+
+insert into inhg values (5, 10);
+
+insert into inhg values (20, 10);
+
+drop table inhg;
+
+create table inhg (
+  x text,
+  like inhx including INDEXES,
+  primary key (x)
+);
+
+create table inhz (
+  xx text default 'text',
+  yy int unique
+);
+
+create unique index "inhz_xx_idx"
+on inhz
+using btree
+(
+  xx
+)
+where
+  xx <> 'test';
+
+create table inhg (
+  x text unique,
+  like inhz including INDEXES
+);
+
+insert into inhg (xx, yy, x) values ('test', 5, 10);
+
+insert into inhg (xx, yy, x) values ('test', 10, 15);
+
+insert into inhg (xx, yy, x) values ('foo', 10, 15);
+
+drop table inhg;
+
+drop table inhz;
+
+create table inhz (
+  x text references inhz,
+  like inhx including INDEXES
+);
+
+drop table inhz;
+
+alter table ctlt1
+  add constraint "cc" check (length(b) > 100) not valid;
+
+create index "ctlt1_b_key" on ctlt1 using btree (b);
+
+create index "ctlt1_fnidx" on ctlt1 using btree ((a || b));
+
+create statistics ctlt1_a_b_stat on "a", "b" from ctlt1;
+
+create statistics ctlt1_expr_stat on (a || b) from ctlt1;
+
+comment on statistics ctlt1_a_b_stat is 'ab stats';
+
+comment on statistics ctlt1_expr_stat is 'ab expr stats';
+
+comment on column ctlt1.a is 'A';
+
+comment on column ctlt1.b is 'B';
+
+comment on constraint ctlt1_a_check on ctlt1 is 't1_a_check';
+
+comment on index ctlt1_pkey is 'index pkey';
+
+comment on index ctlt1_b_key is 'index b_key';
+
+alter table ctlt1
+  alter column a set storage main;
+
+create table ctlt2 (c text not null);
+
+alter table ctlt2
+  alter column c set storage external;
+
+comment on column ctlt2.c is 'C';
+
+comment on constraint ctlt2_c_not_null on ctlt2 is 't2_c_not_null';
+
+create table ctlt3 (
+  a text check (length(a) < 5),
+  c text check (length(c) < 7)
+);
+
+alter table ctlt3
+  alter column c set storage external;
+
+alter table ctlt3
+  alter column a set storage main;
+
+create index "ctlt3_fnidx" on ctlt3 using btree ((a || c));
+
+comment on column ctlt3.a is 'A3';
+
+comment on column ctlt3.c is 'C';
+
+comment on constraint ctlt3_a_check on ctlt3 is 't3_a_check';
+
+create table ctlt4 (
+  a text,
+  c text
+);
+
+alter table ctlt4
+  alter column c set storage external;
+
+create table ctlt12_storage (
+  like ctlt1 including STORAGE,
+  like ctlt2 including STORAGE
+);
+
+create table ctlt12_comments (
+  like ctlt1 including COMMENTS,
+  like ctlt2 including COMMENTS
+);
+
+select
+  conname,
+  description
+from
+  pg_description,
+  pg_constraint as c
+where
+  classoid = cast('pg_constraint' as regclass) and
+  objoid = c.oid and
+  c.conrelid = cast('ctlt12_comments' as regclass);
+
+create table ctlt1_inh (like ctlt1 including COMMENTS including CONSTRAINTS)
+inherits (ctlt1);
+
+select
+  description
+from
+  pg_description,
+  pg_constraint as c
+where
+  classoid = cast('pg_constraint' as regclass) and
+  objoid = c.oid and
+  c.conrelid = cast('ctlt1_inh' as regclass);
+
+create table ctlt13_inh ()
+inherits (ctlt1,
+ctlt3);
+
+create table ctlt13_like (
+  like ctlt3
+  including COMMENTS
+  including CONSTRAINTS
+  including INDEXES
+  including STORAGE
+)
+inherits (ctlt1);
+
+select
+  description
+from
+  pg_description,
+  pg_constraint as c
+where
+  classoid = cast('pg_constraint' as regclass) and
+  objoid = c.oid and
+  c.conrelid = cast('ctlt13_like' as regclass);
+
+create table ctlt_all (like ctlt1 including all);
+
+select
+  c.relname,
+  objsubid,
+  description
+from
+  pg_description,
+  pg_index as i,
+  pg_class as c
+where
+  classoid = cast('pg_class' as regclass) and
+  objoid = i.indexrelid and
+  c.oid = i.indexrelid and
+  i.indrelid = cast('ctlt_all' as regclass)
+order by c.relname,
+  objsubid;
+
+select
+  s.stxname,
+  objsubid,
+  description
+from
+  pg_description,
+  pg_statistic_ext as s
+where
+  classoid = cast('pg_statistic_ext' as regclass) and
+  objoid = s.oid and
+  s.stxrelid = cast('ctlt_all' as regclass)
+order by s.stxname,
+  objsubid;
+
+create table inh_error1 ()
+inherits (ctlt1,
+ctlt4);
+
+create table inh_error2 (like ctlt4 including STORAGE)
+inherits (ctlt1);
+
+create table pg_attrdef (like ctlt1 including all);
+
+drop table public.pg_attrdef;
+
+begin;
+
+create schema "ctl_schema";
+
+set local search_path to ctl_schema, public;
+
+create table ctlt1 (like ctlt1 including all);
+
+rollback;
+
+drop table
+  ctlt1,
+  ctlt2,
+  ctlt3,
+  ctlt4,
+  ctlt12_storage,
+  ctlt12_comments,
+  ctlt1_inh,
+  ctlt13_inh,
+  ctlt13_like,
+  ctlt_all,
+  ctla,
+  ctlb cascade;
+
+comment on constraint noinh_con_copy_b_not_null on noinh_con_copy is 'not null b';
+
+comment on constraint noinh_con_copy_c_not_null on noinh_con_copy is 'not null c no inherit';
+
+create table noinh_con_copy1 (like noinh_con_copy including COMMENTS including CONSTRAINTS);
+
+select
+  conname,
+  description
+from
+  pg_description,
+  pg_constraint as c
+where
+  classoid = cast('pg_constraint' as regclass) and
+  objoid = c.oid and
+  c.conrelid = cast('noinh_con_copy1' as regclass)
+order by conname collate "C";
+
+create table noinh_con_copy1_parted (like noinh_con_copy including all)
+partition by LIST(a);
+
+drop table noinh_con_copy, noinh_con_copy1;
+
+create table ctlt4 (
+  a int,
+  b text
+);
+
+create sequence ctlseq1;
+
+create table ctlt10 (like ctlseq1);
+
+create view ctlv1
+as select * from ctlt4;
+
+create table ctlt11 (like ctlv1);
+
+create table ctlt11a (like ctlv1 including all);
+
+create type ctlty1 as (a int, b text);
+
+create table ctlt12 (like ctlty1);
+
+drop sequence ctlseq1;
+
+drop type ctlty1;
+
+drop view ctlv1;
+
+drop table if exists ctlt4, ctlt10, ctlt11, ctlt11a, ctlt12;
+
+create foreign data wrapper ctl_dummy;
+
+create server ctl_s0 foreign data wrapper ctl_dummy;
+
+create table ctl_table (
+  a int primary key,
+  b varchar compression pglz,
+  c int generated always as (a * 2) stored,
+  d bigint generated always as identity,
+  e int default 1
+);
+
+create index "ctl_table_a_key" on ctl_table using btree (a);
+
+comment on column ctl_table.b is 'Column b';
+
+create statistics ctl_table_stat on "a", "b" from ctl_table;
+
+alter table ctl_table
+  add constraint "foo" check (b = 'text');
+
+alter table ctl_table
+  alter column b set storage main;
+
+create foreign table ctl_foreign_table1 ( like ctl_table ) server ctl_s0;
+
+select
+  attname,
+  attcompression
+from
+  pg_attribute
+where
+  attrelid = cast('ctl_foreign_table1' as regclass) and
+  attnum > 0
+order by attnum;
+
+create foreign table ctl_foreign_table2 ( like ctl_table including all ) server ctl_s0;
+
+select
+  attname,
+  attcompression
+from
+  pg_attribute
+where
+  attrelid = cast('ctl_foreign_table2' as regclass) and
+  attnum > 0
+order by attnum;
+
+drop table ctl_table;
+
+drop foreign table ctl_foreign_table1;
+
+drop foreign table ctl_foreign_table2;
+
+drop foreign data wrapper ctl_dummy cascade;

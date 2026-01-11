@@ -1,0 +1,6 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/single/range_tbl_ref_0.sql
+snapshot_kind: text
+---
+select t1.a from t1, t2;

@@ -27,22 +27,28 @@ impl ExecutionConfig {
 #[derive(Debug, Clone)]
 pub enum ExecutionMode {
     Check { vcs: VcsTargeting },
+    Format { write: bool, vcs: VcsTargeting },
 }
 
 impl ExecutionMode {
     pub fn allows_writes(&self) -> bool {
-        false
+        match self {
+            ExecutionMode::Check { .. } => false,
+            ExecutionMode::Format { write, .. } => *write,
+        }
     }
 
     pub fn vcs(&self) -> &VcsTargeting {
         match self {
             ExecutionMode::Check { vcs } => vcs,
+            ExecutionMode::Format { vcs, .. } => vcs,
         }
     }
 
     pub fn command_name(&self) -> &str {
         match self {
             ExecutionMode::Check { .. } => "check",
+            ExecutionMode::Format { .. } => "format",
         }
     }
 }

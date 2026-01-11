@@ -1,0 +1,7 @@
+MERGE INTO inventories AS t
+USING staging_inventory AS s ON t.sku = s.sku
+WHEN MATCHED AND s.operation = 'delete' THEN DELETE
+WHEN MATCHED AND s.operation = 'update' THEN UPDATE SET quantity = s.quantity, updated_at = clock_timestamp()
+WHEN NOT MATCHED AND s.operation = 'insert' THEN INSERT (sku, quantity, created_at) VALUES (s.sku, s.quantity, clock_timestamp())
+WHEN NOT MATCHED BY TARGET THEN DO NOTHING
+WHEN NOT MATCHED BY SOURCE AND t.discontinued IS FALSE THEN DELETE;

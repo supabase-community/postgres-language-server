@@ -1,0 +1,20 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/single/complex_select_part_1.sql
+snapshot_kind: text
+---
+select
+  c.oid as view_id,
+  n.nspname as view_schema,
+  c.relname as view_name,
+  r.ev_action as view_definition
+from
+  pg_class as c
+  inner join
+    pg_namespace as n
+  on n.oid = c.relnamespace
+  inner join
+    pg_rewrite as r
+  on r.ev_class = c.oid
+where
+  c.relkind in ('v', 'm');

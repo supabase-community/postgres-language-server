@@ -1,0 +1,1 @@
+SELECT * FROM employees WHERE (salary, bonus) > (50000, 10000)

@@ -1,0 +1,208 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/uuid.sql
+snapshot_kind: text
+---
+create table guid1 (
+  guid_field uuid,
+  text_field text default NOW()
+);
+
+create table guid2 (
+  guid_field uuid,
+  text_field text default NOW()
+);
+
+create table guid3 (
+  id serial,
+  guid_field uuid
+);
+
+insert into guid1 (guid_field) values ('11111111-1111-1111-1111-111111111111F');
+
+insert into guid1 (guid_field) values ('{11111111-1111-1111-1111-11111111111}');
+
+insert into guid1 (guid_field) values ('111-11111-1111-1111-1111-111111111111');
+
+insert into guid1 (guid_field) values ('{22222222-2222-2222-2222-222222222222 ');
+
+insert into guid1 (guid_field) values ('11111111-1111-1111-G111-111111111111');
+
+insert into guid1 (guid_field) values ('11+11111-1111-1111-1111-111111111111');
+
+select pg_input_is_valid('11', 'uuid');
+
+select * from pg_input_error_info('11', 'uuid');
+
+insert into guid1 (guid_field) values ('11111111-1111-1111-1111-111111111111');
+
+insert into guid1 (guid_field) values ('{22222222-2222-2222-2222-222222222222}');
+
+insert into guid1 (guid_field) values ('3f3e3c3b3a3039383736353433a2313e');
+
+select guid_field from guid1;
+
+select guid_field from guid1 order by guid_field asc;
+
+select guid_field from guid1 order by guid_field desc;
+
+select COUNT(*) from guid1 where guid_field = '3f3e3c3b-3a30-3938-3736-353433a2313e';
+
+select COUNT(*) from guid1 where guid_field <> '11111111111111111111111111111111';
+
+select COUNT(*) from guid1 where guid_field < '22222222-2222-2222-2222-222222222222';
+
+select COUNT(*) from guid1 where guid_field <= '22222222-2222-2222-2222-222222222222';
+
+select COUNT(*) from guid1 where guid_field > '22222222-2222-2222-2222-222222222222';
+
+select COUNT(*) from guid1 where guid_field >= '22222222-2222-2222-2222-222222222222';
+
+create index "guid1_btree" on guid1 using btree (guid_field);
+
+create index "guid1_hash" on guid1 using hash (guid_field);
+
+create unique index "guid1_unique_btree" on guid1 using btree (guid_field);
+
+select
+  COUNT(*)
+from
+  guid1
+where
+  guid_field <> '11111111111111111111111111111111' or
+  guid_field <>
+  '3f3e3c3b-3a30-3938-3736-353433a2313e';
+
+select
+  COUNT(*)
+from
+  guid1
+where
+  guid_field <=
+  '22222222-2222-2222-2222-222222222222' or
+  guid_field <= '11111111111111111111111111111111' or
+  guid_field <=
+  '3f3e3c3b-3a30-3938-3736-353433a2313e';
+
+select
+  COUNT(*)
+from
+  guid1
+where
+  guid_field =
+  '3f3e3c3b-3a30-3938-3736-353433a2313e' or
+  guid_field = '11111111111111111111111111111111';
+
+insert into guid1 (guid_field) values ('11111111-1111-1111-1111-111111111111');
+
+select COUNT(*) from pg_class where relkind = 'i' and relname like 'guid%';
+
+insert into guid1 (guid_field) values ('44444444-4444-4444-4444-444444444444');
+
+insert into guid2 (guid_field) values ('11111111-1111-1111-1111-111111111111');
+
+insert into guid2 (guid_field) values ('{22222222-2222-2222-2222-222222222222}');
+
+insert into guid2 (guid_field) values ('3f3e3c3b3a3039383736353433a2313e');
+
+select COUNT(*) from guid1 as g1 inner join guid2 as g2 on g1.guid_field = g2.guid_field;
+
+select
+  COUNT(*)
+from
+  guid1 as g1
+  left outer join
+    guid2 as g2
+  on g1.guid_field = g2.guid_field
+where
+  g2.guid_field is null;
+
+truncate guid1;
+
+insert into guid1 (guid_field) values (gen_random_uuid());
+
+insert into guid1 (guid_field) values (gen_random_uuid());
+
+select COUNT(distinct guid_field) from guid1;
+
+truncate guid1;
+
+insert into guid1 (guid_field) values (uuidv4());
+
+insert into guid1 (guid_field) values (uuidv4());
+
+select COUNT(distinct guid_field) from guid1;
+
+truncate guid1;
+
+insert into guid1 (guid_field) values (uuidv7());
+
+insert into guid1 (guid_field) values (uuidv7());
+
+insert into guid1 (guid_field) values (uuidv7(cast('1 day' as interval)));
+
+select COUNT(distinct guid_field) from guid1;
+
+insert into guid3 (guid_field) select uuidv7() from generate_series(1, 10);
+
+select array_agg(id order by guid_field) from guid3;
+
+with
+uuidts
+as (
+  select
+    y,
+    ts as ts,
+    LAG(ts) over (order by y) as prev_ts
+  from
+    (
+      select
+        y,
+        uuid_extract_timestamp(
+          uuidv7(cast(y || ' years' as interval))
+        )
+        as ts
+      from
+        generate_series(
+          1970 - cast(EXTRACT('year' from NOW()) as int),
+          10888 - cast(EXTRACT('year' from NOW()) as int)
+        )
+        as y
+    )
+)
+select
+  y,
+  ts,
+  prev_ts
+from
+  uuidts
+where
+  ts < prev_ts;
+
+select uuid_extract_version('11111111-1111-5111-8111-111111111111');
+
+select uuid_extract_version(gen_random_uuid());
+
+select uuid_extract_version('11111111-1111-1111-1111-111111111111');
+
+select uuid_extract_version(uuidv4());
+
+select uuid_extract_version(uuidv7());
+
+select
+  uuid_extract_timestamp(
+    'C232AB00-9414-11EC-B3C8-9F6BDECED846'
+  ) =
+  'Tuesday, February 22, 2022 2:22:22.00 PM GMT+05:00';
+
+select
+  uuid_extract_timestamp(
+    '017F22E2-79B0-7CC3-98C4-DC0C0C07398F'
+  ) =
+  'Tuesday, February 22, 2022 2:22:22.00 PM GMT+05:00';
+
+select uuid_extract_timestamp(gen_random_uuid());
+
+select uuid_extract_timestamp('11111111-1111-1111-1111-111111111111');
+
+drop table guid1, guid2, guid3 cascade;

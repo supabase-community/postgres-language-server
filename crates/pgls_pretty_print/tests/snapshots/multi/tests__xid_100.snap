@@ -1,0 +1,245 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/xid.sql
+snapshot_kind: text
+---
+select
+  cast('010' as xid),
+  cast('42' as xid),
+  cast('0xffffffff' as xid),
+  cast('-1' as xid),
+  cast('010' as xid8),
+  cast('42' as xid8),
+  cast('0xffffffffffffffff' as xid8),
+  cast('-1' as xid8);
+
+select cast('' as xid);
+
+select cast('asdf' as xid);
+
+select cast('' as xid8);
+
+select cast('asdf' as xid8);
+
+select pg_input_is_valid('42', 'xid');
+
+select pg_input_is_valid('asdf', 'xid');
+
+select * from pg_input_error_info('0xffffffffff', 'xid');
+
+select pg_input_is_valid('42', 'xid8');
+
+select pg_input_is_valid('asdf', 'xid8');
+
+select * from pg_input_error_info('0xffffffffffffffffffff', 'xid8');
+
+select cast('1' as xid) = cast('1' as xid);
+
+select cast('1' as xid) <> cast('1' as xid);
+
+select cast('1' as xid8) = cast('1' as xid8);
+
+select cast('1' as xid8) <> cast('1' as xid8);
+
+select cast('1' as xid) = cast(cast('1' as xid8) as xid);
+
+select cast('1' as xid) <> cast(cast('1' as xid8) as xid);
+
+select cast('1' as xid) < cast('2' as xid);
+
+select cast('1' as xid) <= cast('2' as xid);
+
+select cast('1' as xid) > cast('2' as xid);
+
+select cast('1' as xid) >= cast('2' as xid);
+
+select
+  cast('1' as xid8) < cast('2' as xid8),
+  cast('2' as xid8) < cast('2' as xid8),
+  cast('2' as xid8) < cast('1' as xid8);
+
+select
+  cast('1' as xid8) <= cast('2' as xid8),
+  cast('2' as xid8) <= cast('2' as xid8),
+  cast('2' as xid8) <= cast('1' as xid8);
+
+select
+  cast('1' as xid8) > cast('2' as xid8),
+  cast('2' as xid8) > cast('2' as xid8),
+  cast('2' as xid8) > cast('1' as xid8);
+
+select
+  cast('1' as xid8) >= cast('2' as xid8),
+  cast('2' as xid8) >= cast('2' as xid8),
+  cast('2' as xid8) >= cast('1' as xid8);
+
+select xid8cmp('1', '2'), xid8cmp('2', '2'), xid8cmp('2', '1');
+
+create table xid8_t1 (x xid8);
+
+insert into xid8_t1 values ('0'), ('010'), ('42'), ('0xffffffffffffffff'), ('-1');
+
+select MIN(x), MAX(x) from xid8_t1;
+
+create index on xid8_t1 using btree (x);
+
+create index on xid8_t1 using hash (x);
+
+drop table xid8_t1;
+
+select cast('12:13:' as pg_snapshot);
+
+select cast('12:18:14,16' as pg_snapshot);
+
+select cast('12:16:14,14' as pg_snapshot);
+
+select cast('31:12:' as pg_snapshot);
+
+select cast('0:1:' as pg_snapshot);
+
+select cast('12:13:0' as pg_snapshot);
+
+select cast('12:16:14,13' as pg_snapshot);
+
+select pg_input_is_valid('12:13:', 'pg_snapshot');
+
+select pg_input_is_valid('31:12:', 'pg_snapshot');
+
+select * from pg_input_error_info('31:12:', 'pg_snapshot');
+
+select pg_input_is_valid('12:16:14,13', 'pg_snapshot');
+
+select * from pg_input_error_info('12:16:14,13', 'pg_snapshot');
+
+create temporary table snapshot_test (
+  nr int,
+  snap pg_snapshot
+);
+
+insert into snapshot_test values (1, '12:13:');
+
+insert into snapshot_test values (2, '12:20:13,15,18');
+
+insert into snapshot_test values (3, '100001:100009:100005,100007,100008');
+
+insert into snapshot_test
+values
+  (
+    4,
+    '100:150:101,102,103,104,105,106,107,108,109,110,111,112,113,114,115,116,117,118,119,120,121,122,123,124,125,126,127,128,129,130,131'
+  );
+
+select snap from snapshot_test order by nr;
+
+select
+  pg_snapshot_xmin(snap),
+  pg_snapshot_xmax(snap),
+  pg_snapshot_xip(snap)
+from
+  snapshot_test
+order by nr;
+
+select
+  id,
+  pg_visible_in_snapshot(
+    cast(cast(id as text) as xid8),
+    snap
+  )
+from
+  snapshot_test,
+  generate_series(11, 21) as id
+where
+  nr = 2;
+
+select
+  id,
+  pg_visible_in_snapshot(
+    cast(cast(id as text) as xid8),
+    snap
+  )
+from
+  snapshot_test,
+  generate_series(90, 160) as id
+where
+  nr = 4;
+
+select pg_current_xact_id() >= pg_snapshot_xmin(pg_current_snapshot());
+
+select pg_visible_in_snapshot(pg_current_xact_id(), pg_current_snapshot());
+
+select cast('1000100010001000:1000100010001100:1000100010001012,1000100010001013' as pg_snapshot);
+
+select
+  pg_visible_in_snapshot(
+    '1000100010001012',
+    '1000100010001000:1000100010001100:1000100010001012,1000100010001013'
+  );
+
+select
+  pg_visible_in_snapshot(
+    '1000100010001015',
+    '1000100010001000:1000100010001100:1000100010001012,1000100010001013'
+  );
+
+select cast('1:9223372036854775807:3' as pg_snapshot);
+
+select cast('1:9223372036854775808:3' as pg_snapshot);
+
+begin;
+
+select pg_current_xact_id_if_assigned() is null;
+
+select pg_current_xact_id();
+
+select pg_current_xact_id_if_assigned() is not distinct from cast('pg_current_xact_id' as xid8);
+
+commit;
+
+begin;
+
+select pg_current_xact_id() as committed;
+
+commit;
+
+begin;
+
+select pg_current_xact_id() as rolledback;
+
+rollback;
+
+begin;
+
+select pg_current_xact_id() as inprogress;
+
+select pg_xact_status(cast(cast('committed' as text) as xid8)) as committed;
+
+select pg_xact_status(cast(cast('rolledback' as text) as xid8)) as rolledback;
+
+select pg_xact_status(cast(cast('inprogress' as text) as xid8)) as inprogress;
+
+select pg_xact_status(cast('1' as xid8));
+
+select pg_xact_status(cast('2' as xid8));
+
+select pg_xact_status(cast('3' as xid8));
+
+commit;
+
+begin;
+
+create function test_future_xid_status(xid8)
+returns void
+language plpgsql
+as $function$
+BEGIN
+  PERFORM pg_xact_status($1);
+  RAISE EXCEPTION 'didn''t ERROR at xid in the future as expected';
+EXCEPTION
+  WHEN invalid_parameter_value THEN
+    RAISE NOTICE 'Got expected error for xid in the future';
+END;
+$function$;
+
+select test_future_xid_status(cast(cast('inprogress' + 10000 as text) as xid8));
+
+rollback;

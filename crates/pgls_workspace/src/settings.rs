@@ -17,6 +17,7 @@ use pgls_configuration::{
     database::PartialDatabaseConfiguration,
     diagnostics::InvalidIgnorePattern,
     files::FilesConfiguration,
+    format::{FormatConfiguration, IndentStyle, KeywordCase},
     migrations::{MigrationsConfiguration, PartialMigrationsConfiguration},
     plpgsql_check::PlPgSqlCheckConfiguration,
     splinter::SplinterConfiguration,
@@ -26,9 +27,9 @@ use sqlx::postgres::PgConnectOptions;
 
 use crate::{
     WorkspaceError,
+    matcher::Matcher,
     workspace::{ProjectKey, WorkspaceData},
 };
-use pgls_matcher::Matcher;
 
 #[derive(Debug, Default)]
 /// The information tracked for each project
@@ -214,6 +215,9 @@ pub struct Settings {
     /// Linter settings applied to all files in the workspace
     pub linter: LinterSettings,
 
+    /// Formatter settings applied to all files in the workspace
+    pub formatter: FormatterSettings,
+
     /// Splinter (database linter) settings for the workspace
     pub splinter: SplinterSettings,
 
@@ -256,6 +260,14 @@ impl Settings {
         if let Some(linter) = configuration.linter {
             self.linter =
                 to_linter_settings(working_directory.clone(), LinterConfiguration::from(linter))?;
+        }
+
+        // formatter part
+        if let Some(format) = configuration.format {
+            self.formatter = to_formatter_settings(
+                working_directory.clone(),
+                FormatConfiguration::from(format),
+            )?;
         }
 
         // splinter part
@@ -323,6 +335,23 @@ fn to_linter_settings(
     Ok(LinterSettings {
         enabled: conf.enabled,
         rules: Some(conf.rules),
+        ignored_files: to_matcher(working_directory.clone(), Some(&conf.ignore))?,
+        included_files: to_matcher(working_directory.clone(), Some(&conf.include))?,
+    })
+}
+
+fn to_formatter_settings(
+    working_directory: Option<PathBuf>,
+    conf: FormatConfiguration,
+) -> Result<FormatterSettings, WorkspaceError> {
+    Ok(FormatterSettings {
+        enabled: conf.enabled,
+        line_width: conf.line_width,
+        indent_size: conf.indent_size,
+        indent_style: conf.indent_style,
+        keyword_case: conf.keyword_case,
+        constant_case: conf.constant_case,
+        type_case: conf.type_case,
         ignored_files: to_matcher(working_directory.clone(), Some(&conf.ignore))?,
         included_files: to_matcher(working_directory.clone(), Some(&conf.include))?,
     })
@@ -449,6 +478,53 @@ impl Default for LinterSettings {
         Self {
             enabled: true,
             rules: Some(pgls_configuration::linter::Rules::default()),
+            ignored_files: Matcher::empty(),
+            included_files: Matcher::empty(),
+        }
+    }
+}
+
+/// Formatter settings for the entire workspace
+#[derive(Debug)]
+pub struct FormatterSettings {
+    /// Disabled by default (beta)
+    pub enabled: bool,
+
+    /// Maximum line width before breaking. Default: 100.
+    pub line_width: u16,
+
+    /// Number of spaces (or tab width) for indentation. Default: 2.
+    pub indent_size: u8,
+
+    /// Indentation style: spaces or tabs. Default: spaces.
+    pub indent_style: IndentStyle,
+
+    /// Keyword casing: upper or lower. Default: lower.
+    pub keyword_case: KeywordCase,
+
+    /// Constant casing (NULL, TRUE, FALSE): upper or lower. Default: lower.
+    pub constant_case: KeywordCase,
+
+    /// Data type casing (text, varchar, int): upper or lower. Default: lower.
+    pub type_case: KeywordCase,
+
+    /// List of ignored paths/files to match
+    pub ignored_files: Matcher,
+
+    /// List of included paths/files to match
+    pub included_files: Matcher,
+}
+
+impl Default for FormatterSettings {
+    fn default() -> Self {
+        Self {
+            enabled: false, // Disabled by default during beta
+            line_width: 100,
+            indent_size: 2,
+            indent_style: IndentStyle::Spaces,
+            keyword_case: KeywordCase::default(),
+            constant_case: KeywordCase::default(),
+            type_case: KeywordCase::default(),
             ignored_files: Matcher::empty(),
             included_files: Matcher::empty(),
         }

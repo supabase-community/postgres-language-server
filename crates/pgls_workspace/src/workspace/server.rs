@@ -10,7 +10,7 @@ use analyser::AnalyserVisitorBuilder;
 use async_helper::run_async;
 use connection_manager::ConnectionManager;
 use document::{
-    CursorPositionFilter, DefaultMapper, Document, ExecuteStatementMapper,
+    CursorPositionFilter, DefaultMapper, Document, ExecuteStatementMapper, FormatStatementMapper,
     TypecheckDiagnosticsMapper,
 };
 use futures::{StreamExt, stream};
@@ -38,6 +38,7 @@ use crate::{
         },
         completions::{CompletionsResult, GetCompletionsParams, get_statement_for_completions},
         diagnostics::{PullDiagnosticsResult, PullFileDiagnosticsParams},
+        format::{PullFileFormattingParams, PullFormattingResult, StatementFormatResult},
         on_hover::{OnHoverParams, OnHoverResult},
     },
     settings::{WorkspaceSettings, WorkspaceSettingsHandle, WorkspaceSettingsHandleMut},
@@ -704,6 +705,105 @@ impl Workspace for WorkspaceServer {
         })
     }
 
+    #[ignored_path(path=&params.path)]
+    fn pull_file_formatting(
+        &self,
+        params: PullFileFormattingParams,
+    ) -> Result<PullFormattingResult, WorkspaceError> {
+        let settings = self.workspaces();
+
+        let settings = match settings.settings() {
+            Some(settings) => settings,
+            None => {
+                return Ok(PullFormattingResult::default());
+            }
+        };
+
+        if !settings.formatter.enabled {
+            return Ok(PullFormattingResult::default());
+        }
+
+        let documents = self.documents.read().unwrap();
+        let doc = documents
+            .get(&params.path)
+            .ok_or(WorkspaceError::not_found())?;
+
+        let config = pgls_pretty_print::FormatConfig {
+            line_width: settings.formatter.line_width as usize,
+            indent_size: settings.formatter.indent_size as usize,
+            indent_style: settings.formatter.indent_style.into(),
+            keyword_case: settings.formatter.keyword_case.into(),
+            constant_case: settings.formatter.constant_case.into(),
+            type_case: settings.formatter.type_case.into(),
+        };
+
+        let mut diagnostics = Vec::new();
+        let mut statements = Vec::new();
+        let mut formatted_output = String::new();
+        let path_str = params.path.as_path().display().to_string();
+
+        for (_id, stmt_range, text, ast_result) in doc.iter(FormatStatementMapper) {
+            if let Some(filter_range) = params.range {
+                if stmt_range.intersect(filter_range).is_none() {
+                    if !formatted_output.is_empty() {
+                        formatted_output.push_str("\n\n");
+                    }
+                    formatted_output.push_str(&text);
+                    continue;
+                }
+            }
+
+            match ast_result {
+                Ok(ast) => match pgls_pretty_print::format_statement(&ast, &config) {
+                    Ok(result) => {
+                        if text != result.formatted {
+                            statements.push(StatementFormatResult {
+                                original: text.clone(),
+                                formatted: result.formatted.clone(),
+                                range: stmt_range,
+                            });
+                        }
+                        if !formatted_output.is_empty() {
+                            formatted_output.push_str("\n\n");
+                        }
+                        formatted_output.push_str(&result.formatted);
+                    }
+                    Err(err) => {
+                        diagnostics.push(SDiagnostic::new(
+                            pgls_diagnostics::Error::from(WorkspaceError::format_error(
+                                err.to_string(),
+                            ))
+                            .with_file_path(&path_str)
+                            .with_file_span(stmt_range),
+                        ));
+
+                        if !formatted_output.is_empty() {
+                            formatted_output.push_str("\n\n");
+                        }
+                        formatted_output.push_str(&text);
+                    }
+                },
+                Err(syntax_err) => {
+                    diagnostics.push(SDiagnostic::new(
+                        pgls_diagnostics::Error::from(syntax_err).with_file_path(&path_str),
+                    ));
+
+                    if !formatted_output.is_empty() {
+                        formatted_output.push_str("\n\n");
+                    }
+                    formatted_output.push_str(&text);
+                }
+            }
+        }
+
+        Ok(PullFormattingResult {
+            original: doc.get_document_content().to_string(),
+            formatted: formatted_output,
+            statements,
+            diagnostics,
+        })
+    }
+
     fn pull_db_diagnostics(
         &self,
         params: crate::features::diagnostics::PullDatabaseDiagnosticsParams,
@@ -733,7 +833,6 @@ impl Workspace for WorkspaceServer {
         let pool_clone = pool.clone();
         let schema_cache_clone = schema_cache.clone();
         let categories = params.categories;
-        let rules_config = settings.splinter.rules.clone();
         let splinter_result = run_async(async move {
             let filter = AnalysisFilter {
                 categories,
@@ -743,7 +842,6 @@ impl Workspace for WorkspaceServer {
             let splinter_params = pgls_splinter::SplinterParams {
                 conn: &pool_clone,
                 schema_cache: schema_cache_clone.as_deref(),
-                rules_config: rules_config.as_ref(),
             };
             pgls_splinter::run_splinter(splinter_params, &filter).await
         });
