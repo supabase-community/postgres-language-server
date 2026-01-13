@@ -1,0 +1,1235 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Configuration",
+  "description": "The configuration that is contained inside the configuration file.",
+  "type": "object",
+  "properties": {
+    "$schema": {
+      "description": "A field for the [JSON schema](https://json-schema.org/) specification",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "db": {
+      "description": "The configuration of the database connection",
+      "anyOf": [
+        {
+          "$ref": "#/definitions/DatabaseConfiguration"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "extends": {
+      "description": "A list of paths to other JSON files, used to extends the current configuration.",
+      "anyOf": [
+        {
+          "$ref": "#/definitions/StringSet"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "files": {
+      "description": "The configuration of the filesystem",
+      "anyOf": [
+        {
+          "$ref": "#/definitions/FilesConfiguration"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "linter": {
+      "description": "The configuration for the linter",
+      "anyOf": [
+        {
+          "$ref": "#/definitions/LinterConfiguration"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "migrations": {
+      "description": "Configure migrations",
+      "anyOf": [
+        {
+          "$ref": "#/definitions/MigrationsConfiguration"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "plpgsqlCheck": {
+      "description": "The configuration for type checking",
+      "anyOf": [
+        {
+          "$ref": "#/definitions/PlPgSqlCheckConfiguration"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "splinter": {
+      "description": "The configuration for splinter",
+      "anyOf": [
+        {
+          "$ref": "#/definitions/SplinterConfiguration"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "typecheck": {
+      "description": "The configuration for type checking",
+      "anyOf": [
+        {
+          "$ref": "#/definitions/TypecheckConfiguration"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "vcs": {
+      "description": "The configuration of the VCS integration",
+      "anyOf": [
+        {
+          "$ref": "#/definitions/VcsConfiguration"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "additionalProperties": false,
+  "definitions": {
+    "DatabaseConfiguration": {
+      "description": "The configuration of the database connection.",
+      "type": "object",
+      "properties": {
+        "allowStatementExecutionsAgainst": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/StringSet"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "connTimeoutSecs": {
+          "description": "The connection timeout in seconds.",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint16",
+          "minimum": 0.0
+        },
+        "connectionString": {
+          "description": "A connection string that encodes the full connection setup. When provided, it takes precedence over the individual fields.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "database": {
+          "description": "The name of the database.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "host": {
+          "description": "The host of the database. Required if you want database-related features. All else falls back to sensible defaults.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "password": {
+          "description": "The password to connect to the database.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "port": {
+          "description": "The port of the database.",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint16",
+          "minimum": 0.0
+        },
+        "username": {
+          "description": "The username to connect to the database.",
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "FilesConfiguration": {
+      "description": "The configuration of the filesystem",
+      "type": "object",
+      "properties": {
+        "ignore": {
+          "description": "A list of Unix shell style patterns. Will ignore files/folders that will match these patterns.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/StringSet"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "include": {
+          "description": "A list of Unix shell style patterns. Will handle only those files/folders that will match these patterns.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/StringSet"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "maxSize": {
+          "description": "The maximum allowed size for source code files in bytes. Files above this limit will be ignored for performance reasons. Defaults to 1 MiB",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint64",
+          "minimum": 1.0
+        }
+      },
+      "additionalProperties": false
+    },
+    "LinterConfiguration": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "description": "if `false`, it disables the feature and the linter won't be executed. `true` by default",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "ignore": {
+          "description": "A list of Unix shell style patterns. The linter will ignore files/folders that will match these patterns.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/StringSet"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "include": {
+          "description": "A list of Unix shell style patterns. The linter will include files/folders that will match these patterns.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/StringSet"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "rules": {
+          "description": "List of rules",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/LinterRules"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "LinterRules": {
+      "type": "object",
+      "properties": {
+        "all": {
+          "description": "It enables ALL rules. The rules that belong to `nursery` won't be enabled.",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "recommended": {
+          "description": "It enables the lint rules recommended by Postgres Language Server. `true` by default.",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "safety": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/Safety"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "MigrationsConfiguration": {
+      "description": "The configuration of the filesystem",
+      "type": "object",
+      "properties": {
+        "after": {
+          "description": "Ignore any migrations before this timestamp",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint64",
+          "minimum": 0.0
+        },
+        "migrationsDir": {
+          "description": "The directory where the migration files are stored",
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "Performance": {
+      "description": "A list of rules that belong to this group",
+      "type": "object",
+      "properties": {
+        "all": {
+          "description": "It enables ALL rules for this group.",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "authRlsInitplan": {
+          "description": "Auth RLS Initialization Plan: Detects if calls to `current_setting()` and `auth.()` in RLS policies are being unnecessarily re-evaluated for each row",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/SplinterRuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "duplicateIndex": {
+          "description": "Duplicate Index: Detects cases where two ore more identical indexes exist.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/SplinterRuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "multiplePermissivePolicies": {
+          "description": "Multiple Permissive Policies: Detects if multiple permissive row level security policies are present on a table for the same `role` and `action` (e.g. insert). Multiple permissive policies are suboptimal for performance as each policy must be executed for every relevant query.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/SplinterRuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "noPrimaryKey": {
+          "description": "No Primary Key: Detects if a table does not have a primary key. Tables without a primary key can be inefficient to interact with at scale.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/SplinterRuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "recommended": {
+          "description": "It enables the recommended rules for this group",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "tableBloat": {
+          "description": "Table Bloat: Detects if a table has excess bloat and may benefit from maintenance operations like vacuum full or cluster.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/SplinterRuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "unindexedForeignKeys": {
+          "description": "Unindexed foreign keys: Identifies foreign key constraints without a covering index, which can impact database performance.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/SplinterRuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "unusedIndex": {
+          "description": "Unused Index: Detects if an index has never been used and may be a candidate for removal.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/SplinterRuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "PlPgSqlCheckConfiguration": {
+      "description": "The configuration for type checking.",
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "description": "if `false`, it disables the feature and pglpgsql_check won't be executed. `true` by default",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "RuleConfiguration": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/RulePlainConfiguration"
+        },
+        {
+          "$ref": "#/definitions/RuleWithNoOptions"
+        }
+      ]
+    },
+    "RulePlainConfiguration": {
+      "type": "string",
+      "enum": [
+        "warn",
+        "error",
+        "info",
+        "off"
+      ]
+    },
+    "RuleWithNoOptions": {
+      "type": "object",
+      "required": [
+        "level"
+      ],
+      "properties": {
+        "level": {
+          "description": "The severity of the emitted diagnostics by the rule",
+          "allOf": [
+            {
+              "$ref": "#/definitions/RulePlainConfiguration"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "RuleWithSplinterRuleOptions": {
+      "type": "object",
+      "required": [
+        "level",
+        "options"
+      ],
+      "properties": {
+        "level": {
+          "description": "The severity of the emitted diagnostics by the rule",
+          "allOf": [
+            {
+              "$ref": "#/definitions/RulePlainConfiguration"
+            }
+          ]
+        },
+        "options": {
+          "description": "Rule's options",
+          "allOf": [
+            {
+              "$ref": "#/definitions/SplinterRuleOptions"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "Safety": {
+      "description": "A list of rules that belong to this group",
+      "type": "object",
+      "properties": {
+        "addSerialColumn": {
+          "description": "Adding a column with a SERIAL type or GENERATED ALWAYS AS ... STORED causes a full table rewrite.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "addingFieldWithDefault": {
+          "description": "Adding a column with a DEFAULT value may lead to a table rewrite while holding an ACCESS EXCLUSIVE lock.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "addingForeignKeyConstraint": {
+          "description": "Adding a foreign key constraint requires a table scan and a SHARE ROW EXCLUSIVE lock on both tables, which blocks writes.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "addingNotNullField": {
+          "description": "Setting a column NOT NULL blocks reads while the table is scanned.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "addingPrimaryKeyConstraint": {
+          "description": "Adding a primary key constraint results in locks and table rewrites.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "addingRequiredField": {
+          "description": "Adding a new column that is NOT NULL and has no default value to an existing table effectively makes it required.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "all": {
+          "description": "It enables ALL rules for this group.",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "banCharField": {
+          "description": "Using CHAR(n) or CHARACTER(n) types is discouraged.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "banConcurrentIndexCreationInTransaction": {
+          "description": "Concurrent index creation is not allowed within a transaction.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "banDropColumn": {
+          "description": "Dropping a column may break existing clients.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "banDropDatabase": {
+          "description": "Dropping a database may break existing clients (and everything else, really).",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "banDropNotNull": {
+          "description": "Dropping a NOT NULL constraint may break existing clients.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "banDropTable": {
+          "description": "Dropping a table may break existing clients.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "banTruncateCascade": {
+          "description": "Using TRUNCATE's CASCADE option will truncate any tables that are also foreign-keyed to the specified tables.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "changingColumnType": {
+          "description": "Changing a column type may break existing clients.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "constraintMissingNotValid": {
+          "description": "Adding constraints without NOT VALID blocks all reads and writes.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "creatingEnum": {
+          "description": "Creating enum types is not recommended for new applications.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "disallowUniqueConstraint": {
+          "description": "Disallow adding a UNIQUE constraint without using an existing index.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "lockTimeoutWarning": {
+          "description": "Taking a dangerous lock without setting a lock timeout can cause indefinite blocking.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "multipleAlterTable": {
+          "description": "Multiple ALTER TABLE statements on the same table should be combined into a single statement.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "preferBigInt": {
+          "description": "Prefer BIGINT over smaller integer types.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "preferBigintOverInt": {
+          "description": "Prefer BIGINT over INT/INTEGER types.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "preferBigintOverSmallint": {
+          "description": "Prefer BIGINT over SMALLINT types.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "preferIdentity": {
+          "description": "Prefer using IDENTITY columns over serial columns.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "preferJsonb": {
+          "description": "Prefer JSONB over JSON types.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "preferRobustStmts": {
+          "description": "Prefer statements with guards for robustness in migrations.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "preferTextField": {
+          "description": "Prefer using TEXT over VARCHAR(n) types.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "preferTimestamptz": {
+          "description": "Prefer TIMESTAMPTZ over TIMESTAMP types.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "recommended": {
+          "description": "It enables the recommended rules for this group",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "renamingColumn": {
+          "description": "Renaming columns may break existing queries and application code.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "renamingTable": {
+          "description": "Renaming tables may break existing queries and application code.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "requireConcurrentIndexCreation": {
+          "description": "Creating indexes non-concurrently can lock the table for writes.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "requireConcurrentIndexDeletion": {
+          "description": "Dropping indexes non-concurrently can lock the table for reads.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "runningStatementWhileHoldingAccessExclusive": {
+          "description": "Running additional statements while holding an ACCESS EXCLUSIVE lock blocks all table access.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "transactionNesting": {
+          "description": "Detects problematic transaction nesting that could lead to unexpected behavior.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "Security": {
+      "description": "A list of rules that belong to this group",
+      "type": "object",
+      "properties": {
+        "all": {
+          "description": "It enables ALL rules for this group.",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "authUsersExposed": {
+          "description": "Exposed Auth Users: Detects if auth.users is exposed to anon or authenticated roles via a view or materialized view in schemas exposed to PostgREST, potentially compromising user data security.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/SplinterRuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "extensionInPublic": {
+          "description": "Extension in Public: Detects extensions installed in the `public` schema.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/SplinterRuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "extensionVersionsOutdated": {
+          "description": "Extension Versions Outdated: Detects extensions that are not using the default (recommended) version.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/SplinterRuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "fkeyToAuthUnique": {
+          "description": "Foreign Key to Auth Unique Constraint: Detects user defined foreign keys to unique constraints in the auth schema.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/SplinterRuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "foreignTableInApi": {
+          "description": "Foreign Table in API: Detects foreign tables that are accessible over APIs. Foreign tables do not respect row level security policies.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/SplinterRuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "functionSearchPathMutable": {
+          "description": "Function Search Path Mutable: Detects functions where the search_path parameter is not set.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/SplinterRuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "insecureQueueExposedInApi": {
+          "description": "Insecure Queue Exposed in API: Detects cases where an insecure Queue is exposed over Data APIs",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/SplinterRuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "materializedViewInApi": {
+          "description": "Materialized View in API: Detects materialized views that are accessible over the Data APIs.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/SplinterRuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "policyExistsRlsDisabled": {
+          "description": "Policy Exists RLS Disabled: Detects cases where row level security (RLS) policies have been created, but RLS has not been enabled for the underlying table.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/SplinterRuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "recommended": {
+          "description": "It enables the recommended rules for this group",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "rlsDisabledInPublic": {
+          "description": "RLS Disabled in Public: Detects cases where row level security (RLS) has not been enabled on tables in schemas exposed to PostgREST",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/SplinterRuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "rlsEnabledNoPolicy": {
+          "description": "RLS Enabled No Policy: Detects cases where row level security (RLS) has been enabled on a table but no RLS policies have been created.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/SplinterRuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "rlsReferencesUserMetadata": {
+          "description": "RLS references user metadata: Detects when Supabase Auth user_metadata is referenced insecurely in a row level security (RLS) policy.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/SplinterRuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "securityDefinerView": {
+          "description": "Security Definer View: Detects views defined with the SECURITY DEFINER property. These views enforce Postgres permissions and row level security policies (RLS) of the view creator, rather than that of the querying user",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/SplinterRuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "unsupportedRegTypes": {
+          "description": "Unsupported reg types: Identifies columns using unsupported reg* types outside pg_catalog schema, which prevents database upgrades using pg_upgrade.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/SplinterRuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "SplinterConfiguration": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "description": "if `false`, it disables the feature and the linter won't be executed. `true` by default",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "rules": {
+          "description": "List of rules",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/SplinterRules"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "SplinterRuleConfiguration": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/RulePlainConfiguration"
+        },
+        {
+          "$ref": "#/definitions/RuleWithSplinterRuleOptions"
+        }
+      ]
+    },
+    "SplinterRuleOptions": {
+      "description": "Shared options for all splinter rules.\n\nThese options allow configuring per-rule filtering of database objects.",
+      "type": "object",
+      "properties": {
+        "ignore": {
+          "description": "A list of glob patterns for database objects to ignore.\n\nPatterns use Unix-style globs where: - `*` matches any sequence of characters - `?` matches any single character\n\nEach pattern should be in the format `schema.object_name`, for example: - `\"public.my_table\"` - ignores a specific table - `\"audit.*\"` - ignores all objects in the audit schema - `\"*.audit_*\"` - ignores objects with audit_ prefix in any schema",
+          "default": [],
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "SplinterRules": {
+      "type": "object",
+      "properties": {
+        "all": {
+          "description": "It enables ALL rules. The rules that belong to `nursery` won't be enabled.",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "performance": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/Performance"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "recommended": {
+          "description": "It enables the lint rules recommended by Postgres Language Server. `true` by default.",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "security": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/Security"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "StringSet": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "uniqueItems": true
+    },
+    "TypecheckConfiguration": {
+      "description": "The configuration for type checking.",
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "description": "if `false`, it disables the feature and the typechecker won't be executed. `true` by default",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "searchPath": {
+          "description": "Default search path schemas for type checking. Can be a list of schema names or glob patterns like [\"public\", \"app_*\"]. If not specified, defaults to [\"public\"].",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/StringSet"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "VcsClientKind": {
+      "oneOf": [
+        {
+          "description": "Integration with the git client as VCS",
+          "type": "string",
+          "enum": [
+            "git"
+          ]
+        }
+      ]
+    },
+    "VcsConfiguration": {
+      "description": "Set of properties to integrate with a VCS software.",
+      "type": "object",
+      "properties": {
+        "clientKind": {
+          "description": "The kind of client.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/VcsClientKind"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "defaultBranch": {
+          "description": "The main branch of the project",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "enabled": {
+          "description": "Whether we should integrate itself with the VCS client",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "root": {
+          "description": "The folder where we should check for VCS files. By default, we will use the same folder where `postgres-language-server.jsonc` was found.\n\nIf we can't find the configuration, it will attempt to use the current working directory. If no current working directory can't be found, we won't use the VCS integration, and a diagnostic will be emitted",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "useIgnoreFile": {
+          "description": "Whether we should use the VCS ignore file. When [true], we will ignore the files specified in the ignore file.",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

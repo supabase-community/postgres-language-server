@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><link rel="canonical" href="https://pg-language-server.com/0.19.0/reference/rules/multiple-permissive-policies/" />
+      <link rel="shortcut icon" href="../../../img/favicon.ico" />
+    <title>multiplePermissivePolicies - Postgres Language Server</title>
+    <link rel="stylesheet" href="../../../css/theme.css" />
+    <link rel="stylesheet" href="../../../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
+        <link href="../../../css/version-select.css" rel="stylesheet" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "multiplePermissivePolicies";
+        var mkdocs_page_input_path = "reference/rules/multiple-permissive-policies.md";
+        var mkdocs_page_url = "/0.19.0/reference/rules/multiple-permissive-policies/";
+      </script>
+    
+    <!--[if lt IE 9]>
+      <script src="../../../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+      <script>hljs.highlightAll();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href="../../.." class="icon icon-home"> Postgres Language Server
+        </a>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../../../getting_started/">Getting Started</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../../../manual_installation/">Manual Installation</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../../../configuration/">Configuration</a>
+                </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Features</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../features/syntax_diagnostics/">Syntax Diagnostics</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../features/linting/">Linting</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../features/type_checking/">Type Checking</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../features/plpgsql/">PL/pgSQL Support</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../features/editor_features/">Autocompletion & Hover</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Guides</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../guides/ide_setup/">Use in your IDE</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../guides/checking_migrations/">Checking Migrations</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../guides/configure_database/">Configure database connection</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../guides/suppressions/">Suppressions</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../guides/vcs_integration/">Integrate with VCS</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../guides/continuous_integration/">Continuous Integration</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Reference</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../cli/">CLI Commands</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../">Linter Rules</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../rule_sources/">Rule Sources</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../env_variables/">Environment Variables</a>
+                  </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../..">Postgres Language Server</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../.." class="icon icon-home" aria-label="Docs"></a></li>
+      <li class="breadcrumb-item active">multiplePermissivePolicies</li>
+    <li class="wy-breadcrumbs-aside">
+          <a href="https://github.com/supabase-community/postgres-language-server/edit/master/docs/reference/rules/multiple-permissive-policies.md">Edit on supabase-community/postgres-language-server</a>
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="multiplepermissivepolicies">multiplePermissivePolicies</h1>
+<p><strong>Diagnostic Category: <code>splinter/performance/multiplePermissivePolicies</code></strong></p>
+<p><strong>Severity</strong>: Warning</p>
+<h2 id="description">Description</h2>
+<p>Detects if multiple permissive row level security policies are present on a table for the same `role` and `action` (e.g. insert). Multiple permissive policies are suboptimal for performance as each policy must be executed for every relevant query.</p>
+<h2 id="remediation">Remediation</h2>
+<p>https://supabase.com/docs/guides/database/database-linter?lint=0006_multiple_permissive_policies</p>
+<h2 id="sql-query">SQL Query</h2>
+<pre><code class="language-sql">(
+select
+    'multiple_permissive_policies' as &quot;name!&quot;,
+    'Multiple Permissive Policies' as &quot;title!&quot;,
+    'WARN' as &quot;level!&quot;,
+    'EXTERNAL' as &quot;facing!&quot;,
+    array['PERFORMANCE'] as &quot;categories!&quot;,
+    'Detects if multiple permissive row level security policies are present on a table for the same \`role\` and \`action\` (e.g. insert). Multiple permissive policies are suboptimal for performance as each policy must be executed for every relevant query.' as &quot;description!&quot;,
+    format(
+        'Table \`%s.%s\` has multiple permissive policies for role \`%s\` for action \`%s\`. Policies include \`%s\`',
+        n.nspname,
+        c.relname,
+        r.rolname,
+        act.cmd,
+        array_agg(p.polname order by p.polname)
+    ) as &quot;detail!&quot;,
+    'https://supabase.com/docs/guides/database/database-linter?lint=0006_multiple_permissive_policies' as &quot;remediation!&quot;,
+    jsonb_build_object(
+        'schema', n.nspname,
+        'name', c.relname,
+        'type', 'table'
+    ) as &quot;metadata!&quot;,
+    format(
+        'multiple_permissive_policies_%s_%s_%s_%s',
+        n.nspname,
+        c.relname,
+        r.rolname,
+        act.cmd
+    ) as &quot;cache_key!&quot;
+from
+    pg_catalog.pg_policy p
+    join pg_catalog.pg_class c
+        on p.polrelid = c.oid
+    join pg_catalog.pg_namespace n
+        on c.relnamespace = n.oid
+    join pg_catalog.pg_roles r
+        on p.polroles @&gt; array[r.oid]
+        or p.polroles = array[0::oid]
+    left join pg_catalog.pg_depend dep
+        on c.oid = dep.objid
+        and dep.deptype = 'e',
+    lateral (
+        select x.cmd
+        from unnest((
+            select
+                case p.polcmd
+                    when 'r' then array['SELECT']
+                    when 'a' then array['INSERT']
+                    when 'w' then array['UPDATE']
+                    when 'd' then array['DELETE']
+                    when '*' then array['SELECT', 'INSERT', 'UPDATE', 'DELETE']
+                    else array['ERROR']
+                end as actions
+        )) x(cmd)
+    ) act(cmd)
+where
+    c.relkind = 'r' -- regular tables
+    and p.polpermissive -- policy is permissive
+    and n.nspname not in (
+        '_timescaledb_cache', '_timescaledb_catalog', '_timescaledb_config', '_timescaledb_internal', 'auth', 'cron', 'extensions', 'graphql', 'graphql_public', 'information_schema', 'net', 'pgmq', 'pgroonga', 'pgsodium', 'pgsodium_masks', 'pgtle', 'pgbouncer', 'pg_catalog', 'pgtle', 'realtime', 'repack', 'storage', 'supabase_functions', 'supabase_migrations', 'tiger', 'topology', 'vault'
+    )
+    and r.rolname not like 'pg_%'
+    and r.rolname not like 'supabase%admin'
+    and not r.rolbypassrls
+    and dep.objid is null -- exclude tables owned by extensions
+group by
+    n.nspname,
+    c.relname,
+    r.rolname,
+    act.cmd
+having
+    count(1) &gt; 1)
+</code></pre>
+<h2 id="how-to-configure">How to configure</h2>
+<pre><code class="language-json">{
+  &quot;splinter&quot;: {
+    &quot;rules&quot;: {
+      &quot;performance&quot;: {
+        &quot;multiplePermissivePolicies&quot;: &quot;error&quot;
+      }
+    }
+  }
+}
+</code></pre>
+              
+            </div>
+          </div><footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+        <span>
+          <a href="https://github.com/supabase-community/postgres-language-server" class="fa fa-code-fork" style="color: #fcfcfc"> supabase-community/postgres-language-server</a>
+        </span>
+    
+    
+    
+  </span>
+</div>
+    <script src="../../../js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = "../../..";</script>
+    <script src="../../../js/theme_extra.js"></script>
+    <script src="../../../js/theme.js"></script>
+      <script src="../../../js/version-select.js"></script>
+    <script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+
+</body>
+</html>

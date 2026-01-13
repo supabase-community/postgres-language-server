@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><link rel="canonical" href="https://pg-language-server.com/0.19.0/reference/env_variables/" />
+      <link rel="shortcut icon" href="../../img/favicon.ico" />
+    <title>Environment Variables - Postgres Language Server</title>
+    <link rel="stylesheet" href="../../css/theme.css" />
+    <link rel="stylesheet" href="../../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
+        <link href="../../css/version-select.css" rel="stylesheet" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "Environment Variables";
+        var mkdocs_page_input_path = "reference/env_variables.md";
+        var mkdocs_page_url = "/0.19.0/reference/env_variables/";
+      </script>
+    
+    <!--[if lt IE 9]>
+      <script src="../../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+      <script>hljs.highlightAll();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href="../.." class="icon icon-home"> Postgres Language Server
+        </a>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../../getting_started/">Getting Started</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../../manual_installation/">Manual Installation</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../../configuration/">Configuration</a>
+                </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Features</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../features/syntax_diagnostics/">Syntax Diagnostics</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../features/linting/">Linting</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../features/type_checking/">Type Checking</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../features/plpgsql/">PL/pgSQL Support</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../features/editor_features/">Autocompletion & Hover</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Guides</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../guides/ide_setup/">Use in your IDE</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../guides/checking_migrations/">Checking Migrations</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../guides/configure_database/">Configure database connection</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../guides/suppressions/">Suppressions</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../guides/vcs_integration/">Integrate with VCS</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../guides/continuous_integration/">Continuous Integration</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Reference</span></p>
+              <ul class="current">
+                  <li class="toctree-l1"><a class="reference internal" href="../cli/">CLI Commands</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../rules/">Linter Rules</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../rule_sources/">Rule Sources</a>
+                  </li>
+                  <li class="toctree-l1 current"><a class="reference internal current" href="#">Environment Variables</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#pgls_log_path">PGLS_LOG_PATH</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#pgls_log_level">PGLS_LOG_LEVEL</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#pgls_log_prefix_name">PGLS_LOG_PREFIX_NAME</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#pgls_config_path">PGLS_CONFIG_PATH</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#pgt_log_path">PGT_LOG_PATH</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#pgt_log_level">PGT_LOG_LEVEL</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#pgt_log_prefix_name">PGT_LOG_PREFIX_NAME</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#pgt_config_path">PGT_CONFIG_PATH</a>
+    </li>
+    </ul>
+                  </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../..">Postgres Language Server</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../.." class="icon icon-home" aria-label="Docs"></a></li>
+          <li class="breadcrumb-item">Reference</li>
+      <li class="breadcrumb-item active">Environment Variables</li>
+    <li class="wy-breadcrumbs-aside">
+          <a href="https://github.com/supabase-community/postgres-language-server/edit/master/docs/reference/env_variables.md">Edit on supabase-community/postgres-language-server</a>
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="environment-variables">Environment Variables</h1>
+<h3 id="pgls_log_path"><code>PGLS_LOG_PATH</code></h3>
+<p>The directory where the Daemon logs will be saved.</p>
+<h3 id="pgls_log_level"><code>PGLS_LOG_LEVEL</code></h3>
+<p>Allows to change the log level. Default is debug. This will only affect "pgls*" crates. All others are logged with info level.</p>
+<h3 id="pgls_log_prefix_name"><code>PGLS_LOG_PREFIX_NAME</code></h3>
+<p>A prefix that's added to the name of the log. Default: <code>server.log.</code></p>
+<h3 id="pgls_config_path"><code>PGLS_CONFIG_PATH</code></h3>
+<p>A path to the configuration file</p>
+<h3 id="pgt_log_path"><code>PGT_LOG_PATH</code></h3>
+<p>The directory where the Daemon logs will be saved. Deprecated, use PGLS_LOG_PATH instead.</p>
+<h3 id="pgt_log_level"><code>PGT_LOG_LEVEL</code></h3>
+<p>Allows to change the log level. Default is debug. This will only affect "pgls*" crates. All others are logged with info level. Deprecated, use PGLS_LOG_LEVEL instead.</p>
+<h3 id="pgt_log_prefix_name"><code>PGT_LOG_PREFIX_NAME</code></h3>
+<p>A prefix that's added to the name of the log. Default: <code>server.log</code>. Deprecated, use PGLS_LOG_PREFIX_NAME instead.</p>
+<h3 id="pgt_config_path"><code>PGT_CONFIG_PATH</code></h3>
+<p>A path to the configuration file. Deprecated, use PGLS_CONFIG_PATH instead.</p>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="../rule_sources/" class="btn btn-neutral float-left" title="Rule Sources"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+        <span>
+          <a href="https://github.com/supabase-community/postgres-language-server" class="fa fa-code-fork" style="color: #fcfcfc"> supabase-community/postgres-language-server</a>
+        </span>
+    
+    
+      <span><a href="../rule_sources/" style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+  </span>
+</div>
+    <script src="../../js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = "../..";</script>
+    <script src="../../js/theme_extra.js"></script>
+    <script src="../../js/theme.js"></script>
+      <script src="../../js/version-select.js"></script>
+    <script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+
+</body>
+</html>
