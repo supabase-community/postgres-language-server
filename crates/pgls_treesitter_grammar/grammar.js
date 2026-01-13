@@ -2658,7 +2658,6 @@ module.exports = grammar({
       partialSeq(
         $.keyword_join,
         $.relation,
-        optional($.join),
         choice(
           partialSeq($.keyword_on, field("end", $._expression)),
 

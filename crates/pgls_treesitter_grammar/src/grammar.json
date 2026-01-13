@@ -16686,95 +16686,70 @@
                     "type": "CHOICE",
                     "members": [
                       {
-                        "type": "SEQ",
+                        "type": "CHOICE",
                         "members": [
                           {
-                            "type": "CHOICE",
-                            "members": [
-                              {
-                                "type": "SYMBOL",
-                                "name": "join"
-                              },
-                              {
-                                "type": "BLANK"
-                              }
-                            ]
+                            "type": "PREC_RIGHT",
+                            "value": 0,
+                            "content": {
+                              "type": "SEQ",
+                              "members": [
+                                {
+                                  "type": "SYMBOL",
+                                  "name": "keyword_on"
+                                },
+                                {
+                                  "type": "CHOICE",
+                                  "members": [
+                                    {
+                                      "type": "FIELD",
+                                      "name": "end",
+                                      "content": {
+                                        "type": "SYMBOL",
+                                        "name": "_expression"
+                                      }
+                                    },
+                                    {
+                                      "type": "BLANK"
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
                           },
                           {
-                            "type": "CHOICE",
-                            "members": [
-                              {
-                                "type": "CHOICE",
-                                "members": [
-                                  {
-                                    "type": "PREC_RIGHT",
-                                    "value": 0,
-                                    "content": {
-                                      "type": "SEQ",
-                                      "members": [
-                                        {
+                            "type": "PREC_RIGHT",
+                            "value": 0,
+                            "content": {
+                              "type": "SEQ",
+                              "members": [
+                                {
+                                  "type": "SYMBOL",
+                                  "name": "keyword_using"
+                                },
+                                {
+                                  "type": "CHOICE",
+                                  "members": [
+                                    {
+                                      "type": "FIELD",
+                                      "name": "end",
+                                      "content": {
+                                        "type": "ALIAS",
+                                        "content": {
                                           "type": "SYMBOL",
-                                          "name": "keyword_on"
+                                          "name": "_column_list"
                                         },
-                                        {
-                                          "type": "CHOICE",
-                                          "members": [
-                                            {
-                                              "type": "FIELD",
-                                              "name": "end",
-                                              "content": {
-                                                "type": "SYMBOL",
-                                                "name": "_expression"
-                                              }
-                                            },
-                                            {
-                                              "type": "BLANK"
-                                            }
-                                          ]
-                                        }
-                                      ]
+                                        "named": true,
+                                        "value": "list"
+                                      }
+                                    },
+                                    {
+                                      "type": "BLANK"
                                     }
-                                  },
-                                  {
-                                    "type": "PREC_RIGHT",
-                                    "value": 0,
-                                    "content": {
-                                      "type": "SEQ",
-                                      "members": [
-                                        {
-                                          "type": "SYMBOL",
-                                          "name": "keyword_using"
-                                        },
-                                        {
-                                          "type": "CHOICE",
-                                          "members": [
-                                            {
-                                              "type": "FIELD",
-                                              "name": "end",
-                                              "content": {
-                                                "type": "ALIAS",
-                                                "content": {
-                                                  "type": "SYMBOL",
-                                                  "name": "_column_list"
-                                                },
-                                                "named": true,
-                                                "value": "list"
-                                              }
-                                            },
-                                            {
-                                              "type": "BLANK"
-                                            }
-                                          ]
-                                        }
-                                      ]
-                                    }
-                                  }
-                                ]
-                              },
-                              {
-                                "type": "BLANK"
-                              }
-                            ]
+                                  ]
+                                }
+                              ]
+                            }
                           }
                         ]
                       },

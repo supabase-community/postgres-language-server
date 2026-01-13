@@ -7005,10 +7005,6 @@
       "required": true,
       "types": [
         {
-          "type": "join",
-          "named": true
-        },
-        {
           "type": "keyword_full",
           "named": true
         },

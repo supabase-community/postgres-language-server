@@ -756,4 +756,27 @@ mod tests {
         )
         .await;
     }
+
+    #[sqlx::test]
+    async fn stays_in_joins(pool: PgPool) {
+        let setup = r#"
+            create table public.users (
+                id serial primary key,
+                email varchar(255)
+            );
+        "#;
+
+        let query = format!(
+            "select * from public.users u join public.something s {}",
+            QueryWithCursorPosition::cursor_marker()
+        );
+
+        assert_complete_results(
+            query.as_str(),
+            vec![CompletionAssertion::LabelNotExists("join".into())],
+            Some(setup),
+            &pool,
+        )
+        .await;
+    }
 }
