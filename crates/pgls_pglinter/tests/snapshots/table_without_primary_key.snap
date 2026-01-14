@@ -1,0 +1,13 @@
+---
+source: crates/pgls_pglinter/tests/diagnostics.rs
+expression: content
+snapshot_kind: text
+---
+Category: pglinter/base/howManyTableWithoutPrimaryKey
+Severity: Warning
+Message: Table 'public.test_no_pk' has no primary key
+Advices:
+Tables without primary keys cannot be uniquely identified, which causes issues with replication, foreign keys, and efficient updates/deletes.
+[Info] Rule: B001
+How to fix:
+[Info]   1. create a primary key or change warning/error threshold

@@ -1,0 +1,32 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT\n    c.oid::bigint as \"id!\",\n    n.nspname as \"schema!\",\n    c.relname as \"name!\"\nFROM pg_catalog.pg_class c\nJOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace\nWHERE c.relkind = 'S'\n  AND n.nspname NOT IN ('pg_catalog', 'information_schema', 'pg_toast')\n",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id!",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 1,
+        "name": "schema!",
+        "type_info": "Name"
+      },
+      {
+        "ordinal": 2,
+        "name": "name!",
+        "type_info": "Name"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      null,
+      false,
+      false
+    ]
+  },
+  "hash": "0aba89d3e0ed2e4586b94ea8fe2def7cbde2c9e609d34c1bfcb87f50ed0f25ff"
+}

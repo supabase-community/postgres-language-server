@@ -96,15 +96,26 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       # we need to use the same database as we do locally for sqlx prepare to output the same hashes
-      - name: Build and start PostgreSQL with plpgsql_check
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build PostgreSQL image with cache
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          load: true
+          tags: postgres-language-server-dev:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Start PostgreSQL
         run: |
-          docker build -t postgres-plpgsql-check:latest .
           docker run -d --name postgres \
             -e POSTGRES_USER=postgres \
             -e POSTGRES_PASSWORD=postgres \
             -e POSTGRES_DB=postgres \
             -p 5432:5432 \
-            postgres-plpgsql-check:latest
+            postgres-language-server-dev:latest
           # Wait for postgres to be ready
           for _ in {1..30}; do
             if docker exec postgres pg_isready -U postgres; then
