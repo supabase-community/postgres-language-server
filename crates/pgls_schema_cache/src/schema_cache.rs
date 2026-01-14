@@ -4,8 +4,10 @@ use sqlx::postgres::PgPool;
 
 use crate::columns::Column;
 use crate::functions::Function;
+use crate::indexes::Index;
 use crate::policies::Policy;
 use crate::schemas::Schema;
+use crate::sequences::Sequence;
 use crate::tables::Table;
 use crate::types::PostgresType;
 use crate::versions::Version;
@@ -23,6 +25,8 @@ pub struct SchemaCache {
     pub extensions: Vec<Extension>,
     pub triggers: Vec<Trigger>,
     pub roles: Vec<Role>,
+    pub indexes: Vec<Index>,
+    pub sequences: Vec<Sequence>,
 }
 
 impl SchemaCache {
@@ -39,6 +43,8 @@ impl SchemaCache {
             triggers,
             roles,
             extensions,
+            indexes,
+            sequences,
         ) = futures_util::try_join!(
             Schema::load(pool),
             Table::load(pool),
@@ -50,6 +56,8 @@ impl SchemaCache {
             Trigger::load(pool),
             Role::load(pool),
             Extension::load(pool),
+            Index::load(pool),
+            Sequence::load(pool),
         )?;
 
         let version = versions
@@ -68,6 +76,8 @@ impl SchemaCache {
             triggers,
             roles,
             extensions,
+            indexes,
+            sequences,
         })
     }
 
@@ -103,6 +113,26 @@ impl SchemaCache {
 
     pub fn find_type_by_id(&self, id: i64) -> Option<&PostgresType> {
         self.types.iter().find(|t| t.id == id)
+    }
+
+    pub fn find_table_by_id(&self, id: i64) -> Option<&Table> {
+        self.tables.iter().find(|t| t.id == id)
+    }
+
+    pub fn find_function_by_id(&self, id: i64) -> Option<&Function> {
+        self.functions.iter().find(|f| f.id == id)
+    }
+
+    pub fn find_schema_by_id(&self, id: i64) -> Option<&Schema> {
+        self.schemas.iter().find(|s| s.id == id)
+    }
+
+    pub fn find_index_by_id(&self, id: i64) -> Option<&Index> {
+        self.indexes.iter().find(|i| i.id == id)
+    }
+
+    pub fn find_sequence_by_id(&self, id: i64) -> Option<&Sequence> {
+        self.sequences.iter().find(|s| s.id == id)
     }
 
     pub fn find_cols(&self, name: &str, table: Option<&str>, schema: Option<&str>) -> Vec<&Column> {

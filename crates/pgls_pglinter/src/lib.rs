@@ -7,12 +7,31 @@ pub mod rule;
 pub mod rules;
 
 use pgls_analyse::{AnalysisFilter, RegistryVisitor, RuleMeta};
+use pgls_diagnostics::DatabaseObjectOwned;
 use pgls_schema_cache::SchemaCache;
 use sqlx::PgPool;
 
 pub use cache::PglinterCache;
 pub use diagnostics::{PglinterAdvices, PglinterDiagnostic};
 pub use rule::PglinterRule;
+
+/// PostgreSQL catalog OIDs for different object types
+mod pg_catalog {
+    pub const PG_CLASS: i64 = 1259; // tables, views, indexes, sequences
+    pub const PG_PROC: i64 = 1255; // functions, procedures
+    pub const PG_TYPE: i64 = 1247; // types
+    pub const PG_NAMESPACE: i64 = 2615; // schemas
+    pub const PG_ATTRIBUTE: i64 = 1249; // columns (objid=table oid, objsubid=column number)
+}
+
+/// A violation row returned by pglinter.get_violations()
+#[derive(Debug, sqlx::FromRow)]
+struct ViolationRow {
+    rule_code: String,
+    classid: i64,
+    objid: i64,
+    objsubid: i32,
+}
 
 /// Parameters for running pglinter
 #[derive(Debug)]
@@ -109,35 +128,126 @@ pub async fn run_pglinter(
         return Ok(results);
     }
 
-    // Execute each rule
-    for rule_code in &runnable_rules {
-        if let Some(diags) = execute_rule(params.conn, rule_code).await? {
-            results.extend(diags);
+    // Fetch all violations in one query
+    let violations = fetch_violations(params.conn).await?;
+
+    // Process violations, filtering by enabled rules and resolving objects from cache
+    for violation in violations {
+        // Skip violations for rules we're not checking
+        if !runnable_rules.contains(&violation.rule_code) {
+            continue;
+        }
+
+        // Resolve the object from the schema cache
+        let db_object = resolve_object_from_cache(
+            params.schema_cache,
+            violation.classid,
+            violation.objid,
+            violation.objsubid,
+        );
+
+        // Create a diagnostic for this violation
+        if let Some(diag) = PglinterDiagnostic::from_violation(&violation.rule_code, db_object) {
+            results.push(diag);
         }
     }
 
     Ok(results)
 }
 
-/// Execute a single pglinter rule using pglinter.check(rule_code)
-/// Returns true if the rule detected issues
-async fn execute_rule(
-    conn: &PgPool,
-    rule_code: &str,
-) -> Result<Option<Vec<PglinterDiagnostic>>, sqlx::Error> {
-    let has_issues: bool = sqlx::query_scalar("SELECT pglinter.check($1)")
-        .bind(rule_code)
-        .fetch_one(conn)
-        .await?;
+/// Fetch all violations from pglinter.get_violations()
+async fn fetch_violations(conn: &PgPool) -> Result<Vec<ViolationRow>, sqlx::Error> {
+    sqlx::query_as::<_, ViolationRow>(
+        "select rule_code, classid::bigint, objid::bigint, objsubid from pglinter.get_violations()",
+    )
+    .fetch_all(conn)
+    .await
+}
 
-    if !has_issues {
-        return Ok(None);
-    }
-
-    // Rule fired - create diagnostic from our known metadata
-    if let Some(diag) = PglinterDiagnostic::from_rule_code(rule_code) {
-        Ok(Some(vec![diag]))
-    } else {
-        Ok(None)
+/// Resolve a Postgres object from the schema cache using its catalog OIDs
+fn resolve_object_from_cache(
+    schema_cache: &SchemaCache,
+    classid: i64,
+    objid: i64,
+    objsubid: i32,
+) -> Option<DatabaseObjectOwned> {
+    match classid {
+        pg_catalog::PG_CLASS => {
+            // pg_class contains tables, views, indexes, sequences, etc.
+            // Try tables first, then indexes, then sequences
+            schema_cache
+                .find_table_by_id(objid)
+                .map(|t| DatabaseObjectOwned {
+                    schema: Some(t.schema.clone()),
+                    name: t.name.clone(),
+                    object_type: Some(format!("{:?}", t.table_kind).to_lowercase()),
+                })
+                .or_else(|| {
+                    schema_cache
+                        .find_index_by_id(objid)
+                        .map(|i| DatabaseObjectOwned {
+                            schema: Some(i.schema.clone()),
+                            name: i.name.clone(),
+                            object_type: Some("index".to_string()),
+                        })
+                })
+                .or_else(|| {
+                    schema_cache
+                        .find_sequence_by_id(objid)
+                        .map(|s| DatabaseObjectOwned {
+                            schema: Some(s.schema.clone()),
+                            name: s.name.clone(),
+                            object_type: Some("sequence".to_string()),
+                        })
+                })
+        }
+        pg_catalog::PG_PROC => {
+            // Functions and procedures
+            schema_cache
+                .find_function_by_id(objid)
+                .map(|f| DatabaseObjectOwned {
+                    schema: Some(f.schema.clone()),
+                    name: f.name.clone(),
+                    object_type: Some(format!("{:?}", f.kind).to_lowercase()),
+                })
+        }
+        pg_catalog::PG_TYPE => {
+            // Types
+            schema_cache
+                .find_type_by_id(objid)
+                .map(|t| DatabaseObjectOwned {
+                    schema: Some(t.schema.clone()),
+                    name: t.name.clone(),
+                    object_type: Some("type".to_string()),
+                })
+        }
+        pg_catalog::PG_NAMESPACE => {
+            // Schemas
+            schema_cache
+                .find_schema_by_id(objid)
+                .map(|s| DatabaseObjectOwned {
+                    schema: None,
+                    name: s.name.clone(),
+                    object_type: Some("schema".to_string()),
+                })
+        }
+        pg_catalog::PG_ATTRIBUTE => {
+            // Columns: objid is table OID, objsubid is column number (attnum)
+            // Find the column by table OID and column number
+            let col_num = i64::from(objsubid);
+            schema_cache
+                .columns
+                .iter()
+                .find(|c| c.table_oid == objid && c.number == col_num)
+                .map(|c| DatabaseObjectOwned {
+                    schema: Some(c.schema_name.clone()),
+                    name: format!("{}.{}", c.table_name, c.name),
+                    object_type: Some("column".to_string()),
+                })
+        }
+        _ => {
+            // Unknown catalog - we can't resolve this object from the cache
+            None
+        }
     }
 }
