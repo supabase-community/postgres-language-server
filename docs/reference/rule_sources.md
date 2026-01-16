@@ -1,7 +1,10 @@
 # Rule Sources
 Many rules are inspired by or directly ported from other tools. This page lists the sources of each rule.
+
 ## Exclusive rules
+
 _No exclusive rules available._
+
 ## Rules from other sources
 
 ### Eugene

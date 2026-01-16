@@ -11,7 +11,7 @@ use std::{
     str::{self},
 };
 
-use crate::utils;
+use crate::utils::{self, SplinterRuleMetadata};
 
 /// Generates the lint rules index.
 ///
@@ -122,4 +122,91 @@ fn generate_rule_summary(docs: &'static str) -> io::Result<String> {
     }
 
     panic!("No summary found in rule documentation");
+}
+
+/// Generates the splinter (database linter) rules index.
+///
+/// * `docs_dir`: Path to the docs directory.
+pub fn generate_splinter_rules_index(docs_dir: &Path) -> anyhow::Result<()> {
+    let index_file = docs_dir.join("reference/database_rules.md");
+
+    let mut visitor = crate::utils::SplinterRulesVisitor::default();
+    pgls_splinter::registry::visit_registry(&mut visitor);
+
+    let crate::utils::SplinterRulesVisitor { groups } = visitor;
+
+    let mut content = Vec::new();
+
+    for (group, rules) in groups {
+        generate_splinter_group(group, rules, &mut content)?;
+    }
+
+    let new_content = String::from_utf8(content)?;
+
+    let file_content = fs::read_to_string(&index_file)?;
+
+    let new_content = utils::replace_section(&file_content, "SPLINTER_RULES_INDEX", &new_content);
+
+    fs::write(index_file, new_content)?;
+
+    Ok(())
+}
+
+fn generate_splinter_group(
+    group: &'static str,
+    rules: BTreeMap<&'static str, SplinterRuleMetadata>,
+    content: &mut dyn io::Write,
+) -> io::Result<()> {
+    let (group_name, description) = extract_splinter_group_metadata(group);
+
+    writeln!(content, "\n## {group_name}")?;
+    writeln!(content)?;
+    write_markup_to_string(content, description)?;
+    writeln!(content)?;
+    writeln!(content)?;
+    writeln!(content, "| Rule name | Description | Properties |")?;
+    writeln!(content, "| --- | --- | --- |")?;
+
+    for (rule_name, rule_metadata) in rules {
+        let is_recommended = rule_metadata.metadata.recommended;
+        let requires_supabase = rule_metadata.requires_supabase;
+        let dashed_rule = Case::Kebab.convert(rule_name);
+
+        let mut properties = String::new();
+        if is_recommended {
+            properties.push_str("✅ ");
+        }
+        if requires_supabase {
+            properties.push('⚡');
+        }
+
+        let summary = rule_metadata.description;
+
+        write!(
+            content,
+            "| [{rule_name}](./rules/{dashed_rule}.md) | {summary} | {properties} |"
+        )?;
+
+        writeln!(content)?;
+    }
+
+    Ok(())
+}
+
+fn extract_splinter_group_metadata(group: &str) -> (&str, Markup) {
+    match group {
+        "performance" => (
+            "Performance",
+            markup! {
+                "Rules that detect potential performance issues in your database schema."
+            },
+        ),
+        "security" => (
+            "Security",
+            markup! {
+                "Rules that detect potential security vulnerabilities in your database schema."
+            },
+        ),
+        _ => panic!("Unknown splinter group ID {group:?}"),
+    }
 }

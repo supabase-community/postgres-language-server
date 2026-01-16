@@ -7,6 +7,8 @@ use std::fs;
 use std::io::Write;
 use std::path::Path;
 
+use crate::utils;
+
 #[derive(Debug, Eq, PartialEq)]
 struct SourceSet {
     source_rule_name: String,
@@ -78,7 +80,9 @@ pub fn generate_rule_sources(docs_dir: &Path) -> anyhow::Result<()> {
         "Many rules are inspired by or directly ported from other tools. This page lists the sources of each rule.",
     )?;
 
-    writeln!(buffer, "## Exclusive rules",)?;
+    writeln!(buffer)?;
+    writeln!(buffer, "## Exclusive rules")?;
+    writeln!(buffer)?;
     if exclusive_rules.is_empty() {
         writeln!(buffer, "_No exclusive rules available._")?;
     }
@@ -86,7 +90,8 @@ pub fn generate_rule_sources(docs_dir: &Path) -> anyhow::Result<()> {
         writeln!(buffer, "- [{rule}]({link}) ")?;
     }
 
-    writeln!(buffer, "## Rules from other sources",)?;
+    writeln!(buffer)?;
+    writeln!(buffer, "## Rules from other sources")?;
 
     for (source, rules) in rules_by_source {
         writeln!(buffer)?;
@@ -103,6 +108,69 @@ pub fn generate_rule_sources(docs_dir: &Path) -> anyhow::Result<()> {
     fs::write(rule_sources_file, new_content)?;
 
     Ok(())
+}
+
+pub fn generate_database_rule_sources(docs_dir: &Path) -> anyhow::Result<()> {
+    let rule_sources_file = docs_dir.join("reference/database_rule_sources.md");
+
+    let mut visitor = crate::utils::SplinterRulesVisitor::default();
+    pgls_splinter::registry::visit_registry(&mut visitor);
+
+    let crate::utils::SplinterRulesVisitor { groups } = visitor;
+
+    let rules: Vec<_> = groups
+        .into_iter()
+        .flat_map(|(_, rules)| rules.into_iter())
+        .collect();
+
+    // Group rules by source (currently all from Splinter)
+    let mut rules_by_source = BTreeMap::<&str, Vec<(&str, &str)>>::new();
+
+    for (rule_name, _metadata) in &rules {
+        let kebab_rule_name = Case::Kebab.convert(rule_name);
+        rules_by_source
+            .entry("Splinter")
+            .or_default()
+            .push((rule_name, Box::leak(kebab_rule_name.into_boxed_str())));
+    }
+
+    let new_content = generate_database_sources_content(&rules_by_source)?;
+
+    let file_content = fs::read_to_string(&rule_sources_file)?;
+
+    let new_content = utils::replace_section(&file_content, "DATABASE_RULE_SOURCES", &new_content);
+
+    fs::write(rule_sources_file, new_content)?;
+
+    Ok(())
+}
+
+fn generate_database_sources_content(
+    rules_by_source: &BTreeMap<&str, Vec<(&str, &str)>>,
+) -> Result<String> {
+    let mut buffer = Vec::new();
+
+    for (source, rules) in rules_by_source {
+        let source_url = match *source {
+            "Splinter" => "https://github.com/supabase/splinter",
+            _ => "",
+        };
+
+        writeln!(buffer)?;
+        writeln!(buffer, "### {source}")?;
+        writeln!(buffer)?;
+        writeln!(buffer, r#"| {source} Rule Name | Rule Name |"#)?;
+        writeln!(buffer, r#"| ---- | ---- |"#)?;
+
+        for (rule_name, kebab_rule_name) in rules {
+            writeln!(
+                buffer,
+                "| [{rule_name}]({source_url}) | [{rule_name}](./rules/{kebab_rule_name}.md) |"
+            )?;
+        }
+    }
+
+    Ok(String::from_utf8(buffer)?)
 }
 
 fn push_to_table(source_set: BTreeSet<SourceSet>, buffer: &mut Vec<u8>) -> Result<()> {

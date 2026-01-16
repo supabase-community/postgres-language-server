@@ -5,8 +5,8 @@ use docs_codegen::cli_doc::generate_cli_doc;
 use docs_codegen::default_configuration::generate_default_configuration;
 use docs_codegen::env_variables::generate_env_variables;
 use docs_codegen::rules_docs::generate_rules_docs;
-use docs_codegen::rules_index::generate_rules_index;
-use docs_codegen::rules_sources::generate_rule_sources;
+use docs_codegen::rules_index::{generate_rules_index, generate_splinter_rules_index};
+use docs_codegen::rules_sources::{generate_database_rule_sources, generate_rule_sources};
 use docs_codegen::schema::generate_schema;
 use docs_codegen::splinter_docs::generate_splinter_docs;
 use docs_codegen::version::replace_version;
@@ -26,7 +26,9 @@ fn main() -> anyhow::Result<()> {
     generate_rules_docs(&docs_root)?;
     generate_splinter_docs(&docs_root)?;
     generate_rules_index(&docs_root)?;
+    generate_splinter_rules_index(&docs_root)?;
     generate_rule_sources(&docs_root)?;
+    generate_database_rule_sources(&docs_root)?;
     generate_schema(&docs_root)?;
     replace_version(&docs_root)?;
 
