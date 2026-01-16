@@ -89,7 +89,9 @@ pub fn generate_rule_sources(docs_dir: &Path) -> anyhow::Result<()> {
     writeln!(buffer, "## Rules from other sources",)?;
 
     for (source, rules) in rules_by_source {
+        writeln!(buffer)?;
         writeln!(buffer, "### {source}")?;
+        writeln!(buffer)?;
         writeln!(buffer, r#"| {source} Rule Name | Rule Name |"#)?;
         writeln!(buffer, r#"| ---- | ---- |"#)?;
 

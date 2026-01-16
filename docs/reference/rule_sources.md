@@ -3,7 +3,9 @@ Many rules are inspired by or directly ported from other tools. This page lists 
 ## Exclusive rules
 _No exclusive rules available._
 ## Rules from other sources
+
 ### Eugene
+
 | Eugene Rule Name | Rule Name |
 | ---- | ---- |
 | [E11](https://kaveland.no/eugene/hints/E11/index.html) |[addSerialColumn](./rules/add-serial-column.md) |
@@ -12,7 +14,9 @@ _No exclusive rules available._
 | [E9](https://kaveland.no/eugene/hints/E9/index.html) |[lockTimeoutWarning](./rules/lock-timeout-warning.md) |
 | [W12](https://kaveland.no/eugene/hints/W12/index.html) |[multipleAlterTable](./rules/multiple-alter-table.md) |
 | [W13](https://kaveland.no/eugene/hints/W13/index.html) |[creatingEnum](./rules/creating-enum.md) |
+
 ### Squawk
+
 | Squawk Rule Name | Rule Name |
 | ---- | ---- |
 | [adding-field-with-default](https://squawkhq.com/docs/adding-field-with-default) |[addingFieldWithDefault](./rules/adding-field-with-default.md) |
