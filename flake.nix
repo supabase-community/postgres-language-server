@@ -81,21 +81,7 @@
           inherit buildInputs;
           hardeningDisable = [ "fortify" ];
           shellHook = ''
-            echo "PostgreSQL Language Server Development Environment"
-            echo "Available tools:"
-            echo "  • Rust $(rustc --version)"
-            echo "  • Node.js $(node --version)"
-            echo "  • Bun $(bun --version)"
-            echo "  • Just $(just --version)"
-            echo ""
-            echo "Development Commands:"
-            echo "  • just --list   # Show tasks"
-            echo "  • cargo check   # Check Rust"
-            echo "  • bun install   # Install deps"
-            echo ""
-            echo "Use Docker for database:"
-            echo "  • docker-compose up -d"
-            echo ""
+            echo "Postgres Language Server Development Environment"
 
             # Set environment variables
             ${pkgs.lib.concatStringsSep "\n" (
