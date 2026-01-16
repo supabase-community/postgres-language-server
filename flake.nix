@@ -28,9 +28,22 @@
         # Read rust-toolchain.toml to get the exact Rust version
         rustToolchain = pkgs.rust-bin.fromRustupToolchainFile ./rust-toolchain.toml;
 
+        # Nightly toolchain for rustfmt (used by codegen)
+        rustNightly = pkgs.rust-bin.nightly.latest.minimal.override {
+          extensions = [ "rustfmt" ];
+        };
+
+        # Extract just nightly rustfmt (to avoid nightly rustc taking precedence)
+        nightlyRustfmtOnly = pkgs.runCommand "nightly-rustfmt" { } ''
+          mkdir -p $out/bin
+          ln -s ${rustNightly}/bin/rustfmt $out/bin/rustfmt
+        '';
+
         # Development dependencies
         buildInputs = with pkgs; [
-          # Rust toolchain
+          # Nightly rustfmt (for codegen) - must come before stable toolchain
+          nightlyRustfmtOnly
+          # Rust toolchain (stable from rust-toolchain.toml)
           rustToolchain
 
           # Node.js ecosystem
@@ -48,6 +61,7 @@
           # Build tools
           just
           git
+          taplo
 
           # Docker
           docker-compose
@@ -64,6 +78,9 @@
 
           # WebAssembly toolchain
           emscripten
+
+          # Database tools
+          sqlx-cli
         ];
 
         # Environment variables
