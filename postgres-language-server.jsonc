@@ -1,5 +1,6 @@
 {
-  "$schema": "./docs/schema.json",
+  "$schema": "https://pg-language-server.com/latest/schema.json",
+  "extends": [],
   "vcs": {
     "enabled": false,
     "clientKind": "git",
@@ -14,7 +15,16 @@
       "recommended": true
     }
   },
-  // YOU CAN COMMENT ME OUT :)
+  "splinter": {
+    "enabled": true
+  },
+  "typecheck": {
+    "enabled": true
+  },
+  "plpgsqlCheck": {
+    "enabled": true
+  },
+  // you can write comments here :))
   "db": {
     "host": "127.0.0.1",
     "port": 5432,
@@ -22,6 +32,7 @@
     "password": "postgres",
     "database": "postgres",
     "connTimeoutSecs": 10,
-    "allowStatementExecutionsAgainst": ["127.0.0.1/*", "localhost/*"]
+    "disableConnection": false
   }
 }
+

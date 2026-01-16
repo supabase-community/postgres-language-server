@@ -139,10 +139,11 @@ impl PartialConfiguration {
                 ..Default::default()
             }),
             typecheck: Some(PartialTypecheckConfiguration {
+                enabled: Some(true),
                 ..Default::default()
             }),
             plpgsql_check: Some(PartialPlPgSqlCheckConfiguration {
-                ..Default::default()
+                enabled: Some(true),
             }),
             db: Some(PartialDatabaseConfiguration {
                 connection_string: None,
@@ -195,5 +196,41 @@ impl ConfigurationPathHint {
     }
     pub const fn is_from_lsp(&self) -> bool {
         matches!(self, Self::FromLsp(_))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn init_config_has_no_empty_objects() {
+        let config = PartialConfiguration::init();
+        let json_value: serde_json::Value =
+            serde_json::to_value(&config).expect("failed to serialize config");
+
+        fn find_empty_objects(value: &serde_json::Value, path: &str) -> Vec<String> {
+            let mut empty_paths = Vec::new();
+            if let serde_json::Value::Object(map) = value {
+                if map.is_empty() && !path.is_empty() {
+                    empty_paths.push(path.to_string());
+                }
+                for (key, val) in map {
+                    let new_path = if path.is_empty() {
+                        key.clone()
+                    } else {
+                        format!("{path}.{key}")
+                    };
+                    empty_paths.extend(find_empty_objects(val, &new_path));
+                }
+            }
+            empty_paths
+        }
+
+        let empty_objects = find_empty_objects(&json_value, "");
+        assert!(
+            empty_objects.is_empty(),
+            "init() configuration should not contain empty objects. Found at: {empty_objects:?}"
+        );
     }
 }
