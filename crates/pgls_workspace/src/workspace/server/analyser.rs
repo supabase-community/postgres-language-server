@@ -326,6 +326,7 @@ mod tests {
         let settings = Settings {
             splinter: SplinterSettings {
                 enabled: true,
+                ignore: Default::default(),
                 rules: Some(SplinterRules {
                     performance: Some(Performance {
                         auth_rls_initplan: Some(RuleConfiguration::Plain(
@@ -371,6 +372,7 @@ mod tests {
             },
             splinter: SplinterSettings {
                 enabled: true,
+                ignore: Default::default(),
                 rules: Some(SplinterRules {
                     performance: Some(Performance {
                         auth_rls_initplan: Some(RuleConfiguration::Plain(

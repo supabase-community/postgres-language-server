@@ -214,8 +214,50 @@ fn generate_lint_mod_file(tool: &ToolConfig) -> String {
         quote! {}
     };
 
-    let string_set_import = if handles_files {
+    let string_set_import = if handles_files || tool.name == "splinter" {
         quote! { use biome_deserialize::StringSet; }
+    } else {
+        quote! {}
+    };
+
+    // For splinter, add global ignore patterns for database objects
+    let is_splinter = tool.name == "splinter";
+
+    let splinter_ignore_field = if is_splinter {
+        quote! {
+            /// A list of glob patterns for database objects to ignore across all rules.
+            /// Patterns use Unix-style globs where `*` matches any sequence of characters.
+            /// Format: `schema.object_name`, e.g., "public.my_table", "audit.*"
+            #[partial(bpaf(hide))]
+            pub ignore: StringSet,
+        }
+    } else {
+        quote! {}
+    };
+
+    let splinter_ignore_default = if is_splinter {
+        quote! {
+            ignore: Default::default(),
+        }
+    } else {
+        quote! {}
+    };
+
+    let splinter_ignore_method = if is_splinter {
+        quote! {
+            /// Build a matcher from the global ignore patterns.
+            /// Returns None if no patterns are configured.
+            pub fn get_global_ignore_matcher(&self) -> Option<pgls_matcher::Matcher> {
+                if self.ignore.is_empty() {
+                    return None;
+                }
+                let mut m = pgls_matcher::Matcher::new(pgls_matcher::MatchOptions::default());
+                for p in self.ignore.iter() {
+                    let _ = m.add_pattern(p);
+                }
+                Some(m)
+            }
+        }
     } else {
         quote! {}
     };
@@ -242,6 +284,8 @@ fn generate_lint_mod_file(tool: &ToolConfig) -> String {
             #[partial(bpaf(hide))]
             pub enabled: bool,
 
+            #splinter_ignore_field
+
             /// List of rules
             #[partial(bpaf(pure(Default::default()), optional, hide))]
             pub rules: Rules,
@@ -253,12 +297,15 @@ fn generate_lint_mod_file(tool: &ToolConfig) -> String {
             pub const fn is_disabled(&self) -> bool {
                 !self.enabled
             }
+
+            #splinter_ignore_method
         }
 
         impl Default for #config_struct {
             fn default() -> Self {
                 Self {
                     enabled: true,
+                    #splinter_ignore_default
                     rules: Default::default(),
                     #file_defaults
                 }

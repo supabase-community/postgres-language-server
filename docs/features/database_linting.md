@@ -35,7 +35,31 @@ Configure database linting behavior in your `postgres-language-server.jsonc`:
 
 ## Ignoring Database Objects
 
-You can ignore specific database objects using glob patterns:
+You can ignore specific database objects using glob patterns. Patterns use Unix-style globs where `*` matches any sequence of characters. Patterns should be in the format `schema.object_name`.
+
+### Global Ignore
+
+To ignore objects across all rules, use the top-level `ignore` field:
+
+```json
+{
+  "splinter": {
+    "ignore": [
+      "audit.*",
+      "temp_*"
+    ],
+    "rules": {
+      // ...
+    }
+  }
+}
+```
+
+This is useful for excluding entire schemas (like audit logs or temporary tables) from all database linting.
+
+### Per-Rule Ignore
+
+To ignore objects for a specific rule only, use the rule-level `ignore` option:
 
 ```json
 {
@@ -47,7 +71,7 @@ You can ignore specific database objects using glob patterns:
           "options": {
             "ignore": [
               "public.temp_*",
-              "audit.*"
+              "staging.*"
             ]
           }
         }
@@ -56,6 +80,15 @@ You can ignore specific database objects using glob patterns:
   }
 }
 ```
+
+### Pattern Examples
+
+| Pattern | Matches |
+|---------|---------|
+| `public.my_table` | Specific table in public schema |
+| `audit.*` | All objects in the audit schema |
+| `*.temp_*` | Objects with temp_ prefix in any schema |
+| `public.log_*` | Tables starting with log_ in public schema |
 
 ## Supabase-Specific Rules
 
