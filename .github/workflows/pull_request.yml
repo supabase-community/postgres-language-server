@@ -239,6 +239,8 @@ jobs:
         run: bun run test
       - name: Run cli test
         working-directory: packages/@postgres-language-server/cli
+        env:
+          PGLS_BINARY: ${{ github.workspace }}/target/release/postgres-language-server
         run: bun run test
 
   test-wasm:
