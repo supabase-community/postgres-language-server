@@ -60,6 +60,31 @@ pub fn goto_previous_leaf(node: Node<'_>) -> Option<Node<'_>> {
     })
 }
 
+pub fn goto_closest_unfinished_parent_clause(node: Node<'_>) -> Option<Node<'_>> {
+    let mut parent = Some(node);
+
+    while let Some(investigated) = parent {
+        let kind = investigated.kind();
+
+        // The top level node for all possible trees.
+        if kind == "program" {
+            return Some(investigated);
+        }
+
+        let explicit_skip = SINGLE_TOKEN_RULES.contains(&kind);
+
+        let is_finished_parent = investigated.child_by_field_name("end").is_some();
+
+        if !explicit_skip && !is_finished_parent {
+            return Some(investigated);
+        }
+
+        parent = investigated.parent();
+    }
+
+    return None;
+}
+
 pub fn goto_closest_parent_clause(node: Node<'_>) -> Option<Node<'_>> {
     let mut parent = Some(node);
 

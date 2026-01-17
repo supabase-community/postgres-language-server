@@ -2,7 +2,7 @@ use pgls_schema_cache::ProcKind;
 use pgls_treesitter::{
     context::{TreesitterContext, WrappingClause, WrappingNode},
     goto_closest_parent_clause, goto_closest_parent_clause_with_multiple_children,
-    goto_node_at_position,
+    goto_closest_unfinished_parent_clause, goto_node_at_position,
 };
 use tree_sitter::{InputEdit, Point, Tree};
 
@@ -510,10 +510,10 @@ impl CompletionFilter<'_> {
             return Some(());
         }
 
-        let (clause_to_investigate, clause_completed) = if ctx.node_under_cursor.kind() != "ERROR" {
-            (ctx.current_clause, ctx.current_clause_completed)
+        let clause_to_investigate = if ctx.node_under_cursor.kind() != "ERROR" {
+            ctx.current_clause
         } else {
-            (ctx.previous_clause, ctx.previous_clause_completed)
+            ctx.previous_clause
         };
 
         if clause_to_investigate.is_none() {
@@ -524,25 +524,21 @@ impl CompletionFilter<'_> {
             }
         }
 
-        if clause_completed {
-            return Some(());
-        }
+        // // we allow those nodes that do not change the clause
+        // // e.g. `select * from table order |`; allow "by" since we remain in `order_by` clause.
+        // if let Some(current_node) = goto_node_at_position(&tree, start_byte) {
+        //     if let Some(current_parent) = goto_closest_parent_clause(current_node) {
+        //         let parent_same_kind =
+        //             clause_to_investigate.is_some_and(|c| c.kind() == current_parent.kind());
 
-        // we allow those nodes that do not change the clause
-        // e.g. `select * from table order |`; allow "by" since we remain in `order_by` clause.
-        if let Some(current_node) = goto_node_at_position(&tree, start_byte) {
-            if let Some(current_parent) = goto_closest_parent_clause(current_node) {
-                let parent_same_kind =
-                    clause_to_investigate.is_some_and(|c| c.kind() == current_parent.kind());
+        //         let parent_same_start = clause_to_investigate
+        //             .is_some_and(|c| c.start_byte() == current_parent.start_byte());
 
-                let parent_same_start = clause_to_investigate
-                    .is_some_and(|c| c.start_byte() == current_parent.start_byte());
-
-                if parent_same_kind && parent_same_start {
-                    return Some(());
-                }
-            }
-        }
+        //         if parent_same_kind && parent_same_start {
+        //             return Some(());
+        //         }
+        //     }
+        // }
 
         /*
          * Will allow those nodes that fully exchange the parent clause BUT do not leave
@@ -591,13 +587,14 @@ impl CompletionFilter<'_> {
                 // replacing the start byte means full exchanging
                 clause_to_investigate.is_some_and(|n| n.start_byte() == current_node.start_byte());
 
-            let leaves_clause_unfinished =
-                goto_closest_parent_clause_with_multiple_children(ctx.node_under_cursor)
-                    .is_some_and(|n| {
-                        n.child_by_field_name("end").is_some_and(|end| {
-                            end.start_byte() == ctx.node_under_cursor.start_byte()
-                        })
-                    });
+            // todo: check if it finishes the current clause
+            // todo: check if it opens a new clause, which is only okay if the last one is finished
+            // todo: check if it makes a previously finished clause unfinished
+
+            let leaves_clause_unfinished = clause_to_investigate.is_some_and(|n| {
+                n.child_by_field_name("end")
+                    .is_some_and(|end| end.start_byte() == ctx.node_under_cursor.start_byte())
+            });
 
             if full_exchange && !leaves_clause_unfinished {
                 return Some(());
