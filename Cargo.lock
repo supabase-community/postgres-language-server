@@ -2696,6 +2696,7 @@ dependencies = [
  "pgls_env",
  "pgls_fs",
  "pgls_lsp",
+ "pgls_test_utils",
  "pgls_text_edit",
  "pgls_workspace",
  "quick-junit",
@@ -2703,6 +2704,7 @@ dependencies = [
  "rustc-hash 2.1.0",
  "serde",
  "serde_json",
+ "sqlx",
  "tikv-jemallocator",
  "tokio",
  "tracing",
@@ -2750,6 +2752,7 @@ dependencies = [
  "pgls_console",
  "pgls_diagnostics",
  "pgls_env",
+ "pgls_matcher",
  "pgls_text_size",
  "rustc-hash 2.1.0",
  "schemars",
@@ -2920,6 +2923,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "pgls_matcher"
+version = "0.0.0"
+dependencies = [
+ "pgls_console",
+ "pgls_diagnostics",
+ "rustc-hash 2.1.0",
+]
+
+[[package]]
 name = "pgls_plpgsql_check"
 version = "0.0.0"
 dependencies = [
@@ -2998,8 +3010,10 @@ version = "0.0.0"
 dependencies = [
  "insta",
  "pgls_analyse",
+ "pgls_configuration",
  "pgls_console",
  "pgls_diagnostics",
+ "pgls_matcher",
  "pgls_schema_cache",
  "pgls_test_utils",
  "serde",
@@ -3160,10 +3174,12 @@ dependencies = [
  "pgls_fs",
  "pgls_hover",
  "pgls_lexer",
+ "pgls_matcher",
  "pgls_plpgsql_check",
  "pgls_query",
  "pgls_query_ext",
  "pgls_schema_cache",
+ "pgls_splinter",
  "pgls_statement_splitter",
  "pgls_suppressions",
  "pgls_test_utils",

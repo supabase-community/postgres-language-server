@@ -223,7 +223,7 @@ impl<'app, W: Workspace + ?Sized> FileGuard<'app, W> {
         })
     }
 
-    pub fn pull_diagnostics(
+    pub fn pull_file_diagnostics(
         &self,
         categories: RuleCategories,
         max_diagnostics: u32,

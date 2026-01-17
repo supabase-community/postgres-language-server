@@ -8,7 +8,9 @@
 
 Detects if an index has never been used and may be a candidate for removal.
 
-[Learn More](https://supabase.com/docs/guides/database/database-linter?lint=0005_unused_index)
+## Remediation
+
+https://supabase.com/docs/guides/database/database-linter?lint=0005_unused_index
 
 ## SQL Query
 

@@ -8,7 +8,9 @@
 
 Identifies foreign key constraints without a covering index, which can impact database performance.
 
-[Learn More](https://supabase.com/docs/guides/database/database-linter?lint=0001_unindexed_foreign_keys)
+## Remediation
+
+https://supabase.com/docs/guides/database/database-linter?lint=0001_unindexed_foreign_keys
 
 ## SQL Query
 

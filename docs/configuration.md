@@ -19,9 +19,9 @@ A configuration file is usually placed in your project’s root folder. It is or
   },
   "typecheck": {
     "enabled": true
-  }
+  },
   "plpgsqlCheck": {
-    "enabled" : true
+    "enabled": true
   }
 }
 ```
@@ -103,5 +103,5 @@ In the following example, we include all files, except those in any test/ folder
 ```
 
 #### Control files via VCS
-You can ignore files ignored by your [VCS](/guides/vcs_integration.md).
+You can ignore files ignored by your [VCS](guides/vcs_integration.md).
 

@@ -11,7 +11,9 @@
 
 Detects foreign tables that are accessible over APIs. Foreign tables do not respect row level security policies.
 
-[Learn More](https://supabase.com/docs/guides/database/database-linter?lint=0017_foreign_table_in_api)
+## Remediation
+
+https://supabase.com/docs/guides/database/database-linter?lint=0017_foreign_table_in_api
 
 ## SQL Query
 

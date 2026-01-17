@@ -18,12 +18,10 @@ pub struct LinterConfiguration {
     #[doc = r" List of rules"]
     #[partial(bpaf(pure(Default::default()), optional, hide))]
     pub rules: Rules,
-    #[doc = r" A list of Unix shell style patterns. The formatter will ignore files/folders that will"]
-    #[doc = r" match these patterns."]
+    #[doc = r" A list of Unix shell style patterns. The linter will ignore files/folders that will match these patterns."]
     #[partial(bpaf(hide))]
     pub ignore: StringSet,
-    #[doc = r" A list of Unix shell style patterns. The formatter will include files/folders that will"]
-    #[doc = r" match these patterns."]
+    #[doc = r" A list of Unix shell style patterns. The linter will include files/folders that will match these patterns."]
     #[partial(bpaf(hide))]
     pub include: StringSet,
 }

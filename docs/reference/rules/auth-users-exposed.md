@@ -11,7 +11,9 @@
 
 Detects if auth.users is exposed to anon or authenticated roles via a view or materialized view in schemas exposed to PostgREST, potentially compromising user data security.
 
-[Learn More](https://supabase.com/docs/guides/database/database-linter?lint=0002_auth_users_exposed)
+## Remediation
+
+https://supabase.com/docs/guides/database/database-linter?lint=0002_auth_users_exposed
 
 ## SQL Query
 

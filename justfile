@@ -108,10 +108,10 @@ serve-docs:
 # to lint the queries.
 ready:
   git diff --exit-code --quiet
+  cargo run -p xtask_codegen -- splinter
   cargo run -p xtask_codegen -- configuration
   cargo run -p docs_codegen
   cargo run -p xtask_codegen -- bindings
-  cargo run -p xtask_codegen -- splinter
   cargo sqlx prepare --workspace
   just lint-fix
   just format

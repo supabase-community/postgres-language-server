@@ -6,6 +6,7 @@ pub mod rule;
 pub mod rules;
 
 use pgls_analyse::{AnalysisFilter, RegistryVisitor, RuleMeta};
+use pgls_configuration::splinter::Rules;
 use pgls_schema_cache::SchemaCache;
 use sqlx::PgPool;
 
@@ -17,6 +18,8 @@ pub use rule::SplinterRule;
 pub struct SplinterParams<'a> {
     pub conn: &'a PgPool,
     pub schema_cache: Option<&'a SchemaCache>,
+    /// Optional rules configuration for per-rule database object filtering
+    pub rules_config: Option<&'a Rules>,
 }
 
 /// Visitor that collects enabled splinter rules based on filter
@@ -133,8 +136,30 @@ pub async fn run_splinter(
 
     tx.commit().await?;
 
-    // Convert results to diagnostics
-    let diagnostics: Vec<SplinterDiagnostic> = results.into_iter().map(Into::into).collect();
+    let mut diagnostics: Vec<SplinterDiagnostic> = results.into_iter().map(Into::into).collect();
+
+    if let Some(rules_config) = params.rules_config {
+        let rule_matchers = rules_config.get_ignore_matchers();
+
+        if !rule_matchers.is_empty() {
+            diagnostics.retain(|diag| {
+                let rule_name = diag.category.name().split('/').next_back().unwrap_or("");
+
+                if let Some(matcher) = rule_matchers.get(rule_name) {
+                    if let (Some(schema), Some(name)) =
+                        (&diag.advices.schema, &diag.advices.object_name)
+                    {
+                        let object_identifier = format!("{schema}.{name}");
+
+                        if matcher.matches(&object_identifier) {
+                            return false;
+                        }
+                    }
+                }
+                true
+            });
+        }
+    }
 
     Ok(diagnostics)
 }

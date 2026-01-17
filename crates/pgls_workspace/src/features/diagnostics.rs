@@ -22,5 +22,8 @@ pub struct PullDiagnosticsResult {
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct PullDatabaseDiagnosticsParams {
+    pub categories: RuleCategories,
     pub max_diagnostics: u32,
+    pub only: Vec<RuleSelector>,
+    pub skip: Vec<RuleSelector>,
 }

@@ -14,11 +14,17 @@ use xtask::*;
 struct ToolConfig {
     name: &'static str,
     category: RuleCategory,
+    /// Whether this tool operates on files (vs database)
+    handles_files: bool,
 }
 
 impl ToolConfig {
-    const fn new(name: &'static str, category: RuleCategory) -> Self {
-        Self { name, category }
+    const fn new(name: &'static str, category: RuleCategory, handles_files: bool) -> Self {
+        Self {
+            name,
+            category,
+            handles_files,
+        }
     }
 
     /// Derived: Directory name under pgls_configuration/src/
@@ -60,14 +66,22 @@ impl ToolConfig {
     fn partial_config_struct_name(&self) -> String {
         format!("Partial{}", self.config_struct_name())
     }
+
+    /// Derived: Category prefix used in diagnostics (e.g., "lint" for linter, "splinter" for splinter)
+    fn category_prefix(&self) -> &'static str {
+        match self.name {
+            "linter" => "lint",
+            _ => self.name,
+        }
+    }
 }
 
 /// All supported tools
 const TOOLS: &[ToolConfig] = &[
-    ToolConfig::new("linter", RuleCategory::Lint),
-    ToolConfig::new("assists", RuleCategory::Action),
-    ToolConfig::new("splinter", RuleCategory::Lint),
-    ToolConfig::new("pglinter", RuleCategory::Lint),
+    ToolConfig::new("linter", RuleCategory::Lint, true),
+    ToolConfig::new("assists", RuleCategory::Action, true),
+    ToolConfig::new("splinter", RuleCategory::Lint, false), // Database linter, doesn't handle files
+    ToolConfig::new("pglinter", RuleCategory::Lint, true),
 ];
 
 /// Visitor that collects rules for a specific category
@@ -105,8 +119,8 @@ impl RegistryVisitor for CategoryRulesVisitor {
 
 /// Generate all rule configurations
 pub fn generate_rules_configuration(mode: Mode) -> Result<()> {
-    // Currently we only generate for the linter tool
     generate_tool_configuration(mode, "linter")?;
+    generate_tool_configuration(mode, "splinter")?;
     Ok(())
 }
 
@@ -123,11 +137,10 @@ pub fn generate_tool_configuration(mode: Mode, tool_name: &str) -> Result<()> {
     // Collect rules from the tool's crate
     let mut visitor = CategoryRulesVisitor::new(tool.category);
 
-    // For now, only linter is implemented
     match tool.name {
         "linter" => pgls_analyser::visit_registry(&mut visitor),
+        "splinter" => pgls_splinter::registry::visit_registry(&mut visitor),
         "assists" => unimplemented!("Assists rules not yet implemented"),
-        "splinter" => unimplemented!("Splinter rules not yet implemented"),
         "pglinter" => unimplemented!("PGLinter rules not yet implemented"),
         _ => unreachable!(),
     }
@@ -165,12 +178,56 @@ fn generate_lint_mod_file(tool: &ToolConfig) -> String {
     let generated_file = tool.generated_file().trim_end_matches(".rs");
     let generated_file_ident = Ident::new(generated_file, Span::call_site());
 
+    // For splinter, we need to include the options module
+    let options_module = if tool.name == "splinter" {
+        quote! {
+            mod options;
+            pub use options::SplinterRuleOptions;
+        }
+    } else {
+        quote! {}
+    };
+
+    // Only file-based tools need ignore/include fields
+    let handles_files = tool.handles_files;
+
+    let file_fields = if handles_files {
+        quote! {
+            /// A list of Unix shell style patterns. The linter will ignore files/folders that will match these patterns.
+            #[partial(bpaf(hide))]
+            pub ignore: StringSet,
+
+            /// A list of Unix shell style patterns. The linter will include files/folders that will match these patterns.
+            #[partial(bpaf(hide))]
+            pub include: StringSet,
+        }
+    } else {
+        quote! {}
+    };
+
+    let file_defaults = if handles_files {
+        quote! {
+            ignore: Default::default(),
+            include: Default::default(),
+        }
+    } else {
+        quote! {}
+    };
+
+    let string_set_import = if handles_files {
+        quote! { use biome_deserialize::StringSet; }
+    } else {
+        quote! {}
+    };
+
     let content = quote! {
         //! Generated file, do not edit by hand, see `xtask/codegen`
 
+        #options_module
+
         mod #generated_file_ident;
 
-        use biome_deserialize::StringSet;
+        #string_set_import
         use biome_deserialize_macros::{Merge, Partial};
         use bpaf::Bpaf;
         pub use #generated_file_ident::*;
@@ -189,15 +246,7 @@ fn generate_lint_mod_file(tool: &ToolConfig) -> String {
             #[partial(bpaf(pure(Default::default()), optional, hide))]
             pub rules: Rules,
 
-            /// A list of Unix shell style patterns. The formatter will ignore files/folders that will
-            /// match these patterns.
-            #[partial(bpaf(hide))]
-            pub ignore: StringSet,
-
-            /// A list of Unix shell style patterns. The formatter will include files/folders that will
-            /// match these patterns.
-            #[partial(bpaf(hide))]
-            pub include: StringSet,
+            #file_fields
         }
 
         impl #config_struct {
@@ -211,8 +260,7 @@ fn generate_lint_mod_file(tool: &ToolConfig) -> String {
                 Self {
                     enabled: true,
                     rules: Default::default(),
-                    ignore: Default::default(),
-                    include: Default::default(),
+                    #file_defaults
                 }
             }
         }
@@ -233,7 +281,7 @@ fn generate_lint_mod_file(tool: &ToolConfig) -> String {
 
 /// Generate the rules.rs file for a Lint tool
 fn generate_lint_rules_file(
-    _tool: &ToolConfig,
+    tool: &ToolConfig,
     groups: BTreeMap<&'static str, BTreeMap<&'static str, RuleMetadata>>,
 ) -> Result<String> {
     let mut struct_groups = Vec::with_capacity(groups.len());
@@ -279,8 +327,41 @@ fn generate_lint_rules_file(
         group_pascal_idents.push(group_pascal_ident);
         group_idents.push(group_ident);
         group_strings.push(Literal::string(group));
-        struct_groups.push(generate_lint_group_struct(group, &rules));
+        struct_groups.push(generate_lint_group_struct(tool.name, group, &rules));
     }
+
+    let category_prefix = tool.category_prefix();
+
+    // Generate get_ignore_matchers() method for splinter only
+    // We need to generate this method separately in each group struct
+    // because we need direct access to the rule configurations
+    let get_ignore_matchers_method = if tool.name == "splinter" {
+        // Generate code to call each group's get_ignore_matchers method
+        let mut group_matcher_code = Vec::new();
+        for group_ident in group_idents.iter() {
+            group_matcher_code.push(quote! {
+                if let Some(group) = &self.#group_ident {
+                    matchers.extend(group.get_ignore_matchers());
+                }
+            });
+        }
+
+        quote! {
+            /// Build matchers for all rules that have ignore patterns configured.
+            /// Returns a map from rule name (camelCase) to the matcher.
+            pub fn get_ignore_matchers(&self) -> rustc_hash::FxHashMap<&'static str, pgls_matcher::Matcher> {
+                let mut matchers = rustc_hash::FxHashMap::default();
+                #( #group_matcher_code )*
+                matchers
+            }
+        }
+    } else {
+        quote! {}
+    };
+
+    // Schema name for the Rules struct (e.g., "LinterRules", "SplinterRules")
+    let rules_schema_name = format!("{}Rules", to_capitalized(tool.name));
+    let rules_schema_name_lit = Literal::string(&rules_schema_name);
 
     let rules_struct_content = quote! {
         //! Generated file, do not edit by hand, see `xtask/codegen`
@@ -322,6 +403,7 @@ fn generate_lint_rules_file(
 
         #[derive(Clone, Debug, Default, Deserialize, Eq, Merge, PartialEq, Serialize)]
         #[cfg_attr(feature = "schema", derive(JsonSchema))]
+        #[cfg_attr(feature = "schema", schemars(rename = #rules_schema_name_lit))]
         #[serde(rename_all = "camelCase", deny_unknown_fields)]
         pub struct Rules {
             /// It enables the lint rules recommended by Postgres Language Server. `true` by default.
@@ -360,8 +442,8 @@ fn generate_lint_rules_file(
             pub fn get_severity_from_code(&self, category: &Category) -> Option<Severity> {
                 let mut split_code = category.name().split('/');
 
-                let _lint = split_code.next();
-                debug_assert_eq!(_lint, Some("lint"));
+                let _category_prefix = split_code.next();
+                debug_assert_eq!(_category_prefix, Some(#category_prefix));
 
                 let group = <RuleGroup as std::str::FromStr>::from_str(split_code.next()?).ok()?;
                 let rule_name = split_code.next()?;
@@ -419,6 +501,8 @@ fn generate_lint_rules_file(
                 #( #group_as_disabled_rules )*
                 disabled_rules
             }
+
+            #get_ignore_matchers_method
         }
 
         #( #struct_groups )*
@@ -457,6 +541,7 @@ fn generate_lint_rules_file(
 
 /// Generate a group struct for lint rules
 fn generate_lint_group_struct(
+    tool_name: &str,
     group: &str,
     rules: &BTreeMap<&'static str, RuleMetadata>,
 ) -> TokenStream {
@@ -468,6 +553,9 @@ fn generate_lint_group_struct(
     let mut rule_disabled_check_line = Vec::new();
     let mut get_rule_configuration_line = Vec::new();
     let mut get_severity_lines = Vec::new();
+
+    // For splinter, generate code to build matchers from ignore patterns
+    let mut splinter_ignore_matcher_lines = Vec::new();
 
     for (index, (rule, metadata)) in rules.iter().enumerate() {
         let summary = extract_summary_from_docs(metadata.docs);
@@ -489,8 +577,30 @@ fn generate_lint_group_struct(
              #rule
         });
 
-        let rule_option_type = quote! {
-            pgls_analyser::options::#rule_name
+        // For splinter, generate code to check each rule's ignore patterns
+        if tool_name == "splinter" {
+            let rule_str = Literal::string(rule);
+            splinter_ignore_matcher_lines.push(quote! {
+                if let Some(conf) = &self.#rule_identifier {
+                    if let Some(options) = conf.get_options_ref() {
+                        if !options.ignore.is_empty() {
+                            let mut m = pgls_matcher::Matcher::new(pgls_matcher::MatchOptions::default());
+                            for p in &options.ignore {
+                                let _ = m.add_pattern(p);
+                            }
+                            matchers.insert(#rule_str, m);
+                        }
+                    }
+                }
+            });
+        }
+
+        // For splinter rules, use SplinterRuleOptions for the shared ignore patterns
+        // For linter rules, use pgls_analyser::options::#rule_name
+        let rule_option_type = if tool_name == "splinter" {
+            quote! { crate::splinter::SplinterRuleOptions }
+        } else {
+            quote! { pgls_analyser::options::#rule_name }
         };
         let rule_option = quote! { Option<RuleConfiguration<#rule_option_type>> };
 
@@ -540,6 +650,20 @@ fn generate_lint_group_struct(
     }
 
     let group_pascal_ident = Ident::new(&to_capitalized(group), Span::call_site());
+
+    // For splinter, generate get_ignore_matchers method
+    let get_ignore_matchers_group_method = if tool_name == "splinter" {
+        quote! {
+            /// Build matchers for rules in this group that have ignore patterns configured
+            pub fn get_ignore_matchers(&self) -> rustc_hash::FxHashMap<&'static str, pgls_matcher::Matcher> {
+                let mut matchers = rustc_hash::FxHashMap::default();
+                #( #splinter_ignore_matcher_lines )*
+                matchers
+            }
+        }
+    } else {
+        quote! {}
+    };
 
     quote! {
         #[derive(Clone, Debug, Default, Deserialize, Eq, Merge, PartialEq, Serialize)]
@@ -641,11 +765,14 @@ fn generate_lint_group_struct(
                     _ => None
                 }
             }
+
+            #get_ignore_matchers_group_method
         }
     }
 }
 
 /// Extract the first paragraph from markdown documentation as a summary
+/// Stops at the first heading (## etc) or end of first paragraph
 fn extract_summary_from_docs(docs: &str) -> String {
     let mut summary = String::new();
     let parser = Parser::new(docs);
@@ -666,15 +793,32 @@ fn extract_summary_from_docs(docs: &str) -> String {
             Event::End(TagEnd::Paragraph) => {
                 break;
             }
+            // Stop at H2+ headings (subsections) - H1 is the title
+            Event::Start(Tag::Heading { level, .. })
+                if level != pulldown_cmark::HeadingLevel::H1 =>
+            {
+                break;
+            }
+            // Add separator after H1 heading ends
+            Event::End(TagEnd::Heading(_)) => {
+                summary.push_str(": ");
+            }
             Event::Start(tag) => match tag {
                 Tag::Strong | Tag::Paragraph => continue,
-                _ => panic!("Unimplemented tag {tag:?}"),
+                _ => {
+                    // Skip unsupported tags instead of panicking
+                    continue;
+                }
             },
             Event::End(tag) => match tag {
                 TagEnd::Strong | TagEnd::Paragraph => continue,
-                _ => panic!("Unimplemented tag {tag:?}"),
+                _ => {
+                    // Skip unsupported tags instead of panicking
+                    continue;
+                }
             },
-            _ => panic!("Unimplemented event {event:?}"),
+            // Skip HTML, links, and other events that we don't need in the summary
+            _ => continue,
         }
     }
 

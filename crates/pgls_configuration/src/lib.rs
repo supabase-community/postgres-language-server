@@ -9,6 +9,7 @@ pub mod linter;
 pub mod migrations;
 pub mod plpgsql_check;
 pub mod rules;
+pub mod splinter;
 pub mod typecheck;
 pub mod vcs;
 
@@ -37,10 +38,13 @@ use plpgsql_check::{
     partial_pl_pg_sql_check_configuration,
 };
 pub use rules::{
-    RuleConfiguration, RuleFixConfiguration, RulePlainConfiguration, RuleSelector,
+    AnalyzerGroup, RuleConfiguration, RuleFixConfiguration, RulePlainConfiguration, RuleSelector,
     RuleWithFixOptions, RuleWithOptions,
 };
 use serde::{Deserialize, Serialize};
+use splinter::{
+    PartialSplinterConfiguration, SplinterConfiguration, partial_splinter_configuration,
+};
 pub use typecheck::{
     PartialTypecheckConfiguration, TypecheckConfiguration, partial_typecheck_configuration,
 };
@@ -85,6 +89,10 @@ pub struct Configuration {
     #[partial(type, bpaf(external(partial_linter_configuration), optional))]
     pub linter: LinterConfiguration,
 
+    /// The configuration for splinter
+    #[partial(type, bpaf(external(partial_splinter_configuration), optional))]
+    pub splinter: SplinterConfiguration,
+
     /// The configuration for type checking
     #[partial(type, bpaf(external(partial_typecheck_configuration), optional))]
     pub typecheck: TypecheckConfiguration,
@@ -124,6 +132,10 @@ impl PartialConfiguration {
                     recommended: Some(true),
                     ..Default::default()
                 }),
+                ..Default::default()
+            }),
+            splinter: Some(PartialSplinterConfiguration {
+                enabled: Some(true),
                 ..Default::default()
             }),
             typecheck: Some(PartialTypecheckConfiguration {

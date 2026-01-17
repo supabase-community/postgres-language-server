@@ -90,8 +90,8 @@ fn extract_metadata_from_sql(sql_path: &Path, category: &str) -> Result<SqlRuleM
             break; // Stop at first non-comment line
         }
 
-        if line.starts_with("-- meta:") {
-            let meta_line = &line[8..].trim(); // Remove "-- meta:"
+        if let Some(meta_line) = line.strip_prefix("-- meta:") {
+            let meta_line = meta_line.trim();
 
             if let Some(value) = extract_meta_value(meta_line, "name") {
                 name = Some(value);
@@ -267,52 +267,42 @@ fn generate_rule_file(category_dir: &Path, metadata: &SqlRuleMetadata) -> Result
 
     // Build comprehensive documentation
     let requires_supabase_note = if requires_supabase {
-        "\n/// \n/// **Note:** This rule requires Supabase roles (`anon`, `authenticated`, `service_role`). \n/// It will be automatically skipped if these roles don't exist in your database.".to_string()
+        "\n\n**Note:** This rule requires Supabase roles (`anon`, `authenticated`, `service_role`). It will be automatically skipped if these roles don't exist in your database.".to_string()
     } else {
         String::new()
     };
 
+    // Build doc string as proper markdown (no /// prefixes - those are for source code comments)
     let doc_string = format!(
-        r#"/// # {title}
-///
-/// {description}{requires_supabase_note}
-///
-/// ## SQL Query
-///
-/// ```sql
-{sql_query_commented}
-/// ```
-///
-/// ## Configuration
-///
-/// Enable or disable this rule in your configuration:
-///
-/// ```json
-/// {{
-///   "splinter": {{
-///     "rules": {{
-///       "{category_lower}": {{
-///         "{name}": "warn"
-///       }}
-///     }}
-///   }}
-/// }}
-/// ```
-///
-/// ## Remediation
-///
-/// See: <{remediation}>"#,
-        title = title,
-        description = description,
-        requires_supabase_note = requires_supabase_note,
-        sql_query_commented = sql_query
-            .lines()
-            .map(|line| format!("/// {line}"))
-            .collect::<Vec<_>>()
-            .join("\n"),
-        category_lower = category_lower,
-        name = name,
-        remediation = remediation,
+        r#"# {title}
+
+{description}{requires_supabase_note}
+
+## SQL Query
+
+```sql
+{sql_query}
+```
+
+## Configuration
+
+Enable or disable this rule in your configuration:
+
+```json
+{{
+  "splinter": {{
+    "rules": {{
+      "{category_lower}": {{
+        "{name}": "warn"
+      }}
+    }}
+  }}
+}}
+```
+
+## Remediation
+
+See: <{remediation}>"#,
     );
 
     let content = quote! {
@@ -326,6 +316,7 @@ fn generate_rule_file(category_dir: &Path, metadata: &SqlRuleMetadata) -> Result
                 version: "1.0.0",
                 name: #name,
                 severity: #severity,
+                recommended: true,
             }
         }
 

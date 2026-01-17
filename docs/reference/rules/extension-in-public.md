@@ -8,7 +8,9 @@
 
 Detects extensions installed in the \`public\` schema.
 
-[Learn More](https://supabase.com/docs/guides/database/database-linter?lint=0014_extension_in_public)
+## Remediation
+
+https://supabase.com/docs/guides/database/database-linter?lint=0014_extension_in_public
 
 ## SQL Query
 

@@ -24,7 +24,7 @@ pub enum PgLSCommand {
     #[bpaf(command)]
     Version(#[bpaf(external(cli_options), hide_usage)] CliOptions),
 
-    /// Runs everything to the requested files.
+    /// Lints your database schema.
     #[bpaf(command)]
     Dblint {
         #[bpaf(external(partial_configuration), hide_usage, optional)]

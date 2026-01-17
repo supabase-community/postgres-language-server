@@ -135,8 +135,8 @@ impl Diagnostic for PatternError {
 
 #[cfg(test)]
 mod test {
-    use crate::matcher::Matcher;
-    use crate::matcher::pattern::MatchOptions;
+    use crate::Matcher;
+    use crate::pattern::MatchOptions;
     use std::env;
 
     #[test]
@@ -145,7 +145,7 @@ mod test {
         let dir = format!("{}/**/*.rs", current.display());
         let mut ignore = Matcher::new(MatchOptions::default());
         ignore.add_pattern(&dir).unwrap();
-        let path = env::current_dir().unwrap().join("src/workspace.rs");
+        let path = env::current_dir().unwrap().join("src/lib.rs");
         let result = ignore.matches(path.to_str().unwrap());
 
         assert!(result);
@@ -157,7 +157,7 @@ mod test {
         let dir = format!("{}/**/*.rs", current.display());
         let mut ignore = Matcher::new(MatchOptions::default());
         ignore.add_pattern(&dir).unwrap();
-        let path = env::current_dir().unwrap().join("src/workspace.rs");
+        let path = env::current_dir().unwrap().join("src/lib.rs");
         let result = ignore.matches_path(path.as_path());
 
         assert!(result);
@@ -184,14 +184,14 @@ mod test {
 
     #[test]
     fn matches_single_path() {
-        let dir = "workspace.rs";
+        let dir = "lib.rs";
         let mut ignore = Matcher::new(MatchOptions {
             require_literal_separator: true,
             case_sensitive: true,
             require_literal_leading_dot: true,
         });
         ignore.add_pattern(dir).unwrap();
-        let path = env::current_dir().unwrap().join("src/workspace.rs");
+        let path = env::current_dir().unwrap().join("src/lib.rs");
         let result = ignore.matches(path.to_str().unwrap());
 
         assert!(result);

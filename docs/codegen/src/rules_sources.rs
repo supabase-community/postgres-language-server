@@ -48,12 +48,15 @@ pub fn generate_rule_sources(docs_dir: &Path) -> anyhow::Result<()> {
     for (rule_name, metadata) in rules {
         let kebab_rule_name = Case::Kebab.convert(rule_name);
         if metadata.sources.is_empty() {
-            exclusive_rules.insert((rule_name.to_string(), format!("../rules/{kebab_rule_name}")));
+            exclusive_rules.insert((
+                rule_name.to_string(),
+                format!("./rules/{kebab_rule_name}.md"),
+            ));
         } else {
             for source in metadata.sources {
                 let source_set = SourceSet {
                     rule_name: rule_name.to_string(),
-                    link: format!("../rules/{kebab_rule_name}"),
+                    link: format!("./rules/{kebab_rule_name}.md"),
                     source_link: source.to_rule_url(),
                     source_rule_name: source.as_rule_name().to_string(),
                 };
