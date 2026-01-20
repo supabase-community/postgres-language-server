@@ -99,11 +99,8 @@ EXPORTED_RUNTIME="[
 ]"
 
 # Optimization flags based on build type
-# Note: We use -O2 instead of -O3 for release builds because:
-# - -flto causes LTO bitcode mismatch errors in CI environments
-# - -O3 triggers wasm-opt post-processing issues in some Emscripten versions
 if [ "$BUILD_TYPE" = "release" ]; then
-    OPT_FLAGS="-O2"
+    OPT_FLAGS="-O3 -flto"
 else
     OPT_FLAGS="-O0 -g"
 fi
