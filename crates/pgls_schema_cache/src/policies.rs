@@ -1,6 +1,9 @@
+use serde::{Deserialize, Serialize};
+
+#[cfg(feature = "db")]
 use crate::schema_cache::SchemaCacheItem;
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum PolicyCommand {
     Select,
     Insert,
@@ -54,7 +57,7 @@ impl From<PolicyQueried> for Policy {
     }
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Policy {
     pub name: String,
     pub table_name: String,
@@ -66,6 +69,7 @@ pub struct Policy {
     pub with_check: Option<String>,
 }
 
+#[cfg(feature = "db")]
 impl SchemaCacheItem for Policy {
     type Item = Policy;
 
@@ -78,7 +82,7 @@ impl SchemaCacheItem for Policy {
     }
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "db"))]
 mod tests {
 
     use sqlx::{Executor, PgPool};

@@ -1,15 +1,17 @@
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
+#[cfg(feature = "db")]
 use sqlx::PgPool;
-use sqlx::types::JsonValue;
+use serde_json::Value as JsonValue;
 
+#[cfg(feature = "db")]
 use crate::schema_cache::SchemaCacheItem;
 
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct TypeAttributes {
     pub attrs: Vec<PostgresTypeAttribute>,
 }
 
-#[derive(Debug, Clone, Default, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct PostgresTypeAttribute {
     pub name: String,
     pub type_id: i64,
@@ -23,7 +25,7 @@ impl From<Option<JsonValue>> for TypeAttributes {
     }
 }
 
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct Enums {
     pub values: Vec<String>,
 }
@@ -36,7 +38,7 @@ impl From<Option<JsonValue>> for Enums {
     }
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Serialize, Deserialize)]
 pub struct PostgresType {
     pub id: i64,
     pub name: String,
@@ -47,6 +49,7 @@ pub struct PostgresType {
     pub comment: Option<String>,
 }
 
+#[cfg(feature = "db")]
 impl SchemaCacheItem for PostgresType {
     type Item = PostgresType;
 

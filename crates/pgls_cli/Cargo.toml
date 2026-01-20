@@ -27,8 +27,10 @@ pgls_diagnostics         = { workspace = true }
 pgls_env                 = { workspace = true }
 pgls_fs                  = { workspace = true }
 pgls_lsp                 = { workspace = true }
+pgls_schema_cache = { workspace = true, features = ["db"] }
 pgls_text_edit           = { workspace = true }
 pgls_workspace           = { workspace = true }
+sqlx                     = { workspace = true }
 quick-junit              = "0.5.0"
 rayon                    = { workspace = true }
 rustc-hash               = { workspace = true }

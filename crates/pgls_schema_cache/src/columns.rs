@@ -1,6 +1,9 @@
+use serde::{Deserialize, Serialize};
+
+#[cfg(feature = "db")]
 use crate::schema_cache::SchemaCacheItem;
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum ColumnClassKind {
     OrdinaryTable,
     View,
@@ -36,7 +39,7 @@ impl From<char> for ColumnClassKind {
     }
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Column {
     pub name: String,
 
@@ -65,13 +68,14 @@ pub struct Column {
     pub comment: Option<String>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ForeignKeyReference {
     pub schema: Option<String>,
     pub table: String,
     pub column: String,
 }
 
+#[cfg(feature = "db")]
 impl SchemaCacheItem for Column {
     type Item = Column;
 
@@ -82,7 +86,7 @@ impl SchemaCacheItem for Column {
     }
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "db"))]
 mod tests {
     use sqlx::{Executor, PgPool};
 

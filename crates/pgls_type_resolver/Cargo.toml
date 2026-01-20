@@ -13,7 +13,7 @@ version              = "0.0.0"
 
 [dependencies]
 pgls_query.workspace        = true
-pgls_schema_cache.workspace = true
+pgls_schema_cache = { workspace = true, features = ["db"] }
 
 [dev-dependencies]
 

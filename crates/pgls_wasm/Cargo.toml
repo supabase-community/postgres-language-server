@@ -1,0 +1,26 @@
+[package]
+authors.workspace    = true
+categories.workspace = true
+description          = "WASM bindings for the Postgres Language Server"
+edition.workspace    = true
+homepage.workspace   = true
+keywords.workspace   = true
+license.workspace    = true
+name                 = "pgls_wasm"
+repository.workspace = true
+version              = "0.0.0"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+pgls_diagnostics        = { workspace = true }
+pgls_fs                 = { workspace = true, features = ["serde"] }
+pgls_query              = { workspace = true }
+pgls_schema_cache       = { workspace = true, features = ["serde"] }
+pgls_text_size          = { workspace = true }
+pgls_treesitter_grammar = { workspace = true }
+
+serde       = { workspace = true, features = ["derive"] }
+serde_json  = { workspace = true }
+tree-sitter = { workspace = true }

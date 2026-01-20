@@ -178,3 +178,54 @@ show-logs:
 #         fi
 #     done
 
+# ============================================================================
+# WASM Build
+# ============================================================================
+
+# Build WASM bindings (debug) - uses Nix if available
+build-wasm:
+    #!/usr/bin/env bash
+    if command -v nix &> /dev/null && [ -f crates/pgls_wasm/flake.nix ]; then
+        echo "Building with Nix..."
+        nix develop ./crates/pgls_wasm#default --command ./crates/pgls_wasm/build-wasm.sh
+    else
+        ./crates/pgls_wasm/build-wasm.sh
+    fi
+
+# Build WASM bindings (release) - uses Nix if available
+build-wasm-release:
+    #!/usr/bin/env bash
+    if command -v nix &> /dev/null && [ -f crates/pgls_wasm/flake.nix ]; then
+        echo "Building with Nix..."
+        nix develop ./crates/pgls_wasm#default --command ./crates/pgls_wasm/build-wasm.sh --release
+    else
+        ./crates/pgls_wasm/build-wasm.sh --release
+    fi
+
+# Build WASM using Nix (recommended)
+build-wasm-nix:
+    nix build ./crates/pgls_wasm#default
+
+# Enter WASM development shell with Nix
+wasm-shell:
+    nix develop ./crates/pgls_wasm#default
+
+# Check if WASM build prerequisites are installed
+check-wasm-prereqs:
+    @echo "Checking WASM build prerequisites..."
+    @command -v nix >/dev/null 2>&1 && echo "✓ Nix found (recommended)" || echo "○ Nix not found (optional but recommended)"
+    @command -v emcc >/dev/null 2>&1 && echo "✓ Emscripten (emcc) found" || echo "✗ Emscripten not found - install from https://emscripten.org or use Nix"
+    @rustup target list --installed 2>/dev/null | grep -q wasm32-unknown-emscripten && echo "✓ wasm32-unknown-emscripten target installed" || echo "✗ Missing target - run: rustup target add wasm32-unknown-emscripten"
+
+# Install WASM build prerequisites (non-Nix)
+install-wasm-prereqs:
+    rustup target add wasm32-unknown-emscripten
+    @echo ""
+    @echo "NOTE: You also need to install Emscripten SDK manually:"
+    @echo "  https://emscripten.org/docs/getting_started/downloads.html"
+    @echo ""
+    @echo "After installing, activate it with:"
+    @echo "  source /path/to/emsdk/emsdk_env.sh"
+    @echo ""
+    @echo "Or use Nix (recommended): just wasm-shell"
+

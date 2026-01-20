@@ -1,7 +1,10 @@
+use serde::{Deserialize, Serialize};
+
+#[cfg(feature = "db")]
 use crate::schema_cache::SchemaCacheItem;
 use strum::{EnumIter, IntoEnumIterator};
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum TriggerAffected {
     Row,
     Statement,
@@ -18,7 +21,7 @@ impl From<i16> for TriggerAffected {
     }
 }
 
-#[derive(Debug, PartialEq, Eq, EnumIter)]
+#[derive(Debug, PartialEq, Eq, EnumIter, Serialize, Deserialize)]
 pub enum TriggerEvent {
     Insert,
     Delete,
@@ -47,7 +50,7 @@ impl From<i16> for TriggerEvents {
     }
 }
 
-#[derive(Debug, PartialEq, Eq, EnumIter)]
+#[derive(Debug, PartialEq, Eq, EnumIter, Serialize, Deserialize)]
 pub enum TriggerTiming {
     Before,
     After,
@@ -88,7 +91,7 @@ pub struct TriggerQueried {
     details_bitmask: i16,
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Trigger {
     pub name: String,
     pub table_name: String,
@@ -115,6 +118,7 @@ impl From<TriggerQueried> for Trigger {
     }
 }
 
+#[cfg(feature = "db")]
 impl SchemaCacheItem for Trigger {
     type Item = Trigger;
 
@@ -127,7 +131,7 @@ impl SchemaCacheItem for Trigger {
     }
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "db"))]
 mod tests {
 
     use sqlx::{Executor, PgPool};

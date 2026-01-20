@@ -117,6 +117,7 @@ fn run_bindgen(
         .allowlist_type("PgQueryFingerprintResult")
         .allowlist_type("PgQuerySplitResult")
         .allowlist_type("PgQuerySplitStmt")
+        .allowlist_type("PgQueryPlpgsqlParseResult")
         // Also generate bindings for size_t since it's used in PgQueryProtobuf
         .allowlist_type("size_t")
         .allowlist_var("PG_VERSION_NUM");
@@ -129,11 +130,25 @@ fn run_bindgen(
         b = b.clang_arg("--target=wasm32-unknown-emscripten");
 
         // Add emscripten sysroot includes
+        // Try multiple possible paths for different Emscripten installations
+        let mut found_sysroot = false;
         if let Ok(emsdk) = env::var("EMSDK") {
-            b = b.clang_arg(format!(
-                "-I{emsdk}/upstream/emscripten/cache/sysroot/include"
-            ));
-        } else {
+            // Try standard EMSDK path
+            let standard_path = format!("{emsdk}/upstream/emscripten/cache/sysroot/include");
+            // Try Nix path (uses share/emscripten instead of upstream/emscripten)
+            let nix_path = format!("{emsdk}/share/emscripten/cache/sysroot/include");
+
+            if Path::new(&nix_path).exists() {
+                b = b.clang_arg(format!("-I{nix_path}"));
+                found_sysroot = true;
+            } else if Path::new(&standard_path).exists() {
+                b = b.clang_arg(format!("-I{standard_path}"));
+                found_sysroot = true;
+            }
+        }
+
+        if !found_sysroot {
+            // Fallback to default path
             b = b.clang_arg("-I/emsdk/upstream/emscripten/cache/sysroot/include");
         }
 
@@ -265,7 +280,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     if is_emscripten {
         let mut bindings_content = std::fs::read_to_string(&bindings_path)?;
         if !bindings_content.contains("extern \"C\"") {
-            bindings_content.push_str("\nextern \"C\" {\n");
+            bindings_content.push_str("\nunsafe extern \"C\" {\n");
             bindings_content.push_str("    pub fn pg_query_scan(input: *const ::std::os::raw::c_char) -> PgQueryScanResult;\n");
             bindings_content.push_str("    pub fn pg_query_parse_protobuf(input: *const ::std::os::raw::c_char) -> PgQueryProtobufParseResult;\n");
             bindings_content.push_str("    pub fn pg_query_parse_plpgsql(input: *const ::std::os::raw::c_char) -> PgQueryPlpgsqlParseResult;\n");

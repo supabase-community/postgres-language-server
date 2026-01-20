@@ -16,7 +16,7 @@ version              = "0.0.0"
 pgls_console.workspace      = true
 pgls_diagnostics.workspace  = true
 pgls_query.workspace        = true
-pgls_schema_cache.workspace = true
+pgls_schema_cache           = { workspace = true, features = ["db"] }
 rustc-hash                  = { workspace = true }
 
 biome_deserialize        = { workspace = true, optional = true }

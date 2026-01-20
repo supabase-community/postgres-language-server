@@ -14,7 +14,7 @@ version              = "0.0.0"
 [dependencies]
 humansize                         = { version = "2.1.3" }
 pgls_query.workspace              = true
-pgls_schema_cache.workspace       = true
+pgls_schema_cache                 = { workspace = true, features = ["db"] }
 pgls_text_size.workspace          = true
 pgls_treesitter.workspace         = true
 pgls_treesitter_grammar.workspace = true

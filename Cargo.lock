@@ -2696,6 +2696,7 @@ dependencies = [
  "pgls_env",
  "pgls_fs",
  "pgls_lsp",
+ "pgls_schema_cache",
  "pgls_test_utils",
  "pgls_text_edit",
  "pgls_workspace",
@@ -3148,6 +3149,21 @@ dependencies = [
  "tokio",
  "tree-sitter",
  "uuid",
+]
+
+[[package]]
+name = "pgls_wasm"
+version = "0.0.0"
+dependencies = [
+ "pgls_diagnostics",
+ "pgls_fs",
+ "pgls_query",
+ "pgls_schema_cache",
+ "pgls_text_size",
+ "pgls_treesitter_grammar",
+ "serde",
+ "serde_json",
+ "tree-sitter",
 ]
 
 [[package]]

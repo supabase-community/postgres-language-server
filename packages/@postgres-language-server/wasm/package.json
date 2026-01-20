@@ -1,0 +1,46 @@
+{
+	"name": "@postgres-language-server/wasm",
+	"version": "0.0.0",
+	"description": "WebAssembly bindings for the Postgres Language Server",
+	"type": "module",
+	"main": "dist/index.js",
+	"module": "dist/index.js",
+	"types": "dist/index.d.ts",
+	"exports": {
+		".": {
+			"types": "./dist/index.d.ts",
+			"import": "./dist/index.js"
+		}
+	},
+	"scripts": {
+		"build": "bun build ./src/index.ts --outdir ./dist --target browser && bun run build:types",
+		"build:types": "tsc --declaration --emitDeclarationOnly --outDir dist",
+		"test": "bun test"
+	},
+	"files": [
+		"dist/",
+		"wasm/",
+		"README.md"
+	],
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/supabase-community/postgres-language-server.git",
+		"directory": "packages/@postgres-language-server/wasm"
+	},
+	"author": "Supabase Community",
+	"bugs": "https://github.com/supabase-community/postgres-language-server/issues",
+	"keywords": [
+		"postgres",
+		"sql",
+		"linter",
+		"wasm",
+		"language-server"
+	],
+	"license": "MIT",
+	"publishConfig": {
+		"provenance": true
+	},
+	"devDependencies": {
+		"typescript": "^5.0.0"
+	}
+}

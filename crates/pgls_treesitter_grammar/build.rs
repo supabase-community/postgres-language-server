@@ -3,6 +3,10 @@ fn main() {
     let src_dir = std::path::Path::new("src");
     let parser_path = src_dir.join("parser.c");
 
+    // Detect Emscripten target for WASM builds
+    let target = std::env::var("TARGET").unwrap_or_default();
+    let is_emscripten = target.contains("emscripten");
+
     // regenerate parser if grammar.js changes
     println!("cargo:rerun-if-changed={}", grammar_file.to_str().unwrap());
 
@@ -29,6 +33,12 @@ fn main() {
     }
 
     let mut c_config = cc::Build::new();
+
+    // Use Emscripten compiler for WASM builds
+    if is_emscripten {
+        c_config.compiler("emcc").archiver("emar");
+    }
+
     c_config.std("c11").include(src_dir);
 
     #[cfg(target_env = "msvc")]
