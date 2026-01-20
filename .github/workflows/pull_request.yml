@@ -269,6 +269,7 @@ jobs:
         run: |
           nix develop --command bash -c "
             cd packages/@postgres-language-server/wasm
+            mkdir -p wasm
             cp ../../../crates/pgls_wasm/dist/pgls.js ../../../crates/pgls_wasm/dist/pgls.wasm ./wasm/
             bun run build:ts
           "
