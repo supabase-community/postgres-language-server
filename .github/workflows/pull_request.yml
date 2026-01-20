@@ -241,6 +241,62 @@ jobs:
         working-directory: packages/@postgres-language-server/cli
         run: bun run test
 
+  test-wasm:
+    name: Test WASM Package
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - name: Free Disk Space
+        uses: ./.github/actions/free-disk-space
+
+      - name: Install toolchain
+        uses: moonrepo/setup-rust@v1
+        with:
+          cache-base: main
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Emscripten
+        uses: mymindstorm/setup-emsdk@v14
+        with:
+          version: "3.1.51"
+          actions-cache-folder: "emsdk-cache"
+
+      - name: Add Emscripten target
+        run: rustup target add wasm32-unknown-emscripten
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Install JS dependencies
+        run: bun install
+
+      - name: Build WASM module
+        working-directory: crates/pgls_wasm
+        run: ./build-wasm.sh --release
+
+      - name: Build TypeScript and copy WASM files
+        working-directory: packages/@postgres-language-server/wasm
+        run: |
+          cp ../../../crates/pgls_wasm/dist/pgls.js ../../../crates/pgls_wasm/dist/pgls.wasm ./wasm/
+          bun run build:ts
+
+      - name: Run WASM unit tests
+        working-directory: packages/@postgres-language-server/wasm
+        run: bun test
+
+      - name: Install Playwright
+        working-directory: packages/@postgres-language-server/wasm
+        run: bun run test:e2e:install
+
+      - name: Run WASM e2e tests
+        working-directory: packages/@postgres-language-server/wasm
+        run: bun run test:e2e
+
   codegen:
     name: Check Codegen
     runs-on: ubuntu-22.04
