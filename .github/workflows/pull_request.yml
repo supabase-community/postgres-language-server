@@ -259,6 +259,9 @@ jobs:
       - name: Setup Magic Nix Cache
         uses: DeterminateSystems/magic-nix-cache-action@main
 
+      - name: Install JS dependencies
+        run: nix develop --command bun install
+
       - name: Build WASM module
         run: nix develop --command bash -c "cd crates/pgls_wasm && ./build-wasm.sh --release"
 
