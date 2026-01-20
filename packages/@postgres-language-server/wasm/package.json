@@ -18,9 +18,9 @@
 		"build:ts": "tsc -p tsconfig.build.json && cp wasm/pgls.wasm wasm/pgls.js dist/",
 		"build:types": "tsc --declaration --emitDeclarationOnly --outDir dist",
 		"test": "bun test",
-		"test:e2e": "bunx playwright test",
-		"test:e2e:ui": "bunx playwright test --ui",
-		"test:e2e:install": "bunx playwright install chromium"
+		"test:e2e": "./node_modules/.bin/playwright test",
+		"test:e2e:ui": "./node_modules/.bin/playwright test --ui",
+		"test:e2e:install": "./node_modules/.bin/playwright install chromium"
 	},
 	"files": [
 		"dist/",
