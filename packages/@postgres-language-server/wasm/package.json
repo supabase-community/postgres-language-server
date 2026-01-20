@@ -14,7 +14,7 @@
 	},
 	"scripts": {
 		"build": "bun run build:wasm && bun run build:ts",
-		"build:wasm": "../../../crates/pgls_wasm/build-wasm.sh --release && cp ../../../crates/pgls_wasm/dist/pgls.js ../../../crates/pgls_wasm/dist/pgls.wasm ./wasm/",
+		"build:wasm": "../../../crates/pgls_wasm/build-wasm.sh --release && mkdir -p wasm && cp ../../../crates/pgls_wasm/dist/pgls.js ../../../crates/pgls_wasm/dist/pgls.wasm ./wasm/",
 		"build:ts": "tsc -p tsconfig.build.json && cp wasm/pgls.wasm wasm/pgls.js dist/",
 		"build:types": "tsc --declaration --emitDeclarationOnly --outDir dist",
 		"test": "bun test",

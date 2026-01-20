@@ -262,17 +262,8 @@ jobs:
       - name: Install JS dependencies
         run: nix develop --command bun install
 
-      - name: Build WASM module
-        run: nix develop --command bash -c "cd crates/pgls_wasm && ./build-wasm.sh --release"
-
-      - name: Build TypeScript and copy WASM files
-        run: |
-          nix develop --command bash -c "
-            cd packages/@postgres-language-server/wasm
-            mkdir -p wasm
-            cp ../../../crates/pgls_wasm/dist/pgls.js ../../../crates/pgls_wasm/dist/pgls.wasm ./wasm/
-            bun run build:ts
-          "
+      - name: Build WASM package
+        run: nix develop --command bash -c "cd packages/@postgres-language-server/wasm && bun run build"
 
       - name: Run WASM unit tests
         run: nix develop --command bash -c "cd packages/@postgres-language-server/wasm && bun test"
