@@ -13,9 +13,12 @@
 		}
 	},
 	"scripts": {
-		"build": "bun build ./src/index.ts --outdir ./dist --target browser && bun run build:types",
+		"build": "bun build ./src/index.ts --outdir ./dist --target browser && bun run build:types && cp wasm/pgls.wasm dist/",
 		"build:types": "tsc --declaration --emitDeclarationOnly --outDir dist",
-		"test": "bun test"
+		"test": "bun test",
+		"test:e2e": "playwright test",
+		"test:e2e:ui": "playwright test --ui",
+		"test:e2e:install": "playwright install chromium"
 	},
 	"files": [
 		"dist/",
@@ -41,6 +44,7 @@
 		"provenance": true
 	},
 	"devDependencies": {
+		"@playwright/test": "^1.50.0",
 		"typescript": "^5.0.0"
 	}
 }

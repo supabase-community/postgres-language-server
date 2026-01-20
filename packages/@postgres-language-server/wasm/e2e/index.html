@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PGLS Monaco E2E Test</title>
+    <style>
+        html, body {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            overflow: hidden;
+        }
+        #container {
+            width: 100%;
+            height: 100%;
+        }
+        #status {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            padding: 8px 16px;
+            background: #333;
+            color: #fff;
+            font-family: monospace;
+            font-size: 12px;
+            border-radius: 4px;
+            z-index: 1000;
+        }
+        #status.ready { background: #28a745; }
+        #status.error { background: #dc3545; }
+        #diagnostics {
+            position: fixed;
+            bottom: 10px;
+            left: 10px;
+            right: 10px;
+            max-height: 150px;
+            overflow: auto;
+            background: #1e1e1e;
+            color: #d4d4d4;
+            font-family: monospace;
+            font-size: 12px;
+            padding: 10px;
+            border-radius: 4px;
+            z-index: 1000;
+        }
+        .diagnostic-error { color: #f48771; }
+        .diagnostic-warning { color: #cca700; }
+        .diagnostic-info { color: #75beff; }
+    </style>
+</head>
+<body>
+    <div id="container"></div>
+    <div id="status">Loading...</div>
+    <div id="diagnostics" data-testid="diagnostics"></div>
+
+    <!-- Monaco Editor from CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs/loader.js"></script>
+
+    <script type="module">
+        // Status element
+        const statusEl = document.getElementById('status');
+        const diagnosticsEl = document.getElementById('diagnostics');
+
+        function setStatus(text, className = '') {
+            statusEl.textContent = text;
+            statusEl.className = className;
+        }
+
+        function showDiagnostics(diagnostics) {
+            diagnosticsEl.innerHTML = diagnostics.length === 0
+                ? '<div>No diagnostics</div>'
+                : diagnostics.map(d => {
+                    const className = `diagnostic-${d.severity || 'info'}`;
+                    return `<div class="${className}">[${d.severity}] ${d.message}</div>`;
+                }).join('');
+        }
+
+        // Load Monaco
+        require.config({ paths: { vs: 'https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs' } });
+
+        require(['vs/editor/editor.main'], async function() {
+            setStatus('Monaco loaded, loading WASM...');
+
+            // Register SQL language
+            monaco.languages.register({ id: 'sql' });
+
+            // Create editor
+            const editor = monaco.editor.create(document.getElementById('container'), {
+                value: '-- Type SQL here\nSELECT * FROM users;',
+                language: 'sql',
+                theme: 'vs-dark',
+                automaticLayout: true,
+                minimap: { enabled: false },
+            });
+
+            // Expose editor for tests
+            window.monacoEditor = editor;
+
+            try {
+                // Import and initialize WASM workspace
+                const { createWorkspace } = await import('/dist/index.js');
+                const workspace = await createWorkspace();
+
+                // Expose for tests
+                window.pglsWorkspace = workspace;
+
+                setStatus('Ready', 'ready');
+
+                // Set up diagnostics on content change
+                let debounceTimer;
+                const updateDiagnostics = () => {
+                    const content = editor.getValue();
+                    const uri = 'file:///test.sql';
+
+                    // Update workspace
+                    workspace.insertFile(uri, content);
+
+                    // Get diagnostics via LSP handler
+                    const messages = workspace.handleMessage({
+                        jsonrpc: '2.0',
+                        method: 'textDocument/didOpen',
+                        params: {
+                            textDocument: {
+                                uri: uri,
+                                languageId: 'sql',
+                                version: 1,
+                                text: content,
+                            }
+                        }
+                    });
+
+                    // Find publishDiagnostics notification
+                    const diagNotification = messages.find(m => m.method === 'textDocument/publishDiagnostics');
+                    const diagnostics = diagNotification?.params?.diagnostics || [];
+
+                    // Update Monaco markers
+                    const model = editor.getModel();
+                    const markers = diagnostics.map(d => ({
+                        severity: d.severity === 1 ? monaco.MarkerSeverity.Error :
+                                  d.severity === 2 ? monaco.MarkerSeverity.Warning :
+                                  monaco.MarkerSeverity.Info,
+                        message: d.message,
+                        startLineNumber: d.range.start.line + 1,
+                        startColumn: d.range.start.character + 1,
+                        endLineNumber: d.range.end.line + 1,
+                        endColumn: d.range.end.character + 1,
+                    }));
+
+                    monaco.editor.setModelMarkers(model, 'pgls', markers);
+
+                    // Show in diagnostics panel
+                    showDiagnostics(diagnostics.map(d => ({
+                        severity: d.severity === 1 ? 'error' : d.severity === 2 ? 'warning' : 'info',
+                        message: d.message,
+                    })));
+
+                    // Expose diagnostics for tests
+                    window.lastDiagnostics = diagnostics;
+                };
+
+                editor.onDidChangeModelContent(() => {
+                    clearTimeout(debounceTimer);
+                    debounceTimer = setTimeout(updateDiagnostics, 300);
+                });
+
+                // Initial diagnostics
+                updateDiagnostics();
+
+            } catch (err) {
+                console.error('Failed to load WASM:', err);
+                setStatus('Error: ' + err.message, 'error');
+                window.pglsError = err;
+            }
+        });
+    </script>
+</body>
+</html>
