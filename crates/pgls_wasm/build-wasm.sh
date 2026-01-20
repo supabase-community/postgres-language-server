@@ -99,8 +99,10 @@ EXPORTED_RUNTIME="[
 ]"
 
 # Optimization flags based on build type
+# Note: We don't use -flto as it causes compatibility issues with Emscripten's
+# precompiled libraries in CI environments (LTO bitcode mismatch errors)
 if [ "$BUILD_TYPE" = "release" ]; then
-    OPT_FLAGS="-O3 -flto"
+    OPT_FLAGS="-O3"
 else
     OPT_FLAGS="-O0 -g"
 fi
