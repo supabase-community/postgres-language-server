@@ -27,8 +27,10 @@ use serde::{Deserialize, Serialize};
 
 mod error;
 pub mod ffi;
+pub mod lsp;
 
 pub use error::WasmError;
+pub use lsp::LspHandler;
 
 /// Simplified diagnostic for WASM output.
 #[derive(Debug, Serialize, Deserialize)]

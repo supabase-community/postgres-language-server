@@ -99,3 +99,135 @@ describe("WASM Workspace", () => {
 		expect(errors.length).toBe(0);
 	});
 });
+
+describe("LSP Message Handling", () => {
+	let workspace: Workspace;
+
+	beforeAll(async () => {
+		workspace = await createWorkspace();
+	});
+
+	test("handleMessage returns array", () => {
+		const messages = workspace.handleMessage({
+			jsonrpc: "2.0",
+			id: 1,
+			method: "initialize",
+			params: {},
+		});
+		expect(messages).toBeArray();
+		expect(messages.length).toBeGreaterThan(0);
+	});
+
+	test("initialize returns capabilities", () => {
+		const messages = workspace.handleMessage({
+			jsonrpc: "2.0",
+			id: 1,
+			method: "initialize",
+			params: {},
+		});
+
+		expect(messages.length).toBe(1);
+		const response = messages[0];
+		expect(response.jsonrpc).toBe("2.0");
+		expect(response.id).toBe(1);
+		expect(response.result).toBeDefined();
+		// @ts-expect-error - result is unknown type
+		expect(response.result.capabilities).toBeDefined();
+	});
+
+	test("shutdown returns null", () => {
+		const messages = workspace.handleMessage({
+			jsonrpc: "2.0",
+			id: 2,
+			method: "shutdown",
+			params: null,
+		});
+
+		expect(messages.length).toBe(1);
+		const response = messages[0];
+		expect(response.id).toBe(2);
+		expect(response.result).toBeNull();
+	});
+
+	test("handleMessage accepts string input", () => {
+		const messages = workspace.handleMessage(
+			JSON.stringify({
+				jsonrpc: "2.0",
+				id: 3,
+				method: "shutdown",
+				params: null,
+			}),
+		);
+
+		expect(messages.length).toBe(1);
+		expect(messages[0].id).toBe(3);
+	});
+
+	test("didOpen returns publishDiagnostics notification", () => {
+		const messages = workspace.handleMessage({
+			jsonrpc: "2.0",
+			method: "textDocument/didOpen",
+			params: {
+				textDocument: {
+					uri: "file:///test-lsp.sql",
+					languageId: "sql",
+					version: 1,
+					text: "SELECT * FROM users;",
+				},
+			},
+		});
+
+		// Should return at least one publishDiagnostics notification
+		expect(messages.length).toBeGreaterThanOrEqual(1);
+		const notification = messages.find(
+			(m) => m.method === "textDocument/publishDiagnostics",
+		);
+		expect(notification).toBeDefined();
+		expect(notification?.params).toBeDefined();
+	});
+
+	test("didOpen with invalid SQL returns diagnostics", () => {
+		const messages = workspace.handleMessage({
+			jsonrpc: "2.0",
+			method: "textDocument/didOpen",
+			params: {
+				textDocument: {
+					uri: "file:///invalid-lsp.sql",
+					languageId: "sql",
+					version: 1,
+					text: "SELEC * FROM;",
+				},
+			},
+		});
+
+		const notification = messages.find(
+			(m) => m.method === "textDocument/publishDiagnostics",
+		);
+		expect(notification).toBeDefined();
+		// @ts-expect-error - params is unknown type
+		expect(notification?.params?.diagnostics?.length).toBeGreaterThan(0);
+	});
+
+	test("unknown method returns error", () => {
+		const messages = workspace.handleMessage({
+			jsonrpc: "2.0",
+			id: 99,
+			method: "unknownMethod",
+			params: {},
+		});
+
+		expect(messages.length).toBe(1);
+		const response = messages[0];
+		expect(response.error).toBeDefined();
+		expect(response.error?.code).toBe(-32601); // Method not found
+	});
+
+	test("invalid JSON returns parse error", () => {
+		const messages = workspace.handleMessage("not valid json");
+
+		expect(messages.length).toBe(1);
+		const response = messages[0];
+		expect(response.error).toBeDefined();
+		expect(response.error?.code).toBe(-32700); // Parse error
+	});
+});

@@ -86,6 +86,23 @@ export interface WorkspaceOptions {
 }
 
 /**
+ * A JSON-RPC message (request, response, or notification).
+ * This is the standard LSP message format.
+ */
+export interface JsonRpcMessage {
+	jsonrpc: "2.0";
+	id?: number | string | null;
+	method?: string;
+	params?: unknown;
+	result?: unknown;
+	error?: {
+		code: number;
+		message: string;
+		data?: unknown;
+	};
+}
+
+/**
  * The Emscripten module interface.
  * This is the raw interface exposed by the compiled WASM.
  */
@@ -106,6 +123,7 @@ export interface PGLSModule {
 	_pgls_hover(pathPtr: number, offset: number): number;
 	_pgls_parse(sqlPtr: number): number;
 	_pgls_version(): number;
+	_pgls_handle_message(messagePtr: number): number;
 
 	// Emscripten runtime methods
 	UTF8ToString(ptr: number): string;

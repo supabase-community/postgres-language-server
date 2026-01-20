@@ -252,6 +252,47 @@ pub extern "C" fn pgls_version() -> *mut c_char {
     str_to_c_string(env!("CARGO_PKG_VERSION"))
 }
 
+// ============================================================================
+// LSP Message Handler
+// ============================================================================
+
+use crate::lsp::LspHandler;
+
+/// Global LSP handler instance.
+/// Separate from the workspace to allow independent state management.
+static LSP_HANDLER: Mutex<Option<LspHandler>> = Mutex::new(None);
+
+/// Handle an LSP JSON-RPC message.
+///
+/// This function processes an LSP message and returns a JSON array of outgoing
+/// messages (response + notifications like publishDiagnostics).
+///
+/// The returned string must be freed with `pgls_free_string`.
+///
+/// # Usage with Web Workers
+///
+/// The web worker should iterate over the returned array and send each message
+/// separately via `postMessage`, as `BrowserMessageReader` expects individual messages.
+///
+/// # Safety
+/// The message pointer must be valid and point to a null-terminated UTF-8 string.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn pgls_handle_message(message: *const c_char) -> *mut c_char {
+    // SAFETY: Caller guarantees message is valid
+    let msg = match unsafe { c_str_to_str(message) } {
+        Some(s) => s,
+        None => return str_to_c_string("[]"),
+    };
+
+    let mut guard = LSP_HANDLER.lock().unwrap();
+    if guard.is_none() {
+        *guard = Some(LspHandler::new());
+    }
+
+    let response = guard.as_mut().unwrap().handle_message(msg);
+    str_to_c_string(&response)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

@@ -27,6 +27,7 @@ import type {
 	SchemaCache,
 	WorkspaceOptions,
 	PGLSModule,
+	JsonRpcMessage,
 } from "./types";
 
 export type {
@@ -35,6 +36,7 @@ export type {
 	SchemaCache,
 	WorkspaceOptions,
 	PGLSModule,
+	JsonRpcMessage,
 };
 
 // The WASM module will be loaded dynamically
@@ -52,16 +54,18 @@ export async function loadWasm(): Promise<PGLSModule> {
 
 	// Dynamic import of the Emscripten-generated module
 	// The actual path will depend on how the package is bundled
-	const createPGLS = (await import("../wasm/pgls.js")).default;
-	wasmModule = await createPGLS();
+	// @ts-expect-error - Generated JS file without type declarations
+	const createPGLS = (await import("../wasm/pgls.js")).default as () => Promise<PGLSModule>;
+	const module = await createPGLS();
 
 	// Initialize the workspace
-	const result = wasmModule._pgls_init();
+	const result = module._pgls_init();
 	if (result !== 0) {
 		throw new Error(`Failed to initialize PGLS workspace: error code ${result}`);
 	}
 
-	return wasmModule;
+	wasmModule = module;
+	return module;
 }
 
 /**
@@ -256,6 +260,42 @@ export class Workspace {
 	version(): string {
 		const resultPtr = this.module._pgls_version();
 		return readAndFreeString(this.module, resultPtr) ?? "unknown";
+	}
+
+	/**
+	 * Handle an LSP JSON-RPC message.
+	 *
+	 * This processes an incoming LSP message and returns an array of outgoing
+	 * messages (response + any notifications like publishDiagnostics).
+	 *
+	 * This method is designed for use with monaco-languageclient's
+	 * BrowserMessageReader/Writer pattern where each message is sent separately.
+	 *
+	 * @param message - The JSON-RPC message as a string or object
+	 * @returns Array of outgoing JSON-RPC messages
+	 *
+	 * @example
+	 * ```typescript
+	 * // In a web worker
+	 * self.onmessage = (event) => {
+	 *   const outgoing = workspace.handleMessage(event.data);
+	 *   for (const msg of outgoing) {
+	 *     self.postMessage(msg);
+	 *   }
+	 * };
+	 * ```
+	 */
+	handleMessage(message: string | JsonRpcMessage): JsonRpcMessage[] {
+		const messageStr =
+			typeof message === "string" ? message : JSON.stringify(message);
+		const messagePtr = allocateString(this.module, messageStr);
+		try {
+			const resultPtr = this.module._pgls_handle_message(messagePtr);
+			const result = readAndFreeString(this.module, resultPtr) ?? "[]";
+			return JSON.parse(result) as JsonRpcMessage[];
+		} finally {
+			this.module._free(messagePtr);
+		}
 	}
 }
 

@@ -280,6 +280,7 @@ export async function createPGLS(options = {}) {
     _pgls_hover: wasmExports.pgls_hover,
     _pgls_parse: wasmExports.pgls_parse,
     _pgls_version: wasmExports.pgls_version,
+    _pgls_handle_message: wasmExports.pgls_handle_message,
 
     // Emscripten runtime methods
     UTF8ToString,

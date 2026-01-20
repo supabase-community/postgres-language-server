@@ -24,3 +24,4 @@ pgls_treesitter_grammar = { workspace = true }
 serde       = { workspace = true, features = ["derive"] }
 serde_json  = { workspace = true }
 tree-sitter = { workspace = true }
+lsp-types   = "0.97"
