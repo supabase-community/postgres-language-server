@@ -59,10 +59,11 @@ pub async fn run_schema_export(
     })?;
 
     // Write to file
-    std::fs::write(output_path, json)
-        .map_err(|e| CliDiagnostic::io_error(std::io::Error::other(format!(
+    std::fs::write(output_path, json).map_err(|e| {
+        CliDiagnostic::io_error(std::io::Error::other(format!(
             "Failed to write output file: {e}"
-        ))))?;
+        )))
+    })?;
 
     console.log(markup! {
         "Schema exported to "<Emphasis>{output_path.display().to_string()}</Emphasis>

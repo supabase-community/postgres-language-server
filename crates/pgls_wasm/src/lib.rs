@@ -24,13 +24,13 @@ use std::path::PathBuf;
 use pgls_analyse::RuleCategories;
 use pgls_fs::PgLSPath;
 use pgls_text_size::TextSize;
+use pgls_workspace::Workspace as WorkspaceTrait;
 use pgls_workspace::features::completions::GetCompletionsParams;
 use pgls_workspace::features::diagnostics::PullFileDiagnosticsParams;
 use pgls_workspace::features::on_hover::OnHoverParams;
 use pgls_workspace::workspace::{
     ChangeFileParams, CloseFileParams, OpenFileParams, RegisterProjectFolderParams,
 };
-use pgls_workspace::Workspace as WorkspaceTrait;
 use serde::{Deserialize, Serialize};
 
 mod error;
@@ -116,14 +116,14 @@ impl MemoryFs {
         use pgls_fs::FileSystemExt;
 
         let path_buf = PathBuf::from(path);
-        let mut file = self.inner.open(&path_buf).map_err(|e| {
-            WasmError::FileNotFound(format!("Failed to open file '{path}': {e}"))
-        })?;
+        let mut file = self
+            .inner
+            .open(&path_buf)
+            .map_err(|e| WasmError::FileNotFound(format!("Failed to open file '{path}': {e}")))?;
 
         let mut content = String::new();
-        pgls_fs::File::read_to_string(&mut *file, &mut content).map_err(|e| {
-            WasmError::FileNotFound(format!("Failed to read file '{path}': {e}"))
-        })?;
+        pgls_fs::File::read_to_string(&mut *file, &mut content)
+            .map_err(|e| WasmError::FileNotFound(format!("Failed to read file '{path}': {e}")))?;
 
         Ok(content)
     }

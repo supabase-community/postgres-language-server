@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
+use serde_json::Value as JsonValue;
 #[cfg(feature = "db")]
 use sqlx::PgPool;
-use serde_json::Value as JsonValue;
 
 #[cfg(feature = "db")]
 use crate::schema_cache::SchemaCacheItem;

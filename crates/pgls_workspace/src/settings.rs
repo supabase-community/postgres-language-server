@@ -1,6 +1,8 @@
 use biome_deserialize::StringSet;
 use globset::Glob;
 use pgls_diagnostics::Category;
+#[cfg(feature = "db")]
+use std::str::FromStr;
 use std::{
     borrow::Cow,
     num::NonZeroU64,
@@ -8,8 +10,6 @@ use std::{
     sync::{RwLock, RwLockReadGuard, RwLockWriteGuard},
     time::Duration,
 };
-#[cfg(feature = "db")]
-use std::str::FromStr;
 use tracing::trace;
 
 use ignore::gitignore::{Gitignore, GitignoreBuilder};

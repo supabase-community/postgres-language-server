@@ -2753,6 +2753,7 @@ dependencies = [
  "schemars",
  "serde",
  "serde_json",
+ "sqlx",
  "tracing",
  "tree-sitter",
  "unindent",
@@ -2874,6 +2875,7 @@ dependencies = [
  "schemars",
  "serde",
  "serde_json",
+ "sqlx",
  "tracing",
  "tree-sitter",
 ]

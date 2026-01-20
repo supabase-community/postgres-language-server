@@ -171,7 +171,12 @@ pub enum PgLSCommand {
         connection_string: String,
 
         /// Output file path for the JSON schema
-        #[bpaf(long("output"), short('o'), argument("PATH"), fallback(PathBuf::from("schema.json")))]
+        #[bpaf(
+            long("output"),
+            short('o'),
+            argument("PATH"),
+            fallback(PathBuf::from("schema.json"))
+        )]
         output: PathBuf,
     },
 

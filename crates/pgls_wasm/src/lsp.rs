@@ -106,11 +106,8 @@ impl LspHandler {
         let req: JsonRpcMessage = match serde_json::from_str(message) {
             Ok(r) => r,
             Err(e) => {
-                let error_response = self.error_response(
-                    Value::Null,
-                    -32700,
-                    &format!("Parse error: {e}"),
-                );
+                let error_response =
+                    self.error_response(Value::Null, -32700, &format!("Parse error: {e}"));
                 return serde_json::to_string(&vec![error_response]).unwrap();
             }
         };
@@ -223,7 +220,10 @@ impl LspHandler {
         };
 
         let offset = position_to_offset(content, position);
-        let completions = self.workspace.complete(&uri, offset as u32).unwrap_or_default();
+        let completions = self
+            .workspace
+            .complete(&uri, offset as u32)
+            .unwrap_or_default();
 
         let lsp_completions: Vec<CompletionItem> = completions
             .into_iter()
@@ -434,7 +434,8 @@ impl LspHandler {
             jsonrpc: "2.0".into(),
             method: "textDocument/publishDiagnostics".into(),
             params: serde_json::to_value(PublishDiagnosticsParams {
-                uri: Uri::from_str(uri).unwrap_or_else(|_| Uri::from_str("file:///unknown").unwrap()),
+                uri: Uri::from_str(uri)
+                    .unwrap_or_else(|_| Uri::from_str("file:///unknown").unwrap()),
                 diagnostics: lsp_diagnostics,
                 version: None,
             })
@@ -511,10 +512,12 @@ mod tests {
         let msgs: Vec<Value> = serde_json::from_str(&response).unwrap();
         assert_eq!(msgs.len(), 1);
         assert!(msgs[0]["result"]["capabilities"].is_object());
-        assert!(msgs[0]["result"]["serverInfo"]["name"]
-            .as_str()
-            .unwrap()
-            .contains("pgls"));
+        assert!(
+            msgs[0]["result"]["serverInfo"]["name"]
+                .as_str()
+                .unwrap()
+                .contains("pgls")
+        );
     }
 
     #[test]
@@ -546,7 +549,12 @@ mod tests {
             "textDocument/publishDiagnostics"
         );
         // Valid SQL should have no diagnostics
-        assert!(msgs[0]["params"]["diagnostics"].as_array().unwrap().is_empty());
+        assert!(
+            msgs[0]["params"]["diagnostics"]
+                .as_array()
+                .unwrap()
+                .is_empty()
+        );
     }
 
     #[test]
@@ -577,10 +585,12 @@ mod tests {
             "textDocument/publishDiagnostics"
         );
         // Invalid SQL should have diagnostics
-        assert!(!msgs[0]["params"]["diagnostics"]
-            .as_array()
-            .unwrap()
-            .is_empty());
+        assert!(
+            !msgs[0]["params"]["diagnostics"]
+                .as_array()
+                .unwrap()
+                .is_empty()
+        );
     }
 
     #[test]

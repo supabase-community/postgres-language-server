@@ -25,7 +25,6 @@ use pgls_diagnostics::{
     Diagnostic, DiagnosticExt, Error, Severity, serde::Diagnostic as SDiagnostic,
 };
 use pgls_fs::{ConfigName, PgLSPath};
-#[cfg(not(feature = "db"))]
 use pgls_schema_cache::SchemaCache;
 #[cfg(feature = "db")]
 use pgls_typecheck::{IdentifierType, TypecheckParams, TypedIdentifier};
@@ -83,16 +82,16 @@ pub struct WorkspaceServer {
 
     documents: RwLock<HashMap<PgLSPath, Document>>,
 
-    /// Stores the schema cache for this workspace (DB mode)
+    /// Stores the schema cache loaded from database connections (DB mode)
     #[cfg(feature = "db")]
     schema_cache: SchemaCacheManager,
 
     #[cfg(feature = "db")]
     connection: ConnectionManager,
 
-    /// Stores the schema cache for this workspace (no-DB mode)
-    #[cfg(not(feature = "db"))]
-    schema_cache: RwLock<Option<Arc<SchemaCache>>>,
+    /// Schema cache loaded from JSON (available in both modes)
+    /// In db mode, this can be used as an alternative to database-loaded schemas
+    json_schema: RwLock<Option<Arc<SchemaCache>>>,
 }
 
 /// The `Workspace` object is long-lived, so we want it to be able to cross
@@ -118,6 +117,7 @@ impl WorkspaceServer {
             documents: RwLock::new(HashMap::new()),
             schema_cache: SchemaCacheManager::new(),
             connection: ConnectionManager::new(),
+            json_schema: RwLock::new(None),
         }
     }
 
@@ -127,7 +127,7 @@ impl WorkspaceServer {
         Self {
             settings: RwLock::default(),
             documents: RwLock::new(HashMap::new()),
-            schema_cache: RwLock::new(None),
+            json_schema: RwLock::new(None),
         }
     }
 
@@ -147,25 +147,24 @@ impl WorkspaceServer {
         self.connection.get_pool(&settings.db)
     }
 
-    /// Load schema from JSON (no-db mode only)
-    #[cfg(not(feature = "db"))]
+    /// Load schema from JSON
+    /// This allows setting a schema cache without a database connection.
+    /// In db mode, this schema is used as a fallback when no DB connection is available.
     pub fn set_schema_json(&self, json: &str) -> Result<(), WorkspaceError> {
         let schema: SchemaCache = serde_json::from_str(json)
             .map_err(|e| WorkspaceError::runtime(&format!("Invalid schema JSON: {e}")))?;
-        *self.schema_cache.write().unwrap() = Some(Arc::new(schema));
+        *self.json_schema.write().unwrap() = Some(Arc::new(schema));
         Ok(())
     }
 
-    /// Clear the loaded schema (no-db mode only)
-    #[cfg(not(feature = "db"))]
+    /// Clear the JSON-loaded schema
     pub fn clear_schema(&self) {
-        *self.schema_cache.write().unwrap() = None;
+        *self.json_schema.write().unwrap() = None;
     }
 
-    /// Get a clone of the current schema (no-db mode only)
-    #[cfg(not(feature = "db"))]
-    pub fn get_schema(&self) -> Option<Arc<SchemaCache>> {
-        self.schema_cache.read().unwrap().clone()
+    /// Get a clone of the JSON-loaded schema
+    pub fn get_json_schema(&self) -> Option<Arc<SchemaCache>> {
+        self.json_schema.read().unwrap().clone()
     }
 
     /// Register a new project in the current workspace
@@ -526,7 +525,7 @@ impl Workspace for WorkspaceServer {
 
     #[cfg(not(feature = "db"))]
     fn invalidate_schema_cache(&self, _all: bool) -> Result<(), WorkspaceError> {
-        *self.schema_cache.write().unwrap() = None;
+        *self.json_schema.write().unwrap() = None;
         Ok(())
     }
 
@@ -606,7 +605,10 @@ impl Workspace for WorkspaceServer {
                                                                     path: s.name.clone(),
                                                                     name: a.name.clone(),
                                                                     type_: IdentifierType {
-                                                                        schema: a.type_.schema.clone(),
+                                                                        schema: a
+                                                                            .type_
+                                                                            .schema
+                                                                            .clone(),
                                                                         name: a.type_.name.clone(),
                                                                         is_array: a.type_.is_array,
                                                                     },
@@ -706,7 +708,7 @@ impl Workspace for WorkspaceServer {
             .and_then(|pool| self.schema_cache.load(pool.clone()).ok());
 
         #[cfg(not(feature = "db"))]
-        let schema_cache = self.schema_cache.read().unwrap().clone();
+        let schema_cache = self.json_schema.read().unwrap().clone();
 
         let mut analysable_stmts = vec![];
         for (stmt_root, diagnostic) in doc.iter(AnalyserDiagnosticsMapper) {
@@ -894,7 +896,7 @@ impl Workspace for WorkspaceServer {
         };
 
         #[cfg(not(feature = "db"))]
-        let Some(schema_cache) = self.schema_cache.read().unwrap().clone() else {
+        let Some(schema_cache) = self.json_schema.read().unwrap().clone() else {
             tracing::debug!("No schema loaded. Skipping completions.");
             return Ok(CompletionsResult::default());
         };
@@ -940,7 +942,7 @@ impl Workspace for WorkspaceServer {
         };
 
         #[cfg(not(feature = "db"))]
-        let Some(schema_cache) = self.schema_cache.read().unwrap().clone() else {
+        let Some(schema_cache) = self.json_schema.read().unwrap().clone() else {
             tracing::debug!("No schema loaded. Skipping hover.");
             return Ok(OnHoverResult::default());
         };

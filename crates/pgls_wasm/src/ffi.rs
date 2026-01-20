@@ -18,7 +18,7 @@ use std::ffi::{CStr, CString};
 use std::os::raw::c_char;
 use std::sync::Mutex;
 
-use crate::{Workspace, WasmError};
+use crate::{WasmError, Workspace};
 
 /// Global workspace instance.
 /// WASM is single-threaded, but we use Mutex for safe initialization.

@@ -29,6 +29,7 @@ criterion.workspace       = true
 insta.workspace           = true
 pgls_test_utils.workspace = true
 regex                     = "1.12.2"
+sqlx.workspace            = true
 unindent                  = "0.2.4"
 
 
