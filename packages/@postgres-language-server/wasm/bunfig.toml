@@ -1,0 +1,3 @@
+[test]
+# Only run tests in tests directory, exclude e2e (those use Playwright)
+root = "./tests"

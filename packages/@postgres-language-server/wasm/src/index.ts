@@ -43,6 +43,15 @@ export type {
 let wasmModule: PGLSModule | null = null;
 
 /**
+ * Detect if we're running in Node.js/Bun (vs browser)
+ */
+function isNode(): boolean {
+	return typeof process !== 'undefined' &&
+		process.versions != null &&
+		(process.versions.node != null || process.versions.bun != null);
+}
+
+/**
  * Load the WASM module.
  * This is called automatically by createWorkspace, but can be called
  * manually for preloading.
@@ -53,10 +62,36 @@ export async function loadWasm(): Promise<PGLSModule> {
 	}
 
 	// Dynamic import of the Emscripten-generated module
-	// The actual path will depend on how the package is bundled
+	// Emscripten generates a factory function that returns Promise<Module>
 	// @ts-expect-error - Generated JS file without type declarations
-	const createPGLS = (await import("../wasm/pgls.js")).default as () => Promise<PGLSModule>;
-	const module = await createPGLS();
+	const createPGLS = (await import("../wasm/pgls.js")).default as (options?: object) => Promise<PGLSModule>;
+
+	// Build options for Emscripten module initialization
+	const moduleOptions: Record<string, unknown> = {};
+
+	if (isNode()) {
+		// In Node.js/Bun, read the WASM file directly
+		const { readFileSync } = await import("fs");
+		const { fileURLToPath } = await import("url");
+		const { dirname, join } = await import("path");
+
+		const __filename = fileURLToPath(import.meta.url);
+		const __dirname = dirname(__filename);
+		const wasmPath = join(__dirname, '..', 'wasm', 'pgls.wasm');
+
+		moduleOptions.wasmBinary = readFileSync(wasmPath);
+	} else {
+		// In browser, use locateFile to help find the .wasm file
+		moduleOptions.locateFile = (path: string) => {
+			if (path.endsWith('.wasm')) {
+				return new URL('./pgls.wasm', import.meta.url).href;
+			}
+			return path;
+		};
+	}
+
+	// Initialize the Emscripten module
+	const module = await createPGLS(moduleOptions);
 
 	// Initialize the workspace
 	const result = module._pgls_init();

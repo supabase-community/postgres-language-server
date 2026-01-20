@@ -61,6 +61,9 @@
           libiconv
           llvmPackages.clang
           llvmPackages.libclang
+
+          # WebAssembly toolchain
+          emscripten
         ];
 
         # Environment variables
@@ -68,6 +71,8 @@
           RUST_SRC_PATH = "${rustToolchain}/lib/rustlib/src/rust/library";
           PKG_CONFIG_PATH = "${pkgs.openssl.dev}/lib/pkgconfig";
           LIBCLANG_PATH = "${pkgs.llvmPackages.libclang.lib}/lib";
+          # Emscripten SDK path for WASM builds
+          EMSDK = "${pkgs.emscripten}";
         };
 
       in

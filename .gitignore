@@ -33,6 +33,18 @@ crates/pgt_treesitter_grammar/src/grammar.json
 crates/pgt_treesitter_grammar/src/node-types.json
 crates/pgt_treesitter_grammar/src/parser.c
 crates/pgt_treesitter_grammar/src/parser.c.codex-session-id
+crates/pgls_treesitter_grammar/src/grammar.json
+crates/pgls_treesitter_grammar/src/node-types.json
+crates/pgls_treesitter_grammar/src/parser.c
+
+# WASM package build artifacts
+crates/pgls_wasm/dist/
+packages/@postgres-language-server/wasm/wasm/pgls.js
+packages/@postgres-language-server/wasm/wasm/pgls.wasm
+
+# Playwright
+playwright-report/
+test-results/
 .codex-session-id
 
 site/
