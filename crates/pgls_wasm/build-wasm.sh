@@ -122,6 +122,7 @@ emcc "$STATIC_LIB" \
     -s EXPORT_ES6=1 \
     -s USE_ES6_IMPORT_META=1 \
     -s DYNAMIC_EXECUTION=0 \
+    -s DISABLE_EXCEPTION_CATCHING=0 \
     -o "$DIST_DIR/pgls.js"
 
 echo ""

@@ -5,10 +5,11 @@ use std::{
     borrow::Cow,
     num::NonZeroU64,
     path::{Path, PathBuf},
-    str::FromStr,
     sync::{RwLock, RwLockReadGuard, RwLockWriteGuard},
     time::Duration,
 };
+#[cfg(feature = "db")]
+use std::str::FromStr;
 use tracing::trace;
 
 use ignore::gitignore::{Gitignore, GitignoreBuilder};
@@ -22,6 +23,7 @@ use pgls_configuration::{
     splinter::SplinterConfiguration,
 };
 use pgls_fs::PgLSPath;
+#[cfg(feature = "db")]
 use sqlx::postgres::PgConnectOptions;
 
 use crate::{
@@ -554,11 +556,17 @@ impl From<PartialDatabaseConfiguration> for DatabaseSettings {
         let enable_connection =
             (connection_string.is_some() || value.host.as_ref().is_some()) && !disable_connection;
 
+        #[cfg_attr(not(feature = "db"), allow(unused_mut))]
         let mut database = value.database.unwrap_or(d.database);
+        #[cfg_attr(not(feature = "db"), allow(unused_mut))]
         let mut host = value.host.unwrap_or(d.host);
+        #[cfg_attr(not(feature = "db"), allow(unused_mut))]
         let mut port = value.port.unwrap_or(d.port);
+        #[cfg_attr(not(feature = "db"), allow(unused_mut))]
         let mut username = value.username.unwrap_or(d.username);
 
+        // Parse connection string to extract host/port/username/database (DB mode only)
+        #[cfg(feature = "db")]
         if let Some(uri) = connection_string.as_ref() {
             let opts = PgConnectOptions::from_str(uri)
                 .unwrap_or_else(|err| panic!("Invalid db.connectionString provided: {err}"));
@@ -702,6 +710,7 @@ mod tests {
         assert!(!config.allow_statement_executions)
     }
 
+    #[cfg(feature = "db")]
     #[test]
     fn connection_string_enables_statement_executions_matching_host() {
         let partial_config = PartialDatabaseConfiguration {
@@ -720,6 +729,7 @@ mod tests {
         assert!(config.allow_statement_executions)
     }
 
+    #[cfg(feature = "db")]
     #[test]
     fn connection_string_respects_statement_execution_filters() {
         let partial_config = PartialDatabaseConfiguration {

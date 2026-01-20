@@ -11,6 +11,7 @@ use std::error::Error;
 use std::fmt;
 use std::fmt::{Debug, Display, Formatter};
 use std::process::{ExitCode, Termination};
+#[cfg(feature = "db")]
 use tokio::task::JoinError;
 
 /// Generic errors thrown during operations
@@ -191,6 +192,7 @@ pub struct RuntimeError {
     message: String,
 }
 
+#[cfg(feature = "db")]
 impl From<JoinError> for WorkspaceError {
     fn from(err: JoinError) -> Self {
         Self::RuntimeError(RuntimeError {
@@ -229,6 +231,7 @@ pub struct DatabaseConnectionError {
     code: Option<String>,
 }
 
+#[cfg(feature = "db")]
 impl From<sqlx::Error> for WorkspaceError {
     fn from(err: sqlx::Error) -> Self {
         let db_err = err.as_database_error();

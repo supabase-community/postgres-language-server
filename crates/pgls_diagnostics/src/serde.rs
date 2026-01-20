@@ -81,6 +81,21 @@ impl Diagnostic {
             .map(|span| TextRange::new(span.start() + offset, span.end() + offset));
         self
     }
+
+    /// Get the diagnostic description as a string
+    pub fn description_text(&self) -> &str {
+        &self.description
+    }
+
+    /// Get the location span
+    pub fn span(&self) -> Option<TextRange> {
+        self.location.span
+    }
+
+    /// Get the severity
+    pub fn get_severity(&self) -> Severity {
+        self.severity
+    }
 }
 
 impl super::Diagnostic for Diagnostic {

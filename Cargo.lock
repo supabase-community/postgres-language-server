@@ -2741,7 +2741,6 @@ dependencies = [
 name = "pgls_completions"
 version = "0.0.0"
 dependencies = [
- "async-std",
  "criterion",
  "fuzzy-matcher",
  "insta",
@@ -2754,8 +2753,6 @@ dependencies = [
  "schemars",
  "serde",
  "serde_json",
- "sqlx",
- "tokio",
  "tracing",
  "tree-sitter",
  "unindent",
@@ -2877,8 +2874,6 @@ dependencies = [
  "schemars",
  "serde",
  "serde_json",
- "sqlx",
- "tokio",
  "tracing",
  "tree-sitter",
 ]
@@ -3178,12 +3173,16 @@ name = "pgls_wasm"
 version = "0.0.0"
 dependencies = [
  "lsp-types 0.97.0",
+ "pgls_analyse",
+ "pgls_completions",
+ "pgls_configuration",
  "pgls_diagnostics",
  "pgls_fs",
  "pgls_query",
  "pgls_schema_cache",
  "pgls_text_size",
  "pgls_treesitter_grammar",
+ "pgls_workspace",
  "serde",
  "serde_json",
  "tree-sitter",

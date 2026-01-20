@@ -7,7 +7,7 @@
 //!
 //! The WASM binding exposes two main structs:
 //! - `MemoryFs`: An in-memory file system for storing SQL files
-//! - `Workspace`: The main API for parsing SQL
+//! - `Workspace`: The main API for parsing SQL (backed by pgls_workspace)
 //!
 //! # Example
 //!
@@ -20,9 +20,17 @@
 //! ```
 
 use std::path::PathBuf;
-use std::sync::Arc;
 
-use pgls_schema_cache::SchemaCache;
+use pgls_analyse::RuleCategories;
+use pgls_fs::PgLSPath;
+use pgls_text_size::TextSize;
+use pgls_workspace::features::completions::GetCompletionsParams;
+use pgls_workspace::features::diagnostics::PullFileDiagnosticsParams;
+use pgls_workspace::features::on_hover::OnHoverParams;
+use pgls_workspace::workspace::{
+    ChangeFileParams, CloseFileParams, OpenFileParams, RegisterProjectFolderParams,
+};
+use pgls_workspace::Workspace as WorkspaceTrait;
 use serde::{Deserialize, Serialize};
 
 mod error;
@@ -123,11 +131,11 @@ impl MemoryFs {
 
 /// Main workspace API for language server features.
 ///
-/// Provides methods for parsing and basic SQL analysis.
+/// Provides methods for parsing and SQL analysis.
+/// Backed by `pgls_workspace::WorkspaceServer` for full linting capabilities.
 pub struct Workspace {
+    inner: pgls_workspace::workspace::server::WorkspaceServer,
     fs: MemoryFs,
-    schema: Option<Arc<SchemaCache>>,
-    parser: tree_sitter::Parser,
 }
 
 impl Default for Workspace {
@@ -139,15 +147,17 @@ impl Default for Workspace {
 impl Workspace {
     /// Create a new workspace with an empty file system and no schema.
     pub fn new() -> Self {
-        let mut parser = tree_sitter::Parser::new();
-        parser
-            .set_language(&pgls_treesitter_grammar::LANGUAGE.into())
-            .expect("Failed to set tree-sitter language");
+        let inner = pgls_workspace::workspace::server::WorkspaceServer::new();
+
+        // Register a project folder to enable workspace features
+        let _ = inner.register_project_folder(RegisterProjectFolderParams {
+            path: None,
+            set_as_current_workspace: true,
+        });
 
         Self {
+            inner,
             fs: MemoryFs::new(),
-            schema: None,
-            parser,
         }
     }
 
@@ -161,21 +171,15 @@ impl Workspace {
     ///
     /// # Returns
     /// An error if the JSON is invalid.
-    pub fn set_schema(&mut self, json: &str) -> Result<(), WasmError> {
-        let schema: SchemaCache = serde_json::from_str(json)
-            .map_err(|e| WasmError::InvalidSchema(format!("Failed to parse schema JSON: {e}")))?;
-        self.schema = Some(Arc::new(schema));
-        Ok(())
+    pub fn set_schema(&self, json: &str) -> Result<(), WasmError> {
+        self.inner
+            .set_schema_json(json)
+            .map_err(|e| WasmError::InvalidSchema(format!("Failed to set schema: {e}")))
     }
 
     /// Clear the current schema.
-    pub fn clear_schema(&mut self) {
-        self.schema = None;
-    }
-
-    /// Get the current schema (if set).
-    pub fn schema(&self) -> Option<&SchemaCache> {
-        self.schema.as_deref()
+    pub fn clear_schema(&self) {
+        self.inner.clear_schema();
     }
 
     /// Insert or update a file in the workspace.
@@ -185,6 +189,21 @@ impl Workspace {
     /// * `content` - The file content as a string
     pub fn insert_file(&mut self, path: &str, content: &str) {
         self.fs.insert(path, content);
+
+        // Also open in the inner workspace
+        let pgls_path = PgLSPath::new(PathBuf::from(path));
+        let _ = self.inner.open_file(OpenFileParams {
+            path: pgls_path.clone(),
+            content: content.into(),
+            version: 0,
+        });
+
+        // Update the content
+        let _ = self.inner.change_file(ChangeFileParams {
+            path: pgls_path,
+            content: content.into(),
+            version: 1,
+        });
     }
 
     /// Remove a file from the workspace.
@@ -193,6 +212,9 @@ impl Workspace {
     /// * `path` - The virtual file path to remove
     pub fn remove_file(&mut self, path: &str) {
         self.fs.remove(path);
+
+        let pgls_path = PgLSPath::new(PathBuf::from(path));
+        let _ = self.inner.close_file(CloseFileParams { path: pgls_path });
     }
 
     /// Read a file's content.
@@ -205,8 +227,8 @@ impl Workspace {
 
     /// Lint a file and return diagnostics.
     ///
-    /// Currently returns parse errors only.
-    /// More advanced linting requires additional dependencies.
+    /// Uses the full pgls_workspace linter for comprehensive diagnostics
+    /// including lint rules, not just parse errors.
     ///
     /// # Arguments
     /// * `path` - The virtual file path to lint
@@ -214,26 +236,49 @@ impl Workspace {
     /// # Returns
     /// A list of diagnostics, or an error if the file doesn't exist.
     pub fn lint(&self, path: &str) -> Result<Vec<Diagnostic>, WasmError> {
-        let content = self.fs.read(path)?;
+        // Verify file exists
+        let _content = self.fs.read(path)?;
 
-        // Parse with libpg_query
-        match pgls_query::parse(&content) {
-            Ok(_) => Ok(vec![]),
-            Err(e) => {
-                // Return parse error as diagnostic
-                Ok(vec![Diagnostic {
-                    start: 0,
-                    end: content.len() as u32,
-                    message: e.to_string(),
-                    severity: "error".to_string(),
-                }])
-            }
-        }
+        let pgls_path = PgLSPath::new(PathBuf::from(path));
+        let result = self
+            .inner
+            .pull_file_diagnostics(PullFileDiagnosticsParams {
+                path: pgls_path,
+                categories: RuleCategories::all(),
+                max_diagnostics: 100,
+                only: vec![],
+                skip: vec![],
+            })
+            .map_err(|e| WasmError::ParseError(format!("Lint failed: {e}")))?;
+
+        // Convert workspace diagnostics to our simplified format
+        let diagnostics = result
+            .diagnostics
+            .into_iter()
+            .map(|d| {
+                let span = d.span().unwrap_or_default();
+                Diagnostic {
+                    start: u32::from(span.start()),
+                    end: u32::from(span.end()),
+                    message: d.description_text().to_string(),
+                    severity: match d.get_severity() {
+                        pgls_diagnostics::Severity::Error | pgls_diagnostics::Severity::Fatal => {
+                            "error".to_string()
+                        }
+                        pgls_diagnostics::Severity::Warning => "warning".to_string(),
+                        pgls_diagnostics::Severity::Information => "info".to_string(),
+                        pgls_diagnostics::Severity::Hint => "hint".to_string(),
+                    },
+                }
+            })
+            .collect();
+
+        Ok(diagnostics)
     }
 
     /// Get completions at a position in a file.
     ///
-    /// Currently provides basic completions from the schema.
+    /// Uses the full pgls_workspace completions engine.
     ///
     /// # Arguments
     /// * `path` - The virtual file path
@@ -241,48 +286,45 @@ impl Workspace {
     ///
     /// # Returns
     /// A list of completion items, or an error if the file doesn't exist.
-    pub fn complete(&mut self, path: &str, _offset: u32) -> Result<Vec<CompletionItem>, WasmError> {
+    pub fn complete(&self, path: &str, offset: u32) -> Result<Vec<CompletionItem>, WasmError> {
         // Verify file exists
         let _content = self.fs.read(path)?;
 
-        // Return basic completions from schema
-        let mut items = Vec::new();
+        let pgls_path = PgLSPath::new(PathBuf::from(path));
+        let result = self
+            .inner
+            .get_completions(GetCompletionsParams {
+                path: pgls_path,
+                position: TextSize::from(offset),
+            })
+            .map_err(|e| WasmError::ParseError(format!("Completions failed: {e}")))?;
 
-        if let Some(schema) = &self.schema {
-            // Add tables
-            for table in &schema.tables {
-                items.push(CompletionItem {
-                    label: table.name.clone(),
-                    kind: "table".to_string(),
-                    detail: Some(format!("Table in {}", table.schema)),
-                });
-            }
-
-            // Add functions
-            for func in &schema.functions {
-                items.push(CompletionItem {
-                    label: func.name.clone(),
-                    kind: "function".to_string(),
-                    detail: Some(format!("Function in {}", func.schema)),
-                });
-            }
-
-            // Add schemas
-            for s in &schema.schemas {
-                items.push(CompletionItem {
-                    label: s.name.clone(),
-                    kind: "schema".to_string(),
-                    detail: None,
-                });
-            }
-        }
+        // Convert workspace completions to our simplified format
+        let items = result
+            .into_iter()
+            .map(|c| {
+                let kind = match c.kind {
+                    pgls_completions::CompletionItemKind::Table => "table",
+                    pgls_completions::CompletionItemKind::Column => "column",
+                    pgls_completions::CompletionItemKind::Function => "function",
+                    pgls_completions::CompletionItemKind::Schema => "schema",
+                    pgls_completions::CompletionItemKind::Policy => "policy",
+                    pgls_completions::CompletionItemKind::Role => "role",
+                };
+                CompletionItem {
+                    label: c.label,
+                    kind: kind.to_string(),
+                    detail: Some(c.description),
+                }
+            })
+            .collect();
 
         Ok(items)
     }
 
     /// Get hover information at a position in a file.
     ///
-    /// Currently returns basic information from the schema.
+    /// Uses the full pgls_workspace hover engine.
     ///
     /// # Arguments
     /// * `path` - The virtual file path
@@ -290,58 +332,25 @@ impl Workspace {
     ///
     /// # Returns
     /// Hover text (markdown formatted), or None if no hover info is available.
-    pub fn hover(&mut self, path: &str, offset: u32) -> Result<Option<String>, WasmError> {
-        let content = self.fs.read(path)?;
+    pub fn hover(&self, path: &str, offset: u32) -> Result<Option<String>, WasmError> {
+        // Verify file exists
+        let _content = self.fs.read(path)?;
 
-        // Parse with tree-sitter to find node at position
-        let tree = self
-            .parser
-            .parse(&content, None)
-            .ok_or_else(|| WasmError::ParseError("Failed to parse SQL with tree-sitter".into()))?;
+        let pgls_path = PgLSPath::new(PathBuf::from(path));
+        let result = self
+            .inner
+            .on_hover(OnHoverParams {
+                path: pgls_path,
+                position: TextSize::from(offset),
+            })
+            .map_err(|e| WasmError::ParseError(format!("Hover failed: {e}")))?;
 
-        // Find the node at the given offset
-        let point = {
-            let text_before = &content[..offset as usize];
-            let row = text_before.matches('\n').count();
-            let col = text_before.rfind('\n').map_or(offset as usize, |pos| offset as usize - pos - 1);
-            tree_sitter::Point::new(row, col)
-        };
-
-        let node = tree.root_node().descendant_for_point_range(point, point);
-
-        if let Some(node) = node {
-            let node_text = &content[node.start_byte()..node.end_byte()];
-
-            // Try to find matching schema info
-            if let Some(schema) = &self.schema {
-                // Check if it's a table name
-                if let Some(table) = schema.find_tables(node_text, None).first() {
-                    return Ok(Some(format!(
-                        "**Table**: `{}.{}`\n\nColumns: {}",
-                        table.schema,
-                        table.name,
-                        schema.columns
-                            .iter()
-                            .filter(|c| c.table_oid == table.id)
-                            .map(|c| c.name.as_str())
-                            .collect::<Vec<_>>()
-                            .join(", ")
-                    )));
-                }
-
-                // Check if it's a function name
-                if let Some(func) = schema.find_functions(node_text, None).first() {
-                    return Ok(Some(format!(
-                        "**Function**: `{}.{}`\n\nLanguage: {}",
-                        func.schema,
-                        func.name,
-                        func.language
-                    )));
-                }
-            }
+        let blocks: Vec<String> = result.into_iter().collect();
+        if blocks.is_empty() {
+            Ok(None)
+        } else {
+            Ok(Some(blocks.join("\n\n")))
         }
-
-        Ok(None)
     }
 
     /// Parse SQL and return parse errors (if any).
