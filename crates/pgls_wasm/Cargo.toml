@@ -25,7 +25,7 @@ pgls_text_size          = { workspace = true }
 pgls_treesitter_grammar = { workspace = true }
 pgls_workspace          = { path = "../pgls_workspace", default-features = false }
 
+lsp-types   = "0.97"
 serde       = { workspace = true, features = ["derive"] }
 serde_json  = { workspace = true }
 tree-sitter = { workspace = true }
-lsp-types   = "0.97"

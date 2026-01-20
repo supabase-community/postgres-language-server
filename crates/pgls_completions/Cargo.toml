@@ -12,9 +12,9 @@ version              = "0.0.0"
 
 
 [dependencies]
-pgls_schema_cache = { workspace = true, features = ["serde"] }
-pgls_text_size.workspace    = true
-pgls_treesitter.workspace   = true
+pgls_schema_cache         = { workspace = true, features = ["serde"] }
+pgls_text_size.workspace  = true
+pgls_treesitter.workspace = true
 
 fuzzy-matcher                     = "0.3.7"
 pgls_treesitter_grammar.workspace = true

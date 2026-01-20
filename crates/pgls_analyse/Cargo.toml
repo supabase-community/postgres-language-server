@@ -13,11 +13,11 @@ version              = "0.0.0"
 
 
 [dependencies]
-pgls_console.workspace      = true
-pgls_diagnostics.workspace  = true
-pgls_query.workspace        = true
-pgls_schema_cache           = { workspace = true, default-features = false }
-rustc-hash                  = { workspace = true }
+pgls_console.workspace     = true
+pgls_diagnostics.workspace = true
+pgls_query.workspace       = true
+pgls_schema_cache          = { workspace = true, default-features = false }
+rustc-hash                 = { workspace = true }
 
 biome_deserialize        = { workspace = true, optional = true }
 biome_deserialize_macros = { workspace = true, optional = true }

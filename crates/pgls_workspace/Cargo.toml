@@ -48,19 +48,18 @@ tracing                           = { workspace = true, features = ["attributes"
 tree-sitter.workspace             = true
 
 # Optional DB dependencies
-futures        = { version = "0.3.31", optional = true }
-sqlx           = { workspace = true, optional = true }
-tokio          = { workspace = true, features = ["rt", "rt-multi-thread"], optional = true }
+futures            = { version = "0.3.31", optional = true }
 pgls_plpgsql_check = { workspace = true, optional = true }
 pgls_splinter      = { workspace = true, optional = true }
 pgls_typecheck     = { workspace = true, optional = true }
+sqlx               = { workspace = true, optional = true }
+tokio              = { workspace = true, features = ["rt", "rt-multi-thread"], optional = true }
 
 biome_js_factory = { workspace = true, optional = true }
 biome_js_syntax  = { workspace = true, optional = true }
 biome_rowan      = { workspace = true, optional = true }
 
 [features]
-default = ["db"]
 db = [
   "dep:futures",
   "dep:sqlx",
@@ -70,6 +69,7 @@ db = [
   "dep:pgls_typecheck",
   "pgls_schema_cache/db",
 ]
+default = ["db"]
 schema = [
   "dep:schemars",
   "dep:biome_rowan",
