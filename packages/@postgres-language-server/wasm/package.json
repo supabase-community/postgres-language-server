@@ -13,7 +13,9 @@
 		}
 	},
 	"scripts": {
-		"build": "bun build ./src/index.ts --outdir ./dist --target browser && bun run build:types && cp wasm/pgls.wasm dist/",
+		"build": "bun run build:wasm && bun run build:ts",
+		"build:wasm": "cd ../../crates/pgls_wasm && ./build-wasm.sh && cp dist/pgls.wasm dist/pgls.js ../../packages/@postgres-language-server/wasm/wasm/",
+		"build:ts": "bun build ./src/index.ts --outdir ./dist --target browser && bun run build:types && cp wasm/pgls.wasm dist/",
 		"build:types": "tsc --declaration --emitDeclarationOnly --outDir dist",
 		"test": "bun test",
 		"test:e2e": "playwright test",

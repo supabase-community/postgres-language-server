@@ -4,11 +4,10 @@ import { test, expect } from "@playwright/test";
  * E2E tests for Monaco Editor with PGLS WASM.
  *
  * Prerequisites:
- * 1. Build the WASM module: cd crates/pgls_wasm && ./build-wasm.sh
- * 2. Copy to dist: cp wasm/pgls.wasm packages/@postgres-language-server/wasm/dist/
- * 3. Build TypeScript: cd packages/@postgres-language-server/wasm && bun run build
- * 4. Install Playwright: bun run test:e2e:install
- * 5. Run tests: bun run test:e2e
+ * 1. Have Emscripten in PATH (source emsdk_env.sh)
+ * 2. Build everything: bun run build
+ * 3. Install Playwright: bun run test:e2e:install
+ * 4. Run tests: bun run test:e2e
  */
 test.describe("Monaco Editor with PGLS WASM", () => {
 	test.beforeEach(async ({ page }) => {
