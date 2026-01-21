@@ -68,6 +68,8 @@ describe("WASM Workspace", () => {
 	});
 
 	test("hover returns null without schema", () => {
+		// Explicitly clear schema to ensure we're testing without schema
+		workspace.clearSchema();
 		workspace.insertFile("/hover.sql", "SELECT * FROM users;");
 		const hover = workspace.hover("/hover.sql", 14); // Over "users"
 		// Without schema loaded, hover should return null
@@ -399,12 +401,15 @@ describe("Schema-based completions and hover", () => {
 
 	beforeAll(async () => {
 		workspace = await createWorkspace();
-		// Load the test schema
+	});
+
+	// Ensure schema is loaded before each test (tests may run out of order)
+	beforeEach(() => {
 		workspace.setSchema(JSON.stringify(TEST_SCHEMA));
 	});
 
 	test("setSchema works with valid schema", () => {
-		// If we got here, setSchema worked in beforeAll
+		// Schema was set in beforeEach
 		expect(true).toBe(true);
 	});
 
@@ -459,10 +464,15 @@ describe("Schema-based completions and hover", () => {
 	});
 
 	test("clearSchema removes schema and hover returns null", () => {
+		// First verify hover works with schema (set by beforeEach)
+		workspace.insertFile("/with-schema.sql", "SELECT * FROM users;");
+		const hoverWithSchema = workspace.hover("/with-schema.sql", 14);
+		expect(hoverWithSchema).not.toBeNull();
+
+		// Now clear schema and verify hover returns null
 		workspace.clearSchema();
 		workspace.insertFile("/no-schema.sql", "SELECT * FROM users;");
-		const hover = workspace.hover("/no-schema.sql", 14);
-		// After clearing schema, hover should return null
-		expect(hover).toBeNull();
+		const hoverWithoutSchema = workspace.hover("/no-schema.sql", 14);
+		expect(hoverWithoutSchema).toBeNull();
 	});
 });
