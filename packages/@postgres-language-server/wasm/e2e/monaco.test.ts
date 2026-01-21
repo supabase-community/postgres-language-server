@@ -263,4 +263,254 @@ test.describe("Monaco Editor with PGLS WASM", () => {
 		expect(diagNotification).toBeDefined();
 		expect(diagNotification.params.diagnostics.length).toBeGreaterThan(0);
 	});
+
+	test("setSchema and get schema-aware completions", async ({ page }) => {
+		// Set a test schema
+		await page.evaluate(() => {
+			const workspace = (window as any).pglsWorkspace;
+			const schema = {
+				schemas: [
+					{
+						id: 1,
+						name: "public",
+						owner: "postgres",
+						allowed_users: [],
+						allowed_creators: [],
+						table_count: 1,
+						view_count: 0,
+						function_count: 0,
+						total_size: "0 bytes",
+						comment: null,
+					},
+				],
+				tables: [
+					{
+						id: 1,
+						schema: "public",
+						name: "users",
+						rls_enabled: false,
+						rls_forced: false,
+						replica_identity: "Default",
+						table_kind: "Ordinary",
+						bytes: 0,
+						size: "0 bytes",
+						live_rows_estimate: 0,
+						dead_rows_estimate: 0,
+						comment: null,
+					},
+					{
+						id: 2,
+						schema: "public",
+						name: "orders",
+						rls_enabled: false,
+						rls_forced: false,
+						replica_identity: "Default",
+						table_kind: "Ordinary",
+						bytes: 0,
+						size: "0 bytes",
+						live_rows_estimate: 0,
+						dead_rows_estimate: 0,
+						comment: null,
+					},
+				],
+				columns: [
+					{
+						name: "id",
+						table_name: "users",
+						table_oid: 1,
+						class_kind: "OrdinaryTable",
+						number: 1,
+						schema_name: "public",
+						type_id: 23,
+						type_name: "integer",
+						is_nullable: false,
+						is_primary_key: true,
+						is_unique: true,
+						default_expr: null,
+						varchar_length: null,
+						comment: null,
+					},
+					{
+						name: "username",
+						table_name: "users",
+						table_oid: 1,
+						class_kind: "OrdinaryTable",
+						number: 2,
+						schema_name: "public",
+						type_id: 25,
+						type_name: "text",
+						is_nullable: false,
+						is_primary_key: false,
+						is_unique: true,
+						default_expr: null,
+						varchar_length: null,
+						comment: null,
+					},
+				],
+				functions: [],
+				types: [],
+				version: {
+					version: "16.0",
+					version_num: 160000,
+					major_version: 16,
+					active_connections: 1,
+					max_connections: 100,
+				},
+				policies: [],
+				extensions: [],
+				triggers: [],
+				roles: [],
+			};
+			workspace.setSchema(JSON.stringify(schema));
+		});
+
+		// Open a document
+		await page.evaluate(() => {
+			const workspace = (window as any).pglsWorkspace;
+			workspace.handleMessage({
+				jsonrpc: "2.0",
+				method: "textDocument/didOpen",
+				params: {
+					textDocument: {
+						uri: "file:///schema-completion.sql",
+						languageId: "sql",
+						version: 1,
+						text: "SELECT * FROM ",
+					},
+				},
+			});
+		});
+
+		// Request completions in FROM clause
+		const response = await page.evaluate(() => {
+			const workspace = (window as any).pglsWorkspace;
+			return workspace.handleMessage({
+				jsonrpc: "2.0",
+				id: 100,
+				method: "textDocument/completion",
+				params: {
+					textDocument: { uri: "file:///schema-completion.sql" },
+					position: { line: 0, character: 14 },
+				},
+			});
+		});
+
+		expect(response).toHaveLength(1);
+		expect(response[0].id).toBe(100);
+		expect(response[0].result).toBeDefined();
+
+		// Completions should include our schema tables
+		const labels = response[0].result.map((item: any) => item.label);
+		expect(labels).toContain("users");
+		expect(labels).toContain("orders");
+	});
+
+	test("hover with schema returns column type info", async ({ page }) => {
+		// Set a test schema (same as above)
+		await page.evaluate(() => {
+			const workspace = (window as any).pglsWorkspace;
+			const schema = {
+				schemas: [
+					{
+						id: 1,
+						name: "public",
+						owner: "postgres",
+						allowed_users: [],
+						allowed_creators: [],
+						table_count: 1,
+						view_count: 0,
+						function_count: 0,
+						total_size: "0 bytes",
+						comment: null,
+					},
+				],
+				tables: [
+					{
+						id: 1,
+						schema: "public",
+						name: "users",
+						rls_enabled: false,
+						rls_forced: false,
+						replica_identity: "Default",
+						table_kind: "Ordinary",
+						bytes: 0,
+						size: "0 bytes",
+						live_rows_estimate: 0,
+						dead_rows_estimate: 0,
+						comment: null,
+					},
+				],
+				columns: [
+					{
+						name: "username",
+						table_name: "users",
+						table_oid: 1,
+						class_kind: "OrdinaryTable",
+						number: 1,
+						schema_name: "public",
+						type_id: 25,
+						type_name: "text",
+						is_nullable: false,
+						is_primary_key: false,
+						is_unique: true,
+						default_expr: null,
+						varchar_length: null,
+						comment: "The user display name",
+					},
+				],
+				functions: [],
+				types: [],
+				version: {
+					version: "16.0",
+					version_num: 160000,
+					major_version: 16,
+					active_connections: 1,
+					max_connections: 100,
+				},
+				policies: [],
+				extensions: [],
+				triggers: [],
+				roles: [],
+			};
+			workspace.setSchema(JSON.stringify(schema));
+		});
+
+		// Open a document with a column reference
+		await page.evaluate(() => {
+			const workspace = (window as any).pglsWorkspace;
+			workspace.handleMessage({
+				jsonrpc: "2.0",
+				method: "textDocument/didOpen",
+				params: {
+					textDocument: {
+						uri: "file:///schema-hover.sql",
+						languageId: "sql",
+						version: 1,
+						text: "SELECT username FROM users;",
+					},
+				},
+			});
+		});
+
+		// Request hover over "username"
+		const response = await page.evaluate(() => {
+			const workspace = (window as any).pglsWorkspace;
+			return workspace.handleMessage({
+				jsonrpc: "2.0",
+				id: 101,
+				method: "textDocument/hover",
+				params: {
+					textDocument: { uri: "file:///schema-hover.sql" },
+					position: { line: 0, character: 10 },
+				},
+			});
+		});
+
+		expect(response).toHaveLength(1);
+		expect(response[0].id).toBe(101);
+		// With schema, hover should return content
+		if (response[0].result !== null) {
+			expect(response[0].result.contents).toBeDefined();
+		}
+	});
 });

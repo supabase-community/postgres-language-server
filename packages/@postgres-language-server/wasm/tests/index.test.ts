@@ -231,3 +231,238 @@ describe("LSP Message Handling", () => {
 		expect(response.error?.code).toBe(-32700); // Parse error
 	});
 });
+
+/**
+ * Sample schema for testing completions and hover.
+ * This matches the Rust SchemaCache struct format.
+ */
+const TEST_SCHEMA = {
+	schemas: [
+		{
+			id: 1,
+			name: "public",
+			owner: "postgres",
+			allowed_users: [],
+			allowed_creators: [],
+			table_count: 1,
+			view_count: 0,
+			function_count: 0,
+			total_size: "0 bytes",
+			comment: null,
+		},
+	],
+	tables: [
+		{
+			id: 1,
+			schema: "public",
+			name: "users",
+			rls_enabled: false,
+			rls_forced: false,
+			replica_identity: "Default",
+			table_kind: "Ordinary",
+			bytes: 0,
+			size: "0 bytes",
+			live_rows_estimate: 0,
+			dead_rows_estimate: 0,
+			comment: "User accounts table",
+		},
+		{
+			id: 2,
+			schema: "public",
+			name: "posts",
+			rls_enabled: false,
+			rls_forced: false,
+			replica_identity: "Default",
+			table_kind: "Ordinary",
+			bytes: 0,
+			size: "0 bytes",
+			live_rows_estimate: 0,
+			dead_rows_estimate: 0,
+			comment: null,
+		},
+	],
+	columns: [
+		{
+			name: "id",
+			table_name: "users",
+			table_oid: 1,
+			class_kind: "OrdinaryTable",
+			number: 1,
+			schema_name: "public",
+			type_id: 23,
+			type_name: "integer",
+			is_nullable: false,
+			is_primary_key: true,
+			is_unique: true,
+			default_expr: "nextval('users_id_seq'::regclass)",
+			varchar_length: null,
+			comment: null,
+		},
+		{
+			name: "email",
+			table_name: "users",
+			table_oid: 1,
+			class_kind: "OrdinaryTable",
+			number: 2,
+			schema_name: "public",
+			type_id: 25,
+			type_name: "text",
+			is_nullable: false,
+			is_primary_key: false,
+			is_unique: true,
+			default_expr: null,
+			varchar_length: null,
+			comment: "User email address",
+		},
+		{
+			name: "name",
+			table_name: "users",
+			table_oid: 1,
+			class_kind: "OrdinaryTable",
+			number: 3,
+			schema_name: "public",
+			type_id: 1043,
+			type_name: "character varying",
+			is_nullable: true,
+			is_primary_key: false,
+			is_unique: false,
+			default_expr: null,
+			varchar_length: 255,
+			comment: null,
+		},
+		{
+			name: "id",
+			table_name: "posts",
+			table_oid: 2,
+			class_kind: "OrdinaryTable",
+			number: 1,
+			schema_name: "public",
+			type_id: 23,
+			type_name: "integer",
+			is_nullable: false,
+			is_primary_key: true,
+			is_unique: true,
+			default_expr: null,
+			varchar_length: null,
+			comment: null,
+		},
+		{
+			name: "user_id",
+			table_name: "posts",
+			table_oid: 2,
+			class_kind: "OrdinaryTable",
+			number: 2,
+			schema_name: "public",
+			type_id: 23,
+			type_name: "integer",
+			is_nullable: false,
+			is_primary_key: false,
+			is_unique: false,
+			default_expr: null,
+			varchar_length: null,
+			comment: null,
+		},
+		{
+			name: "title",
+			table_name: "posts",
+			table_oid: 2,
+			class_kind: "OrdinaryTable",
+			number: 3,
+			schema_name: "public",
+			type_id: 25,
+			type_name: "text",
+			is_nullable: false,
+			is_primary_key: false,
+			is_unique: false,
+			default_expr: null,
+			varchar_length: null,
+			comment: null,
+		},
+	],
+	functions: [],
+	types: [],
+	version: {
+		version: "16.0",
+		version_num: 160000,
+		major_version: 16,
+		active_connections: 1,
+		max_connections: 100,
+	},
+	policies: [],
+	extensions: [],
+	triggers: [],
+	roles: [],
+};
+
+describe("Schema-based completions and hover", () => {
+	let workspace: Workspace;
+
+	beforeAll(async () => {
+		workspace = await createWorkspace();
+		// Load the test schema
+		workspace.setSchema(JSON.stringify(TEST_SCHEMA));
+	});
+
+	test("setSchema works with valid schema", () => {
+		// If we got here, setSchema worked in beforeAll
+		expect(true).toBe(true);
+	});
+
+	test("complete returns table names in FROM clause", () => {
+		workspace.insertFile("/from-complete.sql", "SELECT * FROM ");
+		const completions = workspace.complete("/from-complete.sql", 14);
+		expect(completions).toBeArray();
+		// Should contain table names from schema
+		const tableNames = completions.map((c: any) => c.label);
+		expect(tableNames).toContain("users");
+		expect(tableNames).toContain("posts");
+	});
+
+	test("complete returns column names after table reference", () => {
+		workspace.insertFile("/col-complete.sql", "SELECT  FROM users");
+		// Position cursor after SELECT (position 7)
+		const completions = workspace.complete("/col-complete.sql", 7);
+		expect(completions).toBeArray();
+		// Should contain column names from users table
+		const columnNames = completions.map((c: any) => c.label);
+		expect(columnNames).toContain("id");
+		expect(columnNames).toContain("email");
+		expect(columnNames).toContain("name");
+	});
+
+	test("hover on table name shows table info", () => {
+		workspace.insertFile("/hover-table.sql", "SELECT * FROM users;");
+		// Position over "users" (around character 14)
+		const hover = workspace.hover("/hover-table.sql", 14);
+		// With schema loaded, hover should return info
+		expect(hover).not.toBeNull();
+		if (hover) {
+			expect(hover.contents).toBeDefined();
+		}
+	});
+
+	test("hover on column name shows column type", () => {
+		workspace.insertFile("/hover-col.sql", "SELECT email FROM users;");
+		// Position over "email" (around character 7)
+		const hover = workspace.hover("/hover-col.sql", 8);
+		// With schema loaded, hover should return type info
+		expect(hover).not.toBeNull();
+		if (hover) {
+			expect(hover.contents).toBeDefined();
+			// The hover contents should mention the type
+			const hoverText =
+				typeof hover.contents === "string"
+					? hover.contents
+					: JSON.stringify(hover.contents);
+			expect(hoverText.toLowerCase()).toContain("text");
+		}
+	});
+
+	test("clearSchema removes schema and hover returns null", () => {
+		workspace.clearSchema();
+		workspace.insertFile("/no-schema.sql", "SELECT * FROM users;");
+		const hover = workspace.hover("/no-schema.sql", 14);
+		// After clearing schema, hover should return null
+		expect(hover).toBeNull();
+	});
+});
