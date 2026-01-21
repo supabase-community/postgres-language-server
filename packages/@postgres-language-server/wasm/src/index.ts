@@ -17,9 +17,9 @@
  */
 
 // Re-export everything from both APIs
-export * from "./workspace";
-export * from "./lsp";
-export { loadWasm } from "./common";
+export * from "./workspace.js";
+export * from "./lsp.js";
+export { loadWasm } from "./common.js";
 
 // Re-export types
 export type {
@@ -29,7 +29,7 @@ export type {
 	WorkspaceOptions,
 	PGLSModule,
 	JsonRpcMessage,
-} from "./types";
+} from "./types.js";
 
 // Default export for convenience
-export { createWorkspace as default } from "./workspace";
+export { createWorkspace as default } from "./workspace.js";

@@ -36,7 +36,7 @@
  * ```
  */
 
-import { createLanguageServer, type LanguageServer, type JsonRpcMessage } from "./lsp";
+import { createLanguageServer, type LanguageServer, type JsonRpcMessage } from "./lsp.js";
 
 let languageServer: LanguageServer | null = null;
 

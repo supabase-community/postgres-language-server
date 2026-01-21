@@ -22,9 +22,9 @@ import type {
 	SchemaCache,
 	WorkspaceOptions,
 	PGLSModule,
-} from "./types";
+} from "./types.js";
 
-import { loadWasm, allocateString, readAndFreeString, parseResult } from "./common";
+import { loadWasm, allocateString, readAndFreeString, parseResult } from "./common.js";
 
 export type { Diagnostic, CompletionItem, SchemaCache, WorkspaceOptions, PGLSModule };
 
