@@ -16,24 +16,32 @@
 
 use std::ffi::{CStr, CString};
 use std::os::raw::c_char;
-use std::sync::Mutex;
+use std::sync::{Arc, Mutex};
 
 use crate::{WasmError, Workspace};
 
-/// Global workspace instance.
+/// Global shared workspace instance.
+/// This is shared between direct FFI calls and the LSP handler.
 /// WASM is single-threaded, but we use Mutex for safe initialization.
-static WORKSPACE: Mutex<Option<Workspace>> = Mutex::new(None);
+static WORKSPACE: Mutex<Option<Arc<Mutex<Workspace>>>> = Mutex::new(None);
 
-/// Helper to get or create the workspace.
+/// Get or create the shared workspace.
+fn get_workspace() -> Arc<Mutex<Workspace>> {
+    let mut guard = WORKSPACE.lock().unwrap();
+    if guard.is_none() {
+        *guard = Some(Arc::new(Mutex::new(Workspace::new())));
+    }
+    guard.as_ref().unwrap().clone()
+}
+
+/// Helper to execute code with the workspace.
 fn with_workspace<F, T>(f: F) -> T
 where
     F: FnOnce(&mut Workspace) -> T,
 {
-    let mut guard = WORKSPACE.lock().unwrap();
-    if guard.is_none() {
-        *guard = Some(Workspace::new());
-    }
-    f(guard.as_mut().unwrap())
+    let ws = get_workspace();
+    let mut guard = ws.lock().unwrap();
+    f(&mut guard)
 }
 
 /// Convert a C string to a Rust string slice.
@@ -96,6 +104,9 @@ pub unsafe extern "C" fn pgls_free_string(ptr: *mut c_char) {
 /// Set the database schema from a JSON string.
 /// Returns NULL on success, or an error message on failure.
 /// The returned string (if not NULL) must be freed with `pgls_free_string`.
+///
+/// The schema is shared between the direct API (pgls_lint, etc.) and
+/// the LSP handler (pgls_handle_message).
 ///
 /// # Safety
 /// The json pointer must be valid and point to a null-terminated UTF-8 string.
@@ -259,13 +270,17 @@ pub extern "C" fn pgls_version() -> *mut c_char {
 use crate::lsp::LspHandler;
 
 /// Global LSP handler instance.
-/// Separate from the workspace to allow independent state management.
+/// Shares the same workspace as the direct FFI functions.
 static LSP_HANDLER: Mutex<Option<LspHandler>> = Mutex::new(None);
 
 /// Handle an LSP JSON-RPC message.
 ///
 /// This function processes an LSP message and returns a JSON array of outgoing
 /// messages (response + notifications like publishDiagnostics).
+///
+/// The LSP handler shares the same workspace as the direct FFI functions
+/// (pgls_set_schema, pgls_lint, etc.), so changes made through either API
+/// are visible to both.
 ///
 /// The returned string must be freed with `pgls_free_string`.
 ///
@@ -286,7 +301,8 @@ pub unsafe extern "C" fn pgls_handle_message(message: *const c_char) -> *mut c_c
 
     let mut guard = LSP_HANDLER.lock().unwrap();
     if guard.is_none() {
-        *guard = Some(LspHandler::new());
+        // Create LSP handler with the shared workspace
+        *guard = Some(LspHandler::new(get_workspace()));
     }
 
     let response = guard.as_mut().unwrap().handle_message(msg);

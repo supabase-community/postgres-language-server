@@ -16,6 +16,7 @@
 
 use std::collections::HashMap;
 use std::str::FromStr;
+use std::sync::{Arc, Mutex};
 
 use lsp_types::*;
 use serde::{Deserialize, Serialize};
@@ -72,23 +73,21 @@ struct DocumentState {
 ///
 /// This handler processes LSP JSON-RPC messages synchronously and returns
 /// an array of response/notification messages.
+///
+/// The handler uses a shared workspace that is also accessible via the direct
+/// FFI functions (pgls_parse, pgls_lint, etc.), ensuring consistent state.
 pub struct LspHandler {
-    workspace: Workspace,
+    /// Shared workspace - same instance used by FFI functions
+    workspace: Arc<Mutex<Workspace>>,
     documents: HashMap<String, DocumentState>,
     initialized: bool,
 }
 
-impl Default for LspHandler {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
 impl LspHandler {
-    /// Create a new LSP handler.
-    pub fn new() -> Self {
+    /// Create a new LSP handler with a shared workspace.
+    pub fn new(workspace: Arc<Mutex<Workspace>>) -> Self {
         Self {
-            workspace: Workspace::new(),
+            workspace,
             documents: HashMap::new(),
             initialized: false,
         }
@@ -222,6 +221,8 @@ impl LspHandler {
         let offset = position_to_offset(content, position);
         let completions = self
             .workspace
+            .lock()
+            .unwrap()
             .complete(&uri, offset as u32)
             .unwrap_or_default();
 
@@ -272,7 +273,13 @@ impl LspHandler {
         };
 
         let offset = position_to_offset(content, position);
-        let hover_text = self.workspace.hover(&uri, offset as u32).ok().flatten();
+        let hover_text = self
+            .workspace
+            .lock()
+            .unwrap()
+            .hover(&uri, offset as u32)
+            .ok()
+            .flatten();
 
         let result = hover_text.map(|text| {
             serde_json::to_value(Hover {
@@ -315,7 +322,7 @@ impl LspHandler {
                 version,
             },
         );
-        self.workspace.insert_file(&uri, &content);
+        self.workspace.lock().unwrap().insert_file(&uri, &content);
 
         self.publish_diagnostics(&uri)
     }
@@ -343,7 +350,7 @@ impl LspHandler {
                 version,
             },
         );
-        self.workspace.insert_file(&uri, &content);
+        self.workspace.lock().unwrap().insert_file(&uri, &content);
 
         self.publish_diagnostics(&uri)
     }
@@ -357,7 +364,7 @@ impl LspHandler {
 
         let uri = params.text_document.uri.to_string();
         self.documents.remove(&uri);
-        self.workspace.remove_file(&uri);
+        self.workspace.lock().unwrap().remove_file(&uri);
 
         // Send empty diagnostics to clear them
         vec![JsonRpcNotification {
@@ -383,7 +390,7 @@ impl LspHandler {
             None => return vec![],
         };
 
-        if let Err(e) = self.workspace.set_schema(&params.schema) {
+        if let Err(e) = self.workspace.lock().unwrap().set_schema(&params.schema) {
             // Log error but don't fail
             eprintln!("Failed to set schema: {e}");
         }
@@ -396,7 +403,7 @@ impl LspHandler {
     }
 
     fn clear_schema_notification(&mut self) -> Vec<JsonRpcNotification> {
-        self.workspace.clear_schema();
+        self.workspace.lock().unwrap().clear_schema();
         vec![]
     }
 
@@ -410,7 +417,7 @@ impl LspHandler {
             None => return vec![],
         };
 
-        let diagnostics = self.workspace.lint(uri).unwrap_or_default();
+        let diagnostics = self.workspace.lock().unwrap().lint(uri).unwrap_or_default();
         let lsp_diagnostics: Vec<Diagnostic> = diagnostics
             .into_iter()
             .map(|d| Diagnostic {
@@ -502,10 +509,15 @@ fn offset_to_position(content: &str, offset: usize) -> Position {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::Workspace;
+
+    fn test_handler() -> LspHandler {
+        LspHandler::new(Arc::new(Mutex::new(Workspace::new())))
+    }
 
     #[test]
     fn test_initialize() {
-        let mut handler = LspHandler::new();
+        let mut handler = test_handler();
         let response = handler.handle_message(
             r#"{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"capabilities":{}}}"#,
         );
@@ -522,7 +534,7 @@ mod tests {
 
     #[test]
     fn test_did_open_returns_diagnostics() {
-        let mut handler = LspHandler::new();
+        let mut handler = test_handler();
 
         // Initialize first
         handler.handle_message(
@@ -559,7 +571,7 @@ mod tests {
 
     #[test]
     fn test_did_open_with_invalid_sql() {
-        let mut handler = LspHandler::new();
+        let mut handler = test_handler();
 
         handler.handle_message(
             r#"{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"capabilities":{}}}"#,
@@ -595,7 +607,7 @@ mod tests {
 
     #[test]
     fn test_completion() {
-        let mut handler = LspHandler::new();
+        let mut handler = test_handler();
 
         handler.handle_message(
             r#"{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"capabilities":{}}}"#,
@@ -626,7 +638,7 @@ mod tests {
 
     #[test]
     fn test_hover() {
-        let mut handler = LspHandler::new();
+        let mut handler = test_handler();
 
         handler.handle_message(
             r#"{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"capabilities":{}}}"#,
@@ -658,7 +670,7 @@ mod tests {
 
     #[test]
     fn test_shutdown() {
-        let mut handler = LspHandler::new();
+        let mut handler = test_handler();
 
         let response =
             handler.handle_message(r#"{"jsonrpc":"2.0","id":1,"method":"shutdown","params":{}}"#);
@@ -671,7 +683,7 @@ mod tests {
 
     #[test]
     fn test_unknown_method() {
-        let mut handler = LspHandler::new();
+        let mut handler = test_handler();
 
         let response = handler
             .handle_message(r#"{"jsonrpc":"2.0","id":1,"method":"unknown/method","params":{}}"#);
@@ -684,7 +696,7 @@ mod tests {
 
     #[test]
     fn test_parse_error() {
-        let mut handler = LspHandler::new();
+        let mut handler = test_handler();
 
         let response = handler.handle_message("not valid json");
 
