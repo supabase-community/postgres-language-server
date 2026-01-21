@@ -265,7 +265,8 @@ test.describe("Monaco Editor with PGLS WASM", () => {
 	});
 
 	test("setSchema and get schema-aware completions", async ({ page }) => {
-		// Set a test schema
+		// Set a test schema via LSP notification (not via direct setSchema call)
+		// This ensures the schema is set on the LSP handler's workspace
 		await page.evaluate(() => {
 			const workspace = (window as any).pglsWorkspace;
 			const schema = {
@@ -361,7 +362,12 @@ test.describe("Monaco Editor with PGLS WASM", () => {
 				triggers: [],
 				roles: [],
 			};
-			workspace.setSchema(JSON.stringify(schema));
+			// Use the pgls/setSchema LSP notification instead of direct setSchema
+			workspace.handleMessage({
+				jsonrpc: "2.0",
+				method: "pgls/setSchema",
+				params: { schema: JSON.stringify(schema) },
+			});
 		});
 
 		// Open a document
@@ -406,7 +412,7 @@ test.describe("Monaco Editor with PGLS WASM", () => {
 	});
 
 	test("hover with schema returns column type info", async ({ page }) => {
-		// Set a test schema (same as above)
+		// Set a test schema via LSP notification
 		await page.evaluate(() => {
 			const workspace = (window as any).pglsWorkspace;
 			const schema = {
@@ -472,7 +478,12 @@ test.describe("Monaco Editor with PGLS WASM", () => {
 				triggers: [],
 				roles: [],
 			};
-			workspace.setSchema(JSON.stringify(schema));
+			// Use the pgls/setSchema LSP notification instead of direct setSchema
+			workspace.handleMessage({
+				jsonrpc: "2.0",
+				method: "pgls/setSchema",
+				params: { schema: JSON.stringify(schema) },
+			});
 		});
 
 		// Open a document with a column reference
