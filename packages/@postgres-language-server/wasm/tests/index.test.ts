@@ -439,28 +439,22 @@ describe("Schema-based completions and hover", () => {
 		workspace.insertFile("/hover-table.sql", "SELECT * FROM users;");
 		// Position over "users" (around character 14)
 		const hover = workspace.hover("/hover-table.sql", 14);
-		// With schema loaded, hover should return info
+		// With schema loaded, hover should return info (a markdown string)
 		expect(hover).not.toBeNull();
-		if (hover) {
-			expect(hover.contents).toBeDefined();
-		}
+		expect(typeof hover).toBe("string");
+		// The hover text should mention the table
+		expect(hover!.toLowerCase()).toContain("users");
 	});
 
 	test("hover on column name shows column type", () => {
 		workspace.insertFile("/hover-col.sql", "SELECT email FROM users;");
 		// Position over "email" (around character 7)
 		const hover = workspace.hover("/hover-col.sql", 8);
-		// With schema loaded, hover should return type info
+		// With schema loaded, hover should return type info (a markdown string)
 		expect(hover).not.toBeNull();
-		if (hover) {
-			expect(hover.contents).toBeDefined();
-			// The hover contents should mention the type
-			const hoverText =
-				typeof hover.contents === "string"
-					? hover.contents
-					: JSON.stringify(hover.contents);
-			expect(hoverText.toLowerCase()).toContain("text");
-		}
+		expect(typeof hover).toBe("string");
+		// The hover text should mention the type
+		expect(hover!.toLowerCase()).toContain("text");
 	});
 
 	test("clearSchema removes schema and hover returns null", () => {
