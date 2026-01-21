@@ -74,7 +74,25 @@ impl ProtoAnalyzer {
         let mut nodes = Vec::new();
 
         for msg in self.pool.all_messages() {
-            if ["ParseResult", "ScanResult", "Node", "ScanToken"].contains(&msg.name()) {
+            // Skip non-Node types (top-level results, helper messages)
+            if [
+                "ParseResult",
+                "ScanResult",
+                "Node",
+                "ScanToken",
+                "SummaryResult",
+                "PLpgSQLParseResult",
+            ]
+            .contains(&msg.name())
+            {
+                continue;
+            }
+            // Skip PLpgSQL types (they have their own separate AST)
+            if msg.name().starts_with("PLpgSQL") || msg.name().starts_with("PLpgSql") {
+                continue;
+            }
+            // Skip nested messages in SummaryResult (Table, Function, FilterColumn, Context)
+            if msg.full_name().starts_with("pg_query.SummaryResult.") {
                 continue;
             }
             let fields = msg
