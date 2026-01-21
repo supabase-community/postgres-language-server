@@ -28,6 +28,9 @@ pub use scan::*;
 pub use split::*;
 
 pub use protobuf::Node;
+pub use protobuf::PLpgSqlFunction;
+pub use protobuf::PLpgSqlParseResult;
+pub use protobuf::PLpgSqlStmt;
 
 // Include the generated bindings with 2024 edition compatibility
 #[allow(non_upper_case_globals)]

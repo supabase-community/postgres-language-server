@@ -1,4 +1,4 @@
 [submodule "crates/pgls_query/vendor/libpg_query"]
 	path = crates/pgls_query/vendor/libpg_query
-	url = https://github.com/pganalyze/libpg_query.git
-	branch = 17-latest
+	url = https://github.com/psteinroe/libpg_query.git
+	branch = feat/plpgsql-protobuf
