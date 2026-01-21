@@ -1,7 +1,13 @@
 //! C ABI wrappers for Emscripten/WASM.
 //!
-//! This module provides C-compatible functions that can be called from JavaScript
-//! via Emscripten's runtime.
+//! This module provides two independent APIs:
+//!
+//! 1. **Workspace API** (`pgls_*` functions) - Direct access to parse, lint, complete, hover
+//! 2. **Language Server API** (`pgls_lsp_*` functions) - LSP JSON-RPC message handling
+//!
+//! Each API has its own independent workspace. Choose one based on your use case:
+//! - Use Workspace API for simple integrations (editors, linters)
+//! - Use Language Server API for full LSP protocol support (monaco-languageclient)
 //!
 //! # Memory Management
 //!
@@ -11,37 +17,31 @@
 //!
 //! # Thread Safety
 //!
-//! The workspace is stored in a global static and is NOT thread-safe.
-//! This is acceptable for WASM which is single-threaded.
+//! WASM is single-threaded, but we use Mutex for safe global state.
 
 use std::ffi::{CStr, CString};
 use std::os::raw::c_char;
-use std::sync::{Arc, Mutex};
+use std::sync::Mutex;
 
 use crate::{WasmError, Workspace};
 
-/// Global shared workspace instance.
-/// This is shared between direct FFI calls and the LSP handler.
-/// WASM is single-threaded, but we use Mutex for safe initialization.
-static WORKSPACE: Mutex<Option<Arc<Mutex<Workspace>>>> = Mutex::new(None);
+// =============================================================================
+// Workspace API - Direct access to parse, lint, complete, hover
+// =============================================================================
 
-/// Get or create the shared workspace.
-fn get_workspace() -> Arc<Mutex<Workspace>> {
-    let mut guard = WORKSPACE.lock().unwrap();
-    if guard.is_none() {
-        *guard = Some(Arc::new(Mutex::new(Workspace::new())));
-    }
-    guard.as_ref().unwrap().clone()
-}
+/// Global workspace instance for the direct API.
+static WORKSPACE: Mutex<Option<Workspace>> = Mutex::new(None);
 
 /// Helper to execute code with the workspace.
 fn with_workspace<F, T>(f: F) -> T
 where
     F: FnOnce(&mut Workspace) -> T,
 {
-    let ws = get_workspace();
-    let mut guard = ws.lock().unwrap();
-    f(&mut guard)
+    let mut guard = WORKSPACE.lock().unwrap();
+    if guard.is_none() {
+        *guard = Some(Workspace::new());
+    }
+    f(guard.as_mut().unwrap())
 }
 
 /// Convert a C string to a Rust string slice.
@@ -263,25 +263,27 @@ pub extern "C" fn pgls_version() -> *mut c_char {
     str_to_c_string(env!("CARGO_PKG_VERSION"))
 }
 
-// ============================================================================
-// LSP Message Handler
-// ============================================================================
+// =============================================================================
+// Language Server API - LSP JSON-RPC message handling
+// =============================================================================
 
 use crate::lsp::LspHandler;
 
-/// Global LSP handler instance.
-/// Shares the same workspace as the direct FFI functions.
+/// Global LSP handler instance with its own independent workspace.
 static LSP_HANDLER: Mutex<Option<LspHandler>> = Mutex::new(None);
 
 /// Handle an LSP JSON-RPC message.
 ///
-/// This function processes an LSP message and returns a JSON array of outgoing
-/// messages (response + notifications like publishDiagnostics).
+/// This is part of the Language Server API, which is separate from the Workspace API.
+/// The LSP handler manages its own workspace internally and handles document lifecycle
+/// through LSP notifications (didOpen, didChange, didClose).
 ///
-/// The LSP handler shares the same workspace as the direct FFI functions
-/// (pgls_set_schema, pgls_lint, etc.), so changes made through either API
-/// are visible to both.
+/// Use the `pgls/setSchema` notification to set the database schema:
+/// ```json
+/// {"jsonrpc":"2.0","method":"pgls/setSchema","params":{"schema":"..."}}
+/// ```
 ///
+/// Returns a JSON array of outgoing messages (response + notifications).
 /// The returned string must be freed with `pgls_free_string`.
 ///
 /// # Usage with Web Workers
@@ -292,7 +294,7 @@ static LSP_HANDLER: Mutex<Option<LspHandler>> = Mutex::new(None);
 /// # Safety
 /// The message pointer must be valid and point to a null-terminated UTF-8 string.
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn pgls_handle_message(message: *const c_char) -> *mut c_char {
+pub unsafe extern "C" fn pgls_lsp_handle_message(message: *const c_char) -> *mut c_char {
     // SAFETY: Caller guarantees message is valid
     let msg = match unsafe { c_str_to_str(message) } {
         Some(s) => s,
@@ -301,8 +303,7 @@ pub unsafe extern "C" fn pgls_handle_message(message: *const c_char) -> *mut c_c
 
     let mut guard = LSP_HANDLER.lock().unwrap();
     if guard.is_none() {
-        // Create LSP handler with the shared workspace
-        *guard = Some(LspHandler::new(get_workspace()));
+        *guard = Some(LspHandler::new());
     }
 
     let response = guard.as_mut().unwrap().handle_message(msg);

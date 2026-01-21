@@ -86,7 +86,7 @@ EXPORTED_FUNCTIONS="[
   '_pgls_hover',
   '_pgls_parse',
   '_pgls_version',
-  '_pgls_handle_message'
+  '_pgls_lsp_handle_message'
 ]"
 
 # Exported runtime methods for string handling

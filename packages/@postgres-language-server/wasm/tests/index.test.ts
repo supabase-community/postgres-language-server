@@ -3,9 +3,14 @@
  */
 
 import { expect, test, describe, beforeAll, beforeEach } from "bun:test";
-import { createWorkspace, Workspace } from "../src/index";
+import { createWorkspace, Workspace } from "../src/workspace";
+import { createLanguageServer, LanguageServer } from "../src/lsp";
 
-describe("WASM Workspace", () => {
+// =============================================================================
+// Workspace API Tests
+// =============================================================================
+
+describe("Workspace API", () => {
 	let workspace: Workspace;
 
 	beforeAll(async () => {
@@ -81,10 +86,6 @@ describe("WASM Workspace", () => {
 		expect(() => workspace.clearSchema()).not.toThrow();
 	});
 
-	// Note: setSchema test is skipped because it requires exact field matching
-	// with the Rust SchemaCache struct. In practice, schema JSON would be
-	// exported from a real database using `postgres-language-server schema-export`.
-
 	test("setSchema with invalid JSON throws", () => {
 		expect(() => workspace.setSchema("not valid json")).toThrow();
 	});
@@ -102,15 +103,19 @@ describe("WASM Workspace", () => {
 	});
 });
 
-describe("LSP Message Handling", () => {
-	let workspace: Workspace;
+// =============================================================================
+// Language Server API Tests
+// =============================================================================
+
+describe("LanguageServer API", () => {
+	let lsp: LanguageServer;
 
 	beforeAll(async () => {
-		workspace = await createWorkspace();
+		lsp = await createLanguageServer();
 	});
 
 	test("handleMessage returns array", () => {
-		const messages = workspace.handleMessage({
+		const messages = lsp.handleMessage({
 			jsonrpc: "2.0",
 			id: 1,
 			method: "initialize",
@@ -121,7 +126,7 @@ describe("LSP Message Handling", () => {
 	});
 
 	test("initialize returns capabilities", () => {
-		const messages = workspace.handleMessage({
+		const messages = lsp.handleMessage({
 			jsonrpc: "2.0",
 			id: 1,
 			method: "initialize",
@@ -138,7 +143,7 @@ describe("LSP Message Handling", () => {
 	});
 
 	test("shutdown returns null", () => {
-		const messages = workspace.handleMessage({
+		const messages = lsp.handleMessage({
 			jsonrpc: "2.0",
 			id: 2,
 			method: "shutdown",
@@ -152,7 +157,7 @@ describe("LSP Message Handling", () => {
 	});
 
 	test("handleMessage accepts string input", () => {
-		const messages = workspace.handleMessage(
+		const messages = lsp.handleMessage(
 			JSON.stringify({
 				jsonrpc: "2.0",
 				id: 3,
@@ -166,7 +171,7 @@ describe("LSP Message Handling", () => {
 	});
 
 	test("didOpen returns publishDiagnostics notification", () => {
-		const messages = workspace.handleMessage({
+		const messages = lsp.handleMessage({
 			jsonrpc: "2.0",
 			method: "textDocument/didOpen",
 			params: {
@@ -189,7 +194,7 @@ describe("LSP Message Handling", () => {
 	});
 
 	test("didOpen with invalid SQL returns diagnostics", () => {
-		const messages = workspace.handleMessage({
+		const messages = lsp.handleMessage({
 			jsonrpc: "2.0",
 			method: "textDocument/didOpen",
 			params: {
@@ -211,7 +216,7 @@ describe("LSP Message Handling", () => {
 	});
 
 	test("unknown method returns error", () => {
-		const messages = workspace.handleMessage({
+		const messages = lsp.handleMessage({
 			jsonrpc: "2.0",
 			id: 99,
 			method: "unknownMethod",
@@ -225,7 +230,7 @@ describe("LSP Message Handling", () => {
 	});
 
 	test("invalid JSON returns parse error", () => {
-		const messages = workspace.handleMessage("not valid json");
+		const messages = lsp.handleMessage("not valid json");
 
 		expect(messages.length).toBe(1);
 		const response = messages[0];
@@ -233,6 +238,10 @@ describe("LSP Message Handling", () => {
 		expect(response.error?.code).toBe(-32700); // Parse error
 	});
 });
+
+// =============================================================================
+// Schema-based Workspace Tests
+// =============================================================================
 
 /**
  * Sample schema for testing completions and hover.
@@ -396,14 +405,14 @@ const TEST_SCHEMA = {
 	roles: [],
 };
 
-describe("Schema-based completions and hover", () => {
+describe("Schema-based Workspace completions and hover", () => {
 	let workspace: Workspace;
 
 	beforeAll(async () => {
 		workspace = await createWorkspace();
 	});
 
-	// Ensure schema is loaded before each test (tests may run out of order)
+	// Ensure schema is loaded before each test
 	beforeEach(() => {
 		workspace.setSchema(JSON.stringify(TEST_SCHEMA));
 	});

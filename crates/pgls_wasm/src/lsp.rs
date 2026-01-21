@@ -16,7 +16,6 @@
 
 use std::collections::HashMap;
 use std::str::FromStr;
-use std::sync::{Arc, Mutex};
 
 use lsp_types::*;
 use serde::{Deserialize, Serialize};
@@ -72,22 +71,30 @@ struct DocumentState {
 /// LSP handler for WASM.
 ///
 /// This handler processes LSP JSON-RPC messages synchronously and returns
-/// an array of response/notification messages.
+/// an array of response/notification messages. It manages its own workspace
+/// internally.
 ///
-/// The handler uses a shared workspace that is also accessible via the direct
-/// FFI functions (pgls_parse, pgls_lint, etc.), ensuring consistent state.
+/// Use the `pgls/setSchema` notification to set the database schema:
+/// ```json
+/// {"jsonrpc":"2.0","method":"pgls/setSchema","params":{"schema":"..."}}
+/// ```
 pub struct LspHandler {
-    /// Shared workspace - same instance used by FFI functions
-    workspace: Arc<Mutex<Workspace>>,
+    workspace: Workspace,
     documents: HashMap<String, DocumentState>,
     initialized: bool,
 }
 
+impl Default for LspHandler {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl LspHandler {
-    /// Create a new LSP handler with a shared workspace.
-    pub fn new(workspace: Arc<Mutex<Workspace>>) -> Self {
+    /// Create a new LSP handler with its own workspace.
+    pub fn new() -> Self {
         Self {
-            workspace,
+            workspace: Workspace::new(),
             documents: HashMap::new(),
             initialized: false,
         }
@@ -221,8 +228,6 @@ impl LspHandler {
         let offset = position_to_offset(content, position);
         let completions = self
             .workspace
-            .lock()
-            .unwrap()
             .complete(&uri, offset as u32)
             .unwrap_or_default();
 
@@ -275,8 +280,6 @@ impl LspHandler {
         let offset = position_to_offset(content, position);
         let hover_text = self
             .workspace
-            .lock()
-            .unwrap()
             .hover(&uri, offset as u32)
             .ok()
             .flatten();
@@ -322,7 +325,7 @@ impl LspHandler {
                 version,
             },
         );
-        self.workspace.lock().unwrap().insert_file(&uri, &content);
+        self.workspace.insert_file(&uri, &content);
 
         self.publish_diagnostics(&uri)
     }
@@ -350,7 +353,7 @@ impl LspHandler {
                 version,
             },
         );
-        self.workspace.lock().unwrap().insert_file(&uri, &content);
+        self.workspace.insert_file(&uri, &content);
 
         self.publish_diagnostics(&uri)
     }
@@ -364,7 +367,7 @@ impl LspHandler {
 
         let uri = params.text_document.uri.to_string();
         self.documents.remove(&uri);
-        self.workspace.lock().unwrap().remove_file(&uri);
+        self.workspace.remove_file(&uri);
 
         // Send empty diagnostics to clear them
         vec![JsonRpcNotification {
@@ -390,7 +393,7 @@ impl LspHandler {
             None => return vec![],
         };
 
-        if let Err(e) = self.workspace.lock().unwrap().set_schema(&params.schema) {
+        if let Err(e) = self.workspace.set_schema(&params.schema) {
             // Log error but don't fail
             eprintln!("Failed to set schema: {e}");
         }
@@ -403,7 +406,7 @@ impl LspHandler {
     }
 
     fn clear_schema_notification(&mut self) -> Vec<JsonRpcNotification> {
-        self.workspace.lock().unwrap().clear_schema();
+        self.workspace.clear_schema();
         vec![]
     }
 
@@ -417,7 +420,7 @@ impl LspHandler {
             None => return vec![],
         };
 
-        let diagnostics = self.workspace.lock().unwrap().lint(uri).unwrap_or_default();
+        let diagnostics = self.workspace.lint(uri).unwrap_or_default();
         let lsp_diagnostics: Vec<Diagnostic> = diagnostics
             .into_iter()
             .map(|d| Diagnostic {
@@ -509,10 +512,9 @@ fn offset_to_position(content: &str, offset: usize) -> Position {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::Workspace;
 
     fn test_handler() -> LspHandler {
-        LspHandler::new(Arc::new(Mutex::new(Workspace::new())))
+        LspHandler::new()
     }
 
     #[test]

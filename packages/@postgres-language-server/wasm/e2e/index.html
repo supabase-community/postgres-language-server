@@ -76,6 +76,90 @@
                 }).join('');
         }
 
+        /**
+         * LSP Worker Client - Wraps the Language Server running in a Web Worker.
+         *
+         * This is how you would integrate PGLS with Monaco in production:
+         * 1. Create the worker with the LSP module
+         * 2. Send LSP messages via postMessage
+         * 3. Receive responses and notifications
+         */
+        class LspWorkerClient {
+            constructor() {
+                this.worker = null;
+                this.pendingRequests = new Map();
+                this.requestId = 0;
+                this.handlers = new Map();
+            }
+
+            async init() {
+                return new Promise((resolve, reject) => {
+                    this.worker = new Worker('/e2e/lsp-worker.js', { type: 'module' });
+
+                    this.worker.onmessage = (event) => {
+                        const { type, response, message, requestId } = event.data;
+
+                        if (type === 'ready') {
+                            resolve();
+                        } else if (type === 'error' && !this.pendingRequests.has(requestId)) {
+                            reject(new Error(message));
+                        } else if (type === 'response') {
+                            // Handle notifications (no id)
+                            if (response.method) {
+                                const handler = this.handlers.get(response.method);
+                                if (handler) {
+                                    handler(response.params);
+                                }
+                            }
+
+                            // Resolve pending request
+                            if (requestId !== undefined && this.pendingRequests.has(requestId)) {
+                                const { resolve, responses } = this.pendingRequests.get(requestId);
+                                responses.push(response);
+                                // For requests, resolve immediately with all responses
+                                // For notifications, we collect all responses
+                                if (response.id !== undefined || response.method) {
+                                    resolve(responses);
+                                    this.pendingRequests.delete(requestId);
+                                }
+                            }
+                        } else if (type === 'error') {
+                            const pending = this.pendingRequests.get(requestId);
+                            if (pending) {
+                                pending.reject(new Error(message));
+                                this.pendingRequests.delete(requestId);
+                            }
+                        }
+                    };
+
+                    this.worker.postMessage({ type: 'init' });
+                });
+            }
+
+            // Send message and collect responses
+            sendMessage(message) {
+                return new Promise((resolve, reject) => {
+                    const id = ++this.requestId;
+                    this.pendingRequests.set(id, { resolve, reject, responses: [] });
+                    this.worker.postMessage({ type: 'message', message, id });
+
+                    // Timeout for safety
+                    setTimeout(() => {
+                        const pending = this.pendingRequests.get(id);
+                        if (pending) {
+                            resolve(pending.responses);
+                            this.pendingRequests.delete(id);
+                        }
+                    }, 100);
+                });
+            }
+
+            // Register handler for notifications
+            onNotification(method, handler) {
+                this.handlers.set(method, handler);
+            }
+        }
+
         // Load Monaco
         require.config({ paths: { vs: 'https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs' } });
 
@@ -98,36 +182,50 @@
             window.monacoEditor = editor;
 
             try {
-                // Import and initialize WASM workspace
-                const { createWorkspace } = await import('/dist/index.js');
-                const workspace = await createWorkspace();
+                // Create worker-based LSP client for Monaco integration
+                const lspClient = new LspWorkerClient();
+                await lspClient.init();
+                window.pglsLspClient = lspClient;
 
-                // Expose for tests
-                window.pglsWorkspace = workspace;
+                // Initialize LSP via worker
+                await lspClient.sendMessage({
+                    jsonrpc: '2.0',
+                    id: 1,
+                    method: 'initialize',
+                    params: { capabilities: {} }
+                });
 
                 setStatus('Ready', 'ready');
 
-                // Set up diagnostics on content change
+                // Set up diagnostics on content change using the worker LSP
                 let debounceTimer;
-                const updateDiagnostics = () => {
+                let documentVersion = 0;
+
+                const updateDiagnostics = async () => {
                     const content = editor.getValue();
                     const uri = 'file:///test.sql';
+                    documentVersion++;
 
-                    // Update workspace
-                    workspace.insertFile(uri, content);
-
-                    // Get diagnostics via LSP handler
-                    const messages = workspace.handleMessage({
+                    // Send didOpen/didChange via LSP worker
+                    const messages = await lspClient.sendMessage({
                         jsonrpc: '2.0',
-                        method: 'textDocument/didOpen',
-                        params: {
-                            textDocument: {
-                                uri: uri,
-                                languageId: 'sql',
-                                version: 1,
-                                text: content,
+                        method: documentVersion === 1 ? 'textDocument/didOpen' : 'textDocument/didChange',
+                        params: documentVersion === 1
+                            ? {
+                                textDocument: {
+                                    uri: uri,
+                                    languageId: 'sql',
+                                    version: documentVersion,
+                                    text: content,
+                                }
                             }
-                        }
+                            : {
+                                textDocument: {
+                                    uri: uri,
+                                    version: documentVersion,
+                                },
+                                contentChanges: [{ text: content }]
+                            }
                     });
 
                     // Find publishDiagnostics notification

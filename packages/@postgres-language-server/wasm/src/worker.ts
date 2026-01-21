@@ -36,16 +36,16 @@
  * ```
  */
 
-import { createWorkspace, type Workspace, type JsonRpcMessage } from "./index";
+import { createLanguageServer, type LanguageServer, type JsonRpcMessage } from "./lsp";
 
-let workspace: Workspace | null = null;
+let languageServer: LanguageServer | null = null;
 
 /**
- * Initialize the workspace.
+ * Initialize the language server.
  */
 async function initialize(): Promise<void> {
-	if (!workspace) {
-		workspace = await createWorkspace();
+	if (!languageServer) {
+		languageServer = await createLanguageServer();
 	}
 }
 
@@ -53,25 +53,19 @@ async function initialize(): Promise<void> {
  * Handle incoming messages from the main thread.
  */
 self.onmessage = async (event: MessageEvent) => {
-	// Ensure workspace is initialized
-	if (!workspace) {
+	// Ensure language server is initialized
+	if (!languageServer) {
 		await initialize();
 	}
 
 	const data = event.data;
-
-	// Handle special control messages
-	if (typeof data === "object" && data.type === "setSchema") {
-		workspace!.setSchema(data.schema);
-		return;
-	}
 
 	// Handle LSP JSON-RPC messages
 	// The message can be a string (raw JSON) or an object
 	const message: string | JsonRpcMessage = data;
 
 	// Process the message and get array of outgoing messages
-	const outgoing = workspace!.handleMessage(message);
+	const outgoing = languageServer!.handleMessage(message);
 
 	// Send EACH message separately via postMessage
 	// This is required by BrowserMessageReader which expects

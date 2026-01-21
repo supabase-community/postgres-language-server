@@ -123,7 +123,9 @@ export interface PGLSModule {
 	_pgls_hover(pathPtr: number, offset: number): number;
 	_pgls_parse(sqlPtr: number): number;
 	_pgls_version(): number;
-	_pgls_handle_message(messagePtr: number): number;
+
+	// Language Server API
+	_pgls_lsp_handle_message(messagePtr: number): number;
 
 	// Emscripten runtime methods
 	UTF8ToString(ptr: number): string;
