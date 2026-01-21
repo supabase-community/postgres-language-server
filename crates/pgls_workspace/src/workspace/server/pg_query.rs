@@ -83,6 +83,7 @@ impl PgQueryStore {
         let range = TextRange::new(start.try_into().unwrap(), end.try_into().unwrap());
 
         let r = pgls_query::parse_plpgsql(statement.content())
+            .map(|_| ()) // discard result, we only care about syntax errors
             .or_else(|e| match &e {
                 // ignore `is not a known variable` for composite types because libpg_query reports a false positive.
                 // https://github.com/pganalyze/libpg_query/issues/159

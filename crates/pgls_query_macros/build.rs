@@ -3,7 +3,7 @@ use std::fs;
 use std::io::Write;
 use std::path::PathBuf;
 
-static LIBPG_QUERY_TAG: &str = "17-latest";
+static LIBPG_QUERY_TAG: &str = "feat/plpgsql-protobuf";
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let manifest_dir = PathBuf::from(env::var("CARGO_MANIFEST_DIR")?);
@@ -19,7 +19,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         fs::create_dir_all(&vendor_dir)?;
 
         let proto_url = format!(
-            "https://raw.githubusercontent.com/pganalyze/libpg_query/{LIBPG_QUERY_TAG}/protobuf/pg_query.proto"
+            "https://raw.githubusercontent.com/psteinroe/libpg_query/{LIBPG_QUERY_TAG}/protobuf/pg_query.proto"
         );
 
         let response = ureq::get(&proto_url).call()?;
