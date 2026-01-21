@@ -2,7 +2,7 @@
  * Tests for the Postgres Language Server WASM bindings.
  */
 
-import { expect, test, describe, beforeAll } from "bun:test";
+import { expect, test, describe, beforeAll, beforeEach } from "bun:test";
 import { createWorkspace, Workspace } from "../src/index";
 
 describe("WASM Workspace", () => {
