@@ -278,11 +278,7 @@ impl LspHandler {
         };
 
         let offset = position_to_offset(content, position);
-        let hover_text = self
-            .workspace
-            .hover(&uri, offset as u32)
-            .ok()
-            .flatten();
+        let hover_text = self.workspace.hover(&uri, offset as u32).ok().flatten();
 
         let result = hover_text.map(|text| {
             serde_json::to_value(Hover {
