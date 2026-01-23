@@ -116,3 +116,37 @@ pub fn goto_closest_parent_clause_with_multiple_children(node: Node<'_>) -> Opti
 
     return None;
 }
+
+pub fn previous_sibling_completed(node: tree_sitter::Node) -> bool {
+    if let Some(prev) = node.prev_sibling() {
+        let explicit_skip = SINGLE_TOKEN_RULES.contains(&prev.kind());
+        let is_parent = prev.child_count() > 0;
+        let is_finished = prev.child_by_field_name("end").is_some();
+
+        if explicit_skip || !is_parent {
+            return true;
+        }
+
+        is_finished && last_children_completed(prev)
+    } else {
+        return true;
+    }
+}
+
+fn last_children_completed(node: tree_sitter::Node) -> bool {
+    let mut cursor = node.walk();
+
+    if let Some(last_child) = node.children(&mut cursor).last() {
+        let explicit_skip = SINGLE_TOKEN_RULES.contains(&last_child.kind());
+        let is_parent = last_child.child_count() > 0;
+        let is_finished = last_child.child_by_field_name("end").is_some();
+
+        if explicit_skip || !is_parent {
+            return true;
+        }
+
+        is_finished && last_children_completed(last_child)
+    } else {
+        return true;
+    }
+}

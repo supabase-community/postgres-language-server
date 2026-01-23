@@ -795,10 +795,13 @@ mod tests {
 
         assert_complete_results(
             query.as_str(),
-            vec![CompletionAssertion::LabelAndKind(
-                "join".into(),
-                CompletionItemKind::Keyword,
-            )],
+            vec![
+                CompletionAssertion::LabelAndKind("cross".into(), CompletionItemKind::Keyword),
+                CompletionAssertion::LabelAndKind("full".into(), CompletionItemKind::Keyword),
+                CompletionAssertion::LabelAndKind("group".into(), CompletionItemKind::Keyword),
+                CompletionAssertion::LabelAndKind("inner".into(), CompletionItemKind::Keyword),
+                CompletionAssertion::LabelAndKind("join".into(), CompletionItemKind::Keyword),
+            ],
             Some(setup),
             &pool,
         )
