@@ -5,10 +5,11 @@ use std::{
 
 use crate::{
     context::ancestors::ScopeTracker,
-    parts_of_reference_query,
+    helper, parts_of_reference_query,
     queries::{self, QueryResult, TreeSitterQueriesExecutor},
 };
 use pgls_text_size::TextSize;
+use tree_sitter::Language;
 
 mod ancestors;
 
@@ -102,6 +103,7 @@ pub struct TreeSitterContextParams<'a> {
 #[derive(Debug)]
 pub struct TreesitterContext<'a> {
     pub node_under_cursor: tree_sitter::Node<'a>,
+    pub possible_keywords_at_position: Vec<&'static str>,
 
     pub tree: &'a tree_sitter::Tree,
     pub text: &'a str,
@@ -125,6 +127,12 @@ pub struct TreesitterContext<'a> {
     pub is_invocation: bool,
     pub wrapping_statement_range: Option<tree_sitter::Range>,
 
+    pub previous_clause_completed: bool,
+    pub previous_clause: Option<tree_sitter::Node<'a>>,
+
+    pub current_clause_completed: bool,
+    pub current_clause: Option<tree_sitter::Node<'a>>,
+
     mentioned_relations: HashMap<Option<String>, HashSet<String>>,
     mentioned_table_aliases: HashMap<String, String>,
     mentioned_columns: HashMap<Option<WrappingClause<'a>>, HashSet<MentionedColumn>>,
@@ -139,6 +147,7 @@ impl<'a> TreesitterContext<'a> {
             text: params.text,
             position: usize::from(params.position),
             node_under_cursor: params.tree.root_node(),
+            possible_keywords_at_position: vec![],
             identifier_qualifiers: (None, None),
             wrapping_clause_type: None,
             wrapping_node_kind: None,
@@ -148,10 +157,19 @@ impl<'a> TreesitterContext<'a> {
             mentioned_table_aliases: HashMap::new(),
             mentioned_columns: HashMap::new(),
             scope_tracker: ScopeTracker::new(),
+
+            previous_clause_completed: false,
+            previous_clause: None,
+
+            current_clause_completed: false,
+            current_clause: None,
         };
 
         ctx.gather_tree_context();
         ctx.gather_info_from_ts_queries();
+        ctx.gather_possible_keywords_at_position();
+        ctx.check_previous_clause_completed();
+        ctx.check_current_clause_completed();
 
         ctx
     }
@@ -403,6 +421,36 @@ impl<'a> TreesitterContext<'a> {
                 Some(WrappingClause::Join { on_node })
             }
             _ => None,
+        }
+    }
+
+    fn check_current_clause_completed(&mut self) {
+        self.current_clause = helper::goto_closest_unfinished_parent_clause(self.node_under_cursor);
+    }
+
+    fn check_previous_clause_completed(&mut self) {
+        if let Some(previous_leaf) = helper::goto_previous_leaf(self.node_under_cursor) {
+            self.previous_clause = helper::goto_closest_unfinished_parent_clause(previous_leaf);
+        };
+    }
+
+    fn gather_possible_keywords_at_position(&mut self) {
+        let parse_state = if self.node_under_cursor.kind() == "ERROR" {
+            if self.node_under_cursor.child_count() > 0 {
+                self.node_under_cursor.child(0).unwrap().parse_state()
+            } else {
+                self.node_under_cursor.parse_state()
+            }
+        } else {
+            self.node_under_cursor.parse_state()
+        };
+
+        let language: Language = pgls_treesitter_grammar::LANGUAGE.into();
+        if let Some(mut lookahead_iterator) = language.lookahead_iterator(parse_state) {
+            self.possible_keywords_at_position = lookahead_iterator
+                .iter_names()
+                .filter_map(|kw| kw.strip_prefix("keyword_"))
+                .collect();
         }
     }
 
