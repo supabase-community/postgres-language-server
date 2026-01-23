@@ -24,14 +24,23 @@ create table auth.posts (
 --------------
 
 s|
+
+Results:
+select - select (Keyword)
+set - set (Keyword)
+insert - insert (Keyword)
+reset - reset (Keyword)
+
+--------------
+
 select |
 
 Results:
 content - auth.posts.content (Column)
 created_at - auth.posts.created_at (Column)
 email - auth.users.email (Column)
-false - Keyword.false (Keyword)
 name - auth.users.name (Column)
+pid - auth.posts.pid (Column)
 
 --------------
 
@@ -43,15 +52,27 @@ Results:
 content - auth.posts.content (Column)
 created_at - auth.posts.created_at (Column)
 email - auth.users.email (Column)
-false - Keyword.false (Keyword)
 name - auth.users.name (Column)
+pid - auth.posts.pid (Column)
 
 --------------
 
 select u.uid, p.|
 select u.uid, p.c|
 select u.uid, p.content |
+
+Results:
+from - from (Keyword)
+
+--------------
+
 select u.uid, p.content f|
+
+Results:
+from - from (Keyword)
+
+--------------
+
 select u.uid, p.content from |
 **Schema suggestions should be prioritized, since we want to push users to specify them.**
 
@@ -96,12 +117,32 @@ users - auth.users (Table)
 select u.uid, p.content from auth.users |
 
 Results:
-join - Keyword.join (Keyword)
+cross - cross (Keyword)
+full - full (Keyword)
+group - group (Keyword)
+inner - inner (Keyword)
+join - join (Keyword)
 
 --------------
 
 select u.uid, p.content from auth.users u |
+
+Results:
+cross - cross (Keyword)
+full - full (Keyword)
+group - group (Keyword)
+inner - inner (Keyword)
+join - join (Keyword)
+
+--------------
+
 select u.uid, p.content from auth.users u j|
+
+Results:
+join - join (Keyword)
+
+--------------
+
 select u.uid, p.content from auth.users u join |
 
 Results:
@@ -120,7 +161,7 @@ auth - auth (Schema)
 information_schema.administrable_role_authorizations - information_schema.administrable_role_authorizations (Table)
 information_schema.applicable_roles - information_schema.applicable_roles (Table)
 information_schema.attributes - information_schema.attributes (Table)
-lateral - Keyword.lateral (Keyword)
+information_schema - information_schema (Schema)
 
 --------------
 
@@ -142,12 +183,26 @@ posts - auth.posts (Table)
 select u.uid, p.content from auth.users u join auth.posts |
 
 Results:
-join - Keyword.join (Keyword)
+on - on (Keyword)
+using - using (Keyword)
 
 --------------
 
 select u.uid, p.content from auth.users u join auth.posts p |
+
+Results:
+on - on (Keyword)
+using - using (Keyword)
+
+--------------
+
 select u.uid, p.content from auth.users u join auth.posts p o|
+
+Results:
+on - on (Keyword)
+
+--------------
+
 select u.uid, p.content from auth.users u join auth.posts p on |
 
 Results:
@@ -176,6 +231,16 @@ uid - auth.users.uid (Column)
 --------------
 
 select u.uid, p.content from auth.users u join auth.posts p on u.uid |
+
+Results:
+cross - cross (Keyword)
+full - full (Keyword)
+group - group (Keyword)
+inner - inner (Keyword)
+join - join (Keyword)
+
+--------------
+
 select u.uid, p.content from auth.users u join auth.posts p on u.uid = |
 
 Results:
@@ -206,3 +271,12 @@ user_id - auth.posts.user_id (Column)
 --------------
 
 select u.uid, p.content from auth.users u join auth.posts p on u.uid = p.user_id |
+
+Results:
+cross - cross (Keyword)
+full - full (Keyword)
+group - group (Keyword)
+inner - inner (Keyword)
+join - join (Keyword)
+
+--------------

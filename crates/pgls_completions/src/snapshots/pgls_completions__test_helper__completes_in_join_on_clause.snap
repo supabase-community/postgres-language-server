@@ -96,3 +96,12 @@ uid - auth.users.uid (Column)
 --------------
 
 select u.id, auth.posts.content from auth.users u join auth.posts p on p.user_id = u.uid; |
+
+Results:
+insert - insert (Keyword)
+reset - reset (Keyword)
+select - select (Keyword)
+set - set (Keyword)
+truncate - truncate (Keyword)
+
+--------------

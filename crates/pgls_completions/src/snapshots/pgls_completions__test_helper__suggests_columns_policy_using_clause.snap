@@ -67,10 +67,10 @@ create policy "my_pol" on public.instruments for select using (id = 1 and c|)
 
 Results:
 created_at - public.instruments.created_at (Column)
+cast - cast (Keyword)
 cache_size - pg_catalog.pg_sequences.cache_size (Column)
 calls - pg_catalog.pg_stat_user_functions.calls (Column)
 castcontext - pg_catalog.pg_cast.castcontext (Column)
-castfunc - pg_catalog.pg_cast.castfunc (Column)
 
 --------------
 
@@ -135,10 +135,10 @@ create policy "my_pol" on public.instruments for insert with check (id = 1 and c
 
 Results:
 created_at - public.instruments.created_at (Column)
+cast - cast (Keyword)
 cache_size - pg_catalog.pg_sequences.cache_size (Column)
 calls - pg_catalog.pg_stat_user_functions.calls (Column)
 castcontext - pg_catalog.pg_cast.castcontext (Column)
-castfunc - pg_catalog.pg_cast.castfunc (Column)
 
 --------------
 

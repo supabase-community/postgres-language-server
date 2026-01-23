@@ -155,3 +155,12 @@ i.z - public.instruments.z (Column)
 
 select name from instruments i join others o on i.z = o.a where o.a = i.z and i.id > 5|
 select name from instruments i join others o on i.z = o.a where o.a = i.z and i.id > 5; |
+
+Results:
+insert - insert (Keyword)
+reset - reset (Keyword)
+select - select (Keyword)
+set - set (Keyword)
+truncate - truncate (Keyword)
+
+--------------
