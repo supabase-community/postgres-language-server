@@ -395,7 +395,7 @@ impl<'a> TreesitterContext<'a> {
             "alter_table" => Some(WrappingClause::AlterTable),
             "set_statement" => Some(WrappingClause::SetStatement),
             "revoke_statement" => Some(WrappingClause::RevokeStatement),
-            "grant_statement" => Some(WrappingClause::RevokeStatement),
+            "grant_statement" => Some(WrappingClause::GrantStatement),
             "column_definitions" => Some(WrappingClause::ColumnDefinitions),
             "create_policy" => Some(WrappingClause::CreatePolicy),
             "alter_policy" => Some(WrappingClause::AlterPolicy),

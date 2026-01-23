@@ -7,6 +7,63 @@ use tree_sitter::{InputEdit, Point, Tree};
 
 use super::CompletionRelevanceData;
 
+/// Parses SQL with a keyword injected at the given position, using incremental parsing.
+///
+/// Temporarily edits `shared_tree` to hint tree-sitter about the change location,
+/// then undoes the edit so the tree can be reused for subsequent keywords.
+fn parse_with_replaced_keyword(
+    shared_tree: &mut Tree,
+    text: &str,
+    keyword: &str,
+    node: tree_sitter::Node,
+) -> Tree {
+    let start_position = node.start_position();
+    let start_byte = node.start_byte();
+    let old_end_position = node.end_position();
+    let old_end_byte = node.end_byte();
+
+    let new_end_byte = start_byte + keyword.len();
+    let new_end_position = Point {
+        row: start_position.row,
+        column: start_position.column + keyword.len(),
+    };
+
+    shared_tree.edit(&InputEdit {
+        new_end_byte,
+        new_end_position,
+        old_end_byte,
+        old_end_position,
+        start_byte,
+        start_position,
+    });
+
+    let mut parser = tree_sitter::Parser::new();
+    parser
+        .set_language(&pgls_treesitter_grammar::LANGUAGE.into())
+        .unwrap();
+
+    let replaced_sql = format!(
+        "{}{}{}",
+        &text[..start_byte],
+        keyword,
+        &text[old_end_byte..]
+    );
+
+    let tree = parser.parse(replaced_sql, Some(shared_tree)).unwrap();
+
+    // undo edit so shared_tree can be reused
+    shared_tree.edit(&InputEdit {
+        new_end_byte: old_end_byte,
+        new_end_position: old_end_position,
+        old_end_byte: new_end_byte,
+        old_end_position: new_end_position,
+        start_byte,
+        start_position,
+    });
+
+    tree
+}
+
 #[derive(Debug)]
 pub(crate) struct CompletionFilter<'a> {
     data: CompletionRelevanceData<'a>,
@@ -426,6 +483,11 @@ impl CompletionFilter<'_> {
         Some(())
     }
 
+    /// Filters out keywords marked with `require_prefix` unless the user has started typing them.
+    ///
+    /// Some keywords like `and`, `as`, `like` are too noisy to show unprompted since they'd
+    /// appear in nearly every completion list. We only suggest them once the user types at
+    /// least the first character.
     fn check_keyword_requires_prefix(
         &self,
         ctx: &TreesitterContext,
@@ -440,14 +502,35 @@ impl CompletionFilter<'_> {
             return None;
         }
 
-        // at least require the first letter.
-        if !kw.name.starts_with(&content[..1]) {
+        if !kw.name.starts_with(content.chars().next().unwrap()) {
             return None;
         }
 
         Some(())
     }
 
+    /// Validates whether a keyword would produce valid SQL at the current cursor position.
+    ///
+    /// Uses speculative parsing: injects the keyword into the SQL text at the cursor position,
+    /// re-parses, and checks if the result is grammatically valid. The `shared_tree` is
+    /// temporarily edited to enable tree-sitter's incremental parsing optimization.
+    ///
+    /// # Validation rules
+    ///
+    /// 1. **Parse error** → reject. The keyword produces invalid SQL.
+    ///
+    /// 2. **Error recovery** → accept. If the previous clause was an ERROR node and injecting
+    ///    the keyword fixes it, the keyword helped tree-sitter recover.
+    ///
+    /// 3. **Statement boundary** → only accept `starts_statement` keywords (like `SELECT`,
+    ///    `INSERT`) when there's no current clause or we're after a semicolon.
+    ///
+    /// 4. **Clause completion check** → the core logic. Replacing/inserting a keyword is valid
+    ///    only if it doesn't
+    ///      - make a current finished clause unfinished
+    ///      - fully replaces the previous unfinished clause
+    ///
+    ///    See `GRAMMAR_GUIDELINES.md` for how `@end` field markers track clause completion.
     fn valid_keyword(&self, ctx: &TreesitterContext, shared_tree: &mut Tree) -> Option<()> {
         let keyword = if let CompletionRelevanceData::Keyword(kw) = self.data {
             kw
@@ -455,57 +538,14 @@ impl CompletionFilter<'_> {
             return Some(());
         };
 
-        let kw_name = keyword.name;
-
-        let start_position = ctx.node_under_cursor.start_position();
-        let start_byte = ctx.node_under_cursor.start_byte();
-        let old_end_position = ctx.node_under_cursor.end_position();
-        let old_end_byte = ctx.node_under_cursor.end_byte();
-
-        let new_end_byte = start_byte + kw_name.len();
-        let new_end_position = Point {
-            row: start_position.row,
-            column: start_position.column + kw_name.len(),
-        };
-
-        shared_tree.edit(&InputEdit {
-            new_end_byte,
-            new_end_position,
-            old_end_byte,
-            old_end_position,
-            start_byte,
-            start_position,
-        });
-
-        let mut parser = tree_sitter::Parser::new();
-        parser
-            .set_language(&pgls_treesitter_grammar::LANGUAGE.into())
-            .unwrap();
-
-        let replaced_sql = format!(
-            "{}{}{}",
-            &ctx.text[..start_byte],
-            kw_name,
-            &ctx.text[old_end_byte..]
-        );
-
-        let tree = parser.parse(replaced_sql, Some(shared_tree)).unwrap();
-
-        // undo changes to shared tree
-        shared_tree.edit(&InputEdit {
-            new_end_byte: old_end_byte,
-            new_end_position: old_end_position,
-            old_end_byte: new_end_byte,
-            old_end_position: new_end_position,
-            start_byte,
-            start_position,
-        });
+        let tree =
+            parse_with_replaced_keyword(shared_tree, ctx.text, keyword.name, ctx.node_under_cursor);
 
         if tree.root_node().has_error() {
             return None;
-        } else if ctx.previous_clause.is_some_and(|n| n.kind() == "ERROR") {
-            // if the previous clause has an error and injecting the keyword fixes it,
-            // the keyword helped treesitter recover -> suggestable keyword
+        }
+
+        if ctx.previous_clause.is_some_and(|n| n.kind() == "ERROR") {
             return Some(());
         }
 
@@ -523,64 +563,7 @@ impl CompletionFilter<'_> {
             }
         }
 
-        // // we allow those nodes that do not change the clause
-        // // e.g. `select * from table order |`; allow "by" since we remain in `order_by` clause.
-        // if let Some(current_node) = goto_node_at_position(&tree, start_byte) {
-        //     if let Some(current_parent) = goto_closest_parent_clause(current_node) {
-        //         let parent_same_kind =
-        //             clause_to_investigate.is_some_and(|c| c.kind() == current_parent.kind());
-
-        //         let parent_same_start = clause_to_investigate
-        //             .is_some_and(|c| c.start_byte() == current_parent.start_byte());
-
-        //         if parent_same_kind && parent_same_start {
-        //             return Some(());
-        //         }
-        //     }
-        // }
-
-        /*
-         * Will allow those nodes that fully exchange the parent clause BUT do not leave
-         * the previous clause unfinished.
-         *
-         *
-         * Example 1, valid replacement, `select * f|`:
-         * select
-         *  keyword_select
-         *  select_expr
-         *    term (@end)
-         *      all_fields '*'
-         *    alias
-         *      any_identifier 'f' @end
-         *
-         * The `term` ends the select_expr, so it's fine to replace it with `select * from|`:
-         * select
-         *  keyword_select
-         *  select_expr
-         *    term (@end)
-         *      all_fields '*'
-         * from
-         *   keyword_from
-         *
-         * -> the select_expr still has an @end!
-         *
-         *
-         * Example 2, invalid replacement, `select f|`:
-         * select
-         *  keyword_select
-         *  select_expr (@end)
-         *    term
-         *      any_identifier 'f'
-         *
-         * The `select_expr` ends the `select`, so it's not fine to replace it with `select from|`:
-         * select
-         *  keyword_select
-         * from
-         *  keyword_from
-         *
-         * The select hasn't ended, we have invalid grammar.
-         *
-         */
+        let start_byte = ctx.node_under_cursor.start_byte();
 
         if let Some(investigated_node) = goto_node_at_position(&tree, start_byte) {
             if !previous_sibling_completed(investigated_node) {
@@ -589,8 +572,6 @@ impl CompletionFilter<'_> {
 
             let old_unfinished_parent = clause_to_investigate.unwrap();
 
-            // find the corresponding clause in the new tree by walking up from current_node
-            // until we find the old clause kind or a parent that started before our injection
             let mut new_parent = investigated_node.parent();
 
             while let Some(parent) = new_parent {
@@ -608,17 +589,6 @@ impl CompletionFilter<'_> {
             }
 
             if let Some(new_parent) = new_parent {
-                /*
-                 * We have two options:
-                 *
-                 * 1. The new parent is the same as the old parent; we haven't left the clause
-                 * unfinished
-                 *
-                 *
-                 * Replacing the `join` with a `order` clause removes the join from the tree,
-                 * even though it's unfinished, but it's still valid.
-                 */
-
                 if new_parent.kind() != old_unfinished_parent.kind() {
                     return None;
                 }

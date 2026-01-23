@@ -513,7 +513,7 @@ mod tests {
     }
 
     #[sqlx::test]
-    async fn completes_columsn_after_select(pool: PgPool) {
+    async fn completes_columns_after_select(pool: PgPool) {
         let setup = r#"
             create table public.users (
                 id serial primary key,

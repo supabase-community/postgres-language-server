@@ -82,7 +82,7 @@ pub fn goto_closest_unfinished_parent_clause(node: Node<'_>) -> Option<Node<'_>>
         parent = investigated.parent();
     }
 
-    return None;
+    None
 }
 
 pub fn previous_sibling_completed(node: tree_sitter::Node) -> bool {
@@ -97,7 +97,7 @@ pub fn previous_sibling_completed(node: tree_sitter::Node) -> bool {
 
         is_finished && last_children_completed(prev)
     } else {
-        return true;
+        false
     }
 }
 
@@ -115,6 +115,6 @@ fn last_children_completed(node: tree_sitter::Node) -> bool {
 
         is_finished && last_children_completed(last_child)
     } else {
-        return true;
+        true
     }
 }

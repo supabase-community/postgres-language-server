@@ -1,6 +1,7 @@
 use criterion::{Criterion, black_box, criterion_group, criterion_main};
 
 pub fn criterion_benchmark(c: &mut Criterion) {
+    // takes about 3 microseconds on MacBook Pro M2 with 16GB Memory
     c.bench_function("parsing > small sql", |b| {
         let content = format!("select * from users;");
 
@@ -14,6 +15,7 @@ pub fn criterion_benchmark(c: &mut Criterion) {
         });
     });
 
+    // takes about 38 microseconds on MacBook Pro M2 with 16GB Memory
     c.bench_function("parsing > mid sql", |b| {
         let content = format!(
             r#"select
@@ -43,6 +45,7 @@ where
         });
     });
 
+    // takes about 137 microseconds on MacBook Pro M2 with 16GB Memory
     c.bench_function("parsing > large sql", |b| {
         let content = format!(
             r#"with

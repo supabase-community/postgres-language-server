@@ -2,6 +2,7 @@ use criterion::{Criterion, black_box, criterion_group, criterion_main};
 use tree_sitter::{InputEdit, Point, StreamingIterator};
 
 pub fn criterion_benchmark(c: &mut Criterion) {
+    // takes about 3 microseconds on MacBook Pro M2 with 16GB Memory
     c.bench_function("parsing with existing tree > small sql", |b| {
         let content = format!("select * from users;");
 
@@ -86,6 +87,7 @@ pub fn criterion_benchmark(c: &mut Criterion) {
         });
     });
 
+    // takes about 12 microseconds on MacBook Pro M2 with 16GB Memory
     c.bench_function("parsing with existing tree > mid sql", |b| {
         let content = format!(
             r#"
@@ -184,6 +186,7 @@ where
         });
     });
 
+    // takes about 12 microseconds on MacBook Pro M2 with 16GB Memory
     c.bench_function("parsing with existing tree > large sql", |b| {
         let content = format!(
             r#"
