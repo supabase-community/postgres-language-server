@@ -28,11 +28,11 @@ set r|
 set role |
 
 Results:
-none - none (Keyword)
 anon - anon (Role)
 authenticated - authenticated (Role)
 owner - owner (Role)
 service_role - service_role (Role)
+test_login - test_login (Role)
 
 --------------
 
@@ -48,3 +48,12 @@ pg_read_all_stats - pg_read_all_stats (Role)
 --------------
 
 set role anon; |
+
+Results:
+insert - insert (Keyword)
+reset - reset (Keyword)
+select - select (Keyword)
+set - set (Keyword)
+truncate - truncate (Keyword)
+
+--------------
