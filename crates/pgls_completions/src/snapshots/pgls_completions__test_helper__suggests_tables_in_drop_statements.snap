@@ -1,0 +1,102 @@
+---
+source: crates/pgls_completions/src/test_helper.rs
+expression: final_snapshot
+---
+***Setup***
+
+create schema auth;
+
+create table auth.users (
+    uid serial primary key,
+    name text not null,
+    email text unique not null
+);
+
+create table auth.posts (
+    pid serial primary key,
+    user_id int not null references auth.users(uid),
+    title text not null,
+    content text,
+    created_at timestamp default now()
+);
+
+
+--------------
+
+d|
+
+Results:
+update - update (Keyword)
+
+--------------
+
+drop |
+drop t|
+drop table |
+
+Results:
+auth - auth (Schema)
+auth.posts - auth.posts (Table)
+auth.users - auth.users (Table)
+_sqlx_migrations - public._sqlx_migrations (Table)
+information_schema - information_schema (Schema)
+
+--------------
+
+drop table i|
+
+Results:
+information_schema - information_schema (Schema)
+information_schema.information_schema_catalog_name - information_schema.information_schema_catalog_name (Table)
+public - public (Schema)
+pg_catalog.pg_ident_file_mappings - pg_catalog.pg_ident_file_mappings (Table)
+pg_catalog.pg_index - pg_catalog.pg_index (Table)
+
+--------------
+
+drop table if |
+drop table if e|
+drop table if exists |
+
+Results:
+auth - auth (Schema)
+auth.posts - auth.posts (Table)
+auth.users - auth.users (Table)
+_sqlx_migrations - public._sqlx_migrations (Table)
+information_schema - information_schema (Schema)
+
+--------------
+
+drop table if exists a|
+
+Results:
+auth - auth (Schema)
+information_schema.administrable_role_authorizations - information_schema.administrable_role_authorizations (Table)
+information_schema.applicable_roles - information_schema.applicable_roles (Table)
+information_schema.attributes - information_schema.attributes (Table)
+information_schema.collation_character_set_applicability - information_schema.collation_character_set_applicability (Table)
+
+--------------
+
+drop table if exists auth.|
+
+Results:
+posts - auth.posts (Table)
+users - auth.users (Table)
+
+--------------
+
+drop table if exists auth.p|
+
+Results:
+posts - auth.posts (Table)
+
+--------------
+
+drop table if exists auth.posts |
+
+Results:
+cascade - cascade (Keyword)
+restrict - restrict (Keyword)
+
+--------------

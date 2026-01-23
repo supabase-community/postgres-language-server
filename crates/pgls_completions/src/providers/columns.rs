@@ -51,9 +51,12 @@ fn get_completion_text(ctx: &TreesitterContext, col: &Column) -> CompletionText 
 #[cfg(test)]
 mod tests {
 
+    use pgls_test_utils::QueryWithCursorPosition;
     use sqlx::PgPool;
 
-    use crate::test_helper::{TestCompletionsCase, TestCompletionsSuite};
+    use crate::test_helper::{
+        TestCompletionsCase, TestCompletionsSuite, assert_no_complete_results,
+    };
 
     #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
     async fn handles_nested_queries(pool: PgPool) {
@@ -440,7 +443,7 @@ mod tests {
                         "select name from instruments i join others o on i.z = o.a <sql>",
                     )
                     .type_sql("where o.<1>a = <2>i.z and <3>i.id > 5;")
-                    .comment("should respect alias speciifcation")
+                    .comment("should respect alias specification")
                     .comment("should not prioritize suggest columns or schemas (right side of binary expression)")
                     .comment("should prioritize columns that aren't already mentioned"),
             )

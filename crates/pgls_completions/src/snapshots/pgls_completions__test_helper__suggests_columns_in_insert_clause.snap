@@ -22,8 +22,26 @@ create table others (
 ***Case 1:***
 
 i|
+
+Results:
+insert - insert (Keyword)
+
+--------------
+
 insert |
+
+Results:
+into - into (Keyword)
+
+--------------
+
 insert i|
+
+Results:
+into - into (Keyword)
+
+--------------
+
 insert into |
 
 Results:
@@ -47,6 +65,13 @@ pg_catalog.pg_ident_file_mappings - pg_catalog.pg_ident_file_mappings (Table)
 --------------
 
 insert into instruments |
+
+Results:
+select - select (Keyword)
+values - values (Keyword)
+
+--------------
+
 insert into instruments (|
 insert into instruments (|)
 
@@ -54,8 +79,8 @@ Results:
 id - public.instruments.id (Column)
 name - public.instruments.name (Column)
 z - public.instruments.z (Column)
+select - select (Keyword)
 a - public.others.a (Column)
-b - public.others.b (Column)
 
 --------------
 
@@ -93,7 +118,20 @@ n_live_tup - pg_catalog.pg_stat_all_tables.n_live_tup (Column)
 --------------
 
 insert into instruments (id, name) |
+
+Results:
+select - select (Keyword)
+values - values (Keyword)
+
+--------------
+
 insert into instruments (id, name) v|
+
+Results:
+values - values (Keyword)
+
+--------------
+
 insert into instruments (id, name) values |
 insert into instruments (id, name) values (|
 insert into instruments (id, name) values (|)
@@ -102,8 +140,8 @@ Results:
 z - public.instruments.z (Column)
 id - public.instruments.id (Column)
 name - public.instruments.name (Column)
+default - default (Keyword)
 a - public.others.a (Column)
-b - public.others.b (Column)
 
 --------------
 
@@ -114,13 +152,23 @@ Results:
 z - public.instruments.z (Column)
 id - public.instruments.id (Column)
 name - public.instruments.name (Column)
+default - default (Keyword)
 a - public.others.a (Column)
-b - public.others.b (Column)
 
 --------------
 
 insert into instruments (id, name) values (1, '|)
 insert into instruments (id, name) values (1, 'my_bass'); |
+
+Results:
+insert - insert (Keyword)
+reset - reset (Keyword)
+select - select (Keyword)
+set - set (Keyword)
+truncate - truncate (Keyword)
+
+--------------
+
 
 
 
@@ -128,8 +176,26 @@ insert into instruments (id, name) values (1, 'my_bass'); |
 ***Case 2:***
 
 i|
+
+Results:
+insert - insert (Keyword)
+
+--------------
+
 insert |
+
+Results:
+into - into (Keyword)
+
+--------------
+
 insert i|
+
+Results:
+into - into (Keyword)
+
+--------------
+
 insert into |
 
 Results:
@@ -153,6 +219,13 @@ pg_catalog.pg_ident_file_mappings - pg_catalog.pg_ident_file_mappings (Table)
 --------------
 
 insert into instruments |
+
+Results:
+select - select (Keyword)
+values - values (Keyword)
+
+--------------
+
 insert into instruments (|
 insert into instruments (|)
 
@@ -160,8 +233,8 @@ Results:
 id - public.instruments.id (Column)
 name - public.instruments.name (Column)
 z - public.instruments.z (Column)
+select - select (Keyword)
 a - public.others.a (Column)
-b - public.others.b (Column)
 
 --------------
 
@@ -221,7 +294,20 @@ n_live_tup - pg_catalog.pg_stat_all_tables.n_live_tup (Column)
 --------------
 
 insert into instruments ("id", "name") |
+
+Results:
+select - select (Keyword)
+values - values (Keyword)
+
+--------------
+
 insert into instruments ("id", "name") v|
+
+Results:
+values - values (Keyword)
+
+--------------
+
 insert into instruments ("id", "name") values |
 insert into instruments ("id", "name") values (|
 insert into instruments ("id", "name") values (|)
@@ -230,8 +316,8 @@ Results:
 id - public.instruments.id (Column)
 name - public.instruments.name (Column)
 z - public.instruments.z (Column)
+default - default (Keyword)
 a - public.others.a (Column)
-b - public.others.b (Column)
 
 --------------
 
@@ -242,13 +328,23 @@ Results:
 id - public.instruments.id (Column)
 name - public.instruments.name (Column)
 z - public.instruments.z (Column)
+default - default (Keyword)
 a - public.others.a (Column)
-b - public.others.b (Column)
 
 --------------
 
 insert into instruments ("id", "name") values (1, '|)
 insert into instruments ("id", "name") values (1, 'my_bass'); |
+
+Results:
+insert - insert (Keyword)
+reset - reset (Keyword)
+select - select (Keyword)
+set - set (Keyword)
+truncate - truncate (Keyword)
+
+--------------
+
 
 
 
