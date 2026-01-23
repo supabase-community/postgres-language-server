@@ -24,6 +24,15 @@ create table auth.posts (
 --------------
 
 s|
+
+Results:
+select - select (Keyword)
+set - set (Keyword)
+insert - insert (Keyword)
+reset - reset (Keyword)
+
+--------------
+
 select |
 
 Results:
@@ -134,8 +143,28 @@ posts - auth.posts (Table)
 --------------
 
 select u.uid, p.content from auth.users u join auth.posts |
+
+Results:
+on - on (Keyword)
+using - using (Keyword)
+
+--------------
+
 select u.uid, p.content from auth.users u join auth.posts p |
+
+Results:
+on - on (Keyword)
+using - using (Keyword)
+
+--------------
+
 select u.uid, p.content from auth.users u join auth.posts p o|
+
+Results:
+on - on (Keyword)
+
+--------------
+
 select u.uid, p.content from auth.users u join auth.posts p on |
 
 Results:
@@ -164,6 +193,16 @@ uid - auth.users.uid (Column)
 --------------
 
 select u.uid, p.content from auth.users u join auth.posts p on u.uid |
+
+Results:
+cross - cross (Keyword)
+full - full (Keyword)
+group - group (Keyword)
+inner - inner (Keyword)
+join - join (Keyword)
+
+--------------
+
 select u.uid, p.content from auth.users u join auth.posts p on u.uid = |
 
 Results:
@@ -194,3 +233,12 @@ user_id - auth.posts.user_id (Column)
 --------------
 
 select u.uid, p.content from auth.users u join auth.posts p on u.uid = p.user_id |
+
+Results:
+cross - cross (Keyword)
+full - full (Keyword)
+group - group (Keyword)
+inner - inner (Keyword)
+join - join (Keyword)
+
+--------------

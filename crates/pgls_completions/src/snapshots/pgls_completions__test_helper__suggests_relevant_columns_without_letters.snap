@@ -15,6 +15,15 @@ create table users (
 --------------
 
 s|
+
+Results:
+select - select (Keyword)
+set - set (Keyword)
+insert - insert (Keyword)
+reset - reset (Keyword)
+
+--------------
+
 select |
 
 Results:

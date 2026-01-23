@@ -24,6 +24,15 @@ create table public.names (
 ***Case 1:***
 
 s|
+
+Results:
+select - select (Keyword)
+set - set (Keyword)
+insert - insert (Keyword)
+reset - reset (Keyword)
+
+--------------
+
 select |
 
 Results:
