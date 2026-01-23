@@ -101,12 +101,3 @@ posts - auth.posts (Table)
 --------------
 
 alter table if exists auth.posts |
-
-Results:
-add - add (Keyword)
-alter - alter (Keyword)
-drop - drop (Keyword)
-owner - owner (Keyword)
-rename - rename (Keyword)
-
---------------
