@@ -76,3 +76,12 @@ action_order - information_schema.triggers.action_order (Column)
 
 select email from users where id = 1|
 select email from users where id = 1; |
+
+Results:
+insert - insert (Keyword)
+reset - reset (Keyword)
+select - select (Keyword)
+set - set (Keyword)
+truncate - truncate (Keyword)
+
+--------------
