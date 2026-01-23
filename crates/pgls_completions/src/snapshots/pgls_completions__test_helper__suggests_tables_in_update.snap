@@ -144,3 +144,12 @@ action_order - information_schema.triggers.action_order (Column)
 
 update public.coos set name = 'cool' where id = 5|
 update public.coos set name = 'cool' where id = 5; |
+
+Results:
+insert - insert (Keyword)
+reset - reset (Keyword)
+select - select (Keyword)
+set - set (Keyword)
+truncate - truncate (Keyword)
+
+--------------
