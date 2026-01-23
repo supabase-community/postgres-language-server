@@ -85,38 +85,6 @@ pub fn goto_closest_unfinished_parent_clause(node: Node<'_>) -> Option<Node<'_>>
     return None;
 }
 
-pub fn goto_closest_parent_clause(node: Node<'_>) -> Option<Node<'_>> {
-    let mut parent = Some(node);
-
-    while let Some(investigated) = parent {
-        let kind = investigated.kind();
-
-        let explicit_skip = SINGLE_TOKEN_RULES.contains(&kind);
-
-        if !explicit_skip && investigated.child_count() > 0 {
-            return Some(investigated);
-        }
-
-        parent = investigated.parent();
-    }
-
-    return None;
-}
-
-pub fn goto_closest_parent_clause_with_multiple_children(node: Node<'_>) -> Option<Node<'_>> {
-    let mut parent = Some(node);
-
-    while let Some(investigated) = parent {
-        if investigated.child_count() > 1 {
-            return Some(investigated);
-        }
-
-        parent = investigated.parent();
-    }
-
-    return None;
-}
-
 pub fn previous_sibling_completed(node: tree_sitter::Node) -> bool {
     if let Some(prev) = node.prev_sibling() {
         let explicit_skip = SINGLE_TOKEN_RULES.contains(&prev.kind());
