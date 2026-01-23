@@ -516,7 +516,7 @@ impl CompletionFilter<'_> {
             ctx.previous_clause
         };
 
-        if clause_to_investigate.is_none() {
+        if clause_to_investigate.is_none() || ctx.previous_clause.is_some_and(|n| n.kind() == ";") {
             if keyword.starts_statement {
                 return Some(());
             } else {
@@ -582,22 +582,36 @@ impl CompletionFilter<'_> {
          * The select hasn't ended, we have invalid grammar.
          *
          */
-        if let Some(current_node) = goto_node_at_position(&tree, start_byte) {
-            let full_exchange =
-                // replacing the start byte means full exchanging
-                clause_to_investigate.is_some_and(|n| n.start_byte() == current_node.start_byte());
+        if let Some(investigated_node) = goto_node_at_position(&tree, start_byte) {
+            let old_unfinished_parent = clause_to_investigate.unwrap();
 
-            // todo: check if it finishes the current clause
-            // todo: check if it opens a new clause, which is only okay if the last one is finished
-            // todo: check if it makes a previously finished clause unfinished
+            // find the corresponding clause in the new tree by walking up from current_node
+            // until we find the old clause kind or a parent that started before our injection
+            let mut new_parent = investigated_node.parent();
 
-            let leaves_clause_unfinished = clause_to_investigate.is_some_and(|n| {
-                n.child_by_field_name("end")
-                    .is_some_and(|end| end.start_byte() == ctx.node_under_cursor.start_byte())
-            });
+            while let Some(parent) = new_parent {
+                if parent.kind() == old_unfinished_parent.kind()
+                    || parent.start_byte() < old_unfinished_parent.start_byte()
+                {
+                    break;
+                }
+                new_parent = parent.parent();
+            }
 
-            if full_exchange && !leaves_clause_unfinished {
-                return Some(());
+            if let Some(new_parent) = new_parent {
+                // parent is unaltered – the keyword either finishes it or does not change it
+                if new_parent.kind() == old_unfinished_parent.kind()
+                    && new_parent.start_byte() == old_unfinished_parent.start_byte()
+                {
+                    return Some(());
+                }
+
+                // parent has been replaced
+                if new_parent.kind() == old_unfinished_parent.kind()
+                    && new_parent.start_byte() != old_unfinished_parent.start_byte()
+                {
+                    return Some(());
+                }
             }
         }
 

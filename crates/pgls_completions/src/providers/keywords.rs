@@ -405,7 +405,6 @@ pub fn complete_keywords<'a>(
 
 #[cfg(test)]
 mod tests {
-
     use pgls_test_utils::QueryWithCursorPosition;
     use sqlx::PgPool;
 
@@ -774,6 +773,58 @@ mod tests {
         assert_complete_results(
             query.as_str(),
             vec![CompletionAssertion::LabelNotExists("join".into())],
+            Some(setup),
+            &pool,
+        )
+        .await;
+    }
+
+    #[sqlx::test]
+    async fn completes_join_after_alias(pool: PgPool) {
+        let setup = r#"
+            create table public.users (
+                id serial primary key,
+                email varchar(255)
+            );
+        "#;
+
+        let query = format!(
+            "select * from public.users u {}",
+            QueryWithCursorPosition::cursor_marker()
+        );
+
+        assert_complete_results(
+            query.as_str(),
+            vec![CompletionAssertion::LabelAndKind(
+                "join".into(),
+                CompletionItemKind::Keyword,
+            )],
+            Some(setup),
+            &pool,
+        )
+        .await;
+    }
+
+    #[sqlx::test]
+    async fn allows_starting_new_select_stmt(pool: PgPool) {
+        let setup = r#"
+            create table public.users (
+                id serial primary key,
+                email varchar(255)
+            );
+        "#;
+
+        let query = format!(
+            "select * from public.users u; sel{}",
+            QueryWithCursorPosition::cursor_marker()
+        );
+
+        assert_complete_results(
+            query.as_str(),
+            vec![CompletionAssertion::LabelAndKind(
+                "select".into(),
+                CompletionItemKind::Keyword,
+            )],
             Some(setup),
             &pool,
         )
