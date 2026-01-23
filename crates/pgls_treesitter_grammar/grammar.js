@@ -21,7 +21,6 @@ module.exports = grammar({
   ],
 
   conflicts: ($) => [
-    [$.object_reference],
     [$.between_expression, $.binary_expression],
     [$.time],
     [$.timestamp],
@@ -34,13 +33,14 @@ module.exports = grammar({
     [$.schema_identifier, $.table_identifier],
 
     [$.table_reference, $.column_reference],
-    [$.object_reference, $.table_reference],
     [$.function_reference, $.table_reference],
+    [$.function_reference, $.object_reference],
 
     [$.rename_column, $.rename_object],
 
-    [$.join, $.lateral_join],
+    [$._join, $._lateral_join],
     [$.cross_join, $.lateral_cross_join],
+    [$._any_join, $.lateral_join],
   ],
 
   precedences: ($) => [
@@ -81,9 +81,7 @@ module.exports = grammar({
     keyword_truncate: (_) => make_keyword("truncate"),
     keyword_merge: (_) => make_keyword("merge"),
     keyword_show: (_) => make_keyword("show"),
-    keyword_unload: (_) => make_keyword("unload"),
     keyword_into: (_) => make_keyword("into"),
-    keyword_overwrite: (_) => make_keyword("overwrite"),
     keyword_values: (_) => make_keyword("values"),
     keyword_value: (_) => make_keyword("value"),
     keyword_matched: (_) => make_keyword("matched"),
@@ -113,11 +111,9 @@ module.exports = grammar({
     keyword_primary: (_) => make_keyword("primary"),
     keyword_create: (_) => make_keyword("create"),
     keyword_alter: (_) => make_keyword("alter"),
-    keyword_change: (_) => make_keyword("change"),
     keyword_analyze: (_) => make_keyword("analyze"),
     keyword_explain: (_) => make_keyword("explain"),
     keyword_verbose: (_) => make_keyword("verbose"),
-    keyword_modify: (_) => make_keyword("modify"),
     keyword_drop: (_) => make_keyword("drop"),
     keyword_add: (_) => make_keyword("add"),
     keyword_table: (_) => make_keyword("table"),
@@ -136,13 +132,11 @@ module.exports = grammar({
     keyword_start: (_) => make_keyword("start"),
     keyword_restart: (_) => make_keyword("restart"),
     keyword_key: (_) => make_keyword("key"),
-    keyword_duplicate: (_) => make_keyword("duplicate"),
     keyword_as: (_) => make_keyword("as"),
     keyword_distinct: (_) => make_keyword("distinct"),
     keyword_constraint: (_) => make_keyword("constraint"),
     keyword_filter: (_) => make_keyword("filter"),
     keyword_cast: (_) => make_keyword("cast"),
-    keyword_separator: (_) => make_keyword("separator"),
     keyword_case: (_) => make_keyword("case"),
     keyword_when: (_) => make_keyword("when"),
     keyword_then: (_) => make_keyword("then"),
@@ -154,19 +148,15 @@ module.exports = grammar({
     keyword_is: (_) => make_keyword("is"),
     keyword_not: (_) => make_keyword("not"),
     keyword_force: (_) => make_keyword("force"),
-    keyword_ignore: (_) => make_keyword("ignore"),
     keyword_using: (_) => make_keyword("using"),
-    keyword_use: (_) => make_keyword("use"),
     keyword_index: (_) => make_keyword("index"),
     keyword_for: (_) => make_keyword("for"),
     keyword_if: (_) => make_keyword("if"),
     keyword_exists: (_) => make_keyword("exists"),
-    keyword_auto_increment: (_) => make_keyword("auto_increment"),
     keyword_generated: (_) => make_keyword("generated"),
     keyword_always: (_) => make_keyword("always"),
     keyword_collate: (_) => make_keyword("collate"),
     keyword_character: (_) => make_keyword("character"),
-    keyword_engine: (_) => make_keyword("engine"),
     keyword_default: (_) => make_keyword("default"),
     keyword_cascade: (_) => make_keyword("cascade"),
     keyword_restrict: (_) => make_keyword("restrict"),
@@ -231,20 +221,16 @@ module.exports = grammar({
     keyword_concurrently: (_) => make_keyword("concurrently"),
     keyword_btree: (_) => make_keyword("btree"),
     keyword_hash: (_) => make_keyword("hash"),
+    keyword_list: (_) => make_keyword("list"),
     keyword_gist: (_) => make_keyword("gist"),
     keyword_spgist: (_) => make_keyword("spgist"),
     keyword_gin: (_) => make_keyword("gin"),
     keyword_brin: (_) => make_keyword("brin"),
     keyword_like: (_) => choice(make_keyword("like"), make_keyword("ilike")),
     keyword_similar: (_) => make_keyword("similar"),
-    keyword_unsigned: (_) => make_keyword("unsigned"),
-    keyword_zerofill: (_) => make_keyword("zerofill"),
     keyword_conflict: (_) => make_keyword("conflict"),
     keyword_do: (_) => make_keyword("do"),
     keyword_nothing: (_) => make_keyword("nothing"),
-    keyword_high_priority: (_) => make_keyword("high_priority"),
-    keyword_low_priority: (_) => make_keyword("low_priority"),
-    keyword_delayed: (_) => make_keyword("delayed"),
     keyword_recursive: (_) => make_keyword("recursive"),
     keyword_cascaded: (_) => make_keyword("cascaded"),
     keyword_local: (_) => make_keyword("local"),
@@ -252,7 +238,6 @@ module.exports = grammar({
     keyword_check: (_) => make_keyword("check"),
     keyword_option: (_) => make_keyword("option"),
     keyword_vacuum: (_) => make_keyword("vacuum"),
-    keyword_wait: (_) => make_keyword("wait"),
     keyword_nowait: (_) => make_keyword("nowait"),
     keyword_attribute: (_) => make_keyword("attribute"),
     keyword_authorization: (_) => make_keyword("authorization"),
@@ -343,7 +328,6 @@ module.exports = grammar({
     keyword_constraints: (_) => make_keyword("constraints"),
     keyword_snapshot: (_) => make_keyword("snapshot"),
     keyword_characteristics: (_) => make_keyword("characteristics"),
-    keyword_follows: (_) => make_keyword("follows"),
     keyword_precedes: (_) => make_keyword("precedes"),
     keyword_each: (_) => make_keyword("each"),
     keyword_instead: (_) => make_keyword("instead"),
@@ -356,47 +340,20 @@ module.exports = grammar({
     keyword_execute: (_) => make_keyword("execute"),
     keyword_procedure: (_) => make_keyword("procedure"),
     keyword_routine: (_) => make_keyword("routine"),
-    keyword_object_id: (_) => make_keyword("object_id"),
 
-    // Hive Keywords
+    // PostgreSQL keywords (some overlap with Hive/other DBs)
     keyword_external: (_) => make_keyword("external"),
     keyword_stored: (_) => make_keyword("stored"),
-    keyword_virtual: (_) => make_keyword("virtual"),
-    keyword_cached: (_) => make_keyword("cached"),
-    keyword_uncached: (_) => make_keyword("uncached"),
     keyword_replication: (_) => make_keyword("replication"),
-    keyword_tblproperties: (_) => make_keyword("tblproperties"),
-    keyword_compute: (_) => make_keyword("compute"),
-    keyword_stats: (_) => make_keyword("stats"),
     keyword_statistics: (_) => make_keyword("statistics"),
-    keyword_optimize: (_) => make_keyword("optimize"),
     keyword_rewrite: (_) => make_keyword("rewrite"),
-    keyword_bin_pack: (_) => make_keyword("bin_pack"),
-    keyword_incremental: (_) => make_keyword("incremental"),
     keyword_location: (_) => make_keyword("location"),
     keyword_partitioned: (_) => make_keyword("partitioned"),
     keyword_comment: (_) => make_keyword("comment"),
-    keyword_sort: (_) => make_keyword("sort"),
     keyword_format: (_) => make_keyword("format"),
-    keyword_delimited: (_) => make_keyword("delimited"),
     keyword_delimiter: (_) => make_keyword("delimiter"),
-    keyword_fields: (_) => make_keyword("fields"),
-    keyword_terminated: (_) => make_keyword("terminated"),
-    keyword_escaped: (_) => make_keyword("escaped"),
-    keyword_lines: (_) => make_keyword("lines"),
     keyword_cache: (_) => make_keyword("cache"),
-    keyword_metadata: (_) => make_keyword("metadata"),
-    keyword_noscan: (_) => make_keyword("noscan"),
-
-    // Hive file formats
-    keyword_parquet: (_) => make_keyword("parquet"),
-    keyword_rcfile: (_) => make_keyword("rcfile"),
     keyword_csv: (_) => make_keyword("csv"),
-    keyword_textfile: (_) => make_keyword("textfile"),
-    keyword_avro: (_) => make_keyword("avro"),
-    keyword_sequencefile: (_) => make_keyword("sequencefile"),
-    keyword_orc: (_) => make_keyword("orc"),
-    keyword_jsonfile: (_) => make_keyword("jsonfile"),
 
     // Operators
     is_not: ($) => prec.left(seq($.keyword_is, $.keyword_not)),
@@ -422,7 +379,7 @@ module.exports = grammar({
       seq($.keyword_exclude, $.keyword_no, $.keyword_others),
     _exclude_ties: ($) => seq($.keyword_exclude, $.keyword_ties),
     _check_option: ($) => seq($.keyword_check, $.keyword_option),
-    direction: ($) => choice($.keyword_desc, $.keyword_asc),
+    direction: ($) => field("end", choice($.keyword_desc, $.keyword_asc)),
 
     // Types
     keyword_null: (_) => make_keyword("null"),
@@ -431,9 +388,6 @@ module.exports = grammar({
 
     keyword_boolean: (_) => make_keyword("boolean"),
     keyword_bit: (_) => make_keyword("bit"),
-    keyword_binary: (_) => make_keyword("binary"),
-    keyword_varbinary: (_) => make_keyword("varbinary"),
-    keyword_image: (_) => make_keyword("image"),
 
     keyword_smallserial: (_) =>
       choice(make_keyword("smallserial"), make_keyword("serial2")),
@@ -441,12 +395,8 @@ module.exports = grammar({
       choice(make_keyword("serial"), make_keyword("serial4")),
     keyword_bigserial: (_) =>
       choice(make_keyword("bigserial"), make_keyword("serial8")),
-    keyword_tinyint: (_) =>
-      choice(make_keyword("tinyint"), make_keyword("int1")),
     keyword_smallint: (_) =>
       choice(make_keyword("smallint"), make_keyword("int2")),
-    keyword_mediumint: (_) =>
-      choice(make_keyword("mediumint"), make_keyword("int3")),
     keyword_int: (_) =>
       choice(
         make_keyword("int"),
@@ -463,20 +413,17 @@ module.exports = grammar({
     keyword_inet: (_) => make_keyword("inet"),
 
     keyword_money: (_) => make_keyword("money"),
-    keyword_smallmoney: (_) => make_keyword("smallmoney"),
     keyword_varying: (_) => make_keyword("varying"),
 
     keyword_char: (_) =>
       choice(make_keyword("char"), make_keyword("character")),
-    keyword_nchar: (_) => make_keyword("nchar"),
     keyword_varchar: ($) =>
       choice(
         make_keyword("varchar"),
         seq(make_keyword("character"), $.keyword_varying)
       ),
-    keyword_nvarchar: (_) => make_keyword("nvarchar"),
     keyword_text: (_) => make_keyword("text"),
-    keyword_string: (_) => make_keyword("string"),
+    keyword_binary: (_) => make_keyword("binary"),
     keyword_uuid: (_) => make_keyword("uuid"),
 
     keyword_json: (_) => make_keyword("json"),
@@ -488,19 +435,10 @@ module.exports = grammar({
     keyword_enum: (_) => make_keyword("enum"),
 
     keyword_date: (_) => make_keyword("date"),
-    keyword_datetime: (_) => make_keyword("datetime"),
-    keyword_datetime2: (_) => make_keyword("datetime2"),
-    keyword_smalldatetime: (_) => make_keyword("smalldatetime"),
-    keyword_datetimeoffset: (_) => make_keyword("datetimeoffset"),
     keyword_time: (_) => make_keyword("time"),
     keyword_timestamp: (_) => make_keyword("timestamp"),
     keyword_timestamptz: (_) => make_keyword("timestamptz"),
     keyword_interval: (_) => make_keyword("interval"),
-
-    keyword_geometry: (_) => make_keyword("geometry"),
-    keyword_geography: (_) => make_keyword("geography"),
-    keyword_box2d: (_) => make_keyword("box2d"),
-    keyword_box3d: (_) => make_keyword("box3d"),
 
     keyword_oid: (_) => make_keyword("oid"),
     keyword_oids: (_) => make_keyword("oids"),
@@ -518,17 +456,12 @@ module.exports = grammar({
           choice(
             $.keyword_boolean,
             $.bit,
-            $.binary,
-            $.varbinary,
-            $.keyword_image,
 
             $.keyword_smallserial,
             $.keyword_serial,
             $.keyword_bigserial,
 
-            $.tinyint,
             $.smallint,
-            $.mediumint,
             $.int,
             $.bigint,
             $.decimal,
@@ -537,14 +470,10 @@ module.exports = grammar({
             $.float,
 
             $.keyword_money,
-            $.keyword_smallmoney,
 
             $.char,
             $.varchar,
-            $.nchar,
-            $.nvarchar,
             $.numeric,
-            $.keyword_string,
             $.keyword_text,
 
             $.keyword_uuid,
@@ -559,19 +488,10 @@ module.exports = grammar({
             $.enum,
 
             $.keyword_date,
-            $.keyword_datetime,
-            $.keyword_datetime2,
-            $.datetimeoffset,
-            $.keyword_smalldatetime,
             $.time,
             $.timestamp,
             $.keyword_timestamptz,
             $.keyword_interval,
-
-            $.keyword_geometry,
-            $.keyword_geography,
-            $.keyword_box2d,
-            $.keyword_box3d,
 
             $.keyword_oid,
             $.keyword_name,
@@ -586,6 +506,7 @@ module.exports = grammar({
         )
       ),
 
+    // TODO: clean up
     array_size_definition: ($) =>
       prec.left(
         choice(
@@ -597,11 +518,9 @@ module.exports = grammar({
     _array_size_definition: ($) =>
       seq("[", optional(field("size", alias($._integer, $.literal))), "]"),
 
-    tinyint: ($) => unsigned_type($, parametric_type($, $.keyword_tinyint)),
-    smallint: ($) => unsigned_type($, parametric_type($, $.keyword_smallint)),
-    mediumint: ($) => unsigned_type($, parametric_type($, $.keyword_mediumint)),
-    int: ($) => unsigned_type($, parametric_type($, $.keyword_int)),
-    bigint: ($) => unsigned_type($, parametric_type($, $.keyword_bigint)),
+    smallint: ($) => parametric_type($, $.keyword_smallint),
+    int: ($) => parametric_type($, $.keyword_int),
+    bigint: ($) => parametric_type($, $.keyword_bigint),
 
     bit: ($) =>
       choice(
@@ -613,37 +532,22 @@ module.exports = grammar({
         prec(1, parametric_type($, $.keyword_bit, ["precision"]))
       ),
 
-    binary: ($) => parametric_type($, $.keyword_binary, ["precision"]),
-    varbinary: ($) => parametric_type($, $.keyword_varbinary, ["precision"]),
-
     // TODO: should qualify against /\\b(0?[1-9]|[1-4][0-9]|5[0-4])\\b/g
     float: ($) =>
       choice(
         parametric_type($, $.keyword_float, ["precision"]),
-        unsigned_type(
-          $,
-          parametric_type($, $.keyword_float, ["precision", "scale"])
-        )
+        parametric_type($, $.keyword_float, ["precision", "scale"])
       ),
 
     double: ($) =>
       choice(
         make_keyword("float8"),
-        unsigned_type(
-          $,
-          parametric_type($, $.keyword_double, ["precision", "scale"])
-        ),
-        unsigned_type(
-          $,
-          parametric_type($, seq($.keyword_double, $.keyword_precision), [
-            "precision",
-            "scale",
-          ])
-        ),
-        unsigned_type(
-          $,
-          parametric_type($, $.keyword_real, ["precision", "scale"])
-        )
+        parametric_type($, $.keyword_double, ["precision", "scale"]),
+        parametric_type($, seq($.keyword_double, $.keyword_precision), [
+          "precision",
+          "scale",
+        ]),
+        parametric_type($, $.keyword_real, ["precision", "scale"])
       ),
 
     decimal: ($) =>
@@ -658,8 +562,6 @@ module.exports = grammar({
       ),
     char: ($) => parametric_type($, $.keyword_char),
     varchar: ($) => parametric_type($, $.keyword_varchar),
-    nchar: ($) => parametric_type($, $.keyword_nchar),
-    nvarchar: ($) => parametric_type($, $.keyword_nvarchar),
 
     _include_time_zone: ($) =>
       seq(
@@ -667,7 +569,6 @@ module.exports = grammar({
         $.keyword_time,
         $.keyword_zone
       ),
-    datetimeoffset: ($) => parametric_type($, $.keyword_datetimeoffset),
     time: ($) =>
       seq(parametric_type($, $.keyword_time), optional($._include_time_zone)),
     timestamp: ($) =>
@@ -684,11 +585,11 @@ module.exports = grammar({
       ),
 
     array: ($) =>
-      seq(
+      partialSeq(
         $.keyword_array,
         choice(
-          seq("[", comma_list($._expression, false), "]"),
-          seq("(", $._dml_read, ")")
+          seq("[", comma_list($._expression, false), field("end", "]")),
+          seq("(", $._dml_read, field("end", ")"))
         )
       ),
 
@@ -773,23 +674,8 @@ module.exports = grammar({
       seq(
         optional(optional_parenthesis($._cte)),
         optional_parenthesis(
-          choice(
-            $._select_statement,
-            $.set_operation,
-            $._show_statement,
-            $._unload_statement
-          )
+          choice($._select_statement, $.set_operation, $._show_statement)
         )
-      ),
-
-    // athena
-    _unload_statement: ($) =>
-      seq(
-        $.keyword_unload,
-        wrapped_in_parenthesis($._select_statement),
-        $.keyword_to,
-        $._single_quote_string,
-        $.storage_parameters
       ),
 
     _show_statement: ($) =>
@@ -912,18 +798,15 @@ module.exports = grammar({
       ),
 
     select: ($) =>
-      seq(
+      partialSeq(
         $.keyword_select,
-        seq(optional($.keyword_distinct), $.select_expression)
+        seq(optional($.keyword_distinct), field("end", $.select_expression))
       ),
 
-    select_expression: ($) => seq($.term, repeat(seq(",", $.term))),
+    select_expression: ($) => field("end", comma_list($.term, true)),
 
     term: ($) =>
-      seq(
-        field("value", choice($.all_fields, $._expression)),
-        optional($.alias)
-      ),
+      seq(field("end", choice($.all_fields, $._expression)), optional($.alias)),
 
     _truncate_statement: ($) =>
       seq(
@@ -935,7 +818,11 @@ module.exports = grammar({
       ),
 
     _delete_statement: ($) =>
-      seq($.delete, alias($._delete_from, $.from), optional($.returning)),
+      seq(
+        $.keyword_delete,
+        alias($._delete_from, $.from),
+        optional($.returning)
+      ),
 
     _delete_from: ($) =>
       seq(
@@ -946,8 +833,6 @@ module.exports = grammar({
         optional($.order_by),
         optional($.limit)
       ),
-
-    delete: ($) => seq($.keyword_delete, optional($.index_hint)),
 
     _create_statement: ($) =>
       seq(
@@ -971,10 +856,6 @@ module.exports = grammar({
     _table_settings: ($) =>
       choice(
         $.table_partition,
-        $.stored_as,
-        $.storage_location,
-        $.row_format,
-        seq($.keyword_tblproperties, paren_list($.table_option, true)),
         seq($.keyword_without, $.keyword_oids),
         $.storage_parameters,
         $.table_option
@@ -1086,7 +967,10 @@ module.exports = grammar({
       ),
 
     reset_statement: ($) =>
-      seq($.keyword_reset, choice($.keyword_all, $.any_identifier)),
+      partialSeq(
+        $.keyword_reset,
+        field("end", choice($.keyword_all, $.any_identifier))
+      ),
 
     _transaction_mode: ($) =>
       seq(
@@ -1103,11 +987,11 @@ module.exports = grammar({
           seq($.keyword_read, $.keyword_only)
         ),
         optional($.keyword_not),
-        $.keyword_deferrable
+        field("end", $.keyword_deferrable)
       ),
 
     set_statement: ($) =>
-      seq(
+      partialSeq(
         $.keyword_set,
         choice(
           seq(
@@ -1116,33 +1000,42 @@ module.exports = grammar({
               seq(
                 $.object_reference,
                 choice($.keyword_to, "="),
-                choice(
-                  $.literal,
-                  $.keyword_default,
-                  $.any_identifier,
-                  $.keyword_on,
-                  $.keyword_off
+                field(
+                  "end",
+                  choice(
+                    $.literal,
+                    $.keyword_default,
+                    $.any_identifier,
+                    $.keyword_on,
+                    $.keyword_off
+                  )
                 )
               ),
-              seq($.keyword_schema, $.literal),
-              seq($.keyword_names, $.literal),
+              seq($.keyword_schema, field("end", $.literal)),
+              seq($.keyword_names, field("end", $.literal)),
               seq(
                 $.keyword_time,
                 $.keyword_zone,
-                choice($.literal, $.keyword_local, $.keyword_default)
+                field(
+                  "end",
+                  choice($.literal, $.keyword_local, $.keyword_default)
+                )
               ),
               seq(
                 $.keyword_session,
                 $.keyword_authorization,
-                choice($.any_identifier, $.keyword_default)
+                field("end", choice($.any_identifier, $.keyword_default))
               ),
-              seq($.keyword_role, choice($.any_identifier, $.keyword_none))
+              seq(
+                $.keyword_role,
+                field("end", choice($.any_identifier, $.keyword_none))
+              )
             )
           ),
           seq(
             $.keyword_constraints,
             choice($.keyword_all, comma_list($.any_identifier, true)),
-            choice($.keyword_deferred, $.keyword_immediate)
+            field("end", choice($.keyword_deferred, $.keyword_immediate))
           ),
           seq($.keyword_transaction, $._transaction_mode),
           seq($.keyword_transaction, $.keyword_snapshot, $._transaction_mode),
@@ -2137,17 +2030,6 @@ module.exports = grammar({
     change_ownership: ($) =>
       partialSeq($.keyword_owner, $.keyword_to, $.role_specification),
 
-    object_id: ($) =>
-      seq(
-        $.keyword_object_id,
-        wrapped_in_parenthesis(
-          seq(
-            alias($._literal_string, $.literal),
-            optional(seq(",", alias($._literal_string, $.literal)))
-          )
-        )
-      ),
-
     _copy_statement: ($) =>
       seq(
         $.keyword_copy,
@@ -2223,7 +2105,7 @@ module.exports = grammar({
 
     insert_values: ($) =>
       comma_list(
-        seq(
+        partialSeq(
           $.keyword_values,
           paren_list(choice($._expression, $.keyword_default), true)
         ),
@@ -2249,7 +2131,8 @@ module.exports = grammar({
         )
       ),
 
-    _set_values: ($) => seq($.keyword_set, comma_list($.assignment, true)),
+    _set_values: ($) =>
+      partialSeq($.keyword_set, comma_list($.assignment, true)),
 
     _column_list: ($) => paren_list(alias($._column, $.column), true),
     _column: ($) =>
@@ -2356,79 +2239,11 @@ module.exports = grammar({
         optional($.where)
       ),
 
-    storage_location: ($) =>
-      prec.right(
-        seq(
-          $.keyword_location,
-          field("path", alias($._literal_string, $.literal)),
-          optional(
-            seq(
-              $.keyword_cached,
-              $.keyword_in,
-              field("pool", alias($._literal_string, $.literal)),
-              optional(
-                choice(
-                  $.keyword_uncached,
-                  seq(
-                    $.keyword_with,
-                    $.keyword_replication,
-                    "=",
-                    field("value", alias($._natural_number, $.literal))
-                  )
-                )
-              )
-            )
-          )
-        )
-      ),
-
-    row_format: ($) =>
-      seq(
-        $.keyword_row,
-        $.keyword_format,
-        $.keyword_delimited,
-        optional(
-          seq(
-            $.keyword_fields,
-            $.keyword_terminated,
-            $.keyword_by,
-            field(
-              "fields_terminated_char",
-              alias($._literal_string, $.literal)
-            ),
-            optional(
-              seq(
-                $.keyword_escaped,
-                $.keyword_by,
-                field("escaped_char", alias($._literal_string, $.literal))
-              )
-            )
-          )
-        ),
-        optional(
-          seq(
-            $.keyword_lines,
-            $.keyword_terminated,
-            $.keyword_by,
-            field("row_terminated_char", alias($._literal_string, $.literal))
-          )
-        )
-      ),
-
     table_partition: ($) =>
       seq(
-        choice(
-          // Postgres/MySQL style
-          seq(
-            $.keyword_partition,
-            $.keyword_by,
-            choice($.keyword_range, $.keyword_hash)
-          ),
-          // Hive style
-          seq($.keyword_partitioned, $.keyword_by),
-          // Spark SQL
-          $.keyword_partition
-        ),
+        $.keyword_partition,
+        $.keyword_by,
+        choice($.keyword_range, $.keyword_hash, $.keyword_list),
         paren_list($.any_identifier, false)
       ),
 
@@ -2437,22 +2252,6 @@ module.exports = grammar({
         field("key", $.any_identifier),
         "=",
         field("value", alias($._literal_string, $.literal))
-      ),
-
-    stored_as: ($) =>
-      seq(
-        $.keyword_stored,
-        $.keyword_as,
-        choice(
-          $.keyword_parquet,
-          $.keyword_csv,
-          $.keyword_sequencefile,
-          $.keyword_textfile,
-          $.keyword_rcfile,
-          $.keyword_orc,
-          $.keyword_avro,
-          $.keyword_jsonfile
-        )
       ),
 
     assignment: ($) =>
@@ -2473,10 +2272,7 @@ module.exports = grammar({
         seq($.keyword_collate, $.any_identifier),
         field("name", $.keyword_default),
         seq(
-          field(
-            "name",
-            choice($.keyword_engine, $.any_identifier, $._literal_string)
-          ),
+          field("name", choice($.any_identifier, $._literal_string)),
           "=",
           field("value", choice($.any_identifier, $._literal_string))
         )
@@ -2527,7 +2323,6 @@ module.exports = grammar({
           ),
           $._default_expression,
           $._primary_key,
-          $.keyword_auto_increment,
           $.direction,
           $._column_comment,
           $._check_constraint,
@@ -2536,7 +2331,7 @@ module.exports = grammar({
             $.keyword_as,
             $._expression
           ),
-          choice($.keyword_stored, $.keyword_virtual),
+          $.keyword_stored,
           $.keyword_unique
         )
       ),
@@ -2641,6 +2436,7 @@ module.exports = grammar({
 
     parameter: ($) => /\?|(\$[0-9]+)/,
 
+    // TODO: partialSeq, end
     case: ($) =>
       seq(
         $.keyword_case,
@@ -2673,61 +2469,57 @@ module.exports = grammar({
 
     field: ($) => field("name", $.column_identifier),
 
-    implicit_cast: ($) => seq($._expression, "::", $.type),
+    implicit_cast: ($) => seq($._expression, "::", field("end", $.type)),
 
     // Postgres syntax for intervals
-    interval: ($) => seq($.keyword_interval, $._literal_string),
+    interval: ($) =>
+      partialSeq($.keyword_interval, field("end", $._literal_string)),
 
     cast: ($) =>
-      seq(
-        field("name", $.keyword_cast),
-        wrapped_in_parenthesis(
-          seq(field("parameter", $._expression), $.keyword_as, $.type)
-        )
+      partialSeq(
+        $.keyword_cast,
+        wrapped_in_parenthesis(partialSeq($._expression, $.keyword_as, $.type))
       ),
 
     filter_expression: ($) =>
-      seq($.keyword_filter, wrapped_in_parenthesis($.where)),
+      partialSeq($.keyword_filter, wrapped_in_parenthesis($.where)),
 
     invocation: ($) =>
-      prec(
-        1,
-        seq(
-          $.function_reference,
+      seq(
+        $.function_reference,
+        "(",
+        optional(
           choice(
             // default invocation
-            paren_list(
+            comma_list(
               seq(
                 optional($.keyword_distinct),
                 field("parameter", $.term),
                 optional($.order_by)
               ),
-              false
+              true
             ),
             // _aggregate_function, e.g. group_concat
-            wrapped_in_parenthesis(
-              seq(
-                optional($.keyword_distinct),
-                field("parameter", $.term),
-                optional($.order_by),
-                optional(
-                  seq(
-                    choice($.keyword_separator, ","),
-                    alias($._literal_string, $.literal)
-                  )
-                ),
-                optional($.limit)
-              )
+            seq(
+              optional($.keyword_distinct),
+              field("parameter", $.term),
+              optional($.order_by),
+              optional($.limit)
             )
-          ),
-          optional($.filter_expression)
-        )
+          )
+        ),
+        ")",
+        optional($.filter_expression)
       ),
 
-    exists: ($) => seq($.keyword_exists, $.subquery),
+    exists: ($) => partialSeq($.keyword_exists, field("end", $.subquery)),
 
     partition_by: ($) =>
-      seq($.keyword_partition, $.keyword_by, comma_list($._expression, true)),
+      partialSeq(
+        $.keyword_partition,
+        $.keyword_by,
+        comma_list($._expression, true)
+      ),
 
     frame_definition: ($) =>
       seq(
@@ -2785,13 +2577,14 @@ module.exports = grammar({
       ),
 
     window_clause: ($) =>
-      seq(
+      partialSeq(
         $.keyword_window,
         $.any_identifier,
         $.keyword_as,
-        $.window_specification
+        field("end", $.window_specification)
       ),
 
+    // TODO: partialSeq, split up into variants
     window_specification: ($) =>
       wrapped_in_parenthesis(
         seq(
@@ -2802,20 +2595,24 @@ module.exports = grammar({
       ),
 
     window_function: ($) =>
-      seq(
+      partialSeq(
         $.invocation,
         $.keyword_over,
-        choice($.any_identifier, $.window_specification)
+        field("end", choice($.any_identifier, $.window_specification))
       ),
 
-    alias: ($) => seq(optional($.keyword_as), field("alias", $.any_identifier)),
+    alias: ($) =>
+      choice(
+        partialSeq($.keyword_as, field("end", $.any_identifier)),
+        field("end", $.any_identifier)
+      ),
 
     from: ($) =>
-      seq(
+      partialSeq(
         $.keyword_from,
         optional($.keyword_only),
-        comma_list($.relation, true),
-        optional($.index_hint),
+        field("end", comma_list($.relation, true)),
+        // TODO: work joins
         repeat(
           choice($.join, $.cross_join, $.lateral_join, $.lateral_cross_join)
         ),
@@ -2829,152 +2626,137 @@ module.exports = grammar({
     relation: ($) =>
       prec.right(
         seq(
-          choice(
-            $.subquery,
-            $.invocation,
-            $.table_reference,
-            wrapped_in_parenthesis($.values)
+          field(
+            "end",
+            choice(
+              $.subquery,
+              $.invocation,
+              $.table_reference,
+              wrapped_in_parenthesis($.values)
+            )
           ),
           optional(seq($.alias, optional(alias($._column_list, $.list))))
         )
       ),
 
     values: ($) =>
-      seq($.keyword_values, $.list, optional(repeat(seq(",", $.list)))),
-
-    index_hint: ($) =>
-      seq(
-        choice($.keyword_force, $.keyword_use, $.keyword_ignore),
-        $.keyword_index,
-        optional(seq($.keyword_for, $.keyword_join)),
-        wrapped_in_parenthesis(field("index_name", $.any_identifier))
-      ),
+      partialSeq($.keyword_values, $.list, optional(repeat(seq(",", $.list)))),
 
     join: ($) =>
-      seq(
-        optional($.keyword_natural),
-        optional(
-          choice(
-            $.keyword_left,
-            seq($.keyword_full, $.keyword_outer),
-            seq($.keyword_left, $.keyword_outer),
-            $.keyword_right,
-            seq($.keyword_right, $.keyword_outer),
-            $.keyword_inner,
-            $.keyword_full
-          )
-        ),
-        partialSeq(
-          $.keyword_join,
-          $.relation,
-          optional($.index_hint),
-          optional($.join),
-          choice(
-            seq($.keyword_on, field("predicate", $._expression)),
-            seq($.keyword_using, alias($._column_list, $.list))
-          )
-        )
+      choice(partialSeq($.keyword_natural, $._any_join), $._any_join),
+
+    _any_join: ($) =>
+      choice(
+        partialSeq($.keyword_left, optional($.keyword_outer), $._join),
+        partialSeq($.keyword_full, optional($.keyword_outer), $._join),
+        partialSeq($.keyword_right, optional($.keyword_outer), $._join),
+        partialSeq($.keyword_inner, $._join),
+        $._join
       ),
 
-    cross_join: ($) =>
-      seq(
-        $.keyword_cross,
-        partialSeq(
-          $.keyword_join,
-          $.relation,
-          optional(
-            seq(
-              $.keyword_with,
-              $.keyword_ordinality,
-              optional(
-                seq(
-                  $.keyword_as,
-                  field("alias", $.any_identifier),
-                  paren_list($.any_identifier, false)
-                )
-              )
-            )
+    _join: ($) =>
+      partialSeq(
+        $.keyword_join,
+        $.relation,
+        choice(
+          partialSeq($.keyword_on, field("end", $._expression)),
+
+          partialSeq(
+            $.keyword_using,
+            field("end", alias($._column_list, $.list))
           )
         )
       ),
 
     lateral_join: ($) =>
-      seq(
+      choice(
+        partialSeq($.keyword_left, optional($.keyword_outer), $._lateral_join),
+        partialSeq($.keyword_inner, $._lateral_join),
+        $._lateral_join
+      ),
+
+    _lateral_join: ($) =>
+      partialSeq(
+        $.keyword_join,
+        $.keyword_lateral,
+        choice($.invocation, $.subquery),
         optional(
           choice(
-            // lateral joins cannot be right!
-            $.keyword_left,
-            seq($.keyword_left, $.keyword_outer),
-            $.keyword_inner
+            seq($.keyword_as, field("alias", $.any_identifier)),
+            field("alias", $.any_identifier)
           )
         ),
-        partialSeq(
-          $.keyword_join,
-          $.keyword_lateral,
-          choice($.invocation, $.subquery),
-          optional(
-            choice(
-              seq($.keyword_as, field("alias", $.any_identifier)),
-              field("alias", $.any_identifier)
-            )
-          ),
-          $.keyword_on,
-          choice($._expression, $.keyword_true, $.keyword_false)
-        )
+        $.keyword_on,
+        field("end", choice($._expression, $.keyword_true, $.keyword_false))
+      ),
+
+    cross_join: ($) =>
+      partialSeq(
+        $.keyword_cross,
+        $.keyword_join,
+        $.relation,
+        $.keyword_with,
+        $.keyword_ordinality,
+        field("end", $.alias),
+
+        // TODO: check if there are more occurences & whether this can be a named group
+        paren_list($.any_identifier, false)
       ),
 
     lateral_cross_join: ($) =>
-      seq(
+      partialSeq(
         $.keyword_cross,
-        partialSeq(
-          $.keyword_join,
-          $.keyword_lateral,
-          choice($.invocation, $.subquery),
-          optional(
-            choice(
-              seq($.keyword_as, field("alias", $.any_identifier)),
-              field("alias", $.any_identifier)
-            )
-          )
-        )
+        $.keyword_join,
+        $.keyword_lateral,
+        field("end", choice($.invocation, $.subquery)),
+        optional($.alias)
       ),
 
-    where: ($) => seq($.keyword_where, field("predicate", $._expression)),
+    where: ($) => partialSeq($.keyword_where, field("end", $._expression)),
 
     group_by: ($) =>
-      seq(
+      partialSeq(
         $.keyword_group,
         $.keyword_by,
-        comma_list($._expression, true),
-        optional($._having)
+        field("end", comma_list($._expression, true)),
+        optional($.group_by_having)
       ),
 
-    _having: ($) => seq($.keyword_having, $._expression),
+    group_by_having: ($) =>
+      partialSeq($.keyword_having, field("end", $._expression)),
 
     order_by: ($) =>
-      prec.right(
-        seq($.keyword_order, $.keyword_by, comma_list($.order_target, true))
+      partialSeq(
+        $.keyword_order,
+        $.keyword_by,
+        field("end", comma_list($.order_target, true))
       ),
 
     order_target: ($) =>
-      seq(
-        $._expression,
-        optional(
+      choice(
+        field("end", $._expression),
+        seq(
+          $._expression,
           seq(
             choice(
-              $.direction,
-              seq($.keyword_using, choice("<", ">", "<=", ">="))
+              field("end", $.direction),
+              seq($.keyword_using, field("end", choice("<", ">", "<=", ">=")))
             ),
-            optional(
-              seq($.keyword_nulls, choice($.keyword_first, $.keyword_last))
-            )
+            optional($.order_target_nulls)
           )
         )
       ),
 
-    limit: ($) => seq($.keyword_limit, $.literal, optional($.offset)),
+    order_target_nulls: ($) =>
+      seq(
+        $.keyword_nulls,
+        field("end", choice($.keyword_first, $.keyword_last))
+      ),
 
-    offset: ($) => seq($.keyword_offset, $.literal),
+    limit: ($) =>
+      partialSeq($.keyword_limit, field("end", $.literal), optional($.offset)),
+
+    offset: ($) => partialSeq($.keyword_offset, field("end", $.literal)),
 
     returning: ($) => seq($.keyword_returning, $.select_expression),
 
@@ -3114,16 +2896,16 @@ module.exports = grammar({
           $.interval,
           $.between_expression,
           $.field_selection,
-          $.parenthesized_expression,
-          $.object_id
+          $.parenthesized_expression
         )
       ),
 
     field_selection: ($) =>
       seq(
+        // TODO: partial this
         choice($.composite_reference, $.parenthesized_expression),
         ".",
-        $.any_identifier
+        field("end", $.any_identifier)
       ),
 
     composite_reference: ($) =>
@@ -3146,7 +2928,7 @@ module.exports = grammar({
               field("upper", $._expression)
             )
           ),
-          "]"
+          field("end", "]")
         )
       ),
 
@@ -3239,32 +3021,32 @@ module.exports = grammar({
       ];
       return choice(
         ...opChoices.map(([operator, precedence]) =>
-          prec.left(
+          prec.right(
             precedence,
             seq(
               field("binary_expr_left", $._expression),
               field("binary_expr_operator", operator),
-              field("binary_expr_right", $._expression)
+              field("end", $._expression)
             )
           )
         ),
         ...clauseChoices.map(([operator, precedence]) =>
-          prec.left(
+          prec.right(
             precedence,
             seq(
               field("binary_expr_left", $._expression),
               field("binary_expr_operator", operator),
-              field("binary_expr_right", $._expression)
+              field("end", $._expression)
             )
           )
         ),
         ...binaryChoices.map(([operator, precedence]) =>
-          prec.left(
+          prec.right(
             precedence,
             seq(
               field("binary_expr_left", $._expression),
               field("binary_expr_operator", operator),
-              field("binary_expr_right", choice($.list, $.subquery))
+              field("end", choice($.list, $.subquery))
             )
           )
         )
@@ -3287,31 +3069,30 @@ module.exports = grammar({
 
       return choice(
         ...choices.map(([operator, precedence]) =>
-          prec.left(
-            precedence,
-            seq(field("operator", operator), field("operand", $._expression))
-          )
+          prec.left(precedence, seq(operator, field("end", $._expression)))
         )
       );
     },
 
     between_expression: ($) => {
-      /** @type {Array<[Rule, string]>} */
+      /** @type {Array<[Rule[], string]>} */
       const choices = [
-        [$.keyword_between, "between"],
-        [seq($.keyword_not, $.keyword_between), "between"],
+        [[$.keyword_between], "between"],
+        [[$.keyword_not, $.keyword_between], "between"],
       ];
 
       return choice(
         ...choices.map(([operator, precedence]) =>
-          prec.left(
+          prec.right(
             precedence,
             seq(
-              field("left", $._expression),
-              field("operator", operator),
-              field("low", $._expression),
-              $.keyword_and,
-              field("high", $._expression)
+              $._expression,
+              partialSeq(
+                ...operator,
+                $._expression,
+                $.keyword_and,
+                field("end", $._expression)
+              )
             )
           )
         )
@@ -3378,20 +3159,23 @@ module.exports = grammar({
     // todo: handle schema.function(arg1, arg2)
 
     object_reference: ($) =>
-      choice(
-        seq(
-          field("object_reference_1of3", $.any_identifier),
-          ".",
-          field("object_reference_2of3", $.any_identifier),
-          ".",
-          field("object_reference_3of3", $.any_identifier)
-        ),
-        seq(
-          field("object_reference_1of2", $.any_identifier),
-          ".",
-          field("object_reference_2of2", $.any_identifier)
-        ),
-        field("object_reference_1of1", $.any_identifier)
+      prec(
+        10,
+        choice(
+          seq(
+            field("object_reference_1of3", $.any_identifier),
+            ".",
+            field("object_reference_2of3", $.any_identifier),
+            ".",
+            field("object_reference_3of3", $.any_identifier)
+          ),
+          seq(
+            field("object_reference_1of2", $.any_identifier),
+            ".",
+            field("object_reference_2of2", $.any_identifier)
+          ),
+          field("object_reference_1of1", $.any_identifier)
+        )
       ),
 
     type_reference: ($) =>
@@ -3471,18 +3255,6 @@ module.exports = grammar({
  */
 
 /**
- * @param {RuleRecord} $
- * @param {Rule} rule
- * @returns {ChoiceRule}
- */
-function unsigned_type($, rule) {
-  return choice(
-    seq($.keyword_unsigned, rule),
-    seq(rule, optional($.keyword_unsigned), optional($.keyword_zerofill))
-  );
-}
-
-/**
  * @param {Rule} rule
  * @returns {PrecRightRule}
  */
@@ -3495,10 +3267,7 @@ function optional_parenthesis(rule) {
  * @returns {SeqRule}
  */
 function wrapped_in_parenthesis(rule) {
-  if (rule) {
-    return seq("(", rule, ")");
-  }
-  return seq("(", ")");
+  return seq("(", rule, field("end", ")"));
 }
 
 /**
@@ -3541,10 +3310,10 @@ function parametric_type($, rule, params = ["size"]) {
 /**
  * @param {Rule} rule
  * @param {boolean} requireFirst
- * @returns {SeqRule | ChoiceRule}
+ * @returns {PrecRightRule | ChoiceRule}
  */
 function comma_list(rule, requireFirst) {
-  let sequence = seq(rule, repeat(seq(",", rule)));
+  let sequence = prec.right(seq(rule, repeat(seq(",", rule))));
 
   if (requireFirst) {
     return sequence;
@@ -3596,23 +3365,39 @@ function unknown_until($, rule, maxLength) {
 /**
  * Grants "full left precedence", so
  * a rule built with this can be partially matched.
- * For example, partial($.keyword_update, $.table_reference, $.keyword_set) will match if the
+ *
+ * For example, partialSeq($.keyword_update, $.table_reference, $.keyword_set) will match if the
  * parser only sees "update".
+ * The grammar rule created is:
+ *
+ * ```
+ * prec.left(
+ *   seq(
+ *     $.keyword_update,
+ *     optional(seq(
+ *       $.table_reference,
+ *       optional($.keyword_set)
+ *     ))
+ *   )
+ * )
+ * ```
  *
  * Make sure to only use this for rules that are unambiguous in their partial forms.
  *
+ *
+ *
  * @param  {...(RuleOrLiteral)} rules
- * @returns {PrecLeftRule}
+ * @returns {PrecRightRule}
  */
 function partialSeq(...rules) {
   const lastIdx = rules.length - 1;
 
   /** @type {RuleOrLiteral} */
-  let finishedRule = optional(rules[lastIdx]);
+  let finishedRule = rules[lastIdx];
 
   for (let i = lastIdx - 1; i >= 0; i--) {
     finishedRule = seq(rules[i], optional(finishedRule));
   }
 
-  return prec.left(finishedRule);
+  return prec.right(finishedRule);
 }
