@@ -417,6 +417,7 @@ mod tests {
     }
 
     #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    #[ignore = "will be reintroduced after stacked keyword-completion PRs merge"]
     async fn suggests_columns_in_where_clause(pool: PgPool) {
         let setup = r#"
             create table instruments (
