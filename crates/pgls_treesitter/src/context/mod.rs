@@ -581,48 +581,48 @@ mod tests {
     #[test]
     fn identifies_clauses() {
         let test_cases = vec![
-            // (
-            //     format!(
-            //         "Select {}* from users;",
-            //         QueryWithCursorPosition::cursor_marker()
-            //     ),
-            //     WrappingClause::Select,
-            // ),
-            // (
-            //     format!(
-            //         "Select * from u{};",
-            //         QueryWithCursorPosition::cursor_marker()
-            //     ),
-            //     WrappingClause::From,
-            // ),
-            // (
-            //     format!(
-            //         "Select {}* from users where n = 1;",
-            //         QueryWithCursorPosition::cursor_marker()
-            //     ),
-            //     WrappingClause::Select,
-            // ),
-            // (
-            //     format!(
-            //         "Select * from users where {}n = 1;",
-            //         QueryWithCursorPosition::cursor_marker()
-            //     ),
-            //     WrappingClause::Where,
-            // ),
-            // (
-            //     format!(
-            //         "update users set u{} = 1 where n = 2;",
-            //         QueryWithCursorPosition::cursor_marker()
-            //     ),
-            //     WrappingClause::Update,
-            // ),
-            // (
-            //     format!(
-            //         "update users set u = 1 where n{} = 2;",
-            //         QueryWithCursorPosition::cursor_marker()
-            //     ),
-            //     WrappingClause::Where,
-            // ),
+            (
+                format!(
+                    "Select {}* from users;",
+                    QueryWithCursorPosition::cursor_marker()
+                ),
+                WrappingClause::Select,
+            ),
+            (
+                format!(
+                    "Select * from u{};",
+                    QueryWithCursorPosition::cursor_marker()
+                ),
+                WrappingClause::From,
+            ),
+            (
+                format!(
+                    "Select {}* from users where n = 1;",
+                    QueryWithCursorPosition::cursor_marker()
+                ),
+                WrappingClause::Select,
+            ),
+            (
+                format!(
+                    "Select * from users where {}n = 1;",
+                    QueryWithCursorPosition::cursor_marker()
+                ),
+                WrappingClause::Where,
+            ),
+            (
+                format!(
+                    "update users set u{} = 1 where n = 2;",
+                    QueryWithCursorPosition::cursor_marker()
+                ),
+                WrappingClause::Update,
+            ),
+            (
+                format!(
+                    "update users set u = 1 where n{} = 2;",
+                    QueryWithCursorPosition::cursor_marker()
+                ),
+                WrappingClause::Where,
+            ),
             (
                 format!(
                     "delete{} from users;",
