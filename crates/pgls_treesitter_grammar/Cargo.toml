@@ -15,6 +15,7 @@ include = ["grammar.js", "queries/*", "src/*", "tree-sitter.json", "LICENSE", "N
 
 [dependencies]
 tree-sitter-language = "0.1"
+tree-sitter.workspace = true
 
 [build-dependencies]
 cc = "1.2"
@@ -22,4 +23,16 @@ cc = "1.2"
 [dev-dependencies]
 insta                     = { version = "1.42.1" }
 pgls_test_utils.workspace = true
-tree-sitter               = "0.25.5"
+criterion.workspace       = true
+
+[[bench]]
+harness = false
+name    = "lookahead_iter"
+
+[[bench]]
+harness = false
+name    = "parsing"
+
+[[bench]]
+harness = false
+name    = "parsing_with_existing_tree"
