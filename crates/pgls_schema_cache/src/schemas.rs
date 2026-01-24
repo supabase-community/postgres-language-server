@@ -1,8 +1,11 @@
+use serde::{Deserialize, Serialize};
+#[cfg(feature = "db")]
 use sqlx::PgPool;
 
+#[cfg(feature = "db")]
 use crate::schema_cache::SchemaCacheItem;
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Serialize, Deserialize)]
 pub struct Schema {
     pub id: i64,
     pub name: String,
@@ -16,6 +19,7 @@ pub struct Schema {
     pub comment: Option<String>,
 }
 
+#[cfg(feature = "db")]
 impl SchemaCacheItem for Schema {
     type Item = Schema;
 

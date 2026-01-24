@@ -1,7 +1,9 @@
 use serde::{Deserialize, Serialize};
+use serde_json::Value as JsonValue;
+#[cfg(feature = "db")]
 use sqlx::PgPool;
-use sqlx::types::JsonValue;
 
+#[cfg(feature = "db")]
 use crate::schema_cache::SchemaCacheItem;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
@@ -135,6 +137,7 @@ pub struct Function {
     pub security_definer: bool,
 }
 
+#[cfg(feature = "db")]
 impl SchemaCacheItem for Function {
     type Item = Function;
 
@@ -145,7 +148,7 @@ impl SchemaCacheItem for Function {
     }
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "db"))]
 mod tests {
     use sqlx::{Executor, PgPool};
 

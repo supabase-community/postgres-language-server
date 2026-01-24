@@ -119,6 +119,16 @@ impl<'app> CliSession<'app> {
                 Some(log_kind),
             ),
             PgLSCommand::PrintSocket => commands::daemon::print_socket(),
+            PgLSCommand::SchemaExport {
+                connection_string,
+                output,
+            } => {
+                let runtime = tokio::runtime::Runtime::new().map_err(CliDiagnostic::io_error)?;
+                runtime.block_on(commands::schema_export::run_schema_export(
+                    &connection_string,
+                    &output,
+                ))
+            }
         };
 
         if has_metrics {

@@ -1,8 +1,11 @@
+use serde::{Deserialize, Serialize};
+#[cfg(feature = "db")]
 use sqlx::PgPool;
 
+#[cfg(feature = "db")]
 use crate::schema_cache::SchemaCacheItem;
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Serialize, Deserialize)]
 pub struct Extension {
     pub name: String,
     pub schema: Option<String>,
@@ -11,6 +14,7 @@ pub struct Extension {
     pub comment: Option<String>,
 }
 
+#[cfg(feature = "db")]
 impl SchemaCacheItem for Extension {
     type Item = Extension;
 

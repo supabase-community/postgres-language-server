@@ -13,6 +13,7 @@ pub(crate) mod clean;
 pub(crate) mod daemon;
 pub(crate) mod dblint;
 pub(crate) mod init;
+pub(crate) mod schema_export;
 pub(crate) mod version;
 
 #[derive(Debug, Clone, Bpaf)]
@@ -157,6 +158,28 @@ pub enum PgLSCommand {
     /// Cleans the logs emitted by the daemon.
     Clean,
 
+    /// Exports the database schema to a JSON file for use with WASM bindings.
+    #[bpaf(command("schema-export"))]
+    SchemaExport {
+        /// PostgreSQL connection string (e.g., postgres://user:pass@host/db)
+        #[bpaf(
+            env("DATABASE_URL"),
+            long("connection-string"),
+            short('c'),
+            argument("URL")
+        )]
+        connection_string: String,
+
+        /// Output file path for the JSON schema
+        #[bpaf(
+            long("output"),
+            short('o'),
+            argument("PATH"),
+            fallback(PathBuf::from("schema.json"))
+        )]
+        output: PathBuf,
+    },
+
     #[bpaf(command("__run_server"), hide)]
     RunServer {
         /// Allows to change the prefix applied to the file name of the logs.
@@ -230,6 +253,7 @@ impl PgLSCommand {
             | PgLSCommand::Init
             | PgLSCommand::RunServer { .. }
             | PgLSCommand::Clean
+            | PgLSCommand::SchemaExport { .. }
             | PgLSCommand::PrintSocket => None,
         }
     }

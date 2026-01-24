@@ -27,6 +27,7 @@ pgls_diagnostics         = { workspace = true }
 pgls_env                 = { workspace = true }
 pgls_fs                  = { workspace = true }
 pgls_lsp                 = { workspace = true }
+pgls_schema_cache        = { workspace = true, features = ["db"] }
 pgls_text_edit           = { workspace = true }
 pgls_workspace           = { workspace = true }
 quick-junit              = "0.5.0"
@@ -34,6 +35,7 @@ rayon                    = { workspace = true }
 rustc-hash               = { workspace = true }
 serde                    = { workspace = true, features = ["derive"] }
 serde_json               = { workspace = true }
+sqlx                     = { workspace = true }
 tokio                    = { workspace = true, features = ["io-std", "io-util", "net", "time", "rt", "sync", "rt-multi-thread", "macros"] }
 tracing                  = { workspace = true }
 tracing-appender         = "0.2.3"

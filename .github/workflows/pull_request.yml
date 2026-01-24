@@ -241,6 +241,42 @@ jobs:
         working-directory: packages/@postgres-language-server/cli
         run: bun run test
 
+  test-wasm:
+    name: Test WASM Package
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - name: Free Disk Space
+        uses: ./.github/actions/free-disk-space
+
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@main
+
+      - name: Setup Magic Nix Cache
+        uses: DeterminateSystems/magic-nix-cache-action@main
+
+      - name: Install root JS dependencies
+        run: nix develop --command bun install
+
+      - name: Install WASM package dependencies
+        run: nix develop --command bash -c "cd packages/@postgres-language-server/wasm && bun install"
+
+      - name: Build WASM package
+        run: nix develop --command bash -c "cd packages/@postgres-language-server/wasm && bun run build"
+
+      - name: Run WASM unit tests
+        run: nix develop --command bash -c "cd packages/@postgres-language-server/wasm && bun test"
+
+      - name: Install Playwright
+        run: nix develop --command bash -c "cd packages/@postgres-language-server/wasm && bun run test:e2e:install"
+
+      - name: Run WASM e2e tests
+        run: nix develop --command bash -c "cd packages/@postgres-language-server/wasm && bun run test:e2e"
+
   codegen:
     name: Check Codegen
     runs-on: ubuntu-22.04

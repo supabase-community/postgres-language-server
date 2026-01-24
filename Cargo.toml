@@ -37,7 +37,7 @@ rayon                    = "1.10.0"
 regex                    = "1.11.1"
 rustc-hash               = "2.0.0"
 schemars                 = { version = "0.8.22", features = ["indexmap2", "smallvec"] }
-serde                    = "1.0.195"
+serde                    = { version = "1.0.195", features = ["rc"] }
 serde_json               = "1.0.114"
 similar                  = "2.6.0"
 slotmap                  = "1.0.7"
@@ -82,7 +82,7 @@ pgls_plpgsql_check          = { path = "./crates/pgls_plpgsql_check", version = 
 pgls_query                  = { path = "./crates/pgls_query", version = "0.0.0" }
 pgls_query_ext              = { path = "./crates/pgls_query_ext", version = "0.0.0" }
 pgls_query_macros           = { path = "./crates/pgls_query_macros", version = "0.0.0" }
-pgls_schema_cache           = { path = "./crates/pgls_schema_cache", version = "0.0.0" }
+pgls_schema_cache           = { path = "./crates/pgls_schema_cache", version = "0.0.0", default-features = false }
 pgls_splinter               = { path = "./crates/pgls_splinter", version = "0.0.0" }
 pgls_statement_splitter     = { path = "./crates/pgls_statement_splitter", version = "0.0.0" }
 pgls_suppressions           = { path = "./crates/pgls_suppressions", version = "0.0.0" }
@@ -92,6 +92,7 @@ pgls_tokenizer              = { path = "./crates/pgls_tokenizer", version = "0.0
 pgls_treesitter             = { path = "./crates/pgls_treesitter", version = "0.0.0" }
 pgls_treesitter_grammar     = { path = "./crates/pgls_treesitter_grammar", version = "0.0.0" }
 pgls_typecheck              = { path = "./crates/pgls_typecheck", version = "0.0.0" }
+pgls_wasm                   = { path = "./crates/pgls_wasm", version = "0.0.0" }
 pgls_workspace              = { path = "./crates/pgls_workspace", version = "0.0.0" }
 pgls_workspace_macros       = { path = "./crates/pgls_workspace_macros", version = "0.0.0" }
 

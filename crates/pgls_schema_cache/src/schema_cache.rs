@@ -1,3 +1,5 @@
+use serde::{Deserialize, Serialize};
+#[cfg(feature = "db")]
 use sqlx::postgres::PgPool;
 
 use crate::columns::Column;
@@ -9,7 +11,7 @@ use crate::types::PostgresType;
 use crate::versions::Version;
 use crate::{Extension, Role, Trigger};
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Serialize, Deserialize)]
 pub struct SchemaCache {
     pub schemas: Vec<Schema>,
     pub tables: Vec<Table>,
@@ -24,6 +26,7 @@ pub struct SchemaCache {
 }
 
 impl SchemaCache {
+    #[cfg(feature = "db")]
     pub async fn load(pool: &PgPool) -> Result<SchemaCache, sqlx::Error> {
         let (
             schemas,
@@ -161,13 +164,14 @@ impl SchemaCache {
     }
 }
 
+#[cfg(feature = "db")]
 pub trait SchemaCacheItem {
     type Item;
 
     async fn load(pool: &PgPool) -> Result<Vec<Self::Item>, sqlx::Error>;
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "db"))]
 mod tests {
     use std::collections::HashSet;
 

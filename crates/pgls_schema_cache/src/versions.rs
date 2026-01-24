@@ -1,8 +1,11 @@
+use serde::{Deserialize, Serialize};
+#[cfg(feature = "db")]
 use sqlx::PgPool;
 
+#[cfg(feature = "db")]
 use crate::schema_cache::SchemaCacheItem;
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Serialize, Deserialize)]
 pub struct Version {
     pub version: Option<String>,
     pub version_num: Option<i64>,
@@ -11,6 +14,7 @@ pub struct Version {
     pub max_connections: Option<i64>,
 }
 
+#[cfg(feature = "db")]
 impl SchemaCacheItem for Version {
     type Item = Version;
 
