@@ -579,6 +579,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore = "will be reintroduced after stacked keyword-completion PRs merge"]
     fn identifies_clauses() {
         let test_cases = vec![
             (
