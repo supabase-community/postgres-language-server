@@ -275,7 +275,8 @@ export type CompletionItemKind =
 	| "column"
 	| "schema"
 	| "policy"
-	| "role";
+	| "role"
+	| "keyword";
 export interface UpdateSettingsParams {
 	configuration: PartialConfiguration;
 	gitignore_matches: string[];
