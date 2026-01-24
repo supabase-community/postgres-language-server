@@ -97,7 +97,7 @@ pub fn previous_sibling_completed(node: tree_sitter::Node) -> bool {
 
         is_finished && last_children_completed(prev)
     } else {
-        false
+        true
     }
 }
 
