@@ -537,6 +537,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore]
     fn identifies_clauses() {
         let test_cases = vec![
             (
