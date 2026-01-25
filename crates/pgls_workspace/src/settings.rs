@@ -293,12 +293,12 @@ impl Settings {
     }
 
     /// Returns linter rules.
-    pub fn as_linter_rules(&self) -> Option<Cow<pgls_configuration::linter::Rules>> {
+    pub fn as_linter_rules(&self) -> Option<Cow<'_, pgls_configuration::linter::Rules>> {
         self.linter.rules.as_ref().map(Cow::Borrowed)
     }
 
     /// Returns splinter rules.
-    pub fn as_splinter_rules(&self) -> Option<Cow<pgls_configuration::splinter::Rules>> {
+    pub fn as_splinter_rules(&self) -> Option<Cow<'_, pgls_configuration::splinter::Rules>> {
         self.splinter.rules.as_ref().map(Cow::Borrowed)
     }
 

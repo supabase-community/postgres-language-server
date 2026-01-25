@@ -124,11 +124,11 @@ impl WorkspaceServer {
     }
 
     /// Provides a reference to the current settings
-    fn workspaces(&self) -> WorkspaceSettingsHandle {
+    fn workspaces(&self) -> WorkspaceSettingsHandle<'_> {
         WorkspaceSettingsHandle::new(&self.settings)
     }
 
-    fn workspaces_mut(&self) -> WorkspaceSettingsHandleMut {
+    fn workspaces_mut(&self) -> WorkspaceSettingsHandleMut<'_> {
         WorkspaceSettingsHandleMut::new(&self.settings)
     }
 
@@ -500,8 +500,10 @@ impl Workspace for WorkspaceServer {
     #[cfg(feature = "db")]
     fn invalidate_schema_cache(&self, all: bool) -> Result<(), WorkspaceError> {
         if all {
-            // Clear all db-loaded schemas (keep json schema since it was explicitly set)
-            self.schema_cache.clear_all_connections();
+            // Clear all schemas - both db-loaded and json-loaded
+            // DB completions always take precedence when a connection is available,
+            // so clearing the json schema keeps behavior consistent
+            self.schema_cache.clear_all();
         } else {
             // Only clear current connection if one exists
             if let Some(pool) = self.get_current_connection() {
