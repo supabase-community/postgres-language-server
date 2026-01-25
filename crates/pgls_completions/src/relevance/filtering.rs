@@ -1,7 +1,68 @@
 use pgls_schema_cache::ProcKind;
-use pgls_treesitter::context::{TreesitterContext, WrappingClause, WrappingNode};
+use pgls_treesitter::{
+    context::{TreesitterContext, WrappingClause, WrappingNode},
+    goto_node_at_position, previous_sibling_completed,
+};
+use tree_sitter::{InputEdit, Point, Tree};
 
 use super::CompletionRelevanceData;
+
+/// Parses SQL with a keyword injected at the given position, using incremental parsing.
+///
+/// Temporarily edits `shared_tree` to hint tree-sitter about the change location,
+/// then undoes the edit so the tree can be reused for subsequent keywords.
+fn parse_with_replaced_keyword(
+    shared_tree: &mut Tree,
+    text: &str,
+    keyword: &str,
+    node: tree_sitter::Node,
+) -> Tree {
+    let start_position = node.start_position();
+    let start_byte = node.start_byte();
+    let old_end_position = node.end_position();
+    let old_end_byte = node.end_byte();
+
+    let new_end_byte = start_byte + keyword.len();
+    let new_end_position = Point {
+        row: start_position.row,
+        column: start_position.column + keyword.len(),
+    };
+
+    shared_tree.edit(&InputEdit {
+        new_end_byte,
+        new_end_position,
+        old_end_byte,
+        old_end_position,
+        start_byte,
+        start_position,
+    });
+
+    let mut parser = tree_sitter::Parser::new();
+    parser
+        .set_language(&pgls_treesitter_grammar::LANGUAGE.into())
+        .unwrap();
+
+    let replaced_sql = format!(
+        "{}{}{}",
+        &text[..start_byte],
+        keyword,
+        &text[old_end_byte..]
+    );
+
+    let tree = parser.parse(replaced_sql, Some(shared_tree)).unwrap();
+
+    // undo edit so shared_tree can be reused
+    shared_tree.edit(&InputEdit {
+        new_end_byte: old_end_byte,
+        new_end_position: old_end_position,
+        old_end_byte: new_end_byte,
+        old_end_position: new_end_position,
+        start_byte,
+        start_position,
+    });
+
+    tree
+}
 
 #[derive(Debug)]
 pub(crate) struct CompletionFilter<'a> {
@@ -15,17 +76,23 @@ impl<'a> From<CompletionRelevanceData<'a>> for CompletionFilter<'a> {
 }
 
 impl CompletionFilter<'_> {
-    pub fn is_relevant(&self, ctx: &TreesitterContext) -> Option<()> {
-        self.completable_context(ctx)?;
+    pub fn is_relevant(&self, ctx: &TreesitterContext, shared_tree: &mut Tree) -> Option<()> {
+        if let CompletionRelevanceData::Keyword(kw) = self.data {
+            self.check_keyword_requires_prefix(ctx, kw)?;
+            self.valid_keyword(ctx, shared_tree)?;
+            Some(())
+        } else {
+            self.completable_context(ctx)?;
 
-        self.check_specific_node_type(ctx)
-            // we want to rely on treesitter more, so checking the clause is a fallback
-            .or_else(|| self.check_clause(ctx))?;
+            self.check_specific_node_type(ctx)
+                // we want to rely on treesitter more, so checking the clause is a fallback
+                .or_else(|| self.check_clause(ctx))?;
 
-        self.check_invocation(ctx)?;
-        self.check_mentioned_schema_or_alias(ctx)?;
+            self.check_invocation(ctx)?;
+            self.check_mentioned_schema_or_alias(ctx)?;
 
-        Some(())
+            Some(())
+        }
     }
 
     fn completable_context(&self, ctx: &TreesitterContext) -> Option<()> {
@@ -108,15 +175,18 @@ impl CompletionFilter<'_> {
 
             "any_identifier" => match self.data {
                 CompletionRelevanceData::Column(_) => {
-                    ctx.node_under_cursor_is_within_field(&[
+                    let matches_field = ctx.node_under_cursor_is_within_field(&[
                         "object_reference_1of1",
                         "object_reference_2of2",
                         "object_reference_3of3",
                         "column_reference_1of1",
                         "column_reference_2of2",
                         "column_reference_3of3",
-                    ]) && (!ctx.node_under_cursor_is_within_field(&["binary_expr_right"])
-                        || ctx.has_any_qualifier())
+                    ]);
+
+                    let has_any_qualifier = ctx.has_any_qualifier();
+
+                    matches_field || has_any_qualifier
                 }
 
                 CompletionRelevanceData::Schema(_) => ctx.node_under_cursor_is_within_field(&[
@@ -359,6 +429,8 @@ impl CompletionFilter<'_> {
 
                         _ => false,
                     },
+
+                    CompletionRelevanceData::Keyword(_) => true,
                 }
             })
             .and_then(|is_ok| if is_ok { Some(()) } else { None })
@@ -401,6 +473,7 @@ impl CompletionFilter<'_> {
             CompletionRelevanceData::Schema(_) => false,
             // no policy or row completion if user typed a schema node first.
             CompletionRelevanceData::Policy(_) | CompletionRelevanceData::Role(_) => false,
+            CompletionRelevanceData::Keyword(_) => false,
         };
 
         if !matches {
@@ -408,6 +481,127 @@ impl CompletionFilter<'_> {
         }
 
         Some(())
+    }
+
+    /// Filters out keywords marked with `require_prefix` unless the user has started typing them.
+    ///
+    /// Some keywords like `and`, `as`, `like` are too noisy to show unprompted since they'd
+    /// appear in nearly every completion list. We only suggest them once the user types at
+    /// least the first character.
+    fn check_keyword_requires_prefix(
+        &self,
+        ctx: &TreesitterContext,
+        kw: &crate::providers::SqlKeyword,
+    ) -> Option<()> {
+        if !kw.require_prefix {
+            return Some(());
+        }
+
+        let content = ctx.get_node_under_cursor_content()?;
+        if content.is_empty() || crate::sanitization::is_sanitized_token(&content) {
+            return None;
+        }
+
+        if !kw.name.starts_with(content.chars().next().unwrap()) {
+            return None;
+        }
+
+        Some(())
+    }
+
+    /// Validates whether a keyword would produce valid SQL at the current cursor position.
+    ///
+    /// Uses speculative parsing: injects the keyword into the SQL text at the cursor position,
+    /// re-parses, and checks if the result is grammatically valid. The `shared_tree` is
+    /// temporarily edited to enable tree-sitter's incremental parsing optimization.
+    ///
+    /// # Validation rules
+    ///
+    /// 1. **Parse error** → reject. The keyword produces invalid SQL.
+    ///
+    /// 2. **Error recovery** → accept. If the previous clause was an ERROR node and injecting
+    ///    the keyword fixes it, the keyword helped tree-sitter recover.
+    ///
+    /// 3. **Statement boundary** → only accept `starts_statement` keywords (like `SELECT`,
+    ///    `INSERT`) when there's no current clause or we're after a semicolon.
+    ///
+    /// 4. **Clause completion check** → the core logic. Replacing/inserting a keyword is valid
+    ///    only if it doesn't
+    ///      - make a current finished clause unfinished
+    ///      - fully replaces the previous unfinished clause
+    ///
+    ///    See `GRAMMAR_GUIDELINES.md` for how `@end` field markers track clause completion.
+    fn valid_keyword(&self, ctx: &TreesitterContext, shared_tree: &mut Tree) -> Option<()> {
+        let keyword = if let CompletionRelevanceData::Keyword(kw) = self.data {
+            kw
+        } else {
+            return Some(());
+        };
+
+        let tree =
+            parse_with_replaced_keyword(shared_tree, ctx.text, keyword.name, ctx.node_under_cursor);
+
+        if tree.root_node().has_error() {
+            return None;
+        }
+
+        if ctx.previous_clause.is_some_and(|n| n.kind() == "ERROR") {
+            return Some(());
+        }
+
+        let clause_to_investigate = if ctx.node_under_cursor.kind() != "ERROR" {
+            ctx.current_clause
+        } else {
+            ctx.previous_clause
+        };
+
+        if clause_to_investigate.is_none() || ctx.previous_clause.is_some_and(|n| n.kind() == ";") {
+            if keyword.starts_statement {
+                return Some(());
+            } else {
+                return None;
+            }
+        }
+
+        let start_byte = ctx.node_under_cursor.start_byte();
+
+        if let Some(investigated_node) = goto_node_at_position(&tree, start_byte) {
+            if !previous_sibling_completed(investigated_node) {
+                return None;
+            }
+
+            let old_unfinished_parent = clause_to_investigate.unwrap();
+
+            let mut new_parent = investigated_node.parent();
+
+            while let Some(parent) = new_parent {
+                if !previous_sibling_completed(parent) {
+                    return None;
+                }
+
+                if parent.kind() == old_unfinished_parent.kind()
+                    || parent.start_byte() < old_unfinished_parent.start_byte()
+                {
+                    break;
+                }
+
+                new_parent = parent.parent();
+            }
+
+            if let Some(new_parent) = new_parent {
+                if new_parent.kind() != old_unfinished_parent.kind() {
+                    return None;
+                }
+
+                if new_parent.start_byte() != old_unfinished_parent.start_byte() {
+                    return None;
+                }
+
+                return Some(());
+            }
+        }
+
+        None
     }
 }
 
@@ -433,8 +627,12 @@ mod tests {
 
         pool.execute(setup).await.unwrap();
 
-        assert_no_complete_results(
+        assert_complete_results(
             format!("select * {}", QueryWithCursorPosition::cursor_marker()).as_str(),
+            vec![CompletionAssertion::LabelAndKind(
+                "from".into(),
+                crate::CompletionItemKind::Keyword,
+            )],
             None,
             &pool,
         )

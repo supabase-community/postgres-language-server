@@ -8,15 +8,15 @@ program [0..25] 'select * from auth.users;'
   statement [0..24] 'select * from auth.users'
     select [0..8] 'select *'
       keyword_select [0..6] 'select'
-      select_expression [7..8] '*'
-        term [7..8] '*'
-          all_fields [7..8] '*'
+      select_expression [7..8] '*' (@end)
+        term [7..8] '*' (@end)
+          all_fields [7..8] '*' (@end)
             * [7..8] '*'
     from [9..24] 'from auth.users'
       keyword_from [9..13] 'from'
-      relation [14..24] 'auth.users'
-        table_reference [14..24] 'auth.users'
-          schema_identifier [14..18] 'auth'
+      relation [14..24] 'auth.users' (@end)
+        table_reference [14..24] 'auth.users' (@end)
+          schema_identifier [14..18] 'auth' (@table_reference_1of2)
           . [18..19] '.'
-          table_identifier [19..24] 'users'
+          table_identifier [19..24] 'users' (@table_reference_2of2)
   ; [24..25] ';'
