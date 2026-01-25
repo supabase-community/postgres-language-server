@@ -78,7 +78,7 @@ fn generate_group(
     Ok(())
 }
 
-fn extract_group_metadata(group: &str) -> (&str, Markup) {
+fn extract_group_metadata(group: &str) -> (&str, Markup<'_>) {
     match group {
         "safety" => (
             "Safety",
