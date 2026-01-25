@@ -3,7 +3,7 @@ use criterion::{Criterion, black_box, criterion_group, criterion_main};
 pub fn criterion_benchmark(c: &mut Criterion) {
     // takes about 3 microseconds on MacBook Pro M2 with 16GB Memory
     c.bench_function("parsing > small sql", |b| {
-        let content = format!("select * from users;");
+        let content = "select * from users;".to_string();
 
         b.iter(|| {
             let mut parser = tree_sitter::Parser::new();
@@ -17,8 +17,7 @@ pub fn criterion_benchmark(c: &mut Criterion) {
 
     // takes about 38 microseconds on MacBook Pro M2 with 16GB Memory
     c.bench_function("parsing > mid sql", |b| {
-        let content = format!(
-            r#"select
+        let content = r#"select
   n.oid :: int8 as "id!",
   n.nspname as name,
   u.rolname as "owner!"
@@ -33,7 +32,7 @@ where
   )
   and not pg_catalog.starts_with(n.nspname, 'pg_temp_')
   and not pg_catalog.starts_with(n.nspname, 'pg_toast_temp_');"#
-        );
+            .to_string();
 
         b.iter(|| {
             let mut parser = tree_sitter::Parser::new();
@@ -47,8 +46,7 @@ where
 
     // takes about 137 microseconds on MacBook Pro M2 with 16GB Memory
     c.bench_function("parsing > large sql", |b| {
-        let content = format!(
-            r#"with
+        let content = r#"with
   available_tables as (
     select
       c.relname as table_name,
@@ -104,7 +102,7 @@ where
   -- system columns, such as `cmax` or `tableoid`, have negative `attnum`s
   atts.attnum >= 0;
 "#
-        );
+        .to_string();
 
         b.iter(|| {
             let mut parser = tree_sitter::Parser::new();

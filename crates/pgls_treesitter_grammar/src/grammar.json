@@ -3837,7 +3837,7 @@
               "members": [
                 {
                   "type": "SYMBOL",
-                  "name": "_delete_statement"
+                  "name": "delete_statement"
                 },
                 {
                   "type": "SYMBOL",
@@ -4906,7 +4906,7 @@
         }
       ]
     },
-    "_delete_statement": {
+    "delete_statement": {
       "type": "SEQ",
       "members": [
         {
