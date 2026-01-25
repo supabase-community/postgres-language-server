@@ -93,7 +93,6 @@ mod tests {
     }
 
     #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
-    #[ignore = "will be reintroduced after stacked keyword-completion PRs merge"]
     async fn shows_multiple_columns_if_no_relation_specified(pool: PgPool) {
         let setup = r#"
             create schema private;
@@ -125,7 +124,6 @@ mod tests {
     }
 
     #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
-    #[ignore = "will be reintroduced after stacked keyword-completion PRs merge"]
     async fn suggests_relevant_columns_without_letters(pool: PgPool) {
         let setup = r#"
             create table users (
@@ -213,7 +211,6 @@ mod tests {
     }
 
     #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
-    #[ignore = "will be reintroduced after stacked keyword-completion PRs merge"]
     async fn filters_out_by_aliases_in_join_on(pool: PgPool) {
         let setup = r#"
             create schema auth;
@@ -281,7 +278,6 @@ mod tests {
     }
 
     #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
-    #[ignore = "will be reintroduced after stacked keyword-completion PRs merge"]
     async fn does_not_complete_cols_in_join_clauses(pool: PgPool) {
         let setup = r#"
             create schema auth;
@@ -310,7 +306,6 @@ mod tests {
     }
 
     #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
-    #[ignore = "will be reintroduced after stacked keyword-completion PRs merge"]
     async fn completes_in_join_on_clause(pool: PgPool) {
         let setup = r#"
             create schema auth;
@@ -385,7 +380,6 @@ mod tests {
     }
 
     #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
-    #[ignore = "will be reintroduced after stacked keyword-completion PRs merge"]
     async fn suggests_columns_in_insert_clause(pool: PgPool) {
         let setup = r#"
             create table instruments (
@@ -423,7 +417,6 @@ mod tests {
     }
 
     #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
-    #[ignore = "will be reintroduced after stacked keyword-completion PRs merge"]
     async fn suggests_columns_in_where_clause(pool: PgPool) {
         let setup = r#"
             create table instruments (
@@ -447,7 +440,7 @@ mod tests {
                         "select name from instruments i join others o on i.z = o.a <sql>",
                     )
                     .type_sql("where o.<1>a = <2>i.z and <3>i.id > 5;")
-                    .comment("should respect alias speciifcation")
+                    .comment("should respect alias specification")
                     .comment("should not prioritize suggest columns or schemas (right side of binary expression)")
                     .comment("should prioritize columns that aren't already mentioned"),
             )
@@ -456,7 +449,6 @@ mod tests {
     }
 
     #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
-    #[ignore = "will be reintroduced after stacked keyword-completion PRs merge"]
     async fn suggests_columns_in_alter_table_and_drop_table(pool: PgPool) {
         let setup = r#"
             create table instruments (
@@ -531,7 +523,6 @@ mod tests {
     }
 
     #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
-    #[ignore = "will be reintroduced after stacked keyword-completion PRs merge"]
     async fn completes_quoted_columns(pool: PgPool) {
         let setup = r#"
             create schema if not exists private;
@@ -553,7 +544,6 @@ mod tests {
     }
 
     #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
-    #[ignore = "will be reintroduced after stacked keyword-completion PRs merge"]
     async fn completes_quoted_columns_with_aliases(pool: PgPool) {
         let setup = r#"
             create schema if not exists private;
