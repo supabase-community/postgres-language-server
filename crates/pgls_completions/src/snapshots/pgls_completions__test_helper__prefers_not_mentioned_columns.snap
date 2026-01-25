@@ -116,8 +116,8 @@ Results:
 c - public.two.c (Column)
 cache_size - pg_catalog.pg_sequences.cache_size (Column)
 calls - pg_catalog.pg_stat_user_functions.calls (Column)
+cast - cast (Keyword)
 castcontext - pg_catalog.pg_cast.castcontext (Column)
-castfunc - pg_catalog.pg_cast.castfunc (Column)
 
 --------------
 
@@ -268,8 +268,8 @@ Results:
 c - public.two.c (Column)
 cache_size - pg_catalog.pg_sequences.cache_size (Column)
 calls - pg_catalog.pg_stat_user_functions.calls (Column)
+cast - cast (Keyword)
 castcontext - pg_catalog.pg_cast.castcontext (Column)
-castfunc - pg_catalog.pg_cast.castfunc (Column)
 
 --------------
 

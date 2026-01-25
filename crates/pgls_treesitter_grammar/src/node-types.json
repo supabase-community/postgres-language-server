@@ -4488,6 +4488,29 @@
     }
   },
   {
+    "type": "delete_statement",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "from",
+          "named": true
+        },
+        {
+          "type": "keyword_delete",
+          "named": true
+        },
+        {
+          "type": "returning",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
     "type": "direction",
     "named": true,
     "fields": {
@@ -9080,6 +9103,10 @@
           "named": true
         },
         {
+          "type": "delete_statement",
+          "named": true
+        },
+        {
           "type": "drop_database",
           "named": true
         },
@@ -9165,10 +9192,6 @@
         },
         {
           "type": "keyword_default",
-          "named": true
-        },
-        {
-          "type": "keyword_delete",
           "named": true
         },
         {
