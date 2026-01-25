@@ -8,9 +8,9 @@ program [0..28] 'select "auth".REPLACED_TOKEN'
   statement [0..28] 'select "auth".REPLACED_TOKEN'
     select [0..28] 'select "auth".REPLACED_TOKEN'
       keyword_select [0..6] 'select'
-      select_expression [7..28] '"auth".REPLACED_TOKEN'
-        term [7..28] '"auth".REPLACED_TOKEN'
-          object_reference [7..28] '"auth".REPLACED_TOKEN'
-            any_identifier [7..13] '"auth"'
+      select_expression [7..28] '"auth".REPLACED_TOKEN' (@end)
+        term [7..28] '"auth".REPLACED_TOKEN' (@end)
+          object_reference [7..28] '"auth".REPLACED_TOKEN' (@end)
+            any_identifier [7..13] '"auth"' (@object_reference_1of2)
             . [13..14] '.'
-            any_identifier [14..28] 'REPLACED_TOKEN'
+            any_identifier [14..28] 'REPLACED_TOKEN' (@object_reference_2of2)

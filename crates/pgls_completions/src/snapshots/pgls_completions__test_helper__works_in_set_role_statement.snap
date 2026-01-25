@@ -1,0 +1,59 @@
+---
+source: crates/pgls_completions/src/test_helper.rs
+expression: final_snapshot
+---
+***Setup***
+
+create table users (
+  id serial primary key,
+  email varchar,
+  address text
+);
+
+
+--------------
+
+s|
+
+Results:
+select - select (Keyword)
+set - set (Keyword)
+insert - insert (Keyword)
+reset - reset (Keyword)
+
+--------------
+
+set |
+set r|
+set role |
+
+Results:
+anon - anon (Role)
+authenticated - authenticated (Role)
+owner - owner (Role)
+service_role - service_role (Role)
+test_login - test_login (Role)
+
+--------------
+
+set role a|
+
+Results:
+anon - anon (Role)
+authenticated - authenticated (Role)
+pg_read_all_data - pg_read_all_data (Role)
+pg_read_all_settings - pg_read_all_settings (Role)
+pg_read_all_stats - pg_read_all_stats (Role)
+
+--------------
+
+set role anon; |
+
+Results:
+insert - insert (Keyword)
+reset - reset (Keyword)
+select - select (Keyword)
+set - set (Keyword)
+truncate - truncate (Keyword)
+
+--------------
