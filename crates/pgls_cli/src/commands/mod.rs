@@ -158,7 +158,8 @@ pub enum PgLSCommand {
     /// Cleans the logs emitted by the daemon.
     Clean,
 
-    /// Exports the database schema to a JSON file for use with WASM bindings.
+    /// Exports the database schema to JSON for use with WASM bindings.
+    /// Writes to stdout by default, or to a file if --output is specified.
     #[bpaf(command("schema-export"))]
     SchemaExport {
         /// PostgreSQL connection string (e.g., postgres://user:pass@host/db)
@@ -170,14 +171,9 @@ pub enum PgLSCommand {
         )]
         connection_string: String,
 
-        /// Output file path for the JSON schema
-        #[bpaf(
-            long("output"),
-            short('o'),
-            argument("PATH"),
-            fallback(PathBuf::from("schema.json"))
-        )]
-        output: PathBuf,
+        /// Output file path for the JSON schema (defaults to stdout if not specified)
+        #[bpaf(long("output"), short('o'), argument("PATH"))]
+        output: Option<PathBuf>,
     },
 
     #[bpaf(command("__run_server"), hide)]

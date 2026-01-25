@@ -50,7 +50,6 @@ impl<'a> AnalyserVisitorBuilder<'a> {
         self
     }
 
-    #[cfg(feature = "db")]
     #[must_use]
     pub(crate) fn finish(self) -> (Vec<RuleFilter<'static>>, Vec<RuleFilter<'static>>) {
         let mut disabled_rules = vec![];
@@ -61,26 +60,12 @@ impl<'a> AnalyserVisitorBuilder<'a> {
             enabled_rules.extend(linter_enabled_rules);
             disabled_rules.extend(linter_disabled_rules);
         }
+        #[cfg(feature = "db")]
         if let Some(mut splinter) = self.splinter {
             pgls_splinter::registry::visit_registry(&mut splinter);
             let (splinter_enabled_rules, splinter_disabled_rules) = splinter.finish();
             enabled_rules.extend(splinter_enabled_rules);
             disabled_rules.extend(splinter_disabled_rules);
-        }
-
-        (enabled_rules, disabled_rules)
-    }
-
-    #[cfg(not(feature = "db"))]
-    #[must_use]
-    pub(crate) fn finish(self) -> (Vec<RuleFilter<'static>>, Vec<RuleFilter<'static>>) {
-        let mut disabled_rules = vec![];
-        let mut enabled_rules = vec![];
-        if let Some(mut lint) = self.lint {
-            pgls_analyser::visit_registry(&mut lint);
-            let (linter_enabled_rules, linter_disabled_rules) = lint.finish();
-            enabled_rules.extend(linter_enabled_rules);
-            disabled_rules.extend(linter_disabled_rules);
         }
 
         (enabled_rules, disabled_rules)

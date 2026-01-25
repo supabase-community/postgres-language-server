@@ -74,7 +74,7 @@ impl CallsiteEntry {
         }
     }
 
-    fn into_histograms(self, name: &str) -> Vec<(Cow<str>, Histogram<u64>)> {
+    fn into_histograms(self, name: &str) -> Vec<(Cow<'_, str>, Histogram<u64>)> {
         match self {
             CallsiteEntry::Debug { total } => vec![(Cow::Borrowed(name), total)],
             CallsiteEntry::Trace { total, busy, idle } => vec![

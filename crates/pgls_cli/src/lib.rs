@@ -126,7 +126,7 @@ impl<'app> CliSession<'app> {
                 let runtime = tokio::runtime::Runtime::new().map_err(CliDiagnostic::io_error)?;
                 runtime.block_on(commands::schema_export::run_schema_export(
                     &connection_string,
-                    &output,
+                    output.as_deref(),
                 ))
             }
         };
