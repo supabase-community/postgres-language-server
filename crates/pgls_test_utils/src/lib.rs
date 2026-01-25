@@ -73,9 +73,7 @@ fn print_ts_tree_recur(
             node.start_position().column,
             node.end_position().column,
             node_text,
-            field_name
-                .map(|n| format!(" (@{})", n))
-                .unwrap_or("".into())
+            field_name.map(|n| format!(" (@{n})")).unwrap_or("".into())
         )
         .as_str(),
     );

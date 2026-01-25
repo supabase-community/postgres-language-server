@@ -64,8 +64,8 @@ mod tests {
     use crate::{
         CompletionItem, CompletionItemKind, complete,
         test_helper::{
-            CompletionAssertion, assert_complete_results, assert_no_complete_results,
-            get_test_deps, get_test_params,
+            CompletionAssertion, TestCompletionsCase, TestCompletionsSuite,
+            assert_complete_results, assert_no_complete_results, get_test_deps, get_test_params,
         },
     };
 
@@ -268,70 +268,13 @@ mod tests {
           );
         "#;
 
-        pool.execute(setup).await.unwrap();
-
-        assert_complete_results(
-            format!("update {}", QueryWithCursorPosition::cursor_marker()).as_str(),
-            vec![CompletionAssertion::LabelAndKind(
-                "coos".into(),
-                CompletionItemKind::Table,
-            )],
-            None,
-            &pool,
-        )
-        .await;
-
-        assert_complete_results(
-            format!("update public.{}", QueryWithCursorPosition::cursor_marker()).as_str(),
-            vec![CompletionAssertion::LabelAndKind(
-                "coos".into(),
-                CompletionItemKind::Table,
-            )],
-            None,
-            &pool,
-        )
-        .await;
-
-        assert_no_complete_results(
-            format!(
-                "update public.coos {}",
-                QueryWithCursorPosition::cursor_marker()
+        TestCompletionsSuite::new(&pool, Some(setup))
+            .with_case(
+                TestCompletionsCase::new()
+                    .type_sql("update public.coos set name = 'cool' where id = 5;"),
             )
-            .as_str(),
-            None,
-            &pool,
-        )
-        .await;
-
-        assert_complete_results(
-            format!(
-                "update coos set {}",
-                QueryWithCursorPosition::cursor_marker()
-            )
-            .as_str(),
-            vec![
-                CompletionAssertion::Label("id".into()),
-                CompletionAssertion::Label("name".into()),
-            ],
-            None,
-            &pool,
-        )
-        .await;
-
-        assert_complete_results(
-            format!(
-                "update coos set name = 'cool' where {}",
-                QueryWithCursorPosition::cursor_marker()
-            )
-            .as_str(),
-            vec![
-                CompletionAssertion::Label("id".into()),
-                CompletionAssertion::Label("name".into()),
-            ],
-            None,
-            &pool,
-        )
-        .await;
+            .snapshot("suggests_tables_in_update")
+            .await;
     }
 
     #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
@@ -411,31 +354,18 @@ mod tests {
             );
         "#;
 
-        assert_complete_results(
-            format!(
-                "select * from auth.users u join {}",
-                QueryWithCursorPosition::cursor_marker()
+        TestCompletionsSuite::new(&pool, Some(setup))
+            .with_case(
+                TestCompletionsCase::new()
+                    .inside_static_statement("select * from auth.users u <sql>")
+                    .type_sql("join"),
             )
-            .as_str(),
-            vec![
-                CompletionAssertion::LabelAndKind("auth".into(), CompletionItemKind::Schema),
-                CompletionAssertion::LabelAndKind(
-                    "information_schema".into(),
-                    CompletionItemKind::Schema,
-                ),
-                CompletionAssertion::LabelAndKind("pg_catalog".into(), CompletionItemKind::Schema),
-                CompletionAssertion::LabelAndKind("pg_toast".into(), CompletionItemKind::Schema),
-                CompletionAssertion::LabelAndKind("posts".into(), CompletionItemKind::Table), // self-join
-                CompletionAssertion::LabelAndKind("users".into(), CompletionItemKind::Table),
-            ],
-            Some(setup),
-            &pool,
-        )
-        .await;
+            .snapshot("suggests_tables_in_join")
+            .await;
     }
 
     #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
-    async fn suggests_tables_in_alter_and_drop_statements(pool: PgPool) {
+    async fn suggests_tables_in_drop_statements(pool: PgPool) {
         let setup = r#"
             create schema auth;
 
@@ -454,63 +384,36 @@ mod tests {
             );
         "#;
 
-        pool.execute(setup).await.unwrap();
+        TestCompletionsSuite::new(&pool, Some(setup))
+            .with_case(TestCompletionsCase::new().type_sql("drop table if exists auth.posts"))
+            .snapshot("suggests_tables_in_drop_statements")
+            .await;
+    }
 
-        assert_complete_results(
-            format!("alter table {}", QueryWithCursorPosition::cursor_marker()).as_str(),
-            vec![
-                CompletionAssertion::LabelAndKind("auth".into(), CompletionItemKind::Schema),
-                CompletionAssertion::LabelAndKind("posts".into(), CompletionItemKind::Table),
-                CompletionAssertion::LabelAndKind("users".into(), CompletionItemKind::Table),
-            ],
-            None,
-            &pool,
-        )
-        .await;
+    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    async fn suggests_tables_in_alter_statements(pool: PgPool) {
+        let setup = r#"
+            create schema auth;
 
-        assert_complete_results(
-            format!(
-                "alter table if exists {}",
-                QueryWithCursorPosition::cursor_marker()
-            )
-            .as_str(),
-            vec![
-                CompletionAssertion::LabelAndKind("auth".into(), CompletionItemKind::Schema),
-                CompletionAssertion::LabelAndKind("posts".into(), CompletionItemKind::Table),
-                CompletionAssertion::LabelAndKind("users".into(), CompletionItemKind::Table),
-            ],
-            None,
-            &pool,
-        )
-        .await;
+            create table auth.users (
+                uid serial primary key,
+                name text not null,
+                email text unique not null
+            );
 
-        assert_complete_results(
-            format!("drop table {}", QueryWithCursorPosition::cursor_marker()).as_str(),
-            vec![
-                CompletionAssertion::LabelAndKind("auth".into(), CompletionItemKind::Schema),
-                CompletionAssertion::LabelAndKind("posts".into(), CompletionItemKind::Table),
-                CompletionAssertion::LabelAndKind("users".into(), CompletionItemKind::Table),
-            ],
-            None,
-            &pool,
-        )
-        .await;
+            create table auth.posts (
+                pid serial primary key,
+                user_id int not null references auth.users(uid),
+                title text not null,
+                content text,
+                created_at timestamp default now()
+            );
+        "#;
 
-        assert_complete_results(
-            format!(
-                "drop table if exists {}",
-                QueryWithCursorPosition::cursor_marker()
-            )
-            .as_str(),
-            vec![
-                CompletionAssertion::LabelAndKind("auth".into(), CompletionItemKind::Schema),
-                CompletionAssertion::LabelAndKind("posts".into(), CompletionItemKind::Table), // self-join
-                CompletionAssertion::LabelAndKind("users".into(), CompletionItemKind::Table),
-            ],
-            None,
-            &pool,
-        )
-        .await;
+        TestCompletionsSuite::new(&pool, Some(setup))
+            .with_case(TestCompletionsCase::new().type_sql("alter table if exists auth.posts"))
+            .snapshot("suggests_tables_in_alter_statements")
+            .await;
     }
 
     #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]

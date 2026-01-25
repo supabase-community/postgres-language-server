@@ -18,57 +18,57 @@ program [0..25] 'select u.id, u.email, cs.user_settings, cs.client_id from auth.
   statement [0..24] 'select u.id, u.email, cs.user_settings, cs.client_id from auth.users u join public.client_settings cs on u.id = cs.user_id'
     select [0..16] 'select u.id, u.email, cs.user_settings, cs.client_id'
       keyword_select [0..6] 'select'
-      select_expression [4..16] 'u.id, u.email, cs.user_settings, cs.client_id'
-        term [4..8] 'u.id'
-          object_reference [4..8] 'u.id'
-            any_identifier [4..5] 'u'
+      select_expression [4..16] 'u.id, u.email, cs.user_settings, cs.client_id' (@end)
+        term [4..8] 'u.id' (@end)
+          object_reference [4..8] 'u.id' (@end)
+            any_identifier [4..5] 'u' (@object_reference_1of2)
             . [5..6] '.'
-            any_identifier [6..8] 'id'
-        , [8..9] ','
-        term [4..11] 'u.email'
-          object_reference [4..11] 'u.email'
-            any_identifier [4..5] 'u'
+            any_identifier [6..8] 'id' (@object_reference_2of2)
+        , [8..9] ',' (@end)
+        term [4..11] 'u.email' (@end)
+          object_reference [4..11] 'u.email' (@end)
+            any_identifier [4..5] 'u' (@object_reference_1of2)
             . [5..6] '.'
-            any_identifier [6..11] 'email'
-        , [11..12] ','
-        term [4..20] 'cs.user_settings'
-          object_reference [4..20] 'cs.user_settings'
-            any_identifier [4..6] 'cs'
+            any_identifier [6..11] 'email' (@object_reference_2of2)
+        , [11..12] ',' (@end)
+        term [4..20] 'cs.user_settings' (@end)
+          object_reference [4..20] 'cs.user_settings' (@end)
+            any_identifier [4..6] 'cs' (@object_reference_1of2)
             . [6..7] '.'
-            any_identifier [7..20] 'user_settings'
-        , [20..21] ','
-        term [4..16] 'cs.client_id'
-          object_reference [4..16] 'cs.client_id'
-            any_identifier [4..6] 'cs'
+            any_identifier [7..20] 'user_settings' (@object_reference_2of2)
+        , [20..21] ',' (@end)
+        term [4..16] 'cs.client_id' (@end)
+          object_reference [4..16] 'cs.client_id' (@end)
+            any_identifier [4..6] 'cs' (@object_reference_1of2)
             . [6..7] '.'
-            any_identifier [7..16] 'client_id'
+            any_identifier [7..16] 'client_id' (@object_reference_2of2)
     from [0..24] 'from auth.users u join public.client_settings cs on u.id = cs.user_id'
       keyword_from [0..4] 'from'
-      relation [4..16] 'auth.users u'
-        table_reference [4..14] 'auth.users'
-          schema_identifier [4..8] 'auth'
+      relation [4..16] 'auth.users u' (@end)
+        table_reference [4..14] 'auth.users' (@end)
+          schema_identifier [4..8] 'auth' (@table_reference_1of2)
           . [8..9] '.'
-          table_identifier [9..14] 'users'
+          table_identifier [9..14] 'users' (@table_reference_2of2)
         alias [15..16] 'u'
-          any_identifier [15..16] 'u'
+          any_identifier [15..16] 'u' (@end)
       join [4..24] 'join public.client_settings cs on u.id = cs.user_id'
         keyword_join [4..8] 'join'
         relation [9..34] 'public.client_settings cs'
-          table_reference [9..31] 'public.client_settings'
-            schema_identifier [9..15] 'public'
+          table_reference [9..31] 'public.client_settings' (@end)
+            schema_identifier [9..15] 'public' (@table_reference_1of2)
             . [15..16] '.'
-            table_identifier [16..31] 'client_settings'
+            table_identifier [16..31] 'client_settings' (@table_reference_2of2)
           alias [32..34] 'cs'
-            any_identifier [32..34] 'cs'
+            any_identifier [32..34] 'cs' (@end)
         keyword_on [4..6] 'on'
-        binary_expression [7..24] 'u.id = cs.user_id'
-          object_reference [7..11] 'u.id'
-            any_identifier [7..8] 'u'
+        binary_expression [7..24] 'u.id = cs.user_id' (@end)
+          object_reference [7..11] 'u.id' (@binary_expr_left)
+            any_identifier [7..8] 'u' (@object_reference_1of2)
             . [8..9] '.'
-            any_identifier [9..11] 'id'
-          = [12..13] '='
-          object_reference [14..24] 'cs.user_id'
-            any_identifier [14..16] 'cs'
+            any_identifier [9..11] 'id' (@object_reference_2of2)
+          = [12..13] '=' (@binary_expr_operator)
+          object_reference [14..24] 'cs.user_id' (@end)
+            any_identifier [14..16] 'cs' (@object_reference_1of2)
             . [16..17] '.'
-            any_identifier [17..24] 'user_id'
+            any_identifier [17..24] 'user_id' (@object_reference_2of2)
   ; [24..25] ';'

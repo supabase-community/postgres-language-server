@@ -1,0 +1,155 @@
+---
+source: crates/pgls_completions/src/test_helper.rs
+expression: final_snapshot
+---
+***Setup***
+
+create table coos (
+  id serial primary key,
+  name text
+);
+
+
+--------------
+
+u|
+
+Results:
+update - update (Keyword)
+truncate - truncate (Keyword)
+
+--------------
+
+update |
+
+Results:
+coos - public.coos (Table)
+_sqlx_migrations - public._sqlx_migrations (Table)
+information_schema - information_schema (Schema)
+pg_catalog - pg_catalog (Schema)
+pg_toast - pg_toast (Schema)
+
+--------------
+
+update p|
+
+Results:
+public - public (Schema)
+pg_catalog - pg_catalog (Schema)
+pg_toast - pg_toast (Schema)
+information_schema.parameters - information_schema.parameters (Table)
+pg_catalog.pg_aggregate - pg_catalog.pg_aggregate (Table)
+
+--------------
+
+update public.|
+
+Results:
+coos - public.coos (Table)
+_sqlx_migrations - public._sqlx_migrations (Table)
+
+--------------
+
+update public.c|
+
+Results:
+coos - public.coos (Table)
+
+--------------
+
+update public.coos |
+
+Results:
+set - set (Keyword)
+
+--------------
+
+update public.coos s|
+
+Results:
+set - set (Keyword)
+
+--------------
+
+update public.coos set |
+
+Results:
+id - public.coos.id (Column)
+name - public.coos.name (Column)
+information_schema - information_schema (Schema)
+pg_catalog - pg_catalog (Schema)
+pg_toast - pg_toast (Schema)
+
+--------------
+
+update public.coos set n|
+
+Results:
+name - public.coos.name (Column)
+information_schema - information_schema (Schema)
+n_dead_tup - pg_catalog.pg_stat_all_tables.n_dead_tup (Column)
+n_distinct - pg_catalog.pg_stats.n_distinct (Column)
+n_ins_since_vacuum - pg_catalog.pg_stat_all_tables.n_ins_since_vacuum (Column)
+
+--------------
+
+update public.coos set name |
+update public.coos set name = |
+
+Results:
+coos - public.coos (Table)
+id - public.coos.id (Column)
+name - public.coos.name (Column)
+_sqlx_migrations - public._sqlx_migrations (Table)
+information_schema - information_schema (Schema)
+
+--------------
+
+update public.coos set name = '|
+update public.coos set name = 'cool' |
+update public.coos set name = 'cool' w|
+update public.coos set name = 'cool' where |
+
+Results:
+id - public.coos.id (Column)
+name - public.coos.name (Column)
+abbrev - pg_catalog.pg_timezone_abbrevs.abbrev (Column)
+action_condition - information_schema.triggers.action_condition (Column)
+action_order - information_schema.triggers.action_order (Column)
+
+--------------
+
+update public.coos set name = 'cool' where i|
+
+Results:
+id - public.coos.id (Column)
+ident - pg_catalog.pg_backend_memory_contexts.ident (Column)
+identity_cycle - information_schema.columns.identity_cycle (Column)
+identity_generation - information_schema.columns.identity_generation (Column)
+identity_increment - information_schema.columns.identity_increment (Column)
+
+--------------
+
+update public.coos set name = 'cool' where id |
+update public.coos set name = 'cool' where id = |
+
+Results:
+name - public.coos.name (Column)
+id - public.coos.id (Column)
+abbrev - pg_catalog.pg_timezone_abbrevs.abbrev (Column)
+action_condition - information_schema.triggers.action_condition (Column)
+action_order - information_schema.triggers.action_order (Column)
+
+--------------
+
+update public.coos set name = 'cool' where id = 5|
+update public.coos set name = 'cool' where id = 5; |
+
+Results:
+insert - insert (Keyword)
+reset - reset (Keyword)
+select - select (Keyword)
+set - set (Keyword)
+truncate - truncate (Keyword)
+
+--------------
