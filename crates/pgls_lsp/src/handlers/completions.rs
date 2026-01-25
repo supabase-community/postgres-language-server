@@ -79,5 +79,6 @@ fn to_lsp_types_completion_item_kind(
         pgls_completions::CompletionItemKind::Schema => lsp_types::CompletionItemKind::CLASS,
         pgls_completions::CompletionItemKind::Policy => lsp_types::CompletionItemKind::CONSTANT,
         pgls_completions::CompletionItemKind::Role => lsp_types::CompletionItemKind::CONSTANT,
+        pgls_completions::CompletionItemKind::Keyword => lsp_types::CompletionItemKind::KEYWORD,
     }
 }

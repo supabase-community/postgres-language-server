@@ -310,6 +310,7 @@ impl Workspace {
                     pgls_completions::CompletionItemKind::Schema => "schema",
                     pgls_completions::CompletionItemKind::Policy => "policy",
                     pgls_completions::CompletionItemKind::Role => "role",
+                    pgls_completions::CompletionItemKind::Keyword => "keyword",
                 };
                 CompletionItem {
                     label: c.label,
