@@ -24,7 +24,7 @@ use crate::{
 };
 
 mod client;
-mod server;
+pub mod server;
 
 pub use server::StatementId;
 pub(crate) use server::document::*;

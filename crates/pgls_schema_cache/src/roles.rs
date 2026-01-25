@@ -1,6 +1,9 @@
+use serde::{Deserialize, Serialize};
+
+#[cfg(feature = "db")]
 use crate::schema_cache::SchemaCacheItem;
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Role {
     pub name: String,
     pub is_super_user: bool,
@@ -13,6 +16,7 @@ pub struct Role {
     pub has_member: Vec<String>,
 }
 
+#[cfg(feature = "db")]
 impl SchemaCacheItem for Role {
     type Item = Role;
 
@@ -23,7 +27,7 @@ impl SchemaCacheItem for Role {
     }
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "db"))]
 mod tests {
     use sqlx::PgPool;
 

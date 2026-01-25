@@ -15,7 +15,7 @@ doctest = false
 
 [dependencies]
 clap                              = { version = "4.5.23", features = ["derive"] }
-pgls_schema_cache.workspace       = true
+pgls_schema_cache                 = { workspace = true, default-features = false }
 pgls_text_size.workspace          = true
 pgls_treesitter_grammar.workspace = true
 tree-sitter.workspace             = true

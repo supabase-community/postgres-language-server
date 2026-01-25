@@ -1,8 +1,11 @@
+use serde::{Deserialize, Serialize};
+#[cfg(feature = "db")]
 use sqlx::PgPool;
 
+#[cfg(feature = "db")]
 use crate::schema_cache::SchemaCacheItem;
 
-#[derive(Debug, Clone, PartialEq, Eq, Default)]
+#[derive(Debug, Clone, PartialEq, Eq, Default, Serialize, Deserialize)]
 pub enum ReplicaIdentity {
     #[default]
     Default,
@@ -23,7 +26,7 @@ impl From<String> for ReplicaIdentity {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Default)]
+#[derive(Debug, Clone, PartialEq, Eq, Default, Serialize, Deserialize)]
 pub enum TableKind {
     #[default]
     Ordinary,
@@ -51,7 +54,7 @@ impl From<i8> for TableKind {
     }
 }
 
-#[derive(Debug, Default, PartialEq, Eq)]
+#[derive(Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Table {
     pub id: i64,
     pub schema: String,
@@ -67,6 +70,7 @@ pub struct Table {
     pub comment: Option<String>,
 }
 
+#[cfg(feature = "db")]
 impl SchemaCacheItem for Table {
     type Item = Table;
 
@@ -77,7 +81,7 @@ impl SchemaCacheItem for Table {
     }
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "db"))]
 mod tests {
     use sqlx::{Executor, PgPool};
 

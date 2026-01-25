@@ -13,7 +13,6 @@ version              = "0.0.0"
 
 [dependencies]
 biome_deserialize = "0.6.0"
-futures           = "0.3.31"
 globset           = "0.4.16"
 lru               = "0.12"
 
@@ -29,17 +28,14 @@ pgls_fs                           = { workspace = true, features = ["serde"] }
 pgls_hover                        = { workspace = true }
 pgls_lexer                        = { workspace = true }
 pgls_matcher                      = { workspace = true }
-pgls_plpgsql_check                = { workspace = true }
 pgls_query                        = { workspace = true }
 pgls_query_ext                    = { workspace = true }
-pgls_schema_cache                 = { workspace = true }
-pgls_splinter                     = { workspace = true }
+pgls_schema_cache                 = { workspace = true, features = ["serde"] }
 pgls_statement_splitter           = { workspace = true }
 pgls_suppressions                 = { workspace = true }
 pgls_text_size.workspace          = true
 pgls_tokenizer                    = { workspace = true }
 pgls_treesitter_grammar.workspace = true
-pgls_typecheck                    = { workspace = true }
 pgls_workspace_macros             = { workspace = true }
 regex                             = { workspace = true }
 rustc-hash                        = { workspace = true }
@@ -47,17 +43,33 @@ schemars                          = { workspace = true, optional = true }
 serde                             = { workspace = true, features = ["derive"] }
 serde_json                        = { workspace = true, features = ["raw_value"] }
 slotmap                           = { workspace = true, features = ["serde"] }
-sqlx.workspace                    = true
 strum                             = { workspace = true }
-tokio                             = { workspace = true, features = ["rt", "rt-multi-thread"] }
 tracing                           = { workspace = true, features = ["attributes", "log"] }
 tree-sitter.workspace             = true
+
+# Optional DB dependencies
+futures            = { version = "0.3.31", optional = true }
+pgls_plpgsql_check = { workspace = true, optional = true }
+pgls_splinter      = { workspace = true, optional = true }
+pgls_typecheck     = { workspace = true, optional = true }
+sqlx               = { workspace = true, optional = true }
+tokio              = { workspace = true, features = ["rt", "rt-multi-thread"], optional = true }
 
 biome_js_factory = { workspace = true, optional = true }
 biome_js_syntax  = { workspace = true, optional = true }
 biome_rowan      = { workspace = true, optional = true }
 
 [features]
+db = [
+  "dep:futures",
+  "dep:sqlx",
+  "dep:tokio",
+  "dep:pgls_plpgsql_check",
+  "dep:pgls_splinter",
+  "dep:pgls_typecheck",
+  "pgls_schema_cache/db",
+]
+default = ["db"]
 schema = [
   "dep:schemars",
   "dep:biome_rowan",

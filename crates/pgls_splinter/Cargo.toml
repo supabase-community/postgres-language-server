@@ -15,7 +15,7 @@ pgls_analyse.workspace       = true
 pgls_configuration.workspace = true
 pgls_diagnostics.workspace   = true
 pgls_matcher.workspace       = true
-pgls_schema_cache.workspace  = true
+pgls_schema_cache            = { workspace = true, features = ["db"] }
 serde.workspace              = true
 serde_json.workspace         = true
 sqlx.workspace               = true

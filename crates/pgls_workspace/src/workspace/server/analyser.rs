@@ -6,11 +6,13 @@ use crate::settings::Settings;
 
 pub(crate) struct AnalyserVisitorBuilder<'a> {
     lint: Option<LintVisitor<'a>>,
+    #[cfg(feature = "db")]
     splinter: Option<SplinterVisitor<'a>>,
     settings: &'a Settings,
 }
 
 impl<'a> AnalyserVisitorBuilder<'a> {
+    #[cfg(feature = "db")]
     pub(crate) fn new(settings: &'a Settings) -> Self {
         Self {
             settings,
@@ -18,6 +20,15 @@ impl<'a> AnalyserVisitorBuilder<'a> {
             splinter: None,
         }
     }
+
+    #[cfg(not(feature = "db"))]
+    pub(crate) fn new(settings: &'a Settings) -> Self {
+        Self {
+            settings,
+            lint: None,
+        }
+    }
+
     #[must_use]
     pub(crate) fn with_linter_rules(
         mut self,
@@ -28,6 +39,7 @@ impl<'a> AnalyserVisitorBuilder<'a> {
         self
     }
 
+    #[cfg(feature = "db")]
     #[must_use]
     pub(crate) fn with_splinter_rules(
         mut self,
@@ -48,6 +60,7 @@ impl<'a> AnalyserVisitorBuilder<'a> {
             enabled_rules.extend(linter_enabled_rules);
             disabled_rules.extend(linter_disabled_rules);
         }
+        #[cfg(feature = "db")]
         if let Some(mut splinter) = self.splinter {
             pgls_splinter::registry::visit_registry(&mut splinter);
             let (splinter_enabled_rules, splinter_disabled_rules) = splinter.finish();
@@ -162,6 +175,7 @@ impl RegistryVisitor for LintVisitor<'_> {
 }
 
 /// Type meant to register all the splinter (database lint) rules
+#[cfg(feature = "db")]
 #[derive(Debug)]
 struct SplinterVisitor<'a> {
     pub(crate) enabled_rules: FxHashSet<RuleFilter<'static>>,
@@ -171,6 +185,7 @@ struct SplinterVisitor<'a> {
     settings: &'a Settings,
 }
 
+#[cfg(feature = "db")]
 impl<'a> SplinterVisitor<'a> {
     pub(crate) fn new(
         only: &'a [RuleSelector],
@@ -233,6 +248,7 @@ impl<'a> SplinterVisitor<'a> {
     }
 }
 
+#[cfg(feature = "db")]
 impl RegistryVisitor for SplinterVisitor<'_> {
     fn record_category<C: GroupCategory>(&mut self) {
         // Splinter uses Lint as its kind in declare_category! macro
@@ -268,7 +284,7 @@ mod tests {
     use pgls_configuration::{RuleConfiguration, Rules, linter::Safety};
 
     use crate::{
-        settings::{LinterSettings, Settings, SplinterSettings},
+        settings::{LinterSettings, Settings},
         workspace::server::analyser::AnalyserVisitorBuilder,
     };
 
@@ -300,9 +316,12 @@ mod tests {
         )
     }
 
+    #[cfg(feature = "db")]
     #[test]
     fn recognizes_disabled_splinter_rules() {
         use pgls_configuration::splinter::{Performance, Rules as SplinterRules};
+
+        use crate::settings::SplinterSettings;
 
         let settings = Settings {
             splinter: SplinterSettings {
@@ -330,9 +349,12 @@ mod tests {
         )
     }
 
+    #[cfg(feature = "db")]
     #[test]
     fn combines_linter_and_splinter_rules() {
         use pgls_configuration::splinter::{Performance, Rules as SplinterRules};
+
+        use crate::settings::SplinterSettings;
 
         let settings = Settings {
             linter: LinterSettings {

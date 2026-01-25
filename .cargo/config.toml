@@ -1,0 +1,11 @@
+[target.wasm32-unknown-emscripten]
+rustflags = [
+  "-C",
+  "link-args=-sSTANDALONE_WASM=0",
+  "-C",
+  "link-args=-sERROR_ON_UNDEFINED_SYMBOLS=0",
+  "-C",
+  "link-args=-sDISABLE_EXCEPTION_CATCHING=1",
+  "-C",
+  "link-args=-sEXPORTED_FUNCTIONS=['_pgls_init','_pgls_free_string','_pgls_set_schema','_pgls_clear_schema','_pgls_insert_file','_pgls_remove_file','_pgls_lint','_pgls_complete','_pgls_hover','_pgls_parse','_pgls_version','_pgls_handle_message','_malloc','_free']",
+]

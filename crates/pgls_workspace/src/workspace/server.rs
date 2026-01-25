@@ -7,13 +7,16 @@ use std::{
 };
 
 use analyser::AnalyserVisitorBuilder;
+#[cfg(feature = "db")]
 use async_helper::run_async;
+#[cfg(feature = "db")]
 use connection_manager::ConnectionManager;
-use document::{
-    CursorPositionFilter, DefaultMapper, Document, ExecuteStatementMapper,
-    TypecheckDiagnosticsMapper,
-};
+use document::{CursorPositionFilter, DefaultMapper, Document};
+#[cfg(feature = "db")]
+use document::{ExecuteStatementMapper, TypecheckDiagnosticsMapper};
+#[cfg(feature = "db")]
 use futures::{StreamExt, stream};
+#[cfg(feature = "db")]
 use pg_query::convert_to_positional_params;
 use pgls_analyse::AnalysisFilter;
 use pgls_analyser::{Analyser, AnalyserConfig, AnalyserParams, LinterOptions};
@@ -22,9 +25,12 @@ use pgls_diagnostics::{
     Diagnostic, DiagnosticExt, Error, Severity, serde::Diagnostic as SDiagnostic,
 };
 use pgls_fs::{ConfigName, PgLSPath};
+use pgls_schema_cache::SchemaCache;
+#[cfg(feature = "db")]
 use pgls_typecheck::{IdentifierType, TypecheckParams, TypedIdentifier};
 use pgls_workspace_macros::ignored_path;
 use schema_cache_manager::SchemaCacheManager;
+#[cfg(feature = "db")]
 use sqlx::{Executor, PgPool};
 use tracing::{debug, info};
 
@@ -54,8 +60,11 @@ pub use statement_identifier::StatementId;
 
 mod analyser;
 mod annotation;
+#[cfg(feature = "db")]
 mod async_helper;
+#[cfg(feature = "db")]
 mod connection_key;
+#[cfg(feature = "db")]
 mod connection_manager;
 pub(crate) mod document;
 mod migration;
@@ -65,15 +74,16 @@ mod sql_function;
 mod statement_identifier;
 mod tree_sitter;
 
-pub(super) struct WorkspaceServer {
+pub struct WorkspaceServer {
     /// global settings object for this workspace
     settings: RwLock<WorkspaceSettings>,
 
-    /// Stores the schema cache for this workspace
-    schema_cache: SchemaCacheManager,
-
     documents: RwLock<HashMap<PgLSPath, Document>>,
 
+    /// Manages schema cache storage - supports both DB-loaded and JSON-loaded schemas
+    schema_cache: SchemaCacheManager,
+
+    #[cfg(feature = "db")]
     connection: ConnectionManager,
 }
 
@@ -85,13 +95,16 @@ pub(super) struct WorkspaceServer {
 /// could lead too hard to debug issues)
 impl RefUnwindSafe for WorkspaceServer {}
 
+impl Default for WorkspaceServer {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl WorkspaceServer {
     /// Create a new [Workspace]
-    ///
-    /// This is implemented as a crate-private method instead of using
-    /// [Default] to disallow instances of [Workspace] from being created
-    /// outside a [crate::App]
-    pub(crate) fn new() -> Self {
+    #[cfg(feature = "db")]
+    pub fn new() -> Self {
         Self {
             settings: RwLock::default(),
             documents: RwLock::new(HashMap::new()),
@@ -100,19 +113,46 @@ impl WorkspaceServer {
         }
     }
 
+    /// Create a new [Workspace] without database support
+    #[cfg(not(feature = "db"))]
+    pub fn new() -> Self {
+        Self {
+            settings: RwLock::default(),
+            documents: RwLock::new(HashMap::new()),
+            schema_cache: SchemaCacheManager::new(),
+        }
+    }
+
     /// Provides a reference to the current settings
-    fn workspaces(&self) -> WorkspaceSettingsHandle {
+    fn workspaces(&self) -> WorkspaceSettingsHandle<'_> {
         WorkspaceSettingsHandle::new(&self.settings)
     }
 
-    fn workspaces_mut(&self) -> WorkspaceSettingsHandleMut {
+    fn workspaces_mut(&self) -> WorkspaceSettingsHandleMut<'_> {
         WorkspaceSettingsHandleMut::new(&self.settings)
     }
 
+    #[cfg(feature = "db")]
     fn get_current_connection(&self) -> Option<PgPool> {
         let settings = self.workspaces();
         let settings = settings.settings()?;
         self.connection.get_pool(&settings.db)
+    }
+
+    /// Load schema from JSON string.
+    /// This allows setting a schema cache without a database connection.
+    pub fn set_schema_json(&self, json: &str) -> Result<(), WorkspaceError> {
+        self.schema_cache.set(json)
+    }
+
+    /// Clear the schema.
+    pub fn clear_schema(&self) {
+        self.schema_cache.clear();
+    }
+
+    /// Get a clone of the current schema.
+    pub fn get_schema(&self) -> Option<Arc<SchemaCache>> {
+        self.schema_cache.get()
     }
 
     /// Register a new project in the current workspace
@@ -380,11 +420,16 @@ impl Workspace for WorkspaceServer {
             })
             .collect();
 
+        #[cfg(feature = "db")]
         let invalidate_disabled_reason = if self.get_current_connection().is_some() {
             None
         } else {
             Some("No database connection available.".into())
         };
+
+        #[cfg(not(feature = "db"))]
+        let invalidate_disabled_reason: Option<String> =
+            Some("Database support not enabled.".into());
 
         actions.push(CodeAction {
             title: "Invalidate Schema Cache".into(),
@@ -397,6 +442,7 @@ impl Workspace for WorkspaceServer {
         Ok(CodeActionsResult { actions })
     }
 
+    #[cfg(feature = "db")]
     #[ignored_path(path=&params.path)]
     fn execute_statement(
         &self,
@@ -439,16 +485,38 @@ impl Workspace for WorkspaceServer {
         })
     }
 
+    #[cfg(not(feature = "db"))]
+    #[ignored_path(path=&params.path)]
+    #[allow(unused_variables)]
+    fn execute_statement(
+        &self,
+        params: ExecuteStatementParams,
+    ) -> Result<ExecuteStatementResult, WorkspaceError> {
+        Ok(ExecuteStatementResult {
+            message: "Statement execution requires database support.".into(),
+        })
+    }
+
+    #[cfg(feature = "db")]
     fn invalidate_schema_cache(&self, all: bool) -> Result<(), WorkspaceError> {
         if all {
+            // Clear all schemas - both db-loaded and json-loaded
+            // DB completions always take precedence when a connection is available,
+            // so clearing the json schema keeps behavior consistent
             self.schema_cache.clear_all();
         } else {
             // Only clear current connection if one exists
             if let Some(pool) = self.get_current_connection() {
-                self.schema_cache.clear(&pool);
+                self.schema_cache.clear_connection(&pool);
             }
             // If no connection, nothing to clear - just return Ok
         }
+        Ok(())
+    }
+
+    #[cfg(not(feature = "db"))]
+    fn invalidate_schema_cache(&self, _all: bool) -> Result<(), WorkspaceError> {
+        self.schema_cache.clear_all();
         Ok(())
     }
 
@@ -483,112 +551,118 @@ impl Workspace for WorkspaceServer {
         let mut diagnostics: Vec<SDiagnostic> = doc.document_diagnostics().to_vec();
 
         /*
-         * Type-checking against database connection
+         * Type-checking against database connection (DB mode only)
          */
-        let typecheck_enabled = settings.typecheck.enabled;
-        let plpgsql_check_enabled = settings.plpgsql_check.enabled;
-        if typecheck_enabled || plpgsql_check_enabled {
-            if let Some(pool) = self.get_current_connection() {
-                let path_clone = params.path.clone();
-                let schema_cache = self.schema_cache.load(pool.clone())?;
-                let input = doc.iter(TypecheckDiagnosticsMapper).collect::<Vec<_>>();
-                let search_path_patterns = settings.typecheck.search_path.clone();
+        #[cfg(feature = "db")]
+        {
+            let typecheck_enabled = settings.typecheck.enabled;
+            let plpgsql_check_enabled = settings.plpgsql_check.enabled;
+            if typecheck_enabled || plpgsql_check_enabled {
+                if let Some(pool) = self.get_current_connection() {
+                    let path_clone = params.path.clone();
+                    let schema_cache = self.schema_cache.load(pool.clone())?;
+                    let input = doc.iter(TypecheckDiagnosticsMapper).collect::<Vec<_>>();
+                    let search_path_patterns = settings.typecheck.search_path.clone();
 
-                // Combined async context for both typecheck and plpgsql_check
-                let async_results = run_async(async move {
-                    stream::iter(input)
-                        .map(|(id, range, ast, cst, fn_sig)| {
-                            let pool = pool.clone();
-                            let path = path_clone.clone();
-                            let schema_cache = Arc::clone(&schema_cache);
-                            let search_path_patterns = search_path_patterns.clone();
+                    // Combined async context for both typecheck and plpgsql_check
+                    let async_results = run_async(async move {
+                        stream::iter(input)
+                            .map(|(id, range, ast, cst, fn_sig)| {
+                                let pool = pool.clone();
+                                let path = path_clone.clone();
+                                let schema_cache = Arc::clone(&schema_cache);
+                                let search_path_patterns = search_path_patterns.clone();
 
-                            async move {
-                                let mut diagnostics = Vec::new();
+                                async move {
+                                    let mut diagnostics = Vec::new();
 
-                                if let Some(ast) = ast {
-                                    // Type checking
-                                    if typecheck_enabled {
-                                        let typecheck_result =
-                                            pgls_typecheck::check_sql(TypecheckParams {
-                                                conn: &pool,
-                                                sql: convert_to_positional_params(id.content())
-                                                    .as_str(),
-                                                ast: &ast,
-                                                tree: &cst,
-                                                schema_cache: schema_cache.as_ref(),
-                                                search_path_patterns,
-                                                identifiers: fn_sig
-                                                    .map(|s| {
-                                                        s.args
-                                                            .iter()
-                                                            .map(|a| TypedIdentifier {
-                                                                path: s.name.clone(),
-                                                                name: a.name.clone(),
-                                                                type_: IdentifierType {
-                                                                    schema: a.type_.schema.clone(),
-                                                                    name: a.type_.name.clone(),
-                                                                    is_array: a.type_.is_array,
-                                                                },
-                                                            })
-                                                            .collect::<Vec<_>>()
-                                                    })
-                                                    .unwrap_or_default(),
-                                            })
-                                            .await;
-
-                                        if let Ok(Some(diag)) = typecheck_result {
-                                            let r = diag
-                                                .location()
-                                                .span
-                                                .map(|span| span + range.start());
-                                            diagnostics.push(
-                                                diag.with_file_path(
-                                                    path.as_path().display().to_string(),
-                                                )
-                                                .with_file_span(r.unwrap_or(range)),
-                                            );
-                                        }
-                                    }
-
-                                    // plpgsql_check
-                                    if plpgsql_check_enabled {
-                                        let plpgsql_check_results =
-                                            pgls_plpgsql_check::check_plpgsql(
-                                                pgls_plpgsql_check::PlPgSqlCheckParams {
+                                    if let Some(ast) = ast {
+                                        // Type checking
+                                        if typecheck_enabled {
+                                            let typecheck_result =
+                                                pgls_typecheck::check_sql(TypecheckParams {
                                                     conn: &pool,
-                                                    sql: id.content(),
+                                                    sql: convert_to_positional_params(id.content())
+                                                        .as_str(),
                                                     ast: &ast,
+                                                    tree: &cst,
                                                     schema_cache: schema_cache.as_ref(),
-                                                },
-                                            )
-                                            .await
-                                            .unwrap_or_else(|_| vec![]);
+                                                    search_path_patterns,
+                                                    identifiers: fn_sig
+                                                        .map(|s| {
+                                                            s.args
+                                                                .iter()
+                                                                .map(|a| TypedIdentifier {
+                                                                    path: s.name.clone(),
+                                                                    name: a.name.clone(),
+                                                                    type_: IdentifierType {
+                                                                        schema: a
+                                                                            .type_
+                                                                            .schema
+                                                                            .clone(),
+                                                                        name: a.type_.name.clone(),
+                                                                        is_array: a.type_.is_array,
+                                                                    },
+                                                                })
+                                                                .collect::<Vec<_>>()
+                                                        })
+                                                        .unwrap_or_default(),
+                                                })
+                                                .await;
 
-                                        for d in plpgsql_check_results {
-                                            let r = d.span.map(|span| span + range.start());
-                                            diagnostics.push(
-                                                d.with_file_path(
-                                                    path.as_path().display().to_string(),
+                                            if let Ok(Some(diag)) = typecheck_result {
+                                                let r = diag
+                                                    .location()
+                                                    .span
+                                                    .map(|span| span + range.start());
+                                                diagnostics.push(
+                                                    diag.with_file_path(
+                                                        path.as_path().display().to_string(),
+                                                    )
+                                                    .with_file_span(r.unwrap_or(range)),
+                                                );
+                                            }
+                                        }
+
+                                        // plpgsql_check
+                                        if plpgsql_check_enabled {
+                                            let plpgsql_check_results =
+                                                pgls_plpgsql_check::check_plpgsql(
+                                                    pgls_plpgsql_check::PlPgSqlCheckParams {
+                                                        conn: &pool,
+                                                        sql: id.content(),
+                                                        ast: &ast,
+                                                        schema_cache: schema_cache.as_ref(),
+                                                    },
                                                 )
-                                                .with_file_span(r.unwrap_or(range)),
-                                            );
+                                                .await
+                                                .unwrap_or_else(|_| vec![]);
+
+                                            for d in plpgsql_check_results {
+                                                let r = d.span.map(|span| span + range.start());
+                                                diagnostics.push(
+                                                    d.with_file_path(
+                                                        path.as_path().display().to_string(),
+                                                    )
+                                                    .with_file_span(r.unwrap_or(range)),
+                                                );
+                                            }
                                         }
                                     }
+
+                                    Ok::<Vec<pgls_diagnostics::Error>, sqlx::Error>(diagnostics)
                                 }
+                            })
+                            .buffer_unordered(10)
+                            .collect::<Vec<_>>()
+                            .await
+                    })?;
 
-                                Ok::<Vec<pgls_diagnostics::Error>, sqlx::Error>(diagnostics)
-                            }
-                        })
-                        .buffer_unordered(10)
-                        .collect::<Vec<_>>()
-                        .await
-                })?;
-
-                for result in async_results.into_iter() {
-                    let diagnostics_batch = result?;
-                    for diag in diagnostics_batch {
-                        diagnostics.push(SDiagnostic::new(diag));
+                    for result in async_results.into_iter() {
+                        let diagnostics_batch = result?;
+                        for diag in diagnostics_batch {
+                            diagnostics.push(SDiagnostic::new(diag));
+                        }
                     }
                 }
             }
@@ -619,9 +693,13 @@ impl Workspace for WorkspaceServer {
 
         let path = params.path.as_path().display().to_string();
 
+        #[cfg(feature = "db")]
         let schema_cache = self
             .get_current_connection()
             .and_then(|pool| self.schema_cache.load(pool.clone()).ok());
+
+        #[cfg(not(feature = "db"))]
+        let schema_cache = self.schema_cache.get();
 
         let mut analysable_stmts = vec![];
         for (stmt_root, diagnostic) in doc.iter(AnalyserDiagnosticsMapper) {
@@ -704,6 +782,7 @@ impl Workspace for WorkspaceServer {
         })
     }
 
+    #[cfg(feature = "db")]
     fn pull_db_diagnostics(
         &self,
         params: crate::features::diagnostics::PullDatabaseDiagnosticsParams,
@@ -775,6 +854,15 @@ impl Workspace for WorkspaceServer {
         })
     }
 
+    #[cfg(not(feature = "db"))]
+    fn pull_db_diagnostics(
+        &self,
+        _params: crate::features::diagnostics::PullDatabaseDiagnosticsParams,
+    ) -> Result<PullDiagnosticsResult, WorkspaceError> {
+        debug!("Database diagnostics require database support.");
+        Ok(PullDiagnosticsResult::default())
+    }
+
     #[ignored_path(path=&params.path)]
     #[tracing::instrument(level = "debug", skip_all, fields(
         path = params.path.as_os_str().to_str(),
@@ -789,12 +877,20 @@ impl Workspace for WorkspaceServer {
             .get(&params.path)
             .ok_or(WorkspaceError::not_found())?;
 
-        let Some(pool) = self.get_current_connection() else {
-            tracing::debug!("No database connection available. Skipping completions.");
-            return Ok(CompletionsResult::default());
+        #[cfg(feature = "db")]
+        let schema_cache = {
+            let Some(pool) = self.get_current_connection() else {
+                tracing::debug!("No database connection available. Skipping completions.");
+                return Ok(CompletionsResult::default());
+            };
+            self.schema_cache.load(pool.clone())?
         };
 
-        let schema_cache = self.schema_cache.load(pool.clone())?;
+        #[cfg(not(feature = "db"))]
+        let Some(schema_cache) = self.schema_cache.get() else {
+            tracing::debug!("No schema loaded. Skipping completions.");
+            return Ok(CompletionsResult::default());
+        };
 
         match get_statement_for_completions(parsed_doc, params.position) {
             None => {
@@ -827,12 +923,20 @@ impl Workspace for WorkspaceServer {
             .get(&params.path)
             .ok_or(WorkspaceError::not_found())?;
 
-        let Some(pool) = self.get_current_connection() else {
-            tracing::debug!("No database connection available. Skipping completions.");
-            return Ok(OnHoverResult::default());
+        #[cfg(feature = "db")]
+        let schema_cache = {
+            let Some(pool) = self.get_current_connection() else {
+                tracing::debug!("No database connection available. Skipping hover.");
+                return Ok(OnHoverResult::default());
+            };
+            self.schema_cache.load(pool.clone())?
         };
 
-        let schema_cache = self.schema_cache.load(pool.clone())?;
+        #[cfg(not(feature = "db"))]
+        let Some(schema_cache) = self.schema_cache.get() else {
+            tracing::debug!("No schema loaded. Skipping hover.");
+            return Ok(OnHoverResult::default());
+        };
 
         match doc
             .iter_with_filter(
@@ -865,6 +969,6 @@ fn is_dir(path: &Path) -> bool {
     path.is_dir() || (path.is_symlink() && fs::read_link(path).is_ok_and(|path| path.is_dir()))
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "db"))]
 #[path = "server.tests.rs"]
 mod tests;
