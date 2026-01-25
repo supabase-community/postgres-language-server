@@ -9,45 +9,45 @@ program [0..97] 'select (create_composite_type(a, b)).email, (schema.actual_type
   statement [0..96] 'select (create_composite_type(a, b)).email, (schema.actual_type).id, client from client_settings'
     select [0..75] 'select (create_composite_type(a, b)).email, (schema.actual_type).id, client'
       keyword_select [0..6] 'select'
-      select_expression [7..75] '(create_composite_type(a, b)).email, (schema.actual_type).id, client'
-        term [7..42] '(create_composite_type(a, b)).email'
-          field_selection [7..42] '(create_composite_type(a, b)).email'
+      select_expression [7..75] '(create_composite_type(a, b)).email, (schema.actual_type).id, client' (@end)
+        term [7..42] '(create_composite_type(a, b)).email' (@end)
+          field_selection [7..42] '(create_composite_type(a, b)).email' (@end)
             parenthesized_expression [7..36] '(create_composite_type(a, b))'
               ( [7..8] '('
               invocation [8..35] 'create_composite_type(a, b)'
                 function_reference [8..29] 'create_composite_type'
-                  any_identifier [8..29] 'create_composite_type'
+                  any_identifier [8..29] 'create_composite_type' (@function_reference_1of1)
                 ( [29..30] '('
-                term [30..31] 'a'
-                  object_reference [30..31] 'a'
-                    any_identifier [30..31] 'a'
+                term [30..31] 'a' (@parameter)
+                  object_reference [30..31] 'a' (@end)
+                    any_identifier [30..31] 'a' (@object_reference_1of1)
                 , [31..32] ','
-                term [33..34] 'b'
-                  object_reference [33..34] 'b'
-                    any_identifier [33..34] 'b'
+                term [33..34] 'b' (@parameter)
+                  object_reference [33..34] 'b' (@end)
+                    any_identifier [33..34] 'b' (@object_reference_1of1)
                 ) [34..35] ')'
-              ) [35..36] ')'
+              ) [35..36] ')' (@end)
             . [36..37] '.'
-            any_identifier [37..42] 'email'
-        , [42..43] ','
-        term [44..67] '(schema.actual_type).id'
-          field_selection [44..67] '(schema.actual_type).id'
+            any_identifier [37..42] 'email' (@end)
+        , [42..43] ',' (@end)
+        term [44..67] '(schema.actual_type).id' (@end)
+          field_selection [44..67] '(schema.actual_type).id' (@end)
             composite_reference [44..64] '(schema.actual_type)'
               ( [44..45] '('
               object_reference [45..63] 'schema.actual_type'
-                any_identifier [45..51] 'schema'
+                any_identifier [45..51] 'schema' (@object_reference_1of2)
                 . [51..52] '.'
-                any_identifier [52..63] 'actual_type'
-              ) [63..64] ')'
+                any_identifier [52..63] 'actual_type' (@object_reference_2of2)
+              ) [63..64] ')' (@end)
             . [64..65] '.'
-            any_identifier [65..67] 'id'
-        , [67..68] ','
-        term [69..75] 'client'
-          object_reference [69..75] 'client'
-            any_identifier [69..75] 'client'
+            any_identifier [65..67] 'id' (@end)
+        , [67..68] ',' (@end)
+        term [69..75] 'client' (@end)
+          object_reference [69..75] 'client' (@end)
+            any_identifier [69..75] 'client' (@object_reference_1of1)
     from [76..96] 'from client_settings'
       keyword_from [76..80] 'from'
-      relation [81..96] 'client_settings'
-        table_reference [81..96] 'client_settings'
-          any_identifier [81..96] 'client_settings'
+      relation [81..96] 'client_settings' (@end)
+        table_reference [81..96] 'client_settings' (@end)
+          any_identifier [81..96] 'client_settings' (@table_reference_1of1)
   ; [96..97] ';'

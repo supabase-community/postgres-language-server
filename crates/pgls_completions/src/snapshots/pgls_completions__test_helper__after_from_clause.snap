@@ -1,0 +1,87 @@
+---
+source: crates/pgls_completions/src/test_helper.rs
+expression: final_snapshot
+---
+***Setup***
+
+create table public.users (
+    id serial primary key,
+    email varchar(255)
+);
+
+
+--------------
+
+select email from users |
+
+Results:
+cross - cross (Keyword)
+full - full (Keyword)
+group - group (Keyword)
+inner - inner (Keyword)
+join - join (Keyword)
+
+--------------
+
+select email from users w|
+
+Results:
+where - where (Keyword)
+window - window (Keyword)
+
+--------------
+
+select email from users where |
+
+Results:
+email - public.users.email (Column)
+id - public.users.id (Column)
+abbrev - pg_catalog.pg_timezone_abbrevs.abbrev (Column)
+action_condition - information_schema.triggers.action_condition (Column)
+action_order - information_schema.triggers.action_order (Column)
+
+--------------
+
+select email from users where i|
+
+Results:
+id - public.users.id (Column)
+email - public.users.email (Column)
+ident - pg_catalog.pg_backend_memory_contexts.ident (Column)
+identity_cycle - information_schema.columns.identity_cycle (Column)
+identity_generation - information_schema.columns.identity_generation (Column)
+
+--------------
+
+select email from users where id |
+
+Results:
+group - group (Keyword)
+limit - limit (Keyword)
+order - order (Keyword)
+window - window (Keyword)
+
+--------------
+
+select email from users where id = |
+
+Results:
+email - public.users.email (Column)
+id - public.users.id (Column)
+abbrev - pg_catalog.pg_timezone_abbrevs.abbrev (Column)
+action_condition - information_schema.triggers.action_condition (Column)
+action_order - information_schema.triggers.action_order (Column)
+
+--------------
+
+select email from users where id = 1|
+select email from users where id = 1; |
+
+Results:
+insert - insert (Keyword)
+reset - reset (Keyword)
+select - select (Keyword)
+set - set (Keyword)
+truncate - truncate (Keyword)
+
+--------------

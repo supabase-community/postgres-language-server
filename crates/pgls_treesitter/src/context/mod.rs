@@ -384,7 +384,7 @@ impl<'a> TreesitterContext<'a> {
             "where" => Some(WrappingClause::Where),
             "update" => Some(WrappingClause::Update),
             "select" => Some(WrappingClause::Select),
-            "delete" => Some(WrappingClause::Delete),
+            "delete_statement" => Some(WrappingClause::Delete),
             "from" => Some(WrappingClause::From),
             "drop_table" => Some(WrappingClause::DropTable),
             "alter_role" => Some(WrappingClause::AlterRole),
@@ -579,7 +579,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "will be reintroduced after stacked keyword-completion PRs merge"]
     fn identifies_clauses() {
         let test_cases = vec![
             (

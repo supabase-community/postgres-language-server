@@ -1,6 +1,6 @@
 use tree_sitter::{Node, Tree};
 
-pub static SINGLE_TOKEN_RULES: &[&'static str] = &[
+pub static SINGLE_TOKEN_RULES: &[&str] = &[
     "any_identifier",
     "column_identifier",
     "schema_identifier",
@@ -97,7 +97,7 @@ pub fn previous_sibling_completed(node: tree_sitter::Node) -> bool {
 
         is_finished && last_children_completed(prev)
     } else {
-        false
+        true
     }
 }
 

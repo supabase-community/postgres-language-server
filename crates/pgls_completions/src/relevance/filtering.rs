@@ -616,7 +616,6 @@ mod tests {
     use pgls_test_utils::QueryWithCursorPosition;
 
     #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
-    #[ignore = "will be reintroduced after stacked keyword-completion PRs merge"]
     async fn completion_after_asterisk(pool: PgPool) {
         let setup = r#"
             create table users (
