@@ -341,7 +341,6 @@ module.exports = grammar({
     keyword_procedure: (_) => make_keyword("procedure"),
     keyword_routine: (_) => make_keyword("routine"),
 
-    // PostgreSQL keywords (some overlap with Hive/other DBs)
     keyword_external: (_) => make_keyword("external"),
     keyword_stored: (_) => make_keyword("stored"),
     keyword_replication: (_) => make_keyword("replication"),

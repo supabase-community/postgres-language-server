@@ -229,9 +229,9 @@ alias: ($) =>
 
 Without the `end` tokens, a user might type `select * from auth.users u |`, and we would never suggest a completable keyword, since we haven't marked the `alias` clause as finished.
 
-4. Be careful with `"end`" tokens in private clauses.
+4. Be careful with `"end`" tokens in [hidden clauses](https://tree-sitter.github.io/tree-sitter/creating-parsers/3-writing-the-grammar.html#hiding-rules).
 
-Private clauses are "spread" into their parent clauses. Suppose the `_alias` was private, and we have a `$.select` rule like this:
+Hidden clauses are "spread" into their parent clauses. Suppose the `_alias` was hidden, and we have a `$.select` rule like this:
 
 ```js
 select: ($) =>
@@ -240,14 +240,14 @@ select: ($) =>
     $.column_identifier,
     optional($._alias),
     $.keyword_from,
-    field("end", $.table_reference)
+    field("end", $.table_reference),
   );
 ```
 
 Now, if the user types `select email as e|`, the resulting looks like `keyword_select column_identifier keyword_as any_identifier(@end)`, and the select statement is prematurely considered completed.
 
-However, we could hypothetically make the `$.table_reference` a private `$._table_reference` and put an `"end"` node in there. The clause would still complete at the right spot.
-So, a private clause should only ever contain an `"end"` field if that makes sense in all possible parent statement positions.
+However, we could hypothetically make the `$.table_reference` a hidden `$._table_reference` and put an `"end"` node in there. The clause would still complete at the right spot.
+So, a hidden clause should only ever contain an `"end"` field if that makes sense in all possible parent statement positions.
 
 5. Single-Token rules don't need an `"end"` field.
 
