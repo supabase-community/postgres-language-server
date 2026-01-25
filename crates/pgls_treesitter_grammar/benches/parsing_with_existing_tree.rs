@@ -4,7 +4,7 @@ use tree_sitter::{InputEdit, Point, StreamingIterator};
 pub fn criterion_benchmark(c: &mut Criterion) {
     // takes about 3 microseconds on MacBook Pro M2 with 16GB Memory
     c.bench_function("parsing with existing tree > small sql", |b| {
-        let content = format!("select * from users;");
+        let content = "select * from users;".to_string();
 
         let mut parser = tree_sitter::Parser::new();
         parser
@@ -89,8 +89,7 @@ pub fn criterion_benchmark(c: &mut Criterion) {
 
     // takes about 12 microseconds on MacBook Pro M2 with 16GB Memory
     c.bench_function("parsing with existing tree > mid sql", |b| {
-        let content = format!(
-            r#"
+        let content = r#"
 select
   n.oid :: int8 as "id!",
   n.nspname as name,
@@ -107,7 +106,7 @@ where
   and not pg_catalog.starts_with(n.nspname, 'pg_temp_')
   and not pg_catalog.starts_with(n.nspname, 'pg_toast_temp_');
 "#
-        );
+        .to_string();
 
         let mut parser = tree_sitter::Parser::new();
         parser
@@ -188,8 +187,7 @@ where
 
     // takes about 12 microseconds on MacBook Pro M2 with 16GB Memory
     c.bench_function("parsing with existing tree > large sql", |b| {
-        let content = format!(
-            r#"
+        let content = r#"
   with available_tables as (
     select
       c.relname as table_name,
@@ -245,7 +243,7 @@ where
   -- system columns, such as `cmax` or `tableoid`, have negative `attnum`s
   atts.attnum >= 0;
 "#
-        );
+        .to_string();
 
         let mut parser = tree_sitter::Parser::new();
         parser

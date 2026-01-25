@@ -5,10 +5,11 @@ use std::{
 
 use crate::{
     context::ancestors::ScopeTracker,
-    parts_of_reference_query,
+    helper, parts_of_reference_query,
     queries::{self, QueryResult, TreeSitterQueriesExecutor},
 };
 use pgls_text_size::TextSize;
+use tree_sitter::Language;
 
 mod ancestors;
 
@@ -125,6 +126,10 @@ pub struct TreesitterContext<'a> {
     pub is_invocation: bool,
     pub wrapping_statement_range: Option<tree_sitter::Range>,
 
+    pub possible_keywords_at_position: Vec<&'static str>,
+    pub previous_clause: Option<tree_sitter::Node<'a>>,
+    pub current_clause: Option<tree_sitter::Node<'a>>,
+
     mentioned_relations: HashMap<Option<String>, HashSet<String>>,
     mentioned_table_aliases: HashMap<String, String>,
     mentioned_columns: HashMap<Option<WrappingClause<'a>>, HashSet<MentionedColumn>>,
@@ -148,10 +153,17 @@ impl<'a> TreesitterContext<'a> {
             mentioned_table_aliases: HashMap::new(),
             mentioned_columns: HashMap::new(),
             scope_tracker: ScopeTracker::new(),
+
+            possible_keywords_at_position: vec![],
+            current_clause: None,
+            previous_clause: None,
         };
 
         ctx.gather_tree_context();
         ctx.gather_info_from_ts_queries();
+        ctx.gather_possible_keywords_at_position();
+        ctx.check_previous_clause();
+        ctx.check_current_clause();
 
         ctx
     }
@@ -372,7 +384,7 @@ impl<'a> TreesitterContext<'a> {
             "where" => Some(WrappingClause::Where),
             "update" => Some(WrappingClause::Update),
             "select" => Some(WrappingClause::Select),
-            "delete" => Some(WrappingClause::Delete),
+            "delete_statement" => Some(WrappingClause::Delete),
             "from" => Some(WrappingClause::From),
             "drop_table" => Some(WrappingClause::DropTable),
             "alter_role" => Some(WrappingClause::AlterRole),
@@ -383,7 +395,7 @@ impl<'a> TreesitterContext<'a> {
             "alter_table" => Some(WrappingClause::AlterTable),
             "set_statement" => Some(WrappingClause::SetStatement),
             "revoke_statement" => Some(WrappingClause::RevokeStatement),
-            "grant_statement" => Some(WrappingClause::RevokeStatement),
+            "grant_statement" => Some(WrappingClause::GrantStatement),
             "column_definitions" => Some(WrappingClause::ColumnDefinitions),
             "create_policy" => Some(WrappingClause::CreatePolicy),
             "alter_policy" => Some(WrappingClause::AlterPolicy),
@@ -403,6 +415,36 @@ impl<'a> TreesitterContext<'a> {
                 Some(WrappingClause::Join { on_node })
             }
             _ => None,
+        }
+    }
+
+    fn check_current_clause(&mut self) {
+        self.current_clause = helper::goto_closest_unfinished_parent_clause(self.node_under_cursor);
+    }
+
+    fn check_previous_clause(&mut self) {
+        if let Some(previous_leaf) = helper::goto_previous_leaf(self.node_under_cursor) {
+            self.previous_clause = helper::goto_closest_unfinished_parent_clause(previous_leaf);
+        };
+    }
+
+    fn gather_possible_keywords_at_position(&mut self) {
+        let parse_state = if self.node_under_cursor.kind() == "ERROR" {
+            if self.node_under_cursor.child_count() > 0 {
+                self.node_under_cursor.child(0).unwrap().parse_state()
+            } else {
+                self.node_under_cursor.parse_state()
+            }
+        } else {
+            self.node_under_cursor.parse_state()
+        };
+
+        let language: Language = pgls_treesitter_grammar::LANGUAGE.into();
+        if let Some(mut lookahead_iterator) = language.lookahead_iterator(parse_state) {
+            self.possible_keywords_at_position = lookahead_iterator
+                .iter_names()
+                .filter_map(|kw| kw.strip_prefix("keyword_"))
+                .collect();
         }
     }
 
@@ -537,7 +579,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "will be reintroduced after stacked keyword-completion PRs merge"]
     fn identifies_clauses() {
         let test_cases = vec![
             (
