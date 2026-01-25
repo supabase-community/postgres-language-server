@@ -9,18 +9,18 @@ program [0..55] 'update auth.users set auth.users.email = 'my@mail.com';'
     update [0..54] 'update auth.users set auth.users.email = 'my@mail.com''
       keyword_update [0..6] 'update'
       relation [7..17] 'auth.users'
-        table_reference [7..17] 'auth.users'
-          schema_identifier [7..11] 'auth'
+        table_reference [7..17] 'auth.users' (@end)
+          schema_identifier [7..11] 'auth' (@table_reference_1of2)
           . [11..12] '.'
-          table_identifier [12..17] 'users'
+          table_identifier [12..17] 'users' (@table_reference_2of2)
       keyword_set [18..21] 'set'
       assignment [22..54] 'auth.users.email = 'my@mail.com''
-        column_reference [22..38] 'auth.users.email'
-          schema_identifier [22..26] 'auth'
+        column_reference [22..38] 'auth.users.email' (@left)
+          schema_identifier [22..26] 'auth' (@column_reference_1of3)
           . [26..27] '.'
-          table_identifier [27..32] 'users'
+          table_identifier [27..32] 'users' (@column_reference_2of3)
           . [32..33] '.'
-          column_identifier [33..38] 'email'
+          column_identifier [33..38] 'email' (@column_reference_3of3)
         = [39..40] '='
-        literal [41..54] ''my@mail.com''
+        literal [41..54] ''my@mail.com'' (@right)
   ; [54..55] ';'
