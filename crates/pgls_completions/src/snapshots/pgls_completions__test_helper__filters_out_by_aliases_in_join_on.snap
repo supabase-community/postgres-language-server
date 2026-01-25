@@ -24,7 +24,20 @@ create table auth.posts (
 --------------
 
 select u.id, p.content from auth.users u join auth.posts p |
+
+Results:
+on - on (Keyword)
+using - using (Keyword)
+
+--------------
+
 select u.id, p.content from auth.users u join auth.posts p o|
+
+Results:
+on - on (Keyword)
+
+--------------
+
 select u.id, p.content from auth.users u join auth.posts p on |
 **Should prefer primary indices here.**
 
@@ -55,6 +68,16 @@ email - auth.users.email (Column)
 --------------
 
 select u.id, p.content from auth.users u join auth.posts p on u.id |
+
+Results:
+cross - cross (Keyword)
+full - full (Keyword)
+group - group (Keyword)
+inner - inner (Keyword)
+join - join (Keyword)
+
+--------------
+
 select u.id, p.content from auth.users u join auth.posts p on u.id = |
 
 Results:
@@ -86,3 +109,12 @@ user_id - auth.posts.user_id (Column)
 --------------
 
 select u.id, p.content from auth.users u join auth.posts p on u.id = p.user_id |
+
+Results:
+cross - cross (Keyword)
+full - full (Keyword)
+group - group (Keyword)
+inner - inner (Keyword)
+join - join (Keyword)
+
+--------------
