@@ -41,7 +41,7 @@ fn fix_path_for_mac(sh: &Shell) -> anyhow::Result<()> {
             r"/Applications/Visual Studio Code.app/Contents/Resources/app/bin";
         const ROOT_DIR: &str = "";
         let home_dir = sh.var("HOME").map_err(|err| {
-            format_err!("Failed getting HOME from environment with error: {}.", err)
+            format_err!("Failed getting HOME from environment with error: {err}.")
         })?;
 
         [ROOT_DIR, &home_dir]

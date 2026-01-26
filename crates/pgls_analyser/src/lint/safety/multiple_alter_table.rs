@@ -47,53 +47,54 @@ impl LinterRule for MultipleAlterTable {
         let mut diagnostics = Vec::new();
 
         // Check if current statement is ALTER TABLE
-        if let pgls_query::NodeEnum::AlterTableStmt(stmt) = &ctx.stmt() {
-            if let Some(relation) = &stmt.relation {
-                let current_schema = &relation.schemaname;
-                let current_table = &relation.relname;
+        if let pgls_query::NodeEnum::AlterTableStmt(stmt) = &ctx.stmt()
+            && let Some(relation) = &stmt.relation
+        {
+            let current_schema = &relation.schemaname;
+            let current_table = &relation.relname;
 
-                // Check previous statements for ALTER TABLE on the same table
-                let file_ctx = ctx.file_context();
+            // Check previous statements for ALTER TABLE on the same table
+            let file_ctx = ctx.file_context();
 
-                // Normalize schema name: treat empty string as "public"
-                let current_schema_normalized = if current_schema.is_empty() {
+            // Normalize schema name: treat empty string as "public"
+            let current_schema_normalized = if current_schema.is_empty() {
+                "public"
+            } else {
+                current_schema.as_str()
+            };
+
+            let has_previous_alter =
+                file_ctx
+                    .previous_stmts()
+                    .iter()
+                    .any(|prev_stmt| match prev_stmt {
+                        pgls_query::NodeEnum::AlterTableStmt(prev_alter) => {
+                            if let Some(prev_relation) = &prev_alter.relation {
+                                let prev_schema_normalized = if prev_relation.schemaname.is_empty()
+                                {
+                                    "public"
+                                } else {
+                                    prev_relation.schemaname.as_str()
+                                };
+
+                                // Match if same table and schema (treating empty schema as "public")
+                                prev_relation.relname == *current_table
+                                    && prev_schema_normalized == current_schema_normalized
+                            } else {
+                                false
+                            }
+                        }
+                        _ => false,
+                    });
+
+            if has_previous_alter {
+                let schema_display = if current_schema.is_empty() {
                     "public"
                 } else {
-                    current_schema.as_str()
+                    current_schema
                 };
 
-                let has_previous_alter =
-                    file_ctx
-                        .previous_stmts()
-                        .iter()
-                        .any(|prev_stmt| match prev_stmt {
-                            pgls_query::NodeEnum::AlterTableStmt(prev_alter) => {
-                                if let Some(prev_relation) = &prev_alter.relation {
-                                    let prev_schema_normalized =
-                                        if prev_relation.schemaname.is_empty() {
-                                            "public"
-                                        } else {
-                                            prev_relation.schemaname.as_str()
-                                        };
-
-                                    // Match if same table and schema (treating empty schema as "public")
-                                    prev_relation.relname == *current_table
-                                        && prev_schema_normalized == current_schema_normalized
-                                } else {
-                                    false
-                                }
-                            }
-                            _ => false,
-                        });
-
-                if has_previous_alter {
-                    let schema_display = if current_schema.is_empty() {
-                        "public"
-                    } else {
-                        current_schema
-                    };
-
-                    diagnostics.push(
+                diagnostics.push(
                         LinterDiagnostic::new(
                             rule_category!(),
                             None,
@@ -107,7 +108,6 @@ impl LinterRule for MultipleAlterTable {
                         )
                         .note("Combine the ALTER TABLE statements into a single statement with comma-separated actions to scan the table only once."),
                     );
-                }
             }
         }
 

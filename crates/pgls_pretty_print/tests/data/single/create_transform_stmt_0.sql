@@ -1,0 +1,1 @@
+CREATE TRANSFORM FOR hstore LANGUAGE sql (FROM SQL WITH FUNCTION hstore_to_sql(internal), TO SQL WITH FUNCTION sql_to_hstore(internal));

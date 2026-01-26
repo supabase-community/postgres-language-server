@@ -41,6 +41,8 @@ pub enum WorkspaceError {
     Vcs(VcsDiagnostic),
     /// Error in the async runtime
     RuntimeError(RuntimeError),
+    /// Error during formatting
+    FormatError(FormatError),
 }
 
 impl WorkspaceError {
@@ -65,6 +67,12 @@ impl WorkspaceError {
 
     pub fn runtime(msg: &str) -> Self {
         Self::RuntimeError(RuntimeError {
+            message: msg.into(),
+        })
+    }
+
+    pub fn format_error(msg: impl Into<String>) -> Self {
+        Self::FormatError(FormatError {
             message: msg.into(),
         })
     }
@@ -190,6 +198,19 @@ pub struct DisabledVcs {}
 )]
 pub struct RuntimeError {
     message: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, Diagnostic)]
+#[diagnostic(
+    category = "format",
+    severity = Error,
+    message(
+        message("Format error: "{self.message}),
+        description = "Format error: {message}"
+    )
+)]
+pub struct FormatError {
+    pub message: String,
 }
 
 #[cfg(feature = "db")]

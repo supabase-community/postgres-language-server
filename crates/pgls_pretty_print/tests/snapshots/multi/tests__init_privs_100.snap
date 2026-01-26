@@ -1,0 +1,12 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/init_privs.sql
+snapshot_kind: text
+---
+select COUNT(*) > 0 from pg_init_privs;
+
+grant SELECT on table pg_proc to current_user;
+
+grant SELECT (prosrc) on table pg_proc to current_user;
+
+grant SELECT (rolname, rolsuper) on table pg_authid to current_user;

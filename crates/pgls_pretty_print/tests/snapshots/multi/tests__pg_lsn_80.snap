@@ -1,0 +1,88 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/pg_lsn.sql
+snapshot_kind: text
+---
+create table pg_lsn_tbl (f1 pg_lsn);
+
+insert into pg_lsn_tbl values ('0/0');
+
+insert into pg_lsn_tbl values ('FFFFFFFF/FFFFFFFF');
+
+insert into pg_lsn_tbl values ('G/0');
+
+insert into pg_lsn_tbl values ('-1/0');
+
+insert into pg_lsn_tbl values (' 0/12345678');
+
+insert into pg_lsn_tbl values ('ABCD/');
+
+insert into pg_lsn_tbl values ('/ABCD');
+
+select pg_input_is_valid('16AE7F7', 'pg_lsn');
+
+select * from pg_input_error_info('16AE7F7', 'pg_lsn');
+
+select MIN(f1), MAX(f1) from pg_lsn_tbl;
+
+drop table pg_lsn_tbl;
+
+select '0/16AE7F8' = cast('0/16AE7F8' as pg_lsn);
+
+select cast('0/16AE7F8' as pg_lsn) <> '0/16AE7F7';
+
+select '0/16AE7F7' < cast('0/16AE7F8' as pg_lsn);
+
+select '0/16AE7F8' > cast('0/16AE7F7' as pg_lsn);
+
+select cast('0/16AE7F7' as pg_lsn) - cast('0/16AE7F8' as pg_lsn);
+
+select cast('0/16AE7F8' as pg_lsn) - cast('0/16AE7F7' as pg_lsn);
+
+select cast('0/16AE7F7' as pg_lsn) + cast(16 as numeric);
+
+select cast(16 as numeric) + cast('0/16AE7F7' as pg_lsn);
+
+select cast('0/16AE7F7' as pg_lsn) - cast(16 as numeric);
+
+select cast('FFFFFFFF/FFFFFFFE' as pg_lsn) + cast(1 as numeric);
+
+select cast('FFFFFFFF/FFFFFFFE' as pg_lsn) + cast(2 as numeric);
+
+select cast('0/1' as pg_lsn) - cast(1 as numeric);
+
+select cast('0/1' as pg_lsn) - cast(2 as numeric);
+
+select
+  cast('0/0' as pg_lsn) +
+  (cast('FFFFFFFF/FFFFFFFF' as pg_lsn) -
+  cast('0/0' as pg_lsn));
+
+select
+  cast('FFFFFFFF/FFFFFFFF' as pg_lsn) -
+  (cast('FFFFFFFF/FFFFFFFF' as pg_lsn) -
+  cast('0/0' as pg_lsn));
+
+select cast('0/16AE7F7' as pg_lsn) + cast('NaN' as numeric);
+
+select cast('0/16AE7F7' as pg_lsn) - cast('NaN' as numeric);
+
+select distinct
+  cast(i || '/' || j as pg_lsn) as f
+from
+  generate_series(1, 10) as i,
+  generate_series(1, 10) as j,
+  generate_series(1, 5) as k
+where
+  i <= 10 and j > 0 and j <= 10
+order by f;
+
+select distinct
+  cast(i || '/' || j as pg_lsn) as f
+from
+  generate_series(1, 10) as i,
+  generate_series(1, 10) as j,
+  generate_series(1, 5) as k
+where
+  i <= 10 and j > 0 and j <= 10
+order by f;

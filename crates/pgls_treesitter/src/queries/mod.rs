@@ -110,7 +110,7 @@ impl<'a> TreeSitterQueriesExecutor<'a> {
         self.results.append(&mut results);
     }
 
-    pub fn get_iter(&self, range: Option<&'a tree_sitter::Range>) -> QueryResultIter {
+    pub fn get_iter(&self, range: Option<&'a tree_sitter::Range>) -> QueryResultIter<'_> {
         match range {
             Some(r) => QueryResultIter::new(&self.results).within_range(r),
             None => QueryResultIter::new(&self.results),

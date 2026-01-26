@@ -129,7 +129,7 @@ pub fn generate_tool_configuration(mode: Mode, tool_name: &str) -> Result<()> {
     let tool = TOOLS
         .iter()
         .find(|t| t.name == tool_name)
-        .ok_or_else(|| anyhow::anyhow!("Unknown tool: {}", tool_name))?;
+        .ok_or_else(|| anyhow::anyhow!("Unknown tool: {tool_name}"))?;
 
     let config_root = project_root().join("crates/pgls_configuration/src");
     let tool_dir = config_root.join(tool.config_dir());

@@ -1,0 +1,1 @@
+ALTER TABLESPACE myspace SET (seq_page_cost = 1.5);

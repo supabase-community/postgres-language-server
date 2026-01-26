@@ -1,0 +1,77 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/macaddr.sql
+snapshot_kind: text
+---
+create table macaddr_data (
+  a int,
+  b macaddr
+);
+
+insert into macaddr_data values (1, '08:00:2b:01:02:03');
+
+insert into macaddr_data values (2, '08-00-2b-01-02-03');
+
+insert into macaddr_data values (3, '08002b:010203');
+
+insert into macaddr_data values (4, '08002b-010203');
+
+insert into macaddr_data values (5, '0800.2b01.0203');
+
+insert into macaddr_data values (6, '0800-2b01-0203');
+
+insert into macaddr_data values (7, '08002b010203');
+
+insert into macaddr_data values (8, '0800:2b01:0203');
+
+insert into macaddr_data values (9, 'not even close');
+
+insert into macaddr_data values (10, '08:00:2b:01:02:04');
+
+insert into macaddr_data values (11, '08:00:2b:01:02:02');
+
+insert into macaddr_data values (12, '08:00:2a:01:02:03');
+
+insert into macaddr_data values (13, '08:00:2c:01:02:03');
+
+insert into macaddr_data values (14, '08:00:2a:01:02:04');
+
+select * from macaddr_data;
+
+create index "macaddr_data_btree" on macaddr_data using btree (b);
+
+create index "macaddr_data_hash" on macaddr_data using hash (b);
+
+select a, b, trunc(b) from macaddr_data order by 2, 1;
+
+select b < '08:00:2b:01:02:04' from macaddr_data where a = 1;
+
+select b > '08:00:2b:01:02:04' from macaddr_data where a = 1;
+
+select b > '08:00:2b:01:02:03' from macaddr_data where a = 1;
+
+select b <= '08:00:2b:01:02:04' from macaddr_data where a = 1;
+
+select b >= '08:00:2b:01:02:04' from macaddr_data where a = 1;
+
+select b = '08:00:2b:01:02:03' from macaddr_data where a = 1;
+
+select b <> '08:00:2b:01:02:04' from macaddr_data where a = 1;
+
+select b <> '08:00:2b:01:02:03' from macaddr_data where a = 1;
+
+select ~b from macaddr_data;
+
+select b & '00:00:00:ff:ff:ff' from macaddr_data;
+
+select b | '01:02:03:04:05:06' from macaddr_data;
+
+drop table macaddr_data;
+
+select pg_input_is_valid('08:00:2b:01:02:ZZ', 'macaddr');
+
+select * from pg_input_error_info('08:00:2b:01:02:ZZ', 'macaddr');
+
+select pg_input_is_valid('08:00:2b:01:02:', 'macaddr');
+
+select * from pg_input_error_info('08:00:2b:01:02:', 'macaddr');

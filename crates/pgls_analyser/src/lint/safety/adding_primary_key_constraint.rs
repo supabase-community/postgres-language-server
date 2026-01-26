@@ -54,12 +54,10 @@ impl LinterRule for AddingPrimaryKeyConstraint {
                         pgls_query::protobuf::AlterTableType::AtAddConstraint => {
                             if let Some(pgls_query::NodeEnum::Constraint(constraint)) =
                                 cmd.def.as_ref().and_then(|d| d.node.as_ref())
-                            {
-                                if let Some(diagnostic) =
+                                && let Some(diagnostic) =
                                     check_for_primary_key_constraint(constraint)
-                                {
-                                    diagnostics.push(diagnostic);
-                                }
+                            {
+                                diagnostics.push(diagnostic);
                             }
                         }
                         // Check for ADD COLUMN with PRIMARY KEY
@@ -70,12 +68,10 @@ impl LinterRule for AddingPrimaryKeyConstraint {
                                 for constraint in &col_def.constraints {
                                     if let Some(pgls_query::NodeEnum::Constraint(constr)) =
                                         &constraint.node
-                                    {
-                                        if let Some(diagnostic) =
+                                        && let Some(diagnostic) =
                                             check_for_primary_key_constraint(constr)
-                                        {
-                                            diagnostics.push(diagnostic);
-                                        }
+                                    {
+                                        diagnostics.push(diagnostic);
                                     }
                                 }
                             }

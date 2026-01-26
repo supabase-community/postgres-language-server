@@ -1,0 +1,229 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/sequence.sql
+snapshot_kind: text
+---
+create sequence sequence_testx increment by 0;
+
+create sequence sequence_testx increment by -1 minvalue 20;
+
+create sequence sequence_testx increment by 1 maxvalue -20;
+
+create sequence sequence_testx increment by -1 start with 10;
+
+create sequence sequence_testx increment by 1 start with -10;
+
+create sequence sequence_testx cache 0;
+
+create sequence sequence_testx owned by nobody;
+
+create sequence sequence_testx owned by pg_class_oid_index.oid;
+
+create sequence sequence_testx owned by pg_class.relname;
+
+create table sequence_test_table (a int);
+
+create sequence sequence_testx owned by sequence_test_table.b;
+
+drop table sequence_test_table;
+
+create sequence sequence_test5 as int;
+
+create sequence sequence_test6 as smallint;
+
+create sequence sequence_test7 as bigint;
+
+create sequence sequence_test8 as int maxvalue 100000;
+
+create sequence sequence_test9 as int increment by -1;
+
+create sequence sequence_test10 as int minvalue -100000 start with 1;
+
+create sequence sequence_test11 as smallint;
+
+create sequence sequence_test12 as smallint increment by -1;
+
+create sequence sequence_test13 as smallint minvalue -32768;
+
+create sequence sequence_test14 as smallint maxvalue 32767 increment by -1;
+
+create sequence sequence_testx as text;
+
+create sequence sequence_testx as nosuchtype;
+
+create sequence sequence_testx as smallint maxvalue 100000;
+
+create sequence sequence_testx as smallint minvalue -100000;
+
+alter sequence sequence_test5 as smallint;
+
+alter sequence sequence_test8 as smallint;
+
+alter sequence sequence_test8 as smallint maxvalue 20000;
+
+alter sequence sequence_test9 as smallint;
+
+alter sequence sequence_test10 as smallint;
+
+alter sequence sequence_test10 as smallint minvalue -20000;
+
+alter sequence sequence_test11 as int;
+
+alter sequence sequence_test12 as int;
+
+alter sequence sequence_test13 as int;
+
+alter sequence sequence_test14 as int;
+
+create table serialtest1 (
+  f1 text,
+  f2 serial
+);
+
+insert into serialtest1 values ('foo');
+
+insert into serialtest1 values ('bar');
+
+insert into serialtest1 values ('force', 100);
+
+insert into serialtest1 values ('wrong', null);
+
+select * from serialtest1;
+
+select pg_get_serial_sequence('serialTest1', 'f2');
+
+create table serialtest2 (
+  f1 text,
+  f2 serial,
+  f3 smallserial,
+  f4 serial2,
+  f5 bigserial,
+  f6 serial8
+);
+
+insert into serialtest2 (f1) values ('test_defaults');
+
+insert into serialtest2 (f1, f2, f3, f4, f5, f6)
+values
+  (
+    'test_max_vals',
+    2147483647,
+    32767,
+    32767,
+    9223372036854775807,
+    9223372036854775807
+  ),
+  (
+    'test_min_vals',
+    -2147483648,
+    -32768,
+    -32768,
+    -9223372036854775808,
+    -9223372036854775808
+  );
+
+insert into serialtest2 (f1, f3) values ('bogus', -32769);
+
+insert into serialtest2 (f1, f4) values ('bogus', -32769);
+
+insert into serialtest2 (f1, f3) values ('bogus', 32768);
+
+insert into serialtest2 (f1, f4) values ('bogus', 32768);
+
+insert into serialtest2 (f1, f5) values ('bogus', -9223372036854775809);
+
+insert into serialtest2 (f1, f6) values ('bogus', -9223372036854775809);
+
+insert into serialtest2 (f1, f5) values ('bogus', 9223372036854775808);
+
+insert into serialtest2 (f1, f6) values ('bogus', 9223372036854775808);
+
+select * from serialtest2 order by f2 asc;
+
+select nextval('serialTest2_f2_seq');
+
+select nextval('serialTest2_f3_seq');
+
+select nextval('serialTest2_f4_seq');
+
+select nextval('serialTest2_f5_seq');
+
+select nextval('serialTest2_f6_seq');
+
+create sequence sequence_test;
+
+create sequence if not exists sequence_test;
+
+select nextval(cast('sequence_test' as text));
+
+select nextval(cast('sequence_test' as regclass));
+
+select currval(cast('sequence_test' as text));
+
+select currval(cast('sequence_test' as regclass));
+
+select setval(cast('sequence_test' as text), 32);
+
+select nextval(cast('sequence_test' as regclass));
+
+select setval(cast('sequence_test' as text), 99, false);
+
+select nextval(cast('sequence_test' as regclass));
+
+select setval(cast('sequence_test' as regclass), 32);
+
+select nextval(cast('sequence_test' as text));
+
+select setval(cast('sequence_test' as regclass), 99, false);
+
+select nextval(cast('sequence_test' as text));
+
+discard sequences;
+
+select currval(cast('sequence_test' as regclass));
+
+drop sequence sequence_test;
+
+create sequence foo_seq;
+
+alter table foo_seq rename to foo_seq_new;
+
+select * from foo_seq_new;
+
+select nextval('foo_seq_new');
+
+select nextval('foo_seq_new');
+
+select last_value, log_cnt in (31, 32) as log_cnt_ok, is_called from foo_seq_new;
+
+drop sequence foo_seq_new;
+
+alter table serialtest1_f2_seq rename to serialtest1_f2_foo;
+
+insert into serialtest1 values ('more');
+
+select * from serialtest1;
+
+create temporary sequence myseq2;
+
+create temporary sequence myseq3;
+
+create temporary table t1 (
+  f1 serial,
+  f2 int default nextval('myseq2'),
+  f3 int default nextval(cast('myseq3' as text))
+);
+
+drop sequence t1_f1_seq;
+
+drop sequence myseq2;
+
+drop sequence myseq3;
+
+drop table t1;
+
+drop sequence t1_f1_seq;
+
+drop sequence myseq2;
+
+alter sequence if exists sequence_test2 restart;

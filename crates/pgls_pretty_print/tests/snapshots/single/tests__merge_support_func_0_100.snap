@@ -1,0 +1,12 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/single/merge_support_func_0.sql
+snapshot_kind: text
+---
+merge into products as p
+using new_products as np
+on p.product_id = np.product_id
+when matched then update set price = np.price
+when not matched by target
+then insert
+values (np.product_id, np.price);

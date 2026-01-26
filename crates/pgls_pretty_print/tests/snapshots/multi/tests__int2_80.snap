@@ -1,0 +1,214 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/int2.sql
+snapshot_kind: text
+---
+insert into int2_tbl (f1) values ('34.5');
+
+insert into int2_tbl (f1) values ('100000');
+
+insert into int2_tbl (f1) values ('asdf');
+
+insert into int2_tbl (f1) values ('    ');
+
+insert into int2_tbl (f1) values ('- 1234');
+
+insert into int2_tbl (f1) values ('4 444');
+
+insert into int2_tbl (f1) values ('123 dt');
+
+insert into int2_tbl (f1) values ('');
+
+select * from int2_tbl;
+
+select pg_input_is_valid('34', 'int2');
+
+select pg_input_is_valid('asdf', 'int2');
+
+select pg_input_is_valid('50000', 'int2');
+
+select * from pg_input_error_info('50000', 'int2');
+
+select pg_input_is_valid(' 1 3  5 ', 'int2vector');
+
+select * from pg_input_error_info('1 asdf', 'int2vector');
+
+select * from pg_input_error_info('50000', 'int2vector');
+
+select * from int2_tbl as f (a, b);
+
+select * from (select * from int2_tbl) as s (a, b);
+
+select i.* from int2_tbl as i where i.f1 <> cast('0' as smallint);
+
+select i.* from int2_tbl as i where i.f1 <> cast('0' as int);
+
+select i.* from int2_tbl as i where i.f1 = cast('0' as smallint);
+
+select i.* from int2_tbl as i where i.f1 = cast('0' as int);
+
+select i.* from int2_tbl as i where i.f1 < cast('0' as smallint);
+
+select i.* from int2_tbl as i where i.f1 < cast('0' as int);
+
+select i.* from int2_tbl as i where i.f1 <= cast('0' as smallint);
+
+select i.* from int2_tbl as i where i.f1 <= cast('0' as int);
+
+select i.* from int2_tbl as i where i.f1 > cast('0' as smallint);
+
+select i.* from int2_tbl as i where i.f1 > cast('0' as int);
+
+select i.* from int2_tbl as i where i.f1 >= cast('0' as smallint);
+
+select i.* from int2_tbl as i where i.f1 >= cast('0' as int);
+
+select
+  i.*
+from
+  int2_tbl as i
+where
+  i.f1 % cast('2' as smallint) =
+  cast('1' as smallint);
+
+select
+  i.*
+from
+  int2_tbl as i
+where
+  i.f1 % cast('2' as int) =
+  cast('0' as smallint);
+
+select i.f1, i.f1 * cast('2' as smallint) as x from int2_tbl as i;
+
+select
+  i.f1,
+  i.f1 * cast('2' as smallint) as x
+from
+  int2_tbl as i
+where
+  abs(f1) < 16384;
+
+select i.f1, i.f1 * cast('2' as int) as x from int2_tbl as i;
+
+select i.f1, i.f1 + cast('2' as smallint) as x from int2_tbl as i;
+
+select
+  i.f1,
+  i.f1 + cast('2' as smallint) as x
+from
+  int2_tbl as i
+where
+  f1 < 32766;
+
+select i.f1, i.f1 + cast('2' as int) as x from int2_tbl as i;
+
+select i.f1, i.f1 - cast('2' as smallint) as x from int2_tbl as i;
+
+select
+  i.f1,
+  i.f1 - cast('2' as smallint) as x
+from
+  int2_tbl as i
+where
+  f1 > -32767;
+
+select i.f1, i.f1 - cast('2' as int) as x from int2_tbl as i;
+
+select i.f1, i.f1 / cast('2' as smallint) as x from int2_tbl as i;
+
+select i.f1, i.f1 / cast('2' as int) as x from int2_tbl as i;
+
+select cast(-cast(1 as smallint) << 15 as text);
+
+select cast((-cast(1 as smallint) << 15) + cast(1 as smallint) as text);
+
+select cast(-32768 as smallint) * cast(-1 as smallint);
+
+select cast(-32768 as smallint) / cast(-1 as smallint);
+
+select cast(-32768 as smallint) % cast(-1 as smallint);
+
+select
+  x,
+  cast(x as smallint) as int2_value
+from
+  (
+    values
+      (-cast(2.5 as double precision)),
+      (-cast(1.5 as double precision)),
+      (-cast(0.5 as double precision)),
+      (cast(0.0 as double precision)),
+      (cast(0.5 as double precision)),
+      (cast(1.5 as double precision)),
+      (cast(2.5 as double precision))
+  )
+  as t (x);
+
+select
+  x,
+  cast(x as smallint) as int2_value
+from
+  (
+    values
+      (-cast(2.5 as numeric)),
+      (-cast(1.5 as numeric)),
+      (-cast(0.5 as numeric)),
+      (cast(0.0 as numeric)),
+      (cast(0.5 as numeric)),
+      (cast(1.5 as numeric)),
+      (cast(2.5 as numeric))
+  )
+  as t (x);
+
+select cast('0b100101' as smallint);
+
+select cast('0o273' as smallint);
+
+select cast('0x42F' as smallint);
+
+select cast('0b' as smallint);
+
+select cast('0o' as smallint);
+
+select cast('0x' as smallint);
+
+select cast('0b111111111111111' as smallint);
+
+select cast('0b1000000000000000' as smallint);
+
+select cast('0o77777' as smallint);
+
+select cast('0o100000' as smallint);
+
+select cast('0x7FFF' as smallint);
+
+select cast('0x8000' as smallint);
+
+select cast('-0b1000000000000000' as smallint);
+
+select cast('-0b1000000000000001' as smallint);
+
+select cast('-0o100000' as smallint);
+
+select cast('-0o100001' as smallint);
+
+select cast('-0x8000' as smallint);
+
+select cast('-0x8001' as smallint);
+
+select cast('1_000' as smallint);
+
+select cast('1_2_3' as smallint);
+
+select cast('0xE_FF' as smallint);
+
+select cast('0o2_73' as smallint);
+
+select cast('0b_10_0101' as smallint);
+
+select cast('_100' as smallint);
+
+select cast('100_' as smallint);
+
+select cast('10__000' as smallint);

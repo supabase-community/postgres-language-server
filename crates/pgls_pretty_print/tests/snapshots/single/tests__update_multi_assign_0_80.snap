@@ -1,0 +1,10 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/single/update_multi_assign_0.sql
+snapshot_kind: text
+---
+update accounts
+set (balance, updated_at) = (balance + delta, NOW())
+from adjustments
+where
+  accounts.id = adjustments.account_id;

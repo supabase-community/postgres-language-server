@@ -1,0 +1,619 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/create_am.sql
+snapshot_kind: text
+---
+create access method gist2 type index handler gisthandler;
+
+create access method bogus type index handler int4in;
+
+create access method bogus type index handler heap_tableam_handler;
+
+create index "grect2ind2" on fast_emp4000 using gist2 (home_base);
+
+create operator class box_ops default
+  for type box
+  using gist2
+  as operator 1 <<,
+  operator 2 &<,
+  operator 3 &&,
+  operator 4 &>,
+  operator 5 >>,
+  operator 6 ~=,
+  operator 7 @>,
+  operator 8 <@,
+  operator 9 &<|,
+  operator 10 <<|,
+  operator 11 |>>,
+  operator 12 |&>,
+  function 1 gist_box_consistent(
+    internal,
+    box,
+    smallint,
+    oid,
+    internal),
+  function 2 gist_box_union(internal, internal),
+  function 5 gist_box_penalty(internal, internal, internal),
+  function 6 gist_box_picksplit(internal, internal),
+  function 7 gist_box_same(box, box, internal);
+
+create index "grect2ind2" on fast_emp4000 using gist2 (home_base);
+
+begin;
+
+drop index grect2ind;
+
+set enable_seqscan = off;
+
+set enable_indexscan = 'on';
+
+set enable_bitmapscan = off;
+
+select
+  *
+from
+  fast_emp4000
+where
+  home_base <@ cast('(200,200),(2000,1000)' as box)
+order by home_base[0][0];
+
+select
+  *
+from
+  fast_emp4000
+where
+  home_base <@ cast('(200,200),(2000,1000)' as box)
+order by home_base[0][0];
+
+select COUNT(*) from fast_emp4000 where home_base && cast('(1000,1000,0,0)' as box);
+
+select COUNT(*) from fast_emp4000 where home_base && cast('(1000,1000,0,0)' as box);
+
+select COUNT(*) from fast_emp4000 where home_base is null;
+
+select COUNT(*) from fast_emp4000 where home_base is null;
+
+rollback;
+
+drop access method gist2;
+
+begin;
+
+lock table fast_emp4000 in ACCESS EXCLUSIVE mode;
+
+drop access method gist2 cascade;
+
+commit;
+
+set default_table_access_method = '';
+
+set default_table_access_method = 'I do not exist AM';
+
+set default_table_access_method = btree;
+
+create access method heap2 type table handler heap_tableam_handler;
+
+create access method bogus type table handler int4in;
+
+create access method bogus type table handler bthandler;
+
+select amname, amhandler, amtype from pg_am where amtype = 't' order by 1, 2;
+
+create table tableam_tbl_heap2 (f1 int) using heap2;
+
+insert into tableam_tbl_heap2 values (1);
+
+select f1 from tableam_tbl_heap2 order by f1;
+
+create table tableam_tblas_heap2 using heap2 as select * from tableam_tbl_heap2;
+
+select f1 from tableam_tbl_heap2 order by f1;
+
+create materialized view tableam_tblmv_heap2 using heap2 as select * from tableam_tbl_heap2;
+
+select f1 from tableam_tblmv_heap2 order by f1;
+
+create table tableam_parted_heap2 (
+  a text,
+  b int
+)
+partition by LIST(a) using heap2;
+
+select
+  a.amname
+from
+  pg_class as c,
+  pg_am as a
+where
+  c.relname = 'tableam_parted_heap2' and
+  a.oid = c.relam;
+
+drop table tableam_parted_heap2;
+
+create table tableam_parted_heap2 (
+  a text,
+  b int
+)
+partition by LIST(a);
+
+set default_table_access_method = heap;
+
+create table tableam_parted_a_heap2 partition of tableam_parted_heap2 for values in ('a');
+
+set default_table_access_method = heap2;
+
+create table tableam_parted_b_heap2 partition of tableam_parted_heap2 for values in ('b');
+
+reset default_table_access_method;
+
+create table tableam_parted_c_heap2
+partition of tableam_parted_heap2
+for values in ('c') using heap;
+
+create table tableam_parted_d_heap2
+partition of tableam_parted_heap2
+for values in ('d') using heap2;
+
+select
+  pc.relkind,
+  pa.amname,
+  (case
+    when relkind = 't'
+    then (
+      select
+        'toast for ' || cast(relname as regclass)
+      from
+        pg_class as pcm
+      where
+        pcm.reltoastrelid = pc.oid
+    )
+    else cast(cast(relname as regclass) as text)
+  end) collate "C"
+  as relname
+from
+  pg_class as pc,
+  pg_am as pa
+where
+  pa.oid = pc.relam and pa.amname = 'heap2'
+order by 3,
+  1,
+  2;
+
+select
+  pg_describe_object(classid, objid, objsubid)
+  as obj
+from
+  pg_depend,
+  pg_am
+where
+  pg_depend.refclassid = cast('pg_am' as regclass) and
+  pg_am.oid = pg_depend.refobjid and
+  pg_am.amname = 'heap2'
+order by classid,
+  objid,
+  objsubid;
+
+create table heaptable using heap
+as
+  select
+    a,
+    repeat(cast(a as text), 100)
+  from
+    generate_series(1, 9) as a;
+
+select
+  amname
+from
+  pg_class as c,
+  pg_am as am
+where
+  c.relam = am.oid and
+  c.oid = cast('heaptable' as regclass);
+
+alter table heaptable
+  set access method heap2;
+
+select
+  pg_describe_object(classid, objid, objsubid)
+  as obj,
+  pg_describe_object(
+    refclassid,
+    refobjid,
+    refobjsubid
+  )
+  as objref,
+  deptype
+from
+  pg_depend
+where
+  classid = cast('pg_class' as regclass) and
+  objid = cast('heaptable' as regclass)
+order by 1,
+  2;
+
+alter table heaptable
+  set access method heap;
+
+select
+  pg_describe_object(classid, objid, objsubid)
+  as obj,
+  pg_describe_object(
+    refclassid,
+    refobjid,
+    refobjsubid
+  )
+  as objref,
+  deptype
+from
+  pg_depend
+where
+  classid = cast('pg_class' as regclass) and
+  objid = cast('heaptable' as regclass)
+order by 1,
+  2;
+
+alter table heaptable
+  set access method heap2;
+
+select
+  amname
+from
+  pg_class as c,
+  pg_am as am
+where
+  c.relam = am.oid and
+  c.oid = cast('heaptable' as regclass);
+
+select COUNT(a), COUNT(1) filter (where a = 1) from heaptable;
+
+begin;
+
+set local default_table_access_method = heap2;
+
+alter table heaptable
+  set access method default;
+
+select
+  amname
+from
+  pg_class as c,
+  pg_am as am
+where
+  c.relam = am.oid and
+  c.oid = cast('heaptable' as regclass);
+
+set local default_table_access_method = heap;
+
+alter table heaptable
+  set access method default;
+
+select
+  amname
+from
+  pg_class as c,
+  pg_am as am
+where
+  c.relam = am.oid and
+  c.oid = cast('heaptable' as regclass);
+
+rollback;
+
+create materialized view heapmv using heap as select * from heaptable;
+
+select
+  amname
+from
+  pg_class as c,
+  pg_am as am
+where
+  c.relam = am.oid and
+  c.oid = cast('heapmv' as regclass);
+
+alter materialized view heapmv
+  set access method heap2;
+
+select
+  amname
+from
+  pg_class as c,
+  pg_am as am
+where
+  c.relam = am.oid and
+  c.oid = cast('heapmv' as regclass);
+
+select COUNT(a), COUNT(1) filter (where a = 1) from heapmv;
+
+alter table heaptable
+  set access method heap,
+  set access method heap2;
+
+alter table heaptable
+  set access method default,
+  set access method heap2;
+
+alter materialized view heapmv
+  set access method heap,
+  set access method heap2;
+
+drop materialized view heapmv;
+
+drop table heaptable;
+
+create table am_partitioned (
+  x int,
+  y int
+)
+partition by HASH(x) using heap2;
+
+select
+  pg_describe_object(classid, objid, objsubid)
+  as obj,
+  pg_describe_object(
+    refclassid,
+    refobjid,
+    refobjsubid
+  )
+  as refobj
+from
+  pg_depend,
+  pg_am
+where
+  pg_depend.refclassid = cast('pg_am' as regclass) and
+  pg_am.oid = pg_depend.refobjid and
+  pg_depend.objid =
+  cast('am_partitioned' as regclass);
+
+drop table am_partitioned;
+
+begin;
+
+set local default_table_access_method = heap;
+
+create table am_partitioned (
+  x int,
+  y int
+)
+partition by HASH(x);
+
+select relam from pg_class where relname = 'am_partitioned';
+
+select
+  pg_describe_object(classid, objid, objsubid)
+  as obj,
+  pg_describe_object(
+    refclassid,
+    refobjid,
+    refobjsubid
+  )
+  as refobj
+from
+  pg_depend,
+  pg_am
+where
+  pg_depend.refclassid = cast('pg_am' as regclass) and
+  pg_am.oid = pg_depend.refobjid and
+  pg_depend.objid =
+  cast('am_partitioned' as regclass);
+
+alter table am_partitioned
+  set access method heap2;
+
+select
+  a.amname
+from
+  pg_class as c,
+  pg_am as a
+where
+  c.relname = 'am_partitioned' and a.oid = c.relam;
+
+select
+  pg_describe_object(classid, objid, objsubid)
+  as obj,
+  pg_describe_object(
+    refclassid,
+    refobjid,
+    refobjsubid
+  )
+  as refobj
+from
+  pg_depend,
+  pg_am
+where
+  pg_depend.refclassid = cast('pg_am' as regclass) and
+  pg_am.oid = pg_depend.refobjid and
+  pg_depend.objid =
+  cast('am_partitioned' as regclass);
+
+set local default_table_access_method = heap2;
+
+alter table am_partitioned
+  set access method heap;
+
+select
+  a.amname
+from
+  pg_class as c,
+  pg_am as a
+where
+  c.relname = 'am_partitioned' and a.oid = c.relam;
+
+select
+  pg_describe_object(classid, objid, objsubid)
+  as obj,
+  pg_describe_object(
+    refclassid,
+    refobjid,
+    refobjsubid
+  )
+  as refobj
+from
+  pg_depend,
+  pg_am
+where
+  pg_depend.refclassid = cast('pg_am' as regclass) and
+  pg_am.oid = pg_depend.refobjid and
+  pg_depend.objid =
+  cast('am_partitioned' as regclass);
+
+set local default_table_access_method = heap2;
+
+alter table am_partitioned
+  set access method heap2;
+
+select
+  a.amname
+from
+  pg_class as c,
+  pg_am as a
+where
+  c.relname = 'am_partitioned' and a.oid = c.relam;
+
+alter table am_partitioned
+  set access method default;
+
+select relam from pg_class where relname = 'am_partitioned';
+
+select relam from pg_class where relname = 'am_partitioned';
+
+set local default_table_access_method = heap;
+
+create table am_partitioned_0 partition of am_partitioned for values with (MODULUS 10, REMAINDER 0);
+
+set local default_table_access_method = heap2;
+
+create table am_partitioned_1 partition of am_partitioned for values with (MODULUS 10, REMAINDER 1);
+
+set local default_table_access_method = heap;
+
+alter table am_partitioned
+  set access method heap2;
+
+create table am_partitioned_2 partition of am_partitioned for values with (MODULUS 10, REMAINDER 2);
+
+alter table am_partitioned
+  set access method default;
+
+select relam from pg_class where relname = 'am_partitioned';
+
+create table am_partitioned_3 partition of am_partitioned for values with (MODULUS 10, REMAINDER 3);
+
+alter table am_partitioned
+  set access method default;
+
+create table am_partitioned_5p
+partition of am_partitioned
+for values with (MODULUS 10, REMAINDER 5)
+partition by HASH(y);
+
+create table am_partitioned_5p1
+partition of am_partitioned_5p
+for values with (MODULUS 10, REMAINDER 1);
+
+alter table am_partitioned
+  set access method heap2;
+
+create table am_partitioned_6p
+partition of am_partitioned
+for values with (MODULUS 10, REMAINDER 6)
+partition by HASH(y);
+
+create table am_partitioned_6p1
+partition of am_partitioned_6p
+for values with (MODULUS 10, REMAINDER 1);
+
+select
+  c.relname,
+  a.amname
+from
+  pg_class as c,
+  pg_am as a
+where
+  c.relam = a.oid and
+  c.relname like 'am_partitioned%'
+union all
+select
+  c.relname,
+  'default'
+from
+  pg_class as c
+where
+  c.relam = 0 and c.relname like 'am_partitioned%'
+order by 1;
+
+drop table am_partitioned;
+
+commit;
+
+begin;
+
+set local default_table_access_method = heap2;
+
+create table tableam_tbl_heapx (f1 int);
+
+create table tableam_tblas_heapx as select * from tableam_tbl_heapx;
+
+select into tableam_tblselectinto_heapx from tableam_tbl_heapx;
+
+create materialized view tableam_tblmv_heapx using heap2 as select * from tableam_tbl_heapx;
+
+create table tableam_parted_heapx (
+  a text,
+  b int
+)
+partition by LIST(a);
+
+create table tableam_parted_1_heapx partition of tableam_parted_heapx for values in ('a', 'b');
+
+create table tableam_parted_2_heapx
+partition of tableam_parted_heapx
+for values in ('c', 'd') using heap;
+
+create view tableam_view_heapx
+as select * from tableam_tbl_heapx;
+
+create sequence tableam_seq_heapx;
+
+create foreign data wrapper fdw_heap2 validator postgresql_fdw_validator ;
+
+create server fs_heap2 foreign data wrapper fdw_heap2;
+
+create foreign table tableam_fdw_heapx () server fs_heap2;
+
+select
+  pc.relkind,
+  pa.amname,
+  (case
+    when relkind = 't'
+    then (
+      select
+        'toast for ' || cast(relname as regclass)
+      from
+        pg_class as pcm
+      where
+        pcm.reltoastrelid = pc.oid
+    )
+    else cast(cast(relname as regclass) as text)
+  end) collate "C"
+  as relname
+from
+  pg_class as pc
+  left outer join
+    pg_am as pa
+  on pa.oid = pc.relam
+where
+  pc.relname like 'tableam_%_heapx'
+order by 3,
+  1,
+  2;
+
+rollback;
+
+create table i_am_a_failure () using i_do_not_exist_am;
+
+create table i_am_a_failure () using "I do not exist AM";
+
+create table i_am_a_failure () using btree;
+
+create foreign table fp partition of tableam_parted_a_heap2 default server x;
+
+drop access method heap2;

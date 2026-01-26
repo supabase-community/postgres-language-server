@@ -1,0 +1,361 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/lock.sql
+snapshot_kind: text
+---
+create schema "lock_schema1";
+
+set search_path to lock_schema1;
+
+create table lock_tbl1 (a bigint);
+
+create table lock_tbl1a (a bigint);
+
+create view lock_view1
+as select * from lock_tbl1;
+
+create view lock_view2
+(
+  a,
+  b
+)
+as select * from lock_tbl1, lock_tbl1a;
+
+create view lock_view3
+as select * from lock_view2;
+
+create view lock_view4
+as select
+  (select a from lock_tbl1a limit 1)
+from
+  lock_tbl1;
+
+create view lock_view5
+as select
+  *
+from
+  lock_tbl1
+where
+  a in (select * from lock_tbl1a);
+
+create view lock_view6
+as select * from (select * from lock_tbl1) as sub;
+
+create role regress_rol_lock1;
+
+alter role regress_rol_lock1 set search_path to lock_schema1;
+
+grant USAGE on schema lock_schema1 to regress_rol_lock1;
+
+begin;
+
+lock table lock_tbl1 in ACCESS SHARE mode;
+
+lock table lock_tbl1 in ROW SHARE mode;
+
+lock table lock_tbl1 in ROW EXCLUSIVE mode;
+
+lock table lock_tbl1 in SHARE mode;
+
+lock table lock_tbl1 in SHARE ROW EXCLUSIVE mode;
+
+lock table lock_tbl1 in EXCLUSIVE mode;
+
+lock table lock_tbl1 in ACCESS EXCLUSIVE mode;
+
+rollback;
+
+begin;
+
+lock table lock_tbl1 in ACCESS SHARE mode nowait;
+
+lock table lock_tbl1 in ROW SHARE mode nowait;
+
+lock table lock_tbl1 in ROW EXCLUSIVE mode nowait;
+
+lock table lock_tbl1 in SHARE mode nowait;
+
+lock table lock_tbl1 in SHARE ROW EXCLUSIVE mode nowait;
+
+lock table lock_tbl1 in EXCLUSIVE mode nowait;
+
+lock table lock_tbl1 in ACCESS EXCLUSIVE mode nowait;
+
+rollback;
+
+begin;
+
+lock table lock_view1 in EXCLUSIVE mode;
+
+select
+  relname
+from
+  pg_locks as l,
+  pg_class as c
+where
+  l.relation = c.oid and
+  relname like '%lock_%' and
+  mode = 'ExclusiveLock'
+order by relname;
+
+rollback;
+
+begin;
+
+lock table lock_view2 in EXCLUSIVE mode;
+
+select
+  relname
+from
+  pg_locks as l,
+  pg_class as c
+where
+  l.relation = c.oid and
+  relname like '%lock_%' and
+  mode = 'ExclusiveLock'
+order by relname;
+
+rollback;
+
+begin;
+
+lock table lock_view3 in EXCLUSIVE mode;
+
+select
+  relname
+from
+  pg_locks as l,
+  pg_class as c
+where
+  l.relation = c.oid and
+  relname like '%lock_%' and
+  mode = 'ExclusiveLock'
+order by relname;
+
+rollback;
+
+begin;
+
+lock table lock_view4 in EXCLUSIVE mode;
+
+select
+  relname
+from
+  pg_locks as l,
+  pg_class as c
+where
+  l.relation = c.oid and
+  relname like '%lock_%' and
+  mode = 'ExclusiveLock'
+order by relname;
+
+rollback;
+
+begin;
+
+lock table lock_view5 in EXCLUSIVE mode;
+
+select
+  relname
+from
+  pg_locks as l,
+  pg_class as c
+where
+  l.relation = c.oid and
+  relname like '%lock_%' and
+  mode = 'ExclusiveLock'
+order by relname;
+
+rollback;
+
+begin;
+
+lock table lock_view6 in EXCLUSIVE mode;
+
+select
+  relname
+from
+  pg_locks as l,
+  pg_class as c
+where
+  l.relation = c.oid and
+  relname like '%lock_%' and
+  mode = 'ExclusiveLock'
+order by relname;
+
+rollback;
+
+create or replace view lock_view2
+as select * from lock_view3;
+
+begin;
+
+lock table lock_view2 in EXCLUSIVE mode;
+
+rollback;
+
+create view lock_view7
+as select * from lock_view2;
+
+begin;
+
+lock table lock_view7 in EXCLUSIVE mode;
+
+rollback;
+
+create table lock_tbl2 (b bigint)
+inherits (lock_tbl1);
+
+create table lock_tbl3 ()
+inherits (lock_tbl2);
+
+begin;
+
+lock table lock_tbl1 in ACCESS EXCLUSIVE mode;
+
+rollback;
+
+grant UPDATE on table lock_tbl1 to regress_rol_lock1;
+
+set role to regress_rol_lock1;
+
+begin;
+
+lock table lock_tbl2 in ACCESS EXCLUSIVE mode;
+
+rollback;
+
+begin;
+
+lock table lock_tbl1 in ACCESS EXCLUSIVE mode;
+
+rollback;
+
+begin;
+
+lock table only lock_tbl1 in ACCESS EXCLUSIVE mode;
+
+rollback;
+
+reset role;
+
+revoke UPDATE on table lock_tbl1 from regress_rol_lock1;
+
+set role to regress_rol_lock1;
+
+begin;
+
+lock table lock_view1 in ACCESS EXCLUSIVE mode;
+
+rollback;
+
+reset role;
+
+grant UPDATE on table lock_view1 to regress_rol_lock1;
+
+set role to regress_rol_lock1;
+
+begin;
+
+lock table lock_view1 in ACCESS EXCLUSIVE mode;
+
+select
+  relname
+from
+  pg_locks as l,
+  pg_class as c
+where
+  l.relation = c.oid and
+  relname like '%lock_%' and
+  mode = 'AccessExclusiveLock'
+order by relname;
+
+rollback;
+
+reset role;
+
+revoke UPDATE on table lock_view1 from regress_rol_lock1;
+
+create view lock_view8
+  with (security_invoker)
+as select * from lock_tbl1;
+
+set role to regress_rol_lock1;
+
+begin;
+
+lock table lock_view8 in ACCESS EXCLUSIVE mode;
+
+rollback;
+
+reset role;
+
+grant UPDATE on table lock_view8 to regress_rol_lock1;
+
+set role to regress_rol_lock1;
+
+begin;
+
+lock table lock_view8 in ACCESS EXCLUSIVE mode;
+
+rollback;
+
+reset role;
+
+grant UPDATE on table lock_tbl1 to regress_rol_lock1;
+
+begin;
+
+lock table lock_view8 in ACCESS EXCLUSIVE mode;
+
+select
+  relname
+from
+  pg_locks as l,
+  pg_class as c
+where
+  l.relation = c.oid and
+  relname like '%lock_%' and
+  mode = 'AccessExclusiveLock'
+order by relname;
+
+rollback;
+
+reset role;
+
+revoke UPDATE on table lock_view8 from regress_rol_lock1;
+
+drop view lock_view8;
+
+drop view lock_view7;
+
+drop view lock_view6;
+
+drop view lock_view5;
+
+drop view lock_view4;
+
+drop view lock_view3 cascade;
+
+drop view lock_view1;
+
+drop table lock_tbl3;
+
+drop table lock_tbl2;
+
+drop table lock_tbl1;
+
+drop table lock_tbl1a;
+
+drop schema lock_schema1 cascade;
+
+drop role regress_rol_lock1;
+
+reset search_path;
+
+create function test_atomic_ops()
+returns boolean
+as $function$regresslib$function$
+language c;
+
+select test_atomic_ops();

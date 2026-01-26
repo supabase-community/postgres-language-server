@@ -1,0 +1,1878 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/subselect.sql
+snapshot_kind: text
+---
+select 1 as one where 1 in (select 1);
+
+select 1 as zero where not 1 in (select 1);
+
+select 1 as zero where 1 in (select 2);
+
+select * from (select 1 as x) as ss;
+
+select * from (select 1 as x) as ss;
+
+select * from (select 1 as x), (select * from (select 2 as y));
+
+select 2 union select 2;
+
+select 2 union select 2;
+
+select (select 2 union select 2);
+
+select (select 2 union select 2);
+
+select ((select array[1, 2, 3]))[1];
+
+select ((select array[1, 2, 3]))[2];
+
+select ((select array[1, 2, 3]))[3];
+
+create table subselect_tbl (
+  f1 int,
+  f2 int,
+  f3 double precision
+);
+
+insert into subselect_tbl values (1, 2, 3);
+
+insert into subselect_tbl values (2, 3, 4);
+
+insert into subselect_tbl values (3, 4, 5);
+
+insert into subselect_tbl values (1, 1, 1);
+
+insert into subselect_tbl values (2, 2, 2);
+
+insert into subselect_tbl values (3, 3, 3);
+
+insert into subselect_tbl values (6, 7, 8);
+
+insert into subselect_tbl values (8, 9, null);
+
+select * from subselect_tbl;
+
+select f1 as "Constant Select" from subselect_tbl where f1 in (select 1);
+
+select f1 as "Uncorrelated Field" from subselect_tbl where f1 in (select f2 from subselect_tbl);
+
+select
+  f1 as "Uncorrelated Field"
+from
+  subselect_tbl
+where
+  f1 in
+  (
+    select
+      f2
+    from
+      subselect_tbl
+    where
+      f2 in (select f1 from subselect_tbl)
+  );
+
+select
+  f1,
+  f2
+from
+  subselect_tbl
+where
+  not (f1, f2) in
+  (
+    select
+      f2,
+      cast(f3 as int)
+    from
+      subselect_tbl
+    where
+      f3 is not null
+  );
+
+select
+  f1 as "Correlated Field",
+  f2 as "Second Field"
+from
+  subselect_tbl as upper
+where
+  f1 in
+  (
+    select f2 from subselect_tbl where f1 = upper.f1
+  );
+
+select
+  f1 as "Correlated Field",
+  f3 as "Second Field"
+from
+  subselect_tbl as upper
+where
+  f1 in
+  (
+    select
+      f2
+    from
+      subselect_tbl
+    where
+      cast(upper.f2 as double precision) = f3
+  );
+
+select
+  f1 as "Correlated Field",
+  f3 as "Second Field"
+from
+  subselect_tbl as upper
+where
+  f3 in
+  (
+    select
+      upper.f1 + f2
+    from
+      subselect_tbl
+    where
+      f2 = cast(f3 as int)
+  );
+
+select
+  f1 as "Correlated Field"
+from
+  subselect_tbl
+where
+  (f1, f2) in
+  (
+    select
+      f2,
+      cast(f3 as int)
+    from
+      subselect_tbl
+    where
+      f3 is not null
+  );
+
+select row(1, 2) = (select f1, f2) as eq from subselect_tbl;
+
+select row(1, 2) = (select f1, f2) as eq from subselect_tbl;
+
+select row(1, 2) = (select 3, 4) as eq from subselect_tbl;
+
+select row(1, 2) = (select 3, 4) as eq from subselect_tbl;
+
+select row(1, 2) = (select f1, f2 from subselect_tbl);
+
+select count from (select COUNT(distinct name) from road);
+
+select COUNT(*) from (select distinct name from road);
+
+select * from (select * from int4_tbl), (values (123456)) where f1 = column1;
+
+create view view_unnamed_ss
+as select
+  *
+from
+  (
+    select * from (select abs(f1) as a1 from int4_tbl)
+  ),
+  (select * from int8_tbl)
+where
+  a1 < 10 and q1 > a1
+order by q1,
+  q2;
+
+select * from view_unnamed_ss;
+
+drop view view_unnamed_ss;
+
+create view view_unnamed_ss_locking
+as select
+  *
+from
+  (select * from int4_tbl),
+  int8_tbl as unnamed_subquery
+where
+  f1 = q1
+for update of unnamed_subquery;
+
+drop view view_unnamed_ss_locking;
+
+select
+  ss.f1 as "Correlated Field",
+  ss.f3 as "Second Field"
+from
+  subselect_tbl as ss
+where
+  not f1 in
+  (
+    select
+      f1 + 1
+    from
+      int4_tbl
+    where
+      f1 <> ss.f1 and f1 < 2147483647
+  );
+
+select q1, float8(COUNT(*)) / (select COUNT(*) from int8_tbl) from int8_tbl group by q1 order by q1;
+
+select *, pg_typeof(f1) from (select 'foo' as f1 from generate_series(1, 3)) as ss order by 1;
+
+select '42' union all select '43';
+
+select '42' union all select 43;
+
+select 1 = all (select (select 1));
+
+select 1 = all (select (select 1));
+
+select * from int4_tbl as o where exists (select 1 from int4_tbl as i where i.f1 = o.f1 limit null);
+
+select
+  *
+from
+  int4_tbl as o
+where
+  not exists
+  (
+    select
+      1
+    from
+      int4_tbl as i
+    where
+      i.f1 = o.f1
+    limit 1
+  );
+
+select * from int4_tbl as o where exists (select 1 from int4_tbl as i where i.f1 = o.f1 limit 0);
+
+select
+  COUNT(*)
+from
+  (
+    select
+      1
+    from
+      tenk1 as a
+    where
+      unique1 in (select hundred from tenk1 as b)
+  )
+  as ss;
+
+select
+  COUNT(distinct ss.ten)
+from
+  (
+    select
+      ten
+    from
+      tenk1 as a
+    where
+      unique1 in (select hundred from tenk1 as b)
+  )
+  as ss;
+
+select
+  COUNT(*)
+from
+  (
+    select
+      1
+    from
+      tenk1 as a
+    where
+      unique1 in
+      (
+        select distinct hundred from tenk1 as b
+      )
+  )
+  as ss;
+
+select
+  COUNT(distinct ss.ten)
+from
+  (
+    select
+      ten
+    from
+      tenk1 as a
+    where
+      unique1 in
+      (
+        select distinct hundred from tenk1 as b
+      )
+  )
+  as ss;
+
+create temporary table foo (id int);
+
+create temporary table bar (
+  id1 int,
+  id2 int
+);
+
+insert into foo values (1);
+
+insert into bar values (1, 1);
+
+insert into bar values (2, 2);
+
+insert into bar values (3, 1);
+
+select * from foo where id in (select id2 from (select distinct id1, id2 from bar) as s);
+
+select * from foo where id in (select id2 from (select id1, id2 from bar group by id1, id2) as s);
+
+select
+  *
+from
+  foo
+where
+  id in
+  (
+    select
+      id2
+    from
+      (
+        select id1, id2 from bar
+        union
+        select id1, id2 from bar
+      )
+      as s
+  );
+
+select * from foo where id in (select id2 from (select distinct on (id2) id1, id2 from bar) as s);
+
+select * from foo where id in (select id2 from (select id2 from bar group by id2) as s);
+
+select
+  *
+from
+  foo
+where
+  id in
+  (
+    select
+      id2
+    from
+      (
+        select id2 from bar union select id2 from bar
+      )
+      as s
+  );
+
+create table orderstest (
+  approver_ref int,
+  po_ref int,
+  ordercanceled boolean
+);
+
+insert into orderstest values (1, 1, false);
+
+insert into orderstest values (66, 5, false);
+
+insert into orderstest values (66, 6, false);
+
+insert into orderstest values (66, 7, false);
+
+insert into orderstest values (66, 1, true);
+
+insert into orderstest values (66, 8, false);
+
+insert into orderstest values (66, 1, false);
+
+insert into orderstest values (77, 1, false);
+
+insert into orderstest values (1, 1, false);
+
+insert into orderstest values (66, 1, false);
+
+insert into orderstest values (1, 1, false);
+
+create view orders_view
+as select
+  *,
+  (
+    select
+      case
+        when ord.approver_ref = 1 then '---'
+        else 'Approved'
+      end
+  )
+  as "Approved",
+  (
+    select
+      case
+        when ord.ordercanceled then 'Canceled'
+        else (
+          select
+            case
+              when ord.po_ref = 1
+              then (
+                select
+                  case
+                    when ord.approver_ref = 1 then '---'
+                    else 'Approved'
+                  end
+              )
+              else 'PO'
+            end
+        )
+      end
+  )
+  as "Status",
+  case
+    when ord.ordercanceled then 'Canceled'
+    else case
+      when ord.po_ref = 1
+      then case
+        when ord.approver_ref = 1 then '---'
+        else 'Approved'
+      end
+      else 'PO'
+    end
+  end
+  as "Status_OK"
+from
+  orderstest as ord;
+
+select * from orders_view;
+
+drop table orderstest cascade;
+
+create temporary table parts (
+  partnum text,
+  cost double precision
+);
+
+create temporary table shipped (
+  ttype char(2),
+  ordnum int,
+  partnum text,
+  value double precision
+);
+
+create temporary view shipped_view
+as select * from shipped where ttype = 'wt';
+
+create rule shipped_view_insert
+as on insert to shipped_view
+do instead
+  insert into shipped
+  values ('wt', new.ordnum, new.partnum, new.value);;
+
+insert into parts (partnum, cost) values (1, 1234.56);
+
+insert into shipped_view (ordnum, partnum, value)
+values
+  (
+    0, 1, (select cost from parts where partnum = '1')
+  );
+
+select * from shipped_view;
+
+create rule shipped_view_update
+as on update to shipped_view
+do instead
+  update shipped
+  set partnum = new.partnum,
+  value = new.value
+  where
+    ttype = new.ttype and ordnum = new.ordnum;;
+
+update shipped_view
+set value = 11
+from int4_tbl as a
+inner join
+  int4_tbl as b
+on a.f1 =
+  (select f1 from int4_tbl as c where c.f1 = b.f1)
+where
+  ordnum = a.f1;
+
+select * from shipped_view;
+
+select
+  f1,
+  ss1 as relabel
+from
+  (
+    select
+      *,
+      (
+        select SUM(f1) from int4_tbl as b where f1 >= a.f1
+      )
+      as ss1
+    from
+      int4_tbl as a
+  )
+  as ss;
+
+select
+  *
+from
+  (
+    select
+      MAX(unique1)
+    from
+      tenk1 as a
+    where
+      exists
+      (
+        select
+          1
+        from
+          tenk1 as b
+        where
+          b.thousand = a.unique2
+      )
+  )
+  as ss;
+
+select
+  *
+from
+  (
+    select
+      MIN(unique1)
+    from
+      tenk1 as a
+    where
+      not exists
+      (
+        select 1 from tenk1 as b where b.unique2 = 10000
+      )
+  )
+  as ss;
+
+create temporary table numeric_table (num_col numeric);
+
+insert into numeric_table values (1), (1.000000000000000000001), (2), (3);
+
+create temporary table float_table (float_col double precision);
+
+insert into float_table values (1), (2), (3);
+
+select * from float_table where float_col in (select num_col from numeric_table);
+
+select * from numeric_table where num_col in (select float_col from float_table);
+
+create table semijoin_unique_tbl (
+  a int,
+  b int
+);
+
+insert into semijoin_unique_tbl select i % 10, i % 10 from generate_series(1, 1000) as i;
+
+create index on semijoin_unique_tbl using btree (a, b);
+
+analyze semijoin_unique_tbl;
+
+select
+  *
+from
+  semijoin_unique_tbl as t1,
+  semijoin_unique_tbl as t2
+where
+  (t1.a, t2.a) in
+  (
+    select a, b from semijoin_unique_tbl as t3
+  )
+order by t1.a,
+  t2.a;
+
+select
+  *
+from
+  semijoin_unique_tbl as t1,
+  semijoin_unique_tbl as t2
+where
+  (t1.a, t2.a) in
+  (
+    select a + 1, b + 1 from semijoin_unique_tbl as t3
+  )
+order by t1.a,
+  t2.a;
+
+set parallel_setup_cost = 0;
+
+set parallel_tuple_cost = 0;
+
+set min_parallel_table_scan_size = 0;
+
+set max_parallel_workers_per_gather = 4;
+
+set enable_indexscan = off;
+
+select
+  *
+from
+  semijoin_unique_tbl as t1,
+  semijoin_unique_tbl as t2
+where
+  (t1.a, t2.a) in
+  (
+    select a, b from semijoin_unique_tbl as t3
+  )
+order by t1.a,
+  t2.a;
+
+reset enable_indexscan;
+
+reset max_parallel_workers_per_gather;
+
+reset min_parallel_table_scan_size;
+
+reset parallel_tuple_cost;
+
+reset parallel_setup_cost;
+
+drop table semijoin_unique_tbl;
+
+create table unique_tbl_p (
+  a int,
+  b int
+)
+partition by range(a);
+
+create table unique_tbl_p1 partition of unique_tbl_p for values from (0) to (5);
+
+create table unique_tbl_p2 partition of unique_tbl_p for values from (5) to (10);
+
+create table unique_tbl_p3 partition of unique_tbl_p for values from (10) to (20);
+
+insert into unique_tbl_p select i % 12, i from generate_series(0, 1000) as i;
+
+create index on unique_tbl_p1 using btree (a);
+
+create index on unique_tbl_p2 using btree (a);
+
+create index on unique_tbl_p3 using btree (a);
+
+analyze unique_tbl_p;
+
+set enable_partitionwise_join = 'on';
+
+select
+  *
+from
+  unique_tbl_p as t1,
+  unique_tbl_p as t2
+where
+  (t1.a, t2.a) in
+  (
+    select a, a from unique_tbl_p as t3
+  )
+order by t1.a,
+  t2.a;
+
+reset enable_partitionwise_join;
+
+drop table unique_tbl_p;
+
+create temporary table ta (
+  id int primary key,
+  val int
+);
+
+insert into ta values (1, 1);
+
+insert into ta values (2, 2);
+
+create temporary table tb (
+  id int primary key,
+  aval int
+);
+
+insert into tb values (1, 1);
+
+insert into tb values (2, 1);
+
+insert into tb values (3, 2);
+
+insert into tb values (4, 2);
+
+create temporary table tc (
+  id int primary key,
+  aid int
+);
+
+insert into tc values (1, 1);
+
+insert into tc values (2, 2);
+
+select
+  (
+    select
+      MIN(tb.id)
+    from
+      tb
+    where
+      tb.aval =
+      (select ta.val from ta where ta.id = tc.aid)
+  )
+  as min_tb_id
+from
+  tc;
+
+create temporary table t1 (
+  f1 numeric(14, 0),
+  f2 varchar(30)
+);
+
+select
+  *
+from
+  (
+    select distinct
+      f1,
+      f2,
+      (select f2 from t1 as x where x.f1 = up.f1) as fs
+    from
+      t1 as up
+  )
+  as ss
+group by f1,
+  f2,
+  fs;
+
+create temporary table table_a (id int);
+
+insert into table_a values (42);
+
+create temporary view view_a
+as select * from table_a;
+
+select view_a from view_a;
+
+select (select view_a) from view_a;
+
+select (select (select view_a)) from view_a;
+
+select (select cast(a.* as text)) from view_a as a;
+
+select 1 = any (array_agg(f1)) = any (select false) from int4_tbl;
+
+select 1 = any (array_agg(f1)) = any (select false) from int4_tbl;
+
+select q from (select MAX(f1) from int4_tbl group by f1 order by f1) as q;
+
+with q as (select MAX(f1) from int4_tbl group by f1 order by f1) select q from q;
+
+begin;
+
+delete from road
+where
+  exists
+  (
+    select
+      1
+    from
+      int4_tbl
+      inner join
+        (
+          select
+            f1,
+            array(select q1 from int8_tbl) as arr
+          from
+            text_tbl
+        )
+        as ss
+      on true
+    where
+      road.name = ss.f1
+  );
+
+rollback;
+
+select
+  (select sq1) as qq1
+from
+  (
+    select
+      exists (select 1 from int4_tbl where f1 = q2)
+      as sq1,
+      42 as dummy
+    from
+      int8_tbl
+  )
+  as sq0
+  inner join
+    int4_tbl as i4
+  on dummy = i4.f1;
+
+create temporary table upsert (
+  key int primary key,
+  val text
+);
+
+insert into upsert values (1, 'val') on conflict (key) do update set val = 'not seen';
+
+insert into upsert
+values (1, 'val')
+on conflict
+(key)
+do
+update
+set val = 'seen with subselect ' ||
+cast((select f1 from int4_tbl where f1 <> 0 limit 1)
+as text);
+
+select * from upsert;
+
+with
+aa
+as (
+  select 'int4_tbl' as u from int4_tbl limit 1
+)
+insert into upsert
+values (1, 'x'), (999, 'y')
+on conflict
+(key)
+do
+update
+set val = (select u from aa)
+returning *;
+
+create temporary table outer_7597 (
+  f1 int,
+  f2 int
+);
+
+insert into outer_7597 values (0, 0);
+
+insert into outer_7597 values (1, 0);
+
+insert into outer_7597 values (0, null);
+
+insert into outer_7597 values (1, null);
+
+create temporary table inner_7597 (
+  c1 bigint,
+  c2 bigint
+);
+
+insert into inner_7597 values (0, null);
+
+select * from outer_7597 where not (f1, f2) in (select * from inner_7597);
+
+create temporary table outer_text (
+  f1 text,
+  f2 text
+);
+
+insert into outer_text values ('a', 'a');
+
+insert into outer_text values ('b', 'a');
+
+insert into outer_text values ('a', null);
+
+insert into outer_text values ('b', null);
+
+create temporary table inner_text (
+  c1 text,
+  c2 text
+);
+
+insert into inner_text values ('a', null);
+
+insert into inner_text values ('123', '456');
+
+select * from outer_text where not (f1, f2) in (select * from inner_text);
+
+select cast('foo' as text) in (select cast('bar' as name) union all select cast('bar' as name));
+
+select cast('foo' as text) in (select cast('bar' as name) union all select cast('bar' as name));
+
+select row(row(row(1))) = any (select row(row(1)));
+
+select row(row(row(1))) = any (select row(row(1)));
+
+select cast('1' as text) in (select cast('1' as name) union all select cast('1' as name));
+
+select * from int8_tbl where q1 in (select c1 from inner_text);
+
+begin;
+
+create function bogus_int8_text_eq(bigint, text)
+returns boolean
+language sql
+as $function$select $1::text = $2$function$;
+
+create operator = (PROCEDURE = bogus_int8_text_eq, LEFTARG = bigint, RIGHTARG = text);
+
+select * from int8_tbl where q1 in (select c1 from inner_text);
+
+select * from int8_tbl where q1 in (select c1 from inner_text);
+
+create or replace function bogus_int8_text_eq(bigint, text)
+returns boolean
+language sql
+as $function$select $1::text = $2 and $1::text = $2$function$;
+
+select * from int8_tbl where q1 in (select c1 from inner_text);
+
+select * from int8_tbl where q1 in (select c1 from inner_text);
+
+create or replace function bogus_int8_text_eq(bigint, text)
+returns boolean
+language sql
+as $function$select $2 = $1::text$function$;
+
+select * from int8_tbl where q1 in (select c1 from inner_text);
+
+select * from int8_tbl where q1 in (select c1 from inner_text);
+
+rollback;
+
+select
+  COUNT(*)
+from
+  tenk1 as t
+where
+  exists
+  (
+    select
+      1
+    from
+      tenk1 as k
+    where
+      k.unique1 = t.unique2
+  ) or
+  ten < 0;
+
+select
+  COUNT(*)
+from
+  tenk1 as t
+where
+  exists
+  (
+    select
+      1
+    from
+      tenk1 as k
+    where
+      k.unique1 = t.unique2
+  ) or
+  ten < 0;
+
+select
+  COUNT(*)
+from
+  tenk1 as t
+where
+  (exists
+  (
+    select
+      1
+    from
+      tenk1 as k
+    where
+      k.unique1 = t.unique2
+  ) or
+  ten < 0) and
+  thousand = 1;
+
+select
+  COUNT(*)
+from
+  tenk1 as t
+where
+  (exists
+  (
+    select
+      1
+    from
+      tenk1 as k
+    where
+      k.unique1 = t.unique2
+  ) or
+  ten < 0) and
+  thousand = 1;
+
+create temporary table exists_tbl (
+  c1 int,
+  c2 int,
+  c3 int
+)
+partition by LIST(c1);
+
+create temporary table exists_tbl_null partition of exists_tbl for values in (null);
+
+create temporary table exists_tbl_def partition of exists_tbl default;
+
+insert into exists_tbl select x, x / 2, x + 1 from generate_series(0, 10) as x;
+
+analyze exists_tbl;
+
+select
+  *
+from
+  exists_tbl as t1
+where
+  exists
+  (
+    select 1 from exists_tbl as t2 where t1.c1 = t2.c2
+  ) or
+  c3 < 0;
+
+select
+  *
+from
+  exists_tbl as t1
+where
+  exists
+  (
+    select 1 from exists_tbl as t2 where t1.c1 = t2.c2
+  ) or
+  c3 < 0;
+
+select
+  a.thousand
+from
+  tenk1 as a,
+  tenk1 as b
+where
+  a.thousand = b.thousand and
+  exists
+  (
+    select
+      1
+    from
+      tenk1 as c
+    where
+      b.hundred = c.hundred and
+      not exists
+      (
+        select
+          1
+        from
+          tenk1 as d
+        where
+          a.thousand = d.thousand
+      )
+  );
+
+select x, x from (select (select NOW()) as x from (values (1), (2)) as v (y)) as ss;
+
+select x, x from (select (select random()) as x from (values (1), (2)) as v (y)) as ss;
+
+select x, x from (select (select NOW() where y = y) as x from (values (1), (2)) as v (y)) as ss;
+
+select x, x from (select (select random() where y = y) as x from (values (1), (2)) as v (y)) as ss;
+
+select
+  SUM(cast(ss.tst as int))
+from
+  onek as o
+  inner join
+    lateral (
+      select
+        i.ten in
+        (
+          select f1 from int4_tbl where f1 <= o.hundred
+        )
+        as tst,
+        random() as r
+      from
+        onek as i
+      where
+        i.unique1 = o.unique1
+    )
+    as ss
+  on true
+where
+  o.ten = 0;
+
+select
+  SUM(cast(ss.tst as int))
+from
+  onek as o
+  inner join
+    lateral (
+      select
+        i.ten in
+        (
+          select f1 from int4_tbl where f1 <= o.hundred
+        )
+        as tst,
+        random() as r
+      from
+        onek as i
+      where
+        i.unique1 = o.unique1
+    )
+    as ss
+  on true
+where
+  o.ten = 0;
+
+begin;
+
+set local enable_sort = off;
+
+select
+  COUNT(*)
+from
+  onek as o
+  inner join
+    lateral (
+      select
+        *
+      from
+        onek as i1
+      where
+        i1.unique1 = o.unique1
+      except
+      select
+        *
+      from
+        onek as i2
+      where
+        i2.unique1 = o.unique2
+    )
+    as ss
+  on true
+where
+  o.ten = 1;
+
+select
+  COUNT(*)
+from
+  onek as o
+  inner join
+    lateral (
+      select
+        *
+      from
+        onek as i1
+      where
+        i1.unique1 = o.unique1
+      except
+      select
+        *
+      from
+        onek as i2
+      where
+        i2.unique1 = o.unique2
+    )
+    as ss
+  on true
+where
+  o.ten = 1;
+
+rollback;
+
+begin;
+
+set local enable_hashagg = off;
+
+select
+  COUNT(*)
+from
+  onek as o
+  inner join
+    lateral (
+      select
+        *
+      from
+        onek as i1
+      where
+        i1.unique1 = o.unique1
+      except
+      select
+        *
+      from
+        onek as i2
+      where
+        i2.unique1 = o.unique2
+    )
+    as ss
+  on true
+where
+  o.ten = 1;
+
+select
+  COUNT(*)
+from
+  onek as o
+  inner join
+    lateral (
+      select
+        *
+      from
+        onek as i1
+      where
+        i1.unique1 = o.unique1
+      except
+      select
+        *
+      from
+        onek as i2
+      where
+        i2.unique1 = o.unique2
+    )
+    as ss
+  on true
+where
+  o.ten = 1;
+
+rollback;
+
+select
+  SUM(o.four),
+  SUM(ss.a)
+from
+  onek as o
+  inner join
+    lateral (
+      with recursive
+      x (a)
+      as (
+        select o.four as a
+        union
+        select a + 1 from x where a < 10
+      )
+      select
+        *
+      from
+        x
+    )
+    as ss
+  on true
+where
+  o.ten = 1;
+
+select
+  SUM(o.four),
+  SUM(ss.a)
+from
+  onek as o
+  inner join
+    lateral (
+      with recursive
+      x (a)
+      as (
+        select o.four as a
+        union
+        select a + 1 from x where a < 10
+      )
+      select
+        *
+      from
+        x
+    )
+    as ss
+  on true
+where
+  o.ten = 1;
+
+create temporary table notinouter (a int);
+
+create temporary table notininner (b int not null);
+
+insert into notinouter values (null), (1);
+
+select * from notinouter where not a in (select b from notininner);
+
+create temporary table nocolumns ();
+
+select exists (select * from nocolumns);
+
+select
+  val.x
+from
+  generate_series(1, 10) as s (i),
+  lateral (
+    values ((select s.i + 1)), (s.i + 101)
+  )
+  as val (x)
+where
+  s.i < 10 and (select val.x) < 110;
+
+select * from (values (not 3 in (select * from (values (1), (2)) as ss1)), (false)) as ss;
+
+select * from (values (not 3 in (select * from (values (1), (2)) as ss1)), (false)) as ss;
+
+select
+  *
+from
+  int4_tbl
+where
+  case
+    when f1 in (select unique1 from tenk1 as a)
+    then f1
+    else null
+  end in
+  (
+    select ten from tenk1 as b
+  );
+
+select
+  *
+from
+  int4_tbl
+where
+  case
+    when f1 in (select unique1 from tenk1 as a)
+    then f1
+    else null
+  end in
+  (
+    select ten from tenk1 as b
+  );
+
+select
+  *
+from
+  int4_tbl as o
+where
+  (f1, f1) in
+  (
+    select
+      f1,
+      generate_series(1, 50) / 10 as g
+    from
+      int4_tbl as i
+    group by f1
+  );
+
+select
+  *
+from
+  int4_tbl as o
+where
+  (f1, f1) in
+  (
+    select
+      f1,
+      generate_series(1, 50) / 10 as g
+    from
+      int4_tbl as i
+    group by f1
+  );
+
+select
+  (
+    select
+      q
+    from
+      (
+        select 1, 2, 3 where f1 > 0
+        union all
+        select 4, 5, 6.0 where f1 <= 0
+      )
+      as q
+  )
+from
+  int4_tbl;
+
+select
+  *
+from
+  int4_tbl as i4,
+  lateral (
+    select
+      i4.f1 > 1 as b,
+      1 as id
+    from
+      (select random() order by 1) as t1
+    union all
+    select true as b, 2 as id
+  )
+  as t2
+where
+  b and f1 >= 0;
+
+select
+  *
+from
+  int4_tbl as i4,
+  lateral (
+    select
+      i4.f1 > 1 as b,
+      1 as id
+    from
+      (select random() order by 1) as t1
+    union all
+    select true as b, 2 as id
+  )
+  as t2
+where
+  b and f1 >= 0;
+
+create temporary sequence ts1;
+
+select * from (select distinct ten from tenk1) as ss where ten < 10 + nextval('ts1') order by 1;
+
+select nextval('ts1');
+
+create function tattle(x int, y int)
+returns boolean
+volatile
+language plpgsql
+as $function$
+begin
+  raise notice 'x = %, y = %', x, y;
+  return x > y;
+end$function$;
+
+select * from (select 9 as x, unnest(array[1, 2, 3, 11, 12, 13]) as u) as ss where tattle(x, 8);
+
+select * from (select 9 as x, unnest(array[1, 2, 3, 11, 12, 13]) as u) as ss where tattle(x, 8);
+
+alter function tattle(int, int) stable;
+
+select * from (select 9 as x, unnest(array[1, 2, 3, 11, 12, 13]) as u) as ss where tattle(x, 8);
+
+select * from (select 9 as x, unnest(array[1, 2, 3, 11, 12, 13]) as u) as ss where tattle(x, 8);
+
+select * from (select 9 as x, unnest(array[1, 2, 3, 11, 12, 13]) as u) as ss where tattle(x, u);
+
+select * from (select 9 as x, unnest(array[1, 2, 3, 11, 12, 13]) as u) as ss where tattle(x, u);
+
+drop function tattle(int, int);
+
+create table sq_limit (
+  pk int primary key,
+  c1 int,
+  c2 int
+);
+
+insert into sq_limit
+values
+  (1, 1, 1),
+  (2, 2, 2),
+  (3, 3, 3),
+  (4, 4, 4),
+  (5, 1, 1),
+  (6, 2, 2),
+  (7, 3, 3),
+  (8, 4, 4);
+
+create function explain_sq_limit()
+returns setof text
+language plpgsql
+as $function$
+declare ln text;
+begin
+    for ln in
+        explain (analyze, summary off, timing off, costs off, buffers off)
+        select * from (select pk,c2 from sq_limit order by c1,pk) as x limit 3
+    loop
+        ln := regexp_replace(ln, 'Memory: \S*',  'Memory: xxx');
+        return next ln;
+    end loop;
+end;
+$function$;
+
+select * from explain_sq_limit();
+
+select * from (select pk, c2 from sq_limit order by c1, pk) as x limit 3;
+
+drop function explain_sq_limit();
+
+drop table sq_limit;
+
+begin;
+
+declare "c1" scroll
+cursor
+for select
+  *
+from
+  generate_series(1, 4) as i
+where
+  i <> all (values (2), (3));;
+
+move forward all from c1;
+
+fetch backward all from c1;
+
+commit;
+
+begin;
+
+create temporary table json_tab (a int);
+
+insert into json_tab values (1);
+
+select
+  *
+from
+  json_tab as t1
+  left outer join
+    (
+      select
+        json_array(1, a absent on null)
+      from
+        json_tab as t2
+    )
+    as s
+  on false;
+
+select
+  *
+from
+  json_tab as t1
+  left outer join
+    (
+      select
+        json_array(1, a absent on null)
+      from
+        json_tab as t2
+    )
+    as s
+  on false;
+
+rollback;
+
+select
+  tname,
+  attname
+from
+  (
+    select
+      cast(relname as information_schema.sql_identifier)
+      as tname,
+      *
+    from
+      (select * from pg_class as c) as ss1
+  )
+  as ss2
+  right outer join
+    pg_attribute as a
+  on a.attrelid = ss2.oid
+where
+  tname = 'tenk1' and attnum = 1;
+
+select
+  tname,
+  attname
+from
+  (
+    select
+      cast(relname as information_schema.sql_identifier)
+      as tname,
+      *
+    from
+      (select * from pg_class as c) as ss1
+  )
+  as ss2
+  right outer join
+    pg_attribute as a
+  on a.attrelid = ss2.oid
+where
+  tname = 'tenk1' and attnum = 1;
+
+select
+  t1.ten,
+  SUM(x)
+from
+  tenk1 as t1
+  left outer join
+    lateral (
+      select
+        t1.ten + t2.ten as x,
+        t2.fivethous
+      from
+        tenk1 as t2
+    )
+    as ss
+  on t1.unique1 = ss.fivethous
+group by t1.ten
+order by t1.ten;
+
+select
+  t1.ten,
+  SUM(x)
+from
+  tenk1 as t1
+  left outer join
+    lateral (
+      select
+        t1.ten + t2.ten as x,
+        t2.fivethous
+      from
+        tenk1 as t2
+    )
+    as ss
+  on t1.unique1 = ss.fivethous
+group by t1.ten
+order by t1.ten;
+
+select
+  t1.q1,
+  x
+from
+  int8_tbl as t1
+  left outer join
+    int8_tbl as t2
+    left outer join
+      lateral (
+        select t2.q1 + t3.q1 as x, * from int8_tbl as t3
+      )
+      as t3
+    on t2.q2 = t3.q2
+  on t1.q2 = t2.q2
+order by 1,
+  2;
+
+select
+  t1.q1,
+  x
+from
+  int8_tbl as t1
+  left outer join
+    int8_tbl as t2
+    left outer join
+      lateral (
+        select t2.q1 + t3.q1 as x, * from int8_tbl as t3
+      )
+      as t3
+    on t2.q2 = t3.q2
+  on t1.q2 = t2.q2
+order by 1,
+  2;
+
+select
+  t1.q1,
+  x
+from
+  int8_tbl as t1
+  left outer join
+    int8_tbl as t2
+    inner join
+      lateral (
+        select t2.q1 + 1 as x, * from int8_tbl as t3
+      )
+      as t3
+    on t2.q2 = t3.q2
+  on t1.q2 = t2.q2
+order by 1,
+  2;
+
+select
+  t1.q1,
+  x
+from
+  int8_tbl as t1
+  left outer join
+    int8_tbl as t2
+    inner join
+      lateral (
+        select t2.q1 + 1 as x, * from int8_tbl as t3
+      )
+      as t3
+    on t2.q2 = t3.q2
+  on t1.q2 = t2.q2
+order by 1,
+  2;
+
+select
+  t1.q1,
+  x
+from
+  int8_tbl as t1
+  left outer join
+    int8_tbl as t2
+    left outer join
+      lateral (
+        select t2.q1 + 1 as x, * from int8_tbl as t3
+      )
+      as t3
+    on t2.q2 = t3.q2
+  on t1.q2 = t2.q2
+order by 1,
+  2;
+
+select
+  t1.q1,
+  x
+from
+  int8_tbl as t1
+  left outer join
+    int8_tbl as t2
+    left outer join
+      lateral (
+        select t2.q1 + 1 as x, * from int8_tbl as t3
+      )
+      as t3
+    on t2.q2 = t3.q2
+  on t1.q2 = t2.q2
+order by 1,
+  2;
+
+select
+  t1.q1,
+  x
+from
+  int8_tbl as t1
+  left outer join
+    int8_tbl as t2
+    inner join
+      lateral (
+        select t2.q2 as x, * from int8_tbl as t3
+      )
+      as ss
+    on t2.q2 = ss.q1
+  on t1.q1 = t2.q1
+order by 1,
+  2;
+
+select
+  t1.q1,
+  x
+from
+  int8_tbl as t1
+  left outer join
+    int8_tbl as t2
+    inner join
+      lateral (
+        select t2.q2 as x, * from int8_tbl as t3
+      )
+      as ss
+    on t2.q2 = ss.q1
+  on t1.q1 = t2.q1
+order by 1,
+  2;
+
+select
+  t1.q1,
+  x
+from
+  int8_tbl as t1
+  left outer join
+    int8_tbl as t2
+    left outer join
+      lateral (
+        select t2.q2 as x, * from int8_tbl as t3
+      )
+      as ss
+    on t2.q2 = ss.q1
+  on t1.q1 = t2.q1
+order by 1,
+  2;
+
+select
+  t1.q1,
+  x
+from
+  int8_tbl as t1
+  left outer join
+    int8_tbl as t2
+    left outer join
+      lateral (
+        select t2.q2 as x, * from int8_tbl as t3
+      )
+      as ss
+    on t2.q2 = ss.q1
+  on t1.q1 = t2.q1
+order by 1,
+  2;
+
+select
+  ss2.*
+from
+  int8_tbl as t1
+  left outer join
+    int8_tbl as t2
+    left outer join
+      (
+        select
+          coalesce(q1, q1) as x,
+          *
+        from
+          int8_tbl as t3
+      )
+      as ss1
+    on t2.q1 = ss1.q2
+    inner join
+      lateral (
+        select ss1.x as y, * from int8_tbl as t4
+      )
+      as ss2
+    on t2.q2 = ss2.q1
+  on t1.q2 = ss2.q1
+order by 1,
+  2,
+  3;
+
+select
+  ss2.*
+from
+  int8_tbl as t1
+  left outer join
+    int8_tbl as t2
+    left outer join
+      (
+        select
+          coalesce(q1, q1) as x,
+          *
+        from
+          int8_tbl as t3
+      )
+      as ss1
+    on t2.q1 = ss1.q2
+    inner join
+      lateral (
+        select ss1.x as y, * from int8_tbl as t4
+      )
+      as ss2
+    on t2.q2 = ss2.q1
+  on t1.q2 = ss2.q1
+order by 1,
+  2,
+  3;
+
+select
+  ss2.*
+from
+  int8_tbl as t1
+  left outer join
+    int8_tbl as t2
+    left outer join
+      (
+        select
+          coalesce(q1, q1) as x,
+          *
+        from
+          int8_tbl as t3
+      )
+      as ss1
+    on t2.q1 = ss1.q2
+    left outer join
+      lateral (
+        select ss1.x as y, * from int8_tbl as t4
+      )
+      as ss2
+    on t2.q2 = ss2.q1
+  on t1.q2 = ss2.q1
+order by 1,
+  2,
+  3;
+
+select
+  ss2.*
+from
+  int8_tbl as t1
+  left outer join
+    int8_tbl as t2
+    left outer join
+      (
+        select
+          coalesce(q1, q1) as x,
+          *
+        from
+          int8_tbl as t3
+      )
+      as ss1
+    on t2.q1 = ss1.q2
+    left outer join
+      lateral (
+        select ss1.x as y, * from int8_tbl as t4
+      )
+      as ss2
+    on t2.q2 = ss2.q1
+  on t1.q2 = ss2.q1
+order by 1,
+  2,
+  3;
+
+with x as (select * from (select f1 from subselect_tbl) as ss) select * from x where f1 = 1;

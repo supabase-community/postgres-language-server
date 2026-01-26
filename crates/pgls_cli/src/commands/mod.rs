@@ -12,6 +12,7 @@ pub(crate) mod check;
 pub(crate) mod clean;
 pub(crate) mod daemon;
 pub(crate) mod dblint;
+pub(crate) mod format;
 pub(crate) mod init;
 pub(crate) mod schema_export;
 pub(crate) mod version;
@@ -59,6 +60,39 @@ pub enum PgLSCommand {
 
         /// When set to true, only the files that have been changed compared to your `defaultBranch`
         /// configuration will be linted. This option should be used in CI environments.
+        #[bpaf(long("changed"), switch)]
+        changed: bool,
+
+        /// Use this to specify the base branch to compare against when you're using the --changed
+        /// flag and the `defaultBranch` is not set in your `postgres-language-server.jsonc`
+        #[bpaf(long("since"), argument("REF"))]
+        since: Option<String>,
+
+        /// Single file, single path or list of paths
+        #[bpaf(positional("PATH"), many)]
+        paths: Vec<OsString>,
+    },
+
+    /// Formats the requested files.
+    #[bpaf(command)]
+    Format {
+        #[bpaf(external(partial_configuration), hide_usage, optional)]
+        configuration: Option<PartialConfiguration>,
+
+        #[bpaf(external, hide_usage)]
+        cli_options: CliOptions,
+
+        /// Write formatted output back to files
+        #[bpaf(long("write"), switch)]
+        write: bool,
+
+        /// When set to true, only the files that have been staged (the ones prepared to be committed)
+        /// will be formatted. This option should be used when working locally.
+        #[bpaf(long("staged"), switch)]
+        staged: bool,
+
+        /// When set to true, only the files that have been changed compared to your `defaultBranch`
+        /// configuration will be formatted. This option should be used in CI environments.
         #[bpaf(long("changed"), switch)]
         changed: bool,
 
@@ -242,7 +276,8 @@ impl PgLSCommand {
         match self {
             PgLSCommand::Version(cli_options)
             | PgLSCommand::Check { cli_options, .. }
-            | PgLSCommand::Dblint { cli_options, .. } => Some(cli_options),
+            | PgLSCommand::Dblint { cli_options, .. }
+            | PgLSCommand::Format { cli_options, .. } => Some(cli_options),
             PgLSCommand::LspProxy { .. }
             | PgLSCommand::Start { .. }
             | PgLSCommand::Stop

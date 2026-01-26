@@ -1,0 +1,248 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/advisory_lock.sql
+snapshot_kind: text
+---
+select oid as datoid from pg_database where datname = current_database();
+
+begin;
+
+select
+  pg_advisory_xact_lock(1),
+  pg_advisory_xact_lock_shared(2),
+  pg_advisory_xact_lock(1, 1),
+  pg_advisory_xact_lock_shared(2, 2);
+
+select
+  locktype,
+  classid,
+  objid,
+  objsubid,
+  mode,
+  granted
+from
+  pg_locks
+where
+  locktype = 'advisory' and database = 'datoid'
+order by classid,
+  objid,
+  objsubid;
+
+select pg_advisory_unlock_all();
+
+select COUNT(*) from pg_locks where locktype = 'advisory' and database = 'datoid';
+
+select
+  pg_advisory_unlock(1),
+  pg_advisory_unlock_shared(2),
+  pg_advisory_unlock(1, 1),
+  pg_advisory_unlock_shared(2, 2);
+
+commit;
+
+select COUNT(*) from pg_locks where locktype = 'advisory' and database = 'datoid';
+
+begin;
+
+select
+  pg_advisory_xact_lock(1),
+  pg_advisory_xact_lock_shared(2),
+  pg_advisory_xact_lock(1, 1),
+  pg_advisory_xact_lock_shared(2, 2);
+
+select
+  locktype,
+  classid,
+  objid,
+  objsubid,
+  mode,
+  granted
+from
+  pg_locks
+where
+  locktype = 'advisory' and database = 'datoid'
+order by classid,
+  objid,
+  objsubid;
+
+select
+  pg_advisory_lock(1),
+  pg_advisory_lock_shared(2),
+  pg_advisory_lock(1, 1),
+  pg_advisory_lock_shared(2, 2);
+
+rollback;
+
+select
+  locktype,
+  classid,
+  objid,
+  objsubid,
+  mode,
+  granted
+from
+  pg_locks
+where
+  locktype = 'advisory' and database = 'datoid'
+order by classid,
+  objid,
+  objsubid;
+
+select
+  pg_advisory_unlock(1),
+  pg_advisory_unlock(1),
+  pg_advisory_unlock_shared(2),
+  pg_advisory_unlock_shared(2),
+  pg_advisory_unlock(1, 1),
+  pg_advisory_unlock(1, 1),
+  pg_advisory_unlock_shared(2, 2),
+  pg_advisory_unlock_shared(2, 2);
+
+select COUNT(*) from pg_locks where locktype = 'advisory' and database = 'datoid';
+
+begin;
+
+select
+  pg_advisory_lock(1),
+  pg_advisory_lock_shared(2),
+  pg_advisory_lock(1, 1),
+  pg_advisory_lock_shared(2, 2);
+
+select
+  locktype,
+  classid,
+  objid,
+  objsubid,
+  mode,
+  granted
+from
+  pg_locks
+where
+  locktype = 'advisory' and database = 'datoid'
+order by classid,
+  objid,
+  objsubid;
+
+select
+  pg_advisory_xact_lock(1),
+  pg_advisory_xact_lock_shared(2),
+  pg_advisory_xact_lock(1, 1),
+  pg_advisory_xact_lock_shared(2, 2);
+
+rollback;
+
+select
+  locktype,
+  classid,
+  objid,
+  objsubid,
+  mode,
+  granted
+from
+  pg_locks
+where
+  locktype = 'advisory' and database = 'datoid'
+order by classid,
+  objid,
+  objsubid;
+
+select pg_advisory_unlock_all();
+
+select COUNT(*) from pg_locks where locktype = 'advisory' and database = 'datoid';
+
+begin;
+
+select
+  pg_advisory_xact_lock(1),
+  pg_advisory_xact_lock(1),
+  pg_advisory_xact_lock_shared(2),
+  pg_advisory_xact_lock_shared(2),
+  pg_advisory_xact_lock(1, 1),
+  pg_advisory_xact_lock(1, 1),
+  pg_advisory_xact_lock_shared(2, 2),
+  pg_advisory_xact_lock_shared(2, 2);
+
+select
+  locktype,
+  classid,
+  objid,
+  objsubid,
+  mode,
+  granted
+from
+  pg_locks
+where
+  locktype = 'advisory' and database = 'datoid'
+order by classid,
+  objid,
+  objsubid;
+
+commit;
+
+select COUNT(*) from pg_locks where locktype = 'advisory' and database = 'datoid';
+
+select
+  pg_advisory_lock(1),
+  pg_advisory_lock(1),
+  pg_advisory_lock_shared(2),
+  pg_advisory_lock_shared(2),
+  pg_advisory_lock(1, 1),
+  pg_advisory_lock(1, 1),
+  pg_advisory_lock_shared(2, 2),
+  pg_advisory_lock_shared(2, 2);
+
+select
+  locktype,
+  classid,
+  objid,
+  objsubid,
+  mode,
+  granted
+from
+  pg_locks
+where
+  locktype = 'advisory' and database = 'datoid'
+order by classid,
+  objid,
+  objsubid;
+
+select
+  pg_advisory_unlock(1),
+  pg_advisory_unlock(1),
+  pg_advisory_unlock_shared(2),
+  pg_advisory_unlock_shared(2),
+  pg_advisory_unlock(1, 1),
+  pg_advisory_unlock(1, 1),
+  pg_advisory_unlock_shared(2, 2),
+  pg_advisory_unlock_shared(2, 2);
+
+select COUNT(*) from pg_locks where locktype = 'advisory' and database = 'datoid';
+
+select
+  pg_advisory_lock(1),
+  pg_advisory_lock(1),
+  pg_advisory_lock_shared(2),
+  pg_advisory_lock_shared(2),
+  pg_advisory_lock(1, 1),
+  pg_advisory_lock(1, 1),
+  pg_advisory_lock_shared(2, 2),
+  pg_advisory_lock_shared(2, 2);
+
+select
+  locktype,
+  classid,
+  objid,
+  objsubid,
+  mode,
+  granted
+from
+  pg_locks
+where
+  locktype = 'advisory' and database = 'datoid'
+order by classid,
+  objid,
+  objsubid;
+
+select pg_advisory_unlock_all();
+
+select COUNT(*) from pg_locks where locktype = 'advisory' and database = 'datoid';

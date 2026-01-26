@@ -1,0 +1,68 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/char.sql
+snapshot_kind: text
+---
+select cast('c' as char) = cast('c' as char) as "true";
+
+create temporary table char_tbl (f1 char(1));
+
+insert into char_tbl (f1) values ('a');
+
+insert into char_tbl (f1) values ('A');
+
+insert into char_tbl (f1) values ('1');
+
+insert into char_tbl (f1) values (2);
+
+insert into char_tbl (f1) values ('3');
+
+insert into char_tbl (f1) values ('');
+
+insert into char_tbl (f1) values ('cd');
+
+insert into char_tbl (f1) values ('c     ');
+
+select * from char_tbl;
+
+select c.* from char_tbl as c where c.f1 <> 'a';
+
+select c.* from char_tbl as c where c.f1 = 'a';
+
+select c.* from char_tbl as c where c.f1 < 'a';
+
+select c.* from char_tbl as c where c.f1 <= 'a';
+
+select c.* from char_tbl as c where c.f1 > 'a';
+
+select c.* from char_tbl as c where c.f1 >= 'a';
+
+drop table char_tbl;
+
+insert into char_tbl (f1) values ('abcde');
+
+select * from char_tbl;
+
+select pg_input_is_valid('abcd  ', 'char(4)');
+
+select pg_input_is_valid('abcde', 'char(4)');
+
+select * from pg_input_error_info('abcde', 'char(4)');
+
+select cast('a' as char);
+
+select cast('\101' as char);
+
+select cast('\377' as char);
+
+select cast(cast('a' as char) as text);
+
+select cast(cast('\377' as char) as text);
+
+select cast(cast('\000' as char) as text);
+
+select cast(cast('a' as text) as char);
+
+select cast(cast('\377' as text) as char);
+
+select cast(cast('' as text) as char);

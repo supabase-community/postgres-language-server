@@ -20,7 +20,7 @@ impl Dome {
         Self { paths }
     }
 
-    pub fn iter(&self) -> DomeIterator {
+    pub fn iter(&self) -> DomeIterator<'_> {
         DomeIterator {
             iter: self.paths.iter().peekable(),
         }

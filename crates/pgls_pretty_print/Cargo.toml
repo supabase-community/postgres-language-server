@@ -1,0 +1,24 @@
+[package]
+authors.workspace    = true
+categories.workspace = true
+description          = "<DESCRIPTION>"
+edition.workspace    = true
+homepage.workspace   = true
+keywords.workspace   = true
+license.workspace    = true
+name                 = "pgls_pretty_print"
+repository.workspace = true
+version              = "0.0.0"
+
+
+[dependencies]
+pgls_pretty_print_codegen.workspace = true
+pgls_query.workspace                = true
+thiserror.workspace                 = true
+
+[dev-dependencies]
+camino.workspace                  = true
+dir-test.workspace                = true
+insta.workspace                   = true
+pgls_statement_splitter.workspace = true
+regex.workspace                   = true

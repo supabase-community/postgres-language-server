@@ -217,6 +217,12 @@ impl Visit for Advices {
         Ok(())
     }
 
+    fn record_diff_with_offset(&mut self, diff: &TextEdit, line_offset: u32) -> io::Result<()> {
+        self.advices
+            .push(Advice::DiffWithOffset(diff.clone(), line_offset));
+        Ok(())
+    }
+
     fn record_backtrace(
         &mut self,
         title: &dyn fmt::Display,
@@ -271,6 +277,7 @@ enum Advice {
     List(Vec<MarkupBuf>),
     Frame(Location),
     Diff(TextEdit),
+    DiffWithOffset(TextEdit, u32),
     Backtrace(MarkupBuf, Backtrace),
     Command(String),
     Group(MarkupBuf, Advices),
@@ -295,6 +302,7 @@ impl super::Advices for Advice {
                 }),
             }),
             Advice::Diff(diff) => visitor.record_diff(diff),
+            Advice::DiffWithOffset(diff, offset) => visitor.record_diff_with_offset(diff, *offset),
             Advice::Backtrace(title, backtrace) => visitor.record_backtrace(title, backtrace),
             Advice::Command(command) => visitor.record_command(command),
             Advice::Group(title, advice) => visitor.record_group(title, advice),

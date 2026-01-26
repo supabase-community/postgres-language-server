@@ -88,20 +88,21 @@ impl LinterRule for LockTimeoutWarning {
 
             // CREATE INDEX without CONCURRENTLY takes SHARE lock
             pgls_query::NodeEnum::IndexStmt(stmt) => {
-                if !stmt.concurrent {
-                    if let Some(relation) = &stmt.relation {
-                        let schema = if relation.schemaname.is_empty() {
-                            "public"
-                        } else {
-                            &relation.schemaname
-                        };
-                        let table = &relation.relname;
+                if !stmt.concurrent
+                    && let Some(relation) = &stmt.relation
+                {
+                    let schema = if relation.schemaname.is_empty() {
+                        "public"
+                    } else {
+                        &relation.schemaname
+                    };
+                    let table = &relation.relname;
 
-                        // Only warn if the table wasn't created in this transaction
-                        if !tx_state.has_created_object(schema, table) {
-                            let full_name = format!("{schema}.{table}");
-                            let index_name = &stmt.idxname;
-                            diagnostics.push(
+                    // Only warn if the table wasn't created in this transaction
+                    if !tx_state.has_created_object(schema, table) {
+                        let full_name = format!("{schema}.{table}");
+                        let index_name = &stmt.idxname;
+                        diagnostics.push(
                                 LinterDiagnostic::new(
                                     rule_category!(),
                                     None,
@@ -112,7 +113,6 @@ impl LinterRule for LockTimeoutWarning {
                                 .detail(None, "This blocks writes to the table indefinitely if another transaction holds a conflicting lock.")
                                 .note("Run 'SET LOCAL lock_timeout = '2s';' before this statement, or use CREATE INDEX CONCURRENTLY to avoid blocking writes."),
                             );
-                        }
                     }
                 }
             }

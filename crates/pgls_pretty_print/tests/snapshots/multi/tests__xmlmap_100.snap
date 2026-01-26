@@ -1,0 +1,93 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/xmlmap.sql
+snapshot_kind: text
+---
+create schema "testxmlschema";
+
+create table testxmlschema.test1 (
+  a int,
+  b text
+);
+
+insert into testxmlschema.test1 values (1, 'one'), (2, 'two'), (-1, null);
+
+create domain testxmldomain as varchar;
+
+create table testxmlschema.test2 (
+  z int,
+  y varchar(500),
+  x char(6),
+  w numeric(9, 2),
+  v smallint,
+  u bigint,
+  t real,
+  s time,
+  stz time with time zone,
+  r timestamp,
+  rtz timestamp with time zone,
+  q date,
+  p xml,
+  o testxmldomain,
+  n boolean,
+  m bytea,
+  aaa text
+);
+
+alter table testxmlschema.test2
+  drop column aaa;
+
+insert into testxmlschema.test2
+values
+  (
+    55,
+    'abc',
+    'def',
+    98.6,
+    2,
+    999,
+    0,
+    '21:07',
+    '21:11 +05',
+    '2009-06-08 21:07:30',
+    '2009-06-08 21:07:30 -07',
+    '2009-06-08',
+    null,
+    'ABC',
+    true,
+    'XYZ'
+  );
+
+select table_to_xml('testxmlschema.test1', false, false, '');
+
+select table_to_xml('testxmlschema.test1', true, false, 'foo');
+
+select table_to_xml('testxmlschema.test1', false, true, '');
+
+select table_to_xml('testxmlschema.test1', true, true, '');
+
+select table_to_xml('testxmlschema.test2', false, false, '');
+
+select table_to_xmlschema('testxmlschema.test1', false, false, '');
+
+select table_to_xmlschema('testxmlschema.test1', true, false, '');
+
+select table_to_xmlschema('testxmlschema.test1', false, true, 'foo');
+
+select table_to_xmlschema('testxmlschema.test1', true, true, '');
+
+select table_to_xmlschema('testxmlschema.test2', false, false, '');
+
+select table_to_xml_and_xmlschema('testxmlschema.test1', false, false, '');
+
+select table_to_xml_and_xmlschema('testxmlschema.test1', true, false, '');
+
+select table_to_xml_and_xmlschema('testxmlschema.test1', false, true, '');
+
+select table_to_xml_and_xmlschema('testxmlschema.test1', true, true, 'foo');
+
+select query_to_xml('SELECT * FROM testxmlschema.test1', false, false, '');
+
+select query_to_xmlschema('SELECT * FROM testxmlschema.test1', false, false, '');
+
+select query_to_xml_and_xmlschema('SELECT * FROM testxmlschema.test1', true, true, '');
