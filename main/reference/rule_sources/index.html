@@ -5,7 +5,7 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><link rel="canonical" href="https://pg-language-server.com/main/reference/rule_sources/" />
       <link rel="shortcut icon" href="../../img/favicon.ico" />
-    <title>Rule Sources - Postgres Language Server</title>
+    <title>Linter Rule Sources - Postgres Language Server</title>
     <link rel="stylesheet" href="../../css/theme.css" />
     <link rel="stylesheet" href="../../css/theme_extra.css" />
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
@@ -13,7 +13,7 @@
     
       <script>
         // Current page data
-        var mkdocs_page_name = "Rule Sources";
+        var mkdocs_page_name = "Linter Rule Sources";
         var mkdocs_page_input_path = "reference/rule_sources.md";
         var mkdocs_page_url = "/main/reference/rule_sources/";
       </script>
@@ -54,6 +54,8 @@
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="../../features/linting/">Linting</a>
                   </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../features/database_linting/">Database Linting</a>
+                  </li>
                   <li class="toctree-l1"><a class="reference internal" href="../../features/type_checking/">Type Checking</a>
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="../../features/plpgsql/">PL/pgSQL Support</a>
@@ -82,7 +84,7 @@
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="../rules/">Linter Rules</a>
                   </li>
-                  <li class="toctree-l1 current"><a class="reference internal current" href="#">Rule Sources</a>
+                  <li class="toctree-l1 current"><a class="reference internal current" href="#">Linter Rule Sources</a>
     <ul class="current">
     <li class="toctree-l2"><a class="reference internal" href="#exclusive-rules">Exclusive rules</a>
     </li>
@@ -90,9 +92,15 @@
         <ul>
     <li class="toctree-l3"><a class="reference internal" href="#eugene">Eugene</a>
     </li>
+    <li class="toctree-l3"><a class="reference internal" href="#squawk">Squawk</a>
+    </li>
         </ul>
     </li>
     </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../database_rules/">Database Linter Rules</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../database_rule_sources/">Database Linter Rule Sources</a>
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="../env_variables/">Environment Variables</a>
                   </li>
@@ -112,7 +120,7 @@
   <ul class="wy-breadcrumbs">
     <li><a href="../.." class="icon icon-home" aria-label="Docs"></a></li>
           <li class="breadcrumb-item">Reference</li>
-      <li class="breadcrumb-item active">Rule Sources</li>
+      <li class="breadcrumb-item active">Linter Rule Sources</li>
     <li class="wy-breadcrumbs-aside">
           <a href="https://github.com/supabase-community/postgres-language-server/edit/master/docs/reference/rule_sources.md">Edit on supabase-community/postgres-language-server</a>
     </li>
@@ -160,18 +168,17 @@
 <td><a href="https://kaveland.no/eugene/hints/W13/index.html">W13</a></td>
 <td><a href="../rules/creating-enum/">creatingEnum</a></td>
 </tr>
+</tbody>
+</table>
+<h3 id="squawk">Squawk</h3>
+<table>
+<thead>
 <tr>
-<td>### Squawk</td>
-<td></td>
+<th>Squawk Rule Name</th>
+<th>Rule Name</th>
 </tr>
-<tr>
-<td>Squawk Rule Name</td>
-<td>Rule Name</td>
-</tr>
-<tr>
-<td>----</td>
-<td>----</td>
-</tr>
+</thead>
+<tbody>
 <tr>
 <td><a href="https://squawkhq.com/docs/adding-field-with-default">adding-field-with-default</a></td>
 <td><a href="../rules/adding-field-with-default/">addingFieldWithDefault</a></td>
@@ -287,7 +294,7 @@
           </div><footer>
     <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
         <a href="../rules/" class="btn btn-neutral float-left" title="Linter Rules"><span class="icon icon-circle-arrow-left"></span> Previous</a>
-        <a href="../env_variables/" class="btn btn-neutral float-right" title="Environment Variables">Next <span class="icon icon-circle-arrow-right"></span></a>
+        <a href="../database_rules/" class="btn btn-neutral float-right" title="Database Linter Rules">Next <span class="icon icon-circle-arrow-right"></span></a>
     </div>
 
   <hr/>
@@ -317,7 +324,7 @@
       <span><a href="../rules/" style="color: #fcfcfc">&laquo; Previous</a></span>
     
     
-      <span><a href="../env_variables/" style="color: #fcfcfc">Next &raquo;</a></span>
+      <span><a href="../database_rules/" style="color: #fcfcfc">Next &raquo;</a></span>
     
   </span>
 </div>

@@ -1063,6 +1063,17 @@
             "null"
           ]
         },
+        "ignore": {
+          "description": "A list of glob patterns for database objects to ignore across all rules. Patterns use Unix-style globs where `*` matches any sequence of characters. Format: `schema.object_name`, e.g., \"public.my_table\", \"audit.*\"",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/StringSet"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "rules": {
           "description": "List of rules",
           "anyOf": [
