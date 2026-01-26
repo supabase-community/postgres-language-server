@@ -3028,6 +3028,7 @@ dependencies = [
 name = "pgls_splinter"
 version = "0.0.0"
 dependencies = [
+ "biome_deserialize 0.6.0",
  "insta",
  "pgls_analyse",
  "pgls_configuration",

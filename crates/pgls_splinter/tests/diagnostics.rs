@@ -1,6 +1,9 @@
+use biome_deserialize::StringSet;
 use pgls_analyse::AnalysisFilter;
 use pgls_configuration::rules::RuleConfiguration;
-use pgls_configuration::splinter::{Performance, Rules, SplinterRuleOptions};
+use pgls_configuration::splinter::{
+    Performance, Rules, SplinterConfiguration, SplinterRuleOptions,
+};
 use pgls_console::fmt::{Formatter, HTML};
 use pgls_diagnostics::{Diagnostic, LogCategory, Visit};
 use pgls_splinter::{SplinterParams, run_splinter};
@@ -66,7 +69,7 @@ impl TestSetup<'_> {
             SplinterParams {
                 conn: self.test_db,
                 schema_cache: None,
-                rules_config: None,
+                config: None,
             },
             &filter,
         )
@@ -251,7 +254,7 @@ async fn missing_roles_runs_generic_checks_only(test_db: PgPool) {
         SplinterParams {
             conn: &test_db,
             schema_cache: None,
-            rules_config: None,
+            config: None,
         },
         &filter,
     )
@@ -275,7 +278,7 @@ async fn missing_roles_runs_generic_checks_only(test_db: PgPool) {
         SplinterParams {
             conn: &test_db,
             schema_cache: None,
-            rules_config: None,
+            config: None,
         },
         &filter,
     )
@@ -308,7 +311,7 @@ async fn ignore_filtering_filters_matching_objects(test_db: PgPool) {
         SplinterParams {
             conn: &test_db,
             schema_cache: None,
-            rules_config: None,
+            config: None,
         },
         &filter,
     )
@@ -329,38 +332,41 @@ async fn ignore_filtering_filters_matching_objects(test_db: PgPool) {
     );
 
     // Now run with ignore config that filters out some tables
-    let rules_config = Rules {
-        recommended: None,
-        all: None,
-        performance: Some(Performance {
+    let splinter_config = SplinterConfiguration {
+        rules: Rules {
             recommended: None,
             all: None,
-            auth_rls_initplan: None,
-            duplicate_index: None,
-            multiple_permissive_policies: None,
-            no_primary_key: Some(RuleConfiguration::WithOptions(
-                pgls_configuration::rules::RuleWithOptions {
-                    level: pgls_configuration::rules::RulePlainConfiguration::Warn,
-                    options: SplinterRuleOptions {
-                        ignore: vec![
-                            "public.ignored_table".to_string(),
-                            "public.another_*".to_string(), // glob pattern
-                        ],
+            performance: Some(Performance {
+                recommended: None,
+                all: None,
+                auth_rls_initplan: None,
+                duplicate_index: None,
+                multiple_permissive_policies: None,
+                no_primary_key: Some(RuleConfiguration::WithOptions(
+                    pgls_configuration::rules::RuleWithOptions {
+                        level: pgls_configuration::rules::RulePlainConfiguration::Warn,
+                        options: SplinterRuleOptions {
+                            ignore: vec![
+                                "public.ignored_table".to_string(),
+                                "public.another_*".to_string(), // glob pattern
+                            ],
+                        },
                     },
-                },
-            )),
-            table_bloat: None,
-            unindexed_foreign_keys: None,
-            unused_index: None,
-        }),
-        security: None,
+                )),
+                table_bloat: None,
+                unindexed_foreign_keys: None,
+                unused_index: None,
+            }),
+            security: None,
+        },
+        ..Default::default()
     };
 
     let diagnostics_with_ignore = run_splinter(
         SplinterParams {
             conn: &test_db,
             schema_cache: None,
-            rules_config: Some(&rules_config),
+            config: Some(&splinter_config),
         },
         &filter,
     )
@@ -410,28 +416,31 @@ async fn ignore_filtering_with_schema_wildcard(test_db: PgPool) {
     .expect("Failed to create test tables");
 
     // Run with ignore config that filters out all audit schema tables
-    let rules_config = Rules {
-        recommended: None,
-        all: None,
-        performance: Some(Performance {
+    let splinter_config = SplinterConfiguration {
+        rules: Rules {
             recommended: None,
             all: None,
-            auth_rls_initplan: None,
-            duplicate_index: None,
-            multiple_permissive_policies: None,
-            no_primary_key: Some(RuleConfiguration::WithOptions(
-                pgls_configuration::rules::RuleWithOptions {
-                    level: pgls_configuration::rules::RulePlainConfiguration::Warn,
-                    options: SplinterRuleOptions {
-                        ignore: vec!["audit.*".to_string()],
+            performance: Some(Performance {
+                recommended: None,
+                all: None,
+                auth_rls_initplan: None,
+                duplicate_index: None,
+                multiple_permissive_policies: None,
+                no_primary_key: Some(RuleConfiguration::WithOptions(
+                    pgls_configuration::rules::RuleWithOptions {
+                        level: pgls_configuration::rules::RulePlainConfiguration::Warn,
+                        options: SplinterRuleOptions {
+                            ignore: vec!["audit.*".to_string()],
+                        },
                     },
-                },
-            )),
-            table_bloat: None,
-            unindexed_foreign_keys: None,
-            unused_index: None,
-        }),
-        security: None,
+                )),
+                table_bloat: None,
+                unindexed_foreign_keys: None,
+                unused_index: None,
+            }),
+            security: None,
+        },
+        ..Default::default()
     };
 
     let filter = AnalysisFilter::default();
@@ -439,7 +448,7 @@ async fn ignore_filtering_with_schema_wildcard(test_db: PgPool) {
         SplinterParams {
             conn: &test_db,
             schema_cache: None,
-            rules_config: Some(&rules_config),
+            config: Some(&splinter_config),
         },
         &filter,
     )
@@ -469,5 +478,140 @@ async fn ignore_filtering_with_schema_wildcard(test_db: PgPool) {
         no_pk_diagnostics[0].advices.object_name.as_deref(),
         Some("regular_table"),
         "Expected remaining diagnostic to be for regular_table"
+    );
+}
+
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn global_ignore_filters_all_rules(test_db: PgPool) {
+    // Create tables in different schemas
+    sqlx::raw_sql(
+        r#"
+        CREATE SCHEMA audit;
+        CREATE TABLE audit.log_table (data text);
+        CREATE TABLE public.ignored_table (data text);
+        CREATE TABLE public.kept_table (data text);
+        "#,
+    )
+    .execute(&test_db)
+    .await
+    .expect("Failed to create test tables");
+
+    // Run with global ignore config that filters out audit schema and a specific table
+    let splinter_config = SplinterConfiguration {
+        ignore: StringSet::from_iter(["audit.*".to_string(), "public.ignored_table".to_string()]),
+        ..Default::default()
+    };
+
+    let filter = AnalysisFilter::default();
+    let diagnostics = run_splinter(
+        SplinterParams {
+            conn: &test_db,
+            schema_cache: None,
+            config: Some(&splinter_config),
+        },
+        &filter,
+    )
+    .await
+    .expect("Failed to run splinter checks");
+
+    // Filter to only noPrimaryKey diagnostics
+    let no_pk_diagnostics: Vec<_> = diagnostics
+        .iter()
+        .filter(|d| d.category.name().contains("noPrimaryKey"))
+        .collect();
+
+    // Should only have the public.kept_table diagnostic
+    assert_eq!(
+        no_pk_diagnostics.len(),
+        1,
+        "Expected 1 noPrimaryKey diagnostic (audit.* and public.ignored_table should be globally ignored), got {}",
+        no_pk_diagnostics.len()
+    );
+
+    assert_eq!(
+        no_pk_diagnostics[0].advices.schema.as_deref(),
+        Some("public"),
+        "Expected remaining diagnostic to be in public schema"
+    );
+    assert_eq!(
+        no_pk_diagnostics[0].advices.object_name.as_deref(),
+        Some("kept_table"),
+        "Expected remaining diagnostic to be for kept_table"
+    );
+}
+
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn global_ignore_combined_with_per_rule_ignore(test_db: PgPool) {
+    // Create tables to test combined ignore behavior
+    sqlx::raw_sql(
+        r#"
+        CREATE TABLE public.globally_ignored (data text);
+        CREATE TABLE public.rule_ignored (data text);
+        CREATE TABLE public.kept (data text);
+        "#,
+    )
+    .execute(&test_db)
+    .await
+    .expect("Failed to create test tables");
+
+    // Run with both global and per-rule ignore
+    let splinter_config = SplinterConfiguration {
+        ignore: StringSet::from_iter(["public.globally_ignored".to_string()]),
+        rules: Rules {
+            recommended: None,
+            all: None,
+            performance: Some(Performance {
+                recommended: None,
+                all: None,
+                auth_rls_initplan: None,
+                duplicate_index: None,
+                multiple_permissive_policies: None,
+                no_primary_key: Some(RuleConfiguration::WithOptions(
+                    pgls_configuration::rules::RuleWithOptions {
+                        level: pgls_configuration::rules::RulePlainConfiguration::Warn,
+                        options: SplinterRuleOptions {
+                            ignore: vec!["public.rule_ignored".to_string()],
+                        },
+                    },
+                )),
+                table_bloat: None,
+                unindexed_foreign_keys: None,
+                unused_index: None,
+            }),
+            security: None,
+        },
+        ..Default::default()
+    };
+
+    let filter = AnalysisFilter::default();
+    let diagnostics = run_splinter(
+        SplinterParams {
+            conn: &test_db,
+            schema_cache: None,
+            config: Some(&splinter_config),
+        },
+        &filter,
+    )
+    .await
+    .expect("Failed to run splinter checks");
+
+    // Filter to only noPrimaryKey diagnostics
+    let no_pk_diagnostics: Vec<_> = diagnostics
+        .iter()
+        .filter(|d| d.category.name().contains("noPrimaryKey"))
+        .collect();
+
+    // Should only have the public.kept diagnostic
+    assert_eq!(
+        no_pk_diagnostics.len(),
+        1,
+        "Expected 1 noPrimaryKey diagnostic (globally_ignored and rule_ignored should be filtered), got {}",
+        no_pk_diagnostics.len()
+    );
+
+    assert_eq!(
+        no_pk_diagnostics[0].advices.object_name.as_deref(),
+        Some("kept"),
+        "Expected remaining diagnostic to be for kept"
     );
 }

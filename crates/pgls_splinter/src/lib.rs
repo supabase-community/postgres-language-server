@@ -6,7 +6,7 @@ pub mod rule;
 pub mod rules;
 
 use pgls_analyse::{AnalysisFilter, RegistryVisitor, RuleMeta};
-use pgls_configuration::splinter::Rules;
+use pgls_configuration::splinter::SplinterConfiguration;
 use pgls_schema_cache::SchemaCache;
 use sqlx::PgPool;
 
@@ -18,8 +18,8 @@ pub use rule::SplinterRule;
 pub struct SplinterParams<'a> {
     pub conn: &'a PgPool,
     pub schema_cache: Option<&'a SchemaCache>,
-    /// Optional rules configuration for per-rule database object filtering
-    pub rules_config: Option<&'a Rules>,
+    /// Optional splinter configuration for global and per-rule database object filtering
+    pub config: Option<&'a SplinterConfiguration>,
 }
 
 /// Visitor that collects enabled splinter rules based on filter
@@ -138,24 +138,36 @@ pub async fn run_splinter(
 
     let mut diagnostics: Vec<SplinterDiagnostic> = results.into_iter().map(Into::into).collect();
 
-    if let Some(rules_config) = params.rules_config {
-        let rule_matchers = rules_config.get_ignore_matchers();
+    if let Some(config) = params.config {
+        // Build global ignore matcher if patterns exist
+        let global_ignore_matcher = config.get_global_ignore_matcher();
 
-        if !rule_matchers.is_empty() {
+        // Get per-rule ignore matchers
+        let rule_matchers = config.rules.get_ignore_matchers();
+
+        // Filter diagnostics based on global and per-rule ignore patterns
+        if global_ignore_matcher.is_some() || !rule_matchers.is_empty() {
             diagnostics.retain(|diag| {
-                let rule_name = diag.category.name().split('/').next_back().unwrap_or("");
+                let object_identifier = match (&diag.advices.schema, &diag.advices.object_name) {
+                    (Some(schema), Some(name)) => format!("{schema}.{name}"),
+                    _ => return true, // Keep diagnostics without schema.name
+                };
 
-                if let Some(matcher) = rule_matchers.get(rule_name) {
-                    if let (Some(schema), Some(name)) =
-                        (&diag.advices.schema, &diag.advices.object_name)
-                    {
-                        let object_identifier = format!("{schema}.{name}");
-
-                        if matcher.matches(&object_identifier) {
-                            return false;
-                        }
+                // Check global ignore first
+                if let Some(ref matcher) = global_ignore_matcher {
+                    if matcher.matches(&object_identifier) {
+                        return false;
                     }
                 }
+
+                // Then check per-rule ignore
+                let rule_name = diag.category.name().split('/').next_back().unwrap_or("");
+                if let Some(matcher) = rule_matchers.get(rule_name) {
+                    if matcher.matches(&object_identifier) {
+                        return false;
+                    }
+                }
+
                 true
             });
         }

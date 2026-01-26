@@ -426,6 +426,10 @@ export interface PartialSplinterConfiguration {
 	 */
 	enabled?: boolean;
 	/**
+	 * A list of glob patterns for database objects to ignore across all rules. Patterns use Unix-style globs where `*` matches any sequence of characters. Format: `schema.object_name`, e.g., "public.my_table", "audit.*"
+	 */
+	ignore?: StringSet;
+	/**
 	 * List of rules
 	 */
 	rules?: SplinterRules;

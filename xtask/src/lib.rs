@@ -30,7 +30,12 @@ pub fn project_root() -> PathBuf {
 
 pub fn run_rustfmt(mode: Mode) -> Result<()> {
     let _dir = pushd(project_root());
-    let _e = pushenv("RUSTUP_TOOLCHAIN", "nightly");
+    // Only set RUSTUP_TOOLCHAIN if nightly isn't already on PATH (e.g., in Nix)
+    let _e = if !is_nightly_rustfmt_available() {
+        Some(pushenv("RUSTUP_TOOLCHAIN", "nightly"))
+    } else {
+        None
+    };
     ensure_rustfmt()?;
     match mode {
         Mode::Overwrite => run!("cargo fmt"),
@@ -55,7 +60,12 @@ pub fn prepend_generated_preamble(content: impl Display) -> String {
 }
 
 pub fn reformat_without_preamble(text: impl Display) -> Result<String> {
-    let _e = pushenv("RUSTUP_TOOLCHAIN", "nightly");
+    // Only set RUSTUP_TOOLCHAIN if nightly isn't already on PATH (e.g., in Nix)
+    let _e = if !is_nightly_rustfmt_available() {
+        Some(pushenv("RUSTUP_TOOLCHAIN", "nightly"))
+    } else {
+        None
+    };
     ensure_rustfmt()?;
     let output = run!(
         "rustfmt --config newline_style=Unix";
@@ -63,6 +73,13 @@ pub fn reformat_without_preamble(text: impl Display) -> Result<String> {
     )?;
 
     Ok(format!("{output}\n"))
+}
+
+/// Check if nightly rustfmt is already available on PATH (e.g., provided by Nix)
+fn is_nightly_rustfmt_available() -> bool {
+    run!("rustfmt --version")
+        .map(|out| out.contains("nightly"))
+        .unwrap_or(false)
 }
 
 pub fn ensure_rustfmt() -> Result<()> {

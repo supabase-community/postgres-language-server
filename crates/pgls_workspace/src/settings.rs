@@ -333,6 +333,7 @@ fn to_linter_settings(
 fn to_splinter_settings(conf: SplinterConfiguration) -> SplinterSettings {
     SplinterSettings {
         enabled: conf.enabled,
+        ignore: conf.ignore,
         rules: Some(conf.rules),
     }
 }
@@ -463,6 +464,9 @@ pub struct SplinterSettings {
     /// Enabled by default
     pub enabled: bool,
 
+    /// Global ignore patterns for database objects (applies to all rules)
+    pub ignore: StringSet,
+
     /// List of rules
     pub rules: Option<pgls_configuration::splinter::Rules>,
 }
@@ -471,7 +475,19 @@ impl Default for SplinterSettings {
     fn default() -> Self {
         Self {
             enabled: true,
+            ignore: StringSet::default(),
             rules: Some(pgls_configuration::splinter::Rules::default()),
+        }
+    }
+}
+
+impl SplinterSettings {
+    /// Convert settings back to SplinterConfiguration for use with splinter
+    pub fn to_configuration(&self) -> pgls_configuration::splinter::SplinterConfiguration {
+        pgls_configuration::splinter::SplinterConfiguration {
+            enabled: self.enabled,
+            ignore: self.ignore.clone(),
+            rules: self.rules.clone().unwrap_or_default(),
         }
     }
 }

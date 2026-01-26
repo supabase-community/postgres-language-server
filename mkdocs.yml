@@ -19,6 +19,7 @@ nav:
   - Features:
       - Syntax Diagnostics: features/syntax_diagnostics.md
       - Linting: features/linting.md
+      - Database Linting: features/database_linting.md
       - Type Checking: features/type_checking.md
       - PL/pgSQL Support: features/plpgsql.md
       - Autocompletion & Hover: features/editor_features.md
@@ -32,7 +33,9 @@ nav:
   - Reference:
       - CLI Commands: reference/cli.md
       - Linter Rules: reference/rules.md
-      - Rule Sources: reference/rule_sources.md
+      - Linter Rule Sources: reference/rule_sources.md
+      - Database Linter Rules: reference/database_rules.md
+      - Database Linter Rule Sources: reference/database_rule_sources.md
       - Environment Variables: reference/env_variables.md
 
 plugins:

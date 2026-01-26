@@ -21,9 +21,10 @@ serde_json.workspace         = true
 sqlx.workspace               = true
 
 [dev-dependencies]
-insta.workspace           = true
-pgls_console.workspace    = true
-pgls_test_utils.workspace = true
+biome_deserialize.workspace = true
+insta.workspace             = true
+pgls_console.workspace      = true
+pgls_test_utils.workspace   = true
 
 [lib]
 doctest = false

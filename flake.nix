@@ -28,9 +28,22 @@
         # Read rust-toolchain.toml to get the exact Rust version
         rustToolchain = pkgs.rust-bin.fromRustupToolchainFile ./rust-toolchain.toml;
 
+        # Nightly toolchain for rustfmt (used by codegen)
+        rustNightly = pkgs.rust-bin.nightly.latest.minimal.override {
+          extensions = [ "rustfmt" ];
+        };
+
+        # Extract just nightly rustfmt (to avoid nightly rustc taking precedence)
+        nightlyRustfmtOnly = pkgs.runCommand "nightly-rustfmt" { } ''
+          mkdir -p $out/bin
+          ln -s ${rustNightly}/bin/rustfmt $out/bin/rustfmt
+        '';
+
         # Development dependencies
         buildInputs = with pkgs; [
-          # Rust toolchain
+          # Nightly rustfmt (for codegen) - must come before stable toolchain
+          nightlyRustfmtOnly
+          # Rust toolchain (stable from rust-toolchain.toml)
           rustToolchain
 
           # Node.js ecosystem
@@ -48,6 +61,7 @@
           # Build tools
           just
           git
+          taplo
 
           # Docker
           docker-compose
@@ -64,6 +78,9 @@
 
           # WebAssembly toolchain
           emscripten
+
+          # Database tools
+          sqlx-cli
         ];
 
         # Environment variables
@@ -81,21 +98,7 @@
           inherit buildInputs;
           hardeningDisable = [ "fortify" ];
           shellHook = ''
-            echo "PostgreSQL Language Server Development Environment"
-            echo "Available tools:"
-            echo "  • Rust $(rustc --version)"
-            echo "  • Node.js $(node --version)"
-            echo "  • Bun $(bun --version)"
-            echo "  • Just $(just --version)"
-            echo ""
-            echo "Development Commands:"
-            echo "  • just --list   # Show tasks"
-            echo "  • cargo check   # Check Rust"
-            echo "  • bun install   # Install deps"
-            echo ""
-            echo "Use Docker for database:"
-            echo "  • docker-compose up -d"
-            echo ""
+            echo "Postgres Language Server Development Environment"
 
             # Set environment variables
             ${pkgs.lib.concatStringsSep "\n" (
