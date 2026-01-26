@@ -40,13 +40,12 @@ pub(super) fn emit_alter_role_stmt(e: &mut EventEmitter, n: &AlterRoleStmt) {
         e.token(TokenKind::USER_KW);
 
         // Emit the member list from the "rolemembers" option
-        if let Some(opt) = rolemembers_opt {
-            if let Some(NodeEnum::DefElem(def)) = opt.node.as_ref() {
-                if let Some(ref arg) = def.arg {
-                    e.space();
-                    super::emit_node(arg, e);
-                }
-            }
+        if let Some(opt) = rolemembers_opt
+            && let Some(NodeEnum::DefElem(def)) = opt.node.as_ref()
+            && let Some(ref arg) = def.arg
+        {
+            e.space();
+            super::emit_node(arg, e);
         }
     } else {
         // Standard ALTER ROLE syntax

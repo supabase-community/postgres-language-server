@@ -74,13 +74,13 @@ pub(super) fn emit_create_function_stmt(e: &mut EventEmitter, n: &CreateFunction
         e.indent_end();
         e.line(LineType::Soft);
         e.token(TokenKind::R_PAREN);
-    } else if !n.is_procedure {
-        if let Some(ref return_type) = n.return_type {
-            e.line(LineType::Hard);
-            e.token(TokenKind::RETURNS_KW);
-            e.space();
-            super::emit_type_name(e, return_type);
-        }
+    } else if !n.is_procedure
+        && let Some(ref return_type) = n.return_type
+    {
+        e.line(LineType::Hard);
+        e.token(TokenKind::RETURNS_KW);
+        e.space();
+        super::emit_type_name(e, return_type);
     }
 
     // Determine the dollar quote hint based on whether this is a procedure or function
@@ -354,12 +354,11 @@ pub(super) fn format_function_option(
             }
         }
         "window" => {
-            if let Some(ref arg) = d.arg {
-                if let Some(pgls_query::NodeEnum::Boolean(b)) = &arg.node {
-                    if b.boolval {
-                        e.token(TokenKind::WINDOW_KW);
-                    }
-                }
+            if let Some(ref arg) = d.arg
+                && let Some(pgls_query::NodeEnum::Boolean(b)) = &arg.node
+                && b.boolval
+            {
+                e.token(TokenKind::WINDOW_KW);
             }
         }
         _ => {

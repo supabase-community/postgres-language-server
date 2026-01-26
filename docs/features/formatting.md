@@ -2,6 +2,11 @@
 
 > **Preview Feature**: The formatter is currently in preview. We'd love feedback from early adopters! Please report any issues or unexpected output at [GitHub Issues](https://github.com/supabase-community/postgres-language-server/issues).
 
+## Known Limitations
+
+!!! warning "Comments are not yet supported"
+    SQL comments (`--` and `/* */`) will be removed during formatting. This is a temporary limitation that will be addressed in a future release. If your SQL files contain important comments, consider waiting for comment support before using the formatter on those files.
+
 The language server provides SQL formatting that produces consistent, readable code. Built on Postgres' own parser, the formatter ensures 100% syntax compatibility with your SQL.
 
 ## Configuration

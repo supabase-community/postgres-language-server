@@ -89,11 +89,11 @@ fn flatten_a_indirection(
         all_indirections = current_indirections;
 
         // Check if arg is another AIndirection
-        if let Some(ref arg) = current.arg {
-            if let Some(pgls_query::NodeEnum::AIndirection(inner)) = arg.node.as_ref() {
-                current = inner;
-                continue;
-            }
+        if let Some(ref arg) = current.arg
+            && let Some(pgls_query::NodeEnum::AIndirection(inner)) = arg.node.as_ref()
+        {
+            current = inner;
+            continue;
         }
         break;
     }

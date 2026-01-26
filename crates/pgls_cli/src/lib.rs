@@ -182,15 +182,14 @@ impl<'app> CliSession<'app> {
         let loaded_configuration =
             workspace::load_config(fs, cli_options.as_configuration_path_hint())?;
 
-        if let Some(config_path) = &loaded_configuration.file_path {
-            if let Some(file_name) = config_path.file_name().and_then(|name| name.to_str()) {
-                if ConfigName::is_deprecated(file_name) {
-                    self.console().log(markup! {
-                        <Warn>"Warning: "</Warn>
-                        "Deprecated config filename detected. Use 'postgres-language-server.jsonc'.\n"
-                    });
-                }
-            }
+        if let Some(config_path) = &loaded_configuration.file_path
+            && let Some(file_name) = config_path.file_name().and_then(|name| name.to_str())
+            && ConfigName::is_deprecated(file_name)
+        {
+            self.console().log(markup! {
+                <Warn>"Warning: "</Warn>
+                "Deprecated config filename detected. Use 'postgres-language-server.jsonc'.\n"
+            });
         }
 
         let mut configuration = loaded_configuration.configuration;

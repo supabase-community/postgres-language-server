@@ -132,16 +132,16 @@ pub(super) fn emit_alter_object_schema_stmt(e: &mut EventEmitter, n: &AlterObjec
 }
 
 fn emit_operator_collection_object(e: &mut EventEmitter, object: &pgls_query::Node) {
-    if let Some(pgls_query::NodeEnum::List(list)) = &object.node {
-        if list.items.len() >= 2 {
-            let (method_node, name_nodes) = list.items.split_first().unwrap();
-            emit_dot_separated_list(e, name_nodes);
-            e.space();
-            e.token(TokenKind::USING_KW);
-            e.space();
-            super::emit_node(method_node, e);
-            return;
-        }
+    if let Some(pgls_query::NodeEnum::List(list)) = &object.node
+        && list.items.len() >= 2
+    {
+        let (method_node, name_nodes) = list.items.split_first().unwrap();
+        emit_dot_separated_list(e, name_nodes);
+        e.space();
+        e.token(TokenKind::USING_KW);
+        e.space();
+        super::emit_node(method_node, e);
+        return;
     }
 
     super::emit_node(object, e);

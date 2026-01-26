@@ -175,17 +175,17 @@ fn emit_owner_object(e: &mut EventEmitter, object: &pgls_query::Node) {
 }
 
 fn emit_owner_operator_collection(e: &mut EventEmitter, object: &pgls_query::Node) {
-    if let Some(NodeEnum::List(list)) = &object.node {
-        if list.items.len() >= 2 {
-            let (method_node, name_nodes) = list.items.split_first().unwrap();
-            if !name_nodes.is_empty() {
-                emit_dot_separated_list(e, name_nodes);
-                e.space();
-                e.token(TokenKind::USING_KW);
-                e.space();
-                super::emit_node(method_node, e);
-                return;
-            }
+    if let Some(NodeEnum::List(list)) = &object.node
+        && list.items.len() >= 2
+    {
+        let (method_node, name_nodes) = list.items.split_first().unwrap();
+        if !name_nodes.is_empty() {
+            emit_dot_separated_list(e, name_nodes);
+            e.space();
+            e.token(TokenKind::USING_KW);
+            e.space();
+            super::emit_node(method_node, e);
+            return;
         }
     }
 

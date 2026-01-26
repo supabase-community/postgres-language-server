@@ -11,21 +11,21 @@ use pgls_query::{
 /// Emit a SET statement argument
 /// Special handling: AConst with string values should be emitted as unquoted identifiers
 fn emit_set_arg(node: &Node, e: &mut EventEmitter) {
-    if let Some(NodeEnum::AConst(a_const)) = &node.node {
-        if let Some(pgls_query::protobuf::a_const::Val::Sval(s)) = &a_const.val {
-            // Check if this looks like it should be an identifier (not a quoted string)
-            // In SET statements, simple identifiers like schema names are stored as string constants
-            // but should be emitted without quotes
-            let val = &s.sval;
+    if let Some(NodeEnum::AConst(a_const)) = &node.node
+        && let Some(pgls_query::protobuf::a_const::Val::Sval(s)) = &a_const.val
+    {
+        // Check if this looks like it should be an identifier (not a quoted string)
+        // In SET statements, simple identifiers like schema names are stored as string constants
+        // but should be emitted without quotes
+        let val = &s.sval;
 
-            // Emit as identifier (no quotes) if it looks like a simple identifier
-            // This includes schema names, role names, etc.
-            if is_simple_identifier(val) {
-                e.group_start(GroupKind::String);
-                e.token(TokenKind::IDENT(val.clone()));
-                e.group_end();
-                return;
-            }
+        // Emit as identifier (no quotes) if it looks like a simple identifier
+        // This includes schema names, role names, etc.
+        if is_simple_identifier(val) {
+            e.group_start(GroupKind::String);
+            e.token(TokenKind::IDENT(val.clone()));
+            e.group_end();
+            return;
         }
     }
 
@@ -303,34 +303,33 @@ fn emit_transaction_option(e: &mut EventEmitter, def: &pgls_query::protobuf::Def
             e.token(TokenKind::LEVEL_KW);
             e.space();
             // Value is the isolation level name
-            if let Some(ref arg) = def.arg {
-                if let Some(NodeEnum::AConst(a_const)) = &arg.node {
-                    if let Some(pgls_query::protobuf::a_const::Val::Sval(s)) = &a_const.val {
-                        // Emit the isolation level as uppercase keywords
-                        let level = s.sval.to_uppercase();
-                        match level.as_str() {
-                            "SERIALIZABLE" => {
-                                e.token(TokenKind::SERIALIZABLE_KW);
-                            }
-                            "REPEATABLE READ" => {
-                                e.token(TokenKind::REPEATABLE_KW);
-                                e.space();
-                                e.token(TokenKind::READ_KW);
-                            }
-                            "READ COMMITTED" => {
-                                e.token(TokenKind::READ_KW);
-                                e.space();
-                                e.token(TokenKind::COMMITTED_KW);
-                            }
-                            "READ UNCOMMITTED" => {
-                                e.token(TokenKind::READ_KW);
-                                e.space();
-                                e.token(TokenKind::UNCOMMITTED_KW);
-                            }
-                            _ => {
-                                e.token(TokenKind::IDENT(level));
-                            }
-                        }
+            if let Some(ref arg) = def.arg
+                && let Some(NodeEnum::AConst(a_const)) = &arg.node
+                && let Some(pgls_query::protobuf::a_const::Val::Sval(s)) = &a_const.val
+            {
+                // Emit the isolation level as uppercase keywords
+                let level = s.sval.to_uppercase();
+                match level.as_str() {
+                    "SERIALIZABLE" => {
+                        e.token(TokenKind::SERIALIZABLE_KW);
+                    }
+                    "REPEATABLE READ" => {
+                        e.token(TokenKind::REPEATABLE_KW);
+                        e.space();
+                        e.token(TokenKind::READ_KW);
+                    }
+                    "READ COMMITTED" => {
+                        e.token(TokenKind::READ_KW);
+                        e.space();
+                        e.token(TokenKind::COMMITTED_KW);
+                    }
+                    "READ UNCOMMITTED" => {
+                        e.token(TokenKind::READ_KW);
+                        e.space();
+                        e.token(TokenKind::UNCOMMITTED_KW);
+                    }
+                    _ => {
+                        e.token(TokenKind::IDENT(level));
                     }
                 }
             }

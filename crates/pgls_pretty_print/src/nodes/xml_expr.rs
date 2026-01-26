@@ -125,40 +125,39 @@ pub(super) fn emit_xml_expr(e: &mut EventEmitter, n: &XmlExpr) {
             // Handle standalone option if there's a 3rd arg
             // XML_STANDALONE_YES = 0, XML_STANDALONE_NO = 1,
             // XML_STANDALONE_NO_VALUE = 2, XML_STANDALONE_OMITTED = 3
-            if n.args.len() > 2 {
-                if let Some(pgls_query::NodeEnum::AConst(ac)) = n.args[2].node.as_ref() {
-                    if let Some(pgls_query::protobuf::a_const::Val::Ival(ref ival)) = ac.val {
-                        match ival.ival {
-                            0 => {
-                                // XML_STANDALONE_YES
-                                e.token(TokenKind::COMMA);
-                                e.space();
-                                e.token(TokenKind::STANDALONE_KW);
-                                e.space();
-                                e.token(TokenKind::YES_KW);
-                            }
-                            1 => {
-                                // XML_STANDALONE_NO
-                                e.token(TokenKind::COMMA);
-                                e.space();
-                                e.token(TokenKind::STANDALONE_KW);
-                                e.space();
-                                e.token(TokenKind::NO_KW);
-                            }
-                            2 => {
-                                // XML_STANDALONE_NO_VALUE
-                                e.token(TokenKind::COMMA);
-                                e.space();
-                                e.token(TokenKind::STANDALONE_KW);
-                                e.space();
-                                e.token(TokenKind::NO_KW);
-                                e.space();
-                                e.token(TokenKind::VALUE_KW);
-                            }
-                            // 3 = XML_STANDALONE_OMITTED - don't emit anything
-                            _ => {}
-                        }
+            if n.args.len() > 2
+                && let Some(pgls_query::NodeEnum::AConst(ac)) = n.args[2].node.as_ref()
+                && let Some(pgls_query::protobuf::a_const::Val::Ival(ref ival)) = ac.val
+            {
+                match ival.ival {
+                    0 => {
+                        // XML_STANDALONE_YES
+                        e.token(TokenKind::COMMA);
+                        e.space();
+                        e.token(TokenKind::STANDALONE_KW);
+                        e.space();
+                        e.token(TokenKind::YES_KW);
                     }
+                    1 => {
+                        // XML_STANDALONE_NO
+                        e.token(TokenKind::COMMA);
+                        e.space();
+                        e.token(TokenKind::STANDALONE_KW);
+                        e.space();
+                        e.token(TokenKind::NO_KW);
+                    }
+                    2 => {
+                        // XML_STANDALONE_NO_VALUE
+                        e.token(TokenKind::COMMA);
+                        e.space();
+                        e.token(TokenKind::STANDALONE_KW);
+                        e.space();
+                        e.token(TokenKind::NO_KW);
+                        e.space();
+                        e.token(TokenKind::VALUE_KW);
+                    }
+                    // 3 = XML_STANDALONE_OMITTED - don't emit anything
+                    _ => {}
                 }
             }
             e.token(TokenKind::R_PAREN);

@@ -50,9 +50,7 @@ impl AnnotationStore {
         let lexed = pgls_lexer::lex(content);
 
         let ends_with_semicolon = (0..lexed.len())
-            // Iterate through tokens in reverse to find the last non-whitespace token
-            .filter(|t| !WHITESPACE_TOKENS.contains(&lexed.kind(*t)))
-            .next_back()
+            .rfind(|t| !WHITESPACE_TOKENS.contains(&lexed.kind(*t)))
             .map(|t| lexed.kind(t) == SyntaxKind::SEMICOLON)
             .unwrap_or(false);
 

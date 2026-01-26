@@ -309,12 +309,12 @@ fn emit_interval_type_modifiers(e: &mut EventEmitter, n: &TypeName) -> bool {
         emit_keyword_sequence(e, field_words);
     }
 
-    if let Some(precision) = precision_value {
-        if precision != INTERVAL_FULL_PRECISION {
-            e.token(TokenKind::L_PAREN);
-            e.token(TokenKind::IDENT(precision.to_string()));
-            e.token(TokenKind::R_PAREN);
-        }
+    if let Some(precision) = precision_value
+        && precision != INTERVAL_FULL_PRECISION
+    {
+        e.token(TokenKind::L_PAREN);
+        e.token(TokenKind::IDENT(precision.to_string()));
+        e.token(TokenKind::R_PAREN);
     }
 
     true

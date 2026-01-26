@@ -21,3 +21,4 @@ camino.workspace                  = true
 dir-test.workspace                = true
 insta.workspace                   = true
 pgls_statement_splitter.workspace = true
+regex.workspace                   = true

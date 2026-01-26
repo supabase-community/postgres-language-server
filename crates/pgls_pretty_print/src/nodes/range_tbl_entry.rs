@@ -21,11 +21,11 @@ pub(super) fn emit_range_tbl_entry(e: &mut EventEmitter, n: &RangeTblEntry) {
 
     super::emit_identifier(e, &label);
 
-    if let Some(alias) = preferred_alias(n) {
-        if !alias.is_empty() {
-            e.space();
-            super::emit_identifier_maybe_quoted(e, alias);
-        }
+    if let Some(alias) = preferred_alias(n)
+        && !alias.is_empty()
+    {
+        e.space();
+        super::emit_identifier_maybe_quoted(e, alias);
     }
 
     if let Some(tablesample) = n.tablesample.as_deref() {

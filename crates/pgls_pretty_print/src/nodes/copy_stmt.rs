@@ -119,34 +119,34 @@ fn emit_copy_option(e: &mut EventEmitter, n: &pgls_query::protobuf::DefElem) {
     e.token(TokenKind::IDENT(name_upper.clone()));
 
     // Handle the value based on its type
-    if let Some(ref arg) = n.arg {
-        if let Some(node_enum) = &arg.node {
-            match node_enum {
-                NodeEnum::Boolean(b) => {
-                    // For boolean options like HEADER, FREEZE, etc.:
-                    // - When true, emit just the option name (already done above)
-                    // - When false, we still need to emit false explicitly
-                    if !b.boolval {
-                        e.space();
-                        e.token(TokenKind::FALSE_KW);
-                    }
-                    // Note: when true, we don't emit any value - just the name is sufficient
-                }
-                NodeEnum::String(s) => {
+    if let Some(ref arg) = n.arg
+        && let Some(node_enum) = &arg.node
+    {
+        match node_enum {
+            NodeEnum::Boolean(b) => {
+                // For boolean options like HEADER, FREEZE, etc.:
+                // - When true, emit just the option name (already done above)
+                // - When false, we still need to emit false explicitly
+                if !b.boolval {
                     e.space();
-                    super::emit_string_literal(e, s);
+                    e.token(TokenKind::FALSE_KW);
                 }
-                NodeEnum::List(list) => {
-                    // For options like FORCE_QUOTE (column_list)
-                    e.space();
-                    e.token(TokenKind::L_PAREN);
-                    emit_comma_separated_list(e, &list.items, super::emit_node);
-                    e.token(TokenKind::R_PAREN);
-                }
-                _ => {
-                    e.space();
-                    super::emit_node(arg, e);
-                }
+                // Note: when true, we don't emit any value - just the name is sufficient
+            }
+            NodeEnum::String(s) => {
+                e.space();
+                super::emit_string_literal(e, s);
+            }
+            NodeEnum::List(list) => {
+                // For options like FORCE_QUOTE (column_list)
+                e.space();
+                e.token(TokenKind::L_PAREN);
+                emit_comma_separated_list(e, &list.items, super::emit_node);
+                e.token(TokenKind::R_PAREN);
+            }
+            _ => {
+                e.space();
+                super::emit_node(arg, e);
             }
         }
     }

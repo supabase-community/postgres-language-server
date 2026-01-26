@@ -82,10 +82,10 @@ impl Matcher {
         }
         let mut already_checked = self.already_checked.write().unwrap();
         let source_as_string = source.to_str();
-        if let Some(source_as_string) = source_as_string {
-            if let Some(matches) = already_checked.get(source_as_string) {
-                return *matches;
-            }
+        if let Some(source_as_string) = source_as_string
+            && let Some(matches) = already_checked.get(source_as_string)
+        {
+            return *matches;
         }
         let matches = self.run_match(source);
 

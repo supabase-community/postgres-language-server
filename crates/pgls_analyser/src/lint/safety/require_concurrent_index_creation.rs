@@ -78,12 +78,11 @@ impl LinterRule for RequireConcurrentIndexCreation {
 fn is_table_created_in_file(file_context: &crate::AnalysedFileContext, table_name: &str) -> bool {
     // Check all statements in the file to see if this table was created
     for stmt in file_context.stmts {
-        if let pgls_query::NodeEnum::CreateStmt(create_stmt) = stmt {
-            if let Some(relation) = &create_stmt.relation {
-                if relation.relname == table_name {
-                    return true;
-                }
-            }
+        if let pgls_query::NodeEnum::CreateStmt(create_stmt) = stmt
+            && let Some(relation) = &create_stmt.relation
+            && relation.relname == table_name
+        {
+            return true;
         }
     }
     false

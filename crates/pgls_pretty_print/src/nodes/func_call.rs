@@ -429,10 +429,10 @@ fn is_builtin_normalize(n: &FuncCall) -> bool {
 
     // With 2 args, second must be a known normalization form
     if n.args.len() == 2 {
-        if let Some(pgls_query::NodeEnum::AConst(a_const)) = &n.args[1].node {
-            if let Some(pgls_query::protobuf::a_const::Val::Sval(s)) = &a_const.val {
-                return matches!(s.sval.as_str(), "NFC" | "NFD" | "NFKC" | "NFKD");
-            }
+        if let Some(pgls_query::NodeEnum::AConst(a_const)) = &n.args[1].node
+            && let Some(pgls_query::protobuf::a_const::Val::Sval(s)) = &a_const.val
+        {
+            return matches!(s.sval.as_str(), "NFC" | "NFD" | "NFKC" | "NFKD");
         }
         return false;
     }

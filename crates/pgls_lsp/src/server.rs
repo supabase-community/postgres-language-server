@@ -181,17 +181,16 @@ impl LanguageServer for LSPServer {
                     let base_path = self.session.base_path();
                     if let Some(base_path) = base_path {
                         let possible_config_json = file_path.strip_prefix(&base_path);
-                        if let Ok(watched_file) = possible_config_json {
-                            if ConfigName::file_names()
+                        if let Ok(watched_file) = possible_config_json
+                            && ConfigName::file_names()
                                 .contains(&&*watched_file.display().to_string())
-                            {
-                                self.session.load_workspace_settings(None).await;
-                                self.setup_capabilities().await;
-                                // self.session.update_all_diagnostics().await;
-                                // for now we are only interested to the configuration file,
-                                // so it's OK to exist the loop
-                                break;
-                            }
+                        {
+                            self.session.load_workspace_settings(None).await;
+                            self.setup_capabilities().await;
+                            // self.session.update_all_diagnostics().await;
+                            // for now we are only interested to the configuration file,
+                            // so it's OK to exist the loop
+                            break;
                         }
                     }
                 }

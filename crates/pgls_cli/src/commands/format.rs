@@ -63,10 +63,10 @@ fn resolve_paths(
     )?
     .unwrap_or_else(|| args.paths.clone());
 
-    if paths.is_empty() {
-        if let Some(current_dir) = fs.working_directory() {
-            paths.push(current_dir.into_os_string());
-        }
+    if paths.is_empty()
+        && let Some(current_dir) = fs.working_directory()
+    {
+        paths.push(current_dir.into_os_string());
     }
 
     Ok(paths)

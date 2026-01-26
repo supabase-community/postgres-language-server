@@ -94,7 +94,7 @@ impl Server {
             .context("call() returned an error")
             .and_then(|res| match res {
                 Some(res) => {
-                    bail!("shutdown returned {:?}", res)
+                    bail!("shutdown returned {res:?}")
                 }
                 _ => Ok(()),
             })
@@ -220,7 +220,7 @@ impl Server {
             .context("call() returned an error")
             .and_then(|res| match res {
                 Some(res) => {
-                    bail!("shutdown returned {:?}", res)
+                    bail!("shutdown returned {res:?}")
                 }
                 _ => Ok(()),
             })

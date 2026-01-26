@@ -717,33 +717,33 @@ fn emit_alter_table_cmd_impl(e: &mut EventEmitter, cmd: &AlterTableCmd, for_type
             e.space();
             e.token(TokenKind::SET_KW);
             // def is a List of DefElem options
-            if let Some(ref def) = cmd.def {
-                if let Some(NodeEnum::List(list)) = &def.node {
-                    for opt in &list.items {
-                        if let Some(NodeEnum::DefElem(de)) = &opt.node {
+            if let Some(ref def) = cmd.def
+                && let Some(NodeEnum::List(list)) = &def.node
+            {
+                for opt in &list.items {
+                    if let Some(NodeEnum::DefElem(de)) = &opt.node {
+                        e.space();
+                        // Handle special "generated" option that specifies ALWAYS/BY DEFAULT
+                        if de.defname == "generated" {
+                            e.token(TokenKind::GENERATED_KW);
                             e.space();
-                            // Handle special "generated" option that specifies ALWAYS/BY DEFAULT
-                            if de.defname == "generated" {
-                                e.token(TokenKind::GENERATED_KW);
-                                e.space();
-                                // arg is an Integer - 97='a' for ALWAYS, 100='d' for BY DEFAULT
-                                if let Some(ref arg) = de.arg {
-                                    if let Some(NodeEnum::Integer(i)) = &arg.node {
-                                        if i.ival == 97 {
-                                            // 'a' = ALWAYS
-                                            e.token(TokenKind::ALWAYS_KW);
-                                        } else {
-                                            // 'd' = BY DEFAULT
-                                            e.token(TokenKind::BY_KW);
-                                            e.space();
-                                            e.token(TokenKind::DEFAULT_KW);
-                                        }
-                                    }
+                            // arg is an Integer - 97='a' for ALWAYS, 100='d' for BY DEFAULT
+                            if let Some(ref arg) = de.arg
+                                && let Some(NodeEnum::Integer(i)) = &arg.node
+                            {
+                                if i.ival == 97 {
+                                    // 'a' = ALWAYS
+                                    e.token(TokenKind::ALWAYS_KW);
+                                } else {
+                                    // 'd' = BY DEFAULT
+                                    e.token(TokenKind::BY_KW);
+                                    e.space();
+                                    e.token(TokenKind::DEFAULT_KW);
                                 }
-                            } else {
-                                // Emit other sequence options
-                                super::emit_sequence_option(e, de);
                             }
+                        } else {
+                            // Emit other sequence options
+                            super::emit_sequence_option(e, de);
                         }
                     }
                 }
@@ -777,33 +777,33 @@ fn emit_alter_table_cmd_impl(e: &mut EventEmitter, cmd: &AlterTableCmd, for_type
             e.space();
 
             // constraint name comes from the def (Constraint node)
-            if let Some(ref def) = cmd.def {
-                if let Some(NodeEnum::Constraint(c)) = &def.node {
-                    super::string::emit_identifier(e, &c.conname);
+            if let Some(ref def) = cmd.def
+                && let Some(NodeEnum::Constraint(c)) = &def.node
+            {
+                super::string::emit_identifier(e, &c.conname);
 
-                    // DEFERRABLE or NOT DEFERRABLE
-                    if c.deferrable {
-                        e.space();
-                        e.token(TokenKind::DEFERRABLE_KW);
-                    } else {
-                        e.space();
-                        e.token(TokenKind::NOT_KW);
-                        e.space();
-                        e.token(TokenKind::DEFERRABLE_KW);
-                    }
+                // DEFERRABLE or NOT DEFERRABLE
+                if c.deferrable {
+                    e.space();
+                    e.token(TokenKind::DEFERRABLE_KW);
+                } else {
+                    e.space();
+                    e.token(TokenKind::NOT_KW);
+                    e.space();
+                    e.token(TokenKind::DEFERRABLE_KW);
+                }
 
-                    // INITIALLY DEFERRED or INITIALLY IMMEDIATE
-                    if c.initdeferred {
-                        e.space();
-                        e.token(TokenKind::INITIALLY_KW);
-                        e.space();
-                        e.token(TokenKind::DEFERRED_KW);
-                    } else {
-                        e.space();
-                        e.token(TokenKind::INITIALLY_KW);
-                        e.space();
-                        e.token(TokenKind::IMMEDIATE_KW);
-                    }
+                // INITIALLY DEFERRED or INITIALLY IMMEDIATE
+                if c.initdeferred {
+                    e.space();
+                    e.token(TokenKind::INITIALLY_KW);
+                    e.space();
+                    e.token(TokenKind::DEFERRED_KW);
+                } else {
+                    e.space();
+                    e.token(TokenKind::INITIALLY_KW);
+                    e.space();
+                    e.token(TokenKind::IMMEDIATE_KW);
                 }
             }
         }
@@ -828,16 +828,16 @@ fn emit_alter_table_cmd_impl(e: &mut EventEmitter, cmd: &AlterTableCmd, for_type
             e.token(TokenKind::OPTIONS_KW);
             e.space();
             e.token(TokenKind::L_PAREN);
-            if let Some(ref def) = cmd.def {
-                if let Some(NodeEnum::List(list)) = &def.node {
-                    for (i, opt) in list.items.iter().enumerate() {
-                        if i > 0 {
-                            e.token(TokenKind::COMMA);
-                            e.space();
-                        }
-                        if let Some(NodeEnum::DefElem(de)) = &opt.node {
-                            super::emit_options_def_elem(e, de);
-                        }
+            if let Some(ref def) = cmd.def
+                && let Some(NodeEnum::List(list)) = &def.node
+            {
+                for (i, opt) in list.items.iter().enumerate() {
+                    if i > 0 {
+                        e.token(TokenKind::COMMA);
+                        e.space();
+                    }
+                    if let Some(NodeEnum::DefElem(de)) = &opt.node {
+                        super::emit_options_def_elem(e, de);
                     }
                 }
             }
@@ -848,16 +848,16 @@ fn emit_alter_table_cmd_impl(e: &mut EventEmitter, cmd: &AlterTableCmd, for_type
             e.token(TokenKind::OPTIONS_KW);
             e.space();
             e.token(TokenKind::L_PAREN);
-            if let Some(ref def) = cmd.def {
-                if let Some(NodeEnum::List(list)) = &def.node {
-                    for (i, opt) in list.items.iter().enumerate() {
-                        if i > 0 {
-                            e.token(TokenKind::COMMA);
-                            e.space();
-                        }
-                        if let Some(NodeEnum::DefElem(de)) = &opt.node {
-                            super::emit_options_def_elem(e, de);
-                        }
+            if let Some(ref def) = cmd.def
+                && let Some(NodeEnum::List(list)) = &def.node
+            {
+                for (i, opt) in list.items.iter().enumerate() {
+                    if i > 0 {
+                        e.token(TokenKind::COMMA);
+                        e.space();
+                    }
+                    if let Some(NodeEnum::DefElem(de)) = &opt.node {
+                        super::emit_options_def_elem(e, de);
                     }
                 }
             }

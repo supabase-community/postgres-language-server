@@ -95,21 +95,17 @@ pub(super) fn emit_json_array_agg(e: &mut EventEmitter, n: &JsonArrayAgg) {
         emit_json_value_expr(e, arg);
     }
 
-    if let Some(ref constructor) = n.constructor {
-        if !constructor.agg_order.is_empty() {
-            if n.arg.is_some() {
-                e.line(crate::emitter::LineType::SoftOrSpace);
-            }
-            e.token(TokenKind::ORDER_KW);
-            e.space();
-            e.token(TokenKind::BY_KW);
-            e.space();
-            super::node_list::emit_comma_separated_list(
-                e,
-                &constructor.agg_order,
-                super::emit_node,
-            );
+    if let Some(ref constructor) = n.constructor
+        && !constructor.agg_order.is_empty()
+    {
+        if n.arg.is_some() {
+            e.line(crate::emitter::LineType::SoftOrSpace);
         }
+        e.token(TokenKind::ORDER_KW);
+        e.space();
+        e.token(TokenKind::BY_KW);
+        e.space();
+        super::node_list::emit_comma_separated_list(e, &constructor.agg_order, super::emit_node);
     }
 
     // NULL ON NULL / ABSENT ON NULL goes inside the parentheses
@@ -127,12 +123,12 @@ pub(super) fn emit_json_array_agg(e: &mut EventEmitter, n: &JsonArrayAgg) {
     }
 
     // RETURNING clause goes inside the parentheses
-    if let Some(ref constructor) = n.constructor {
-        if let Some(ref output) = constructor.output {
-            let mut has_content = n.arg.is_some();
-            e.line(crate::emitter::LineType::SoftOrSpace);
-            emit_json_output(e, output, &mut has_content);
-        }
+    if let Some(ref constructor) = n.constructor
+        && let Some(ref output) = constructor.output
+    {
+        let mut has_content = n.arg.is_some();
+        e.line(crate::emitter::LineType::SoftOrSpace);
+        emit_json_output(e, output, &mut has_content);
     }
 
     e.token(TokenKind::R_PAREN);

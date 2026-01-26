@@ -63,14 +63,12 @@ pub(super) fn emit_alter_subscription_stmt(e: &mut EventEmitter, n: &AlterSubscr
         7 => {
             // ENABLE or DISABLE - determined by the enabled option value
             let is_enabled = n.options.iter().any(|opt| {
-                if let Some(pgls_query::NodeEnum::DefElem(def)) = &opt.node {
-                    if def.defname == "enabled" {
-                        if let Some(arg) = &def.arg {
-                            if let Some(pgls_query::NodeEnum::Boolean(b)) = &arg.node {
-                                return b.boolval;
-                            }
-                        }
-                    }
+                if let Some(pgls_query::NodeEnum::DefElem(def)) = &opt.node
+                    && def.defname == "enabled"
+                    && let Some(arg) = &def.arg
+                    && let Some(pgls_query::NodeEnum::Boolean(b)) = &arg.node
+                {
+                    return b.boolval;
                 }
                 false
             });

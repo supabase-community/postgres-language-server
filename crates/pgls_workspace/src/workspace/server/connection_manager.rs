@@ -41,10 +41,10 @@ impl ConnectionManager {
         }
 
         {
-            if let Ok(pools) = self.pools.read() {
-                if let Some(cached_pool) = pools.get(&key) {
-                    return Some(cached_pool.pool.clone());
-                }
+            if let Ok(pools) = self.pools.read()
+                && let Some(cached_pool) = pools.get(&key)
+            {
+                return Some(cached_pool.pool.clone());
             }
         }
 

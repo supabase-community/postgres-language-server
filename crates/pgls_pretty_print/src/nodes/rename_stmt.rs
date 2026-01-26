@@ -276,20 +276,19 @@ fn emit_simple_rename(e: &mut EventEmitter, new_name: &str) {
 }
 
 fn emit_operator_collection_head(e: &mut EventEmitter, n: &RenameStmt) -> bool {
-    if let Some(ref object) = n.object {
-        if let Some(NodeEnum::List(list)) = &object.node {
-            if list.items.len() >= 2 {
-                let (method_node, name_nodes) = list.items.split_first().unwrap();
-                if !name_nodes.is_empty() {
-                    e.space();
-                    emit_dot_separated_list(e, name_nodes);
-                    e.space();
-                    e.token(TokenKind::USING_KW);
-                    e.space();
-                    emit_node(method_node, e);
-                    return true;
-                }
-            }
+    if let Some(ref object) = n.object
+        && let Some(NodeEnum::List(list)) = &object.node
+        && list.items.len() >= 2
+    {
+        let (method_node, name_nodes) = list.items.split_first().unwrap();
+        if !name_nodes.is_empty() {
+            e.space();
+            emit_dot_separated_list(e, name_nodes);
+            e.space();
+            e.token(TokenKind::USING_KW);
+            e.space();
+            emit_node(method_node, e);
+            return true;
         }
     }
 

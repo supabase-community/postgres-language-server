@@ -31,19 +31,19 @@ pub(super) fn emit_alter_extension_stmt(e: &mut EventEmitter, n: &AlterExtension
         if has_update_to {
             // Find the new_version option and emit UPDATE TO syntax
             for opt in &n.options {
-                if let Some(pgls_query::NodeEnum::DefElem(d)) = &opt.node {
-                    if d.defname == "new_version" {
-                        e.token(TokenKind::UPDATE_KW);
+                if let Some(pgls_query::NodeEnum::DefElem(d)) = &opt.node
+                    && d.defname == "new_version"
+                {
+                    e.token(TokenKind::UPDATE_KW);
+                    e.space();
+                    e.token(TokenKind::TO_KW);
+                    if let Some(ref arg) = d.arg {
                         e.space();
-                        e.token(TokenKind::TO_KW);
-                        if let Some(ref arg) = d.arg {
-                            e.space();
-                            // Version must be a string literal (quoted)
-                            if let Some(pgls_query::NodeEnum::String(s)) = &arg.node {
-                                super::emit_string_literal(e, s);
-                            } else {
-                                super::emit_node(arg, e);
-                            }
+                        // Version must be a string literal (quoted)
+                        if let Some(pgls_query::NodeEnum::String(s)) = &arg.node {
+                            super::emit_string_literal(e, s);
+                        } else {
+                            super::emit_node(arg, e);
                         }
                     }
                 }

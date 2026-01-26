@@ -49,16 +49,16 @@ pub(super) fn emit_create_event_trig_stmt(e: &mut EventEmitter, n: &CreateEventT
                 e.space();
                 e.token(TokenKind::L_PAREN);
                 // Emit list of values
-                if let Some(arg) = &def_elem.arg {
-                    if let Some(pgls_query::NodeEnum::List(list)) = arg.node.as_ref() {
-                        for (j, item) in list.items.iter().enumerate() {
-                            if j > 0 {
-                                e.token(TokenKind::COMMA);
-                                e.space();
-                            }
-                            if let Some(pgls_query::NodeEnum::String(s)) = item.node.as_ref() {
-                                super::emit_string_literal(e, s);
-                            }
+                if let Some(arg) = &def_elem.arg
+                    && let Some(pgls_query::NodeEnum::List(list)) = arg.node.as_ref()
+                {
+                    for (j, item) in list.items.iter().enumerate() {
+                        if j > 0 {
+                            e.token(TokenKind::COMMA);
+                            e.space();
+                        }
+                        if let Some(pgls_query::NodeEnum::String(s)) = item.node.as_ref() {
+                            super::emit_string_literal(e, s);
                         }
                     }
                 }

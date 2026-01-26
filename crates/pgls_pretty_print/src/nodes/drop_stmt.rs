@@ -89,17 +89,17 @@ fn emit_dot_separated_identifiers(e: &mut EventEmitter, items: &[pgls_query::pro
 }
 
 fn emit_drop_cast_object(node: &pgls_query::protobuf::Node, e: &mut EventEmitter) {
-    if let Some(pgls_query::NodeEnum::List(list)) = node.node.as_ref() {
-        if list.items.len() == 2 {
-            e.token(TokenKind::L_PAREN);
-            super::emit_node(&list.items[0], e);
-            e.space();
-            e.token(TokenKind::AS_KW);
-            e.space();
-            super::emit_node(&list.items[1], e);
-            e.token(TokenKind::R_PAREN);
-            return;
-        }
+    if let Some(pgls_query::NodeEnum::List(list)) = node.node.as_ref()
+        && list.items.len() == 2
+    {
+        e.token(TokenKind::L_PAREN);
+        super::emit_node(&list.items[0], e);
+        e.space();
+        e.token(TokenKind::AS_KW);
+        e.space();
+        super::emit_node(&list.items[1], e);
+        e.token(TokenKind::R_PAREN);
+        return;
     }
 
     // Fallback for unexpected structure
@@ -110,20 +110,20 @@ fn emit_drop_cast_object(node: &pgls_query::protobuf::Node, e: &mut EventEmitter
 /// Format: name USING access_method
 /// The list is [access_method, name_parts...]
 fn emit_drop_opclass_object(node: &pgls_query::protobuf::Node, e: &mut EventEmitter) {
-    if let Some(pgls_query::NodeEnum::List(list)) = node.node.as_ref() {
-        if list.items.len() >= 2 {
-            // First element is the access method name
-            // Remaining elements are the operator class/family name parts
-            let name_parts = &list.items[1..];
-            emit_dot_separated_identifiers(e, name_parts);
-            e.space();
-            e.token(TokenKind::USING_KW);
-            e.space();
-            if let Some(pgls_query::NodeEnum::String(s)) = list.items[0].node.as_ref() {
-                super::string::emit_identifier_maybe_quoted(e, &s.sval);
-            }
-            return;
+    if let Some(pgls_query::NodeEnum::List(list)) = node.node.as_ref()
+        && list.items.len() >= 2
+    {
+        // First element is the access method name
+        // Remaining elements are the operator class/family name parts
+        let name_parts = &list.items[1..];
+        emit_dot_separated_identifiers(e, name_parts);
+        e.space();
+        e.token(TokenKind::USING_KW);
+        e.space();
+        if let Some(pgls_query::NodeEnum::String(s)) = list.items[0].node.as_ref() {
+            super::string::emit_identifier_maybe_quoted(e, &s.sval);
         }
+        return;
     }
 
     // Fallback for unexpected structure
@@ -134,28 +134,28 @@ fn emit_drop_opclass_object(node: &pgls_query::protobuf::Node, e: &mut EventEmit
 /// Format: name ON table_name
 /// The list is [table_name_parts..., object_name] - last item is the object name
 fn emit_drop_on_object(node: &pgls_query::protobuf::Node, e: &mut EventEmitter) {
-    if let Some(pgls_query::NodeEnum::List(list)) = node.node.as_ref() {
-        if list.items.len() >= 2 {
-            // Last element is the object name (trigger/rule/policy)
-            // All previous elements are the table name parts (schema, table, etc.)
-            let (table_parts, object_name_item) = list.items.split_at(list.items.len() - 1);
-            let object_name = &object_name_item[0];
+    if let Some(pgls_query::NodeEnum::List(list)) = node.node.as_ref()
+        && list.items.len() >= 2
+    {
+        // Last element is the object name (trigger/rule/policy)
+        // All previous elements are the table name parts (schema, table, etc.)
+        let (table_parts, object_name_item) = list.items.split_at(list.items.len() - 1);
+        let object_name = &object_name_item[0];
 
-            // Emit object name first
-            if let Some(pgls_query::NodeEnum::String(s)) = object_name.node.as_ref() {
-                super::string::emit_identifier_maybe_quoted(e, &s.sval);
-            } else {
-                super::emit_node(object_name, e);
-            }
-
-            e.space();
-            e.token(TokenKind::ON_KW);
-            e.space();
-
-            // Emit table name parts dot-separated
-            emit_dot_separated_identifiers(e, table_parts);
-            return;
+        // Emit object name first
+        if let Some(pgls_query::NodeEnum::String(s)) = object_name.node.as_ref() {
+            super::string::emit_identifier_maybe_quoted(e, &s.sval);
+        } else {
+            super::emit_node(object_name, e);
         }
+
+        e.space();
+        e.token(TokenKind::ON_KW);
+        e.space();
+
+        // Emit table name parts dot-separated
+        emit_dot_separated_identifiers(e, table_parts);
+        return;
     }
 
     // Fallback for unexpected structure

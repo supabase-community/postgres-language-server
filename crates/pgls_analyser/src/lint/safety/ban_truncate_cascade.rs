@@ -35,16 +35,16 @@ impl LinterRule for BanTruncateCascade {
     fn run(ctx: &LinterRuleContext<Self>) -> Vec<LinterDiagnostic> {
         let mut diagnostics = Vec::new();
 
-        if let pgls_query::NodeEnum::TruncateStmt(stmt) = &ctx.stmt() {
-            if stmt.behavior() == DropBehavior::DropCascade {
-                diagnostics.push(LinterDiagnostic::new(
+        if let pgls_query::NodeEnum::TruncateStmt(stmt) = &ctx.stmt()
+            && stmt.behavior() == DropBehavior::DropCascade
+        {
+            diagnostics.push(LinterDiagnostic::new(
                             rule_category!(),
                             None,
                             markup! {
                                 "The `CASCADE` option will also truncate any tables that are foreign-keyed to the specified tables."
                             },
                         ).detail(None, "Do not use the `CASCADE` option. Instead, specify manually what you want: `TRUNCATE a, b;`."));
-            }
         }
 
         diagnostics

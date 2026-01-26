@@ -57,14 +57,12 @@ fn clear_location(node: &mut NodeEnum) {
                 // Normalize funcformat to CoerceExplicitCall since we emit as regular function call
                 (*n).funcformat = pgls_query::protobuf::CoercionForm::CoerceExplicitCall.into();
                 // Remove pg_catalog prefix from function names
-                if (*n).funcname.len() == 2 {
-                    if let Some(NodeEnum::String(schema)) =
+                if (*n).funcname.len() == 2
+                    && let Some(NodeEnum::String(schema)) =
                         (*n).funcname.first().and_then(|node| node.node.as_ref())
-                    {
-                        if schema.sval.eq_ignore_ascii_case("pg_catalog") {
-                            (*n).funcname.remove(0);
-                        }
-                    }
+                    && schema.sval.eq_ignore_ascii_case("pg_catalog")
+                {
+                    (*n).funcname.remove(0);
                 }
                 // Normalize function names to lowercase for case-insensitive comparison
                 for func_name_node in &mut (*n).funcname {
@@ -125,22 +123,20 @@ fn clear_location(node: &mut NodeEnum) {
             }
             NodeMut::JsonArrayConstructor(n) => {
                 (*n).location = 0;
-                if let Some(output) = (*n).output.as_mut() {
-                    if let Some(returning) = output.returning.as_mut() {
-                        if let Some(format) = returning.format.as_mut() {
-                            format.location = 0;
-                        }
-                    }
+                if let Some(output) = (*n).output.as_mut()
+                    && let Some(returning) = output.returning.as_mut()
+                    && let Some(format) = returning.format.as_mut()
+                {
+                    format.location = 0;
                 }
             }
             NodeMut::JsonObjectConstructor(n) => {
                 (*n).location = 0;
-                if let Some(output) = (*n).output.as_mut() {
-                    if let Some(returning) = output.returning.as_mut() {
-                        if let Some(format) = returning.format.as_mut() {
-                            format.location = 0;
-                        }
-                    }
+                if let Some(output) = (*n).output.as_mut()
+                    && let Some(returning) = output.returning.as_mut()
+                    && let Some(format) = returning.format.as_mut()
+                {
+                    format.location = 0;
                 }
             }
             NodeMut::JsonAggConstructor(n) => {
@@ -168,12 +164,11 @@ fn clear_location(node: &mut NodeEnum) {
                     on_empty.location = 0;
                 }
                 // Normalize output.returning.format.location
-                if let Some(output) = (*n).output.as_mut() {
-                    if let Some(returning) = output.returning.as_mut() {
-                        if let Some(format) = returning.format.as_mut() {
-                            format.location = 0;
-                        }
-                    }
+                if let Some(output) = (*n).output.as_mut()
+                    && let Some(returning) = output.returning.as_mut()
+                    && let Some(format) = returning.format.as_mut()
+                {
+                    format.location = 0;
                 }
                 // Normalize wrapper: JswUnspec (1) and JswNone (2) are semantically equivalent
                 // When no wrapper clause is specified, PostgreSQL defaults to WITHOUT WRAPPER
@@ -183,10 +178,10 @@ fn clear_location(node: &mut NodeEnum) {
             }
             NodeMut::JsonTable(n) => {
                 (*n).location = 0;
-                if let Some(context) = (*n).context_item.as_mut() {
-                    if let Some(format) = context.format.as_mut() {
-                        format.location = 0;
-                    }
+                if let Some(context) = (*n).context_item.as_mut()
+                    && let Some(format) = context.format.as_mut()
+                {
+                    format.location = 0;
                 }
 
                 for column in &mut (*n).columns {
@@ -225,40 +220,37 @@ fn clear_location(node: &mut NodeEnum) {
             NodeMut::TypeName(n) => {
                 (*n).location = 0;
 
-                if (*n).names.len() == 2 {
-                    if let Some(NodeEnum::String(schema)) =
+                if (*n).names.len() == 2
+                    && let Some(NodeEnum::String(schema)) =
                         (*n).names.first().and_then(|node| node.node.as_ref())
-                    {
-                        if schema.sval.eq_ignore_ascii_case("pg_catalog") {
-                            (*n).names.remove(0);
-                        }
-                    }
+                    && schema.sval.eq_ignore_ascii_case("pg_catalog")
+                {
+                    (*n).names.remove(0);
                 }
 
                 // Normalize char to bpchar(1) and bpchar to bpchar(1)
-                if (*n).names.len() == 1 {
-                    if let Some(NodeEnum::String(type_name)) =
+                if (*n).names.len() == 1
+                    && let Some(NodeEnum::String(type_name)) =
                         (*n).names.first().and_then(|node| node.node.as_ref())
-                    {
-                        let is_char = type_name.sval.eq_ignore_ascii_case("char");
-                        let is_bpchar = type_name.sval.eq_ignore_ascii_case("bpchar");
-                        if (is_char || is_bpchar) && (*n).typmods.is_empty() {
-                            // char/bpchar without size is char(1) = bpchar(1)
-                            (&mut (*n).names)[0] = pgls_query::protobuf::Node {
-                                node: Some(NodeEnum::String(pgls_query::protobuf::String {
-                                    sval: "bpchar".to_string(),
-                                })),
-                            };
-                            (*n).typmods.push(pgls_query::protobuf::Node {
-                                node: Some(NodeEnum::AConst(pgls_query::protobuf::AConst {
-                                    isnull: false,
-                                    location: 0,
-                                    val: Some(pgls_query::protobuf::a_const::Val::Ival(
-                                        pgls_query::protobuf::Integer { ival: 1 },
-                                    )),
-                                })),
-                            });
-                        }
+                {
+                    let is_char = type_name.sval.eq_ignore_ascii_case("char");
+                    let is_bpchar = type_name.sval.eq_ignore_ascii_case("bpchar");
+                    if (is_char || is_bpchar) && (*n).typmods.is_empty() {
+                        // char/bpchar without size is char(1) = bpchar(1)
+                        (&mut (*n).names)[0] = pgls_query::protobuf::Node {
+                            node: Some(NodeEnum::String(pgls_query::protobuf::String {
+                                sval: "bpchar".to_string(),
+                            })),
+                        };
+                        (*n).typmods.push(pgls_query::protobuf::Node {
+                            node: Some(NodeEnum::AConst(pgls_query::protobuf::AConst {
+                                isnull: false,
+                                location: 0,
+                                val: Some(pgls_query::protobuf::a_const::Val::Ival(
+                                    pgls_query::protobuf::Integer { ival: 1 },
+                                )),
+                            })),
+                        });
                     }
                 }
             }
@@ -381,19 +373,16 @@ fn clear_location(node: &mut NodeEnum) {
                     if let Some(NodeEnum::DefElem(def)) = opt.node.as_mut() {
                         def.location = 0;
                         // Normalize TypeName to String
-                        if let Some(ref mut arg) = def.arg {
-                            if let Some(NodeEnum::TypeName(tn)) = arg.node.as_mut() {
-                                if tn.names.len() == 1
-                                    && tn.typmods.is_empty()
-                                    && tn.array_bounds.is_empty()
-                                    && !tn.setof
-                                    && !tn.pct_type
-                                {
-                                    if let Some(first) = tn.names.first() {
-                                        arg.node = first.node.clone();
-                                    }
-                                }
-                            }
+                        if let Some(ref mut arg) = def.arg
+                            && let Some(NodeEnum::TypeName(tn)) = arg.node.as_mut()
+                            && tn.names.len() == 1
+                            && tn.typmods.is_empty()
+                            && tn.array_bounds.is_empty()
+                            && !tn.setof
+                            && !tn.pct_type
+                            && let Some(first) = tn.names.first()
+                        {
+                            arg.node = first.node.clone();
                         }
                     }
                 }
@@ -453,12 +442,12 @@ fn flatten_bool_expr(be: &mut pgls_query::protobuf::BoolExpr) {
     {
         let mut new_args = Vec::new();
         for arg in std::mem::take(&mut be.args) {
-            if let Some(NodeEnum::BoolExpr(ref child)) = arg.node {
-                if child.boolop() == boolop {
-                    // Same boolop type - flatten by pulling up child args
-                    new_args.extend(child.args.clone());
-                    continue;
-                }
+            if let Some(NodeEnum::BoolExpr(ref child)) = arg.node
+                && child.boolop() == boolop
+            {
+                // Same boolop type - flatten by pulling up child args
+                new_args.extend(child.args.clone());
+                continue;
             }
             new_args.push(arg);
         }
@@ -474,10 +463,10 @@ fn flatten_bool_expr(be: &mut pgls_query::protobuf::BoolExpr) {
 fn normalize_a_indirection(node: &mut NodeEnum) {
     if let NodeEnum::AIndirection(ind) = node {
         // Recursively normalize the arg first
-        if let Some(ref mut arg) = ind.arg {
-            if let Some(ref mut inner_node) = arg.node {
-                normalize_a_indirection(inner_node);
-            }
+        if let Some(ref mut arg) = ind.arg
+            && let Some(ref mut inner_node) = arg.node
+        {
+            normalize_a_indirection(inner_node);
         }
 
         // Now flatten: if arg is another AIndirection, pull up its contents
@@ -505,31 +494,31 @@ fn normalize_a_indirection(node: &mut NodeEnum) {
         // Merge leading String/AStar elements from indirection into ColumnRef fields
         // This normalizes `d1.r` which may parse as either structure
         // Also handles partial cases like `value.if2[1]` where we merge "if2" but keep AIndices
-        if let Some(ref mut arg) = ind.arg {
-            if let Some(NodeEnum::ColumnRef(col)) = arg.node.as_mut() {
-                // Find how many leading elements are String or AStar
-                let merge_count = ind
-                    .indirection
-                    .iter()
-                    .take_while(|indir| {
-                        matches!(
-                            indir.node.as_ref(),
-                            Some(NodeEnum::String(_) | NodeEnum::AStar(_))
-                        )
-                    })
-                    .count();
+        if let Some(ref mut arg) = ind.arg
+            && let Some(NodeEnum::ColumnRef(col)) = arg.node.as_mut()
+        {
+            // Find how many leading elements are String or AStar
+            let merge_count = ind
+                .indirection
+                .iter()
+                .take_while(|indir| {
+                    matches!(
+                        indir.node.as_ref(),
+                        Some(NodeEnum::String(_) | NodeEnum::AStar(_))
+                    )
+                })
+                .count();
 
-                if merge_count > 0 {
-                    // Split indirection: merge first `merge_count` into ColumnRef, keep rest
-                    let remaining = ind.indirection.split_off(merge_count);
-                    col.fields.append(&mut ind.indirection);
-                    ind.indirection = remaining;
+            if merge_count > 0 {
+                // Split indirection: merge first `merge_count` into ColumnRef, keep rest
+                let remaining = ind.indirection.split_off(merge_count);
+                col.fields.append(&mut ind.indirection);
+                ind.indirection = remaining;
 
-                    // If no indirection left, convert to just ColumnRef
-                    if ind.indirection.is_empty() {
-                        *node = NodeEnum::ColumnRef(col.clone());
-                        return;
-                    }
+                // If no indirection left, convert to just ColumnRef
+                if ind.indirection.is_empty() {
+                    *node = NodeEnum::ColumnRef(col.clone());
+                    return;
                 }
             }
         }
@@ -548,10 +537,10 @@ fn normalize_a_indirection(node: &mut NodeEnum) {
                     normalize_a_indirection(n);
                 }
             }
-            if let Some(ref mut w) = stmt.where_clause {
-                if let Some(ref mut n) = w.node {
-                    normalize_a_indirection(n);
-                }
+            if let Some(ref mut w) = stmt.where_clause
+                && let Some(ref mut n) = w.node
+            {
+                normalize_a_indirection(n);
             }
             for sort in &mut stmt.sort_clause {
                 if let Some(ref mut n) = sort.node {
@@ -560,17 +549,17 @@ fn normalize_a_indirection(node: &mut NodeEnum) {
             }
         }
         NodeEnum::SortBy(sb) => {
-            if let Some(ref mut n) = sb.node {
-                if let Some(ref mut inner) = n.node {
-                    normalize_a_indirection(inner);
-                }
+            if let Some(ref mut n) = sb.node
+                && let Some(ref mut inner) = n.node
+            {
+                normalize_a_indirection(inner);
             }
         }
         NodeEnum::ResTarget(rt) => {
-            if let Some(ref mut v) = rt.val {
-                if let Some(ref mut n) = v.node {
-                    normalize_a_indirection(n);
-                }
+            if let Some(ref mut v) = rt.val
+                && let Some(ref mut n) = v.node
+            {
+                normalize_a_indirection(n);
             }
         }
         NodeEnum::FuncCall(fc) => {
@@ -582,56 +571,47 @@ fn normalize_a_indirection(node: &mut NodeEnum) {
             // Normalize NORMALIZE function's second argument:
             // NFC/NFD/NFKC/NFKD can be emitted as identifier but parsed back as ColumnRef
             // Convert ColumnRef with these values to AConst string
-            if fc.funcname.len() == 1 {
-                if let Some(NodeEnum::String(s)) = fc.funcname.first().and_then(|n| n.node.as_ref())
+            if fc.funcname.len() == 1
+                && let Some(NodeEnum::String(s)) = fc.funcname.first().and_then(|n| n.node.as_ref())
+                && s.sval.eq_ignore_ascii_case("normalize")
+                && fc.args.len() == 2
+            {
+                if let Some(NodeEnum::ColumnRef(cref)) = fc.args[1].node.as_ref()
+                    && cref.fields.len() == 1
+                    && let Some(NodeEnum::String(field_str)) = cref.fields[0].node.as_ref()
                 {
-                    if s.sval.eq_ignore_ascii_case("normalize") && fc.args.len() == 2 {
-                        if let Some(NodeEnum::ColumnRef(cref)) = fc.args[1].node.as_ref() {
-                            if cref.fields.len() == 1 {
-                                if let Some(NodeEnum::String(field_str)) =
-                                    cref.fields[0].node.as_ref()
-                                {
-                                    let form = field_str.sval.to_uppercase();
-                                    if matches!(form.as_str(), "NFC" | "NFD" | "NFKC" | "NFKD") {
-                                        // Convert to AConst string for normalization
-                                        fc.args[1].node =
-                                            Some(NodeEnum::AConst(pgls_query::protobuf::AConst {
-                                                isnull: false,
-                                                location: 0,
-                                                val: Some(
-                                                    pgls_query::protobuf::a_const::Val::Sval(
-                                                        pgls_query::protobuf::String {
-                                                            sval: form.to_lowercase(),
-                                                        },
-                                                    ),
-                                                ),
-                                            }));
-                                    }
-                                }
-                            }
-                        }
-                        // Also lowercase AConst values for comparison
-                        if let Some(NodeEnum::AConst(aconst)) = fc.args[1].node.as_mut() {
-                            if let Some(pgls_query::protobuf::a_const::Val::Sval(s)) =
-                                aconst.val.as_mut()
-                            {
-                                s.sval = s.sval.to_lowercase();
-                            }
-                        }
+                    let form = field_str.sval.to_uppercase();
+                    if matches!(form.as_str(), "NFC" | "NFD" | "NFKC" | "NFKD") {
+                        // Convert to AConst string for normalization
+                        fc.args[1].node = Some(NodeEnum::AConst(pgls_query::protobuf::AConst {
+                            isnull: false,
+                            location: 0,
+                            val: Some(pgls_query::protobuf::a_const::Val::Sval(
+                                pgls_query::protobuf::String {
+                                    sval: form.to_lowercase(),
+                                },
+                            )),
+                        }));
                     }
+                }
+                // Also lowercase AConst values for comparison
+                if let Some(NodeEnum::AConst(aconst)) = fc.args[1].node.as_mut()
+                    && let Some(pgls_query::protobuf::a_const::Val::Sval(s)) = aconst.val.as_mut()
+                {
+                    s.sval = s.sval.to_lowercase();
                 }
             }
         }
         NodeEnum::AExpr(expr) => {
-            if let Some(ref mut l) = expr.lexpr {
-                if let Some(ref mut n) = l.node {
-                    normalize_a_indirection(n);
-                }
+            if let Some(ref mut l) = expr.lexpr
+                && let Some(ref mut n) = l.node
+            {
+                normalize_a_indirection(n);
             }
-            if let Some(ref mut r) = expr.rexpr {
-                if let Some(ref mut n) = r.node {
-                    normalize_a_indirection(n);
-                }
+            if let Some(ref mut r) = expr.rexpr
+                && let Some(ref mut n) = r.node
+            {
+                normalize_a_indirection(n);
             }
         }
         NodeEnum::UpdateStmt(stmt) => {
@@ -640,45 +620,45 @@ fn normalize_a_indirection(node: &mut NodeEnum) {
                     normalize_a_indirection(n);
                 }
             }
-            if let Some(ref mut w) = stmt.where_clause {
-                if let Some(ref mut n) = w.node {
-                    normalize_a_indirection(n);
-                }
+            if let Some(ref mut w) = stmt.where_clause
+                && let Some(ref mut n) = w.node
+            {
+                normalize_a_indirection(n);
             }
         }
         NodeEnum::DeleteStmt(stmt) => {
-            if let Some(ref mut w) = stmt.where_clause {
-                if let Some(ref mut n) = w.node {
-                    normalize_a_indirection(n);
-                }
+            if let Some(ref mut w) = stmt.where_clause
+                && let Some(ref mut n) = w.node
+            {
+                normalize_a_indirection(n);
             }
         }
         NodeEnum::InsertStmt(stmt) => {
-            if let Some(ref mut sel) = stmt.select_stmt {
-                if let Some(ref mut n) = sel.node {
-                    normalize_a_indirection(n);
-                }
+            if let Some(ref mut sel) = stmt.select_stmt
+                && let Some(ref mut n) = sel.node
+            {
+                normalize_a_indirection(n);
             }
         }
         NodeEnum::Constraint(c) => {
-            if let Some(ref mut raw) = c.raw_expr {
-                if let Some(ref mut n) = raw.node {
-                    normalize_a_indirection(n);
-                }
+            if let Some(ref mut raw) = c.raw_expr
+                && let Some(ref mut n) = raw.node
+            {
+                normalize_a_indirection(n);
             }
         }
         NodeEnum::AlterDomainStmt(stmt) => {
-            if let Some(ref mut def) = stmt.def {
-                if let Some(ref mut n) = def.node {
-                    normalize_a_indirection(n);
-                    // For NOT NULL constraints on domains, clear keys and conname
-                    // since they aren't emitted/reparsed
-                    if let NodeEnum::Constraint(c) = n {
-                        if c.contype == pgls_query::protobuf::ConstrType::ConstrNotnull as i32 {
-                            c.keys.clear();
-                            // conname is emitted, so leave it for comparison
-                        }
-                    }
+            if let Some(ref mut def) = stmt.def
+                && let Some(ref mut n) = def.node
+            {
+                normalize_a_indirection(n);
+                // For NOT NULL constraints on domains, clear keys and conname
+                // since they aren't emitted/reparsed
+                if let NodeEnum::Constraint(c) = n
+                    && c.contype == pgls_query::protobuf::ConstrType::ConstrNotnull as i32
+                {
+                    c.keys.clear();
+                    // conname is emitted, so leave it for comparison
                 }
             }
         }
@@ -690,10 +670,10 @@ fn normalize_a_indirection(node: &mut NodeEnum) {
             }
         }
         NodeEnum::NullTest(nt) => {
-            if let Some(ref mut arg) = nt.arg {
-                if let Some(ref mut n) = arg.node {
-                    normalize_a_indirection(n);
-                }
+            if let Some(ref mut arg) = nt.arg
+                && let Some(ref mut n) = arg.node
+            {
+                normalize_a_indirection(n);
             }
         }
         NodeEnum::BoolExpr(be) => {
@@ -715,12 +695,11 @@ fn normalize_a_indirection(node: &mut NodeEnum) {
         }
         NodeEnum::AlterTableStmt(stmt) => {
             for cmd in &mut stmt.cmds {
-                if let Some(NodeEnum::AlterTableCmd(c)) = cmd.node.as_mut() {
-                    if let Some(ref mut def) = c.def {
-                        if let Some(ref mut n) = def.node {
-                            normalize_a_indirection(n);
-                        }
-                    }
+                if let Some(NodeEnum::AlterTableCmd(c)) = cmd.node.as_mut()
+                    && let Some(ref mut def) = c.def
+                    && let Some(ref mut n) = def.node
+                {
+                    normalize_a_indirection(n);
                 }
             }
         }
@@ -732,10 +711,10 @@ fn normalize_a_indirection(node: &mut NodeEnum) {
             }
         }
         NodeEnum::StatsElem(se) => {
-            if let Some(ref mut expr) = se.expr {
-                if let Some(ref mut n) = expr.node {
-                    normalize_a_indirection(n);
-                }
+            if let Some(ref mut expr) = se.expr
+                && let Some(ref mut n) = expr.node
+            {
+                normalize_a_indirection(n);
             }
         }
         NodeEnum::IndexStmt(stmt) => {
@@ -746,46 +725,46 @@ fn normalize_a_indirection(node: &mut NodeEnum) {
             }
         }
         NodeEnum::IndexElem(ie) => {
-            if let Some(ref mut expr) = ie.expr {
-                if let Some(ref mut n) = expr.node {
-                    normalize_a_indirection(n);
-                }
+            if let Some(ref mut expr) = ie.expr
+                && let Some(ref mut n) = expr.node
+            {
+                normalize_a_indirection(n);
             }
         }
         NodeEnum::JoinExpr(je) => {
-            if let Some(ref mut quals) = je.quals {
-                if let Some(ref mut n) = quals.node {
-                    normalize_a_indirection(n);
-                }
+            if let Some(ref mut quals) = je.quals
+                && let Some(ref mut n) = quals.node
+            {
+                normalize_a_indirection(n);
             }
-            if let Some(ref mut larg) = je.larg {
-                if let Some(ref mut n) = larg.node {
-                    normalize_a_indirection(n);
-                }
+            if let Some(ref mut larg) = je.larg
+                && let Some(ref mut n) = larg.node
+            {
+                normalize_a_indirection(n);
             }
-            if let Some(ref mut rarg) = je.rarg {
-                if let Some(ref mut n) = rarg.node {
-                    normalize_a_indirection(n);
-                }
+            if let Some(ref mut rarg) = je.rarg
+                && let Some(ref mut n) = rarg.node
+            {
+                normalize_a_indirection(n);
             }
         }
         NodeEnum::RangeSubselect(rs) => {
-            if let Some(ref mut sub) = rs.subquery {
-                if let Some(ref mut n) = sub.node {
-                    normalize_a_indirection(n);
-                }
+            if let Some(ref mut sub) = rs.subquery
+                && let Some(ref mut n) = sub.node
+            {
+                normalize_a_indirection(n);
             }
         }
         NodeEnum::SubLink(sl) => {
-            if let Some(ref mut sub) = sl.subselect {
-                if let Some(ref mut n) = sub.node {
-                    normalize_a_indirection(n);
-                }
+            if let Some(ref mut sub) = sl.subselect
+                && let Some(ref mut n) = sub.node
+            {
+                normalize_a_indirection(n);
             }
-            if let Some(ref mut test) = sl.testexpr {
-                if let Some(ref mut n) = test.node {
-                    normalize_a_indirection(n);
-                }
+            if let Some(ref mut test) = sl.testexpr
+                && let Some(ref mut n) = test.node
+            {
+                normalize_a_indirection(n);
             }
         }
         _ => {}
@@ -810,17 +789,17 @@ fn normalize_object_with_args(node: &mut NodeEnum) {
             }
         }
         NodeEnum::AlterObjectSchemaStmt(stmt) => {
-            if let Some(ref mut obj) = stmt.object {
-                if let Some(ref mut n) = obj.node {
-                    normalize_object_with_args(n);
-                }
+            if let Some(ref mut obj) = stmt.object
+                && let Some(ref mut n) = obj.node
+            {
+                normalize_object_with_args(n);
             }
         }
         NodeEnum::CommentStmt(stmt) => {
-            if let Some(ref mut obj) = stmt.object {
-                if let Some(ref mut n) = obj.node {
-                    normalize_object_with_args(n);
-                }
+            if let Some(ref mut obj) = stmt.object
+                && let Some(ref mut n) = obj.node
+            {
+                normalize_object_with_args(n);
             }
         }
         NodeEnum::AlterFunctionStmt(stmt) => {
@@ -857,22 +836,22 @@ fn normalize_join_expr(node: &mut NodeEnum) {
             // NOTE: We do NOT clear join alias or join_using_alias here.
             // If the emitter doesn't emit them, the test should fail and we need to fix the emitter.
             // Recursively normalize nested joins and subqueries
-            if let Some(ref mut larg) = je.larg {
-                if let Some(ref mut n) = larg.node {
-                    normalize_join_expr(n);
-                }
+            if let Some(ref mut larg) = je.larg
+                && let Some(ref mut n) = larg.node
+            {
+                normalize_join_expr(n);
             }
-            if let Some(ref mut rarg) = je.rarg {
-                if let Some(ref mut n) = rarg.node {
-                    normalize_join_expr(n);
-                }
+            if let Some(ref mut rarg) = je.rarg
+                && let Some(ref mut n) = rarg.node
+            {
+                normalize_join_expr(n);
             }
         }
         NodeEnum::RangeSubselect(rs) => {
-            if let Some(ref mut sub) = rs.subquery {
-                if let Some(ref mut n) = sub.node {
-                    normalize_join_expr(n);
-                }
+            if let Some(ref mut sub) = rs.subquery
+                && let Some(ref mut n) = sub.node
+            {
+                normalize_join_expr(n);
             }
         }
         NodeEnum::SelectStmt(stmt) => {
@@ -883,24 +862,24 @@ fn normalize_join_expr(node: &mut NodeEnum) {
             }
         }
         NodeEnum::ViewStmt(vs) => {
-            if let Some(ref mut query) = vs.query {
-                if let Some(ref mut n) = query.node {
-                    normalize_join_expr(n);
-                }
+            if let Some(ref mut query) = vs.query
+                && let Some(ref mut n) = query.node
+            {
+                normalize_join_expr(n);
             }
         }
         NodeEnum::DeleteStmt(del) => {
-            if let Some(ref mut where_clause) = del.where_clause {
-                if let Some(ref mut n) = where_clause.node {
-                    normalize_join_expr(n);
-                }
+            if let Some(ref mut where_clause) = del.where_clause
+                && let Some(ref mut n) = where_clause.node
+            {
+                normalize_join_expr(n);
             }
         }
         NodeEnum::SubLink(sl) => {
-            if let Some(ref mut sub) = sl.subselect {
-                if let Some(ref mut n) = sub.node {
-                    normalize_join_expr(n);
-                }
+            if let Some(ref mut sub) = sl.subselect
+                && let Some(ref mut n) = sub.node
+            {
+                normalize_join_expr(n);
             }
         }
         _ => {}
@@ -912,26 +891,26 @@ fn normalize_join_expr(node: &mut NodeEnum) {
 /// When partbound is None but inh_relations is non-empty, set a default partition bound.
 /// Also clear table_elts for partitions since they inherit from parent.
 fn normalize_foreign_table_partbound(node: &mut NodeEnum) {
-    if let NodeEnum::CreateForeignTableStmt(stmt) = node {
-        if let Some(ref mut base) = stmt.base_stmt {
-            // If we have partition inheritance
-            if !base.inh_relations.is_empty() {
-                // Add a default partbound if missing
-                if base.partbound.is_none() {
-                    base.partbound = Some(pgls_query::protobuf::PartitionBoundSpec {
-                        strategy: String::new(),
-                        is_default: true,
-                        modulus: 0,
-                        remainder: 0,
-                        listdatums: vec![],
-                        lowerdatums: vec![],
-                        upperdatums: vec![],
-                        location: 0,
-                    });
-                }
-                // Clear table_elts since partition columns come from parent
-                base.table_elts.clear();
+    if let NodeEnum::CreateForeignTableStmt(stmt) = node
+        && let Some(ref mut base) = stmt.base_stmt
+    {
+        // If we have partition inheritance
+        if !base.inh_relations.is_empty() {
+            // Add a default partbound if missing
+            if base.partbound.is_none() {
+                base.partbound = Some(pgls_query::protobuf::PartitionBoundSpec {
+                    strategy: String::new(),
+                    is_default: true,
+                    modulus: 0,
+                    remainder: 0,
+                    listdatums: vec![],
+                    lowerdatums: vec![],
+                    upperdatums: vec![],
+                    location: 0,
+                });
             }
+            // Clear table_elts since partition columns come from parent
+            base.table_elts.clear();
         }
     }
 }
@@ -1042,10 +1021,10 @@ fn normalize_merge_support_func_recursive(node: &mut NodeEnum) {
             process_node_list(&mut wc.ctes);
         }
         NodeEnum::CopyStmt(cs) => {
-            if let Some(query) = &mut cs.query {
-                if let Some(n) = &mut query.node {
-                    normalize_merge_support_func_recursive(n);
-                }
+            if let Some(query) = &mut cs.query
+                && let Some(n) = &mut query.node
+            {
+                normalize_merge_support_func_recursive(n);
             }
         }
         _ => {}
@@ -1061,10 +1040,10 @@ fn process_node_list(list: &mut [pgls_query::protobuf::Node]) {
 }
 
 fn process_optional_boxed_node(opt: &mut Option<Box<pgls_query::protobuf::Node>>) {
-    if let Some(node) = opt {
-        if let Some(n) = &mut node.node {
-            normalize_merge_support_func_recursive(n);
-        }
+    if let Some(node) = opt
+        && let Some(n) = &mut node.node
+    {
+        normalize_merge_support_func_recursive(n);
     }
 }
 
@@ -1100,47 +1079,47 @@ fn normalize_sql_value_function_recursive(node: &mut NodeEnum) {
                     normalize_sql_value_function_recursive(n);
                 }
             }
-            if let Some(ref mut w) = stmt.where_clause {
-                if let Some(ref mut n) = w.node {
+            if let Some(ref mut w) = stmt.where_clause
+                && let Some(ref mut n) = w.node
+            {
+                normalize_sql_value_function_recursive(n);
+            }
+        }
+        NodeEnum::AExpr(expr) => {
+            if let Some(ref mut l) = expr.lexpr
+                && let Some(ref mut n) = l.node
+            {
+                // Check if this is a SqlvalueFunction that needs conversion
+                if let NodeEnum::SqlvalueFunction(svf) = n {
+                    if let Some(func_call) = sql_value_to_func_call(svf) {
+                        *n = NodeEnum::FuncCall(Box::new(func_call));
+                    }
+                } else {
+                    normalize_sql_value_function_recursive(n);
+                }
+            }
+            if let Some(ref mut r) = expr.rexpr
+                && let Some(ref mut n) = r.node
+            {
+                if let NodeEnum::SqlvalueFunction(svf) = n {
+                    if let Some(func_call) = sql_value_to_func_call(svf) {
+                        *n = NodeEnum::FuncCall(Box::new(func_call));
+                    }
+                } else {
                     normalize_sql_value_function_recursive(n);
                 }
             }
         }
-        NodeEnum::AExpr(expr) => {
-            if let Some(ref mut l) = expr.lexpr {
-                if let Some(ref mut n) = l.node {
-                    // Check if this is a SqlvalueFunction that needs conversion
-                    if let NodeEnum::SqlvalueFunction(svf) = n {
-                        if let Some(func_call) = sql_value_to_func_call(svf) {
-                            *n = NodeEnum::FuncCall(Box::new(func_call));
-                        }
-                    } else {
-                        normalize_sql_value_function_recursive(n);
-                    }
-                }
-            }
-            if let Some(ref mut r) = expr.rexpr {
-                if let Some(ref mut n) = r.node {
-                    if let NodeEnum::SqlvalueFunction(svf) = n {
-                        if let Some(func_call) = sql_value_to_func_call(svf) {
-                            *n = NodeEnum::FuncCall(Box::new(func_call));
-                        }
-                    } else {
-                        normalize_sql_value_function_recursive(n);
-                    }
-                }
-            }
-        }
         NodeEnum::ResTarget(rt) => {
-            if let Some(ref mut v) = rt.val {
-                if let Some(ref mut n) = v.node {
-                    if let NodeEnum::SqlvalueFunction(svf) = n {
-                        if let Some(func_call) = sql_value_to_func_call(svf) {
-                            *n = NodeEnum::FuncCall(Box::new(func_call));
-                        }
-                    } else {
-                        normalize_sql_value_function_recursive(n);
+            if let Some(ref mut v) = rt.val
+                && let Some(ref mut n) = v.node
+            {
+                if let NodeEnum::SqlvalueFunction(svf) = n {
+                    if let Some(func_call) = sql_value_to_func_call(svf) {
+                        *n = NodeEnum::FuncCall(Box::new(func_call));
                     }
+                } else {
+                    normalize_sql_value_function_recursive(n);
                 }
             }
         }

@@ -46,87 +46,87 @@ fn format_role_option(e: &mut EventEmitter, d: &pgls_query::protobuf::DefElem) {
 
     match defname_lower.as_str() {
         "canlogin" => {
-            if let Some(ref arg) = d.arg {
-                if let Some(pgls_query::NodeEnum::Boolean(b)) = &arg.node {
-                    if b.boolval {
-                        e.token(TokenKind::IDENT("login".to_string()));
-                    } else {
-                        e.token(TokenKind::IDENT("nologin".to_string()));
-                    }
-                    return;
+            if let Some(ref arg) = d.arg
+                && let Some(pgls_query::NodeEnum::Boolean(b)) = &arg.node
+            {
+                if b.boolval {
+                    e.token(TokenKind::IDENT("login".to_string()));
+                } else {
+                    e.token(TokenKind::IDENT("nologin".to_string()));
                 }
+                return;
             }
         }
         "inherit" => {
-            if let Some(ref arg) = d.arg {
-                if let Some(pgls_query::NodeEnum::Boolean(b)) = &arg.node {
-                    if b.boolval {
-                        e.token(TokenKind::INHERIT_KW);
-                    } else {
-                        e.token(TokenKind::IDENT("noinherit".to_string()));
-                    }
-                    return;
+            if let Some(ref arg) = d.arg
+                && let Some(pgls_query::NodeEnum::Boolean(b)) = &arg.node
+            {
+                if b.boolval {
+                    e.token(TokenKind::INHERIT_KW);
+                } else {
+                    e.token(TokenKind::IDENT("noinherit".to_string()));
                 }
+                return;
             }
         }
         "createrole" => {
-            if let Some(ref arg) = d.arg {
-                if let Some(pgls_query::NodeEnum::Boolean(b)) = &arg.node {
-                    if b.boolval {
-                        e.token(TokenKind::IDENT("createrole".to_string()));
-                    } else {
-                        e.token(TokenKind::IDENT("nocreaterole".to_string()));
-                    }
-                    return;
+            if let Some(ref arg) = d.arg
+                && let Some(pgls_query::NodeEnum::Boolean(b)) = &arg.node
+            {
+                if b.boolval {
+                    e.token(TokenKind::IDENT("createrole".to_string()));
+                } else {
+                    e.token(TokenKind::IDENT("nocreaterole".to_string()));
                 }
+                return;
             }
         }
         "createdb" => {
-            if let Some(ref arg) = d.arg {
-                if let Some(pgls_query::NodeEnum::Boolean(b)) = &arg.node {
-                    if b.boolval {
-                        e.token(TokenKind::IDENT("createdb".to_string()));
-                    } else {
-                        e.token(TokenKind::IDENT("nocreatedb".to_string()));
-                    }
-                    return;
+            if let Some(ref arg) = d.arg
+                && let Some(pgls_query::NodeEnum::Boolean(b)) = &arg.node
+            {
+                if b.boolval {
+                    e.token(TokenKind::IDENT("createdb".to_string()));
+                } else {
+                    e.token(TokenKind::IDENT("nocreatedb".to_string()));
                 }
+                return;
             }
         }
         "isreplication" => {
-            if let Some(ref arg) = d.arg {
-                if let Some(pgls_query::NodeEnum::Boolean(b)) = &arg.node {
-                    if b.boolval {
-                        e.token(TokenKind::IDENT("replication".to_string()));
-                    } else {
-                        e.token(TokenKind::IDENT("noreplication".to_string()));
-                    }
-                    return;
+            if let Some(ref arg) = d.arg
+                && let Some(pgls_query::NodeEnum::Boolean(b)) = &arg.node
+            {
+                if b.boolval {
+                    e.token(TokenKind::IDENT("replication".to_string()));
+                } else {
+                    e.token(TokenKind::IDENT("noreplication".to_string()));
                 }
+                return;
             }
         }
         "issuperuser" | "superuser" => {
-            if let Some(ref arg) = d.arg {
-                if let Some(pgls_query::NodeEnum::Boolean(b)) = &arg.node {
-                    if b.boolval {
-                        e.token(TokenKind::IDENT("superuser".to_string()));
-                    } else {
-                        e.token(TokenKind::IDENT("nosuperuser".to_string()));
-                    }
-                    return;
+            if let Some(ref arg) = d.arg
+                && let Some(pgls_query::NodeEnum::Boolean(b)) = &arg.node
+            {
+                if b.boolval {
+                    e.token(TokenKind::IDENT("superuser".to_string()));
+                } else {
+                    e.token(TokenKind::IDENT("nosuperuser".to_string()));
                 }
+                return;
             }
         }
         "bypassrls" => {
-            if let Some(ref arg) = d.arg {
-                if let Some(pgls_query::NodeEnum::Boolean(b)) = &arg.node {
-                    if b.boolval {
-                        e.token(TokenKind::IDENT("bypassrls".to_string()));
-                    } else {
-                        e.token(TokenKind::IDENT("nobypassrls".to_string()));
-                    }
-                    return;
+            if let Some(ref arg) = d.arg
+                && let Some(pgls_query::NodeEnum::Boolean(b)) = &arg.node
+            {
+                if b.boolval {
+                    e.token(TokenKind::IDENT("bypassrls".to_string()));
+                } else {
+                    e.token(TokenKind::IDENT("nobypassrls".to_string()));
                 }
+                return;
             }
         }
         "connectionlimit" => {

@@ -69,18 +69,16 @@ impl LinterRule for PreferIdentity {
             }
             pgls_query::NodeEnum::AlterTableStmt(stmt) => {
                 for cmd in &stmt.cmds {
-                    if let Some(pgls_query::NodeEnum::AlterTableCmd(cmd)) = &cmd.node {
-                        if matches!(
+                    if let Some(pgls_query::NodeEnum::AlterTableCmd(cmd)) = &cmd.node
+                        && matches!(
                             cmd.subtype(),
                             pgls_query::protobuf::AlterTableType::AtAddColumn
                                 | pgls_query::protobuf::AlterTableType::AtAlterColumnType
-                        ) {
-                            if let Some(pgls_query::NodeEnum::ColumnDef(col_def)) =
-                                &cmd.def.as_ref().and_then(|d| d.node.as_ref())
-                            {
-                                check_column_def(&mut diagnostics, col_def);
-                            }
-                        }
+                        )
+                        && let Some(pgls_query::NodeEnum::ColumnDef(col_def)) =
+                            &cmd.def.as_ref().and_then(|d| d.node.as_ref())
+                    {
+                        check_column_def(&mut diagnostics, col_def);
                     }
                 }
             }

@@ -13,12 +13,11 @@ fn emit_collation_definition(e: &mut EventEmitter, definition: &[Node]) {
     // Check if there's a FROM element with List argument (special FROM syntax)
     // If FROM has a TypeName argument, it's the parenthesized option syntax
     let has_special_from = definition.iter().any(|def_node| {
-        if let Some(pgls_query::NodeEnum::DefElem(def_elem)) = &def_node.node {
-            if def_elem.defname == "from" {
-                if let Some(ref arg) = def_elem.arg {
-                    return matches!(arg.node, Some(pgls_query::NodeEnum::List(_)));
-                }
-            }
+        if let Some(pgls_query::NodeEnum::DefElem(def_elem)) = &def_node.node
+            && def_elem.defname == "from"
+            && let Some(ref arg) = def_elem.arg
+        {
+            return matches!(arg.node, Some(pgls_query::NodeEnum::List(_)));
         }
         false
     });
@@ -26,25 +25,25 @@ fn emit_collation_definition(e: &mut EventEmitter, definition: &[Node]) {
     if has_special_from {
         // Special FROM collation syntax: CREATE COLLATION name FROM other_collation
         for def_node in definition {
-            if let Some(pgls_query::NodeEnum::DefElem(def_elem)) = &def_node.node {
-                if def_elem.defname == "from" {
-                    e.space();
-                    e.token(TokenKind::FROM_KW);
-                    e.space();
-                    // The arg is a List containing String nodes with the collation name
-                    if let Some(ref arg) = def_elem.arg {
-                        if let Some(pgls_query::NodeEnum::List(list)) = &arg.node {
-                            // Emit the strings in the list as dot-separated qualified name with quotes
-                            for (i, item) in list.items.iter().enumerate() {
-                                if i > 0 {
-                                    e.token(TokenKind::DOT);
-                                }
-                                if let Some(pgls_query::NodeEnum::String(s)) = &item.node {
-                                    super::emit_string_identifier(e, s);
-                                } else {
-                                    super::emit_node(item, e);
-                                }
-                            }
+            if let Some(pgls_query::NodeEnum::DefElem(def_elem)) = &def_node.node
+                && def_elem.defname == "from"
+            {
+                e.space();
+                e.token(TokenKind::FROM_KW);
+                e.space();
+                // The arg is a List containing String nodes with the collation name
+                if let Some(ref arg) = def_elem.arg
+                    && let Some(pgls_query::NodeEnum::List(list)) = &arg.node
+                {
+                    // Emit the strings in the list as dot-separated qualified name with quotes
+                    for (i, item) in list.items.iter().enumerate() {
+                        if i > 0 {
+                            e.token(TokenKind::DOT);
+                        }
+                        if let Some(pgls_query::NodeEnum::String(s)) = &item.node {
+                            super::emit_string_identifier(e, s);
+                        } else {
+                            super::emit_node(item, e);
                         }
                     }
                 }

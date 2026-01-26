@@ -24,19 +24,19 @@ pub(super) fn emit_create_table_as_stmt(e: &mut EventEmitter, n: &CreateTableAsS
         e.space();
         e.token(TokenKind::VIEW_KW);
     } else {
-        if let Some(ref into) = n.into {
-            if let Some(ref rel) = into.rel {
-                match rel.relpersistence.as_str() {
-                    "t" => {
-                        e.token(TokenKind::TEMPORARY_KW);
-                        e.space();
-                    }
-                    "u" => {
-                        e.token(TokenKind::UNLOGGED_KW);
-                        e.space();
-                    }
-                    _ => {}
+        if let Some(ref into) = n.into
+            && let Some(ref rel) = into.rel
+        {
+            match rel.relpersistence.as_str() {
+                "t" => {
+                    e.token(TokenKind::TEMPORARY_KW);
+                    e.space();
                 }
+                "u" => {
+                    e.token(TokenKind::UNLOGGED_KW);
+                    e.space();
+                }
+                _ => {}
             }
         }
         e.token(TokenKind::TABLE_KW);
@@ -149,28 +149,28 @@ pub(super) fn emit_create_table_as_stmt(e: &mut EventEmitter, n: &CreateTableAsS
     e.indent_start();
     e.line(LineType::SoftOrSpace);
 
-    if let Some(ref query) = n.query {
-        if let Some(ref inner) = query.node {
-            match inner {
-                NodeEnum::SelectStmt(stmt) => emit_select_stmt_no_semicolon(e, stmt),
-                NodeEnum::ExecuteStmt(stmt) => super::emit_execute_stmt_no_semicolon(e, stmt),
-                _ => emit_node(query, e),
-            }
+    if let Some(ref query) = n.query
+        && let Some(ref inner) = query.node
+    {
+        match inner {
+            NodeEnum::SelectStmt(stmt) => emit_select_stmt_no_semicolon(e, stmt),
+            NodeEnum::ExecuteStmt(stmt) => super::emit_execute_stmt_no_semicolon(e, stmt),
+            _ => emit_node(query, e),
         }
     }
 
     e.indent_end();
 
     // WITH DATA / WITH NO DATA (applies to both CREATE TABLE AS and CREATE MATERIALIZED VIEW)
-    if let Some(ref into) = n.into {
-        if into.skip_data {
-            e.space();
-            e.token(TokenKind::WITH_KW);
-            e.space();
-            e.token(TokenKind::NO_KW);
-            e.space();
-            e.token(TokenKind::DATA_KW);
-        }
+    if let Some(ref into) = n.into
+        && into.skip_data
+    {
+        e.space();
+        e.token(TokenKind::WITH_KW);
+        e.space();
+        e.token(TokenKind::NO_KW);
+        e.space();
+        e.token(TokenKind::DATA_KW);
     }
 
     e.token(TokenKind::SEMICOLON);
