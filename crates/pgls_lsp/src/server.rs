@@ -329,6 +329,28 @@ impl LanguageServer for LSPServer {
             Err(e) => LspResult::Err(into_lsp_error(e)),
         }
     }
+
+    #[tracing::instrument(level = "trace", skip_all)]
+    async fn semantic_tokens_full(
+        &self,
+        params: SemanticTokensParams,
+    ) -> LspResult<Option<SemanticTokensResult>> {
+        match handlers::semantic_tokens::semantic_tokens_full(&self.session, params) {
+            Ok(result) => LspResult::Ok(result),
+            Err(e) => LspResult::Err(into_lsp_error(e)),
+        }
+    }
+
+    #[tracing::instrument(level = "trace", skip_all)]
+    async fn semantic_tokens_range(
+        &self,
+        params: SemanticTokensRangeParams,
+    ) -> LspResult<Option<SemanticTokensRangeResult>> {
+        match handlers::semantic_tokens::semantic_tokens_range(&self.session, params) {
+            Ok(result) => LspResult::Ok(result),
+            Err(e) => LspResult::Err(into_lsp_error(e)),
+        }
+    }
 }
 
 impl Drop for LSPServer {
@@ -483,6 +505,7 @@ impl ServerFactory {
         workspace_method!(builder, register_project_folder);
         workspace_method!(builder, unregister_project_folder);
         workspace_method!(builder, invalidate_schema_cache);
+        workspace_method!(builder, get_semantic_tokens);
 
         let (service, socket) = builder.finish();
         ServerConnection { socket, service }

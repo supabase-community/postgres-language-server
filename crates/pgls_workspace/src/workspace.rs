@@ -21,6 +21,7 @@ use crate::{
         },
         format::{PullFileFormattingParams, PullFormattingResult},
         on_hover::{OnHoverParams, OnHoverResult},
+        semantic_tokens::{SemanticTokensParams, SemanticTokensResult},
     },
 };
 
@@ -130,6 +131,12 @@ pub trait Workspace: Send + Sync + RefUnwindSafe {
     ) -> Result<CompletionsResult, WorkspaceError>;
 
     fn on_hover(&self, params: OnHoverParams) -> Result<OnHoverResult, WorkspaceError>;
+
+    /// Retrieves semantic tokens for syntax highlighting
+    fn get_semantic_tokens(
+        &self,
+        params: SemanticTokensParams,
+    ) -> Result<SemanticTokensResult, WorkspaceError>;
 
     /// Register a possible workspace project folder. Returns the key of said project. Use this key when you want to switch to different projects.
     fn register_project_folder(

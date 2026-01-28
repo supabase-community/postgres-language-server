@@ -1,10 +1,13 @@
 use crate::adapters::{PositionEncoding, WideEncoding, negotiated_encoding};
 use crate::handlers::code_actions::command_id;
 use pgls_workspace::features::code_actions::CommandActionCategory;
+use pgls_workspace::features::semantic_tokens::{TokenModifier, TokenType};
 use strum::IntoEnumIterator;
 use tower_lsp::lsp_types::{
     ClientCapabilities, CompletionOptions, ExecuteCommandOptions, HoverProviderCapability, OneOf,
-    PositionEncodingKind, SaveOptions, ServerCapabilities, TextDocumentSyncCapability,
+    PositionEncodingKind, SaveOptions, SemanticTokenModifier, SemanticTokenType,
+    SemanticTokensFullOptions, SemanticTokensLegend, SemanticTokensOptions,
+    SemanticTokensServerCapabilities, ServerCapabilities, TextDocumentSyncCapability,
     TextDocumentSyncKind, TextDocumentSyncOptions, TextDocumentSyncSaveOptions,
     WorkDoneProgressOptions,
 };
@@ -69,6 +72,25 @@ pub(crate) fn server_capabilities(capabilities: &ClientCapabilities) -> ServerCa
         )),
         rename_provider: None,
         hover_provider: Some(HoverProviderCapability::Simple(true)),
+        semantic_tokens_provider: Some(SemanticTokensServerCapabilities::SemanticTokensOptions(
+            SemanticTokensOptions {
+                work_done_progress_options: WorkDoneProgressOptions {
+                    work_done_progress: None,
+                },
+                legend: SemanticTokensLegend {
+                    token_types: TokenType::legend()
+                        .into_iter()
+                        .map(SemanticTokenType::new)
+                        .collect(),
+                    token_modifiers: TokenModifier::legend()
+                        .into_iter()
+                        .map(SemanticTokenModifier::new)
+                        .collect(),
+                },
+                range: Some(true),
+                full: Some(SemanticTokensFullOptions::Bool(true)),
+            },
+        )),
         ..Default::default()
     }
 }
