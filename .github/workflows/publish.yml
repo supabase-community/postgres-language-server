@@ -93,6 +93,21 @@ jobs:
             exit 1
           fi
 
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@main
+
+      - name: Setup Magic Nix Cache
+        uses: DeterminateSystems/magic-nix-cache-action@main
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Build WASM Package
+        run: nix develop --command bash -c "cd packages/@postgres-language-server/wasm && bun run build"
+
       - name: Generate Packages (deprecated)
         id: generate-packages-deprecated
         run: node packages/@postgrestools/postgrestools/scripts/generate-packages.mjs

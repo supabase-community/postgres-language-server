@@ -91,7 +91,7 @@ async function downloadBinary(platform, arch, os, releaseTag, githubToken) {
 	console.log(`Downloaded asset for ${buildName} (v${releaseTag})`);
 }
 
-async function writeManifest(packagePath, version) {
+async function writeManifest(packagePath, version, { versionOnly = false } = {}) {
 	const manifestPath = resolve(
 		PACKAGES_PGLS_ROOT,
 		packagePath,
@@ -102,12 +102,14 @@ async function writeManifest(packagePath, version) {
 		fs.readFileSync(manifestPath).toString("utf-8")
 	);
 
-	const nativePackages = platformArchCombinations().map(
-		({ platform, arch }) => [getPackageName(platform, arch), version]
-	);
-
 	manifestData.version = version;
-	manifestData.optionalDependencies = Object.fromEntries(nativePackages);
+
+	if (!versionOnly) {
+		const nativePackages = platformArchCombinations().map(
+			({ platform, arch }) => [getPackageName(platform, arch), version]
+		);
+		manifestData.optionalDependencies = Object.fromEntries(nativePackages);
+	}
 
 	console.log(`Update manifest ${manifestPath}`);
 	const content = JSON.stringify(manifestData, null, 2);
@@ -276,6 +278,7 @@ function getVersion(releaseTag, isPrerelease) {
 	const version = getVersion(releaseTag, isPrerelease);
 	await writeManifest("cli", version);
 	await writeManifest("backend-jsonrpc", version);
+	await writeManifest("wasm", version, { versionOnly: true });
 
 	// Copy README to main packages
 	copyReadmeToPackage("cli");
