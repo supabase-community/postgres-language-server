@@ -50,3 +50,4 @@ test-results/
 site/
 
 biome-main/
+.review/
