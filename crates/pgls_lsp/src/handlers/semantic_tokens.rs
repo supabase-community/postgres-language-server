@@ -1,64 +1,61 @@
 use crate::{adapters, diagnostics::LspError, session::Session};
+use pgls_text_size::TextRange;
 use pgls_workspace::features::semantic_tokens::SemanticTokensParams;
 use tower_lsp::lsp_types::{self, SemanticToken, SemanticTokens, SemanticTokensRangeResult};
 
 /// Handles a full semantic tokens request.
-/// Returns all semantic tokens for the entire document.
 #[tracing::instrument(level = "debug", skip(session), err)]
 pub fn semantic_tokens_full(
     session: &Session,
     params: lsp_types::SemanticTokensParams,
 ) -> Result<Option<lsp_types::SemanticTokensResult>, LspError> {
     let url = &params.text_document.uri;
-    let path = session.file_path(url)?;
-    let doc = session.document(url)?;
-    let encoding = adapters::negotiated_encoding(session.client_capabilities().unwrap());
-
-    let workspace_result = session
-        .workspace
-        .get_semantic_tokens(SemanticTokensParams { path, range: None })?;
-
-    let lsp_tokens = encode_tokens(&workspace_result.tokens, &doc.line_index, encoding)?;
-
-    Ok(Some(lsp_types::SemanticTokensResult::Tokens(
-        SemanticTokens {
-            result_id: None,
-            data: lsp_tokens,
-        },
-    )))
+    let tokens = get_semantic_tokens(session, url, None)?;
+    Ok(Some(lsp_types::SemanticTokensResult::Tokens(tokens)))
 }
 
 /// Handles a range semantic tokens request.
-/// Returns semantic tokens for the specified range only.
 #[tracing::instrument(level = "debug", skip(session), err)]
 pub fn semantic_tokens_range(
     session: &Session,
     params: lsp_types::SemanticTokensRangeParams,
 ) -> Result<Option<SemanticTokensRangeResult>, LspError> {
     let url = &params.text_document.uri;
+    let tokens = get_semantic_tokens(session, url, Some(params.range))?;
+    Ok(Some(SemanticTokensRangeResult::Tokens(tokens)))
+}
+
+/// Common implementation for semantic tokens requests.
+fn get_semantic_tokens(
+    session: &Session,
+    url: &lsp_types::Url,
+    range: Option<lsp_types::Range>,
+) -> Result<SemanticTokens, LspError> {
     let path = session.file_path(url)?;
     let doc = session.document(url)?;
     let encoding = adapters::negotiated_encoding(session.client_capabilities().unwrap());
 
-    // Convert LSP range to TextRange
-    let start_offset =
-        adapters::from_lsp::offset(&doc.line_index, params.range.start, encoding)?;
-    let end_offset = adapters::from_lsp::offset(&doc.line_index, params.range.end, encoding)?;
-    let range = pgls_text_size::TextRange::new(start_offset, end_offset);
+    let text_range = range
+        .map(|r| -> Result<TextRange, LspError> {
+            let start = adapters::from_lsp::offset(&doc.line_index, r.start, encoding)?;
+            let end = adapters::from_lsp::offset(&doc.line_index, r.end, encoding)?;
+            Ok(TextRange::new(start, end))
+        })
+        .transpose()?;
 
     let workspace_result = session
         .workspace
         .get_semantic_tokens(SemanticTokensParams {
             path,
-            range: Some(range),
+            range: text_range,
         })?;
 
     let lsp_tokens = encode_tokens(&workspace_result.tokens, &doc.line_index, encoding)?;
 
-    Ok(Some(SemanticTokensRangeResult::Tokens(SemanticTokens {
+    Ok(SemanticTokens {
         result_id: None,
         data: lsp_tokens,
-    })))
+    })
 }
 
 /// Encodes workspace semantic tokens into the LSP delta-encoded format.
