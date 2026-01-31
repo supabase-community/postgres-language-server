@@ -99,11 +99,10 @@ impl LinterRule for DisallowUniqueConstraint {
                                     for constraint in &col_def.constraints {
                                         if let Some(pgls_query::NodeEnum::Constraint(constr)) =
                                             &constraint.node
-                                        {
-                                            if constr.contype()
+                                            && constr.contype()
                                                 == pgls_query::protobuf::ConstrType::ConstrUnique
-                                            {
-                                                diagnostics.push(
+                                        {
+                                            diagnostics.push(
                                                     LinterDiagnostic::new(
                                                         rule_category!(),
                                                         None,
@@ -113,7 +112,6 @@ impl LinterRule for DisallowUniqueConstraint {
                                                     )
                                                     .note("Create a unique index CONCURRENTLY and then add the constraint using that index."),
                                                 );
-                                            }
                                         }
                                     }
                                 }

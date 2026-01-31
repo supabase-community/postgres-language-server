@@ -1,0 +1,6 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/single/join_expr_0.sql
+snapshot_kind: text
+---
+select * from users as u inner join orders as o on u.id = o.user_id;

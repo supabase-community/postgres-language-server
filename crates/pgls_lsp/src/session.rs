@@ -474,11 +474,12 @@ impl Session {
                 );
 
                 // Check if using deprecated config filename and notify user (once)
-                if !self.notified_deprecated_config.load(Ordering::Relaxed) {
-                    if let Some(config_path) = &configuration_file_path {
-                        if let Some(file_name) = config_path.file_name().and_then(|n| n.to_str()) {
-                            if ConfigName::is_deprecated(file_name) {
-                                self.client
+                if !self.notified_deprecated_config.load(Ordering::Relaxed)
+                    && let Some(config_path) = &configuration_file_path
+                    && let Some(file_name) = config_path.file_name().and_then(|n| n.to_str())
+                    && ConfigName::is_deprecated(file_name)
+                {
+                    self.client
                                     .show_message(
                                         MessageType::WARNING,
                                         "You are using the deprecated config filename 'postgrestools.jsonc'. \
@@ -486,11 +487,8 @@ impl Session {
                                         Support for the old filename will be removed in a future version."
                                     )
                                     .await;
-                                self.notified_deprecated_config
-                                    .store(true, Ordering::Relaxed);
-                            }
-                        }
-                    }
+                    self.notified_deprecated_config
+                        .store(true, Ordering::Relaxed);
                 }
 
                 info!("Update workspace settings.");

@@ -1,0 +1,6 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/single/nested_column_refs.sql
+snapshot_kind: text
+---
+select schema."table"."column" from schema."table";

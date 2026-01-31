@@ -35,16 +35,16 @@ impl LinterRule for BanDropColumn {
 
         if let pgls_query::NodeEnum::AlterTableStmt(stmt) = &ctx.stmt() {
             for cmd in &stmt.cmds {
-                if let Some(pgls_query::NodeEnum::AlterTableCmd(cmd)) = &cmd.node {
-                    if cmd.subtype() == pgls_query::protobuf::AlterTableType::AtDropColumn {
-                        diagnostics.push(LinterDiagnostic::new(
+                if let Some(pgls_query::NodeEnum::AlterTableCmd(cmd)) = &cmd.node
+                    && cmd.subtype() == pgls_query::protobuf::AlterTableType::AtDropColumn
+                {
+                    diagnostics.push(LinterDiagnostic::new(
                             rule_category!(),
                             None,
                             markup! {
                                 "Dropping a column may break existing clients."
                             },
                         ).detail(None, "You can leave the column as nullable or delete the column once queries no longer select or modify the column."));
-                    }
                 }
             }
         }

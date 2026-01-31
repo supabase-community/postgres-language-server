@@ -78,10 +78,10 @@ impl SchemaCacheManager {
         let key: ConnectionKey = (&pool).into();
 
         // Try read lock first for cache hit
-        if let Ok(schemas) = self.db_schemas.read() {
-            if let Some(cache) = schemas.get(&key) {
-                return Ok(Arc::clone(cache));
-            }
+        if let Ok(schemas) = self.db_schemas.read()
+            && let Some(cache) = schemas.get(&key)
+        {
+            return Ok(Arc::clone(cache));
         }
 
         // Cache miss - need write lock to insert

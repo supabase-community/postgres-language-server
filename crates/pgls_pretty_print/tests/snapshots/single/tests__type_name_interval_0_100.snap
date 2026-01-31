@@ -1,0 +1,23 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/single/type_name_interval_0.sql
+snapshot_kind: text
+---
+create table interval_samples (
+  plain_interval interval,
+  precision_only interval(3),
+  year_only interval year,
+  month_only interval month,
+  year_to_month interval year to month,
+  day_only interval day,
+  day_to_hour interval day to hour,
+  day_to_minute interval day to minute,
+  day_to_second interval day to second(4),
+  hour_only interval hour,
+  hour_to_minute interval hour to minute,
+  hour_to_second interval hour to second(2),
+  minute_only interval minute,
+  minute_to_second interval minute to second,
+  second_only interval second,
+  second_precision interval second(6)
+);

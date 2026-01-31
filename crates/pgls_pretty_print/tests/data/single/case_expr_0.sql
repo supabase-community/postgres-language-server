@@ -1,0 +1,1 @@
+SELECT CASE WHEN x = 1 THEN 'one' ELSE 'other' END;

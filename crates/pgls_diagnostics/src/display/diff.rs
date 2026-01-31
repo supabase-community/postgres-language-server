@@ -7,13 +7,21 @@ use pgls_console::{MarkupElement, fmt, markup};
 use pgls_text_edit::{ChangeTag, CompressedOp, TextEdit};
 
 use super::frame::{
-    CODE_FRAME_CONTEXT_LINES, IntoIter, OneIndexed, PrintInvisiblesOptions, calculate_print_width,
-    print_invisibles, text_width,
+    CODE_FRAME_CONTEXT_LINES, IntoIter, OneIndexed, PrintInvisiblesOptions, print_invisibles,
+    text_width,
 };
 
 const MAX_PATCH_LINES: usize = 150;
 
 pub(super) fn print_diff(fmt: &mut fmt::Formatter<'_>, diff: &TextEdit) -> io::Result<()> {
+    print_diff_with_offset(fmt, diff, 0)
+}
+
+pub(super) fn print_diff_with_offset(
+    fmt: &mut fmt::Formatter<'_>,
+    diff: &TextEdit,
+    line_offset: u32,
+) -> io::Result<()> {
     // Before printing, we need to preprocess the list of DiffOps it's made of to classify them by line
     let mut modified_lines = BTreeSet::new();
     let mut inserted_lines = BTreeMap::new();
@@ -69,7 +77,7 @@ pub(super) fn print_diff(fmt: &mut fmt::Formatter<'_>, diff: &TextEdit) -> io::R
     };
 
     if let Some((key, entry)) = modified_line {
-        return print_short_diff(fmt, key, entry);
+        return print_short_diff(fmt, key, entry, line_offset);
     }
 
     // Otherwise if multiple lines were modified we need to perform more preprocessing,
@@ -93,6 +101,7 @@ pub(super) fn print_diff(fmt: &mut fmt::Formatter<'_>, diff: &TextEdit) -> io::R
         &shown_line_indexes,
         before_line_count,
         after_line_count,
+        line_offset,
     )
 }
 
@@ -284,26 +293,25 @@ fn process_diff_lines<'lines, 'diff>(
 
         if let (Some(inserted_before_line), Some(inserted_after_line)) =
             (inserted_before_line, inserted_after_line)
+            && inserted_before_line.diffs == inserted_after_line.diffs
         {
-            if inserted_before_line.diffs == inserted_after_line.diffs {
-                let line = inserted_lines
-                    .remove(&LineKey::before(before_line))
-                    .unwrap();
+            let line = inserted_lines
+                .remove(&LineKey::before(before_line))
+                .unwrap();
 
-                inserted_lines.remove(&LineKey::after(after_line)).unwrap();
+            inserted_lines.remove(&LineKey::after(after_line)).unwrap();
 
-                inserted_lines.insert(
-                    LineKey {
-                        before_line: Some(before_line),
-                        after_line: Some(after_line),
-                    },
-                    GroupDiffsLine {
-                        before_line: Some(before_line),
-                        after_line: Some(after_line),
-                        diffs: line.diffs,
-                    },
-                );
-            }
+            inserted_lines.insert(
+                LineKey {
+                    before_line: Some(before_line),
+                    after_line: Some(after_line),
+                },
+                GroupDiffsLine {
+                    before_line: Some(before_line),
+                    after_line: Some(after_line),
+                    diffs: line.diffs,
+                },
+            );
         }
     }
 
@@ -394,6 +402,7 @@ fn print_short_diff(
     fmt: &mut fmt::Formatter<'_>,
     key: &LineKey,
     entry: &GroupDiffsLine<'_>,
+    line_offset: u32,
 ) -> io::Result<()> {
     let index = match (key.before_line, key.after_line) {
         (None, Some(index)) | (Some(index), None) => index,
@@ -402,9 +411,11 @@ fn print_short_diff(
         ),
     };
 
+    let display_line = index.get() as u32 + line_offset;
+
     fmt.write_markup(markup! {
         <Emphasis>
-            {format_args!("  {} \u{2502} ", index.get())}
+            {format_args!("  {} \u{2502} ", display_line)}
         </Emphasis>
     })?;
 
@@ -442,10 +453,11 @@ fn print_short_diff(
 
     fmt.write_str("\n")?;
 
-    let no_length = calculate_print_width(index);
+    // Calculate width based on the displayed line number (with offset)
+    let no_length = display_line.to_string().len();
     fmt.write_markup(markup! {
         <Emphasis>
-            {format_args!("  {: >1$} \u{2502} ", "", no_length.get())}
+            {format_args!("  {: >1$} \u{2502} ", "", no_length)}
         </Emphasis>
     })?;
 
@@ -470,11 +482,14 @@ fn print_full_diff(
     shown_line_indexes: &BTreeSet<usize>,
     before_line_count: OneIndexed,
     after_line_count: OneIndexed,
+    line_offset: u32,
 ) -> io::Result<()> {
-    // Calculate width of line no column
-    let before_no_length = calculate_print_width(before_line_count);
-    let after_no_length = calculate_print_width(after_line_count);
-    let line_no_length = before_no_length.get() + 1 + after_no_length.get();
+    // Calculate width of line no column (with offset applied)
+    let before_max = before_line_count.get() as u32 + line_offset;
+    let after_max = after_line_count.get() as u32 + line_offset;
+    let before_no_length = before_max.to_string().len();
+    let after_no_length = after_max.to_string().len();
+    let line_no_length = before_no_length + 1 + after_no_length;
 
     // Skip displaying the gutter if the file only has a single line
     let single_line = before_line_count == OneIndexed::MIN && after_line_count == OneIndexed::MIN;
@@ -509,12 +524,12 @@ fn print_full_diff(
             line_type = ChangeTag::Delete;
         }
 
-        if let Some(last_displayed_line) = last_displayed_line {
-            if last_displayed_line + 1 != i {
-                fmt.write_markup(markup! {
-                    <Emphasis>"  "{"\u{b7}".repeat(line_no_length)}" \u{2502} \n"</Emphasis>
-                })?;
-            }
+        if let Some(last_displayed_line) = last_displayed_line
+            && last_displayed_line + 1 != i
+        {
+            fmt.write_markup(markup! {
+                <Emphasis>"  "{"\u{b7}".repeat(line_no_length)}" \u{2502} \n"</Emphasis>
+            })?;
         }
 
         last_displayed_line = Some(i);
@@ -540,13 +555,14 @@ fn print_full_diff(
             fmt.write_str("  ")?;
 
             if let Some(before_line) = line.before_line {
+                let display_before = before_line.get() as u32 + line_offset;
                 fmt.write_markup(markup! {
                     <Emphasis>
-                        {format_args!("{: >1$}", before_line.get(), before_no_length.get())}
+                        {format_args!("{: >1$}", display_before, before_no_length)}
                     </Emphasis>
                 })?;
             } else {
-                for _ in 0..before_no_length.get() {
+                for _ in 0..before_no_length {
                     fmt.write_str(" ")?;
                 }
             }
@@ -554,13 +570,14 @@ fn print_full_diff(
             fmt.write_str(" ")?;
 
             if let Some(after_line) = line.after_line {
+                let display_after = after_line.get() as u32 + line_offset;
                 fmt.write_markup(markup! {
                     <Emphasis>
-                        {format_args!("{: >1$}", after_line.get(), after_no_length.get())}
+                        {format_args!("{: >1$}", display_after, after_no_length)}
                     </Emphasis>
                 })?;
             } else {
-                for _ in 0..after_no_length.get() {
+                for _ in 0..after_no_length {
                     fmt.write_str(" ")?;
                 }
             }

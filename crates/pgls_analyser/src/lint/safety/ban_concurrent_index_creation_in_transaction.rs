@@ -37,16 +37,17 @@ impl LinterRule for BanConcurrentIndexCreationInTransaction {
         // other statement in the same context (indicating a transaction block)
         //
         // since our analyser assumes we're always in a transaction context, we always flag concurrent indexes
-        if let pgls_query::NodeEnum::IndexStmt(stmt) = ctx.stmt() {
-            if stmt.concurrent && ctx.file_context().stmt_count() > 1 {
-                diagnostics.push(LinterDiagnostic::new(
+        if let pgls_query::NodeEnum::IndexStmt(stmt) = ctx.stmt()
+            && stmt.concurrent
+            && ctx.file_context().stmt_count() > 1
+        {
+            diagnostics.push(LinterDiagnostic::new(
                     rule_category!(),
                     None,
                     markup! {
                         "CREATE INDEX CONCURRENTLY cannot be used inside a transaction block."
                     }
                 ).detail(None, "Run CREATE INDEX CONCURRENTLY outside of a transaction. Migration tools usually run in transactions, so you may need to run this statement in its own migration or manually."));
-            }
         }
 
         diagnostics

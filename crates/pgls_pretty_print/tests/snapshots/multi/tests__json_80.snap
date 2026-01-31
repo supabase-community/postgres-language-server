@@ -1,0 +1,2199 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/json.sql
+snapshot_kind: text
+---
+select cast('""' as json);
+
+select cast('''''' as json);
+
+select cast('"abc"' as json);
+
+select cast('"abc' as json);
+
+select cast('"abc
+def"' as json);
+
+select cast('"\n\"\\"' as json);
+
+select cast('"\v"' as json);
+
+select cast('"' || repeat('.', 12) || 'abc"' as json);
+
+select cast('"' || repeat('.', 12) || 'abc\n"' as json);
+
+select
+  cast(row_to_json(j) as jsonb)
+from
+  (
+    select
+      left(
+        'abcdefghijklmnopqrstuv"	wxyz012345678',
+        a
+      )
+      as a
+    from
+      generate_series(0, 37) as a
+  )
+  as j;
+
+select cast('1' as json);
+
+select cast('0' as json);
+
+select cast('01' as json);
+
+select cast('0.1' as json);
+
+select cast('9223372036854775808' as json);
+
+select cast('1e100' as json);
+
+select cast('1.3e100' as json);
+
+select cast('1f2' as json);
+
+select cast('0.x1' as json);
+
+select cast('1.3ex100' as json);
+
+select cast('[]' as json);
+
+select
+  cast('[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]'
+  as json);
+
+select cast('[1,2]' as json);
+
+select cast('[1,2,]' as json);
+
+select cast('[1,2' as json);
+
+select cast('[1,[2]' as json);
+
+select cast('{}' as json);
+
+select cast('{"abc"}' as json);
+
+select cast('{"abc":1}' as json);
+
+select cast('{1:"abc"}' as json);
+
+select cast('{"abc",1}' as json);
+
+select cast('{"abc"=1}' as json);
+
+select cast('{"abc"::1}' as json);
+
+select cast('{"abc":1,"def":2,"ghi":[3,4],"hij":{"klm":5,"nop":[6]}}' as json);
+
+select cast('{"abc":1:2}' as json);
+
+select cast('{"abc":1,3}' as json);
+
+set max_stack_depth = '100kB';
+
+select cast(repeat('[', 10000) as json);
+
+select cast(repeat('{"a":', 10000) as json);
+
+reset max_stack_depth;
+
+select cast('true' as json);
+
+select cast('false' as json);
+
+select cast('null' as json);
+
+select cast(' true ' as json);
+
+select cast('true false' as json);
+
+select cast('true, false' as json);
+
+select cast('truf' as json);
+
+select cast('trues' as json);
+
+select cast('' as json);
+
+select cast('    ' as json);
+
+select cast('{
+		"one": 1,
+		"two":"two",
+		"three":
+		true}' as json);
+
+select
+  cast('{
+		"one": 1,
+		"two":,"two",  -- ERROR extraneous comma before field "two"
+		"three":
+		true}'
+  as json);
+
+select
+  cast('{
+		"one": 1,
+		"two":"two",
+		"averyveryveryveryveryveryveryveryveryverylongfieldname":}'
+  as json);
+
+select pg_input_is_valid('{"a":true}', 'json');
+
+select pg_input_is_valid('{"a":true', 'json');
+
+select * from pg_input_error_info('{"a":true', 'json');
+
+select array_to_json(array(select 1 as a));
+
+select
+  array_to_json(array_agg(q), false)
+from
+  (
+    select
+      x as b,
+      x * 2 as c
+    from
+      generate_series(1, 3) as x
+  )
+  as q;
+
+select
+  array_to_json(array_agg(q), true)
+from
+  (
+    select
+      x as b,
+      x * 2 as c
+    from
+      generate_series(1, 3) as x
+  )
+  as q;
+
+select
+  array_to_json(array_agg(q), false)
+from
+  (
+    select
+      'a' || x as b,
+      y as c,
+      array[row(x.*, array[1, 2, 3]),
+      row(y.*, array[4, 5, 6])]
+      as z
+    from
+      generate_series(1, 2) as x,
+      generate_series(4, 5) as y
+  )
+  as q;
+
+select array_to_json(array_agg(x), false) from generate_series(5, 10) as x;
+
+select array_to_json(cast('{{1,5},{99,100}}' as int[]));
+
+select row_to_json(row(1, 'foo'));
+
+select
+  row_to_json(q)
+from
+  (
+    select
+      'a' || x as b,
+      y as c,
+      array[row(x.*, array[1, 2, 3]),
+      row(y.*, array[4, 5, 6])]
+      as z
+    from
+      generate_series(1, 2) as x,
+      generate_series(4, 5) as y
+  )
+  as q;
+
+select
+  row_to_json(q, true)
+from
+  (
+    select
+      'a' || x as b,
+      y as c,
+      array[row(x.*, array[1, 2, 3]),
+      row(y.*, array[4, 5, 6])]
+      as z
+    from
+      generate_series(1, 2) as x,
+      generate_series(4, 5) as y
+  )
+  as q;
+
+create temporary table rows
+as
+  select
+    x,
+    'txt' || x as y
+  from
+    generate_series(1, 3) as x;
+
+select row_to_json(q, true) from rows as q;
+
+select
+  row_to_json(
+    row((
+      select
+        array_agg(x) as d
+      from
+        generate_series(5, 10) as x
+    )),
+    false
+  );
+
+analyze rows;
+
+select
+  attname,
+  to_json(histogram_bounds)
+  as histogram_bounds
+from
+  pg_stats
+where
+  tablename = 'rows' and
+  schemaname =
+  cast(cast(pg_my_temp_schema()
+  as regnamespace)
+  as text)
+order by 1;
+
+select to_json(cast('2014-05-28 12:22:35.614298' as timestamp));
+
+begin;
+
+set local time zone 10.5;
+
+select
+  to_json(
+    cast('2014-05-28 12:22:35.614298-04'
+    as timestamp with time zone)
+  );
+
+set local time zone -8;
+
+select
+  to_json(
+    cast('2014-05-28 12:22:35.614298-04'
+    as timestamp with time zone)
+  );
+
+commit;
+
+select to_json(cast('2014-05-28' as date));
+
+select to_json(cast('Infinity' as date));
+
+select to_json(cast('-Infinity' as date));
+
+select to_json(cast('Infinity' as timestamp));
+
+select to_json(cast('-Infinity' as timestamp));
+
+select to_json(cast('Infinity' as timestamp with time zone));
+
+select to_json(cast('-Infinity' as timestamp with time zone));
+
+select
+  json_agg(q)
+from
+  (
+    select
+      'a' || x as b,
+      y as c,
+      array[row(x.*, array[1, 2, 3]),
+      row(y.*, array[4, 5, 6])]
+      as z
+    from
+      generate_series(1, 2) as x,
+      generate_series(4, 5) as y
+  )
+  as q;
+
+select json_agg(q order by x, y) from rows as q;
+
+update rows set x = null where x = 1;
+
+select json_agg(q order by x nulls first, y) from rows as q;
+
+select
+  row_to_json(q)
+from
+  (
+    select
+      cast('NaN' as double precision)
+      as float8field
+  )
+  as q;
+
+select
+  row_to_json(q)
+from
+  (
+    select
+      cast('Infinity' as double precision)
+      as float8field
+  )
+  as q;
+
+select
+  row_to_json(q)
+from
+  (
+    select
+      cast('-Infinity' as double precision)
+      as float8field
+  )
+  as q;
+
+select
+  row_to_json(q)
+from
+  (
+    select
+      cast('{"a":1,"b": [2,3,4,"d","e","f"],"c":{"p":1,"q":2}}'
+      as json)
+      as jsonfield
+  )
+  as q;
+
+create temporary table test_json (
+  json_type text,
+  test_json json
+);
+
+insert into test_json
+values
+  ('scalar', '"a scalar"'),
+  (
+    'array',
+    '["zero", "one","two",null,"four","five", [1,2,3],{"f1":9}]'
+  ),
+  (
+    'object',
+    '{"field1":"val1","field2":"val2","field3":null, "field4": 4, "field5": [1,2,3], "field6": {"f1":9}}'
+  );
+
+select test_json -> 'x' from test_json where json_type = 'scalar';
+
+select test_json -> 'x' from test_json where json_type = 'array';
+
+select test_json -> 'x' from test_json where json_type = 'object';
+
+select test_json -> 'field2' from test_json where json_type = 'object';
+
+select test_json ->> 'field2' from test_json where json_type = 'object';
+
+select test_json -> 2 from test_json where json_type = 'scalar';
+
+select test_json -> 2 from test_json where json_type = 'array';
+
+select test_json -> -1 from test_json where json_type = 'array';
+
+select test_json -> 2 from test_json where json_type = 'object';
+
+select test_json ->> 2 from test_json where json_type = 'array';
+
+select test_json ->> 6 from test_json where json_type = 'array';
+
+select test_json ->> 7 from test_json where json_type = 'array';
+
+select test_json ->> 'field4' from test_json where json_type = 'object';
+
+select test_json ->> 'field5' from test_json where json_type = 'object';
+
+select test_json ->> 'field6' from test_json where json_type = 'object';
+
+select json_object_keys(test_json) from test_json where json_type = 'scalar';
+
+select json_object_keys(test_json) from test_json where json_type = 'array';
+
+select json_object_keys(test_json) from test_json where json_type = 'object';
+
+select
+  COUNT(*)
+from
+  (
+    select
+      json_object_keys(
+        json_object(array_agg(g))
+      )
+    from
+      (
+        select
+          unnest(array['f' || n, cast(n as text)])
+          as g
+        from
+          generate_series(1, 300) as n
+      )
+      as x
+  )
+  as y;
+
+select
+  test_json -> 'field3' is null
+  as expect_false
+from
+  test_json
+where
+  json_type = 'object';
+
+select
+  test_json ->> 'field3' is null
+  as expect_true
+from
+  test_json
+where
+  json_type = 'object';
+
+select
+  test_json -> 3 is null as expect_false
+from
+  test_json
+where
+  json_type = 'array';
+
+select
+  test_json ->> 3 is null as expect_true
+from
+  test_json
+where
+  json_type = 'array';
+
+select cast('{"a": [{"b": "c"}, {"b": "cc"}]}' as json) -> cast(null as text);
+
+select cast('{"a": [{"b": "c"}, {"b": "cc"}]}' as json) -> cast(null as int);
+
+select cast('{"a": [{"b": "c"}, {"b": "cc"}]}' as json) -> 1;
+
+select cast('{"a": [{"b": "c"}, {"b": "cc"}]}' as json) -> -1;
+
+select cast('{"a": [{"b": "c"}, {"b": "cc"}]}' as json) -> 'z';
+
+select cast('{"a": [{"b": "c"}, {"b": "cc"}]}' as json) -> '';
+
+select cast('[{"b": "c"}, {"b": "cc"}]' as json) -> 1;
+
+select cast('[{"b": "c"}, {"b": "cc"}]' as json) -> 3;
+
+select cast('[{"b": "c"}, {"b": "cc"}]' as json) -> 'z';
+
+select cast('{"a": "c", "b": null}' as json) -> 'b';
+
+select cast('"foo"' as json) -> 1;
+
+select cast('"foo"' as json) -> 'z';
+
+select cast('{"a": [{"b": "c"}, {"b": "cc"}]}' as json) ->> cast(null as text);
+
+select cast('{"a": [{"b": "c"}, {"b": "cc"}]}' as json) ->> cast(null as int);
+
+select cast('{"a": [{"b": "c"}, {"b": "cc"}]}' as json) ->> 1;
+
+select cast('{"a": [{"b": "c"}, {"b": "cc"}]}' as json) ->> 'z';
+
+select cast('{"a": [{"b": "c"}, {"b": "cc"}]}' as json) ->> '';
+
+select cast('[{"b": "c"}, {"b": "cc"}]' as json) ->> 1;
+
+select cast('[{"b": "c"}, {"b": "cc"}]' as json) ->> 3;
+
+select cast('[{"b": "c"}, {"b": "cc"}]' as json) ->> 'z';
+
+select cast('{"a": "c", "b": null}' as json) ->> 'b';
+
+select cast('"foo"' as json) ->> 1;
+
+select cast('"foo"' as json) ->> 'z';
+
+select json_array_length('[1,2,3,{"f1":1,"f2":[5,6]},4]');
+
+select json_array_length('[]');
+
+select json_array_length('{"f1":1,"f2":[5,6]}');
+
+select json_array_length('4');
+
+select json_each('{"f1":[1,2,3],"f2":{"f3":1},"f4":null}');
+
+select
+  *
+from
+  json_each(
+    '{"f1":[1,2,3],"f2":{"f3":1},"f4":null,"f5":99,"f6":"stringy"}'
+  )
+  as q;
+
+select json_each_text('{"f1":[1,2,3],"f2":{"f3":1},"f4":null,"f5":"null"}');
+
+select
+  *
+from
+  json_each_text(
+    '{"f1":[1,2,3],"f2":{"f3":1},"f4":null,"f5":99,"f6":"stringy"}'
+  )
+  as q;
+
+select
+  json_extract_path(
+    '{"f2":{"f3":1},"f4":{"f5":99,"f6":"stringy"}}',
+    'f4',
+    'f6'
+  );
+
+select json_extract_path('{"f2":{"f3":1},"f4":{"f5":99,"f6":"stringy"}}', 'f2');
+
+select
+  json_extract_path(
+    '{"f2":["f3",1],"f4":{"f5":99,"f6":"stringy"}}',
+    'f2',
+    cast(0 as text)
+  );
+
+select
+  json_extract_path(
+    '{"f2":["f3",1],"f4":{"f5":99,"f6":"stringy"}}',
+    'f2',
+    cast(1 as text)
+  );
+
+select
+  json_extract_path_text(
+    '{"f2":{"f3":1},"f4":{"f5":99,"f6":"stringy"}}',
+    'f4',
+    'f6'
+  );
+
+select
+  json_extract_path_text(
+    '{"f2":{"f3":1},"f4":{"f5":99,"f6":"stringy"}}',
+    'f2'
+  );
+
+select
+  json_extract_path_text(
+    '{"f2":["f3",1],"f4":{"f5":99,"f6":"stringy"}}',
+    'f2',
+    cast(0 as text)
+  );
+
+select
+  json_extract_path_text(
+    '{"f2":["f3",1],"f4":{"f5":99,"f6":"stringy"}}',
+    'f2',
+    cast(1 as text)
+  );
+
+select
+  json_extract_path(
+    '{"f2":{"f3":1},"f4":{"f5":null,"f6":"stringy"}}',
+    'f4',
+    'f5'
+  ) is null
+  as expect_false;
+
+select
+  json_extract_path_text(
+    '{"f2":{"f3":1},"f4":{"f5":null,"f6":"stringy"}}',
+    'f4',
+    'f5'
+  ) is null
+  as expect_true;
+
+select
+  json_extract_path(
+    '{"f2":{"f3":1},"f4":[0,1,2,null]}',
+    'f4',
+    '3'
+  ) is null
+  as expect_false;
+
+select
+  json_extract_path_text(
+    '{"f2":{"f3":1},"f4":[0,1,2,null]}',
+    'f4',
+    '3'
+  ) is null
+  as expect_true;
+
+select
+  cast('{"f2":{"f3":1},"f4":{"f5":99,"f6":"stringy"}}'
+  as json) #>
+  array['f4', 'f6'];
+
+select
+  cast('{"f2":{"f3":1},"f4":{"f5":99,"f6":"stringy"}}'
+  as json) #>
+  array['f2'];
+
+select
+  cast('{"f2":["f3",1],"f4":{"f5":99,"f6":"stringy"}}'
+  as json) #>
+  array['f2', '0'];
+
+select
+  cast('{"f2":["f3",1],"f4":{"f5":99,"f6":"stringy"}}'
+  as json) #>
+  array['f2', '1'];
+
+select
+  cast('{"f2":{"f3":1},"f4":{"f5":99,"f6":"stringy"}}'
+  as json) #>>
+  array['f4', 'f6'];
+
+select
+  cast('{"f2":{"f3":1},"f4":{"f5":99,"f6":"stringy"}}'
+  as json) #>>
+  array['f2'];
+
+select
+  cast('{"f2":["f3",1],"f4":{"f5":99,"f6":"stringy"}}'
+  as json) #>>
+  array['f2', '0'];
+
+select
+  cast('{"f2":["f3",1],"f4":{"f5":99,"f6":"stringy"}}'
+  as json) #>>
+  array['f2', '1'];
+
+select cast('{"a": {"b":{"c": "foo"}}}' as json) #> '{}';
+
+select cast('[1,2,3]' as json) #> '{}';
+
+select cast('"foo"' as json) #> '{}';
+
+select cast('42' as json) #> '{}';
+
+select cast('null' as json) #> '{}';
+
+select cast('{"a": {"b":{"c": "foo"}}}' as json) #> array['a'];
+
+select cast('{"a": {"b":{"c": "foo"}}}' as json) #> array['a', null];
+
+select cast('{"a": {"b":{"c": "foo"}}}' as json) #> array['a', ''];
+
+select cast('{"a": {"b":{"c": "foo"}}}' as json) #> array['a', 'b'];
+
+select cast('{"a": {"b":{"c": "foo"}}}' as json) #> array['a', 'b', 'c'];
+
+select cast('{"a": {"b":{"c": "foo"}}}' as json) #> array['a', 'b', 'c', 'd'];
+
+select cast('{"a": {"b":{"c": "foo"}}}' as json) #> array['a', 'z', 'c'];
+
+select cast('{"a": [{"b": "c"}, {"b": "cc"}]}' as json) #> array['a', '1', 'b'];
+
+select cast('{"a": [{"b": "c"}, {"b": "cc"}]}' as json) #> array['a', 'z', 'b'];
+
+select cast('[{"b": "c"}, {"b": "cc"}]' as json) #> array['1', 'b'];
+
+select cast('[{"b": "c"}, {"b": "cc"}]' as json) #> array['z', 'b'];
+
+select cast('[{"b": "c"}, {"b": null}]' as json) #> array['1', 'b'];
+
+select cast('"foo"' as json) #> array['z'];
+
+select cast('42' as json) #> array['f2'];
+
+select cast('42' as json) #> array['0'];
+
+select cast('{"a": {"b":{"c": "foo"}}}' as json) #>> '{}';
+
+select cast('[1,2,3]' as json) #>> '{}';
+
+select cast('"foo"' as json) #>> '{}';
+
+select cast('42' as json) #>> '{}';
+
+select cast('null' as json) #>> '{}';
+
+select cast('{"a": {"b":{"c": "foo"}}}' as json) #>> array['a'];
+
+select cast('{"a": {"b":{"c": "foo"}}}' as json) #>> array['a', null];
+
+select cast('{"a": {"b":{"c": "foo"}}}' as json) #>> array['a', ''];
+
+select cast('{"a": {"b":{"c": "foo"}}}' as json) #>> array['a', 'b'];
+
+select cast('{"a": {"b":{"c": "foo"}}}' as json) #>> array['a', 'b', 'c'];
+
+select cast('{"a": {"b":{"c": "foo"}}}' as json) #>> array['a', 'b', 'c', 'd'];
+
+select cast('{"a": {"b":{"c": "foo"}}}' as json) #>> array['a', 'z', 'c'];
+
+select
+  cast('{"a": [{"b": "c"}, {"b": "cc"}]}'
+  as json) #>>
+  array['a', '1', 'b'];
+
+select
+  cast('{"a": [{"b": "c"}, {"b": "cc"}]}'
+  as json) #>>
+  array['a', 'z', 'b'];
+
+select cast('[{"b": "c"}, {"b": "cc"}]' as json) #>> array['1', 'b'];
+
+select cast('[{"b": "c"}, {"b": "cc"}]' as json) #>> array['z', 'b'];
+
+select cast('[{"b": "c"}, {"b": null}]' as json) #>> array['1', 'b'];
+
+select cast('"foo"' as json) #>> array['z'];
+
+select cast('42' as json) #>> array['f2'];
+
+select cast('42' as json) #>> array['0'];
+
+select
+  json_array_elements(
+    '[1,true,[1,[2,3]],null,{"f1":1,"f2":[7,8,9]},false,"stringy"]'
+  );
+
+select
+  *
+from
+  json_array_elements(
+    '[1,true,[1,[2,3]],null,{"f1":1,"f2":[7,8,9]},false,"stringy"]'
+  )
+  as q;
+
+select
+  json_array_elements_text(
+    '[1,true,[1,[2,3]],null,{"f1":1,"f2":[7,8,9]},false,"stringy"]'
+  );
+
+select
+  *
+from
+  json_array_elements_text(
+    '[1,true,[1,[2,3]],null,{"f1":1,"f2":[7,8,9]},false,"stringy"]'
+  )
+  as q;
+
+create type jpop as (a text, b int, c timestamp);
+
+create domain js_int_not_null as int not null;
+
+create domain js_int_array_1d as int[] check (array_length(value, 1) = 3);
+
+create domain js_int_array_2d as int[][] check (array_length(value, 2) = 3);
+
+create type j_unordered_pair as (x int, y int);
+
+create domain j_ordered_pair as j_unordered_pair check (value.x <= value.y);
+
+create type jsrec as (
+  i int,
+  ia _int4,
+  ia1 int[],
+  ia2 int[][],
+  ia3 int[][][],
+  ia1d js_int_array_1d,
+  ia2d js_int_array_2d,
+  t text,
+  ta text[],
+  c char(10),
+  ca char(10)[],
+  ts timestamp,
+  js json,
+  jsb jsonb,
+  jsa json[],
+  rec jpop,
+  reca jpop[]
+);
+
+create type jsrec_i_not_null as (i js_int_not_null);
+
+select
+  *
+from
+  json_populate_record(
+    cast(null as jpop),
+    '{"a":"blurfl","x":43.2}'
+  )
+  as q;
+
+select
+  *
+from
+  json_populate_record(
+    cast(row('x', 3, '2012-12-31 15:30:56')
+    as jpop),
+    '{"a":"blurfl","x":43.2}'
+  )
+  as q;
+
+select
+  *
+from
+  json_populate_record(
+    cast(null as jpop),
+    '{"a":"blurfl","x":43.2}'
+  )
+  as q;
+
+select
+  *
+from
+  json_populate_record(
+    cast(row('x', 3, '2012-12-31 15:30:56')
+    as jpop),
+    '{"a":"blurfl","x":43.2}'
+  )
+  as q;
+
+select
+  *
+from
+  json_populate_record(
+    cast(null as jpop),
+    '{"a":[100,200,false],"x":43.2}'
+  )
+  as q;
+
+select
+  *
+from
+  json_populate_record(
+    cast(row('x', 3, '2012-12-31 15:30:56')
+    as jpop),
+    '{"a":[100,200,false],"x":43.2}'
+  )
+  as q;
+
+select
+  *
+from
+  json_populate_record(
+    cast(row('x', 3, '2012-12-31 15:30:56')
+    as jpop),
+    '{"c":[100,200,false],"x":43.2}'
+  )
+  as q;
+
+select
+  *
+from
+  json_populate_record(
+    cast(row('x', 3, '2012-12-31 15:30:56')
+    as jpop),
+    '{}'
+  )
+  as q;
+
+select
+  i
+from
+  json_populate_record(
+    cast(null as jsrec_i_not_null),
+    '{"x": 43.2}'
+  )
+  as q;
+
+select
+  i
+from
+  json_populate_record(
+    cast(null as jsrec_i_not_null),
+    '{"i": null}'
+  )
+  as q;
+
+select
+  i
+from
+  json_populate_record(
+    cast(null as jsrec_i_not_null),
+    '{"i": 12345}'
+  )
+  as q;
+
+select ia from json_populate_record(cast(null as jsrec), '{"ia": null}') as q;
+
+select ia from json_populate_record(cast(null as jsrec), '{"ia": 123}') as q;
+
+select
+  ia
+from
+  json_populate_record(
+    cast(null as jsrec),
+    '{"ia": [1, "2", null, 4]}'
+  )
+  as q;
+
+select
+  ia
+from
+  json_populate_record(
+    cast(null as jsrec),
+    '{"ia": [[1, 2], [3, 4]]}'
+  )
+  as q;
+
+select
+  ia
+from
+  json_populate_record(
+    cast(null as jsrec),
+    '{"ia": [[1], 2]}'
+  )
+  as q;
+
+select
+  ia
+from
+  json_populate_record(
+    cast(null as jsrec),
+    '{"ia": [[1], [2, 3]]}'
+  )
+  as q;
+
+select
+  ia
+from
+  json_populate_record(
+    cast(null as jsrec),
+    '{"ia": "{1,2,3}"}'
+  )
+  as q;
+
+select ia1 from json_populate_record(cast(null as jsrec), '{"ia1": null}') as q;
+
+select ia1 from json_populate_record(cast(null as jsrec), '{"ia1": 123}') as q;
+
+select
+  ia1
+from
+  json_populate_record(
+    cast(null as jsrec),
+    '{"ia1": [1, "2", null, 4]}'
+  )
+  as q;
+
+select
+  ia1
+from
+  json_populate_record(
+    cast(null as jsrec),
+    '{"ia1": [[1, 2, 3]]}'
+  )
+  as q;
+
+select
+  ia1d
+from
+  json_populate_record(
+    cast(null as jsrec),
+    '{"ia1d": null}'
+  )
+  as q;
+
+select
+  ia1d
+from
+  json_populate_record(
+    cast(null as jsrec),
+    '{"ia1d": 123}'
+  )
+  as q;
+
+select
+  ia1d
+from
+  json_populate_record(
+    cast(null as jsrec),
+    '{"ia1d": [1, "2", null, 4]}'
+  )
+  as q;
+
+select
+  ia1d
+from
+  json_populate_record(
+    cast(null as jsrec),
+    '{"ia1d": [1, "2", null]}'
+  )
+  as q;
+
+select
+  ia2
+from
+  json_populate_record(
+    cast(null as jsrec),
+    '{"ia2": [1, "2", null, 4]}'
+  )
+  as q;
+
+select
+  ia2
+from
+  json_populate_record(
+    cast(null as jsrec),
+    '{"ia2": [[1, 2], [null, 4]]}'
+  )
+  as q;
+
+select
+  ia2
+from
+  json_populate_record(
+    cast(null as jsrec),
+    '{"ia2": [[], []]}'
+  )
+  as q;
+
+select
+  ia2
+from
+  json_populate_record(
+    cast(null as jsrec),
+    '{"ia2": [[1, 2], [3]]}'
+  )
+  as q;
+
+select
+  ia2
+from
+  json_populate_record(
+    cast(null as jsrec),
+    '{"ia2": [[1, 2], 3, 4]}'
+  )
+  as q;
+
+select
+  ia2d
+from
+  json_populate_record(
+    cast(null as jsrec),
+    '{"ia2d": [[1, "2"], [null, 4]]}'
+  )
+  as q;
+
+select
+  ia2d
+from
+  json_populate_record(
+    cast(null as jsrec),
+    '{"ia2d": [[1, "2", 3], [null, 5, 6]]}'
+  )
+  as q;
+
+select
+  ia3
+from
+  json_populate_record(
+    cast(null as jsrec),
+    '{"ia3": [1, "2", null, 4]}'
+  )
+  as q;
+
+select
+  ia3
+from
+  json_populate_record(
+    cast(null as jsrec),
+    '{"ia3": [[1, 2], [null, 4]]}'
+  )
+  as q;
+
+select
+  ia3
+from
+  json_populate_record(
+    cast(null as jsrec),
+    '{"ia3": [ [[], []], [[], []], [[], []] ]}'
+  )
+  as q;
+
+select
+  ia3
+from
+  json_populate_record(
+    cast(null as jsrec),
+    '{"ia3": [ [[1, 2]], [[3, 4]] ]}'
+  )
+  as q;
+
+select
+  ia3
+from
+  json_populate_record(
+    cast(null as jsrec),
+    '{"ia3": [ [[1, 2], [3, 4]], [[5, 6], [7, 8]] ]}'
+  )
+  as q;
+
+select
+  ia3
+from
+  json_populate_record(
+    cast(null as jsrec),
+    '{"ia3": [ [[1, 2], [3, 4]], [[5, 6], [7, 8], [9, 10]] ]}'
+  )
+  as q;
+
+select ta from json_populate_record(cast(null as jsrec), '{"ta": null}') as q;
+
+select ta from json_populate_record(cast(null as jsrec), '{"ta": 123}') as q;
+
+select
+  ta
+from
+  json_populate_record(
+    cast(null as jsrec),
+    '{"ta": [1, "2", null, 4]}'
+  )
+  as q;
+
+select
+  ta
+from
+  json_populate_record(
+    cast(null as jsrec),
+    '{"ta": [[1, 2, 3], {"k": "v"}]}'
+  )
+  as q;
+
+select c from json_populate_record(cast(null as jsrec), '{"c": null}') as q;
+
+select c from json_populate_record(cast(null as jsrec), '{"c": "aaa"}') as q;
+
+select
+  c
+from
+  json_populate_record(
+    cast(null as jsrec),
+    '{"c": "aaaaaaaaaa"}'
+  )
+  as q;
+
+select
+  c
+from
+  json_populate_record(
+    cast(null as jsrec),
+    '{"c": "aaaaaaaaaaaaa"}'
+  )
+  as q;
+
+select ca from json_populate_record(cast(null as jsrec), '{"ca": null}') as q;
+
+select ca from json_populate_record(cast(null as jsrec), '{"ca": 123}') as q;
+
+select
+  ca
+from
+  json_populate_record(
+    cast(null as jsrec),
+    '{"ca": [1, "2", null, 4]}'
+  )
+  as q;
+
+select
+  ca
+from
+  json_populate_record(
+    cast(null as jsrec),
+    '{"ca": ["aaaaaaaaaaaaaaaa"]}'
+  )
+  as q;
+
+select
+  ca
+from
+  json_populate_record(
+    cast(null as jsrec),
+    '{"ca": [[1, 2, 3], {"k": "v"}]}'
+  )
+  as q;
+
+select js from json_populate_record(cast(null as jsrec), '{"js": null}') as q;
+
+select js from json_populate_record(cast(null as jsrec), '{"js": true}') as q;
+
+select js from json_populate_record(cast(null as jsrec), '{"js": 123.45}') as q;
+
+select
+  js
+from
+  json_populate_record(
+    cast(null as jsrec),
+    '{"js": "123.45"}'
+  )
+  as q;
+
+select js from json_populate_record(cast(null as jsrec), '{"js": "abc"}') as q;
+
+select
+  js
+from
+  json_populate_record(
+    cast(null as jsrec),
+    '{"js": [123, "123", null, {"key": "value"}]}'
+  )
+  as q;
+
+select
+  js
+from
+  json_populate_record(
+    cast(null as jsrec),
+    '{"js": {"a": "bbb", "b": null, "c": 123.45}}'
+  )
+  as q;
+
+select jsb from json_populate_record(cast(null as jsrec), '{"jsb": null}') as q;
+
+select jsb from json_populate_record(cast(null as jsrec), '{"jsb": true}') as q;
+
+select
+  jsb
+from
+  json_populate_record(
+    cast(null as jsrec),
+    '{"jsb": 123.45}'
+  )
+  as q;
+
+select
+  jsb
+from
+  json_populate_record(
+    cast(null as jsrec),
+    '{"jsb": "123.45"}'
+  )
+  as q;
+
+select
+  jsb
+from
+  json_populate_record(
+    cast(null as jsrec),
+    '{"jsb": "abc"}'
+  )
+  as q;
+
+select
+  jsb
+from
+  json_populate_record(
+    cast(null as jsrec),
+    '{"jsb": [123, "123", null, {"key": "value"}]}'
+  )
+  as q;
+
+select
+  jsb
+from
+  json_populate_record(
+    cast(null as jsrec),
+    '{"jsb": {"a": "bbb", "b": null, "c": 123.45}}'
+  )
+  as q;
+
+select jsa from json_populate_record(cast(null as jsrec), '{"jsa": null}') as q;
+
+select jsa from json_populate_record(cast(null as jsrec), '{"jsa": 123}') as q;
+
+select
+  jsa
+from
+  json_populate_record(
+    cast(null as jsrec),
+    '{"jsa": [1, "2", null, 4]}'
+  )
+  as q;
+
+select
+  jsa
+from
+  json_populate_record(
+    cast(null as jsrec),
+    '{"jsa": ["aaa", null, [1, 2, "3", {}], { "k" : "v" }]}'
+  )
+  as q;
+
+select rec from json_populate_record(cast(null as jsrec), '{"rec": 123}') as q;
+
+select
+  rec
+from
+  json_populate_record(
+    cast(null as jsrec),
+    '{"rec": [1, 2]}'
+  )
+  as q;
+
+select
+  rec
+from
+  json_populate_record(
+    cast(null as jsrec),
+    '{"rec": {"a": "abc", "c": "01.02.2003", "x": 43.2}}'
+  )
+  as q;
+
+select
+  rec
+from
+  json_populate_record(
+    cast(null as jsrec),
+    '{"rec": "(abc,42,01.02.2003)"}'
+  )
+  as q;
+
+select
+  reca
+from
+  json_populate_record(
+    cast(null as jsrec),
+    '{"reca": 123}'
+  )
+  as q;
+
+select
+  reca
+from
+  json_populate_record(
+    cast(null as jsrec),
+    '{"reca": [1, 2]}'
+  )
+  as q;
+
+select
+  reca
+from
+  json_populate_record(
+    cast(null as jsrec),
+    '{"reca": [{"a": "abc", "b": 456}, null, {"c": "01.02.2003", "x": 43.2}]}'
+  )
+  as q;
+
+select
+  reca
+from
+  json_populate_record(
+    cast(null as jsrec),
+    '{"reca": ["(abc,42,01.02.2003)"]}'
+  )
+  as q;
+
+select
+  reca
+from
+  json_populate_record(
+    cast(null as jsrec),
+    '{"reca": "{\"(abc,42,01.02.2003)\"}"}'
+  )
+  as q;
+
+select
+  rec
+from
+  json_populate_record(
+    cast(row(null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    cast(row('x', 3, '2012-12-31 15:30:56')
+    as jpop),
+    null)
+    as jsrec),
+    '{"rec": {"a": "abc", "c": "01.02.2003", "x": 43.2}}'
+  )
+  as q;
+
+select json_populate_record(cast(null as record), '{"x": 0, "y": 1}');
+
+select json_populate_record(row(1, 2), '{"f1": 0, "f2": 1}');
+
+select
+  *
+from
+  json_populate_record(
+    cast(null as record),
+    '{"x": 776}'
+  ) as
+  (x int, y int);
+
+select json_populate_record(cast(null as j_ordered_pair), '{"x": 0, "y": 1}');
+
+select json_populate_record(cast(row(1, 2) as j_ordered_pair), '{"x": 0}');
+
+select
+  json_populate_record(
+    cast(row(1, 2) as j_ordered_pair),
+    '{"x": 1, "y": 0}'
+  );
+
+select
+  *
+from
+  json_populate_recordset(
+    cast(null as jpop),
+    '[{"a":"blurfl","x":43.2},{"b":3,"c":"2012-01-20 10:42:53"}]'
+  )
+  as q;
+
+select
+  *
+from
+  json_populate_recordset(
+    cast(row('def', 99, null) as jpop),
+    '[{"a":"blurfl","x":43.2},{"b":3,"c":"2012-01-20 10:42:53"}]'
+  )
+  as q;
+
+select
+  *
+from
+  json_populate_recordset(
+    cast(null as jpop),
+    '[{"a":"blurfl","x":43.2},{"b":3,"c":"2012-01-20 10:42:53"}]'
+  )
+  as q;
+
+select
+  *
+from
+  json_populate_recordset(
+    cast(row('def', 99, null) as jpop),
+    '[{"a":"blurfl","x":43.2},{"b":3,"c":"2012-01-20 10:42:53"}]'
+  )
+  as q;
+
+select
+  *
+from
+  json_populate_recordset(
+    cast(row('def', 99, null) as jpop),
+    '[{"a":[100,200,300],"x":43.2},{"a":{"z":true},"b":3,"c":"2012-01-20 10:42:53"}]'
+  )
+  as q;
+
+select
+  *
+from
+  json_populate_recordset(
+    cast(row('def', 99, null) as jpop),
+    '[{"c":[100,200,300],"x":43.2},{"a":{"z":true},"b":3,"c":"2012-01-20 10:42:53"}]'
+  )
+  as q;
+
+create type jpop2 as (a int, b json, c int, d int);
+
+select
+  *
+from
+  json_populate_recordset(
+    cast(null as jpop2),
+    '[{"a":2,"c":3,"b":{"z":4},"d":6}]'
+  )
+  as q;
+
+select
+  *
+from
+  json_populate_recordset(
+    cast(null as jpop),
+    '[{"a":"blurfl","x":43.2},{"b":3,"c":"2012-01-20 10:42:53"}]'
+  )
+  as q;
+
+select
+  *
+from
+  json_populate_recordset(
+    cast(row('def', 99, null) as jpop),
+    '[{"a":"blurfl","x":43.2},{"b":3,"c":"2012-01-20 10:42:53"}]'
+  )
+  as q;
+
+select
+  *
+from
+  json_populate_recordset(
+    cast(row('def', 99, null) as jpop),
+    '[{"a":[100,200,300],"x":43.2},{"a":{"z":true},"b":3,"c":"2012-01-20 10:42:53"}]'
+  )
+  as q;
+
+select json_populate_recordset(cast(null as record), '[{"x": 0, "y": 1}]');
+
+select json_populate_recordset(row(1, 2), '[{"f1": 0, "f2": 1}]');
+
+select
+  i,
+  json_populate_recordset(
+    row(i, 50),
+    '[{"f1":"42"},{"f2":"43"}]'
+  )
+from
+  (values (1), (2)) as v (i);
+
+select
+  *
+from
+  json_populate_recordset(
+    cast(null as record),
+    '[{"x": 776}]'
+  ) as
+  (x int, y int);
+
+select json_populate_recordset(cast(null as record), '[]');
+
+select json_populate_recordset(row(1, 2), '[]');
+
+select * from json_populate_recordset(cast(null as jpop), '[]') as q;
+
+select
+  *
+from
+  json_populate_recordset(
+    cast(null as record),
+    '[]'
+  ) as
+  (x int, y int);
+
+select
+  json_populate_recordset(
+    cast(null as j_ordered_pair),
+    '[{"x": 0, "y": 1}]'
+  );
+
+select
+  json_populate_recordset(
+    cast(row(1, 2) as j_ordered_pair),
+    '[{"x": 0}, {"y": 3}]'
+  );
+
+select
+  json_populate_recordset(
+    cast(row(1, 2) as j_ordered_pair),
+    '[{"x": 1, "y": 0}]'
+  );
+
+select
+  *
+from
+  json_populate_recordset(
+    row(cast(0 as int)),
+    '[{"a":"1","b":"2"},{"a":"3"}]'
+  )
+  as q
+  (a text, b text);
+
+select
+  *
+from
+  json_populate_recordset(
+    row(cast(0 as int), cast(0 as int)),
+    '[{"a":"1","b":"2"},{"a":"3"}]'
+  )
+  as q
+  (a text, b text);
+
+select
+  *
+from
+  json_populate_recordset(
+    row(cast(0 as int),
+    cast(0 as int),
+    cast(0 as int)),
+    '[{"a":"1","b":"2"},{"a":"3"}]'
+  )
+  as q
+  (a text, b text);
+
+select
+  *
+from
+  json_populate_recordset(
+    row(cast(1000000000 as int),
+    cast(50 as int)),
+    '[{"b":"2"},{"a":"3"}]'
+  )
+  as q
+  (a text, b text);
+
+create temporary table jspoptest (js json);
+
+insert into jspoptest
+select
+  cast('{
+	"jsa": [1, "2", null, 4],
+	"rec": {"a": "abc", "c": "01.02.2003", "x": 43.2},
+	"reca": [{"a": "abc", "b": 456}, null, {"c": "01.02.2003", "x": 43.2}]
+}'
+  as json)
+from
+  generate_series(1, 3);
+
+select (json_populate_record(cast(null as jsrec), js)).* from jspoptest;
+
+drop type jsrec;
+
+drop type jsrec_i_not_null;
+
+drop domain js_int_not_null;
+
+drop domain js_int_array_1d;
+
+drop domain js_int_array_2d;
+
+drop domain j_ordered_pair;
+
+drop type j_unordered_pair;
+
+select
+  value,
+  json_typeof(value)
+from
+  (
+    values
+      (cast('123.4' as json)),
+      (cast('-1' as json)),
+      (cast('"foo"' as json)),
+      (cast('true' as json)),
+      (cast('false' as json)),
+      (cast('null' as json)),
+      (cast('[1, 2, 3]' as json)),
+      (cast('[]' as json)),
+      (cast('{"x":"foo", "y":123}' as json)),
+      (cast('{}' as json)),
+      (cast(null as json))
+  )
+  as data (value);
+
+select
+  json_build_array(
+    'a',
+    1,
+    'b',
+    1.2,
+    'c',
+    true,
+    'd',
+    null,
+    'e',
+    cast('{"x": 3, "y": [1,2,3]}' as json)
+  );
+
+select json_build_array('a', null);
+
+select json_build_array(variadic cast(null as text[]));
+
+select json_build_array(variadic cast('{}' as text[]));
+
+select json_build_array(variadic cast('{a,b,c}' as text[]));
+
+select json_build_array(variadic cast(array['a', null] as text[]));
+
+select json_build_array(variadic cast('{1,2,3,4}' as text[]));
+
+select json_build_array(variadic cast('{1,2,3,4}' as int[]));
+
+select json_build_array(variadic cast('{{1,4},{2,5},{3,6}}' as int[][]));
+
+select
+  json_build_object(
+    'a',
+    1,
+    'b',
+    1.2,
+    'c',
+    true,
+    'd',
+    null,
+    'e',
+    cast('{"x": 3, "y": [1,2,3]}' as json)
+  );
+
+select
+  json_build_object(
+    'a',
+    json_build_object('b', false, 'c', 99),
+    'd',
+    json_build_object(
+      'e',
+      cast(array[9, 8, 7] as int[]),
+      'f',
+      (
+        select
+          row_to_json(r)
+        from
+          (
+            select
+              relkind,
+              cast(oid as regclass) as name
+            from
+              pg_class
+            where
+              relname = 'pg_class'
+          )
+          as r
+      )
+    )
+  );
+
+select json_build_object(cast('{a,b,c}' as text[]));
+
+select json_build_object(cast('{a,b,c}' as text[]), cast('{d,e,f}' as text[]));
+
+select json_build_object('a', 'b', 'c');
+
+select json_build_object(null, 'a');
+
+select json_build_object('a', null);
+
+select json_build_object(variadic cast(null as text[]));
+
+select json_build_object(variadic cast('{}' as text[]));
+
+select json_build_object(variadic cast('{a,b,c}' as text[]));
+
+select json_build_object(variadic cast(array['a', null] as text[]));
+
+select json_build_object(variadic cast(array[null, 'a'] as text[]));
+
+select json_build_object(variadic cast('{1,2,3,4}' as text[]));
+
+select json_build_object(variadic cast('{1,2,3,4}' as int[]));
+
+select json_build_object(variadic cast('{{1,4},{2,5},{3,6}}' as int[][]));
+
+select json_build_array();
+
+select json_build_object();
+
+select json_build_object(1, 2);
+
+select json_build_object(null, 2);
+
+select json_build_object(r, 2) from (select 1 as a, 2 as b) as r;
+
+select json_build_object(cast('{"a":1,"b":2}' as json), 3);
+
+select json_build_object(cast('{1,2,3}' as int[]), 3);
+
+create temporary table foo (
+  serial_num int,
+  name text,
+  type text
+);
+
+insert into foo values (847001, 't15', 'GE1043');
+
+insert into foo values (847002, 't16', 'GE1043');
+
+insert into foo values (847003, 'sub-alpha', 'GESS90');
+
+select
+  json_build_object(
+    'turbines',
+    json_object_agg(
+      serial_num,
+      json_build_object(
+        'name',
+        name,
+        'type',
+        type
+      )
+    )
+  )
+from
+  foo;
+
+select json_object_agg(name, type) from foo;
+
+insert into foo values (999999, null, 'bar');
+
+select json_object_agg(name, type) from foo;
+
+select json_object('{}');
+
+select json_object('{}', '{}');
+
+select json_object('{a,1,b,2,3,NULL,"d e f","a b c"}');
+
+select json_object('{{a,1},{b,2},{3,NULL},{"d e f","a b c"}}');
+
+select json_object('{a,b,c}');
+
+select json_object('{{a},{b}}');
+
+select json_object('{{a,b,c},{b,c,d}}');
+
+select json_object('{{{a,b},{c,d}},{{b,c},{d,e}}}');
+
+select json_object('{a,b,c,"d e f"}', '{1,2,3,"a b c"}');
+
+select
+  json_object(
+    '{{a,1},{b,2},{3,NULL},{"d e f","a b c"}}',
+    '{{a,1},{b,2},{3,NULL},{"d e f","a b c"}}'
+  );
+
+select json_object('{a,b,c,"d e f",g}', '{1,2,3,"a b c"}');
+
+select json_object('{a,b,c,"d e f"}', '{1,2,3,"a b c",g}');
+
+select json_object('{a,b,NULL,"d e f"}', '{1,2,3,"a b c"}');
+
+select json_object('{a,b,"","d e f"}', '{1,2,3,"a b c"}');
+
+select json_object_agg_unique(mod(i, 100), i) from generate_series(0, 199) as i;
+
+select
+  *
+from
+  json_to_record(
+    '{"a":1,"b":"foo","c":"bar"}'
+  )
+  as x
+  (a int, b text, d text);
+
+select
+  *
+from
+  json_to_recordset(
+    '[{"a":1,"b":"foo","d":false},{"a":2,"b":"bar","c":true}]'
+  )
+  as x
+  (a int, b text, c boolean);
+
+select
+  *
+from
+  json_to_recordset(
+    '[{"a":1,"b":{"d":"foo"},"c":true},{"a":2,"c":false,"b":{"d":"bar"}}]'
+  )
+  as x
+  (a int, b json, c boolean);
+
+select
+  *,
+  c is null as c_is_null
+from
+  json_to_record(
+    cast('{"a":1, "b":{"c":16, "d":2}, "x":8, "ca": ["1 2", 3], "ia": [[1,2],[3,4]], "r": {"a": "aaa", "b": 123}}'
+    as json)
+  )
+  as t
+  (
+    a int,
+    b json,
+    c text,
+    x int,
+    ca char(5)[],
+    ia int[][],
+    r jpop
+  );
+
+select
+  *,
+  c is null as c_is_null
+from
+  json_to_recordset(
+    cast('[{"a":1, "b":{"c":16, "d":2}, "x":8}]'
+    as json)
+  )
+  as t
+  (a int, b json, c text, x int);
+
+select * from json_to_record('{"ia": null}') as x (ia _int4);
+
+select * from json_to_record('{"ia": 123}') as x (ia _int4);
+
+select * from json_to_record('{"ia": [1, "2", null, 4]}') as x (ia _int4);
+
+select * from json_to_record('{"ia": [[1, 2], [3, 4]]}') as x (ia _int4);
+
+select * from json_to_record('{"ia": [[1], 2]}') as x (ia _int4);
+
+select * from json_to_record('{"ia": [[1], [2, 3]]}') as x (ia _int4);
+
+select * from json_to_record('{"ia2": [1, 2, 3]}') as x (ia2 int[][]);
+
+select * from json_to_record('{"ia2": [[1, 2], [3, 4]]}') as x (ia2 int[][]);
+
+select * from json_to_record('{"ia2": [[[1], [2], [3]]]}') as x (ia2 int[][]);
+
+select * from json_to_record('{"out": {"key": 1}}') as x (out json);
+
+select * from json_to_record('{"out": [{"key": 1}]}') as x (out json);
+
+select * from json_to_record('{"out": "{\"key\": 1}"}') as x (out json);
+
+select * from json_to_record('{"out": {"key": 1}}') as x (out jsonb);
+
+select * from json_to_record('{"out": [{"key": 1}]}') as x (out jsonb);
+
+select * from json_to_record('{"out": "{\"key\": 1}"}') as x (out jsonb);
+
+select json_strip_nulls(null);
+
+select json_strip_nulls('1');
+
+select json_strip_nulls('"a string"');
+
+select json_strip_nulls('null');
+
+select json_strip_nulls('[1,2,null,3,4]');
+
+select json_strip_nulls('{"a":1,"b":null,"c":[2,null,3],"d":{"e":4,"f":null}}');
+
+select json_strip_nulls('[1,{"a":1,"b":null,"c":2},3]');
+
+select json_strip_nulls('{"a": {"b": null, "c": null}, "d": {} }');
+
+select json_strip_nulls(null, true);
+
+select json_strip_nulls('1', true);
+
+select json_strip_nulls('"a string"', true);
+
+select json_strip_nulls('null', true);
+
+select json_strip_nulls('[1,2,null,3,4]', true);
+
+select
+  json_strip_nulls(
+    '{"a":1,"b":null,"c":[2,null,3],"d":{"e":4,"f":null}}',
+    true
+  );
+
+select json_strip_nulls('[1,{"a":1,"b":null,"c":2},3]', true);
+
+select json_strip_nulls('{"a": {"b": null, "c": null}, "d": {} }', true);
+
+select
+  to_tsvector(
+    cast('{"a": "aaa bbb ddd ccc", "b": ["eee fff ggg"], "c": {"d": "hhh iii"}}'
+    as json)
+  );
+
+select
+  to_tsvector(
+    'simple',
+    cast('{"a": "aaa bbb ddd ccc", "b": ["eee fff ggg"], "c": {"d": "hhh iii"}}'
+    as json)
+  );
+
+select
+  to_tsvector(
+    'english',
+    cast('{"a": "aaa in bbb ddd ccc", "b": ["the eee fff ggg"], "c": {"d": "hhh. iii"}}'
+    as json)
+  );
+
+select
+  to_tsvector(
+    'english',
+    cast('{"a": "aaa in bbb ddd ccc", "b": 123, "c": 456}'
+    as json)
+  );
+
+select
+  json_to_tsvector(
+    'english',
+    cast('{"a": "aaa in bbb", "b": 123, "c": 456, "d": true, "f": false, "g": null}'
+    as json),
+    '"all"'
+  );
+
+select
+  json_to_tsvector(
+    'english',
+    cast('{"a": "aaa in bbb", "b": 123, "c": 456, "d": true, "f": false, "g": null}'
+    as json),
+    '"key"'
+  );
+
+select
+  json_to_tsvector(
+    'english',
+    cast('{"a": "aaa in bbb", "b": 123, "c": 456, "d": true, "f": false, "g": null}'
+    as json),
+    '"string"'
+  );
+
+select
+  json_to_tsvector(
+    'english',
+    cast('{"a": "aaa in bbb", "b": 123, "c": 456, "d": true, "f": false, "g": null}'
+    as json),
+    '"numeric"'
+  );
+
+select
+  json_to_tsvector(
+    'english',
+    cast('{"a": "aaa in bbb", "b": 123, "c": 456, "d": true, "f": false, "g": null}'
+    as json),
+    '"boolean"'
+  );
+
+select
+  json_to_tsvector(
+    'english',
+    cast('{"a": "aaa in bbb", "b": 123, "c": 456, "d": true, "f": false, "g": null}'
+    as json),
+    '["string", "numeric"]'
+  );
+
+select
+  json_to_tsvector(
+    'english',
+    cast('{"a": "aaa in bbb", "b": 123, "c": 456, "d": true, "f": false, "g": null}'
+    as json),
+    '"all"'
+  );
+
+select
+  json_to_tsvector(
+    'english',
+    cast('{"a": "aaa in bbb", "b": 123, "c": 456, "d": true, "f": false, "g": null}'
+    as json),
+    '"key"'
+  );
+
+select
+  json_to_tsvector(
+    'english',
+    cast('{"a": "aaa in bbb", "b": 123, "c": 456, "d": true, "f": false, "g": null}'
+    as json),
+    '"string"'
+  );
+
+select
+  json_to_tsvector(
+    'english',
+    cast('{"a": "aaa in bbb", "b": 123, "c": 456, "d": true, "f": false, "g": null}'
+    as json),
+    '"numeric"'
+  );
+
+select
+  json_to_tsvector(
+    'english',
+    cast('{"a": "aaa in bbb", "b": 123, "c": 456, "d": true, "f": false, "g": null}'
+    as json),
+    '"boolean"'
+  );
+
+select
+  json_to_tsvector(
+    'english',
+    cast('{"a": "aaa in bbb", "b": 123, "c": 456, "d": true, "f": false, "g": null}'
+    as json),
+    '["string", "numeric"]'
+  );
+
+select to_tsvector(cast('""' as json));
+
+select to_tsvector(cast('{}' as json));
+
+select to_tsvector(cast('[]' as json));
+
+select to_tsvector(cast('null' as json));
+
+select json_to_tsvector(cast('""' as json), '"all"');
+
+select json_to_tsvector(cast('{}' as json), '"all"');
+
+select json_to_tsvector(cast('[]' as json), '"all"');
+
+select json_to_tsvector(cast('null' as json), '"all"');
+
+select
+  json_to_tsvector(
+    'english',
+    cast('{"a": "aaa in bbb", "b": 123, "c": 456, "d": true, "f": false, "g": null}'
+    as json),
+    '""'
+  );
+
+select
+  json_to_tsvector(
+    'english',
+    cast('{"a": "aaa in bbb", "b": 123, "c": 456, "d": true, "f": false, "g": null}'
+    as json),
+    '{}'
+  );
+
+select
+  json_to_tsvector(
+    'english',
+    cast('{"a": "aaa in bbb", "b": 123, "c": 456, "d": true, "f": false, "g": null}'
+    as json),
+    '[]'
+  );
+
+select
+  json_to_tsvector(
+    'english',
+    cast('{"a": "aaa in bbb", "b": 123, "c": 456, "d": true, "f": false, "g": null}'
+    as json),
+    'null'
+  );
+
+select
+  json_to_tsvector(
+    'english',
+    cast('{"a": "aaa in bbb", "b": 123, "c": 456, "d": true, "f": false, "g": null}'
+    as json),
+    '["all", null]'
+  );
+
+select
+  ts_headline(
+    cast('{"a": "aaa bbb", "b": {"c": "ccc ddd fff", "c1": "ccc1 ddd1"}, "d": ["ggg hhh", "iii jjj"]}'
+    as json),
+    tsquery('bbb & ddd & hhh')
+  );
+
+select
+  ts_headline(
+    'english',
+    cast('{"a": "aaa bbb", "b": {"c": "ccc ddd fff"}, "d": ["ggg hhh", "iii jjj"]}'
+    as json),
+    tsquery('bbb & ddd & hhh')
+  );
+
+select
+  ts_headline(
+    cast('{"a": "aaa bbb", "b": {"c": "ccc ddd fff", "c1": "ccc1 ddd1"}, "d": ["ggg hhh", "iii jjj"]}'
+    as json),
+    tsquery('bbb & ddd & hhh'),
+    'StartSel = <, StopSel = >'
+  );
+
+select
+  ts_headline(
+    'english',
+    cast('{"a": "aaa bbb", "b": {"c": "ccc ddd fff", "c1": "ccc1 ddd1"}, "d": ["ggg hhh", "iii jjj"]}'
+    as json),
+    tsquery('bbb & ddd & hhh'),
+    'StartSel = <, StopSel = >'
+  );
+
+select ts_headline(cast('null' as json), tsquery('aaa & bbb'));
+
+select ts_headline(cast('{}' as json), tsquery('aaa & bbb'));
+
+select ts_headline(cast('[]' as json), tsquery('aaa & bbb'));

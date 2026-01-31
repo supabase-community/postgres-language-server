@@ -7,6 +7,7 @@
 use biome_deserialize::Merge;
 use cli_options::CliOptions;
 use commands::check::{self, CheckArgs};
+use commands::format::{self, FormatArgs};
 use pgls_configuration::PartialConfiguration;
 use pgls_console::{ColorMode, Console, ConsoleExt, markup};
 use pgls_fs::{ConfigName, FileSystem, OsFileSystem};
@@ -89,6 +90,26 @@ impl<'app> CliSession<'app> {
                     since,
                 },
             ),
+            PgLSCommand::Format {
+                cli_options,
+                configuration,
+                paths,
+                write,
+                staged,
+                changed,
+                since,
+            } => format::format(
+                self,
+                &cli_options,
+                FormatArgs {
+                    configuration,
+                    paths,
+                    write,
+                    staged,
+                    changed,
+                    since,
+                },
+            ),
             PgLSCommand::Clean => commands::clean::clean(self),
             PgLSCommand::Start {
                 config_path,
@@ -161,15 +182,14 @@ impl<'app> CliSession<'app> {
         let loaded_configuration =
             workspace::load_config(fs, cli_options.as_configuration_path_hint())?;
 
-        if let Some(config_path) = &loaded_configuration.file_path {
-            if let Some(file_name) = config_path.file_name().and_then(|name| name.to_str()) {
-                if ConfigName::is_deprecated(file_name) {
-                    self.console().log(markup! {
-                        <Warn>"Warning: "</Warn>
-                        "Deprecated config filename detected. Use 'postgres-language-server.jsonc'.\n"
-                    });
-                }
-            }
+        if let Some(config_path) = &loaded_configuration.file_path
+            && let Some(file_name) = config_path.file_name().and_then(|name| name.to_str())
+            && ConfigName::is_deprecated(file_name)
+        {
+            self.console().log(markup! {
+                <Warn>"Warning: "</Warn>
+                "Deprecated config filename detected. Use 'postgres-language-server.jsonc'.\n"
+            });
         }
 
         let mut configuration = loaded_configuration.configuration;

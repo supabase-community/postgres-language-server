@@ -106,19 +106,19 @@ fn load_config(
 
     // If the configuration path hint is from user and is a file path,
     // we'll load it directly
-    if let ConfigurationPathHint::FromUser(ref config_file_path) = base_path {
-        if file_system.path_is_file(config_file_path) {
-            let content = strip_jsonc_comments(&file_system.read_file_from_path(config_file_path)?);
+    if let ConfigurationPathHint::FromUser(ref config_file_path) = base_path
+        && file_system.path_is_file(config_file_path)
+    {
+        let content = strip_jsonc_comments(&file_system.read_file_from_path(config_file_path)?);
 
-            let deserialized = serde_json::from_str::<PartialConfiguration>(&content)
-                .map_err(ConfigurationDiagnostic::new_deserialization_error)?;
+        let deserialized = serde_json::from_str::<PartialConfiguration>(&content)
+            .map_err(ConfigurationDiagnostic::new_deserialization_error)?;
 
-            return Ok(Some(ConfigurationPayload {
-                deserialized,
-                configuration_file_path: PathBuf::from(config_file_path),
-                external_resolution_base_path,
-            }));
-        }
+        return Ok(Some(ConfigurationPayload {
+            deserialized,
+            configuration_file_path: PathBuf::from(config_file_path),
+            external_resolution_base_path,
+        }));
     }
 
     // If the configuration path hint is not a file path
@@ -437,22 +437,22 @@ impl PartialConfigurationExt for PartialConfiguration {
                 (Some(vcs_base_path), None) => PathBuf::from(vcs_base_path),
                 (None, None) => return Err(WorkspaceError::vcs_disabled()),
             };
-            if let Some(client_kind) = &vcs.client_kind {
-                if !vcs.ignore_file_disabled() {
-                    let result = file_system
-                        .auto_search(&vcs_base_path, &[client_kind.ignore_file()], false)
-                        .map_err(WorkspaceError::from)?;
+            if let Some(client_kind) = &vcs.client_kind
+                && !vcs.ignore_file_disabled()
+            {
+                let result = file_system
+                    .auto_search(&vcs_base_path, &[client_kind.ignore_file()], false)
+                    .map_err(WorkspaceError::from)?;
 
-                    if let Some(result) = result {
-                        return Ok((
-                            result.file_path.parent().map(PathBuf::from),
-                            result
-                                .content
-                                .lines()
-                                .map(String::from)
-                                .collect::<Vec<String>>(),
-                        ));
-                    }
+                if let Some(result) = result {
+                    return Ok((
+                        result.file_path.parent().map(PathBuf::from),
+                        result
+                            .content
+                            .lines()
+                            .map(String::from)
+                            .collect::<Vec<String>>(),
+                    ));
                 }
             }
         }

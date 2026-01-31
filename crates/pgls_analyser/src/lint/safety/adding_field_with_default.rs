@@ -50,31 +50,29 @@ impl LinterRule for AddingFieldWithDefault {
 
         if let pgls_query::NodeEnum::AlterTableStmt(stmt) = &ctx.stmt() {
             for cmd in &stmt.cmds {
-                if let Some(pgls_query::NodeEnum::AlterTableCmd(cmd)) = &cmd.node {
-                    if cmd.subtype() == pgls_query::protobuf::AlterTableType::AtAddColumn {
-                        if let Some(pgls_query::NodeEnum::ColumnDef(col_def)) =
-                            &cmd.def.as_ref().and_then(|d| d.node.as_ref())
-                        {
-                            let has_default = col_def.constraints.iter().any(|constraint| {
-                                if let Some(pgls_query::NodeEnum::Constraint(c)) = &constraint.node
-                                {
-                                    c.contype() == pgls_query::protobuf::ConstrType::ConstrDefault
-                                } else {
-                                    false
-                                }
-                            });
+                if let Some(pgls_query::NodeEnum::AlterTableCmd(cmd)) = &cmd.node
+                    && cmd.subtype() == pgls_query::protobuf::AlterTableType::AtAddColumn
+                    && let Some(pgls_query::NodeEnum::ColumnDef(col_def)) =
+                        &cmd.def.as_ref().and_then(|d| d.node.as_ref())
+                {
+                    let has_default = col_def.constraints.iter().any(|constraint| {
+                        if let Some(pgls_query::NodeEnum::Constraint(c)) = &constraint.node {
+                            c.contype() == pgls_query::protobuf::ConstrType::ConstrDefault
+                        } else {
+                            false
+                        }
+                    });
 
-                            let has_generated = col_def.constraints.iter().any(|constraint| {
-                                if let Some(pgls_query::NodeEnum::Constraint(c)) = &constraint.node
-                                {
-                                    c.contype() == pgls_query::protobuf::ConstrType::ConstrGenerated
-                                } else {
-                                    false
-                                }
-                            });
+                    let has_generated = col_def.constraints.iter().any(|constraint| {
+                        if let Some(pgls_query::NodeEnum::Constraint(c)) = &constraint.node {
+                            c.contype() == pgls_query::protobuf::ConstrType::ConstrGenerated
+                        } else {
+                            false
+                        }
+                    });
 
-                            if has_generated {
-                                diagnostics.push(
+                    if has_generated {
+                        diagnostics.push(
                                     LinterDiagnostic::new(
                                         rule_category!(),
                                         None,
@@ -85,23 +83,26 @@ impl LinterRule for AddingFieldWithDefault {
                                     .detail(None, "This operation requires an ACCESS EXCLUSIVE lock and rewrites the entire table.")
                                     .note("Add the column as nullable, backfill existing rows, and add a trigger to update the column on write instead."),
                                 );
-                            } else if has_default {
-                                // For PG 11+, check if the default is volatile
-                                if pg_version.is_some_and(|v| v >= 11) {
-                                    // Check if default is non-volatile
-                                    let is_safe_default = col_def.constraints.iter().any(|constraint| {
-                                        if let Some(pgls_query::NodeEnum::Constraint(c)) = &constraint.node {
-                                            if c.contype() == pgls_query::protobuf::ConstrType::ConstrDefault {
-                                                if let Some(raw_expr) = &c.raw_expr {
-                                                    return is_safe_default_expr(&raw_expr.node.as_ref().map(|n| Box::new(n.clone())), ctx.schema_cache());
-                                                }
-                                            }
-                                        }
-                                        false
-                                    });
+                    } else if has_default {
+                        // For PG 11+, check if the default is volatile
+                        if pg_version.is_some_and(|v| v >= 11) {
+                            // Check if default is non-volatile
+                            let is_safe_default = col_def.constraints.iter().any(|constraint| {
+                                if let Some(pgls_query::NodeEnum::Constraint(c)) = &constraint.node
+                                    && c.contype()
+                                        == pgls_query::protobuf::ConstrType::ConstrDefault
+                                    && let Some(raw_expr) = &c.raw_expr
+                                {
+                                    return is_safe_default_expr(
+                                        &raw_expr.node.as_ref().map(|n| Box::new(n.clone())),
+                                        ctx.schema_cache(),
+                                    );
+                                }
+                                false
+                            });
 
-                                    if !is_safe_default {
-                                        diagnostics.push(
+                            if !is_safe_default {
+                                diagnostics.push(
                                             LinterDiagnostic::new(
                                                 rule_category!(),
                                                 None,
@@ -112,10 +113,10 @@ impl LinterRule for AddingFieldWithDefault {
                                             .detail(None, "Even in PostgreSQL 11+, volatile default values require a full table rewrite.")
                                             .note("Add the column without a default, then set the default in a separate statement."),
                                         );
-                                    }
-                                } else {
-                                    // Pre PG 11, all defaults cause rewrites
-                                    diagnostics.push(
+                            }
+                        } else {
+                            // Pre PG 11, all defaults cause rewrites
+                            diagnostics.push(
                                         LinterDiagnostic::new(
                                             rule_category!(),
                                             None,
@@ -126,8 +127,6 @@ impl LinterRule for AddingFieldWithDefault {
                                         .detail(None, "This operation requires an ACCESS EXCLUSIVE lock and rewrites the entire table.")
                                         .note("Add the column without a default, then set the default in a separate statement."),
                                     );
-                                }
-                            }
                         }
                     }
                 }

@@ -42,11 +42,11 @@ impl LinterRule for AddingRequiredField {
             }
 
             for cmd in &stmt.cmds {
-                if let Some(pgls_query::NodeEnum::AlterTableCmd(alter_table_cmd)) = &cmd.node {
-                    if alter_table_cmd.subtype()
+                if let Some(pgls_query::NodeEnum::AlterTableCmd(alter_table_cmd)) = &cmd.node
+                    && alter_table_cmd.subtype()
                         == pgls_query::protobuf::AlterTableType::AtAddColumn
-                    {
-                        diagnostics.push(
+                {
+                    diagnostics.push(
                             LinterDiagnostic::new(
                                 rule_category!(),
                                 None,
@@ -60,7 +60,6 @@ impl LinterRule for AddingRequiredField {
                                 ",
                         ),
                     );
-                    }
                 }
             }
         }

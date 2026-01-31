@@ -1,0 +1,1 @@
+SELECT * WHERE data IS JSON

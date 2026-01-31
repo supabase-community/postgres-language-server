@@ -456,16 +456,16 @@ impl CompletionScore<'_> {
     }
 
     fn check_is_not_wellknown_migration(&mut self, _ctx: &TreesitterContext) {
-        if let Some(table_name) = self.get_table_name() {
-            if ["_sqlx_migrations"].contains(&table_name) {
-                self.score -= 10;
-            }
+        if let Some(table_name) = self.get_table_name()
+            && ["_sqlx_migrations"].contains(&table_name)
+        {
+            self.score -= 10;
         }
 
-        if let Some(schema_name) = self.get_schema_name() {
-            if ["supabase_migrations"].contains(&schema_name) {
-                self.score -= 10;
-            }
+        if let Some(schema_name) = self.get_schema_name()
+            && ["supabase_migrations"].contains(&schema_name)
+        {
+            self.score -= 10;
         }
     }
 }

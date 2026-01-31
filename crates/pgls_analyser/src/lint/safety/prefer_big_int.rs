@@ -68,17 +68,14 @@ impl LinterRule for PreferBigInt {
             }
             pgls_query::NodeEnum::AlterTableStmt(stmt) => {
                 for cmd in &stmt.cmds {
-                    if let Some(pgls_query::NodeEnum::AlterTableCmd(cmd)) = &cmd.node {
-                        if cmd.subtype() == pgls_query::protobuf::AlterTableType::AtAddColumn
+                    if let Some(pgls_query::NodeEnum::AlterTableCmd(cmd)) = &cmd.node
+                        && (cmd.subtype() == pgls_query::protobuf::AlterTableType::AtAddColumn
                             || cmd.subtype()
-                                == pgls_query::protobuf::AlterTableType::AtAlterColumnType
-                        {
-                            if let Some(pgls_query::NodeEnum::ColumnDef(col_def)) =
-                                &cmd.def.as_ref().and_then(|d| d.node.as_ref())
-                            {
-                                check_column_def(&mut diagnostics, col_def);
-                            }
-                        }
+                                == pgls_query::protobuf::AlterTableType::AtAlterColumnType)
+                        && let Some(pgls_query::NodeEnum::ColumnDef(col_def)) =
+                            &cmd.def.as_ref().and_then(|d| d.node.as_ref())
+                    {
+                        check_column_def(&mut diagnostics, col_def);
                     }
                 }
             }

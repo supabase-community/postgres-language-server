@@ -650,7 +650,7 @@ mod tests {
         }
     }
 
-    fn lex(input: &str) -> Vec<TokenDebug> {
+    fn lex(input: &str) -> Vec<TokenDebug<'_>> {
         let mut tokens = vec![];
         let mut start = 0;
 

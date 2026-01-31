@@ -56,12 +56,10 @@ impl LinterRule for AddingForeignKeyConstraint {
                         pgls_query::protobuf::AlterTableType::AtAddConstraint => {
                             if let Some(pgls_query::NodeEnum::Constraint(constraint)) =
                                 cmd.def.as_ref().and_then(|d| d.node.as_ref())
-                            {
-                                if let Some(diagnostic) =
+                                && let Some(diagnostic) =
                                     check_foreign_key_constraint(constraint, false)
-                                {
-                                    diagnostics.push(diagnostic);
-                                }
+                            {
+                                diagnostics.push(diagnostic);
                             }
                         }
                         pgls_query::protobuf::AlterTableType::AtAddColumn => {
@@ -72,12 +70,10 @@ impl LinterRule for AddingForeignKeyConstraint {
                                 for constraint in &col_def.constraints {
                                     if let Some(pgls_query::NodeEnum::Constraint(constr)) =
                                         &constraint.node
-                                    {
-                                        if let Some(diagnostic) =
+                                        && let Some(diagnostic) =
                                             check_foreign_key_constraint(constr, true)
-                                        {
-                                            diagnostics.push(diagnostic);
-                                        }
+                                    {
+                                        diagnostics.push(diagnostic);
                                     }
                                 }
                             }

@@ -1,0 +1,1 @@
+CREATE TABLE users (id TEXT, name TEXT);

@@ -49,10 +49,10 @@ impl LinterRule for BanCharField {
 
         if let pgls_query::NodeEnum::CreateStmt(stmt) = &ctx.stmt() {
             for table_elt in &stmt.table_elts {
-                if let Some(pgls_query::NodeEnum::ColumnDef(col_def)) = &table_elt.node {
-                    if let Some(diagnostic) = check_column_for_char_type(col_def) {
-                        diagnostics.push(diagnostic);
-                    }
+                if let Some(pgls_query::NodeEnum::ColumnDef(col_def)) = &table_elt.node
+                    && let Some(diagnostic) = check_column_for_char_type(col_def)
+                {
+                    diagnostics.push(diagnostic);
                 }
             }
         }
@@ -60,16 +60,13 @@ impl LinterRule for BanCharField {
         // Also check ALTER TABLE ADD COLUMN statements
         if let pgls_query::NodeEnum::AlterTableStmt(stmt) = &ctx.stmt() {
             for cmd in &stmt.cmds {
-                if let Some(pgls_query::NodeEnum::AlterTableCmd(cmd)) = &cmd.node {
-                    if cmd.subtype() == pgls_query::protobuf::AlterTableType::AtAddColumn {
-                        if let Some(pgls_query::NodeEnum::ColumnDef(col_def)) =
-                            &cmd.def.as_ref().and_then(|d| d.node.as_ref())
-                        {
-                            if let Some(diagnostic) = check_column_for_char_type(col_def) {
-                                diagnostics.push(diagnostic);
-                            }
-                        }
-                    }
+                if let Some(pgls_query::NodeEnum::AlterTableCmd(cmd)) = &cmd.node
+                    && cmd.subtype() == pgls_query::protobuf::AlterTableType::AtAddColumn
+                    && let Some(pgls_query::NodeEnum::ColumnDef(col_def)) =
+                        &cmd.def.as_ref().and_then(|d| d.node.as_ref())
+                    && let Some(diagnostic) = check_column_for_char_type(col_def)
+                {
+                    diagnostics.push(diagnostic);
                 }
             }
         }

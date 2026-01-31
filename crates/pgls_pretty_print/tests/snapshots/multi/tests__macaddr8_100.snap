@@ -1,0 +1,149 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/macaddr8.sql
+snapshot_kind: text
+---
+select cast('08:00:2b:01:02:03     ' as macaddr8);
+
+select cast('    08:00:2b:01:02:03     ' as macaddr8);
+
+select cast('    08:00:2b:01:02:03' as macaddr8);
+
+select cast('08:00:2b:01:02:03:04:05     ' as macaddr8);
+
+select cast('    08:00:2b:01:02:03:04:05     ' as macaddr8);
+
+select cast('    08:00:2b:01:02:03:04:05' as macaddr8);
+
+select cast('123    08:00:2b:01:02:03' as macaddr8);
+
+select cast('08:00:2b:01:02:03  123' as macaddr8);
+
+select cast('123    08:00:2b:01:02:03:04:05' as macaddr8);
+
+select cast('08:00:2b:01:02:03:04:05  123' as macaddr8);
+
+select cast('08:00:2b:01:02:03:04:05:06:07' as macaddr8);
+
+select cast('08-00-2b-01-02-03-04-05-06-07' as macaddr8);
+
+select cast('08002b:01020304050607' as macaddr8);
+
+select cast('08002b01020304050607' as macaddr8);
+
+select cast('0z002b0102030405' as macaddr8);
+
+select cast('08002b010203xyza' as macaddr8);
+
+select cast('08:00-2b:01:02:03:04:05' as macaddr8);
+
+select cast('08:00-2b:01:02:03:04:05' as macaddr8);
+
+select cast('08:00:2b:01.02:03:04:05' as macaddr8);
+
+select cast('08:00:2b:01.02:03:04:05' as macaddr8);
+
+select macaddr8_set7bit(cast('00:08:2b:01:02:03' as macaddr8));
+
+create table macaddr8_data (
+  a int,
+  b macaddr8
+);
+
+insert into macaddr8_data values (1, '08:00:2b:01:02:03');
+
+insert into macaddr8_data values (2, '08-00-2b-01-02-03');
+
+insert into macaddr8_data values (3, '08002b:010203');
+
+insert into macaddr8_data values (4, '08002b-010203');
+
+insert into macaddr8_data values (5, '0800.2b01.0203');
+
+insert into macaddr8_data values (6, '0800-2b01-0203');
+
+insert into macaddr8_data values (7, '08002b010203');
+
+insert into macaddr8_data values (8, '0800:2b01:0203');
+
+insert into macaddr8_data values (9, 'not even close');
+
+insert into macaddr8_data values (10, '08:00:2b:01:02:04');
+
+insert into macaddr8_data values (11, '08:00:2b:01:02:02');
+
+insert into macaddr8_data values (12, '08:00:2a:01:02:03');
+
+insert into macaddr8_data values (13, '08:00:2c:01:02:03');
+
+insert into macaddr8_data values (14, '08:00:2a:01:02:04');
+
+insert into macaddr8_data values (15, '08:00:2b:01:02:03:04:05');
+
+insert into macaddr8_data values (16, '08-00-2b-01-02-03-04-05');
+
+insert into macaddr8_data values (17, '08002b:0102030405');
+
+insert into macaddr8_data values (18, '08002b-0102030405');
+
+insert into macaddr8_data values (19, '0800.2b01.0203.0405');
+
+insert into macaddr8_data values (20, '08002b01:02030405');
+
+insert into macaddr8_data values (21, '08002b0102030405');
+
+select * from macaddr8_data order by 1;
+
+create index "macaddr8_data_btree" on macaddr8_data using btree (b);
+
+create index "macaddr8_data_hash" on macaddr8_data using hash (b);
+
+select a, b, trunc(b) from macaddr8_data order by 2, 1;
+
+select b < '08:00:2b:01:02:04' from macaddr8_data where a = 1;
+
+select b > '08:00:2b:ff:fe:01:02:04' from macaddr8_data where a = 1;
+
+select b > '08:00:2b:ff:fe:01:02:03' from macaddr8_data where a = 1;
+
+select cast(b as macaddr) <= '08:00:2b:01:02:04' from macaddr8_data where a = 1;
+
+select cast(b as macaddr) >= '08:00:2b:01:02:04' from macaddr8_data where a = 1;
+
+select b = '08:00:2b:ff:fe:01:02:03' from macaddr8_data where a = 1;
+
+select cast(b as macaddr) <> cast('08:00:2b:01:02:04' as macaddr) from macaddr8_data where a = 1;
+
+select cast(b as macaddr) <> cast('08:00:2b:01:02:03' as macaddr) from macaddr8_data where a = 1;
+
+select b < '08:00:2b:01:02:03:04:06' from macaddr8_data where a = 15;
+
+select b > '08:00:2b:01:02:03:04:06' from macaddr8_data where a = 15;
+
+select b > '08:00:2b:01:02:03:04:05' from macaddr8_data where a = 15;
+
+select b <= '08:00:2b:01:02:03:04:06' from macaddr8_data where a = 15;
+
+select b >= '08:00:2b:01:02:03:04:06' from macaddr8_data where a = 15;
+
+select b = '08:00:2b:01:02:03:04:05' from macaddr8_data where a = 15;
+
+select b <> '08:00:2b:01:02:03:04:06' from macaddr8_data where a = 15;
+
+select b <> '08:00:2b:01:02:03:04:05' from macaddr8_data where a = 15;
+
+select ~b from macaddr8_data;
+
+select b & '00:00:00:ff:ff:ff' from macaddr8_data;
+
+select b | '01:02:03:04:05:06' from macaddr8_data;
+
+drop table macaddr8_data;
+
+select pg_input_is_valid('08:00:2b:01:02:03:04:ZZ', 'macaddr8');
+
+select * from pg_input_error_info('08:00:2b:01:02:03:04:ZZ', 'macaddr8');
+
+select pg_input_is_valid('08:00:2b:01:02:03:04:', 'macaddr8');
+
+select * from pg_input_error_info('08:00:2b:01:02:03:04:', 'macaddr8');

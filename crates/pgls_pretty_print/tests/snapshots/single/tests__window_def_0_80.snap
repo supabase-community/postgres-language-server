@@ -1,0 +1,15 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/single/window_def_0.sql
+snapshot_kind: text
+---
+select
+  id,
+  name,
+  ROW_NUMBER()
+  over (
+    partition by dept
+    order by salary desc
+  )
+from
+  employees;

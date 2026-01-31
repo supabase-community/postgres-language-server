@@ -1,0 +1,6 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/single/select_for_update_0.sql
+snapshot_kind: text
+---
+select * from seats order by seat_no limit 1 for update skip locked;

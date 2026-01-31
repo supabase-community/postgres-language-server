@@ -82,12 +82,11 @@ pub async fn run_splinter(
 
     for rule_name in &collector.enabled_rules {
         // Skip Supabase-specific rules if Supabase roles don't exist
-        if !has_supabase_roles {
-            if let Some(metadata) = crate::registry::get_rule_metadata(rule_name) {
-                if metadata.requires_supabase {
-                    continue;
-                }
-            }
+        if !has_supabase_roles
+            && let Some(metadata) = crate::registry::get_rule_metadata(rule_name)
+            && metadata.requires_supabase
+        {
+            continue;
         }
 
         // Get embedded SQL content (compile-time included)
@@ -154,18 +153,18 @@ pub async fn run_splinter(
                 };
 
                 // Check global ignore first
-                if let Some(ref matcher) = global_ignore_matcher {
-                    if matcher.matches(&object_identifier) {
-                        return false;
-                    }
+                if let Some(ref matcher) = global_ignore_matcher
+                    && matcher.matches(&object_identifier)
+                {
+                    return false;
                 }
 
                 // Then check per-rule ignore
                 let rule_name = diag.category.name().split('/').next_back().unwrap_or("");
-                if let Some(matcher) = rule_matchers.get(rule_name) {
-                    if matcher.matches(&object_identifier) {
-                        return false;
-                    }
+                if let Some(matcher) = rule_matchers.get(rule_name)
+                    && matcher.matches(&object_identifier)
+                {
+                    return false;
                 }
 
                 true

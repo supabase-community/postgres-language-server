@@ -1,0 +1,22 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/single/json_table_features_0.sql
+snapshot_kind: text
+---
+create view jsonb_table_view2
+as select
+  *
+from
+  json_table(
+    cast('null' as jsonb),
+    'lax $[*]'
+    passing 1 + 2 as a,
+    cast('"foo"' as json) as "b c"
+    columns (
+      int int path '$',
+      text text path '$',
+      js json path '$',
+      jsb jsonb path '$'
+    )
+    null on error
+  );

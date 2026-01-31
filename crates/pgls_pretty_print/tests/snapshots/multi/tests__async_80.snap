@@ -1,0 +1,30 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/async.sql
+snapshot_kind: text
+---
+select pg_notify('notify_async1', 'sample message1');
+
+select pg_notify('notify_async1', '');
+
+select pg_notify('notify_async1', null);
+
+select pg_notify('', 'sample message1');
+
+select pg_notify(null, 'sample message1');
+
+select
+  pg_notify(
+    'notify_async_channel_name_too_long______________________________',
+    'sample_message1'
+  );
+
+notify "notify_async2";
+
+listen notify_async2;
+
+unlisten notify_async2;
+
+unlisten *;
+
+select pg_notification_queue_usage();

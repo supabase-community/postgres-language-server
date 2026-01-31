@@ -58,9 +58,10 @@ impl LinterRule for AddingNotNullField {
 
         if let pgls_query::NodeEnum::AlterTableStmt(stmt) = &ctx.stmt() {
             for cmd in &stmt.cmds {
-                if let Some(pgls_query::NodeEnum::AlterTableCmd(cmd)) = &cmd.node {
-                    if cmd.subtype() == pgls_query::protobuf::AlterTableType::AtSetNotNull {
-                        diagnostics.push(LinterDiagnostic::new(
+                if let Some(pgls_query::NodeEnum::AlterTableCmd(cmd)) = &cmd.node
+                    && cmd.subtype() == pgls_query::protobuf::AlterTableType::AtSetNotNull
+                {
+                    diagnostics.push(LinterDiagnostic::new(
                             rule_category!(),
                             None,
                             markup! {
@@ -68,7 +69,6 @@ impl LinterRule for AddingNotNullField {
                             },
                         ).detail(None, "This operation requires an ACCESS EXCLUSIVE lock and a full table scan to verify all rows.")
                         .note("Use a CHECK constraint with NOT VALID instead, then validate it in a separate transaction."));
-                    }
                 }
             }
         }

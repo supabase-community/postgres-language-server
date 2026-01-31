@@ -1,0 +1,1629 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/merge.sql
+snapshot_kind: text
+---
+create user regress_merge_privs;
+
+create user regress_merge_no_privs;
+
+create user regress_merge_none;
+
+drop table if exists target;
+
+drop table if exists source;
+
+create table target (
+  tid int,
+  balance int
+)
+with (autovacuum_enabled = off);
+
+create table source (
+  sid int,
+  delta int
+)
+with (autovacuum_enabled = off);
+
+insert into target values (1, 10);
+
+insert into target values (2, 20);
+
+insert into target values (3, 30);
+
+select
+  t.ctid is not null as matched,
+  t.*,
+  s.*
+from
+  source as s
+  full outer join
+    target as t
+  on s.sid = t.tid
+order by t.tid,
+  s.sid;
+
+alter table target
+  owner to regress_merge_privs;
+
+alter table source
+  owner to regress_merge_privs;
+
+create table target2 (
+  tid int,
+  balance int
+)
+with (autovacuum_enabled = off);
+
+create table source2 (
+  sid int,
+  delta int
+)
+with (autovacuum_enabled = off);
+
+alter table target2
+  owner to regress_merge_no_privs;
+
+alter table source2
+  owner to regress_merge_no_privs;
+
+grant INSERT on table target to regress_merge_no_privs;
+
+set session authorization regress_merge_privs;
+
+insert into target default values;
+
+update target set balance = 0;
+
+merge into target using target on tid = tid when matched then do nothing;
+
+with foo as (merge into target using source on true when matched then delete) select * from foo;
+
+copy (merge into target using source on true when matched then delete) to stdout;
+
+create materialized view mv as select * from target;
+
+drop materialized view mv;
+
+set session authorization regress_merge_none;
+
+merge into target using (select 1) on true when matched then do nothing;
+
+set session authorization regress_merge_privs;
+
+grant INSERT on table target to regress_merge_no_privs;
+
+set session authorization regress_merge_no_privs;
+
+grant UPDATE on table target2 to regress_merge_privs;
+
+set session authorization regress_merge_privs;
+
+begin;
+
+rollback;
+
+insert into source values (4, 40);
+
+select * from source order by sid;
+
+select * from target order by tid;
+
+merge into target as t
+using source as s
+on t.tid = s.sid
+when not matched by target then do nothing;
+
+begin;
+
+select * from target order by tid;
+
+rollback;
+
+begin;
+
+select * from target order by tid;
+
+rollback;
+
+insert into target select generate_series(1000, 2500), 0;
+
+alter table target
+  add primary key (tid);
+
+analyze target;
+
+delete from target where tid > 100;
+
+analyze target;
+
+insert into source values (2, 5);
+
+insert into source values (3, 20);
+
+select * from source order by sid;
+
+select * from target order by tid;
+
+begin;
+
+select * from target order by tid;
+
+rollback;
+
+begin;
+
+select * from target order by tid;
+
+rollback;
+
+begin;
+
+merge into target as t using source as s on t.tid = s.sid when matched then do nothing;
+
+select * from target order by tid;
+
+rollback;
+
+begin;
+
+select * from target order by tid;
+
+rollback;
+
+insert into source values (2, 5);
+
+select * from source order by sid;
+
+select * from target order by tid;
+
+begin;
+
+rollback;
+
+begin;
+
+rollback;
+
+delete from source where sid = 2;
+
+insert into source values (2, 5);
+
+select * from source order by sid;
+
+select * from target order by tid;
+
+insert into source values (4, 40);
+
+begin;
+
+select * from target order by tid;
+
+rollback;
+
+delete from source where sid = 4;
+
+insert into source values (4, 40);
+
+select * from source order by sid;
+
+select * from target order by tid;
+
+alter table target
+  drop constraint target_pkey;
+
+alter table target
+  alter column tid drop not null;
+
+begin;
+
+select * from target order by tid;
+
+rollback;
+
+begin;
+
+select * from target order by tid;
+
+rollback;
+
+begin;
+
+select * from target order by tid;
+
+rollback;
+
+begin;
+
+select * from target order by tid;
+
+rollback;
+
+insert into source values (5, 50);
+
+insert into source values (5, 50);
+
+begin;
+
+select * from target order by tid;
+
+rollback;
+
+delete from source where sid = 5;
+
+begin;
+
+select * from target order by tid;
+
+rollback;
+
+begin;
+
+select * from target order by tid;
+
+rollback;
+
+begin;
+
+select * from target order by tid;
+
+rollback;
+
+begin;
+
+rollback;
+
+create table wq_target (
+  tid int not null,
+  balance int default -1
+)
+with (autovacuum_enabled = off);
+
+create table wq_source (
+  balance int,
+  sid int
+)
+with (autovacuum_enabled = off);
+
+insert into wq_source (sid, balance) values (1, 100);
+
+begin;
+
+select * from wq_target;
+
+rollback;
+
+select * from wq_target;
+
+select * from wq_target;
+
+begin;
+
+select * from wq_target;
+
+rollback;
+
+begin;
+
+select * from wq_target;
+
+rollback;
+
+select * from wq_target;
+
+select * from wq_source;
+
+select * from wq_target;
+
+select * from wq_target;
+
+select * from wq_target;
+
+select * from wq_target;
+
+select * from wq_target;
+
+select * from wq_target;
+
+begin;
+
+select * from wq_target;
+
+rollback;
+
+select * from wq_target;
+
+drop table wq_target, wq_source;
+
+create or replace function merge_trigfunc()
+returns trigger
+language plpgsql
+as $function$
+DECLARE
+	line text;
+BEGIN
+	SELECT INTO line format('%s %s %s trigger%s',
+		TG_WHEN, TG_OP, TG_LEVEL, CASE
+		WHEN TG_OP = 'INSERT' AND TG_LEVEL = 'ROW'
+			THEN format(' row: %s', NEW)
+		WHEN TG_OP = 'UPDATE' AND TG_LEVEL = 'ROW'
+			THEN format(' row: %s -> %s', OLD, NEW)
+		WHEN TG_OP = 'DELETE' AND TG_LEVEL = 'ROW'
+			THEN format(' row: %s', OLD)
+		END);
+
+	RAISE NOTICE '%', line;
+	IF (TG_WHEN = 'BEFORE' AND TG_LEVEL = 'ROW') THEN
+		IF (TG_OP = 'DELETE') THEN
+			RETURN OLD;
+		ELSE
+			RETURN NEW;
+		END IF;
+	ELSE
+		RETURN NULL;
+	END IF;
+END;
+$function$;
+
+create trigger merge_bsi
+before insert
+on target
+for each statement
+execute function merge_trigfunc();
+
+create trigger merge_bsu
+before update
+on target
+for each statement
+execute function merge_trigfunc();
+
+create trigger merge_bsd
+before delete
+on target
+for each statement
+execute function merge_trigfunc();
+
+create trigger merge_asi
+after insert
+on target
+for each statement
+execute function merge_trigfunc();
+
+create trigger merge_asu
+after update
+on target
+for each statement
+execute function merge_trigfunc();
+
+create trigger merge_asd
+after delete
+on target
+for each statement
+execute function merge_trigfunc();
+
+create trigger merge_bri before insert on target for each row execute function merge_trigfunc();
+
+create trigger merge_bru before update on target for each row execute function merge_trigfunc();
+
+create trigger merge_brd before delete on target for each row execute function merge_trigfunc();
+
+create trigger merge_ari after insert on target for each row execute function merge_trigfunc();
+
+create trigger merge_aru after update on target for each row execute function merge_trigfunc();
+
+create trigger merge_ard after delete on target for each row execute function merge_trigfunc();
+
+begin;
+
+update target set balance = 0 where tid = 3;
+
+select * from target order by tid;
+
+rollback;
+
+begin;
+
+delete from source where sid = 2;
+
+select * from target order by tid;
+
+rollback;
+
+create or replace function skip_merge_op()
+returns trigger
+language plpgsql
+as $function$
+BEGIN
+	RETURN NULL;
+END;
+$function$;
+
+select * from target full outer join source on sid = tid;
+
+create trigger merge_skip
+before insert or delete or update
+on target
+for each row
+execute function skip_merge_op();
+
+do
+$do$
+DECLARE
+  result integer;
+BEGIN
+MERGE INTO target t
+USING source AS s
+ON t.tid = s.sid
+WHEN MATCHED AND s.sid = 3 THEN UPDATE SET balance = t.balance + s.delta
+WHEN MATCHED THEN DELETE
+WHEN NOT MATCHED THEN INSERT VALUES (sid, delta);
+IF FOUND THEN
+  RAISE NOTICE 'Found';
+ELSE
+  RAISE NOTICE 'Not found';
+END IF;
+GET DIAGNOSTICS result := ROW_COUNT;
+RAISE NOTICE 'ROW_COUNT = %', result;
+END;
+$do$;
+
+select * from target full outer join source on sid = tid;
+
+drop trigger merge_skip on target;
+
+drop function skip_merge_op();
+
+begin;
+
+do
+language plpgsql
+$do$
+BEGIN
+MERGE INTO target t
+USING source AS s
+ON t.tid = s.sid
+WHEN MATCHED AND t.balance > s.delta THEN
+	UPDATE SET balance = t.balance - s.delta;
+END;
+$do$;
+
+rollback;
+
+begin;
+
+select * from target order by tid;
+
+rollback;
+
+begin;
+
+select * from target order by tid;
+
+rollback;
+
+begin;
+
+select * from target order by tid;
+
+rollback;
+
+begin;
+
+select * from target order by tid;
+
+rollback;
+
+begin;
+
+select * from target order by tid;
+
+rollback;
+
+begin;
+
+select * from target order by tid;
+
+rollback;
+
+begin;
+
+create function merge_func(p_id int, p_bal int)
+returns int
+language plpgsql
+as $function$
+DECLARE
+ result integer;
+BEGIN
+MERGE INTO target t
+USING (SELECT p_id AS sid) AS s
+ON t.tid = s.sid
+WHEN MATCHED THEN
+	UPDATE SET balance = t.balance - p_bal;
+IF FOUND THEN
+	GET DIAGNOSTICS result := ROW_COUNT;
+END IF;
+RETURN result;
+END;
+$function$;
+
+select merge_func(3, 4);
+
+select * from target order by tid;
+
+rollback;
+
+begin;
+
+execute foom;
+
+select * from target order by tid;
+
+rollback;
+
+begin;
+
+execute foom2 (1, 1);
+
+select * from target order by tid;
+
+rollback;
+
+create table sq_target (
+  tid int not null,
+  balance int
+)
+with (autovacuum_enabled = off);
+
+create table sq_source (
+  delta int,
+  sid int,
+  balance int default 0
+)
+with (autovacuum_enabled = off);
+
+insert into sq_target (tid, balance) values (1, 100), (2, 200), (3, 300);
+
+insert into sq_source (sid, delta) values (1, 10), (2, 20), (4, 40);
+
+begin;
+
+select * from sq_target;
+
+rollback;
+
+create view v
+as select * from sq_source where sid < 2;
+
+begin;
+
+select * from sq_target;
+
+rollback;
+
+begin;
+
+rollback;
+
+begin;
+
+insert into sq_source (sid, balance, delta) values (-1, -1, -10);
+
+select * from sq_target;
+
+rollback;
+
+begin;
+
+insert into sq_source (sid, balance, delta) values (-1, -1, -10);
+
+with targq as (select * from v)
+merge into sq_target as t
+using v
+on tid = sid
+when matched and
+  tid >= 2
+then update set balance = t.balance + delta
+when not matched by target
+then insert (balance, tid)
+values (balance + delta, sid)
+when matched and tid < 2 then delete;
+
+rollback;
+
+select * from sq_source order by sid;
+
+select * from sq_target order by tid;
+
+begin;
+
+create table merge_actions (
+  action text,
+  abbrev text
+);
+
+insert into merge_actions values ('INSERT', 'ins'), ('UPDATE', 'upd'), ('DELETE', 'del');
+
+rollback;
+
+select "mergesupport#25" from sq_target;
+
+update sq_target set balance = balance + 1 returning "mergesupport#25";
+
+create table sq_target_merge_log (
+  tid int not null,
+  last_change text
+);
+
+insert into sq_target_merge_log values (1, 'Original value');
+
+begin;
+
+with
+m
+as (
+  merge into sq_target as t
+  using sq_source as s
+  on tid = sid
+  when matched and
+    tid >= 2
+  then update set balance = t.balance + delta
+  when not matched by target
+  then insert (balance, tid)
+  values (balance + delta, sid)
+  when matched and tid < 2 then delete
+  returning "mergesupport#25" as action,
+    old as old_data,
+    new as new_data,
+    t.*,
+    case "mergesupport#25"
+      when 'INSERT' then 'Inserted ' || t
+      when 'UPDATE'
+      then 'Added ' || delta || ' to balance'
+      when 'DELETE' then 'Removed ' || t
+    end
+    as description
+),
+m2
+as (
+  merge into sq_target_merge_log as l
+  using m
+  on l.tid = m.tid
+  when matched
+  then update set last_change = description
+  when not matched by target
+  then insert
+  values (m.tid, description)
+  returning m.*,
+    "mergesupport#25" as log_action,
+    old as old_log,
+    new as new_log,
+    l.*
+)
+select
+  *
+from
+  m2;
+
+select * from sq_target_merge_log order by tid;
+
+rollback;
+
+begin;
+
+copy (merge into sq_target as t
+using sq_source as s
+on tid = sid
+when matched and
+  tid >= 2
+then update set balance = t.balance + delta
+when not matched by target
+then insert (balance, tid)
+values (balance + delta, sid)
+when matched and tid < 2 then delete
+returning "mergesupport#25",
+  old.*,
+  new.*)
+to stdout;
+
+rollback;
+
+begin;
+
+create function
+merge_into_sq_target(
+  sid int,
+  balance int,
+  delta int,
+  out action text,
+  out tid int,
+  out new_balance int
+)
+language sql
+as $function$
+    MERGE INTO sq_target t
+    USING (VALUES ($1, $2, $3)) AS v(sid, balance, delta)
+    ON tid = v.sid
+    WHEN MATCHED AND tid >= 2 THEN
+        UPDATE SET balance = t.balance + v.delta
+    WHEN NOT MATCHED THEN
+        INSERT (balance, tid) VALUES (v.balance + v.delta, v.sid)
+    WHEN MATCHED AND tid < 2 THEN
+        DELETE
+    RETURNING merge_action(), t.*;
+$function$;
+
+select
+  m.*
+from
+  (
+    values (1, 0, 0), (3, 0, 20), (4, 100, 10)
+  )
+  as v (sid, balance, delta),
+  lateral (
+    select
+      action,
+      tid,
+      new_balance
+    from
+      merge_into_sq_target(sid, balance, delta)
+  )
+  as m;
+
+rollback;
+
+begin;
+
+create function merge_sq_source_into_sq_target()
+returns table (
+  action text,
+  tid int,
+  balance int
+)
+language sql
+as $function$
+    MERGE INTO sq_target t
+    USING sq_source s
+    ON tid = sid
+    WHEN MATCHED AND tid >= 2 THEN
+        UPDATE SET balance = t.balance + delta
+    WHEN NOT MATCHED THEN
+        INSERT (balance, tid) VALUES (balance + delta, sid)
+    WHEN MATCHED AND tid < 2 THEN
+        DELETE
+    RETURNING merge_action(), t.*;
+$function$;
+
+select * from merge_sq_source_into_sq_target();
+
+rollback;
+
+begin;
+
+create function
+merge_into_sq_target(
+  sid int,
+  balance int,
+  delta int,
+  out r_action text,
+  out r_tid int,
+  out r_balance int
+)
+language plpgsql
+as $function$
+BEGIN
+    MERGE INTO sq_target t
+    USING (VALUES ($1, $2, $3)) AS v(sid, balance, delta)
+    ON tid = v.sid
+    WHEN MATCHED AND tid >= 2 THEN
+        UPDATE SET balance = t.balance + v.delta
+    WHEN NOT MATCHED THEN
+        INSERT (balance, tid) VALUES (v.balance + v.delta, v.sid)
+    WHEN MATCHED AND tid < 2 THEN
+        DELETE
+    RETURNING merge_action(), t.* INTO r_action, r_tid, r_balance;
+END;
+$function$;
+
+select
+  m.*
+from
+  (
+    values (1, 0, 0), (3, 0, 20), (4, 100, 10)
+  )
+  as v (sid, balance, delta),
+  lateral (
+    select
+      r_action,
+      r_tid,
+      r_balance
+    from
+      merge_into_sq_target(sid, balance, delta)
+  )
+  as m;
+
+rollback;
+
+create table ex_mtarget (
+  a int,
+  b int
+)
+with (autovacuum_enabled = off);
+
+create table ex_msource (
+  a int,
+  b int
+)
+with (autovacuum_enabled = off);
+
+insert into ex_mtarget select i, i * 10 from generate_series(1, 100, 2) as i;
+
+insert into ex_msource select i, i * 10 from generate_series(1, 100, 1) as i;
+
+create function explain_merge(query text)
+returns setof text
+language plpgsql
+as $function$
+DECLARE ln text;
+BEGIN
+    FOR ln IN
+        EXECUTE 'explain (analyze, timing off, summary off, costs off, buffers off) ' ||
+		  query
+    LOOP
+        ln := regexp_replace(ln, '(Memory( Usage)?|Buckets|Batches): \S*',  '\1: xxx', 'g');
+        RETURN NEXT ln;
+    END LOOP;
+END;
+$function$;
+
+select
+  explain_merge(
+    '
+MERGE INTO ex_mtarget t USING ex_msource s ON t.a = s.a
+WHEN MATCHED THEN
+	UPDATE SET b = t.b + 1'
+  );
+
+select
+  explain_merge(
+    '
+MERGE INTO ex_mtarget t USING ex_msource s ON t.a = s.a
+WHEN MATCHED AND t.a < 10 THEN
+	UPDATE SET b = t.b + 1'
+  );
+
+select
+  explain_merge(
+    '
+MERGE INTO ex_mtarget t USING ex_msource s ON t.a = s.a
+WHEN MATCHED AND t.a < 10 THEN
+	UPDATE SET b = t.b + 1
+WHEN MATCHED AND t.a >= 10 AND t.a <= 20 THEN
+	DELETE'
+  );
+
+select
+  explain_merge(
+    '
+MERGE INTO ex_mtarget t USING ex_msource s ON t.a = s.a
+WHEN NOT MATCHED AND s.a < 10 THEN
+	INSERT VALUES (a, b)'
+  );
+
+select
+  explain_merge(
+    '
+MERGE INTO ex_mtarget t USING ex_msource s ON t.a = s.a
+WHEN MATCHED AND t.a < 10 THEN
+	UPDATE SET b = t.b + 1
+WHEN MATCHED AND t.a >= 30 AND t.a <= 40 THEN
+	DELETE
+WHEN NOT MATCHED AND s.a < 20 THEN
+	INSERT VALUES (a, b)'
+  );
+
+select
+  explain_merge(
+    '
+MERGE INTO ex_mtarget t USING ex_msource s ON t.a = s.a
+WHEN NOT MATCHED BY SOURCE and t.a < 10 THEN
+	DELETE'
+  );
+
+select
+  explain_merge(
+    '
+MERGE INTO ex_mtarget t USING ex_msource s ON t.a = s.a
+WHEN NOT MATCHED BY SOURCE AND t.a < 10 THEN
+	DELETE
+WHEN NOT MATCHED BY TARGET AND s.a < 20 THEN
+	INSERT VALUES (a, b)'
+  );
+
+select
+  explain_merge(
+    '
+MERGE INTO ex_mtarget t USING ex_msource s ON t.a = s.a AND t.a < -1000
+WHEN MATCHED AND t.a < 10 THEN
+	DO NOTHING'
+  );
+
+drop table ex_msource, ex_mtarget;
+
+drop function explain_merge(text);
+
+create table src (
+  a int,
+  b int,
+  c int,
+  d int
+);
+
+create table tgt (
+  a int,
+  b int,
+  c int,
+  d int
+);
+
+create table ref (
+  ab int,
+  cd int
+);
+
+drop table src, tgt, ref;
+
+begin;
+
+select * from sq_target where tid = 1;
+
+rollback;
+
+begin;
+
+select * from sq_target where tid = 1;
+
+rollback;
+
+begin;
+
+select * from sq_target where tid = 1;
+
+rollback;
+
+drop table sq_target, sq_target_merge_log, sq_source cascade;
+
+create table pa_target (
+  tid int,
+  balance double precision,
+  val text
+)
+partition by LIST(tid);
+
+create table part1 partition of pa_target for values in (1, 4) with (autovacuum_enabled = off);
+
+create table part2 partition of pa_target for values in (2, 5, 6) with (autovacuum_enabled = off);
+
+create table part3 partition of pa_target for values in (3, 8, 9) with (autovacuum_enabled = off);
+
+create table part4 partition of pa_target default with (autovacuum_enabled = off);
+
+create table pa_source (
+  sid int,
+  delta double precision
+);
+
+insert into pa_source select id, id * 10 from generate_series(1, 14) as id;
+
+insert into pa_target select id, id * 100, 'initial' from generate_series(1, 15, 2) as id;
+
+begin;
+
+select * from pa_target order by tid, val;
+
+rollback;
+
+begin;
+
+select * from pa_target order by tid, val;
+
+rollback;
+
+begin;
+
+create function merge_func()
+returns int
+language plpgsql
+as $function$
+DECLARE
+  result integer;
+BEGIN
+MERGE INTO pa_target t
+  USING pa_source s
+  ON t.tid = s.sid
+  WHEN MATCHED THEN
+    UPDATE SET tid = tid + 1, balance = balance + delta, val = val || ' updated by merge'
+  WHEN NOT MATCHED THEN
+    INSERT VALUES (sid, delta, 'inserted by merge')
+  WHEN NOT MATCHED BY SOURCE THEN
+    UPDATE SET tid = 1, val = val || ' not matched by source';
+IF FOUND THEN
+  GET DIAGNOSTICS result := ROW_COUNT;
+END IF;
+RETURN result;
+END;
+$function$;
+
+select merge_func();
+
+select * from pa_target order by tid, val;
+
+rollback;
+
+begin;
+
+select * from pa_target order by tid;
+
+rollback;
+
+begin;
+
+truncate pa_target;
+
+select * from pa_target order by tid, val;
+
+rollback;
+
+drop table pa_target cascade;
+
+create table pa_target (
+  tid int,
+  balance double precision,
+  val text
+)
+partition by LIST(tid);
+
+create table part1 (
+  tid int,
+  balance double precision,
+  val text
+)
+with (autovacuum_enabled = off);
+
+create table part2 (
+  balance double precision,
+  tid int,
+  val text
+)
+with (autovacuum_enabled = off);
+
+create table part3 (
+  tid int,
+  balance double precision,
+  val text
+)
+with (autovacuum_enabled = off);
+
+create table part4 (
+  extraid text,
+  tid int,
+  balance double precision,
+  val text
+)
+with (autovacuum_enabled = off);
+
+alter table part4
+  drop column extraid;
+
+alter table pa_target
+  attach partition
+  part1 for values in (1, 4);
+
+alter table pa_target
+  attach partition
+  part2 for values in (2, 5, 6);
+
+alter table pa_target
+  attach partition
+  part3 for values in (3, 8, 9);
+
+alter table pa_target
+  attach partition
+  part4 default;
+
+insert into pa_target select id, id * 100, 'initial' from generate_series(1, 15, 2) as id;
+
+begin;
+
+do
+$do$
+DECLARE
+  result integer;
+BEGIN
+MERGE INTO pa_target t
+  USING pa_source s
+  ON t.tid = s.sid
+  WHEN MATCHED THEN
+    UPDATE SET balance = balance + delta, val = val || ' updated by merge'
+  WHEN NOT MATCHED THEN
+    INSERT VALUES (sid, delta, 'inserted by merge')
+  WHEN NOT MATCHED BY SOURCE THEN
+    UPDATE SET val = val || ' not matched by source';
+GET DIAGNOSTICS result := ROW_COUNT;
+RAISE NOTICE 'ROW_COUNT = %', result;
+END;
+$do$;
+
+select * from pa_target order by tid, val;
+
+rollback;
+
+begin;
+
+select * from pa_target order by tid, val;
+
+rollback;
+
+begin;
+
+do
+$do$
+DECLARE
+  result integer;
+BEGIN
+MERGE INTO pa_target t
+  USING pa_source s
+  ON t.tid = s.sid
+  WHEN MATCHED THEN
+    UPDATE SET tid = tid + 1, balance = balance + delta, val = val || ' updated by merge'
+  WHEN NOT MATCHED THEN
+    INSERT VALUES (sid, delta, 'inserted by merge')
+  WHEN NOT MATCHED BY SOURCE THEN
+    UPDATE SET tid = 1, val = val || ' not matched by source';
+GET DIAGNOSTICS result := ROW_COUNT;
+RAISE NOTICE 'ROW_COUNT = %', result;
+END;
+$do$;
+
+select * from pa_target order by tid, val;
+
+rollback;
+
+begin;
+
+create function trig_fn()
+returns trigger
+language plpgsql
+as $function$ BEGIN RETURN NULL; END; $function$;
+
+create trigger del_trig before delete on pa_target for each row execute function trig_fn();
+
+do
+$do$
+DECLARE
+  result integer;
+BEGIN
+MERGE INTO pa_target t
+  USING pa_source s
+  ON t.tid = s.sid
+  WHEN MATCHED THEN
+    UPDATE SET tid = tid + 1, balance = balance + delta, val = val || ' updated by merge'
+  WHEN NOT MATCHED THEN
+    INSERT VALUES (sid, delta, 'inserted by merge')
+  WHEN NOT MATCHED BY SOURCE THEN
+    UPDATE SET val = val || ' not matched by source';
+GET DIAGNOSTICS result := ROW_COUNT;
+RAISE NOTICE 'ROW_COUNT = %', result;
+END;
+$do$;
+
+select * from pa_target order by tid, val;
+
+rollback;
+
+begin;
+
+create function trig_fn()
+returns trigger
+language plpgsql
+as $function$ BEGIN RETURN NULL; END; $function$;
+
+create trigger ins_trig before insert on pa_target for each row execute function trig_fn();
+
+do
+$do$
+DECLARE
+  result integer;
+BEGIN
+MERGE INTO pa_target t
+  USING pa_source s
+  ON t.tid = s.sid
+  WHEN MATCHED THEN
+    UPDATE SET tid = tid + 1, balance = balance + delta, val = val || ' updated by merge'
+  WHEN NOT MATCHED THEN
+    INSERT VALUES (sid, delta, 'inserted by merge')
+  WHEN NOT MATCHED BY SOURCE THEN
+    UPDATE SET val = val || ' not matched by source';
+GET DIAGNOSTICS result := ROW_COUNT;
+RAISE NOTICE 'ROW_COUNT = %', result;
+END;
+$do$;
+
+select * from pa_target order by tid, val;
+
+rollback;
+
+begin;
+
+alter table pa_target
+  enable row level security;
+
+alter table pa_target
+  force row level security;
+
+create policy pa_target_pol on pa_target as permissive for all to public using (tid <> 0);
+
+rollback;
+
+drop table pa_source;
+
+drop table pa_target cascade;
+
+create table pa_target (
+  logts timestamp,
+  tid int,
+  balance double precision,
+  val text
+)
+partition by range(logts);
+
+create table part_m01
+partition of pa_target
+for values from ('2017-01-01') to ('2017-02-01')
+partition by LIST(tid);
+
+create table part_m01_odd
+partition of part_m01
+for values in (1, 3, 5, 7, 9)
+with (autovacuum_enabled = off);
+
+create table part_m01_even
+partition of part_m01
+for values in (2, 4, 6, 8)
+with (autovacuum_enabled = off);
+
+create table part_m02
+partition of pa_target
+for values from ('2017-02-01') to ('2017-03-01')
+partition by LIST(tid);
+
+create table part_m02_odd
+partition of part_m02
+for values in (1, 3, 5, 7, 9)
+with (autovacuum_enabled = off);
+
+create table part_m02_even
+partition of part_m02
+for values in (2, 4, 6, 8)
+with (autovacuum_enabled = off);
+
+create table pa_source (
+  sid int,
+  delta double precision
+)
+with (autovacuum_enabled = off);
+
+insert into pa_source select id, id * 10 from generate_series(1, 14) as id;
+
+insert into pa_target
+select
+  '2017-01-31',
+  id,
+  id * 100,
+  'initial'
+from
+  generate_series(1, 9, 3) as id;
+
+insert into pa_target
+select
+  '2017-02-28',
+  id,
+  id * 100,
+  'initial'
+from
+  generate_series(2, 9, 3) as id;
+
+begin;
+
+select * from pa_target order by tid;
+
+rollback;
+
+drop table pa_source;
+
+drop table pa_target cascade;
+
+create table pa_target (tid int primary key)
+partition by LIST(tid);
+
+create table pa_targetp partition of pa_target default;
+
+create table pa_source (sid int);
+
+insert into pa_source values (1), (2);
+
+select * from pa_target;
+
+drop table pa_targetp;
+
+drop table pa_source;
+
+drop table pa_target cascade;
+
+create table cj_target (
+  tid int,
+  balance double precision,
+  val text
+)
+with (autovacuum_enabled = off);
+
+create table cj_source1 (
+  sid1 int,
+  scat int,
+  delta int
+)
+with (autovacuum_enabled = off);
+
+create table cj_source2 (
+  sid2 int,
+  sval text
+)
+with (autovacuum_enabled = off);
+
+insert into cj_source1 values (1, 10, 100);
+
+insert into cj_source1 values (1, 20, 200);
+
+insert into cj_source1 values (2, 20, 300);
+
+insert into cj_source1 values (3, 10, 400);
+
+insert into cj_source2 values (1, 'initial source2');
+
+insert into cj_source2 values (2, 'initial source2');
+
+insert into cj_source2 values (3, 'initial source2');
+
+select * from cj_target;
+
+select * from cj_target;
+
+alter table cj_source1 rename column sid1 to sid;
+
+alter table cj_source2 rename column sid2 to sid;
+
+truncate cj_target;
+
+drop table cj_source2, cj_source1, cj_target;
+
+create table fs_target (
+  a int,
+  b int,
+  c text
+)
+with (autovacuum_enabled = off);
+
+select COUNT(*) from fs_target;
+
+drop table fs_target;
+
+create table measurement (
+  city_id int not null,
+  logdate date not null,
+  peaktemp int,
+  unitsales int
+)
+with (autovacuum_enabled = off);
+
+create table measurement_y2006m02 (
+  check (logdate >= cast('2006-02-01' as date) and
+  logdate < cast('2006-03-01' as date))
+)
+inherits (measurement)
+with (autovacuum_enabled = off);
+
+create table measurement_y2006m03 (
+  check (logdate >= cast('2006-03-01' as date) and
+  logdate < cast('2006-04-01' as date))
+)
+inherits (measurement)
+with (autovacuum_enabled = off);
+
+create table measurement_y2007m01 (
+  filler text,
+  peaktemp int,
+  logdate date not null,
+  city_id int not null,
+  unitsales int
+  check (logdate >= cast('2007-01-01' as date) and
+  logdate < cast('2007-02-01' as date))
+)
+with (autovacuum_enabled = off);
+
+alter table measurement_y2007m01
+  drop column filler;
+
+alter table measurement_y2007m01
+  inherit measurement;
+
+insert into measurement values (0, '2005-07-21', 5, 15);
+
+create or replace function measurement_insert_trigger()
+returns trigger
+as $function$
+BEGIN
+    IF ( NEW.logdate >= DATE '2006-02-01' AND
+         NEW.logdate < DATE '2006-03-01' ) THEN
+        INSERT INTO measurement_y2006m02 VALUES (NEW.*);
+    ELSIF ( NEW.logdate >= DATE '2006-03-01' AND
+            NEW.logdate < DATE '2006-04-01' ) THEN
+        INSERT INTO measurement_y2006m03 VALUES (NEW.*);
+    ELSIF ( NEW.logdate >= DATE '2007-01-01' AND
+            NEW.logdate < DATE '2007-02-01' ) THEN
+        INSERT INTO measurement_y2007m01 (city_id, logdate, peaktemp, unitsales)
+            VALUES (NEW.*);
+    ELSE
+        RAISE EXCEPTION 'Date out of range.  Fix the measurement_insert_trigger() function!';
+    END IF;
+    RETURN NULL;
+END;
+$function$
+language plpgsql;
+
+create trigger insert_measurement_trigger
+before insert
+on measurement
+for each row
+execute function measurement_insert_trigger();
+
+insert into measurement values (1, '2006-02-10', 35, 10);
+
+insert into measurement values (1, '2006-02-16', 45, 20);
+
+insert into measurement values (1, '2006-03-17', 25, 10);
+
+insert into measurement values (1, '2006-03-27', 15, 40);
+
+insert into measurement values (1, '2007-01-15', 10, 10);
+
+insert into measurement values (1, '2007-01-17', 10, 10);
+
+select cast(tableoid as regclass), * from measurement order by city_id, logdate;
+
+create table new_measurement (like measurement) with (autovacuum_enabled = off);
+
+insert into new_measurement values (0, '2005-07-21', 25, 20);
+
+insert into new_measurement values (1, '2006-03-01', 20, 10);
+
+insert into new_measurement values (1, '2006-02-16', 50, 10);
+
+insert into new_measurement values (2, '2006-02-10', 20, 20);
+
+insert into new_measurement values (1, '2006-03-27', null, null);
+
+insert into new_measurement values (1, '2007-01-17', null, null);
+
+insert into new_measurement values (1, '2007-01-15', 5, null);
+
+insert into new_measurement values (1, '2007-01-16', 10, 10);
+
+begin;
+
+select cast(tableoid as regclass), * from measurement order by city_id, logdate, peaktemp;
+
+rollback;
+
+select cast(tableoid as regclass), * from measurement order by city_id, logdate;
+
+begin;
+
+select * from new_measurement order by city_id, logdate;
+
+rollback;
+
+select * from new_measurement order by city_id, logdate;
+
+drop trigger insert_measurement_trigger on measurement;
+
+alter table measurement
+  add constraint "mcheck" check (city_id = 0) no inherit;
+
+begin;
+
+select * from only measurement order by city_id, logdate;
+
+rollback;
+
+alter table measurement
+  enable row level security;
+
+alter table measurement
+  force row level security;
+
+create policy measurement_p
+on measurement
+as permissive
+for all
+to public
+using (peaktemp is not null);
+
+select * from only measurement order by city_id, logdate;
+
+drop table measurement, new_measurement cascade;
+
+drop function measurement_insert_trigger();
+
+create table src (
+  a int,
+  b text
+);
+
+insert into src values (1, 'src row');
+
+create table tgt (
+  a int,
+  b text
+);
+
+insert into tgt values (null, 'tgt row');
+
+select * from tgt;
+
+drop table src, tgt;
+
+create table bug18634t (
+  a int,
+  b int,
+  c text
+);
+
+insert into bug18634t values (1, 10, 'tgt1'), (2, 20, 'tgt2');
+
+create view bug18634v
+as select
+  *
+from
+  bug18634t
+where
+  exists (select 1 from bug18634t);
+
+create table bug18634s (
+  a int,
+  b int,
+  c text
+);
+
+insert into bug18634s values (1, 2, 'src1');
+
+select * from bug18634t;
+
+drop table bug18634t cascade;
+
+drop table bug18634s;
+
+reset session_authorization;
+
+create view classv
+as select * from pg_class;
+
+drop table target, target2;
+
+drop table source, source2;
+
+drop function merge_trigfunc();
+
+drop role regress_merge_privs;
+
+drop role regress_merge_no_privs;
+
+drop role regress_merge_none;
