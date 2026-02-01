@@ -1,0 +1,270 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/select_distinct.sql
+snapshot_kind: text
+---
+select distinct two from onek order by 1;
+
+select distinct ten from onek order by 1;
+
+select distinct string4 from onek order by 1;
+
+select distinct
+  two,
+  string4,
+  ten
+from
+  onek
+order by two using <,
+  string4 using <,
+  ten using <;
+
+select distinct p.age from person as p order by age using >;
+
+select COUNT(*) from (select distinct two, four, two from tenk1) as ss;
+
+select COUNT(*) from (select distinct two, four, two from tenk1) as ss;
+
+set work_mem = '64kB';
+
+set enable_hashagg = 'false';
+
+set jit_above_cost = 0;
+
+select distinct g % 1000 from generate_series(0, 9999) as g;
+
+create table distinct_group_1
+as
+  select distinct
+    g % 1000
+  from
+    generate_series(0, 9999) as g;
+
+set jit_above_cost = default;
+
+create table distinct_group_2
+as
+  select distinct
+    cast(g % 1000 as text)
+  from
+    generate_series(0, 9999) as g;
+
+set enable_seqscan = 0;
+
+select distinct hundred, two from tenk1;
+
+reset enable_seqscan;
+
+set enable_hashagg = 'true';
+
+set enable_sort = 'false';
+
+set jit_above_cost = 0;
+
+select distinct g % 1000 from generate_series(0, 9999) as g;
+
+create table distinct_hash_1
+as
+  select distinct
+    g % 1000
+  from
+    generate_series(0, 9999) as g;
+
+set jit_above_cost = default;
+
+create table distinct_hash_2
+as
+  select distinct
+    cast(g % 1000 as text)
+  from
+    generate_series(0, 9999) as g;
+
+set enable_sort = 'true';
+
+set work_mem = default;
+
+select * from distinct_hash_1
+except
+select * from distinct_group_1
+union all
+(select * from distinct_group_1
+except
+select * from distinct_hash_1);
+
+select * from distinct_hash_1
+except
+select * from distinct_group_1
+union all
+(select * from distinct_group_1
+except
+select * from distinct_hash_1);
+
+drop table distinct_hash_1;
+
+drop table distinct_hash_2;
+
+drop table distinct_group_1;
+
+drop table distinct_group_2;
+
+set parallel_tuple_cost = 0;
+
+set parallel_setup_cost = 0;
+
+set min_parallel_table_scan_size = 0;
+
+set max_parallel_workers_per_gather = 2;
+
+select distinct four from tenk1;
+
+select distinct four from tenk1;
+
+create or replace function distinct_func(a int)
+returns int
+as $function$
+  BEGIN
+    RETURN a;
+  END;
+$function$
+language plpgsql
+parallel UNSAFE;
+
+select distinct distinct_func(1) from tenk1;
+
+create or replace function distinct_func(a int)
+returns int
+as $function$
+  BEGIN
+    RETURN a;
+  END;
+$function$
+language plpgsql
+parallel SAFE;
+
+select distinct distinct_func(1) from tenk1;
+
+reset max_parallel_workers_per_gather;
+
+reset min_parallel_table_scan_size;
+
+reset parallel_setup_cost;
+
+reset parallel_tuple_cost;
+
+select distinct four from tenk1 where four = 0;
+
+select distinct four from tenk1 where four = 0;
+
+select distinct four from tenk1 where four = 0 and two <> 0;
+
+select distinct four from tenk1 where four = 0 and two <> 0;
+
+select distinct four, 1, 2, 3 from tenk1 where four = 0;
+
+select distinct four, 1, 2, 3 from tenk1 where four = 0;
+
+set parallel_setup_cost = 0;
+
+set min_parallel_table_scan_size = 0;
+
+set max_parallel_workers_per_gather = 2;
+
+select distinct four from tenk1 where four = 10;
+
+reset max_parallel_workers_per_gather;
+
+reset min_parallel_table_scan_size;
+
+reset parallel_setup_cost;
+
+create temporary table disttable (f1 int);
+
+insert into disttable values (1);
+
+insert into disttable values (2);
+
+insert into disttable values (3);
+
+insert into disttable values (null);
+
+select f1, f1 is distinct from 2 as "not 2" from disttable;
+
+select f1, f1 is distinct from null as "not null" from disttable;
+
+select f1, f1 is distinct from f1 as "false" from disttable;
+
+select f1, f1 is distinct from f1 + 1 as "not null" from disttable;
+
+select 1 is distinct from 2 as yes;
+
+select 2 is distinct from 2 as no;
+
+select 2 is distinct from null as yes;
+
+select null is distinct from null as no;
+
+select 1 is not distinct from 2 as no;
+
+select 2 is not distinct from 2 as yes;
+
+select 2 is not distinct from null as no;
+
+select null is not distinct from null as yes;
+
+create table distinct_tbl (
+  x int,
+  y int
+);
+
+insert into distinct_tbl
+select
+  i % 10,
+  i % 10
+from
+  generate_series(1, 1000) as i;
+
+create index "distinct_tbl_x_y_idx" on distinct_tbl using btree (x, y);
+
+analyze distinct_tbl;
+
+set enable_hashagg = off;
+
+select distinct y, x from distinct_tbl;
+
+select distinct y, x from distinct_tbl;
+
+select distinct y, x from (select * from distinct_tbl order by x) as s;
+
+select distinct y, x from (select * from distinct_tbl order by x) as s;
+
+set parallel_tuple_cost = 0;
+
+set parallel_setup_cost = 0;
+
+set min_parallel_table_scan_size = 0;
+
+set min_parallel_index_scan_size = 0;
+
+set max_parallel_workers_per_gather = 2;
+
+select distinct y, x from distinct_tbl limit 10;
+
+select distinct y, x from distinct_tbl limit 10;
+
+reset max_parallel_workers_per_gather;
+
+reset min_parallel_index_scan_size;
+
+reset min_parallel_table_scan_size;
+
+reset parallel_setup_cost;
+
+reset parallel_tuple_cost;
+
+select distinct y, x from distinct_tbl order by y;
+
+select distinct y, x from distinct_tbl order by y;
+
+reset enable_hashagg;
+
+drop table distinct_tbl;

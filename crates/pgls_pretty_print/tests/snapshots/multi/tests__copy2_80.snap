@@ -1,0 +1,52 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/copy2.sql
+snapshot_kind: text
+---
+create temporary table x (
+  a serial,
+  b int,
+  c text not null default 'stuff',
+  d text,
+  e text
+);
+
+create function fn_x_before()
+returns trigger
+as $function$
+  BEGIN
+		NEW.e := 'before trigger fired'::text;
+		return NEW;
+	END;
+$function$
+language plpgsql;
+
+create function fn_x_after()
+returns trigger
+as $function$
+  BEGIN
+		UPDATE x set e='after trigger fired' where c='stuff';
+		return NULL;
+	END;
+$function$
+language plpgsql;
+
+create trigger trg_x_after
+after insert
+on x
+for each row
+execute function fn_x_after();
+
+create trigger trg_x_before
+before insert
+on x
+for each row
+execute function fn_x_before();
+
+select * from x;
+
+copy x to stdout;
+
+copy x (c, e) to stdout;
+
+copy x (b, e) to stdout;

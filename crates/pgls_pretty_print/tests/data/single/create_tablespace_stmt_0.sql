@@ -1,0 +1,1 @@
+CREATE TABLESPACE myspace LOCATION '/data/postgres';

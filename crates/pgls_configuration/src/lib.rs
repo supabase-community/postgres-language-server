@@ -5,6 +5,7 @@
 pub mod database;
 pub mod diagnostics;
 pub mod files;
+pub mod format;
 pub mod linter;
 pub mod migrations;
 pub mod plpgsql_check;
@@ -25,6 +26,10 @@ use database::{
     DatabaseConfiguration, PartialDatabaseConfiguration, partial_database_configuration,
 };
 use files::{FilesConfiguration, PartialFilesConfiguration, partial_files_configuration};
+pub use format::{
+    FormatConfiguration, IndentStyle as FormatIndentStyle, KeywordCase, PartialFormatConfiguration,
+    partial_format_configuration,
+};
 pub use linter::{
     LinterConfiguration, PartialLinterConfiguration, Rules, partial_linter_configuration,
     push_to_analyser_rules,
@@ -93,6 +98,10 @@ pub struct Configuration {
     #[partial(type, bpaf(external(partial_splinter_configuration), optional))]
     pub splinter: SplinterConfiguration,
 
+    /// The configuration for the SQL formatter
+    #[partial(type, bpaf(external(partial_format_configuration), optional))]
+    pub format: FormatConfiguration,
+
     /// The configuration for type checking
     #[partial(type, bpaf(external(partial_typecheck_configuration), optional))]
     pub typecheck: TypecheckConfiguration,
@@ -136,6 +145,10 @@ impl PartialConfiguration {
             }),
             splinter: Some(PartialSplinterConfiguration {
                 enabled: Some(true),
+                ..Default::default()
+            }),
+            format: Some(PartialFormatConfiguration {
+                enabled: Some(false), // Disabled by default during beta
                 ..Default::default()
             }),
             typecheck: Some(PartialTypecheckConfiguration {

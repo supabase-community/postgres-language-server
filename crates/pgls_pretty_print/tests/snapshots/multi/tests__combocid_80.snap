@@ -1,0 +1,131 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/combocid.sql
+snapshot_kind: text
+---
+create temporary table combocidtest (foobar int);
+
+begin;
+
+insert into combocidtest select 1 limit 0;
+
+insert into combocidtest select 1 limit 0;
+
+insert into combocidtest select 1 limit 0;
+
+insert into combocidtest select 1 limit 0;
+
+insert into combocidtest select 1 limit 0;
+
+insert into combocidtest select 1 limit 0;
+
+insert into combocidtest select 1 limit 0;
+
+insert into combocidtest select 1 limit 0;
+
+insert into combocidtest select 1 limit 0;
+
+insert into combocidtest select 1 limit 0;
+
+insert into combocidtest values (1);
+
+insert into combocidtest values (2);
+
+select ctid, cmin, * from combocidtest;
+
+savepoint s1;
+
+update combocidtest set foobar = foobar + 10;
+
+select ctid, cmin, * from combocidtest;
+
+rollback to savepoint s1;
+
+select ctid, cmin, * from combocidtest;
+
+commit;
+
+select ctid, cmin, * from combocidtest;
+
+begin;
+
+insert into combocidtest values (333);
+
+declare "c" cursor for select ctid, cmin, * from combocidtest;;
+
+delete from combocidtest;
+
+fetch forward all from c;
+
+rollback;
+
+select ctid, cmin, * from combocidtest;
+
+begin;
+
+insert into combocidtest select 1 limit 0;
+
+insert into combocidtest select 1 limit 0;
+
+insert into combocidtest select 1 limit 0;
+
+insert into combocidtest select 1 limit 0;
+
+insert into combocidtest select 1 limit 0;
+
+insert into combocidtest select 1 limit 0;
+
+insert into combocidtest select 1 limit 0;
+
+insert into combocidtest select 1 limit 0;
+
+insert into combocidtest select 1 limit 0;
+
+insert into combocidtest select 1 limit 0;
+
+insert into combocidtest values (444);
+
+select ctid, cmin, * from combocidtest;
+
+savepoint s1;
+
+select ctid, cmin, * from combocidtest for update;
+
+select ctid, cmin, * from combocidtest;
+
+update combocidtest set foobar = foobar + 10;
+
+select ctid, cmin, * from combocidtest;
+
+rollback to savepoint s1;
+
+select ctid, cmin, * from combocidtest;
+
+commit;
+
+select ctid, cmin, * from combocidtest;
+
+create table if not exists testcase (
+  id int primary key,
+  balance numeric
+);
+
+insert into testcase values (1, 0);
+
+begin;
+
+select * from testcase where testcase.id = 1 for update;
+
+update testcase set balance = balance + 400 where id = 1;
+
+savepoint subxact;
+
+update testcase set balance = balance - 100 where id = 1;
+
+rollback to savepoint subxact;
+
+select * from testcase where id = 1 for update;
+
+rollback;
+
+drop table testcase;

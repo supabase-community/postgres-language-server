@@ -1,0 +1,1 @@
+CREATE CONVERSION myconv FOR 'UTF8' TO 'LATIN1' FROM utf8_to_latin1;

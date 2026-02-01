@@ -1,0 +1,29 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/ordered_set_filter.sql
+snapshot_kind: text
+---
+select
+  percentile_disc(
+    0.5
+  )
+  within group (order by score)
+  filter (where
+    score > 0)
+from
+  (values (1), (2), (3)) as scores (score);
+
+select
+  percentile_cont(
+    0.9
+  )
+  within group (order by duration)
+  filter (where
+    duration is not null)
+from
+  (
+    values
+      (cast('1 hour' as interval)),
+      (cast('2 hours' as interval))
+  )
+  as durations (duration);

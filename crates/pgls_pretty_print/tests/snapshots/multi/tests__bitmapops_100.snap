@@ -1,0 +1,39 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/bitmapops.sql
+snapshot_kind: text
+---
+create table bmscantest (
+  a int,
+  b int,
+  t text
+)
+with (autovacuum_enabled = 'false');
+
+insert into bmscantest
+select
+  r % 53,
+  r % 59,
+  'foooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo'
+from
+  generate_series(1, 70000) as r;
+
+create index "i_bmtest_a" on bmscantest using btree (a);
+
+create index "i_bmtest_b" on bmscantest using btree (b);
+
+set enable_indexscan = 'false';
+
+set enable_seqscan = 'false';
+
+set work_mem = 64;
+
+select COUNT(*) from bmscantest where a = 1 and b = 1;
+
+vacuum (FREEZE) bmscantest;
+
+select COUNT(*) from bmscantest where a = 1 and b = 1;
+
+select COUNT(*) from bmscantest where a = 1 or b = 1;
+
+drop table bmscantest;

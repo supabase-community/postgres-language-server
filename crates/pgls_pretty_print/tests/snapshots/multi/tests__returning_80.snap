@@ -1,0 +1,729 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/returning.sql
+snapshot_kind: text
+---
+create temporary table foo (
+  f1 serial,
+  f2 text,
+  f3 int default 42
+);
+
+insert into foo (f2, f3)
+values
+  ('test', default),
+  ('More', 11),
+  (upper('more'), 7 + 9)
+returning *,
+f1 + f3 as sum;
+
+select * from foo;
+
+update foo set f2 = lower(f2), f3 = default returning foo.*, f1 + f3 as sum13;
+
+select * from foo;
+
+delete from foo where f1 > 2 returning f3, f2, f1, least(f1, f3);
+
+select * from foo;
+
+insert into foo
+select f1 + 10, f2, f3 + 99 from foo
+returning *,
+f1 + 112 in (select q1 from int8_tbl)
+as subplan,
+exists (select * from int4_tbl)
+as initplan;
+
+update foo
+set f3 = f3 * 2
+where
+  f1 > 10
+returning *,
+f1 + 112 in (select q1 from int8_tbl)
+as subplan,
+exists (select * from int4_tbl)
+as initplan;
+
+delete from foo
+where
+  f1 > 10
+returning *,
+f1 + 112 in (select q1 from int8_tbl)
+as subplan,
+exists (select * from int4_tbl)
+as initplan;
+
+update foo
+set f3 = f3 * 2
+from int4_tbl as i
+where
+  foo.f1 + 123455 = i.f1
+returning foo.*,
+i.f1 as "i.f1";
+
+select * from foo;
+
+delete from foo
+using int4_tbl as i
+where
+  foo.f1 + 123455 = i.f1
+returning foo.*,
+i.f1 as "i.f1";
+
+select * from foo;
+
+create temporary table foochild (fc int)
+inherits (foo);
+
+insert into foochild values (123, 'child', 999, -123);
+
+alter table foo
+  add column f4 bigint default 99;
+
+select * from foo;
+
+select * from foochild;
+
+update foo set f4 = f4 + f3 where f4 = 99 returning *;
+
+select * from foo;
+
+select * from foochild;
+
+update foo set f3 = f3 * 2 from int8_tbl as i where foo.f1 = i.q2 returning *;
+
+select * from foo;
+
+select * from foochild;
+
+delete from foo using int8_tbl as i where foo.f1 = i.q2 returning *;
+
+select * from foo;
+
+select * from foochild;
+
+drop table foochild;
+
+create temporary view voo
+as select f1, f2 from foo;
+
+create rule voo_i
+as on insert to voo
+do instead
+  insert into foo values (new.*, 57);;
+
+insert into voo values (11, 'zit');
+
+insert into voo values (12, 'zoo') returning *, f1 * 2;
+
+create or replace rule voo_i
+as on insert to voo
+do instead
+  insert into foo
+  values (new.*, 57)
+  returning *;;
+
+create or replace rule voo_i
+as on insert to voo
+do instead
+  insert into foo
+  values (new.*, 57)
+  returning f1,
+  f2;;
+
+insert into voo values (13, 'zit2');
+
+insert into voo values (14, 'zoo2') returning *;
+
+select * from foo;
+
+select * from voo;
+
+create or replace rule voo_u
+as on update to voo
+do instead
+  update foo
+  set f1 = new.f1,
+  f2 = new.f2
+  where
+    f1 = old.f1
+  returning f1,
+  f2;;
+
+update voo set f1 = f1 + 1 where f2 = 'zoo2';
+
+update voo set f1 = f1 + 1 where f2 = 'zoo2' returning *, f1 * 2;
+
+select * from foo;
+
+select * from voo;
+
+create or replace rule voo_d
+as on delete to voo
+do instead
+  delete from foo
+  where
+    f1 = old.f1
+  returning f1,
+  f2;;
+
+delete from foo where f1 = 13;
+
+delete from foo where f2 = 'zit' returning *;
+
+select * from foo;
+
+select * from voo;
+
+create temporary view foo_v
+as select * from foo offset 0;
+
+update foo set f2 = foo_v.f2 from foo_v where foo_v.f1 = foo.f1 returning foo_v;
+
+select * from foo;
+
+create function foo_f()
+returns setof foo
+as $function$ SELECT * FROM foo OFFSET 0 $function$
+language sql
+stable;
+
+update foo
+set f2 = foo_f.f2
+from foo_f()
+where
+  foo_f.f1 = foo.f1
+returning foo_f;
+
+select * from foo;
+
+drop function foo_f();
+
+create type foo_t as (f1 int, f2 text, f3 int, f4 bigint);
+
+create function foo_f()
+returns setof foo_t
+as $function$ SELECT * FROM foo OFFSET 0 $function$
+language sql
+stable;
+
+update foo
+set f2 = foo_f.f2
+from foo_f()
+where
+  foo_f.f1 = foo.f1
+returning foo_f;
+
+select * from foo;
+
+drop function foo_f();
+
+drop type foo_t;
+
+create temporary table joinme (
+  f2j text,
+  other int
+);
+
+insert into joinme values ('more', 12345);
+
+insert into joinme values ('zoo2', 54321);
+
+insert into joinme values ('other', 0);
+
+create temporary view joinview
+as select
+  foo.*,
+  other
+from
+  foo inner join joinme on f2 = f2j;
+
+select * from joinview;
+
+create rule joinview_u
+as on update to joinview
+do instead
+  update foo
+  set f1 = new.f1,
+  f3 = new.f3
+  from joinme
+  where
+    f2 = f2j and f2 = old.f2
+  returning foo.*,
+  other;;
+
+update joinview set f1 = f1 + 1 where f3 = 57 returning *, other + 1;
+
+select * from joinview;
+
+select * from foo;
+
+select * from voo;
+
+insert into foo as bar default values returning *;
+
+insert into foo as bar default values returning foo.*;
+
+insert into foo as bar default values returning bar.*;
+
+insert into foo as bar default values returning bar.f3;
+
+truncate foo;
+
+insert into foo
+values
+  (1, 'xxx', 10, 20),
+  (2, 'more', 42, 141),
+  (3, 'zoo2', 57, 99);
+
+insert into foo
+values (4)
+returning cast(old.tableoid as regclass),
+old.ctid,
+old.*,
+cast(new.tableoid as regclass),
+new.ctid,
+new.*,
+*;
+
+insert into foo
+values (4)
+returning cast(old.tableoid as regclass),
+old.ctid,
+old.*,
+cast(new.tableoid as regclass),
+new.ctid,
+new.*,
+*;
+
+create unique index "foo_f1_idx" on foo using btree (f1);
+
+update foo
+set f4 = 100
+where
+  f1 = 5
+returning cast(old.tableoid as regclass),
+old.ctid,
+old.*,
+old,
+cast(new.tableoid as regclass),
+new.ctid,
+new.*,
+new,
+cast(old.f4 as text) || '->' ||
+cast(new.f4 as text)
+as change;
+
+update foo
+set f4 = 100
+where
+  f1 = 5
+returning cast(old.tableoid as regclass),
+old.ctid,
+old.*,
+old,
+cast(new.tableoid as regclass),
+new.ctid,
+new.*,
+new,
+cast(old.f4 as text) || '->' ||
+cast(new.f4 as text)
+as change;
+
+delete from foo
+where
+  f1 = 5
+returning cast(old.tableoid as regclass),
+old.ctid,
+old.*,
+cast(new.tableoid as regclass),
+new.ctid,
+new.*,
+*;
+
+delete from foo
+where
+  f1 = 5
+returning cast(old.tableoid as regclass),
+old.ctid,
+old.*,
+cast(new.tableoid as regclass),
+new.ctid,
+new.*,
+*;
+
+insert into foo
+values (5, 'subquery test')
+returning (
+  select
+    MAX(old.f4 + x)
+  from
+    generate_series(1, 10) as x
+)
+as old_max,
+(
+  select
+    MAX(new.f4 + x)
+  from
+    generate_series(1, 10) as x
+)
+as new_max;
+
+insert into foo
+values (5, 'subquery test')
+returning (
+  select
+    MAX(old.f4 + x)
+  from
+    generate_series(1, 10) as x
+)
+as old_max,
+(
+  select
+    MAX(new.f4 + x)
+  from
+    generate_series(1, 10) as x
+)
+as new_max;
+
+update foo
+set f4 = 100
+where
+  f1 = 5
+returning (select old.f4 = new.f4),
+(
+  select
+    MAX(old.f4 + x)
+  from
+    generate_series(1, 10) as x
+)
+as old_max,
+(
+  select
+    MAX(new.f4 + x)
+  from
+    generate_series(1, 10) as x
+)
+as new_max;
+
+update foo
+set f4 = 100
+where
+  f1 = 5
+returning (select old.f4 = new.f4),
+(
+  select
+    MAX(old.f4 + x)
+  from
+    generate_series(1, 10) as x
+)
+as old_max,
+(
+  select
+    MAX(new.f4 + x)
+  from
+    generate_series(1, 10) as x
+)
+as new_max;
+
+delete from foo
+where
+  f1 = 5
+returning (
+  select
+    MAX(old.f4 + x)
+  from
+    generate_series(1, 10) as x
+)
+as old_max,
+(
+  select
+    MAX(new.f4 + x)
+  from
+    generate_series(1, 10) as x
+)
+as new_max;
+
+delete from foo
+where
+  f1 = 5
+returning (
+  select
+    MAX(old.f4 + x)
+  from
+    generate_series(1, 10) as x
+)
+as old_max,
+(
+  select
+    MAX(new.f4 + x)
+  from
+    generate_series(1, 10) as x
+)
+as new_max;
+
+create rule foo_del_rule
+as on delete to foo
+do instead
+  update foo
+  set f2 = f2 || ' (deleted)',
+  f3 = -1,
+  f4 = -1
+  where
+    f1 = old.f1
+  returning *;;
+
+delete from foo where f1 = 4 returning old.*, new.*, *;
+
+delete from foo where f1 = 4 returning old.*, new.*, *;
+
+update joinview
+set f3 = f3 + 1
+where
+  f3 = 57
+returning old.*,
+new.*,
+*,
+new.f3 - old.f3 as delta_f3;
+
+update joinview
+set f3 = f3 + 1
+where
+  f3 = 57
+returning old.*,
+new.*,
+*,
+new.f3 - old.f3 as delta_f3;
+
+create function joinview_upd_trig_fn()
+returns trigger
+language plpgsql
+as $function$
+BEGIN
+  RAISE NOTICE 'UPDATE: % -> %', old, new;
+  UPDATE foo SET f1 = new.f1, f3 = new.f3, f4 = new.f4 * 10
+    FROM joinme WHERE f2 = f2j AND f2 = old.f2
+    RETURNING new.f1, new.f4 INTO new.f1, new.f4;  -- should fail
+  RETURN NEW;
+END;
+$function$;
+
+create trigger joinview_upd_trig
+instead of update
+on joinview
+for each row
+execute function joinview_upd_trig_fn();
+
+drop rule joinview_u on joinview;
+
+update joinview
+set f3 = f3 + 1,
+f4 = 7
+where
+  f3 = 58
+returning old.*,
+new.*,
+*,
+new.f3 - old.f3 as delta_f3;
+
+create or replace function joinview_upd_trig_fn()
+returns trigger
+language plpgsql
+as $function$
+BEGIN
+  RAISE NOTICE 'UPDATE: % -> %', old, new;
+  UPDATE foo SET f1 = new.f1, f3 = new.f3, f4 = new.f4 * 10
+    FROM joinme WHERE f2 = f2j AND f2 = old.f2
+    RETURNING WITH (new AS n) new.f1, n.f4 INTO new.f1, new.f4;  -- now ok
+  RETURN NEW;
+END;
+$function$;
+
+update joinview
+set f3 = f3 + 1,
+f4 = 7
+where
+  f3 = 58
+returning old.*,
+new.*,
+*,
+new.f3 - old.f3 as delta_f3;
+
+update joinview
+set f3 = f3 + 1,
+f4 = 7
+where
+  f3 = 58
+returning old.*,
+new.*,
+*,
+new.f3 - old.f3 as delta_f3;
+
+alter table foo
+  drop column f3 cascade;
+
+update foo set f4 = f4 + 1 returning old.f3;
+
+update foo set f4 = f4 + 1 returning old, new;
+
+create table zerocol ();
+
+insert into zerocol select returning old.*, new.*, *;
+
+insert into zerocol
+select
+returning cast(old.tableoid as regclass),
+old.ctid,
+cast(new.tableoid as regclass),
+new.ctid,
+ctid,
+*;
+
+delete from zerocol
+returning cast(old.tableoid as regclass),
+old.ctid,
+cast(new.tableoid as regclass),
+new.ctid,
+ctid,
+*;
+
+drop table zerocol;
+
+create table public.tt (
+  a int,
+  b int
+);
+
+insert into public.tt values (1, 10);
+
+update public.tt set b = b * 2 returning a, b, old.b, new.b, tt.b, public.tt.b;
+
+drop table public.tt;
+
+create table foo_parted (
+  a int,
+  b double precision,
+  c text
+)
+partition by LIST(a);
+
+create table foo_part_s1 partition of foo_parted for values in (1);
+
+create table foo_part_s2 partition of foo_parted for values in (2);
+
+create table foo_part_d1 (
+  c text,
+  a int,
+  b double precision
+);
+
+alter table foo_parted
+  attach partition
+  foo_part_d1 for values in (3);
+
+create table foo_part_d2 (
+  b double precision,
+  c text,
+  a int
+);
+
+alter table foo_parted
+  attach partition
+  foo_part_d2 for values in (4);
+
+insert into foo_parted
+values
+  (1, 17.1, 'P1'),
+  (2, 17.2, 'P2'),
+  (3, 17.3, 'P3'),
+  (4, 17.4, 'P4')
+returning cast(old.tableoid as regclass),
+old.ctid,
+old.*,
+cast(new.tableoid as regclass),
+new.ctid,
+new.*,
+*;
+
+update foo_parted
+set a = 2,
+b = b + 1,
+c = c || '->P2'
+where
+  a = 1
+returning cast(old.tableoid as regclass),
+old.ctid,
+old.*,
+cast(new.tableoid as regclass),
+new.ctid,
+new.*,
+*;
+
+update foo_parted
+set a = 1,
+b = b + 1,
+c = c || '->P1'
+where
+  a = 3
+returning cast(old.tableoid as regclass),
+old.ctid,
+old.*,
+cast(new.tableoid as regclass),
+new.ctid,
+new.*,
+*;
+
+update foo_parted
+set a = 3,
+b = b + 1,
+c = c || '->P3'
+where
+  a = 1
+returning cast(old.tableoid as regclass),
+old.ctid,
+old.*,
+cast(new.tableoid as regclass),
+new.ctid,
+new.*,
+*;
+
+update foo_parted
+set a = 4,
+b = b + 1,
+c = c || '->P4'
+where
+  a = 3
+returning cast(old.tableoid as regclass),
+old.ctid,
+old.*,
+cast(new.tableoid as regclass),
+new.ctid,
+new.*,
+*;
+
+create view foo_parted_v
+as select *, 'xxx' as dummy from foo_parted;
+
+update foo_parted_v
+set a = 1,
+c = c || '->P1'
+where
+  a = 2 and c = 'P2'
+returning 'P2:' || old.dummy,
+'P1:' || new.dummy;
+
+delete from foo_parted
+returning cast(old.tableoid as regclass),
+old.ctid,
+old.*,
+cast(new.tableoid as regclass),
+new.ctid,
+new.*,
+*;
+
+drop table foo_parted cascade;
+
+commit;
+
+drop function foo_update;

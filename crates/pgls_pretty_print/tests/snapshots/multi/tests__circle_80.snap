@@ -1,0 +1,59 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/circle.sql
+snapshot_kind: text
+---
+set extra_float_digits = -1;
+
+create table circle_tbl (f1 circle);
+
+insert into circle_tbl values ('<(5,1),3>');
+
+insert into circle_tbl values ('((1,2),100)');
+
+insert into circle_tbl values (' 1 , 3 , 5 ');
+
+insert into circle_tbl values (' ( ( 1 , 2 ) , 3 ) ');
+
+insert into circle_tbl values (' ( 100 , 200 ) , 10 ');
+
+insert into circle_tbl values (' < ( 100 , 1 ) , 115 > ');
+
+insert into circle_tbl values ('<(3,5),0>');
+
+insert into circle_tbl values ('<(3,5),NaN>');
+
+insert into circle_tbl values ('<(-100,0),-100>');
+
+insert into circle_tbl values ('<(100,200),10');
+
+insert into circle_tbl values ('<(100,200),10> x');
+
+insert into circle_tbl values ('1abc,3,5');
+
+insert into circle_tbl values ('(3,(1,2),3)');
+
+select * from circle_tbl;
+
+select center(f1) as center from circle_tbl;
+
+select radius(f1) as radius from circle_tbl;
+
+select diameter(f1) as diameter from circle_tbl;
+
+select f1 from circle_tbl where radius(f1) < 5;
+
+select f1 from circle_tbl where diameter(f1) >= 10;
+
+select
+  c1.f1 as one,
+  c2.f1 as two,
+  c1.f1 <-> c2.f1 as distance
+from
+  circle_tbl as c1,
+  circle_tbl as c2
+where
+  c1.f1 < c2.f1 and c1.f1 <-> c2.f1 > 0
+order by distance,
+  area(c1.f1),
+  area(c2.f1);

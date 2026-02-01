@@ -1,0 +1,835 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/rowtypes.sql
+snapshot_kind: text
+---
+create type complex as (r double precision, i double precision);
+
+create temporary table fullname (
+  first text,
+  last text
+);
+
+create type quad as (c1 complex, c2 complex);
+
+select cast((1.1, 2.2) as complex), cast(row((3.3, 4.4), (5.5, null)) as quad);
+
+select cast(row('Joe', 'Blow') as fullname), cast('(Joe,Blow)' as fullname);
+
+select cast('(Joe,von Blow)' as fullname), cast('(Joe,d''Blow)' as fullname);
+
+select cast('(Joe,"von""Blow")' as fullname), cast('(Joe,d\\Blow)' as fullname);
+
+select cast('(Joe,"Blow,Jr")' as fullname);
+
+select cast('(Joe,)' as fullname);
+
+select cast('(Joe)' as fullname);
+
+select cast('(Joe,,)' as fullname);
+
+select cast('[]' as fullname);
+
+select cast(' (Joe,Blow)  ' as fullname);
+
+select cast('(Joe,Blow) /' as fullname);
+
+select pg_input_is_valid('(1,2)', 'complex');
+
+select pg_input_is_valid('(1,2', 'complex');
+
+select pg_input_is_valid('(1,zed)', 'complex');
+
+select * from pg_input_error_info('(1,zed)', 'complex');
+
+select * from pg_input_error_info('(1,1e400)', 'complex');
+
+create temporary table quadtable (
+  f1 int,
+  q quad
+);
+
+insert into quadtable values (1, ((3.3, 4.4), (5.5, 6.6)));
+
+insert into quadtable values (2, ((null, 4.4), (5.5, 6.6)));
+
+select * from quadtable;
+
+select f1, q.c1 from quadtable;
+
+select f1, q.c1, qq.q.c1.i from quadtable as qq;
+
+create temporary table people (
+  fn fullname,
+  bd date
+);
+
+insert into people values ('(Joe,Blow)', '1984-01-10');
+
+select * from people;
+
+alter table fullname
+  add column suffix text default '';
+
+alter table fullname
+  add column suffix text default null;
+
+select * from people;
+
+update people set fn."suffix" = 'Jr';
+
+select * from people;
+
+insert into quadtable (f1, q."c1"."r", q."c2"."i") values (44, 55, 66);
+
+update quadtable set q."c1"."r" = 12 where f1 = 2;
+
+update quadtable set q."c1" = 12;
+
+select * from quadtable;
+
+create temporary table pp (f1 text);
+
+insert into pp values (repeat('abcdefghijkl', 100000));
+
+insert into people select cast(('Jim', f1, null) as fullname), current_date from pp;
+
+select fn.first, substr(fn.last, 1, 20), length(fn.last) from people;
+
+update people set fn."first" = 'Jack';
+
+select fn.first, substr(fn.last, 1, 20), length(fn.last) from people;
+
+select row(1, 2) < row(1, 3) as "true";
+
+select row(1, 2) < row(1, 1) as "false";
+
+select row(1, 2) < row(1, null) as "null";
+
+select row(1, 2, 3) < row(1, 3, null) as "true";
+
+select row(11, 'ABC') < row(11, 'DEF') as "true";
+
+select row(11, 'ABC') > row(11, 'DEF') as "false";
+
+select row(12, 'ABC') > row(11, 'DEF') as "true";
+
+select row(1, 2, 3) < row(1, null, 4) as "null";
+
+select row(1, 2, 3) = row(1, null, 4) as "false";
+
+select row(1, 2, 3) <> row(1, null, 4) as "true";
+
+select row('ABC', 'DEF') ~<=~ row('DEF', 'ABC') as "true";
+
+select row('ABC', 'DEF') ~>=~ row('DEF', 'ABC') as "false";
+
+select row('ABC', 'DEF') ~~ row('DEF', 'ABC') as fail;
+
+select row(1, 2) = row(1, cast(2 as bigint));
+
+select row(1, 2) in (row(3, 4), row(1, 2));
+
+select row(1, 2) in (row(3, 4), row(1, cast(2 as bigint)));
+
+select
+  unique1,
+  unique2
+from
+  tenk1
+where
+  (unique1, unique2) < any
+  (
+    select ten, ten from tenk1 where hundred < 3
+  ) and
+  unique1 <= 20
+order by 1;
+
+select
+  thousand,
+  tenthous
+from
+  tenk1
+where
+  (thousand, tenthous) >= (997, 5000)
+order by thousand,
+  tenthous;
+
+select
+  thousand,
+  tenthous
+from
+  tenk1
+where
+  (thousand, tenthous) >= (997, 5000)
+order by thousand,
+  tenthous;
+
+select
+  thousand,
+  tenthous,
+  four
+from
+  tenk1
+where
+  (thousand, tenthous, four) > (998, 5000, 3)
+order by thousand,
+  tenthous;
+
+select
+  thousand,
+  tenthous,
+  four
+from
+  tenk1
+where
+  (thousand, tenthous, four) > (998, 5000, 3)
+order by thousand,
+  tenthous;
+
+select
+  thousand,
+  tenthous
+from
+  tenk1
+where
+  (998, 5000) < (thousand, tenthous)
+order by thousand,
+  tenthous;
+
+select
+  thousand,
+  tenthous
+from
+  tenk1
+where
+  (998, 5000) < (thousand, tenthous)
+order by thousand,
+  tenthous;
+
+select
+  thousand,
+  hundred
+from
+  tenk1
+where
+  (998, 5000) < (thousand, hundred)
+order by thousand,
+  hundred;
+
+select
+  thousand,
+  hundred
+from
+  tenk1
+where
+  (998, 5000) < (thousand, hundred)
+order by thousand,
+  hundred;
+
+create temporary table test_table (
+  a text,
+  b text
+);
+
+insert into test_table values ('a', 'b');
+
+insert into test_table select 'a', null from generate_series(1, 1000);
+
+insert into test_table values ('b', 'a');
+
+create index on test_table using btree (a, b);
+
+set enable_sort = off;
+
+select a, b from test_table where (a, b) > ('a', 'a') order by a, b;
+
+select a, b from test_table where (a, b) > ('a', 'a') order by a, b;
+
+reset enable_sort;
+
+select * from int8_tbl as i8 where i8 in (row(123, 456));
+
+select
+  *
+from
+  int8_tbl as i8
+where
+  i8
+  in (
+    cast(row(123, 456) as int8_tbl),
+    '(4567890123456789,123)'
+  );
+
+select
+  *
+from
+  int8_tbl as i8
+where
+  i8
+  in (
+    cast(row(123, 456) as int8_tbl),
+    '(4567890123456789,123)'
+  );
+
+select (row(1, 2.0)).f1;
+
+select (row(1, 2.0)).f2;
+
+select (row(1, 2.0)).nosuch;
+
+select (row(1, 2.0)).*;
+
+select r.f1 from (select row(1, 2.0) as r) as ss;
+
+select r.f3 from (select row(1, 2.0) as r) as ss;
+
+select r.* from (select row(1, 2.0) as r) as ss;
+
+select row();
+
+select row() is null;
+
+select row() = row();
+
+select array[row(1, 2), row(3, 4), row(5, 6)];
+
+select row(1, 1.1) = any (array[row(7, 7.7), row(1, 1.1), row(0, 0.0)]);
+
+select row(1, 1.1) = any (array[row(7, 7.7), row(1, 1.0), row(0, 0.0)]);
+
+create type cantcompare as (p point, r double precision);
+
+create temporary table cc (f1 cantcompare);
+
+insert into cc values ('("(1,2)",3)');
+
+insert into cc values ('("(4,5)",6)');
+
+select * from cc order by f1;
+
+create type testtype1 as (a int, b int);
+
+select cast(row(1, 2) as testtype1) < cast(row(1, 3) as testtype1);
+
+select cast(row(1, 2) as testtype1) <= cast(row(1, 3) as testtype1);
+
+select cast(row(1, 2) as testtype1) = cast(row(1, 2) as testtype1);
+
+select cast(row(1, 2) as testtype1) <> cast(row(1, 3) as testtype1);
+
+select cast(row(1, 3) as testtype1) >= cast(row(1, 2) as testtype1);
+
+select cast(row(1, 3) as testtype1) > cast(row(1, 2) as testtype1);
+
+select cast(row(1, -2) as testtype1) < cast(row(1, -3) as testtype1);
+
+select cast(row(1, -2) as testtype1) <= cast(row(1, -3) as testtype1);
+
+select cast(row(1, -2) as testtype1) = cast(row(1, -3) as testtype1);
+
+select cast(row(1, -2) as testtype1) <> cast(row(1, -2) as testtype1);
+
+select cast(row(1, -3) as testtype1) >= cast(row(1, -2) as testtype1);
+
+select cast(row(1, -3) as testtype1) > cast(row(1, -2) as testtype1);
+
+select cast(row(1, -2) as testtype1) < cast(row(1, 3) as testtype1);
+
+create type testtype3 as (a int, b text);
+
+select cast(row(1, 2) as testtype1) < cast(row(1, 'abc') as testtype3);
+
+select cast(row(1, 2) as testtype1) <> cast(row(1, 'abc') as testtype3);
+
+create type testtype5 as (a int);
+
+select cast(row(1, 2) as testtype1) < cast(row(1) as testtype5);
+
+select cast(row(1, 2) as testtype1) <> cast(row(1) as testtype5);
+
+create type testtype6 as (a int, b point);
+
+select cast(row(1, '(1,2)') as testtype6) < cast(row(1, '(1,3)') as testtype6);
+
+select cast(row(1, '(1,2)') as testtype6) <> cast(row(1, '(1,3)') as testtype6);
+
+drop type testtype1, testtype3, testtype5, testtype6;
+
+create type testtype1 as (a int, b int);
+
+select cast(row(1, 2) as testtype1) *< cast(row(1, 3) as testtype1);
+
+select cast(row(1, 2) as testtype1) *<= cast(row(1, 3) as testtype1);
+
+select cast(row(1, 2) as testtype1) *= cast(row(1, 2) as testtype1);
+
+select cast(row(1, 2) as testtype1) *<> cast(row(1, 3) as testtype1);
+
+select cast(row(1, 3) as testtype1) *>= cast(row(1, 2) as testtype1);
+
+select cast(row(1, 3) as testtype1) *> cast(row(1, 2) as testtype1);
+
+select cast(row(1, -2) as testtype1) *< cast(row(1, -3) as testtype1);
+
+select cast(row(1, -2) as testtype1) *<= cast(row(1, -3) as testtype1);
+
+select cast(row(1, -2) as testtype1) *= cast(row(1, -3) as testtype1);
+
+select cast(row(1, -2) as testtype1) *<> cast(row(1, -2) as testtype1);
+
+select cast(row(1, -3) as testtype1) *>= cast(row(1, -2) as testtype1);
+
+select cast(row(1, -3) as testtype1) *> cast(row(1, -2) as testtype1);
+
+select cast(row(1, -2) as testtype1) *< cast(row(1, 3) as testtype1);
+
+create type testtype2 as (a smallint, b boolean);
+
+select cast(row(1, true) as testtype2) *< cast(row(2, true) as testtype2);
+
+select cast(row(-2, true) as testtype2) *< cast(row(-1, true) as testtype2);
+
+select cast(row(0, false) as testtype2) *< cast(row(0, true) as testtype2);
+
+select cast(row(0, false) as testtype2) *<> cast(row(0, true) as testtype2);
+
+create type testtype3 as (a int, b text);
+
+select cast(row(1, 'abc') as testtype3) *< cast(row(1, 'abd') as testtype3);
+
+select cast(row(1, 'abc') as testtype3) *< cast(row(1, 'abcd') as testtype3);
+
+select cast(row(1, 'abc') as testtype3) *> cast(row(1, 'abd') as testtype3);
+
+select cast(row(1, 'abc') as testtype3) *<> cast(row(1, 'abd') as testtype3);
+
+create type testtype4 as (a int, b point);
+
+select cast(row(1, '(1,2)') as testtype4) *< cast(row(1, '(1,3)') as testtype4);
+
+select cast(row(1, '(1,2)') as testtype4) *<> cast(row(1, '(1,3)') as testtype4);
+
+select cast(row(1, 2) as testtype1) *< cast(row(1, 'abc') as testtype3);
+
+select cast(row(1, 2) as testtype1) *<> cast(row(1, 'abc') as testtype3);
+
+create type testtype5 as (a int);
+
+select cast(row(1, 2) as testtype1) *< cast(row(1) as testtype5);
+
+select cast(row(1, 2) as testtype1) *<> cast(row(1) as testtype5);
+
+create type testtype6 as (a int, b point);
+
+select cast(row(1, '(1,2)') as testtype6) *< cast(row(1, '(1,3)') as testtype6);
+
+select cast(row(1, '(1,2)') as testtype6) *>= cast(row(1, '(1,3)') as testtype6);
+
+select cast(row(1, '(1,2)') as testtype6) *<> cast(row(1, '(1,3)') as testtype6);
+
+select
+  q.a,
+  q.b = row(2),
+  q.c = array[row(3)],
+  q.d = row(row(4))
+from
+  unnest(
+    array[row(1, row(2), array[row(3)], row(row(4))),
+    row(2, row(3), array[row(4)], row(row(5)))]
+  )
+  as q
+  (a int, b record, c record[], d record);
+
+drop type testtype1, testtype2, testtype3, testtype4, testtype5, testtype6;
+
+begin;
+
+create table price (
+  id serial primary key,
+  active boolean not null,
+  price numeric
+);
+
+create type price_input as (id int, price numeric);
+
+create type price_key as (id int);
+
+create function price_key_from_table(price)
+returns price_key
+as $function$
+    SELECT $1.id
+$function$
+language sql;
+
+create function price_key_from_input(price_input)
+returns price_key
+as $function$
+    SELECT $1.id
+$function$
+language sql;
+
+insert into price values (1, false, 42), (10, false, 100), (11, true, 17.99);
+
+update price
+set active = true,
+price = input_prices.price
+from unnest(
+  cast(array[(10, 123.00), (11, 99.99)]
+  as price_input[])
+)
+as input_prices
+where
+  price_key_from_table(price.*) =
+  price_key_from_input(input_prices.*);
+
+select * from price;
+
+rollback;
+
+create temporary table compos (
+  f1 int,
+  f2 text
+);
+
+create function fcompos1(v compos)
+returns void
+as $function$
+insert into compos values (v);  -- fail
+$function$
+language sql;
+
+create function fcompos1(v compos)
+returns void
+as $function$
+insert into compos values (v.*);
+$function$
+language sql;
+
+create function fcompos2(v compos)
+returns void
+as $function$
+select fcompos1(v);
+$function$
+language sql;
+
+create function fcompos3(v compos)
+returns void
+as $function$
+select fcompos1(fcompos3.v.*);
+$function$
+language sql;
+
+select fcompos1(row(1, 'one'));
+
+select fcompos2(row(2, 'two'));
+
+select fcompos3(row(3, 'three'));
+
+select * from compos;
+
+select cast(fullname as text) from fullname;
+
+select cast(fullname as text) from fullname;
+
+select text(fullname) from fullname;
+
+select fullname.text from fullname;
+
+select cast(row('Jim', 'Beam') as text);
+
+select cast(row('Jim', 'Beam') as text);
+
+select text(row('Jim', 'Beam'));
+
+select (row('Jim', 'Beam')).text;
+
+insert into fullname values ('Joe', 'Blow');
+
+select f.last from fullname as f;
+
+select last(f) from fullname as f;
+
+create function longname(fullname)
+returns text
+language sql
+as $function$select $1.first || ' ' || $1.last$function$;
+
+select f.longname from fullname as f;
+
+select longname(f) from fullname as f;
+
+alter table fullname
+  add column longname text;
+
+select f.longname from fullname as f;
+
+select longname(f) from fullname as f;
+
+select row_to_json(i) from int8_tbl as i;
+
+select row_to_json(i) from int8_tbl as i (x, y);
+
+select row_to_json(ss) from (select q1, q2 from int8_tbl) as ss;
+
+select row_to_json(ss) from (select q1, q2 from int8_tbl offset 0) as ss;
+
+select row_to_json(ss) from (select q1 as a, q2 as b from int8_tbl) as ss;
+
+select row_to_json(ss) from (select q1 as a, q2 as b from int8_tbl offset 0) as ss;
+
+select row_to_json(ss) from (select q1 as a, q2 as b from int8_tbl) as ss (x, y);
+
+select row_to_json(ss) from (select q1 as a, q2 as b from int8_tbl offset 0) as ss (x, y);
+
+select
+  row_to_json(q)
+from
+  (
+    select
+      thousand,
+      tenthous
+    from
+      tenk1
+    where
+      thousand = 42 and tenthous < 2000
+    offset 0
+  )
+  as q;
+
+select
+  row_to_json(q)
+from
+  (
+    select
+      thousand,
+      tenthous
+    from
+      tenk1
+    where
+      thousand = 42 and tenthous < 2000
+    offset 0
+  )
+  as q;
+
+select
+  row_to_json(q)
+from
+  (
+    select
+      thousand as x,
+      tenthous as y
+    from
+      tenk1
+    where
+      thousand = 42 and tenthous < 2000
+    offset 0
+  )
+  as q;
+
+select
+  row_to_json(q)
+from
+  (
+    select
+      thousand as x,
+      tenthous as y
+    from
+      tenk1
+    where
+      thousand = 42 and tenthous < 2000
+    offset 0
+  )
+  as q (a, b);
+
+create temporary table tt1 as select * from int8_tbl limit 2;
+
+create temporary table tt2 ()
+inherits (tt1);
+
+insert into tt2 values (0, 0);
+
+select row_to_json(r) from (select q2, q1 from tt1 offset 0) as r;
+
+create temporary table tt3 ()
+inherits (tt2);
+
+insert into tt3 values (33, 44);
+
+select row_to_json(cast(cast(tt3 as tt2) as tt1)) from tt3;
+
+select
+  r,
+  r is null as isnull,
+  r is not null as isnotnull
+from
+  (
+    values
+      (1, row(1, 2)),
+      (1, row(null, null)),
+      (1, null),
+      (null, row(1, 2)),
+      (null, row(null, null)),
+      (null, null)
+  )
+  as r (a, b);
+
+select
+  r,
+  r is null as isnull,
+  r is not null as isnotnull
+from
+  (
+    values
+      (1, row(1, 2)),
+      (1, row(null, null)),
+      (1, null),
+      (null, row(1, 2)),
+      (null, row(null, null)),
+      (null, null)
+  )
+  as r (a, b);
+
+with
+r (a,
+b)
+as materialized (
+  values
+    (1, row(1, 2)),
+    (1, row(null, null)),
+    (1, null),
+    (null, row(1, 2)),
+    (null, row(null, null)),
+    (null, null)
+)
+select
+  r,
+  r is null as isnull,
+  r is not null as isnotnull
+from
+  r;
+
+with
+r (a,
+b)
+as materialized (
+  values
+    (1, row(1, 2)),
+    (1, row(null, null)),
+    (1, null),
+    (null, row(1, 2)),
+    (null, row(null, null)),
+    (null, null)
+)
+select
+  r,
+  r is null as isnull,
+  r is not null as isnotnull
+from
+  r;
+
+with
+cte (c) as materialized (select row(1, 2)),
+cte2 (c) as (select * from cte)
+select
+  *
+from
+  cte2 as t
+where
+  (
+    select
+      *
+    from
+      (select c as c1) as s
+    where
+      (select c1.f1 > 0)
+  ) is not null;
+
+with
+cte (c) as materialized (select row(1, 2)),
+cte2 (c) as (select * from cte)
+select
+  *
+from
+  cte2 as t
+where
+  (
+    select
+      *
+    from
+      (select c as c1) as s
+    where
+      (select c1.f1 > 0)
+  ) is not null;
+
+select
+  1 as one
+from
+  cte2 as t
+where
+  (
+    select
+      *
+    from
+      (select c as c1) as s
+    where
+      (select c1.f1 > 0)
+  ) is not null;
+
+select pg_get_viewdef('composite_v', true);
+
+drop view composite_v;
+
+select ss.a.x, ss.a.n from (select information_schema._pg_expandarray(array[1, 2]) as a) as ss;
+
+select
+  ss.a.x,
+  ss.a.n
+from
+  (
+    select
+      information_schema._pg_expandarray(array[1, 2])
+      as a
+  )
+  as ss
+where
+  false;
+
+with
+cte (c) as materialized (select row(1, 2)),
+cte2 (c) as (select * from cte)
+select
+  c.f1
+from
+  cte2 as t;
+
+with
+cte (c) as materialized (select row(1, 2)),
+cte2 (c) as (select * from cte)
+select
+  c.f1
+from
+  cte2 as t
+where
+  false;
+
+create table compositetable (
+  a text,
+  b text
+);
+
+insert into compositetable (a, b) values ('fa', 'fb');
+
+select d.a from (select compositetable as d from compositetable) as s;
+
+select d.a, d.b from (select compositetable as d from compositetable) as s;
+
+select d.ctid from (select compositetable as d from compositetable) as s;
+
+select (cast(null as compositetable)).nonexistent;
+
+select (cast(null as compositetable)).a;
+
+select (cast(null as compositetable)).oid;
+
+drop table compositetable;

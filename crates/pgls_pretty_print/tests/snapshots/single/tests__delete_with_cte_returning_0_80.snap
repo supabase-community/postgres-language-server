@@ -1,0 +1,21 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/single/delete_with_cte_returning_0.sql
+snapshot_kind: text
+---
+with
+stale
+as (
+  select
+    id
+  from
+    sessions
+  where
+    last_seen <
+    NOW() - cast('30 days' as interval)
+)
+delete from sessions
+using stale
+where
+  sessions.id = stale.id
+returning sessions.id;

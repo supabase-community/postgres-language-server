@@ -1,0 +1,6 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/single/create_op_class_stmt_0.sql
+snapshot_kind: text
+---
+create operator class myopclass for type int using btree as operator 1 <;

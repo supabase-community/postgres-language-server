@@ -1,0 +1,5151 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/partition_join.sql
+snapshot_kind: text
+---
+set enable_partitionwise_join = 'true';
+
+create table prt1 (
+  a int,
+  b int,
+  c varchar
+)
+partition by range(a);
+
+create table prt1_p1 partition of prt1 for values from (0) to (250);
+
+create table prt1_p3 partition of prt1 for values from (500) to (600);
+
+create table prt1_p2 partition of prt1 for values from (250) to (500);
+
+insert into prt1
+select
+  i,
+  i % 25,
+  to_char(i, 'FM0000')
+from
+  generate_series(0, 599) as i
+where
+  i % 2 = 0;
+
+create index "iprt1_p1_a" on prt1_p1 using btree (a);
+
+create index "iprt1_p2_a" on prt1_p2 using btree (a);
+
+create index "iprt1_p3_a" on prt1_p3 using btree (a);
+
+analyze prt1;
+
+create table prt2 (
+  a int,
+  b int,
+  c varchar
+)
+partition by range(b);
+
+create table prt2_p1 partition of prt2 for values from (0) to (250);
+
+create table prt2_p2 partition of prt2 for values from (250) to (500);
+
+create table prt2_p3 partition of prt2 for values from (500) to (600);
+
+insert into prt2
+select
+  i % 25,
+  i,
+  to_char(i, 'FM0000')
+from
+  generate_series(0, 599) as i
+where
+  i % 3 = 0;
+
+create index "iprt2_p1_b" on prt2_p1 using btree (b);
+
+create index "iprt2_p2_b" on prt2_p2 using btree (b);
+
+create index "iprt2_p3_b" on prt2_p3 using btree (b);
+
+analyze prt2;
+
+select
+  t1.a,
+  t1.c,
+  t2.b,
+  t2.c
+from
+  prt1 as t1,
+  prt2 as t2
+where
+  t1.a = t2.b and t1.b = 0
+order by t1.a,
+  t2.b;
+
+select
+  t1.a,
+  t1.c,
+  t2.b,
+  t2.c
+from
+  prt1 as t1,
+  prt2 as t2
+where
+  t1.a = t2.b and t1.b = 0
+order by t1.a,
+  t2.b;
+
+select
+  t1.a,
+  t1.c,
+  t2.b,
+  t2.c
+from
+  prt1 as t1,
+  prt2 as t2
+where
+  t1.a = t2.a and t1.a = t2.b
+order by t1.a,
+  t2.b;
+
+select
+  t1.a,
+  t1.c,
+  t2.b,
+  t2.c
+from
+  prt1 as t1,
+  prt2 as t2
+where
+  t1.a = t2.a and t1.a = t2.b
+order by t1.a,
+  t2.b;
+
+select
+  COUNT(*)
+from
+  prt1 as t1
+  left outer join
+    prt1 as t2
+  on t1.a = t2.a
+  left outer join
+    prt1 as t3
+  on t2.a = t3.a;
+
+select
+  COUNT(*)
+from
+  prt1 as t1
+  left outer join
+    prt1 as t2
+  on t1.a = t2.a
+  left outer join
+    prt1 as t3
+  on t2.a = t3.a;
+
+select
+  t1,
+  t2
+from
+  prt1 as t1
+  left outer join
+    prt2 as t2
+  on t1.a = t2.b
+where
+  t1.b = 0
+order by t1.a,
+  t2.b;
+
+select
+  t1,
+  t2
+from
+  prt1 as t1
+  left outer join
+    prt2 as t2
+  on t1.a = t2.b
+where
+  t1.b = 0
+order by t1.a,
+  t2.b;
+
+select
+  t1.a,
+  t1.c,
+  t2.b,
+  t2.c
+from
+  prt1 as t1
+  right outer join
+    prt2 as t2
+  on t1.a = t2.b
+where
+  t2.a = 0
+order by t1.a,
+  t2.b;
+
+select
+  t1.a,
+  t1.c,
+  t2.b,
+  t2.c
+from
+  prt1 as t1
+  right outer join
+    prt2 as t2
+  on t1.a = t2.b
+where
+  t2.a = 0
+order by t1.a,
+  t2.b;
+
+select
+  t1.a,
+  t1.c,
+  t2.b,
+  t2.c
+from
+  (
+    select
+      50 as phv,
+      *
+    from
+      prt1
+    where
+      prt1.b = 0
+  )
+  as t1
+  full outer join
+    (
+      select
+        75 as phv,
+        *
+      from
+        prt2
+      where
+        prt2.a = 0
+    )
+    as t2
+  on t1.a = t2.b
+where
+  t1.phv = t1.a or t2.phv = t2.b
+order by t1.a,
+  t2.b;
+
+select
+  t1.a,
+  t1.c,
+  t2.b,
+  t2.c
+from
+  (
+    select
+      50 as phv,
+      *
+    from
+      prt1
+    where
+      prt1.b = 0
+  )
+  as t1
+  full outer join
+    (
+      select
+        75 as phv,
+        *
+      from
+        prt2
+      where
+        prt2.a = 0
+    )
+    as t2
+  on t1.a = t2.b
+where
+  t1.phv = t1.a or t2.phv = t2.b
+order by t1.a,
+  t2.b;
+
+select
+  t1.a,
+  t1.c,
+  t2.b,
+  t2.c
+from
+  prt1 as t1,
+  prt2 as t2
+where
+  t1.a = t2.b and
+  t1.a < 450 and
+  t2.b > 250 and
+  t1.b = 0
+order by t1.a,
+  t2.b;
+
+select
+  t1.a,
+  t1.c,
+  t2.b,
+  t2.c
+from
+  prt1 as t1,
+  prt2 as t2
+where
+  t1.a = t2.b and
+  t1.a < 450 and
+  t2.b > 250 and
+  t1.b = 0
+order by t1.a,
+  t2.b;
+
+select
+  t1.a,
+  t1.c,
+  t2.b,
+  t2.c
+from
+  (select * from prt1 where a < 450) as t1
+  left outer join
+    (select * from prt2 where b > 250) as t2
+  on t1.a = t2.b
+where
+  t1.b = 0
+order by t1.a,
+  t2.b;
+
+select
+  t1.a,
+  t1.c,
+  t2.b,
+  t2.c
+from
+  (select * from prt1 where a < 450) as t1
+  left outer join
+    (select * from prt2 where b > 250) as t2
+  on t1.a = t2.b
+where
+  t1.b = 0
+order by t1.a,
+  t2.b;
+
+select
+  t1.a,
+  t1.c,
+  t2.b,
+  t2.c
+from
+  (select * from prt1 where a < 450) as t1
+  full outer join
+    (select * from prt2 where b > 250) as t2
+  on t1.a = t2.b
+where
+  t1.b = 0 or t2.a = 0
+order by t1.a,
+  t2.b;
+
+select
+  t1.a,
+  t1.c,
+  t2.b,
+  t2.c
+from
+  (select * from prt1 where a < 450) as t1
+  full outer join
+    (select * from prt2 where b > 250) as t2
+  on t1.a = t2.b
+where
+  t1.b = 0 or t2.a = 0
+order by t1.a,
+  t2.b;
+
+select
+  t1.*
+from
+  prt1 as t1
+where
+  t1.a in
+  (
+    select
+      t2.b
+    from
+      prt2 as t2
+    where
+      t2.a = 0
+  ) and
+  t1.b = 0
+order by t1.a;
+
+select
+  t1.*
+from
+  prt1 as t1
+where
+  t1.a in
+  (
+    select
+      t2.b
+    from
+      prt2 as t2
+    where
+      t2.a = 0
+  ) and
+  t1.b = 0
+order by t1.a;
+
+select
+  SUM(t1.a),
+  AVG(t1.a),
+  SUM(t1.b),
+  AVG(t1.b)
+from
+  prt1 as t1
+where
+  not exists
+  (
+    select
+      1
+    from
+      prt2 as t2
+    where
+      t1.a = t2.b
+  );
+
+select
+  SUM(t1.a),
+  AVG(t1.a),
+  SUM(t1.b),
+  AVG(t1.b)
+from
+  prt1 as t1
+where
+  not exists
+  (
+    select
+      1
+    from
+      prt2 as t2
+    where
+      t1.a = t2.b
+  );
+
+select
+  *
+from
+  prt1 as t1
+  left outer join
+    lateral (
+      select
+        t2.a as t2a,
+        t3.a as t3a,
+        least(t1.a, t2.a, t3.b)
+      from
+        prt1 as t2
+        inner join
+          prt2 as t3
+        on t2.a = t3.b
+    )
+    as ss
+  on t1.a = ss.t2a
+where
+  t1.b = 0
+order by t1.a;
+
+select
+  *
+from
+  prt1 as t1
+  left outer join
+    lateral (
+      select
+        t2.a as t2a,
+        t3.a as t3a,
+        least(t1.a, t2.a, t3.b)
+      from
+        prt1 as t2
+        inner join
+          prt2 as t3
+        on t2.a = t3.b
+    )
+    as ss
+  on t1.a = ss.t2a
+where
+  t1.b = 0
+order by t1.a;
+
+select
+  t1.a,
+  ss.t2a,
+  ss.t2c
+from
+  prt1 as t1
+  left outer join
+    lateral (
+      select
+        t2.a as t2a,
+        t3.a as t3a,
+        t2.b as t2b,
+        t2.c as t2c,
+        least(t1.a, t2.a, t3.b)
+      from
+        prt1 as t2
+        inner join
+          prt2 as t3
+        on t2.a = t3.b
+    )
+    as ss
+  on t1.c = ss.t2c
+where
+  t1.b + coalesce(ss.t2b, 0) = 0
+order by t1.a;
+
+select
+  t1.a,
+  ss.t2a,
+  ss.t2c
+from
+  prt1 as t1
+  left outer join
+    lateral (
+      select
+        t2.a as t2a,
+        t3.a as t3a,
+        t2.b as t2b,
+        t2.c as t2c,
+        least(t1.a, t2.a, t3.a)
+      from
+        prt1 as t2
+        inner join
+          prt2 as t3
+        on t2.a = t3.b
+    )
+    as ss
+  on t1.c = ss.t2c
+where
+  t1.b + coalesce(ss.t2b, 0) = 0
+order by t1.a;
+
+select
+  *
+from
+  prt1 as t1
+  inner join
+    lateral (
+      select
+        *
+      from
+        prt1 as t2
+        tablesample system (t1.a)
+        repeatable (t1.b)
+    )
+    as s
+  on t1.a = s.a;
+
+select
+  COUNT(*)
+from
+  prt1 as t1
+  left outer join
+    lateral (
+      select t1.b as t1b, t2.* from prt2 as t2
+    )
+    as s
+  on t1.a = s.b
+where
+  s.t1b = s.a;
+
+select
+  COUNT(*)
+from
+  prt1 as t1
+  left outer join
+    lateral (
+      select t1.b as t1b, t2.* from prt2 as t2
+    )
+    as s
+  on t1.a = s.b
+where
+  s.t1b = s.a;
+
+select
+  COUNT(*)
+from
+  prt1 as t1
+  left outer join
+    lateral (
+      select t1.b as t1b, t2.* from prt2 as t2
+    )
+    as s
+  on t1.a = s.b
+where
+  s.t1b = s.b;
+
+select
+  COUNT(*)
+from
+  prt1 as t1
+  left outer join
+    lateral (
+      select t1.b as t1b, t2.* from prt2 as t2
+    )
+    as s
+  on t1.a = s.b
+where
+  s.t1b = s.b;
+
+set enable_partitionwise_aggregate = 'true';
+
+set enable_hashjoin = 'false';
+
+select
+  a,
+  b
+from
+  prt1
+  full outer join
+    prt2 as p2 (b, a, c)
+  using (
+    "a",
+    "b")
+where
+  a between 490 and 510
+group by 1,
+  2
+order by 1,
+  2;
+
+select
+  a,
+  b
+from
+  prt1
+  full outer join
+    prt2 as p2 (b, a, c)
+  using (
+    "a",
+    "b")
+where
+  a between 490 and 510
+group by 1,
+  2
+order by 1,
+  2;
+
+reset enable_partitionwise_aggregate;
+
+reset enable_hashjoin;
+
+select
+  *
+from
+  prt1 as t1
+  inner join
+    prt1 as t2
+  on t1.a = t2.a
+where
+  t1.a in (select a from prt1 as t3);
+
+create table prt1_e (
+  a int,
+  b int,
+  c int
+)
+partition by range(((a + b) / 2));
+
+create table prt1_e_p1 partition of prt1_e for values from (0) to (250);
+
+create table prt1_e_p2 partition of prt1_e for values from (250) to (500);
+
+create table prt1_e_p3 partition of prt1_e for values from (500) to (600);
+
+insert into prt1_e select i, i, i % 25 from generate_series(0, 599, 2) as i;
+
+create index "iprt1_e_p1_ab2" on prt1_e_p1 using btree (((a + b) / 2));
+
+create index "iprt1_e_p2_ab2" on prt1_e_p2 using btree (((a + b) / 2));
+
+create index "iprt1_e_p3_ab2" on prt1_e_p3 using btree (((a + b) / 2));
+
+analyze prt1_e;
+
+create table prt2_e (
+  a int,
+  b int,
+  c int
+)
+partition by range(((b + a) / 2));
+
+create table prt2_e_p1 partition of prt2_e for values from (0) to (250);
+
+create table prt2_e_p2 partition of prt2_e for values from (250) to (500);
+
+create table prt2_e_p3 partition of prt2_e for values from (500) to (600);
+
+insert into prt2_e select i, i, i % 25 from generate_series(0, 599, 3) as i;
+
+analyze prt2_e;
+
+select
+  t1.a,
+  t1.c,
+  t2.b,
+  t2.c
+from
+  prt1_e as t1,
+  prt2_e as t2
+where
+  (t1.a + t1.b) / 2 = (t2.b + t2.a) / 2 and
+  t1.c = 0
+order by t1.a,
+  t2.b;
+
+select
+  t1.a,
+  t1.c,
+  t2.b,
+  t2.c
+from
+  prt1_e as t1,
+  prt2_e as t2
+where
+  (t1.a + t1.b) / 2 = (t2.b + t2.a) / 2 and
+  t1.c = 0
+order by t1.a,
+  t2.b;
+
+select
+  t1.a,
+  t1.c,
+  t2.b,
+  t2.c,
+  t3.a + t3.b,
+  t3.c
+from
+  prt1 as t1,
+  prt2 as t2,
+  prt1_e as t3
+where
+  t1.a = t2.b and
+  t1.a = (t3.a + t3.b) / 2 and
+  t1.b = 0
+order by t1.a,
+  t2.b;
+
+select
+  t1.a,
+  t1.c,
+  t2.b,
+  t2.c,
+  t3.a + t3.b,
+  t3.c
+from
+  prt1 as t1,
+  prt2 as t2,
+  prt1_e as t3
+where
+  t1.a = t2.b and
+  t1.a = (t3.a + t3.b) / 2 and
+  t1.b = 0
+order by t1.a,
+  t2.b;
+
+select
+  t1.a,
+  t1.c,
+  t2.b,
+  t2.c,
+  t3.a + t3.b,
+  t3.c
+from
+  prt1 as t1
+  left outer join
+    prt2 as t2
+  on t1.a = t2.b
+  left outer join
+    prt1_e as t3
+  on t1.a = (t3.a + t3.b) / 2
+where
+  t1.b = 0
+order by t1.a,
+  t2.b,
+  t3.a + t3.b;
+
+select
+  t1.a,
+  t1.c,
+  t2.b,
+  t2.c,
+  t3.a + t3.b,
+  t3.c
+from
+  prt1 as t1
+  left outer join
+    prt2 as t2
+  on t1.a = t2.b
+  left outer join
+    prt1_e as t3
+  on t1.a = (t3.a + t3.b) / 2
+where
+  t1.b = 0
+order by t1.a,
+  t2.b,
+  t3.a + t3.b;
+
+select
+  t1.a,
+  t1.c,
+  t2.b,
+  t2.c,
+  t3.a + t3.b,
+  t3.c
+from
+  prt1 as t1
+  left outer join
+    prt2 as t2
+  on t1.a = t2.b
+  right outer join
+    prt1_e as t3
+  on t1.a = (t3.a + t3.b) / 2
+where
+  t3.c = 0
+order by t1.a,
+  t2.b,
+  t3.a + t3.b;
+
+select
+  t1.a,
+  t1.c,
+  t2.b,
+  t2.c,
+  t3.a + t3.b,
+  t3.c
+from
+  prt1 as t1
+  left outer join
+    prt2 as t2
+  on t1.a = t2.b
+  right outer join
+    prt1_e as t3
+  on t1.a = (t3.a + t3.b) / 2
+where
+  t3.c = 0
+order by t1.a,
+  t2.b,
+  t3.a + t3.b;
+
+select
+  COUNT(*)
+from
+  prt1
+  full outer join
+    prt2 as p2 (b, a, c)
+  using (
+    "a",
+    "b")
+  full outer join
+    prt2 as p3 (b, a, c)
+  using (
+    "a",
+    "b")
+where
+  a between 490 and 510;
+
+select
+  COUNT(*)
+from
+  prt1
+  full outer join
+    prt2 as p2 (b, a, c)
+  using (
+    "a",
+    "b")
+  full outer join
+    prt2 as p3 (b, a, c)
+  using (
+    "a",
+    "b")
+where
+  a between 490 and 510;
+
+select
+  COUNT(*)
+from
+  prt1
+  full outer join
+    prt2 as p2 (b, a, c)
+  using (
+    "a",
+    "b")
+  full outer join
+    prt2 as p3 (b, a, c)
+  using (
+    "a",
+    "b")
+  full outer join
+    prt1 as p4 (a, b, c)
+  using (
+    "a",
+    "b")
+where
+  a between 490 and 510;
+
+select
+  COUNT(*)
+from
+  prt1
+  full outer join
+    prt2 as p2 (b, a, c)
+  using (
+    "a",
+    "b")
+  full outer join
+    prt2 as p3 (b, a, c)
+  using (
+    "a",
+    "b")
+  full outer join
+    prt1 as p4 (a, b, c)
+  using (
+    "a",
+    "b")
+where
+  a between 490 and 510;
+
+select
+  t1.a,
+  t1.phv,
+  t2.b,
+  t2.phv,
+  t3.a + t3.b,
+  t3.phv
+from
+  (
+    select
+      50 as phv,
+      *
+    from
+      prt1
+    where
+      prt1.b = 0
+  )
+  as t1
+  full outer join
+    (
+      select
+        75 as phv,
+        *
+      from
+        prt2
+      where
+        prt2.a = 0
+    )
+    as t2
+  on t1.a = t2.b
+  full outer join
+    (
+      select
+        50 as phv,
+        *
+      from
+        prt1_e
+      where
+        prt1_e.c = 0
+    )
+    as t3
+  on t1.a = (t3.a + t3.b) / 2
+where
+  t1.a = t1.phv or
+  t2.b = t2.phv or
+  (t3.a + t3.b) / 2 = t3.phv
+order by t1.a,
+  t2.b,
+  t3.a + t3.b;
+
+select
+  t1.a,
+  t1.phv,
+  t2.b,
+  t2.phv,
+  t3.a + t3.b,
+  t3.phv
+from
+  (
+    select
+      50 as phv,
+      *
+    from
+      prt1
+    where
+      prt1.b = 0
+  )
+  as t1
+  full outer join
+    (
+      select
+        75 as phv,
+        *
+      from
+        prt2
+      where
+        prt2.a = 0
+    )
+    as t2
+  on t1.a = t2.b
+  full outer join
+    (
+      select
+        50 as phv,
+        *
+      from
+        prt1_e
+      where
+        prt1_e.c = 0
+    )
+    as t3
+  on t1.a = (t3.a + t3.b) / 2
+where
+  t1.a = t1.phv or
+  t2.b = t2.phv or
+  (t3.a + t3.b) / 2 = t3.phv
+order by t1.a,
+  t2.b,
+  t3.a + t3.b;
+
+select
+  t1.*
+from
+  prt1 as t1
+where
+  t1.a in
+  (
+    select
+      t1.b
+    from
+      prt2 as t1,
+      prt1_e as t2
+    where
+      t1.a = 0 and t1.b = (t2.a + t2.b) / 2
+  ) and
+  t1.b = 0
+order by t1.a;
+
+select
+  t1.*
+from
+  prt1 as t1
+where
+  t1.a in
+  (
+    select
+      t1.b
+    from
+      prt2 as t1,
+      prt1_e as t2
+    where
+      t1.a = 0 and t1.b = (t2.a + t2.b) / 2
+  ) and
+  t1.b = 0
+order by t1.a;
+
+select
+  t1.*
+from
+  prt1 as t1
+where
+  t1.a in
+  (
+    select
+      t1.b
+    from
+      prt2 as t1
+    where
+      t1.b in
+      (
+        select
+          (t1.a + t1.b) / 2
+        from
+          prt1_e as t1
+        where
+          t1.c = 0
+      )
+  ) and
+  t1.b = 0
+order by t1.a;
+
+select
+  t1.*
+from
+  prt1 as t1
+where
+  t1.a in
+  (
+    select
+      t1.b
+    from
+      prt2 as t1
+    where
+      t1.b in
+      (
+        select
+          (t1.a + t1.b) / 2
+        from
+          prt1_e as t1
+        where
+          t1.c = 0
+      )
+  ) and
+  t1.b = 0
+order by t1.a;
+
+set enable_hashjoin = off;
+
+set enable_nestloop = off;
+
+select
+  t1.*
+from
+  prt1 as t1
+where
+  t1.a in
+  (
+    select
+      t1.b
+    from
+      prt2 as t1
+    where
+      t1.b in
+      (
+        select
+          (t1.a + t1.b) / 2
+        from
+          prt1_e as t1
+        where
+          t1.c = 0
+      )
+  ) and
+  t1.b = 0
+order by t1.a;
+
+select
+  t1.*
+from
+  prt1 as t1
+where
+  t1.a in
+  (
+    select
+      t1.b
+    from
+      prt2 as t1
+    where
+      t1.b in
+      (
+        select
+          (t1.a + t1.b) / 2
+        from
+          prt1_e as t1
+        where
+          t1.c = 0
+      )
+  ) and
+  t1.b = 0
+order by t1.a;
+
+select
+  t1.a,
+  t1.c,
+  t2.b,
+  t2.c,
+  t3.a + t3.b,
+  t3.c
+from
+  prt1 as t1
+  left outer join
+    prt2 as t2
+  on t1.a = t2.b
+  right outer join
+    prt1_e as t3
+  on t1.a = (t3.a + t3.b) / 2
+where
+  t3.c = 0
+order by t1.a,
+  t2.b,
+  t3.a + t3.b;
+
+select
+  t1.a,
+  t1.c,
+  t2.b,
+  t2.c,
+  t3.a + t3.b,
+  t3.c
+from
+  prt1 as t1
+  left outer join
+    prt2 as t2
+  on t1.a = t2.b
+  right outer join
+    prt1_e as t3
+  on t1.a = (t3.a + t3.b) / 2
+where
+  t3.c = 0
+order by t1.a,
+  t2.b,
+  t3.a + t3.b;
+
+select
+  t1.a,
+  t2.b
+from
+  (select * from prt1 where a < 450) as t1
+  left outer join
+    (select * from prt2 where b > 250) as t2
+  on t1.a = t2.b
+where
+  t1.b = 0
+order by t1.a,
+  t2.b;
+
+select
+  t1.a,
+  t2.b
+from
+  (select * from prt1 where a < 450) as t1
+  left outer join
+    (select * from prt2 where b > 250) as t2
+  on t1.a = t2.b
+where
+  t1.b = 0
+order by t1.a,
+  t2.b;
+
+select
+  t1.a,
+  t2.b
+from
+  prt1 as t1,
+  prt2 as t2
+where
+  cast(t1 as text) = cast(t2 as text) and
+  t1.a = t2.b
+order by t1.a;
+
+select
+  t1.a,
+  t2.b
+from
+  prt1 as t1,
+  prt2 as t2
+where
+  cast(t1 as text) = cast(t2 as text) and
+  t1.a = t2.b
+order by t1.a;
+
+reset enable_hashjoin;
+
+reset enable_nestloop;
+
+create table prt1_m (
+  a int,
+  b int,
+  c int
+)
+partition by range(a, ((a + b) / 2));
+
+create table prt1_m_p1 partition of prt1_m for values from (0, 0) to (250, 250);
+
+create table prt1_m_p2
+partition of prt1_m
+for values from (250, 250) to (500, 500);
+
+create table prt1_m_p3
+partition of prt1_m
+for values from (500, 500) to (600, 600);
+
+insert into prt1_m select i, i, i % 25 from generate_series(0, 599, 2) as i;
+
+analyze prt1_m;
+
+create table prt2_m (
+  a int,
+  b int,
+  c int
+)
+partition by range(((b + a) / 2), b);
+
+create table prt2_m_p1 partition of prt2_m for values from (0, 0) to (250, 250);
+
+create table prt2_m_p2
+partition of prt2_m
+for values from (250, 250) to (500, 500);
+
+create table prt2_m_p3
+partition of prt2_m
+for values from (500, 500) to (600, 600);
+
+insert into prt2_m select i, i, i % 25 from generate_series(0, 599, 3) as i;
+
+analyze prt2_m;
+
+select
+  t1.a,
+  t1.c,
+  t2.b,
+  t2.c
+from
+  (
+    select * from prt1_m where prt1_m.c = 0
+  )
+  as t1
+  full outer join
+    (
+      select * from prt2_m where prt2_m.c = 0
+    )
+    as t2
+  on t1.a = (t2.b + t2.a) / 2 and
+    t2.b = (t1.a + t1.b) / 2
+order by t1.a,
+  t2.b;
+
+select
+  t1.a,
+  t1.c,
+  t2.b,
+  t2.c
+from
+  (
+    select * from prt1_m where prt1_m.c = 0
+  )
+  as t1
+  full outer join
+    (
+      select * from prt2_m where prt2_m.c = 0
+    )
+    as t2
+  on t1.a = (t2.b + t2.a) / 2 and
+    t2.b = (t1.a + t1.b) / 2
+order by t1.a,
+  t2.b;
+
+create table plt1 (
+  a int,
+  b int,
+  c text
+)
+partition by LIST(c);
+
+create table plt1_p1
+partition of plt1
+for values in ('0000',
+'0003',
+'0004',
+'0010');
+
+create table plt1_p2
+partition of plt1
+for values in ('0001',
+'0005',
+'0002',
+'0009');
+
+create table plt1_p3
+partition of plt1
+for values in ('0006',
+'0007',
+'0008',
+'0011');
+
+insert into plt1
+select
+  i,
+  i,
+  to_char(i / 50, 'FM0000')
+from
+  generate_series(0, 599, 2) as i;
+
+analyze plt1;
+
+create table plt2 (
+  a int,
+  b int,
+  c text
+)
+partition by LIST(c);
+
+create table plt2_p1
+partition of plt2
+for values in ('0000',
+'0003',
+'0004',
+'0010');
+
+create table plt2_p2
+partition of plt2
+for values in ('0001',
+'0005',
+'0002',
+'0009');
+
+create table plt2_p3
+partition of plt2
+for values in ('0006',
+'0007',
+'0008',
+'0011');
+
+insert into plt2
+select
+  i,
+  i,
+  to_char(i / 50, 'FM0000')
+from
+  generate_series(0, 599, 3) as i;
+
+analyze plt2;
+
+create table plt1_e (
+  a int,
+  b int,
+  c text
+)
+partition by LIST((ltrim(c, 'A')));
+
+create table plt1_e_p1
+partition of plt1_e
+for values in ('0000',
+'0003',
+'0004',
+'0010');
+
+create table plt1_e_p2
+partition of plt1_e
+for values in ('0001',
+'0005',
+'0002',
+'0009');
+
+create table plt1_e_p3
+partition of plt1_e
+for values in ('0006',
+'0007',
+'0008',
+'0011');
+
+insert into plt1_e
+select
+  i,
+  i,
+  'A' || to_char(i / 50, 'FM0000')
+from
+  generate_series(0, 599, 2) as i;
+
+analyze plt1_e;
+
+select
+  AVG(t1.a),
+  AVG(t2.b),
+  AVG(t3.a + t3.b),
+  t1.c,
+  t2.c,
+  t3.c
+from
+  plt1 as t1,
+  plt2 as t2,
+  plt1_e as t3
+where
+  t1.b = t2.b and
+  t1.c = t2.c and
+  ltrim(t3.c, 'A') = t1.c
+group by t1.c,
+  t2.c,
+  t3.c
+order by t1.c,
+  t2.c,
+  t3.c;
+
+select
+  AVG(t1.a),
+  AVG(t2.b),
+  AVG(t3.a + t3.b),
+  t1.c,
+  t2.c,
+  t3.c
+from
+  plt1 as t1,
+  plt2 as t2,
+  plt1_e as t3
+where
+  t1.b = t2.b and
+  t1.c = t2.c and
+  ltrim(t3.c, 'A') = t1.c
+group by t1.c,
+  t2.c,
+  t3.c
+order by t1.c,
+  t2.c,
+  t3.c;
+
+select
+  t1.a,
+  t1.c,
+  t2.b,
+  t2.c
+from
+  prt1 as t1,
+  prt2 as t2
+where
+  t1.a = t2.b and t1.a = 1 and t1.a = 2;
+
+select
+  t1.a,
+  t1.c,
+  t2.b,
+  t2.c
+from
+  (
+    select * from prt1 where a = 1 and a = 2
+  )
+  as t1
+  left outer join
+    prt2 as t2
+  on t1.a = t2.b;
+
+select
+  t1.a,
+  t1.c,
+  t2.b,
+  t2.c
+from
+  (
+    select * from prt1 where a = 1 and a = 2
+  )
+  as t1
+  right outer join
+    prt2 as t2
+  on t1.a = t2.b,
+  prt1 as t3
+where
+  t2.b = t3.a;
+
+select
+  t1.a,
+  t1.c,
+  t2.b,
+  t2.c
+from
+  (
+    select * from prt1 where a = 1 and a = 2
+  )
+  as t1
+  full outer join
+    prt2 as t2
+  on t1.a = t2.b
+where
+  t2.a = 0
+order by t1.a,
+  t2.b;
+
+create table pht1 (
+  a int,
+  b int,
+  c text
+)
+partition by HASH(c);
+
+create table pht1_p1 partition of pht1 for values with (MODULUS 3, REMAINDER 0);
+
+create table pht1_p2 partition of pht1 for values with (MODULUS 3, REMAINDER 1);
+
+create table pht1_p3 partition of pht1 for values with (MODULUS 3, REMAINDER 2);
+
+insert into pht1
+select
+  i,
+  i,
+  to_char(i / 50, 'FM0000')
+from
+  generate_series(0, 599, 2) as i;
+
+analyze pht1;
+
+create table pht2 (
+  a int,
+  b int,
+  c text
+)
+partition by HASH(c);
+
+create table pht2_p1 partition of pht2 for values with (MODULUS 3, REMAINDER 0);
+
+create table pht2_p2 partition of pht2 for values with (MODULUS 3, REMAINDER 1);
+
+create table pht2_p3 partition of pht2 for values with (MODULUS 3, REMAINDER 2);
+
+insert into pht2
+select
+  i,
+  i,
+  to_char(i / 50, 'FM0000')
+from
+  generate_series(0, 599, 3) as i;
+
+analyze pht2;
+
+create table pht1_e (
+  a int,
+  b int,
+  c text
+)
+partition by HASH((ltrim(c, 'A')));
+
+create table pht1_e_p1
+partition of pht1_e
+for values with (MODULUS 3, REMAINDER 0);
+
+create table pht1_e_p2
+partition of pht1_e
+for values with (MODULUS 3, REMAINDER 1);
+
+create table pht1_e_p3
+partition of pht1_e
+for values with (MODULUS 3, REMAINDER 2);
+
+insert into pht1_e
+select
+  i,
+  i,
+  'A' || to_char(i / 50, 'FM0000')
+from
+  generate_series(0, 299, 2) as i;
+
+analyze pht1_e;
+
+select
+  AVG(t1.a),
+  AVG(t2.b),
+  AVG(t3.a + t3.b),
+  t1.c,
+  t2.c,
+  t3.c
+from
+  pht1 as t1,
+  pht2 as t2,
+  pht1_e as t3
+where
+  t1.b = t2.b and
+  t1.c = t2.c and
+  ltrim(t3.c, 'A') = t1.c
+group by t1.c,
+  t2.c,
+  t3.c
+order by t1.c,
+  t2.c,
+  t3.c;
+
+select
+  AVG(t1.a),
+  AVG(t2.b),
+  AVG(t3.a + t3.b),
+  t1.c,
+  t2.c,
+  t3.c
+from
+  pht1 as t1,
+  pht2 as t2,
+  pht1_e as t3
+where
+  t1.b = t2.b and
+  t1.c = t2.c and
+  ltrim(t3.c, 'A') = t1.c
+group by t1.c,
+  t2.c,
+  t3.c
+order by t1.c,
+  t2.c,
+  t3.c;
+
+alter table prt1
+  detach partition
+  prt1_p3;
+
+alter table prt1
+  attach partition
+  prt1_p3 default;
+
+analyze prt1;
+
+alter table prt2
+  detach partition
+  prt2_p3;
+
+alter table prt2
+  attach partition
+  prt2_p3 default;
+
+analyze prt2;
+
+select
+  t1.a,
+  t1.c,
+  t2.b,
+  t2.c
+from
+  prt1 as t1,
+  prt2 as t2
+where
+  t1.a = t2.b and t1.b = 0
+order by t1.a,
+  t2.b;
+
+alter table plt1
+  detach partition
+  plt1_p3;
+
+alter table plt1
+  attach partition
+  plt1_p3 default;
+
+analyze plt1;
+
+alter table plt2
+  detach partition
+  plt2_p3;
+
+alter table plt2
+  attach partition
+  plt2_p3 default;
+
+analyze plt2;
+
+select
+  AVG(t1.a),
+  AVG(t2.b),
+  t1.c,
+  t2.c
+from
+  plt1 as t1
+  right outer join
+    plt2 as t2
+  on t1.c = t2.c
+where
+  t1.a % 25 = 0
+group by t1.c,
+  t2.c
+order by t1.c,
+  t2.c;
+
+create table prt1_l (
+  a int,
+  b int,
+  c varchar
+)
+partition by range(a);
+
+create table prt1_l_p1 partition of prt1_l for values from (0) to (250);
+
+create table prt1_l_p2
+partition of prt1_l
+for values from (250) to (500)
+partition by LIST(c);
+
+create table prt1_l_p2_p1 partition of prt1_l_p2 for values in ('0000', '0001');
+
+create table prt1_l_p2_p2 partition of prt1_l_p2 for values in ('0002', '0003');
+
+create table prt1_l_p3
+partition of prt1_l
+for values from (500) to (600)
+partition by range(b);
+
+create table prt1_l_p3_p1 partition of prt1_l_p3 for values from (0) to (13);
+
+create table prt1_l_p3_p2 partition of prt1_l_p3 for values from (13) to (25);
+
+insert into prt1_l
+select
+  i,
+  i % 25,
+  to_char(i % 4, 'FM0000')
+from
+  generate_series(0, 599, 2) as i;
+
+analyze prt1_l;
+
+create table prt2_l (
+  a int,
+  b int,
+  c varchar
+)
+partition by range(b);
+
+create table prt2_l_p1 partition of prt2_l for values from (0) to (250);
+
+create table prt2_l_p2
+partition of prt2_l
+for values from (250) to (500)
+partition by LIST(c);
+
+create table prt2_l_p2_p1 partition of prt2_l_p2 for values in ('0000', '0001');
+
+create table prt2_l_p2_p2 partition of prt2_l_p2 for values in ('0002', '0003');
+
+create table prt2_l_p3
+partition of prt2_l
+for values from (500) to (600)
+partition by range(a);
+
+create table prt2_l_p3_p1 partition of prt2_l_p3 for values from (0) to (13);
+
+create table prt2_l_p3_p2 partition of prt2_l_p3 for values from (13) to (25);
+
+insert into prt2_l
+select
+  i % 25,
+  i,
+  to_char(i % 4, 'FM0000')
+from
+  generate_series(0, 599, 3) as i;
+
+analyze prt2_l;
+
+select
+  t1.a,
+  t1.c,
+  t2.b,
+  t2.c
+from
+  prt1_l as t1,
+  prt2_l as t2
+where
+  t1.a = t2.b and t1.b = 0
+order by t1.a,
+  t2.b;
+
+select
+  t1.a,
+  t1.c,
+  t2.b,
+  t2.c
+from
+  prt1_l as t1,
+  prt2_l as t2
+where
+  t1.a = t2.b and t1.b = 0
+order by t1.a,
+  t2.b;
+
+select
+  t1.a,
+  t1.c,
+  t2.b,
+  t2.c
+from
+  prt1_l as t1,
+  prt2_l as t2
+where
+  t1.a = t2.a and
+  t1.a = t2.b and
+  t1.c = t2.c
+order by t1.a,
+  t2.b;
+
+select
+  t1.a,
+  t1.c,
+  t2.b,
+  t2.c
+from
+  prt1_l as t1,
+  prt2_l as t2
+where
+  t1.a = t2.a and
+  t1.a = t2.b and
+  t1.c = t2.c
+order by t1.a,
+  t2.b;
+
+select
+  t1.a,
+  t1.c,
+  t2.b,
+  t2.c
+from
+  prt1_l as t1
+  left outer join
+    prt2_l as t2
+  on t1.a = t2.b and t1.c = t2.c
+where
+  t1.b = 0
+order by t1.a,
+  t2.b;
+
+select
+  t1.a,
+  t1.c,
+  t2.b,
+  t2.c
+from
+  prt1_l as t1
+  left outer join
+    prt2_l as t2
+  on t1.a = t2.b and t1.c = t2.c
+where
+  t1.b = 0
+order by t1.a,
+  t2.b;
+
+select
+  t1.a,
+  t1.c,
+  t2.b,
+  t2.c
+from
+  prt1_l as t1
+  right outer join
+    prt2_l as t2
+  on t1.a = t2.b and t1.c = t2.c
+where
+  t2.a = 0
+order by t1.a,
+  t2.b;
+
+select
+  t1.a,
+  t1.c,
+  t2.b,
+  t2.c
+from
+  prt1_l as t1
+  right outer join
+    prt2_l as t2
+  on t1.a = t2.b and t1.c = t2.c
+where
+  t2.a = 0
+order by t1.a,
+  t2.b;
+
+select
+  t1.a,
+  t1.c,
+  t2.b,
+  t2.c
+from
+  (
+    select * from prt1_l where prt1_l.b = 0
+  )
+  as t1
+  full outer join
+    (
+      select * from prt2_l where prt2_l.a = 0
+    )
+    as t2
+  on t1.a = t2.b and t1.c = t2.c
+order by t1.a,
+  t2.b;
+
+select
+  t1.a,
+  t1.c,
+  t2.b,
+  t2.c
+from
+  (
+    select * from prt1_l where prt1_l.b = 0
+  )
+  as t1
+  full outer join
+    (
+      select * from prt2_l where prt2_l.a = 0
+    )
+    as t2
+  on t1.a = t2.b and t1.c = t2.c
+order by t1.a,
+  t2.b;
+
+select
+  *
+from
+  prt1_l as t1
+  left outer join
+    lateral (
+      select
+        t2.a as t2a,
+        t2.c as t2c,
+        t2.b as t2b,
+        t3.b as t3b,
+        least(t1.a, t2.a, t3.b)
+      from
+        prt1_l as t2
+        inner join
+          prt2_l as t3
+        on t2.a = t3.b and t2.c = t3.c
+    )
+    as ss
+  on t1.a = ss.t2a and t1.c = ss.t2c
+where
+  t1.b = 0
+order by t1.a;
+
+select
+  *
+from
+  prt1_l as t1
+  left outer join
+    lateral (
+      select
+        t2.a as t2a,
+        t2.c as t2c,
+        t2.b as t2b,
+        t3.b as t3b,
+        least(t1.a, t2.a, t3.b)
+      from
+        prt1_l as t2
+        inner join
+          prt2_l as t3
+        on t2.a = t3.b and t2.c = t3.c
+    )
+    as ss
+  on t1.a = ss.t2a and t1.c = ss.t2c
+where
+  t1.b = 0
+order by t1.a;
+
+select
+  *
+from
+  prt1_l as t1
+  inner join
+    lateral (
+      select
+        *
+      from
+        prt1_l as t2
+        tablesample system (t1.a)
+        repeatable (t1.b)
+    )
+    as s
+  on t1.a = s.a and t1.b = s.b and t1.c = s.c;
+
+select
+  COUNT(*)
+from
+  prt1_l as t1
+  left outer join
+    lateral (
+      select
+        t1.b as t1b,
+        t2.*
+      from
+        prt2_l as t2
+    )
+    as s
+  on t1.a = s.b and t1.b = s.a and t1.c = s.c
+where
+  s.t1b = s.a;
+
+select
+  COUNT(*)
+from
+  prt1_l as t1
+  left outer join
+    lateral (
+      select
+        t1.b as t1b,
+        t2.*
+      from
+        prt2_l as t2
+    )
+    as s
+  on t1.a = s.b and t1.b = s.a and t1.c = s.c
+where
+  s.t1b = s.a;
+
+select
+  t1.a,
+  t1.c,
+  t2.b,
+  t2.c
+from
+  (
+    select
+      *
+    from
+      prt1_l
+    where
+      a = 1 and a = 2
+  )
+  as t1
+  right outer join
+    prt2_l as t2
+  on t1.a = t2.b and
+    t1.b = t2.a and
+    t1.c = t2.c;
+
+delete from prt1_l
+where
+  exists
+  (
+    select
+      1
+    from
+      int4_tbl,
+      lateral (
+        select int4_tbl.f1 from int8_tbl limit 2
+      )
+      as ss
+    where
+      prt1_l.c is null
+  );
+
+create table prt1_n (
+  a int,
+  b int,
+  c varchar
+)
+partition by range(c);
+
+create table prt1_n_p1 partition of prt1_n for values from ('0000') to ('0250');
+
+create table prt1_n_p2 partition of prt1_n for values from ('0250') to ('0500');
+
+insert into prt1_n
+select
+  i,
+  i,
+  to_char(i, 'FM0000')
+from
+  generate_series(0, 499, 2) as i;
+
+analyze prt1_n;
+
+create table prt2_n (
+  a int,
+  b int,
+  c text
+)
+partition by LIST(c);
+
+create table prt2_n_p1
+partition of prt2_n
+for values in ('0000',
+'0003',
+'0004',
+'0010',
+'0006',
+'0007');
+
+create table prt2_n_p2
+partition of prt2_n
+for values in ('0001',
+'0005',
+'0002',
+'0009',
+'0008',
+'0011');
+
+insert into prt2_n
+select
+  i,
+  i,
+  to_char(i / 50, 'FM0000')
+from
+  generate_series(0, 599, 2) as i;
+
+analyze prt2_n;
+
+create table prt3_n (
+  a int,
+  b int,
+  c text
+)
+partition by LIST(c);
+
+create table prt3_n_p1
+partition of prt3_n
+for values in ('0000',
+'0004',
+'0006',
+'0007');
+
+create table prt3_n_p2
+partition of prt3_n
+for values in ('0001',
+'0002',
+'0008',
+'0010');
+
+create table prt3_n_p3
+partition of prt3_n
+for values in ('0003',
+'0005',
+'0009',
+'0011');
+
+insert into prt2_n
+select
+  i,
+  i,
+  to_char(i / 50, 'FM0000')
+from
+  generate_series(0, 599, 2) as i;
+
+analyze prt3_n;
+
+create table prt4_n (
+  a int,
+  b int,
+  c text
+)
+partition by range(a);
+
+create table prt4_n_p1 partition of prt4_n for values from (0) to (300);
+
+create table prt4_n_p2 partition of prt4_n for values from (300) to (500);
+
+create table prt4_n_p3 partition of prt4_n for values from (500) to (600);
+
+insert into prt4_n
+select
+  i,
+  i,
+  to_char(i, 'FM0000')
+from
+  generate_series(0, 599, 2) as i;
+
+analyze prt4_n;
+
+select t1.a, t1.c, t2.b, t2.c from prt1 as t1, prt4_n as t2 where t1.a = t2.a;
+
+select
+  t1.a,
+  t1.c,
+  t2.b,
+  t2.c
+from
+  prt1 as t1,
+  prt4_n as t2,
+  prt2 as t3
+where
+  t1.a = t2.a and t1.a = t3.b;
+
+select
+  t1.a,
+  t1.c,
+  t2.b,
+  t2.c
+from
+  prt1 as t1
+  left outer join
+    prt2 as t2
+  on t1.a < t2.b;
+
+select
+  t1.a,
+  t1.c,
+  t2.b,
+  t2.c
+from
+  prt1_m as t1,
+  prt2_m as t2
+where
+  t1.a = (t2.b + t2.a) / 2;
+
+select
+  t1.a,
+  t1.c,
+  t2.b,
+  t2.c
+from
+  prt1_m as t1
+  left outer join
+    prt2_m as t2
+  on t1.a = t2.b;
+
+select
+  t1.a,
+  t1.c,
+  t2.b,
+  t2.c
+from
+  prt1_m as t1
+  left outer join
+    prt2_m as t2
+  on t1.c = t2.c;
+
+select
+  t1.a,
+  t1.c,
+  t2.b,
+  t2.c
+from
+  prt1_n as t1
+  left outer join
+    prt2_n as t2
+  on t1.c = t2.c;
+
+select
+  t1.a,
+  t1.c,
+  t2.b,
+  t2.c
+from
+  prt1_n as t1
+  inner join
+    prt2_n as t2
+  on t1.c = t2.c
+  inner join
+    plt1 as t3
+  on t1.c = t3.c;
+
+select
+  t1.a,
+  t1.c,
+  t2.b,
+  t2.c
+from
+  prt1_n as t1
+  full outer join
+    prt1 as t2
+  on t1.c = t2.c;
+
+create temporary table prtx1 (
+  a int,
+  b int,
+  c int
+)
+partition by range(a);
+
+create temporary table prtx1_1 partition of prtx1 for values from (1) to (11);
+
+create temporary table prtx1_2 partition of prtx1 for values from (11) to (21);
+
+create temporary table prtx1_3 partition of prtx1 for values from (21) to (31);
+
+create temporary table prtx2 (
+  a int,
+  b int,
+  c int
+)
+partition by range(a);
+
+create temporary table prtx2_1 partition of prtx2 for values from (1) to (11);
+
+create temporary table prtx2_2 partition of prtx2 for values from (11) to (21);
+
+create temporary table prtx2_3 partition of prtx2 for values from (21) to (31);
+
+insert into prtx1 select 1 + i % 30, i, i from generate_series(1, 1000) as i;
+
+insert into prtx2
+select
+  1 + i % 30,
+  i,
+  i
+from
+  generate_series(1, 500) as i,
+  generate_series(1, 10) as j;
+
+create index on prtx2 using btree (b);
+
+create index on prtx2 using btree (c);
+
+analyze prtx1;
+
+analyze prtx2;
+
+select
+  *
+from
+  prtx1
+where
+  not exists
+  (
+    select
+      1
+    from
+      prtx2
+    where
+      prtx2.a = prtx1.a and
+      prtx2.b = prtx1.b and
+      prtx2.c = 123
+  ) and
+  a < 20 and
+  c = 120;
+
+select
+  *
+from
+  prtx1
+where
+  not exists
+  (
+    select
+      1
+    from
+      prtx2
+    where
+      prtx2.a = prtx1.a and
+      prtx2.b = prtx1.b and
+      prtx2.c = 123
+  ) and
+  a < 20 and
+  c = 120;
+
+select
+  *
+from
+  prtx1
+where
+  not exists
+  (
+    select
+      1
+    from
+      prtx2
+    where
+      prtx2.a = prtx1.a and
+      (prtx2.b = prtx1.b + 1 or prtx2.c = 99)
+  ) and
+  a < 20 and
+  c = 91;
+
+select
+  *
+from
+  prtx1
+where
+  not exists
+  (
+    select
+      1
+    from
+      prtx2
+    where
+      prtx2.a = prtx1.a and
+      (prtx2.b = prtx1.b + 1 or prtx2.c = 99)
+  ) and
+  a < 20 and
+  c = 91;
+
+create table prt1_adv (
+  a int,
+  b int,
+  c varchar
+)
+partition by range(a);
+
+create table prt1_adv_p1 partition of prt1_adv for values from (100) to (200);
+
+create table prt1_adv_p2 partition of prt1_adv for values from (200) to (300);
+
+create table prt1_adv_p3 partition of prt1_adv for values from (300) to (400);
+
+create index "prt1_adv_a_idx" on prt1_adv using btree (a);
+
+insert into prt1_adv
+select
+  i,
+  i % 25,
+  to_char(i, 'FM0000')
+from
+  generate_series(100, 399) as i;
+
+analyze prt1_adv;
+
+create table prt2_adv (
+  a int,
+  b int,
+  c varchar
+)
+partition by range(b);
+
+create table prt2_adv_p1 partition of prt2_adv for values from (100) to (150);
+
+create table prt2_adv_p2 partition of prt2_adv for values from (200) to (300);
+
+create table prt2_adv_p3 partition of prt2_adv for values from (350) to (500);
+
+create index "prt2_adv_b_idx" on prt2_adv using btree (b);
+
+insert into prt2_adv_p1
+select
+  i % 25,
+  i,
+  to_char(i, 'FM0000')
+from
+  generate_series(100, 149) as i;
+
+insert into prt2_adv_p2
+select
+  i % 25,
+  i,
+  to_char(i, 'FM0000')
+from
+  generate_series(200, 299) as i;
+
+insert into prt2_adv_p3
+select
+  i % 25,
+  i,
+  to_char(i, 'FM0000')
+from
+  generate_series(350, 499) as i;
+
+analyze prt2_adv;
+
+select
+  t1.a,
+  t1.c,
+  t2.b,
+  t2.c
+from
+  prt1_adv as t1
+  inner join
+    prt2_adv as t2
+  on t1.a = t2.b
+where
+  t1.b = 0
+order by t1.a,
+  t2.b;
+
+select
+  t1.a,
+  t1.c,
+  t2.b,
+  t2.c
+from
+  prt1_adv as t1
+  inner join
+    prt2_adv as t2
+  on t1.a = t2.b
+where
+  t1.b = 0
+order by t1.a,
+  t2.b;
+
+select
+  t1.*
+from
+  prt1_adv as t1
+where
+  exists
+  (
+    select
+      1
+    from
+      prt2_adv as t2
+    where
+      t1.a = t2.b
+  ) and
+  t1.b = 0
+order by t1.a;
+
+select
+  t1.*
+from
+  prt1_adv as t1
+where
+  exists
+  (
+    select
+      1
+    from
+      prt2_adv as t2
+    where
+      t1.a = t2.b
+  ) and
+  t1.b = 0
+order by t1.a;
+
+select
+  t1.a,
+  t1.c,
+  t2.b,
+  t2.c
+from
+  prt1_adv as t1
+  left outer join
+    prt2_adv as t2
+  on t1.a = t2.b
+where
+  t1.b = 0
+order by t1.a,
+  t2.b;
+
+select
+  t1.a,
+  t1.c,
+  t2.b,
+  t2.c
+from
+  prt1_adv as t1
+  left outer join
+    prt2_adv as t2
+  on t1.a = t2.b
+where
+  t1.b = 0
+order by t1.a,
+  t2.b;
+
+select
+  t1.*
+from
+  prt1_adv as t1
+where
+  not exists
+  (
+    select
+      1
+    from
+      prt2_adv as t2
+    where
+      t1.a = t2.b
+  ) and
+  t1.b = 0
+order by t1.a;
+
+select
+  t1.*
+from
+  prt1_adv as t1
+where
+  not exists
+  (
+    select
+      1
+    from
+      prt2_adv as t2
+    where
+      t1.a = t2.b
+  ) and
+  t1.b = 0
+order by t1.a;
+
+select
+  t1.a,
+  t1.c,
+  t2.b,
+  t2.c
+from
+  (
+    select
+      175 as phv,
+      *
+    from
+      prt1_adv
+    where
+      prt1_adv.b = 0
+  )
+  as t1
+  full outer join
+    (
+      select
+        425 as phv,
+        *
+      from
+        prt2_adv
+      where
+        prt2_adv.a = 0
+    )
+    as t2
+  on t1.a = t2.b
+where
+  t1.phv = t1.a or t2.phv = t2.b
+order by t1.a,
+  t2.b;
+
+select
+  t1.a,
+  t1.c,
+  t2.b,
+  t2.c
+from
+  (
+    select
+      175 as phv,
+      *
+    from
+      prt1_adv
+    where
+      prt1_adv.b = 0
+  )
+  as t1
+  full outer join
+    (
+      select
+        425 as phv,
+        *
+      from
+        prt2_adv
+      where
+        prt2_adv.a = 0
+    )
+    as t2
+  on t1.a = t2.b
+where
+  t1.phv = t1.a or t2.phv = t2.b
+order by t1.a,
+  t2.b;
+
+create table prt2_adv_extra
+partition of prt2_adv
+for values from (500) to (maxvalue);
+
+insert into prt2_adv
+select
+  i % 25,
+  i,
+  to_char(i, 'FM0000')
+from
+  generate_series(500, 599) as i;
+
+analyze prt2_adv;
+
+select
+  t1.a,
+  t1.c,
+  t2.b,
+  t2.c
+from
+  prt1_adv as t1
+  inner join
+    prt2_adv as t2
+  on t1.a = t2.b
+where
+  t1.b = 0
+order by t1.a,
+  t2.b;
+
+select
+  t1.a,
+  t1.c,
+  t2.b,
+  t2.c
+from
+  prt1_adv as t1
+  inner join
+    prt2_adv as t2
+  on t1.a = t2.b
+where
+  t1.b = 0
+order by t1.a,
+  t2.b;
+
+select
+  t1.*
+from
+  prt1_adv as t1
+where
+  exists
+  (
+    select
+      1
+    from
+      prt2_adv as t2
+    where
+      t1.a = t2.b
+  ) and
+  t1.b = 0
+order by t1.a;
+
+select
+  t1.*
+from
+  prt1_adv as t1
+where
+  exists
+  (
+    select
+      1
+    from
+      prt2_adv as t2
+    where
+      t1.a = t2.b
+  ) and
+  t1.b = 0
+order by t1.a;
+
+select
+  t1.a,
+  t1.c,
+  t2.b,
+  t2.c
+from
+  prt1_adv as t1
+  left outer join
+    prt2_adv as t2
+  on t1.a = t2.b
+where
+  t1.b = 0
+order by t1.a,
+  t2.b;
+
+select
+  t1.a,
+  t1.c,
+  t2.b,
+  t2.c
+from
+  prt1_adv as t1
+  left outer join
+    prt2_adv as t2
+  on t1.a = t2.b
+where
+  t1.b = 0
+order by t1.a,
+  t2.b;
+
+select
+  t1.b,
+  t1.c,
+  t2.a,
+  t2.c
+from
+  prt2_adv as t1
+  left outer join
+    prt1_adv as t2
+  on t1.b = t2.a
+where
+  t1.a = 0
+order by t1.b,
+  t2.a;
+
+select
+  t1.*
+from
+  prt1_adv as t1
+where
+  not exists
+  (
+    select
+      1
+    from
+      prt2_adv as t2
+    where
+      t1.a = t2.b
+  ) and
+  t1.b = 0
+order by t1.a;
+
+select
+  t1.*
+from
+  prt1_adv as t1
+where
+  not exists
+  (
+    select
+      1
+    from
+      prt2_adv as t2
+    where
+      t1.a = t2.b
+  ) and
+  t1.b = 0
+order by t1.a;
+
+select
+  t1.*
+from
+  prt2_adv as t1
+where
+  not exists
+  (
+    select
+      1
+    from
+      prt1_adv as t2
+    where
+      t1.b = t2.a
+  ) and
+  t1.a = 0
+order by t1.b;
+
+select
+  t1.a,
+  t1.c,
+  t2.b,
+  t2.c
+from
+  (
+    select
+      175 as phv,
+      *
+    from
+      prt1_adv
+    where
+      prt1_adv.b = 0
+  )
+  as t1
+  full outer join
+    (
+      select
+        425 as phv,
+        *
+      from
+        prt2_adv
+      where
+        prt2_adv.a = 0
+    )
+    as t2
+  on t1.a = t2.b
+where
+  t1.phv = t1.a or t2.phv = t2.b
+order by t1.a,
+  t2.b;
+
+select
+  t1.b,
+  t1.c,
+  t2.a,
+  t2.c,
+  t3.a,
+  t3.c
+from
+  prt2_adv as t1
+  left outer join
+    prt1_adv as t2
+  on t1.b = t2.a
+  inner join
+    prt1_adv as t3
+  on t1.b = t3.a
+where
+  t1.a = 0
+order by t1.b,
+  t2.a,
+  t3.a;
+
+select
+  t1.b,
+  t1.c,
+  t2.a,
+  t2.c,
+  t3.a,
+  t3.c
+from
+  prt2_adv as t1
+  left outer join
+    prt1_adv as t2
+  on t1.b = t2.a
+  inner join
+    prt1_adv as t3
+  on t1.b = t3.a
+where
+  t1.a = 0
+order by t1.b,
+  t2.a,
+  t3.a;
+
+drop table prt2_adv_extra;
+
+alter table prt2_adv
+  detach partition
+  prt2_adv_p3;
+
+create table prt2_adv_p3_1 partition of prt2_adv for values from (350) to (375);
+
+create table prt2_adv_p3_2 partition of prt2_adv for values from (375) to (500);
+
+insert into prt2_adv
+select
+  i % 25,
+  i,
+  to_char(i, 'FM0000')
+from
+  generate_series(350, 499) as i;
+
+analyze prt2_adv;
+
+select
+  t1.a,
+  t1.c,
+  t2.b,
+  t2.c
+from
+  prt1_adv as t1
+  inner join
+    prt2_adv as t2
+  on t1.a = t2.b
+where
+  t1.b = 0
+order by t1.a,
+  t2.b;
+
+select
+  t1.*
+from
+  prt1_adv as t1
+where
+  exists
+  (
+    select
+      1
+    from
+      prt2_adv as t2
+    where
+      t1.a = t2.b
+  ) and
+  t1.b = 0
+order by t1.a;
+
+select
+  t1.a,
+  t1.c,
+  t2.b,
+  t2.c
+from
+  prt1_adv as t1
+  left outer join
+    prt2_adv as t2
+  on t1.a = t2.b
+where
+  t1.b = 0
+order by t1.a,
+  t2.b;
+
+select
+  t1.*
+from
+  prt1_adv as t1
+where
+  not exists
+  (
+    select
+      1
+    from
+      prt2_adv as t2
+    where
+      t1.a = t2.b
+  ) and
+  t1.b = 0
+order by t1.a;
+
+select
+  t1.a,
+  t1.c,
+  t2.b,
+  t2.c
+from
+  (
+    select
+      175 as phv,
+      *
+    from
+      prt1_adv
+    where
+      prt1_adv.b = 0
+  )
+  as t1
+  full outer join
+    (
+      select
+        425 as phv,
+        *
+      from
+        prt2_adv
+      where
+        prt2_adv.a = 0
+    )
+    as t2
+  on t1.a = t2.b
+where
+  t1.phv = t1.a or t2.phv = t2.b
+order by t1.a,
+  t2.b;
+
+drop table prt2_adv_p3_1;
+
+drop table prt2_adv_p3_2;
+
+analyze prt2_adv;
+
+alter table prt1_adv
+  detach partition
+  prt1_adv_p1;
+
+alter table prt1_adv
+  attach partition
+  prt1_adv_p1 default;
+
+alter table prt1_adv
+  detach partition
+  prt1_adv_p3;
+
+analyze prt1_adv;
+
+select
+  t1.a,
+  t1.c,
+  t2.b,
+  t2.c
+from
+  prt1_adv as t1
+  inner join
+    prt2_adv as t2
+  on t1.a = t2.b
+where
+  t1.b = 0
+order by t1.a,
+  t2.b;
+
+select
+  t1.a,
+  t1.c,
+  t2.b,
+  t2.c
+from
+  prt1_adv as t1
+  inner join
+    prt2_adv as t2
+  on t1.a = t2.b
+where
+  t1.b = 0
+order by t1.a,
+  t2.b;
+
+alter table prt1_adv
+  attach partition
+  prt1_adv_p3
+  for values from (300) to (400);
+
+analyze prt1_adv;
+
+alter table prt2_adv
+  attach partition
+  prt2_adv_p3
+  for values from (350) to (500);
+
+analyze prt2_adv;
+
+select
+  t1.a,
+  t1.c,
+  t2.b,
+  t2.c
+from
+  prt1_adv as t1
+  inner join
+    prt2_adv as t2
+  on t1.a = t2.b
+where
+  t1.b = 0
+order by t1.a,
+  t2.b;
+
+alter table prt2_adv
+  detach partition
+  prt2_adv_p3;
+
+alter table prt2_adv
+  attach partition
+  prt2_adv_p3 default;
+
+analyze prt2_adv;
+
+select
+  t1.a,
+  t1.c,
+  t2.b,
+  t2.c
+from
+  prt1_adv as t1
+  inner join
+    prt2_adv as t2
+  on t1.a = t2.b
+where
+  t1.b = 0
+order by t1.a,
+  t2.b;
+
+drop table prt1_adv_p3;
+
+analyze prt1_adv;
+
+drop table prt2_adv_p3;
+
+analyze prt2_adv;
+
+create table prt3_adv (
+  a int,
+  b int,
+  c varchar
+)
+partition by range(a);
+
+create table prt3_adv_p1 partition of prt3_adv for values from (200) to (300);
+
+create table prt3_adv_p2 partition of prt3_adv for values from (300) to (400);
+
+create index "prt3_adv_a_idx" on prt3_adv using btree (a);
+
+insert into prt3_adv
+select
+  i,
+  i % 25,
+  to_char(i, 'FM0000')
+from
+  generate_series(200, 399) as i;
+
+analyze prt3_adv;
+
+select
+  t1.a,
+  t1.c,
+  t2.b,
+  t2.c,
+  t3.a,
+  t3.c
+from
+  prt1_adv as t1
+  left outer join
+    prt2_adv as t2
+  on t1.a = t2.b
+  left outer join
+    prt3_adv as t3
+  on t1.a = t3.a
+where
+  t1.b = 0
+order by t1.a,
+  t2.b,
+  t3.a;
+
+select
+  t1.a,
+  t1.c,
+  t2.b,
+  t2.c,
+  t3.a,
+  t3.c
+from
+  prt1_adv as t1
+  left outer join
+    prt2_adv as t2
+  on t1.a = t2.b
+  left outer join
+    prt3_adv as t3
+  on t1.a = t3.a
+where
+  t1.b = 0
+order by t1.a,
+  t2.b,
+  t3.a;
+
+drop table prt1_adv;
+
+drop table prt2_adv;
+
+drop table prt3_adv;
+
+create table prt1_adv (
+  a int,
+  b int,
+  c varchar
+)
+partition by range(a);
+
+create table prt1_adv_p1 partition of prt1_adv for values from (100) to (200);
+
+create table prt1_adv_p2 partition of prt1_adv for values from (200) to (300);
+
+create table prt1_adv_p3 partition of prt1_adv for values from (300) to (400);
+
+create index "prt1_adv_a_idx" on prt1_adv using btree (a);
+
+insert into prt1_adv
+select
+  i,
+  i % 25,
+  to_char(i, 'FM0000')
+from
+  generate_series(100, 399) as i;
+
+analyze prt1_adv;
+
+create table prt2_adv (
+  a int,
+  b int,
+  c varchar
+)
+partition by range(b);
+
+create table prt2_adv_p1 partition of prt2_adv for values from (100) to (200);
+
+create table prt2_adv_p2 partition of prt2_adv for values from (200) to (400);
+
+create index "prt2_adv_b_idx" on prt2_adv using btree (b);
+
+insert into prt2_adv
+select
+  i % 25,
+  i,
+  to_char(i, 'FM0000')
+from
+  generate_series(100, 399) as i;
+
+analyze prt2_adv;
+
+select
+  t1.a,
+  t1.c,
+  t2.b,
+  t2.c
+from
+  prt1_adv as t1
+  inner join
+    prt2_adv as t2
+  on t1.a = t2.b
+where
+  t1.a < 300 and t1.b = 0
+order by t1.a,
+  t2.b;
+
+select
+  t1.a,
+  t1.c,
+  t2.b,
+  t2.c
+from
+  prt1_adv as t1
+  inner join
+    prt2_adv as t2
+  on t1.a = t2.b
+where
+  t1.a < 300 and t1.b = 0
+order by t1.a,
+  t2.b;
+
+drop table prt1_adv_p3;
+
+create table prt1_adv_default partition of prt1_adv default;
+
+analyze prt1_adv;
+
+create table prt2_adv_default partition of prt2_adv default;
+
+analyze prt2_adv;
+
+select
+  t1.a,
+  t1.c,
+  t2.b,
+  t2.c
+from
+  prt1_adv as t1
+  inner join
+    prt2_adv as t2
+  on t1.a = t2.b
+where
+  t1.a >= 100 and t1.a < 300 and t1.b = 0
+order by t1.a,
+  t2.b;
+
+select
+  t1.a,
+  t1.c,
+  t2.b,
+  t2.c
+from
+  prt1_adv as t1
+  inner join
+    prt2_adv as t2
+  on t1.a = t2.b
+where
+  t1.a >= 100 and t1.a < 300 and t1.b = 0
+order by t1.a,
+  t2.b;
+
+drop table prt1_adv;
+
+drop table prt2_adv;
+
+create table plt1_adv (
+  a int,
+  b int,
+  c text
+)
+partition by LIST(c);
+
+create table plt1_adv_p1 partition of plt1_adv for values in ('0001', '0003');
+
+create table plt1_adv_p2 partition of plt1_adv for values in ('0004', '0006');
+
+create table plt1_adv_p3 partition of plt1_adv for values in ('0008', '0009');
+
+insert into plt1_adv
+select
+  i,
+  i,
+  to_char(i % 10, 'FM0000')
+from
+  generate_series(1, 299) as i
+where
+  i % 10 in (1, 3, 4, 6, 8, 9);
+
+analyze plt1_adv;
+
+create table plt2_adv (
+  a int,
+  b int,
+  c text
+)
+partition by LIST(c);
+
+create table plt2_adv_p1 partition of plt2_adv for values in ('0002', '0003');
+
+create table plt2_adv_p2 partition of plt2_adv for values in ('0004', '0006');
+
+create table plt2_adv_p3 partition of plt2_adv for values in ('0007', '0009');
+
+insert into plt2_adv
+select
+  i,
+  i,
+  to_char(i % 10, 'FM0000')
+from
+  generate_series(1, 299) as i
+where
+  i % 10 in (2, 3, 4, 6, 7, 9);
+
+analyze plt2_adv;
+
+select
+  t1.a,
+  t1.c,
+  t2.a,
+  t2.c
+from
+  plt1_adv as t1
+  inner join
+    plt2_adv as t2
+  on t1.a = t2.a and t1.c = t2.c
+where
+  t1.b < 10
+order by t1.a;
+
+select
+  t1.a,
+  t1.c,
+  t2.a,
+  t2.c
+from
+  plt1_adv as t1
+  inner join
+    plt2_adv as t2
+  on t1.a = t2.a and t1.c = t2.c
+where
+  t1.b < 10
+order by t1.a;
+
+select
+  t1.*
+from
+  plt1_adv as t1
+where
+  exists
+  (
+    select
+      1
+    from
+      plt2_adv as t2
+    where
+      t1.a = t2.a and t1.c = t2.c
+  ) and
+  t1.b < 10
+order by t1.a;
+
+select
+  t1.*
+from
+  plt1_adv as t1
+where
+  exists
+  (
+    select
+      1
+    from
+      plt2_adv as t2
+    where
+      t1.a = t2.a and t1.c = t2.c
+  ) and
+  t1.b < 10
+order by t1.a;
+
+select
+  t1.a,
+  t1.c,
+  t2.a,
+  t2.c
+from
+  plt1_adv as t1
+  left outer join
+    plt2_adv as t2
+  on t1.a = t2.a and t1.c = t2.c
+where
+  t1.b < 10
+order by t1.a;
+
+select
+  t1.a,
+  t1.c,
+  t2.a,
+  t2.c
+from
+  plt1_adv as t1
+  left outer join
+    plt2_adv as t2
+  on t1.a = t2.a and t1.c = t2.c
+where
+  t1.b < 10
+order by t1.a;
+
+select
+  t1.*
+from
+  plt1_adv as t1
+where
+  not exists
+  (
+    select
+      1
+    from
+      plt2_adv as t2
+    where
+      t1.a = t2.a and t1.c = t2.c
+  ) and
+  t1.b < 10
+order by t1.a;
+
+select
+  t1.*
+from
+  plt1_adv as t1
+where
+  not exists
+  (
+    select
+      1
+    from
+      plt2_adv as t2
+    where
+      t1.a = t2.a and t1.c = t2.c
+  ) and
+  t1.b < 10
+order by t1.a;
+
+select
+  t1.a,
+  t1.c,
+  t2.a,
+  t2.c
+from
+  plt1_adv as t1
+  full outer join
+    plt2_adv as t2
+  on t1.a = t2.a and t1.c = t2.c
+where
+  coalesce(t1.b, 0) < 10 and
+  coalesce(t2.b, 0) < 10
+order by t1.a,
+  t2.a;
+
+select
+  t1.a,
+  t1.c,
+  t2.a,
+  t2.c
+from
+  plt1_adv as t1
+  full outer join
+    plt2_adv as t2
+  on t1.a = t2.a and t1.c = t2.c
+where
+  coalesce(t1.b, 0) < 10 and
+  coalesce(t2.b, 0) < 10
+order by t1.a,
+  t2.a;
+
+create table plt2_adv_extra partition of plt2_adv for values in ('0000');
+
+insert into plt2_adv_extra values (0, 0, '0000');
+
+analyze plt2_adv;
+
+select
+  t1.a,
+  t1.c,
+  t2.a,
+  t2.c
+from
+  plt1_adv as t1
+  inner join
+    plt2_adv as t2
+  on t1.a = t2.a and t1.c = t2.c
+where
+  t1.b < 10
+order by t1.a;
+
+select
+  t1.a,
+  t1.c,
+  t2.a,
+  t2.c
+from
+  plt1_adv as t1
+  inner join
+    plt2_adv as t2
+  on t1.a = t2.a and t1.c = t2.c
+where
+  t1.b < 10
+order by t1.a;
+
+select
+  t1.*
+from
+  plt1_adv as t1
+where
+  exists
+  (
+    select
+      1
+    from
+      plt2_adv as t2
+    where
+      t1.a = t2.a and t1.c = t2.c
+  ) and
+  t1.b < 10
+order by t1.a;
+
+select
+  t1.*
+from
+  plt1_adv as t1
+where
+  exists
+  (
+    select
+      1
+    from
+      plt2_adv as t2
+    where
+      t1.a = t2.a and t1.c = t2.c
+  ) and
+  t1.b < 10
+order by t1.a;
+
+select
+  t1.a,
+  t1.c,
+  t2.a,
+  t2.c
+from
+  plt1_adv as t1
+  left outer join
+    plt2_adv as t2
+  on t1.a = t2.a and t1.c = t2.c
+where
+  t1.b < 10
+order by t1.a;
+
+select
+  t1.a,
+  t1.c,
+  t2.a,
+  t2.c
+from
+  plt1_adv as t1
+  left outer join
+    plt2_adv as t2
+  on t1.a = t2.a and t1.c = t2.c
+where
+  t1.b < 10
+order by t1.a;
+
+select
+  t1.a,
+  t1.c,
+  t2.a,
+  t2.c
+from
+  plt2_adv as t1
+  left outer join
+    plt1_adv as t2
+  on t1.a = t2.a and t1.c = t2.c
+where
+  t1.b < 10
+order by t1.a;
+
+select
+  t1.*
+from
+  plt1_adv as t1
+where
+  not exists
+  (
+    select
+      1
+    from
+      plt2_adv as t2
+    where
+      t1.a = t2.a and t1.c = t2.c
+  ) and
+  t1.b < 10
+order by t1.a;
+
+select
+  t1.*
+from
+  plt1_adv as t1
+where
+  not exists
+  (
+    select
+      1
+    from
+      plt2_adv as t2
+    where
+      t1.a = t2.a and t1.c = t2.c
+  ) and
+  t1.b < 10
+order by t1.a;
+
+select
+  t1.*
+from
+  plt2_adv as t1
+where
+  not exists
+  (
+    select
+      1
+    from
+      plt1_adv as t2
+    where
+      t1.a = t2.a and t1.c = t2.c
+  ) and
+  t1.b < 10
+order by t1.a;
+
+select
+  t1.a,
+  t1.c,
+  t2.a,
+  t2.c
+from
+  plt1_adv as t1
+  full outer join
+    plt2_adv as t2
+  on t1.a = t2.a and t1.c = t2.c
+where
+  coalesce(t1.b, 0) < 10 and
+  coalesce(t2.b, 0) < 10
+order by t1.a,
+  t2.a;
+
+drop table plt2_adv_extra;
+
+alter table plt2_adv
+  detach partition
+  plt2_adv_p2;
+
+create table plt2_adv_p2_1 partition of plt2_adv for values in ('0004');
+
+create table plt2_adv_p2_2 partition of plt2_adv for values in ('0006');
+
+insert into plt2_adv
+select
+  i,
+  i,
+  to_char(i % 10, 'FM0000')
+from
+  generate_series(1, 299) as i
+where
+  i % 10 in (4, 6);
+
+analyze plt2_adv;
+
+select
+  t1.a,
+  t1.c,
+  t2.a,
+  t2.c
+from
+  plt1_adv as t1
+  inner join
+    plt2_adv as t2
+  on t1.a = t2.a and t1.c = t2.c
+where
+  t1.b < 10
+order by t1.a;
+
+select
+  t1.*
+from
+  plt1_adv as t1
+where
+  exists
+  (
+    select
+      1
+    from
+      plt2_adv as t2
+    where
+      t1.a = t2.a and t1.c = t2.c
+  ) and
+  t1.b < 10
+order by t1.a;
+
+select
+  t1.a,
+  t1.c,
+  t2.a,
+  t2.c
+from
+  plt1_adv as t1
+  left outer join
+    plt2_adv as t2
+  on t1.a = t2.a and t1.c = t2.c
+where
+  t1.b < 10
+order by t1.a;
+
+select
+  t1.*
+from
+  plt1_adv as t1
+where
+  not exists
+  (
+    select
+      1
+    from
+      plt2_adv as t2
+    where
+      t1.a = t2.a and t1.c = t2.c
+  ) and
+  t1.b < 10
+order by t1.a;
+
+select
+  t1.a,
+  t1.c,
+  t2.a,
+  t2.c
+from
+  plt1_adv as t1
+  full outer join
+    plt2_adv as t2
+  on t1.a = t2.a and t1.c = t2.c
+where
+  coalesce(t1.b, 0) < 10 and
+  coalesce(t2.b, 0) < 10
+order by t1.a,
+  t2.a;
+
+drop table plt2_adv_p2_1;
+
+drop table plt2_adv_p2_2;
+
+alter table plt2_adv
+  attach partition
+  plt2_adv_p2
+  for values in ('0004', '0006');
+
+alter table plt1_adv
+  detach partition
+  plt1_adv_p1;
+
+create table plt1_adv_p1_null
+partition of plt1_adv
+for values in (null, '0001', '0003');
+
+insert into plt1_adv
+select
+  i,
+  i,
+  to_char(i % 10, 'FM0000')
+from
+  generate_series(1, 299) as i
+where
+  i % 10 in (1, 3);
+
+insert into plt1_adv values (-1, -1, null);
+
+analyze plt1_adv;
+
+alter table plt2_adv
+  detach partition
+  plt2_adv_p3;
+
+create table plt2_adv_p3_null
+partition of plt2_adv
+for values in (null, '0007', '0009');
+
+insert into plt2_adv
+select
+  i,
+  i,
+  to_char(i % 10, 'FM0000')
+from
+  generate_series(1, 299) as i
+where
+  i % 10 in (7, 9);
+
+insert into plt2_adv values (-1, -1, null);
+
+analyze plt2_adv;
+
+select
+  t1.a,
+  t1.c,
+  t2.a,
+  t2.c
+from
+  plt1_adv as t1
+  inner join
+    plt2_adv as t2
+  on t1.a = t2.a and t1.c = t2.c
+where
+  t1.b < 10
+order by t1.a;
+
+select
+  t1.a,
+  t1.c,
+  t2.a,
+  t2.c
+from
+  plt1_adv as t1
+  inner join
+    plt2_adv as t2
+  on t1.a = t2.a and t1.c = t2.c
+where
+  t1.b < 10
+order by t1.a;
+
+select
+  t1.*
+from
+  plt1_adv as t1
+where
+  exists
+  (
+    select
+      1
+    from
+      plt2_adv as t2
+    where
+      t1.a = t2.a and t1.c = t2.c
+  ) and
+  t1.b < 10
+order by t1.a;
+
+select
+  t1.*
+from
+  plt1_adv as t1
+where
+  exists
+  (
+    select
+      1
+    from
+      plt2_adv as t2
+    where
+      t1.a = t2.a and t1.c = t2.c
+  ) and
+  t1.b < 10
+order by t1.a;
+
+select
+  t1.a,
+  t1.c,
+  t2.a,
+  t2.c
+from
+  plt1_adv as t1
+  left outer join
+    plt2_adv as t2
+  on t1.a = t2.a and t1.c = t2.c
+where
+  t1.b < 10
+order by t1.a;
+
+select
+  t1.a,
+  t1.c,
+  t2.a,
+  t2.c
+from
+  plt1_adv as t1
+  left outer join
+    plt2_adv as t2
+  on t1.a = t2.a and t1.c = t2.c
+where
+  t1.b < 10
+order by t1.a;
+
+select
+  t1.*
+from
+  plt1_adv as t1
+where
+  not exists
+  (
+    select
+      1
+    from
+      plt2_adv as t2
+    where
+      t1.a = t2.a and t1.c = t2.c
+  ) and
+  t1.b < 10
+order by t1.a;
+
+select
+  t1.*
+from
+  plt1_adv as t1
+where
+  not exists
+  (
+    select
+      1
+    from
+      plt2_adv as t2
+    where
+      t1.a = t2.a and t1.c = t2.c
+  ) and
+  t1.b < 10
+order by t1.a;
+
+select
+  t1.a,
+  t1.c,
+  t2.a,
+  t2.c
+from
+  plt1_adv as t1
+  full outer join
+    plt2_adv as t2
+  on t1.a = t2.a and t1.c = t2.c
+where
+  coalesce(t1.b, 0) < 10 and
+  coalesce(t2.b, 0) < 10
+order by t1.a,
+  t2.a;
+
+select
+  t1.a,
+  t1.c,
+  t2.a,
+  t2.c
+from
+  plt1_adv as t1
+  full outer join
+    plt2_adv as t2
+  on t1.a = t2.a and t1.c = t2.c
+where
+  coalesce(t1.b, 0) < 10 and
+  coalesce(t2.b, 0) < 10
+order by t1.a,
+  t2.a;
+
+drop table plt1_adv_p1_null;
+
+alter table plt1_adv
+  attach partition
+  plt1_adv_p1
+  for values in ('0001', '0003');
+
+create table plt1_adv_extra partition of plt1_adv for values in (null);
+
+insert into plt1_adv values (-1, -1, null);
+
+analyze plt1_adv;
+
+drop table plt2_adv_p3_null;
+
+alter table plt2_adv
+  attach partition
+  plt2_adv_p3
+  for values in ('0007', '0009');
+
+analyze plt2_adv;
+
+select
+  t1.a,
+  t1.c,
+  t2.a,
+  t2.c
+from
+  plt1_adv as t1
+  inner join
+    plt2_adv as t2
+  on t1.a = t2.a and t1.c = t2.c
+where
+  t1.b < 10
+order by t1.a;
+
+select
+  t1.a,
+  t1.c,
+  t2.a,
+  t2.c
+from
+  plt1_adv as t1
+  inner join
+    plt2_adv as t2
+  on t1.a = t2.a and t1.c = t2.c
+where
+  t1.b < 10
+order by t1.a;
+
+select
+  t1.a,
+  t1.c,
+  t2.a,
+  t2.c
+from
+  plt1_adv as t1
+  left outer join
+    plt2_adv as t2
+  on t1.a = t2.a and t1.c = t2.c
+where
+  t1.b < 10
+order by t1.a;
+
+select
+  t1.a,
+  t1.c,
+  t2.a,
+  t2.c
+from
+  plt1_adv as t1
+  full outer join
+    plt2_adv as t2
+  on t1.a = t2.a and t1.c = t2.c
+where
+  coalesce(t1.b, 0) < 10 and
+  coalesce(t2.b, 0) < 10
+order by t1.a,
+  t2.a;
+
+create table plt2_adv_extra partition of plt2_adv for values in (null);
+
+insert into plt2_adv values (-1, -1, null);
+
+analyze plt2_adv;
+
+select
+  t1.a,
+  t1.c,
+  t2.a,
+  t2.c
+from
+  plt1_adv as t1
+  inner join
+    plt2_adv as t2
+  on t1.a = t2.a and t1.c = t2.c
+where
+  t1.b < 10
+order by t1.a;
+
+select
+  t1.a,
+  t1.c,
+  t2.a,
+  t2.c
+from
+  plt1_adv as t1
+  inner join
+    plt2_adv as t2
+  on t1.a = t2.a and t1.c = t2.c
+where
+  t1.b < 10
+order by t1.a;
+
+select
+  t1.a,
+  t1.c,
+  t2.a,
+  t2.c
+from
+  plt1_adv as t1
+  left outer join
+    plt2_adv as t2
+  on t1.a = t2.a and t1.c = t2.c
+where
+  t1.b < 10
+order by t1.a;
+
+select
+  t1.a,
+  t1.c,
+  t2.a,
+  t2.c
+from
+  plt1_adv as t1
+  left outer join
+    plt2_adv as t2
+  on t1.a = t2.a and t1.c = t2.c
+where
+  t1.b < 10
+order by t1.a;
+
+select
+  t1.a,
+  t1.c,
+  t2.a,
+  t2.c
+from
+  plt1_adv as t1
+  full outer join
+    plt2_adv as t2
+  on t1.a = t2.a and t1.c = t2.c
+where
+  coalesce(t1.b, 0) < 10 and
+  coalesce(t2.b, 0) < 10
+order by t1.a,
+  t2.a;
+
+select
+  t1.a,
+  t1.c,
+  t2.a,
+  t2.c
+from
+  plt1_adv as t1
+  full outer join
+    plt2_adv as t2
+  on t1.a = t2.a and t1.c = t2.c
+where
+  coalesce(t1.b, 0) < 10 and
+  coalesce(t2.b, 0) < 10
+order by t1.a,
+  t2.a;
+
+select
+  t1.a,
+  t1.c,
+  t2.a,
+  t2.c,
+  t3.a,
+  t3.c
+from
+  plt1_adv as t1
+  left outer join
+    plt2_adv as t2
+  on t1.a = t2.a and t1.c = t2.c
+  left outer join
+    plt1_adv as t3
+  on t1.a = t3.a and t1.c = t3.c
+where
+  t1.b < 10
+order by t1.a;
+
+select
+  t1.a,
+  t1.c,
+  t2.a,
+  t2.c,
+  t3.a,
+  t3.c
+from
+  plt1_adv as t1
+  left outer join
+    plt2_adv as t2
+  on t1.a = t2.a and t1.c = t2.c
+  left outer join
+    plt1_adv as t3
+  on t1.a = t3.a and t1.c = t3.c
+where
+  t1.b < 10
+order by t1.a;
+
+drop table plt1_adv_extra;
+
+drop table plt2_adv_extra;
+
+alter table plt1_adv
+  detach partition
+  plt1_adv_p1;
+
+alter table plt1_adv
+  attach partition
+  plt1_adv_p1 default;
+
+drop table plt1_adv_p3;
+
+analyze plt1_adv;
+
+drop table plt2_adv_p3;
+
+analyze plt2_adv;
+
+select
+  t1.a,
+  t1.c,
+  t2.a,
+  t2.c
+from
+  plt1_adv as t1
+  inner join
+    plt2_adv as t2
+  on t1.a = t2.a and t1.c = t2.c
+where
+  t1.b < 10
+order by t1.a;
+
+select
+  t1.a,
+  t1.c,
+  t2.a,
+  t2.c
+from
+  plt1_adv as t1
+  inner join
+    plt2_adv as t2
+  on t1.a = t2.a and t1.c = t2.c
+where
+  t1.b < 10
+order by t1.a;
+
+alter table plt2_adv
+  detach partition
+  plt2_adv_p2;
+
+create table plt2_adv_p2_ext
+partition of plt2_adv
+for values in ('0004', '0005', '0006');
+
+insert into plt2_adv
+select
+  i,
+  i,
+  to_char(i % 10, 'FM0000')
+from
+  generate_series(1, 299) as i
+where
+  i % 10 in (4, 5, 6);
+
+analyze plt2_adv;
+
+select
+  t1.a,
+  t1.c,
+  t2.a,
+  t2.c
+from
+  plt1_adv as t1
+  inner join
+    plt2_adv as t2
+  on t1.a = t2.a and t1.c = t2.c
+where
+  t1.b < 10
+order by t1.a;
+
+alter table plt2_adv
+  detach partition
+  plt2_adv_p2_ext;
+
+alter table plt2_adv
+  attach partition
+  plt2_adv_p2_ext default;
+
+analyze plt2_adv;
+
+select
+  t1.a,
+  t1.c,
+  t2.a,
+  t2.c
+from
+  plt1_adv as t1
+  inner join
+    plt2_adv as t2
+  on t1.a = t2.a and t1.c = t2.c
+where
+  t1.b < 10
+order by t1.a;
+
+drop table plt2_adv_p2_ext;
+
+alter table plt2_adv
+  attach partition
+  plt2_adv_p2
+  for values in ('0004', '0006');
+
+analyze plt2_adv;
+
+create table plt3_adv (
+  a int,
+  b int,
+  c text
+)
+partition by LIST(c);
+
+create table plt3_adv_p1 partition of plt3_adv for values in ('0004', '0006');
+
+create table plt3_adv_p2 partition of plt3_adv for values in ('0007', '0009');
+
+insert into plt3_adv
+select
+  i,
+  i,
+  to_char(i % 10, 'FM0000')
+from
+  generate_series(1, 299) as i
+where
+  i % 10 in (4, 6, 7, 9);
+
+analyze plt3_adv;
+
+select
+  t1.a,
+  t1.c,
+  t2.a,
+  t2.c,
+  t3.a,
+  t3.c
+from
+  plt1_adv as t1
+  left outer join
+    plt2_adv as t2
+  on t1.a = t2.a and t1.c = t2.c
+  left outer join
+    plt3_adv as t3
+  on t1.a = t3.a and t1.c = t3.c
+where
+  t1.b < 10
+order by t1.a;
+
+select
+  t1.a,
+  t1.c,
+  t2.a,
+  t2.c,
+  t3.a,
+  t3.c
+from
+  plt1_adv as t1
+  left outer join
+    plt2_adv as t2
+  on t1.a = t2.a and t1.c = t2.c
+  left outer join
+    plt3_adv as t3
+  on t1.a = t3.a and t1.c = t3.c
+where
+  t1.b < 10
+order by t1.a;
+
+drop table plt2_adv_p1;
+
+create table plt2_adv_p1_null
+partition of plt2_adv
+for values in (null, '0001', '0003');
+
+insert into plt2_adv
+select
+  i,
+  i,
+  to_char(i % 10, 'FM0000')
+from
+  generate_series(1, 299) as i
+where
+  i % 10 in (1, 3);
+
+insert into plt2_adv values (-1, -1, null);
+
+analyze plt2_adv;
+
+select
+  t1.a,
+  t1.c,
+  t2.a,
+  t2.c
+from
+  plt1_adv as t1
+  inner join
+    plt2_adv as t2
+  on t1.a = t2.a and t1.c = t2.c
+where
+  t1.b < 10
+order by t1.a;
+
+select
+  t1.a,
+  t1.c,
+  t2.a,
+  t2.c
+from
+  plt1_adv as t1
+  inner join
+    plt2_adv as t2
+  on t1.a = t2.a and t1.c = t2.c
+where
+  t1.b < 10
+order by t1.a;
+
+drop table plt2_adv_p1_null;
+
+create table plt2_adv_p1_null partition of plt2_adv for values in (null);
+
+insert into plt2_adv values (-1, -1, null);
+
+analyze plt2_adv;
+
+select
+  t1.a,
+  t1.c,
+  t2.a,
+  t2.c
+from
+  plt1_adv as t1
+  inner join
+    plt2_adv as t2
+  on t1.a = t2.a and t1.c = t2.c
+where
+  t1.b < 10
+order by t1.a;
+
+select
+  t1.a,
+  t1.c,
+  t2.a,
+  t2.c
+from
+  plt1_adv as t1
+  inner join
+    plt2_adv as t2
+  on t1.a = t2.a and t1.c = t2.c
+where
+  t1.b < 10
+order by t1.a;
+
+drop table plt1_adv;
+
+drop table plt2_adv;
+
+drop table plt3_adv;
+
+create table plt1_adv (
+  a int,
+  b int,
+  c text
+)
+partition by LIST(c);
+
+create table plt1_adv_p1 partition of plt1_adv for values in ('0001');
+
+create table plt1_adv_p2 partition of plt1_adv for values in ('0002');
+
+create table plt1_adv_p3 partition of plt1_adv for values in ('0003');
+
+create table plt1_adv_p4
+partition of plt1_adv
+for values in (null, '0004', '0005');
+
+insert into plt1_adv
+select
+  i,
+  i,
+  to_char(i % 10, 'FM0000')
+from
+  generate_series(1, 299) as i
+where
+  i % 10 in (1, 2, 3, 4, 5);
+
+insert into plt1_adv values (-1, -1, null);
+
+analyze plt1_adv;
+
+create table plt2_adv (
+  a int,
+  b int,
+  c text
+)
+partition by LIST(c);
+
+create table plt2_adv_p1 partition of plt2_adv for values in ('0001', '0002');
+
+create table plt2_adv_p2 partition of plt2_adv for values in (null);
+
+create table plt2_adv_p3 partition of plt2_adv for values in ('0003');
+
+create table plt2_adv_p4 partition of plt2_adv for values in ('0004', '0005');
+
+insert into plt2_adv
+select
+  i,
+  i,
+  to_char(i % 10, 'FM0000')
+from
+  generate_series(1, 299) as i
+where
+  i % 10 in (1, 2, 3, 4, 5);
+
+insert into plt2_adv values (-1, -1, null);
+
+analyze plt2_adv;
+
+select
+  t1.a,
+  t1.c,
+  t2.a,
+  t2.c
+from
+  plt1_adv as t1
+  inner join
+    plt2_adv as t2
+  on t1.a = t2.a and t1.c = t2.c
+where
+  t1.c in ('0003', '0004', '0005') and
+  t1.b < 10
+order by t1.a;
+
+select
+  t1.a,
+  t1.c,
+  t2.a,
+  t2.c
+from
+  plt1_adv as t1
+  inner join
+    plt2_adv as t2
+  on t1.a = t2.a and t1.c = t2.c
+where
+  t1.c in ('0003', '0004', '0005') and
+  t1.b < 10
+order by t1.a;
+
+select
+  t1.a,
+  t1.c,
+  t2.a,
+  t2.c
+from
+  plt1_adv as t1
+  left outer join
+    plt2_adv as t2
+  on t1.a = t2.a and t1.c = t2.c
+where
+  t1.c is null and t1.b < 10
+order by t1.a;
+
+select
+  t1.a,
+  t1.c,
+  t2.a,
+  t2.c
+from
+  plt1_adv as t1
+  left outer join
+    plt2_adv as t2
+  on t1.a = t2.a and t1.c = t2.c
+where
+  t1.c is null and t1.b < 10
+order by t1.a;
+
+create table plt1_adv_default partition of plt1_adv default;
+
+analyze plt1_adv;
+
+create table plt2_adv_default partition of plt2_adv default;
+
+analyze plt2_adv;
+
+select
+  t1.a,
+  t1.c,
+  t2.a,
+  t2.c
+from
+  plt1_adv as t1
+  inner join
+    plt2_adv as t2
+  on t1.a = t2.a and t1.c = t2.c
+where
+  t1.c in ('0003', '0004', '0005') and
+  t1.b < 10
+order by t1.a;
+
+select
+  t1.a,
+  t1.c,
+  t2.a,
+  t2.c
+from
+  plt1_adv as t1
+  inner join
+    plt2_adv as t2
+  on t1.a = t2.a and t1.c = t2.c
+where
+  t1.c in ('0003', '0004', '0005') and
+  t1.b < 10
+order by t1.a;
+
+select
+  t1.a,
+  t1.c,
+  t2.a,
+  t2.c
+from
+  plt1_adv as t1
+  left outer join
+    plt2_adv as t2
+  on t1.a = t2.a and t1.c = t2.c
+where
+  t1.c is null and t1.b < 10
+order by t1.a;
+
+select
+  t1.a,
+  t1.c,
+  t2.a,
+  t2.c
+from
+  plt1_adv as t1
+  left outer join
+    plt2_adv as t2
+  on t1.a = t2.a and t1.c = t2.c
+where
+  t1.c is null and t1.b < 10
+order by t1.a;
+
+drop table plt1_adv;
+
+drop table plt2_adv;
+
+create table plt1_adv (
+  a int,
+  b int,
+  c text
+)
+partition by LIST(c);
+
+create table plt1_adv_p1
+partition of plt1_adv
+for values in ('0000', '0001', '0002');
+
+create table plt1_adv_p2 partition of plt1_adv for values in ('0003', '0004');
+
+insert into plt1_adv
+select
+  i,
+  i,
+  to_char(i % 5, 'FM0000')
+from
+  generate_series(0, 24) as i;
+
+analyze plt1_adv;
+
+create table plt2_adv (
+  a int,
+  b int,
+  c text
+)
+partition by LIST(c);
+
+create table plt2_adv_p1 partition of plt2_adv for values in ('0002');
+
+create table plt2_adv_p2 partition of plt2_adv for values in ('0003', '0004');
+
+insert into plt2_adv
+select
+  i,
+  i,
+  to_char(i % 5, 'FM0000')
+from
+  generate_series(0, 24) as i
+where
+  i % 5 in (2, 3, 4);
+
+analyze plt2_adv;
+
+create table plt3_adv (
+  a int,
+  b int,
+  c text
+)
+partition by LIST(c);
+
+create table plt3_adv_p1 partition of plt3_adv for values in ('0001');
+
+create table plt3_adv_p2 partition of plt3_adv for values in ('0003', '0004');
+
+insert into plt3_adv
+select
+  i,
+  i,
+  to_char(i % 5, 'FM0000')
+from
+  generate_series(0, 24) as i
+where
+  i % 5 in (1, 3, 4);
+
+analyze plt3_adv;
+
+select
+  t1.a,
+  t1.c,
+  t2.a,
+  t2.c,
+  t3.a,
+  t3.c
+from
+  plt1_adv as t1
+  left outer join
+    plt2_adv as t2
+  on t1.c = t2.c
+  full outer join
+    plt3_adv as t3
+  on t1.c = t3.c
+where
+  coalesce(t1.a, 0) % 5 <> 3 and
+  coalesce(t1.a, 0) % 5 <> 4
+order by t1.c,
+  t1.a,
+  t2.a,
+  t3.a;
+
+select
+  t1.a,
+  t1.c,
+  t2.a,
+  t2.c,
+  t3.a,
+  t3.c
+from
+  plt1_adv as t1
+  left outer join
+    plt2_adv as t2
+  on t1.c = t2.c
+  full outer join
+    plt3_adv as t3
+  on t1.c = t3.c
+where
+  coalesce(t1.a, 0) % 5 <> 3 and
+  coalesce(t1.a, 0) % 5 <> 4
+order by t1.c,
+  t1.a,
+  t2.a,
+  t3.a;
+
+drop table plt1_adv;
+
+drop table plt2_adv;
+
+drop table plt3_adv;
+
+create table alpha (
+  a double precision,
+  b int,
+  c text
+)
+partition by range(a);
+
+create table alpha_neg
+partition of alpha
+for values from ('-Infinity') to (0)
+partition by range(b);
+
+create table alpha_pos
+partition of alpha
+for values from (0) to (10.0)
+partition by LIST(c);
+
+create table alpha_neg_p1 partition of alpha_neg for values from (100) to (200);
+
+create table alpha_neg_p2 partition of alpha_neg for values from (200) to (300);
+
+create table alpha_neg_p3 partition of alpha_neg for values from (300) to (400);
+
+create table alpha_pos_p1 partition of alpha_pos for values in ('0001', '0003');
+
+create table alpha_pos_p2 partition of alpha_pos for values in ('0004', '0006');
+
+create table alpha_pos_p3 partition of alpha_pos for values in ('0008', '0009');
+
+insert into alpha_neg
+select
+  -1.0,
+  i,
+  to_char(i % 10, 'FM0000')
+from
+  generate_series(100, 399) as i
+where
+  i % 10 in (1, 3, 4, 6, 8, 9);
+
+insert into alpha_pos
+select
+  1.0,
+  i,
+  to_char(i % 10, 'FM0000')
+from
+  generate_series(100, 399) as i
+where
+  i % 10 in (1, 3, 4, 6, 8, 9);
+
+analyze alpha;
+
+create table beta (
+  a double precision,
+  b int,
+  c text
+)
+partition by range(a);
+
+create table beta_neg
+partition of beta
+for values from (-10.0) to (0)
+partition by range(b);
+
+create table beta_pos
+partition of beta
+for values from (0) to ('Infinity')
+partition by LIST(c);
+
+create table beta_neg_p1 partition of beta_neg for values from (100) to (150);
+
+create table beta_neg_p2 partition of beta_neg for values from (200) to (300);
+
+create table beta_neg_p3 partition of beta_neg for values from (350) to (500);
+
+create table beta_pos_p1 partition of beta_pos for values in ('0002', '0003');
+
+create table beta_pos_p2 partition of beta_pos for values in ('0004', '0006');
+
+create table beta_pos_p3 partition of beta_pos for values in ('0007', '0009');
+
+insert into beta_neg
+select
+  -1.0,
+  i,
+  to_char(i % 10, 'FM0000')
+from
+  generate_series(100, 149) as i
+where
+  i % 10 in (2, 3, 4, 6, 7, 9);
+
+insert into beta_neg
+select
+  -1.0,
+  i,
+  to_char(i % 10, 'FM0000')
+from
+  generate_series(200, 299) as i
+where
+  i % 10 in (2, 3, 4, 6, 7, 9);
+
+insert into beta_neg
+select
+  -1.0,
+  i,
+  to_char(i % 10, 'FM0000')
+from
+  generate_series(350, 499) as i
+where
+  i % 10 in (2, 3, 4, 6, 7, 9);
+
+insert into beta_pos
+select
+  1.0,
+  i,
+  to_char(i % 10, 'FM0000')
+from
+  generate_series(100, 149) as i
+where
+  i % 10 in (2, 3, 4, 6, 7, 9);
+
+insert into beta_pos
+select
+  1.0,
+  i,
+  to_char(i % 10, 'FM0000')
+from
+  generate_series(200, 299) as i
+where
+  i % 10 in (2, 3, 4, 6, 7, 9);
+
+insert into beta_pos
+select
+  1.0,
+  i,
+  to_char(i % 10, 'FM0000')
+from
+  generate_series(350, 499) as i
+where
+  i % 10 in (2, 3, 4, 6, 7, 9);
+
+analyze beta;
+
+select
+  t1.*,
+  t2.*
+from
+  alpha as t1
+  inner join
+    beta as t2
+  on t1.a = t2.a and t1.b = t2.b
+where
+  t1.b >= 125 and t1.b < 225
+order by t1.a,
+  t1.b;
+
+select
+  t1.*,
+  t2.*
+from
+  alpha as t1
+  inner join
+    beta as t2
+  on t1.a = t2.a and t1.b = t2.b
+where
+  t1.b >= 125 and t1.b < 225
+order by t1.a,
+  t1.b;
+
+select
+  t1.*,
+  t2.*
+from
+  alpha as t1
+  inner join
+    beta as t2
+  on t1.a = t2.a and t1.c = t2.c
+where
+  (t1.b >= 100 and t1.b < 110 or
+  t1.b >= 200 and t1.b < 210) and
+  (t2.b >= 100 and t2.b < 110 or
+  t2.b >= 200 and t2.b < 210) and
+  t1.c in ('0004', '0009')
+order by t1.a,
+  t1.b,
+  t2.b;
+
+select
+  t1.*,
+  t2.*
+from
+  alpha as t1
+  inner join
+    beta as t2
+  on t1.a = t2.a and t1.c = t2.c
+where
+  (t1.b >= 100 and t1.b < 110 or
+  t1.b >= 200 and t1.b < 210) and
+  (t2.b >= 100 and t2.b < 110 or
+  t2.b >= 200 and t2.b < 210) and
+  t1.c in ('0004', '0009')
+order by t1.a,
+  t1.b,
+  t2.b;
+
+select
+  t1.*,
+  t2.*
+from
+  alpha as t1
+  inner join
+    beta as t2
+  on t1.a = t2.a and
+    t1.b = t2.b and
+    t1.c = t2.c
+where
+  (t1.b >= 100 and t1.b < 110 or
+  t1.b >= 200 and t1.b < 210) and
+  (t2.b >= 100 and t2.b < 110 or
+  t2.b >= 200 and t2.b < 210) and
+  t1.c in ('0004', '0009')
+order by t1.a,
+  t1.b;
+
+select
+  t1.*,
+  t2.*
+from
+  alpha as t1
+  inner join
+    beta as t2
+  on t1.a = t2.a and
+    t1.b = t2.b and
+    t1.c = t2.c
+where
+  (t1.b >= 100 and t1.b < 110 or
+  t1.b >= 200 and t1.b < 210) and
+  (t2.b >= 100 and t2.b < 110 or
+  t2.b >= 200 and t2.b < 210) and
+  t1.c in ('0004', '0009')
+order by t1.a,
+  t1.b;
+
+create table fract_t (
+  id bigint,
+  primary key (id)
+)
+partition by range(id);
+
+create table fract_t0 partition of fract_t for values from ('0') to ('1000');
+
+create table fract_t1 partition of fract_t for values from ('1000') to ('2000');
+
+insert into fract_t (id) select generate_series(0, 1999);
+
+analyze fract_t;
+
+set max_parallel_workers_per_gather = 0;
+
+set enable_partitionwise_join = 'on';
+
+select
+  x.id,
+  y.id
+from
+  fract_t as x
+  left outer join
+    fract_t as y
+  using ("id")
+order by x.id asc
+limit 10;
+
+select
+  x.id,
+  y.id
+from
+  fract_t as x
+  left outer join
+    fract_t as y
+  using ("id")
+order by x.id desc
+limit 10;
+
+select
+  x.id,
+  y.id
+from
+  fract_t as x
+  left outer join
+    fract_t as y
+  using ("id")
+order by x.id desc
+limit 2;
+
+create index "pht1_c_idx" on pht1 using btree (c);
+
+select * from pht1 as p1 inner join pht1 as p2 using ("c") limit 1;
+
+select * from pht1 as p1 inner join pht1 as p2 using ("c") limit 100;
+
+select * from pht1 as p1 inner join pht1 as p2 using ("c") limit 1000;
+
+set max_parallel_workers_per_gather = 1;
+
+set debug_parallel_query = 'on';
+
+select * from pht1 as p1 inner join pht1 as p2 using ("c") limit 100;
+
+reset debug_parallel_query;
+
+drop index pht1_c_idx cascade;
+
+drop table fract_t;
+
+reset max_parallel_workers_per_gather;
+
+reset enable_partitionwise_join;

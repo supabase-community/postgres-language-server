@@ -1,0 +1,98 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/errors.sql
+snapshot_kind: text
+---
+select 1;
+
+select;
+
+select * from nonesuch;
+
+select nonesuch from pg_database;
+
+select * from pg_database where nonesuch = pg_database.datname;
+
+select * from pg_database where pg_database.datname = nonesuch;
+
+select distinct on (foobar) * from pg_database;
+
+select null from pg_database group by datname for update;
+
+select null from pg_database group by grouping sets (()) for update;
+
+delete from nonesuch;
+
+drop table nonesuch;
+
+alter table nonesuch rename to newnonesuch;
+
+alter table nonesuch rename to stud_emp;
+
+alter table stud_emp rename to student;
+
+alter table stud_emp rename to stud_emp;
+
+alter table nonesuchrel rename column nonesuchatt to newnonesuchatt;
+
+alter table emp rename column nonesuchatt to newnonesuchatt;
+
+alter table emp rename column salary to manager;
+
+alter table emp rename column salary to ctid;
+
+rollback;
+
+commit;
+
+create aggregate newavg2 (
+  sfunc = int4pl,
+  basetype = int,
+  stype = int,
+  finalfunc = int2um,
+  initcond = '0'
+);
+
+create aggregate newcnt1 (sfunc = int4inc, stype = int, initcond = '0');
+
+drop index nonesuch;
+
+drop aggregate newcnt(nonesuch);
+
+drop aggregate nonesuch(int);
+
+drop aggregate newcnt(real);
+
+drop function nonesuch();
+
+drop type nonesuch;
+
+drop operator === (int, int);
+
+drop operator = (nonesuch, int);
+
+drop operator = (int, nonesuch);
+
+drop rule nonesuch on noplace;
+
+select 1 / 0;
+
+select cast(1 as bigint) / 0;
+
+select 1 / cast(0 as bigint);
+
+select cast(1 as smallint) / 0;
+
+select 1 / cast(0 as smallint);
+
+select cast(1 as numeric) / 0;
+
+select 1 / cast(0 as numeric);
+
+select cast(1 as double precision) / 0;
+
+select 1 / cast(0 as double precision);
+
+select cast(1 as real) / 0;
+
+select 1 / cast(0 as real);

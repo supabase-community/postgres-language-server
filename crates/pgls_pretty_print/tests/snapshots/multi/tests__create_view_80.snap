@@ -1,0 +1,1676 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/create_view.sql
+snapshot_kind: text
+---
+create function interpt_pp(path, path)
+returns point
+as $function$regresslib$function$
+language c
+strict;
+
+create table real_city (
+  pop int,
+  cname text,
+  outline path
+);
+
+copy real_city from 'filename';
+
+analyze real_city;
+
+select * into ramp from only road where name ~ '.*Ramp';
+
+create view street
+as select
+  r.name,
+  r.thepath,
+  c.cname as cname
+from
+  only road as r,
+  real_city as c
+where
+  c.outline ?# r.thepath;
+
+create view iexit
+as select
+  ih.name,
+  ih.thepath,
+  interpt_pp(ih.thepath, r.thepath)
+  as exit
+from
+  ihighway as ih,
+  ramp as r
+where
+  ih.thepath ?# r.thepath;
+
+create view toyemp
+as select
+  name,
+  age,
+  location,
+  12 * salary as annualsal
+from
+  emp;
+
+comment on view noview is 'no view';
+
+comment on view toyemp is 'is a view';
+
+comment on view toyemp is null;
+
+create table view_base_table (
+  key int primary key,
+  data varchar(20)
+);
+
+create view key_dependent_view
+as select
+  *
+from
+  view_base_table
+group by key;
+
+alter table view_base_table
+  drop constraint view_base_table_pkey;
+
+create view key_dependent_view_no_cols
+as select
+from
+  view_base_table
+group by key
+having
+  length(data) > 0;
+
+create table viewtest_tbl (
+  a int,
+  b int,
+  c numeric(10, 1),
+  d text collate "C"
+);
+
+create or replace view viewtest
+as select * from viewtest_tbl;
+
+create or replace view viewtest
+as select * from viewtest_tbl where a > 10;
+
+select * from viewtest;
+
+create or replace view viewtest
+as select
+  a,
+  b,
+  c,
+  d
+from
+  viewtest_tbl
+where
+  a > 5
+order by b desc;
+
+select * from viewtest;
+
+create or replace view viewtest
+as select a from viewtest_tbl where a <> 20;
+
+create or replace view viewtest
+as select 1, * from viewtest_tbl;
+
+create or replace view viewtest
+as select
+  a,
+  cast(b as numeric),
+  c,
+  d
+from
+  viewtest_tbl;
+
+create or replace view viewtest
+as select
+  a,
+  b,
+  cast(c as numeric(10, 2)),
+  d
+from
+  viewtest_tbl;
+
+create or replace view viewtest
+as select
+  a,
+  b,
+  c,
+  d collate "POSIX"
+from
+  viewtest_tbl;
+
+create or replace view viewtest
+as select
+  a,
+  b,
+  c,
+  d,
+  0 as e
+from
+  viewtest_tbl;
+
+drop view viewtest;
+
+drop table viewtest_tbl;
+
+create schema "temp_view_test";
+
+create table base_table (
+  a int,
+  id int
+);
+
+create table base_table2 (
+  a int,
+  id int
+);
+
+set search_path to temp_view_test, public;
+
+create temporary table temp_table (
+  a int,
+  id int
+);
+
+create view v1
+as select * from base_table;
+
+create view v1_temp
+as select * from temp_table;
+
+create temporary view v2_temp
+as select * from base_table;
+
+create view temp_view_test.v2
+as select * from base_table;
+
+create view temp_view_test.v3_temp
+as select * from temp_table;
+
+create schema "test_view_schema";
+
+create temporary view testview
+as select 1;
+
+create view v3
+as select
+  t1.a as t1_a,
+  t2.a as t2_a
+from
+  base_table as t1,
+  base_table2 as t2
+where
+  t1.id = t2.id;
+
+create view v4_temp
+as select
+  t1.a as t1_a,
+  t2.a as t2_a
+from
+  base_table as t1,
+  temp_table as t2
+where
+  t1.id = t2.id;
+
+create view v5_temp
+as select
+  t1.a as t1_a,
+  t2.a as t2_a,
+  t3.a as t3_a
+from
+  base_table as t1,
+  base_table2 as t2,
+  temp_table as t3
+where
+  t1.id = t2.id and t2.id = t3.id;
+
+create view v4
+as select
+  *
+from
+  base_table
+where
+  id in (select id from base_table2);
+
+create view v5
+as select
+  t1.id,
+  t2.a
+from
+  base_table as t1,
+  (select * from base_table2) as t2;
+
+create view v6
+as select
+  *
+from
+  base_table
+where
+  exists (select 1 from base_table2);
+
+create view v7
+as select
+  *
+from
+  base_table
+where
+  not exists (select 1 from base_table2);
+
+create view v8
+as select
+  *
+from
+  base_table
+where
+  exists (select 1);
+
+create view v6_temp
+as select
+  *
+from
+  base_table
+where
+  id in (select id from temp_table);
+
+create view v7_temp
+as select
+  t1.id,
+  t2.a
+from
+  base_table as t1,
+  (select * from temp_table) as t2;
+
+create view v8_temp
+as select
+  *
+from
+  base_table
+where
+  exists (select 1 from temp_table);
+
+create view v9_temp
+as select
+  *
+from
+  base_table
+where
+  not exists (select 1 from temp_table);
+
+create view v10_temp
+as select * from v7_temp;
+
+create view v11_temp
+as select
+  t1.id,
+  t2.a
+from
+  base_table as t1,
+  v10_temp as t2;
+
+create view v12_temp
+as select true from v11_temp;
+
+create sequence seq1;
+
+create temporary sequence seq1_temp;
+
+create view v9
+as select seq1.is_called from seq1;
+
+create view v13_temp
+as select
+  seq1_temp.is_called
+from
+  seq1_temp;
+
+select
+  relname
+from
+  pg_class
+where
+  relname like 'v_' and
+  relnamespace =
+  (
+    select
+      oid
+    from
+      pg_namespace
+    where
+      nspname = 'temp_view_test'
+  )
+order by relname;
+
+select
+  relname
+from
+  pg_class
+where
+  relname like 'v%' and
+  relnamespace in
+  (
+    select
+      oid
+    from
+      pg_namespace
+    where
+      nspname like 'pg_temp%'
+  )
+order by relname;
+
+create schema "testviewschm2";
+
+set search_path to testviewschm2, public;
+
+create table t1 (
+  num int,
+  name text
+);
+
+create table t2 (
+  num2 int,
+  value text
+);
+
+create temporary table tt (
+  num2 int,
+  value text
+);
+
+create view nontemp1
+as select * from t1 inner join t2 on true;
+
+create view temporal1
+as select * from t1 inner join tt on true;
+
+create view nontemp2
+as select
+  *
+from
+  t1 inner join t2 on t1.num = t2.num2;
+
+create view temporal2
+as select
+  *
+from
+  t1 inner join tt on t1.num = tt.num2;
+
+create view nontemp3
+as select
+  *
+from
+  t1
+  left outer join
+    t2
+  on t1.num = t2.num2;
+
+create view temporal3
+as select
+  *
+from
+  t1
+  left outer join
+    tt
+  on t1.num = tt.num2;
+
+create view nontemp4
+as select
+  *
+from
+  t1
+  left outer join
+    t2
+  on t1.num = t2.num2 and t2.value = 'xxx';
+
+create view temporal4
+as select
+  *
+from
+  t1
+  left outer join
+    tt
+  on t1.num = tt.num2 and tt.value = 'xxx';
+
+select
+  relname
+from
+  pg_class
+where
+  relname like 'nontemp%' and
+  relnamespace =
+  (
+    select
+      oid
+    from
+      pg_namespace
+    where
+      nspname = 'testviewschm2'
+  )
+order by relname;
+
+select
+  relname
+from
+  pg_class
+where
+  relname like 'temporal%' and
+  relnamespace in
+  (
+    select
+      oid
+    from
+      pg_namespace
+    where
+      nspname like 'pg_temp%'
+  )
+order by relname;
+
+create table tbl1 (
+  a int,
+  b int
+);
+
+create table tbl2 (
+  c int,
+  d int
+);
+
+create table tbl3 (
+  e int,
+  f int
+);
+
+create table tbl4 (
+  g int,
+  h int
+);
+
+create temporary table tmptbl (
+  i int,
+  j int
+);
+
+create view pubview
+as select
+  *
+from
+  tbl1
+where
+  tbl1.a
+  between (select d from tbl2 where c = 1)
+  and (select e from tbl3 where f = 2) and
+  exists
+  (
+    select
+      g
+    from
+      tbl4
+      left outer join
+        tbl3
+      on tbl4.h = tbl3.f
+  );
+
+select
+  COUNT(*)
+from
+  pg_class
+where
+  relname = 'pubview' and
+  relnamespace in
+  (
+    select
+      oid
+    from
+      pg_namespace
+    where
+      nspname = 'testviewschm2'
+  );
+
+create view mytempview
+as select
+  *
+from
+  tbl1
+where
+  tbl1.a
+  between (select d from tbl2 where c = 1)
+  and (select e from tbl3 where f = 2) and
+  exists
+  (
+    select
+      g
+    from
+      tbl4
+      left outer join
+        tbl3
+      on tbl4.h = tbl3.f
+  ) and
+  not exists
+  (
+    select
+      g
+    from
+      tbl4
+      left outer join
+        tmptbl
+      on tbl4.h = tmptbl.j
+  );
+
+select
+  COUNT(*)
+from
+  pg_class
+where
+  relname like 'mytempview' and
+  relnamespace in
+  (
+    select
+      oid
+    from
+      pg_namespace
+    where
+      nspname like 'pg_temp%'
+  );
+
+create view mysecview1
+as select * from tbl1 where a = 0;
+
+create view mysecview2
+  with (security_barrier = 'true')
+as select * from tbl1 where a > 0;
+
+create view mysecview3
+  with (security_barrier = 'false')
+as select * from tbl1 where a < 0;
+
+create view mysecview4
+  with (security_barrier)
+as select * from tbl1 where a <> 0;
+
+create view mysecview5
+  with (security_barrier = 100)
+as select * from tbl1 where a > 100;
+
+create view mysecview6
+  with (invalid_option)
+as select * from tbl1 where a < 100;
+
+create view mysecview7
+  with (security_invoker = 'true')
+as select * from tbl1 where a = 100;
+
+create view mysecview8
+  with (security_invoker = 'false',
+  security_barrier = 'true')
+as select * from tbl1 where a > 100;
+
+create view mysecview9
+  with (security_invoker)
+as select * from tbl1 where a < 100;
+
+create view mysecview10
+  with (security_invoker = 100)
+as select * from tbl1 where a <> 100;
+
+select
+  relname,
+  relkind,
+  reloptions
+from
+  pg_class
+where
+  oid
+  in (
+    cast('mysecview1' as regclass),
+    cast('mysecview2' as regclass),
+    cast('mysecview3' as regclass),
+    cast('mysecview4' as regclass),
+    cast('mysecview7' as regclass),
+    cast('mysecview8' as regclass),
+    cast('mysecview9' as regclass)
+  )
+order by relname;
+
+create or replace view mysecview1
+as select * from tbl1 where a = 256;
+
+create or replace view mysecview2
+as select * from tbl1 where a > 256;
+
+create or replace view mysecview3
+  with (security_barrier = 'true')
+as select * from tbl1 where a < 256;
+
+create or replace view mysecview4
+  with (security_barrier = 'false')
+as select * from tbl1 where a <> 256;
+
+create or replace view mysecview7
+as select * from tbl1 where a > 256;
+
+create or replace view mysecview8
+  with (security_invoker = 'true')
+as select * from tbl1 where a < 256;
+
+create or replace view mysecview9
+  with (security_invoker = 'false',
+  security_barrier = 'true')
+as select * from tbl1 where a <> 256;
+
+select
+  relname,
+  relkind,
+  reloptions
+from
+  pg_class
+where
+  oid
+  in (
+    cast('mysecview1' as regclass),
+    cast('mysecview2' as regclass),
+    cast('mysecview3' as regclass),
+    cast('mysecview4' as regclass),
+    cast('mysecview7' as regclass),
+    cast('mysecview8' as regclass),
+    cast('mysecview9' as regclass)
+  )
+order by relname;
+
+create view unspecified_types
+as select
+  42 as i,
+  42.5 as num,
+  'foo' as u,
+  cast('foo' as unknown) as u2,
+  null as n;
+
+select * from unspecified_types;
+
+create view tt1
+as select
+  *
+from
+  (
+    values
+      (
+        cast('abc' as varchar(3)),
+        '0123456789',
+        42,
+        cast('abcd' as varchar(4))
+      ),
+      (
+        '0123456789',
+        cast('abc' as varchar(3)),
+        42.12,
+        cast('abc' as varchar(4))
+      )
+  )
+  as vv (a, b, c, d);
+
+select * from tt1;
+
+select cast(a as varchar(3)) from tt1;
+
+drop view tt1;
+
+create table tt1 (
+  f1 int,
+  f2 int,
+  f3 text
+);
+
+create table tx1 (
+  x1 int,
+  x2 int,
+  x3 text
+);
+
+create table temp_view_test.tt1 (
+  y1 int,
+  f2 int,
+  f3 text
+);
+
+create view aliased_view_1
+as select
+  *
+from
+  tt1
+where
+  exists
+  (
+    select 1 from tx1 where tt1.f1 = tx1.x1
+  );
+
+create view aliased_view_2
+as select
+  *
+from
+  tt1 as a1
+where
+  exists
+  (
+    select 1 from tx1 where a1.f1 = tx1.x1
+  );
+
+create view aliased_view_3
+as select
+  *
+from
+  tt1
+where
+  exists
+  (
+    select
+      1
+    from
+      tx1 as a2
+    where
+      tt1.f1 = a2.x1
+  );
+
+create view aliased_view_4
+as select
+  *
+from
+  temp_view_test.tt1
+where
+  exists
+  (
+    select
+      1
+    from
+      tt1
+    where
+      temp_view_test.tt1.y1 = tt1.f1
+  );
+
+alter table tx1 rename to a1;
+
+alter table tt1 rename to a2;
+
+alter table a1 rename to tt1;
+
+alter table a2 rename to tx1;
+
+alter table tx1 set schema temp_view_test;
+
+alter table temp_view_test.tt1 rename to tmp1;
+
+alter table temp_view_test.tmp1 set schema testviewschm2;
+
+alter table tmp1 rename to tx1;
+
+create view aliased_order_by
+as select
+  x1 as x2,
+  x2 as x1,
+  x3
+from
+  tt1
+order by x2;
+
+alter view aliased_order_by rename column x1 to x0;
+
+alter view aliased_order_by rename column x3 to x1;
+
+create view view_of_joins
+as select
+  *
+from
+  (
+    select
+      *
+    from
+      (tbl1 inner join tbl2 on true) as "same"
+  )
+  as ss,
+  (tbl3 inner join tbl4 on true) as "same";
+
+create table tbl1a (
+  a int,
+  c int
+);
+
+create view view_of_joins_2a
+as select
+  *
+from
+  tbl1 inner join tbl1a using ("a");
+
+create view view_of_joins_2b
+as select
+  *
+from
+  tbl1 inner join tbl1a using ("a") as "x";
+
+create view view_of_joins_2c
+as select
+  *
+from
+  (tbl1
+  inner join
+    tbl1a
+  using ("a")) as "y";
+
+create view view_of_joins_2d
+as select
+  *
+from
+  (tbl1
+  inner join
+    tbl1a
+  using ("a") as "x") as "y";
+
+select pg_get_viewdef('view_of_joins_2a', true);
+
+select pg_get_viewdef('view_of_joins_2b', true);
+
+select pg_get_viewdef('view_of_joins_2c', true);
+
+select pg_get_viewdef('view_of_joins_2d', true);
+
+create table tt2 (
+  a int,
+  b int,
+  c int
+);
+
+create table tt3 (
+  ax bigint,
+  b smallint,
+  c numeric
+);
+
+create table tt4 (
+  ay int,
+  b int,
+  q int
+);
+
+create view v1
+as select * from tt2 natural join tt3;
+
+create view v1a
+as select
+  *
+from
+  (tt2 natural join tt3) as "j";
+
+create view v2
+as select
+  *
+from
+  tt2 inner join tt3 using ( "b", "c")
+  inner join
+    tt4
+  using ("b");
+
+create view v2a
+as select
+  *
+from
+  (tt2 inner join tt3 using ( "b", "c")
+  inner join
+    tt4
+  using ("b")) as "j";
+
+create view v3
+as select
+  *
+from
+  tt2 inner join tt3 using ( "b", "c")
+  full outer join
+    tt4
+  using ("b");
+
+select pg_get_viewdef('v1', true);
+
+select pg_get_viewdef('v1a', true);
+
+select pg_get_viewdef('v2', true);
+
+select pg_get_viewdef('v2a', true);
+
+select pg_get_viewdef('v3', true);
+
+alter table tt2
+  add column d int;
+
+alter table tt2
+  add column e int;
+
+select pg_get_viewdef('v1', true);
+
+select pg_get_viewdef('v1a', true);
+
+select pg_get_viewdef('v2', true);
+
+select pg_get_viewdef('v2a', true);
+
+select pg_get_viewdef('v3', true);
+
+alter table tt3 rename column c to d;
+
+select pg_get_viewdef('v1', true);
+
+select pg_get_viewdef('v1a', true);
+
+select pg_get_viewdef('v2', true);
+
+select pg_get_viewdef('v2a', true);
+
+select pg_get_viewdef('v3', true);
+
+alter table tt3
+  add column c int;
+
+alter table tt3
+  add column e int;
+
+select pg_get_viewdef('v1', true);
+
+select pg_get_viewdef('v1a', true);
+
+select pg_get_viewdef('v2', true);
+
+select pg_get_viewdef('v2a', true);
+
+select pg_get_viewdef('v3', true);
+
+alter table tt2
+  drop column d;
+
+select pg_get_viewdef('v1', true);
+
+select pg_get_viewdef('v1a', true);
+
+select pg_get_viewdef('v2', true);
+
+select pg_get_viewdef('v2a', true);
+
+select pg_get_viewdef('v3', true);
+
+create table tt5 (
+  a int,
+  b int
+);
+
+create table tt6 (
+  c int,
+  d int
+);
+
+create view vv1
+as select
+  *
+from
+  (tt5
+  inner join
+    tt6
+  on true) as "j" ("aa",
+  "bb",
+  "cc",
+  "dd");
+
+select pg_get_viewdef('vv1', true);
+
+alter table tt5
+  add column c int;
+
+select pg_get_viewdef('vv1', true);
+
+alter table tt5
+  add column cc int;
+
+select pg_get_viewdef('vv1', true);
+
+alter table tt5
+  drop column c;
+
+select pg_get_viewdef('vv1', true);
+
+create view v4
+as select * from v1;
+
+alter view v1 rename column a to x;
+
+select pg_get_viewdef('v1', true);
+
+select pg_get_viewdef('v4', true);
+
+create table tt7 (
+  x int,
+  xx int,
+  y int
+);
+
+alter table tt7
+  drop column xx;
+
+create table tt8 (
+  x int,
+  z int
+);
+
+create view vv2
+as select
+  *
+from
+  (
+    values (1, 2, 3, 4, 5)
+  )
+  as v (a, b, c, d, e)
+union all
+select
+  *
+from
+  tt7 full outer join tt8 using ("x"),
+  tt8 as tt8x;
+
+select pg_get_viewdef('vv2', true);
+
+create view vv3
+as select
+  *
+from
+  (
+    values (1, 2, 3, 4, 5, 6)
+  )
+  as v (a, b, c, x, e, f)
+union all
+select
+  *
+from
+  tt7 full outer join tt8 using ("x"),
+  tt7 as tt7x
+  full outer join
+    tt8 as tt8x
+  using ("x");
+
+select pg_get_viewdef('vv3', true);
+
+create view vv4
+as select
+  *
+from
+  (
+    values (1, 2, 3, 4, 5, 6, 7)
+  )
+  as v (a, b, c, x, e, f, g)
+union all
+select
+  *
+from
+  tt7 full outer join tt8 using ("x"),
+  tt7 as tt7x
+  full outer join
+    tt8 as tt8x
+  using ("x")
+  full outer join
+    tt8 as tt8y
+  using ("x");
+
+select pg_get_viewdef('vv4', true);
+
+alter table tt7
+  add column zz int;
+
+alter table tt7
+  add column z int;
+
+alter table tt7
+  drop column zz;
+
+alter table tt8
+  add column z2 int;
+
+select pg_get_viewdef('vv2', true);
+
+select pg_get_viewdef('vv3', true);
+
+select pg_get_viewdef('vv4', true);
+
+create table tt7a (
+  x date,
+  xx int,
+  y int
+);
+
+alter table tt7a
+  drop column xx;
+
+create table tt8a (
+  x timestamp with time zone,
+  z int
+);
+
+create view vv2a
+as select
+  *
+from
+  (
+    values (NOW(), 2, 3, NOW(), 5)
+  )
+  as v (a, b, c, d, e)
+union all
+select
+  *
+from
+  tt7a left outer join tt8a using ("x"),
+  tt8a as tt8ax;
+
+select pg_get_viewdef('vv2a', true);
+
+create table tt9 (
+  x int,
+  xx int,
+  y int
+);
+
+create table tt10 (
+  x int,
+  z int
+);
+
+create view vv5
+as select
+  x,
+  y,
+  z
+from
+  tt9 inner join tt10 using ("x");
+
+select pg_get_viewdef('vv5', true);
+
+alter table tt9
+  drop column xx;
+
+select pg_get_viewdef('vv5', true);
+
+create table tt11 (
+  x int,
+  y int
+);
+
+create table tt12 (
+  x int,
+  z int
+);
+
+create table tt13 (
+  z int,
+  q int
+);
+
+create view vv6
+as select
+  x,
+  y,
+  z,
+  q
+from
+  tt11 inner join tt12 using ("x")
+  inner join
+    tt13
+  using ("z");
+
+select pg_get_viewdef('vv6', true);
+
+alter table tt11
+  add column z int;
+
+select pg_get_viewdef('vv6', true);
+
+create table tt14t (
+  f1 text,
+  f2 text,
+  f3 text,
+  f4 text
+);
+
+insert into tt14t values ('foo', 'bar', 'baz', '42');
+
+alter table tt14t
+  drop column f2;
+
+create function tt14f()
+returns setof tt14t
+as $function$
+declare
+    rec1 record;
+begin
+    for rec1 in select * from tt14t
+    loop
+        return next rec1;
+    end loop;
+end;
+$function$
+language plpgsql;
+
+create view tt14v
+as select t.* from tt14f() as t;
+
+select pg_get_viewdef('tt14v', true);
+
+select * from tt14v;
+
+alter table tt14t
+  drop column f3;
+
+begin;
+
+delete from pg_depend
+where
+  objid =
+  (
+    select
+      oid
+    from
+      pg_rewrite
+    where
+      ev_class = cast('tt14v' as regclass) and
+      rulename = '_RETURN'
+  ) and
+  refobjsubid = 3
+returning pg_describe_object(
+  classid,
+  objid,
+  objsubid
+)
+as obj,
+pg_describe_object(
+  refclassid,
+  refobjid,
+  refobjsubid
+)
+as ref,
+deptype;
+
+alter table tt14t
+  drop column f3;
+
+select pg_get_viewdef('tt14v', true);
+
+select * from tt14v;
+
+select f1, f4 from tt14v;
+
+select * from tt14v;
+
+rollback;
+
+alter table tt14t
+  alter column f4 type int using cast(f4 as int);
+
+begin;
+
+delete from pg_depend
+where
+  objid =
+  (
+    select
+      oid
+    from
+      pg_rewrite
+    where
+      ev_class = cast('tt14v' as regclass) and
+      rulename = '_RETURN'
+  ) and
+  refobjsubid = 4
+returning pg_describe_object(
+  classid,
+  objid,
+  objsubid
+)
+as obj,
+pg_describe_object(
+  refclassid,
+  refobjid,
+  refobjsubid
+)
+as ref,
+deptype;
+
+alter table tt14t
+  alter column f4 type int using cast(f4 as int);
+
+select pg_get_viewdef('tt14v', true);
+
+select f1, f3 from tt14v;
+
+select * from tt14v;
+
+rollback;
+
+drop view tt14v;
+
+create view tt14v
+as select t.f1, t.f4 from tt14f() as t;
+
+select pg_get_viewdef('tt14v', true);
+
+select * from tt14v;
+
+alter table tt14t
+  drop column f3;
+
+select pg_get_viewdef('tt14v', true);
+
+select * from tt14v;
+
+select * from tt14v;
+
+create type nestedcomposite as (x int8_tbl);
+
+create view tt15v
+as select
+  cast(row(i) as nestedcomposite)
+from
+  int8_tbl as i;
+
+select * from tt15v;
+
+select pg_get_viewdef('tt15v', true);
+
+select cast(row(cast(i.* as int8_tbl)) as nestedcomposite) from int8_tbl as i;
+
+create view tt16v
+as select
+  *
+from
+  int8_tbl as i,
+  lateral (values (i)) as ss;
+
+select * from tt16v;
+
+select pg_get_viewdef('tt16v', true);
+
+select * from int8_tbl as i, lateral (values (cast(i.* as int8_tbl))) as ss;
+
+create view tt17v
+as select
+  *
+from
+  int8_tbl as i
+where
+  i in (values (i));
+
+select * from tt17v;
+
+select pg_get_viewdef('tt17v', true);
+
+select * from int8_tbl as i where i.* in (values (cast(i.* as int8_tbl)));
+
+create table tt15v_log (
+  o tt15v,
+  n tt15v,
+  incr boolean
+);
+
+create rule updlog
+as on update to tt15v
+do
+  insert into tt15v_log
+  values
+    (
+      old, new, row(old, old) < row(new, new)
+    );;
+
+create view tt18v
+as select
+  *
+from
+  int8_tbl
+  as xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+union all
+select
+  *
+from
+  int8_tbl
+  as xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx;
+
+select pg_get_viewdef('tt18v', true);
+
+select * from tt18v;
+
+select cast('foo' as text) = any (cast(array['abc', 'def', 'foo'] as text[]));
+
+select
+  cast('foo' as text) = any
+  (
+    select
+      cast(array['abc', 'def', 'foo']
+      as text[])
+  );
+
+select
+  cast('foo' as text) = any (cast((
+    select
+      cast(array['abc', 'def', 'foo']
+      as text[])
+  )
+  as text[]));
+
+create view tt19v
+as select
+  cast('foo' as text) = any (cast(array['abc', 'def', 'foo']
+  as text[]))
+  as c1,
+  cast('foo' as text) = any (cast((
+    select
+      cast(array['abc', 'def', 'foo']
+      as text[])
+  )
+  as text[]))
+  as c2;
+
+select pg_get_viewdef('tt19v', true);
+
+create view tt20v
+as select
+  *
+from
+  coalesce(1, 2) as c,
+  pg_collation_for(cast('x' as text))
+  as col,
+  current_date as d,
+  localtimestamp(3) as t,
+  cast(1 + 2 as int) as i4,
+  cast(1 + 2 as bigint) as i8;
+
+select pg_get_viewdef('tt20v', true);
+
+create view tt201v
+as select
+  timezone(
+    'UTC',
+    cast('2022-12-01' as date) +
+    cast('1 day' as interval)
+  )
+  as atz,
+  EXTRACT('day' from NOW()) as extr,
+  overlaps(
+    NOW(),
+    cast('1 day' as interval),
+    current_timestamp(2),
+    cast('1 day' as interval)
+  )
+  as o,
+  is_normalized('foo') as isn,
+  is_normalized('foo', 'NFKC') as isnn,
+  NORMALIZE('foo') as n,
+  NORMALIZE('foo', NFKD) as nfkd,
+  OVERLAY('foo' placing 'bar' from 2)
+  as ovl,
+  OVERLAY('foo' placing 'bar' from 2 for 3)
+  as ovl2,
+  POSITION('foo' in 'foobar') as p,
+  SUBSTRING('foo' from 2 for 3) as s,
+  SUBSTRING('foo' from 'f' for '#') as ss,
+  SUBSTRING('foo' from 'oo') as ssf,
+  btrim(' foo ', ' ') as bt,
+  ltrim(' foo ', ' ') as lt,
+  rtrim(' foo ') as rt,
+  btrim(
+    cast('\000Tom\000' as bytea),
+    cast('\000' as bytea)
+  )
+  as btb,
+  ltrim(
+    cast('\000Tom\000' as bytea),
+    cast('\000' as bytea)
+  )
+  as ltb,
+  rtrim(
+    cast('\000Tom\000' as bytea),
+    cast('\000' as bytea)
+  )
+  as rtb,
+  current_date as cd,
+  (select * from current_date) as cd2,
+  current_time as ct,
+  (select * from current_time) as ct2,
+  current_time(1) as ct3,
+  (select * from current_time(1)) as ct4,
+  current_timestamp as ct5,
+  (select * from current_timestamp) as ct6,
+  current_timestamp(1) as ct7,
+  (select * from current_timestamp(1))
+  as ct8,
+  localtime as lt1,
+  (select * from localtime) as lt2,
+  localtime(1) as lt3,
+  (select * from localtime(1)) as lt4,
+  localtimestamp as lt5,
+  (select * from localtimestamp) as lt6,
+  localtimestamp(1) as lt7,
+  (select * from localtimestamp(1)) as lt8,
+  current_catalog as ca,
+  (select * from current_catalog) as ca2,
+  current_role as cr,
+  (select * from current_role) as cr2,
+  current_schema as cs,
+  (select * from current_schema) as cs2,
+  current_user as cu,
+  (select * from current_user) as cu2,
+  user as us,
+  (select * from user) as us2,
+  session_user as seu,
+  (select * from session_user) as seu2,
+  SYSTEM_USER as su,
+  (select * from SYSTEM_USER) as su2;
+
+select pg_get_viewdef('tt201v', true);
+
+create view tt21v
+as select * from tt5 natural join tt6;
+
+select pg_get_viewdef('tt21v', true);
+
+create view tt22v
+as select * from tt5 natural left join tt6;
+
+select pg_get_viewdef('tt22v', true);
+
+create view tt23v
+(
+  col_a,
+  col_b
+)
+as select
+  q1 as other_name1,
+  q2 as other_name2
+from
+  int8_tbl
+union
+select 42, 43;
+
+select pg_get_viewdef('tt23v', true);
+
+select
+  pg_get_ruledef(oid, true)
+from
+  pg_rewrite
+where
+  ev_class = cast('tt23v' as regclass) and
+  ev_type = '1';
+
+select
+  r.column2 as col_a,
+  rr.column2 as col_b
+from
+  cte
+  inner join
+    (
+      select
+        rr
+      from
+        (values (1, 7), (3, 8)) as rr
+      limit 2
+    )
+    as ss
+  on r.column1 = rr.column1;
+
+select pg_get_viewdef('tt24v', true);
+
+select k.word from cte;
+
+select pg_get_viewdef('tt25v', true);
+
+select * from tt24v;
+
+select
+  r.column2
+from
+  (
+    select
+      r
+    from
+      (values (1, 2), (3, 4)) as r
+    limit 1
+  )
+  as ss;
+
+create view tt26v
+as select
+  x + y + z as c1,
+  x * y + z as c2,
+  x + y * z as c3,
+  (x + y) * z as c4,
+  x * (y + z) as c5,
+  x + (y + z) as c6,
+  x + (y # z) as c7,
+  x > y and (y > z or x > z) as c8,
+  x > y or y > z and not x > z as c9,
+  (x, y) <> all (values (1, 2), (3, 4))
+  as c10,
+  (x, y) <= any (values (1, 2), (3, 4))
+  as c11
+from
+  (values (1, 2, 3)) as v (x, y, z);
+
+select pg_get_viewdef('tt26v', true);
+
+create table tt27v_tbl (a int);
+
+create view tt27v
+as select a from tt27v_tbl;
+
+set restrict_nonsystem_relation_kind = view;
+
+select a from tt27v where a > 0;
+
+insert into tt27v values (1);
+
+select viewname from pg_views where viewname = 'tt27v';
+
+reset restrict_nonsystem_relation_kind;
+
+drop schema temp_view_test cascade;
+
+drop schema testviewschm2 cascade;

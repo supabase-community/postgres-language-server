@@ -1,0 +1,325 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/select.sql
+snapshot_kind: text
+---
+select * from onek where onek.unique1 < 10 order by onek.unique1;
+
+select
+  onek.unique1,
+  onek.stringu1
+from
+  onek
+where
+  onek.unique1 < 20
+order by unique1 using >;
+
+select
+  onek.unique1,
+  onek.stringu1
+from
+  onek
+where
+  onek.unique1 > 980
+order by stringu1 using <;
+
+select
+  onek.unique1,
+  onek.string4
+from
+  onek
+where
+  onek.unique1 > 980
+order by string4 using <,
+  unique1 using >;
+
+select
+  onek.unique1,
+  onek.string4
+from
+  onek
+where
+  onek.unique1 > 980
+order by string4 using >,
+  unique1 using <;
+
+select
+  onek.unique1,
+  onek.string4
+from
+  onek
+where
+  onek.unique1 < 20
+order by unique1 using >,
+  string4 using <;
+
+select
+  onek.unique1,
+  onek.string4
+from
+  onek
+where
+  onek.unique1 < 20
+order by unique1 using <,
+  string4 using >;
+
+analyze onek2;
+
+set enable_seqscan = off;
+
+set enable_bitmapscan = off;
+
+set enable_sort = off;
+
+select onek2.* from onek2 where onek2.unique1 < 10;
+
+select
+  onek2.unique1,
+  onek2.stringu1
+from
+  onek2
+where
+  onek2.unique1 < 20
+order by unique1 using >;
+
+select onek2.unique1, onek2.stringu1 from onek2 where onek2.unique1 > 980;
+
+reset enable_seqscan;
+
+reset enable_bitmapscan;
+
+reset enable_sort;
+
+select p.name, p.age from person as p;
+
+select p.name, p.age from person as p order by age using >, name;
+
+select foo from (select 1 offset 0) as foo;
+
+select foo from (select null offset 0) as foo;
+
+select foo from (select 'xyzzy', 1, null offset 0) as foo;
+
+select
+  *
+from
+  onek,
+  (
+    values (147, 'RFAAAA'), (931, 'VJAAAA')
+  )
+  as v (i, j)
+where
+  onek.unique1 = v.i and
+  onek.stringu1 = v.j;
+
+select
+  *
+from
+  onek,
+  (
+    values
+      (
+        (
+          select
+            i
+          from
+            (
+              values
+                (10000),
+                (2),
+                (389),
+                (1000),
+                (2000),
+                ((select 10029))
+            )
+            as foo (i)
+          order by i asc
+          limit 1
+        )
+      )
+  )
+  as bar (i)
+where
+  onek.unique1 = bar.i;
+
+select
+  *
+from
+  onek
+where
+  (unique1, ten) in
+  (
+    values
+      (1, 1),
+      (20, 0),
+      (99, 9),
+      (17, 99)
+  )
+order by unique1;
+
+values (1, 2), (3, 4 + 4), (7, 77.7);
+
+values (1, 2), (3, 4 + 4), (7, 77.7)
+union all
+select 2 + 2, 57
+union all
+select * from int8_tbl;
+
+create temporary table nocols ();
+
+insert into nocols default values;
+
+select * from nocols as n, lateral (values (n.*)) as v;
+
+create temporary table foo (f1 int);
+
+insert into foo values (42), (3), (10), (7), (null), (null), (1);
+
+select * from foo order by f1;
+
+select * from foo order by f1 asc;
+
+select * from foo order by f1 nulls first;
+
+select * from foo order by f1 desc;
+
+select * from foo order by f1 desc nulls last;
+
+create index "fooi" on foo using btree (f1);
+
+set enable_sort = 'false';
+
+select * from foo order by f1;
+
+select * from foo order by f1 nulls first;
+
+select * from foo order by f1 desc;
+
+select * from foo order by f1 desc nulls last;
+
+drop index fooi;
+
+create index "fooi" on foo using btree (f1 desc);
+
+select * from foo order by f1;
+
+select * from foo order by f1 nulls first;
+
+select * from foo order by f1 desc;
+
+select * from foo order by f1 desc nulls last;
+
+drop index fooi;
+
+create index "fooi" on foo using btree (f1 desc nulls last);
+
+select * from foo order by f1;
+
+select * from foo order by f1 nulls first;
+
+select * from foo order by f1 desc;
+
+select * from foo order by f1 desc nulls last;
+
+select * from onek2 where unique2 = 11 and stringu1 = 'ATAAAA';
+
+select * from onek2 where unique2 = 11 and stringu1 = 'ATAAAA';
+
+select * from onek2 where unique2 = 11 and stringu1 = 'ATAAAA';
+
+select unique2 from onek2 where unique2 = 11 and stringu1 = 'ATAAAA';
+
+select unique2 from onek2 where unique2 = 11 and stringu1 = 'ATAAAA';
+
+select * from onek2 where unique2 = 11 and stringu1 < 'B';
+
+select * from onek2 where unique2 = 11 and stringu1 < 'B';
+
+select unique2 from onek2 where unique2 = 11 and stringu1 < 'B';
+
+select unique2 from onek2 where unique2 = 11 and stringu1 < 'B';
+
+select unique2 from onek2 where unique2 = 11 and stringu1 < 'B' for update;
+
+select unique2 from onek2 where unique2 = 11 and stringu1 < 'B' for update;
+
+select unique2 from onek2 where unique2 = 11 and stringu1 < 'C';
+
+select unique2 from onek2 where unique2 = 11 and stringu1 < 'C';
+
+set enable_indexscan = off;
+
+select unique2 from onek2 where unique2 = 11 and stringu1 < 'B';
+
+select unique2 from onek2 where unique2 = 11 and stringu1 < 'B';
+
+reset enable_indexscan;
+
+select
+  unique1,
+  unique2
+from
+  onek2
+where
+  (unique2 = 11 or unique1 = 0) and
+  stringu1 < 'B';
+
+select
+  unique1,
+  unique2
+from
+  onek2
+where
+  (unique2 = 11 or unique1 = 0) and
+  stringu1 < 'B';
+
+select
+  unique1,
+  unique2
+from
+  onek2
+where
+  unique2 = 11 and stringu1 < 'B' or
+  unique1 = 0;
+
+select
+  unique1,
+  unique2
+from
+  onek2
+where
+  unique2 = 11 and stringu1 < 'B' or
+  unique1 = 0;
+
+select 1 as x order by x;
+
+create function sillysrf(int)
+returns setof int
+as $function$values (1),(10),(2),($1)$function$
+language sql
+immutable;
+
+select sillysrf(42);
+
+select sillysrf(-1) order by 1;
+
+drop function sillysrf(int);
+
+select * from (values (2), (null), (1)) as v (k) where k = k order by k;
+
+select * from (values (2), (null), (1)) as v (k) where k = k;
+
+create table list_parted_tbl (
+  a int,
+  b int
+)
+partition by LIST(a);
+
+create table list_parted_tbl1
+partition of list_parted_tbl
+for values in (1)
+partition by LIST(b);
+
+select * from list_parted_tbl;
+
+drop table list_parted_tbl;

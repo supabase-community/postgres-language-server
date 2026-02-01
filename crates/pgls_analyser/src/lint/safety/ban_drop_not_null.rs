@@ -35,16 +35,16 @@ impl LinterRule for BanDropNotNull {
 
         if let pgls_query::NodeEnum::AlterTableStmt(stmt) = &ctx.stmt() {
             for cmd in &stmt.cmds {
-                if let Some(pgls_query::NodeEnum::AlterTableCmd(cmd)) = &cmd.node {
-                    if cmd.subtype() == pgls_query::protobuf::AlterTableType::AtDropNotNull {
-                        diagnostics.push(LinterDiagnostic::new(
+                if let Some(pgls_query::NodeEnum::AlterTableCmd(cmd)) = &cmd.node
+                    && cmd.subtype() == pgls_query::protobuf::AlterTableType::AtDropNotNull
+                {
+                    diagnostics.push(LinterDiagnostic::new(
                             rule_category!(),
                             None,
                             markup! {
                                 "Dropping a NOT NULL constraint may break existing clients."
                             },
                         ).detail(None, "Consider using a marker value that represents NULL. Alternatively, create a new table allowing NULL values, copy the data from the old table, and create a view that filters NULL values."));
-                    }
                 }
             }
         }

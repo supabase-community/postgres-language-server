@@ -1,0 +1,38 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/copyencoding.sql
+snapshot_kind: text
+---
+select getdatabaseencoding() <> 'UTF8' as skip_test;
+
+create table copy_encoding_tab (t text);
+
+copy (select 'あ') to 'utf8_csv';
+
+copy copy_encoding_tab from 'utf8_csv';
+
+set client_encoding to utf8;
+
+copy (select 'あ') to 'utf8_csv';
+
+set client_encoding to latin1;
+
+copy copy_encoding_tab from 'utf8_csv';
+
+reset client_encoding;
+
+copy (select 'あ') to 'utf8_csv';
+
+copy copy_encoding_tab from 'utf8_csv';
+
+set client_encoding to utf8;
+
+copy (select 'あ') to 'utf8_csv';
+
+set client_encoding to euc_jp;
+
+copy copy_encoding_tab from 'utf8_csv';
+
+reset client_encoding;
+
+drop table copy_encoding_tab;

@@ -1,0 +1,6 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/single/field_store_0.sql
+snapshot_kind: text
+---
+update my_table set composite_col."field1" = 'new_value';

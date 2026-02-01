@@ -45,6 +45,11 @@ pub trait Visit {
         Ok(())
     }
 
+    /// Prints the diff with a line offset applied to line numbers.
+    fn record_diff_with_offset(&mut self, diff: &TextEdit, _line_offset: u32) -> io::Result<()> {
+        self.record_diff(diff)
+    }
+
     /// Prints a Rust backtrace.
     fn record_backtrace(
         &mut self,

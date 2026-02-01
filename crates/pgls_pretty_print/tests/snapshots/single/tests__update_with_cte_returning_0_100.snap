@@ -1,0 +1,17 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/single/update_with_cte_returning_0.sql
+snapshot_kind: text
+---
+with
+pending
+as (
+  select id from invoices where status = 'pending'
+)
+update invoices as inv
+set status = 'processed'
+from pending
+where
+  inv.id = pending.id
+returning inv.id,
+inv.status;

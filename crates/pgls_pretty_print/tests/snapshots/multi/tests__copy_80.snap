@@ -1,0 +1,347 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/copy.sql
+snapshot_kind: text
+---
+create temporary table copytest (
+  style text,
+  test text,
+  filler int
+);
+
+insert into copytest values ('DOS', 'abc
+def', 1);
+
+insert into copytest values ('Unix', 'abc
+def', 2);
+
+insert into copytest values ('Mac', 'abcdef', 3);
+
+insert into copytest values ('esc\ape', 'a\r\\
+\nb', 4);
+
+copy copytest to 'filename' with (FORMAT 'csv');
+
+create temporary table copytest2 (like copytest);
+
+copy copytest2 from 'filename' with (FORMAT 'csv');
+
+select * from copytest except select * from copytest2;
+
+truncate copytest2;
+
+copy copytest to 'filename' with (FORMAT 'csv', QUOTE '''', ESCAPE '\');
+
+copy copytest2 from 'filename' with (FORMAT 'csv', QUOTE '''', ESCAPE '\');
+
+select * from copytest except select * from copytest2;
+
+truncate copytest2;
+
+copy copytest2 (test) from 'filename' with (FORMAT 'csv');
+
+select test from copytest2 order by test collate "C";
+
+truncate copytest2;
+
+copy copytest2 (test) from stdout;
+
+select test from copytest2;
+
+create temporary table copytest3 (
+  c1 int,
+  "col with , comma" text,
+  "col with "" quote" int
+);
+
+copy copytest3 from stdout with (FORMAT 'csv', HEADER);
+
+copy copytest3 to stdout with (FORMAT 'csv', HEADER);
+
+create temporary table copytest4 (
+  c1 int,
+  "colname with tab: 	" text
+);
+
+copy copytest4 from stdout with (HEADER);
+
+copy copytest4 to stdout with (HEADER);
+
+create temporary table copytest5 (c1 int);
+
+copy copytest5 from stdout with (FORMAT 'csv', HEADER 2);
+
+truncate copytest5;
+
+copy copytest5 from stdout with (FORMAT 'csv', HEADER 4);
+
+select COUNT(*) from copytest5;
+
+truncate copytest5;
+
+copy copytest5 from stdout with (FORMAT 'csv', HEADER 5);
+
+select COUNT(*) from copytest5;
+
+create table parted_copytest (
+  a int,
+  b int,
+  c text
+)
+partition by LIST(b);
+
+create table parted_copytest_a1 (
+  c text,
+  b int,
+  a int
+);
+
+create table parted_copytest_a2 (
+  a int,
+  c text,
+  b int
+);
+
+alter table parted_copytest
+  attach partition
+  parted_copytest_a1 for values in (1);
+
+alter table parted_copytest
+  attach partition
+  parted_copytest_a2 for values in (2);
+
+insert into parted_copytest
+select
+  x,
+  1,
+  'One'
+from
+  generate_series(1, 1000) as x;
+
+insert into parted_copytest
+select
+  x,
+  2,
+  'Two'
+from
+  generate_series(1001, 1010) as x;
+
+insert into parted_copytest
+select
+  x,
+  1,
+  'One'
+from
+  generate_series(1011, 1020) as x;
+
+copy (select * from parted_copytest order by a) to 'filename';
+
+truncate parted_copytest;
+
+copy parted_copytest from 'filename';
+
+begin;
+
+truncate parted_copytest;
+
+copy parted_copytest from 'filename' with (FREEZE);
+
+rollback;
+
+select
+  cast(tableoid as regclass),
+  COUNT(*),
+  SUM(a)
+from
+  parted_copytest
+group by tableoid
+order by cast(cast(tableoid as regclass) as name);
+
+truncate parted_copytest;
+
+create function part_ins_func()
+returns trigger
+language plpgsql
+as $function$
+begin
+  return new;
+end;
+$function$;
+
+create trigger part_ins_trig
+before insert
+on parted_copytest_a2
+for each row
+execute function part_ins_func();
+
+copy parted_copytest from 'filename';
+
+select
+  cast(tableoid as regclass),
+  COUNT(*),
+  SUM(a)
+from
+  parted_copytest
+group by tableoid
+order by cast(cast(tableoid as regclass) as name);
+
+truncate parted_copytest;
+
+create index on parted_copytest using btree (b);
+
+drop trigger part_ins_trig on parted_copytest_a2;
+
+copy parted_copytest from stdout;
+
+select * from parted_copytest where b = 1;
+
+select * from parted_copytest where b = 2;
+
+drop table parted_copytest;
+
+create table tab_progress_reporting (
+  name text,
+  age int,
+  location point,
+  salary int,
+  manager name
+);
+
+create function notice_after_tab_progress_reporting()
+returns trigger
+as $function$
+declare report record;
+begin
+  -- The fields ignored here are the ones that may not remain
+  -- consistent across multiple runs.  The sizes reported may differ
+  -- across platforms, so just check if these are strictly positive.
+  with progress_data as (
+    select
+       relid::regclass::text as relname,
+       command,
+       type,
+       bytes_processed > 0 as has_bytes_processed,
+       bytes_total > 0 as has_bytes_total,
+       tuples_processed,
+       tuples_excluded,
+       tuples_skipped
+      from pg_stat_progress_copy
+      where pid = pg_backend_pid())
+  select into report (to_jsonb(r)) as value
+    from progress_data r;
+
+  raise info 'progress: %', report.value::text;
+  return new;
+end;
+$function$
+language plpgsql;
+
+create trigger check_after_tab_progress_reporting
+after insert
+on tab_progress_reporting
+for each statement
+execute function notice_after_tab_progress_reporting();
+
+copy tab_progress_reporting from stdout;
+
+truncate tab_progress_reporting;
+
+copy tab_progress_reporting from 'filename' where salary < 2000;
+
+copy tab_progress_reporting from stdout with (ON_ERROR 'ignore');
+
+drop trigger check_after_tab_progress_reporting on tab_progress_reporting;
+
+drop function notice_after_tab_progress_reporting();
+
+drop table tab_progress_reporting;
+
+create table header_copytest (
+  a int,
+  b int,
+  c text
+);
+
+alter table header_copytest
+  drop column c;
+
+alter table header_copytest
+  add column c text;
+
+copy header_copytest to stdout;
+
+copy header_copytest from stdout;
+
+copy header_copytest from stdout;
+
+select * from header_copytest order by a;
+
+alter table header_copytest
+  drop column b;
+
+copy header_copytest (c, a) from stdout;
+
+select * from header_copytest order by a;
+
+drop table header_copytest;
+
+create temporary table oversized_column_default (
+  col1 varchar(5)
+  default 'more than 5 chars',
+  col2 varchar(5)
+);
+
+copy oversized_column_default from stdout;
+
+copy oversized_column_default (col2) from stdout;
+
+copy oversized_column_default from stdout with (DEFAULT '');
+
+drop table oversized_column_default;
+
+create table parted_si (
+  id int not null,
+  data text not null,
+  rand double precision
+  not null
+  default random()
+)
+partition by LIST((id % 2));
+
+create table parted_si_p_even partition of parted_si for values in (0);
+
+create table parted_si_p_odd partition of parted_si for values in (1);
+
+copy parted_si (id, data) from 'filename';
+
+select
+  cast(tableoid as regclass),
+  id % 2 = 0 as is_even,
+  COUNT(*)
+from
+  parted_si
+group by 1,
+  2
+order by 1;
+
+drop table parted_si;
+
+begin;
+
+create foreign data wrapper copytest_wrapper;
+
+create server copytest_server foreign data wrapper copytest_wrapper;
+
+create foreign table copytest_foreign_table ( a int ) server copytest_server;
+
+copy copytest_foreign_table from stdout with (FREEZE);
+
+create materialized view copytest_mv as select 1 as id with no data;
+
+copy copytest_mv (id) to stdout;
+
+refresh materialized view copytest_mv;
+
+copy copytest_mv (id) to stdout;
+
+drop materialized view copytest_mv;

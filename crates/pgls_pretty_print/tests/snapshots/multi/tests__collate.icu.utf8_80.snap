@@ -1,0 +1,1941 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/collate.icu.utf8.sql
+snapshot_kind: text
+---
+select
+  getdatabaseencoding() <> 'UTF8' or
+  (
+    select
+      COUNT(*)
+    from
+      pg_collation
+    where
+      collprovider = 'i' and
+      collname <> 'unicode'
+  ) =
+  0
+  as skip_test;
+
+set client_encoding to utf8;
+
+create schema "collate_tests";
+
+set search_path to collate_tests;
+
+create table collate_test1 (
+  a int,
+  b text collate "en-x-icu" not null
+);
+
+create table collate_test_fail (
+  a int,
+  b text collate "ja_JP.eucjp-x-icu"
+);
+
+create table collate_test_fail (
+  a int,
+  b text collate "foo-x-icu"
+);
+
+create table collate_test_fail (
+  a int collate "en-x-icu",
+  b text
+);
+
+create table collate_test_like (like collate_test1);
+
+create table collate_test2 (
+  a int,
+  b text collate "sv-x-icu"
+);
+
+create table collate_test3 (
+  a int,
+  b text collate "C"
+);
+
+insert into collate_test1
+values
+  (1, 'abc'),
+  (2, 'Ã¤bc'),
+  (3, 'bbc'),
+  (4, 'ABC');
+
+insert into collate_test2 select * from collate_test1;
+
+insert into collate_test3 select * from collate_test1;
+
+select * from collate_test1 where b >= 'bbc';
+
+select * from collate_test2 where b >= 'bbc';
+
+select * from collate_test3 where b >= 'bbc';
+
+select * from collate_test3 where b >= 'BBC';
+
+select * from collate_test1 where b collate "C" >= 'bbc';
+
+select * from collate_test1 where b >= 'bbc' collate "C";
+
+select * from collate_test1 where b collate "C" >= 'bbc' collate "C";
+
+select * from collate_test1 where b collate "C" >= 'bbc' collate "en-x-icu";
+
+create domain testdomain_sv as text collate "sv-x-icu";
+
+create domain testdomain_i as int collate "sv-x-icu";
+
+create table collate_test4 (
+  a int,
+  b testdomain_sv
+);
+
+insert into collate_test4 select * from collate_test1;
+
+select a, b from collate_test4 order by b;
+
+create table collate_test5 (
+  a int,
+  b testdomain_sv collate "en-x-icu"
+);
+
+insert into collate_test5 select * from collate_test1;
+
+select a, b from collate_test5 order by b;
+
+select a, b from collate_test1 order by b;
+
+select a, b from collate_test2 order by b;
+
+select a, b from collate_test3 order by b;
+
+select a, b from collate_test1 order by b collate "C";
+
+select * from collate_test1 order by b;
+
+select * from collate_test2 order by b;
+
+select * from collate_test3 order by b;
+
+select 'bbc' collate "en-x-icu" > 'Ã¤bc' collate "en-x-icu" as "true";
+
+select 'bbc' collate "sv-x-icu" > 'Ã¤bc' collate "sv-x-icu" as "false";
+
+create table collate_test10 (
+  a int,
+  x text collate "en-x-icu",
+  y text collate "tr-x-icu"
+);
+
+insert into collate_test10 values (1, 'hij', 'hij'), (2, 'HIJ', 'HIJ');
+
+select
+  a,
+  lower(x),
+  lower(y),
+  upper(x),
+  upper(y),
+  initcap(x),
+  initcap(y)
+from
+  collate_test10;
+
+select a, lower(x collate "C"), lower(y collate "C") from collate_test10;
+
+select a, x, y from collate_test10 order by lower(y), a;
+
+select
+  lower(
+    'AbCd 123 #$% Ä±iIÄ° áº Ã ÇÇÇ Î£ÏÏ' collate "en-x-icu"
+  );
+
+select
+  casefold(
+    'AbCd 123 #$% Ä±iIÄ° áº Ã ÇÇÇ Î£ÏÏ' collate "en-x-icu"
+  );
+
+select
+  lower(
+    'AbCd 123 #$% Ä±iIÄ° áº Ã ÇÇÇ Î£ÏÏ' collate "tr-x-icu"
+  );
+
+select
+  casefold(
+    'AbCd 123 #$% Ä±iIÄ° áº Ã ÇÇÇ Î£ÏÏ' collate "tr-x-icu"
+  );
+
+select * from collate_test1 where b like 'abc';
+
+select * from collate_test1 where b like 'abc%';
+
+select * from collate_test1 where b like '%bc%';
+
+select * from collate_test1 where b ilike 'abc';
+
+select * from collate_test1 where b ilike 'abc%';
+
+select * from collate_test1 where b ilike '%bc%';
+
+select 'TÃ¼rkiye' collate "en-x-icu" ilike '%KI%' as "true";
+
+select 'TÃ¼rkiye' collate "tr-x-icu" ilike '%KI%' as "false";
+
+select 'bÄ±t' ilike 'BIT' collate "en-x-icu" as "false";
+
+select 'bÄ±t' ilike 'BIT' collate "tr-x-icu" as "true";
+
+select relname from pg_class where relname ilike 'abc%';
+
+select * from collate_test1 where b ~ '^abc$';
+
+select * from collate_test1 where b ~ '^abc';
+
+select * from collate_test1 where b ~ 'bc';
+
+select * from collate_test1 where b ~* '^abc$';
+
+select * from collate_test1 where b ~* '^abc';
+
+select * from collate_test1 where b ~* 'bc';
+
+create table collate_test6 (
+  a int,
+  b text collate "en-x-icu"
+);
+
+insert into collate_test6
+values
+  (1, 'abc'),
+  (2, 'ABC'),
+  (3, '123'),
+  (4, 'ab1'),
+  (5, 'a1!'),
+  (6, 'a c'),
+  (7, '!.;'),
+  (8, '   '),
+  (9, 'Ã¤bÃ§'),
+  (10, 'ÃBÃ');
+
+select
+  b,
+  b ~ '^[[:alpha:]]+$' as is_alpha,
+  b ~ '^[[:upper:]]+$' as is_upper,
+  b ~ '^[[:lower:]]+$' as is_lower,
+  b ~ '^[[:digit:]]+$' as is_digit,
+  b ~ '^[[:alnum:]]+$' as is_alnum,
+  b ~ '^[[:graph:]]+$' as is_graph,
+  b ~ '^[[:print:]]+$' as is_print,
+  b ~ '^[[:punct:]]+$' as is_punct,
+  b ~ '^[[:space:]]+$' as is_space
+from
+  collate_test6;
+
+select 'TÃ¼rkiye' collate "en-x-icu" ~* 'KI' as "true";
+
+select 'TÃ¼rkiye' collate "tr-x-icu" ~* 'KI' as "true";
+
+select 'bÄ±t' ~* 'BIT' collate "en-x-icu" as "false";
+
+select 'bÄ±t' ~* 'BIT' collate "tr-x-icu" as "false";
+
+select relname from pg_class where relname ~* '^abc';
+
+create view collview1
+as select
+  *
+from
+  collate_test1
+where
+  b collate "C" >= 'bbc';
+
+create view collview2
+as select
+  a,
+  b
+from
+  collate_test1
+order by b collate "C";
+
+create view collview3
+as select
+  a,
+  lower((x || x) collate "C")
+from
+  collate_test10;
+
+select
+  table_name,
+  view_definition
+from
+  information_schema.views
+where
+  table_name like 'collview%'
+order by 1;
+
+select a, coalesce(b, 'foo') from collate_test1 order by 2;
+
+select a, coalesce(b, 'foo') from collate_test2 order by 2;
+
+select a, coalesce(b, 'foo') from collate_test3 order by 2;
+
+select
+  a,
+  lower(coalesce(x, 'foo')),
+  lower(coalesce(y, 'foo'))
+from
+  collate_test10;
+
+select a, b, greatest(b, 'CCC') from collate_test1 order by 3;
+
+select a, b, greatest(b, 'CCC') from collate_test2 order by 3;
+
+select a, b, greatest(b, 'CCC') from collate_test3 order by 3;
+
+select
+  a,
+  x,
+  y,
+  lower(greatest(x, 'foo')),
+  lower(greatest(y, 'foo'))
+from
+  collate_test10;
+
+select a, nullif(b, 'abc') from collate_test1 order by 2;
+
+select a, nullif(b, 'abc') from collate_test2 order by 2;
+
+select a, nullif(b, 'abc') from collate_test3 order by 2;
+
+select a, lower(nullif(x, 'foo')), lower(nullif(y, 'foo')) from collate_test10;
+
+select
+  a,
+  case b when 'abc' then 'abcd' else b end
+from
+  collate_test1
+order by 2;
+
+select
+  a,
+  case b when 'abc' then 'abcd' else b end
+from
+  collate_test2
+order by 2;
+
+select
+  a,
+  case b when 'abc' then 'abcd' else b end
+from
+  collate_test3
+order by 2;
+
+create domain testdomain as text;
+
+select a, cast(b as testdomain) from collate_test1 order by 2;
+
+select a, cast(b as testdomain) from collate_test2 order by 2;
+
+select a, cast(b as testdomain) from collate_test3 order by 2;
+
+select a, cast(b as testdomain_sv) from collate_test3 order by 2;
+
+select
+  a,
+  lower(cast(x as testdomain)),
+  lower(cast(y as testdomain))
+from
+  collate_test10;
+
+select MIN(b), MAX(b) from collate_test1;
+
+select MIN(b), MAX(b) from collate_test2;
+
+select MIN(b), MAX(b) from collate_test3;
+
+select array_agg(b order by b) from collate_test1;
+
+select array_agg(b order by b) from collate_test2;
+
+select array_agg(b order by b) from collate_test3;
+
+select a, b from collate_test1
+union all
+select a, b from collate_test1
+order by 2;
+
+select a, b from collate_test2 union select a, b from collate_test2 order by 2;
+
+select a, b from collate_test3 where a > 1 order by 2;
+
+select a, b from collate_test3
+except
+select
+  a,
+  b
+from
+  collate_test3
+where
+  a < 2
+order by 2;
+
+select a, b from collate_test1
+union all
+select a, b from collate_test3
+order by 2;
+
+select a, b from collate_test1 union all select a, b from collate_test3;
+
+select a, b from collate_test1 union select a, b from collate_test3 order by 2;
+
+select
+  a,
+  b collate "C"
+from
+  collate_test1
+union
+select a, b from collate_test3
+order by 2;
+
+select a, b from collate_test3 order by 2;
+
+select a, b from collate_test1 except select a, b from collate_test3 order by 2;
+
+create table test_u
+as
+  select a, b from collate_test1
+  union all
+  select a, b from collate_test3;
+
+select x < y from collate_test10;
+
+select x || y from collate_test10;
+
+select x, y from collate_test10 order by x || y;
+
+with recursive
+foo (x)
+as (
+  select
+    x
+  from
+    (
+      values ('a' collate "en-x-icu"), ('b')
+    )
+    as t (x)
+  union all
+  select
+    (x || 'c') collate "de-x-icu"
+  from
+    foo
+  where
+    length(x) < 10
+)
+select
+  *
+from
+  foo;
+
+select a, cast(b as varchar) from collate_test1 order by 2;
+
+select a, cast(b as varchar) from collate_test2 order by 2;
+
+select a, cast(b as varchar) from collate_test3 order by 2;
+
+create function mylt(text, text)
+returns boolean
+language sql
+as $function$ select $1 < $2 $function$;
+
+create function mylt_noninline(text, text)
+returns boolean
+language sql
+as $function$ select $1 < $2 limit 1 $function$;
+
+create function mylt_plpgsql(text, text)
+returns boolean
+language plpgsql
+as $function$ begin return $1 < $2; end $function$;
+
+select
+  a.b as a,
+  b.b as b,
+  a.b < b.b as lt,
+  mylt(a.b, b.b),
+  mylt_noninline(a.b, b.b),
+  mylt_plpgsql(a.b, b.b)
+from
+  collate_test1 as a,
+  collate_test1 as b
+order by a.b,
+  b.b;
+
+select
+  a.b as a,
+  b.b as b,
+  a.b < b.b collate "C" as lt,
+  mylt(a.b, b.b collate "C"),
+  mylt_noninline(a.b, b.b collate "C"),
+  mylt_plpgsql(a.b, b.b collate "C")
+from
+  collate_test1 as a,
+  collate_test1 as b
+order by a.b,
+  b.b;
+
+create function mylt2(x text, y text)
+returns boolean
+language plpgsql
+as $function$
+declare
+  xx text := x;
+  yy text := y;
+begin
+  return xx < yy;
+end
+$function$;
+
+select
+  mylt2('a', 'B' collate "en-x-icu") as t,
+  mylt2('a', 'B' collate "C") as f;
+
+create or replace function mylt2(x text, y text)
+returns boolean
+language plpgsql
+as $function$
+declare
+  xx text COLLATE "POSIX" := x;
+  yy text := y;
+begin
+  return xx < yy;
+end
+$function$;
+
+select mylt2('a', 'B') as f;
+
+select mylt2('a', 'B' collate "C") as fail;
+
+select mylt2('a', 'B' collate "POSIX") as f;
+
+select
+  *
+from
+  unnest(
+    (
+      select
+        array_agg(b order by b)
+      from
+        collate_test1
+    )
+  )
+order by 1;
+
+select
+  *
+from
+  unnest(
+    (
+      select
+        array_agg(b order by b)
+      from
+        collate_test2
+    )
+  )
+order by 1;
+
+select
+  *
+from
+  unnest(
+    (
+      select
+        array_agg(b order by b)
+      from
+        collate_test3
+    )
+  )
+order by 1;
+
+create function dup(anyelement)
+returns anyelement
+as $function$select $1$function$
+language sql;
+
+select a, dup(b) from collate_test1 order by 2;
+
+select a, dup(b) from collate_test2 order by 2;
+
+select a, dup(b) from collate_test3 order by 2;
+
+create index "collate_test1_idx1" on collate_test1 using btree (b);
+
+create index "collate_test1_idx2" on collate_test1 using btree (b collate "C");
+
+create index "collate_test1_idx3"
+on collate_test1
+using btree
+(
+  (b collate "C")
+);
+
+create index "collate_test1_idx4"
+on collate_test1
+using btree
+(
+  ((b || 'foo') collate "POSIX")
+);
+
+create index "collate_test1_idx5" on collate_test1 using btree (a collate "C");
+
+create index "collate_test1_idx6"
+on collate_test1
+using btree
+(
+  (a collate "C")
+);
+
+select
+  relname,
+  pg_get_indexdef(oid)
+from
+  pg_class
+where
+  relname like 'collate_test%_idx%'
+order by 1;
+
+set enable_seqscan = off;
+
+select * from collate_test1 where b ilike 'abc';
+
+select * from collate_test1 where b ilike 'abc';
+
+select * from collate_test1 where b ilike 'ABC';
+
+select * from collate_test1 where b ilike 'ABC';
+
+reset enable_seqscan;
+
+create role regress_test_role;
+
+create schema "test_schema";
+
+set client_min_messages = warning;
+
+set icu_validation_level = disabled;
+
+do
+$do$
+BEGIN
+  EXECUTE 'CREATE COLLATION test0 (provider = icu, locale = ' ||
+          quote_literal((SELECT CASE WHEN datlocprovider='i' THEN datlocale ELSE datcollate END FROM pg_database WHERE datname = current_database())) || ');';
+END
+$do$;
+
+create collation test0 from "C";
+
+do
+$do$
+BEGIN
+  EXECUTE 'CREATE COLLATION test1 (provider = icu, locale = ' ||
+          quote_literal((SELECT CASE WHEN datlocprovider='i' THEN datlocale ELSE datcollate END FROM pg_database WHERE datname = current_database())) || ');';
+END
+$do$;
+
+reset icu_validation_level;
+
+reset client_min_messages;
+
+create collation test3 (provider = icu, lc_collate = 'en_US.utf8');
+
+set icu_validation_level = error;
+
+create collation testx (provider = icu, locale = 'nonsense-nowhere');
+
+create collation testx (
+  provider = icu,
+  locale = '@colStrength=primary;nonsense=yes'
+);
+
+reset icu_validation_level;
+
+create collation testx (
+  provider = icu,
+  locale = '@colStrength=primary;nonsense=yes'
+);
+
+drop collation testx;
+
+create collation testx (provider = icu, locale = 'nonsense-nowhere');
+
+drop collation testx;
+
+create collation test4 from "nonsense";
+
+create collation test5 from "test0";
+
+select collname from pg_collation where collname like 'test%' order by 1;
+
+alter collation test1 rename to test11;
+
+alter collation test0 rename to test11;
+
+alter collation test1 rename to test22;
+
+alter collation test11 owner to regress_test_role;
+
+alter collation test11 owner to nonsense;
+
+alter collation test11 set schema test_schema;
+
+comment on collation test0 is 'US English';
+
+select
+  collname,
+  nspname,
+  obj_description(
+    pg_collation.oid,
+    'pg_collation'
+  )
+from
+  pg_collation
+  inner join
+    pg_namespace
+  on collnamespace = pg_namespace.oid
+where
+  collname like 'test%'
+order by 1;
+
+drop collation test0, test_schema.test11, test5;
+
+drop collation test0;
+
+drop collation if exists test0;
+
+select collname from pg_collation where collname like 'test%';
+
+drop schema test_schema;
+
+drop role regress_test_role;
+
+alter collation "en-x-icu" refresh version;
+
+select current_database() as datname;
+
+create collation test0 from "C";
+
+create table collate_dep_test1 (
+  a int,
+  b text collate "test0"
+);
+
+create domain collate_dep_dom1 as text collate "test0";
+
+create type collate_dep_test2 as (x int, y text collate "test0");
+
+create view collate_dep_test3
+as select
+  cast('foo' as text) collate "test0"
+  as foo;
+
+create table collate_dep_test4t (
+  a int,
+  b text
+);
+
+create index "collate_dep_test4i"
+on collate_dep_test4t
+using btree
+(
+  b collate test0
+);
+
+drop collation test0;
+
+drop collation test0 cascade;
+
+drop table collate_dep_test1, collate_dep_test4t;
+
+drop type collate_dep_test2;
+
+create type textrange_c as range (subtype = text, collation = "C");
+
+create type textrange_en_us as range (subtype = text, collation = "en-x-icu");
+
+select textrange_c('A', 'Z') @> cast('b' as text);
+
+select textrange_en_us('A', 'Z') @> cast('b' as text);
+
+drop type textrange_c;
+
+drop type textrange_en_us;
+
+select * from collate_test2 order by b collate "ucs_basic";
+
+select * from collate_test2 order by b collate "unicode";
+
+set client_min_messages = warning;
+
+create collation testcoll_ignore_accents (
+  provider = icu,
+  locale = '@colStrength=primary;colCaseLevel=yes'
+);
+
+reset client_min_messages;
+
+select
+  'aaÃ¡' > 'AAA' collate "und-x-icu",
+  'aaÃ¡' <
+  'AAA' collate "testcoll_ignore_accents";
+
+set client_min_messages = warning;
+
+create collation testcoll_backwards (
+  provider = icu,
+  locale = '@colBackwards=yes'
+);
+
+reset client_min_messages;
+
+select
+  'cotÃ©' <
+  'cÃ´te' collate "und-x-icu",
+  'cotÃ©' >
+  'cÃ´te' collate "testcoll_backwards";
+
+create collation testcoll_lower_first (
+  provider = icu,
+  locale = '@colCaseFirst=lower'
+);
+
+create collation testcoll_upper_first (
+  provider = icu,
+  locale = '@colCaseFirst=upper'
+);
+
+select
+  'aaa' <
+  'AAA' collate "testcoll_lower_first",
+  'aaa' >
+  'AAA' collate "testcoll_upper_first";
+
+create collation testcoll_shifted (
+  provider = icu,
+  locale = '@colAlternate=shifted'
+);
+
+select
+  'de-luge' < 'deanza' collate "und-x-icu",
+  'de-luge' >
+  'deanza' collate "testcoll_shifted";
+
+set client_min_messages = warning;
+
+create collation testcoll_numeric (provider = icu, locale = '@colNumeric=yes');
+
+reset client_min_messages;
+
+select
+  'A-21' > 'A-123' collate "und-x-icu",
+  'A-21' <
+  'A-123' collate "testcoll_numeric";
+
+create collation testcoll_error1 (provider = icu, locale = '@colNumeric=lower');
+
+create collation testcoll_de_phonebook (
+  provider = icu,
+  locale = 'de@collation=phonebook'
+);
+
+select
+  'Goldmann' <
+  'GÃ¶tz' collate "de-x-icu",
+  'Goldmann' >
+  'GÃ¶tz' collate "testcoll_de_phonebook";
+
+create collation testcoll_rules1 (
+  provider = icu,
+  locale = '',
+  rules = '&a < g'
+);
+
+create table test7 (a text);
+
+insert into test7
+values
+  ('Abernathy'),
+  ('apple'),
+  ('bird'),
+  ('Boston'),
+  ('Graham'),
+  ('green');
+
+select * from test7 order by a collate "en-x-icu";
+
+select * from test7 order by a collate "testcoll_rules1";
+
+drop table test7;
+
+create collation testcoll_rulesx (
+  provider = icu,
+  locale = '',
+  rules = '!!wrong!!'
+);
+
+create collation ctest_det (
+  provider = icu,
+  locale = '',
+  deterministic = 'true'
+);
+
+create collation ctest_nondet (
+  provider = icu,
+  locale = '',
+  deterministic = 'false'
+);
+
+select 'abc' like 'abc' collate "ctest_det";
+
+select 'abc' like 'a\bc' collate "ctest_det";
+
+select 'abc' like 'abc' collate "ctest_nondet";
+
+select 'abc' like 'a\bc' collate "ctest_nondet";
+
+create table test6 (
+  a int,
+  b text
+);
+
+insert into test6 values (1, 'zyäbc');
+
+insert into test6 values (2, 'zyäbc');
+
+select * from test6;
+
+select * from test6 where b = 'zyÃ¤bc' collate "ctest_det";
+
+select * from test6 where b = 'zyÃ¤bc' collate "ctest_nondet";
+
+select strpos(b collate "ctest_det", 'bc') from test6;
+
+select strpos(b collate "ctest_nondet", 'bc') from test6;
+
+select replace(b collate "ctest_det", 'äb', 'X') from test6;
+
+select replace(b collate "ctest_nondet", 'äb', 'X') from test6;
+
+select a, split_part(b collate "ctest_det", 'äb', 2) from test6;
+
+select a, split_part(b collate "ctest_nondet", 'äb', 2) from test6;
+
+select a, split_part(b collate "ctest_det", 'äb', -1) from test6;
+
+select a, split_part(b collate "ctest_nondet", 'äb', -1) from test6;
+
+select a, string_to_array(b collate "ctest_det", 'äb') from test6;
+
+select a, string_to_array(b collate "ctest_nondet", 'äb') from test6;
+
+select * from test6 where b like 'zyÃ¤bc' collate "ctest_det";
+
+select * from test6 where b like 'zyÃ¤bc' collate "ctest_nondet";
+
+create table test6a (
+  a int,
+  b text[]
+);
+
+insert into test6a values (1, array['äbc']);
+
+insert into test6a values (2, array['äbc']);
+
+select * from test6a;
+
+select * from test6a where b = array['Ã¤bc'] collate "ctest_det";
+
+select * from test6a where b = array['Ã¤bc'] collate "ctest_nondet";
+
+create collation case_sensitive (provider = icu, locale = '');
+
+create collation case_insensitive (
+  provider = icu,
+  locale = '@colStrength=secondary',
+  deterministic = 'false'
+);
+
+select
+  'abc' <= 'ABC' collate "case_sensitive",
+  'abc' >= 'ABC' collate "case_sensitive";
+
+select
+  'abc' <=
+  'ABC' collate "case_insensitive",
+  'abc' >=
+  'ABC' collate "case_insensitive";
+
+select array_sort(cast('{a,B}' as text[]) collate "case_insensitive");
+
+select array_sort(cast('{a,B}' as text[]) collate "C");
+
+create collation lt_insensitive (
+  provider = icu,
+  locale = 'en-u-ks-level1',
+  deterministic = 'false'
+);
+
+select 'aBcD' collate "lt_insensitive" = 'AbCd' collate "lt_insensitive";
+
+create collation lt_upperfirst (provider = icu, locale = 'und-u-kf-upper');
+
+select 'Z' collate "lt_upperfirst" < 'z' collate "lt_upperfirst";
+
+create table test1cs (x text collate "case_sensitive");
+
+create table test2cs (x text collate "case_sensitive");
+
+create table test3cs (x text collate "case_sensitive");
+
+insert into test1cs values ('abc'), ('def'), ('ghi');
+
+insert into test2cs values ('ABC'), ('ghi');
+
+insert into test3cs values ('abc'), ('ABC'), ('def'), ('ghi');
+
+select x from test3cs where x = 'abc';
+
+select x from test3cs where x <> 'abc';
+
+select x from test3cs where x like 'a%';
+
+select x from test3cs where x ilike 'a%';
+
+select x from test3cs where x similar to 'a%';
+
+select x from test3cs where x ~ 'a';
+
+set enable_hashagg = off;
+
+select x from test1cs union select x from test2cs order by x;
+
+select x from test2cs union select x from test1cs order by x;
+
+select x from test2cs;
+
+select x from test1cs;
+
+select x from test1cs except select x from test2cs;
+
+select x from test2cs except select x from test1cs;
+
+select distinct x from test3cs order by x;
+
+reset enable_hashagg;
+
+select COUNT(distinct x) from test3cs;
+
+select x, COUNT(*) from test3cs group by x order by x;
+
+select
+  x,
+  ROW_NUMBER() over (order by x),
+  RANK() over (order by x)
+from
+  test3cs
+order by x;
+
+create unique index on test1cs using btree (x);
+
+insert into test1cs values ('ABC');
+
+create unique index on test3cs using btree (x);
+
+select string_to_array('ABC,DEF,GHI' collate "case_sensitive", ',', 'abc');
+
+select string_to_array('ABCDEFGHI' collate "case_sensitive", null, 'b');
+
+create table test1ci (x text collate "case_insensitive");
+
+create table test2ci (x text collate "case_insensitive");
+
+create table test3ci (x text collate "case_insensitive");
+
+create index on test3ci using btree (x text_pattern_ops);
+
+insert into test1ci values ('abc'), ('def'), ('ghi');
+
+insert into test2ci values ('ABC'), ('ghi');
+
+insert into test3ci values ('abc'), ('ABC'), ('def'), ('ghi');
+
+select x from test3ci where x = 'abc';
+
+select x from test3ci where x <> 'abc';
+
+select x from test3ci where x like 'a%';
+
+select x from test3ci where x ilike 'a%';
+
+select x from test3ci where x similar to 'a%';
+
+select x from test3ci where x ~ 'a';
+
+select x from test1ci union select x from test2ci order by x;
+
+select x from test2ci union select x from test1ci order by x;
+
+select x from test2ci order by x;
+
+select x from test1ci order by x;
+
+select x from test1ci except select x from test2ci;
+
+select x from test2ci except select x from test1ci;
+
+select distinct x from test3ci order by x;
+
+select COUNT(distinct x) from test3ci;
+
+select x, COUNT(*) from test3ci group by x order by x;
+
+select
+  x,
+  ROW_NUMBER() over (order by x),
+  RANK() over (order by x)
+from
+  test3ci
+order by x;
+
+create unique index on test1ci using btree (x);
+
+insert into test1ci values ('ABC');
+
+create unique index on test3ci using btree (x);
+
+select string_to_array('ABC,DEF,GHI' collate "case_insensitive", ',', 'abc');
+
+select string_to_array('ABCDEFGHI' collate "case_insensitive", null, 'b');
+
+create table test1bpci (x char(3) collate "case_insensitive");
+
+create table test2bpci (x char(3) collate "case_insensitive");
+
+create table test3bpci (x char(3) collate "case_insensitive");
+
+create index on test3bpci using btree (x bpchar_pattern_ops);
+
+insert into test1bpci values ('abc'), ('def'), ('ghi');
+
+insert into test2bpci values ('ABC'), ('ghi');
+
+insert into test3bpci values ('abc'), ('ABC'), ('def'), ('ghi');
+
+select x from test3bpci where x = 'abc';
+
+select x from test3bpci where x <> 'abc';
+
+select x from test3bpci where x like 'a%';
+
+select x from test3bpci where x ilike 'a%';
+
+select x from test3bpci where x similar to 'a%';
+
+select x from test3bpci where x ~ 'a';
+
+select x from test1bpci union select x from test2bpci order by x;
+
+select x from test2bpci union select x from test1bpci order by x;
+
+select x from test2bpci order by x;
+
+select x from test1bpci order by x;
+
+select x from test1bpci except select x from test2bpci;
+
+select x from test2bpci except select x from test1bpci;
+
+select distinct x from test3bpci order by x;
+
+select COUNT(distinct x) from test3bpci;
+
+select x, COUNT(*) from test3bpci group by x order by x;
+
+select
+  x,
+  ROW_NUMBER() over (order by x),
+  RANK() over (order by x)
+from
+  test3bpci
+order by x;
+
+create unique index on test1bpci using btree (x);
+
+insert into test1bpci values ('ABC');
+
+create unique index on test3bpci using btree (x);
+
+select
+  string_to_array(
+    cast('ABC,DEF,GHI' as char(11)) collate "case_insensitive",
+    ',',
+    'abc'
+  );
+
+select
+  string_to_array(
+    cast('ABCDEFGHI' as char(9)) collate "case_insensitive",
+    null,
+    'b'
+  );
+
+create table test4c (x text collate "case_insensitive");
+
+insert into test4c values ('abc');
+
+create index on test4c using btree (x);
+
+set enable_seqscan = off;
+
+select x from test4c where x like 'ABC' collate "case_sensitive";
+
+select x from test4c where x like 'ABC%' collate "case_sensitive";
+
+select x from test4c where x like 'ABC' collate "case_insensitive";
+
+select x from test4c where x like 'ABC%' collate "case_insensitive";
+
+reset enable_seqscan;
+
+select
+  'á½Î´ÏÏÏÎµÏÏ' =
+  'á½ÎÎ¥Î£Î£ÎÎÎ£' collate "case_sensitive";
+
+select
+  'á½Î´ÏÏÏÎµÏÏ' =
+  'á½ÎÎ¥Î£Î£ÎÎÎ£' collate "case_insensitive";
+
+select
+  relname
+from
+  pg_class
+where
+  relname =
+  cast('PG_CLASS' as text) collate "case_insensitive";
+
+select
+  relname
+from
+  pg_class
+where
+  cast('PG_CLASS' as text) =
+  relname collate "case_insensitive";
+
+select
+  typname
+from
+  pg_type
+where
+  typname like 'int_' and
+  typname <>
+  cast('INT2' as text) collate "case_insensitive"
+order by typname;
+
+select
+  typname
+from
+  pg_type
+where
+  typname like 'int_' and
+  cast('INT2' as text) <>
+  typname collate "case_insensitive"
+order by typname;
+
+create temporary table outer_text (
+  f1 text collate "case_insensitive",
+  f2 text
+);
+
+insert into outer_text values ('a', 'a');
+
+insert into outer_text values ('b', 'a');
+
+insert into outer_text values ('A', null);
+
+insert into outer_text values ('B', null);
+
+create temporary table inner_text (
+  c1 text collate "case_insensitive",
+  c2 text
+);
+
+insert into inner_text values ('a', null);
+
+select * from outer_text where not (f1, f2) in (select * from inner_text);
+
+set client_min_messages = warning;
+
+create collation ignore_accents (
+  provider = icu,
+  locale = '@colStrength=primary;colCaseLevel=yes',
+  deterministic = 'false'
+);
+
+reset client_min_messages;
+
+create table test4 (
+  a int,
+  b text
+);
+
+insert into test4
+values
+  (1, 'cote'),
+  (2, 'cÃ´te'),
+  (3, 'cotÃ©'),
+  (4, 'cÃ´tÃ©');
+
+select * from test4 where b = 'cote';
+
+select * from test4 where b = 'cote' collate "ignore_accents";
+
+select * from test4 where b = 'Cote' collate "ignore_accents";
+
+select * from test4 where b = 'Cote' collate "case_insensitive";
+
+create table test4nfd (
+  a int,
+  b text
+);
+
+insert into test4nfd
+values
+  (1, 'cote'),
+  (2, 'cÃ´te'),
+  (3, 'cotÃ©'),
+  (4, 'cÃ´tÃ©');
+
+update test4nfd set b = NORMALIZE(b, NFD);
+
+select a, b, replace(b collate "ignore_accents", 'co', 'ma') from test4;
+
+select a, b, replace(b collate "ignore_accents", 'co', 'ma') from test4nfd;
+
+select 'äbc' like 'ä_c' collate "ignore_accents";
+
+select 'äbc' like 'ä_c' collate "ignore_accents";
+
+select 'äbc' like 'ä%c' collate "ignore_accents";
+
+select 'äbc' like 'ä%%c' collate "ignore_accents";
+
+select 'cbä' like 'c%%ä' collate "ignore_accents";
+
+select 'cbä' like 'cb_' collate "ignore_accents";
+
+select 'cbä' like 'cb__' collate "ignore_accents";
+
+select 'äbc' like '%äbc' collate "ignore_accents";
+
+select 'äbc' like '%ä%c' collate "ignore_accents";
+
+select 'äbc' like 'äbc%' collate "ignore_accents";
+
+select 'äbc' like 'ä%c%' collate "ignore_accents";
+
+select 'äbc' like '_bc' collate "ignore_accents";
+
+select '̈bc' = 'bc' collate "ignore_accents";
+
+select 'äbc' like '__bc' collate "ignore_accents";
+
+select 'äbc' like '_̈bc' collate "ignore_accents";
+
+select 'äbc' like '_äbc' collate "ignore_accents";
+
+select 'foox' like 'foo\' collate "ignore_accents";
+
+create table test10pk (x text collate "case_sensitive" primary key);
+
+create table test10fk (
+  x text
+  collate "case_insensitive"
+  references test10pk (x)
+  on DELETE cascade
+  on UPDATE cascade
+);
+
+create table test11pk (x text collate "case_insensitive" primary key);
+
+create table test11fk (
+  x text
+  collate "case_sensitive"
+  references test11pk (x)
+  on DELETE cascade
+  on UPDATE cascade
+);
+
+create table test12pk (x text collate "case_insensitive" primary key);
+
+create table test12fk (
+  a int,
+  b text
+  collate "case_insensitive"
+  references test12pk (x)
+);
+
+insert into test12pk values ('abc');
+
+insert into test12fk values (1, 'abc'), (2, 'ABC');
+
+update test12pk set x = 'ABC' where x = 'abc';
+
+select * from test12pk;
+
+select * from test12fk;
+
+drop table test12pk, test12fk;
+
+create table test12pk (x text collate "case_insensitive" primary key);
+
+create table test12fk (
+  a int,
+  b text
+  collate "case_insensitive"
+  references test12pk (x)
+  on UPDATE restrict
+);
+
+insert into test12pk values ('abc');
+
+insert into test12fk values (1, 'abc'), (2, 'ABC');
+
+update test12pk set x = 'ABC' where x = 'abc';
+
+select * from test12pk;
+
+select * from test12fk;
+
+drop table test12pk, test12fk;
+
+create table test12pk (x text collate "case_insensitive" primary key);
+
+create table test12fk (
+  a int,
+  b text
+  collate "case_insensitive"
+  references test12pk (x)
+  on UPDATE cascade
+);
+
+insert into test12pk values ('abc');
+
+insert into test12fk values (1, 'abc'), (2, 'ABC');
+
+update test12pk set x = 'ABC' where x = 'abc';
+
+select * from test12pk;
+
+select * from test12fk;
+
+drop table test12pk, test12fk;
+
+create table test20 (
+  a int,
+  b text collate "case_insensitive"
+)
+partition by LIST(b);
+
+create table test20_1 partition of test20 for values in ('abc');
+
+insert into test20 values (1, 'abc');
+
+insert into test20 values (2, 'ABC');
+
+select * from test20_1;
+
+create table test21 (
+  a int,
+  b text collate "case_insensitive"
+)
+partition by range(b);
+
+create table test21_1 partition of test21 for values from ('ABC') to ('DEF');
+
+insert into test21 values (1, 'abc');
+
+insert into test21 values (2, 'ABC');
+
+select * from test21_1;
+
+create table test22 (
+  a int,
+  b text collate "case_sensitive"
+)
+partition by HASH(b);
+
+create table test22_0
+partition of test22
+for values with (MODULUS 2, REMAINDER 0);
+
+create table test22_1
+partition of test22
+for values with (MODULUS 2, REMAINDER 1);
+
+insert into test22 values (1, 'def');
+
+insert into test22 values (2, 'DEF');
+
+select (select COUNT(*) from test22_0) = (select COUNT(*) from test22_1);
+
+create table test22a (
+  a int,
+  b text[] collate "case_sensitive"
+)
+partition by HASH(b);
+
+create table test22a_0
+partition of test22a
+for values with (MODULUS 2, REMAINDER 0);
+
+create table test22a_1
+partition of test22a
+for values with (MODULUS 2, REMAINDER 1);
+
+insert into test22a values (1, array['def']);
+
+insert into test22a values (2, array['DEF']);
+
+select (select COUNT(*) from test22a_0) = (select COUNT(*) from test22a_1);
+
+create table test23 (
+  a int,
+  b text collate "case_insensitive"
+)
+partition by HASH(b);
+
+create table test23_0
+partition of test23
+for values with (MODULUS 2, REMAINDER 0);
+
+create table test23_1
+partition of test23
+for values with (MODULUS 2, REMAINDER 1);
+
+insert into test23 values (1, 'def');
+
+insert into test23 values (2, 'DEF');
+
+select (select COUNT(*) from test23_0) <> (select COUNT(*) from test23_1);
+
+create table test23a (
+  a int,
+  b text[] collate "case_insensitive"
+)
+partition by HASH(b);
+
+create table test23a_0
+partition of test23a
+for values with (MODULUS 2, REMAINDER 0);
+
+create table test23a_1
+partition of test23a
+for values with (MODULUS 2, REMAINDER 1);
+
+insert into test23a values (1, array['def']);
+
+insert into test23a values (2, array['DEF']);
+
+select (select COUNT(*) from test23a_0) <> (select COUNT(*) from test23a_1);
+
+create table test30 (
+  a int,
+  b char(3) collate "case_insensitive"
+)
+partition by LIST(b);
+
+create table test30_1 partition of test30 for values in ('abc');
+
+insert into test30 values (1, 'abc');
+
+insert into test30 values (2, 'ABC');
+
+select * from test30_1;
+
+create table test31 (
+  a int,
+  b char(3) collate "case_insensitive"
+)
+partition by range(b);
+
+create table test31_1 partition of test31 for values from ('ABC') to ('DEF');
+
+insert into test31 values (1, 'abc');
+
+insert into test31 values (2, 'ABC');
+
+select * from test31_1;
+
+create table test32 (
+  a int,
+  b char(3) collate "case_sensitive"
+)
+partition by HASH(b);
+
+create table test32_0
+partition of test32
+for values with (MODULUS 2, REMAINDER 0);
+
+create table test32_1
+partition of test32
+for values with (MODULUS 2, REMAINDER 1);
+
+insert into test32 values (1, 'def');
+
+insert into test32 values (2, 'DEF');
+
+select (select COUNT(*) from test32_0) = (select COUNT(*) from test32_1);
+
+create table test33 (
+  a int,
+  b char(3) collate "case_insensitive"
+)
+partition by HASH(b);
+
+create table test33_0
+partition of test33
+for values with (MODULUS 2, REMAINDER 0);
+
+create table test33_1
+partition of test33
+for values with (MODULUS 2, REMAINDER 1);
+
+insert into test33 values (1, 'def');
+
+insert into test33 values (2, 'DEF');
+
+select (select COUNT(*) from test33_0) <> (select COUNT(*) from test33_1);
+
+set max_parallel_workers_per_gather = 0;
+
+set enable_incremental_sort = off;
+
+create table pagg_tab3 (
+  a text,
+  c text collate "case_insensitive"
+)
+partition by LIST(c collate "C");
+
+create table pagg_tab3_p1 partition of pagg_tab3 for values in ('a', 'b');
+
+create table pagg_tab3_p2 partition of pagg_tab3 for values in ('B', 'A');
+
+insert into pagg_tab3
+select
+  i % 4 + 1,
+  substr('abAB', i % 4 + 1, 1)
+from
+  generate_series(0, 19) as i;
+
+analyze pagg_tab3;
+
+set enable_partitionwise_aggregate = 'false';
+
+select
+  upper(c collate "case_insensitive"),
+  COUNT(c)
+from
+  pagg_tab3
+group by c collate "case_insensitive"
+order by 1;
+
+select
+  upper(c collate "case_insensitive"),
+  COUNT(c)
+from
+  pagg_tab3
+group by c collate "case_insensitive"
+order by 1;
+
+set enable_partitionwise_aggregate = 'true';
+
+select
+  upper(c collate "case_insensitive"),
+  COUNT(c)
+from
+  pagg_tab3
+group by c collate "case_insensitive"
+order by 1;
+
+select
+  upper(c collate "case_insensitive"),
+  COUNT(c)
+from
+  pagg_tab3
+group by c collate "case_insensitive"
+order by 1;
+
+select c collate "C", COUNT(c) from pagg_tab3 group by c collate "C" order by 1;
+
+select c collate "C", COUNT(c) from pagg_tab3 group by c collate "C" order by 1;
+
+set enable_partitionwise_join = 'false';
+
+select
+  t1.c,
+  COUNT(t2.c)
+from
+  pagg_tab3 as t1
+  inner join
+    pagg_tab3 as t2
+  on t1.c = t2.c
+group by 1
+order by t1.c collate "C";
+
+select
+  t1.c,
+  COUNT(t2.c)
+from
+  pagg_tab3 as t1
+  inner join
+    pagg_tab3 as t2
+  on t1.c = t2.c
+group by 1
+order by t1.c collate "C";
+
+set enable_partitionwise_join = 'true';
+
+select
+  t1.c,
+  COUNT(t2.c)
+from
+  pagg_tab3 as t1
+  inner join
+    pagg_tab3 as t2
+  on t1.c = t2.c
+group by 1
+order by t1.c collate "C";
+
+select
+  t1.c,
+  COUNT(t2.c)
+from
+  pagg_tab3 as t1
+  inner join
+    pagg_tab3 as t2
+  on t1.c = t2.c
+group by 1
+order by t1.c collate "C";
+
+select
+  t1.c collate "C",
+  COUNT(t2.c)
+from
+  pagg_tab3 as t1
+  inner join
+    pagg_tab3 as t2
+  on t1.c = t2.c collate "C"
+group by t1.c collate "C"
+order by t1.c collate "C";
+
+select
+  t1.c collate "C",
+  COUNT(t2.c)
+from
+  pagg_tab3 as t1
+  inner join
+    pagg_tab3 as t2
+  on t1.c = t2.c collate "C"
+group by t1.c collate "C"
+order by t1.c collate "C";
+
+set enable_partitionwise_join = 'false';
+
+select
+  t1.c collate "C",
+  COUNT(t2.c)
+from
+  pagg_tab3 as t1
+  inner join
+    pagg_tab3 as t2
+  on t1.c = t2.c collate "C"
+group by t1.c collate "C"
+order by t1.c collate "C";
+
+select
+  t1.c collate "C",
+  COUNT(t2.c)
+from
+  pagg_tab3 as t1
+  inner join
+    pagg_tab3 as t2
+  on t1.c = t2.c collate "C"
+group by t1.c collate "C"
+order by t1.c collate "C";
+
+set enable_partitionwise_join = 'true';
+
+create table pagg_tab4 (
+  c text collate "case_insensitive",
+  b text collate "case_insensitive"
+)
+partition by LIST(b collate "C");
+
+create table pagg_tab4_p1 partition of pagg_tab4 for values in ('a', 'b');
+
+create table pagg_tab4_p2 partition of pagg_tab4 for values in ('B', 'A');
+
+insert into pagg_tab4 (b, c)
+select
+  substr('abAB', i % 4 + 1, 1),
+  substr('abAB', i % 2 + 1, 1)
+from
+  generate_series(0, 11) as i;
+
+analyze pagg_tab4;
+
+select
+  t1.c,
+  COUNT(t2.c)
+from
+  pagg_tab3 as t1
+  inner join
+    pagg_tab4 as t2
+  on t1.c = t2.c and t1.c = t2.b
+group by 1
+order by t1.c collate "C";
+
+select
+  t1.c,
+  COUNT(t2.c)
+from
+  pagg_tab3 as t1
+  inner join
+    pagg_tab4 as t2
+  on t1.c = t2.c and t1.c = t2.b
+group by 1
+order by t1.c collate "C";
+
+create table pagg_tab5 (
+  c text collate "case_insensitive",
+  b text collate "case_insensitive"
+)
+partition by LIST(c collate case_insensitive);
+
+create table pagg_tab5_p1 partition of pagg_tab5 for values in ('a', 'b');
+
+create table pagg_tab5_p2 partition of pagg_tab5 for values in ('c', 'd');
+
+insert into pagg_tab5 (b, c)
+select
+  substr('abAB', i % 4 + 1, 1),
+  substr('abAB', i % 2 + 1, 1)
+from
+  generate_series(0, 5) as i;
+
+insert into pagg_tab5 (b, c)
+select
+  substr('cdCD', i % 4 + 1, 1),
+  substr('cdCD', i % 2 + 1, 1)
+from
+  generate_series(0, 5) as i;
+
+analyze pagg_tab5;
+
+create table pagg_tab6 (
+  c text collate "case_insensitive",
+  b text collate "case_insensitive"
+)
+partition by LIST(b collate case_insensitive);
+
+create table pagg_tab6_p1 partition of pagg_tab6 for values in ('a', 'b');
+
+create table pagg_tab6_p2 partition of pagg_tab6 for values in ('c', 'd');
+
+insert into pagg_tab6 (b, c)
+select
+  substr('abAB', i % 4 + 1, 1),
+  substr('abAB', i % 2 + 1, 1)
+from
+  generate_series(0, 5) as i;
+
+insert into pagg_tab6 (b, c)
+select
+  substr('cdCD', i % 4 + 1, 1),
+  substr('cdCD', i % 2 + 1, 1)
+from
+  generate_series(0, 5) as i;
+
+analyze pagg_tab6;
+
+select
+  t1.c,
+  COUNT(t2.c)
+from
+  pagg_tab5 as t1
+  inner join
+    pagg_tab6 as t2
+  on t1.c = t2.c and t1.c = t2.b
+group by 1
+order by t1.c collate "C";
+
+select
+  t1.c,
+  COUNT(t2.c)
+from
+  pagg_tab5 as t1
+  inner join
+    pagg_tab6 as t2
+  on t1.c = t2.c and t1.c = t2.b
+group by 1
+order by t1.c collate "C";
+
+set enable_partitionwise_join = 'false';
+
+select
+  t1.c,
+  COUNT(t2.c)
+from
+  pagg_tab5 as t1
+  inner join
+    pagg_tab6 as t2
+  on t1.c = t2.c and t1.c = t2.b
+group by 1
+order by t1.c collate "C";
+
+select
+  t1.c,
+  COUNT(t2.c)
+from
+  pagg_tab5 as t1
+  inner join
+    pagg_tab6 as t2
+  on t1.c = t2.c and t1.c = t2.b
+group by 1
+order by t1.c collate "C";
+
+drop table pagg_tab3;
+
+drop table pagg_tab4;
+
+drop table pagg_tab5;
+
+drop table pagg_tab6;
+
+reset enable_partitionwise_aggregate;
+
+reset max_parallel_workers_per_gather;
+
+reset enable_incremental_sort;
+
+insert into t5 (a, b) values (1, 'D1'), (2, 'D2'), (3, 'd1');
+
+select * from t5 order by c asc, a asc;
+
+reset search_path;
+
+set client_min_messages = warning;
+
+drop schema collate_tests cascade;
+
+reset client_min_messages;
+
+create collation coll_icu_upgrade from "und-x-icu";

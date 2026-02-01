@@ -1,0 +1,6 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/single/create_event_trig_stmt_0.sql
+snapshot_kind: text
+---
+create event trigger "my_event_trigger" on ddl_command_start execute function my_event_function();

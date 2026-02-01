@@ -1,0 +1,309 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/largeobject.sql
+snapshot_kind: text
+---
+set bytea_output = escape;
+
+create role regress_lo_user;
+
+select lo_create(42);
+
+alter large object 42 owner to regress_lo_user;
+
+set session authorization regress_lo_user;
+
+grant SELECT on large object 42 to public;
+
+comment on large object 42 is 'the ultimate answer';
+
+reset session_authorization;
+
+create table lotest_stash_values (
+  loid oid,
+  fd int
+);
+
+insert into lotest_stash_values (loid) select lo_creat(42);
+
+begin;
+
+update lotest_stash_values set fd = lo_open(loid, cast(X'20000' | X'40000' as int));
+
+select
+  lowrite(
+    fd,
+    '
+I wandered lonely as a cloud
+That floats on high o''er vales and hills,
+When all at once I saw a crowd,
+A host, of golden daffodils;
+Beside the lake, beneath the trees,
+Fluttering and dancing in the breeze.
+
+Continuous as the stars that shine
+And twinkle on the milky way,
+They stretched in never-ending line
+Along the margin of a bay:
+Ten thousand saw I at a glance,
+Tossing their heads in sprightly dance.
+
+The waves beside them danced; but they
+Out-did the sparkling waves in glee:
+A poet could not but be gay,
+In such a jocund company:
+I gazed--and gazed--but little thought
+What wealth the show to me had brought:
+
+For oft, when on my couch I lie
+In vacant or in pensive mood,
+They flash upon that inward eye
+Which is the bliss of solitude;
+And then my heart with pleasure fills,
+And dances with the daffodils.
+
+         -- William Wordsworth
+'
+  )
+from
+  lotest_stash_values;
+
+select lo_close(fd) from lotest_stash_values;
+
+commit;
+
+select lo_from_bytea(0, lo_get(loid)) as newloid from lotest_stash_values;
+
+begin;
+
+update lotest_stash_values set fd = lo_open(loid, cast(X'20000' | X'40000' as int));
+
+select lo_lseek(fd, 104, 0) from lotest_stash_values;
+
+select loread(fd, 28) from lotest_stash_values;
+
+select lo_lseek(fd, -19, 1) from lotest_stash_values;
+
+select lowrite(fd, 'n') from lotest_stash_values;
+
+select lo_tell(fd) from lotest_stash_values;
+
+select lo_lseek(fd, -744, 2) from lotest_stash_values;
+
+select loread(fd, 28) from lotest_stash_values;
+
+select lo_close(fd) from lotest_stash_values;
+
+commit;
+
+begin;
+
+select lo_open(loid, cast(X'40000' as int)) from lotest_stash_values;
+
+rollback;
+
+do $do$dobody$do$;
+
+begin;
+
+update lotest_stash_values set fd = lo_open(loid, cast(X'20000' | X'40000' as int));
+
+select lo_truncate(fd, 11) from lotest_stash_values;
+
+select loread(fd, 15) from lotest_stash_values;
+
+select lo_truncate(fd, 10000) from lotest_stash_values;
+
+select loread(fd, 10) from lotest_stash_values;
+
+select lo_lseek(fd, 0, 2) from lotest_stash_values;
+
+select lo_tell(fd) from lotest_stash_values;
+
+select lo_truncate(fd, 5000) from lotest_stash_values;
+
+select lo_lseek(fd, 0, 2) from lotest_stash_values;
+
+select lo_tell(fd) from lotest_stash_values;
+
+select lo_close(fd) from lotest_stash_values;
+
+commit;
+
+begin;
+
+update lotest_stash_values set fd = lo_open(loid, cast(X'20000' | X'40000' as int));
+
+select lo_lseek64(fd, 4294967296, 0) from lotest_stash_values;
+
+select lowrite(fd, 'offset:4GB') from lotest_stash_values;
+
+select lo_tell64(fd) from lotest_stash_values;
+
+select lo_lseek64(fd, -10, 1) from lotest_stash_values;
+
+select lo_tell64(fd) from lotest_stash_values;
+
+select loread(fd, 10) from lotest_stash_values;
+
+select lo_truncate64(fd, 5000000000) from lotest_stash_values;
+
+select lo_lseek64(fd, 0, 2) from lotest_stash_values;
+
+select lo_tell64(fd) from lotest_stash_values;
+
+select lo_truncate64(fd, 3000000000) from lotest_stash_values;
+
+select lo_lseek64(fd, 0, 2) from lotest_stash_values;
+
+select lo_tell64(fd) from lotest_stash_values;
+
+select lo_close(fd) from lotest_stash_values;
+
+commit;
+
+select lo_unlink(loid) from lotest_stash_values;
+
+truncate lotest_stash_values;
+
+insert into lotest_stash_values (loid) select lo_import('filename');
+
+begin;
+
+update lotest_stash_values set fd = lo_open(loid, cast(X'20000' | X'40000' as int));
+
+select lo_lseek(fd, 0, 2) from lotest_stash_values;
+
+select lo_lseek(fd, 2030, 0) from lotest_stash_values;
+
+select loread(fd, 36) from lotest_stash_values;
+
+select lo_tell(fd) from lotest_stash_values;
+
+select lo_lseek(fd, -26, 1) from lotest_stash_values;
+
+select lowrite(fd, 'abcdefghijklmnop') from lotest_stash_values;
+
+select lo_lseek(fd, 2030, 0) from lotest_stash_values;
+
+select loread(fd, 36) from lotest_stash_values;
+
+select lo_close(fd) from lotest_stash_values;
+
+commit;
+
+select lo_export(loid, 'filename') from lotest_stash_values;
+
+select
+  pageno,
+  data
+from
+  pg_largeobject
+where
+  loid = (select loid from lotest_stash_values)
+except
+select
+  pageno,
+  data
+from
+  pg_largeobject
+where
+  loid = 'newloid';
+
+select lo_unlink(loid) from lotest_stash_values;
+
+truncate lotest_stash_values;
+
+select lo_from_bytea(0, lo_get('newloid_1')) as newloid_2;
+
+select fipshash(lo_get('newloid_1')) = fipshash(lo_get('newloid_2'));
+
+select lo_get('newloid_1', 0, 20);
+
+select lo_get('newloid_1', 10, 20);
+
+select lo_put('newloid_1', 5, decode('afafafaf', 'hex'));
+
+select lo_get('newloid_1', 0, 20);
+
+select lo_put('newloid_1', 4294967310, 'foo');
+
+select lo_get('newloid_1');
+
+select lo_get('newloid_1', 4294967294, 100);
+
+select lo_from_bytea(0, '\xdeadbeef') as newloid;
+
+set bytea_output = hex;
+
+select lo_get('newloid');
+
+select lo_create(2121);
+
+comment on large object 2121 is 'testing comments';
+
+start transaction read only;
+
+select lo_open(2121, cast(X'40000' as int));
+
+select lo_open(2121, cast(X'20000' as int));
+
+rollback;
+
+start transaction read only;
+
+select lo_create(42);
+
+rollback;
+
+start transaction read only;
+
+select lo_creat(42);
+
+rollback;
+
+start transaction read only;
+
+select lo_unlink(42);
+
+rollback;
+
+start transaction read only;
+
+select lowrite(42, 'x');
+
+rollback;
+
+start transaction read only;
+
+select lo_import('filename');
+
+rollback;
+
+start transaction read only;
+
+select lo_truncate(42, 0);
+
+rollback;
+
+start transaction read only;
+
+select lo_truncate64(42, 0);
+
+rollback;
+
+start transaction read only;
+
+select lo_from_bytea(0, 'x');
+
+rollback;
+
+start transaction read only;
+
+select lo_put(42, 0, 'x');
+
+rollback;
+
+drop table lotest_stash_values;
+
+drop role regress_lo_user;

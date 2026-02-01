@@ -37,16 +37,16 @@ impl LinterRule for ChangingColumnType {
 
         if let pgls_query::NodeEnum::AlterTableStmt(stmt) = ctx.stmt() {
             for cmd in &stmt.cmds {
-                if let Some(pgls_query::NodeEnum::AlterTableCmd(cmd)) = &cmd.node {
-                    if cmd.subtype() == pgls_query::protobuf::AlterTableType::AtAlterColumnType {
-                        diagnostics.push(LinterDiagnostic::new(
+                if let Some(pgls_query::NodeEnum::AlterTableCmd(cmd)) = &cmd.node
+                    && cmd.subtype() == pgls_query::protobuf::AlterTableType::AtAlterColumnType
+                {
+                    diagnostics.push(LinterDiagnostic::new(
                             rule_category!(),
                             None,
                             markup! {
                                 "Changing a column type requires a table rewrite and blocks reads and writes."
                             }
                         ).detail(None, "Consider creating a new column with the desired type, migrating data, and then dropping the old column."));
-                    }
                 }
             }
         }

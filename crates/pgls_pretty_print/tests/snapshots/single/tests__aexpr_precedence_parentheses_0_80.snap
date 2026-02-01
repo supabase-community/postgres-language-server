@@ -1,0 +1,22 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/single/aexpr_precedence_parentheses_0.sql
+snapshot_kind: text
+---
+select
+  100 * 3 + (vs.i - 1) * 3 as offset_a,
+  (metrics.total - metrics.used) /
+  (metrics.total + metrics.used)
+  as utilization,
+  cost + tax_rate * subtotal -
+  discount_rate * subtotal
+  as net_total
+from
+  balances as vs,
+  ledger as metrics,
+  invoices
+where
+  (amount + fee) * (1 - discount) >
+  limit_value - buffer and
+  (temperature - ambient) * factor >
+  threshold;

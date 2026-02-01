@@ -1,0 +1,6 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/single/range_subselect_0.sql
+snapshot_kind: text
+---
+select * from (select id, name from users where active = true) as active_users;

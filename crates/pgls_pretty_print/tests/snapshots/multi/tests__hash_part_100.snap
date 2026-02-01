@@ -1,0 +1,113 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/hash_part.sql
+snapshot_kind: text
+---
+create table mchash (
+  a int,
+  b text,
+  c jsonb
+)
+partition by HASH(a part_test_int4_ops,
+b part_test_text_ops);
+
+create table mchash1 partition of mchash for values with (MODULUS 4, REMAINDER 0);
+
+select satisfies_hash_partition(0, 4, 0, null);
+
+select satisfies_hash_partition(cast('tenk1' as regclass), 4, 0, null);
+
+select satisfies_hash_partition(cast('mchash1' as regclass), 4, 0, null);
+
+select satisfies_hash_partition(cast('mchash' as regclass), 0, 0, null);
+
+select satisfies_hash_partition(cast('mchash' as regclass), 1, -1, null);
+
+select satisfies_hash_partition(cast('mchash' as regclass), 1, 1, null);
+
+select satisfies_hash_partition(cast('mchash' as regclass), null, 0, null);
+
+select satisfies_hash_partition(cast('mchash' as regclass), 4, null, null);
+
+select
+  satisfies_hash_partition(
+    cast('mchash' as regclass),
+    4,
+    0,
+    cast(null as int),
+    cast(null as text),
+    cast(null as json)
+  );
+
+select satisfies_hash_partition(cast('mchash' as regclass), 3, 1, cast(null as int));
+
+select
+  satisfies_hash_partition(
+    cast('mchash' as regclass),
+    2,
+    1,
+    cast(null as int),
+    cast(null as int)
+  );
+
+select satisfies_hash_partition(cast('mchash' as regclass), 4, 0, 0, cast('' as text));
+
+select satisfies_hash_partition(cast('mchash' as regclass), 4, 0, 2, cast('' as text));
+
+select
+  satisfies_hash_partition(
+    cast('mchash' as regclass),
+    2,
+    1,
+    variadic cast(array[1, 2] as int[])
+  );
+
+create table mcinthash (
+  a int,
+  b int,
+  c jsonb
+)
+partition by HASH(a part_test_int4_ops,
+b part_test_int4_ops);
+
+select satisfies_hash_partition(cast('mcinthash' as regclass), 4, 0, variadic array[0, 0]);
+
+select satisfies_hash_partition(cast('mcinthash' as regclass), 4, 0, variadic array[0, 1]);
+
+select
+  satisfies_hash_partition(
+    cast('mcinthash' as regclass),
+    4,
+    0,
+    variadic cast(array[] as int[])
+  );
+
+select satisfies_hash_partition(cast('mcinthash' as regclass), 4, 0, variadic array[NOW(), NOW()]);
+
+create table text_hashp (a text)
+partition by HASH(a);
+
+create table text_hashp0 partition of text_hashp for values with (MODULUS 2, REMAINDER 0);
+
+create table text_hashp1 partition of text_hashp for values with (MODULUS 2, REMAINDER 1);
+
+select
+  satisfies_hash_partition(
+    cast('text_hashp' as regclass),
+    2,
+    0,
+    cast('xxx' as text)
+  ) or
+  satisfies_hash_partition(
+    cast('text_hashp' as regclass),
+    2,
+    1,
+    cast('xxx' as text)
+  )
+  as satisfies;
+
+drop table mchash;
+
+drop table mcinthash;
+
+drop table text_hashp;

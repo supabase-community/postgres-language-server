@@ -15,13 +15,20 @@ rust-version = "1.86.0"
 [workspace.dependencies]
 # supporting crates unrelated to postgres
 anyhow                   = "1.0.92"
+biome_console            = "=0.5.7"
 biome_deserialize        = "0.6.0"
 biome_deserialize_macros = "0.6.0"
+biome_diagnostics        = "=0.5.7"
 biome_js_factory         = "0.5.7"
 biome_js_formatter       = "0.5.7"
 biome_js_syntax          = "0.5.7"
-biome_rowan              = "0.5.7"
-biome_string_case        = "0.5.8"
+biome_json_parser        = "=0.5.7"
+biome_parser             = "=0.5.7"
+biome_rowan              = "=0.5.7"
+biome_string_case        = "=0.5.8"
+biome_text_edit          = "=0.5.7"
+biome_text_size          = "=0.5.7"
+biome_unicode_table      = "=0.5.7"
 bpaf                     = { version = "0.9.15", features = ["derive"] }
 criterion                = "0.5"
 crossbeam                = "0.8.4"
@@ -44,7 +51,9 @@ slotmap                  = "1.0.7"
 smallvec                 = { version = "1.13.2", features = ["union", "const_new", "serde"] }
 strum                    = { version = "0.27.1", features = ["derive"] }
 # this will use tokio if available, otherwise async-std
+camino                   = "1.1.9"
 convert_case             = "0.6.0"
+dir-test                 = "0.4.1"
 prost                    = "0.13.5"
 prost-reflect            = "0.15.3"
 protox                   = "0.8.0"
@@ -79,6 +88,8 @@ pgls_lsp                    = { path = "./crates/pgls_lsp", version = "0.0.0" }
 pgls_markup                 = { path = "./crates/pgls_markup", version = "0.0.0" }
 pgls_matcher                = { path = "./crates/pgls_matcher", version = "0.0.0" }
 pgls_plpgsql_check          = { path = "./crates/pgls_plpgsql_check", version = "0.0.0" }
+pgls_pretty_print           = { path = "./crates/pgls_pretty_print", version = "0.0.0" }
+pgls_pretty_print_codegen   = { path = "./crates/pgls_pretty_print_codegen", version = "0.0.0" }
 pgls_query                  = { path = "./crates/pgls_query", version = "0.0.0" }
 pgls_query_ext              = { path = "./crates/pgls_query_ext", version = "0.0.0" }
 pgls_query_macros           = { path = "./crates/pgls_query_macros", version = "0.0.0" }

@@ -1,0 +1,1 @@
+ALTER FUNCTION my_func(integer) DEPENDS ON EXTENSION btree_gist;

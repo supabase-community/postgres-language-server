@@ -1,0 +1,6 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/single/json_is_predicate_0.sql
+snapshot_kind: text
+---
+select * where data is json;

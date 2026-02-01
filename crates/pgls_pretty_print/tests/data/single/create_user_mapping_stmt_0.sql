@@ -1,0 +1,1 @@
+CREATE USER MAPPING FOR myuser SERVER myserver;

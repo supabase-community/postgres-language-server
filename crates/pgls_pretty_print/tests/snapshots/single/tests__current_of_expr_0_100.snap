@@ -1,0 +1,6 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/single/current_of_expr_0.sql
+snapshot_kind: text
+---
+delete from table_name where current of cursor_name;

@@ -1,0 +1,229 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/misc.sql
+snapshot_kind: text
+---
+create function overpaid(emp)
+returns boolean
+as $function$regresslib$function$
+language c
+strict;
+
+create function reverse_name(name)
+returns name
+as $function$regresslib$function$
+language c
+strict;
+
+update onek set unique1 = onek.unique1 + 1;
+
+update onek set unique1 = onek.unique1 - 1;
+
+select two, stringu1, ten, string4 into tmp from onek;
+
+update tmp
+set stringu1 = reverse_name(onek.stringu1)
+from onek
+where
+  onek.stringu1 = 'JBAAAA' and
+  onek.stringu1 = tmp.stringu1;
+
+update tmp
+set stringu1 = reverse_name(onek2.stringu1)
+from onek2
+where
+  onek2.stringu1 = 'JCAAAA' and
+  onek2.stringu1 = tmp.stringu1;
+
+drop table tmp;
+
+copy onek to 'filename';
+
+create temporary table onek_copy (like onek);
+
+copy onek_copy from 'filename';
+
+select * from onek except all select * from onek_copy;
+
+select * from onek_copy except all select * from onek;
+
+copy stud_emp to 'filename' with (FORMAT 'binary');
+
+create temporary table stud_emp_copy (like stud_emp);
+
+copy stud_emp_copy from 'filename' with (FORMAT 'binary');
+
+select * from stud_emp_copy;
+
+create table hobbies_r (
+  name text,
+  person text
+);
+
+create table equipment_r (
+  name text,
+  hobby text
+);
+
+insert into hobbies_r (name, person)
+select
+  'posthacking',
+  p.name
+from
+  person as p
+where
+  p.name = 'mike' or p.name = 'jeff';
+
+insert into hobbies_r (name, person)
+select
+  'basketball',
+  p.name
+from
+  person as p
+where
+  p.name = 'joe' or p.name = 'sally';
+
+insert into hobbies_r (name) values ('skywalking');
+
+insert into equipment_r (name, hobby) values ('advil', 'posthacking');
+
+insert into equipment_r (name, hobby) values ('peet''s coffee', 'posthacking');
+
+insert into equipment_r (name, hobby) values ('hightops', 'basketball');
+
+insert into equipment_r (name, hobby) values ('guts', 'skywalking');
+
+create function hobbies(person)
+returns setof hobbies_r
+as $function$select * from hobbies_r where person = $1.name$function$
+language sql;
+
+create function hobby_construct(text, text)
+returns hobbies_r
+as $function$select $1 as name, $2 as hobby$function$
+language sql;
+
+create function hobby_construct_named(name text, hobby text)
+returns hobbies_r
+as $function$select name, hobby$function$
+language sql;
+
+create function hobbies_by_name(hobbies_r.name%type)
+returns hobbies_r.person%type
+as $function$select person from hobbies_r where name = $1$function$
+language sql;
+
+create function equipment(hobbies_r)
+returns setof equipment_r
+as $function$select * from equipment_r where hobby = $1.name$function$
+language sql;
+
+create function equipment_named(hobby hobbies_r)
+returns setof equipment_r
+as $function$select * from equipment_r where equipment_r.hobby = equipment_named.hobby.name$function$
+language sql;
+
+create function equipment_named_ambiguous_1a(hobby hobbies_r)
+returns setof equipment_r
+as $function$select * from equipment_r where hobby = equipment_named_ambiguous_1a.hobby.name$function$
+language sql;
+
+create function equipment_named_ambiguous_1b(hobby hobbies_r)
+returns setof equipment_r
+as $function$select * from equipment_r where equipment_r.hobby = hobby.name$function$
+language sql;
+
+create function equipment_named_ambiguous_1c(hobby hobbies_r)
+returns setof equipment_r
+as $function$select * from equipment_r where hobby = hobby.name$function$
+language sql;
+
+create function equipment_named_ambiguous_2a(hobby text)
+returns setof equipment_r
+as $function$select * from equipment_r where hobby = equipment_named_ambiguous_2a.hobby$function$
+language sql;
+
+create function equipment_named_ambiguous_2b(hobby text)
+returns setof equipment_r
+as $function$select * from equipment_r where equipment_r.hobby = hobby$function$
+language sql;
+
+select p.name, name(p.hobbies) from only person as p;
+
+select p.name, name(p.hobbies) from person as p;
+
+select distinct hobbies_r.name, name(hobbies_r.equipment) from hobbies_r order by 1, 2;
+
+select hobbies_r.name, hobbies_r.equipment.name from hobbies_r;
+
+select p.name, name(p.hobbies), name(equipment(p.hobbies)) from only person as p;
+
+select p.name, name(p.hobbies), name(equipment(p.hobbies)) from person as p;
+
+select name(equipment(p.hobbies)), p.name, name(p.hobbies) from only person as p;
+
+select p.hobbies.equipment.name, p.name, name(p.hobbies) from person as p;
+
+select p.hobbies.equipment.name, name(p.hobbies), p.name from only person as p;
+
+select name(equipment(p.hobbies)), name(p.hobbies), p.name from person as p;
+
+select name(equipment(hobby_construct(cast('skywalking' as text), cast('mer' as text))));
+
+select name(equipment(hobby_construct_named(cast('skywalking' as text), cast('mer' as text))));
+
+select
+  name(
+    equipment_named(
+      hobby_construct_named(
+        cast('skywalking' as text),
+        cast('mer' as text)
+      )
+    )
+  );
+
+select
+  name(
+    equipment_named_ambiguous_1a(
+      hobby_construct_named(
+        cast('skywalking' as text),
+        cast('mer' as text)
+      )
+    )
+  );
+
+select
+  name(
+    equipment_named_ambiguous_1b(
+      hobby_construct_named(
+        cast('skywalking' as text),
+        cast('mer' as text)
+      )
+    )
+  );
+
+select
+  name(
+    equipment_named_ambiguous_1c(
+      hobby_construct_named(
+        cast('skywalking' as text),
+        cast('mer' as text)
+      )
+    )
+  );
+
+select name(equipment_named_ambiguous_2a(cast('skywalking' as text)));
+
+select name(equipment_named_ambiguous_2b(cast('skywalking' as text)));
+
+select hobbies_by_name('basketball');
+
+select name, overpaid(emp.*) from emp;
+
+select * from equipment(row('skywalking', 'mer'));
+
+select name(equipment(row('skywalking', 'mer')));
+
+select *, name(equipment(h.*)) from hobbies_r as h;
+
+select *, (equipment(cast(h.* as hobbies_r))).name from hobbies_r as h;

@@ -1,0 +1,507 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/inet.sql
+snapshot_kind: text
+---
+drop table inet_tbl;
+
+create table inet_tbl (
+  c cidr,
+  i inet
+);
+
+insert into inet_tbl (c, i) values ('192.168.1', '192.168.1.226/24');
+
+insert into inet_tbl (c, i) values ('192.168.1.0/26', '192.168.1.226');
+
+insert into inet_tbl (c, i) values ('192.168.1', '192.168.1.0/24');
+
+insert into inet_tbl (c, i) values ('192.168.1', '192.168.1.0/25');
+
+insert into inet_tbl (c, i) values ('192.168.1', '192.168.1.255/24');
+
+insert into inet_tbl (c, i) values ('192.168.1', '192.168.1.255/25');
+
+insert into inet_tbl (c, i) values ('10', '10.1.2.3/8');
+
+insert into inet_tbl (c, i) values ('10.0.0.0', '10.1.2.3/8');
+
+insert into inet_tbl (c, i) values ('10.1.2.3', '10.1.2.3/32');
+
+insert into inet_tbl (c, i) values ('10.1.2', '10.1.2.3/24');
+
+insert into inet_tbl (c, i) values ('10.1', '10.1.2.3/16');
+
+insert into inet_tbl (c, i) values ('10', '10.1.2.3/8');
+
+insert into inet_tbl (c, i) values ('10', '11.1.2.3/8');
+
+insert into inet_tbl (c, i) values ('10', '9.1.2.3/8');
+
+insert into inet_tbl (c, i) values ('10:23::f1', '10:23::f1/64');
+
+insert into inet_tbl (c, i) values ('10:23::8000/113', '10:23::ffff');
+
+insert into inet_tbl (c, i) values ('::ffff:1.2.3.4', '::4.3.2.1/24');
+
+insert into inet_tbl (c, i) values ('192.168.1.2/30', '192.168.1.226');
+
+insert into inet_tbl (c, i) values ('1234::1234::1234', '::1.2.3.4');
+
+insert into inet_tbl (c, i) values (cidr('192.168.1.2/30'), '192.168.1.226');
+
+insert into inet_tbl (c, i)
+values
+  (
+    cidr('ffff:ffff:ffff:ffff::/24'),
+    '::192.168.1.226'
+  );
+
+select c as cidr, i as inet from inet_tbl;
+
+select i as inet, host(i), text(i), family(i) from inet_tbl;
+
+select
+  c as cidr,
+  abbrev(c) as "abbrev(cidr)",
+  i as inet,
+  abbrev(i) as "abbrev(inet)"
+from
+  inet_tbl;
+
+select
+  c as cidr,
+  broadcast(c) as "broadcast(cidr)",
+  i as inet,
+  broadcast(i) as "broadcast(inet)"
+from
+  inet_tbl;
+
+select
+  c as cidr,
+  network(c) as "network(cidr)",
+  i as inet,
+  network(i) as "network(inet)"
+from
+  inet_tbl;
+
+select
+  c as cidr,
+  masklen(c) as "masklen(cidr)",
+  i as inet,
+  masklen(i) as "masklen(inet)"
+from
+  inet_tbl;
+
+select
+  c as cidr,
+  masklen(c) as "masklen(cidr)",
+  i as inet,
+  masklen(i) as "masklen(inet)"
+from
+  inet_tbl
+where
+  masklen(c) <= 8;
+
+select i as inet, netmask(i) as "netmask(inet)" from inet_tbl;
+
+select i as inet, hostmask(i) as "hostmask(inet)" from inet_tbl;
+
+select c as cidr, i as inet from inet_tbl where c = i;
+
+select
+  i,
+  c,
+  i < c as lt,
+  i <= c as le,
+  i = c as eq,
+  i >= c as ge,
+  i > c as gt,
+  i <> c as ne,
+  i << c as sb,
+  i <<= c as sbe,
+  i >> c as sup,
+  i >>= c as spe,
+  i && c as ovr
+from
+  inet_tbl;
+
+select MAX(i) as max, MIN(i) as min from inet_tbl;
+
+select MAX(c) as max, MIN(c) as min from inet_tbl;
+
+select
+  c as cidr,
+  set_masklen(cidr(text(c)), 24)
+  as "set_masklen(cidr)",
+  i as inet,
+  set_masklen(inet(text(i)), 24)
+  as "set_masklen(inet)"
+from
+  inet_tbl;
+
+select
+  c as cidr,
+  set_masklen(cidr(text(c)), -1)
+  as "set_masklen(cidr)",
+  i as inet,
+  set_masklen(inet(text(i)), -1)
+  as "set_masklen(inet)"
+from
+  inet_tbl;
+
+select set_masklen(inet(text(i)), 33) from inet_tbl;
+
+select set_masklen(cidr(text(c)), 33) from inet_tbl;
+
+create index "inet_idx1" on inet_tbl using btree (i);
+
+set enable_seqscan = off;
+
+select * from inet_tbl where i << cast('192.168.1.0/24' as cidr);
+
+select * from inet_tbl where i << cast('192.168.1.0/24' as cidr);
+
+select * from inet_tbl where i <<= cast('192.168.1.0/24' as cidr);
+
+select * from inet_tbl where i <<= cast('192.168.1.0/24' as cidr);
+
+select * from inet_tbl where cast('192.168.1.0/24' as cidr) >>= i;
+
+select * from inet_tbl where cast('192.168.1.0/24' as cidr) >>= i;
+
+select * from inet_tbl where cast('192.168.1.0/24' as cidr) >> i;
+
+select * from inet_tbl where cast('192.168.1.0/24' as cidr) >> i;
+
+set enable_seqscan = 'on';
+
+drop index inet_idx1;
+
+create index "inet_idx2" on inet_tbl using gist (i inet_ops);
+
+set enable_seqscan = off;
+
+select * from inet_tbl where i << cast('192.168.1.0/24' as cidr) order by i;
+
+select * from inet_tbl where i <<= cast('192.168.1.0/24' as cidr) order by i;
+
+select * from inet_tbl where i && cast('192.168.1.0/24' as cidr) order by i;
+
+select * from inet_tbl where i >>= cast('192.168.1.0/24' as cidr) order by i;
+
+select * from inet_tbl where i >> cast('192.168.1.0/24' as cidr) order by i;
+
+select * from inet_tbl where i < cast('192.168.1.0/24' as cidr) order by i;
+
+select * from inet_tbl where i <= cast('192.168.1.0/24' as cidr) order by i;
+
+select * from inet_tbl where i = cast('192.168.1.0/24' as cidr) order by i;
+
+select * from inet_tbl where i >= cast('192.168.1.0/24' as cidr) order by i;
+
+select * from inet_tbl where i > cast('192.168.1.0/24' as cidr) order by i;
+
+select * from inet_tbl where i <> cast('192.168.1.0/24' as cidr) order by i;
+
+select i from inet_tbl where i << cast('192.168.1.0/24' as cidr) order by i;
+
+select i from inet_tbl where i << cast('192.168.1.0/24' as cidr) order by i;
+
+set enable_seqscan = 'on';
+
+drop index inet_idx2;
+
+create index "inet_idx3" on inet_tbl using spgist (i);
+
+set enable_seqscan = off;
+
+select * from inet_tbl where i << cast('192.168.1.0/24' as cidr) order by i;
+
+select * from inet_tbl where i <<= cast('192.168.1.0/24' as cidr) order by i;
+
+select * from inet_tbl where i && cast('192.168.1.0/24' as cidr) order by i;
+
+select * from inet_tbl where i >>= cast('192.168.1.0/24' as cidr) order by i;
+
+select * from inet_tbl where i >> cast('192.168.1.0/24' as cidr) order by i;
+
+select * from inet_tbl where i < cast('192.168.1.0/24' as cidr) order by i;
+
+select * from inet_tbl where i <= cast('192.168.1.0/24' as cidr) order by i;
+
+select * from inet_tbl where i = cast('192.168.1.0/24' as cidr) order by i;
+
+select * from inet_tbl where i >= cast('192.168.1.0/24' as cidr) order by i;
+
+select * from inet_tbl where i > cast('192.168.1.0/24' as cidr) order by i;
+
+select * from inet_tbl where i <> cast('192.168.1.0/24' as cidr) order by i;
+
+select i from inet_tbl where i << cast('192.168.1.0/24' as cidr) order by i;
+
+select i from inet_tbl where i << cast('192.168.1.0/24' as cidr) order by i;
+
+set enable_seqscan = 'on';
+
+drop index inet_idx3;
+
+select i, ~i as "~i" from inet_tbl;
+
+select i, c, i & c as "and" from inet_tbl;
+
+select i, c, i | c as "or" from inet_tbl;
+
+select i, i + 500 as "i+500" from inet_tbl;
+
+select i, i - 500 as "i-500" from inet_tbl;
+
+select i, c, i - c as minus from inet_tbl;
+
+select cast('127.0.0.1' as inet) + 257;
+
+select cast('127.0.0.1' as inet) + 257 - 257;
+
+select cast('127::1' as inet) + 257;
+
+select cast('127::1' as inet) + 257 - 257;
+
+select cast('127.0.0.2' as inet) - (cast('127.0.0.2' as inet) + 500);
+
+select cast('127.0.0.2' as inet) - (cast('127.0.0.2' as inet) - 500);
+
+select cast('127::2' as inet) - (cast('127::2' as inet) + 500);
+
+select cast('127::2' as inet) - (cast('127::2' as inet) - 500);
+
+select cast('127.0.0.1' as inet) + 10000000000;
+
+select cast('127.0.0.1' as inet) - 10000000000;
+
+select cast('126::1' as inet) - cast('127::2' as inet);
+
+select cast('127::1' as inet) - cast('126::2' as inet);
+
+select cast('127::1' as inet) + 10000000000;
+
+select cast('127::1' as inet) - cast('127::2' as inet);
+
+insert into inet_tbl (c, i) values ('10', '10::/8');
+
+select inet_merge(c, i) from inet_tbl;
+
+select inet_merge(c, i) from inet_tbl where inet_same_family(c, i);
+
+select
+  a
+from
+  (
+    values
+      (cast('0.0.0.0/0' as inet)),
+      (cast('0.0.0.0/1' as inet)),
+      (cast('0.0.0.0/32' as inet)),
+      (cast('0.0.0.1/0' as inet)),
+      (cast('0.0.0.1/1' as inet)),
+      (cast('127.126.127.127/0' as inet)),
+      (cast('127.127.127.127/0' as inet)),
+      (cast('127.128.127.127/0' as inet)),
+      (cast('192.168.1.0/24' as inet)),
+      (cast('192.168.1.0/25' as inet)),
+      (cast('192.168.1.1/23' as inet)),
+      (cast('192.168.1.1/5' as inet)),
+      (cast('192.168.1.1/6' as inet)),
+      (cast('192.168.1.1/25' as inet)),
+      (cast('192.168.1.2/25' as inet)),
+      (cast('192.168.1.1/26' as inet)),
+      (cast('192.168.1.2/26' as inet)),
+      (cast('192.168.1.2/23' as inet)),
+      (cast('192.168.1.255/5' as inet)),
+      (cast('192.168.1.255/6' as inet)),
+      (cast('192.168.1.3/1' as inet)),
+      (cast('192.168.1.3/23' as inet)),
+      (cast('192.168.1.4/0' as inet)),
+      (cast('192.168.1.5/0' as inet)),
+      (cast('255.0.0.0/0' as inet)),
+      (cast('255.1.0.0/0' as inet)),
+      (cast('255.2.0.0/0' as inet)),
+      (cast('255.255.000.000/0' as inet)),
+      (cast('255.255.000.000/0' as inet)),
+      (cast('255.255.000.000/15' as inet)),
+      (cast('255.255.000.000/16' as inet)),
+      (cast('255.255.255.254/32' as inet)),
+      (cast('255.255.255.000/32' as inet)),
+      (cast('255.255.255.001/31' as inet)),
+      (cast('255.255.255.002/31' as inet)),
+      (cast('255.255.255.003/31' as inet)),
+      (cast('255.255.255.003/32' as inet)),
+      (cast('255.255.255.001/32' as inet)),
+      (cast('255.255.255.255/0' as inet)),
+      (cast('255.255.255.255/0' as inet)),
+      (cast('255.255.255.255/0' as inet)),
+      (cast('255.255.255.255/1' as inet)),
+      (cast('255.255.255.255/16' as inet)),
+      (cast('255.255.255.255/16' as inet)),
+      (cast('255.255.255.255/31' as inet)),
+      (cast('255.255.255.255/32' as inet)),
+      (cast('255.255.255.253/32' as inet)),
+      (cast('255.255.255.252/32' as inet)),
+      (cast('255.3.0.0/0' as inet)),
+      (
+        cast('0000:0000:0000:0000:0000:0000:0000:0000/0'
+        as inet)
+      ),
+      (
+        cast('0000:0000:0000:0000:0000:0000:0000:0000/128'
+        as inet)
+      ),
+      (
+        cast('0000:0000:0000:0000:0000:0000:0000:0001/128'
+        as inet)
+      ),
+      (cast('10:23::f1/64' as inet)),
+      (cast('10:23::f1/65' as inet)),
+      (cast('10:23::ffff' as inet)),
+      (cast('127::1' as inet)),
+      (cast('127::2' as inet)),
+      (
+        cast('8000:0000:0000:0000:0000:0000:0000:0000/1'
+        as inet)
+      ),
+      (
+        cast('::1:ffff:ffff:ffff:ffff/128'
+        as inet)
+      ),
+      (
+        cast('::2:ffff:ffff:ffff:ffff/128'
+        as inet)
+      ),
+      (cast('::4:3:2:0/24' as inet)),
+      (cast('::4:3:2:1/24' as inet)),
+      (cast('::4:3:2:2/24' as inet)),
+      (
+        cast('ffff:83e7:f118:57dc:6093:6d92:689d:58cf/70'
+        as inet)
+      ),
+      (
+        cast('ffff:84b0:4775:536e:c3ed:7116:a6d6:34f0/44'
+        as inet)
+      ),
+      (
+        cast('ffff:8566:f84:5867:47f1:7867:d2ba:8a1a/69'
+        as inet)
+      ),
+      (
+        cast('ffff:8883:f028:7d2:4d68:d510:7d6b:ac43/73'
+        as inet)
+      ),
+      (
+        cast('ffff:8ae8:7c14:65b3:196:8e4a:89ae:fb30/89'
+        as inet)
+      ),
+      (
+        cast('ffff:8dd0:646:694c:7c16:7e35:6a26:171/104'
+        as inet)
+      ),
+      (
+        cast('ffff:8eef:cbf:700:eda3:ae32:f4b4:318b/121'
+        as inet)
+      ),
+      (
+        cast('ffff:90e7:e744:664:a93:8efe:1f25:7663/122'
+        as inet)
+      ),
+      (
+        cast('ffff:9597:c69c:8b24:57a:8639:ec78:6026/111'
+        as inet)
+      ),
+      (
+        cast('ffff:9e86:79ea:f16e:df31:8e4d:7783:532e/88'
+        as inet)
+      ),
+      (
+        cast('ffff:a0c7:82d3:24de:f762:6e1f:316d:3fb2/23'
+        as inet)
+      ),
+      (
+        cast('ffff:fffa:ffff:ffff:ffff:ffff:ffff:ffff/0'
+        as inet)
+      ),
+      (
+        cast('ffff:fffb:ffff:ffff:ffff:ffff:ffff:ffff/0'
+        as inet)
+      ),
+      (
+        cast('ffff:fffc:ffff:ffff:ffff:ffff:ffff:ffff/0'
+        as inet)
+      ),
+      (
+        cast('ffff:fffd:ffff:ffff:ffff:ffff:ffff:ffff/0'
+        as inet)
+      ),
+      (
+        cast('ffff:fffe:ffff:ffff:ffff:ffff:ffff:ffff/0'
+        as inet)
+      ),
+      (
+        cast('ffff:ffff:ffff:fffa:ffff:ffff:ffff:ffff/0'
+        as inet)
+      ),
+      (
+        cast('ffff:ffff:ffff:fffb:ffff:ffff:ffff:ffff/0'
+        as inet)
+      ),
+      (
+        cast('ffff:ffff:ffff:fffc:ffff:ffff:ffff:ffff/0'
+        as inet)
+      ),
+      (
+        cast('ffff:ffff:ffff:fffd::/128'
+        as inet)
+      ),
+      (
+        cast('ffff:ffff:ffff:fffd:ffff:ffff:ffff:ffff/0'
+        as inet)
+      ),
+      (
+        cast('ffff:ffff:ffff:fffe::/128'
+        as inet)
+      ),
+      (
+        cast('ffff:ffff:ffff:fffe:ffff:ffff:ffff:ffff/0'
+        as inet)
+      ),
+      (
+        cast('ffff:ffff:ffff:ffff:4:3:2:0/24'
+        as inet)
+      ),
+      (
+        cast('ffff:ffff:ffff:ffff:4:3:2:1/24'
+        as inet)
+      ),
+      (
+        cast('ffff:ffff:ffff:ffff:4:3:2:2/24'
+        as inet)
+      ),
+      (
+        cast('ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff/0'
+        as inet)
+      ),
+      (
+        cast('ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff/128'
+        as inet)
+      )
+  )
+  as i (a)
+order by a;
+
+select pg_input_is_valid('1234', 'cidr');
+
+select * from pg_input_error_info('1234', 'cidr');
+
+select pg_input_is_valid('192.168.198.200/24', 'cidr');
+
+select * from pg_input_error_info('192.168.198.200/24', 'cidr');
+
+select pg_input_is_valid('1234', 'inet');
+
+select * from pg_input_error_info('1234', 'inet');

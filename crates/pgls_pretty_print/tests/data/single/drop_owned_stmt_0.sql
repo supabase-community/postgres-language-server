@@ -1,0 +1,1 @@
+DROP OWNED BY myuser;

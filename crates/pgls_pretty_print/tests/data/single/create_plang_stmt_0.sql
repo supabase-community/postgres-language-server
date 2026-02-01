@@ -1,0 +1,2 @@
+CREATE LANGUAGE plpython3u
+HANDLER plpython3_handler;

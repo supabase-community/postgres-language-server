@@ -1,0 +1,1693 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/rangefuncs.sql
+snapshot_kind: text
+---
+create table rngfunc2 (
+  rngfuncid int,
+  f2 int
+);
+
+insert into rngfunc2 values (1, 11);
+
+insert into rngfunc2 values (2, 22);
+
+insert into rngfunc2 values (1, 111);
+
+create function rngfunct(int)
+returns setof rngfunc2
+as $function$SELECT * FROM rngfunc2 WHERE rngfuncid = $1 ORDER BY f2;$function$
+language sql;
+
+select * from rngfunct(1) with ordinality as z (a, b, ord);
+
+select * from rngfunct(1) with ordinality as z (a, b, ord) where b > 100;
+
+select a, b, ord from rngfunct(1) with ordinality as z (a, b, ord);
+
+select a, ord from unnest(array['a', 'b']) with ordinality as z (a, ord);
+
+select * from unnest(array['a', 'b']) with ordinality as z (a, ord);
+
+select a, ord from unnest(array[cast(1.0 as double precision)]) with ordinality as z (a, ord);
+
+select * from unnest(array[cast(1.0 as double precision)]) with ordinality as z (a, ord);
+
+select row_to_json(s.*) from generate_series(11, 14) with ordinality as s;
+
+create temporary view vw_ord
+as select
+  *
+from
+  (values (1)) as v (n)
+  inner join
+    rngfunct(1) with ordinality as z (a, b, ord)
+  on n = ord;
+
+select * from vw_ord;
+
+select definition from pg_views where viewname = 'vw_ord';
+
+drop view vw_ord;
+
+select * from rows from (rngfunct(1), rngfunct(2)) with ordinality as z (a, b, c, d, ord);
+
+create temporary view vw_ord
+as select
+  *
+from
+  (values (1)) as v (n)
+  inner join
+    rows from (rngfunct(1),
+    rngfunct(2))
+    with ordinality
+    as z (a, b, c, d, ord)
+  on n = ord;
+
+select * from vw_ord;
+
+select definition from pg_views where viewname = 'vw_ord';
+
+drop view vw_ord;
+
+select * from unnest(array[10, 20], array['foo', 'bar'], array[1.0]);
+
+select
+  *
+from
+  unnest(
+    array[10, 20],
+    array['foo', 'bar'],
+    array[1.0]
+  )
+  with ordinality
+  as z (a, b, c, ord);
+
+select
+  *
+from
+  rows from (unnest(
+    array[10, 20],
+    array['foo', 'bar'],
+    array[1.0]
+  ))
+  with ordinality
+  as z (a, b, c, ord);
+
+select
+  *
+from
+  rows from (unnest(array[10, 20], array['foo', 'bar']),
+  generate_series(101, 102))
+  with ordinality
+  as z (a, b, c, ord);
+
+create temporary view vw_ord
+as select
+  *
+from
+  unnest(
+    array[10, 20],
+    array['foo', 'bar'],
+    array[1.0]
+  )
+  as z (a, b, c);
+
+select * from vw_ord;
+
+select definition from pg_views where viewname = 'vw_ord';
+
+drop view vw_ord;
+
+create temporary view vw_ord
+as select
+  *
+from
+  rows from (unnest(
+    array[10, 20],
+    array['foo', 'bar'],
+    array[1.0]
+  ))
+  as z (a, b, c);
+
+select * from vw_ord;
+
+select definition from pg_views where viewname = 'vw_ord';
+
+drop view vw_ord;
+
+create temporary view vw_ord
+as select
+  *
+from
+  rows from (unnest(array[10, 20], array['foo', 'bar']),
+  generate_series(1, 2))
+  as z (a, b, c);
+
+select * from vw_ord;
+
+select definition from pg_views where viewname = 'vw_ord';
+
+drop view vw_ord;
+
+begin;
+
+declare "rf_cur" scroll
+cursor
+for select
+  *
+from
+  rows from (generate_series(1, 5),
+  generate_series(1, 2))
+  with ordinality
+  as g (i, j, o);;
+
+fetch forward all from rf_cur;
+
+fetch backward all from rf_cur;
+
+fetch forward all from rf_cur;
+
+fetch next from rf_cur;
+
+fetch next from rf_cur;
+
+fetch prior from rf_cur;
+
+fetch absolute 1 from rf_cur;
+
+fetch next from rf_cur;
+
+fetch next from rf_cur;
+
+fetch next from rf_cur;
+
+fetch prior from rf_cur;
+
+fetch prior from rf_cur;
+
+fetch prior from rf_cur;
+
+commit;
+
+select * from rngfunc2, rngfunct(rngfunc2.rngfuncid) as z where rngfunc2.f2 = z.f2;
+
+select
+  *
+from
+  rngfunc2,
+  rngfunct(rngfunc2.rngfuncid)
+  with ordinality
+  as z (rngfuncid, f2, ord)
+where
+  rngfunc2.f2 = z.f2;
+
+select
+  *
+from
+  rngfunc2
+where
+  f2 in
+  (
+    select
+      f2
+    from
+      rngfunct(rngfunc2.rngfuncid) as z
+    where
+      z.rngfuncid = rngfunc2.rngfuncid
+  )
+order by 1,
+  2;
+
+select
+  *
+from
+  rngfunc2
+where
+  f2 in
+  (
+    select
+      f2
+    from
+      rngfunct(1) as z
+    where
+      z.rngfuncid = rngfunc2.rngfuncid
+  )
+order by 1,
+  2;
+
+select
+  *
+from
+  rngfunc2
+where
+  f2 in
+  (
+    select
+      f2
+    from
+      rngfunct(rngfunc2.rngfuncid) as z
+    where
+      z.rngfuncid = 1
+  )
+order by 1,
+  2;
+
+select rngfunct.rngfuncid, rngfunct.f2 from rngfunct(cast(sin(pi() / 2) as int)) order by 1, 2;
+
+create table rngfunc (
+  rngfuncid int,
+  rngfuncsubid int,
+  rngfuncname text,
+  primary key (rngfuncid, rngfuncsubid)
+);
+
+insert into rngfunc values (1, 1, 'Joe');
+
+insert into rngfunc values (1, 2, 'Ed');
+
+insert into rngfunc values (2, 1, 'Mary');
+
+create function getrngfunc1(int)
+returns int
+as $function$SELECT $1;$function$
+language sql;
+
+select * from getrngfunc1(1) as t1;
+
+select * from getrngfunc1(1) with ordinality as t1 (v, o);
+
+create view vw_getrngfunc
+as select * from getrngfunc1(1);
+
+select * from vw_getrngfunc;
+
+drop view vw_getrngfunc;
+
+create view vw_getrngfunc
+as select
+  *
+from
+  getrngfunc1(1) with ordinality as t1 (v, o);
+
+select * from vw_getrngfunc;
+
+drop view vw_getrngfunc;
+
+create function getrngfunc2(int)
+returns setof int
+as $function$SELECT rngfuncid FROM rngfunc WHERE rngfuncid = $1;$function$
+language sql;
+
+select * from getrngfunc2(1) as t1;
+
+select * from getrngfunc2(1) with ordinality as t1 (v, o);
+
+create view vw_getrngfunc
+as select * from getrngfunc2(1);
+
+select * from vw_getrngfunc;
+
+drop view vw_getrngfunc;
+
+create view vw_getrngfunc
+as select
+  *
+from
+  getrngfunc2(1) with ordinality as t1 (v, o);
+
+select * from vw_getrngfunc;
+
+drop view vw_getrngfunc;
+
+create function getrngfunc3(int)
+returns setof text
+as $function$SELECT rngfuncname FROM rngfunc WHERE rngfuncid = $1;$function$
+language sql;
+
+select * from getrngfunc3(1) as t1;
+
+select * from getrngfunc3(1) with ordinality as t1 (v, o);
+
+create view vw_getrngfunc
+as select * from getrngfunc3(1);
+
+select * from vw_getrngfunc;
+
+drop view vw_getrngfunc;
+
+create view vw_getrngfunc
+as select
+  *
+from
+  getrngfunc3(1) with ordinality as t1 (v, o);
+
+select * from vw_getrngfunc;
+
+drop view vw_getrngfunc;
+
+create function getrngfunc4(int)
+returns rngfunc
+as $function$SELECT * FROM rngfunc WHERE rngfuncid = $1;$function$
+language sql;
+
+select * from getrngfunc4(1) as t1;
+
+select * from getrngfunc4(1) with ordinality as t1 (a, b, c, o);
+
+create view vw_getrngfunc
+as select * from getrngfunc4(1);
+
+select * from vw_getrngfunc;
+
+drop view vw_getrngfunc;
+
+create view vw_getrngfunc
+as select
+  *
+from
+  getrngfunc4(1) with ordinality as t1 (a, b, c, o);
+
+select * from vw_getrngfunc;
+
+drop view vw_getrngfunc;
+
+create function getrngfunc5(int)
+returns setof rngfunc
+as $function$SELECT * FROM rngfunc WHERE rngfuncid = $1;$function$
+language sql;
+
+select * from getrngfunc5(1) as t1;
+
+select * from getrngfunc5(1) with ordinality as t1 (a, b, c, o);
+
+create view vw_getrngfunc
+as select * from getrngfunc5(1);
+
+select * from vw_getrngfunc;
+
+drop view vw_getrngfunc;
+
+create view vw_getrngfunc
+as select
+  *
+from
+  getrngfunc5(1) with ordinality as t1 (a, b, c, o);
+
+select * from vw_getrngfunc;
+
+drop view vw_getrngfunc;
+
+create function getrngfunc6(int)
+returns record
+as $function$SELECT * FROM rngfunc WHERE rngfuncid = $1;$function$
+language sql;
+
+select * from getrngfunc6(1) as t1 (rngfuncid int, rngfuncsubid int, rngfuncname text);
+
+select
+  *
+from
+  rows from (getrngfunc6(1) as (rngfuncid int, rngfuncsubid int, rngfuncname text))
+  with ordinality;
+
+create view vw_getrngfunc
+as select
+  *
+from
+  getrngfunc6(1) as
+  (
+    rngfuncid int,
+    rngfuncsubid int,
+    rngfuncname text
+  );
+
+select * from vw_getrngfunc;
+
+drop view vw_getrngfunc;
+
+create view vw_getrngfunc
+as select
+  *
+from
+  rows from (getrngfunc6(1) as (rngfuncid int, rngfuncsubid int, rngfuncname text))
+  with ordinality;
+
+select * from vw_getrngfunc;
+
+drop view vw_getrngfunc;
+
+create function getrngfunc7(int)
+returns setof record
+as $function$SELECT * FROM rngfunc WHERE rngfuncid = $1;$function$
+language sql;
+
+select * from getrngfunc7(1) as t1 (rngfuncid int, rngfuncsubid int, rngfuncname text);
+
+select
+  *
+from
+  rows from (getrngfunc7(1) as (rngfuncid int, rngfuncsubid int, rngfuncname text))
+  with ordinality;
+
+create view vw_getrngfunc
+as select
+  *
+from
+  getrngfunc7(1) as
+  (
+    rngfuncid int,
+    rngfuncsubid int,
+    rngfuncname text
+  );
+
+select * from vw_getrngfunc;
+
+drop view vw_getrngfunc;
+
+create view vw_getrngfunc
+as select
+  *
+from
+  rows from (getrngfunc7(1) as (rngfuncid int, rngfuncsubid int, rngfuncname text))
+  with ordinality;
+
+select * from vw_getrngfunc;
+
+drop view vw_getrngfunc;
+
+create function getrngfunc8(int)
+returns int
+as $function$DECLARE rngfuncint int; BEGIN SELECT rngfuncid into rngfuncint FROM rngfunc WHERE rngfuncid = $1; RETURN rngfuncint; END;$function$
+language plpgsql;
+
+select * from getrngfunc8(1) as t1;
+
+select * from getrngfunc8(1) with ordinality as t1 (v, o);
+
+create view vw_getrngfunc
+as select * from getrngfunc8(1);
+
+select * from vw_getrngfunc;
+
+drop view vw_getrngfunc;
+
+create view vw_getrngfunc
+as select
+  *
+from
+  getrngfunc8(1) with ordinality as t1 (v, o);
+
+select * from vw_getrngfunc;
+
+drop view vw_getrngfunc;
+
+create function getrngfunc9(int)
+returns rngfunc
+as $function$DECLARE rngfunctup rngfunc%ROWTYPE; BEGIN SELECT * into rngfunctup FROM rngfunc WHERE rngfuncid = $1; RETURN rngfunctup; END;$function$
+language plpgsql;
+
+select * from getrngfunc9(1) as t1;
+
+select * from getrngfunc9(1) with ordinality as t1 (a, b, c, o);
+
+create view vw_getrngfunc
+as select * from getrngfunc9(1);
+
+select * from vw_getrngfunc;
+
+drop view vw_getrngfunc;
+
+create view vw_getrngfunc
+as select
+  *
+from
+  getrngfunc9(1) with ordinality as t1 (a, b, c, o);
+
+select * from vw_getrngfunc;
+
+drop view vw_getrngfunc;
+
+select
+  *
+from
+  rows from (getrngfunc1(1),
+  getrngfunc2(1),
+  getrngfunc3(1),
+  getrngfunc4(1),
+  getrngfunc5(1),
+  getrngfunc6(1) as (rngfuncid int, rngfuncsubid int, rngfuncname text),
+  getrngfunc7(1) as (rngfuncid int, rngfuncsubid int, rngfuncname text),
+  getrngfunc8(1),
+  getrngfunc9(1))
+  with ordinality
+  as t1
+  (a,
+  b,
+  c,
+  d,
+  e,
+  f,
+  g,
+  h,
+  i,
+  j,
+  k,
+  l,
+  m,
+  o,
+  p,
+  q,
+  r,
+  s,
+  t,
+  u);
+
+select
+  *
+from
+  rows from (getrngfunc9(1),
+  getrngfunc8(1),
+  getrngfunc7(1) as (rngfuncid int, rngfuncsubid int, rngfuncname text),
+  getrngfunc6(1) as (rngfuncid int, rngfuncsubid int, rngfuncname text),
+  getrngfunc5(1),
+  getrngfunc4(1),
+  getrngfunc3(1),
+  getrngfunc2(1),
+  getrngfunc1(1))
+  with ordinality
+  as t1
+  (a,
+  b,
+  c,
+  d,
+  e,
+  f,
+  g,
+  h,
+  i,
+  j,
+  k,
+  l,
+  m,
+  o,
+  p,
+  q,
+  r,
+  s,
+  t,
+  u);
+
+create temporary view vw_rngfunc
+as select
+  *
+from
+  rows from (getrngfunc9(1),
+  getrngfunc7(1) as (rngfuncid int, rngfuncsubid int, rngfuncname text),
+  getrngfunc1(1))
+  with ordinality
+  as t1 (a, b, c, d, e, f, g, n);
+
+select * from vw_rngfunc;
+
+select pg_get_viewdef('vw_rngfunc');
+
+drop view vw_rngfunc;
+
+drop function getrngfunc1(int);
+
+drop function getrngfunc2(int);
+
+drop function getrngfunc3(int);
+
+drop function getrngfunc4(int);
+
+drop function getrngfunc5(int);
+
+drop function getrngfunc6(int);
+
+drop function getrngfunc7(int);
+
+drop function getrngfunc8(int);
+
+drop function getrngfunc9(int);
+
+drop function rngfunct(int);
+
+drop table rngfunc2;
+
+drop table rngfunc;
+
+create temporary sequence rngfunc_rescan_seq1;
+
+create temporary sequence rngfunc_rescan_seq2;
+
+create type rngfunc_rescan_t as (i int, s bigint);
+
+create function rngfunc_sql(int, int)
+returns setof rngfunc_rescan_t
+as $function$SELECT i, nextval('rngfunc_rescan_seq1') FROM generate_series($1,$2) i;$function$
+language sql;
+
+create function rngfunc_mat(int, int)
+returns setof rngfunc_rescan_t
+as $function$begin for i in $1..$2 loop return next (i, nextval('rngfunc_rescan_seq2')); end loop; end;$function$
+language plpgsql;
+
+select setval('rngfunc_rescan_seq1', 1, false), setval('rngfunc_rescan_seq2', 1, false);
+
+select * from (values (1), (2), (3)) as v (r) left outer join rngfunc_sql(11, 13) on r + i < 100;
+
+select setval('rngfunc_rescan_seq1', 1, false), setval('rngfunc_rescan_seq2', 1, false);
+
+select
+  *
+from
+  (values (1), (2), (3)) as v (r)
+  left outer join
+    rngfunc_sql(11, 13) with ordinality as f (i, s, o)
+  on r + i < 100;
+
+select setval('rngfunc_rescan_seq1', 1, false), setval('rngfunc_rescan_seq2', 1, false);
+
+select * from (values (1), (2), (3)) as v (r) left outer join rngfunc_mat(11, 13) on r + i < 100;
+
+select setval('rngfunc_rescan_seq1', 1, false), setval('rngfunc_rescan_seq2', 1, false);
+
+select
+  *
+from
+  (values (1), (2), (3)) as v (r)
+  left outer join
+    rngfunc_mat(11, 13) with ordinality as f (i, s, o)
+  on r + i < 100;
+
+select setval('rngfunc_rescan_seq1', 1, false), setval('rngfunc_rescan_seq2', 1, false);
+
+select
+  *
+from
+  (values (1), (2), (3)) as v (r)
+  left outer join
+    rows from (rngfunc_sql(11, 13),
+    rngfunc_mat(11, 13))
+    with ordinality
+    as f (i1, s1, i2, s2, o)
+  on r + i1 + i2 < 100;
+
+select
+  *
+from
+  (values (1), (2), (3)) as v (r)
+  left outer join
+    generate_series(11, 13) as f (i)
+  on r + i < 100;
+
+select
+  *
+from
+  (values (1), (2), (3)) as v (r)
+  left outer join
+    generate_series(11, 13)
+    with ordinality
+    as f (i, o)
+  on r + i < 100;
+
+select
+  *
+from
+  (values (1), (2), (3)) as v (r)
+  left outer join
+    unnest(array[10, 20, 30]) as f (i)
+  on r + i < 100;
+
+select
+  *
+from
+  (values (1), (2), (3)) as v (r)
+  left outer join
+    unnest(array[10, 20, 30])
+    with ordinality
+    as f (i, o)
+  on r + i < 100;
+
+select setval('rngfunc_rescan_seq1', 1, false), setval('rngfunc_rescan_seq2', 1, false);
+
+select * from (values (1), (2), (3)) as v (r), rngfunc_sql(10 + r, 13);
+
+select setval('rngfunc_rescan_seq1', 1, false), setval('rngfunc_rescan_seq2', 1, false);
+
+select
+  *
+from
+  (values (1), (2), (3)) as v (r),
+  rngfunc_sql(10 + r, 13)
+  with ordinality
+  as f (i, s, o);
+
+select setval('rngfunc_rescan_seq1', 1, false), setval('rngfunc_rescan_seq2', 1, false);
+
+select * from (values (1), (2), (3)) as v (r), rngfunc_sql(11, 10 + r);
+
+select setval('rngfunc_rescan_seq1', 1, false), setval('rngfunc_rescan_seq2', 1, false);
+
+select
+  *
+from
+  (values (1), (2), (3)) as v (r),
+  rngfunc_sql(11, 10 + r)
+  with ordinality
+  as f (i, s, o);
+
+select setval('rngfunc_rescan_seq1', 1, false), setval('rngfunc_rescan_seq2', 1, false);
+
+select * from (values (11, 12), (13, 15), (16, 20)) as v (r1, r2), rngfunc_sql(r1, r2);
+
+select setval('rngfunc_rescan_seq1', 1, false), setval('rngfunc_rescan_seq2', 1, false);
+
+select
+  *
+from
+  (
+    values (11, 12), (13, 15), (16, 20)
+  )
+  as v (r1, r2),
+  rngfunc_sql(r1, r2) with ordinality as f (i, s, o);
+
+select setval('rngfunc_rescan_seq1', 1, false), setval('rngfunc_rescan_seq2', 1, false);
+
+select * from (values (1), (2), (3)) as v (r), rngfunc_mat(10 + r, 13);
+
+select setval('rngfunc_rescan_seq1', 1, false), setval('rngfunc_rescan_seq2', 1, false);
+
+select
+  *
+from
+  (values (1), (2), (3)) as v (r),
+  rngfunc_mat(10 + r, 13)
+  with ordinality
+  as f (i, s, o);
+
+select setval('rngfunc_rescan_seq1', 1, false), setval('rngfunc_rescan_seq2', 1, false);
+
+select * from (values (1), (2), (3)) as v (r), rngfunc_mat(11, 10 + r);
+
+select setval('rngfunc_rescan_seq1', 1, false), setval('rngfunc_rescan_seq2', 1, false);
+
+select
+  *
+from
+  (values (1), (2), (3)) as v (r),
+  rngfunc_mat(11, 10 + r)
+  with ordinality
+  as f (i, s, o);
+
+select setval('rngfunc_rescan_seq1', 1, false), setval('rngfunc_rescan_seq2', 1, false);
+
+select * from (values (11, 12), (13, 15), (16, 20)) as v (r1, r2), rngfunc_mat(r1, r2);
+
+select setval('rngfunc_rescan_seq1', 1, false), setval('rngfunc_rescan_seq2', 1, false);
+
+select
+  *
+from
+  (
+    values (11, 12), (13, 15), (16, 20)
+  )
+  as v (r1, r2),
+  rngfunc_mat(r1, r2) with ordinality as f (i, s, o);
+
+select setval('rngfunc_rescan_seq1', 1, false), setval('rngfunc_rescan_seq2', 1, false);
+
+select
+  *
+from
+  (values (1), (2), (3)) as v (r),
+  rows from (rngfunc_sql(11, 11),
+  rngfunc_mat(10 + r, 13));
+
+select setval('rngfunc_rescan_seq1', 1, false), setval('rngfunc_rescan_seq2', 1, false);
+
+select
+  *
+from
+  (values (1), (2), (3)) as v (r),
+  rows from (rngfunc_sql(10 + r, 13),
+  rngfunc_mat(11, 11));
+
+select setval('rngfunc_rescan_seq1', 1, false), setval('rngfunc_rescan_seq2', 1, false);
+
+select
+  *
+from
+  (values (1), (2), (3)) as v (r),
+  rows from (rngfunc_sql(10 + r, 13),
+  rngfunc_mat(10 + r, 13));
+
+select setval('rngfunc_rescan_seq1', 1, false), setval('rngfunc_rescan_seq2', 1, false);
+
+select
+  *
+from
+  generate_series(1, 2) as r1,
+  generate_series(r1, 3) as r2,
+  rows from (rngfunc_sql(10 + r1, 13),
+  rngfunc_mat(10 + r2, 13));
+
+select * from (values (1), (2), (3)) as v (r), generate_series(10 + r, 20 - r) as f (i);
+
+select
+  *
+from
+  (values (1), (2), (3)) as v (r),
+  generate_series(10 + r, 20 - r)
+  with ordinality
+  as f (i, o);
+
+select * from (values (1), (2), (3)) as v (r), unnest(array[r * 10, r * 20, r * 30]) as f (i);
+
+select
+  *
+from
+  (values (1), (2), (3)) as v (r),
+  unnest(array[r * 10, r * 20, r * 30])
+  with ordinality
+  as f (i, o);
+
+select
+  *
+from
+  (values (1), (2), (3)) as v1 (r1),
+  lateral (
+    select
+      r1,
+      *
+    from
+      (values (10), (20), (30)) as v2 (r2)
+      left outer join
+        generate_series(21, 23) as f (i)
+      on r2 + i < 100
+    offset 0
+  )
+  as s1;
+
+select
+  *
+from
+  (values (1), (2), (3)) as v1 (r1),
+  lateral (
+    select
+      r1,
+      *
+    from
+      (values (10), (20), (30)) as v2 (r2)
+      left outer join
+        generate_series(20 + r1, 23) as f (i)
+      on r2 + i < 100
+    offset 0
+  )
+  as s1;
+
+select
+  *
+from
+  (values (1), (2), (3)) as v1 (r1),
+  lateral (
+    select
+      r1,
+      *
+    from
+      (values (10), (20), (30)) as v2 (r2)
+      left outer join
+        generate_series(r2, r2 + 3) as f (i)
+      on r2 + i < 100
+    offset 0
+  )
+  as s1;
+
+select
+  *
+from
+  (values (1), (2), (3)) as v1 (r1),
+  lateral (
+    select
+      r1,
+      *
+    from
+      (values (10), (20), (30)) as v2 (r2)
+      left outer join
+        generate_series(r1, 2 + r2 / 5) as f (i)
+      on r2 + i < 100
+    offset 0
+  )
+  as s1;
+
+select
+  *
+from
+  (values (1), (2)) as v1 (r1)
+  left outer join
+    lateral (
+      select
+        *
+      from
+        generate_series(1, v1.r1) as gs1
+        left outer join
+          lateral (
+            select
+              *
+            from
+              generate_series(1, gs1) as gs2
+              left outer join
+                generate_series(1, gs2) as gs3
+              on true
+          )
+          as ss1
+        on true
+        full outer join
+          generate_series(1, v1.r1) as gs4
+        on false
+    )
+    as ss0
+  on true;
+
+drop function rngfunc_sql(int, int);
+
+drop function rngfunc_mat(int, int);
+
+drop sequence rngfunc_rescan_seq1;
+
+drop sequence rngfunc_rescan_seq2;
+
+create function rngfunc(in f1 int, out f2 int)
+as $function$select $1+1$function$
+language sql;
+
+select rngfunc(42);
+
+select * from rngfunc(42);
+
+select * from rngfunc(42) as p (x);
+
+create or replace function rngfunc(in f1 int, out f2 int)
+returns int
+as $function$select $1+1$function$
+language sql;
+
+create or replace function rngfunc(in f1 int, out f2 int)
+returns double precision
+as $function$select $1+1$function$
+language sql;
+
+create or replace function rngfunc(in f1 int, out f2 int, out f3 text)
+returns int
+as $function$select $1+1$function$
+language sql;
+
+create or replace function rngfunc(in f1 int, out f2 int, out f3 text)
+returns record
+as $function$select $1+1$function$
+language sql;
+
+create or replace function rngfuncr(in f1 int, out f2 int, out text)
+as $function$select $1-1, $1::text || 'z'$function$
+language sql;
+
+select f1, rngfuncr(f1) from int4_tbl;
+
+select * from rngfuncr(42);
+
+select * from rngfuncr(42) as p (a, b);
+
+create or replace function rngfuncb(in f1 int, inout f2 int, out text)
+as $function$select $2-1, $1::text || 'z'$function$
+language sql;
+
+select f1, rngfuncb(f1, f1 / 2) from int4_tbl;
+
+select * from rngfuncb(42, 99);
+
+select * from rngfuncb(42, 99) as p (a, b);
+
+drop function rngfunc(int);
+
+drop function rngfuncr(int);
+
+drop function rngfuncb(int, int);
+
+create function dup(f1 anyelement, out f2 anyelement, out f3 anyarray)
+as $function$select $1, array[$1,$1]$function$
+language sql;
+
+select dup(22);
+
+select dup('xyz');
+
+select dup(cast('xyz' as text));
+
+select * from dup(cast('xyz' as text));
+
+create or replace function dup(inout f2 anyelement, out f3 anyarray)
+as $function$select $1, array[$1,$1]$function$
+language sql;
+
+drop function dup(anyelement);
+
+create or replace function dup(inout f2 anyelement, out f3 anyarray)
+as $function$select $1, array[$1,$1]$function$
+language sql;
+
+select dup(22);
+
+drop function dup(anyelement);
+
+create function bad(f1 int, out f2 anyelement, out f3 anyarray)
+as $function$select $1, array[$1,$1]$function$
+language sql;
+
+create function
+dup(
+  f1 anycompatible,
+  f2 anycompatiblearray,
+  out f3 anycompatible,
+  out f4 anycompatiblearray
+)
+as $function$select $1, $2$function$
+language sql;
+
+select dup(22, array[44]);
+
+select dup(4.5, array[44]);
+
+select dup(22, array[cast(44 as bigint)]);
+
+select *, pg_typeof(f3), pg_typeof(f4) from dup(22, array[cast(44 as bigint)]);
+
+drop function dup(anycompatible, anycompatiblearray);
+
+create function
+dup(
+  f1 anycompatiblerange,
+  out f2 anycompatible,
+  out f3 anycompatiblearray,
+  out f4 anycompatiblerange
+)
+as $function$select lower($1), array[lower($1), upper($1)], $1$function$
+language sql;
+
+select dup(int4range(4, 7));
+
+select dup(numrange(4, 7));
+
+select dup(textrange('aaa', 'bbb'));
+
+drop function dup(anycompatiblerange);
+
+create function bad(f1 anyarray, out f2 anycompatible, out f3 anycompatiblearray)
+as $function$select $1, array[$1,$1]$function$
+language sql;
+
+create or replace function rngfunc()
+returns table (
+  a int
+)
+as $function$ SELECT a FROM generate_series(1,5) a(a) $function$
+language sql;
+
+select * from rngfunc();
+
+drop function rngfunc();
+
+create or replace function rngfunc(int)
+returns table (
+  a int,
+  b int
+)
+as $function$ SELECT a, b
+         FROM generate_series(1,$1) a(a),
+              generate_series(1,$1) b(b) $function$
+language sql;
+
+select * from rngfunc(3);
+
+drop function rngfunc(int);
+
+create or replace function rngfunc()
+returns table (
+  a varchar(5)
+)
+as $function$ SELECT 'hello'::varchar(5) $function$
+language sql
+stable;
+
+select * from rngfunc() group by 1;
+
+drop function rngfunc();
+
+create temporary table tt (
+  f1 serial,
+  data text
+);
+
+create function insert_tt(text)
+returns int
+as $function$ insert into tt(data) values($1) returning f1 $function$
+language sql;
+
+select insert_tt('foo');
+
+select insert_tt('bar');
+
+select * from tt;
+
+create or replace function insert_tt(text)
+returns int
+as $function$ insert into tt(data) values($1),($1||$1) returning f1 $function$
+language sql;
+
+select insert_tt('fool');
+
+select * from tt;
+
+create or replace function insert_tt2(text, text)
+returns setof int
+as $function$ insert into tt(data) values($1),($2) returning f1 $function$
+language sql;
+
+select insert_tt2('foolish', 'barrish');
+
+select * from insert_tt2('baz', 'quux');
+
+select * from tt;
+
+select insert_tt2('foolish', 'barrish') limit 1;
+
+select * from tt;
+
+create function noticetrigger()
+returns trigger
+as $function$
+begin
+  raise notice 'noticetrigger % %', new.f1, new.data;
+  return null;
+end $function$
+language plpgsql;
+
+create trigger tnoticetrigger after insert on tt for each row execute function noticetrigger();
+
+select insert_tt2('foolme', 'barme') limit 1;
+
+select * from tt;
+
+create temporary table tt_log (
+  f1 int,
+  data text
+);
+
+create rule insert_tt_rule
+as on insert to tt
+do
+  insert into tt_log values (new.*);;
+
+select insert_tt2('foollog', 'barlog') limit 1;
+
+select * from tt;
+
+select * from tt_log;
+
+create function rngfunc1(n int, out a text, out b text)
+returns setof record
+language sql
+as $function$ select 'foo ' || i, 'bar ' || i from generate_series(1,$1) i $function$;
+
+set work_mem = '64kB';
+
+select t.a, t, t.a from rngfunc1(10000) as t limit 1;
+
+reset work_mem;
+
+select t.a, t, t.a from rngfunc1(10000) as t limit 1;
+
+drop function rngfunc1(int);
+
+create function array_to_set(anyarray)
+returns setof record
+as $function$
+  select i AS "index", $1[i] AS "value" from generate_subscripts($1, 1) i
+$function$
+language sql
+strict
+immutable;
+
+select array_to_set(array['one', 'two']);
+
+select * from array_to_set(array['one', 'two']) as t (f1 int, f2 text);
+
+select * from array_to_set(array['one', 'two']);
+
+select * from array_to_set(array['one', 'two']) as t (f1 numeric(4, 2), f2 text);
+
+select * from array_to_set(array['one', 'two']) as t (f1 point, f2 text);
+
+select * from array_to_set(array['one', 'two']) as t (f1 numeric(4, 2), f2 text);
+
+create or replace function array_to_set(anyarray)
+returns setof record
+as $function$
+  select i AS "index", $1[i] AS "value" from generate_subscripts($1, 1) i
+$function$
+language sql
+immutable;
+
+select array_to_set(array['one', 'two']);
+
+select * from array_to_set(array['one', 'two']) as t (f1 int, f2 text);
+
+select * from array_to_set(array['one', 'two']) as t (f1 numeric(4, 2), f2 text);
+
+select * from array_to_set(array['one', 'two']) as t (f1 point, f2 text);
+
+select * from array_to_set(array['one', 'two']) as t (f1 numeric(4, 2), f2 text);
+
+create temporary table rngfunc (
+  f1 bigint,
+  f2 bigint
+);
+
+create function testrngfunc()
+returns record
+as $function$
+  insert into rngfunc values (1,2) returning *;
+$function$
+language sql;
+
+select testrngfunc();
+
+select * from testrngfunc() as t (f1 bigint, f2 bigint);
+
+select * from testrngfunc();
+
+drop function testrngfunc();
+
+create function testrngfunc()
+returns setof record
+as $function$
+  insert into rngfunc values (1,2), (3,4) returning *;
+$function$
+language sql;
+
+select testrngfunc();
+
+select * from testrngfunc() as t (f1 bigint, f2 bigint);
+
+select * from testrngfunc();
+
+drop function testrngfunc();
+
+create type rngfunc_type as (f1 numeric(35, 6), f2 numeric(35, 2));
+
+create function testrngfunc()
+returns rngfunc_type
+as $function$
+  select 7.136178319899999964, 7.136178319899999964;
+$function$
+language sql
+immutable;
+
+select testrngfunc();
+
+select testrngfunc();
+
+select * from testrngfunc();
+
+select * from testrngfunc();
+
+create or replace function testrngfunc()
+returns rngfunc_type
+as $function$
+  select 7.136178319899999964, 7.136178319899999964;
+$function$
+language sql
+volatile;
+
+select testrngfunc();
+
+select testrngfunc();
+
+select * from testrngfunc();
+
+select * from testrngfunc();
+
+drop function testrngfunc();
+
+create function testrngfunc()
+returns setof rngfunc_type
+as $function$
+  select 7.136178319899999964, 7.136178319899999964;
+$function$
+language sql
+immutable;
+
+select testrngfunc();
+
+select testrngfunc();
+
+select * from testrngfunc();
+
+select * from testrngfunc();
+
+create or replace function testrngfunc()
+returns setof rngfunc_type
+as $function$
+  select 7.136178319899999964, 7.136178319899999964;
+$function$
+language sql
+volatile;
+
+select testrngfunc();
+
+select testrngfunc();
+
+select * from testrngfunc();
+
+select * from testrngfunc();
+
+create or replace function testrngfunc()
+returns setof rngfunc_type
+as $function$
+  select 1, 2 union select 3, 4 order by 1;
+$function$
+language sql
+immutable;
+
+select testrngfunc();
+
+select testrngfunc();
+
+select * from testrngfunc();
+
+select * from testrngfunc();
+
+select * from testrngfunc() as t (f1 bigint, f2 bigint);
+
+select * from pg_get_keywords() as t (f1 bigint, f2 bigint);
+
+select * from sin(3) as t (f1 bigint, f2 bigint);
+
+drop type rngfunc_type cascade;
+
+create temporary table users (
+  userid text,
+  seq int,
+  email text,
+  todrop boolean,
+  moredrop int,
+  enabled boolean
+);
+
+insert into users values ('id', 1, 'email', true, 11, true);
+
+insert into users values ('id2', 2, 'email2', true, 12, true);
+
+alter table users
+  drop column todrop;
+
+create or replace function get_first_user()
+returns users
+as $function$ SELECT * FROM users ORDER BY userid LIMIT 1; $function$
+language sql
+stable;
+
+select get_first_user();
+
+select * from get_first_user();
+
+create or replace function get_users()
+returns setof users
+as $function$ SELECT * FROM users ORDER BY userid; $function$
+language sql
+stable;
+
+select get_users();
+
+select * from get_users();
+
+select * from get_users() with ordinality;
+
+select * from rows from (generate_series(10, 11), get_users()) with ordinality;
+
+select * from rows from (get_users(), generate_series(10, 11)) with ordinality;
+
+create temporary view usersview
+as select
+  *
+from
+  rows from (get_users(),
+  generate_series(10, 11))
+  with ordinality;
+
+select * from usersview;
+
+alter table users
+  add column junk text;
+
+select * from usersview;
+
+alter table users
+  drop column moredrop;
+
+begin;
+
+delete from pg_depend
+where
+  objid =
+  (
+    select
+      oid
+    from
+      pg_rewrite
+    where
+      ev_class = cast('usersview' as regclass) and
+      rulename = '_RETURN'
+  ) and
+  refobjsubid = 5
+returning pg_describe_object(classid, objid, objsubid)
+as obj,
+pg_describe_object(
+  refclassid,
+  refobjid,
+  refobjsubid
+)
+as ref,
+deptype;
+
+alter table users
+  drop column moredrop;
+
+select * from usersview;
+
+rollback;
+
+alter table users
+  alter column seq type numeric;
+
+begin;
+
+delete from pg_depend
+where
+  objid =
+  (
+    select
+      oid
+    from
+      pg_rewrite
+    where
+      ev_class = cast('usersview' as regclass) and
+      rulename = '_RETURN'
+  ) and
+  refobjsubid = 2
+returning pg_describe_object(classid, objid, objsubid)
+as obj,
+pg_describe_object(
+  refclassid,
+  refobjid,
+  refobjsubid
+)
+as ref,
+deptype;
+
+alter table users
+  alter column seq type numeric;
+
+select * from usersview;
+
+rollback;
+
+drop view usersview;
+
+drop function get_first_user();
+
+drop function get_users();
+
+drop table users;
+
+create or replace function rngfuncbar()
+returns setof text
+as $function$ select 'foo'::varchar union all select 'bar'::varchar ; $function$
+language sql
+stable;
+
+select rngfuncbar();
+
+select * from rngfuncbar();
+
+select * from rngfuncbar();
+
+drop function rngfuncbar();
+
+create or replace function rngfuncbar(out int, out numeric)
+as $function$ select (1, 2.1) $function$
+language sql;
+
+select * from rngfuncbar();
+
+create or replace function rngfuncbar(out int, out numeric)
+as $function$ select (1, 2) $function$
+language sql;
+
+select * from rngfuncbar();
+
+create or replace function rngfuncbar(out int, out numeric)
+as $function$ select (1, 2.1, 3) $function$
+language sql;
+
+select * from rngfuncbar();
+
+drop function rngfuncbar();
+
+create function extractq2(t int8_tbl)
+returns bigint
+as $function$
+  select t.q2
+$function$
+language sql
+immutable;
+
+select x from int8_tbl, extractq2(int8_tbl) as f (x);
+
+select x from int8_tbl, extractq2(int8_tbl) as f (x);
+
+create function extractq2_2(t int8_tbl)
+returns table (
+  ret1 bigint
+)
+as $function$
+  select extractq2(t) offset 0
+$function$
+language sql
+immutable;
+
+select x from int8_tbl, extractq2_2(int8_tbl) as f (x);
+
+select x from int8_tbl, extractq2_2(int8_tbl) as f (x);
+
+create function extractq2_2_opt(t int8_tbl)
+returns table (
+  ret1 bigint
+)
+as $function$
+  select extractq2(t)
+$function$
+language sql
+immutable;
+
+select x from int8_tbl, extractq2_2_opt(int8_tbl) as f (x);
+
+select x from int8_tbl, extractq2_2_opt(int8_tbl) as f (x);
+
+create type rngfunc2 as (a int, b text);
+
+select
+  *,
+  row_to_json(u)
+from
+  unnest(
+    array[cast((1, 'foo') as rngfunc2),
+    cast(null as rngfunc2)]
+  )
+  as u;
+
+select *, row_to_json(u) from unnest(array[cast(null as rngfunc2), cast(null as rngfunc2)]) as u;
+
+select
+  *,
+  row_to_json(u)
+from
+  unnest(
+    array[cast(null as rngfunc2),
+    cast((1, 'foo') as rngfunc2),
+    cast(null as rngfunc2)]
+  )
+  as u;
+
+select *, row_to_json(u) from unnest(cast(array[] as rngfunc2[])) as u;
+
+drop type rngfunc2;
+
+select
+  *
+from
+  (
+    select
+      jsonb_path_query_array(
+        module -> 'lectures',
+        '$[*]'
+      )
+      as lecture
+    from
+      unnest(
+        array[cast('{"lectures": [{"id": "1"}]}' as jsonb)]
+      )
+      as unnested_modules (module)
+  )
+  as ss,
+  jsonb_to_recordset(ss.lecture) as j (id text);
+
+select
+  *
+from
+  (
+    select
+      jsonb_path_query_array(
+        module -> 'lectures',
+        '$[*]'
+      )
+      as lecture
+    from
+      unnest(
+        array[cast('{"lectures": [{"id": "1"}]}' as jsonb)]
+      )
+      as unnested_modules (module)
+  )
+  as ss,
+  jsonb_to_recordset(ss.lecture) as j (id text);
+
+with a (b) as (values (row(1, 2, 3))) select * from a, coalesce(b) as c (d int, e int);
+
+with a (b) as (values (row(1, 2, 3)))
+select
+  *
+from
+  a,
+  coalesce(b) as c (d int, e int, f int, g int);
+
+with a (b) as (values (row(1, 2, 3)))
+select
+  *
+from
+  a,
+  coalesce(b)
+  as c
+  (d int, e int, f double precision);
+
+select * from int8_tbl, coalesce(row(1)) as (a int, b int);

@@ -1,0 +1,1023 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/join_hash.sql
+snapshot_kind: text
+---
+begin;
+
+set local min_parallel_table_scan_size = 0;
+
+set local parallel_setup_cost = 0;
+
+set local enable_hashjoin = 'on';
+
+create or replace function find_hash(node json)
+returns json
+language plpgsql
+as $function$
+declare
+  x json;
+  child json;
+begin
+  if node->>'Node Type' = 'Hash' then
+    return node;
+  else
+    for child in select json_array_elements(node->'Plans')
+    loop
+      x := find_hash(child);
+      if x is not null then
+        return x;
+      end if;
+    end loop;
+    return null;
+  end if;
+end;
+$function$;
+
+create or replace function hash_join_batches(query text)
+returns table (
+  original int,
+  final int
+)
+language plpgsql
+as $function$
+declare
+  whole_plan json;
+  hash_node json;
+begin
+  for whole_plan in
+    execute 'explain (analyze, format ''json'') ' || query
+  loop
+    hash_node := find_hash(json_extract_path(whole_plan, '0', 'Plan'));
+    original := hash_node->>'Original Hash Batches';
+    final := hash_node->>'Hash Batches';
+    return next;
+  end loop;
+end;
+$function$;
+
+create table simple as select generate_series(1, 20000) as id, 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+
+alter table simple
+  set (parallel_workers = 2);
+
+analyze simple;
+
+create table bigger_than_it_looks
+as
+  select
+    generate_series(1, 20000) as id,
+    'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+
+alter table bigger_than_it_looks
+  set (autovacuum_enabled = 'false');
+
+alter table bigger_than_it_looks
+  set (parallel_workers = 2);
+
+analyze bigger_than_it_looks;
+
+update pg_class set reltuples = 1000 where relname = 'bigger_than_it_looks';
+
+create table extremely_skewed (
+  id int,
+  t text
+);
+
+alter table extremely_skewed
+  set (autovacuum_enabled = 'false');
+
+alter table extremely_skewed
+  set (parallel_workers = 2);
+
+analyze extremely_skewed;
+
+insert into extremely_skewed
+select
+  42 as id,
+  'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
+from
+  generate_series(1, 20000);
+
+update pg_class
+set reltuples = 2,
+relpages = pg_relation_size('extremely_skewed') / 8192
+where
+  relname = 'extremely_skewed';
+
+create table wide as select generate_series(1, 2) as id, rpad('', 320000, 'x') as t;
+
+alter table wide
+  set (parallel_workers = 2);
+
+savepoint settings;
+
+set local max_parallel_workers_per_gather = 0;
+
+set local work_mem = '4MB';
+
+set local hash_mem_multiplier = 1.0;
+
+select COUNT(*) from simple as r inner join simple as s using ("id");
+
+select COUNT(*) from simple as r inner join simple as s using ("id");
+
+select
+  original > 1 as initially_multibatch,
+  final > original as increased_batches
+from
+  hash_join_batches(
+    '
+  select count(*) from simple r join simple s using (id);
+'
+  );
+
+rollback to savepoint settings;
+
+savepoint settings;
+
+set local max_parallel_workers_per_gather = 2;
+
+set local work_mem = '4MB';
+
+set local hash_mem_multiplier = 1.0;
+
+set local enable_parallel_hash = off;
+
+select COUNT(*) from simple as r inner join simple as s using ("id");
+
+select COUNT(*) from simple as r inner join simple as s using ("id");
+
+select
+  original > 1 as initially_multibatch,
+  final > original as increased_batches
+from
+  hash_join_batches(
+    '
+  select count(*) from simple r join simple s using (id);
+'
+  );
+
+rollback to savepoint settings;
+
+savepoint settings;
+
+set local max_parallel_workers_per_gather = 2;
+
+set local work_mem = '4MB';
+
+set local hash_mem_multiplier = 1.0;
+
+set local enable_parallel_hash = 'on';
+
+select COUNT(*) from simple as r inner join simple as s using ("id");
+
+select COUNT(*) from simple as r inner join simple as s using ("id");
+
+select
+  original > 1 as initially_multibatch,
+  final > original as increased_batches
+from
+  hash_join_batches(
+    '
+  select count(*) from simple r join simple s using (id);
+'
+  );
+
+rollback to savepoint settings;
+
+savepoint settings;
+
+set local max_parallel_workers_per_gather = 0;
+
+set local work_mem = '128kB';
+
+set local hash_mem_multiplier = 1.0;
+
+select COUNT(*) from simple as r inner join simple as s using ("id");
+
+select COUNT(*) from simple as r inner join simple as s using ("id");
+
+select
+  original > 1 as initially_multibatch,
+  final > original as increased_batches
+from
+  hash_join_batches(
+    '
+  select count(*) from simple r join simple s using (id);
+'
+  );
+
+rollback to savepoint settings;
+
+savepoint settings;
+
+set local max_parallel_workers_per_gather = 2;
+
+set local work_mem = '128kB';
+
+set local hash_mem_multiplier = 1.0;
+
+set local enable_parallel_hash = off;
+
+select COUNT(*) from simple as r inner join simple as s using ("id");
+
+select COUNT(*) from simple as r inner join simple as s using ("id");
+
+select
+  original > 1 as initially_multibatch,
+  final > original as increased_batches
+from
+  hash_join_batches(
+    '
+  select count(*) from simple r join simple s using (id);
+'
+  );
+
+rollback to savepoint settings;
+
+savepoint settings;
+
+set local max_parallel_workers_per_gather = 2;
+
+set local work_mem = '192kB';
+
+set local hash_mem_multiplier = 1.0;
+
+set local enable_parallel_hash = 'on';
+
+select COUNT(*) from simple as r inner join simple as s using ("id");
+
+select COUNT(*) from simple as r inner join simple as s using ("id");
+
+select
+  original > 1 as initially_multibatch,
+  final > original as increased_batches
+from
+  hash_join_batches(
+    '
+  select count(*) from simple r join simple s using (id);
+'
+  );
+
+select COUNT(*) from simple as r full outer join simple as s using ("id");
+
+rollback to savepoint settings;
+
+savepoint settings;
+
+set local max_parallel_workers_per_gather = 0;
+
+set local work_mem = '128kB';
+
+set local hash_mem_multiplier = 1.0;
+
+select COUNT(*) from simple as r inner join bigger_than_it_looks as s using ("id");
+
+select COUNT(*) from simple as r inner join bigger_than_it_looks as s using ("id");
+
+select
+  original > 1 as initially_multibatch,
+  final > original as increased_batches
+from
+  hash_join_batches(
+    '
+  select count(*) FROM simple r JOIN bigger_than_it_looks s USING (id);
+'
+  );
+
+rollback to savepoint settings;
+
+savepoint settings;
+
+set local max_parallel_workers_per_gather = 2;
+
+set local work_mem = '128kB';
+
+set local hash_mem_multiplier = 1.0;
+
+set local enable_parallel_hash = off;
+
+select COUNT(*) from simple as r inner join bigger_than_it_looks as s using ("id");
+
+select COUNT(*) from simple as r inner join bigger_than_it_looks as s using ("id");
+
+select
+  original > 1 as initially_multibatch,
+  final > original as increased_batches
+from
+  hash_join_batches(
+    '
+  select count(*) from simple r join bigger_than_it_looks s using (id);
+'
+  );
+
+rollback to savepoint settings;
+
+savepoint settings;
+
+set local max_parallel_workers_per_gather = 1;
+
+set local work_mem = '192kB';
+
+set local hash_mem_multiplier = 1.0;
+
+set local enable_parallel_hash = 'on';
+
+select COUNT(*) from simple as r inner join bigger_than_it_looks as s using ("id");
+
+select COUNT(*) from simple as r inner join bigger_than_it_looks as s using ("id");
+
+select
+  original > 1 as initially_multibatch,
+  final > original as increased_batches
+from
+  hash_join_batches(
+    '
+  select count(*) from simple r join bigger_than_it_looks s using (id);
+'
+  );
+
+rollback to savepoint settings;
+
+savepoint settings;
+
+set local max_parallel_workers_per_gather = 0;
+
+set local work_mem = '128kB';
+
+set local hash_mem_multiplier = 1.0;
+
+select COUNT(*) from simple as r inner join extremely_skewed as s using ("id");
+
+select COUNT(*) from simple as r inner join extremely_skewed as s using ("id");
+
+select
+  *
+from
+  hash_join_batches(
+    '
+  select count(*) from simple r join extremely_skewed s using (id);
+'
+  );
+
+rollback to savepoint settings;
+
+savepoint settings;
+
+set local max_parallel_workers_per_gather = 2;
+
+set local work_mem = '128kB';
+
+set local hash_mem_multiplier = 1.0;
+
+set local enable_parallel_hash = off;
+
+select COUNT(*) from simple as r inner join extremely_skewed as s using ("id");
+
+select COUNT(*) from simple as r inner join extremely_skewed as s using ("id");
+
+select
+  *
+from
+  hash_join_batches(
+    '
+  select count(*) from simple r join extremely_skewed s using (id);
+'
+  );
+
+rollback to savepoint settings;
+
+savepoint settings;
+
+set local max_parallel_workers_per_gather = 1;
+
+set local work_mem = '128kB';
+
+set local hash_mem_multiplier = 1.0;
+
+set local enable_parallel_hash = 'on';
+
+select COUNT(*) from simple as r inner join extremely_skewed as s using ("id");
+
+select COUNT(*) from simple as r inner join extremely_skewed as s using ("id");
+
+select
+  *
+from
+  hash_join_batches(
+    '
+  select count(*) from simple r join extremely_skewed s using (id);
+'
+  );
+
+rollback to savepoint settings;
+
+savepoint settings;
+
+set local max_parallel_workers_per_gather = 2;
+
+set local work_mem = '4MB';
+
+set local hash_mem_multiplier = 1.0;
+
+set local parallel_leader_participation = off;
+
+select * from hash_join_batches('
+  select count(*) from simple r join simple s using (id);
+');
+
+rollback to savepoint settings;
+
+create table join_foo as select generate_series(1, 3) as id, cast('xxxxx' as text) as t;
+
+alter table join_foo
+  set (parallel_workers = 0);
+
+create table join_bar as select generate_series(1, 10000) as id, cast('xxxxx' as text) as t;
+
+alter table join_bar
+  set (parallel_workers = 2);
+
+savepoint settings;
+
+set enable_parallel_hash = off;
+
+set parallel_leader_participation = off;
+
+set min_parallel_table_scan_size = 0;
+
+set parallel_setup_cost = 0;
+
+set parallel_tuple_cost = 0;
+
+set max_parallel_workers_per_gather = 2;
+
+set enable_material = off;
+
+set enable_mergejoin = off;
+
+set work_mem = '64kB';
+
+set hash_mem_multiplier = 1.0;
+
+select
+  COUNT(*)
+from
+  join_foo
+  left outer join
+    (
+      select
+        b1.id,
+        b1.t
+      from
+        join_bar as b1
+        inner join
+          join_bar as b2
+        using ("id")
+    )
+    as ss
+  on join_foo.id < ss.id + 1 and
+    join_foo.id > ss.id - 1;
+
+select
+  COUNT(*)
+from
+  join_foo
+  left outer join
+    (
+      select
+        b1.id,
+        b1.t
+      from
+        join_bar as b1
+        inner join
+          join_bar as b2
+        using ("id")
+    )
+    as ss
+  on join_foo.id < ss.id + 1 and
+    join_foo.id > ss.id - 1;
+
+select
+  final > 1 as multibatch
+from
+  hash_join_batches(
+    '
+  select count(*) from join_foo
+    left join (select b1.id, b1.t from join_bar b1 join join_bar b2 using (id)) ss
+    on join_foo.id < ss.id + 1 and join_foo.id > ss.id - 1;
+'
+  );
+
+rollback to savepoint settings;
+
+savepoint settings;
+
+set enable_parallel_hash = off;
+
+set parallel_leader_participation = off;
+
+set min_parallel_table_scan_size = 0;
+
+set parallel_setup_cost = 0;
+
+set parallel_tuple_cost = 0;
+
+set max_parallel_workers_per_gather = 2;
+
+set enable_material = off;
+
+set enable_mergejoin = off;
+
+set work_mem = '4MB';
+
+set hash_mem_multiplier = 1.0;
+
+select
+  COUNT(*)
+from
+  join_foo
+  left outer join
+    (
+      select
+        b1.id,
+        b1.t
+      from
+        join_bar as b1
+        inner join
+          join_bar as b2
+        using ("id")
+    )
+    as ss
+  on join_foo.id < ss.id + 1 and
+    join_foo.id > ss.id - 1;
+
+select
+  COUNT(*)
+from
+  join_foo
+  left outer join
+    (
+      select
+        b1.id,
+        b1.t
+      from
+        join_bar as b1
+        inner join
+          join_bar as b2
+        using ("id")
+    )
+    as ss
+  on join_foo.id < ss.id + 1 and
+    join_foo.id > ss.id - 1;
+
+select
+  final > 1 as multibatch
+from
+  hash_join_batches(
+    '
+  select count(*) from join_foo
+    left join (select b1.id, b1.t from join_bar b1 join join_bar b2 using (id)) ss
+    on join_foo.id < ss.id + 1 and join_foo.id > ss.id - 1;
+'
+  );
+
+rollback to savepoint settings;
+
+savepoint settings;
+
+set enable_parallel_hash = 'on';
+
+set parallel_leader_participation = off;
+
+set min_parallel_table_scan_size = 0;
+
+set parallel_setup_cost = 0;
+
+set parallel_tuple_cost = 0;
+
+set max_parallel_workers_per_gather = 2;
+
+set enable_material = off;
+
+set enable_mergejoin = off;
+
+set work_mem = '64kB';
+
+set hash_mem_multiplier = 1.0;
+
+select
+  COUNT(*)
+from
+  join_foo
+  left outer join
+    (
+      select
+        b1.id,
+        b1.t
+      from
+        join_bar as b1
+        inner join
+          join_bar as b2
+        using ("id")
+    )
+    as ss
+  on join_foo.id < ss.id + 1 and
+    join_foo.id > ss.id - 1;
+
+select
+  COUNT(*)
+from
+  join_foo
+  left outer join
+    (
+      select
+        b1.id,
+        b1.t
+      from
+        join_bar as b1
+        inner join
+          join_bar as b2
+        using ("id")
+    )
+    as ss
+  on join_foo.id < ss.id + 1 and
+    join_foo.id > ss.id - 1;
+
+select
+  final > 1 as multibatch
+from
+  hash_join_batches(
+    '
+  select count(*) from join_foo
+    left join (select b1.id, b1.t from join_bar b1 join join_bar b2 using (id)) ss
+    on join_foo.id < ss.id + 1 and join_foo.id > ss.id - 1;
+'
+  );
+
+rollback to savepoint settings;
+
+savepoint settings;
+
+set enable_parallel_hash = 'on';
+
+set parallel_leader_participation = off;
+
+set min_parallel_table_scan_size = 0;
+
+set parallel_setup_cost = 0;
+
+set parallel_tuple_cost = 0;
+
+set max_parallel_workers_per_gather = 2;
+
+set enable_material = off;
+
+set enable_mergejoin = off;
+
+set work_mem = '4MB';
+
+set hash_mem_multiplier = 1.0;
+
+select
+  COUNT(*)
+from
+  join_foo
+  left outer join
+    (
+      select
+        b1.id,
+        b1.t
+      from
+        join_bar as b1
+        inner join
+          join_bar as b2
+        using ("id")
+    )
+    as ss
+  on join_foo.id < ss.id + 1 and
+    join_foo.id > ss.id - 1;
+
+select
+  COUNT(*)
+from
+  join_foo
+  left outer join
+    (
+      select
+        b1.id,
+        b1.t
+      from
+        join_bar as b1
+        inner join
+          join_bar as b2
+        using ("id")
+    )
+    as ss
+  on join_foo.id < ss.id + 1 and
+    join_foo.id > ss.id - 1;
+
+select
+  final > 1 as multibatch
+from
+  hash_join_batches(
+    '
+  select count(*) from join_foo
+    left join (select b1.id, b1.t from join_bar b1 join join_bar b2 using (id)) ss
+    on join_foo.id < ss.id + 1 and join_foo.id > ss.id - 1;
+'
+  );
+
+rollback to savepoint settings;
+
+savepoint settings;
+
+set local max_parallel_workers_per_gather = 0;
+
+select COUNT(*) from simple as r full outer join simple as s using ("id");
+
+select COUNT(*) from simple as r full outer join simple as s using ("id");
+
+rollback to savepoint settings;
+
+savepoint settings;
+
+set enable_parallel_hash = off;
+
+set local max_parallel_workers_per_gather = 2;
+
+select COUNT(*) from simple as r full outer join simple as s using ("id");
+
+select COUNT(*) from simple as r full outer join simple as s using ("id");
+
+rollback to savepoint settings;
+
+savepoint settings;
+
+set local max_parallel_workers_per_gather = 2;
+
+select COUNT(*) from simple as r full outer join simple as s using ("id");
+
+select COUNT(*) from simple as r full outer join simple as s using ("id");
+
+rollback to savepoint settings;
+
+savepoint settings;
+
+set local max_parallel_workers_per_gather = 0;
+
+select COUNT(*) from simple as r full outer join simple as s on r.id = 0 - s.id;
+
+select COUNT(*) from simple as r full outer join simple as s on r.id = 0 - s.id;
+
+rollback to savepoint settings;
+
+savepoint settings;
+
+set enable_parallel_hash = off;
+
+set local max_parallel_workers_per_gather = 2;
+
+select COUNT(*) from simple as r full outer join simple as s on r.id = 0 - s.id;
+
+select COUNT(*) from simple as r full outer join simple as s on r.id = 0 - s.id;
+
+rollback to savepoint settings;
+
+savepoint settings;
+
+set local max_parallel_workers_per_gather = 2;
+
+select COUNT(*) from simple as r full outer join simple as s on r.id = 0 - s.id;
+
+select COUNT(*) from simple as r full outer join simple as s on r.id = 0 - s.id;
+
+rollback to savepoint settings;
+
+savepoint settings;
+
+set max_parallel_workers_per_gather = 2;
+
+set enable_parallel_hash = 'on';
+
+set work_mem = '128kB';
+
+set hash_mem_multiplier = 1.0;
+
+select
+  length(MAX(s.t))
+from
+  wide
+  left outer join
+    (
+      select id, coalesce(t, '') || '' as t from wide
+    )
+    as s
+  using ("id");
+
+select
+  length(MAX(s.t))
+from
+  wide
+  left outer join
+    (
+      select id, coalesce(t, '') || '' as t from wide
+    )
+    as s
+  using ("id");
+
+select
+  final > 1 as multibatch
+from
+  hash_join_batches(
+    '
+  select length(max(s.t))
+  from wide left join (select id, coalesce(t, '''') || '''' as t from wide) s using (id);
+'
+  );
+
+rollback to savepoint settings;
+
+savepoint settings;
+
+set enable_parallel_hash = 'on';
+
+set min_parallel_table_scan_size = 0;
+
+set parallel_setup_cost = 0;
+
+set parallel_tuple_cost = 0;
+
+create table hjtest_matchbits_t1 (id int);
+
+create table hjtest_matchbits_t2 (id int);
+
+insert into hjtest_matchbits_t1 values (1);
+
+insert into hjtest_matchbits_t2 values (2);
+
+update hjtest_matchbits_t2 set id = 2;
+
+select
+  *
+from
+  hjtest_matchbits_t1 as t1
+  full outer join
+    hjtest_matchbits_t2 as t2
+  on t1.id = t2.id
+order by t1.id;
+
+reset parallel_setup_cost;
+
+set enable_parallel_hash = off;
+
+select * from hjtest_matchbits_t1 as t1 full outer join hjtest_matchbits_t2 as t2 on t1.id = t2.id;
+
+rollback to savepoint settings;
+
+rollback;
+
+begin;
+
+set local enable_sort = off;
+
+set local from_collapse_limit = 1;
+
+create table hjtest_1 (
+  a text,
+  b int,
+  id int,
+  c boolean
+);
+
+create table hjtest_2 (
+  a boolean,
+  id int,
+  b text,
+  c int
+);
+
+insert into hjtest_1 (a, b, id, c) values ('text', 2, 1, false);
+
+insert into hjtest_1 (a, b, id, c) values ('text', 1, 2, false);
+
+insert into hjtest_1 (a, b, id, c) values ('text', 20, 1, false);
+
+insert into hjtest_1 (a, b, id, c) values ('text', 1, 1, false);
+
+insert into hjtest_2 (a, id, b, c) values (true, 1, 'another', 2);
+
+insert into hjtest_2 (a, id, b, c) values (true, 3, 'another', 7);
+
+insert into hjtest_2 (a, id, b, c) values (true, 1, 'another', 90);
+
+insert into hjtest_2 (a, id, b, c) values (true, 1, 'another', 3);
+
+insert into hjtest_2 (a, id, b, c) values (true, 1, 'text', 1);
+
+select
+  hjtest_1.a as a1,
+  hjtest_2.a as a2,
+  cast(hjtest_1.tableoid as regclass) as t1,
+  cast(hjtest_2.tableoid as regclass) as t2
+from
+  hjtest_1,
+  hjtest_2
+where
+  hjtest_1.id = (select 1 where hjtest_2.id = 1) and
+  (select hjtest_1.b * 5) = (select hjtest_2.c * 5) and
+  (select hjtest_1.b * 5) < 50 and
+  (select hjtest_2.c * 5) < 55 and
+  hjtest_1.a <> hjtest_2.b;
+
+select
+  hjtest_1.a as a1,
+  hjtest_2.a as a2,
+  cast(hjtest_1.tableoid as regclass) as t1,
+  cast(hjtest_2.tableoid as regclass) as t2
+from
+  hjtest_1,
+  hjtest_2
+where
+  hjtest_1.id = (select 1 where hjtest_2.id = 1) and
+  (select hjtest_1.b * 5) = (select hjtest_2.c * 5) and
+  (select hjtest_1.b * 5) < 50 and
+  (select hjtest_2.c * 5) < 55 and
+  hjtest_1.a <> hjtest_2.b;
+
+select
+  hjtest_1.a as a1,
+  hjtest_2.a as a2,
+  cast(hjtest_1.tableoid as regclass) as t1,
+  cast(hjtest_2.tableoid as regclass) as t2
+from
+  hjtest_2,
+  hjtest_1
+where
+  hjtest_1.id = (select 1 where hjtest_2.id = 1) and
+  (select hjtest_1.b * 5) = (select hjtest_2.c * 5) and
+  (select hjtest_1.b * 5) < 50 and
+  (select hjtest_2.c * 5) < 55 and
+  hjtest_1.a <> hjtest_2.b;
+
+select
+  hjtest_1.a as a1,
+  hjtest_2.a as a2,
+  cast(hjtest_1.tableoid as regclass) as t1,
+  cast(hjtest_2.tableoid as regclass) as t2
+from
+  hjtest_2,
+  hjtest_1
+where
+  hjtest_1.id = (select 1 where hjtest_2.id = 1) and
+  (select hjtest_1.b * 5) = (select hjtest_2.c * 5) and
+  (select hjtest_1.b * 5) < 50 and
+  (select hjtest_2.c * 5) < 55 and
+  hjtest_1.a <> hjtest_2.b;
+
+rollback;
+
+begin;
+
+set local enable_hashjoin = 'on';
+
+select
+  i8.q2,
+  ss.*
+from
+  int8_tbl as i8,
+  lateral (
+    select
+      t1.fivethous,
+      i4.f1
+    from
+      tenk1 as t1
+      inner join
+        int4_tbl as i4
+      on t1.fivethous = i4.f1 + i8.q2
+    order by 1,
+      2
+  )
+  as ss;
+
+select
+  i8.q2,
+  ss.*
+from
+  int8_tbl as i8,
+  lateral (
+    select
+      t1.fivethous,
+      i4.f1
+    from
+      tenk1 as t1
+      inner join
+        int4_tbl as i4
+      on t1.fivethous = i4.f1 + i8.q2
+    order by 1,
+      2
+  )
+  as ss;
+
+rollback;

@@ -33,16 +33,16 @@ impl LinterRule for RenamingTable {
     fn run(ctx: &LinterRuleContext<Self>) -> Vec<LinterDiagnostic> {
         let mut diagnostics = Vec::new();
 
-        if let pgls_query::NodeEnum::RenameStmt(stmt) = &ctx.stmt() {
-            if stmt.rename_type() == pgls_query::protobuf::ObjectType::ObjectTable {
-                diagnostics.push(LinterDiagnostic::new(
+        if let pgls_query::NodeEnum::RenameStmt(stmt) = &ctx.stmt()
+            && stmt.rename_type() == pgls_query::protobuf::ObjectType::ObjectTable
+        {
+            diagnostics.push(LinterDiagnostic::new(
                     rule_category!(),
                     None,
                     markup! {
                         "Renaming a table may break existing clients."
                     },
                 ).detail(None, "Consider creating a view with the old table name instead, or coordinate the rename carefully with application deployments."));
-            }
         }
 
         diagnostics

@@ -1,0 +1,355 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/hash_index.sql
+snapshot_kind: text
+---
+create table hash_i4_heap (
+  seqno int,
+  random int
+);
+
+create table hash_name_heap (
+  seqno int,
+  random name
+);
+
+create table hash_txt_heap (
+  seqno int,
+  random text
+);
+
+create table hash_f8_heap (
+  seqno int,
+  random double precision
+);
+
+copy hash_i4_heap from 'filename';
+
+copy hash_name_heap from 'filename';
+
+copy hash_txt_heap from 'filename';
+
+copy hash_f8_heap from 'filename';
+
+analyze hash_i4_heap;
+
+analyze hash_name_heap;
+
+analyze hash_txt_heap;
+
+analyze hash_f8_heap;
+
+create index "hash_i4_index" on hash_i4_heap using hash (random int4_ops);
+
+create index "hash_name_index" on hash_name_heap using hash (random name_ops);
+
+create index "hash_txt_index" on hash_txt_heap using hash (random text_ops);
+
+create index "hash_f8_index"
+on hash_f8_heap
+using hash
+(
+  random float8_ops
+)
+with (fillfactor = 60);
+
+create unique index "hash_f8_index_1"
+on hash_f8_heap
+using btree
+(
+  (abs(random))
+);
+
+create unique index "hash_f8_index_2"
+on hash_f8_heap
+using btree
+(
+  (seqno + 1),
+  random
+);
+
+create unique index "hash_f8_index_3"
+on hash_f8_heap
+using btree
+(
+  random
+)
+where
+  seqno > 1000;
+
+select * from hash_i4_heap where hash_i4_heap.random = 843938989;
+
+select * from hash_i4_heap where hash_i4_heap.random = 66766766;
+
+select
+  *
+from
+  hash_name_heap
+where
+  hash_name_heap.random =
+  cast('1505703298' as name);
+
+select
+  *
+from
+  hash_name_heap
+where
+  hash_name_heap.random =
+  cast('7777777' as name);
+
+select
+  *
+from
+  hash_txt_heap
+where
+  hash_txt_heap.random =
+  cast('1351610853' as text);
+
+select
+  *
+from
+  hash_txt_heap
+where
+  hash_txt_heap.random =
+  cast('111111112222222233333333' as text);
+
+select
+  *
+from
+  hash_f8_heap
+where
+  hash_f8_heap.random =
+  cast('444705537' as double precision);
+
+select
+  *
+from
+  hash_f8_heap
+where
+  hash_f8_heap.random =
+  cast('88888888' as double precision);
+
+update hash_i4_heap set random = 1 where hash_i4_heap.seqno = 1492;
+
+select
+  h.seqno as i1492,
+  h.random as i1
+from
+  hash_i4_heap as h
+where
+  h.random = 1;
+
+update hash_i4_heap set seqno = 20000 where hash_i4_heap.random = 1492795354;
+
+select h.seqno as i20000 from hash_i4_heap as h where h.random = 1492795354;
+
+update hash_name_heap
+set random = cast('0123456789abcdef' as name)
+where
+  hash_name_heap.seqno = 6543;
+
+select
+  h.seqno as i6543,
+  h.random as c0_to_f
+from
+  hash_name_heap as h
+where
+  h.random =
+  cast('0123456789abcdef' as name);
+
+update hash_name_heap
+set seqno = 20000
+where
+  hash_name_heap.random =
+  cast('76652222' as name);
+
+select
+  h.seqno as emptyset
+from
+  hash_name_heap as h
+where
+  h.random = cast('76652222' as name);
+
+update hash_txt_heap
+set random = cast('0123456789abcdefghijklmnop'
+as text)
+where
+  hash_txt_heap.seqno = 4002;
+
+select
+  h.seqno as i4002,
+  h.random as c0_to_p
+from
+  hash_txt_heap as h
+where
+  h.random =
+  cast('0123456789abcdefghijklmnop'
+  as text);
+
+update hash_txt_heap
+set seqno = 20000
+where
+  hash_txt_heap.random =
+  cast('959363399' as text);
+
+select
+  h.seqno as t20000
+from
+  hash_txt_heap as h
+where
+  h.random = cast('959363399' as text);
+
+update hash_f8_heap
+set random = cast('-1234.1234' as double precision)
+where
+  hash_f8_heap.seqno = 8906;
+
+select
+  h.seqno as i8096,
+  h.random as f1234_1234
+from
+  hash_f8_heap as h
+where
+  h.random =
+  cast('-1234.1234' as double precision);
+
+update hash_f8_heap
+set seqno = 20000
+where
+  hash_f8_heap.random =
+  cast('488912369' as double precision);
+
+select
+  h.seqno as f20000
+from
+  hash_f8_heap as h
+where
+  h.random =
+  cast('488912369' as double precision);
+
+create table hash_split_heap (keycol int);
+
+insert into hash_split_heap select 1 from generate_series(1, 500) as a;
+
+create index "hash_split_index" on hash_split_heap using hash (keycol);
+
+insert into hash_split_heap select 1 from generate_series(1, 5000) as a;
+
+begin;
+
+set enable_seqscan = off;
+
+set enable_bitmapscan = off;
+
+declare "c" cursor for select * from hash_split_heap where keycol = 1;;
+
+move forward all from c;
+
+move backward 10000 from c;
+
+move backward all from c;
+
+close c;
+
+commit;
+
+delete from hash_split_heap where keycol = 1;
+
+insert into hash_split_heap select a / 2 from generate_series(1, 25000) as a;
+
+vacuum hash_split_heap;
+
+alter index hash_split_index
+  set (fillfactor = 10);
+
+reindex index hash_split_index;
+
+drop table hash_split_heap;
+
+create table hash_cleanup_heap (keycol int);
+
+create index "hash_cleanup_index" on hash_cleanup_heap using hash (keycol);
+
+insert into hash_cleanup_heap select 1 from generate_series(1, 500) as i;
+
+begin;
+
+insert into hash_cleanup_heap select 1 from generate_series(1, 1000) as i;
+
+rollback;
+
+checkpoint;
+
+vacuum hash_cleanup_heap;
+
+truncate hash_cleanup_heap;
+
+insert into hash_cleanup_heap select 1 from generate_series(1, 50) as i;
+
+begin;
+
+insert into hash_cleanup_heap select 1 from generate_series(1, 1500) as i;
+
+rollback;
+
+insert into hash_cleanup_heap select 1 from generate_series(1, 500) as i;
+
+checkpoint;
+
+vacuum hash_cleanup_heap;
+
+truncate hash_cleanup_heap;
+
+insert into hash_cleanup_heap select 1 from generate_series(1, 500) as i;
+
+begin;
+
+insert into hash_cleanup_heap select 1 from generate_series(1, 1500) as i;
+
+rollback;
+
+insert into hash_cleanup_heap select 1 from generate_series(1, 50) as i;
+
+checkpoint;
+
+vacuum hash_cleanup_heap;
+
+drop table hash_cleanup_heap;
+
+create temporary table hash_temp_heap (
+  x int,
+  y int
+);
+
+insert into hash_temp_heap values (1, 1);
+
+create index "hash_idx" on hash_temp_heap using hash (x);
+
+drop table hash_temp_heap cascade;
+
+create table hash_heap_float4 (
+  x real,
+  y int
+);
+
+insert into hash_heap_float4 values (1.1, 1);
+
+create index "hash_idx" on hash_heap_float4 using hash (x);
+
+drop table hash_heap_float4 cascade;
+
+create index "hash_f8_index2"
+on hash_f8_heap
+using hash
+(
+  random float8_ops
+)
+with (fillfactor = 9);
+
+create index "hash_f8_index2"
+on hash_f8_heap
+using hash
+(
+  random float8_ops
+)
+with (fillfactor = 101);

@@ -1,0 +1,14 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/single/complex_select_part_4.sql
+snapshot_kind: text
+---
+select
+  view_id,
+  view_schema,
+  view_name,
+  cast(entry ->> 'resno' as int) as view_column,
+  cast(entry ->> 'resorigtbl' as oid) as resorigtbl,
+  cast(entry ->> 'resorigcol' as int) as resorigcol
+from
+  target_entries;

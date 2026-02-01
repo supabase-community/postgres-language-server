@@ -64,10 +64,10 @@ impl Advices for SplinterAdvices {
         }
 
         // Show additional metadata if present
-        if let Some(metadata) = &self.additional_metadata {
-            if !metadata.is_null() {
-                visitor.record_log(LogCategory::None, &format!("{metadata}"))?;
-            }
+        if let Some(metadata) = &self.additional_metadata
+            && !metadata.is_null()
+        {
+            visitor.record_log(LogCategory::None, &format!("{metadata}"))?;
         }
 
         // Show remediation

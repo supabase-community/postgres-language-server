@@ -1,0 +1,1132 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/sqljson_jsontable.sql
+snapshot_kind: text
+---
+select * from json_table( '[]', 'strict $.a' columns (js2 int path '$' ) default 1 on error );
+
+select * from json_table( '[]', 'strict $.a' columns (js2 int path '$' ) null on error );
+
+select * from json_table( '[]', 'strict $.a' columns (js2 int path '$' ) empty array on error );
+
+select * from json_table( '[]', 'strict $.a' columns (js2 int path '$' ) error on error );
+
+select * from json_table( cast('"1.23"' as jsonb), '$.a' as js2 columns (js2 int path '$' ) );
+
+select * from json_table( cast(null as jsonb), '$' columns (v1 timestamp ) ) as f (v1, v2);
+
+select
+  *
+from
+  json_table(
+    cast('"1.23"' as jsonb),
+    '$.a'
+    columns (
+      js2 int path '$',
+      js2 int path '$'
+    )
+  );
+
+create type comp as (a int, b int);
+
+select
+  *
+from
+  json_table(
+    cast('{"rec": "(1,2)"}' as jsonb),
+    '$'
+    columns (
+      id for ordinality,
+      comp comp path '$.rec' omit quotes
+    )
+  ) as jt;
+
+drop type comp;
+
+select * from json_table( cast(null as jsonb), '$' columns (foo int ) ) as bar;
+
+select * from json_table( cast('"1.23"' as jsonb), 'strict $.a' columns (js2 int path '$' ) );
+
+select * from json_table( cast('123' as jsonb), '$' columns (item int path '$', foo int ) ) as bar;
+
+create domain jsonb_test_domain as text check (value <> 'foo');
+
+create temporary table json_table_test (js)
+as
+  values
+    ('1'),
+    ('[]'),
+    ('{}'),
+    (
+      '[1, 1.23, "2", "aaaaaaa", "foo", null, false, true, {"aaa": 123}, "[1,2]", "\"str\""]'
+    );
+
+select
+  *
+from
+  json_table_test as vals
+  left outer join
+    json_table(
+      cast(vals.js as jsonb),
+      'lax $[*]'
+      columns (
+        id for ordinality,
+        int int path '$',
+        text text path '$',
+        "char(4)" char(4) path '$',
+        bool bool path '$',
+        numeric numeric path '$',
+        domain jsonb_test_domain path '$',
+        js json path '$',
+        jb jsonb path '$'
+      )
+    ) as jt
+  on true;
+
+select
+  *
+from
+  json_table_test as vals
+  left outer join
+    json_table(
+      cast(vals.js as jsonb),
+      'lax $[*]'
+      columns (
+        id for ordinality,
+        jst text format json path '$',
+        jsc char(4) format json path '$',
+        jsv varchar(4) format json path '$',
+        jsb jsonb format json path '$',
+        jsbq jsonb format json path '$' omit quotes
+      )
+    ) as jt
+  on true;
+
+select
+  *
+from
+  json_table_test as vals
+  left outer join
+    json_table(
+      cast(vals.js as jsonb),
+      'lax $[*]'
+      columns (
+        id for ordinality,
+        exists1 bool exists path '$.aaa',
+        exists2 int exists path '$.aaa',
+        exists3 int exists path 'strict $.aaa' unknown on error,
+        exists4 text exists path 'strict $.aaa' false on error
+      )
+    ) as jt
+  on true;
+
+select
+  *
+from
+  json_table_test as vals
+  left outer join
+    json_table(
+      cast(vals.js as jsonb),
+      'lax $[*]'
+      columns (
+        id for ordinality,
+        aaa int,
+        aaa1 int path '$.aaa',
+        js2 json path '$',
+        jsb2w jsonb path '$' with unconditional wrapper,
+        jsb2q jsonb path '$' omit quotes,
+        ia int[] path '$',
+        ta text[] path '$',
+        jba jsonb[] path '$'
+      )
+    ) as jt
+  on true;
+
+select
+  *
+from
+  json_table(
+    cast('{"d1": "H"}' as jsonb),
+    '$'
+    columns (
+      js1 jsonb_test_domain path '$.a2' default cast(cast('"foo1"' as jsonb) as text) on empty
+    )
+  );
+
+select
+  *
+from
+  json_table(
+    cast('{"d1": "H"}' as jsonb),
+    '$'
+    columns (
+      js1 jsonb_test_domain path '$.a2' default cast('foo' as jsonb_test_domain) on empty
+    )
+  );
+
+select
+  *
+from
+  json_table(
+    cast('{"d1": "H"}' as jsonb),
+    '$'
+    columns (
+      js1 jsonb_test_domain path '$.a2' default cast('foo1' as jsonb_test_domain) on empty
+    )
+  );
+
+select
+  *
+from
+  json_table(
+    cast('{"d1": "foo"}' as jsonb),
+    '$'
+    columns (
+      js1 jsonb_test_domain path '$.d1' default cast('foo2' as jsonb_test_domain) on error
+    )
+  );
+
+select
+  *
+from
+  json_table(
+    cast('{"d1": "foo"}' as jsonb),
+    '$'
+    columns (
+      js1 oid[] path '$.d2' default cast(cast('{1}' as int[]) as oid[]) on empty
+    )
+  );
+
+create view jsonb_table_view2
+as select
+  *
+from
+  json_table(
+    cast('null' as jsonb),
+    'lax $[*]'
+    passing 1 + 2 as a,
+    cast('"foo"' as json) as "b c"
+    columns (
+      int int path '$',
+      text text path '$',
+      "char(4)" char(4) path '$',
+      bool bool path '$',
+      numeric numeric path '$',
+      domain jsonb_test_domain path '$'
+    )
+  );
+
+create view jsonb_table_view3
+as select
+  *
+from
+  json_table(
+    cast('null' as jsonb),
+    'lax $[*]'
+    passing 1 + 2 as a,
+    cast('"foo"' as json) as "b c"
+    columns (
+      js json path '$',
+      jb jsonb path '$',
+      jst text format json path '$',
+      jsc char(4) format json path '$',
+      jsv varchar(4) format json path '$'
+    )
+  );
+
+create view jsonb_table_view4
+as select
+  *
+from
+  json_table(
+    cast('null' as jsonb),
+    'lax $[*]'
+    passing 1 + 2 as a,
+    cast('"foo"' as json) as "b c"
+    columns (
+      jsb jsonb format json path '$',
+      jsbq jsonb format json path '$' omit quotes,
+      aaa int,
+      aaa1 int path '$.aaa'
+    )
+  );
+
+create view jsonb_table_view5
+as select
+  *
+from
+  json_table(
+    cast('null' as jsonb),
+    'lax $[*]'
+    passing 1 + 2 as a,
+    cast('"foo"' as json) as "b c"
+    columns (
+      exists1 bool exists path '$.aaa',
+      exists2 int exists path '$.aaa' true on error,
+      exists3 text exists path 'strict $.aaa' unknown on error
+    )
+  );
+
+create view jsonb_table_view6
+as select
+  *
+from
+  json_table(
+    cast('null' as jsonb),
+    'lax $[*]'
+    passing 1 + 2 as a,
+    cast('"foo"' as json) as "b c"
+    columns (
+      js2 json path '$',
+      jsb2w jsonb path '$' with unconditional wrapper,
+      jsb2q jsonb path '$' omit quotes,
+      ia int[] path '$',
+      ta text[] path '$',
+      jba jsonb[] path '$'
+    )
+  );
+
+select * from jsonb_table_view2;
+
+select * from jsonb_table_view3;
+
+select * from jsonb_table_view4;
+
+select * from jsonb_table_view5;
+
+select * from jsonb_table_view6;
+
+select
+  *
+from
+  json_table(
+    cast('null' as jsonb),
+    'lax $[*]'
+    passing 1 + 2 as a,
+    cast('"foo"' as json) as "b c"
+    columns (
+      id for ordinality,
+      int int path '$',
+      text text path '$'
+    )
+  ) as json_table_func;
+
+select
+  *
+from
+  json_table(
+    cast('null' as jsonb),
+    'lax $[*]'
+    passing 1 + 2 as a,
+    cast('"foo"' as json) as "b c"
+    columns (
+      id for ordinality,
+      int int path '$',
+      text text path '$'
+    )
+  ) as json_table_func;
+
+drop view jsonb_table_view2;
+
+drop view jsonb_table_view3;
+
+drop view jsonb_table_view4;
+
+drop view jsonb_table_view5;
+
+drop view jsonb_table_view6;
+
+drop domain jsonb_test_domain;
+
+select
+  *
+from
+  json_table(
+    cast('1' as jsonb),
+    '$'
+    columns (
+      id for ordinality,
+      id2 for ordinality,
+      a int path '$.a' error on empty
+    )
+  ) as jt;
+
+select
+  *
+from
+  json_table(
+    cast('1' as jsonb),
+    '$'
+    columns (
+      id for ordinality,
+      a int path '$' error on empty
+    )
+  ) as jt;
+
+select
+  *
+from
+  (values ('1'), ('"err"')) as vals (js),
+  json_table(
+    cast(vals.js as jsonb),
+    '$'
+    columns (
+      a int path '$'
+    )
+  ) as jt;
+
+select
+  *
+from
+  (values ('1'), ('"err"')) as vals (js)
+  left outer join
+    json_table(
+      cast(vals.js as jsonb),
+      '$'
+      columns (
+        a int path '$' error on error
+      )
+    ) as jt
+  on true;
+
+select
+  *
+from
+  (values ('1'), ('"err"')) as vals (js)
+  left outer join
+    json_table(
+      cast(vals.js as jsonb),
+      '$'
+      columns (
+        a int path '$' error on error
+      )
+    ) as jt
+  on true;
+
+select
+  *
+from
+  json_table(
+    cast('1' as jsonb),
+    '$'
+    columns (
+      a int path '$.a' error on empty
+    )
+  ) as jt;
+
+select
+  *
+from
+  json_table(
+    cast('1' as jsonb),
+    '$'
+    columns (
+      a int path 'strict $.a' error on error
+    )
+    error on error
+  ) as jt;
+
+select
+  *
+from
+  json_table(
+    cast('1' as jsonb),
+    '$'
+    columns (
+      a int path 'lax $.a' error on empty
+    )
+    error on error
+  ) as jt;
+
+select
+  *
+from
+  json_table(
+    cast('"a"' as jsonb),
+    '$'
+    columns (
+      a int path '$' default 1 on empty default 2 on error
+    )
+  ) as jt;
+
+select
+  *
+from
+  json_table(
+    cast('"a"' as jsonb),
+    '$'
+    columns (
+      a int path 'strict $.a' default 1 on empty default 2 on error
+    )
+  ) as jt;
+
+select
+  *
+from
+  json_table(
+    cast('"a"' as jsonb),
+    '$'
+    columns (
+      a int path 'lax $.a' default 1 on empty default 2 on error
+    )
+  ) as jt;
+
+select
+  *
+from
+  json_table(
+    cast('"a"' as jsonb),
+    '$'
+    columns (
+      a int4 exists path '$.a' error on error
+    )
+  );
+
+select
+  *
+from
+  json_table(
+    cast('"a"' as jsonb),
+    '$'
+    columns (
+      a int4 exists path '$' error on error
+    )
+  );
+
+select * from json_table( cast('"a"' as jsonb), '$' columns (a int2 exists path '$.a' ) );
+
+select * from json_table( cast('"a"' as jsonb), '$' columns (a int8 exists path '$.a' ) );
+
+select * from json_table( cast('"a"' as jsonb), '$' columns (a float4 exists path '$.a' ) );
+
+select * from json_table( cast('"a"' as jsonb), '$' columns (a char(3) exists path '$.a' ) );
+
+select
+  *
+from
+  json_table(
+    cast('"a"' as jsonb),
+    '$'
+    columns (
+      a char(3) exists path '$.a' error on error
+    )
+  );
+
+select
+  *
+from
+  json_table(
+    cast('"a"' as jsonb),
+    '$'
+    columns (
+      a char(5) exists path '$.a' error on error
+    )
+  );
+
+select * from json_table( cast('"a"' as jsonb), '$' columns (a json exists path '$.a' ) );
+
+select * from json_table( cast('"a"' as jsonb), '$' columns (a jsonb exists path '$.a' ) );
+
+create domain dint4 as int;
+
+create domain dint4_0 as int check (value <> 0);
+
+select
+  a,
+  cast(a as boolean)
+from
+  json_table(
+    cast('"a"' as jsonb),
+    '$'
+    columns (
+      a dint4 exists path '$.a'
+    )
+  );
+
+select
+  a,
+  cast(a as boolean)
+from
+  json_table(
+    cast('{"a":1}' as jsonb),
+    '$'
+    columns (
+      a dint4_0 exists path '$.b'
+    )
+  );
+
+select
+  a,
+  cast(a as boolean)
+from
+  json_table(
+    cast('{"a":1}' as jsonb),
+    '$'
+    columns (
+      a dint4_0 exists path '$.b' error on error
+    )
+  );
+
+select
+  a,
+  cast(a as boolean)
+from
+  json_table(
+    cast('{"a":1}' as jsonb),
+    '$'
+    columns (
+      a dint4_0 exists path '$.b' false on error
+    )
+  );
+
+select
+  a,
+  cast(a as boolean)
+from
+  json_table(
+    cast('{"a":1}' as jsonb),
+    '$'
+    columns (
+      a dint4_0 exists path '$.b' true on error
+    )
+  );
+
+drop domain dint4, dint4_0;
+
+select * from json_table( cast('"world"' as jsonb), '$' columns (item text path '$' keep quotes ) );
+
+select * from json_table( cast('"world"' as jsonb), '$' columns (item text path '$' omit quotes ) );
+
+select
+  *
+from
+  json_table(
+    cast('"world"' as jsonb),
+    '$'
+    columns (
+      item text format json path '$' keep quotes
+    )
+  );
+
+select
+  *
+from
+  json_table(
+    cast('"world"' as jsonb),
+    '$'
+    columns (
+      item text format json path '$' omit quotes
+    )
+  );
+
+select
+  *
+from
+  json_table(
+    cast('"world"' as jsonb),
+    '$'
+    columns (
+      item text format json path '$' without wrapper keep quotes
+    )
+  );
+
+select
+  *
+from
+  json_table(
+    cast('"world"' as jsonb),
+    '$'
+    columns (
+      item text path '$' without wrapper omit quotes
+    )
+  );
+
+select
+  *
+from
+  json_table(
+    cast('"world"' as jsonb),
+    '$'
+    columns (
+      item text format json path '$' with unconditional wrapper
+    )
+  );
+
+select
+  *
+from
+  json_table(
+    cast('"world"' as jsonb),
+    '$'
+    columns (
+      item text path '$' with unconditional wrapper omit quotes
+    )
+  );
+
+select
+  *
+from
+  json_table(
+    cast('"world"' as jsonb),
+    '$'
+    columns (
+      item text format json path '$' with unconditional wrapper keep quotes
+    )
+  );
+
+select
+  *
+from
+  json_table(
+    cast('[1,2,3]' as jsonb),
+    '$[*] ? (@ < $x)'
+    passing 3 as x
+    columns (
+      y text format json path '$'
+    )
+  ) as jt;
+
+select
+  *
+from
+  json_table(
+    cast('[1,2,3]' as jsonb),
+    '$[*] ? (@ < $x)'
+    passing 10 as x,
+    3 as y
+    columns (
+      a text format json path '$ ? (@ < $y)'
+    )
+  ) as jt;
+
+select
+  *
+from
+  json_table(
+    '{"a": [{"b": "1"}, {"b": "2"}]}',
+    '$'
+    columns (
+      b json path '$.a[*].b' error on error
+    )
+  );
+
+select
+  *
+from
+  json_table(
+    cast('[]' as jsonb),
+    '$' as a
+    columns (
+      b int,
+      nested path '$' as a columns (c int )
+    )
+  ) as jt;
+
+select
+  *
+from
+  json_table(
+    cast('[]' as jsonb),
+    '$' as a
+    columns (
+      b int,
+      nested path '$' as n_a columns (c int )
+    )
+  ) as jt;
+
+select
+  *
+from
+  json_table(
+    cast('[]' as jsonb),
+    '$'
+    columns (
+      b int,
+      nested path '$' as b columns (c int )
+    )
+  ) as jt;
+
+select
+  *
+from
+  json_table(
+    cast('[]' as jsonb),
+    '$'
+    columns (
+      nested path '$' as a columns (b int ),
+      nested path '$'
+      columns (
+        nested path '$' as a columns (c int )
+      )
+    )
+  ) as jt;
+
+create temporary table jsonb_table_test (js jsonb);
+
+insert into jsonb_table_test
+values
+  (
+    '[
+		{"a":  1,  "b": [], "c": []},
+		{"a":  2,  "b": [1, 2, 3], "c": [10, null, 20]},
+		{"a":  3,  "b": [1, 2], "c": []},
+		{"x": "4", "b": [1, 2], "c": 123}
+	 ]'
+  );
+
+select
+  jt.*
+from
+  jsonb_table_test as jtt,
+  json_table(
+    jtt.js,
+    'strict $[*]' as p
+    columns (
+      n for ordinality,
+      a int path 'lax $.a' default -1 on empty,
+      nested path 'strict $.b[*]' as pb
+      columns (
+        b_id for ordinality,
+        b int path '$'
+      ),
+      nested path 'strict $.c[*]' as pc
+      columns (
+        c_id for ordinality,
+        c int path '$'
+      )
+    )
+  ) as jt;
+
+select
+  *
+from
+  generate_series(1, 3) as x,
+  generate_series(1, 3) as y,
+  json_table(
+    cast('[[1,2,3],[2,3,4,5],[3,4,5,6]]' as jsonb),
+    'strict $[*] ? (@[*] <= $x)'
+    passing x as x,
+    y as y
+    columns (
+      y text format json path '$',
+      nested path 'strict $[*] ? (@ == $y)'
+      columns (
+        z int path '$'
+      )
+    )
+  ) as jt;
+
+create view jsonb_table_view_nested
+as select
+  *
+from
+  json_table(
+    cast('null' as jsonb),
+    'lax $[*]'
+    passing 1 + 2 as a,
+    cast('"foo"' as json) as "b c"
+    columns (
+      id for ordinality,
+      nested path '$[1]' as p1
+      columns (
+        a1 int,
+        nested path '$[*]' as "p1 1" columns (a11 text ),
+        b1 text
+      ),
+      nested path '$[2]' as p2
+      columns (
+        nested path '$[*]' as "p2:1" columns (a21 text ),
+        nested path '$[*]' as p22 columns (a22 text )
+      )
+    )
+  );
+
+drop view jsonb_table_view_nested;
+
+create table s (js jsonb);
+
+insert into s
+values
+  (
+    '{"a":{"za":[{"z1": [11,2222]},{"z21": [22, 234,2345]},{"z22": [32, 204,145]}]},"c": 3}'
+  ),
+  (
+    '{"a":{"za":[{"z1": [21,4222]},{"z21": [32, 134,1345]}]},"c": 10}'
+  );
+
+select
+  sub.*
+from
+  s,
+  json_table(
+    js,
+    '$'
+    passing 32 as x,
+    13 as y
+    columns (
+      xx int path '$.c',
+      nested path '$.a.za[1]'
+      columns (
+        nested path '$.z21[*]'
+        columns (
+          z21 int path '$?(@ >= $"x")' error on error
+        )
+      )
+    )
+  ) as sub;
+
+select
+  sub.*
+from
+  s,
+  (values (23)) as x (x),
+  generate_series(13, 13) as y,
+  json_table(
+    js,
+    '$' as c1
+    passing x as x,
+    y as y
+    columns (
+      nested path '$.a.za[2]'
+      columns (
+        nested path '$.z22[*]' as z22
+        columns (
+          c int path '$'
+        )
+      ),
+      nested path '$.a.za[1]'
+      columns (
+        d int[] path '$.z21'
+      ),
+      nested path '$.a.za[0]'
+      columns (
+        nested path '$.z1[*]' as z1
+        columns (
+          a int path '$'
+        )
+      ),
+      xx1 int path '$.c',
+      nested path '$.a.za[1]'
+      columns (
+        nested path '$.z21[*]' as z21
+        columns (
+          b int path '$'
+        )
+      ),
+      xx int path '$.c'
+    )
+  ) as sub;
+
+select
+  sub.*
+from
+  s,
+  (values (23)) as x (x),
+  generate_series(13, 13) as y,
+  json_table(
+    js,
+    '$' as c1
+    passing x as x,
+    y as y
+    columns (
+      xx1 int path '$.c',
+      nested path '$.a.za[0].z1[*]'
+      columns (
+        nested path '$ ?(@ >= ($"x" -2))'
+        columns (
+          a int path '$'
+        )
+      ),
+      nested path '$.a.za[0]'
+      columns (
+        nested path '$.z1[*] ? (@ >= ($"x" -2))'
+        columns (
+          b int path '$'
+        )
+      )
+    )
+  ) as sub;
+
+select
+  sub.*
+from
+  s,
+  (values (23)) as x (x),
+  generate_series(13, 13) as y,
+  json_table(
+    js,
+    '$' as c1
+    passing x as x,
+    y as y
+    columns (
+      xx1 int path '$.c',
+      nested path '$.a.za[1]'
+      columns (
+        nested path '$.z21[*]' columns (b int path '$' )
+      ),
+      nested path '$.a.za[1] ? (@.z21[*] >= ($"x"-1))'
+      columns (
+        nested path '$.z21[*] ? (@ >= ($"y" + 3))' as z22
+        columns (
+          a int path '$ ? (@ >= ($"y" + 12))'
+        )
+      ),
+      nested path '$.a.za[1]'
+      columns (
+        nested path '$.z21[*] ? (@ >= ($"y" +121))' as z21
+        columns (
+          c int path '$ ? (@ > ($"x" +111))'
+        )
+      )
+    )
+  ) as sub;
+
+select
+  sub.*
+from
+  s,
+  (values (23)) as x (x),
+  generate_series(13, 13) as y,
+  json_table(
+    js,
+    '$' as c1
+    passing x as x,
+    y as y
+    columns (
+      xx1 int path '$.c',
+      nested path '$.a.za[2]'
+      columns (
+        nested path '$.z22[*]' as z22
+        columns (
+          c int path '$'
+        )
+      ),
+      nested path '$.a.za[1]'
+      columns (
+        d json path '$ ? (@.z21[*] == ($"x" -1))'
+      ),
+      nested path '$.a.za[0]'
+      columns (
+        nested path '$.z1[*] ? (@ >= ($"x" -2))' as z1
+        columns (
+          a int path '$'
+        )
+      ),
+      nested path '$.a.za[1]'
+      columns (
+        nested path '$.z21[*] ? (@ >= ($"y" +121))' as z21
+        columns (
+          b int path '$ ? (@ > ($"x" +111))' default 0 on empty
+        )
+      )
+    )
+  ) as sub;
+
+create or replace view jsonb_table_view7
+as select
+  sub.*
+from
+  s,
+  (values (23)) as x (x),
+  generate_series(13, 13) as y,
+  json_table(
+    js,
+    '$' as c1
+    passing x as x,
+    y as y
+    columns (
+      xx1 int path '$.c',
+      nested path '$.a.za[2]'
+      columns (
+        nested path '$.z22[*]' as z22
+        columns (
+          c int path '$' without wrapper omit quotes
+        )
+      ),
+      nested path '$.a.za[1]'
+      columns (
+        d json path '$ ? (@.z21[*] == ($"x" -1))' with unconditional wrapper
+      ),
+      nested path '$.a.za[0]'
+      columns (
+        nested path '$.z1[*] ? (@ >= ($"x" -2))' as z1
+        columns (
+          a int path '$' keep quotes
+        )
+      ),
+      nested path '$.a.za[1]'
+      columns (
+        nested path '$.z21[*] ? (@ >= ($"y" +121))' as z21
+        columns (
+          b int path '$ ? (@ > ($"x" +111))' default 0 on empty
+        )
+      )
+    )
+  ) as sub;
+
+drop view jsonb_table_view7;
+
+drop table s;
+
+select * from json_table( cast('1' as jsonb), '$' columns (a int ) null on error );
+
+select * from json_table( cast('1' as jsonb), '$' columns (a int true on empty ) );
+
+select * from json_table( cast('1' as jsonb), '$' columns (a int omit quotes true on error ) );
+
+select * from json_table( cast('1' as jsonb), '$' columns (a int exists empty object on error ) );
+
+create view json_table_view8
+as select
+  *
+from
+  json_table(
+    '"a"',
+    '$'
+    columns (
+      a text path '$'
+    )
+  );
+
+create view json_table_view9
+as select
+  *
+from
+  json_table(
+    '"a"',
+    '$'
+    columns (
+      a text path '$'
+    )
+    error on error
+  );
+
+drop view json_table_view8, json_table_view9;
+
+create view json_table_view8
+as select
+  *
+from
+  json_table(
+    '"a"',
+    '$'
+    columns (
+      a text path '$'
+    )
+    empty array on error
+  );
+
+create view json_table_view9
+as select
+  *
+from
+  json_table(
+    '"a"',
+    '$'
+    columns (
+      a text path '$'
+    )
+    empty array on error
+  );
+
+drop view json_table_view8, json_table_view9;

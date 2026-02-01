@@ -1,0 +1,1 @@
+ALTER PUBLICATION mypub SET TABLE mytable;

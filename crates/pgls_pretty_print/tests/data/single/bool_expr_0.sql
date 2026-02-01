@@ -1,0 +1,1 @@
+SELECT * FROM users WHERE active = true AND age >= 18;

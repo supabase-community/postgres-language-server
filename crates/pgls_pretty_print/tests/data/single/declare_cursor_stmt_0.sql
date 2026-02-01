@@ -1,0 +1,1 @@
+DECLARE mycursor CURSOR FOR SELECT * FROM mytable;

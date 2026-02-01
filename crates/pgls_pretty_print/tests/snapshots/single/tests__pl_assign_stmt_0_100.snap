@@ -1,0 +1,11 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/single/pl_assign_stmt_0.sql
+snapshot_kind: text
+---
+do $do$
+DECLARE
+    x integer;
+BEGIN
+    x := 42;
+END $do$;

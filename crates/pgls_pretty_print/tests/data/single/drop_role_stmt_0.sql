@@ -1,0 +1,1 @@
+DROP ROLE test_user;

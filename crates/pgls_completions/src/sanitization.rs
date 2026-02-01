@@ -320,7 +320,7 @@ mod tests {
         },
     };
 
-    fn get_test_params(input: &str, position: TextSize) -> CompletionParams {
+    fn get_test_params(input: &str, position: TextSize) -> CompletionParams<'_> {
         let mut ts = tree_sitter::Parser::new();
         ts.set_language(&pgls_treesitter_grammar::LANGUAGE.into())
             .unwrap();
