@@ -3,9 +3,9 @@
 <head>
     <meta charset="utf-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><link rel="canonical" href="https://pg-language-server.com/main/features/database_linting/" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><link rel="canonical" href="https://pg-language-server.com/main/features/formatting/" />
       <link rel="shortcut icon" href="../../img/favicon.ico" />
-    <title>Database Linting - Postgres Language Server</title>
+    <title>Formatting - Postgres Language Server</title>
     <link rel="stylesheet" href="../../css/theme.css" />
     <link rel="stylesheet" href="../../css/theme_extra.css" />
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
@@ -13,9 +13,9 @@
     
       <script>
         // Current page data
-        var mkdocs_page_name = "Database Linting";
-        var mkdocs_page_input_path = "features/database_linting.md";
-        var mkdocs_page_url = "/main/features/database_linting/";
+        var mkdocs_page_name = "Formatting";
+        var mkdocs_page_input_path = "features/formatting.md";
+        var mkdocs_page_url = "/main/features/formatting/";
       </script>
     
     <!--[if lt IE 9]>
@@ -54,33 +54,29 @@
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="../linting/">Linting</a>
                   </li>
-                  <li class="toctree-l1 current"><a class="reference internal current" href="#">Database Linting</a>
-    <ul class="current">
-    <li class="toctree-l2"><a class="reference internal" href="#rules">Rules</a>
-    </li>
-    <li class="toctree-l2"><a class="reference internal" href="#configuration">Configuration</a>
-    </li>
-    <li class="toctree-l2"><a class="reference internal" href="#ignoring-database-objects">Ignoring Database Objects</a>
-        <ul>
-    <li class="toctree-l3"><a class="reference internal" href="#global-ignore">Global Ignore</a>
-    </li>
-    <li class="toctree-l3"><a class="reference internal" href="#per-rule-ignore">Per-Rule Ignore</a>
-    </li>
-    <li class="toctree-l3"><a class="reference internal" href="#pattern-examples">Pattern Examples</a>
-    </li>
-        </ul>
-    </li>
-    <li class="toctree-l2"><a class="reference internal" href="#supabase-specific-rules">Supabase-Specific Rules</a>
-    </li>
-    <li class="toctree-l2"><a class="reference internal" href="#cli-usage">CLI Usage</a>
-    </li>
-    <li class="toctree-l2"><a class="reference internal" href="#database-connection">Database Connection</a>
-    </li>
-    </ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../database_linting/">Database Linting</a>
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="../type_checking/">Type Checking</a>
                   </li>
-                  <li class="toctree-l1"><a class="reference internal" href="../formatting/">Formatting</a>
+                  <li class="toctree-l1 current"><a class="reference internal current" href="#">Formatting</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#known-limitations">Known Limitations</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#configuration">Configuration</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#options">Options</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#example-output">Example Output</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#cli-usage">CLI Usage</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#editor-integration">Editor Integration</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#ignoring-files">Ignoring Files</a>
+    </li>
+    </ul>
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="../plpgsql/">PL/pgSQL Support</a>
                   </li>
@@ -132,9 +128,9 @@
   <ul class="wy-breadcrumbs">
     <li><a href="../.." class="icon icon-home" aria-label="Docs"></a></li>
           <li class="breadcrumb-item">Features</li>
-      <li class="breadcrumb-item active">Database Linting</li>
+      <li class="breadcrumb-item active">Formatting</li>
     <li class="wy-breadcrumbs-aside">
-          <a href="https://github.com/supabase-community/postgres-language-server/edit/master/docs/features/database_linting.md">Edit on supabase-community/postgres-language-server</a>
+          <a href="https://github.com/supabase-community/postgres-language-server/edit/master/docs/features/formatting.md">Edit on supabase-community/postgres-language-server</a>
     </li>
   </ul>
   <hr/>
@@ -142,135 +138,124 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
             <div class="section" itemprop="articleBody">
               
-                <h1 id="database-linting">Database Linting</h1>
-<p>The database linter analyzes your live Postgres database schema to detect performance issues, security vulnerabilities, and configuration problems. Unlike the <a href="../linting/">file-based linter</a> which checks SQL migration files, the database linter connects directly to your database and inspects the actual schema state.</p>
-<p>All database linting rules are powered by existing tools such as <a href="https://github.com/supabase/splinter">Splinter</a>.</p>
-<h2 id="rules">Rules</h2>
-<p>See the <a href="../../reference/database_rules/">Database Linter Rules Reference</a> for the complete list of available rules and their descriptions.</p>
+                <h1 id="formatting">Formatting</h1>
+<blockquote>
+<p><strong>Preview Feature</strong>: The formatter is currently in preview. We'd love feedback from early adopters! Please report any issues or unexpected output at <a href="https://github.com/supabase-community/postgres-language-server/issues">GitHub Issues</a>.</p>
+</blockquote>
+<h2 id="known-limitations">Known Limitations</h2>
+<div class="admonition warning">
+<p class="admonition-title">Comments are not yet supported</p>
+<p>SQL comments (<code>--</code> and <code>/* */</code>) will be removed during formatting. This is a temporary limitation that will be addressed in a future release. If your SQL files contain important comments, consider waiting for comment support before using the formatter on those files.</p>
+</div>
+<p>The language server provides SQL formatting that produces consistent, readable code. Built on Postgres' own parser, the formatter ensures 100% syntax compatibility with your SQL.</p>
 <h2 id="configuration">Configuration</h2>
-<p>Configure database linting behavior in your <code>postgres-language-server.jsonc</code>:</p>
+<p>Configure formatting behavior in your <code>postgres-language-server.jsonc</code>:</p>
 <pre><code class="language-json">{
-  &quot;splinter&quot;: {
-    // Enable/disable the database linter entirely
+  &quot;format&quot;: {
     &quot;enabled&quot;: true,
-    &quot;rules&quot;: {
-      // Configure rule groups
-      &quot;performance&quot;: {
-        // Individual rule configuration
-        &quot;noPrimaryKey&quot;: &quot;warn&quot;,
-        &quot;unusedIndex&quot;: &quot;info&quot;
-      },
-      &quot;security&quot;: {
-        &quot;rlsDisabledInPublic&quot;: &quot;error&quot;,
-        &quot;authUsersExposed&quot;: &quot;error&quot;
-      }
-    }
+    &quot;lineWidth&quot;: 100,
+    &quot;indentSize&quot;: 2,
+    &quot;indentStyle&quot;: &quot;spaces&quot;,
+    &quot;keywordCase&quot;: &quot;lower&quot;,
+    &quot;constantCase&quot;: &quot;lower&quot;,
+    &quot;typeCase&quot;: &quot;lower&quot;
   }
 }
 </code></pre>
-<h2 id="ignoring-database-objects">Ignoring Database Objects</h2>
-<p>You can ignore specific database objects using glob patterns. Patterns use Unix-style globs where <code>*</code> matches any sequence of characters. Patterns should be in the format <code>schema.object_name</code>.</p>
-<h3 id="global-ignore">Global Ignore</h3>
-<p>To ignore objects across all rules, use the top-level <code>ignore</code> field:</p>
-<pre><code class="language-json">{
-  &quot;splinter&quot;: {
-    &quot;ignore&quot;: [
-      &quot;audit.*&quot;,
-      &quot;temp_*&quot;
-    ],
-    &quot;rules&quot;: {
-      // ...
-    }
-  }
-}
-</code></pre>
-<p>This is useful for excluding entire schemas (like audit logs or temporary tables) from all database linting.</p>
-<h3 id="per-rule-ignore">Per-Rule Ignore</h3>
-<p>To ignore objects for a specific rule only, use the rule-level <code>ignore</code> option:</p>
-<pre><code class="language-json">{
-  &quot;splinter&quot;: {
-    &quot;rules&quot;: {
-      &quot;performance&quot;: {
-        &quot;noPrimaryKey&quot;: {
-          &quot;level&quot;: &quot;warn&quot;,
-          &quot;options&quot;: {
-            &quot;ignore&quot;: [
-              &quot;public.temp_*&quot;,
-              &quot;staging.*&quot;
-            ]
-          }
-        }
-      }
-    }
-  }
-}
-</code></pre>
-<h3 id="pattern-examples">Pattern Examples</h3>
+<h3 id="options">Options</h3>
 <table>
 <thead>
 <tr>
-<th>Pattern</th>
-<th>Matches</th>
+<th>Option</th>
+<th>Default</th>
+<th>Description</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><code>public.my_table</code></td>
-<td>Specific table in public schema</td>
+<td><code>enabled</code></td>
+<td><code>true</code></td>
+<td>Enable or disable the formatter</td>
 </tr>
 <tr>
-<td><code>audit.*</code></td>
-<td>All objects in the audit schema</td>
+<td><code>lineWidth</code></td>
+<td><code>100</code></td>
+<td>Maximum line width before breaking</td>
 </tr>
 <tr>
-<td><code>*.temp_*</code></td>
-<td>Objects with temp_ prefix in any schema</td>
+<td><code>indentSize</code></td>
+<td><code>2</code></td>
+<td>Number of spaces (or tab width) for indentation</td>
 </tr>
 <tr>
-<td><code>public.log_*</code></td>
-<td>Tables starting with log_ in public schema</td>
+<td><code>indentStyle</code></td>
+<td><code>"spaces"</code></td>
+<td>Use <code>"spaces"</code> or <code>"tabs"</code> for indentation</td>
+</tr>
+<tr>
+<td><code>keywordCase</code></td>
+<td><code>"lower"</code></td>
+<td>Casing for SQL keywords: <code>"upper"</code> or <code>"lower"</code></td>
+</tr>
+<tr>
+<td><code>constantCase</code></td>
+<td><code>"lower"</code></td>
+<td>Casing for constants (NULL, TRUE, FALSE): <code>"upper"</code> or <code>"lower"</code></td>
+</tr>
+<tr>
+<td><code>typeCase</code></td>
+<td><code>"lower"</code></td>
+<td>Casing for data types (text, int, varchar): <code>"upper"</code> or <code>"lower"</code></td>
 </tr>
 </tbody>
 </table>
-<h2 id="supabase-specific-rules">Supabase-Specific Rules</h2>
-<p>Some rules are specifically designed for Supabase projects and will be automatically skipped if Supabase-specific database roles are not detected. These rules check for issues related to:</p>
-<ul>
-<li>Auth schema exposure</li>
-<li>RLS policy configuration</li>
-<li>API schema security</li>
-<li>Supabase-specific extensions</li>
-</ul>
-<h2 id="cli-usage">CLI Usage</h2>
-<p>The database linter can be run via the CLI:</p>
-<pre><code class="language-bash"># Run database linting
-postgres-language-server dblint
+<h3 id="example-output">Example Output</h3>
+<p>With default settings (lowercase):</p>
+<pre><code class="language-sql">create table users (
+  id serial primary key,
+  name text not null,
+  active boolean default true
+);
 
-# With specific rules
-postgres-language-server dblint --only security/rlsDisabledInPublic
-
-# Skip certain rules
-postgres-language-server dblint --skip performance/tableBloat
+select * from users where active = true;
 </code></pre>
-<p>See the <a href="../../reference/cli/">CLI Reference</a> for more options.</p>
-<h2 id="database-connection">Database Connection</h2>
-<p>The database linter requires a database connection to analyze the schema. Configure your connection in <code>postgres-language-server.jsonc</code>:</p>
+<p>With uppercase keywords and constants:</p>
+<pre><code class="language-sql">CREATE TABLE users (
+  id serial PRIMARY KEY,
+  name text NOT NULL,
+  active boolean DEFAULT TRUE
+);
+
+SELECT * FROM users WHERE active = TRUE;
+</code></pre>
+<h2 id="cli-usage">CLI Usage</h2>
+<p>Format files using the CLI:</p>
+<pre><code class="language-bash"># Format and show diff
+postgres-language-server format file.sql
+
+# Format and write changes
+postgres-language-server format file.sql --write
+
+# Format entire directory
+postgres-language-server format migrations/ --write
+</code></pre>
+<h2 id="editor-integration">Editor Integration</h2>
+<p>The formatter integrates with your editor via the Language Server Protocol. Use your editor's format document command (typically bound to a keyboard shortcut) to format SQL files.</p>
+<h2 id="ignoring-files">Ignoring Files</h2>
+<p>Use the <code>ignore</code> and <code>include</code> options to control which files are formatted:</p>
 <pre><code class="language-json">{
-  &quot;db&quot;: {
-    &quot;host&quot;: &quot;127.0.0.1&quot;,
-    &quot;port&quot;: 5432,
-    &quot;database&quot;: &quot;postgres&quot;,
-    &quot;username&quot;: &quot;postgres&quot;,
-    &quot;password&quot;: &quot;postgres&quot;
+  &quot;format&quot;: {
+    &quot;ignore&quot;: [&quot;**/generated/**&quot;, &quot;**/vendor/**&quot;],
+    &quot;include&quot;: [&quot;**/*.sql&quot;]
   }
 }
 </code></pre>
-<p>See the <a href="../../guides/configure_database/">database connection guide</a> for more details.</p>
               
             </div>
           </div><footer>
     <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
-        <a href="../linting/" class="btn btn-neutral float-left" title="Linting"><span class="icon icon-circle-arrow-left"></span> Previous</a>
-        <a href="../type_checking/" class="btn btn-neutral float-right" title="Type Checking">Next <span class="icon icon-circle-arrow-right"></span></a>
+        <a href="../type_checking/" class="btn btn-neutral float-left" title="Type Checking"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../plpgsql/" class="btn btn-neutral float-right" title="PL/pgSQL Support">Next <span class="icon icon-circle-arrow-right"></span></a>
     </div>
 
   <hr/>
@@ -297,10 +282,10 @@ postgres-language-server dblint --skip performance/tableBloat
         </span>
     
     
-      <span><a href="../linting/" style="color: #fcfcfc">&laquo; Previous</a></span>
+      <span><a href="../type_checking/" style="color: #fcfcfc">&laquo; Previous</a></span>
     
     
-      <span><a href="../type_checking/" style="color: #fcfcfc">Next &raquo;</a></span>
+      <span><a href="../plpgsql/" style="color: #fcfcfc">Next &raquo;</a></span>
     
   </span>
 </div>

@@ -193,7 +193,7 @@ fn generate_splinter_group(
     Ok(())
 }
 
-fn extract_splinter_group_metadata(group: &str) -> (&str, Markup) {
+fn extract_splinter_group_metadata(group: &str) -> (&str, Markup<'_>) {
     match group {
         "performance" => (
             "Performance",
