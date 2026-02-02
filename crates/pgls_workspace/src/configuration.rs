@@ -109,7 +109,7 @@ fn load_config(
     if let ConfigurationPathHint::FromUser(ref config_file_path) = base_path
         && file_system.path_is_file(config_file_path)
     {
-        let content = strip_jsonc_comments(&file_system.read_file_from_path(config_file_path)?);
+        let content = strip_jsonc(&file_system.read_file_from_path(config_file_path)?)?;
 
         let deserialized = serde_json::from_str::<PartialConfiguration>(&content)
             .map_err(ConfigurationDiagnostic::new_deserialization_error)?;
@@ -139,9 +139,8 @@ fn load_config(
     )? {
         let AutoSearchResult { content, file_path } = auto_search_result;
 
-        let deserialized =
-            serde_json::from_str::<PartialConfiguration>(&strip_jsonc_comments(&content))
-                .map_err(ConfigurationDiagnostic::new_deserialization_error)?;
+        let deserialized = serde_json::from_str::<PartialConfiguration>(&strip_jsonc(&content)?)
+            .map_err(ConfigurationDiagnostic::new_deserialization_error)?;
 
         Ok(Some(ConfigurationPayload {
             deserialized,
@@ -224,69 +223,17 @@ pub fn to_analyser_rules(settings: &Settings) -> LinterRules {
     analyser_rules
 }
 
-/// Takes a string of jsonc content and returns a comment free version
-/// which should parse fine as regular json.
-/// Nested block comments are supported.
-pub fn strip_jsonc_comments(jsonc_input: &str) -> String {
-    let mut json_output = String::new();
-
-    let mut block_comment_depth: u8 = 0;
-    let mut is_in_string: bool = false; // Comments cannot be in strings
-
-    for line in jsonc_input.split('\n') {
-        let mut last_char: Option<char> = None;
-        for cur_char in line.chars() {
-            // Check whether we're in a string
-            if block_comment_depth == 0 && last_char != Some('\\') && cur_char == '"' {
-                is_in_string = !is_in_string;
-            }
-
-            // Check for line comment start
-            if !is_in_string && last_char == Some('/') && cur_char == '/' {
-                last_char = None;
-                json_output.push_str("  ");
-                break; // Stop outputting or parsing this line
-            }
-            // Check for block comment start
-            if !is_in_string && last_char == Some('/') && cur_char == '*' {
-                block_comment_depth += 1;
-                last_char = None;
-                json_output.push_str("  ");
-            // Check for block comment end
-            } else if !is_in_string && last_char == Some('*') && cur_char == '/' {
-                block_comment_depth = block_comment_depth.saturating_sub(1);
-                last_char = None;
-                json_output.push_str("  ");
-            // Output last char if not in any block comment
-            } else {
-                if block_comment_depth == 0 {
-                    if let Some(last_char) = last_char {
-                        json_output.push(last_char);
-                    }
-                } else {
-                    json_output.push(' ');
-                }
-                last_char = Some(cur_char);
-            }
-        }
-
-        // Add last char and newline if not in any block comment
-        if let Some(last_char) = last_char {
-            if block_comment_depth == 0 {
-                json_output.push(last_char);
-            } else {
-                json_output.push(' ');
-            }
-        }
-
-        // Remove trailing whitespace from line
-        while json_output.ends_with(' ') {
-            json_output.pop();
-        }
-        json_output.push('\n');
-    }
-
-    json_output
+/// Strips JSONC comments and trailing commas from input, returning valid JSON.
+fn strip_jsonc(content: &str) -> Result<String, ConfigurationDiagnostic> {
+    let mut data = content.to_string();
+    json_strip_comments::strip(&mut data).map_err(|e| {
+        ConfigurationDiagnostic::DeserializationError(
+            pgls_configuration::diagnostics::DeserializationError {
+                message: format!("Failed to strip JSONC comments: {e}"),
+            },
+        )
+    })?;
+    Ok(data)
 }
 
 pub trait PartialConfigurationExt {
@@ -409,8 +356,9 @@ impl PartialConfigurationExt for PartialConfiguration {
 
             })?;
 
-            let deserialized = serde_json::from_str::<PartialConfiguration>(&content)
-                .map_err(ConfigurationDiagnostic::new_deserialization_error)?;
+            let deserialized =
+                serde_json::from_str::<PartialConfiguration>(&strip_jsonc(&content)?)
+                    .map_err(ConfigurationDiagnostic::new_deserialization_error)?;
             deserialized_configurations.push(deserialized)
         }
         Ok(deserialized_configurations)
@@ -560,107 +508,5 @@ mod tests {
             let normalized = normalize_path(path);
             assert_eq!(normalized, PathBuf::from(r"c:\a\d"));
         }
-    }
-
-    #[test]
-    fn test_strip_jsonc_comments_line_comments() {
-        let input = r#"{
-  "name": "test", // This is a line comment
-  "value": 42 // Another comment
-}"#;
-
-        let expected = r#"{
-  "name": "test",
-  "value": 42
-}
-"#;
-
-        assert_eq!(strip_jsonc_comments(input), expected);
-    }
-
-    #[test]
-    fn test_strip_jsonc_comments_block_comments() {
-        let input = r#"{
-  /* This is a block comment */
-  "name": "test",
-  "value": /* inline comment */ 42
-}"#;
-
-        let expected = r#"{
-
-  "name": "test",
-  "value":                       42
-}
-"#;
-
-        assert_eq!(strip_jsonc_comments(input), expected);
-    }
-
-    #[test]
-    fn test_strip_jsonc_comments_nested_block_comments() {
-        let input = r#"{
-  /* Outer comment /* Nested comment */ still outer */
-  "name": "test"
-}"#;
-
-        let expected = r#"{
-
-  "name": "test"
-}
-"#;
-
-        assert_eq!(strip_jsonc_comments(input), expected);
-    }
-
-    #[test]
-    fn test_strip_jsonc_comments_in_strings() {
-        let input = r#"{
-  "comment_like": "This is not a // comment",
-  "another": "This is not a /* block comment */ either"
-}"#;
-
-        let expected = r#"{
-  "comment_like": "This is not a // comment",
-  "another": "This is not a /* block comment */ either"
-}
-"#;
-
-        assert_eq!(strip_jsonc_comments(input), expected);
-    }
-
-    #[test]
-    fn test_strip_jsonc_comments_escaped_quotes() {
-        let input = r#"{
-  "escaped\": \"quote": "value", // Comment after escaped quotes
-  "normal": "value" // Normal comment
-}"#;
-
-        let expected = r#"{
-  "escaped\": \"quote": "value",
-  "normal": "value"
-}
-"#;
-
-        assert_eq!(strip_jsonc_comments(input), expected);
-    }
-
-    #[test]
-    fn test_strip_jsonc_comments_multiline_block() {
-        let input = r#"{
-  /* This is a
-     multiline block
-     comment */
-  "name": "test"
-}"#;
-
-        let expected = r#"{
-
-
-
-  "name": "test"
-}
-"#;
-
-        assert_eq!(strip_jsonc_comments(input), expected);
     }
 }

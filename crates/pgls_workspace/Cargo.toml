@@ -17,6 +17,7 @@ globset           = "0.4.16"
 lru               = "0.12"
 
 ignore                            = { workspace = true }
+json-strip-comments               = { workspace = true }
 pgls_analyse                      = { workspace = true, features = ["serde"] }
 pgls_analyser                     = { workspace = true }
 pgls_completions                  = { workspace = true }
