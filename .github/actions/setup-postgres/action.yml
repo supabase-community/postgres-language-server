@@ -27,6 +27,12 @@ runs:
       if: runner.os == 'macOS'
       shell: bash
       run: |
+        # Install ICU4C for PostgreSQL extension compilation
+        brew install icu4c
+        export PKG_CONFIG_PATH="/opt/homebrew/opt/icu4c/lib/pkgconfig:$PKG_CONFIG_PATH"
+        export CFLAGS="-I/opt/homebrew/opt/icu4c/include $CFLAGS"
+        export LDFLAGS="-L/opt/homebrew/opt/icu4c/lib $LDFLAGS"
+
         # First, ensure we're using the same PostgreSQL that the action installed
         export PATH="$(pg_config --bindir):$PATH"
 
@@ -35,8 +41,8 @@ runs:
         echo "Extension directory: $(pg_config --sharedir)/extension"
         echo "Library directory: $(pg_config --pkglibdir)"
 
-        # Clone and build plpgsql_check
-        git clone https://github.com/okbob/plpgsql_check.git
+        # Clone and build plpgsql_check (pinned to v2.7.11 for PG15 compatibility)
+        git clone --branch v2.7.11 --depth 1 https://github.com/okbob/plpgsql_check.git
         cd plpgsql_check
 
         # Clean and compile
