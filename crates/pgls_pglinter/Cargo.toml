@@ -23,6 +23,7 @@ sqlx.workspace                        = true
 [dev-dependencies]
 insta.workspace           = true
 pgls_console.workspace    = true
+pgls_schema_cache         = { workspace = true, features = ["db"] }
 pgls_test_utils.workspace = true
 
 [lib]
