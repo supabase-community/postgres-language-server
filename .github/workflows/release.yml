@@ -103,8 +103,8 @@ jobs:
         run: |
           mkdir dist
           # deprecated
-          cp target/${{ matrix.config.target }}/release/postgrestools.exe ./dist/postgrestools_${{ matrix.config.target }}
-          cp target/${{ matrix.config.target }}/release/postgres-language-server.exe ./dist/postgres-language-server_${{ matrix.config.target }}
+          cp target/${{ matrix.config.target }}/release/postgrestools.exe ./dist/postgrestools_${{ matrix.config.target }}.exe
+          cp target/${{ matrix.config.target }}/release/postgres-language-server.exe ./dist/postgres-language-server_${{ matrix.config.target }}.exe
 
       - name: 👦 Name the Binary
         if: matrix.config.os != 'windows-2022'
