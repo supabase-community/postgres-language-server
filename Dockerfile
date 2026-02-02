@@ -4,7 +4,7 @@ FROM postgres:15
 RUN apt-get update && \
     apt-get install -y postgresql-server-dev-15 gcc make git && \
     cd /tmp && \
-    git clone https://github.com/okbob/plpgsql_check.git && \
+    git clone --branch v2.7.11 --depth 1 https://github.com/okbob/plpgsql_check.git && \
     cd plpgsql_check && \
     make && \
     make install && \

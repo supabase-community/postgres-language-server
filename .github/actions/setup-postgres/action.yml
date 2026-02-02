@@ -35,8 +35,8 @@ runs:
         echo "Extension directory: $(pg_config --sharedir)/extension"
         echo "Library directory: $(pg_config --pkglibdir)"
 
-        # Clone and build plpgsql_check
-        git clone https://github.com/okbob/plpgsql_check.git
+        # Clone and build plpgsql_check (pinned to v2.7.11 for PG15 compatibility)
+        git clone --branch v2.7.11 --depth 1 https://github.com/okbob/plpgsql_check.git
         cd plpgsql_check
 
         # Clean and compile
