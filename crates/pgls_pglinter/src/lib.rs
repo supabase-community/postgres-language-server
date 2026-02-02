@@ -9,9 +9,10 @@ pub mod rules;
 use pgls_analyse::{AnalysisFilter, RegistryVisitor, RuleMeta};
 use pgls_diagnostics::DatabaseObjectOwned;
 use pgls_schema_cache::SchemaCache;
+use rustc_hash::FxHashMap;
 use sqlx::PgPool;
 
-pub use cache::PglinterCache;
+pub use cache::{PglinterCache, RuleMessage};
 pub use diagnostics::{PglinterAdvices, PglinterDiagnostic};
 pub use rule::PglinterRule;
 
@@ -60,10 +61,10 @@ impl<'a> RegistryVisitor for RuleCollector<'a> {
     }
 
     fn record_rule<R: RuleMeta>(&mut self) {
-        if self.filter.match_rule::<R>() {
-            if let Some(code) = registry::get_rule_code(R::METADATA.name) {
-                self.enabled_rules.push(code.to_string());
-            }
+        if self.filter.match_rule::<R>()
+            && let Some(code) = registry::get_rule_code(R::METADATA.name)
+        {
+            self.enabled_rules.push(code.to_string());
         }
     }
 }
@@ -128,6 +129,18 @@ pub async fn run_pglinter(
         return Ok(results);
     }
 
+    // Get rule messages from cache or fetch
+    let rule_messages = match cache {
+        Some(c) => c.rule_messages.clone(),
+        None => {
+            if cache::check_rule_messages_table_exists(params.conn).await? {
+                cache::fetch_rule_messages(params.conn).await?
+            } else {
+                FxHashMap::default()
+            }
+        }
+    };
+
     // Fetch all violations in one query
     let violations = fetch_violations(params.conn).await?;
 
@@ -146,8 +159,13 @@ pub async fn run_pglinter(
             violation.objsubid,
         );
 
+        // Get rule message if available
+        let rule_message = rule_messages.get(&violation.rule_code);
+
         // Create a diagnostic for this violation
-        if let Some(diag) = PglinterDiagnostic::from_violation(&violation.rule_code, db_object) {
+        if let Some(diag) =
+            PglinterDiagnostic::from_violation(&violation.rule_code, db_object, rule_message)
+        {
             results.push(diag);
         }
     }

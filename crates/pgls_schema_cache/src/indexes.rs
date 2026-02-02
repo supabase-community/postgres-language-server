@@ -1,8 +1,12 @@
+#[cfg(feature = "db")]
 use sqlx::PgPool;
 
+#[cfg(feature = "db")]
 use crate::schema_cache::SchemaCacheItem;
 
-#[derive(Debug, Default, PartialEq, Eq)]
+use serde::{Deserialize, Serialize};
+
+#[derive(Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Index {
     pub id: i64,
     pub schema: String,
@@ -10,6 +14,7 @@ pub struct Index {
     pub table_name: String,
 }
 
+#[cfg(feature = "db")]
 impl SchemaCacheItem for Index {
     type Item = Index;
 

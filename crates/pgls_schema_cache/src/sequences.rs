@@ -1,14 +1,19 @@
+#[cfg(feature = "db")]
 use sqlx::PgPool;
 
+#[cfg(feature = "db")]
 use crate::schema_cache::SchemaCacheItem;
 
-#[derive(Debug, Default, PartialEq, Eq)]
+use serde::{Deserialize, Serialize};
+
+#[derive(Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Sequence {
     pub id: i64,
     pub schema: String,
     pub name: String,
 }
 
+#[cfg(feature = "db")]
 impl SchemaCacheItem for Sequence {
     type Item = Sequence;
 

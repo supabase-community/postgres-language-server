@@ -1,5 +1,6 @@
 //! Pglinter diagnostic types
 
+use crate::cache::RuleMessage;
 use pgls_diagnostics::{
     Advices, Category, DatabaseObjectOwned, Diagnostic, LogCategory, MessageAndDescription,
     Severity, Visit,
@@ -52,12 +53,12 @@ impl Advices for PglinterAdvices {
             visitor.record_log(LogCategory::Info, &format!("Rule: {code}"))?;
         }
 
-        if let Some(objects) = &self.object_list {
-            if !objects.is_empty() {
-                visitor.record_log(LogCategory::None, &"Affected objects:")?;
-                for line in objects.lines() {
-                    visitor.record_log(LogCategory::Info, &format!("  {line}"))?;
-                }
+        if let Some(objects) = &self.object_list
+            && !objects.is_empty()
+        {
+            visitor.record_log(LogCategory::None, &"Affected objects:")?;
+            for line in objects.lines() {
+                visitor.record_log(LogCategory::Info, &format!("  {line}"))?;
             }
         }
 
@@ -135,27 +136,58 @@ impl PglinterDiagnostic {
         })
     }
 
-    /// Create diagnostic from a pglinter violation with optional object info
+    /// Create diagnostic from a pglinter violation with optional object info and rule message
     pub fn from_violation(
         rule_code: &str,
         db_object: Option<DatabaseObjectOwned>,
+        rule_message: Option<&RuleMessage>,
     ) -> Option<PglinterDiagnostic> {
         let category = crate::registry::get_rule_category(rule_code)?;
         let metadata = crate::registry::get_rule_metadata_by_code(rule_code)?;
 
-        let fixes: Vec<String> = metadata.fixes.iter().map(|s| s.to_string()).collect();
+        // Get object name for placeholder replacement
+        let obj_name = db_object
+            .as_ref()
+            .map(|obj| {
+                if let Some(ref schema) = obj.schema {
+                    format!("'{}.{}'", schema, obj.name)
+                } else {
+                    format!("'{}'", obj.name)
+                }
+            })
+            .unwrap_or_else(|| "Object".to_string());
 
-        // Generate a violation-specific message
-        let message = violation_message(rule_code, db_object.as_ref());
+        // Use rule_message from pglinter v1.1.0+ if available, otherwise fall back to hardcoded
+        let (message, advice_description, fixes) = if let Some(rm) = rule_message {
+            // Replace {object} placeholder with actual object name
+            let msg = rm.message.replace("{object}", &obj_name);
+            let advice = rm.advices.clone();
+            let fix_list = rm.infos.clone();
+            (msg, advice, fix_list)
+        } else {
+            // Fall back to hardcoded messages for older pglinter versions
+            let msg = violation_message(rule_code, db_object.as_ref());
+            let advice = violation_advice(rule_code);
+            let fix_list = metadata.fixes.iter().map(|s| s.to_string()).collect();
+            (msg, advice, fix_list)
+        };
 
-        // Generate a violation-specific advice (more detailed explanation)
-        let advice_description = violation_advice(rule_code);
+        // Determine severity from rule_message or default to Warning
+        let severity = rule_message
+            .map(|rm| match rm.severity.to_uppercase().as_str() {
+                "ERROR" => Severity::Error,
+                "WARNING" => Severity::Warning,
+                "INFO" | "INFORMATION" => Severity::Information,
+                "HINT" => Severity::Hint,
+                _ => Severity::Warning,
+            })
+            .unwrap_or(Severity::Warning);
 
         Some(PglinterDiagnostic {
             category,
             db_object,
             message: message.into(),
-            severity: Severity::Warning,
+            severity,
             advices: PglinterAdvices {
                 description: advice_description,
                 rule_code: Some(rule_code.to_string()),
