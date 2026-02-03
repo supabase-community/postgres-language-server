@@ -14,6 +14,7 @@ use crate::versions::Version;
 use crate::{Extension, Role, Trigger};
 
 #[derive(Debug, Default, Serialize, Deserialize)]
+#[serde(default)]
 pub struct SchemaCache {
     pub schemas: Vec<Schema>,
     pub tables: Vec<Table>,
