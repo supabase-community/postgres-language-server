@@ -5,119 +5,119 @@ snapshot_kind: text
 ---
 Category: pglinter/base/howManyObjectsWithUppercase
 Severity: Warning
-Message: Sequence 'public.BadName_id_seq' uses uppercase characters
+Message: 'public.BadName_id_seq' uses uppercase characters.
 Advices:
 Using uppercase in identifiers requires quoting and can cause case-sensitivity issues.
 [Info] Rule: B005
 How to fix:
-[Info]   1. Do not use uppercase for any database objects
+[Info]   1. How to fix: Rename the database object to use only lowercase characters.
 
 ---
 
 Category: pglinter/base/howManyObjectsWithUppercase
 Severity: Warning
-Message: Ordinary 'public.BadName' uses uppercase characters
+Message: 'public.BadName' uses uppercase characters.
 Advices:
 Using uppercase in identifiers requires quoting and can cause case-sensitivity issues.
 [Info] Rule: B005
 How to fix:
-[Info]   1. Do not use uppercase for any database objects
+[Info]   1. How to fix: Rename the database object to use only lowercase characters.
 
 ---
 
 Category: pglinter/base/howManyObjectsWithUppercase
 Severity: Warning
-Message: Index 'public.BadName_pkey' uses uppercase characters
+Message: 'public.BadName_pkey' uses uppercase characters.
 Advices:
 Using uppercase in identifiers requires quoting and can cause case-sensitivity issues.
 [Info] Rule: B005
 How to fix:
-[Info]   1. Do not use uppercase for any database objects
+[Info]   1. How to fix: Rename the database object to use only lowercase characters.
 
 ---
 
 Category: pglinter/base/howManyObjectsWithUppercase
 Severity: Warning
-Message: Index 'public.BadName_pkey' uses uppercase characters
+Message: 'public.BadName_pkey' uses uppercase characters.
 Advices:
 Using uppercase in identifiers requires quoting and can cause case-sensitivity issues.
 [Info] Rule: B005
 How to fix:
-[Info]   1. Do not use uppercase for any database objects
+[Info]   1. How to fix: Rename the database object to use only lowercase characters.
 
 ---
 
 Category: pglinter/base/howManyObjectsWithUppercase
 Severity: Warning
-Message: Sequence 'public.BadName_id_seq' uses uppercase characters
+Message: 'public.BadName_id_seq' uses uppercase characters.
 Advices:
 Using uppercase in identifiers requires quoting and can cause case-sensitivity issues.
 [Info] Rule: B005
 How to fix:
-[Info]   1. Do not use uppercase for any database objects
+[Info]   1. How to fix: Rename the database object to use only lowercase characters.
 
 ---
 
 Category: pglinter/base/howManyObjectsWithUppercase
 Severity: Warning
-Message: Object Object uses uppercase characters
+Message: Object uses uppercase characters.
 Advices:
 Using uppercase in identifiers requires quoting and can cause case-sensitivity issues.
 [Info] Rule: B005
 How to fix:
-[Info]   1. Do not use uppercase for any database objects
+[Info]   1. How to fix: Rename the database object to use only lowercase characters.
 
 ---
 
 Category: pglinter/base/howManyObjectsWithUppercase
 Severity: Warning
-Message: Object Object uses uppercase characters
+Message: Object uses uppercase characters.
 Advices:
 Using uppercase in identifiers requires quoting and can cause case-sensitivity issues.
 [Info] Rule: B005
 How to fix:
-[Info]   1. Do not use uppercase for any database objects
+[Info]   1. How to fix: Rename the database object to use only lowercase characters.
 
 ---
 
 Category: pglinter/base/howManyObjectsWithUppercase
 Severity: Warning
-Message: Object Object uses uppercase characters
+Message: Object uses uppercase characters.
 Advices:
 Using uppercase in identifiers requires quoting and can cause case-sensitivity issues.
 [Info] Rule: B005
 How to fix:
-[Info]   1. Do not use uppercase for any database objects
+[Info]   1. How to fix: Rename the database object to use only lowercase characters.
 
 ---
 
 Category: pglinter/base/howManyObjectsWithUppercase
 Severity: Warning
-Message: Object Object uses uppercase characters
+Message: Object uses uppercase characters.
 Advices:
 Using uppercase in identifiers requires quoting and can cause case-sensitivity issues.
 [Info] Rule: B005
 How to fix:
-[Info]   1. Do not use uppercase for any database objects
+[Info]   1. How to fix: Rename the database object to use only lowercase characters.
 
 ---
 
 Category: pglinter/base/howManyTableWithoutIndexOnFk
 Severity: Warning
-Message: Foreign key on Object has no index
+Message: Object does not have an index on its foreign key.
 Advices:
-Foreign keys without indexes cause slow cascading operations and inefficient join queries.
+Create an index on the foreign key column to improve join and lookup performance.
 [Info] Rule: B003
 How to fix:
-[Info]   1. create a index on foreign key or change warning/error threshold
+[Info]   1. How to fix: CREATE INDEX ON {object} (...);
 
 ---
 
 Category: pglinter/base/howManyTableWithoutPrimaryKey
 Severity: Warning
-Message: Table 'public.no_pk' has no primary key
+Message: 'public.no_pk' does not have a primary key.
 Advices:
-Tables without primary keys cannot be uniquely identified, which causes issues with replication, foreign keys, and efficient updates/deletes.
+Add a primary key to this table to ensure data integrity and better performance.
 [Info] Rule: B001
 How to fix:
-[Info]   1. create a primary key or change warning/error threshold
+[Info]   1. How to fix: ALTER TABLE {object} ADD PRIMARY KEY (...);

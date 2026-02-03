@@ -5,64 +5,64 @@ snapshot_kind: text
 ---
 Category: pglinter/base/howManyObjectsWithUppercase
 Severity: Warning
-Message: Sequence 'public.TestTable_id_seq' uses uppercase characters
+Message: 'public.TestTable_id_seq' uses uppercase characters.
 Advices:
 Using uppercase in identifiers requires quoting and can cause case-sensitivity issues.
 [Info] Rule: B005
 How to fix:
-[Info]   1. Do not use uppercase for any database objects
+[Info]   1. How to fix: Rename the database object to use only lowercase characters.
 
 ---
 
 Category: pglinter/base/howManyObjectsWithUppercase
 Severity: Warning
-Message: Ordinary 'public.TestTable' uses uppercase characters
+Message: 'public.TestTable' uses uppercase characters.
 Advices:
 Using uppercase in identifiers requires quoting and can cause case-sensitivity issues.
 [Info] Rule: B005
 How to fix:
-[Info]   1. Do not use uppercase for any database objects
+[Info]   1. How to fix: Rename the database object to use only lowercase characters.
 
 ---
 
 Category: pglinter/base/howManyObjectsWithUppercase
 Severity: Warning
-Message: Index 'public.TestTable_pkey' uses uppercase characters
+Message: 'public.TestTable_pkey' uses uppercase characters.
 Advices:
 Using uppercase in identifiers requires quoting and can cause case-sensitivity issues.
 [Info] Rule: B005
 How to fix:
-[Info]   1. Do not use uppercase for any database objects
+[Info]   1. How to fix: Rename the database object to use only lowercase characters.
 
 ---
 
 Category: pglinter/base/howManyObjectsWithUppercase
 Severity: Warning
-Message: Column 'public.TestTable.UserName' uses uppercase characters
+Message: 'public.TestTable.UserName' uses uppercase characters.
 Advices:
 Using uppercase in identifiers requires quoting and can cause case-sensitivity issues.
 [Info] Rule: B005
 How to fix:
-[Info]   1. Do not use uppercase for any database objects
+[Info]   1. How to fix: Rename the database object to use only lowercase characters.
 
 ---
 
 Category: pglinter/base/howManyObjectsWithUppercase
 Severity: Warning
-Message: Index 'public.TestTable_pkey' uses uppercase characters
+Message: 'public.TestTable_pkey' uses uppercase characters.
 Advices:
 Using uppercase in identifiers requires quoting and can cause case-sensitivity issues.
 [Info] Rule: B005
 How to fix:
-[Info]   1. Do not use uppercase for any database objects
+[Info]   1. How to fix: Rename the database object to use only lowercase characters.
 
 ---
 
 Category: pglinter/base/howManyObjectsWithUppercase
 Severity: Warning
-Message: Sequence 'public.TestTable_id_seq' uses uppercase characters
+Message: 'public.TestTable_id_seq' uses uppercase characters.
 Advices:
 Using uppercase in identifiers requires quoting and can cause case-sensitivity issues.
 [Info] Rule: B005
 How to fix:
-[Info]   1. Do not use uppercase for any database objects
+[Info]   1. How to fix: Rename the database object to use only lowercase characters.

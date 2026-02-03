@@ -5,9 +5,9 @@ snapshot_kind: text
 ---
 Category: pglinter/base/howManyTableWithoutPrimaryKey
 Severity: Warning
-Message: Table 'public.test_no_pk' has no primary key
+Message: 'public.test_no_pk' does not have a primary key.
 Advices:
-Tables without primary keys cannot be uniquely identified, which causes issues with replication, foreign keys, and efficient updates/deletes.
+Add a primary key to this table to ensure data integrity and better performance.
 [Info] Rule: B001
 How to fix:
-[Info]   1. create a primary key or change warning/error threshold
+[Info]   1. How to fix: ALTER TABLE {object} ADD PRIMARY KEY (...);
