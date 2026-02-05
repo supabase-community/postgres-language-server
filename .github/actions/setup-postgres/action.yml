@@ -78,9 +78,9 @@ runs:
         # Initialize pgrx for the installed PostgreSQL version
         cargo pgrx init --pg${PG_VERSION} $(which pg_config)
 
-        # Clone and build pglinter (clone to /tmp, use feat/83/violation_list for rule_messages)
+        # Clone and build pglinter (requires v1.1.0+ for get_violations API + rule_messages table)
         cd /tmp
-        git clone -b feat/83/violation_list https://github.com/pmpetit/pglinter.git
+        git clone --depth 1 https://github.com/pmpetit/pglinter.git
         cd pglinter
 
         # Install using pgrx

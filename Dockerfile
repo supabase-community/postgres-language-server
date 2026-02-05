@@ -19,9 +19,9 @@ RUN apt-get update && \
     cargo install cargo-pgrx --version 0.16.1 --locked && \
     # Initialize pgrx for PostgreSQL 15
     cargo pgrx init --pg15 $(which pg_config) && \
-    # Clone and build pglinter (using feat/83/violation_list branch for get_violations API + rule_messages)
+    # Clone and build pglinter (requires v1.1.0+ for get_violations API + rule_messages table)
     cd /tmp && \
-    git clone -b feat/83/violation_list https://github.com/pmpetit/pglinter.git && \
+    git clone --depth 1 https://github.com/pmpetit/pglinter.git && \
     cd pglinter && \
     cargo pgrx install --pg-config $(which pg_config) --release && \
     # Cleanup Rust and build dependencies
