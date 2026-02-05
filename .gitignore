@@ -51,3 +51,5 @@ site/
 
 biome-main/
 .review/
+pglinter_repo/
+.review/

@@ -1,0 +1,13 @@
+---
+source: crates/pgls_pglinter/tests/diagnostics.rs
+expression: content
+snapshot_kind: text
+---
+Category: pglinter/base/howManyTableWithoutPrimaryKey
+Severity: Warning
+Message: 'public.test_no_pk' does not have a primary key.
+Advices:
+Add a primary key to this table to ensure data integrity and better performance.
+[Info] Rule: B001
+How to fix:
+[Info]   1. How to fix: ALTER TABLE {object} ADD PRIMARY KEY (...);

@@ -2,11 +2,12 @@ use pgls_analyse::RuleFilter;
 
 use std::str::FromStr;
 
-/// Represents a rule group from any analyzer (linter or splinter)
+/// Represents a rule group from any analyzer (linter, splinter, or pglinter)
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
 pub enum AnalyzerGroup {
     Linter(crate::linter::RuleGroup),
     Splinter(crate::splinter::RuleGroup),
+    PgLinter(crate::pglinter::RuleGroup),
 }
 
 impl AnalyzerGroup {
@@ -14,6 +15,7 @@ impl AnalyzerGroup {
         match self {
             Self::Linter(group) => group.as_str(),
             Self::Splinter(group) => group.as_str(),
+            Self::PgLinter(group) => group.as_str(),
         }
     }
 
@@ -21,6 +23,7 @@ impl AnalyzerGroup {
         match self {
             Self::Linter(_) => "lint",
             Self::Splinter(_) => "splinter",
+            Self::PgLinter(_) => "pglinter",
         }
     }
 }
@@ -57,6 +60,8 @@ impl FromStr for RuleSelector {
             ("lint", rest)
         } else if let Some(rest) = selector.strip_prefix("splinter/") {
             ("splinter", rest)
+        } else if let Some(rest) = selector.strip_prefix("pglinter/") {
+            ("pglinter", rest)
         } else {
             // Default to lint for backward compatibility
             ("lint", selector)
@@ -84,6 +89,17 @@ impl FromStr for RuleSelector {
                         Err("This rule doesn't exist.")
                     }
                 }
+                "pglinter" => {
+                    let group = crate::pglinter::RuleGroup::from_str(group_name)?;
+                    if let Some(rule_name) = crate::pglinter::Rules::has_rule(group, rule_name) {
+                        Ok(RuleSelector::Rule(
+                            AnalyzerGroup::PgLinter(group),
+                            rule_name,
+                        ))
+                    } else {
+                        Err("This rule doesn't exist.")
+                    }
+                }
                 _ => Err("Unknown analyzer type."),
             }
         } else {
@@ -97,6 +113,12 @@ impl FromStr for RuleSelector {
                 },
                 "splinter" => match crate::splinter::RuleGroup::from_str(rest) {
                     Ok(group) => Ok(RuleSelector::Group(AnalyzerGroup::Splinter(group))),
+                    Err(_) => Err(
+                        "This group doesn't exist. Use the syntax `<group>/<rule>` to specify a rule.",
+                    ),
+                },
+                "pglinter" => match crate::pglinter::RuleGroup::from_str(rest) {
+                    Ok(group) => Ok(RuleSelector::Group(AnalyzerGroup::PgLinter(group))),
                     Err(_) => Err(
                         "This group doesn't exist. Use the syntax `<group>/<rule>` to specify a rule.",
                     ),

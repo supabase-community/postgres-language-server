@@ -1,0 +1,68 @@
+---
+source: crates/pgls_pglinter/tests/diagnostics.rs
+expression: content
+snapshot_kind: text
+---
+Category: pglinter/base/howManyObjectsWithUppercase
+Severity: Warning
+Message: 'public.TestTable_id_seq' uses uppercase characters.
+Advices:
+Using uppercase in identifiers requires quoting and can cause case-sensitivity issues.
+[Info] Rule: B005
+How to fix:
+[Info]   1. How to fix: Rename the database object to use only lowercase characters.
+
+---
+
+Category: pglinter/base/howManyObjectsWithUppercase
+Severity: Warning
+Message: 'public.TestTable' uses uppercase characters.
+Advices:
+Using uppercase in identifiers requires quoting and can cause case-sensitivity issues.
+[Info] Rule: B005
+How to fix:
+[Info]   1. How to fix: Rename the database object to use only lowercase characters.
+
+---
+
+Category: pglinter/base/howManyObjectsWithUppercase
+Severity: Warning
+Message: 'public.TestTable_pkey' uses uppercase characters.
+Advices:
+Using uppercase in identifiers requires quoting and can cause case-sensitivity issues.
+[Info] Rule: B005
+How to fix:
+[Info]   1. How to fix: Rename the database object to use only lowercase characters.
+
+---
+
+Category: pglinter/base/howManyObjectsWithUppercase
+Severity: Warning
+Message: 'public.TestTable.UserName' uses uppercase characters.
+Advices:
+Using uppercase in identifiers requires quoting and can cause case-sensitivity issues.
+[Info] Rule: B005
+How to fix:
+[Info]   1. How to fix: Rename the database object to use only lowercase characters.
+
+---
+
+Category: pglinter/base/howManyObjectsWithUppercase
+Severity: Warning
+Message: 'public.TestTable_pkey' uses uppercase characters.
+Advices:
+Using uppercase in identifiers requires quoting and can cause case-sensitivity issues.
+[Info] Rule: B005
+How to fix:
+[Info]   1. How to fix: Rename the database object to use only lowercase characters.
+
+---
+
+Category: pglinter/base/howManyObjectsWithUppercase
+Severity: Warning
+Message: 'public.TestTable_id_seq' uses uppercase characters.
+Advices:
+Using uppercase in identifiers requires quoting and can cause case-sensitivity issues.
+[Info] Rule: B005
+How to fix:
+[Info]   1. How to fix: Rename the database object to use only lowercase characters.

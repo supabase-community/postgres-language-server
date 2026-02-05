@@ -8,6 +8,7 @@ pub mod files;
 pub mod format;
 pub mod linter;
 pub mod migrations;
+pub mod pglinter;
 pub mod plpgsql_check;
 pub mod rules;
 pub mod splinter;
@@ -36,6 +37,9 @@ pub use linter::{
 };
 use migrations::{
     MigrationsConfiguration, PartialMigrationsConfiguration, partial_migrations_configuration,
+};
+use pglinter::{
+    PartialPglinterConfiguration, PglinterConfiguration, partial_pglinter_configuration,
 };
 use pgls_env::PGLS_WEBSITE;
 use plpgsql_check::{
@@ -102,6 +106,10 @@ pub struct Configuration {
     #[partial(type, bpaf(external(partial_format_configuration), optional))]
     pub format: FormatConfiguration,
 
+    /// The configuration for pglinter
+    #[partial(type, bpaf(external(partial_pglinter_configuration), optional))]
+    pub pglinter: PglinterConfiguration,
+
     /// The configuration for type checking
     #[partial(type, bpaf(external(partial_typecheck_configuration), optional))]
     pub typecheck: TypecheckConfiguration,
@@ -149,6 +157,10 @@ impl PartialConfiguration {
             }),
             format: Some(PartialFormatConfiguration {
                 enabled: Some(false), // Disabled by default during beta
+                ..Default::default()
+            }),
+            pglinter: Some(PartialPglinterConfiguration {
+                enabled: Some(false), // Disabled by default since pglinter extension might not be installed
                 ..Default::default()
             }),
             typecheck: Some(PartialTypecheckConfiguration {

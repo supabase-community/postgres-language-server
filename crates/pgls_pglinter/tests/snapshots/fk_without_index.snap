@@ -1,0 +1,13 @@
+---
+source: crates/pgls_pglinter/tests/diagnostics.rs
+expression: content
+snapshot_kind: text
+---
+Category: pglinter/base/howManyTableWithoutIndexOnFk
+Severity: Warning
+Message: Object does not have an index on its foreign key.
+Advices:
+Create an index on the foreign key column to improve join and lookup performance.
+[Info] Rule: B003
+How to fix:
+[Info]   1. How to fix: CREATE INDEX ON {object} (...);
