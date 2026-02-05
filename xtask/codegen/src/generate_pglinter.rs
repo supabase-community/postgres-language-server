@@ -35,11 +35,11 @@ struct PglinterRuleMeta {
 
 /// Parse pglinter rules from rules.sql and generate Rust code
 pub fn generate_pglinter() -> Result<()> {
-    let rules_sql_path = project_root().join("pglinter_repo/sql/rules.sql");
+    let rules_sql_path = project_root().join("crates/pgls_pglinter/vendor/sql/rules.sql");
 
     if !rules_sql_path.exists() {
         anyhow::bail!(
-            "pglinter_repo/sql/rules.sql not found. Clone pglinter repo first: git clone https://github.com/pmpetit/pglinter pglinter_repo"
+            "Vendor files not found at crates/pgls_pglinter/vendor/sql/rules.sql. Run 'cargo build -p pgls_pglinter' first to download them."
         );
     }
 
