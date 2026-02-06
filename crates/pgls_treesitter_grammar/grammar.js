@@ -2739,7 +2739,7 @@ module.exports = grammar({
             choice(
               $.subquery,
               $.invocation,
-              $.table_reference,
+              seq($.table_reference, optional("*")),
               wrapped_in_parenthesis($.values),
             ),
           ),
