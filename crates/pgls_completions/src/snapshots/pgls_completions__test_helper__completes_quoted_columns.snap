@@ -74,6 +74,7 @@ select "email" |
 
 Results:
 from - from (Keyword)
+is - is (Keyword)
 
 --------------
 
@@ -139,10 +140,10 @@ select "email" from "private".u|
 select "email" from "private".users; |
 
 Results:
+analyze - analyze (Keyword)
+explain - explain (Keyword)
 insert - insert (Keyword)
 reset - reset (Keyword)
 select - select (Keyword)
-set - set (Keyword)
-truncate - truncate (Keyword)
 
 --------------

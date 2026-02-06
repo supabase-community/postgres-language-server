@@ -260,6 +260,16 @@ module.exports = grammar({
     keyword_main: (_) => make_keyword("main"),
     keyword_storage: (_) => make_keyword("storage"),
     keyword_compression: (_) => make_keyword("compression"),
+    keyword_settings: (_) => make_keyword("settings"),
+    keyword_generic_plan: (_) => make_keyword("generic_plan"),
+    keyword_buffers: (_) => make_keyword("buffers"),
+    keyword_wal: (_) => make_keyword("wal"),
+    keyword_timing: (_) => make_keyword("timing"),
+    keyword_summary: (_) => make_keyword("summary"),
+    keyword_memory: (_) => make_keyword("memory"),
+    keyword_serialize: (_) => make_keyword("serialize"),
+    keyword_skip_locked: (_) => make_keyword("skip_locked"),
+    keyword_buffer_usage_limit: (_) => make_keyword("buffer_usage_limit"),
 
     keyword_overriding: () => make_keyword("overriding"),
     keyword_system: () => make_keyword("system"),
@@ -301,6 +311,7 @@ module.exports = grammar({
     keyword_input: (_) => make_keyword("input"),
     keyword_strict: (_) => make_keyword("strict"),
     keyword_cost: (_) => make_keyword("cost"),
+    keyword_costs: (_) => make_keyword("costs"),
     keyword_support: (_) => make_keyword("support"),
     keyword_definer: (_) => make_keyword("definer"),
     keyword_invoker: (_) => make_keyword("invoker"),
@@ -426,6 +437,7 @@ module.exports = grammar({
     keyword_uuid: (_) => make_keyword("uuid"),
 
     keyword_json: (_) => make_keyword("json"),
+    keyword_yaml: (_) => make_keyword("yaml"),
     keyword_jsonb: (_) => make_keyword("jsonb"),
     keyword_xml: (_) => make_keyword("xml"),
 
@@ -618,18 +630,56 @@ module.exports = grammar({
       ),
 
     statement: ($) =>
-      seq(
+      choice(
+        $._ddl_statement,
+        $._dml_write,
+        optional_parenthesis($._dml_read),
+        $._explain_statement,
+        $.analyze_statement,
+      ),
+
+    _explain_statement: ($) =>
+      partialSeq(
+        $.keyword_explain,
         optional(
-          seq(
-            $.keyword_explain,
-            optional($.keyword_analyze),
-            optional($.keyword_verbose),
+          choice(
+            partialSeq($.keyword_verbose, $._boolean),
+            partialSeq($.keyword_analyze, $._boolean),
+            partialSeq($.keyword_costs, $._boolean),
+            partialSeq($.keyword_settings, $._boolean),
+            partialSeq($.keyword_generic_plan, $._boolean),
+            partialSeq($.keyword_buffers, $._boolean),
+            partialSeq(
+              $.keyword_serializable,
+              choice($.keyword_none, $.keyword_text, $.keyword_binary),
+            ),
+            partialSeq($.keyword_wal, $._boolean),
+            partialSeq($.keyword_timing, $._boolean),
+            partialSeq($.keyword_summary, $._boolean),
+            partialSeq($.keyword_memory, $._boolean),
+            partialSeq(
+              $.keyword_format,
+              choice(
+                $.keyword_text,
+                $.keyword_xml,
+                $.keyword_json,
+                $.keyword_yaml,
+              ),
+            ),
           ),
         ),
-        choice(
-          $._ddl_statement,
-          $._dml_write,
-          optional_parenthesis($._dml_read),
+        field(
+          "end",
+          choice(
+            $._select_statement,
+            $._insert_statement,
+            $._update_statement,
+            $.delete_statement,
+            $._merge_statement,
+            $.create_materialized_view,
+            $.create_table,
+            // todo: declare, values, execute
+          ),
         ),
       ),
 
@@ -2206,6 +2256,40 @@ module.exports = grammar({
         optional(paren_list($.field, false)),
       ),
 
+    analyze_statement: ($) =>
+      partialSeq(
+        field("end", $.keyword_analyze),
+        optional($.analyze_options),
+        optional($.analyze_table_and_columns),
+      ),
+
+    analyze_options: ($) =>
+      wrapped_in_parenthesis(comma_list($.analyze_option, true)),
+
+    analyze_option: ($) =>
+      choice(
+        seq(field("end", $.keyword_verbose), optional($._boolean)),
+        seq(field("end", $.keyword_skip_locked), optional($._boolean)),
+        partialSeq(
+          $.keyword_buffer_usage_limit,
+          choice(
+            field("end", $._integer),
+            // todo: size strings
+          ),
+        ),
+      ),
+
+    analyze_table_and_columns: ($) =>
+      seq(
+        optional($.keyword_only),
+        field("end", $.table_reference),
+        optional("*"),
+        optional($.analyze_columns),
+      ),
+
+    analyze_columns: ($) =>
+      wrapped_in_parenthesis(comma_list($.column_identifier, true)),
+
     _vacuum_option: ($) =>
       choice(
         seq($.keyword_full, optional(choice($.keyword_true, $.keyword_false))),
@@ -2692,7 +2776,7 @@ module.exports = grammar({
           ),
         ),
         $.keyword_on,
-        field("end", choice($._expression, $.keyword_true, $.keyword_false)),
+        field("end", choice($._expression, $._boolean)),
       ),
 
     cross_join: ($) =>
@@ -2745,7 +2829,10 @@ module.exports = grammar({
           seq(
             choice(
               field("end", $.direction),
-              seq($.keyword_using, field("end", choice("<", ">", "<=", ">="))),
+              partialSeq(
+                $.keyword_using,
+                field("end", choice("<", ">", "<=", ">=")),
+              ),
             ),
             optional($.order_target_nulls),
           ),
@@ -3028,9 +3115,11 @@ module.exports = grammar({
         ...opChoices.map(([operator, precedence]) =>
           prec.right(
             precedence,
-            seq(
-              field("binary_expr_left", $._expression),
-              field("binary_expr_operator", operator),
+            partialSeq(
+              seq(
+                field("binary_expr_left", $._expression),
+                field("binary_expr_operator", operator),
+              ),
               field("end", $._expression),
             ),
           ),
@@ -3038,9 +3127,11 @@ module.exports = grammar({
         ...clauseChoices.map(([operator, precedence]) =>
           prec.right(
             precedence,
-            seq(
-              field("binary_expr_left", $._expression),
-              field("binary_expr_operator", operator),
+            partialSeq(
+              seq(
+                field("binary_expr_left", $._expression),
+                field("binary_expr_operator", operator),
+              ),
               field("end", $._expression),
             ),
           ),
@@ -3048,9 +3139,11 @@ module.exports = grammar({
         ...binaryChoices.map(([operator, precedence]) =>
           prec.right(
             precedence,
-            seq(
-              field("binary_expr_left", $._expression),
-              field("binary_expr_operator", operator),
+            partialSeq(
+              seq(
+                field("binary_expr_left", $._expression),
+                field("binary_expr_operator", operator),
+              ),
               field("end", choice($.list, $.subquery)),
             ),
           ),
@@ -3119,11 +3212,13 @@ module.exports = grammar({
           $._literal_string,
           $._bit_string,
           $._string_casting,
-          $.keyword_true,
-          $.keyword_false,
+          $._boolean,
           $.keyword_null,
         ),
       ),
+
+    _boolean: ($) => choice($.keyword_true, $.keyword_false),
+
     _double_quote_string: (_) => /"[^"]*"/,
     // The norm specify that between two consecutive string must be a return,
     // but this is good enough.

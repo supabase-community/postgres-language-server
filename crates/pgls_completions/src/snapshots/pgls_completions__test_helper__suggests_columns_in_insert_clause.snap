@@ -25,6 +25,7 @@ i|
 
 Results:
 insert - insert (Keyword)
+explain - explain (Keyword)
 
 --------------
 
@@ -161,11 +162,11 @@ insert into instruments (id, name) values (1, '|)
 insert into instruments (id, name) values (1, 'my_bass'); |
 
 Results:
+analyze - analyze (Keyword)
+explain - explain (Keyword)
 insert - insert (Keyword)
 reset - reset (Keyword)
 select - select (Keyword)
-set - set (Keyword)
-truncate - truncate (Keyword)
 
 --------------
 
@@ -179,6 +180,7 @@ i|
 
 Results:
 insert - insert (Keyword)
+explain - explain (Keyword)
 
 --------------
 
@@ -337,11 +339,11 @@ insert into instruments ("id", "name") values (1, '|)
 insert into instruments ("id", "name") values (1, 'my_bass'); |
 
 Results:
+analyze - analyze (Keyword)
+explain - explain (Keyword)
 insert - insert (Keyword)
 reset - reset (Keyword)
 select - select (Keyword)
-set - set (Keyword)
-truncate - truncate (Keyword)
 
 --------------
 

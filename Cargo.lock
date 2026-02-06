@@ -3135,6 +3135,7 @@ dependencies = [
  "cc",
  "criterion",
  "insta",
+ "pgls_lexer",
  "pgls_test_utils",
  "tree-sitter",
  "tree-sitter-language",

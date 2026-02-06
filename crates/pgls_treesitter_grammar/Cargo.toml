@@ -23,6 +23,7 @@ cc = "1.2"
 [dev-dependencies]
 criterion.workspace       = true
 insta                     = { version = "1.42.1" }
+pgls_lexer.workspace      = true
 pgls_test_utils.workspace = true
 
 [[bench]]

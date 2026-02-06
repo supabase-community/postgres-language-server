@@ -57,6 +57,7 @@ select email from users where id |
 
 Results:
 group - group (Keyword)
+is - is (Keyword)
 limit - limit (Keyword)
 order - order (Keyword)
 window - window (Keyword)
@@ -78,10 +79,10 @@ select email from users where id = 1|
 select email from users where id = 1; |
 
 Results:
+analyze - analyze (Keyword)
+explain - explain (Keyword)
 insert - insert (Keyword)
 reset - reset (Keyword)
 select - select (Keyword)
-set - set (Keyword)
-truncate - truncate (Keyword)
 
 --------------
