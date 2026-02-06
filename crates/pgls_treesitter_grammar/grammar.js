@@ -763,6 +763,12 @@ module.exports = grammar({
           $.select,
           optional(seq($.keyword_into, $.select_expression)),
           optional($.from),
+          optional($.where),
+          optional($.group_by),
+          optional($.window_clause),
+          optional($.order_by),
+          optional($.limit),
+          optional($.offset),
         ),
       ),
 
@@ -853,7 +859,10 @@ module.exports = grammar({
     select_expression: ($) => field("end", comma_list($.term, true)),
 
     term: ($) =>
-      seq(field("end", choice($.all_fields, $._expression)), optional($.alias)),
+      seq(
+        field("end", choice($.all_fields, $._expression)),
+        prec(-1, optional($.alias)),
+      ),
 
     _truncate_statement: ($) =>
       seq(
@@ -879,6 +888,7 @@ module.exports = grammar({
         optional($.where),
         optional($.order_by),
         optional($.limit),
+        optional($.offset),
       ),
 
     _create_statement: ($) =>
@@ -2326,7 +2336,6 @@ module.exports = grammar({
         optional($.keyword_only),
         $.relation,
         $._set_values,
-        // optional($.from),
         optional($.where),
       ),
 
@@ -2613,6 +2622,7 @@ module.exports = grammar({
               field("parameter", $.term),
               optional($.order_by),
               optional($.limit),
+              optional($.offset),
             ),
           ),
         ),
@@ -2720,28 +2730,19 @@ module.exports = grammar({
         $.keyword_from,
         optional($.keyword_only),
         field("end", comma_list($.relation, true)),
-        // TODO: work joins
         repeat(
           choice($.join, $.cross_join, $.lateral_join, $.lateral_cross_join),
         ),
-        optional($.where),
-        optional($.group_by),
-        optional($.window_clause),
-        optional($.order_by),
-        optional($.limit),
       ),
 
     relation: ($) =>
       prec.right(
         seq(
-          field(
-            "end",
-            choice(
-              $.subquery,
-              $.invocation,
-              seq($.table_reference, optional("*")),
-              wrapped_in_parenthesis($.values),
-            ),
+          choice(
+            field("end", $.subquery),
+            field("end", $.invocation),
+            seq(field("end", $.table_reference), optional("*")),
+            wrapped_in_parenthesis($.values),
           ),
           optional(seq($.alias, optional(alias($._column_list, $.list)))),
         ),
@@ -2864,8 +2865,7 @@ module.exports = grammar({
         field("end", choice($.keyword_first, $.keyword_last)),
       ),
 
-    limit: ($) =>
-      partialSeq($.keyword_limit, field("end", $.literal), optional($.offset)),
+    limit: ($) => partialSeq($.keyword_limit, field("end", $.literal)),
 
     offset: ($) => partialSeq($.keyword_offset, field("end", $.literal)),
 

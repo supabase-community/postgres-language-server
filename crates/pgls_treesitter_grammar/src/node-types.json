@@ -1313,6 +1313,10 @@
           "named": true
         },
         {
+          "type": "group_by",
+          "named": true
+        },
+        {
           "type": "interval",
           "named": true
         },
@@ -1349,6 +1353,10 @@
           "named": true
         },
         {
+          "type": "limit",
+          "named": true
+        },
+        {
           "type": "list",
           "named": true
         },
@@ -1358,6 +1366,14 @@
         },
         {
           "type": "object_reference",
+          "named": true
+        },
+        {
+          "type": "offset",
+          "named": true
+        },
+        {
+          "type": "order_by",
           "named": true
         },
         {
@@ -1390,6 +1406,14 @@
         },
         {
           "type": "unary_expression",
+          "named": true
+        },
+        {
+          "type": "where",
+          "named": true
+        },
+        {
+          "type": "window_clause",
           "named": true
         },
         {
@@ -3663,6 +3687,10 @@
           "named": true
         },
         {
+          "type": "group_by",
+          "named": true
+        },
+        {
           "type": "keyword_all",
           "named": true
         },
@@ -3683,6 +3711,18 @@
           "named": true
         },
         {
+          "type": "limit",
+          "named": true
+        },
+        {
+          "type": "offset",
+          "named": true
+        },
+        {
+          "type": "order_by",
+          "named": true
+        },
+        {
           "type": "select",
           "named": true
         },
@@ -3692,6 +3732,14 @@
         },
         {
           "type": "set_operation",
+          "named": true
+        },
+        {
+          "type": "where",
+          "named": true
+        },
+        {
+          "type": "window_clause",
           "named": true
         }
       ]
@@ -4026,6 +4074,10 @@
           "named": true
         },
         {
+          "type": "group_by",
+          "named": true
+        },
+        {
           "type": "keyword_as",
           "named": true
         },
@@ -4078,7 +4130,19 @@
           "named": true
         },
         {
+          "type": "limit",
+          "named": true
+        },
+        {
           "type": "object_reference",
+          "named": true
+        },
+        {
+          "type": "offset",
+          "named": true
+        },
+        {
+          "type": "order_by",
           "named": true
         },
         {
@@ -4099,6 +4163,14 @@
         },
         {
           "type": "table_partition",
+          "named": true
+        },
+        {
+          "type": "where",
+          "named": true
+        },
+        {
+          "type": "window_clause",
           "named": true
         }
       ]
@@ -5796,10 +5868,6 @@
           "named": true
         },
         {
-          "type": "group_by",
-          "named": true
-        },
-        {
           "type": "join",
           "named": true
         },
@@ -5824,6 +5892,10 @@
           "named": true
         },
         {
+          "type": "offset",
+          "named": true
+        },
+        {
           "type": "order_by",
           "named": true
         },
@@ -5833,10 +5905,6 @@
         },
         {
           "type": "where",
-          "named": true
-        },
-        {
-          "type": "window_clause",
           "named": true
         }
       ]
@@ -6816,6 +6884,10 @@
           "named": true
         },
         {
+          "type": "group_by",
+          "named": true
+        },
+        {
           "type": "insert_columns",
           "named": true
         },
@@ -6880,6 +6952,18 @@
           "named": true
         },
         {
+          "type": "limit",
+          "named": true
+        },
+        {
+          "type": "offset",
+          "named": true
+        },
+        {
+          "type": "order_by",
+          "named": true
+        },
+        {
           "type": "select",
           "named": true
         },
@@ -6893,6 +6977,10 @@
         },
         {
           "type": "where",
+          "named": true
+        },
+        {
+          "type": "window_clause",
           "named": true
         }
       ]
@@ -7114,6 +7202,10 @@
         },
         {
           "type": "limit",
+          "named": true
+        },
+        {
+          "type": "offset",
           "named": true
         },
         {
@@ -7726,15 +7818,11 @@
       }
     },
     "children": {
-      "multiple": true,
+      "multiple": false,
       "required": true,
       "types": [
         {
           "type": "keyword_limit",
-          "named": true
-        },
-        {
-          "type": "offset",
           "named": true
         }
       ]
@@ -8602,13 +8690,9 @@
     "named": true,
     "fields": {
       "end": {
-        "multiple": true,
+        "multiple": false,
         "required": true,
         "types": [
-          {
-            "type": "(",
-            "named": false
-          },
           {
             "type": ")",
             "named": false
@@ -8624,10 +8708,6 @@
           {
             "type": "table_reference",
             "named": true
-          },
-          {
-            "type": "values",
-            "named": true
           }
         ]
       }
@@ -8642,6 +8722,10 @@
         },
         {
           "type": "list",
+          "named": true
+        },
+        {
+          "type": "values",
           "named": true
         }
       ]
@@ -9017,7 +9101,23 @@
           "named": true
         },
         {
+          "type": "group_by",
+          "named": true
+        },
+        {
           "type": "keyword_into",
+          "named": true
+        },
+        {
+          "type": "limit",
+          "named": true
+        },
+        {
+          "type": "offset",
+          "named": true
+        },
+        {
+          "type": "order_by",
           "named": true
         },
         {
@@ -9026,6 +9126,14 @@
         },
         {
           "type": "select_expression",
+          "named": true
+        },
+        {
+          "type": "where",
+          "named": true
+        },
+        {
+          "type": "window_clause",
           "named": true
         }
       ]
@@ -9348,6 +9456,10 @@
             "named": true
           },
           {
+            "type": "group_by",
+            "named": true
+          },
+          {
             "type": "insert",
             "named": true
           },
@@ -9380,6 +9492,10 @@
             "named": true
           },
           {
+            "type": "limit",
+            "named": true
+          },
+          {
             "type": "list",
             "named": true
           },
@@ -9389,6 +9505,14 @@
           },
           {
             "type": "object_reference",
+            "named": true
+          },
+          {
+            "type": "offset",
+            "named": true
+          },
+          {
+            "type": "order_by",
             "named": true
           },
           {
@@ -9433,6 +9557,14 @@
           },
           {
             "type": "when_clause",
+            "named": true
+          },
+          {
+            "type": "where",
+            "named": true
+          },
+          {
+            "type": "window_clause",
             "named": true
           },
           {
@@ -9701,6 +9833,10 @@
           "named": true
         },
         {
+          "type": "group_by",
+          "named": true
+        },
+        {
           "type": "insert",
           "named": true
         },
@@ -9921,6 +10057,18 @@
           "named": true
         },
         {
+          "type": "limit",
+          "named": true
+        },
+        {
+          "type": "offset",
+          "named": true
+        },
+        {
+          "type": "order_by",
+          "named": true
+        },
+        {
           "type": "reset_statement",
           "named": true
         },
@@ -9966,6 +10114,10 @@
         },
         {
           "type": "where",
+          "named": true
+        },
+        {
+          "type": "window_clause",
           "named": true
         }
       ]
@@ -10041,6 +10193,10 @@
           "named": true
         },
         {
+          "type": "group_by",
+          "named": true
+        },
+        {
           "type": "keyword_all",
           "named": true
         },
@@ -10061,6 +10217,18 @@
           "named": true
         },
         {
+          "type": "limit",
+          "named": true
+        },
+        {
+          "type": "offset",
+          "named": true
+        },
+        {
+          "type": "order_by",
+          "named": true
+        },
+        {
           "type": "select",
           "named": true
         },
@@ -10070,6 +10238,14 @@
         },
         {
           "type": "set_operation",
+          "named": true
+        },
+        {
+          "type": "where",
+          "named": true
+        },
+        {
+          "type": "window_clause",
           "named": true
         }
       ]
