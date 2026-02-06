@@ -178,7 +178,7 @@ pub static ALL_KEYWORDS: &[SqlKeyword] = &[
     SqlKeyword::new("interval").require_prefix(),
     SqlKeyword::new("into"),
     SqlKeyword::new("invoker"),
-    SqlKeyword::new("is"),
+    SqlKeyword::new("is").require_prefix(),
     SqlKeyword::new("isolation"),
     SqlKeyword::new("join"),
     SqlKeyword::new("json"),

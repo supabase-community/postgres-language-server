@@ -26,6 +26,7 @@ create table auth.posts (
 a|
 
 Results:
+analyze - analyze (Keyword)
 truncate - truncate (Keyword)
 update - update (Keyword)
 

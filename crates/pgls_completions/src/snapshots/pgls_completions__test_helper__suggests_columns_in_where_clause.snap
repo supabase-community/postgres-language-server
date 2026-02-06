@@ -103,6 +103,12 @@ window - window (Keyword)
 --------------
 
 select name from instruments i join others o on i.z = o.a where o.a = i.z a|
+
+Results:
+and - and (Keyword)
+
+--------------
+
 select name from instruments i join others o on i.z = o.a where o.a = i.z and |
 **should prioritize columns that aren't already mentioned**
 

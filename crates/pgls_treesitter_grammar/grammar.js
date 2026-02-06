@@ -22,6 +22,7 @@ module.exports = grammar({
 
   conflicts: ($) => [
     [$.between_expression, $.binary_expression],
+    [$.is_expression, $.binary_expression],
     [$.time],
     [$.timestamp],
     [$.grantable_on_function, $.grantable_on_table],
@@ -366,13 +367,9 @@ module.exports = grammar({
     keyword_csv: (_) => make_keyword("csv"),
 
     // Operators
-    is_not: ($) => prec.left(seq($.keyword_is, $.keyword_not)),
     not_like: ($) => seq($.keyword_not, $.keyword_like),
     similar_to: ($) => seq($.keyword_similar, $.keyword_to),
     not_similar_to: ($) => seq($.keyword_not, $.keyword_similar, $.keyword_to),
-    distinct_from: ($) => seq($.keyword_is, $.keyword_distinct, $.keyword_from),
-    not_distinct_from: ($) =>
-      seq($.keyword_is, $.keyword_not, $.keyword_distinct, $.keyword_from),
 
     _temporary: ($) => choice($.keyword_temp, $.keyword_temporary),
     _not_null: ($) => seq($.keyword_not, $.keyword_null),
@@ -2987,6 +2984,7 @@ module.exports = grammar({
           $.array,
           $.interval,
           $.between_expression,
+          $.is_expression,
           $.field_selection,
           $.parenthesized_expression,
         ),
@@ -3088,16 +3086,10 @@ module.exports = grammar({
         [">", "binary_relation"],
         ["<>", "binary_relation"],
         [$.op_other, "binary_other"],
-        [$.keyword_is, "binary_is"],
-        [$.is_not, "binary_is"],
         [$.keyword_like, "pattern_matching"],
         [$.not_like, "pattern_matching"],
         [$.similar_to, "pattern_matching"],
         [$.not_similar_to, "pattern_matching"],
-        // binary_is precedence disambiguates `(is not distinct from)` from an
-        // `is (not distinct from)` with a unary `not`
-        [$.distinct_from, "binary_is"],
-        [$.not_distinct_from, "binary_is"],
       ];
 
       /** @type {Array<[Rule, string]>} */
@@ -3171,6 +3163,29 @@ module.exports = grammar({
         ),
       );
     },
+
+    is_expression: ($) =>
+      prec.left(
+        "binary_is",
+        seq(
+          $._expression,
+          choice(
+            partialSeq(
+              $.keyword_is,
+              optional($.keyword_not),
+              field("end", choice($.keyword_null, $._boolean)),
+            ),
+
+            partialSeq(
+              $.keyword_is,
+              optional($.keyword_not),
+              $.keyword_distinct,
+              $.keyword_from,
+              field("end", $._expression),
+            ),
+          ),
+        ),
+      ),
 
     between_expression: ($) => {
       /** @type {Array<[Rule[], string]>} */

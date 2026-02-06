@@ -210,6 +210,10 @@
           "named": true
         },
         {
+          "type": "is_expression",
+          "named": true
+        },
+        {
           "type": "keyword_alter",
           "named": true
         },
@@ -1302,6 +1306,10 @@
           "named": true
         },
         {
+          "type": "is_expression",
+          "named": true
+        },
+        {
           "type": "keyword_all",
           "named": true
         },
@@ -1457,6 +1465,10 @@
             "named": true
           },
           {
+            "type": "is_expression",
+            "named": true
+          },
+          {
             "type": "list",
             "named": true
           },
@@ -1541,6 +1553,10 @@
             "named": true
           },
           {
+            "type": "is_expression",
+            "named": true
+          },
+          {
             "type": "list",
             "named": true
           },
@@ -1617,6 +1633,10 @@
         },
         {
           "type": "invocation",
+          "named": true
+        },
+        {
+          "type": "is_expression",
           "named": true
         },
         {
@@ -1751,6 +1771,10 @@
             "named": true
           },
           {
+            "type": "is_expression",
+            "named": true
+          },
+          {
             "type": "list",
             "named": true
           },
@@ -1845,14 +1869,6 @@
             "named": false
           },
           {
-            "type": "distinct_from",
-            "named": true
-          },
-          {
-            "type": "is_not",
-            "named": true
-          },
-          {
             "type": "keyword_and",
             "named": true
           },
@@ -1861,19 +1877,11 @@
             "named": true
           },
           {
-            "type": "keyword_is",
-            "named": true
-          },
-          {
             "type": "keyword_like",
             "named": true
           },
           {
             "type": "keyword_or",
-            "named": true
-          },
-          {
-            "type": "not_distinct_from",
             "named": true
           },
           {
@@ -1936,6 +1944,10 @@
           },
           {
             "type": "invocation",
+            "named": true
+          },
+          {
+            "type": "is_expression",
             "named": true
           },
           {
@@ -2086,6 +2098,10 @@
           "named": true
         },
         {
+          "type": "is_expression",
+          "named": true
+        },
+        {
           "type": "keyword_case",
           "named": true
         },
@@ -2201,6 +2217,10 @@
         },
         {
           "type": "invocation",
+          "named": true
+        },
+        {
+          "type": "is_expression",
           "named": true
         },
         {
@@ -2369,6 +2389,10 @@
           "named": true
         },
         {
+          "type": "is_expression",
+          "named": true
+        },
+        {
           "type": "keyword_check",
           "named": true
         },
@@ -2532,6 +2556,10 @@
         },
         {
           "type": "invocation",
+          "named": true
+        },
+        {
+          "type": "is_expression",
           "named": true
         },
         {
@@ -4139,6 +4167,10 @@
           "named": true
         },
         {
+          "type": "is_expression",
+          "named": true
+        },
+        {
           "type": "keyword_after",
           "named": true
         },
@@ -4686,29 +4718,6 @@
           }
         ]
       }
-    }
-  },
-  {
-    "type": "distinct_from",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": true,
-      "required": true,
-      "types": [
-        {
-          "type": "keyword_distinct",
-          "named": true
-        },
-        {
-          "type": "keyword_from",
-          "named": true
-        },
-        {
-          "type": "keyword_is",
-          "named": true
-        }
-      ]
     }
   },
   {
@@ -5444,6 +5453,10 @@
             "named": true
           },
           {
+            "type": "is_expression",
+            "named": true
+          },
+          {
             "type": "list",
             "named": true
           },
@@ -5933,6 +5946,10 @@
         },
         {
           "type": "invocation",
+          "named": true
+        },
+        {
+          "type": "is_expression",
           "named": true
         },
         {
@@ -6567,6 +6584,10 @@
             "named": true
           },
           {
+            "type": "is_expression",
+            "named": true
+          },
+          {
             "type": "list",
             "named": true
           },
@@ -6666,6 +6687,10 @@
           },
           {
             "type": "invocation",
+            "named": true
+          },
+          {
+            "type": "is_expression",
             "named": true
           },
           {
@@ -6940,6 +6965,10 @@
           "named": true
         },
         {
+          "type": "is_expression",
+          "named": true
+        },
+        {
           "type": "keyword_default",
           "named": true
         },
@@ -7080,19 +7109,198 @@
     }
   },
   {
-    "type": "is_not",
+    "type": "is_expression",
     "named": true,
-    "fields": {},
+    "fields": {
+      "end": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "array",
+            "named": true
+          },
+          {
+            "type": "between_expression",
+            "named": true
+          },
+          {
+            "type": "binary_expression",
+            "named": true
+          },
+          {
+            "type": "case",
+            "named": true
+          },
+          {
+            "type": "cast",
+            "named": true
+          },
+          {
+            "type": "exists",
+            "named": true
+          },
+          {
+            "type": "field_selection",
+            "named": true
+          },
+          {
+            "type": "interval",
+            "named": true
+          },
+          {
+            "type": "invocation",
+            "named": true
+          },
+          {
+            "type": "is_expression",
+            "named": true
+          },
+          {
+            "type": "keyword_false",
+            "named": true
+          },
+          {
+            "type": "keyword_null",
+            "named": true
+          },
+          {
+            "type": "keyword_true",
+            "named": true
+          },
+          {
+            "type": "list",
+            "named": true
+          },
+          {
+            "type": "literal",
+            "named": true
+          },
+          {
+            "type": "object_reference",
+            "named": true
+          },
+          {
+            "type": "parameter",
+            "named": true
+          },
+          {
+            "type": "parenthesized_expression",
+            "named": true
+          },
+          {
+            "type": "subquery",
+            "named": true
+          },
+          {
+            "type": "subscript",
+            "named": true
+          },
+          {
+            "type": "unary_expression",
+            "named": true
+          },
+          {
+            "type": "window_function",
+            "named": true
+          }
+        ]
+      }
+    },
     "children": {
       "multiple": true,
       "required": true,
       "types": [
+        {
+          "type": "array",
+          "named": true
+        },
+        {
+          "type": "between_expression",
+          "named": true
+        },
+        {
+          "type": "binary_expression",
+          "named": true
+        },
+        {
+          "type": "case",
+          "named": true
+        },
+        {
+          "type": "cast",
+          "named": true
+        },
+        {
+          "type": "exists",
+          "named": true
+        },
+        {
+          "type": "field_selection",
+          "named": true
+        },
+        {
+          "type": "interval",
+          "named": true
+        },
+        {
+          "type": "invocation",
+          "named": true
+        },
+        {
+          "type": "is_expression",
+          "named": true
+        },
+        {
+          "type": "keyword_distinct",
+          "named": true
+        },
+        {
+          "type": "keyword_from",
+          "named": true
+        },
         {
           "type": "keyword_is",
           "named": true
         },
         {
           "type": "keyword_not",
+          "named": true
+        },
+        {
+          "type": "list",
+          "named": true
+        },
+        {
+          "type": "literal",
+          "named": true
+        },
+        {
+          "type": "object_reference",
+          "named": true
+        },
+        {
+          "type": "parameter",
+          "named": true
+        },
+        {
+          "type": "parenthesized_expression",
+          "named": true
+        },
+        {
+          "type": "subquery",
+          "named": true
+        },
+        {
+          "type": "subscript",
+          "named": true
+        },
+        {
+          "type": "unary_expression",
+          "named": true
+        },
+        {
+          "type": "window_function",
           "named": true
         }
       ]
@@ -7140,6 +7348,10 @@
           },
           {
             "type": "invocation",
+            "named": true
+          },
+          {
+            "type": "is_expression",
             "named": true
           },
           {
@@ -7390,6 +7602,10 @@
             "named": true
           },
           {
+            "type": "is_expression",
+            "named": true
+          },
+          {
             "type": "keyword_false",
             "named": true
           },
@@ -7569,6 +7785,10 @@
           "named": true
         },
         {
+          "type": "is_expression",
+          "named": true
+        },
+        {
           "type": "list",
           "named": true
         },
@@ -7629,33 +7849,6 @@
         },
         {
           "type": "keyword_true",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
-    "type": "not_distinct_from",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": true,
-      "required": true,
-      "types": [
-        {
-          "type": "keyword_distinct",
-          "named": true
-        },
-        {
-          "type": "keyword_from",
-          "named": true
-        },
-        {
-          "type": "keyword_is",
-          "named": true
-        },
-        {
-          "type": "keyword_not",
           "named": true
         }
       ]
@@ -7959,6 +8152,10 @@
             "named": true
           },
           {
+            "type": "is_expression",
+            "named": true
+          },
+          {
             "type": "list",
             "named": true
           },
@@ -8035,6 +8232,10 @@
         },
         {
           "type": "invocation",
+          "named": true
+        },
+        {
+          "type": "is_expression",
           "named": true
         },
         {
@@ -8196,6 +8397,10 @@
           "named": true
         },
         {
+          "type": "is_expression",
+          "named": true
+        },
+        {
           "type": "list",
           "named": true
         },
@@ -8276,6 +8481,10 @@
         },
         {
           "type": "invocation",
+          "named": true
+        },
+        {
+          "type": "is_expression",
           "named": true
         },
         {
@@ -9132,6 +9341,10 @@
             "named": true
           },
           {
+            "type": "is_expression",
+            "named": true
+          },
+          {
             "type": "keyword_into",
             "named": true
           },
@@ -9247,6 +9460,10 @@
           },
           {
             "type": "invocation",
+            "named": true
+          },
+          {
+            "type": "is_expression",
             "named": true
           },
           {
@@ -9894,6 +10111,10 @@
             "named": true
           },
           {
+            "type": "is_expression",
+            "named": true
+          },
+          {
             "type": "list",
             "named": true
           },
@@ -9969,6 +10190,10 @@
           },
           {
             "type": "invocation",
+            "named": true
+          },
+          {
+            "type": "is_expression",
             "named": true
           },
           {
@@ -10050,6 +10275,10 @@
             "named": true
           },
           {
+            "type": "is_expression",
+            "named": true
+          },
+          {
             "type": "list",
             "named": true
           },
@@ -10125,6 +10354,10 @@
           },
           {
             "type": "invocation",
+            "named": true
+          },
+          {
+            "type": "is_expression",
             "named": true
           },
           {
@@ -10356,6 +10589,10 @@
           },
           {
             "type": "invocation",
+            "named": true
+          },
+          {
+            "type": "is_expression",
             "named": true
           },
           {
@@ -10787,6 +11024,10 @@
             "named": true
           },
           {
+            "type": "is_expression",
+            "named": true
+          },
+          {
             "type": "list",
             "named": true
           },
@@ -11001,6 +11242,10 @@
             "named": true
           },
           {
+            "type": "is_expression",
+            "named": true
+          },
+          {
             "type": "list",
             "named": true
           },
@@ -11085,6 +11330,10 @@
         },
         {
           "type": "invocation",
+          "named": true
+        },
+        {
+          "type": "is_expression",
           "named": true
         },
         {
@@ -11236,6 +11485,10 @@
           },
           {
             "type": "invocation",
+            "named": true
+          },
+          {
+            "type": "is_expression",
             "named": true
           },
           {
