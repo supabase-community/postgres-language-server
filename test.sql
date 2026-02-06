@@ -1,1 +1,1 @@
-select name is 
+select schema.onek.col from

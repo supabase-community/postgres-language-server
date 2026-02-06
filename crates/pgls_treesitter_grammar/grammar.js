@@ -29,6 +29,7 @@ module.exports = grammar({
 
     [$.any_identifier, $.column_identifier],
     [$.any_identifier, $.schema_identifier],
+    [$.any_identifier, $.schema_identifier, $.table_identifier],
     [$.any_identifier, $.table_identifier],
     [$.function_identifier, $.table_identifier],
     [$.schema_identifier, $.table_identifier],
@@ -2522,7 +2523,21 @@ module.exports = grammar({
 
     ordered_column: ($) => seq(field("name", $._column), optional($.direction)),
 
-    all_fields: ($) => seq(optional(seq($.table_reference, ".")), "*"),
+    all_fields: ($) =>
+      prec(
+        10,
+        choice(
+          field("end", "*"),
+          seq($.table_identifier, ".", field("end", "*")),
+          seq(
+            $.schema_identifier,
+            ".",
+            $.table_identifier,
+            ".",
+            field("end", "*"),
+          ),
+        ),
+      ),
 
     parameter: ($) => /\?|(\$[0-9]+)/,
 

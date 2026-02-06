@@ -15880,34 +15880,71 @@
       ]
     },
     "all_fields": {
-      "type": "SEQ",
-      "members": [
-        {
-          "type": "CHOICE",
-          "members": [
-            {
-              "type": "SEQ",
-              "members": [
-                {
-                  "type": "SYMBOL",
-                  "name": "table_reference"
-                },
-                {
-                  "type": "STRING",
-                  "value": "."
-                }
-              ]
-            },
-            {
-              "type": "BLANK"
+      "type": "PREC",
+      "value": 10,
+      "content": {
+        "type": "CHOICE",
+        "members": [
+          {
+            "type": "FIELD",
+            "name": "end",
+            "content": {
+              "type": "STRING",
+              "value": "*"
             }
-          ]
-        },
-        {
-          "type": "STRING",
-          "value": "*"
-        }
-      ]
+          },
+          {
+            "type": "SEQ",
+            "members": [
+              {
+                "type": "SYMBOL",
+                "name": "table_identifier"
+              },
+              {
+                "type": "STRING",
+                "value": "."
+              },
+              {
+                "type": "FIELD",
+                "name": "end",
+                "content": {
+                  "type": "STRING",
+                  "value": "*"
+                }
+              }
+            ]
+          },
+          {
+            "type": "SEQ",
+            "members": [
+              {
+                "type": "SYMBOL",
+                "name": "schema_identifier"
+              },
+              {
+                "type": "STRING",
+                "value": "."
+              },
+              {
+                "type": "SYMBOL",
+                "name": "table_identifier"
+              },
+              {
+                "type": "STRING",
+                "value": "."
+              },
+              {
+                "type": "FIELD",
+                "name": "end",
+                "content": {
+                  "type": "STRING",
+                  "value": "*"
+                }
+              }
+            ]
+          }
+        ]
+      }
     },
     "parameter": {
       "type": "PATTERN",
@@ -22096,6 +22133,11 @@
     [
       "any_identifier",
       "schema_identifier"
+    ],
+    [
+      "any_identifier",
+      "schema_identifier",
+      "table_identifier"
     ],
     [
       "any_identifier",

@@ -94,13 +94,28 @@
   {
     "type": "all_fields",
     "named": true,
-    "fields": {},
+    "fields": {
+      "end": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "*",
+            "named": false
+          }
+        ]
+      }
+    },
     "children": {
-      "multiple": false,
+      "multiple": true,
       "required": false,
       "types": [
         {
-          "type": "table_reference",
+          "type": "schema_identifier",
+          "named": true
+        },
+        {
+          "type": "table_identifier",
           "named": true
         }
       ]
