@@ -24,7 +24,25 @@ reset - reset (Keyword)
 --------------
 
 set |
+
+Results:
+constraints - constraints (Keyword)
+names - names (Keyword)
+role - role (Keyword)
+schema - schema (Keyword)
+session - session (Keyword)
+
+--------------
+
 set r|
+
+Results:
+role - role (Keyword)
+constraints - constraints (Keyword)
+transaction - transaction (Keyword)
+
+--------------
+
 set role |
 
 Results:

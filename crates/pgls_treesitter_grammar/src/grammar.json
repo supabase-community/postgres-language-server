@@ -6285,7 +6285,7 @@
                               "members": [
                                 {
                                   "type": "SYMBOL",
-                                  "name": "object_reference"
+                                  "name": "any_identifier"
                                 },
                                 {
                                   "type": "CHOICE",
@@ -6501,7 +6501,7 @@
                                                 "members": [
                                                   {
                                                     "type": "SYMBOL",
-                                                    "name": "any_identifier"
+                                                    "name": "role_identifier"
                                                   },
                                                   {
                                                     "type": "SYMBOL",
@@ -6546,7 +6546,7 @@
                                         "members": [
                                           {
                                             "type": "SYMBOL",
-                                            "name": "any_identifier"
+                                            "name": "role_identifier"
                                           },
                                           {
                                             "type": "SYMBOL",
@@ -6673,8 +6673,33 @@
                               "type": "FIELD",
                               "name": "end",
                               "content": {
-                                "type": "SYMBOL",
-                                "name": "_transaction_mode"
+                                "type": "PREC_RIGHT",
+                                "value": 0,
+                                "content": {
+                                  "type": "SEQ",
+                                  "members": [
+                                    {
+                                      "type": "SYMBOL",
+                                      "name": "_transaction_mode"
+                                    },
+                                    {
+                                      "type": "REPEAT",
+                                      "content": {
+                                        "type": "SEQ",
+                                        "members": [
+                                          {
+                                            "type": "STRING",
+                                            "value": ","
+                                          },
+                                          {
+                                            "type": "SYMBOL",
+                                            "name": "_transaction_mode"
+                                          }
+                                        ]
+                                      }
+                                    }
+                                  ]
+                                }
                               }
                             },
                             {
@@ -6713,7 +6738,7 @@
                                       "name": "end",
                                       "content": {
                                         "type": "SYMBOL",
-                                        "name": "_transaction_mode"
+                                        "name": "literal"
                                       }
                                     },
                                     {
@@ -6778,8 +6803,33 @@
                                                       "type": "FIELD",
                                                       "name": "end",
                                                       "content": {
-                                                        "type": "SYMBOL",
-                                                        "name": "_transaction_mode"
+                                                        "type": "PREC_RIGHT",
+                                                        "value": 0,
+                                                        "content": {
+                                                          "type": "SEQ",
+                                                          "members": [
+                                                            {
+                                                              "type": "SYMBOL",
+                                                              "name": "_transaction_mode"
+                                                            },
+                                                            {
+                                                              "type": "REPEAT",
+                                                              "content": {
+                                                                "type": "SEQ",
+                                                                "members": [
+                                                                  {
+                                                                    "type": "STRING",
+                                                                    "value": ","
+                                                                  },
+                                                                  {
+                                                                    "type": "SYMBOL",
+                                                                    "name": "_transaction_mode"
+                                                                  }
+                                                                ]
+                                                              }
+                                                            }
+                                                          ]
+                                                        }
                                                       }
                                                     },
                                                     {

@@ -9063,6 +9063,10 @@
         "required": false,
         "types": [
           {
+            "type": ",",
+            "named": false
+          },
+          {
             "type": "any_identifier",
             "named": true
           },
@@ -9141,6 +9145,10 @@
           {
             "type": "literal",
             "named": true
+          },
+          {
+            "type": "role_identifier",
+            "named": true
           }
         ]
       }
@@ -9215,10 +9223,6 @@
         },
         {
           "type": "keyword_zone",
-          "named": true
-        },
-        {
-          "type": "object_reference",
           "named": true
         }
       ]

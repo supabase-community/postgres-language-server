@@ -1048,7 +1048,7 @@ module.exports = grammar({
             optional(choice($.keyword_session, $.keyword_local)),
             choice(
               partialSeq(
-                $.object_reference,
+                $.any_identifier,
                 choice($.keyword_to, "="),
                 field(
                   "end",
@@ -1074,11 +1074,11 @@ module.exports = grammar({
               partialSeq(
                 $.keyword_session,
                 $.keyword_authorization,
-                field("end", choice($.any_identifier, $.keyword_default)),
+                field("end", choice($.role_identifier, $.keyword_default)),
               ),
               partialSeq(
                 $.keyword_role,
-                field("end", choice($.any_identifier, $.keyword_none)),
+                field("end", choice($.role_identifier, $.keyword_none)),
               ),
             ),
           ),
@@ -1087,18 +1087,21 @@ module.exports = grammar({
             choice($.keyword_all, comma_list($.any_identifier, true)),
             field("end", choice($.keyword_deferred, $.keyword_immediate)),
           ),
-          partialSeq($.keyword_transaction, field("end", $._transaction_mode)),
+          partialSeq(
+            $.keyword_transaction,
+            field("end", comma_list($._transaction_mode, true)),
+          ),
           partialSeq(
             $.keyword_transaction,
             $.keyword_snapshot,
-            field("end", $._transaction_mode),
+            field("end", $.literal),
           ),
           partialSeq(
             $.keyword_session,
             $.keyword_characteristics,
             $.keyword_as,
             $.keyword_transaction,
-            field("end", $._transaction_mode),
+            field("end", comma_list($._transaction_mode, true)),
           ),
         ),
       ),
