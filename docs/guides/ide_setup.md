@@ -8,7 +8,61 @@ The language server is available on the [VSCode Marketplace](https://marketplace
 
 ## Neovim
 
-You will have to install `nvim-lspconfig`, and follow the [instructions](https://github.com/neovim/nvim-lspconfig/blob/master/doc/configs.md#postgres_lsp).
+### Installation via Mason (Recommended)
+
+The easiest way to install the language server is via [Mason](https://github.com/williamboman/mason.nvim):
+
+```vim
+:MasonInstall postgres-language-server
+```
+
+Then configure `nvim-lspconfig` to use it:
+
+```lua
+require('lspconfig').postgres_lsp.setup{}
+```
+
+### Manual Installation
+
+1. Download the binary for your platform from the [releases page](https://github.com/supabase-community/postgres-language-server/releases)
+2. Place it in your `$PATH`
+3. Configure `nvim-lspconfig`:
+
+```lua
+require('lspconfig').postgres_lsp.setup{
+  cmd = { "postgres-language-server", "lsp-proxy" },
+}
+```
+
+For more details, see the [nvim-lspconfig documentation](https://github.com/neovim/nvim-lspconfig/blob/master/doc/configs.md#postgres_lsp).
+
+### Troubleshooting
+
+If the language server isn't working:
+
+1. **Check that the binary is executable:**
+   ```bash
+   which postgres-language-server
+   postgres-language-server --version
+   ```
+
+2. **Check LSP status in Neovim:**
+   ```vim
+   :LspInfo
+   ```
+   This shows if the server is attached to your buffer.
+
+3. **Check the logs:**
+   ```vim
+   :LspLog
+   ```
+   Look for errors related to `postgres_lsp`.
+
+4. **Verify your file is recognized as SQL:**
+   ```vim
+   :set filetype?
+   ```
+   Should output `filetype=sql` for `.sql` files.
 
 ## Emacs
 
