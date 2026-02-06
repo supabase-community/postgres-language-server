@@ -1046,7 +1046,7 @@ module.exports = grammar({
           seq(
             optional(choice($.keyword_session, $.keyword_local)),
             choice(
-              seq(
+              partialSeq(
                 $.object_reference,
                 choice($.keyword_to, "="),
                 field(
@@ -1060,9 +1060,9 @@ module.exports = grammar({
                   ),
                 ),
               ),
-              seq($.keyword_schema, field("end", $.literal)),
-              seq($.keyword_names, field("end", $.literal)),
-              seq(
+              partialSeq($.keyword_schema, field("end", $.literal)),
+              partialSeq($.keyword_names, field("end", $.literal)),
+              partialSeq(
                 $.keyword_time,
                 $.keyword_zone,
                 field(
@@ -1070,30 +1070,34 @@ module.exports = grammar({
                   choice($.literal, $.keyword_local, $.keyword_default),
                 ),
               ),
-              seq(
+              partialSeq(
                 $.keyword_session,
                 $.keyword_authorization,
                 field("end", choice($.any_identifier, $.keyword_default)),
               ),
-              seq(
+              partialSeq(
                 $.keyword_role,
                 field("end", choice($.any_identifier, $.keyword_none)),
               ),
             ),
           ),
-          seq(
+          partialSeq(
             $.keyword_constraints,
             choice($.keyword_all, comma_list($.any_identifier, true)),
             field("end", choice($.keyword_deferred, $.keyword_immediate)),
           ),
-          seq($.keyword_transaction, $._transaction_mode),
-          seq($.keyword_transaction, $.keyword_snapshot, $._transaction_mode),
-          seq(
+          partialSeq($.keyword_transaction, field("end", $._transaction_mode)),
+          partialSeq(
+            $.keyword_transaction,
+            $.keyword_snapshot,
+            field("end", $._transaction_mode),
+          ),
+          partialSeq(
             $.keyword_session,
             $.keyword_characteristics,
             $.keyword_as,
             $.keyword_transaction,
-            $._transaction_mode,
+            field("end", $._transaction_mode),
           ),
         ),
       ),
