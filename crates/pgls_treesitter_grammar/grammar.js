@@ -723,7 +723,12 @@ module.exports = grammar({
       seq(
         optional(optional_parenthesis($._cte)),
         optional_parenthesis(
-          choice($._select_statement, $.set_operation, $._show_statement),
+          choice(
+            $._select_statement,
+            $.set_operation,
+            $._show_statement,
+            $.values,
+          ),
         ),
       ),
 
@@ -2750,8 +2755,7 @@ module.exports = grammar({
         ),
       ),
 
-    values: ($) =>
-      partialSeq($.keyword_values, $.list, optional(repeat(seq(",", $.list)))),
+    values: ($) => partialSeq($.keyword_values, comma_list($.list, true)),
 
     join: ($) =>
       choice(partialSeq($.keyword_natural, $._any_join), $._any_join),

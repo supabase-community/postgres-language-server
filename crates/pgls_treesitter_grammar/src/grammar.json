@@ -4295,6 +4295,10 @@
                   {
                     "type": "SYMBOL",
                     "name": "_show_statement"
+                  },
+                  {
+                    "type": "SYMBOL",
+                    "name": "values"
                   }
                 ]
               },
@@ -4319,6 +4323,10 @@
                       {
                         "type": "SYMBOL",
                         "name": "_show_statement"
+                      },
+                      {
+                        "type": "SYMBOL",
+                        "name": "values"
                       }
                     ]
                   },
@@ -17460,45 +17468,33 @@
             "type": "CHOICE",
             "members": [
               {
-                "type": "SEQ",
-                "members": [
-                  {
-                    "type": "SYMBOL",
-                    "name": "list"
-                  },
-                  {
-                    "type": "CHOICE",
-                    "members": [
-                      {
-                        "type": "CHOICE",
+                "type": "PREC_RIGHT",
+                "value": 0,
+                "content": {
+                  "type": "SEQ",
+                  "members": [
+                    {
+                      "type": "SYMBOL",
+                      "name": "list"
+                    },
+                    {
+                      "type": "REPEAT",
+                      "content": {
+                        "type": "SEQ",
                         "members": [
                           {
-                            "type": "REPEAT",
-                            "content": {
-                              "type": "SEQ",
-                              "members": [
-                                {
-                                  "type": "STRING",
-                                  "value": ","
-                                },
-                                {
-                                  "type": "SYMBOL",
-                                  "name": "list"
-                                }
-                              ]
-                            }
+                            "type": "STRING",
+                            "value": ","
                           },
                           {
-                            "type": "BLANK"
+                            "type": "SYMBOL",
+                            "name": "list"
                           }
                         ]
-                      },
-                      {
-                        "type": "BLANK"
                       }
-                    ]
-                  }
-                ]
+                    }
+                  ]
+                }
               },
               {
                 "type": "BLANK"

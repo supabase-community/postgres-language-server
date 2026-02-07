@@ -1409,6 +1409,10 @@
           "named": true
         },
         {
+          "type": "values",
+          "named": true
+        },
+        {
           "type": "where",
           "named": true
         },
@@ -3706,6 +3710,10 @@
         },
         {
           "type": "set_operation",
+          "named": true
+        },
+        {
+          "type": "values",
           "named": true
         },
         {
@@ -10079,6 +10087,10 @@
           "named": true
         },
         {
+          "type": "values",
+          "named": true
+        },
+        {
           "type": "when_clause",
           "named": true
         },
@@ -10208,6 +10220,10 @@
         },
         {
           "type": "set_operation",
+          "named": true
+        },
+        {
+          "type": "values",
           "named": true
         },
         {
