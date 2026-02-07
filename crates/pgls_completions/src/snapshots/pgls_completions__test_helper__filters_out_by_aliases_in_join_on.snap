@@ -71,10 +71,10 @@ select u.id, p.content from auth.users u join auth.posts p on u.id |
 
 Results:
 cross - cross (Keyword)
+except - except (Keyword)
 full - full (Keyword)
 group - group (Keyword)
 inner - inner (Keyword)
-join - join (Keyword)
 
 --------------
 
@@ -112,9 +112,9 @@ select u.id, p.content from auth.users u join auth.posts p on u.id = p.user_id |
 
 Results:
 cross - cross (Keyword)
+except - except (Keyword)
 full - full (Keyword)
 group - group (Keyword)
 inner - inner (Keyword)
-join - join (Keyword)
 
 --------------

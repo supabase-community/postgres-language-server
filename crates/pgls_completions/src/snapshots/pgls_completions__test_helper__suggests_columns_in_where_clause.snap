@@ -24,10 +24,10 @@ select name from instruments i join others o on i.z = o.a |
 
 Results:
 cross - cross (Keyword)
+except - except (Keyword)
 full - full (Keyword)
 group - group (Keyword)
 inner - inner (Keyword)
-join - join (Keyword)
 
 --------------
 
@@ -63,11 +63,11 @@ c - public.others.c (Column)
 select name from instruments i join others o on i.z = o.a where o.a |
 
 Results:
+except - except (Keyword)
 group - group (Keyword)
+intersect - intersect (Keyword)
 limit - limit (Keyword)
 offset - offset (Keyword)
-order - order (Keyword)
-window - window (Keyword)
 
 --------------
 
@@ -96,11 +96,11 @@ z - public.instruments.z (Column)
 select name from instruments i join others o on i.z = o.a where o.a = i.z |
 
 Results:
+except - except (Keyword)
 group - group (Keyword)
+intersect - intersect (Keyword)
 limit - limit (Keyword)
 offset - offset (Keyword)
-order - order (Keyword)
-window - window (Keyword)
 
 --------------
 
@@ -143,11 +143,11 @@ id - public.instruments.id (Column)
 select name from instruments i join others o on i.z = o.a where o.a = i.z and i.id |
 
 Results:
+except - except (Keyword)
 group - group (Keyword)
+intersect - intersect (Keyword)
 limit - limit (Keyword)
 offset - offset (Keyword)
-order - order (Keyword)
-window - window (Keyword)
 
 --------------
 

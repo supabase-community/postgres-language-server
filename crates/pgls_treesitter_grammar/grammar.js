@@ -724,12 +724,26 @@ module.exports = grammar({
         optional(optional_parenthesis($._cte)),
         optional_parenthesis(
           choice(
-            $._select_statement,
-            $.set_operation,
+            delimited_list(
+              choice($._select_statement, $.values, $.table_statement),
+              choice(
+                seq($.keyword_union, optional($.keyword_all)),
+                $.keyword_except,
+                $.keyword_intersect,
+              ),
+              true,
+            ),
             $._show_statement,
-            $.values,
           ),
         ),
+      ),
+
+    table_statement: ($) =>
+      partialSeq(
+        $.keyword_table,
+        optional($.keyword_only),
+        field("end", $.table_reference),
+        optional("*"),
       ),
 
     _show_statement: ($) =>
@@ -743,24 +757,6 @@ module.exports = grammar({
         optional(seq(optional($.keyword_not), $.keyword_materialized)),
         wrapped_in_parenthesis(
           alias(choice($._dml_read, $._dml_write), $.statement),
-        ),
-      ),
-
-    set_operation: ($) =>
-      seq(
-        $._select_statement,
-        repeat1(
-          seq(
-            field(
-              "operation",
-              choice(
-                seq($.keyword_union, optional($.keyword_all)),
-                $.keyword_except,
-                $.keyword_intersect,
-              ),
-            ),
-            $._select_statement,
-          ),
         ),
       ),
 
@@ -3453,7 +3449,17 @@ function parametric_type($, rule, params = ["size"]) {
  * @returns {PrecRightRule | ChoiceRule}
  */
 function comma_list(rule, requireFirst) {
-  let sequence = prec.right(seq(rule, repeat(seq(",", rule))));
+  return delimited_list(rule, ",", requireFirst);
+}
+
+/**
+ * @param {RuleOrLiteral} rule
+ * @param {RuleOrLiteral} delimiter
+ * @param {boolean} requireFirst
+ * @returns {PrecRightRule | ChoiceRule}
+ */
+function delimited_list(rule, delimiter, requireFirst) {
+  const sequence = prec.right(seq(rule, repeat(partialSeq(delimiter, rule))));
 
   if (requireFirst) {
     return sequence;

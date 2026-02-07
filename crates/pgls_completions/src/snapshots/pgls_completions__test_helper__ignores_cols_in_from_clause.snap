@@ -59,9 +59,9 @@ select * from private.users |
 
 Results:
 cross - cross (Keyword)
+except - except (Keyword)
 full - full (Keyword)
 group - group (Keyword)
 inner - inner (Keyword)
-join - join (Keyword)
 
 --------------

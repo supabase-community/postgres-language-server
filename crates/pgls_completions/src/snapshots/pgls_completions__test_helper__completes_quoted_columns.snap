@@ -73,11 +73,11 @@ encoding - pg_catalog.pg_database.encoding (Column)
 select "email" |
 
 Results:
+except - except (Keyword)
 from - from (Keyword)
 group - group (Keyword)
+intersect - intersect (Keyword)
 limit - limit (Keyword)
-offset - offset (Keyword)
-order - order (Keyword)
 
 --------------
 

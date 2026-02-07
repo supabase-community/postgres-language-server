@@ -61,10 +61,10 @@ name - Schema: pg_catalog.name (Function)
 select narrator_id |
 
 Results:
+except - except (Keyword)
 from - from (Keyword)
 group - group (Keyword)
+intersect - intersect (Keyword)
 limit - limit (Keyword)
-offset - offset (Keyword)
-order - order (Keyword)
 
 --------------

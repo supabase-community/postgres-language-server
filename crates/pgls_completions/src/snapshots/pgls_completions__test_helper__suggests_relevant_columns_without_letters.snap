@@ -49,11 +49,11 @@ nameeq - Schema: pg_catalog.nameeq (Function)
 select name |
 
 Results:
+except - except (Keyword)
 from - from (Keyword)
 group - group (Keyword)
+intersect - intersect (Keyword)
 limit - limit (Keyword)
-offset - offset (Keyword)
-order - order (Keyword)
 
 --------------
 
@@ -91,9 +91,9 @@ select name from users |
 
 Results:
 cross - cross (Keyword)
+except - except (Keyword)
 full - full (Keyword)
 group - group (Keyword)
 inner - inner (Keyword)
-join - join (Keyword)
 
 --------------
