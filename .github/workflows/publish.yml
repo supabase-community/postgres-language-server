@@ -75,6 +75,8 @@ jobs:
       id-token: write
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: true
 
       - name: Install Node
         uses: actions/setup-node@v4
