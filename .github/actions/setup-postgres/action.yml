@@ -89,6 +89,8 @@ runs:
         cd pglinter
 
         # Install using pgrx
+        # Ensure macOS linker allows unresolved PostgreSQL symbols at link time.
+        export RUSTFLAGS="${RUSTFLAGS:-} -C link-arg=-Wl,-undefined,dynamic_lookup"
         cargo pgrx install --pg-config $(which pg_config) --release --target "${HOST_TARGET}"
 
         # Verify installation
