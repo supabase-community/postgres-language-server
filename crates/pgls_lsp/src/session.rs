@@ -7,6 +7,7 @@ use biome_deserialize::Merge;
 use futures::StreamExt;
 use futures::stream::FuturesUnordered;
 use pgls_analyse::RuleCategoriesBuilder;
+use pgls_configuration::database::PartialDatabaseConfiguration;
 use pgls_configuration::{ConfigurationPathHint, PartialConfiguration};
 use pgls_diagnostics::{DiagnosticExt, Error};
 use pgls_fs::{ConfigName, FileSystem, PgLSPath};
@@ -497,6 +498,13 @@ impl Session {
 
                 if let Some(ws_configuration) = extra_config {
                     fs_configuration.merge_with(ws_configuration);
+                }
+
+                if let Some(env_db) = PartialDatabaseConfiguration::from_env() {
+                    match &mut fs_configuration.db {
+                        Some(db) => db.merge_with(env_db),
+                        None => fs_configuration.db = Some(env_db),
+                    }
                 }
 
                 let result = fs_configuration
