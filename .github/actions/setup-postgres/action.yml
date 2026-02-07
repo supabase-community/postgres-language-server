@@ -71,6 +71,11 @@ runs:
         # Install cargo-pgrx (version must match pglinter's pgrx dependency)
         cargo install cargo-pgrx --version 0.16.1 --locked
 
+        # Ensure we build the extension for the host architecture (macOS-14 runners are arm64).
+        # Release workflow also cross-compiles x86_64, but the local PostgreSQL installation is arm64.
+        HOST_TARGET=$(rustc -vV | sed -n 's/^host: //p')
+        echo "Host target: ${HOST_TARGET}"
+
         # Determine postgres version for pgrx init
         PG_VERSION=$(pg_config --version | grep -oE '[0-9]+' | head -1)
         echo "PostgreSQL version: $PG_VERSION"
@@ -84,7 +89,7 @@ runs:
         cd pglinter
 
         # Install using pgrx
-        cargo pgrx install --pg-config $(which pg_config) --release
+        cargo pgrx install --pg-config $(which pg_config) --release --target "${HOST_TARGET}"
 
         # Verify installation
         echo "Extension control files:"
@@ -148,4 +153,3 @@ runs:
 
         # Show extension status
         docker exec postgres psql -U postgres -c "SELECT extname, extversion FROM pg_extension WHERE extname IN ('plpgsql_check', 'pglinter');"
-
