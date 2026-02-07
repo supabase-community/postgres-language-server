@@ -45,6 +45,9 @@ module.exports = grammar({
     [$._any_join, $.lateral_join],
 
     [$.subquery, $.list],
+    // todo: check if actually needed once constraints are cleaned up
+    [$.constraint, $._constraint_literal],
+    [$._primary_key_constraint, $._constraint_literal],
   ],
 
   precedences: ($) => [
@@ -936,7 +939,7 @@ module.exports = grammar({
     // in =-assigned `table_option`s
     create_table: ($) =>
       prec.left(
-        seq(
+        partialSeq(
           $.keyword_create,
           optional(
             choice($._temporary, $.keyword_unlogged, $.keyword_external),
@@ -946,11 +949,14 @@ module.exports = grammar({
           $.object_reference,
           choice(
             seq(
-              $.column_definitions,
+              field("end", $.column_definitions),
               repeat($._table_settings),
               optional(seq($.keyword_as, $._select_statement)),
             ),
-            seq(repeat($._table_settings), seq($.keyword_as, $.create_query)),
+            seq(
+              repeat($._table_settings),
+              seq($.keyword_as, field("end", $.create_query)),
+            ),
           ),
         ),
       ),
@@ -1673,8 +1679,7 @@ module.exports = grammar({
     add_constraint: ($) =>
       partialSeq(
         $.keyword_add,
-        optional($.keyword_constraint),
-        $.any_identifier,
+        optional(partialSeq($.keyword_constraint, $.any_identifier)),
         $.constraint,
       ),
 
@@ -2166,7 +2171,7 @@ module.exports = grammar({
           ),
         ),
         choice(
-          seq($.keyword_default, $.keyword_values),
+          partialSeq($.keyword_default, $.keyword_values),
           $.insert_values,
           $._select_statement,
         ),
@@ -2174,12 +2179,12 @@ module.exports = grammar({
       ),
 
     insert_values: ($) =>
-      comma_list(
-        partialSeq(
-          $.keyword_values,
-          paren_list(choice($._expression, $.keyword_default), true),
+      partialSeq(
+        $.keyword_values,
+        comma_list(
+          paren_list(choice($._expression, $.keyword_default), false),
+          true,
         ),
-        true,
       ),
 
     insert_columns: ($) => paren_list($.column_identifier, true),
@@ -2382,18 +2387,23 @@ module.exports = grammar({
       ),
 
     column_definitions: ($) =>
-      seq(
-        "(",
-        comma_list($.column_definition, true),
-        optional($.constraints),
-        ")",
+      choice(
+        partialSeq("(", field("end", ")")),
+        partialSeq(
+          "(",
+          comma_list($.column_definition, true),
+          optional(seq(",", comma_list($.constraint, true))),
+          field("end", ")"),
+        ),
       ),
 
     column_definition: ($) =>
-      seq(
-        $.any_identifier,
-        field("type", $.type),
-        repeat($._column_constraint),
+      prec.left(
+        partialSeq(
+          $.any_identifier,
+          field("end", $.type),
+          repeat($._column_constraint),
+        ),
       ),
 
     _column_comment: ($) =>
@@ -2460,8 +2470,6 @@ module.exports = grammar({
         $.keyword_current_timestamp,
         alias($.implicit_cast, $.cast),
       ),
-
-    constraints: ($) => seq(",", $.constraint, repeat(seq(",", $.constraint))),
 
     constraint: ($) =>
       choice(

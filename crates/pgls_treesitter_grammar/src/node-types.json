@@ -2547,13 +2547,7 @@
           {
             "type": ")",
             "named": false
-          }
-        ]
-      },
-      "type": {
-        "multiple": false,
-        "required": true,
-        "types": [
+          },
           {
             "type": "type",
             "named": true
@@ -2755,17 +2749,28 @@
   {
     "type": "column_definitions",
     "named": true,
-    "fields": {},
+    "fields": {
+      "end": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": ")",
+            "named": false
+          }
+        ]
+      }
+    },
     "children": {
       "multiple": true,
-      "required": true,
+      "required": false,
       "types": [
         {
           "type": "column_definition",
           "named": true
         },
         {
-          "type": "constraints",
+          "type": "constraint",
           "named": true
         }
       ]
@@ -3140,21 +3145,6 @@
         },
         {
           "type": "table_reference",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
-    "type": "constraints",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": true,
-      "required": true,
-      "types": [
-        {
-          "type": "constraint",
           "named": true
         }
       ]
@@ -4053,12 +4043,20 @@
     "named": true,
     "fields": {
       "end": {
-        "multiple": false,
+        "multiple": true,
         "required": false,
         "types": [
           {
             "type": ")",
             "named": false
+          },
+          {
+            "type": "column_definitions",
+            "named": true
+          },
+          {
+            "type": "create_query",
+            "named": true
           }
         ]
       }
@@ -4067,14 +4065,6 @@
       "multiple": true,
       "required": true,
       "types": [
-        {
-          "type": "column_definitions",
-          "named": true
-        },
-        {
-          "type": "create_query",
-          "named": true
-        },
         {
           "type": "from",
           "named": true

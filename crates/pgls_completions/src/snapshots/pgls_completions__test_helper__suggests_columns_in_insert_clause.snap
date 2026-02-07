@@ -67,6 +67,7 @@ pg_catalog.pg_ident_file_mappings - pg_catalog.pg_ident_file_mappings (Table)
 insert into instruments |
 
 Results:
+default - default (Keyword)
 select - select (Keyword)
 values - values (Keyword)
 
@@ -120,6 +121,7 @@ n_live_tup - pg_catalog.pg_stat_all_tables.n_live_tup (Column)
 insert into instruments (id, name) |
 
 Results:
+default - default (Keyword)
 select - select (Keyword)
 values - values (Keyword)
 
@@ -161,11 +163,11 @@ insert into instruments (id, name) values (1, '|)
 insert into instruments (id, name) values (1, 'my_bass'); |
 
 Results:
+create - create (Keyword)
 insert - insert (Keyword)
 reset - reset (Keyword)
 select - select (Keyword)
 set - set (Keyword)
-truncate - truncate (Keyword)
 
 --------------
 
@@ -221,6 +223,7 @@ pg_catalog.pg_ident_file_mappings - pg_catalog.pg_ident_file_mappings (Table)
 insert into instruments |
 
 Results:
+default - default (Keyword)
 select - select (Keyword)
 values - values (Keyword)
 
@@ -296,6 +299,7 @@ n_live_tup - pg_catalog.pg_stat_all_tables.n_live_tup (Column)
 insert into instruments ("id", "name") |
 
 Results:
+default - default (Keyword)
 select - select (Keyword)
 values - values (Keyword)
 
@@ -337,11 +341,11 @@ insert into instruments ("id", "name") values (1, '|)
 insert into instruments ("id", "name") values (1, 'my_bass'); |
 
 Results:
+create - create (Keyword)
 insert - insert (Keyword)
 reset - reset (Keyword)
 select - select (Keyword)
 set - set (Keyword)
-truncate - truncate (Keyword)
 
 --------------
 

@@ -91,10 +91,10 @@ pg_read_all_stats - pg_read_all_stats (Role)
 set session authorization authenticated; |
 
 Results:
+create - create (Keyword)
 insert - insert (Keyword)
 reset - reset (Keyword)
 select - select (Keyword)
 set - set (Keyword)
-truncate - truncate (Keyword)
 
 --------------
