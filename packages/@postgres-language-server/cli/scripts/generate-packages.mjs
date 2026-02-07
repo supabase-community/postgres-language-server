@@ -64,8 +64,9 @@ async function downloadSchema(releaseTag, githubToken) {
 
 async function downloadBinary(platform, arch, os, releaseTag, githubToken) {
 	const buildName = getBuildName(platform, arch);
+	const ext = getBinaryExt(os);
 
-	const assetUrl = `https://github.com/supabase-community/postgres-language-server/releases/download/${releaseTag}/${buildName}`;
+	const assetUrl = `https://github.com/supabase-community/postgres-language-server/releases/download/${releaseTag}/${buildName}${ext}`;
 
 	const response = await fetch(assetUrl.trim(), {
 		headers: {
@@ -249,7 +250,7 @@ function getBinarySource(platform, arch, os) {
 }
 
 function getBuildName(platform, arch) {
-	return `postgres-language-server_${arch}-${platform}`;
+	return `postgres-language-server_${arch}-${platform}${platform.includes('windows') ? '.exe' : ''}`;
 }
 
 function getPackageName(platform, arch) {
