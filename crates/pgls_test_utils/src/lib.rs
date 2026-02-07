@@ -67,13 +67,18 @@ fn print_ts_tree_recur(
 
     result.push_str(
         format!(
-            "{}{} [{}..{}] '{}'{}\n",
+            "{}{} [{}..{}] '{}'{}{}\n",
             indent,
             node.kind(),
             node.start_position().column,
             node.end_position().column,
             node_text,
-            field_name.map(|n| format!(" (@{n})")).unwrap_or("".into())
+            field_name.map(|n| format!(" (@{n})")).unwrap_or("".into()),
+            if node.is_missing() {
+                " ***MISSING**"
+            } else {
+                ""
+            }
         )
         .as_str(),
     );

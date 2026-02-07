@@ -43,6 +43,8 @@ module.exports = grammar({
     [$._join, $._lateral_join],
     [$.cross_join, $.lateral_cross_join],
     [$._any_join, $.lateral_join],
+
+    [$.subquery, $.list],
   ],
 
   precedences: ($) => [
@@ -2201,7 +2203,7 @@ module.exports = grammar({
     _set_values: ($) =>
       partialSeq($.keyword_set, comma_list($.assignment, true)),
 
-    _column_list: ($) => paren_list(alias($._column, $.column), true),
+    _column_list: ($) => paren_list(alias($._column, $.column), false),
     _column: ($) =>
       choice($.column_identifier, alias($._literal_string, $.literal)),
 
@@ -3236,7 +3238,7 @@ module.exports = grammar({
 
     not_in: ($) => seq($.keyword_not, $.keyword_in),
 
-    subquery: ($) => wrapped_in_parenthesis($._dml_read),
+    subquery: ($) => wrapped_in_parenthesis(optional($._dml_read)),
 
     list: ($) => paren_list($._expression, false),
 

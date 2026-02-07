@@ -13683,43 +13683,51 @@
           "value": "("
         },
         {
-          "type": "PREC_RIGHT",
-          "value": 0,
-          "content": {
-            "type": "SEQ",
-            "members": [
-              {
-                "type": "ALIAS",
-                "content": {
-                  "type": "SYMBOL",
-                  "name": "_column"
-                },
-                "named": true,
-                "value": "column"
-              },
-              {
-                "type": "REPEAT",
-                "content": {
-                  "type": "SEQ",
-                  "members": [
-                    {
-                      "type": "STRING",
-                      "value": ","
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "PREC_RIGHT",
+              "value": 0,
+              "content": {
+                "type": "SEQ",
+                "members": [
+                  {
+                    "type": "ALIAS",
+                    "content": {
+                      "type": "SYMBOL",
+                      "name": "_column"
                     },
-                    {
-                      "type": "ALIAS",
-                      "content": {
-                        "type": "SYMBOL",
-                        "name": "_column"
-                      },
-                      "named": true,
-                      "value": "column"
+                    "named": true,
+                    "value": "column"
+                  },
+                  {
+                    "type": "REPEAT",
+                    "content": {
+                      "type": "SEQ",
+                      "members": [
+                        {
+                          "type": "STRING",
+                          "value": ","
+                        },
+                        {
+                          "type": "ALIAS",
+                          "content": {
+                            "type": "SYMBOL",
+                            "name": "_column"
+                          },
+                          "named": true,
+                          "value": "column"
+                        }
+                      ]
                     }
-                  ]
-                }
+                  }
+                ]
               }
-            ]
-          }
+            },
+            {
+              "type": "BLANK"
+            }
+          ]
         },
         {
           "type": "FIELD",
@@ -21576,8 +21584,16 @@
           "value": "("
         },
         {
-          "type": "SYMBOL",
-          "name": "_dml_read"
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "SYMBOL",
+              "name": "_dml_read"
+            },
+            {
+              "type": "BLANK"
+            }
+          ]
         },
         {
           "type": "FIELD",
@@ -22275,6 +22291,10 @@
     [
       "_any_join",
       "lateral_join"
+    ],
+    [
+      "subquery",
+      "list"
     ]
   ],
   "precedences": [

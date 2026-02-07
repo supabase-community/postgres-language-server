@@ -12,7 +12,7 @@ version              = "0.0.0"
 
 
 [dependencies]
-pgls_schema_cache         = { workspace = true, features = ["serde"] }
+pgls_schema_cache         = { workspace = true, features = ["serde", "db"] }
 pgls_text_size.workspace  = true
 pgls_treesitter.workspace = true
 

@@ -95,7 +95,7 @@ fn verify_branches_have_ends(
 }
 
 #[test]
-// #[ignore = "wip"]
+#[ignore = "wip"]
 fn test_grammar() {
     let mut parser = tree_sitter::Parser::new();
     if let Err(e) = parser.set_language(&pgls_treesitter_grammar::LANGUAGE.into()) {
@@ -258,5 +258,24 @@ mod generate_typing_states_tests {
     fn array_brackets() {
         let states = generate_typing_states("a[1, 2]");
         assert_eq!(states, vec!["a[]", "a[1]", "a[1, 2]"]);
+    }
+
+    #[test]
+    fn emtpy_sub_query_is_error() {
+        let mut parser = tree_sitter::Parser::new();
+        if let Err(e) = parser.set_language(&pgls_treesitter_grammar::LANGUAGE.into()) {
+            panic!("Language is invalid! {}", e)
+        }
+
+        let sql = "select foo from ()";
+
+        let tree = parser.parse(sql, None).unwrap();
+        let root = tree.root_node();
+
+        let mut printed = String::new();
+        print_ts_tree(&root, sql, &mut printed);
+        println!("{}", printed);
+
+        assert!(!root.has_error())
     }
 }

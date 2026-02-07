@@ -718,6 +718,10 @@ mod tests {
                     crate::CompletionItemKind::Keyword,
                 ),
                 CompletionAssertion::LabelAndKind(
+                    "offset".into(),
+                    crate::CompletionItemKind::Keyword,
+                ),
+                CompletionAssertion::LabelAndKind(
                     "order".into(),
                     crate::CompletionItemKind::Keyword,
                 ),
