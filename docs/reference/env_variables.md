@@ -19,6 +19,30 @@
 
  A path to the configuration file
 
+### `DATABASE_URL`
+
+ A connection string that encodes the full database connection setup.
+
+### `PGHOST`
+
+ The host of the database server.
+
+### `PGPORT`
+
+ The port of the database server.
+
+### `PGUSER`
+
+ The username to connect to the database.
+
+### `PGPASSWORD`
+
+ The password to connect to the database.
+
+### `PGDATABASE`
+
+ The name of the database to connect to.
+
 ### `PGT_LOG_PATH`
 
  The directory where the Daemon logs will be saved. Deprecated, use PGLS_LOG_PATH instead.

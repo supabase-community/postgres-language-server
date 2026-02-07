@@ -73,9 +73,7 @@ impl PartialDatabaseConfiguration {
     pub fn from_env() -> Option<Self> {
         let database_url = std::env::var("DATABASE_URL").ok();
         let pghost = std::env::var("PGHOST").ok();
-        let pgport = std::env::var("PGPORT")
-            .ok()
-            .and_then(|p| p.parse().ok());
+        let pgport = std::env::var("PGPORT").ok().and_then(|p| p.parse().ok());
         let pguser = std::env::var("PGUSER").ok();
         let pgpassword = std::env::var("PGPASSWORD").ok();
         let pgdatabase = std::env::var("PGDATABASE").ok();

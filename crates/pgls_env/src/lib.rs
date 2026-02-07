@@ -76,18 +76,9 @@ impl PgLSEnv {
                 "DATABASE_URL",
                 "A connection string that encodes the full database connection setup.",
             ),
-            pghost: PgLSEnvVariable::new(
-                "PGHOST",
-                "The host of the database server.",
-            ),
-            pgport: PgLSEnvVariable::new(
-                "PGPORT",
-                "The port of the database server.",
-            ),
-            pguser: PgLSEnvVariable::new(
-                "PGUSER",
-                "The username to connect to the database.",
-            ),
+            pghost: PgLSEnvVariable::new("PGHOST", "The host of the database server."),
+            pgport: PgLSEnvVariable::new("PGPORT", "The port of the database server."),
+            pguser: PgLSEnvVariable::new("PGUSER", "The username to connect to the database."),
             pgpassword: PgLSEnvVariable::new(
                 "PGPASSWORD",
                 "The password to connect to the database.",
