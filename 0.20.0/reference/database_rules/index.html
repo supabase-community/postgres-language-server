@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><link rel="canonical" href="https://pg-language-server.com/0.20.0/reference/database_rules/" />
+      <link rel="shortcut icon" href="../../img/favicon.ico" />
+    <title>Database Linter Rules - Postgres Language Server</title>
+    <link rel="stylesheet" href="../../css/theme.css" />
+    <link rel="stylesheet" href="../../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
+        <link href="../../css/version-select.css" rel="stylesheet" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "Database Linter Rules";
+        var mkdocs_page_input_path = "reference/database_rules.md";
+        var mkdocs_page_url = "/0.20.0/reference/database_rules/";
+      </script>
+    
+    <!--[if lt IE 9]>
+      <script src="../../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+      <script>hljs.highlightAll();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href="../.." class="icon icon-home"> Postgres Language Server
+        </a>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../../getting_started/">Getting Started</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../../manual_installation/">Manual Installation</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../../configuration/">Configuration</a>
+                </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Features</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../features/syntax_diagnostics/">Syntax Diagnostics</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../features/linting/">Linting</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../features/database_linting/">Database Linting</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../features/type_checking/">Type Checking</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../features/formatting/">Formatting</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../features/plpgsql/">PL/pgSQL Support</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../features/editor_features/">Autocompletion & Hover</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Guides</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../guides/ide_setup/">Use in your IDE</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../guides/checking_migrations/">Checking Migrations</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../guides/configure_database/">Configure database connection</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../guides/suppressions/">Suppressions</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../guides/vcs_integration/">Integrate with VCS</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../guides/continuous_integration/">Continuous Integration</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Reference</span></p>
+              <ul class="current">
+                  <li class="toctree-l1"><a class="reference internal" href="../cli/">CLI Commands</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../rules/">Linter Rules</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../rule_sources/">Linter Rule Sources</a>
+                  </li>
+                  <li class="toctree-l1 current"><a class="reference internal current" href="#">Database Linter Rules</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#performance">Performance</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#security">Security</a>
+    </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../database_rule_sources/">Database Linter Rule Sources</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../env_variables/">Environment Variables</a>
+                  </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../..">Postgres Language Server</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../.." class="icon icon-home" aria-label="Docs"></a></li>
+          <li class="breadcrumb-item">Reference</li>
+      <li class="breadcrumb-item active">Database Linter Rules</li>
+    <li class="wy-breadcrumbs-aside">
+          <a href="https://github.com/supabase-community/postgres-language-server/edit/master/docs/reference/database_rules.md">Edit on supabase-community/postgres-language-server</a>
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="database-linter-rules">Database Linter Rules</h1>
+<p>Below is the list of database linting rules supported by the Postgres Language Server, divided by group. These rules analyze your live database schema to detect issues.</p>
+<p>All rules are powered by <a href="https://github.com/supabase/splinter">Splinter</a>.</p>
+<p>Here's a legend of the emojis:</p>
+<ul>
+<li>The icon ✅ indicates that the rule is part of the recommended rules.</li>
+<li>The icon ⚡ indicates that the rule requires a Supabase database.</li>
+</ul>
+<h2 id="performance">Performance</h2>
+<p>Rules that detect potential performance issues in your database schema.</p>
+<table>
+<thead>
+<tr>
+<th>Rule name</th>
+<th>Description</th>
+<th>Properties</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="../rules/auth-rls-initplan/">authRlsInitplan</a></td>
+<td>Detects if calls to `current_setting()` and `auth.<function>()` in RLS policies are being unnecessarily re-evaluated for each row</td>
+<td>✅ ⚡</td>
+</tr>
+<tr>
+<td><a href="../rules/duplicate-index/">duplicateIndex</a></td>
+<td>Detects cases where two ore more identical indexes exist.</td>
+<td>✅</td>
+</tr>
+<tr>
+<td><a href="../rules/multiple-permissive-policies/">multiplePermissivePolicies</a></td>
+<td>Detects if multiple permissive row level security policies are present on a table for the same `role` and `action` (e.g. insert). Multiple permissive policies are suboptimal for performance as each policy must be executed for every relevant query.</td>
+<td>✅</td>
+</tr>
+<tr>
+<td><a href="../rules/no-primary-key/">noPrimaryKey</a></td>
+<td>Detects if a table does not have a primary key. Tables without a primary key can be inefficient to interact with at scale.</td>
+<td>✅</td>
+</tr>
+<tr>
+<td><a href="../rules/table-bloat/">tableBloat</a></td>
+<td>Detects if a table has excess bloat and may benefit from maintenance operations like vacuum full or cluster.</td>
+<td>✅</td>
+</tr>
+<tr>
+<td><a href="../rules/unindexed-foreign-keys/">unindexedForeignKeys</a></td>
+<td>Identifies foreign key constraints without a covering index, which can impact database performance.</td>
+<td>✅</td>
+</tr>
+<tr>
+<td><a href="../rules/unused-index/">unusedIndex</a></td>
+<td>Detects if an index has never been used and may be a candidate for removal.</td>
+<td>✅</td>
+</tr>
+</tbody>
+</table>
+<h2 id="security">Security</h2>
+<p>Rules that detect potential security vulnerabilities in your database schema.</p>
+<table>
+<thead>
+<tr>
+<th>Rule name</th>
+<th>Description</th>
+<th>Properties</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="../rules/auth-users-exposed/">authUsersExposed</a></td>
+<td>Detects if auth.users is exposed to anon or authenticated roles via a view or materialized view in schemas exposed to PostgREST, potentially compromising user data security.</td>
+<td>✅ ⚡</td>
+</tr>
+<tr>
+<td><a href="../rules/extension-in-public/">extensionInPublic</a></td>
+<td>Detects extensions installed in the `public` schema.</td>
+<td>✅</td>
+</tr>
+<tr>
+<td><a href="../rules/extension-versions-outdated/">extensionVersionsOutdated</a></td>
+<td>Detects extensions that are not using the default (recommended) version.</td>
+<td>✅</td>
+</tr>
+<tr>
+<td><a href="../rules/fkey-to-auth-unique/">fkeyToAuthUnique</a></td>
+<td>Detects user defined foreign keys to unique constraints in the auth schema.</td>
+<td>✅ ⚡</td>
+</tr>
+<tr>
+<td><a href="../rules/foreign-table-in-api/">foreignTableInApi</a></td>
+<td>Detects foreign tables that are accessible over APIs. Foreign tables do not respect row level security policies.</td>
+<td>✅ ⚡</td>
+</tr>
+<tr>
+<td><a href="../rules/function-search-path-mutable/">functionSearchPathMutable</a></td>
+<td>Detects functions where the search_path parameter is not set.</td>
+<td>✅</td>
+</tr>
+<tr>
+<td><a href="../rules/insecure-queue-exposed-in-api/">insecureQueueExposedInApi</a></td>
+<td>Detects cases where an insecure Queue is exposed over Data APIs</td>
+<td>✅ ⚡</td>
+</tr>
+<tr>
+<td><a href="../rules/materialized-view-in-api/">materializedViewInApi</a></td>
+<td>Detects materialized views that are accessible over the Data APIs.</td>
+<td>✅ ⚡</td>
+</tr>
+<tr>
+<td><a href="../rules/policy-exists-rls-disabled/">policyExistsRlsDisabled</a></td>
+<td>Detects cases where row level security (RLS) policies have been created, but RLS has not been enabled for the underlying table.</td>
+<td>✅</td>
+</tr>
+<tr>
+<td><a href="../rules/rls-disabled-in-public/">rlsDisabledInPublic</a></td>
+<td>Detects cases where row level security (RLS) has not been enabled on tables in schemas exposed to PostgREST</td>
+<td>✅ ⚡</td>
+</tr>
+<tr>
+<td><a href="../rules/rls-enabled-no-policy/">rlsEnabledNoPolicy</a></td>
+<td>Detects cases where row level security (RLS) has been enabled on a table but no RLS policies have been created.</td>
+<td>✅</td>
+</tr>
+<tr>
+<td><a href="../rules/rls-references-user-metadata/">rlsReferencesUserMetadata</a></td>
+<td>Detects when Supabase Auth user_metadata is referenced insecurely in a row level security (RLS) policy.</td>
+<td>✅ ⚡</td>
+</tr>
+<tr>
+<td><a href="../rules/security-definer-view/">securityDefinerView</a></td>
+<td>Detects views defined with the SECURITY DEFINER property. These views enforce Postgres permissions and row level security policies (RLS) of the view creator, rather than that of the querying user</td>
+<td>✅ ⚡</td>
+</tr>
+<tr>
+<td><a href="../rules/unsupported-reg-types/">unsupportedRegTypes</a></td>
+<td>Identifies columns using unsupported reg* types outside pg_catalog schema, which prevents database upgrades using pg_upgrade.</td>
+<td>✅</td>
+</tr>
+</tbody>
+</table>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="../rule_sources/" class="btn btn-neutral float-left" title="Linter Rule Sources"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../database_rule_sources/" class="btn btn-neutral float-right" title="Database Linter Rule Sources">Next <span class="icon icon-circle-arrow-right"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+        <span>
+          <a href="https://github.com/supabase-community/postgres-language-server" class="fa fa-code-fork" style="color: #fcfcfc"> supabase-community/postgres-language-server</a>
+        </span>
+    
+    
+      <span><a href="../rule_sources/" style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+      <span><a href="../database_rule_sources/" style="color: #fcfcfc">Next &raquo;</a></span>
+    
+  </span>
+</div>
+    <script src="../../js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = "../..";</script>
+    <script src="../../js/theme_extra.js"></script>
+    <script src="../../js/theme.js"></script>
+      <script src="../../js/version-select.js"></script>
+    <script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+
+</body>
+</html>
