@@ -50,6 +50,10 @@ select name |
 
 Results:
 from - from (Keyword)
+group - group (Keyword)
+limit - limit (Keyword)
+offset - offset (Keyword)
+order - order (Keyword)
 
 --------------
 
@@ -57,6 +61,7 @@ select name f|
 
 Results:
 from - from (Keyword)
+offset - offset (Keyword)
 
 --------------
 

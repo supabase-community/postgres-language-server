@@ -63,6 +63,10 @@ select u.uid, p.content |
 
 Results:
 from - from (Keyword)
+group - group (Keyword)
+limit - limit (Keyword)
+offset - offset (Keyword)
+order - order (Keyword)
 
 --------------
 
@@ -70,6 +74,7 @@ select u.uid, p.content f|
 
 Results:
 from - from (Keyword)
+offset - offset (Keyword)
 
 --------------
 

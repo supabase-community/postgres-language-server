@@ -58,6 +58,7 @@ select email from users where id |
 Results:
 group - group (Keyword)
 limit - limit (Keyword)
+offset - offset (Keyword)
 order - order (Keyword)
 window - window (Keyword)
 

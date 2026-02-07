@@ -65,6 +65,7 @@ select name from instruments i join others o on i.z = o.a where o.a |
 Results:
 group - group (Keyword)
 limit - limit (Keyword)
+offset - offset (Keyword)
 order - order (Keyword)
 window - window (Keyword)
 
@@ -97,6 +98,7 @@ select name from instruments i join others o on i.z = o.a where o.a = i.z |
 Results:
 group - group (Keyword)
 limit - limit (Keyword)
+offset - offset (Keyword)
 order - order (Keyword)
 window - window (Keyword)
 
@@ -143,6 +145,7 @@ select name from instruments i join others o on i.z = o.a where o.a = i.z and i.
 Results:
 group - group (Keyword)
 limit - limit (Keyword)
+offset - offset (Keyword)
 order - order (Keyword)
 window - window (Keyword)
 
