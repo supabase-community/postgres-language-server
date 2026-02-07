@@ -62,9 +62,9 @@ select narrator_id |
 
 Results:
 except - except (Keyword)
+for - for (Keyword)
 from - from (Keyword)
 group - group (Keyword)
 intersect - intersect (Keyword)
-limit - limit (Keyword)
 
 --------------

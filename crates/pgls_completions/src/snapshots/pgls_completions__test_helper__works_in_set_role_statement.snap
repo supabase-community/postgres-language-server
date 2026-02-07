@@ -69,9 +69,9 @@ set role anon; |
 
 Results:
 create - create (Keyword)
+drop - drop (Keyword)
 insert - insert (Keyword)
 reset - reset (Keyword)
 select - select (Keyword)
-set - set (Keyword)
 
 --------------

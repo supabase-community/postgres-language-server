@@ -74,16 +74,17 @@ select "email" |
 
 Results:
 except - except (Keyword)
+for - for (Keyword)
 from - from (Keyword)
 group - group (Keyword)
 intersect - intersect (Keyword)
-limit - limit (Keyword)
 
 --------------
 
 select "email" f|
 
 Results:
+for - for (Keyword)
 from - from (Keyword)
 offset - offset (Keyword)
 
@@ -145,9 +146,9 @@ select "email" from "private".users; |
 
 Results:
 create - create (Keyword)
+drop - drop (Keyword)
 insert - insert (Keyword)
 reset - reset (Keyword)
 select - select (Keyword)
-set - set (Keyword)
 
 --------------

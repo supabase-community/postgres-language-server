@@ -26,11 +26,18 @@ create table auth.posts (
 d|
 
 Results:
+drop - drop (Keyword)
 update - update (Keyword)
 
 --------------
 
 drop |
+
+Results:
+index - index (Keyword)
+
+--------------
+
 drop t|
 drop table |
 

@@ -50,16 +50,17 @@ select name |
 
 Results:
 except - except (Keyword)
+for - for (Keyword)
 from - from (Keyword)
 group - group (Keyword)
 intersect - intersect (Keyword)
-limit - limit (Keyword)
 
 --------------
 
 select name f|
 
 Results:
+for - for (Keyword)
 from - from (Keyword)
 offset - offset (Keyword)
 
@@ -92,8 +93,8 @@ select name from users |
 Results:
 cross - cross (Keyword)
 except - except (Keyword)
+for - for (Keyword)
 full - full (Keyword)
 group - group (Keyword)
-inner - inner (Keyword)
 
 --------------

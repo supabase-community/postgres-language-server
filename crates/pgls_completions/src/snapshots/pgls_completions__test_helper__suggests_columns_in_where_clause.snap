@@ -25,9 +25,9 @@ select name from instruments i join others o on i.z = o.a |
 Results:
 cross - cross (Keyword)
 except - except (Keyword)
+for - for (Keyword)
 full - full (Keyword)
 group - group (Keyword)
-inner - inner (Keyword)
 
 --------------
 
@@ -64,10 +64,10 @@ select name from instruments i join others o on i.z = o.a where o.a |
 
 Results:
 except - except (Keyword)
+for - for (Keyword)
 group - group (Keyword)
 intersect - intersect (Keyword)
 limit - limit (Keyword)
-offset - offset (Keyword)
 
 --------------
 
@@ -97,10 +97,10 @@ select name from instruments i join others o on i.z = o.a where o.a = i.z |
 
 Results:
 except - except (Keyword)
+for - for (Keyword)
 group - group (Keyword)
 intersect - intersect (Keyword)
 limit - limit (Keyword)
-offset - offset (Keyword)
 
 --------------
 
@@ -144,10 +144,10 @@ select name from instruments i join others o on i.z = o.a where o.a = i.z and i.
 
 Results:
 except - except (Keyword)
+for - for (Keyword)
 group - group (Keyword)
 intersect - intersect (Keyword)
 limit - limit (Keyword)
-offset - offset (Keyword)
 
 --------------
 
@@ -167,9 +167,9 @@ select name from instruments i join others o on i.z = o.a where o.a = i.z and i.
 
 Results:
 create - create (Keyword)
+drop - drop (Keyword)
 insert - insert (Keyword)
 reset - reset (Keyword)
 select - select (Keyword)
-set - set (Keyword)
 
 --------------

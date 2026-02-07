@@ -85,16 +85,17 @@ select "pr"."email" |
 
 Results:
 except - except (Keyword)
+for - for (Keyword)
 from - from (Keyword)
 group - group (Keyword)
 intersect - intersect (Keyword)
-limit - limit (Keyword)
 
 --------------
 
 select "pr"."email" f|
 
 Results:
+for - for (Keyword)
 from - from (Keyword)
 offset - offset (Keyword)
 
@@ -141,9 +142,9 @@ select "pr"."email" from private.users |
 Results:
 cross - cross (Keyword)
 except - except (Keyword)
+for - for (Keyword)
 full - full (Keyword)
 group - group (Keyword)
-inner - inner (Keyword)
 
 --------------
 
@@ -155,9 +156,9 @@ select "pr"."email" from private.users "pr" |
 Results:
 cross - cross (Keyword)
 except - except (Keyword)
+for - for (Keyword)
 full - full (Keyword)
 group - group (Keyword)
-inner - inner (Keyword)
 
 --------------
 

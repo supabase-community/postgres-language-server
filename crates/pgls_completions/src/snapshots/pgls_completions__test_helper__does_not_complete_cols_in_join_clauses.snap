@@ -63,16 +63,17 @@ select u.uid, p.content |
 
 Results:
 except - except (Keyword)
+for - for (Keyword)
 from - from (Keyword)
 group - group (Keyword)
 intersect - intersect (Keyword)
-limit - limit (Keyword)
 
 --------------
 
 select u.uid, p.content f|
 
 Results:
+for - for (Keyword)
 from - from (Keyword)
 offset - offset (Keyword)
 
@@ -124,9 +125,9 @@ select u.uid, p.content from auth.users |
 Results:
 cross - cross (Keyword)
 except - except (Keyword)
+for - for (Keyword)
 full - full (Keyword)
 group - group (Keyword)
-inner - inner (Keyword)
 
 --------------
 
@@ -135,9 +136,9 @@ select u.uid, p.content from auth.users u |
 Results:
 cross - cross (Keyword)
 except - except (Keyword)
+for - for (Keyword)
 full - full (Keyword)
 group - group (Keyword)
-inner - inner (Keyword)
 
 --------------
 
@@ -240,9 +241,9 @@ select u.uid, p.content from auth.users u join auth.posts p on u.uid |
 Results:
 cross - cross (Keyword)
 except - except (Keyword)
+for - for (Keyword)
 full - full (Keyword)
 group - group (Keyword)
-inner - inner (Keyword)
 
 --------------
 
@@ -280,8 +281,8 @@ select u.uid, p.content from auth.users u join auth.posts p on u.uid = p.user_id
 Results:
 cross - cross (Keyword)
 except - except (Keyword)
+for - for (Keyword)
 full - full (Keyword)
 group - group (Keyword)
-inner - inner (Keyword)
 
 --------------
