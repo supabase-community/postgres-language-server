@@ -11,7 +11,7 @@ program [0..25] 'select * from auth.users;'
       select_expression [7..8] '*' (@end)
         term [7..8] '*' (@end)
           all_fields [7..8] '*' (@end)
-            * [7..8] '*'
+            * [7..8] '*' (@end)
     from [9..24] 'from auth.users'
       keyword_from [9..13] 'from'
       relation [14..24] 'auth.users' (@end)

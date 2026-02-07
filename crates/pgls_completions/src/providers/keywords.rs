@@ -42,7 +42,9 @@ pub static ALL_KEYWORDS: &[SqlKeyword] = &[
     SqlKeyword::new("all"),
     SqlKeyword::new("alter").starts_statement(),
     SqlKeyword::new("always"),
-    SqlKeyword::new("analyze").starts_statement(),
+    SqlKeyword::new("analyze")
+        .starts_statement()
+        .require_prefix(),
     SqlKeyword::new("and").require_prefix(),
     SqlKeyword::new("any").require_prefix(),
     SqlKeyword::new("array").require_prefix(),
@@ -123,7 +125,9 @@ pub static ALL_KEYWORDS: &[SqlKeyword] = &[
     SqlKeyword::new("exclude"),
     SqlKeyword::new("execute"),
     SqlKeyword::new("exists").require_prefix(),
-    SqlKeyword::new("explain").starts_statement(),
+    SqlKeyword::new("explain")
+        .starts_statement()
+        .require_prefix(),
     SqlKeyword::new("extended"),
     SqlKeyword::new("extension"),
     SqlKeyword::new("external"),
@@ -174,7 +178,7 @@ pub static ALL_KEYWORDS: &[SqlKeyword] = &[
     SqlKeyword::new("interval").require_prefix(),
     SqlKeyword::new("into"),
     SqlKeyword::new("invoker"),
-    SqlKeyword::new("is"),
+    SqlKeyword::new("is").require_prefix(),
     SqlKeyword::new("isolation"),
     SqlKeyword::new("join"),
     SqlKeyword::new("json"),
@@ -711,6 +715,10 @@ mod tests {
                 ),
                 CompletionAssertion::LabelAndKind(
                     "natural".into(),
+                    crate::CompletionItemKind::Keyword,
+                ),
+                CompletionAssertion::LabelAndKind(
+                    "offset".into(),
                     crate::CompletionItemKind::Keyword,
                 ),
                 CompletionAssertion::LabelAndKind(

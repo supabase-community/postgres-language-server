@@ -53,6 +53,12 @@ abbrev - pg_catalog.pg_timezone_abbrevs.abbrev (Column)
 
 create policy "my_pol" on public.instruments for select using (id = 1 |)
 create policy "my_pol" on public.instruments for select using (id = 1 a|)
+
+Results:
+and - and (Keyword)
+
+--------------
+
 create policy "my_pol" on public.instruments for select using (id = 1 and |)
 
 Results:
@@ -121,6 +127,12 @@ abbrev - pg_catalog.pg_timezone_abbrevs.abbrev (Column)
 
 create policy "my_pol" on public.instruments for insert with check (id = 1 |)
 create policy "my_pol" on public.instruments for insert with check (id = 1 a|)
+
+Results:
+and - and (Keyword)
+
+--------------
+
 create policy "my_pol" on public.instruments for insert with check (id = 1 and |)
 
 Results:

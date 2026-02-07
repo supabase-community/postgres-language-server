@@ -106,7 +106,7 @@ impl HoveredNode {
 
                     // hover over type in `select` clause etc…
                     || (ctx
-                        .history_ends_with(&["field_selection","composite_reference","object_reference", "any_identifier"])
+                        .history_ends_with(&["field_selection", "parenthesized_expression", "object_reference", "any_identifier"])
                         && ctx.node_under_cursor_is_within_field(&["object_reference_1of1", "object_reference_2of2"])))
 
                     // make sure we're not checking against an alias
