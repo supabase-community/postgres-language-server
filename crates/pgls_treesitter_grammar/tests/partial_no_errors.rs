@@ -18,7 +18,6 @@ pub static SINGLE_TOKEN_RULES: &[&str] = &[
     "column_reference",
     "function_reference",
     "type_reference",
-    "composite_reference",
     "literal",
     "term",
     "parameter",

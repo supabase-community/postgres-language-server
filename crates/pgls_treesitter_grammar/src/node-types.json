@@ -2982,32 +2982,6 @@
     }
   },
   {
-    "type": "composite_reference",
-    "named": true,
-    "fields": {
-      "end": {
-        "multiple": false,
-        "required": true,
-        "types": [
-          {
-            "type": ")",
-            "named": false
-          }
-        ]
-      }
-    },
-    "children": {
-      "multiple": false,
-      "required": true,
-      "types": [
-        {
-          "type": "object_reference",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
     "type": "constraint",
     "named": true,
     "fields": {
@@ -5667,7 +5641,7 @@
     "fields": {
       "end": {
         "multiple": false,
-        "required": true,
+        "required": false,
         "types": [
           {
             "type": "any_identifier",
@@ -5680,10 +5654,6 @@
       "multiple": false,
       "required": true,
       "types": [
-        {
-          "type": "composite_reference",
-          "named": true
-        },
         {
           "type": "parenthesized_expression",
           "named": true

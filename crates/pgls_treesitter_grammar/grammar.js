@@ -3015,15 +3015,12 @@ module.exports = grammar({
       ),
 
     field_selection: ($) =>
-      seq(
+      partialSeq(
         // TODO: partial this
-        choice($.composite_reference, $.parenthesized_expression),
+        $.parenthesized_expression,
         ".",
         field("end", $.any_identifier),
       ),
-
-    composite_reference: ($) =>
-      prec(3, wrapped_in_parenthesis($.object_reference)),
 
     parenthesized_expression: ($) =>
       prec(2, wrapped_in_parenthesis($._expression)),

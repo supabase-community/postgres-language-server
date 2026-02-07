@@ -32,7 +32,7 @@ program [0..97] 'select (create_composite_type(a, b)).email, (schema.actual_type
         , [42..43] ',' (@end)
         term [44..67] '(schema.actual_type).id' (@end)
           field_selection [44..67] '(schema.actual_type).id' (@end)
-            composite_reference [44..64] '(schema.actual_type)'
+            parenthesized_expression [44..64] '(schema.actual_type)'
               ( [44..45] '('
               object_reference [45..63] 'schema.actual_type'
                 any_identifier [45..51] 'schema' (@object_reference_1of2)
