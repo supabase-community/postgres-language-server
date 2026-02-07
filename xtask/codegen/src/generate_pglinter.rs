@@ -24,6 +24,7 @@ struct PglinterRuleMeta {
     /// Description of the rule
     description: String,
     /// Message template with placeholders
+    #[allow(dead_code)]
     message: String,
     /// Suggested fixes
     fixes: Vec<String>,
