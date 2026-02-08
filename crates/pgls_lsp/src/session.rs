@@ -7,7 +7,6 @@ use biome_deserialize::Merge;
 use futures::StreamExt;
 use futures::stream::FuturesUnordered;
 use pgls_analyse::RuleCategoriesBuilder;
-use pgls_configuration::database::PartialDatabaseConfiguration;
 use pgls_configuration::{ConfigurationPathHint, PartialConfiguration};
 use pgls_diagnostics::{DiagnosticExt, Error};
 use pgls_fs::{ConfigName, FileSystem, PgLSPath};
@@ -76,6 +75,9 @@ pub(crate) struct Session {
     pub(crate) cancellation: Arc<Notify>,
 
     pub(crate) config_path: Option<PathBuf>,
+
+    /// Extra configuration from environment variables, applied on every config load.
+    env_config: Option<PartialConfiguration>,
 }
 
 /// The parameters provided by the client in the "initialize" request
@@ -156,6 +158,7 @@ impl Session {
         workspace: Arc<dyn Workspace>,
         cancellation: Arc<Notify>,
         fs: DynRef<'static, dyn FileSystem>,
+        env_config: Option<PartialConfiguration>,
     ) -> Self {
         let documents = Default::default();
         Self {
@@ -170,6 +173,7 @@ impl Session {
             config_path: None,
             notified_broken_configuration: AtomicBool::new(false),
             notified_deprecated_config: AtomicBool::new(false),
+            env_config,
         }
     }
 
@@ -500,11 +504,9 @@ impl Session {
                     fs_configuration.merge_with(ws_configuration);
                 }
 
-                if let Some(env_db) = PartialDatabaseConfiguration::from_env() {
-                    match &mut fs_configuration.db {
-                        Some(db) => db.merge_with(env_db),
-                        None => fs_configuration.db = Some(env_db),
-                    }
+                // Env vars take highest priority — merge last so they override everything.
+                if let Some(env_config) = &self.env_config {
+                    fs_configuration.merge_with(env_config.clone());
                 }
 
                 let result = fs_configuration
