@@ -11,29 +11,29 @@ use serde::{Deserialize, Serialize};
 pub struct DatabaseConfiguration {
     /// A connection string that encodes the full connection setup.
     /// When provided, it takes precedence over the individual fields.
-    #[partial(bpaf(long("connection-string")))]
+    #[partial(bpaf(env("DATABASE_URL"), long("connection-string")))]
     pub connection_string: Option<String>,
 
     /// The host of the database.
     /// Required if you want database-related features.
     /// All else falls back to sensible defaults.
-    #[partial(bpaf(long("host")))]
+    #[partial(bpaf(env("PGHOST"), long("host")))]
     pub host: String,
 
     /// The port of the database.
-    #[partial(bpaf(long("port")))]
+    #[partial(bpaf(env("PGPORT"), long("port")))]
     pub port: u16,
 
     /// The username to connect to the database.
-    #[partial(bpaf(long("username")))]
+    #[partial(bpaf(env("PGUSER"), long("username")))]
     pub username: String,
 
     /// The password to connect to the database.
-    #[partial(bpaf(long("password")))]
+    #[partial(bpaf(env("PGPASSWORD"), long("password")))]
     pub password: String,
 
     /// The name of the database.
-    #[partial(bpaf(long("database")))]
+    #[partial(bpaf(env("PGDATABASE"), long("database")))]
     pub database: String,
 
     #[partial(bpaf(long("allow_statement_executions_against")))]
@@ -62,5 +62,41 @@ impl Default for DatabaseConfiguration {
             allow_statement_executions_against: Default::default(),
             conn_timeout_secs: 10,
         }
+    }
+}
+
+impl PartialDatabaseConfiguration {
+    /// Creates a partial configuration from standard Postgres environment variables.
+    ///
+    /// Reads `DATABASE_URL`, `PGHOST`, `PGPORT`, `PGUSER`, `PGPASSWORD`, and `PGDATABASE`.
+    /// Returns `None` if no relevant env vars are set.
+    pub fn from_env() -> Option<Self> {
+        let database_url = std::env::var("DATABASE_URL").ok();
+        let pghost = std::env::var("PGHOST").ok();
+        let pgport = std::env::var("PGPORT").ok().and_then(|p| p.parse().ok());
+        let pguser = std::env::var("PGUSER").ok();
+        let pgpassword = std::env::var("PGPASSWORD").ok();
+        let pgdatabase = std::env::var("PGDATABASE").ok();
+
+        let has_any = database_url.is_some()
+            || pghost.is_some()
+            || pgport.is_some()
+            || pguser.is_some()
+            || pgpassword.is_some()
+            || pgdatabase.is_some();
+
+        if !has_any {
+            return None;
+        }
+
+        Some(Self {
+            connection_string: database_url,
+            host: pghost,
+            port: pgport,
+            username: pguser,
+            password: pgpassword,
+            database: pgdatabase,
+            ..Default::default()
+        })
     }
 }
