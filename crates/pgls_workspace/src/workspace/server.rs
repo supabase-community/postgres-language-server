@@ -46,6 +46,7 @@ use crate::{
         diagnostics::{PullDiagnosticsResult, PullFileDiagnosticsParams},
         format::{PullFileFormattingParams, PullFormattingResult, StatementFormatResult},
         on_hover::{OnHoverParams, OnHoverResult},
+        semantic_tokens::{SemanticTokensParams, SemanticTokensResult},
     },
     settings::{WorkspaceSettings, WorkspaceSettingsHandle, WorkspaceSettingsHandleMut},
     workspace::{AnalyserDiagnosticsMapper, WithCSTandASTMapper},
@@ -71,6 +72,7 @@ pub(crate) mod document;
 mod migration;
 mod pg_query;
 mod schema_cache_manager;
+pub mod semantic_tokens;
 mod sql_function;
 mod statement_identifier;
 mod tree_sitter;
@@ -1057,6 +1059,29 @@ impl Workspace for WorkspaceServer {
             }
             None => Ok(OnHoverResult::default()),
         }
+    }
+
+    #[ignored_path(path=&params.path)]
+    #[tracing::instrument(level = "debug", skip_all, fields(
+        path = params.path.as_os_str().to_str(),
+    ), err)]
+    fn get_semantic_tokens(
+        &self,
+        params: SemanticTokensParams,
+    ) -> Result<SemanticTokensResult, WorkspaceError> {
+        use document::{RangeOverlapFilter, SemanticTokenMapper};
+
+        let documents = self.documents.read().unwrap();
+        let doc = documents
+            .get(&params.path)
+            .ok_or(WorkspaceError::not_found())?;
+
+        let tokens: Vec<_> = doc
+            .iter_with_filter(SemanticTokenMapper, RangeOverlapFilter::new(params.range))
+            .flat_map(|(_, tokens)| tokens)
+            .collect();
+
+        Ok(SemanticTokensResult::new(tokens))
     }
 }
 

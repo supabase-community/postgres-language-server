@@ -9,6 +9,7 @@ use pgls_text_size::{TextRange, TextSize};
 use super::{
     annotation::AnnotationStore,
     pg_query::PgQueryStore,
+    semantic_tokens::{SemanticToken, SemanticTokenStore},
     sql_function::{SQLFunctionSignature, get_sql_fn_body, get_sql_fn_signature},
     statement_identifier::StatementId,
     tree_sitter::TreeSitterStore,
@@ -21,6 +22,7 @@ pub struct Document {
     diagnostics: Vec<SDiagnostic>,
     ast_db: PgQueryStore,
     cst_db: TreeSitterStore,
+    semantic_token_db: SemanticTokenStore,
     #[allow(dead_code)]
     annotation_db: AnnotationStore,
     suppressions: Suppressions,
@@ -30,6 +32,7 @@ impl Document {
     pub fn new(content: String, version: i32) -> Document {
         let cst_db = TreeSitterStore::new();
         let ast_db = PgQueryStore::new();
+        let semantic_token_db = SemanticTokenStore::default();
         let annotation_db = AnnotationStore::new();
         let suppressions = Suppressions::from(content.as_str());
 
@@ -42,6 +45,7 @@ impl Document {
             version,
             ast_db,
             cst_db,
+            semantic_token_db,
             annotation_db,
             suppressions,
         }
@@ -377,6 +381,53 @@ impl IdFilter {
 impl StatementFilter<'_> for IdFilter {
     fn predicate(&self, id: &StatementId, _range: &TextRange, _content: &str) -> bool {
         *id == self.id
+    }
+}
+
+/// Filter that matches statements overlapping with a given range.
+/// If no range is provided, all statements pass.
+pub struct RangeOverlapFilter {
+    range: Option<TextRange>,
+}
+
+impl RangeOverlapFilter {
+    pub fn new(range: Option<TextRange>) -> Self {
+        Self { range }
+    }
+}
+
+impl StatementFilter<'_> for RangeOverlapFilter {
+    fn predicate(&self, _id: &StatementId, range: &TextRange, _content: &str) -> bool {
+        match self.range {
+            Some(filter_range) => {
+                // Check if the statement range overlaps with the filter range
+                range.start() < filter_range.end() && range.end() > filter_range.start()
+            }
+            None => true, // No range filter, all statements pass
+        }
+    }
+}
+
+/// Mapper that returns semantic tokens for each statement, adjusted to document coordinates
+pub struct SemanticTokenMapper;
+impl<'a> StatementMapper<'a> for SemanticTokenMapper {
+    /// Returns (statement_range, tokens_with_document_coordinates)
+    type Output = (TextRange, Vec<SemanticToken>);
+
+    fn map(&self, parser: &'a Document, id: StatementId, range: TextRange) -> Self::Output {
+        let tokens = parser.semantic_token_db.get_or_cache_tokens(&id);
+
+        // Adjust token positions from statement-relative to document-absolute
+        let adjusted_tokens: Vec<SemanticToken> = tokens
+            .into_iter()
+            .map(|t| SemanticToken {
+                range: TextRange::new(t.range.start() + range.start(), t.range.end() + range.start()),
+                token_type: t.token_type,
+                token_modifiers: t.token_modifiers,
+            })
+            .collect();
+
+        (range, adjusted_tokens)
     }
 }
 

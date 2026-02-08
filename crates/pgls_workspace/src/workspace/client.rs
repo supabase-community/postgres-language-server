@@ -183,6 +183,13 @@ where
         self.request("pgls/on_hover", params)
     }
 
+    fn get_semantic_tokens(
+        &self,
+        params: crate::features::semantic_tokens::SemanticTokensParams,
+    ) -> Result<crate::features::semantic_tokens::SemanticTokensResult, WorkspaceError> {
+        self.request("pgls/get_semantic_tokens", params)
+    }
+
     fn invalidate_schema_cache(&self, all: bool) -> Result<(), WorkspaceError> {
         self.request("pgls/invalidate_schema_cache", all)
     }
