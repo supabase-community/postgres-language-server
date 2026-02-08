@@ -6,6 +6,7 @@ use crate::session::{
 use crate::utils::{into_lsp_error, panic_to_lsp_error};
 use futures::FutureExt;
 use futures::future::ready;
+use pgls_configuration::database::PartialDatabaseConfiguration;
 use pgls_fs::{ConfigName, FileSystem, OsFileSystem};
 use pgls_workspace::workspace::{RegisterProjectFolderParams, UnregisterProjectFolderParams};
 use pgls_workspace::{DynRef, Workspace, workspace};
@@ -162,9 +163,9 @@ impl LanguageServer for LSPServer {
 
     #[tracing::instrument(level = "info", skip_all)]
     async fn did_change_configuration(&self, params: DidChangeConfigurationParams) {
-        self.session
-            .load_workspace_settings(serde_json::from_value(params.settings).ok())
-            .await;
+        let extra_config: Option<pgls_configuration::PartialConfiguration> =
+            serde_json::from_value(params.settings).ok();
+        self.session.load_workspace_settings(extra_config).await;
         self.setup_capabilities().await;
         self.session.update_all_diagnostics().await;
     }
@@ -410,10 +411,19 @@ pub struct ServerFactory {
     /// This shared flag is set to true once at least one sessions has been
     /// initialized on this server instance
     is_initialized: Arc<AtomicBool>,
+    /// Configuration from environment variables (DATABASE_URL, PGHOST, etc.).
+    /// Computed once at factory creation and passed to each session.
+    env_config: Option<pgls_configuration::PartialConfiguration>,
 }
 
 impl ServerFactory {
     pub fn new(stop_on_disconnect: bool) -> Self {
+        let env_config = PartialDatabaseConfiguration::from_env().map(|db| {
+            pgls_configuration::PartialConfiguration {
+                db: Some(db),
+                ..Default::default()
+            }
+        });
         Self {
             cancellation: Arc::default(),
             workspace: None,
@@ -421,6 +431,7 @@ impl ServerFactory {
             next_session_key: AtomicU64::new(0),
             stop_on_disconnect,
             is_initialized: Arc::default(),
+            env_config,
         }
     }
 
@@ -441,6 +452,7 @@ impl ServerFactory {
 
         let session_key = SessionKey(self.next_session_key.fetch_add(1, Ordering::Relaxed));
 
+        let env_config = self.env_config.clone();
         let mut builder = LspService::build(move |client| {
             let mut session = Session::new(
                 session_key,
@@ -448,6 +460,7 @@ impl ServerFactory {
                 workspace,
                 self.cancellation.clone(),
                 fs,
+                env_config,
             );
             if let Some(path) = config_path {
                 session.set_config_path(path);
