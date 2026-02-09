@@ -23,10 +23,12 @@ This project provides a toolchain for Postgres development, built on Postgres' o
 
 The following features are implemented:
 - Autocompletion
-- Syntax Error Highlighting
+- Hover
+- Syntax Diagnostics
 - Type-checking (via `EXPLAIN` error insights)
-- Linter, inspired by [Squawk](https://squawkhq.com)
 - Formatting
+- Database & Migration Linting
+- PL/pgSQL Support
 
 Our current focus is on refining and enhancing these core features while building a robust and easily accessible infrastructure. For future plans and opportunities to contribute, please check out the issues and discussions. Any contributions are welcome!
 
