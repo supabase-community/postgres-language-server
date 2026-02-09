@@ -62,6 +62,31 @@ async function downloadSchema(releaseTag, githubToken) {
 	console.log(`Downloaded schema for ${releaseTag}`);
 }
 
+async function downloadWasmAssets(releaseTag, githubToken) {
+	const wasmDir = resolve(PACKAGES_PGLS_ROOT, "wasm", "wasm");
+	fs.mkdirSync(wasmDir, { recursive: true });
+
+	for (const asset of ["pgls.js", "pgls.wasm"]) {
+		const assetUrl = `https://github.com/supabase-community/postgres-language-server/releases/download/${releaseTag}/${asset}`;
+
+		const response = await fetch(assetUrl.trim(), {
+			headers: {
+				Authorization: `token ${githubToken}`,
+				Accept: "application/octet-stream",
+			},
+		});
+
+		if (!response.ok) {
+			throw new Error(`Failed to Fetch WASM Asset from ${assetUrl}`);
+		}
+
+		const fileStream = fs.createWriteStream(resolve(wasmDir, asset));
+		await streamPipeline(response.body, fileStream);
+
+		console.log(`Downloaded WASM asset ${asset} for ${releaseTag}`);
+	}
+}
+
 async function downloadBinary(platform, arch, os, releaseTag, githubToken) {
 	const buildName = getBuildName(platform, arch);
 	const ext = getBinaryExt(os);
@@ -277,6 +302,7 @@ function getVersion(releaseTag, isPrerelease) {
 	const isPrerelease = process.env.PRERELEASE === "true";
 
 	await downloadSchema(releaseTag, githubToken);
+	await downloadWasmAssets(releaseTag, githubToken);
 	const version = getVersion(releaseTag, isPrerelease);
 	await writeManifest("cli", version);
 	await writeManifest("backend-jsonrpc", version);
