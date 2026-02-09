@@ -233,8 +233,8 @@ jobs:
 
       - name: Prepare WASM Assets
         run: |
-          cp wasm-assets/packages/@postgres-language-server/wasm/wasm/pgls.js ./pgls.js
-          cp wasm-assets/packages/@postgres-language-server/wasm/wasm/pgls.wasm ./pgls.wasm
+          cp wasm-assets/pgls.js ./pgls.js
+          cp wasm-assets/pgls.wasm ./pgls.wasm
 
       - name: 📂 Create Release
         uses: softprops/action-gh-release@v2
