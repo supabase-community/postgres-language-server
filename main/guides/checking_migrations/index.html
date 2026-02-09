@@ -127,18 +127,28 @@
 <p>To run it, simply point at your migrations directory.</p>
 <pre><code class="language-sh">postgres-language-server check supabase/migrations
 </code></pre>
-<p>When you are setting it up in an existing project, you might want to ignore all migrations that are already applied. To do so, add <code>migrationsDir</code> and <code>after</code> to your <code>postgres-language-server.jsonc</code> file</p>
+<p>When you are setting it up in an existing project, you might want to ignore all migrations that are already applied. To do so, add <code>migrationsDir</code> and <code>after</code> to your <code>postgres-language-server.jsonc</code> file.</p>
+<p>The <code>after</code> value is the numeric prefix extracted from your migration filenames (the part before the first <code>_</code>), with leading zeros stripped. Only migrations with a prefix greater than this value will be checked.</p>
+<p>For example, if your last applied migration is <code>20250301120000_create_users.sql</code>, use <code>20250301120000</code>:</p>
 <pre><code class="language-json">{
     &quot;migrations&quot;: {
         &quot;migrationsDir&quot;: &quot;supabase/migrations&quot;,
-        &quot;after&quot;: 1740868021
+        &quot;after&quot;: 20250301120000
     }
 }
 </code></pre>
 <p>Alternatively, pass them directly.</p>
-<pre><code>postgres-language-server check supabase/migrations --migrations-dir=&quot;supabase/migrations&quot; --after=1740868021
+<pre><code>postgres-language-server check supabase/migrations --migrations-dir=&quot;supabase/migrations&quot; --after=20250301120000
 </code></pre>
-<p>This will only check migrations after the specified timestamp.</p>
+<p>This will only check migrations after the specified migration id.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The prefix format depends on your migration tool:</p>
+<ul>
+<li><strong>Supabase</strong>: datetime prefix, e.g. <code>20250301120000_create_users.sql</code> → use <code>20250301120000</code></li>
+<li><strong>Sequential</strong>: numeric prefix, e.g. <code>000201_create_users.sql</code> → use <code>201</code> (leading zeros are stripped)</li>
+</ul>
+</div>
 <p>For pre-commit hooks and when working locally, use <code>--staged</code> to only lint files that have been staged. In CI environments, you most likely want to use <code>--changed</code> to only lint files that have been changed compared to your <code>vcs.default_branch</code> configuration. If <code>default_branch</code> is not set in your <code>postgres-language-server.jsonc</code>, use <code>--since=REF</code> to specify the base branch to compare against.</p>
               
             </div>
