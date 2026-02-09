@@ -181,12 +181,7 @@ impl Display for PgLSEnv {
         };
 
         let sensitive = [&self.database_url, &self.pgpassword];
-        let non_sensitive = [
-            &self.pghost,
-            &self.pgport,
-            &self.pguser,
-            &self.pgdatabase,
-        ];
+        let non_sensitive = [&self.pghost, &self.pgport, &self.pguser, &self.pgdatabase];
 
         for var in sensitive {
             match var.value() {
