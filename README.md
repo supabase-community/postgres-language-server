@@ -1,10 +1,11 @@
-![Postgres Language Server](/docs/images/pls-github.png)
+<div align="center">
+  <img src="docs/images/pls-github.png" alt="Postgres Language Server" width="300">
 
-# Postgres Language Server
+  # Postgres Language Server
+  A collection of language tools and a Language Server Protocol (LSP) implementation for Postgres, focusing on developer experience and reliable SQL tooling.
 
-A collection of language tools and a Language Server Protocol (LSP) implementation for Postgres, focusing on developer experience and reliable SQL tooling.
-
-[Documentation](https://pg-language-server.com/) | [Installation](https://pg-language-server.com/getting_started/)
+  [Documentation](https://pg-language-server.com/) | [Installation](https://pg-language-server.com/getting_started/)
+</div>
 
 ## Overview
 
@@ -12,7 +13,7 @@ LSP Demo             |  CLI Demo
 :-------------------------:|:-------------------------:
 ![LSP Demo](/docs/images/lsp-demo.gif)  |  ![CLI Demo](/docs/images/cli-demo.png)
 
-This project provides a toolchain for Postgres development, built on Postgres' own parser `libpg_query` to ensure 100% syntax compatibility. It is built on a Server-Client architecture with a transport-agnostic design. This means all features can be accessed through the [Language Server Protocol](https://microsoft.github.io/language-server-protocol/), but also through other interfaces like a CLI, HTTP APIs, or a WebAssembly module. The goal is to make all the great Postgres tooling out there as accessible as possible, and to build anything that is missing ourselves.
+This project provides a toolchain for Postgres development, built on Postgres' own parser `libpg_query` to ensure 100% syntax compatibility. It is built on a Server-Client architecture with a transport-agnostic design. All features can be accessed through the [Language Server Protocol](https://microsoft.github.io/language-server-protocol/), but also through other interfaces like a CLI, HTTP APIs, and a WebAssembly module. The goal is to make all the great Postgres tooling out there as accessible as possible, and to build anything that is missing ourselves.
 
 ## Features
 
@@ -29,6 +30,7 @@ This project provides a toolchain for Postgres development, built on Postgres' o
 | Editor | Install |
 |--------|---------|
 | VSCode | [Marketplace](https://marketplace.visualstudio.com/items?itemName=Supabase.postgrestools) |
+| Cursor | [Open VSX](https://open-vsx.org/extension/supabase/postgrestools) |
 | Neovim | [nvim-lspconfig](https://github.com/neovim/nvim-lspconfig/blob/master/doc/configs.md#postgres_lsp) |
 | Zed | [Extension](https://github.com/LoamStudios/zed-postgres-language-server) |
 | Sublime Text | [LSP-postgres](https://lsp.sublimetext.io/language_servers/#postgresql) |

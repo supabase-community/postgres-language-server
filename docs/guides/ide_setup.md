@@ -68,6 +68,10 @@ If the language server isn't working:
 
 The language client is available through [lsp-mode](https://github.com/emacs-lsp/lsp-mode). For more details, refer to their [manual page](https://emacs-lsp.github.io/lsp-mode/page/lsp-postgres/).
 
+## Cursor
+
+The language server is available on the [Open VSX Registry](https://open-vsx.org/extension/supabase/postgrestools). Install it from the extensions panel in Cursor.
+
 ## Zed
 
 The language server is available as an Extension. It's published from [this repo](https://github.com/LoamStudios/zed-postgres-language-server).
