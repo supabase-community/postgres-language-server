@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="docs/images/pls-github.png" alt="Postgres Language Server">
+  <img src="docs/images/pls-github.png" alt="Postgres Language Server" width="80%">
 
   # Postgres Language Server
   A collection of language tools and a Language Server Protocol (LSP) implementation for Postgres, focusing on developer experience and reliable SQL tooling.
