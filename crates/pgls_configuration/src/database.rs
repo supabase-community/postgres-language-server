@@ -11,29 +11,35 @@ use serde::{Deserialize, Serialize};
 pub struct DatabaseConfiguration {
     /// A connection string that encodes the full connection setup.
     /// When provided, it takes precedence over the individual fields.
-    #[partial(bpaf(env("DATABASE_URL"), long("connection-string")))]
+    /// Can also be set via the `DATABASE_URL` environment variable.
+    #[partial(bpaf(long("connection-string")))]
     pub connection_string: Option<String>,
 
     /// The host of the database.
     /// Required if you want database-related features.
     /// All else falls back to sensible defaults.
-    #[partial(bpaf(env("PGHOST"), long("host")))]
+    /// Can also be set via the `PGHOST` environment variable.
+    #[partial(bpaf(long("host")))]
     pub host: String,
 
     /// The port of the database.
-    #[partial(bpaf(env("PGPORT"), long("port")))]
+    /// Can also be set via the `PGPORT` environment variable.
+    #[partial(bpaf(long("port")))]
     pub port: u16,
 
     /// The username to connect to the database.
-    #[partial(bpaf(env("PGUSER"), long("username")))]
+    /// Can also be set via the `PGUSER` environment variable.
+    #[partial(bpaf(long("username")))]
     pub username: String,
 
     /// The password to connect to the database.
-    #[partial(bpaf(env("PGPASSWORD"), long("password")))]
+    /// Can also be set via the `PGPASSWORD` environment variable.
+    #[partial(bpaf(long("password")))]
     pub password: String,
 
     /// The name of the database.
-    #[partial(bpaf(env("PGDATABASE"), long("database")))]
+    /// Can also be set via the `PGDATABASE` environment variable.
+    #[partial(bpaf(long("database")))]
     pub database: String,
 
     #[partial(bpaf(long("allow_statement_executions_against")))]
