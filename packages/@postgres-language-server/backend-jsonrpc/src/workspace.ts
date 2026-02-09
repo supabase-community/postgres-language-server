@@ -374,27 +374,27 @@ export interface PartialDatabaseConfiguration {
 	 */
 	connTimeoutSecs?: number;
 	/**
-	 * A connection string that encodes the full connection setup. When provided, it takes precedence over the individual fields.
+	 * A connection string that encodes the full connection setup. When provided, it takes precedence over the individual fields. Can also be set via the `DATABASE_URL` environment variable.
 	 */
 	connectionString?: string;
 	/**
-	 * The name of the database.
+	 * The name of the database. Can also be set via the `PGDATABASE` environment variable.
 	 */
 	database?: string;
 	/**
-	 * The host of the database. Required if you want database-related features. All else falls back to sensible defaults.
+	 * The host of the database. Required if you want database-related features. All else falls back to sensible defaults. Can also be set via the `PGHOST` environment variable.
 	 */
 	host?: string;
 	/**
-	 * The password to connect to the database.
+	 * The password to connect to the database. Can also be set via the `PGPASSWORD` environment variable.
 	 */
 	password?: string;
 	/**
-	 * The port of the database.
+	 * The port of the database. Can also be set via the `PGPORT` environment variable.
 	 */
 	port?: number;
 	/**
-	 * The username to connect to the database.
+	 * The username to connect to the database. Can also be set via the `PGUSER` environment variable.
 	 */
 	username?: string;
 }
