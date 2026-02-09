@@ -180,14 +180,26 @@ impl Display for PgLSEnv {
             }
         };
 
-        for var in [
-            &self.database_url,
+        let sensitive = [&self.database_url, &self.pgpassword];
+        let non_sensitive = [
             &self.pghost,
             &self.pgport,
             &self.pguser,
-            &self.pgpassword,
             &self.pgdatabase,
-        ] {
+        ];
+
+        for var in sensitive {
+            match var.value() {
+                None => {
+                    KeyValuePair(var.name, markup! { <Dim>"unset"</Dim> }).fmt(fmt)?;
+                }
+                Some(_) => {
+                    KeyValuePair(var.name, markup! { <Dim>"set"</Dim> }).fmt(fmt)?;
+                }
+            };
+        }
+
+        for var in non_sensitive {
             match var.value() {
                 None => {
                     KeyValuePair(var.name, markup! { <Dim>"unset"</Dim> }).fmt(fmt)?;
