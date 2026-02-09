@@ -4,7 +4,7 @@ use bpaf::Bpaf;
 use serde::{Deserialize, Serialize};
 
 /// The configuration of the database connection.
-#[derive(Clone, Debug, Deserialize, Eq, Partial, PartialEq, Serialize)]
+#[derive(Clone, Deserialize, Eq, Partial, PartialEq, Serialize)]
 #[partial(derive(Bpaf, Clone, Eq, PartialEq, Merge))]
 #[partial(cfg_attr(feature = "schema", derive(schemars::JsonSchema)))]
 #[partial(serde(rename_all = "camelCase", default, deny_unknown_fields))]
@@ -53,6 +53,28 @@ pub struct DatabaseConfiguration {
     #[partial(bpaf(long("disable-db"), switch, fallback(Some(false))))]
     #[partial(cfg_attr(feature = "schema", schemars(skip)))]
     pub disable_connection: bool,
+}
+
+impl std::fmt::Debug for DatabaseConfiguration {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("DatabaseConfiguration")
+            .field(
+                "connection_string",
+                &self.connection_string.as_ref().map(|_| "[redacted]"),
+            )
+            .field("host", &self.host)
+            .field("port", &self.port)
+            .field("username", &self.username)
+            .field("password", &"[redacted]")
+            .field("database", &self.database)
+            .field(
+                "allow_statement_executions_against",
+                &self.allow_statement_executions_against,
+            )
+            .field("conn_timeout_secs", &self.conn_timeout_secs)
+            .field("disable_connection", &self.disable_connection)
+            .finish()
+    }
 }
 
 impl Default for DatabaseConfiguration {

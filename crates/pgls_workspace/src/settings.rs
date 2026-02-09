@@ -640,7 +640,6 @@ impl Default for TypecheckSettings {
 }
 
 /// Database settings for the entire workspace
-#[derive(Debug)]
 pub struct DatabaseSettings {
     pub enable_connection: bool,
     pub connection_string: Option<String>,
@@ -651,6 +650,28 @@ pub struct DatabaseSettings {
     pub database: String,
     pub conn_timeout_secs: Duration,
     pub allow_statement_executions: bool,
+}
+
+impl std::fmt::Debug for DatabaseSettings {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("DatabaseSettings")
+            .field("enable_connection", &self.enable_connection)
+            .field(
+                "connection_string",
+                &self.connection_string.as_ref().map(|_| "[redacted]"),
+            )
+            .field("host", &self.host)
+            .field("port", &self.port)
+            .field("username", &self.username)
+            .field("password", &"[redacted]")
+            .field("database", &self.database)
+            .field("conn_timeout_secs", &self.conn_timeout_secs)
+            .field(
+                "allow_statement_executions",
+                &self.allow_statement_executions,
+            )
+            .finish()
+    }
 }
 
 impl Default for DatabaseSettings {
