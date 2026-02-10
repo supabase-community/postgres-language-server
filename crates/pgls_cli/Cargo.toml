@@ -13,8 +13,6 @@ version              = "0.0.0"
 
 [dependencies]
 anyhow                   = { workspace = true }
-biome_deserialize        = { workspace = true }
-biome_deserialize_macros = { workspace = true }
 bpaf                     = { workspace = true, features = ["bright-color"] }
 crossbeam                = { workspace = true }
 dashmap                  = "5.5.3"

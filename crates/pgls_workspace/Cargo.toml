@@ -12,9 +12,8 @@ version              = "0.0.0"
 
 
 [dependencies]
-biome_deserialize = "0.6.0"
-globset           = "0.4.16"
-lru               = "0.12"
+globset = "0.4.16"
+lru     = "0.12"
 
 ignore                            = { workspace = true }
 json-strip-comments               = { workspace = true }
@@ -59,10 +58,6 @@ pgls_typecheck     = { workspace = true, optional = true }
 sqlx               = { workspace = true, optional = true }
 tokio              = { workspace = true, features = ["rt", "rt-multi-thread"], optional = true }
 
-biome_js_factory = { workspace = true, optional = true }
-biome_js_syntax  = { workspace = true, optional = true }
-biome_rowan      = { workspace = true, optional = true }
-
 [features]
 db = [
   "dep:futures",
@@ -77,9 +72,6 @@ db = [
 default = ["db"]
 schema = [
   "dep:schemars",
-  "dep:biome_rowan",
-  "dep:biome_js_syntax",
-  "dep:biome_js_factory",
   "pgls_configuration/schema",
   "pgls_diagnostics/schema",
   "pgls_fs/schema",

@@ -1,5 +1,5 @@
-use biome_deserialize::StringSet;
 use globset::Glob;
+use pgls_configuration::StringSet;
 use pgls_diagnostics::Category;
 #[cfg(feature = "db")]
 use std::str::FromStr;
@@ -826,7 +826,7 @@ impl Default for FilesSettings {
 
 #[cfg(test)]
 mod tests {
-    use biome_deserialize::StringSet;
+    use pgls_configuration::StringSet;
     use pgls_configuration::database::PartialDatabaseConfiguration;
 
     use super::DatabaseSettings;

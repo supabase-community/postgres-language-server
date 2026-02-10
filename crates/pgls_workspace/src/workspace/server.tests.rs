@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
-use biome_deserialize::{Merge, StringSet};
 use pgls_analyse::RuleCategories;
+use pgls_configuration::{Merge, StringSet};
 use pgls_configuration::{
     PartialConfiguration, PartialTypecheckConfiguration, database::PartialDatabaseConfiguration,
     files::PartialFilesConfiguration,

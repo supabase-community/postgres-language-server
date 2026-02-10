@@ -1,5 +1,5 @@
 use anyhow::{Context, Result};
-use biome_string_case::Case;
+use convert_case::{Case, Casing};
 use quote::{format_ident, quote};
 use regex::Regex;
 use std::collections::BTreeMap;
@@ -88,7 +88,7 @@ fn parse_rules_sql(content: &str) -> Result<BTreeMap<String, PglinterRuleMeta>> 
         // Parse fixes array
         let fixes: Vec<String> = parse_fixes_array(fixes_str);
 
-        let snake_name = Case::Snake.convert(&name);
+        let snake_name = name.to_case(Case::Snake);
         let camel_name = to_camel_case(&name);
 
         let meta = PglinterRuleMeta {
@@ -342,7 +342,7 @@ fn generate_category_mod(
 ) -> Result<()> {
     let mod_file = category_dir.join("mod.rs");
 
-    let category_title = Case::Pascal.convert(category);
+    let category_title = category.to_case(Case::Pascal);
     let category_struct = format_ident!("{}", category_title);
 
     // Generate mod declarations
@@ -402,7 +402,7 @@ fn generate_rules_mod(
         .keys()
         .map(|cat| {
             let mod_name = format_ident!("{}", cat);
-            let group_name = format_ident!("{}", Case::Pascal.convert(cat));
+            let group_name = format_ident!("{}", cat.to_case(Case::Pascal));
             quote! { self::#mod_name::#group_name }
         })
         .collect();
@@ -612,7 +612,7 @@ fn update_categories_file(rules: &BTreeMap<String, PglinterRuleMeta>) -> Result<
             current_category = category.clone();
             all_entries.push(format!(
                 "    // {} rules ({}-series)",
-                Case::Pascal.convert(category),
+                category.to_case(Case::Pascal),
                 match category.as_str() {
                     "base" => "B",
                     "schema" => "S",

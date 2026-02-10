@@ -5,8 +5,8 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use biome_deserialize::Merge;
 use pgls_analyser::LinterRules;
+use pgls_configuration::Merge;
 use pgls_configuration::{
     ConfigurationDiagnostic, ConfigurationPathHint, ConfigurationPayload, PartialConfiguration,
     VERSION, diagnostics::CantLoadExtendFile, push_to_analyser_rules,

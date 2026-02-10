@@ -2,7 +2,7 @@ use std::path::PathBuf;
 use std::{collections::BTreeMap, path::Path};
 
 use anyhow::{Context, Ok, Result};
-use biome_string_case::Case;
+use convert_case::{Case, Casing};
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
 use xtask::{glue::fs2, project_root};
@@ -36,7 +36,7 @@ fn generate_options(base_path: &Path) -> Result<()> {
             let group_name = format_ident!("{}", filename(&group_path)?.to_string());
             for rule_path in list_entry_paths(&group_path)?.filter(|path| !path.is_dir()) {
                 let rule_filename = filename(&rule_path)?;
-                let rule_name = Case::Pascal.convert(rule_filename);
+                let rule_name = rule_filename.to_case(Case::Pascal);
                 let rule_module_name = format_ident!("{}", rule_filename);
                 let rule_name = format_ident!("{}", rule_name);
                 rules_options.insert(rule_filename.to_string(), quote! {
@@ -86,7 +86,7 @@ fn generate_category(
         generate_group(name, file_name, all_rules, base_path)?;
 
         let module_name = format_ident!("{}", file_name);
-        let group_name = format_ident!("{}", Case::Pascal.convert(file_name));
+        let group_name = format_ident!("{}", file_name.to_case(Case::Pascal));
 
         groups.insert(
             file_name.to_string(),
@@ -104,7 +104,7 @@ fn generate_category(
     let key = name;
     let module_name = format_ident!("{name}");
 
-    let category_name = Case::Pascal.convert(name);
+    let category_name = name.to_case(Case::Pascal);
     let category_name = format_ident!("{category_name}");
 
     let kind = match name {
@@ -154,7 +154,7 @@ fn generate_group(
             .to_str()
             .context("could not convert file name to string")?;
 
-        let rule_type = Case::Pascal.convert(file_name);
+        let rule_type = file_name.to_case(Case::Pascal);
 
         let key = rule_type.clone();
         let module_name = format_ident!("{}", file_name);
@@ -165,7 +165,7 @@ fn generate_group(
         let category_ident = format_ident!("{}", category);
         let group_module_ident = format_ident!("{}", group); // Module name (lowercase)
         all_rules.insert(
-            Case::Camel.convert(&key),
+            key.to_case(Case::Camel),
             (
                 quote! {
                     crate::#category_ident::#group_module_ident::#module_name::#rule_type_ident
@@ -187,7 +187,7 @@ fn generate_group(
         );
     }
 
-    let group_name = format_ident!("{}", Case::Pascal.convert(group));
+    let group_name = format_ident!("{}", group.to_case(Case::Pascal));
 
     let (rule_imports, rule_names): (Vec<_>, Vec<_>) = rules.into_values().unzip();
 

@@ -5,22 +5,18 @@ publish = false
 version = "0.0.0"
 
 [dependencies]
-anyhow             = { workspace = true }
-biome_js_factory   = { workspace = true }
-biome_js_formatter = { workspace = true }
-biome_js_syntax    = { workspace = true }
-biome_rowan        = { workspace = true }
-biome_string_case  = { workspace = true }
-bpaf               = { workspace = true, features = ["derive"] }
-pgls_analyse       = { workspace = true }
-pgls_analyser      = { workspace = true }
-pgls_diagnostics   = { workspace = true }
-pgls_env           = { workspace = true }
-pgls_pglinter      = { workspace = true }
-pgls_splinter      = { workspace = true }
-pgls_workspace     = { workspace = true, features = ["schema"] }
-proc-macro2        = { workspace = true, features = ["span-locations"] }
-pulldown-cmark     = { version = "0.12.2" }
-quote              = "1.0.36"
-regex              = "1.11"
-xtask              = { path = '../', version = "0.0" }
+anyhow           = { workspace = true }
+bpaf             = { workspace = true, features = ["derive"] }
+convert_case     = { workspace = true }
+pgls_analyse     = { workspace = true }
+pgls_analyser    = { workspace = true }
+pgls_diagnostics = { workspace = true }
+pgls_env         = { workspace = true }
+pgls_pglinter    = { workspace = true }
+pgls_splinter    = { workspace = true }
+pgls_workspace   = { workspace = true, features = ["schema"] }
+proc-macro2      = { workspace = true, features = ["span-locations"] }
+pulldown-cmark   = { version = "0.12.2" }
+quote            = "1.0.36"
+regex            = "1.11"
+xtask            = { path = '../', version = "0.0" }
