@@ -1,4 +1,4 @@
-use crate::{to_capitalized, update};
+use crate::{to_capitalized, to_snake_case, update};
 use convert_case::{Case, Casing};
 use pgls_analyse::{
     GroupCategory, RegistryVisitor, RuleCategory, RuleGroup, RuleMeta, RuleMetadata,
@@ -608,7 +608,7 @@ fn generate_lint_group_struct(
     for (index, (rule, metadata)) in rules.iter().enumerate() {
         let summary = extract_summary_from_docs(metadata.docs);
         let rule_position = Literal::u8_unsuffixed(index as u8);
-        let rule_identifier = quote::format_ident!("{}", rule.to_case(Case::Snake));
+        let rule_identifier = quote::format_ident!("{}", to_snake_case(rule));
         let rule_name = Ident::new(&to_capitalized(rule), Span::call_site());
 
         if metadata.recommended {
@@ -1119,7 +1119,7 @@ fn generate_action_group_struct(
     for (index, (rule, metadata)) in rules.iter().enumerate() {
         let summary = extract_summary_from_docs(metadata.docs);
         let rule_position = Literal::u8_unsuffixed(index as u8);
-        let rule_identifier = quote::format_ident!("{}", rule.to_case(Case::Snake));
+        let rule_identifier = quote::format_ident!("{}", to_snake_case(rule));
         let rule_name = Ident::new(&to_capitalized(rule), Span::call_site());
 
         lines_rule.push(quote! {

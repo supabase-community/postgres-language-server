@@ -103,7 +103,7 @@ fn value_type(value: &Value) -> String {
         Value::Bool(true) => "true".to_string(),
         Value::Bool(false) => "false".to_string(),
         Value::Number(value) => format!("{}", value.as_f64().unwrap()),
-        Value::String(value) => format!("\"{}\"", value),
+        Value::String(value) => format!("\"{value}\""),
         Value::Array(_) => unimplemented!(),
         Value::Object(_) => unimplemented!(),
     }

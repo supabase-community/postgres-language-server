@@ -115,7 +115,7 @@ pub fn generate_new_analyser_rule(
     let file_name = format!(
         "{}/{}.rs",
         rule_folder.display(),
-        rule_name.to_case(Case::Snake)
+        crate::to_snake_case(rule_name)
     );
     std::fs::write(file_name.clone(), code).unwrap_or_else(|_| panic!("To write {}", &file_name));
 

@@ -1,3 +1,4 @@
+use crate::to_snake_case;
 use anyhow::{Context, Result};
 use convert_case::{Case, Casing};
 use quote::{format_ident, quote};
@@ -88,7 +89,7 @@ fn parse_rules_sql(content: &str) -> Result<BTreeMap<String, PglinterRuleMeta>> 
         // Parse fixes array
         let fixes: Vec<String> = parse_fixes_array(fixes_str);
 
-        let snake_name = name.to_case(Case::Snake);
+        let snake_name = to_snake_case(&name);
         let camel_name = to_camel_case(&name);
 
         let meta = PglinterRuleMeta {
