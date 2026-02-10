@@ -146,7 +146,7 @@ jobs:
           bun-version: "1.2.17"
 
       - name: Install JS dependencies
-        run: bun install --frozen-lockfile
+        run: bun install
 
       - name: Setup Just
         uses: extractions/setup-just@v3

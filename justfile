@@ -96,7 +96,7 @@ lint-ci-versions:
 
 lint-ci:
   cargo sqlx prepare --check --workspace
-  cargo clippy --fix
+  cargo clippy --fix --allow-dirty
   cargo run -p rules_check
   bun biome lint --write
 
