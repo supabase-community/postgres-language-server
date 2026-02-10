@@ -1,6 +1,5 @@
 {
   "lockfileVersion": 1,
-  "configVersion": 0,
   "workspaces": {
     "": {
       "name": "postgres_lsp",
@@ -36,6 +35,14 @@
         "@postgres-language-server/cli-x86_64-linux-gnu": "<placeholder>",
         "@postgres-language-server/cli-x86_64-linux-musl": "<placeholder>",
         "@postgres-language-server/cli-x86_64-windows-msvc": "<placeholder>",
+      },
+    },
+    "packages/@postgres-language-server/wasm": {
+      "name": "@postgres-language-server/wasm",
+      "version": "0.0.0",
+      "devDependencies": {
+        "@playwright/test": "^1.50.0",
+        "typescript": "^5.0.0",
       },
     },
     "packages/@postgrestools/backend-jsonrpc": {
@@ -84,6 +91,8 @@
 
     "@biomejs/cli-win32-x64": ["@biomejs/cli-win32-x64@1.9.4", "", { "os": "win32", "cpu": "x64" }, "sha512-8Y5wMhVIPaWe6jw2H+KlEm4wP/f7EW3810ZLmDlrEEy5KvBsb9ECEfu/kMWD484ijfQ8+nIi0giMgu9g1UAuuA=="],
 
+    "@playwright/test": ["@playwright/test@1.58.2", "", { "dependencies": { "playwright": "1.58.2" }, "bin": { "playwright": "cli.js" } }, "sha512-akea+6bHYBBfA9uQqSYmlJXn61cTa+jbO87xVLCWbTqbWadRVmhxlXATaOjOgcBaWU4ePo0wB41KMFv3o35IXA=="],
+
     "@postgres-language-server/backend-jsonrpc": ["@postgres-language-server/backend-jsonrpc@workspace:packages/@postgres-language-server/backend-jsonrpc"],
 
     "@postgres-language-server/cli": ["@postgres-language-server/cli@workspace:packages/@postgres-language-server/cli"],
@@ -101,6 +110,8 @@
     "@postgres-language-server/cli-x86_64-linux-musl": ["@postgres-language-server/cli-x86_64-linux-musl@0.17.1", "", { "os": "linux", "cpu": "x64" }, "sha512-YH5Znq0urRUxtdsbyDu6Dcg5x9qhgDqTl7gCVY/LmVrPnHfP2I6gU/TJT21B5sDTSadjwZ73AbXimLmlwG6HPA=="],
 
     "@postgres-language-server/cli-x86_64-windows-msvc": ["@postgres-language-server/cli-x86_64-windows-msvc@0.17.1", "", { "os": "win32", "cpu": "x64" }, "sha512-o2uIx0Vi3iEBFKKnz024JicgovJZWpM9G4WbQxf3r9IQlZPWvDXknlX7rNPQDnQTFRIUg8bpjZpjEvDFHMmuGg=="],
+
+    "@postgres-language-server/wasm": ["@postgres-language-server/wasm@workspace:packages/@postgres-language-server/wasm"],
 
     "@postgrestools/backend-jsonrpc": ["@postgrestools/backend-jsonrpc@workspace:packages/@postgrestools/backend-jsonrpc"],
 
@@ -125,6 +136,12 @@
     "@types/ws": ["@types/ws@8.5.14", "", { "dependencies": { "@types/node": "*" } }, "sha512-bd/YFLW+URhBzMXurx7lWByOu+xzU9+kb3RboOteXYDfW+tr+JZa99OyNmPINEGB/ahzKrEuc8rcv4gnpJmxTw=="],
 
     "bun-types": ["bun-types@1.2.5", "", { "dependencies": { "@types/node": "*", "@types/ws": "~8.5.10" } }, "sha512-3oO6LVGGRRKI4kHINx5PIdIgnLRb7l/SprhzqXapmoYkFl5m4j6EvALvbDVuuBFaamB46Ap6HCUxIXNLCGy+tg=="],
+
+    "fsevents": ["fsevents@2.3.2", "", { "os": "darwin" }, "sha512-xiqMQR4xAeHTuB9uWm+fFRcIOgKBMiOBP+eXiyT7jsgVCq1bkVygt00oASowB7EdtpOHaaPgKt812P9ab+DDKA=="],
+
+    "playwright": ["playwright@1.58.2", "", { "dependencies": { "playwright-core": "1.58.2" }, "optionalDependencies": { "fsevents": "2.3.2" }, "bin": { "playwright": "cli.js" } }, "sha512-vA30H8Nvkq/cPBnNw4Q8TWz1EJyqgpuinBcHET0YVJVFldr8JDNiU9LaWAE1KqSkRYazuaBhTpB5ZzShOezQ6A=="],
+
+    "playwright-core": ["playwright-core@1.58.2", "", { "bin": { "playwright-core": "cli.js" } }, "sha512-yZkEtftgwS8CsfYo7nm0KE8jsvm6i/PTgVtB8DL726wNf6H2IMsDuxCpJj59KDaxCtSnrWan2AeDqM7JBaultg=="],
 
     "typescript": ["typescript@5.8.2", "", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-aJn6wq13/afZp/jT9QZmwEjDqqvSGp1VT5GVg+f/t6/oVyrgXM6BY1h9BRh/O5p3PlUPAe+WuiEZOmb/49RqoQ=="],
 
