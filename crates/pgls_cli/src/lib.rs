@@ -201,11 +201,8 @@ impl<'app> CliSession<'app> {
         }
 
         let mut configuration = loaded_configuration.configuration;
-        if let Some(cli_config) = cli_configuration {
-            configuration.merge_with(cli_config);
-        }
 
-        // Env vars take highest priority — merge last so they override everything.
+        // Env vars override config file but are overridden by explicit CLI args.
         if let Some(env_db) = pgls_configuration::database::PartialDatabaseConfiguration::from_env()
         {
             let env_config = PartialConfiguration {
@@ -213,6 +210,10 @@ impl<'app> CliSession<'app> {
                 ..Default::default()
             };
             configuration.merge_with(env_config);
+        }
+
+        if let Some(cli_config) = cli_configuration {
+            configuration.merge_with(cli_config);
         }
 
         Ok(configuration)
