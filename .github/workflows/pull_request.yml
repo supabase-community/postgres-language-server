@@ -148,6 +148,9 @@ jobs:
       - name: Install JS dependencies
         run: bun install
 
+      - name: Restore lockfile after platform-specific install
+        run: git checkout bun.lock
+
       - name: Setup Just
         uses: extractions/setup-just@v3
 
