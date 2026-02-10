@@ -128,12 +128,13 @@
 <p>The language server is built on Postgres' own parser <code>libpg_query</code> to ensure 100% syntax compatibility. It uses a Server-Client architecture and is a transport-agnostic. This means all features can be accessed through the Language Server Protocol as well as a CLI.</p>
 <p>The following features are available today:</p>
 <ul>
-<li><a href="features/syntax_diagnostics/">Syntax Diagnostics</a></li>
-<li><a href="features/linting/">Linting</a></li>
-<li><a href="features/type_checking/">Type Checking</a></li>
-<li><a href="features/formatting/">Formatting</a> (Preview)</li>
-<li><a href="features/plpgsql/">PL/pgSQL Support</a></li>
 <li><a href="features/editor_features/">Autocompletion &amp; Hover</a></li>
+<li><a href="features/syntax_diagnostics/">Syntax Diagnostics</a></li>
+<li><a href="features/type_checking/">Type Checking</a> (via <code>EXPLAIN</code> error insights)</li>
+<li><a href="features/formatting/">Formatting</a></li>
+<li><a href="features/linting/">Migration Linting</a></li>
+<li><a href="features/database_linting/">Database Linting</a></li>
+<li><a href="features/plpgsql/">PL/pgSQL Support</a></li>
 </ul>
 <p>For future plans and opportunities to contribute, please check out the issues and discussions. Any contributions are welcome!</p>
               
@@ -183,5 +184,5 @@
 
 <!--
 MkDocs version : 1.6.1
-Build Date UTC : 2026-02-09 10:48:48.820287+00:00
+Build Date UTC : 2026-02-10 08:54:35.083942+00:00
 -->
