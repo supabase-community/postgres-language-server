@@ -144,6 +144,14 @@ impl<'app> CliSession<'app> {
                 connection_string,
                 output,
             } => {
+                let connection_string = connection_string
+                    .or_else(|| std::env::var("DATABASE_URL").ok())
+                    .ok_or_else(|| {
+                        CliDiagnostic::missing_argument(
+                            "--connection-string (or DATABASE_URL env var)",
+                            "schema-export",
+                        )
+                    })?;
                 let runtime = tokio::runtime::Runtime::new().map_err(CliDiagnostic::io_error)?;
                 runtime.block_on(commands::schema_export::run_schema_export(
                     &connection_string,
@@ -193,6 +201,17 @@ impl<'app> CliSession<'app> {
         }
 
         let mut configuration = loaded_configuration.configuration;
+
+        // Env vars override config file but are overridden by explicit CLI args.
+        if let Some(env_db) = pgls_configuration::database::PartialDatabaseConfiguration::from_env()
+        {
+            let env_config = PartialConfiguration {
+                db: Some(env_db),
+                ..Default::default()
+            };
+            configuration.merge_with(env_config);
+        }
+
         if let Some(cli_config) = cli_configuration {
             configuration.merge_with(cli_config);
         }

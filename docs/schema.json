@@ -366,35 +366,35 @@
           "minimum": 0.0
         },
         "connectionString": {
-          "description": "A connection string that encodes the full connection setup. When provided, it takes precedence over the individual fields.",
+          "description": "A connection string that encodes the full connection setup. When provided, it takes precedence over the individual fields. Can also be set via the `DATABASE_URL` environment variable.",
           "type": [
             "string",
             "null"
           ]
         },
         "database": {
-          "description": "The name of the database.",
+          "description": "The name of the database. Can also be set via the `PGDATABASE` environment variable.",
           "type": [
             "string",
             "null"
           ]
         },
         "host": {
-          "description": "The host of the database. Required if you want database-related features. All else falls back to sensible defaults.",
+          "description": "The host of the database. Required if you want database-related features. All else falls back to sensible defaults. Can also be set via the `PGHOST` environment variable.",
           "type": [
             "string",
             "null"
           ]
         },
         "password": {
-          "description": "The password to connect to the database.",
+          "description": "The password to connect to the database. Can also be set via the `PGPASSWORD` environment variable.",
           "type": [
             "string",
             "null"
           ]
         },
         "port": {
-          "description": "The port of the database.",
+          "description": "The port of the database. Can also be set via the `PGPORT` environment variable.",
           "type": [
             "integer",
             "null"
@@ -403,7 +403,7 @@
           "minimum": 0.0
         },
         "username": {
-          "description": "The username to connect to the database.",
+          "description": "The username to connect to the database. Can also be set via the `PGUSER` environment variable.",
           "type": [
             "string",
             "null"

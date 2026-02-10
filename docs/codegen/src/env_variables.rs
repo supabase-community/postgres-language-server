@@ -42,6 +42,43 @@ pub fn generate_env_variables(docs_dir: &Path) -> Result<()> {
     writeln!(
         content,
         "### `{}`\n\n {}\n",
+        env.database_url.name(),
+        env.database_url.description()
+    )?;
+    writeln!(
+        content,
+        "### `{}`\n\n {}\n",
+        env.pghost.name(),
+        env.pghost.description()
+    )?;
+    writeln!(
+        content,
+        "### `{}`\n\n {}\n",
+        env.pgport.name(),
+        env.pgport.description()
+    )?;
+    writeln!(
+        content,
+        "### `{}`\n\n {}\n",
+        env.pguser.name(),
+        env.pguser.description()
+    )?;
+    writeln!(
+        content,
+        "### `{}`\n\n {}\n",
+        env.pgpassword.name(),
+        env.pgpassword.description()
+    )?;
+    writeln!(
+        content,
+        "### `{}`\n\n {}\n",
+        env.pgdatabase.name(),
+        env.pgdatabase.description()
+    )?;
+
+    writeln!(
+        content,
+        "### `{}`\n\n {}\n",
         env.pgt_log_path.name(),
         env.pgt_log_path.description()
     )?;

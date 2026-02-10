@@ -35,6 +35,14 @@ pub struct PgLSEnv {
     pub pgls_log_prefix: PgLSEnvVariable,
     pub pgls_config_path: PgLSEnvVariable,
 
+    // Standard Postgres connection env vars
+    pub database_url: PgLSEnvVariable,
+    pub pghost: PgLSEnvVariable,
+    pub pgport: PgLSEnvVariable,
+    pub pguser: PgLSEnvVariable,
+    pub pgpassword: PgLSEnvVariable,
+    pub pgdatabase: PgLSEnvVariable,
+
     // DEPRECATED - kept for backward compatibility
     pub pgt_log_path: PgLSEnvVariable,
     pub pgt_log_level: PgLSEnvVariable,
@@ -62,6 +70,22 @@ impl PgLSEnv {
             pgls_config_path: PgLSEnvVariable::new(
                 "PGLS_CONFIG_PATH",
                 "A path to the configuration file",
+            ),
+
+            database_url: PgLSEnvVariable::new(
+                "DATABASE_URL",
+                "A connection string that encodes the full database connection setup.",
+            ),
+            pghost: PgLSEnvVariable::new("PGHOST", "The host of the database server."),
+            pgport: PgLSEnvVariable::new("PGPORT", "The port of the database server."),
+            pguser: PgLSEnvVariable::new("PGUSER", "The username to connect to the database."),
+            pgpassword: PgLSEnvVariable::new(
+                "PGPASSWORD",
+                "The password to connect to the database.",
+            ),
+            pgdatabase: PgLSEnvVariable::new(
+                "PGDATABASE",
+                "The name of the database to connect to.",
             ),
 
             pgt_log_path: PgLSEnvVariable::new(
@@ -155,6 +179,31 @@ impl Display for PgLSEnv {
                     .fmt(fmt)?;
             }
         };
+
+        let sensitive = [&self.database_url, &self.pgpassword];
+        let non_sensitive = [&self.pghost, &self.pgport, &self.pguser, &self.pgdatabase];
+
+        for var in sensitive {
+            match var.value() {
+                None => {
+                    KeyValuePair(var.name, markup! { <Dim>"unset"</Dim> }).fmt(fmt)?;
+                }
+                Some(_) => {
+                    KeyValuePair(var.name, markup! { <Dim>"set"</Dim> }).fmt(fmt)?;
+                }
+            };
+        }
+
+        for var in non_sensitive {
+            match var.value() {
+                None => {
+                    KeyValuePair(var.name, markup! { <Dim>"unset"</Dim> }).fmt(fmt)?;
+                }
+                Some(value) => {
+                    KeyValuePair(var.name, markup! {{DebugDisplay(value)}}).fmt(fmt)?;
+                }
+            };
+        }
 
         match self.pgt_log_path.value() {
             None => {

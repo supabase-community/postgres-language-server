@@ -196,14 +196,10 @@ pub enum PgLSCommand {
     /// Writes to stdout by default, or to a file if --output is specified.
     #[bpaf(command("schema-export"))]
     SchemaExport {
-        /// PostgreSQL connection string (e.g., postgres://user:pass@host/db)
-        #[bpaf(
-            env("DATABASE_URL"),
-            long("connection-string"),
-            short('c'),
-            argument("URL")
-        )]
-        connection_string: String,
+        /// PostgreSQL connection string (e.g., postgres://user:pass@host/db).
+        /// Can also be set via the `DATABASE_URL` environment variable.
+        #[bpaf(long("connection-string"), short('c'), argument("URL"), optional)]
+        connection_string: Option<String>,
 
         /// Output file path for the JSON schema (defaults to stdout if not specified)
         #[bpaf(long("output"), short('o'), argument("PATH"))]
