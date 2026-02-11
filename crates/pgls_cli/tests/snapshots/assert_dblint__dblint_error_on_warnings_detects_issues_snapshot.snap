@@ -1,0 +1,48 @@
+---
+source: crates/pgls_cli/tests/assert_dblint.rs
+expression: output
+snapshot_kind: text
+---
+status: failure
+stdout:
+Command completed in <duration>.
+Found 1 warning(s).
+stderr:
+splinter/performance/duplicateIndex ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Table \`public.test_duplicate_idx\` has identical indexes {idx_duplicate_a,idx_duplicate_b}. Drop all except one of them
+  
+  Detects cases where two ore more identical indexes exist.
+  
+  i table: public.test_duplicate_idx
+  
+  {"indexes":["idx_duplicate_a","idx_duplicate_b"]}
+  
+  i Remediation: https://supabase.com/docs/guides/database/database-linter?lint=0009_duplicate_index
+  
+
+splinter/performance/unusedIndex ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  i Index \`idx_duplicate_a\` on table \`public.test_duplicate_idx\` has not been used
+  
+  Detects if an index has never been used and may be a candidate for removal.
+  
+  i table: public.test_duplicate_idx
+  
+  i Remediation: https://supabase.com/docs/guides/database/database-linter?lint=0005_unused_index
+  
+
+splinter/performance/unusedIndex ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  i Index \`idx_duplicate_b\` on table \`public.test_duplicate_idx\` has not been used
+  
+  Detects if an index has never been used and may be a candidate for removal.
+  
+  i table: public.test_duplicate_idx
+  
+  i Remediation: https://supabase.com/docs/guides/database/database-linter?lint=0005_unused_index
+  
+
+check ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Some warnings were emitted while running checks.
