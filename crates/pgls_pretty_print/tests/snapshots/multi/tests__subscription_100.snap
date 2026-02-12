@@ -1,7 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/subscription.sql
-snapshot_kind: text
 ---
 create role regress_subscription_user login superuser;
 
@@ -254,7 +253,9 @@ commit;
 
 create function func()
 returns void
-as $function$ ALTER SUBSCRIPTION regress_testsub SET PUBLICATION mypub WITH (refresh = true) $function$
+as $function$
+ALTER SUBSCRIPTION regress_testsub SET PUBLICATION mypub WITH (refresh = true)
+$function$
 language sql;
 
 select func();

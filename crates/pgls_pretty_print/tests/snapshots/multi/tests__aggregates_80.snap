@@ -1,7 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/aggregates.sql
-snapshot_kind: text
 ---
 set extra_float_digits = 0;
 
@@ -2380,7 +2379,8 @@ BEGIN
        RAISE 'erroneously called with NULL argument';
     END IF;
     RETURN NULL;
-END$function$;
+END
+$function$;
 
 create aggregate balk (
   int
@@ -2567,7 +2567,8 @@ BEGIN
        RAISE 'erroneously called with NULL argument';
     END IF;
     RETURN NULL;
-END$function$;
+END
+$function$;
 
 create aggregate balk (
   int

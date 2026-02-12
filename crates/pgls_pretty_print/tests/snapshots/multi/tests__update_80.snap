@@ -1,7 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/update.sql
-snapshot_kind: text
 ---
 create table update_test (
   a int default 10,
@@ -450,7 +449,7 @@ create function trans_updatetrigfunc()
 returns trigger
 language plpgsql
 as $function$
-  begin
+begin
     raise notice 'trigger = %, old table = %, new table = %',
                  TG_NAME,
                  (select string_agg(old_table::text, ', ' ORDER BY a) FROM old_table),
@@ -498,7 +497,8 @@ as $function$
 BEGIN
    NEW.b = NEW.b + 1;
    return NEW;
-END $function$
+END
+$function$
 language plpgsql;
 
 create trigger trig_c1_100
@@ -572,7 +572,8 @@ as $function$
 BEGIN
    NEW.c = NEW.c + 1; -- Make even numbers odd, or vice versa
    return NEW;
-END $function$
+END
+$function$
 language plpgsql;
 
 create trigger trig_d_1_15
@@ -655,7 +656,7 @@ create function trigfunc()
 returns trigger
 language plpgsql
 as $function$
-  begin
+begin
     raise notice 'trigger = % fired on table % during %',
                  TG_NAME, TG_TABLE_NAME, TG_OP;
     return null;
@@ -958,7 +959,8 @@ as $function$
 BEGIN
    NEW.b = 2; -- This is changing partition key column.
    return NEW;
-END $function$
+END
+$function$
 language plpgsql;
 
 create trigger parted_mod_b
@@ -997,7 +999,8 @@ as $function$
 BEGIN
    raise notice 'Trigger: Got OLD row %, but returning NULL', OLD;
    return NULL;
-END $function$
+END
+$function$
 language plpgsql;
 
 create trigger trig_skip_delete
@@ -1060,7 +1063,9 @@ drop table list_parted;
 
 create or replace function dummy_hashint4(a int, seed bigint)
 returns bigint
-as $function$ begin return (a + seed); end; $function$
+as $function$
+begin return (a + seed); end;
+$function$
 language plpgsql
 immutable;
 

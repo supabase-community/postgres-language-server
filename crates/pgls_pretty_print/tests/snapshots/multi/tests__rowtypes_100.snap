@@ -1,7 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/rowtypes.sql
-snapshot_kind: text
 ---
 create type complex as (r double precision, i double precision);
 
@@ -458,14 +457,14 @@ create type price_key as (id int);
 create function price_key_from_table(price)
 returns price_key
 as $function$
-    SELECT $1.id
+SELECT $1.id
 $function$
 language sql;
 
 create function price_key_from_input(price_input)
 returns price_key
 as $function$
-    SELECT $1.id
+SELECT $1.id
 $function$
 language sql;
 
@@ -553,7 +552,9 @@ select last(f) from fullname as f;
 create function longname(fullname)
 returns text
 language sql
-as $function$select $1.first || ' ' || $1.last$function$;
+as $function$
+select $1.first || ' ' || $1.last
+$function$;
 
 select f.longname from fullname as f;
 

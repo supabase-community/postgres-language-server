@@ -1,7 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/float4.sql
-snapshot_kind: text
 ---
 create table float4_tbl (f1 real);
 
@@ -188,14 +187,18 @@ returns xfloat4
 immutable
 strict
 language internal
-as $function$int4in$function$;
+as $function$
+int4in
+$function$;
 
 create function xfloat4out(xfloat4)
 returns cstring
 immutable
 strict
 language internal
-as $function$int4out$function$;
+as $function$
+int4out
+$function$;
 
 create type xfloat4 (input = xfloat4in, output = xfloat4out, like = real);
 

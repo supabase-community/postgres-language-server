@@ -1,7 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/dependency.sql
-snapshot_kind: text
 ---
 create user regress_dep_user;
 
@@ -115,7 +114,9 @@ to regress_dep_user2;
 create function deptest_func()
 returns void
 language plpgsql
-as $function$ BEGIN END; $function$;
+as $function$
+BEGIN END;
+$function$;
 
 create type deptest_enum as enum ('red');
 

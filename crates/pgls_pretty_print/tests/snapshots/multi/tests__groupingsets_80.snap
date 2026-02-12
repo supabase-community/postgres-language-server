@@ -1,7 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/groupingsets.sql
-snapshot_kind: text
 ---
 create temporary view gstest1
 (
@@ -73,10 +72,10 @@ create temporary table gstest_empty (
 create function gstest_data(v int, out a int, out b int)
 returns setof record
 as $function$
-    begin
+begin
       return query select v, i from generate_series(1,3) i;
     end;
-  $function$
+$function$
 language plpgsql;
 
 set enable_hashagg = 'false';

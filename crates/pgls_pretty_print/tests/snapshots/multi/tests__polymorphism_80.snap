@@ -1,12 +1,11 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/polymorphism.sql
-snapshot_kind: text
 ---
 create function polyf(x anyelement)
 returns anyelement
 as $function$
-  select x + 1
+select x + 1
 $function$
 language sql;
 
@@ -19,7 +18,7 @@ drop function polyf(anyelement);
 create function polyf(x anyelement)
 returns anyarray
 as $function$
-  select array[x + 1, x + 2]
+select array[x + 1, x + 2]
 $function$
 language sql;
 
@@ -30,7 +29,7 @@ drop function polyf(anyelement);
 create function polyf(x anyarray)
 returns anyelement
 as $function$
-  select x[1]
+select x[1]
 $function$
 language sql;
 
@@ -43,7 +42,7 @@ drop function polyf(anyarray);
 create function polyf(x anyarray)
 returns anyarray
 as $function$
-  select x
+select x
 $function$
 language sql;
 
@@ -56,14 +55,14 @@ drop function polyf(anyarray);
 create function polyf(x anyelement)
 returns anyrange
 as $function$
-  select array[x + 1, x + 2]
+select array[x + 1, x + 2]
 $function$
 language sql;
 
 create function polyf(x anyrange)
 returns anyarray
 as $function$
-  select array[lower(x), upper(x)]
+select array[lower(x), upper(x)]
 $function$
 language sql;
 
@@ -74,7 +73,7 @@ drop function polyf(anyrange);
 create function polyf(x anycompatible, y anycompatible)
 returns anycompatiblearray
 as $function$
-  select array[x, y]
+select array[x, y]
 $function$
 language sql;
 
@@ -85,7 +84,7 @@ drop function polyf(anycompatible, anycompatible);
 create function polyf(x anycompatiblerange, y anycompatible, z anycompatible)
 returns anycompatiblearray
 as $function$
-  select array[lower(x), upper(x), y, z]
+select array[lower(x), upper(x), y, z]
 $function$
 language sql;
 
@@ -115,7 +114,7 @@ polyf(
 )
 returns anycompatiblearray
 as $function$
-  select array[lower(x), upper(x), y, z]
+select array[lower(x), upper(x), y, z]
 $function$
 language sql;
 
@@ -140,14 +139,14 @@ drop function polyf(anycompatiblemultirange, anycompatible, anycompatible);
 create function polyf(x anycompatible)
 returns anycompatiblerange
 as $function$
-  select array[x + 1, x + 2]
+select array[x + 1, x + 2]
 $function$
 language sql;
 
 create function polyf(x anycompatiblerange, y anycompatiblearray)
 returns anycompatiblerange
 as $function$
-  select x
+select x
 $function$
 language sql;
 
@@ -162,14 +161,14 @@ drop function polyf(anycompatiblerange, anycompatiblearray);
 create function polyf(x anycompatible)
 returns anycompatiblemultirange
 as $function$
-  select array[x + 1, x + 2]
+select array[x + 1, x + 2]
 $function$
 language sql;
 
 create function polyf(x anycompatiblemultirange, y anycompatiblearray)
 returns anycompatiblemultirange
 as $function$
-  select x
+select x
 $function$
 language sql;
 
@@ -197,7 +196,7 @@ polyf(
   out y anycompatiblearray
 )
 as $function$
-  select a || b, array[c, d]
+select a || b, array[c, d]
 $function$
 language sql;
 
@@ -230,7 +229,9 @@ drop function polyf(anyelement, anyarray, anycompatible, anycompatible);
 
 create function polyf(anyrange)
 returns anymultirange
-as $function$select multirange($1);$function$
+as $function$
+select multirange($1);
+$function$
 language sql;
 
 select polyf(int4range(1, 10));
@@ -241,7 +242,9 @@ drop function polyf(anyrange);
 
 create function polyf(anymultirange)
 returns anyelement
-as $function$select lower($1);$function$
+as $function$
+select lower($1);
+$function$
 language sql;
 
 select polyf(int4multirange(int4range(1, 10), int4range(20, 30)));
@@ -252,7 +255,9 @@ drop function polyf(anymultirange);
 
 create function polyf(anycompatiblerange)
 returns anycompatiblemultirange
-as $function$select multirange($1);$function$
+as $function$
+select multirange($1);
+$function$
 language sql;
 
 select polyf(int4range(1, 10));
@@ -263,7 +268,9 @@ drop function polyf(anycompatiblerange);
 
 create function polyf(anymultirange)
 returns anyrange
-as $function$select range_merge($1);$function$
+as $function$
+select range_merge($1);
+$function$
 language sql;
 
 select polyf(int4multirange(int4range(1, 10), int4range(20, 30)));
@@ -274,7 +281,9 @@ drop function polyf(anymultirange);
 
 create function polyf(anycompatiblemultirange)
 returns anycompatiblerange
-as $function$select range_merge($1);$function$
+as $function$
+select range_merge($1);
+$function$
 language sql;
 
 select polyf(int4multirange(int4range(1, 10), int4range(20, 30)));
@@ -285,7 +294,9 @@ drop function polyf(anycompatiblemultirange);
 
 create function polyf(anycompatiblemultirange)
 returns anycompatible
-as $function$select lower($1);$function$
+as $function$
+select lower($1);
+$function$
 language sql;
 
 select polyf(int4multirange(int4range(1, 10), int4range(20, 30)));
@@ -296,48 +307,66 @@ drop function polyf(anycompatiblemultirange);
 
 create function stfp(anyarray)
 returns anyarray
-as $function$select $1$function$
+as $function$
+select $1
+$function$
 language sql;
 
 create function stfnp(int[])
 returns int[]
-as $function$select $1$function$
+as $function$
+select $1
+$function$
 language sql;
 
 create function tfp(anyarray, anyelement)
 returns anyarray
-as $function$select $1 || $2$function$
+as $function$
+select $1 || $2
+$function$
 language sql;
 
 create function tfnp(int[], int)
 returns int[]
-as $function$select $1 || $2$function$
+as $function$
+select $1 || $2
+$function$
 language sql;
 
 create function tf1p(anyarray, int)
 returns anyarray
-as $function$select $1$function$
+as $function$
+select $1
+$function$
 language sql;
 
 create function tf2p(int[], anyelement)
 returns int[]
-as $function$select $1$function$
+as $function$
+select $1
+$function$
 language sql;
 
 create function sum3(anyelement, anyelement, anyelement)
 returns anyelement
-as $function$select $1+$2+$3$function$
+as $function$
+select $1+$2+$3
+$function$
 language sql
 strict;
 
 create function ffp(anyarray)
 returns anyarray
-as $function$select $1$function$
+as $function$
+select $1
+$function$
 language sql;
 
 create function ffnp(int[])
 returns int[]
-as $function$select $1$function$
+as $function$
+select $1
+$function$
 language sql;
 
 create aggregate myaggp01a (
@@ -884,13 +913,15 @@ as $function$
 begin
   raise notice 'bleat %', $1;
   return $1;
-end$function$
+end
+$function$
 language plpgsql;
 
 create function sql_if(boolean, anyelement, anyelement)
 returns anyelement
 as $function$
-select case when $1 then $2 else $3 end $function$
+select case when $1 then $2 else $3 end
+$function$
 language sql;
 
 select f1, sql_if(f1 > 0, bleat(f1), bleat(f1 + 1)) from int4_tbl;
@@ -964,13 +995,17 @@ create aggregate build_group (
 
 create function first_el_transfn(anyarray, anyelement)
 returns anyarray
-as $function$select $1 || $2$function$
+as $function$
+select $1 || $2
+$function$
 language sql
 immutable;
 
 create function first_el(anyarray)
 returns anyelement
-as $function$select $1[1]$function$
+as $function$
+select $1[1]
+$function$
 language sql
 strict
 immutable;
@@ -1030,7 +1065,7 @@ select anyrange_in('[10,20)', cast('int4range' as regtype), -1);
 create function myleast(variadic anyarray)
 returns anyelement
 as $function$
-  select min($1[i]) from generate_subscripts($1,1) g(i)
+select min($1[i]) from generate_subscripts($1,1) g(i)
 $function$
 language sql
 immutable
@@ -1053,7 +1088,7 @@ select myleast(variadic cast(array[] as int[]));
 create function concat(text, variadic anyarray)
 returns text
 as $function$
-  select array_to_string($2, $1);
+select array_to_string($2, $1);
 $function$
 language sql
 immutable
@@ -1072,7 +1107,7 @@ drop function concat(text, anyarray);
 create function formarray(anyelement, variadic anyarray)
 returns anyarray
 as $function$
-  select array_prepend($1, $2);
+select array_prepend($1, $2);
 $function$
 language sql
 immutable
@@ -1111,7 +1146,7 @@ select pg_typeof(myleast(10, 1, 20, 33));
 create function dfunc(a int default 1, int default 2)
 returns int
 as $function$
-  select $1 + $2;
+select $1 + $2;
 $function$
 language sql;
 
@@ -1132,13 +1167,13 @@ drop function dfunc(int, int);
 create function dfunc(a int default 1, b int)
 returns int
 as $function$
-  select $1 + $2;
+select $1 + $2;
 $function$
 language sql;
 
 create function dfunc(a int default 1, out sum int, b int default 2)
 as $function$
-  select $1 + $2;
+select $1 + $2;
 $function$
 language sql;
 
@@ -1149,7 +1184,7 @@ drop function dfunc(int, int);
 create function dfunc(a int default 1.0, int default '-1')
 returns int
 as $function$
-  select $1 + $2;
+select $1 + $2;
 $function$
 language sql;
 
@@ -1158,7 +1193,7 @@ select dfunc();
 create function dfunc(a text default 'Hello', b text default 'World')
 returns text
 as $function$
-  select $1 || ', ' || $2;
+select $1 || ', ' || $2;
 $function$
 language sql;
 
@@ -1179,7 +1214,7 @@ drop function dfunc(text, text);
 create function dfunc(int default 1, int default 2)
 returns int
 as $function$
-  select 2;
+select 2;
 $function$
 language sql;
 
@@ -1192,7 +1227,7 @@ dfunc(
 )
 returns int
 as $function$
-  select 4;
+select 4;
 $function$
 language sql;
 
@@ -1213,14 +1248,14 @@ drop function dfunc(int, int, int, int);
 create function dfunc(out int default 20)
 returns int
 as $function$
-  select 1;
+select 1;
 $function$
 language sql;
 
 create function dfunc(anyelement default cast('World' as text))
 returns text
 as $function$
-  select 'Hello, ' || $1::text;
+select 'Hello, ' || $1::text;
 $function$
 language sql;
 
@@ -1236,7 +1271,9 @@ drop function dfunc(anyelement);
 
 create function dfunc(variadic a int[])
 returns int
-as $function$ select array_upper($1, 1) $function$
+as $function$
+select array_upper($1, 1)
+$function$
 language sql;
 
 select dfunc();
@@ -1250,7 +1287,9 @@ dfunc(
   variadic a int[] default cast(array[] as int[])
 )
 returns int
-as $function$ select array_upper($1, 1) $function$
+as $function$
+select array_upper($1, 1)
+$function$
 language sql;
 
 select dfunc();
@@ -1261,7 +1300,9 @@ select dfunc(10, 20);
 
 create or replace function dfunc(variadic a int[])
 returns int
-as $function$ select array_upper($1, 1) $function$
+as $function$
+select array_upper($1, 1)
+$function$
 language sql;
 
 drop function dfunc(int[]);
@@ -1269,21 +1310,21 @@ drop function dfunc(int[]);
 create function dfunc(int default 1, int default 2, int default 3)
 returns int
 as $function$
-  select 3;
+select 3;
 $function$
 language sql;
 
 create function dfunc(int default 1, int default 2)
 returns int
 as $function$
-  select 2;
+select 2;
 $function$
 language sql;
 
 create function dfunc(text)
 returns text
 as $function$
-  select $1;
+select $1;
 $function$
 language sql;
 
@@ -1305,7 +1346,7 @@ returns table (
   d int
 )
 as $function$
-  select $1, $2, $3, $4;
+select $1, $2, $3, $4;
 $function$
 language sql;
 
@@ -1340,7 +1381,7 @@ drop function dfunc(int, int, int, int);
 create function xleast(x numeric, variadic arr numeric[])
 returns numeric
 as $function$
-  select least(x, min(arr[i])) from generate_subscripts(arr, 1) g(i);
+select least(x, min(arr[i])) from generate_subscripts(arr, 1) g(i);
 $function$
 language sql;
 
@@ -1375,7 +1416,7 @@ returns table (
   c date
 )
 as $function$
-  select $1, $2, $3;
+select $1, $2, $3;
 $function$
 language sql;
 
@@ -1430,7 +1471,7 @@ dfunc(
 )
 returns record
 as $function$
-  select $1, $2;
+select $1, $2;
 $function$
 language sql;
 
@@ -1459,7 +1500,7 @@ dfunc(
 )
 returns record
 as $function$
-  select $1, $2;
+select $1, $2;
 $function$
 language sql;
 
@@ -1472,7 +1513,7 @@ dfunc(
 )
 returns record
 as $function$
-  select $1, $2;
+select $1, $2;
 $function$
 language sql;
 
@@ -1480,27 +1521,37 @@ drop function dfunc(varchar, numeric);
 
 create function testpolym(a int, a int)
 returns int
-as $function$ select 1;$function$
+as $function$
+select 1;
+$function$
 language sql;
 
 create function testpolym(int, out a int, out a int)
 returns int
-as $function$ select 1;$function$
+as $function$
+select 1;
+$function$
 language sql;
 
 create function testpolym(out a int, inout a int)
 returns int
-as $function$ select 1;$function$
+as $function$
+select 1;
+$function$
 language sql;
 
 create function testpolym(a int, inout a int)
 returns int
-as $function$ select 1;$function$
+as $function$
+select 1;
+$function$
 language sql;
 
 create function testpolym(a int, out a int)
 returns int
-as $function$ select $1;$function$
+as $function$
+select $1;
+$function$
 language sql;
 
 select testpolym(37);
@@ -1511,7 +1562,9 @@ create function testpolym(a int)
 returns table (
   a int
 )
-as $function$ select $1;$function$
+as $function$
+select $1;
+$function$
 language sql;
 
 select * from testpolym(37);
@@ -1526,7 +1579,7 @@ dfunc(
 )
 returns anyelement
 as $function$
-  select case when $3 then $1 else $2 end;
+select case when $3 then $1 else $2 end;
 $function$
 language sql;
 
@@ -1588,7 +1641,7 @@ select dfunc("a" := 1);
 
 do
 $do$
-  declare r integer;
+declare r integer;
   begin
     select dfunc(a=>-- comment
       1) into r;
@@ -1615,7 +1668,7 @@ drop function dfunc(anyelement, anyelement, boolean);
 create function anyctest(anycompatible, anycompatible)
 returns anycompatible
 as $function$
-  select greatest($1, $2)
+select greatest($1, $2)
 $function$
 language sql;
 
@@ -1632,7 +1685,7 @@ drop function anyctest(anycompatible, anycompatible);
 create function anyctest(anycompatible, anycompatible)
 returns anycompatiblearray
 as $function$
-  select array[$1, $2]
+select array[$1, $2]
 $function$
 language sql;
 
@@ -1647,7 +1700,7 @@ drop function anyctest(anycompatible, anycompatible);
 create function anyctest(anycompatible, anycompatiblearray)
 returns anycompatiblearray
 as $function$
-  select array[$1] || $2
+select array[$1] || $2
 $function$
 language sql;
 
@@ -1668,7 +1721,7 @@ drop function anyctest(anycompatible, anycompatiblearray);
 create function anyctest(anycompatible, anycompatiblerange)
 returns anycompatiblerange
 as $function$
-  select $2
+select $2
 $function$
 language sql;
 
@@ -1687,7 +1740,7 @@ drop function anyctest(anycompatible, anycompatiblerange);
 create function anyctest(anycompatiblerange, anycompatiblerange)
 returns anycompatible
 as $function$
-  select lower($1) + upper($2)
+select lower($1) + upper($2)
 $function$
 language sql;
 
@@ -1700,14 +1753,14 @@ drop function anyctest(anycompatiblerange, anycompatiblerange);
 create function anyctest(anycompatible)
 returns anycompatiblerange
 as $function$
-  select $1
+select $1
 $function$
 language sql;
 
 create function anyctest(anycompatible, anycompatiblemultirange)
 returns anycompatiblemultirange
 as $function$
-  select $2
+select $2
 $function$
 language sql;
 
@@ -1726,7 +1779,7 @@ drop function anyctest(anycompatible, anycompatiblemultirange);
 create function anyctest(anycompatiblemultirange, anycompatiblemultirange)
 returns anycompatible
 as $function$
-  select lower($1) + upper($2)
+select lower($1) + upper($2)
 $function$
 language sql;
 
@@ -1755,14 +1808,14 @@ drop function anyctest(anycompatiblemultirange, anycompatiblemultirange);
 create function anyctest(anycompatible)
 returns anycompatiblemultirange
 as $function$
-  select $1
+select $1
 $function$
 language sql;
 
 create function anyctest(anycompatiblenonarray, anycompatiblenonarray)
 returns anycompatiblearray
 as $function$
-  select array[$1, $2]
+select array[$1, $2]
 $function$
 language sql;
 
@@ -1783,7 +1836,7 @@ anyctest(
 )
 returns anycompatiblearray
 as $function$
-  select array[c, d]
+select array[c, d]
 $function$
 language sql;
 
@@ -1810,7 +1863,7 @@ drop function anyctest(anyelement, anyarray, anycompatible, anycompatible);
 create function anyctest(variadic anycompatiblearray)
 returns anycompatiblearray
 as $function$
-  select $1
+select $1
 $function$
 language sql;
 

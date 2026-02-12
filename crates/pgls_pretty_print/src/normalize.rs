@@ -24,6 +24,7 @@ pub fn normalize_ast(node: &mut NodeEnum) {
     normalize_foreign_table_partbound(node);
     normalize_merge_support_func(node);
     normalize_sql_value_function(node);
+    normalize_function_body(node);
 }
 
 /// Clear location fields in AST nodes.
@@ -1202,6 +1203,47 @@ fn sql_value_to_func_call(
         funcformat: pgls_query::protobuf::CoercionForm::CoerceExplicitCall.into(),
         location: 0,
     })
+}
+
+/// Normalize function body strings by trimming whitespace.
+///
+/// The formatter emits function bodies on separate lines from the dollar-quote delimiters,
+/// which adds leading/trailing newlines to the body. This normalization trims these
+/// so that semantically equivalent bodies compare equal.
+fn normalize_function_body(node: &mut NodeEnum) {
+    match node {
+        NodeEnum::CreateFunctionStmt(stmt) => {
+            for opt in &mut stmt.options {
+                if let Some(NodeEnum::DefElem(def)) = opt.node.as_mut()
+                    && def.defname.eq_ignore_ascii_case("as")
+                    && let Some(ref mut arg) = def.arg
+                    && let Some(NodeEnum::List(list)) = arg.node.as_mut()
+                {
+                    // Trim whitespace from each string in the list (function body)
+                    for item in &mut list.items {
+                        if let Some(NodeEnum::String(s)) = item.node.as_mut() {
+                            s.sval = s.sval.trim().to_string();
+                        }
+                    }
+                }
+            }
+        }
+        NodeEnum::DoStmt(stmt) => {
+            for arg in &mut stmt.args {
+                if let Some(NodeEnum::DefElem(def)) = arg.node.as_mut()
+                    && def.defname.eq_ignore_ascii_case("as")
+                    && let Some(ref mut arg) = def.arg
+                    && let Some(NodeEnum::String(s)) = arg.node.as_mut()
+                {
+                    s.sval = s.sval.trim().to_string();
+                }
+            }
+        }
+        NodeEnum::InlineCodeBlock(block) => {
+            block.source_text = block.source_text.trim().to_string();
+        }
+        _ => {}
+    }
 }
 
 #[cfg(test)]

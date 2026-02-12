@@ -1,7 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/stats.sql
-snapshot_kind: text
 ---
 show "track_counts";
 
@@ -199,14 +198,18 @@ commit;
 create function stats_test_func1()
 returns void
 language plpgsql
-as $function$BEGIN END;$function$;
+as $function$
+BEGIN END;
+$function$;
 
 select cast(cast('stats_test_func1()' as regprocedure) as oid) as stats_test_func1_oid;
 
 create function stats_test_func2()
 returns void
 language plpgsql
-as $function$BEGIN END;$function$;
+as $function$
+BEGIN END;
+$function$;
 
 select cast(cast('stats_test_func2()' as regprocedure) as oid) as stats_test_func2_oid;
 

@@ -1,7 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/select.sql
-snapshot_kind: text
 ---
 select * from onek where onek.unique1 < 10 order by onek.unique1;
 
@@ -295,7 +294,9 @@ select 1 as x order by x;
 
 create function sillysrf(int)
 returns setof int
-as $function$values (1),(10),(2),($1)$function$
+as $function$
+values (1),(10),(2),($1)
+$function$
 language sql
 immutable;
 

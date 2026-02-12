@@ -1,7 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/returning.sql
-snapshot_kind: text
 ---
 create temporary table foo (
   f1 serial,
@@ -172,7 +171,9 @@ select * from foo;
 
 create function foo_f()
 returns setof foo
-as $function$ SELECT * FROM foo OFFSET 0 $function$
+as $function$
+SELECT * FROM foo OFFSET 0
+$function$
 language sql
 stable;
 
@@ -186,7 +187,9 @@ create type foo_t as (f1 int, f2 text, f3 int, f4 bigint);
 
 create function foo_f()
 returns setof foo_t
-as $function$ SELECT * FROM foo OFFSET 0 $function$
+as $function$
+SELECT * FROM foo OFFSET 0
+$function$
 language sql
 stable;
 

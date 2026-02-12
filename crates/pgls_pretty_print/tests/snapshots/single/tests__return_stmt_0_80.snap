@@ -1,9 +1,10 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/single/return_stmt_0.sql
-snapshot_kind: text
 ---
-do $do$
+do
+$do$
 BEGIN
     RETURN;
-END $do$;
+END
+$do$;

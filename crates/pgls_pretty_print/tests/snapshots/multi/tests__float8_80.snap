@@ -1,7 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/float8.sql
-snapshot_kind: text
 ---
 create temporary table float8_tbl (f1 double precision);
 
@@ -533,14 +532,18 @@ returns xfloat8
 immutable
 strict
 language internal
-as $function$int8in$function$;
+as $function$
+int8in
+$function$;
 
 create function xfloat8out(xfloat8)
 returns cstring
 immutable
 strict
 language internal
-as $function$int8out$function$;
+as $function$
+int8out
+$function$;
 
 create type xfloat8 (
   input = xfloat8in,

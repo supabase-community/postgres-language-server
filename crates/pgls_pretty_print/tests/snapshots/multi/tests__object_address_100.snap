@@ -1,7 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/object_address.sql
-snapshot_kind: text
 ---
 set client_min_messages = warning;
 
@@ -60,7 +59,9 @@ create domain addr_nsp.gendomain as int constraint "domconstr" check (value > 0)
 create function addr_nsp.trig()
 returns trigger
 language plpgsql
-as $function$ BEGIN END; $function$;
+as $function$
+BEGIN END;
+$function$;
 
 create trigger t before insert on addr_nsp.gentable for each row execute function addr_nsp.trig();
 
@@ -68,7 +69,9 @@ create policy genpol on addr_nsp.gentable as permissive for all to public;
 
 create procedure addr_nsp.proc(int)
 language sql
-as $procedure$ $procedure$;
+as $procedure$
+
+$procedure$;
 
 create server integer foreign data wrapper addr_fdw;
 

@@ -1,7 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/indexing.sql
-snapshot_kind: text
 ---
 create table idxpart (
   a int,
@@ -2224,7 +2223,9 @@ create table test_pg_index_toast_table (a int);
 
 create or replace function test_pg_index_toast_func(a int, b int[])
 returns boolean
-as $function$ select true $function$
+as $function$
+select true
+$function$
 language sql
 immutable;
 

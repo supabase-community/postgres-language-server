@@ -1,7 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/select_distinct.sql
-snapshot_kind: text
 ---
 select distinct two from onek order by 1;
 
@@ -104,7 +103,7 @@ select distinct four from tenk1;
 create or replace function distinct_func(a int)
 returns int
 as $function$
-  BEGIN
+BEGIN
     RETURN a;
   END;
 $function$
@@ -116,7 +115,7 @@ select distinct distinct_func(1) from tenk1;
 create or replace function distinct_func(a int)
 returns int
 as $function$
-  BEGIN
+BEGIN
     RETURN a;
   END;
 $function$

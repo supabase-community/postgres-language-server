@@ -1,7 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/mvcc.sql
-snapshot_kind: text
 ---
 begin;
 
@@ -42,7 +41,8 @@ BEGIN
 	    RAISE reading_sql_data_not_permitted USING MESSAGE = 'round and round again';
 	EXCEPTION WHEN reading_sql_data_not_permitted THEN END;
     END LOOP;
-END;$do$;
+END;
+$do$;
 
 select
   'clean_aborted_self_key_before'

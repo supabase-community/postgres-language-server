@@ -1,7 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/create_procedure.sql
-snapshot_kind: text
 ---
 call nonexistent();
 
@@ -10,7 +9,9 @@ call random();
 create function cp_testfunc1(a int)
 returns int
 language sql
-as $function$ SELECT a $function$;
+as $function$
+SELECT a
+$function$;
 
 create table cp_test (
   a int,
@@ -182,7 +183,9 @@ call ptest9(1. / 0.);
 
 create procedure ptest10(out a int, in b int, in c int)
 language sql
-as $procedure$ SELECT b - c $procedure$;
+as $procedure$
+SELECT b - c
+$procedure$;
 
 call ptest10(null, 7, 4);
 
@@ -196,13 +199,17 @@ call ptest10("b" := 8, "c" := 2, "a" := 0);
 
 create procedure ptest11(out a int, variadic b int[])
 language sql
-as $procedure$ SELECT b[1] + b[2] $procedure$;
+as $procedure$
+SELECT b[1] + b[2]
+$procedure$;
 
 call ptest11(null, 11, 12, 13);
 
 create procedure ptest10(in a int, in b int, in c int)
 language sql
-as $procedure$ SELECT a + b - c $procedure$;
+as $procedure$
+SELECT a + b - c
+$procedure$;
 
 drop procedure ptest10;
 
@@ -231,20 +238,28 @@ call SUM(1);
 create procedure ptestx()
 language sql
 window
-as $procedure$ INSERT INTO cp_test VALUES (1, 'a') $procedure$;
+as $procedure$
+INSERT INTO cp_test VALUES (1, 'a')
+$procedure$;
 
 create procedure ptestx()
 language sql
 strict
-as $procedure$ INSERT INTO cp_test VALUES (1, 'a') $procedure$;
+as $procedure$
+INSERT INTO cp_test VALUES (1, 'a')
+$procedure$;
 
 create procedure ptestx(variadic a int[], out b int)
 language sql
-as $procedure$ SELECT a[1] $procedure$;
+as $procedure$
+SELECT a[1]
+$procedure$;
 
 create procedure ptestx(a int default 42, out b int)
 language sql
-as $procedure$ SELECT a $procedure$;
+as $procedure$
+SELECT a
+$procedure$;
 
 alter procedure ptest1(text) strict;
 

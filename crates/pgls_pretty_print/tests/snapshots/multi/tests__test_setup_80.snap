@@ -1,7 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/test_setup.sql
-snapshot_kind: text
 ---
 set synchronous_commit = 'on';
 
@@ -236,8 +235,8 @@ parallel SAFE;
 create function part_hashint4_noop(value int, seed bigint)
 returns bigint
 as $function$
-    select value + seed;
-    $function$
+select value + seed;
+$function$
 language sql
 strict
 immutable
@@ -252,8 +251,8 @@ create operator class part_test_int4_ops
 create function part_hashtext_length(value text, seed bigint)
 returns bigint
 as $function$
-    select length(coalesce(value, ''))::int8
-    $function$
+select length(coalesce(value, ''))::int8
+$function$
 language sql
 strict
 immutable

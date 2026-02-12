@@ -1,7 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/privileges.sql
-snapshot_kind: text
 ---
 set client_min_messages = warning;
 
@@ -351,7 +350,9 @@ grant REGRESS_PRIV_GROUP2 to regress_priv_user4 with ADMIN true;
 
 create function leak(int, int)
 returns boolean
-as $function$int4lt$function$
+as $function$
+int4lt
+$function$
 language internal
 immutable
 strict;
@@ -614,7 +615,9 @@ set session authorization regress_priv_user2;
 
 create function leak2(int, int)
 returns boolean
-as $function$begin raise notice 'leak % %', $1, $2; return $1 > $2; end$function$
+as $function$
+begin raise notice 'leak % %', $1, $2; return $1 > $2; end
+$function$
 language plpgsql
 immutable;
 
@@ -1464,18 +1467,24 @@ grant USAGE on language sql to regress_priv_user2;
 
 create function priv_testfunc1(int)
 returns int
-as $function$select 2 * $1;$function$
+as $function$
+select 2 * $1;
+$function$
 language sql;
 
 create function priv_testfunc2(int)
 returns int
-as $function$select 3 * $1;$function$
+as $function$
+select 3 * $1;
+$function$
 language sql;
 
 create aggregate priv_testagg1 (int) (sfunc = int4pl, stype = int);
 
 create procedure priv_testproc1(int)
-as $procedure$select $1;$procedure$
+as $procedure$
+select $1;
+$procedure$
 language sql;
 
 revoke all
@@ -1512,7 +1521,9 @@ grant all on procedure priv_testproc1(int) to regress_priv_user4;
 
 create function priv_testfunc4(boolean)
 returns text
-as $function$select col1 from atest2 where col2 = $1;$function$
+as $function$
+select col1 from atest2 where col2 = $1;
+$function$
 language sql
 security definer;
 
@@ -1524,7 +1535,9 @@ select priv_testfunc1(5), priv_testfunc2(5);
 
 create function priv_testfunc3(int)
 returns int
-as $function$select 2 * $1;$function$
+as $function$
+select 2 * $1;
+$function$
 language sql;
 
 select priv_testagg1(x) from (values (1), (2), (3)) as _ (x);
@@ -1608,7 +1621,9 @@ create domain priv_testdomain3a as int;
 
 create function castfunc(int)
 returns priv_testdomain3a
-as $function$ SELECT $1::priv_testdomain3a $function$
+as $function$
+SELECT $1::priv_testdomain3a
+$function$
 language sql;
 
 create cast (priv_testdomain1 as priv_testdomain3a) with function castfunc(int);
@@ -1620,12 +1635,16 @@ drop domain priv_testdomain3a;
 create function priv_testfunc5a(a priv_testdomain1)
 returns int
 language sql
-as $function$ SELECT $1 $function$;
+as $function$
+SELECT $1
+$function$;
 
 create function priv_testfunc6a(b int)
 returns priv_testdomain1
 language sql
-as $function$ SELECT $1::priv_testdomain1 $function$;
+as $function$
+SELECT $1::priv_testdomain1
+$function$;
 
 create operator !+! (PROCEDURE = int4pl,
 LEFTARG = priv_testdomain1,
@@ -1683,7 +1702,9 @@ create domain priv_testdomain3b as int;
 
 create function castfunc(int)
 returns priv_testdomain3b
-as $function$ SELECT $1::priv_testdomain3b $function$
+as $function$
+SELECT $1::priv_testdomain3b
+$function$
 language sql;
 
 create cast (priv_testdomain1 as priv_testdomain3b) with function castfunc(int);
@@ -1691,12 +1712,16 @@ create cast (priv_testdomain1 as priv_testdomain3b) with function castfunc(int);
 create function priv_testfunc5b(a priv_testdomain1)
 returns int
 language sql
-as $function$ SELECT $1 $function$;
+as $function$
+SELECT $1
+$function$;
 
 create function priv_testfunc6b(b int)
 returns priv_testdomain1
 language sql
-as $function$ SELECT $1::priv_testdomain1 $function$;
+as $function$
+SELECT $1::priv_testdomain1
+$function$;
 
 create operator !! (PROCEDURE = priv_testfunc5b, RIGHTARG = priv_testdomain1);
 
@@ -2387,12 +2412,16 @@ set session authorization regress_sro_user;
 create function unwanted_grant()
 returns void
 language sql
-as $function$GRANT regress_priv_group2 TO regress_sro_user$function$;
+as $function$
+GRANT regress_priv_group2 TO regress_sro_user
+$function$;
 
 create function mv_action()
 returns boolean
 language sql
-as $function$DECLARE c CURSOR WITH HOLD FOR SELECT public.unwanted_grant(); SELECT true$function$;
+as $function$
+DECLARE c CURSOR WITH HOLD FOR SELECT public.unwanted_grant(); SELECT true
+$function$;
 
 create materialized view sro_mv as select mv_action() with no data;
 
@@ -2407,7 +2436,9 @@ create table sro_trojan_table ();
 create function sro_trojan()
 returns trigger
 language plpgsql
-as $function$BEGIN PERFORM public.unwanted_grant(); RETURN NULL; END$function$;
+as $function$
+BEGIN PERFORM public.unwanted_grant(); RETURN NULL; END
+$function$;
 
 create constraint trigger t
 after insert
@@ -2420,7 +2451,9 @@ execute function sro_trojan();
 create or replace function mv_action()
 returns boolean
 language sql
-as $function$INSERT INTO public.sro_trojan_table DEFAULT VALUES; SELECT true$function$;
+as $function$
+INSERT INTO public.sro_trojan_table DEFAULT VALUES; SELECT true
+$function$;
 
 refresh materialized view sro_mv;
 
@@ -2447,7 +2480,8 @@ BEGIN
 	RETURN 1;
 EXCEPTION WHEN OTHERS THEN
 	RETURN 2;
-END$function$;
+END
+$function$;
 
 create materialized view sro_index_mv as select 1 as c;
 
@@ -2474,7 +2508,9 @@ create function dogrant_ok()
 returns void
 language sql
 security definer
-as $function$GRANT regress_priv_group2 TO regress_priv_user5$function$;
+as $function$
+GRANT regress_priv_group2 TO regress_priv_user5
+$function$;
 
 grant REGRESS_PRIV_GROUP2 to regress_priv_user5;
 
@@ -2712,7 +2748,8 @@ BEGIN
 	RETURN pg_terminate_backend($1);
 EXCEPTION WHEN OTHERS THEN
 	RETURN false;
-END$function$;
+END
+$function$;
 
 alter function terminate_nothrow owner to pg_signal_backend;
 
@@ -2764,8 +2801,10 @@ select
 begin;
 
 do
-$do$BEGIN EXECUTE format(
-	'ALTER DATABASE %I OWNER TO regress_priv_group2', current_catalog); END$do$;
+$do$
+BEGIN EXECUTE format(
+	'ALTER DATABASE %I OWNER TO regress_priv_group2', current_catalog); END
+$do$;
 
 select
   pg_has_role(
@@ -3055,13 +3094,17 @@ set role to regress_priv_user1;
 
 create function testns.foo()
 returns int
-as $function$select 1$function$
+as $function$
+select 1
+$function$
 language sql;
 
 create aggregate testns.agg1 (int) (sfunc = int4pl, stype = int);
 
 create procedure testns.bar()
-as $procedure$select 1$procedure$
+as $procedure$
+select 1
+$procedure$
 language sql;
 
 select has_function_privilege('regress_priv_user2', 'testns.foo()', 'EXECUTE');
@@ -3081,7 +3124,9 @@ drop function testns.foo();
 
 create function testns.foo()
 returns int
-as $function$select 1$function$
+as $function$
+select 1
+$function$
 language sql;
 
 drop aggregate testns.agg1(int);
@@ -3091,7 +3136,9 @@ create aggregate testns.agg1 (int) (sfunc = int4pl, stype = int);
 drop procedure testns.bar();
 
 create procedure testns.bar()
-as $procedure$select 1$procedure$
+as $procedure$
+select 1
+$procedure$
 language sql;
 
 select has_function_privilege('regress_priv_user2', 'testns.foo()', 'EXECUTE');
@@ -3193,13 +3240,17 @@ select has_table_privilege('regress_priv_user1', 'testns.t2', 'SELECT');
 
 create function testns.priv_testfunc(int)
 returns int
-as $function$select 3 * $1;$function$
+as $function$
+select 3 * $1;
+$function$
 language sql;
 
 create aggregate testns.priv_testagg (int) (sfunc = int4pl, stype = int);
 
 create procedure testns.priv_testproc(int)
-as $procedure$select 3$procedure$
+as $procedure$
+select 3
+$procedure$
 language sql;
 
 select
