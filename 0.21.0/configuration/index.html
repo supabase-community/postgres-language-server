@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><link rel="canonical" href="https://pg-language-server.com/0.21.0/configuration/" />
+      <link rel="shortcut icon" href="../img/favicon.ico" />
+    <title>Configuration - Postgres Language Server</title>
+    <link rel="stylesheet" href="../css/theme.css" />
+    <link rel="stylesheet" href="../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
+        <link href="../css/version-select.css" rel="stylesheet" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "Configuration";
+        var mkdocs_page_input_path = "configuration.md";
+        var mkdocs_page_url = "/0.21.0/configuration/";
+      </script>
+    
+    <!--[if lt IE 9]>
+      <script src="../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+      <script>hljs.highlightAll();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href=".." class="icon icon-home"> Postgres Language Server
+        </a>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../getting_started/">Getting Started</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../manual_installation/">Manual Installation</a>
+                </li>
+              </ul>
+              <ul class="current">
+                <li class="toctree-l1 current"><a class="reference internal current" href="#">Configuration</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#configuration-file-structure">Configuration file structure</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#configuring-a-database-connection">Configuring a database connection</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#specifying-files-to-process">Specifying files to process</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#include-files-via-cli">Include files via CLI</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#control-files-via-configuration">Control files via configuration</a>
+        <ul>
+    <li class="toctree-l4"><a class="reference internal" href="#include-files-via-configuration">Include files via configuration</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#exclude-files-via-configuration">Exclude files via configuration</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#control-files-via-vcs">Control files via VCS</a>
+    </li>
+        </ul>
+    </li>
+        </ul>
+    </li>
+    </ul>
+                </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Features</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../features/syntax_diagnostics/">Syntax Diagnostics</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../features/linting/">Linting</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../features/database_linting/">Database Linting</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../features/type_checking/">Type Checking</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../features/formatting/">Formatting</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../features/plpgsql/">PL/pgSQL Support</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../features/editor_features/">Autocompletion & Hover</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Guides</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../guides/ide_setup/">Use in your IDE</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../guides/checking_migrations/">Checking Migrations</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../guides/configure_database/">Configure database connection</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../guides/suppressions/">Suppressions</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../guides/vcs_integration/">Integrate with VCS</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../guides/continuous_integration/">Continuous Integration</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Reference</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../reference/cli/">CLI Commands</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../reference/rules/">Linter Rules</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../reference/rule_sources/">Linter Rule Sources</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../reference/database_rules/">Database Linter Rules</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../reference/database_rule_sources/">Database Linter Rule Sources</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../reference/env_variables/">Environment Variables</a>
+                  </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="..">Postgres Language Server</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href=".." class="icon icon-home" aria-label="Docs"></a></li>
+      <li class="breadcrumb-item active">Configuration</li>
+    <li class="wy-breadcrumbs-aside">
+          <a href="https://github.com/supabase-community/postgres-language-server/edit/master/docs/configuration.md">Edit on supabase-community/postgres-language-server</a>
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="configuration">Configuration</h1>
+<p>This guide will help you to understand how to configure the Postgres Language Server. It explains the structure of the configuration file and how the configuration is resolved.</p>
+<p>The Postgres Language Server allows you to customize its behavior using CLI options or a configuration file named <code>postgres-language-server.jsonc</code>. We recommend that you create a configuration file for each project. This ensures that each team member has the same configuration in the CLI and in any editor that allows Biome integration. Many of the options available in a configuration file are also available in the CLI.</p>
+<h2 id="configuration-file-structure">Configuration file structure</h2>
+<p>A configuration file is usually placed in your project’s root folder. It is organized around the tools that are provided. All tools are enabled by default, but some require additional setup like a database connection or the <code>plpgsql_check</code> extension.</p>
+<pre><code class="language-json">{
+  &quot;$schema&quot;: &quot;https://pg-language-server.com/latest/schema.json&quot;,
+  &quot;linter&quot;: {
+    &quot;enabled&quot;: true,
+    &quot;rules&quot;: {
+      &quot;recommended&quot;: true
+    }
+  },
+  &quot;typecheck&quot;: {
+    &quot;enabled&quot;: true
+  },
+  &quot;plpgsqlCheck&quot;: {
+    &quot;enabled&quot;: true
+  },
+  &quot;format&quot;: {
+    &quot;enabled&quot;: true,
+    &quot;keywordCase&quot;: &quot;lower&quot;
+  }
+}
+</code></pre>
+<h2 id="configuring-a-database-connection">Configuring a database connection</h2>
+<p>Some tools that the Postgres Language Server provides are implemented as mere interfaces on top of functionality that is provided by the database itself. This ensures correctness, but requires an active connection to a Postgres database. We strongly recommend to only connect to a local development database.</p>
+<pre><code class="language-json">{
+  &quot;$schema&quot;: &quot;https://pg-language-server.com/latest/schema.json&quot;,
+  &quot;db&quot;: {
+    &quot;host&quot;: &quot;127.0.0.1&quot;,
+    &quot;port&quot;: 5432,
+    &quot;username&quot;: &quot;postgres&quot;,
+    &quot;password&quot;: &quot;postgres&quot;,
+    &quot;database&quot;: &quot;postgres&quot;,
+    &quot;connTimeoutSecs&quot;: 10,
+    &quot;allowStatementExecutionsAgainst&quot;: [&quot;127.0.0.1/*&quot;, &quot;localhost/*&quot;]
+  }
+}
+</code></pre>
+<p>When you need to pass additional Postgres settings (e.g. <code>sslmode</code>, <code>options</code>,
+<code>application_name</code>) you can provide a connection string instead of the
+individual fields. The URI takes precedence over any other connection fields.</p>
+<pre><code class="language-json">{
+  &quot;db&quot;: {
+    &quot;connectionString&quot;: &quot;postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable&quot;,
+    &quot;allowStatementExecutionsAgainst&quot;: [&quot;localhost/*&quot;]
+  }
+}
+</code></pre>
+<h2 id="specifying-files-to-process">Specifying files to process</h2>
+<p>You can control the files/folders to process using different strategies, either CLI, configuration and VCS.</p>
+<h3 id="include-files-via-cli">Include files via CLI</h3>
+<p>The first way to control which files and folders are processed is to list them in the CLI. In the following command, we only check <code>file1.sql</code> and all the files in the <code>src</code> folder, because folders are recursively traversed.</p>
+<pre><code class="language-shell">postgres-language-server check file1.js src/
+</code></pre>
+<h3 id="control-files-via-configuration">Control files via configuration</h3>
+<p>The configuration file can be used to refine which files are processed. You can explicitly list the files to be processed using the <code>files.includes</code> field. <code>files.includes</code> accepts glob patterns such as sql/*<em>/</em>.sql. Negated patterns starting with <code>!</code> can be used to exclude files.</p>
+<p>Paths and globs inside the configuration file are resolved relative to the folder the configuration file is in. An exception to this is when a configuration file is extended by another.</p>
+<h4 id="include-files-via-configuration">Include files via configuration</h4>
+<p>Let’s take the following configuration, where we want to include only SQL files (<code>.sql</code>) that are inside the <code>sql/</code> folder:</p>
+<pre><code class="language-json">{
+  &quot;files&quot;: {
+    &quot;includes&quot;: [&quot;sql/**/*.sql&quot;]
+  }
+}
+</code></pre>
+<h4 id="exclude-files-via-configuration">Exclude files via configuration</h4>
+<p>If you want to exclude files and folders from being processed, you can use the <code>files.ignore</code> .</p>
+<p>In the following example, we include all files, except those in any test/ folder:</p>
+<pre><code class="language-json">{
+  &quot;files&quot;: {
+    &quot;ignore&quot;: [
+      &quot;**/test&quot;,
+    ]
+  }
+}
+</code></pre>
+<h4 id="control-files-via-vcs">Control files via VCS</h4>
+<p>You can ignore files ignored by your <a href="../guides/vcs_integration/">VCS</a>.</p>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="../manual_installation/" class="btn btn-neutral float-left" title="Manual Installation"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../features/syntax_diagnostics/" class="btn btn-neutral float-right" title="Syntax Diagnostics">Next <span class="icon icon-circle-arrow-right"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+        <span>
+          <a href="https://github.com/supabase-community/postgres-language-server" class="fa fa-code-fork" style="color: #fcfcfc"> supabase-community/postgres-language-server</a>
+        </span>
+    
+    
+      <span><a href="../manual_installation/" style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+      <span><a href="../features/syntax_diagnostics/" style="color: #fcfcfc">Next &raquo;</a></span>
+    
+  </span>
+</div>
+    <script src="../js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = "..";</script>
+    <script src="../js/theme_extra.js"></script>
+    <script src="../js/theme.js"></script>
+      <script src="../js/version-select.js"></script>
+    <script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+
+</body>
+</html>
