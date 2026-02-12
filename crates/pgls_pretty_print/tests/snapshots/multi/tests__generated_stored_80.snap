@@ -1,7 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/generated_stored.sql
-snapshot_kind: text
 ---
 create schema "generated_stored_tests";
 
@@ -516,7 +515,9 @@ grant SELECT (a, c) on table gtest11 to regress_user11;
 
 create function gf1(a int)
 returns int
-as $function$ SELECT a * 3 $function$
+as $function$
+SELECT a * 3
+$function$
 immutable
 language sql;
 

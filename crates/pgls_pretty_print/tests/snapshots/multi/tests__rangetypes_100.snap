@@ -1,7 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/rangetypes.sql
-snapshot_kind: text
 ---
 select cast('' as textrange);
 
@@ -931,7 +930,9 @@ drop type textrange2;
 
 create function anyarray_anyrange_func(a anyarray, r anyrange)
 returns anyelement
-as $function$select $1[1] + lower($2);$function$
+as $function$
+select $1[1] + lower($2);
+$function$
 language sql;
 
 select anyarray_anyrange_func(array[1, 2], int4range(10, 20));
@@ -942,17 +943,23 @@ drop function anyarray_anyrange_func(anyarray, anyrange);
 
 create function bogus_func(anyelement)
 returns anyrange
-as $function$select int4range(1,10)$function$
+as $function$
+select int4range(1,10)
+$function$
 language sql;
 
 create function bogus_func(int)
 returns anyrange
-as $function$select int4range(1,10)$function$
+as $function$
+select int4range(1,10)
+$function$
 language sql;
 
 create function range_add_bounds(anyrange)
 returns anyelement
-as $function$select lower($1) + upper($1)$function$
+as $function$
+select lower($1) + upper($1)
+$function$
 language sql;
 
 select range_add_bounds(int4range(1, 17));
@@ -960,7 +967,9 @@ select range_add_bounds(int4range(1, 17));
 select range_add_bounds(numrange(1.0001, 123.123));
 
 create function rangetypes_sql(q anyrange, b anyarray, out c anyelement)
-as $function$ select upper($1) + $2[1] $function$
+as $function$
+select upper($1) + $2[1]
+$function$
 language sql;
 
 select rangetypes_sql(int4range(1, 10), array[2, 20]);
@@ -973,7 +982,9 @@ anycompatiblearray_anycompatiblerange_func(
   r anycompatiblerange
 )
 returns anycompatible
-as $function$select $1[1] + lower($2);$function$
+as $function$
+select $1[1] + lower($2);
+$function$
 language sql;
 
 select anycompatiblearray_anycompatiblerange_func(array[1, 2], int4range(10, 20));
@@ -986,7 +997,9 @@ drop function anycompatiblearray_anycompatiblerange_func(anycompatiblearray, any
 
 create function bogus_func(anycompatible)
 returns anycompatiblerange
-as $function$select int4range(1,10)$function$
+as $function$
+select int4range(1,10)
+$function$
 language sql;
 
 select array[numrange(1.1, 1.2), numrange(12.3, 155.5)];
@@ -1041,25 +1054,33 @@ select cast('(01,10)' as varbitrange) except select cast('(10,11)' as varbitrang
 reset enable_sort;
 
 create function outparam_succeed(i anyrange, out r anyrange, out t text)
-as $function$ select $1, 'foo'::text $function$
+as $function$
+select $1, 'foo'::text
+$function$
 language sql;
 
 select * from outparam_succeed(int4range(1, 2));
 
 create function outparam2_succeed(r anyrange, out lu anyarray, out ul anyarray)
-as $function$ select array[lower($1), upper($1)], array[upper($1), lower($1)] $function$
+as $function$
+select array[lower($1), upper($1)], array[upper($1), lower($1)]
+$function$
 language sql;
 
 select * from outparam2_succeed(int4range(1, 11));
 
 create function outparam_succeed2(i anyrange, out r anyarray, out t text)
-as $function$ select ARRAY[upper($1)], 'foo'::text $function$
+as $function$
+select ARRAY[upper($1)], 'foo'::text
+$function$
 language sql;
 
 select * from outparam_succeed2(int4range(int4range(1, 2)));
 
 create function inoutparam_succeed(out i anyelement, inout r anyrange)
-as $function$ select upper($1), $1 $function$
+as $function$
+select upper($1), $1
+$function$
 language sql;
 
 select * from inoutparam_succeed(int4range(1, 2));
@@ -1069,17 +1090,23 @@ returns table (
   l anyelement,
   u anyelement
 )
-as $function$ select lower($1), upper($1) $function$
+as $function$
+select lower($1), upper($1)
+$function$
 language sql;
 
 select * from table_succeed(int4range(1, 11));
 
 create function outparam_fail(i anyelement, out r anyrange, out t text)
-as $function$ select '[1,10]', 'foo' $function$
+as $function$
+select '[1,10]', 'foo'
+$function$
 language sql;
 
 create function inoutparam_fail(inout i anyelement, out r anyrange)
-as $function$ select $1, '[1,10]' $function$
+as $function$
+select $1, '[1,10]'
+$function$
 language sql;
 
 create function table_fail(i anyelement)
@@ -1087,7 +1114,9 @@ returns table (
   i anyelement,
   r anyrange
 )
-as $function$ select $1, '[1,10]' $function$
+as $function$
+select $1, '[1,10]'
+$function$
 language sql;
 
 select current_date <@ cast('empty' as daterange);

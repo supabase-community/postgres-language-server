@@ -1,7 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/compression_lz4.sql
-snapshot_kind: text
 ---
 select
   not enumvals @> '{lz4}' as skip_test
@@ -61,7 +60,9 @@ select pg_column_compression(f1) from cmmove2;
 create or replace function large_val_lz4()
 returns text
 language sql
-as $function$select array_agg(fipshash(g::text))::text from generate_series(1, 256) g$function$;
+as $function$
+select array_agg(fipshash(g::text))::text from generate_series(1, 256) g
+$function$;
 
 create table cmdata2 (f1 text compression lz4);
 

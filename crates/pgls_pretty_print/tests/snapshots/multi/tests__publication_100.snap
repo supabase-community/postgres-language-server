@@ -1,7 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/publication.sql
-snapshot_kind: text
 ---
 create role regress_publication_user login superuser;
 
@@ -286,7 +285,9 @@ alter publication testpub5 set table testpub_rf_tbl3 where ( e < AVG(e));
 
 create function testpub_rf_func1(int, int)
 returns boolean
-as $function$ SELECT hashint4($1) > $2 $function$
+as $function$
+SELECT hashint4($1) > $2
+$function$
 language sql;
 
 create operator =#> (PROCEDURE = testpub_rf_func1, LEFTARG = int, RIGHTARG = int);
@@ -296,7 +297,9 @@ create publication testpub6 for table testpub_rf_tbl3 where (e =#> 27);
 create function testpub_rf_func2()
 returns int
 immutable
-as $function$ BEGIN RETURN 123; END; $function$
+as $function$
+BEGIN RETURN 123; END;
+$function$
 language plpgsql;
 
 alter publication testpub5 add table testpub_rf_tbl1 where ( a >= testpub_rf_func2());

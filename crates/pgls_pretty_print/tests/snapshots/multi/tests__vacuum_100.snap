@@ -1,7 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/vacuum.sql
-snapshot_kind: text
 ---
 create table vactst (i int);
 
@@ -90,13 +89,17 @@ create function do_analyze()
 returns void
 volatile
 language sql
-as $function$ANALYZE pg_am$function$;
+as $function$
+ANALYZE pg_am
+$function$;
 
 create function wrap_do_analyze(c int)
 returns int
 immutable
 language sql
-as $function$SELECT $1 FROM public.do_analyze()$function$;
+as $function$
+SELECT $1 FROM public.do_analyze()
+$function$;
 
 create index on vaccluster using btree ((wrap_do_analyze(i)));
 

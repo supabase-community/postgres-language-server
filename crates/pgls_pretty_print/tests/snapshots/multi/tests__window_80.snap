@@ -1,7 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/window.sql
-snapshot_kind: text
 ---
 create temporary table empsalary (
   depname varchar,
@@ -2015,7 +2014,7 @@ returns table (
 )
 language sql
 as $function$
-  SELECT sum(unique1) over (rows between x preceding and x following),
+SELECT sum(unique1) over (rows between x preceding and x following),
          unique1, four
   FROM tenk1 WHERE unique1 < 10;
 $function$;
@@ -2052,7 +2051,7 @@ returns table (
 )
 language sql
 as $function$
-  SELECT sum(unique1) over (rows between unbounded preceding and unbounded following),
+SELECT sum(unique1) over (rows between unbounded preceding and unbounded following),
          unique1, four
   FROM tenk1 WHERE unique1 < 10;
 $function$;
@@ -5144,7 +5143,9 @@ language internal
 window
 immutable
 strict
-as $function$window_nth_value$function$;
+as $function$
+window_nth_value
+$function$;
 
 select
   nth_value_def(
@@ -5193,19 +5194,25 @@ from
 
 create function logging_sfunc_nonstrict(text, anyelement)
 returns text
-as $function$ SELECT COALESCE($1, '') || '*' || quote_nullable($2) $function$
+as $function$
+SELECT COALESCE($1, '') || '*' || quote_nullable($2)
+$function$
 language sql
 immutable;
 
 create function logging_msfunc_nonstrict(text, anyelement)
 returns text
-as $function$ SELECT COALESCE($1, '') || '+' || quote_nullable($2) $function$
+as $function$
+SELECT COALESCE($1, '') || '+' || quote_nullable($2)
+$function$
 language sql
 immutable;
 
 create function logging_minvfunc_nonstrict(text, anyelement)
 returns text
-as $function$ SELECT $1 || '-' || quote_nullable($2) $function$
+as $function$
+SELECT $1 || '-' || quote_nullable($2)
+$function$
 language sql
 immutable;
 
@@ -5233,21 +5240,27 @@ create aggregate logging_agg_nonstrict_initcond (
 
 create function logging_sfunc_strict(text, anyelement)
 returns text
-as $function$ SELECT $1 || '*' || quote_nullable($2) $function$
+as $function$
+SELECT $1 || '*' || quote_nullable($2)
+$function$
 language sql
 strict
 immutable;
 
 create function logging_msfunc_strict(text, anyelement)
 returns text
-as $function$ SELECT $1 || '+' || quote_nullable($2) $function$
+as $function$
+SELECT $1 || '+' || quote_nullable($2)
+$function$
 language sql
 strict
 immutable;
 
 create function logging_minvfunc_strict(text, anyelement)
 returns text
-as $function$ SELECT $1 || '-' || quote_nullable($2) $function$
+as $function$
+SELECT $1 || '-' || quote_nullable($2)
+$function$
 language sql
 strict
 immutable;
@@ -5472,7 +5485,9 @@ order by i;
 
 create function sum_int_randrestart_minvfunc(int, int)
 returns int
-as $function$ SELECT CASE WHEN random() < 0.2 THEN NULL ELSE $1 - $2 END $function$
+as $function$
+SELECT CASE WHEN random() < 0.2 THEN NULL ELSE $1 - $2 END
+$function$
 language sql
 strict;
 
@@ -6704,7 +6719,7 @@ window
 create function pg_temp.f(group_size bigint)
 returns setof int[]
 as $function$
-    SELECT array_agg(s) OVER w
+SELECT array_agg(s) OVER w
       FROM generate_series(1,5) s
     WINDOW w AS (ORDER BY s ROWS BETWEEN CURRENT ROW AND GROUP_SIZE FOLLOWING)
 $function$

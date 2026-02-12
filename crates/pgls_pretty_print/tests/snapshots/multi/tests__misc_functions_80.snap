@@ -1,7 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/misc_functions.sql
-snapshot_kind: text
 ---
 create function
 explain_mask_costs(
@@ -129,7 +128,9 @@ select num_nulls();
 
 create function test_canonicalize_path(text)
 returns text
-as $function$regresslib$function$
+as $function$
+regresslib
+$function$
 language c
 strict
 immutable;
@@ -368,7 +369,9 @@ language internal
 strict
 immutable
 parallel SAFE
-as $function$int4eq$function$;
+as $function$
+int4eq
+$function$;
 
 select
   *
@@ -404,7 +407,9 @@ language internal
 strict
 immutable
 parallel SAFE
-as $function$generate_series_int4$function$
+as $function$
+generate_series_int4
+$function$
 support test_support_func;
 
 select
@@ -680,7 +685,9 @@ select gist_translate_cmptype_common(3);
 
 create function test_relpath()
 returns void
-as $function$regresslib$function$
+as $function$
+regresslib
+$function$
 language c;
 
 select test_relpath();

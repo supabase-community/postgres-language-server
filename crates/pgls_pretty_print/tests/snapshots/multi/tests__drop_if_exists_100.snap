@@ -1,7 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/drop_if_exists.sql
-snapshot_kind: text
 ---
 drop table test_exists;
 
@@ -309,12 +308,16 @@ drop view if exists no_such_schema.foo;
 
 create function test_ambiguous_funcname(int)
 returns int
-as $function$ select $1; $function$
+as $function$
+select $1;
+$function$
 language sql;
 
 create function test_ambiguous_funcname(text)
 returns text
-as $function$ select $1; $function$
+as $function$
+select $1;
+$function$
 language sql;
 
 drop function test_ambiguous_funcname;
@@ -326,11 +329,15 @@ drop function test_ambiguous_funcname(int);
 drop function test_ambiguous_funcname(text);
 
 create procedure test_ambiguous_procname(int)
-as $procedure$ begin end; $procedure$
+as $procedure$
+begin end;
+$procedure$
 language plpgsql;
 
 create procedure test_ambiguous_procname(text)
-as $procedure$ begin end; $procedure$
+as $procedure$
+begin end;
+$procedure$
 language plpgsql;
 
 drop procedure test_ambiguous_procname;

@@ -1,7 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/explain.sql
-snapshot_kind: text
 ---
 create function explain_filter(text)
 returns setof text
@@ -176,7 +175,9 @@ create temporary table t1 (f1 double precision);
 create function pg_temp.mysin(double precision)
 returns double precision
 language plpgsql
-as $function$begin return sin($1); end$function$;
+as $function$
+begin return sin($1); end
+$function$;
 
 select explain_filter('explain (verbose) select * from t1 where pg_temp.mysin(f1) < 0.5');
 

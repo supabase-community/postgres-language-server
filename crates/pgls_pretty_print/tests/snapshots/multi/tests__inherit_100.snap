@@ -1,7 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/inherit.sql
-snapshot_kind: text
 ---
 create table a (aa text);
 
@@ -194,7 +193,9 @@ create index on some_tab_child using btree (f1, f2);
 
 create function some_tab_stmt_trig_func()
 returns trigger
-as $function$begin raise notice 'updating some_tab'; return NULL; end;$function$
+as $function$
+begin raise notice 'updating some_tab'; return NULL; end;
+$function$
 language plpgsql;
 
 create trigger some_tab_stmt_trig
@@ -517,7 +518,9 @@ create table p2 (f1 text);
 
 create function p2text(p2)
 returns text
-as $function$select $1.f1$function$
+as $function$
+select $1.f1
+$function$
 language sql;
 
 create table c1 (f3 int)

@@ -2,7 +2,7 @@ use pgls_query::protobuf::String as PgString;
 
 use crate::{
     TokenKind,
-    emitter::{EventEmitter, GroupKind},
+    emitter::{EventEmitter, GroupKind, LineType},
 };
 
 const RESERVED_KEYWORDS: &[&str] = &[
@@ -160,9 +160,15 @@ pub(super) fn emit_dollar_quoted_str_with_hint(
     hint: DollarQuoteHint,
 ) {
     let delimiter = pick_dollar_delimiter(value, hint);
-    e.token(TokenKind::DOLLAR_QUOTED_STRING(format!(
-        "{delimiter}{value}{delimiter}"
-    )));
+    // Trim leading/trailing whitespace from the body for cleaner formatting,
+    // then emit: delimiter, newline, body, newline, delimiter
+    // This puts the function body on its own lines for readability
+    let trimmed_body = value.trim();
+    e.token(TokenKind::DOLLAR_QUOTE_DELIMITER(delimiter.clone()));
+    e.line(LineType::Hard);
+    e.token(TokenKind::DOLLAR_QUOTE_BODY(trimmed_body.to_string()));
+    e.line(LineType::Hard);
+    e.token(TokenKind::DOLLAR_QUOTE_DELIMITER(delimiter));
 }
 
 fn needs_quoting(value: &str) -> bool {

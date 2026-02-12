@@ -1,7 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/event_trigger.sql
-snapshot_kind: text
 ---
 create event trigger "regress_event_trigger"
 on ddl_command_start
@@ -20,13 +19,16 @@ select test_event_trigger();
 
 create function test_event_trigger_arg(name text)
 returns event_trigger
-as $function$ BEGIN RETURN 1; END $function$
+as $function$
+BEGIN RETURN 1; END
+$function$
 language plpgsql;
 
 create function test_event_trigger_sql()
 returns event_trigger
 as $function$
-SELECT 1 $function$
+SELECT 1
+$function$
 language sql;
 
 create event trigger "regress_event_trigger"
@@ -127,7 +129,8 @@ as $function$
 begin
   create table event_trigger_fire6 (a int);
   return 0;
-end $function$;
+end
+$function$;
 
 select f1();
 
@@ -136,7 +139,8 @@ language plpgsql
 as $procedure$
 begin
   create table event_trigger_fire7 (a int);
-end $procedure$;
+end
+$procedure$;
 
 call p1();
 
@@ -225,7 +229,9 @@ create or replace function schema_two.add(int, int)
 returns int
 language plpgsql
 called on null input
-as $function$ BEGIN RETURN coalesce($1,0) + coalesce($2,0); END; $function$;
+as $function$
+BEGIN RETURN coalesce($1,0) + coalesce($2,0); END;
+$function$;
 
 create aggregate schema_two.newton (
   basetype = int,
@@ -364,7 +370,8 @@ BEGIN
         r.object_identity, r.schema_name, r.object_name,
         r.address_names, r.address_args;
     END LOOP;
-END; $function$;
+END;
+$function$;
 
 create event trigger "regress_event_trigger_report_dropped"
 on sql_drop
@@ -381,7 +388,8 @@ BEGIN
         RAISE NOTICE 'END: command_tag=% type=% identity=%',
             r.command_tag, r.object_type, r.object_identity;
     END LOOP;
-END; $function$;
+END;
+$function$;
 
 create event trigger "regress_event_trigger_report_end"
 on ddl_command_end
@@ -471,7 +479,8 @@ BEGIN
         r.object_identity, r.schema_name, r.object_name,
         r.address_names, r.address_args;
     END LOOP;
-END; $function$;
+END;
+$function$;
 
 create function event_trigger_dummy_trigger()
 returns trigger
@@ -479,7 +488,8 @@ language plpgsql
 as $function$
 BEGIN
     RETURN new;
-END; $function$;
+END;
+$function$;
 
 create table evtrg_nontemp_table (
   f1 int primary key,
@@ -669,7 +679,9 @@ execute function reindex_end_command();
 
 create function reindex_end_command_snap()
 returns event_trigger
-as $function$ BEGIN PERFORM 1; END $function$
+as $function$
+BEGIN PERFORM 1; END
+$function$
 language plpgsql;
 
 create event trigger "regress_reindex_end_snap"

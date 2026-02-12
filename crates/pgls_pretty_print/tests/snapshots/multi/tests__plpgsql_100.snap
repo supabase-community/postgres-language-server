@@ -1,7 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/plpgsql.sql
-snapshot_kind: text
 ---
 create table room (
   roomno char(8),
@@ -1495,7 +1494,8 @@ BEGIN
         rslt = CAST($1 AS TEXT) || ',' || recursion_test($1 - 1, $2);
     END IF;
     RETURN rslt;
-END;$function$
+END;
+$function$
 language plpgsql;
 
 select recursion_test(4, 3);
@@ -1505,7 +1505,7 @@ create table found_test_tbl (a int);
 create function test_found()
 returns boolean
 as $function$
-  declare
+declare
   begin
   insert into found_test_tbl values (1);
   if FOUND then
@@ -1537,7 +1537,8 @@ as $function$
     insert into found_test_tbl values (6);
   end if;
   return true;
-  end;$function$
+  end;
+$function$
 language plpgsql;
 
 select test_found();
@@ -1554,7 +1555,8 @@ BEGIN
 		RETURN NEXT rec;
 	END LOOP;
 	RETURN;
-END;$function$
+END;
+$function$
 language plpgsql;
 
 select * from test_table_func_rec();
@@ -1569,7 +1571,8 @@ BEGIN
 		RETURN NEXT row;
 	END LOOP;
 	RETURN;
-END;$function$
+END;
+$function$
 language plpgsql;
 
 select * from test_table_func_row();
@@ -1584,7 +1587,8 @@ BEGIN
 		RETURN NEXT i + 1;
 	END LOOP;
 	RETURN;
-END;$function$
+END;
+$function$
 language plpgsql;
 
 select * from test_ret_set_scalar(1, 10);
@@ -1605,7 +1609,8 @@ BEGIN
 		RETURN NEXT retval;
 	END IF;
 	RETURN;
-END;$function$
+END;
+$function$
 language plpgsql;
 
 select * from test_ret_set_rec_dyn(1500) as (a int, b int, c int);
@@ -1625,7 +1630,8 @@ BEGIN
 		SELECT INTO retval 50, 5::numeric, 'xxx'::text;
 		RETURN retval;
 	END IF;
-END;$function$
+END;
+$function$
 language plpgsql;
 
 select * from test_ret_rec_dyn(1500) as (a int, b int, c int);
@@ -1637,7 +1643,8 @@ returns anyelement
 as $function$
 begin
   return x + 1;
-end$function$
+end
+$function$
 language plpgsql;
 
 select f1(42) as int, f1(4.5) as num;
@@ -1651,7 +1658,8 @@ returns anyarray
 as $function$
 begin
   return array[x + 1, x + 2];
-end$function$
+end
+$function$
 language plpgsql;
 
 select f1(42) as int, f1(4.5) as num;
@@ -1663,7 +1671,8 @@ returns anyelement
 as $function$
 begin
   return x[1];
-end$function$
+end
+$function$
 language plpgsql;
 
 select f1(array[2, 4]) as int, f1(array[4.5, 7.7]) as num;
@@ -1677,7 +1686,8 @@ returns anyarray
 as $function$
 begin
   return x;
-end$function$
+end
+$function$
 language plpgsql;
 
 select f1(array[2, 4]) as int, f1(array[4.5, 7.7]) as num;
@@ -1691,7 +1701,8 @@ returns anyrange
 as $function$
 begin
   return array[x + 1, x + 2];
-end$function$
+end
+$function$
 language plpgsql;
 
 create function f1(x anyrange)
@@ -1699,7 +1710,8 @@ returns anyarray
 as $function$
 begin
   return array[lower(x), upper(x)];
-end$function$
+end
+$function$
 language plpgsql;
 
 select f1(int4range(42, 49)) as int, f1(float8range(4.5, 7.8)) as num;
@@ -1711,7 +1723,8 @@ returns anycompatiblearray
 as $function$
 begin
   return array[x, y];
-end$function$
+end
+$function$
 language plpgsql;
 
 select f1(2, 4) as int, f1(2, 4.5) as num;
@@ -1723,7 +1736,8 @@ returns anycompatiblearray
 as $function$
 begin
   return array[lower(x), upper(x), y, z];
-end$function$
+end
+$function$
 language plpgsql;
 
 select
@@ -1741,7 +1755,8 @@ returns anycompatiblerange
 as $function$
 begin
   return array[x + 1, x + 2];
-end$function$
+end
+$function$
 language plpgsql;
 
 create function f1(x anycompatiblerange, y anycompatiblearray)
@@ -1749,7 +1764,8 @@ returns anycompatiblerange
 as $function$
 begin
   return x;
-end$function$
+end
+$function$
 language plpgsql;
 
 select f1(int4range(42, 49), array[11]) as int, f1(float8range(4.5, 7.8), array[7]) as num;
@@ -1769,7 +1785,8 @@ as $function$
 begin
   x := a || b;
   y := array[c, d];
-end$function$
+end
+$function$
 language plpgsql;
 
 select x, pg_typeof(x), y, pg_typeof(y) from f1(11, array[1, 2], 42, 34.5);
@@ -1787,7 +1804,8 @@ returns int
 as $function$
 begin
   return i+1;
-end$function$
+end
+$function$
 language plpgsql;
 
 create function f1(in i int, out j int)
@@ -1795,7 +1813,8 @@ as $function$
 begin
   j := i+1;
   return;
-end$function$
+end
+$function$
 language plpgsql;
 
 select f1(42);
@@ -1806,7 +1825,8 @@ create or replace function f1(inout i int)
 as $function$
 begin
   i := i+1;
-end$function$
+end
+$function$
 language plpgsql;
 
 select f1(42);
@@ -1824,7 +1844,8 @@ begin
   j := i+2;
   return next;
   return;
-end$function$
+end
+$function$
 language plpgsql;
 
 select * from f1(42);
@@ -1837,7 +1858,8 @@ begin
   j := i;
   j := j+1;
   k := 'foo';
-end$function$
+end
+$function$
 language plpgsql;
 
 select f1(42);
@@ -1856,7 +1878,8 @@ begin
   j := j+1;
   k := 'foot';
   return next;
-end$function$
+end
+$function$
 language plpgsql;
 
 select * from f1(42);
@@ -1869,7 +1892,8 @@ begin
   j := i;
   k := array[j,j];
   return;
-end$function$
+end
+$function$
 language plpgsql;
 
 select * from duplic(42);
@@ -1884,7 +1908,8 @@ begin
   j := lower(i);
   k := array[lower(i),upper(i)];
   return;
-end$function$
+end
+$function$
 language plpgsql;
 
 select * from duplic(int4range(42, 49));
@@ -1908,7 +1933,8 @@ BEGIN
 	ELSE
 		RETURN FALSE;
 	END IF;
-END;$function$
+END;
+$function$
 language plpgsql;
 
 create function perform_test_func()
@@ -1932,7 +1958,8 @@ BEGIN
 	END IF;
 
 	RETURN;
-END;$function$
+END;
+$function$
 language plpgsql;
 
 select perform_test_func();
@@ -1954,7 +1981,8 @@ begin
   select into x id from users where login = a_login;
   if found then return x; end if;
   return 0;
-end$function$
+end
+$function$
 language plpgsql
 stable;
 
@@ -1979,7 +2007,8 @@ begin
     RETURN -2;  -- error code for insertion failure
   END IF;
   RETURN my_id_user;
-end$function$
+end
+$function$
 language plpgsql;
 
 select sp_add_user('user1');
@@ -2215,7 +2244,8 @@ declare
     select * from tenk1 where thousand = p1 and tenthous = p2;
 begin
   open c1 (p2 := 77, p1 := 42/0);
-end $function$
+end
+$function$
 language plpgsql;
 
 select namedparmcursor_test7();
@@ -2232,7 +2262,8 @@ begin
   , 42);
   fetch c1 into n;
   return n;
-end $function$
+end
+$function$
 language plpgsql;
 
 select namedparmcursor_test8();
@@ -2251,7 +2282,8 @@ begin
   open c1 (p1 := p1, p2 => p2, debug => 2);
   fetch c1 into n;
   return n;
-end $function$
+end
+$function$
 language plpgsql;
 
 select namedparmcursor_test9(6);
@@ -2322,7 +2354,8 @@ begin
     Johnny Yuma;
     a := 10;
     return a;
-end$function$
+end
+$function$
 language plpgsql;
 
 create function bad_sql2()
@@ -2334,7 +2367,8 @@ begin
         raise notice 'in loop';
     end loop;
     return 5;
-end;$function$
+end;
+$function$
 language plpgsql;
 
 create function missing_return_expr()
@@ -2342,7 +2376,8 @@ returns int
 as $function$
 begin
     return ;
-end;$function$
+end;
+$function$
 language plpgsql;
 
 create function void_return_expr()
@@ -2350,7 +2385,8 @@ returns void
 as $function$
 begin
     return 5;
-end;$function$
+end;
+$function$
 language plpgsql;
 
 create function void_return_expr()
@@ -2358,7 +2394,8 @@ returns void
 as $function$
 begin
     perform 2+2;
-end;$function$
+end;
+$function$
 language plpgsql;
 
 select void_return_expr();
@@ -2368,7 +2405,8 @@ returns int
 as $function$
 begin
     perform 2+2;
-end;$function$
+end;
+$function$
 language plpgsql;
 
 select missing_return_expr();
@@ -2404,7 +2442,8 @@ begin
     raise notice '% % %', i, j, k;
     execute 'select 1,2' into _v;
     return _v;
-end; $function$
+end;
+$function$
 language plpgsql;
 
 select execute_into_test('eifoo');
@@ -2418,7 +2457,8 @@ returns void
 as $function$
 begin
     raise notice '% %', sqlstate, sqlerrm;
-end; $function$
+end;
+$function$
 language plpgsql;
 
 select excpt_test1();
@@ -2432,7 +2472,8 @@ begin
             raise notice '% %', sqlstate, sqlerrm;
         end;
     end;
-end; $function$
+end;
+$function$
 language plpgsql;
 
 select excpt_test2();
@@ -2457,7 +2498,8 @@ begin
 	    end;
 	    raise notice '% %', sqlstate, sqlerrm;
     end;
-end; $function$
+end;
+$function$
 language plpgsql;
 
 select excpt_test3();
@@ -2468,7 +2510,8 @@ as $function$
 begin
 	begin perform 1/0;
 	exception when others then return sqlerrm; end;
-end; $function$
+end;
+$function$
 language plpgsql;
 
 select excpt_test4();
@@ -2491,7 +2534,8 @@ declare
 begin
     i := 2;
     raise notice '%; %; %; %; %; %', a, a[i], c, (select c || 'abc'), row(10,'aaa',NULL,30), NULL;
-end;$function$
+end;
+$function$
 language plpgsql;
 
 select raise_exprs();
@@ -2507,7 +2551,8 @@ declare
 begin
   select into x,y unique1/p1, unique1/$1 from tenk1 group by unique1/p1;
   return x = y;
-end$function$
+end
+$function$
 language plpgsql;
 
 select multi_datum_use(42);
@@ -2527,7 +2572,8 @@ begin
   -- should work
   insert into foo values(5,6) returning * into x;
   raise notice 'x.f1 = %, x.f2 = %', x.f1, x.f2;
-end$function$
+end
+$function$
 language plpgsql;
 
 select stricttest();
@@ -2540,7 +2586,8 @@ begin
   -- should fail due to implicit strict
   insert into foo values(7,8),(9,10) returning * into x;
   raise notice 'x.f1 = %, x.f2 = %', x.f1, x.f2;
-end$function$
+end
+$function$
 language plpgsql;
 
 select stricttest();
@@ -2553,7 +2600,8 @@ begin
   -- should work
   execute 'insert into foo values(5,6) returning *' into x;
   raise notice 'x.f1 = %, x.f2 = %', x.f1, x.f2;
-end$function$
+end
+$function$
 language plpgsql;
 
 select stricttest();
@@ -2566,7 +2614,8 @@ begin
   -- this should work since EXECUTE isn't as picky
   execute 'insert into foo values(7,8),(9,10) returning *' into x;
   raise notice 'x.f1 = %, x.f2 = %', x.f1, x.f2;
-end$function$
+end
+$function$
 language plpgsql;
 
 select stricttest();
@@ -2581,7 +2630,8 @@ begin
   -- should work
   select * from foo where f1 = 3 into strict x;
   raise notice 'x.f1 = %, x.f2 = %', x.f1, x.f2;
-end$function$
+end
+$function$
 language plpgsql;
 
 select stricttest();
@@ -2594,7 +2644,8 @@ begin
   -- should fail, no rows
   select * from foo where f1 = 0 into strict x;
   raise notice 'x.f1 = %, x.f2 = %', x.f1, x.f2;
-end$function$
+end
+$function$
 language plpgsql;
 
 select stricttest();
@@ -2607,7 +2658,8 @@ begin
   -- should fail, too many rows
   select * from foo where f1 > 3 into strict x;
   raise notice 'x.f1 = %, x.f2 = %', x.f1, x.f2;
-end$function$
+end
+$function$
 language plpgsql;
 
 select stricttest();
@@ -2620,7 +2672,8 @@ begin
   -- should work
   execute 'select * from foo where f1 = 3' into strict x;
   raise notice 'x.f1 = %, x.f2 = %', x.f1, x.f2;
-end$function$
+end
+$function$
 language plpgsql;
 
 select stricttest();
@@ -2633,7 +2686,8 @@ begin
   -- should fail, no rows
   execute 'select * from foo where f1 = 0' into strict x;
   raise notice 'x.f1 = %, x.f2 = %', x.f1, x.f2;
-end$function$
+end
+$function$
 language plpgsql;
 
 select stricttest();
@@ -2646,7 +2700,8 @@ begin
   -- should fail, too many rows
   execute 'select * from foo where f1 > 3' into strict x;
   raise notice 'x.f1 = %, x.f2 = %', x.f1, x.f2;
-end$function$
+end
+$function$
 language plpgsql;
 
 select stricttest();
@@ -2666,7 +2721,8 @@ begin
   -- no rows
   select * from foo where f1 = p1 and f1::text = p3 into strict x;
   raise notice 'x.f1 = %, x.f2 = %', x.f1, x.f2;
-end$function$
+end
+$function$
 language plpgsql;
 
 select stricttest();
@@ -2682,7 +2738,8 @@ begin
   -- no rows
   select * from foo where f1 = p1 and f1::text = p3 into strict x;
   raise notice 'x.f1 = %, x.f2 = %', x.f1, x.f2;
-end$function$
+end
+$function$
 language plpgsql;
 
 select stricttest();
@@ -2698,7 +2755,8 @@ begin
   -- too many rows
   select * from foo where f1 > p1 or f1::text = p3  into strict x;
   raise notice 'x.f1 = %, x.f2 = %', x.f1, x.f2;
-end$function$
+end
+$function$
 language plpgsql;
 
 select stricttest();
@@ -2711,7 +2769,8 @@ begin
   -- too many rows, no params
   select * from foo where f1 > 3 into strict x;
   raise notice 'x.f1 = %, x.f2 = %', x.f1, x.f2;
-end$function$
+end
+$function$
 language plpgsql;
 
 select stricttest();
@@ -2724,7 +2783,8 @@ begin
   -- no rows
   execute 'select * from foo where f1 = $1 or f1::text = $2' using 0, 'foo' into strict x;
   raise notice 'x.f1 = %, x.f2 = %', x.f1, x.f2;
-end$function$
+end
+$function$
 language plpgsql;
 
 select stricttest();
@@ -2737,7 +2797,8 @@ begin
   -- too many rows
   execute 'select * from foo where f1 > $1' using 1 into strict x;
   raise notice 'x.f1 = %, x.f2 = %', x.f1, x.f2;
-end$function$
+end
+$function$
 language plpgsql;
 
 select stricttest();
@@ -2750,7 +2811,8 @@ begin
   -- too many rows, no parameters
   execute 'select * from foo where f1 > 3' into strict x;
   raise notice 'x.f1 = %, x.f2 = %', x.f1, x.f2;
-end$function$
+end
+$function$
 language plpgsql;
 
 select stricttest();
@@ -2768,7 +2830,8 @@ begin
   -- too many rows
   select * from foo where f1 > p1 or f1::text = p3  into strict x;
   raise notice 'x.f1 = %, x.f2 = %', x.f1, x.f2;
-end$function$
+end
+$function$
 language plpgsql;
 
 select stricttest();
@@ -2788,7 +2851,8 @@ begin
   -- too many rows
   select * from foo where f1 > p1 or f1::text = p3  into strict x;
   raise notice 'x.f1 = %, x.f2 = %', x.f1, x.f2;
-end$function$
+end
+$function$
 language plpgsql;
 
 select stricttest();
@@ -2849,7 +2913,8 @@ begin
 	f1 int;
 	begin
 	end;
-end$function$
+end
+$function$
 language plpgsql;
 
 drop function shadowtest();
@@ -2864,7 +2929,8 @@ begin
 	in1 int;
 	begin
 	end;
-end$function$
+end
+$function$
 language plpgsql;
 
 drop function shadowtest(int);
@@ -2876,7 +2942,8 @@ declare
 f1 int;
 c1 cursor (f1 int) for select 1;
 begin
-end$function$
+end
+$function$
 language plpgsql;
 
 drop function shadowtest();
@@ -2886,7 +2953,8 @@ set plpgsql.extra_errors = shadowed_variables;
 create or replace function shadowtest(f1 int)
 returns boolean
 as $function$
-declare f1 int; begin return 1; end $function$
+declare f1 int; begin return 1; end
+$function$
 language plpgsql;
 
 select shadowtest(1);
@@ -2898,14 +2966,16 @@ reset plpgsql.extra_warnings;
 create or replace function shadowtest(f1 int)
 returns boolean
 as $function$
-declare f1 int; begin return 1; end $function$
+declare f1 int; begin return 1; end
+$function$
 language plpgsql;
 
 select shadowtest(1);
 
 set plpgsql.extra_warnings = too_many_rows;
 
-do $do$
+do
+$do$
 declare x int;
 begin
   select v from generate_series(1,2) g(v) into x;
@@ -2914,7 +2984,8 @@ $do$;
 
 set plpgsql.extra_errors = too_many_rows;
 
-do $do$
+do
+$do$
 declare x int;
 begin
   select v from generate_series(1,2) g(v) into x;
@@ -2987,7 +3058,8 @@ begin
 end;
 $do$;
 
-do $do$
+do
+$do$
 declare
   t test_01;
 begin
@@ -3346,7 +3418,8 @@ begin
     end;
   end loop;
   raise notice 'cnt = %', cnt;
-end $do$;
+end
+$do$;
 
 create or replace function forc_bad()
 returns void
@@ -4131,7 +4204,9 @@ language plpgsql;
 
 create function sql_recurse(double precision)
 returns double precision
-as $function$ select recurse($1) limit 1; $function$
+as $function$
+select recurse($1) limit 1;
+$function$
 language sql;
 
 select recurse(10);
@@ -4139,7 +4214,9 @@ select recurse(10);
 create function error1(text)
 returns text
 language sql
-as $function$ SELECT relname::text FROM pg_class c WHERE c.oid = $1::regclass $function$;
+as $function$
+SELECT relname::text FROM pg_class c WHERE c.oid = $1::regclass
+$function$;
 
 create function error2(p_name_table text)
 returns text
@@ -4147,7 +4224,8 @@ language plpgsql
 as $function$
 begin
   return error1(p_name_table);
-end$function$;
+end
+$function$;
 
 begin;
 
@@ -4183,7 +4261,8 @@ returns date
 as $function$
 begin
   return $1;
-end$function$
+end
+$function$
 language plpgsql;
 
 select cast_invoker(20150717);
@@ -4216,9 +4295,15 @@ drop function sql_to_date(int) cascade;
 
 begin;
 
-do $do$ declare x text[]; begin x := '{1.23, 4.56}'::numeric[]; end $do$;
+do
+$do$
+declare x text[]; begin x := '{1.23, 4.56}'::numeric[]; end
+$do$;
 
-do $do$ declare x text[]; begin x := '{1.23, 4.56}'::numeric[]; end $do$;
+do
+$do$
+declare x text[]; begin x := '{1.23, 4.56}'::numeric[]; end
+$do$;
 
 commit;
 
@@ -4299,9 +4384,14 @@ BEGIN
     LOOP
         RAISE NOTICE '%, %', r.roomno, r.comment;
     END LOOP;
-END$do$;
+END
+$do$;
 
-do language plpgsql $do$begin return 1; end$do$;
+do
+language plpgsql
+$do$
+begin return 1; end
+$do$;
 
 do
 $do$
@@ -4311,7 +4401,8 @@ BEGIN
     LOOP
         RAISE NOTICE '%, %', r.roomno, r.comment;
     END LOOP;
-END$do$;
+END
+$do$;
 
 do
 $do$
@@ -4333,7 +4424,8 @@ begin
 end;
 $do$;
 
-do $do$
+do
+$do$
 declare x int := x + 1;  -- error
 begin
   raise notice 'x = %', x;
@@ -4626,7 +4718,8 @@ begin
   r := row(12, '{foo,bar,baz}')::rtype;
   r.ar[2] := 'replace';
   return r.ar;
-end$function$;
+end
+$function$;
 
 select arrayassign1();
 
@@ -4647,7 +4740,8 @@ begin
   res := array[x1, x2];
   res[2] := x3;
   return res;
-end$function$;
+end
+$function$;
 
 select testoa(1, 2, 3);
 
@@ -4665,7 +4759,7 @@ create function returns_rw_array(int)
 returns int[]
 language plpgsql
 as $function$
-  declare r int[];
+declare r int[];
   begin r := array[$1, $1]; return r; end;
 $function$
 stable;
@@ -4674,7 +4768,7 @@ create function consumes_rw_array(int[])
 returns int
 language plpgsql
 as $function$
-  begin return $1[1]; end;
+begin return $1[1]; end;
 $function$
 stable;
 
@@ -4702,12 +4796,14 @@ select consumes_rw_array(a), a from (values (returns_rw_array(1)), (returns_rw_a
 
 select consumes_rw_array(a), a from (values (returns_rw_array(1)), (returns_rw_array(2))) as v (a);
 
-do $do$
+do
+$do$
 declare a int[] := array[1,2];
 begin
   a := a || 3;
   raise notice 'a = %', a;
-end$do$;
+end
+$do$;
 
 create function inner_func(int)
 returns int
@@ -4851,19 +4947,22 @@ begin
 end;
 $do$;
 
-do $do$
+do
+$do$
 begin
   assert 1=1;  -- should succeed
 end;
 $do$;
 
-do $do$
+do
+$do$
 begin
   assert 1=0;  -- should fail
 end;
 $do$;
 
-do $do$
+do
+$do$
 begin
   assert NULL;  -- should fail
 end;
@@ -4871,7 +4970,8 @@ $do$;
 
 set plpgsql.check_asserts = off;
 
-do $do$
+do
+$do$
 begin
   assert 1=0;  -- won't be tested
 end;
@@ -4906,14 +5006,16 @@ immutable;
 
 create domain plpgsql_domain as int check (plpgsql_domain_check(value));
 
-do $do$
+do
+$do$
 declare v_test plpgsql_domain;
 begin
   v_test := 1;
 end;
 $do$;
 
-do $do$
+do
+$do$
 declare v_test plpgsql_domain := 1;
 begin
   v_test := 0;  -- fail
@@ -5049,7 +5151,7 @@ create function transition_table_level1_ri_parent_del_func()
 returns trigger
 language plpgsql
 as $function$
-  DECLARE n bigint;
+DECLARE n bigint;
   BEGIN
     PERFORM FROM p JOIN transition_table_level2 c ON c.parent_no = p.level1_no;
     IF FOUND THEN
@@ -5070,7 +5172,7 @@ create function transition_table_level1_ri_parent_upd_func()
 returns trigger
 language plpgsql
 as $function$
-  DECLARE
+DECLARE
     x int;
   BEGIN
     WITH p AS (SELECT level1_no, sum(delta) cnt
@@ -5101,7 +5203,7 @@ create function transition_table_level2_ri_child_insupd_func()
 returns trigger
 language plpgsql
 as $function$
-  BEGIN
+BEGIN
     PERFORM FROM i
       LEFT JOIN transition_table_level1 p
         ON p.level1_no IS NOT NULL AND p.level1_no = i.parent_no
@@ -5166,7 +5268,7 @@ create function transition_table_level2_bad_usage_func()
 returns trigger
 language plpgsql
 as $function$
-  BEGIN
+BEGIN
     INSERT INTO dx VALUES (1000000, 1000000, 'x');
     RETURN NULL;
   END;
@@ -5265,7 +5367,8 @@ BEGIN
       (SELECT COUNT(*)
        FROM (SELECT * FROM new_test UNION ALL SELECT * FROM new_test) ss);
     RETURN NULL;
-END$function$;
+END
+$function$;
 
 create trigger my_trigger
 after update
@@ -5305,7 +5408,8 @@ BEGIN
     a_val := $1;
     SELECT * INTO result FROM partitioned_table WHERE a = a_val;
     RETURN result;
-END; $function$
+END;
+$function$
 language plpgsql;
 
 select * from get_from_partitioned_table(1) as t;
@@ -5322,7 +5426,8 @@ BEGIN
         RETURN NEXT a_val;
     END LOOP;
     RETURN;
-END; $function$
+END;
+$function$
 language plpgsql;
 
 select * from list_partitioned_table() as t;
@@ -5333,5 +5438,6 @@ as $function$
 BEGIN
   GET DIAGNOSTICS x = ROW_COUNT;
   RETURN;
-END; $function$
+END;
+$function$
 language plpgsql;

@@ -1,7 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/numerology.sql
-snapshot_kind: text
 ---
 select 37;
 
@@ -87,7 +86,8 @@ BEGIN
   FOR i IN 1_001..1_003 LOOP
     RAISE NOTICE 'i = %', i;
   END LOOP;
-END $do$;
+END
+$do$;
 
 select _100;
 

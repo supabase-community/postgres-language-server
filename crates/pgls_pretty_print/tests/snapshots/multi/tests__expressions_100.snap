@@ -1,7 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/expressions.sql
-snapshot_kind: text
 ---
 select cast(date(NOW()) as text) = cast(current_date as text);
 
@@ -164,21 +163,27 @@ returns myint
 strict
 immutable
 language internal
-as $function$int4in$function$;
+as $function$
+int4in
+$function$;
 
 create function myintout(myint)
 returns cstring
 strict
 immutable
 language internal
-as $function$int4out$function$;
+as $function$
+int4out
+$function$;
 
 create function myinthash(myint)
 returns int
 strict
 immutable
 language internal
-as $function$hashint4$function$;
+as $function$
+hashint4
+$function$;
 
 create type myint (input = myintin, output = myintout, like = int);
 

@@ -1,7 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/foreign_data.sql
-snapshot_kind: text
 ---
 create function test_fdw_handler()
 returns fdw_handler
@@ -84,7 +83,9 @@ create foreign data wrapper foo validator postgresql_fdw_validator ;
 create function invalid_fdw_handler()
 returns int
 language sql
-as $function$SELECT 1;$function$;
+as $function$
+SELECT 1;
+$function$;
 
 create foreign data wrapper test_fdw handler invalid_fdw_handler ;
 
@@ -1172,7 +1173,7 @@ drop server s10 cascade;
 create function dummy_trigger()
 returns trigger
 as $function$
-  BEGIN
+BEGIN
     RETURN NULL;
   END
 $function$

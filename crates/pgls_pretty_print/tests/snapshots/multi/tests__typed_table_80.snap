@@ -1,7 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/typed_table.sql
-snapshot_kind: text
 ---
 create table ttable1 of nothing;
 
@@ -17,7 +16,7 @@ create function get_all_persons()
 returns setof person_type
 language sql
 as $function$
-    SELECT * FROM persons;
+SELECT * FROM persons;
 $function$;
 
 select * from get_all_persons();
@@ -85,7 +84,9 @@ insert into persons values (1, 'test');
 create function namelen(person_type)
 returns int
 language sql
-as $function$ SELECT length($1.name) $function$;
+as $function$
+SELECT length($1.name)
+$function$;
 
 select id, namelen(persons) from persons;
 

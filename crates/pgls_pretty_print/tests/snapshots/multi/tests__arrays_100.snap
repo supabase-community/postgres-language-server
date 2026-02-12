@@ -1,7 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/arrays.sql
-snapshot_kind: text
 ---
 create table arrtest (
   a smallint[],
@@ -678,11 +677,13 @@ insert into arr_pk_tbl (pk, f1[0:2147483647]) values (2, '{}');
 insert into arr_pk_tbl (pk, f1[-2147483648:2147483647]) values (2, '{}');
 
 do
-$do$ declare a int[];
+$do$
+declare a int[];
 begin
   a := '[-2147483648:-2147483647]={1,2}'::int[];
   a[2147483647] := 42;
-end $do$;
+end
+$do$;
 
 select 'foo' ~~ any (array['%a', '%o']);
 

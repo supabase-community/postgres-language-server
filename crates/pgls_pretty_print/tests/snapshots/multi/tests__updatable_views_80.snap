@@ -1,7 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/updatable_views.sql
-snapshot_kind: text
 ---
 set extra_float_digits = 0;
 
@@ -905,7 +904,9 @@ as select b as bb, a as aa from base_tbl;
 
 create function rw_view1_aa(x rw_view1)
 returns int
-as $function$ SELECT x.aa $function$
+as $function$
+SELECT x.aa
+$function$
 language sql;
 
 update rw_view1 as v

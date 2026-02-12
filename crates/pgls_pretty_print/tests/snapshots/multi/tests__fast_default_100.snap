@@ -1,7 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/fast_default.sql
-snapshot_kind: text
 ---
 set search_path to fast_default;
 
@@ -45,7 +44,6 @@ create function log_rewrite()
 returns event_trigger
 language plpgsql
 as $function$
-
 declare
    this_schema text;
 begin
@@ -230,7 +228,8 @@ BEGIN
     i := i + 1;
   END LOOP;
   RETURN res;
-END; $function$
+END;
+$function$
 language plpgsql
 stable;
 
@@ -396,7 +395,9 @@ select comp();
 create function foolme(timestamp with time zone default clock_timestamp())
 returns timestamp with time zone
 immutable
-as $function$select $1$function$
+as $function$
+select $1
+$function$
 language sql;
 
 alter table t
@@ -521,7 +522,6 @@ create function test_trigger()
 returns trigger
 language plpgsql
 as $function$
-
 begin
     raise notice 'old tuple: %', to_json(OLD)::text;
     if TG_OP = 'DELETE'
@@ -531,7 +531,6 @@ begin
        return NEW;
     end if;
 end;
-
 $function$;
 
 create table t (

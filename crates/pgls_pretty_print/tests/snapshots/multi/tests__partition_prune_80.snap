@@ -1,7 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/partition_prune.sql
-snapshot_kind: text
 ---
 create function explain_analyze(query text)
 returns setof text
@@ -1040,7 +1039,9 @@ begin;
 
 create function list_part_fn(int)
 returns int
-as $function$ begin return $1; end;$function$
+as $function$
+begin return $1; end;
+$function$
 language plpgsql
 stable;
 
@@ -2389,7 +2390,9 @@ deallocate update_part_abc_view;
 
 create function stable_one()
 returns int
-as $function$ begin return 1; end; $function$
+as $function$
+begin return 1; end;
+$function$
 language plpgsql
 stable;
 

@@ -1,7 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/domain.sql
-snapshot_kind: text
 ---
 create domain domaindroptest as int;
 
@@ -226,7 +225,9 @@ do instead
 
 create function makedcomp(r double precision, i double precision)
 returns dcomptype
-as $function$select row(r, i)$function$
+as $function$
+select row(r, i)
+$function$
 language sql;
 
 select makedcomp(1, 2);
@@ -818,7 +819,8 @@ as $function$
 declare v pos_int;
 begin
     return p1;
-end$function$
+end
+$function$
 language plpgsql;
 
 select doubledecrement(3);
@@ -829,7 +831,8 @@ as $function$
 declare v pos_int := 0;
 begin
     return p1;
-end$function$
+end
+$function$
 language plpgsql;
 
 select doubledecrement(3);
@@ -841,7 +844,8 @@ declare v pos_int := 1;
 begin
     v := p1 - 1;
     return v - 1;
-end$function$
+end
+$function$
 language plpgsql;
 
 select doubledecrement(null);
@@ -940,7 +944,8 @@ declare
 begin
   x[1] := $1;
   return x[1];
-end$function$
+end
+$function$
 language plpgsql;
 
 select array_elem_check(121.00);
@@ -957,7 +962,8 @@ declare
 begin
   x[1] := $1;
   return x[1];
-end$function$
+end
+$function$
 language plpgsql;
 
 select array_elem_check(121.00);
@@ -974,7 +980,8 @@ declare
 begin
   x[1] := $1;
   return x[1];
-end$function$
+end
+$function$
 language plpgsql;
 
 select array_elem_check(121.00);
@@ -1009,7 +1016,8 @@ declare
 begin
   x[2] := $1;
   return x[2];
-end$function$
+end
+$function$
 language plpgsql;
 
 select array_elem_check(3);
@@ -1071,7 +1079,9 @@ drop domain di;
 create function sql_is_distinct_from(anyelement, anyelement)
 returns boolean
 language sql
-as $function$select $1 is distinct from $2 limit 1$function$;
+as $function$
+select $1 is distinct from $2 limit 1
+$function$;
 
 create domain inotnull as int check (sql_is_distinct_from(value, null));
 
