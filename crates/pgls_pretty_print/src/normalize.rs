@@ -686,6 +686,28 @@ fn normalize_a_indirection(node: &mut NodeEnum) {
                 }
             }
         }
+        NodeEnum::CreateStmt(stmt) => {
+            // Recurse into table elements (ColumnDef, Constraint, etc.)
+            for elt in &mut stmt.table_elts {
+                if let Some(ref mut n) = elt.node {
+                    normalize_a_indirection(n);
+                }
+            }
+        }
+        NodeEnum::ColumnDef(cd) => {
+            // Recurse into column constraints
+            for constraint in &mut cd.constraints {
+                if let Some(ref mut n) = constraint.node {
+                    normalize_a_indirection(n);
+                }
+            }
+            // Recurse into default value expression
+            if let Some(ref mut raw) = cd.raw_default
+                && let Some(ref mut n) = raw.node
+            {
+                normalize_a_indirection(n);
+            }
+        }
         NodeEnum::RuleStmt(stmt) => {
             for action in &mut stmt.actions {
                 if let Some(ref mut n) = action.node {

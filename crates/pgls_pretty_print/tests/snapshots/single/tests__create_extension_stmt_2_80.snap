@@ -1,0 +1,5 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/single/create_extension_stmt_2.sql
+---
+create extension if not exists pg_stat_statements with schema extensions;

@@ -195,7 +195,14 @@ pub(super) fn emit_comment_stmt(e: &mut EventEmitter, n: &CommentStmt) {
             e.space();
             super::emit_node(object, e);
         } else {
-            super::emit_node(object, e);
+            // For most object types (TABLE, INDEX, SEQUENCE, VIEW, etc.), the object
+            // is a List of String nodes representing a schema-qualified name that must
+            // be dot-separated (e.g., public.my_table), not comma-separated.
+            if let Some(pgls_query::NodeEnum::List(list)) = object.node.as_ref() {
+                emit_dot_separated_list(e, &list.items);
+            } else {
+                super::emit_node(object, e);
+            }
         }
     }
 
