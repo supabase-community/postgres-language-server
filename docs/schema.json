@@ -534,6 +534,13 @@
           "format": "uint16",
           "minimum": 0.0
         },
+        "skipFnBodies": {
+          "description": "If `true`, skip formatting of SQL function bodies (keep them verbatim). Default: `false`.",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
         "typeCase": {
           "description": "Data type casing (text, varchar, int): \"upper\" or \"lower\". Default: \"lower\".",
           "anyOf": [
