@@ -892,24 +892,27 @@ impl Workspace for WorkspaceServer {
         let format_candidates: Vec<_> = doc.iter(FormatStatementMapper).collect();
         let mut formatted_sql_fn_bodies = HashMap::new();
 
-        for (id, _stmt_range, _text, ast_result) in &format_candidates {
-            if !id.is_child() {
-                continue;
+        // Only format SQL function bodies if skip_fn_bodies is false
+        if !settings.formatter.skip_fn_bodies {
+            for (id, _stmt_range, _text, ast_result) in &format_candidates {
+                if !id.is_child() {
+                    continue;
+                }
+
+                let Some(parent_id) = id.parent() else {
+                    continue;
+                };
+
+                let Ok(ast) = ast_result else {
+                    continue;
+                };
+
+                let Ok(result) = pgls_pretty_print::format_statement(ast, &config) else {
+                    continue;
+                };
+
+                formatted_sql_fn_bodies.insert(parent_id, result.formatted);
             }
-
-            let Some(parent_id) = id.parent() else {
-                continue;
-            };
-
-            let Ok(ast) = ast_result else {
-                continue;
-            };
-
-            let Ok(result) = pgls_pretty_print::format_statement(ast, &config) else {
-                continue;
-            };
-
-            formatted_sql_fn_bodies.insert(parent_id, result.formatted);
         }
 
         for (id, stmt_range, text, ast_result) in format_candidates {

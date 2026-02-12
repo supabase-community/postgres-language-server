@@ -101,6 +101,9 @@ pub struct FormatConfiguration {
     /// Data type casing (text, varchar, int): "upper" or "lower". Default: "lower".
     #[partial(bpaf(long("type-case")))]
     pub type_case: KeywordCase,
+    /// If `true`, skip formatting of SQL function bodies (keep them verbatim). Default: `false`.
+    #[partial(bpaf(long("skip-fn-bodies")))]
+    pub skip_fn_bodies: bool,
     /// A list of Unix shell style patterns. The formatter will ignore files/folders that will match these patterns.
     #[partial(bpaf(hide))]
     pub ignore: StringSet,
@@ -119,6 +122,7 @@ impl Default for FormatConfiguration {
             keyword_case: KeywordCase::default(),
             constant_case: KeywordCase::default(),
             type_case: KeywordCase::default(),
+            skip_fn_bodies: false,
             ignore: Default::default(),
             include: Default::default(),
         }
