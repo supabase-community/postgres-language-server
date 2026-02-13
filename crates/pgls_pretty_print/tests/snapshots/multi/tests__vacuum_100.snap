@@ -87,16 +87,16 @@ cluster vaccluster;
 
 create function do_analyze()
 returns void
-volatile
 language sql
+volatile
 as $function$
 ANALYZE pg_am
 $function$;
 
 create function wrap_do_analyze(c int)
 returns int
-immutable
 language sql
+immutable
 as $function$
 SELECT $1 FROM public.do_analyze()
 $function$;

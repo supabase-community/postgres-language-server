@@ -1277,6 +1277,7 @@ create index "val_brin" on brin_hot using brin (val);
 
 create function wait_for_hot_stats()
 returns void
+language plpgsql
 as $function$
 DECLARE
   start_time timestamptz := clock_timestamp();
@@ -1296,8 +1297,7 @@ BEGIN
   RAISE log 'wait_for_hot_stats delayed % seconds',
     EXTRACT(epoch FROM clock_timestamp() - start_time);
 END
-$function$
-language plpgsql;
+$function$;
 
 update brin_hot set val = -3 where id = 42;
 

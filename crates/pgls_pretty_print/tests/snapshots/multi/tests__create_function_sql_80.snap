@@ -672,10 +672,10 @@ select * from sometable;
 create function voidtest5(a int)
 returns setof void
 language sql
+stable
 as $function$
 SELECT generate_series(1, a)
-$function$
-stable;
+$function$;
 
 select * from voidtest5(3);
 
@@ -729,8 +729,8 @@ from
 create function part_hashint4_error(value int, seed bigint)
 returns bigint
 language sql
-strict
 immutable
+strict
 parallel SAFE
 as $function$
 SELECT value + seed + random()::int/0

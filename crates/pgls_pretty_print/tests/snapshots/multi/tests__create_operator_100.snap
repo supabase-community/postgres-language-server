@@ -95,11 +95,11 @@ begin;
 
 create or replace function fn_op2(boolean, boolean)
 returns boolean
+language sql
+immutable
 as $function$
 SELECT NULL::BOOLEAN;
-$function$
-language sql
-immutable;
+$function$;
 
 create operator === (LEFTARG = boolean,
 RIGHTARG = boolean,
@@ -131,11 +131,11 @@ create type type_op3 as enum ('new', 'open', 'closed');
 
 create function fn_op3(type_op3, bigint)
 returns bigint
+language sql
+immutable
 as $function$
 SELECT NULL::int8;
-$function$
-language sql
-immutable;
+$function$;
 
 revoke USAGE on type type_op3 from regress_rol_op3;
 
@@ -155,11 +155,11 @@ create type type_op4 as enum ('new', 'open', 'closed');
 
 create function fn_op4(bigint, type_op4)
 returns bigint
+language sql
+immutable
 as $function$
 SELECT NULL::int8;
-$function$
-language sql
-immutable;
+$function$;
 
 revoke USAGE on type type_op4 from regress_rol_op4;
 
@@ -179,11 +179,11 @@ create type type_op5 as enum ('new', 'open', 'closed');
 
 create function fn_op5(bigint, bigint)
 returns bigint
+language sql
+immutable
 as $function$
 SELECT NULL::int8;
-$function$
-language sql
-immutable;
+$function$;
 
 revoke EXECUTE on function fn_op5(bigint, bigint) from regress_rol_op5;
 
@@ -203,11 +203,11 @@ create type type_op6 as enum ('new', 'open', 'closed');
 
 create function fn_op6(bigint, bigint)
 returns type_op6
+language sql
+immutable
 as $function$
 SELECT NULL::type_op6;
-$function$
-language sql
-immutable;
+$function$;
 
 revoke USAGE on type type_op6 from regress_rol_op6;
 

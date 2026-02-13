@@ -6,21 +6,21 @@ create type casttesttype;
 
 create function casttesttype_in(cstring)
 returns casttesttype
+language internal
+immutable
+strict
 as $function$
 textin
-$function$
-language internal
-strict
-immutable;
+$function$;
 
 create function casttesttype_out(casttesttype)
 returns cstring
+language internal
+immutable
+strict
 as $function$
 textout
-$function$
-language internal
-strict
-immutable;
+$function$;
 
 create type casttesttype (
   internallength = variable,

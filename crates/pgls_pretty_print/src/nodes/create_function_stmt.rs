@@ -90,8 +90,9 @@ pub(super) fn emit_create_function_stmt(e: &mut EventEmitter, n: &CreateFunction
         super::DollarQuoteHint::Function
     };
 
-    // Options
-    for option in &n.options {
+    // Options - sort according to Postgres's canonical order
+    let sorted_options = sort_function_options(&n.options);
+    for option in sorted_options {
         if let Some(pgls_query::NodeEnum::DefElem(def_elem)) = &option.node {
             e.line(LineType::Hard);
             format_function_option(e, def_elem, dollar_hint);
@@ -181,6 +182,53 @@ fn emit_function_parameter_list(e: &mut EventEmitter, params: &[&FunctionParamet
         }
         emit_function_parameter(e, param);
     }
+}
+
+/// Returns the canonical order for a function option.
+/// Postgres's canonical order (as seen in pg_dump output) is:
+/// 1. LANGUAGE
+/// 2. WINDOW
+/// 3. IMMUTABLE / STABLE / VOLATILE (volatility)
+/// 4. LEAKPROOF / NOT LEAKPROOF
+/// 5. STRICT / CALLED ON NULL INPUT (strict)
+/// 6. SECURITY DEFINER / SECURITY INVOKER (security)
+/// 7. PARALLEL (parallel)
+/// 8. COST (cost)
+/// 9. ROWS (rows)
+/// 10. SUPPORT (support)
+/// 11. SET options (set)
+/// 12. AS (function body)
+fn option_order(defname: &str) -> usize {
+    match defname.to_lowercase().as_str() {
+        "language" => 0,
+        "window" => 1,
+        "volatility" => 2,
+        "leakproof" => 3,
+        "strict" => 4,
+        "security" => 5,
+        "parallel" => 6,
+        "cost" => 7,
+        "rows" => 8,
+        "support" => 9,
+        "set" => 10,
+        "as" => 11,
+        _ => 100, // Unknown options go last
+    }
+}
+
+/// Sort function options according to Postgres's canonical order.
+pub(super) fn sort_function_options(
+    options: &[pgls_query::protobuf::Node],
+) -> Vec<pgls_query::protobuf::Node> {
+    let mut sorted: Vec<pgls_query::protobuf::Node> = options.to_vec();
+    sorted.sort_by_key(|node| {
+        if let Some(pgls_query::NodeEnum::DefElem(def_elem)) = &node.node {
+            option_order(&def_elem.defname)
+        } else {
+            100 // Non-DefElem nodes go last
+        }
+    });
+    sorted
 }
 
 pub(super) fn format_function_option(

@@ -354,9 +354,9 @@ reset search_path;
 
 create function test_atomic_ops()
 returns boolean
+language c
 as $function$
 regresslib
-$function$
-language c;
+$function$;
 
 select test_atomic_ops();

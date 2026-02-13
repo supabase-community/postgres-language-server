@@ -188,11 +188,11 @@ partition by LIST(a1, a2);
 
 create function retset(a int)
 returns setof int
+language sql
+immutable
 as $function$
 SELECT 1;
-$function$
-language sql
-immutable;
+$function$;
 
 create table partitioned (a int)
 partition by range((retset(a)));
@@ -216,11 +216,11 @@ partition by range((42));
 
 create function const_func()
 returns int
+language sql
+immutable
 as $function$
 SELECT 1;
-$function$
-language sql
-immutable;
+$function$;
 
 create table partitioned (a int)
 partition by range((const_func()));
@@ -247,10 +247,10 @@ partition by range(a, ('unknown'));
 
 create function immut_func(a int)
 returns int
+language sql
 as $function$
 SELECT a + random()::int;
-$function$
-language sql;
+$function$;
 
 create table partitioned (a int)
 partition by range((immut_func(a)));
@@ -277,10 +277,10 @@ partition by range(a);
 
 create function plusone(a int)
 returns int
+language sql
 as $function$
 SELECT a+1;
-$function$
-language sql;
+$function$;
 
 create table partitioned (
   a int,

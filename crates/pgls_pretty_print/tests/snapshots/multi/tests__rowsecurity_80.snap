@@ -48,8 +48,8 @@ set search_path to regress_rls_schema;
 
 create or replace function f_leak(text)
 returns boolean
-cost 0.0000001
 language plpgsql
+cost 0.0000001
 as $function$
 BEGIN RAISE NOTICE 'f_leak => %', $1; RETURN true; END
 $function$;

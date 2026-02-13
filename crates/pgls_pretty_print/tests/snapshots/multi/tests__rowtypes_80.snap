@@ -481,17 +481,17 @@ create type price_key as (id int);
 
 create function price_key_from_table(price)
 returns price_key
+language sql
 as $function$
 SELECT $1.id
-$function$
-language sql;
+$function$;
 
 create function price_key_from_input(price_input)
 returns price_key
+language sql
 as $function$
 SELECT $1.id
-$function$
-language sql;
+$function$;
 
 insert into price values (1, false, 42), (10, false, 100), (11, true, 17.99);
 
@@ -518,31 +518,31 @@ create temporary table compos (
 
 create function fcompos1(v compos)
 returns void
+language sql
 as $function$
 insert into compos values (v);  -- fail
-$function$
-language sql;
+$function$;
 
 create function fcompos1(v compos)
 returns void
+language sql
 as $function$
 insert into compos values (v.*);
-$function$
-language sql;
+$function$;
 
 create function fcompos2(v compos)
 returns void
+language sql
 as $function$
 select fcompos1(v);
-$function$
-language sql;
+$function$;
 
 create function fcompos3(v compos)
 returns void
+language sql
 as $function$
 select fcompos1(fcompos3.v.*);
-$function$
-language sql;
+$function$;
 
 select fcompos1(row(1, 'one'));
 

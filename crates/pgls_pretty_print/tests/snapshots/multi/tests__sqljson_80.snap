@@ -228,11 +228,11 @@ create type mood as enum ('happy', 'sad', 'neutral');
 
 create function mood_to_json(mood)
 returns json
+language sql
+immutable
 as $function$
 SELECT to_json($1::text);
-$function$
-language sql
-immutable;
+$function$;
 
 create cast (mood as json) with function mood_to_json(mood) as implicit;
 

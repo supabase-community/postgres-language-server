@@ -304,10 +304,10 @@ alter publication testpub5 set table testpub_rf_tbl3 where ( e < AVG(e));
 
 create function testpub_rf_func1(int, int)
 returns boolean
+language sql
 as $function$
 SELECT hashint4($1) > $2
-$function$
-language sql;
+$function$;
 
 create operator =#> (PROCEDURE = testpub_rf_func1,
 LEFTARG = int,
@@ -317,11 +317,11 @@ create publication testpub6 for table testpub_rf_tbl3 where (e =#> 27);
 
 create function testpub_rf_func2()
 returns int
+language plpgsql
 immutable
 as $function$
 BEGIN RETURN 123; END;
-$function$
-language plpgsql;
+$function$;
 
 alter publication testpub5 add
 table testpub_rf_tbl1

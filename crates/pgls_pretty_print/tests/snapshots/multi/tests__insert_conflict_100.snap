@@ -1,7 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/insert_conflict.sql
-snapshot_kind: text
 ---
 create table insertconflicttest (
   key int,
@@ -1213,6 +1212,7 @@ select * from parted_conflict order by a;
 
 create or replace function parted_conflict_update_func()
 returns trigger
+language plpgsql
 as $function$
 declare
     r record;
@@ -1222,8 +1222,7 @@ begin
  end loop;
  return new;
 end;
-$function$
-language plpgsql;
+$function$;
 
 create trigger parted_conflict_update
 after update

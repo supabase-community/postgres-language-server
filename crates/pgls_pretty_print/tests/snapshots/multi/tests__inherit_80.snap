@@ -199,10 +199,10 @@ create index on some_tab_child using btree (f1, f2);
 
 create function some_tab_stmt_trig_func()
 returns trigger
+language plpgsql
 as $function$
 begin raise notice 'updating some_tab'; return NULL; end;
-$function$
-language plpgsql;
+$function$;
 
 create trigger some_tab_stmt_trig
 before update
@@ -551,10 +551,10 @@ create table p2 (f1 text);
 
 create function p2text(p2)
 returns text
+language sql
 as $function$
 select $1.f1
-$function$
-language sql;
+$function$;
 
 create table c1 (f3 int)
 inherits (p1,

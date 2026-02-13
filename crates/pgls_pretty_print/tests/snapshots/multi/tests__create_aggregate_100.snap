@@ -32,12 +32,12 @@ comment on aggregate newcnt("any") is 'an agg(any) comment';
 
 create function sum3(bigint, bigint, bigint)
 returns bigint
+language sql
+immutable
+strict
 as $function$
 select $1 + $2 + $3
-$function$
-language sql
-strict
-immutable;
+$function$;
 
 create aggregate sum2 (bigint, bigint) (sfunc = sum3, stype = bigint, initcond = '0');
 
@@ -45,20 +45,20 @@ create type aggtype as (a int, b int, c text);
 
 create function aggf_trans(aggtype[], int, int, text)
 returns aggtype[]
+language sql
+immutable
+strict
 as $function$
 select array_append($1,ROW($2,$3,$4)::aggtype)
-$function$
-language sql
-strict
-immutable;
+$function$;
 
 create function aggfns_trans(aggtype[], int, int, text)
 returns aggtype[]
+language sql
+immutable
 as $function$
 select array_append($1,ROW($2,$3,$4)::aggtype)
-$function$
-language sql
-immutable;
+$function$;
 
 create aggregate aggfstr (int, int, text) (sfunc = aggf_trans, stype = aggtype[], initcond = '{}');
 
@@ -275,12 +275,12 @@ create or replace aggregate myavg (numeric) (stype = numeric, sfunc = numeric_ad
 
 create function sum4(bigint, bigint, bigint, bigint)
 returns bigint
+language sql
+immutable
+strict
 as $function$
 select $1 + $2 + $3 + $4
-$function$
-language sql
-strict
-immutable;
+$function$;
 
 create or replace aggregate sum3 (bigint, bigint, bigint) (stype = bigint, sfunc = sum4);
 
@@ -292,10 +292,10 @@ create aggregate mysum (int) (stype = int, sfunc = int4pl, parallel = pear);
 
 create function float8mi_n(double precision, double precision)
 returns double precision
+language sql
 as $function$
 SELECT $1 - $2;
-$function$
-language sql;
+$function$;
 
 create aggregate invalidsumdouble (
   double precision
@@ -309,10 +309,10 @@ create aggregate invalidsumdouble (
 
 create function float8mi_int(double precision, double precision)
 returns int
+language sql
 as $function$
 SELECT CAST($1 - $2 AS INT);
-$function$
-language sql;
+$function$;
 
 create aggregate wrongreturntype (
   double precision

@@ -1410,8 +1410,8 @@ select nextval('ts1');
 
 create function tattle(x int, y int)
 returns boolean
-volatile
 language plpgsql
+volatile
 as $function$
 begin
   raise notice 'x = %, y = %', x, y;

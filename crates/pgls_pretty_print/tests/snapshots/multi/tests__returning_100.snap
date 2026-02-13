@@ -171,11 +171,11 @@ select * from foo;
 
 create function foo_f()
 returns setof foo
+language sql
+stable
 as $function$
 SELECT * FROM foo OFFSET 0
-$function$
-language sql
-stable;
+$function$;
 
 update foo set f2 = foo_f.f2 from foo_f() where foo_f.f1 = foo.f1 returning foo_f;
 
@@ -187,11 +187,11 @@ create type foo_t as (f1 int, f2 text, f3 int, f4 bigint);
 
 create function foo_f()
 returns setof foo_t
+language sql
+stable
 as $function$
 SELECT * FROM foo OFFSET 0
-$function$
-language sql
-stable;
+$function$;
 
 update foo set f2 = foo_f.f2 from foo_f() where foo_f.f1 = foo.f1 returning foo_f;
 

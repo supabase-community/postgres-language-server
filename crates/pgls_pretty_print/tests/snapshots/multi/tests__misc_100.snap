@@ -4,19 +4,19 @@ input_file: crates/pgls_pretty_print/tests/data/multi/misc.sql
 ---
 create function overpaid(emp)
 returns boolean
+language c
+strict
 as $function$
 regresslib
-$function$
-language c
-strict;
+$function$;
 
 create function reverse_name(name)
 returns name
+language c
+strict
 as $function$
 regresslib
-$function$
-language c
-strict;
+$function$;
 
 update onek set unique1 = onek.unique1 + 1;
 
@@ -98,80 +98,80 @@ insert into equipment_r (name, hobby) values ('guts', 'skywalking');
 
 create function hobbies(person)
 returns setof hobbies_r
+language sql
 as $function$
 select * from hobbies_r where person = $1.name
-$function$
-language sql;
+$function$;
 
 create function hobby_construct(text, text)
 returns hobbies_r
+language sql
 as $function$
 select $1 as name, $2 as hobby
-$function$
-language sql;
+$function$;
 
 create function hobby_construct_named(name text, hobby text)
 returns hobbies_r
+language sql
 as $function$
 select name, hobby
-$function$
-language sql;
+$function$;
 
 create function hobbies_by_name(hobbies_r.name%type)
 returns hobbies_r.person%type
+language sql
 as $function$
 select person from hobbies_r where name = $1
-$function$
-language sql;
+$function$;
 
 create function equipment(hobbies_r)
 returns setof equipment_r
+language sql
 as $function$
 select * from equipment_r where hobby = $1.name
-$function$
-language sql;
+$function$;
 
 create function equipment_named(hobby hobbies_r)
 returns setof equipment_r
+language sql
 as $function$
 select * from equipment_r where equipment_r.hobby = equipment_named.hobby.name
-$function$
-language sql;
+$function$;
 
 create function equipment_named_ambiguous_1a(hobby hobbies_r)
 returns setof equipment_r
+language sql
 as $function$
 select * from equipment_r where hobby = equipment_named_ambiguous_1a.hobby.name
-$function$
-language sql;
+$function$;
 
 create function equipment_named_ambiguous_1b(hobby hobbies_r)
 returns setof equipment_r
+language sql
 as $function$
 select * from equipment_r where equipment_r.hobby = hobby.name
-$function$
-language sql;
+$function$;
 
 create function equipment_named_ambiguous_1c(hobby hobbies_r)
 returns setof equipment_r
+language sql
 as $function$
 select * from equipment_r where hobby = hobby.name
-$function$
-language sql;
+$function$;
 
 create function equipment_named_ambiguous_2a(hobby text)
 returns setof equipment_r
+language sql
 as $function$
 select * from equipment_r where hobby = equipment_named_ambiguous_2a.hobby
-$function$
-language sql;
+$function$;
 
 create function equipment_named_ambiguous_2b(hobby text)
 returns setof equipment_r
+language sql
 as $function$
 select * from equipment_r where equipment_r.hobby = hobby
-$function$
-language sql;
+$function$;
 
 select p.name, name(p.hobbies) from only person as p;
 

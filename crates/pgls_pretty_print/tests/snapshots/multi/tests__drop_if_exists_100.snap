@@ -308,17 +308,17 @@ drop view if exists no_such_schema.foo;
 
 create function test_ambiguous_funcname(int)
 returns int
+language sql
 as $function$
 select $1;
-$function$
-language sql;
+$function$;
 
 create function test_ambiguous_funcname(text)
 returns text
+language sql
 as $function$
 select $1;
-$function$
-language sql;
+$function$;
 
 drop function test_ambiguous_funcname;
 
@@ -329,16 +329,16 @@ drop function test_ambiguous_funcname(int);
 drop function test_ambiguous_funcname(text);
 
 create procedure test_ambiguous_procname(int)
+language plpgsql
 as $procedure$
 begin end;
-$procedure$
-language plpgsql;
+$procedure$;
 
 create procedure test_ambiguous_procname(text)
+language plpgsql
 as $procedure$
 begin end;
-$procedure$
-language plpgsql;
+$procedure$;
 
 drop procedure test_ambiguous_procname;
 

@@ -102,25 +102,25 @@ select distinct four from tenk1;
 
 create or replace function distinct_func(a int)
 returns int
+language plpgsql
+parallel UNSAFE
 as $function$
 BEGIN
     RETURN a;
   END;
-$function$
-language plpgsql
-parallel UNSAFE;
+$function$;
 
 select distinct distinct_func(1) from tenk1;
 
 create or replace function distinct_func(a int)
 returns int
+language plpgsql
+parallel SAFE
 as $function$
 BEGIN
     RETURN a;
   END;
-$function$
-language plpgsql
-parallel SAFE;
+$function$;
 
 select distinct distinct_func(1) from tenk1;
 

@@ -134,11 +134,11 @@ begin;
 
 create function vol(text)
 returns text
+language plpgsql
+volatile
 as $function$
 begin return $1; end
-$function$
-language plpgsql
-volatile;
+$function$;
 
 select
   case case vol('bar')
@@ -155,18 +155,18 @@ create domain foodomain as text;
 
 create function volfoo(text)
 returns foodomain
+language plpgsql
+volatile
 as $function$
 begin return $1::foodomain; end
-$function$
-language plpgsql
-volatile;
+$function$;
 
 create function inline_eq(foodomain, foodomain)
 returns boolean
+language sql
 as $function$
 SELECT CASE $2::text WHEN $1::text THEN true ELSE false END
-$function$
-language sql;
+$function$;
 
 create operator = (PROCEDURE = inline_eq,
 LEFTARG = foodomain,
@@ -187,22 +187,22 @@ create domain arrdomain as int[];
 
 create function make_ad(int, int)
 returns arrdomain
+language plpgsql
+volatile
 as $function$
 declare x arrdomain;
    begin
      x := array[$1,$2];
      return x;
    end
-$function$
-language plpgsql
-volatile;
+$function$;
 
 create function ad_eq(arrdomain, arrdomain)
 returns boolean
+language plpgsql
 as $function$
 begin return array_eq($1, $2); end
-$function$
-language plpgsql;
+$function$;
 
 create operator = (PROCEDURE = ad_eq,
 LEFTARG = arrdomain,
