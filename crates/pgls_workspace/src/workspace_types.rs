@@ -110,14 +110,14 @@ fn value_type(value: &Value) -> String {
 }
 
 /// Generate a union type string from a list of type strings,
-/// flattening any nested union types (types containing " | ")
+/// flattening any nested union types (types containing "\n\t| ")
 fn make_union_type(items: impl IntoIterator<Item = String>) -> String {
     let mut result = Vec::new();
 
     for item in items {
-        // Flatten nested union types
-        if item.contains(" | ") {
-            for part in item.split(" | ") {
+        // Flatten nested union types (multi-line format)
+        if item.contains("\n\t| ") {
+            for part in item.split("\n\t| ") {
                 result.push(part.to_string());
             }
         } else {
@@ -125,7 +125,12 @@ fn make_union_type(items: impl IntoIterator<Item = String>) -> String {
         }
     }
 
-    result.join(" | ")
+    // Format as multi-line union with leading pipe on each line for readability
+    if result.len() > 1 {
+        format!("\n\t| {}", result.join("\n\t| "))
+    } else {
+        result.join(" | ")
+    }
 }
 
 /// Generate a TS type string from a [SchemaObject], returning the generated

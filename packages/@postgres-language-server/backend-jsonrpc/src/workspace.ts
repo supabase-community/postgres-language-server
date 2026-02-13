@@ -18,7 +18,11 @@ export type FileKind = FileKind2[];
 /**
  * The priority of the file
  */
-export type FileKind2 = "Config" | "Ignore" | "Inspectable" | "Handleable";
+export type FileKind2 = 
+	| "Config"
+	| "Ignore"
+	| "Inspectable"
+	| "Handleable";
 export interface RegisterProjectFolderParams {
 	path?: string;
 	setAsCurrentWorkspace: boolean;
@@ -36,7 +40,10 @@ export interface PullFileDiagnosticsParams {
 }
 export type RuleCategories = RuleCategory[];
 export type RuleCode = string;
-export type RuleCategory = "Lint" | "Action" | "Transformation";
+export type RuleCategory = 
+	| "Lint"
+	| "Action"
+	| "Transformation";
 export interface PullDiagnosticsResult {
 	diagnostics: Diagnostic[];
 	skipped_diagnostics: number;
@@ -61,7 +68,108 @@ export interface Diagnostic {
 export interface Advices {
 	advices: Advice[];
 }
-export type Category = "lint/safety/addSerialColumn" | "lint/safety/addingFieldWithDefault" | "lint/safety/addingForeignKeyConstraint" | "lint/safety/addingNotNullField" | "lint/safety/addingPrimaryKeyConstraint" | "lint/safety/addingRequiredField" | "lint/safety/banCharField" | "lint/safety/banConcurrentIndexCreationInTransaction" | "lint/safety/banDropColumn" | "lint/safety/banDropDatabase" | "lint/safety/banDropNotNull" | "lint/safety/banDropTable" | "lint/safety/banTruncateCascade" | "lint/safety/changingColumnType" | "lint/safety/constraintMissingNotValid" | "lint/safety/creatingEnum" | "lint/safety/disallowUniqueConstraint" | "lint/safety/lockTimeoutWarning" | "lint/safety/multipleAlterTable" | "lint/safety/preferBigInt" | "lint/safety/preferBigintOverInt" | "lint/safety/preferBigintOverSmallint" | "lint/safety/preferIdentity" | "lint/safety/preferJsonb" | "lint/safety/preferRobustStmts" | "lint/safety/preferTextField" | "lint/safety/preferTimestamptz" | "lint/safety/renamingColumn" | "lint/safety/renamingTable" | "lint/safety/requireConcurrentIndexCreation" | "lint/safety/requireConcurrentIndexDeletion" | "lint/safety/runningStatementWhileHoldingAccessExclusive" | "lint/safety/transactionNesting" | "pglinter/extensionNotInstalled" | "pglinter/ruleDisabledInExtension" | "pglinter/base/compositePrimaryKeyTooManyColumns" | "pglinter/base/howManyObjectsWithUppercase" | "pglinter/base/howManyRedudantIndex" | "pglinter/base/howManyTableWithoutIndexOnFk" | "pglinter/base/howManyTableWithoutPrimaryKey" | "pglinter/base/howManyTablesNeverSelected" | "pglinter/base/howManyTablesWithFkMismatch" | "pglinter/base/howManyTablesWithFkOutsideSchema" | "pglinter/base/howManyTablesWithReservedKeywords" | "pglinter/base/howManyTablesWithSameTrigger" | "pglinter/base/howManyUnusedIndex" | "pglinter/base/severalTableOwnerInSchema" | "pglinter/cluster/passwordEncryptionIsMd5" | "pglinter/cluster/pgHbaEntriesWithMethodTrustOrPasswordShouldNotExists" | "pglinter/cluster/pgHbaEntriesWithMethodTrustShouldNotExists" | "pglinter/schema/ownerSchemaIsInternalRole" | "pglinter/schema/schemaOwnerDoNotMatchTableOwner" | "pglinter/schema/schemaPrefixedOrSuffixedWithEnvt" | "pglinter/schema/schemaWithDefaultRoleNotGranted" | "pglinter/schema/unsecuredPublicSchema" | "splinter/performance/authRlsInitplan" | "splinter/performance/duplicateIndex" | "splinter/performance/multiplePermissivePolicies" | "splinter/performance/noPrimaryKey" | "splinter/performance/tableBloat" | "splinter/performance/unindexedForeignKeys" | "splinter/performance/unusedIndex" | "splinter/security/authUsersExposed" | "splinter/security/extensionInPublic" | "splinter/security/extensionVersionsOutdated" | "splinter/security/fkeyToAuthUnique" | "splinter/security/foreignTableInApi" | "splinter/security/functionSearchPathMutable" | "splinter/security/insecureQueueExposedInApi" | "splinter/security/materializedViewInApi" | "splinter/security/policyExistsRlsDisabled" | "splinter/security/rlsDisabledInPublic" | "splinter/security/rlsEnabledNoPolicy" | "splinter/security/rlsReferencesUserMetadata" | "splinter/security/securityDefinerView" | "splinter/security/unsupportedRegTypes" | "stdin" | "check" | "format" | "configuration" | "database/connection" | "internalError/io" | "internalError/runtime" | "internalError/fs" | "flags/invalid" | "project" | "typecheck" | "plpgsql_check" | "internalError/panic" | "syntax" | "dummy" | "lint" | "lint/performance" | "lint/safety" | "splinter" | "splinter/performance" | "splinter/security" | "pglinter" | "pglinter/base" | "pglinter/cluster" | "pglinter/schema";
+export type Category = 
+	| "lint/safety/addSerialColumn"
+	| "lint/safety/addingFieldWithDefault"
+	| "lint/safety/addingForeignKeyConstraint"
+	| "lint/safety/addingNotNullField"
+	| "lint/safety/addingPrimaryKeyConstraint"
+	| "lint/safety/addingRequiredField"
+	| "lint/safety/banCharField"
+	| "lint/safety/banConcurrentIndexCreationInTransaction"
+	| "lint/safety/banDropColumn"
+	| "lint/safety/banDropDatabase"
+	| "lint/safety/banDropNotNull"
+	| "lint/safety/banDropTable"
+	| "lint/safety/banTruncateCascade"
+	| "lint/safety/changingColumnType"
+	| "lint/safety/constraintMissingNotValid"
+	| "lint/safety/creatingEnum"
+	| "lint/safety/disallowUniqueConstraint"
+	| "lint/safety/lockTimeoutWarning"
+	| "lint/safety/multipleAlterTable"
+	| "lint/safety/preferBigInt"
+	| "lint/safety/preferBigintOverInt"
+	| "lint/safety/preferBigintOverSmallint"
+	| "lint/safety/preferIdentity"
+	| "lint/safety/preferJsonb"
+	| "lint/safety/preferRobustStmts"
+	| "lint/safety/preferTextField"
+	| "lint/safety/preferTimestamptz"
+	| "lint/safety/renamingColumn"
+	| "lint/safety/renamingTable"
+	| "lint/safety/requireConcurrentIndexCreation"
+	| "lint/safety/requireConcurrentIndexDeletion"
+	| "lint/safety/runningStatementWhileHoldingAccessExclusive"
+	| "lint/safety/transactionNesting"
+	| "pglinter/extensionNotInstalled"
+	| "pglinter/ruleDisabledInExtension"
+	| "pglinter/base/compositePrimaryKeyTooManyColumns"
+	| "pglinter/base/howManyObjectsWithUppercase"
+	| "pglinter/base/howManyRedudantIndex"
+	| "pglinter/base/howManyTableWithoutIndexOnFk"
+	| "pglinter/base/howManyTableWithoutPrimaryKey"
+	| "pglinter/base/howManyTablesNeverSelected"
+	| "pglinter/base/howManyTablesWithFkMismatch"
+	| "pglinter/base/howManyTablesWithFkOutsideSchema"
+	| "pglinter/base/howManyTablesWithReservedKeywords"
+	| "pglinter/base/howManyTablesWithSameTrigger"
+	| "pglinter/base/howManyUnusedIndex"
+	| "pglinter/base/severalTableOwnerInSchema"
+	| "pglinter/cluster/passwordEncryptionIsMd5"
+	| "pglinter/cluster/pgHbaEntriesWithMethodTrustOrPasswordShouldNotExists"
+	| "pglinter/cluster/pgHbaEntriesWithMethodTrustShouldNotExists"
+	| "pglinter/schema/ownerSchemaIsInternalRole"
+	| "pglinter/schema/schemaOwnerDoNotMatchTableOwner"
+	| "pglinter/schema/schemaPrefixedOrSuffixedWithEnvt"
+	| "pglinter/schema/schemaWithDefaultRoleNotGranted"
+	| "pglinter/schema/unsecuredPublicSchema"
+	| "splinter/performance/authRlsInitplan"
+	| "splinter/performance/duplicateIndex"
+	| "splinter/performance/multiplePermissivePolicies"
+	| "splinter/performance/noPrimaryKey"
+	| "splinter/performance/tableBloat"
+	| "splinter/performance/unindexedForeignKeys"
+	| "splinter/performance/unusedIndex"
+	| "splinter/security/authUsersExposed"
+	| "splinter/security/extensionInPublic"
+	| "splinter/security/extensionVersionsOutdated"
+	| "splinter/security/fkeyToAuthUnique"
+	| "splinter/security/foreignTableInApi"
+	| "splinter/security/functionSearchPathMutable"
+	| "splinter/security/insecureQueueExposedInApi"
+	| "splinter/security/materializedViewInApi"
+	| "splinter/security/policyExistsRlsDisabled"
+	| "splinter/security/rlsDisabledInPublic"
+	| "splinter/security/rlsEnabledNoPolicy"
+	| "splinter/security/rlsReferencesUserMetadata"
+	| "splinter/security/securityDefinerView"
+	| "splinter/security/unsupportedRegTypes"
+	| "stdin"
+	| "check"
+	| "format"
+	| "configuration"
+	| "database/connection"
+	| "internalError/io"
+	| "internalError/runtime"
+	| "internalError/fs"
+	| "flags/invalid"
+	| "project"
+	| "typecheck"
+	| "plpgsql_check"
+	| "internalError/panic"
+	| "syntax"
+	| "dummy"
+	| "lint"
+	| "lint/performance"
+	| "lint/safety"
+	| "splinter"
+	| "splinter/performance"
+	| "splinter/security"
+	| "pglinter"
+	| "pglinter/base"
+	| "pglinter/cluster"
+	| "pglinter/schema";
 export interface Location {
 	path?: Resource_for_String;
 	sourceCode?: string;
@@ -71,18 +179,35 @@ export type MarkupBuf = MarkupNodeBuf[];
 /**
  * The severity to associate to a diagnostic.
  */
-export type Severity = "hint" | "information" | "warning" | "error" | "fatal";
+export type Severity = 
+	| "hint"
+	| "information"
+	| "warning"
+	| "error"
+	| "fatal";
 export type DiagnosticTags = DiagnosticTag[];
 /**
  * Serializable representation of a [Diagnostic](super::Diagnostic) advice
 
 See the [Visitor] trait for additional documentation on all the supported advice types.
  */
-export type Advice = { log: [LogCategory, MarkupBuf] } | { list: MarkupBuf[] } | { frame: Location } | { diff: TextEdit } | { diffWithOffset: [TextEdit, number] } | { backtrace: [MarkupBuf, Backtrace] } | { command: string } | { group: [MarkupBuf, Advices] };
+export type Advice = 
+	| { log: [LogCategory, MarkupBuf] }
+	| { list: MarkupBuf[] }
+	| { frame: Location }
+	| { diff: TextEdit }
+	| { diffWithOffset: [TextEdit, number] }
+	| { backtrace: [MarkupBuf, Backtrace] }
+	| { command: string }
+	| { group: [MarkupBuf, Advices] };
 /**
  * Represents the resource a diagnostic is associated with.
  */
-export type Resource_for_String = "database" | "argv" | "memory" | { file: string };
+export type Resource_for_String = 
+	| "database"
+	| "argv"
+	| "memory"
+	| { file: string };
 export type TextRange = [TextSize, TextSize];
 export interface MarkupNodeBuf {
 	content: string;
@@ -91,11 +216,20 @@ export interface MarkupNodeBuf {
 /**
  * Internal enum used to automatically generate bit offsets for [DiagnosticTags] and help with the implementation of `serde` and `schemars` for tags.
  */
-export type DiagnosticTag = "fixable" | "internal" | "unnecessaryCode" | "deprecatedCode" | "verbose";
+export type DiagnosticTag = 
+	| "fixable"
+	| "internal"
+	| "unnecessaryCode"
+	| "deprecatedCode"
+	| "verbose";
 /**
  * The category for a log advice, defines how the message should be presented to the user.
  */
-export type LogCategory = "none" | "info" | "warn" | "error";
+export type LogCategory = 
+	| "none"
+	| "info"
+	| "warn"
+	| "error";
 export interface TextEdit {
 	dictionary: string;
 	ops: CompressedOp[];
@@ -105,8 +239,23 @@ export type TextSize = number;
 /**
  * Enumeration of all the supported markup elements
  */
-export type MarkupElement = "Emphasis" | "Dim" | "Italic" | "Underline" | "Error" | "Success" | "Warn" | "Info" | "Debug" | "Trace" | "Inverse" | { Hyperlink: { href: string } };
-export type CompressedOp = { diffOp: DiffOp } | { equalLines: { line_count: number } };
+export type MarkupElement = 
+	| 
+	| "Emphasis"
+	| "Dim"
+	| "Italic"
+	| "Underline"
+	| "Error"
+	| "Success"
+	| "Warn"
+	| "Info"
+	| "Debug"
+	| "Trace"
+	| "Inverse"
+	| { Hyperlink: { href: string } };
+export type CompressedOp = 
+	| { diffOp: DiffOp }
+	| { equalLines: { line_count: number } };
 /**
  * Serializable representation of a backtrace frame.
  */
@@ -114,7 +263,10 @@ export interface BacktraceFrame {
 	ip: number;
 	symbols: BacktraceSymbol[];
 }
-export type DiffOp = { equal: { range: TextRange } } | { insert: { range: TextRange } } | { delete: { range: TextRange } };
+export type DiffOp = 
+	| { equal: { range: TextRange } }
+	| { insert: { range: TextRange } }
+	| { delete: { range: TextRange } };
 /**
  * Serializable representation of a backtrace frame symbol.
  */
@@ -162,7 +314,14 @@ export interface CompletionText {
 	range: TextRange;
 	text: string;
 }
-export type CompletionItemKind = "table" | "function" | "column" | "schema" | "policy" | "role" | "keyword";
+export type CompletionItemKind = 
+	| "table"
+	| "function"
+	| "column"
+	| "schema"
+	| "policy"
+	| "role"
+	| "keyword";
 export interface UpdateSettingsParams {
 	configuration: PartialConfiguration;
 	gitignore_matches: string[];
@@ -422,11 +581,15 @@ If we can't find the configuration, it will attempt to use the current working d
 /**
  * Keyword casing style for the formatter.
  */
-export type KeywordCase = "upper" | "lower";
+export type KeywordCase = 
+	| "upper"
+	| "lower";
 /**
  * Indentation style for the formatter.
  */
-export type IndentStyle = "spaces" | "tabs";
+export type IndentStyle = 
+	| "spaces"
+	| "tabs";
 export interface LinterRules {
 	/**
 	 * It enables ALL rules. The rules that belong to `nursery` won't be enabled.
@@ -838,9 +1001,17 @@ export interface Security {
 	 */
 	unsupportedRegTypes?: RuleConfiguration_for_SplinterRuleOptions;
 }
-export type RuleConfiguration_for_Null = RulePlainConfiguration | RuleWithOptions_for_Null;
-export type RuleConfiguration_for_SplinterRuleOptions = RulePlainConfiguration | RuleWithOptions_for_SplinterRuleOptions;
-export type RulePlainConfiguration = "warn" | "error" | "info" | "off";
+export type RuleConfiguration_for_Null = 
+	| RulePlainConfiguration
+	| RuleWithOptions_for_Null;
+export type RuleConfiguration_for_SplinterRuleOptions = 
+	| RulePlainConfiguration
+	| RuleWithOptions_for_SplinterRuleOptions;
+export type RulePlainConfiguration = 
+	| "warn"
+	| "error"
+	| "info"
+	| "off";
 export interface RuleWithOptions_for_Null {
 	/**
 	 * The severity of the emitted diagnostics by the rule

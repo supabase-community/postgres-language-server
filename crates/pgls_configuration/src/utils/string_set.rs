@@ -56,10 +56,15 @@ impl DerefMut for StringSet {
 }
 
 impl FromStr for StringSet {
-    type Err = &'static str;
+    type Err = std::convert::Infallible;
 
-    fn from_str(_s: &str) -> Result<Self, Self::Err> {
-        Ok(StringSet::default())
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let items: IndexSet<String> = s
+            .split(',')
+            .map(|item| item.trim().to_string())
+            .filter(|item| !item.is_empty())
+            .collect();
+        Ok(StringSet(items))
     }
 }
 
