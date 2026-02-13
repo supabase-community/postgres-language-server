@@ -493,13 +493,13 @@ drop trigger trans_inserttrig on range_parted;
 
 create function func_parted_mod_b()
 returns trigger
+language plpgsql
 as $function$
 BEGIN
    NEW.b = NEW.b + 1;
    return NEW;
 END
-$function$
-language plpgsql;
+$function$;
 
 create trigger trig_c1_100
 before insert or update
@@ -568,13 +568,13 @@ reset session_authorization;
 
 create function func_d_1_15()
 returns trigger
+language plpgsql
 as $function$
 BEGIN
    NEW.c = NEW.c + 1; -- Make even numbers odd, or vice versa
    return NEW;
 END
-$function$
-language plpgsql;
+$function$;
 
 create trigger trig_d_1_15
 before insert
@@ -955,13 +955,13 @@ order by 1;
 
 create function func_parted_mod_b()
 returns trigger
+language plpgsql
 as $function$
 BEGIN
    NEW.b = 2; -- This is changing partition key column.
    return NEW;
 END
-$function$
-language plpgsql;
+$function$;
 
 create trigger parted_mod_b
 before update
@@ -995,13 +995,13 @@ drop trigger parted_mod_b on sub_part1;
 
 create or replace function func_parted_mod_b()
 returns trigger
+language plpgsql
 as $function$
 BEGIN
    raise notice 'Trigger: Got OLD row %, but returning NULL', OLD;
    return NULL;
 END
-$function$
-language plpgsql;
+$function$;
 
 create trigger trig_skip_delete
 before delete
@@ -1063,11 +1063,11 @@ drop table list_parted;
 
 create or replace function dummy_hashint4(a int, seed bigint)
 returns bigint
+language plpgsql
+immutable
 as $function$
 begin return (a + seed); end;
-$function$
-language plpgsql
-immutable;
+$function$;
 
 create operator class custom_opclass
   for type int

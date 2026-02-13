@@ -63,10 +63,10 @@ commit;
 create function errfunc()
 returns int
 language sql
+set transaction_read_only = 'on'
 as $function$
 SELECT 1
-$function$
-set transaction_read_only = 'on';
+$function$;
 
 create table writetest (a int);
 
@@ -498,10 +498,10 @@ select * from xacttest;
 create or replace function max_xacttest()
 returns smallint
 language sql
+stable
 as $function$
 select max(a) from xacttest
-$function$
-stable;
+$function$;
 
 begin;
 
@@ -514,10 +514,10 @@ rollback;
 create or replace function max_xacttest()
 returns smallint
 language sql
+volatile
 as $function$
 select max(a) from xacttest
-$function$
-volatile;
+$function$;
 
 begin;
 
@@ -530,10 +530,10 @@ rollback;
 create or replace function max_xacttest()
 returns smallint
 language plpgsql
+stable
 as $function$
 begin return max(a) from xacttest; end
-$function$
-stable;
+$function$;
 
 begin;
 
@@ -546,10 +546,10 @@ rollback;
 create or replace function max_xacttest()
 returns smallint
 language plpgsql
+volatile
 as $function$
 begin return max(a) from xacttest; end
-$function$
-volatile;
+$function$;
 
 begin;
 
@@ -587,6 +587,8 @@ drop table trans_barbaz;
 
 create function inverse(int)
 returns double precision
+language plpgsql
+volatile
 as $function$
 begin
   analyze revalidate_bug;
@@ -594,9 +596,7 @@ begin
 exception
   when division_by_zero then return 0;
 end
-$function$
-language plpgsql
-volatile;
+$function$;
 
 create table revalidate_bug (c double precision unique);
 

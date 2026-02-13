@@ -86,12 +86,12 @@ returns table (
   a int,
   b int
 )
-as $function$
-SELECT $1, $1+i FROM generate_series(1,5) g(i);
-$function$
 language sql
 immutable
-strict;
+strict
+as $function$
+SELECT $1, $1+i FROM generate_series(1,5) g(i);
+$function$;
 
 create statistics alt_stat2 on "a" from tftest(1);
 
@@ -3029,19 +3029,19 @@ select * from tststats.priv_test_tbl where a = 1 and tststats.priv_test_tbl.* > 
 
 create function op_leak(int, int)
 returns boolean
+language plpgsql
 as $function$
 BEGIN RAISE NOTICE 'op_leak => %, %', $1, $2; RETURN $1 < $2; END
-$function$
-language plpgsql;
+$function$;
 
 create operator <<< (PROCEDURE = op_leak, LEFTARG = int, RIGHTARG = int, RESTRICT = scalarltsel);
 
 create function op_leak(record, record)
 returns boolean
+language plpgsql
 as $function$
 BEGIN RAISE NOTICE 'op_leak => %, %', $1, $2; RETURN $1 < $2; END
-$function$
-language plpgsql;
+$function$;
 
 create operator <<< (PROCEDURE = op_leak,
 LEFTARG = record,
@@ -3300,9 +3300,9 @@ reset enable_mergejoin;
 
 create function extstat_small(x numeric)
 returns boolean
-strict
-immutable
 language plpgsql
+immutable
+strict
 as $function$
 BEGIN RETURN x < 1; END
 $function$;

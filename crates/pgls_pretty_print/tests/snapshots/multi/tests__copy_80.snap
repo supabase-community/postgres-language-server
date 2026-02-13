@@ -1,7 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/copy.sql
-snapshot_kind: text
 ---
 create temporary table copytest (
   style text,
@@ -209,6 +208,7 @@ create table tab_progress_reporting (
 
 create function notice_after_tab_progress_reporting()
 returns trigger
+language plpgsql
 as $function$
 declare report record;
 begin
@@ -233,8 +233,7 @@ begin
   raise info 'progress: %', report.value::text;
   return new;
 end;
-$function$
-language plpgsql;
+$function$;
 
 create trigger check_after_tab_progress_reporting
 after insert

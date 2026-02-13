@@ -529,18 +529,18 @@ create type xfloat8;
 
 create function xfloat8in(cstring)
 returns xfloat8
+language internal
 immutable
 strict
-language internal
 as $function$
 int8in
 $function$;
 
 create function xfloat8out(xfloat8)
 returns cstring
+language internal
 immutable
 strict
-language internal
 as $function$
 int8out
 $function$;

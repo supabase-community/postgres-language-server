@@ -4876,27 +4876,27 @@ from
 
 create function logging_sfunc_nonstrict(text, anyelement)
 returns text
+language sql
+immutable
 as $function$
 SELECT COALESCE($1, '') || '*' || quote_nullable($2)
-$function$
-language sql
-immutable;
+$function$;
 
 create function logging_msfunc_nonstrict(text, anyelement)
 returns text
+language sql
+immutable
 as $function$
 SELECT COALESCE($1, '') || '+' || quote_nullable($2)
-$function$
-language sql
-immutable;
+$function$;
 
 create function logging_minvfunc_nonstrict(text, anyelement)
 returns text
+language sql
+immutable
 as $function$
 SELECT $1 || '-' || quote_nullable($2)
-$function$
-language sql
-immutable;
+$function$;
 
 create aggregate logging_agg_nonstrict (
   anyelement
@@ -4922,30 +4922,30 @@ create aggregate logging_agg_nonstrict_initcond (
 
 create function logging_sfunc_strict(text, anyelement)
 returns text
+language sql
+immutable
+strict
 as $function$
 SELECT $1 || '*' || quote_nullable($2)
-$function$
-language sql
-strict
-immutable;
+$function$;
 
 create function logging_msfunc_strict(text, anyelement)
 returns text
+language sql
+immutable
+strict
 as $function$
 SELECT $1 || '+' || quote_nullable($2)
-$function$
-language sql
-strict
-immutable;
+$function$;
 
 create function logging_minvfunc_strict(text, anyelement)
 returns text
+language sql
+immutable
+strict
 as $function$
 SELECT $1 || '-' || quote_nullable($2)
-$function$
-language sql
-strict
-immutable;
+$function$;
 
 create aggregate logging_agg_strict (
   text
@@ -5132,11 +5132,11 @@ order by i;
 
 create function sum_int_randrestart_minvfunc(int, int)
 returns int
+language sql
+strict
 as $function$
 SELECT CASE WHEN random() < 0.2 THEN NULL ELSE $1 - $2 END
-$function$
-language sql
-strict;
+$function$;
 
 create aggregate sum_int_randomrestart (
   int
@@ -6309,13 +6309,13 @@ window
 
 create function pg_temp.f(group_size bigint)
 returns setof int[]
+language sql
+stable
 as $function$
 SELECT array_agg(s) OVER w
       FROM generate_series(1,5) s
     WINDOW w AS (ORDER BY s ROWS BETWEEN CURRENT ROW AND GROUP_SIZE FOLLOWING)
-$function$
-language sql
-stable;
+$function$;
 
 select * from pg_temp.f(2);
 

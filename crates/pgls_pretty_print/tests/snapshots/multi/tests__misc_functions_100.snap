@@ -128,12 +128,12 @@ select num_nulls();
 
 create function test_canonicalize_path(text)
 returns text
+language c
+immutable
+strict
 as $function$
 regresslib
-$function$
-language c
-strict
-immutable;
+$function$;
 
 select test_canonicalize_path('/');
 
@@ -313,8 +313,8 @@ drop role regress_slot_dir_funcs;
 create function my_int_eq(int, int)
 returns boolean
 language internal
-strict
 immutable
+strict
 parallel SAFE
 as $function$
 int4eq
@@ -332,9 +332,9 @@ where
 
 create function test_support_func(internal)
 returns internal
-as 'regresslib', 'test_support_func'
 language c
-strict;
+strict
+as 'regresslib', 'test_support_func';
 
 alter function my_int_eq(int, int) support test_support_func;
 
@@ -351,13 +351,13 @@ where
 create function my_gen_series(int, int)
 returns setof int
 language internal
-strict
 immutable
+strict
 parallel SAFE
+support test_support_func
 as $function$
 generate_series_int4
-$function$
-support test_support_func;
+$function$;
 
 select * from tenk1 as a inner join my_gen_series(1, 1000) as g on a.unique1 = g;
 
@@ -603,10 +603,10 @@ select gist_translate_cmptype_common(3);
 
 create function test_relpath()
 returns void
+language c
 as $function$
 regresslib
-$function$
-language c;
+$function$;
 
 select test_relpath();
 

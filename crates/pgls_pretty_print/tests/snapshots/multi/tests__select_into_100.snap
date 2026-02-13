@@ -97,10 +97,10 @@ drop table ctas_nodata_4;
 
 create function make_table()
 returns void
+language sql
 as $function$
 CREATE TABLE created_table AS SELECT * FROM int8_tbl;
-$function$
-language sql;
+$function$;
 
 select make_table();
 

@@ -4,11 +4,11 @@ input_file: crates/pgls_pretty_print/tests/data/multi/indirect_toast.sql
 ---
 create function make_tuple_indirect(record)
 returns record
+language c
+strict
 as $function$
 regresslib
-$function$
-language c
-strict;
+$function$;
 
 set default_toast_compression = pglz;
 

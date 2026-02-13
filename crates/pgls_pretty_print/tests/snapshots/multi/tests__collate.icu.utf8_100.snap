@@ -440,10 +440,10 @@ select * from unnest((select array_agg(b order by b) from collate_test3)) order 
 
 create function dup(anyelement)
 returns anyelement
+language sql
 as $function$
 select $1
-$function$
-language sql;
+$function$;
 
 select a, dup(b) from collate_test1 order by 2;
 

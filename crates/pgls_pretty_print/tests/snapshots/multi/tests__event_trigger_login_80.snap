@@ -1,7 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/event_trigger_login.sql
-snapshot_kind: text
 ---
 create table user_logins (
   id serial,
@@ -12,13 +11,13 @@ grant SELECT on table user_logins to public;
 
 create function on_login_proc()
 returns event_trigger
+language plpgsql
 as $function$
 BEGIN
   INSERT INTO user_logins (who) VALUES (SESSION_USER);
   RAISE NOTICE 'You are welcome!';
 END;
-$function$
-language plpgsql;
+$function$;
 
 create event trigger "on_login_trigger"
 on login

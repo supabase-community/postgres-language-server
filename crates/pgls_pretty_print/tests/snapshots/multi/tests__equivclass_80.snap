@@ -6,18 +6,18 @@ create type int8alias1;
 
 create function int8alias1in(cstring)
 returns int8alias1
-strict
-immutable
 language internal
+immutable
+strict
 as $function$
 int8in
 $function$;
 
 create function int8alias1out(int8alias1)
 returns cstring
-strict
-immutable
 language internal
+immutable
+strict
 as $function$
 int8out
 $function$;
@@ -32,18 +32,18 @@ create type int8alias2;
 
 create function int8alias2in(cstring)
 returns int8alias2
-strict
-immutable
 language internal
+immutable
+strict
 as $function$
 int8in
 $function$;
 
 create function int8alias2out(int8alias2)
 returns cstring
-strict
-immutable
 language internal
+immutable
+strict
 as $function$
 int8out
 $function$;
@@ -64,9 +64,9 @@ create cast (int8alias2 as bigint) without function;
 
 create function int8alias1eq(int8alias1, int8alias1)
 returns boolean
-strict
-immutable
 language internal
+immutable
+strict
 as $function$
 int8eq
 $function$;
@@ -84,9 +84,9 @@ alter operator family integer_ops using btree
 
 create function int8alias2eq(int8alias2, int8alias2)
 returns boolean
-strict
-immutable
 language internal
+immutable
+strict
 as $function$
 int8eq
 $function$;
@@ -104,9 +104,9 @@ alter operator family integer_ops using btree
 
 create function int8alias1eq(bigint, int8alias1)
 returns boolean
-strict
-immutable
 language internal
+immutable
+strict
 as $function$
 int8eq
 $function$;
@@ -123,9 +123,9 @@ alter operator family integer_ops using btree
 
 create function int8alias1eq(int8alias1, int8alias2)
 returns boolean
-strict
-immutable
 language internal
+immutable
+strict
 as $function$
 int8eq
 $function$;
@@ -142,9 +142,9 @@ alter operator family integer_ops using btree
 
 create function int8alias1lt(int8alias1, int8alias1)
 returns boolean
-strict
-immutable
 language internal
+immutable
+strict
 as $function$
 int8lt
 $function$;
@@ -158,9 +158,9 @@ alter operator family integer_ops using btree
 
 create function int8alias1cmp(bigint, int8alias1)
 returns int
-strict
-immutable
 language internal
+immutable
+strict
 as $function$
 btint8cmp
 $function$;
@@ -510,9 +510,9 @@ alter operator family integer_ops using hash
 
 create function hashint8alias1(int8alias1)
 returns int
-strict
-immutable
 language internal
+immutable
+strict
 as $function$
 hashint8
 $function$;

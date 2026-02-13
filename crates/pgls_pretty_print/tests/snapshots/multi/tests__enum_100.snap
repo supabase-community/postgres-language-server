@@ -1,7 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/enum.sql
-snapshot_kind: text
 ---
 create type rainbow as enum ('red', 'orange', 'yellow', 'green', 'blue', 'purple');
 
@@ -261,23 +260,23 @@ select enum_range(cast(null as rainbow), null);
 
 create function echo_me(anyenum)
 returns text
+language plpgsql
 as $function$
 BEGIN
 RETURN $1::text || 'omg';
 END
-$function$
-language plpgsql;
+$function$;
 
 select echo_me(cast('red' as rainbow));
 
 create function echo_me(rainbow)
 returns text
+language plpgsql
 as $function$
 BEGIN
 RETURN $1::text || 'wtf';
 END
-$function$
-language plpgsql;
+$function$;
 
 select echo_me(cast('red' as rainbow));
 

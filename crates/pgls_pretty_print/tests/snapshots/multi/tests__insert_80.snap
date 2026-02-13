@@ -602,13 +602,13 @@ alter table mlparted
 
 create function mlparted11_trig_fn()
 returns trigger
+language plpgsql
 as $function$
 begin
   NEW.b := 4;
   return NEW;
 end;
-$function$
-language plpgsql;
+$function$;
 
 create trigger mlparted11_trig
 before insert
@@ -725,10 +725,10 @@ insert into mlparted values (1, 45, 'a');
 
 create function mlparted5abrtrig_func()
 returns trigger
+language plpgsql
 as $function$
 begin new.c = 'b'; return new; end;
-$function$
-language plpgsql;
+$function$;
 
 create trigger mlparted5abrtrig
 before insert
@@ -1019,10 +1019,10 @@ create table brtrigpartcon1 partition of brtrigpartcon for values in (1);
 
 create or replace function brtrigpartcon1trigf()
 returns trigger
+language plpgsql
 as $function$
 begin new.a := 2; return new; end
-$function$
-language plpgsql;
+$function$;
 
 create trigger brtrigpartcon1trig
 before insert
@@ -1096,10 +1096,10 @@ alter table donothingbrtrig_test2
 
 create or replace function donothingbrtrig_func()
 returns trigger
+language plpgsql
 as $function$
 begin raise notice 'b: %', new.b; return NULL; end
-$function$
-language plpgsql;
+$function$;
 
 create trigger donothingbrtrig1
 before insert

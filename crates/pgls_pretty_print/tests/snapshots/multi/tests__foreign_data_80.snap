@@ -4,8 +4,8 @@ input_file: crates/pgls_pretty_print/tests/data/multi/foreign_data.sql
 ---
 create function test_fdw_handler()
 returns fdw_handler
-as 'regresslib', 'test_fdw_handler'
-language c;
+language c
+as 'regresslib', 'test_fdw_handler';
 
 set client_min_messages = warning;
 
@@ -1172,12 +1172,12 @@ drop server s10 cascade;
 
 create function dummy_trigger()
 returns trigger
+language plpgsql
 as $function$
 BEGIN
     RETURN NULL;
   END
-$function$
-language plpgsql;
+$function$;
 
 create trigger trigtest_before_stmt
 before insert or delete or update

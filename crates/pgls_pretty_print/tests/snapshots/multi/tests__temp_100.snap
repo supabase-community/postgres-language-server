@@ -141,17 +141,17 @@ insert into whereami values ('temp');
 
 create function public.whoami()
 returns text
+language sql
 as $function$
 select 'public'::text
-$function$
-language sql;
+$function$;
 
 create function pg_temp.whoami()
 returns text
+language sql
 as $function$
 select 'temp'::text
-$function$
-language sql;
+$function$;
 
 select * from whereami;
 
@@ -266,19 +266,19 @@ begin;
 
 create function pg_temp.twophase_func()
 returns void
+language sql
 as $function$
 select '2pc_func'::text
-$function$
-language sql;
+$function$;
 
 prepare transaction 'twophase_func';
 
 create function pg_temp.twophase_func()
 returns void
+language sql
 as $function$
 select '2pc_func'::text
-$function$
-language sql;
+$function$;
 
 begin;
 

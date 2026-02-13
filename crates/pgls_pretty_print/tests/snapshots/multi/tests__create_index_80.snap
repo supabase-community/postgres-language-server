@@ -838,8 +838,8 @@ commit;
 
 create function predicate_stable()
 returns boolean
-immutable
 language plpgsql
+immutable
 as $function$
 BEGIN
   EXECUTE 'SELECT txid_current()';
@@ -2307,6 +2307,7 @@ rollback;
 
 create or replace function create_relfilenode_part(relname text, indname text)
 returns void
+language plpgsql
 as $function$
 BEGIN
   EXECUTE format('
@@ -2317,8 +2318,7 @@ BEGIN
          (SELECT relid FROM pg_partition_tree(''%I''));',
 	 relname, indname);
   END
-$function$
-language plpgsql;
+$function$;
 
 create or replace function compare_relfilenode_part(tabname text)
 returns table (
@@ -2326,6 +2326,7 @@ returns table (
   relkind char,
   state text
 )
+language plpgsql
 as $function$
 BEGIN
     RETURN QUERY EXECUTE
@@ -2338,8 +2339,7 @@ BEGIN
            FROM %I b JOIN pg_class a ON b.relname = a.relname
            ORDER BY 1;', tabname);
   END
-$function$
-language plpgsql;
+$function$;
 
 select
   create_relfilenode_part(

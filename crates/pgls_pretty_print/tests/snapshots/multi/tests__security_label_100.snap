@@ -29,10 +29,10 @@ as select * from seclabel_tbl2;
 
 create function seclabel_four()
 returns int
+language sql
 as $function$
 SELECT 4
-$function$
-language sql;
+$function$;
 
 create domain seclabel_domain as text;
 

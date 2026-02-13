@@ -208,21 +208,21 @@ create type textrange as range (subtype = text, collation = "C");
 
 create function binary_coercible(oid, oid)
 returns boolean
-as 'regresslib', 'binary_coercible'
 language c
-strict
 stable
-parallel SAFE;
+strict
+parallel SAFE
+as 'regresslib', 'binary_coercible';
 
 create function part_hashint4_noop(value int, seed bigint)
 returns bigint
+language sql
+immutable
+strict
+parallel SAFE
 as $function$
 select value + seed;
-$function$
-language sql
-strict
-immutable
-parallel SAFE;
+$function$;
 
 create operator class part_test_int4_ops
   for type int
@@ -232,13 +232,13 @@ create operator class part_test_int4_ops
 
 create function part_hashtext_length(value text, seed bigint)
 returns bigint
+language sql
+immutable
+strict
+parallel SAFE
 as $function$
 select length(coalesce(value, ''))::int8
-$function$
-language sql
-strict
-immutable
-parallel SAFE;
+$function$;
 
 create operator class part_test_text_ops
   for type text
@@ -248,17 +248,17 @@ create operator class part_test_text_ops
 
 create function fipshash(bytea)
 returns text
-strict
 immutable
-parallel SAFE
-leakproof return substr(encode(sha256($1), 'hex'), 1, 32);;
+leakproof
+strict
+parallel SAFE return substr(encode(sha256($1), 'hex'), 1, 32);;
 
 create function fipshash(text)
 returns text
-strict
 immutable
-parallel SAFE
-leakproof return substr(
+leakproof
+strict
+parallel SAFE return substr(
   encode(sha256(cast($1 as bytea)), 'hex'),
   1,
   32

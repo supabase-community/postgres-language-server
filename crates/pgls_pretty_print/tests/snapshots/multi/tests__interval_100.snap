@@ -1,7 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/interval.sql
-snapshot_kind: text
 ---
 set datestyle = ISO;
 
@@ -947,6 +946,7 @@ select i, isfinite(i) from infinite_interval_tbl;
 
 create function eval(expr text)
 returns text
+language plpgsql
 as $function$
 DECLARE
   result text;
@@ -956,8 +956,7 @@ BEGIN
 EXCEPTION WHEN OTHERS THEN
   RETURN SQLERRM;
 END
-$function$
-language plpgsql;
+$function$;
 
 select
   d as date,

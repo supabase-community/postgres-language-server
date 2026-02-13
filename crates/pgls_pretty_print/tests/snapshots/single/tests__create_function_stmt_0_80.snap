@@ -4,7 +4,7 @@ input_file: crates/pgls_pretty_print/tests/data/single/create_function_stmt_0.sq
 ---
 create function add(a int, b int)
 returns int
+language sql
 as $function$
 SELECT $1 + $2
-$function$
-language sql;
+$function$;

@@ -702,9 +702,9 @@ alter table attmp3
 
 create function boo(int)
 returns int
+language plpgsql
 immutable
 strict
-language plpgsql
 as $function$
 BEGIN RAISE NOTICE 'boo: %', $1; RETURN $1; END;
 $function$;

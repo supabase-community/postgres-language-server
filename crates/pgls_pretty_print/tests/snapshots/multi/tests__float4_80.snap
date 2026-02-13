@@ -184,18 +184,18 @@ create type xfloat4;
 
 create function xfloat4in(cstring)
 returns xfloat4
+language internal
 immutable
 strict
-language internal
 as $function$
 int4in
 $function$;
 
 create function xfloat4out(xfloat4)
 returns cstring
+language internal
 immutable
 strict
-language internal
 as $function$
 int4out
 $function$;

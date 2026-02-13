@@ -6,28 +6,28 @@ create event trigger "regress_event_trigger" on ddl_command_start execute functi
 
 create function test_event_trigger()
 returns event_trigger
+language plpgsql
 as $function$
 BEGIN
     RAISE NOTICE 'test_event_trigger: % %', tg_event, tg_tag;
 END
-$function$
-language plpgsql;
+$function$;
 
 select test_event_trigger();
 
 create function test_event_trigger_arg(name text)
 returns event_trigger
+language plpgsql
 as $function$
 BEGIN RETURN 1; END
-$function$
-language plpgsql;
+$function$;
 
 create function test_event_trigger_sql()
 returns event_trigger
+language sql
 as $function$
 SELECT 1
-$function$
-language sql;
+$function$;
 
 create event trigger "regress_event_trigger"
 on elephant_bootstrap
@@ -603,12 +603,12 @@ drop function test_evtrig_no_rewrite();
 
 create or replace function reindex_start_command()
 returns event_trigger
+language plpgsql
 as $function$
 BEGIN
     RAISE NOTICE 'REINDEX START: % %', tg_event, tg_tag;
 END;
-$function$
-language plpgsql;
+$function$;
 
 create event trigger "regress_reindex_start"
 on ddl_command_start
@@ -617,6 +617,7 @@ execute function reindex_start_command();
 
 create function reindex_end_command()
 returns event_trigger
+language plpgsql
 as $function$
 DECLARE
     obj record;
@@ -627,8 +628,7 @@ BEGIN
 	    obj.command_tag, obj.object_type, obj.object_identity;
     END LOOP;
 END;
-$function$
-language plpgsql;
+$function$;
 
 create event trigger "regress_reindex_end"
 on ddl_command_end
@@ -637,10 +637,10 @@ execute function reindex_end_command();
 
 create function reindex_end_command_snap()
 returns event_trigger
+language plpgsql
 as $function$
 BEGIN PERFORM 1; END
-$function$
-language plpgsql;
+$function$;
 
 create event trigger "regress_reindex_end_snap"
 on ddl_command_end
@@ -740,30 +740,30 @@ create table event_trigger_test (
 
 create or replace function start_command()
 returns event_trigger
+language plpgsql
 as $function$
 BEGIN
 RAISE NOTICE '% - ddl_command_start', tg_tag;
 END;
-$function$
-language plpgsql;
+$function$;
 
 create or replace function end_command()
 returns event_trigger
+language plpgsql
 as $function$
 BEGIN
 RAISE NOTICE '% - ddl_command_end', tg_tag;
 END;
-$function$
-language plpgsql;
+$function$;
 
 create or replace function drop_sql_command()
 returns event_trigger
+language plpgsql
 as $function$
 BEGIN
 RAISE NOTICE '% - sql_drop', tg_tag;
 END;
-$function$
-language plpgsql;
+$function$;
 
 create event trigger "start_rls_command"
 on ddl_command_start

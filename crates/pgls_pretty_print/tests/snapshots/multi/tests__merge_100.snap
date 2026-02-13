@@ -1462,6 +1462,7 @@ insert into measurement values (0, '2005-07-21', 5, 15);
 
 create or replace function measurement_insert_trigger()
 returns trigger
+language plpgsql
 as $function$
 BEGIN
     IF ( NEW.logdate >= DATE '2006-02-01' AND
@@ -1479,8 +1480,7 @@ BEGIN
     END IF;
     RETURN NULL;
 END;
-$function$
-language plpgsql;
+$function$;
 
 create trigger insert_measurement_trigger
 before insert

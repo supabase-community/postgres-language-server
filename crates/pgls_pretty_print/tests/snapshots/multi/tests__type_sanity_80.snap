@@ -1,7 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/type_sanity.sql
-snapshot_kind: text
 ---
 select
   t1.oid,
@@ -776,9 +775,9 @@ where
 
 create function is_catalog_text_unique_index_oid(oid)
 returns boolean
-as 'regresslib', 'is_catalog_text_unique_index_oid'
 language c
-strict;
+strict
+as 'regresslib', 'is_catalog_text_unique_index_oid';
 
 select
   cast(indexrelid as regclass)

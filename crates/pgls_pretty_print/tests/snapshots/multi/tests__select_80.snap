@@ -294,11 +294,11 @@ select 1 as x order by x;
 
 create function sillysrf(int)
 returns setof int
+language sql
+immutable
 as $function$
 values (1),(10),(2),($1)
-$function$
-language sql
-immutable;
+$function$;
 
 select sillysrf(42);
 

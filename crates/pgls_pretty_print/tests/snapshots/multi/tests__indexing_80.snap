@@ -2442,11 +2442,11 @@ create table test_pg_index_toast_table (a int);
 
 create or replace function test_pg_index_toast_func(a int, b int[])
 returns boolean
+language sql
+immutable
 as $function$
 select true
-$function$
-language sql
-immutable;
+$function$;
 
 select array_agg(n) as b from generate_series(1, 10000) as n;
 

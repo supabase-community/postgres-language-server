@@ -1,7 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/random.sql
-snapshot_kind: text
 ---
 select
   r,
@@ -28,6 +27,7 @@ from
 
 create function ks_test_uniform_random()
 returns boolean
+language plpgsql
 as $function$
 DECLARE
   n int := 1000;        -- Number of samples
@@ -44,8 +44,7 @@ BEGIN
   );
   RETURN ok;
 END
-$function$
-language plpgsql;
+$function$;
 
 select ks_test_uniform_random() or ks_test_uniform_random() or ks_test_uniform_random() as uniform;
 
@@ -92,6 +91,7 @@ group by r;
 
 create function ks_test_normal_random()
 returns boolean
+language plpgsql
 as $function$
 DECLARE
   n int := 1000;        -- Number of samples
@@ -109,8 +109,7 @@ BEGIN
   );
   RETURN ok;
 END
-$function$
-language plpgsql;
+$function$;
 
 select
   ks_test_normal_random() or
@@ -310,6 +309,7 @@ from
 
 create function ks_test_uniform_random_int_in_range()
 returns boolean
+language plpgsql
 as $function$
 DECLARE
   n int := 1000;        -- Number of samples
@@ -326,8 +326,7 @@ BEGIN
   );
   RETURN ok;
 END
-$function$
-language plpgsql;
+$function$;
 
 select
   ks_test_uniform_random_int_in_range() or
@@ -337,6 +336,7 @@ select
 
 create function ks_test_uniform_random_bigint_in_range()
 returns boolean
+language plpgsql
 as $function$
 DECLARE
   n int := 1000;        -- Number of samples
@@ -353,8 +353,7 @@ BEGIN
   );
   RETURN ok;
 END
-$function$
-language plpgsql;
+$function$;
 
 select
   ks_test_uniform_random_bigint_in_range() or
@@ -364,6 +363,7 @@ select
 
 create function ks_test_uniform_random_numeric_in_range()
 returns boolean
+language plpgsql
 as $function$
 DECLARE
   n int := 1000;        -- Number of samples
@@ -380,8 +380,7 @@ BEGIN
   );
   RETURN ok;
 END
-$function$
-language plpgsql;
+$function$;
 
 select
   ks_test_uniform_random_numeric_in_range() or

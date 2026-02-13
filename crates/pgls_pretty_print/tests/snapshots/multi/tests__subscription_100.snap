@@ -253,10 +253,10 @@ commit;
 
 create function func()
 returns void
+language sql
 as $function$
 ALTER SUBSCRIPTION regress_testsub SET PUBLICATION mypub WITH (refresh = true)
-$function$
-language sql;
+$function$;
 
 select func();
 
