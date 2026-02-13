@@ -42,7 +42,9 @@ pub static ALL_KEYWORDS: &[SqlKeyword] = &[
     SqlKeyword::new("all"),
     SqlKeyword::new("alter").starts_statement(),
     SqlKeyword::new("always"),
-    SqlKeyword::new("analyze").starts_statement(),
+    SqlKeyword::new("analyze")
+        .starts_statement()
+        .require_prefix(),
     SqlKeyword::new("and").require_prefix(),
     SqlKeyword::new("any").require_prefix(),
     SqlKeyword::new("array").require_prefix(),
@@ -123,7 +125,9 @@ pub static ALL_KEYWORDS: &[SqlKeyword] = &[
     SqlKeyword::new("exclude"),
     SqlKeyword::new("execute"),
     SqlKeyword::new("exists").require_prefix(),
-    SqlKeyword::new("explain").starts_statement(),
+    SqlKeyword::new("explain")
+        .starts_statement()
+        .require_prefix(),
     SqlKeyword::new("extended"),
     SqlKeyword::new("extension"),
     SqlKeyword::new("external"),
@@ -174,7 +178,7 @@ pub static ALL_KEYWORDS: &[SqlKeyword] = &[
     SqlKeyword::new("interval").require_prefix(),
     SqlKeyword::new("into"),
     SqlKeyword::new("invoker"),
-    SqlKeyword::new("is"),
+    SqlKeyword::new("is").require_prefix(),
     SqlKeyword::new("isolation"),
     SqlKeyword::new("join"),
     SqlKeyword::new("json"),
@@ -431,6 +435,14 @@ mod tests {
             query.as_str(),
             vec![
                 CompletionAssertion::LabelAndKind(
+                    "create".into(),
+                    crate::CompletionItemKind::Keyword,
+                ),
+                CompletionAssertion::LabelAndKind(
+                    "drop".into(),
+                    crate::CompletionItemKind::Keyword,
+                ),
+                CompletionAssertion::LabelAndKind(
                     "insert".into(),
                     crate::CompletionItemKind::Keyword,
                 ),
@@ -609,10 +621,13 @@ mod tests {
 
         assert_complete_results(
             query.as_str(),
-            vec![CompletionAssertion::LabelAndKind(
-                "from".into(),
-                crate::CompletionItemKind::Keyword,
-            )],
+            vec![
+                CompletionAssertion::LabelAndKind("for".into(), crate::CompletionItemKind::Keyword),
+                CompletionAssertion::LabelAndKind(
+                    "from".into(),
+                    crate::CompletionItemKind::Keyword,
+                ),
+            ],
             Some(setup),
             &pool,
         )
@@ -635,10 +650,17 @@ mod tests {
 
         assert_complete_results(
             query.as_str(),
-            vec![CompletionAssertion::LabelAndKind(
-                "from".into(),
-                crate::CompletionItemKind::Keyword,
-            )],
+            vec![
+                CompletionAssertion::LabelAndKind(
+                    "except".into(),
+                    crate::CompletionItemKind::Keyword,
+                ),
+                CompletionAssertion::LabelAndKind("for".into(), crate::CompletionItemKind::Keyword),
+                CompletionAssertion::LabelAndKind(
+                    "from".into(),
+                    crate::CompletionItemKind::Keyword,
+                ),
+            ],
             Some(setup),
             &pool,
         )
@@ -686,6 +708,11 @@ mod tests {
                     crate::CompletionItemKind::Keyword,
                 ),
                 CompletionAssertion::LabelAndKind(
+                    "except".into(),
+                    crate::CompletionItemKind::Keyword,
+                ),
+                CompletionAssertion::LabelAndKind("for".into(), crate::CompletionItemKind::Keyword),
+                CompletionAssertion::LabelAndKind(
                     "full".into(),
                     crate::CompletionItemKind::Keyword,
                 ),
@@ -695,6 +722,10 @@ mod tests {
                 ),
                 CompletionAssertion::LabelAndKind(
                     "inner".into(),
+                    crate::CompletionItemKind::Keyword,
+                ),
+                CompletionAssertion::LabelAndKind(
+                    "intersect".into(),
                     crate::CompletionItemKind::Keyword,
                 ),
                 CompletionAssertion::LabelAndKind(
@@ -714,7 +745,27 @@ mod tests {
                     crate::CompletionItemKind::Keyword,
                 ),
                 CompletionAssertion::LabelAndKind(
+                    "offset".into(),
+                    crate::CompletionItemKind::Keyword,
+                ),
+                CompletionAssertion::LabelAndKind(
                     "order".into(),
+                    crate::CompletionItemKind::Keyword,
+                ),
+                CompletionAssertion::LabelAndKind(
+                    "right".into(),
+                    crate::CompletionItemKind::Keyword,
+                ),
+                CompletionAssertion::LabelAndKind(
+                    "union".into(),
+                    crate::CompletionItemKind::Keyword,
+                ),
+                CompletionAssertion::LabelAndKind(
+                    "where".into(),
+                    crate::CompletionItemKind::Keyword,
+                ),
+                CompletionAssertion::LabelAndKind(
+                    "window".into(),
                     crate::CompletionItemKind::Keyword,
                 ),
             ],
@@ -797,9 +848,12 @@ mod tests {
             query.as_str(),
             vec![
                 CompletionAssertion::LabelAndKind("cross".into(), CompletionItemKind::Keyword),
+                CompletionAssertion::LabelAndKind("except".into(), CompletionItemKind::Keyword),
+                CompletionAssertion::LabelAndKind("for".into(), CompletionItemKind::Keyword),
                 CompletionAssertion::LabelAndKind("full".into(), CompletionItemKind::Keyword),
                 CompletionAssertion::LabelAndKind("group".into(), CompletionItemKind::Keyword),
                 CompletionAssertion::LabelAndKind("inner".into(), CompletionItemKind::Keyword),
+                CompletionAssertion::LabelAndKind("intersect".into(), CompletionItemKind::Keyword),
                 CompletionAssertion::LabelAndKind("join".into(), CompletionItemKind::Keyword),
             ],
             Some(setup),

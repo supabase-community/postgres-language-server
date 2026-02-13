@@ -59,10 +59,10 @@ select u.id, auth.posts.content from auth.users u join auth.posts p on p.user_id
 
 Results:
 cross - cross (Keyword)
+except - except (Keyword)
+for - for (Keyword)
 full - full (Keyword)
 group - group (Keyword)
-inner - inner (Keyword)
-join - join (Keyword)
 
 --------------
 
@@ -98,10 +98,10 @@ uid - auth.users.uid (Column)
 select u.id, auth.posts.content from auth.users u join auth.posts p on p.user_id = u.uid; |
 
 Results:
+create - create (Keyword)
+drop - drop (Keyword)
 insert - insert (Keyword)
 reset - reset (Keyword)
 select - select (Keyword)
-set - set (Keyword)
-truncate - truncate (Keyword)
 
 --------------

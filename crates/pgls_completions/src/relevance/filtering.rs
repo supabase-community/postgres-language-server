@@ -629,10 +629,41 @@ mod tests {
 
         assert_complete_results(
             format!("select * {}", QueryWithCursorPosition::cursor_marker()).as_str(),
-            vec![CompletionAssertion::LabelAndKind(
-                "from".into(),
-                crate::CompletionItemKind::Keyword,
-            )],
+            vec![
+                CompletionAssertion::LabelAndKind(
+                    "except".into(),
+                    crate::CompletionItemKind::Keyword,
+                ),
+                CompletionAssertion::LabelAndKind("for".into(), crate::CompletionItemKind::Keyword),
+                CompletionAssertion::LabelAndKind(
+                    "from".into(),
+                    crate::CompletionItemKind::Keyword,
+                ),
+                CompletionAssertion::LabelAndKind(
+                    "group".into(),
+                    crate::CompletionItemKind::Keyword,
+                ),
+                CompletionAssertion::LabelAndKind(
+                    "intersect".into(),
+                    crate::CompletionItemKind::Keyword,
+                ),
+                CompletionAssertion::LabelAndKind(
+                    "limit".into(),
+                    crate::CompletionItemKind::Keyword,
+                ),
+                CompletionAssertion::LabelAndKind(
+                    "offset".into(),
+                    crate::CompletionItemKind::Keyword,
+                ),
+                CompletionAssertion::LabelAndKind(
+                    "order".into(),
+                    crate::CompletionItemKind::Keyword,
+                ),
+                CompletionAssertion::LabelAndKind(
+                    "union".into(),
+                    crate::CompletionItemKind::Keyword,
+                ),
+            ],
             None,
             &pool,
         )
