@@ -2402,11 +2402,19 @@ module.exports = grammar({
       ),
 
     table_partition: ($) =>
-      seq(
-        $.keyword_partition,
-        $.keyword_by,
-        choice($.keyword_range, $.keyword_hash, $.keyword_list),
-        paren_list($.any_identifier, false),
+      choice(
+        partialSeq(
+          $.keyword_partition,
+          $.keyword_by,
+          choice($.keyword_range, $.keyword_hash, $.keyword_list),
+          paren_list($.any_identifier, false),
+        ),
+        partialSeq(
+          $.keyword_partition,
+          $.keyword_of,
+          choice($.keyword_range, $.keyword_hash, $.keyword_list),
+          paren_list($.any_identifier, false),
+        ),
       ),
 
     _key_value_pair: ($) =>
