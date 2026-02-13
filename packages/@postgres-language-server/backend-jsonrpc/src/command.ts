@@ -73,5 +73,5 @@ export function getCommand(): string | null {
 }
 
 function hasStdErr(err: unknown): err is { stderr: string } {
-	return !!(err as any)?.stderr;
+	return typeof err === "object" && err !== null && "stderr" in err;
 }

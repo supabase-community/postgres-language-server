@@ -39,9 +39,9 @@ export async function loadWasm(): Promise<PGLSModule> {
 
 	if (isNode()) {
 		// In Node.js/Bun, read the WASM file directly
-		const { readFileSync } = await import("fs");
-		const { fileURLToPath } = await import("url");
-		const { dirname, join } = await import("path");
+		const { readFileSync } = await import("node:fs");
+		const { fileURLToPath } = await import("node:url");
+		const { dirname, join } = await import("node:path");
 
 		const __filename = fileURLToPath(import.meta.url);
 		const __dirname = dirname(__filename);

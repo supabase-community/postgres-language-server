@@ -1,7 +1,7 @@
 import assert from "node:assert";
 import * as fs from "node:fs";
-import { pipeline } from "node:stream";
 import { resolve } from "node:path";
+import { pipeline } from "node:stream";
 import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
 const streamPipeline = promisify(pipeline);

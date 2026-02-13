@@ -17,18 +17,18 @@
  */
 
 import type {
-	Diagnostic,
 	CompletionItem,
+	Diagnostic,
+	PGLSModule,
 	SchemaCache,
 	WorkspaceOptions,
-	PGLSModule,
 } from "./types.js";
 
 import {
-	loadWasm,
 	allocateString,
-	readAndFreeString,
+	loadWasm,
 	parseResult,
+	readAndFreeString,
 } from "./common.js";
 
 export type {
