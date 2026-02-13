@@ -49,8 +49,9 @@ module.exports = grammar({
     [$.constraint, $._constraint_literal],
     [$._primary_key_constraint, $._constraint_literal],
 
+    [$.table_partition, $.partition_of],
     [$.create_index, $.create_function, $.create_table],
-    [$.drop_index, $.drop_function],
+    [$.drop_index, $.drop_function, $.drop_table],
 
     [$._function_return, $.binary_expression, $.between_expression],
   ],
@@ -988,6 +989,10 @@ module.exports = grammar({
             seq(
               repeat($._table_settings),
               seq($.keyword_as, field("end", $.create_query)),
+            ),
+            seq(
+              field("end", $.partition_of),
+              repeat($._table_settings),
             ),
           ),
         ),
@@ -2059,11 +2064,11 @@ module.exports = grammar({
       ),
 
     drop_table: ($) =>
-      seq(
+      partialSeq(
         $.keyword_drop,
         $.keyword_table,
         optional($._if_exists),
-        $.table_reference,
+        field("end", $.table_reference),
         optional($._drop_behavior),
       ),
 
@@ -2402,19 +2407,31 @@ module.exports = grammar({
       ),
 
     table_partition: ($) =>
+      partialSeq(
+        $.keyword_partition,
+        $.keyword_by,
+        choice($.keyword_range, $.keyword_hash, $.keyword_list),
+        paren_list($.any_identifier, false),
+      ),
+
+    partition_bound: ($) =>
       choice(
+        $.keyword_default,
         partialSeq(
-          $.keyword_partition,
-          $.keyword_by,
-          choice($.keyword_range, $.keyword_hash, $.keyword_list),
-          paren_list($.any_identifier, false),
+          $.keyword_for,
+          $.keyword_values,
+          $.keyword_in,
+          paren_list($._expression, false),
         ),
-        partialSeq(
-          $.keyword_partition,
-          $.keyword_of,
-          choice($.keyword_range, $.keyword_hash, $.keyword_list),
-          paren_list($.any_identifier, false),
-        ),
+      ),
+
+    partition_of: ($) =>
+      partialSeq(
+        $.keyword_partition,
+        $.keyword_of,
+        $.table_reference,
+        optional($.column_definitions),
+        field("end", $.partition_bound),
       ),
 
     _key_value_pair: ($) =>
