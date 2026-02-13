@@ -747,7 +747,7 @@ module.exports = grammar({
         optional(optional_parenthesis($._cte)),
         optional_parenthesis(
           choice(
-            delimited_list(
+            token_delimited_list(
               choice($._select_statement, $.values, $.table_statement),
               choice(
                 seq($.keyword_union, optional($.keyword_all)),
@@ -2452,12 +2452,10 @@ module.exports = grammar({
       ),
 
     column_definition: ($) =>
-      prec.left(
-        partialSeq(
-          $.any_identifier,
-          field("end", $.type),
-          repeat($._column_constraint),
-        ),
+      partialSeq(
+        $.any_identifier,
+        field("end", $.type),
+        repeat($._column_constraint),
       ),
 
     _column_comment: ($) =>
@@ -3513,7 +3511,14 @@ function parametric_type($, rule, params = ["size"]) {
  * @returns {PrecRightRule | ChoiceRule}
  */
 function comma_list(rule, requireFirst) {
-  return delimited_list(rule, ",", requireFirst);
+  /** Note: rule is required to form a full sequence after the comma */
+  const sequence = prec.right(seq(rule, repeat(seq(",", rule))));
+
+  if (requireFirst) {
+    return sequence;
+  }
+
+  return optional(sequence);
 }
 
 /**
@@ -3522,7 +3527,8 @@ function comma_list(rule, requireFirst) {
  * @param {boolean} requireFirst
  * @returns {PrecRightRule | ChoiceRule}
  */
-function delimited_list(rule, delimiter, requireFirst) {
+function token_delimited_list(rule, delimiter, requireFirst) {
+  /** Note: rule is NOT required to form a full sequence after the delimiter */
   const sequence = prec.right(seq(rule, repeat(partialSeq(delimiter, rule))));
 
   if (requireFirst) {

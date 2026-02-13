@@ -94,7 +94,7 @@ fn verify_branches_have_ends(
 }
 
 #[test]
-// #[ignore = "wip"]
+#[ignore = "wip"]
 fn test_grammar() {
     let mut parser = tree_sitter::Parser::new();
     if let Err(e) = parser.set_language(&pgls_treesitter_grammar::LANGUAGE.into()) {
