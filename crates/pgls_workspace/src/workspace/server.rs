@@ -11,7 +11,7 @@ use analyser::AnalyserVisitorBuilder;
 use async_helper::run_async;
 #[cfg(feature = "db")]
 use connection_manager::ConnectionManager;
-use document::{CursorPositionFilter, DefaultMapper, Document};
+use document::{CursorPositionFilter, DefaultMapper, Document, FormatStatementMapper};
 #[cfg(feature = "db")]
 use document::{ExecuteStatementMapper, TypecheckDiagnosticsMapper};
 #[cfg(feature = "db")]
@@ -44,6 +44,7 @@ use crate::{
         },
         completions::{CompletionsResult, GetCompletionsParams, get_statement_for_completions},
         diagnostics::{PullDiagnosticsResult, PullFileDiagnosticsParams},
+        format::{PullFileFormattingParams, PullFormattingResult, StatementFormatResult},
         on_hover::{OnHoverParams, OnHoverResult},
     },
     settings::{WorkspaceSettings, WorkspaceSettingsHandle, WorkspaceSettingsHandleMut},
@@ -557,112 +558,109 @@ impl Workspace for WorkspaceServer {
         {
             let typecheck_enabled = settings.typecheck.enabled;
             let plpgsql_check_enabled = settings.plpgsql_check.enabled;
-            if typecheck_enabled || plpgsql_check_enabled {
-                if let Some(pool) = self.get_current_connection() {
-                    let path_clone = params.path.clone();
-                    let schema_cache = self.schema_cache.load(pool.clone())?;
-                    let input = doc.iter(TypecheckDiagnosticsMapper).collect::<Vec<_>>();
-                    let search_path_patterns = settings.typecheck.search_path.clone();
+            if (typecheck_enabled || plpgsql_check_enabled)
+                && let Some(pool) = self.get_current_connection()
+            {
+                let path_clone = params.path.clone();
+                let schema_cache = self.schema_cache.load(pool.clone())?;
+                let input = doc.iter(TypecheckDiagnosticsMapper).collect::<Vec<_>>();
+                let search_path_patterns = settings.typecheck.search_path.clone();
 
-                    // Combined async context for both typecheck and plpgsql_check
-                    let async_results = run_async(async move {
-                        stream::iter(input)
-                            .map(|(id, range, ast, cst, fn_sig)| {
-                                let pool = pool.clone();
-                                let path = path_clone.clone();
-                                let schema_cache = Arc::clone(&schema_cache);
-                                let search_path_patterns = search_path_patterns.clone();
+                // Combined async context for both typecheck and plpgsql_check
+                let async_results = run_async(async move {
+                    stream::iter(input)
+                        .map(|(id, range, ast, cst, fn_sig)| {
+                            let pool = pool.clone();
+                            let path = path_clone.clone();
+                            let schema_cache = Arc::clone(&schema_cache);
+                            let search_path_patterns = search_path_patterns.clone();
 
-                                async move {
-                                    let mut diagnostics = Vec::new();
+                            async move {
+                                let mut diagnostics = Vec::new();
 
-                                    if let Some(ast) = ast {
-                                        // Type checking
-                                        if typecheck_enabled {
-                                            let typecheck_result =
-                                                pgls_typecheck::check_sql(TypecheckParams {
-                                                    conn: &pool,
-                                                    sql: convert_to_positional_params(id.content())
-                                                        .as_str(),
-                                                    ast: &ast,
-                                                    tree: &cst,
-                                                    schema_cache: schema_cache.as_ref(),
-                                                    search_path_patterns,
-                                                    identifiers: fn_sig
-                                                        .map(|s| {
-                                                            s.args
-                                                                .iter()
-                                                                .map(|a| TypedIdentifier {
-                                                                    path: s.name.clone(),
-                                                                    name: a.name.clone(),
-                                                                    type_: IdentifierType {
-                                                                        schema: a
-                                                                            .type_
-                                                                            .schema
-                                                                            .clone(),
-                                                                        name: a.type_.name.clone(),
-                                                                        is_array: a.type_.is_array,
-                                                                    },
-                                                                })
-                                                                .collect::<Vec<_>>()
-                                                        })
-                                                        .unwrap_or_default(),
-                                                })
-                                                .await;
+                                if let Some(ast) = ast {
+                                    // Type checking
+                                    if typecheck_enabled {
+                                        let typecheck_result =
+                                            pgls_typecheck::check_sql(TypecheckParams {
+                                                conn: &pool,
+                                                sql: convert_to_positional_params(id.content())
+                                                    .as_str(),
+                                                ast: &ast,
+                                                tree: &cst,
+                                                schema_cache: schema_cache.as_ref(),
+                                                search_path_patterns,
+                                                identifiers: fn_sig
+                                                    .map(|s| {
+                                                        s.args
+                                                            .iter()
+                                                            .map(|a| TypedIdentifier {
+                                                                path: s.name.clone(),
+                                                                name: a.name.clone(),
+                                                                type_: IdentifierType {
+                                                                    schema: a.type_.schema.clone(),
+                                                                    name: a.type_.name.clone(),
+                                                                    is_array: a.type_.is_array,
+                                                                },
+                                                            })
+                                                            .collect::<Vec<_>>()
+                                                    })
+                                                    .unwrap_or_default(),
+                                            })
+                                            .await;
 
-                                            if let Ok(Some(diag)) = typecheck_result {
-                                                let r = diag
-                                                    .location()
-                                                    .span
-                                                    .map(|span| span + range.start());
-                                                diagnostics.push(
-                                                    diag.with_file_path(
-                                                        path.as_path().display().to_string(),
-                                                    )
-                                                    .with_file_span(r.unwrap_or(range)),
-                                                );
-                                            }
-                                        }
-
-                                        // plpgsql_check
-                                        if plpgsql_check_enabled {
-                                            let plpgsql_check_results =
-                                                pgls_plpgsql_check::check_plpgsql(
-                                                    pgls_plpgsql_check::PlPgSqlCheckParams {
-                                                        conn: &pool,
-                                                        sql: id.content(),
-                                                        ast: &ast,
-                                                        schema_cache: schema_cache.as_ref(),
-                                                    },
+                                        if let Ok(Some(diag)) = typecheck_result {
+                                            let r = diag
+                                                .location()
+                                                .span
+                                                .map(|span| span + range.start());
+                                            diagnostics.push(
+                                                diag.with_file_path(
+                                                    path.as_path().display().to_string(),
                                                 )
-                                                .await
-                                                .unwrap_or_else(|_| vec![]);
-
-                                            for d in plpgsql_check_results {
-                                                let r = d.span.map(|span| span + range.start());
-                                                diagnostics.push(
-                                                    d.with_file_path(
-                                                        path.as_path().display().to_string(),
-                                                    )
-                                                    .with_file_span(r.unwrap_or(range)),
-                                                );
-                                            }
+                                                .with_file_span(r.unwrap_or(range)),
+                                            );
                                         }
                                     }
 
-                                    Ok::<Vec<pgls_diagnostics::Error>, sqlx::Error>(diagnostics)
-                                }
-                            })
-                            .buffer_unordered(10)
-                            .collect::<Vec<_>>()
-                            .await
-                    })?;
+                                    // plpgsql_check
+                                    if plpgsql_check_enabled {
+                                        let plpgsql_check_results =
+                                            pgls_plpgsql_check::check_plpgsql(
+                                                pgls_plpgsql_check::PlPgSqlCheckParams {
+                                                    conn: &pool,
+                                                    sql: id.content(),
+                                                    ast: &ast,
+                                                    schema_cache: schema_cache.as_ref(),
+                                                },
+                                            )
+                                            .await
+                                            .unwrap_or_else(|_| vec![]);
 
-                    for result in async_results.into_iter() {
-                        let diagnostics_batch = result?;
-                        for diag in diagnostics_batch {
-                            diagnostics.push(SDiagnostic::new(diag));
-                        }
+                                        for d in plpgsql_check_results {
+                                            let r = d.span.map(|span| span + range.start());
+                                            diagnostics.push(
+                                                d.with_file_path(
+                                                    path.as_path().display().to_string(),
+                                                )
+                                                .with_file_span(r.unwrap_or(range)),
+                                            );
+                                        }
+                                    }
+                                }
+
+                                Ok::<Vec<pgls_diagnostics::Error>, sqlx::Error>(diagnostics)
+                            }
+                        })
+                        .buffer_unordered(10)
+                        .collect::<Vec<_>>()
+                        .await
+                })?;
+
+                for result in async_results.into_iter() {
+                    let diagnostics_batch = result?;
+                    for diag in diagnostics_batch {
+                        diagnostics.push(SDiagnostic::new(diag));
                     }
                 }
             }
@@ -851,6 +849,142 @@ impl Workspace for WorkspaceServer {
         Ok(PullDiagnosticsResult {
             diagnostics,
             skipped_diagnostics: skipped,
+        })
+    }
+
+    #[ignored_path(path=&params.path)]
+    fn pull_file_formatting(
+        &self,
+        params: PullFileFormattingParams,
+    ) -> Result<PullFormattingResult, WorkspaceError> {
+        let settings = self.workspaces();
+
+        let settings = match settings.settings() {
+            Some(settings) => settings,
+            None => {
+                return Ok(PullFormattingResult::default());
+            }
+        };
+
+        if !settings.formatter.enabled {
+            return Ok(PullFormattingResult::default());
+        }
+
+        let documents = self.documents.read().unwrap();
+        let doc = documents
+            .get(&params.path)
+            .ok_or(WorkspaceError::not_found())?;
+
+        let config = pgls_pretty_print::FormatConfig {
+            line_width: settings.formatter.line_width as usize,
+            indent_size: settings.formatter.indent_size as usize,
+            indent_style: settings.formatter.indent_style.into(),
+            keyword_case: settings.formatter.keyword_case.into(),
+            constant_case: settings.formatter.constant_case.into(),
+            type_case: settings.formatter.type_case.into(),
+        };
+
+        let mut diagnostics = Vec::new();
+        let mut statements = Vec::new();
+        let mut formatted_output = String::new();
+        let path_str = params.path.as_path().display().to_string();
+
+        let format_candidates: Vec<_> = doc.iter(FormatStatementMapper).collect();
+        let mut formatted_sql_fn_bodies = HashMap::new();
+
+        // Only format SQL function bodies if skip_fn_bodies is false
+        if !settings.formatter.skip_fn_bodies {
+            for (id, _stmt_range, _text, ast_result) in &format_candidates {
+                if !id.is_child() {
+                    continue;
+                }
+
+                let Some(parent_id) = id.parent() else {
+                    continue;
+                };
+
+                let Ok(ast) = ast_result else {
+                    continue;
+                };
+
+                let Ok(result) = pgls_pretty_print::format_statement(ast, &config) else {
+                    continue;
+                };
+
+                formatted_sql_fn_bodies.insert(parent_id, result.formatted);
+            }
+        }
+
+        for (id, stmt_range, text, ast_result) in format_candidates {
+            if id.is_child() {
+                continue;
+            }
+
+            if let Some(filter_range) = params.range
+                && stmt_range.intersect(filter_range).is_none()
+            {
+                if !formatted_output.is_empty() {
+                    formatted_output.push_str("\n\n");
+                }
+                formatted_output.push_str(&text);
+                continue;
+            }
+
+            match ast_result {
+                Ok(ast) => {
+                    let mut ast = ast;
+                    if let Some(formatted_sql_fn_body) = formatted_sql_fn_bodies.get(&id) {
+                        sql_function::set_sql_fn_body(&mut ast, formatted_sql_fn_body);
+                    }
+
+                    match pgls_pretty_print::format_statement(&ast, &config) {
+                        Ok(result) => {
+                            if text != result.formatted {
+                                statements.push(StatementFormatResult {
+                                    original: text.clone(),
+                                    formatted: result.formatted.clone(),
+                                    range: stmt_range,
+                                });
+                            }
+                            if !formatted_output.is_empty() {
+                                formatted_output.push_str("\n\n");
+                            }
+                            formatted_output.push_str(&result.formatted);
+                        }
+                        Err(err) => {
+                            diagnostics.push(SDiagnostic::new(
+                                pgls_diagnostics::Error::from(WorkspaceError::format_error(
+                                    err.to_string(),
+                                ))
+                                .with_file_path(&path_str)
+                                .with_file_span(stmt_range),
+                            ));
+
+                            if !formatted_output.is_empty() {
+                                formatted_output.push_str("\n\n");
+                            }
+                            formatted_output.push_str(&text);
+                        }
+                    }
+                }
+                Err(syntax_err) => {
+                    diagnostics.push(SDiagnostic::new(
+                        pgls_diagnostics::Error::from(syntax_err).with_file_path(&path_str),
+                    ));
+
+                    if !formatted_output.is_empty() {
+                        formatted_output.push_str("\n\n");
+                    }
+                    formatted_output.push_str(&text);
+                }
+            }
+        }
+
+        Ok(PullFormattingResult {
+            original: doc.get_document_content().to_string(),
+            formatted: formatted_output,
+            statements,
+            diagnostics,
         })
     }
 

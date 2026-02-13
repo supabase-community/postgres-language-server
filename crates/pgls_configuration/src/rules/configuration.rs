@@ -1,5 +1,4 @@
-use biome_deserialize::Merge;
-use biome_deserialize_macros::Deserializable;
+use crate::Merge;
 use pgls_analyser::RuleOptions;
 use pgls_diagnostics::Severity;
 #[cfg(feature = "schema")]
@@ -164,7 +163,7 @@ impl From<RuleAssistPlainConfiguration> for Severity {
     }
 }
 
-#[derive(Clone, Copy, Debug, Default, Deserialize, Deserializable, Eq, PartialEq, Serialize)]
+#[derive(Clone, Copy, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
 #[cfg_attr(feature = "schema", derive(JsonSchema))]
 #[serde(rename_all = "camelCase")]
 pub enum RulePlainConfiguration {
@@ -233,7 +232,7 @@ impl<T: Default> Default for RuleAssistConfiguration<T> {
     }
 }
 
-#[derive(Clone, Copy, Debug, Default, Deserialize, Deserializable, Eq, PartialEq, Serialize)]
+#[derive(Clone, Copy, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
 #[cfg_attr(feature = "schema", derive(JsonSchema))]
 #[serde(rename_all = "camelCase")]
 pub enum RuleAssistPlainConfiguration {
@@ -256,7 +255,7 @@ impl Merge for RuleAssistPlainConfiguration {
     }
 }
 
-#[derive(Clone, Debug, Default, Deserialize, Deserializable, Eq, PartialEq, Serialize)]
+#[derive(Clone, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
 #[cfg_attr(feature = "schema", derive(JsonSchema))]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct RuleAssistWithOptions<T: Default> {
@@ -272,7 +271,7 @@ impl<T: Default> Merge for RuleAssistWithOptions<T> {
     }
 }
 
-#[derive(Clone, Debug, Default, Deserialize, Deserializable, Eq, PartialEq, Serialize)]
+#[derive(Clone, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
 #[cfg_attr(feature = "schema", derive(JsonSchema))]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct RuleWithOptions<T: Default> {
@@ -288,7 +287,7 @@ impl<T: Default> Merge for RuleWithOptions<T> {
     }
 }
 
-#[derive(Clone, Debug, Default, Deserialize, Deserializable, Eq, PartialEq, Serialize)]
+#[derive(Clone, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
 #[cfg_attr(feature = "schema", derive(JsonSchema))]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct RuleWithFixOptions<T: Default> {

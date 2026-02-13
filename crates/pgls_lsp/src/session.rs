@@ -3,10 +3,10 @@ use crate::diagnostics::LspError;
 use crate::documents::Document;
 use crate::utils;
 use anyhow::Result;
-use biome_deserialize::Merge;
 use futures::StreamExt;
 use futures::stream::FuturesUnordered;
 use pgls_analyse::RuleCategoriesBuilder;
+use pgls_configuration::Merge;
 use pgls_configuration::{ConfigurationPathHint, PartialConfiguration};
 use pgls_diagnostics::{DiagnosticExt, Error};
 use pgls_fs::{ConfigName, FileSystem, PgLSPath};
@@ -75,6 +75,9 @@ pub(crate) struct Session {
     pub(crate) cancellation: Arc<Notify>,
 
     pub(crate) config_path: Option<PathBuf>,
+
+    /// Extra configuration from environment variables, applied on every config load.
+    env_config: Option<PartialConfiguration>,
 }
 
 /// The parameters provided by the client in the "initialize" request
@@ -155,6 +158,7 @@ impl Session {
         workspace: Arc<dyn Workspace>,
         cancellation: Arc<Notify>,
         fs: DynRef<'static, dyn FileSystem>,
+        env_config: Option<PartialConfiguration>,
     ) -> Self {
         let documents = Default::default();
         Self {
@@ -169,6 +173,7 @@ impl Session {
             config_path: None,
             notified_broken_configuration: AtomicBool::new(false),
             notified_deprecated_config: AtomicBool::new(false),
+            env_config,
         }
     }
 
@@ -474,11 +479,12 @@ impl Session {
                 );
 
                 // Check if using deprecated config filename and notify user (once)
-                if !self.notified_deprecated_config.load(Ordering::Relaxed) {
-                    if let Some(config_path) = &configuration_file_path {
-                        if let Some(file_name) = config_path.file_name().and_then(|n| n.to_str()) {
-                            if ConfigName::is_deprecated(file_name) {
-                                self.client
+                if !self.notified_deprecated_config.load(Ordering::Relaxed)
+                    && let Some(config_path) = &configuration_file_path
+                    && let Some(file_name) = config_path.file_name().and_then(|n| n.to_str())
+                    && ConfigName::is_deprecated(file_name)
+                {
+                    self.client
                                     .show_message(
                                         MessageType::WARNING,
                                         "You are using the deprecated config filename 'postgrestools.jsonc'. \
@@ -486,11 +492,8 @@ impl Session {
                                         Support for the old filename will be removed in a future version."
                                     )
                                     .await;
-                                self.notified_deprecated_config
-                                    .store(true, Ordering::Relaxed);
-                            }
-                        }
-                    }
+                    self.notified_deprecated_config
+                        .store(true, Ordering::Relaxed);
                 }
 
                 info!("Update workspace settings.");
@@ -499,6 +502,11 @@ impl Session {
 
                 if let Some(ws_configuration) = extra_config {
                     fs_configuration.merge_with(ws_configuration);
+                }
+
+                // Env vars take highest priority — merge last so they override everything.
+                if let Some(env_config) = &self.env_config {
+                    fs_configuration.merge_with(env_config.clone());
                 }
 
                 let result = fs_configuration

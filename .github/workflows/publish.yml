@@ -75,6 +75,8 @@ jobs:
       id-token: write
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: true
 
       - name: Install Node
         uses: actions/setup-node@v4
@@ -93,6 +95,14 @@ jobs:
             exit 1
           fi
 
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.2.17"
+
+      - name: Install dependencies
+        run: bun install
+
       - name: Generate Packages (deprecated)
         id: generate-packages-deprecated
         run: node packages/@postgrestools/postgrestools/scripts/generate-packages.mjs
@@ -108,6 +118,10 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.release_tag || github.event.release.tag_name }}
           PRERELEASE: ${{ github.event_name == 'workflow_dispatch' && needs.validate_tag.outputs.is-prerelease || github.event.release.prerelease }}
+
+      - name: Build WASM TS
+        run: bun run build:ts
+        working-directory: packages/@postgres-language-server/wasm
 
       - name: Publish npm packages as nightly (deprecated)
         if: (github.event_name == 'workflow_dispatch' && needs.validate_tag.outputs.is-prerelease == 'true') || (github.event_name == 'release' && github.event.release.prerelease)

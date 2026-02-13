@@ -1,0 +1,867 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/hash_func.sql
+snapshot_kind: text
+---
+select
+  v as value,
+  cast(hashint2(v) as bit(32)) as standard,
+  cast(hashint2extended(v, 0) as bit(32))
+  as extended0,
+  cast(hashint2extended(v, 1) as bit(32))
+  as extended1
+from
+  (
+    values
+      (cast(0 as smallint)),
+      (cast(1 as smallint)),
+      (cast(17 as smallint)),
+      (cast(42 as smallint))
+  )
+  as x (v)
+where
+  cast(hashint2(v) as bit(32)) <>
+  cast(hashint2extended(v, 0) as bit(32)) or
+  cast(hashint2(v) as bit(32)) =
+  cast(hashint2extended(v, 1) as bit(32));
+
+select
+  v as value,
+  cast(hashint4(v) as bit(32)) as standard,
+  cast(hashint4extended(v, 0) as bit(32))
+  as extended0,
+  cast(hashint4extended(v, 1) as bit(32))
+  as extended1
+from
+  (
+    values
+      (0),
+      (1),
+      (17),
+      (42),
+      (550273),
+      (207112489)
+  )
+  as x (v)
+where
+  cast(hashint4(v) as bit(32)) <>
+  cast(hashint4extended(v, 0) as bit(32)) or
+  cast(hashint4(v) as bit(32)) =
+  cast(hashint4extended(v, 1) as bit(32));
+
+select
+  v as value,
+  cast(hashint8(v) as bit(32)) as standard,
+  cast(hashint8extended(v, 0) as bit(32))
+  as extended0,
+  cast(hashint8extended(v, 1) as bit(32))
+  as extended1
+from
+  (
+    values
+      (0),
+      (1),
+      (17),
+      (42),
+      (550273),
+      (207112489)
+  )
+  as x (v)
+where
+  cast(hashint8(v) as bit(32)) <>
+  cast(hashint8extended(v, 0) as bit(32)) or
+  cast(hashint8(v) as bit(32)) =
+  cast(hashint8extended(v, 1) as bit(32));
+
+select
+  v as value,
+  cast(hashfloat4(v) as bit(32))
+  as standard,
+  cast(hashfloat4extended(v, 0)
+  as bit(32))
+  as extended0,
+  cast(hashfloat4extended(v, 1)
+  as bit(32))
+  as extended1
+from
+  (
+    values
+      (0),
+      (1),
+      (17),
+      (42),
+      (550273),
+      (207112489)
+  )
+  as x (v)
+where
+  cast(hashfloat4(v) as bit(32)) <>
+  cast(hashfloat4extended(v, 0)
+  as bit(32)) or
+  cast(hashfloat4(v) as bit(32)) =
+  cast(hashfloat4extended(v, 1)
+  as bit(32));
+
+select
+  v as value,
+  cast(hashfloat8(v) as bit(32))
+  as standard,
+  cast(hashfloat8extended(v, 0)
+  as bit(32))
+  as extended0,
+  cast(hashfloat8extended(v, 1)
+  as bit(32))
+  as extended1
+from
+  (
+    values
+      (0),
+      (1),
+      (17),
+      (42),
+      (550273),
+      (207112489)
+  )
+  as x (v)
+where
+  cast(hashfloat8(v) as bit(32)) <>
+  cast(hashfloat8extended(v, 0)
+  as bit(32)) or
+  cast(hashfloat8(v) as bit(32)) =
+  cast(hashfloat8extended(v, 1)
+  as bit(32));
+
+select
+  v as value,
+  cast(hashoid(v) as bit(32)) as standard,
+  cast(hashoidextended(v, 0) as bit(32))
+  as extended0,
+  cast(hashoidextended(v, 1) as bit(32))
+  as extended1
+from
+  (
+    values
+      (0),
+      (1),
+      (17),
+      (42),
+      (550273),
+      (207112489)
+  )
+  as x (v)
+where
+  cast(hashoid(v) as bit(32)) <>
+  cast(hashoidextended(v, 0) as bit(32)) or
+  cast(hashoid(v) as bit(32)) =
+  cast(hashoidextended(v, 1) as bit(32));
+
+select
+  v as value,
+  cast(hashchar(v) as bit(32)) as standard,
+  cast(hashcharextended(v, 0) as bit(32))
+  as extended0,
+  cast(hashcharextended(v, 1) as bit(32))
+  as extended1
+from
+  (
+    values
+      (cast(null as char)),
+      ('1'),
+      ('x'),
+      ('X'),
+      ('p'),
+      ('N')
+  )
+  as x (v)
+where
+  cast(hashchar(v) as bit(32)) <>
+  cast(hashcharextended(v, 0) as bit(32)) or
+  cast(hashchar(v) as bit(32)) =
+  cast(hashcharextended(v, 1) as bit(32));
+
+select
+  v as value,
+  cast(hashname(v) as bit(32)) as standard,
+  cast(hashnameextended(v, 0) as bit(32))
+  as extended0,
+  cast(hashnameextended(v, 1) as bit(32))
+  as extended1
+from
+  (
+    values
+      (null),
+      ('PostgreSQL'),
+      ('eIpUEtqmY89'),
+      ('AXKEJBTK'),
+      ('muop28x03'),
+      ('yi3nm0d73')
+  )
+  as x (v)
+where
+  cast(hashname(v) as bit(32)) <>
+  cast(hashnameextended(v, 0) as bit(32)) or
+  cast(hashname(v) as bit(32)) =
+  cast(hashnameextended(v, 1) as bit(32));
+
+select
+  v as value,
+  cast(hashtext(v) as bit(32)) as standard,
+  cast(hashtextextended(v, 0) as bit(32))
+  as extended0,
+  cast(hashtextextended(v, 1) as bit(32))
+  as extended1
+from
+  (
+    values
+      (null),
+      ('PostgreSQL'),
+      ('eIpUEtqmY89'),
+      ('AXKEJBTK'),
+      ('muop28x03'),
+      ('yi3nm0d73')
+  )
+  as x (v)
+where
+  cast(hashtext(v) as bit(32)) <>
+  cast(hashtextextended(v, 0) as bit(32)) or
+  cast(hashtext(v) as bit(32)) =
+  cast(hashtextextended(v, 1) as bit(32));
+
+select
+  v as value,
+  cast(hashoidvector(v) as bit(32))
+  as standard,
+  cast(hashoidvectorextended(v, 0)
+  as bit(32))
+  as extended0,
+  cast(hashoidvectorextended(v, 1)
+  as bit(32))
+  as extended1
+from
+  (
+    values
+      (cast(null as oidvector)),
+      ('0 1 2 3 4'),
+      ('17 18 19 20'),
+      ('42 43 42 45'),
+      ('550273 550273 570274'),
+      (
+        '207112489 207112499 21512 2155 372325 1363252'
+      )
+  )
+  as x (v)
+where
+  cast(hashoidvector(v) as bit(32)) <>
+  cast(hashoidvectorextended(v, 0)
+  as bit(32)) or
+  cast(hashoidvector(v) as bit(32)) =
+  cast(hashoidvectorextended(v, 1)
+  as bit(32));
+
+select
+  v as value,
+  cast(hash_aclitem(v) as bit(32))
+  as standard,
+  cast(hash_aclitem_extended(v, 0)
+  as bit(32))
+  as extended0,
+  cast(hash_aclitem_extended(v, 1)
+  as bit(32))
+  as extended1
+from
+  (
+    select distinct
+      relacl[1]
+    from
+      pg_class
+    limit 10
+  )
+  as x (v)
+where
+  cast(hash_aclitem(v) as bit(32)) <>
+  cast(hash_aclitem_extended(v, 0)
+  as bit(32)) or
+  cast(hash_aclitem(v) as bit(32)) =
+  cast(hash_aclitem_extended(v, 1)
+  as bit(32));
+
+select
+  v as value,
+  cast(hashmacaddr(v) as bit(32))
+  as standard,
+  cast(hashmacaddrextended(v, 0)
+  as bit(32))
+  as extended0,
+  cast(hashmacaddrextended(v, 1)
+  as bit(32))
+  as extended1
+from
+  (
+    values
+      (cast(null as macaddr)),
+      ('08:00:2b:01:02:04'),
+      ('08:00:2b:01:02:04'),
+      ('e2:7f:51:3e:70:49'),
+      ('d6:a9:4a:78:1c:d5'),
+      ('ea:29:b1:5e:1f:a5')
+  )
+  as x (v)
+where
+  cast(hashmacaddr(v) as bit(32)) <>
+  cast(hashmacaddrextended(v, 0)
+  as bit(32)) or
+  cast(hashmacaddr(v) as bit(32)) =
+  cast(hashmacaddrextended(v, 1)
+  as bit(32));
+
+select
+  v as value,
+  cast(hashinet(v) as bit(32)) as standard,
+  cast(hashinetextended(v, 0) as bit(32))
+  as extended0,
+  cast(hashinetextended(v, 1) as bit(32))
+  as extended1
+from
+  (
+    values
+      (cast(null as inet)),
+      ('192.168.100.128/25'),
+      ('192.168.100.0/8'),
+      ('172.168.10.126/16'),
+      ('172.18.103.126/24'),
+      ('192.188.13.16/32')
+  )
+  as x (v)
+where
+  cast(hashinet(v) as bit(32)) <>
+  cast(hashinetextended(v, 0) as bit(32)) or
+  cast(hashinet(v) as bit(32)) =
+  cast(hashinetextended(v, 1) as bit(32));
+
+select
+  v as value,
+  cast(hash_numeric(v) as bit(32))
+  as standard,
+  cast(hash_numeric_extended(v, 0)
+  as bit(32))
+  as extended0,
+  cast(hash_numeric_extended(v, 1)
+  as bit(32))
+  as extended1
+from
+  (
+    values
+      (0),
+      (1.149484958),
+      (17.149484958),
+      (42.149484958),
+      (149484958.550273),
+      (2071124898672)
+  )
+  as x (v)
+where
+  cast(hash_numeric(v) as bit(32)) <>
+  cast(hash_numeric_extended(v, 0)
+  as bit(32)) or
+  cast(hash_numeric(v) as bit(32)) =
+  cast(hash_numeric_extended(v, 1)
+  as bit(32));
+
+select
+  v as value,
+  cast(hashmacaddr8(v) as bit(32))
+  as standard,
+  cast(hashmacaddr8extended(v, 0)
+  as bit(32))
+  as extended0,
+  cast(hashmacaddr8extended(v, 1)
+  as bit(32))
+  as extended1
+from
+  (
+    values
+      (cast(null as macaddr8)),
+      ('08:00:2b:01:02:04:36:49'),
+      ('08:00:2b:01:02:04:f0:e8'),
+      ('e2:7f:51:3e:70:49:16:29'),
+      ('d6:a9:4a:78:1c:d5:47:32'),
+      ('ea:29:b1:5e:1f:a5')
+  )
+  as x (v)
+where
+  cast(hashmacaddr8(v) as bit(32)) <>
+  cast(hashmacaddr8extended(v, 0)
+  as bit(32)) or
+  cast(hashmacaddr8(v) as bit(32)) =
+  cast(hashmacaddr8extended(v, 1)
+  as bit(32));
+
+select
+  v as value,
+  cast(hash_array(v) as bit(32))
+  as standard,
+  cast(hash_array_extended(v, 0)
+  as bit(32))
+  as extended0,
+  cast(hash_array_extended(v, 1)
+  as bit(32))
+  as extended1
+from
+  (
+    values
+      (cast('{0}' as int[])),
+      ('{0,1,2,3,4}'),
+      ('{17,18,19,20}'),
+      ('{42,34,65,98}'),
+      ('{550273,590027, 870273}'),
+      ('{207112489, 807112489}')
+  )
+  as x (v)
+where
+  cast(hash_array(v) as bit(32)) <>
+  cast(hash_array_extended(v, 0)
+  as bit(32)) or
+  cast(hash_array(v) as bit(32)) =
+  cast(hash_array_extended(v, 1)
+  as bit(32));
+
+select
+  v as value,
+  cast(hash_array(v) as bit(32))
+  as standard
+from
+  (
+    values (cast('{101}' as bit varying[]))
+  )
+  as x (v);
+
+select
+  v as value,
+  cast(hash_array_extended(v, 0)
+  as bit(32))
+  as extended0
+from
+  (
+    values (cast('{101}' as bit varying[]))
+  )
+  as x (v);
+
+select
+  v as value,
+  cast(hashbpchar(v) as bit(32))
+  as standard,
+  cast(hashbpcharextended(v, 0)
+  as bit(32))
+  as extended0,
+  cast(hashbpcharextended(v, 1)
+  as bit(32))
+  as extended1
+from
+  (
+    values
+      (null),
+      ('PostgreSQL'),
+      ('eIpUEtqmY89'),
+      ('AXKEJBTK'),
+      ('muop28x03'),
+      ('yi3nm0d73')
+  )
+  as x (v)
+where
+  cast(hashbpchar(v) as bit(32)) <>
+  cast(hashbpcharextended(v, 0)
+  as bit(32)) or
+  cast(hashbpchar(v) as bit(32)) =
+  cast(hashbpcharextended(v, 1)
+  as bit(32));
+
+select
+  v as value,
+  cast(time_hash(v) as bit(32))
+  as standard,
+  cast(time_hash_extended(v, 0)
+  as bit(32))
+  as extended0,
+  cast(time_hash_extended(v, 1)
+  as bit(32))
+  as extended1
+from
+  (
+    values
+      (cast(null as time)),
+      ('11:09:59'),
+      ('1:09:59'),
+      ('11:59:59'),
+      ('7:9:59'),
+      ('5:15:59')
+  )
+  as x (v)
+where
+  cast(time_hash(v) as bit(32)) <>
+  cast(time_hash_extended(v, 0)
+  as bit(32)) or
+  cast(time_hash(v) as bit(32)) =
+  cast(time_hash_extended(v, 1)
+  as bit(32));
+
+select
+  v as value,
+  cast(timetz_hash(v) as bit(32))
+  as standard,
+  cast(timetz_hash_extended(v, 0)
+  as bit(32))
+  as extended0,
+  cast(timetz_hash_extended(v, 1)
+  as bit(32))
+  as extended1
+from
+  (
+    values
+      (cast(null as time with time zone)),
+      ('00:11:52.518762-07'),
+      ('00:11:52.51762-08'),
+      ('00:11:52.62-01'),
+      ('00:11:52.62+01'),
+      ('11:59:59+04')
+  )
+  as x (v)
+where
+  cast(timetz_hash(v) as bit(32)) <>
+  cast(timetz_hash_extended(v, 0)
+  as bit(32)) or
+  cast(timetz_hash(v) as bit(32)) =
+  cast(timetz_hash_extended(v, 1)
+  as bit(32));
+
+select
+  v as value,
+  cast(interval_hash(v) as bit(32))
+  as standard,
+  cast(interval_hash_extended(v, 0)
+  as bit(32))
+  as extended0,
+  cast(interval_hash_extended(v, 1)
+  as bit(32))
+  as extended1
+from
+  (
+    values
+      (cast(null as interval)),
+      ('5 month 7 day 46 minutes'),
+      ('1 year 7 day 46 minutes'),
+      ('1 year 7 month 20 day 46 minutes'),
+      ('5 month'),
+      (
+        '17 year 11 month 7 day 9 hours 46 minutes 5 seconds'
+      )
+  )
+  as x (v)
+where
+  cast(interval_hash(v) as bit(32)) <>
+  cast(interval_hash_extended(v, 0)
+  as bit(32)) or
+  cast(interval_hash(v) as bit(32)) =
+  cast(interval_hash_extended(v, 1)
+  as bit(32));
+
+select
+  v as value,
+  cast(timestamp_hash(v) as bit(32))
+  as standard,
+  cast(timestamp_hash_extended(v, 0)
+  as bit(32))
+  as extended0,
+  cast(timestamp_hash_extended(v, 1)
+  as bit(32))
+  as extended1
+from
+  (
+    values
+      (cast(null as timestamp)),
+      ('2017-08-22 00:09:59.518762'),
+      ('2015-08-20 00:11:52.51762-08'),
+      ('2017-05-22 00:11:52.62-01'),
+      ('2013-08-22 00:11:52.62+01'),
+      ('2013-08-22 11:59:59+04')
+  )
+  as x (v)
+where
+  cast(timestamp_hash(v) as bit(32)) <>
+  cast(timestamp_hash_extended(v, 0)
+  as bit(32)) or
+  cast(timestamp_hash(v) as bit(32)) =
+  cast(timestamp_hash_extended(v, 1)
+  as bit(32));
+
+select
+  v as value,
+  cast(uuid_hash(v) as bit(32))
+  as standard,
+  cast(uuid_hash_extended(v, 0)
+  as bit(32))
+  as extended0,
+  cast(uuid_hash_extended(v, 1)
+  as bit(32))
+  as extended1
+from
+  (
+    values
+      (cast(null as uuid)),
+      ('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11'),
+      ('5a9ba4ac-8d6f-11e7-bb31-be2e44b06b34'),
+      ('99c6705c-d939-461c-a3c9-1690ad64ed7b'),
+      ('7deed3ca-8d6f-11e7-bb31-be2e44b06b34'),
+      ('9ad46d4f-6f2a-4edd-aadb-745993928e1e')
+  )
+  as x (v)
+where
+  cast(uuid_hash(v) as bit(32)) <>
+  cast(uuid_hash_extended(v, 0)
+  as bit(32)) or
+  cast(uuid_hash(v) as bit(32)) =
+  cast(uuid_hash_extended(v, 1)
+  as bit(32));
+
+select
+  v as value,
+  cast(pg_lsn_hash(v) as bit(32))
+  as standard,
+  cast(pg_lsn_hash_extended(v, 0)
+  as bit(32))
+  as extended0,
+  cast(pg_lsn_hash_extended(v, 1)
+  as bit(32))
+  as extended1
+from
+  (
+    values
+      (cast(null as pg_lsn)),
+      ('16/B374D84'),
+      ('30/B374D84'),
+      ('255/B374D84'),
+      ('25/B379D90'),
+      ('900/F37FD90')
+  )
+  as x (v)
+where
+  cast(pg_lsn_hash(v) as bit(32)) <>
+  cast(pg_lsn_hash_extended(v, 0)
+  as bit(32)) or
+  cast(pg_lsn_hash(v) as bit(32)) =
+  cast(pg_lsn_hash_extended(v, 1)
+  as bit(32));
+
+create type mood as enum ('sad', 'ok', 'happy');
+
+select
+  v as value,
+  cast(hashenum(v) as bit(32)) as standard,
+  cast(hashenumextended(v, 0) as bit(32))
+  as extended0,
+  cast(hashenumextended(v, 1) as bit(32))
+  as extended1
+from
+  (
+    values
+      (cast('sad' as mood)),
+      ('ok'),
+      ('happy')
+  )
+  as x (v)
+where
+  cast(hashenum(v) as bit(32)) <>
+  cast(hashenumextended(v, 0) as bit(32)) or
+  cast(hashenum(v) as bit(32)) =
+  cast(hashenumextended(v, 1) as bit(32));
+
+drop type mood;
+
+select
+  v as value,
+  cast(jsonb_hash(v) as bit(32))
+  as standard,
+  cast(jsonb_hash_extended(v, 0)
+  as bit(32))
+  as extended0,
+  cast(jsonb_hash_extended(v, 1)
+  as bit(32))
+  as extended1
+from
+  (
+    values
+      (cast(null as jsonb)),
+      (
+        '{"a": "aaa bbb ddd ccc", "b": ["eee fff ggg"], "c": {"d": "hhh iii"}}'
+      ),
+      (
+        '{"foo": [true, "bar"], "tags": {"e": 1, "f": null}}'
+      ),
+      ('{"g": {"h": "value"}}')
+  )
+  as x (v)
+where
+  cast(jsonb_hash(v) as bit(32)) <>
+  cast(jsonb_hash_extended(v, 0)
+  as bit(32)) or
+  cast(jsonb_hash(v) as bit(32)) =
+  cast(jsonb_hash_extended(v, 1)
+  as bit(32));
+
+select
+  v as value,
+  cast(hash_range(v) as bit(32))
+  as standard,
+  cast(hash_range_extended(v, 0)
+  as bit(32))
+  as extended0,
+  cast(hash_range_extended(v, 1)
+  as bit(32))
+  as extended1
+from
+  (
+    values
+      (int4range(10, 20)),
+      (int4range(23, 43)),
+      (int4range(5675, 550273)),
+      (int4range(550274, 1550274)),
+      (int4range(1550275, 208112489))
+  )
+  as x (v)
+where
+  cast(hash_range(v) as bit(32)) <>
+  cast(hash_range_extended(v, 0)
+  as bit(32)) or
+  cast(hash_range(v) as bit(32)) =
+  cast(hash_range_extended(v, 1)
+  as bit(32));
+
+select
+  v as value,
+  cast(hash_multirange(v) as bit(32))
+  as standard,
+  cast(hash_multirange_extended(v, 0)
+  as bit(32))
+  as extended0,
+  cast(hash_multirange_extended(v, 1)
+  as bit(32))
+  as extended1
+from
+  (
+    values
+      (cast('{[10,20)}' as int4multirange)),
+      (cast('{[23, 43]}' as int4multirange)),
+      (
+        cast('{[5675, 550273)}'
+        as int4multirange)
+      ),
+      (
+        cast('{[550274, 1550274)}'
+        as int4multirange)
+      ),
+      (
+        cast('{[1550275, 208112489)}'
+        as int4multirange)
+      )
+  )
+  as x (v)
+where
+  cast(hash_multirange(v) as bit(32)) <>
+  cast(hash_multirange_extended(v, 0)
+  as bit(32)) or
+  cast(hash_multirange(v) as bit(32)) =
+  cast(hash_multirange_extended(v, 1)
+  as bit(32));
+
+create type hash_test_t1 as (a int, b text);
+
+select
+  v as value,
+  cast(hash_record(v) as bit(32))
+  as standard,
+  cast(hash_record_extended(v, 0)
+  as bit(32))
+  as extended0,
+  cast(hash_record_extended(v, 1)
+  as bit(32))
+  as extended1
+from
+  (
+    values
+      (
+        cast(row(1, 'aaa') as hash_test_t1),
+        row(2, 'bbb'),
+        row(-1, 'ccc')
+      )
+  )
+  as x (v)
+where
+  cast(hash_record(v) as bit(32)) <>
+  cast(hash_record_extended(v, 0)
+  as bit(32)) or
+  cast(hash_record(v) as bit(32)) =
+  cast(hash_record_extended(v, 1)
+  as bit(32));
+
+drop type hash_test_t1;
+
+create type hash_test_t2 as (a bit varying, b text);
+
+select
+  v as value,
+  cast(hash_record(v) as bit(32))
+  as standard
+from
+  (
+    values
+      (
+        cast(row(cast('10' as bit varying), 'aaa')
+        as hash_test_t2)
+      )
+  )
+  as x (v);
+
+select
+  v as value,
+  cast(hash_record_extended(v, 0)
+  as bit(32))
+  as extended0
+from
+  (
+    values
+      (
+        cast(row(cast('11' as bit varying), 'aaa')
+        as hash_test_t2)
+      )
+  )
+  as x (v);
+
+drop type hash_test_t2;
+
+select hashfloat4(cast('0' as real)) = hashfloat4(cast('-0' as real)) as t;
+
+select hashfloat4(cast('NaN' as real)) = hashfloat4(-cast('NaN' as real)) as t;
+
+select
+  hashfloat8(
+    cast('0' as double precision)
+  ) =
+  hashfloat8(
+    cast('-0' as double precision)
+  )
+  as t;
+
+select
+  hashfloat8(
+    cast('NaN' as double precision)
+  ) =
+  hashfloat8(
+    -cast('NaN' as double precision)
+  )
+  as t;
+
+select
+  hashfloat4(cast('NaN' as real)) =
+  hashfloat8(
+    cast('NaN' as double precision)
+  )
+  as t;

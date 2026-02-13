@@ -1,0 +1,488 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/equivclass.sql
+---
+create type int8alias1;
+
+create function int8alias1in(cstring)
+returns int8alias1
+language internal
+immutable
+strict
+as $function$
+int8in
+$function$;
+
+create function int8alias1out(int8alias1)
+returns cstring
+language internal
+immutable
+strict
+as $function$
+int8out
+$function$;
+
+create type int8alias1 (input = int8alias1in, output = int8alias1out, like = bigint);
+
+create type int8alias2;
+
+create function int8alias2in(cstring)
+returns int8alias2
+language internal
+immutable
+strict
+as $function$
+int8in
+$function$;
+
+create function int8alias2out(int8alias2)
+returns cstring
+language internal
+immutable
+strict
+as $function$
+int8out
+$function$;
+
+create type int8alias2 (input = int8alias2in, output = int8alias2out, like = bigint);
+
+create cast (bigint as int8alias1) without function;
+
+create cast (bigint as int8alias2) without function;
+
+create cast (int8alias1 as bigint) without function;
+
+create cast (int8alias2 as bigint) without function;
+
+create function int8alias1eq(int8alias1, int8alias1)
+returns boolean
+language internal
+immutable
+strict
+as $function$
+int8eq
+$function$;
+
+create operator = (PROCEDURE = int8alias1eq,
+LEFTARG = int8alias1,
+RIGHTARG = int8alias1,
+COMMUTATOR = =,
+RESTRICT = eqsel,
+JOIN = eqjoinsel,
+MERGES);
+
+alter operator family integer_ops using btree add operator 3 = (int8alias1, int8alias1);
+
+create function int8alias2eq(int8alias2, int8alias2)
+returns boolean
+language internal
+immutable
+strict
+as $function$
+int8eq
+$function$;
+
+create operator = (PROCEDURE = int8alias2eq,
+LEFTARG = int8alias2,
+RIGHTARG = int8alias2,
+COMMUTATOR = =,
+RESTRICT = eqsel,
+JOIN = eqjoinsel,
+MERGES);
+
+alter operator family integer_ops using btree add operator 3 = (int8alias2, int8alias2);
+
+create function int8alias1eq(bigint, int8alias1)
+returns boolean
+language internal
+immutable
+strict
+as $function$
+int8eq
+$function$;
+
+create operator = (PROCEDURE = int8alias1eq,
+LEFTARG = bigint,
+RIGHTARG = int8alias1,
+RESTRICT = eqsel,
+JOIN = eqjoinsel,
+MERGES);
+
+alter operator family integer_ops using btree add operator 3 = (bigint, int8alias1);
+
+create function int8alias1eq(int8alias1, int8alias2)
+returns boolean
+language internal
+immutable
+strict
+as $function$
+int8eq
+$function$;
+
+create operator = (PROCEDURE = int8alias1eq,
+LEFTARG = int8alias1,
+RIGHTARG = int8alias2,
+RESTRICT = eqsel,
+JOIN = eqjoinsel,
+MERGES);
+
+alter operator family integer_ops using btree add operator 3 = (int8alias1, int8alias2);
+
+create function int8alias1lt(int8alias1, int8alias1)
+returns boolean
+language internal
+immutable
+strict
+as $function$
+int8lt
+$function$;
+
+create operator < (PROCEDURE = int8alias1lt, LEFTARG = int8alias1, RIGHTARG = int8alias1);
+
+alter operator family integer_ops using btree add operator 1 < (int8alias1, int8alias1);
+
+create function int8alias1cmp(bigint, int8alias1)
+returns int
+language internal
+immutable
+strict
+as $function$
+btint8cmp
+$function$;
+
+alter operator family integer_ops using btree add function 1 int8alias1cmp(bigint, int8alias1);
+
+create table ec0 (
+  ff bigint primary key,
+  f1 bigint,
+  f2 bigint
+);
+
+create table ec1 (
+  ff bigint primary key,
+  f1 int8alias1,
+  f2 int8alias2
+);
+
+create table ec2 (
+  xf bigint primary key,
+  x1 int8alias1,
+  x2 int8alias2
+);
+
+set enable_hashjoin = off;
+
+set enable_mergejoin = off;
+
+select * from ec0 where ff = f1 and f1 = cast('42' as bigint);
+
+select * from ec0 where ff = f1 and f1 = cast('42' as int8alias1);
+
+select * from ec1 where ff = f1 and f1 = cast('42' as int8alias1);
+
+select * from ec1 where ff = f1 and f1 = cast('42' as int8alias2);
+
+select * from ec1, ec2 where ff = x1 and ff = cast('42' as bigint);
+
+select * from ec1, ec2 where ff = x1 and ff = cast('42' as int8alias1);
+
+select * from ec1, ec2 where ff = x1 and cast('42' as bigint) = x1;
+
+select * from ec1, ec2 where ff = x1 and x1 = cast('42' as int8alias1);
+
+select * from ec1, ec2 where ff = x1 and x1 = cast('42' as int8alias2);
+
+create unique index "ec1_expr1" on ec1 using btree ((ff + 1));
+
+create unique index "ec1_expr2" on ec1 using btree ((ff + 2 + 1));
+
+create unique index "ec1_expr3" on ec1 using btree ((ff + 3 + 1));
+
+create unique index "ec1_expr4" on ec1 using btree ((ff + 4));
+
+select
+  *
+from
+  ec1,
+  (
+    select
+      ff + 1 as x
+    from
+      (
+        select ff + 2 as ff from ec1
+        union all
+        select ff + 3 as ff from ec1
+      )
+      as ss0
+    union all
+    select ff + 4 as x from ec1
+  )
+  as ss1
+where
+  ss1.x = ec1.f1 and ec1.ff = cast(42 as bigint);
+
+select
+  *
+from
+  ec1,
+  (
+    select
+      ff + 1 as x
+    from
+      (
+        select ff + 2 as ff from ec1
+        union all
+        select ff + 3 as ff from ec1
+      )
+      as ss0
+    union all
+    select ff + 4 as x from ec1
+  )
+  as ss1
+where
+  ss1.x = ec1.f1 and
+  ec1.ff = cast(42 as bigint) and
+  ec1.ff = ec1.f1;
+
+select
+  *
+from
+  ec1,
+  (
+    select
+      ff + 1 as x
+    from
+      (
+        select ff + 2 as ff from ec1
+        union all
+        select ff + 3 as ff from ec1
+      )
+      as ss0
+    union all
+    select ff + 4 as x from ec1
+  )
+  as ss1,
+  (
+    select
+      ff + 1 as x
+    from
+      (
+        select ff + 2 as ff from ec1
+        union all
+        select ff + 3 as ff from ec1
+      )
+      as ss0
+    union all
+    select ff + 4 as x from ec1
+  )
+  as ss2
+where
+  ss1.x = ec1.f1 and
+  ss1.x = ss2.x and
+  ec1.ff = cast(42 as bigint);
+
+set enable_mergejoin = 'on';
+
+set enable_nestloop = off;
+
+select
+  *
+from
+  ec1,
+  (
+    select
+      ff + 1 as x
+    from
+      (
+        select ff + 2 as ff from ec1
+        union all
+        select ff + 3 as ff from ec1
+      )
+      as ss0
+    union all
+    select ff + 4 as x from ec1
+  )
+  as ss1,
+  (
+    select
+      ff + 1 as x
+    from
+      (
+        select ff + 2 as ff from ec1
+        union all
+        select ff + 3 as ff from ec1
+      )
+      as ss0
+    union all
+    select ff + 4 as x from ec1
+  )
+  as ss2
+where
+  ss1.x = ec1.f1 and
+  ss1.x = ss2.x and
+  ec1.ff = cast(42 as bigint);
+
+set enable_nestloop = 'on';
+
+set enable_mergejoin = off;
+
+drop index ec1_expr3;
+
+select
+  *
+from
+  ec1,
+  (
+    select
+      ff + 1 as x
+    from
+      (
+        select ff + 2 as ff from ec1
+        union all
+        select ff + 3 as ff from ec1
+      )
+      as ss0
+    union all
+    select ff + 4 as x from ec1
+  )
+  as ss1
+where
+  ss1.x = ec1.f1 and ec1.ff = cast(42 as bigint);
+
+set enable_mergejoin = 'on';
+
+set enable_nestloop = off;
+
+select
+  *
+from
+  ec1,
+  (
+    select
+      ff + 1 as x
+    from
+      (
+        select ff + 2 as ff from ec1
+        union all
+        select ff + 3 as ff from ec1
+      )
+      as ss0
+    union all
+    select ff + 4 as x from ec1
+  )
+  as ss1
+where
+  ss1.x = ec1.f1 and ec1.ff = cast(42 as bigint);
+
+set enable_nestloop = 'on';
+
+set enable_mergejoin = off;
+
+alter table ec1
+  enable row level security;
+
+create policy p1 on ec1 as permissive for all to public using (f1 < cast('5' as int8alias1));
+
+create user regress_user_ectest;
+
+grant SELECT on table ec0 to regress_user_ectest;
+
+grant SELECT on table ec1 to regress_user_ectest;
+
+select
+  *
+from
+  ec0 as a,
+  ec1 as b
+where
+  a.ff = b.ff and
+  a.ff = cast(cast(43 as bigint) as int8alias1);
+
+set session authorization regress_user_ectest;
+
+select
+  *
+from
+  ec0 as a,
+  ec1 as b
+where
+  a.ff = b.ff and
+  a.ff = cast(cast(43 as bigint) as int8alias1);
+
+reset session_authorization;
+
+revoke SELECT on table ec0 from regress_user_ectest;
+
+revoke SELECT on table ec1 from regress_user_ectest;
+
+drop role regress_user_ectest;
+
+select * from tenk1 where unique1 = unique1 and unique2 = unique2;
+
+set enable_mergejoin = off;
+
+select * from ec0 as m inner join ec0 as n on m.ff = n.ff inner join ec1 as p on m.ff + n.ff = p.f1;
+
+select
+  *
+from
+  ec0 as m inner join ec0 as n on m.ff = n.ff
+  inner join
+    ec1 as p
+  on cast(p.f1 as bigint) =
+    cast(m.ff + n.ff as int8alias1);
+
+reset enable_mergejoin;
+
+select * from tenk1 where unique1 = unique1 or unique2 = unique2;
+
+create temporary table undername (
+  f1 name,
+  f2 int
+);
+
+create temporary view overview
+as select
+  cast(f1 as information_schema.sql_identifier)
+  as sqli,
+  f2
+from
+  undername;
+
+select * from overview where sqli = 'foo' order by sqli;
+
+begin;
+
+create table tbl_nocom (
+  a bigint,
+  b int8alias1
+);
+
+set enable_hashjoin = off;
+
+set enable_mergejoin = 'on';
+
+select * from tbl_nocom as t1 full outer join tbl_nocom as t2 on t2.a = t1.b;
+
+alter operator = (bigint, int8alias1) set (hashes);
+
+alter operator family integer_ops using hash add operator 1 = (bigint, int8alias1);
+
+create function hashint8alias1(int8alias1)
+returns int
+language internal
+immutable
+strict
+as $function$
+hashint8
+$function$;
+
+alter operator family integer_ops using hash add function 1 hashint8alias1(int8alias1);
+
+set enable_hashjoin = 'on';
+
+set enable_mergejoin = off;
+
+select * from tbl_nocom as t1 full outer join tbl_nocom as t2 on t2.a = t1.b;
+
+rollback;

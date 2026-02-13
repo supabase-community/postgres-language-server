@@ -1,0 +1,14 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/single/select_distinct_on_0.sql
+snapshot_kind: text
+---
+select distinct on (
+  department_id,
+  team_id)
+  employee_id,
+  team_id
+from
+  employees
+order by department_id,
+  team_id;

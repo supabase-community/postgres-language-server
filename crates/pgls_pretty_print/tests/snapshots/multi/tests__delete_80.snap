@@ -1,0 +1,28 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/delete.sql
+snapshot_kind: text
+---
+create table delete_test (
+  id serial primary key,
+  a int,
+  b text
+);
+
+insert into delete_test (a) values (10);
+
+insert into delete_test (a, b) values (50, repeat('x', 10000));
+
+insert into delete_test (a) values (100);
+
+delete from delete_test as dt where dt.a > 75;
+
+delete from delete_test as dt where delete_test.a > 25;
+
+select id, a, char_length(b) from delete_test;
+
+delete from delete_test where a > 25;
+
+select id, a, char_length(b) from delete_test;
+
+drop table delete_test;

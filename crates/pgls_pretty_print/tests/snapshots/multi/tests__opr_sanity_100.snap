@@ -1,0 +1,2051 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/opr_sanity.sql
+snapshot_kind: text
+---
+select
+  p1.oid,
+  p1.proname
+from
+  pg_proc as p1
+where
+  p1.prolang = 0 or
+  p1.prorettype = 0 or
+  p1.pronargs < 0 or
+  p1.pronargdefaults < 0 or
+  p1.pronargdefaults > p1.pronargs or
+  array_lower(p1.proargtypes, 1) <> 0 or
+  array_upper(p1.proargtypes, 1) <> p1.pronargs - 1 or
+  cast(0 as oid) = any (p1.proargtypes) or
+  procost <= 0 or
+  case
+    when proretset then prorows <= 0
+    else prorows <> 0
+  end or
+  prokind not in ('f', 'a', 'w', 'p') or
+  provolatile not in ('i', 's', 'v') or
+  proparallel not in ('s', 'r', 'u');
+
+select p1.oid, p1.proname from pg_proc as p1 where prosrc is null;
+
+select
+  p1.oid,
+  p1.proname
+from
+  pg_proc as p1
+where
+  (prosrc = '' or prosrc = '-') and
+  prosqlbody is null;
+
+select p1.oid, p1.proname from pg_proc as p1 where proretset and prokind <> 'f';
+
+select p1.oid, p1.proname from pg_proc as p1 where prosecdef order by 1;
+
+select
+  p1.oid,
+  p1.proname
+from
+  pg_proc as p1
+where
+  (pronargdefaults <> 0) <>
+  (proargdefaults is not null);
+
+select
+  p1.oid,
+  p1.proname
+from
+  pg_proc as p1
+where
+  prolang = 13 and
+  (probin is null or probin = '' or probin = '-');
+
+select p1.oid, p1.proname from pg_proc as p1 where prolang <> 13 and probin is not null;
+
+select
+  p1.oid,
+  p1.proname,
+  p2.oid,
+  p2.proname
+from
+  pg_proc as p1,
+  pg_proc as p2
+where
+  p1.oid <> p2.oid and
+  p1.proname = p2.proname and
+  p1.pronargs = p2.pronargs and
+  p1.proargtypes = p2.proargtypes;
+
+select
+  p1.oid,
+  p1.proname,
+  p2.oid,
+  p2.proname
+from
+  pg_proc as p1,
+  pg_proc as p2
+where
+  p1.oid < p2.oid and
+  p1.prosrc = p2.prosrc and
+  p1.prolang = 12 and
+  p2.prolang = 12 and
+  (p1.prokind <> 'a' or p2.prokind <> 'a') and
+  (p1.prolang <> p2.prolang or
+  p1.prokind <> p2.prokind or
+  p1.prosecdef <> p2.prosecdef or
+  p1.proleakproof <> p2.proleakproof or
+  p1.proisstrict <> p2.proisstrict or
+  p1.proretset <> p2.proretset or
+  p1.provolatile <> p2.provolatile or
+  p1.pronargs <> p2.pronargs);
+
+select distinct
+  cast(p1.prorettype as regtype),
+  cast(p2.prorettype as regtype)
+from
+  pg_proc as p1,
+  pg_proc as p2
+where
+  p1.oid <> p2.oid and
+  p1.prosrc = p2.prosrc and
+  p1.prolang = 12 and
+  p2.prolang = 12 and
+  p1.prokind <> 'a' and
+  p2.prokind <> 'a' and
+  p1.prosrc not like 'range\_constructor_' and
+  p2.prosrc not like 'range\_constructor_' and
+  p1.prosrc not like 'multirange\_constructor_' and
+  p2.prosrc not like 'multirange\_constructor_' and
+  p1.prorettype < p2.prorettype
+order by 1,
+  2;
+
+select distinct
+  cast(p1.proargtypes[0] as regtype),
+  cast(p2.proargtypes[0] as regtype)
+from
+  pg_proc as p1,
+  pg_proc as p2
+where
+  p1.oid <> p2.oid and
+  p1.prosrc = p2.prosrc and
+  p1.prolang = 12 and
+  p2.prolang = 12 and
+  p1.prokind <> 'a' and
+  p2.prokind <> 'a' and
+  p1.prosrc not like 'range\_constructor_' and
+  p2.prosrc not like 'range\_constructor_' and
+  p1.prosrc not like 'multirange\_constructor_' and
+  p2.prosrc not like 'multirange\_constructor_' and
+  p1.proargtypes[0] < p2.proargtypes[0]
+order by 1,
+  2;
+
+select distinct
+  cast(p1.proargtypes[1] as regtype),
+  cast(p2.proargtypes[1] as regtype)
+from
+  pg_proc as p1,
+  pg_proc as p2
+where
+  p1.oid <> p2.oid and
+  p1.prosrc = p2.prosrc and
+  p1.prolang = 12 and
+  p2.prolang = 12 and
+  p1.prokind <> 'a' and
+  p2.prokind <> 'a' and
+  p1.prosrc not like 'range\_constructor_' and
+  p2.prosrc not like 'range\_constructor_' and
+  p1.prosrc not like 'multirange\_constructor_' and
+  p2.prosrc not like 'multirange\_constructor_' and
+  p1.proargtypes[1] < p2.proargtypes[1]
+order by 1,
+  2;
+
+select distinct
+  cast(p1.proargtypes[2] as regtype),
+  cast(p2.proargtypes[2] as regtype)
+from
+  pg_proc as p1,
+  pg_proc as p2
+where
+  p1.oid <> p2.oid and
+  p1.prosrc = p2.prosrc and
+  p1.prolang = 12 and
+  p2.prolang = 12 and
+  p1.prokind <> 'a' and
+  p2.prokind <> 'a' and
+  p1.proargtypes[2] < p2.proargtypes[2]
+order by 1,
+  2;
+
+select distinct
+  cast(p1.proargtypes[3] as regtype),
+  cast(p2.proargtypes[3] as regtype)
+from
+  pg_proc as p1,
+  pg_proc as p2
+where
+  p1.oid <> p2.oid and
+  p1.prosrc = p2.prosrc and
+  p1.prolang = 12 and
+  p2.prolang = 12 and
+  p1.prokind <> 'a' and
+  p2.prokind <> 'a' and
+  p1.proargtypes[3] < p2.proargtypes[3]
+order by 1,
+  2;
+
+select distinct
+  cast(p1.proargtypes[4] as regtype),
+  cast(p2.proargtypes[4] as regtype)
+from
+  pg_proc as p1,
+  pg_proc as p2
+where
+  p1.oid <> p2.oid and
+  p1.prosrc = p2.prosrc and
+  p1.prolang = 12 and
+  p2.prolang = 12 and
+  p1.prokind <> 'a' and
+  p2.prokind <> 'a' and
+  p1.proargtypes[4] < p2.proargtypes[4]
+order by 1,
+  2;
+
+select distinct
+  cast(p1.proargtypes[5] as regtype),
+  cast(p2.proargtypes[5] as regtype)
+from
+  pg_proc as p1,
+  pg_proc as p2
+where
+  p1.oid <> p2.oid and
+  p1.prosrc = p2.prosrc and
+  p1.prolang = 12 and
+  p2.prolang = 12 and
+  p1.prokind <> 'a' and
+  p2.prokind <> 'a' and
+  p1.proargtypes[5] < p2.proargtypes[5]
+order by 1,
+  2;
+
+select distinct
+  cast(p1.proargtypes[6] as regtype),
+  cast(p2.proargtypes[6] as regtype)
+from
+  pg_proc as p1,
+  pg_proc as p2
+where
+  p1.oid <> p2.oid and
+  p1.prosrc = p2.prosrc and
+  p1.prolang = 12 and
+  p2.prolang = 12 and
+  p1.prokind <> 'a' and
+  p2.prokind <> 'a' and
+  p1.proargtypes[6] < p2.proargtypes[6]
+order by 1,
+  2;
+
+select distinct
+  cast(p1.proargtypes[7] as regtype),
+  cast(p2.proargtypes[7] as regtype)
+from
+  pg_proc as p1,
+  pg_proc as p2
+where
+  p1.oid <> p2.oid and
+  p1.prosrc = p2.prosrc and
+  p1.prolang = 12 and
+  p2.prolang = 12 and
+  p1.prokind <> 'a' and
+  p2.prokind <> 'a' and
+  p1.proargtypes[7] < p2.proargtypes[7]
+order by 1,
+  2;
+
+select
+  p1.oid,
+  p1.proname
+from
+  pg_proc as p1
+where
+  p1.prorettype = cast('internal' as regtype) and
+  not cast('internal' as regtype) = any (p1.proargtypes);
+
+select
+  p1.oid,
+  p1.proname
+from
+  pg_proc as p1
+where
+  p1.prorettype
+  in (
+    cast('anyelement' as regtype),
+    cast('anyarray' as regtype),
+    cast('anynonarray' as regtype),
+    cast('anyenum' as regtype)
+  ) and
+  not (cast('anyelement' as regtype) = any (p1.proargtypes) or
+  cast('anyarray' as regtype) = any (p1.proargtypes) or
+  cast('anynonarray' as regtype) = any (p1.proargtypes) or
+  cast('anyenum' as regtype) = any (p1.proargtypes) or
+  cast('anyrange' as regtype) = any (p1.proargtypes) or
+  cast('anymultirange' as regtype) = any (p1.proargtypes))
+order by 2;
+
+select
+  p1.oid,
+  p1.proname
+from
+  pg_proc as p1
+where
+  p1.prorettype
+  in (
+    cast('anyrange' as regtype),
+    cast('anymultirange' as regtype)
+  ) and
+  not (cast('anyrange' as regtype) = any (p1.proargtypes) or
+  cast('anymultirange' as regtype) = any (p1.proargtypes))
+order by 2;
+
+select
+  p1.oid,
+  p1.proname
+from
+  pg_proc as p1
+where
+  p1.prorettype
+  in (
+    cast('anycompatible' as regtype),
+    cast('anycompatiblearray' as regtype),
+    cast('anycompatiblenonarray' as regtype)
+  ) and
+  not (cast('anycompatible' as regtype) = any (p1.proargtypes) or
+  cast('anycompatiblearray' as regtype) = any (p1.proargtypes) or
+  cast('anycompatiblenonarray' as regtype) = any (p1.proargtypes) or
+  cast('anycompatiblerange' as regtype) = any (p1.proargtypes))
+order by 2;
+
+select
+  p1.oid,
+  p1.proname
+from
+  pg_proc as p1
+where
+  p1.prorettype =
+  cast('anycompatiblerange' as regtype) and
+  not cast('anycompatiblerange' as regtype) = any (p1.proargtypes)
+order by 2;
+
+select
+  p1.oid,
+  p1.proname
+from
+  pg_proc as p1
+where
+  cast('cstring' as regtype) = any (p1.proargtypes) and
+  not exists
+  (
+    select 1 from pg_type where typinput = p1.oid
+  ) and
+  not exists
+  (
+    select 1 from pg_conversion where conproc = p1.oid
+  ) and
+  p1.oid <>
+  cast('shell_in(cstring)' as regprocedure)
+order by 1;
+
+select
+  p1.oid,
+  p1.proname
+from
+  pg_proc as p1
+where
+  p1.prorettype = cast('cstring' as regtype) and
+  not exists
+  (
+    select 1 from pg_type where typoutput = p1.oid
+  ) and
+  not exists
+  (
+    select 1 from pg_type where typmodout = p1.oid
+  ) and
+  p1.oid <> cast('shell_out(void)' as regprocedure)
+order by 1;
+
+select
+  p1.oid,
+  p1.proname
+from
+  pg_proc as p1
+where
+  proallargtypes is not null and
+  array_length(proallargtypes, 1) <
+  array_length(proargtypes, 1);
+
+select
+  p1.oid,
+  p1.proname
+from
+  pg_proc as p1
+where
+  proargmodes is not null and
+  array_length(proargmodes, 1) <
+  array_length(proargtypes, 1);
+
+select
+  p1.oid,
+  p1.proname
+from
+  pg_proc as p1
+where
+  proargnames is not null and
+  array_length(proargnames, 1) <
+  array_length(proargtypes, 1);
+
+select
+  p1.oid,
+  p1.proname
+from
+  pg_proc as p1
+where
+  proallargtypes is not null and
+  proargmodes is not null and
+  array_length(proallargtypes, 1) <>
+  array_length(proargmodes, 1);
+
+select
+  p1.oid,
+  p1.proname
+from
+  pg_proc as p1
+where
+  proallargtypes is not null and
+  proargnames is not null and
+  array_length(proallargtypes, 1) <>
+  array_length(proargnames, 1);
+
+select
+  p1.oid,
+  p1.proname
+from
+  pg_proc as p1
+where
+  proargmodes is not null and
+  proargnames is not null and
+  array_length(proargmodes, 1) <>
+  array_length(proargnames, 1);
+
+select
+  p1.oid,
+  p1.proname,
+  p1.proargtypes,
+  p1.proallargtypes,
+  p1.proargmodes
+from
+  pg_proc as p1
+where
+  proallargtypes is not null and
+  array(select unnest(proargtypes)) <>
+  array(
+    select
+      proallargtypes[i]
+    from
+      generate_series(
+        1,
+        array_length(proallargtypes, 1)
+      )
+      as g (i)
+    where
+      proargmodes is null or
+      proargmodes[i] in ('i', 'b', 'v')
+  );
+
+select
+  cast(oid as regprocedure),
+  cast(provariadic as regtype),
+  cast(proargtypes as regtype[])
+from
+  pg_proc
+where
+  provariadic <> 0 and
+  case proargtypes[array_length(proargtypes, 1) - 1]
+    when cast('"any"' as regtype)
+    then cast('"any"' as regtype)
+    when cast('anyarray' as regtype)
+    then cast('anyelement' as regtype)
+    when cast('anycompatiblearray' as regtype)
+    then cast('anycompatible' as regtype)
+    else (
+      select
+        t.oid
+      from
+        pg_type as t
+      where
+        t.typarray =
+        proargtypes[array_length(proargtypes, 1) - 1]
+    )
+  end <>
+  provariadic;
+
+select
+  cast(oid as regprocedure),
+  proargmodes,
+  provariadic
+from
+  pg_proc
+where
+  (proargmodes is not null and
+  'v' = any (proargmodes)) is distinct from provariadic <> 0;
+
+select
+  p1.oid,
+  p1.proname,
+  p2.oid,
+  p2.proname
+from
+  pg_proc as p1,
+  pg_proc as p2
+where
+  p2.oid = p1.prosupport and
+  (p2.prorettype <> cast('internal' as regtype) or
+  p2.proretset or
+  p2.pronargs <> 1 or
+  p2.proargtypes[0] <> cast('internal' as regtype));
+
+select
+  p1.oid,
+  p1.proname
+from
+  pg_proc as p1
+  left outer join
+    pg_description as d
+  on p1.tableoid = d.classoid and
+    p1.oid = d.objoid and
+    d.objsubid = 0
+where
+  d.classoid is null and p1.oid <= 9999;
+
+select
+  cast(p1.oid as regprocedure)
+from
+  pg_proc as p1
+  inner join
+    pg_namespace as pn
+  on pronamespace = pn.oid
+where
+  nspname = 'pg_catalog' and proleakproof
+order by 1;
+
+select
+  cast(p1.oid as regprocedure)
+from
+  pg_proc as p1
+  inner join
+    pg_namespace as pn
+  on pronamespace = pn.oid
+where
+  nspname = 'pg_catalog' and
+  proleakproof and
+  pronargs = 0
+order by 1;
+
+select
+  proname,
+  oid
+from
+  pg_catalog.pg_proc
+where
+  proname
+  in (
+    'lo_open',
+    'lo_close',
+    'lo_creat',
+    'lo_create',
+    'lo_unlink',
+    'lo_lseek',
+    'lo_lseek64',
+    'lo_tell',
+    'lo_tell64',
+    'lo_truncate',
+    'lo_truncate64',
+    'loread',
+    'lowrite'
+  ) and
+  pronamespace =
+  (
+    select
+      oid
+    from
+      pg_catalog.pg_namespace
+    where
+      nspname = 'pg_catalog'
+  )
+order by 1;
+
+select p1.oid, p1.proname from pg_proc as p1 where provolatile = 'i' and proparallel = 'u';
+
+select
+  *
+from
+  pg_cast as c
+where
+  castsource = 0 or
+  casttarget = 0 or
+  castcontext not in ('e', 'a', 'i') or
+  castmethod not in ('f', 'b', 'i');
+
+select
+  *
+from
+  pg_cast as c
+where
+  castmethod = 'f' and castfunc = 0 or
+  castmethod in ('b', 'i') and castfunc <> 0;
+
+select * from pg_cast as c where castsource = casttarget and castfunc = 0;
+
+select
+  c.*
+from
+  pg_cast as c,
+  pg_proc as p
+where
+  c.castfunc = p.oid and
+  p.pronargs < 2 and
+  castsource = casttarget;
+
+select
+  c.*
+from
+  pg_cast as c,
+  pg_proc as p
+where
+  c.castfunc = p.oid and
+  (p.pronargs < 1 or
+  p.pronargs > 3 or
+  not (binary_coercible(c.castsource, p.proargtypes[0]) or
+  c.castsource = cast('character' as regtype) and
+  p.proargtypes[0] = cast('text' as regtype)) or
+  not binary_coercible(p.prorettype, c.casttarget));
+
+select
+  c.*
+from
+  pg_cast as c,
+  pg_proc as p
+where
+  c.castfunc = p.oid and
+  (p.pronargs > 1 and
+  p.proargtypes[1] <> cast('int4' as regtype) or
+  p.pronargs > 2 and
+  p.proargtypes[2] <> cast('bool' as regtype));
+
+select
+  cast(castsource as regtype),
+  cast(casttarget as regtype),
+  castfunc,
+  castcontext
+from
+  pg_cast as c
+where
+  c.castmethod = 'b' and
+  not exists
+  (
+    select
+      1
+    from
+      pg_cast as k
+    where
+      k.castmethod = 'b' and
+      k.castsource = c.casttarget and
+      k.casttarget = c.castsource
+  );
+
+select
+  c.oid,
+  c.conname
+from
+  pg_conversion as c
+where
+  c.conproc = 0 or
+  pg_encoding_to_char(conforencoding) = '' or
+  pg_encoding_to_char(contoencoding) = '';
+
+select
+  p.oid,
+  p.proname,
+  c.oid,
+  c.conname
+from
+  pg_proc as p,
+  pg_conversion as c
+where
+  p.oid = c.conproc and
+  (p.prorettype <> cast('int4' as regtype) or
+  p.proretset or
+  p.pronargs <> 6 or
+  p.proargtypes[0] <> cast('int4' as regtype) or
+  p.proargtypes[1] <> cast('int4' as regtype) or
+  p.proargtypes[2] <> cast('cstring' as regtype) or
+  p.proargtypes[3] <> cast('internal' as regtype) or
+  p.proargtypes[4] <> cast('int4' as regtype) or
+  p.proargtypes[5] <> cast('bool' as regtype));
+
+select
+  c.oid,
+  c.conname
+from
+  pg_conversion as c
+where
+  condefault and
+  convert(
+    cast('ABC' as bytea),
+    pg_encoding_to_char(conforencoding),
+    pg_encoding_to_char(contoencoding)
+  ) <>
+  'ABC';
+
+select
+  o1.oid,
+  o1.oprname
+from
+  pg_operator as o1
+where
+  o1.oprkind <> 'b' and o1.oprkind <> 'l' or
+  o1.oprresult = 0 or
+  o1.oprcode = 0;
+
+select
+  o1.oid,
+  o1.oprname
+from
+  pg_operator as o1
+where
+  o1.oprleft = 0 and o1.oprkind <> 'l' or
+  o1.oprleft <> 0 and o1.oprkind = 'l' or
+  o1.oprright = 0;
+
+select
+  o1.oid,
+  o1.oprcode,
+  o2.oid,
+  o2.oprcode
+from
+  pg_operator as o1,
+  pg_operator as o2
+where
+  o1.oid <> o2.oid and
+  o1.oprname = o2.oprname and
+  o1.oprkind = o2.oprkind and
+  o1.oprleft = o2.oprleft and
+  o1.oprright = o2.oprright;
+
+select
+  o1.oid,
+  o1.oprcode,
+  o2.oid,
+  o2.oprcode
+from
+  pg_operator as o1,
+  pg_operator as o2
+where
+  o1.oprcom = o2.oid and
+  (o1.oprkind <> 'b' or
+  o1.oprleft <> o2.oprright or
+  o1.oprright <> o2.oprleft or
+  o1.oprresult <> o2.oprresult or
+  o1.oid <> o2.oprcom);
+
+select
+  o1.oid,
+  o1.oprcode,
+  o2.oid,
+  o2.oprcode
+from
+  pg_operator as o1,
+  pg_operator as o2
+where
+  o1.oprnegate = o2.oid and
+  (o1.oprkind <> o2.oprkind or
+  o1.oprleft <> o2.oprleft or
+  o1.oprright <> o2.oprright or
+  o1.oprresult <> cast('bool' as regtype) or
+  o2.oprresult <> cast('bool' as regtype) or
+  o1.oid <> o2.oprnegate or
+  o1.oid = o2.oid);
+
+select distinct
+  o1.oprname as op1,
+  o2.oprname as op2
+from
+  pg_operator as o1,
+  pg_operator as o2
+where
+  o1.oprcom = o2.oid and o1.oprname <= o2.oprname
+order by 1,
+  2;
+
+select distinct
+  o1.oprname as op1,
+  o2.oprname as op2
+from
+  pg_operator as o1,
+  pg_operator as o2
+where
+  o1.oprnegate = o2.oid and o1.oprname <= o2.oprname
+order by 1,
+  2;
+
+select
+  o1.oid,
+  o1.oprname
+from
+  pg_operator as o1
+where
+  (o1.oprcanmerge or o1.oprcanhash) and
+  not (o1.oprkind = 'b' and
+  o1.oprresult = cast('bool' as regtype) and
+  o1.oprcom <> 0);
+
+select
+  o1.oid,
+  o1.oprname,
+  o2.oid,
+  o2.oprname
+from
+  pg_operator as o1,
+  pg_operator as o2
+where
+  o1.oprcom = o2.oid and
+  (o1.oprcanmerge <> o2.oprcanmerge or
+  o1.oprcanhash <> o2.oprcanhash);
+
+select
+  o1.oid,
+  o1.oprname
+from
+  pg_operator as o1
+where
+  o1.oprcanmerge and
+  not exists
+  (
+    select
+      1
+    from
+      pg_amop
+    where
+      amopmethod =
+      (select oid from pg_am where amname = 'btree') and
+      amopopr = o1.oid and
+      amopstrategy = 3
+  );
+
+select
+  o1.oid,
+  o1.oprname,
+  p.amopfamily
+from
+  pg_operator as o1,
+  pg_amop as p
+where
+  amopopr = o1.oid and
+  amopmethod =
+  (select oid from pg_am where amname = 'btree') and
+  amopstrategy = 3 and
+  not o1.oprcanmerge;
+
+select
+  o1.oid,
+  o1.oprname
+from
+  pg_operator as o1
+where
+  o1.oprcanhash and
+  not exists
+  (
+    select
+      1
+    from
+      pg_amop
+    where
+      amopmethod =
+      (select oid from pg_am where amname = 'hash') and
+      amopopr = o1.oid and
+      amopstrategy = 1
+  );
+
+select
+  o1.oid,
+  o1.oprname,
+  p.amopfamily
+from
+  pg_operator as o1,
+  pg_amop as p
+where
+  amopopr = o1.oid and
+  amopmethod =
+  (select oid from pg_am where amname = 'hash') and
+  not o1.oprcanhash;
+
+select
+  o1.oid,
+  o1.oprname,
+  p1.oid,
+  p1.proname
+from
+  pg_operator as o1,
+  pg_proc as p1
+where
+  o1.oprcode = p1.oid and
+  o1.oprkind = 'b' and
+  (p1.pronargs <> 2 or
+  not binary_coercible(p1.prorettype, o1.oprresult) or
+  not binary_coercible(o1.oprleft, p1.proargtypes[0]) or
+  not binary_coercible(o1.oprright, p1.proargtypes[1]));
+
+select
+  o1.oid,
+  o1.oprname,
+  p1.oid,
+  p1.proname
+from
+  pg_operator as o1,
+  pg_proc as p1
+where
+  o1.oprcode = p1.oid and
+  o1.oprkind = 'l' and
+  (p1.pronargs <> 1 or
+  not binary_coercible(p1.prorettype, o1.oprresult) or
+  not binary_coercible(o1.oprright, p1.proargtypes[0]) or
+  o1.oprleft <> 0);
+
+select
+  o1.oid,
+  o1.oprname,
+  p1.oid,
+  p1.proname
+from
+  pg_operator as o1,
+  pg_proc as p1
+where
+  o1.oprcode = p1.oid and
+  (o1.oprcanmerge or o1.oprcanhash) and
+  p1.provolatile = 'v';
+
+select
+  o1.oid,
+  o1.oprname,
+  p2.oid,
+  p2.proname
+from
+  pg_operator as o1,
+  pg_proc as p2
+where
+  o1.oprrest = p2.oid and
+  (o1.oprresult <> cast('bool' as regtype) or
+  p2.prorettype <> cast('float8' as regtype) or
+  p2.proretset or
+  p2.pronargs <> 4 or
+  p2.proargtypes[0] <> cast('internal' as regtype) or
+  p2.proargtypes[1] <> cast('oid' as regtype) or
+  p2.proargtypes[2] <> cast('internal' as regtype) or
+  p2.proargtypes[3] <> cast('int4' as regtype));
+
+select
+  o1.oid,
+  o1.oprname,
+  p2.oid,
+  p2.proname
+from
+  pg_operator as o1,
+  pg_proc as p2
+where
+  o1.oprjoin = p2.oid and
+  (o1.oprkind <> 'b' or
+  o1.oprresult <> cast('bool' as regtype) or
+  p2.prorettype <> cast('float8' as regtype) or
+  p2.proretset or
+  p2.pronargs <> 5 or
+  p2.proargtypes[0] <> cast('internal' as regtype) or
+  p2.proargtypes[1] <> cast('oid' as regtype) or
+  p2.proargtypes[2] <> cast('internal' as regtype) or
+  p2.proargtypes[3] <> cast('int2' as regtype) or
+  p2.proargtypes[4] <> cast('internal' as regtype));
+
+select
+  o1.oid,
+  o1.oprname
+from
+  pg_operator as o1
+  left outer join
+    pg_description as d
+  on o1.tableoid = d.classoid and
+    o1.oid = d.objoid and
+    d.objsubid = 0
+where
+  d.classoid is null and o1.oid <= 9999;
+
+with
+funcdescs
+as (
+  select
+    p.oid as p_oid,
+    proname,
+    o.oid as o_oid,
+    pd.description as prodesc,
+    'implementation of ' || oprname || ' operator'
+    as expecteddesc,
+    od.description as oprdesc
+  from
+    pg_proc as p
+    inner join
+      pg_operator as o
+    on oprcode = p.oid
+    left outer join
+      pg_description as pd
+    on pd.objoid = p.oid and
+      pd.classoid = p.tableoid and
+      pd.objsubid = 0
+    left outer join
+      pg_description as od
+    on od.objoid = o.oid and
+      od.classoid = o.tableoid and
+      od.objsubid = 0
+  where
+    o.oid <= 9999
+)
+select
+  *
+from
+  funcdescs
+where
+  prodesc is distinct from expecteddesc and
+  oprdesc not like 'deprecated%' and
+  prodesc is distinct from oprdesc;
+
+with
+funcdescs
+as (
+  select
+    p.oid as p_oid,
+    proname,
+    o.oid as o_oid,
+    pd.description as prodesc,
+    'implementation of ' || oprname || ' operator'
+    as expecteddesc,
+    od.description as oprdesc
+  from
+    pg_proc as p
+    inner join
+      pg_operator as o
+    on oprcode = p.oid
+    left outer join
+      pg_description as pd
+    on pd.objoid = p.oid and
+      pd.classoid = p.tableoid and
+      pd.objsubid = 0
+    left outer join
+      pg_description as od
+    on od.objoid = o.oid and
+      od.classoid = o.tableoid and
+      od.objsubid = 0
+  where
+    o.oid <= 9999
+)
+select
+  p_oid,
+  proname,
+  prodesc
+from
+  funcdescs
+where
+  prodesc is distinct from expecteddesc and
+  oprdesc not like 'deprecated%'
+order by 1;
+
+select
+  o1.oid,
+  o1.oprcode,
+  o2.oid,
+  o2.oprcode
+from
+  pg_operator as o1,
+  pg_operator as o2,
+  pg_proc as p1,
+  pg_proc as p2
+where
+  o1.oprcom = o2.oid and
+  p1.oid = o1.oprcode and
+  p2.oid = o2.oprcode and
+  (p1.provolatile <> p2.provolatile or
+  p1.proleakproof <> p2.proleakproof);
+
+select
+  o1.oid,
+  o1.oprcode,
+  o2.oid,
+  o2.oprcode
+from
+  pg_operator as o1,
+  pg_operator as o2,
+  pg_proc as p1,
+  pg_proc as p2
+where
+  o1.oprnegate = o2.oid and
+  p1.oid = o1.oprcode and
+  p2.oid = o2.oprcode and
+  (p1.provolatile <> p2.provolatile or
+  p1.proleakproof <> p2.proleakproof);
+
+select
+  cast(pp.oid as regprocedure) as proc,
+  pp.provolatile as vp,
+  pp.proleakproof as lp,
+  cast(po.oid as regprocedure) as opr,
+  po.provolatile as vo,
+  po.proleakproof as lo
+from
+  pg_proc as pp,
+  pg_proc as po,
+  pg_operator as o,
+  pg_amproc as ap,
+  pg_amop as ao
+where
+  pp.oid = ap.amproc and
+  po.oid = o.oprcode and
+  o.oid = ao.amopopr and
+  ao.amopmethod =
+  (select oid from pg_am where amname = 'btree') and
+  ao.amopfamily = ap.amprocfamily and
+  ao.amoplefttype = ap.amproclefttype and
+  ao.amoprighttype = ap.amprocrighttype and
+  ap.amprocnum = 1 and
+  (pp.provolatile <> po.provolatile or
+  pp.proleakproof <> po.proleakproof)
+order by 1;
+
+select
+  ctid,
+  cast(aggfnoid as oid)
+from
+  pg_aggregate as a
+where
+  aggfnoid = 0 or
+  aggtransfn = 0 or
+  aggkind not in ('n', 'o', 'h') or
+  aggnumdirectargs < 0 or
+  aggkind = 'n' and aggnumdirectargs > 0 or
+  aggfinalmodify not in ('r', 's', 'w') or
+  aggmfinalmodify not in ('r', 's', 'w') or
+  aggtranstype = 0 or
+  aggtransspace < 0 or
+  aggmtransspace < 0;
+
+select
+  cast(a.aggfnoid as oid),
+  p.proname
+from
+  pg_aggregate as a,
+  pg_proc as p
+where
+  a.aggfnoid = p.oid and
+  (p.prokind <> 'a' or
+  p.proretset or
+  p.pronargs < a.aggnumdirectargs);
+
+select
+  oid,
+  proname
+from
+  pg_proc as p
+where
+  p.prokind = 'a' and
+  not exists
+  (
+    select
+      1
+    from
+      pg_aggregate as a
+    where
+      a.aggfnoid = p.oid
+  );
+
+select
+  cast(a.aggfnoid as oid),
+  p.proname
+from
+  pg_aggregate as a,
+  pg_proc as p
+where
+  a.aggfnoid = p.oid and
+  a.aggfinalfn = 0 and
+  p.prorettype <> a.aggtranstype;
+
+select
+  cast(a.aggfnoid as oid),
+  p.proname,
+  ptr.oid,
+  ptr.proname
+from
+  pg_aggregate as a,
+  pg_proc as p,
+  pg_proc as ptr
+where
+  a.aggfnoid = p.oid and
+  a.aggtransfn = ptr.oid and
+  (ptr.proretset or
+  not ptr.pronargs =
+  case
+    when a.aggkind = 'n' then p.pronargs + 1
+    else greatest(p.pronargs - a.aggnumdirectargs, 1) + 1
+  end or
+  not binary_coercible(ptr.prorettype, a.aggtranstype) or
+  not binary_coercible(
+    a.aggtranstype,
+    ptr.proargtypes[0]
+  ) or
+  p.pronargs > 0 and
+  not binary_coercible(
+    p.proargtypes[0],
+    ptr.proargtypes[1]
+  ) or
+  p.pronargs > 1 and
+  not binary_coercible(
+    p.proargtypes[1],
+    ptr.proargtypes[2]
+  ) or
+  p.pronargs > 2 and
+  not binary_coercible(
+    p.proargtypes[2],
+    ptr.proargtypes[3]
+  ) or
+  p.pronargs > 3 and
+  not binary_coercible(
+    p.proargtypes[3],
+    ptr.proargtypes[4]
+  ) or
+  p.pronargs > 4);
+
+select
+  cast(a.aggfnoid as oid),
+  p.proname,
+  pfn.oid,
+  pfn.proname
+from
+  pg_aggregate as a,
+  pg_proc as p,
+  pg_proc as pfn
+where
+  a.aggfnoid = p.oid and
+  a.aggfinalfn = pfn.oid and
+  (pfn.proretset or
+  not binary_coercible(pfn.prorettype, p.prorettype) or
+  not binary_coercible(
+    a.aggtranstype,
+    pfn.proargtypes[0]
+  ) or
+  case
+    when a.aggfinalextra
+    then pfn.pronargs <> p.pronargs + 1
+    else pfn.pronargs <> a.aggnumdirectargs + 1
+  end or
+  pfn.pronargs > 1 and
+  not binary_coercible(
+    p.proargtypes[0],
+    pfn.proargtypes[1]
+  ) or
+  pfn.pronargs > 2 and
+  not binary_coercible(
+    p.proargtypes[1],
+    pfn.proargtypes[2]
+  ) or
+  pfn.pronargs > 3 and
+  not binary_coercible(
+    p.proargtypes[2],
+    pfn.proargtypes[3]
+  ) or
+  pfn.pronargs > 4);
+
+select
+  cast(a.aggfnoid as oid),
+  p.proname,
+  ptr.oid,
+  ptr.proname
+from
+  pg_aggregate as a,
+  pg_proc as p,
+  pg_proc as ptr
+where
+  a.aggfnoid = p.oid and
+  a.aggtransfn = ptr.oid and
+  ptr.proisstrict and
+  a.agginitval is null and
+  not binary_coercible(p.proargtypes[0], a.aggtranstype);
+
+select
+  ctid,
+  cast(aggfnoid as oid)
+from
+  pg_aggregate as a
+where
+  aggmtranstype <> 0 and
+  (aggmtransfn = 0 or aggminvtransfn = 0);
+
+select
+  ctid,
+  cast(aggfnoid as oid)
+from
+  pg_aggregate as a
+where
+  aggmtranstype = 0 and
+  (aggmtransfn <> 0 or
+  aggminvtransfn <> 0 or
+  aggmfinalfn <> 0 or
+  aggmtransspace <> 0 or
+  aggminitval is not null);
+
+select
+  cast(a.aggfnoid as oid),
+  p.proname
+from
+  pg_aggregate as a,
+  pg_proc as p
+where
+  a.aggfnoid = p.oid and
+  a.aggmtransfn <> 0 and
+  a.aggmfinalfn = 0 and
+  p.prorettype <> a.aggmtranstype;
+
+select
+  cast(a.aggfnoid as oid),
+  p.proname,
+  ptr.oid,
+  ptr.proname
+from
+  pg_aggregate as a,
+  pg_proc as p,
+  pg_proc as ptr
+where
+  a.aggfnoid = p.oid and
+  a.aggmtransfn = ptr.oid and
+  (ptr.proretset or
+  not ptr.pronargs =
+  case
+    when a.aggkind = 'n' then p.pronargs + 1
+    else greatest(p.pronargs - a.aggnumdirectargs, 1) + 1
+  end or
+  not binary_coercible(ptr.prorettype, a.aggmtranstype) or
+  not binary_coercible(
+    a.aggmtranstype,
+    ptr.proargtypes[0]
+  ) or
+  p.pronargs > 0 and
+  not binary_coercible(
+    p.proargtypes[0],
+    ptr.proargtypes[1]
+  ) or
+  p.pronargs > 1 and
+  not binary_coercible(
+    p.proargtypes[1],
+    ptr.proargtypes[2]
+  ) or
+  p.pronargs > 2 and
+  not binary_coercible(
+    p.proargtypes[2],
+    ptr.proargtypes[3]
+  ) or
+  p.pronargs > 3);
+
+select
+  cast(a.aggfnoid as oid),
+  p.proname,
+  ptr.oid,
+  ptr.proname
+from
+  pg_aggregate as a,
+  pg_proc as p,
+  pg_proc as ptr
+where
+  a.aggfnoid = p.oid and
+  a.aggminvtransfn = ptr.oid and
+  (ptr.proretset or
+  not ptr.pronargs =
+  case
+    when a.aggkind = 'n' then p.pronargs + 1
+    else greatest(p.pronargs - a.aggnumdirectargs, 1) + 1
+  end or
+  not binary_coercible(ptr.prorettype, a.aggmtranstype) or
+  not binary_coercible(
+    a.aggmtranstype,
+    ptr.proargtypes[0]
+  ) or
+  p.pronargs > 0 and
+  not binary_coercible(
+    p.proargtypes[0],
+    ptr.proargtypes[1]
+  ) or
+  p.pronargs > 1 and
+  not binary_coercible(
+    p.proargtypes[1],
+    ptr.proargtypes[2]
+  ) or
+  p.pronargs > 2 and
+  not binary_coercible(
+    p.proargtypes[2],
+    ptr.proargtypes[3]
+  ) or
+  p.pronargs > 3);
+
+select
+  cast(a.aggfnoid as oid),
+  p.proname,
+  pfn.oid,
+  pfn.proname
+from
+  pg_aggregate as a,
+  pg_proc as p,
+  pg_proc as pfn
+where
+  a.aggfnoid = p.oid and
+  a.aggmfinalfn = pfn.oid and
+  (pfn.proretset or
+  not binary_coercible(pfn.prorettype, p.prorettype) or
+  not binary_coercible(
+    a.aggmtranstype,
+    pfn.proargtypes[0]
+  ) or
+  case
+    when a.aggmfinalextra
+    then pfn.pronargs <> p.pronargs + 1
+    else pfn.pronargs <> a.aggnumdirectargs + 1
+  end or
+  pfn.pronargs > 1 and
+  not binary_coercible(
+    p.proargtypes[0],
+    pfn.proargtypes[1]
+  ) or
+  pfn.pronargs > 2 and
+  not binary_coercible(
+    p.proargtypes[1],
+    pfn.proargtypes[2]
+  ) or
+  pfn.pronargs > 3 and
+  not binary_coercible(
+    p.proargtypes[2],
+    pfn.proargtypes[3]
+  ) or
+  pfn.pronargs > 4);
+
+select
+  cast(a.aggfnoid as oid),
+  p.proname,
+  ptr.oid,
+  ptr.proname
+from
+  pg_aggregate as a,
+  pg_proc as p,
+  pg_proc as ptr
+where
+  a.aggfnoid = p.oid and
+  a.aggmtransfn = ptr.oid and
+  ptr.proisstrict and
+  a.aggminitval is null and
+  not binary_coercible(
+    p.proargtypes[0],
+    a.aggmtranstype
+  );
+
+select
+  cast(a.aggfnoid as oid),
+  p.proname,
+  ptr.oid,
+  ptr.proname,
+  iptr.oid,
+  iptr.proname
+from
+  pg_aggregate as a,
+  pg_proc as p,
+  pg_proc as ptr,
+  pg_proc as iptr
+where
+  a.aggfnoid = p.oid and
+  a.aggmtransfn = ptr.oid and
+  a.aggminvtransfn = iptr.oid and
+  ptr.proisstrict <> iptr.proisstrict;
+
+select
+  a.aggfnoid,
+  p.proname
+from
+  pg_aggregate as a,
+  pg_proc as p
+where
+  a.aggcombinefn = p.oid and
+  (p.pronargs <> 2 or
+  p.prorettype <> p.proargtypes[0] or
+  p.prorettype <> p.proargtypes[1] or
+  not binary_coercible(a.aggtranstype, p.proargtypes[0]));
+
+select
+  a.aggfnoid,
+  p.proname
+from
+  pg_aggregate as a,
+  pg_proc as p
+where
+  a.aggcombinefn = p.oid and
+  a.aggtranstype = cast('internal' as regtype) and
+  p.proisstrict;
+
+select
+  aggfnoid,
+  aggtranstype,
+  aggserialfn,
+  aggdeserialfn
+from
+  pg_aggregate
+where
+  (aggserialfn <> 0 or aggdeserialfn <> 0) and
+  (aggtranstype <> cast('internal' as regtype) or
+  aggcombinefn = 0 or
+  aggserialfn = 0 or
+  aggdeserialfn = 0);
+
+select
+  a.aggfnoid,
+  p.proname
+from
+  pg_aggregate as a,
+  pg_proc as p
+where
+  a.aggserialfn = p.oid and
+  (p.prorettype <> cast('bytea' as regtype) or
+  p.pronargs <> 1 or
+  p.proargtypes[0] <> cast('internal' as regtype) or
+  not p.proisstrict);
+
+select
+  a.aggfnoid,
+  p.proname
+from
+  pg_aggregate as a,
+  pg_proc as p
+where
+  a.aggdeserialfn = p.oid and
+  (p.prorettype <> cast('internal' as regtype) or
+  p.pronargs <> 2 or
+  p.proargtypes[0] <> cast('bytea' as regtype) or
+  p.proargtypes[1] <> cast('internal' as regtype) or
+  not p.proisstrict);
+
+select
+  a.aggfnoid,
+  a.aggcombinefn,
+  a.aggserialfn,
+  a.aggdeserialfn,
+  b.aggfnoid,
+  b.aggcombinefn,
+  b.aggserialfn,
+  b.aggdeserialfn
+from
+  pg_aggregate as a,
+  pg_aggregate as b
+where
+  a.aggfnoid < b.aggfnoid and
+  a.aggtransfn = b.aggtransfn and
+  (a.aggcombinefn <> b.aggcombinefn or
+  a.aggserialfn <> b.aggserialfn or
+  a.aggdeserialfn <> b.aggdeserialfn);
+
+select distinct
+  proname,
+  oprname
+from
+  pg_operator as o,
+  pg_aggregate as a,
+  pg_proc as p
+where
+  a.aggfnoid = p.oid and a.aggsortop = o.oid
+order by 1,
+  2;
+
+select
+  cast(a.aggfnoid as oid),
+  o.oid
+from
+  pg_operator as o,
+  pg_aggregate as a,
+  pg_proc as p
+where
+  a.aggfnoid = p.oid and
+  a.aggsortop = o.oid and
+  (oprkind <> 'b' or
+  oprresult <> cast('boolean' as regtype) or
+  oprleft <> p.proargtypes[0] or
+  oprright <> p.proargtypes[0]);
+
+select
+  cast(a.aggfnoid as oid),
+  o.oid
+from
+  pg_operator as o,
+  pg_aggregate as a,
+  pg_proc as p
+where
+  a.aggfnoid = p.oid and
+  a.aggsortop = o.oid and
+  not exists
+  (
+    select
+      1
+    from
+      pg_amop
+    where
+      amopmethod =
+      (select oid from pg_am where amname = 'btree') and
+      amopopr = o.oid and
+      amoplefttype = o.oprleft and
+      amoprighttype = o.oprright
+  );
+
+select distinct
+  proname,
+  oprname,
+  amopstrategy
+from
+  pg_operator as o,
+  pg_aggregate as a,
+  pg_proc as p,
+  pg_amop as ao
+where
+  a.aggfnoid = p.oid and
+  a.aggsortop = o.oid and
+  amopopr = o.oid and
+  amopmethod =
+  (select oid from pg_am where amname = 'btree')
+order by 1,
+  2;
+
+select
+  cast(p1.oid as regprocedure),
+  cast(p2.oid as regprocedure)
+from
+  pg_proc as p1,
+  pg_proc as p2
+where
+  p1.oid < p2.oid and
+  p1.proname = p2.proname and
+  p1.prokind = 'a' and
+  p2.prokind = 'a' and
+  array_dims(p1.proargtypes) <>
+  array_dims(p2.proargtypes)
+order by 1;
+
+select oid, proname from pg_proc as p where prokind = 'a' and proargdefaults is not null;
+
+select
+  p.oid,
+  proname
+from
+  pg_proc as p
+  inner join
+    pg_aggregate as a
+  on a.aggfnoid = p.oid
+where
+  prokind = 'a' and
+  provariadic <> 0 and
+  a.aggkind = 'n';
+
+select f.oid from pg_opfamily as f where f.opfmethod = 0 or f.opfnamespace = 0;
+
+select
+  oid,
+  opfname
+from
+  pg_opfamily as f
+where
+  not exists
+  (
+    select 1 from pg_opclass where opcfamily = f.oid
+  );
+
+select
+  c1.oid
+from
+  pg_opclass as c1
+where
+  c1.opcmethod = 0 or
+  c1.opcnamespace = 0 or
+  c1.opcfamily = 0 or
+  c1.opcintype = 0;
+
+select
+  c1.oid,
+  f1.oid
+from
+  pg_opclass as c1,
+  pg_opfamily as f1
+where
+  c1.opcfamily = f1.oid and
+  c1.opcmethod <> f1.opfmethod;
+
+select
+  c1.oid,
+  c2.oid
+from
+  pg_opclass as c1,
+  pg_opclass as c2
+where
+  c1.oid <> c2.oid and
+  c1.opcmethod = c2.opcmethod and
+  c1.opcintype = c2.opcintype and
+  c1.opcdefault and
+  c2.opcdefault;
+
+select oid, opcname from pg_opclass where not amvalidate(oid);
+
+select a1.oid, a1.amname from pg_am as a1 where a1.amhandler = 0;
+
+select
+  a1.oid,
+  a1.amname,
+  p1.oid,
+  p1.proname
+from
+  pg_am as a1,
+  pg_proc as p1
+where
+  p1.oid = a1.amhandler and
+  a1.amtype = 'i' and
+  (p1.prorettype <>
+  cast('index_am_handler' as regtype) or
+  p1.proretset or
+  p1.pronargs <> 1 or
+  p1.proargtypes[0] <> cast('internal' as regtype));
+
+select
+  a1.oid,
+  a1.amname,
+  p1.oid,
+  p1.proname
+from
+  pg_am as a1,
+  pg_proc as p1
+where
+  p1.oid = a1.amhandler and
+  a1.amtype = 't' and
+  (p1.prorettype <>
+  cast('table_am_handler' as regtype) or
+  p1.proretset or
+  p1.pronargs <> 1 or
+  p1.proargtypes[0] <> cast('internal' as regtype));
+
+select
+  a1.amopfamily,
+  a1.amopstrategy
+from
+  pg_amop as a1
+where
+  a1.amopfamily = 0 or
+  a1.amoplefttype = 0 or
+  a1.amoprighttype = 0 or
+  a1.amopopr = 0 or
+  a1.amopmethod = 0 or
+  a1.amopstrategy < 1;
+
+select
+  a1.amopfamily,
+  a1.amopstrategy
+from
+  pg_amop as a1
+where
+  not (a1.amoppurpose = 's' and a1.amopsortfamily = 0 or
+  a1.amoppurpose = 'o' and a1.amopsortfamily <> 0);
+
+select
+  a1.oid,
+  f1.oid
+from
+  pg_amop as a1,
+  pg_opfamily as f1
+where
+  a1.amopfamily = f1.oid and
+  a1.amopmethod <> f1.opfmethod;
+
+select distinct
+  amopmethod,
+  amopstrategy,
+  oprname
+from
+  pg_amop as a1
+  left outer join
+    pg_operator as o1
+  on amopopr = o1.oid
+order by 1,
+  2,
+  3;
+
+select
+  a1.amopfamily,
+  a1.amopopr,
+  o1.oid,
+  o1.oprname
+from
+  pg_amop as a1,
+  pg_operator as o1
+where
+  a1.amopopr = o1.oid and
+  a1.amoppurpose = 's' and
+  (o1.oprrest = 0 or o1.oprjoin = 0);
+
+select
+  c1.opcname,
+  c1.opcfamily
+from
+  pg_opclass as c1
+where
+  not exists
+  (
+    select
+      1
+    from
+      pg_amop as a1
+    where
+      a1.amopfamily = c1.opcfamily and
+      binary_coercible(c1.opcintype, a1.amoplefttype)
+  );
+
+select
+  a1.amopfamily,
+  a1.amopstrategy,
+  a1.amopopr
+from
+  pg_amop as a1
+where
+  not exists
+  (
+    select
+      1
+    from
+      pg_opclass as c1
+    where
+      c1.opcfamily = a1.amopfamily and
+      binary_coercible(c1.opcintype, a1.amoplefttype)
+  );
+
+select
+  a1.amopfamily,
+  a1.amopopr,
+  o1.oprname,
+  p1.prosrc
+from
+  pg_amop as a1,
+  pg_operator as o1,
+  pg_proc as p1
+where
+  a1.amopopr = o1.oid and
+  o1.oprcode = p1.oid and
+  a1.amoplefttype = a1.amoprighttype and
+  p1.provolatile <> 'i';
+
+select
+  a1.amopfamily,
+  a1.amopopr,
+  o1.oprname,
+  p1.prosrc
+from
+  pg_amop as a1,
+  pg_operator as o1,
+  pg_proc as p1
+where
+  a1.amopopr = o1.oid and
+  o1.oprcode = p1.oid and
+  a1.amoplefttype <> a1.amoprighttype and
+  p1.provolatile = 'v';
+
+select
+  a1.amprocfamily,
+  a1.amprocnum
+from
+  pg_amproc as a1
+where
+  a1.amprocfamily = 0 or
+  a1.amproclefttype = 0 or
+  a1.amprocrighttype = 0 or
+  a1.amprocnum < 0 or
+  a1.amproc = 0;
+
+select
+  a1.amprocfamily,
+  a1.amproc,
+  p1.prosrc
+from
+  pg_amproc as a1,
+  pg_proc as p1
+where
+  a1.amproc = p1.oid and
+  a1.amproclefttype = a1.amprocrighttype and
+  p1.provolatile <> 'i';
+
+select
+  a1.amprocfamily,
+  a1.amproc,
+  p1.prosrc
+from
+  pg_amproc as a1,
+  pg_proc as p1
+where
+  a1.amproc = p1.oid and
+  a1.amproclefttype <> a1.amprocrighttype and
+  p1.provolatile = 'v';
+
+select
+  cast(amp.amproc as regproc) as proc,
+  opf.opfname as opfamily_name,
+  opc.opcname as opclass_name,
+  cast(opc.opcintype as regtype) as opcintype
+from
+  pg_am as am
+  inner join
+    pg_opclass as opc
+  on opc.opcmethod = am.oid
+  inner join
+    pg_opfamily as opf
+  on opc.opcfamily = opf.oid
+  left outer join
+    pg_amproc as amp
+  on amp.amprocfamily = opf.oid and
+    amp.amproclefttype = opc.opcintype and
+    amp.amprocnum = 4
+where
+  am.amname = 'btree' and
+  amp.amproc is distinct from cast('btequalimage' as regproc)
+order by 1,
+  2,
+  3;
+
+select
+  indexrelid,
+  indrelid
+from
+  pg_index
+where
+  indexrelid = 0 or
+  indrelid = 0 or
+  indnatts <= 0 or
+  indnatts > 32;
+
+select
+  indexrelid,
+  indrelid
+from
+  pg_index
+where
+  array_lower(indkey, 1) <> 0 or
+  array_upper(indkey, 1) <> indnatts - 1 or
+  array_lower(indclass, 1) <> 0 or
+  array_upper(indclass, 1) <> indnatts - 1 or
+  array_lower(indcollation, 1) <> 0 or
+  array_upper(indcollation, 1) <> indnatts - 1 or
+  array_lower(indoption, 1) <> 0 or
+  array_upper(indoption, 1) <> indnatts - 1;
+
+select
+  cast(indexrelid as regclass),
+  cast(indrelid as regclass),
+  attname,
+  cast(atttypid as regtype),
+  opcname
+from
+  (
+    select
+      indexrelid,
+      indrelid,
+      unnest(indkey) as ikey,
+      unnest(indclass) as iclass,
+      unnest(indcollation) as icoll
+    from
+      pg_index
+  )
+  as ss,
+  pg_attribute as a,
+  pg_opclass as opc
+where
+  a.attrelid = indrelid and
+  a.attnum = ikey and
+  opc.oid = iclass and
+  (not binary_coercible(atttypid, opcintype) or
+  icoll <> attcollation);
+
+select
+  cast(indexrelid as regclass),
+  cast(indrelid as regclass),
+  attname,
+  cast(atttypid as regtype),
+  opcname
+from
+  (
+    select
+      indexrelid,
+      indrelid,
+      unnest(indkey) as ikey,
+      unnest(indclass) as iclass,
+      unnest(indcollation) as icoll
+    from
+      pg_index
+    where
+      indrelid < 16384
+  )
+  as ss,
+  pg_attribute as a,
+  pg_opclass as opc
+where
+  a.attrelid = indrelid and
+  a.attnum = ikey and
+  opc.oid = iclass and
+  (opcintype <> atttypid or icoll <> attcollation)
+order by 1;
+
+select
+  relname,
+  attname,
+  attcollation
+from
+  pg_class as c,
+  pg_attribute as a
+where
+  c.oid = attrelid and
+  c.oid < 16384 and
+  c.relkind <> 'v' and
+  attcollation <> 0 and
+  attcollation <>
+  (
+    select oid from pg_collation where collname = 'C'
+  );
+
+select
+  cast(indexrelid as regclass),
+  cast(indrelid as regclass),
+  iclass,
+  icoll
+from
+  (
+    select
+      indexrelid,
+      indrelid,
+      unnest(indclass) as iclass,
+      unnest(indcollation) as icoll
+    from
+      pg_index
+    where
+      indrelid < 16384
+  )
+  as ss
+where
+  icoll <> 0 and
+  icoll <>
+  (
+    select oid from pg_collation where collname = 'C'
+  );

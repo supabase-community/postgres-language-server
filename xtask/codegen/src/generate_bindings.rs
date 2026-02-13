@@ -1,15 +1,5 @@
 use crate::update;
-use biome_js_factory::make;
-use biome_js_formatter::{context::JsFormatOptions, format_node};
-use biome_js_syntax::{
-    AnyJsBinding, AnyJsBindingPattern, AnyJsCallArgument, AnyJsDeclaration, AnyJsDeclarationClause,
-    AnyJsExportClause, AnyJsExpression, AnyJsFormalParameter, AnyJsImportClause,
-    AnyJsLiteralExpression, AnyJsModuleItem, AnyJsName, AnyJsNamedImportSpecifier,
-    AnyJsObjectMember, AnyJsObjectMemberName, AnyJsParameter, AnyJsStatement, AnyTsName,
-    AnyTsReturnType, AnyTsType, AnyTsTypeMember, JsFileSource, TriviaPieceKind, T,
-};
-use biome_rowan::AstNode;
-use biome_string_case::Case;
+use convert_case::{Case, Casing};
 use pgls_workspace::workspace_types::{generate_type, methods, ModuleQueue};
 use xtask::{project_root, Mode, Result};
 
@@ -20,420 +10,68 @@ pub fn generate_bindings(mode: Mode) -> Result<()> {
         project_root().join("packages/@postgres-language-server/backend-jsonrpc/src/workspace.ts");
     let methods = methods();
 
-    let mut declarations = Vec::new();
-    let mut member_definitions = Vec::with_capacity(methods.len());
-    let mut member_declarations = Vec::with_capacity(methods.len());
+    let mut declarations: Vec<(String, Option<&String>)> = Vec::new();
+    let mut workspace_members = Vec::new();
+    let mut impl_members = Vec::new();
     let mut queue = ModuleQueue::default();
 
     for method in &methods {
         let params = generate_type(&mut declarations, &mut queue, &method.params);
         let result = generate_type(&mut declarations, &mut queue, &method.result);
 
-        let camel_case = Case::Camel.convert(method.name);
+        let camel_case = method.name.to_case(Case::Camel);
 
-        member_definitions.push(AnyTsTypeMember::TsMethodSignatureTypeMember(
-            make::ts_method_signature_type_member(
-                AnyJsObjectMemberName::JsLiteralMemberName(make::js_literal_member_name(
-                    make::ident(&camel_case),
-                )),
-                make::js_parameters(
-                    make::token(T!['(']),
-                    make::js_parameter_list(
-                        Some(AnyJsParameter::AnyJsFormalParameter(
-                            AnyJsFormalParameter::JsFormalParameter(
-                                make::js_formal_parameter(
-                                    make::js_decorator_list([]),
-                                    AnyJsBindingPattern::AnyJsBinding(
-                                        AnyJsBinding::JsIdentifierBinding(
-                                            make::js_identifier_binding(make::ident("params")),
-                                        ),
-                                    ),
-                                )
-                                .with_type_annotation(make::ts_type_annotation(
-                                    make::token(T![:]),
-                                    params,
-                                ))
-                                .build(),
-                            ),
-                        )),
-                        None,
-                    ),
-                    make::token(T![')']),
-                ),
-            )
-            .with_return_type_annotation(make::ts_return_type_annotation(
-                make::token(T![:]),
-                AnyTsReturnType::AnyTsType(AnyTsType::TsReferenceType(
-                    make::ts_reference_type(AnyTsName::JsReferenceIdentifier(
-                        make::js_reference_identifier(make::ident("Promise")),
-                    ))
-                    .with_type_arguments(make::ts_type_arguments(
-                        make::token(T![<]),
-                        make::ts_type_argument_list(Some(result), None),
-                        make::token(T![>]),
-                    ))
-                    .build(),
-                )),
-            ))
-            .build(),
+        // Workspace interface method signature
+        workspace_members.push(format!(
+            "\t{camel_case}(params: {params}): Promise<{result}>;"
         ));
 
-        member_declarations.push(AnyJsObjectMember::JsMethodObjectMember(
-            make::js_method_object_member(
-                AnyJsObjectMemberName::JsLiteralMemberName(make::js_literal_member_name(
-                    make::ident(&camel_case),
-                )),
-                make::js_parameters(
-                    make::token(T!['(']),
-                    make::js_parameter_list(
-                        Some(AnyJsParameter::AnyJsFormalParameter(
-                            AnyJsFormalParameter::JsFormalParameter(
-                                make::js_formal_parameter(make::js_decorator_list([]),AnyJsBindingPattern::AnyJsBinding(
-                                    AnyJsBinding::JsIdentifierBinding(make::js_identifier_binding(
-                                        make::ident("params"),
-                                    )),
-                                ))
-                                .build(),
-                            ),
-                        )),
-                        None,
-                    ),
-                    make::token(T![')']),
-                ),
-                make::js_function_body(
-                    make::token(T!['{']),
-                    make::js_directive_list(None),
-                    make::js_statement_list(Some(AnyJsStatement::JsReturnStatement(
-                        make::js_return_statement(make::token(T![return]))
-                            .with_argument(AnyJsExpression::JsCallExpression(
-                                make::js_call_expression(
-                                    AnyJsExpression::JsStaticMemberExpression(
-                                        make::js_static_member_expression(
-                                            AnyJsExpression::JsIdentifierExpression(
-                                                make::js_identifier_expression(
-                                                    make::js_reference_identifier(make::ident(
-                                                        "transport",
-                                                    )),
-                                                ),
-                                            ),
-                                            make::token(T![.]),
-                                            AnyJsName::JsName(make::js_name(make::ident(
-                                                "request",
-                                            ))),
-                                        ),
-                                    ),
-                                    make::js_call_arguments(
-                                        make::token(T!['(']),
-                                        make::js_call_argument_list(
-                                            [
-                                                AnyJsCallArgument::AnyJsExpression(
-                                                    AnyJsExpression::AnyJsLiteralExpression(
-                                                        AnyJsLiteralExpression::JsStringLiteralExpression(make::js_string_literal_expression(make::js_string_literal(&format!("pgls/{}", method.name)))),
-                                                    ),
-                                                ),
-                                                AnyJsCallArgument::AnyJsExpression(
-                                                    AnyJsExpression::JsIdentifierExpression(
-                                                        make::js_identifier_expression(
-                                                            make::js_reference_identifier(make::ident(
-                                                                "params",
-                                                            )),
-                                                        ),
-                                                    ),
-                                                ),
-                                            ],
-                                            Some(make::token(T![,])),
-                                        ),
-                                        make::token(T![')']),
-                                    ),
-                                )
-                                .build(),
-                            ))
-                            .build(),
-                    ))),
-                    make::token(T!['}']),
-                ),
-            )
-            .build(),
+        // createWorkspace implementation method
+        impl_members.push(format!(
+            "\t\t{camel_case}(params) {{\n\t\t\treturn transport.request(\"pgls/{}\", params);\n\t\t}}",
+            method.name
         ));
     }
 
-    let leading_comment = [
-        (
-            TriviaPieceKind::SingleLineComment,
-            "// Generated file, do not edit by hand, see `xtask/codegen`",
-        ),
-        (TriviaPieceKind::Newline, "\n"),
-    ];
+    // Build the full output
+    let mut output = String::new();
 
-    let mut items = vec![AnyJsModuleItem::JsImport(
-        make::js_import(
-            make::token(T![import]).with_leading_trivia(leading_comment.into_iter()),
-            AnyJsImportClause::JsImportNamedClause(
-                make::js_import_named_clause(
-                    make::js_named_import_specifiers(
-                        make::token(T!['{']),
-                        make::js_named_import_specifier_list(
-                            Some(AnyJsNamedImportSpecifier::JsShorthandNamedImportSpecifier(
-                                make::js_shorthand_named_import_specifier(
-                                    AnyJsBinding::JsIdentifierBinding(make::js_identifier_binding(
-                                        make::ident("Transport"),
-                                    )),
-                                )
-                                .build(),
-                            )),
-                            None,
-                        ),
-                        make::token(T!['}']),
-                    ),
-                    make::token(T![from]),
-                    make::js_module_source(make::js_string_literal("./transport")),
-                )
-                .with_type_token(make::token(T![type]))
-                .build(),
-            ),
-        )
-        .build(),
-    )];
+    // Header
+    output.push_str("// Generated file, do not edit by hand, see `xtask/codegen`\n");
+    output.push_str("import type { Transport } from \"./transport\";\n");
 
-    items.extend(declarations.into_iter().map(|(decl, description)| {
-        let mut export = make::token(T![export]);
+    // Type declarations
+    for (decl, description) in &declarations {
         if let Some(description) = description {
-            let comment = format!("/**\n\t* {description} \n\t */\n");
-            let trivia = vec![
-                (TriviaPieceKind::Newline, "\n"),
-                (TriviaPieceKind::MultiLineComment, comment.as_str()),
-                (TriviaPieceKind::Newline, "\n"),
-            ];
-            export = export.with_leading_trivia(trivia);
+            output.push_str(&format!("/**\n * {description}\n */\n"));
         }
-        AnyJsModuleItem::JsExport(make::js_export(
-            make::js_decorator_list([]),
-            export,
-            AnyJsExportClause::AnyJsDeclarationClause(match decl {
-                AnyJsDeclaration::JsClassDeclaration(decl) => {
-                    AnyJsDeclarationClause::JsClassDeclaration(decl)
-                }
-                AnyJsDeclaration::JsFunctionDeclaration(decl) => {
-                    AnyJsDeclarationClause::JsFunctionDeclaration(decl)
-                }
-                AnyJsDeclaration::JsVariableDeclaration(decl) => {
-                    AnyJsDeclarationClause::JsVariableDeclarationClause(
-                        make::js_variable_declaration_clause(decl).build(),
-                    )
-                }
-                AnyJsDeclaration::TsDeclareFunctionDeclaration(decl) => {
-                    AnyJsDeclarationClause::TsDeclareFunctionDeclaration(decl)
-                }
-                AnyJsDeclaration::TsEnumDeclaration(decl) => {
-                    AnyJsDeclarationClause::TsEnumDeclaration(decl)
-                }
-                AnyJsDeclaration::TsExternalModuleDeclaration(decl) => {
-                    AnyJsDeclarationClause::TsExternalModuleDeclaration(decl)
-                }
-                AnyJsDeclaration::TsGlobalDeclaration(decl) => {
-                    AnyJsDeclarationClause::TsGlobalDeclaration(decl)
-                }
-                AnyJsDeclaration::TsImportEqualsDeclaration(decl) => {
-                    AnyJsDeclarationClause::TsImportEqualsDeclaration(decl)
-                }
-                AnyJsDeclaration::TsInterfaceDeclaration(decl) => {
-                    AnyJsDeclarationClause::TsInterfaceDeclaration(decl)
-                }
-                AnyJsDeclaration::TsModuleDeclaration(decl) => {
-                    AnyJsDeclarationClause::TsModuleDeclaration(decl)
-                }
-                AnyJsDeclaration::TsTypeAliasDeclaration(decl) => {
-                    AnyJsDeclarationClause::TsTypeAliasDeclaration(decl)
-                }
-            }),
-        ))
-    }));
+        output.push_str(&format!("export {decl}\n"));
+    }
 
-    member_definitions.push(AnyTsTypeMember::TsMethodSignatureTypeMember(
-        make::ts_method_signature_type_member(
-            AnyJsObjectMemberName::JsLiteralMemberName(make::js_literal_member_name(make::ident(
-                "destroy",
-            ))),
-            make::js_parameters(
-                make::token(T!['(']),
-                make::js_parameter_list(None, None),
-                make::token(T![')']),
-            ),
-        )
-        .with_return_type_annotation(make::ts_return_type_annotation(
-            make::token(T![:]),
-            AnyTsReturnType::AnyTsType(AnyTsType::TsVoidType(make::ts_void_type(make::token(T![
-                void
-            ])))),
-        ))
-        .build(),
-    ));
+    // Configuration type alias
+    output.push_str("export type Configuration = PartialConfiguration;\n");
 
-    member_declarations.push(AnyJsObjectMember::JsMethodObjectMember(
-        make::js_method_object_member(
-            AnyJsObjectMemberName::JsLiteralMemberName(make::js_literal_member_name(make::ident(
-                "destroy",
-            ))),
-            make::js_parameters(
-                make::token(T!['(']),
-                make::js_parameter_list(None, None),
-                make::token(T![')']),
-            ),
-            make::js_function_body(
-                make::token(T!['{']),
-                make::js_directive_list(None),
-                make::js_statement_list(Some(AnyJsStatement::JsExpressionStatement(
-                    make::js_expression_statement(AnyJsExpression::JsCallExpression(
-                        make::js_call_expression(
-                            AnyJsExpression::JsStaticMemberExpression(
-                                make::js_static_member_expression(
-                                    AnyJsExpression::JsIdentifierExpression(
-                                        make::js_identifier_expression(
-                                            make::js_reference_identifier(make::ident("transport")),
-                                        ),
-                                    ),
-                                    make::token(T![.]),
-                                    AnyJsName::JsName(make::js_name(make::ident("destroy"))),
-                                ),
-                            ),
-                            make::js_call_arguments(
-                                make::token(T!['(']),
-                                make::js_call_argument_list(None, None),
-                                make::token(T![')']),
-                            ),
-                        )
-                        .build(),
-                    ))
-                    .build(),
-                ))),
-                make::token(T!['}']),
-            ),
-        )
-        .build(),
-    ));
+    // Workspace interface
+    workspace_members.push("\tdestroy(): void;".to_string());
+    output.push_str("export interface Workspace {\n");
+    for member in &workspace_members {
+        output.push_str(member);
+        output.push('\n');
+    }
+    output.push_str("}\n");
 
-    // Export `PartialConfiguration` as `Configuration` for backwards compatibility.
-    items.push(AnyJsModuleItem::JsExport(make::js_export(
-        make::js_decorator_list([]),
-        make::token(T![export]),
-        AnyJsExportClause::AnyJsDeclarationClause(AnyJsDeclarationClause::TsTypeAliasDeclaration(
-            make::ts_type_alias_declaration(
-                make::token(T![type]),
-                make::ts_identifier_binding(make::ident("Configuration")),
-                make::token(T![=]),
-                AnyTsType::TsReferenceType(
-                    make::ts_reference_type(AnyTsName::JsReferenceIdentifier(
-                        make::js_reference_identifier(make::ident("PartialConfiguration")),
-                    ))
-                    .build(),
-                ),
-            )
-            .build(),
-        )),
-    )));
-
-    items.push(AnyJsModuleItem::JsExport(make::js_export(
-        make::js_decorator_list([]),
-        make::token(T![export]),
-        AnyJsExportClause::AnyJsDeclarationClause(AnyJsDeclarationClause::TsInterfaceDeclaration(
-            make::ts_interface_declaration(
-                make::token(T![interface]),
-                make::ts_identifier_binding(make::ident("Workspace")),
-                make::token(T!['{']),
-                make::ts_type_member_list(member_definitions),
-                make::token(T!['}']),
-            )
-            .build(),
-        )),
-    )));
-
-    let member_separators = (0..member_declarations.len()).map(|_| make::token(T![,]));
-
-    items.push(AnyJsModuleItem::JsExport(make::js_export(
-        make::js_decorator_list([]),
-        make::token(T![export]),
-        AnyJsExportClause::AnyJsDeclarationClause(AnyJsDeclarationClause::JsFunctionDeclaration(
-            make::js_function_declaration(
-                make::token(T![function]),
-                AnyJsBinding::JsIdentifierBinding(make::js_identifier_binding(make::ident(
-                    "createWorkspace",
-                ))),
-                make::js_parameters(
-                    make::token(T!['(']),
-                    make::js_parameter_list(
-                        Some(AnyJsParameter::AnyJsFormalParameter(
-                            AnyJsFormalParameter::JsFormalParameter(
-                                make::js_formal_parameter(
-                                    make::js_decorator_list([]),
-                                    AnyJsBindingPattern::AnyJsBinding(
-                                        AnyJsBinding::JsIdentifierBinding(
-                                            make::js_identifier_binding(make::ident("transport")),
-                                        ),
-                                    ),
-                                )
-                                .with_type_annotation(make::ts_type_annotation(
-                                    make::token(T![:]),
-                                    AnyTsType::TsReferenceType(
-                                        make::ts_reference_type(AnyTsName::JsReferenceIdentifier(
-                                            make::js_reference_identifier(make::ident("Transport")),
-                                        ))
-                                        .build(),
-                                    ),
-                                ))
-                                .build(),
-                            ),
-                        )),
-                        None,
-                    ),
-                    make::token(T![')']),
-                ),
-                make::js_function_body(
-                    make::token(T!['{']),
-                    make::js_directive_list(None),
-                    make::js_statement_list(Some(AnyJsStatement::JsReturnStatement(
-                        make::js_return_statement(make::token(T![return]))
-                            .with_argument(AnyJsExpression::JsObjectExpression(
-                                make::js_object_expression(
-                                    make::token(T!['{']),
-                                    make::js_object_member_list(
-                                        member_declarations,
-                                        member_separators,
-                                    ),
-                                    make::token(T!['}']),
-                                ),
-                            ))
-                            .build(),
-                    ))),
-                    make::token(T!['}']),
-                ),
-            )
-            .with_return_type_annotation(make::ts_return_type_annotation(
-                make::token(T![:]),
-                AnyTsReturnType::AnyTsType(AnyTsType::TsReferenceType(
-                    make::ts_reference_type(AnyTsName::JsReferenceIdentifier(
-                        make::js_reference_identifier(make::ident("Workspace")),
-                    ))
-                    .build(),
-                )),
-            ))
-            .build(),
-        )),
-    )));
-
-    let module = make::js_module(
-        make::js_directive_list(None),
-        make::js_module_item_list(items),
-        make::eof(),
-    )
-    .build();
-
-    let formatted = format_node(JsFormatOptions::new(JsFileSource::ts()), module.syntax()).unwrap();
-    let printed = formatted.print().unwrap();
-    let code = printed.into_code();
+    // createWorkspace function
+    impl_members.push("\t\tdestroy() {\n\t\t\ttransport.destroy();\n\t\t}".to_string());
+    output.push_str("export function createWorkspace(transport: Transport): Workspace {\n");
+    output.push_str("\treturn {\n");
+    output.push_str(&impl_members.join(",\n"));
+    output.push_str(",\n");
+    output.push_str("\t};\n");
+    output.push_str("}\n");
 
     // Generate for both packages (dual publishing)
-    update(&bindings_path_postgrestools, &code, &mode)?;
-    update(&bindings_path_postgres_language_server, &code, &mode)?;
+    update(&bindings_path_postgrestools, &output, &mode)?;
+    update(&bindings_path_postgres_language_server, &output, &mode)?;
 
     Ok(())
 }

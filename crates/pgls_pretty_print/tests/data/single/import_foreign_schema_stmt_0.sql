@@ -1,0 +1,1 @@
+IMPORT FOREIGN SCHEMA remote_schema FROM SERVER myserver INTO local_schema;

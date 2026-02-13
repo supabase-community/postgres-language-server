@@ -1,0 +1,1 @@
+UNLISTEN mytable_updated;

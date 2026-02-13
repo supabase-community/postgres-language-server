@@ -1,0 +1,73 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/security_label.sql
+---
+set client_min_messages = warning;
+
+drop role if exists regress_seclabel_user1;
+
+drop role if exists regress_seclabel_user2;
+
+reset client_min_messages;
+
+create user regress_seclabel_user1 createrole;
+
+create user regress_seclabel_user2;
+
+create table seclabel_tbl1 (
+  a int,
+  b text
+);
+
+create table seclabel_tbl2 (
+  x int,
+  y text
+);
+
+create view seclabel_view1
+as select * from seclabel_tbl2;
+
+create function seclabel_four()
+returns int
+language sql
+as $function$
+SELECT 4
+$function$;
+
+create domain seclabel_domain as text;
+
+alter table seclabel_tbl1
+  owner to regress_seclabel_user1;
+
+alter table seclabel_tbl2
+  owner to regress_seclabel_user2;
+
+security label on table seclabel_tbl1 is 'classified';
+
+security label for dummy on table seclabel_tbl1 is 'classified';
+
+security label on table seclabel_tbl1 is '...invalid label...';
+
+security label on table seclabel_tbl3 is 'unclassified';
+
+security label on role regress_seclabel_user1 is 'classified';
+
+security label for dummy on role regress_seclabel_user1 is 'classified';
+
+security label on role regress_seclabel_user1 is '...invalid label...';
+
+security label on role regress_seclabel_user3 is 'unclassified';
+
+drop function seclabel_four();
+
+drop domain seclabel_domain;
+
+drop view seclabel_view1;
+
+drop table seclabel_tbl1;
+
+drop table seclabel_tbl2;
+
+drop role regress_seclabel_user1;
+
+drop role regress_seclabel_user2;

@@ -13,7 +13,6 @@ version              = "0.0.0"
 
 [dependencies]
 anyhow                   = { workspace = true }
-biome_deserialize        = { workspace = true }
 futures                  = "0.3.31"
 pgls_analyse             = { workspace = true }
 pgls_completions         = { workspace = true }

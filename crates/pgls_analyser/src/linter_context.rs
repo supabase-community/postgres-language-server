@@ -44,7 +44,7 @@ where
         self.stmt
     }
 
-    pub fn file_context(&self) -> &AnalysedFileContext {
+    pub fn file_context(&self) -> &AnalysedFileContext<'_> {
         self.file_context
     }
 
@@ -183,10 +183,10 @@ impl TransactionState {
     /// Update transaction state based on a statement
     pub(crate) fn update_from_stmt(&mut self, stmt: &pgls_query::NodeEnum) {
         // Track SET lock_timeout
-        if let pgls_query::NodeEnum::VariableSetStmt(set_stmt) = stmt {
-            if set_stmt.name.eq_ignore_ascii_case("lock_timeout") {
-                self.lock_timeout_set = true;
-            }
+        if let pgls_query::NodeEnum::VariableSetStmt(set_stmt) = stmt
+            && set_stmt.name.eq_ignore_ascii_case("lock_timeout")
+        {
+            self.lock_timeout_set = true;
         }
 
         // Track created objects
@@ -209,12 +209,12 @@ impl TransactionState {
                 }
             }
             pgls_query::NodeEnum::CreateTableAsStmt(ctas) => {
-                if let Some(into) = &ctas.into {
-                    if let Some(rel) = &into.rel {
-                        let schema = rel.schemaname.clone();
-                        let name = rel.relname.clone();
-                        self.add_created_object(schema, name);
-                    }
+                if let Some(into) = &ctas.into
+                    && let Some(rel) = &into.rel
+                {
+                    let schema = rel.schemaname.clone();
+                    let name = rel.relname.clone();
+                    self.add_created_object(schema, name);
                 }
             }
             _ => {}
@@ -222,14 +222,14 @@ impl TransactionState {
 
         // Track ACCESS EXCLUSIVE lock acquisition
         // ALTER TABLE on an existing table acquires ACCESS EXCLUSIVE lock
-        if let pgls_query::NodeEnum::AlterTableStmt(alter_stmt) = stmt {
-            if let Some(relation) = &alter_stmt.relation {
-                let schema = &relation.schemaname;
-                let name = &relation.relname;
-                // Only set the flag if altering an existing table (not one created in this transaction)
-                if !self.has_created_object(schema, name) {
-                    self.holding_access_exclusive = true;
-                }
+        if let pgls_query::NodeEnum::AlterTableStmt(alter_stmt) = stmt
+            && let Some(relation) = &alter_stmt.relation
+        {
+            let schema = &relation.schemaname;
+            let name = &relation.relname;
+            // Only set the flag if altering an existing table (not one created in this transaction)
+            if !self.has_created_object(schema, name) {
+                self.holding_access_exclusive = true;
             }
         }
     }

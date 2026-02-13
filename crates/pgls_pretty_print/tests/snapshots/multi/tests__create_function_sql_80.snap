@@ -1,0 +1,810 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/create_function_sql.sql
+---
+create user regress_unpriv_user;
+
+create schema "temp_func_test";
+
+grant all on schema temp_func_test to public;
+
+set search_path to temp_func_test, public;
+
+create function functest_a_1(text, date)
+returns boolean
+language sql
+as $function$
+SELECT $1 = 'abcd' AND $2 > '2001-01-01'
+$function$;
+
+create function functest_a_2(text[])
+returns int
+language sql
+as $function$
+SELECT $1[1]::int
+$function$;
+
+create function functest_a_3()
+returns boolean
+language sql
+as $function$
+SELECT false
+$function$;
+
+select
+  proname,
+  cast(prorettype as regtype),
+  cast(proargtypes as regtype[])
+from
+  pg_proc
+where
+  oid
+  in (
+    cast('functest_A_1' as regproc),
+    cast('functest_A_2' as regproc),
+    cast('functest_A_3' as regproc)
+  )
+order by proname;
+
+select functest_a_1('abcd', '2020-01-01');
+
+select functest_a_2(array['1', '2', '3']);
+
+select functest_a_3();
+
+create function functest_b_1(int)
+returns boolean
+language sql
+as $function$
+SELECT $1 > 0
+$function$;
+
+create function functest_b_2(int)
+returns boolean
+language sql
+immutable
+as $function$
+SELECT $1 > 0
+$function$;
+
+create function functest_b_3(int)
+returns boolean
+language sql
+stable
+as $function$
+SELECT $1 = 0
+$function$;
+
+create function functest_b_4(int)
+returns boolean
+language sql
+volatile
+as $function$
+SELECT $1 < 0
+$function$;
+
+select
+  proname,
+  provolatile
+from
+  pg_proc
+where
+  oid
+  in (
+    cast('functest_B_1' as regproc),
+    cast('functest_B_2' as regproc),
+    cast('functest_B_3' as regproc),
+    cast('functest_B_4' as regproc)
+  )
+order by proname;
+
+alter function functest_b_2(int) volatile;
+
+alter function functest_b_3(int) cost 100;
+
+select
+  proname,
+  provolatile
+from
+  pg_proc
+where
+  oid
+  in (
+    cast('functest_B_1' as regproc),
+    cast('functest_B_2' as regproc),
+    cast('functest_B_3' as regproc),
+    cast('functest_B_4' as regproc)
+  )
+order by proname;
+
+create function functest_c_1(int)
+returns boolean
+language sql
+as $function$
+SELECT $1 > 0
+$function$;
+
+create function functest_c_2(int)
+returns boolean
+language sql
+security definer
+as $function$
+SELECT $1 = 0
+$function$;
+
+create function functest_c_3(int)
+returns boolean
+language sql
+security invoker
+as $function$
+SELECT $1 < 0
+$function$;
+
+select
+  proname,
+  prosecdef
+from
+  pg_proc
+where
+  oid
+  in (
+    cast('functest_C_1' as regproc),
+    cast('functest_C_2' as regproc),
+    cast('functest_C_3' as regproc)
+  )
+order by proname;
+
+alter function functest_c_1(int) immutable;
+
+alter function functest_c_2(int) security invoker;
+
+alter function functest_c_3(int) security definer;
+
+select
+  proname,
+  prosecdef
+from
+  pg_proc
+where
+  oid
+  in (
+    cast('functest_C_1' as regproc),
+    cast('functest_C_2' as regproc),
+    cast('functest_C_3' as regproc)
+  )
+order by proname;
+
+create function functest_e_1(int)
+returns boolean
+language sql
+as $function$
+SELECT $1 > 100
+$function$;
+
+create function functest_e_2(int)
+returns boolean
+language sql
+leakproof
+as $function$
+SELECT $1 > 100
+$function$;
+
+select
+  proname,
+  proleakproof
+from
+  pg_proc
+where
+  oid
+  in (
+    cast('functest_E_1' as regproc),
+    cast('functest_E_2' as regproc)
+  )
+order by proname;
+
+alter function functest_e_1(int) leakproof;
+
+alter function functest_e_2(int) stable;
+
+select
+  proname,
+  proleakproof
+from
+  pg_proc
+where
+  oid
+  in (
+    cast('functest_E_1' as regproc),
+    cast('functest_E_2' as regproc)
+  )
+order by proname;
+
+alter function functest_e_2(int) not leakproof;
+
+select
+  proname,
+  proleakproof
+from
+  pg_proc
+where
+  oid
+  in (
+    cast('functest_E_1' as regproc),
+    cast('functest_E_2' as regproc)
+  )
+order by proname;
+
+alter function functest_e_1(int) owner to regress_unpriv_user;
+
+alter function functest_e_2(int) owner to regress_unpriv_user;
+
+set session authorization regress_unpriv_user;
+
+set search_path to temp_func_test, public;
+
+alter function functest_e_1(int) not leakproof;
+
+alter function functest_e_2(int) leakproof;
+
+create function functest_e_3(int)
+returns boolean
+language sql
+leakproof
+as $function$
+SELECT $1 < 200
+$function$;
+
+reset session_authorization;
+
+create function functest_f_1(int)
+returns boolean
+language sql
+as $function$
+SELECT $1 > 50
+$function$;
+
+create function functest_f_2(int)
+returns boolean
+language sql
+called on null input
+as $function$
+SELECT $1 = 50
+$function$;
+
+create function functest_f_3(int)
+returns boolean
+language sql
+strict
+as $function$
+SELECT $1 < 50
+$function$;
+
+create function functest_f_4(int)
+returns boolean
+language sql
+strict
+as $function$
+SELECT $1 = 50
+$function$;
+
+select
+  proname,
+  proisstrict
+from
+  pg_proc
+where
+  oid
+  in (
+    cast('functest_F_1' as regproc),
+    cast('functest_F_2' as regproc),
+    cast('functest_F_3' as regproc),
+    cast('functest_F_4' as regproc)
+  )
+order by proname;
+
+alter function functest_f_1(int) immutable;
+
+alter function functest_f_2(int) strict;
+
+alter function functest_f_3(int) called on null input;
+
+select
+  proname,
+  proisstrict
+from
+  pg_proc
+where
+  oid
+  in (
+    cast('functest_F_1' as regproc),
+    cast('functest_F_2' as regproc),
+    cast('functest_F_3' as regproc),
+    cast('functest_F_4' as regproc)
+  )
+order by proname;
+
+select pg_get_functiondef(cast('functest_A_1' as regproc));
+
+select pg_get_functiondef(cast('functest_B_3' as regproc));
+
+select pg_get_functiondef(cast('functest_C_3' as regproc));
+
+select pg_get_functiondef(cast('functest_F_2' as regproc));
+
+create function functest_s_1(a text, b date)
+returns boolean
+language sql return a = 'abcd' and b > '2001-01-01';;
+
+create function functest_s_2(a text[])
+returns int return cast(a[1] as int);;
+
+create function functest_s_3()
+returns boolean return false;;
+
+commit;
+
+select a = 'abcd' and b > '2001-01-01';
+
+commit;
+
+select 1;
+
+select false;
+
+commit;
+
+create table functest1 (i int);
+
+insert into functest1 select a + $2;
+
+commit;
+
+create function functest_s_xxx(x int)
+returns int
+language sql
+as $function$
+SELECT x * 2
+$function$ return x * 3;;
+
+create function functest_s_xx(x anyarray)
+returns anyelement
+language sql return x[1];;
+
+create function functest_s_xx(x date)
+returns boolean
+language sql return x > 1;;
+
+select case when x % 2 = 0 then true else false end;
+
+commit;
+
+select functest_s_1('abcd', '2020-01-01');
+
+select functest_s_2(array['1', '2', '3']);
+
+select functest_s_3();
+
+select functest_s_10('abcd', '2020-01-01');
+
+select functest_s_13();
+
+select pg_get_functiondef(cast('functest_S_1' as regproc));
+
+select pg_get_functiondef(cast('functest_S_2' as regproc));
+
+select pg_get_functiondef(cast('functest_S_3' as regproc));
+
+select pg_get_functiondef(cast('functest_S_3a' as regproc));
+
+select pg_get_functiondef(cast('functest_S_10' as regproc));
+
+select pg_get_functiondef(cast('functest_S_13' as regproc));
+
+select pg_get_functiondef(cast('functest_S_15' as regproc));
+
+select pg_get_functiondef(cast('functest_S_16' as regproc));
+
+drop table functest1 cascade;
+
+create table functest3 (a int);
+
+insert into functest3 values (1), (2);
+
+create view functestv3
+as select * from functest3;
+
+create function functest_s_14()
+returns bigint return (select COUNT(*) from functestv3);;
+
+select functest_s_14();
+
+drop table functest3 cascade;
+
+create function functest_is_1(a int, b int default 1, c text default 'foo')
+returns int
+language sql
+as $function$
+SELECT $1 + $2
+$function$;
+
+create function functest_is_2(out a int, b int default 1)
+returns int
+language sql
+as $function$
+SELECT $1
+$function$;
+
+create function functest_is_3(a int default 1, out b int)
+returns int
+language sql
+as $function$
+SELECT $1
+$function$;
+
+select
+  routine_name,
+  ordinal_position,
+  parameter_name,
+  parameter_default
+from
+  information_schema.parameters
+  inner join
+    information_schema.routines
+  using (
+    "specific_schema",
+    "specific_name")
+where
+  routine_schema = 'temp_func_test' and
+  routine_name ~ '^functest_is_'
+order by 1,
+  2;
+
+drop function
+  functest_is_1(int, int, text),
+  functest_is_2(int),
+  functest_is_3(int);
+
+create function functest_is_4a()
+returns int
+language sql
+as $function$
+SELECT 1
+$function$;
+
+create function functest_is_4b(x int default functest_is_4a())
+returns int
+language sql
+as $function$
+SELECT x
+$function$;
+
+create sequence functest1;
+
+create function functest_is_5(x int default nextval('functest1'))
+returns int
+language sql
+as $function$
+SELECT x
+$function$;
+
+create function functest_is_6()
+returns int
+language sql return nextval('functest1');;
+
+create table functest2 (
+  a int,
+  b int
+);
+
+create function functest_is_7()
+returns int
+language sql return (select COUNT(a) from functest2);;
+
+select
+  r0.routine_name,
+  r1.routine_name
+from
+  information_schema.routine_routine_usage
+  as rru
+  inner join
+    information_schema.routines as r0
+  on r0.specific_name = rru.specific_name
+  inner join
+    information_schema.routines as r1
+  on r1.specific_name = rru.routine_name
+where
+  r0.routine_schema = 'temp_func_test' and
+  r1.routine_schema = 'temp_func_test'
+order by 1,
+  2;
+
+select
+  routine_name,
+  sequence_name
+from
+  information_schema.routine_sequence_usage
+where
+  routine_schema = 'temp_func_test'
+order by 1,
+  2;
+
+select
+  routine_name,
+  table_name,
+  column_name
+from
+  information_schema.routine_column_usage
+where
+  routine_schema = 'temp_func_test'
+order by 1,
+  2;
+
+select
+  routine_name,
+  table_name
+from
+  information_schema.routine_table_usage
+where
+  routine_schema = 'temp_func_test'
+order by 1,
+  2;
+
+drop function functest_is_4a cascade;
+
+drop sequence functest1 cascade;
+
+drop table functest2 cascade;
+
+create function functest_b_2(bigint)
+returns boolean
+language sql
+immutable
+as $function$
+SELECT $1 > 0
+$function$;
+
+drop function functest_b_1;
+
+drop function functest_b_1;
+
+drop function functest_b_2;
+
+create function functest1(a int)
+returns int
+language sql
+as $function$
+SELECT $1
+$function$;
+
+create or replace function functest1(a int)
+returns int
+language sql
+window
+as $function$
+SELECT $1
+$function$;
+
+create or replace procedure functest1(a int)
+language sql
+as $procedure$
+SELECT $1
+$procedure$;
+
+drop function functest1(int);
+
+create function functest_srf0()
+returns setof int
+language sql
+as $function$
+SELECT i FROM generate_series(1, 100) i
+$function$;
+
+select functest_srf0() limit 5;
+
+create table functest3 (a int);
+
+insert into functest3 values (1), (2), (3);
+
+create function functest_sri1()
+returns setof int
+language sql
+stable
+as $function$
+SELECT * FROM functest3;
+$function$;
+
+select * from functest_sri1();
+
+select * from functest_sri1();
+
+select * from functest3;
+
+commit;
+
+select * from functest_sri2();
+
+select * from functest_sri2();
+
+drop table functest3 cascade;
+
+create function voidtest1(a int)
+returns void
+language sql
+as $function$
+SELECT a + 1
+$function$;
+
+select voidtest1(42);
+
+create function voidtest2(a int, b int)
+returns void
+language sql
+as $function$
+SELECT voidtest1(a + b)
+$function$;
+
+select voidtest2(11, 22);
+
+select voidtest2(11, 22);
+
+create temporary table sometable (f1 int);
+
+create function voidtest3(a int)
+returns void
+language sql
+as $function$
+INSERT INTO sometable VALUES(a + 1)
+$function$;
+
+select voidtest3(17);
+
+create function voidtest4(a int)
+returns void
+language sql
+as $function$
+INSERT INTO sometable VALUES(a - 1) RETURNING f1
+$function$;
+
+select voidtest4(39);
+
+select * from sometable;
+
+create function voidtest5(a int)
+returns setof void
+language sql
+stable
+as $function$
+SELECT generate_series(1, a)
+$function$;
+
+select * from voidtest5(3);
+
+set check_function_bodies = off;
+
+create function create_and_insert()
+returns void
+language sql
+as $function$
+create table ddl_test (f1 int);
+  insert into ddl_test values (1.2);
+$function$;
+
+select create_and_insert();
+
+select * from ddl_test;
+
+create function alter_and_insert()
+returns void
+language sql
+as $function$
+alter table ddl_test alter column f1 type numeric;
+  insert into ddl_test values (1.2);
+$function$;
+
+select alter_and_insert();
+
+select * from ddl_test;
+
+reset check_function_bodies;
+
+create function double_append(anyarray, anyelement)
+returns setof anyarray
+language sql
+immutable
+as $function$
+SELECT array_append($1, $2) || array_append($1, $2)
+$function$;
+
+select
+  double_append(
+    array_append(array[q1], q2),
+    q3
+  )
+from
+  (
+    values (1, 2, 3), (4, 5, 6)
+  )
+  as v (q1, q2, q3);
+
+create function part_hashint4_error(value int, seed bigint)
+returns bigint
+language sql
+immutable
+strict
+parallel SAFE
+as $function$
+SELECT value + seed + random()::int/0
+$function$;
+
+create operator class part_test_int4_ops_bad
+  for type int
+  using hash
+  as function 2 part_hashint4_error(int, bigint);
+
+create table pt (i int)
+partition by HASH(i part_test_int4_ops_bad);
+
+create table p1 partition of pt for values with (MODULUS 4, REMAINDER 0);
+
+insert into pt values (1);
+
+insert into pt values (1);
+
+create function test1(int)
+returns int
+language sql
+as $function$
+SELECT 'not an integer';
+$function$;
+
+create function test1(int)
+returns int
+language sql
+as $function$
+not even SQL
+$function$;
+
+create function test1(int)
+returns int
+language sql
+as $function$
+SELECT 1, 2, 3;
+$function$;
+
+create function test1(int)
+returns int
+language sql
+as $function$
+SELECT $2;
+$function$;
+
+create function test1(int)
+returns int
+language sql
+as 'a', 'b';
+
+create function test1(int)
+returns int
+language sql
+as $function$
+
+$function$;
+
+set check_function_bodies = off;
+
+create function test1(anyelement)
+returns anyarray
+language sql
+as $function$
+
+$function$;
+
+select test1(0);
+
+reset check_function_bodies;
+
+drop schema temp_func_test cascade;
+
+drop role regress_unpriv_user;
+
+reset search_path;

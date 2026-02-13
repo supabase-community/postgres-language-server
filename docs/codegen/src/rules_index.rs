@@ -1,4 +1,4 @@
-use biome_string_case::Case;
+use convert_case::{Case, Casing};
 use pgls_analyse::RuleMetadata;
 use pgls_console::fmt::{Formatter, HTML};
 use pgls_console::{Markup, markup};
@@ -58,7 +58,7 @@ fn generate_group(
 
     for (rule_name, rule_metadata) in rules {
         let is_recommended = rule_metadata.recommended;
-        let dashed_rule = Case::Kebab.convert(rule_name);
+        let dashed_rule = rule_name.to_case(Case::Kebab);
 
         let mut properties = String::new();
         if is_recommended {
@@ -170,7 +170,7 @@ fn generate_splinter_group(
     for (rule_name, rule_metadata) in rules {
         let is_recommended = rule_metadata.metadata.recommended;
         let requires_supabase = rule_metadata.requires_supabase;
-        let dashed_rule = Case::Kebab.convert(rule_name);
+        let dashed_rule = rule_name.to_case(Case::Kebab);
 
         let mut properties = String::new();
         if is_recommended {
@@ -193,7 +193,7 @@ fn generate_splinter_group(
     Ok(())
 }
 
-fn extract_splinter_group_metadata(group: &str) -> (&str, Markup) {
+fn extract_splinter_group_metadata(group: &str) -> (&str, Markup<'_>) {
     match group {
         "performance" => (
             "Performance",

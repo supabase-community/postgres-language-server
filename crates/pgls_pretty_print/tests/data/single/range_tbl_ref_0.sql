@@ -1,0 +1,1 @@
+SELECT t1.a FROM t1, t2;

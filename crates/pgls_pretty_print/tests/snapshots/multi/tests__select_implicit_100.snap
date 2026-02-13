@@ -1,0 +1,183 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/select_implicit.sql
+snapshot_kind: text
+---
+create table test_missing_target (
+  a int,
+  b int,
+  c char(8),
+  d char(1)
+);
+
+insert into test_missing_target values (0, 1, 'XXXX', 'A');
+
+insert into test_missing_target values (1, 2, 'ABAB', 'b');
+
+insert into test_missing_target values (2, 2, 'ABAB', 'c');
+
+insert into test_missing_target values (3, 3, 'BBBB', 'D');
+
+insert into test_missing_target values (4, 3, 'BBBB', 'e');
+
+insert into test_missing_target values (5, 3, 'bbbb', 'F');
+
+insert into test_missing_target values (6, 4, 'cccc', 'g');
+
+insert into test_missing_target values (7, 4, 'cccc', 'h');
+
+insert into test_missing_target values (8, 4, 'CCCC', 'I');
+
+insert into test_missing_target values (9, 4, 'CCCC', 'j');
+
+select c, COUNT(*) from test_missing_target group by test_missing_target.c order by c;
+
+select COUNT(*) from test_missing_target group by test_missing_target.c order by c;
+
+select COUNT(*) from test_missing_target group by a order by b;
+
+select COUNT(*) from test_missing_target group by b order by b;
+
+select test_missing_target.b, COUNT(*) from test_missing_target group by b order by b;
+
+select c from test_missing_target order by a;
+
+select COUNT(*) from test_missing_target group by b order by b desc;
+
+select COUNT(*) from test_missing_target order by 1 desc;
+
+select c, COUNT(*) from test_missing_target group by 1 order by 1;
+
+select c, COUNT(*) from test_missing_target group by 3;
+
+select
+  COUNT(*)
+from
+  test_missing_target as x,
+  test_missing_target as y
+where
+  x.a = y.a
+group by b
+order by b;
+
+select a, a from test_missing_target order by a;
+
+select a / 2, a / 2 from test_missing_target order by a / 2;
+
+select a / 2, a / 2 from test_missing_target group by a / 2 order by a / 2;
+
+select
+  x.b,
+  COUNT(*)
+from
+  test_missing_target as x,
+  test_missing_target as y
+where
+  x.a = y.a
+group by x.b
+order by x.b;
+
+select
+  COUNT(*)
+from
+  test_missing_target as x,
+  test_missing_target as y
+where
+  x.a = y.a
+group by x.b
+order by x.b;
+
+create table test_missing_target2
+as
+  select
+    COUNT(*)
+  from
+    test_missing_target as x,
+    test_missing_target as y
+  where
+    x.a = y.a
+  group by x.b
+  order by x.b;
+
+select * from test_missing_target2;
+
+select
+  a % 2,
+  COUNT(b)
+from
+  test_missing_target
+group by test_missing_target.a % 2
+order by test_missing_target.a % 2;
+
+select
+  COUNT(c)
+from
+  test_missing_target
+group by lower(test_missing_target.c)
+order by lower(test_missing_target.c);
+
+select COUNT(a) from test_missing_target group by a order by b;
+
+select COUNT(b) from test_missing_target group by b / 2 order by b / 2;
+
+select
+  lower(test_missing_target.c),
+  COUNT(c)
+from
+  test_missing_target
+group by lower(c)
+order by lower(c);
+
+select a from test_missing_target order by upper(d);
+
+select COUNT(b) from test_missing_target group by (b + 1) / 2 order by (b + 1) / 2 desc;
+
+select
+  COUNT(x.a)
+from
+  test_missing_target as x,
+  test_missing_target as y
+where
+  x.a = y.a
+group by b / 2
+order by b / 2;
+
+select
+  x.b / 2,
+  COUNT(x.b)
+from
+  test_missing_target as x,
+  test_missing_target as y
+where
+  x.a = y.a
+group by x.b / 2
+order by x.b / 2;
+
+select
+  COUNT(b)
+from
+  test_missing_target as x,
+  test_missing_target as y
+where
+  x.a = y.a
+group by x.b / 2;
+
+create table test_missing_target3
+as
+  select
+    COUNT(x.b)
+  from
+    test_missing_target as x,
+    test_missing_target as y
+  where
+    x.a = y.a
+  group by x.b / 2
+  order by x.b / 2;
+
+select * from test_missing_target3;
+
+drop table test_missing_target;
+
+drop table test_missing_target2;
+
+drop table test_missing_target3;

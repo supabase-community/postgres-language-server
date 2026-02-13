@@ -80,6 +80,7 @@ Run `postgres-language-server --help` for all options. The CLI options take prec
 The Postgres Language Server is available as an extension in your favorite editors.
 
 - VSCode: The language server is available on the [VSCode Marketplace](https://marketplace.visualstudio.com/items?itemName=Supabase.postgrestools). It's published from [this repo](https://github.com/supabase-community/postgres-language-server-vscode).
+- Cursor: The language server is available on the [Open VSX Registry](https://open-vsx.org/extension/supabase/postgrestools).
 - Neovim: You will have to install `nvim-lspconfig`, and follow the [instructions](https://github.com/neovim/nvim-lspconfig/blob/master/doc/configs.md#postgres_lsp).
 - Emacs: The language client is available through [lsp-mode](https://github.com/emacs-lsp/lsp-mode). For more details, refer to their [manual page](https://emacs-lsp.github.io/lsp-mode/page/lsp-postgres/).
 - Zed: The language server is available as an Extension. It's published from [this repo](https://github.com/LoamStudios/zed-postgres-language-server).

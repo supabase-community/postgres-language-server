@@ -1,0 +1,94 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/line.sql
+snapshot_kind: text
+---
+create table line_tbl (s line);
+
+insert into line_tbl values ('{0,-1,5}');
+
+insert into line_tbl values ('{1,0,5}');
+
+insert into line_tbl values ('{0,3,0}');
+
+insert into line_tbl values (' (0,0), (6,6)');
+
+insert into line_tbl values ('10,-10 ,-5,-4');
+
+insert into line_tbl values ('[-1e6,2e2,3e5, -4e1]');
+
+insert into line_tbl values ('{3,NaN,5}');
+
+insert into line_tbl values ('{NaN,NaN,NaN}');
+
+insert into line_tbl values ('[(1,3),(2,3)]');
+
+insert into line_tbl
+values
+  (
+    line(
+      cast('(3,1)' as point),
+      cast('(3,2)' as point)
+    )
+  );
+
+insert into line_tbl values ('{}');
+
+insert into line_tbl values ('{0');
+
+insert into line_tbl values ('{0,0}');
+
+insert into line_tbl values ('{0,0,1');
+
+insert into line_tbl values ('{0,0,1}');
+
+insert into line_tbl values ('{0,0,1} x');
+
+insert into line_tbl values ('(3asdf,2 ,3,4r2)');
+
+insert into line_tbl values ('[1,2,3, 4');
+
+insert into line_tbl values ('[(,2),(3,4)]');
+
+insert into line_tbl values ('[(1,2),(3,4)');
+
+insert into line_tbl values ('[(1,2),(1,2)]');
+
+insert into line_tbl
+values
+  (
+    line(
+      cast('(1,0)' as point),
+      cast('(1,0)' as point)
+    )
+  );
+
+select * from line_tbl;
+
+select
+  cast('{nan, 1, nan}' as line) =
+  cast('{nan, 1, nan}' as line)
+  as "true",
+  cast('{nan, 1, nan}' as line) =
+  cast('{nan, 2, nan}' as line)
+  as "false";
+
+select pg_input_is_valid('{1, 1}', 'line');
+
+select * from pg_input_error_info('{1, 1}', 'line');
+
+select pg_input_is_valid('{0, 0, 0}', 'line');
+
+select * from pg_input_error_info('{0, 0, 0}', 'line');
+
+select pg_input_is_valid('{1, 1, a}', 'line');
+
+select * from pg_input_error_info('{1, 1, a}', 'line');
+
+select pg_input_is_valid('{1, 1, 1e400}', 'line');
+
+select * from pg_input_error_info('{1, 1, 1e400}', 'line');
+
+select pg_input_is_valid('(1, 1), (1, 1e400)', 'line');
+
+select * from pg_input_error_info('(1, 1), (1, 1e400)', 'line');

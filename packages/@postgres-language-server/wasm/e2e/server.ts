@@ -3,8 +3,8 @@
  * Serves the test HTML page and WASM files.
  */
 
-import { readFileSync, existsSync } from "node:fs";
-import { join, extname } from "node:path";
+import { existsSync, readFileSync } from "node:fs";
+import { extname, join } from "node:path";
 
 const PORT = 3000;
 const ROOT = join(import.meta.dir, "..");

@@ -1,0 +1,78 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/oid.sql
+snapshot_kind: text
+---
+create table oid_tbl (f1 oid);
+
+insert into oid_tbl (f1) values ('1234');
+
+insert into oid_tbl (f1) values ('1235');
+
+insert into oid_tbl (f1) values ('987');
+
+insert into oid_tbl (f1) values ('-1040');
+
+insert into oid_tbl (f1) values ('99999999');
+
+insert into oid_tbl (f1) values ('5     ');
+
+insert into oid_tbl (f1) values ('   10  ');
+
+insert into oid_tbl (f1) values ('	  15 	  ');
+
+insert into oid_tbl (f1) values ('');
+
+insert into oid_tbl (f1) values ('    ');
+
+insert into oid_tbl (f1) values ('asdfasd');
+
+insert into oid_tbl (f1) values ('99asdfasd');
+
+insert into oid_tbl (f1) values ('5    d');
+
+insert into oid_tbl (f1) values ('    5d');
+
+insert into oid_tbl (f1) values ('5    5');
+
+insert into oid_tbl (f1) values (' - 500');
+
+insert into oid_tbl (f1) values ('32958209582039852935');
+
+insert into oid_tbl (f1) values ('-23582358720398502385');
+
+select * from oid_tbl;
+
+select pg_input_is_valid('1234', 'oid');
+
+select pg_input_is_valid('01XYZ', 'oid');
+
+select * from pg_input_error_info('01XYZ', 'oid');
+
+select pg_input_is_valid('9999999999', 'oid');
+
+select * from pg_input_error_info('9999999999', 'oid');
+
+select pg_input_is_valid(' 1 2  4 ', 'oidvector');
+
+select pg_input_is_valid('01 01XYZ', 'oidvector');
+
+select * from pg_input_error_info('01 01XYZ', 'oidvector');
+
+select pg_input_is_valid('01 9999999999', 'oidvector');
+
+select * from pg_input_error_info('01 9999999999', 'oidvector');
+
+select o.* from oid_tbl as o where o.f1 = 1234;
+
+select o.* from oid_tbl as o where o.f1 <> '1234';
+
+select o.* from oid_tbl as o where o.f1 <= '1234';
+
+select o.* from oid_tbl as o where o.f1 < '1234';
+
+select o.* from oid_tbl as o where o.f1 >= '1234';
+
+select o.* from oid_tbl as o where o.f1 > '1234';
+
+drop table oid_tbl;

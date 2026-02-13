@@ -27,6 +27,12 @@ runs:
       if: runner.os == 'macOS'
       shell: bash
       run: |
+        # Install ICU4C for PostgreSQL extension compilation
+        brew install icu4c
+        export PKG_CONFIG_PATH="/opt/homebrew/opt/icu4c/lib/pkgconfig:$PKG_CONFIG_PATH"
+        export CFLAGS="-I/opt/homebrew/opt/icu4c/include $CFLAGS"
+        export LDFLAGS="-L/opt/homebrew/opt/icu4c/lib $LDFLAGS"
+
         # First, ensure we're using the same PostgreSQL that the action installed
         export PATH="$(pg_config --bindir):$PATH"
 
@@ -35,8 +41,9 @@ runs:
         echo "Extension directory: $(pg_config --sharedir)/extension"
         echo "Library directory: $(pg_config --pkglibdir)"
 
-        # Clone and build plpgsql_check
-        git clone https://github.com/okbob/plpgsql_check.git
+        # Clone and build plpgsql_check (clone to /tmp to avoid workspace conflicts, pinned to v2.7.11)
+        cd /tmp
+        git clone --branch v2.7.11 --depth 1 https://github.com/okbob/plpgsql_check.git
         cd plpgsql_check
 
         # Clean and compile
@@ -53,30 +60,84 @@ runs:
         echo "Extension library files:"
         ls -la "$(pg_config --pkglibdir)/" | grep plpgsql || echo "No plpgsql_check library found"
 
-    # Install the pglpgsql_check extension on macOS (Part 2)
-    - name: Create extension in database
+    # Install the pglinter extension on macOS (pgrx-based Rust extension)
+    - name: Install and compile pglinter
+      if: runner.os == 'macOS'
+      shell: bash
+      run: |
+        # First, ensure we're using the same PostgreSQL that the action installed
+        export PATH="$(pg_config --bindir):$PATH"
+
+        # Install cargo-pgrx (version must match pglinter's pgrx dependency)
+        cargo install cargo-pgrx --version 0.16.1 --locked
+
+        # Ensure we build the extension for the host architecture (macOS-14 runners are arm64).
+        # Release workflow also cross-compiles x86_64, but the local PostgreSQL installation is arm64.
+        HOST_TARGET=$(rustc -vV | sed -n 's/^host: //p')
+        echo "Host target: ${HOST_TARGET}"
+
+        # Determine postgres version for pgrx init
+        PG_VERSION=$(pg_config --version | grep -oE '[0-9]+' | head -1)
+        echo "PostgreSQL version: $PG_VERSION"
+
+        # Initialize pgrx for the installed PostgreSQL version
+        cargo pgrx init --pg${PG_VERSION} $(which pg_config)
+
+        # Clone and build pglinter (requires v1.1.0+ for get_violations API + rule_messages table)
+        cd /tmp
+        git clone --depth 1 https://github.com/pmpetit/pglinter.git
+        cd pglinter
+
+        # Install using pgrx
+        # Ensure macOS linker allows unresolved PostgreSQL symbols at link time.
+        export RUSTFLAGS="${RUSTFLAGS:-} -C link-arg=-Wl,-undefined,dynamic_lookup"
+        cargo pgrx install --pg-config $(which pg_config) --release --target "${HOST_TARGET}"
+
+        # Verify installation
+        echo "Extension control files:"
+        ls -la "$(pg_config --sharedir)/extension/" | grep pglinter || echo "No pglinter found"
+
+        echo "Extension library files:"
+        ls -la "$(pg_config --pkglibdir)/" | grep pglinter || echo "No pglinter library found"
+
+    # Create extensions in database on macOS
+    - name: Create extensions in database
       if: runner.os == 'macOS'
       shell: bash
       env:
         PGSERVICE: ${{ steps.postgres.outputs.service-name }}
       run: |
         psql -c "CREATE EXTENSION plpgsql_check;"
+        psql -c "CREATE EXTENSION pglinter;"
 
         # Verify installation
-        psql -c "SELECT extname, extversion FROM pg_extension WHERE extname = 'plpgsql_check';"
+        psql -c "SELECT extname, extversion FROM pg_extension WHERE extname IN ('plpgsql_check', 'pglinter');"
 
-    # For Linux, use custom Docker image with plpgsql_check
-    - name: Build and start PostgreSQL with plpgsql_check
+    # For Linux, use custom Docker image with plpgsql_check and pglinter
+    - name: Set up Docker Buildx
+      if: runner.os == 'Linux'
+      uses: docker/setup-buildx-action@v3
+
+    - name: Build PostgreSQL image with cache
+      if: runner.os == 'Linux'
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        load: true
+        tags: postgres-language-server-dev:latest
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+    - name: Start PostgreSQL container
       if: runner.os == 'Linux'
       shell: bash
       run: |
-        docker build -t postgres-plpgsql-check:latest .
         docker run -d --name postgres \
           -e POSTGRES_USER=postgres \
           -e POSTGRES_PASSWORD=postgres \
           -e POSTGRES_DB=postgres \
           -p 5432:5432 \
-          postgres-plpgsql-check:latest
+          postgres-language-server-dev:latest
         # Wait for postgres to be ready
         for _ in {1..30}; do
           if docker exec postgres pg_isready -U postgres; then
@@ -85,3 +146,12 @@ runs:
           sleep 1
         done
 
+        # Create extensions in postgres database only (NOT template1)
+        # This avoids polluting test databases - tests that need extensions can create them explicitly
+        echo "Creating extensions in postgres database..."
+        docker exec postgres psql -U postgres -c "CREATE SCHEMA IF NOT EXISTS extensions;"
+        docker exec postgres psql -U postgres -c "CREATE EXTENSION IF NOT EXISTS plpgsql_check SCHEMA extensions;"
+        docker exec postgres psql -U postgres -c "CREATE EXTENSION IF NOT EXISTS pglinter SCHEMA extensions;"
+
+        # Show extension status
+        docker exec postgres psql -U postgres -c "SELECT extname, extversion FROM pg_extension WHERE extname IN ('plpgsql_check', 'pglinter');"

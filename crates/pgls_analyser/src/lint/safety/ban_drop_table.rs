@@ -32,9 +32,10 @@ impl LinterRule for BanDropTable {
     fn run(ctx: &LinterRuleContext<Self>) -> Vec<LinterDiagnostic> {
         let mut diagnostics = vec![];
 
-        if let pgls_query::NodeEnum::DropStmt(stmt) = &ctx.stmt() {
-            if stmt.remove_type() == pgls_query::protobuf::ObjectType::ObjectTable {
-                diagnostics.push(
+        if let pgls_query::NodeEnum::DropStmt(stmt) = &ctx.stmt()
+            && stmt.remove_type() == pgls_query::protobuf::ObjectType::ObjectTable
+        {
+            diagnostics.push(
                     LinterDiagnostic::new(
                         rule_category!(),
                         None,
@@ -47,7 +48,6 @@ impl LinterRule for BanDropTable {
                         "Update your application code to no longer read or write the table, and only then delete the table. Be sure to create a backup.",
                     ),
                 );
-            }
         }
 
         diagnostics

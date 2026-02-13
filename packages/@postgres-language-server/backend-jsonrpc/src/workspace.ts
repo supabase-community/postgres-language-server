@@ -95,6 +95,28 @@ export type Category =
 	| "lint/safety/requireConcurrentIndexDeletion"
 	| "lint/safety/runningStatementWhileHoldingAccessExclusive"
 	| "lint/safety/transactionNesting"
+	| "pglinter/extensionNotInstalled"
+	| "pglinter/ruleDisabledInExtension"
+	| "pglinter/base/compositePrimaryKeyTooManyColumns"
+	| "pglinter/base/howManyObjectsWithUppercase"
+	| "pglinter/base/howManyRedudantIndex"
+	| "pglinter/base/howManyTableWithoutIndexOnFk"
+	| "pglinter/base/howManyTableWithoutPrimaryKey"
+	| "pglinter/base/howManyTablesNeverSelected"
+	| "pglinter/base/howManyTablesWithFkMismatch"
+	| "pglinter/base/howManyTablesWithFkOutsideSchema"
+	| "pglinter/base/howManyTablesWithReservedKeywords"
+	| "pglinter/base/howManyTablesWithSameTrigger"
+	| "pglinter/base/howManyUnusedIndex"
+	| "pglinter/base/severalTableOwnerInSchema"
+	| "pglinter/cluster/passwordEncryptionIsMd5"
+	| "pglinter/cluster/pgHbaEntriesWithMethodTrustOrPasswordShouldNotExists"
+	| "pglinter/cluster/pgHbaEntriesWithMethodTrustShouldNotExists"
+	| "pglinter/schema/ownerSchemaIsInternalRole"
+	| "pglinter/schema/schemaOwnerDoNotMatchTableOwner"
+	| "pglinter/schema/schemaPrefixedOrSuffixedWithEnvt"
+	| "pglinter/schema/schemaWithDefaultRoleNotGranted"
+	| "pglinter/schema/unsecuredPublicSchema"
 	| "splinter/performance/authRlsInitplan"
 	| "splinter/performance/duplicateIndex"
 	| "splinter/performance/multiplePermissivePolicies"
@@ -118,6 +140,7 @@ export type Category =
 	| "splinter/security/unsupportedRegTypes"
 	| "stdin"
 	| "check"
+	| "format"
 	| "configuration"
 	| "database/connection"
 	| "internalError/io"
@@ -135,7 +158,11 @@ export type Category =
 	| "lint/safety"
 	| "splinter"
 	| "splinter/performance"
-	| "splinter/security";
+	| "splinter/security"
+	| "pglinter"
+	| "pglinter/base"
+	| "pglinter/cluster"
+	| "pglinter/schema";
 export interface Location {
 	path?: Resource_for_String;
 	sourceCode?: string;
@@ -148,15 +175,16 @@ export type MarkupBuf = MarkupNodeBuf[];
 export type Severity = "hint" | "information" | "warning" | "error" | "fatal";
 export type DiagnosticTags = DiagnosticTag[];
 /**
-	* Serializable representation of a [Diagnostic](super::Diagnostic) advice
+ * Serializable representation of a [Diagnostic](super::Diagnostic) advice
 
-See the [Visitor] trait for additional documentation on all the supported advice types. 
-	 */
+See the [Visitor] trait for additional documentation on all the supported advice types.
+ */
 export type Advice =
 	| { log: [LogCategory, MarkupBuf] }
 	| { list: MarkupBuf[] }
 	| { frame: Location }
 	| { diff: TextEdit }
+	| { diffWithOffset: [TextEdit, number] }
 	| { backtrace: [MarkupBuf, Backtrace] }
 	| { command: string }
 	| { group: [MarkupBuf, Advices] };
@@ -257,10 +285,10 @@ export interface CompletionItem {
 	sort_text: string;
 }
 /**
-	* The text that the editor should fill in. If `None`, the `label` should be used. Tables, for example, might have different completion_texts:
+ * The text that the editor should fill in. If `None`, the `label` should be used. Tables, for example, might have different completion_texts:
 
-label: "users", description: "Schema: auth", completion_text: "auth.users". 
-	 */
+label: "users", description: "Schema: auth", completion_text: "auth.users".
+ */
 export interface CompletionText {
 	is_snippet: boolean;
 	/**
@@ -304,6 +332,10 @@ export interface PartialConfiguration {
 	 */
 	files?: PartialFilesConfiguration;
 	/**
+	 * The configuration for the SQL formatter
+	 */
+	format?: PartialFormatConfiguration;
+	/**
 	 * The configuration for the linter
 	 */
 	linter?: PartialLinterConfiguration;
@@ -311,6 +343,10 @@ export interface PartialConfiguration {
 	 * Configure migrations
 	 */
 	migrations?: PartialMigrationsConfiguration;
+	/**
+	 * The configuration for pglinter
+	 */
+	pglinter?: PartialPglinterConfiguration;
 	/**
 	 * The configuration for type checking
 	 */
@@ -338,27 +374,27 @@ export interface PartialDatabaseConfiguration {
 	 */
 	connTimeoutSecs?: number;
 	/**
-	 * A connection string that encodes the full connection setup. When provided, it takes precedence over the individual fields.
+	 * A connection string that encodes the full connection setup. When provided, it takes precedence over the individual fields. Can also be set via the `DATABASE_URL` environment variable.
 	 */
 	connectionString?: string;
 	/**
-	 * The name of the database.
+	 * The name of the database. Can also be set via the `PGDATABASE` environment variable.
 	 */
 	database?: string;
 	/**
-	 * The host of the database. Required if you want database-related features. All else falls back to sensible defaults.
+	 * The host of the database. Required if you want database-related features. All else falls back to sensible defaults. Can also be set via the `PGHOST` environment variable.
 	 */
 	host?: string;
 	/**
-	 * The password to connect to the database.
+	 * The password to connect to the database. Can also be set via the `PGPASSWORD` environment variable.
 	 */
 	password?: string;
 	/**
-	 * The port of the database.
+	 * The port of the database. Can also be set via the `PGPORT` environment variable.
 	 */
 	port?: number;
 	/**
-	 * The username to connect to the database.
+	 * The username to connect to the database. Can also be set via the `PGUSER` environment variable.
 	 */
 	username?: string;
 }
@@ -379,6 +415,51 @@ export interface PartialFilesConfiguration {
 	 * The maximum allowed size for source code files in bytes. Files above this limit will be ignored for performance reasons. Defaults to 1 MiB
 	 */
 	maxSize?: number;
+}
+/**
+ * The configuration for SQL formatting.
+ */
+export interface PartialFormatConfiguration {
+	/**
+	 * Constant casing (NULL, TRUE, FALSE): "upper" or "lower". Default: "lower".
+	 */
+	constantCase?: KeywordCase;
+	/**
+	 * If `false`, it disables the formatter. `true` by default.
+	 */
+	enabled?: boolean;
+	/**
+	 * A list of Unix shell style patterns. The formatter will ignore files/folders that will match these patterns.
+	 */
+	ignore?: StringSet;
+	/**
+	 * A list of Unix shell style patterns. The formatter will include files/folders that will match these patterns.
+	 */
+	include?: StringSet;
+	/**
+	 * Number of spaces (or tab width) for indentation. Default: 2.
+	 */
+	indentSize?: number;
+	/**
+	 * Indentation style: "spaces" or "tabs". Default: "spaces".
+	 */
+	indentStyle?: IndentStyle;
+	/**
+	 * Keyword casing: "upper" or "lower". Default: "lower".
+	 */
+	keywordCase?: KeywordCase;
+	/**
+	 * Maximum line width before breaking. Default: 100.
+	 */
+	lineWidth?: number;
+	/**
+	 * If `true`, skip formatting of SQL function bodies (keep them verbatim). Default: `false`.
+	 */
+	skipFnBodies?: boolean;
+	/**
+	 * Data type casing (text, varchar, int): "upper" or "lower". Default: "lower".
+	 */
+	typeCase?: KeywordCase;
 }
 export interface PartialLinterConfiguration {
 	/**
@@ -410,6 +491,16 @@ export interface PartialMigrationsConfiguration {
 	 * The directory where the migration files are stored
 	 */
 	migrationsDir?: string;
+}
+export interface PartialPglinterConfiguration {
+	/**
+	 * if `false`, it disables the feature and the linter won't be executed. `true` by default
+	 */
+	enabled?: boolean;
+	/**
+	 * List of rules
+	 */
+	rules?: PglinterRules;
 }
 /**
  * The configuration for type checking.
@@ -464,9 +555,9 @@ export interface PartialVcsConfiguration {
 	 */
 	enabled?: boolean;
 	/**
-	* The folder where we should check for VCS files. By default, we will use the same folder where `postgres-language-server.jsonc` was found.
+	 * The folder where we should check for VCS files. By default, we will use the same folder where `postgres-language-server.jsonc` was found.
 
-If we can't find the configuration, it will attempt to use the current working directory. If no current working directory can't be found, we won't use the VCS integration, and a diagnostic will be emitted 
+If we can't find the configuration, it will attempt to use the current working directory. If no current working directory can't be found, we won't use the VCS integration, and a diagnostic will be emitted
 	 */
 	root?: string;
 	/**
@@ -474,6 +565,14 @@ If we can't find the configuration, it will attempt to use the current working d
 	 */
 	useIgnoreFile?: boolean;
 }
+/**
+ * Keyword casing style for the formatter.
+ */
+export type KeywordCase = "upper" | "lower";
+/**
+ * Indentation style for the formatter.
+ */
+export type IndentStyle = "spaces" | "tabs";
 export interface LinterRules {
 	/**
 	 * It enables ALL rules. The rules that belong to `nursery` won't be enabled.
@@ -484,6 +583,19 @@ export interface LinterRules {
 	 */
 	recommended?: boolean;
 	safety?: Safety;
+}
+export interface PglinterRules {
+	/**
+	 * It enables ALL rules. The rules that belong to `nursery` won't be enabled.
+	 */
+	all?: boolean;
+	base?: Base;
+	cluster?: Cluster;
+	/**
+	 * It enables the lint rules recommended by Postgres Language Server. `true` by default.
+	 */
+	recommended?: boolean;
+	schema?: Schema;
 }
 export interface SplinterRules {
 	/**
@@ -646,6 +758,125 @@ export interface Safety {
 /**
  * A list of rules that belong to this group
  */
+export interface Base {
+	/**
+	 * It enables ALL rules for this group.
+	 */
+	all?: boolean;
+	/**
+	 * CompositePrimaryKeyTooManyColumns (B012): Detect tables with composite primary keys involving more than 4 columns
+	 */
+	compositePrimaryKeyTooManyColumns?: RuleConfiguration_for_Null;
+	/**
+	 * HowManyObjectsWithUppercase (B005): Count number of objects with uppercase in name or in columns.
+	 */
+	howManyObjectsWithUppercase?: RuleConfiguration_for_Null;
+	/**
+	 * HowManyRedudantIndex (B002): Count number of redundant index vs nb index.
+	 */
+	howManyRedudantIndex?: RuleConfiguration_for_Null;
+	/**
+	 * HowManyTableWithoutIndexOnFk (B003): Count number of tables without index on foreign key.
+	 */
+	howManyTableWithoutIndexOnFk?: RuleConfiguration_for_Null;
+	/**
+	 * HowManyTableWithoutPrimaryKey (B001): Count number of tables without primary key.
+	 */
+	howManyTableWithoutPrimaryKey?: RuleConfiguration_for_Null;
+	/**
+	 * HowManyTablesNeverSelected (B006): Count number of table(s) that has never been selected.
+	 */
+	howManyTablesNeverSelected?: RuleConfiguration_for_Null;
+	/**
+	 * HowManyTablesWithFkMismatch (B008): Count number of tables with foreign keys that do not match the key reference type.
+	 */
+	howManyTablesWithFkMismatch?: RuleConfiguration_for_Null;
+	/**
+	 * HowManyTablesWithFkOutsideSchema (B007): Count number of tables with foreign keys outside their schema.
+	 */
+	howManyTablesWithFkOutsideSchema?: RuleConfiguration_for_Null;
+	/**
+	 * HowManyTablesWithReservedKeywords (B010): Count number of database objects using reserved keywords in their names.
+	 */
+	howManyTablesWithReservedKeywords?: RuleConfiguration_for_Null;
+	/**
+	 * HowManyTablesWithSameTrigger (B009): Count number of tables using the same trigger vs nb table with their own triggers.
+	 */
+	howManyTablesWithSameTrigger?: RuleConfiguration_for_Null;
+	/**
+	 * HowManyUnusedIndex (B004): Count number of unused index vs nb index (base on pg_stat_user_indexes, indexes associated to unique constraints are discard.)
+	 */
+	howManyUnusedIndex?: RuleConfiguration_for_Null;
+	/**
+	 * It enables the recommended rules for this group
+	 */
+	recommended?: boolean;
+	/**
+	 * SeveralTableOwnerInSchema (B011): In a schema there are several tables owned by different owners.
+	 */
+	severalTableOwnerInSchema?: RuleConfiguration_for_Null;
+}
+/**
+ * A list of rules that belong to this group
+ */
+export interface Cluster {
+	/**
+	 * It enables ALL rules for this group.
+	 */
+	all?: boolean;
+	/**
+	 * PasswordEncryptionIsMd5 (C003): This configuration is not secure anymore and will prevent an upgrade to Postgres 18. Warning, you will need to reset all passwords after this is changed to scram-sha-256.
+	 */
+	passwordEncryptionIsMd5?: RuleConfiguration_for_Null;
+	/**
+	 * PgHbaEntriesWithMethodTrustOrPasswordShouldNotExists (C002): This configuration is extremely insecure and should only be used in a controlled, non-production environment for testing purposes. In a production environment, you should use more secure authentication methods such as md5, scram-sha-256, or cert, and restrict access to trusted IP addresses only.
+	 */
+	pgHbaEntriesWithMethodTrustOrPasswordShouldNotExists?: RuleConfiguration_for_Null;
+	/**
+	 * PgHbaEntriesWithMethodTrustShouldNotExists (C001): This configuration is extremely insecure and should only be used in a controlled, non-production environment for testing purposes. In a production environment, you should use more secure authentication methods such as md5, scram-sha-256, or cert, and restrict access to trusted IP addresses only.
+	 */
+	pgHbaEntriesWithMethodTrustShouldNotExists?: RuleConfiguration_for_Null;
+	/**
+	 * It enables the recommended rules for this group
+	 */
+	recommended?: boolean;
+}
+/**
+ * A list of rules that belong to this group
+ */
+export interface Schema {
+	/**
+	 * It enables ALL rules for this group.
+	 */
+	all?: boolean;
+	/**
+	 * OwnerSchemaIsInternalRole (S004): Owner of schema should not be any internal pg roles, or owner is a superuser (not sure it is necesary).
+	 */
+	ownerSchemaIsInternalRole?: RuleConfiguration_for_Null;
+	/**
+	 * It enables the recommended rules for this group
+	 */
+	recommended?: boolean;
+	/**
+	 * SchemaOwnerDoNotMatchTableOwner (S005): The schema owner and tables in the schema do not match.
+	 */
+	schemaOwnerDoNotMatchTableOwner?: RuleConfiguration_for_Null;
+	/**
+	 * SchemaPrefixedOrSuffixedWithEnvt (S002): The schema is prefixed with one of staging,stg,preprod,prod,sandbox,sbox string. Means that when you refresh your preprod, staging environments from production, you have to rename the target schema from prod_ to stg_ or something like. It is possible, but it is never easy.
+	 */
+	schemaPrefixedOrSuffixedWithEnvt?: RuleConfiguration_for_Null;
+	/**
+	 * SchemaWithDefaultRoleNotGranted (S001): The schema has no default role. Means that futur table will not be granted through a role. So you will have to re-execute grants on it.
+	 */
+	schemaWithDefaultRoleNotGranted?: RuleConfiguration_for_Null;
+	/**
+	 * UnsecuredPublicSchema (S003): Only authorized users should be allowed to create objects.
+	 */
+	unsecuredPublicSchema?: RuleConfiguration_for_Null;
+}
+/**
+ * A list of rules that belong to this group
+ */
 export interface Performance {
 	/**
 	 * It enables ALL rules for this group.
@@ -781,17 +1012,17 @@ export interface RuleWithOptions_for_SplinterRuleOptions {
 	options: SplinterRuleOptions;
 }
 /**
-	* Shared options for all splinter rules.
+ * Shared options for all splinter rules.
 
-These options allow configuring per-rule filtering of database objects. 
-	 */
+These options allow configuring per-rule filtering of database objects.
+ */
 export interface SplinterRuleOptions {
 	/**
-	* A list of glob patterns for database objects to ignore.
+	 * A list of glob patterns for database objects to ignore.
 
 Patterns use Unix-style globs where: - `*` matches any sequence of characters - `?` matches any single character
 
-Each pattern should be in the format `schema.object_name`, for example: - `"public.my_table"` - ignores a specific table - `"audit.*"` - ignores all objects in the audit schema - `"*.audit_*"` - ignores objects with audit_ prefix in any schema 
+Each pattern should be in the format `schema.object_name`, for example: - `"public.my_table"` - ignores a specific table - `"audit.*"` - ignores all objects in the audit schema - `"*.audit_*"` - ignores objects with audit_ prefix in any schema
 	 */
 	ignore?: string[];
 }

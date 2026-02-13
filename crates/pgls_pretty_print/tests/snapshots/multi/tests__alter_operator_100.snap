@@ -1,0 +1,335 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/alter_operator.sql
+---
+create function alter_op_test_fn(boolean, boolean)
+returns boolean
+language sql
+immutable
+as $function$
+SELECT NULL::BOOLEAN;
+$function$;
+
+create function customcontsel(internal, oid, internal, int)
+returns double precision
+language internal
+stable
+strict
+as $function$
+contsel
+$function$;
+
+create operator === (LEFTARG = boolean,
+RIGHTARG = boolean,
+PROCEDURE = alter_op_test_fn,
+COMMUTATOR = ===,
+NEGATOR = !==,
+RESTRICT = customcontsel,
+JOIN = contjoinsel,
+HASHES,
+MERGES);
+
+select
+  pg_describe_object(
+    refclassid,
+    refobjid,
+    refobjsubid
+  )
+  as ref,
+  deptype
+from
+  pg_depend
+where
+  classid = cast('pg_operator' as regclass) and
+  objid = cast('===(bool,bool)' as regoperator)
+order by 1;
+
+alter operator === (boolean, boolean) set (restrict = NONE);
+
+alter operator === (boolean, boolean) set (join = NONE);
+
+select
+  oprrest,
+  oprjoin
+from
+  pg_operator
+where
+  oprname = '===' and
+  oprleft = cast('boolean' as regtype) and
+  oprright = cast('boolean' as regtype);
+
+select
+  pg_describe_object(
+    refclassid,
+    refobjid,
+    refobjsubid
+  )
+  as ref,
+  deptype
+from
+  pg_depend
+where
+  classid = cast('pg_operator' as regclass) and
+  objid = cast('===(bool,bool)' as regoperator)
+order by 1;
+
+alter operator === (boolean, boolean) set (restrict = contsel);
+
+alter operator === (boolean, boolean) set (join = contjoinsel);
+
+select
+  oprrest,
+  oprjoin
+from
+  pg_operator
+where
+  oprname = '===' and
+  oprleft = cast('boolean' as regtype) and
+  oprright = cast('boolean' as regtype);
+
+select
+  pg_describe_object(
+    refclassid,
+    refobjid,
+    refobjsubid
+  )
+  as ref,
+  deptype
+from
+  pg_depend
+where
+  classid = cast('pg_operator' as regclass) and
+  objid = cast('===(bool,bool)' as regoperator)
+order by 1;
+
+alter operator === (boolean, boolean) set (restrict = NONE, join = NONE);
+
+select
+  oprrest,
+  oprjoin
+from
+  pg_operator
+where
+  oprname = '===' and
+  oprleft = cast('boolean' as regtype) and
+  oprright = cast('boolean' as regtype);
+
+select
+  pg_describe_object(
+    refclassid,
+    refobjid,
+    refobjsubid
+  )
+  as ref,
+  deptype
+from
+  pg_depend
+where
+  classid = cast('pg_operator' as regclass) and
+  objid = cast('===(bool,bool)' as regoperator)
+order by 1;
+
+alter operator === (boolean, boolean) set (restrict = customcontsel, join = contjoinsel);
+
+select
+  oprrest,
+  oprjoin
+from
+  pg_operator
+where
+  oprname = '===' and
+  oprleft = cast('boolean' as regtype) and
+  oprright = cast('boolean' as regtype);
+
+select
+  pg_describe_object(
+    refclassid,
+    refobjid,
+    refobjsubid
+  )
+  as ref,
+  deptype
+from
+  pg_depend
+where
+  classid = cast('pg_operator' as regclass) and
+  objid = cast('===(bool,bool)' as regoperator)
+order by 1;
+
+alter operator === (boolean, boolean) set (restrict = non_existent_func);
+
+alter operator === (boolean, boolean) set (join = non_existent_func);
+
+alter operator & (bit(1), bit(1)) set ("Restrict" = _int_contsel, "Join" = _int_contjoinsel);
+
+create user regress_alter_op_user;
+
+set session authorization regress_alter_op_user;
+
+alter operator === (boolean, boolean) set (restrict = NONE);
+
+reset session_authorization;
+
+create function alter_op_test_fn_bool_real(boolean, real)
+returns boolean
+language sql
+immutable
+as $function$
+SELECT NULL::BOOLEAN;
+$function$;
+
+create function alter_op_test_fn_real_bool(real, boolean)
+returns boolean
+language sql
+immutable
+as $function$
+SELECT NULL::BOOLEAN;
+$function$;
+
+create operator === (LEFTARG = boolean, RIGHTARG = real, PROCEDURE = alter_op_test_fn_bool_real);
+
+create operator ==== (LEFTARG = real, RIGHTARG = boolean, PROCEDURE = alter_op_test_fn_real_bool);
+
+create operator !==== (LEFTARG = boolean, RIGHTARG = real, PROCEDURE = alter_op_test_fn_bool_real);
+
+alter operator === (boolean, real) set (merges = 'false');
+
+alter operator === (boolean, real) set (hashes = 'false');
+
+alter operator === (boolean, real) set (merges);
+
+alter operator === (boolean, real) set (hashes);
+
+select
+  oprcanmerge,
+  oprcanhash
+from
+  pg_operator
+where
+  oprname = '===' and
+  oprleft = cast('boolean' as regtype) and
+  oprright = cast('real' as regtype);
+
+alter operator === (boolean, real) set (commutator = ====);
+
+select
+  op.oprname as operator_name,
+  com.oprname as commutator_name,
+  com.oprcode as commutator_func
+from
+  pg_operator as op
+  inner join
+    pg_operator as com
+  on op.oid = com.oprcom and op.oprcom = com.oid
+where
+  op.oprname = '===' and
+  op.oprleft = cast('boolean' as regtype) and
+  op.oprright = cast('real' as regtype);
+
+alter operator === (boolean, real) set (negator = ===);
+
+alter operator === (boolean, real) set (negator = !====);
+
+select
+  op.oprname as operator_name,
+  neg.oprname as negator_name,
+  neg.oprcode as negator_func
+from
+  pg_operator as op
+  inner join
+    pg_operator as neg
+  on op.oid = neg.oprnegate and op.oprnegate = neg.oid
+where
+  op.oprname = '===' and
+  op.oprleft = cast('boolean' as regtype) and
+  op.oprright = cast('real' as regtype);
+
+alter operator === (boolean, real) set (negator = !====);
+
+alter operator === (boolean, real) set (commutator = ====);
+
+alter operator === (boolean, real) set (merges);
+
+alter operator === (boolean, real) set (hashes);
+
+select
+  oprcanmerge,
+  oprcanhash,
+  pg_describe_object(
+    cast('pg_operator' as regclass),
+    oprcom,
+    0
+  )
+  as commutator,
+  pg_describe_object(
+    cast('pg_operator' as regclass),
+    oprnegate,
+    0
+  )
+  as negator
+from
+  pg_operator
+where
+  oprname = '===' and
+  oprleft = cast('boolean' as regtype) and
+  oprright = cast('real' as regtype);
+
+create operator @= (LEFTARG = real, RIGHTARG = boolean, PROCEDURE = alter_op_test_fn_real_bool);
+
+create operator @!= (LEFTARG = boolean, RIGHTARG = real, PROCEDURE = alter_op_test_fn_bool_real);
+
+alter operator === (boolean, real) set (commutator = @=);
+
+alter operator === (boolean, real) set (negator = @!=);
+
+alter operator === (boolean, real) set (merges = 'false');
+
+alter operator === (boolean, real) set (hashes = 'false');
+
+alter operator @= (real, boolean) set (commutator = ===);
+
+alter operator @!= (boolean, real) set (negator = ===);
+
+select
+  oprcanmerge,
+  oprcanhash,
+  pg_describe_object(
+    cast('pg_operator' as regclass),
+    oprcom,
+    0
+  )
+  as commutator,
+  pg_describe_object(
+    cast('pg_operator' as regclass),
+    oprnegate,
+    0
+  )
+  as negator
+from
+  pg_operator
+where
+  oprname = '===' and
+  oprleft = cast('boolean' as regtype) and
+  oprright = cast('real' as regtype);
+
+drop role regress_alter_op_user;
+
+drop operator === (boolean, boolean);
+
+drop operator === (boolean, real);
+
+drop operator ==== (real, boolean);
+
+drop operator !==== (boolean, real);
+
+drop operator @= (real, boolean);
+
+drop operator @!= (boolean, real);
+
+drop function customcontsel(internal, oid, internal, int);
+
+drop function alter_op_test_fn(boolean, boolean);
+
+drop function alter_op_test_fn_bool_real(boolean, real);
+
+drop function alter_op_test_fn_real_bool(real, boolean);

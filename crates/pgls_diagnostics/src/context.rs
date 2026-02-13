@@ -637,6 +637,10 @@ mod internal {
             self.visitor.record_diff(diff)
         }
 
+        fn record_diff_with_offset(&mut self, diff: &TextEdit, line_offset: u32) -> io::Result<()> {
+            self.visitor.record_diff_with_offset(diff, line_offset)
+        }
+
         fn record_backtrace(
             &mut self,
             title: &dyn fmt::Display,

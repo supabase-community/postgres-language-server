@@ -33,16 +33,16 @@ impl LinterRule for RenamingColumn {
     fn run(ctx: &LinterRuleContext<Self>) -> Vec<LinterDiagnostic> {
         let mut diagnostics = Vec::new();
 
-        if let pgls_query::NodeEnum::RenameStmt(stmt) = &ctx.stmt() {
-            if stmt.rename_type() == pgls_query::protobuf::ObjectType::ObjectColumn {
-                diagnostics.push(LinterDiagnostic::new(
+        if let pgls_query::NodeEnum::RenameStmt(stmt) = &ctx.stmt()
+            && stmt.rename_type() == pgls_query::protobuf::ObjectType::ObjectColumn
+        {
+            diagnostics.push(LinterDiagnostic::new(
                     rule_category!(),
                     None,
                     markup! {
                         "Renaming a column may break existing clients."
                     },
                 ).detail(None, "Consider creating a new column with the desired name and migrating data instead."));
-            }
         }
 
         diagnostics

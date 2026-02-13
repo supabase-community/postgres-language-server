@@ -17,16 +17,27 @@
  */
 
 import type {
+	CompletionItem,
+	Diagnostic,
+	PGLSModule,
+	SchemaCache,
+	WorkspaceOptions,
+} from "./types.js";
+
+import {
+	allocateString,
+	loadWasm,
+	parseResult,
+	readAndFreeString,
+} from "./common.js";
+
+export type {
 	Diagnostic,
 	CompletionItem,
 	SchemaCache,
 	WorkspaceOptions,
 	PGLSModule,
-} from "./types.js";
-
-import { loadWasm, allocateString, readAndFreeString, parseResult } from "./common.js";
-
-export type { Diagnostic, CompletionItem, SchemaCache, WorkspaceOptions, PGLSModule };
+};
 
 /**
  * The Workspace class provides a direct API for SQL parsing, linting,
@@ -167,7 +178,9 @@ export class Workspace {
 /**
  * Create a new Workspace instance.
  */
-export async function createWorkspace(options?: WorkspaceOptions): Promise<Workspace> {
+export async function createWorkspace(
+	options?: WorkspaceOptions,
+): Promise<Workspace> {
 	const module = await loadWasm();
 	const workspace = new Workspace(module);
 

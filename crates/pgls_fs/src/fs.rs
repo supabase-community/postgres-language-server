@@ -113,11 +113,12 @@ pub trait FileSystem: Send + Sync + RefUnwindSafe {
                 }
             }
 
-            if !is_searching_in_parent_dir && should_error_if_file_not_found {
-                if let Some(diagnostic) = errors.into_iter().next() {
-                    // We can only return one Err, so we return the first diagnostic.
-                    return Err(diagnostic);
-                }
+            if !is_searching_in_parent_dir
+                && should_error_if_file_not_found
+                && let Some(diagnostic) = errors.into_iter().next()
+            {
+                // We can only return one Err, so we return the first diagnostic.
+                return Err(diagnostic);
             }
 
             if let Some(parent_search_dir) = curret_search_dir.parent() {

@@ -1,5 +1,5 @@
-use biome_deserialize::StringSet;
 use globset::Glob;
+use pgls_configuration::StringSet;
 use pgls_diagnostics::Category;
 #[cfg(feature = "db")]
 use std::str::FromStr;
@@ -18,7 +18,9 @@ use pgls_configuration::{
     database::PartialDatabaseConfiguration,
     diagnostics::InvalidIgnorePattern,
     files::FilesConfiguration,
+    format::{FormatConfiguration, IndentStyle, KeywordCase},
     migrations::{MigrationsConfiguration, PartialMigrationsConfiguration},
+    pglinter::PglinterConfiguration,
     plpgsql_check::PlPgSqlCheckConfiguration,
     splinter::SplinterConfiguration,
 };
@@ -28,9 +30,9 @@ use sqlx::postgres::PgConnectOptions;
 
 use crate::{
     WorkspaceError,
+    matcher::Matcher,
     workspace::{ProjectKey, WorkspaceData},
 };
-use pgls_matcher::Matcher;
 
 #[derive(Debug, Default)]
 /// The information tracked for each project
@@ -219,6 +221,12 @@ pub struct Settings {
     /// Splinter (database linter) settings for the workspace
     pub splinter: SplinterSettings,
 
+    /// Formatter settings applied to all files in the workspace
+    pub formatter: FormatterSettings,
+
+    /// Pglinter (database linter via pglinter extension) settings for the workspace
+    pub pglinter: PglinterSettings,
+
     /// Type checking settings for the workspace
     pub typecheck: TypecheckSettings,
 
@@ -265,6 +273,19 @@ impl Settings {
             self.splinter = to_splinter_settings(SplinterConfiguration::from(splinter));
         }
 
+        // formatter part
+        if let Some(format) = configuration.format {
+            self.formatter = to_formatter_settings(
+                working_directory.clone(),
+                FormatConfiguration::from(format),
+            )?;
+        }
+
+        // pglinter part
+        if let Some(pglinter) = configuration.pglinter {
+            self.pglinter = to_pglinter_settings(PglinterConfiguration::from(pglinter));
+        }
+
         // typecheck part
         if let Some(typecheck) = configuration.typecheck {
             self.typecheck = to_typecheck_settings(TypecheckConfiguration::from(typecheck));
@@ -302,6 +323,11 @@ impl Settings {
         self.splinter.rules.as_ref().map(Cow::Borrowed)
     }
 
+    /// Returns pglinter rules.
+    pub fn as_pglinter_rules(&self) -> Option<Cow<'_, pgls_configuration::pglinter::Rules>> {
+        self.pglinter.rules.as_ref().map(Cow::Borrowed)
+    }
+
     /// It retrieves the severity based on the `code` of the rule and the current configuration.
     ///
     /// The code of the has the following pattern: `{group}/{rule_name}`.
@@ -334,6 +360,31 @@ fn to_splinter_settings(conf: SplinterConfiguration) -> SplinterSettings {
     SplinterSettings {
         enabled: conf.enabled,
         ignore: conf.ignore,
+        rules: Some(conf.rules),
+    }
+}
+
+fn to_formatter_settings(
+    working_directory: Option<PathBuf>,
+    conf: FormatConfiguration,
+) -> Result<FormatterSettings, WorkspaceError> {
+    Ok(FormatterSettings {
+        enabled: conf.enabled,
+        line_width: conf.line_width,
+        indent_size: conf.indent_size,
+        indent_style: conf.indent_style,
+        keyword_case: conf.keyword_case,
+        constant_case: conf.constant_case,
+        type_case: conf.type_case,
+        skip_fn_bodies: conf.skip_fn_bodies,
+        ignored_files: to_matcher(working_directory.clone(), Some(&conf.ignore))?,
+        included_files: to_matcher(working_directory.clone(), Some(&conf.include))?,
+    })
+}
+
+fn to_pglinter_settings(conf: PglinterConfiguration) -> PglinterSettings {
+    PglinterSettings {
+        enabled: conf.enabled,
         rules: Some(conf.rules),
     }
 }
@@ -492,6 +543,76 @@ impl SplinterSettings {
     }
 }
 
+/// Formatter settings for the entire workspace
+#[derive(Debug)]
+pub struct FormatterSettings {
+    /// Disabled by default (beta)
+    pub enabled: bool,
+
+    /// Maximum line width before breaking. Default: 100.
+    pub line_width: u16,
+
+    /// Number of spaces (or tab width) for indentation. Default: 2.
+    pub indent_size: u8,
+
+    /// Indentation style: spaces or tabs. Default: spaces.
+    pub indent_style: IndentStyle,
+
+    /// Keyword casing: upper or lower. Default: lower.
+    pub keyword_case: KeywordCase,
+
+    /// Constant casing (NULL, TRUE, FALSE): upper or lower. Default: lower.
+    pub constant_case: KeywordCase,
+
+    /// Data type casing (text, varchar, int): upper or lower. Default: lower.
+    pub type_case: KeywordCase,
+
+    /// If true, skip formatting of SQL function bodies (keep them verbatim). Default: false.
+    pub skip_fn_bodies: bool,
+
+    /// List of ignored paths/files to match
+    pub ignored_files: Matcher,
+
+    /// List of included paths/files to match
+    pub included_files: Matcher,
+}
+
+impl Default for FormatterSettings {
+    fn default() -> Self {
+        Self {
+            enabled: false, // Disabled by default during beta
+            line_width: 100,
+            indent_size: 2,
+            indent_style: IndentStyle::Spaces,
+            keyword_case: KeywordCase::default(),
+            constant_case: KeywordCase::default(),
+            type_case: KeywordCase::default(),
+            skip_fn_bodies: false,
+            ignored_files: Matcher::empty(),
+            included_files: Matcher::empty(),
+        }
+    }
+}
+
+/// Pglinter (database linter via pglinter extension) settings for the entire workspace
+#[derive(Debug)]
+pub struct PglinterSettings {
+    /// Disabled by default (pglinter extension might not be installed)
+    pub enabled: bool,
+
+    /// List of rules
+    pub rules: Option<pgls_configuration::pglinter::Rules>,
+}
+
+impl Default for PglinterSettings {
+    fn default() -> Self {
+        Self {
+            enabled: false, // Disabled by default since pglinter extension might not be installed
+            rules: Some(pgls_configuration::pglinter::Rules::default()),
+        }
+    }
+}
+
 /// Type checking settings for the entire workspace
 #[derive(Debug)]
 pub struct PlPgSqlCheckSettings {
@@ -524,7 +645,6 @@ impl Default for TypecheckSettings {
 }
 
 /// Database settings for the entire workspace
-#[derive(Debug)]
 pub struct DatabaseSettings {
     pub enable_connection: bool,
     pub connection_string: Option<String>,
@@ -535,6 +655,28 @@ pub struct DatabaseSettings {
     pub database: String,
     pub conn_timeout_secs: Duration,
     pub allow_statement_executions: bool,
+}
+
+impl std::fmt::Debug for DatabaseSettings {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("DatabaseSettings")
+            .field("enable_connection", &self.enable_connection)
+            .field(
+                "connection_string",
+                &self.connection_string.as_ref().map(|_| "[redacted]"),
+            )
+            .field("host", &self.host)
+            .field("port", &self.port)
+            .field("username", &self.username)
+            .field("password", &"[redacted]")
+            .field("database", &self.database)
+            .field("conn_timeout_secs", &self.conn_timeout_secs)
+            .field(
+                "allow_statement_executions",
+                &self.allow_statement_executions,
+            )
+            .finish()
+    }
 }
 
 impl Default for DatabaseSettings {
@@ -689,7 +831,7 @@ impl Default for FilesSettings {
 
 #[cfg(test)]
 mod tests {
-    use biome_deserialize::StringSet;
+    use pgls_configuration::StringSet;
     use pgls_configuration::database::PartialDatabaseConfiguration;
 
     use super::DatabaseSettings;

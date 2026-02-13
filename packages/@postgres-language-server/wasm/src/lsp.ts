@@ -27,9 +27,9 @@
  * ```
  */
 
-import type { PGLSModule, JsonRpcMessage } from "./types.js";
+import type { JsonRpcMessage, PGLSModule } from "./types.js";
 
-import { loadWasm, allocateString, readAndFreeString } from "./common.js";
+import { allocateString, loadWasm, readAndFreeString } from "./common.js";
 
 export type { PGLSModule, JsonRpcMessage };
 

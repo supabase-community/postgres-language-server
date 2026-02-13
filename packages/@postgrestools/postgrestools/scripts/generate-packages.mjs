@@ -1,7 +1,7 @@
 import assert from "node:assert";
 import * as fs from "node:fs";
-import { pipeline } from "node:stream";
 import { resolve } from "node:path";
+import { pipeline } from "node:stream";
 import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
 const streamPipeline = promisify(pipeline);
@@ -54,7 +54,7 @@ async function downloadSchema(releaseTag, githubToken) {
 
 	// download to root.
 	const fileStream = fs.createWriteStream(
-		resolve(POSTGRESTOOLS_ROOT, "schema.json")
+		resolve(POSTGRESTOOLS_ROOT, "schema.json"),
 	);
 
 	await streamPipeline(response.body, fileStream);
@@ -64,8 +64,9 @@ async function downloadSchema(releaseTag, githubToken) {
 
 async function downloadBinary(platform, arch, os, releaseTag, githubToken) {
 	const buildName = getBuildName(platform, arch);
+	const ext = getBinaryExt(os);
 
-	const assetUrl = `https://github.com/supabase-community/postgres-language-server/releases/download/${releaseTag}/${buildName}`;
+	const assetUrl = `https://github.com/supabase-community/postgres-language-server/releases/download/${releaseTag}/${buildName}${ext}`;
 
 	const response = await fetch(assetUrl.trim(), {
 		headers: {
@@ -77,14 +78,12 @@ async function downloadBinary(platform, arch, os, releaseTag, githubToken) {
 	if (!response.ok) {
 		const error = await response.text();
 		throw new Error(
-			`Failed to Fetch Asset from ${assetUrl} (Reason: ${error})`
+			`Failed to Fetch Asset from ${assetUrl} (Reason: ${error})`,
 		);
 	}
 
 	// just download to root.
-	const fileStream = fs.createWriteStream(
-		getBinarySource(platform, arch, os)
-	);
+	const fileStream = fs.createWriteStream(getBinarySource(platform, arch, os));
 
 	await streamPipeline(response.body, fileStream);
 
@@ -95,15 +94,15 @@ async function writeManifest(packagePath, version) {
 	const manifestPath = resolve(
 		PACKAGES_POSTGRESTOOLS_ROOT,
 		packagePath,
-		"package.json"
+		"package.json",
 	);
 
 	const manifestData = JSON.parse(
-		fs.readFileSync(manifestPath).toString("utf-8")
+		fs.readFileSync(manifestPath).toString("utf-8"),
 	);
 
 	const nativePackages = platformArchCombinations().map(
-		({ platform, arch }) => [getPackageName(platform, arch), version]
+		({ platform, arch }) => [getPackageName(platform, arch), version],
 	);
 
 	manifestData.version = version;
@@ -178,7 +177,7 @@ function copyBinaryToNativePackage(platform, arch, os) {
 			libc,
 		},
 		null,
-		2
+		2,
 	);
 
 	const ext = getBinaryExt(os);
@@ -192,7 +191,7 @@ function copyBinaryToNativePackage(platform, arch, os) {
 
 	if (!fs.existsSync(binarySource)) {
 		console.error(
-			`Source for binary for ${buildName} not found at: ${binarySource}`
+			`Source for binary for ${buildName} not found at: ${binarySource}`,
 		);
 		process.exit(1);
 	}
@@ -230,10 +229,10 @@ function copyReadmeToPackage(packagePath) {
 	}
 
 	console.info(`Copying README.md to ${packagePath}`);
-	
+
 	// Read the original README content
-	const originalReadme = fs.readFileSync(readmeSrc, 'utf-8');
-	
+	const originalReadme = fs.readFileSync(readmeSrc, "utf-8");
+
 	// Add deprecation notice for @postgrestools packages
 	const deprecationNotice = `> [!WARNING]
 > **This package is deprecated.** Please use [\`@postgres-language-server/cli\`](https://www.npmjs.com/package/@postgres-language-server/cli) instead.
@@ -243,8 +242,8 @@ function copyReadmeToPackage(packagePath) {
 `;
 
 	const modifiedReadme = deprecationNotice + originalReadme;
-	
-	fs.writeFileSync(readmeTarget, modifiedReadme, 'utf-8');
+
+	fs.writeFileSync(readmeTarget, modifiedReadme, "utf-8");
 	fs.chmodSync(readmeTarget, 0o666);
 }
 

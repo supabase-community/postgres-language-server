@@ -144,6 +144,20 @@ COMMIT;",
     }
 
     #[test]
+    fn begin_transaction_modes() {
+        Tester::from(
+            "BEGIN TRANSACTION ISOLATION LEVEL SERIALIZABLE;
+INSERT INTO t VALUES (1);
+COMMIT;",
+        )
+        .expect_statements(vec![
+            "BEGIN TRANSACTION ISOLATION LEVEL SERIALIZABLE;",
+            "INSERT INTO t VALUES (1);",
+            "COMMIT;",
+        ]);
+    }
+
+    #[test]
     fn begin_atomic() {
         Tester::from(
             "CREATE OR REPLACE FUNCTION public.test_fn(some_in TEXT)

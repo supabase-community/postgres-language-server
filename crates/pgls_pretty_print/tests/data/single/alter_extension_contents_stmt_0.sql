@@ -1,0 +1,1 @@
+ALTER EXTENSION hstore ADD FUNCTION hstore_in(cstring);

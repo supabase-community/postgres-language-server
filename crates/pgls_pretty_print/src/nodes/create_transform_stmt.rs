@@ -1,0 +1,75 @@
+use crate::{
+    TokenKind,
+    emitter::{EventEmitter, GroupKind, LineType},
+};
+use pgls_query::protobuf::CreateTransformStmt;
+
+pub(super) fn emit_create_transform_stmt(e: &mut EventEmitter, n: &CreateTransformStmt) {
+    e.group_start(GroupKind::CreateTransformStmt);
+
+    e.token(TokenKind::CREATE_KW);
+    e.space();
+
+    if n.replace {
+        e.token(TokenKind::OR_KW);
+        e.space();
+        e.token(TokenKind::REPLACE_KW);
+        e.space();
+    }
+
+    e.token(TokenKind::TRANSFORM_KW);
+    e.space();
+    e.token(TokenKind::FOR_KW);
+    e.space();
+
+    if let Some(ref type_name) = n.type_name {
+        super::emit_type_name(e, type_name);
+    }
+
+    e.space();
+    e.token(TokenKind::LANGUAGE_KW);
+    e.space();
+    e.token(TokenKind::IDENT(n.lang.clone()));
+
+    e.line(LineType::SoftOrSpace);
+    e.token(TokenKind::L_PAREN);
+    e.line(LineType::Soft);
+    e.indent_start();
+
+    let mut has_clause = false;
+    if let Some(ref fromsql) = n.fromsql {
+        e.token(TokenKind::FROM_KW);
+        e.space();
+        e.token(TokenKind::SQL_KW);
+        e.space();
+        e.token(TokenKind::WITH_KW);
+        e.space();
+        e.token(TokenKind::FUNCTION_KW);
+        e.space();
+        super::emit_object_with_args(e, fromsql);
+        has_clause = true;
+    }
+
+    if let Some(ref tosql) = n.tosql {
+        if has_clause {
+            e.token(TokenKind::COMMA);
+            e.line(LineType::SoftOrSpace);
+        }
+        e.token(TokenKind::TO_KW);
+        e.space();
+        e.token(TokenKind::SQL_KW);
+        e.space();
+        e.token(TokenKind::WITH_KW);
+        e.space();
+        e.token(TokenKind::FUNCTION_KW);
+        e.space();
+        super::emit_object_with_args(e, tosql);
+    }
+
+    e.indent_end();
+    e.line(LineType::Soft);
+    e.token(TokenKind::R_PAREN);
+    e.token(TokenKind::SEMICOLON);
+
+    e.group_end();
+}

@@ -1,0 +1,169 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/compression_lz4.sql
+---
+select
+  not enumvals @> '{lz4}' as skip_test
+from
+  pg_settings
+where
+  name = 'default_toast_compression';
+
+create schema "lz4";
+
+set search_path to lz4, public;
+
+set default_toast_compression = pglz;
+
+create table cmdata_pglz (f1 text compression pglz);
+
+create index "idx" on cmdata_pglz using btree (f1);
+
+insert into cmdata_pglz values (repeat('1234567890', 1000));
+
+create table cmdata_lz4 (f1 text compression lz4);
+
+insert into cmdata_lz4 values (repeat('1234567890', 1004));
+
+select pg_column_compression(f1) from cmdata_lz4;
+
+select substr(f1, 200, 5) from cmdata_pglz;
+
+select substr(f1, 2000, 50) from cmdata_lz4;
+
+select * into cmmove1 from cmdata_lz4;
+
+select pg_column_compression(f1) from cmmove1;
+
+create table cmdata2 (like cmdata_lz4 including COMPRESSION);
+
+drop table cmdata2;
+
+create table cmmove3 (f1 text compression pglz);
+
+insert into cmmove3 select * from cmdata_pglz;
+
+insert into cmmove3 select * from cmdata_lz4;
+
+select pg_column_compression(f1) from cmmove3;
+
+create table cmmove2 (f1 text compression pglz);
+
+insert into cmmove2 values (repeat('1234567890', 1004));
+
+select pg_column_compression(f1) from cmmove2;
+
+update cmmove2 set f1 = cmdata_lz4.f1 from cmdata_lz4;
+
+select pg_column_compression(f1) from cmmove2;
+
+create or replace function large_val_lz4()
+returns text
+language sql
+as $function$
+select array_agg(fipshash(g::text))::text from generate_series(1, 256) g
+$function$;
+
+create table cmdata2 (f1 text compression lz4);
+
+insert into cmdata2 select large_val_lz4() || repeat('a', 4000);
+
+select pg_column_compression(f1) from cmdata2;
+
+select substr(f1, 200, 5) from cmdata2;
+
+drop table cmdata2;
+
+drop function large_val_lz4;
+
+create materialized view compressmv (x) as select * from cmdata_lz4;
+
+select pg_column_compression(f1) from cmdata_lz4;
+
+select pg_column_compression(x) from compressmv;
+
+create table cmpart (f1 text compression lz4)
+partition by HASH(f1);
+
+create table cmpart1 partition of cmpart for values with (MODULUS 2, REMAINDER 0);
+
+create table cmpart2 (f1 text compression pglz);
+
+insert into cmpart values (repeat('123456789', 1004));
+
+insert into cmpart values (repeat('123456789', 4004));
+
+select pg_column_compression(f1) from cmpart1;
+
+select pg_column_compression(f1) from cmpart2;
+
+create table cminh ()
+inherits (cmdata_pglz,
+cmdata_lz4);
+
+create table cminh (f1 text compression lz4)
+inherits (cmdata_pglz);
+
+create table cmdata3 (f1 text);
+
+create table cminh ()
+inherits (cmdata_pglz,
+cmdata3);
+
+set default_toast_compression = lz4;
+
+alter table cmdata_pglz
+  alter column f1 set compression lz4;
+
+insert into cmdata_pglz values (repeat('123456789', 4004));
+
+select pg_column_compression(f1) from cmdata_pglz;
+
+alter table cmdata_pglz
+  alter column f1 set compression pglz;
+
+alter materialized view compressmv
+  alter column x set compression lz4;
+
+alter table cmpart1
+  alter column f1 set compression pglz;
+
+alter table cmpart2
+  alter column f1 set compression lz4;
+
+insert into cmpart values (repeat('123456789', 1004));
+
+insert into cmpart values (repeat('123456789', 4004));
+
+select pg_column_compression(f1) from cmpart1;
+
+select pg_column_compression(f1) from cmpart2;
+
+create table cmdata2 (
+  f1 text compression pglz,
+  f2 text compression lz4
+);
+
+create unique index "idx1" on cmdata2 using btree ((f1 || f2));
+
+insert into cmdata2
+values
+  (
+    (
+      select
+        cast(array_agg(fipshash(cast(g as text))) as text)
+      from
+        generate_series(1, 50) as g
+    ),
+    version()
+  );
+
+select length(f1) from cmdata_pglz;
+
+select length(f1) from cmdata_lz4;
+
+select length(f1) from cmmove1;
+
+select length(f1) from cmmove2;
+
+select length(f1) from cmmove3;

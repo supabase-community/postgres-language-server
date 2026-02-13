@@ -1,0 +1,215 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/select_views.sql
+---
+select * from street;
+
+select name, #thepath from iexit order by name collate "C", 2;
+
+select * from toyemp where name = 'sharon';
+
+create role regress_alice;
+
+create function f_leak(text)
+returns boolean
+language plpgsql
+cost 0.0000001
+as $function$
+BEGIN RAISE NOTICE 'f_leak => %', $1; RETURN true; END
+$function$;
+
+create table customer (
+  cid int primary key,
+  name text not null,
+  tel text,
+  passwd text
+);
+
+create table credit_card (
+  cid int references customer (cid),
+  cnum text,
+  climit int
+);
+
+create table credit_usage (
+  cid int references customer (cid),
+  ymd date,
+  usage int
+);
+
+insert into customer
+values
+  (
+    101,
+    'regress_alice',
+    '+81-12-3456-7890',
+    'passwd123'
+  ),
+  (
+    102,
+    'regress_bob',
+    '+01-234-567-8901',
+    'beafsteak'
+  ),
+  (
+    103, 'regress_eve', '+49-8765-43210', 'hamburger'
+  );
+
+insert into credit_card
+values
+  (101, '1111-2222-3333-4444', 4000),
+  (102, '5555-6666-7777-8888', 3000),
+  (103, '9801-2345-6789-0123', 2000);
+
+insert into credit_usage
+values
+  (101, '2011-09-15', 120),
+  (101, '2011-10-05', 90),
+  (101, '2011-10-18', 110),
+  (101, '2011-10-21', 200),
+  (101, '2011-11-10', 80),
+  (102, '2011-09-22', 300),
+  (102, '2011-10-12', 120),
+  (102, '2011-10-28', 200),
+  (103, '2011-10-15', 480);
+
+create view my_property_normal
+as select * from customer where name = current_user;
+
+create view my_property_secure
+  with (security_barrier)
+as select * from customer where name = current_user;
+
+create view my_credit_card_normal
+as select
+  *
+from
+  customer as l natural join credit_card as r
+where
+  l.name = current_user;
+
+create view my_credit_card_secure
+  with (security_barrier)
+as select
+  *
+from
+  customer as l natural join credit_card as r
+where
+  l.name = current_user;
+
+create view my_credit_card_usage_normal
+as select
+  *
+from
+  my_credit_card_secure as l
+  natural join
+    credit_usage as r;
+
+create view my_credit_card_usage_secure
+  with (security_barrier)
+as select
+  *
+from
+  my_credit_card_secure as l
+  natural join
+    credit_usage as r;
+
+grant SELECT on table my_property_normal to public;
+
+grant SELECT on table my_property_secure to public;
+
+grant SELECT on table my_credit_card_normal to public;
+
+grant SELECT on table my_credit_card_secure to public;
+
+grant SELECT on table my_credit_card_usage_normal to public;
+
+grant SELECT on table my_credit_card_usage_secure to public;
+
+set session authorization regress_alice;
+
+select * from my_property_normal where f_leak(passwd);
+
+select * from my_property_normal where f_leak(passwd);
+
+select * from my_property_secure where f_leak(passwd);
+
+select * from my_property_secure where f_leak(passwd);
+
+select * from my_property_normal as v where f_leak('passwd') and f_leak(passwd);
+
+select * from my_property_normal as v where f_leak('passwd') and f_leak(passwd);
+
+select * from my_property_secure as v where f_leak('passwd') and f_leak(passwd);
+
+select * from my_property_secure as v where f_leak('passwd') and f_leak(passwd);
+
+select * from my_credit_card_normal where f_leak(cnum);
+
+select * from my_credit_card_normal where f_leak(cnum);
+
+select * from my_credit_card_secure where f_leak(cnum);
+
+select * from my_credit_card_secure where f_leak(cnum);
+
+select
+  *
+from
+  my_credit_card_usage_normal
+where
+  f_leak(cnum) and
+  ymd >= '2011-10-01' and
+  ymd < '2011-11-01';
+
+select
+  *
+from
+  my_credit_card_usage_normal
+where
+  f_leak(cnum) and
+  ymd >= '2011-10-01' and
+  ymd < '2011-11-01';
+
+select
+  *
+from
+  my_credit_card_usage_secure
+where
+  f_leak(cnum) and
+  ymd >= '2011-10-01' and
+  ymd < '2011-11-01';
+
+select
+  *
+from
+  my_credit_card_usage_secure
+where
+  f_leak(cnum) and
+  ymd >= '2011-10-01' and
+  ymd < '2011-11-01';
+
+prepare p1 as select * from my_property_normal where f_leak(passwd);;
+
+prepare p2 as select * from my_property_secure where f_leak(passwd);;
+
+execute p1;
+
+execute p2;
+
+reset session_authorization;
+
+alter view my_property_normal
+  set (security_barrier = 'true');
+
+alter view my_property_secure
+  set (security_barrier = 'false');
+
+set session authorization regress_alice;
+
+execute p1;
+
+execute p2;
+
+reset session_authorization;
+
+drop role regress_alice;

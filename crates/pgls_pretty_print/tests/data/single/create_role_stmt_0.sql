@@ -1,0 +1,1 @@
+CREATE ROLE admin WITH LOGIN PASSWORD 'secret';

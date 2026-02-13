@@ -4,9 +4,10 @@
 //! to parse commands and arguments, redirect the execution of the commands and
 //! execute the traversal of directory and files, based on the command that was passed.
 
-use biome_deserialize::Merge;
 use cli_options::CliOptions;
 use commands::check::{self, CheckArgs};
+use commands::format::{self, FormatArgs};
+use pgls_configuration::Merge;
 use pgls_configuration::PartialConfiguration;
 use pgls_console::{ColorMode, Console, ConsoleExt, markup};
 use pgls_fs::{ConfigName, FileSystem, OsFileSystem};
@@ -89,6 +90,26 @@ impl<'app> CliSession<'app> {
                     since,
                 },
             ),
+            PgLSCommand::Format {
+                cli_options,
+                configuration,
+                paths,
+                write,
+                staged,
+                changed,
+                since,
+            } => format::format(
+                self,
+                &cli_options,
+                FormatArgs {
+                    configuration,
+                    paths,
+                    write,
+                    staged,
+                    changed,
+                    since,
+                },
+            ),
             PgLSCommand::Clean => commands::clean::clean(self),
             PgLSCommand::Start {
                 config_path,
@@ -123,6 +144,14 @@ impl<'app> CliSession<'app> {
                 connection_string,
                 output,
             } => {
+                let connection_string = connection_string
+                    .or_else(|| std::env::var("DATABASE_URL").ok())
+                    .ok_or_else(|| {
+                        CliDiagnostic::missing_argument(
+                            "--connection-string (or DATABASE_URL env var)",
+                            "schema-export",
+                        )
+                    })?;
                 let runtime = tokio::runtime::Runtime::new().map_err(CliDiagnostic::io_error)?;
                 runtime.block_on(commands::schema_export::run_schema_export(
                     &connection_string,
@@ -161,18 +190,28 @@ impl<'app> CliSession<'app> {
         let loaded_configuration =
             workspace::load_config(fs, cli_options.as_configuration_path_hint())?;
 
-        if let Some(config_path) = &loaded_configuration.file_path {
-            if let Some(file_name) = config_path.file_name().and_then(|name| name.to_str()) {
-                if ConfigName::is_deprecated(file_name) {
-                    self.console().log(markup! {
-                        <Warn>"Warning: "</Warn>
-                        "Deprecated config filename detected. Use 'postgres-language-server.jsonc'.\n"
-                    });
-                }
-            }
+        if let Some(config_path) = &loaded_configuration.file_path
+            && let Some(file_name) = config_path.file_name().and_then(|name| name.to_str())
+            && ConfigName::is_deprecated(file_name)
+        {
+            self.console().log(markup! {
+                <Warn>"Warning: "</Warn>
+                "Deprecated config filename detected. Use 'postgres-language-server.jsonc'.\n"
+            });
         }
 
         let mut configuration = loaded_configuration.configuration;
+
+        // Env vars override config file but are overridden by explicit CLI args.
+        if let Some(env_db) = pgls_configuration::database::PartialDatabaseConfiguration::from_env()
+        {
+            let env_config = PartialConfiguration {
+                db: Some(env_db),
+                ..Default::default()
+            };
+            configuration.merge_with(env_config);
+        }
+
         if let Some(cli_config) = cli_configuration {
             configuration.merge_with(cli_config);
         }

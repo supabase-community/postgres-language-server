@@ -1,0 +1,223 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/index_including_gist.sql
+snapshot_kind: text
+---
+create table tbl_gist (
+  c1 int,
+  c2 int,
+  c3 int,
+  c4 box
+);
+
+insert into tbl_gist
+select
+  x,
+  2 * x,
+  3 * x,
+  box(point(x, x + 1), point(2 * x, 2 * x + 1))
+from
+  generate_series(1, 8000) as x;
+
+create index "tbl_gist_idx" on tbl_gist using gist (c4) include (c1, c2, c3);
+
+select
+  pg_get_indexdef(i.indexrelid)
+from
+  pg_index as i
+  inner join
+    pg_class as c
+  on i.indexrelid = c.oid
+where
+  i.indrelid = cast('tbl_gist' as regclass)
+order by c.relname;
+
+select * from tbl_gist where c4 <@ box(point(1, 1), point(10, 10));
+
+set enable_bitmapscan = off;
+
+select * from tbl_gist where c4 <@ box(point(1, 1), point(10, 10));
+
+set enable_bitmapscan = default;
+
+drop table tbl_gist;
+
+create table tbl_gist (
+  c1 int,
+  c2 int,
+  c3 int,
+  c4 box
+);
+
+create index "tbl_gist_idx" on tbl_gist using gist (c4) include (c1, c2, c3);
+
+insert into tbl_gist
+select
+  x,
+  2 * x,
+  3 * x,
+  box(point(x, x + 1), point(2 * x, 2 * x + 1))
+from
+  generate_series(1, 8000) as x;
+
+select
+  pg_get_indexdef(i.indexrelid)
+from
+  pg_index as i
+  inner join
+    pg_class as c
+  on i.indexrelid = c.oid
+where
+  i.indrelid = cast('tbl_gist' as regclass)
+order by c.relname;
+
+select * from tbl_gist where c4 <@ box(point(1, 1), point(10, 10));
+
+set enable_bitmapscan = off;
+
+select * from tbl_gist where c4 <@ box(point(1, 1), point(10, 10));
+
+set enable_bitmapscan = default;
+
+drop table tbl_gist;
+
+create table tbl_gist (
+  c1 int,
+  c2 int,
+  c3 int,
+  c4 box
+);
+
+insert into tbl_gist
+select
+  x,
+  2 * x,
+  3 * x,
+  box(point(x, x + 1), point(2 * x, 2 * x + 1))
+from
+  generate_series(1, 10) as x;
+
+create index concurrently "tbl_gist_idx" on tbl_gist using gist (c4) include (c1, c2, c3);
+
+select indexdef from pg_indexes where tablename = 'tbl_gist' order by indexname;
+
+drop table tbl_gist;
+
+create table tbl_gist (
+  c1 int,
+  c2 int,
+  c3 int,
+  c4 box
+);
+
+insert into tbl_gist
+select
+  x,
+  2 * x,
+  3 * x,
+  box(point(x, x + 1), point(2 * x, 2 * x + 1))
+from
+  generate_series(1, 10) as x;
+
+create index "tbl_gist_idx" on tbl_gist using gist (c4) include (c1, c3);
+
+select indexdef from pg_indexes where tablename = 'tbl_gist' order by indexname;
+
+reindex index tbl_gist_idx;
+
+select indexdef from pg_indexes where tablename = 'tbl_gist' order by indexname;
+
+alter table tbl_gist
+  drop column c1;
+
+select indexdef from pg_indexes where tablename = 'tbl_gist' order by indexname;
+
+drop table tbl_gist;
+
+create table tbl_gist (
+  c1 int,
+  c2 int,
+  c3 int,
+  c4 box
+);
+
+insert into tbl_gist
+select
+  x,
+  2 * x,
+  3 * x,
+  box(point(x, x + 1), point(2 * x, 2 * x + 1))
+from
+  generate_series(1, 10) as x;
+
+create index "tbl_gist_idx" on tbl_gist using gist (c4) include (c1, c3);
+
+update tbl_gist set c1 = 100 where c1 = 2;
+
+update tbl_gist set c1 = 1 where c1 = 3;
+
+delete from tbl_gist where c1 = 5 or c3 = 12;
+
+drop table tbl_gist;
+
+create table tbl_gist (
+  c1 int,
+  c2 int,
+  c3 int,
+  c4 box
+);
+
+insert into tbl_gist
+select
+  x,
+  2 * x,
+  3 * x,
+  box(point(x, x + 1), point(2 * x, 2 * x + 1))
+from
+  generate_series(1, 10) as x;
+
+create index "tbl_gist_idx" on tbl_gist using gist (c4) include (c1, c3);
+
+alter table tbl_gist
+  alter column c1 type bigint;
+
+alter table tbl_gist
+  alter column c3 type bigint;
+
+drop table tbl_gist;
+
+create table tbl_gist (
+  c1 int,
+  c2 int,
+  c3 int,
+  c4 box,
+  exclude using gist (c4 with &&)
+  include ("c1",
+  "c2",
+  "c3")
+);
+
+insert into tbl_gist
+select
+  x,
+  2 * x,
+  3 * x,
+  box(point(x, x + 1), point(2 * x, 2 * x + 1))
+from
+  generate_series(1, 10) as x;
+
+insert into tbl_gist
+select
+  x,
+  2 * x,
+  3 * x,
+  box(
+    point(3 * x, 2 * x),
+    point(3 * x + 1, 2 * x + 1)
+  )
+from
+  generate_series(1, 10) as x;
+
+select * from tbl_gist where c4 <@ box(point(1, 1), point(10, 10));
+
+drop table tbl_gist;

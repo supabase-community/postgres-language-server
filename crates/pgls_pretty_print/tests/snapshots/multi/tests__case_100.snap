@@ -1,0 +1,221 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/case.sql
+---
+create table case_tbl (
+  i int,
+  f double precision
+);
+
+create table case2_tbl (
+  i int,
+  j int
+);
+
+insert into case_tbl values (1, 10.1);
+
+insert into case_tbl values (2, 20.2);
+
+insert into case_tbl values (3, -30.3);
+
+insert into case_tbl values (4, null);
+
+insert into case2_tbl values (1, -1);
+
+insert into case2_tbl values (2, -2);
+
+insert into case2_tbl values (3, -3);
+
+insert into case2_tbl values (2, -4);
+
+insert into case2_tbl values (1, null);
+
+insert into case2_tbl values (null, -6);
+
+select '3' as "One", case when 1 < 2 then 3 end as "Simple WHEN";
+
+select '<NULL>' as "One", case when 1 > 2 then 3 end as "Simple default";
+
+select '3' as "One", case when 1 < 2 then 3 else 4 end as "Simple ELSE";
+
+select '4' as "One", case when 1 > 2 then 3 else 4 end as "ELSE default";
+
+select '6' as "One", case when 1 > 2 then 3 when 4 < 5 then 6 else 7 end as "Two WHEN with default";
+
+select '7' as "None", case when random() < 0 then 1 end as "NULL on no matches";
+
+select case when 1 = 0 then 1 / 0 when 1 = 1 then 1 else 2 / 0 end;
+
+select case 1 when 0 then 1 / 0 when 1 then 1 else 2 / 0 end;
+
+select case when i > 100 then 1 / 0 else 0 end from case_tbl;
+
+select case 'a' when 'a' then 1 else 2 end;
+
+select case when i >= 3 then i end as ">= 3 or Null" from case_tbl;
+
+select case when i >= 3 then i + i else i end as "Simplest Math" from case_tbl;
+
+select
+  i as "Value",
+  case
+    when i < 0 then 'small'
+    when i = 0 then 'zero'
+    when i = 1 then 'one'
+    when i = 2 then 'two'
+    else 'big'
+  end
+  as "Category"
+from
+  case_tbl;
+
+select
+  case
+    when i < 0 or i < 0 then 'small'
+    when i = 0 or i = 0 then 'zero'
+    when i = 1 or i = 1 then 'one'
+    when i = 2 or i = 2 then 'two'
+    else 'big'
+  end
+  as "Category"
+from
+  case_tbl;
+
+select * from case_tbl where coalesce(f, i) = 4;
+
+select * from case_tbl where nullif(f, i) = 2;
+
+select coalesce(a.f, b.i, b.j) from case_tbl as a, case2_tbl as b;
+
+select * from case_tbl as a, case2_tbl as b where coalesce(a.f, b.i, b.j) = 2;
+
+select
+  nullif(a.i, b.i) as "NULLIF(a.i,b.i)",
+  nullif(b.i, 4) as "NULLIF(b.i,4)"
+from
+  case_tbl as a,
+  case2_tbl as b;
+
+select * from case_tbl as a, case2_tbl as b where coalesce(f, b.i) = 2;
+
+select * from case_tbl where nullif(1, 2) = 2;
+
+select * from case_tbl where nullif(1, 1) is not null;
+
+select * from case_tbl where nullif(1, null) = 2;
+
+update case_tbl set i = case when i >= 3 then -i else 2 * i end;
+
+select * from case_tbl;
+
+update case_tbl set i = case when i >= 2 then 2 * i else 3 * i end;
+
+select * from case_tbl;
+
+update case_tbl
+set i = case when b.i >= 2 then 2 * j else 3 * j end
+from case2_tbl as b
+where
+  j = -case_tbl.i;
+
+select * from case_tbl;
+
+begin;
+
+create function vol(text)
+returns text
+language plpgsql
+volatile
+as $function$
+begin return $1; end
+$function$;
+
+select
+  case case vol('bar')
+    when 'foo' then 'it was foo!'
+    when vol(null) then 'null input'
+    when 'bar' then 'it was bar!'
+  end
+    when 'it was foo!' then 'foo recognized'
+    when 'it was bar!' then 'bar recognized'
+    else 'unrecognized'
+  end;
+
+create domain foodomain as text;
+
+create function volfoo(text)
+returns foodomain
+language plpgsql
+volatile
+as $function$
+begin return $1::foodomain; end
+$function$;
+
+create function inline_eq(foodomain, foodomain)
+returns boolean
+language sql
+as $function$
+SELECT CASE $2::text WHEN $1::text THEN true ELSE false END
+$function$;
+
+create operator = (PROCEDURE = inline_eq, LEFTARG = foodomain, RIGHTARG = foodomain);
+
+select case volfoo('bar') when cast('foo' as foodomain) then 'is foo' else 'is not foo' end;
+
+rollback;
+
+begin;
+
+create domain arrdomain as int[];
+
+create function make_ad(int, int)
+returns arrdomain
+language plpgsql
+volatile
+as $function$
+declare x arrdomain;
+   begin
+     x := array[$1,$2];
+     return x;
+   end
+$function$;
+
+create function ad_eq(arrdomain, arrdomain)
+returns boolean
+language plpgsql
+as $function$
+begin return array_eq($1, $2); end
+$function$;
+
+create operator = (PROCEDURE = ad_eq, LEFTARG = arrdomain, RIGHTARG = arrdomain);
+
+select
+  case make_ad(1, 2)
+    when cast(array[2, 4] as arrdomain) then 'wrong'
+    when cast(array[2, 5] as arrdomain)
+    then 'still wrong'
+    when cast(array[1, 2] as arrdomain) then 'right'
+  end;
+
+select nullif(make_ad(1, 2), cast(array[2, 3] as arrdomain));
+
+rollback;
+
+begin;
+
+create type casetestenum as enum ('e', 'f', 'g');
+
+select
+  case cast('foo' as text)
+    when 'foo'
+    then array['a', 'b', 'c', 'd'] ||
+    cast(enum_range(cast(null as casetestenum))
+    as text[])
+    else array['x', 'y']
+  end;
+
+rollback;
+
+drop table case_tbl;
+
+drop table case2_tbl;

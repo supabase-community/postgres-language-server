@@ -1,0 +1,1 @@
+CREATE VIEW user_view AS SELECT id, name FROM users;

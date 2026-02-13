@@ -1,0 +1,398 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/collate.sql
+---
+create schema "collate_tests";
+
+set search_path to collate_tests;
+
+create table collate_test1 (
+  a int,
+  b text collate "C" not null
+);
+
+create table collate_test_fail (
+  a int collate "C",
+  b text
+);
+
+create table collate_test_like (like collate_test1);
+
+create table collate_test2 (
+  a int,
+  b text collate "POSIX"
+);
+
+insert into collate_test1 values (1, 'abc'), (2, 'Abc'), (3, 'bbc'), (4, 'ABD');
+
+insert into collate_test2 select * from collate_test1;
+
+select * from collate_test1 where b collate "C" >= 'abc';
+
+select * from collate_test1 where b >= 'abc' collate "C";
+
+select * from collate_test1 where b collate "C" >= 'abc' collate "C";
+
+select * from collate_test1 where b collate "C" >= 'bbc' collate "POSIX";
+
+create domain testdomain_p as text collate "POSIX";
+
+create domain testdomain_i as int collate "POSIX";
+
+create table collate_test4 (
+  a int,
+  b testdomain_p
+);
+
+insert into collate_test4 select * from collate_test1;
+
+select a, b from collate_test4 order by b;
+
+create table collate_test5 (
+  a int,
+  b testdomain_p collate "C"
+);
+
+insert into collate_test5 select * from collate_test1;
+
+select a, b from collate_test5 order by b;
+
+select a, b from collate_test1 order by b;
+
+select a, b from collate_test2 order by b;
+
+select a, b from collate_test1 order by b collate "C";
+
+select * from collate_test1 order by b;
+
+select * from collate_test2 order by b;
+
+select 'bbc' collate "C" > 'Abc' collate "C" as "true";
+
+select 'bbc' collate "POSIX" < 'Abc' collate "POSIX" as "false";
+
+create table collate_test10 (
+  a int,
+  x text collate "C",
+  y text collate "POSIX"
+);
+
+insert into collate_test10 values (1, 'hij', 'hij'), (2, 'HIJ', 'HIJ');
+
+select a, lower(x), lower(y), upper(x), upper(y), initcap(x), initcap(y) from collate_test10;
+
+select a, lower(x collate "C"), lower(y collate "C") from collate_test10;
+
+select a, x, y from collate_test10 order by lower(y), a;
+
+create view collview1
+as select
+  *
+from
+  collate_test1
+where
+  b collate "C" >= 'bbc';
+
+create view collview2
+as select
+  a,
+  b
+from
+  collate_test1
+order by b collate "C";
+
+create view collview3
+as select
+  a,
+  lower((x || x) collate "POSIX")
+from
+  collate_test10;
+
+select
+  table_name,
+  view_definition
+from
+  information_schema.views
+where
+  table_name like 'collview%'
+order by 1;
+
+select a, coalesce(b, 'foo') from collate_test1 order by 2;
+
+select a, coalesce(b, 'foo') from collate_test2 order by 2;
+
+select a, lower(coalesce(x, 'foo')), lower(coalesce(y, 'foo')) from collate_test10;
+
+select a, b, greatest(b, 'CCC') from collate_test1 order by 3;
+
+select a, b, greatest(b, 'CCC') from collate_test2 order by 3;
+
+select a, x, y, lower(greatest(x, 'foo')), lower(greatest(y, 'foo')) from collate_test10;
+
+select a, nullif(b, 'abc') from collate_test1 order by 2;
+
+select a, nullif(b, 'abc') from collate_test2 order by 2;
+
+select a, lower(nullif(x, 'foo')), lower(nullif(y, 'foo')) from collate_test10;
+
+select a, case b when 'abc' then 'abcd' else b end from collate_test1 order by 2;
+
+select a, case b when 'abc' then 'abcd' else b end from collate_test2 order by 2;
+
+create domain testdomain as text;
+
+select a, cast(b as testdomain) from collate_test1 order by 2;
+
+select a, cast(b as testdomain) from collate_test2 order by 2;
+
+select a, cast(b as testdomain_p) from collate_test2 order by 2;
+
+select a, lower(cast(x as testdomain)), lower(cast(y as testdomain)) from collate_test10;
+
+select MIN(b), MAX(b) from collate_test1;
+
+select MIN(b), MAX(b) from collate_test2;
+
+select array_agg(b order by b) from collate_test1;
+
+select array_agg(b order by b) from collate_test2;
+
+select string_agg(x collate "C", y collate "POSIX") from collate_test10;
+
+select array_agg(x collate "C" order by y collate "POSIX") from collate_test10;
+
+select array_agg(a order by x collate "C", y collate "POSIX") from collate_test10;
+
+select array_agg(a order by x || y) from collate_test10;
+
+select a, b from collate_test1 union all select a, b from collate_test1 order by 2;
+
+select a, b from collate_test2 union select a, b from collate_test2 order by 2;
+
+select a, b from collate_test2 where a > 1 order by 2;
+
+select a, b from collate_test2 except select a, b from collate_test2 where a < 2 order by 2;
+
+select a, b from collate_test1 union all select a, b from collate_test2 order by 2;
+
+select a, b from collate_test1 union all select a, b from collate_test2;
+
+select a, b from collate_test1 union select a, b from collate_test2 order by 2;
+
+select a, b collate "C" from collate_test1 union select a, b from collate_test2 order by 2;
+
+select a, b from collate_test2 order by 2;
+
+select a, b from collate_test1 except select a, b from collate_test2 order by 2;
+
+create table test_u as select a, b from collate_test1 union all select a, b from collate_test2;
+
+select x < y from collate_test10;
+
+select x || y from collate_test10;
+
+select x, y from collate_test10 order by x || y;
+
+with recursive
+foo (x)
+as (
+  select
+    x
+  from
+    (values ('a' collate "C"), ('b')) as t (x)
+  union all
+  select
+    (x || 'c') collate "POSIX"
+  from
+    foo
+  where
+    length(x) < 10
+)
+select
+  *
+from
+  foo;
+
+select a, b, a < b as lt from (values ('a', 'B'), ('A', 'b' collate "C")) as v (a, b);
+
+select * from collate_test10 where not (x, y) in (select y, x from collate_test10);
+
+select
+  *
+from
+  collate_test10
+where
+  not (x collate "POSIX", y collate "C") in
+  (
+    select y, x from collate_test10
+  );
+
+select
+  *
+from
+  collate_test10
+where
+  not (x, y) in
+  (
+    select
+      y collate "C",
+      x collate "POSIX"
+    from
+      collate_test10
+  );
+
+select a, cast(b as varchar) from collate_test1 order by 2;
+
+select a, cast(b as varchar) from collate_test2 order by 2;
+
+create function vc(text)
+returns text
+language sql
+as $function$
+select $1::varchar
+$function$;
+
+select a, b from collate_test1 order by a, vc(b);
+
+select * from unnest((select array_agg(b order by b) from collate_test1)) order by 1;
+
+select * from unnest((select array_agg(b order by b) from collate_test2)) order by 1;
+
+create function dup(anyelement)
+returns anyelement
+language sql
+as $function$
+select $1
+$function$;
+
+select a, dup(b) from collate_test1 order by 2;
+
+select a, dup(b) from collate_test2 order by 2;
+
+create index "collate_test1_idx1" on collate_test1 using btree (b);
+
+create index "collate_test1_idx2" on collate_test1 using btree (b collate "POSIX");
+
+create index "collate_test1_idx3" on collate_test1 using btree ((b collate "POSIX"));
+
+create index "collate_test1_idx4" on collate_test1 using btree (((b || 'foo') collate "POSIX"));
+
+create index "collate_test1_idx5" on collate_test1 using btree (a collate "POSIX");
+
+create index "collate_test1_idx6" on collate_test1 using btree ((a collate "POSIX"));
+
+select
+  relname,
+  pg_get_indexdef(oid)
+from
+  pg_class
+where
+  relname like 'collate_test%_idx%'
+order by 1;
+
+set enable_seqscan = 0;
+
+set enable_hashjoin = 0;
+
+set enable_nestloop = 0;
+
+create table collate_test20 (f1 text collate "C" primary key);
+
+insert into collate_test20 values ('foo'), ('bar');
+
+create table collate_test21 (f2 text collate "POSIX" references collate_test20);
+
+insert into collate_test21 values ('foo'), ('bar');
+
+insert into collate_test21 values ('baz');
+
+create table collate_test22 (f2 text collate "POSIX");
+
+insert into collate_test22 values ('foo'), ('bar'), ('baz');
+
+alter table collate_test22
+  add foreign key (f2) references collate_test20;
+
+delete from collate_test22 where f2 = 'baz';
+
+alter table collate_test22
+  add foreign key (f2) references collate_test20;
+
+reset enable_seqscan;
+
+reset enable_hashjoin;
+
+reset enable_nestloop;
+
+select * from collate_test10 order by x, y;
+
+select * from collate_test10 order by x desc, y collate "C" asc nulls first;
+
+create collation builtin_c (provider = builtin, locale = "C");
+
+select b from collate_test1 order by b collate "builtin_c";
+
+create collation builtin2 (provider = builtin);
+
+create collation builtin2 (provider = builtin, locale = "en_US");
+
+create collation builtin2 (provider = builtin, lc_ctype = "C", lc_collate = "C");
+
+create collation mycoll1 from "C";
+
+create collation mycoll2 (lc_collate = "POSIX", lc_ctype = "POSIX");
+
+create collation mycoll3 from "default";
+
+drop collation mycoll1;
+
+create table collate_test23 (f1 text collate "mycoll2");
+
+drop collation mycoll2;
+
+create collation case_coll ("Lc_Collate" = "POSIX", "Lc_Ctype" = "POSIX");
+
+create temporary table vctable (f1 varchar(25));
+
+insert into vctable values ('foo' collate "C");
+
+select pg_collation_for('foo');
+
+select pg_collation_for(cast('foo' as text));
+
+select pg_collation_for((select a from collate_test1 limit 1));
+
+select pg_collation_for((select b from collate_test1 limit 1));
+
+create view collate_on_int
+as select
+  c1 + 1 as c1p
+from
+  (select cast('4' collate "C" as int) as c1) as ss;
+
+create collation coll_dup_chk (lc_collate = "POSIX", lc_collate = "NONSENSE", lc_ctype = "POSIX");
+
+create collation coll_dup_chk (lc_ctype = "POSIX", lc_ctype = "NONSENSE", lc_collate = "POSIX");
+
+create collation coll_dup_chk (
+  provider = icu,
+  provider = nonsense,
+  lc_collate = "POSIX",
+  lc_ctype = "POSIX"
+);
+
+create collation case_sensitive (locale = '', locale = "NONSENSE");
+
+create collation coll_dup_chk (deterministic = 'true', deterministic = nonsense, locale = '');
+
+create collation coll_dup_chk (version = '1', version = "NONSENSE", locale = '');
+
+create collation coll_dup_chk (lc_collate = "POSIX", lc_ctype = "POSIX", locale = '');
+
+create collation coll_dup_chk (lc_collate = "POSIX", locale = '');
+
+create collation coll_dup_chk (lc_ctype = "POSIX", locale = '');
+
+create collation coll_dup_chk ("from" = "C", version = "1");
+
+drop schema collate_tests cascade;

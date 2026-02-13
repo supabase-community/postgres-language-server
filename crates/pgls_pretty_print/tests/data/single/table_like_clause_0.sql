@@ -1,0 +1,1 @@
+CREATE TABLE new_table (LIKE old_table INCLUDING ALL)

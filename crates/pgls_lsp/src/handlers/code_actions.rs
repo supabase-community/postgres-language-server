@@ -131,6 +131,6 @@ pub async fn execute_command(
 
             Ok(None)
         }
-        any => Err(anyhow!(format!("Unknown command: {}", any))),
+        any => Err(anyhow!(format!("Unknown command: {any}"))),
     }
 }

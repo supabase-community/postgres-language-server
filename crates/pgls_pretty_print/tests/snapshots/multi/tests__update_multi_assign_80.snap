@@ -1,0 +1,33 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/update_multi_assign.sql
+snapshot_kind: text
+---
+create table ledger (
+  id int primary key,
+  balance numeric,
+  updated_at timestamp with time zone
+);
+
+create table adjustments (
+  id int,
+  delta numeric,
+  seen_at timestamp with time zone
+);
+
+update ledger
+set (balance, updated_at) = (balance + delta, seen_at)
+from adjustments
+where
+  ledger.id = adjustments.id;
+
+insert into ledger as l (id, balance, updated_at)
+values (1, 10, NOW())
+on conflict
+(id)
+do
+update
+set (balance, updated_at) = (
+  excluded.balance + l.balance,
+  excluded.updated_at
+);

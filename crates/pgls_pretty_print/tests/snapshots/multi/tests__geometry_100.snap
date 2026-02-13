@@ -1,0 +1,455 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/geometry.sql
+snapshot_kind: text
+---
+set extra_float_digits = -3;
+
+select center(f1) as center from box_tbl;
+
+select @@f1 as center from box_tbl;
+
+select point(f1) as center from circle_tbl;
+
+select @@f1 as center from circle_tbl;
+
+select @@f1 as center from polygon_tbl where #f1 > 2;
+
+select p1.f1 from point_tbl as p1 where ishorizontal(p1.f1, cast('(0,0)' as point));
+
+select p1.f1 from point_tbl as p1 where p1.f1 ?- cast('(0,0)' as point);
+
+select p1.f1 from point_tbl as p1 where isvertical(p1.f1, cast('(5.1,34.5)' as point));
+
+select p1.f1 from point_tbl as p1 where p1.f1 ?| cast('(5.1,34.5)' as point);
+
+select p1.f1, p2.f1, slope(p1.f1, p2.f1) from point_tbl as p1, point_tbl as p2;
+
+select p1.f1, p2.f1, p1.f1 + p2.f1 from point_tbl as p1, point_tbl as p2;
+
+select p1.f1, p2.f1, p1.f1 - p2.f1 from point_tbl as p1, point_tbl as p2;
+
+select
+  p1.f1,
+  p2.f1,
+  p1.f1 * p2.f1
+from
+  point_tbl as p1,
+  point_tbl as p2
+where
+  p1.f1[0] between 1 and 1000;
+
+select p1.f1, p2.f1, p1.f1 * p2.f1 from point_tbl as p1, point_tbl as p2 where p1.f1[0] < 1;
+
+select
+  p1.f1,
+  p2.f1,
+  p1.f1 / p2.f1
+from
+  point_tbl as p1,
+  point_tbl as p2
+where
+  p2.f1[0] between 1 and 1000;
+
+select p1.f1, p2.f1, p1.f1 / p2.f1 from point_tbl as p1, point_tbl as p2 where p2.f1[0] > 1000;
+
+select
+  p1.f1,
+  p2.f1,
+  p1.f1 / p2.f1
+from
+  point_tbl as p1,
+  point_tbl as p2
+where
+  p2.f1 ~= cast('(0,0)' as point);
+
+select
+  p.f1,
+  l.s,
+  p.f1 <-> l.s as dist_pl,
+  l.s <-> p.f1 as dist_lp
+from
+  point_tbl as p,
+  line_tbl as l;
+
+select
+  p.f1,
+  l.s,
+  p.f1 <-> l.s as dist_ps,
+  l.s <-> p.f1 as dist_sp
+from
+  point_tbl as p,
+  lseg_tbl as l;
+
+select
+  p.f1,
+  b.f1,
+  p.f1 <-> b.f1 as dist_pb,
+  b.f1 <-> p.f1 as dist_bp
+from
+  point_tbl as p,
+  box_tbl as b;
+
+select
+  p.f1,
+  p1.f1,
+  p.f1 <-> p1.f1 as dist_ppath,
+  p1.f1 <-> p.f1 as dist_pathp
+from
+  point_tbl as p,
+  path_tbl as p1;
+
+select
+  p.f1,
+  p1.f1,
+  p.f1 <-> p1.f1 as dist_ppoly,
+  p1.f1 <-> p.f1 as dist_polyp
+from
+  point_tbl as p,
+  polygon_tbl as p1;
+
+select p1.f1, p2.f1, line(p1.f1, p2.f1) from point_tbl as p1, point_tbl as p2 where p1.f1 <> p2.f1;
+
+select p.f1, l.s, p.f1 ## l.s from point_tbl as p, line_tbl as l;
+
+select p.f1, l.s, p.f1 ## l.s from point_tbl as p, lseg_tbl as l;
+
+select p.f1, b.f1, p.f1 ## b.f1 from point_tbl as p, box_tbl as b;
+
+select p.f1, l.s from point_tbl as p, line_tbl as l where p.f1 <@ l.s;
+
+select p.f1, l.s from point_tbl as p, lseg_tbl as l where p.f1 <@ l.s;
+
+select p.f1, p1.f1 from point_tbl as p, path_tbl as p1 where p.f1 <@ p1.f1;
+
+select s from line_tbl where ?|s;
+
+select s from line_tbl where ?-s;
+
+select l1.s, l2.s from line_tbl as l1, line_tbl as l2 where l1.s = l2.s;
+
+select l1.s, l2.s from line_tbl as l1, line_tbl as l2 where l1.s ?|| l2.s;
+
+select l1.s, l2.s from line_tbl as l1, line_tbl as l2 where l1.s ?-| l2.s;
+
+select l1.s, l2.s, l1.s <-> l2.s from line_tbl as l1, line_tbl as l2;
+
+select l1.s, l2.s from line_tbl as l1, line_tbl as l2 where l1.s ?# l2.s;
+
+select l.s, b.f1 from line_tbl as l, box_tbl as b where l.s ?# b.f1;
+
+select l1.s, l2.s, l1.s # l2.s from line_tbl as l1, line_tbl as l2;
+
+select l.s, l1.s, l.s ## l1.s from line_tbl as l, lseg_tbl as l1;
+
+select p.f1, l.s, l.s # p.f1 as intersection from lseg_tbl as l, point_tbl as p;
+
+select s, @-@s from lseg_tbl;
+
+select s from lseg_tbl where ?|s;
+
+select s from lseg_tbl where ?-s;
+
+select s, @@s from lseg_tbl;
+
+select s, cast(s as point) from lseg_tbl;
+
+select l1.s, l2.s from lseg_tbl as l1, lseg_tbl as l2 where l1.s < l2.s;
+
+select l1.s, l2.s from lseg_tbl as l1, lseg_tbl as l2 where l1.s <= l2.s;
+
+select l1.s, l2.s from lseg_tbl as l1, lseg_tbl as l2 where l1.s = l2.s;
+
+select l1.s, l2.s from lseg_tbl as l1, lseg_tbl as l2 where l1.s >= l2.s;
+
+select l1.s, l2.s from lseg_tbl as l1, lseg_tbl as l2 where l1.s > l2.s;
+
+select l1.s, l2.s from lseg_tbl as l1, lseg_tbl as l2 where l1.s <> l2.s;
+
+select l1.s, l2.s from lseg_tbl as l1, lseg_tbl as l2 where l1.s ?|| l2.s;
+
+select l1.s, l2.s from lseg_tbl as l1, lseg_tbl as l2 where l1.s ?-| l2.s;
+
+select
+  l.s,
+  l1.s,
+  l.s <-> l1.s as dist_sl,
+  l1.s <-> l.s as dist_ls
+from
+  lseg_tbl as l,
+  line_tbl as l1;
+
+select l1.s, l2.s, l1.s <-> l2.s from lseg_tbl as l1, lseg_tbl as l2;
+
+select l.s, b.f1, l.s <-> b.f1 as dist_sb, b.f1 <-> l.s as dist_bs from lseg_tbl as l, box_tbl as b;
+
+select l.s, l1.s from lseg_tbl as l, line_tbl as l1 where l.s ?# l1.s;
+
+select l.s, b.f1 from lseg_tbl as l, box_tbl as b where l.s ?# b.f1;
+
+select l1.s, l2.s, l1.s # l2.s from lseg_tbl as l1, lseg_tbl as l2;
+
+select l1.s, l2.s, l1.s ## l2.s from lseg_tbl as l1, lseg_tbl as l2;
+
+select l.s, b.f1, l.s ## b.f1 from lseg_tbl as l, box_tbl as b;
+
+select l.s, l1.s from lseg_tbl as l, line_tbl as l1 where l.s <@ l1.s;
+
+select l.s, b.f1 from lseg_tbl as l, box_tbl as b where l.s <@ b.f1;
+
+select box(f1) as box from circle_tbl;
+
+select b.f1 + p.f1 as translation from box_tbl as b, point_tbl as p;
+
+select b.f1 - p.f1 as translation from box_tbl as b, point_tbl as p;
+
+select b.f1, p.f1, b.f1 * p.f1 from box_tbl as b, point_tbl as p where p.f1[0] between 1 and 1000;
+
+select b.f1, p.f1, b.f1 * p.f1 from box_tbl as b, point_tbl as p where p.f1[0] > 1000;
+
+select b.f1, p.f1, b.f1 / p.f1 from box_tbl as b, point_tbl as p where p.f1[0] between 1 and 1000;
+
+select cast(f1 as box) from point_tbl;
+
+select bound_box(a.f1, b.f1) from box_tbl as a, box_tbl as b;
+
+select b1.f1, b2.f1, b1.f1 <^ b2.f1 from box_tbl as b1, box_tbl as b2;
+
+select b1.f1, b2.f1, b1.f1 >^ b2.f1 from box_tbl as b1, box_tbl as b2;
+
+select b1.f1, b2.f1, b1.f1 # b2.f1 from box_tbl as b1, box_tbl as b2;
+
+select f1, diagonal(f1) from box_tbl;
+
+select b1.f1, b2.f1, b1.f1 <-> b2.f1 from box_tbl as b1, box_tbl as b2;
+
+select f1, npoints(f1) from path_tbl;
+
+select f1, area(f1) from path_tbl;
+
+select f1, @-@f1 from path_tbl;
+
+select f1, cast(f1 as polygon) from path_tbl where isclosed(f1);
+
+select f1, cast(f1 as polygon) from path_tbl where isopen(f1);
+
+select p1.f1, p2.f1 from path_tbl as p1, path_tbl as p2 where p1.f1 < p2.f1;
+
+select p1.f1, p2.f1 from path_tbl as p1, path_tbl as p2 where p1.f1 <= p2.f1;
+
+select p1.f1, p2.f1 from path_tbl as p1, path_tbl as p2 where p1.f1 = p2.f1;
+
+select p1.f1, p2.f1 from path_tbl as p1, path_tbl as p2 where p1.f1 >= p2.f1;
+
+select p1.f1, p2.f1 from path_tbl as p1, path_tbl as p2 where p1.f1 > p2.f1;
+
+select p1.f1, p2.f1, p1.f1 + p2.f1 from path_tbl as p1, path_tbl as p2;
+
+select p.f1, p1.f1, p.f1 + p1.f1 from path_tbl as p, point_tbl as p1;
+
+select p.f1, p1.f1, p.f1 - p1.f1 from path_tbl as p, point_tbl as p1;
+
+select p.f1, p1.f1, p.f1 * p1.f1 from path_tbl as p, point_tbl as p1;
+
+select
+  p.f1,
+  p1.f1,
+  p.f1 / p1.f1
+from
+  path_tbl as p,
+  point_tbl as p1
+where
+  p1.f1[0] between 1 and 1000;
+
+select
+  p.f1,
+  p1.f1,
+  p.f1 / p1.f1
+from
+  path_tbl as p,
+  point_tbl as p1
+where
+  p1.f1 ~= cast('(0,0)' as point);
+
+select p1.f1, p2.f1, p1.f1 <-> p2.f1 from path_tbl as p1, path_tbl as p2;
+
+select p.f1, poly.f1, poly.f1 @> p.f1 as contains from polygon_tbl as poly, point_tbl as p;
+
+select p.f1, poly.f1, p.f1 <@ poly.f1 as contained from polygon_tbl as poly, point_tbl as p;
+
+select npoints(f1) as npoints, f1 as polygon from polygon_tbl;
+
+select polygon(f1) from box_tbl;
+
+select polygon(f1) from path_tbl where isclosed(f1);
+
+select f1 as open_path, polygon(pclose(f1)) as polygon from path_tbl where isopen(f1);
+
+select f1, cast(f1 as box) from polygon_tbl;
+
+select f1, cast(f1 as path) from polygon_tbl;
+
+select p1.f1, p2.f1 from polygon_tbl as p1, polygon_tbl as p2 where p1.f1 ~= p2.f1;
+
+select p1.f1, p2.f1 from polygon_tbl as p1, polygon_tbl as p2 where p1.f1 <@ p2.f1;
+
+select p1.f1, p2.f1 from polygon_tbl as p1, polygon_tbl as p2 where p1.f1 @> p2.f1;
+
+select p1.f1, p2.f1 from polygon_tbl as p1, polygon_tbl as p2 where p1.f1 && p2.f1;
+
+select p1.f1, p2.f1 from polygon_tbl as p1, polygon_tbl as p2 where p1.f1 << p2.f1;
+
+select p1.f1, p2.f1 from polygon_tbl as p1, polygon_tbl as p2 where p1.f1 &< p2.f1;
+
+select p1.f1, p2.f1 from polygon_tbl as p1, polygon_tbl as p2 where p1.f1 >> p2.f1;
+
+select p1.f1, p2.f1 from polygon_tbl as p1, polygon_tbl as p2 where p1.f1 &> p2.f1;
+
+select p1.f1, p2.f1 from polygon_tbl as p1, polygon_tbl as p2 where p1.f1 <<| p2.f1;
+
+select p1.f1, p2.f1 from polygon_tbl as p1, polygon_tbl as p2 where p1.f1 &<| p2.f1;
+
+select p1.f1, p2.f1 from polygon_tbl as p1, polygon_tbl as p2 where p1.f1 |>> p2.f1;
+
+select p1.f1, p2.f1 from polygon_tbl as p1, polygon_tbl as p2 where p1.f1 |&> p2.f1;
+
+select p1.f1, p2.f1, p1.f1 <-> p2.f1 from polygon_tbl as p1, polygon_tbl as p2;
+
+select circle(f1, 50.0) from point_tbl;
+
+select circle(f1) from box_tbl;
+
+select circle(f1) from polygon_tbl where #f1 >= 3;
+
+select
+  c1.f1 as circle,
+  p1.f1 as point,
+  p1.f1 <-> c1.f1 as distance
+from
+  circle_tbl as c1,
+  point_tbl as p1
+where
+  p1.f1 <-> c1.f1 > 0
+order by distance,
+  area(c1.f1),
+  p1.f1[0];
+
+select f1, cast(f1 as polygon) from circle_tbl where f1 >= '<(0,0),1>';
+
+select f1, polygon(8, f1) from circle_tbl where f1 >= '<(0,0),1>';
+
+select f1, polygon(1, f1) from circle_tbl where f1 >= '<(0,0),1>';
+
+select f1, polygon(10, f1) from circle_tbl where f1 < '<(0,0),1>';
+
+select c1.f1, c2.f1 from circle_tbl as c1, circle_tbl as c2 where c1.f1 ~= c2.f1;
+
+select c1.f1, c2.f1 from circle_tbl as c1, circle_tbl as c2 where c1.f1 && c2.f1;
+
+select c1.f1, c2.f1 from circle_tbl as c1, circle_tbl as c2 where c1.f1 &< c2.f1;
+
+select c1.f1, c2.f1 from circle_tbl as c1, circle_tbl as c2 where c1.f1 << c2.f1;
+
+select c1.f1, c2.f1 from circle_tbl as c1, circle_tbl as c2 where c1.f1 >> c2.f1;
+
+select c1.f1, c2.f1 from circle_tbl as c1, circle_tbl as c2 where c1.f1 &> c2.f1;
+
+select c1.f1, c2.f1 from circle_tbl as c1, circle_tbl as c2 where c1.f1 <@ c2.f1;
+
+select c1.f1, c2.f1 from circle_tbl as c1, circle_tbl as c2 where c1.f1 @> c2.f1;
+
+select c1.f1, c2.f1 from circle_tbl as c1, circle_tbl as c2 where c1.f1 <<| c2.f1;
+
+select c1.f1, c2.f1 from circle_tbl as c1, circle_tbl as c2 where c1.f1 |>> c2.f1;
+
+select c1.f1, c2.f1 from circle_tbl as c1, circle_tbl as c2 where c1.f1 &<| c2.f1;
+
+select c1.f1, c2.f1 from circle_tbl as c1, circle_tbl as c2 where c1.f1 |&> c2.f1;
+
+select c1.f1, c2.f1 from circle_tbl as c1, circle_tbl as c2 where c1.f1 = c2.f1;
+
+select c1.f1, c2.f1 from circle_tbl as c1, circle_tbl as c2 where c1.f1 <> c2.f1;
+
+select c1.f1, c2.f1 from circle_tbl as c1, circle_tbl as c2 where c1.f1 < c2.f1;
+
+select c1.f1, c2.f1 from circle_tbl as c1, circle_tbl as c2 where c1.f1 > c2.f1;
+
+select c1.f1, c2.f1 from circle_tbl as c1, circle_tbl as c2 where c1.f1 <= c2.f1;
+
+select c1.f1, c2.f1 from circle_tbl as c1, circle_tbl as c2 where c1.f1 >= c2.f1;
+
+select c1.f1, c2.f1 from circle_tbl as c1, circle_tbl as c2 where c1.f1 < c2.f1;
+
+select c1.f1, c2.f1 from circle_tbl as c1, circle_tbl as c2 where c1.f1 < c2.f1;
+
+select c.f1, p.f1, c.f1 + p.f1 from circle_tbl as c, point_tbl as p;
+
+select c.f1, p.f1, c.f1 - p.f1 from circle_tbl as c, point_tbl as p;
+
+select c.f1, p.f1, c.f1 * p.f1 from circle_tbl as c, point_tbl as p;
+
+select
+  c.f1,
+  p.f1,
+  c.f1 / p.f1
+from
+  circle_tbl as c,
+  point_tbl as p
+where
+  p.f1[0] between 1 and 1000;
+
+select c.f1, p.f1, c.f1 / p.f1 from circle_tbl as c, point_tbl as p where p.f1[0] > 1000;
+
+select
+  c.f1,
+  p.f1,
+  c.f1 / p.f1
+from
+  circle_tbl as c,
+  point_tbl as p
+where
+  p.f1 ~= cast('(0,0)' as point);
+
+select c.f1, p.f1, c.f1 <-> p.f1 from circle_tbl as c, polygon_tbl as p;
+
+create index "gcircleind" on circle_tbl using gist (f1);
+
+select * from circle_tbl where f1 && circle(point(1, -2), 1) order by area(f1);
+
+select * from circle_tbl where f1 && circle(point(1, -2), 1) order by area(f1);
+
+select * from circle_tbl where f1 && circle(point(1, -2), 1) order by area(f1);
+
+create index "gpolygonind" on polygon_tbl using gist (f1);
+
+select
+  *
+from
+  polygon_tbl
+where
+  f1 @> cast('((1,1),(2,2),(2,1))' as polygon)
+order by (poly_center(f1))[0];
+
+select
+  *
+from
+  polygon_tbl
+where
+  f1 @> cast('((1,1),(2,2),(2,1))' as polygon)
+order by (poly_center(f1))[0];
+
+select
+  *
+from
+  polygon_tbl
+where
+  f1 @> cast('((1,1),(2,2),(2,1))' as polygon)
+order by (poly_center(f1))[0];
+
+select pg_input_is_valid('(1', 'circle');
+
+select * from pg_input_error_info('1,', 'circle');
+
+select pg_input_is_valid('(1,2),-1', 'circle');
+
+select * from pg_input_error_info('(1,2),-1', 'circle');

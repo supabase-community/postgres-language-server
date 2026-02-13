@@ -100,24 +100,26 @@ fn check_column_def(
     diagnostics: &mut Vec<LinterDiagnostic>,
     col_def: &pgls_query::protobuf::ColumnDef,
 ) {
-    if let Some(type_name) = &col_def.type_name {
-        if let Some(last_name) = type_name.names.last() {
-            if let Some(pgls_query::NodeEnum::String(name)) = &last_name.node {
-                // Check for "timestamp" (without timezone)
-                if name.sval.to_lowercase() == "timestamp" {
-                    diagnostics.push(
-                        LinterDiagnostic::new(
-                            rule_category!(),
-                            None,
-                            markup! {
-                                "Prefer TIMESTAMPTZ over TIMESTAMP for better timezone handling."
-                            },
-                        )
-                        .detail(None, "TIMESTAMP WITHOUT TIME ZONE can lead to issues when dealing with time zones.")
-                        .note("Use TIMESTAMPTZ (TIMESTAMP WITH TIME ZONE) instead."),
-                    );
-                }
-            }
+    if let Some(type_name) = &col_def.type_name
+        && let Some(last_name) = type_name.names.last()
+        && let Some(pgls_query::NodeEnum::String(name)) = &last_name.node
+    {
+        // Check for "timestamp" (without timezone)
+        if name.sval.to_lowercase() == "timestamp" {
+            diagnostics.push(
+                LinterDiagnostic::new(
+                    rule_category!(),
+                    None,
+                    markup! {
+                        "Prefer TIMESTAMPTZ over TIMESTAMP for better timezone handling."
+                    },
+                )
+                .detail(
+                    None,
+                    "TIMESTAMP WITHOUT TIME ZONE can lead to issues when dealing with time zones.",
+                )
+                .note("Use TIMESTAMPTZ (TIMESTAMP WITH TIME ZONE) instead."),
+            );
         }
     }
 }

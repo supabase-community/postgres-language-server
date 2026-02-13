@@ -1,0 +1,408 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/create_type.sql
+---
+create function widget_in(cstring)
+returns widget
+language c
+immutable
+strict
+as $function$
+regresslib
+$function$;
+
+create function widget_out(widget)
+returns cstring
+language c
+immutable
+strict
+as $function$
+regresslib
+$function$;
+
+create function int44in(cstring)
+returns city_budget
+language c
+immutable
+strict
+as $function$
+regresslib
+$function$;
+
+create function int44out(city_budget)
+returns cstring
+language c
+immutable
+strict
+as $function$
+regresslib
+$function$;
+
+create type widget (
+  internallength = 24,
+  input = widget_in,
+  output = widget_out,
+  typmod_in = numerictypmodin,
+  typmod_out = numerictypmodout,
+  alignment = double
+);
+
+create type city_budget (
+  internallength = 16,
+  input = int44in,
+  output = int44out,
+  element = int,
+  category = 'x',
+  preferred = 'true'
+);
+
+create type shell;
+
+create type shell;
+
+drop type shell;
+
+drop type shell;
+
+create type myshell;
+
+create type int42;
+
+create type text_w_default;
+
+create function int42_in(cstring)
+returns int42
+language internal
+immutable
+strict
+as $function$
+int4in
+$function$;
+
+create function int42_out(int42)
+returns cstring
+language internal
+immutable
+strict
+as $function$
+int4out
+$function$;
+
+create function text_w_default_in(cstring)
+returns text_w_default
+language internal
+immutable
+strict
+as $function$
+textin
+$function$;
+
+create function text_w_default_out(text_w_default)
+returns cstring
+language internal
+immutable
+strict
+as $function$
+textout
+$function$;
+
+create type int42 (
+  internallength = 4,
+  input = int42_in,
+  output = int42_out,
+  alignment = int,
+  "default" = 42,
+  passedbyvalue
+);
+
+create type text_w_default (
+  internallength = variable,
+  input = text_w_default_in,
+  output = text_w_default_out,
+  alignment = int,
+  "default" = 'zippo'
+);
+
+create table default_test (
+  f1 text_w_default,
+  f2 int42
+);
+
+insert into default_test default values;
+
+select * from default_test;
+
+create type bogus_type;
+
+create type bogus_type (
+  "Internallength" = 4,
+  "Input" = int42_in,
+  "Output" = int42_out,
+  "Alignment" = int,
+  "Default" = 42,
+  "Passedbyvalue"
+);
+
+create type bogus_type (input = array_in, output = array_out, element = int, internallength = 32);
+
+drop type bogus_type;
+
+create type bogus_type (input = array_in, output = array_out, element = int, internallength = 32);
+
+create type default_test_row as (f1 text_w_default, f2 int42);
+
+create function get_default_test()
+returns setof default_test_row
+language sql
+as $function$
+SELECT * FROM default_test;
+$function$;
+
+select * from get_default_test();
+
+comment on type bad is 'bad comment';
+
+comment on type default_test_row is 'good comment';
+
+comment on type default_test_row is null;
+
+comment on column default_test_row.nope is 'bad comment';
+
+comment on column default_test_row.f1 is 'good comment';
+
+comment on column default_test_row.f1 is null;
+
+create type text_w_default;
+
+drop type default_test_row cascade;
+
+drop table default_test;
+
+create type base_type;
+
+create function base_fn_in(cstring)
+returns base_type
+language internal
+immutable
+strict
+as $function$
+boolin
+$function$;
+
+create function base_fn_out(base_type)
+returns cstring
+language internal
+immutable
+strict
+as $function$
+boolout
+$function$;
+
+create type base_type (input = base_fn_in, output = base_fn_out);
+
+drop function base_fn_in(cstring);
+
+drop function base_fn_out(base_type);
+
+drop type base_type;
+
+drop type base_type cascade;
+
+create temporary table mytab (foo widget(42, 13, 7));
+
+create temporary table mytab (foo widget(42, 13));
+
+select
+  format_type(atttypid, atttypmod)
+from
+  pg_attribute
+where
+  attrelid = cast('mytab' as regclass) and
+  attnum > 0;
+
+insert into mytab values ('(1,2,3)'), ('(-44,5.5,12)');
+
+select * from mytab;
+
+select format_type(cast('varchar' as regtype), 42);
+
+select format_type(cast('bpchar' as regtype), null);
+
+select format_type(cast('bpchar' as regtype), -1);
+
+select pg_input_is_valid('(1,2,3)', 'widget');
+
+select pg_input_is_valid('(1,2)', 'widget');
+
+select pg_input_is_valid('{"(1,2,3)"}', 'widget[]');
+
+select pg_input_is_valid('{"(1,2)"}', 'widget[]');
+
+select pg_input_is_valid('("(1,2,3)")', 'mytab');
+
+select pg_input_is_valid('("(1,2)")', 'mytab');
+
+create function pt_in_widget(point, widget)
+returns boolean
+language c
+strict
+as $function$
+regresslib
+$function$;
+
+create operator <% (LEFTARG = point,
+RIGHTARG = widget,
+PROCEDURE = pt_in_widget,
+COMMUTATOR = >%,
+NEGATOR = >=%);
+
+select
+  cast('(1,2)' as point) <%
+  cast('(0,0,3)' as widget)
+  as t,
+  cast('(1,2)' as point) <%
+  cast('(0,0,1)' as widget)
+  as f;
+
+create table city (
+  name name,
+  location box,
+  budget city_budget
+);
+
+insert into city
+values
+  ('Podunk', '(1,2),(3,4)', '100,127,1000'),
+  (
+    'Gotham',
+    '(1000,34),(1100,334)',
+    '123456,127,-1000,6789'
+  );
+
+select * from city;
+
+create type myvarchar;
+
+create function myvarcharin(cstring, oid, int)
+returns myvarchar
+language internal
+immutable
+strict
+parallel SAFE
+as $function$
+varcharin
+$function$;
+
+create function myvarcharout(myvarchar)
+returns cstring
+language internal
+immutable
+strict
+parallel SAFE
+as $function$
+varcharout
+$function$;
+
+create function myvarcharsend(myvarchar)
+returns bytea
+language internal
+stable
+strict
+parallel SAFE
+as $function$
+varcharsend
+$function$;
+
+create function myvarcharrecv(internal, oid, int)
+returns myvarchar
+language internal
+stable
+strict
+parallel SAFE
+as $function$
+varcharrecv
+$function$;
+
+alter type myvarchar set (storage = extended);
+
+create type myvarchar (input = myvarcharin, output = myvarcharout, alignment = int, storage = main);
+
+create domain myvarchardom as myvarchar;
+
+alter type myvarchar set (storage = plain);
+
+alter type myvarchar set (storage = extended);
+
+alter type myvarchar
+set (send = myvarcharsend,
+receive = myvarcharrecv,
+typmod_in = varchartypmodin,
+typmod_out = varchartypmodout,
+analyze = ts_typanalyze,
+subscript = raw_array_subscript_handler);
+
+select
+  typinput,
+  typoutput,
+  typreceive,
+  typsend,
+  typmodin,
+  typmodout,
+  typanalyze,
+  typsubscript,
+  typstorage
+from
+  pg_type
+where
+  typname = 'myvarchar';
+
+select
+  typinput,
+  typoutput,
+  typreceive,
+  typsend,
+  typmodin,
+  typmodout,
+  typanalyze,
+  typsubscript,
+  typstorage
+from
+  pg_type
+where
+  typname = '_myvarchar';
+
+select
+  typinput,
+  typoutput,
+  typreceive,
+  typsend,
+  typmodin,
+  typmodout,
+  typanalyze,
+  typsubscript,
+  typstorage
+from
+  pg_type
+where
+  typname = 'myvarchardom';
+
+select
+  typinput,
+  typoutput,
+  typreceive,
+  typsend,
+  typmodin,
+  typmodout,
+  typanalyze,
+  typsubscript,
+  typstorage
+from
+  pg_type
+where
+  typname = '_myvarchardom';
+
+drop function myvarcharsend(myvarchar);
+
+drop type myvarchar;
+
+drop type myvarchar cascade;

@@ -1,0 +1,1 @@
+SELECT id, name, ROW_NUMBER() OVER (PARTITION BY dept ORDER BY salary DESC) FROM employees;

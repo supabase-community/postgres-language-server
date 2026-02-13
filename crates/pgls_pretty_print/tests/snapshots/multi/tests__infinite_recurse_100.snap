@@ -1,0 +1,14 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/infinite_recurse.sql
+---
+create function infinite_recurse()
+returns int
+language sql
+as $function$
+select infinite_recurse()
+$function$;
+
+select version() ~ 'powerpc64[^,]*-linux-gnu' as skip_test;
+
+select infinite_recurse();

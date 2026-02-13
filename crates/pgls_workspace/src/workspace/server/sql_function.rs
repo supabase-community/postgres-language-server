@@ -106,6 +106,52 @@ pub fn get_sql_fn_body(ast: &pgls_query::NodeEnum, content: &str) -> Option<SQLF
     })
 }
 
+/// Replaces the SQL function body in CREATE FUNCTION ... AS '<body>' for LANGUAGE SQL functions.
+/// Returns true when a body was replaced.
+pub fn set_sql_fn_body(ast: &mut pgls_query::NodeEnum, new_body: &str) -> bool {
+    let create_fn = match ast {
+        pgls_query::NodeEnum::CreateFunctionStmt(cf) => cf,
+        _ => return false,
+    };
+
+    let language = pgls_query_ext::utils::find_option_value(create_fn, "language");
+    if language.as_deref() != Some("sql") {
+        return false;
+    }
+
+    for option in &mut create_fn.options {
+        let Some(pgls_query::NodeEnum::DefElem(def_elem)) = option.node.as_mut() else {
+            continue;
+        };
+
+        if def_elem.defname != "as" {
+            continue;
+        }
+
+        let Some(arg) = def_elem.arg.as_mut() else {
+            continue;
+        };
+
+        match arg.node.as_mut() {
+            Some(pgls_query::NodeEnum::String(s)) => {
+                s.sval = new_body.to_string();
+                return true;
+            }
+            Some(pgls_query::NodeEnum::List(list)) => {
+                if list.items.len() == 1
+                    && let Some(pgls_query::NodeEnum::String(s)) = list.items[0].node.as_mut()
+                {
+                    s.sval = new_body.to_string();
+                    return true;
+                }
+            }
+            _ => {}
+        }
+    }
+
+    false
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -162,5 +208,26 @@ mod tests {
                 })
                 .is_some()
         );
+    }
+
+    #[test]
+    fn set_sql_function_body() {
+        let input = "CREATE FUNCTION add(a integer, b integer) RETURNS integer
+    AS 'SELECT $1+$2;'
+    LANGUAGE SQL
+    IMMUTABLE;";
+
+        let mut ast = pgls_query::parse(input).unwrap().into_root().unwrap();
+
+        let changed = set_sql_fn_body(&mut ast, "select $1 + $2;");
+        assert!(changed);
+
+        let create_fn = match &ast {
+            pgls_query::NodeEnum::CreateFunctionStmt(stmt) => stmt,
+            _ => panic!("Expected CreateFunctionStmt"),
+        };
+
+        let body = pgls_query_ext::utils::find_option_value(create_fn, "as");
+        assert_eq!(body, Some("select $1 + $2;".to_string()));
     }
 }

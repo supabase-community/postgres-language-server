@@ -21,6 +21,7 @@ nav:
       - Linting: features/linting.md
       - Database Linting: features/database_linting.md
       - Type Checking: features/type_checking.md
+      - Formatting: features/formatting.md
       - PL/pgSQL Support: features/plpgsql.md
       - Autocompletion & Hover: features/editor_features.md
   - Guides:

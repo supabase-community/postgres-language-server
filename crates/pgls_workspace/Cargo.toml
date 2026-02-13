@@ -12,11 +12,11 @@ version              = "0.0.0"
 
 
 [dependencies]
-biome_deserialize = "0.6.0"
-globset           = "0.4.16"
-lru               = "0.12"
+globset = "0.4.16"
+lru     = "0.12"
 
 ignore                            = { workspace = true }
+json-strip-comments               = { workspace = true }
 pgls_analyse                      = { workspace = true, features = ["serde"] }
 pgls_analyser                     = { workspace = true }
 pgls_completions                  = { workspace = true }
@@ -28,11 +28,13 @@ pgls_fs                           = { workspace = true, features = ["serde"] }
 pgls_hover                        = { workspace = true }
 pgls_lexer                        = { workspace = true }
 pgls_matcher                      = { workspace = true }
+pgls_pretty_print                 = { workspace = true }
 pgls_query                        = { workspace = true }
 pgls_query_ext                    = { workspace = true }
 pgls_schema_cache                 = { workspace = true, features = ["serde"] }
 pgls_statement_splitter           = { workspace = true }
 pgls_suppressions                 = { workspace = true }
+pgls_text_edit.workspace          = true
 pgls_text_size.workspace          = true
 pgls_tokenizer                    = { workspace = true }
 pgls_treesitter_grammar.workspace = true
@@ -49,21 +51,19 @@ tree-sitter.workspace             = true
 
 # Optional DB dependencies
 futures            = { version = "0.3.31", optional = true }
+pgls_pglinter      = { workspace = true, optional = true }
 pgls_plpgsql_check = { workspace = true, optional = true }
 pgls_splinter      = { workspace = true, optional = true }
 pgls_typecheck     = { workspace = true, optional = true }
 sqlx               = { workspace = true, optional = true }
 tokio              = { workspace = true, features = ["rt", "rt-multi-thread"], optional = true }
 
-biome_js_factory = { workspace = true, optional = true }
-biome_js_syntax  = { workspace = true, optional = true }
-biome_rowan      = { workspace = true, optional = true }
-
 [features]
 db = [
   "dep:futures",
   "dep:sqlx",
   "dep:tokio",
+  "dep:pgls_pglinter",
   "dep:pgls_plpgsql_check",
   "dep:pgls_splinter",
   "dep:pgls_typecheck",
@@ -72,9 +72,6 @@ db = [
 default = ["db"]
 schema = [
   "dep:schemars",
-  "dep:biome_rowan",
-  "dep:biome_js_syntax",
-  "dep:biome_js_factory",
   "pgls_configuration/schema",
   "pgls_diagnostics/schema",
   "pgls_fs/schema",

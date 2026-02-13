@@ -26,15 +26,11 @@
 		"build:ts": "tsc -p tsconfig.build.json && cp wasm/pgls.wasm wasm/pgls.js dist/",
 		"build:types": "tsc --declaration --emitDeclarationOnly --outDir dist",
 		"test": "bun test",
-		"test:e2e": "./node_modules/.bin/playwright test",
-		"test:e2e:ui": "./node_modules/.bin/playwright test --ui",
-		"test:e2e:install": "./node_modules/.bin/playwright install chromium"
+		"test:e2e": "playwright test",
+		"test:e2e:ui": "playwright test --ui",
+		"test:e2e:install": "playwright install chromium"
 	},
-	"files": [
-		"dist/",
-		"wasm/",
-		"README.md"
-	],
+	"files": ["dist/", "wasm/", "README.md"],
 	"repository": {
 		"type": "git",
 		"url": "git+https://github.com/supabase-community/postgres-language-server.git",
@@ -42,13 +38,7 @@
 	},
 	"author": "Supabase Community",
 	"bugs": "https://github.com/supabase-community/postgres-language-server/issues",
-	"keywords": [
-		"postgres",
-		"sql",
-		"linter",
-		"wasm",
-		"language-server"
-	],
+	"keywords": ["postgres", "sql", "linter", "wasm", "language-server"],
 	"license": "MIT",
 	"publishConfig": {
 		"provenance": true

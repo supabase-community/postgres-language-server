@@ -1,0 +1,3320 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/stats_ext.sql
+---
+create function check_estimated_rows(text)
+returns table (
+  estimated int,
+  actual int
+)
+language plpgsql
+as $function$
+declare
+    ln text;
+    tmp text[];
+    first_row bool := true;
+begin
+    for ln in
+        execute format('explain analyze %s', $1)
+    loop
+        if first_row then
+            first_row := false;
+            tmp := regexp_match(ln, 'rows=(\d*) .* rows=(\d*)');
+            return query select tmp[1]::int, tmp[2]::int;
+        end if;
+    end loop;
+end;
+$function$;
+
+create table ext_stats_test (
+  x text,
+  y int,
+  z int
+);
+
+create statistics tst on "a", "b" from nonexistent;
+
+create statistics tst on "a", "b" from ext_stats_test;
+
+create statistics tst on "x", "x", "y" from ext_stats_test;
+
+create statistics tst on "x", "x", "y", "x", "x", "y", "x", "x", "y" from ext_stats_test;
+
+create statistics tst
+on "x",
+"x",
+"y",
+"x",
+"x",
+(x || 'x'),
+(y + 1),
+(x || 'x'),
+(x || 'x'),
+(y + 1)
+from ext_stats_test;
+
+create statistics tst
+on (x || 'x'),
+(x || 'x'),
+(y + 1),
+(x || 'x'),
+(x || 'x'),
+(y + 1),
+(x || 'x'),
+(x || 'x'),
+(y + 1)
+from ext_stats_test;
+
+create statistics tst on (x || 'x'), (x || 'x'), "y" from ext_stats_test;
+
+create statistics tst (unrecognized) on "x", "y" from ext_stats_test;
+
+create statistics tst on "a" from (values (x)) as foo;
+
+create statistics tst on "a" from foo natural join bar;
+
+create statistics tst on "a" from (select * from ext_stats_test) as foo;
+
+create statistics tst on "a" from ext_stats_test as s tablesample system (x);
+
+create statistics tst on "a" from xmltable( 'foo' passing 'bar' columns a text);
+
+create statistics tst on "a" from json_table( cast('123' as jsonb), '$' columns (item int ) );
+
+create function tftest(int)
+returns table (
+  a int,
+  b int
+)
+language sql
+immutable
+strict
+as $function$
+SELECT $1, $1+i FROM generate_series(1,5) g(i);
+$function$;
+
+create statistics alt_stat2 on "a" from tftest(1);
+
+drop function tftest;
+
+create statistics tst on (y) from ext_stats_test;
+
+drop table ext_stats_test;
+
+create statistics tst on "z" from ext_stats_test1;
+
+create statistics tst on (z) from ext_stats_test1;
+
+create statistics tst on (z + 1) from ext_stats_test1;
+
+create statistics tst (ndistinct) on "z" from ext_stats_test1;
+
+create statistics tst on "tableoid" from ext_stats_test1;
+
+create statistics tst on (tableoid) from ext_stats_test1;
+
+create statistics tst on (cast(tableoid as int) + 1) from ext_stats_test1;
+
+create statistics tst (ndistinct) on "xmin" from ext_stats_test1;
+
+create statistics tst (ndistinct) on "w" from ext_stats_test1;
+
+drop table ext_stats_test1;
+
+create table ab1 (
+  a int,
+  b int,
+  c int
+);
+
+create statistics if not exists ab1_a_b_stats on "a", "b" from ab1;
+
+comment on statistics ab1_a_b_stats is 'new comment';
+
+create role regress_stats_ext;
+
+set session authorization regress_stats_ext;
+
+comment on statistics ab1_a_b_stats is 'changed comment';
+
+drop statistics ab1_a_b_stats;
+
+alter statistics ab1_a_b_stats rename to ab1_a_b_stats_new;
+
+reset session_authorization;
+
+drop role regress_stats_ext;
+
+create statistics if not exists ab1_a_b_stats on "a", "b" from ab1;
+
+drop statistics ab1_a_b_stats;
+
+create schema "regress_schema_2";
+
+create statistics regress_schema_2.ab1_a_b_stats on "a", "b" from ab1;
+
+select pg_get_statisticsobjdef(oid) from pg_statistic_ext where stxname = 'ab1_a_b_stats';
+
+drop statistics regress_schema_2.ab1_a_b_stats;
+
+create statistics ab1_b_c_stats on "b", "c" from ab1;
+
+create statistics ab1_a_b_c_stats on "a", "b", "c" from ab1;
+
+create statistics ab1_b_a_stats on "b", "a" from ab1;
+
+alter table ab1
+  drop column a;
+
+select stxname from pg_statistic_ext where stxname like 'ab1%';
+
+drop table ab1;
+
+select stxname from pg_statistic_ext where stxname like 'ab1%';
+
+create table ab1 (
+  a int,
+  b int
+);
+
+alter table ab1
+  alter column a set statistics 0;
+
+insert into ab1 select a, a % 23 from generate_series(1, 1000) as a;
+
+create statistics ab1_a_b_stats on "a", "b" from ab1;
+
+analyze ab1;
+
+alter table ab1
+  alter column a set statistics -1;
+
+alter statistics ab1_a_b_stats set statistics 0;
+
+analyze ab1;
+
+select
+  stxname,
+  stxdndistinct,
+  stxddependencies,
+  stxdmcv,
+  stxdinherit
+from
+  pg_statistic_ext as s
+  left outer join
+    pg_statistic_ext_data as d
+  on d.stxoid = s.oid
+where
+  s.stxname = 'ab1_a_b_stats';
+
+alter statistics ab1_a_b_stats set statistics -1;
+
+analyze ab1 (a);
+
+analyze ab1;
+
+drop table ab1;
+
+alter statistics ab1_a_b_stats set statistics 0;
+
+alter statistics if exists ab1_a_b_stats set statistics 0;
+
+create table ab1 (
+  a int,
+  b int
+);
+
+create table ab1c ()
+inherits (ab1);
+
+insert into ab1 values (1, 1);
+
+create statistics ab1_a_b_stats on "a", "b" from ab1;
+
+analyze ab1;
+
+drop table ab1 cascade;
+
+create table stxdinh (
+  a int,
+  b int
+);
+
+create table stxdinh1 ()
+inherits (stxdinh);
+
+create table stxdinh2 ()
+inherits (stxdinh);
+
+insert into stxdinh select mod(a, 50), mod(a, 100) from generate_series(0, 1999) as a;
+
+insert into stxdinh1 select mod(a, 100), mod(a, 100) from generate_series(0, 999) as a;
+
+insert into stxdinh2 select mod(a, 100), mod(a, 100) from generate_series(0, 999) as a;
+
+vacuum (ANALYZE) stxdinh, stxdinh1, stxdinh2;
+
+select * from check_estimated_rows('SELECT a, b FROM stxdinh* GROUP BY 1, 2');
+
+select * from check_estimated_rows('SELECT a, b FROM stxdinh* WHERE a = 0 AND b = 0');
+
+create statistics stxdinh on "a", "b" from stxdinh;
+
+vacuum (ANALYZE) stxdinh, stxdinh1, stxdinh2;
+
+select * from check_estimated_rows('SELECT a, b FROM stxdinh* GROUP BY 1, 2');
+
+select * from check_estimated_rows('SELECT a, b FROM stxdinh* WHERE a = 0 AND b = 0');
+
+select * from check_estimated_rows('SELECT a, b FROM ONLY stxdinh GROUP BY 1, 2');
+
+select * from check_estimated_rows('SELECT a, b FROM ONLY stxdinh WHERE a = 0 AND b = 0');
+
+drop table stxdinh, stxdinh1, stxdinh2;
+
+create table stxdinp (
+  i int,
+  a int,
+  b int
+)
+partition by range(i);
+
+create table stxdinp1 partition of stxdinp for values from (1) to (100);
+
+insert into stxdinp select 1, a / 100, a / 100 from generate_series(1, 999) as a;
+
+create statistics stxdinp on (a + 1), "a", "b" from stxdinp;
+
+vacuum (ANALYZE) stxdinp;
+
+select 1 from pg_statistic_ext where stxrelid = cast('stxdinp' as regclass);
+
+select * from check_estimated_rows('SELECT a, b FROM stxdinp GROUP BY 1, 2');
+
+select * from check_estimated_rows('SELECT a + 1, b FROM ONLY stxdinp GROUP BY 1, 2');
+
+drop table stxdinp;
+
+create table ab1 (
+  a int,
+  b int,
+  c timestamp,
+  d timestamp with time zone
+);
+
+create statistics ab1_exprstat_1 on (a + b) from ab1;
+
+create statistics ab1_exprstat_2 on (a + b) from ab1;
+
+select stxkind from pg_statistic_ext where stxname = 'ab1_exprstat_2';
+
+create statistics ab1_exprstat_3 on (a + b), "a" from ab1;
+
+select stxkind from pg_statistic_ext where stxname = 'ab1_exprstat_3';
+
+create statistics ab1_exprstat_4 on (date_trunc('day', d)) from ab1;
+
+create statistics ab1_exprstat_5 on (date_trunc('day', c)) from ab1;
+
+create statistics ab1_exprstat_6 on (case a when 1 then true else false end), "b" from ab1;
+
+insert into ab1
+select
+  x / 10,
+  x / 3,
+  cast('2020-10-01' as timestamp) +
+  x * cast('1 day' as interval),
+  cast('2020-10-01' as timestamp with time zone) +
+  x * cast('1 day' as interval)
+from
+  generate_series(1, 100) as x;
+
+analyze ab1;
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM ab1 WHERE (case a when 1 then true else false end) AND b=2'
+  );
+
+drop table ab1;
+
+create schema "tststats";
+
+create table tststats.t (
+  a int,
+  b int,
+  c text
+);
+
+create index "ti" on tststats.t using btree (a, b);
+
+create sequence tststats.s;
+
+create view tststats.v
+as select * from tststats.t;
+
+create materialized view tststats.mv as select * from tststats.t;
+
+create type tststats.ty as (a int, b int, c text);
+
+create foreign data wrapper extstats_dummy_fdw;
+
+create server extstats_dummy_srv foreign data wrapper extstats_dummy_fdw;
+
+create foreign table tststats.f ( a int, b int, c text ) server extstats_dummy_srv;
+
+create table tststats.pt (
+  a int,
+  b int,
+  c text
+)
+partition by range(a, b);
+
+create table tststats.pt1 partition of tststats.pt for values from (-10, -10) to (10, 10);
+
+create statistics tststats.s1 on "a", "b" from tststats.t;
+
+create statistics tststats.s2 on "a", "b" from tststats.ti;
+
+create statistics tststats.s3 on "a", "b" from tststats.s;
+
+create statistics tststats.s4 on "a", "b" from tststats.v;
+
+create statistics tststats.s5 on "a", "b" from tststats.mv;
+
+create statistics tststats.s6 on "a", "b" from tststats.ty;
+
+create statistics tststats.s7 on "a", "b" from tststats.f;
+
+create statistics tststats.s8 on "a", "b" from tststats.pt;
+
+create statistics tststats.s9 on "a", "b" from tststats.pt1;
+
+do
+$do$
+DECLARE
+	relname text := reltoastrelid::regclass FROM pg_class WHERE oid = 'tststats.t'::regclass;
+BEGIN
+	EXECUTE 'CREATE STATISTICS tststats.s10 ON a, b FROM ' || relname;
+EXCEPTION WHEN wrong_object_type THEN
+	RAISE NOTICE 'stats on toast table not created';
+END;
+$do$;
+
+drop schema tststats cascade;
+
+drop foreign data wrapper extstats_dummy_fdw cascade;
+
+create table ndistinct (
+  filler1 text,
+  filler2 numeric,
+  a int,
+  b int,
+  filler3 date,
+  c int,
+  d int
+)
+with (autovacuum_enabled = off);
+
+insert into ndistinct (a, b, c, filler1)
+select
+  i / 100,
+  i / 100,
+  i / 100,
+  i / 100 || ' dollars and zero cents'
+from
+  generate_series(1, 1000) as s (i);
+
+analyze ndistinct;
+
+select * from check_estimated_rows('SELECT COUNT(*) FROM ndistinct GROUP BY a, b');
+
+select * from check_estimated_rows('SELECT COUNT(*) FROM ndistinct GROUP BY b, c');
+
+select * from check_estimated_rows('SELECT COUNT(*) FROM ndistinct GROUP BY a, b, c');
+
+select * from check_estimated_rows('SELECT COUNT(*) FROM ndistinct GROUP BY a, b, c, d');
+
+select * from check_estimated_rows('SELECT COUNT(*) FROM ndistinct GROUP BY b, c, d');
+
+select * from check_estimated_rows('SELECT COUNT(*) FROM ndistinct GROUP BY a, b, (a+1)');
+
+select * from check_estimated_rows('SELECT COUNT(*) FROM ndistinct GROUP BY (a+1), (b+100)');
+
+select * from check_estimated_rows('SELECT COUNT(*) FROM ndistinct GROUP BY (a+1), (b+100), (2*c)');
+
+select * from check_estimated_rows('SELECT COUNT(*) FROM ndistinct GROUP BY a, (a+1), (b+100)');
+
+create statistics s10 on "a", "b", "c" from ndistinct;
+
+analyze ndistinct;
+
+select
+  s.stxkind,
+  d.stxdndistinct
+from
+  pg_statistic_ext as s,
+  pg_statistic_ext_data as d
+where
+  s.stxrelid = cast('ndistinct' as regclass) and
+  d.stxoid = s.oid;
+
+select * from check_estimated_rows('SELECT COUNT(*) FROM ndistinct GROUP BY ctid, a, b');
+
+select * from check_estimated_rows('SELECT COUNT(*) FROM ndistinct GROUP BY a, b');
+
+select * from check_estimated_rows('SELECT COUNT(*) FROM ndistinct GROUP BY b, c');
+
+select * from check_estimated_rows('SELECT COUNT(*) FROM ndistinct GROUP BY a, b, c');
+
+select * from check_estimated_rows('SELECT COUNT(*) FROM ndistinct GROUP BY a, b, (a+1)');
+
+select * from check_estimated_rows('SELECT COUNT(*) FROM ndistinct GROUP BY (a+1), (b+100)');
+
+select * from check_estimated_rows('SELECT COUNT(*) FROM ndistinct GROUP BY (a+1), (b+100), (2*c)');
+
+select * from check_estimated_rows('SELECT COUNT(*) FROM ndistinct GROUP BY a, (a+1), (b+100)');
+
+select * from check_estimated_rows('SELECT COUNT(*) FROM ndistinct GROUP BY a, b, c, d');
+
+select * from check_estimated_rows('SELECT COUNT(*) FROM ndistinct GROUP BY b, c, d');
+
+truncate ndistinct;
+
+insert into ndistinct (a, b, c, filler1)
+select
+  mod(i, 13),
+  mod(i, 17),
+  mod(i, 19),
+  mod(i, 23) || ' dollars and zero cents'
+from
+  generate_series(1, 1000) as s (i);
+
+analyze ndistinct;
+
+select
+  s.stxkind,
+  d.stxdndistinct
+from
+  pg_statistic_ext as s,
+  pg_statistic_ext_data as d
+where
+  s.stxrelid = cast('ndistinct' as regclass) and
+  d.stxoid = s.oid;
+
+select * from check_estimated_rows('SELECT COUNT(*) FROM ndistinct GROUP BY a, b');
+
+select * from check_estimated_rows('SELECT COUNT(*) FROM ndistinct GROUP BY a, b, c');
+
+select * from check_estimated_rows('SELECT COUNT(*) FROM ndistinct GROUP BY a, b, c, d');
+
+select * from check_estimated_rows('SELECT COUNT(*) FROM ndistinct GROUP BY b, c, d');
+
+select * from check_estimated_rows('SELECT COUNT(*) FROM ndistinct GROUP BY a, d');
+
+select * from check_estimated_rows('SELECT COUNT(*) FROM ndistinct GROUP BY a, b, (a+1)');
+
+select * from check_estimated_rows('SELECT COUNT(*) FROM ndistinct GROUP BY (a+1), (b+100)');
+
+select * from check_estimated_rows('SELECT COUNT(*) FROM ndistinct GROUP BY (a+1), (b+100), (2*c)');
+
+select * from check_estimated_rows('SELECT COUNT(*) FROM ndistinct GROUP BY a, (a+1), (b+100)');
+
+drop statistics s10;
+
+select
+  s.stxkind,
+  d.stxdndistinct
+from
+  pg_statistic_ext as s,
+  pg_statistic_ext_data as d
+where
+  s.stxrelid = cast('ndistinct' as regclass) and
+  d.stxoid = s.oid;
+
+select * from check_estimated_rows('SELECT COUNT(*) FROM ndistinct GROUP BY a, b');
+
+select * from check_estimated_rows('SELECT COUNT(*) FROM ndistinct GROUP BY a, b, c');
+
+select * from check_estimated_rows('SELECT COUNT(*) FROM ndistinct GROUP BY a, b, c, d');
+
+select * from check_estimated_rows('SELECT COUNT(*) FROM ndistinct GROUP BY b, c, d');
+
+select * from check_estimated_rows('SELECT COUNT(*) FROM ndistinct GROUP BY a, d');
+
+select * from check_estimated_rows('SELECT COUNT(*) FROM ndistinct GROUP BY a, b, (a+1)');
+
+select * from check_estimated_rows('SELECT COUNT(*) FROM ndistinct GROUP BY (a+1), (b+100)');
+
+select * from check_estimated_rows('SELECT COUNT(*) FROM ndistinct GROUP BY (a+1), (b+100), (2*c)');
+
+select * from check_estimated_rows('SELECT COUNT(*) FROM ndistinct GROUP BY a, (a+1), (b+100)');
+
+select * from check_estimated_rows('SELECT COUNT(*) FROM ndistinct GROUP BY (a+1), (b+100)');
+
+select * from check_estimated_rows('SELECT COUNT(*) FROM ndistinct GROUP BY (a+1), (b+100), (2*c)');
+
+select * from check_estimated_rows('SELECT COUNT(*) FROM ndistinct GROUP BY a, (a+1), (b+100)');
+
+create statistics s10 (ndistinct) on (a + 1), (b + 100), (2 * c) from ndistinct;
+
+analyze ndistinct;
+
+select
+  s.stxkind,
+  d.stxdndistinct
+from
+  pg_statistic_ext as s,
+  pg_statistic_ext_data as d
+where
+  s.stxrelid = cast('ndistinct' as regclass) and
+  d.stxoid = s.oid;
+
+select * from check_estimated_rows('SELECT COUNT(*) FROM ndistinct GROUP BY (a+1), (b+100)');
+
+select * from check_estimated_rows('SELECT COUNT(*) FROM ndistinct GROUP BY (a+1), (b+100), (2*c)');
+
+select * from check_estimated_rows('SELECT COUNT(*) FROM ndistinct GROUP BY a, (a+1), (b+100)');
+
+drop statistics s10;
+
+select * from check_estimated_rows('SELECT COUNT(*) FROM ndistinct GROUP BY a, b');
+
+select * from check_estimated_rows('SELECT COUNT(*) FROM ndistinct GROUP BY a, (2*c)');
+
+select * from check_estimated_rows('SELECT COUNT(*) FROM ndistinct GROUP BY a, b, (2*c)');
+
+create statistics s10 (ndistinct) on "a", "b", (2 * c) from ndistinct;
+
+analyze ndistinct;
+
+select
+  s.stxkind,
+  d.stxdndistinct
+from
+  pg_statistic_ext as s,
+  pg_statistic_ext_data as d
+where
+  s.stxrelid = cast('ndistinct' as regclass) and
+  d.stxoid = s.oid;
+
+select * from check_estimated_rows('SELECT COUNT(*) FROM ndistinct GROUP BY a, b');
+
+select * from check_estimated_rows('SELECT COUNT(*) FROM ndistinct GROUP BY a, (2*c)');
+
+select * from check_estimated_rows('SELECT COUNT(*) FROM ndistinct GROUP BY a, b, (2*c)');
+
+drop statistics s10;
+
+truncate ndistinct;
+
+insert into ndistinct (a, b, c, d)
+select
+  mod(i, 3),
+  mod(i, 9),
+  mod(i, 5),
+  mod(i, 20)
+from
+  generate_series(1, 1000) as s (i);
+
+analyze ndistinct;
+
+select * from check_estimated_rows('SELECT COUNT(*) FROM ndistinct GROUP BY a, b');
+
+select * from check_estimated_rows('SELECT COUNT(*) FROM ndistinct GROUP BY a, (b+1)');
+
+select * from check_estimated_rows('SELECT COUNT(*) FROM ndistinct GROUP BY (a*5), b');
+
+select * from check_estimated_rows('SELECT COUNT(*) FROM ndistinct GROUP BY (a*5), (b+1)');
+
+select * from check_estimated_rows('SELECT COUNT(*) FROM ndistinct GROUP BY (a*5), (b+1), c');
+
+select * from check_estimated_rows('SELECT COUNT(*) FROM ndistinct GROUP BY a, b, (c*10)');
+
+select * from check_estimated_rows('SELECT COUNT(*) FROM ndistinct GROUP BY a, (b+1), c, (d - 1)');
+
+create statistics s11 (ndistinct) on "a", "b" from ndistinct;
+
+create statistics s12 (ndistinct) on "c", "d" from ndistinct;
+
+analyze ndistinct;
+
+select * from check_estimated_rows('SELECT COUNT(*) FROM ndistinct GROUP BY a, b');
+
+select * from check_estimated_rows('SELECT COUNT(*) FROM ndistinct GROUP BY a, (b+1)');
+
+select * from check_estimated_rows('SELECT COUNT(*) FROM ndistinct GROUP BY (a*5), b');
+
+select * from check_estimated_rows('SELECT COUNT(*) FROM ndistinct GROUP BY (a*5), (b+1)');
+
+select * from check_estimated_rows('SELECT COUNT(*) FROM ndistinct GROUP BY (a*5), (b+1), c');
+
+select * from check_estimated_rows('SELECT COUNT(*) FROM ndistinct GROUP BY a, b, (c*10)');
+
+select * from check_estimated_rows('SELECT COUNT(*) FROM ndistinct GROUP BY a, (b+1), c, (d - 1)');
+
+drop statistics s12;
+
+create statistics s12 (ndistinct) on (c * 10), (d - 1) from ndistinct;
+
+analyze ndistinct;
+
+select * from check_estimated_rows('SELECT COUNT(*) FROM ndistinct GROUP BY a, b');
+
+select * from check_estimated_rows('SELECT COUNT(*) FROM ndistinct GROUP BY a, (b+1)');
+
+select * from check_estimated_rows('SELECT COUNT(*) FROM ndistinct GROUP BY (a*5), b');
+
+select * from check_estimated_rows('SELECT COUNT(*) FROM ndistinct GROUP BY (a*5), (b+1)');
+
+select * from check_estimated_rows('SELECT COUNT(*) FROM ndistinct GROUP BY (a*5), (b+1), c');
+
+select * from check_estimated_rows('SELECT COUNT(*) FROM ndistinct GROUP BY a, b, (c*10)');
+
+select * from check_estimated_rows('SELECT COUNT(*) FROM ndistinct GROUP BY a, (b+1), c, (d - 1)');
+
+drop statistics s12;
+
+create statistics s12 (ndistinct) on "c", "d", (c * 10), (d - 1) from ndistinct;
+
+analyze ndistinct;
+
+select * from check_estimated_rows('SELECT COUNT(*) FROM ndistinct GROUP BY a, b');
+
+select * from check_estimated_rows('SELECT COUNT(*) FROM ndistinct GROUP BY a, (b+1)');
+
+select * from check_estimated_rows('SELECT COUNT(*) FROM ndistinct GROUP BY (a*5), b');
+
+select * from check_estimated_rows('SELECT COUNT(*) FROM ndistinct GROUP BY (a*5), (b+1)');
+
+select * from check_estimated_rows('SELECT COUNT(*) FROM ndistinct GROUP BY (a*5), (b+1), c');
+
+select * from check_estimated_rows('SELECT COUNT(*) FROM ndistinct GROUP BY a, b, (c*10)');
+
+select * from check_estimated_rows('SELECT COUNT(*) FROM ndistinct GROUP BY a, (b+1), c, (d - 1)');
+
+drop statistics s11;
+
+create statistics s11 (ndistinct) on "a", "b", (a * 5), (b + 1) from ndistinct;
+
+analyze ndistinct;
+
+select * from check_estimated_rows('SELECT COUNT(*) FROM ndistinct GROUP BY a, b');
+
+select * from check_estimated_rows('SELECT COUNT(*) FROM ndistinct GROUP BY a, (b+1)');
+
+select * from check_estimated_rows('SELECT COUNT(*) FROM ndistinct GROUP BY (a*5), b');
+
+select * from check_estimated_rows('SELECT COUNT(*) FROM ndistinct GROUP BY (a*5), (b+1)');
+
+select * from check_estimated_rows('SELECT COUNT(*) FROM ndistinct GROUP BY (a*5), (b+1), c');
+
+select * from check_estimated_rows('SELECT COUNT(*) FROM ndistinct GROUP BY a, b, (c*10)');
+
+select * from check_estimated_rows('SELECT COUNT(*) FROM ndistinct GROUP BY a, (b+1), c, (d - 1)');
+
+drop statistics s11;
+
+drop statistics s12;
+
+create statistics s11 (ndistinct) on "a", "b", (a * 5), (b + 1) from ndistinct;
+
+create statistics s12 (ndistinct) on "a", (b + 1), (c * 10) from ndistinct;
+
+analyze ndistinct;
+
+select * from check_estimated_rows('SELECT COUNT(*) FROM ndistinct GROUP BY a, b');
+
+select * from check_estimated_rows('SELECT COUNT(*) FROM ndistinct GROUP BY a, (b+1)');
+
+select * from check_estimated_rows('SELECT COUNT(*) FROM ndistinct GROUP BY (a*5), b');
+
+select * from check_estimated_rows('SELECT COUNT(*) FROM ndistinct GROUP BY (a*5), (b+1)');
+
+select * from check_estimated_rows('SELECT COUNT(*) FROM ndistinct GROUP BY (a*5), (b+1), c');
+
+select * from check_estimated_rows('SELECT COUNT(*) FROM ndistinct GROUP BY a, b, (c*10)');
+
+select * from check_estimated_rows('SELECT COUNT(*) FROM ndistinct GROUP BY a, (b+1), c, (d - 1)');
+
+drop statistics s11;
+
+drop statistics s12;
+
+create table functional_dependencies (
+  filler1 text,
+  filler2 numeric,
+  a int,
+  b text,
+  filler3 date,
+  c int,
+  d text
+)
+with (autovacuum_enabled = off);
+
+create index "fdeps_ab_idx" on functional_dependencies using btree (a, b);
+
+create index "fdeps_abc_idx" on functional_dependencies using btree (a, b, c);
+
+insert into functional_dependencies (a, b, c, filler1)
+select
+  mod(i, 5),
+  mod(i, 7),
+  mod(i, 11),
+  i
+from
+  generate_series(1, 1000) as s (i);
+
+analyze functional_dependencies;
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM functional_dependencies WHERE a = 1 AND b = ''1'''
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM functional_dependencies WHERE a = 1 AND b = ''1'' AND c = 1'
+  );
+
+create statistics func_deps_stat (dependencies) on "a", "b", "c" from functional_dependencies;
+
+analyze functional_dependencies;
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM functional_dependencies WHERE a = 1 AND b = ''1'''
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM functional_dependencies WHERE a = 1 AND b = ''1'' AND c = 1'
+  );
+
+truncate functional_dependencies;
+
+drop statistics func_deps_stat;
+
+insert into functional_dependencies (a, b, c, filler1)
+select
+  i,
+  i,
+  i,
+  i
+from
+  generate_series(1, 5000) as s (i);
+
+analyze functional_dependencies;
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM functional_dependencies WHERE mod(a, 11) = 1 AND mod(b::int, 13) = 1'
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM functional_dependencies WHERE mod(a, 11) = 1 AND mod(b::int, 13) = 1 AND mod(c, 7) = 1'
+  );
+
+create statistics func_deps_stat
+(dependencies)
+on (mod(a, 11)),
+(mod(cast(b as int), 13)),
+(mod(c, 7))
+from functional_dependencies;
+
+analyze functional_dependencies;
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM functional_dependencies WHERE mod(a, 11) = 1 AND mod(b::int, 13) = 1'
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM functional_dependencies WHERE mod(a, 11) = 1 AND mod(b::int, 13) = 1 AND mod(c, 7) = 1'
+  );
+
+truncate functional_dependencies;
+
+drop statistics func_deps_stat;
+
+insert into functional_dependencies (a, b, c, filler1)
+select
+  mod(i, 100),
+  mod(i, 50),
+  mod(i, 25),
+  i
+from
+  generate_series(1, 5000) as s (i);
+
+analyze functional_dependencies;
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM functional_dependencies WHERE a = 1 AND b = ''1'''
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM functional_dependencies WHERE a = 1 AND b = ''1'' AND c = 1'
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM functional_dependencies WHERE a IN (1, 51) AND b = ''1'''
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM functional_dependencies WHERE a IN (1, 51) AND b IN (''1'', ''2'')'
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM functional_dependencies WHERE a IN (1, 2, 51, 52) AND b IN (''1'', ''2'')'
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM functional_dependencies WHERE a IN (1, 2, 51, 52) AND b = ''1'''
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM functional_dependencies WHERE a IN (1, 26, 51, 76) AND b IN (''1'', ''26'') AND c = 1'
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM functional_dependencies WHERE a IN (1, 26, 51, 76) AND b IN (''1'', ''26'') AND c IN (1)'
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM functional_dependencies WHERE a IN (1, 2, 26, 27, 51, 52, 76, 77) AND b IN (''1'', ''2'', ''26'', ''27'') AND c IN (1, 2)'
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM functional_dependencies WHERE (a = 1 OR a = 51) AND b = ''1'''
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM functional_dependencies WHERE (a = 1 OR a = 51) AND (b = ''1'' OR b = ''2'')'
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM functional_dependencies WHERE (a = 1 OR a = 2 OR a = 51 OR a = 52) AND (b = ''1'' OR b = ''2'')'
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM functional_dependencies WHERE (a = 1 OR b = ''1'') AND b = ''1'''
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM functional_dependencies WHERE a = ANY (ARRAY[1, 51]) AND b = ''1'''
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM functional_dependencies WHERE a = ANY (ARRAY[1, 51]) AND b = ANY (ARRAY[''1'', ''2''])'
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM functional_dependencies WHERE a = ANY (ARRAY[1, 2, 51, 52]) AND b = ANY (ARRAY[''1'', ''2''])'
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM functional_dependencies WHERE a = ANY (ARRAY[1, 26, 51, 76]) AND b = ANY (ARRAY[''1'', ''26'']) AND c = 1'
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM functional_dependencies WHERE a = ANY (ARRAY[1, 26, 51, 76]) AND b = ANY (ARRAY[''1'', ''26'']) AND c = ANY (ARRAY[1])'
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM functional_dependencies WHERE a = ANY (ARRAY[1, 2, 26, 27, 51, 52, 76, 77]) AND b = ANY (ARRAY[''1'', ''2'', ''26'', ''27'']) AND c = ANY (ARRAY[1, 2])'
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM functional_dependencies WHERE a < ANY (ARRAY[1, 51]) AND b > ''1'''
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM functional_dependencies WHERE a >= ANY (ARRAY[1, 51]) AND b <= ANY (ARRAY[''1'', ''2''])'
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM functional_dependencies WHERE a <= ANY (ARRAY[1, 2, 51, 52]) AND b >= ANY (ARRAY[''1'', ''2''])'
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM functional_dependencies WHERE a IN (1, 51) AND b = ALL (ARRAY[''1''])'
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM functional_dependencies WHERE a IN (1, 51) AND b = ALL (ARRAY[''1'', ''2''])'
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM functional_dependencies WHERE a IN (1, 2, 51, 52) AND b = ALL (ARRAY[''1'', ''2''])'
+  );
+
+create statistics func_deps_stat (dependencies) on "a", "b", "c" from functional_dependencies;
+
+analyze functional_dependencies;
+
+select dependencies from pg_stats_ext where statistics_name = 'func_deps_stat';
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM functional_dependencies WHERE a = 1 AND b = ''1'''
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM functional_dependencies WHERE a = 1 AND b = ''1'' AND c = 1'
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM functional_dependencies WHERE a IN (1, 51) AND b = ''1'''
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM functional_dependencies WHERE a IN (1, 51) AND b IN (''1'', ''2'')'
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM functional_dependencies WHERE a IN (1, 2, 51, 52) AND b IN (''1'', ''2'')'
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM functional_dependencies WHERE a IN (1, 2, 51, 52) AND b = ''1'''
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM functional_dependencies WHERE a IN (1, 26, 51, 76) AND b IN (''1'', ''26'') AND c = 1'
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM functional_dependencies WHERE a IN (1, 26, 51, 76) AND b IN (''1'', ''26'') AND c IN (1)'
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM functional_dependencies WHERE a IN (1, 2, 26, 27, 51, 52, 76, 77) AND b IN (''1'', ''2'', ''26'', ''27'') AND c IN (1, 2)'
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM functional_dependencies WHERE (a = 1 OR a = 51) AND b = ''1'''
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM functional_dependencies WHERE (a = 1 OR a = 51) AND (b = ''1'' OR b = ''2'')'
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM functional_dependencies WHERE (a = 1 OR a = 2 OR a = 51 OR a = 52) AND (b = ''1'' OR b = ''2'')'
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM functional_dependencies WHERE (a = 1 OR b = ''1'') AND b = ''1'''
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM functional_dependencies WHERE a = ANY (ARRAY[1, 51]) AND b = ''1'''
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM functional_dependencies WHERE a = ANY (ARRAY[1, 51]) AND b = ANY (ARRAY[''1'', ''2''])'
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM functional_dependencies WHERE a = ANY (ARRAY[1, 2, 51, 52]) AND b = ANY (ARRAY[''1'', ''2''])'
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM functional_dependencies WHERE a = ANY (ARRAY[1, 26, 51, 76]) AND b = ANY (ARRAY[''1'', ''26'']) AND c = 1'
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM functional_dependencies WHERE a = ANY (ARRAY[1, 26, 51, 76]) AND b = ANY (ARRAY[''1'', ''26'']) AND c = ANY (ARRAY[1])'
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM functional_dependencies WHERE a = ANY (ARRAY[1, 2, 26, 27, 51, 52, 76, 77]) AND b = ANY (ARRAY[''1'', ''2'', ''26'', ''27'']) AND c = ANY (ARRAY[1, 2])'
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM functional_dependencies WHERE a < ANY (ARRAY[1, 51]) AND b > ''1'''
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM functional_dependencies WHERE a >= ANY (ARRAY[1, 51]) AND b <= ANY (ARRAY[''1'', ''2''])'
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM functional_dependencies WHERE a <= ANY (ARRAY[1, 2, 51, 52]) AND b >= ANY (ARRAY[''1'', ''2''])'
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM functional_dependencies WHERE a IN (1, 51) AND b = ALL (ARRAY[''1''])'
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM functional_dependencies WHERE a IN (1, 51) AND b = ALL (ARRAY[''1'', ''2''])'
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM functional_dependencies WHERE a IN (1, 2, 51, 52) AND b = ALL (ARRAY[''1'', ''2''])'
+  );
+
+alter table functional_dependencies
+  alter column c type numeric;
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM functional_dependencies WHERE a = 1 AND b = ''1'' AND c = 1'
+  );
+
+analyze functional_dependencies;
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM functional_dependencies WHERE a = 1 AND b = ''1'' AND c = 1'
+  );
+
+drop statistics func_deps_stat;
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM functional_dependencies WHERE (a * 2) = 2 AND upper(b) = ''1'''
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM functional_dependencies WHERE (a * 2) = 2 AND upper(b) = ''1'' AND (c + 1) = 2'
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM functional_dependencies WHERE (a * 2) IN (2, 102) AND upper(b) = ''1'''
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM functional_dependencies WHERE (a * 2) IN (2, 102) AND upper(b) IN (''1'', ''2'')'
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM functional_dependencies WHERE (a * 2) IN (2, 4, 102, 104) AND upper(b) IN (''1'', ''2'')'
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM functional_dependencies WHERE (a * 2) IN (2, 4, 102, 104) AND upper(b) = ''1'''
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM functional_dependencies WHERE (a * 2) IN (2, 52, 102, 152) AND upper(b) IN (''1'', ''26'') AND (c + 1) = 2'
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM functional_dependencies WHERE (a * 2) IN (2, 52, 102, 152) AND upper(b) IN (''1'', ''26'') AND (c + 1) IN (2)'
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM functional_dependencies WHERE (a * 2) IN (2, 4, 52, 54, 102, 104, 152, 154) AND upper(b) IN (''1'', ''2'', ''26'', ''27'') AND (c + 1) IN (2, 3)'
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM functional_dependencies WHERE ((a * 2) = 2 OR (a * 2) = 102) AND upper(b) = ''1'''
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM functional_dependencies WHERE ((a * 2) = 2 OR (a * 2) = 102) AND (upper(b) = ''1'' OR upper(b) = ''2'')'
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM functional_dependencies WHERE ((a * 2) = 2 OR (a * 2) = 4 OR (a * 2) = 102 OR (a * 2) = 104) AND (upper(b) = ''1'' OR upper(b) = ''2'')'
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM functional_dependencies WHERE ((a * 2) = 2 OR upper(b) = ''1'') AND upper(b) = ''1'''
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM functional_dependencies WHERE (a * 2) = ANY (ARRAY[2, 102]) AND upper(b) = ''1'''
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM functional_dependencies WHERE (a * 2) = ANY (ARRAY[2, 102]) AND upper(b) = ANY (ARRAY[''1'', ''2''])'
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM functional_dependencies WHERE (a * 2) = ANY (ARRAY[2, 4, 102, 104]) AND upper(b) = ANY (ARRAY[''1'', ''2''])'
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM functional_dependencies WHERE (a * 2) = ANY (ARRAY[2, 52, 102, 152]) AND upper(b) = ANY (ARRAY[''1'', ''26'']) AND (c + 1) = 2'
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM functional_dependencies WHERE (a * 2) = ANY (ARRAY[2, 52, 102, 152]) AND upper(b) = ANY (ARRAY[''1'', ''26'']) AND (c + 1) = ANY (ARRAY[2])'
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM functional_dependencies WHERE (a * 2) = ANY (ARRAY[2, 4, 52, 54, 102, 104, 152, 154]) AND upper(b) = ANY (ARRAY[''1'', ''2'', ''26'', ''27'']) AND (c + 1) = ANY (ARRAY[2, 3])'
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM functional_dependencies WHERE (a * 2) < ANY (ARRAY[2, 102]) AND upper(b) > ''1'''
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM functional_dependencies WHERE (a * 2) >= ANY (ARRAY[2, 102]) AND upper(b) <= ANY (ARRAY[''1'', ''2''])'
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM functional_dependencies WHERE (a * 2) <= ANY (ARRAY[2, 4, 102, 104]) AND upper(b) >= ANY (ARRAY[''1'', ''2''])'
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM functional_dependencies WHERE (a * 2) IN (2, 102) AND upper(b) = ALL (ARRAY[''1''])'
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM functional_dependencies WHERE (a * 2) IN (2, 102) AND upper(b) = ALL (ARRAY[''1'', ''2''])'
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM functional_dependencies WHERE (a * 2) IN (2, 4, 102, 104) AND upper(b) = ALL (ARRAY[''1'', ''2''])'
+  );
+
+create statistics func_deps_stat
+(dependencies)
+on (a * 2),
+(upper(b)),
+(c + 1)
+from functional_dependencies;
+
+analyze functional_dependencies;
+
+select dependencies from pg_stats_ext where statistics_name = 'func_deps_stat';
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM functional_dependencies WHERE (a * 2) = 2 AND upper(b) = ''1'''
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM functional_dependencies WHERE (a * 2) = 2 AND upper(b) = ''1'' AND (c + 1) = 2'
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM functional_dependencies WHERE (a * 2) IN (2, 102) AND upper(b) = ''1'''
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM functional_dependencies WHERE (a * 2) IN (2, 102) AND upper(b) IN (''1'', ''2'')'
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM functional_dependencies WHERE (a * 2) IN (2, 4, 102, 104) AND upper(b) IN (''1'', ''2'')'
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM functional_dependencies WHERE (a * 2) IN (2, 4, 102, 104) AND upper(b) = ''1'''
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM functional_dependencies WHERE (a * 2) IN (2, 52, 102, 152) AND upper(b) IN (''1'', ''26'') AND (c + 1) = 2'
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM functional_dependencies WHERE (a * 2) IN (2, 52, 102, 152) AND upper(b) IN (''1'', ''26'') AND (c + 1) IN (2)'
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM functional_dependencies WHERE (a * 2) IN (2, 4, 52, 54, 102, 104, 152, 154) AND upper(b) IN (''1'', ''2'', ''26'', ''27'') AND (c + 1) IN (2, 3)'
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM functional_dependencies WHERE ((a * 2) = 2 OR (a * 2) = 102) AND upper(b) = ''1'''
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM functional_dependencies WHERE ((a * 2) = 2 OR (a * 2) = 102) AND (upper(b) = ''1'' OR upper(b) = ''2'')'
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM functional_dependencies WHERE ((a * 2) = 2 OR (a * 2) = 4 OR (a * 2) = 102 OR (a * 2) = 104) AND (upper(b) = ''1'' OR upper(b) = ''2'')'
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM functional_dependencies WHERE ((a * 2) = 2 OR upper(b) = ''1'') AND upper(b) = ''1'''
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM functional_dependencies WHERE (a * 2) = ANY (ARRAY[2, 102]) AND upper(b) = ''1'''
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM functional_dependencies WHERE (a * 2) = ANY (ARRAY[2, 102]) AND upper(b) = ANY (ARRAY[''1'', ''2''])'
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM functional_dependencies WHERE (a * 2) = ANY (ARRAY[2, 4, 102, 104]) AND upper(b) = ANY (ARRAY[''1'', ''2''])'
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM functional_dependencies WHERE (a * 2) = ANY (ARRAY[2, 52, 102, 152]) AND upper(b) = ANY (ARRAY[''1'', ''26'']) AND (c + 1) = 2'
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM functional_dependencies WHERE (a * 2) = ANY (ARRAY[2, 52, 102, 152]) AND upper(b) = ANY (ARRAY[''1'', ''26'']) AND (c + 1) = ANY (ARRAY[2])'
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM functional_dependencies WHERE (a * 2) = ANY (ARRAY[2, 4, 52, 54, 102, 104, 152, 154]) AND upper(b) = ANY (ARRAY[''1'', ''2'', ''26'', ''27'']) AND (c + 1) = ANY (ARRAY[2, 3])'
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM functional_dependencies WHERE (a * 2) < ANY (ARRAY[2, 102]) AND upper(b) > ''1'''
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM functional_dependencies WHERE (a * 2) >= ANY (ARRAY[2, 102]) AND upper(b) <= ANY (ARRAY[''1'', ''2''])'
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM functional_dependencies WHERE (a * 2) <= ANY (ARRAY[2, 4, 102, 104]) AND upper(b) >= ANY (ARRAY[''1'', ''2''])'
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM functional_dependencies WHERE (a * 2) IN (2, 102) AND upper(b) = ALL (ARRAY[''1''])'
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM functional_dependencies WHERE (a * 2) IN (2, 102) AND upper(b) = ALL (ARRAY[''1'', ''2''])'
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM functional_dependencies WHERE (a * 2) IN (2, 4, 102, 104) AND upper(b) = ALL (ARRAY[''1'', ''2''])'
+  );
+
+create table functional_dependencies_multi (
+  a int,
+  b int,
+  c int,
+  d int
+)
+with (autovacuum_enabled = off);
+
+insert into functional_dependencies_multi (a, b, c, d)
+select
+  mod(i, 7),
+  mod(i, 7),
+  mod(i, 11),
+  mod(i, 11)
+from
+  generate_series(1, 5000) as s (i);
+
+analyze functional_dependencies_multi;
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM functional_dependencies_multi WHERE a = 0 AND b = 0'
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM functional_dependencies_multi WHERE 0 = a AND 0 = b'
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM functional_dependencies_multi WHERE c = 0 AND d = 0'
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM functional_dependencies_multi WHERE a = 0 AND b = 0 AND c = 0 AND d = 0'
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM functional_dependencies_multi WHERE 0 = a AND b = 0 AND 0 = c AND d = 0'
+  );
+
+create statistics functional_dependencies_multi_1
+(dependencies)
+on "a",
+"b"
+from functional_dependencies_multi;
+
+create statistics functional_dependencies_multi_2
+(dependencies)
+on "c",
+"d"
+from functional_dependencies_multi;
+
+analyze functional_dependencies_multi;
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM functional_dependencies_multi WHERE a = 0 AND b = 0'
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM functional_dependencies_multi WHERE 0 = a AND 0 = b'
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM functional_dependencies_multi WHERE c = 0 AND d = 0'
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM functional_dependencies_multi WHERE a = 0 AND b = 0 AND c = 0 AND d = 0'
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM functional_dependencies_multi WHERE 0 = a AND b = 0 AND 0 = c AND d = 0'
+  );
+
+drop table functional_dependencies_multi;
+
+create table mcv_lists (
+  filler1 text,
+  filler2 numeric,
+  a int,
+  b varchar,
+  filler3 date,
+  c int,
+  d text,
+  ia int[]
+)
+with (autovacuum_enabled = off);
+
+insert into mcv_lists (a, b, c, filler1)
+select
+  mod(i, 37),
+  mod(i, 41),
+  mod(i, 43),
+  mod(i, 47)
+from
+  generate_series(1, 5000) as s (i);
+
+analyze mcv_lists;
+
+select * from check_estimated_rows('SELECT * FROM mcv_lists WHERE a = 1 AND b = ''1''');
+
+select * from check_estimated_rows('SELECT * FROM mcv_lists WHERE a = 1 AND b = ''1'' AND c = 1');
+
+create statistics mcv_lists_stats (mcv) on "a", "b", "c" from mcv_lists;
+
+analyze mcv_lists;
+
+select * from check_estimated_rows('SELECT * FROM mcv_lists WHERE a = 1 AND b = ''1''');
+
+select * from check_estimated_rows('SELECT * FROM mcv_lists WHERE a = 1 AND b = ''1'' AND c = 1');
+
+truncate mcv_lists;
+
+drop statistics mcv_lists_stats;
+
+insert into mcv_lists (a, b, c, filler1) select i, i, i, i from generate_series(1, 1000) as s (i);
+
+analyze mcv_lists;
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM mcv_lists WHERE mod(a,7) = 1 AND mod(b::int,11) = 1'
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM mcv_lists WHERE mod(a,7) = 1 AND mod(b::int,11) = 1 AND mod(c,13) = 1'
+  );
+
+create statistics mcv_lists_stats
+(mcv)
+on (mod(a, 7)),
+(mod(cast(b as int), 11)),
+(mod(c, 13))
+from mcv_lists;
+
+analyze mcv_lists;
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM mcv_lists WHERE mod(a,7) = 1 AND mod(b::int,11) = 1'
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM mcv_lists WHERE mod(a,7) = 1 AND mod(b::int,11) = 1 AND mod(c,13) = 1'
+  );
+
+truncate mcv_lists;
+
+drop statistics mcv_lists_stats;
+
+insert into mcv_lists (a, b, c, ia, filler1)
+select
+  mod(i, 100),
+  mod(i, 50),
+  mod(i, 25),
+  array[mod(i, 25)],
+  i
+from
+  generate_series(1, 5000) as s (i);
+
+analyze mcv_lists;
+
+select * from check_estimated_rows('SELECT * FROM mcv_lists WHERE a = 1 AND b = ''1''');
+
+select * from check_estimated_rows('SELECT * FROM mcv_lists WHERE 1 = a AND ''1'' = b');
+
+select * from check_estimated_rows('SELECT * FROM mcv_lists WHERE a < 1 AND b < ''1''');
+
+select * from check_estimated_rows('SELECT * FROM mcv_lists WHERE 1 > a AND ''1'' > b');
+
+select * from check_estimated_rows('SELECT * FROM mcv_lists WHERE a <= 0 AND b <= ''0''');
+
+select * from check_estimated_rows('SELECT * FROM mcv_lists WHERE 0 >= a AND ''0'' >= b');
+
+select * from check_estimated_rows('SELECT * FROM mcv_lists WHERE a = 1 AND b = ''1'' AND c = 1');
+
+select * from check_estimated_rows('SELECT * FROM mcv_lists WHERE a < 5 AND b < ''1'' AND c < 5');
+
+select * from check_estimated_rows('SELECT * FROM mcv_lists WHERE a < 5 AND ''1'' > b AND 5 > c');
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM mcv_lists WHERE a <= 4 AND b <= ''0'' AND c <= 4'
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM mcv_lists WHERE 4 >= a AND ''0'' >= b AND 4 >= c'
+  );
+
+select * from check_estimated_rows('SELECT * FROM mcv_lists WHERE a = 1 OR b = ''1'' OR c = 1');
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM mcv_lists WHERE a = 1 OR b = ''1'' OR c = 1 OR d IS NOT NULL'
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM mcv_lists WHERE a IN (1, 2, 51, 52) AND b IN ( ''1'', ''2'')'
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM mcv_lists WHERE a IN (1, 2, 51, 52, NULL) AND b IN ( ''1'', ''2'', NULL)'
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM mcv_lists WHERE a = ANY (ARRAY[1, 2, 51, 52]) AND b = ANY (ARRAY[''1'', ''2''])'
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM mcv_lists WHERE a = ANY (ARRAY[NULL, 1, 2, 51, 52]) AND b = ANY (ARRAY[''1'', ''2'', NULL])'
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM mcv_lists WHERE a <= ANY (ARRAY[1, 2, 3]) AND b IN (''1'', ''2'', ''3'')'
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM mcv_lists WHERE a <= ANY (ARRAY[1, NULL, 2, 3]) AND b IN (''1'', ''2'', NULL, ''3'')'
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM mcv_lists WHERE a < ALL (ARRAY[4, 5]) AND c > ANY (ARRAY[1, 2, 3])'
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM mcv_lists WHERE a < ALL (ARRAY[4, 5]) AND c > ANY (ARRAY[1, 2, 3, NULL])'
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM mcv_lists WHERE a < ALL (ARRAY[4, 5]) AND b IN (''1'', ''2'', ''3'') AND c > ANY (ARRAY[1, 2, 3])'
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM mcv_lists WHERE a < ALL (ARRAY[4, 5]) AND b IN (''1'', ''2'', NULL, ''3'') AND c > ANY (ARRAY[1, 2, NULL, 3])'
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM mcv_lists WHERE a = ANY (ARRAY[4,5]) AND 4 = ANY(ia)'
+  );
+
+create statistics mcv_lists_stats (mcv) on "a", "b", "c", "ia" from mcv_lists;
+
+analyze mcv_lists;
+
+select * from check_estimated_rows('SELECT * FROM mcv_lists WHERE a = 1 AND b = ''1''');
+
+select * from check_estimated_rows('SELECT * FROM mcv_lists WHERE 1 = a AND ''1'' = b');
+
+select * from check_estimated_rows('SELECT * FROM mcv_lists WHERE a < 1 AND b < ''1''');
+
+select * from check_estimated_rows('SELECT * FROM mcv_lists WHERE 1 > a AND ''1'' > b');
+
+select * from check_estimated_rows('SELECT * FROM mcv_lists WHERE a <= 0 AND b <= ''0''');
+
+select * from check_estimated_rows('SELECT * FROM mcv_lists WHERE 0 >= a AND ''0'' >= b');
+
+select * from check_estimated_rows('SELECT * FROM mcv_lists WHERE a = 1 AND b = ''1'' AND c = 1');
+
+select * from check_estimated_rows('SELECT * FROM mcv_lists WHERE a < 5 AND b < ''1'' AND c < 5');
+
+select * from check_estimated_rows('SELECT * FROM mcv_lists WHERE a < 5 AND ''1'' > b AND 5 > c');
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM mcv_lists WHERE a <= 4 AND b <= ''0'' AND c <= 4'
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM mcv_lists WHERE 4 >= a AND ''0'' >= b AND 4 >= c'
+  );
+
+select * from check_estimated_rows('SELECT * FROM mcv_lists WHERE a = 1 OR b = ''1'' OR c = 1');
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM mcv_lists WHERE a = 1 OR b = ''1'' OR c = 1 OR d IS NOT NULL'
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM mcv_lists WHERE a = 1 OR b = ''1'' OR c = 1 OR d IS NOT NULL'
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM mcv_lists WHERE a IN (1, 2, 51, 52) AND b IN ( ''1'', ''2'')'
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM mcv_lists WHERE a IN (1, 2, 51, 52, NULL) AND b IN ( ''1'', ''2'', NULL)'
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM mcv_lists WHERE a = ANY (ARRAY[1, 2, 51, 52]) AND b = ANY (ARRAY[''1'', ''2''])'
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM mcv_lists WHERE a = ANY (ARRAY[NULL, 1, 2, 51, 52]) AND b = ANY (ARRAY[''1'', ''2'', NULL])'
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM mcv_lists WHERE a <= ANY (ARRAY[1, 2, 3]) AND b IN (''1'', ''2'', ''3'')'
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM mcv_lists WHERE a <= ANY (ARRAY[1, NULL, 2, 3]) AND b IN (''1'', ''2'', NULL, ''3'')'
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM mcv_lists WHERE a < ALL (ARRAY[4, 5]) AND c > ANY (ARRAY[1, 2, 3])'
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM mcv_lists WHERE a < ALL (ARRAY[4, 5]) AND c > ANY (ARRAY[1, 2, 3, NULL])'
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM mcv_lists WHERE a < ALL (ARRAY[4, 5]) AND b IN (''1'', ''2'', ''3'') AND c > ANY (ARRAY[1, 2, 3])'
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM mcv_lists WHERE a < ALL (ARRAY[4, 5]) AND b IN (''1'', ''2'', NULL, ''3'') AND c > ANY (ARRAY[1, 2, NULL, 3])'
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM mcv_lists WHERE a = ANY (ARRAY[4,5]) AND 4 = ANY(ia)'
+  );
+
+alter table mcv_lists
+  alter column d type varchar(64);
+
+select
+  d.stxdmcv is not null
+from
+  pg_statistic_ext as s,
+  pg_statistic_ext_data as d
+where
+  s.stxname = 'mcv_lists_stats' and d.stxoid = s.oid;
+
+alter table mcv_lists
+  alter column c type numeric;
+
+select * from check_estimated_rows('SELECT * FROM mcv_lists WHERE a = 1 AND b = ''1''');
+
+analyze mcv_lists;
+
+select * from check_estimated_rows('SELECT * FROM mcv_lists WHERE a = 1 AND b = ''1''');
+
+truncate mcv_lists;
+
+drop statistics mcv_lists_stats;
+
+insert into mcv_lists (a, b, c, filler1) select i, i, i, i from generate_series(1, 1000) as s (i);
+
+analyze mcv_lists;
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM mcv_lists WHERE mod(a,20) = 1 AND mod(b::int,10) = 1'
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM mcv_lists WHERE 1 = mod(a,20) AND 1 = mod(b::int,10)'
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM mcv_lists WHERE mod(a,20) < 1 AND mod(b::int,10) < 1'
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM mcv_lists WHERE 1 > mod(a,20) AND 1 > mod(b::int,10)'
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM mcv_lists WHERE mod(a,20) = 1 AND mod(b::int,10) = 1 AND mod(c,5) = 1'
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM mcv_lists WHERE mod(a,20) = 1 OR mod(b::int,10) = 1 OR mod(c,25) = 1 OR d IS NOT NULL'
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM mcv_lists WHERE mod(a,20) IN (1, 2, 51, 52, NULL) AND mod(b::int,10) IN ( 1, 2, NULL)'
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM mcv_lists WHERE mod(a,20) = ANY (ARRAY[1, 2, 51, 52]) AND mod(b::int,10) = ANY (ARRAY[1, 2])'
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM mcv_lists WHERE mod(a,20) <= ANY (ARRAY[1, NULL, 2, 3]) AND mod(b::int,10) IN (1, 2, NULL, 3)'
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM mcv_lists WHERE mod(a,20) < ALL (ARRAY[4, 5]) AND mod(b::int,10) IN (1, 2, 3) AND mod(c,5) > ANY (ARRAY[1, 2, 3])'
+  );
+
+create statistics mcv_lists_stats_1 on (mod(a, 20)) from mcv_lists;
+
+create statistics mcv_lists_stats_2 on (mod(cast(b as int), 10)) from mcv_lists;
+
+create statistics mcv_lists_stats_3 on (mod(c, 5)) from mcv_lists;
+
+analyze mcv_lists;
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM mcv_lists WHERE mod(a,20) = 1 AND mod(b::int,10) = 1'
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM mcv_lists WHERE 1 = mod(a,20) AND 1 = mod(b::int,10)'
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM mcv_lists WHERE mod(a,20) < 1 AND mod(b::int,10) < 1'
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM mcv_lists WHERE 1 > mod(a,20) AND 1 > mod(b::int,10)'
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM mcv_lists WHERE mod(a,20) = 1 AND mod(b::int,10) = 1 AND mod(c,5) = 1'
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM mcv_lists WHERE mod(a,20) = 1 OR mod(b::int,10) = 1 OR mod(c,25) = 1 OR d IS NOT NULL'
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM mcv_lists WHERE mod(a,20) IN (1, 2, 51, 52, NULL) AND mod(b::int,10) IN ( 1, 2, NULL)'
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM mcv_lists WHERE mod(a,20) = ANY (ARRAY[1, 2, 51, 52]) AND mod(b::int,10) = ANY (ARRAY[1, 2])'
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM mcv_lists WHERE mod(a,20) <= ANY (ARRAY[1, NULL, 2, 3]) AND mod(b::int,10) IN (1, 2, NULL, 3)'
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM mcv_lists WHERE mod(a,20) < ALL (ARRAY[4, 5]) AND mod(b::int,10) IN (1, 2, 3) AND mod(c,5) > ANY (ARRAY[1, 2, 3])'
+  );
+
+drop statistics mcv_lists_stats_1;
+
+drop statistics mcv_lists_stats_2;
+
+drop statistics mcv_lists_stats_3;
+
+create statistics mcv_lists_stats
+(mcv)
+on (mod(a, 20)),
+(mod(cast(b as int), 10)),
+(mod(c, 5))
+from mcv_lists;
+
+analyze mcv_lists;
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM mcv_lists WHERE mod(a,20) = 1 AND mod(b::int,10) = 1'
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM mcv_lists WHERE 1 = mod(a,20) AND 1 = mod(b::int,10)'
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM mcv_lists WHERE mod(a,20) < 1 AND mod(b::int,10) < 1'
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM mcv_lists WHERE 1 > mod(a,20) AND 1 > mod(b::int,10)'
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM mcv_lists WHERE mod(a,20) = 1 AND mod(b::int,10) = 1 AND mod(c,5) = 1'
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM mcv_lists WHERE mod(a,20) = 1 OR mod(b::int,10) = 1 OR mod(c,25) = 1 OR d IS NOT NULL'
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM mcv_lists WHERE mod(a,20) IN (1, 2, 51, 52, NULL) AND mod(b::int,10) IN ( 1, 2, NULL)'
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM mcv_lists WHERE mod(a,20) = ANY (ARRAY[1, 2, 51, 52]) AND mod(b::int,10) = ANY (ARRAY[1, 2])'
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM mcv_lists WHERE mod(a,20) <= ANY (ARRAY[1, NULL, 2, 3]) AND mod(b::int,10) IN (1, 2, NULL, 3)'
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM mcv_lists WHERE mod(a,20) < ALL (ARRAY[4, 5]) AND mod(b::int,10) IN (1, 2, 3) AND mod(c,5) > ANY (ARRAY[1, 2, 3])'
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM mcv_lists WHERE mod(a,20) = 1 OR mod(b::int,10) = 1 OR mod(c,5) = 1 OR d IS NOT NULL'
+  );
+
+truncate mcv_lists;
+
+drop statistics mcv_lists_stats;
+
+insert into mcv_lists (a, b, c, filler1)
+select
+  case
+    when mod(i, 100) = 1 then null
+    else mod(i, 100)
+  end,
+  case
+    when mod(i, 50) = 1 then null
+    else mod(i, 50)
+  end,
+  case
+    when mod(i, 25) = 1 then null
+    else mod(i, 25)
+  end,
+  i
+from
+  generate_series(1, 5000) as s (i);
+
+analyze mcv_lists;
+
+select * from check_estimated_rows('SELECT * FROM mcv_lists WHERE a IS NULL AND b IS NULL');
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM mcv_lists WHERE a IS NULL AND b IS NULL AND c IS NULL'
+  );
+
+select * from check_estimated_rows('SELECT * FROM mcv_lists WHERE a IS NULL AND b IS NOT NULL');
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM mcv_lists WHERE a IS NOT NULL AND b IS NULL AND c IS NOT NULL'
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM mcv_lists WHERE a IN (0, 1) AND b IN (''0'', ''1'')'
+  );
+
+create statistics mcv_lists_stats (mcv) on "a", "b", "c" from mcv_lists;
+
+analyze mcv_lists;
+
+select * from check_estimated_rows('SELECT * FROM mcv_lists WHERE a IS NULL AND b IS NULL');
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM mcv_lists WHERE a IS NULL AND b IS NULL AND c IS NULL'
+  );
+
+select * from check_estimated_rows('SELECT * FROM mcv_lists WHERE a IS NULL AND b IS NOT NULL');
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM mcv_lists WHERE a IS NOT NULL AND b IS NULL AND c IS NOT NULL'
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM mcv_lists WHERE a IN (0, 1) AND b IN (''0'', ''1'')'
+  );
+
+truncate mcv_lists;
+
+insert into mcv_lists (a, b, c) select 1, 2, 3 from generate_series(1, 1000) as s (i);
+
+analyze mcv_lists;
+
+select
+  m.*
+from
+  pg_statistic_ext as s,
+  pg_statistic_ext_data as d,
+  pg_mcv_list_items(d.stxdmcv) as m
+where
+  s.stxname = 'mcv_lists_stats' and d.stxoid = s.oid;
+
+truncate mcv_lists;
+
+drop statistics mcv_lists_stats;
+
+insert into mcv_lists (a, b, c, d)
+select
+  null,
+  case when mod(i, 2) = 0 then null else 'x' end,
+  case when mod(i, 2) = 0 then null else 0 end,
+  case when mod(i, 2) = 0 then null else 'x' end
+from
+  generate_series(1, 5000) as s (i);
+
+analyze mcv_lists;
+
+select * from check_estimated_rows('SELECT * FROM mcv_lists WHERE b = ''x'' OR d = ''x''');
+
+select * from check_estimated_rows('SELECT * FROM mcv_lists WHERE a = 1 OR b = ''x'' OR d = ''x''');
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM mcv_lists WHERE a IS NULL AND (b = ''x'' OR d = ''x'')'
+  );
+
+create statistics mcv_lists_stats (mcv) on "a", "b", "d" from mcv_lists;
+
+analyze mcv_lists;
+
+select
+  m.*
+from
+  pg_statistic_ext as s,
+  pg_statistic_ext_data as d,
+  pg_mcv_list_items(d.stxdmcv) as m
+where
+  s.stxname = 'mcv_lists_stats' and d.stxoid = s.oid;
+
+select * from check_estimated_rows('SELECT * FROM mcv_lists WHERE b = ''x'' OR d = ''x''');
+
+select * from check_estimated_rows('SELECT * FROM mcv_lists WHERE a = 1 OR b = ''x'' OR d = ''x''');
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM mcv_lists WHERE a IS NULL AND (b = ''x'' OR d = ''x'')'
+  );
+
+create table mcv_lists_uuid (
+  a uuid,
+  b uuid,
+  c uuid
+)
+with (autovacuum_enabled = off);
+
+insert into mcv_lists_uuid (a, b, c)
+select
+  cast(fipshash(cast(mod(i, 100) as text)) as uuid),
+  cast(fipshash(cast(mod(i, 50) as text)) as uuid),
+  cast(fipshash(cast(mod(i, 25) as text)) as uuid)
+from
+  generate_series(1, 5000) as s (i);
+
+analyze mcv_lists_uuid;
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM mcv_lists_uuid WHERE a = ''e7f6c011-776e-8db7-cd33-0b54174fd76f'' AND b = ''e7f6c011-776e-8db7-cd33-0b54174fd76f'''
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM mcv_lists_uuid WHERE a = ''e7f6c011-776e-8db7-cd33-0b54174fd76f'' AND b = ''e7f6c011-776e-8db7-cd33-0b54174fd76f'' AND c = ''e7f6c011-776e-8db7-cd33-0b54174fd76f'''
+  );
+
+create statistics mcv_lists_uuid_stats (mcv) on "a", "b", "c" from mcv_lists_uuid;
+
+analyze mcv_lists_uuid;
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM mcv_lists_uuid WHERE a = ''e7f6c011-776e-8db7-cd33-0b54174fd76f'' AND b = ''e7f6c011-776e-8db7-cd33-0b54174fd76f'''
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM mcv_lists_uuid WHERE a = ''e7f6c011-776e-8db7-cd33-0b54174fd76f'' AND b = ''e7f6c011-776e-8db7-cd33-0b54174fd76f'' AND c = ''e7f6c011-776e-8db7-cd33-0b54174fd76f'''
+  );
+
+drop table mcv_lists_uuid;
+
+create table mcv_lists_arrays (
+  a text[],
+  b numeric[],
+  c int[]
+)
+with (autovacuum_enabled = off);
+
+insert into mcv_lists_arrays (a, b, c)
+select
+  array[fipshash(cast(i / 100 as text)),
+  fipshash(cast(i / 100 - 1 as text)),
+  fipshash(cast(i / 100 + 1 as text))],
+  array[cast(i / 100 - 1 as numeric) / 1000,
+  cast(i / 100 as numeric) / 1000,
+  cast(i / 100 + 1 as numeric) / 1000],
+  array[i / 100 - 1, i / 100, i / 100 + 1]
+from
+  generate_series(1, 5000) as s (i);
+
+create statistics mcv_lists_arrays_stats (mcv) on "a", "b", "c" from mcv_lists_arrays;
+
+analyze mcv_lists_arrays;
+
+create table mcv_lists_bool (
+  a boolean,
+  b boolean,
+  c boolean
+)
+with (autovacuum_enabled = off);
+
+insert into mcv_lists_bool (a, b, c)
+select
+  mod(i, 2) = 0,
+  mod(i, 4) = 0,
+  mod(i, 8) = 0
+from
+  generate_series(1, 10000) as s (i);
+
+analyze mcv_lists_bool;
+
+select * from check_estimated_rows('SELECT * FROM mcv_lists_bool WHERE a AND b AND c');
+
+select * from check_estimated_rows('SELECT * FROM mcv_lists_bool WHERE NOT a AND b AND c');
+
+select * from check_estimated_rows('SELECT * FROM mcv_lists_bool WHERE NOT a AND NOT b AND c');
+
+select * from check_estimated_rows('SELECT * FROM mcv_lists_bool WHERE NOT a AND b AND NOT c');
+
+create statistics mcv_lists_bool_stats (mcv) on "a", "b", "c" from mcv_lists_bool;
+
+analyze mcv_lists_bool;
+
+select * from check_estimated_rows('SELECT * FROM mcv_lists_bool WHERE a AND b AND c');
+
+select * from check_estimated_rows('SELECT * FROM mcv_lists_bool WHERE NOT a AND b AND c');
+
+select * from check_estimated_rows('SELECT * FROM mcv_lists_bool WHERE NOT a AND NOT b AND c');
+
+select * from check_estimated_rows('SELECT * FROM mcv_lists_bool WHERE NOT a AND b AND NOT c');
+
+create table mcv_lists_partial (
+  a int,
+  b int,
+  c int
+);
+
+insert into mcv_lists_partial (a, b, c)
+select
+  mod(i, 10),
+  mod(i, 10),
+  mod(i, 10)
+from
+  generate_series(0, 999) as s (i);
+
+insert into mcv_lists_partial (a, b, c) select i, i, i from generate_series(0, 99) as s (i);
+
+insert into mcv_lists_partial (a, b, c) select i, i, i from generate_series(0, 3999) as s (i);
+
+analyze mcv_lists_partial;
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM mcv_lists_partial WHERE a = 0 AND b = 0 AND c = 0'
+  );
+
+select * from check_estimated_rows('SELECT * FROM mcv_lists_partial WHERE a = 0 OR b = 0 OR c = 0');
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM mcv_lists_partial WHERE a = 10 AND b = 10 AND c = 10'
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM mcv_lists_partial WHERE a = 10 OR b = 10 OR c = 10'
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM mcv_lists_partial WHERE a = 0 AND b = 0 AND c = 10'
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM mcv_lists_partial WHERE a = 0 OR b = 0 OR c = 10'
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM mcv_lists_partial WHERE (a = 0 AND b = 0 AND c = 0) OR (a = 1 AND b = 1 AND c = 1) OR (a = 2 AND b = 2 AND c = 2)'
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM mcv_lists_partial WHERE (a = 0 AND b = 0) OR (a = 0 AND c = 0) OR (b = 0 AND c = 0)'
+  );
+
+create statistics mcv_lists_partial_stats (mcv) on "a", "b", "c" from mcv_lists_partial;
+
+analyze mcv_lists_partial;
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM mcv_lists_partial WHERE a = 0 AND b = 0 AND c = 0'
+  );
+
+select * from check_estimated_rows('SELECT * FROM mcv_lists_partial WHERE a = 0 OR b = 0 OR c = 0');
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM mcv_lists_partial WHERE a = 10 AND b = 10 AND c = 10'
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM mcv_lists_partial WHERE a = 10 OR b = 10 OR c = 10'
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM mcv_lists_partial WHERE a = 0 AND b = 0 AND c = 10'
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM mcv_lists_partial WHERE a = 0 OR b = 0 OR c = 10'
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM mcv_lists_partial WHERE (a = 0 AND b = 0 AND c = 0) OR (a = 1 AND b = 1 AND c = 1) OR (a = 2 AND b = 2 AND c = 2)'
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM mcv_lists_partial WHERE (a = 0 AND b = 0) OR (a = 0 AND c = 0) OR (b = 0 AND c = 0)'
+  );
+
+drop table mcv_lists_partial;
+
+create table mcv_lists_multi (
+  a int,
+  b int,
+  c int,
+  d int
+)
+with (autovacuum_enabled = off);
+
+insert into mcv_lists_multi (a, b, c, d)
+select
+  mod(i, 5),
+  mod(i, 5),
+  mod(i, 7),
+  mod(i, 7)
+from
+  generate_series(1, 5000) as s (i);
+
+analyze mcv_lists_multi;
+
+select * from check_estimated_rows('SELECT * FROM mcv_lists_multi WHERE a = 0 AND b = 0');
+
+select * from check_estimated_rows('SELECT * FROM mcv_lists_multi WHERE c = 0 AND d = 0');
+
+select * from check_estimated_rows('SELECT * FROM mcv_lists_multi WHERE b = 0 AND c = 0');
+
+select * from check_estimated_rows('SELECT * FROM mcv_lists_multi WHERE b = 0 OR c = 0');
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM mcv_lists_multi WHERE a = 0 AND b = 0 AND c = 0 AND d = 0'
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM mcv_lists_multi WHERE (a = 0 AND b = 0) OR (c = 0 AND d = 0)'
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM mcv_lists_multi WHERE a = 0 OR b = 0 OR c = 0 OR d = 0'
+  );
+
+create statistics mcv_lists_multi_1 (mcv) on "a", "b" from mcv_lists_multi;
+
+create statistics mcv_lists_multi_2 (mcv) on "c", "d" from mcv_lists_multi;
+
+analyze mcv_lists_multi;
+
+select * from check_estimated_rows('SELECT * FROM mcv_lists_multi WHERE a = 0 AND b = 0');
+
+select * from check_estimated_rows('SELECT * FROM mcv_lists_multi WHERE c = 0 AND d = 0');
+
+select * from check_estimated_rows('SELECT * FROM mcv_lists_multi WHERE b = 0 AND c = 0');
+
+select * from check_estimated_rows('SELECT * FROM mcv_lists_multi WHERE b = 0 OR c = 0');
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM mcv_lists_multi WHERE a = 0 AND b = 0 AND c = 0 AND d = 0'
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM mcv_lists_multi WHERE (a = 0 AND b = 0) OR (c = 0 AND d = 0)'
+  );
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM mcv_lists_multi WHERE a = 0 OR b = 0 OR c = 0 OR d = 0'
+  );
+
+drop table mcv_lists_multi;
+
+create table expr_stats (
+  a int,
+  b int,
+  c int
+);
+
+insert into expr_stats
+select
+  mod(i, 10),
+  mod(i, 10),
+  mod(i, 10)
+from
+  generate_series(1, 1000) as s (i);
+
+analyze expr_stats;
+
+select * from check_estimated_rows('SELECT * FROM expr_stats WHERE (2*a) = 0 AND (3*b) = 0');
+
+select * from check_estimated_rows('SELECT * FROM expr_stats WHERE (a+b) = 0 AND (a-b) = 0');
+
+create statistics expr_stats_1 (mcv) on (a + b), (a - b), (2 * a), (3 * b) from expr_stats;
+
+analyze expr_stats;
+
+select * from check_estimated_rows('SELECT * FROM expr_stats WHERE (2*a) = 0 AND (3*b) = 0');
+
+select * from check_estimated_rows('SELECT * FROM expr_stats WHERE (a+b) = 0 AND (a-b) = 0');
+
+drop statistics expr_stats_1;
+
+drop table expr_stats;
+
+create table expr_stats (
+  a int,
+  b int,
+  c int
+);
+
+insert into expr_stats
+select
+  mod(i, 10),
+  mod(i, 10),
+  mod(i, 10)
+from
+  generate_series(1, 1000) as s (i);
+
+analyze expr_stats;
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM expr_stats WHERE a = 0 AND (2*a) = 0 AND (3*b) = 0'
+  );
+
+select * from check_estimated_rows('SELECT * FROM expr_stats WHERE a = 3 AND b = 3 AND (a-b) = 0');
+
+select * from check_estimated_rows('SELECT * FROM expr_stats WHERE a = 0 AND b = 1 AND (a-b) = 0');
+
+create statistics expr_stats_1
+(mcv)
+on "a",
+"b",
+(2 * a),
+(3 * b),
+(a + b),
+(a - b)
+from expr_stats;
+
+analyze expr_stats;
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM expr_stats WHERE a = 0 AND (2*a) = 0 AND (3*b) = 0'
+  );
+
+select * from check_estimated_rows('SELECT * FROM expr_stats WHERE a = 3 AND b = 3 AND (a-b) = 0');
+
+select * from check_estimated_rows('SELECT * FROM expr_stats WHERE a = 0 AND b = 1 AND (a-b) = 0');
+
+drop table expr_stats;
+
+create table expr_stats (
+  a int,
+  b name,
+  c text
+);
+
+insert into expr_stats
+select
+  mod(i, 10),
+  fipshash(cast(mod(i, 10) as text)),
+  fipshash(cast(mod(i, 10) as text))
+from
+  generate_series(1, 1000) as s (i);
+
+analyze expr_stats;
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM expr_stats WHERE a = 0 AND (b || c) <= ''z'' AND (c || b) >= ''0'''
+  );
+
+create statistics expr_stats_1 (mcv) on "a", "b", (b || c), (c || b) from expr_stats;
+
+analyze expr_stats;
+
+select
+  *
+from
+  check_estimated_rows(
+    'SELECT * FROM expr_stats WHERE a = 0 AND (b || c) <= ''z'' AND (c || b) >= ''0'''
+  );
+
+drop table expr_stats;
+
+create table expr_stats_incompatible_test (
+  c0 double precision,
+  c1 boolean not null
+);
+
+create statistics expr_stat_comp_1 on "c0", "c1" from expr_stats_incompatible_test;
+
+insert into expr_stats_incompatible_test values (1234, false), (5678, true);
+
+analyze expr_stats_incompatible_test;
+
+select
+  c0
+from
+  only expr_stats_incompatible_test
+where
+  upper('x') like 'x' || cast('[0,1]' as int4range) and
+  (c0 in (0, 1) or c1);
+
+drop table expr_stats_incompatible_test;
+
+create schema "tststats";
+
+create table tststats.priv_test_tbl (
+  a int,
+  b int
+);
+
+insert into tststats.priv_test_tbl
+select
+  mod(i, 5),
+  mod(i, 10)
+from
+  generate_series(1, 100) as s (i);
+
+create statistics tststats.priv_test_stats (mcv) on "a", "b" from tststats.priv_test_tbl;
+
+analyze tststats.priv_test_tbl;
+
+create table stts_t1 (
+  a int,
+  b int
+);
+
+create statistics (ndistinct) on "a", "b" from stts_t1;
+
+create statistics (ndistinct, dependencies) on "a", "b" from stts_t1;
+
+create statistics (ndistinct, dependencies, mcv) on "a", "b" from stts_t1;
+
+create table stts_t2 (
+  a int,
+  b int,
+  c int
+);
+
+create statistics on "b", "c" from stts_t2;
+
+create table stts_t3 (
+  col1 int,
+  col2 int,
+  col3 int
+);
+
+create statistics stts_hoge on "col1", "col2", "col3" from stts_t3;
+
+create schema "stts_s1";
+
+create schema "stts_s2";
+
+create statistics stts_s1.stts_foo on "col1", "col2" from stts_t3;
+
+create statistics stts_s2.stts_yama (dependencies, mcv) on "col1", "col3" from stts_t3;
+
+insert into stts_t1 select i, i from generate_series(1, 100) as i;
+
+analyze stts_t1;
+
+set search_path to public, stts_s1, stts_s2, tststats;
+
+create statistics (mcv) on "a", "b", (a + b), (a - b) from stts_t1;
+
+create statistics (mcv) on "a", "b", (a + b), (a - b) from stts_t1;
+
+create statistics (mcv) on (a + b), (a - b) from stts_t1;
+
+drop statistics stts_t1_a_b_expr_expr_stat;
+
+drop statistics stts_t1_a_b_expr_expr_stat1;
+
+drop statistics stts_t1_expr_expr_stat;
+
+set search_path to public, stts_s1;
+
+create role regress_stats_ext nosuperuser;
+
+set role to regress_stats_ext;
+
+reset role;
+
+drop table stts_t1, stts_t2, stts_t3;
+
+drop schema stts_s1, stts_s2 cascade;
+
+drop role regress_stats_ext;
+
+reset search_path;
+
+create user regress_stats_user1;
+
+grant USAGE on schema tststats to regress_stats_user1;
+
+set session authorization regress_stats_user1;
+
+select * from tststats.priv_test_tbl;
+
+select * from tststats.priv_test_tbl where a = 1 and tststats.priv_test_tbl.* > (1, 1) is not null;
+
+create function op_leak(int, int)
+returns boolean
+language plpgsql
+as $function$
+BEGIN RAISE NOTICE 'op_leak => %, %', $1, $2; RETURN $1 < $2; END
+$function$;
+
+create operator <<< (PROCEDURE = op_leak, LEFTARG = int, RIGHTARG = int, RESTRICT = scalarltsel);
+
+create function op_leak(record, record)
+returns boolean
+language plpgsql
+as $function$
+BEGIN RAISE NOTICE 'op_leak => %, %', $1, $2; RETURN $1 < $2; END
+$function$;
+
+create operator <<< (PROCEDURE = op_leak,
+LEFTARG = record,
+RIGHTARG = record,
+RESTRICT = scalarltsel);
+
+select * from tststats.priv_test_tbl where a <<< 0 and b <<< 0;
+
+select * from tststats.priv_test_tbl where a <<< 0 or b <<< 0;
+
+select * from tststats.priv_test_tbl as t where a <<< 0 and (b <<< 0 or t.* <<< (1, 1) is not null);
+
+delete from tststats.priv_test_tbl where a <<< 0 and b <<< 0;
+
+reset session_authorization;
+
+create view tststats.priv_test_view
+  with (security_barrier = 'true')
+as select * from tststats.priv_test_tbl where false;
+
+grant SELECT, DELETE on table tststats.priv_test_view to regress_stats_user1;
+
+set session authorization regress_stats_user1;
+
+select * from tststats.priv_test_view where a <<< 0 and b <<< 0;
+
+select * from tststats.priv_test_view where a <<< 0 or b <<< 0;
+
+select
+  *
+from
+  tststats.priv_test_view as t
+where
+  a <<< 0 and
+  (b <<< 0 or t.* <<< (1, 1) is not null);
+
+delete from tststats.priv_test_view where a <<< 0 and b <<< 0;
+
+reset session_authorization;
+
+alter table tststats.priv_test_tbl
+  enable row level security;
+
+create policy priv_test_tbl_pol
+on tststats.priv_test_tbl
+as permissive
+for all
+to public
+using (2 * a < 0);
+
+grant SELECT, DELETE on table tststats.priv_test_tbl to regress_stats_user1;
+
+set session authorization regress_stats_user1;
+
+select * from tststats.priv_test_tbl where a <<< 0 and b <<< 0;
+
+select * from tststats.priv_test_tbl where a <<< 0 or b <<< 0;
+
+select * from tststats.priv_test_tbl as t where a <<< 0 and (b <<< 0 or t.* <<< (1, 1) is not null);
+
+delete from tststats.priv_test_tbl where a <<< 0 and b <<< 0;
+
+reset session_authorization;
+
+create table tststats.priv_test_parent_tbl (
+  a int,
+  b int
+);
+
+alter table tststats.priv_test_tbl
+  inherit tststats.priv_test_parent_tbl;
+
+set session authorization regress_stats_user1;
+
+select * from tststats.priv_test_parent_tbl where a <<< 0 and b <<< 0;
+
+select * from tststats.priv_test_parent_tbl where a <<< 0 or b <<< 0;
+
+select
+  *
+from
+  tststats.priv_test_parent_tbl as t
+where
+  a <<< 0 and
+  (b <<< 0 or t.* <<< (1, 1) is not null);
+
+delete from tststats.priv_test_parent_tbl where a <<< 0 and b <<< 0;
+
+reset session_authorization;
+
+alter table tststats.priv_test_parent_tbl
+  enable row level security;
+
+create policy priv_test_parent_tbl_pol
+on tststats.priv_test_parent_tbl
+as permissive
+for all
+to public
+using (2 * a < 0);
+
+grant SELECT, DELETE on table tststats.priv_test_parent_tbl to regress_stats_user1;
+
+set session authorization regress_stats_user1;
+
+select * from tststats.priv_test_parent_tbl where a <<< 0 and b <<< 0;
+
+select * from tststats.priv_test_parent_tbl where a <<< 0 or b <<< 0;
+
+select
+  *
+from
+  tststats.priv_test_parent_tbl as t
+where
+  a <<< 0 and
+  (b <<< 0 or t.* <<< (1, 1) is not null);
+
+delete from tststats.priv_test_parent_tbl where a <<< 0 and b <<< 0;
+
+reset session_authorization;
+
+create table stats_ext_tbl (
+  id int
+  primary key
+  generated by default as identity,
+  col text
+);
+
+insert into stats_ext_tbl (col) values ('secret'), ('secret'), ('very secret');
+
+create statistics s_col on "id", "col" from stats_ext_tbl;
+
+create statistics s_expr on (mod(id, 2)), (lower(col)) from stats_ext_tbl;
+
+analyze stats_ext_tbl;
+
+set session authorization regress_stats_user1;
+
+select
+  statistics_name,
+  most_common_vals
+from
+  pg_stats_ext as x
+where
+  tablename = 'stats_ext_tbl'
+order by row(x.*);
+
+select
+  statistics_name,
+  most_common_vals
+from
+  pg_stats_ext_exprs as x
+where
+  tablename = 'stats_ext_tbl'
+order by row(x.*);
+
+reset session_authorization;
+
+alter table stats_ext_tbl
+  owner to regress_stats_user1;
+
+set session authorization regress_stats_user1;
+
+select
+  statistics_name,
+  most_common_vals
+from
+  pg_stats_ext as x
+where
+  tablename = 'stats_ext_tbl'
+order by row(x.*);
+
+select
+  statistics_name,
+  most_common_vals
+from
+  pg_stats_ext_exprs as x
+where
+  tablename = 'stats_ext_tbl'
+order by row(x.*);
+
+drop operator <<< (int, int);
+
+drop function op_leak(int, int);
+
+drop operator <<< (record, record);
+
+drop function op_leak(record, record);
+
+reset session_authorization;
+
+drop table stats_ext_tbl;
+
+drop schema tststats cascade;
+
+drop role regress_stats_user1;
+
+create table grouping_unique (x int);
+
+insert into grouping_unique (x) select gs from generate_series(1, 1000) as gs;
+
+analyze grouping_unique;
+
+select
+  *
+from
+  check_estimated_rows(
+    '
+  SELECT * FROM generate_series(1, 1) t1 LEFT JOIN (
+    SELECT x FROM grouping_unique t2 GROUP BY x) AS q1
+  ON t1.t1 = q1.x;
+'
+  );
+
+drop table grouping_unique;
+
+create table sb_1
+as
+  select
+    gs % 10 as x,
+    gs % 10 as y,
+    gs % 10 as z
+  from
+    generate_series(1, 1e4) as gs;
+
+create table sb_2
+as
+  select
+    gs % 49 as x,
+    gs % 51 as y,
+    gs % 73 as z,
+    'abc' || gs as payload
+  from
+    generate_series(1, 1e4) as gs;
+
+analyze sb_1, sb_2;
+
+select * from sb_1 as a, sb_2 as b where a.x = b.x and a.y = b.y and a.z = b.z;
+
+create statistics extstat_sb_2 (ndistinct) on "x", "y", "z" from sb_2;
+
+analyze sb_2;
+
+select * from sb_1 as a, sb_2 as b where a.x = b.x and a.y = b.y and a.z = b.z;
+
+set enable_nestloop = off;
+
+set enable_mergejoin = off;
+
+select from sb_1 left outer join sb_2 on sb_2.x = sb_1.x and sb_1.x = sb_2.x;
+
+select from sb_1 left outer join sb_2 on sb_2.x = sb_1.x and sb_1.x = sb_2.x and sb_1.y = sb_2.y;
+
+reset enable_nestloop;
+
+reset enable_mergejoin;
+
+create function extstat_small(x numeric)
+returns boolean
+language plpgsql
+immutable
+strict
+as $function$
+BEGIN RETURN x < 1; END
+$function$;
+
+select * from check_estimated_rows('SELECT * FROM sb_2 WHERE extstat_small(y)');
+
+create statistics extstat_sb_2_small on (extstat_small(y)) from sb_2;
+
+analyze sb_2;
+
+select * from check_estimated_rows('SELECT * FROM sb_2 WHERE extstat_small(y)');
+
+drop table sb_1, sb_2 cascade;
+
+drop function extstat_small(numeric);

@@ -203,14 +203,27 @@ pub(crate) fn unknown(p: &mut Splitter, exclude: &[SyntaxKind]) -> SplitterResul
             SyntaxKind::L_PAREN => {
                 parenthesis(p)?;
             }
-            SyntaxKind::BEGIN_KW => {
-                if p.look_ahead(true) != SyntaxKind::SEMICOLON {
-                    // BEGIN; should be treated as a statement terminator
-                    begin_end(p)?;
-                } else {
+            SyntaxKind::BEGIN_KW => match p.look_ahead(true) {
+                SyntaxKind::SEMICOLON => {
                     p.advance()?;
                 }
-            }
+                SyntaxKind::ATOMIC_KW => {
+                    begin_end(p)?;
+                }
+                SyntaxKind::TRANSACTION_KW
+                | SyntaxKind::WORK_KW
+                | SyntaxKind::ISOLATION_KW
+                | SyntaxKind::READ_KW
+                | SyntaxKind::WRITE_KW
+                | SyntaxKind::ONLY_KW
+                | SyntaxKind::DEFERRABLE_KW
+                | SyntaxKind::NOT_KW => {
+                    p.advance()?;
+                }
+                _ => {
+                    begin_end(p)?;
+                }
+            },
             t => match at_statement_start(t, exclude) {
                 Some(SyntaxKind::SELECT_KW) => {
                     let prev = p.look_back(true);

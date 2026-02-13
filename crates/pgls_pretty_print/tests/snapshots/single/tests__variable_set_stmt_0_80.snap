@@ -1,0 +1,6 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/single/variable_set_stmt_0.sql
+snapshot_kind: text
+---
+set search_path to myschema, public;

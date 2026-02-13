@@ -1,0 +1,5579 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/plpgsql.sql
+---
+create table room (
+  roomno char(8),
+  comment text
+);
+
+create unique index "room_rno" on room using btree (roomno bpchar_ops);
+
+create table wslot (
+  slotname char(20),
+  roomno char(8),
+  slotlink char(20),
+  backlink char(20)
+);
+
+create unique index "wslot_name" on wslot using btree (slotname bpchar_ops);
+
+create table pfield (
+  name text,
+  comment text
+);
+
+create unique index "pfield_name" on pfield using btree (name text_ops);
+
+create table pslot (
+  slotname char(20),
+  pfname text,
+  slotlink char(20),
+  backlink char(20)
+);
+
+create unique index "pslot_name" on pslot using btree (slotname bpchar_ops);
+
+create table pline (
+  slotname char(20),
+  phonenumber char(20),
+  comment text,
+  backlink char(20)
+);
+
+create unique index "pline_name" on pline using btree (slotname bpchar_ops);
+
+create table hub (
+  name char(14),
+  comment text,
+  nslots int
+);
+
+create unique index "hub_name" on hub using btree (name bpchar_ops);
+
+create table hslot (
+  slotname char(20),
+  hubname char(14),
+  slotno int,
+  slotlink char(20)
+);
+
+create unique index "hslot_name" on hslot using btree (slotname bpchar_ops);
+
+create index "hslot_hubname" on hslot using btree (hubname bpchar_ops);
+
+create table system (
+  name text,
+  comment text
+);
+
+create unique index "system_name" on system using btree (name text_ops);
+
+create table iface (
+  slotname char(20),
+  sysname text,
+  ifname text,
+  slotlink char(20)
+);
+
+create unique index "iface_name" on iface using btree (slotname bpchar_ops);
+
+create table phone (
+  slotname char(20),
+  comment text,
+  slotlink char(20)
+);
+
+create unique index "phone_name" on phone using btree (slotname bpchar_ops);
+
+create function tg_room_au()
+returns trigger
+language plpgsql
+as $function$
+begin
+    if new.roomno != old.roomno then
+        update WSlot set roomno = new.roomno where roomno = old.roomno;
+    end if;
+    return new;
+end;
+$function$;
+
+create trigger tg_room_au
+after update
+on room
+for each row
+execute function tg_room_au();
+
+create function tg_room_ad()
+returns trigger
+language plpgsql
+as $function$
+begin
+    delete from WSlot where roomno = old.roomno;
+    return old;
+end;
+$function$;
+
+create trigger tg_room_ad
+after delete
+on room
+for each row
+execute function tg_room_ad();
+
+create function tg_wslot_biu()
+returns trigger
+language plpgsql
+as $function$
+begin
+    if count(*) = 0 from Room where roomno = new.roomno then
+        raise exception 'Room % does not exist', new.roomno;
+    end if;
+    return new;
+end;
+$function$;
+
+create trigger tg_wslot_biu
+before insert or update
+on wslot
+for each row
+execute function tg_wslot_biu();
+
+create function tg_pfield_au()
+returns trigger
+language plpgsql
+as $function$
+begin
+    if new.name != old.name then
+        update PSlot set pfname = new.name where pfname = old.name;
+    end if;
+    return new;
+end;
+$function$;
+
+create trigger tg_pfield_au
+after update
+on pfield
+for each row
+execute function tg_pfield_au();
+
+create function tg_pfield_ad()
+returns trigger
+language plpgsql
+as $function$
+begin
+    delete from PSlot where pfname = old.name;
+    return old;
+end;
+$function$;
+
+create trigger tg_pfield_ad
+after delete
+on pfield
+for each row
+execute function tg_pfield_ad();
+
+create function tg_pslot_biu()
+returns trigger
+language plpgsql
+as $function$
+declare
+    pfrec	record;
+    ps          alias for new;
+begin
+    select into pfrec * from PField where name = ps.pfname;
+    if not found then
+        raise exception $$Patchfield "%" does not exist$$, ps.pfname;
+    end if;
+    return ps;
+end;
+$function$;
+
+create trigger tg_pslot_biu
+before insert or update
+on pslot
+for each row
+execute function tg_pslot_biu();
+
+create function tg_system_au()
+returns trigger
+language plpgsql
+as $function$
+begin
+    if new.name != old.name then
+        update IFace set sysname = new.name where sysname = old.name;
+    end if;
+    return new;
+end;
+$function$;
+
+create trigger tg_system_au
+after update
+on system
+for each row
+execute function tg_system_au();
+
+create function tg_iface_biu()
+returns trigger
+language plpgsql
+as $function$
+declare
+    sname	text;
+    sysrec	record;
+begin
+    select into sysrec * from system where name = new.sysname;
+    if not found then
+        raise exception $q$system "%" does not exist$q$, new.sysname;
+    end if;
+    sname := 'IF.' || new.sysname;
+    sname := sname || '.';
+    sname := sname || new.ifname;
+    if length(sname) > 20 then
+        raise exception 'IFace slotname "%" too long (20 char max)', sname;
+    end if;
+    new.slotname := sname;
+    return new;
+end;
+$function$;
+
+create trigger tg_iface_biu
+before insert or update
+on iface
+for each row
+execute function tg_iface_biu();
+
+create function tg_hub_a()
+returns trigger
+language plpgsql
+as $function$
+declare
+    hname	text;
+    dummy	integer;
+begin
+    if tg_op = 'INSERT' then
+	dummy := tg_hub_adjustslots(new.name, 0, new.nslots);
+	return new;
+    end if;
+    if tg_op = 'UPDATE' then
+	if new.name != old.name then
+	    update HSlot set hubname = new.name where hubname = old.name;
+	end if;
+	dummy := tg_hub_adjustslots(new.name, old.nslots, new.nslots);
+	return new;
+    end if;
+    if tg_op = 'DELETE' then
+	dummy := tg_hub_adjustslots(old.name, old.nslots, 0);
+	return old;
+    end if;
+end;
+$function$;
+
+create trigger tg_hub_a
+after insert or delete or update
+on hub
+for each row
+execute function tg_hub_a();
+
+create function tg_hub_adjustslots(hname char, oldnslots int, newnslots int)
+returns int
+language plpgsql
+as $function$
+begin
+    if newnslots = oldnslots then
+        return 0;
+    end if;
+    if newnslots < oldnslots then
+        delete from HSlot where hubname = hname and slotno > newnslots;
+	return 0;
+    end if;
+    for i in oldnslots + 1 .. newnslots loop
+        insert into HSlot (slotname, hubname, slotno, slotlink)
+		values ('HS.dummy', hname, i, '');
+    end loop;
+    return 0;
+end
+$function$;
+
+comment on function tg_hub_adjustslots_wrong(char, int, int) is 'function with args';
+
+comment on function tg_hub_adjustslots(char, int, int) is 'function with args';
+
+comment on function tg_hub_adjustslots(char, int, int) is null;
+
+create function tg_hslot_biu()
+returns trigger
+language plpgsql
+as $function$
+declare
+    sname	text;
+    xname	HSlot.slotname%TYPE;
+    hubrec	record;
+begin
+    select into hubrec * from Hub where name = new.hubname;
+    if not found then
+        raise exception 'no manual manipulation of HSlot';
+    end if;
+    if new.slotno < 1 or new.slotno > hubrec.nslots then
+        raise exception 'no manual manipulation of HSlot';
+    end if;
+    if tg_op = 'UPDATE' and new.hubname != old.hubname then
+	if count(*) > 0 from Hub where name = old.hubname then
+	    raise exception 'no manual manipulation of HSlot';
+	end if;
+    end if;
+    sname := 'HS.' || trim(new.hubname);
+    sname := sname || '.';
+    sname := sname || new.slotno::text;
+    if length(sname) > 20 then
+        raise exception 'HSlot slotname "%" too long (20 char max)', sname;
+    end if;
+    new.slotname := sname;
+    return new;
+end;
+$function$;
+
+create trigger tg_hslot_biu
+before insert or update
+on hslot
+for each row
+execute function tg_hslot_biu();
+
+create function tg_hslot_bd()
+returns trigger
+language plpgsql
+as $function$
+declare
+    hubrec	record;
+begin
+    select into hubrec * from Hub where name = old.hubname;
+    if not found then
+        return old;
+    end if;
+    if old.slotno > hubrec.nslots then
+        return old;
+    end if;
+    raise exception 'no manual manipulation of HSlot';
+end;
+$function$;
+
+create trigger tg_hslot_bd
+before delete
+on hslot
+for each row
+execute function tg_hslot_bd();
+
+create function tg_chkslotname()
+returns trigger
+language plpgsql
+as $function$
+begin
+    if substr(new.slotname, 1, 2) != tg_argv[0] then
+        raise exception 'slotname must begin with %', tg_argv[0];
+    end if;
+    return new;
+end;
+$function$;
+
+create trigger tg_chkslotname
+before insert
+on pslot
+for each row
+execute function tg_chkslotname("PS");
+
+create trigger tg_chkslotname
+before insert
+on wslot
+for each row
+execute function tg_chkslotname("WS");
+
+create trigger tg_chkslotname
+before insert
+on pline
+for each row
+execute function tg_chkslotname("PL");
+
+create trigger tg_chkslotname
+before insert
+on iface
+for each row
+execute function tg_chkslotname("IF");
+
+create trigger tg_chkslotname
+before insert
+on phone
+for each row
+execute function tg_chkslotname("PH");
+
+create function tg_chkslotlink()
+returns trigger
+language plpgsql
+as $function$
+begin
+    if new.slotlink isnull then
+        new.slotlink := '';
+    end if;
+    return new;
+end;
+$function$;
+
+create trigger tg_chkslotlink
+before insert or update
+on pslot
+for each row
+execute function tg_chkslotlink();
+
+create trigger tg_chkslotlink
+before insert or update
+on wslot
+for each row
+execute function tg_chkslotlink();
+
+create trigger tg_chkslotlink
+before insert or update
+on iface
+for each row
+execute function tg_chkslotlink();
+
+create trigger tg_chkslotlink
+before insert or update
+on hslot
+for each row
+execute function tg_chkslotlink();
+
+create trigger tg_chkslotlink
+before insert or update
+on phone
+for each row
+execute function tg_chkslotlink();
+
+create function tg_chkbacklink()
+returns trigger
+language plpgsql
+as $function$
+begin
+    if new.backlink isnull then
+        new.backlink := '';
+    end if;
+    return new;
+end;
+$function$;
+
+create trigger tg_chkbacklink
+before insert or update
+on pslot
+for each row
+execute function tg_chkbacklink();
+
+create trigger tg_chkbacklink
+before insert or update
+on wslot
+for each row
+execute function tg_chkbacklink();
+
+create trigger tg_chkbacklink
+before insert or update
+on pline
+for each row
+execute function tg_chkbacklink();
+
+create function tg_pslot_bu()
+returns trigger
+language plpgsql
+as $function$
+begin
+    if new.slotname != old.slotname then
+        delete from PSlot where slotname = old.slotname;
+	insert into PSlot (
+		    slotname,
+		    pfname,
+		    slotlink,
+		    backlink
+		) values (
+		    new.slotname,
+		    new.pfname,
+		    new.slotlink,
+		    new.backlink
+		);
+        return null;
+    end if;
+    return new;
+end;
+$function$;
+
+create trigger tg_pslot_bu
+before update
+on pslot
+for each row
+execute function tg_pslot_bu();
+
+create function tg_wslot_bu()
+returns trigger
+language plpgsql
+as $function$
+begin
+    if new.slotname != old.slotname then
+        delete from WSlot where slotname = old.slotname;
+	insert into WSlot (
+		    slotname,
+		    roomno,
+		    slotlink,
+		    backlink
+		) values (
+		    new.slotname,
+		    new.roomno,
+		    new.slotlink,
+		    new.backlink
+		);
+        return null;
+    end if;
+    return new;
+end;
+$function$;
+
+create trigger tg_wslot_bu
+before update
+on wslot
+for each row
+execute function tg_wslot_bu();
+
+create function tg_pline_bu()
+returns trigger
+language plpgsql
+as $function$
+begin
+    if new.slotname != old.slotname then
+        delete from PLine where slotname = old.slotname;
+	insert into PLine (
+		    slotname,
+		    phonenumber,
+		    comment,
+		    backlink
+		) values (
+		    new.slotname,
+		    new.phonenumber,
+		    new.comment,
+		    new.backlink
+		);
+        return null;
+    end if;
+    return new;
+end;
+$function$;
+
+create trigger tg_pline_bu
+before update
+on pline
+for each row
+execute function tg_pline_bu();
+
+create function tg_iface_bu()
+returns trigger
+language plpgsql
+as $function$
+begin
+    if new.slotname != old.slotname then
+        delete from IFace where slotname = old.slotname;
+	insert into IFace (
+		    slotname,
+		    sysname,
+		    ifname,
+		    slotlink
+		) values (
+		    new.slotname,
+		    new.sysname,
+		    new.ifname,
+		    new.slotlink
+		);
+        return null;
+    end if;
+    return new;
+end;
+$function$;
+
+create trigger tg_iface_bu
+before update
+on iface
+for each row
+execute function tg_iface_bu();
+
+create function tg_hslot_bu()
+returns trigger
+language plpgsql
+as $function$
+begin
+    if new.slotname != old.slotname or new.hubname != old.hubname then
+        delete from HSlot where slotname = old.slotname;
+	insert into HSlot (
+		    slotname,
+		    hubname,
+		    slotno,
+		    slotlink
+		) values (
+		    new.slotname,
+		    new.hubname,
+		    new.slotno,
+		    new.slotlink
+		);
+        return null;
+    end if;
+    return new;
+end;
+$function$;
+
+create trigger tg_hslot_bu
+before update
+on hslot
+for each row
+execute function tg_hslot_bu();
+
+create function tg_phone_bu()
+returns trigger
+language plpgsql
+as $function$
+begin
+    if new.slotname != old.slotname then
+        delete from PHone where slotname = old.slotname;
+	insert into PHone (
+		    slotname,
+		    comment,
+		    slotlink
+		) values (
+		    new.slotname,
+		    new.comment,
+		    new.slotlink
+		);
+        return null;
+    end if;
+    return new;
+end;
+$function$;
+
+create trigger tg_phone_bu
+before update
+on phone
+for each row
+execute function tg_phone_bu();
+
+create function tg_backlink_a()
+returns trigger
+language plpgsql
+as $function$
+declare
+    dummy	integer;
+begin
+    if tg_op = 'INSERT' then
+        if new.backlink != '' then
+	    dummy := tg_backlink_set(new.backlink, new.slotname);
+	end if;
+	return new;
+    end if;
+    if tg_op = 'UPDATE' then
+        if new.backlink != old.backlink then
+	    if old.backlink != '' then
+	        dummy := tg_backlink_unset(old.backlink, old.slotname);
+	    end if;
+	    if new.backlink != '' then
+	        dummy := tg_backlink_set(new.backlink, new.slotname);
+	    end if;
+	else
+	    if new.slotname != old.slotname and new.backlink != '' then
+	        dummy := tg_slotlink_set(new.backlink, new.slotname);
+	    end if;
+	end if;
+	return new;
+    end if;
+    if tg_op = 'DELETE' then
+        if old.backlink != '' then
+	    dummy := tg_backlink_unset(old.backlink, old.slotname);
+	end if;
+	return old;
+    end if;
+end;
+$function$;
+
+create trigger tg_backlink_a
+after insert or delete or update
+on pslot
+for each row
+execute function tg_backlink_a("PS");
+
+create trigger tg_backlink_a
+after insert or delete or update
+on wslot
+for each row
+execute function tg_backlink_a("WS");
+
+create trigger tg_backlink_a
+after insert or delete or update
+on pline
+for each row
+execute function tg_backlink_a("PL");
+
+create function tg_backlink_set(myname char, blname char)
+returns int
+language plpgsql
+as $function$
+declare
+    mytype	char(2);
+    link	char(4);
+    rec		record;
+begin
+    mytype := substr(myname, 1, 2);
+    link := mytype || substr(blname, 1, 2);
+    if link = 'PLPL' then
+        raise exception
+		'backlink between two phone lines does not make sense';
+    end if;
+    if link in ('PLWS', 'WSPL') then
+        raise exception
+		'direct link of phone line to wall slot not permitted';
+    end if;
+    if mytype = 'PS' then
+        select into rec * from PSlot where slotname = myname;
+	if not found then
+	    raise exception '% does not exist', myname;
+	end if;
+	if rec.backlink != blname then
+	    update PSlot set backlink = blname where slotname = myname;
+	end if;
+	return 0;
+    end if;
+    if mytype = 'WS' then
+        select into rec * from WSlot where slotname = myname;
+	if not found then
+	    raise exception '% does not exist', myname;
+	end if;
+	if rec.backlink != blname then
+	    update WSlot set backlink = blname where slotname = myname;
+	end if;
+	return 0;
+    end if;
+    if mytype = 'PL' then
+        select into rec * from PLine where slotname = myname;
+	if not found then
+	    raise exception '% does not exist', myname;
+	end if;
+	if rec.backlink != blname then
+	    update PLine set backlink = blname where slotname = myname;
+	end if;
+	return 0;
+    end if;
+    raise exception 'illegal backlink beginning with %', mytype;
+end;
+$function$;
+
+create function tg_backlink_unset(char, char)
+returns int
+language plpgsql
+as $function$
+declare
+    myname	alias for $1;
+    blname	alias for $2;
+    mytype	char(2);
+    rec		record;
+begin
+    mytype := substr(myname, 1, 2);
+    if mytype = 'PS' then
+        select into rec * from PSlot where slotname = myname;
+	if not found then
+	    return 0;
+	end if;
+	if rec.backlink = blname then
+	    update PSlot set backlink = '' where slotname = myname;
+	end if;
+	return 0;
+    end if;
+    if mytype = 'WS' then
+        select into rec * from WSlot where slotname = myname;
+	if not found then
+	    return 0;
+	end if;
+	if rec.backlink = blname then
+	    update WSlot set backlink = '' where slotname = myname;
+	end if;
+	return 0;
+    end if;
+    if mytype = 'PL' then
+        select into rec * from PLine where slotname = myname;
+	if not found then
+	    return 0;
+	end if;
+	if rec.backlink = blname then
+	    update PLine set backlink = '' where slotname = myname;
+	end if;
+	return 0;
+    end if;
+end
+$function$;
+
+create function tg_slotlink_a()
+returns trigger
+language plpgsql
+as $function$
+declare
+    dummy	integer;
+begin
+    if tg_op = 'INSERT' then
+        if new.slotlink != '' then
+	    dummy := tg_slotlink_set(new.slotlink, new.slotname);
+	end if;
+	return new;
+    end if;
+    if tg_op = 'UPDATE' then
+        if new.slotlink != old.slotlink then
+	    if old.slotlink != '' then
+	        dummy := tg_slotlink_unset(old.slotlink, old.slotname);
+	    end if;
+	    if new.slotlink != '' then
+	        dummy := tg_slotlink_set(new.slotlink, new.slotname);
+	    end if;
+	else
+	    if new.slotname != old.slotname and new.slotlink != '' then
+	        dummy := tg_slotlink_set(new.slotlink, new.slotname);
+	    end if;
+	end if;
+	return new;
+    end if;
+    if tg_op = 'DELETE' then
+        if old.slotlink != '' then
+	    dummy := tg_slotlink_unset(old.slotlink, old.slotname);
+	end if;
+	return old;
+    end if;
+end;
+$function$;
+
+create trigger tg_slotlink_a
+after insert or delete or update
+on pslot
+for each row
+execute function tg_slotlink_a("PS");
+
+create trigger tg_slotlink_a
+after insert or delete or update
+on wslot
+for each row
+execute function tg_slotlink_a("WS");
+
+create trigger tg_slotlink_a
+after insert or delete or update
+on iface
+for each row
+execute function tg_slotlink_a("IF");
+
+create trigger tg_slotlink_a
+after insert or delete or update
+on hslot
+for each row
+execute function tg_slotlink_a("HS");
+
+create trigger tg_slotlink_a
+after insert or delete or update
+on phone
+for each row
+execute function tg_slotlink_a("PH");
+
+create function tg_slotlink_set(char, char)
+returns int
+language plpgsql
+as $function$
+declare
+    myname	alias for $1;
+    blname	alias for $2;
+    mytype	char(2);
+    link	char(4);
+    rec		record;
+begin
+    mytype := substr(myname, 1, 2);
+    link := mytype || substr(blname, 1, 2);
+    if link = 'PHPH' then
+        raise exception
+		'slotlink between two phones does not make sense';
+    end if;
+    if link in ('PHHS', 'HSPH') then
+        raise exception
+		'link of phone to hub does not make sense';
+    end if;
+    if link in ('PHIF', 'IFPH') then
+        raise exception
+		'link of phone to hub does not make sense';
+    end if;
+    if link in ('PSWS', 'WSPS') then
+        raise exception
+		'slotlink from patchslot to wallslot not permitted';
+    end if;
+    if mytype = 'PS' then
+        select into rec * from PSlot where slotname = myname;
+	if not found then
+	    raise exception '% does not exist', myname;
+	end if;
+	if rec.slotlink != blname then
+	    update PSlot set slotlink = blname where slotname = myname;
+	end if;
+	return 0;
+    end if;
+    if mytype = 'WS' then
+        select into rec * from WSlot where slotname = myname;
+	if not found then
+	    raise exception '% does not exist', myname;
+	end if;
+	if rec.slotlink != blname then
+	    update WSlot set slotlink = blname where slotname = myname;
+	end if;
+	return 0;
+    end if;
+    if mytype = 'IF' then
+        select into rec * from IFace where slotname = myname;
+	if not found then
+	    raise exception '% does not exist', myname;
+	end if;
+	if rec.slotlink != blname then
+	    update IFace set slotlink = blname where slotname = myname;
+	end if;
+	return 0;
+    end if;
+    if mytype = 'HS' then
+        select into rec * from HSlot where slotname = myname;
+	if not found then
+	    raise exception '% does not exist', myname;
+	end if;
+	if rec.slotlink != blname then
+	    update HSlot set slotlink = blname where slotname = myname;
+	end if;
+	return 0;
+    end if;
+    if mytype = 'PH' then
+        select into rec * from PHone where slotname = myname;
+	if not found then
+	    raise exception '% does not exist', myname;
+	end if;
+	if rec.slotlink != blname then
+	    update PHone set slotlink = blname where slotname = myname;
+	end if;
+	return 0;
+    end if;
+    raise exception 'illegal slotlink beginning with %', mytype;
+end;
+$function$;
+
+create function tg_slotlink_unset(char, char)
+returns int
+language plpgsql
+as $function$
+declare
+    myname	alias for $1;
+    blname	alias for $2;
+    mytype	char(2);
+    rec		record;
+begin
+    mytype := substr(myname, 1, 2);
+    if mytype = 'PS' then
+        select into rec * from PSlot where slotname = myname;
+	if not found then
+	    return 0;
+	end if;
+	if rec.slotlink = blname then
+	    update PSlot set slotlink = '' where slotname = myname;
+	end if;
+	return 0;
+    end if;
+    if mytype = 'WS' then
+        select into rec * from WSlot where slotname = myname;
+	if not found then
+	    return 0;
+	end if;
+	if rec.slotlink = blname then
+	    update WSlot set slotlink = '' where slotname = myname;
+	end if;
+	return 0;
+    end if;
+    if mytype = 'IF' then
+        select into rec * from IFace where slotname = myname;
+	if not found then
+	    return 0;
+	end if;
+	if rec.slotlink = blname then
+	    update IFace set slotlink = '' where slotname = myname;
+	end if;
+	return 0;
+    end if;
+    if mytype = 'HS' then
+        select into rec * from HSlot where slotname = myname;
+	if not found then
+	    return 0;
+	end if;
+	if rec.slotlink = blname then
+	    update HSlot set slotlink = '' where slotname = myname;
+	end if;
+	return 0;
+    end if;
+    if mytype = 'PH' then
+        select into rec * from PHone where slotname = myname;
+	if not found then
+	    return 0;
+	end if;
+	if rec.slotlink = blname then
+	    update PHone set slotlink = '' where slotname = myname;
+	end if;
+	return 0;
+    end if;
+end;
+$function$;
+
+create function pslot_backlink_view(char)
+returns text
+language plpgsql
+as $function$
+<<outer>>
+declare
+    rec		record;
+    bltype	char(2);
+    retval	text;
+begin
+    select into rec * from PSlot where slotname = $1;
+    if not found then
+        return '';
+    end if;
+    if rec.backlink = '' then
+        return '-';
+    end if;
+    bltype := substr(rec.backlink, 1, 2);
+    if bltype = 'PL' then
+        declare
+	    rec		record;
+	begin
+	    select into rec * from PLine where slotname = "outer".rec.backlink;
+	    retval := 'Phone line ' || trim(rec.phonenumber);
+	    if rec.comment != '' then
+	        retval := retval || ' (';
+		retval := retval || rec.comment;
+		retval := retval || ')';
+	    end if;
+	    return retval;
+	end;
+    end if;
+    if bltype = 'WS' then
+        select into rec * from WSlot where slotname = rec.backlink;
+	retval := trim(rec.slotname) || ' in room ';
+	retval := retval || trim(rec.roomno);
+	retval := retval || ' -> ';
+	return retval || wslot_slotlink_view(rec.slotname);
+    end if;
+    return rec.backlink;
+end;
+$function$;
+
+create function pslot_slotlink_view(char)
+returns text
+language plpgsql
+as $function$
+declare
+    psrec	record;
+    sltype	char(2);
+    retval	text;
+begin
+    select into psrec * from PSlot where slotname = $1;
+    if not found then
+        return '';
+    end if;
+    if psrec.slotlink = '' then
+        return '-';
+    end if;
+    sltype := substr(psrec.slotlink, 1, 2);
+    if sltype = 'PS' then
+	retval := trim(psrec.slotlink) || ' -> ';
+	return retval || pslot_backlink_view(psrec.slotlink);
+    end if;
+    if sltype = 'HS' then
+        retval := comment from Hub H, HSlot HS
+			where HS.slotname = psrec.slotlink
+			  and H.name = HS.hubname;
+        retval := retval || ' slot ';
+	retval := retval || slotno::text from HSlot
+			where slotname = psrec.slotlink;
+	return retval;
+    end if;
+    return psrec.slotlink;
+end;
+$function$;
+
+create function wslot_slotlink_view(char)
+returns text
+language plpgsql
+as $function$
+declare
+    rec		record;
+    sltype	char(2);
+    retval	text;
+begin
+    select into rec * from WSlot where slotname = $1;
+    if not found then
+        return '';
+    end if;
+    if rec.slotlink = '' then
+        return '-';
+    end if;
+    sltype := substr(rec.slotlink, 1, 2);
+    if sltype = 'PH' then
+        select into rec * from PHone where slotname = rec.slotlink;
+	retval := 'Phone ' || trim(rec.slotname);
+	if rec.comment != '' then
+	    retval := retval || ' (';
+	    retval := retval || rec.comment;
+	    retval := retval || ')';
+	end if;
+	return retval;
+    end if;
+    if sltype = 'IF' then
+	declare
+	    syrow	System%RowType;
+	    ifrow	IFace%ROWTYPE;
+        begin
+	    select into ifrow * from IFace where slotname = rec.slotlink;
+	    select into syrow * from System where name = ifrow.sysname;
+	    retval := syrow.name || ' IF ';
+	    retval := retval || ifrow.ifname;
+	    if syrow.comment != '' then
+	        retval := retval || ' (';
+		retval := retval || syrow.comment;
+		retval := retval || ')';
+	    end if;
+	    return retval;
+	end;
+    end if;
+    return rec.slotlink;
+end;
+$function$;
+
+create view pfield_v1
+as select
+  pf.pfname,
+  pf.slotname,
+  pslot_backlink_view(pf.slotname)
+  as backside,
+  pslot_slotlink_view(pf.slotname)
+  as patch
+from
+  pslot as pf;
+
+insert into room values ('001', 'Entrance');
+
+insert into room values ('002', 'Office');
+
+insert into room values ('003', 'Office');
+
+insert into room values ('004', 'Technical');
+
+insert into room values ('101', 'Office');
+
+insert into room values ('102', 'Conference');
+
+insert into room values ('103', 'Restroom');
+
+insert into room values ('104', 'Technical');
+
+insert into room values ('105', 'Office');
+
+insert into room values ('106', 'Office');
+
+insert into wslot values ('WS.001.1a', '001', '', '');
+
+insert into wslot values ('WS.001.1b', '001', '', '');
+
+insert into wslot values ('WS.001.2a', '001', '', '');
+
+insert into wslot values ('WS.001.2b', '001', '', '');
+
+insert into wslot values ('WS.001.3a', '001', '', '');
+
+insert into wslot values ('WS.001.3b', '001', '', '');
+
+insert into wslot values ('WS.002.1a', '002', '', '');
+
+insert into wslot values ('WS.002.1b', '002', '', '');
+
+insert into wslot values ('WS.002.2a', '002', '', '');
+
+insert into wslot values ('WS.002.2b', '002', '', '');
+
+insert into wslot values ('WS.002.3a', '002', '', '');
+
+insert into wslot values ('WS.002.3b', '002', '', '');
+
+insert into wslot values ('WS.003.1a', '003', '', '');
+
+insert into wslot values ('WS.003.1b', '003', '', '');
+
+insert into wslot values ('WS.003.2a', '003', '', '');
+
+insert into wslot values ('WS.003.2b', '003', '', '');
+
+insert into wslot values ('WS.003.3a', '003', '', '');
+
+insert into wslot values ('WS.003.3b', '003', '', '');
+
+insert into wslot values ('WS.101.1a', '101', '', '');
+
+insert into wslot values ('WS.101.1b', '101', '', '');
+
+insert into wslot values ('WS.101.2a', '101', '', '');
+
+insert into wslot values ('WS.101.2b', '101', '', '');
+
+insert into wslot values ('WS.101.3a', '101', '', '');
+
+insert into wslot values ('WS.101.3b', '101', '', '');
+
+insert into wslot values ('WS.102.1a', '102', '', '');
+
+insert into wslot values ('WS.102.1b', '102', '', '');
+
+insert into wslot values ('WS.102.2a', '102', '', '');
+
+insert into wslot values ('WS.102.2b', '102', '', '');
+
+insert into wslot values ('WS.102.3a', '102', '', '');
+
+insert into wslot values ('WS.102.3b', '102', '', '');
+
+insert into wslot values ('WS.105.1a', '105', '', '');
+
+insert into wslot values ('WS.105.1b', '105', '', '');
+
+insert into wslot values ('WS.105.2a', '105', '', '');
+
+insert into wslot values ('WS.105.2b', '105', '', '');
+
+insert into wslot values ('WS.105.3a', '105', '', '');
+
+insert into wslot values ('WS.105.3b', '105', '', '');
+
+insert into wslot values ('WS.106.1a', '106', '', '');
+
+insert into wslot values ('WS.106.1b', '106', '', '');
+
+insert into wslot values ('WS.106.2a', '106', '', '');
+
+insert into wslot values ('WS.106.2b', '106', '', '');
+
+insert into wslot values ('WS.106.3a', '106', '', '');
+
+insert into wslot values ('WS.106.3b', '106', '', '');
+
+insert into pfield values ('PF0_1', 'Wallslots basement');
+
+insert into pslot values ('PS.base.a1', 'PF0_1', '', '');
+
+insert into pslot values ('PS.base.a2', 'PF0_1', '', '');
+
+insert into pslot values ('PS.base.a3', 'PF0_1', '', '');
+
+insert into pslot values ('PS.base.a4', 'PF0_1', '', '');
+
+insert into pslot values ('PS.base.a5', 'PF0_1', '', '');
+
+insert into pslot values ('PS.base.a6', 'PF0_1', '', '');
+
+insert into pslot values ('PS.base.b1', 'PF0_1', '', 'WS.002.1a');
+
+insert into pslot values ('PS.base.b2', 'PF0_1', '', 'WS.002.1b');
+
+insert into pslot values ('PS.base.b3', 'PF0_1', '', 'WS.002.2a');
+
+insert into pslot values ('PS.base.b4', 'PF0_1', '', 'WS.002.2b');
+
+insert into pslot values ('PS.base.b5', 'PF0_1', '', 'WS.002.3a');
+
+insert into pslot values ('PS.base.b6', 'PF0_1', '', 'WS.002.3b');
+
+insert into pslot values ('PS.base.c1', 'PF0_1', '', 'WS.003.1a');
+
+insert into pslot values ('PS.base.c2', 'PF0_1', '', 'WS.003.1b');
+
+insert into pslot values ('PS.base.c3', 'PF0_1', '', 'WS.003.2a');
+
+insert into pslot values ('PS.base.c4', 'PF0_1', '', 'WS.003.2b');
+
+insert into pslot values ('PS.base.c5', 'PF0_1', '', 'WS.003.3a');
+
+insert into pslot values ('PS.base.c6', 'PF0_1', '', 'WS.003.3b');
+
+insert into pfield values ('PF0_X', 'Phonelines basement');
+
+insert into pslot values ('PS.base.ta1', 'PF0_X', '', '');
+
+insert into pslot values ('PS.base.ta2', 'PF0_X', '', '');
+
+insert into pslot values ('PS.base.ta3', 'PF0_X', '', '');
+
+insert into pslot values ('PS.base.ta4', 'PF0_X', '', '');
+
+insert into pslot values ('PS.base.ta5', 'PF0_X', '', '');
+
+insert into pslot values ('PS.base.ta6', 'PF0_X', '', '');
+
+insert into pslot values ('PS.base.tb1', 'PF0_X', '', '');
+
+insert into pslot values ('PS.base.tb2', 'PF0_X', '', '');
+
+insert into pslot values ('PS.base.tb3', 'PF0_X', '', '');
+
+insert into pslot values ('PS.base.tb4', 'PF0_X', '', '');
+
+insert into pslot values ('PS.base.tb5', 'PF0_X', '', '');
+
+insert into pslot values ('PS.base.tb6', 'PF0_X', '', '');
+
+insert into pfield values ('PF1_1', 'Wallslots first floor');
+
+insert into pslot values ('PS.first.a1', 'PF1_1', '', 'WS.101.1a');
+
+insert into pslot values ('PS.first.a2', 'PF1_1', '', 'WS.101.1b');
+
+insert into pslot values ('PS.first.a3', 'PF1_1', '', 'WS.101.2a');
+
+insert into pslot values ('PS.first.a4', 'PF1_1', '', 'WS.101.2b');
+
+insert into pslot values ('PS.first.a5', 'PF1_1', '', 'WS.101.3a');
+
+insert into pslot values ('PS.first.a6', 'PF1_1', '', 'WS.101.3b');
+
+insert into pslot values ('PS.first.b1', 'PF1_1', '', 'WS.102.1a');
+
+insert into pslot values ('PS.first.b2', 'PF1_1', '', 'WS.102.1b');
+
+insert into pslot values ('PS.first.b3', 'PF1_1', '', 'WS.102.2a');
+
+insert into pslot values ('PS.first.b4', 'PF1_1', '', 'WS.102.2b');
+
+insert into pslot values ('PS.first.b5', 'PF1_1', '', 'WS.102.3a');
+
+insert into pslot values ('PS.first.b6', 'PF1_1', '', 'WS.102.3b');
+
+insert into pslot values ('PS.first.c1', 'PF1_1', '', 'WS.105.1a');
+
+insert into pslot values ('PS.first.c2', 'PF1_1', '', 'WS.105.1b');
+
+insert into pslot values ('PS.first.c3', 'PF1_1', '', 'WS.105.2a');
+
+insert into pslot values ('PS.first.c4', 'PF1_1', '', 'WS.105.2b');
+
+insert into pslot values ('PS.first.c5', 'PF1_1', '', 'WS.105.3a');
+
+insert into pslot values ('PS.first.c6', 'PF1_1', '', 'WS.105.3b');
+
+insert into pslot values ('PS.first.d1', 'PF1_1', '', 'WS.106.1a');
+
+insert into pslot values ('PS.first.d2', 'PF1_1', '', 'WS.106.1b');
+
+insert into pslot values ('PS.first.d3', 'PF1_1', '', 'WS.106.2a');
+
+insert into pslot values ('PS.first.d4', 'PF1_1', '', 'WS.106.2b');
+
+insert into pslot values ('PS.first.d5', 'PF1_1', '', 'WS.106.3a');
+
+insert into pslot values ('PS.first.d6', 'PF1_1', '', 'WS.106.3b');
+
+update pslot set backlink = 'WS.001.1a' where slotname = 'PS.base.a1';
+
+update pslot set backlink = 'WS.001.1b' where slotname = 'PS.base.a3';
+
+select * from wslot where roomno = '001' order by slotname;
+
+select * from pslot where slotname ~ 'PS.base.a' order by slotname;
+
+update pslot set backlink = 'WS.001.2a' where slotname = 'PS.base.a3';
+
+select * from wslot where roomno = '001' order by slotname;
+
+select * from pslot where slotname ~ 'PS.base.a' order by slotname;
+
+update pslot set backlink = 'WS.001.1b' where slotname = 'PS.base.a2';
+
+select * from wslot where roomno = '001' order by slotname;
+
+select * from pslot where slotname ~ 'PS.base.a' order by slotname;
+
+update wslot set backlink = 'PS.base.a4' where slotname = 'WS.001.2b';
+
+update wslot set backlink = 'PS.base.a6' where slotname = 'WS.001.3a';
+
+select * from wslot where roomno = '001' order by slotname;
+
+select * from pslot where slotname ~ 'PS.base.a' order by slotname;
+
+update wslot set backlink = 'PS.base.a6' where slotname = 'WS.001.3b';
+
+select * from wslot where roomno = '001' order by slotname;
+
+select * from pslot where slotname ~ 'PS.base.a' order by slotname;
+
+update wslot set backlink = 'PS.base.a5' where slotname = 'WS.001.3a';
+
+select * from wslot where roomno = '001' order by slotname;
+
+select * from pslot where slotname ~ 'PS.base.a' order by slotname;
+
+insert into pfield values ('PF1_2', 'Phonelines first floor');
+
+insert into pslot values ('PS.first.ta1', 'PF1_2', '', '');
+
+insert into pslot values ('PS.first.ta2', 'PF1_2', '', '');
+
+insert into pslot values ('PS.first.ta3', 'PF1_2', '', '');
+
+insert into pslot values ('PS.first.ta4', 'PF1_2', '', '');
+
+insert into pslot values ('PS.first.ta5', 'PF1_2', '', '');
+
+insert into pslot values ('PS.first.ta6', 'PF1_2', '', '');
+
+insert into pslot values ('PS.first.tb1', 'PF1_2', '', '');
+
+insert into pslot values ('PS.first.tb2', 'PF1_2', '', '');
+
+insert into pslot values ('PS.first.tb3', 'PF1_2', '', '');
+
+insert into pslot values ('PS.first.tb4', 'PF1_2', '', '');
+
+insert into pslot values ('PS.first.tb5', 'PF1_2', '', '');
+
+insert into pslot values ('PS.first.tb6', 'PF1_2', '', '');
+
+update pfield set name = 'PF0_2' where name = 'PF0_X';
+
+select * from pslot order by slotname;
+
+select * from wslot order by slotname;
+
+insert into pline values ('PL.001', '-0', 'Central call', 'PS.base.ta1');
+
+insert into pline values ('PL.002', '-101', '', 'PS.base.ta2');
+
+insert into pline values ('PL.003', '-102', '', 'PS.base.ta3');
+
+insert into pline values ('PL.004', '-103', '', 'PS.base.ta5');
+
+insert into pline values ('PL.005', '-104', '', 'PS.base.ta6');
+
+insert into pline values ('PL.006', '-106', '', 'PS.base.tb2');
+
+insert into pline values ('PL.007', '-108', '', 'PS.base.tb3');
+
+insert into pline values ('PL.008', '-109', '', 'PS.base.tb4');
+
+insert into pline values ('PL.009', '-121', '', 'PS.base.tb5');
+
+insert into pline values ('PL.010', '-122', '', 'PS.base.tb6');
+
+insert into pline values ('PL.015', '-134', '', 'PS.first.ta1');
+
+insert into pline values ('PL.016', '-137', '', 'PS.first.ta3');
+
+insert into pline values ('PL.017', '-139', '', 'PS.first.ta4');
+
+insert into pline values ('PL.018', '-362', '', 'PS.first.tb1');
+
+insert into pline values ('PL.019', '-363', '', 'PS.first.tb2');
+
+insert into pline values ('PL.020', '-364', '', 'PS.first.tb3');
+
+insert into pline values ('PL.021', '-365', '', 'PS.first.tb5');
+
+insert into pline values ('PL.022', '-367', '', 'PS.first.tb6');
+
+insert into pline values ('PL.028', '-501', 'Fax entrance', 'PS.base.ta2');
+
+insert into pline values ('PL.029', '-502', 'Fax first floor', 'PS.first.ta1');
+
+insert into phone values ('PH.hc001', 'Hicom standard', 'WS.001.1a');
+
+update pslot set slotlink = 'PS.base.ta1' where slotname = 'PS.base.a1';
+
+insert into phone values ('PH.hc002', 'Hicom standard', 'WS.002.1a');
+
+update pslot set slotlink = 'PS.base.ta5' where slotname = 'PS.base.b1';
+
+insert into phone values ('PH.hc003', 'Hicom standard', 'WS.002.2a');
+
+update pslot set slotlink = 'PS.base.tb2' where slotname = 'PS.base.b3';
+
+insert into phone values ('PH.fax001', 'Canon fax', 'WS.001.2a');
+
+update pslot set slotlink = 'PS.base.ta2' where slotname = 'PS.base.a3';
+
+insert into hub values ('base.hub1', 'Patchfield PF0_1 hub', 16);
+
+insert into system values ('orion', 'PC');
+
+insert into iface values ('IF', 'orion', 'eth0', 'WS.002.1b');
+
+update pslot set slotlink = 'HS.base.hub1.1' where slotname = 'PS.base.b2';
+
+select * from pfield_v1 where pfname = 'PF0_1' order by slotname;
+
+select * from pfield_v1 where pfname = 'PF0_2' order by slotname;
+
+insert into pfield values ('PF1_1', 'should fail due to unique index');
+
+update pslot set backlink = 'WS.not.there' where slotname = 'PS.base.a1';
+
+update pslot set backlink = 'XX.illegal' where slotname = 'PS.base.a1';
+
+update pslot set slotlink = 'PS.not.there' where slotname = 'PS.base.a1';
+
+update pslot set slotlink = 'XX.illegal' where slotname = 'PS.base.a1';
+
+insert into hslot values ('HS', 'base.hub1', 1, '');
+
+insert into hslot values ('HS', 'base.hub1', 20, '');
+
+delete from hslot;
+
+insert into iface values ('IF', 'notthere', 'eth0', '');
+
+insert into iface
+values
+  (
+    'IF',
+    'orion',
+    'ethernet_interface_name_too_long',
+    ''
+  );
+
+create function recursion_test(int, int)
+returns text
+language plpgsql
+as $function$
+DECLARE rslt text;
+BEGIN
+    IF $1 <= 0 THEN
+        rslt = CAST($2 AS TEXT);
+    ELSE
+        rslt = CAST($1 AS TEXT) || ',' || recursion_test($1 - 1, $2);
+    END IF;
+    RETURN rslt;
+END;
+$function$;
+
+select recursion_test(4, 3);
+
+create table found_test_tbl (a int);
+
+create function test_found()
+returns boolean
+language plpgsql
+as $function$
+declare
+  begin
+  insert into found_test_tbl values (1);
+  if FOUND then
+     insert into found_test_tbl values (2);
+  end if;
+
+  update found_test_tbl set a = 100 where a = 1;
+  if FOUND then
+    insert into found_test_tbl values (3);
+  end if;
+
+  delete from found_test_tbl where a = 9999; -- matches no rows
+  if not FOUND then
+    insert into found_test_tbl values (4);
+  end if;
+
+  for i in 1 .. 10 loop
+    -- no need to do anything
+  end loop;
+  if FOUND then
+    insert into found_test_tbl values (5);
+  end if;
+
+  -- never executes the loop
+  for i in 2 .. 1 loop
+    -- no need to do anything
+  end loop;
+  if not FOUND then
+    insert into found_test_tbl values (6);
+  end if;
+  return true;
+  end;
+$function$;
+
+select test_found();
+
+select * from found_test_tbl;
+
+create function test_table_func_rec()
+returns setof found_test_tbl
+language plpgsql
+as $function$
+DECLARE
+	rec RECORD;
+BEGIN
+	FOR rec IN select * from found_test_tbl LOOP
+		RETURN NEXT rec;
+	END LOOP;
+	RETURN;
+END;
+$function$;
+
+select * from test_table_func_rec();
+
+create function test_table_func_row()
+returns setof found_test_tbl
+language plpgsql
+as $function$
+DECLARE
+	row found_test_tbl%ROWTYPE;
+BEGIN
+	FOR row IN select * from found_test_tbl LOOP
+		RETURN NEXT row;
+	END LOOP;
+	RETURN;
+END;
+$function$;
+
+select * from test_table_func_row();
+
+create function test_ret_set_scalar(int, int)
+returns setof int
+language plpgsql
+as $function$
+DECLARE
+	i int;
+BEGIN
+	FOR i IN $1 .. $2 LOOP
+		RETURN NEXT i + 1;
+	END LOOP;
+	RETURN;
+END;
+$function$;
+
+select * from test_ret_set_scalar(1, 10);
+
+create function test_ret_set_rec_dyn(int)
+returns setof record
+language plpgsql
+as $function$
+DECLARE
+	retval RECORD;
+BEGIN
+	IF $1 > 10 THEN
+		SELECT INTO retval 5, 10, 15;
+		RETURN NEXT retval;
+		RETURN NEXT retval;
+	ELSE
+		SELECT INTO retval 50, 5::numeric, 'xxx'::text;
+		RETURN NEXT retval;
+		RETURN NEXT retval;
+	END IF;
+	RETURN;
+END;
+$function$;
+
+select * from test_ret_set_rec_dyn(1500) as (a int, b int, c int);
+
+select * from test_ret_set_rec_dyn(5) as (a int, b numeric, c text);
+
+create function test_ret_rec_dyn(int)
+returns record
+language plpgsql
+as $function$
+DECLARE
+	retval RECORD;
+BEGIN
+	IF $1 > 10 THEN
+		SELECT INTO retval 5, 10, 15;
+		RETURN retval;
+	ELSE
+		SELECT INTO retval 50, 5::numeric, 'xxx'::text;
+		RETURN retval;
+	END IF;
+END;
+$function$;
+
+select * from test_ret_rec_dyn(1500) as (a int, b int, c int);
+
+select * from test_ret_rec_dyn(5) as (a int, b numeric, c text);
+
+create function f1(x anyelement)
+returns anyelement
+language plpgsql
+as $function$
+begin
+  return x + 1;
+end
+$function$;
+
+select f1(42) as int, f1(4.5) as num;
+
+select f1(point(3, 4));
+
+drop function f1(anyelement);
+
+create function f1(x anyelement)
+returns anyarray
+language plpgsql
+as $function$
+begin
+  return array[x + 1, x + 2];
+end
+$function$;
+
+select f1(42) as int, f1(4.5) as num;
+
+drop function f1(anyelement);
+
+create function f1(x anyarray)
+returns anyelement
+language plpgsql
+as $function$
+begin
+  return x[1];
+end
+$function$;
+
+select f1(array[2, 4]) as int, f1(array[4.5, 7.7]) as num;
+
+select f1(stavalues1) from pg_statistic;
+
+drop function f1(anyarray);
+
+create function f1(x anyarray)
+returns anyarray
+language plpgsql
+as $function$
+begin
+  return x;
+end
+$function$;
+
+select f1(array[2, 4]) as int, f1(array[4.5, 7.7]) as num;
+
+select f1(stavalues1) from pg_statistic;
+
+drop function f1(anyarray);
+
+create function f1(x anyelement)
+returns anyrange
+language plpgsql
+as $function$
+begin
+  return array[x + 1, x + 2];
+end
+$function$;
+
+create function f1(x anyrange)
+returns anyarray
+language plpgsql
+as $function$
+begin
+  return array[lower(x), upper(x)];
+end
+$function$;
+
+select f1(int4range(42, 49)) as int, f1(float8range(4.5, 7.8)) as num;
+
+drop function f1(anyrange);
+
+create function f1(x anycompatible, y anycompatible)
+returns anycompatiblearray
+language plpgsql
+as $function$
+begin
+  return array[x, y];
+end
+$function$;
+
+select f1(2, 4) as int, f1(2, 4.5) as num;
+
+drop function f1(anycompatible, anycompatible);
+
+create function f1(x anycompatiblerange, y anycompatible, z anycompatible)
+returns anycompatiblearray
+language plpgsql
+as $function$
+begin
+  return array[lower(x), upper(x), y, z];
+end
+$function$;
+
+select
+  f1(
+    int4range(42, 49),
+    11,
+    cast(2 as smallint)
+  )
+  as int,
+  f1(
+    float8range(4.5, 7.8),
+    7.8,
+    cast(11 as real)
+  )
+  as num;
+
+select f1(int4range(42, 49), 11, 4.5) as fail;
+
+drop function f1(anycompatiblerange, anycompatible, anycompatible);
+
+create function f1(x anycompatible)
+returns anycompatiblerange
+language plpgsql
+as $function$
+begin
+  return array[x + 1, x + 2];
+end
+$function$;
+
+create function f1(x anycompatiblerange, y anycompatiblearray)
+returns anycompatiblerange
+language plpgsql
+as $function$
+begin
+  return x;
+end
+$function$;
+
+select
+  f1(int4range(42, 49), array[11]) as int,
+  f1(float8range(4.5, 7.8), array[7])
+  as num;
+
+drop function f1(anycompatiblerange, anycompatiblearray);
+
+create function
+f1(
+  a anyelement,
+  b anyarray,
+  c anycompatible,
+  d anycompatible,
+  out x anyarray,
+  out y anycompatiblearray
+)
+language plpgsql
+as $function$
+begin
+  x := a || b;
+  y := array[c, d];
+end
+$function$;
+
+select x, pg_typeof(x), y, pg_typeof(y) from f1(11, array[1, 2], 42, 34.5);
+
+select
+  x,
+  pg_typeof(x),
+  y,
+  pg_typeof(y)
+from
+  f1(
+    11,
+    array[1, 2],
+    point(1, 2),
+    point(3, 4)
+  );
+
+select
+  x,
+  pg_typeof(x),
+  y,
+  pg_typeof(y)
+from
+  f1(11, '{1,2}', point(1, 2), '(3,4)');
+
+select x, pg_typeof(x), y, pg_typeof(y) from f1(11, array[1, 2.2], 42, 34.5);
+
+drop function f1(anyelement, anyarray, anycompatible, anycompatible);
+
+create function f1(in i int, out j int)
+returns int
+language plpgsql
+as $function$
+begin
+  return i+1;
+end
+$function$;
+
+create function f1(in i int, out j int)
+language plpgsql
+as $function$
+begin
+  j := i+1;
+  return;
+end
+$function$;
+
+select f1(42);
+
+select * from f1(42);
+
+create or replace function f1(inout i int)
+language plpgsql
+as $function$
+begin
+  i := i+1;
+end
+$function$;
+
+select f1(42);
+
+select * from f1(42);
+
+drop function f1(int);
+
+create function f1(in i int, out j int)
+returns setof int
+language plpgsql
+as $function$
+begin
+  j := i+1;
+  return next;
+  j := i+2;
+  return next;
+  return;
+end
+$function$;
+
+select * from f1(42);
+
+drop function f1(int);
+
+create function f1(in i int, out j int, out k text)
+language plpgsql
+as $function$
+begin
+  j := i;
+  j := j+1;
+  k := 'foo';
+end
+$function$;
+
+select f1(42);
+
+select * from f1(42);
+
+drop function f1(int);
+
+create function f1(in i int, out j int, out k text)
+returns setof record
+language plpgsql
+as $function$
+begin
+  j := i+1;
+  k := 'foo';
+  return next;
+  j := j+1;
+  k := 'foot';
+  return next;
+end
+$function$;
+
+select * from f1(42);
+
+drop function f1(int);
+
+create function duplic(in i anyelement, out j anyelement, out k anyarray)
+language plpgsql
+as $function$
+begin
+  j := i;
+  k := array[j,j];
+  return;
+end
+$function$;
+
+select * from duplic(42);
+
+select * from duplic(cast('foo' as text));
+
+drop function duplic(anyelement);
+
+create function
+duplic(
+  in i anycompatiblerange,
+  out j anycompatible,
+  out k anycompatiblearray
+)
+language plpgsql
+as $function$
+begin
+  j := lower(i);
+  k := array[lower(i),upper(i)];
+  return;
+end
+$function$;
+
+select * from duplic(int4range(42, 49));
+
+select * from duplic(textrange('aaa', 'bbb'));
+
+drop function duplic(anycompatiblerange);
+
+create table perform_test (
+  a int,
+  b int
+);
+
+create function perform_simple_func(int)
+returns boolean
+language plpgsql
+as $function$
+BEGIN
+	IF $1 < 20 THEN
+		INSERT INTO perform_test VALUES ($1, $1 + 10);
+		RETURN TRUE;
+	ELSE
+		RETURN FALSE;
+	END IF;
+END;
+$function$;
+
+create function perform_test_func()
+returns void
+language plpgsql
+as $function$
+BEGIN
+	IF FOUND then
+		INSERT INTO perform_test VALUES (100, 100);
+	END IF;
+
+	PERFORM perform_simple_func(5);
+
+	IF FOUND then
+		INSERT INTO perform_test VALUES (100, 100);
+	END IF;
+
+	PERFORM perform_simple_func(50);
+
+	IF FOUND then
+		INSERT INTO perform_test VALUES (100, 100);
+	END IF;
+
+	RETURN;
+END;
+$function$;
+
+select perform_test_func();
+
+select * from perform_test;
+
+drop table perform_test;
+
+create temporary table users (
+  login text,
+  id serial
+);
+
+create function sp_id_user(a_login text)
+returns int
+language plpgsql
+stable
+as $function$
+declare x int;
+begin
+  select into x id from users where login = a_login;
+  if found then return x; end if;
+  return 0;
+end
+$function$;
+
+insert into users values ('user1');
+
+select sp_id_user('user1');
+
+select sp_id_user('userx');
+
+create function sp_add_user(a_login text)
+returns int
+language plpgsql
+as $function$
+declare my_id_user int;
+begin
+  my_id_user = sp_id_user( a_login );
+  IF  my_id_user > 0 THEN
+    RETURN -1;  -- error code for existing user
+  END IF;
+  INSERT INTO users ( login ) VALUES ( a_login );
+  my_id_user = sp_id_user( a_login );
+  IF  my_id_user = 0 THEN
+    RETURN -2;  -- error code for insertion failure
+  END IF;
+  RETURN my_id_user;
+end
+$function$;
+
+select sp_add_user('user1');
+
+select sp_add_user('user2');
+
+select sp_add_user('user2');
+
+select sp_add_user('user3');
+
+select sp_add_user('user3');
+
+drop function sp_add_user(text);
+
+drop function sp_id_user(text);
+
+create table rc_test (
+  a int,
+  b int
+);
+
+copy rc_test from stdout;
+
+create function return_unnamed_refcursor()
+returns refcursor
+language plpgsql
+as $function$
+declare
+    rc refcursor;
+begin
+    open rc for select a from rc_test;
+    return rc;
+end
+$function$;
+
+create function use_refcursor(rc refcursor)
+returns int
+language plpgsql
+as $function$
+declare
+    rc refcursor;
+    x record;
+begin
+    rc := return_unnamed_refcursor();
+    fetch next from rc into x;
+    return x.a;
+end
+$function$;
+
+select use_refcursor(return_unnamed_refcursor());
+
+create function return_refcursor(rc refcursor)
+returns refcursor
+language plpgsql
+as $function$
+begin
+    open rc for select a from rc_test;
+    return rc;
+end
+$function$;
+
+create function refcursor_test1(refcursor)
+returns refcursor
+language plpgsql
+as $function$
+begin
+    perform return_refcursor($1);
+    return $1;
+end
+$function$;
+
+begin;
+
+select refcursor_test1('test1');
+
+fetch next from test1;
+
+select refcursor_test1('test2');
+
+fetch forward all from test2;
+
+commit;
+
+fetch next from test1;
+
+create function refcursor_test2(int, int)
+returns boolean
+language plpgsql
+as $function$
+declare
+    c1 cursor (param1 int, param2 int) for select * from rc_test where a > param1 and b > param2;
+    nonsense record;
+begin
+    open c1($1, $2);
+    fetch c1 into nonsense;
+    close c1;
+    if found then
+        return true;
+    else
+        return false;
+    end if;
+end
+$function$;
+
+select
+  refcursor_test2(20000, 20000)
+  as "Should be false",
+  refcursor_test2(20, 20)
+  as "Should be true";
+
+create function constant_refcursor()
+returns refcursor
+language plpgsql
+as $function$
+declare
+    rc constant refcursor;
+begin
+    open rc for select a from rc_test;
+    return rc;
+end
+$function$;
+
+select constant_refcursor();
+
+create or replace function constant_refcursor()
+returns refcursor
+language plpgsql
+as $function$
+declare
+    rc constant refcursor := 'my_cursor_name';
+begin
+    open rc for select a from rc_test;
+    return rc;
+end
+$function$;
+
+select constant_refcursor();
+
+create function namedparmcursor_test1(int, int)
+returns boolean
+language plpgsql
+as $function$
+declare
+    c1 cursor (param1 int, param12 int) for select * from rc_test where a > param1 and b > param12;
+    nonsense record;
+begin
+    open c1(param12 := $2, param1 := $1);
+    fetch c1 into nonsense;
+    close c1;
+    if found then
+        return true;
+    else
+        return false;
+    end if;
+end
+$function$;
+
+select
+  namedparmcursor_test1(20000, 20000)
+  as "Should be false",
+  namedparmcursor_test1(20, 20)
+  as "Should be true";
+
+create function namedparmcursor_test2(int, int)
+returns boolean
+language plpgsql
+as $function$
+declare
+    c1 cursor (param1 int, param2 int) for select * from rc_test where a > param1 and b > param2;
+    nonsense record;
+begin
+    open c1(param1 := $1, $2);
+    fetch c1 into nonsense;
+    close c1;
+    if found then
+        return true;
+    else
+        return false;
+    end if;
+end
+$function$;
+
+select namedparmcursor_test2(20, 20);
+
+create function namedparmcursor_test3()
+returns void
+language plpgsql
+as $function$
+declare
+    c1 cursor (param1 int, param2 int) for select * from rc_test where a > param1 and b > param2;
+begin
+    open c1(param2 := 20, 21);
+end
+$function$;
+
+create function namedparmcursor_test4()
+returns void
+language plpgsql
+as $function$
+declare
+    c1 cursor (param1 int, param2 int) for select * from rc_test where a > param1 and b > param2;
+begin
+    open c1(20, param1 := 21);
+end
+$function$;
+
+create function namedparmcursor_test5()
+returns void
+language plpgsql
+as $function$
+declare
+  c1 cursor (p1 int, p2 int) for
+    select * from tenk1 where thousand = p1 and tenthous = p2;
+begin
+  open c1 (p2 := 77, p2 := 42);
+end
+$function$;
+
+create function namedparmcursor_test6()
+returns void
+language plpgsql
+as $function$
+declare
+  c1 cursor (p1 int, p2 int) for
+    select * from tenk1 where thousand = p1 and tenthous = p2;
+begin
+  open c1 (p2 := 77);
+end
+$function$;
+
+create function namedparmcursor_test7()
+returns void
+language plpgsql
+as $function$
+declare
+  c1 cursor (p1 int, p2 int) for
+    select * from tenk1 where thousand = p1 and tenthous = p2;
+begin
+  open c1 (p2 := 77, p1 := 42/0);
+end
+$function$;
+
+select namedparmcursor_test7();
+
+create function namedparmcursor_test8()
+returns int
+language plpgsql
+as $function$
+declare
+  c1 cursor (p1 int, p2 int) for
+    select count(*) from tenk1 where thousand = p1 and tenthous = p2;
+  n int4;
+begin
+  open c1 (77 -- test
+  , 42);
+  fetch c1 into n;
+  return n;
+end
+$function$;
+
+select namedparmcursor_test8();
+
+create function namedparmcursor_test9(p1 int)
+returns int
+language plpgsql
+as $function$
+declare
+  c1 cursor (p1 int, p2 int, debug int) for
+    select count(*) from tenk1 where thousand = p1 and tenthous = p2
+      and four = debug;
+  p2 int4 := 1006;
+  n int4;
+begin
+  -- use both supported syntaxes for named arguments
+  open c1 (p1 := p1, p2 => p2, debug => 2);
+  fetch c1 into n;
+  return n;
+end
+$function$;
+
+select namedparmcursor_test9(6);
+
+create function raise_test1(int)
+returns int
+language plpgsql
+as $function$
+begin
+    raise notice 'This message has too many parameters!', $1;
+    return $1;
+end;
+$function$;
+
+create function raise_test2(int)
+returns int
+language plpgsql
+as $function$
+begin
+    raise notice 'This message has too few parameters: %, %, %', $1, $1;
+    return $1;
+end;
+$function$;
+
+create function raise_test3(int)
+returns int
+language plpgsql
+as $function$
+begin
+    raise notice 'This message has no parameters (despite having %% signs in it)!';
+    return $1;
+end;
+$function$;
+
+select raise_test3(1);
+
+create function reraise_test()
+returns void
+language plpgsql
+as $function$
+BEGIN
+   BEGIN
+       RAISE syntax_error;
+   EXCEPTION
+       WHEN syntax_error THEN
+           BEGIN
+               raise notice 'exception % thrown in inner block, reraising', sqlerrm;
+               RAISE;
+           EXCEPTION
+               WHEN OTHERS THEN
+                   raise notice 'RIGHT - exception % caught in inner block', sqlerrm;
+           END;
+   END;
+EXCEPTION
+   WHEN OTHERS THEN
+       raise notice 'WRONG - exception % caught in outer block', sqlerrm;
+END;
+$function$;
+
+select reraise_test();
+
+create function bad_sql1()
+returns int
+language plpgsql
+as $function$
+declare a int;
+begin
+    a := 5;
+    Johnny Yuma;
+    a := 10;
+    return a;
+end
+$function$;
+
+create function bad_sql2()
+returns int
+language plpgsql
+as $function$
+declare r record;
+begin
+    for r in select I fought the law, the law won LOOP
+        raise notice 'in loop';
+    end loop;
+    return 5;
+end;
+$function$;
+
+create function missing_return_expr()
+returns int
+language plpgsql
+as $function$
+begin
+    return ;
+end;
+$function$;
+
+create function void_return_expr()
+returns void
+language plpgsql
+as $function$
+begin
+    return 5;
+end;
+$function$;
+
+create function void_return_expr()
+returns void
+language plpgsql
+as $function$
+begin
+    perform 2+2;
+end;
+$function$;
+
+select void_return_expr();
+
+create function missing_return_expr()
+returns int
+language plpgsql
+as $function$
+begin
+    perform 2+2;
+end;
+$function$;
+
+select missing_return_expr();
+
+drop function void_return_expr();
+
+drop function missing_return_expr();
+
+create table eifoo (
+  i int,
+  y int
+);
+
+create type eitype as (i int, y int);
+
+create or replace function execute_into_test(varchar)
+returns record
+language plpgsql
+as $function$
+declare
+    _r record;
+    _rt eifoo%rowtype;
+    _v eitype;
+    i int;
+    j int;
+    k int;
+begin
+    execute 'insert into '||$1||' values(10,15)';
+    execute 'select (row).* from (select row(10,1)::eifoo) s' into _r;
+    raise notice '% %', _r.i, _r.y;
+    execute 'select * from '||$1||' limit 1' into _rt;
+    raise notice '% %', _rt.i, _rt.y;
+    execute 'select *, 20 from '||$1||' limit 1' into i, j, k;
+    raise notice '% % %', i, j, k;
+    execute 'select 1,2' into _v;
+    return _v;
+end;
+$function$;
+
+select execute_into_test('eifoo');
+
+drop table eifoo cascade;
+
+drop type eitype cascade;
+
+create function excpt_test1()
+returns void
+language plpgsql
+as $function$
+begin
+    raise notice '% %', sqlstate, sqlerrm;
+end;
+$function$;
+
+select excpt_test1();
+
+create function excpt_test2()
+returns void
+language plpgsql
+as $function$
+begin
+    begin
+        begin
+            raise notice '% %', sqlstate, sqlerrm;
+        end;
+    end;
+end;
+$function$;
+
+select excpt_test2();
+
+create function excpt_test3()
+returns void
+language plpgsql
+as $function$
+begin
+    begin
+        raise exception 'user exception';
+    exception when others then
+	    raise notice 'caught exception % %', sqlstate, sqlerrm;
+	    begin
+	        raise notice '% %', sqlstate, sqlerrm;
+	        perform 10/0;
+        exception
+            when substring_error then
+                -- this exception handler shouldn't be invoked
+                raise notice 'unexpected exception: % %', sqlstate, sqlerrm;
+	        when division_by_zero then
+	            raise notice 'caught exception % %', sqlstate, sqlerrm;
+	    end;
+	    raise notice '% %', sqlstate, sqlerrm;
+    end;
+end;
+$function$;
+
+select excpt_test3();
+
+create function excpt_test4()
+returns text
+language plpgsql
+as $function$
+begin
+	begin perform 1/0;
+	exception when others then return sqlerrm; end;
+end;
+$function$;
+
+select excpt_test4();
+
+drop function excpt_test1();
+
+drop function excpt_test2();
+
+drop function excpt_test3();
+
+drop function excpt_test4();
+
+create function raise_exprs()
+returns void
+language plpgsql
+as $function$
+declare
+    a integer[] = '{10,20,30}';
+    c varchar = 'xyz';
+    i integer;
+begin
+    i := 2;
+    raise notice '%; %; %; %; %; %', a, a[i], c, (select c || 'abc'), row(10,'aaa',NULL,30), NULL;
+end;
+$function$;
+
+select raise_exprs();
+
+drop function raise_exprs();
+
+create function multi_datum_use(p1 int)
+returns boolean
+language plpgsql
+as $function$
+declare
+  x int;
+  y int;
+begin
+  select into x,y unique1/p1, unique1/$1 from tenk1 group by unique1/p1;
+  return x = y;
+end
+$function$;
+
+select multi_datum_use(42);
+
+create temporary table foo (
+  f1 int,
+  f2 int
+);
+
+insert into foo values (1, 2), (3, 4);
+
+create or replace function stricttest()
+returns void
+language plpgsql
+as $function$
+declare x record;
+begin
+  -- should work
+  insert into foo values(5,6) returning * into x;
+  raise notice 'x.f1 = %, x.f2 = %', x.f1, x.f2;
+end
+$function$;
+
+select stricttest();
+
+create or replace function stricttest()
+returns void
+language plpgsql
+as $function$
+declare x record;
+begin
+  -- should fail due to implicit strict
+  insert into foo values(7,8),(9,10) returning * into x;
+  raise notice 'x.f1 = %, x.f2 = %', x.f1, x.f2;
+end
+$function$;
+
+select stricttest();
+
+create or replace function stricttest()
+returns void
+language plpgsql
+as $function$
+declare x record;
+begin
+  -- should work
+  execute 'insert into foo values(5,6) returning *' into x;
+  raise notice 'x.f1 = %, x.f2 = %', x.f1, x.f2;
+end
+$function$;
+
+select stricttest();
+
+create or replace function stricttest()
+returns void
+language plpgsql
+as $function$
+declare x record;
+begin
+  -- this should work since EXECUTE isn't as picky
+  execute 'insert into foo values(7,8),(9,10) returning *' into x;
+  raise notice 'x.f1 = %, x.f2 = %', x.f1, x.f2;
+end
+$function$;
+
+select stricttest();
+
+select * from foo;
+
+create or replace function stricttest()
+returns void
+language plpgsql
+as $function$
+declare x record;
+begin
+  -- should work
+  select * from foo where f1 = 3 into strict x;
+  raise notice 'x.f1 = %, x.f2 = %', x.f1, x.f2;
+end
+$function$;
+
+select stricttest();
+
+create or replace function stricttest()
+returns void
+language plpgsql
+as $function$
+declare x record;
+begin
+  -- should fail, no rows
+  select * from foo where f1 = 0 into strict x;
+  raise notice 'x.f1 = %, x.f2 = %', x.f1, x.f2;
+end
+$function$;
+
+select stricttest();
+
+create or replace function stricttest()
+returns void
+language plpgsql
+as $function$
+declare x record;
+begin
+  -- should fail, too many rows
+  select * from foo where f1 > 3 into strict x;
+  raise notice 'x.f1 = %, x.f2 = %', x.f1, x.f2;
+end
+$function$;
+
+select stricttest();
+
+create or replace function stricttest()
+returns void
+language plpgsql
+as $function$
+declare x record;
+begin
+  -- should work
+  execute 'select * from foo where f1 = 3' into strict x;
+  raise notice 'x.f1 = %, x.f2 = %', x.f1, x.f2;
+end
+$function$;
+
+select stricttest();
+
+create or replace function stricttest()
+returns void
+language plpgsql
+as $function$
+declare x record;
+begin
+  -- should fail, no rows
+  execute 'select * from foo where f1 = 0' into strict x;
+  raise notice 'x.f1 = %, x.f2 = %', x.f1, x.f2;
+end
+$function$;
+
+select stricttest();
+
+create or replace function stricttest()
+returns void
+language plpgsql
+as $function$
+declare x record;
+begin
+  -- should fail, too many rows
+  execute 'select * from foo where f1 > 3' into strict x;
+  raise notice 'x.f1 = %, x.f2 = %', x.f1, x.f2;
+end
+$function$;
+
+select stricttest();
+
+drop function stricttest();
+
+set plpgsql.print_strict_params = 'true';
+
+create or replace function stricttest()
+returns void
+language plpgsql
+as $function$
+declare
+x record;
+p1 int := 2;
+p3 text := 'foo';
+begin
+  -- no rows
+  select * from foo where f1 = p1 and f1::text = p3 into strict x;
+  raise notice 'x.f1 = %, x.f2 = %', x.f1, x.f2;
+end
+$function$;
+
+select stricttest();
+
+create or replace function stricttest()
+returns void
+language plpgsql
+as $function$
+declare
+x record;
+p1 int := 2;
+p3 text := $a$'Valame Dios!' dijo Sancho; 'no le dije yo a vuestra merced que mirase bien lo que hacia?'$a$;
+begin
+  -- no rows
+  select * from foo where f1 = p1 and f1::text = p3 into strict x;
+  raise notice 'x.f1 = %, x.f2 = %', x.f1, x.f2;
+end
+$function$;
+
+select stricttest();
+
+create or replace function stricttest()
+returns void
+language plpgsql
+as $function$
+declare
+x record;
+p1 int := 2;
+p3 text := 'foo';
+begin
+  -- too many rows
+  select * from foo where f1 > p1 or f1::text = p3  into strict x;
+  raise notice 'x.f1 = %, x.f2 = %', x.f1, x.f2;
+end
+$function$;
+
+select stricttest();
+
+create or replace function stricttest()
+returns void
+language plpgsql
+as $function$
+declare x record;
+begin
+  -- too many rows, no params
+  select * from foo where f1 > 3 into strict x;
+  raise notice 'x.f1 = %, x.f2 = %', x.f1, x.f2;
+end
+$function$;
+
+select stricttest();
+
+create or replace function stricttest()
+returns void
+language plpgsql
+as $function$
+declare x record;
+begin
+  -- no rows
+  execute 'select * from foo where f1 = $1 or f1::text = $2' using 0, 'foo' into strict x;
+  raise notice 'x.f1 = %, x.f2 = %', x.f1, x.f2;
+end
+$function$;
+
+select stricttest();
+
+create or replace function stricttest()
+returns void
+language plpgsql
+as $function$
+declare x record;
+begin
+  -- too many rows
+  execute 'select * from foo where f1 > $1' using 1 into strict x;
+  raise notice 'x.f1 = %, x.f2 = %', x.f1, x.f2;
+end
+$function$;
+
+select stricttest();
+
+create or replace function stricttest()
+returns void
+language plpgsql
+as $function$
+declare x record;
+begin
+  -- too many rows, no parameters
+  execute 'select * from foo where f1 > 3' into strict x;
+  raise notice 'x.f1 = %, x.f2 = %', x.f1, x.f2;
+end
+$function$;
+
+select stricttest();
+
+create or replace function stricttest()
+returns void
+language plpgsql
+as $function$
+-- override the global
+#print_strict_params off
+declare
+x record;
+p1 int := 2;
+p3 text := 'foo';
+begin
+  -- too many rows
+  select * from foo where f1 > p1 or f1::text = p3  into strict x;
+  raise notice 'x.f1 = %, x.f2 = %', x.f1, x.f2;
+end
+$function$;
+
+select stricttest();
+
+reset plpgsql.print_strict_params;
+
+create or replace function stricttest()
+returns void
+language plpgsql
+as $function$
+-- override the global
+#print_strict_params on
+declare
+x record;
+p1 int := 2;
+p3 text := 'foo';
+begin
+  -- too many rows
+  select * from foo where f1 > p1 or f1::text = p3  into strict x;
+  raise notice 'x.f1 = %, x.f2 = %', x.f1, x.f2;
+end
+$function$;
+
+select stricttest();
+
+set plpgsql.extra_warnings = 'all';
+
+set plpgsql.extra_warnings = 'none';
+
+set plpgsql.extra_errors = 'all';
+
+set plpgsql.extra_errors = 'none';
+
+set plpgsql.extra_warnings = shadowed_variables;
+
+create or replace function shadowtest(in1 int)
+returns table (
+  out1 int
+)
+language plpgsql
+as $function$
+declare
+in1 int;
+out1 int;
+begin
+end
+$function$;
+
+select shadowtest(1);
+
+set plpgsql.extra_warnings = shadowed_variables;
+
+select shadowtest(1);
+
+create or replace function shadowtest(in1 int)
+returns table (
+  out1 int
+)
+language plpgsql
+as $function$
+declare
+in1 int;
+out1 int;
+begin
+end
+$function$;
+
+select shadowtest(1);
+
+drop function shadowtest(int);
+
+create or replace function shadowtest()
+returns void
+language plpgsql
+as $function$
+declare
+f1 int;
+begin
+	declare
+	f1 int;
+	begin
+	end;
+end
+$function$;
+
+drop function shadowtest();
+
+create or replace function shadowtest(in1 int)
+returns void
+language plpgsql
+as $function$
+declare
+in1 int;
+begin
+	declare
+	in1 int;
+	begin
+	end;
+end
+$function$;
+
+drop function shadowtest(int);
+
+create or replace function shadowtest()
+returns void
+language plpgsql
+as $function$
+declare
+f1 int;
+c1 cursor (f1 int) for select 1;
+begin
+end
+$function$;
+
+drop function shadowtest();
+
+set plpgsql.extra_errors = shadowed_variables;
+
+create or replace function shadowtest(f1 int)
+returns boolean
+language plpgsql
+as $function$
+declare f1 int; begin return 1; end
+$function$;
+
+select shadowtest(1);
+
+reset plpgsql.extra_errors;
+
+reset plpgsql.extra_warnings;
+
+create or replace function shadowtest(f1 int)
+returns boolean
+language plpgsql
+as $function$
+declare f1 int; begin return 1; end
+$function$;
+
+select shadowtest(1);
+
+set plpgsql.extra_warnings = too_many_rows;
+
+do
+$do$
+declare x int;
+begin
+  select v from generate_series(1,2) g(v) into x;
+end;
+$do$;
+
+set plpgsql.extra_errors = too_many_rows;
+
+do
+$do$
+declare x int;
+begin
+  select v from generate_series(1,2) g(v) into x;
+end;
+$do$;
+
+reset plpgsql.extra_errors;
+
+reset plpgsql.extra_warnings;
+
+set plpgsql.extra_warnings = strict_multi_assignment;
+
+do
+$do$
+declare
+  x int;
+  y int;
+begin
+  select 1 into x, y;
+  select 1,2 into x, y;
+  select 1,2,3 into x, y;
+end
+$do$;
+
+set plpgsql.extra_errors = strict_multi_assignment;
+
+do
+$do$
+declare
+  x int;
+  y int;
+begin
+  select 1 into x, y;
+  select 1,2 into x, y;
+  select 1,2,3 into x, y;
+end
+$do$;
+
+create table test_01 (
+  a int,
+  b int,
+  c int
+);
+
+alter table test_01
+  drop column a;
+
+insert into test_01 values (10, 20);
+
+do
+$do$
+declare
+  x int;
+  y int;
+begin
+  select * from test_01 into x, y; -- should be ok
+  raise notice 'ok';
+  select * from test_01 into x;    -- should to fail
+end;
+$do$;
+
+do
+$do$
+declare
+  t test_01;
+begin
+  select 1, 2 into t;  -- should be ok
+  raise notice 'ok';
+  select 1, 2, 3 into t; -- should fail;
+end;
+$do$;
+
+do
+$do$
+declare
+  t test_01;
+begin
+  select 1 into t; -- should fail;
+end;
+$do$;
+
+drop table test_01;
+
+reset plpgsql.extra_errors;
+
+reset plpgsql.extra_warnings;
+
+create function sc_test()
+returns setof int
+language plpgsql
+as $function$
+declare
+  c scroll cursor for select f1 from int4_tbl;
+  x integer;
+begin
+  open c;
+  fetch last from c into x;
+  while found loop
+    return next x;
+    fetch prior from c into x;
+  end loop;
+  close c;
+end;
+$function$;
+
+select * from sc_test();
+
+create or replace function sc_test()
+returns setof int
+language plpgsql
+as $function$
+declare
+  c no scroll cursor for select f1 from int4_tbl;
+  x integer;
+begin
+  open c;
+  fetch last from c into x;
+  while found loop
+    return next x;
+    fetch prior from c into x;
+  end loop;
+  close c;
+end;
+$function$;
+
+select * from sc_test();
+
+create or replace function sc_test()
+returns setof int
+language plpgsql
+as $function$
+declare
+  c refcursor;
+  x integer;
+begin
+  open c scroll for select f1 from int4_tbl;
+  fetch last from c into x;
+  while found loop
+    return next x;
+    fetch prior from c into x;
+  end loop;
+  close c;
+end;
+$function$;
+
+select * from sc_test();
+
+create or replace function sc_test()
+returns setof int
+language plpgsql
+as $function$
+declare
+  c refcursor;
+  x integer;
+begin
+  open c scroll for execute 'select f1 from int4_tbl';
+  fetch last from c into x;
+  while found loop
+    return next x;
+    fetch relative -2 from c into x;
+  end loop;
+  close c;
+end;
+$function$;
+
+select * from sc_test();
+
+create or replace function sc_test()
+returns setof int
+language plpgsql
+as $function$
+declare
+  c refcursor;
+  x integer;
+begin
+  open c scroll for execute 'select f1 from int4_tbl';
+  fetch last from c into x;
+  while found loop
+    return next x;
+    move backward 2 from c;
+    fetch relative -1 from c into x;
+  end loop;
+  close c;
+end;
+$function$;
+
+select * from sc_test();
+
+create or replace function sc_test()
+returns setof int
+language plpgsql
+as $function$
+declare
+  c cursor for select * from generate_series(1, 10);
+  x integer;
+begin
+  open c;
+  loop
+      move relative 2 in c;
+      if not found then
+          exit;
+      end if;
+      fetch next from c into x;
+      if found then
+          return next x;
+      end if;
+  end loop;
+  close c;
+end;
+$function$;
+
+select * from sc_test();
+
+create or replace function sc_test()
+returns setof int
+language plpgsql
+as $function$
+declare
+  c cursor for select * from generate_series(1, 10);
+  x integer;
+begin
+  open c;
+  move forward all in c;
+  fetch backward from c into x;
+  if found then
+    return next x;
+  end if;
+  close c;
+end;
+$function$;
+
+select * from sc_test();
+
+drop function sc_test();
+
+create function pl_qual_names(param1 int)
+returns void
+language plpgsql
+as $function$
+<<outerblock>>
+declare
+  param1 int := 1;
+begin
+  <<innerblock>>
+  declare
+    param1 int := 2;
+  begin
+    raise notice 'param1 = %', param1;
+    raise notice 'pl_qual_names.param1 = %', pl_qual_names.param1;
+    raise notice 'outerblock.param1 = %', outerblock.param1;
+    raise notice 'innerblock.param1 = %', innerblock.param1;
+  end;
+end;
+$function$;
+
+select pl_qual_names(42);
+
+drop function pl_qual_names(int);
+
+create function ret_query1(out int, out int)
+returns setof record
+language plpgsql
+as $function$
+begin
+    $1 := -1;
+    $2 := -2;
+    return next;
+    return query select x + 1, x * 10 from generate_series(0, 10) s (x);
+    return next;
+end;
+$function$;
+
+select * from ret_query1();
+
+create type record_type as (x text, y int, z boolean);
+
+create or replace function ret_query2(lim int)
+returns setof record_type
+language plpgsql
+as $function$
+begin
+    return query select fipshash(s.x::text), s.x, s.x > 0
+                 from generate_series(-8, lim) s (x) where s.x % 2 = 0;
+end;
+$function$;
+
+select * from ret_query2(8);
+
+create function exc_using(int, text)
+returns int
+language plpgsql
+as $function$
+declare i int;
+begin
+  for i in execute 'select * from generate_series(1,$1)' using $1+1 loop
+    raise notice '%', i;
+  end loop;
+  execute 'select $2 + $2*3 + length($1)' into i using $2,$1;
+  return i;
+end
+$function$;
+
+select exc_using(5, 'foobar');
+
+drop function exc_using(int, text);
+
+create or replace function exc_using(int)
+returns void
+language plpgsql
+as $function$
+declare
+  c refcursor;
+  i int;
+begin
+  open c for execute 'select * from generate_series(1,$1)' using $1+1;
+  loop
+    fetch c into i;
+    exit when not found;
+    raise notice '%', i;
+  end loop;
+  close c;
+  return;
+end;
+$function$;
+
+select exc_using(5);
+
+drop function exc_using(int);
+
+create or replace function forc01()
+returns void
+language plpgsql
+as $function$
+declare
+  c cursor(r1 integer, r2 integer)
+       for select * from generate_series(r1,r2) i;
+  c2 cursor
+       for select * from generate_series(41,43) i;
+begin
+  -- assign portal names to cursors to get stable output
+  c := 'c';
+  c2 := 'c2';
+  for r in c(5,7) loop
+    raise notice '% from %', r.i, c;
+  end loop;
+  -- again, to test if cursor was closed properly
+  -- (and while we're at it, test named-parameter notation)
+  for r in c(r2 := 10, r1 => 9) loop
+    raise notice '% from %', r.i, c;
+  end loop;
+  -- and test a parameterless cursor
+  for r in c2 loop
+    raise notice '% from %', r.i, c2;
+  end loop;
+  -- and try it with a hand-assigned name
+  raise notice 'after loop, c2 = %', c2;
+  c2 := 'special_name';
+  for r in c2 loop
+    raise notice '% from %', r.i, c2;
+  end loop;
+  raise notice 'after loop, c2 = %', c2;
+  -- and try it with a generated name
+  -- (which we can't show in the output because it's variable)
+  c2 := null;
+  for r in c2 loop
+    raise notice '%', r.i;
+  end loop;
+  raise notice 'after loop, c2 = %', c2;
+  return;
+end;
+$function$;
+
+select forc01();
+
+create temporary table forc_test
+as
+  select
+    n as i,
+    n as j
+  from
+    generate_series(1, 10) as n;
+
+create or replace function forc01()
+returns void
+language plpgsql
+as $function$
+declare
+  c cursor for select * from forc_test;
+begin
+  for r in c loop
+    raise notice '%, %', r.i, r.j;
+    update forc_test set i = i * 100, j = r.j * 2 where current of c;
+  end loop;
+end;
+$function$;
+
+select forc01();
+
+select * from forc_test;
+
+create or replace function forc01()
+returns void
+language plpgsql
+as $function$
+declare
+  c refcursor := 'fooled_ya';
+  r record;
+begin
+  open c for select * from forc_test;
+  loop
+    fetch c into r;
+    exit when not found;
+    raise notice '%, %', r.i, r.j;
+    update forc_test set i = i * 100, j = r.j * 2 where current of c;
+  end loop;
+end;
+$function$;
+
+select forc01();
+
+select * from forc_test;
+
+drop function forc01();
+
+do
+$do$
+declare cnt int := 0;
+  c1 cursor for select * from forc_test;
+begin
+  for r1 in c1 loop
+    declare c1 cursor for select * from forc_test;
+    begin
+      for r2 in c1 loop
+        cnt := cnt + 1;
+      end loop;
+    end;
+  end loop;
+  raise notice 'cnt = %', cnt;
+end
+$do$;
+
+create or replace function forc_bad()
+returns void
+language plpgsql
+as $function$
+declare
+  c refcursor;
+begin
+  for r in c loop
+    raise notice '%', r.i;
+  end loop;
+end;
+$function$;
+
+create or replace function return_dquery()
+returns setof int
+language plpgsql
+as $function$
+begin
+  return query execute 'select * from (values(10),(20)) f';
+  return query execute 'select * from (values($1),($2)) f' using 40,50;
+end;
+$function$;
+
+select * from return_dquery();
+
+drop function return_dquery();
+
+create table tabwithcols (
+  a int,
+  b int,
+  c int,
+  d int
+);
+
+insert into tabwithcols values (10, 20, 30, 40), (50, 60, 70, 80);
+
+create or replace function returnqueryf()
+returns setof tabwithcols
+language plpgsql
+as $function$
+begin
+  return query select * from tabwithcols;
+  return query execute 'select * from tabwithcols';
+end;
+$function$;
+
+select * from returnqueryf();
+
+alter table tabwithcols
+  drop column b;
+
+select * from returnqueryf();
+
+alter table tabwithcols
+  drop column d;
+
+select * from returnqueryf();
+
+alter table tabwithcols
+  add column d int;
+
+select * from returnqueryf();
+
+drop function returnqueryf();
+
+drop table tabwithcols;
+
+create type compostype as (x int, y varchar);
+
+create or replace function compos()
+returns compostype
+language plpgsql
+as $function$
+declare
+  v compostype;
+begin
+  v := (1, 'hello');
+  return v;
+end;
+$function$;
+
+select compos();
+
+create or replace function compos()
+returns compostype
+language plpgsql
+as $function$
+declare
+  v record;
+begin
+  v := (1, 'hello'::varchar);
+  return v;
+end;
+$function$;
+
+select compos();
+
+create or replace function compos()
+returns compostype
+language plpgsql
+as $function$
+begin
+  return (1, 'hello'::varchar);
+end;
+$function$;
+
+select compos();
+
+create or replace function compos()
+returns compostype
+language plpgsql
+as $function$
+begin
+  return (1, 'hello');
+end;
+$function$;
+
+select compos();
+
+create or replace function compos()
+returns compostype
+language plpgsql
+as $function$
+begin
+  return (1, 'hello')::compostype;
+end;
+$function$;
+
+select compos();
+
+drop function compos();
+
+create or replace function composrec()
+returns record
+language plpgsql
+as $function$
+declare
+  v record;
+begin
+  v := (1, 'hello');
+  return v;
+end;
+$function$;
+
+select composrec();
+
+create or replace function composrec()
+returns record
+language plpgsql
+as $function$
+begin
+  return (1, 'hello');
+end;
+$function$;
+
+select composrec();
+
+drop function composrec();
+
+create or replace function compos()
+returns setof compostype
+language plpgsql
+as $function$
+begin
+  for i in 1..3
+  loop
+    return next (1, 'hello'::varchar);
+  end loop;
+  return next null::compostype;
+  return next (2, 'goodbye')::compostype;
+end;
+$function$;
+
+select * from compos();
+
+drop function compos();
+
+create or replace function compos()
+returns compostype
+language plpgsql
+as $function$
+begin
+  return 1 + 1;
+end;
+$function$;
+
+select compos();
+
+create or replace function compos()
+returns compostype
+language plpgsql
+as $function$
+declare x int := 42;
+begin
+  return x;
+end;
+$function$;
+
+select * from compos();
+
+drop function compos();
+
+create or replace function compos()
+returns int
+language plpgsql
+as $function$
+declare
+  v compostype;
+begin
+  v := (1, 'hello');
+  return v;
+end;
+$function$;
+
+select compos();
+
+create or replace function compos()
+returns int
+language plpgsql
+as $function$
+begin
+  return (1, 'hello')::compostype;
+end;
+$function$;
+
+select compos();
+
+drop function compos();
+
+drop type compostype;
+
+create or replace function raise_test()
+returns void
+language plpgsql
+as $function$
+begin
+  raise notice '% % %', 1, 2, 3
+     using errcode = '55001', detail = 'some detail info', hint = 'some hint';
+  raise '% % %', 1, 2, 3
+     using errcode = 'division_by_zero', detail = 'some detail info';
+end;
+$function$;
+
+select raise_test();
+
+create or replace function raise_test()
+returns void
+language plpgsql
+as $function$
+begin
+  raise 'check me'
+     using errcode = 'division_by_zero', detail = 'some detail info';
+  exception
+    when others then
+      raise notice 'SQLSTATE: % SQLERRM: %', sqlstate, sqlerrm;
+      raise;
+end;
+$function$;
+
+select raise_test();
+
+create or replace function raise_test()
+returns void
+language plpgsql
+as $function$
+begin
+  raise 'check me'
+     using errcode = '1234F', detail = 'some detail info';
+  exception
+    when others then
+      raise notice 'SQLSTATE: % SQLERRM: %', sqlstate, sqlerrm;
+      raise;
+end;
+$function$;
+
+select raise_test();
+
+create or replace function raise_test()
+returns void
+language plpgsql
+as $function$
+begin
+  raise 'check me'
+     using errcode = '1234F', detail = 'some detail info';
+  exception
+    when sqlstate '1234F' then
+      raise notice 'SQLSTATE: % SQLERRM: %', sqlstate, sqlerrm;
+      raise;
+end;
+$function$;
+
+select raise_test();
+
+create or replace function raise_test()
+returns void
+language plpgsql
+as $function$
+begin
+  raise division_by_zero using detail = 'some detail info';
+  exception
+    when others then
+      raise notice 'SQLSTATE: % SQLERRM: %', sqlstate, sqlerrm;
+      raise;
+end;
+$function$;
+
+select raise_test();
+
+create or replace function raise_test()
+returns void
+language plpgsql
+as $function$
+begin
+  raise division_by_zero;
+end;
+$function$;
+
+select raise_test();
+
+create or replace function raise_test()
+returns void
+language plpgsql
+as $function$
+begin
+  raise sqlstate '1234F';
+end;
+$function$;
+
+select raise_test();
+
+create or replace function raise_test()
+returns void
+language plpgsql
+as $function$
+begin
+  raise division_by_zero using message = 'custom' || ' message';
+end;
+$function$;
+
+select raise_test();
+
+create or replace function raise_test()
+returns void
+language plpgsql
+as $function$
+begin
+  raise using message = 'custom' || ' message', errcode = '22012';
+end;
+$function$;
+
+select raise_test();
+
+create or replace function raise_test()
+returns void
+language plpgsql
+as $function$
+begin
+  raise notice 'some message' using message = 'custom' || ' message', errcode = '22012';
+end;
+$function$;
+
+select raise_test();
+
+create or replace function raise_test()
+returns void
+language plpgsql
+as $function$
+begin
+  raise division_by_zero using message = 'custom' || ' message', errcode = '22012';
+end;
+$function$;
+
+select raise_test();
+
+create or replace function raise_test()
+returns void
+language plpgsql
+as $function$
+begin
+  raise;
+end;
+$function$;
+
+select raise_test();
+
+create function zero_divide()
+returns int
+language plpgsql
+parallel SAFE
+as $function$
+declare v int := 0;
+begin
+  return 10 / v;
+end;
+$function$;
+
+create or replace function raise_test()
+returns void
+language plpgsql
+as $function$
+begin
+  raise exception 'custom exception'
+     using detail = 'some detail of custom exception',
+           hint = 'some hint related to custom exception';
+end;
+$function$;
+
+create function stacked_diagnostics_test()
+returns void
+language plpgsql
+as $function$
+declare _sqlstate text;
+        _message text;
+        _context text;
+begin
+  perform zero_divide();
+exception when others then
+  get stacked diagnostics
+        _sqlstate = returned_sqlstate,
+        _message = message_text,
+        _context = pg_exception_context;
+  raise notice 'sqlstate: %, message: %, context: [%]',
+    _sqlstate, _message, replace(_context, E'\n', ' <- ');
+end;
+$function$;
+
+select stacked_diagnostics_test();
+
+create or replace function stacked_diagnostics_test()
+returns void
+language plpgsql
+as $function$
+declare _detail text;
+        _hint text;
+        _message text;
+begin
+  perform raise_test();
+exception when others then
+  get stacked diagnostics
+        _message = message_text,
+        _detail = pg_exception_detail,
+        _hint = pg_exception_hint;
+  raise notice 'message: %, detail: %, hint: %', _message, _detail, _hint;
+end;
+$function$;
+
+select stacked_diagnostics_test();
+
+create or replace function stacked_diagnostics_test()
+returns void
+language plpgsql
+as $function$
+declare _detail text;
+        _hint text;
+        _message text;
+begin
+  get stacked diagnostics
+        _message = message_text,
+        _detail = pg_exception_detail,
+        _hint = pg_exception_hint;
+  raise notice 'message: %, detail: %, hint: %', _message, _detail, _hint;
+end;
+$function$;
+
+select stacked_diagnostics_test();
+
+drop function stacked_diagnostics_test();
+
+create function error_trap_test()
+returns text
+language plpgsql
+parallel SAFE
+as $function$
+begin
+  perform zero_divide();
+  return 'no error detected!';
+exception when division_by_zero then
+  return 'division_by_zero detected';
+end;
+$function$;
+
+set debug_parallel_query = 'on';
+
+select error_trap_test();
+
+select error_trap_test();
+
+reset debug_parallel_query;
+
+drop function error_trap_test();
+
+drop function zero_divide();
+
+create or replace function raise_test()
+returns void
+language plpgsql
+as $function$
+begin
+  perform 1/0;
+exception
+  when sqlstate '22012' then
+    raise notice using message = sqlstate;
+    raise sqlstate '22012' using message = 'substitute message';
+end;
+$function$;
+
+select raise_test();
+
+drop function raise_test();
+
+create or replace function stacked_diagnostics_test()
+returns void
+language plpgsql
+as $function$
+declare _column_name text;
+        _constraint_name text;
+        _datatype_name text;
+        _table_name text;
+        _schema_name text;
+begin
+  raise exception using
+    column = '>>some column name<<',
+    constraint = '>>some constraint name<<',
+    datatype = '>>some datatype name<<',
+    table = '>>some table name<<',
+    schema = '>>some schema name<<';
+exception when others then
+  get stacked diagnostics
+        _column_name = column_name,
+        _constraint_name = constraint_name,
+        _datatype_name = pg_datatype_name,
+        _table_name = table_name,
+        _schema_name = schema_name;
+  raise notice 'column %, constraint %, type %, table %, schema %',
+    _column_name, _constraint_name, _datatype_name, _table_name, _schema_name;
+end;
+$function$;
+
+select stacked_diagnostics_test();
+
+drop function stacked_diagnostics_test();
+
+create or replace function vari(variadic int[])
+returns void
+language plpgsql
+as $function$
+begin
+  for i in array_lower($1,1)..array_upper($1,1) loop
+    raise notice '%', $1[i];
+  end loop; end;
+$function$;
+
+select vari(1, 2, 3, 4, 5);
+
+select vari(3, 4, 5);
+
+select vari(variadic array[5, 6, 7]);
+
+drop function vari(int[]);
+
+create or replace function pleast(variadic numeric[])
+returns numeric
+language plpgsql
+immutable
+strict
+as $function$
+declare aux numeric = $1[array_lower($1,1)];
+begin
+  for i in array_lower($1,1)+1..array_upper($1,1) loop
+    if $1[i] < aux then aux := $1[i]; end if;
+  end loop;
+  return aux;
+end;
+$function$;
+
+select pleast(10, 1, 2, 3, -16);
+
+select pleast(10.2, 2.2, -1.1);
+
+select pleast(10.2, 10, -20);
+
+select pleast(10, 20, -1.0);
+
+create or replace function pleast(numeric)
+returns numeric
+language plpgsql
+immutable
+strict
+as $function$
+begin
+  raise notice 'non-variadic function called';
+  return $1;
+end;
+$function$;
+
+select pleast(10);
+
+drop function pleast(numeric[]);
+
+drop function pleast(numeric);
+
+create function tftest(int)
+returns table (
+  a int,
+  b int
+)
+language plpgsql
+immutable
+strict
+as $function$
+begin
+  return query select $1, $1+i from generate_series(1,5) g(i);
+end;
+$function$;
+
+select * from tftest(10);
+
+create or replace function tftest(a1 int)
+returns table (
+  a int,
+  b int
+)
+language plpgsql
+immutable
+strict
+as $function$
+begin
+  a := a1; b := a1 + 1;
+  return next;
+  a := a1 * 10; b := a1 * 10 + 1;
+  return next;
+end;
+$function$;
+
+select * from tftest(10);
+
+drop function tftest(int);
+
+create function rttest()
+returns setof int
+language plpgsql
+as $function$
+declare rc int;
+begin
+  return query values(10),(20);
+  get diagnostics rc = row_count;
+  raise notice '% %', found, rc;
+  return query select * from (values(10),(20)) f(a) where false;
+  get diagnostics rc = row_count;
+  raise notice '% %', found, rc;
+  return query execute 'values(10),(20)';
+  get diagnostics rc = row_count;
+  raise notice '% %', found, rc;
+  return query execute 'select * from (values(10),(20)) f(a) where false';
+  get diagnostics rc = row_count;
+  raise notice '% %', found, rc;
+end;
+$function$;
+
+select * from rttest();
+
+create or replace function rttest()
+returns setof int
+language plpgsql
+as $function$
+begin
+  return query select 10 into no_such_table;
+end;
+$function$;
+
+select * from rttest();
+
+create or replace function rttest()
+returns setof int
+language plpgsql
+as $function$
+begin
+  return query execute 'select 10 into no_such_table';
+end;
+$function$;
+
+select * from rttest();
+
+select * from no_such_table;
+
+drop function rttest();
+
+create function leaker_1(fail boolean)
+returns int
+language plpgsql
+as $function$
+DECLARE
+  v_var INTEGER;
+BEGIN
+  BEGIN
+    v_var := (leaker_2(fail)).error_code;
+  EXCEPTION
+    WHEN others THEN RETURN 0;
+  END;
+  RETURN 1;
+END;
+$function$;
+
+create function leaker_2(fail boolean, out error_code int, out new_id int)
+returns record
+language plpgsql
+as $function$
+BEGIN
+  IF fail THEN
+    RAISE EXCEPTION 'fail ...';
+  END IF;
+  error_code := 1;
+  new_id := 1;
+  RETURN;
+END;
+$function$;
+
+select * from leaker_1(false);
+
+select * from leaker_1(true);
+
+drop function leaker_1(boolean);
+
+drop function leaker_2(boolean);
+
+create function nonsimple_expr_test()
+returns text[]
+language plpgsql
+as $function$
+DECLARE
+  arr text[];
+  lr text;
+  i integer;
+BEGIN
+  arr := array[array['foo','bar'], array['baz', 'quux']];
+  lr := 'fool';
+  i := 1;
+  -- use sub-SELECTs to make expressions non-simple
+  arr[(SELECT i)][(SELECT i+1)] := (SELECT lr);
+  RETURN arr;
+END;
+$function$;
+
+select nonsimple_expr_test();
+
+drop function nonsimple_expr_test();
+
+create function nonsimple_expr_test()
+returns int
+language plpgsql
+as $function$
+declare
+   i integer NOT NULL := 0;
+begin
+  begin
+    i := (SELECT NULL::integer);  -- should throw error
+  exception
+    WHEN OTHERS THEN
+      i := (SELECT 1::integer);
+  end;
+  return i;
+end;
+$function$;
+
+select nonsimple_expr_test();
+
+drop function nonsimple_expr_test();
+
+create function recurse(double precision)
+returns double precision
+language plpgsql
+as $function$
+begin
+  if ($1 > 0) then
+    return sql_recurse($1 - 1);
+  else
+    return $1;
+  end if;
+end;
+$function$;
+
+create function sql_recurse(double precision)
+returns double precision
+language sql
+as $function$
+select recurse($1) limit 1;
+$function$;
+
+select recurse(10);
+
+create function error1(text)
+returns text
+language sql
+as $function$
+SELECT relname::text FROM pg_class c WHERE c.oid = $1::regclass
+$function$;
+
+create function error2(p_name_table text)
+returns text
+language plpgsql
+as $function$
+begin
+  return error1(p_name_table);
+end
+$function$;
+
+begin;
+
+create table public.stuffs (stuff text);
+
+savepoint a;
+
+select error2('nonexistent.stuffs');
+
+rollback to savepoint a;
+
+select error2('public.stuffs');
+
+rollback;
+
+drop function error2(text);
+
+drop function error1(text);
+
+create function sql_to_date(int)
+returns date
+language sql
+immutable
+strict
+as $function$
+select $1::text::date
+$function$;
+
+create cast (int as date) with function sql_to_date(int) as assignment;
+
+create function cast_invoker(int)
+returns date
+language plpgsql
+as $function$
+begin
+  return $1;
+end
+$function$;
+
+select cast_invoker(20150717);
+
+select cast_invoker(20150718);
+
+begin;
+
+select cast_invoker(20150717);
+
+select cast_invoker(20150718);
+
+savepoint s1;
+
+select cast_invoker(20150718);
+
+select cast_invoker(-1);
+
+rollback to savepoint s1;
+
+select cast_invoker(20150719);
+
+select cast_invoker(20150720);
+
+commit;
+
+drop function cast_invoker(int);
+
+drop function sql_to_date(int) cascade;
+
+begin;
+
+do
+$do$
+declare x text[]; begin x := '{1.23, 4.56}'::numeric[]; end
+$do$;
+
+do
+$do$
+declare x text[]; begin x := '{1.23, 4.56}'::numeric[]; end
+$do$;
+
+commit;
+
+create function fail()
+returns int
+language plpgsql
+as $function$
+begin
+  return 1/0;
+end
+$function$;
+
+select fail();
+
+select fail();
+
+drop function fail();
+
+set standard_conforming_strings = off;
+
+create or replace function strtest()
+returns text
+language plpgsql
+as $function$
+begin
+  raise notice 'foo\\bar\041baz';
+  return 'foo\\bar\041baz';
+end
+$function$;
+
+select strtest();
+
+create or replace function strtest()
+returns text
+language plpgsql
+as $function$
+begin
+  raise notice E'foo\\bar\041baz';
+  return E'foo\\bar\041baz';
+end
+$function$;
+
+select strtest();
+
+set standard_conforming_strings = 'on';
+
+create or replace function strtest()
+returns text
+language plpgsql
+as $function$
+begin
+  raise notice 'foo\\bar\041baz\';
+  return 'foo\\bar\041baz\';
+end
+$function$;
+
+select strtest();
+
+create or replace function strtest()
+returns text
+language plpgsql
+as $function$
+begin
+  raise notice E'foo\\bar\041baz';
+  return E'foo\\bar\041baz';
+end
+$function$;
+
+select strtest();
+
+drop function strtest();
+
+do
+$do$
+DECLARE r record;
+BEGIN
+    FOR r IN SELECT rtrim(roomno) AS roomno, comment FROM Room ORDER BY roomno
+    LOOP
+        RAISE NOTICE '%, %', r.roomno, r.comment;
+    END LOOP;
+END
+$do$;
+
+do
+language plpgsql
+$do$
+begin return 1; end
+$do$;
+
+do
+$do$
+DECLARE r record;
+BEGIN
+    FOR r IN SELECT rtrim(roomno) AS roomno, foo FROM Room ORDER BY roomno
+    LOOP
+        RAISE NOTICE '%, %', r.roomno, r.comment;
+    END LOOP;
+END
+$do$;
+
+do
+$do$
+begin
+  for i in 1..10 loop
+   begin
+    execute $ex$
+      do $$
+      declare x int = 0;
+      begin
+        x := 1 / x;
+      end;
+      $$;
+    $ex$;
+  exception when division_by_zero then
+    raise notice 'caught division by zero';
+  end;
+  end loop;
+end;
+$do$;
+
+do
+$do$
+declare x int := x + 1;  -- error
+begin
+  raise notice 'x = %', x;
+end;
+$do$;
+
+do
+$do$
+declare y int := x + 1;  -- error
+        x int := 42;
+begin
+  raise notice 'x = %, y = %', x, y;
+end;
+$do$;
+
+do
+$do$
+declare x int := 42;
+        y int := x + 1;
+begin
+  raise notice 'x = %, y = %', x, y;
+end;
+$do$;
+
+do
+$do$
+declare x int := 42;
+begin
+  declare y int := x + 1;
+          x int := x + 2;
+          z int := x * 10;
+  begin
+    raise notice 'x = %, y = %, z = %', x, y, z;
+  end;
+end;
+$do$;
+
+set plpgsql.variable_conflict = error;
+
+create function conflict_test()
+returns setof int8_tbl
+language plpgsql
+as $function$
+declare r record;
+  q1 bigint := 42;
+begin
+  for r in select q1,q2 from int8_tbl loop
+    return next r;
+  end loop;
+end;
+$function$;
+
+select * from conflict_test();
+
+create or replace function conflict_test()
+returns setof int8_tbl
+language plpgsql
+as $function$
+#variable_conflict use_variable
+declare r record;
+  q1 bigint := 42;
+begin
+  for r in select q1,q2 from int8_tbl loop
+    return next r;
+  end loop;
+end;
+$function$;
+
+select * from conflict_test();
+
+create or replace function conflict_test()
+returns setof int8_tbl
+language plpgsql
+as $function$
+#variable_conflict use_column
+declare r record;
+  q1 bigint := 42;
+begin
+  for r in select q1,q2 from int8_tbl loop
+    return next r;
+  end loop;
+end;
+$function$;
+
+select * from conflict_test();
+
+drop function conflict_test();
+
+create function unreserved_test()
+returns int
+language plpgsql
+as $function$
+declare
+  forward int := 21;
+begin
+  forward := forward * 2;
+  return forward;
+end
+$function$;
+
+select unreserved_test();
+
+create or replace function unreserved_test()
+returns int
+language plpgsql
+as $function$
+declare
+  return int := 42;
+begin
+  return := return + 1;
+  return return;
+end
+$function$;
+
+select unreserved_test();
+
+create or replace function unreserved_test()
+returns int
+language plpgsql
+as $function$
+declare
+  comment int := 21;
+begin
+  comment := comment * 2;
+  comment on function unreserved_test() is 'this is a test';
+  return comment;
+end
+$function$;
+
+select unreserved_test();
+
+select obj_description(cast('unreserved_test()' as regprocedure), 'pg_proc');
+
+drop function unreserved_test();
+
+create function foreach_test(anyarray)
+returns void
+language plpgsql
+as $function$
+declare x int;
+begin
+  foreach x in array $1
+  loop
+    raise notice '%', x;
+  end loop;
+  end;
+$function$;
+
+select foreach_test(array[1, 2, 3, 4]);
+
+select foreach_test(array[array[1, 2], array[3, 4]]);
+
+create or replace function foreach_test(anyarray)
+returns void
+language plpgsql
+as $function$
+declare x int;
+begin
+  foreach x slice 1 in array $1
+  loop
+    raise notice '%', x;
+  end loop;
+  end;
+$function$;
+
+select foreach_test(array[1, 2, 3, 4]);
+
+select foreach_test(array[array[1, 2], array[3, 4]]);
+
+create or replace function foreach_test(anyarray)
+returns void
+language plpgsql
+as $function$
+declare x int[];
+begin
+  foreach x slice 1 in array $1
+  loop
+    raise notice '%', x;
+  end loop;
+  end;
+$function$;
+
+select foreach_test(array[1, 2, 3, 4]);
+
+select foreach_test(array[array[1, 2], array[3, 4]]);
+
+create or replace function foreach_test(anyarray)
+returns void
+language plpgsql
+as $function$
+declare x int[];
+begin
+  foreach x slice 2 in array $1
+  loop
+    raise notice '%', x;
+  end loop;
+  end;
+$function$;
+
+select foreach_test(array[1, 2, 3, 4]);
+
+select foreach_test(array[array[1, 2], array[3, 4]]);
+
+select foreach_test(array[array[array[1, 2]], array[array[3, 4]]]);
+
+create type xy_tuple as (x int, y int);
+
+create or replace function foreach_test(anyarray)
+returns void
+language plpgsql
+as $function$
+declare r record;
+begin
+  foreach r in array $1
+  loop
+    raise notice '%', r;
+  end loop;
+  end;
+$function$;
+
+select foreach_test(cast(array[(10, 20), (40, 69), (35, 78)] as xy_tuple[]));
+
+select
+  foreach_test(
+    cast(array[array[(10, 20), (40, 69)],
+    array[(35, 78), (88, 76)]]
+    as xy_tuple[])
+  );
+
+create or replace function foreach_test(anyarray)
+returns void
+language plpgsql
+as $function$
+declare x int; y int;
+begin
+  foreach x, y in array $1
+  loop
+    raise notice 'x = %, y = %', x, y;
+  end loop;
+  end;
+$function$;
+
+select foreach_test(cast(array[(10, 20), (40, 69), (35, 78)] as xy_tuple[]));
+
+select
+  foreach_test(
+    cast(array[array[(10, 20), (40, 69)],
+    array[(35, 78), (88, 76)]]
+    as xy_tuple[])
+  );
+
+create or replace function foreach_test(anyarray)
+returns void
+language plpgsql
+as $function$
+declare x xy_tuple[];
+begin
+  foreach x slice 1 in array $1
+  loop
+    raise notice '%', x;
+  end loop;
+  end;
+$function$;
+
+select foreach_test(cast(array[(10, 20), (40, 69), (35, 78)] as xy_tuple[]));
+
+select
+  foreach_test(
+    cast(array[array[(10, 20), (40, 69)],
+    array[(35, 78), (88, 76)]]
+    as xy_tuple[])
+  );
+
+drop function foreach_test(anyarray);
+
+drop type xy_tuple;
+
+create temporary table rtype (
+  id int,
+  ar text[]
+);
+
+create function arrayassign1()
+returns text[]
+language plpgsql
+as $function$
+declare
+ r record;
+begin
+  r := row(12, '{foo,bar,baz}')::rtype;
+  r.ar[2] := 'replace';
+  return r.ar;
+end
+$function$;
+
+select arrayassign1();
+
+select arrayassign1();
+
+create domain orderedarray as int[2]
+  constraint "sorted" check (value[1] < value[2]);
+
+select cast('{1,2}' as orderedarray);
+
+select cast('{2,1}' as orderedarray);
+
+create function testoa(x1 int, x2 int, x3 int)
+returns orderedarray
+language plpgsql
+as $function$
+declare res orderedarray;
+begin
+  res := array[x1, x2];
+  res[2] := x3;
+  return res;
+end
+$function$;
+
+select testoa(1, 2, 3);
+
+select testoa(1, 2, 3);
+
+select testoa(2, 1, 3);
+
+select testoa(1, 2, 1);
+
+drop function arrayassign1();
+
+drop function testoa(int, int, int);
+
+create function returns_rw_array(int)
+returns int[]
+language plpgsql
+stable
+as $function$
+declare r int[];
+  begin r := array[$1, $1]; return r; end;
+$function$;
+
+create function consumes_rw_array(int[])
+returns int
+language plpgsql
+stable
+as $function$
+begin return $1[1]; end;
+$function$;
+
+select consumes_rw_array(returns_rw_array(42));
+
+select
+  i,
+  a
+from
+  (
+    select returns_rw_array(1) as a offset 0
+  )
+  as ss,
+  lateral consumes_rw_array(a) as i;
+
+select
+  i,
+  a
+from
+  (
+    select returns_rw_array(1) as a offset 0
+  )
+  as ss,
+  lateral consumes_rw_array(a) as i;
+
+select consumes_rw_array(a), a from returns_rw_array(1) as a;
+
+select consumes_rw_array(a), a from returns_rw_array(1) as a;
+
+select
+  consumes_rw_array(a),
+  a
+from
+  (
+    values
+      (returns_rw_array(1)),
+      (returns_rw_array(2))
+  )
+  as v (a);
+
+select
+  consumes_rw_array(a),
+  a
+from
+  (
+    values
+      (returns_rw_array(1)),
+      (returns_rw_array(2))
+  )
+  as v (a);
+
+do
+$do$
+declare a int[] := array[1,2];
+begin
+  a := a || 3;
+  raise notice 'a = %', a;
+end
+$do$;
+
+create function inner_func(int)
+returns int
+language plpgsql
+as $function$
+declare _context text;
+begin
+  get diagnostics _context = pg_context;
+  raise notice '***%***', _context;
+  -- lets do it again, just for fun..
+  get diagnostics _context = pg_context;
+  raise notice '***%***', _context;
+  raise notice 'lets make sure we didnt break anything';
+  return 2 * $1;
+end;
+$function$;
+
+create or replace function outer_func(int)
+returns int
+language plpgsql
+as $function$
+declare
+  myresult int;
+begin
+  raise notice 'calling down into inner_func()';
+  myresult := inner_func($1);
+  raise notice 'inner_func() done';
+  return myresult;
+end;
+$function$;
+
+create or replace function outer_outer_func(int)
+returns int
+language plpgsql
+as $function$
+declare
+  myresult int;
+begin
+  raise notice 'calling down into outer_func()';
+  myresult := outer_func($1);
+  raise notice 'outer_func() done';
+  return myresult;
+end;
+$function$;
+
+select outer_outer_func(10);
+
+select outer_outer_func(20);
+
+drop function outer_outer_func(int);
+
+drop function outer_func(int);
+
+drop function inner_func(int);
+
+create function inner_func(int)
+returns int
+language plpgsql
+as $function$
+declare
+  _context text;
+  sx int := 5;
+begin
+  begin
+    perform sx / 0;
+  exception
+    when division_by_zero then
+      get diagnostics _context = pg_context;
+      raise notice '***%***', _context;
+  end;
+
+  -- lets do it again, just for fun..
+  get diagnostics _context = pg_context;
+  raise notice '***%***', _context;
+  raise notice 'lets make sure we didnt break anything';
+  return 2 * $1;
+end;
+$function$;
+
+create or replace function outer_func(int)
+returns int
+language plpgsql
+as $function$
+declare
+  myresult int;
+begin
+  raise notice 'calling down into inner_func()';
+  myresult := inner_func($1);
+  raise notice 'inner_func() done';
+  return myresult;
+end;
+$function$;
+
+create or replace function outer_outer_func(int)
+returns int
+language plpgsql
+as $function$
+declare
+  myresult int;
+begin
+  raise notice 'calling down into outer_func()';
+  myresult := outer_func($1);
+  raise notice 'outer_func() done';
+  return myresult;
+end;
+$function$;
+
+select outer_outer_func(10);
+
+select outer_outer_func(20);
+
+drop function outer_outer_func(int);
+
+drop function outer_func(int);
+
+drop function inner_func(int);
+
+create function current_function(text)
+returns regprocedure
+language plpgsql
+as $function$
+declare
+  fn_oid regprocedure;
+begin
+  get diagnostics fn_oid = pg_routine_oid;
+  return fn_oid;
+end;
+$function$;
+
+select current_function('foo');
+
+drop function current_function(text);
+
+do
+$do$
+declare
+  fn_oid oid;
+begin
+  get diagnostics fn_oid = pg_routine_oid;
+  raise notice 'pg_routine_oid = %', fn_oid;
+end;
+$do$;
+
+do
+$do$
+begin
+  assert 1=1;  -- should succeed
+end;
+$do$;
+
+do
+$do$
+begin
+  assert 1=0;  -- should fail
+end;
+$do$;
+
+do
+$do$
+begin
+  assert NULL;  -- should fail
+end;
+$do$;
+
+set plpgsql.check_asserts = off;
+
+do
+$do$
+begin
+  assert 1=0;  -- won't be tested
+end;
+$do$;
+
+reset plpgsql.check_asserts;
+
+do
+$do$
+declare var text := 'some value';
+begin
+  assert 1=0, format('assertion failed, var = "%s"', var);
+end;
+$do$;
+
+do
+$do$
+begin
+  assert 1=0, 'unhandled assertion';
+exception when others then
+  null; -- do nothing
+end;
+$do$;
+
+create function plpgsql_domain_check(val int)
+returns boolean
+language plpgsql
+immutable
+as $function$
+begin return val > 0; end
+$function$;
+
+create domain plpgsql_domain as int check (plpgsql_domain_check(value));
+
+do
+$do$
+declare v_test plpgsql_domain;
+begin
+  v_test := 1;
+end;
+$do$;
+
+do
+$do$
+declare v_test plpgsql_domain := 1;
+begin
+  v_test := 0;  -- fail
+end;
+$do$;
+
+create function plpgsql_arr_domain_check(val int[])
+returns boolean
+language plpgsql
+immutable
+as $function$
+begin return val[1] > 0; end
+$function$;
+
+create domain plpgsql_arr_domain as int[]
+  check (plpgsql_arr_domain_check(value));
+
+do
+$do$
+declare v_test plpgsql_arr_domain;
+begin
+  v_test := array[1];
+  v_test := v_test || 2;
+end;
+$do$;
+
+do
+$do$
+declare v_test plpgsql_arr_domain := array[1];
+begin
+  v_test := 0 || v_test;  -- fail
+end;
+$do$;
+
+create table transition_table_base (
+  id int primary key,
+  val text
+);
+
+create function transition_table_base_ins_func()
+returns trigger
+language plpgsql
+as $function$
+DECLARE
+  t text;
+  l text;
+BEGIN
+  t = '';
+  FOR l IN EXECUTE
+           $q$
+             EXPLAIN (TIMING off, COSTS off, VERBOSE on)
+             SELECT * FROM newtable
+           $q$ LOOP
+    t = t || l || E'\n';
+  END LOOP;
+
+  RAISE INFO '%', t;
+  RETURN new;
+END;
+$function$;
+
+create trigger transition_table_base_ins_trig
+after insert
+on transition_table_base
+referencing old table as oldtable
+new table as newtable
+for each statement
+execute function transition_table_base_ins_func();
+
+create trigger transition_table_base_ins_trig
+after insert
+on transition_table_base
+referencing new table as newtable
+for each statement
+execute function transition_table_base_ins_func();
+
+insert into transition_table_base values (1, 'One'), (2, 'Two');
+
+insert into transition_table_base values (3, 'Three'), (4, 'Four');
+
+create or replace function transition_table_base_upd_func()
+returns trigger
+language plpgsql
+as $function$
+DECLARE
+  t text;
+  l text;
+BEGIN
+  t = '';
+  FOR l IN EXECUTE
+           $q$
+             EXPLAIN (TIMING off, COSTS off, VERBOSE on)
+             SELECT * FROM oldtable ot FULL JOIN newtable nt USING (id)
+           $q$ LOOP
+    t = t || l || E'\n';
+  END LOOP;
+
+  RAISE INFO '%', t;
+  RETURN new;
+END;
+$function$;
+
+create trigger transition_table_base_upd_trig
+after update
+on transition_table_base
+referencing old table as oldtable
+new table as newtable
+for each statement
+execute function transition_table_base_upd_func();
+
+update transition_table_base
+set val = '*' || val || '*'
+where
+  id between 2 and 3;
+
+create table transition_table_level1 (
+  level1_no serial not null,
+  level1_node_name varchar(255),
+  primary key (level1_no)
+);
+
+create table transition_table_level2 (
+  level2_no serial not null,
+  parent_no int not null,
+  level1_node_name varchar(255),
+  primary key (level2_no)
+);
+
+create table transition_table_status (
+  level int not null,
+  node_no int not null,
+  status int,
+  primary key (level, node_no)
+);
+
+create function transition_table_level1_ri_parent_del_func()
+returns trigger
+language plpgsql
+as $function$
+DECLARE n bigint;
+  BEGIN
+    PERFORM FROM p JOIN transition_table_level2 c ON c.parent_no = p.level1_no;
+    IF FOUND THEN
+      RAISE EXCEPTION 'RI error';
+    END IF;
+    RETURN NULL;
+  END;
+$function$;
+
+create trigger transition_table_level1_ri_parent_del_trigger
+after delete
+on transition_table_level1
+referencing old table as p
+for each statement
+execute function transition_table_level1_ri_parent_del_func();
+
+create function transition_table_level1_ri_parent_upd_func()
+returns trigger
+language plpgsql
+as $function$
+DECLARE
+    x int;
+  BEGIN
+    WITH p AS (SELECT level1_no, sum(delta) cnt
+                 FROM (SELECT level1_no, 1 AS delta FROM i
+                       UNION ALL
+                       SELECT level1_no, -1 AS delta FROM d) w
+                 GROUP BY level1_no
+                 HAVING sum(delta) < 0)
+    SELECT level1_no
+      FROM p JOIN transition_table_level2 c ON c.parent_no = p.level1_no
+      INTO x;
+    IF FOUND THEN
+      RAISE EXCEPTION 'RI error';
+    END IF;
+    RETURN NULL;
+  END;
+$function$;
+
+create trigger transition_table_level1_ri_parent_upd_trigger
+after update
+on transition_table_level1
+referencing old table as d
+new table as i
+for each statement
+execute function transition_table_level1_ri_parent_upd_func();
+
+create function transition_table_level2_ri_child_insupd_func()
+returns trigger
+language plpgsql
+as $function$
+BEGIN
+    PERFORM FROM i
+      LEFT JOIN transition_table_level1 p
+        ON p.level1_no IS NOT NULL AND p.level1_no = i.parent_no
+      WHERE p.level1_no IS NULL;
+    IF FOUND THEN
+      RAISE EXCEPTION 'RI error';
+    END IF;
+    RETURN NULL;
+  END;
+$function$;
+
+create trigger transition_table_level2_ri_child_ins_trigger
+after insert
+on transition_table_level2
+referencing new table as i
+for each statement
+execute function transition_table_level2_ri_child_insupd_func();
+
+create trigger transition_table_level2_ri_child_upd_trigger
+after update
+on transition_table_level2
+referencing new table as i
+for each statement
+execute function transition_table_level2_ri_child_insupd_func();
+
+insert into transition_table_level1 (level1_no) select generate_series(1, 200);
+
+analyze transition_table_level1;
+
+insert into transition_table_level2 (level2_no, parent_no)
+select
+  level2_no,
+  level2_no / 50 + 1 as parent_no
+from
+  generate_series(1, 9999) as level2_no;
+
+analyze transition_table_level2;
+
+insert into transition_table_status (level, node_no, status)
+select
+  1,
+  level1_no,
+  0
+from
+  transition_table_level1;
+
+insert into transition_table_status (level, node_no, status)
+select
+  2,
+  level2_no,
+  0
+from
+  transition_table_level2;
+
+analyze transition_table_status;
+
+insert into transition_table_level1 (level1_no)
+select generate_series(201, 1000);
+
+analyze transition_table_level1;
+
+create function transition_table_level2_bad_usage_func()
+returns trigger
+language plpgsql
+as $function$
+BEGIN
+    INSERT INTO dx VALUES (1000000, 1000000, 'x');
+    RETURN NULL;
+  END;
+$function$;
+
+create trigger transition_table_level2_bad_usage_trigger
+after delete
+on transition_table_level2
+referencing old table as dx
+for each statement
+execute function transition_table_level2_bad_usage_func();
+
+delete from transition_table_level2 where level2_no between 301 and 305;
+
+drop trigger
+  transition_table_level2_bad_usage_trigger on transition_table_level2;
+
+delete from transition_table_level1 where level1_no = 25;
+
+update transition_table_level1 set level1_no = -1 where level1_no = 30;
+
+insert into transition_table_level2 (level2_no, parent_no)
+values (10000, 10000);
+
+update transition_table_level2 set parent_no = 2000 where level2_no = 40;
+
+delete from transition_table_level1 where level1_no between 201 and 1000;
+
+delete from transition_table_level1
+where
+  level1_no
+  between 100000000
+  and 100000010;
+
+select COUNT(*) from transition_table_level1;
+
+delete from transition_table_level2 where level2_no between 211 and 220;
+
+select COUNT(*) from transition_table_level2;
+
+create table alter_table_under_transition_tables (
+  id int primary key,
+  name text
+);
+
+create function alter_table_under_transition_tables_upd_func()
+returns trigger
+language plpgsql
+as $function$
+BEGIN
+  RAISE WARNING 'old table = %, new table = %',
+                  (SELECT string_agg(id || '=' || name, ',') FROM d),
+                  (SELECT string_agg(id || '=' || name, ',') FROM i);
+  RAISE NOTICE 'one = %', (SELECT 1 FROM alter_table_under_transition_tables LIMIT 1);
+  RETURN NULL;
+END;
+$function$;
+
+create trigger alter_table_under_transition_tables_upd_trigger
+after update or truncate
+on alter_table_under_transition_tables
+referencing old table as d
+new table as i
+for each statement
+execute function alter_table_under_transition_tables_upd_func();
+
+create trigger alter_table_under_transition_tables_upd_trigger
+after update
+on alter_table_under_transition_tables
+referencing old table as d
+new table as i
+for each statement
+execute function alter_table_under_transition_tables_upd_func();
+
+insert into alter_table_under_transition_tables
+values (1, '1'), (2, '2'), (3, '3');
+
+update alter_table_under_transition_tables set name = name || name;
+
+alter table alter_table_under_transition_tables
+  alter column name type int using cast(name as int);
+
+update alter_table_under_transition_tables
+set name = cast(cast(name as text) || cast(name as text)
+as int);
+
+alter table alter_table_under_transition_tables
+  drop column name;
+
+update alter_table_under_transition_tables set id = id;
+
+create table multi_test (i int);
+
+insert into multi_test values (1);
+
+create or replace function multi_test_trig()
+returns trigger
+language plpgsql
+as $function$
+BEGIN
+    RAISE NOTICE 'count = %', (SELECT COUNT(*) FROM new_test);
+    RAISE NOTICE 'count union = %',
+      (SELECT COUNT(*)
+       FROM (SELECT * FROM new_test UNION ALL SELECT * FROM new_test) ss);
+    RETURN NULL;
+END
+$function$;
+
+create trigger my_trigger
+after update
+on multi_test
+referencing new table as new_test
+old table as old_test
+for each statement
+execute function multi_test_trig();
+
+update multi_test set i = i;
+
+drop table multi_test;
+
+drop function multi_test_trig();
+
+create table partitioned_table (
+  a int,
+  b text
+)
+partition by LIST(a);
+
+create table pt_part1 partition of partitioned_table for values in (1);
+
+create table pt_part2 partition of partitioned_table for values in (2);
+
+insert into partitioned_table values (1, 'Row 1');
+
+insert into partitioned_table values (2, 'Row 2');
+
+create or replace function get_from_partitioned_table(partitioned_table.a%type)
+returns partitioned_table
+language plpgsql
+as $function$
+DECLARE
+    a_val partitioned_table.a%TYPE;
+    result partitioned_table%ROWTYPE;
+BEGIN
+    a_val := $1;
+    SELECT * INTO result FROM partitioned_table WHERE a = a_val;
+    RETURN result;
+END;
+$function$;
+
+select * from get_from_partitioned_table(1) as t;
+
+create or replace function list_partitioned_table()
+returns setof public.partitioned_table.a%type
+language plpgsql
+as $function$
+DECLARE
+    row public.partitioned_table%ROWTYPE;
+    a_val public.partitioned_table.a%TYPE;
+BEGIN
+    FOR row IN SELECT * FROM public.partitioned_table ORDER BY a LOOP
+        a_val := row.a;
+        RETURN NEXT a_val;
+    END LOOP;
+    RETURN;
+END;
+$function$;
+
+select * from list_partitioned_table() as t;
+
+create function fx(x wslot)
+returns void
+language plpgsql
+as $function$
+BEGIN
+  GET DIAGNOSTICS x = ROW_COUNT;
+  RETURN;
+END;
+$function$;

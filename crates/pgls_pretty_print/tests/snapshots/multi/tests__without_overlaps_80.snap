@@ -1,0 +1,3234 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/without_overlaps.sql
+snapshot_kind: text
+---
+set datestyle = iso, ymd;
+
+select
+  pg_get_constraintdef(oid)
+from
+  pg_constraint
+where
+  conname = 'temporal_rng_pk';
+
+select
+  pg_get_indexdef(conindid, 0, true)
+from
+  pg_constraint
+where
+  conname = 'temporal_rng_pk';
+
+create table temporal_rng2 (like temporal_rng including all);
+
+drop table temporal_rng2;
+
+create table temporal_rng2 ()
+inherits (temporal_rng);
+
+drop table temporal_rng2;
+
+drop table temporal_rng;
+
+create table temporal_rng (
+  id int4range,
+  valid_at daterange
+);
+
+drop table temporal_rng cascade;
+
+create table temporal_rng (
+  id int4range,
+  valid_at daterange
+);
+
+create table temporal_rng2 ()
+inherits (temporal_rng);
+
+drop table temporal_rng2;
+
+drop table temporal_rng;
+
+select
+  pg_get_constraintdef(oid)
+from
+  pg_constraint
+where
+  conname = 'temporal_rng2_pk';
+
+select
+  pg_get_indexdef(conindid, 0, true)
+from
+  pg_constraint
+where
+  conname = 'temporal_rng2_pk';
+
+create type textrange2 as range (subtype = text, collation = "C");
+
+alter table temporal_rng3
+  drop constraint temporal_rng3_pk;
+
+drop table temporal_rng3;
+
+drop type textrange2;
+
+select
+  pg_get_constraintdef(oid)
+from
+  pg_constraint
+where
+  conname = 'temporal_mltrng_pk';
+
+select
+  pg_get_indexdef(conindid, 0, true)
+from
+  pg_constraint
+where
+  conname = 'temporal_mltrng_pk';
+
+select
+  pg_get_constraintdef(oid)
+from
+  pg_constraint
+where
+  conname = 'temporal_mltrng2_pk';
+
+select
+  pg_get_indexdef(conindid, 0, true)
+from
+  pg_constraint
+where
+  conname = 'temporal_mltrng2_pk';
+
+select
+  pg_get_constraintdef(oid)
+from
+  pg_constraint
+where
+  conname = 'temporal_rng3_uq';
+
+select
+  pg_get_indexdef(conindid, 0, true)
+from
+  pg_constraint
+where
+  conname = 'temporal_rng3_uq';
+
+drop table temporal_rng3;
+
+select
+  pg_get_constraintdef(oid)
+from
+  pg_constraint
+where
+  conname = 'temporal_rng3_uq';
+
+select
+  pg_get_indexdef(conindid, 0, true)
+from
+  pg_constraint
+where
+  conname = 'temporal_rng3_uq';
+
+drop table temporal_rng3;
+
+create type textrange2 as range (subtype = text, collation = "C");
+
+alter table temporal_rng3
+  drop constraint temporal_rng3_uq;
+
+drop table temporal_rng3;
+
+drop type textrange2;
+
+create table temporal_rng (
+  id int4range,
+  valid_at daterange
+);
+
+create table temporal3 (
+  id int4range,
+  valid_at daterange
+);
+
+create index "idx_temporal3_uq" on temporal3 using gist (id, valid_at);
+
+alter table temporal3
+  add constraint "temporal3_pk" primary key using index "idx_temporal3_uq";
+
+drop table temporal3;
+
+create table temporal3 (
+  id int4range,
+  valid_at daterange
+);
+
+create index "idx_temporal3_uq" on temporal3 using gist (id, valid_at);
+
+alter table temporal3
+  add constraint "temporal3_uq" unique using index "idx_temporal3_uq";
+
+drop table temporal3;
+
+create table temporal3 (
+  id int4range,
+  valid_at daterange
+);
+
+create unique index "idx_temporal3_uq" on temporal3 using btree (id, valid_at);
+
+alter table temporal3
+  add constraint "temporal3_uq" unique using index "idx_temporal3_uq";
+
+drop table temporal3;
+
+create table temporal3 (id int4range);
+
+drop table temporal3;
+
+create table temporal3 (id int4range);
+
+drop table temporal3;
+
+alter table temporal_rng
+  drop constraint temporal_rng_pk;
+
+insert into temporal_rng (id, valid_at)
+values
+  (
+    '[1,2)',
+    daterange('2018-01-02', '2018-02-03')
+  );
+
+insert into temporal_rng (id, valid_at)
+values
+  (
+    '[1,2)',
+    daterange('2018-03-03', '2018-04-04')
+  );
+
+insert into temporal_rng (id, valid_at)
+values
+  (
+    '[2,3)',
+    daterange('2018-01-01', '2018-01-05')
+  );
+
+insert into temporal_rng (id, valid_at)
+values
+  ('[3,4)', daterange('2018-01-01', null));
+
+alter table temporal_rng
+  drop constraint temporal_rng_pk;
+
+begin;
+
+insert into temporal_rng (id, valid_at)
+values
+  (
+    '[1,2)',
+    daterange('2018-01-01', '2018-01-05')
+  );
+
+rollback;
+
+begin;
+
+insert into temporal_rng (id, valid_at) values ('[3,4)', 'empty');
+
+rollback;
+
+delete from temporal_rng;
+
+insert into temporal_rng (id, valid_at)
+values
+  (
+    '[1,2)',
+    daterange('2018-01-02', '2018-02-03')
+  );
+
+insert into temporal_rng (id, valid_at)
+values
+  (
+    '[1,2)',
+    daterange('2018-03-03', '2018-04-04')
+  );
+
+insert into temporal_rng (id, valid_at)
+values
+  (
+    '[2,3)',
+    daterange('2018-01-01', '2018-01-05')
+  );
+
+insert into temporal_rng (id, valid_at)
+values
+  ('[3,4)', daterange('2018-01-01', null));
+
+insert into temporal_rng (id, valid_at)
+values
+  (
+    '[1,2)',
+    daterange('2018-01-01', '2018-01-05')
+  );
+
+insert into temporal_rng (id, valid_at)
+values
+  (
+    null,
+    daterange('2018-01-01', '2018-01-05')
+  );
+
+insert into temporal_rng (id, valid_at) values ('[3,4)', null);
+
+insert into temporal_rng (id, valid_at) values ('[3,4)', 'empty');
+
+select * from temporal_rng order by id, valid_at;
+
+update temporal_rng
+set id = '[11,12)'
+where
+  id = '[1,2)' and
+  valid_at @> cast('2018-01-15' as date);
+
+update temporal_rng
+set valid_at = '[2020-01-01,2021-01-01)'
+where
+  id = '[11,12)' and
+  valid_at @> cast('2018-01-15' as date);
+
+update temporal_rng
+set id = '[21,22)',
+valid_at = '[2018-01-02,2018-02-03)'
+where
+  id = '[11,12)' and
+  valid_at @> cast('2020-01-15' as date);
+
+select * from temporal_rng order by id, valid_at;
+
+update temporal_rng
+set id = '[1,2)',
+valid_at = daterange('2018-03-05', '2018-05-05')
+where
+  id = '[21,22)';
+
+update temporal_rng
+set id = null,
+valid_at = daterange('2018-03-05', '2018-05-05')
+where
+  id = '[21,22)';
+
+update temporal_rng set id = '[1,2)', valid_at = null where id = '[21,22)';
+
+update temporal_rng set id = '[1,2)', valid_at = 'empty' where id = '[21,22)';
+
+select * from temporal_rng order by id, valid_at;
+
+create table temporal_rng3 (
+  id int4range,
+  valid_at daterange
+);
+
+insert into temporal_rng3 (id, valid_at)
+values
+  (
+    '[1,2)',
+    daterange('2018-01-02', '2018-02-03')
+  );
+
+insert into temporal_rng3 (id, valid_at)
+values
+  (
+    '[1,2)',
+    daterange('2018-03-03', '2018-04-04')
+  );
+
+insert into temporal_rng3 (id, valid_at)
+values
+  (
+    '[2,3)',
+    daterange('2018-01-01', '2018-01-05')
+  );
+
+insert into temporal_rng3 (id, valid_at)
+values
+  ('[3,4)', daterange('2018-01-01', null));
+
+insert into temporal_rng3 (id, valid_at)
+values
+  (
+    null,
+    daterange('2018-01-01', '2018-01-05')
+  );
+
+insert into temporal_rng3 (id, valid_at) values ('[3,4)', null);
+
+alter table temporal_rng3
+  drop constraint temporal_rng3_uq;
+
+begin;
+
+insert into temporal_rng3 (id, valid_at)
+values
+  (
+    '[1,2)',
+    daterange('2018-01-01', '2018-01-05')
+  );
+
+rollback;
+
+begin;
+
+insert into temporal_rng3 (id, valid_at) values ('[3,4)', 'empty');
+
+rollback;
+
+delete from temporal_rng3;
+
+insert into temporal_rng3 (id, valid_at)
+values
+  (
+    '[1,2)',
+    daterange('2018-01-02', '2018-02-03')
+  );
+
+insert into temporal_rng3 (id, valid_at)
+values
+  (
+    '[1,2)',
+    daterange('2018-03-03', '2018-04-04')
+  );
+
+insert into temporal_rng3 (id, valid_at)
+values
+  (
+    '[2,3)',
+    daterange('2018-01-01', '2018-01-05')
+  );
+
+insert into temporal_rng3 (id, valid_at)
+values
+  ('[3,4)', daterange('2018-01-01', null));
+
+insert into temporal_rng3 (id, valid_at)
+values
+  (
+    null,
+    daterange('2018-01-01', '2018-01-05')
+  );
+
+insert into temporal_rng3 (id, valid_at) values ('[3,4)', null);
+
+insert into temporal_rng3 (id, valid_at)
+values
+  (
+    '[1,2)',
+    daterange('2018-01-01', '2018-01-05')
+  );
+
+insert into temporal_rng3 (id, valid_at) values ('[3,4)', 'empty');
+
+select * from temporal_rng3 order by id, valid_at;
+
+update temporal_rng3
+set id = '[11,12)'
+where
+  id = '[1,2)' and
+  valid_at @> cast('2018-01-15' as date);
+
+update temporal_rng3
+set valid_at = '[2020-01-01,2021-01-01)'
+where
+  id = '[11,12)' and
+  valid_at @> cast('2018-01-15' as date);
+
+update temporal_rng3
+set id = '[21,22)',
+valid_at = '[2018-01-02,2018-02-03)'
+where
+  id = '[11,12)' and
+  valid_at @> cast('2020-01-15' as date);
+
+update temporal_rng3
+set id = null,
+valid_at = daterange('2020-01-01', '2021-01-01')
+where
+  id = '[21,22)';
+
+update temporal_rng3
+set id = '[1,2)',
+valid_at = null
+where
+  id is null and
+  valid_at @> cast('2020-06-01' as date);
+
+select * from temporal_rng3 order by id, valid_at;
+
+update temporal_rng3
+set valid_at = daterange('2018-03-01', '2018-05-05')
+where
+  id = '[1,2)' and valid_at is null;
+
+update temporal_rng3
+set valid_at = 'empty'
+where
+  id = '[1,2)' and valid_at is null;
+
+update temporal_rng3
+set id = null,
+valid_at = 'empty'
+where
+  id = '[1,2)' and valid_at is null;
+
+select * from temporal_rng3 order by id, valid_at;
+
+drop table temporal_rng3;
+
+alter table temporal_mltrng
+  drop constraint temporal_mltrng_pk;
+
+insert into temporal_mltrng (id, valid_at)
+values
+  (
+    '[1,2)',
+    datemultirange(
+      daterange('2018-01-02', '2018-02-03')
+    )
+  );
+
+insert into temporal_mltrng (id, valid_at)
+values
+  (
+    '[1,2)',
+    datemultirange(
+      daterange('2018-03-03', '2018-04-04')
+    )
+  );
+
+insert into temporal_mltrng (id, valid_at)
+values
+  (
+    '[2,3)',
+    datemultirange(
+      daterange('2018-01-01', '2018-01-05')
+    )
+  );
+
+insert into temporal_mltrng (id, valid_at)
+values
+  (
+    '[3,4)',
+    datemultirange(
+      daterange('2018-01-01', null)
+    )
+  );
+
+alter table temporal_mltrng
+  drop constraint temporal_mltrng_pk;
+
+begin;
+
+insert into temporal_mltrng (id, valid_at)
+values
+  (
+    '[1,2)',
+    datemultirange(
+      daterange('2018-01-01', '2018-01-05')
+    )
+  );
+
+rollback;
+
+begin;
+
+insert into temporal_mltrng (id, valid_at) values ('[3,4)', '{}');
+
+rollback;
+
+delete from temporal_mltrng;
+
+insert into temporal_mltrng (id, valid_at)
+values
+  (
+    '[1,2)',
+    datemultirange(
+      daterange('2018-01-02', '2018-02-03')
+    )
+  );
+
+insert into temporal_mltrng (id, valid_at)
+values
+  (
+    '[1,2)',
+    datemultirange(
+      daterange('2018-03-03', '2018-04-04')
+    )
+  );
+
+insert into temporal_mltrng (id, valid_at)
+values
+  (
+    '[2,3)',
+    datemultirange(
+      daterange('2018-01-01', '2018-01-05')
+    )
+  );
+
+insert into temporal_mltrng (id, valid_at)
+values
+  (
+    '[3,4)',
+    datemultirange(
+      daterange('2018-01-01', null)
+    )
+  );
+
+insert into temporal_mltrng (id, valid_at)
+values
+  (
+    '[1,2)',
+    datemultirange(
+      daterange('2018-01-01', '2018-01-05')
+    )
+  );
+
+insert into temporal_mltrng (id, valid_at)
+values
+  (
+    null,
+    datemultirange(
+      daterange('2018-01-01', '2018-01-05')
+    )
+  );
+
+insert into temporal_mltrng (id, valid_at) values ('[3,4)', null);
+
+insert into temporal_mltrng (id, valid_at) values ('[3,4)', '{}');
+
+select * from temporal_mltrng order by id, valid_at;
+
+update temporal_mltrng
+set id = '[11,12)'
+where
+  id = '[1,2)' and
+  valid_at @> cast('2018-01-15' as date);
+
+update temporal_mltrng
+set valid_at = '{[2020-01-01,2021-01-01)}'
+where
+  id = '[11,12)' and
+  valid_at @> cast('2018-01-15' as date);
+
+update temporal_mltrng
+set id = '[21,22)',
+valid_at = '{[2018-01-02,2018-02-03)}'
+where
+  id = '[11,12)' and
+  valid_at @> cast('2020-01-15' as date);
+
+select * from temporal_mltrng order by id, valid_at;
+
+update temporal_mltrng
+set id = '[1,2)',
+valid_at = datemultirange(
+  daterange('2018-03-05', '2018-05-05')
+)
+where
+  id = '[21,22)';
+
+update temporal_mltrng
+set id = null,
+valid_at = datemultirange(
+  daterange('2018-03-05', '2018-05-05')
+)
+where
+  id = '[21,22)';
+
+update temporal_mltrng set id = '[1,2)', valid_at = null where id = '[21,22)';
+
+update temporal_mltrng set id = '[1,2)', valid_at = '{}' where id = '[21,22)';
+
+select * from temporal_mltrng order by id, valid_at;
+
+create table temporal_mltrng3 (
+  id int4range,
+  valid_at datemultirange
+);
+
+insert into temporal_mltrng3 (id, valid_at)
+values
+  (
+    '[1,2)',
+    datemultirange(
+      daterange('2018-01-02', '2018-02-03')
+    )
+  );
+
+insert into temporal_mltrng3 (id, valid_at)
+values
+  (
+    '[1,2)',
+    datemultirange(
+      daterange('2018-03-03', '2018-04-04')
+    )
+  );
+
+insert into temporal_mltrng3 (id, valid_at)
+values
+  (
+    '[2,3)',
+    datemultirange(
+      daterange('2018-01-01', '2018-01-05')
+    )
+  );
+
+insert into temporal_mltrng3 (id, valid_at)
+values
+  (
+    '[3,4)',
+    datemultirange(
+      daterange('2018-01-01', null)
+    )
+  );
+
+insert into temporal_mltrng3 (id, valid_at)
+values
+  (
+    null,
+    datemultirange(
+      daterange('2018-01-01', '2018-01-05')
+    )
+  );
+
+insert into temporal_mltrng3 (id, valid_at) values ('[3,4)', null);
+
+alter table temporal_mltrng3
+  drop constraint temporal_mltrng3_uq;
+
+begin;
+
+insert into temporal_mltrng3 (id, valid_at)
+values
+  (
+    '[1,2)',
+    datemultirange(
+      daterange('2018-01-01', '2018-01-05')
+    )
+  );
+
+rollback;
+
+begin;
+
+insert into temporal_mltrng3 (id, valid_at) values ('[3,4)', '{}');
+
+rollback;
+
+delete from temporal_mltrng3;
+
+insert into temporal_mltrng3 (id, valid_at)
+values
+  (
+    '[1,2)',
+    datemultirange(
+      daterange('2018-01-02', '2018-02-03')
+    )
+  );
+
+insert into temporal_mltrng3 (id, valid_at)
+values
+  (
+    '[1,2)',
+    datemultirange(
+      daterange('2018-03-03', '2018-04-04')
+    )
+  );
+
+insert into temporal_mltrng3 (id, valid_at)
+values
+  (
+    '[2,3)',
+    datemultirange(
+      daterange('2018-01-01', '2018-01-05')
+    )
+  );
+
+insert into temporal_mltrng3 (id, valid_at)
+values
+  (
+    '[3,4)',
+    datemultirange(
+      daterange('2018-01-01', null)
+    )
+  );
+
+insert into temporal_mltrng3 (id, valid_at)
+values
+  (
+    null,
+    datemultirange(
+      daterange('2018-01-01', '2018-01-05')
+    )
+  );
+
+insert into temporal_mltrng3 (id, valid_at) values ('[3,4)', null);
+
+insert into temporal_mltrng3 (id, valid_at)
+values
+  (
+    '[1,2)',
+    datemultirange(
+      daterange('2018-01-01', '2018-01-05')
+    )
+  );
+
+insert into temporal_mltrng3 (id, valid_at) values ('[3,4)', '{}');
+
+select * from temporal_mltrng3 order by id, valid_at;
+
+update temporal_mltrng3
+set id = '[11,12)'
+where
+  id = '[1,2)' and
+  valid_at @> cast('2018-01-15' as date);
+
+update temporal_mltrng3
+set valid_at = '{[2020-01-01,2021-01-01)}'
+where
+  id = '[11,12)' and
+  valid_at @> cast('2018-01-15' as date);
+
+update temporal_mltrng3
+set id = '[21,22)',
+valid_at = '{[2018-01-02,2018-02-03)}'
+where
+  id = '[11,12)' and
+  valid_at @> cast('2020-01-15' as date);
+
+update temporal_mltrng3
+set id = null,
+valid_at = datemultirange(
+  daterange('2020-01-01', '2021-01-01')
+)
+where
+  id = '[21,22)';
+
+update temporal_mltrng3
+set id = '[1,2)',
+valid_at = null
+where
+  id is null and
+  valid_at @> cast('2020-06-01' as date);
+
+select * from temporal_mltrng3 order by id, valid_at;
+
+update temporal_mltrng3
+set valid_at = datemultirange(
+  daterange('2018-03-01', '2018-05-05')
+)
+where
+  id = '[1,2)' and valid_at is null;
+
+update temporal_mltrng3
+set valid_at = '{}'
+where
+  id = '[1,2)' and valid_at is null;
+
+update temporal_mltrng3
+set id = null,
+valid_at = '{}'
+where
+  id = '[1,2)' and valid_at is null;
+
+select * from temporal_mltrng3 order by id, valid_at;
+
+drop table temporal_mltrng3;
+
+insert into temporal3 (id, valid_at, id2, name)
+values
+  (
+    '[1,2)',
+    daterange('2000-01-01', '2010-01-01'),
+    '[7,8)',
+    'foo'
+  ),
+  (
+    '[2,3)',
+    daterange('2000-01-01', '2010-01-01'),
+    '[9,10)',
+    'bar'
+  );
+
+drop table temporal3;
+
+alter table temporal3
+  alter column valid_at drop not null;
+
+alter table temporal3
+  alter column valid_at type tstzrange using tstzrange(
+    lower(valid_at),
+    upper(valid_at)
+  );
+
+alter table temporal3 rename column valid_at to valid_thru;
+
+alter table temporal3
+  drop column valid_thru;
+
+drop table temporal3;
+
+create table tp1
+partition of temporal_partitioned
+for values in ('[1,2)', '[2,3)');
+
+create table tp2
+partition of temporal_partitioned
+for values in ('[3,4)', '[4,5)');
+
+insert into temporal_partitioned (id, valid_at, name)
+values
+  (
+    '[1,2)',
+    daterange('2000-01-01', '2000-02-01'),
+    'one'
+  ),
+  (
+    '[1,2)',
+    daterange('2000-02-01', '2000-03-01'),
+    'one'
+  ),
+  (
+    '[3,4)',
+    daterange('2000-01-01', '2010-01-01'),
+    'three'
+  );
+
+select * from temporal_partitioned order by id, valid_at;
+
+select * from tp1 order by id, valid_at;
+
+select * from tp2 order by id, valid_at;
+
+drop table temporal_partitioned;
+
+create table tp1
+partition of temporal_partitioned
+for values in ('[1,2)', '[2,3)');
+
+create table tp2
+partition of temporal_partitioned
+for values in ('[3,4)', '[4,5)');
+
+insert into temporal_partitioned (id, valid_at, name)
+values
+  (
+    '[1,2)',
+    daterange('2000-01-01', '2000-02-01'),
+    'one'
+  ),
+  (
+    '[1,2)',
+    daterange('2000-02-01', '2000-03-01'),
+    'one'
+  ),
+  (
+    '[3,4)',
+    daterange('2000-01-01', '2010-01-01'),
+    'three'
+  );
+
+select * from temporal_partitioned order by id, valid_at;
+
+select * from tp1 order by id, valid_at;
+
+select * from tp2 order by id, valid_at;
+
+drop table temporal_partitioned;
+
+alter table temporal_rng
+  replica identity
+  using index
+  temporal_rng_pk;
+
+truncate temporal_rng;
+
+insert into temporal_rng (id, valid_at)
+values
+  (
+    '[1,2)',
+    daterange('2000-01-01', '2010-01-01')
+  );
+
+insert into temporal_rng (id, valid_at)
+values
+  (
+    '[1,2)',
+    daterange('2005-01-01', '2006-01-01')
+  )
+on conflict do nothing;
+
+insert into temporal_rng (id, valid_at)
+values
+  (
+    '[1,2)',
+    daterange('2010-01-01', '2020-01-01')
+  )
+on conflict do nothing;
+
+insert into temporal_rng (id, valid_at)
+values
+  (
+    '[2,3)',
+    daterange('2005-01-01', '2006-01-01')
+  )
+on conflict do nothing;
+
+select * from temporal_rng order by id, valid_at;
+
+truncate temporal_rng;
+
+insert into temporal_rng (id, valid_at)
+values
+  (
+    '[1,2)',
+    daterange('2000-01-01', '2010-01-01')
+  );
+
+insert into temporal_rng (id, valid_at)
+values
+  (
+    '[1,2)',
+    daterange('2005-01-01', '2006-01-01')
+  )
+on conflict (id, valid_at) do nothing;
+
+insert into temporal_rng (id, valid_at)
+values
+  (
+    '[1,2)',
+    daterange('2010-01-01', '2020-01-01')
+  )
+on conflict (id, valid_at) do nothing;
+
+insert into temporal_rng (id, valid_at)
+values
+  (
+    '[2,3)',
+    daterange('2005-01-01', '2006-01-01')
+  )
+on conflict (id, valid_at) do nothing;
+
+select * from temporal_rng order by id, valid_at;
+
+truncate temporal_rng;
+
+insert into temporal_rng (id, valid_at)
+values
+  (
+    '[1,2)',
+    daterange('2000-01-01', '2010-01-01')
+  );
+
+insert into temporal_rng (id, valid_at)
+values
+  (
+    '[1,2)',
+    daterange('2005-01-01', '2006-01-01')
+  )
+on conflict
+on constraint temporal_rng_pk
+do nothing;
+
+insert into temporal_rng (id, valid_at)
+values
+  (
+    '[1,2)',
+    daterange('2010-01-01', '2020-01-01')
+  )
+on conflict
+on constraint temporal_rng_pk
+do nothing;
+
+insert into temporal_rng (id, valid_at)
+values
+  (
+    '[2,3)',
+    daterange('2005-01-01', '2006-01-01')
+  )
+on conflict
+on constraint temporal_rng_pk
+do nothing;
+
+select * from temporal_rng order by id, valid_at;
+
+truncate temporal_rng;
+
+insert into temporal_rng (id, valid_at)
+values
+  (
+    '[1,2)',
+    daterange('2000-01-01', '2010-01-01')
+  );
+
+insert into temporal_rng (id, valid_at)
+values
+  (
+    '[1,2)',
+    daterange('2005-01-01', '2006-01-01')
+  )
+on conflict
+(id, valid_at)
+do
+update
+set id = excluded.id + '[2,3)';
+
+insert into temporal_rng (id, valid_at)
+values
+  (
+    '[1,2)',
+    daterange('2010-01-01', '2020-01-01')
+  )
+on conflict
+(id, valid_at)
+do
+update
+set id = excluded.id + '[3,4)';
+
+insert into temporal_rng (id, valid_at)
+values
+  (
+    '[2,3)',
+    daterange('2005-01-01', '2006-01-01')
+  )
+on conflict
+(id, valid_at)
+do
+update
+set id = excluded.id + '[4,5)';
+
+select * from temporal_rng order by id, valid_at;
+
+truncate temporal_rng;
+
+insert into temporal_rng (id, valid_at)
+values
+  (
+    '[1,2)',
+    daterange('2000-01-01', '2010-01-01')
+  );
+
+insert into temporal_rng (id, valid_at)
+values
+  (
+    '[1,2)',
+    daterange('2005-01-01', '2006-01-01')
+  )
+on conflict
+on constraint temporal_rng_pk
+do
+update
+set id = excluded.id + '[2,3)';
+
+insert into temporal_rng (id, valid_at)
+values
+  (
+    '[1,2)',
+    daterange('2010-01-01', '2020-01-01')
+  )
+on conflict
+on constraint temporal_rng_pk
+do
+update
+set id = excluded.id + '[3,4)';
+
+insert into temporal_rng (id, valid_at)
+values
+  (
+    '[2,3)',
+    daterange('2005-01-01', '2006-01-01')
+  )
+on conflict
+on constraint temporal_rng_pk
+do
+update
+set id = excluded.id + '[4,5)';
+
+select * from temporal_rng order by id, valid_at;
+
+truncate temporal3;
+
+insert into temporal3 (id, valid_at)
+values
+  (
+    '[1,2)',
+    daterange('2000-01-01', '2010-01-01')
+  );
+
+insert into temporal3 (id, valid_at)
+values
+  (
+    '[1,2)',
+    daterange('2005-01-01', '2006-01-01')
+  )
+on conflict do nothing;
+
+insert into temporal3 (id, valid_at)
+values
+  (
+    '[1,2)',
+    daterange('2010-01-01', '2020-01-01')
+  )
+on conflict do nothing;
+
+insert into temporal3 (id, valid_at)
+values
+  (
+    '[2,3)',
+    daterange('2005-01-01', '2006-01-01')
+  )
+on conflict do nothing;
+
+select * from temporal3 order by id, valid_at;
+
+truncate temporal3;
+
+insert into temporal3 (id, valid_at)
+values
+  (
+    '[1,2)',
+    daterange('2000-01-01', '2010-01-01')
+  );
+
+insert into temporal3 (id, valid_at)
+values
+  (
+    '[1,2)',
+    daterange('2005-01-01', '2006-01-01')
+  )
+on conflict (id, valid_at) do nothing;
+
+insert into temporal3 (id, valid_at)
+values
+  (
+    '[1,2)',
+    daterange('2010-01-01', '2020-01-01')
+  )
+on conflict (id, valid_at) do nothing;
+
+insert into temporal3 (id, valid_at)
+values
+  (
+    '[2,3)',
+    daterange('2005-01-01', '2006-01-01')
+  )
+on conflict (id, valid_at) do nothing;
+
+select * from temporal3 order by id, valid_at;
+
+truncate temporal3;
+
+insert into temporal3 (id, valid_at)
+values
+  (
+    '[1,2)',
+    daterange('2000-01-01', '2010-01-01')
+  );
+
+insert into temporal3 (id, valid_at)
+values
+  (
+    '[1,2)',
+    daterange('2005-01-01', '2006-01-01')
+  )
+on conflict
+on constraint temporal3_uq
+do nothing;
+
+insert into temporal3 (id, valid_at)
+values
+  (
+    '[1,2)',
+    daterange('2010-01-01', '2020-01-01')
+  )
+on conflict
+on constraint temporal3_uq
+do nothing;
+
+insert into temporal3 (id, valid_at)
+values
+  (
+    '[2,3)',
+    daterange('2005-01-01', '2006-01-01')
+  )
+on conflict
+on constraint temporal3_uq
+do nothing;
+
+select * from temporal3 order by id, valid_at;
+
+truncate temporal3;
+
+insert into temporal3 (id, valid_at)
+values
+  (
+    '[1,2)',
+    daterange('2000-01-01', '2010-01-01')
+  );
+
+insert into temporal3 (id, valid_at)
+values
+  (
+    '[1,2)',
+    daterange('2005-01-01', '2006-01-01')
+  )
+on conflict
+(id, valid_at)
+do
+update
+set id = excluded.id + '[2,3)';
+
+insert into temporal3 (id, valid_at)
+values
+  (
+    '[1,2)',
+    daterange('2010-01-01', '2020-01-01')
+  )
+on conflict
+(id, valid_at)
+do
+update
+set id = excluded.id + '[3,4)';
+
+insert into temporal3 (id, valid_at)
+values
+  (
+    '[2,3)',
+    daterange('2005-01-01', '2006-01-01')
+  )
+on conflict
+(id, valid_at)
+do
+update
+set id = excluded.id + '[4,5)';
+
+select * from temporal3 order by id, valid_at;
+
+truncate temporal3;
+
+insert into temporal3 (id, valid_at)
+values
+  (
+    '[1,2)',
+    daterange('2000-01-01', '2010-01-01')
+  );
+
+insert into temporal3 (id, valid_at)
+values
+  (
+    '[1,2)',
+    daterange('2005-01-01', '2006-01-01')
+  )
+on conflict
+on constraint temporal3_uq
+do
+update
+set id = excluded.id + '[2,3)';
+
+insert into temporal3 (id, valid_at)
+values
+  (
+    '[1,2)',
+    daterange('2010-01-01', '2020-01-01')
+  )
+on conflict
+on constraint temporal3_uq
+do
+update
+set id = excluded.id + '[3,4)';
+
+insert into temporal3 (id, valid_at)
+values
+  (
+    '[2,3)',
+    daterange('2005-01-01', '2006-01-01')
+  )
+on conflict
+on constraint temporal3_uq
+do
+update
+set id = excluded.id + '[4,5)';
+
+select * from temporal3 order by id, valid_at;
+
+drop table temporal3;
+
+truncate temporal_mltrng;
+
+insert into temporal_mltrng (id, valid_at)
+values
+  (
+    '[1,2)',
+    datemultirange(
+      daterange('2000-01-01', '2010-01-01')
+    )
+  );
+
+insert into temporal_mltrng (id, valid_at)
+values
+  (
+    '[1,2)',
+    datemultirange(
+      daterange('2005-01-01', '2006-01-01')
+    )
+  )
+on conflict do nothing;
+
+insert into temporal_mltrng (id, valid_at)
+values
+  (
+    '[1,2)',
+    datemultirange(
+      daterange('2010-01-01', '2020-01-01')
+    )
+  )
+on conflict do nothing;
+
+insert into temporal_mltrng (id, valid_at)
+values
+  (
+    '[2,3)',
+    datemultirange(
+      daterange('2005-01-01', '2006-01-01')
+    )
+  )
+on conflict do nothing;
+
+select * from temporal_mltrng order by id, valid_at;
+
+truncate temporal_mltrng;
+
+insert into temporal_mltrng (id, valid_at)
+values
+  (
+    '[1,2)',
+    datemultirange(
+      daterange('2000-01-01', '2010-01-01')
+    )
+  );
+
+insert into temporal_mltrng (id, valid_at)
+values
+  (
+    '[1,2)',
+    datemultirange(
+      daterange('2005-01-01', '2006-01-01')
+    )
+  )
+on conflict (id, valid_at) do nothing;
+
+insert into temporal_mltrng (id, valid_at)
+values
+  (
+    '[1,2)',
+    datemultirange(
+      daterange('2010-01-01', '2020-01-01')
+    )
+  )
+on conflict (id, valid_at) do nothing;
+
+insert into temporal_mltrng (id, valid_at)
+values
+  (
+    '[2,3)',
+    datemultirange(
+      daterange('2005-01-01', '2006-01-01')
+    )
+  )
+on conflict (id, valid_at) do nothing;
+
+select * from temporal_mltrng order by id, valid_at;
+
+truncate temporal_mltrng;
+
+insert into temporal_mltrng (id, valid_at)
+values
+  (
+    '[1,2)',
+    datemultirange(
+      daterange('2000-01-01', '2010-01-01')
+    )
+  );
+
+insert into temporal_mltrng (id, valid_at)
+values
+  (
+    '[1,2)',
+    datemultirange(
+      daterange('2005-01-01', '2006-01-01')
+    )
+  )
+on conflict
+on constraint temporal_mltrng_pk
+do nothing;
+
+insert into temporal_mltrng (id, valid_at)
+values
+  (
+    '[1,2)',
+    datemultirange(
+      daterange('2010-01-01', '2020-01-01')
+    )
+  )
+on conflict
+on constraint temporal_mltrng_pk
+do nothing;
+
+insert into temporal_mltrng (id, valid_at)
+values
+  (
+    '[2,3)',
+    datemultirange(
+      daterange('2005-01-01', '2006-01-01')
+    )
+  )
+on conflict
+on constraint temporal_mltrng_pk
+do nothing;
+
+select * from temporal_mltrng order by id, valid_at;
+
+truncate temporal_mltrng;
+
+insert into temporal_mltrng (id, valid_at)
+values
+  (
+    '[1,2)',
+    datemultirange(
+      daterange('2000-01-01', '2010-01-01')
+    )
+  );
+
+insert into temporal_mltrng (id, valid_at)
+values
+  (
+    '[1,2)',
+    datemultirange(
+      daterange('2005-01-01', '2006-01-01')
+    )
+  )
+on conflict
+(id, valid_at)
+do
+update
+set id = excluded.id + '[2,3)';
+
+insert into temporal_mltrng (id, valid_at)
+values
+  (
+    '[1,2)',
+    datemultirange(
+      daterange('2010-01-01', '2020-01-01')
+    )
+  )
+on conflict
+(id, valid_at)
+do
+update
+set id = excluded.id + '[3,4)';
+
+insert into temporal_mltrng (id, valid_at)
+values
+  (
+    '[2,3)',
+    datemultirange(
+      daterange('2005-01-01', '2006-01-01')
+    )
+  )
+on conflict
+(id, valid_at)
+do
+update
+set id = excluded.id + '[4,5)';
+
+select * from temporal_mltrng order by id, valid_at;
+
+truncate temporal_mltrng;
+
+insert into temporal_mltrng (id, valid_at)
+values
+  (
+    '[1,2)',
+    datemultirange(
+      daterange('2000-01-01', '2010-01-01')
+    )
+  );
+
+insert into temporal_mltrng (id, valid_at)
+values
+  (
+    '[1,2)',
+    datemultirange(
+      daterange('2005-01-01', '2006-01-01')
+    )
+  )
+on conflict
+on constraint temporal_mltrng_pk
+do
+update
+set id = excluded.id + '[2,3)';
+
+insert into temporal_mltrng (id, valid_at)
+values
+  (
+    '[1,2)',
+    datemultirange(
+      daterange('2010-01-01', '2020-01-01')
+    )
+  )
+on conflict
+on constraint temporal_mltrng_pk
+do
+update
+set id = excluded.id + '[3,4)';
+
+insert into temporal_mltrng (id, valid_at)
+values
+  (
+    '[2,3)',
+    datemultirange(
+      daterange('2005-01-01', '2006-01-01')
+    )
+  )
+on conflict
+on constraint temporal_mltrng_pk
+do
+update
+set id = excluded.id + '[4,5)';
+
+select * from temporal_mltrng order by id, valid_at;
+
+truncate temporal_mltrng3;
+
+insert into temporal_mltrng3 (id, valid_at)
+values
+  (
+    '[1,2)',
+    datemultirange(
+      daterange('2000-01-01', '2010-01-01')
+    )
+  );
+
+insert into temporal_mltrng3 (id, valid_at)
+values
+  (
+    '[1,2)',
+    datemultirange(
+      daterange('2005-01-01', '2006-01-01')
+    )
+  )
+on conflict do nothing;
+
+insert into temporal_mltrng3 (id, valid_at)
+values
+  (
+    '[1,2)',
+    datemultirange(
+      daterange('2010-01-01', '2020-01-01')
+    )
+  )
+on conflict do nothing;
+
+insert into temporal_mltrng3 (id, valid_at)
+values
+  (
+    '[2,3)',
+    datemultirange(
+      daterange('2005-01-01', '2006-01-01')
+    )
+  )
+on conflict do nothing;
+
+select * from temporal_mltrng3 order by id, valid_at;
+
+truncate temporal_mltrng3;
+
+insert into temporal_mltrng3 (id, valid_at)
+values
+  (
+    '[1,2)',
+    datemultirange(
+      daterange('2000-01-01', '2010-01-01')
+    )
+  );
+
+insert into temporal_mltrng3 (id, valid_at)
+values
+  (
+    '[1,2)',
+    datemultirange(
+      daterange('2005-01-01', '2006-01-01')
+    )
+  )
+on conflict (id, valid_at) do nothing;
+
+insert into temporal_mltrng3 (id, valid_at)
+values
+  (
+    '[1,2)',
+    datemultirange(
+      daterange('2010-01-01', '2020-01-01')
+    )
+  )
+on conflict (id, valid_at) do nothing;
+
+insert into temporal_mltrng3 (id, valid_at)
+values
+  (
+    '[2,3)',
+    datemultirange(
+      daterange('2005-01-01', '2006-01-01')
+    )
+  )
+on conflict (id, valid_at) do nothing;
+
+select * from temporal_mltrng3 order by id, valid_at;
+
+truncate temporal_mltrng3;
+
+insert into temporal_mltrng3 (id, valid_at)
+values
+  (
+    '[1,2)',
+    datemultirange(
+      daterange('2000-01-01', '2010-01-01')
+    )
+  );
+
+insert into temporal_mltrng3 (id, valid_at)
+values
+  (
+    '[1,2)',
+    datemultirange(
+      daterange('2005-01-01', '2006-01-01')
+    )
+  )
+on conflict
+on constraint temporal_mltrng3_uq
+do nothing;
+
+insert into temporal_mltrng3 (id, valid_at)
+values
+  (
+    '[1,2)',
+    datemultirange(
+      daterange('2010-01-01', '2020-01-01')
+    )
+  )
+on conflict
+on constraint temporal_mltrng3_uq
+do nothing;
+
+insert into temporal_mltrng3 (id, valid_at)
+values
+  (
+    '[2,3)',
+    datemultirange(
+      daterange('2005-01-01', '2006-01-01')
+    )
+  )
+on conflict
+on constraint temporal_mltrng3_uq
+do nothing;
+
+select * from temporal_mltrng3 order by id, valid_at;
+
+truncate temporal_mltrng3;
+
+insert into temporal_mltrng3 (id, valid_at)
+values
+  (
+    '[1,2)',
+    datemultirange(
+      daterange('2000-01-01', '2010-01-01')
+    )
+  );
+
+insert into temporal_mltrng3 (id, valid_at)
+values
+  (
+    '[1,2)',
+    datemultirange(
+      daterange('2005-01-01', '2006-01-01')
+    )
+  )
+on conflict
+(id, valid_at)
+do
+update
+set id = excluded.id + '[2,3)';
+
+insert into temporal_mltrng3 (id, valid_at)
+values
+  (
+    '[1,2)',
+    datemultirange(
+      daterange('2010-01-01', '2020-01-01')
+    )
+  )
+on conflict
+(id, valid_at)
+do
+update
+set id = excluded.id + '[3,4)';
+
+insert into temporal_mltrng3 (id, valid_at)
+values
+  (
+    '[2,3)',
+    datemultirange(
+      daterange('2005-01-01', '2006-01-01')
+    )
+  )
+on conflict
+(id, valid_at)
+do
+update
+set id = excluded.id + '[4,5)';
+
+select * from temporal_mltrng3 order by id, valid_at;
+
+truncate temporal_mltrng3;
+
+insert into temporal_mltrng3 (id, valid_at)
+values
+  (
+    '[1,2)',
+    datemultirange(
+      daterange('2000-01-01', '2010-01-01')
+    )
+  );
+
+insert into temporal_mltrng3 (id, valid_at)
+values
+  (
+    '[1,2)',
+    datemultirange(
+      daterange('2005-01-01', '2006-01-01')
+    )
+  )
+on conflict
+on constraint temporal_mltrng3_uq
+do
+update
+set id = excluded.id + '[2,3)';
+
+insert into temporal_mltrng3 (id, valid_at)
+values
+  (
+    '[1,2)',
+    datemultirange(
+      daterange('2010-01-01', '2020-01-01')
+    )
+  )
+on conflict
+on constraint temporal_mltrng3_uq
+do
+update
+set id = excluded.id + '[3,4)';
+
+insert into temporal_mltrng3 (id, valid_at)
+values
+  (
+    '[2,3)',
+    datemultirange(
+      daterange('2005-01-01', '2006-01-01')
+    )
+  )
+on conflict
+on constraint temporal_mltrng3_uq
+do
+update
+set id = excluded.id + '[4,5)';
+
+select * from temporal_mltrng3 order by id, valid_at;
+
+drop table temporal_mltrng3;
+
+alter table temporal3
+  drop column valid_at;
+
+alter table temporal3
+  drop column valid_at cascade;
+
+drop table temporal_fk_rng2rng;
+
+drop table temporal3;
+
+drop table temporal_rng;
+
+create table temporal_rng (
+  id int4range,
+  valid_at daterange
+);
+
+drop table temporal_fk_rng2rng;
+
+drop table temporal_fk_rng2rng;
+
+drop table temporal_rng2;
+
+drop table temporal_fk2_rng2rng;
+
+alter table temporal_fk_rng2rng
+  drop constraint temporal_fk_rng2rng_fk,
+  alter column valid_at type tsrange using tsrange(
+    lower(valid_at),
+    upper(valid_at)
+  );
+
+alter table temporal_fk_rng2rng
+  alter column valid_at type daterange using daterange(
+    cast(lower(valid_at) as date),
+    cast(upper(valid_at) as date)
+  );
+
+delete from temporal_fk_rng2rng;
+
+delete from temporal_rng;
+
+insert into temporal_rng (id, valid_at)
+values
+  (
+    '[1,2)',
+    daterange('2018-01-02', '2018-02-03')
+  ),
+  (
+    '[1,2)',
+    daterange('2018-03-03', '2018-04-04')
+  ),
+  (
+    '[2,3)',
+    daterange('2018-01-01', '2018-01-05')
+  ),
+  ('[3,4)', daterange('2018-01-01', null));
+
+alter table temporal_fk_rng2rng
+  drop constraint temporal_fk_rng2rng_fk;
+
+insert into temporal_fk_rng2rng (id, valid_at, parent_id)
+values
+  (
+    '[1,2)',
+    daterange('2018-01-02', '2018-02-01'),
+    '[1,2)'
+  );
+
+alter table temporal_fk_rng2rng
+  drop constraint temporal_fk_rng2rng_fk;
+
+insert into temporal_fk_rng2rng (id, valid_at, parent_id)
+values
+  (
+    '[2,3)',
+    daterange('2018-01-02', '2018-04-01'),
+    '[1,2)'
+  );
+
+delete from temporal_fk_rng2rng;
+
+select
+  pg_get_constraintdef(oid)
+from
+  pg_constraint
+where
+  conname = 'temporal_fk_rng2rng_fk';
+
+insert into temporal_fk_rng2rng (id, valid_at, parent_id)
+values
+  (
+    '[1,2)',
+    daterange('2018-01-02', '2018-02-01'),
+    '[1,2)'
+  );
+
+insert into temporal_fk_rng2rng (id, valid_at, parent_id)
+values
+  (
+    '[2,3)',
+    daterange('2018-01-02', '2018-04-01'),
+    '[1,2)'
+  );
+
+insert into temporal_rng (id, valid_at)
+values
+  (
+    '[1,2)',
+    daterange('2018-02-03', '2018-03-03')
+  );
+
+insert into temporal_fk_rng2rng (id, valid_at, parent_id)
+values
+  (
+    '[2,3)',
+    daterange('2018-01-02', '2018-04-01'),
+    '[1,2)'
+  );
+
+update temporal_fk_rng2rng
+set valid_at = daterange('2018-01-02', '2018-02-20')
+where
+  id = '[1,2)';
+
+update temporal_fk_rng2rng
+set valid_at = daterange('2018-01-02', '2018-05-01')
+where
+  id = '[1,2)';
+
+update temporal_fk_rng2rng set parent_id = '[8,9)' where id = '[1,2)';
+
+begin;
+
+insert into temporal_rng (id, valid_at)
+values
+  (
+    '[5,6)',
+    daterange('2018-01-01', '2018-02-01')
+  ),
+  (
+    '[5,6)',
+    daterange('2018-02-01', '2018-03-01')
+  );
+
+insert into temporal_fk_rng2rng (id, valid_at, parent_id)
+values
+  (
+    '[3,4)',
+    daterange('2018-01-05', '2018-01-10'),
+    '[5,6)'
+  );
+
+alter table temporal_fk_rng2rng
+  alter constraint "temporal_fk_rng2rng_fk" deferrable initially deferred;
+
+delete from temporal_rng where id = '[5,6)';
+
+commit;
+
+truncate temporal_rng, temporal_fk_rng2rng;
+
+alter table temporal_fk_rng2rng
+  drop constraint temporal_fk_rng2rng_fk;
+
+insert into temporal_rng (id, valid_at)
+values
+  (
+    '[5,6)',
+    daterange('2018-01-01', '2018-02-01')
+  );
+
+update temporal_rng
+set valid_at = daterange('2016-01-01', '2016-02-01')
+where
+  id = '[5,6)';
+
+delete from temporal_rng where id = '[5,6)';
+
+insert into temporal_rng (id, valid_at)
+values
+  (
+    '[5,6)',
+    daterange('2018-01-01', '2018-02-01')
+  ),
+  (
+    '[5,6)',
+    daterange('2018-02-01', '2018-03-01')
+  );
+
+insert into temporal_fk_rng2rng (id, valid_at, parent_id)
+values
+  (
+    '[3,4)',
+    daterange('2018-01-05', '2018-01-10'),
+    '[5,6)'
+  );
+
+update temporal_rng
+set valid_at = daterange('2016-02-01', '2016-03-01')
+where
+  id = '[5,6)' and
+  valid_at =
+  daterange('2018-02-01', '2018-03-01');
+
+insert into temporal_rng (id, valid_at)
+values
+  (
+    '[6,7)',
+    daterange('2018-01-01', '2018-02-01')
+  ),
+  (
+    '[6,7)',
+    daterange('2018-02-01', '2018-03-01')
+  );
+
+insert into temporal_fk_rng2rng (id, valid_at, parent_id)
+values
+  (
+    '[4,5)',
+    daterange('2018-01-15', '2018-02-15'),
+    '[6,7)'
+  );
+
+update temporal_rng
+set valid_at = case
+  when lower(valid_at) = '2018-01-01'
+  then daterange('2018-01-01', '2018-01-05')
+  when lower(valid_at) = '2018-02-01'
+  then daterange('2018-01-05', '2018-03-01')
+end
+where
+  id = '[6,7)';
+
+insert into temporal_rng (id, valid_at)
+values
+  (
+    '[1,2)',
+    daterange('2018-01-01', '2018-03-01')
+  ),
+  (
+    '[1,2)',
+    daterange('2018-03-01', '2018-06-01')
+  );
+
+insert into temporal_fk_rng2rng (id, valid_at, parent_id)
+values
+  (
+    '[1,2)',
+    daterange('2018-01-15', '2018-02-01'),
+    '[1,2)'
+  ),
+  (
+    '[2,3)',
+    daterange('2018-01-15', '2018-05-01'),
+    '[1,2)'
+  );
+
+update temporal_rng
+set valid_at = daterange('2018-01-15', '2018-03-01')
+where
+  id = '[1,2)' and
+  valid_at @> cast('2018-01-15' as date);
+
+update temporal_rng
+set valid_at = daterange('2018-01-01', '2018-03-01')
+where
+  id = '[1,2)' and
+  valid_at @> cast('2018-01-25' as date);
+
+update temporal_rng
+set id = '[2,3)',
+valid_at = daterange('2018-01-15', '2018-03-01')
+where
+  id = '[1,2)' and
+  valid_at @> cast('2018-01-15' as date);
+
+update temporal_rng
+set id = '[2,3)'
+where
+  id = '[1,2)' and
+  valid_at @> cast('2018-01-15' as date);
+
+insert into temporal_rng (id, valid_at)
+values
+  (
+    '[2,3)',
+    daterange('2018-01-01', '2018-03-01')
+  );
+
+insert into temporal_fk_rng2rng (id, valid_at, parent_id)
+values
+  (
+    '[5,6)',
+    daterange('2018-01-15', '2018-02-01'),
+    '[2,3)'
+  );
+
+update temporal_rng
+set valid_at = daterange('2018-01-15', '2018-02-15')
+where
+  id = '[2,3)';
+
+update temporal_rng
+set valid_at = daterange('2016-01-01', '2016-02-01')
+where
+  id = '[5,6)' and
+  valid_at =
+  daterange('2018-01-01', '2018-02-01');
+
+begin;
+
+alter table temporal_fk_rng2rng
+  alter constraint "temporal_fk_rng2rng_fk" deferrable initially deferred;
+
+update temporal_rng
+set valid_at = daterange('2016-01-01', '2016-02-01')
+where
+  id = '[5,6)' and
+  valid_at =
+  daterange('2018-01-01', '2018-02-01');
+
+commit;
+
+update temporal_rng
+set id = '[7,8)'
+where
+  id = '[5,6)' and
+  valid_at =
+  daterange('2018-01-01', '2018-02-01');
+
+delete from temporal_fk_rng2rng where id = '[3,4)';
+
+update temporal_rng
+set valid_at = daterange('2016-01-01', '2016-02-01')
+where
+  id = '[5,6)' and
+  valid_at =
+  daterange('2018-01-01', '2018-02-01');
+
+truncate temporal_rng, temporal_fk_rng2rng;
+
+alter table temporal_fk_rng2rng
+  drop constraint temporal_fk_rng2rng_fk;
+
+truncate temporal_rng, temporal_fk_rng2rng;
+
+insert into temporal_rng (id, valid_at)
+values
+  (
+    '[5,6)',
+    daterange('2018-01-01', '2018-02-01')
+  );
+
+delete from temporal_rng where id = '[5,6)';
+
+insert into temporal_rng (id, valid_at)
+values
+  (
+    '[5,6)',
+    daterange('2018-01-01', '2018-02-01')
+  ),
+  (
+    '[5,6)',
+    daterange('2018-02-01', '2018-03-01')
+  );
+
+insert into temporal_fk_rng2rng (id, valid_at, parent_id)
+values
+  (
+    '[3,4)',
+    daterange('2018-01-05', '2018-01-10'),
+    '[5,6)'
+  );
+
+delete from temporal_rng
+where
+  id = '[5,6)' and
+  valid_at =
+  daterange('2018-02-01', '2018-03-01');
+
+delete from temporal_rng
+where
+  id = '[5,6)' and
+  valid_at =
+  daterange('2018-01-01', '2018-02-01');
+
+begin;
+
+alter table temporal_fk_rng2rng
+  alter constraint "temporal_fk_rng2rng_fk" deferrable initially deferred;
+
+delete from temporal_rng
+where
+  id = '[5,6)' and
+  valid_at =
+  daterange('2018-01-01', '2018-02-01');
+
+commit;
+
+delete from temporal_fk_rng2rng where id = '[3,4)';
+
+delete from temporal_rng
+where
+  id = '[5,6)' and
+  valid_at =
+  daterange('2018-01-01', '2018-02-01');
+
+truncate temporal_rng, temporal_fk_rng2rng;
+
+alter table temporal_fk_rng2rng
+  drop constraint temporal_fk_rng2rng_fk;
+
+insert into temporal_rng (id, valid_at)
+values
+  (
+    '[6,7)',
+    daterange('2018-01-01', '2021-01-01')
+  );
+
+insert into temporal_fk_rng2rng (id, valid_at, parent_id)
+values
+  (
+    '[4,5)',
+    daterange('2018-01-01', '2021-01-01'),
+    '[6,7)'
+  );
+
+insert into temporal_rng (id, valid_at)
+values
+  (
+    '[9,10)',
+    daterange('2018-01-01', '2021-01-01')
+  );
+
+insert into temporal_fk_rng2rng (id, valid_at, parent_id)
+values
+  (
+    '[6,7)',
+    daterange('2018-01-01', '2021-01-01'),
+    '[9,10)'
+  );
+
+insert into temporal_rng (id, valid_at)
+values
+  ('[-1,-1]', daterange(null, null));
+
+insert into temporal_rng (id, valid_at)
+values
+  (
+    '[12,13)',
+    daterange('2018-01-01', '2021-01-01')
+  );
+
+insert into temporal_fk_rng2rng (id, valid_at, parent_id)
+values
+  (
+    '[8,9)',
+    daterange('2018-01-01', '2021-01-01'),
+    '[12,13)'
+  );
+
+drop table temporal_mltrng;
+
+create table temporal_mltrng (
+  id int4range,
+  valid_at datemultirange
+);
+
+drop table temporal_fk_mltrng2mltrng;
+
+drop table temporal_fk_mltrng2mltrng;
+
+drop table temporal_mltrng2;
+
+drop table temporal_fk2_mltrng2mltrng;
+
+delete from temporal_fk_mltrng2mltrng;
+
+insert into temporal_mltrng (id, valid_at)
+values
+  (
+    '[1,2)',
+    datemultirange(
+      daterange('2018-01-02', '2018-02-03')
+    )
+  ),
+  (
+    '[1,2)',
+    datemultirange(
+      daterange('2018-03-03', '2018-04-04')
+    )
+  ),
+  (
+    '[2,3)',
+    datemultirange(
+      daterange('2018-01-01', '2018-01-05')
+    )
+  ),
+  (
+    '[3,4)',
+    datemultirange(
+      daterange('2018-01-01', null)
+    )
+  );
+
+alter table temporal_fk_mltrng2mltrng
+  drop constraint temporal_fk_mltrng2mltrng_fk;
+
+insert into temporal_fk_mltrng2mltrng (id, valid_at, parent_id)
+values
+  (
+    '[1,2)',
+    datemultirange(
+      daterange('2018-01-02', '2018-02-01')
+    ),
+    '[1,2)'
+  );
+
+alter table temporal_fk_mltrng2mltrng
+  drop constraint temporal_fk_mltrng2mltrng_fk;
+
+insert into temporal_fk_mltrng2mltrng (id, valid_at, parent_id)
+values
+  (
+    '[2,3)',
+    datemultirange(
+      daterange('2018-01-02', '2018-04-01')
+    ),
+    '[1,2)'
+  );
+
+delete from temporal_fk_mltrng2mltrng;
+
+select
+  pg_get_constraintdef(oid)
+from
+  pg_constraint
+where
+  conname = 'temporal_fk_mltrng2mltrng_fk';
+
+insert into temporal_fk_mltrng2mltrng (id, valid_at, parent_id)
+values
+  (
+    '[1,2)',
+    datemultirange(
+      daterange('2018-01-02', '2018-02-01')
+    ),
+    '[1,2)'
+  );
+
+insert into temporal_fk_mltrng2mltrng (id, valid_at, parent_id)
+values
+  (
+    '[2,3)',
+    datemultirange(
+      daterange('2018-01-02', '2018-04-01')
+    ),
+    '[1,2)'
+  );
+
+insert into temporal_mltrng (id, valid_at)
+values
+  (
+    '[1,2)',
+    datemultirange(
+      daterange('2018-02-03', '2018-03-03')
+    )
+  );
+
+insert into temporal_fk_mltrng2mltrng (id, valid_at, parent_id)
+values
+  (
+    '[2,3)',
+    datemultirange(
+      daterange('2018-01-02', '2018-04-01')
+    ),
+    '[1,2)'
+  );
+
+update temporal_fk_mltrng2mltrng
+set valid_at = datemultirange(
+  daterange('2018-01-02', '2018-02-20')
+)
+where
+  id = '[1,2)';
+
+update temporal_fk_mltrng2mltrng
+set valid_at = datemultirange(
+  daterange('2018-01-02', '2018-05-01')
+)
+where
+  id = '[1,2)';
+
+update temporal_fk_mltrng2mltrng set parent_id = '[8,9)' where id = '[1,2)';
+
+begin;
+
+insert into temporal_mltrng (id, valid_at)
+values
+  (
+    '[5,6)',
+    datemultirange(
+      daterange('2018-01-01', '2018-02-01')
+    )
+  ),
+  (
+    '[5,6)',
+    datemultirange(
+      daterange('2018-02-01', '2018-03-01')
+    )
+  );
+
+insert into temporal_fk_mltrng2mltrng (id, valid_at, parent_id)
+values
+  (
+    '[3,4)',
+    datemultirange(
+      daterange('2018-01-05', '2018-01-10')
+    ),
+    '[5,6)'
+  );
+
+alter table temporal_fk_mltrng2mltrng
+  alter constraint "temporal_fk_mltrng2mltrng_fk" deferrable initially deferred;
+
+delete from temporal_mltrng where id = '[5,6)';
+
+commit;
+
+truncate temporal_mltrng, temporal_fk_mltrng2mltrng;
+
+alter table temporal_fk_mltrng2mltrng
+  drop constraint temporal_fk_mltrng2mltrng_fk;
+
+insert into temporal_mltrng (id, valid_at)
+values
+  (
+    '[5,6)',
+    datemultirange(
+      daterange('2018-01-01', '2018-02-01')
+    )
+  );
+
+update temporal_mltrng
+set valid_at = datemultirange(
+  daterange('2016-01-01', '2016-02-01')
+)
+where
+  id = '[5,6)';
+
+delete from temporal_mltrng where id = '[5,6)';
+
+insert into temporal_mltrng (id, valid_at)
+values
+  (
+    '[5,6)',
+    datemultirange(
+      daterange('2018-01-01', '2018-02-01')
+    )
+  ),
+  (
+    '[5,6)',
+    datemultirange(
+      daterange('2018-02-01', '2018-03-01')
+    )
+  );
+
+insert into temporal_fk_mltrng2mltrng (id, valid_at, parent_id)
+values
+  (
+    '[3,4)',
+    datemultirange(
+      daterange('2018-01-05', '2018-01-10')
+    ),
+    '[5,6)'
+  );
+
+update temporal_mltrng
+set valid_at = datemultirange(
+  daterange('2016-02-01', '2016-03-01')
+)
+where
+  id = '[5,6)' and
+  valid_at =
+  datemultirange(
+    daterange('2018-02-01', '2018-03-01')
+  );
+
+insert into temporal_mltrng (id, valid_at)
+values
+  (
+    '[6,7)',
+    datemultirange(
+      daterange('2018-01-01', '2018-02-01')
+    )
+  ),
+  (
+    '[6,7)',
+    datemultirange(
+      daterange('2018-02-01', '2018-03-01')
+    )
+  );
+
+insert into temporal_fk_mltrng2mltrng (id, valid_at, parent_id)
+values
+  (
+    '[4,5)',
+    datemultirange(
+      daterange('2018-01-15', '2018-02-15')
+    ),
+    '[6,7)'
+  );
+
+update temporal_mltrng
+set valid_at = case
+  when lower(valid_at) = '2018-01-01'
+  then datemultirange(
+    daterange('2018-01-01', '2018-01-05')
+  )
+  when lower(valid_at) = '2018-02-01'
+  then datemultirange(
+    daterange('2018-01-05', '2018-03-01')
+  )
+end
+where
+  id = '[6,7)';
+
+insert into temporal_mltrng (id, valid_at)
+values
+  (
+    '[1,2)',
+    datemultirange(
+      daterange('2018-01-01', '2018-03-01')
+    )
+  ),
+  (
+    '[1,2)',
+    datemultirange(
+      daterange('2018-03-01', '2018-06-01')
+    )
+  );
+
+insert into temporal_fk_mltrng2mltrng (id, valid_at, parent_id)
+values
+  (
+    '[1,2)',
+    datemultirange(
+      daterange('2018-01-15', '2018-02-01')
+    ),
+    '[1,2)'
+  ),
+  (
+    '[2,3)',
+    datemultirange(
+      daterange('2018-01-15', '2018-05-01')
+    ),
+    '[1,2)'
+  );
+
+update temporal_mltrng
+set valid_at = datemultirange(
+  daterange('2018-01-15', '2018-03-01')
+)
+where
+  id = '[1,2)' and
+  valid_at @> cast('2018-01-15' as date);
+
+update temporal_mltrng
+set valid_at = datemultirange(
+  daterange('2018-01-01', '2018-03-01')
+)
+where
+  id = '[1,2)' and
+  valid_at @> cast('2018-01-25' as date);
+
+update temporal_mltrng
+set id = '[2,3)',
+valid_at = datemultirange(
+  daterange('2018-01-15', '2018-03-01')
+)
+where
+  id = '[1,2)' and
+  valid_at @> cast('2018-01-15' as date);
+
+update temporal_mltrng
+set id = '[2,3)'
+where
+  id = '[1,2)' and
+  valid_at @> cast('2018-01-15' as date);
+
+insert into temporal_mltrng (id, valid_at)
+values
+  (
+    '[2,3)',
+    datemultirange(
+      daterange('2018-01-01', '2018-03-01')
+    )
+  );
+
+insert into temporal_fk_mltrng2mltrng (id, valid_at, parent_id)
+values
+  (
+    '[5,6)',
+    datemultirange(
+      daterange('2018-01-15', '2018-02-01')
+    ),
+    '[2,3)'
+  );
+
+update temporal_mltrng
+set valid_at = datemultirange(
+  daterange('2018-01-15', '2018-02-15')
+)
+where
+  id = '[2,3)';
+
+update temporal_mltrng
+set valid_at = datemultirange(
+  daterange('2016-01-01', '2016-02-01')
+)
+where
+  id = '[5,6)' and
+  valid_at =
+  datemultirange(
+    daterange('2018-01-01', '2018-02-01')
+  );
+
+begin;
+
+alter table temporal_fk_mltrng2mltrng
+  alter constraint "temporal_fk_mltrng2mltrng_fk" deferrable initially deferred;
+
+update temporal_mltrng
+set valid_at = datemultirange(
+  daterange('2016-01-01', '2016-02-01')
+)
+where
+  id = '[5,6)' and
+  valid_at =
+  datemultirange(
+    daterange('2018-01-01', '2018-02-01')
+  );
+
+commit;
+
+update temporal_mltrng
+set id = '[7,8)'
+where
+  id = '[5,6)' and
+  valid_at =
+  datemultirange(
+    daterange('2018-01-01', '2018-02-01')
+  );
+
+truncate temporal_mltrng, temporal_fk_mltrng2mltrng;
+
+alter table temporal_fk_mltrng2mltrng
+  drop constraint temporal_fk_mltrng2mltrng_fk;
+
+truncate temporal_mltrng, temporal_fk_mltrng2mltrng;
+
+insert into temporal_mltrng (id, valid_at)
+values
+  (
+    '[5,6)',
+    datemultirange(
+      daterange('2018-01-01', '2018-02-01')
+    )
+  );
+
+delete from temporal_mltrng where id = '[5,6)';
+
+insert into temporal_mltrng (id, valid_at)
+values
+  (
+    '[5,6)',
+    datemultirange(
+      daterange('2018-01-01', '2018-02-01')
+    )
+  ),
+  (
+    '[5,6)',
+    datemultirange(
+      daterange('2018-02-01', '2018-03-01')
+    )
+  );
+
+insert into temporal_fk_mltrng2mltrng (id, valid_at, parent_id)
+values
+  (
+    '[3,4)',
+    datemultirange(
+      daterange('2018-01-05', '2018-01-10')
+    ),
+    '[5,6)'
+  );
+
+delete from temporal_mltrng
+where
+  id = '[5,6)' and
+  valid_at =
+  datemultirange(
+    daterange('2018-02-01', '2018-03-01')
+  );
+
+delete from temporal_mltrng
+where
+  id = '[5,6)' and
+  valid_at =
+  datemultirange(
+    daterange('2018-01-01', '2018-02-01')
+  );
+
+begin;
+
+alter table temporal_fk_mltrng2mltrng
+  alter constraint "temporal_fk_mltrng2mltrng_fk" deferrable initially deferred;
+
+delete from temporal_mltrng
+where
+  id = '[5,6)' and
+  valid_at =
+  datemultirange(
+    daterange('2018-01-01', '2018-02-01')
+  );
+
+commit;
+
+create table tp1
+partition of temporal_partitioned_rng
+for values in ('[1,2)',
+'[3,4)',
+'[5,6)',
+'[7,8)',
+'[9,10)',
+'[11,12)');
+
+create table tp2
+partition of temporal_partitioned_rng
+for values in ('[2,3)',
+'[4,5)',
+'[6,7)',
+'[8,9)',
+'[10,11)',
+'[12,13)');
+
+insert into temporal_partitioned_rng (id, valid_at, name)
+values
+  (
+    '[1,2)',
+    daterange('2000-01-01', '2000-02-01'),
+    'one'
+  ),
+  (
+    '[1,2)',
+    daterange('2000-02-01', '2000-03-01'),
+    'one'
+  ),
+  (
+    '[2,3)',
+    daterange('2000-01-01', '2010-01-01'),
+    'two'
+  );
+
+create table tfkp1
+partition of temporal_partitioned_fk_rng2rng
+for values in ('[1,2)',
+'[3,4)',
+'[5,6)',
+'[7,8)',
+'[9,10)',
+'[11,12)');
+
+create table tfkp2
+partition of temporal_partitioned_fk_rng2rng
+for values in ('[2,3)',
+'[4,5)',
+'[6,7)',
+'[8,9)',
+'[10,11)',
+'[12,13)');
+
+insert into temporal_partitioned_fk_rng2rng (id, valid_at, parent_id)
+values
+  (
+    '[1,2)',
+    daterange('2000-01-01', '2000-02-15'),
+    '[1,2)'
+  ),
+  (
+    '[1,2)',
+    daterange('2001-01-01', '2002-01-01'),
+    '[2,3)'
+  ),
+  (
+    '[2,3)',
+    daterange('2000-01-01', '2000-02-15'),
+    '[1,2)'
+  );
+
+insert into temporal_partitioned_fk_rng2rng (id, valid_at, parent_id)
+values
+  (
+    '[3,4)',
+    daterange('2010-01-01', '2010-02-15'),
+    '[1,2)'
+  );
+
+insert into temporal_partitioned_fk_rng2rng (id, valid_at, parent_id)
+values
+  (
+    '[3,4)',
+    daterange('2000-01-01', '2000-02-15'),
+    '[3,4)'
+  );
+
+update temporal_partitioned_fk_rng2rng
+set valid_at = daterange('2000-01-01', '2000-02-13')
+where
+  id = '[2,3)';
+
+update temporal_partitioned_fk_rng2rng set id = '[4,5)' where id = '[1,2)';
+
+update temporal_partitioned_fk_rng2rng set id = '[1,2)' where id = '[4,5)';
+
+update temporal_partitioned_fk_rng2rng
+set valid_at = daterange('2000-01-01', '2000-04-01')
+where
+  id = '[1,2)';
+
+truncate temporal_partitioned_rng, temporal_partitioned_fk_rng2rng;
+
+insert into temporal_partitioned_rng (id, valid_at)
+values
+  (
+    '[5,6)',
+    daterange('2016-01-01', '2016-02-01')
+  );
+
+update temporal_partitioned_rng
+set valid_at = daterange('2018-01-01', '2018-02-01')
+where
+  id = '[5,6)';
+
+insert into temporal_partitioned_rng (id, valid_at)
+values
+  (
+    '[5,6)',
+    daterange('2018-02-01', '2018-03-01')
+  );
+
+insert into temporal_partitioned_fk_rng2rng (id, valid_at, parent_id)
+values
+  (
+    '[3,4)',
+    daterange('2018-01-05', '2018-01-10'),
+    '[5,6)'
+  );
+
+update temporal_partitioned_rng
+set valid_at = daterange('2016-02-01', '2016-03-01')
+where
+  id = '[5,6)' and
+  valid_at =
+  daterange('2018-02-01', '2018-03-01');
+
+update temporal_partitioned_rng
+set valid_at = daterange('2016-01-01', '2016-02-01')
+where
+  id = '[5,6)' and
+  valid_at =
+  daterange('2018-01-01', '2018-02-01');
+
+truncate temporal_partitioned_rng, temporal_partitioned_fk_rng2rng;
+
+insert into temporal_partitioned_rng (id, valid_at)
+values
+  (
+    '[5,6)',
+    daterange('2018-01-01', '2018-02-01')
+  );
+
+insert into temporal_partitioned_rng (id, valid_at)
+values
+  (
+    '[5,6)',
+    daterange('2018-02-01', '2018-03-01')
+  );
+
+insert into temporal_partitioned_fk_rng2rng (id, valid_at, parent_id)
+values
+  (
+    '[3,4)',
+    daterange('2018-01-05', '2018-01-10'),
+    '[5,6)'
+  );
+
+delete from temporal_partitioned_rng
+where
+  id = '[5,6)' and
+  valid_at =
+  daterange('2018-02-01', '2018-03-01');
+
+delete from temporal_partitioned_rng
+where
+  id = '[5,6)' and
+  valid_at =
+  daterange('2018-01-01', '2018-02-01');
+
+drop table temporal_partitioned_fk_rng2rng;
+
+drop table temporal_partitioned_rng;
+
+create table tp1
+partition of temporal_partitioned_mltrng
+for values in ('[1,2)',
+'[3,4)',
+'[5,6)',
+'[7,8)',
+'[9,10)',
+'[11,12)',
+'[13,14)',
+'[15,16)',
+'[17,18)',
+'[19,20)',
+'[21,22)',
+'[23,24)');
+
+create table tp2
+partition of temporal_partitioned_mltrng
+for values in ('[0,1)',
+'[2,3)',
+'[4,5)',
+'[6,7)',
+'[8,9)',
+'[10,11)',
+'[12,13)',
+'[14,15)',
+'[16,17)',
+'[18,19)',
+'[20,21)',
+'[22,23)',
+'[24,25)');
+
+insert into temporal_partitioned_mltrng (id, valid_at, name)
+values
+  (
+    '[1,2)',
+    datemultirange(
+      daterange('2000-01-01', '2000-02-01')
+    ),
+    'one'
+  ),
+  (
+    '[1,2)',
+    datemultirange(
+      daterange('2000-02-01', '2000-03-01')
+    ),
+    'one'
+  ),
+  (
+    '[2,3)',
+    datemultirange(
+      daterange('2000-01-01', '2010-01-01')
+    ),
+    'two'
+  );
+
+create table tfkp1
+partition of temporal_partitioned_fk_mltrng2mltrng
+for values in ('[1,2)',
+'[3,4)',
+'[5,6)',
+'[7,8)',
+'[9,10)',
+'[11,12)',
+'[13,14)',
+'[15,16)',
+'[17,18)',
+'[19,20)',
+'[21,22)',
+'[23,24)');
+
+create table tfkp2
+partition of temporal_partitioned_fk_mltrng2mltrng
+for values in ('[0,1)',
+'[2,3)',
+'[4,5)',
+'[6,7)',
+'[8,9)',
+'[10,11)',
+'[12,13)',
+'[14,15)',
+'[16,17)',
+'[18,19)',
+'[20,21)',
+'[22,23)',
+'[24,25)');
+
+insert into temporal_partitioned_fk_mltrng2mltrng (id, valid_at, parent_id)
+values
+  (
+    '[1,2)',
+    datemultirange(
+      daterange('2000-01-01', '2000-02-15')
+    ),
+    '[1,2)'
+  ),
+  (
+    '[1,2)',
+    datemultirange(
+      daterange('2001-01-01', '2002-01-01')
+    ),
+    '[2,3)'
+  ),
+  (
+    '[2,3)',
+    datemultirange(
+      daterange('2000-01-01', '2000-02-15')
+    ),
+    '[1,2)'
+  );
+
+insert into temporal_partitioned_fk_mltrng2mltrng (id, valid_at, parent_id)
+values
+  (
+    '[3,4)',
+    datemultirange(
+      daterange('2010-01-01', '2010-02-15')
+    ),
+    '[1,2)'
+  );
+
+insert into temporal_partitioned_fk_mltrng2mltrng (id, valid_at, parent_id)
+values
+  (
+    '[3,4)',
+    datemultirange(
+      daterange('2000-01-01', '2000-02-15')
+    ),
+    '[3,4)'
+  );
+
+update temporal_partitioned_fk_mltrng2mltrng
+set valid_at = datemultirange(
+  daterange('2000-01-01', '2000-02-13')
+)
+where
+  id = '[2,3)';
+
+update temporal_partitioned_fk_mltrng2mltrng
+set id = '[4,5)'
+where
+  id = '[1,2)';
+
+update temporal_partitioned_fk_mltrng2mltrng
+set id = '[1,2)'
+where
+  id = '[4,5)';
+
+update temporal_partitioned_fk_mltrng2mltrng
+set valid_at = datemultirange(
+  daterange('2000-01-01', '2000-04-01')
+)
+where
+  id = '[1,2)';
+
+truncate temporal_partitioned_mltrng, temporal_partitioned_fk_mltrng2mltrng;
+
+insert into temporal_partitioned_mltrng (id, valid_at)
+values
+  (
+    '[5,6)',
+    datemultirange(
+      daterange('2016-01-01', '2016-02-01')
+    )
+  );
+
+update temporal_partitioned_mltrng
+set valid_at = datemultirange(
+  daterange('2018-01-01', '2018-02-01')
+)
+where
+  id = '[5,6)';
+
+insert into temporal_partitioned_mltrng (id, valid_at)
+values
+  (
+    '[5,6)',
+    datemultirange(
+      daterange('2018-02-01', '2018-03-01')
+    )
+  );
+
+insert into temporal_partitioned_fk_mltrng2mltrng (id, valid_at, parent_id)
+values
+  (
+    '[3,4)',
+    datemultirange(
+      daterange('2018-01-05', '2018-01-10')
+    ),
+    '[5,6)'
+  );
+
+update temporal_partitioned_mltrng
+set valid_at = datemultirange(
+  daterange('2016-02-01', '2016-03-01')
+)
+where
+  id = '[5,6)' and
+  valid_at =
+  datemultirange(
+    daterange('2018-02-01', '2018-03-01')
+  );
+
+update temporal_partitioned_mltrng
+set valid_at = datemultirange(
+  daterange('2016-01-01', '2016-02-01')
+)
+where
+  id = '[5,6)' and
+  valid_at =
+  datemultirange(
+    daterange('2018-01-01', '2018-02-01')
+  );
+
+truncate temporal_partitioned_mltrng, temporal_partitioned_fk_mltrng2mltrng;
+
+insert into temporal_partitioned_mltrng (id, valid_at)
+values
+  (
+    '[5,6)',
+    datemultirange(
+      daterange('2018-01-01', '2018-02-01')
+    )
+  );
+
+insert into temporal_partitioned_mltrng (id, valid_at)
+values
+  (
+    '[5,6)',
+    datemultirange(
+      daterange('2018-02-01', '2018-03-01')
+    )
+  );
+
+insert into temporal_partitioned_fk_mltrng2mltrng (id, valid_at, parent_id)
+values
+  (
+    '[3,4)',
+    datemultirange(
+      daterange('2018-01-05', '2018-01-10')
+    ),
+    '[5,6)'
+  );
+
+delete from temporal_partitioned_mltrng
+where
+  id = '[5,6)' and
+  valid_at =
+  datemultirange(
+    daterange('2018-02-01', '2018-03-01')
+  );
+
+delete from temporal_partitioned_mltrng
+where
+  id = '[5,6)' and
+  valid_at =
+  datemultirange(
+    daterange('2018-01-01', '2018-02-01')
+  );
+
+drop table temporal_partitioned_fk_mltrng2mltrng;
+
+drop table temporal_partitioned_mltrng;
+
+reset datestyle;

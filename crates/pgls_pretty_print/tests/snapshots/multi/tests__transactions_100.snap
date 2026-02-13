@@ -1,0 +1,929 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/transactions.sql
+---
+begin;
+
+create table xacttest (
+  a smallint,
+  b real
+);
+
+insert into xacttest values (56, 7.8), (100, 99.097), (0, 0.09561), (42, 324.78);
+
+insert into xacttest (a, b) values (777, 777.777);
+
+commit;
+
+select a from xacttest where a > 100;
+
+begin;
+
+create table disappear (a int);
+
+delete from xacttest;
+
+select * from xacttest;
+
+rollback;
+
+select oid from pg_class where relname = 'disappear';
+
+select * from xacttest;
+
+begin isolation level serializable;
+
+select COUNT(*) from xacttest;
+
+reset transaction_isolation;
+
+commit;
+
+begin read only;
+
+select COUNT(*) from xacttest;
+
+reset transaction_read_only;
+
+commit;
+
+begin deferrable;
+
+select COUNT(*) from xacttest;
+
+reset transaction_deferrable;
+
+commit;
+
+create function errfunc()
+returns int
+language sql
+set transaction_read_only = 'on'
+as $function$
+SELECT 1
+$function$;
+
+create table writetest (a int);
+
+create temporary table temptest (a int);
+
+begin;
+
+set TRANSACTION isolation level serializable read only deferrable;
+
+select * from writetest;
+
+set TRANSACTION read write;
+
+commit;
+
+begin;
+
+set TRANSACTION read only;
+
+set TRANSACTION read write;
+
+set TRANSACTION read only;
+
+select * from writetest;
+
+savepoint x;
+
+set TRANSACTION read only;
+
+select * from writetest;
+
+set TRANSACTION read only;
+
+set TRANSACTION read write;
+
+commit;
+
+begin;
+
+set TRANSACTION read write;
+
+savepoint x;
+
+set TRANSACTION read write;
+
+set TRANSACTION read only;
+
+select * from writetest;
+
+set TRANSACTION read only;
+
+set TRANSACTION read write;
+
+commit;
+
+begin;
+
+set TRANSACTION read write;
+
+savepoint x;
+
+set TRANSACTION read only;
+
+select * from writetest;
+
+rollback to savepoint x;
+
+show "transaction_read_only";
+
+savepoint y;
+
+set TRANSACTION read only;
+
+select * from writetest;
+
+release savepoint y;
+
+show "transaction_read_only";
+
+commit;
+
+set session CHARACTERISTICS as transaction read only;
+
+drop table writetest;
+
+insert into writetest values (1);
+
+select * from writetest;
+
+delete from temptest;
+
+update temptest set a = 0 from writetest where temptest.a = 1 and writetest.a = temptest.a;
+
+update writetest set a = 0;
+
+execute test;
+
+select * from writetest, temptest;
+
+create table test as select * from writetest;
+
+start transaction read write;
+
+drop table writetest;
+
+commit;
+
+set session CHARACTERISTICS as transaction read write;
+
+create table trans_foobar (a int);
+
+begin;
+
+create table trans_foo (a int);
+
+savepoint one;
+
+drop table trans_foo;
+
+create table trans_bar (a int);
+
+rollback to savepoint one;
+
+release savepoint one;
+
+savepoint two;
+
+create table trans_baz (a int);
+
+release savepoint two;
+
+drop table trans_foobar;
+
+create table trans_barbaz (a int);
+
+commit;
+
+select * from trans_foo;
+
+select * from trans_bar;
+
+select * from trans_barbaz;
+
+select * from trans_baz;
+
+begin;
+
+insert into trans_foo values (1);
+
+savepoint one;
+
+insert into trans_bar values (1);
+
+rollback to savepoint one;
+
+release savepoint one;
+
+savepoint two;
+
+insert into trans_barbaz values (1);
+
+release savepoint two;
+
+savepoint three;
+
+savepoint four;
+
+insert into trans_foo values (2);
+
+release savepoint four;
+
+rollback to savepoint three;
+
+release savepoint three;
+
+insert into trans_foo values (3);
+
+commit;
+
+select * from trans_foo;
+
+select * from trans_barbaz;
+
+begin;
+
+savepoint one;
+
+select trans_foo;
+
+rollback to savepoint one;
+
+release savepoint one;
+
+savepoint two;
+
+create table savepoints (a int);
+
+savepoint three;
+
+insert into savepoints values (1);
+
+savepoint four;
+
+insert into savepoints values (2);
+
+savepoint five;
+
+insert into savepoints values (3);
+
+rollback to savepoint five;
+
+commit;
+
+commit;
+
+select * from savepoints;
+
+begin;
+
+savepoint one;
+
+delete from savepoints where a = 1;
+
+release savepoint one;
+
+savepoint two;
+
+delete from savepoints where a = 1;
+
+savepoint three;
+
+delete from savepoints where a = 2;
+
+rollback;
+
+commit;
+
+select * from savepoints;
+
+begin;
+
+insert into savepoints values (4);
+
+savepoint one;
+
+insert into savepoints values (5);
+
+select trans_foo;
+
+commit;
+
+select * from savepoints;
+
+begin;
+
+insert into savepoints values (6);
+
+savepoint one;
+
+insert into savepoints values (7);
+
+release savepoint one;
+
+insert into savepoints values (8);
+
+commit;
+
+select a.xmin = b.xmin from savepoints as a, savepoints as b where a.a = 6 and b.a = 8;
+
+select a.xmin = b.xmin from savepoints as a, savepoints as b where a.a = 6 and b.a = 7;
+
+begin;
+
+insert into savepoints values (9);
+
+savepoint one;
+
+insert into savepoints values (10);
+
+rollback to savepoint one;
+
+insert into savepoints values (11);
+
+commit;
+
+select a from savepoints where a in (9, 10, 11);
+
+select a.xmin = b.xmin from savepoints as a, savepoints as b where a.a = 9 and b.a = 11;
+
+begin;
+
+insert into savepoints values (12);
+
+savepoint one;
+
+insert into savepoints values (13);
+
+savepoint two;
+
+insert into savepoints values (14);
+
+rollback to savepoint one;
+
+insert into savepoints values (15);
+
+savepoint two;
+
+insert into savepoints values (16);
+
+savepoint three;
+
+insert into savepoints values (17);
+
+commit;
+
+select a from savepoints where a between 12 and 17;
+
+begin;
+
+insert into savepoints values (18);
+
+savepoint one;
+
+insert into savepoints values (19);
+
+savepoint two;
+
+insert into savepoints values (20);
+
+rollback to savepoint one;
+
+insert into savepoints values (21);
+
+rollback to savepoint one;
+
+insert into savepoints values (22);
+
+commit;
+
+select a from savepoints where a between 18 and 22;
+
+drop table savepoints;
+
+savepoint one;
+
+rollback to savepoint one;
+
+release savepoint one;
+
+begin;
+
+savepoint one;
+
+select 0 / 0;
+
+savepoint two;
+
+release savepoint one;
+
+rollback to savepoint one;
+
+select 1;
+
+commit;
+
+select 1;
+
+begin;
+
+declare "c" cursor for select unique2 from tenk1 order by unique2;;
+
+savepoint one;
+
+fetch forward 10 from c;
+
+rollback to savepoint one;
+
+fetch forward 10 from c;
+
+release savepoint one;
+
+fetch forward 10 from c;
+
+close c;
+
+declare "c" cursor for select unique2 / 0 from tenk1 order by unique2;;
+
+savepoint two;
+
+fetch forward 10 from c;
+
+rollback to savepoint two;
+
+fetch forward 10 from c;
+
+rollback to savepoint two;
+
+release savepoint two;
+
+fetch forward 10 from c;
+
+commit;
+
+select * from xacttest;
+
+create or replace function max_xacttest()
+returns smallint
+language sql
+stable
+as $function$
+select max(a) from xacttest
+$function$;
+
+begin;
+
+update xacttest set a = max_xacttest() + 10 where a > 0;
+
+select * from xacttest;
+
+rollback;
+
+create or replace function max_xacttest()
+returns smallint
+language sql
+volatile
+as $function$
+select max(a) from xacttest
+$function$;
+
+begin;
+
+update xacttest set a = max_xacttest() + 10 where a > 0;
+
+select * from xacttest;
+
+rollback;
+
+create or replace function max_xacttest()
+returns smallint
+language plpgsql
+stable
+as $function$
+begin return max(a) from xacttest; end
+$function$;
+
+begin;
+
+update xacttest set a = max_xacttest() + 10 where a > 0;
+
+select * from xacttest;
+
+rollback;
+
+create or replace function max_xacttest()
+returns smallint
+language plpgsql
+volatile
+as $function$
+begin return max(a) from xacttest; end
+$function$;
+
+begin;
+
+update xacttest set a = max_xacttest() + 10 where a > 0;
+
+select * from xacttest;
+
+rollback;
+
+begin;
+
+savepoint x;
+
+create table koju (a int unique);
+
+insert into koju values (1);
+
+insert into koju values (1);
+
+rollback to savepoint x;
+
+create table koju (a int unique);
+
+insert into koju values (1);
+
+insert into koju values (1);
+
+rollback;
+
+drop table trans_foo;
+
+drop table trans_baz;
+
+drop table trans_barbaz;
+
+create function inverse(int)
+returns double precision
+language plpgsql
+volatile
+as $function$
+begin
+  analyze revalidate_bug;
+  return 1::float8/$1;
+exception
+  when division_by_zero then return 0;
+end
+$function$;
+
+create table revalidate_bug (c double precision unique);
+
+insert into revalidate_bug values (1);
+
+insert into revalidate_bug values (inverse(0));
+
+drop table revalidate_bug;
+
+drop function inverse(int);
+
+begin;
+
+savepoint x;
+
+create table trans_abc (a int);
+
+insert into trans_abc values (5);
+
+insert into trans_abc values (10);
+
+declare "foo" cursor for select * from trans_abc;;
+
+fetch next from foo;
+
+rollback to savepoint x;
+
+fetch next from foo;
+
+commit;
+
+begin;
+
+create table trans_abc (a int);
+
+insert into trans_abc values (5);
+
+insert into trans_abc values (10);
+
+insert into trans_abc values (15);
+
+declare "foo" cursor for select * from trans_abc;;
+
+fetch next from foo;
+
+savepoint x;
+
+fetch next from foo;
+
+rollback to savepoint x;
+
+fetch next from foo;
+
+rollback;
+
+create function invert(x double precision)
+returns double precision
+language plpgsql
+as $function$
+begin return 1/x; end
+$function$;
+
+create function create_temp_tab()
+returns text
+language plpgsql
+as $function$
+BEGIN
+  CREATE TEMP TABLE new_table (f1 float8);
+  -- case of interest is that we fail while holding an open
+  -- relcache reference to new_table
+  INSERT INTO new_table SELECT invert(0.0);
+  RETURN 'foo';
+END
+$function$;
+
+begin;
+
+declare "ok" cursor for select * from int8_tbl;;
+
+declare "ctt" cursor for select create_temp_tab();;
+
+fetch next from ok;
+
+savepoint s1;
+
+fetch next from ok;
+
+fetch next from ctt;
+
+rollback to savepoint s1;
+
+fetch next from ok;
+
+fetch next from ctt;
+
+commit;
+
+drop function create_temp_tab();
+
+drop function invert(double precision);
+
+create table trans_abc (a int);
+
+set default_transaction_read_only = 'on';
+
+start transaction isolation level repeatable read read write deferrable;
+
+show "transaction_isolation";
+
+show "transaction_read_only";
+
+show "transaction_deferrable";
+
+insert into trans_abc values (1);
+
+insert into trans_abc values (2);
+
+commit and chain;
+
+show "transaction_isolation";
+
+show "transaction_read_only";
+
+show "transaction_deferrable";
+
+insert into trans_abc values ('error');
+
+insert into trans_abc values (3);
+
+commit and chain;
+
+show "transaction_isolation";
+
+show "transaction_read_only";
+
+show "transaction_deferrable";
+
+insert into trans_abc values (4);
+
+commit;
+
+start transaction isolation level repeatable read read write deferrable;
+
+show "transaction_isolation";
+
+show "transaction_read_only";
+
+show "transaction_deferrable";
+
+savepoint x;
+
+insert into trans_abc values ('error');
+
+commit and chain;
+
+show "transaction_isolation";
+
+show "transaction_read_only";
+
+show "transaction_deferrable";
+
+insert into trans_abc values (5);
+
+commit;
+
+start transaction isolation level repeatable read read write deferrable;
+
+show "transaction_isolation";
+
+show "transaction_read_only";
+
+show "transaction_deferrable";
+
+savepoint x;
+
+commit and chain;
+
+show "transaction_isolation";
+
+show "transaction_read_only";
+
+show "transaction_deferrable";
+
+commit;
+
+start transaction isolation level read committed read write deferrable;
+
+show "transaction_isolation";
+
+show "transaction_read_only";
+
+show "transaction_deferrable";
+
+savepoint x;
+
+commit and chain;
+
+show "transaction_isolation";
+
+show "transaction_read_only";
+
+show "transaction_deferrable";
+
+commit;
+
+start transaction isolation level serializable read write not deferrable;
+
+show "transaction_isolation";
+
+show "transaction_read_only";
+
+show "transaction_deferrable";
+
+insert into trans_abc values (6);
+
+rollback and chain;
+
+show "transaction_isolation";
+
+show "transaction_read_only";
+
+show "transaction_deferrable";
+
+insert into trans_abc values ('error');
+
+rollback and chain;
+
+show "transaction_isolation";
+
+show "transaction_read_only";
+
+show "transaction_deferrable";
+
+rollback;
+
+commit and chain;
+
+rollback and chain;
+
+select * from trans_abc order by 1;
+
+reset default_transaction_read_only;
+
+drop table trans_abc;
+
+create temporary table i_table (f1 int);
+
+select 3;
+
+select * from i_table;
+
+select 1 / 0;
+
+select * from i_table;
+
+rollback;
+
+commit;
+
+rollback;
+
+rollback;
+
+rollback;
+
+insert into i_table values (5);
+
+commit;
+
+insert into i_table values (6);
+
+rollback;
+
+select 1 / 0;
+
+select 2;
+
+select * from i_table;
+
+rollback;
+
+vacuum;
+
+vacuum;
+
+savepoint sp;
+
+savepoint sp;
+
+select 2;
+
+select 3;
+
+commit;
+
+commit and chain;
+
+show "transaction_read_only";
+
+rollback and chain;
+
+show "transaction_read_only";
+
+create table trans_abc (a int);
+
+commit and chain;
+
+rollback and chain;
+
+commit;
+
+rollback;
+
+commit and chain;
+
+show "transaction_isolation";
+
+commit;
+
+rollback and chain;
+
+show "transaction_isolation";
+
+rollback;
+
+set default_transaction_isolation = 'read committed';
+
+commit and chain;
+
+show "transaction_isolation";
+
+rollback and chain;
+
+show "transaction_isolation";
+
+reset default_transaction_isolation;
+
+select * from trans_abc order by 1;
+
+drop table trans_abc;
+
+begin isolation level repeatable read;
+
+set transaction SNAPSHOT 'Incorrect Identifier';
+
+rollback;
+
+begin isolation level repeatable read;
+
+set transaction SNAPSHOT 'FFF-FFF-F';
+
+rollback;
+
+begin;
+
+select 1 / 0;
+
+rollback to savepoint x;

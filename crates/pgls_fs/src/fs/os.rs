@@ -229,10 +229,10 @@ fn handle_dir<'scope>(
     // The unresolved origin path in case the directory is behind a symbolic link
     origin_path: Option<PathBuf>,
 ) {
-    if let Some(file_name) = path.file_name() {
-        if DEFAULT_IGNORE.contains(&file_name.as_encoded_bytes()) {
-            return;
-        }
+    if let Some(file_name) = path.file_name()
+        && DEFAULT_IGNORE.contains(&file_name.as_encoded_bytes())
+    {
+        return;
     }
     let iter = match fs::read_dir(path) {
         Ok(iter) => iter,

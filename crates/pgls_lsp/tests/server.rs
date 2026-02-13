@@ -2,14 +2,14 @@ use anyhow::Context;
 use anyhow::Error;
 use anyhow::Result;
 use anyhow::bail;
-use biome_deserialize::Merge;
-use biome_deserialize::StringSet;
 use futures::Sink;
 use futures::SinkExt;
 use futures::Stream;
 use futures::StreamExt;
 use futures::channel::mpsc::{Sender, channel};
+use pgls_configuration::Merge;
 use pgls_configuration::PartialConfiguration;
+use pgls_configuration::StringSet;
 use pgls_configuration::database::PartialDatabaseConfiguration;
 use pgls_fs::MemoryFileSystem;
 use pgls_lsp::LSPServer;
@@ -94,7 +94,7 @@ impl Server {
             .context("call() returned an error")
             .and_then(|res| match res {
                 Some(res) => {
-                    bail!("shutdown returned {:?}", res)
+                    bail!("shutdown returned {res:?}")
                 }
                 _ => Ok(()),
             })
@@ -220,7 +220,7 @@ impl Server {
             .context("call() returned an error")
             .and_then(|res| match res {
                 Some(res) => {
-                    bail!("shutdown returned {:?}", res)
+                    bail!("shutdown returned {res:?}")
                 }
                 _ => Ok(()),
             })

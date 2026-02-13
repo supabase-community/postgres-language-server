@@ -1,0 +1,1596 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/stats.sql
+---
+show "track_counts";
+
+select
+  backend_type,
+  object,
+  context
+from
+  pg_stat_io
+order by backend_type collate "C",
+  object collate "C",
+  context collate "C";
+
+set enable_seqscan = 'on';
+
+set enable_indexscan = 'on';
+
+set enable_indexonlyscan = off;
+
+set track_functions = 'all';
+
+select oid as dboid from pg_database where datname = current_database();
+
+begin;
+
+set local stats_fetch_consistency = snapshot;
+
+create table prevstats
+as
+  select
+    t.seq_scan,
+    t.seq_tup_read,
+    t.idx_scan,
+    t.idx_tup_fetch,
+    b.heap_blks_read + b.heap_blks_hit
+    as heap_blks,
+    b.idx_blks_read + b.idx_blks_hit
+    as idx_blks,
+    pg_stat_get_snapshot_timestamp()
+    as snap_ts
+  from
+    pg_catalog.pg_stat_user_tables as t,
+    pg_catalog.pg_statio_user_tables as b
+  where
+    t.relname = 'tenk2' and
+    b.relname = 'tenk2';
+
+commit;
+
+create table trunc_stats_test (id serial);
+
+create table trunc_stats_test1 (
+  id serial,
+  stuff text
+);
+
+create table trunc_stats_test2 (id serial);
+
+create table trunc_stats_test3 (
+  id serial,
+  stuff text
+);
+
+create table trunc_stats_test4 (id serial);
+
+insert into trunc_stats_test default values;
+
+insert into trunc_stats_test default values;
+
+insert into trunc_stats_test default values;
+
+truncate trunc_stats_test;
+
+insert into trunc_stats_test1 default values;
+
+insert into trunc_stats_test1 default values;
+
+insert into trunc_stats_test1 default values;
+
+update trunc_stats_test1 set id = id + 10 where id in (1, 2);
+
+delete from trunc_stats_test1 where id = 3;
+
+begin;
+
+update trunc_stats_test1 set id = id + 100;
+
+truncate trunc_stats_test1;
+
+insert into trunc_stats_test1 default values;
+
+commit;
+
+begin;
+
+insert into trunc_stats_test2 default values;
+
+insert into trunc_stats_test2 default values;
+
+savepoint p1;
+
+insert into trunc_stats_test2 default values;
+
+truncate trunc_stats_test2;
+
+insert into trunc_stats_test2 default values;
+
+release savepoint p1;
+
+commit;
+
+begin;
+
+insert into trunc_stats_test3 default values;
+
+insert into trunc_stats_test3 default values;
+
+savepoint p1;
+
+insert into trunc_stats_test3 default values;
+
+insert into trunc_stats_test3 default values;
+
+truncate trunc_stats_test3;
+
+insert into trunc_stats_test3 default values;
+
+rollback to savepoint p1;
+
+commit;
+
+begin;
+
+insert into trunc_stats_test4 default values;
+
+insert into trunc_stats_test4 default values;
+
+truncate trunc_stats_test4;
+
+insert into trunc_stats_test4 default values;
+
+rollback;
+
+select COUNT(*) from tenk2;
+
+set enable_bitmapscan = off;
+
+select COUNT(*) from tenk2 where unique1 = 1;
+
+reset enable_bitmapscan;
+
+select pg_stat_force_next_flush();
+
+begin;
+
+set local stats_fetch_consistency = snapshot;
+
+select
+  relname,
+  n_tup_ins,
+  n_tup_upd,
+  n_tup_del,
+  n_live_tup,
+  n_dead_tup
+from
+  pg_stat_user_tables
+where
+  relname like 'trunc_stats_test%'
+order by relname;
+
+select
+  st.seq_scan >= pr.seq_scan + 1,
+  st.seq_tup_read >=
+  pr.seq_tup_read + cl.reltuples,
+  st.idx_scan >= pr.idx_scan + 1,
+  st.idx_tup_fetch >= pr.idx_tup_fetch + 1
+from
+  pg_stat_user_tables as st,
+  pg_class as cl,
+  prevstats as pr
+where
+  st.relname = 'tenk2' and
+  cl.relname = 'tenk2';
+
+select
+  st.heap_blks_read + st.heap_blks_hit >=
+  pr.heap_blks + cl.relpages,
+  st.idx_blks_read + st.idx_blks_hit >=
+  pr.idx_blks + 1
+from
+  pg_statio_user_tables as st,
+  pg_class as cl,
+  prevstats as pr
+where
+  st.relname = 'tenk2' and
+  cl.relname = 'tenk2';
+
+select
+  pr.snap_ts <
+  pg_stat_get_snapshot_timestamp()
+  as snapshot_newer
+from
+  prevstats as pr;
+
+commit;
+
+create function stats_test_func1()
+returns void
+language plpgsql
+as $function$
+BEGIN END;
+$function$;
+
+select
+  cast(cast('stats_test_func1()'
+  as regprocedure)
+  as oid)
+  as stats_test_func1_oid;
+
+create function stats_test_func2()
+returns void
+language plpgsql
+as $function$
+BEGIN END;
+$function$;
+
+select
+  cast(cast('stats_test_func2()'
+  as regprocedure)
+  as oid)
+  as stats_test_func2_oid;
+
+begin;
+
+set local stats_fetch_consistency = 'none';
+
+select pg_stat_get_function_calls('stats_test_func1_oid');
+
+select pg_stat_get_xact_function_calls('stats_test_func1_oid');
+
+select stats_test_func1();
+
+select pg_stat_get_xact_function_calls('stats_test_func1_oid');
+
+select stats_test_func1();
+
+select pg_stat_get_xact_function_calls('stats_test_func1_oid');
+
+select pg_stat_get_function_calls('stats_test_func1_oid');
+
+commit;
+
+begin;
+
+select stats_test_func2();
+
+savepoint foo;
+
+select stats_test_func2();
+
+rollback to savepoint foo;
+
+select pg_stat_get_xact_function_calls('stats_test_func2_oid');
+
+select stats_test_func2();
+
+commit;
+
+begin;
+
+select stats_test_func2();
+
+rollback;
+
+select pg_stat_force_next_flush();
+
+select
+  funcname,
+  calls
+from
+  pg_stat_user_functions
+where
+  funcid = 'stats_test_func1_oid';
+
+select
+  funcname,
+  calls
+from
+  pg_stat_user_functions
+where
+  funcid = 'stats_test_func2_oid';
+
+begin;
+
+select
+  funcname,
+  calls
+from
+  pg_stat_user_functions
+where
+  funcid = 'stats_test_func1_oid';
+
+drop function stats_test_func1();
+
+select
+  funcname,
+  calls
+from
+  pg_stat_user_functions
+where
+  funcid = 'stats_test_func1_oid';
+
+select pg_stat_get_function_calls('stats_test_func1_oid');
+
+rollback;
+
+select
+  funcname,
+  calls
+from
+  pg_stat_user_functions
+where
+  funcid = 'stats_test_func1_oid';
+
+select pg_stat_get_function_calls('stats_test_func1_oid');
+
+begin;
+
+drop function stats_test_func1();
+
+commit;
+
+select
+  funcname,
+  calls
+from
+  pg_stat_user_functions
+where
+  funcid = 'stats_test_func1_oid';
+
+select pg_stat_get_function_calls('stats_test_func1_oid');
+
+begin;
+
+select stats_test_func2();
+
+savepoint a;
+
+select stats_test_func2();
+
+savepoint b;
+
+drop function stats_test_func2();
+
+commit;
+
+select
+  funcname,
+  calls
+from
+  pg_stat_user_functions
+where
+  funcid = 'stats_test_func2_oid';
+
+select pg_stat_get_function_calls('stats_test_func2_oid');
+
+create table drop_stats_test ();
+
+insert into drop_stats_test default values;
+
+select cast(cast('drop_stats_test' as regclass) as oid) as drop_stats_test_oid;
+
+create table drop_stats_test_xact ();
+
+insert into drop_stats_test_xact default values;
+
+select
+  cast(cast('drop_stats_test_xact' as regclass)
+  as oid)
+  as drop_stats_test_xact_oid;
+
+create table drop_stats_test_subxact ();
+
+insert into drop_stats_test_subxact default values;
+
+select
+  cast(cast('drop_stats_test_subxact'
+  as regclass)
+  as oid)
+  as drop_stats_test_subxact_oid;
+
+select pg_stat_force_next_flush();
+
+select pg_stat_get_live_tuples('drop_stats_test_oid');
+
+drop table drop_stats_test;
+
+select pg_stat_get_live_tuples('drop_stats_test_oid');
+
+select pg_stat_get_xact_tuples_inserted('drop_stats_test_oid');
+
+select pg_stat_get_live_tuples('drop_stats_test_xact_oid');
+
+select pg_stat_get_tuples_inserted('drop_stats_test_xact_oid');
+
+select pg_stat_get_xact_tuples_inserted('drop_stats_test_xact_oid');
+
+begin;
+
+insert into drop_stats_test_xact default values;
+
+select pg_stat_get_xact_tuples_inserted('drop_stats_test_xact_oid');
+
+drop table drop_stats_test_xact;
+
+select pg_stat_get_xact_tuples_inserted('drop_stats_test_xact_oid');
+
+rollback;
+
+select pg_stat_force_next_flush();
+
+select pg_stat_get_live_tuples('drop_stats_test_xact_oid');
+
+select pg_stat_get_tuples_inserted('drop_stats_test_xact_oid');
+
+select pg_stat_get_live_tuples('drop_stats_test_xact_oid');
+
+select pg_stat_get_tuples_inserted('drop_stats_test_xact_oid');
+
+begin;
+
+insert into drop_stats_test_xact default values;
+
+select pg_stat_get_xact_tuples_inserted('drop_stats_test_xact_oid');
+
+drop table drop_stats_test_xact;
+
+select pg_stat_get_xact_tuples_inserted('drop_stats_test_xact_oid');
+
+commit;
+
+select pg_stat_force_next_flush();
+
+select pg_stat_get_live_tuples('drop_stats_test_xact_oid');
+
+select pg_stat_get_tuples_inserted('drop_stats_test_xact_oid');
+
+select pg_stat_get_live_tuples('drop_stats_test_subxact_oid');
+
+begin;
+
+insert into drop_stats_test_subxact default values;
+
+savepoint sp1;
+
+insert into drop_stats_test_subxact default values;
+
+select pg_stat_get_xact_tuples_inserted('drop_stats_test_subxact_oid');
+
+savepoint sp2;
+
+drop table drop_stats_test_subxact;
+
+rollback to savepoint sp2;
+
+select pg_stat_get_xact_tuples_inserted('drop_stats_test_subxact_oid');
+
+commit;
+
+select pg_stat_force_next_flush();
+
+select pg_stat_get_live_tuples('drop_stats_test_subxact_oid');
+
+select pg_stat_get_live_tuples('drop_stats_test_subxact_oid');
+
+begin;
+
+savepoint sp1;
+
+drop table drop_stats_test_subxact;
+
+savepoint sp2;
+
+rollback to savepoint sp1;
+
+commit;
+
+select pg_stat_get_live_tuples('drop_stats_test_subxact_oid');
+
+select pg_stat_get_live_tuples('drop_stats_test_subxact_oid');
+
+begin;
+
+savepoint sp1;
+
+drop table drop_stats_test_subxact;
+
+savepoint sp2;
+
+release savepoint sp1;
+
+commit;
+
+select pg_stat_get_live_tuples('drop_stats_test_subxact_oid');
+
+drop table
+  trunc_stats_test,
+  trunc_stats_test1,
+  trunc_stats_test2,
+  trunc_stats_test3,
+  trunc_stats_test4;
+
+drop table prevstats;
+
+begin;
+
+create temporary table test_last_scan (
+  idx_col int primary key,
+  noidx_col int
+);
+
+insert into test_last_scan (idx_col, noidx_col) values (1, 1);
+
+select pg_stat_force_next_flush();
+
+select
+  last_seq_scan,
+  last_idx_scan
+from
+  pg_stat_all_tables
+where
+  relid =
+  cast('test_last_scan' as regclass);
+
+commit;
+
+select pg_stat_reset_single_table_counters(cast('test_last_scan' as regclass));
+
+select
+  seq_scan,
+  idx_scan
+from
+  pg_stat_all_tables
+where
+  relid =
+  cast('test_last_scan' as regclass);
+
+begin;
+
+set local enable_seqscan = 'on';
+
+set local enable_indexscan = 'on';
+
+set local enable_bitmapscan = off;
+
+select COUNT(*) from test_last_scan where noidx_col = 1;
+
+select COUNT(*) from test_last_scan where noidx_col = 1;
+
+set local enable_seqscan = off;
+
+select COUNT(*) from test_last_scan where idx_col = 1;
+
+select COUNT(*) from test_last_scan where idx_col = 1;
+
+select pg_stat_force_next_flush();
+
+commit;
+
+select
+  last_seq_scan as test_last_seq,
+  last_idx_scan as test_last_idx
+from
+  pg_stat_all_tables
+where
+  relid =
+  cast('test_last_scan' as regclass);
+
+select pg_sleep(0.1);
+
+begin;
+
+set local enable_seqscan = 'on';
+
+set local enable_indexscan = off;
+
+set local enable_bitmapscan = off;
+
+select COUNT(*) from test_last_scan where noidx_col = 1;
+
+select COUNT(*) from test_last_scan where noidx_col = 1;
+
+select pg_stat_force_next_flush();
+
+commit;
+
+select
+  seq_scan,
+  'test_last_seq' < last_seq_scan
+  as seq_ok,
+  idx_scan,
+  'test_last_idx' = last_idx_scan
+  as idx_ok
+from
+  pg_stat_all_tables
+where
+  relid =
+  cast('test_last_scan' as regclass);
+
+select
+  last_seq_scan as test_last_seq,
+  last_idx_scan as test_last_idx
+from
+  pg_stat_all_tables
+where
+  relid =
+  cast('test_last_scan' as regclass);
+
+select pg_sleep(0.1);
+
+begin;
+
+set local enable_seqscan = off;
+
+set local enable_indexscan = 'on';
+
+set local enable_bitmapscan = off;
+
+select COUNT(*) from test_last_scan where idx_col = 1;
+
+select COUNT(*) from test_last_scan where idx_col = 1;
+
+select pg_stat_force_next_flush();
+
+commit;
+
+select
+  seq_scan,
+  'test_last_seq' = last_seq_scan
+  as seq_ok,
+  idx_scan,
+  'test_last_idx' < last_idx_scan
+  as idx_ok
+from
+  pg_stat_all_tables
+where
+  relid =
+  cast('test_last_scan' as regclass);
+
+select
+  last_seq_scan as test_last_seq,
+  last_idx_scan as test_last_idx
+from
+  pg_stat_all_tables
+where
+  relid =
+  cast('test_last_scan' as regclass);
+
+select pg_sleep(0.1);
+
+begin;
+
+set local enable_seqscan = off;
+
+set local enable_indexscan = off;
+
+set local enable_bitmapscan = 'on';
+
+select COUNT(*) from test_last_scan where idx_col = 1;
+
+select COUNT(*) from test_last_scan where idx_col = 1;
+
+select pg_stat_force_next_flush();
+
+commit;
+
+select
+  seq_scan,
+  'test_last_seq' = last_seq_scan
+  as seq_ok,
+  idx_scan,
+  'test_last_idx' < last_idx_scan
+  as idx_ok
+from
+  pg_stat_all_tables
+where
+  relid =
+  cast('test_last_scan' as regclass);
+
+select
+  shobj_description(d.oid, 'pg_database')
+  as description_before
+from
+  pg_database as d
+where
+  datname = current_database();
+
+begin;
+
+select current_database() as datname;
+
+select pg_stat_force_next_flush();
+
+commit;
+
+select
+  n_tup_ins + n_tup_upd > 0 as has_data
+from
+  pg_stat_all_tables
+where
+  relid =
+  cast('pg_shdescription' as regclass);
+
+select
+  pg_stat_reset_single_table_counters(
+    cast('pg_shdescription' as regclass)
+  );
+
+select
+  n_tup_ins + n_tup_upd > 0 as has_data
+from
+  pg_stat_all_tables
+where
+  relid =
+  cast('pg_shdescription' as regclass);
+
+select
+  sessions as db_stat_sessions
+from
+  pg_stat_database
+where
+  datname = (select current_database());
+
+select pg_stat_force_next_flush();
+
+select
+  sessions > 'db_stat_sessions'
+from
+  pg_stat_database
+where
+  datname = (select current_database());
+
+select num_requested as rqst_ckpts_before from pg_stat_checkpointer;
+
+select wal_bytes as wal_bytes_before from pg_stat_wal;
+
+select
+  wal_bytes as backend_wal_bytes_before
+from
+  pg_stat_get_backend_wal(
+    pg_backend_pid()
+  );
+
+create temporary table test_stats_temp as select 17;
+
+drop table test_stats_temp;
+
+select num_requested > 'rqst_ckpts_before' from pg_stat_checkpointer;
+
+select wal_bytes > 'wal_bytes_before' from pg_stat_wal;
+
+select pg_stat_force_next_flush();
+
+select
+  wal_bytes > 'backend_wal_bytes_before'
+from
+  pg_stat_get_backend_wal(
+    pg_backend_pid()
+  );
+
+select
+  (current_schemas(true))[1] =
+  'pg_temp_' || cast(beid as text)
+  as match
+from
+  pg_stat_get_backend_idset() as beid
+where
+  pg_stat_get_backend_pid(beid) =
+  pg_backend_pid();
+
+select
+  stats_reset as slru_commit_ts_reset_ts
+from
+  pg_stat_slru
+where
+  name = 'commit_timestamp';
+
+select
+  stats_reset as slru_notify_reset_ts
+from
+  pg_stat_slru
+where
+  name = 'notify';
+
+select pg_stat_reset_slru('commit_timestamp');
+
+select
+  stats_reset >
+  cast('slru_commit_ts_reset_ts'
+  as timestamp with time zone)
+from
+  pg_stat_slru
+where
+  name = 'commit_timestamp';
+
+select
+  stats_reset as slru_commit_ts_reset_ts
+from
+  pg_stat_slru
+where
+  name = 'commit_timestamp';
+
+select pg_stat_reset_slru();
+
+select
+  stats_reset >
+  cast('slru_commit_ts_reset_ts'
+  as timestamp with time zone)
+from
+  pg_stat_slru
+where
+  name = 'commit_timestamp';
+
+select
+  stats_reset >
+  cast('slru_notify_reset_ts'
+  as timestamp with time zone)
+from
+  pg_stat_slru
+where
+  name = 'notify';
+
+select stats_reset as archiver_reset_ts from pg_stat_archiver;
+
+select pg_stat_reset_shared('archiver');
+
+select
+  stats_reset >
+  cast('archiver_reset_ts'
+  as timestamp with time zone)
+from
+  pg_stat_archiver;
+
+select stats_reset as bgwriter_reset_ts from pg_stat_bgwriter;
+
+select pg_stat_reset_shared('bgwriter');
+
+select
+  stats_reset >
+  cast('bgwriter_reset_ts'
+  as timestamp with time zone)
+from
+  pg_stat_bgwriter;
+
+select stats_reset as checkpointer_reset_ts from pg_stat_checkpointer;
+
+select pg_stat_reset_shared('checkpointer');
+
+select
+  stats_reset >
+  cast('checkpointer_reset_ts'
+  as timestamp with time zone)
+from
+  pg_stat_checkpointer;
+
+select stats_reset as recovery_prefetch_reset_ts from pg_stat_recovery_prefetch;
+
+select pg_stat_reset_shared('recovery_prefetch');
+
+select
+  stats_reset >
+  cast('recovery_prefetch_reset_ts'
+  as timestamp with time zone)
+from
+  pg_stat_recovery_prefetch;
+
+select MAX(stats_reset) as slru_reset_ts from pg_stat_slru;
+
+select pg_stat_reset_shared('slru');
+
+select
+  MAX(stats_reset) >
+  cast('slru_reset_ts'
+  as timestamp with time zone)
+from
+  pg_stat_slru;
+
+select stats_reset as wal_reset_ts from pg_stat_wal;
+
+select pg_stat_reset_shared('wal');
+
+select
+  stats_reset >
+  cast('wal_reset_ts'
+  as timestamp with time zone)
+from
+  pg_stat_wal;
+
+select pg_stat_reset_shared('unknown');
+
+select pg_stat_reset();
+
+select
+  stats_reset as db_reset_ts
+from
+  pg_stat_database
+where
+  datname = (select current_database());
+
+select pg_stat_reset();
+
+select
+  stats_reset >
+  cast('db_reset_ts'
+  as timestamp with time zone)
+from
+  pg_stat_database
+where
+  datname = (select current_database());
+
+begin;
+
+set local stats_fetch_consistency = snapshot;
+
+select pg_stat_get_snapshot_timestamp();
+
+select pg_stat_get_function_calls(0);
+
+select pg_stat_get_snapshot_timestamp() >= NOW();
+
+select pg_stat_clear_snapshot();
+
+select pg_stat_get_snapshot_timestamp();
+
+commit;
+
+begin;
+
+set local stats_fetch_consistency = cache;
+
+select pg_stat_get_function_calls(0);
+
+select pg_stat_get_snapshot_timestamp() is not null as snapshot_ok;
+
+set local stats_fetch_consistency = snapshot;
+
+select pg_stat_get_snapshot_timestamp() is not null as snapshot_ok;
+
+select pg_stat_get_function_calls(0);
+
+select pg_stat_get_snapshot_timestamp() is not null as snapshot_ok;
+
+set local stats_fetch_consistency = 'none';
+
+select pg_stat_get_snapshot_timestamp() is not null as snapshot_ok;
+
+select pg_stat_get_function_calls(0);
+
+select pg_stat_get_snapshot_timestamp() is not null as snapshot_ok;
+
+rollback;
+
+select pg_stat_have_stats('bgwriter', 0, 0);
+
+select pg_stat_have_stats('zaphod', 0, 0);
+
+select pg_stat_have_stats('database', 'dboid', 1);
+
+select pg_stat_have_stats('database', 'dboid', 0);
+
+create table stats_test_tab1 as select generate_series(1, 10) as a;
+
+create index "stats_test_idx1" on stats_test_tab1 using btree (a);
+
+select cast(cast('stats_test_idx1' as regclass) as oid) as stats_test_idx1_oid;
+
+set enable_seqscan = off;
+
+select a from stats_test_tab1 where a = 3;
+
+select pg_stat_have_stats('relation', 'dboid', 'stats_test_idx1_oid');
+
+select pg_stat_have_stats('relation', 'dboid', 'stats_test_idx1_oid');
+
+drop index stats_test_idx1;
+
+select pg_stat_have_stats('relation', 'dboid', 'stats_test_idx1_oid');
+
+begin;
+
+create index "stats_test_idx1" on stats_test_tab1 using btree (a);
+
+select cast(cast('stats_test_idx1' as regclass) as oid) as stats_test_idx1_oid;
+
+select a from stats_test_tab1 where a = 3;
+
+select pg_stat_have_stats('relation', 'dboid', 'stats_test_idx1_oid');
+
+rollback;
+
+select pg_stat_have_stats('relation', 'dboid', 'stats_test_idx1_oid');
+
+create index "stats_test_idx1" on stats_test_tab1 using btree (a);
+
+select cast(cast('stats_test_idx1' as regclass) as oid) as stats_test_idx1_oid;
+
+select a from stats_test_tab1 where a = 3;
+
+select pg_stat_have_stats('relation', 'dboid', 'stats_test_idx1_oid');
+
+reindex (CONCURRENTLY) index stats_test_idx1;
+
+select pg_stat_have_stats('relation', 'dboid', 'stats_test_idx1_oid');
+
+select cast(cast('stats_test_idx1' as regclass) as oid) as stats_test_idx1_oid;
+
+select pg_stat_have_stats('relation', 'dboid', 'stats_test_idx1_oid');
+
+begin;
+
+select pg_stat_have_stats('relation', 'dboid', 'stats_test_idx1_oid');
+
+drop index stats_test_idx1;
+
+rollback;
+
+select pg_stat_have_stats('relation', 'dboid', 'stats_test_idx1_oid');
+
+set enable_seqscan = 'on';
+
+select pg_stat_get_replication_slot(null);
+
+select pg_stat_get_subscription_stats(null);
+
+select
+  pid as checkpointer_pid
+from
+  pg_stat_activity
+where
+  backend_type = 'checkpointer';
+
+select
+  SUM(extends)
+  as io_sum_shared_before_extends
+from
+  pg_stat_io
+where
+  context = 'normal' and
+  object = 'relation';
+
+select
+  SUM(extends)
+  as my_io_sum_shared_before_extends
+from
+  pg_stat_get_backend_io(pg_backend_pid())
+where
+  context = 'normal' and
+  object = 'relation';
+
+select
+  SUM(writes) as writes,
+  SUM(fsyncs) as fsyncs
+from
+  pg_stat_io
+where
+  object = 'relation';
+
+select
+  SUM(writes) as writes,
+  SUM(fsyncs) as fsyncs
+from
+  pg_stat_get_backend_io(pg_backend_pid())
+where
+  object = 'relation';
+
+select
+  SUM(writes) as writes,
+  SUM(fsyncs) as fsyncs
+from
+  pg_stat_io
+where
+  context = 'normal' and object = 'wal';
+
+create table test_io_shared (a int);
+
+insert into test_io_shared select i from generate_series(1, 100) as i;
+
+select pg_stat_force_next_flush();
+
+select
+  SUM(extends)
+  as io_sum_shared_after_extends
+from
+  pg_stat_io
+where
+  context = 'normal' and
+  object = 'relation';
+
+select 'io_sum_shared_after_extends' > 'io_sum_shared_before_extends';
+
+select
+  SUM(extends)
+  as my_io_sum_shared_after_extends
+from
+  pg_stat_get_backend_io(pg_backend_pid())
+where
+  context = 'normal' and
+  object = 'relation';
+
+select 'my_io_sum_shared_after_extends' > 'my_io_sum_shared_before_extends';
+
+checkpoint;
+
+checkpoint;
+
+select
+  SUM(writes) as writes,
+  SUM(fsyncs) as fsyncs
+from
+  pg_stat_io
+where
+  object = 'relation';
+
+select 'io_sum_shared_after_writes' > 'io_sum_shared_before_writes';
+
+select
+  current_setting('fsync') = 'off' or
+  'io_sum_shared_after_fsyncs' >
+  'io_sum_shared_before_fsyncs';
+
+select
+  SUM(writes) as writes,
+  SUM(fsyncs) as fsyncs
+from
+  pg_stat_get_backend_io(pg_backend_pid())
+where
+  object = 'relation';
+
+select 'my_io_sum_shared_after_writes' >= 'my_io_sum_shared_before_writes';
+
+select
+  current_setting('fsync') = 'off' or
+  'my_io_sum_shared_after_fsyncs' >=
+  'my_io_sum_shared_before_fsyncs';
+
+select
+  SUM(writes) as writes,
+  SUM(fsyncs) as fsyncs
+from
+  pg_stat_io
+where
+  context = 'normal' and object = 'wal';
+
+select current_setting('synchronous_commit') = 'on';
+
+select 'io_sum_wal_normal_after_writes' > 'io_sum_wal_normal_before_writes';
+
+select
+  current_setting('fsync') = 'off' or
+  current_setting('wal_sync_method')
+  in (
+    'open_sync', 'open_datasync'
+  ) or
+  'io_sum_wal_normal_after_fsyncs' >
+  'io_sum_wal_normal_before_fsyncs';
+
+select
+  SUM(reads) as io_sum_shared_before_reads
+from
+  pg_stat_io
+where
+  context = 'normal' and
+  object = 'relation';
+
+begin;
+
+alter table test_io_shared
+  set tablespace regress_tblspace;
+
+select COUNT(*) from test_io_shared;
+
+commit;
+
+select pg_stat_force_next_flush();
+
+select
+  SUM(reads) as io_sum_shared_after_reads
+from
+  pg_stat_io
+where
+  context = 'normal' and
+  object = 'relation';
+
+select 'io_sum_shared_after_reads' > 'io_sum_shared_before_reads';
+
+select
+  SUM(hits) as io_sum_shared_before_hits
+from
+  pg_stat_io
+where
+  context = 'normal' and
+  object = 'relation';
+
+begin;
+
+set local enable_nestloop = 'on';
+
+set local enable_mergejoin = off;
+
+set local enable_hashjoin = off;
+
+set local enable_material = off;
+
+select
+  COUNT(*)
+from
+  test_io_shared as t1
+  inner join
+    test_io_shared as t2
+  using ("a");
+
+select
+  COUNT(*)
+from
+  test_io_shared as t1
+  inner join
+    test_io_shared as t2
+  using ("a");
+
+commit;
+
+select pg_stat_force_next_flush();
+
+select
+  SUM(hits) as io_sum_shared_after_hits
+from
+  pg_stat_io
+where
+  context = 'normal' and
+  object = 'relation';
+
+select 'io_sum_shared_after_hits' > 'io_sum_shared_before_hits';
+
+drop table test_io_shared;
+
+set temp_buffers = 100;
+
+create temporary table test_io_local (
+  a int,
+  b text
+);
+
+select
+  SUM(extends) as extends,
+  SUM(evictions) as evictions,
+  SUM(writes) as writes
+from
+  pg_stat_io
+where
+  context = 'normal' and
+  object = 'temp relation';
+
+insert into test_io_local
+select
+  generate_series(1, 5000) as id,
+  repeat('a', 200);
+
+select
+  pg_relation_size('test_io_local') /
+  cast(current_setting('block_size')
+  as bigint) >
+  100;
+
+select
+  SUM(reads) as io_sum_local_before_reads
+from
+  pg_stat_io
+where
+  context = 'normal' and
+  object = 'temp relation';
+
+select COUNT(*) from test_io_local;
+
+select pg_stat_force_next_flush();
+
+select
+  SUM(evictions) as evictions,
+  SUM(reads) as reads,
+  SUM(writes) as writes,
+  SUM(extends) as extends
+from
+  pg_stat_io
+where
+  context = 'normal' and
+  object = 'temp relation';
+
+select
+  'io_sum_local_after_evictions' >
+  'io_sum_local_before_evictions',
+  'io_sum_local_after_reads' >
+  'io_sum_local_before_reads',
+  'io_sum_local_after_writes' >
+  'io_sum_local_before_writes',
+  'io_sum_local_after_extends' >
+  'io_sum_local_before_extends';
+
+alter table test_io_local
+  set tablespace regress_tblspace;
+
+select pg_stat_force_next_flush();
+
+select
+  SUM(writes)
+  as io_sum_local_new_tblspc_writes
+from
+  pg_stat_io
+where
+  context = 'normal' and
+  object = 'temp relation';
+
+select 'io_sum_local_new_tblspc_writes' > 'io_sum_local_after_writes';
+
+reset temp_buffers;
+
+set wal_skip_threshold = '1 kB';
+
+select
+  SUM(reuses) as reuses,
+  SUM(reads) as reads,
+  SUM(evictions) as evictions
+from
+  pg_stat_io
+where
+  context = 'vacuum';
+
+create table test_io_vac_strategy (
+  a int,
+  b int
+)
+with (autovacuum_enabled = 'false');
+
+insert into test_io_vac_strategy select i, i from generate_series(1, 4500) as i;
+
+vacuum (FULL) test_io_vac_strategy;
+
+vacuum (PARALLEL 0, BUFFER_USAGE_LIMIT 128) test_io_vac_strategy;
+
+select pg_stat_force_next_flush();
+
+select
+  SUM(reuses) as reuses,
+  SUM(reads) as reads,
+  SUM(evictions) as evictions
+from
+  pg_stat_io
+where
+  context = 'vacuum';
+
+select 'io_sum_vac_strategy_after_reads' > 'io_sum_vac_strategy_before_reads';
+
+select
+  'io_sum_vac_strategy_after_reuses' +
+  'io_sum_vac_strategy_after_evictions' >
+  'io_sum_vac_strategy_before_reuses' +
+  'io_sum_vac_strategy_before_evictions';
+
+reset wal_skip_threshold;
+
+select
+  SUM(extends)
+  as io_sum_bulkwrite_strategy_extends_before
+from
+  pg_stat_io
+where
+  context = 'bulkwrite';
+
+create table test_io_bulkwrite_strategy
+as
+  select
+    i
+  from
+    generate_series(1, 100) as i;
+
+select pg_stat_force_next_flush();
+
+select
+  SUM(extends)
+  as io_sum_bulkwrite_strategy_extends_after
+from
+  pg_stat_io
+where
+  context = 'bulkwrite';
+
+select
+  'io_sum_bulkwrite_strategy_extends_after' >
+  'io_sum_bulkwrite_strategy_extends_before';
+
+select pg_stat_have_stats('io', 0, 0);
+
+select
+  SUM(evictions) + SUM(reuses) +
+  SUM(extends) +
+  SUM(fsyncs) +
+  SUM(reads) +
+  SUM(writes) +
+  SUM(writebacks) +
+  SUM(hits)
+  as io_stats_pre_reset
+from
+  pg_stat_io;
+
+select
+  SUM(evictions) + SUM(reuses) +
+  SUM(extends) +
+  SUM(fsyncs) +
+  SUM(reads) +
+  SUM(writes) +
+  SUM(writebacks) +
+  SUM(hits)
+  as my_io_stats_pre_reset
+from
+  pg_stat_get_backend_io(pg_backend_pid());
+
+select pg_stat_reset_shared('io');
+
+select
+  SUM(evictions) + SUM(reuses) +
+  SUM(extends) +
+  SUM(fsyncs) +
+  SUM(reads) +
+  SUM(writes) +
+  SUM(writebacks) +
+  SUM(hits)
+  as io_stats_post_reset
+from
+  pg_stat_io;
+
+select 'io_stats_post_reset' < 'io_stats_pre_reset';
+
+select
+  SUM(evictions) + SUM(reuses) +
+  SUM(extends) +
+  SUM(fsyncs) +
+  SUM(reads) +
+  SUM(writes) +
+  SUM(writebacks) +
+  SUM(hits)
+  as my_io_stats_post_reset
+from
+  pg_stat_get_backend_io(pg_backend_pid());
+
+select 'my_io_stats_pre_reset' <= 'my_io_stats_post_reset';
+
+select pg_stat_reset_backend_stats(pg_backend_pid());
+
+select
+  SUM(evictions) + SUM(reuses) +
+  SUM(extends) +
+  SUM(fsyncs) +
+  SUM(reads) +
+  SUM(writes) +
+  SUM(writebacks) +
+  SUM(hits)
+  as my_io_stats_post_backend_reset
+from
+  pg_stat_get_backend_io(pg_backend_pid());
+
+select 'my_io_stats_pre_reset' > 'my_io_stats_post_backend_reset';
+
+select pg_stat_get_backend_io(null);
+
+select pg_stat_get_backend_io(0);
+
+select pg_stat_get_backend_io('checkpointer_pid');
+
+create table brin_hot (
+  id int primary key,
+  val int not null
+)
+with (
+  autovacuum_enabled = off,
+  fillfactor = 70
+);
+
+insert into brin_hot select *, 0 from generate_series(1, 235);
+
+create index "val_brin" on brin_hot using brin (val);
+
+create function wait_for_hot_stats()
+returns void
+language plpgsql
+as $function$
+DECLARE
+  start_time timestamptz := clock_timestamp();
+  updated bool;
+BEGIN
+  -- we don't want to wait forever; loop will exit after 30 seconds
+  FOR i IN 1 .. 300 LOOP
+    SELECT (pg_stat_get_tuples_hot_updated('brin_hot'::regclass::oid) > 0) INTO updated;
+    EXIT WHEN updated;
+
+    -- wait a little
+    PERFORM pg_sleep_for('100 milliseconds');
+    -- reset stats snapshot so we can test again
+    PERFORM pg_stat_clear_snapshot();
+  END LOOP;
+  -- report time waited in postmaster log (where it won't change test output)
+  RAISE log 'wait_for_hot_stats delayed % seconds',
+    EXTRACT(epoch FROM clock_timestamp() - start_time);
+END
+$function$;
+
+update brin_hot set val = -3 where id = 42;
+
+select wait_for_hot_stats();
+
+select
+  pg_stat_get_tuples_hot_updated(
+    cast(cast('brin_hot' as regclass)
+    as oid)
+  );
+
+drop table brin_hot;
+
+drop function wait_for_hot_stats();
+
+create table brin_hot_2 (
+  a int,
+  b int
+);
+
+insert into brin_hot_2 values (1, 100);
+
+create index
+on brin_hot_2
+using brin
+(
+  b
+)
+where
+  a = 2;
+
+update brin_hot_2 set a = 2;
+
+select * from brin_hot_2 where a = 2 and b = 100;
+
+select COUNT(*) from brin_hot_2 where a = 2 and b = 100;
+
+set enable_seqscan = off;
+
+select * from brin_hot_2 where a = 2 and b = 100;
+
+select COUNT(*) from brin_hot_2 where a = 2 and b = 100;
+
+drop table brin_hot_2;
+
+create table brin_hot_3 (
+  a int,
+  filler text
+)
+with (fillfactor = 10);
+
+insert into brin_hot_3 select 1, repeat(' ', 500) from generate_series(1, 20);
+
+create index
+on brin_hot_3
+using brin
+(
+  a
+)
+with (pages_per_range = 1);
+
+update brin_hot_3 set a = 2;
+
+select * from brin_hot_3 where a = 2;
+
+select COUNT(*) from brin_hot_3 where a = 2;
+
+drop table brin_hot_3;
+
+set enable_seqscan = 'on';
+
+create table table_fillfactor (n char(1000))
+with (
+  fillfactor = 10,
+  autovacuum_enabled = off
+);
+
+insert into table_fillfactor select 'x' from generate_series(1, 1000);
+
+select * from check_estimated_rows('SELECT * FROM table_fillfactor');
+
+drop table table_fillfactor;

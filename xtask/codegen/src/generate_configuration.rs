@@ -1,5 +1,5 @@
-use crate::{to_capitalized, update};
-use biome_string_case::Case;
+use crate::{to_capitalized, to_snake_case, update};
+use convert_case::{Case, Casing};
 use pgls_analyse::{
     GroupCategory, RegistryVisitor, RuleCategory, RuleGroup, RuleMeta, RuleMetadata,
 };
@@ -81,7 +81,7 @@ const TOOLS: &[ToolConfig] = &[
     ToolConfig::new("linter", RuleCategory::Lint, true),
     ToolConfig::new("assists", RuleCategory::Action, true),
     ToolConfig::new("splinter", RuleCategory::Lint, false), // Database linter, doesn't handle files
-    ToolConfig::new("pglinter", RuleCategory::Lint, true),
+    ToolConfig::new("pglinter", RuleCategory::Lint, false), // Database linter via pglinter extension
 ];
 
 /// Visitor that collects rules for a specific category
@@ -121,6 +121,7 @@ impl RegistryVisitor for CategoryRulesVisitor {
 pub fn generate_rules_configuration(mode: Mode) -> Result<()> {
     generate_tool_configuration(mode, "linter")?;
     generate_tool_configuration(mode, "splinter")?;
+    generate_tool_configuration(mode, "pglinter")?;
     Ok(())
 }
 
@@ -129,7 +130,7 @@ pub fn generate_tool_configuration(mode: Mode, tool_name: &str) -> Result<()> {
     let tool = TOOLS
         .iter()
         .find(|t| t.name == tool_name)
-        .ok_or_else(|| anyhow::anyhow!("Unknown tool: {}", tool_name))?;
+        .ok_or_else(|| anyhow::anyhow!("Unknown tool: {tool_name}"))?;
 
     let config_root = project_root().join("crates/pgls_configuration/src");
     let tool_dir = config_root.join(tool.config_dir());
@@ -140,8 +141,8 @@ pub fn generate_tool_configuration(mode: Mode, tool_name: &str) -> Result<()> {
     match tool.name {
         "linter" => pgls_analyser::visit_registry(&mut visitor),
         "splinter" => pgls_splinter::registry::visit_registry(&mut visitor),
+        "pglinter" => pgls_pglinter::registry::visit_registry(&mut visitor),
         "assists" => unimplemented!("Assists rules not yet implemented"),
-        "pglinter" => unimplemented!("PGLinter rules not yet implemented"),
         _ => unreachable!(),
     }
 
@@ -215,7 +216,7 @@ fn generate_lint_mod_file(tool: &ToolConfig) -> String {
     };
 
     let string_set_import = if handles_files || tool.name == "splinter" {
-        quote! { use biome_deserialize::StringSet; }
+        quote! { use crate::StringSet; }
     } else {
         quote! {}
     };
@@ -270,7 +271,7 @@ fn generate_lint_mod_file(tool: &ToolConfig) -> String {
         mod #generated_file_ident;
 
         #string_set_import
-        use biome_deserialize_macros::{Merge, Partial};
+        use pgls_configuration_macros::{Merge, Partial};
         use bpaf::Bpaf;
         pub use #generated_file_ident::*;
         use serde::{Deserialize, Serialize};
@@ -339,7 +340,7 @@ fn generate_lint_rules_file(
     let mut group_as_disabled_rules = Vec::with_capacity(groups.len());
 
     for (group, rules) in groups {
-        let group_pascal_ident = quote::format_ident!("{}", &Case::Pascal.convert(group));
+        let group_pascal_ident = quote::format_ident!("{}", &group.to_case(Case::Pascal));
         let group_ident = quote::format_ident!("{}", group);
 
         let (global_all, global_recommended) = {
@@ -414,7 +415,7 @@ fn generate_lint_rules_file(
         //! Generated file, do not edit by hand, see `xtask/codegen`
 
         use crate::rules::{RuleConfiguration, RulePlainConfiguration};
-        use biome_deserialize_macros::Merge;
+        use pgls_configuration_macros::Merge;
         use pgls_analyse::RuleFilter;
         use pgls_analyser::RuleOptions;
         use pgls_diagnostics::{Category, Severity};
@@ -607,7 +608,7 @@ fn generate_lint_group_struct(
     for (index, (rule, metadata)) in rules.iter().enumerate() {
         let summary = extract_summary_from_docs(metadata.docs);
         let rule_position = Literal::u8_unsuffixed(index as u8);
-        let rule_identifier = quote::format_ident!("{}", Case::Snake.convert(rule));
+        let rule_identifier = quote::format_ident!("{}", to_snake_case(rule));
         let rule_name = Ident::new(&to_capitalized(rule), Span::call_site());
 
         if metadata.recommended {
@@ -643,9 +644,12 @@ fn generate_lint_group_struct(
         }
 
         // For splinter rules, use SplinterRuleOptions for the shared ignore patterns
+        // For pglinter rules, use () as options since they don't have configurable options
         // For linter rules, use pgls_analyser::options::#rule_name
         let rule_option_type = if tool_name == "splinter" {
             quote! { crate::splinter::SplinterRuleOptions }
+        } else if tool_name == "pglinter" {
+            quote! { () }
         } else {
             quote! { pgls_analyser::options::#rule_name }
         };
@@ -894,14 +898,14 @@ fn generate_action_mod_file(tool: &ToolConfig) -> String {
 
         mod #generated_file_ident;
 
-        use biome_deserialize::StringSet;
-        use biome_deserialize_macros::{Deserializable, Merge, Partial};
+        use crate::StringSet;
+        use pgls_configuration_macros::{Merge, Partial};
         use bpaf::Bpaf;
         pub use #generated_file_ident::*;
         use serde::{Deserialize, Serialize};
 
         #[derive(Clone, Debug, Deserialize, Eq, Partial, PartialEq, Serialize)]
-        #[partial(derive(Bpaf, Clone, Deserializable, Eq, Merge, PartialEq))]
+        #[partial(derive(Bpaf, Clone, Eq, Merge, PartialEq))]
         #[partial(cfg_attr(feature = "schema", derive(schemars::JsonSchema)))]
         #[partial(serde(deny_unknown_fields, rename_all = "camelCase"))]
         pub struct #config_struct {
@@ -961,7 +965,7 @@ fn generate_action_actions_file(
     let mut group_as_enabled_rules = Vec::with_capacity(groups.len());
 
     for (group, rules) in groups {
-        let group_pascal_ident = quote::format_ident!("{}", &Case::Pascal.convert(group));
+        let group_pascal_ident = quote::format_ident!("{}", &group.to_case(Case::Pascal));
         let group_ident = quote::format_ident!("{}", group);
 
         group_as_enabled_rules.push(quote! {
@@ -980,7 +984,7 @@ fn generate_action_actions_file(
         //! Generated file, do not edit by hand, see `xtask/codegen`
 
         use crate::rules::{RuleAssistConfiguration, RuleAssistPlainConfiguration};
-        use biome_deserialize_macros::{Deserializable, Merge};
+        use pgls_configuration_macros::Merge;
         use pgls_analyse::RuleFilter;
         use pgls_analyser::RuleOptions;
         use pgls_diagnostics::{Category, Severity};
@@ -993,7 +997,6 @@ fn generate_action_actions_file(
             Clone,
             Copy,
             Debug,
-            Deserializable,
             Eq,
             Hash,
             Merge,
@@ -1027,12 +1030,11 @@ fn generate_action_actions_file(
             }
         }
 
-        #[derive(Clone, Debug, Default, Deserialize, Deserializable, Eq, Merge, PartialEq, Serialize)]
+        #[derive(Clone, Debug, Default, Deserialize, Eq, Merge, PartialEq, Serialize)]
         #[cfg_attr(feature = "schema", derive(JsonSchema))]
         #[serde(rename_all = "camelCase", deny_unknown_fields)]
         pub struct Actions {
             #(
-                #[deserializable(rename = #group_strings)]
                 #[serde(skip_serializing_if = "Option::is_none")]
                 pub #group_idents: Option<#group_pascal_idents>,
             )*
@@ -1117,7 +1119,7 @@ fn generate_action_group_struct(
     for (index, (rule, metadata)) in rules.iter().enumerate() {
         let summary = extract_summary_from_docs(metadata.docs);
         let rule_position = Literal::u8_unsuffixed(index as u8);
-        let rule_identifier = quote::format_ident!("{}", Case::Snake.convert(rule));
+        let rule_identifier = quote::format_ident!("{}", to_snake_case(rule));
         let rule_name = Ident::new(&to_capitalized(rule), Span::call_site());
 
         lines_rule.push(quote! {
@@ -1154,7 +1156,7 @@ fn generate_action_group_struct(
     let group_pascal_ident = Ident::new(&to_capitalized(group), Span::call_site());
 
     quote! {
-        #[derive(Clone, Debug, Default, Deserialize, Deserializable, Eq, Merge, PartialEq, Serialize)]
+        #[derive(Clone, Debug, Default, Deserialize, Eq, Merge, PartialEq, Serialize)]
         #[cfg_attr(feature = "schema", derive(JsonSchema))]
         #[serde(rename_all = "camelCase", default, deny_unknown_fields)]
         /// A list of rules that belong to this group

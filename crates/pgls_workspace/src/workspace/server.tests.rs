@@ -1,10 +1,10 @@
 use std::sync::Arc;
 
-use biome_deserialize::{Merge, StringSet};
 use pgls_analyse::RuleCategories;
+use pgls_configuration::{Merge, StringSet};
 use pgls_configuration::{
-    PartialConfiguration, PartialTypecheckConfiguration, database::PartialDatabaseConfiguration,
-    files::PartialFilesConfiguration,
+    PartialConfiguration, PartialFormatConfiguration, PartialTypecheckConfiguration,
+    database::PartialDatabaseConfiguration, files::PartialFilesConfiguration,
 };
 
 #[cfg(not(target_os = "windows"))]
@@ -17,6 +17,7 @@ use sqlx::{Executor, PgPool};
 use crate::{
     Workspace, WorkspaceError,
     features::code_actions::ExecuteStatementResult,
+    features::format::PullFileFormattingParams,
     workspace::{
         OpenFileParams, RegisterProjectFolderParams, StatementId, UpdateSettingsParams,
         server::WorkspaceServer,
@@ -626,6 +627,52 @@ FOR NO KEY UPDATE;
             .count(),
         0,
         "Expected no syntax diagnostic"
+    );
+}
+
+#[tokio::test]
+async fn test_format_keeps_sql_function_body_intact() {
+    let mut conf = PartialConfiguration::init();
+    conf.merge_with(PartialConfiguration {
+        format: Some(PartialFormatConfiguration {
+            enabled: Some(true),
+            ..Default::default()
+        }),
+        ..Default::default()
+    });
+
+    let workspace = get_test_workspace(Some(conf)).expect("Unable to create test workspace");
+
+    let path = PgLSPath::new("test.sql");
+    let content =
+        "create function add(a int, b int) returns int as 'SELECT 424242+$1+$2;' language sql;";
+
+    workspace
+        .open_file(OpenFileParams {
+            path: path.clone(),
+            content: content.into(),
+            version: 1,
+        })
+        .expect("Unable to open test file");
+
+    let result = workspace
+        .pull_file_formatting(PullFileFormattingParams {
+            path: path.clone(),
+            range: None,
+        })
+        .expect("Unable to pull formatting");
+
+    assert_eq!(
+        result.formatted.matches("424242").count(),
+        1,
+        "SQL function body should not be emitted as a second standalone statement:\n{}",
+        result.formatted,
+    );
+
+    assert!(
+        result.formatted.contains("select 424242 + $1 + $2;"),
+        "SQL function body should be formatted inline:\n{}",
+        result.formatted,
     );
 }
 

@@ -1,0 +1,1335 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/sqljson_queryfuncs.sql
+---
+select json_exists(cast(null as jsonb), '$');
+
+select json_exists(cast('[]' as jsonb), '$');
+
+select json_exists(json_object(returning jsonb), '$');
+
+select json_exists(cast('1' as jsonb), '$');
+
+select json_exists(cast('null' as jsonb), '$');
+
+select json_exists(cast('[]' as jsonb), '$');
+
+select json_exists(cast('1' as jsonb), '$.a');
+
+select json_exists(cast('1' as jsonb), 'strict $.a');
+
+select json_exists(cast('1' as jsonb), 'strict $.a' error on error);
+
+select json_exists(cast('null' as jsonb), '$.a');
+
+select json_exists(cast('[]' as jsonb), '$.a');
+
+select json_exists(cast('[1, "aaa", {"a": 1}]' as jsonb), 'strict $.a');
+
+select json_exists(cast('[1, "aaa", {"a": 1}]' as jsonb), 'lax $.a');
+
+select json_exists(cast('{}' as jsonb), '$.a');
+
+select json_exists(cast('{"b": 1, "a": 2}' as jsonb), '$.a');
+
+select json_exists(cast('1' as jsonb), '$.a.b');
+
+select json_exists(cast('{"a": {"b": 1}}' as jsonb), '$.a.b');
+
+select json_exists(cast('{"a": 1, "b": 2}' as jsonb), '$.a.b');
+
+select
+  json_exists(cast('{"a": 1, "b": 2}' as jsonb), '$.* ? (@ > $x)'
+  passing 1 as x);
+
+select
+  json_exists(cast('{"a": 1, "b": 2}' as jsonb), '$.* ? (@ > $x)'
+  passing '1' as x);
+
+select
+  json_exists(cast('{"a": 1, "b": 2}' as jsonb), '$.* ? (@ > $x && @ < $y)'
+  passing 0 as x,
+  2 as y);
+
+select
+  json_exists(cast('{"a": 1, "b": 2}' as jsonb), '$.* ? (@ > $x && @ < $y)'
+  passing 0 as x,
+  1 as y);
+
+select json_exists(cast('1' as jsonb), '$ > 2');
+
+select json_exists(cast('1' as jsonb), '$.a > 2' error on error);
+
+select json_value(cast(null as jsonb), '$');
+
+select json_value(cast('null' as jsonb), '$');
+
+select json_value(cast('null' as jsonb), '$'  returning int);
+
+select json_value(cast('true' as jsonb), '$');
+
+select json_value(cast('true' as jsonb), '$'  returning boolean);
+
+select json_value(cast('123' as jsonb), '$');
+
+select json_value(cast('123' as jsonb), '$'  returning int) + 234;
+
+select json_value(cast('123' as jsonb), '$'  returning text);
+
+select json_value(cast('123' as jsonb), '$'  returning bytea error on error);
+
+select json_value(cast('1.23' as jsonb), '$');
+
+select json_value(cast('1.23' as jsonb), '$'  returning int);
+
+select json_value(cast('"1.23"' as jsonb), '$'  returning numeric);
+
+select json_value(cast('"1.23"' as jsonb), '$'  returning int error on error);
+
+select json_value(cast('"aaa"' as jsonb), '$');
+
+select json_value(cast('"aaa"' as jsonb), '$'  returning text);
+
+select json_value(cast('"aaa"' as jsonb), '$'  returning char(5));
+
+select
+  json_value(cast('"aaa"' as jsonb), '$'
+  returning char(2)
+  error on error);
+
+select json_value(cast('"aaa"' as jsonb), '$'  returning char(2));
+
+select
+  json_value(cast('"aaa"' as jsonb), '$'
+  returning char(3)
+  error on error);
+
+select json_value(cast('"aaa"' as jsonb), '$'  returning json);
+
+select json_value(cast('"aaa"' as jsonb), '$'  returning jsonb);
+
+select json_value(cast('"aaa"' as jsonb), '$'  returning json error on error);
+
+select json_value(cast('"aaa"' as jsonb), '$'  returning jsonb error on error);
+
+select json_value(cast('"\"aaa\""' as jsonb), '$'  returning json);
+
+select json_value(cast('"\"aaa\""' as jsonb), '$'  returning jsonb);
+
+select json_value(cast('"aaa"' as jsonb), '$'  returning int);
+
+select json_value(cast('"aaa"' as jsonb), '$'  returning int error on error);
+
+select
+  json_value(cast('"aaa"' as jsonb), '$'
+  returning int
+  default 111 on error);
+
+select json_value(cast('"123"' as jsonb), '$'  returning int) + 234;
+
+select json_value(cast('"2017-02-20"' as jsonb), '$'  returning date) + 9;
+
+create domain sqljsonb_int_not_null as int not null;
+
+select json_value(cast('null' as jsonb), '$'  returning sqljsonb_int_not_null);
+
+select
+  json_value(cast('null' as jsonb), '$'
+  returning sqljsonb_int_not_null
+  error on error);
+
+select
+  json_value(cast('null' as jsonb), '$'
+  returning sqljsonb_int_not_null
+  default 2 on empty
+  error on error);
+
+select
+  json_value(cast('1' as jsonb), '$.a'
+  returning sqljsonb_int_not_null
+  default 2 on empty
+  error on error);
+
+select
+  json_value(cast('1' as jsonb), '$.a'
+  returning sqljsonb_int_not_null
+  default null on empty
+  error on error);
+
+create type rainbow as enum ('red',
+'orange',
+'yellow',
+'green',
+'blue',
+'purple');
+
+create domain rgb as rainbow check (value in ('red', 'green', 'blue'));
+
+select json_value(cast('"purple"' as jsonb), 'lax $[*]'  returning rgb);
+
+select
+  json_value(cast('"purple"' as jsonb), 'lax $[*]'
+  returning rgb
+  error on error);
+
+select json_value(cast('[]' as jsonb), '$');
+
+select json_value(cast('[]' as jsonb), '$' error on error);
+
+select json_value(cast('{}' as jsonb), '$');
+
+select json_value(cast('{}' as jsonb), '$' error on error);
+
+select json_value(cast('1' as jsonb), '$.a');
+
+select json_value(cast('1' as jsonb), 'strict $.a' error on error);
+
+select json_value(cast('1' as jsonb), 'strict $.a' default 'error' on error);
+
+select json_value(cast('1' as jsonb), 'lax $.a' error on error);
+
+select json_value(cast('1' as jsonb), 'lax $.a' error on empty error on error);
+
+select json_value(cast('1' as jsonb), 'strict $.*' default 2 on error);
+
+select json_value(cast('1' as jsonb), 'lax $.a' default 2 on error);
+
+select json_value(cast('1' as jsonb), 'lax $.a' default '2' on empty);
+
+select
+  json_value(cast('1' as jsonb), 'lax $.a'
+  null on empty
+  default '2' on error);
+
+select
+  json_value(cast('1' as jsonb), 'lax $.a'
+  default '2' on empty
+  default '3' on error);
+
+select
+  json_value(cast('1' as jsonb), 'lax $.a'
+  error on empty
+  default '3' on error);
+
+select json_value(cast('[1,2]' as jsonb), '$[*]' error on error);
+
+select json_value(cast('[1,2]' as jsonb), '$[*]' default '0' on error);
+
+select json_value(cast('[" "]' as jsonb), '$[*]'  returning int error on error);
+
+select
+  json_value(cast('[" "]' as jsonb), '$[*]'
+  returning int
+  default 2 + 3 on error);
+
+select
+  json_value(cast('["1"]' as jsonb), '$[*]'
+  returning int
+  default 2 + 3 on error);
+
+select json_value(cast('["1"]' as jsonb), '$[*]'  returning int format json);
+
+select json_value(cast('["1"]' as jsonb), '$[*]'  returning record);
+
+select
+  x,
+  json_value(cast('{"a": 1, "b": 2}' as jsonb), '$.* ? (@ > $x)'
+  passing x as x
+  returning int
+  default -1 on empty
+  default -2 on error)
+  as y
+from
+  generate_series(0, 2) as x;
+
+select
+  json_value(cast('null' as jsonb), '$a'
+  passing cast(' (1, 2 )' as point) as a);
+
+select
+  json_value(cast('null' as jsonb), '$a'
+  passing cast(' (1, 2 )' as point) as a
+  returning point);
+
+select
+  json_value(cast('null' as jsonb), '$a'
+  passing cast(' (1, 2 )' as point) as a
+  returning point
+  error on error);
+
+select
+  json_value(cast('null' as jsonb), '$ts'
+  passing cast('2018-02-21 12:34:56 +10'
+  as timestamp with time zone) as ts);
+
+select
+  json_value(cast('null' as jsonb), '$ts'
+  passing cast('2018-02-21 12:34:56 +10'
+  as timestamp with time zone) as ts
+  returning timestamp with time zone);
+
+select
+  json_value(cast('null' as jsonb), '$ts'
+  passing cast('2018-02-21 12:34:56 +10'
+  as timestamp with time zone) as ts
+  returning timestamp);
+
+select
+  json_value(cast('null' as jsonb), '$ts'
+  passing cast('2018-02-21 12:34:56 +10' as date) as ts
+  returning date);
+
+select
+  json_value(cast('null' as jsonb), '$ts'
+  passing cast('2018-02-21 12:34:56 +10' as time) as ts
+  returning time);
+
+select
+  json_value(cast('null' as jsonb), '$ts'
+  passing cast('2018-02-21 12:34:56 +10'
+  as time with time zone) as ts
+  returning time with time zone);
+
+select
+  json_value(cast('null' as jsonb), '$ts'
+  passing cast('2018-02-21 12:34:56 +10'
+  as timestamp) as ts
+  returning timestamp);
+
+select
+  json_value(cast('null' as jsonb), '$ts'
+  passing cast('2018-02-21 12:34:56 +10'
+  as timestamp with time zone) as ts
+  returning json);
+
+select
+  json_value(cast('null' as jsonb), '$ts'
+  passing cast('2018-02-21 12:34:56 +10'
+  as timestamp with time zone) as ts
+  returning jsonb);
+
+select json_value('{"a": 1.234}', '$.a'  returning int error on error);
+
+select json_value('{"a": "1.234"}', '$.a'  returning int error on error);
+
+select json_value(cast(null as jsonb), '$');
+
+select
+  json_query(js, '$') as unspec,
+  json_query(js, '$' without wrapper)
+  as without,
+  json_query(js, '$'
+  with conditional wrapper)
+  as "with cond",
+  json_query(js, '$'
+  with unconditional wrapper)
+  as "with uncond",
+  json_query(js, '$'
+  with unconditional wrapper)
+  as "with"
+from
+  (
+    values
+      (cast('null' as jsonb)),
+      ('12.3'),
+      ('true'),
+      ('"aaa"'),
+      ('[1, null, "2"]'),
+      ('{"a": 1, "b": [2]}')
+  )
+  as foo (js);
+
+select
+  json_query(js, 'strict $[*]') as unspec,
+  json_query(js, 'strict $[*]'
+  without wrapper)
+  as without,
+  json_query(js, 'strict $[*]'
+  with conditional wrapper)
+  as "with cond",
+  json_query(js, 'strict $[*]'
+  with unconditional wrapper)
+  as "with uncond",
+  json_query(js, 'strict $[*]'
+  with unconditional wrapper)
+  as "with"
+from
+  (
+    values
+      (cast('1' as jsonb)),
+      ('[]'),
+      ('[null]'),
+      ('[12.3]'),
+      ('[true]'),
+      ('["aaa"]'),
+      ('[[1, 2, 3]]'),
+      ('[{"a": 1, "b": [2]}]'),
+      ('[1, "2", null, [3]]')
+  )
+  as foo (js);
+
+select json_query(cast('"aaa"' as jsonb), '$'  returning text);
+
+select json_query(cast('"aaa"' as jsonb), '$'  returning text keep quotes);
+
+select json_query(cast('"aaa"' as jsonb), '$'  returning text keep quotes);
+
+select json_query(cast('"aaa"' as jsonb), '$'  returning text omit quotes);
+
+select json_query(cast('"aaa"' as jsonb), '$'  returning text omit quotes);
+
+select json_query(cast('"aaa"' as jsonb), '$' omit quotes error on error);
+
+select
+  json_query(cast('"aaa"' as jsonb), '$'
+  returning json
+  omit quotes
+  error on error);
+
+select
+  json_query(cast('"aaa"' as jsonb), '$'
+  returning bytea format json
+  omit quotes
+  error on error);
+
+select
+  json_query(cast('"aaa"' as jsonb), '$'
+  returning char(3)
+  error on error);
+
+select json_query(cast('"aaa"' as jsonb), '$'  returning char(3));
+
+select
+  json_query(cast('"aaa"' as jsonb), '$'
+  returning char(3)
+  omit quotes
+  error on error);
+
+select
+  json_query(cast('"aaa"' as jsonb), '$.a'
+  returning char(2)
+  omit quotes
+  default 'bb' on empty);
+
+select
+  json_query(cast('"aaa"' as jsonb), '$.a'
+  returning char(2)
+  omit quotes
+  default cast('"bb"' as jsonb) on empty);
+
+select
+  json_query(cast('[1]' as jsonb), '$'
+  with unconditional wrapper
+  omit quotes);
+
+select
+  json_query(cast('[1]' as jsonb), '$'
+  with conditional wrapper
+  omit quotes);
+
+select
+  json_query(cast('["1"]' as jsonb), '$[*]'
+  with conditional wrapper
+  keep quotes);
+
+select
+  json_query(cast('["1"]' as jsonb), '$[*]'
+  with unconditional wrapper
+  keep quotes);
+
+select
+  json_query(cast('["1"]' as jsonb), '$[*]'
+  with unconditional wrapper
+  keep quotes);
+
+select json_query(cast('["1"]' as jsonb), '$[*]' without wrapper omit quotes);
+
+select json_query(cast('["1"]' as jsonb), '$[*]' without wrapper keep quotes);
+
+select
+  json_query(cast('{"rec": "{1,2,3}"}' as jsonb), '$.rec'
+  returning int[]
+  omit quotes);
+
+select
+  json_query(cast('{"rec": "{1,2,3}"}' as jsonb), '$.rec'
+  returning int[]
+  keep quotes);
+
+select
+  json_query(cast('{"rec": "{1,2,3}"}' as jsonb), '$.rec'
+  returning int[]
+  keep quotes
+  error on error);
+
+select
+  json_query(cast('{"rec": "[1,2]"}' as jsonb), '$.rec'
+  returning int4range
+  omit quotes);
+
+select
+  json_query(cast('{"rec": "[1,2]"}' as jsonb), '$.rec'
+  returning int4range
+  keep quotes);
+
+select
+  json_query(cast('{"rec": "[1,2]"}' as jsonb), '$.rec'
+  returning int4range
+  keep quotes
+  error on error);
+
+create domain qf_char_domain as char(1);
+
+create domain qf_jsonb_domain as jsonb;
+
+select
+  json_query(cast('"1"' as jsonb), '$'
+  returning qf_char_domain
+  omit quotes
+  error on error);
+
+select
+  json_query(cast('"1"' as jsonb), '$'
+  returning qf_jsonb_domain
+  omit quotes
+  error on error);
+
+drop domain qf_char_domain, qf_jsonb_domain;
+
+select json_query(cast('[]' as jsonb), '$[*]');
+
+select json_query(cast('[]' as jsonb), '$[*]' null on empty);
+
+select json_query(cast('[]' as jsonb), '$[*]' empty array on empty);
+
+select json_query(cast('[]' as jsonb), '$[*]' empty array on empty);
+
+select json_query(cast('[]' as jsonb), '$[*]' empty object on empty);
+
+select json_query(cast('[]' as jsonb), '$[*]' error on empty);
+
+select json_query(cast('[]' as jsonb), '$[*]' default '"empty"' on empty);
+
+select json_query(cast('[]' as jsonb), '$[*]' error on empty null on error);
+
+select
+  json_query(cast('[]' as jsonb), '$[*]'
+  error on empty
+  empty array on error);
+
+select
+  json_query(cast('[]' as jsonb), '$[*]'
+  error on empty
+  empty object on error);
+
+select json_query(cast('[]' as jsonb), '$[*]' error on empty error on error);
+
+select json_query(cast('[]' as jsonb), '$[*]' error on error);
+
+select json_query(cast('[1,2]' as jsonb), '$[*]' error on error);
+
+select json_query(cast('[1,2]' as jsonb), '$[*]' default '"empty"' on error);
+
+select json_query(cast('[1,2]' as jsonb), '$'  returning json);
+
+select json_query(cast('[1,2]' as jsonb), '$'  returning json format json);
+
+select json_query(cast('[1,2]' as jsonb), '$'  returning jsonb);
+
+select json_query(cast('[1,2]' as jsonb), '$'  returning jsonb format json);
+
+select json_query(cast('[1,2]' as jsonb), '$'  returning text);
+
+select json_query(cast('[1,2]' as jsonb), '$'  returning char(10));
+
+select json_query(cast('[1,2]' as jsonb), '$'  returning text format json);
+
+select json_query(cast('[1,2]' as jsonb), '$'  returning bytea);
+
+select json_query(cast('[1,2]' as jsonb), '$'  returning bytea format json);
+
+select
+  json_query(cast('[1,2]' as jsonb), '$[*]'
+  returning bytea
+  empty object on error);
+
+select
+  json_query(cast('[1,2]' as jsonb), '$[*]'
+  returning bytea format json
+  empty object on error);
+
+select
+  json_query(cast('[1,2]' as jsonb), '$[*]'
+  returning json
+  empty object on error);
+
+select
+  json_query(cast('[1,2]' as jsonb), '$[*]'
+  returning jsonb
+  empty object on error);
+
+select
+  json_query(cast('[3,4]' as jsonb), '$[*]'
+  returning bigint[]
+  empty object on error);
+
+select
+  json_query(cast('"[3,4]"' as jsonb), '$[*]'
+  returning bigint[]
+  empty object on error);
+
+select
+  json_query(cast('"123.1"' as jsonb), '$'
+  returning smallint
+  error on error);
+
+select json_query(cast('"123.1"' as jsonb), '$'  returning int error on error);
+
+select
+  json_query(cast('"123.1"' as jsonb), '$'
+  returning bigint
+  error on error);
+
+select
+  json_query(cast('"123.1"' as jsonb), '$'
+  returning boolean
+  error on error);
+
+select
+  json_query(cast('"123.1"' as jsonb), '$'
+  returning numeric
+  error on error);
+
+select json_query(cast('"123.1"' as jsonb), '$'  returning real error on error);
+
+select
+  json_query(cast('"123.1"' as jsonb), '$'
+  returning double precision
+  error on error);
+
+select
+  json_query(cast('"123.1"' as jsonb), '$'
+  returning smallint
+  omit quotes
+  error on error);
+
+select
+  json_query(cast('"123.1"' as jsonb), '$'
+  returning double precision
+  omit quotes
+  error on error);
+
+select
+  json_query(cast('[3,4]' as jsonb), '$[*]'
+  returning anyarray
+  empty object on error);
+
+select
+  x,
+  y,
+  json_query(cast('[1,2,3,4,5,null]' as jsonb), '$[*] ? (@ >= $x && @ <= $y)'
+  passing x as x,
+  y as y
+  with conditional wrapper
+  empty array on empty)
+  as list
+from
+  generate_series(0, 4) as x,
+  generate_series(0, 4) as y;
+
+create type comp_abc as (a text, b int, c timestamp);
+
+select
+  json_query(cast('{"rec": "(abc,42,01.02.2003)"}'
+  as jsonb), '$.rec'
+  returning comp_abc
+  omit quotes);
+
+select
+  json_query(cast('{"rec": "(abc,42,01.02.2003)"}'
+  as jsonb), '$.rec'
+  returning comp_abc
+  keep quotes);
+
+select
+  json_query(cast('{"rec": "(abc,42,01.02.2003)"}'
+  as jsonb), '$.rec'
+  returning comp_abc
+  keep quotes
+  error on error);
+
+drop type comp_abc;
+
+create type sqljsonb_rec as (a int, t text, js json, jb jsonb, jsa json[]);
+
+create type sqljsonb_reca as (reca sqljsonb_rec[]);
+
+select
+  json_query(cast('[{"a": 1, "b": "foo", "t": "aaa", "js": [1, "2", {}], "jb": {"x": [1, "2", {}]}},  {"a": 2}]'
+  as jsonb), '$[0]'
+  returning sqljsonb_rec);
+
+select
+  json_query(cast('[{"a": "a", "b": "foo", "t": "aaa", "js": [1, "2", {}], "jb": {"x": [1, "2", {}]}},  {"a": 2}]'
+  as jsonb), '$[0]'
+  returning sqljsonb_rec
+  error on error);
+
+select
+  json_query(cast('[{"a": "a", "b": "foo", "t": "aaa", "js": [1, "2", {}], "jb": {"x": [1, "2", {}]}},  {"a": 2}]'
+  as jsonb), '$[0]'
+  returning sqljsonb_rec);
+
+select
+  *
+from
+  unnest(
+    (json_query(cast('{"jsa":  [{"a": 1, "b": ["foo"]}, {"a": 2, "c": {}}, 123]}'
+    as jsonb), '$'
+    returning sqljsonb_rec)).jsa
+  );
+
+select
+  *
+from
+  unnest(
+    (json_query(cast('{"reca": [{"a": 1, "t": ["foo", []]}, {"a": 2, "jb": [{}, true]}]}'
+    as jsonb), '$'
+    returning sqljsonb_reca)).reca
+  );
+
+select
+  json_query(cast('[{"a": 1, "b": "foo", "t": "aaa", "js": [1, "2", {}], "jb": {"x": [1, "2", {}]}},  {"a": 2}]'
+  as jsonb), '$[0]'
+  returning jsonpath);
+
+select
+  json_query(cast('[{"a": 1, "b": "foo", "t": "aaa", "js": [1, "2", {}], "jb": {"x": [1, "2", {}]}},  {"a": 2}]'
+  as jsonb), '$[0]'
+  returning jsonpath
+  error on error);
+
+select
+  json_query(cast('[1,2,null,"3"]' as jsonb), '$[*]'
+  returning int[]
+  with unconditional wrapper);
+
+select
+  json_query(cast('[1,2,null,"a"]' as jsonb), '$[*]'
+  returning int[]
+  with unconditional wrapper
+  error on error);
+
+select
+  json_query(cast('[1,2,null,"a"]' as jsonb), '$[*]'
+  returning int[]
+  with unconditional wrapper);
+
+select
+  *
+from
+  unnest(
+    json_query(cast('[{"a": 1, "t": ["foo", []]}, {"a": 2, "jb": [{}, true]}]'
+    as jsonb), '$'
+    returning sqljsonb_rec[])
+  );
+
+select
+  json_query(cast('{"a": 1}' as jsonb), '$.a'
+  returning sqljsonb_int_not_null);
+
+select
+  json_query(cast('{"a": 1}' as jsonb), '$.b'
+  returning sqljsonb_int_not_null);
+
+select
+  json_query(cast('{"a": 1}' as jsonb), '$.b'
+  returning sqljsonb_int_not_null
+  error on empty
+  error on error);
+
+select
+  json_query(cast('null' as jsonb), '$ts'
+  passing cast('2018-02-21 12:34:56 +10'
+  as timestamp with time zone) as ts);
+
+select
+  json_query(cast('null' as jsonb), '$ts'
+  passing cast('2018-02-21 12:34:56 +10'
+  as timestamp with time zone) as ts
+  returning json);
+
+select
+  json_query(cast('null' as jsonb), '$ts'
+  passing cast('2018-02-21 12:34:56 +10'
+  as timestamp with time zone) as ts
+  returning jsonb);
+
+create table test_jsonb_constraints (
+  js text,
+  i int,
+  x jsonb
+  default json_query(cast('[1,2]' as jsonb), '$[*]'
+  with unconditional wrapper)
+  constraint "test_jsonb_constraint1" check (js is json)
+  constraint "test_jsonb_constraint2" check (json_exists(cast(js as jsonb), '$.a'
+  passing i + 5 as int,
+  cast(i as text) as "TXT",
+  array[1, 2, 3] as arr))
+  constraint "test_jsonb_constraint3" check (json_value(cast(js as jsonb), '$.a'
+  returning int
+  default '12' on empty
+  error on error) >
+  i)
+  constraint "test_jsonb_constraint4" check (json_query(cast(js as jsonb), '$.a'
+  with conditional wrapper
+  empty object on error) =
+  cast('[10]' as jsonb))
+  constraint "test_jsonb_constraint5" check (json_query(cast(js as jsonb), '$.a'
+  returning char(5)
+  omit quotes
+  empty array on empty) >
+  'a' collate "C")
+);
+
+select
+  check_clause
+from
+  information_schema.check_constraints
+where
+  constraint_name like 'test_jsonb_constraint%'
+order by 1;
+
+select
+  pg_get_expr(adbin, adrelid)
+from
+  pg_attrdef
+where
+  adrelid =
+  cast('test_jsonb_constraints'
+  as regclass)
+order by 1;
+
+insert into test_jsonb_constraints values ('', 1);
+
+insert into test_jsonb_constraints values ('1', 1);
+
+insert into test_jsonb_constraints values ('[]');
+
+insert into test_jsonb_constraints values ('{"b": 1}', 1);
+
+insert into test_jsonb_constraints values ('{"a": 1}', 1);
+
+insert into test_jsonb_constraints values ('{"a": 10}', 1);
+
+drop table test_jsonb_constraints;
+
+create table test_jsonb_mutability (
+  js jsonb,
+  b int
+);
+
+create index on test_jsonb_mutability using btree ((json_query(js, '$')));
+
+create index on test_jsonb_mutability using btree ((json_query(js, '$.a[0]')));
+
+create index
+on test_jsonb_mutability
+using btree
+(
+  (json_query(js, '$.time()'))
+);
+
+create index
+on test_jsonb_mutability
+using btree
+(
+  (json_query(js, '$.date()'))
+);
+
+create index
+on test_jsonb_mutability
+using btree
+(
+  (json_query(js, '$.time_tz()'))
+);
+
+create index
+on test_jsonb_mutability
+using btree
+(
+  (json_query(js, '$.timestamp()'))
+);
+
+create index
+on test_jsonb_mutability
+using btree
+(
+  (json_query(js, '$.timestamp_tz()'))
+);
+
+create index
+on test_jsonb_mutability
+using btree
+(
+  (json_query(js, '$.a ? (@.date() < $.time_tz())'))
+);
+
+create index
+on test_jsonb_mutability
+using btree
+(
+  (json_query(js, '$.a ? (@.date() < $.time())'))
+);
+
+create index
+on test_jsonb_mutability
+using btree
+(
+  (json_query(js, '$.a ? (@.time() < $.time())'))
+);
+
+create index
+on test_jsonb_mutability
+using btree
+(
+  (json_query(js, '$.a ? (@.time() < $.time_tz())'))
+);
+
+create index
+on test_jsonb_mutability
+using btree
+(
+  (json_query(js, '$.a ? (@.timestamp() < $.timestamp_tz())'))
+);
+
+create index
+on test_jsonb_mutability
+using btree
+(
+  (json_query(js, '$.a ? (@.timestamp_tz() < $.timestamp_tz())'))
+);
+
+create index
+on test_jsonb_mutability
+using btree
+(
+  (json_query(js, '$.a ? (@.time() < $.datetime("HH:MI TZH"))'))
+);
+
+create index
+on test_jsonb_mutability
+using btree
+(
+  (json_query(js, '$.a ? (@.date() < $.datetime("HH:MI TZH"))'))
+);
+
+create index
+on test_jsonb_mutability
+using btree
+(
+  (json_query(js, '$.a ? (@.timestamp() < $.datetime("HH:MI TZH"))'))
+);
+
+create index
+on test_jsonb_mutability
+using btree
+(
+  (json_query(js, '$.a ? (@.timestamp() < $.datetime("HH:MI"))'))
+);
+
+create index
+on test_jsonb_mutability
+using btree
+(
+  (json_query(js, '$.a ? (@.timestamp_tz() < $.datetime("HH:MI TZH"))'))
+);
+
+create index
+on test_jsonb_mutability
+using btree
+(
+  (json_query(js, '$.a ? (@.timestamp_tz() < $.datetime("HH:MI"))'))
+);
+
+create index
+on test_jsonb_mutability
+using btree
+(
+  (json_query(js, '$.date() < $x'
+  passing cast('12:34' as time with time zone) as x))
+);
+
+create index
+on test_jsonb_mutability
+using btree
+(
+  (json_query(js, '$.date() < $x'
+  passing cast('1234' as int) as x))
+);
+
+create index
+on test_jsonb_mutability
+using btree
+(
+  (json_query(js, '$.a ? (@.timestamp(2) < $.timestamp(3))'))
+);
+
+create index
+on test_jsonb_mutability
+using btree
+(
+  (json_query(js, '$.datetime()'))
+);
+
+create index
+on test_jsonb_mutability
+using btree
+(
+  (json_query(js, '$.a ? (@ < $.datetime())'))
+);
+
+create index
+on test_jsonb_mutability
+using btree
+(
+  (json_query(js, '$.a ? (@.datetime() < $.datetime())'))
+);
+
+create index
+on test_jsonb_mutability
+using btree
+(
+  (json_query(js, '$.a ? (@.datetime() < $.datetime("HH:MI TZH"))'))
+);
+
+create index
+on test_jsonb_mutability
+using btree
+(
+  (json_query(js, '$.a ? (@.datetime("HH:MI TZH") < $.datetime("HH:MI TZH"))'))
+);
+
+create index
+on test_jsonb_mutability
+using btree
+(
+  (json_query(js, '$.a ? (@.datetime("HH:MI") < $.datetime("YY-MM-DD HH:MI"))'))
+);
+
+create index
+on test_jsonb_mutability
+using btree
+(
+  (json_query(js, '$.a ? (@.datetime("HH:MI TZH") < $.datetime("YY-MM-DD HH:MI"))'))
+);
+
+create index
+on test_jsonb_mutability
+using btree
+(
+  (json_query(js, '$.datetime("HH:MI TZH") < $x'
+  passing cast('12:34' as time with time zone) as x))
+);
+
+create index
+on test_jsonb_mutability
+using btree
+(
+  (json_query(js, '$.datetime("HH:MI TZH") < $y'
+  passing cast('12:34' as time with time zone) as x))
+);
+
+create index
+on test_jsonb_mutability
+using btree
+(
+  (json_query(js, '$.datetime() < $x'
+  passing cast('12:34' as time with time zone) as x))
+);
+
+create index
+on test_jsonb_mutability
+using btree
+(
+  (json_query(js, '$.datetime() < $x'
+  passing cast('1234' as int) as x))
+);
+
+create index
+on test_jsonb_mutability
+using btree
+(
+  (json_query(js, '$.datetime() ? (@ == $x)'
+  passing cast('12:34' as time) as x))
+);
+
+create index
+on test_jsonb_mutability
+using btree
+(
+  (json_query(js, '$.datetime("YY-MM-DD") ? (@ == $x)'
+  passing cast('2020-07-14' as date) as x))
+);
+
+create index
+on test_jsonb_mutability
+using btree
+(
+  (json_query(js, '$[1, $.a ? (@.datetime() == $x)]'
+  passing cast('12:34' as time) as x))
+);
+
+create index
+on test_jsonb_mutability
+using btree
+(
+  (json_query(js, '$[1, 0 to $.a ? (@.datetime() == $x)]'
+  passing cast('12:34' as time) as x))
+);
+
+create index
+on test_jsonb_mutability
+using btree
+(
+  (json_query(js, '$[1, $.a ? (@.datetime("HH:MI") == $x)]'
+  passing cast('12:34' as time) as x))
+);
+
+create index
+on test_jsonb_mutability
+using btree
+(
+  (json_value(js, '$'
+  default cast(random() as int) on error))
+);
+
+create or replace function ret_setint()
+returns setof int
+language plpgsql
+immutable
+as $function$
+BEGIN
+    RETURN QUERY EXECUTE 'select 1 union all select 1';
+END;
+$function$;
+
+select
+  json_query(js, '$'
+  returning int
+  default ret_setint() on error)
+from
+  test_jsonb_mutability;
+
+select
+  json_query(js, '$'
+  returning int
+  default b + 1 on error)
+from
+  test_jsonb_mutability;
+
+select
+  json_query(js, '$'
+  returning int
+  default SUM(1) over () on error)
+from
+  test_jsonb_mutability;
+
+select
+  json_query(js, '$'
+  returning int
+  default (select 1) on error)
+from
+  test_jsonb_mutability;
+
+drop table test_jsonb_mutability;
+
+drop function ret_setint;
+
+create domain queryfuncs_test_domain as text check (value <> 'foo');
+
+select
+  json_value(cast('{"d1": "H"}' as jsonb), '$.a2'
+  returning queryfuncs_test_domain
+  default cast('foo' as queryfuncs_test_domain) on empty);
+
+select
+  json_value(cast('{"d1": "H"}' as jsonb), '$.a2'
+  returning queryfuncs_test_domain
+  default cast('foo1' as queryfuncs_test_domain) on empty);
+
+select
+  json_value(cast('{"d1": "H"}' as jsonb), '$.a2'
+  returning queryfuncs_test_domain
+  default cast(cast('"foo1"' as jsonb) as text) on empty);
+
+select
+  json_value(cast('{"d1": "foo"}' as jsonb), '$.a2'
+  returning queryfuncs_test_domain
+  default cast('foo1' as queryfuncs_test_domain) on empty);
+
+select
+  json_query('"a"', '$.a'
+  returning int
+  default cast((select '"1"') as jsonb) on error);
+
+select
+  json_query('"a"', '$.a'
+  returning queryfuncs_test_domain
+  default cast((select '"1"')
+  as queryfuncs_test_domain) on error);
+
+select
+  json_query('"a"', '$.a'
+  returning int
+  default cast(cast((select 1) as oid) as int) on error);
+
+select
+  json_query('"a"', '$.a'
+  returning int[]
+  default cast(cast((select '{1}') as oid[])
+  as int[]) on error);
+
+select
+  json_query('"a"', '$.a'
+  returning int[]
+  default cast((select '{1}') as text) collate "C" on error);
+
+create table someparent (a int);
+
+create table somechild ()
+inherits (someparent);
+
+select
+  json_query('"a"', '$.a'
+  returning someparent
+  default cast(cast((select '(1)') as somechild)
+  as someparent) on error);
+
+drop domain queryfuncs_test_domain;
+
+drop table someparent, somechild;
+
+select json_exists(cast('{"a": 123}' as jsonb), '$' || '.' || 'a');
+
+select json_value(cast('{"a": 123}' as jsonb), '$' || '.' || 'a');
+
+select
+  json_value(cast('{"a": 123}' as jsonb), '$' || '.' || 'b'
+  default 'foo' on empty);
+
+select json_query(cast('{"a": 123}' as jsonb), '$' || '.' || 'a');
+
+select
+  json_query(cast('{"a": 123}' as jsonb), '$' || '.' || 'a'
+  with unconditional wrapper);
+
+select json_query(cast('{"a": 123}' as jsonb), 'error' || ' ' || 'error');
+
+select json_exists(cast('{"a": 123}' as json), '$' || '.' || 'a');
+
+select json_query(null format json, '$');
+
+create temporary table jsonpaths (path) as select '$';
+
+select json_value('"aaa"', path  returning json) from jsonpaths;
+
+select json_query(cast('null' as jsonb), '$xyz' passing 1 as xy);
+
+select json_query(cast('null' as jsonb), '$xy' passing 1 as xyz);
+
+select json_query(cast('null' as jsonb), '$xyz' passing 1 as xyz);
+
+select json_query(cast('null' as jsonb), '$Xyz' passing 1 as xyz);
+
+select json_query(cast('null' as jsonb), '$Xyz' passing 1 as "Xyz");
+
+select json_query(cast('null' as jsonb), '$"Xyz"' passing 1 as "Xyz");
+
+select json_exists(cast('1' as jsonb), '$' default 1 on error);
+
+select json_value(cast('1' as jsonb), '$' empty array on error);
+
+select json_query(cast('1' as jsonb), '$' true on error);
+
+create domain queryfuncs_char2 as char(2);
+
+create domain queryfuncs_char2_chk as char(2) check (value not in ('12'));
+
+select
+  json_query(cast('123' as jsonb), '$'
+  returning queryfuncs_char2
+  error on error);
+
+select
+  json_query(cast('123' as jsonb), '$'
+  returning queryfuncs_char2
+  default '1' on error);
+
+select
+  json_query(cast('123' as jsonb), '$'
+  returning queryfuncs_char2_chk
+  error on error);
+
+select
+  json_query(cast('123' as jsonb), '$'
+  returning queryfuncs_char2_chk
+  default '1' on error);
+
+select
+  json_value(cast('123' as jsonb), '$'
+  returning queryfuncs_char2
+  error on error);
+
+select
+  json_value(cast('123' as jsonb), '$'
+  returning queryfuncs_char2
+  default 1 on error);
+
+select
+  json_value(cast('123' as jsonb), '$'
+  returning queryfuncs_char2_chk
+  error on error);
+
+select
+  json_value(cast('123' as jsonb), '$'
+  returning queryfuncs_char2_chk
+  default 1 on error);
+
+drop domain queryfuncs_char2, queryfuncs_char2_chk;
+
+create domain queryfuncs_d_varbit3 as bit varying(3) check (value <> '01');
+
+select
+  json_value(cast('1234' as jsonb), '$'
+  returning queryfuncs_d_varbit3
+  default '111111' on error);
+
+select
+  json_value(cast('1234' as jsonb), '$'
+  returning queryfuncs_d_varbit3
+  default '010' on error);
+
+select
+  json_value(cast('1234' as jsonb), '$'
+  returning queryfuncs_d_varbit3
+  default '01' on error);
+
+select json_value(cast('"111"' as jsonb), '$'  returning bit(2) error on error);
+
+select
+  json_value(cast('1234' as jsonb), '$'
+  returning bit(3)
+  default 1 on error);
+
+select
+  json_value(cast('1234' as jsonb), '$'
+  returning bit(3)
+  default cast(1 as bit(3)) on error);
+
+select
+  json_value(cast('"111"' as jsonb), '$.a'
+  returning bit(3)
+  default '1111' on empty);
+
+drop domain queryfuncs_d_varbit3;

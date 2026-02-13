@@ -1,0 +1,38 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/single/complex_select_part_0.sql
+snapshot_kind: text
+---
+select
+  cast(contype as text) as contype,
+  conname,
+  array_length(conkey, 1) as ncol,
+  conrelid as resorigtbl,
+  col as resorigcol,
+  ord
+from
+  pg_constraint
+  left outer join
+    lateral unnest(conkey)
+    with ordinality
+    as _ (col, ord)
+  on true
+where
+  contype in ('p', 'f')
+union
+select
+  concat(contype, '_ref') as contype,
+  conname,
+  array_length(confkey, 1) as ncol,
+  confrelid,
+  col,
+  ord
+from
+  pg_constraint
+  left outer join
+    lateral unnest(confkey)
+    with ordinality
+    as _ (col, ord)
+  on true
+where
+  contype = 'f';

@@ -6,6 +6,7 @@ use crate::session::{
 use crate::utils::{into_lsp_error, panic_to_lsp_error};
 use futures::FutureExt;
 use futures::future::ready;
+use pgls_configuration::database::PartialDatabaseConfiguration;
 use pgls_fs::{ConfigName, FileSystem, OsFileSystem};
 use pgls_workspace::workspace::{RegisterProjectFolderParams, UnregisterProjectFolderParams};
 use pgls_workspace::{DynRef, Workspace, workspace};
@@ -162,9 +163,9 @@ impl LanguageServer for LSPServer {
 
     #[tracing::instrument(level = "info", skip_all)]
     async fn did_change_configuration(&self, params: DidChangeConfigurationParams) {
-        self.session
-            .load_workspace_settings(serde_json::from_value(params.settings).ok())
-            .await;
+        let extra_config: Option<pgls_configuration::PartialConfiguration> =
+            serde_json::from_value(params.settings).ok();
+        self.session.load_workspace_settings(extra_config).await;
         self.setup_capabilities().await;
         self.session.update_all_diagnostics().await;
     }
@@ -181,17 +182,16 @@ impl LanguageServer for LSPServer {
                     let base_path = self.session.base_path();
                     if let Some(base_path) = base_path {
                         let possible_config_json = file_path.strip_prefix(&base_path);
-                        if let Ok(watched_file) = possible_config_json {
-                            if ConfigName::file_names()
+                        if let Ok(watched_file) = possible_config_json
+                            && ConfigName::file_names()
                                 .contains(&&*watched_file.display().to_string())
-                            {
-                                self.session.load_workspace_settings(None).await;
-                                self.setup_capabilities().await;
-                                // self.session.update_all_diagnostics().await;
-                                // for now we are only interested to the configuration file,
-                                // so it's OK to exist the loop
-                                break;
-                            }
+                        {
+                            self.session.load_workspace_settings(None).await;
+                            self.setup_capabilities().await;
+                            // self.session.update_all_diagnostics().await;
+                            // for now we are only interested to the configuration file,
+                            // so it's OK to exist the loop
+                            break;
                         }
                     }
                 }
@@ -308,6 +308,28 @@ impl LanguageServer for LSPServer {
             Err(err) => LspResult::Err(into_lsp_error(err)),
         }
     }
+
+    #[tracing::instrument(level = "trace", skip(self))]
+    async fn formatting(
+        &self,
+        params: DocumentFormattingParams,
+    ) -> LspResult<Option<Vec<TextEdit>>> {
+        match handlers::formatting::formatting(&self.session, params) {
+            Ok(result) => LspResult::Ok(result),
+            Err(e) => LspResult::Err(into_lsp_error(e)),
+        }
+    }
+
+    #[tracing::instrument(level = "trace", skip(self))]
+    async fn range_formatting(
+        &self,
+        params: DocumentRangeFormattingParams,
+    ) -> LspResult<Option<Vec<TextEdit>>> {
+        match handlers::formatting::range_formatting(&self.session, params) {
+            Ok(result) => LspResult::Ok(result),
+            Err(e) => LspResult::Err(into_lsp_error(e)),
+        }
+    }
 }
 
 impl Drop for LSPServer {
@@ -389,10 +411,19 @@ pub struct ServerFactory {
     /// This shared flag is set to true once at least one sessions has been
     /// initialized on this server instance
     is_initialized: Arc<AtomicBool>,
+    /// Configuration from environment variables (DATABASE_URL, PGHOST, etc.).
+    /// Computed once at factory creation and passed to each session.
+    env_config: Option<pgls_configuration::PartialConfiguration>,
 }
 
 impl ServerFactory {
     pub fn new(stop_on_disconnect: bool) -> Self {
+        let env_config = PartialDatabaseConfiguration::from_env().map(|db| {
+            pgls_configuration::PartialConfiguration {
+                db: Some(db),
+                ..Default::default()
+            }
+        });
         Self {
             cancellation: Arc::default(),
             workspace: None,
@@ -400,6 +431,7 @@ impl ServerFactory {
             next_session_key: AtomicU64::new(0),
             stop_on_disconnect,
             is_initialized: Arc::default(),
+            env_config,
         }
     }
 
@@ -420,6 +452,7 @@ impl ServerFactory {
 
         let session_key = SessionKey(self.next_session_key.fetch_add(1, Ordering::Relaxed));
 
+        let env_config = self.env_config.clone();
         let mut builder = LspService::build(move |client| {
             let mut session = Session::new(
                 session_key,
@@ -427,6 +460,7 @@ impl ServerFactory {
                 workspace,
                 self.cancellation.clone(),
                 fs,
+                env_config,
             );
             if let Some(path) = config_path {
                 session.set_config_path(path);

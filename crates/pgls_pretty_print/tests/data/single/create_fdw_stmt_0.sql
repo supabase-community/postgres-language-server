@@ -1,0 +1,1 @@
+CREATE FOREIGN DATA WRAPPER postgres_fdw;

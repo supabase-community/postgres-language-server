@@ -1,0 +1,50 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/mvcc.sql
+---
+begin;
+
+set local enable_seqscan = 'false';
+
+set local enable_indexonlyscan = 'false';
+
+set local enable_bitmapscan = 'false';
+
+create table clean_aborted_self (
+  key int,
+  data text
+);
+
+create index "clean_aborted_self_key" on clean_aborted_self using btree (key);
+
+insert into clean_aborted_self (key, data) values (-1, 'just to allocate metapage');
+
+select pg_relation_size('clean_aborted_self_key') as clean_aborted_self_key_before;
+
+do
+$do$
+BEGIN
+    -- iterate often enough to see index growth even on larger-than-default page sizes
+    FOR i IN 1..100 LOOP
+        BEGIN
+	    -- perform index scan over all the inserted keys to get them to be seen as dead
+            IF EXISTS(SELECT * FROM clean_aborted_self WHERE key > 0 AND key < 100) THEN
+	        RAISE data_corrupted USING MESSAGE = 'these rows should not exist';
+            END IF;
+            INSERT INTO clean_aborted_self SELECT g.i, 'rolling back in a sec' FROM generate_series(1, 100) g(i);
+	    -- just some error that's not normally thrown
+	    RAISE reading_sql_data_not_permitted USING MESSAGE = 'round and round again';
+	EXCEPTION WHEN reading_sql_data_not_permitted THEN END;
+    END LOOP;
+END;
+$do$;
+
+select
+  'clean_aborted_self_key_before' as size_before,
+  pg_relation_size('clean_aborted_self_key')
+  as size_after
+where
+  'clean_aborted_self_key_before' <>
+  pg_relation_size('clean_aborted_self_key');
+
+rollback;

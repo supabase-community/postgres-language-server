@@ -39,18 +39,17 @@ impl LinterRule for RequireConcurrentIndexDeletion {
     fn run(ctx: &LinterRuleContext<Self>) -> Vec<LinterDiagnostic> {
         let mut diagnostics = Vec::new();
 
-        if let pgls_query::NodeEnum::DropStmt(stmt) = &ctx.stmt() {
-            if !stmt.concurrent
-                && stmt.remove_type() == pgls_query::protobuf::ObjectType::ObjectIndex
-            {
-                diagnostics.push(LinterDiagnostic::new(
+        if let pgls_query::NodeEnum::DropStmt(stmt) = &ctx.stmt()
+            && !stmt.concurrent
+            && stmt.remove_type() == pgls_query::protobuf::ObjectType::ObjectIndex
+        {
+            diagnostics.push(LinterDiagnostic::new(
                     rule_category!(),
                     None,
                     markup! {
                         "Dropping an index non-concurrently blocks reads and writes to the table."
                     },
                 ).detail(None, "Use DROP INDEX CONCURRENTLY to avoid blocking concurrent operations on the table."));
-            }
         }
 
         diagnostics

@@ -1,0 +1,36 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/lseg.sql
+snapshot_kind: text
+---
+create table lseg_tbl (s lseg);
+
+insert into lseg_tbl values ('[(1,2),(3,4)]');
+
+insert into lseg_tbl values ('(0,0),(6,6)');
+
+insert into lseg_tbl values ('10,-10 ,-3,-4');
+
+insert into lseg_tbl values ('[-1e6,2e2,3e5, -4e1]');
+
+insert into lseg_tbl values (lseg(point(11, 22), point(33, 44)));
+
+insert into lseg_tbl values ('[(-10,2),(-10,3)]');
+
+insert into lseg_tbl values ('[(0,-20),(30,-20)]');
+
+insert into lseg_tbl values ('[(NaN,1),(NaN,90)]');
+
+insert into lseg_tbl values ('(3asdf,2 ,3,4r2)');
+
+insert into lseg_tbl values ('[1,2,3, 4');
+
+insert into lseg_tbl values ('[(,2),(3,4)]');
+
+insert into lseg_tbl values ('[(1,2),(3,4)');
+
+select * from lseg_tbl;
+
+select pg_input_is_valid('[(1,2),(3)]', 'lseg');
+
+select * from pg_input_error_info('[(1,2),(3)]', 'lseg');

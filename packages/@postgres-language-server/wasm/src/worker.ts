@@ -36,7 +36,11 @@
  * ```
  */
 
-import { createLanguageServer, type LanguageServer, type JsonRpcMessage } from "./lsp.js";
+import {
+	type JsonRpcMessage,
+	type LanguageServer,
+	createLanguageServer,
+} from "./lsp.js";
 
 let languageServer: LanguageServer | null = null;
 
@@ -65,13 +69,15 @@ self.onmessage = async (event: MessageEvent) => {
 	const message: string | JsonRpcMessage = data;
 
 	// Process the message and get array of outgoing messages
-	const outgoing = languageServer!.handleMessage(message);
+	const outgoing = languageServer?.handleMessage(message);
 
 	// Send EACH message separately via postMessage
 	// This is required by BrowserMessageReader which expects
 	// individual messages, not arrays
-	for (const msg of outgoing) {
-		self.postMessage(msg);
+	if (outgoing) {
+		for (const msg of outgoing) {
+			self.postMessage(msg);
+		}
 	}
 };
 
@@ -79,6 +85,3 @@ self.onmessage = async (event: MessageEvent) => {
 initialize().then(() => {
 	self.postMessage({ type: "ready" });
 });
-
-// Export for type checking (worker doesn't actually export)
-export type {};

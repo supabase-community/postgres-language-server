@@ -1,0 +1,376 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/bit.sql
+snapshot_kind: text
+---
+create table bit_table (b bit(11));
+
+insert into bit_table values (B'10');
+
+insert into bit_table values (B'00000000000');
+
+insert into bit_table values (B'11011000000');
+
+insert into bit_table values (B'01010101010');
+
+insert into bit_table values (B'101011111010');
+
+select * from bit_table;
+
+create table varbit_table (v bit varying(11));
+
+insert into varbit_table values (B'');
+
+insert into varbit_table values (B'0');
+
+insert into varbit_table values (B'010101');
+
+insert into varbit_table values (B'01010101010');
+
+insert into varbit_table values (B'101011111010');
+
+select * from varbit_table;
+
+select B' 0';
+
+select B'0 ';
+
+select X' 0';
+
+select X'0 ';
+
+select v, b, v || b as concat from bit_table, varbit_table order by 3;
+
+select b, length(b) as lb from bit_table;
+
+select v, length(v) as lv from varbit_table;
+
+select
+  b,
+  SUBSTRING(b from 2 for 4) as sub_2_4,
+  SUBSTRING(b from 7 for 13) as sub_7_13,
+  SUBSTRING(b from 6) as sub_6
+from
+  bit_table;
+
+select
+  v,
+  SUBSTRING(v from 2 for 4) as sub_2_4,
+  SUBSTRING(v from 7 for 13) as sub_7_13,
+  SUBSTRING(v from 6) as sub_6
+from
+  varbit_table;
+
+select SUBSTRING(cast('01010101' as bit(8)) from 2 for 2147483646) as "1010101";
+
+select
+  SUBSTRING(cast('01010101' as bit(8))
+  from -10
+  for 2147483646)
+  as "01010101";
+
+select SUBSTRING(cast('01010101' as bit(8)) from -10 for -2147483646) as error;
+
+select
+  SUBSTRING(cast('01010101' as bit varying)
+  from 2
+  for 2147483646)
+  as "1010101";
+
+select
+  SUBSTRING(cast('01010101' as bit varying)
+  from -10
+  for 2147483646)
+  as "01010101";
+
+select
+  SUBSTRING(cast('01010101' as bit varying)
+  from -10
+  for -2147483646)
+  as error;
+
+drop table varbit_table;
+
+create table varbit_table (
+  a bit varying(16),
+  b bit varying(16)
+);
+
+select
+  a,
+  b,
+  ~a as "~ a",
+  a & b as "a & b",
+  a | b as "a | b",
+  a # b as "a # b"
+from
+  varbit_table;
+
+select
+  a,
+  b,
+  a < b as "a<b",
+  a <= b as "a<=b",
+  a = b as "a=b",
+  a >= b as "a>=b",
+  a > b as "a>b",
+  a <> b as "a<>b"
+from
+  varbit_table;
+
+select a, a << 4 as "a<<4", b, b >> 2 as "b>>2" from varbit_table;
+
+drop table varbit_table;
+
+drop table bit_table;
+
+create table bit_table (
+  a bit(16),
+  b bit(16)
+);
+
+select
+  a,
+  b,
+  ~a as "~ a",
+  a & b as "a & b",
+  a | b as "a | b",
+  a # b as "a # b"
+from
+  bit_table;
+
+select
+  a,
+  b,
+  a < b as "a<b",
+  a <= b as "a<=b",
+  a = b as "a=b",
+  a >= b as "a>=b",
+  a > b as "a>b",
+  a <> b as "a<>b"
+from
+  bit_table;
+
+select a, a << 4 as "a<<4", b, b >> 2 as "b>>2" from bit_table;
+
+drop table bit_table;
+
+select B'001' & B'10';
+
+select B'0111' | B'011';
+
+select B'0010' # B'011101';
+
+select POSITION(B'1010' in B'0000101');
+
+select POSITION(B'1010' in B'00001010');
+
+select POSITION(B'1010' in B'00000101');
+
+select POSITION(B'1010' in B'000001010');
+
+select POSITION(B'' in B'00001010');
+
+select POSITION(B'0' in B'');
+
+select POSITION(B'' in B'');
+
+select POSITION(B'101101' in B'001011011011011000');
+
+select POSITION(B'10110110' in B'001011011011010');
+
+select POSITION(B'1011011011011' in B'001011011011011');
+
+select POSITION(B'1011011011011' in B'00001011011011011');
+
+select POSITION(B'11101011' in B'11101011');
+
+select POSITION(B'11101011' in B'011101011');
+
+select POSITION(B'11101011' in B'00011101011');
+
+select POSITION(B'11101011' in B'0000011101011');
+
+select POSITION(B'111010110' in B'111010110');
+
+select POSITION(B'111010110' in B'0111010110');
+
+select POSITION(B'111010110' in B'000111010110');
+
+select POSITION(B'111010110' in B'00000111010110');
+
+select POSITION(B'111010110' in B'11101011');
+
+select POSITION(B'111010110' in B'011101011');
+
+select POSITION(B'111010110' in B'00011101011');
+
+select POSITION(B'111010110' in B'0000011101011');
+
+select POSITION(B'111010110' in B'111010110');
+
+select POSITION(B'111010110' in B'0111010110');
+
+select POSITION(B'111010110' in B'000111010110');
+
+select POSITION(B'111010110' in B'00000111010110');
+
+select POSITION(B'111010110' in B'000001110101111101011');
+
+select POSITION(B'111010110' in B'0000001110101111101011');
+
+select POSITION(B'111010110' in B'000000001110101111101011');
+
+select POSITION(B'111010110' in B'00000000001110101111101011');
+
+select POSITION(B'111010110' in B'0000011101011111010110');
+
+select POSITION(B'111010110' in B'00000011101011111010110');
+
+select POSITION(B'111010110' in B'0000000011101011111010110');
+
+select POSITION(B'111010110' in B'000000000011101011111010110');
+
+select
+  POSITION(B'000000000011101011111010110' in B'000000000011101011111010110');
+
+select
+  POSITION(B'00000000011101011111010110' in B'000000000011101011111010110');
+
+select
+  POSITION(B'0000000000011101011111010110' in B'000000000011101011111010110');
+
+create table bit_shift_table (b bit(16));
+
+insert into bit_shift_table values (B'1101100000000000');
+
+insert into bit_shift_table select b >> 1 from bit_shift_table;
+
+insert into bit_shift_table select b >> 2 from bit_shift_table;
+
+insert into bit_shift_table select b >> 4 from bit_shift_table;
+
+insert into bit_shift_table select b >> 8 from bit_shift_table;
+
+select POSITION(B'1101' in b), POSITION(B'11011' in b), b from bit_shift_table;
+
+select b, b >> 1 as bsr, b << 1 as bsl from bit_shift_table;
+
+select b, b >> 8 as bsr8, b << 8 as bsl8 from bit_shift_table;
+
+select
+  cast(b as bit(15)),
+  cast(b as bit(15)) >> 1 as bsr,
+  cast(b as bit(15)) << 1 as bsl
+from
+  bit_shift_table;
+
+select
+  cast(b as bit(15)),
+  cast(b as bit(15)) >> 8 as bsr8,
+  cast(b as bit(15)) << 8 as bsl8
+from
+  bit_shift_table;
+
+create table varbit_shift_table (v bit varying(20));
+
+insert into varbit_shift_table values (B'11011');
+
+insert into varbit_shift_table
+select
+  cast(v || B'0' as bit varying(6)) >> 1
+from
+  varbit_shift_table;
+
+insert into varbit_shift_table
+select
+  cast(v || B'00' as bit varying(8)) >> 2
+from
+  varbit_shift_table;
+
+insert into varbit_shift_table
+select
+  cast(v || B'0000' as bit varying(12)) >>
+  4
+from
+  varbit_shift_table;
+
+insert into varbit_shift_table
+select
+  cast(v || B'00000000'
+  as bit varying(20)) >>
+  8
+from
+  varbit_shift_table;
+
+select
+  POSITION(B'1101' in v),
+  POSITION(B'11011' in v),
+  v
+from
+  varbit_shift_table;
+
+select v, v >> 1 as vsr, v << 1 as vsl from varbit_shift_table;
+
+select v, v >> 8 as vsr8, v << 8 as vsl8 from varbit_shift_table;
+
+drop table bit_shift_table;
+
+drop table varbit_shift_table;
+
+select get_bit(B'0101011000100', 10);
+
+select set_bit(B'0101011000100100', 15, 1);
+
+select set_bit(B'0101011000100100', 16, 1);
+
+select OVERLAY(B'0101011100' placing '001' from 2 for 3);
+
+select OVERLAY(B'0101011100' placing '101' from 6);
+
+select OVERLAY(B'0101011100' placing '001' from 11);
+
+select OVERLAY(B'0101011100' placing '001' from 20);
+
+select bit_count(cast(B'0101011100' as bit(10)));
+
+select bit_count(cast(B'1111111111' as bit(10)));
+
+select bit_count(cast(repeat('0', 100) as bit(100)));
+
+select bit_count(cast(repeat('1', 100) as bit(100)));
+
+select bit_count(cast(repeat('01', 500) as bit(1000)));
+
+select bit_count(cast(repeat('10101', 200) as bit(1000)));
+
+create table bit_defaults (
+  b1 bit(4) default '1001',
+  b2 bit(4) default B'0101',
+  b3 bit varying(5) default '1001',
+  b4 bit varying(5) default B'0101'
+);
+
+insert into bit_defaults default values;
+
+select * from bit_defaults;
+
+select pg_input_is_valid('01010001', 'bit(10)');
+
+select * from pg_input_error_info('01010001', 'bit(10)');
+
+select pg_input_is_valid('01010Z01', 'bit(8)');
+
+select * from pg_input_error_info('01010Z01', 'bit(8)');
+
+select pg_input_is_valid('x01010Z01', 'bit(32)');
+
+select * from pg_input_error_info('x01010Z01', 'bit(32)');
+
+select pg_input_is_valid('01010Z01', 'varbit');
+
+select * from pg_input_error_info('01010Z01', 'varbit');
+
+select pg_input_is_valid('x01010Z01', 'varbit');
+
+select * from pg_input_error_info('x01010Z01', 'varbit');

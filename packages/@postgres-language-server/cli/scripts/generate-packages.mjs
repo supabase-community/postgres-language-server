@@ -1,7 +1,7 @@
 import assert from "node:assert";
 import * as fs from "node:fs";
-import { pipeline } from "node:stream";
 import { resolve } from "node:path";
+import { pipeline } from "node:stream";
 import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
 const streamPipeline = promisify(pipeline);
@@ -53,19 +53,45 @@ async function downloadSchema(releaseTag, githubToken) {
 	}
 
 	// download to root.
-	const fileStream = fs.createWriteStream(
-		resolve(PGLS_ROOT, "schema.json")
-	);
+	const fileStream = fs.createWriteStream(resolve(PGLS_ROOT, "schema.json"));
 
 	await streamPipeline(response.body, fileStream);
 
 	console.log(`Downloaded schema for ${releaseTag}`);
 }
 
+async function downloadWasmAssets(releaseTag, githubToken) {
+	const wasmDir = resolve(PACKAGES_PGLS_ROOT, "wasm", "wasm");
+	fs.mkdirSync(wasmDir, { recursive: true });
+
+	for (const asset of ["pgls.js", "pgls.wasm"]) {
+		const assetUrl = `https://github.com/supabase-community/postgres-language-server/releases/download/${releaseTag}/${asset}`;
+
+		const response = await fetch(assetUrl.trim(), {
+			headers: {
+				Authorization: `token ${githubToken}`,
+				Accept: "application/octet-stream",
+			},
+		});
+
+		if (!response.ok) {
+			throw new Error(`Failed to Fetch WASM Asset from ${assetUrl}`);
+		}
+
+		const fileStream = fs.createWriteStream(resolve(wasmDir, asset));
+		await streamPipeline(response.body, fileStream);
+
+		console.log(`Downloaded WASM asset ${asset} for ${releaseTag}`);
+	}
+}
+
 async function downloadBinary(platform, arch, os, releaseTag, githubToken) {
 	const buildName = getBuildName(platform, arch);
+	const ext = getBinaryExt(os);
+	const assetName =
+		ext && buildName.endsWith(ext) ? buildName : `${buildName}${ext}`;
 
-	const assetUrl = `https://github.com/supabase-community/postgres-language-server/releases/download/${releaseTag}/${buildName}`;
+	const assetUrl = `https://github.com/supabase-community/postgres-language-server/releases/download/${releaseTag}/${assetName}`;
 
 	const response = await fetch(assetUrl.trim(), {
 		headers: {
@@ -77,37 +103,37 @@ async function downloadBinary(platform, arch, os, releaseTag, githubToken) {
 	if (!response.ok) {
 		const error = await response.text();
 		throw new Error(
-			`Failed to Fetch Asset from ${assetUrl} (Reason: ${error})`
+			`Failed to Fetch Asset from ${assetUrl} (Reason: ${error})`,
 		);
 	}
 
 	// just download to root.
-	const fileStream = fs.createWriteStream(
-		getBinarySource(platform, arch, os)
-	);
+	const fileStream = fs.createWriteStream(getBinarySource(platform, arch, os));
 
 	await streamPipeline(response.body, fileStream);
 
 	console.log(`Downloaded asset for ${buildName} (v${releaseTag})`);
 }
 
-async function writeManifest(packagePath, version) {
-	const manifestPath = resolve(
-		PACKAGES_PGLS_ROOT,
-		packagePath,
-		"package.json"
-	);
+async function writeManifest(
+	packagePath,
+	version,
+	{ versionOnly = false } = {},
+) {
+	const manifestPath = resolve(PACKAGES_PGLS_ROOT, packagePath, "package.json");
 
 	const manifestData = JSON.parse(
-		fs.readFileSync(manifestPath).toString("utf-8")
-	);
-
-	const nativePackages = platformArchCombinations().map(
-		({ platform, arch }) => [getPackageName(platform, arch), version]
+		fs.readFileSync(manifestPath).toString("utf-8"),
 	);
 
 	manifestData.version = version;
-	manifestData.optionalDependencies = Object.fromEntries(nativePackages);
+
+	if (!versionOnly) {
+		const nativePackages = platformArchCombinations().map(
+			({ platform, arch }) => [getPackageName(platform, arch), version],
+		);
+		manifestData.optionalDependencies = Object.fromEntries(nativePackages);
+	}
 
 	console.log(`Update manifest ${manifestPath}`);
 	const content = JSON.stringify(manifestData, null, 2);
@@ -178,7 +204,7 @@ function copyBinaryToNativePackage(platform, arch, os) {
 			libc,
 		},
 		null,
-		2
+		2,
 	);
 
 	const ext = getBinaryExt(os);
@@ -192,7 +218,7 @@ function copyBinaryToNativePackage(platform, arch, os) {
 
 	if (!fs.existsSync(binarySource)) {
 		console.error(
-			`Source for binary for ${buildName} not found at: ${binarySource}`
+			`Source for binary for ${buildName} not found at: ${binarySource}`,
 		);
 		process.exit(1);
 	}
@@ -247,7 +273,7 @@ function getBinarySource(platform, arch, os) {
 }
 
 function getBuildName(platform, arch) {
-	return `postgres-language-server_${arch}-${platform}`;
+	return `postgres-language-server_${arch}-${platform}${platform.includes("windows") ? ".exe" : ""}`;
 }
 
 function getPackageName(platform, arch) {
@@ -273,9 +299,11 @@ function getVersion(releaseTag, isPrerelease) {
 	const isPrerelease = process.env.PRERELEASE === "true";
 
 	await downloadSchema(releaseTag, githubToken);
+	await downloadWasmAssets(releaseTag, githubToken);
 	const version = getVersion(releaseTag, isPrerelease);
 	await writeManifest("cli", version);
 	await writeManifest("backend-jsonrpc", version);
+	await writeManifest("wasm", version, { versionOnly: true });
 
 	// Copy README to main packages
 	copyReadmeToPackage("cli");

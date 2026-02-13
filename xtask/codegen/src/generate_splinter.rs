@@ -1,5 +1,5 @@
 use anyhow::{Context, Result};
-use biome_string_case::Case;
+use convert_case::{Case, Casing};
 use quote::{format_ident, quote};
 use std::collections::BTreeMap;
 use std::fs;
@@ -244,7 +244,7 @@ fn generate_rule_files(rules: &BTreeMap<String, SqlRuleMetadata>) -> Result<()> 
 fn generate_rule_file(category_dir: &Path, metadata: &SqlRuleMetadata) -> Result<()> {
     let rule_file = category_dir.join(format!("{}.rs", metadata.snake_name));
 
-    let struct_name = Case::Pascal.convert(&metadata.snake_name);
+    let struct_name = metadata.snake_name.to_case(Case::Pascal);
     let struct_name = format_ident!("{}", struct_name);
 
     // These will be used as string literals in the quote!
@@ -342,7 +342,7 @@ fn generate_category_mod(
 ) -> Result<()> {
     let mod_file = category_dir.join("mod.rs");
 
-    let category_title = Case::Pascal.convert(category);
+    let category_title = category.to_case(Case::Pascal);
     let category_struct = format_ident!("{}", category_title);
 
     // Generate mod declarations
@@ -356,7 +356,7 @@ fn generate_category_mod(
         .iter()
         .map(|r| {
             let mod_name = format_ident!("{}", r.snake_name);
-            let struct_name = format_ident!("{}", Case::Pascal.convert(&r.snake_name));
+            let struct_name = format_ident!("{}", r.snake_name.to_case(Case::Pascal));
             quote! { self::#mod_name::#struct_name }
         })
         .collect();
@@ -402,7 +402,7 @@ fn generate_rules_mod(
         .keys()
         .map(|cat| {
             let mod_name = format_ident!("{}", cat);
-            let group_name = format_ident!("{}", Case::Pascal.convert(cat));
+            let group_name = format_ident!("{}", cat.to_case(Case::Pascal));
             quote! { self::#mod_name::#group_name }
         })
         .collect();
@@ -511,7 +511,7 @@ fn generate_registry(rules: &BTreeMap<String, SqlRuleMetadata>) -> Result<()> {
             let camel_name = &rule.name;
             let category_ident = format_ident!("{}", rule.category.to_lowercase());
             let module_name = format_ident!("{}", &rule.snake_name);
-            let struct_name = format_ident!("{}", Case::Pascal.convert(&rule.snake_name));
+            let struct_name = format_ident!("{}", rule.snake_name.to_case(Case::Pascal));
 
             quote! {
                 #camel_name => Some((

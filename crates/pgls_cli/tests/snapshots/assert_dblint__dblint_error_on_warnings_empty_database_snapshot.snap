@@ -1,0 +1,9 @@
+---
+source: crates/pgls_cli/tests/assert_dblint.rs
+expression: output
+snapshot_kind: text
+---
+status: success
+stdout:
+Command completed in <duration>.
+stderr:

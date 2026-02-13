@@ -2,29 +2,41 @@
 //!
 //! The configuration is divided by "tool".
 
+// Allow the crate to reference itself by name, needed by pgls_configuration_macros
+// which generates `pgls_configuration::Merge` paths.
+extern crate self as pgls_configuration;
+
 pub mod database;
 pub mod diagnostics;
 pub mod files;
+pub mod format;
 pub mod linter;
 pub mod migrations;
+pub mod pglinter;
 pub mod plpgsql_check;
 pub mod rules;
 pub mod splinter;
 pub mod typecheck;
+pub mod utils;
 pub mod vcs;
+
+pub use utils::merge::Merge;
+pub use utils::string_set::StringSet;
 
 pub use crate::diagnostics::ConfigurationDiagnostic;
 
 use std::path::PathBuf;
 
 use crate::vcs::{PartialVcsConfiguration, VcsConfiguration, partial_vcs_configuration};
-use biome_deserialize::StringSet;
-use biome_deserialize_macros::{Merge, Partial};
 use bpaf::Bpaf;
 use database::{
     DatabaseConfiguration, PartialDatabaseConfiguration, partial_database_configuration,
 };
 use files::{FilesConfiguration, PartialFilesConfiguration, partial_files_configuration};
+pub use format::{
+    FormatConfiguration, IndentStyle as FormatIndentStyle, KeywordCase, PartialFormatConfiguration,
+    partial_format_configuration,
+};
 pub use linter::{
     LinterConfiguration, PartialLinterConfiguration, Rules, partial_linter_configuration,
     push_to_analyser_rules,
@@ -32,6 +44,10 @@ pub use linter::{
 use migrations::{
     MigrationsConfiguration, PartialMigrationsConfiguration, partial_migrations_configuration,
 };
+use pglinter::{
+    PartialPglinterConfiguration, PglinterConfiguration, partial_pglinter_configuration,
+};
+use pgls_configuration_macros::{Merge, Partial};
 use pgls_env::PGLS_WEBSITE;
 use plpgsql_check::{
     PartialPlPgSqlCheckConfiguration, PlPgSqlCheckConfiguration,
@@ -93,6 +109,14 @@ pub struct Configuration {
     #[partial(type, bpaf(external(partial_splinter_configuration), optional))]
     pub splinter: SplinterConfiguration,
 
+    /// The configuration for the SQL formatter
+    #[partial(type, bpaf(external(partial_format_configuration), optional))]
+    pub format: FormatConfiguration,
+
+    /// The configuration for pglinter
+    #[partial(type, bpaf(external(partial_pglinter_configuration), optional))]
+    pub pglinter: PglinterConfiguration,
+
     /// The configuration for type checking
     #[partial(type, bpaf(external(partial_typecheck_configuration), optional))]
     pub typecheck: TypecheckConfiguration,
@@ -136,6 +160,14 @@ impl PartialConfiguration {
             }),
             splinter: Some(PartialSplinterConfiguration {
                 enabled: Some(true),
+                ..Default::default()
+            }),
+            format: Some(PartialFormatConfiguration {
+                enabled: Some(false), // Disabled by default during beta
+                ..Default::default()
+            }),
+            pglinter: Some(PartialPglinterConfiguration {
+                enabled: Some(false), // Disabled by default since pglinter extension might not be installed
                 ..Default::default()
             }),
             typecheck: Some(PartialTypecheckConfiguration {

@@ -1,0 +1,1 @@
+CREATE SUBSCRIPTION mysub CONNECTION 'host=localhost dbname=postgres' PUBLICATION mypub;

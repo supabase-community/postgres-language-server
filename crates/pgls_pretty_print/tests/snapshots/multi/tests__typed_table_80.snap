@@ -1,0 +1,106 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/typed_table.sql
+---
+create table ttable1 of nothing;
+
+create type person_type as (id int, name text);
+
+create table persons of person_type;
+
+create table if not exists persons of person_type;
+
+select * from persons;
+
+create function get_all_persons()
+returns setof person_type
+language sql
+as $function$
+SELECT * FROM persons;
+$function$;
+
+select * from get_all_persons();
+
+alter table persons
+  add column comment text;
+
+alter table persons
+  drop column name;
+
+alter table persons rename column id to num;
+
+alter table persons
+  alter column name type varchar;
+
+create table stuff (id int);
+
+alter table persons
+  inherit stuff;
+
+create table personsx of person_type (myname with options not null );
+
+create table persons2 of person_type
+(
+  id with options
+  primary key,
+  unique (name)
+);
+
+create table persons3 of person_type
+(
+  primary key (id),
+  name with options
+  default ''
+);
+
+create table persons4 of person_type
+(
+  name with options
+  not null,
+  name with options
+  default ''
+);
+
+drop type person_type;
+
+drop type person_type cascade;
+
+create table persons5 of stuff;
+
+create type tt_enum_type as enum ('a');
+
+create table of_tt_enum_type of tt_enum_type;
+
+drop type tt_enum_type;
+
+drop table stuff;
+
+create type person_type as (id int, name text);
+
+create table persons of person_type;
+
+insert into persons values (1, 'test');
+
+create function namelen(person_type)
+returns int
+language sql
+as $function$
+SELECT length($1.name)
+$function$;
+
+select id, namelen(persons) from persons;
+
+create table persons2 of person_type
+(
+  id with options
+  primary key,
+  unique (name)
+);
+
+create table persons3 of person_type
+(
+  primary key (id),
+  name with options
+  not null
+  default ''
+);

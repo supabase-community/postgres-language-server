@@ -1,10 +1,13 @@
 //! Codegen tools. Derived from Biome's codegen
 
+use convert_case::{Boundary, Case, Converter};
+
 mod generate_analyser;
 mod generate_bindings;
 mod generate_configuration;
 mod generate_crate;
 mod generate_new_analyser_rule;
+mod generate_pglinter;
 mod generate_splinter;
 
 pub use self::generate_analyser::generate_analyser;
@@ -12,6 +15,7 @@ pub use self::generate_bindings::generate_bindings;
 pub use self::generate_configuration::{generate_rules_configuration, generate_tool_configuration};
 pub use self::generate_crate::generate_crate;
 pub use self::generate_new_analyser_rule::generate_new_analyser_rule;
+pub use self::generate_pglinter::generate_pglinter;
 pub use self::generate_splinter::generate_splinter;
 use bpaf::Bpaf;
 use generate_new_analyser_rule::Category;
@@ -44,6 +48,21 @@ pub fn update(path: &Path, contents: &str, mode: &Mode) -> Result<UpdateResult> 
     }
     fs2::write(path, contents)?;
     Ok(UpdateResult::Updated)
+}
+
+/// Convert to snake_case without splitting on digit boundaries.
+///
+/// `convert_case` treats digit-letter boundaries as word separators
+/// (e.g. "Md5" → "md_5"), but we want digits attached to the preceding
+/// word (e.g. "Md5" → "md5") to match the old biome_string_case behavior.
+pub fn to_snake_case(s: &str) -> String {
+    Converter::new()
+        .to_case(Case::Snake)
+        .remove_boundary(Boundary::DigitUpper)
+        .remove_boundary(Boundary::DigitLower)
+        .remove_boundary(Boundary::UpperDigit)
+        .remove_boundary(Boundary::LowerDigit)
+        .convert(s)
 }
 
 pub fn to_capitalized(s: &str) -> String {
@@ -95,4 +114,7 @@ pub enum TaskCommand {
     /// Generate splinter categories from the SQL file
     #[bpaf(command)]
     Splinter,
+    /// Generate pglinter rules from pglinter_repo/sql/rules.sql
+    #[bpaf(command)]
+    Pglinter,
 }
