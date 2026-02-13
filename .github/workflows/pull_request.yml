@@ -315,6 +315,8 @@ jobs:
       - name: Install toolchain
         uses: moonrepo/setup-rust@v1
         with:
+          components: rustfmt
+          bins: taplo-cli
           cache-base: main
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -327,12 +329,6 @@ jobs:
         run: command -v tree-sitter || cargo install tree-sitter-cli
       - name: Ensure RustFMT on nightly toolchain
         run: rustup component add rustfmt --toolchain nightly
-      - name: echo toolchain
-        run: rustup show
-      - name: Run the analyser codegen
-        run: cargo run -p xtask_codegen -- analyser
-      - name: Run the configuration codegen
-        run: cargo run -p xtask_codegen -- configuration
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
         with:
