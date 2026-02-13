@@ -53,9 +53,7 @@ async function downloadSchema(releaseTag, githubToken) {
 	}
 
 	// download to root.
-	const fileStream = fs.createWriteStream(
-		resolve(PGLS_ROOT, "schema.json")
-	);
+	const fileStream = fs.createWriteStream(resolve(PGLS_ROOT, "schema.json"));
 
 	await streamPipeline(response.body, fileStream);
 
@@ -90,7 +88,8 @@ async function downloadWasmAssets(releaseTag, githubToken) {
 async function downloadBinary(platform, arch, os, releaseTag, githubToken) {
 	const buildName = getBuildName(platform, arch);
 	const ext = getBinaryExt(os);
-	const assetName = ext && buildName.endsWith(ext) ? buildName : `${buildName}${ext}`;
+	const assetName =
+		ext && buildName.endsWith(ext) ? buildName : `${buildName}${ext}`;
 
 	const assetUrl = `https://github.com/supabase-community/postgres-language-server/releases/download/${releaseTag}/${assetName}`;
 
@@ -104,36 +103,34 @@ async function downloadBinary(platform, arch, os, releaseTag, githubToken) {
 	if (!response.ok) {
 		const error = await response.text();
 		throw new Error(
-			`Failed to Fetch Asset from ${assetUrl} (Reason: ${error})`
+			`Failed to Fetch Asset from ${assetUrl} (Reason: ${error})`,
 		);
 	}
 
 	// just download to root.
-	const fileStream = fs.createWriteStream(
-		getBinarySource(platform, arch, os)
-	);
+	const fileStream = fs.createWriteStream(getBinarySource(platform, arch, os));
 
 	await streamPipeline(response.body, fileStream);
 
 	console.log(`Downloaded asset for ${buildName} (v${releaseTag})`);
 }
 
-async function writeManifest(packagePath, version, { versionOnly = false } = {}) {
-	const manifestPath = resolve(
-		PACKAGES_PGLS_ROOT,
-		packagePath,
-		"package.json"
-	);
+async function writeManifest(
+	packagePath,
+	version,
+	{ versionOnly = false } = {},
+) {
+	const manifestPath = resolve(PACKAGES_PGLS_ROOT, packagePath, "package.json");
 
 	const manifestData = JSON.parse(
-		fs.readFileSync(manifestPath).toString("utf-8")
+		fs.readFileSync(manifestPath).toString("utf-8"),
 	);
 
 	manifestData.version = version;
 
 	if (!versionOnly) {
 		const nativePackages = platformArchCombinations().map(
-			({ platform, arch }) => [getPackageName(platform, arch), version]
+			({ platform, arch }) => [getPackageName(platform, arch), version],
 		);
 		manifestData.optionalDependencies = Object.fromEntries(nativePackages);
 	}
@@ -207,7 +204,7 @@ function copyBinaryToNativePackage(platform, arch, os) {
 			libc,
 		},
 		null,
-		2
+		2,
 	);
 
 	const ext = getBinaryExt(os);
@@ -221,7 +218,7 @@ function copyBinaryToNativePackage(platform, arch, os) {
 
 	if (!fs.existsSync(binarySource)) {
 		console.error(
-			`Source for binary for ${buildName} not found at: ${binarySource}`
+			`Source for binary for ${buildName} not found at: ${binarySource}`,
 		);
 		process.exit(1);
 	}
@@ -276,7 +273,7 @@ function getBinarySource(platform, arch, os) {
 }
 
 function getBuildName(platform, arch) {
-	return `postgres-language-server_${arch}-${platform}${platform.includes('windows') ? '.exe' : ''}`;
+	return `postgres-language-server_${arch}-${platform}${platform.includes("windows") ? ".exe" : ""}`;
 }
 
 function getPackageName(platform, arch) {

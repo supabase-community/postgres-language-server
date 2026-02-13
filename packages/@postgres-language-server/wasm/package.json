@@ -30,11 +30,7 @@
 		"test:e2e:ui": "playwright test --ui",
 		"test:e2e:install": "playwright install chromium"
 	},
-	"files": [
-		"dist/",
-		"wasm/",
-		"README.md"
-	],
+	"files": ["dist/", "wasm/", "README.md"],
 	"repository": {
 		"type": "git",
 		"url": "git+https://github.com/supabase-community/postgres-language-server.git",
@@ -42,13 +38,7 @@
 	},
 	"author": "Supabase Community",
 	"bugs": "https://github.com/supabase-community/postgres-language-server/issues",
-	"keywords": [
-		"postgres",
-		"sql",
-		"linter",
-		"wasm",
-		"language-server"
-	],
+	"keywords": ["postgres", "sql", "linter", "wasm", "language-server"],
 	"license": "MIT",
 	"publishConfig": {
 		"provenance": true
