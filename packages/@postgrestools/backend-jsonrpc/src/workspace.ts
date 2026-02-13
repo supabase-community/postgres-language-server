@@ -18,7 +18,11 @@ export type FileKind = FileKind2[];
 /**
  * The priority of the file
  */
-export type FileKind2 = "Config" | "Ignore" | "Inspectable" | "Handleable";
+export type FileKind2 =
+	| "Config"
+	| "Ignore"
+	| "Inspectable"
+	| "Handleable";
 export interface RegisterProjectFolderParams {
 	path?: string;
 	setAsCurrentWorkspace: boolean;
@@ -36,7 +40,10 @@ export interface PullFileDiagnosticsParams {
 }
 export type RuleCategories = RuleCategory[];
 export type RuleCode = string;
-export type RuleCategory = "Lint" | "Action" | "Transformation";
+export type RuleCategory =
+	| "Lint"
+	| "Action"
+	| "Transformation";
 export interface PullDiagnosticsResult {
 	diagnostics: Diagnostic[];
 	skipped_diagnostics: number;
@@ -172,7 +179,12 @@ export type MarkupBuf = MarkupNodeBuf[];
 /**
  * The severity to associate to a diagnostic.
  */
-export type Severity = "hint" | "information" | "warning" | "error" | "fatal";
+export type Severity =
+	| "hint"
+	| "information"
+	| "warning"
+	| "error"
+	| "fatal";
 export type DiagnosticTags = DiagnosticTag[];
 /**
  * Serializable representation of a [Diagnostic](super::Diagnostic) advice
@@ -213,7 +225,11 @@ export type DiagnosticTag =
 /**
  * The category for a log advice, defines how the message should be presented to the user.
  */
-export type LogCategory = "none" | "info" | "warn" | "error";
+export type LogCategory =
+	| "none"
+	| "info"
+	| "warn"
+	| "error";
 export interface TextEdit {
 	dictionary: string;
 	ops: CompressedOp[];
@@ -564,11 +580,15 @@ If we can't find the configuration, it will attempt to use the current working d
 /**
  * Keyword casing style for the formatter.
  */
-export type KeywordCase = "upper" | "lower";
+export type KeywordCase =
+	| "upper"
+	| "lower";
 /**
  * Indentation style for the formatter.
  */
-export type IndentStyle = "spaces" | "tabs";
+export type IndentStyle =
+	| "spaces"
+	| "tabs";
 export interface LinterRules {
 	/**
 	 * It enables ALL rules. The rules that belong to `nursery` won't be enabled.
@@ -986,7 +1006,11 @@ export type RuleConfiguration_for_Null =
 export type RuleConfiguration_for_SplinterRuleOptions =
 	| RulePlainConfiguration
 	| RuleWithOptions_for_SplinterRuleOptions;
-export type RulePlainConfiguration = "warn" | "error" | "info" | "off";
+export type RulePlainConfiguration =
+	| "warn"
+	| "error"
+	| "info"
+	| "off";
 export interface RuleWithOptions_for_Null {
 	/**
 	 * The severity of the emitted diagnostics by the rule
@@ -1038,13 +1062,9 @@ export interface CloseFileParams {
 export type Configuration = PartialConfiguration;
 export interface Workspace {
 	isPathIgnored(params: IsPathIgnoredParams): Promise<boolean>;
-	registerProjectFolder(
-		params: RegisterProjectFolderParams,
-	): Promise<ProjectKey>;
+	registerProjectFolder(params: RegisterProjectFolderParams): Promise<ProjectKey>;
 	getFileContent(params: GetFileContentParams): Promise<string>;
-	pullFileDiagnostics(
-		params: PullFileDiagnosticsParams,
-	): Promise<PullDiagnosticsResult>;
+	pullFileDiagnostics(params: PullFileDiagnosticsParams): Promise<PullDiagnosticsResult>;
 	getCompletions(params: GetCompletionsParams): Promise<CompletionsResult>;
 	updateSettings(params: UpdateSettingsParams): Promise<void>;
 	openFile(params: OpenFileParams): Promise<void>;
