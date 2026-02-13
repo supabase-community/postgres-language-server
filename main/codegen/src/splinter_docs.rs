@@ -1,5 +1,5 @@
 use anyhow::Result;
-use biome_string_case::Case;
+use convert_case::{Case, Casing};
 use std::{fs, io::Write as _, path::Path};
 
 use crate::utils::SplinterRuleMetadata;
@@ -34,7 +34,7 @@ pub fn generate_splinter_docs(docs_dir: &Path) -> anyhow::Result<()> {
     for (group, rules) in groups {
         for (rule, metadata) in rules {
             let content = generate_splinter_rule_doc(group, rule, metadata)?;
-            let dashed_rule = Case::Kebab.convert(rule);
+            let dashed_rule = rule.to_case(Case::Kebab);
             fs::write(rules_dir.join(format!("{dashed_rule}.md")), content)?;
         }
     }

@@ -1,5 +1,5 @@
 use anyhow::Result;
-use biome_string_case::Case;
+use convert_case::{Case, Casing};
 use pgls_analyse::RuleMetadata;
 use std::cmp::Ordering;
 use std::collections::{BTreeMap, BTreeSet};
@@ -48,7 +48,7 @@ pub fn generate_rule_sources(docs_dir: &Path) -> anyhow::Result<()> {
     let mut exclusive_rules = BTreeSet::<(String, String)>::new();
 
     for (rule_name, metadata) in rules {
-        let kebab_rule_name = Case::Kebab.convert(rule_name);
+        let kebab_rule_name = rule_name.to_case(Case::Kebab);
         if metadata.sources.is_empty() {
             exclusive_rules.insert((
                 rule_name.to_string(),
@@ -127,7 +127,7 @@ pub fn generate_database_rule_sources(docs_dir: &Path) -> anyhow::Result<()> {
     let mut rules_by_source = BTreeMap::<&str, Vec<(&str, &str)>>::new();
 
     for (rule_name, _metadata) in &rules {
-        let kebab_rule_name = Case::Kebab.convert(rule_name);
+        let kebab_rule_name = rule_name.to_case(Case::Kebab);
         rules_by_source
             .entry("Splinter")
             .or_default()
