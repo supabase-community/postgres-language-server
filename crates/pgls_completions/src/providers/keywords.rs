@@ -711,10 +711,7 @@ mod tests {
                     "except".into(),
                     crate::CompletionItemKind::Keyword,
                 ),
-                CompletionAssertion::LabelAndKind(
-                    "for".into(),
-                    crate::CompletionItemKind::Keyword,
-                ),
+                CompletionAssertion::LabelAndKind("for".into(), crate::CompletionItemKind::Keyword),
                 CompletionAssertion::LabelAndKind(
                     "full".into(),
                     crate::CompletionItemKind::Keyword,

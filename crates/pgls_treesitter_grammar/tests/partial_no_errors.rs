@@ -98,7 +98,7 @@ fn verify_branches_have_ends(
 fn test_grammar() {
     let mut parser = tree_sitter::Parser::new();
     if let Err(e) = parser.set_language(&pgls_treesitter_grammar::LANGUAGE.into()) {
-        panic!("Language is invalid! {}", e)
+        panic!("Language is invalid! {e}")
     }
 
     let files = PG_REGRESSION_FILES.iter();
@@ -109,10 +109,10 @@ fn test_grammar() {
 
             if let Some(t) = tree {
                 if let Err(msg) = verify_tree(&t, state.as_str()) {
-                    panic!("\n\nGot error for statement: {}\n\n\nError: {}", state, msg)
+                    panic!("\n\nGot error for statement: {state}\n\n\nError: {msg}")
                 }
             } else {
-                panic!("Unable to get tree for statement: {}", file);
+                panic!("Unable to get tree for statement: {file}");
             }
         }
     }
@@ -263,7 +263,7 @@ mod generate_typing_states_tests {
     fn emtpy_sub_query_is_error() {
         let mut parser = tree_sitter::Parser::new();
         if let Err(e) = parser.set_language(&pgls_treesitter_grammar::LANGUAGE.into()) {
-            panic!("Language is invalid! {}", e)
+            panic!("Language is invalid! {e}")
         }
 
         let sql = "select foo from ()";
@@ -273,7 +273,7 @@ mod generate_typing_states_tests {
 
         let mut printed = String::new();
         print_ts_tree(&root, sql, &mut printed);
-        println!("{}", printed);
+        println!("{printed}");
 
         assert!(!root.has_error())
     }
