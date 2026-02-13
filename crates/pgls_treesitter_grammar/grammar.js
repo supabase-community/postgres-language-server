@@ -990,10 +990,7 @@ module.exports = grammar({
               repeat($._table_settings),
               seq($.keyword_as, field("end", $.create_query)),
             ),
-            seq(
-              field("end", $.partition_of),
-              repeat($._table_settings),
-            ),
+            seq(field("end", $.partition_of), repeat($._table_settings)),
           ),
         ),
       ),
