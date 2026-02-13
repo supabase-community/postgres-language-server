@@ -1,7 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/collate.sql
-snapshot_kind: text
 ---
 create schema "collate_tests";
 
@@ -249,7 +248,9 @@ select a, cast(b as varchar) from collate_test2 order by 2;
 create function vc(text)
 returns text
 language sql
-as $function$select $1::varchar$function$;
+as $function$
+select $1::varchar
+$function$;
 
 select a, b from collate_test1 order by a, vc(b);
 
@@ -259,8 +260,10 @@ select * from unnest((select array_agg(b order by b) from collate_test2)) order 
 
 create function dup(anyelement)
 returns anyelement
-as $function$select $1$function$
-language sql;
+language sql
+as $function$
+select $1
+$function$;
 
 select a, dup(b) from collate_test1 order by 2;
 

@@ -1,7 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/create_operator.sql
-snapshot_kind: text
 ---
 create operator ## (LEFTARG = path, RIGHTARG = path, FUNCTION = path_inter, COMMUTATOR = ##);
 
@@ -42,7 +41,8 @@ select 2 <> 1, 2 <> 2;
 select 2 <> 1;
 
 do
-$do$ -- use DO to protect -- from psql
+$do$
+-- use DO to protect -- from psql
   declare r boolean;
   begin
     execute $e$ select 2 !=-- comment
@@ -95,11 +95,11 @@ begin;
 
 create or replace function fn_op2(boolean, boolean)
 returns boolean
-as $function$
-    SELECT NULL::BOOLEAN;
-$function$
 language sql
-immutable;
+immutable
+as $function$
+SELECT NULL::BOOLEAN;
+$function$;
 
 create operator === (LEFTARG = boolean,
 RIGHTARG = boolean,
@@ -131,11 +131,11 @@ create type type_op3 as enum ('new', 'open', 'closed');
 
 create function fn_op3(type_op3, bigint)
 returns bigint
-as $function$
-    SELECT NULL::int8;
-$function$
 language sql
-immutable;
+immutable
+as $function$
+SELECT NULL::int8;
+$function$;
 
 revoke USAGE on type type_op3 from regress_rol_op3;
 
@@ -155,11 +155,11 @@ create type type_op4 as enum ('new', 'open', 'closed');
 
 create function fn_op4(bigint, type_op4)
 returns bigint
-as $function$
-    SELECT NULL::int8;
-$function$
 language sql
-immutable;
+immutable
+as $function$
+SELECT NULL::int8;
+$function$;
 
 revoke USAGE on type type_op4 from regress_rol_op4;
 
@@ -179,11 +179,11 @@ create type type_op5 as enum ('new', 'open', 'closed');
 
 create function fn_op5(bigint, bigint)
 returns bigint
-as $function$
-    SELECT NULL::int8;
-$function$
 language sql
-immutable;
+immutable
+as $function$
+SELECT NULL::int8;
+$function$;
 
 revoke EXECUTE on function fn_op5(bigint, bigint) from regress_rol_op5;
 
@@ -203,11 +203,11 @@ create type type_op6 as enum ('new', 'open', 'closed');
 
 create function fn_op6(bigint, bigint)
 returns type_op6
-as $function$
-    SELECT NULL::type_op6;
-$function$
 language sql
-immutable;
+immutable
+as $function$
+SELECT NULL::type_op6;
+$function$;
 
 revoke USAGE on type type_op6 from regress_rol_op6;
 

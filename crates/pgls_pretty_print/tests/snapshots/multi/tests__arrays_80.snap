@@ -1,7 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/arrays.sql
-snapshot_kind: text
 ---
 create table arrtest (
   a smallint[],
@@ -834,11 +833,13 @@ insert into arr_pk_tbl (pk, f1[0:2147483647]) values (2, '{}');
 insert into arr_pk_tbl (pk, f1[-2147483648:2147483647]) values (2, '{}');
 
 do
-$do$ declare a int[];
+$do$
+declare a int[];
 begin
   a := '[-2147483648:-2147483647]={1,2}'::int[];
   a[2147483647] := 42;
-end $do$;
+end
+$do$;
 
 select 'foo' ~~ any (array['%a', '%o']);
 
@@ -1046,20 +1047,20 @@ drop type comptype;
 
 create or replace function unnest1(anyarray)
 returns setof anyelement
+language sql
+immutable
 as $function$
 select $1[s] from generate_subscripts($1,1) g(s);
-$function$
-language sql
-immutable;
+$function$;
 
 create or replace function unnest2(anyarray)
 returns setof anyelement
+language sql
+immutable
 as $function$
 select $1[s1][s2] from generate_subscripts($1,1) g1(s1),
                    generate_subscripts($1,2) g2(s2);
-$function$
-language sql
-immutable;
+$function$;
 
 select * from unnest1(array[1, 2, 3]);
 

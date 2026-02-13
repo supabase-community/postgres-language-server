@@ -1,7 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/multirangetypes.sql
-snapshot_kind: text
 ---
 select cast('' as textmultirange);
 
@@ -1958,8 +1957,10 @@ drop role regress_multirange_owner;
 
 create function anyarray_anymultirange_func(a anyarray, r anymultirange)
 returns anyelement
-as $function$select $1[1] + lower($2);$function$
-language sql;
+language sql
+as $function$
+select $1[1] + lower($2);
+$function$;
 
 select
   anyarray_anymultirange_func(
@@ -1977,18 +1978,24 @@ drop function anyarray_anymultirange_func(anyarray, anymultirange);
 
 create function bogus_func(anyelement)
 returns anymultirange
-as $function$select int4multirange(int4range(1,10))$function$
-language sql;
+language sql
+as $function$
+select int4multirange(int4range(1,10))
+$function$;
 
 create function bogus_func(int)
 returns anymultirange
-as $function$select int4multirange(int4range(1,10))$function$
-language sql;
+language sql
+as $function$
+select int4multirange(int4range(1,10))
+$function$;
 
 create function range_add_bounds(anymultirange)
 returns anyelement
-as $function$select lower($1) + upper($1)$function$
-language sql;
+language sql
+as $function$
+select lower($1) + upper($1)
+$function$;
 
 select range_add_bounds(int4multirange(int4range(1, 17)));
 
@@ -2000,8 +2007,10 @@ multirangetypes_sql(
   b anyarray,
   out c anyelement
 )
-as $function$ select upper($1) + $2[1] $function$
-language sql;
+language sql
+as $function$
+select upper($1) + $2[1]
+$function$;
 
 select multirangetypes_sql(int4multirange(int4range(1, 10)), array[2, 20]);
 
@@ -2013,8 +2022,10 @@ anycompatiblearray_anycompatiblemultirange_func(
   mr anycompatiblemultirange
 )
 returns anycompatible
-as $function$select $1[1] + lower($2);$function$
-language sql;
+language sql
+as $function$
+select $1[1] + lower($2);
+$function$;
 
 select
   anycompatiblearray_anycompatiblemultirange_func(
@@ -2045,8 +2056,10 @@ anycompatiblerange_anycompatiblemultirange_func(
   mr anycompatiblemultirange
 )
 returns anycompatible
-as $function$select lower($1) + lower($2);$function$
-language sql;
+language sql
+as $function$
+select lower($1) + lower($2);
+$function$;
 
 select
   anycompatiblerange_anycompatiblemultirange_func(
@@ -2067,8 +2080,10 @@ drop function
 
 create function bogus_func(anycompatible)
 returns anycompatiblerange
-as $function$select int4range(1,10)$function$
-language sql;
+language sql
+as $function$
+select int4range(1,10)
+$function$;
 
 select
   array[nummultirange(numrange(1.1, 1.2)),
@@ -2140,8 +2155,10 @@ mr_outparam_succeed(
   out r anymultirange,
   out t text
 )
-as $function$ select $1, 'foo'::text $function$
-language sql;
+language sql
+as $function$
+select $1, 'foo'::text
+$function$;
 
 select * from mr_outparam_succeed(int4multirange(int4range(1, 2)));
 
@@ -2151,8 +2168,10 @@ mr_outparam_succeed2(
   out r anyarray,
   out t text
 )
-as $function$ select ARRAY[upper($1)], 'foo'::text $function$
-language sql;
+language sql
+as $function$
+select ARRAY[upper($1)], 'foo'::text
+$function$;
 
 select * from mr_outparam_succeed2(int4multirange(int4range(1, 2)));
 
@@ -2162,8 +2181,10 @@ mr_outparam_succeed3(
   out r anyrange,
   out t text
 )
-as $function$ select range_merge($1), 'foo'::text $function$
-language sql;
+language sql
+as $function$
+select range_merge($1), 'foo'::text
+$function$;
 
 select * from mr_outparam_succeed3(int4multirange(int4range(1, 2)));
 
@@ -2173,14 +2194,18 @@ mr_outparam_succeed4(
   out r anymultirange,
   out t text
 )
-as $function$ select multirange($1), 'foo'::text $function$
-language sql;
+language sql
+as $function$
+select multirange($1), 'foo'::text
+$function$;
 
 select * from mr_outparam_succeed4(int4range(1, 2));
 
 create function mr_inoutparam_succeed(out i anyelement, inout r anymultirange)
-as $function$ select upper($1), $1 $function$
-language sql;
+language sql
+as $function$
+select upper($1), $1
+$function$;
 
 select * from mr_inoutparam_succeed(int4multirange(int4range(1, 2)));
 
@@ -2189,30 +2214,40 @@ returns table (
   i anyelement,
   r anymultirange
 )
-as $function$ select $1, $2 $function$
-language sql;
+language sql
+as $function$
+select $1, $2
+$function$;
 
 select * from mr_table_succeed(123, int4multirange(int4range(1, 11)));
 
 create function mr_polymorphic(i anyrange)
 returns anymultirange
-as $function$ begin return multirange($1); end; $function$
-language plpgsql;
+language plpgsql
+as $function$
+begin return multirange($1); end;
+$function$;
 
 select mr_polymorphic(int4range(1, 4));
 
 create function mr_outparam_fail(i anyelement, out r anymultirange, out t text)
-as $function$ select '[1,10]', 'foo' $function$
-language sql;
+language sql
+as $function$
+select '[1,10]', 'foo'
+$function$;
 
 create function mr_inoutparam_fail(inout i anyelement, out r anymultirange)
-as $function$ select $1, '[1,10]' $function$
-language sql;
+language sql
+as $function$
+select $1, '[1,10]'
+$function$;
 
 create function mr_table_fail(i anyelement)
 returns table (
   i anyelement,
   r anymultirange
 )
-as $function$ select $1, '[1,10]' $function$
-language sql;
+language sql
+as $function$
+select $1, '[1,10]'
+$function$;

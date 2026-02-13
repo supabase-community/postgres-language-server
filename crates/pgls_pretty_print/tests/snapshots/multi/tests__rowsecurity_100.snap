@@ -1,7 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/rowsecurity.sql
-snapshot_kind: text
 ---
 set client_min_messages = warning;
 
@@ -49,9 +48,11 @@ set search_path to regress_rls_schema;
 
 create or replace function f_leak(text)
 returns boolean
-cost 0.0000001
 language plpgsql
-as $function$BEGIN RAISE NOTICE 'f_leak => %', $1; RETURN true; END$function$;
+cost 0.0000001
+as $function$
+BEGIN RAISE NOTICE 'f_leak => %', $1; RETURN true; END
+$function$;
 
 grant EXECUTE on function f_leak(text) to public;
 

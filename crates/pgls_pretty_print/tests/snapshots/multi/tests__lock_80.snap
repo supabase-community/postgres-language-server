@@ -1,7 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/lock.sql
-snapshot_kind: text
 ---
 create schema "lock_schema1";
 
@@ -358,7 +357,9 @@ reset search_path;
 
 create function test_atomic_ops()
 returns boolean
-as $function$regresslib$function$
-language c;
+language c
+as $function$
+regresslib
+$function$;
 
 select test_atomic_ops();

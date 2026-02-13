@@ -1,7 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/alter_table.sql
-snapshot_kind: text
 ---
 set client_min_messages = warning;
 
@@ -684,10 +683,12 @@ alter table attmp3
 
 create function boo(int)
 returns int
+language plpgsql
 immutable
 strict
-language plpgsql
-as $function$ BEGIN RAISE NOTICE 'boo: %', $1; RETURN $1; END; $function$;
+as $function$
+BEGIN RAISE NOTICE 'boo: %', $1; RETURN $1; END;
+$function$;
 
 insert into attmp7 values (8, 18);
 

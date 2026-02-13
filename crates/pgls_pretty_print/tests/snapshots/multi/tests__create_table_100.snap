@@ -1,7 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/create_table.sql
-snapshot_kind: text
 ---
 create table unknowntab (u unknown);
 
@@ -189,9 +188,11 @@ partition by LIST(a1, a2);
 
 create function retset(a int)
 returns setof int
-as $function$ SELECT 1; $function$
 language sql
-immutable;
+immutable
+as $function$
+SELECT 1;
+$function$;
 
 create table partitioned (a int)
 partition by range((retset(a)));
@@ -215,9 +216,11 @@ partition by range((42));
 
 create function const_func()
 returns int
-as $function$ SELECT 1; $function$
 language sql
-immutable;
+immutable
+as $function$
+SELECT 1;
+$function$;
 
 create table partitioned (a int)
 partition by range((const_func()));
@@ -244,8 +247,10 @@ partition by range(a, ('unknown'));
 
 create function immut_func(a int)
 returns int
-as $function$ SELECT a + random()::int; $function$
-language sql;
+language sql
+as $function$
+SELECT a + random()::int;
+$function$;
 
 create table partitioned (a int)
 partition by range((immut_func(a)));
@@ -272,8 +277,10 @@ partition by range(a);
 
 create function plusone(a int)
 returns int
-as $function$ SELECT a+1; $function$
-language sql;
+language sql
+as $function$
+SELECT a+1;
+$function$;
 
 create table partitioned (
   a int,
@@ -815,7 +822,9 @@ drop table range_parted4;
 create function my_int4_sort(int, int)
 returns int
 language sql
-as $function$ SELECT CASE WHEN $1 = $2 THEN 0 WHEN $1 > $2 THEN 1 ELSE -1 END; $function$;
+as $function$
+SELECT CASE WHEN $1 = $2 THEN 0 WHEN $1 > $2 THEN 1 ELSE -1 END;
+$function$;
 
 create operator class test_int4_ops
   for type int
@@ -904,10 +913,11 @@ create or replace function func_part_create()
 returns trigger
 language plpgsql
 as $function$
-  begin
+begin
     execute 'create table tab_part_create_1 partition of tab_part_create for values in (1)';
     return null;
-  end $function$;
+  end
+$function$;
 
 create trigger trig_part_create
 before insert

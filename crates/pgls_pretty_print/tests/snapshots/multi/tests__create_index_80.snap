@@ -1,7 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/create_index.sql
-snapshot_kind: text
 ---
 create index "onek_unique1" on onek using btree (unique1 int4_ops);
 
@@ -839,13 +838,14 @@ commit;
 
 create function predicate_stable()
 returns boolean
-immutable
 language plpgsql
+immutable
 as $function$
 BEGIN
   EXECUTE 'SELECT txid_current()';
   RETURN true;
-END; $function$;
+END;
+$function$;
 
 create index
 concurrently "concur_index8"
@@ -2307,8 +2307,9 @@ rollback;
 
 create or replace function create_relfilenode_part(relname text, indname text)
 returns void
+language plpgsql
 as $function$
-  BEGIN
+BEGIN
   EXECUTE format('
     CREATE TABLE %I AS
       SELECT oid, relname, relfilenode, relkind, reltoastrelid
@@ -2317,8 +2318,7 @@ as $function$
          (SELECT relid FROM pg_partition_tree(''%I''));',
 	 relname, indname);
   END
-  $function$
-language plpgsql;
+$function$;
 
 create or replace function compare_relfilenode_part(tabname text)
 returns table (
@@ -2326,8 +2326,9 @@ returns table (
   relkind char,
   state text
 )
+language plpgsql
 as $function$
-  BEGIN
+BEGIN
     RETURN QUERY EXECUTE
       format(
         'SELECT  b.relname,
@@ -2338,8 +2339,7 @@ as $function$
            FROM %I b JOIN pg_class a ON b.relname = a.relname
            ORDER BY 1;', tabname);
   END
-  $function$
-language plpgsql;
+$function$;
 
 select
   create_relfilenode_part(

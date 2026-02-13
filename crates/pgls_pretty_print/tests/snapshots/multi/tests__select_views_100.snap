@@ -1,7 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/select_views.sql
-snapshot_kind: text
 ---
 select * from street;
 
@@ -15,7 +14,9 @@ create function f_leak(text)
 returns boolean
 language plpgsql
 cost 0.0000001
-as $function$BEGIN RAISE NOTICE 'f_leak => %', $1; RETURN true; END$function$;
+as $function$
+BEGIN RAISE NOTICE 'f_leak => %', $1; RETURN true; END
+$function$;
 
 create table customer (
   cid int primary key,

@@ -1,12 +1,11 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/alter_generic.sql
-snapshot_kind: text
 ---
 create function test_opclass_options_func(internal)
 returns void
-as 'regresslib', 'test_opclass_options_func'
-language c;
+language c
+as 'regresslib', 'test_opclass_options_func';
 
 set client_min_messages = warning;
 
@@ -37,12 +36,16 @@ set session authorization regress_alter_generic_user1;
 create function alt_func1(int)
 returns int
 language sql
-as $function$SELECT $1 + 1$function$;
+as $function$
+SELECT $1 + 1
+$function$;
 
 create function alt_func2(int)
 returns int
 language sql
-as $function$SELECT $1 - 1$function$;
+as $function$
+SELECT $1 - 1
+$function$;
 
 create aggregate alt_agg1 (
   sfunc1 = int4pl,
@@ -91,12 +94,16 @@ set session authorization regress_alter_generic_user2;
 create function alt_func1(int)
 returns int
 language sql
-as $function$SELECT $1 + 2$function$;
+as $function$
+SELECT $1 + 2
+$function$;
 
 create function alt_func2(int)
 returns int
 language sql
-as $function$SELECT $1 - 2$function$;
+as $function$
+SELECT $1 - 2
+$function$;
 
 create aggregate alt_agg1 (
   sfunc1 = int4pl,
@@ -548,8 +555,10 @@ create operator family alt_opf12 using btree;
 
 create function fn_opf12(int, smallint)
 returns bigint
-as $function$SELECT NULL::BIGINT;$function$
-language sql;
+language sql
+as $function$
+SELECT NULL::BIGINT;
+$function$;
 
 alter operator family alt_opf12 using btree
   add function 1 fn_opf12(int, smallint);
@@ -564,8 +573,10 @@ create operator family alt_opf13 using hash;
 
 create function fn_opf13(int)
 returns bigint
-as $function$SELECT NULL::BIGINT;$function$
-language sql;
+language sql
+as $function$
+SELECT NULL::BIGINT;
+$function$;
 
 alter operator family alt_opf13 using hash add function 1 fn_opf13(int);
 
@@ -579,8 +590,10 @@ create operator family alt_opf14 using btree;
 
 create function fn_opf14(int)
 returns bigint
-as $function$SELECT NULL::BIGINT;$function$
-language sql;
+language sql
+as $function$
+SELECT NULL::BIGINT;
+$function$;
 
 alter operator family alt_opf14 using btree add function 1 fn_opf14(int);
 
@@ -594,8 +607,10 @@ create operator family alt_opf15 using hash;
 
 create function fn_opf15(int, smallint)
 returns bigint
-as $function$SELECT NULL::BIGINT;$function$
-language sql;
+language sql
+as $function$
+SELECT NULL::BIGINT;
+$function$;
 
 alter operator family alt_opf15 using hash
   add function 1 fn_opf15(int, smallint);

@@ -1,7 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/merge.sql
-snapshot_kind: text
 ---
 create user regress_merge_privs;
 
@@ -787,7 +786,7 @@ merge_into_sq_target(
 )
 language sql
 as $function$
-    MERGE INTO sq_target t
+MERGE INTO sq_target t
     USING (VALUES ($1, $2, $3)) AS v(sid, balance, delta)
     ON tid = v.sid
     WHEN MATCHED AND tid >= 2 THEN
@@ -835,7 +834,7 @@ returns table (
 )
 language sql
 as $function$
-    MERGE INTO sq_target t
+MERGE INTO sq_target t
     USING sq_source s
     ON tid = sid
     WHEN MATCHED AND tid >= 2 THEN
@@ -1278,7 +1277,9 @@ begin;
 create function trig_fn()
 returns trigger
 language plpgsql
-as $function$ BEGIN RETURN NULL; END; $function$;
+as $function$
+BEGIN RETURN NULL; END;
+$function$;
 
 create trigger del_trig
 before delete
@@ -1314,7 +1315,9 @@ begin;
 create function trig_fn()
 returns trigger
 language plpgsql
-as $function$ BEGIN RETURN NULL; END; $function$;
+as $function$
+BEGIN RETURN NULL; END;
+$function$;
 
 create trigger ins_trig
 before insert
@@ -1557,6 +1560,7 @@ insert into measurement values (0, '2005-07-21', 5, 15);
 
 create or replace function measurement_insert_trigger()
 returns trigger
+language plpgsql
 as $function$
 BEGIN
     IF ( NEW.logdate >= DATE '2006-02-01' AND
@@ -1574,8 +1578,7 @@ BEGIN
     END IF;
     RETURN NULL;
 END;
-$function$
-language plpgsql;
+$function$;
 
 create trigger insert_measurement_trigger
 before insert

@@ -1,7 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/largeobject.sql
-snapshot_kind: text
 ---
 set bytea_output = escape;
 
@@ -110,7 +109,10 @@ select lo_open(loid, cast(X'40000' as int)) from lotest_stash_values;
 
 rollback;
 
-do $do$dobody$do$;
+do
+$do$
+dobody
+$do$;
 
 begin;
 

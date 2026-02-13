@@ -1,7 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/stats.sql
-snapshot_kind: text
 ---
 show "track_counts";
 
@@ -211,7 +210,9 @@ commit;
 create function stats_test_func1()
 returns void
 language plpgsql
-as $function$BEGIN END;$function$;
+as $function$
+BEGIN END;
+$function$;
 
 select
   cast(cast('stats_test_func1()'
@@ -222,7 +223,9 @@ select
 create function stats_test_func2()
 returns void
 language plpgsql
-as $function$BEGIN END;$function$;
+as $function$
+BEGIN END;
+$function$;
 
 select
   cast(cast('stats_test_func2()'
@@ -1488,6 +1491,7 @@ create index "val_brin" on brin_hot using brin (val);
 
 create function wait_for_hot_stats()
 returns void
+language plpgsql
 as $function$
 DECLARE
   start_time timestamptz := clock_timestamp();
@@ -1507,8 +1511,7 @@ BEGIN
   RAISE log 'wait_for_hot_stats delayed % seconds',
     EXTRACT(epoch FROM clock_timestamp() - start_time);
 END
-$function$
-language plpgsql;
+$function$;
 
 update brin_hot set val = -3 where id = 42;
 

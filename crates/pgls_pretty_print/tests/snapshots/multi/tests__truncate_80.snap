@@ -1,7 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/truncate.sql
-snapshot_kind: text
 ---
 create table truncate_a (col1 int primary key);
 
@@ -213,6 +212,7 @@ create table trunc_trigger_log (
 
 create function trunctrigger()
 returns trigger
+language plpgsql
 as $function$
 declare c bigint;
 begin
@@ -221,8 +221,7 @@ begin
       (TG_OP, TG_LEVEL, TG_WHEN, TG_ARGV[0], tg_table_name, c);
     return null;
 end;
-$function$
-language plpgsql;
+$function$;
 
 insert into trunc_trigger_test values (1, 'foo', 'bar'), (2, 'baz', 'quux');
 
@@ -368,7 +367,7 @@ create function tp_ins_data()
 returns void
 language plpgsql
 as $function$
-  BEGIN
+BEGIN
 	INSERT INTO truncprim VALUES (1), (100), (150);
 	INSERT INTO truncpart VALUES (1), (100), (150);
   END
@@ -384,7 +383,7 @@ tp_chk_data(
 returns setof record
 language plpgsql
 as $function$
-  BEGIN
+BEGIN
     RETURN QUERY SELECT
       pk.tableoid::regclass, pk.a, fk.tableoid::regclass, fk.a
     FROM truncprim pk FULL JOIN truncpart fk USING (a)

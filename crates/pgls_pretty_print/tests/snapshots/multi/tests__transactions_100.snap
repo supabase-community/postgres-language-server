@@ -1,7 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/transactions.sql
-snapshot_kind: text
 ---
 begin;
 
@@ -59,8 +58,10 @@ commit;
 create function errfunc()
 returns int
 language sql
-as $function$SELECT 1$function$
-set transaction_read_only = 'on';
+set transaction_read_only = 'on'
+as $function$
+SELECT 1
+$function$;
 
 create table writetest (a int);
 
@@ -469,8 +470,10 @@ select * from xacttest;
 create or replace function max_xacttest()
 returns smallint
 language sql
-as $function$select max(a) from xacttest$function$
-stable;
+stable
+as $function$
+select max(a) from xacttest
+$function$;
 
 begin;
 
@@ -483,8 +486,10 @@ rollback;
 create or replace function max_xacttest()
 returns smallint
 language sql
-as $function$select max(a) from xacttest$function$
-volatile;
+volatile
+as $function$
+select max(a) from xacttest
+$function$;
 
 begin;
 
@@ -497,8 +502,10 @@ rollback;
 create or replace function max_xacttest()
 returns smallint
 language plpgsql
-as $function$begin return max(a) from xacttest; end$function$
-stable;
+stable
+as $function$
+begin return max(a) from xacttest; end
+$function$;
 
 begin;
 
@@ -511,8 +518,10 @@ rollback;
 create or replace function max_xacttest()
 returns smallint
 language plpgsql
-as $function$begin return max(a) from xacttest; end$function$
-volatile;
+volatile
+as $function$
+begin return max(a) from xacttest; end
+$function$;
 
 begin;
 
@@ -550,15 +559,16 @@ drop table trans_barbaz;
 
 create function inverse(int)
 returns double precision
+language plpgsql
+volatile
 as $function$
 begin
   analyze revalidate_bug;
   return 1::float8/$1;
 exception
   when division_by_zero then return 0;
-end$function$
-language plpgsql
-volatile;
+end
+$function$;
 
 create table revalidate_bug (c double precision unique);
 
@@ -617,7 +627,9 @@ rollback;
 create function invert(x double precision)
 returns double precision
 language plpgsql
-as $function$ begin return 1/x; end $function$;
+as $function$
+begin return 1/x; end
+$function$;
 
 create function create_temp_tab()
 returns text
@@ -629,7 +641,8 @@ BEGIN
   -- relcache reference to new_table
   INSERT INTO new_table SELECT invert(0.0);
   RETURN 'foo';
-END $function$;
+END
+$function$;
 
 begin;
 

@@ -1,7 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/rowtypes.sql
-snapshot_kind: text
 ---
 create type complex as (r double precision, i double precision);
 
@@ -482,17 +481,17 @@ create type price_key as (id int);
 
 create function price_key_from_table(price)
 returns price_key
+language sql
 as $function$
-    SELECT $1.id
-$function$
-language sql;
+SELECT $1.id
+$function$;
 
 create function price_key_from_input(price_input)
 returns price_key
+language sql
 as $function$
-    SELECT $1.id
-$function$
-language sql;
+SELECT $1.id
+$function$;
 
 insert into price values (1, false, 42), (10, false, 100), (11, true, 17.99);
 
@@ -519,31 +518,31 @@ create temporary table compos (
 
 create function fcompos1(v compos)
 returns void
+language sql
 as $function$
 insert into compos values (v);  -- fail
-$function$
-language sql;
+$function$;
 
 create function fcompos1(v compos)
 returns void
+language sql
 as $function$
 insert into compos values (v.*);
-$function$
-language sql;
+$function$;
 
 create function fcompos2(v compos)
 returns void
+language sql
 as $function$
 select fcompos1(v);
-$function$
-language sql;
+$function$;
 
 create function fcompos3(v compos)
 returns void
+language sql
 as $function$
 select fcompos1(fcompos3.v.*);
-$function$
-language sql;
+$function$;
 
 select fcompos1(row(1, 'one'));
 
@@ -578,7 +577,9 @@ select last(f) from fullname as f;
 create function longname(fullname)
 returns text
 language sql
-as $function$select $1.first || ' ' || $1.last$function$;
+as $function$
+select $1.first || ' ' || $1.last
+$function$;
 
 select f.longname from fullname as f;
 

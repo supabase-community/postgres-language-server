@@ -1,0 +1,18 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/single/create_stmt_cast_check_0.sql
+---
+create table t (
+  type public.my_enum not null,
+  target_column text,
+  from_value text,
+  to_value text,
+  constraint "c2" check (type <>
+  cast('es_value_changed'
+  as public.my_enum) or
+  target_column = cast('config' as text) and
+  from_value is null and to_value is null or
+  from_value is not null and
+  to_value is not null and
+  target_column in ('type', 'name'))
+);

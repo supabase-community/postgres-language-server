@@ -889,7 +889,37 @@ impl Workspace for WorkspaceServer {
         let mut formatted_output = String::new();
         let path_str = params.path.as_path().display().to_string();
 
-        for (_id, stmt_range, text, ast_result) in doc.iter(FormatStatementMapper) {
+        let format_candidates: Vec<_> = doc.iter(FormatStatementMapper).collect();
+        let mut formatted_sql_fn_bodies = HashMap::new();
+
+        // Only format SQL function bodies if skip_fn_bodies is false
+        if !settings.formatter.skip_fn_bodies {
+            for (id, _stmt_range, _text, ast_result) in &format_candidates {
+                if !id.is_child() {
+                    continue;
+                }
+
+                let Some(parent_id) = id.parent() else {
+                    continue;
+                };
+
+                let Ok(ast) = ast_result else {
+                    continue;
+                };
+
+                let Ok(result) = pgls_pretty_print::format_statement(ast, &config) else {
+                    continue;
+                };
+
+                formatted_sql_fn_bodies.insert(parent_id, result.formatted);
+            }
+        }
+
+        for (id, stmt_range, text, ast_result) in format_candidates {
+            if id.is_child() {
+                continue;
+            }
+
             if let Some(filter_range) = params.range
                 && stmt_range.intersect(filter_range).is_none()
             {
@@ -901,35 +931,42 @@ impl Workspace for WorkspaceServer {
             }
 
             match ast_result {
-                Ok(ast) => match pgls_pretty_print::format_statement(&ast, &config) {
-                    Ok(result) => {
-                        if text != result.formatted {
-                            statements.push(StatementFormatResult {
-                                original: text.clone(),
-                                formatted: result.formatted.clone(),
-                                range: stmt_range,
-                            });
-                        }
-                        if !formatted_output.is_empty() {
-                            formatted_output.push_str("\n\n");
-                        }
-                        formatted_output.push_str(&result.formatted);
+                Ok(ast) => {
+                    let mut ast = ast;
+                    if let Some(formatted_sql_fn_body) = formatted_sql_fn_bodies.get(&id) {
+                        sql_function::set_sql_fn_body(&mut ast, formatted_sql_fn_body);
                     }
-                    Err(err) => {
-                        diagnostics.push(SDiagnostic::new(
-                            pgls_diagnostics::Error::from(WorkspaceError::format_error(
-                                err.to_string(),
-                            ))
-                            .with_file_path(&path_str)
-                            .with_file_span(stmt_range),
-                        ));
 
-                        if !formatted_output.is_empty() {
-                            formatted_output.push_str("\n\n");
+                    match pgls_pretty_print::format_statement(&ast, &config) {
+                        Ok(result) => {
+                            if text != result.formatted {
+                                statements.push(StatementFormatResult {
+                                    original: text.clone(),
+                                    formatted: result.formatted.clone(),
+                                    range: stmt_range,
+                                });
+                            }
+                            if !formatted_output.is_empty() {
+                                formatted_output.push_str("\n\n");
+                            }
+                            formatted_output.push_str(&result.formatted);
                         }
-                        formatted_output.push_str(&text);
+                        Err(err) => {
+                            diagnostics.push(SDiagnostic::new(
+                                pgls_diagnostics::Error::from(WorkspaceError::format_error(
+                                    err.to_string(),
+                                ))
+                                .with_file_path(&path_str)
+                                .with_file_span(stmt_range),
+                            ));
+
+                            if !formatted_output.is_empty() {
+                                formatted_output.push_str("\n\n");
+                            }
+                            formatted_output.push_str(&text);
+                        }
                     }
-                },
+                }
                 Err(syntax_err) => {
                     diagnostics.push(SDiagnostic::new(
                         pgls_diagnostics::Error::from(syntax_err).with_file_path(&path_str),

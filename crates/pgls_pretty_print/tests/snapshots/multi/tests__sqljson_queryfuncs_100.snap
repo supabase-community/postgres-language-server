@@ -1,7 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/sqljson_queryfuncs.sql
-snapshot_kind: text
 ---
 select json_exists(cast(null as jsonb), '$');
 
@@ -918,13 +917,13 @@ using btree
 
 create or replace function ret_setint()
 returns setof int
+language plpgsql
+immutable
 as $function$
 BEGIN
     RETURN QUERY EXECUTE 'select 1 union all select 1';
 END;
-$function$
-language plpgsql
-immutable;
+$function$;
 
 select json_query(js, '$'  returning int default ret_setint() on error) from test_jsonb_mutability;
 

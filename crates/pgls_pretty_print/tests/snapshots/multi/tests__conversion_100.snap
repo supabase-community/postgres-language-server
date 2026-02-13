@@ -1,20 +1,19 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/conversion.sql
-snapshot_kind: text
 ---
 create function test_enc_setup()
 returns void
-as 'regresslib', 'test_enc_setup'
 language c
-strict;
+strict
+as 'regresslib', 'test_enc_setup';
 
 select from test_enc_setup();
 
 create function test_enc_conversion(bytea, name, name, boolean, out validlen int, out result bytea)
-as 'regresslib', 'test_enc_conversion'
 language c
-strict;
+strict
+as 'regresslib', 'test_enc_conversion';
 
 create user regress_conversion_user nocreatedb nocreaterole;
 

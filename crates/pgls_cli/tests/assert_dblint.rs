@@ -33,6 +33,17 @@ async fn dblint_empty_database_snapshot(test_db: PgPool) {
     target_os = "windows",
     ignore = "snapshot expectations only validated on unix-like platforms"
 )]
+async fn dblint_error_on_warnings_empty_database_snapshot(test_db: PgPool) {
+    let url = get_database_url(&test_db);
+    let output = run_dblint(&url, &["--error-on-warnings"]);
+    assert_snapshot!(output);
+}
+
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[cfg_attr(
+    target_os = "windows",
+    ignore = "snapshot expectations only validated on unix-like platforms"
+)]
 async fn dblint_detects_issues_snapshot(test_db: PgPool) {
     // Setup: create table without primary key (triggers noPrimaryKey rule)
     sqlx::raw_sql("CREATE TABLE test_no_pk (id int, name text)")
@@ -42,6 +53,27 @@ async fn dblint_detects_issues_snapshot(test_db: PgPool) {
 
     let url = get_database_url(&test_db);
     let output = run_dblint(&url, &[]);
+    assert_snapshot!(output);
+}
+
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[cfg_attr(
+    target_os = "windows",
+    ignore = "snapshot expectations only validated on unix-like platforms"
+)]
+async fn dblint_error_on_warnings_detects_issues_snapshot(test_db: PgPool) {
+    // Setup: create duplicate non-unique indexes (triggers duplicateIndex warning)
+    sqlx::raw_sql(
+        "CREATE TABLE test_duplicate_idx (id int primary key, email text);
+         CREATE INDEX idx_duplicate_a ON test_duplicate_idx (email);
+         CREATE INDEX idx_duplicate_b ON test_duplicate_idx (email);",
+    )
+    .execute(&test_db)
+    .await
+    .expect("Failed to create test schema");
+
+    let url = get_database_url(&test_db);
+    let output = run_dblint(&url, &["--error-on-warnings"]);
     assert_snapshot!(output);
 }
 

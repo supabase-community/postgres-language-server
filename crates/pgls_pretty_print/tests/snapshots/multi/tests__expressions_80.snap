@@ -1,7 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/expressions.sql
-snapshot_kind: text
 ---
 select cast(date(NOW()) as text) = cast(current_date as text);
 
@@ -101,23 +100,23 @@ begin;
 
 create function return_int_input(int)
 returns int
+language plpgsql
+stable
 as $function$
 begin
 	return $1;
 end;
-$function$
-language plpgsql
-stable;
+$function$;
 
 create function return_text_input(text)
 returns text
+language plpgsql
+stable
 as $function$
 begin
 	return $1;
 end;
-$function$
-language plpgsql
-stable;
+$function$;
 
 select return_int_input(1) in (10, 9, 2, 8, 3, 7, 4, 6, 5, 1);
 
@@ -223,24 +222,30 @@ create type myint;
 
 create function myintin(cstring)
 returns myint
-strict
-immutable
 language internal
-as $function$int4in$function$;
+immutable
+strict
+as $function$
+int4in
+$function$;
 
 create function myintout(myint)
 returns cstring
-strict
-immutable
 language internal
-as $function$int4out$function$;
+immutable
+strict
+as $function$
+int4out
+$function$;
 
 create function myinthash(myint)
 returns int
-strict
-immutable
 language internal
-as $function$hashint4$function$;
+immutable
+strict
+as $function$
+hashint4
+$function$;
 
 create type myint (input = myintin, output = myintout, like = int);
 
@@ -250,6 +255,8 @@ create cast (myint as int) without function;
 
 create function myinteq(myint, myint)
 returns boolean
+language plpgsql
+immutable
 as $function$
 begin
   if $1 is null and $2 is null then
@@ -258,19 +265,17 @@ begin
     return $1::int = $2::int;
   end if;
 end;
-$function$
-language plpgsql
-immutable;
+$function$;
 
 create function myintne(myint, myint)
 returns boolean
+language plpgsql
+immutable
 as $function$
 begin
   return not myinteq($1, $2);
 end;
-$function$
-language plpgsql
-immutable;
+$function$;
 
 create operator = (LEFTARG = myint,
 RIGHTARG = myint,

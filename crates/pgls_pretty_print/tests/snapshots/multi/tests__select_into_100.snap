@@ -1,7 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/select_into.sql
-snapshot_kind: text
 ---
 select * into sitmp1 from onek where onek.unique1 < 2;
 
@@ -98,10 +97,10 @@ drop table ctas_nodata_4;
 
 create function make_table()
 returns void
+language sql
 as $function$
-  CREATE TABLE created_table AS SELECT * FROM int8_tbl;
-$function$
-language sql;
+CREATE TABLE created_table AS SELECT * FROM int8_tbl;
+$function$;
 
 select make_table();
 
@@ -112,7 +111,8 @@ $do$
 BEGIN
 	EXECUTE 'EXPLAIN ANALYZE SELECT * INTO TABLE easi FROM int8_tbl';
 	EXECUTE 'EXPLAIN ANALYZE CREATE TABLE easi2 AS SELECT * FROM int8_tbl WITH NO DATA';
-END$do$;
+END
+$do$;
 
 drop table created_table;
 

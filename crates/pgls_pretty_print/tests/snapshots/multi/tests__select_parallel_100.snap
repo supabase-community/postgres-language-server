@@ -1,7 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/select_parallel.sql
-snapshot_kind: text
 ---
 select pg_stat_force_next_flush();
 
@@ -17,9 +16,11 @@ where
 
 create function sp_parallel_restricted(int)
 returns int
-as $function$begin return $1; end$function$
 language plpgsql
-parallel RESTRICTED;
+parallel RESTRICTED
+as $function$
+begin return $1; end
+$function$;
 
 begin;
 
@@ -89,9 +90,11 @@ reset enable_parallel_append;
 
 create function sp_test_func()
 returns setof text
-as $function$ select 'foo'::varchar union all select 'bar'::varchar $function$
 language sql
-stable;
+stable
+as $function$
+select 'foo'::varchar union all select 'bar'::varchar
+$function$;
 
 select sp_test_func() order by 1;
 
@@ -396,7 +399,8 @@ $do$
 BEGIN
  SET effective_io_concurrency = 50;
 EXCEPTION WHEN invalid_parameter_value THEN
-END $do$;
+END
+$do$;
 
 set work_mem = '64kB';
 
@@ -512,13 +516,13 @@ select COUNT(*) from tenk1 group by twenty;
 
 create function sp_simple_func(var1 int)
 returns int
+language plpgsql
+parallel SAFE
 as $function$
 begin
         return var1 + 10;
 end;
-$function$
-language plpgsql
-parallel SAFE;
+$function$;
 
 select ten, sp_simple_func(ten) from tenk1 where ten < 100 order by ten;
 
@@ -602,10 +606,12 @@ reset max_parallel_workers;
 
 create function parallel_safe_volatile(a int)
 returns int
-as $function$ begin return a; end; $function$
-parallel SAFE
+language plpgsql
 volatile
-language plpgsql;
+parallel SAFE
+as $function$
+begin return a; end;
+$function$;
 
 select * from tenk1 where four = 2 order by four, hundred, parallel_safe_volatile(thousand);
 
@@ -786,14 +792,16 @@ order by pathkey;
 
 create function make_some_array(int, int)
 returns int[]
-as $function$declare x int[];
+language plpgsql
+parallel SAFE
+as $function$
+declare x int[];
   begin
     x[1] := $1;
     x[2] := $2;
     return x;
-  end$function$
-language plpgsql
-parallel SAFE;
+  end
+$function$;
 
 create table fooarr (
   f1 text,
@@ -837,17 +845,21 @@ create role regress_parallel_worker;
 
 create function set_and_report_role()
 returns text
-as $function$ select current_setting('role') $function$
 language sql
 parallel SAFE
-set role to regress_parallel_worker;
+set role to regress_parallel_worker
+as $function$
+select current_setting('role')
+$function$;
 
 create function set_role_and_error(int)
 returns int
-as $function$ select 1 / $1 $function$
 language sql
 parallel SAFE
-set role to regress_parallel_worker;
+set role to regress_parallel_worker
+as $function$
+select 1 / $1
+$function$;
 
 set debug_parallel_query = 0;
 
@@ -875,7 +887,7 @@ create function my_cmp(int, int)
 returns int
 language sql
 as $function$
-	SELECT
+SELECT
 		CASE WHEN $1 < $2 THEN -1
 				WHEN $1 > $2 THEN  1
 				ELSE 0

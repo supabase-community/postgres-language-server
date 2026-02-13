@@ -1,7 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/collate.linux.utf8.sql
-snapshot_kind: text
 ---
 select
   getdatabaseencoding() <> 'UTF8' or
@@ -367,17 +366,23 @@ select a, cast(b as varchar) from collate_test3 order by 2;
 create function mylt(text, text)
 returns boolean
 language sql
-as $function$ select $1 < $2 $function$;
+as $function$
+select $1 < $2
+$function$;
 
 create function mylt_noninline(text, text)
 returns boolean
 language sql
-as $function$ select $1 < $2 limit 1 $function$;
+as $function$
+select $1 < $2 limit 1
+$function$;
 
 create function mylt_plpgsql(text, text)
 returns boolean
 language plpgsql
-as $function$ begin return $1 < $2; end $function$;
+as $function$
+begin return $1 < $2; end
+$function$;
 
 select
   a.b as a,
@@ -445,8 +450,10 @@ select * from unnest((select array_agg(b order by b) from collate_test3)) order 
 
 create function dup(anyelement)
 returns anyelement
-as $function$select $1$function$
-language sql;
+language sql
+as $function$
+select $1
+$function$;
 
 select a, dup(b) from collate_test1 order by 2;
 

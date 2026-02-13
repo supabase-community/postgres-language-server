@@ -1,35 +1,42 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/create_type.sql
-snapshot_kind: text
 ---
 create function widget_in(cstring)
 returns widget
-as $function$regresslib$function$
 language c
+immutable
 strict
-immutable;
+as $function$
+regresslib
+$function$;
 
 create function widget_out(widget)
 returns cstring
-as $function$regresslib$function$
 language c
+immutable
 strict
-immutable;
+as $function$
+regresslib
+$function$;
 
 create function int44in(cstring)
 returns city_budget
-as $function$regresslib$function$
 language c
+immutable
 strict
-immutable;
+as $function$
+regresslib
+$function$;
 
 create function int44out(city_budget)
 returns cstring
-as $function$regresslib$function$
 language c
+immutable
 strict
-immutable;
+as $function$
+regresslib
+$function$;
 
 create type widget (
   internallength = 24,
@@ -65,31 +72,39 @@ create type text_w_default;
 
 create function int42_in(cstring)
 returns int42
-as $function$int4in$function$
 language internal
+immutable
 strict
-immutable;
+as $function$
+int4in
+$function$;
 
 create function int42_out(int42)
 returns cstring
-as $function$int4out$function$
 language internal
+immutable
 strict
-immutable;
+as $function$
+int4out
+$function$;
 
 create function text_w_default_in(cstring)
 returns text_w_default
-as $function$textin$function$
 language internal
+immutable
 strict
-immutable;
+as $function$
+textin
+$function$;
 
 create function text_w_default_out(text_w_default)
 returns cstring
-as $function$textout$function$
 language internal
+immutable
 strict
-immutable;
+as $function$
+textout
+$function$;
 
 create type int42 (
   internallength = 4,
@@ -138,10 +153,10 @@ create type default_test_row as (f1 text_w_default, f2 int42);
 
 create function get_default_test()
 returns setof default_test_row
+language sql
 as $function$
-  SELECT * FROM default_test;
-$function$
-language sql;
+SELECT * FROM default_test;
+$function$;
 
 select * from get_default_test();
 
@@ -167,17 +182,21 @@ create type base_type;
 
 create function base_fn_in(cstring)
 returns base_type
-as $function$boolin$function$
 language internal
 immutable
-strict;
+strict
+as $function$
+boolin
+$function$;
 
 create function base_fn_out(base_type)
 returns cstring
-as $function$boolout$function$
 language internal
 immutable
-strict;
+strict
+as $function$
+boolout
+$function$;
 
 create type base_type (input = base_fn_in, output = base_fn_out);
 
@@ -225,9 +244,11 @@ select pg_input_is_valid('("(1,2)")', 'mytab');
 
 create function pt_in_widget(point, widget)
 returns boolean
-as $function$regresslib$function$
 language c
-strict;
+strict
+as $function$
+regresslib
+$function$;
 
 create operator <% (LEFTARG = point,
 RIGHTARG = widget,
@@ -266,33 +287,41 @@ create function myvarcharin(cstring, oid, int)
 returns myvarchar
 language internal
 immutable
-parallel SAFE
 strict
-as $function$varcharin$function$;
+parallel SAFE
+as $function$
+varcharin
+$function$;
 
 create function myvarcharout(myvarchar)
 returns cstring
 language internal
 immutable
-parallel SAFE
 strict
-as $function$varcharout$function$;
+parallel SAFE
+as $function$
+varcharout
+$function$;
 
 create function myvarcharsend(myvarchar)
 returns bytea
 language internal
 stable
-parallel SAFE
 strict
-as $function$varcharsend$function$;
+parallel SAFE
+as $function$
+varcharsend
+$function$;
 
 create function myvarcharrecv(internal, oid, int)
 returns myvarchar
 language internal
 stable
-parallel SAFE
 strict
-as $function$varcharrecv$function$;
+parallel SAFE
+as $function$
+varcharrecv
+$function$;
 
 alter type myvarchar set (storage = extended);
 

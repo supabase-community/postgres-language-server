@@ -1,7 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/aggregates.sql
-snapshot_kind: text
 ---
 set extra_float_digits = 0;
 
@@ -2152,6 +2151,7 @@ create type avg_state as (total bigint, count bigint);
 
 create or replace function avg_transfn(state avg_state, n int)
 returns avg_state
+language plpgsql
 as $function$
 declare new_state avg_state;
 begin
@@ -2171,11 +2171,11 @@ begin
 
 	return null;
 end
-$function$
-language plpgsql;
+$function$;
 
 create function avg_finalfn(state avg_state)
 returns int
+language plpgsql
 as $function$
 begin
 	if state is null then
@@ -2184,11 +2184,11 @@ begin
 		return state.total / state.count;
 	end if;
 end
-$function$
-language plpgsql;
+$function$;
 
 create function sum_finalfn(state avg_state)
 returns int
+language plpgsql
 as $function$
 begin
 	if state is null then
@@ -2197,8 +2197,7 @@ begin
 		return state.total;
 	end if;
 end
-$function$
-language plpgsql;
+$function$;
 
 create aggregate my_avg (
   int
@@ -2317,6 +2316,7 @@ begin;
 
 create or replace function sum_transfn(state int, n int)
 returns int
+language plpgsql
 as $function$
 declare new_state int4;
 begin
@@ -2334,11 +2334,11 @@ begin
 
 	return null;
 end
-$function$
-language plpgsql;
+$function$;
 
 create function halfsum_finalfn(state int)
 returns int
+language plpgsql
 as $function$
 begin
 	if state is null then
@@ -2347,8 +2347,7 @@ begin
 		return state / 2;
 	end if;
 end
-$function$
-language plpgsql;
+$function$;
 
 create aggregate my_sum (int) (stype = int, sfunc = sum_transfn);
 
@@ -2372,15 +2371,16 @@ begin;
 
 create function balkifnull(bigint, int)
 returns bigint
-strict
 language plpgsql
+strict
 as $function$
 BEGIN
     IF $1 IS NULL THEN
        RAISE 'erroneously called with NULL argument';
     END IF;
     RETURN NULL;
-END$function$;
+END
+$function$;
 
 create aggregate balk (
   int
@@ -2558,16 +2558,17 @@ begin;
 
 create function balkifnull(bigint, bigint)
 returns bigint
-parallel SAFE
-strict
 language plpgsql
+strict
+parallel SAFE
 as $function$
 BEGIN
     IF $1 IS NULL THEN
        RAISE 'erroneously called with NULL argument';
     END IF;
     RETURN NULL;
-END$function$;
+END
+$function$;
 
 create aggregate balk (
   int
@@ -2607,8 +2608,8 @@ $function$;
 create function rwagg_finalfunc(x anyarray)
 returns anyarray
 language plpgsql
-strict
 immutable
+strict
 as $function$
 DECLARE
     res x%TYPE;
@@ -2630,8 +2631,8 @@ create aggregate rwagg (
 create function eatarray(x real[])
 returns real[]
 language plpgsql
-strict
 immutable
+strict
 as $function$
 BEGIN
     x[1] := x[1] + 1;

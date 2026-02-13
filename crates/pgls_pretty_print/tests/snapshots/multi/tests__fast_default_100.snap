@@ -1,7 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/fast_default.sql
-snapshot_kind: text
 ---
 set search_path to fast_default;
 
@@ -13,6 +12,7 @@ insert into m values (cast(null as oid));
 
 create function set(tabname name)
 returns void
+language plpgsql
 as $function$
 BEGIN
   UPDATE m
@@ -22,11 +22,11 @@ BEGIN
                 AND c.relnamespace = s.oid
                 AND s.nspname = 'fast_default');
 END;
-$function$
-language plpgsql;
+$function$;
 
 create function comp()
 returns text
+language plpgsql
 as $function$
 BEGIN
   RETURN (SELECT CASE
@@ -38,14 +38,12 @@ BEGIN
                AND c.relnamespace = s.oid
                AND s.nspname = 'fast_default');
 END;
-$function$
-language plpgsql;
+$function$;
 
 create function log_rewrite()
 returns event_trigger
 language plpgsql
 as $function$
-
 declare
    this_schema text;
 begin
@@ -220,6 +218,8 @@ drop table t;
 
 create or replace function foo(a int)
 returns text
+language plpgsql
+stable
 as $function$
 DECLARE res TEXT := '';
         i INT;
@@ -230,9 +230,8 @@ BEGIN
     i := i + 1;
   END LOOP;
   RETURN res;
-END; $function$
-language plpgsql
-stable;
+END;
+$function$;
 
 create table t (
   pk int not null primary key,
@@ -395,9 +394,11 @@ select comp();
 
 create function foolme(timestamp with time zone default clock_timestamp())
 returns timestamp with time zone
+language sql
 immutable
-as $function$select $1$function$
-language sql;
+as $function$
+select $1
+$function$;
 
 alter table t
   add column c3 timestamp with time zone default foolme();
@@ -521,7 +522,6 @@ create function test_trigger()
 returns trigger
 language plpgsql
 as $function$
-
 begin
     raise notice 'old tuple: %', to_json(OLD)::text;
     if TG_OP = 'DELETE'
@@ -531,7 +531,6 @@ begin
        return NEW;
     end if;
 end;
-
 $function$;
 
 create table t (

@@ -1,7 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/security_label.sql
-snapshot_kind: text
 ---
 set client_min_messages = warning;
 
@@ -30,8 +29,10 @@ as select * from seclabel_tbl2;
 
 create function seclabel_four()
 returns int
-as $function$SELECT 4$function$
-language sql;
+language sql
+as $function$
+SELECT 4
+$function$;
 
 create domain seclabel_domain as text;
 

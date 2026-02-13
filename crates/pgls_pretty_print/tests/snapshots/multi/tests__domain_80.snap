@@ -1,7 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/domain.sql
-snapshot_kind: text
 ---
 create domain domaindroptest as int;
 
@@ -226,8 +225,10 @@ do instead
 
 create function makedcomp(r double precision, i double precision)
 returns dcomptype
-as $function$select row(r, i)$function$
-language sql;
+language sql
+as $function$
+select row(r, i)
+$function$;
 
 select makedcomp(1, 2);
 
@@ -814,35 +815,38 @@ execute s1 (null);
 
 create function doubledecrement(p1 pos_int)
 returns pos_int
+language plpgsql
 as $function$
 declare v pos_int;
 begin
     return p1;
-end$function$
-language plpgsql;
+end
+$function$;
 
 select doubledecrement(3);
 
 create or replace function doubledecrement(p1 pos_int)
 returns pos_int
+language plpgsql
 as $function$
 declare v pos_int := 0;
 begin
     return p1;
-end$function$
-language plpgsql;
+end
+$function$;
 
 select doubledecrement(3);
 
 create or replace function doubledecrement(p1 pos_int)
 returns pos_int
+language plpgsql
 as $function$
 declare v pos_int := 1;
 begin
     v := p1 - 1;
     return v - 1;
-end$function$
-language plpgsql;
+end
+$function$;
 
 select doubledecrement(null);
 
@@ -934,14 +938,15 @@ drop domain posint cascade;
 
 create or replace function array_elem_check(numeric)
 returns numeric
+language plpgsql
 as $function$
 declare
   x numeric(4,2)[1];
 begin
   x[1] := $1;
   return x[1];
-end$function$
-language plpgsql;
+end
+$function$;
 
 select array_elem_check(121.00);
 
@@ -951,14 +956,15 @@ create domain mynums as numeric(4, 2)[1];
 
 create or replace function array_elem_check(numeric)
 returns numeric
+language plpgsql
 as $function$
 declare
   x mynums;
 begin
   x[1] := $1;
   return x[1];
-end$function$
-language plpgsql;
+end
+$function$;
 
 select array_elem_check(121.00);
 
@@ -968,14 +974,15 @@ create domain mynums2 as mynums;
 
 create or replace function array_elem_check(numeric)
 returns numeric
+language plpgsql
 as $function$
 declare
   x mynums2;
 begin
   x[1] := $1;
   return x[1];
-end$function$
-language plpgsql;
+end
+$function$;
 
 select array_elem_check(121.00);
 
@@ -1003,14 +1010,15 @@ select * from op;
 
 create or replace function array_elem_check(int)
 returns int
+language plpgsql
 as $function$
 declare
   x orderedpair := '{1,2}';
 begin
   x[2] := $1;
   return x[2];
-end$function$
-language plpgsql;
+end
+$function$;
 
 select array_elem_check(3);
 
@@ -1022,15 +1030,15 @@ create domain di as int;
 
 create function dom_check(int)
 returns di
+language plpgsql
+immutable
 as $function$
 declare d di;
 begin
   d := $1::di;
   return d;
 end
-$function$
-language plpgsql
-immutable;
+$function$;
 
 select dom_check(0);
 
@@ -1044,15 +1052,15 @@ select dom_check(0);
 
 create or replace function dom_check(int)
 returns di
+language plpgsql
+immutable
 as $function$
 declare d di;
 begin
   d := $1;
   return d;
 end
-$function$
-language plpgsql
-immutable;
+$function$;
 
 select dom_check(0);
 
@@ -1071,7 +1079,9 @@ drop domain di;
 create function sql_is_distinct_from(anyelement, anyelement)
 returns boolean
 language sql
-as $function$select $1 is distinct from $2 limit 1$function$;
+as $function$
+select $1 is distinct from $2 limit 1
+$function$;
 
 create domain inotnull as int check (sql_is_distinct_from(value, null));
 

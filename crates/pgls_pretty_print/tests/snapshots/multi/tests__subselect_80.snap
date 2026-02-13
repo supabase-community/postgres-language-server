@@ -1,7 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/subselect.sql
-snapshot_kind: text
 ---
 select 1 as one where 1 in (select 1);
 
@@ -1154,7 +1153,9 @@ begin;
 create function bogus_int8_text_eq(bigint, text)
 returns boolean
 language sql
-as $function$select $1::text = $2$function$;
+as $function$
+select $1::text = $2
+$function$;
 
 create operator = (PROCEDURE = bogus_int8_text_eq,
 LEFTARG = bigint,
@@ -1167,7 +1168,9 @@ select * from int8_tbl where q1 in (select c1 from inner_text);
 create or replace function bogus_int8_text_eq(bigint, text)
 returns boolean
 language sql
-as $function$select $1::text = $2 and $1::text = $2$function$;
+as $function$
+select $1::text = $2 and $1::text = $2
+$function$;
 
 select * from int8_tbl where q1 in (select c1 from inner_text);
 
@@ -1176,7 +1179,9 @@ select * from int8_tbl where q1 in (select c1 from inner_text);
 create or replace function bogus_int8_text_eq(bigint, text)
 returns boolean
 language sql
-as $function$select $2 = $1::text$function$;
+as $function$
+select $2 = $1::text
+$function$;
 
 select * from int8_tbl where q1 in (select c1 from inner_text);
 
@@ -1763,13 +1768,14 @@ select nextval('ts1');
 
 create function tattle(x int, y int)
 returns boolean
-volatile
 language plpgsql
+volatile
 as $function$
 begin
   raise notice 'x = %, y = %', x, y;
   return x > y;
-end$function$;
+end
+$function$;
 
 select
   *

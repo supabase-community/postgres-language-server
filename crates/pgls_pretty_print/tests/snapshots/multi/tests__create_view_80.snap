@@ -1,13 +1,14 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/create_view.sql
-snapshot_kind: text
 ---
 create function interpt_pp(path, path)
 returns point
-as $function$regresslib$function$
 language c
-strict;
+strict
+as $function$
+regresslib
+$function$;
 
 create table real_city (
   pop int,
@@ -1240,6 +1241,7 @@ alter table tt14t
 
 create function tt14f()
 returns setof tt14t
+language plpgsql
 as $function$
 declare
     rec1 record;
@@ -1249,8 +1251,7 @@ begin
         return next rec1;
     end loop;
 end;
-$function$
-language plpgsql;
+$function$;
 
 create view tt14v
 as select t.* from tt14f() as t;

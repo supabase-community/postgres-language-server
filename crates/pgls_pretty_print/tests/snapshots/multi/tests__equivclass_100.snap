@@ -1,23 +1,26 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/equivclass.sql
-snapshot_kind: text
 ---
 create type int8alias1;
 
 create function int8alias1in(cstring)
 returns int8alias1
-strict
-immutable
 language internal
-as $function$int8in$function$;
+immutable
+strict
+as $function$
+int8in
+$function$;
 
 create function int8alias1out(int8alias1)
 returns cstring
-strict
-immutable
 language internal
-as $function$int8out$function$;
+immutable
+strict
+as $function$
+int8out
+$function$;
 
 create type int8alias1 (input = int8alias1in, output = int8alias1out, like = bigint);
 
@@ -25,17 +28,21 @@ create type int8alias2;
 
 create function int8alias2in(cstring)
 returns int8alias2
-strict
-immutable
 language internal
-as $function$int8in$function$;
+immutable
+strict
+as $function$
+int8in
+$function$;
 
 create function int8alias2out(int8alias2)
 returns cstring
-strict
-immutable
 language internal
-as $function$int8out$function$;
+immutable
+strict
+as $function$
+int8out
+$function$;
 
 create type int8alias2 (input = int8alias2in, output = int8alias2out, like = bigint);
 
@@ -49,10 +56,12 @@ create cast (int8alias2 as bigint) without function;
 
 create function int8alias1eq(int8alias1, int8alias1)
 returns boolean
-strict
-immutable
 language internal
-as $function$int8eq$function$;
+immutable
+strict
+as $function$
+int8eq
+$function$;
 
 create operator = (PROCEDURE = int8alias1eq,
 LEFTARG = int8alias1,
@@ -66,10 +75,12 @@ alter operator family integer_ops using btree add operator 3 = (int8alias1, int8
 
 create function int8alias2eq(int8alias2, int8alias2)
 returns boolean
-strict
-immutable
 language internal
-as $function$int8eq$function$;
+immutable
+strict
+as $function$
+int8eq
+$function$;
 
 create operator = (PROCEDURE = int8alias2eq,
 LEFTARG = int8alias2,
@@ -83,10 +94,12 @@ alter operator family integer_ops using btree add operator 3 = (int8alias2, int8
 
 create function int8alias1eq(bigint, int8alias1)
 returns boolean
-strict
-immutable
 language internal
-as $function$int8eq$function$;
+immutable
+strict
+as $function$
+int8eq
+$function$;
 
 create operator = (PROCEDURE = int8alias1eq,
 LEFTARG = bigint,
@@ -99,10 +112,12 @@ alter operator family integer_ops using btree add operator 3 = (bigint, int8alia
 
 create function int8alias1eq(int8alias1, int8alias2)
 returns boolean
-strict
-immutable
 language internal
-as $function$int8eq$function$;
+immutable
+strict
+as $function$
+int8eq
+$function$;
 
 create operator = (PROCEDURE = int8alias1eq,
 LEFTARG = int8alias1,
@@ -115,10 +130,12 @@ alter operator family integer_ops using btree add operator 3 = (int8alias1, int8
 
 create function int8alias1lt(int8alias1, int8alias1)
 returns boolean
-strict
-immutable
 language internal
-as $function$int8lt$function$;
+immutable
+strict
+as $function$
+int8lt
+$function$;
 
 create operator < (PROCEDURE = int8alias1lt, LEFTARG = int8alias1, RIGHTARG = int8alias1);
 
@@ -126,10 +143,12 @@ alter operator family integer_ops using btree add operator 1 < (int8alias1, int8
 
 create function int8alias1cmp(bigint, int8alias1)
 returns int
-strict
-immutable
 language internal
-as $function$btint8cmp$function$;
+immutable
+strict
+as $function$
+btint8cmp
+$function$;
 
 alter operator family integer_ops using btree add function 1 int8alias1cmp(bigint, int8alias1);
 
@@ -451,10 +470,12 @@ alter operator family integer_ops using hash add operator 1 = (bigint, int8alias
 
 create function hashint8alias1(int8alias1)
 returns int
-strict
-immutable
 language internal
-as $function$hashint8$function$;
+immutable
+strict
+as $function$
+hashint8
+$function$;
 
 alter operator family integer_ops using hash add function 1 hashint8alias1(int8alias1);
 

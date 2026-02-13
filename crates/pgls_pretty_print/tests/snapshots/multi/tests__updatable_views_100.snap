@@ -1,7 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/updatable_views.sql
-snapshot_kind: text
 ---
 set extra_float_digits = 0;
 
@@ -668,6 +667,7 @@ order by table_name,
 
 create function rw_view1_trig_fn()
 returns trigger
+language plpgsql
 as $function$
 BEGIN
   IF TG_OP = 'INSERT' THEN
@@ -683,8 +683,7 @@ BEGIN
     RETURN OLD;
   END IF;
 END;
-$function$
-language plpgsql;
+$function$;
 
 create trigger rw_view1_ins_trig
 instead of insert
@@ -849,8 +848,10 @@ as select b as bb, a as aa from base_tbl;
 
 create function rw_view1_aa(x rw_view1)
 returns int
-as $function$ SELECT x.aa $function$
-language sql;
+language sql
+as $function$
+SELECT x.aa
+$function$;
 
 update rw_view1 as v
 set bb = 'Updated row 2'
@@ -1435,6 +1436,7 @@ insert into base_tbl values (2, 'Row 2');
 
 create function rw_view1_trig_fn()
 returns trigger
+language plpgsql
 as $function$
 BEGIN
   IF TG_OP = 'INSERT' THEN
@@ -1443,8 +1445,7 @@ BEGIN
   END IF;
   RETURN NULL;
 END;
-$function$
-language plpgsql;
+$function$;
 
 create trigger rw_view1_ins_trig
 after insert
@@ -1901,13 +1902,13 @@ create table base_tbl (
 
 create function base_tbl_trig_fn()
 returns trigger
+language plpgsql
 as $function$
 BEGIN
   NEW.b := 10;
   RETURN NEW;
 END;
-$function$
-language plpgsql;
+$function$;
 
 create trigger base_tbl_trig
 before insert or update
@@ -1939,6 +1940,7 @@ as select a from base_tbl where a < b;
 
 create function rw_view1_trig_fn()
 returns trigger
+language plpgsql
 as $function$
 BEGIN
   IF TG_OP = 'INSERT' THEN
@@ -1952,8 +1954,7 @@ BEGIN
     RETURN OLD;
   END IF;
 END;
-$function$
-language plpgsql;
+$function$;
 
 create trigger rw_view1_trig
 instead of insert or delete or update
@@ -2049,26 +2050,26 @@ where
 
 create function snoop(anyelement)
 returns boolean
+language plpgsql
+cost 0.000001
 as $function$
 BEGIN
   RAISE NOTICE 'snooped value: %', $1;
   RETURN true;
 END;
-$function$
-language plpgsql
-cost 0.000001;
+$function$;
 
 create or replace function leakproof(anyelement)
 returns boolean
+language plpgsql
+immutable
+leakproof
+strict
 as $function$
 BEGIN
   RETURN true;
 END;
-$function$
-language plpgsql
-strict
-immutable
-leakproof;
+$function$;
 
 select * from rw_view1 where snoop(person);
 
@@ -2927,13 +2928,13 @@ select * from base_tab_def order by a;
 
 create function base_tab_def_view_instrig_func()
 returns trigger
+language plpgsql
 as $function$
 begin
   insert into base_tab_def values (new.a, new.b, new.c, new.d, new.e);
   return new;
 end;
-$function$
-language plpgsql;
+$function$;
 
 create trigger base_tab_def_view_instrig
 instead of insert

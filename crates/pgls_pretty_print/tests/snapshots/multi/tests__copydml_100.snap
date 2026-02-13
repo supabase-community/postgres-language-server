@@ -1,7 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/copydml.sql
-snapshot_kind: text
 ---
 create table copydml_test (
   id serial,
@@ -155,6 +154,7 @@ drop rule qqq on copydml_test;
 
 create function qqq_trig()
 returns trigger
+language plpgsql
 as $function$
 begin
 if tg_op in ('INSERT', 'UPDATE') then
@@ -165,8 +165,7 @@ else
     return old;
 end if;
 end
-$function$
-language plpgsql;
+$function$;
 
 create trigger qqqbef
 before insert or delete or update

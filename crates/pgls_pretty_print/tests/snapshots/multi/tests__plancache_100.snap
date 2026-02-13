@@ -1,7 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/plancache.sql
-snapshot_kind: text
 ---
 create temporary table pcachetest as select * from int8_tbl;
 
@@ -53,6 +52,7 @@ execute vprep;
 
 create function cache_test(int)
 returns int
+language plpgsql
 as $function$
 declare total int;
 begin
@@ -65,8 +65,7 @@ begin
 	drop table t1;
 	return total;
 end
-$function$
-language plpgsql;
+$function$;
 
 select cache_test(1);
 
@@ -79,11 +78,12 @@ as select 2 + 2 as f1;
 
 create function cache_test_2()
 returns int
+language plpgsql
 as $function$
 begin
 	return f1 from v1;
-end$function$
-language plpgsql;
+end
+$function$;
 
 select cache_test_2();
 
@@ -147,6 +147,7 @@ execute p2;
 
 create function cachebug()
 returns void
+language plpgsql
 as $function$
 declare r int;
 begin
@@ -156,8 +157,8 @@ begin
   for r in select * from vv loop
     raise notice '%', r;
   end loop;
-end$function$
-language plpgsql;
+end
+$function$;
 
 select cachebug();
 

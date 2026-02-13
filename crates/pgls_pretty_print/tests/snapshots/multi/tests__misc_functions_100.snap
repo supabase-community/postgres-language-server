@@ -1,7 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/misc_functions.sql
-snapshot_kind: text
 ---
 create function
 explain_mask_costs(
@@ -129,10 +128,12 @@ select num_nulls();
 
 create function test_canonicalize_path(text)
 returns text
-as $function$regresslib$function$
 language c
+immutable
 strict
-immutable;
+as $function$
+regresslib
+$function$;
 
 select test_canonicalize_path('/');
 
@@ -312,10 +313,12 @@ drop role regress_slot_dir_funcs;
 create function my_int_eq(int, int)
 returns boolean
 language internal
-strict
 immutable
+strict
 parallel SAFE
-as $function$int4eq$function$;
+as $function$
+int4eq
+$function$;
 
 select
   *
@@ -329,9 +332,9 @@ where
 
 create function test_support_func(internal)
 returns internal
-as 'regresslib', 'test_support_func'
 language c
-strict;
+strict
+as 'regresslib', 'test_support_func';
 
 alter function my_int_eq(int, int) support test_support_func;
 
@@ -348,11 +351,13 @@ where
 create function my_gen_series(int, int)
 returns setof int
 language internal
-strict
 immutable
+strict
 parallel SAFE
-as $function$generate_series_int4$function$
-support test_support_func;
+support test_support_func
+as $function$
+generate_series_int4
+$function$;
 
 select * from tenk1 as a inner join my_gen_series(1, 1000) as g on a.unique1 = g;
 
@@ -598,8 +603,10 @@ select gist_translate_cmptype_common(3);
 
 create function test_relpath()
 returns void
-as $function$regresslib$function$
-language c;
+language c
+as $function$
+regresslib
+$function$;
 
 select test_relpath();
 

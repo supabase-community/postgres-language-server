@@ -1,7 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/create_function_sql.sql
-snapshot_kind: text
 ---
 create user regress_unpriv_user;
 
@@ -14,17 +13,23 @@ set search_path to temp_func_test, public;
 create function functest_a_1(text, date)
 returns boolean
 language sql
-as $function$SELECT $1 = 'abcd' AND $2 > '2001-01-01'$function$;
+as $function$
+SELECT $1 = 'abcd' AND $2 > '2001-01-01'
+$function$;
 
 create function functest_a_2(text[])
 returns int
 language sql
-as $function$SELECT $1[1]::int$function$;
+as $function$
+SELECT $1[1]::int
+$function$;
 
 create function functest_a_3()
 returns boolean
 language sql
-as $function$SELECT false$function$;
+as $function$
+SELECT false
+$function$;
 
 select
   proname,
@@ -50,25 +55,33 @@ select functest_a_3();
 create function functest_b_1(int)
 returns boolean
 language sql
-as $function$SELECT $1 > 0$function$;
+as $function$
+SELECT $1 > 0
+$function$;
 
 create function functest_b_2(int)
 returns boolean
 language sql
 immutable
-as $function$SELECT $1 > 0$function$;
+as $function$
+SELECT $1 > 0
+$function$;
 
 create function functest_b_3(int)
 returns boolean
 language sql
 stable
-as $function$SELECT $1 = 0$function$;
+as $function$
+SELECT $1 = 0
+$function$;
 
 create function functest_b_4(int)
 returns boolean
 language sql
 volatile
-as $function$SELECT $1 < 0$function$;
+as $function$
+SELECT $1 < 0
+$function$;
 
 select
   proname,
@@ -107,19 +120,25 @@ order by proname;
 create function functest_c_1(int)
 returns boolean
 language sql
-as $function$SELECT $1 > 0$function$;
+as $function$
+SELECT $1 > 0
+$function$;
 
 create function functest_c_2(int)
 returns boolean
 language sql
 security definer
-as $function$SELECT $1 = 0$function$;
+as $function$
+SELECT $1 = 0
+$function$;
 
 create function functest_c_3(int)
 returns boolean
 language sql
 security invoker
-as $function$SELECT $1 < 0$function$;
+as $function$
+SELECT $1 < 0
+$function$;
 
 select
   proname,
@@ -158,13 +177,17 @@ order by proname;
 create function functest_e_1(int)
 returns boolean
 language sql
-as $function$SELECT $1 > 100$function$;
+as $function$
+SELECT $1 > 100
+$function$;
 
 create function functest_e_2(int)
 returns boolean
 language sql
 leakproof
-as $function$SELECT $1 > 100$function$;
+as $function$
+SELECT $1 > 100
+$function$;
 
 select
   proname,
@@ -227,32 +250,42 @@ create function functest_e_3(int)
 returns boolean
 language sql
 leakproof
-as $function$SELECT $1 < 200$function$;
+as $function$
+SELECT $1 < 200
+$function$;
 
 reset session_authorization;
 
 create function functest_f_1(int)
 returns boolean
 language sql
-as $function$SELECT $1 > 50$function$;
+as $function$
+SELECT $1 > 50
+$function$;
 
 create function functest_f_2(int)
 returns boolean
 language sql
 called on null input
-as $function$SELECT $1 = 50$function$;
+as $function$
+SELECT $1 = 50
+$function$;
 
 create function functest_f_3(int)
 returns boolean
 language sql
 strict
-as $function$SELECT $1 < 50$function$;
+as $function$
+SELECT $1 < 50
+$function$;
 
 create function functest_f_4(int)
 returns boolean
 language sql
 strict
-as $function$SELECT $1 = 50$function$;
+as $function$
+SELECT $1 = 50
+$function$;
 
 select
   proname,
@@ -329,7 +362,9 @@ commit;
 create function functest_s_xxx(x int)
 returns int
 language sql
-as $function$ SELECT x * 2 $function$ return x * 3;;
+as $function$
+SELECT x * 2
+$function$ return x * 3;;
 
 create function functest_s_xx(x anyarray)
 returns anyelement
@@ -388,17 +423,23 @@ drop table functest3 cascade;
 create function functest_is_1(a int, b int default 1, c text default 'foo')
 returns int
 language sql
-as $function$SELECT $1 + $2$function$;
+as $function$
+SELECT $1 + $2
+$function$;
 
 create function functest_is_2(out a int, b int default 1)
 returns int
 language sql
-as $function$SELECT $1$function$;
+as $function$
+SELECT $1
+$function$;
 
 create function functest_is_3(a int default 1, out b int)
 returns int
 language sql
-as $function$SELECT $1$function$;
+as $function$
+SELECT $1
+$function$;
 
 select
   routine_name,
@@ -423,19 +464,25 @@ drop function functest_is_1(int, int, text), functest_is_2(int), functest_is_3(i
 create function functest_is_4a()
 returns int
 language sql
-as $function$SELECT 1$function$;
+as $function$
+SELECT 1
+$function$;
 
 create function functest_is_4b(x int default functest_is_4a())
 returns int
 language sql
-as $function$SELECT x$function$;
+as $function$
+SELECT x
+$function$;
 
 create sequence functest1;
 
 create function functest_is_5(x int default nextval('functest1'))
 returns int
 language sql
-as $function$SELECT x$function$;
+as $function$
+SELECT x
+$function$;
 
 create function functest_is_6()
 returns int
@@ -508,7 +555,9 @@ create function functest_b_2(bigint)
 returns boolean
 language sql
 immutable
-as $function$SELECT $1 > 0$function$;
+as $function$
+SELECT $1 > 0
+$function$;
 
 drop function functest_b_1;
 
@@ -519,24 +568,32 @@ drop function functest_b_2;
 create function functest1(a int)
 returns int
 language sql
-as $function$SELECT $1$function$;
+as $function$
+SELECT $1
+$function$;
 
 create or replace function functest1(a int)
 returns int
 language sql
 window
-as $function$SELECT $1$function$;
+as $function$
+SELECT $1
+$function$;
 
 create or replace procedure functest1(a int)
 language sql
-as $procedure$SELECT $1$procedure$;
+as $procedure$
+SELECT $1
+$procedure$;
 
 drop function functest1(int);
 
 create function functest_srf0()
 returns setof int
 language sql
-as $function$ SELECT i FROM generate_series(1, 100) i $function$;
+as $function$
+SELECT i FROM generate_series(1, 100) i
+$function$;
 
 select functest_srf0() limit 5;
 
@@ -549,7 +606,7 @@ returns setof int
 language sql
 stable
 as $function$
-    SELECT * FROM functest3;
+SELECT * FROM functest3;
 $function$;
 
 select * from functest_sri1();
@@ -569,14 +626,18 @@ drop table functest3 cascade;
 create function voidtest1(a int)
 returns void
 language sql
-as $function$ SELECT a + 1 $function$;
+as $function$
+SELECT a + 1
+$function$;
 
 select voidtest1(42);
 
 create function voidtest2(a int, b int)
 returns void
 language sql
-as $function$ SELECT voidtest1(a + b) $function$;
+as $function$
+SELECT voidtest1(a + b)
+$function$;
 
 select voidtest2(11, 22);
 
@@ -587,14 +648,18 @@ create temporary table sometable (f1 int);
 create function voidtest3(a int)
 returns void
 language sql
-as $function$ INSERT INTO sometable VALUES(a + 1) $function$;
+as $function$
+INSERT INTO sometable VALUES(a + 1)
+$function$;
 
 select voidtest3(17);
 
 create function voidtest4(a int)
 returns void
 language sql
-as $function$ INSERT INTO sometable VALUES(a - 1) RETURNING f1 $function$;
+as $function$
+INSERT INTO sometable VALUES(a - 1) RETURNING f1
+$function$;
 
 select voidtest4(39);
 
@@ -603,8 +668,10 @@ select * from sometable;
 create function voidtest5(a int)
 returns setof void
 language sql
-as $function$ SELECT generate_series(1, a) $function$
-stable;
+stable
+as $function$
+SELECT generate_series(1, a)
+$function$;
 
 select * from voidtest5(3);
 
@@ -614,7 +681,7 @@ create function create_and_insert()
 returns void
 language sql
 as $function$
-  create table ddl_test (f1 int);
+create table ddl_test (f1 int);
   insert into ddl_test values (1.2);
 $function$;
 
@@ -626,7 +693,7 @@ create function alter_and_insert()
 returns void
 language sql
 as $function$
-  alter table ddl_test alter column f1 type numeric;
+alter table ddl_test alter column f1 type numeric;
   insert into ddl_test values (1.2);
 $function$;
 
@@ -640,7 +707,9 @@ create function double_append(anyarray, anyelement)
 returns setof anyarray
 language sql
 immutable
-as $function$ SELECT array_append($1, $2) || array_append($1, $2) $function$;
+as $function$
+SELECT array_append($1, $2) || array_append($1, $2)
+$function$;
 
 select
   double_append(array_append(array[q1], q2), q3)
@@ -650,10 +719,12 @@ from
 create function part_hashint4_error(value int, seed bigint)
 returns bigint
 language sql
-strict
 immutable
+strict
 parallel SAFE
-as $function$ SELECT value + seed + random()::int/0 $function$;
+as $function$
+SELECT value + seed + random()::int/0
+$function$;
 
 create operator class part_test_int4_ops_bad
   for type int
@@ -672,22 +743,30 @@ insert into pt values (1);
 create function test1(int)
 returns int
 language sql
-as $function$SELECT 'not an integer';$function$;
+as $function$
+SELECT 'not an integer';
+$function$;
 
 create function test1(int)
 returns int
 language sql
-as $function$not even SQL$function$;
+as $function$
+not even SQL
+$function$;
 
 create function test1(int)
 returns int
 language sql
-as $function$SELECT 1, 2, 3;$function$;
+as $function$
+SELECT 1, 2, 3;
+$function$;
 
 create function test1(int)
 returns int
 language sql
-as $function$SELECT $2;$function$;
+as $function$
+SELECT $2;
+$function$;
 
 create function test1(int)
 returns int
@@ -697,14 +776,18 @@ as 'a', 'b';
 create function test1(int)
 returns int
 language sql
-as $function$$function$;
+as $function$
+
+$function$;
 
 set check_function_bodies = off;
 
 create function test1(anyelement)
 returns anyarray
 language sql
-as $function$$function$;
+as $function$
+
+$function$;
 
 select test1(0);
 

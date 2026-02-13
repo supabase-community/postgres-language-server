@@ -1,20 +1,23 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/alter_operator.sql
-snapshot_kind: text
 ---
 create function alter_op_test_fn(boolean, boolean)
 returns boolean
-as $function$ SELECT NULL::BOOLEAN; $function$
 language sql
-immutable;
+immutable
+as $function$
+SELECT NULL::BOOLEAN;
+$function$;
 
 create function customcontsel(internal, oid, internal, int)
 returns double precision
-as $function$contsel$function$
 language internal
 stable
-strict;
+strict
+as $function$
+contsel
+$function$;
 
 create operator === (LEFTARG = boolean,
 RIGHTARG = boolean,
@@ -185,15 +188,19 @@ reset session_authorization;
 
 create function alter_op_test_fn_bool_real(boolean, real)
 returns boolean
-as $function$ SELECT NULL::BOOLEAN; $function$
 language sql
-immutable;
+immutable
+as $function$
+SELECT NULL::BOOLEAN;
+$function$;
 
 create function alter_op_test_fn_real_bool(real, boolean)
 returns boolean
-as $function$ SELECT NULL::BOOLEAN; $function$
 language sql
-immutable;
+immutable
+as $function$
+SELECT NULL::BOOLEAN;
+$function$;
 
 create operator === (LEFTARG = boolean,
 RIGHTARG = real,

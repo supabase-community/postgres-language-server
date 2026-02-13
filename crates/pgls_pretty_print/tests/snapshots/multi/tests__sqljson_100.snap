@@ -1,7 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/sqljson.sql
-snapshot_kind: text
 ---
 select json(null);
 
@@ -221,11 +220,11 @@ create type mood as enum ('happy', 'sad', 'neutral');
 
 create function mood_to_json(mood)
 returns json
-as $function$
-  SELECT to_json($1::text);
-$function$
 language sql
-immutable;
+immutable
+as $function$
+SELECT to_json($1::text);
+$function$;
 
 create cast (mood as json) with function mood_to_json(mood) as implicit;
 

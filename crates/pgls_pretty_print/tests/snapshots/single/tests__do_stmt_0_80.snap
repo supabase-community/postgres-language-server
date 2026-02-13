@@ -1,6 +1,9 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/single/do_stmt_0.sql
-snapshot_kind: text
 ---
-do language plpgsql $do$BEGIN NULL; END$do$;
+do
+language plpgsql
+$do$
+BEGIN NULL; END
+$do$;

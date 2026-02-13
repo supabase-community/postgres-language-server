@@ -25,6 +25,8 @@ const LITERALS: &[&str] = &[
     "BIT_STRING",
     "BYTE_STRING",
     "DOLLAR_QUOTED_STRING",
+    "DOLLAR_QUOTE_DELIMITER", // $function$, $body$, $$, etc.
+    "DOLLAR_QUOTE_BODY",      // The content inside dollar quotes (preserved verbatim)
     "ESC_STRING",
     "FLOAT_NUMBER",
     "INT_NUMBER",
@@ -37,17 +39,19 @@ const LITERALS: &[&str] = &[
 
 const VARIANT_DATA: &[(&str, &str)] = &[
     ("STRING", "String"),
-    ("ESC_STRING", "String"),           // E'hello\nworld'
-    ("DOLLAR_QUOTED_STRING", "String"), // $$hello world$$
-    ("INT_NUMBER", "i64"),              // 123, -456
-    ("FLOAT_NUMBER", "f64"),            // 123.45, 1.2e-3
-    ("BIT_STRING", "String"),           // B'1010', X'FF'
-    ("BYTE_STRING", "String"),          // Similar to bit string
-    ("IDENT", "String"),                // user_id, table_name
-    ("POSITIONAL_PARAM", "u32"),        // $1, $2, $3 (the number matters!)
-    ("COMMENT", "String"),              // /* comment text */
-    ("BOOLEAN", "bool"),                // true, false
-    ("TYPE_IDENT", "String"),           // text, varchar, int (data type names)
+    ("ESC_STRING", "String"),             // E'hello\nworld'
+    ("DOLLAR_QUOTED_STRING", "String"),   // $$hello world$$ (legacy, full string)
+    ("DOLLAR_QUOTE_DELIMITER", "String"), // $function$, $body$, $$, etc.
+    ("DOLLAR_QUOTE_BODY", "String"),      // The content inside dollar quotes
+    ("INT_NUMBER", "i64"),                // 123, -456
+    ("FLOAT_NUMBER", "f64"),              // 123.45, 1.2e-3
+    ("BIT_STRING", "String"),             // B'1010', X'FF'
+    ("BYTE_STRING", "String"),            // Similar to bit string
+    ("IDENT", "String"),                  // user_id, table_name
+    ("POSITIONAL_PARAM", "u32"),          // $1, $2, $3 (the number matters!)
+    ("COMMENT", "String"),                // /* comment text */
+    ("BOOLEAN", "bool"),                  // true, false
+    ("TYPE_IDENT", "String"),             // text, varchar, int (data type names)
 ];
 
 pub fn token_kind_mod() -> proc_macro2::TokenStream {
@@ -150,6 +154,8 @@ pub fn token_kind_mod() -> proc_macro2::TokenStream {
                     TokenKind::STRING(s) => s.clone(),
                     TokenKind::ESC_STRING(s) => s.clone(),
                     TokenKind::DOLLAR_QUOTED_STRING(s) => s.clone(),
+                    TokenKind::DOLLAR_QUOTE_DELIMITER(s) => s.clone(),
+                    TokenKind::DOLLAR_QUOTE_BODY(s) => s.clone(),
                     TokenKind::INT_NUMBER(n) => n.to_string(),
                     TokenKind::FLOAT_NUMBER(n) => n.to_string(),
                     TokenKind::BIT_STRING(s) => s.clone(),

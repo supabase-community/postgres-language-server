@@ -1,12 +1,13 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/triggers.sql
-snapshot_kind: text
 ---
 create function trigger_return_old()
 returns trigger
-as $function$regresslib$function$
-language c;
+language c
+as $function$
+regresslib
+$function$;
 
 create table trigtest (
   f1 int,
@@ -33,8 +34,10 @@ select * from trigtest;
 
 create function f1_times_10()
 returns trigger
-as $function$ begin new.f1 := new.f1 * 10; return new; end $function$
-language plpgsql;
+language plpgsql
+as $function$
+begin new.f1 := new.f1 * 10; return new; end
+$function$;
 
 create trigger trigger_alpha
 before insert or update
@@ -138,7 +141,8 @@ as $function$
 BEGIN
 	RAISE NOTICE 'trigger_func(%) called: action = %, when = %, level = %', TG_ARGV[0], TG_OP, TG_WHEN, TG_LEVEL;
 	RETURN NULL;
-END;$function$;
+END;
+$function$;
 
 create trigger before_ins_stmt_trig
 before insert
@@ -369,14 +373,14 @@ create table some_t (some_col boolean not null);
 
 create function dummy_update_func()
 returns trigger
+language plpgsql
 as $function$
 BEGIN
   RAISE NOTICE 'dummy_update_func(%) called: action = %, old = %, new = %',
     TG_ARGV[0], TG_OP, OLD, NEW;
   RETURN NEW;
 END;
-$function$
-language plpgsql;
+$function$;
 
 create trigger some_trig_before
 before update
@@ -465,12 +469,13 @@ create table trigtest2 (i int references trigtest (i) on DELETE cascade);
 
 create function trigtest()
 returns trigger
+language plpgsql
 as $function$
 begin
 	raise notice '% % % %', TG_TABLE_NAME, TG_OP, TG_WHEN, TG_LEVEL;
 	return new;
-end;$function$
-language plpgsql;
+end;
+$function$;
 
 create trigger trigtest_b_row_tg
 before insert or delete or update
@@ -556,7 +561,6 @@ create or replace function trigger_data()
 returns trigger
 language plpgsql
 as $function$
-
 declare
 
 	argstr text;
@@ -642,7 +646,8 @@ begin
 		raise notice 'row % changed', new.f1;
 	end if;
 	return new;
-end$function$;
+end
+$function$;
 
 create trigger t before update on trigger_test for each row execute function mytrigger();
 
@@ -667,7 +672,8 @@ begin
 		raise notice 'row % not changed', new.f1;
 	end if;
 	return new;
-end$function$;
+end
+$function$;
 
 update trigger_test set f3 = 'bar';
 
@@ -1126,7 +1132,9 @@ select COUNT(*) from european_city_view;
 create function no_op_trig_fn()
 returns trigger
 language plpgsql
-as $function$begin RETURN NULL; end$function$;
+as $function$
+begin RETURN NULL; end
+$function$;
 
 create trigger no_op_trig
 instead of insert or delete or update
@@ -1482,13 +1490,13 @@ inherits (stmt_trig_on_empty_upd);
 
 create function update_stmt_notice()
 returns trigger
+language plpgsql
 as $function$
 begin
 	raise notice 'updating %', TG_TABLE_NAME;
 	return null;
 end;
-$function$
-language plpgsql;
+$function$;
 
 create trigger before_stmt_trigger
 before update
@@ -1517,12 +1525,13 @@ create table trigger_ddl_table (
 
 create function trigger_ddl_func()
 returns trigger
+language plpgsql
 as $function$
 begin
   alter table trigger_ddl_table add primary key (col1);
   return new;
-end$function$
-language plpgsql;
+end
+$function$;
 
 create trigger trigger_ddl_func
 before insert
@@ -1534,12 +1543,13 @@ insert into trigger_ddl_table values (1, 42);
 
 create or replace function trigger_ddl_func()
 returns trigger
+language plpgsql
 as $function$
 begin
   create index on trigger_ddl_table (col2);
   return new;
-end$function$
-language plpgsql;
+end
+$function$;
 
 insert into trigger_ddl_table values (1, 42);
 
@@ -1678,8 +1688,10 @@ as select * from my_table;
 
 create function my_trigger_function()
 returns trigger
-as $function$ begin end; $function$
-language plpgsql;
+language plpgsql
+as $function$
+begin end;
+$function$;
 
 create trigger my_trigger
 after update
@@ -1700,7 +1712,9 @@ partition by LIST(a);
 create function trigger_nothing()
 returns trigger
 language plpgsql
-as $function$ begin end; $function$;
+as $function$
+begin end;
+$function$;
 
 create trigger failed
 instead of update
@@ -1869,16 +1883,16 @@ create table parted2_stmt_trig2 partition of parted2_stmt_trig for values in (2)
 
 create or replace function trigger_notice()
 returns trigger
+language plpgsql
 as $function$
-  begin
+begin
     raise notice 'trigger % on % % % for %', TG_NAME, TG_TABLE_NAME, TG_WHEN, TG_OP, TG_LEVEL;
     if TG_LEVEL = 'ROW' then
        return NEW;
     end if;
     return null;
   end;
-  $function$
-language plpgsql;
+$function$;
 
 create trigger trig_ins_before
 before insert
@@ -2075,8 +2089,9 @@ insert into parted_trig values (1);
 
 create or replace function trigger_notice()
 returns trigger
+language plpgsql
 as $function$
-  begin
+begin
     raise notice 'trigger % on % % % for %', TG_NAME, TG_TABLE_NAME, TG_WHEN, TG_OP, TG_LEVEL;
     if TG_LEVEL = 'ROW' then
       if TG_OP = 'DELETE' then
@@ -2087,8 +2102,7 @@ as $function$
     end if;
     return null;
   end;
-  $function$
-language plpgsql;
+$function$;
 
 create trigger parted_trig_before_stmt
 before insert or delete or update
@@ -2125,8 +2139,9 @@ create table parted_trig1 partition of parted_trig for values in (1);
 
 create or replace function trigger_notice()
 returns trigger
+language plpgsql
 as $function$
-  declare
+declare
     arg1 text = TG_ARGV[0];
     arg2 integer = TG_ARGV[1];
   begin
@@ -2134,8 +2149,7 @@ as $function$
 		TG_NAME, TG_TABLE_NAME, TG_WHEN, TG_OP, TG_LEVEL, arg1, arg2;
     return null;
   end;
-  $function$
-language plpgsql;
+$function$;
 
 create trigger aaa
 after insert
@@ -2160,12 +2174,15 @@ create function bark(text)
 returns boolean
 language plpgsql
 immutable
-as $function$ begin raise notice '% <- woof!', $1; return true; end; $function$;
+as $function$
+begin raise notice '% <- woof!', $1; return true; end;
+$function$;
 
 create or replace function trigger_notice_ab()
 returns trigger
+language plpgsql
 as $function$
-  begin
+begin
     raise notice 'trigger % on % % % for %: (a,b)=(%,%)',
 		TG_NAME, TG_TABLE_NAME, TG_WHEN, TG_OP, TG_LEVEL,
 		NEW.a, NEW.b;
@@ -2174,8 +2191,7 @@ as $function$
     end if;
     return null;
   end;
-  $function$
-language plpgsql;
+$function$;
 
 create table parted_irreg_ancestor (
   fd text,
@@ -2664,7 +2680,9 @@ inherits (parent);
 create function trig_nothing()
 returns trigger
 language plpgsql
-as $function$ begin return null; end $function$;
+as $function$
+begin return null; end
+$function$;
 
 create trigger tg after insert on parent for each row execute function trig_nothing();
 
@@ -2842,7 +2860,9 @@ create table trgfire1 partition of trgfire for values from (1) to (10);
 create or replace function tgf()
 returns trigger
 language plpgsql
-as $function$ begin raise exception 'except'; end $function$;
+as $function$
+begin raise exception 'except'; end
+$function$;
 
 create trigger tg after insert on trgfire for each row execute function tgf();
 
@@ -2920,7 +2940,7 @@ create or replace function dump_insert()
 returns trigger
 language plpgsql
 as $function$
-  begin
+begin
     raise notice 'trigger = %, new table = %',
                  TG_NAME,
                  (select string_agg(new_table::text, ', ' order by a) from new_table);
@@ -2932,7 +2952,7 @@ create or replace function dump_update()
 returns trigger
 language plpgsql
 as $function$
-  begin
+begin
     raise notice 'trigger = %, old table = %, new table = %',
                  TG_NAME,
                  (select string_agg(old_table::text, ', ' order by a) from old_table),
@@ -2945,7 +2965,7 @@ create or replace function dump_delete()
 returns trigger
 language plpgsql
 as $function$
-  begin
+begin
     raise notice 'trigger = %, old table = %',
                  TG_NAME,
                  (select string_agg(old_table::text, ', ' order by a) from old_table);
@@ -3150,7 +3170,7 @@ create or replace function intercept_insert()
 returns trigger
 language plpgsql
 as $function$
-  begin
+begin
     new.b = new.b + 1000;
     return new;
   end;
@@ -3212,7 +3232,7 @@ create or replace function dump_update_new()
 returns trigger
 language plpgsql
 as $function$
-  begin
+begin
     raise notice 'trigger = %, new table = %', TG_NAME,
                  (select string_agg(new_table::text, ', ' order by a) from new_table);
     return null;
@@ -3223,7 +3243,7 @@ create or replace function dump_update_old()
 returns trigger
 language plpgsql
 as $function$
-  begin
+begin
     raise notice 'trigger = %, old table = %', TG_NAME,
                  (select string_agg(old_table::text, ', ' order by a) from old_table);
     return null;
@@ -3634,11 +3654,13 @@ create table my_table (a int);
 
 create function make_bogus_matview()
 returns trigger
-as $function$ begin
+language plpgsql
+as $function$
+begin
   create materialized view transition_test_mv as select * from new_table;
   return new;
-end $function$
-language plpgsql;
+end
+$function$;
 
 create trigger make_bogus_matview
 after insert
@@ -3819,21 +3841,23 @@ create table my_table (id int);
 
 create function funca()
 returns trigger
+language plpgsql
 as $function$
 begin
   raise notice 'hello from funcA';
   return null;
-end; $function$
-language plpgsql;
+end;
+$function$;
 
 create function funcb()
 returns trigger
+language plpgsql
 as $function$
 begin
   raise notice 'hello from funcB';
   return null;
-end; $function$
-language plpgsql;
+end;
+$function$;
 
 create trigger my_trig after insert on my_table for each row execute function funca();
 
@@ -3911,7 +3935,9 @@ partition by LIST(a);
 create function trigger_parted_trigfunc()
 returns trigger
 language plpgsql
-as $function$ begin end; $function$;
+as $function$
+begin end;
+$function$;
 
 create trigger aft_row
 after insert or update
@@ -3964,7 +3990,8 @@ raise notice 'trigger = %, old_table = %',
           TG_NAME,
           (select string_agg(old_table::text, ', ' order by col1) from old_table);
 return null;
-end; $function$;
+end;
+$function$;
 
 create function convslot_trig2()
 returns trigger
@@ -3975,7 +4002,8 @@ raise notice 'trigger = %, new table = %',
           TG_NAME,
           (select string_agg(new_table::text, ', ' order by col1) from new_table);
 return null;
-end; $function$;
+end;
+$function$;
 
 create trigger but_trigger
 after update
@@ -3996,7 +4024,8 @@ raise notice 'trigger = %, old_table = %, new table = %',
           (select string_agg(old_table::text, ', ' order by col1) from old_table),
           (select string_agg(new_table::text, ', ' order by col1) from new_table);
 return null;
-end; $function$;
+end;
+$function$;
 
 create trigger but_trigger2
 after update
@@ -4042,8 +4071,10 @@ alter table convslot_test_parent
 
 create function convslot_trig4()
 returns trigger
-as $function$begin raise exception 'BOOM!'; end$function$
-language plpgsql;
+language plpgsql
+as $function$
+begin raise exception 'BOOM!'; end
+$function$;
 
 create trigger convslot_test_parent_update
 after update
@@ -4083,8 +4114,10 @@ create table cho partition of middle for values from (6) to (10);
 
 create function f()
 returns trigger
-as $function$ begin return new; end; $function$
-language plpgsql;
+language plpgsql
+as $function$
+begin return new; end;
+$function$;
 
 create trigger a after insert on grandparent for each row execute function f();
 

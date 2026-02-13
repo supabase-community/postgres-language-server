@@ -36,9 +36,11 @@ pub(super) fn emit_alter_function_stmt(e: &mut EventEmitter, n: &AlterFunctionSt
     };
 
     // Emit actions (function options like IMMUTABLE, SECURITY DEFINER, etc.)
+    // Sort according to Postgres's canonical order
     if !n.actions.is_empty() {
         e.line(LineType::SoftOrSpace);
-        emit_comma_separated_list(e, &n.actions, |node, e| {
+        let sorted_actions = super::create_function_stmt::sort_function_options(&n.actions);
+        emit_comma_separated_list(e, &sorted_actions, |node, e| {
             let def_elem = assert_node_variant!(DefElem, node);
             super::create_function_stmt::format_function_option(e, def_elem, dollar_hint);
         });

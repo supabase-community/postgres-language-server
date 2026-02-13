@@ -1,7 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/foreign_key.sql
-snapshot_kind: text
 ---
 create table pktable (
   ptest1 int primary key,
@@ -3954,7 +3953,7 @@ create function fkpart11.print_row()
 returns trigger
 language plpgsql
 as $function$
-  BEGIN
+BEGIN
     RAISE NOTICE 'TABLE: %, OP: %, OLD: %, NEW: %', TG_RELNAME, TG_OP, OLD, NEW;
     RETURN NULL;
   END;

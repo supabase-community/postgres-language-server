@@ -1,7 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/temp.sql
-snapshot_kind: text
 ---
 create table temptest (col int);
 
@@ -103,7 +102,8 @@ begin
   $cmd$,
     (SELECT string_agg(g.i::text || ':' || random()::text, '|')
      FROM generate_series(1, 100) g(i)));
-end$do$;
+end
+$do$;
 
 select * from temptest;
 
@@ -141,13 +141,17 @@ insert into whereami values ('temp');
 
 create function public.whoami()
 returns text
-as $function$select 'public'::text$function$
-language sql;
+language sql
+as $function$
+select 'public'::text
+$function$;
 
 create function pg_temp.whoami()
 returns text
-as $function$select 'temp'::text$function$
-language sql;
+language sql
+as $function$
+select 'temp'::text
+$function$;
 
 select * from whereami;
 
@@ -262,15 +266,19 @@ begin;
 
 create function pg_temp.twophase_func()
 returns void
-as $function$ select '2pc_func'::text $function$
-language sql;
+language sql
+as $function$
+select '2pc_func'::text
+$function$;
 
 prepare transaction 'twophase_func';
 
 create function pg_temp.twophase_func()
 returns void
-as $function$ select '2pc_func'::text $function$
-language sql;
+language sql
+as $function$
+select '2pc_func'::text
+$function$;
 
 begin;
 
@@ -353,7 +361,7 @@ create function test_temp_pin(p_start int, p_end int)
 returns void
 language plpgsql
 as $function$
-  DECLARE
+DECLARE
       cursorname text;
       query text;
   BEGIN

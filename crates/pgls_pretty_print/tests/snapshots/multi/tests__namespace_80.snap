@@ -1,7 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/namespace.sql
-snapshot_kind: text
 ---
 select set_config('search_path', ' ', false);
 
@@ -125,10 +124,10 @@ set search_path to test_maint_search_path;
 
 create function fn(int)
 returns int
-immutable
 language plpgsql
+immutable
 as $function$
-  BEGIN
+BEGIN
     RAISE NOTICE 'current search_path: %', current_setting('search_path');
     RETURN $1;
   END;

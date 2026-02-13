@@ -1,7 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/compression.sql
-snapshot_kind: text
 ---
 create schema "pglz";
 
@@ -28,7 +27,9 @@ create table cmdata2 (f1 int compression pglz);
 create or replace function large_val()
 returns text
 language sql
-as $function$select array_agg(fipshash(g::text))::text from generate_series(1, 256) g$function$;
+as $function$
+select array_agg(fipshash(g::text))::text from generate_series(1, 256) g
+$function$;
 
 create table cmdata2 (f1 text compression pglz);
 

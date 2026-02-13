@@ -453,6 +453,10 @@ export interface PartialFormatConfiguration {
 	 */
 	lineWidth?: number;
 	/**
+	 * If `true`, skip formatting of SQL function bodies (keep them verbatim). Default: `false`.
+	 */
+	skipFnBodies?: boolean;
+	/**
 	 * Data type casing (text, varchar, int): "upper" or "lower". Default: "lower".
 	 */
 	typeCase?: KeywordCase;

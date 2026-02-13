@@ -1,7 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/case.sql
-snapshot_kind: text
 ---
 create table case_tbl (
   i int,
@@ -125,9 +124,11 @@ begin;
 
 create function vol(text)
 returns text
-as $function$begin return $1; end$function$
 language plpgsql
-volatile;
+volatile
+as $function$
+begin return $1; end
+$function$;
 
 select
   case case vol('bar')
@@ -144,14 +145,18 @@ create domain foodomain as text;
 
 create function volfoo(text)
 returns foodomain
-as $function$begin return $1::foodomain; end$function$
 language plpgsql
-volatile;
+volatile
+as $function$
+begin return $1::foodomain; end
+$function$;
 
 create function inline_eq(foodomain, foodomain)
 returns boolean
-as $function$SELECT CASE $2::text WHEN $1::text THEN true ELSE false END$function$
-language sql;
+language sql
+as $function$
+SELECT CASE $2::text WHEN $1::text THEN true ELSE false END
+$function$;
 
 create operator = (PROCEDURE = inline_eq, LEFTARG = foodomain, RIGHTARG = foodomain);
 
@@ -165,18 +170,22 @@ create domain arrdomain as int[];
 
 create function make_ad(int, int)
 returns arrdomain
-as $function$declare x arrdomain;
+language plpgsql
+volatile
+as $function$
+declare x arrdomain;
    begin
      x := array[$1,$2];
      return x;
-   end$function$
-language plpgsql
-volatile;
+   end
+$function$;
 
 create function ad_eq(arrdomain, arrdomain)
 returns boolean
-as $function$begin return array_eq($1, $2); end$function$
-language plpgsql;
+language plpgsql
+as $function$
+begin return array_eq($1, $2); end
+$function$;
 
 create operator = (PROCEDURE = ad_eq, LEFTARG = arrdomain, RIGHTARG = arrdomain);
 
