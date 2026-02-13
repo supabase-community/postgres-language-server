@@ -74,8 +74,10 @@ self.onmessage = async (event: MessageEvent) => {
 	// Send EACH message separately via postMessage
 	// This is required by BrowserMessageReader which expects
 	// individual messages, not arrays
-	for (const msg of outgoing) {
-		self.postMessage(msg);
+	if (outgoing) {
+		for (const msg of outgoing) {
+			self.postMessage(msg);
+		}
 	}
 };
 
