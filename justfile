@@ -28,7 +28,6 @@ gen-lint:
   cargo run -p xtask_codegen -- analyser
   cargo run -p xtask_codegen -- configuration
   cargo run -p xtask_codegen -- bindings
-  bun biome format --write packages/@postgrestools/backend-jsonrpc/src/workspace.ts packages/@postgres-language-server/backend-jsonrpc/src/workspace.ts
   cargo run -p xtask_codegen -- splinter
   cargo run -p xtask_codegen -- pglinter
   cargo run -p rules_check
@@ -114,7 +113,6 @@ ready:
   cargo run -p xtask_codegen -- configuration
   cargo run -p docs_codegen
   cargo run -p xtask_codegen -- bindings
-  bun biome format --write packages/@postgrestools/backend-jsonrpc/src/workspace.ts packages/@postgres-language-server/backend-jsonrpc/src/workspace.ts
   cargo sqlx prepare --workspace
   just lint-fix
   just format
