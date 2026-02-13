@@ -318,7 +318,12 @@ pub fn generate_type<'a>(
 
             assert!(!optional, "optional nested types are not supported");
 
-            let decl = format!("type {name} = {ts_type};");
+            // For multi-line union types, don't add space after =
+            let decl = if ts_type.starts_with('\n') {
+                format!("type {name} ={ts_type};")
+            } else {
+                format!("type {name} = {ts_type};")
+            };
             module.push((decl, description));
         }
     }
