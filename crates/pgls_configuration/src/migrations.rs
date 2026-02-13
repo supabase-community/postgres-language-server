@@ -1,5 +1,5 @@
-use biome_deserialize_macros::{Merge, Partial};
 use bpaf::Bpaf;
+use pgls_configuration_macros::{Merge, Partial};
 use serde::{Deserialize, Serialize};
 
 /// The configuration of the filesystem

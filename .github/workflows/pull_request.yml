@@ -315,6 +315,8 @@ jobs:
       - name: Install toolchain
         uses: moonrepo/setup-rust@v1
         with:
+          components: rustfmt
+          bins: taplo-cli
           cache-base: main
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -327,18 +329,16 @@ jobs:
         run: command -v tree-sitter || cargo install tree-sitter-cli
       - name: Ensure RustFMT on nightly toolchain
         run: rustup component add rustfmt --toolchain nightly
-      - name: echo toolchain
-        run: rustup show
-      - name: Run the analyser codegen
-        run: cargo run -p xtask_codegen -- analyser
-      - name: Run the configuration codegen
-        run: cargo run -p xtask_codegen -- configuration
-      - name: Run the bindings codegen
-        run: cargo run -p xtask_codegen -- bindings
-      - name: Run the splinter codegen
-        run: cargo run -p xtask_codegen -- splinter
-      - name: Run the docs codegen
-        run: cargo run -p docs_codegen
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.2.17"
+      - name: Install JS dependencies
+        run: bun install
+      - name: Setup Just
+        uses: extractions/setup-just@v3
+      - name: Run codegen
+        run: just gen-lint
       - name: Check for git diff -- run "just ready" if you see an error
         run: |
           if [[ $(git status --porcelain) ]]; then

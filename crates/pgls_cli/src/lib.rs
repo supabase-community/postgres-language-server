@@ -4,10 +4,10 @@
 //! to parse commands and arguments, redirect the execution of the commands and
 //! execute the traversal of directory and files, based on the command that was passed.
 
-use biome_deserialize::Merge;
 use cli_options::CliOptions;
 use commands::check::{self, CheckArgs};
 use commands::format::{self, FormatArgs};
+use pgls_configuration::Merge;
 use pgls_configuration::PartialConfiguration;
 use pgls_console::{ColorMode, Console, ConsoleExt, markup};
 use pgls_fs::{ConfigName, FileSystem, OsFileSystem};

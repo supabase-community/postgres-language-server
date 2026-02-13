@@ -2,6 +2,10 @@
 //!
 //! The configuration is divided by "tool".
 
+// Allow the crate to reference itself by name, needed by pgls_configuration_macros
+// which generates `pgls_configuration::Merge` paths.
+extern crate self as pgls_configuration;
+
 pub mod database;
 pub mod diagnostics;
 pub mod files;
@@ -13,15 +17,17 @@ pub mod plpgsql_check;
 pub mod rules;
 pub mod splinter;
 pub mod typecheck;
+pub mod utils;
 pub mod vcs;
+
+pub use utils::merge::Merge;
+pub use utils::string_set::StringSet;
 
 pub use crate::diagnostics::ConfigurationDiagnostic;
 
 use std::path::PathBuf;
 
 use crate::vcs::{PartialVcsConfiguration, VcsConfiguration, partial_vcs_configuration};
-use biome_deserialize::StringSet;
-use biome_deserialize_macros::{Merge, Partial};
 use bpaf::Bpaf;
 use database::{
     DatabaseConfiguration, PartialDatabaseConfiguration, partial_database_configuration,
@@ -41,6 +47,7 @@ use migrations::{
 use pglinter::{
     PartialPglinterConfiguration, PglinterConfiguration, partial_pglinter_configuration,
 };
+use pgls_configuration_macros::{Merge, Partial};
 use pgls_env::PGLS_WEBSITE;
 use plpgsql_check::{
     PartialPlPgSqlCheckConfiguration, PlPgSqlCheckConfiguration,

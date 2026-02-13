@@ -1,6 +1,5 @@
-use biome_deserialize::{DeserializableValidator, DeserializationDiagnostic};
-use biome_deserialize_macros::{Deserializable, Merge, Partial};
 use bpaf::Bpaf;
+use pgls_configuration_macros::{Merge, Partial};
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;
 
@@ -8,8 +7,7 @@ const GIT_IGNORE_FILE_NAME: &str = ".gitignore";
 
 /// Set of properties to integrate with a VCS software.
 #[derive(Clone, Debug, Deserialize, Eq, Partial, PartialEq, Serialize)]
-#[partial(derive(Bpaf, Clone, Deserializable, Eq, Merge, PartialEq))]
-#[partial(deserializable(with_validator))]
+#[partial(derive(Bpaf, Clone, Eq, Merge, PartialEq))]
 #[partial(cfg_attr(feature = "schema", derive(schemars::JsonSchema)))]
 #[partial(serde(deny_unknown_fields, rename_all = "camelCase"))]
 pub struct VcsConfiguration {
@@ -19,7 +17,6 @@ pub struct VcsConfiguration {
 
     /// The kind of client.
     #[partial(bpaf(long("vcs-client-kind"), argument("git"), optional))]
-    #[partial(deserializable(bail_on_error))]
     pub client_kind: VcsClientKind,
 
     /// Whether we should use the VCS ignore file. When [true], we will ignore the files
@@ -65,31 +62,7 @@ impl PartialVcsConfiguration {
     }
 }
 
-impl DeserializableValidator for PartialVcsConfiguration {
-    fn validate(
-        &mut self,
-        _name: &str,
-        range: biome_deserialize::TextRange,
-        diagnostics: &mut Vec<DeserializationDiagnostic>,
-    ) -> bool {
-        if self.client_kind.is_none() && self.is_enabled() {
-            diagnostics.push(
-                DeserializationDiagnostic::new(
-                    "You enabled the VCS integration, but you didn't specify a client.",
-                )
-                .with_range(range)
-                .with_note("We will disable the VCS integration until the issue is fixed."),
-            );
-            return false;
-        }
-
-        true
-    }
-}
-
-#[derive(
-    Clone, Copy, Debug, Default, Deserialize, Deserializable, Eq, Merge, PartialEq, Serialize,
-)]
+#[derive(Clone, Copy, Debug, Default, Deserialize, Eq, Merge, PartialEq, Serialize)]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 #[serde(rename_all = "camelCase")]
 pub enum VcsClientKind {

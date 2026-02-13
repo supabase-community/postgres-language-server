@@ -2,9 +2,9 @@
  * Tests for the Postgres Language Server WASM bindings.
  */
 
-import { expect, test, describe, beforeAll, beforeEach } from "bun:test";
-import { createWorkspace, Workspace } from "../src/workspace";
-import { createLanguageServer, LanguageServer } from "../src/lsp";
+import { beforeAll, beforeEach, describe, expect, test } from "bun:test";
+import { type LanguageServer, createLanguageServer } from "../src/lsp";
+import { type Workspace, createWorkspace } from "../src/workspace";
 
 // =============================================================================
 // Workspace API Tests
@@ -452,7 +452,7 @@ describe("Schema-based Workspace completions and hover", () => {
 		expect(hover).not.toBeNull();
 		expect(typeof hover).toBe("string");
 		// The hover text should mention the table
-		expect(hover!.toLowerCase()).toContain("users");
+		expect(hover?.toLowerCase()).toContain("users");
 	});
 
 	test("hover on column name shows column type", () => {
@@ -463,7 +463,7 @@ describe("Schema-based Workspace completions and hover", () => {
 		expect(hover).not.toBeNull();
 		expect(typeof hover).toBe("string");
 		// The hover text should mention the type
-		expect(hover!.toLowerCase()).toContain("text");
+		expect(hover?.toLowerCase()).toContain("text");
 	});
 
 	test("clearSchema removes schema and hover returns null", () => {

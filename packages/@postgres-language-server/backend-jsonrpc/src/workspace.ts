@@ -175,10 +175,10 @@ export type MarkupBuf = MarkupNodeBuf[];
 export type Severity = "hint" | "information" | "warning" | "error" | "fatal";
 export type DiagnosticTags = DiagnosticTag[];
 /**
-	* Serializable representation of a [Diagnostic](super::Diagnostic) advice
+ * Serializable representation of a [Diagnostic](super::Diagnostic) advice
 
-See the [Visitor] trait for additional documentation on all the supported advice types. 
-	 */
+See the [Visitor] trait for additional documentation on all the supported advice types.
+ */
 export type Advice =
 	| { log: [LogCategory, MarkupBuf] }
 	| { list: MarkupBuf[] }
@@ -285,10 +285,10 @@ export interface CompletionItem {
 	sort_text: string;
 }
 /**
-	* The text that the editor should fill in. If `None`, the `label` should be used. Tables, for example, might have different completion_texts:
+ * The text that the editor should fill in. If `None`, the `label` should be used. Tables, for example, might have different completion_texts:
 
-label: "users", description: "Schema: auth", completion_text: "auth.users". 
-	 */
+label: "users", description: "Schema: auth", completion_text: "auth.users".
+ */
 export interface CompletionText {
 	is_snippet: boolean;
 	/**
@@ -555,9 +555,9 @@ export interface PartialVcsConfiguration {
 	 */
 	enabled?: boolean;
 	/**
-	* The folder where we should check for VCS files. By default, we will use the same folder where `postgres-language-server.jsonc` was found.
+	 * The folder where we should check for VCS files. By default, we will use the same folder where `postgres-language-server.jsonc` was found.
 
-If we can't find the configuration, it will attempt to use the current working directory. If no current working directory can't be found, we won't use the VCS integration, and a diagnostic will be emitted 
+If we can't find the configuration, it will attempt to use the current working directory. If no current working directory can't be found, we won't use the VCS integration, and a diagnostic will be emitted
 	 */
 	root?: string;
 	/**
@@ -1012,17 +1012,17 @@ export interface RuleWithOptions_for_SplinterRuleOptions {
 	options: SplinterRuleOptions;
 }
 /**
-	* Shared options for all splinter rules.
+ * Shared options for all splinter rules.
 
-These options allow configuring per-rule filtering of database objects. 
-	 */
+These options allow configuring per-rule filtering of database objects.
+ */
 export interface SplinterRuleOptions {
 	/**
-	* A list of glob patterns for database objects to ignore.
+	 * A list of glob patterns for database objects to ignore.
 
 Patterns use Unix-style globs where: - `*` matches any sequence of characters - `?` matches any single character
 
-Each pattern should be in the format `schema.object_name`, for example: - `"public.my_table"` - ignores a specific table - `"audit.*"` - ignores all objects in the audit schema - `"*.audit_*"` - ignores objects with audit_ prefix in any schema 
+Each pattern should be in the format `schema.object_name`, for example: - `"public.my_table"` - ignores a specific table - `"audit.*"` - ignores all objects in the audit schema - `"*.audit_*"` - ignores objects with audit_ prefix in any schema
 	 */
 	ignore?: string[];
 }

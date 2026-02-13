@@ -1,5 +1,5 @@
-use biome_deserialize::StringSet;
 use pgls_analyse::AnalysisFilter;
+use pgls_configuration::StringSet;
 use pgls_configuration::rules::RuleConfiguration;
 use pgls_configuration::splinter::{
     Performance, Rules, SplinterConfiguration, SplinterRuleOptions,

@@ -32,5 +32,5 @@ pgls_query_ext = { workspace = true }
 pgls_workspace = { workspace = true }
 pgls_statement_splitter = { workspace = true }
 pgls_console = { workspace = true }
-biome_string_case = { workspace = true }
+convert_case = { workspace = true }
 

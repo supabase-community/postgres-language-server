@@ -4,9 +4,9 @@
 mod options;
 pub use options::SplinterRuleOptions;
 mod rules;
-use biome_deserialize::StringSet;
-use biome_deserialize_macros::{Merge, Partial};
+use crate::StringSet;
 use bpaf::Bpaf;
+use pgls_configuration_macros::{Merge, Partial};
 pub use rules::*;
 use serde::{Deserialize, Serialize};
 #[derive(Clone, Debug, Deserialize, Eq, Partial, PartialEq, Serialize)]

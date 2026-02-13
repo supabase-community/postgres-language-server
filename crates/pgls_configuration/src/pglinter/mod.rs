@@ -2,8 +2,8 @@
 
 #![doc = r" Generated file, do not edit by hand, see `xtask/codegen`"]
 mod rules;
-use biome_deserialize_macros::{Merge, Partial};
 use bpaf::Bpaf;
+use pgls_configuration_macros::{Merge, Partial};
 pub use rules::*;
 use serde::{Deserialize, Serialize};
 #[derive(Clone, Debug, Deserialize, Eq, Partial, PartialEq, Serialize)]

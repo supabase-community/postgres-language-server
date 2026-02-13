@@ -1,13 +1,11 @@
-use biome_deserialize::StringSet;
-use biome_deserialize_macros::{Deserializable, Merge, Partial};
+use crate::StringSet;
 use bpaf::Bpaf;
+use pgls_configuration_macros::{Merge, Partial};
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;
 
 /// Indentation style for the formatter.
-#[derive(
-    Clone, Copy, Debug, Default, Deserialize, Deserializable, Eq, Merge, PartialEq, Serialize,
-)]
+#[derive(Clone, Copy, Debug, Default, Deserialize, Eq, Merge, PartialEq, Serialize)]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 #[serde(rename_all = "camelCase")]
 pub enum IndentStyle {
@@ -40,9 +38,7 @@ impl From<IndentStyle> for pgls_pretty_print::renderer::IndentStyle {
 }
 
 /// Keyword casing style for the formatter.
-#[derive(
-    Clone, Copy, Debug, Default, Deserialize, Deserializable, Eq, Merge, PartialEq, Serialize,
-)]
+#[derive(Clone, Copy, Debug, Default, Deserialize, Eq, Merge, PartialEq, Serialize)]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 #[serde(rename_all = "camelCase")]
 pub enum KeywordCase {

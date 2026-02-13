@@ -1,6 +1,6 @@
-use biome_deserialize::StringSet;
-use biome_deserialize_macros::{Merge, Partial};
+use crate::StringSet;
 use bpaf::Bpaf;
+use pgls_configuration_macros::{Merge, Partial};
 use serde::{Deserialize, Serialize};
 
 /// The configuration for type checking.

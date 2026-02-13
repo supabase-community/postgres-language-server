@@ -1,5 +1,5 @@
-use biome_string_case::Case;
 use bpaf::Bpaf;
+use convert_case::{Case, Casing};
 use pgls_diagnostics::Severity;
 use pgls_env::PGLS_WEBSITE;
 use std::str::FromStr;
@@ -96,7 +96,7 @@ pub fn generate_new_analyser_rule(
     group: &str,
     severity: Severity,
 ) {
-    let rule_name_camel = Case::Camel.convert(rule_name);
+    let rule_name_camel = rule_name.to_case(Case::Camel);
     let crate_folder = project_root().join("crates/pgls_analyser");
     let rule_folder = match &category {
         Category::Lint => crate_folder.join(format!("src/lint/{group}")),
@@ -108,14 +108,14 @@ pub fn generate_new_analyser_rule(
     // Generate rule code
     let code = generate_rule_template(
         &category,
-        Case::Pascal.convert(rule_name).as_str(),
+        rule_name.to_case(Case::Pascal).as_str(),
         rule_name_camel.as_str(),
         severity,
     );
     let file_name = format!(
         "{}/{}.rs",
         rule_folder.display(),
-        Case::Snake.convert(rule_name)
+        crate::to_snake_case(rule_name)
     );
     std::fs::write(file_name.clone(), code).unwrap_or_else(|_| panic!("To write {}", &file_name));
 
@@ -123,7 +123,7 @@ pub fn generate_new_analyser_rule(
     let mut categories = std::fs::read_to_string(categories_path).unwrap();
 
     if !categories.contains(&rule_name_camel) {
-        let kebab_case_rule = Case::Kebab.convert(&rule_name_camel);
+        let kebab_case_rule = rule_name_camel.to_case(Case::Kebab);
         // We sort rules to reduce conflicts between contributions made in parallel.
         let rule_line = match category {
             Category::Lint => format!(
