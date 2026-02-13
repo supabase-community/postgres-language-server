@@ -18,11 +18,7 @@ export type FileKind = FileKind2[];
 /**
  * The priority of the file
  */
-export type FileKind2 = 
-	| "Config"
-	| "Ignore"
-	| "Inspectable"
-	| "Handleable";
+export type FileKind2 = "Config" | "Ignore" | "Inspectable" | "Handleable";
 export interface RegisterProjectFolderParams {
 	path?: string;
 	setAsCurrentWorkspace: boolean;
@@ -40,10 +36,7 @@ export interface PullFileDiagnosticsParams {
 }
 export type RuleCategories = RuleCategory[];
 export type RuleCode = string;
-export type RuleCategory = 
-	| "Lint"
-	| "Action"
-	| "Transformation";
+export type RuleCategory = "Lint" | "Action" | "Transformation";
 export interface PullDiagnosticsResult {
 	diagnostics: Diagnostic[];
 	skipped_diagnostics: number;
@@ -68,7 +61,7 @@ export interface Diagnostic {
 export interface Advices {
 	advices: Advice[];
 }
-export type Category = 
+export type Category =
 	| "lint/safety/addSerialColumn"
 	| "lint/safety/addingFieldWithDefault"
 	| "lint/safety/addingForeignKeyConstraint"
@@ -179,19 +172,14 @@ export type MarkupBuf = MarkupNodeBuf[];
 /**
  * The severity to associate to a diagnostic.
  */
-export type Severity = 
-	| "hint"
-	| "information"
-	| "warning"
-	| "error"
-	| "fatal";
+export type Severity = "hint" | "information" | "warning" | "error" | "fatal";
 export type DiagnosticTags = DiagnosticTag[];
 /**
  * Serializable representation of a [Diagnostic](super::Diagnostic) advice
 
 See the [Visitor] trait for additional documentation on all the supported advice types.
  */
-export type Advice = 
+export type Advice =
 	| { log: [LogCategory, MarkupBuf] }
 	| { list: MarkupBuf[] }
 	| { frame: Location }
@@ -203,7 +191,7 @@ export type Advice =
 /**
  * Represents the resource a diagnostic is associated with.
  */
-export type Resource_for_String = 
+export type Resource_for_String =
 	| "database"
 	| "argv"
 	| "memory"
@@ -216,7 +204,7 @@ export interface MarkupNodeBuf {
 /**
  * Internal enum used to automatically generate bit offsets for [DiagnosticTags] and help with the implementation of `serde` and `schemars` for tags.
  */
-export type DiagnosticTag = 
+export type DiagnosticTag =
 	| "fixable"
 	| "internal"
 	| "unnecessaryCode"
@@ -225,11 +213,7 @@ export type DiagnosticTag =
 /**
  * The category for a log advice, defines how the message should be presented to the user.
  */
-export type LogCategory = 
-	| "none"
-	| "info"
-	| "warn"
-	| "error";
+export type LogCategory = "none" | "info" | "warn" | "error";
 export interface TextEdit {
 	dictionary: string;
 	ops: CompressedOp[];
@@ -239,8 +223,7 @@ export type TextSize = number;
 /**
  * Enumeration of all the supported markup elements
  */
-export type MarkupElement = 
-	| 
+export type MarkupElement =
 	| "Emphasis"
 	| "Dim"
 	| "Italic"
@@ -253,7 +236,7 @@ export type MarkupElement =
 	| "Trace"
 	| "Inverse"
 	| { Hyperlink: { href: string } };
-export type CompressedOp = 
+export type CompressedOp =
 	| { diffOp: DiffOp }
 	| { equalLines: { line_count: number } };
 /**
@@ -263,7 +246,7 @@ export interface BacktraceFrame {
 	ip: number;
 	symbols: BacktraceSymbol[];
 }
-export type DiffOp = 
+export type DiffOp =
 	| { equal: { range: TextRange } }
 	| { insert: { range: TextRange } }
 	| { delete: { range: TextRange } };
@@ -314,7 +297,7 @@ export interface CompletionText {
 	range: TextRange;
 	text: string;
 }
-export type CompletionItemKind = 
+export type CompletionItemKind =
 	| "table"
 	| "function"
 	| "column"
@@ -581,15 +564,11 @@ If we can't find the configuration, it will attempt to use the current working d
 /**
  * Keyword casing style for the formatter.
  */
-export type KeywordCase = 
-	| "upper"
-	| "lower";
+export type KeywordCase = "upper" | "lower";
 /**
  * Indentation style for the formatter.
  */
-export type IndentStyle = 
-	| "spaces"
-	| "tabs";
+export type IndentStyle = "spaces" | "tabs";
 export interface LinterRules {
 	/**
 	 * It enables ALL rules. The rules that belong to `nursery` won't be enabled.
@@ -1001,17 +980,13 @@ export interface Security {
 	 */
 	unsupportedRegTypes?: RuleConfiguration_for_SplinterRuleOptions;
 }
-export type RuleConfiguration_for_Null = 
+export type RuleConfiguration_for_Null =
 	| RulePlainConfiguration
 	| RuleWithOptions_for_Null;
-export type RuleConfiguration_for_SplinterRuleOptions = 
+export type RuleConfiguration_for_SplinterRuleOptions =
 	| RulePlainConfiguration
 	| RuleWithOptions_for_SplinterRuleOptions;
-export type RulePlainConfiguration = 
-	| "warn"
-	| "error"
-	| "info"
-	| "off";
+export type RulePlainConfiguration = "warn" | "error" | "info" | "off";
 export interface RuleWithOptions_for_Null {
 	/**
 	 * The severity of the emitted diagnostics by the rule
@@ -1063,9 +1038,13 @@ export interface CloseFileParams {
 export type Configuration = PartialConfiguration;
 export interface Workspace {
 	isPathIgnored(params: IsPathIgnoredParams): Promise<boolean>;
-	registerProjectFolder(params: RegisterProjectFolderParams): Promise<ProjectKey>;
+	registerProjectFolder(
+		params: RegisterProjectFolderParams,
+	): Promise<ProjectKey>;
 	getFileContent(params: GetFileContentParams): Promise<string>;
-	pullFileDiagnostics(params: PullFileDiagnosticsParams): Promise<PullDiagnosticsResult>;
+	pullFileDiagnostics(
+		params: PullFileDiagnosticsParams,
+	): Promise<PullDiagnosticsResult>;
 	getCompletions(params: GetCompletionsParams): Promise<CompletionsResult>;
 	updateSettings(params: UpdateSettingsParams): Promise<void>;
 	openFile(params: OpenFileParams): Promise<void>;

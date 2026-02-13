@@ -8,7 +8,7 @@
 	"files": {
 		"ignoreUnknown": false,
 		"ignore": [],
-		"include": ["/packages/**/*"]
+		"include": ["packages/**/*"]
 	},
 	"formatter": {
 		"enabled": true,

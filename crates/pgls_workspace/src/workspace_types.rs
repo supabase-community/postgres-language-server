@@ -118,10 +118,16 @@ fn make_union_type(items: impl IntoIterator<Item = String>) -> String {
         // Flatten nested union types (multi-line format)
         if item.contains("\n\t| ") {
             for part in item.split("\n\t| ") {
-                result.push(part.to_string());
+                let trimmed = part.trim();
+                if !trimmed.is_empty() {
+                    result.push(trimmed.to_string());
+                }
             }
         } else {
-            result.push(item);
+            let trimmed = item.trim();
+            if !trimmed.is_empty() {
+                result.push(trimmed.to_string());
+            }
         }
     }
 
@@ -129,7 +135,7 @@ fn make_union_type(items: impl IntoIterator<Item = String>) -> String {
     if result.len() > 1 {
         format!("\n\t| {}", result.join("\n\t| "))
     } else {
-        result.join(" | ")
+        result.into_iter().next().unwrap_or_default()
     }
 }
 
