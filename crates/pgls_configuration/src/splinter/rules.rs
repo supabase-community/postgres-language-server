@@ -540,6 +540,9 @@ pub struct Security {
     #[doc = "RLS Enabled No Policy: Detects cases where row level security (RLS) has been enabled on a table but no RLS policies have been created."]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub rls_enabled_no_policy: Option<RuleConfiguration<crate::splinter::SplinterRuleOptions>>,
+    #[doc = "RLS Policy Always True: Detects RLS policies that use overly permissive expressions like USING (true) or WITH CHECK (true) for UPDATE, DELETE, or INSERT operations. SELECT policies with USING (true) are intentionally excluded as this pattern is often used deliberately for public read access."]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub rls_policy_always_true: Option<RuleConfiguration<crate::splinter::SplinterRuleOptions>>,
     #[doc = "RLS references user metadata: Detects when Supabase Auth user_metadata is referenced insecurely in a row level security (RLS) policy."]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub rls_references_user_metadata:
@@ -547,6 +550,9 @@ pub struct Security {
     #[doc = "Security Definer View: Detects views defined with the SECURITY DEFINER property. These views enforce Postgres permissions and row level security policies (RLS) of the view creator, rather than that of the querying user"]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub security_definer_view: Option<RuleConfiguration<crate::splinter::SplinterRuleOptions>>,
+    #[doc = "Sensitive Columns Exposed: Detects tables exposed via API that contain columns with potentially sensitive data (PII, credentials, financial info) without RLS protection."]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub sensitive_columns_exposed: Option<RuleConfiguration<crate::splinter::SplinterRuleOptions>>,
     #[doc = "Unsupported reg types: Identifies columns using unsupported reg* types outside pg_catalog schema, which prevents database upgrades using pg_upgrade."]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub unsupported_reg_types: Option<RuleConfiguration<crate::splinter::SplinterRuleOptions>>,
@@ -565,8 +571,10 @@ impl Security {
         "policyExistsRlsDisabled",
         "rlsDisabledInPublic",
         "rlsEnabledNoPolicy",
+        "rlsPolicyAlwaysTrue",
         "rlsReferencesUserMetadata",
         "securityDefinerView",
+        "sensitiveColumnsExposed",
         "unsupportedRegTypes",
     ];
     const RECOMMENDED_RULES_AS_FILTERS: &'static [RuleFilter<'static>] = &[
@@ -584,6 +592,8 @@ impl Security {
         RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[11]),
         RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[12]),
         RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[13]),
+        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[14]),
+        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[15]),
     ];
     const ALL_RULES_AS_FILTERS: &'static [RuleFilter<'static>] = &[
         RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[0]),
@@ -600,6 +610,8 @@ impl Security {
         RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[11]),
         RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[12]),
         RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[13]),
+        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[14]),
+        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[15]),
     ];
     #[doc = r" Retrieves the recommended rules"]
     pub(crate) fn is_recommended_true(&self) -> bool {
@@ -671,19 +683,29 @@ impl Security {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[10]));
             }
         }
-        if let Some(rule) = self.rls_references_user_metadata.as_ref() {
+        if let Some(rule) = self.rls_policy_always_true.as_ref() {
             if rule.is_enabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[11]));
             }
         }
-        if let Some(rule) = self.security_definer_view.as_ref() {
+        if let Some(rule) = self.rls_references_user_metadata.as_ref() {
             if rule.is_enabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[12]));
             }
         }
-        if let Some(rule) = self.unsupported_reg_types.as_ref() {
+        if let Some(rule) = self.security_definer_view.as_ref() {
             if rule.is_enabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[13]));
+            }
+        }
+        if let Some(rule) = self.sensitive_columns_exposed.as_ref() {
+            if rule.is_enabled() {
+                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[14]));
+            }
+        }
+        if let Some(rule) = self.unsupported_reg_types.as_ref() {
+            if rule.is_enabled() {
+                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[15]));
             }
         }
         index_set
@@ -745,19 +767,29 @@ impl Security {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[10]));
             }
         }
-        if let Some(rule) = self.rls_references_user_metadata.as_ref() {
+        if let Some(rule) = self.rls_policy_always_true.as_ref() {
             if rule.is_disabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[11]));
             }
         }
-        if let Some(rule) = self.security_definer_view.as_ref() {
+        if let Some(rule) = self.rls_references_user_metadata.as_ref() {
             if rule.is_disabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[12]));
             }
         }
-        if let Some(rule) = self.unsupported_reg_types.as_ref() {
+        if let Some(rule) = self.security_definer_view.as_ref() {
             if rule.is_disabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[13]));
+            }
+        }
+        if let Some(rule) = self.sensitive_columns_exposed.as_ref() {
+            if rule.is_disabled() {
+                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[14]));
+            }
+        }
+        if let Some(rule) = self.unsupported_reg_types.as_ref() {
+            if rule.is_disabled() {
+                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[15]));
             }
         }
         index_set
@@ -800,8 +832,10 @@ impl Security {
             "policyExistsRlsDisabled" => Severity::Error,
             "rlsDisabledInPublic" => Severity::Error,
             "rlsEnabledNoPolicy" => Severity::Information,
+            "rlsPolicyAlwaysTrue" => Severity::Warning,
             "rlsReferencesUserMetadata" => Severity::Error,
             "securityDefinerView" => Severity::Error,
+            "sensitiveColumnsExposed" => Severity::Error,
             "unsupportedRegTypes" => Severity::Warning,
             _ => unreachable!(),
         }
@@ -855,12 +889,20 @@ impl Security {
                 .rls_enabled_no_policy
                 .as_ref()
                 .map(|conf| (conf.level(), conf.get_options())),
+            "rlsPolicyAlwaysTrue" => self
+                .rls_policy_always_true
+                .as_ref()
+                .map(|conf| (conf.level(), conf.get_options())),
             "rlsReferencesUserMetadata" => self
                 .rls_references_user_metadata
                 .as_ref()
                 .map(|conf| (conf.level(), conf.get_options())),
             "securityDefinerView" => self
                 .security_definer_view
+                .as_ref()
+                .map(|conf| (conf.level(), conf.get_options())),
+            "sensitiveColumnsExposed" => self
+                .sensitive_columns_exposed
                 .as_ref()
                 .map(|conf| (conf.level(), conf.get_options())),
             "unsupportedRegTypes" => self
@@ -996,6 +1038,17 @@ impl Security {
                 }
             }
         }
+        if let Some(conf) = &self.rls_policy_always_true {
+            if let Some(options) = conf.get_options_ref() {
+                if !options.ignore.is_empty() {
+                    let mut m = pgls_matcher::Matcher::new(pgls_matcher::MatchOptions::default());
+                    for p in &options.ignore {
+                        let _ = m.add_pattern(p);
+                    }
+                    matchers.insert("rlsPolicyAlwaysTrue", m);
+                }
+            }
+        }
         if let Some(conf) = &self.rls_references_user_metadata {
             if let Some(options) = conf.get_options_ref() {
                 if !options.ignore.is_empty() {
@@ -1015,6 +1068,17 @@ impl Security {
                         let _ = m.add_pattern(p);
                     }
                     matchers.insert("securityDefinerView", m);
+                }
+            }
+        }
+        if let Some(conf) = &self.sensitive_columns_exposed {
+            if let Some(options) = conf.get_options_ref() {
+                if !options.ignore.is_empty() {
+                    let mut m = pgls_matcher::Matcher::new(pgls_matcher::MatchOptions::default());
+                    for p in &options.ignore {
+                        let _ = m.add_pattern(p);
+                    }
+                    matchers.insert("sensitiveColumnsExposed", m);
                 }
             }
         }
