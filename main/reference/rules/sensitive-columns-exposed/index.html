@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><link rel="canonical" href="https://pg-language-server.com/main/reference/rules/sensitive-columns-exposed/" />
+      <link rel="shortcut icon" href="../../../img/favicon.ico" />
+    <title>sensitiveColumnsExposed - Postgres Language Server</title>
+    <link rel="stylesheet" href="../../../css/theme.css" />
+    <link rel="stylesheet" href="../../../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
+        <link href="../../../css/version-select.css" rel="stylesheet" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "sensitiveColumnsExposed";
+        var mkdocs_page_input_path = "reference/rules/sensitive-columns-exposed.md";
+        var mkdocs_page_url = "/main/reference/rules/sensitive-columns-exposed/";
+      </script>
+    
+    <!--[if lt IE 9]>
+      <script src="../../../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+      <script>hljs.highlightAll();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href="../../.." class="icon icon-home"> Postgres Language Server
+        </a>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../../../getting_started/">Getting Started</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../../../manual_installation/">Manual Installation</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../../../configuration/">Configuration</a>
+                </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Features</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../features/syntax_diagnostics/">Syntax Diagnostics</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../features/linting/">Linting</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../features/database_linting/">Database Linting</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../features/type_checking/">Type Checking</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../features/formatting/">Formatting</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../features/plpgsql/">PL/pgSQL Support</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../features/editor_features/">Autocompletion & Hover</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Guides</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../guides/ide_setup/">Use in your IDE</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../guides/checking_migrations/">Checking Migrations</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../guides/configure_database/">Configure database connection</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../guides/suppressions/">Suppressions</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../guides/vcs_integration/">Integrate with VCS</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../guides/continuous_integration/">Continuous Integration</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Reference</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../cli/">CLI Commands</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../">Linter Rules</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../rule_sources/">Linter Rule Sources</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../database_rules/">Database Linter Rules</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../database_rule_sources/">Database Linter Rule Sources</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../env_variables/">Environment Variables</a>
+                  </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../..">Postgres Language Server</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../.." class="icon icon-home" aria-label="Docs"></a></li>
+      <li class="breadcrumb-item active">sensitiveColumnsExposed</li>
+    <li class="wy-breadcrumbs-aside">
+          <a href="https://github.com/supabase-community/postgres-language-server/edit/master/docs/reference/rules/sensitive-columns-exposed.md">Edit on supabase-community/postgres-language-server</a>
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="sensitivecolumnsexposed">sensitiveColumnsExposed</h1>
+<p><strong>Diagnostic Category: <code>splinter/security/sensitiveColumnsExposed</code></strong></p>
+<p><strong>Severity</strong>: Error</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This rule requires a Supabase database/project and will be automatically skipped if not detected.</p>
+</div>
+<h2 id="description">Description</h2>
+<p>Detects tables exposed via API that contain columns with potentially sensitive data (PII, credentials, financial info) without RLS protection.</p>
+<h2 id="remediation">Remediation</h2>
+<p>https://supabase.com/docs/guides/database/database-linter?lint=0023_sensitive_columns_exposed</p>
+<h2 id="sql-query">SQL Query</h2>
+<pre><code class="language-sql">(
+with sensitive_patterns as (
+    select unnest(array[
+        -- Authentication &amp; Credentials
+        'password', 'passwd', 'pwd', 'passphrase',
+        'secret', 'secret_key', 'private_key', 'api_key', 'apikey',
+        'auth_key', 'token', 'jwt', 'access_token', 'refresh_token',
+        'oauth_token', 'session_token', 'bearer_token', 'auth_code',
+        'session_id', 'session_key', 'session_secret',
+        'recovery_code', 'backup_code', 'verification_code',
+        'otp', 'two_factor', '2fa_secret', '2fa_code',
+        -- Personal Identifiers
+        'ssn', 'social_security', 'social_security_number',
+        'driver_license', 'drivers_license', 'license_number',
+        'passport_number', 'passport_id', 'national_id', 'tax_id',
+        -- Financial Information
+        'credit_card', 'card_number', 'cvv', 'cvc', 'cvn',
+        'bank_account', 'account_number', 'routing_number',
+        'iban', 'swift_code', 'bic',
+        -- Health &amp; Medical
+        'health_record', 'medical_record', 'patient_id',
+        'insurance_number', 'health_insurance', 'medical_insurance',
+        'treatment',
+        -- Device Identifiers
+        'mac_address', 'macaddr', 'imei', 'device_uuid',
+        -- Digital Keys &amp; Certificates
+        'pgp_key', 'gpg_key', 'ssh_key', 'certificate',
+        'license_key', 'activation_key',
+        -- Biometric Data
+        'facial_recognition'
+    ]) as pattern
+),
+exposed_tables as (
+    select
+        n.nspname as schema_name,
+        c.relname as table_name,
+        c.oid as table_oid
+    from
+        pg_catalog.pg_class c
+        join pg_catalog.pg_namespace n
+            on c.relnamespace = n.oid
+    where
+        c.relkind = 'r' -- regular tables
+        and (
+            pg_catalog.has_table_privilege('anon', c.oid, 'SELECT')
+            or pg_catalog.has_table_privilege('authenticated', c.oid, 'SELECT')
+        )
+        and n.nspname = any(array(select trim(unnest(string_to_array(current_setting('pgrst.db_schemas', 't'), ',')))))
+        and n.nspname not in (
+            '_timescaledb_cache', '_timescaledb_catalog', '_timescaledb_config', '_timescaledb_internal', 'auth', 'cron', 'extensions', 'graphql', 'graphql_public', 'information_schema', 'net', 'pgmq', 'pgroonga', 'pgsodium', 'pgsodium_masks', 'pgtle', 'pgbouncer', 'pg_catalog', 'pgtle', 'realtime', 'repack', 'storage', 'supabase_functions', 'supabase_migrations', 'tiger', 'topology', 'vault'
+        )
+        -- Only flag tables without RLS enabled
+        and not c.relrowsecurity
+),
+sensitive_columns as (
+    select
+        et.schema_name,
+        et.table_name,
+        a.attname as column_name,
+        sp.pattern as matched_pattern
+    from
+        exposed_tables et
+        join pg_catalog.pg_attribute a
+            on a.attrelid = et.table_oid
+            and a.attnum &gt; 0
+            and not a.attisdropped
+        cross join sensitive_patterns sp
+    where
+        -- Match column name against sensitive patterns (case insensitive), allowing '-'/'_' variants
+        replace(lower(a.attname), '-', '_') = sp.pattern
+)
+select
+    'sensitive_columns_exposed' as &quot;name!&quot;,
+    'Sensitive Columns Exposed' as &quot;title!&quot;,
+    'ERROR' as &quot;level!&quot;,
+    'EXTERNAL' as &quot;facing!&quot;,
+    array['SECURITY'] as &quot;categories!&quot;,
+    'Detects tables exposed via API that contain columns with potentially sensitive data (PII, credentials, financial info) without RLS protection.' as &quot;description!&quot;,
+    format(
+        'Table `%s.%s` is exposed via API without RLS and contains potentially sensitive column(s): %s. This may lead to data exposure.',
+        schema_name,
+        table_name,
+        string_agg(distinct column_name, ', ' order by column_name)
+    ) as &quot;detail!&quot;,
+    'https://supabase.com/docs/guides/database/database-linter?lint=0023_sensitive_columns_exposed' as &quot;remediation!&quot;,
+    jsonb_build_object(
+        'schema', schema_name,
+        'name', table_name,
+        'type', 'table',
+        'sensitive_columns', array_agg(distinct column_name order by column_name),
+        'matched_patterns', array_agg(distinct matched_pattern order by matched_pattern)
+    ) as &quot;metadata!&quot;,
+    format(
+        'sensitive_columns_exposed_%s_%s',
+        schema_name,
+        table_name
+    ) as &quot;cache_key!&quot;
+from
+    sensitive_columns
+group by
+    schema_name,
+    table_name
+order by
+    schema_name,
+    table_name)
+</code></pre>
+<h2 id="how-to-configure">How to configure</h2>
+<pre><code class="language-json">{
+  &quot;splinter&quot;: {
+    &quot;rules&quot;: {
+      &quot;security&quot;: {
+        &quot;sensitiveColumnsExposed&quot;: &quot;error&quot;
+      }
+    }
+  }
+}
+</code></pre>
+              
+            </div>
+          </div><footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+        <span>
+          <a href="https://github.com/supabase-community/postgres-language-server" class="fa fa-code-fork" style="color: #fcfcfc"> supabase-community/postgres-language-server</a>
+        </span>
+    
+    
+    
+  </span>
+</div>
+    <script src="../../../js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = "../../..";</script>
+    <script src="../../../js/theme_extra.js"></script>
+    <script src="../../../js/theme.js"></script>
+      <script src="../../../js/version-select.js"></script>
+    <script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+
+</body>
+</html>

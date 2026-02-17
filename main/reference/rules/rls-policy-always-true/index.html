@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><link rel="canonical" href="https://pg-language-server.com/main/reference/rules/rls-policy-always-true/" />
+      <link rel="shortcut icon" href="../../../img/favicon.ico" />
+    <title>rlsPolicyAlwaysTrue - Postgres Language Server</title>
+    <link rel="stylesheet" href="../../../css/theme.css" />
+    <link rel="stylesheet" href="../../../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
+        <link href="../../../css/version-select.css" rel="stylesheet" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "rlsPolicyAlwaysTrue";
+        var mkdocs_page_input_path = "reference/rules/rls-policy-always-true.md";
+        var mkdocs_page_url = "/main/reference/rules/rls-policy-always-true/";
+      </script>
+    
+    <!--[if lt IE 9]>
+      <script src="../../../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+      <script>hljs.highlightAll();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href="../../.." class="icon icon-home"> Postgres Language Server
+        </a>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../../../getting_started/">Getting Started</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../../../manual_installation/">Manual Installation</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../../../configuration/">Configuration</a>
+                </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Features</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../features/syntax_diagnostics/">Syntax Diagnostics</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../features/linting/">Linting</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../features/database_linting/">Database Linting</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../features/type_checking/">Type Checking</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../features/formatting/">Formatting</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../features/plpgsql/">PL/pgSQL Support</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../features/editor_features/">Autocompletion & Hover</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Guides</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../guides/ide_setup/">Use in your IDE</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../guides/checking_migrations/">Checking Migrations</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../guides/configure_database/">Configure database connection</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../guides/suppressions/">Suppressions</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../guides/vcs_integration/">Integrate with VCS</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../guides/continuous_integration/">Continuous Integration</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Reference</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../cli/">CLI Commands</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../">Linter Rules</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../rule_sources/">Linter Rule Sources</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../database_rules/">Database Linter Rules</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../database_rule_sources/">Database Linter Rule Sources</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../env_variables/">Environment Variables</a>
+                  </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../..">Postgres Language Server</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../.." class="icon icon-home" aria-label="Docs"></a></li>
+      <li class="breadcrumb-item active">rlsPolicyAlwaysTrue</li>
+    <li class="wy-breadcrumbs-aside">
+          <a href="https://github.com/supabase-community/postgres-language-server/edit/master/docs/reference/rules/rls-policy-always-true.md">Edit on supabase-community/postgres-language-server</a>
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="rlspolicyalwaystrue">rlsPolicyAlwaysTrue</h1>
+<p><strong>Diagnostic Category: <code>splinter/security/rlsPolicyAlwaysTrue</code></strong></p>
+<p><strong>Severity</strong>: Warning</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This rule requires a Supabase database/project and will be automatically skipped if not detected.</p>
+</div>
+<h2 id="description">Description</h2>
+<p>Detects RLS policies that use overly permissive expressions like USING (true) or WITH CHECK (true) for UPDATE, DELETE, or INSERT operations. SELECT policies with USING (true) are intentionally excluded as this pattern is often used deliberately for public read access.</p>
+<h2 id="remediation">Remediation</h2>
+<p>https://supabase.com/docs/guides/database/database-linter?lint=0024_permissive_rls_policy</p>
+<h2 id="sql-query">SQL Query</h2>
+<pre><code class="language-sql">(
+with policies as (
+    select
+        nsp.nspname as schema_name,
+        pb.tablename as table_name,
+        pc.relrowsecurity as is_rls_active,
+        pa.polname as policy_name,
+        pa.polpermissive as is_permissive,
+        pa.polroles as role_oids,
+        (select array_agg(r::regrole::text) from unnest(pa.polroles) as x(r)) as roles,
+        case pa.polcmd
+            when 'r' then 'SELECT'
+            when 'a' then 'INSERT'
+            when 'w' then 'UPDATE'
+            when 'd' then 'DELETE'
+            when '*' then 'ALL'
+        end as command,
+        pb.qual,
+        pb.with_check,
+        -- Normalize expressions by removing whitespace and lowercasing
+        replace(replace(replace(lower(coalesce(pb.qual, '')), ' ', ''), E'\n', ''), E'\t', '') as normalized_qual,
+        replace(replace(replace(lower(coalesce(pb.with_check, '')), ' ', ''), E'\n', ''), E'\t', '') as normalized_with_check
+    from
+        pg_catalog.pg_policy pa
+        join pg_catalog.pg_class pc
+            on pa.polrelid = pc.oid
+        join pg_catalog.pg_namespace nsp
+            on pc.relnamespace = nsp.oid
+        join pg_catalog.pg_policies pb
+            on pc.relname = pb.tablename
+            and nsp.nspname = pb.schemaname
+            and pa.polname = pb.policyname
+    where
+        pc.relkind = 'r' -- regular tables
+        and nsp.nspname not in (
+            '_timescaledb_cache', '_timescaledb_catalog', '_timescaledb_config', '_timescaledb_internal', 'auth', 'cron', 'extensions', 'graphql', 'graphql_public', 'information_schema', 'net', 'pgmq', 'pgroonga', 'pgsodium', 'pgsodium_masks', 'pgtle', 'pgbouncer', 'pg_catalog', 'pgtle', 'realtime', 'repack', 'storage', 'supabase_functions', 'supabase_migrations', 'tiger', 'topology', 'vault'
+        )
+),
+permissive_patterns as (
+    select
+        p.*,
+        -- Check for always-true USING clause patterns
+        -- Note: SELECT with (true) is often intentional and documented, so we only flag UPDATE/DELETE
+        case when (
+            command in ('UPDATE', 'DELETE', 'ALL')
+            and (
+                normalized_qual in ('true', '(true)', '1=1', '(1=1)')
+                -- Empty or null qual on permissive policy means allow all
+                or (qual is null and is_permissive)
+            )
+        ) then true else false end as has_permissive_using,
+        -- Check for always-true WITH CHECK clause patterns
+        case when (
+            normalized_with_check in ('true', '(true)', '1=1', '(1=1)')
+            -- Empty with_check on INSERT means allow all (INSERT has no USING to fall back on)
+            or (with_check is null and is_permissive and command = 'INSERT')
+            -- Empty with_check on UPDATE/ALL with permissive USING means allow all writes
+            or (with_check is null and is_permissive and command in ('UPDATE', 'ALL')
+                and normalized_qual in ('true', '(true)', '1=1', '(1=1)'))
+        ) then true else false end as has_permissive_with_check
+    from
+        policies p
+    where
+        -- Only check tables with RLS enabled (otherwise it's a different lint)
+        is_rls_active
+        -- Only check permissive policies (restrictive policies with true are less dangerous)
+        and is_permissive
+        -- Only flag policies that apply to anon or authenticated roles (or public/all roles)
+        and (
+            role_oids = array[0::oid] -- public (all roles)
+            or exists (
+                select 1
+                from unnest(role_oids) as r
+                where r::regrole::text in ('anon', 'authenticated')
+            )
+        )
+)
+select
+    'rls_policy_always_true' as &quot;name!&quot;,
+    'RLS Policy Always True' as &quot;title!&quot;,
+    'WARN' as &quot;level!&quot;,
+    'EXTERNAL' as &quot;facing!&quot;,
+    array['SECURITY'] as &quot;categories!&quot;,
+    'Detects RLS policies that use overly permissive expressions like USING (true) or WITH CHECK (true) for UPDATE, DELETE, or INSERT operations. SELECT policies with USING (true) are intentionally excluded as this pattern is often used deliberately for public read access.' as &quot;description!&quot;,
+    format(
+        'Table `%s.%s` has an RLS policy `%s` for `%s` that allows unrestricted access%s. This effectively bypasses row-level security for %s.',
+        schema_name,
+        table_name,
+        policy_name,
+        command,
+        case
+            when has_permissive_using and has_permissive_with_check then ' (both USING and WITH CHECK are always true)'
+            when has_permissive_using then ' (USING clause is always true)'
+            when has_permissive_with_check then ' (WITH CHECK clause is always true)'
+            else ''
+        end,
+        array_to_string(roles, ', ')
+    ) as &quot;detail!&quot;,
+    'https://supabase.com/docs/guides/database/database-linter?lint=0024_permissive_rls_policy' as &quot;remediation!&quot;,
+    jsonb_build_object(
+        'schema', schema_name,
+        'name', table_name,
+        'type', 'table',
+        'policy_name', policy_name,
+        'command', command,
+        'roles', roles,
+        'qual', qual,
+        'with_check', with_check,
+        'permissive_using', has_permissive_using,
+        'permissive_with_check', has_permissive_with_check
+    ) as &quot;metadata!&quot;,
+    format(
+        'rls_policy_always_true_%s_%s_%s',
+        schema_name,
+        table_name,
+        policy_name
+    ) as &quot;cache_key!&quot;
+from
+    permissive_patterns
+where
+    has_permissive_using or has_permissive_with_check
+order by
+    schema_name,
+    table_name,
+    policy_name)
+</code></pre>
+<h2 id="how-to-configure">How to configure</h2>
+<pre><code class="language-json">{
+  &quot;splinter&quot;: {
+    &quot;rules&quot;: {
+      &quot;security&quot;: {
+        &quot;rlsPolicyAlwaysTrue&quot;: &quot;error&quot;
+      }
+    }
+  }
+}
+</code></pre>
+              
+            </div>
+          </div><footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+        <span>
+          <a href="https://github.com/supabase-community/postgres-language-server" class="fa fa-code-fork" style="color: #fcfcfc"> supabase-community/postgres-language-server</a>
+        </span>
+    
+    
+    
+  </span>
+</div>
+    <script src="../../../js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = "../../..";</script>
+    <script src="../../../js/theme_extra.js"></script>
+    <script src="../../../js/theme.js"></script>
+      <script src="../../../js/version-select.js"></script>
+    <script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+
+</body>
+</html>

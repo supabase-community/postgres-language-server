@@ -249,6 +249,11 @@
 <td>✅</td>
 </tr>
 <tr>
+<td><a href="../rules/rls-policy-always-true/">rlsPolicyAlwaysTrue</a></td>
+<td>Detects RLS policies that use overly permissive expressions like USING (true) or WITH CHECK (true) for UPDATE, DELETE, or INSERT operations. SELECT policies with USING (true) are intentionally excluded as this pattern is often used deliberately for public read access.</td>
+<td>✅ ⚡</td>
+</tr>
+<tr>
 <td><a href="../rules/rls-references-user-metadata/">rlsReferencesUserMetadata</a></td>
 <td>Detects when Supabase Auth user_metadata is referenced insecurely in a row level security (RLS) policy.</td>
 <td>✅ ⚡</td>
@@ -256,6 +261,11 @@
 <tr>
 <td><a href="../rules/security-definer-view/">securityDefinerView</a></td>
 <td>Detects views defined with the SECURITY DEFINER property. These views enforce Postgres permissions and row level security policies (RLS) of the view creator, rather than that of the querying user</td>
+<td>✅ ⚡</td>
+</tr>
+<tr>
+<td><a href="../rules/sensitive-columns-exposed/">sensitiveColumnsExposed</a></td>
+<td>Detects tables exposed via API that contain columns with potentially sensitive data (PII, credentials, financial info) without RLS protection.</td>
 <td>✅ ⚡</td>
 </tr>
 <tr>
