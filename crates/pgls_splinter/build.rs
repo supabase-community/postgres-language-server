@@ -2,7 +2,7 @@ use std::fs;
 use std::io::Write;
 use std::path::Path;
 
-const EXPECTED_COMMIT: &str = "27ea2ece65464213e466cd969cc61b6940d16219";
+const EXPECTED_COMMIT: &str = "b9de3a3001cbdf01dc1da327acae0700c07f0110";
 const REPO: &str = "supabase/splinter";
 
 fn main() {

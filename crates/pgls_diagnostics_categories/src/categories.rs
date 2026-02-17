@@ -95,8 +95,10 @@ define_categories! {
     "splinter/security/policyExistsRlsDisabled": "https://supabase.com/docs/guides/database/database-linter?lint=0007_policy_exists_rls_disabled",
     "splinter/security/rlsDisabledInPublic": "https://supabase.com/docs/guides/database/database-linter?lint=0013_rls_disabled_in_public",
     "splinter/security/rlsEnabledNoPolicy": "https://supabase.com/docs/guides/database/database-linter?lint=0008_rls_enabled_no_policy",
+    "splinter/security/rlsPolicyAlwaysTrue": "https://supabase.com/docs/guides/database/database-linter?lint=0024_permissive_rls_policy",
     "splinter/security/rlsReferencesUserMetadata": "https://supabase.com/docs/guides/database/database-linter?lint=0015_rls_references_user_metadata",
     "splinter/security/securityDefinerView": "https://supabase.com/docs/guides/database/database-linter?lint=0010_security_definer_view",
+    "splinter/security/sensitiveColumnsExposed": "https://supabase.com/docs/guides/database/database-linter?lint=0023_sensitive_columns_exposed",
     "splinter/security/unsupportedRegTypes": "https://supabase.com/docs/guides/database/database-linter?lint=unsupported_reg_types",
     // splinter rules end
     ;

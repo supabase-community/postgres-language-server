@@ -32,8 +32,10 @@ _No exclusive rules available._
 | [policyExistsRlsDisabled](https://github.com/supabase/splinter) | [policyExistsRlsDisabled](./rules/policy-exists-rls-disabled.md) |
 | [rlsDisabledInPublic](https://github.com/supabase/splinter) | [rlsDisabledInPublic](./rules/rls-disabled-in-public.md) |
 | [rlsEnabledNoPolicy](https://github.com/supabase/splinter) | [rlsEnabledNoPolicy](./rules/rls-enabled-no-policy.md) |
+| [rlsPolicyAlwaysTrue](https://github.com/supabase/splinter) | [rlsPolicyAlwaysTrue](./rules/rls-policy-always-true.md) |
 | [rlsReferencesUserMetadata](https://github.com/supabase/splinter) | [rlsReferencesUserMetadata](./rules/rls-references-user-metadata.md) |
 | [securityDefinerView](https://github.com/supabase/splinter) | [securityDefinerView](./rules/security-definer-view.md) |
+| [sensitiveColumnsExposed](https://github.com/supabase/splinter) | [sensitiveColumnsExposed](./rules/sensitive-columns-exposed.md) |
 | [unsupportedRegTypes](https://github.com/supabase/splinter) | [unsupportedRegTypes](./rules/unsupported-reg-types.md) |
 
 [//]: # (END DATABASE_RULE_SOURCES)
