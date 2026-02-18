@@ -13,8 +13,10 @@ pgls_analyser    = { workspace = true }
 pgls_diagnostics = { workspace = true }
 pgls_env         = { workspace = true }
 pgls_pglinter    = { workspace = true }
+pgls_schema_cache = { workspace = true, features = ["schema"] }
 pgls_splinter    = { workspace = true }
 pgls_workspace   = { workspace = true, features = ["schema"] }
+schemars         = { workspace = true }
 proc-macro2      = { workspace = true, features = ["span-locations"] }
 pulldown-cmark   = { version = "0.12.2" }
 quote            = "1.0.36"

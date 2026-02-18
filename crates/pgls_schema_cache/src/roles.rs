@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 use crate::schema_cache::SchemaCacheItem;
 
 #[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct Role {
     pub name: String,
     pub is_super_user: bool,

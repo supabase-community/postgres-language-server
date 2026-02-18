@@ -5,6 +5,7 @@ use crate::schema_cache::SchemaCacheItem;
 use strum::{EnumIter, IntoEnumIterator};
 
 #[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub enum TriggerAffected {
     Row,
     Statement,
@@ -22,6 +23,7 @@ impl From<i16> for TriggerAffected {
 }
 
 #[derive(Debug, PartialEq, Eq, EnumIter, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub enum TriggerEvent {
     Insert,
     Delete,
@@ -51,6 +53,7 @@ impl From<i16> for TriggerEvents {
 }
 
 #[derive(Debug, PartialEq, Eq, EnumIter, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub enum TriggerTiming {
     Before,
     After,
@@ -92,6 +95,7 @@ pub struct TriggerQueried {
 }
 
 #[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct Trigger {
     pub name: String,
     pub table_name: String,
