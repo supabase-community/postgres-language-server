@@ -14,6 +14,8 @@ version              = "0.0.0"
 default = ["db"]
 # Enable serde serialization/deserialization for all types (needed for WASM)
 serde = []
+# Enable schemars JsonSchema derive for schema generation/codegen
+schema = ["dep:schemars"]
 # Enable database connectivity (sqlx, async-std, tokio, futures-util)
 # Disable this feature for WASM builds
 db = ["dep:sqlx", "dep:async-std", "dep:futures-util", "dep:tokio"]
@@ -26,6 +28,7 @@ pgls_console.workspace     = true
 pgls_diagnostics.workspace = true
 serde                      = { workspace = true, features = ["derive"] }
 serde_json.workspace       = true
+schemars                  = { workspace = true, optional = true }
 sqlx                       = { workspace = true, optional = true }
 strum                      = { workspace = true }
 tokio                      = { workspace = true, optional = true }

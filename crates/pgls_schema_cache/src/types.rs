@@ -7,11 +7,13 @@ use sqlx::PgPool;
 use crate::schema_cache::SchemaCacheItem;
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct TypeAttributes {
     pub attrs: Vec<PostgresTypeAttribute>,
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct PostgresTypeAttribute {
     pub name: String,
     pub type_id: i64,
@@ -26,6 +28,7 @@ impl From<Option<JsonValue>> for TypeAttributes {
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct Enums {
     pub values: Vec<String>,
 }
@@ -39,6 +42,7 @@ impl From<Option<JsonValue>> for Enums {
 }
 
 #[derive(Debug, Default, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct PostgresType {
     pub id: i64,
     pub name: String,

@@ -47,12 +47,15 @@ const hover = workspace.hover('/query.sql', 14); // position over "users"
 
 ### With Schema
 
-For schema-aware completions and hover, provide your database schema:
+For schema-aware completions and hover, provide your database schema.
+TypeScript types exported as `SchemaCache`:
 
 ```typescript
+import type { SchemaCache } from '@postgres-language-server/wasm';
+
 const workspace = await createWorkspace();
 
-// Set schema (matches pgls_schema_cache format)
+// Set schema
 workspace.setSchema(JSON.stringify({
   schemas: [{ id: 1, name: 'public', owner: 'postgres', ... }],
   tables: [{ id: 1, schema: 'public', name: 'users', ... }],
@@ -60,7 +63,7 @@ workspace.setSchema(JSON.stringify({
   functions: [],
   types: [],
   // ...
-}));
+} satisfies SchemaCache));
 
 workspace.insertFile('/query.sql', 'SELECT * FROM ');
 const completions = workspace.complete('/query.sql', 14);

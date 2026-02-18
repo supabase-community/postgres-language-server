@@ -14,6 +14,7 @@ use crate::versions::Version;
 use crate::{Extension, Role, Trigger};
 
 #[derive(Debug, Default, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 #[serde(default)]
 pub struct SchemaCache {
     pub schemas: Vec<Schema>,

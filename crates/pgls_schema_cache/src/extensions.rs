@@ -6,6 +6,7 @@ use sqlx::PgPool;
 use crate::schema_cache::SchemaCacheItem;
 
 #[derive(Debug, Default, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct Extension {
     pub name: String,
     pub schema: Option<String>,

@@ -7,6 +7,7 @@ use crate::schema_cache::SchemaCacheItem;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct Index {
     pub id: i64,
     pub schema: String,

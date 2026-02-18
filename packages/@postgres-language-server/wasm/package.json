@@ -23,8 +23,9 @@
 	"scripts": {
 		"build": "bun run build:wasm && bun run build:ts",
 		"build:wasm": "../../../crates/pgls_wasm/build-wasm.sh --release && mkdir -p wasm && cp ../../../crates/pgls_wasm/dist/pgls.js ../../../crates/pgls_wasm/dist/pgls.wasm ./wasm/",
-		"build:ts": "tsc -p tsconfig.build.json && cp wasm/pgls.wasm wasm/pgls.js dist/",
-		"build:types": "tsc --declaration --emitDeclarationOnly --outDir dist",
+		"gen:schema-types": "cargo run -p xtask_codegen -- wasm-schema-types",
+		"build:ts": "bun run gen:schema-types && tsc -p tsconfig.build.json && cp src/schema-cache.d.ts dist/schema-cache.d.ts && cp wasm/pgls.wasm wasm/pgls.js dist/",
+		"build:types": "bun run gen:schema-types && tsc --declaration --emitDeclarationOnly --outDir dist && cp src/schema-cache.d.ts dist/schema-cache.d.ts",
 		"test": "bun test",
 		"test:e2e": "playwright test",
 		"test:e2e:ui": "playwright test --ui",

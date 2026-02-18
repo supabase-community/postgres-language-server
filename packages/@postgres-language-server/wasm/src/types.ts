@@ -2,6 +2,8 @@
  * TypeScript type definitions for the Postgres Language Server WASM API.
  */
 
+import type { SchemaCache } from "./schema-cache";
+
 /**
  * A diagnostic message from the linter.
  */
@@ -35,47 +37,9 @@ export interface CompletionItem {
 }
 
 /**
- * Schema cache representing database metadata.
- * This structure mirrors the Rust SchemaCache type.
+ * Schema cache type generated from Rust `SchemaCache` via schemars.
  */
-export interface SchemaCache {
-	schemas: Schema[];
-	tables: Table[];
-	functions: Function[];
-	types: Type[];
-	// Add more as needed based on pgls_schema_cache
-}
-
-export interface Schema {
-	name: string;
-	owner?: string;
-}
-
-export interface Table {
-	name: string;
-	schema: string;
-	columns: Column[];
-}
-
-export interface Column {
-	name: string;
-	dataType: string;
-	isNullable: boolean;
-	defaultValue?: string;
-}
-
-export interface Function {
-	name: string;
-	schema: string;
-	returnType: string;
-	arguments: string[];
-}
-
-export interface Type {
-	name: string;
-	schema: string;
-	kind: string;
-}
+export type { SchemaCache } from "./schema-cache";
 
 /**
  * Options for initializing the workspace.
