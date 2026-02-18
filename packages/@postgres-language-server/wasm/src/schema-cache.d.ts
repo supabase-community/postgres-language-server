@@ -207,43 +207,18 @@ export interface FunctionArgs {
 /**
  * `Behavior` describes the characteristics of the function. Is it deterministic? Does it changed due to side effects, and if so, when?
  */
-export type Behavior =
-	| "Immutable"
-	| "Stable"
-	| "Volatile";
-export type ProcKind =
-	| "Function"
-	| "Aggregate"
-	| "Window"
-	| "Procedure";
-export type PolicyCommand =
-	| "Select"
-	| "Insert"
-	| "Update"
-	| "Delete"
-	| "All";
-export type ReplicaIdentity =
-	| "Default"
-	| "Index"
-	| "Full"
-	| "Nothing";
+export type Behavior = "Immutable" | "Stable" | "Volatile";
+export type ProcKind = "Function" | "Aggregate" | "Window" | "Procedure";
+export type PolicyCommand = "Select" | "Insert" | "Update" | "Delete" | "All";
+export type ReplicaIdentity = "Default" | "Index" | "Full" | "Nothing";
 export type TableKind =
 	| "Ordinary"
 	| "View"
 	| "MaterializedView"
 	| "Partitioned";
-export type TriggerAffected =
-	| "Row"
-	| "Statement";
-export type TriggerEvent =
-	| "Insert"
-	| "Delete"
-	| "Update"
-	| "Truncate";
-export type TriggerTiming =
-	| "Before"
-	| "After"
-	| "Instead";
+export type TriggerAffected = "Row" | "Statement";
+export type TriggerEvent = "Insert" | "Delete" | "Update" | "Truncate";
+export type TriggerTiming = "Before" | "After" | "Instead";
 export interface TypeAttributes {
 	attrs: PostgresTypeAttribute[];
 }
