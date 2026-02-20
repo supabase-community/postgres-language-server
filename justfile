@@ -114,8 +114,9 @@ ready:
   cargo run -p docs_codegen
   cargo run -p xtask_codegen -- bindings
   cargo sqlx prepare --workspace
+  just format # format after codegen, so we don't have staged changes before lint-fix
   just lint-fix
-  just format
+  just format # format after linting so we fmt resolved issues
   git diff --exit-code --quiet
 
 # Creates a new crate
