@@ -25,8 +25,8 @@ tracing                           = { workspace = true }
 tree-sitter.workspace             = true
 
 [dev-dependencies]
-pgls_schema_cache                 = { workspace = true, features = ["db"] }
 insta                     = { version = "1.42.1" }
+pgls_schema_cache         = { workspace = true, features = ["db"] }
 pgls_test_utils.workspace = true
 sqlx.workspace            = true
 
