@@ -7,6 +7,7 @@ version = "0.0.0"
 [dependencies]
 anyhow             = { workspace = true }
 biome_js_factory   = { workspace = true }
+biome_formatter    = { workspace = true }
 biome_js_formatter = { workspace = true }
 biome_js_syntax    = { workspace = true }
 biome_rowan        = { workspace = true }

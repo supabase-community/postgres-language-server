@@ -1,4 +1,5 @@
 use crate::update;
+use biome_formatter::IndentStyle;
 use biome_js_factory::make;
 use biome_js_formatter::{context::JsFormatOptions, format_node};
 use biome_js_syntax::{
@@ -427,7 +428,11 @@ pub fn generate_bindings(mode: Mode) -> Result<()> {
     )
     .build();
 
-    let formatted = format_node(JsFormatOptions::new(JsFileSource::ts()), module.syntax()).unwrap();
+    let formatted = format_node(
+        JsFormatOptions::new(JsFileSource::ts()).with_indent_style(IndentStyle::Tab),
+        module.syntax(),
+    )
+    .unwrap();
     let printed = formatted.print().unwrap();
     let code = printed.into_code();
 
