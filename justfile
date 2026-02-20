@@ -116,7 +116,7 @@ ready:
   cargo sqlx prepare --workspace
   just format # format after codegen, so we don't have staged changes before lint-fix
   just lint-fix
-  just format # format after linting so we fmt resolved issues
+  just format # format after linting so we format potential linting writes
   git diff --exit-code --quiet
 
 # Creates a new crate
