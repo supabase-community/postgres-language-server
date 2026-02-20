@@ -1,4 +1,5 @@
 use crate::update;
+
 use convert_case::{Case, Casing};
 use pgls_workspace::workspace_types::{generate_type, methods, ModuleQueue};
 use xtask::{project_root, Mode, Result};
