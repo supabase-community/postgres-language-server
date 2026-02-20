@@ -28,6 +28,7 @@ gen-lint:
   cargo run -p xtask_codegen -- analyser
   cargo run -p xtask_codegen -- configuration
   cargo run -p xtask_codegen -- bindings
+  cargo run -p xtask_codegen -- wasm-schema-types
   cargo run -p xtask_codegen -- splinter
   cargo run -p xtask_codegen -- pglinter
   cargo run -p rules_check
@@ -113,6 +114,7 @@ ready:
   cargo run -p xtask_codegen -- configuration
   cargo run -p docs_codegen
   cargo run -p xtask_codegen -- bindings
+  cargo run -p xtask_codegen -- wasm-schema-types
   cargo sqlx prepare --workspace
   just format # format after codegen, so we don't have staged changes before lint-fix
   just lint-fix

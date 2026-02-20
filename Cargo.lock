@@ -2766,6 +2766,7 @@ dependencies = [
  "pgls_console",
  "pgls_diagnostics",
  "pgls_test_utils",
+ "schemars",
  "serde",
  "serde_json",
  "sqlx",
@@ -5604,12 +5605,14 @@ dependencies = [
  "pgls_diagnostics",
  "pgls_env",
  "pgls_pglinter",
+ "pgls_schema_cache",
  "pgls_splinter",
  "pgls_workspace",
  "proc-macro2",
  "pulldown-cmark",
  "quote",
  "regex",
+ "schemars",
  "xtask",
 ]
 

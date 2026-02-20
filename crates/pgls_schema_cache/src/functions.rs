@@ -7,6 +7,7 @@ use sqlx::PgPool;
 use crate::schema_cache::SchemaCacheItem;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub enum ProcKind {
     #[default]
     Function,
@@ -35,6 +36,7 @@ impl From<i8> for ProcKind {
 
 /// `Behavior` describes the characteristics of the function. Is it deterministic? Does it changed due to side effects, and if so, when?
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub enum Behavior {
     /// The function is a pure function (same input leads to same output.)
     Immutable,
@@ -62,6 +64,7 @@ impl From<Option<String>> for Behavior {
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct FunctionArg {
     /// `in`, `out`, or `inout`.
     pub mode: String,
@@ -75,6 +78,7 @@ pub struct FunctionArg {
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct FunctionArgs {
     pub args: Vec<FunctionArg>,
 }
@@ -88,6 +92,7 @@ impl From<Option<JsonValue>> for FunctionArgs {
 }
 
 #[derive(Debug, Default, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct Function {
     /// The Id (`oid`).
     pub id: i64,

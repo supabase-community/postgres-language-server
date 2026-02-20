@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 use crate::schema_cache::SchemaCacheItem;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub enum PolicyCommand {
     Select,
     Insert,
@@ -58,6 +59,7 @@ impl From<PolicyQueried> for Policy {
 }
 
 #[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct Policy {
     pub name: String,
     pub table_name: String,
