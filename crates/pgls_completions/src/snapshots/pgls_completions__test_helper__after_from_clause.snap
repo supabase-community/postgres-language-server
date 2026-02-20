@@ -16,10 +16,10 @@ select email from users |
 
 Results:
 cross - cross (Keyword)
+except - except (Keyword)
+for - for (Keyword)
 full - full (Keyword)
 group - group (Keyword)
-inner - inner (Keyword)
-join - join (Keyword)
 
 --------------
 
@@ -56,10 +56,11 @@ identity_generation - information_schema.columns.identity_generation (Column)
 select email from users where id |
 
 Results:
+except - except (Keyword)
+for - for (Keyword)
 group - group (Keyword)
+intersect - intersect (Keyword)
 limit - limit (Keyword)
-order - order (Keyword)
-window - window (Keyword)
 
 --------------
 
@@ -78,10 +79,10 @@ select email from users where id = 1|
 select email from users where id = 1; |
 
 Results:
+create - create (Keyword)
+drop - drop (Keyword)
 insert - insert (Keyword)
 reset - reset (Keyword)
 select - select (Keyword)
-set - set (Keyword)
-truncate - truncate (Keyword)
 
 --------------

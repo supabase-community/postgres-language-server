@@ -26,12 +26,25 @@ create table auth.posts (
 d|
 
 Results:
+drop - drop (Keyword)
 update - update (Keyword)
 
 --------------
 
 drop |
+
+Results:
+table - table (Keyword)
+
+--------------
+
 drop t|
+
+Results:
+table - table (Keyword)
+
+--------------
+
 drop table |
 
 Results:
@@ -56,6 +69,12 @@ pg_catalog.pg_index - pg_catalog.pg_index (Table)
 
 drop table if |
 drop table if e|
+
+Results:
+exists - exists (Keyword)
+
+--------------
+
 drop table if exists |
 
 Results:
@@ -94,9 +113,3 @@ posts - auth.posts (Table)
 --------------
 
 drop table if exists auth.posts |
-
-Results:
-cascade - cascade (Keyword)
-restrict - restrict (Keyword)
-
---------------

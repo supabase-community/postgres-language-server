@@ -24,7 +24,25 @@ reset - reset (Keyword)
 --------------
 
 set |
+
+Results:
+constraints - constraints (Keyword)
+names - names (Keyword)
+role - role (Keyword)
+schema - schema (Keyword)
+session - session (Keyword)
+
+--------------
+
 set r|
+
+Results:
+role - role (Keyword)
+constraints - constraints (Keyword)
+transaction - transaction (Keyword)
+
+--------------
+
 set role |
 
 Results:
@@ -50,10 +68,10 @@ pg_read_all_stats - pg_read_all_stats (Role)
 set role anon; |
 
 Results:
+create - create (Keyword)
+drop - drop (Keyword)
 insert - insert (Keyword)
 reset - reset (Keyword)
 select - select (Keyword)
-set - set (Keyword)
-truncate - truncate (Keyword)
 
 --------------

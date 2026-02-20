@@ -27,10 +27,10 @@ select * from auth.users u |
 
 Results:
 cross - cross (Keyword)
+except - except (Keyword)
+for - for (Keyword)
 full - full (Keyword)
 group - group (Keyword)
-inner - inner (Keyword)
-join - join (Keyword)
 
 --------------
 

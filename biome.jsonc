@@ -11,8 +11,7 @@
 		"include": ["packages/**/*"]
 	},
 	"formatter": {
-		"enabled": true,
-		"indentStyle": "tab"
+		"enabled": true
 	},
 	"organizeImports": {
 		"enabled": true

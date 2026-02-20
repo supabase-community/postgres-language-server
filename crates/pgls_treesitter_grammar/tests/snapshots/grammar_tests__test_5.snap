@@ -13,43 +13,43 @@ program [0..71] 'select * from users u where u.active = true and (u.role = 'admi
       select_expression [7..8] '*' (@end)
         term [7..8] '*' (@end)
           all_fields [7..8] '*' (@end)
-            * [7..8] '*'
-    from [9..70] 'from users u where u.active = true and (u.role = 'admin' or u.role = 'moderator')'
+            * [7..8] '*' (@end)
+    from [9..21] 'from users u'
       keyword_from [9..13] 'from'
       relation [14..21] 'users u' (@end)
         table_reference [14..19] 'users' (@end)
           any_identifier [14..19] 'users' (@table_reference_1of1)
         alias [20..21] 'u'
           any_identifier [20..21] 'u' (@end)
-      where [2..70] 'where u.active = true and (u.role = 'admin' or u.role = 'moderator')'
-        keyword_where [2..7] 'where'
-        binary_expression [8..70] 'u.active = true and (u.role = 'admin' or u.role = 'moderator')' (@end)
-          binary_expression [8..23] 'u.active = true' (@binary_expr_left)
-            object_reference [8..16] 'u.active' (@binary_expr_left)
-              any_identifier [8..9] 'u' (@object_reference_1of2)
-              . [9..10] '.'
-              any_identifier [10..16] 'active' (@object_reference_2of2)
-            = [17..18] '=' (@binary_expr_operator)
-            literal [19..23] 'true' (@end)
-              keyword_true [19..23] 'true'
-          keyword_and [24..27] 'and' (@binary_expr_operator)
-          parenthesized_expression [28..70] '(u.role = 'admin' or u.role = 'moderator')' (@end)
-            ( [28..29] '('
-            binary_expression [29..69] 'u.role = 'admin' or u.role = 'moderator''
-              binary_expression [29..45] 'u.role = 'admin'' (@binary_expr_left)
-                object_reference [29..35] 'u.role' (@binary_expr_left)
-                  any_identifier [29..30] 'u' (@object_reference_1of2)
-                  . [30..31] '.'
-                  any_identifier [31..35] 'role' (@object_reference_2of2)
-                = [36..37] '=' (@binary_expr_operator)
-                literal [38..45] ''admin'' (@end)
-              keyword_or [46..48] 'or' (@binary_expr_operator)
-              binary_expression [49..69] 'u.role = 'moderator'' (@end)
-                object_reference [49..55] 'u.role' (@binary_expr_left)
-                  any_identifier [49..50] 'u' (@object_reference_1of2)
-                  . [50..51] '.'
-                  any_identifier [51..55] 'role' (@object_reference_2of2)
-                = [56..57] '=' (@binary_expr_operator)
-                literal [58..69] ''moderator'' (@end)
-            ) [69..70] ')' (@end)
+    where [2..70] 'where u.active = true and (u.role = 'admin' or u.role = 'moderator')'
+      keyword_where [2..7] 'where'
+      binary_expression [8..70] 'u.active = true and (u.role = 'admin' or u.role = 'moderator')' (@end)
+        binary_expression [8..23] 'u.active = true' (@binary_expr_left)
+          object_reference [8..16] 'u.active' (@binary_expr_left)
+            any_identifier [8..9] 'u' (@object_reference_1of2)
+            . [9..10] '.'
+            any_identifier [10..16] 'active' (@object_reference_2of2)
+          = [17..18] '=' (@binary_expr_operator)
+          literal [19..23] 'true' (@end)
+            keyword_true [19..23] 'true'
+        keyword_and [24..27] 'and' (@binary_expr_operator)
+        parenthesized_expression [28..70] '(u.role = 'admin' or u.role = 'moderator')' (@end)
+          ( [28..29] '('
+          binary_expression [29..69] 'u.role = 'admin' or u.role = 'moderator''
+            binary_expression [29..45] 'u.role = 'admin'' (@binary_expr_left)
+              object_reference [29..35] 'u.role' (@binary_expr_left)
+                any_identifier [29..30] 'u' (@object_reference_1of2)
+                . [30..31] '.'
+                any_identifier [31..35] 'role' (@object_reference_2of2)
+              = [36..37] '=' (@binary_expr_operator)
+              literal [38..45] ''admin'' (@end)
+            keyword_or [46..48] 'or' (@binary_expr_operator)
+            binary_expression [49..69] 'u.role = 'moderator'' (@end)
+              object_reference [49..55] 'u.role' (@binary_expr_left)
+                any_identifier [49..50] 'u' (@object_reference_1of2)
+                . [50..51] '.'
+                any_identifier [51..55] 'role' (@object_reference_2of2)
+              = [56..57] '=' (@binary_expr_operator)
+              literal [58..69] ''moderator'' (@end)
+          ) [69..70] ')' (@end)
   ; [70..71] ';'
