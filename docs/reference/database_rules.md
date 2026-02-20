@@ -42,8 +42,10 @@ Rules that detect potential security vulnerabilities in your database schema.
 | [policyExistsRlsDisabled](./rules/policy-exists-rls-disabled.md) | Detects cases where row level security (RLS) policies have been created, but RLS has not been enabled for the underlying table. | ✅  |
 | [rlsDisabledInPublic](./rules/rls-disabled-in-public.md) | Detects cases where row level security (RLS) has not been enabled on tables in schemas exposed to PostgREST | ✅ ⚡ |
 | [rlsEnabledNoPolicy](./rules/rls-enabled-no-policy.md) | Detects cases where row level security (RLS) has been enabled on a table but no RLS policies have been created. | ✅  |
+| [rlsPolicyAlwaysTrue](./rules/rls-policy-always-true.md) | Detects RLS policies that use overly permissive expressions like USING (true) or WITH CHECK (true) for UPDATE, DELETE, or INSERT operations. SELECT policies with USING (true) are intentionally excluded as this pattern is often used deliberately for public read access. | ✅ ⚡ |
 | [rlsReferencesUserMetadata](./rules/rls-references-user-metadata.md) | Detects when Supabase Auth user_metadata is referenced insecurely in a row level security (RLS) policy. | ✅ ⚡ |
 | [securityDefinerView](./rules/security-definer-view.md) | Detects views defined with the SECURITY DEFINER property. These views enforce Postgres permissions and row level security policies (RLS) of the view creator, rather than that of the querying user | ✅ ⚡ |
+| [sensitiveColumnsExposed](./rules/sensitive-columns-exposed.md) | Detects tables exposed via API that contain columns with potentially sensitive data (PII, credentials, financial info) without RLS protection. | ✅ ⚡ |
 | [unsupportedRegTypes](./rules/unsupported-reg-types.md) | Identifies columns using unsupported reg* types outside pg_catalog schema, which prevents database upgrades using pg_upgrade. | ✅  |
 
 [//]: # (END SPLINTER_RULES_INDEX)

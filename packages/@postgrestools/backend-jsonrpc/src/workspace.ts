@@ -135,8 +135,10 @@ export type Category =
 	| "splinter/security/policyExistsRlsDisabled"
 	| "splinter/security/rlsDisabledInPublic"
 	| "splinter/security/rlsEnabledNoPolicy"
+	| "splinter/security/rlsPolicyAlwaysTrue"
 	| "splinter/security/rlsReferencesUserMetadata"
 	| "splinter/security/securityDefinerView"
+	| "splinter/security/sensitiveColumnsExposed"
 	| "splinter/security/unsupportedRegTypes"
 	| "stdin"
 	| "check"
@@ -972,6 +974,10 @@ export interface Security {
 	 */
 	rlsEnabledNoPolicy?: RuleConfiguration_for_SplinterRuleOptions;
 	/**
+	 * RLS Policy Always True: Detects RLS policies that use overly permissive expressions like USING (true) or WITH CHECK (true) for UPDATE, DELETE, or INSERT operations. SELECT policies with USING (true) are intentionally excluded as this pattern is often used deliberately for public read access.
+	 */
+	rlsPolicyAlwaysTrue?: RuleConfiguration_for_SplinterRuleOptions;
+	/**
 	 * RLS references user metadata: Detects when Supabase Auth user_metadata is referenced insecurely in a row level security (RLS) policy.
 	 */
 	rlsReferencesUserMetadata?: RuleConfiguration_for_SplinterRuleOptions;
@@ -979,6 +985,10 @@ export interface Security {
 	 * Security Definer View: Detects views defined with the SECURITY DEFINER property. These views enforce Postgres permissions and row level security policies (RLS) of the view creator, rather than that of the querying user
 	 */
 	securityDefinerView?: RuleConfiguration_for_SplinterRuleOptions;
+	/**
+	 * Sensitive Columns Exposed: Detects tables exposed via API that contain columns with potentially sensitive data (PII, credentials, financial info) without RLS protection.
+	 */
+	sensitiveColumnsExposed?: RuleConfiguration_for_SplinterRuleOptions;
 	/**
 	 * Unsupported reg types: Identifies columns using unsupported reg* types outside pg_catalog schema, which prevents database upgrades using pg_upgrade.
 	 */
