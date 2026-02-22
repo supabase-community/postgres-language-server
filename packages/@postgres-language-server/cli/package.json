@@ -1,44 +1,48 @@
 {
-	"name": "@postgres-language-server/cli",
-	"version": "<placeholder>",
-	"bin": {
-		"postgres-language-server": "bin/postgres-language-server"
-	},
-	"repository": {
-		"type": "git",
-		"url": "git+https://github.com/supabase-community/postgres-language-server.git",
-		"directory": "packages/@postgres-language-server/cli"
-	},
-	"author": "Supabase Community",
-	"contributors": [
-		{
-			"name": "Philipp Steinrötter",
-			"url": "https://github.com/psteinroe"
-		},
-		{
-			"name": "Julian Domke",
-			"url": "https://github.com/juleswritescode"
-		}
-	],
-	"license": "MIT or Apache-2.0",
-	"description": "A collection of language tools and a Language Server Protocol (LSP) implementation for Postgres, focusing on developer experience and reliable SQL tooling.",
-	"files": ["bin/postgres-language-server", "schema.json", "README.md"],
-	"engines": {
-		"node": ">=20"
-	},
-	"publishConfig": {
-		"provenance": true
-	},
-	"optionalDependencies": {
-		"@postgres-language-server/cli-x86_64-windows-msvc": "<placeholder>",
-		"@postgres-language-server/cli-aarch64-windows-msvc": "<placeholder>",
-		"@postgres-language-server/cli-x86_64-apple-darwin": "<placeholder>",
-		"@postgres-language-server/cli-aarch64-apple-darwin": "<placeholder>",
-		"@postgres-language-server/cli-x86_64-linux-gnu": "<placeholder>",
-		"@postgres-language-server/cli-aarch64-linux-gnu": "<placeholder>",
-		"@postgres-language-server/cli-x86_64-linux-musl": "<placeholder>"
-	},
-	"scripts": {
-		"test": "bun test"
-	}
+  "name": "@postgres-language-server/cli",
+  "version": "<placeholder>",
+  "description": "A collection of language tools and a Language Server Protocol (LSP) implementation for Postgres, focusing on developer experience and reliable SQL tooling.",
+  "license": "MIT or Apache-2.0",
+  "author": "Supabase Community",
+  "contributors": [
+    {
+      "name": "Philipp Steinrötter",
+      "url": "https://github.com/psteinroe"
+    },
+    {
+      "name": "Julian Domke",
+      "url": "https://github.com/juleswritescode"
+    }
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/supabase-community/postgres-language-server.git",
+    "directory": "packages/@postgres-language-server/cli"
+  },
+  "bin": {
+    "postgres-language-server": "bin/postgres-language-server"
+  },
+  "files": [
+    "bin/postgres-language-server",
+    "schema.json",
+    "README.md"
+  ],
+  "publishConfig": {
+    "provenance": true
+  },
+  "scripts": {
+    "test": "bun test"
+  },
+  "optionalDependencies": {
+    "@postgres-language-server/cli-aarch64-apple-darwin": "<placeholder>",
+    "@postgres-language-server/cli-aarch64-linux-gnu": "<placeholder>",
+    "@postgres-language-server/cli-aarch64-windows-msvc": "<placeholder>",
+    "@postgres-language-server/cli-x86_64-apple-darwin": "<placeholder>",
+    "@postgres-language-server/cli-x86_64-linux-gnu": "<placeholder>",
+    "@postgres-language-server/cli-x86_64-linux-musl": "<placeholder>",
+    "@postgres-language-server/cli-x86_64-windows-msvc": "<placeholder>"
+  },
+  "engines": {
+    "node": ">=20"
+  }
 }
