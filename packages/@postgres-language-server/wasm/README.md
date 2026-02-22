@@ -14,10 +14,10 @@ bun add @postgres-language-server/wasm
 
 This package provides two separate APIs. Choose the one that fits your use case:
 
-| API | Use Case | Import Path |
-|-----|----------|-------------|
-| **Workspace** | Direct parse, lint, complete, hover | `@postgres-language-server/wasm/workspace` |
-| **LanguageServer** | Full LSP JSON-RPC protocol | `@postgres-language-server/wasm/lsp` |
+| API                | Use Case                            | Import Path                                |
+| ------------------ | ----------------------------------- | ------------------------------------------ |
+| **Workspace**      | Direct parse, lint, complete, hover | `@postgres-language-server/wasm/workspace` |
+| **LanguageServer** | Full LSP JSON-RPC protocol          | `@postgres-language-server/wasm/lsp`       |
 
 Each API manages its own workspace independently. Use one or the other, not both.
 
@@ -26,23 +26,23 @@ Each API manages its own workspace independently. Use one or the other, not both
 Use this for custom editor integrations, build-time SQL linting, or simple tooling that doesn't need full LSP.
 
 ```typescript
-import { createWorkspace } from '@postgres-language-server/wasm/workspace';
+import { createWorkspace } from "@postgres-language-server/wasm/workspace";
 
 const workspace = await createWorkspace();
 
 // Parse SQL and get errors
-const errors = workspace.parse('SELECT * FROM users;');
+const errors = workspace.parse("SELECT * FROM users;");
 console.log(errors); // []
 
 // Insert a file and lint it
-workspace.insertFile('/query.sql', 'SELECT * FROM users;');
-const diagnostics = workspace.lint('/query.sql');
+workspace.insertFile("/query.sql", "SELECT * FROM users;");
+const diagnostics = workspace.lint("/query.sql");
 
 // Get completions
-const completions = workspace.complete('/query.sql', 14); // position after "FROM "
+const completions = workspace.complete("/query.sql", 14); // position after "FROM "
 
 // Get hover info
-const hover = workspace.hover('/query.sql', 14); // position over "users"
+const hover = workspace.hover("/query.sql", 14); // position over "users"
 ```
 
 ### With Schema
@@ -72,16 +72,16 @@ const completions = workspace.complete('/query.sql', 14);
 Use this for Monaco editor integration with `monaco-languageclient` or any editor that speaks LSP protocol.
 
 ```typescript
-import { createLanguageServer } from '@postgres-language-server/wasm/lsp';
+import { createLanguageServer } from "@postgres-language-server/wasm/lsp";
 
 const lsp = await createLanguageServer();
 
 // Handle LSP messages
 const responses = lsp.handleMessage({
-  jsonrpc: '2.0',
+  jsonrpc: "2.0",
   id: 1,
-  method: 'initialize',
-  params: { capabilities: {} }
+  method: "initialize",
+  params: { capabilities: {} },
 });
 
 // responses is an array of outgoing messages
@@ -96,14 +96,14 @@ For Monaco editor, run the language server in a web worker:
 
 ```typescript
 // lsp-worker.js
-import { createLanguageServer } from '@postgres-language-server/wasm/lsp';
+import { createLanguageServer } from "@postgres-language-server/wasm/lsp";
 
 let lsp = null;
 
 self.onmessage = async (event) => {
   if (!lsp) {
     lsp = await createLanguageServer();
-    self.postMessage({ type: 'ready' });
+    self.postMessage({ type: "ready" });
   }
 
   const responses = lsp.handleMessage(event.data);
@@ -119,9 +119,9 @@ Use the `pgls/setSchema` notification:
 
 ```typescript
 lsp.handleMessage({
-  jsonrpc: '2.0',
-  method: 'pgls/setSchema',
-  params: { schema: JSON.stringify(schemaCache) }
+  jsonrpc: "2.0",
+  method: "pgls/setSchema",
+  params: { schema: JSON.stringify(schemaCache) },
 });
 ```
 
@@ -129,22 +129,22 @@ lsp.handleMessage({
 
 ### Workspace
 
-| Method | Description |
-|--------|-------------|
-| `parse(sql: string)` | Parse SQL, returns array of error messages |
-| `insertFile(path, content)` | Add or update a file in the workspace |
-| `removeFile(path)` | Remove a file from the workspace |
-| `lint(path)` | Get diagnostics for a file |
-| `complete(path, offset)` | Get completions at position |
-| `hover(path, offset)` | Get hover info at position |
-| `setSchema(json)` | Set database schema |
-| `clearSchema()` | Clear the current schema |
-| `version()` | Get library version |
+| Method                      | Description                                |
+| --------------------------- | ------------------------------------------ |
+| `parse(sql: string)`        | Parse SQL, returns array of error messages |
+| `insertFile(path, content)` | Add or update a file in the workspace      |
+| `removeFile(path)`          | Remove a file from the workspace           |
+| `lint(path)`                | Get diagnostics for a file                 |
+| `complete(path, offset)`    | Get completions at position                |
+| `hover(path, offset)`       | Get hover info at position                 |
+| `setSchema(json)`           | Set database schema                        |
+| `clearSchema()`             | Clear the current schema                   |
+| `version()`                 | Get library version                        |
 
 ### LanguageServer
 
-| Method | Description |
-|--------|-------------|
+| Method               | Description                                              |
+| -------------------- | -------------------------------------------------------- |
 | `handleMessage(msg)` | Process LSP JSON-RPC message, returns array of responses |
 
 ### Supported LSP Methods

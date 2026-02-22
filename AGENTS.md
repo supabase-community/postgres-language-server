@@ -40,7 +40,7 @@ just format
 
 # Lint entire codebase
 just lint
-# or: cargo clippy && cargo run -p rules_check && bun biome lint
+# or: cargo clippy && cargo run -p rules_check && bun oxlint packages/
 
 # Fix linting issues
 just lint-fix
@@ -137,7 +137,7 @@ cargo insta review
 - `clippy.toml` - Clippy linting configuration
 
 ### Other Tools
-- `biome.jsonc` - Biome formatter/linter configuration for JS/TS
+- `.oxlintrc.json` / `.oxfmtrc.json` - oxlint linter and oxfmt formatter configuration for JS/TS
 - `taplo.toml` - TOML formatting configuration
 - `justfile` - Task runner with all development commands
 - `docker-compose.yml` - Database setup for testing

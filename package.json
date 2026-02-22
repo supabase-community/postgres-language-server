@@ -3,7 +3,8 @@
   "version": "0.0.0",
   "private": true,
   "devDependencies": {
-    "@biomejs/biome": "1.9.4",
+    "oxlint": "1.49.0",
+    "oxfmt": "0.34.0",
     "@types/bun": "latest"
   },
   "peerDependencies": {

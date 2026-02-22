@@ -23,12 +23,12 @@ export { loadWasm } from "./common.js";
 
 // Re-export types
 export type {
-	Diagnostic,
-	CompletionItem,
-	SchemaCache,
-	WorkspaceOptions,
-	PGLSModule,
-	JsonRpcMessage,
+  Diagnostic,
+  CompletionItem,
+  SchemaCache,
+  WorkspaceOptions,
+  PGLSModule,
+  JsonRpcMessage,
 } from "./types.js";
 
 // Default export for convenience
