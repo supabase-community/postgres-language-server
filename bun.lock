@@ -6,8 +6,8 @@
       "name": "postgres_lsp",
       "devDependencies": {
         "@types/bun": "latest",
-        "oxfmt": "^0.34.0",
-        "oxlint": "^1.49.0",
+        "oxfmt": "0.34.0",
+        "oxlint": "1.49.0",
       },
       "peerDependencies": {
         "typescript": "^5",
