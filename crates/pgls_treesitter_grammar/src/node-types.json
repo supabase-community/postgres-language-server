@@ -3250,7 +3250,7 @@
     }
   },
   {
-    "type": "copy_statement",
+    "type": "copy_data_stream",
     "named": true,
     "fields": {
       "end": {
@@ -3294,6 +3294,72 @@
         },
         {
           "type": "copy_data_line",
+          "named": true
+        },
+        {
+          "type": "copy_stmt_options",
+          "named": true
+        },
+        {
+          "type": "keyword_copy",
+          "named": true
+        },
+        {
+          "type": "keyword_from",
+          "named": true
+        },
+        {
+          "type": "keyword_program",
+          "named": true
+        },
+        {
+          "type": "table_reference",
+          "named": true
+        },
+        {
+          "type": "where",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "copy_statement",
+    "named": true,
+    "fields": {
+      "end": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
+            "type": ")",
+            "named": false
+          },
+          {
+            "type": "command",
+            "named": false
+          },
+          {
+            "type": "filename",
+            "named": false
+          },
+          {
+            "type": "keyword_stdin",
+            "named": true
+          },
+          {
+            "type": "keyword_stdout",
+            "named": true
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "column",
           "named": true
         },
         {
@@ -9427,7 +9493,7 @@
           "named": true
         },
         {
-          "type": "copy_statement",
+          "type": "copy_data_stream",
           "named": true
         },
         {

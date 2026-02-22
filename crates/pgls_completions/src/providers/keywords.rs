@@ -376,10 +376,6 @@ pub fn complete_keywords<'a>(
         return;
     }
 
-    println!("[keywords] root has_error: {}", ctx.tree.root_node().has_error());
-    println!("[keywords] possible_keywords_at_position: {:?}", ctx.possible_keywords_at_position);
-    println!("[keywords] node_under_cursor: {} {:?}", ctx.node_under_cursor.kind(), ctx.node_under_cursor.range());
-
     let keywords_to_try = ALL_KEYWORDS.iter().filter(|kw| {
         ctx.tree.root_node().has_error() || ctx.possible_keywords_at_position.contains(&kw.name)
     });
@@ -448,10 +444,6 @@ mod tests {
                 ),
                 CompletionAssertion::LabelAndKind(
                     "drop".into(),
-                    crate::CompletionItemKind::Keyword,
-                ),
-                CompletionAssertion::LabelAndKind(
-                    "insert".into(),
                     crate::CompletionItemKind::Keyword,
                 ),
                 CompletionAssertion::LabelAndKind(

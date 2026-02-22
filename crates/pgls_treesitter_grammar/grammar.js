@@ -83,17 +83,19 @@ module.exports = grammar({
 
   rules: {
     program: ($) =>
-      seq(
-        // any number of transactions, statements, or blocks with a terminating ;
-        repeat(
-          choice(
-            alias($.copy_data_stream, $.copy_statement),
-            seq(choice($.transaction, $.statement, $.block), ";"),
-            $.psql_meta_command,
+      choice(
+        seq(
+          repeat(
+            choice(
+              // any number of transactions, statements, or blocks with a terminating ;
+              seq(choice($.transaction, $.statement, $.block), ";"),
+              $.psql_meta_command,
+              $.copy_data_stream,
+            ),
           ),
+          // optionally, a single statement without a terminating ;
+          optional($.statement),
         ),
-        // optionally, a single statement without a terminating ;
-        optional($.statement),
       ),
 
     keyword_select: (_) => make_keyword("select"),
@@ -2192,6 +2194,7 @@ module.exports = grammar({
           ),
         ),
       ),
+
     psql_meta_command: (_) => /\\[^\n]*/,
     copy_data_line: (_) => /[^\n\\][^\n]*/,
 

@@ -4,64 +4,64 @@
   "word": "_identifier",
   "rules": {
     "program": {
-      "type": "SEQ",
+      "type": "CHOICE",
       "members": [
         {
-          "type": "REPEAT",
-          "content": {
-            "type": "CHOICE",
-            "members": [
-              {
-                "type": "ALIAS",
-                "content": {
-                  "type": "SYMBOL",
-                  "name": "copy_data_stream"
-                },
-                "named": true,
-                "value": "copy_statement"
-              },
-              {
-                "type": "SEQ",
+          "type": "SEQ",
+          "members": [
+            {
+              "type": "REPEAT",
+              "content": {
+                "type": "CHOICE",
                 "members": [
                   {
-                    "type": "CHOICE",
+                    "type": "SEQ",
                     "members": [
                       {
-                        "type": "SYMBOL",
-                        "name": "transaction"
+                        "type": "CHOICE",
+                        "members": [
+                          {
+                            "type": "SYMBOL",
+                            "name": "transaction"
+                          },
+                          {
+                            "type": "SYMBOL",
+                            "name": "statement"
+                          },
+                          {
+                            "type": "SYMBOL",
+                            "name": "block"
+                          }
+                        ]
                       },
                       {
-                        "type": "SYMBOL",
-                        "name": "statement"
-                      },
-                      {
-                        "type": "SYMBOL",
-                        "name": "block"
+                        "type": "STRING",
+                        "value": ";"
                       }
                     ]
                   },
                   {
-                    "type": "STRING",
-                    "value": ";"
+                    "type": "SYMBOL",
+                    "name": "psql_meta_command"
+                  },
+                  {
+                    "type": "SYMBOL",
+                    "name": "copy_data_stream"
                   }
                 ]
-              },
-              {
-                "type": "SYMBOL",
-                "name": "psql_meta_command"
               }
-            ]
-          }
-        },
-        {
-          "type": "CHOICE",
-          "members": [
-            {
-              "type": "SYMBOL",
-              "name": "statement"
             },
             {
-              "type": "BLANK"
+              "type": "CHOICE",
+              "members": [
+                {
+                  "type": "SYMBOL",
+                  "name": "statement"
+                },
+                {
+                  "type": "BLANK"
+                }
+              ]
             }
           ]
         }
