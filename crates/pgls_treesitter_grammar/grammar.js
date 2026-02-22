@@ -54,6 +54,10 @@ module.exports = grammar({
     [$.drop_index, $.drop_function, $.drop_table],
 
     [$._function_return, $.binary_expression, $.between_expression],
+
+    [$.copy_statement, $.copy_data_stream],
+    [$._copy_from, $._copy_to],
+    [$.copy_stmt_options],
   ],
 
   precedences: ($) => [
@@ -81,7 +85,13 @@ module.exports = grammar({
     program: ($) =>
       seq(
         // any number of transactions, statements, or blocks with a terminating ;
-        repeat(seq(choice($.transaction, $.statement, $.block), ";")),
+        repeat(
+          choice(
+            alias($.copy_data_stream, $.copy_statement),
+            seq(choice($.transaction, $.statement, $.block), ";"),
+            $.psql_meta_command,
+          ),
+        ),
         // optionally, a single statement without a terminating ;
         optional($.statement),
       ),
@@ -257,7 +267,15 @@ module.exports = grammar({
     keyword_action: (_) => make_keyword("action"),
     keyword_extension: (_) => make_keyword("extension"),
     keyword_copy: (_) => make_keyword("copy"),
+    keyword_on_error: (_) => make_keyword("on_error"),
+    keyword_reject_limit: (_) => make_keyword("reject_limit"),
+    keyword_log_verbosity: (_) => make_keyword("log_verbosity"),
+    keyword_stop: (_) => make_keyword("stop"),
+    keyword_ignore: (_) => make_keyword("ignore"),
+    keyword_silent: (_) => make_keyword("silent"),
+
     keyword_stdin: (_) => make_keyword("stdin"),
+    keyword_stdout: (_) => make_keyword("stdout"),
     keyword_freeze: (_) => make_keyword("freeze"),
     keyword_escape: (_) => make_keyword("escape"),
     keyword_encoding: (_) => make_keyword("encoding"),
@@ -721,44 +739,44 @@ module.exports = grammar({
         $.grant_statement,
       ),
 
-    _cte: ($) =>
-      seq(
+    cte: ($) =>
+      partialSeq(
         $.keyword_with,
         optional($.keyword_recursive),
-        $.cte,
-        repeat(seq(",", $.cte)),
+        comma_list(field("end", $.with_query), true),
       ),
 
     _dml_write: ($) =>
       seq(
-        seq(
-          optional($._cte),
-          choice(
-            $.delete_statement,
-            $._insert_statement,
-            $._update_statement,
-            $._truncate_statement,
-            $._copy_statement,
-          ),
+        optional($.cte),
+        choice(
+          $.delete_statement,
+          $._insert_statement,
+          $._update_statement,
+          $._truncate_statement,
+          $.copy_statement,
         ),
       ),
 
     _dml_read: ($) =>
-      seq(
-        optional(optional_parenthesis($._cte)),
-        optional_parenthesis(
-          choice(
-            token_delimited_list(
-              choice($._select_statement, $.values, $.table_statement),
-              choice(
-                seq($.keyword_union, optional($.keyword_all)),
-                $.keyword_except,
-                $.keyword_intersect,
-              ),
-              true,
+      choice(
+        partialSeq(optional_parenthesis($.cte), $._dml_read_stmt),
+        $._dml_read_stmt,
+      ),
+
+    _dml_read_stmt: ($) =>
+      optional_parenthesis(
+        choice(
+          token_delimited_list(
+            choice($._select_statement, $.values, $.table_statement),
+            choice(
+              seq($.keyword_union, optional($.keyword_all)),
+              $.keyword_except,
+              $.keyword_intersect,
             ),
-            $._show_statement,
+            true,
           ),
+          $._show_statement,
         ),
       ),
 
@@ -773,14 +791,14 @@ module.exports = grammar({
     _show_statement: ($) =>
       seq($.keyword_show, choice($.keyword_all, $.any_identifier)),
 
-    cte: ($) =>
-      seq(
+    with_query: ($) =>
+      partialSeq(
         $.any_identifier,
         optional(paren_list(field("argument", $.any_identifier), false)),
         $.keyword_as,
         optional(seq(optional($.keyword_not), $.keyword_materialized)),
         wrapped_in_parenthesis(
-          alias(choice($._dml_read, $._dml_write), $.statement),
+          optional(alias(choice($._dml_read, $._dml_write), $.statement)),
         ),
       ),
 
@@ -2161,53 +2179,148 @@ module.exports = grammar({
     change_ownership: ($) =>
       partialSeq($.keyword_owner, $.keyword_to, $.role_specification),
 
-    _copy_statement: ($) =>
-      seq(
+    copy_statement: ($) => choice($._copy_from, $._copy_to),
+
+    copy_data_stream: ($) =>
+      prec.right(
+        seq(
+          $._copy_from,
+          ";",
+          partialSeq(
+            repeat($.copy_data_line),
+            field("end", $.psql_meta_command),
+          ),
+        ),
+      ),
+    psql_meta_command: (_) => /\\[^\n]*/,
+    copy_data_line: (_) => /[^\n\\][^\n]*/,
+
+    _copy_to: ($) =>
+      partialSeq(
+        $.keyword_copy,
+        choice(seq($.table_reference, optional($._column_list)), $.subquery),
+        $.keyword_to,
+        $._copy_stmt_target,
+        optional($.copy_stmt_options),
+      ),
+
+    _copy_from: ($) =>
+      partialSeq(
         $.keyword_copy,
         $.table_reference,
-        $._column_list,
+        optional($._column_list),
         $.keyword_from,
-        choice(
-          $.keyword_stdin,
-          alias($._literal_string, "filename"),
-          seq($.keyword_program, alias($._literal_string, "command")),
+        $._copy_stmt_target,
+        optional($.copy_stmt_options),
+        optional($.where),
+      ),
+
+    _copy_stmt_target: ($) =>
+      choice(
+        field("end", $.keyword_stdin),
+        field("end", $.keyword_stdout),
+        field("end", alias($._literal_string, "filename")),
+        partialSeq(
+          $.keyword_program,
+          field("end", alias($._literal_string, "command")),
         ),
-        optional($.keyword_with),
-        wrapped_in_parenthesis(
-          repeat1(
-            choice(
-              seq(
-                $.keyword_format,
-                choice($.keyword_csv, $.keyword_binary, $.keyword_text),
-              ),
-              seq($.keyword_freeze, choice($.keyword_true, $.keyword_false)),
-              seq(
-                $.keyword_header,
-                choice($.keyword_true, $.keyword_false, $.keyword_match),
-              ),
-              seq(
-                choice(
-                  $.keyword_delimiter,
-                  $.keyword_null,
-                  $.keyword_default,
-                  $.keyword_escape,
-                  $.keyword_quote,
-                  $.keyword_encoding,
-                ),
-                alias($._literal_string, $.any_identifier),
-              ),
-              seq(
-                choice(
-                  $.keyword_force_null,
-                  $.keyword_force_not_null,
-                  $.keyword_force_quote,
-                ),
-                $._column_list,
-              ),
+      ),
+
+    copy_stmt_options: ($) =>
+      choice(
+        partialSeq(
+          $.keyword_with,
+          choice(
+            wrapped_in_parenthesis(comma_list($._copy_stmt_option, false)),
+            $._copy_stmt_legacy_options,
+          ),
+        ),
+        wrapped_in_parenthesis(comma_list($._copy_stmt_option, false)),
+        $._copy_stmt_legacy_options,
+      ),
+
+    _copy_stmt_legacy_options: ($) =>
+      repeat1(
+        prec.left(
+          choice(
+            field("end", $.keyword_binary),
+            partialSeq(
+              $.keyword_delimiter,
+              optional($.keyword_as),
+              field("end", $._literal_string),
+            ),
+            partialSeq(
+              $.keyword_null,
+              optional($.keyword_as),
+              field("end", $._literal_string),
+            ),
+            field("end", $.keyword_csv),
+            partialSeq($.keyword_csv, field("end", $.keyword_header)),
+            partialSeq(
+              $.keyword_csv,
+              $.keyword_quote,
+              optional($.keyword_as),
+              field("end", alias($._literal_string, $.any_identifier)),
+            ),
+            partialSeq(
+              $.keyword_csv,
+              $.keyword_escape,
+              optional($.keyword_as),
+              field("end", alias($._literal_string, $.any_identifier)),
+            ),
+            partialSeq(
+              $.keyword_csv,
+              $.keyword_force,
+              $.keyword_quote,
+              field("end", choice($._column_list, "*")),
+            ),
+            partialSeq(
+              $.keyword_csv,
+              $.keyword_force,
+              $.keyword_not,
+              $.keyword_null,
+              field("end", comma_list($.column_identifier, true)),
             ),
           ),
         ),
-        optional($.where),
+      ),
+
+    _copy_stmt_option: ($) =>
+      choice(
+        partialSeq(
+          $.keyword_format,
+          choice($.keyword_csv, $.keyword_binary, $.keyword_text),
+        ),
+        seq($.keyword_freeze, optional($._boolean)),
+        seq($.keyword_header, optional(choice($._boolean, $.keyword_match))),
+        partialSeq(
+          choice(
+            $.keyword_delimiter,
+            $.keyword_null,
+            $.keyword_default,
+            $.keyword_quote,
+            $.keyword_escape,
+            $.keyword_encoding,
+          ),
+          alias($._literal_string, $.any_identifier),
+        ),
+        partialSeq(
+          choice(
+            $.keyword_force_null,
+            $.keyword_force_not_null,
+            $.keyword_force_quote,
+          ),
+          choice($._column_list, "*"),
+        ),
+        partialSeq(
+          $.keyword_on_error,
+          choice($.keyword_stop, $.keyword_ignore),
+        ),
+        partialSeq($.keyword_reject_limit, $._natural_number),
+        partialSeq(
+          $.keyword_log_verbosity,
+          choice($.keyword_default, $.keyword_verbose, $.keyword_silent),
+        ),
       ),
 
     _insert_statement: ($) => seq($.insert, optional($.returning)),
@@ -2243,7 +2356,24 @@ module.exports = grammar({
         ),
       ),
 
-    insert_columns: ($) => paren_list($.column_identifier, true),
+    insert_columns: ($) => paren_list($._column_indirection, false),
+
+    _column_indirection: ($) =>
+      seq(
+        field("end", $.column_identifier),
+        repeat(
+          choice(
+            prec.right($.column_indirection_array_access),
+            prec.right($.column_indirection_property_access),
+          ),
+        ),
+      ),
+
+    column_indirection_property_access: ($) =>
+      partialSeq(".", field("end", $._identifier)),
+
+    column_indirection_array_access: ($) =>
+      seq("[", optional($._expression), field("end", "]")),
 
     _on_conflict: ($) =>
       seq(
@@ -2955,7 +3085,7 @@ module.exports = grammar({
 
     offset: ($) => partialSeq($.keyword_offset, field("end", $.literal)),
 
-    returning: ($) => seq($.keyword_returning, $.select_expression),
+    returning: ($) => partialSeq($.keyword_returning, $.select_expression),
 
     grant_statement: ($) =>
       prec.left(
@@ -3339,11 +3469,11 @@ module.exports = grammar({
 
     _boolean: ($) => choice($.keyword_true, $.keyword_false),
 
-    _double_quote_string: (_) => /"[^"]*"/,
+    _double_quote_string: (_) => /:?"[^"]*"/,
     // The norm specify that between two consecutive string must be a return,
     // but this is good enough.
     _single_quote_string: (_) =>
-      seq(/([uU]&|[nN])?'([^']|'')*'/, repeat(/'([^']|'')*'/)),
+      seq(/:?([uU]&|[nN])?'([^']|'')*'/, repeat(/'([^']|'')*'/)),
 
     _postgres_escape_string: (_) => /(e|E)'([^']|\\')*'/,
 

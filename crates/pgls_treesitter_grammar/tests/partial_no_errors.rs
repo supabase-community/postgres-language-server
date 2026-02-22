@@ -35,9 +35,11 @@ pub static WITHOUT_END_RULES: &[&str] = &["program", "statement"];
 // we're in /crates/pgls_treesitter_grammar/tests
 // => ../../ is crates
 static PG_REGRESSION_FILES: LazyLock<Vec<&'static str>> = std::sync::LazyLock::new(|| {
-    vec![include_str!(
-        "../../pgls_query/vendor/libpg_query/test/sql/postgres_regress/select.sql"
-    )]
+    vec![
+        include_str!("../../pgls_query/vendor/libpg_query/test/sql/postgres_regress/select.sql"),
+        include_str!("../tests/partial-sqls/insert.sql"),
+        include_str!("../tests/partial-sqls/copy.sql"),
+    ]
 });
 
 fn error_message(msg: &str, source: &str, tree: &tree_sitter::Tree) -> String {
