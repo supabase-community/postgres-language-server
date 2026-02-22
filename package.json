@@ -3,8 +3,8 @@
   "version": "0.0.0",
   "private": true,
   "devDependencies": {
-    "oxlint": "^1.49.0",
-    "oxfmt": "^0.34.0",
+    "oxlint": "1.49.0",
+    "oxfmt": "0.34.0",
     "@types/bun": "latest"
   },
   "peerDependencies": {
