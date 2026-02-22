@@ -2340,9 +2340,9 @@ module.exports = grammar({
           ),
         ),
         choice(
-          partialSeq($.keyword_default, $.keyword_values),
-          $.insert_values,
-          $._select_statement,
+          partialSeq($.keyword_default, field("end", $.keyword_values)),
+          field("end", $.insert_values),
+          field("end", $._select_statement),
         ),
         optional($._on_conflict),
       ),

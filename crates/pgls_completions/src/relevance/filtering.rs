@@ -538,14 +538,35 @@ impl CompletionFilter<'_> {
             return Some(());
         };
 
+        let keyword_is_insert = keyword.name == "insert";
+
+        if keyword_is_insert {
+            println!("[insert] entering valid_keyword");
+            println!("[insert] node_under_cursor kind: {}", ctx.node_under_cursor.kind());
+            println!("[insert] node_under_cursor range: {:?}", ctx.node_under_cursor.range());
+            println!("[insert] previous_clause: {:?}", ctx.previous_clause.map(|n| n.kind()));
+            println!("[insert] current_clause: {:?}", ctx.current_clause.map(|n| n.kind()));
+        }
+
         let tree =
             parse_with_replaced_keyword(shared_tree, ctx.text, keyword.name, ctx.node_under_cursor);
 
+        if keyword_is_insert {
+            println!("[insert] reparsed tree: {}", tree.root_node().to_sexp());
+            println!("[insert] has_error: {}", tree.root_node().has_error());
+        }
+
         if tree.root_node().has_error() {
+            if keyword_is_insert {
+                println!("[insert] filtered out: has initial error")
+            }
             return None;
         }
 
         if ctx.previous_clause.is_some_and(|n| n.kind() == "ERROR") {
+            if keyword_is_insert {
+                println!("[insert] returning Some: previous_clause is ERROR")
+            }
             return Some(());
         }
 
@@ -555,10 +576,20 @@ impl CompletionFilter<'_> {
             ctx.previous_clause
         };
 
+        if keyword_is_insert {
+            println!("[insert] clause_to_investigate: {:?}", clause_to_investigate.map(|n| n.kind()));
+        }
+
         if clause_to_investigate.is_none() || ctx.previous_clause.is_some_and(|n| n.kind() == ";") {
             if keyword.starts_statement {
+                if keyword_is_insert {
+                    println!("[insert] returning Some: starts_statement and no clause/prev is ;")
+                }
                 return Some(());
             } else {
+                if keyword_is_insert {
+                    println!("[insert] filtered out: no clause but not starts_statement")
+                }
                 return None;
             }
         }
@@ -566,7 +597,13 @@ impl CompletionFilter<'_> {
         let start_byte = ctx.node_under_cursor.start_byte();
 
         if let Some(investigated_node) = goto_node_at_position(&tree, start_byte) {
+            if keyword_is_insert {
+                println!("[insert] investigated_node kind: {}", investigated_node.kind());
+            }
             if !previous_sibling_completed(investigated_node) {
+                if keyword_is_insert {
+                    println!("[insert] filtered out: previous sibling not completed (investigated_node)")
+                }
                 return None;
             }
 
@@ -575,7 +612,13 @@ impl CompletionFilter<'_> {
             let mut new_parent = investigated_node.parent();
 
             while let Some(parent) = new_parent {
+                if keyword_is_insert {
+                    println!("[insert] checking parent: {} at {:?}", parent.kind(), parent.range());
+                }
                 if !previous_sibling_completed(parent) {
+                    if keyword_is_insert {
+                        println!("[insert] filtered out: previous sibling not completed (parent {})", parent.kind())
+                    }
                     return None;
                 }
 
@@ -590,17 +633,33 @@ impl CompletionFilter<'_> {
 
             if let Some(new_parent) = new_parent {
                 if new_parent.kind() != old_unfinished_parent.kind() {
+                    if keyword_is_insert {
+                        println!("[insert] filtered out: new_parent kind {} != old kind {}", new_parent.kind(), old_unfinished_parent.kind())
+                    }
                     return None;
                 }
 
                 if new_parent.start_byte() != old_unfinished_parent.start_byte() {
+                    if keyword_is_insert {
+                        println!("[insert] filtered out: new_parent start_byte {} != old start_byte {}", new_parent.start_byte(), old_unfinished_parent.start_byte())
+                    }
                     return None;
                 }
 
+                if keyword_is_insert {
+                    println!("[insert] returning Some: passed all checks")
+                }
                 return Some(());
+            }
+        } else {
+            if keyword_is_insert {
+                println!("[insert] no investigated_node found at start_byte {}", start_byte)
             }
         }
 
+        if keyword_is_insert {
+            println!("[insert] filtered out: fell through to None")
+        }
         None
     }
 }

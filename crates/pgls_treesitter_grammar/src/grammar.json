@@ -15901,8 +15901,12 @@
                                                                       "type": "CHOICE",
                                                                       "members": [
                                                                         {
-                                                                          "type": "SYMBOL",
-                                                                          "name": "keyword_values"
+                                                                          "type": "FIELD",
+                                                                          "name": "end",
+                                                                          "content": {
+                                                                            "type": "SYMBOL",
+                                                                            "name": "keyword_values"
+                                                                          }
                                                                         },
                                                                         {
                                                                           "type": "BLANK"
@@ -15913,12 +15917,20 @@
                                                                 }
                                                               },
                                                               {
-                                                                "type": "SYMBOL",
-                                                                "name": "insert_values"
+                                                                "type": "FIELD",
+                                                                "name": "end",
+                                                                "content": {
+                                                                  "type": "SYMBOL",
+                                                                  "name": "insert_values"
+                                                                }
                                                               },
                                                               {
-                                                                "type": "SYMBOL",
-                                                                "name": "_select_statement"
+                                                                "type": "FIELD",
+                                                                "name": "end",
+                                                                "content": {
+                                                                  "type": "SYMBOL",
+                                                                  "name": "_select_statement"
+                                                                }
                                                               }
                                                             ]
                                                           },

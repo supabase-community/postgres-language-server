@@ -7433,12 +7433,68 @@
     "named": true,
     "fields": {
       "end": {
-        "multiple": false,
+        "multiple": true,
         "required": false,
         "types": [
           {
+            "type": "(",
+            "named": false
+          },
+          {
             "type": ")",
             "named": false
+          },
+          {
+            "type": "from",
+            "named": true
+          },
+          {
+            "type": "group_by",
+            "named": true
+          },
+          {
+            "type": "insert_values",
+            "named": true
+          },
+          {
+            "type": "keyword_into",
+            "named": true
+          },
+          {
+            "type": "keyword_values",
+            "named": true
+          },
+          {
+            "type": "limit",
+            "named": true
+          },
+          {
+            "type": "offset",
+            "named": true
+          },
+          {
+            "type": "order_by",
+            "named": true
+          },
+          {
+            "type": "select",
+            "named": true
+          },
+          {
+            "type": "select_expression",
+            "named": true
+          },
+          {
+            "type": "select_row_locking",
+            "named": true
+          },
+          {
+            "type": "where",
+            "named": true
+          },
+          {
+            "type": "window_clause",
+            "named": true
           }
         ]
       }
@@ -7456,19 +7512,7 @@
           "named": true
         },
         {
-          "type": "from",
-          "named": true
-        },
-        {
-          "type": "group_by",
-          "named": true
-        },
-        {
           "type": "insert_columns",
-          "named": true
-        },
-        {
-          "type": "insert_values",
           "named": true
         },
         {
@@ -7524,43 +7568,11 @@
           "named": true
         },
         {
-          "type": "keyword_values",
-          "named": true
-        },
-        {
-          "type": "limit",
-          "named": true
-        },
-        {
-          "type": "offset",
-          "named": true
-        },
-        {
-          "type": "order_by",
-          "named": true
-        },
-        {
-          "type": "select",
-          "named": true
-        },
-        {
-          "type": "select_expression",
-          "named": true
-        },
-        {
-          "type": "select_row_locking",
-          "named": true
-        },
-        {
           "type": "table_reference",
           "named": true
         },
         {
           "type": "where",
-          "named": true
-        },
-        {
-          "type": "window_clause",
           "named": true
         }
       ]
