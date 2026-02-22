@@ -1,1 +1,1 @@
-select schema.onek.col from
+insert
