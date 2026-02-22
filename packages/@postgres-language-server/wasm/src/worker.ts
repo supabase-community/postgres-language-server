@@ -36,11 +36,7 @@
  * ```
  */
 
-import {
-	type JsonRpcMessage,
-	type LanguageServer,
-	createLanguageServer,
-} from "./lsp.js";
+import { type JsonRpcMessage, type LanguageServer, createLanguageServer } from "./lsp.js";
 
 let languageServer: LanguageServer | null = null;
 
@@ -48,40 +44,40 @@ let languageServer: LanguageServer | null = null;
  * Initialize the language server.
  */
 async function initialize(): Promise<void> {
-	if (!languageServer) {
-		languageServer = await createLanguageServer();
-	}
+  if (!languageServer) {
+    languageServer = await createLanguageServer();
+  }
 }
 
 /**
  * Handle incoming messages from the main thread.
  */
 self.onmessage = async (event: MessageEvent) => {
-	// Ensure language server is initialized
-	if (!languageServer) {
-		await initialize();
-	}
+  // Ensure language server is initialized
+  if (!languageServer) {
+    await initialize();
+  }
 
-	const data = event.data;
+  const data = event.data;
 
-	// Handle LSP JSON-RPC messages
-	// The message can be a string (raw JSON) or an object
-	const message: string | JsonRpcMessage = data;
+  // Handle LSP JSON-RPC messages
+  // The message can be a string (raw JSON) or an object
+  const message: string | JsonRpcMessage = data;
 
-	// Process the message and get array of outgoing messages
-	const outgoing = languageServer?.handleMessage(message);
+  // Process the message and get array of outgoing messages
+  const outgoing = languageServer?.handleMessage(message);
 
-	// Send EACH message separately via postMessage
-	// This is required by BrowserMessageReader which expects
-	// individual messages, not arrays
-	if (outgoing) {
-		for (const msg of outgoing) {
-			self.postMessage(msg);
-		}
-	}
+  // Send EACH message separately via postMessage
+  // This is required by BrowserMessageReader which expects
+  // individual messages, not arrays
+  if (outgoing) {
+    for (const msg of outgoing) {
+      self.postMessage(msg);
+    }
+  }
 };
 
 // Initialize immediately and signal readiness
 initialize().then(() => {
-	self.postMessage({ type: "ready" });
+  self.postMessage({ type: "ready" });
 });
