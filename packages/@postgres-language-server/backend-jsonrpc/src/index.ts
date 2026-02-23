@@ -10,12 +10,12 @@ import { type Workspace, createWorkspace as wrapTransport } from "./workspace";
  * @returns A Workspace client, or null if the underlying platform is not supported
  */
 export async function createWorkspace(): Promise<Workspace | null> {
-	const command = getCommand();
-	if (!command) {
-		return null;
-	}
+  const command = getCommand();
+  if (!command) {
+    return null;
+  }
 
-	return createWorkspaceWithBinary(command);
+  return createWorkspaceWithBinary(command);
 }
 
 /**
@@ -26,21 +26,19 @@ export async function createWorkspace(): Promise<Workspace | null> {
  * @param command Path to the binary
  * @returns A Workspace client, or null if the underlying platform is not supported
  */
-export async function createWorkspaceWithBinary(
-	command: string,
-): Promise<Workspace> {
-	const socket = await createSocket(command);
-	const transport = new Transport(socket);
+export async function createWorkspaceWithBinary(command: string): Promise<Workspace> {
+  const socket = await createSocket(command);
+  const transport = new Transport(socket);
 
-	await transport.request("initialize", {
-		capabilities: {},
-		client_info: {
-			name: "@postgres-language-server/backend-jsonrpc",
-			version: "0.0.0",
-		},
-	});
+  await transport.request("initialize", {
+    capabilities: {},
+    client_info: {
+      name: "@postgres-language-server/backend-jsonrpc",
+      version: "0.0.0",
+    },
+  });
 
-	return wrapTransport(transport);
+  return wrapTransport(transport);
 }
 
 export * from "./workspace";

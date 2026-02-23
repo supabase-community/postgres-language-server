@@ -1,55 +1,66 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>PGLS Monaco E2E Test</title>
     <style>
-        html, body {
-            margin: 0;
-            padding: 0;
-            height: 100%;
-            overflow: hidden;
-        }
-        #container {
-            width: 100%;
-            height: 100%;
-        }
-        #status {
-            position: fixed;
-            top: 10px;
-            right: 10px;
-            padding: 8px 16px;
-            background: #333;
-            color: #fff;
-            font-family: monospace;
-            font-size: 12px;
-            border-radius: 4px;
-            z-index: 1000;
-        }
-        #status.ready { background: #28a745; }
-        #status.error { background: #dc3545; }
-        #diagnostics {
-            position: fixed;
-            bottom: 10px;
-            left: 10px;
-            right: 10px;
-            max-height: 150px;
-            overflow: auto;
-            background: #1e1e1e;
-            color: #d4d4d4;
-            font-family: monospace;
-            font-size: 12px;
-            padding: 10px;
-            border-radius: 4px;
-            z-index: 1000;
-        }
-        .diagnostic-error { color: #f48771; }
-        .diagnostic-warning { color: #cca700; }
-        .diagnostic-info { color: #75beff; }
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        height: 100%;
+        overflow: hidden;
+      }
+      #container {
+        width: 100%;
+        height: 100%;
+      }
+      #status {
+        position: fixed;
+        top: 10px;
+        right: 10px;
+        padding: 8px 16px;
+        background: #333;
+        color: #fff;
+        font-family: monospace;
+        font-size: 12px;
+        border-radius: 4px;
+        z-index: 1000;
+      }
+      #status.ready {
+        background: #28a745;
+      }
+      #status.error {
+        background: #dc3545;
+      }
+      #diagnostics {
+        position: fixed;
+        bottom: 10px;
+        left: 10px;
+        right: 10px;
+        max-height: 150px;
+        overflow: auto;
+        background: #1e1e1e;
+        color: #d4d4d4;
+        font-family: monospace;
+        font-size: 12px;
+        padding: 10px;
+        border-radius: 4px;
+        z-index: 1000;
+      }
+      .diagnostic-error {
+        color: #f48771;
+      }
+      .diagnostic-warning {
+        color: #cca700;
+      }
+      .diagnostic-info {
+        color: #75beff;
+      }
     </style>
-</head>
-<body>
+  </head>
+  <body>
     <div id="container"></div>
     <div id="status">Loading...</div>
     <div id="diagnostics" data-testid="diagnostics"></div>
@@ -58,219 +69,229 @@
     <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs/loader.js"></script>
 
     <script type="module">
-        // Status element
-        const statusEl = document.getElementById('status');
-        const diagnosticsEl = document.getElementById('diagnostics');
+      // Status element
+      const statusEl = document.getElementById("status");
+      const diagnosticsEl = document.getElementById("diagnostics");
 
-        function setStatus(text, className = '') {
-            statusEl.textContent = text;
-            statusEl.className = className;
+      function setStatus(text, className = "") {
+        statusEl.textContent = text;
+        statusEl.className = className;
+      }
+
+      function showDiagnostics(diagnostics) {
+        diagnosticsEl.innerHTML =
+          diagnostics.length === 0
+            ? "<div>No diagnostics</div>"
+            : diagnostics
+                .map((d) => {
+                  const className = `diagnostic-${d.severity || "info"}`;
+                  return `<div class="${className}">[${d.severity}] ${d.message}</div>`;
+                })
+                .join("");
+      }
+
+      /**
+       * LSP Worker Client - Wraps the Language Server running in a Web Worker.
+       *
+       * This is how you would integrate PGLS with Monaco in production:
+       * 1. Create the worker with the LSP module
+       * 2. Send LSP messages via postMessage
+       * 3. Receive responses and notifications
+       */
+      class LspWorkerClient {
+        constructor() {
+          this.worker = null;
+          this.pendingRequests = new Map();
+          this.requestId = 0;
+          this.handlers = new Map();
         }
 
-        function showDiagnostics(diagnostics) {
-            diagnosticsEl.innerHTML = diagnostics.length === 0
-                ? '<div>No diagnostics</div>'
-                : diagnostics.map(d => {
-                    const className = `diagnostic-${d.severity || 'info'}`;
-                    return `<div class="${className}">[${d.severity}] ${d.message}</div>`;
-                }).join('');
+        async init() {
+          return new Promise((resolve, reject) => {
+            this.worker = new Worker("/e2e/lsp-worker.js", { type: "module" });
+
+            this.worker.onmessage = (event) => {
+              const { type, response, message, requestId } = event.data;
+
+              if (type === "ready") {
+                resolve();
+              } else if (type === "error" && !this.pendingRequests.has(requestId)) {
+                reject(new Error(message));
+              } else if (type === "response") {
+                // Handle notifications (no id)
+                if (response.method) {
+                  const handler = this.handlers.get(response.method);
+                  if (handler) {
+                    handler(response.params);
+                  }
+                }
+
+                // Resolve pending request
+                if (requestId !== undefined && this.pendingRequests.has(requestId)) {
+                  const { resolve, responses } = this.pendingRequests.get(requestId);
+                  responses.push(response);
+                  // For requests, resolve immediately with all responses
+                  // For notifications, we collect all responses
+                  if (response.id !== undefined || response.method) {
+                    resolve(responses);
+                    this.pendingRequests.delete(requestId);
+                  }
+                }
+              } else if (type === "error") {
+                const pending = this.pendingRequests.get(requestId);
+                if (pending) {
+                  pending.reject(new Error(message));
+                  this.pendingRequests.delete(requestId);
+                }
+              }
+            };
+
+            this.worker.postMessage({ type: "init" });
+          });
         }
 
-        /**
-         * LSP Worker Client - Wraps the Language Server running in a Web Worker.
-         *
-         * This is how you would integrate PGLS with Monaco in production:
-         * 1. Create the worker with the LSP module
-         * 2. Send LSP messages via postMessage
-         * 3. Receive responses and notifications
-         */
-        class LspWorkerClient {
-            constructor() {
-                this.worker = null;
-                this.pendingRequests = new Map();
-                this.requestId = 0;
-                this.handlers = new Map();
-            }
+        // Send message and collect responses
+        sendMessage(message) {
+          return new Promise((resolve, reject) => {
+            const id = ++this.requestId;
+            this.pendingRequests.set(id, { resolve, reject, responses: [] });
+            this.worker.postMessage({ type: "message", message, id });
 
-            async init() {
-                return new Promise((resolve, reject) => {
-                    this.worker = new Worker('/e2e/lsp-worker.js', { type: 'module' });
-
-                    this.worker.onmessage = (event) => {
-                        const { type, response, message, requestId } = event.data;
-
-                        if (type === 'ready') {
-                            resolve();
-                        } else if (type === 'error' && !this.pendingRequests.has(requestId)) {
-                            reject(new Error(message));
-                        } else if (type === 'response') {
-                            // Handle notifications (no id)
-                            if (response.method) {
-                                const handler = this.handlers.get(response.method);
-                                if (handler) {
-                                    handler(response.params);
-                                }
-                            }
-
-                            // Resolve pending request
-                            if (requestId !== undefined && this.pendingRequests.has(requestId)) {
-                                const { resolve, responses } = this.pendingRequests.get(requestId);
-                                responses.push(response);
-                                // For requests, resolve immediately with all responses
-                                // For notifications, we collect all responses
-                                if (response.id !== undefined || response.method) {
-                                    resolve(responses);
-                                    this.pendingRequests.delete(requestId);
-                                }
-                            }
-                        } else if (type === 'error') {
-                            const pending = this.pendingRequests.get(requestId);
-                            if (pending) {
-                                pending.reject(new Error(message));
-                                this.pendingRequests.delete(requestId);
-                            }
-                        }
-                    };
-
-                    this.worker.postMessage({ type: 'init' });
-                });
-            }
-
-            // Send message and collect responses
-            sendMessage(message) {
-                return new Promise((resolve, reject) => {
-                    const id = ++this.requestId;
-                    this.pendingRequests.set(id, { resolve, reject, responses: [] });
-                    this.worker.postMessage({ type: 'message', message, id });
-
-                    // Timeout for safety
-                    setTimeout(() => {
-                        const pending = this.pendingRequests.get(id);
-                        if (pending) {
-                            resolve(pending.responses);
-                            this.pendingRequests.delete(id);
-                        }
-                    }, 500);
-                });
-            }
-
-            // Register handler for notifications
-            onNotification(method, handler) {
-                this.handlers.set(method, handler);
-            }
+            // Timeout for safety
+            setTimeout(() => {
+              const pending = this.pendingRequests.get(id);
+              if (pending) {
+                resolve(pending.responses);
+                this.pendingRequests.delete(id);
+              }
+            }, 500);
+          });
         }
 
-        // Load Monaco
-        require.config({ paths: { vs: 'https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs' } });
+        // Register handler for notifications
+        onNotification(method, handler) {
+          this.handlers.set(method, handler);
+        }
+      }
 
-        require(['vs/editor/editor.main'], async function() {
-            setStatus('Monaco loaded, loading WASM...');
+      // Load Monaco
+      require.config({ paths: { vs: "https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs" } });
 
-            // Register SQL language
-            monaco.languages.register({ id: 'sql' });
+      require(["vs/editor/editor.main"], async function () {
+        setStatus("Monaco loaded, loading WASM...");
 
-            // Create editor
-            const editor = monaco.editor.create(document.getElementById('container'), {
-                value: '-- Type SQL here\nSELECT * FROM users;',
-                language: 'sql',
-                theme: 'vs-dark',
-                automaticLayout: true,
-                minimap: { enabled: false },
+        // Register SQL language
+        monaco.languages.register({ id: "sql" });
+
+        // Create editor
+        const editor = monaco.editor.create(document.getElementById("container"), {
+          value: "-- Type SQL here\nSELECT * FROM users;",
+          language: "sql",
+          theme: "vs-dark",
+          automaticLayout: true,
+          minimap: { enabled: false },
+        });
+
+        // Expose editor for tests
+        window.monacoEditor = editor;
+
+        try {
+          // Create worker-based LSP client for Monaco integration
+          const lspClient = new LspWorkerClient();
+          await lspClient.init();
+          window.pglsLspClient = lspClient;
+
+          // Initialize LSP via worker
+          await lspClient.sendMessage({
+            jsonrpc: "2.0",
+            id: 1,
+            method: "initialize",
+            params: { capabilities: {} },
+          });
+
+          setStatus("Ready", "ready");
+
+          // Set up diagnostics on content change using the worker LSP
+          let debounceTimer;
+          let documentVersion = 0;
+
+          const updateDiagnostics = async () => {
+            const content = editor.getValue();
+            const uri = "file:///test.sql";
+            documentVersion++;
+
+            // Send didOpen/didChange via LSP worker
+            const messages = await lspClient.sendMessage({
+              jsonrpc: "2.0",
+              method: documentVersion === 1 ? "textDocument/didOpen" : "textDocument/didChange",
+              params:
+                documentVersion === 1
+                  ? {
+                      textDocument: {
+                        uri: uri,
+                        languageId: "sql",
+                        version: documentVersion,
+                        text: content,
+                      },
+                    }
+                  : {
+                      textDocument: {
+                        uri: uri,
+                        version: documentVersion,
+                      },
+                      contentChanges: [{ text: content }],
+                    },
             });
 
-            // Expose editor for tests
-            window.monacoEditor = editor;
+            // Find publishDiagnostics notification
+            const diagNotification = messages.find(
+              (m) => m.method === "textDocument/publishDiagnostics",
+            );
+            const diagnostics = diagNotification?.params?.diagnostics || [];
 
-            try {
-                // Create worker-based LSP client for Monaco integration
-                const lspClient = new LspWorkerClient();
-                await lspClient.init();
-                window.pglsLspClient = lspClient;
+            // Update Monaco markers
+            const model = editor.getModel();
+            const markers = diagnostics.map((d) => ({
+              severity:
+                d.severity === 1
+                  ? monaco.MarkerSeverity.Error
+                  : d.severity === 2
+                    ? monaco.MarkerSeverity.Warning
+                    : monaco.MarkerSeverity.Info,
+              message: d.message,
+              startLineNumber: d.range.start.line + 1,
+              startColumn: d.range.start.character + 1,
+              endLineNumber: d.range.end.line + 1,
+              endColumn: d.range.end.character + 1,
+            }));
 
-                // Initialize LSP via worker
-                await lspClient.sendMessage({
-                    jsonrpc: '2.0',
-                    id: 1,
-                    method: 'initialize',
-                    params: { capabilities: {} }
-                });
+            monaco.editor.setModelMarkers(model, "pgls", markers);
 
-                setStatus('Ready', 'ready');
+            // Show in diagnostics panel
+            showDiagnostics(
+              diagnostics.map((d) => ({
+                severity: d.severity === 1 ? "error" : d.severity === 2 ? "warning" : "info",
+                message: d.message,
+              })),
+            );
 
-                // Set up diagnostics on content change using the worker LSP
-                let debounceTimer;
-                let documentVersion = 0;
+            // Expose diagnostics for tests
+            window.lastDiagnostics = diagnostics;
+          };
 
-                const updateDiagnostics = async () => {
-                    const content = editor.getValue();
-                    const uri = 'file:///test.sql';
-                    documentVersion++;
+          editor.onDidChangeModelContent(() => {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(updateDiagnostics, 300);
+          });
 
-                    // Send didOpen/didChange via LSP worker
-                    const messages = await lspClient.sendMessage({
-                        jsonrpc: '2.0',
-                        method: documentVersion === 1 ? 'textDocument/didOpen' : 'textDocument/didChange',
-                        params: documentVersion === 1
-                            ? {
-                                textDocument: {
-                                    uri: uri,
-                                    languageId: 'sql',
-                                    version: documentVersion,
-                                    text: content,
-                                }
-                            }
-                            : {
-                                textDocument: {
-                                    uri: uri,
-                                    version: documentVersion,
-                                },
-                                contentChanges: [{ text: content }]
-                            }
-                    });
-
-                    // Find publishDiagnostics notification
-                    const diagNotification = messages.find(m => m.method === 'textDocument/publishDiagnostics');
-                    const diagnostics = diagNotification?.params?.diagnostics || [];
-
-                    // Update Monaco markers
-                    const model = editor.getModel();
-                    const markers = diagnostics.map(d => ({
-                        severity: d.severity === 1 ? monaco.MarkerSeverity.Error :
-                                  d.severity === 2 ? monaco.MarkerSeverity.Warning :
-                                  monaco.MarkerSeverity.Info,
-                        message: d.message,
-                        startLineNumber: d.range.start.line + 1,
-                        startColumn: d.range.start.character + 1,
-                        endLineNumber: d.range.end.line + 1,
-                        endColumn: d.range.end.character + 1,
-                    }));
-
-                    monaco.editor.setModelMarkers(model, 'pgls', markers);
-
-                    // Show in diagnostics panel
-                    showDiagnostics(diagnostics.map(d => ({
-                        severity: d.severity === 1 ? 'error' : d.severity === 2 ? 'warning' : 'info',
-                        message: d.message,
-                    })));
-
-                    // Expose diagnostics for tests
-                    window.lastDiagnostics = diagnostics;
-                };
-
-                editor.onDidChangeModelContent(() => {
-                    clearTimeout(debounceTimer);
-                    debounceTimer = setTimeout(updateDiagnostics, 300);
-                });
-
-                // Initial diagnostics
-                updateDiagnostics();
-
-            } catch (err) {
-                console.error('Failed to load WASM:', err);
-                setStatus('Error: ' + err.message, 'error');
-                window.pglsError = err;
-            }
-        });
+          // Initial diagnostics
+          updateDiagnostics();
+        } catch (err) {
+          console.error("Failed to load WASM:", err);
+          setStatus("Error: " + err.message, "error");
+          window.pglsError = err;
+        }
+      });
     </script>
-</body>
+  </body>
 </html>

@@ -1,50 +1,60 @@
 {
-	"name": "@postgres-language-server/wasm",
-	"version": "0.0.0",
-	"description": "WebAssembly bindings for the Postgres Language Server",
-	"type": "module",
-	"main": "dist/index.js",
-	"module": "dist/index.js",
-	"types": "dist/index.d.ts",
-	"exports": {
-		".": {
-			"types": "./dist/index.d.ts",
-			"import": "./dist/index.js"
-		},
-		"./workspace": {
-			"types": "./dist/workspace.d.ts",
-			"import": "./dist/workspace.js"
-		},
-		"./lsp": {
-			"types": "./dist/lsp.d.ts",
-			"import": "./dist/lsp.js"
-		}
-	},
-	"scripts": {
-		"build": "bun run build:wasm && bun run build:ts",
-		"build:wasm": "../../../crates/pgls_wasm/build-wasm.sh --release && mkdir -p wasm && cp ../../../crates/pgls_wasm/dist/pgls.js ../../../crates/pgls_wasm/dist/pgls.wasm ./wasm/",
-		"build:ts": "tsc -p tsconfig.build.json && cp wasm/pgls.wasm wasm/pgls.js dist/",
-		"build:types": "tsc --declaration --emitDeclarationOnly --outDir dist",
-		"test": "bun test",
-		"test:e2e": "playwright test",
-		"test:e2e:ui": "playwright test --ui",
-		"test:e2e:install": "playwright install chromium"
-	},
-	"files": ["dist/", "wasm/", "README.md"],
-	"repository": {
-		"type": "git",
-		"url": "git+https://github.com/supabase-community/postgres-language-server.git",
-		"directory": "packages/@postgres-language-server/wasm"
-	},
-	"author": "Supabase Community",
-	"bugs": "https://github.com/supabase-community/postgres-language-server/issues",
-	"keywords": ["postgres", "sql", "linter", "wasm", "language-server"],
-	"license": "MIT",
-	"publishConfig": {
-		"provenance": true
-	},
-	"devDependencies": {
-		"@playwright/test": "^1.50.0",
-		"typescript": "^5.0.0"
-	}
+  "name": "@postgres-language-server/wasm",
+  "version": "0.0.0",
+  "description": "WebAssembly bindings for the Postgres Language Server",
+  "keywords": [
+    "language-server",
+    "linter",
+    "postgres",
+    "sql",
+    "wasm"
+  ],
+  "bugs": "https://github.com/supabase-community/postgres-language-server/issues",
+  "license": "MIT",
+  "author": "Supabase Community",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/supabase-community/postgres-language-server.git",
+    "directory": "packages/@postgres-language-server/wasm"
+  },
+  "files": [
+    "dist/",
+    "wasm/",
+    "README.md"
+  ],
+  "type": "module",
+  "main": "dist/index.js",
+  "module": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./workspace": {
+      "types": "./dist/workspace.d.ts",
+      "import": "./dist/workspace.js"
+    },
+    "./lsp": {
+      "types": "./dist/lsp.d.ts",
+      "import": "./dist/lsp.js"
+    }
+  },
+  "publishConfig": {
+    "provenance": true
+  },
+  "scripts": {
+    "build": "bun run build:wasm && bun run build:ts",
+    "build:wasm": "../../../crates/pgls_wasm/build-wasm.sh --release && mkdir -p wasm && cp ../../../crates/pgls_wasm/dist/pgls.js ../../../crates/pgls_wasm/dist/pgls.wasm ./wasm/",
+    "build:ts": "tsc -p tsconfig.build.json && cp wasm/pgls.wasm wasm/pgls.js dist/",
+    "build:types": "tsc --declaration --emitDeclarationOnly --outDir dist",
+    "test": "bun test",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:install": "playwright install chromium"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.50.0",
+    "typescript": "^5.0.0"
+  }
 }

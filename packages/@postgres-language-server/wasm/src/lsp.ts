@@ -27,9 +27,8 @@
  * ```
  */
 
-import type { JsonRpcMessage, PGLSModule } from "./types.js";
-
 import { allocateString, loadWasm, readAndFreeString } from "./common.js";
+import type { JsonRpcMessage, PGLSModule } from "./types.js";
 
 export type { PGLSModule, JsonRpcMessage };
 
@@ -37,41 +36,40 @@ export type { PGLSModule, JsonRpcMessage };
  * The LanguageServer class provides a full LSP JSON-RPC message handler.
  */
 export class LanguageServer {
-	private module: PGLSModule;
+  private module: PGLSModule;
 
-	constructor(module: PGLSModule) {
-		this.module = module;
-	}
+  constructor(module: PGLSModule) {
+    this.module = module;
+  }
 
-	/**
-	 * Handle an LSP JSON-RPC message.
-	 *
-	 * Processes an incoming LSP message and returns an array of outgoing
-	 * messages (response + any notifications like publishDiagnostics).
-	 *
-	 * @param message - The JSON-RPC message as a string or object
-	 * @returns Array of outgoing JSON-RPC messages
-	 */
-	handleMessage(message: string | JsonRpcMessage): JsonRpcMessage[] {
-		const messageStr =
-			typeof message === "string" ? message : JSON.stringify(message);
-		const messagePtr = allocateString(this.module, messageStr);
-		try {
-			const resultPtr = this.module._pgls_lsp_handle_message(messagePtr);
-			const result = readAndFreeString(this.module, resultPtr) ?? "[]";
-			return JSON.parse(result) as JsonRpcMessage[];
-		} finally {
-			this.module._free(messagePtr);
-		}
-	}
+  /**
+   * Handle an LSP JSON-RPC message.
+   *
+   * Processes an incoming LSP message and returns an array of outgoing
+   * messages (response + any notifications like publishDiagnostics).
+   *
+   * @param message - The JSON-RPC message as a string or object
+   * @returns Array of outgoing JSON-RPC messages
+   */
+  handleMessage(message: string | JsonRpcMessage): JsonRpcMessage[] {
+    const messageStr = typeof message === "string" ? message : JSON.stringify(message);
+    const messagePtr = allocateString(this.module, messageStr);
+    try {
+      const resultPtr = this.module._pgls_lsp_handle_message(messagePtr);
+      const result = readAndFreeString(this.module, resultPtr) ?? "[]";
+      return JSON.parse(result) as JsonRpcMessage[];
+    } finally {
+      this.module._free(messagePtr);
+    }
+  }
 }
 
 /**
  * Create a new LanguageServer instance.
  */
 export async function createLanguageServer(): Promise<LanguageServer> {
-	const module = await loadWasm();
-	return new LanguageServer(module);
+  const module = await loadWasm();
+  return new LanguageServer(module);
 }
 
 export default createLanguageServer;

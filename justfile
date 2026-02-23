@@ -43,17 +43,17 @@ new-lintrule group rulename severity="error":
 format:
 	cargo fmt
 	taplo format
-	bun biome format --write
+	bun oxfmt packages/
 
 format-ci:
 	cargo fmt --all --check
 	taplo format --check
-	bun biome format
+	bun oxfmt --check packages/
 
 format-ci-versions:
 	cargo --version
 	taplo --version
-	echo "Biome $(bun biome --version)"
+	bun oxfmt --version
 
 [unix]
 _touch file:
@@ -79,12 +79,12 @@ test-doc:
 lint:
   cargo clippy
   cargo run -p rules_check
-  bun biome lint
+  bun oxlint packages/
 
 lint-fix:
   cargo clippy --fix
   cargo run -p rules_check
-  bun biome lint --write
+  bun oxlint --fix packages/
 
 lint-ci-versions:
   rustc --version
@@ -92,13 +92,13 @@ lint-ci-versions:
   cargo --version
   cargo sqlx --version
   cargo clippy --version
-  echo "Biome $(bun biome --version)"
+  bun oxlint --version
 
 lint-ci:
   cargo sqlx prepare --check --workspace
   cargo clippy --fix
   cargo run -p rules_check
-  bun biome lint --write
+  bun oxlint --fix packages/
 
 serve-docs:
     uv sync
