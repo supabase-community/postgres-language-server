@@ -5585,7 +5585,11 @@ version = "0.0.0"
 dependencies = [
  "anyhow",
  "flate2",
+ "pgls_cli",
+ "pgls_workspace",
+ "serde_json",
  "time",
+ "tokio",
  "write-json",
  "xflags",
  "xshell",

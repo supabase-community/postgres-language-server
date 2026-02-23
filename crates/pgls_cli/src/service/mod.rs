@@ -101,6 +101,11 @@ pub struct SocketTransport {
     pending_requests: PendingRequests,
 }
 
+#[cfg(not(test))]
+const REQUEST_TIMEOUT: Duration = Duration::from_secs(15);
+#[cfg(test)]
+const REQUEST_TIMEOUT: Duration = Duration::from_millis(50);
+
 /// Stores a handle to the map of pending requests, and clears the map
 /// automatically when the handle is dropped
 #[derive(Clone, Default)]
@@ -185,27 +190,30 @@ impl WorkspaceTransport for SocketTransport {
         P: Serialize,
         R: DeserializeOwned,
     {
+        let request_id = request.id;
         let (send, recv) = oneshot::channel();
-
-        self.pending_requests.insert(request.id, send);
-
         let is_shutdown = request.method == "pgls/shutdown";
 
         let request = JsonRpcRequest {
             jsonrpc: Cow::Borrowed("2.0"),
-            id: request.id,
+            id: request_id,
             method: Cow::Borrowed(request.method),
             params: request.params,
         };
 
-        let request = to_vec(&request).map_err(|err| {
-            TransportError::SerdeError(format!(
-                "failed to serialize {} into byte buffer: {err}",
-                type_name::<P>()
-            ))
-        })?;
+        let request = match to_vec(&request) {
+            Ok(request) => request,
+            Err(err) => {
+                return Err(TransportError::SerdeError(format!(
+                    "failed to serialize {} into byte buffer: {err}",
+                    type_name::<P>()
+                )));
+            }
+        };
 
-        let response = self.runtime.block_on(async move {
+        self.pending_requests.insert(request_id, send);
+
+        let response = match self.runtime.block_on(async move {
             self.write_send
                 .send((request, is_shutdown))
                 .await
@@ -219,11 +227,17 @@ impl WorkspaceTransport for SocketTransport {
                         Err(_) => Err(TransportError::ChannelClosed),
                     }
                 }
-                _ = sleep(Duration::from_secs(15)) => {
+                _ = sleep(REQUEST_TIMEOUT) => {
                     Err(TransportError::Timeout)
                 }
             }
-        })?;
+        }) {
+            Ok(response) => response,
+            Err(err) => {
+                self.pending_requests.remove(&request_id);
+                return Err(err);
+            }
+        };
 
         let response = response.get();
         let result = from_str(response).map_err(|err| {
@@ -470,5 +484,87 @@ impl FromStr for TransportHeader {
             }
             _ => Ok(TransportHeader::Unknown(name.into())),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::fmt;
+
+    use pgls_workspace::TransportError;
+    use pgls_workspace::workspace::{TransportRequest, WorkspaceTransport};
+    use serde::Serialize;
+    use serde::ser::{Error as SerError, Serializer};
+    use serde_json::Value;
+    use tokio::io::{duplex, split};
+    use tokio::runtime::Runtime;
+
+    use super::SocketTransport;
+
+    struct FailingParams;
+
+    impl Serialize for FailingParams {
+        fn serialize<S>(&self, _serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            Err(S::Error::custom("expected serialization failure"))
+        }
+    }
+
+    impl fmt::Debug for FailingParams {
+        fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+            f.write_str("FailingParams")
+        }
+    }
+
+    fn disconnected_transport() -> SocketTransport {
+        let runtime = Runtime::new().expect("failed to create tokio runtime");
+        let (stream, peer) = duplex(1024);
+        drop(peer);
+        let (read, write) = split(stream);
+        SocketTransport::open(runtime, read, write)
+    }
+
+    #[test]
+    fn request_does_not_retain_pending_entries_when_serialization_fails() {
+        let transport = disconnected_transport();
+
+        let result: Result<Value, TransportError> = transport.request(TransportRequest {
+            id: 1,
+            method: "pgls/get_file_content",
+            params: FailingParams,
+        });
+
+        assert!(matches!(result, Err(TransportError::SerdeError(_))));
+        assert_eq!(
+            transport.pending_requests.len(),
+            0,
+            "pending request should be cleaned up on serialization failure"
+        );
+    }
+
+    #[test]
+    fn request_does_not_retain_pending_entries_on_timeout_or_channel_close() {
+        let transport = disconnected_transport();
+
+        let result: Result<Value, TransportError> = transport.request(TransportRequest {
+            id: 2,
+            method: "pgls/get_file_content",
+            params: (),
+        });
+
+        assert!(
+            matches!(
+                result,
+                Err(TransportError::Timeout | TransportError::ChannelClosed)
+            ),
+            "expected timeout or channel-closed error, got {result:?}"
+        );
+        assert_eq!(
+            transport.pending_requests.len(),
+            0,
+            "pending request should be cleaned up on timeout/channel-close"
+        );
     }
 }

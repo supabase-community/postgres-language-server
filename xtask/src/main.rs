@@ -17,6 +17,7 @@
 mod flags;
 
 mod install;
+mod leak_check;
 
 use std::{
     env,
@@ -32,6 +33,7 @@ fn main() -> anyhow::Result<()> {
 
     match flags.subcommand {
         flags::XtaskCmd::Install(cmd) => cmd.run(sh),
+        flags::XtaskCmd::LeakCheck(cmd) => cmd.run(sh),
     }
 }
 
