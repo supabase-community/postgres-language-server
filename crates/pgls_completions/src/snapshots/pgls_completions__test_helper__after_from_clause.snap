@@ -79,10 +79,10 @@ select email from users where id = 1|
 select email from users where id = 1; |
 
 Results:
+copy - copy (Keyword)
 create - create (Keyword)
 drop - drop (Keyword)
 insert - insert (Keyword)
 reset - reset (Keyword)
-select - select (Keyword)
 
 --------------

@@ -435,15 +435,15 @@ mod tests {
             query.as_str(),
             vec![
                 CompletionAssertion::LabelAndKind(
+                    "copy".into(),
+                    crate::CompletionItemKind::Keyword,
+                ),
+                CompletionAssertion::LabelAndKind(
                     "create".into(),
                     crate::CompletionItemKind::Keyword,
                 ),
                 CompletionAssertion::LabelAndKind(
                     "drop".into(),
-                    crate::CompletionItemKind::Keyword,
-                ),
-                CompletionAssertion::LabelAndKind(
-                    "insert".into(),
                     crate::CompletionItemKind::Keyword,
                 ),
                 CompletionAssertion::LabelAndKind(

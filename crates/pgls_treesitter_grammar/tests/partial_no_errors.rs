@@ -35,9 +35,24 @@ pub static WITHOUT_END_RULES: &[&str] = &["program", "statement"];
 // we're in /crates/pgls_treesitter_grammar/tests
 // => ../../ is crates
 static PG_REGRESSION_FILES: LazyLock<Vec<&'static str>> = std::sync::LazyLock::new(|| {
-    vec![include_str!(
-        "../../pgls_query/vendor/libpg_query/test/sql/postgres_regress/select.sql"
-    )]
+    vec![
+        include_str!("../../pgls_query/vendor/libpg_query/test/sql/postgres_regress/select.sql"),
+        /*
+         * The actual postgres regression files have lots of setup statements;
+         * tables are created, dropped, and so on.
+         *
+         * Using them for tests blows up the scope of a PR, because you not only have
+         * to support the tested statement, but also the setup statements.
+         *
+         * Below files are reduced versions of the regression suite, i.e. the `insert.sql` file
+         * only contains insert statement and not the setup-stuff.
+         *
+         * Once we have more statements fully supported (drop, alter, create...) we can
+         * switch to the actual regression suite files.
+         */
+        include_str!("../tests/partial-sqls/insert.sql"),
+        include_str!("../tests/partial-sqls/copy.sql"),
+    ]
 });
 
 fn error_message(msg: &str, source: &str, tree: &tree_sitter::Tree) -> String {

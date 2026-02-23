@@ -1,7 +1,6 @@
 ---
 source: crates/pgls_completions/src/test_helper.rs
 expression: final_snapshot
-snapshot_kind: text
 ---
 ***Setup***
 
@@ -146,10 +145,10 @@ select "email" from "private".u|
 select "email" from "private".users; |
 
 Results:
+copy - copy (Keyword)
 create - create (Keyword)
 drop - drop (Keyword)
 insert - insert (Keyword)
 reset - reset (Keyword)
-select - select (Keyword)
 
 --------------

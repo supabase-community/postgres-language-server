@@ -1,7 +1,6 @@
 ---
 source: crates/pgls_completions/src/test_helper.rs
 expression: final_snapshot
-snapshot_kind: text
 ---
 ***Setup***
 
@@ -26,6 +25,7 @@ i|
 
 Results:
 insert - insert (Keyword)
+with - with (Keyword)
 
 --------------
 
@@ -164,11 +164,11 @@ insert into instruments (id, name) values (1, '|)
 insert into instruments (id, name) values (1, 'my_bass'); |
 
 Results:
+copy - copy (Keyword)
 create - create (Keyword)
 drop - drop (Keyword)
 insert - insert (Keyword)
 reset - reset (Keyword)
-select - select (Keyword)
 
 --------------
 
@@ -182,6 +182,7 @@ i|
 
 Results:
 insert - insert (Keyword)
+with - with (Keyword)
 
 --------------
 
@@ -342,11 +343,11 @@ insert into instruments ("id", "name") values (1, '|)
 insert into instruments ("id", "name") values (1, 'my_bass'); |
 
 Results:
+copy - copy (Keyword)
 create - create (Keyword)
 drop - drop (Keyword)
 insert - insert (Keyword)
 reset - reset (Keyword)
-select - select (Keyword)
 
 --------------
 
