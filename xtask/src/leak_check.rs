@@ -4,9 +4,13 @@ use std::thread;
 use std::time::{Duration, Instant};
 
 use anyhow::{bail, Context};
+#[cfg(unix)]
 use pgls_cli::SocketTransport;
+#[cfg(unix)]
 use pgls_workspace::workspace::{TransportRequest, WorkspaceTransport};
+#[cfg(unix)]
 use serde_json::Value;
+#[cfg(unix)]
 use tokio::net::UnixStream;
 use xshell::Shell;
 
@@ -111,6 +115,7 @@ fn run_lsp_probe(iterations: usize, pause: Duration) -> anyhow::Result<()> {
     bail!("leaks reported potential leaked allocations in lsp probe");
 }
 
+#[cfg(unix)]
 fn run_cli_timeout_probe(iterations: usize) -> anyhow::Result<()> {
     let rss_start = current_rss_kb(std::process::id())?;
 
@@ -155,13 +160,16 @@ fn run_cli_timeout_probe(iterations: usize) -> anyhow::Result<()> {
     let fail_threshold_kb: u64 = 20_000;
     if rss_delta >= fail_threshold_kb {
         bail!(
-            "CLI timeout probe shows strong retained-memory growth (delta={} KB >= {} KB)",
-            rss_delta,
-            fail_threshold_kb
+            "CLI timeout probe shows strong retained-memory growth (delta={rss_delta} KB >= {fail_threshold_kb} KB)"
         );
     }
 
     Ok(())
+}
+
+#[cfg(not(unix))]
+fn run_cli_timeout_probe(_iterations: usize) -> anyhow::Result<()> {
+    bail!("cli-timeout probe requires unix (UnixStream)");
 }
 
 struct ProcessGuard {
