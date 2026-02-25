@@ -75,17 +75,17 @@ jobs:
 
       # 2. Check migration safety with pgfence
       - name: Check migration safety (pgfence)
-        run: npx --yes @flvmnt/pgfence analyze --ci migrations/*.sql
+        run: npx --yes @flvmnt/pgfence@0.2.1 analyze --ci migrations/*.sql
 ```
 
 pgfence exits with code 1 when it finds high-risk issues, so it integrates naturally as a CI gate. You can adjust the threshold with `--max-risk`:
 
 ```sh
 # Block on HIGH or above (default)
-npx @flvmnt/pgfence analyze --ci migrations/*.sql
+npx --yes @flvmnt/pgfence@0.2.1 analyze --ci migrations/*.sql
 
 # Block on MEDIUM or above (stricter)
-npx @flvmnt/pgfence analyze --ci --max-risk medium migrations/*.sql
+npx --yes @flvmnt/pgfence@0.2.1 analyze --ci --max-risk medium migrations/*.sql
 ```
 
 For more details, see the [pgfence documentation](https://pgfence.dev).
