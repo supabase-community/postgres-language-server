@@ -46,7 +46,7 @@ A common use-case is to check your migration files. Check out [the dedicated gui
 
 ### Combining with pgfence for Migration Safety
 
-While Postgres Language Server catches SQL syntax and semantic issues, it does not analyze the **lock modes** and **runtime risk** of DDL statements. [pgfence](https://pgfence.dev) is a complementary CLI that fills this gap — it tells you what PostgreSQL lock each migration statement acquires, what it blocks, and provides safe rewrite recipes when it detects dangerous patterns.
+While Postgres Language Server catches SQL syntax and semantic issues, it does not analyze the **lock modes** and **runtime risk** of DDL statements. [pgfence](https://pgfence.dev) is a complementary CLI that fills this gap — it tells you which PostgreSQL lock mode each migration statement acquires, what it blocks, and provides safe rewrite recipes when it detects dangerous patterns.
 
 By running both tools in CI, you get comprehensive migration checking: PGLT ensures your SQL is correct, and pgfence ensures it is safe to run against a live database.
 
