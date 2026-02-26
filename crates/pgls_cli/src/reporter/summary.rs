@@ -95,7 +95,11 @@ impl Display for FileDiagnostics {
                 parts.push(format!(
                     "{} {}",
                     counts.errors,
-                    if counts.errors == 1 { "error" } else { "errors" }
+                    if counts.errors == 1 {
+                        "error"
+                    } else {
+                        "errors"
+                    }
                 ));
             }
             if counts.warnings > 0 {

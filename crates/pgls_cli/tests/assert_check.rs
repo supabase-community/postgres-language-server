@@ -167,9 +167,7 @@ fn normalize_durations(input: &str) -> String {
         while let Some(dot_rel) = rest[dot_search..].find('.') {
             let dot_pos = dot_search + dot_rel;
             let after_dot = dot_pos + 1;
-            if after_dot >= rest.len()
-                || !rest.as_bytes()[after_dot].is_ascii_digit()
-            {
+            if after_dot >= rest.len() || !rest.as_bytes()[after_dot].is_ascii_digit() {
                 found_end = Some(start + dot_pos);
                 break;
             }

@@ -44,7 +44,7 @@ impl ReportWriter for JsonReportWriter {
         } else {
             serde_json::to_string(&output)
         }
-        .map_err(|e| CliDiagnostic::io_error(std::io::Error::new(std::io::ErrorKind::Other, e)))?;
+        .map_err(|e| CliDiagnostic::io_error(std::io::Error::other(e)))?;
 
         console.log(markup!({ serialized }));
         Ok(())
