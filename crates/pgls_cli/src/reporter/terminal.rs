@@ -130,7 +130,7 @@ impl fmt::Display for SummaryDetail {
     }
 }
 
-struct ConsoleTraversalSummary<'a>(&'a str, &'a Report, &'a TraversalData);
+pub(crate) struct ConsoleTraversalSummary<'a>(pub &'a str, pub &'a Report, pub &'a TraversalData);
 
 impl fmt::Display for ConsoleTraversalSummary<'_> {
     fn fmt(&self, fmt: &mut Formatter) -> std::io::Result<()> {
@@ -168,7 +168,7 @@ impl fmt::Display for ConsoleTraversalSummary<'_> {
     }
 }
 
-struct ConsoleDiagnosticSummary<'a>(&'a str, &'a Report);
+pub(crate) struct ConsoleDiagnosticSummary<'a>(pub &'a str, pub &'a Report);
 
 impl fmt::Display for ConsoleDiagnosticSummary<'_> {
     fn fmt(&self, fmt: &mut Formatter) -> std::io::Result<()> {
