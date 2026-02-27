@@ -11,15 +11,7 @@ repository.workspace = true
 version              = "0.0.0"
 
 build   = "build.rs"
-include = [
-  "grammar.js",
-  "src/lib.rs",
-  "src/scanner.c",
-  "src/tree_sitter/*",
-  "tree-sitter.json",
-  "LICENSE",
-  "NOTICE",
-]
+include = ["grammar.js", "src/lib.rs", "src/scanner.c", "src/tree_sitter/*", "tree-sitter.json", "LICENSE", "NOTICE"]
 
 [dependencies]
 tree-sitter.workspace = true
