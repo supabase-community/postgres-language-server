@@ -2,23 +2,33 @@
 source: crates/pgls_treesitter_grammar/tests/grammar_tests.rs
 expression: writer
 ---
-update auth.users set users.email = 'my@mail.com';
+update auth.users as u set email = 'my@mail.com' where u.id = 1;
 -----------------------
-program [0..50] 'update auth.users set users.email = 'my@mail.com';'
-  statement [0..49] 'update auth.users set users.email = 'my@mail.com''
-    update [0..49] 'update auth.users set users.email = 'my@mail.com''
+program [0..64] 'update auth.users as u set email = 'my@mail.com' where u.id = 1;'
+  statement [0..63] 'update auth.users as u set email = 'my@mail.com' where u.id = 1'
+    update [0..63] 'update auth.users as u set email = 'my@mail.com' where u.id = 1'
       keyword_update [0..6] 'update'
-      relation [7..17] 'auth.users'
+      update_target [7..22] 'auth.users as u'
         table_reference [7..17] 'auth.users' (@end)
           schema_identifier [7..11] 'auth' (@table_reference_1of2)
           . [11..12] '.'
           table_identifier [12..17] 'users' (@table_reference_2of2)
-      keyword_set [18..21] 'set'
-      assignment [22..49] 'users.email = 'my@mail.com''
-        column_reference [22..33] 'users.email' (@left)
-          any_identifier [22..27] 'users' (@column_reference_1of2)
-          . [27..28] '.'
-          any_identifier [28..33] 'email' (@column_reference_2of2)
-        = [34..35] '='
-        literal [36..49] ''my@mail.com'' (@right)
-  ; [49..50] ';'
+        alias [18..22] 'as u'
+          keyword_as [18..20] 'as'
+          any_identifier [21..22] 'u' (@end)
+      update_set_values [23..48] 'set email = 'my@mail.com''
+        keyword_set [23..26] 'set'
+        assignment [27..48] 'email = 'my@mail.com'' (@end)
+          column_identifier [27..32] 'email' (@end)
+          = [33..34] '='
+          literal [35..48] ''my@mail.com'' (@right)
+      where [49..63] 'where u.id = 1'
+        keyword_where [49..54] 'where'
+        binary_expression [55..63] 'u.id = 1' (@end)
+          object_reference [55..59] 'u.id' (@binary_expr_left)
+            any_identifier [55..56] 'u' (@object_reference_1of2)
+            . [56..57] '.'
+            any_identifier [57..59] 'id' (@object_reference_2of2)
+          = [60..61] '=' (@binary_expr_operator)
+          literal [62..63] '1' (@end)
+  ; [63..64] ';'
