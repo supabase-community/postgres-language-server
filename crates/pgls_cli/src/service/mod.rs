@@ -99,12 +99,10 @@ pub struct SocketTransport {
     runtime: Runtime,
     write_send: Sender<(Vec<u8>, bool)>,
     pending_requests: PendingRequests,
+    request_timeout: Duration,
 }
 
-#[cfg(not(test))]
-const REQUEST_TIMEOUT: Duration = Duration::from_secs(15);
-#[cfg(test)]
-const REQUEST_TIMEOUT: Duration = Duration::from_millis(50);
+const DEFAULT_REQUEST_TIMEOUT: Duration = Duration::from_secs(15);
 
 /// Stores a handle to the map of pending requests, and clears the map
 /// automatically when the handle is dropped
@@ -137,6 +135,19 @@ impl Drop for PendingRequests {
 
 impl SocketTransport {
     pub fn open<R, W>(runtime: Runtime, socket_read: R, socket_write: W) -> Self
+    where
+        R: AsyncRead + Unpin + Send + 'static,
+        W: AsyncWrite + Unpin + Send + 'static,
+    {
+        Self::open_with_timeout(runtime, socket_read, socket_write, DEFAULT_REQUEST_TIMEOUT)
+    }
+
+    pub fn open_with_timeout<R, W>(
+        runtime: Runtime,
+        socket_read: R,
+        socket_write: W,
+        request_timeout: Duration,
+    ) -> Self
     where
         R: AsyncRead + Unpin + Send + 'static,
         W: AsyncWrite + Unpin + Send + 'static,
@@ -177,6 +188,7 @@ impl SocketTransport {
             runtime,
             write_send,
             pending_requests: pending_requests_2,
+            request_timeout,
         }
     }
 }
@@ -227,7 +239,7 @@ impl WorkspaceTransport for SocketTransport {
                         Err(_) => Err(TransportError::ChannelClosed),
                     }
                 }
-                _ = sleep(REQUEST_TIMEOUT) => {
+                _ = sleep(self.request_timeout) => {
                     Err(TransportError::Timeout)
                 }
             }
@@ -490,6 +502,7 @@ impl FromStr for TransportHeader {
 #[cfg(test)]
 mod tests {
     use std::fmt;
+    use std::time::Duration;
 
     use pgls_workspace::TransportError;
     use pgls_workspace::workspace::{TransportRequest, WorkspaceTransport};
@@ -523,7 +536,7 @@ mod tests {
         let (stream, peer) = duplex(1024);
         drop(peer);
         let (read, write) = split(stream);
-        SocketTransport::open(runtime, read, write)
+        SocketTransport::open_with_timeout(runtime, read, write, Duration::from_millis(50))
     }
 
     #[test]

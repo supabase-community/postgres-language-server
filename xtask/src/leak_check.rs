@@ -8,7 +8,6 @@ use anyhow::{bail, Context};
 use pgls_cli::SocketTransport;
 #[cfg(unix)]
 use pgls_workspace::workspace::{TransportRequest, WorkspaceTransport};
-#[cfg(unix)]
 use serde_json::Value;
 #[cfg(unix)]
 use tokio::net::UnixStream;
@@ -23,6 +22,10 @@ impl flags::LeakCheck {
     pub(crate) fn run(self, _sh: &Shell) -> anyhow::Result<()> {
         if !cfg!(target_os = "macos") {
             bail!("`xtask leak-check` is currently implemented only for macOS (`leaks` tool).");
+        }
+
+        if Command::new("leaks").arg("--help").output().is_err() {
+            bail!("`leaks` not found — install Xcode Command Line Tools (`xcode-select --install`)");
         }
 
         let iterations = self.iterations.unwrap_or(DEFAULT_ITERATIONS);
@@ -126,7 +129,8 @@ fn run_cli_timeout_probe(iterations: usize) -> anyhow::Result<()> {
     drop(stream_b);
 
     let (read, write) = stream_a.into_split();
-    let transport = SocketTransport::open(runtime, read, write);
+    let transport =
+        SocketTransport::open_with_timeout(runtime, read, write, Duration::from_millis(2));
 
     let mut channel_closed = 0usize;
     let mut timed_out = 0usize;
@@ -256,38 +260,32 @@ fn wait_for_socket(pid: u32) -> anyhow::Result<()> {
 fn run_lsp_churn(stdin: &mut ChildStdin, iterations: usize, pause: Duration) -> anyhow::Result<()> {
     let uri = "file:///tmp/pgls-leak-check.sql";
 
-    send_lsp_message(
+    send_lsp_json(
         stdin,
-        r#"{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"capabilities":{},"rootUri":null}}"#,
+        serde_json::json!({"jsonrpc":"2.0","id":1,"method":"initialize","params":{"capabilities":{},"rootUri":null}}),
     )?;
-    send_lsp_message(
+    send_lsp_json(
         stdin,
-        r#"{"jsonrpc":"2.0","method":"initialized","params":{}}"#,
+        serde_json::json!({"jsonrpc":"2.0","method":"initialized","params":{}}),
     )?;
 
     for i in 0..iterations {
-        let open_text = json_escape(&format!("select {i} as value;"));
-        let changed_text = json_escape(&format!("select {i} as value, {} as extra;", i + 1));
+        let open_text = format!("select {i} as value;");
+        let changed_text = format!("select {i} as value, {} as extra;", i + 1);
 
-        send_lsp_message(
+        send_lsp_json(
             stdin,
-            &format!(
-                r#"{{"jsonrpc":"2.0","method":"textDocument/didOpen","params":{{"textDocument":{{"uri":"{uri}","languageId":"sql","version":1,"text":"{open_text}"}}}}}}"#
-            ),
+            serde_json::json!({"jsonrpc":"2.0","method":"textDocument/didOpen","params":{"textDocument":{"uri":uri,"languageId":"sql","version":1,"text":open_text}}}),
         )?;
 
-        send_lsp_message(
+        send_lsp_json(
             stdin,
-            &format!(
-                r#"{{"jsonrpc":"2.0","method":"textDocument/didChange","params":{{"textDocument":{{"uri":"{uri}","version":2}},"contentChanges":[{{"text":"{changed_text}"}}]}}}}"#
-            ),
+            serde_json::json!({"jsonrpc":"2.0","method":"textDocument/didChange","params":{"textDocument":{"uri":uri,"version":2},"contentChanges":[{"text":changed_text}]}}),
         )?;
 
-        send_lsp_message(
+        send_lsp_json(
             stdin,
-            &format!(
-                r#"{{"jsonrpc":"2.0","method":"textDocument/didClose","params":{{"textDocument":{{"uri":"{uri}"}}}}}}"#
-            ),
+            serde_json::json!({"jsonrpc":"2.0","method":"textDocument/didClose","params":{"textDocument":{"uri":uri}}}),
         )?;
 
         thread::sleep(pause);
@@ -297,15 +295,19 @@ fn run_lsp_churn(stdin: &mut ChildStdin, iterations: usize, pause: Duration) -> 
 }
 
 fn send_shutdown_and_exit(stdin: &mut ChildStdin) -> anyhow::Result<()> {
-    send_lsp_message(
+    send_lsp_json(
         stdin,
-        r#"{"jsonrpc":"2.0","id":2,"method":"shutdown","params":null}"#,
+        serde_json::json!({"jsonrpc":"2.0","id":2,"method":"shutdown","params":null}),
     )?;
-    send_lsp_message(stdin, r#"{"jsonrpc":"2.0","method":"exit","params":null}"#)?;
+    send_lsp_json(
+        stdin,
+        serde_json::json!({"jsonrpc":"2.0","method":"exit","params":null}),
+    )?;
     Ok(())
 }
 
-fn send_lsp_message(stdin: &mut ChildStdin, payload: &str) -> anyhow::Result<()> {
+fn send_lsp_json(stdin: &mut ChildStdin, value: Value) -> anyhow::Result<()> {
+    let payload = serde_json::to_string(&value).context("failed to serialize LSP message")?;
     let header = format!("Content-Length: {}\r\n\r\n", payload.len());
     stdin
         .write_all(header.as_bytes())
@@ -314,21 +316,6 @@ fn send_lsp_message(stdin: &mut ChildStdin, payload: &str) -> anyhow::Result<()>
         .write_all(payload.as_bytes())
         .context("failed to write LSP payload")?;
     stdin.flush().context("failed to flush LSP payload")
-}
-
-fn json_escape(s: &str) -> String {
-    let mut out = String::with_capacity(s.len());
-    for c in s.chars() {
-        match c {
-            '"' => out.push_str("\\\""),
-            '\\' => out.push_str("\\\\"),
-            '\n' => out.push_str("\\n"),
-            '\r' => out.push_str("\\r"),
-            '\t' => out.push_str("\\t"),
-            _ => out.push(c),
-        }
-    }
-    out
 }
 
 fn run_leaks(pid: u32) -> anyhow::Result<String> {
