@@ -147,7 +147,8 @@ fn contains_only_basic_chars(value: &str) -> bool {
 
 fn is_type_cast_fragment(value: &str) -> bool {
     value.trim().chars().all(|c| {
-        c.is_ascii_alphanumeric() || matches!(c, ' ' | '_' | '.' | '"' | '[' | ']' | '(' | ')' | ',')
+        c.is_ascii_alphanumeric()
+            || matches!(c, ' ' | '_' | '.' | '"' | '[' | ']' | '(' | ')' | ',')
     })
 }
 
@@ -190,7 +191,10 @@ mod tests {
             extract_basic_default_literal("'anonymous'::text"),
             Some("anonymous".to_string())
         );
-        assert_eq!(extract_basic_default_literal("(42)::int8"), Some("42".to_string()));
+        assert_eq!(
+            extract_basic_default_literal("(42)::int8"),
+            Some("42".to_string())
+        );
         assert_eq!(
             extract_basic_default_literal("NULL::character varying"),
             Some("NULL".to_string())
@@ -212,9 +216,6 @@ mod tests {
             extract_basic_default_literal("'a'::text || 'b'::text"),
             None
         );
-        assert_eq!(
-            extract_basic_default_literal("'with@symbol'::text"),
-            None
-        );
+        assert_eq!(extract_basic_default_literal("'with@symbol'::text"), None);
     }
 }
