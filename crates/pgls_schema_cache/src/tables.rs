@@ -6,6 +6,7 @@ use sqlx::PgPool;
 use crate::schema_cache::SchemaCacheItem;
 
 #[derive(Debug, Clone, PartialEq, Eq, Default, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub enum ReplicaIdentity {
     #[default]
     Default,
@@ -27,6 +28,7 @@ impl From<String> for ReplicaIdentity {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Default, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub enum TableKind {
     #[default]
     Ordinary,
@@ -55,6 +57,7 @@ impl From<i8> for TableKind {
 }
 
 #[derive(Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct Table {
     pub id: i64,
     pub schema: String,

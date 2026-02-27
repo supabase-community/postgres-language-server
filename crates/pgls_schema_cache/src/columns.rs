@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 use crate::schema_cache::SchemaCacheItem;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub enum ColumnClassKind {
     OrdinaryTable,
     View,
@@ -40,6 +41,7 @@ impl From<char> for ColumnClassKind {
 }
 
 #[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct Column {
     pub name: String,
 
@@ -69,6 +71,7 @@ pub struct Column {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct ForeignKeyReference {
     pub schema: Option<String>,
     pub table: String,
