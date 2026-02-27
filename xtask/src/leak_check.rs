@@ -25,7 +25,9 @@ impl flags::LeakCheck {
         }
 
         if Command::new("leaks").arg("--help").output().is_err() {
-            bail!("`leaks` not found — install Xcode Command Line Tools (`xcode-select --install`)");
+            bail!(
+                "`leaks` not found — install Xcode Command Line Tools (`xcode-select --install`)"
+            );
         }
 
         let iterations = self.iterations.unwrap_or(DEFAULT_ITERATIONS);
