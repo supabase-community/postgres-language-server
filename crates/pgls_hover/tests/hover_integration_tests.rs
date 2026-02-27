@@ -201,6 +201,23 @@ async fn test_table_hover_works(test_db: PgPool) {
 }
 
 #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn test_table_hover_select_star(test_db: PgPool) {
+    let setup = r#"
+        create table users (
+            id serial primary key,
+            email varchar(255) not null
+        );
+    "#;
+
+    let query = format!(
+        "select * from use{}rs",
+        QueryWithCursorPosition::cursor_marker()
+    );
+
+    test_hover_at_cursor("table_hover_select_star", query, Some(setup), &test_db).await;
+}
+
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
 async fn test_no_hover_on_keyword(test_db: PgPool) {
     let setup = r#"
         create table users (

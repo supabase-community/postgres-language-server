@@ -1,11 +1,12 @@
 ---
 source: crates/pgls_hover/tests/hover_integration_tests.rs
+assertion_line: 69
 expression: snapshot
 ---
 # Input
 ```sql
-grant select on users to public;
-                  ↑ hovered here
+select * from users
+                 ↑ hovered here
 ```
 
 # Hover Results
@@ -13,11 +14,11 @@ grant select on users to public;
 ```plain  
 Columns:
 - id: int4
-- name: text
+- email: varchar(255)
   
 ```  
 ---    
 ```plain  
 
-~0 rows, ~0 dead rows, 16.38 kB  
+~0 rows, ~0 dead rows, 8.19 kB  
 ```

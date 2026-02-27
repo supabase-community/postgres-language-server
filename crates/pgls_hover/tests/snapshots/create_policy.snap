@@ -1,5 +1,5 @@
 ---
-source: crates/pgt_hover/tests/hover_integration_tests.rs
+source: crates/pgls_hover/tests/hover_integration_tests.rs
 expression: snapshot
 ---
 # Input
@@ -11,6 +11,9 @@ create policy "my cool pol" on users for all to public with check (true);
 # Hover Results
 ### `public.users` - 🔓 RLS disabled  
 ```plain  
+Columns:
+- id: int4
+- name: text
   
 ```  
 ---    

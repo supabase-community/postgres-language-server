@@ -6,6 +6,8 @@ use pgls_treesitter::TreesitterContext;
 
 use crate::{contextual_priority::ContextualPriority, to_markdown::ToHoverMarkdown};
 
+const MAX_COLUMNS_IN_HOVER: usize = 20;
+
 impl ToHoverMarkdown for Table {
     fn hover_headline<W: Write>(
         &self,
@@ -37,15 +39,47 @@ impl ToHoverMarkdown for Table {
     fn hover_body<W: Write>(
         &self,
         writer: &mut W,
-        _schema_cache: &SchemaCache,
+        schema_cache: &SchemaCache,
     ) -> Result<bool, std::fmt::Error> {
         if let Some(comment) = &self.comment {
             write!(writer, "Comment: '{comment}'")?;
             writeln!(writer)?;
-            Ok(true)
-        } else {
-            Ok(false)
         }
+
+        let mut columns: Vec<_> = schema_cache
+            .columns
+            .iter()
+            .filter(|column| column.schema_name == self.schema && column.table_name == self.name)
+            .collect();
+        columns.sort_by_key(|column| column.number);
+
+        writeln!(writer, "Columns:")?;
+
+        for column in columns.iter().take(MAX_COLUMNS_IN_HOVER) {
+            write!(writer, "- {}: ", column.name)?;
+
+            if let Some(type_name) = &column.type_name {
+                write!(writer, "{type_name}")?;
+
+                if let Some(varchar_length) = column.varchar_length {
+                    write!(writer, "({varchar_length})")?;
+                }
+            } else {
+                write!(writer, "typeid:{}", column.type_id)?;
+            }
+
+            writeln!(writer)?;
+        }
+
+        if columns.len() > MAX_COLUMNS_IN_HOVER {
+            writeln!(
+                writer,
+                "... +{} more columns",
+                columns.len() - MAX_COLUMNS_IN_HOVER
+            )?;
+        }
+
+        Ok(true)
     }
 
     fn hover_footer<W: Write>(
