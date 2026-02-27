@@ -2620,7 +2620,7 @@ module.exports = grammar({
           field("right", choice($._expression, $.all_fields, $.keyword_default)),
         ),
         partialSeq(
-          field("left", paren_list($._column_indirection, false)),
+          field("left", $.lhs_column_list),
           "=",
           field(
             "right",
@@ -2645,6 +2645,9 @@ module.exports = grammar({
           ),
         ),
       ),
+
+    lhs_column_list: ($) =>
+      partialSeq("(", comma_list($._column_indirection, false), ")"),
 
     table_option: ($) =>
       choice(
