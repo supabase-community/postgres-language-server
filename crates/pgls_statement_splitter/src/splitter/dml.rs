@@ -14,6 +14,9 @@ pub(crate) fn cte(p: &mut Splitter) -> SplitterResult {
     loop {
         p.expect(SyntaxKind::IDENT)?;
         p.expect(SyntaxKind::AS_KW)?;
+        // Handle optional [NOT] MATERIALIZED hint (PostgreSQL 12+)
+        p.eat(SyntaxKind::NOT_KW)?;
+        p.eat(SyntaxKind::MATERIALIZED_KW)?;
         parenthesis(p)?;
 
         if p.current() == SyntaxKind::COMMA {

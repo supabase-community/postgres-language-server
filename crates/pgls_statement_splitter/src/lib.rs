@@ -607,4 +607,31 @@ VALUES
         // does not panic
         let _ = Tester::from("select case ");
     }
+
+    #[test]
+    fn with_cte_as_materialized() {
+        Tester::from(
+            "WITH latest AS MATERIALIZED (SELECT id FROM submissions) SELECT * FROM latest;",
+        )
+        .assert_single_statement()
+        .assert_no_errors();
+    }
+
+    #[test]
+    fn with_cte_as_not_materialized() {
+        Tester::from(
+            "WITH latest AS NOT MATERIALIZED (SELECT id FROM submissions) SELECT * FROM latest;",
+        )
+        .assert_single_statement()
+        .assert_no_errors();
+    }
+
+    #[test]
+    fn with_multiple_materialized_ctes() {
+        Tester::from(
+            "WITH a AS (SELECT 1), b AS MATERIALIZED (SELECT 2), c AS NOT MATERIALIZED (SELECT 3) SELECT * FROM a, b, c;",
+        )
+        .assert_single_statement()
+        .assert_no_errors();
+    }
 }
