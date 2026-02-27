@@ -54,7 +54,12 @@ pub(crate) use self::unix::{ensure_daemon, open_socket, print_socket, run_daemon
 /// [WorkspaceTransport] instance if the socket is currently active
 pub fn open_transport(runtime: Runtime) -> io::Result<Option<impl WorkspaceTransport>> {
     match runtime.block_on(open_socket()) {
-        Ok(Some((read, write))) => Ok(Some(SocketTransport::open(runtime, read, write))),
+        Ok(Some((read, write))) => Ok(Some(SocketTransport::open_with_timeout(
+            runtime,
+            read,
+            write,
+            DEFAULT_REQUEST_TIMEOUT,
+        ))),
         Ok(None) => Ok(None),
         Err(err) => Err(err),
     }
@@ -134,14 +139,6 @@ impl Drop for PendingRequests {
 }
 
 impl SocketTransport {
-    pub fn open<R, W>(runtime: Runtime, socket_read: R, socket_write: W) -> Self
-    where
-        R: AsyncRead + Unpin + Send + 'static,
-        W: AsyncWrite + Unpin + Send + 'static,
-    {
-        Self::open_with_timeout(runtime, socket_read, socket_write, DEFAULT_REQUEST_TIMEOUT)
-    }
-
     pub fn open_with_timeout<R, W>(
         runtime: Runtime,
         socket_read: R,
