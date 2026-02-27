@@ -1,6 +1,5 @@
 ---
 source: crates/pgls_hover/tests/hover_integration_tests.rs
-assertion_line: 69
 expression: snapshot
 ---
 # Input
@@ -13,8 +12,8 @@ select * from users
 ### `public.users` - 🔓 RLS disabled  
 ```plain  
 Columns:
-- id: int4
-- email: varchar(255)
+- id: int4 - not null
+- email: varchar(255) - not null
   
 ```  
 ---    

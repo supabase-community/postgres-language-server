@@ -12,8 +12,8 @@ grant select on users to public;
 ### `public.users` - 🔓 RLS disabled  
 ```plain  
 Columns:
-- id: int4
-- name: text
+- id: int4 - not null
+- name: text - nullable
   
 ```  
 ---    

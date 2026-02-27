@@ -12,8 +12,8 @@ select * from "auth".users
 ### `auth.users` - 🔓 RLS disabled  
 ```plain  
 Columns:
-- id: int4
-- email: varchar(255)
+- id: int4 - not null
+- email: varchar(255) - not null
   
 ```  
 ---    
