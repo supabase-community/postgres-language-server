@@ -4,7 +4,7 @@ use pgls_workspace::workspace_types::{generate_type, ModuleQueue};
 use schemars::r#gen::{SchemaGenerator, SchemaSettings};
 use xtask::{project_root, Mode, Result};
 
-pub fn generate_wasm_schema_types(mode: Mode) -> Result<()> {
+pub fn generate_schema_types(mode: Mode) -> Result<()> {
     let output_path =
         project_root().join("packages/@postgres-language-server/wasm/src/schema-cache.d.ts");
 

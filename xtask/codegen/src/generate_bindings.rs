@@ -4,11 +4,7 @@ use convert_case::{Case, Casing};
 use pgls_workspace::workspace_types::{generate_type, methods, ModuleQueue};
 use xtask::{project_root, Mode, Result};
 
-pub fn generate_bindings(mode: Mode) -> Result<()> {
-    generate_workspace_bindings(&mode)
-}
-
-fn generate_workspace_bindings(mode: &Mode) -> Result<()> {
+pub fn generate_bindings(mode: &Mode) -> Result<()> {
     let bindings_path_postgrestools =
         project_root().join("packages/@postgrestools/backend-jsonrpc/src/workspace.ts");
     let bindings_path_postgres_language_server =

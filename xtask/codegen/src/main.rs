@@ -3,7 +3,7 @@ use xtask::{project_root, pushd, Result};
 
 use xtask_codegen::{
     generate_analyser, generate_bindings, generate_crate, generate_new_analyser_rule,
-    generate_pglinter, generate_rules_configuration, generate_splinter, generate_wasm_schema_types,
+    generate_pglinter, generate_rules_configuration, generate_schema_types, generate_splinter,
     task_command, TaskCommand,
 };
 
@@ -30,7 +30,7 @@ fn main() -> Result<()> {
             generate_rules_configuration(Overwrite)?;
         }
         TaskCommand::Bindings => {
-            generate_bindings(Overwrite)?;
+            generate_bindings(&Overwrite)?;
         }
         TaskCommand::Splinter => {
             generate_splinter()?;
@@ -38,8 +38,8 @@ fn main() -> Result<()> {
         TaskCommand::Pglinter => {
             generate_pglinter()?;
         }
-        TaskCommand::WasmSchemaTypes => {
-            generate_wasm_schema_types(Overwrite)?;
+        TaskCommand::SchemaTypes => {
+            generate_schema_types(Overwrite)?;
         }
     }
 
