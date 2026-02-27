@@ -113,6 +113,8 @@ impl ToHoverMarkdown for Table {
     }
 }
 
+// `extract_basic_default_literal` will extract simple default literals for table hover.
+// Example: `'anonymous'::text` -> `anonymous`, `(42)::int8` -> `42`, `now()` -> ignored.
 fn extract_basic_default_literal(default_expr: &str) -> Option<String> {
     let mut cast_parts = default_expr.split("::");
     let mut value = cast_parts.next().unwrap_or(default_expr).trim();
