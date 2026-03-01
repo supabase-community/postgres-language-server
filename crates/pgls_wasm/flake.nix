@@ -31,6 +31,7 @@
 
             # Emscripten SDK
             emscripten
+            tree-sitter
 
             # Build tools
             pkg-config
@@ -72,6 +73,7 @@
           nativeBuildInputs = with pkgs; [
             rustToolchain
             emscripten
+            tree-sitter
             pkg-config
             cmake
           ];

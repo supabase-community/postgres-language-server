@@ -27,10 +27,10 @@ unsafe extern "C" {
 /// The tree-sitter [`LanguageFn`] for this grammar.
 pub const LANGUAGE: LanguageFn = unsafe { LanguageFn::from_raw(tree_sitter_pgls) };
 
-/// The content of the [`node-types.json`] file for this grammar.
+/// The content of the generated [`node-types.json`] file for this grammar.
 ///
 /// [`node-types.json`]: https://tree-sitter.github.io/tree-sitter/using-parsers/6-static-node-types
-pub const NODE_TYPES: &str = include_str!("node-types.json");
+pub const NODE_TYPES: &str = include_str!(concat!(env!("OUT_DIR"), "/generated/node-types.json"));
 
 // NOTE: uncomment these to include any queries that this grammar contains:
 
