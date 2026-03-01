@@ -690,12 +690,12 @@ mod tests {
     #[test]
     fn debug_simple_cast() {
         let result = lex("::test");
-        assert_debug_snapshot!(result, @r###"
+        assert_debug_snapshot!(result, @r#"
         [
             "::" @ DoubleColon,
             "test" @ Ident,
         ]
-        "###);
+        "#);
     }
 
     #[test]

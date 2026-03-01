@@ -2363,7 +2363,7 @@ module.exports = grammar({
 
     _column_indirection: ($) =>
       seq(
-        field("end", $.column_identifier),
+        $.column_identifier,
         repeat(
           choice(
             prec.right($.column_indirection_array_access),
@@ -2547,10 +2547,7 @@ module.exports = grammar({
       ),
 
     update_set_values: ($) =>
-      partialSeq(
-        $.keyword_set,
-        field("end", comma_list($.assignment, true)),
-      ),
+      partialSeq($.keyword_set, field("end", comma_list($.assignment, true))),
 
     update_from: ($) =>
       partialSeq(
@@ -2560,7 +2557,12 @@ module.exports = grammar({
           seq(
             comma_list($.relation, true),
             repeat(
-              choice($.join, $.cross_join, $.lateral_join, $.lateral_cross_join),
+              choice(
+                $.join,
+                $.cross_join,
+                $.lateral_join,
+                $.lateral_cross_join,
+              ),
             ),
           ),
         ),
@@ -2617,13 +2619,13 @@ module.exports = grammar({
         partialSeq(
           field("left", $._column_indirection),
           "=",
-          field("right", choice($._expression, $.all_fields, $.keyword_default)),
+          field("end", choice($._expression, $.all_fields, $.keyword_default)),
         ),
         partialSeq(
           field("left", $.lhs_column_list),
           "=",
           field(
-            "right",
+            "end",
             choice(
               wrapped_in_parenthesis(
                 comma_list(
