@@ -1,0 +1,16 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+-- expect_lint/safety/requireConcurrentDetachPartition
+alter table my_table detach partition my_partition;
+```
+
+# Diagnostics
+lint/safety/requireConcurrentDetachPartition ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Detaching a partition without CONCURRENTLY blocks all table access.
+  
+  i Use DETACH PARTITION ... CONCURRENTLY (PostgreSQL 14+) to avoid blocking reads and writes.

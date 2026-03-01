@@ -1,12 +1,12 @@
 ---
-source: crates/pgt_analyser/tests/rules_tests.rs
+source: crates/pgls_analyser/tests/rules_tests.rs
 expression: snapshot
-snapshot_kind: text
 ---
 # Input
 ```
 -- expect_lint/safety/changingColumnType
-ALTER TABLE "core_recipe" ALTER COLUMN "edits" TYPE text USING "edits"::text;
+ALTER TABLE "core_recipe" ALTER COLUMN "count" TYPE bigint;
+
 ```
 
 # Diagnostics

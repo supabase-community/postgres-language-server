@@ -1,0 +1,16 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+-- expect_lint/safety/banAlterEnumAddValue
+alter type my_enum add value 'new_value';
+```
+
+# Diagnostics
+lint/safety/banAlterEnumAddValue ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × ALTER TYPE ... ADD VALUE acquires an ACCESS EXCLUSIVE lock on the enum type.
+  
+  i The new enum value cannot be used in the same transaction. In PostgreSQL versions before 12, this statement cannot run inside a transaction block at all.

@@ -1,0 +1,18 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+-- expect_lint/safety/banNotValidValidateSameTransaction
+ALTER TABLE orders ADD CONSTRAINT orders_check CHECK (total > 0) NOT VALID;
+ALTER TABLE orders VALIDATE CONSTRAINT orders_check;
+
+```
+
+# Diagnostics
+lint/safety/banNotValidValidateSameTransaction ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Constraint orders_check was added as NOT VALID and validated in the same transaction.
+  
+  i Run VALIDATE CONSTRAINT in a separate transaction to avoid holding locks during validation.

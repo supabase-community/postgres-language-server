@@ -1,0 +1,16 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+-- expect_lint/safety/banBlockingRefreshMatview
+refresh materialized view my_view;
+```
+
+# Diagnostics
+lint/safety/banBlockingRefreshMatview ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × REFRESH MATERIALIZED VIEW without CONCURRENTLY blocks all reads.
+  
+  i Use REFRESH MATERIALIZED VIEW CONCURRENTLY to allow reads during the refresh. This requires a unique index on the view.

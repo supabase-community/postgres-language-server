@@ -1,0 +1,17 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+-- expect_lint/safety/banAddExclusionConstraint
+alter table my_table add constraint my_excl exclude using gist (col with &&);
+
+```
+
+# Diagnostics
+lint/safety/banAddExclusionConstraint ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Adding an exclusion constraint acquires an ACCESS EXCLUSIVE lock.
+  
+  i There is no concurrent alternative for exclusion constraints. Use SET lock_timeout to limit the impact on concurrent operations.

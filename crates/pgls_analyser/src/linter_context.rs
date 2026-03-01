@@ -140,18 +140,48 @@ impl<'a> AnalysedFileContext<'a> {
 pub struct TransactionState {
     /// Whether `SET lock_timeout` has been called in this transaction
     lock_timeout_set: bool,
+    /// Whether `SET statement_timeout` has been called in this transaction
+    statement_timeout_set: bool,
+    /// Whether `SET idle_in_transaction_session_timeout` has been called in this transaction
+    idle_in_transaction_timeout_set: bool,
     /// Objects (schema, name) created in this transaction
     /// Schema names are normalized: empty string is stored as "public"
     created_objects: Vec<(String, String)>,
     /// Whether an ACCESS EXCLUSIVE lock is currently being held
     /// This is set when an ALTER TABLE is executed on an existing table
     holding_access_exclusive: bool,
+    /// Constraint names added with NOT VALID in this transaction
+    not_valid_constraints: Vec<String>,
+    /// Tables holding ACCESS EXCLUSIVE locks in this transaction (for wide lock window detection)
+    access_exclusive_tables: Vec<(String, String)>,
 }
 
 impl TransactionState {
     /// Returns true if a lock timeout has been set in this transaction
     pub fn has_lock_timeout(&self) -> bool {
         self.lock_timeout_set
+    }
+
+    /// Returns true if a statement timeout has been set in this transaction
+    pub fn has_statement_timeout(&self) -> bool {
+        self.statement_timeout_set
+    }
+
+    /// Returns true if an idle-in-transaction timeout has been set in this transaction
+    pub fn has_idle_in_transaction_timeout(&self) -> bool {
+        self.idle_in_transaction_timeout_set
+    }
+
+    /// Returns true if a constraint with the given name was added with NOT VALID in this transaction
+    pub fn has_not_valid_constraint(&self, name: &str) -> bool {
+        self.not_valid_constraints
+            .iter()
+            .any(|n| n.eq_ignore_ascii_case(name))
+    }
+
+    /// Returns the tables currently holding ACCESS EXCLUSIVE locks
+    pub fn access_exclusive_tables(&self) -> &[(String, String)] {
+        &self.access_exclusive_tables
     }
 
     /// Returns true if an object with the given schema and name was created in this transaction
@@ -182,11 +212,16 @@ impl TransactionState {
 
     /// Update transaction state based on a statement
     pub(crate) fn update_from_stmt(&mut self, stmt: &pgls_query::NodeEnum) {
-        // Track SET lock_timeout
-        if let pgls_query::NodeEnum::VariableSetStmt(set_stmt) = stmt
-            && set_stmt.name.eq_ignore_ascii_case("lock_timeout")
-        {
-            self.lock_timeout_set = true;
+        // Track SET timeouts
+        if let pgls_query::NodeEnum::VariableSetStmt(set_stmt) = stmt {
+            let name = &set_stmt.name;
+            if name.eq_ignore_ascii_case("lock_timeout") {
+                self.lock_timeout_set = true;
+            } else if name.eq_ignore_ascii_case("statement_timeout") {
+                self.statement_timeout_set = true;
+            } else if name.eq_ignore_ascii_case("idle_in_transaction_session_timeout") {
+                self.idle_in_transaction_timeout_set = true;
+            }
         }
 
         // Track created objects
@@ -220,6 +255,23 @@ impl TransactionState {
             _ => {}
         }
 
+        // Track NOT VALID constraints
+        if let pgls_query::NodeEnum::AlterTableStmt(alter_stmt) = stmt {
+            for cmd in &alter_stmt.cmds {
+                if let Some(pgls_query::NodeEnum::AlterTableCmd(cmd)) = &cmd.node
+                    && cmd.subtype() == pgls_query::protobuf::AlterTableType::AtAddConstraint
+                {
+                    if let Some(pgls_query::NodeEnum::Constraint(constraint)) =
+                        cmd.def.as_ref().and_then(|d| d.node.as_ref())
+                    {
+                        if constraint.skip_validation && !constraint.conname.is_empty() {
+                            self.not_valid_constraints.push(constraint.conname.clone());
+                        }
+                    }
+                }
+            }
+        }
+
         // Track ACCESS EXCLUSIVE lock acquisition
         // ALTER TABLE on an existing table acquires ACCESS EXCLUSIVE lock
         if let pgls_query::NodeEnum::AlterTableStmt(alter_stmt) = stmt
@@ -230,6 +282,43 @@ impl TransactionState {
             // Only set the flag if altering an existing table (not one created in this transaction)
             if !self.has_created_object(schema, name) {
                 self.holding_access_exclusive = true;
+                let normalized_schema = if schema.is_empty() {
+                    "public".to_string()
+                } else {
+                    schema.clone()
+                };
+                if !self
+                    .access_exclusive_tables
+                    .iter()
+                    .any(|(s, n)| s == &normalized_schema && n == name)
+                {
+                    self.access_exclusive_tables
+                        .push((normalized_schema, name.clone()));
+                }
+            }
+        }
+
+        // Non-concurrent CREATE INDEX also takes ACCESS EXCLUSIVE-like lock (SHARE lock, but we track for wide window)
+        if let pgls_query::NodeEnum::IndexStmt(index_stmt) = stmt
+            && !index_stmt.concurrent
+            && let Some(relation) = &index_stmt.relation
+        {
+            let schema = &relation.schemaname;
+            let name = &relation.relname;
+            if !self.has_created_object(schema, name) {
+                let normalized_schema = if schema.is_empty() {
+                    "public".to_string()
+                } else {
+                    schema.clone()
+                };
+                if !self
+                    .access_exclusive_tables
+                    .iter()
+                    .any(|(s, n)| s == &normalized_schema && n == name)
+                {
+                    self.access_exclusive_tables
+                        .push((normalized_schema, name.clone()));
+                }
             }
         }
     }

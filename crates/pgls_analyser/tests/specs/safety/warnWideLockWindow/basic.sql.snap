@@ -1,0 +1,18 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+-- expect_lint/safety/warnWideLockWindow
+ALTER TABLE users ADD COLUMN email TEXT;
+ALTER TABLE orders ADD COLUMN total NUMERIC;
+
+```
+
+# Diagnostics
+lint/safety/warnWideLockWindow ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Acquiring a lock on public.orders while already holding ACCESS EXCLUSIVE locks on other tables.
+  
+  i This widens the lock window. Split into separate transactions to minimize lock duration.

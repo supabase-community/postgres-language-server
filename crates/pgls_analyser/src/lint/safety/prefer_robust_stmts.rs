@@ -22,6 +22,14 @@ declare_lint_rule! {
     /// DROP INDEX CONCURRENTLY users_email_idx;
     /// ```
     ///
+    /// ```sql,expect_diagnostic
+    /// CREATE TABLE users (id int);
+    /// ```
+    ///
+    /// ```sql,expect_diagnostic
+    /// DROP TABLE users;
+    /// ```
+    ///
     /// ### Valid
     ///
     /// ```sql
@@ -30,6 +38,14 @@ declare_lint_rule! {
     ///
     /// ```sql
     /// DROP INDEX CONCURRENTLY IF EXISTS users_email_idx;
+    /// ```
+    ///
+    /// ```sql
+    /// CREATE TABLE IF NOT EXISTS users (id int);
+    /// ```
+    ///
+    /// ```sql
+    /// DROP TABLE IF EXISTS users;
     /// ```
     ///
     pub PreferRobustStmts {
@@ -82,7 +98,6 @@ impl LinterRule for PreferRobustStmts {
                 }
             }
             pgls_query::NodeEnum::DropStmt(stmt) => {
-                // Concurrent drop runs outside transaction
                 if stmt.concurrent && !stmt.missing_ok {
                     diagnostics.push(
                         LinterDiagnostic::new(
@@ -95,6 +110,40 @@ impl LinterRule for PreferRobustStmts {
                         .detail(
                             None,
                             "Add IF EXISTS to make the migration re-runnable if it fails.",
+                        ),
+                    );
+                }
+                if stmt.remove_type() == pgls_query::protobuf::ObjectType::ObjectTable
+                    && !stmt.missing_ok
+                {
+                    diagnostics.push(
+                        LinterDiagnostic::new(
+                            rule_category!(),
+                            None,
+                            markup! {
+                                <Emphasis>"DROP TABLE"</Emphasis>" should use "<Emphasis>"IF EXISTS"</Emphasis>"."
+                            },
+                        )
+                        .detail(
+                            None,
+                            "Add IF EXISTS to make the migration re-runnable if it fails.",
+                        ),
+                    );
+                }
+            }
+            pgls_query::NodeEnum::CreateStmt(stmt) => {
+                if !stmt.if_not_exists {
+                    diagnostics.push(
+                        LinterDiagnostic::new(
+                            rule_category!(),
+                            None,
+                            markup! {
+                                <Emphasis>"CREATE TABLE"</Emphasis>" should use "<Emphasis>"IF NOT EXISTS"</Emphasis>"."
+                            },
+                        )
+                        .detail(
+                            None,
+                            "Add IF NOT EXISTS to make the migration re-runnable if it fails.",
                         ),
                     );
                 }
