@@ -1,0 +1,17 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+-- expect_lint/safety/banUpdateWithoutWhere
+update my_table set col = 'value';
+
+```
+
+# Diagnostics
+lint/safety/banUpdateWithoutWhere ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × An UPDATE without a WHERE clause will modify all rows in the table.
+  
+  i Add a WHERE clause to limit which rows are updated.

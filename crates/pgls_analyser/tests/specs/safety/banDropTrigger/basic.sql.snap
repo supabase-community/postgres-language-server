@@ -1,0 +1,16 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+-- expect_lint/safety/banDropTrigger
+drop trigger my_trigger on my_table;
+```
+
+# Diagnostics
+lint/safety/banDropTrigger ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Dropping a trigger acquires an ACCESS EXCLUSIVE lock on the table.
+  
+  i This blocks all reads and writes. Ensure no application logic depends on the trigger before dropping it.

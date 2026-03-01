@@ -1,0 +1,17 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+-- expect_lint/safety/banEnableDisableTrigger
+alter table my_table enable trigger my_trigger;
+
+```
+
+# Diagnostics
+lint/safety/banEnableDisableTrigger ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Enabling or disabling a trigger acquires a SHARE ROW EXCLUSIVE lock.
+  
+  i This blocks concurrent writes. Consider the impact on busy tables and use SET lock_timeout.

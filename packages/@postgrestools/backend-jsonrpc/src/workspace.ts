@@ -68,13 +68,26 @@ export type Category =
   | "lint/safety/addingNotNullField"
   | "lint/safety/addingPrimaryKeyConstraint"
   | "lint/safety/addingRequiredField"
+  | "lint/safety/banAddExclusionConstraint"
+  | "lint/safety/banAlterEnumAddValue"
+  | "lint/safety/banAttachPartition"
+  | "lint/safety/banBlockingRefreshMatview"
   | "lint/safety/banCharField"
   | "lint/safety/banConcurrentIndexCreationInTransaction"
+  | "lint/safety/banCreateTrigger"
+  | "lint/safety/banDeleteWithoutWhere"
   | "lint/safety/banDropColumn"
+  | "lint/safety/banEnableDisableTrigger"
+  | "lint/safety/banNotValidValidateSameTransaction"
   | "lint/safety/banDropDatabase"
   | "lint/safety/banDropNotNull"
+  | "lint/safety/banDropSchema"
   | "lint/safety/banDropTable"
+  | "lint/safety/banDropTrigger"
+  | "lint/safety/banTruncate"
   | "lint/safety/banTruncateCascade"
+  | "lint/safety/banUpdateWithoutWhere"
+  | "lint/safety/banVacuumFull"
   | "lint/safety/changingColumnType"
   | "lint/safety/constraintMissingNotValid"
   | "lint/safety/creatingEnum"
@@ -91,10 +104,16 @@ export type Category =
   | "lint/safety/preferTimestamptz"
   | "lint/safety/renamingColumn"
   | "lint/safety/renamingTable"
+  | "lint/safety/requireConcurrentDetachPartition"
+  | "lint/safety/requireIdleInTransactionTimeout"
   | "lint/safety/requireConcurrentIndexCreation"
   | "lint/safety/requireConcurrentIndexDeletion"
+  | "lint/safety/requireConcurrentReindex"
+  | "lint/safety/requireStatementTimeout"
   | "lint/safety/runningStatementWhileHoldingAccessExclusive"
   | "lint/safety/transactionNesting"
+  | "lint/safety/warnRefreshMatviewConcurrent"
+  | "lint/safety/warnWideLockWindow"
   | "pglinter/extensionNotInstalled"
   | "pglinter/ruleDisabledInExtension"
   | "pglinter/base/compositePrimaryKeyTooManyColumns"
@@ -639,6 +658,22 @@ export interface Safety {
    */
   all?: boolean;
   /**
+   * Adding an exclusion constraint acquires an ACCESS EXCLUSIVE lock.
+   */
+  banAddExclusionConstraint?: RuleConfiguration_for_Null;
+  /**
+   * ALTER TYPE ... ADD VALUE cannot run inside a transaction block in older PostgreSQL versions.
+   */
+  banAlterEnumAddValue?: RuleConfiguration_for_Null;
+  /**
+   * Attaching a partition acquires an ACCESS EXCLUSIVE lock on the parent table.
+   */
+  banAttachPartition?: RuleConfiguration_for_Null;
+  /**
+   * REFRESH MATERIALIZED VIEW without CONCURRENTLY acquires an ACCESS EXCLUSIVE lock.
+   */
+  banBlockingRefreshMatview?: RuleConfiguration_for_Null;
+  /**
    * Using CHAR(n) or CHARACTER(n) types is discouraged.
    */
   banCharField?: RuleConfiguration_for_Null;
@@ -646,6 +681,14 @@ export interface Safety {
    * Concurrent index creation is not allowed within a transaction.
    */
   banConcurrentIndexCreationInTransaction?: RuleConfiguration_for_Null;
+  /**
+   * Creating a trigger acquires a SHARE ROW EXCLUSIVE lock on the table.
+   */
+  banCreateTrigger?: RuleConfiguration_for_Null;
+  /**
+   * A DELETE statement without a WHERE clause will remove all rows from the table.
+   */
+  banDeleteWithoutWhere?: RuleConfiguration_for_Null;
   /**
    * Dropping a column may break existing clients.
    */
@@ -659,15 +702,43 @@ export interface Safety {
    */
   banDropNotNull?: RuleConfiguration_for_Null;
   /**
+   * Dropping a schema will remove all objects within it and may break existing clients.
+   */
+  banDropSchema?: RuleConfiguration_for_Null;
+  /**
    * Dropping a table may break existing clients.
    */
   banDropTable?: RuleConfiguration_for_Null;
+  /**
+   * Dropping a trigger acquires an ACCESS EXCLUSIVE lock on the table.
+   */
+  banDropTrigger?: RuleConfiguration_for_Null;
+  /**
+   * Enabling or disabling a trigger acquires a SHARE ROW EXCLUSIVE lock.
+   */
+  banEnableDisableTrigger?: RuleConfiguration_for_Null;
+  /**
+   * Validating a constraint in the same transaction it was added as NOT VALID defeats the purpose.
+   */
+  banNotValidValidateSameTransaction?: RuleConfiguration_for_Null;
+  /**
+   * Truncating a table removes all rows and can cause data loss in production.
+   */
+  banTruncate?: RuleConfiguration_for_Null;
   /**
    * Using TRUNCATE's CASCADE option will truncate any tables that are also foreign-keyed to the specified tables.
    */
   banTruncateCascade?: RuleConfiguration_for_Null;
   /**
-   * Changing a column type may break existing clients.
+   * An UPDATE statement without a WHERE clause will modify all rows in the table.
+   */
+  banUpdateWithoutWhere?: RuleConfiguration_for_Null;
+  /**
+   * VACUUM FULL rewrites the entire table and acquires an ACCESS EXCLUSIVE lock.
+   */
+  banVacuumFull?: RuleConfiguration_for_Null;
+  /**
+   * Changing a column type may require a table rewrite and break existing clients.
    */
   changingColumnType?: RuleConfiguration_for_Null;
   /**
@@ -735,6 +806,10 @@ export interface Safety {
    */
   renamingTable?: RuleConfiguration_for_Null;
   /**
+   * Detaching a partition without CONCURRENTLY acquires an ACCESS EXCLUSIVE lock.
+   */
+  requireConcurrentDetachPartition?: RuleConfiguration_for_Null;
+  /**
    * Creating indexes non-concurrently can lock the table for writes.
    */
   requireConcurrentIndexCreation?: RuleConfiguration_for_Null;
@@ -743,6 +818,18 @@ export interface Safety {
    */
   requireConcurrentIndexDeletion?: RuleConfiguration_for_Null;
   /**
+   * REINDEX without CONCURRENTLY acquires an ACCESS EXCLUSIVE lock on the table.
+   */
+  requireConcurrentReindex?: RuleConfiguration_for_Null;
+  /**
+   * Dangerous lock statements should be preceded by SET idle_in_transaction_session_timeout.
+   */
+  requireIdleInTransactionTimeout?: RuleConfiguration_for_Null;
+  /**
+   * Dangerous lock statements should be preceded by SET statement_timeout.
+   */
+  requireStatementTimeout?: RuleConfiguration_for_Null;
+  /**
    * Running additional statements while holding an ACCESS EXCLUSIVE lock blocks all table access.
    */
   runningStatementWhileHoldingAccessExclusive?: RuleConfiguration_for_Null;
@@ -750,6 +837,14 @@ export interface Safety {
    * Detects problematic transaction nesting that could lead to unexpected behavior.
    */
   transactionNesting?: RuleConfiguration_for_Null;
+  /**
+   * REFRESH MATERIALIZED VIEW CONCURRENTLY still acquires an EXCLUSIVE lock.
+   */
+  warnRefreshMatviewConcurrent?: RuleConfiguration_for_Null;
+  /**
+   * Acquiring ACCESS EXCLUSIVE locks on multiple tables widens the lock window.
+   */
+  warnWideLockWindow?: RuleConfiguration_for_Null;
 }
 /**
  * A list of rules that belong to this group

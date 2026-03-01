@@ -1,0 +1,16 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+-- expect_lint/safety/banDropSchema
+drop schema my_schema;
+```
+
+# Diagnostics
+lint/safety/banDropSchema ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Dropping a schema will remove all objects within it and may break existing clients.
+  
+  i Remove objects individually instead, or ensure all dependent applications have been updated.
