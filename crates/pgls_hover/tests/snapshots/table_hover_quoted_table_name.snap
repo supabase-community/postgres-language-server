@@ -1,5 +1,5 @@
 ---
-source: crates/pgt_hover/tests/hover_integration_tests.rs
+source: crates/pgls_hover/tests/hover_integration_tests.rs
 expression: snapshot
 ---
 # Input
@@ -11,6 +11,9 @@ select * from "auth"."users"
 # Hover Results
 ### `auth.users` - 🔓 RLS disabled  
 ```plain  
+Columns:
+- id: int4 - not null
+- email: varchar(255) - not null
   
 ```  
 ---    
