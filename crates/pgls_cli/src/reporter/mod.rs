@@ -1,6 +1,8 @@
 pub(crate) mod github;
 pub(crate) mod gitlab;
+pub(crate) mod json;
 pub(crate) mod junit;
+pub(crate) mod summary;
 pub(crate) mod terminal;
 
 use crate::cli_options::{CliOptions, CliReporter};
@@ -39,6 +41,9 @@ pub enum ReportMode {
     GitHub,
     GitLab,
     Junit,
+    Json,
+    JsonPretty,
+    Summary,
 }
 
 impl From<CliReporter> for ReportMode {
@@ -48,6 +53,9 @@ impl From<CliReporter> for ReportMode {
             CliReporter::GitHub => Self::GitHub,
             CliReporter::Junit => Self::Junit,
             CliReporter::GitLab => Self::GitLab,
+            CliReporter::Json => Self::Json,
+            CliReporter::JsonPretty => Self::JsonPretty,
+            CliReporter::Summary => Self::Summary,
         }
     }
 }
@@ -129,6 +137,9 @@ impl Reporter {
             ReportMode::GitHub => Box::new(github::GithubReportWriter),
             ReportMode::GitLab => Box::new(gitlab::GitLabReportWriter),
             ReportMode::Junit => Box::new(junit::JunitReportWriter),
+            ReportMode::Json => Box::new(json::JsonReportWriter { pretty: false }),
+            ReportMode::JsonPretty => Box::new(json::JsonReportWriter { pretty: true }),
+            ReportMode::Summary => Box::new(summary::SummaryReportWriter),
         };
 
         writer.write(console, command_name, payload, &self.config)
