@@ -621,7 +621,7 @@ pub fn complete_keywords<'a>(
 
 #[cfg(test)]
 mod tests {
-    use std::{collections::BTreeSet, path::Path};
+    use std::{collections::HashSet, path::Path};
 
     use pgls_query::protobuf::KeywordKind;
     use pgls_test_utils::QueryWithCursorPosition;
@@ -638,7 +638,7 @@ mod tests {
     };
 
     #[test]
-    fn has_all_keywords_from_pg_query_proto() {
+    fn has_all_core_keywords_from_pg_query_proto() {
         let proto_file = Path::new(env!("CARGO_MANIFEST_DIR"))
             .join("../pgls_query/vendor/libpg_query/protobuf/pg_query.proto");
         let include_path = proto_file
@@ -656,11 +656,11 @@ mod tests {
             .get_enum_by_name(".pg_query.Token")
             .expect(".pg_query.Token enum should exist");
 
-        let mut expected_keywords = BTreeSet::new();
+        let mut expected_keywords = HashSet::new();
 
         for value in token_enum.values() {
             for candidate in keyword_candidates(value.name()) {
-                if is_sql_keyword(&candidate) {
+                if is_core_sql_keyword(&candidate) {
                     expected_keywords.insert(candidate);
                     break;
                 }
@@ -670,16 +670,18 @@ mod tests {
         let actual_keywords = ALL_KEYWORDS
             .iter()
             .map(|keyword| keyword.name.to_string())
-            .collect::<BTreeSet<_>>();
+            .collect::<HashSet<_>>();
 
-        let missing_keywords = expected_keywords
+        let mut missing_keywords = expected_keywords
             .difference(&actual_keywords)
             .cloned()
             .collect::<Vec<_>>();
+        missing_keywords.sort_unstable();
 
         assert!(
             missing_keywords.is_empty(),
-            "Found {} keyword(s) derived from pg_query.proto that are missing from ALL_KEYWORDS.\n\
+            "Found {} core keyword(s) derived from pg_query.proto that are missing from ALL_KEYWORDS.\n\
+             Core keywords are defined as reserved or unreserved parser keywords.\n\
              Add missing entries to ALL_KEYWORDS in crates/pgls_completions/src/providers/keywords.rs.\n\
              Missing keywords:\n{}",
             missing_keywords.len(),
@@ -703,7 +705,7 @@ mod tests {
         candidates
     }
 
-    fn is_sql_keyword(candidate: &str) -> bool {
+    fn is_core_sql_keyword(candidate: &str) -> bool {
         let Ok(scan_result) = pgls_query::scan(candidate) else {
             return false;
         };
@@ -714,7 +716,10 @@ mod tests {
             return false;
         };
 
-        keyword_kind != KeywordKind::NoKeyword
+        matches!(
+            keyword_kind,
+            KeywordKind::ReservedKeyword | KeywordKind::UnreservedKeyword
+        )
     }
 
     #[sqlx::test]
