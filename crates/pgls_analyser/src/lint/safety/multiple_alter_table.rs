@@ -6,12 +6,12 @@ use pgls_diagnostics::Severity;
 declare_lint_rule! {
     /// Multiple ALTER TABLE statements on the same table should be combined into a single statement.
     ///
-    /// When you run multiple ALTER TABLE statements on the same table, PostgreSQL must scan and potentially
+    /// When you run multiple ALTER TABLE statements on the same table, Postgres must scan and potentially
     /// rewrite the table multiple times. Each ALTER TABLE command requires acquiring locks and performing
     /// table operations that can be expensive, especially on large tables.
     ///
     /// Combining multiple ALTER TABLE operations into a single statement with comma-separated actions
-    /// allows PostgreSQL to scan and modify the table only once, improving performance and reducing
+    /// allows Postgres to scan and modify the table only once, improving performance and reducing
     /// the time locks are held.
     ///
     /// ## Examples

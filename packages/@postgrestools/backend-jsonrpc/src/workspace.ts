@@ -662,7 +662,7 @@ export interface Safety {
    */
   banAddExclusionConstraint?: RuleConfiguration_for_Null;
   /**
-   * ALTER TYPE ... ADD VALUE cannot run inside a transaction block in older PostgreSQL versions.
+   * ALTER TYPE ... ADD VALUE cannot run inside a transaction block in older Postgres versions.
    */
   banAlterEnumAddValue?: RuleConfiguration_for_Null;
   /**

@@ -171,7 +171,7 @@ pub struct Safety {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ban_add_exclusion_constraint:
         Option<RuleConfiguration<pgls_analyser::options::BanAddExclusionConstraint>>,
-    #[doc = "ALTER TYPE ... ADD VALUE cannot run inside a transaction block in older PostgreSQL versions."]
+    #[doc = "ALTER TYPE ... ADD VALUE cannot run inside a transaction block in older Postgres versions."]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ban_alter_enum_add_value:
         Option<RuleConfiguration<pgls_analyser::options::BanAlterEnumAddValue>>,
