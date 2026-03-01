@@ -4,8 +4,8 @@ expression: snapshot
 ---
 # Input
 ```sql
-revoke select on users from public;
-                   ↑ hovered here
+select * from users
+                 ↑ hovered here
 ```
 
 # Hover Results
@@ -13,11 +13,11 @@ revoke select on users from public;
 ```plain  
 Columns:
 - id: int4 - not null
-- name: text - nullable
+- email: varchar(255) - not null
   
 ```  
 ---    
 ```plain  
 
-~0 rows, ~0 dead rows, 16.38 kB  
+~0 rows, ~0 dead rows, 8.19 kB  
 ```

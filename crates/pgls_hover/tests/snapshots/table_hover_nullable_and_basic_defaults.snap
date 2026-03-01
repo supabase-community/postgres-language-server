@@ -4,8 +4,8 @@ expression: snapshot
 ---
 # Input
 ```sql
-revoke select on users from public;
-                   ↑ hovered here
+select * from users
+                 ↑ hovered here
 ```
 
 # Hover Results
@@ -13,7 +13,10 @@ revoke select on users from public;
 ```plain  
 Columns:
 - id: int4 - not null
-- name: text - nullable
+- name: text - nullable - default: anonymous
+- score: int4 - nullable - default: 0
+- enabled: bool - nullable - default: false
+- created_at: timestamptz - nullable
   
 ```  
 ---    
