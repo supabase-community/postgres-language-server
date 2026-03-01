@@ -94,13 +94,6 @@ n_ins_since_vacuum - pg_catalog.pg_stat_all_tables.n_ins_since_vacuum (Column)
 --------------
 
 update public.coos set name |
-
-Results:
-from - from (Keyword)
-where - where (Keyword)
-
---------------
-
 update public.coos set name = |
 
 Results:
