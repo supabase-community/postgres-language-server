@@ -59,6 +59,45 @@ fn check_junit_reporter_snapshot() {
     target_os = "windows",
     ignore = "snapshot expectations only validated on unix-like platforms"
 )]
+fn check_json_reporter_snapshot() {
+    assert_snapshot!(run_check(&[
+        "--reporter",
+        "json",
+        "tests/fixtures/test.sql"
+    ]));
+}
+
+#[test]
+#[cfg_attr(
+    target_os = "windows",
+    ignore = "snapshot expectations only validated on unix-like platforms"
+)]
+fn check_json_pretty_reporter_snapshot() {
+    assert_snapshot!(run_check(&[
+        "--reporter",
+        "json-pretty",
+        "tests/fixtures/test.sql"
+    ]));
+}
+
+#[test]
+#[cfg_attr(
+    target_os = "windows",
+    ignore = "snapshot expectations only validated on unix-like platforms"
+)]
+fn check_summary_reporter_snapshot() {
+    assert_snapshot!(run_check(&[
+        "--reporter",
+        "summary",
+        "tests/fixtures/test.sql"
+    ]));
+}
+
+#[test]
+#[cfg_attr(
+    target_os = "windows",
+    ignore = "snapshot expectations only validated on unix-like platforms"
+)]
 fn check_stdin_snapshot() {
     assert_snapshot!(run_check_with(
         &[
@@ -120,8 +159,21 @@ fn normalize_durations(input: &str) -> String {
     let mut search_start = 0;
     while let Some(relative) = content[search_start..].find(" in ") {
         let start = search_start + relative + 4;
-        if let Some(end_rel) = content[start..].find('.') {
-            let end = start + end_rel;
+        // Find end of sentence period: scan for '.' that is followed by
+        // a non-digit (or EOL), skipping decimal points inside durations.
+        let rest = &content[start..];
+        let mut dot_search = 0;
+        let mut found_end = None;
+        while let Some(dot_rel) = rest[dot_search..].find('.') {
+            let dot_pos = dot_search + dot_rel;
+            let after_dot = dot_pos + 1;
+            if after_dot >= rest.len() || !rest.as_bytes()[after_dot].is_ascii_digit() {
+                found_end = Some(start + dot_pos);
+                break;
+            }
+            dot_search = after_dot;
+        }
+        if let Some(end) = found_end {
             if content[start..end].chars().any(|c| c.is_ascii_digit()) {
                 content.replace_range(start..end, "<duration>");
                 search_start = start + "<duration>".len() + 1;
@@ -144,6 +196,55 @@ fn normalize_durations(input: &str) -> String {
             time_search = end + 1;
         } else {
             break;
+        }
+    }
+
+    // Normalize JSON "duration":12345 and "duration": 12345 (numeric nanos)
+    for json_dur_pat in &["\"duration\":", "\"duration\": "] {
+        let mut json_search = 0;
+        while let Some(relative) = content[json_search..].find(json_dur_pat) {
+            let start = json_search + relative + json_dur_pat.len();
+            let rest = &content[start..];
+            // Skip if it's a string value (already handled or not numeric)
+            if rest.starts_with('"') {
+                json_search = start + 1;
+                continue;
+            }
+            let num_end = rest
+                .find(|c: char| !c.is_ascii_digit())
+                .unwrap_or(rest.len());
+            if num_end > 0 {
+                content.replace_range(start..start + num_end, "0");
+                json_search = start + 1;
+            } else {
+                json_search = start + 1;
+            }
+        }
+    }
+
+    // Normalize Rust Debug durations (e.g. "4.877792ms", "1.23s", "123µs", "123ns")
+    // used by summary reporter: "file(s) in 4.877ms." / "Completed in 4.877ms."
+    for prefix in &["file(s) in ", "Completed in "] {
+        let mut search = 0;
+        while let Some(relative) = content[search..].find(prefix) {
+            let start = search + relative + prefix.len();
+            // Find the end of the duration: digits, '.', and time unit suffix
+            let rest = &content[start..];
+            let dur_end = rest
+                .find(|c: char| !c.is_ascii_digit() && c != '.' && c != 'µ')
+                .unwrap_or(rest.len());
+            // Include trailing unit letters (m, s, n, etc.)
+            let after_digits = &rest[dur_end..];
+            let unit_end = after_digits
+                .find(|c: char| !c.is_ascii_lowercase())
+                .unwrap_or(after_digits.len());
+            let total_end = start + dur_end + unit_end;
+            if total_end > start {
+                content.replace_range(start..total_end, "<duration>");
+                search = start + "<duration>".len();
+            } else {
+                search = start + 1;
+            }
         }
     }
 

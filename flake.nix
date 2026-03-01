@@ -78,6 +78,7 @@
 
           # WebAssembly toolchain
           emscripten
+          tree-sitter
 
           # Database tools
           sqlx-cli

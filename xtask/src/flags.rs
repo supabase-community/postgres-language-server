@@ -18,6 +18,16 @@ xflags::xflags! {
             /// Install only the language server.
             optional --server
         }
+
+        /// Run a simple macOS leak check against an isolated language server process.
+        cmd leak-check {
+            /// Number of open/change/close LSP cycles to run.
+            optional --iterations n: usize
+            /// Pause between cycles in milliseconds.
+            optional --pause-ms n: u64
+            /// Probe to run: lsp | cli-timeout | both
+            optional --probe name: String
+        }
     }
 }
 
@@ -32,6 +42,7 @@ pub struct Xtask {
 #[derive(Debug)]
 pub enum XtaskCmd {
     Install(Install),
+    LeakCheck(LeakCheck),
 }
 
 #[derive(Debug)]
@@ -39,6 +50,13 @@ pub struct Install {
     pub client: bool,
     pub code_bin: Option<String>,
     pub server: bool,
+}
+
+#[derive(Debug)]
+pub struct LeakCheck {
+    pub iterations: Option<usize>,
+    pub pause_ms: Option<u64>,
+    pub probe: Option<String>,
 }
 
 impl Xtask {
