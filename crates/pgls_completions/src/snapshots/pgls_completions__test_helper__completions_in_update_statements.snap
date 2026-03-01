@@ -1,0 +1,638 @@
+---
+source: crates/pgls_completions/src/test_helper.rs
+expression: final_snapshot
+---
+***Setup***
+
+create table instruments (
+    id bigint primary key generated always as identity,
+    name text not null,
+    z text
+);
+
+create table others (
+    id serial primary key,
+    a text,
+    b text
+);
+
+
+--------------
+
+***Case 1:***
+
+u|
+
+Results:
+update - update (Keyword)
+truncate - truncate (Keyword)
+
+--------------
+
+update |
+
+Results:
+instruments - public.instruments (Table)
+others - public.others (Table)
+_sqlx_migrations - public._sqlx_migrations (Table)
+information_schema - information_schema (Schema)
+pg_catalog - pg_catalog (Schema)
+
+--------------
+
+update i|
+
+Results:
+instruments - public.instruments (Table)
+information_schema - information_schema (Schema)
+public - public (Schema)
+information_schema.information_schema_catalog_name - information_schema.information_schema_catalog_name (Table)
+id - public.instruments.id (Column)
+
+--------------
+
+update instruments |
+
+Results:
+set - set (Keyword)
+
+--------------
+
+update instruments s|
+
+Results:
+set - set (Keyword)
+
+--------------
+
+update instruments set |
+
+Results:
+id - public.instruments.id (Column)
+name - public.instruments.name (Column)
+z - public.instruments.z (Column)
+public - public (Schema)
+information_schema - information_schema (Schema)
+
+--------------
+
+update instruments set n|
+
+Results:
+name - public.instruments.name (Column)
+information_schema - information_schema (Schema)
+n_dead_tup - pg_catalog.pg_stat_all_tables.n_dead_tup (Column)
+n_distinct - pg_catalog.pg_stats.n_distinct (Column)
+n_ins_since_vacuum - pg_catalog.pg_stat_all_tables.n_ins_since_vacuum (Column)
+
+--------------
+
+update instruments set name |
+update instruments set name = |
+
+Results:
+instruments - public.instruments (Table)
+others - public.others (Table)
+id - public.instruments.id (Column)
+name - public.instruments.name (Column)
+z - public.instruments.z (Column)
+
+--------------
+
+update instruments set name = '|
+update instruments set name = 'new' |
+
+Results:
+from - from (Keyword)
+where - where (Keyword)
+
+--------------
+
+update instruments set name = 'new' w|
+
+Results:
+where - where (Keyword)
+
+--------------
+
+update instruments set name = 'new' where |
+
+Results:
+id - public.instruments.id (Column)
+name - public.instruments.name (Column)
+z - public.instruments.z (Column)
+a - public.others.a (Column)
+b - public.others.b (Column)
+
+--------------
+
+update instruments set name = 'new' where i|
+
+Results:
+id - public.instruments.id (Column)
+ident - pg_catalog.pg_backend_memory_contexts.ident (Column)
+identity_cycle - information_schema.columns.identity_cycle (Column)
+identity_generation - information_schema.columns.identity_generation (Column)
+identity_increment - information_schema.columns.identity_increment (Column)
+
+--------------
+
+update instruments set name = 'new' where id |
+update instruments set name = 'new' where id = |
+
+Results:
+name - public.instruments.name (Column)
+z - public.instruments.z (Column)
+id - public.instruments.id (Column)
+a - public.others.a (Column)
+b - public.others.b (Column)
+
+--------------
+
+update instruments set name = 'new' where id = 1|
+update instruments set name = 'new' where id = 1; |
+
+Results:
+copy - copy (Keyword)
+create - create (Keyword)
+drop - drop (Keyword)
+insert - insert (Keyword)
+reset - reset (Keyword)
+
+--------------
+
+
+
+
+
+***Case 2:***
+
+update instruments as i | where i.id = 1;
+
+Results:
+instruments - public.instruments (Table)
+others - public.others (Table)
+id - public.instruments.id (Column)
+name - public.instruments.name (Column)
+z - public.instruments.z (Column)
+
+--------------
+
+update instruments as i s| where i.id = 1;
+update instruments as i set | where i.id = 1;
+
+Results:
+id - public.instruments.id (Column)
+name - public.instruments.name (Column)
+z - public.instruments.z (Column)
+public - public (Schema)
+information_schema - information_schema (Schema)
+
+--------------
+
+update instruments as i set n| where i.id = 1;
+
+Results:
+name - public.instruments.name (Column)
+information_schema - information_schema (Schema)
+n_dead_tup - pg_catalog.pg_stat_all_tables.n_dead_tup (Column)
+n_distinct - pg_catalog.pg_stats.n_distinct (Column)
+n_ins_since_vacuum - pg_catalog.pg_stat_all_tables.n_ins_since_vacuum (Column)
+
+--------------
+
+update instruments as i set name | where i.id = 1;
+update instruments as i set name = | where i.id = 1;
+
+Results:
+instruments - public.instruments (Table)
+others - public.others (Table)
+id - public.instruments.id (Column)
+name - public.instruments.name (Column)
+z - public.instruments.z (Column)
+
+--------------
+
+update instruments as i set name = '| where i.id = 1;
+update instruments as i set name = 'x', | where i.id = 1;
+
+Results:
+id - public.instruments.id (Column)
+name - public.instruments.name (Column)
+z - public.instruments.z (Column)
+public - public (Schema)
+information_schema - information_schema (Schema)
+
+--------------
+
+update instruments as i set name = 'x', z | where i.id = 1;
+update instruments as i set name = 'x', z = | where i.id = 1;
+
+Results:
+instruments - public.instruments (Table)
+others - public.others (Table)
+id - public.instruments.id (Column)
+name - public.instruments.name (Column)
+z - public.instruments.z (Column)
+
+--------------
+
+update instruments as i set name = 'x', z = '| where i.id = 1;
+update instruments as i set name = 'x', z = 'y' | where i.id = 1;
+
+Results:
+from - from (Keyword)
+
+--------------
+
+
+
+
+
+***Case 3:***
+
+update instruments set name = 'x' |
+
+Results:
+from - from (Keyword)
+where - where (Keyword)
+
+--------------
+
+update instruments set name = 'x' r|
+
+Results:
+from - from (Keyword)
+where - where (Keyword)
+
+--------------
+
+update instruments set name = 'x' returning |
+update instruments set name = 'x' returning i|
+update instruments set name = 'x' returning id, |
+update instruments set name = 'x' returning id, n|
+update instruments set name = 'x' returning id, name; |
+
+Results:
+copy - copy (Keyword)
+create - create (Keyword)
+drop - drop (Keyword)
+insert - insert (Keyword)
+reset - reset (Keyword)
+
+--------------
+
+
+
+
+
+***Case 4:***
+
+update instruments | where id = 1;
+
+Results:
+set - set (Keyword)
+
+--------------
+
+update instruments s| where id = 1;
+
+Results:
+set - set (Keyword)
+
+--------------
+
+update instruments set | where id = 1;
+
+Results:
+id - public.instruments.id (Column)
+name - public.instruments.name (Column)
+z - public.instruments.z (Column)
+public - public (Schema)
+information_schema - information_schema (Schema)
+
+--------------
+
+update instruments set n| where id = 1;
+
+Results:
+name - public.instruments.name (Column)
+information_schema - information_schema (Schema)
+n_dead_tup - pg_catalog.pg_stat_all_tables.n_dead_tup (Column)
+n_distinct - pg_catalog.pg_stats.n_distinct (Column)
+n_ins_since_vacuum - pg_catalog.pg_stat_all_tables.n_ins_since_vacuum (Column)
+
+--------------
+
+update instruments set name | where id = 1;
+update instruments set name = | where id = 1;
+
+Results:
+instruments - public.instruments (Table)
+others - public.others (Table)
+id - public.instruments.id (Column)
+name - public.instruments.name (Column)
+z - public.instruments.z (Column)
+
+--------------
+
+update instruments set name = d| where id = 1;
+
+Results:
+id - public.instruments.id (Column)
+information_schema.data_type_privileges - information_schema.data_type_privileges (Table)
+default - default (Keyword)
+information_schema.domain_constraints - information_schema.domain_constraints (Table)
+information_schema.domain_udt_usage - information_schema.domain_udt_usage (Table)
+
+--------------
+
+update instruments set name = default, | where id = 1;
+
+Results:
+id - public.instruments.id (Column)
+name - public.instruments.name (Column)
+z - public.instruments.z (Column)
+public - public (Schema)
+information_schema - information_schema (Schema)
+
+--------------
+
+update instruments set name = default, z | where id = 1;
+update instruments set name = default, z = | where id = 1;
+
+Results:
+instruments - public.instruments (Table)
+others - public.others (Table)
+id - public.instruments.id (Column)
+name - public.instruments.name (Column)
+z - public.instruments.z (Column)
+
+--------------
+
+update instruments set name = default, z = '| where id = 1;
+update instruments set name = default, z = 'y' | where id = 1;
+
+Results:
+from - from (Keyword)
+
+--------------
+
+
+
+
+
+***Case 5:***
+
+update instruments set name = o.a |
+
+Results:
+from - from (Keyword)
+where - where (Keyword)
+
+--------------
+
+update instruments set name = o.a f|
+
+Results:
+from - from (Keyword)
+
+--------------
+
+update instruments set name = o.a from |
+
+Results:
+instruments - public.instruments (Table)
+others - public.others (Table)
+id - public.instruments.id (Column)
+name - public.instruments.name (Column)
+z - public.instruments.z (Column)
+
+--------------
+
+update instruments set name = o.a from o|
+
+Results:
+others - public.others (Table)
+information_schema - information_schema (Schema)
+pg_catalog - pg_catalog (Schema)
+pg_toast - pg_toast (Schema)
+information_schema.column_options - information_schema.column_options (Table)
+
+--------------
+
+update instruments set name = o.a from others |
+
+Results:
+cross - cross (Keyword)
+full - full (Keyword)
+inner - inner (Keyword)
+join - join (Keyword)
+left - left (Keyword)
+
+--------------
+
+update instruments set name = o.a from others o |
+
+Results:
+cross - cross (Keyword)
+full - full (Keyword)
+inner - inner (Keyword)
+join - join (Keyword)
+left - left (Keyword)
+
+--------------
+
+update instruments set name = o.a from others o w|
+
+Results:
+where - where (Keyword)
+
+--------------
+
+update instruments set name = o.a from others o where |
+
+Results:
+o.a - public.others.a (Column)
+o.b - public.others.b (Column)
+id - public.instruments.id (Column)
+name - public.instruments.name (Column)
+z - public.instruments.z (Column)
+
+--------------
+
+update instruments set name = o.a from others o where i|
+
+Results:
+id - public.instruments.id (Column)
+ident - pg_catalog.pg_backend_memory_contexts.ident (Column)
+identity_cycle - information_schema.columns.identity_cycle (Column)
+identity_generation - information_schema.columns.identity_generation (Column)
+identity_increment - information_schema.columns.identity_increment (Column)
+
+--------------
+
+update instruments set name = o.a from others o where instruments.|
+
+Results:
+id - public.instruments.id (Column)
+name - public.instruments.name (Column)
+z - public.instruments.z (Column)
+
+--------------
+
+update instruments set name = o.a from others o where instruments.i|
+
+Results:
+id - public.instruments.id (Column)
+
+--------------
+
+update instruments set name = o.a from others o where instruments.id |
+
+Results:
+returning - returning (Keyword)
+
+--------------
+
+update instruments set name = o.a from others o where instruments.id = |
+
+Results:
+o.a - public.others.a (Column)
+o.b - public.others.b (Column)
+name - public.instruments.name (Column)
+z - public.instruments.z (Column)
+id - public.instruments.id (Column)
+
+--------------
+
+update instruments set name = o.a from others o where instruments.id = o.|
+
+Results:
+a - public.others.a (Column)
+b - public.others.b (Column)
+id - public.others.id (Column)
+
+--------------
+
+update instruments set name = o.a from others o where instruments.id = o.i|
+
+Results:
+id - public.others.id (Column)
+
+--------------
+
+update instruments set name = o.a from others o where instruments.id = o.id |
+
+Results:
+returning - returning (Keyword)
+
+--------------
+
+update instruments set name = o.a from others o where instruments.id = o.id r|
+
+Results:
+returning - returning (Keyword)
+
+--------------
+
+update instruments set name = o.a from others o where instruments.id = o.id returning |
+update instruments set name = o.a from others o where instruments.id = o.id returning n|
+update instruments set name = o.a from others o where instruments.id = o.id returning name, |
+update instruments set name = o.a from others o where instruments.id = o.id returning name, z|
+update instruments set name = o.a from others o where instruments.id = o.id returning name, z; |
+
+Results:
+copy - copy (Keyword)
+create - create (Keyword)
+drop - drop (Keyword)
+insert - insert (Keyword)
+reset - reset (Keyword)
+
+--------------
+
+
+
+
+
+***Case 6:***
+
+update instruments set name = (|) where id = 1;
+
+Results:
+instruments - public.instruments (Table)
+others - public.others (Table)
+id - public.instruments.id (Column)
+name - public.instruments.name (Column)
+z - public.instruments.z (Column)
+
+--------------
+
+update instruments set name = (s|) where id = 1;
+
+Results:
+instruments - public.instruments (Table)
+others - public.others (Table)
+information_schema.schemata - information_schema.schemata (Table)
+select - select (Keyword)
+information_schema.sequences - information_schema.sequences (Table)
+
+--------------
+
+update instruments set name = (select |) where id = 1;
+update instruments set name = (select a |) where id = 1;
+update instruments set name = (select a f|) where id = 1;
+
+Results:
+for - for (Keyword)
+from - from (Keyword)
+offset - offset (Keyword)
+
+--------------
+
+update instruments set name = (select a from |) where id = 1;
+update instruments set name = (select a from o|) where id = 1;
+
+Results:
+others - public.others (Table)
+only - only (Keyword)
+information_schema - information_schema (Schema)
+pg_catalog - pg_catalog (Schema)
+pg_toast - pg_toast (Schema)
+
+--------------
+
+update instruments set name = (select a from others |) where id = 1;
+update instruments set name = (select a from others w|) where id = 1;
+
+Results:
+where - where (Keyword)
+window - window (Keyword)
+
+--------------
+
+update instruments set name = (select a from others where |) where id = 1;
+update instruments set name = (select a from others where i|) where id = 1;
+
+Results:
+id - public.others.id (Column)
+ident - pg_catalog.pg_backend_memory_contexts.ident (Column)
+identity_cycle - information_schema.columns.identity_cycle (Column)
+identity_generation - information_schema.columns.identity_generation (Column)
+identity_increment - information_schema.columns.identity_increment (Column)
+
+--------------
+
+update instruments set name = (select a from others where id |) where id = 1;
+update instruments set name = (select a from others where id = |) where id = 1;
+
+Results:
+a - public.others.a (Column)
+b - public.others.b (Column)
+id - public.others.id (Column)
+name - public.instruments.name (Column)
+z - public.instruments.z (Column)
+
+--------------
+
+update instruments set name = (select a from others where id = 1 |) where id = 1;
