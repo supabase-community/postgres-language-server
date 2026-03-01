@@ -6,11 +6,11 @@ use pgls_diagnostics::Severity;
 declare_lint_rule! {
     /// Setting a column NOT NULL blocks reads while the table is scanned.
     ///
-    /// In PostgreSQL versions before 11, adding a NOT NULL constraint to an existing column requires
+    /// In Postgres versions before 11, adding a NOT NULL constraint to an existing column requires
     /// a full table scan to verify that all existing rows satisfy the constraint. This operation
     /// takes an ACCESS EXCLUSIVE lock, blocking all reads and writes.
     ///
-    /// In PostgreSQL 11+, this operation is much faster as it can skip the full table scan for
+    /// In Postgres 11+, this operation is much faster as it can skip the full table scan for
     /// newly added columns with default values.
     ///
     /// Instead of using SET NOT NULL, consider using a CHECK constraint with NOT VALID, then

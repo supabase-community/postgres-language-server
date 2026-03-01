@@ -6,13 +6,13 @@ use pgls_diagnostics::Severity;
 declare_lint_rule! {
     /// Adding a column with a DEFAULT value may lead to a table rewrite while holding an ACCESS EXCLUSIVE lock.
     ///
-    /// In PostgreSQL versions before 11, adding a column with a DEFAULT value causes a full table rewrite,
+    /// In Postgres versions before 11, adding a column with a DEFAULT value causes a full table rewrite,
     /// which holds an ACCESS EXCLUSIVE lock on the table and blocks all reads and writes.
     ///
-    /// In PostgreSQL 11+, this behavior was optimized for non-volatile defaults. However:
+    /// In Postgres 11+, this behavior was optimized for non-volatile defaults. However:
     /// - Volatile default values (like random() or custom functions) still cause table rewrites
     /// - Generated columns (GENERATED ALWAYS AS) always require table rewrites
-    /// - Non-volatile defaults are safe in PostgreSQL 11+
+    /// - Non-volatile defaults are safe in Postgres 11+
     ///
     /// ## Examples
     ///
@@ -45,7 +45,7 @@ impl LinterRule for AddingFieldWithDefault {
     fn run(ctx: &LinterRuleContext<Self>) -> Vec<LinterDiagnostic> {
         let mut diagnostics = Vec::new();
 
-        // Check PostgreSQL version - in 11+, non-volatile defaults are safe
+        // Check Postgres version - in 11+, non-volatile defaults are safe
         let pg_version = ctx.schema_cache().and_then(|sc| sc.version.major_version);
 
         if let pgls_query::NodeEnum::AlterTableStmt(stmt) = &ctx.stmt() {
@@ -110,7 +110,7 @@ impl LinterRule for AddingFieldWithDefault {
                                                     "Adding a column with a volatile default value causes a table rewrite."
                                                 },
                                             )
-                                            .detail(None, "Even in PostgreSQL 11+, volatile default values require a full table rewrite.")
+                                            .detail(None, "Even in Postgres 11+, volatile default values require a full table rewrite.")
                                             .note("Add the column without a default, then set the default in a separate statement."),
                                         );
                             }

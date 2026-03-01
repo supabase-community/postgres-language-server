@@ -1,7 +1,6 @@
 ---
-source: crates/pgt_analyser/tests/rules_tests.rs
+source: crates/pgls_analyser/tests/rules_tests.rs
 expression: snapshot
-snapshot_kind: text
 ---
 # Input
 ```
@@ -15,6 +14,6 @@ lint/safety/addingForeignKeyConstraint ━━━━━━━━━━━━━�
 
   × Adding a foreign key constraint requires a table scan and locks on both tables.
   
-  i This will block writes to both the referencing and referenced tables while PostgreSQL verifies the constraint.
+  i This will block writes to both the referencing and referenced tables while Postgres verifies the constraint.
   
   i Add the constraint as NOT VALID first, then VALIDATE it in a separate transaction.

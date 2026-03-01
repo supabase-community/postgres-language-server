@@ -4,10 +4,10 @@ use pgls_console::markup;
 use pgls_diagnostics::Severity;
 
 declare_lint_rule! {
-    /// `ALTER TYPE ... ADD VALUE` cannot run inside a transaction block in older PostgreSQL versions.
+    /// `ALTER TYPE ... ADD VALUE` cannot run inside a transaction block in older Postgres versions.
     ///
     /// Adding a value to an enum type acquires an `ACCESS EXCLUSIVE` lock on the enum type.
-    /// In PostgreSQL versions before 12, `ALTER TYPE ... ADD VALUE` cannot be executed inside a
+    /// In Postgres versions before 12, `ALTER TYPE ... ADD VALUE` cannot be executed inside a
     /// transaction block. Even in newer versions, the new value cannot be used in the same
     /// transaction until it is committed.
     ///
@@ -51,7 +51,7 @@ impl LinterRule for BanAlterEnumAddValue {
                 )
                 .detail(
                     None,
-                    "The new enum value cannot be used in the same transaction. In PostgreSQL versions before 12, this statement cannot run inside a transaction block at all.",
+                    "The new enum value cannot be used in the same transaction. In Postgres versions before 12, this statement cannot run inside a transaction block at all.",
                 ),
             );
         }

@@ -19,7 +19,7 @@ Rules that detect potential safety issues in your code.
 | [addingPrimaryKeyConstraint](./rules/adding-primary-key-constraint.md) | Adding a primary key constraint results in locks and table rewrites. | ✅ |
 | [addingRequiredField](./rules/adding-required-field.md) | Adding a new column that is NOT NULL and has no default value to an existing table effectively makes it required. |  |
 | [banAddExclusionConstraint](./rules/ban-add-exclusion-constraint.md) | Adding an exclusion constraint acquires an `ACCESS EXCLUSIVE` lock. | ✅ |
-| [banAlterEnumAddValue](./rules/ban-alter-enum-add-value.md) | `ALTER TYPE ... ADD VALUE` cannot run inside a transaction block in older PostgreSQL versions. |  |
+| [banAlterEnumAddValue](./rules/ban-alter-enum-add-value.md) | `ALTER TYPE ... ADD VALUE` cannot run inside a transaction block in older Postgres versions. |  |
 | [banAttachPartition](./rules/ban-attach-partition.md) | Attaching a partition acquires an `ACCESS EXCLUSIVE` lock on the parent table. | ✅ |
 | [banBlockingRefreshMatview](./rules/ban-blocking-refresh-matview.md) | `REFRESH MATERIALIZED VIEW` without `CONCURRENTLY` acquires an `ACCESS EXCLUSIVE` lock. | ✅ |
 | [banCharField](./rules/ban-char-field.md) | Using CHAR(n) or CHARACTER(n) types is discouraged. |  |

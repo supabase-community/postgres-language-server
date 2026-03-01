@@ -6,7 +6,7 @@ use pgls_diagnostics::Severity;
 declare_lint_rule! {
     /// Adding constraints without NOT VALID blocks all reads and writes.
     ///
-    /// When adding a CHECK or FOREIGN KEY constraint, PostgreSQL must validate all existing rows,
+    /// When adding a CHECK or FOREIGN KEY constraint, Postgres must validate all existing rows,
     /// which requires a full table scan. This blocks reads and writes for the duration.
     ///
     /// Instead, add the constraint with NOT VALID first, then VALIDATE CONSTRAINT in a separate

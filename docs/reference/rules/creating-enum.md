@@ -13,7 +13,7 @@ Creating enum types is not recommended for new applications.
 Enumerated types have several limitations that make them difficult to work with in production:
 
 - Removing values from an enum requires complex migrations and is not supported directly
-- Adding values to an enum requires an ACCESS EXCLUSIVE lock in some PostgreSQL versions
+- Adding values to an enum requires an ACCESS EXCLUSIVE lock in some Postgres versions
 - Associating additional data with enum values is impossible without restructuring
 - Renaming enum values requires careful migration planning
 
