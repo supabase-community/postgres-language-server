@@ -1,0 +1,40 @@
+---
+source: crates/pgls_cli/tests/assert_check.rs
+expression: "run_check(&[\"--reporter\", \"json-pretty\", \"tests/fixtures/test.sql\"])"
+---
+status: failure
+stdout:
+{
+  "summary": {
+    "changed": 0,
+    "unchanged": 1,
+    "duration": 0,
+    "errors": 1,
+    "warnings": 0,
+    "skipped": 0,
+    "skippedDiagnostics": 0
+  },
+  "diagnostics": [
+    {
+      "severity": "error",
+      "message": "Invalid statement: syntax error at or near \"tqjable\"",
+      "category": "syntax",
+      "location": {
+        "path": "tests/fixtures/test.sql",
+        "start": {
+          "line": 1,
+          "column": 1
+        },
+        "end": {
+          "line": 1,
+          "column": 35
+        }
+      }
+    }
+  ],
+  "command": "check"
+}
+stderr:
+check ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Some errors were emitted while running checks.

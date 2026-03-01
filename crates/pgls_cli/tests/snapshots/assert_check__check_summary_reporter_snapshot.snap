@@ -1,0 +1,14 @@
+---
+source: crates/pgls_cli/tests/assert_check.rs
+expression: "run_check(&[\"--reporter\", \"summary\", \"tests/fixtures/test.sql\"])"
+---
+status: failure
+stdout:
+tests/fixtures/test.sql: 1 error
+
+Checked 1 file in <duration>. No fixes applied.
+Found 1 error.
+stderr:
+check ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Some errors were emitted while running checks.

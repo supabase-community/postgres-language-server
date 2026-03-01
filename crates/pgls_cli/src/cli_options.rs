@@ -129,6 +129,12 @@ pub enum CliReporter {
     Junit,
     /// Reports linter diagnostics using the [GitLab Code Quality report](https://docs.gitlab.com/ee/ci/testing/code_quality.html#implement-a-custom-tool).
     GitLab,
+    /// Diagnostics are printed as JSON
+    Json,
+    /// Diagnostics are printed as pretty-printed JSON
+    JsonPretty,
+    /// Only a summary of diagnostics is printed (counts, no individual diagnostics)
+    Summary,
 }
 
 impl CliReporter {
@@ -145,6 +151,9 @@ impl FromStr for CliReporter {
             "github" => Ok(Self::GitHub),
             "junit" => Ok(Self::Junit),
             "gitlab" => Ok(Self::GitLab),
+            "json" => Ok(Self::Json),
+            "json-pretty" => Ok(Self::JsonPretty),
+            "summary" => Ok(Self::Summary),
             _ => Err(format!(
                 "value {s:?} is not valid for the --reporter argument"
             )),
@@ -159,6 +168,9 @@ impl Display for CliReporter {
             CliReporter::GitHub => f.write_str("github"),
             CliReporter::Junit => f.write_str("junit"),
             CliReporter::GitLab => f.write_str("gitlab"),
+            CliReporter::Json => f.write_str("json"),
+            CliReporter::JsonPretty => f.write_str("json-pretty"),
+            CliReporter::Summary => f.write_str("summary"),
         }
     }
 }

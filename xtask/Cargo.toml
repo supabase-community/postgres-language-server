@@ -7,11 +7,15 @@ rust-version.workspace = true
 version                = "0.0.0"
 
 [dependencies]
-anyhow     = "1.0.62"
-flate2     = "1.0.24"
-time       = { version = "0.3", default-features = false }
-write-json = "0.1.2"
-xflags     = "0.3.0"
-xshell     = "0.2.2"
-zip        = { version = "0.6", default-features = false, features = ["deflate", "time"] }
+anyhow         = "1.0.62"
+flate2         = "1.0.24"
+pgls_cli       = { path = "../crates/pgls_cli" }
+pgls_workspace = { path = "../crates/pgls_workspace" }
+serde_json     = "1.0.114"
+time           = { version = "0.3", default-features = false }
+tokio          = { version = "1.40.0", features = ["rt-multi-thread", "net"] }
+write-json     = "0.1.2"
+xflags         = "0.3.0"
+xshell         = "0.2.2"
+zip            = { version = "0.6", default-features = false, features = ["deflate", "time"] }
 # Avoid adding more dependencies to this crate
