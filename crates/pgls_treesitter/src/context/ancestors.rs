@@ -16,13 +16,13 @@ impl ScopeTracker {
     }
 
     pub fn register<'a>(&mut self, node: tree_sitter::Node<'a>, position: usize) {
-        if SCOPE_BOUNDARIES.contains(&node.kind()) {
+        if SCOPE_BOUNDARIES.contains(&node.kind()) || self.scopes.is_empty() {
             self.add_new_scope(node);
         }
 
         self.scopes
             .last_mut()
-            .unwrap_or_else(|| panic!("Unhandled node kind: {}", node.kind()))
+            .expect("scope must exist after initialization above")
             .ancestors
             .register(node, position);
     }

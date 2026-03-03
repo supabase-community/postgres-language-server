@@ -992,4 +992,25 @@ mod tests {
             );
         }
     }
+
+    #[test]
+    fn does_not_crash_on_incomplete_function_body() {
+        // Regression test for #704: incomplete SQL with unhandled node kinds
+        // (function_arguments, type, function_language, object_reference, comment,
+        // keyword_begin, keyword_end, :=) must not panic.
+        let sql = "DECLARE\nBEGIN\n    po_1 := length(pi_1);\nEND;";
+
+        let tree = get_tree(sql);
+
+        // Try multiple positions across the statement to cover all node kinds
+        for pos in 0..sql.len() {
+            let params = TreeSitterContextParams {
+                position: (pos as u32).into(),
+                text: sql,
+                tree: &tree,
+            };
+            // must not panic
+            let _ = TreesitterContext::new(params);
+        }
+    }
 }
