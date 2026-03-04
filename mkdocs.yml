@@ -37,6 +37,7 @@ nav:
       - Linter Rule Sources: reference/rule_sources.md
       - Database Linter Rules: reference/database_rules.md
       - Database Linter Rule Sources: reference/database_rule_sources.md
+      - Related Work: reference/related_work.md
       - Environment Variables: reference/env_variables.md
 
 plugins:
