@@ -11,6 +11,6 @@ alter type my_enum add value 'new_value';
 # Diagnostics
 lint/safety/banAlterEnumAddValue ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-  × ALTER TYPE ... ADD VALUE acquires an ACCESS EXCLUSIVE lock on the enum type.
+  × ALTER TYPE ... ADD VALUE cannot be used in a transaction block before Postgres 12.
   
-  i The new enum value cannot be used in the same transaction. In Postgres versions before 12, this statement cannot run inside a transaction block at all.
+  i On Postgres 12+, the operation is fast but the new value cannot be used in the same transaction until committed.

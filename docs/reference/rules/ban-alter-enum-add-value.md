@@ -10,10 +10,9 @@
 ## Description
 `ALTER TYPE ... ADD VALUE` cannot run inside a transaction block in older Postgres versions.
 
-Adding a value to an enum type acquires an `ACCESS EXCLUSIVE` lock on the enum type.
 In Postgres versions before 12, `ALTER TYPE ... ADD VALUE` cannot be executed inside a
-transaction block. Even in newer versions, the new value cannot be used in the same
-transaction until it is committed.
+transaction block at all. On Postgres 12+, the operation is fast (metadata-only), but the
+new enum value cannot be used in the same transaction until it is committed.
 
 ## Examples
 
@@ -26,13 +25,13 @@ alter type my_enum add value 'new_value';
 ```sh
 code-block.sql:1:1 lint/safety/banAlterEnumAddValue ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-  ! ALTER TYPE ... ADD VALUE acquires an ACCESS EXCLUSIVE lock on the enum type.
+  ! ALTER TYPE ... ADD VALUE cannot be used in a transaction block before Postgres 12.
   
   > 1 │ alter type my_enum add value 'new_value';
       │ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
     2 │ 
   
-  i The new enum value cannot be used in the same transaction. In Postgres versions before 12, this statement cannot run inside a transaction block at all.
+  i On Postgres 12+, the operation is fast but the new value cannot be used in the same transaction until committed.
   
 
 ```

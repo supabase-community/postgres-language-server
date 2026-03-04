@@ -50,24 +50,31 @@ impl LinterRule for WarnWideLockWindow {
             return diagnostics;
         }
 
+        // Only AlterTableStmt with ACCESS EXCLUSIVE subtypes widens the lock window
         let current_table = match ctx.stmt() {
-            pgls_query::NodeEnum::AlterTableStmt(stmt) => stmt.relation.as_ref().map(|r| {
-                let schema = if r.schemaname.is_empty() {
-                    "public".to_string()
-                } else {
-                    r.schemaname.clone()
-                };
-                (schema, r.relname.clone())
-            }),
-            pgls_query::NodeEnum::IndexStmt(stmt) if !stmt.concurrent => {
-                stmt.relation.as_ref().map(|r| {
-                    let schema = if r.schemaname.is_empty() {
-                        "public".to_string()
+            pgls_query::NodeEnum::AlterTableStmt(stmt) => {
+                let has_access_exclusive = stmt.cmds.iter().any(|cmd| {
+                    if let Some(pgls_query::NodeEnum::AlterTableCmd(cmd)) = &cmd.node {
+                        !matches!(
+                            cmd.subtype(),
+                            pgls_query::protobuf::AlterTableType::AtValidateConstraint
+                        )
                     } else {
-                        r.schemaname.clone()
-                    };
-                    (schema, r.relname.clone())
-                })
+                        false
+                    }
+                });
+                if has_access_exclusive {
+                    stmt.relation.as_ref().map(|r| {
+                        let schema = if r.schemaname.is_empty() {
+                            "public".to_string()
+                        } else {
+                            r.schemaname.clone()
+                        };
+                        (schema, r.relname.clone())
+                    })
+                } else {
+                    None
+                }
             }
             _ => None,
         };

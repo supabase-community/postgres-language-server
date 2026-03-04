@@ -49,11 +49,17 @@ impl LinterRule for BanNotValidValidateSameTransaction {
 
         let tx_state = ctx.file_context().transaction_state();
 
+        let (table_schema, table_name) = stmt
+            .relation
+            .as_ref()
+            .map(|r| (r.schemaname.as_str(), r.relname.as_str()))
+            .unwrap_or_default();
+
         for cmd in &stmt.cmds {
             if let Some(pgls_query::NodeEnum::AlterTableCmd(cmd)) = &cmd.node
                 && cmd.subtype() == pgls_query::protobuf::AlterTableType::AtValidateConstraint
                 && !cmd.name.is_empty()
-                && tx_state.has_not_valid_constraint(&cmd.name)
+                && tx_state.has_not_valid_constraint(table_schema, table_name, &cmd.name)
             {
                 let constraint_name = &cmd.name;
                 diagnostics.push(

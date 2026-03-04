@@ -27,7 +27,7 @@ declare_lint_rule! {
     pub BanTruncate {
         version: "next",
         name: "banTruncate",
-        severity: Severity::Warning,
+        severity: Severity::Error,
         recommended: true,
         sources: &[RuleSource::Pgfence("truncate")],
     }
