@@ -1,0 +1,17 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+-- expect_lint/safety/requireStatementTimeout
+REFRESH MATERIALIZED VIEW my_view;
+
+```
+
+# Diagnostics
+lint/safety/requireStatementTimeout ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Statement takes a dangerous lock without a statement_timeout set.
+  
+  i Run SET statement_timeout = '...' before this statement to prevent it from running indefinitely.

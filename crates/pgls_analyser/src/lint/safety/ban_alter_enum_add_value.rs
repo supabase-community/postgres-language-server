@@ -6,10 +6,9 @@ use pgls_diagnostics::Severity;
 declare_lint_rule! {
     /// `ALTER TYPE ... ADD VALUE` cannot run inside a transaction block in older Postgres versions.
     ///
-    /// Adding a value to an enum type acquires an `ACCESS EXCLUSIVE` lock on the enum type.
     /// In Postgres versions before 12, `ALTER TYPE ... ADD VALUE` cannot be executed inside a
-    /// transaction block. Even in newer versions, the new value cannot be used in the same
-    /// transaction until it is committed.
+    /// transaction block at all. On Postgres 12+, the operation is fast (metadata-only), but the
+    /// new enum value cannot be used in the same transaction until it is committed.
     ///
     /// ## Examples
     ///
@@ -46,12 +45,12 @@ impl LinterRule for BanAlterEnumAddValue {
                     rule_category!(),
                     None,
                     markup! {
-                        <Emphasis>"ALTER TYPE ... ADD VALUE"</Emphasis>" acquires an "<Emphasis>"ACCESS EXCLUSIVE"</Emphasis>" lock on the enum type."
+                        <Emphasis>"ALTER TYPE ... ADD VALUE"</Emphasis>" cannot be used in a transaction block before Postgres 12."
                     },
                 )
                 .detail(
                     None,
-                    "The new enum value cannot be used in the same transaction. In Postgres versions before 12, this statement cannot run inside a transaction block at all.",
+                    "On Postgres 12+, the operation is fast but the new value cannot be used in the same transaction until committed.",
                 ),
             );
         }

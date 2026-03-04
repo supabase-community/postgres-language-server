@@ -1060,7 +1060,7 @@ impl Safety {
             "banDropTrigger" => Severity::Warning,
             "banEnableDisableTrigger" => Severity::Warning,
             "banNotValidValidateSameTransaction" => Severity::Error,
-            "banTruncate" => Severity::Warning,
+            "banTruncate" => Severity::Error,
             "banTruncateCascade" => Severity::Error,
             "banUpdateWithoutWhere" => Severity::Warning,
             "banVacuumFull" => Severity::Error,

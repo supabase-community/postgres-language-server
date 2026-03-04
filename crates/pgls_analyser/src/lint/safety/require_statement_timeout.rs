@@ -41,7 +41,7 @@ impl LinterRule for RequireStatementTimeout {
             return vec![];
         }
 
-        if !is_dangerous_lock_stmt(ctx.stmt(), tx_state) {
+        if !tx_state.is_dangerous_lock_stmt(ctx.stmt()) {
             return vec![];
         }
 
@@ -58,31 +58,5 @@ impl LinterRule for RequireStatementTimeout {
                 "Run SET statement_timeout = '...' before this statement to prevent it from running indefinitely.",
             ),
         ]
-    }
-}
-
-fn is_dangerous_lock_stmt(
-    stmt: &pgls_query::NodeEnum,
-    tx_state: &crate::linter_context::TransactionState,
-) -> bool {
-    match stmt {
-        pgls_query::NodeEnum::AlterTableStmt(alter_stmt) => {
-            if let Some(relation) = &alter_stmt.relation {
-                !tx_state.has_created_object(&relation.schemaname, &relation.relname)
-            } else {
-                true
-            }
-        }
-        pgls_query::NodeEnum::IndexStmt(index_stmt) => {
-            if index_stmt.concurrent {
-                return false;
-            }
-            if let Some(relation) = &index_stmt.relation {
-                !tx_state.has_created_object(&relation.schemaname, &relation.relname)
-            } else {
-                true
-            }
-        }
-        _ => false,
     }
 }

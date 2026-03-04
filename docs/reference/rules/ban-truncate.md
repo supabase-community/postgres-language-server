@@ -27,7 +27,7 @@ truncate my_table;
 ```sh
 code-block.sql:1:1 lint/safety/banTruncate ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-  ! Truncating a table removes all rows and can cause data loss.
+  × Truncating a table removes all rows and can cause data loss.
   
   > 1 │ truncate my_table;
       │ ^^^^^^^^^^^^^^^^^^
