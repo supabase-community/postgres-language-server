@@ -4,13 +4,13 @@ Several tools address migration safety and schema change linting for PostgreSQL.
 
 Some of our [lint rules are ported from these tools](./rule_sources.md).
 
-## Migration Safety Linters
+## Migration Safety Tools
 
 ### Eugene
 
 - **Language**: Rust
 - **Repository**: [github.com/kaaveland/eugene](https://github.com/kaaveland/eugene)
-- **Approach**: DDL lint with a unique trace mode that runs migrations against a real database and reports actual lock events
+- **Approach**: DDL linting with a unique trace mode that runs migrations against a real database and reports actual lock events
 - **Best for**: Teams that want ground-truth lock analysis from observed Postgres behavior, not just static analysis
 - **Scope**: Raw SQL migrations
 
@@ -30,7 +30,7 @@ Some of our [lint rules are ported from these tools](./rule_sources.md).
 - **Best for**: Teams using ORMs (TypeORM, Knex, Sequelize, Drizzle, Prisma) who need safety analysis on generated SQL, or teams that want size-aware risk scoring
 - **Scope**: Raw SQL and ORM-generated migrations
 
-### strong_migrations
+### Strong Migrations
 
 - **Language**: Ruby
 - **Repository**: [github.com/ankane/strong_migrations](https://github.com/ankane/strong_migrations)
