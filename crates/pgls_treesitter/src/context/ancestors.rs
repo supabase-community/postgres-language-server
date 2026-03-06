@@ -30,7 +30,7 @@ impl ScopeTracker {
 
         self.scopes
             .last_mut()
-            .unwrap_or_else(|| panic!("No top-level grammar-rule found. Please create an issue with the entire Postgres file, noting where you've hovered."))
+            .unwrap_or_else(|| panic!("No top-level grammar-rule found. Please create an issue with the entire Postgres file, noting cursor/hover position."))
             .ancestors
             .register(node, position);
     }
