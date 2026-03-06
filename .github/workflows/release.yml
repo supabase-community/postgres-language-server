@@ -120,10 +120,12 @@ jobs:
         with:
           path: |
             ~/.cargo/bin/tree-sitter
-          key: ${{ runner.os }}-tree-sitter-${{ hashFiles('rust-toolchain.toml') }}
+            target/**/build/pgls_treesitter_grammar-*/out/generated
+          key: ${{ runner.os }}-tree-sitter-${{ hashFiles('.tree-sitter-cli-version', 'crates/pgls_treesitter_grammar/grammar.js', 'crates/pgls_treesitter_grammar/tree-sitter.json', 'rust-toolchain.toml', 'Cargo.lock') }}
 
       - name: Setup tree-sitter
-        run: command -v tree-sitter || cargo install tree-sitter-cli
+        run: command -v tree-sitter || cargo install tree-sitter-cli --version "$(cat .tree-sitter-cli-version)" --locked
+        shell: bash
 
       - name: Setup Postgres
         uses: ./.github/actions/setup-postgres

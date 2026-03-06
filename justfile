@@ -11,7 +11,7 @@ alias qm := quick-modify
 # Installs the tools needed to develop
 install-tools:
 	cargo install cargo-binstall
-	cargo install tree-sitter-cli
+	cargo install tree-sitter-cli --version "$(cat .tree-sitter-cli-version)" --locked
 	cargo binstall cargo-insta taplo-cli sqlx-cli
 	cargo binstall --git "https://github.com/astral-sh/uv" uv
 	bun install
@@ -19,7 +19,7 @@ install-tools:
 # Upgrades the tools needed to develop
 upgrade-tools:
 	cargo install cargo-binstall --force
-	cargo install tree-sitter-cli  --force
+	cargo install tree-sitter-cli --version "$(cat .tree-sitter-cli-version)" --locked --force
 	cargo binstall cargo-insta taplo-cli sqlx-cli --force
 	cargo binstall --git "https://github.com/astral-sh/uv" uv --force
 
@@ -28,6 +28,7 @@ gen-lint:
   cargo run -p xtask_codegen -- analyser
   cargo run -p xtask_codegen -- configuration
   cargo run -p xtask_codegen -- bindings
+  cargo run -p xtask_codegen -- schema-types
   cargo run -p xtask_codegen -- splinter
   cargo run -p xtask_codegen -- pglinter
   cargo run -p rules_check
@@ -113,6 +114,7 @@ ready:
   cargo run -p xtask_codegen -- configuration
   cargo run -p docs_codegen
   cargo run -p xtask_codegen -- bindings
+  cargo run -p xtask_codegen -- schema-types
   cargo sqlx prepare --workspace
   just format # format after codegen, so we don't have staged changes before lint-fix
   just lint-fix
@@ -159,4 +161,3 @@ quick-modify:
 # just show-logs | bunyan
 show-logs:
     tail -f $(ls $PGLS_LOG_PATH/server.log.* | sort -t- -k2,2 -k3,3 -k4,4 | tail -n 1)
-
