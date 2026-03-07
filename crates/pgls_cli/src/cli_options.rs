@@ -44,7 +44,7 @@ pub struct CliOptions {
     #[bpaf(long("no-errors-on-unmatched"), switch)]
     pub no_errors_on_unmatched: bool,
 
-    /// Tell Postgres Tools to exit with an error code if some diagnostics emit warnings.
+    /// Tell Postgres Language Server to exit with an error code if some diagnostics emit warnings.
     #[bpaf(long("error-on-warnings"), switch)]
     pub error_on_warnings: bool,
 
