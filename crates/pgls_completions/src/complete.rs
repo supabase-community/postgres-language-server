@@ -187,33 +187,27 @@ mod tests {
         "#;
 
         TestCompletionsSuite::new(&pool, Some(setup))
-            // basic COPY TO (full statement typed once)
             .with_case(TestCompletionsCase::new().type_sql("copy instruments to stdout;"))
-            // COPY FROM
             .with_case(
                 TestCompletionsCase::new()
                     .inside_static_statement("copy instruments <sql>")
                     .type_sql("from stdin;"),
             )
-            // column list
             .with_case(
                 TestCompletionsCase::new()
                     .inside_static_statement("copy instruments (<sql>) to stdout;")
                     .type_sql("id, name"),
             )
-            // WITH format options (TO)
             .with_case(
                 TestCompletionsCase::new()
                     .inside_static_statement("copy instruments to stdout <sql>")
                     .type_sql("with (format csv, header);"),
             )
-            // WITH format options (FROM)
             .with_case(
                 TestCompletionsCase::new()
                     .inside_static_statement("copy instruments from stdin <sql>")
                     .type_sql("with (format csv, header);"),
             )
-            // subquery
             .with_case(
                 TestCompletionsCase::new()
                     .inside_static_statement("copy (<sql>) to stdout;")
