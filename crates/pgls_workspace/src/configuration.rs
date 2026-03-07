@@ -338,7 +338,7 @@ impl PartialConfigurationExt for PartialConfiguration {
                         err.to_string(),
                     )
                     .with_verbose_advice(markup! {
-                        "Postgres Tools tried to load the configuration file \""<Emphasis>{
+                        "Postgres Language Server tried to load the configuration file \""<Emphasis>{
                             extend_configuration_file_path.display().to_string()
                         }</Emphasis>"\" in \"extends\" using \""<Emphasis>{
                             external_resolution_base_path.display().to_string()
