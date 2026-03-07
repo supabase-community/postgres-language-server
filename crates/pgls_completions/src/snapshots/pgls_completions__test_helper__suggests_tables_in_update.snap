@@ -76,9 +76,9 @@ update public.coos set |
 Results:
 id - public.coos.id (Column)
 name - public.coos.name (Column)
+public - public (Schema)
 information_schema - information_schema (Schema)
 pg_catalog - pg_catalog (Schema)
-pg_toast - pg_toast (Schema)
 
 --------------
 
@@ -107,7 +107,20 @@ information_schema - information_schema (Schema)
 
 update public.coos set name = '|
 update public.coos set name = 'cool' |
+
+Results:
+from - from (Keyword)
+where - where (Keyword)
+
+--------------
+
 update public.coos set name = 'cool' w|
+
+Results:
+where - where (Keyword)
+
+--------------
+
 update public.coos set name = 'cool' where |
 
 Results:

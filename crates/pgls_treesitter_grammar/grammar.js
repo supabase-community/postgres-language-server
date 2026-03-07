@@ -2357,7 +2357,7 @@ module.exports = grammar({
 
     _column_indirection: ($) =>
       seq(
-        field("end", $.column_identifier),
+        $.column_identifier,
         repeat(
           choice(
             prec.right($.column_indirection_array_access),
@@ -2389,8 +2389,7 @@ module.exports = grammar({
         ),
       ),
 
-    _set_values: ($) =>
-      partialSeq($.keyword_set, comma_list($.assignment, true)),
+    _set_values: ($) => $.update_set_values,
 
     _column_list: ($) => paren_list(alias($._column, $.column), false),
     _column: ($) =>
@@ -2524,10 +2523,54 @@ module.exports = grammar({
     update: ($) =>
       partialSeq(
         $.keyword_update,
-        optional($.keyword_only),
-        $.relation,
-        $._set_values,
-        optional($.where),
+        $.update_target,
+        $.update_set_values,
+        optional($.update_from),
+        optional(choice($.where, $.where_current_of)),
+      ),
+
+    update_target: ($) =>
+      choice(
+        partialSeq(
+          $.keyword_only,
+          field("end", $.table_reference),
+          optional("*"),
+          optional($.alias),
+        ),
+        seq(field("end", $.table_reference), optional("*"), optional($.alias)),
+      ),
+
+    update_set_values: ($) =>
+      partialSeq($.keyword_set, field("end", comma_list($.assignment, true))),
+
+    update_from: ($) =>
+      partialSeq(
+        $.keyword_from,
+        field(
+          "end",
+          seq(
+            comma_list($.relation, true),
+            repeat(
+              choice(
+                $.join,
+                $.cross_join,
+                $.lateral_join,
+                $.lateral_cross_join,
+              ),
+            ),
+          ),
+        ),
+      ),
+
+    where_current_of: ($) =>
+      prec(
+        1,
+        partialSeq(
+          $.keyword_where,
+          $.keyword_current,
+          $.keyword_of,
+          field("end", $.any_identifier),
+        ),
       ),
 
     table_partition: ($) =>
@@ -2566,10 +2609,40 @@ module.exports = grammar({
       ),
 
     assignment: ($) =>
-      partialSeq(
-        field("left", $.column_reference),
-        "=",
-        field("right", $._expression),
+      choice(
+        partialSeq(
+          field("left", $._column_indirection),
+          "=",
+          field("end", choice($._expression, $.all_fields, $.keyword_default)),
+        ),
+        partialSeq(
+          field("left", $.lhs_column_list),
+          "=",
+          field("end", $.rhs_column_list),
+        ),
+      ),
+
+    lhs_column_list: ($) =>
+      partialSeq("(", comma_list($._column_indirection, false), ")"),
+
+    rhs_column_list: ($) =>
+      choice(
+        wrapped_in_parenthesis(
+          comma_list(
+            choice($._expression, $.all_fields, $.keyword_default),
+            true,
+          ),
+        ),
+        partialSeq(
+          $.keyword_row,
+          wrapped_in_parenthesis(
+            comma_list(
+              choice($._expression, $.all_fields, $.keyword_default),
+              false,
+            ),
+          ),
+        ),
+        $.subquery,
       ),
 
     table_option: ($) =>
@@ -3082,7 +3155,25 @@ module.exports = grammar({
 
     offset: ($) => partialSeq($.keyword_offset, field("end", $.literal)),
 
-    returning: ($) => partialSeq($.keyword_returning, $.select_expression),
+    returning: ($) =>
+      partialSeq(
+        $.keyword_returning,
+        optional($.returning_with),
+        field("end", $.select_expression),
+      ),
+
+    returning_with: ($) =>
+      partialSeq(
+        $.keyword_with,
+        wrapped_in_parenthesis(comma_list($.returning_with_item, true)),
+      ),
+
+    returning_with_item: ($) =>
+      partialSeq(
+        choice($.keyword_old, $.keyword_new),
+        $.keyword_as,
+        field("end", $.any_identifier),
+      ),
 
     grant_statement: ($) =>
       prec.left(

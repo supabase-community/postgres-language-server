@@ -36,8 +36,8 @@ fn test_1() {
 #[test]
 fn test_2() {
     let sql1 = "update auth.users set email = 'my@mail.com';";
-    let sql2 = "update auth.users set users.email = 'my@mail.com';";
-    let sql3 = "update auth.users set auth.users.email = 'my@mail.com';";
+    let sql2 = "update auth.users as u set email = 'my@mail.com' where u.id = 1;";
+    let sql3 = "update auth.users set (email, id) = ('my@mail.com', 1);";
 
     file_snapshot("test_2_sql1", sql1);
     file_snapshot("test_2_sql2", sql2);
