@@ -2618,32 +2618,32 @@ module.exports = grammar({
         partialSeq(
           field("left", $.lhs_column_list),
           "=",
-          field(
-            "end",
-            choice(
-              wrapped_in_parenthesis(
-                comma_list(
-                  choice($._expression, $.all_fields, $.keyword_default),
-                  true,
-                ),
-              ),
-              partialSeq(
-                $.keyword_row,
-                wrapped_in_parenthesis(
-                  comma_list(
-                    choice($._expression, $.all_fields, $.keyword_default),
-                    false,
-                  ),
-                ),
-              ),
-              $.subquery,
-            ),
-          ),
+          field("end", $.rhs_column_list),
         ),
       ),
 
     lhs_column_list: ($) =>
       partialSeq("(", comma_list($._column_indirection, false), ")"),
+
+    rhs_column_list: ($) =>
+      choice(
+        wrapped_in_parenthesis(
+          comma_list(
+            choice($._expression, $.all_fields, $.keyword_default),
+            true,
+          ),
+        ),
+        partialSeq(
+          $.keyword_row,
+          wrapped_in_parenthesis(
+            comma_list(
+              choice($._expression, $.all_fields, $.keyword_default),
+              false,
+            ),
+          ),
+        ),
+        $.subquery,
+      ),
 
     table_option: ($) =>
       choice(
