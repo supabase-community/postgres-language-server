@@ -36,6 +36,7 @@ pub enum WrappingClause<'a> {
     DropRole,
     RevokeStatement,
     GrantStatement,
+    CopyStatement,
 
     CreatePolicy,
     AlterPolicy,
@@ -402,6 +403,7 @@ impl<'a> TreesitterContext<'a> {
             "set_statement" => Some(WrappingClause::SetStatement),
             "revoke_statement" => Some(WrappingClause::RevokeStatement),
             "grant_statement" => Some(WrappingClause::GrantStatement),
+            "copy_statement" => Some(WrappingClause::CopyStatement),
             "column_definitions" => Some(WrappingClause::ColumnDefinitions),
             "create_policy" => Some(WrappingClause::CreatePolicy),
             "alter_policy" => Some(WrappingClause::AlterPolicy),
