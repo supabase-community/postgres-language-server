@@ -63,6 +63,8 @@ pub static ALL_KEYWORDS: &[SqlKeyword] = &[
     SqlKeyword::new("boolean"),
     SqlKeyword::new("brin"),
     SqlKeyword::new("btree"),
+    SqlKeyword::new("buffer_usage_limit"),
+    SqlKeyword::new("buffers"),
     SqlKeyword::new("by"),
     SqlKeyword::new("bytea"),
     SqlKeyword::new("cache"),
@@ -77,7 +79,6 @@ pub static ALL_KEYWORDS: &[SqlKeyword] = &[
     SqlKeyword::new("check"),
     SqlKeyword::new("collate"),
     SqlKeyword::new("column"),
-    SqlKeyword::new("columns"),
     SqlKeyword::new("comment").starts_statement(),
     SqlKeyword::new("commit").starts_statement(),
     SqlKeyword::new("committed"),
@@ -89,6 +90,7 @@ pub static ALL_KEYWORDS: &[SqlKeyword] = &[
     SqlKeyword::new("constraints"),
     SqlKeyword::new("copy").starts_statement(),
     SqlKeyword::new("cost"),
+    SqlKeyword::new("costs"),
     SqlKeyword::new("create").starts_statement(),
     SqlKeyword::new("cross"),
     SqlKeyword::new("csv"),
@@ -109,7 +111,6 @@ pub static ALL_KEYWORDS: &[SqlKeyword] = &[
     SqlKeyword::new("delete").starts_statement(),
     SqlKeyword::new("delimiter"),
     SqlKeyword::new("desc"),
-    SqlKeyword::new("disable_page_skipping"),
     SqlKeyword::new("distinct"),
     SqlKeyword::new("do").starts_statement(),
     SqlKeyword::new("double"),
@@ -149,6 +150,7 @@ pub static ALL_KEYWORDS: &[SqlKeyword] = &[
     SqlKeyword::new("function"),
     SqlKeyword::new("functions"),
     SqlKeyword::new("generated"),
+    SqlKeyword::new("generic_plan"),
     SqlKeyword::new("gin"),
     SqlKeyword::new("gist"),
     SqlKeyword::new("grant").starts_statement(),
@@ -159,12 +161,12 @@ pub static ALL_KEYWORDS: &[SqlKeyword] = &[
     SqlKeyword::new("having"),
     SqlKeyword::new("header"),
     SqlKeyword::new("if"),
+    SqlKeyword::new("ignore"),
     SqlKeyword::new("immediate"),
     SqlKeyword::new("immutable"),
     SqlKeyword::new("in").require_prefix(),
     SqlKeyword::new("increment"),
     SqlKeyword::new("index"),
-    SqlKeyword::new("index_cleanup"),
     SqlKeyword::new("inet"),
     SqlKeyword::new("inherit"),
     SqlKeyword::new("initially"),
@@ -194,7 +196,7 @@ pub static ALL_KEYWORDS: &[SqlKeyword] = &[
     SqlKeyword::new("limit"),
     SqlKeyword::new("list"),
     SqlKeyword::new("local"),
-    SqlKeyword::new("location"),
+    SqlKeyword::new("log_verbosity"),
     SqlKeyword::new("logged"),
     SqlKeyword::new("main"),
     SqlKeyword::new("maintain"),
@@ -202,6 +204,7 @@ pub static ALL_KEYWORDS: &[SqlKeyword] = &[
     SqlKeyword::new("matched"),
     SqlKeyword::new("materialized"),
     SqlKeyword::new("maxvalue"),
+    SqlKeyword::new("memory"),
     SqlKeyword::new("merge").starts_statement(),
     SqlKeyword::new("minvalue"),
     SqlKeyword::new("money"),
@@ -213,7 +216,6 @@ pub static ALL_KEYWORDS: &[SqlKeyword] = &[
     SqlKeyword::new("none"),
     SqlKeyword::new("not").require_prefix(),
     SqlKeyword::new("nothing"),
-    SqlKeyword::new("nowait"),
     SqlKeyword::new("null").require_prefix(),
     SqlKeyword::new("nulls"),
     SqlKeyword::new("numeric"),
@@ -224,6 +226,7 @@ pub static ALL_KEYWORDS: &[SqlKeyword] = &[
     SqlKeyword::new("oids"),
     SqlKeyword::new("old"),
     SqlKeyword::new("on"),
+    SqlKeyword::new("on_error"),
     SqlKeyword::new("only").require_prefix(),
     SqlKeyword::new("option"),
     SqlKeyword::new("or").require_prefix(),
@@ -238,19 +241,16 @@ pub static ALL_KEYWORDS: &[SqlKeyword] = &[
     SqlKeyword::new("owner"),
     SqlKeyword::new("parallel"),
     SqlKeyword::new("partition"),
-    SqlKeyword::new("partitioned"),
     SqlKeyword::new("password"),
     SqlKeyword::new("permissive"),
     SqlKeyword::new("plain"),
     SqlKeyword::new("policy"),
-    SqlKeyword::new("precedes"),
     SqlKeyword::new("preceding"),
     SqlKeyword::new("precision"),
     SqlKeyword::new("primary"),
     SqlKeyword::new("privileges"),
     SqlKeyword::new("procedure"),
     SqlKeyword::new("procedures"),
-    SqlKeyword::new("process_toast"),
     SqlKeyword::new("program"),
     SqlKeyword::new("public"),
     SqlKeyword::new("quote"),
@@ -264,10 +264,10 @@ pub static ALL_KEYWORDS: &[SqlKeyword] = &[
     SqlKeyword::new("regnamespace"),
     SqlKeyword::new("regproc"),
     SqlKeyword::new("regtype"),
+    SqlKeyword::new("reject_limit"),
     SqlKeyword::new("rename"),
     SqlKeyword::new("repeatable"),
     SqlKeyword::new("replace"),
-    SqlKeyword::new("replication"),
     SqlKeyword::new("reset").starts_statement(),
     SqlKeyword::new("restart"),
     SqlKeyword::new("restrict"),
@@ -277,7 +277,6 @@ pub static ALL_KEYWORDS: &[SqlKeyword] = &[
     SqlKeyword::new("returning"),
     SqlKeyword::new("returns"),
     SqlKeyword::new("revoke").starts_statement(),
-    SqlKeyword::new("rewrite"),
     SqlKeyword::new("right"),
     SqlKeyword::new("role"),
     SqlKeyword::new("rollback").starts_statement(),
@@ -296,7 +295,10 @@ pub static ALL_KEYWORDS: &[SqlKeyword] = &[
     SqlKeyword::new("session_user"),
     SqlKeyword::new("set").starts_statement(),
     SqlKeyword::new("setof"),
+    SqlKeyword::new("settings"),
+    SqlKeyword::new("share"),
     SqlKeyword::new("show").starts_statement(),
+    SqlKeyword::new("silent"),
     SqlKeyword::new("similar").require_prefix(),
     SqlKeyword::new("skip_locked"),
     SqlKeyword::new("smallint"),
@@ -309,9 +311,12 @@ pub static ALL_KEYWORDS: &[SqlKeyword] = &[
     SqlKeyword::new("statement"),
     SqlKeyword::new("statistics"),
     SqlKeyword::new("stdin"),
+    SqlKeyword::new("stdout"),
+    SqlKeyword::new("stop"),
     SqlKeyword::new("storage"),
     SqlKeyword::new("stored"),
     SqlKeyword::new("strict"),
+    SqlKeyword::new("summary"),
     SqlKeyword::new("support"),
     SqlKeyword::new("system"),
     SqlKeyword::new("table"),
@@ -325,6 +330,7 @@ pub static ALL_KEYWORDS: &[SqlKeyword] = &[
     SqlKeyword::new("time"),
     SqlKeyword::new("timestamp"),
     SqlKeyword::new("timestamptz"),
+    SqlKeyword::new("timing"),
     SqlKeyword::new("to"),
     SqlKeyword::new("transaction"),
     SqlKeyword::new("trigger"),
@@ -353,6 +359,7 @@ pub static ALL_KEYWORDS: &[SqlKeyword] = &[
     SqlKeyword::new("version"),
     SqlKeyword::new("view"),
     SqlKeyword::new("volatile"),
+    SqlKeyword::new("wal"),
     SqlKeyword::new("when"),
     SqlKeyword::new("where"),
     SqlKeyword::new("window"),
@@ -360,6 +367,7 @@ pub static ALL_KEYWORDS: &[SqlKeyword] = &[
     SqlKeyword::new("without"),
     SqlKeyword::new("write"),
     SqlKeyword::new("xml"),
+    SqlKeyword::new("yaml"),
     SqlKeyword::new("zone"),
 ];
 
@@ -409,16 +417,91 @@ pub fn complete_keywords<'a>(
 
 #[cfg(test)]
 mod tests {
+    use std::collections::HashSet;
+
     use pgls_test_utils::QueryWithCursorPosition;
+    use regex::Regex;
     use sqlx::PgPool;
+    use tree_sitter::Language;
 
     use crate::{
         CompletionItemKind,
+        providers::keywords::ALL_KEYWORDS,
         test_helper::{
             CompletionAssertion, TestCompletionsCase, TestCompletionsSuite,
             assert_complete_results, assert_no_complete_results,
         },
     };
+
+    #[test]
+    fn has_all_keywords_from_treesitter_grammar() {
+        let expected_keywords = keywords_from_treesitter_grammar();
+        let actual_keywords = all_keywords_set();
+
+        let mut missing_keywords = expected_keywords
+            .difference(&actual_keywords)
+            .cloned()
+            .collect::<Vec<_>>();
+        missing_keywords.sort_unstable();
+
+        assert!(
+            missing_keywords.is_empty(),
+            "Found {} keyword(s) from tree-sitter grammar that are missing from ALL_KEYWORDS.\n\
+             Add missing entries to ALL_KEYWORDS in crates/pgls_completions/src/providers/keywords.rs.\n\
+             Missing keywords:\n{}",
+            missing_keywords.len(),
+            missing_keywords.join("\n")
+        );
+    }
+
+    #[test]
+    fn has_no_extra_keywords_outside_treesitter_grammar() {
+        let expected_keywords = keywords_from_treesitter_grammar();
+        let actual_keywords = all_keywords_set();
+
+        let mut extra_keywords = actual_keywords
+            .difference(&expected_keywords)
+            .cloned()
+            .collect::<Vec<_>>();
+        extra_keywords.sort_unstable();
+
+        assert!(
+            extra_keywords.is_empty(),
+            "Found {} keyword(s) in ALL_KEYWORDS that are not tree-sitter grammar keywords.\n\
+             Remove these from ALL_KEYWORDS or add matching keyword_* symbols to grammar.js.\n\
+             Extra keywords:\n{}",
+            extra_keywords.len(),
+            extra_keywords.join("\n")
+        );
+    }
+
+    fn all_keywords_set() -> HashSet<String> {
+        ALL_KEYWORDS
+            .iter()
+            .map(|keyword| keyword.name.to_string())
+            .collect::<HashSet<_>>()
+    }
+
+    fn keywords_from_treesitter_grammar() -> HashSet<String> {
+        let language: Language = pgls_treesitter_grammar::LANGUAGE.into();
+        // Tree-sitter generates auxiliary symbol names like `keyword_int_token2` for keyword
+        // rules that use `choice(...)`. Strip the suffix to compare canonical keyword names.
+        let generated_token_suffix =
+            Regex::new(r"_token\d+$").expect("valid regex for generated token suffix");
+        let mut keywords = HashSet::new();
+
+        for id in 0..language.node_kind_count() {
+            let Some(kind) = language.node_kind_for_id(id as u16) else {
+                continue;
+            };
+            if let Some(keyword) = kind.strip_prefix("keyword_") {
+                let keyword = generated_token_suffix.replace(keyword, "").to_string();
+                keywords.insert(keyword);
+            }
+        }
+
+        keywords
+    }
 
     #[sqlx::test]
     async fn completes_stmt_start_keywords(pool: PgPool) {
