@@ -63,4 +63,4 @@ postgres-language-server check migrations/ --only safety/banDropColumn
 postgres-language-server check migrations/ --skip safety/banDropTable
 ```
 
-See the [CLI Reference](../reference/cli.md) for more options, and check the guide on [linting migrations]('../guides/checking_migrations.md').
+See the [CLI Reference](../reference/cli.md) for more options, and check the guide on [linting migrations](../guides/checking_migrations.md).
