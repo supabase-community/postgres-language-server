@@ -16,7 +16,7 @@ program [0..44] 'update auth.users set email = 'my@mail.com';'
       update_set_values [18..43] 'set email = 'my@mail.com''
         keyword_set [18..21] 'set'
         assignment [22..43] 'email = 'my@mail.com'' (@end)
-          column_identifier [22..27] 'email' (@end)
+          column_identifier [22..27] 'email' (@left)
           = [28..29] '='
-          literal [30..43] ''my@mail.com'' (@right)
+          literal [30..43] ''my@mail.com'' (@end)
   ; [43..44] ';'

@@ -84,6 +84,8 @@ module.exports = grammar({
   rules: {
     program: ($) =>
       choice(
+        // NOTE: if you add a new top-level statement, make sure to define it
+        // as a top-level boundary in treesitter context
         seq(
           repeat(
             choice(
@@ -145,7 +147,6 @@ module.exports = grammar({
     keyword_tables: (_) => make_keyword("tables"),
     keyword_view: (_) => make_keyword("view"),
     keyword_column: (_) => make_keyword("column"),
-    keyword_columns: (_) => make_keyword("columns"),
     keyword_materialized: (_) => make_keyword("materialized"),
     keyword_tablespace: (_) => make_keyword("tablespace"),
     keyword_sequence: (_) => make_keyword("sequence"),
@@ -263,7 +264,6 @@ module.exports = grammar({
     keyword_check: (_) => make_keyword("check"),
     keyword_option: (_) => make_keyword("option"),
     keyword_vacuum: (_) => make_keyword("vacuum"),
-    keyword_nowait: (_) => make_keyword("nowait"),
     keyword_attribute: (_) => make_keyword("attribute"),
     keyword_authorization: (_) => make_keyword("authorization"),
     keyword_action: (_) => make_keyword("action"),
@@ -300,7 +300,6 @@ module.exports = grammar({
     keyword_timing: (_) => make_keyword("timing"),
     keyword_summary: (_) => make_keyword("summary"),
     keyword_memory: (_) => make_keyword("memory"),
-    keyword_serialize: (_) => make_keyword("serialize"),
     keyword_skip_locked: (_) => make_keyword("skip_locked"),
     keyword_buffer_usage_limit: (_) => make_keyword("buffer_usage_limit"),
 
@@ -373,7 +372,6 @@ module.exports = grammar({
     keyword_constraints: (_) => make_keyword("constraints"),
     keyword_snapshot: (_) => make_keyword("snapshot"),
     keyword_characteristics: (_) => make_keyword("characteristics"),
-    keyword_precedes: (_) => make_keyword("precedes"),
     keyword_each: (_) => make_keyword("each"),
     keyword_instead: (_) => make_keyword("instead"),
     keyword_of: (_) => make_keyword("of"),
@@ -388,11 +386,7 @@ module.exports = grammar({
 
     keyword_external: (_) => make_keyword("external"),
     keyword_stored: (_) => make_keyword("stored"),
-    keyword_replication: (_) => make_keyword("replication"),
     keyword_statistics: (_) => make_keyword("statistics"),
-    keyword_rewrite: (_) => make_keyword("rewrite"),
-    keyword_location: (_) => make_keyword("location"),
-    keyword_partitioned: (_) => make_keyword("partitioned"),
     keyword_comment: (_) => make_keyword("comment"),
     keyword_format: (_) => make_keyword("format"),
     keyword_delimiter: (_) => make_keyword("delimiter"),
@@ -2624,32 +2618,32 @@ module.exports = grammar({
         partialSeq(
           field("left", $.lhs_column_list),
           "=",
-          field(
-            "end",
-            choice(
-              wrapped_in_parenthesis(
-                comma_list(
-                  choice($._expression, $.all_fields, $.keyword_default),
-                  true,
-                ),
-              ),
-              partialSeq(
-                $.keyword_row,
-                wrapped_in_parenthesis(
-                  comma_list(
-                    choice($._expression, $.all_fields, $.keyword_default),
-                    false,
-                  ),
-                ),
-              ),
-              $.subquery,
-            ),
-          ),
+          field("end", $.rhs_column_list),
         ),
       ),
 
     lhs_column_list: ($) =>
       partialSeq("(", comma_list($._column_indirection, false), ")"),
+
+    rhs_column_list: ($) =>
+      choice(
+        wrapped_in_parenthesis(
+          comma_list(
+            choice($._expression, $.all_fields, $.keyword_default),
+            true,
+          ),
+        ),
+        partialSeq(
+          $.keyword_row,
+          wrapped_in_parenthesis(
+            comma_list(
+              choice($._expression, $.all_fields, $.keyword_default),
+              false,
+            ),
+          ),
+        ),
+        $.subquery,
+      ),
 
     table_option: ($) =>
       choice(

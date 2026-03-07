@@ -19,9 +19,9 @@ program [0..64] 'update auth.users as u set email = 'my@mail.com' where u.id = 1
       update_set_values [23..48] 'set email = 'my@mail.com''
         keyword_set [23..26] 'set'
         assignment [27..48] 'email = 'my@mail.com'' (@end)
-          column_identifier [27..32] 'email' (@end)
+          column_identifier [27..32] 'email' (@left)
           = [33..34] '='
-          literal [35..48] ''my@mail.com'' (@right)
+          literal [35..48] ''my@mail.com'' (@end)
       where [49..63] 'where u.id = 1'
         keyword_where [49..54] 'where'
         binary_expression [55..63] 'u.id = 1' (@end)
