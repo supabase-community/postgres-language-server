@@ -1,0 +1,19 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+-- expect_lint/safety/requireStatementTimeout
+SET statement_timeout = '5s';
+COMMIT;
+ALTER TABLE users ADD COLUMN email TEXT;
+
+```
+
+# Diagnostics
+lint/safety/requireStatementTimeout ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Statement takes a dangerous lock without a statement_timeout set.
+  
+  i Run SET statement_timeout = '...' before this statement to prevent it from running indefinitely.

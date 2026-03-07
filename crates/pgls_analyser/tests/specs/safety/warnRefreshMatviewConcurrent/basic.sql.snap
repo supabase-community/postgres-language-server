@@ -1,0 +1,17 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+-- expect_lint/safety/warnRefreshMatviewConcurrent
+refresh materialized view concurrently my_view;
+
+```
+
+# Diagnostics
+lint/safety/warnRefreshMatviewConcurrent ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × REFRESH MATERIALIZED VIEW CONCURRENTLY still acquires an EXCLUSIVE lock.
+  
+  i Concurrent refresh allows reads but still blocks DDL and writes. Consider the impact on long-running refreshes.

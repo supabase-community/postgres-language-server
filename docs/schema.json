@@ -1017,6 +1017,50 @@
             "null"
           ]
         },
+        "banAddExclusionConstraint": {
+          "description": "Adding an exclusion constraint acquires an ACCESS EXCLUSIVE lock.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "banAlterEnumAddValue": {
+          "description": "ALTER TYPE ... ADD VALUE cannot run inside a transaction block in older Postgres versions.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "banAttachPartition": {
+          "description": "Attaching a partition acquires an ACCESS EXCLUSIVE lock on the parent table.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "banBlockingRefreshMatview": {
+          "description": "REFRESH MATERIALIZED VIEW without CONCURRENTLY acquires an ACCESS EXCLUSIVE lock.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "banCharField": {
           "description": "Using CHAR(n) or CHARACTER(n) types is discouraged.",
           "anyOf": [
@@ -1030,6 +1074,28 @@
         },
         "banConcurrentIndexCreationInTransaction": {
           "description": "Concurrent index creation is not allowed within a transaction.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "banCreateTrigger": {
+          "description": "Creating a trigger acquires a SHARE ROW EXCLUSIVE lock on the table.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "banDeleteWithoutWhere": {
+          "description": "A DELETE statement without a WHERE clause will remove all rows from the table.",
           "anyOf": [
             {
               "$ref": "#/definitions/RuleConfiguration"
@@ -1072,8 +1138,63 @@
             }
           ]
         },
+        "banDropSchema": {
+          "description": "Dropping a schema will remove all objects within it and may break existing clients.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "banDropTable": {
           "description": "Dropping a table may break existing clients.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "banDropTrigger": {
+          "description": "Dropping a trigger acquires an ACCESS EXCLUSIVE lock on the table.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "banEnableDisableTrigger": {
+          "description": "Enabling or disabling a trigger acquires a SHARE ROW EXCLUSIVE lock.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "banNotValidValidateSameTransaction": {
+          "description": "Validating a constraint in the same transaction it was added as NOT VALID defeats the purpose.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "banTruncate": {
+          "description": "Truncating a table removes all rows and can cause data loss in production.",
           "anyOf": [
             {
               "$ref": "#/definitions/RuleConfiguration"
@@ -1094,8 +1215,30 @@
             }
           ]
         },
+        "banUpdateWithoutWhere": {
+          "description": "An UPDATE statement without a WHERE clause will modify all rows in the table.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "banVacuumFull": {
+          "description": "VACUUM FULL rewrites the entire table and acquires an ACCESS EXCLUSIVE lock.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "changingColumnType": {
-          "description": "Changing a column type may break existing clients.",
+          "description": "Changing a column type may require a table rewrite and break existing clients.",
           "anyOf": [
             {
               "$ref": "#/definitions/RuleConfiguration"
@@ -1277,6 +1420,17 @@
             }
           ]
         },
+        "requireConcurrentDetachPartition": {
+          "description": "Detaching a partition without CONCURRENTLY acquires an ACCESS EXCLUSIVE lock.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "requireConcurrentIndexCreation": {
           "description": "Creating indexes non-concurrently can lock the table for writes.",
           "anyOf": [
@@ -1299,6 +1453,39 @@
             }
           ]
         },
+        "requireConcurrentReindex": {
+          "description": "REINDEX without CONCURRENTLY acquires an ACCESS EXCLUSIVE lock on the table.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "requireIdleInTransactionTimeout": {
+          "description": "Dangerous lock statements should be preceded by SET idle_in_transaction_session_timeout.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "requireStatementTimeout": {
+          "description": "Dangerous lock statements should be preceded by SET statement_timeout.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "runningStatementWhileHoldingAccessExclusive": {
           "description": "Running additional statements while holding an ACCESS EXCLUSIVE lock blocks all table access.",
           "anyOf": [
@@ -1312,6 +1499,28 @@
         },
         "transactionNesting": {
           "description": "Detects problematic transaction nesting that could lead to unexpected behavior.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "warnRefreshMatviewConcurrent": {
+          "description": "REFRESH MATERIALIZED VIEW CONCURRENTLY still acquires an EXCLUSIVE lock.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "warnWideLockWindow": {
+          "description": "Acquiring ACCESS EXCLUSIVE locks on multiple tables widens the lock window.",
           "anyOf": [
             {
               "$ref": "#/definitions/RuleConfiguration"
