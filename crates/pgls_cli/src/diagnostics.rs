@@ -14,10 +14,10 @@ fn command_name() -> String {
     current_exe()
         .ok()
         .and_then(|path| Some(path.file_name()?.to_str()?.to_string()))
-        .unwrap_or_else(|| String::from("postgrestools"))
+        .unwrap_or_else(|| String::from("postgres-language-server"))
 }
 
-/// A diagnostic that is emitted when running Postgres Tools via CLI.
+/// A diagnostic that is emitted when running Postgres Language Server via CLI.
 ///
 /// When displaying the diagnostic,
 #[derive(Debug, Diagnostic)]
