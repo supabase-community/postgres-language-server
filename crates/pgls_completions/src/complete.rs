@@ -79,36 +79,30 @@ mod tests {
         "#;
 
         TestCompletionsSuite::new(&pool, Some(setup))
-            // basic SET + WHERE (full statement typed once)
             .with_case(
                 TestCompletionsCase::new()
                     .type_sql("update instruments set name = 'new' where id = 1;"),
             )
-            // multi-col SET + alias
             .with_case(
                 TestCompletionsCase::new()
                     .inside_static_statement("update instruments as i <sql> where i.id = 1;")
                     .type_sql("set name = 'x', z = 'y'"),
             )
-            // RETURNING clause
             .with_case(
                 TestCompletionsCase::new()
                     .inside_static_statement("update instruments set name = 'x' <sql>")
                     .type_sql("returning id, name;"),
             )
-            // SET with DEFAULT
             .with_case(
                 TestCompletionsCase::new()
                     .inside_static_statement("update instruments <sql> where id = 1;")
                     .type_sql("set name = default, z = 'y'"),
             )
-            // FROM + join
             .with_case(
                 TestCompletionsCase::new()
                     .inside_static_statement("update instruments set name = o.a <sql>")
                     .type_sql("from others o where instruments.id = o.id returning name, z;"),
             )
-            // subquery in SET
             .with_case(
                 TestCompletionsCase::new()
                     .inside_static_statement("update instruments set name = (<sql>) where id = 1;")
