@@ -237,7 +237,7 @@ impl WorkspaceServer {
                 // `matched_path_or_any_parents` panics if `source` is not under the gitignore root.
                 // This checks excludes absolute paths that are not a prefix of the base root.
                 if !path.has_root() || path.starts_with(ignore.path()) {
-                    // Because Postgres Tools passes a list of paths,
+                    // Because Postgres Language Server passes a list of paths,
                     // we use `matched_path_or_any_parents` instead of `matched`.
                     ignore
                         .matched_path_or_any_parents(path, path.is_dir())
