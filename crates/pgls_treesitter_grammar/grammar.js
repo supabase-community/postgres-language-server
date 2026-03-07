@@ -84,6 +84,8 @@ module.exports = grammar({
   rules: {
     program: ($) =>
       choice(
+        // NOTE: if you add a new top-level statement, make sure to define it
+        // as a top-level boundary in treesitter context
         seq(
           repeat(
             choice(

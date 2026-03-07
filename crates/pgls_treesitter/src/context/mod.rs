@@ -305,6 +305,10 @@ impl<'a> TreesitterContext<'a> {
         let parent_node_kind = parent_node.kind();
         let current_node_kind = current_node.kind();
 
+        if ["comment", "marginalia"].contains(&current_node_kind) {
+            return;
+        }
+
         self.scope_tracker.register(current_node, self.position);
 
         // prevent infinite recursion – this can happen with ERROR nodes
