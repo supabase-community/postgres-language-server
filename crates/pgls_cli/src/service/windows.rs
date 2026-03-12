@@ -91,7 +91,7 @@ fn spawn_daemon(
         cmd.arg(format!("--log-path={}", log_path.display()));
     }
     if let Some(log_file_name_prefix) = log_file_name_prefix {
-        cmd.arg(format!("--log-prefix-name={}", log_file_name_prefix));
+        cmd.arg(format!("--log-prefix-name={log_file_name_prefix}"));
     }
     cmd.creation_flags(CREATE_NEW_PROCESS_GROUP);
 
