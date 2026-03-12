@@ -108,16 +108,12 @@ jobs:
 
       - uses: Swatinem/rust-cache@v2
 
-      - uses: actions/cache@v5
-        with:
-          path: |
-            ~/.cargo/bin/tree-sitter
-            target/**/build/pgls_treesitter_grammar-*/out/generated
-          key: ${{ runner.os }}-tree-sitter-${{ hashFiles('.tree-sitter-cli-version', 'crates/pgls_treesitter_grammar/grammar.js', 'crates/pgls_treesitter_grammar/tree-sitter.json', 'rust-toolchain.toml', 'Cargo.lock') }}
-
       - name: Setup tree-sitter
-        run: command -v tree-sitter || cargo install tree-sitter-cli --version "$(cat .tree-sitter-cli-version)" --locked
-        shell: bash
+        run: |
+          VERSION=$(cat .tree-sitter-cli-version)
+          curl -fsSL "https://github.com/tree-sitter/tree-sitter/releases/download/v${VERSION}/tree-sitter-linux-x64.gz" | gunzip > /usr/local/bin/tree-sitter
+          chmod +x /usr/local/bin/tree-sitter
+          tree-sitter --version
 
       - name: Generate Packages (deprecated)
         id: generate-packages-deprecated
