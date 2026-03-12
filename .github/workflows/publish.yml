@@ -103,20 +103,6 @@ jobs:
       - name: Install dependencies
         run: bun install
 
-      - name: Install Rust toolchain
-        uses: actions-rust-lang/setup-rust-toolchain@v1
-
-      - uses: Swatinem/rust-cache@v2
-
-      - name: Read tree-sitter version
-        id: ts-version
-        run: echo "version=v$(cat .tree-sitter-cli-version)" >> "$GITHUB_OUTPUT"
-
-      - name: Setup tree-sitter
-        uses: tree-sitter/setup-action@v2
-        with:
-          tree-sitter-ref: ${{ steps.ts-version.outputs.version }}
-
       - name: Generate Packages (deprecated)
         id: generate-packages-deprecated
         run: node packages/@postgrestools/postgrestools/scripts/generate-packages.mjs
@@ -134,8 +120,8 @@ jobs:
           PRERELEASE: ${{ github.event_name == 'workflow_dispatch' && needs.validate_tag.outputs.is-prerelease || github.event.release.prerelease }}
 
       - name: Build WASM TS
-        run: bun run build:ts
         working-directory: packages/@postgres-language-server/wasm
+        run: tsc -p tsconfig.build.json && cp src/schema-cache.d.ts dist/schema-cache.d.ts && cp wasm/pgls.wasm wasm/pgls.js dist/
 
       - name: Publish npm packages as nightly (deprecated)
         if: (github.event_name == 'workflow_dispatch' && needs.validate_tag.outputs.is-prerelease == 'true') || (github.event_name == 'release' && github.event.release.prerelease)
