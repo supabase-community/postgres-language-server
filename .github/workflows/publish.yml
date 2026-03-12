@@ -108,10 +108,14 @@ jobs:
 
       - uses: Swatinem/rust-cache@v2
 
+      - name: Read tree-sitter version
+        id: ts-version
+        run: echo "version=v$(cat .tree-sitter-cli-version)" >> "$GITHUB_OUTPUT"
+
       - name: Setup tree-sitter
         uses: tree-sitter/setup-action@v2
         with:
-          tree-sitter-ref: v0.25.9
+          tree-sitter-ref: ${{ steps.ts-version.outputs.version }}
 
       - name: Generate Packages (deprecated)
         id: generate-packages-deprecated
