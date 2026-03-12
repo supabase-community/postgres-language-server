@@ -335,6 +335,7 @@ fn run_leaks(pid: u32) -> anyhow::Result<String> {
     Ok(combined)
 }
 
+#[cfg(unix)]
 fn current_rss_kb(pid: u32) -> anyhow::Result<u64> {
     let output = Command::new("ps")
         .arg("-o")
