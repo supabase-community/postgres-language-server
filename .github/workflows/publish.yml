@@ -103,6 +103,20 @@ jobs:
       - name: Install dependencies
         run: bun install
 
+      - name: Install Rust toolchain
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+
+      - uses: actions/cache@v5
+        with:
+          path: |
+            ~/.cargo/bin/tree-sitter
+            target/**/build/pgls_treesitter_grammar-*/out/generated
+          key: ${{ runner.os }}-tree-sitter-${{ hashFiles('.tree-sitter-cli-version', 'crates/pgls_treesitter_grammar/grammar.js', 'crates/pgls_treesitter_grammar/tree-sitter.json', 'rust-toolchain.toml', 'Cargo.lock') }}
+
+      - name: Setup tree-sitter
+        run: command -v tree-sitter || cargo install tree-sitter-cli --version "$(cat .tree-sitter-cli-version)" --locked
+        shell: bash
+
       - name: Generate Packages (deprecated)
         id: generate-packages-deprecated
         run: node packages/@postgrestools/postgrestools/scripts/generate-packages.mjs
