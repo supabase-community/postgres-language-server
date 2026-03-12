@@ -208,6 +208,9 @@ jobs:
         run: command -v tree-sitter || cargo install tree-sitter-cli --version "$(cat .tree-sitter-cli-version)" --locked
         shell: bash
 
+      - name: Run clippy
+        run: cargo clippy --all-targets -- -D warnings
+
       - name: Run tests
         run: cargo test --workspace
 
