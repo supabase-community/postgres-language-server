@@ -190,6 +190,7 @@ jobs:
       - name: Install toolchain
         uses: moonrepo/setup-rust@v1
         with:
+          components: clippy
           cache-base: main
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
