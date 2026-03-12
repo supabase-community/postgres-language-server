@@ -97,6 +97,7 @@ impl TryFrom<&Vec<Attribute>> for FieldAttrs {
 }
 
 #[derive(Clone, Debug, Default)]
+#[allow(clippy::large_enum_variant)]
 pub enum PartialType {
     #[default]
     Prefixed,
