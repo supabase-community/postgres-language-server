@@ -1,9 +1,7 @@
-use assert_cmd::Command;
+use assert_cmd::cargo_bin_cmd;
 use insta::assert_snapshot;
 use std::path::Path;
 use std::process::ExitStatus;
-
-const BIN: &str = "postgres-language-server";
 const CONFIG_PATH: &str = "tests/fixtures/postgres-language-server.jsonc";
 
 #[test]
@@ -134,7 +132,7 @@ fn run_check(args: &[&str]) -> String {
 }
 
 fn run_check_with(args: &[&str], stdin: Option<&str>, cwd: Option<&Path>) -> String {
-    let mut cmd = Command::cargo_bin(BIN).expect("binary not built");
+    let mut cmd = cargo_bin_cmd!("postgres-language-server");
     if let Some(dir) = cwd {
         cmd.current_dir(dir);
     }

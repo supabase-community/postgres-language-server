@@ -1,9 +1,7 @@
-use assert_cmd::Command;
+use assert_cmd::cargo_bin_cmd;
 use insta::assert_snapshot;
 use sqlx::PgPool;
 use std::process::ExitStatus;
-
-const BIN: &str = "postgres-language-server";
 
 /// Get database URL from the pool's connect options
 /// Uses the known docker-compose credentials (postgres:postgres)
@@ -84,7 +82,7 @@ async fn dblint_error_on_warnings_detects_issues_snapshot(test_db: PgPool) {
 )]
 fn dblint_no_database_snapshot() {
     // Test that dblint completes gracefully when no database is configured
-    let mut cmd = Command::cargo_bin(BIN).expect("binary not built");
+    let mut cmd = cargo_bin_cmd!("postgres-language-server");
     let output = cmd
         .args(["dblint", "--disable-db", "--log-level", "none"])
         .output()
@@ -99,7 +97,7 @@ fn dblint_no_database_snapshot() {
 }
 
 fn run_dblint(url: &str, args: &[&str]) -> String {
-    let mut cmd = Command::cargo_bin(BIN).expect("binary not built");
+    let mut cmd = cargo_bin_cmd!("postgres-language-server");
     let mut full_args = vec!["dblint", "--connection-string", url, "--log-level", "none"];
     full_args.extend_from_slice(args);
 
