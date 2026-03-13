@@ -1,0 +1,16 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+-- expect_lint/safety/banVacuumFull
+vacuum full my_table;
+```
+
+# Diagnostics
+lint/safety/banVacuumFull ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × VACUUM FULL rewrites the entire table and blocks all access.
+  
+  i Use regular VACUUM or pg_repack for online table maintenance without blocking reads and writes.

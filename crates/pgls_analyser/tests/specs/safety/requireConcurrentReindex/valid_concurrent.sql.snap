@@ -1,0 +1,9 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+-- expect_no_diagnostics
+reindex index concurrently my_index;
+```

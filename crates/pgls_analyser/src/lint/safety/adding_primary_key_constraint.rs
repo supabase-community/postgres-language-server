@@ -6,7 +6,7 @@ use pgls_diagnostics::Severity;
 declare_lint_rule! {
     /// Adding a primary key constraint results in locks and table rewrites.
     ///
-    /// When you add a PRIMARY KEY constraint, PostgreSQL needs to scan the entire table
+    /// When you add a PRIMARY KEY constraint, Postgres needs to scan the entire table
     /// to verify uniqueness and build the underlying index. This requires an ACCESS EXCLUSIVE
     /// lock which blocks all reads and writes.
     ///

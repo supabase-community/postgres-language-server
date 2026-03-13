@@ -1,0 +1,12 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+-- expect_no_diagnostics
+ALTER TABLE users ADD COLUMN email TEXT;
+COMMIT;
+ALTER TABLE orders ADD COLUMN total NUMERIC;
+
+```

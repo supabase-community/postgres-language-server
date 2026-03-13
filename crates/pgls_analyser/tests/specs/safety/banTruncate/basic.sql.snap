@@ -1,0 +1,16 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+-- expect_lint/safety/banTruncate
+truncate my_table;
+```
+
+# Diagnostics
+lint/safety/banTruncate ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Truncating a table removes all rows and can cause data loss.
+  
+  i Use DELETE with a WHERE clause instead, or ensure this is intentional and not part of a migration.

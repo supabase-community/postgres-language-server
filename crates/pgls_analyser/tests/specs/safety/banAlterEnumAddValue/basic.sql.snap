@@ -1,0 +1,16 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+-- expect_lint/safety/banAlterEnumAddValue
+alter type my_enum add value 'new_value';
+```
+
+# Diagnostics
+lint/safety/banAlterEnumAddValue ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × ALTER TYPE ... ADD VALUE cannot be used in a transaction block before Postgres 12.
+  
+  i On Postgres 12+, the operation is fast but the new value cannot be used in the same transaction until committed.

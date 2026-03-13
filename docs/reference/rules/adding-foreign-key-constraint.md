@@ -13,7 +13,7 @@
 Adding a foreign key constraint requires a table scan and a SHARE ROW EXCLUSIVE lock on both tables, which blocks writes.
 
 Adding a foreign key constraint to an existing table can cause downtime by locking both tables while
-verifying the constraint. PostgreSQL needs to check that all existing values in the referencing
+verifying the constraint. Postgres needs to check that all existing values in the referencing
 column exist in the referenced table.
 
 Instead, add the constraint as NOT VALID in one transaction, then VALIDATE it in another transaction.
@@ -36,7 +36,7 @@ code-block.sql:1:1 lint/safety/addingForeignKeyConstraint ━━━━━━━�
       │ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
     2 │ 
   
-  i This will block writes to both the referencing and referenced tables while PostgreSQL verifies the constraint.
+  i This will block writes to both the referencing and referenced tables while Postgres verifies the constraint.
   
   i Add the constraint as NOT VALID first, then VALIDATE it in a separate transaction.
   
