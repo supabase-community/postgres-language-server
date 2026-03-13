@@ -51,9 +51,12 @@ fn get_completion_text(ctx: &TreesitterContext, col: &Column) -> CompletionText 
 #[cfg(test)]
 mod tests {
 
+    use pgls_test_utils::QueryWithCursorPosition;
     use sqlx::PgPool;
 
-    use crate::test_helper::{TestCompletionsCase, TestCompletionsSuite};
+    use crate::test_helper::{
+        CompletionAssertion, TestCompletionsCase, TestCompletionsSuite, assert_complete_results,
+    };
 
     #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
     async fn handles_nested_queries(pool: PgPool) {
@@ -596,5 +599,42 @@ mod tests {
             )
             .snapshot("completes_quoted_columns_with_aliases")
             .await;
+    }
+
+    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    async fn suggest_column_names_in_returning(pool: PgPool) {
+        let setup = r#"
+            create schema if not exists private;
+            
+            create table private.users (
+                id serial primary key,
+                email text unique not null,
+                name text not null
+            );
+        "#;
+
+        let query = format!(
+            r#"insert into private.users (email, name) values ('test@ema.il', 'hello') returning {}"#,
+            QueryWithCursorPosition::cursor_marker()
+        );
+
+        assert_complete_results(
+            query.as_str(),
+            vec![
+                CompletionAssertion::LabelAndKind(
+                    "email".into(),
+                    crate::CompletionItemKind::Column,
+                ),
+                CompletionAssertion::LabelAndKind("id".into(), crate::CompletionItemKind::Column),
+                CompletionAssertion::LabelAndKind("name".into(), crate::CompletionItemKind::Column),
+                CompletionAssertion::LabelAndKind(
+                    "with".into(),
+                    crate::CompletionItemKind::Keyword,
+                ),
+            ],
+            Some(setup),
+            &pool,
+        )
+        .await;
     }
 }
