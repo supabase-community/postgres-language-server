@@ -224,6 +224,18 @@ pub(crate) fn unknown(p: &mut Splitter, exclude: &[SyntaxKind]) -> SplitterResul
                     begin_end(p)?;
                 }
             },
+            // When WITH_KW is excluded (e.g. inside CREATE) and followed by
+            // an identifier or RECURSIVE, it starts a CTE. Parse it as such
+            // so the following DML keyword is not treated as a new statement.
+            t if t == SyntaxKind::WITH_KW
+                && exclude.contains(&SyntaxKind::WITH_KW)
+                && matches!(
+                    p.look_ahead(true),
+                    SyntaxKind::IDENT | SyntaxKind::RECURSIVE_KW
+                ) =>
+            {
+                cte(p)?;
+            }
             t => match at_statement_start(t, exclude) {
                 Some(SyntaxKind::SELECT_KW) => {
                     let prev = p.look_back(true);
