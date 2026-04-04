@@ -13,5 +13,5 @@ pub(crate) fn create(p: &mut Splitter) -> SplitterResult {
 pub(crate) fn alter(p: &mut Splitter) -> SplitterResult {
     p.expect(SyntaxKind::ALTER_KW)?;
 
-    unknown(p, &[SyntaxKind::ALTER_KW])
+    unknown(p, &[SyntaxKind::ALTER_KW, SyntaxKind::WITH_KW])
 }
