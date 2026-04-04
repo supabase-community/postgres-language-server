@@ -1,6 +1,10 @@
 use assert_cmd::cargo_bin_cmd;
 use insta::assert_snapshot;
+#[cfg(target_os = "linux")]
+use sqlx::PgPool;
 use std::path::Path;
+#[cfg(target_os = "linux")]
+use std::path::PathBuf;
 use std::process::ExitStatus;
 const CONFIG_PATH: &str = "tests/fixtures/postgres-language-server.jsonc";
 
@@ -123,6 +127,75 @@ fn check_directory_traversal_snapshot() {
         None,
         Some(project_dir)
     ));
+}
+
+#[cfg(target_os = "linux")]
+fn get_database_url(pool: &PgPool) -> String {
+    let opts = pool.connect_options();
+    format!(
+        "postgres://postgres:postgres@{}:{}/{}",
+        opts.get_host(),
+        opts.get_port(),
+        opts.get_database().unwrap_or("postgres")
+    )
+}
+
+#[cfg(target_os = "linux")]
+fn create_temp_sql_file(contents: &str) -> PathBuf {
+    let path = std::env::temp_dir().join(format!(
+        "pgls-tls-{}-{}.sql",
+        std::process::id(),
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .expect("system clock should be after unix epoch")
+            .as_nanos()
+    ));
+
+    std::fs::write(&path, contents).expect("failed to write temporary SQL file");
+    path
+}
+
+#[cfg(target_os = "linux")]
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn check_accepts_tls_connection_strings(test_db: PgPool) {
+    let sql_file = create_temp_sql_file("select 1;\n");
+    let connection_string = format!(
+        "{}?sslmode=require&channel_binding=require",
+        get_database_url(&test_db)
+    );
+
+    let mut cmd = cargo_bin_cmd!("postgres-language-server");
+    let output = cmd
+        .args([
+            "check",
+            sql_file
+                .to_str()
+                .expect("temporary SQL file path should be valid UTF-8"),
+            "--connection-string",
+            &connection_string,
+            "--log-level",
+            "none",
+        ])
+        .output()
+        .expect("failed to run CLI");
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let stderr = String::from_utf8_lossy(&output.stderr);
+
+    assert!(
+        output.status.success(),
+        "expected TLS-backed check to succeed\nstdout:\n{stdout}\nstderr:\n{stderr}"
+    );
+    assert!(
+        !stdout.contains("TLS upgrade required") && !stderr.contains("TLS upgrade required"),
+        "TLS support error should not appear\nstdout:\n{stdout}\nstderr:\n{stderr}"
+    );
+    assert!(
+        stdout.contains("Checked 1 file"),
+        "expected successful CLI output\nstdout:\n{stdout}\nstderr:\n{stderr}"
+    );
+
+    std::fs::remove_file(sql_file).expect("failed to remove temporary SQL file");
 }
 
 fn run_check(args: &[&str]) -> String {
