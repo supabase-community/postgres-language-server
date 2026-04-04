@@ -461,6 +461,7 @@ async fn test_disable_plpgsql_check(test_db: PgPool) {
         configuration: PartialConfiguration {
             plpgsql_check: Some(PartialPlPgSqlCheckConfiguration {
                 enabled: Some(false),
+                ..Default::default()
             }),
             ..Default::default()
         },

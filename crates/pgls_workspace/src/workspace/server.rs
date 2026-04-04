@@ -558,6 +558,21 @@ impl Workspace for WorkspaceServer {
         {
             let typecheck_enabled = settings.typecheck.enabled;
             let plpgsql_check_enabled = settings.plpgsql_check.enabled;
+            let plpgsql_check_options = pgls_plpgsql_check::PlPgSqlCheckOptions {
+                fatal_errors: settings.plpgsql_check.fatal_errors,
+                other_warnings: settings.plpgsql_check.other_warnings,
+                extra_warnings: settings.plpgsql_check.extra_warnings,
+                performance_warnings: settings.plpgsql_check.performance_warnings,
+                security_warnings: settings.plpgsql_check.security_warnings,
+                compatibility_warnings: settings.plpgsql_check.compatibility_warnings,
+                without_warnings: settings.plpgsql_check.without_warnings,
+                all_warnings: settings.plpgsql_check.all_warnings,
+                use_incomment_options: settings.plpgsql_check.use_incomment_options,
+                incomment_options_usage_warning: settings
+                    .plpgsql_check
+                    .incomment_options_usage_warning,
+                constant_tracing: settings.plpgsql_check.constant_tracing,
+            };
             if (typecheck_enabled || plpgsql_check_enabled)
                 && let Some(pool) = self.get_current_connection()
             {
@@ -574,6 +589,7 @@ impl Workspace for WorkspaceServer {
                             let path = path_clone.clone();
                             let schema_cache = Arc::clone(&schema_cache);
                             let search_path_patterns = search_path_patterns.clone();
+                            let plpgsql_check_options = plpgsql_check_options.clone();
 
                             async move {
                                 let mut diagnostics = Vec::new();
@@ -632,6 +648,7 @@ impl Workspace for WorkspaceServer {
                                                     sql: id.content(),
                                                     ast: &ast,
                                                     schema_cache: schema_cache.as_ref(),
+                                                    options: &plpgsql_check_options,
                                                 },
                                             )
                                             .await
