@@ -499,13 +499,57 @@ export interface PartialPglinterConfiguration {
   rules?: PglinterRules;
 }
 /**
- * The configuration for type checking.
+ * The configuration for plpgsql_check.
  */
 export interface PartialPlPgSqlCheckConfiguration {
+  /**
+   * Enable all warnings, overriding individual warning parameters. `false` by default.
+   */
+  allWarnings?: boolean;
+  /**
+   * Detect deprecated patterns like explicit cursor name assignments in refcursor variables. `false` by default.
+   */
+  compatibilityWarnings?: boolean;
+  /**
+   * Permit variables holding constant values to be used like constants. `true` by default.
+   */
+  constantTracing?: boolean;
   /**
    * if `false`, it disables the feature and pglpgsql_check won't be executed. `true` by default
    */
   enabled?: boolean;
+  /**
+   * Show warnings regarding missing RETURN statements, shadowed variables, dead code, and unused parameters. `true` by default.
+   */
+  extraWarnings?: boolean;
+  /**
+   * Stop processing at the first error. `true` by default.
+   */
+  fatalErrors?: boolean;
+  /**
+   * Raise warnings when in-comment options are utilized. `false` by default.
+   */
+  incommentOptionsUsageWarning?: boolean;
+  /**
+   * Show warnings about attribute count mismatches, variable overlaps, unused variables, and unwanted casting. `true` by default.
+   */
+  otherWarnings?: boolean;
+  /**
+   * Flag performance issues like declared types with modifiers and implicit casts that may prevent index usage. `false` by default.
+   */
+  performanceWarnings?: boolean;
+  /**
+   * Identify potential SQL injection vulnerabilities in dynamic statements. `false` by default.
+   */
+  securityWarnings?: boolean;
+  /**
+   * Activate in-comment options embedded in function source code. `true` by default.
+   */
+  useIncommentOptions?: boolean;
+  /**
+   * Disable all warnings, overriding individual warning parameters. `false` by default.
+   */
+  withoutWarnings?: boolean;
 }
 export interface PartialSplinterConfiguration {
   /**
