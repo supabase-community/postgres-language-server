@@ -558,6 +558,19 @@ impl Workspace for WorkspaceServer {
         {
             let typecheck_enabled = settings.typecheck.enabled;
             let plpgsql_check_enabled = settings.plpgsql_check.enabled;
+            let plpgsql_check_fatal_errors = settings.plpgsql_check.fatal_errors;
+            let plpgsql_check_other_warnings = settings.plpgsql_check.other_warnings;
+            let plpgsql_check_extra_warnings = settings.plpgsql_check.extra_warnings;
+            let plpgsql_check_performance_warnings = settings.plpgsql_check.performance_warnings;
+            let plpgsql_check_security_warnings = settings.plpgsql_check.security_warnings;
+            let plpgsql_check_compatibility_warnings =
+                settings.plpgsql_check.compatibility_warnings;
+            let plpgsql_check_without_warnings = settings.plpgsql_check.without_warnings;
+            let plpgsql_check_all_warnings = settings.plpgsql_check.all_warnings;
+            let plpgsql_check_use_incomment_options = settings.plpgsql_check.use_incomment_options;
+            let plpgsql_check_incomment_options_usage_warning =
+                settings.plpgsql_check.incomment_options_usage_warning;
+            let plpgsql_check_constant_tracing = settings.plpgsql_check.constant_tracing;
             if (typecheck_enabled || plpgsql_check_enabled)
                 && let Some(pool) = self.get_current_connection()
             {
@@ -632,6 +645,17 @@ impl Workspace for WorkspaceServer {
                                                     sql: id.content(),
                                                     ast: &ast,
                                                     schema_cache: schema_cache.as_ref(),
+                                                    fatal_errors: plpgsql_check_fatal_errors,
+                                                    other_warnings: plpgsql_check_other_warnings,
+                                                    extra_warnings: plpgsql_check_extra_warnings,
+                                                    performance_warnings: plpgsql_check_performance_warnings,
+                                                    security_warnings: plpgsql_check_security_warnings,
+                                                    compatibility_warnings: plpgsql_check_compatibility_warnings,
+                                                    without_warnings: plpgsql_check_without_warnings,
+                                                    all_warnings: plpgsql_check_all_warnings,
+                                                    use_incomment_options: plpgsql_check_use_incomment_options,
+                                                    incomment_options_usage_warning: plpgsql_check_incomment_options_usage_warning,
+                                                    constant_tracing: plpgsql_check_constant_tracing,
                                                 },
                                             )
                                             .await

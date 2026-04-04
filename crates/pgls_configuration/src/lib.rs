@@ -176,6 +176,7 @@ impl PartialConfiguration {
             }),
             plpgsql_check: Some(PartialPlPgSqlCheckConfiguration {
                 enabled: Some(true),
+                ..Default::default()
             }),
             db: Some(PartialDatabaseConfiguration {
                 connection_string: None,

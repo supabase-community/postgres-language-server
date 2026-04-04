@@ -14,6 +14,17 @@ pub struct PlPgSqlCheckParams<'a> {
     pub sql: &'a str,
     pub ast: &'a pgls_query::NodeEnum,
     pub schema_cache: &'a pgls_schema_cache::SchemaCache,
+    pub fatal_errors: bool,
+    pub other_warnings: bool,
+    pub extra_warnings: bool,
+    pub performance_warnings: bool,
+    pub security_warnings: bool,
+    pub compatibility_warnings: bool,
+    pub without_warnings: bool,
+    pub all_warnings: bool,
+    pub use_incomment_options: bool,
+    pub incomment_options_usage_warning: bool,
+    pub constant_tracing: bool,
 }
 
 #[derive(Debug, Deserialize)]
@@ -129,6 +140,52 @@ fn build_function_identifier(
     }
 }
 
+/// Build extra named parameters for plpgsql_check_function().
+/// Only includes parameters that differ from plpgsql_check defaults.
+fn build_extra_params(options: &PlPgSqlCheckParams<'_>) -> String {
+    let mut params = Vec::new();
+
+    if !options.fatal_errors {
+        params.push("fatal_errors := false".to_string());
+    }
+    if !options.other_warnings {
+        params.push("other_warnings := false".to_string());
+    }
+    if !options.extra_warnings {
+        params.push("extra_warnings := false".to_string());
+    }
+    if options.performance_warnings {
+        params.push("performance_warnings := true".to_string());
+    }
+    if options.security_warnings {
+        params.push("security_warnings := true".to_string());
+    }
+    if options.compatibility_warnings {
+        params.push("compatibility_warnings := true".to_string());
+    }
+    if options.without_warnings {
+        params.push("without_warnings := true".to_string());
+    }
+    if options.all_warnings {
+        params.push("all_warnings := true".to_string());
+    }
+    if !options.use_incomment_options {
+        params.push("use_incomment_options := false".to_string());
+    }
+    if options.incomment_options_usage_warning {
+        params.push("incomment_options_usage_warning := true".to_string());
+    }
+    if !options.constant_tracing {
+        params.push("constant_tracing := false".to_string());
+    }
+
+    if params.is_empty() {
+        String::new()
+    } else {
+        format!(", {}", params.join(", "))
+    }
+}
+
 pub async fn check_plpgsql(
     params: PlPgSqlCheckParams<'_>,
 ) -> Result<Vec<PlPgSqlCheckDiagnostic>, sqlx::Error> {
@@ -175,6 +232,7 @@ pub async fn check_plpgsql(
     sqlx::query(&sql_with_replace).execute(&mut *tx).await?;
 
     // run plpgsql_check and collect results with their relations
+    let extra = build_extra_params(&params);
     let results_with_relations: Vec<(String, Option<String>)> = if is_trigger {
         let mut results = Vec::new();
 
@@ -185,7 +243,7 @@ pub async fn check_plpgsql(
                 let relation = format!("{}.{}", trigger.table_schema, trigger.table_name);
 
                 let result: Option<String> = sqlx::query_scalar(&format!(
-                    "select plpgsql_check_function('{fn_identifier}', '{relation}', format := 'json')"
+                    "select plpgsql_check_function('{fn_identifier}', '{relation}', format := 'json'{extra})"
                 ))
                 .fetch_optional(&mut *tx)
                 .await?
@@ -200,7 +258,7 @@ pub async fn check_plpgsql(
         results
     } else {
         let result: Option<String> = sqlx::query_scalar(&format!(
-            "select plpgsql_check_function('{fn_identifier}', format := 'json')"
+            "select plpgsql_check_function('{fn_identifier}', format := 'json'{extra})"
         ))
         .fetch_optional(&mut *tx)
         .await?
@@ -253,6 +311,17 @@ mod tests {
             sql: create_fn_sql,
             ast: &ast,
             schema_cache: &schema_cache,
+            fatal_errors: true,
+            other_warnings: true,
+            extra_warnings: true,
+            performance_warnings: false,
+            security_warnings: false,
+            compatibility_warnings: false,
+            without_warnings: false,
+            all_warnings: false,
+            use_incomment_options: true,
+            incomment_options_usage_warning: false,
+            constant_tracing: true,
         })
         .await?;
 

@@ -399,6 +399,17 @@ fn to_typecheck_settings(conf: TypecheckConfiguration) -> TypecheckSettings {
 fn to_plpgsql_check_settings(conf: PlPgSqlCheckConfiguration) -> PlPgSqlCheckSettings {
     PlPgSqlCheckSettings {
         enabled: conf.enabled,
+        fatal_errors: conf.fatal_errors,
+        other_warnings: conf.other_warnings,
+        extra_warnings: conf.extra_warnings,
+        performance_warnings: conf.performance_warnings,
+        security_warnings: conf.security_warnings,
+        compatibility_warnings: conf.compatibility_warnings,
+        without_warnings: conf.without_warnings,
+        all_warnings: conf.all_warnings,
+        use_incomment_options: conf.use_incomment_options,
+        incomment_options_usage_warning: conf.incomment_options_usage_warning,
+        constant_tracing: conf.constant_tracing,
     }
 }
 
@@ -613,16 +624,39 @@ impl Default for PglinterSettings {
     }
 }
 
-/// Type checking settings for the entire workspace
+/// plpgsql_check settings for the entire workspace
 #[derive(Debug)]
 pub struct PlPgSqlCheckSettings {
-    /// Enabled by default
     pub enabled: bool,
+    pub fatal_errors: bool,
+    pub other_warnings: bool,
+    pub extra_warnings: bool,
+    pub performance_warnings: bool,
+    pub security_warnings: bool,
+    pub compatibility_warnings: bool,
+    pub without_warnings: bool,
+    pub all_warnings: bool,
+    pub use_incomment_options: bool,
+    pub incomment_options_usage_warning: bool,
+    pub constant_tracing: bool,
 }
 
 impl Default for PlPgSqlCheckSettings {
     fn default() -> Self {
-        Self { enabled: true }
+        Self {
+            enabled: true,
+            fatal_errors: true,
+            other_warnings: true,
+            extra_warnings: true,
+            performance_warnings: false,
+            security_warnings: false,
+            compatibility_warnings: false,
+            without_warnings: false,
+            all_warnings: false,
+            use_incomment_options: true,
+            incomment_options_usage_warning: false,
+            constant_tracing: true,
+        }
     }
 }
 
