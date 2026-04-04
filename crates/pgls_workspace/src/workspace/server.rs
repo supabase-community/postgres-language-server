@@ -561,15 +561,13 @@ impl Workspace for WorkspaceServer {
             let plpgsql_check_fatal_errors = settings.plpgsql_check.fatal_errors;
             let plpgsql_check_other_warnings = settings.plpgsql_check.other_warnings;
             let plpgsql_check_extra_warnings = settings.plpgsql_check.extra_warnings;
-            let plpgsql_check_performance_warnings =
-                settings.plpgsql_check.performance_warnings;
+            let plpgsql_check_performance_warnings = settings.plpgsql_check.performance_warnings;
             let plpgsql_check_security_warnings = settings.plpgsql_check.security_warnings;
             let plpgsql_check_compatibility_warnings =
                 settings.plpgsql_check.compatibility_warnings;
             let plpgsql_check_without_warnings = settings.plpgsql_check.without_warnings;
             let plpgsql_check_all_warnings = settings.plpgsql_check.all_warnings;
-            let plpgsql_check_use_incomment_options =
-                settings.plpgsql_check.use_incomment_options;
+            let plpgsql_check_use_incomment_options = settings.plpgsql_check.use_incomment_options;
             let plpgsql_check_incomment_options_usage_warning =
                 settings.plpgsql_check.incomment_options_usage_warning;
             let plpgsql_check_constant_tracing = settings.plpgsql_check.constant_tracing;
