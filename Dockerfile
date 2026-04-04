@@ -2,7 +2,15 @@ FROM postgres:15
 
 # Install build dependencies
 RUN apt-get update && \
-    apt-get install -y postgresql-server-dev-15 gcc make git curl pkg-config libssl-dev libclang-dev clang libicu-dev && \
+    apt-get install -y postgresql-server-dev-15 gcc make git curl pkg-config libssl-dev libclang-dev clang libicu-dev openssl && \
+    mkdir -p /etc/postgresql/ssl && \
+    openssl req -x509 -newkey rsa:2048 -sha256 -days 3650 -nodes \
+      -subj "/CN=localhost" \
+      -keyout /etc/postgresql/ssl/server.key \
+      -out /etc/postgresql/ssl/server.crt && \
+    chmod 600 /etc/postgresql/ssl/server.key && \
+    chmod 644 /etc/postgresql/ssl/server.crt && \
+    chown postgres:postgres /etc/postgresql/ssl/server.key /etc/postgresql/ssl/server.crt && \
     # Install plpgsql_check (C extension - simple make install)
     # Pin to v2.7.11 for stability with PG15
     cd /tmp && \
@@ -24,11 +32,11 @@ RUN apt-get update && \
     git clone --depth 1 https://github.com/pmpetit/pglinter.git && \
     cd pglinter && \
     cargo pgrx install --pg-config $(which pg_config) --release && \
-    # Cleanup Rust and build dependencies
+    # Cleanup Rust toolchains and temporary sources
     rm -rf /tmp/pglinter $HOME/.cargo $HOME/.rustup && \
-    apt-get remove -y gcc make git curl pkg-config libssl-dev libclang-dev clang libicu-dev && \
-    apt-get autoremove -y && \
     rm -rf /var/lib/apt/lists/*
+
+RUN printf "\nssl = on\nssl_cert_file = '/etc/postgresql/ssl/server.crt'\nssl_key_file = '/etc/postgresql/ssl/server.key'\n" >> /usr/share/postgresql/postgresql.conf.sample
 
 # Add initialization script for extensions
 # Create extensions in a dedicated 'extensions' schema to avoid triggering extensionInPublic lint
