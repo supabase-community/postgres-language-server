@@ -256,6 +256,27 @@ pub unsafe extern "C" fn pgls_parse(sql: *const c_char) -> *mut c_char {
     })
 }
 
+/// Split SQL into individual statements.
+/// Returns a JSON array of `Statement` objects, each with `sql`, `start`, and `end`.
+/// The returned string must be freed with `pgls_free_string`.
+///
+/// # Safety
+/// The sql pointer must be valid and point to a null-terminated UTF-8 string.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn pgls_split_statements(sql: *const c_char) -> *mut c_char {
+    // SAFETY: Caller guarantees sql is valid
+    let sql_str = match unsafe { c_str_to_str(sql) } {
+        Some(s) => s,
+        None => return str_to_c_string("ERROR: Invalid SQL pointer"),
+    };
+
+    with_workspace(|ws| {
+        let statements = ws.split_statements(sql_str);
+        let json = serde_json::to_string(&statements).unwrap_or_else(|e| format!("ERROR: {e}"));
+        str_to_c_string(&json)
+    })
+}
+
 /// Get the version of the library.
 /// The returned string must be freed with `pgls_free_string`.
 #[unsafe(no_mangle)]
@@ -368,6 +389,25 @@ mod tests {
             assert!(!result.is_null());
             let result_str = CStr::from_ptr(result).to_str().unwrap();
             assert!(result_str.contains("error") || result_str.len() > 2); // Has errors
+            pgls_free_string(result);
+        }
+    }
+
+    #[test]
+    fn test_ffi_split_statements() {
+        pgls_init();
+
+        unsafe {
+            let sql = CString::new("SELECT 1; SELECT 2;").unwrap();
+            let result = pgls_split_statements(sql.as_ptr());
+            assert!(!result.is_null());
+            let result_str = CStr::from_ptr(result).to_str().unwrap();
+            let parsed: Vec<serde_json::Value> = serde_json::from_str(result_str).unwrap();
+            assert_eq!(parsed.len(), 2);
+            assert_eq!(parsed[0]["sql"], "SELECT 1;");
+            assert_eq!(parsed[0]["start"], 0);
+            assert_eq!(parsed[0]["end"], 9);
+            assert_eq!(parsed[1]["sql"], "SELECT 2;");
             pgls_free_string(result);
         }
     }

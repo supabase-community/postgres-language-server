@@ -26,6 +26,7 @@ export type {
   Diagnostic,
   CompletionItem,
   SchemaCache,
+  Statement,
   WorkspaceOptions,
   PGLSModule,
   JsonRpcMessage,

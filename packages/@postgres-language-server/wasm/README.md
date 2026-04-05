@@ -34,6 +34,10 @@ const workspace = await createWorkspace();
 const errors = workspace.parse("SELECT * FROM users;");
 console.log(errors); // []
 
+// Split SQL into individual statements
+const statements = workspace.splitStatements("SELECT 1; SELECT 2;");
+// [{ sql: "SELECT 1;", start: 0, end: 9 }, { sql: "SELECT 2;", start: 10, end: 19 }]
+
 // Insert a file and lint it
 workspace.insertFile("/query.sql", "SELECT * FROM users;");
 const diagnostics = workspace.lint("/query.sql");
@@ -135,6 +139,7 @@ lsp.handleMessage({
 | Method                      | Description                                |
 | --------------------------- | ------------------------------------------ |
 | `parse(sql: string)`        | Parse SQL, returns array of error messages |
+| `splitStatements(sql)`      | Split SQL into statements with byte offsets |
 | `insertFile(path, content)` | Add or update a file in the workspace      |
 | `removeFile(path)`          | Remove a file from the workspace           |
 | `lint(path)`                | Get diagnostics for a file                 |

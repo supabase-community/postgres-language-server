@@ -102,6 +102,182 @@ describe("Workspace API", () => {
     expect(errors).toBeArray();
     expect(errors.length).toBe(0);
   });
+
+  test("splitStatements splits semicolon-separated SQL", () => {
+    const statements = workspace.splitStatements("SELECT 1; SELECT 2;");
+    expect(statements.map((s) => s.sql)).toEqual(["SELECT 1;", "SELECT 2;"]);
+  });
+
+  test("splitStatements splits statements separated by blank lines", () => {
+    const statements = workspace.splitStatements("SELECT 1\n\nSELECT 2\n\nSELECT 3");
+    expect(statements.map((s) => s.sql)).toEqual(["SELECT 1", "SELECT 2", "SELECT 3"]);
+  });
+
+  test("splitStatements ignores leading comments", () => {
+    const statements = workspace.splitStatements("-- comment\nSELECT 1;\n\n/* block */\nSELECT 2;");
+    expect(statements.map((s) => s.sql)).toEqual(["SELECT 1;", "SELECT 2;"]);
+  });
+
+  test("splitStatements preserves complex single statements", () => {
+    const statements =
+      workspace.splitStatements(`CREATE OR REPLACE FUNCTION public.test_fn(some_in TEXT)
+RETURNS TEXT
+LANGUAGE sql
+IMMUTABLE
+STRICT
+BEGIN ATOMIC
+  SELECT $1 || 'foo';
+END;`);
+
+    expect(statements.map((s) => s.sql)).toEqual([
+      `CREATE OR REPLACE FUNCTION public.test_fn(some_in TEXT)
+RETURNS TEXT
+LANGUAGE sql
+IMMUTABLE
+STRICT
+BEGIN ATOMIC
+  SELECT $1 || 'foo';
+END;`,
+    ]);
+  });
+
+  test("splitStatements keeps blank lines inside a select list", () => {
+    const sql = `SELECT
+  email,
+
+
+FROM
+  auth.users;`;
+
+    const statements = workspace.splitStatements(sql);
+    expect(statements.map((s) => s.sql)).toEqual([sql]);
+  });
+
+  test("splitStatements preserves materialized CTE variants as one statement", () => {
+    const sql =
+      "WITH a AS (SELECT 1), b AS MATERIALIZED (SELECT 2), c AS NOT MATERIALIZED (SELECT 3) SELECT * FROM a, b, c;";
+
+    const statements = workspace.splitStatements(sql);
+    expect(statements.map((s) => s.sql)).toEqual([sql]);
+  });
+
+  test("splitStatements preserves merge statements as one statement", () => {
+    const sql = `MERGE INTO course_permissions AS cp
+USING (SELECT 1 AS user_id, 2 AS course_id, 'Owner'::enum_course_role AS course_role) AS data
+ON (cp.course_id = data.course_id AND cp.user_id = data.user_id)
+WHEN MATCHED THEN UPDATE SET course_role = data.course_role
+WHEN NOT MATCHED THEN
+INSERT
+  (user_id, course_id, course_role)
+VALUES
+  (data.user_id, data.course_id, data.course_role);`;
+
+    const statements = workspace.splitStatements(sql);
+    expect(statements.map((s) => s.sql)).toEqual([sql]);
+  });
+
+  test("splitStatements keeps instead-of trigger definitions together", () => {
+    const sql = `CREATE OR REPLACE TRIGGER my_trigger
+       INSTEAD OF INSERT ON my_table
+       FOR EACH ROW
+       EXECUTE FUNCTION my_table_trigger_fn();`;
+
+    const statements = workspace.splitStatements(sql);
+    expect(statements.map((s) => s.sql)).toEqual([sql]);
+  });
+
+  test("splitStatements ignores psql meta-commands between statements", () => {
+    const statements = workspace.splitStatements("select 1\n\\com test\nselect 2");
+    expect(statements.map((s) => s.sql)).toEqual(["select 1", "select 2"]);
+  });
+
+  test("splitStatements keeps multiline statements together before blank-line splits", () => {
+    const statements = workspace.splitStatements("select 1\nfrom contact\n\nselect 3");
+    expect(statements.map((s) => s.sql)).toEqual(["select 1\nfrom contact", "select 3"]);
+  });
+
+  test("splitStatements keeps transaction control statements separate", () => {
+    const statements = workspace.splitStatements(`BEGIN TRANSACTION ISOLATION LEVEL SERIALIZABLE;
+INSERT INTO t VALUES (1);
+COMMIT;`);
+
+    expect(statements.map((s) => s.sql)).toEqual([
+      "BEGIN TRANSACTION ISOLATION LEVEL SERIALIZABLE;",
+      "INSERT INTO t VALUES (1);",
+      "COMMIT;",
+    ]);
+  });
+
+  test("splitStatements handles mixed DDL migrations", () => {
+    const statements =
+      workspace.splitStatements(`alter table appointment_status add constraint valid_key check (private.strip_special_chars(key) = key and length(key) > 0 and length(key) < 60);
+
+create trigger default_key before insert on appointment_type for each row when (new.key is null) execute procedure default_key ();
+
+create trigger default_key before insert or update on appointment_status for each row when (new.key is null) execute procedure default_key ();
+
+alter table deal_type add column key text not null;
+`);
+
+    expect(statements.map((s) => s.sql)).toEqual([
+      "alter table appointment_status add constraint valid_key check (private.strip_special_chars(key) = key and length(key) > 0 and length(key) < 60);",
+      "create trigger default_key before insert on appointment_type for each row when (new.key is null) execute procedure default_key ();",
+      "create trigger default_key before insert or update on appointment_status for each row when (new.key is null) execute procedure default_key ();",
+      "alter table deal_type add column key text not null;",
+    ]);
+  });
+
+  test("splitStatements remains best-effort for invalid earlier statements", () => {
+    const statements = workspace.splitStatements("\ninsert select 1\n\nselect 3");
+    expect(statements.map((s) => s.sql)).toEqual(["insert select 1", "select 3"]);
+  });
+
+  test("splitStatements returns an empty array for empty SQL", () => {
+    const statements = workspace.splitStatements("");
+    expect(statements).toEqual([]);
+  });
+
+  test("splitStatements returns original byte offsets", () => {
+    const sql = "-- SELECT 1;\nSELECT 1;\n\nSELECT 2;";
+    const firstStart = sql.indexOf("\nSELECT 1;") + 1;
+    const secondStart = sql.lastIndexOf("SELECT 2;");
+
+    const statements = workspace.splitStatements(sql);
+
+    expect(statements).toEqual([
+      {
+        sql: "SELECT 1;",
+        start: firstStart,
+        end: firstStart + "SELECT 1;".length,
+      },
+      {
+        sql: "SELECT 2;",
+        start: secondStart,
+        end: secondStart + "SELECT 2;".length,
+      },
+    ]);
+  });
+
+  test("splitStatements returns byte offsets for multibyte SQL", () => {
+    const firstStatement = "SELECT '😀';";
+    const secondStatement = "SELECT 2;";
+    const sql = `${firstStatement}\n${secondStatement}`;
+
+    const statements = workspace.splitStatements(sql);
+
+    expect(statements).toEqual([
+      {
+        sql: firstStatement,
+        start: 0,
+        end: new TextEncoder().encode(firstStatement).length,
+      },
+      {
+        sql: secondStatement,
+        start: new TextEncoder().encode(`${firstStatement}\n`).length,
+        end: new TextEncoder().encode(sql).length,
+      },
+    ]);
+  });
 });
 
 // =============================================================================

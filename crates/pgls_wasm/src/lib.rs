@@ -66,6 +66,18 @@ pub struct CompletionItem {
     pub detail: Option<String>,
 }
 
+/// A single SQL statement extracted from a multi-statement source.
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Statement {
+    /// The SQL text of the statement
+    pub sql: String,
+    /// Start byte offset in the original SQL string
+    pub start: u32,
+    /// End byte offset in the original SQL string
+    pub end: u32,
+}
+
 /// In-memory file system for storing SQL files.
 ///
 /// This wraps `pgls_fs::MemoryFileSystem` with a simpler API
@@ -367,6 +379,22 @@ impl Workspace {
             Err(e) => vec![e.to_string()],
         }
     }
+
+    /// Split SQL into individual statements.
+    ///
+    /// Each returned `Statement` contains the SQL text and its byte offsets
+    /// in the original string.
+    pub fn split_statements(&self, sql: &str) -> Vec<Statement> {
+        self.inner
+            .split_statements(sql)
+            .into_iter()
+            .map(|range| Statement {
+                sql: sql[range].to_string(),
+                start: u32::from(range.start()),
+                end: u32::from(range.end()),
+            })
+            .collect()
+    }
 }
 
 #[cfg(test)]
@@ -395,6 +423,30 @@ mod tests {
         // Invalid SQL
         let errors = workspace.parse("SELEC 1;");
         assert!(!errors.is_empty());
+    }
+
+    #[test]
+    fn test_workspace_split_statements() {
+        let workspace = Workspace::new();
+
+        let statements = workspace.split_statements("SELECT 1; SELECT 2;");
+        assert_eq!(statements.len(), 2);
+        assert_eq!(statements[0].sql, "SELECT 1;");
+        assert_eq!(statements[0].start, 0);
+        assert_eq!(statements[0].end, 9);
+        assert_eq!(statements[1].sql, "SELECT 2;");
+        assert_eq!(statements[1].start, 10);
+        assert_eq!(statements[1].end, 19);
+    }
+
+    #[test]
+    fn test_workspace_split_statements_ignores_comments() {
+        let workspace = Workspace::new();
+
+        let statements = workspace.split_statements("-- comment\nSELECT 1;\n\nSELECT 2;");
+        assert_eq!(statements.len(), 2);
+        assert_eq!(statements[0].sql, "SELECT 1;");
+        assert_eq!(statements[1].sql, "SELECT 2;");
     }
 
     #[test]
