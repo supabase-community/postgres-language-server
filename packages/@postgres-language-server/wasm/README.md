@@ -136,18 +136,18 @@ lsp.handleMessage({
 
 ### Workspace
 
-| Method                      | Description                                |
-| --------------------------- | ------------------------------------------ |
-| `parse(sql: string)`        | Parse SQL, returns array of error messages |
+| Method                      | Description                                 |
+| --------------------------- | ------------------------------------------- |
+| `parse(sql: string)`        | Parse SQL, returns array of error messages  |
 | `splitStatements(sql)`      | Split SQL into statements with byte offsets |
-| `insertFile(path, content)` | Add or update a file in the workspace      |
-| `removeFile(path)`          | Remove a file from the workspace           |
-| `lint(path)`                | Get diagnostics for a file                 |
-| `complete(path, offset)`    | Get completions at position                |
-| `hover(path, offset)`       | Get hover info at position                 |
-| `setSchema(json)`           | Set database schema                        |
-| `clearSchema()`             | Clear the current schema                   |
-| `version()`                 | Get library version                        |
+| `insertFile(path, content)` | Add or update a file in the workspace       |
+| `removeFile(path)`          | Remove a file from the workspace            |
+| `lint(path)`                | Get diagnostics for a file                  |
+| `complete(path, offset)`    | Get completions at position                 |
+| `hover(path, offset)`       | Get hover info at position                  |
+| `setSchema(json)`           | Set database schema                         |
+| `clearSchema()`             | Clear the current schema                    |
+| `version()`                 | Get library version                         |
 
 ### LanguageServer
 
