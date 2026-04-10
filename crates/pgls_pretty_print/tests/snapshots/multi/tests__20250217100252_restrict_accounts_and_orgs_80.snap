@@ -1,0 +1,48 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/20250217100252_restrict_accounts_and_orgs.sql
+---
+alter policy accounts_select_policy
+on app.accounts
+to authenticated
+using (id = auth.uid());
+
+alter policy organizations_select_policy
+on app.organizations
+to authenticated
+using (app.is_organization_maintainer(
+  auth.uid(),
+  id
+));
+
+create or replace function public.get_account(handle text)
+returns setof public.accounts
+language sql
+strict
+security definer
+as $function$
+select id, handle, avatar_path, display_name, bio, created_at
+    from public.accounts a
+    where a.handle = get_account.handle
+    and auth.uid() is not null;
+$function$;
+
+create or replace function public.get_organization(handle text)
+returns setof public.organizations
+language sql
+strict
+security definer
+as $function$
+select id, handle, avatar_path, display_name, bio, created_at
+    from public.organizations o
+    where o.handle = get_organization.handle
+    and auth.uid() is not null;
+$function$;
+
+grant SELECT on table app.accounts to service_role;
+
+grant SELECT on table app.organizations to service_role;
+
+grant SELECT on table app.packages to service_role;
+
+grant SELECT on table app.package_versions to service_role;

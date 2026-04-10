@@ -1,0 +1,12 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/20230831172915_allow_anon_access_to_package_views.sql
+---
+alter view public.packages
+  set (security_invoker = 'false');
+
+alter view public.package_versions
+  set (security_invoker = 'false');
+
+alter view public.package_upgrades
+  set (security_invoker = 'false');

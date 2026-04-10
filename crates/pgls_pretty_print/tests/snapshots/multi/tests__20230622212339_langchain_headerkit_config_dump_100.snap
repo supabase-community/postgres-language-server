@@ -1,0 +1,79 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/20230622212339_langchain_headerkit_config_dump.sql
+---
+update app.packages set control_requires = '{vector}' where handle = 'langchain';
+
+insert into app.package_upgrades (
+  package_id,
+  from_version_struct,
+  to_version_struct,
+  sql
+)
+values
+  (
+    (
+      select
+        id
+      from
+        app.packages
+      where
+        handle = 'langchain' and
+        partial_name = 'embedding_search'
+    ),
+    (1, 1, 0),
+    (1, 1, 1),
+    '
+SELECT pg_extension_config_dump(''documents'', '''');
+SELECT pg_extension_config_dump(''documents_id_seq'', '''');
+'
+  );
+
+insert into app.package_upgrades (
+  package_id,
+  from_version_struct,
+  to_version_struct,
+  sql
+)
+values
+  (
+    (
+      select
+        id
+      from
+        app.packages
+      where
+        handle = 'langchain' and
+        partial_name = 'hybrid_search'
+    ),
+    (1, 1, 0),
+    (1, 1, 1),
+    '
+SELECT pg_extension_config_dump(''documents'', '''');
+SELECT pg_extension_config_dump(''documents_id_seq'', '''');
+'
+  );
+
+insert into app.package_upgrades (
+  package_id,
+  from_version_struct,
+  to_version_struct,
+  sql
+)
+values
+  (
+    (
+      select
+        id
+      from
+        app.packages
+      where
+        partial_name = 'pg_headerkit'
+    ),
+    (1, 0, 0),
+    (1, 0, 1),
+    '
+SELECT pg_extension_config_dump(''hdr.allow_list'', '''');
+SELECT pg_extension_config_dump(''hdr.deny_list'', '''');
+'
+  );

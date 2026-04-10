@@ -1,0 +1,33 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/20230405083103_fix_auth_schema_values.sql
+---
+update auth.users
+set created_at = NOW(),
+updated_at = NOW(),
+email_confirmed_at = NOW(),
+confirmation_token = '',
+recovery_token = '',
+email_change_token_new = '',
+email_change = '';
+
+insert into auth.identities (
+  id,
+  provider_id,
+  provider,
+  user_id,
+  identity_data,
+  created_at,
+  updated_at
+)
+select
+  gen_random_uuid(),
+  email,
+  'email' as provider,
+  id as user_id,
+  jsonb_build_object('sub', id, 'email', email)
+  as identity_data,
+  created_at,
+  updated_at
+from
+  auth.users;
