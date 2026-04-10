@@ -1,0 +1,21 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/20230829125510_fix_view_permissions.sql
+---
+alter view public.accounts
+  set (security_invoker = 'true');
+
+alter view public.organizations
+  set (security_invoker = 'true');
+
+alter view public.members
+  set (security_invoker = 'true');
+
+alter view public.packages
+  set (security_invoker = 'true');
+
+alter view public.package_versions
+  set (security_invoker = 'true');
+
+alter view public.package_upgrades
+  set (security_invoker = 'true');

@@ -98,7 +98,7 @@ jobs:
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
         with:
-          bun-version: "1.2.17"
+          bun-version: "1.3.11"
 
       - name: Install dependencies
         run: bun install
@@ -119,9 +119,9 @@ jobs:
           RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.release_tag || github.event.release.tag_name }}
           PRERELEASE: ${{ github.event_name == 'workflow_dispatch' && needs.validate_tag.outputs.is-prerelease || github.event.release.prerelease }}
 
-      - name: Build WASM TS
+      - name: Build WASM TS (from release assets)
         working-directory: packages/@postgres-language-server/wasm
-        run: tsc -p tsconfig.build.json && cp src/schema-cache.d.ts dist/schema-cache.d.ts && cp wasm/pgls.wasm wasm/pgls.js dist/
+        run: bun run build:ts:release-assets
 
       - name: Publish npm packages as nightly (deprecated)
         if: (github.event_name == 'workflow_dispatch' && needs.validate_tag.outputs.is-prerelease == 'true') || (github.event_name == 'release' && github.event.release.prerelease)

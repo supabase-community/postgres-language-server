@@ -1,0 +1,9 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/20220117141359_app_schema.sql
+---
+create schema "app";
+
+grant USAGE on schema app to authenticated, anon;
+
+alter default privileges in schema app grant SELECT on tables to authenticated, anon;

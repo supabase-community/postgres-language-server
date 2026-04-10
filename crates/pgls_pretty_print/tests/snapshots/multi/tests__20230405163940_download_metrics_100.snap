@@ -1,0 +1,102 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/20230405163940_download_metrics.sql
+---
+create or replace function app.api_request_headers()
+returns json
+language sql
+stable
+as $function$
+select coalesce(current_setting('request.headers', true)::json, '{}'::json);
+$function$;
+
+create or replace function app.api_request_header(text)
+returns text
+language sql
+stable
+as $function$
+select app.api_request_headers() ->> $1
+$function$;
+
+create or replace function app.api_request_ip()
+returns inet
+language sql
+stable
+as $function$
+select split_part(app.api_request_header('x-forwarded-for') || ',', ',', 1)::inet
+$function$;
+
+create or replace function app.api_request_client_info()
+returns text
+language sql
+stable
+as $function$
+select app.api_request_header('x-client-info')
+$function$;
+
+create table app.downloads (
+  id uuid primary key default gen_random_uuid(),
+  package_id uuid
+  not null
+  references app.packages (id),
+  ip inet
+  not null
+  default cast(app.api_request_ip() as inet),
+  client_info text
+  default app.api_request_client_info(),
+  created_at timestamp with time zone
+  not null
+  default NOW()
+);
+
+create index "downloads_package_id_ip" on app.downloads using btree (package_id);
+
+create index "downloads_created_at" on app.downloads using brin (created_at);
+
+create or replace function public.register_download(package_name text)
+returns void
+language sql
+security definer
+as $function$
+insert into app.downloads(package_id)
+  select id
+  from app.packages ap
+  where ap.package_name = $1
+$function$;
+
+create materialized view public.download_metrics
+as
+  select
+    dl.package_id,
+    COUNT(dl.id) as downloads_all_time,
+    COUNT(
+      dl.id
+    )
+    filter (where
+      dl.created_at >
+      NOW() - cast('180 days' as interval))
+    as downloads_180_days,
+    COUNT(
+      dl.id
+    )
+    filter (where
+      dl.created_at >
+      NOW() - cast('90 days' as interval))
+    as downloads_90_days,
+    COUNT(
+      dl.id
+    )
+    filter (where
+      dl.created_at >
+      NOW() - cast('30 days' as interval))
+    as downloads_30_day
+  from
+    app.downloads as dl
+  group by dl.package_id;
+
+select
+  cron.schedule(
+    'refresh download metrics',
+    '*/30 * * * *',
+    'refresh materialized view public.download_metrics;'
+  );

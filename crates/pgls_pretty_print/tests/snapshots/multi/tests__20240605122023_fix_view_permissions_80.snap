@@ -1,0 +1,33 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/20240605122023_fix_view_permissions.sql
+---
+alter view public.packages
+  set (security_invoker = 'true');
+
+alter view public.package_versions
+  set (security_invoker = 'true');
+
+alter view public.package_upgrades
+  set (security_invoker = 'true');
+
+create policy packages_select_policy_anon
+on app.packages
+as permissive
+for select
+to anon
+using (true);
+
+create policy package_versions_select_policy_anon
+on app.package_versions
+as permissive
+for select
+to anon
+using (true);
+
+create policy package_upgrades_select_policy_anon
+on app.package_upgrades
+as permissive
+for select
+to anon
+using (true);
