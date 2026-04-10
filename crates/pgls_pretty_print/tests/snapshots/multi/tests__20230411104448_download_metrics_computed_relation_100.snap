@@ -1,0 +1,14 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/20230411104448_download_metrics_computed_relation.sql
+---
+create or replace function public.download_metrics(public.packages)
+returns setof public.download_metrics
+language sql
+stable
+rows 1
+as $function$
+select *
+  from public.download_metrics dm
+  where dm.package_id = $1.id;
+$function$;

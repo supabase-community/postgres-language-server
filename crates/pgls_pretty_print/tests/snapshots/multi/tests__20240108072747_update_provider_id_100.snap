@@ -1,0 +1,5 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/20240108072747_update_provider_id.sql
+---
+update auth.identities set provider_id = email where provider = 'email';

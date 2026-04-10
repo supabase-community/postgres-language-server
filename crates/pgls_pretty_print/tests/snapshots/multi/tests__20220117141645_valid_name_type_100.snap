@@ -1,0 +1,16 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/20220117141645_valid_name_type.sql
+---
+create extension if not exists citext with schema extensions;
+
+create domain app.valid_name as extensions.citext check (value ~ '^[A-z][A-z0-9\_]{2,32}$');
+
+create or replace function app.exception(message text)
+returns text
+language plpgsql
+as $function$
+begin
+                raise exception using errcode='22000', message=message;
+        end;
+$function$;

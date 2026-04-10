@@ -1,0 +1,27 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/20230413140356_update_profile_function.sql
+---
+create or replace function
+public.update_profile(
+  handle app.valid_name,
+  display_name text default null,
+  bio text default null
+)
+returns void
+language plpgsql
+as $function$
+declare
+    v_is_org boolean;
+  begin
+    update app.accounts a
+      set display_name = coalesce($2, a.display_name),
+          bio = coalesce($3, a.bio)
+    where a.handle = $1;
+
+    update app.organizations o
+      set display_name = coalesce($2, o.display_name),
+          bio = coalesce($3, o.bio)
+    where o.handle = $1;
+  end;
+$function$;

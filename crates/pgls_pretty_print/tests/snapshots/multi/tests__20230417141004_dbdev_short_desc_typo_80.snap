@@ -1,0 +1,9 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/20230417141004_dbdev_short_desc_typo.sql
+---
+update app.packages
+set control_description = 'Install packages from the database.dev registry'
+where
+  handle = 'supabase' and
+  partial_name = 'dbdev';
