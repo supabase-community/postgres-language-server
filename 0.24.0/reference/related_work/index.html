@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><link rel="canonical" href="https://pg-language-server.com/0.24.0/reference/related_work/" />
+      <link rel="shortcut icon" href="../../img/favicon.ico" />
+    <title>Related Work - Postgres Language Server</title>
+    <link rel="stylesheet" href="../../css/theme.css" />
+    <link rel="stylesheet" href="../../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
+        <link href="../../css/version-select.css" rel="stylesheet" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "Related Work";
+        var mkdocs_page_input_path = "reference/related_work.md";
+        var mkdocs_page_url = "/0.24.0/reference/related_work/";
+      </script>
+    
+    <!--[if lt IE 9]>
+      <script src="../../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+      <script>hljs.highlightAll();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href="../.." class="icon icon-home"> Postgres Language Server
+        </a>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../../getting_started/">Getting Started</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../../manual_installation/">Manual Installation</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../../configuration/">Configuration</a>
+                </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Features</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../features/syntax_diagnostics/">Syntax Diagnostics</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../features/linting/">Linting</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../features/database_linting/">Database Linting</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../features/type_checking/">Type Checking</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../features/formatting/">Formatting</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../features/plpgsql/">PL/pgSQL Support</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../features/editor_features/">Autocompletion & Hover</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Guides</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../guides/ide_setup/">Use in your IDE</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../guides/checking_migrations/">Checking Migrations</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../guides/configure_database/">Configure database connection</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../guides/suppressions/">Suppressions</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../guides/vcs_integration/">Integrate with VCS</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../guides/continuous_integration/">Continuous Integration</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Reference</span></p>
+              <ul class="current">
+                  <li class="toctree-l1"><a class="reference internal" href="../cli/">CLI Commands</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../rules/">Linter Rules</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../rule_sources/">Linter Rule Sources</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../database_rules/">Database Linter Rules</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../database_rule_sources/">Database Linter Rule Sources</a>
+                  </li>
+                  <li class="toctree-l1 current"><a class="reference internal current" href="#">Related Work</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#migration-safety">Migration Safety</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#migration-execution">Migration Execution</a>
+    </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../env_variables/">Environment Variables</a>
+                  </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../..">Postgres Language Server</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../.." class="icon icon-home" aria-label="Docs"></a></li>
+          <li class="breadcrumb-item">Reference</li>
+      <li class="breadcrumb-item active">Related Work</li>
+    <li class="wy-breadcrumbs-aside">
+          <a href="https://github.com/supabase-community/postgres-language-server/edit/master/docs/reference/related_work.md">Edit on supabase-community/postgres-language-server</a>
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="related-work">Related Work</h1>
+<p>Several tools address migration safety and schema change management for PostgreSQL.</p>
+<p>Some of our <a href="../rule_sources/">lint rules are ported from these tools</a>.</p>
+<h2 id="migration-safety">Migration Safety</h2>
+<ul>
+<li><a href="https://github.com/kaaveland/eugene"><strong>Eugene</strong></a> - Lint and trace lock behaviour of SQL migrations for PostgreSQL</li>
+<li><a href="https://github.com/sbdchd/squawk"><strong>Squawk</strong></a> - Linter for PostgreSQL migrations and SQL</li>
+<li><a href="https://github.com/flvmnt/pgfence"><strong>pgfence</strong></a> - PostgreSQL migration safety CLI with lock mode analysis, risk scoring, and safe rewrite recipes</li>
+<li><a href="https://github.com/ankane/strong_migrations"><strong>Strong Migrations</strong></a> - Catch unsafe migrations in development (Ruby / ActiveRecord)</li>
+</ul>
+<h2 id="migration-execution">Migration Execution</h2>
+<ul>
+<li><a href="https://github.com/xataio/pgroll"><strong>pgroll</strong></a> - PostgreSQL zero-downtime migrations made easy</li>
+</ul>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="../database_rule_sources/" class="btn btn-neutral float-left" title="Database Linter Rule Sources"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../env_variables/" class="btn btn-neutral float-right" title="Environment Variables">Next <span class="icon icon-circle-arrow-right"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+        <span>
+          <a href="https://github.com/supabase-community/postgres-language-server" class="fa fa-code-fork" style="color: #fcfcfc"> supabase-community/postgres-language-server</a>
+        </span>
+    
+    
+      <span><a href="../database_rule_sources/" style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+      <span><a href="../env_variables/" style="color: #fcfcfc">Next &raquo;</a></span>
+    
+  </span>
+</div>
+    <script src="../../js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = "../..";</script>
+    <script src="../../js/theme_extra.js"></script>
+    <script src="../../js/theme.js"></script>
+      <script src="../../js/version-select.js"></script>
+    <script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+
+</body>
+</html>
