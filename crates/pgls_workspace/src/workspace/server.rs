@@ -26,6 +26,7 @@ use pgls_diagnostics::{
 };
 use pgls_fs::{ConfigName, PgLSPath};
 use pgls_schema_cache::SchemaCache;
+use pgls_text_size::TextRange;
 #[cfg(feature = "db")]
 use pgls_typecheck::{IdentifierType, TypecheckParams, TypedIdentifier};
 use pgls_workspace_macros::ignored_path;
@@ -149,6 +150,12 @@ impl WorkspaceServer {
     /// Clear the schema.
     pub fn clear_schema(&self) {
         self.schema_cache.clear();
+    }
+
+    /// Split raw SQL into byte ranges of individual statements.
+    #[allow(clippy::unused_self)]
+    pub fn split_statements(&self, sql: &str) -> Vec<TextRange> {
+        pgls_statement_splitter::split(sql).ranges
     }
 
     /// Get a clone of the current schema.

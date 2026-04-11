@@ -22,10 +22,11 @@ import type {
   Diagnostic,
   PGLSModule,
   SchemaCache,
+  Statement,
   WorkspaceOptions,
 } from "./types.js";
 
-export type { Diagnostic, CompletionItem, SchemaCache, WorkspaceOptions, PGLSModule };
+export type { Diagnostic, CompletionItem, SchemaCache, Statement, WorkspaceOptions, PGLSModule };
 
 /**
  * The Workspace class provides a direct API for SQL parsing, linting,
@@ -149,6 +150,23 @@ export class Workspace {
       const resultPtr = this.module._pgls_parse(sqlPtr);
       const result = readAndFreeString(this.module, resultPtr);
       return parseResult<string[]>(result) ?? [];
+    } finally {
+      this.module._free(sqlPtr);
+    }
+  }
+
+  /**
+   * Split SQL into individual statements.
+   *
+   * Each returned `Statement` contains the SQL text and its byte offsets
+   * in the original string.
+   */
+  splitStatements(sql: string): Statement[] {
+    const sqlPtr = allocateString(this.module, sql);
+    try {
+      const resultPtr = this.module._pgls_split_statements(sqlPtr);
+      const result = readAndFreeString(this.module, resultPtr);
+      return parseResult<Statement[]>(result) ?? [];
     } finally {
       this.module._free(sqlPtr);
     }

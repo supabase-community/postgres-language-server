@@ -50,6 +50,18 @@ export interface WorkspaceOptions {
 }
 
 /**
+ * A single SQL statement extracted from a multi-statement source.
+ */
+export interface Statement {
+  /** The SQL text of the statement */
+  sql: string;
+  /** Start byte offset in the original SQL string */
+  start: number;
+  /** End byte offset in the original SQL string */
+  end: number;
+}
+
+/**
  * A JSON-RPC message (request, response, or notification).
  * This is the standard LSP message format.
  */
@@ -86,6 +98,7 @@ export interface PGLSModule {
   _pgls_complete(pathPtr: number, offset: number): number;
   _pgls_hover(pathPtr: number, offset: number): number;
   _pgls_parse(sqlPtr: number): number;
+  _pgls_split_statements(sqlPtr: number): number;
   _pgls_version(): number;
 
   // Language Server API

@@ -85,6 +85,7 @@ EXPORTED_FUNCTIONS="[
   '_pgls_complete',
   '_pgls_hover',
   '_pgls_parse',
+  '_pgls_split_statements',
   '_pgls_version',
   '_pgls_lsp_handle_message'
 ]"
