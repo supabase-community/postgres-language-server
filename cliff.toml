@@ -9,6 +9,8 @@
 # template for the changelog header
 header = """
 # Postgres Language Server\n
+A collection of language tools and a Language Server Protocol (LSP) implementation for Postgres, focusing on developer experience and reliable SQL tooling.\n
+📖 **Getting Started** — See the [installation docs](https://pg-language-server.com/latest/getting_started/) for setup instructions.\n
 """
 # template for the changelog body
 # https://keats.github.io/tera/docs/#introduction
@@ -47,9 +49,6 @@ body = """
 """
 # template for the changelog footer
 footer = """
----
-
-📖 **Getting Started** — See the [installation docs](https://pg-language-server.com/latest/getting_started/) for setup instructions.
 """
 # remove the leading and trailing s
 trim = true
