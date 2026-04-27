@@ -10,12 +10,13 @@
 header = """
 # Postgres Language Server\n
 A collection of language tools and a Language Server Protocol (LSP) implementation for Postgres, focusing on developer experience and reliable SQL tooling.\n
+📖 **Getting Started** — See the [installation docs](https://pg-language-server.com/latest/getting_started/) for setup instructions.\n
 """
 # template for the changelog body
 # https://keats.github.io/tera/docs/#introduction
 body = """
 {% if version %}\
-    ## {{ version | trim_start_matches(pat="v") }}
+    ## {{ version | trim_start_matches(pat="v") }} — _{{ timestamp | date(format="%Y-%m-%d") }}_
 {% else %}\
     ## [unreleased]
 {% endif %}\
@@ -25,16 +26,26 @@ body = """
         - {% if commit.scope %}*({{ commit.scope }})* {% endif %}\
             {% if commit.breaking %}[**breaking**] {% endif %}\
             {{ commit.message | upper_first }}\
+            {% if commit.remote.username %} by @{{ commit.remote.username }}{%- endif -%}\
+            {% if commit.remote.pr_number %} in \
+              [#{{ commit.remote.pr_number }}](<REPO>/pull/{{ commit.remote.pr_number }})\
+            {%- endif %}
     {% endfor %}
 {% endfor %}\n
 
-## Contributors
-{% for contributor in github.contributors | filter(attribute="is_first_time", value=true) %}
-  * @{{ contributor.username }} made their first contribution in #{{ contributor.pr_number }} 🎉
-{%- endfor -%}
-{% for contributor in github.contributors | filter(attribute="is_first_time", value=false) %}
-  * @{{ contributor.username }}
-{%- endfor -%}\n
+{% if github.contributors | filter(attribute="is_first_time", value=true) | length != 0 %}
+  ## New Contributors
+  {% for contributor in github.contributors | filter(attribute="is_first_time", value=true) %}
+    * @{{ contributor.username }} made their first contribution\
+      {%- if contributor.pr_number %} in [#{{ contributor.pr_number }}](<REPO>/pull/{{ contributor.pr_number }}){%- endif %} 🎉
+  {%- endfor %}
+{% endif %}
+
+{% if version %}
+  {% if previous.version %}
+    **Full Changelog**: [{{ previous.version }}...{{ version }}](<REPO>/compare/{{ previous.version }}...{{ version }})
+  {% endif %}
+{% endif %}
 """
 # template for the changelog footer
 footer = """
@@ -43,7 +54,7 @@ footer = """
 trim = true
 # postprocessors
 postprocessors = [
-  # { pattern = '<REPO>', replace = "https://github.com/orhun/git-cliff" }, # replace repository URL
+  { pattern = '<REPO>', replace = "https://github.com/supabase-community/postgres-language-server" },
 ]
 # render body even when there are no releases to process
 # render_always = true
@@ -89,3 +100,7 @@ filter_commits = false
 topo_order = false
 # sort the commits inside sections by oldest/newest order
 sort_commits = "oldest"
+
+[remote.github]
+owner = "supabase-community"
+repo = "postgres-language-server"

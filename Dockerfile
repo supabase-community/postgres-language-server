@@ -21,10 +21,11 @@ RUN apt-get update && \
     cd /tmp && \
     rm -rf /tmp/plpgsql_check && \
     # Install Rust for pglinter (pgrx-based extension)
-    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y && \
+    # pgrx 0.18.0 requires Rust 1.89+
+    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal --default-toolchain 1.89.0 && \
     . $HOME/.cargo/env && \
     # Install cargo-pgrx (version must match pglinter's pgrx dependency)
-    cargo install cargo-pgrx --version 0.16.1 --locked && \
+    cargo install cargo-pgrx --version 0.18.0 --locked && \
     # Initialize pgrx for PostgreSQL 15
     cargo pgrx init --pg15 $(which pg_config) && \
     # Clone and build pglinter (requires v1.1.0+ for get_violations API + rule_messages table)
