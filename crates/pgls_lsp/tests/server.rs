@@ -602,7 +602,186 @@ async fn test_completions(test_db: PgPool) -> Result<()> {
         })
         .await?;
 
-    assert!(res.is_some());
+    let list = match res.context("expected a completion response")? {
+        CompletionResponse::List(l) => l,
+        other => bail!("expected CompletionResponse::List, got {other:?}"),
+    };
+
+    assert!(!list.items.is_empty(), "expected completion items");
+    assert!(!list.is_incomplete, "result should not be truncated");
+
+    server.shutdown().await?;
+    reader.abort();
+
+    Ok(())
+}
+
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn test_completions_is_incomplete_when_truncated(test_db: PgPool) -> Result<()> {
+    let factory = ServerFactory::default();
+    let mut fs = MemoryFileSystem::default();
+
+    // Create 55 tables — more than pgls_completions::LIMIT (50)
+    // so table-name completions at "select * from " will exceed the limit
+    // and be truncated.
+    let setup = r#"
+        do $$
+        begin
+            for i in 0..54 loop
+                execute format('create table public.t%s (id int);', lpad(i::text, 3, '0'));
+            end loop;
+        end
+        $$;
+    "#;
+
+    test_db
+        .execute(setup)
+        .await
+        .expect("Failed to setup test database");
+
+    let mut conf = PartialConfiguration::init();
+    conf.merge_with(PartialConfiguration {
+        db: Some(PartialDatabaseConfiguration {
+            database: Some(
+                test_db
+                    .connect_options()
+                    .get_database()
+                    .unwrap()
+                    .to_string(),
+            ),
+            ..Default::default()
+        }),
+        ..Default::default()
+    });
+    fs.insert(
+        url!("postgres-language-server.jsonc")
+            .to_file_path()
+            .unwrap(),
+        serde_json::to_string_pretty(&conf).unwrap(),
+    );
+
+    let (service, client) = factory
+        .create_with_fs(None, DynRef::Owned(Box::new(fs)))
+        .into_inner();
+
+    let (stream, sink) = client.split();
+    let mut server = Server::new(service);
+
+    let (sender, _) = channel(CHANNEL_BUFFER_SIZE);
+    let reader = tokio::spawn(client_handler(stream, sink, sender));
+
+    server.initialize().await?;
+    server.initialized().await?;
+    server.load_configuration().await?;
+
+    server.open_document("select * from t\n").await?;
+
+    let res = server
+        .get_completion(CompletionParams {
+            work_done_progress_params: WorkDoneProgressParams::default(),
+            partial_result_params: PartialResultParams::default(),
+            context: None,
+            text_document_position: TextDocumentPositionParams {
+                text_document: TextDocumentIdentifier {
+                    uri: url!("document.sql"),
+                },
+                position: Position {
+                    line: 0,
+                    character: 15,
+                },
+            },
+        })
+        .await?;
+
+    let list = match res.context("expected a completion response")? {
+        CompletionResponse::List(l) => l,
+        other => bail!("expected CompletionResponse::List, got {other:?}"),
+    };
+
+    assert_eq!(
+        list.items.len(),
+        pgls_completions::LIMIT,
+        "items should be truncated to LIMIT"
+    );
+    assert!(
+        list.is_incomplete,
+        "is_incomplete must be true when results are truncated at LIMIT"
+    );
+
+    server.shutdown().await?;
+    reader.abort();
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn test_completions_is_complete_when_no_db_configured() -> Result<()> {
+    let factory = ServerFactory::default();
+    let mut fs = MemoryFileSystem::default();
+
+    // No DB connection configured.
+    let mut conf = PartialConfiguration::init();
+    conf.merge_with(PartialConfiguration {
+        db: Some(PartialDatabaseConfiguration {
+            disable_connection: Some(true),
+            ..Default::default()
+        }),
+        ..Default::default()
+    });
+    fs.insert(
+        url!("postgres-language-server.jsonc")
+            .to_file_path()
+            .unwrap(),
+        serde_json::to_string_pretty(&conf).unwrap(),
+    );
+
+    let (service, client) = factory
+        .create_with_fs(None, DynRef::Owned(Box::new(fs)))
+        .into_inner();
+
+    let (stream, sink) = client.split();
+    let mut server = Server::new(service);
+
+    let (sender, _) = channel(CHANNEL_BUFFER_SIZE);
+    let reader = tokio::spawn(client_handler(stream, sink, sender));
+
+    server.initialize().await?;
+    server.initialized().await?;
+    server.load_configuration().await?;
+
+    server.open_document("select * from users\n").await?;
+
+    let res = server
+        .get_completion(CompletionParams {
+            work_done_progress_params: WorkDoneProgressParams::default(),
+            partial_result_params: PartialResultParams::default(),
+            context: None,
+            text_document_position: TextDocumentPositionParams {
+                text_document: TextDocumentIdentifier {
+                    uri: url!("document.sql"),
+                },
+                position: Position {
+                    line: 0,
+                    character: 14,
+                },
+            },
+        })
+        .await?;
+
+    let list = match res.context("expected a completion response")? {
+        CompletionResponse::List(l) => l,
+        other => bail!("expected CompletionResponse::List, got {other:?}"),
+    };
+
+    assert!(
+        list.items.is_empty(),
+        "expected no items without a DB connection, got {}",
+        list.items.len()
+    );
+    assert!(
+        !list.is_incomplete,
+        "is_incomplete must be false when items is empty due to no DB being configured (0 != LIMIT)"
+    );
 
     server.shutdown().await?;
     reader.abort();

@@ -29,7 +29,15 @@ pub fn get_completions(
         Ok(result) => result,
         Err(e) => match e {
             WorkspaceError::DatabaseConnectionError(_) => {
-                return Ok(lsp_types::CompletionResponse::Array(vec![]));
+                // The list is empty only because the DB is unreachable.
+                // Mark it incomplete so the client re-requests on the next
+                // keystroke and picks up real completions once the connection recovers.
+                return Ok(lsp_types::CompletionResponse::List(
+                    lsp_types::CompletionList {
+                        is_incomplete: true,
+                        items: vec![],
+                    },
+                ));
             }
             _ => {
                 return Err(e.into());
@@ -66,7 +74,12 @@ pub fn get_completions(
         })
         .collect();
 
-    Ok(lsp_types::CompletionResponse::Array(items))
+    Ok(lsp_types::CompletionResponse::List(
+        lsp_types::CompletionList {
+            is_incomplete: items.len() == pgls_completions::LIMIT,
+            items,
+        },
+    ))
 }
 
 fn to_lsp_types_completion_item_kind(
