@@ -1,0 +1,16 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+-- expect_lint/safety/requireConcurrentReindex
+reindex index my_index;
+```
+
+# Diagnostics
+lint/safety/requireConcurrentReindex ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × REINDEX without CONCURRENTLY blocks all table access.
+  
+  i Use REINDEX CONCURRENTLY to rebuild the index without blocking reads and writes.

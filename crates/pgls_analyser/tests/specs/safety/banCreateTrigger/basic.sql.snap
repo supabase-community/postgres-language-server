@@ -1,0 +1,16 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+-- expect_lint/safety/banCreateTrigger
+create trigger my_trigger after insert on my_table for each row execute function my_func();
+```
+
+# Diagnostics
+lint/safety/banCreateTrigger ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Creating a trigger acquires a SHARE ROW EXCLUSIVE lock on the table.
+  
+  i Triggers add hidden complexity and can block concurrent writes. Consider using application-level logic instead.
