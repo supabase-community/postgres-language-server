@@ -24,7 +24,7 @@ RUN apt-get update && \
     curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y && \
     . $HOME/.cargo/env && \
     # Install cargo-pgrx (version must match pglinter's pgrx dependency)
-    cargo install cargo-pgrx --version 0.16.1 --locked && \
+    cargo install cargo-pgrx --version 0.18.0 --locked && \
     # Initialize pgrx for PostgreSQL 15
     cargo pgrx init --pg15 $(which pg_config) && \
     # Clone and build pglinter (requires v1.1.0+ for get_violations API + rule_messages table)
