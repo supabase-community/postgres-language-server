@@ -38,7 +38,7 @@ How to fix:
 
 Category: pglinter/base/howManyObjectsWithUppercase
 Severity: Warning
-Message: 'public.TestTable.UserName' uses uppercase characters.
+Message: 'public.TestTable' uses uppercase characters.
 Advices:
 Using uppercase in identifiers requires quoting and can cause case-sensitivity issues.
 [Info] Rule: B005
