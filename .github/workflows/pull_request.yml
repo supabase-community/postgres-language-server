@@ -136,7 +136,7 @@ jobs:
           key: ${{ runner.os }}-tree-sitter-${{ hashFiles('.tree-sitter-cli-version', 'crates/pgls_treesitter_grammar/grammar.js', 'crates/pgls_treesitter_grammar/tree-sitter.json', 'rust-toolchain.toml', 'Cargo.lock') }}
 
       - name: Setup tree-sitter
-        run: command -v tree-sitter || cargo install tree-sitter-cli --version "$(cat .tree-sitter-cli-version)" --locked
+        run: bash ./.github/scripts/setup-tree-sitter.sh
         shell: bash
 
       - name: Setup sqlx-cli
@@ -206,7 +206,7 @@ jobs:
           key: ${{ runner.os }}-tree-sitter-${{ hashFiles('.tree-sitter-cli-version', 'crates/pgls_treesitter_grammar/grammar.js', 'crates/pgls_treesitter_grammar/tree-sitter.json', 'rust-toolchain.toml', 'Cargo.lock') }}
 
       - name: Setup tree-sitter
-        run: command -v tree-sitter || cargo install tree-sitter-cli --version "$(cat .tree-sitter-cli-version)" --locked
+        run: bash ./.github/scripts/setup-tree-sitter.sh
         shell: bash
 
       - name: Run clippy
@@ -247,7 +247,7 @@ jobs:
             target/**/build/pgls_treesitter_grammar-*/out/generated
           key: ${{ runner.os }}-tree-sitter-${{ hashFiles('.tree-sitter-cli-version', 'crates/pgls_treesitter_grammar/grammar.js', 'crates/pgls_treesitter_grammar/tree-sitter.json', 'rust-toolchain.toml', 'Cargo.lock') }}
       - name: setup tree-sitter
-        run: command -v tree-sitter || cargo install tree-sitter-cli --version "$(cat .tree-sitter-cli-version)" --locked
+        run: bash ./.github/scripts/setup-tree-sitter.sh
         shell: bash
       - name: Build main binary
         run: cargo build -p pgls_cli --release
@@ -337,7 +337,7 @@ jobs:
             target/**/build/pgls_treesitter_grammar-*/out/generated
           key: ${{ runner.os }}-tree-sitter-${{ hashFiles('.tree-sitter-cli-version', 'crates/pgls_treesitter_grammar/grammar.js', 'crates/pgls_treesitter_grammar/tree-sitter.json', 'rust-toolchain.toml', 'Cargo.lock') }}
       - name: setup tree-sitter
-        run: command -v tree-sitter || cargo install tree-sitter-cli --version "$(cat .tree-sitter-cli-version)" --locked
+        run: bash ./.github/scripts/setup-tree-sitter.sh
         shell: bash
       - name: Ensure RustFMT on nightly toolchain
         run: rustup component add rustfmt --toolchain nightly
