@@ -1,24 +1,35 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+persist_tree_sitter_path() {
+  local tree_sitter_path tree_sitter_dir
+  tree_sitter_path="$(command -v tree-sitter)"
+  tree_sitter_dir="$(dirname "${tree_sitter_path}")"
+
+  if [[ -n "${GITHUB_PATH:-}" ]]; then
+    if [[ "${RUNNER_OS:-}" == "Windows" ]] && command -v cygpath >/dev/null 2>&1; then
+      cygpath -w "${tree_sitter_dir}" >>"${GITHUB_PATH}"
+    else
+      echo "${tree_sitter_dir}" >>"${GITHUB_PATH}"
+    fi
+  fi
+
+  "${tree_sitter_path}" --version
+}
+
 if command -v tree-sitter >/dev/null 2>&1; then
-  tree-sitter --version
+  persist_tree_sitter_path
   exit 0
 fi
 
 version="$(cat .tree-sitter-cli-version)"
 
-if [[ "${RUNNER_OS:-}" == "Windows" ]]; then
-  # Compiling tree-sitter-cli from source on Windows intermittently fails in CI.
-  # The npm package ships a prebuilt binary for the GitHub-hosted Windows runner.
+if command -v npm >/dev/null 2>&1; then
+  # The npm package ships prebuilt binaries, avoiding slow and flaky source
+  # compilation on GitHub-hosted runners.
   npm install -g "tree-sitter-cli@${version}"
 else
   cargo install tree-sitter-cli --version "${version}" --locked
 fi
 
-tree_sitter_path="$(command -v tree-sitter)"
-if [[ -n "${GITHUB_PATH:-}" ]]; then
-  dirname "${tree_sitter_path}" >>"${GITHUB_PATH}"
-fi
-
-"${tree_sitter_path}" --version
+persist_tree_sitter_path
