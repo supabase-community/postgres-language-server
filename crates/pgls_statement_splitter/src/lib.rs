@@ -634,4 +634,112 @@ VALUES
         .assert_single_statement()
         .assert_no_errors();
     }
+
+    /// Regression: a backslash command without a trailing newline (so that the
+    /// command runs all the way to EOF) used to cause an out-of-bounds panic in
+    /// the splitter. See `plpgsql_command` in `splitter/common.rs`.
+    #[test]
+    #[timeout(1000)]
+    fn does_not_panic_on_backslash_dot_at_eof() {
+        // `\.` is a valid psql command (terminator for COPY FROM STDIN).
+        let _ = split("\\.");
+    }
+
+    #[test]
+    #[timeout(1000)]
+    fn does_not_panic_on_backslash_command_at_eof() {
+        let _ = split("\\dt");
+    }
+
+    #[test]
+    #[timeout(1000)]
+    fn does_not_panic_on_double_backslash_at_eof() {
+        let _ = split("\\\\something");
+    }
+
+    #[test]
+    #[timeout(1000)]
+    fn does_not_panic_on_backslash_command_with_args_at_eof() {
+        let _ = split("\\com test");
+    }
+
+    #[test]
+    #[timeout(1000)]
+    fn does_not_panic_on_statement_followed_by_backslash_at_eof() {
+        let _ = split("select 1;\n\\.");
+    }
+
+    // --- Minimal/degenerate backslash inputs (must not panic) -----------------
+
+    #[test]
+    #[timeout(1000)]
+    fn does_not_panic_on_lone_backslash() {
+        let _ = split("\\");
+    }
+
+    #[test]
+    #[timeout(1000)]
+    fn does_not_panic_on_double_backslash_alone() {
+        let _ = split("\\\\");
+    }
+
+    #[test]
+    #[timeout(1000)]
+    fn does_not_panic_on_many_backslashes_at_eof() {
+        let _ = split("\\\\\\\\");
+    }
+
+    #[test]
+    #[timeout(1000)]
+    fn does_not_panic_on_backslash_only_followed_by_newline() {
+        // Trailing newline goes through the LINE_ENDING branch of
+        // `plpgsql_command`, exercising a different exit path.
+        let _ = split("\\\n");
+    }
+
+    // --- Backslash command at the very beginning of input ---------------------
+
+    #[test]
+    #[timeout(1000)]
+    fn backslash_command_at_start_then_statement() {
+        Tester::from("\\dt\nselect 1").expect_statements(vec!["select 1"]);
+    }
+
+    #[test]
+    #[timeout(1000)]
+    fn backslash_command_at_start_then_terminated_statement() {
+        Tester::from("\\dt\nselect 1;").expect_statements(vec!["select 1;"]);
+    }
+
+    // --- Backslash command(s) in the middle of statements ---------------------
+
+    #[test]
+    #[timeout(1000)]
+    fn backslash_command_between_two_statements() {
+        Tester::from("select 1;\n\\dt\nselect 2;")
+            .expect_statements(vec!["select 1;", "select 2;"]);
+    }
+
+    #[test]
+    #[timeout(1000)]
+    fn multiple_consecutive_backslash_commands_between_statements() {
+        Tester::from("select 1;\n\\dt\n\\du\n\\dn\nselect 2;")
+            .expect_statements(vec!["select 1;", "select 2;"]);
+    }
+
+    #[test]
+    #[timeout(1000)]
+    fn consecutive_backslash_commands_at_eof_do_not_panic() {
+        // No trailing newline on the last command — runs to EOF.
+        let _ = split("\\dt\n\\du\n\\dn");
+    }
+
+    // --- Backslash at start, middle, and end all at once ----------------------
+
+    #[test]
+    #[timeout(1000)]
+    fn backslash_commands_surrounding_statements() {
+        Tester::from("\\dt\nselect 1;\n\\du\nselect 2;\n\\dn")
+            .expect_statements(vec!["select 1;", "select 2;"]);
+    }
 }

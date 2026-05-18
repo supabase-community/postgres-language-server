@@ -136,7 +136,7 @@ pub(crate) fn plpgsql_command(p: &mut Splitter) -> SplitterResult {
             _ => {
                 // advance the splitter to the next token without ignoring irrelevant tokens
                 // we would skip a newline with `advance()`
-                p.current_pos += 1;
+                p.step()?;
             }
         }
     }

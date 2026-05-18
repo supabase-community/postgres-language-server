@@ -134,6 +134,20 @@ impl<'a> Splitter<'a> {
         Ok(self.lexed.kind(pos))
     }
 
+    /// Advances the parser by exactly one token and returns it.
+    ///
+    /// NOTE: Unlike [`advance`], this does NOT skip trivia tokens. Use this
+    /// when the caller needs to walk the raw token stream (e.g. searching
+    /// for a single-newline `LINE_ENDING`, which `advance` would skip).
+    fn step(&mut self) -> Result<SyntaxKind, ReachedEOFException> {
+        if self.current() == SyntaxKind::EOF {
+            return Err(ReachedEOFException);
+        }
+
+        self.current_pos += 1;
+        Ok(self.lexed.kind(self.current_pos))
+    }
+
     fn look_ahead(&self, ignore_trivia: bool) -> SyntaxKind {
         let pos = if ignore_trivia {
             (self.current_pos + 1..self.lexed.len())
