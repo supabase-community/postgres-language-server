@@ -13,6 +13,17 @@ add_github_path() {
   fi
 }
 
+cargo_bin_dir() {
+  local cargo_home="${CARGO_HOME:-$HOME/.cargo}"
+  local dir="${cargo_home}/bin"
+
+  if [[ "${RUNNER_OS:-}" == "Windows" ]] && command -v cygpath >/dev/null 2>&1; then
+    cygpath -u "${dir}"
+  else
+    echo "${dir}"
+  fi
+}
+
 persist_tree_sitter_path() {
   local tree_sitter_path tree_sitter_dir
   tree_sitter_path="$(command -v tree-sitter)"
@@ -22,28 +33,12 @@ persist_tree_sitter_path() {
   "${tree_sitter_path}" --version
 }
 
-if command -v tree-sitter >/dev/null 2>&1; then
-  persist_tree_sitter_path
-  exit 0
-fi
+cargo_bin="$(cargo_bin_dir)"
+export PATH="${cargo_bin}:${PATH}"
+add_github_path "${cargo_bin}"
 
-version="$(cat .tree-sitter-cli-version)"
-
-if command -v npm >/dev/null 2>&1; then
-  # The npm package ships prebuilt binaries, avoiding slow and flaky source
-  # compilation on GitHub-hosted runners.
-  npm install -g "tree-sitter-cli@${version}"
-
-  # npm also creates shell shims in the global bin directory. Rust's
-  # Command::new("tree-sitter") needs the real binary on Windows, so expose the
-  # package directory that contains tree-sitter.exe/tree-sitter directly.
-  npm_tree_sitter_dir="$(npm root -g)/tree-sitter-cli"
-  if [[ -d "${npm_tree_sitter_dir}" ]]; then
-    export PATH="${npm_tree_sitter_dir}:${PATH}"
-    add_github_path "${npm_tree_sitter_dir}"
-  fi
-else
-  cargo install tree-sitter-cli --version "${version}" --locked
+if ! command -v tree-sitter >/dev/null 2>&1; then
+  cargo install tree-sitter-cli --version "$(cat .tree-sitter-cli-version)" --locked
 fi
 
 persist_tree_sitter_path
