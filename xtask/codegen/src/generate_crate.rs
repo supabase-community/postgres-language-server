@@ -1,5 +1,5 @@
+use crate::*;
 use std::fs;
-use xtask::*;
 
 fn cargo_template(name: &str) -> String {
     format!(

@@ -101,10 +101,11 @@ The project uses a modular Rust workspace with crates prefixed with `pgls_`:
 - `pgls_suppressions` - Rule suppression handling
 
 ### TypeScript Packages
-Located in `packages/` and `editors/`:
-- VSCode extension in `editors/code/`
+Located in `packages/`:
 - Backend JSON-RPC bridge in `packages/@postgres-language-server/backend-jsonrpc/` (legacy: `packages/@postgrestools/backend-jsonrpc/`)
-- Main TypeScript package in `packages/@postgres-language-server/postgres-language-server/` (legacy: `packages/@postgrestools/postgrestools/`)
+- CLI package in `packages/@postgres-language-server/cli/`
+- WASM package in `packages/@postgres-language-server/wasm/`
+- Legacy main TypeScript package in `packages/@postgrestools/postgrestools/`
 
 ### Database Integration
 The server connects to a Postgres database to build an in-memory schema cache containing tables, columns, functions, and type information. This enables accurate autocompletion and type checking.
