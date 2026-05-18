@@ -1,9 +1,9 @@
+use crate::project_root;
 use bpaf::Bpaf;
 use convert_case::{Case, Casing};
 use pgls_diagnostics::Severity;
 use pgls_env::PGLS_WEBSITE;
 use std::str::FromStr;
-use xtask::project_root;
 
 #[derive(Debug, Clone, Bpaf)]
 pub enum Category {

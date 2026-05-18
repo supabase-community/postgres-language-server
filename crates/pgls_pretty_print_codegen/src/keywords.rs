@@ -1,4 +1,4 @@
-// from https://github.com/sbdchd/squawk/blob/ac9f90c3b2be8d2c46fd5454eb48975afd268dbe/crates/xtask/src/keywords.rs
+// Adapted from Squawk's keyword generation helper.
 use anyhow::{Context, Ok, Result};
 use std::path;
 

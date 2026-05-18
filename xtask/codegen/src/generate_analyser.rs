@@ -1,11 +1,11 @@
 use std::path::PathBuf;
 use std::{collections::BTreeMap, path::Path};
 
+use crate::{glue::fs2, project_root};
 use anyhow::{Context, Ok, Result};
 use convert_case::{Case, Casing};
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
-use xtask::{glue::fs2, project_root};
 
 pub fn generate_analyser() -> Result<()> {
     generate_linter()?;
@@ -51,7 +51,7 @@ fn generate_options(base_path: &Path) -> Result<()> {
         }
     }
     let rules_options = rules_options.values();
-    let tokens = xtask::reformat(quote! {
+    let tokens = crate::reformat(quote! {
         #( #crates )*
 
         #( #rules_options )*
@@ -120,7 +120,7 @@ fn generate_category(
     );
 
     let (modules, paths): (Vec<_>, Vec<_>) = groups.into_values().unzip();
-    let tokens = xtask::reformat(quote! {
+    let tokens = crate::reformat(quote! {
         #( #modules )*
         ::pgls_analyse::declare_category! {
             pub #category_name {
@@ -200,7 +200,7 @@ fn generate_group(
         ),
         _ => panic!("Category not supported: {category}"),
     };
-    let tokens = xtask::reformat(quote! {
+    let tokens = crate::reformat(quote! {
         #import_macro
 
         #(#rule_imports)*
@@ -235,7 +235,7 @@ fn update_linter_registry_builder(
         }
     });
 
-    let tokens = xtask::reformat(quote! {
+    let tokens = crate::reformat(quote! {
         use pgls_analyse::{RegistryVisitor, RuleKey};
         use crate::linter_registry::RegistryLinterRule;
 

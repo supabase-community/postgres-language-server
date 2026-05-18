@@ -1,5 +1,5 @@
-use xtask::Mode::Overwrite;
-use xtask::{project_root, pushd, Result};
+use xtask_codegen::Mode::Overwrite;
+use xtask_codegen::{project_root, pushd, Result};
 
 use xtask_codegen::{
     generate_analyser, generate_bindings, generate_crate, generate_new_analyser_rule,

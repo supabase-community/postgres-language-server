@@ -1,8 +1,8 @@
 use crate::update;
+use crate::{project_root, Mode, Result};
 use pgls_schema_cache::SchemaCache;
 use pgls_workspace::workspace_types::{generate_type, ModuleQueue};
 use schemars::r#gen::{SchemaGenerator, SchemaSettings};
-use xtask::{project_root, Mode, Result};
 
 pub fn generate_schema_types(mode: Mode) -> Result<()> {
     let output_path =

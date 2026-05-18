@@ -1,8 +1,8 @@
 use crate::update;
 
+use crate::{project_root, Mode, Result};
 use convert_case::{Case, Casing};
 use pgls_workspace::workspace_types::{generate_type, methods, ModuleQueue};
-use xtask::{project_root, Mode, Result};
 
 pub fn generate_bindings(mode: &Mode) -> Result<()> {
     let bindings_path_postgrestools =

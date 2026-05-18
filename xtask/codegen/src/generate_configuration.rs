@@ -1,3 +1,4 @@
+use crate::*;
 use crate::{to_capitalized, to_snake_case, update};
 use convert_case::{Case, Casing};
 use pgls_analyse::{
@@ -8,7 +9,6 @@ use proc_macro2::{Ident, Literal, Span, TokenStream};
 use pulldown_cmark::{Event, Parser, Tag, TagEnd};
 use quote::quote;
 use std::collections::BTreeMap;
-use xtask::*;
 
 /// Configuration for a tool that produces rules
 struct ToolConfig {
@@ -324,7 +324,7 @@ fn generate_lint_mod_file(tool: &ToolConfig) -> String {
         }
     };
 
-    xtask::reformat(content.to_string()).unwrap()
+    crate::reformat(content.to_string()).unwrap()
 }
 
 /// Generate the rules.rs file for a Lint tool
@@ -584,7 +584,7 @@ fn generate_lint_rules_file(
         }
     };
 
-    xtask::reformat(rules_struct_content.to_string())
+    crate::reformat(rules_struct_content.to_string())
 }
 
 /// Generate a group struct for lint rules
@@ -950,7 +950,7 @@ fn generate_action_mod_file(tool: &ToolConfig) -> String {
         }
     };
 
-    xtask::reformat(content.to_string()).unwrap()
+    crate::reformat(content.to_string()).unwrap()
 }
 
 /// Generate the actions.rs file for an Action tool
@@ -1103,7 +1103,7 @@ fn generate_action_actions_file(
         }
     };
 
-    xtask::reformat(actions_struct_content.to_string())
+    crate::reformat(actions_struct_content.to_string())
 }
 
 /// Generate a group struct for action rules

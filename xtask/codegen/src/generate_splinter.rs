@@ -1,10 +1,10 @@
+use crate::{glue::fs2, project_root, Mode};
 use anyhow::{Context, Result};
 use convert_case::{Case, Casing};
 use quote::{format_ident, quote};
 use std::collections::BTreeMap;
 use std::fs;
 use std::path::{Path, PathBuf};
-use xtask::{glue::fs2, project_root, Mode};
 
 use crate::update;
 
@@ -201,7 +201,7 @@ fn generate_rule_trait() -> Result<()> {
         }
     };
 
-    let formatted = xtask::reformat(content)?;
+    let formatted = crate::reformat(content)?;
     update(&rule_path, &formatted, &Mode::Overwrite)?;
 
     Ok(())
@@ -328,7 +328,7 @@ See: <{remediation}>"#,
         }
     };
 
-    let formatted = xtask::reformat(content)?;
+    let formatted = crate::reformat(content)?;
     update(&rule_file, &formatted, &Mode::Overwrite)?;
 
     Ok(())
@@ -376,7 +376,7 @@ fn generate_category_mod(
         }
     };
 
-    let formatted = xtask::reformat(content)?;
+    let formatted = crate::reformat(content)?;
     update(&mod_file, &formatted, &Mode::Overwrite)?;
 
     Ok(())
@@ -422,7 +422,7 @@ fn generate_rules_mod(
         }
     };
 
-    let formatted = xtask::reformat(content)?;
+    let formatted = crate::reformat(content)?;
     update(&mod_file, &formatted, &Mode::Overwrite)?;
 
     Ok(())
@@ -615,7 +615,7 @@ fn generate_registry(rules: &BTreeMap<String, SqlRuleMetadata>) -> Result<()> {
         }
     };
 
-    let formatted = xtask::reformat(content)?;
+    let formatted = crate::reformat(content)?;
     update(&registry_path, &formatted, &Mode::Overwrite)?;
 
     Ok(())
