@@ -16,4 +16,9 @@ else
   cargo install tree-sitter-cli --version "${version}" --locked
 fi
 
-tree-sitter --version
+tree_sitter_path="$(command -v tree-sitter)"
+if [[ -n "${GITHUB_PATH:-}" ]]; then
+  dirname "${tree_sitter_path}" >>"${GITHUB_PATH}"
+fi
+
+"${tree_sitter_path}" --version
