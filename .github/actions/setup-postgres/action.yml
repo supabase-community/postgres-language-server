@@ -140,32 +140,18 @@ runs:
           -e POSTGRES_DB=postgres \
           -p 5432:5432 \
           postgres-language-server-dev:latest
-        # The custom image runs init scripts on first boot. pg_isready can briefly
-        # succeed while the entrypoint's temporary server is still running, just
-        # before it shuts down and starts the final server. Wait for that init
-        # phase to finish before creating extensions in the postgres database.
+        # The Dockerfile's init script installs the extensions. Wait for init to
+        # finish so pg_isready doesn't catch the temporary bootstrap server.
         for _ in {1..60}; do
-          logs="$(docker logs postgres 2>&1 || true)"
-          if grep -Eq "PostgreSQL init process complete|Skipping initialization" <<<"${logs}"; then
+          if docker logs postgres 2>&1 | grep -Eq "PostgreSQL init process complete|Skipping initialization"; then
             break
           fi
           sleep 1
         done
 
         for _ in {1..60}; do
-          if docker exec postgres pg_isready -U postgres -d postgres && \
-             docker exec postgres psql -U postgres -d postgres -tAc "SELECT 1" >/dev/null; then
+          if docker exec postgres psql -U postgres -d postgres -tAc "SELECT 1" >/dev/null; then
             break
           fi
           sleep 1
         done
-
-        # Create extensions in postgres database only (NOT template1)
-        # This avoids polluting test databases - tests that need extensions can create them explicitly
-        echo "Creating extensions in postgres database..."
-        docker exec postgres psql -U postgres -d postgres -c "CREATE SCHEMA IF NOT EXISTS extensions;"
-        docker exec postgres psql -U postgres -d postgres -c "CREATE EXTENSION IF NOT EXISTS plpgsql_check SCHEMA extensions;"
-        docker exec postgres psql -U postgres -d postgres -c "CREATE EXTENSION IF NOT EXISTS pglinter SCHEMA extensions;"
-
-        # Show extension status
-        docker exec postgres psql -U postgres -d postgres -c "SELECT extname, extversion FROM pg_extension WHERE extname IN ('plpgsql_check', 'pglinter');"
