@@ -3,9 +3,9 @@
 <head>
     <meta charset="utf-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><link rel="canonical" href="https://pg-language-server.com/main/reference/rules/changing-column-type/" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><link rel="canonical" href="https://pg-language-server.com/main/reference/rules/avoid-alter-enum-add-value/" />
       <link rel="shortcut icon" href="../../../img/favicon.ico" />
-    <title>changingColumnType - Postgres Language Server</title>
+    <title>avoidAlterEnumAddValue - Postgres Language Server</title>
     <link rel="stylesheet" href="../../../css/theme.css" />
     <link rel="stylesheet" href="../../../css/theme_extra.css" />
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
@@ -13,9 +13,9 @@
     
       <script>
         // Current page data
-        var mkdocs_page_name = "changingColumnType";
-        var mkdocs_page_input_path = "reference/rules/changing-column-type.md";
-        var mkdocs_page_url = "/main/reference/rules/changing-column-type/";
+        var mkdocs_page_name = "avoidAlterEnumAddValue";
+        var mkdocs_page_input_path = "reference/rules/avoid-alter-enum-add-value.md";
+        var mkdocs_page_url = "/main/reference/rules/avoid-alter-enum-add-value/";
       </script>
     
     <!--[if lt IE 9]>
@@ -111,9 +111,9 @@
         <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
   <ul class="wy-breadcrumbs">
     <li><a href="../../.." class="icon icon-home" aria-label="Docs"></a></li>
-      <li class="breadcrumb-item active">changingColumnType</li>
+      <li class="breadcrumb-item active">avoidAlterEnumAddValue</li>
     <li class="wy-breadcrumbs-aside">
-          <a href="https://github.com/supabase-community/postgres-language-server/edit/master/docs/reference/rules/changing-column-type.md">Edit on supabase-community/postgres-language-server</a>
+          <a href="https://github.com/supabase-community/postgres-language-server/edit/master/docs/reference/rules/avoid-alter-enum-add-value.md">Edit on supabase-community/postgres-language-server</a>
     </li>
   </ul>
   <hr/>
@@ -121,42 +121,34 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
             <div class="section" itemprop="articleBody">
               
-                <h1 id="changingcolumntype">changingColumnType</h1>
-<p><strong>Diagnostic Category: <code>lint/safety/changingColumnType</code></strong></p>
+                <h1 id="avoidalterenumaddvalue">avoidAlterEnumAddValue</h1>
+<p><strong>Diagnostic Category: <code>lint/safety/avoidAlterEnumAddValue</code></strong></p>
 <p><strong>Since</strong>: <code>vnext</code></p>
 <p><strong>Sources</strong>: 
-- Inspired from: <a href="https://squawkhq.com/docs/changing-column-type" target="_blank"><code>squawk/changing-column-type</code></a></p>
+- Inspired from: <a href="https://github.com/flvmnt/pgfence" target="_blank"><code>pgfence/alter-enum-add-value</code></a></p>
 <h2 id="description">Description</h2>
-<p>Changing a column type may require a table rewrite and break existing clients.</p>
-<p>Most column type changes require an exclusive lock on the table while the entire
-table is rewritten. This can take a long time for large tables and will block
-reads and writes.</p>
-<p>Some type changes are safe and don't require a table rewrite:</p>
-<ul>
-<li>Changing to <code>text</code> (binary compatible with varchar/char types)</li>
-<li>Changing to <code>varchar</code> without a length limit</li>
-<li>Dropping a <code>numeric</code> precision constraint (e.g., <code>numeric(10,2)</code> to <code>numeric</code>)</li>
-</ul>
-<p>For unsafe type changes, consider creating a new column with the desired type,
-migrating the data, and then dropping the old column.</p>
+<p><code>ALTER TYPE ... ADD VALUE</code> cannot run inside a transaction block in older Postgres versions.</p>
+<p>In Postgres versions before 12, <code>ALTER TYPE ... ADD VALUE</code> cannot be executed inside a
+transaction block at all. On Postgres 12+, the operation is fast (metadata-only), but the
+new enum value cannot be used in the same transaction until it is committed.</p>
 <h2 id="examples">Examples</h2>
 <h3 id="invalid">Invalid</h3>
-<pre><code class="language-sql">ALTER TABLE &quot;core_recipe&quot; ALTER COLUMN &quot;count&quot; TYPE bigint;
+<pre><code class="language-sql">alter type my_enum add value 'new_value';
 </code></pre>
-<pre><code class="language-sh">code-block.sql:1:1 lint/safety/changingColumnType ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+<pre><code class="language-sh">code-block.sql:1:1 lint/safety/avoidAlterEnumAddValue ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-  ! Changing a column type requires a table rewrite and blocks reads and writes.
+  ! ALTER TYPE ... ADD VALUE cannot be used in a transaction block before Postgres 12.
 
-  &gt; 1 │ ALTER TABLE &quot;core_recipe&quot; ALTER COLUMN &quot;count&quot; TYPE bigint;
-      │ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  &gt; 1 │ alter type my_enum add value 'new_value';
+      │ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
     2 │ 
 
-  i Consider creating a new column with the desired type, migrating data, and then dropping the old column.
+  i On Postgres 12+, the operation is fast but the new value cannot be used in the same transaction until committed.
 
 
 </code></pre>
 <h3 id="valid">Valid</h3>
-<pre><code class="language-sql">ALTER TABLE &quot;core_recipe&quot; ALTER COLUMN &quot;edits&quot; TYPE text;
+<pre><code class="language-sql">alter type my_enum rename value 'old_value' to 'new_value';
 </code></pre>
 <h2 id="how-to-configure">How to configure</h2>
 <pre><code class="language-json">
@@ -164,7 +156,7 @@ migrating the data, and then dropping the old column.</p>
   &quot;linter&quot;: {
     &quot;rules&quot;: {
       &quot;safety&quot;: {
-        &quot;changingColumnType&quot;: &quot;error&quot;
+        &quot;avoidAlterEnumAddValue&quot;: &quot;error&quot;
       }
     }
   }

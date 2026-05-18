@@ -161,10 +161,42 @@ This allows migrations to be safely re-run if they fail partway through.</p>
 
 
 </code></pre>
+<pre><code class="language-sql">CREATE TABLE users (id int);
+</code></pre>
+<pre><code class="language-sh">code-block.sql:1:1 lint/safety/preferRobustStmts ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! CREATE TABLE should use IF NOT EXISTS.
+
+  &gt; 1 │ CREATE TABLE users (id int);
+      │ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    2 │ 
+
+  i Add IF NOT EXISTS to make the migration re-runnable if it fails.
+
+
+</code></pre>
+<pre><code class="language-sql">DROP TABLE users;
+</code></pre>
+<pre><code class="language-sh">code-block.sql:1:1 lint/safety/preferRobustStmts ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! DROP TABLE should use IF EXISTS.
+
+  &gt; 1 │ DROP TABLE users;
+      │ ^^^^^^^^^^^^^^^^^
+    2 │ 
+
+  i Add IF EXISTS to make the migration re-runnable if it fails.
+
+
+</code></pre>
 <h3 id="valid">Valid</h3>
 <pre><code class="language-sql">CREATE INDEX CONCURRENTLY IF NOT EXISTS users_email_idx ON users (email);
 </code></pre>
 <pre><code class="language-sql">DROP INDEX CONCURRENTLY IF EXISTS users_email_idx;
+</code></pre>
+<pre><code class="language-sql">CREATE TABLE IF NOT EXISTS users (id int);
+</code></pre>
+<pre><code class="language-sql">DROP TABLE IF EXISTS users;
 </code></pre>
 <h2 id="how-to-configure">How to configure</h2>
 <pre><code class="language-json">

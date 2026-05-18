@@ -96,6 +96,8 @@
     </li>
     <li class="toctree-l3"><a class="reference internal" href="#squawk">Squawk</a>
     </li>
+    <li class="toctree-l3"><a class="reference internal" href="#pgfence">pgfence</a>
+    </li>
         </ul>
     </li>
     </ul>
@@ -290,6 +292,93 @@
 <tr>
 <td><a href="https://squawkhq.com/docs/transaction-nesting">transaction-nesting</a></td>
 <td><a href="../rules/transaction-nesting/">transactionNesting</a></td>
+</tr>
+</tbody>
+</table>
+<h3 id="pgfence">pgfence</h3>
+<table>
+<thead>
+<tr>
+<th>pgfence Rule Name</th>
+<th>Rule Name</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="https://github.com/flvmnt/pgfence">add-constraint-exclude</a></td>
+<td><a href="../rules/avoid-adding-exclusion-constraint/">avoidAddingExclusionConstraint</a></td>
+</tr>
+<tr>
+<td><a href="https://github.com/flvmnt/pgfence">alter-enum-add-value</a></td>
+<td><a href="../rules/avoid-alter-enum-add-value/">avoidAlterEnumAddValue</a></td>
+</tr>
+<tr>
+<td><a href="https://github.com/flvmnt/pgfence">attach-partition</a></td>
+<td><a href="../rules/avoid-attaching-partition/">avoidAttachingPartition</a></td>
+</tr>
+<tr>
+<td><a href="https://github.com/flvmnt/pgfence">create-trigger</a></td>
+<td><a href="../rules/avoid-create-trigger/">avoidCreateTrigger</a></td>
+</tr>
+<tr>
+<td><a href="https://github.com/flvmnt/pgfence">delete-without-where</a></td>
+<td><a href="../rules/ban-delete-without-where/">banDeleteWithoutWhere</a></td>
+</tr>
+<tr>
+<td><a href="https://github.com/flvmnt/pgfence">detach-partition</a></td>
+<td><a href="../rules/require-concurrent-detach-partition/">requireConcurrentDetachPartition</a></td>
+</tr>
+<tr>
+<td><a href="https://github.com/flvmnt/pgfence">drop-schema</a></td>
+<td><a href="../rules/ban-drop-schema/">banDropSchema</a></td>
+</tr>
+<tr>
+<td><a href="https://github.com/flvmnt/pgfence">drop-trigger</a></td>
+<td><a href="../rules/ban-drop-trigger/">banDropTrigger</a></td>
+</tr>
+<tr>
+<td><a href="https://github.com/flvmnt/pgfence">enable-disable-trigger</a></td>
+<td><a href="../rules/avoid-enable-disable-trigger/">avoidEnableDisableTrigger</a></td>
+</tr>
+<tr>
+<td><a href="https://github.com/flvmnt/pgfence">missing-idle-timeout</a></td>
+<td><a href="../rules/require-idle-in-transaction-timeout/">requireIdleInTransactionTimeout</a></td>
+</tr>
+<tr>
+<td><a href="https://github.com/flvmnt/pgfence">missing-statement-timeout</a></td>
+<td><a href="../rules/require-statement-timeout/">requireStatementTimeout</a></td>
+</tr>
+<tr>
+<td><a href="https://github.com/flvmnt/pgfence">not-valid-validate-same-tx</a></td>
+<td><a href="../rules/require-separate-constraint-validation/">requireSeparateConstraintValidation</a></td>
+</tr>
+<tr>
+<td><a href="https://github.com/flvmnt/pgfence">refresh-matview-blocking</a></td>
+<td><a href="../rules/require-concurrent-refresh-matview/">requireConcurrentRefreshMatview</a></td>
+</tr>
+<tr>
+<td><a href="https://github.com/flvmnt/pgfence">refresh-matview-concurrent</a></td>
+<td><a href="../rules/concurrent-refresh-matview-lock/">concurrentRefreshMatviewLock</a></td>
+</tr>
+<tr>
+<td><a href="https://github.com/flvmnt/pgfence">reindex-non-concurrent</a></td>
+<td><a href="../rules/require-concurrent-reindex/">requireConcurrentReindex</a></td>
+</tr>
+<tr>
+<td><a href="https://github.com/flvmnt/pgfence">truncate</a></td>
+<td><a href="../rules/ban-truncate/">banTruncate</a></td>
+</tr>
+<tr>
+<td><a href="https://github.com/flvmnt/pgfence">update-in-migration</a></td>
+<td><a href="../rules/ban-update-without-where/">banUpdateWithoutWhere</a></td>
+</tr>
+<tr>
+<td><a href="https://github.com/flvmnt/pgfence">vacuum-full</a></td>
+<td><a href="../rules/ban-vacuum-full/">banVacuumFull</a></td>
+</tr>
+<tr>
+<td><a href="https://github.com/flvmnt/pgfence">wide-lock-window</a></td>
+<td><a href="../rules/avoid-wide-lock-window/">avoidWideLockWindow</a></td>
 </tr>
 </tbody>
 </table>

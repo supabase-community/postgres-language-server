@@ -3,9 +3,9 @@
 <head>
     <meta charset="utf-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><link rel="canonical" href="https://pg-language-server.com/main/reference/rules/changing-column-type/" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><link rel="canonical" href="https://pg-language-server.com/main/reference/rules/require-statement-timeout/" />
       <link rel="shortcut icon" href="../../../img/favicon.ico" />
-    <title>changingColumnType - Postgres Language Server</title>
+    <title>requireStatementTimeout - Postgres Language Server</title>
     <link rel="stylesheet" href="../../../css/theme.css" />
     <link rel="stylesheet" href="../../../css/theme_extra.css" />
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
@@ -13,9 +13,9 @@
     
       <script>
         // Current page data
-        var mkdocs_page_name = "changingColumnType";
-        var mkdocs_page_input_path = "reference/rules/changing-column-type.md";
-        var mkdocs_page_url = "/main/reference/rules/changing-column-type/";
+        var mkdocs_page_name = "requireStatementTimeout";
+        var mkdocs_page_input_path = "reference/rules/require-statement-timeout.md";
+        var mkdocs_page_url = "/main/reference/rules/require-statement-timeout/";
       </script>
     
     <!--[if lt IE 9]>
@@ -111,9 +111,9 @@
         <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
   <ul class="wy-breadcrumbs">
     <li><a href="../../.." class="icon icon-home" aria-label="Docs"></a></li>
-      <li class="breadcrumb-item active">changingColumnType</li>
+      <li class="breadcrumb-item active">requireStatementTimeout</li>
     <li class="wy-breadcrumbs-aside">
-          <a href="https://github.com/supabase-community/postgres-language-server/edit/master/docs/reference/rules/changing-column-type.md">Edit on supabase-community/postgres-language-server</a>
+          <a href="https://github.com/supabase-community/postgres-language-server/edit/master/docs/reference/rules/require-statement-timeout.md">Edit on supabase-community/postgres-language-server</a>
     </li>
   </ul>
   <hr/>
@@ -121,42 +121,33 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
             <div class="section" itemprop="articleBody">
               
-                <h1 id="changingcolumntype">changingColumnType</h1>
-<p><strong>Diagnostic Category: <code>lint/safety/changingColumnType</code></strong></p>
+                <h1 id="requirestatementtimeout">requireStatementTimeout</h1>
+<p><strong>Diagnostic Category: <code>lint/safety/requireStatementTimeout</code></strong></p>
 <p><strong>Since</strong>: <code>vnext</code></p>
 <p><strong>Sources</strong>: 
-- Inspired from: <a href="https://squawkhq.com/docs/changing-column-type" target="_blank"><code>squawk/changing-column-type</code></a></p>
+- Inspired from: <a href="https://github.com/flvmnt/pgfence" target="_blank"><code>pgfence/missing-statement-timeout</code></a></p>
 <h2 id="description">Description</h2>
-<p>Changing a column type may require a table rewrite and break existing clients.</p>
-<p>Most column type changes require an exclusive lock on the table while the entire
-table is rewritten. This can take a long time for large tables and will block
-reads and writes.</p>
-<p>Some type changes are safe and don't require a table rewrite:</p>
-<ul>
-<li>Changing to <code>text</code> (binary compatible with varchar/char types)</li>
-<li>Changing to <code>varchar</code> without a length limit</li>
-<li>Dropping a <code>numeric</code> precision constraint (e.g., <code>numeric(10,2)</code> to <code>numeric</code>)</li>
-</ul>
-<p>For unsafe type changes, consider creating a new column with the desired type,
-migrating the data, and then dropping the old column.</p>
+<p>Dangerous lock statements should be preceded by <code>SET statement_timeout</code>.</p>
+<p>Long-running statements holding locks can block other operations. Setting a
+<code>statement_timeout</code> ensures the statement fails rather than running indefinitely.</p>
 <h2 id="examples">Examples</h2>
 <h3 id="invalid">Invalid</h3>
-<pre><code class="language-sql">ALTER TABLE &quot;core_recipe&quot; ALTER COLUMN &quot;count&quot; TYPE bigint;
+<pre><code class="language-sql">ALTER TABLE users ADD COLUMN email TEXT;
 </code></pre>
-<pre><code class="language-sh">code-block.sql:1:1 lint/safety/changingColumnType ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+<pre><code class="language-sh">code-block.sql:1:1 lint/safety/requireStatementTimeout ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-  ! Changing a column type requires a table rewrite and blocks reads and writes.
+  ! Statement takes a dangerous lock without a statement_timeout set.
 
-  &gt; 1 │ ALTER TABLE &quot;core_recipe&quot; ALTER COLUMN &quot;count&quot; TYPE bigint;
-      │ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  &gt; 1 │ ALTER TABLE users ADD COLUMN email TEXT;
+      │ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
     2 │ 
 
-  i Consider creating a new column with the desired type, migrating data, and then dropping the old column.
+  i Run SET statement_timeout = '...' before this statement to prevent it from running indefinitely.
 
 
 </code></pre>
 <h3 id="valid">Valid</h3>
-<pre><code class="language-sql">ALTER TABLE &quot;core_recipe&quot; ALTER COLUMN &quot;edits&quot; TYPE text;
+<pre><code class="language-sql">CREATE INDEX CONCURRENTLY users_email_idx ON users(email);
 </code></pre>
 <h2 id="how-to-configure">How to configure</h2>
 <pre><code class="language-json">
@@ -164,7 +155,7 @@ migrating the data, and then dropping the old column.</p>
   &quot;linter&quot;: {
     &quot;rules&quot;: {
       &quot;safety&quot;: {
-        &quot;changingColumnType&quot;: &quot;error&quot;
+        &quot;requireStatementTimeout&quot;: &quot;error&quot;
       }
     }
   }

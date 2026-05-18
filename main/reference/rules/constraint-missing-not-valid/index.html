@@ -128,7 +128,7 @@
 - Inspired from: <a href="https://squawkhq.com/docs/constraint-missing-not-valid" target="_blank"><code>squawk/constraint-missing-not-valid</code></a></p>
 <h2 id="description">Description</h2>
 <p>Adding constraints without NOT VALID blocks all reads and writes.</p>
-<p>When adding a CHECK or FOREIGN KEY constraint, PostgreSQL must validate all existing rows,
+<p>When adding a CHECK or FOREIGN KEY constraint, Postgres must validate all existing rows,
 which requires a full table scan. This blocks reads and writes for the duration.</p>
 <p>Instead, add the constraint with NOT VALID first, then VALIDATE CONSTRAINT in a separate
 transaction. This allows reads and writes to continue while validation happens.</p>

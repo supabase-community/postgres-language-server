@@ -129,11 +129,39 @@
          <lastmod>2026-05-18</lastmod>
     </url>
     <url>
+         <loc>https://pg-language-server.com/main/reference/rules/avoid-adding-exclusion-constraint/</loc>
+         <lastmod>2026-05-18</lastmod>
+    </url>
+    <url>
+         <loc>https://pg-language-server.com/main/reference/rules/avoid-alter-enum-add-value/</loc>
+         <lastmod>2026-05-18</lastmod>
+    </url>
+    <url>
+         <loc>https://pg-language-server.com/main/reference/rules/avoid-attaching-partition/</loc>
+         <lastmod>2026-05-18</lastmod>
+    </url>
+    <url>
+         <loc>https://pg-language-server.com/main/reference/rules/avoid-create-trigger/</loc>
+         <lastmod>2026-05-18</lastmod>
+    </url>
+    <url>
+         <loc>https://pg-language-server.com/main/reference/rules/avoid-enable-disable-trigger/</loc>
+         <lastmod>2026-05-18</lastmod>
+    </url>
+    <url>
+         <loc>https://pg-language-server.com/main/reference/rules/avoid-wide-lock-window/</loc>
+         <lastmod>2026-05-18</lastmod>
+    </url>
+    <url>
          <loc>https://pg-language-server.com/main/reference/rules/ban-char-field/</loc>
          <lastmod>2026-05-18</lastmod>
     </url>
     <url>
          <loc>https://pg-language-server.com/main/reference/rules/ban-concurrent-index-creation-in-transaction/</loc>
+         <lastmod>2026-05-18</lastmod>
+    </url>
+    <url>
+         <loc>https://pg-language-server.com/main/reference/rules/ban-delete-without-where/</loc>
          <lastmod>2026-05-18</lastmod>
     </url>
     <url>
@@ -149,7 +177,15 @@
          <lastmod>2026-05-18</lastmod>
     </url>
     <url>
+         <loc>https://pg-language-server.com/main/reference/rules/ban-drop-schema/</loc>
+         <lastmod>2026-05-18</lastmod>
+    </url>
+    <url>
          <loc>https://pg-language-server.com/main/reference/rules/ban-drop-table/</loc>
+         <lastmod>2026-05-18</lastmod>
+    </url>
+    <url>
+         <loc>https://pg-language-server.com/main/reference/rules/ban-drop-trigger/</loc>
          <lastmod>2026-05-18</lastmod>
     </url>
     <url>
@@ -157,7 +193,23 @@
          <lastmod>2026-05-18</lastmod>
     </url>
     <url>
+         <loc>https://pg-language-server.com/main/reference/rules/ban-truncate/</loc>
+         <lastmod>2026-05-18</lastmod>
+    </url>
+    <url>
+         <loc>https://pg-language-server.com/main/reference/rules/ban-update-without-where/</loc>
+         <lastmod>2026-05-18</lastmod>
+    </url>
+    <url>
+         <loc>https://pg-language-server.com/main/reference/rules/ban-vacuum-full/</loc>
+         <lastmod>2026-05-18</lastmod>
+    </url>
+    <url>
          <loc>https://pg-language-server.com/main/reference/rules/changing-column-type/</loc>
+         <lastmod>2026-05-18</lastmod>
+    </url>
+    <url>
+         <loc>https://pg-language-server.com/main/reference/rules/concurrent-refresh-matview-lock/</loc>
          <lastmod>2026-05-18</lastmod>
     </url>
     <url>
@@ -265,11 +317,35 @@
          <lastmod>2026-05-18</lastmod>
     </url>
     <url>
+         <loc>https://pg-language-server.com/main/reference/rules/require-concurrent-detach-partition/</loc>
+         <lastmod>2026-05-18</lastmod>
+    </url>
+    <url>
          <loc>https://pg-language-server.com/main/reference/rules/require-concurrent-index-creation/</loc>
          <lastmod>2026-05-18</lastmod>
     </url>
     <url>
          <loc>https://pg-language-server.com/main/reference/rules/require-concurrent-index-deletion/</loc>
+         <lastmod>2026-05-18</lastmod>
+    </url>
+    <url>
+         <loc>https://pg-language-server.com/main/reference/rules/require-concurrent-refresh-matview/</loc>
+         <lastmod>2026-05-18</lastmod>
+    </url>
+    <url>
+         <loc>https://pg-language-server.com/main/reference/rules/require-concurrent-reindex/</loc>
+         <lastmod>2026-05-18</lastmod>
+    </url>
+    <url>
+         <loc>https://pg-language-server.com/main/reference/rules/require-idle-in-transaction-timeout/</loc>
+         <lastmod>2026-05-18</lastmod>
+    </url>
+    <url>
+         <loc>https://pg-language-server.com/main/reference/rules/require-separate-constraint-validation/</loc>
+         <lastmod>2026-05-18</lastmod>
+    </url>
+    <url>
+         <loc>https://pg-language-server.com/main/reference/rules/require-statement-timeout/</loc>
          <lastmod>2026-05-18</lastmod>
     </url>
     <url>

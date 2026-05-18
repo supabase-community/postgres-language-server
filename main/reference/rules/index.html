@@ -173,6 +173,36 @@
 <td></td>
 </tr>
 <tr>
+<td><a href="avoid-adding-exclusion-constraint/">avoidAddingExclusionConstraint</a></td>
+<td>Adding an exclusion constraint acquires an <code>ACCESS EXCLUSIVE</code> lock.</td>
+<td>✅</td>
+</tr>
+<tr>
+<td><a href="avoid-alter-enum-add-value/">avoidAlterEnumAddValue</a></td>
+<td><code>ALTER TYPE ... ADD VALUE</code> cannot run inside a transaction block in older Postgres versions.</td>
+<td></td>
+</tr>
+<tr>
+<td><a href="avoid-attaching-partition/">avoidAttachingPartition</a></td>
+<td>Attaching a partition acquires an <code>ACCESS EXCLUSIVE</code> lock on the parent table.</td>
+<td>✅</td>
+</tr>
+<tr>
+<td><a href="avoid-create-trigger/">avoidCreateTrigger</a></td>
+<td>Creating a trigger acquires a <code>SHARE ROW EXCLUSIVE</code> lock on the table.</td>
+<td></td>
+</tr>
+<tr>
+<td><a href="avoid-enable-disable-trigger/">avoidEnableDisableTrigger</a></td>
+<td>Enabling or disabling a trigger acquires a <code>SHARE ROW EXCLUSIVE</code> lock.</td>
+<td></td>
+</tr>
+<tr>
+<td><a href="avoid-wide-lock-window/">avoidWideLockWindow</a></td>
+<td>Acquiring ACCESS EXCLUSIVE locks on multiple tables widens the lock window.</td>
+<td>✅</td>
+</tr>
+<tr>
 <td><a href="ban-char-field/">banCharField</a></td>
 <td>Using CHAR(n) or CHARACTER(n) types is discouraged.</td>
 <td></td>
@@ -180,6 +210,11 @@
 <tr>
 <td><a href="ban-concurrent-index-creation-in-transaction/">banConcurrentIndexCreationInTransaction</a></td>
 <td>Concurrent index creation is not allowed within a transaction.</td>
+<td>✅</td>
+</tr>
+<tr>
+<td><a href="ban-delete-without-where/">banDeleteWithoutWhere</a></td>
+<td>A <code>DELETE</code> statement without a <code>WHERE</code> clause will remove all rows from the table.</td>
 <td>✅</td>
 </tr>
 <tr>
@@ -198,8 +233,23 @@
 <td>✅</td>
 </tr>
 <tr>
+<td><a href="ban-drop-schema/">banDropSchema</a></td>
+<td>Dropping a schema will remove all objects within it and may break existing clients.</td>
+<td>✅</td>
+</tr>
+<tr>
 <td><a href="ban-drop-table/">banDropTable</a></td>
 <td>Dropping a table may break existing clients.</td>
+<td>✅</td>
+</tr>
+<tr>
+<td><a href="ban-drop-trigger/">banDropTrigger</a></td>
+<td>Dropping a trigger acquires an <code>ACCESS EXCLUSIVE</code> lock on the table.</td>
+<td></td>
+</tr>
+<tr>
+<td><a href="ban-truncate/">banTruncate</a></td>
+<td>Truncating a table removes all rows and can cause data loss in production.</td>
 <td>✅</td>
 </tr>
 <tr>
@@ -208,8 +258,23 @@
 <td></td>
 </tr>
 <tr>
+<td><a href="ban-update-without-where/">banUpdateWithoutWhere</a></td>
+<td>An <code>UPDATE</code> statement without a <code>WHERE</code> clause will modify all rows in the table.</td>
+<td>✅</td>
+</tr>
+<tr>
+<td><a href="ban-vacuum-full/">banVacuumFull</a></td>
+<td><code>VACUUM FULL</code> rewrites the entire table and acquires an <code>ACCESS EXCLUSIVE</code> lock.</td>
+<td>✅</td>
+</tr>
+<tr>
 <td><a href="changing-column-type/">changingColumnType</a></td>
-<td>Changing a column type may break existing clients.</td>
+<td>Changing a column type may require a table rewrite and break existing clients.</td>
+<td></td>
+</tr>
+<tr>
+<td><a href="concurrent-refresh-matview-lock/">concurrentRefreshMatviewLock</a></td>
+<td><code>REFRESH MATERIALIZED VIEW CONCURRENTLY</code> still acquires an <code>EXCLUSIVE</code> lock.</td>
 <td></td>
 </tr>
 <tr>
@@ -288,6 +353,11 @@
 <td></td>
 </tr>
 <tr>
+<td><a href="require-concurrent-detach-partition/">requireConcurrentDetachPartition</a></td>
+<td>Detaching a partition without <code>CONCURRENTLY</code> acquires an <code>ACCESS EXCLUSIVE</code> lock.</td>
+<td>✅</td>
+</tr>
+<tr>
 <td><a href="require-concurrent-index-creation/">requireConcurrentIndexCreation</a></td>
 <td>Creating indexes non-concurrently can lock the table for writes.</td>
 <td></td>
@@ -295,6 +365,31 @@
 <tr>
 <td><a href="require-concurrent-index-deletion/">requireConcurrentIndexDeletion</a></td>
 <td>Dropping indexes non-concurrently can lock the table for reads.</td>
+<td></td>
+</tr>
+<tr>
+<td><a href="require-concurrent-refresh-matview/">requireConcurrentRefreshMatview</a></td>
+<td><code>REFRESH MATERIALIZED VIEW</code> without <code>CONCURRENTLY</code> acquires an <code>ACCESS EXCLUSIVE</code> lock.</td>
+<td>✅</td>
+</tr>
+<tr>
+<td><a href="require-concurrent-reindex/">requireConcurrentReindex</a></td>
+<td><code>REINDEX</code> without <code>CONCURRENTLY</code> acquires an <code>ACCESS EXCLUSIVE</code> lock on the table.</td>
+<td>✅</td>
+</tr>
+<tr>
+<td><a href="require-idle-in-transaction-timeout/">requireIdleInTransactionTimeout</a></td>
+<td>Dangerous lock statements should be preceded by <code>SET idle_in_transaction_session_timeout</code>.</td>
+<td></td>
+</tr>
+<tr>
+<td><a href="require-separate-constraint-validation/">requireSeparateConstraintValidation</a></td>
+<td>Validating a constraint in the same transaction it was added as <code>NOT VALID</code> defeats the purpose.</td>
+<td>✅</td>
+</tr>
+<tr>
+<td><a href="require-statement-timeout/">requireStatementTimeout</a></td>
+<td>Dangerous lock statements should be preceded by <code>SET statement_timeout</code>.</td>
 <td></td>
 </tr>
 <tr>

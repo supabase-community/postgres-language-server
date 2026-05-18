@@ -133,7 +133,7 @@
 <h2 id="description">Description</h2>
 <p>Adding a foreign key constraint requires a table scan and a SHARE ROW EXCLUSIVE lock on both tables, which blocks writes.</p>
 <p>Adding a foreign key constraint to an existing table can cause downtime by locking both tables while
-verifying the constraint. PostgreSQL needs to check that all existing values in the referencing
+verifying the constraint. Postgres needs to check that all existing values in the referencing
 column exist in the referenced table.</p>
 <p>Instead, add the constraint as NOT VALID in one transaction, then VALIDATE it in another transaction.
 This approach only takes a SHARE UPDATE EXCLUSIVE lock when validating, allowing concurrent writes.</p>
@@ -149,7 +149,7 @@ This approach only takes a SHARE UPDATE EXCLUSIVE lock when validating, allowing
       │ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
     2 │ 
 
-  i This will block writes to both the referencing and referenced tables while PostgreSQL verifies the constraint.
+  i This will block writes to both the referencing and referenced tables while Postgres verifies the constraint.
 
   i Add the constraint as NOT VALID first, then VALIDATE it in a separate transaction.
 

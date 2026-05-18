@@ -132,7 +132,7 @@
 - Inspired from: <a href="https://squawkhq.com/docs/adding-serial-primary-key-field" target="_blank"><code>squawk/adding-serial-primary-key-field</code></a></p>
 <h2 id="description">Description</h2>
 <p>Adding a primary key constraint results in locks and table rewrites.</p>
-<p>When you add a PRIMARY KEY constraint, PostgreSQL needs to scan the entire table
+<p>When you add a PRIMARY KEY constraint, Postgres needs to scan the entire table
 to verify uniqueness and build the underlying index. This requires an ACCESS EXCLUSIVE
 lock which blocks all reads and writes.</p>
 <h2 id="examples">Examples</h2>

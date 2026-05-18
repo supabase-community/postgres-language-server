@@ -132,13 +132,13 @@
 - Inspired from: <a href="https://squawkhq.com/docs/adding-field-with-default" target="_blank"><code>squawk/adding-field-with-default</code></a></p>
 <h2 id="description">Description</h2>
 <p>Adding a column with a DEFAULT value may lead to a table rewrite while holding an ACCESS EXCLUSIVE lock.</p>
-<p>In PostgreSQL versions before 11, adding a column with a DEFAULT value causes a full table rewrite,
+<p>In Postgres versions before 11, adding a column with a DEFAULT value causes a full table rewrite,
 which holds an ACCESS EXCLUSIVE lock on the table and blocks all reads and writes.</p>
-<p>In PostgreSQL 11+, this behavior was optimized for non-volatile defaults. However:</p>
+<p>In Postgres 11+, this behavior was optimized for non-volatile defaults. However:</p>
 <ul>
 <li>Volatile default values (like random() or custom functions) still cause table rewrites</li>
 <li>Generated columns (GENERATED ALWAYS AS) always require table rewrites</li>
-<li>Non-volatile defaults are safe in PostgreSQL 11+</li>
+<li>Non-volatile defaults are safe in Postgres 11+</li>
 </ul>
 <h2 id="examples">Examples</h2>
 <h3 id="invalid">Invalid</h3>
