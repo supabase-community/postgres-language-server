@@ -1,0 +1,17 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+-- expect_lint/safety/requireIdleInTransactionTimeout
+ALTER TABLE users ADD COLUMN email TEXT;
+
+```
+
+# Diagnostics
+lint/safety/requireIdleInTransactionTimeout ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Statement takes a dangerous lock without idle_in_transaction_session_timeout set.
+  
+  i Run SET idle_in_transaction_session_timeout = '...' before this statement to prevent idle transactions from holding locks.

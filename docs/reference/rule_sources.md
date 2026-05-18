@@ -49,3 +49,27 @@ _No exclusive rules available._
 | [require-concurrent-index-creation](https://squawkhq.com/docs/require-concurrent-index-creation) |[requireConcurrentIndexCreation](./rules/require-concurrent-index-creation.md) |
 | [require-concurrent-index-deletion](https://squawkhq.com/docs/require-concurrent-index-deletion) |[requireConcurrentIndexDeletion](./rules/require-concurrent-index-deletion.md) |
 | [transaction-nesting](https://squawkhq.com/docs/transaction-nesting) |[transactionNesting](./rules/transaction-nesting.md) |
+
+### pgfence
+
+| pgfence Rule Name | Rule Name |
+| ---- | ---- |
+| [add-constraint-exclude](https://github.com/flvmnt/pgfence) |[avoidAddingExclusionConstraint](./rules/avoid-adding-exclusion-constraint.md) |
+| [alter-enum-add-value](https://github.com/flvmnt/pgfence) |[avoidAlterEnumAddValue](./rules/avoid-alter-enum-add-value.md) |
+| [attach-partition](https://github.com/flvmnt/pgfence) |[avoidAttachingPartition](./rules/avoid-attaching-partition.md) |
+| [create-trigger](https://github.com/flvmnt/pgfence) |[avoidCreateTrigger](./rules/avoid-create-trigger.md) |
+| [delete-without-where](https://github.com/flvmnt/pgfence) |[banDeleteWithoutWhere](./rules/ban-delete-without-where.md) |
+| [detach-partition](https://github.com/flvmnt/pgfence) |[requireConcurrentDetachPartition](./rules/require-concurrent-detach-partition.md) |
+| [drop-schema](https://github.com/flvmnt/pgfence) |[banDropSchema](./rules/ban-drop-schema.md) |
+| [drop-trigger](https://github.com/flvmnt/pgfence) |[banDropTrigger](./rules/ban-drop-trigger.md) |
+| [enable-disable-trigger](https://github.com/flvmnt/pgfence) |[avoidEnableDisableTrigger](./rules/avoid-enable-disable-trigger.md) |
+| [missing-idle-timeout](https://github.com/flvmnt/pgfence) |[requireIdleInTransactionTimeout](./rules/require-idle-in-transaction-timeout.md) |
+| [missing-statement-timeout](https://github.com/flvmnt/pgfence) |[requireStatementTimeout](./rules/require-statement-timeout.md) |
+| [not-valid-validate-same-tx](https://github.com/flvmnt/pgfence) |[requireSeparateConstraintValidation](./rules/require-separate-constraint-validation.md) |
+| [refresh-matview-blocking](https://github.com/flvmnt/pgfence) |[requireConcurrentRefreshMatview](./rules/require-concurrent-refresh-matview.md) |
+| [refresh-matview-concurrent](https://github.com/flvmnt/pgfence) |[concurrentRefreshMatviewLock](./rules/concurrent-refresh-matview-lock.md) |
+| [reindex-non-concurrent](https://github.com/flvmnt/pgfence) |[requireConcurrentReindex](./rules/require-concurrent-reindex.md) |
+| [truncate](https://github.com/flvmnt/pgfence) |[banTruncate](./rules/ban-truncate.md) |
+| [update-in-migration](https://github.com/flvmnt/pgfence) |[banUpdateWithoutWhere](./rules/ban-update-without-where.md) |
+| [vacuum-full](https://github.com/flvmnt/pgfence) |[banVacuumFull](./rules/ban-vacuum-full.md) |
+| [wide-lock-window](https://github.com/flvmnt/pgfence) |[avoidWideLockWindow](./rules/avoid-wide-lock-window.md) |

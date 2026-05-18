@@ -6,7 +6,7 @@ use pgls_diagnostics::Severity;
 declare_lint_rule! {
     /// Prefer JSONB over JSON types.
     ///
-    /// JSONB is the binary JSON data type in PostgreSQL that is more efficient for most use cases.
+    /// JSONB is the binary JSON data type in Postgres that is more efficient for most use cases.
     /// Unlike JSON, JSONB stores data in a decomposed binary format which provides several advantages:
     /// - Significantly faster query performance for operations like indexing and searching
     /// - Support for indexing (GIN indexes)

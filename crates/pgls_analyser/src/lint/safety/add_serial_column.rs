@@ -7,7 +7,7 @@ declare_lint_rule! {
     /// Adding a column with a SERIAL type or GENERATED ALWAYS AS ... STORED causes a full table rewrite.
     ///
     /// When adding a column with a SERIAL type (serial, bigserial, smallserial) or a GENERATED ALWAYS AS ... STORED column
-    /// to an existing table, PostgreSQL must rewrite the entire table while holding an ACCESS EXCLUSIVE lock.
+    /// to an existing table, Postgres must rewrite the entire table while holding an ACCESS EXCLUSIVE lock.
     /// This blocks all reads and writes to the table for the duration of the rewrite operation.
     ///
     /// SERIAL types are implemented using sequences and DEFAULT values, while GENERATED ... STORED columns require

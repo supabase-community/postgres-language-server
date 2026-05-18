@@ -1,0 +1,10 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+-- expect_no_diagnostics
+select 1;
+
+```

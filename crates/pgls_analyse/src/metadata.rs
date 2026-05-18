@@ -96,6 +96,8 @@ pub enum RuleSource {
     Squawk(&'static str),
     /// Rules from [Eugene](https://github.com/kaaveland/eugene)
     Eugene(&'static str),
+    /// Rules from [pgfence](https://github.com/flvmnt/pgfence)
+    Pgfence(&'static str),
 }
 
 impl PartialEq for RuleSource {
@@ -109,6 +111,7 @@ impl std::fmt::Display for RuleSource {
         match self {
             Self::Squawk(_) => write!(f, "Squawk"),
             Self::Eugene(_) => write!(f, "Eugene"),
+            Self::Pgfence(_) => write!(f, "pgfence"),
         }
     }
 }
@@ -132,6 +135,7 @@ impl RuleSource {
         match self {
             Self::Squawk(rule_name) => rule_name,
             Self::Eugene(rule_name) => rule_name,
+            Self::Pgfence(rule_name) => rule_name,
         }
     }
 
@@ -139,6 +143,7 @@ impl RuleSource {
         match self {
             Self::Squawk(rule_name) => format!("squawk/{rule_name}"),
             Self::Eugene(rule_name) => format!("eugene/{rule_name}"),
+            Self::Pgfence(rule_name) => format!("pgfence/{rule_name}"),
         }
     }
 
@@ -148,6 +153,7 @@ impl RuleSource {
             Self::Eugene(rule_name) => {
                 format!("https://kaveland.no/eugene/hints/{rule_name}/index.html")
             }
+            Self::Pgfence(_) => "https://github.com/flvmnt/pgfence".to_string(),
         }
     }
 
