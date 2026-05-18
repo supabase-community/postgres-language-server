@@ -1,0 +1,3 @@
+[install]
+# Require newly published package versions to be at least 3 days old before install.
+minimumReleaseAge = 259200
