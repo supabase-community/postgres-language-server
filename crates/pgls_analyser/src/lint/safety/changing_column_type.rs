@@ -90,7 +90,7 @@ fn is_safe_type_widening(col_def: &pgls_query::protobuf::ColumnDef) -> bool {
                 None
             }
         })
-        .last();
+        .next_back();
 
     let Some(target_type) = target_type else {
         return false;

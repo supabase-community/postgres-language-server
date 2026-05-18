@@ -68,22 +68,22 @@ export type Category =
   | "lint/safety/addingNotNullField"
   | "lint/safety/addingPrimaryKeyConstraint"
   | "lint/safety/addingRequiredField"
-  | "lint/safety/banAddExclusionConstraint"
-  | "lint/safety/banAlterEnumAddValue"
-  | "lint/safety/banAttachPartition"
-  | "lint/safety/banBlockingRefreshMatview"
+  | "lint/safety/avoidAddingExclusionConstraint"
+  | "lint/safety/avoidAlterEnumAddValue"
+  | "lint/safety/avoidAttachingPartition"
+  | "lint/safety/requireConcurrentRefreshMatview"
   | "lint/safety/banCharField"
   | "lint/safety/banConcurrentIndexCreationInTransaction"
-  | "lint/safety/banCreateTrigger"
+  | "lint/safety/avoidCreateTrigger"
   | "lint/safety/banDeleteWithoutWhere"
   | "lint/safety/banDropColumn"
-  | "lint/safety/banEnableDisableTrigger"
-  | "lint/safety/banNotValidValidateSameTransaction"
   | "lint/safety/banDropDatabase"
   | "lint/safety/banDropNotNull"
   | "lint/safety/banDropSchema"
   | "lint/safety/banDropTable"
   | "lint/safety/banDropTrigger"
+  | "lint/safety/avoidEnableDisableTrigger"
+  | "lint/safety/requireSeparateConstraintValidation"
   | "lint/safety/banTruncate"
   | "lint/safety/banTruncateCascade"
   | "lint/safety/banUpdateWithoutWhere"
@@ -105,15 +105,15 @@ export type Category =
   | "lint/safety/renamingColumn"
   | "lint/safety/renamingTable"
   | "lint/safety/requireConcurrentDetachPartition"
-  | "lint/safety/requireIdleInTransactionTimeout"
   | "lint/safety/requireConcurrentIndexCreation"
   | "lint/safety/requireConcurrentIndexDeletion"
   | "lint/safety/requireConcurrentReindex"
+  | "lint/safety/requireIdleInTransactionTimeout"
   | "lint/safety/requireStatementTimeout"
   | "lint/safety/runningStatementWhileHoldingAccessExclusive"
   | "lint/safety/transactionNesting"
-  | "lint/safety/warnRefreshMatviewConcurrent"
-  | "lint/safety/warnWideLockWindow"
+  | "lint/safety/concurrentRefreshMatviewLock"
+  | "lint/safety/avoidWideLockWindow"
   | "pglinter/extensionNotInstalled"
   | "pglinter/ruleDisabledInExtension"
   | "pglinter/base/compositePrimaryKeyTooManyColumns"
@@ -704,19 +704,27 @@ export interface Safety {
   /**
    * Adding an exclusion constraint acquires an ACCESS EXCLUSIVE lock.
    */
-  banAddExclusionConstraint?: RuleConfiguration_for_Null;
+  avoidAddingExclusionConstraint?: RuleConfiguration_for_Null;
   /**
    * ALTER TYPE ... ADD VALUE cannot run inside a transaction block in older Postgres versions.
    */
-  banAlterEnumAddValue?: RuleConfiguration_for_Null;
+  avoidAlterEnumAddValue?: RuleConfiguration_for_Null;
   /**
    * Attaching a partition acquires an ACCESS EXCLUSIVE lock on the parent table.
    */
-  banAttachPartition?: RuleConfiguration_for_Null;
+  avoidAttachingPartition?: RuleConfiguration_for_Null;
   /**
-   * REFRESH MATERIALIZED VIEW without CONCURRENTLY acquires an ACCESS EXCLUSIVE lock.
+   * Creating a trigger acquires a SHARE ROW EXCLUSIVE lock on the table.
    */
-  banBlockingRefreshMatview?: RuleConfiguration_for_Null;
+  avoidCreateTrigger?: RuleConfiguration_for_Null;
+  /**
+   * Enabling or disabling a trigger acquires a SHARE ROW EXCLUSIVE lock.
+   */
+  avoidEnableDisableTrigger?: RuleConfiguration_for_Null;
+  /**
+   * Acquiring ACCESS EXCLUSIVE locks on multiple tables widens the lock window.
+   */
+  avoidWideLockWindow?: RuleConfiguration_for_Null;
   /**
    * Using CHAR(n) or CHARACTER(n) types is discouraged.
    */
@@ -725,10 +733,6 @@ export interface Safety {
    * Concurrent index creation is not allowed within a transaction.
    */
   banConcurrentIndexCreationInTransaction?: RuleConfiguration_for_Null;
-  /**
-   * Creating a trigger acquires a SHARE ROW EXCLUSIVE lock on the table.
-   */
-  banCreateTrigger?: RuleConfiguration_for_Null;
   /**
    * A DELETE statement without a WHERE clause will remove all rows from the table.
    */
@@ -758,14 +762,6 @@ export interface Safety {
    */
   banDropTrigger?: RuleConfiguration_for_Null;
   /**
-   * Enabling or disabling a trigger acquires a SHARE ROW EXCLUSIVE lock.
-   */
-  banEnableDisableTrigger?: RuleConfiguration_for_Null;
-  /**
-   * Validating a constraint in the same transaction it was added as NOT VALID defeats the purpose.
-   */
-  banNotValidValidateSameTransaction?: RuleConfiguration_for_Null;
-  /**
    * Truncating a table removes all rows and can cause data loss in production.
    */
   banTruncate?: RuleConfiguration_for_Null;
@@ -785,6 +781,10 @@ export interface Safety {
    * Changing a column type may require a table rewrite and break existing clients.
    */
   changingColumnType?: RuleConfiguration_for_Null;
+  /**
+   * REFRESH MATERIALIZED VIEW CONCURRENTLY still acquires an EXCLUSIVE lock.
+   */
+  concurrentRefreshMatviewLock?: RuleConfiguration_for_Null;
   /**
    * Adding constraints without NOT VALID blocks all reads and writes.
    */
@@ -862,6 +862,10 @@ export interface Safety {
    */
   requireConcurrentIndexDeletion?: RuleConfiguration_for_Null;
   /**
+   * REFRESH MATERIALIZED VIEW without CONCURRENTLY acquires an ACCESS EXCLUSIVE lock.
+   */
+  requireConcurrentRefreshMatview?: RuleConfiguration_for_Null;
+  /**
    * REINDEX without CONCURRENTLY acquires an ACCESS EXCLUSIVE lock on the table.
    */
   requireConcurrentReindex?: RuleConfiguration_for_Null;
@@ -869,6 +873,10 @@ export interface Safety {
    * Dangerous lock statements should be preceded by SET idle_in_transaction_session_timeout.
    */
   requireIdleInTransactionTimeout?: RuleConfiguration_for_Null;
+  /**
+   * Validating a constraint in the same transaction it was added as NOT VALID defeats the purpose.
+   */
+  requireSeparateConstraintValidation?: RuleConfiguration_for_Null;
   /**
    * Dangerous lock statements should be preceded by SET statement_timeout.
    */
@@ -881,14 +889,6 @@ export interface Safety {
    * Detects problematic transaction nesting that could lead to unexpected behavior.
    */
   transactionNesting?: RuleConfiguration_for_Null;
-  /**
-   * REFRESH MATERIALIZED VIEW CONCURRENTLY still acquires an EXCLUSIVE lock.
-   */
-  warnRefreshMatviewConcurrent?: RuleConfiguration_for_Null;
-  /**
-   * Acquiring ACCESS EXCLUSIVE locks on multiple tables widens the lock window.
-   */
-  warnWideLockWindow?: RuleConfiguration_for_Null;
 }
 /**
  * A list of rules that belong to this group

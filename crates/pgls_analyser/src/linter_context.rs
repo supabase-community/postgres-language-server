@@ -161,6 +161,45 @@ pub struct TransactionState {
     transaction_depth: usize,
 }
 
+fn normalized_schema(schema: &str) -> &str {
+    if schema.is_empty() { "public" } else { schema }
+}
+
+fn def_elem_is_enabled(def: &pgls_query::protobuf::DefElem, name: &str) -> bool {
+    if !def.defname.eq_ignore_ascii_case(name) {
+        return false;
+    }
+
+    match &def.arg {
+        Some(arg) => match &arg.node {
+            Some(pgls_query::NodeEnum::Integer(i)) => i.ival != 0,
+            Some(pgls_query::NodeEnum::Boolean(b)) => b.boolval,
+            _ => true,
+        },
+        None => true,
+    }
+}
+
+pub(crate) fn is_vacuum_full(stmt: &pgls_query::protobuf::VacuumStmt) -> bool {
+    stmt.options.iter().any(|opt| {
+        if let Some(pgls_query::NodeEnum::DefElem(def)) = &opt.node {
+            def_elem_is_enabled(def, "full")
+        } else {
+            false
+        }
+    })
+}
+
+pub(crate) fn is_reindex_concurrent(stmt: &pgls_query::protobuf::ReindexStmt) -> bool {
+    stmt.params.iter().any(|param| {
+        if let Some(pgls_query::NodeEnum::DefElem(def)) = &param.node {
+            def_elem_is_enabled(def, "concurrently")
+        } else {
+            false
+        }
+    })
+}
+
 impl TransactionState {
     /// Returns true if a lock timeout has been set in this transaction
     pub fn has_lock_timeout(&self) -> bool {
@@ -179,9 +218,8 @@ impl TransactionState {
 
     /// Returns true if a constraint with the given name on the given table was added with NOT VALID
     pub fn has_not_valid_constraint(&self, schema: &str, table: &str, name: &str) -> bool {
-        let normalized_schema = if schema.is_empty() { "public" } else { schema };
         self.not_valid_constraints.iter().any(|(s, t, n)| {
-            normalized_schema.eq_ignore_ascii_case(s)
+            normalized_schema(schema).eq_ignore_ascii_case(s)
                 && table.eq_ignore_ascii_case(t)
                 && name.eq_ignore_ascii_case(n)
         })
@@ -194,12 +232,9 @@ impl TransactionState {
 
     /// Returns true if an object with the given schema and name was created in this transaction
     pub fn has_created_object(&self, schema: &str, name: &str) -> bool {
-        // Normalize schema: treat empty string as "public"
-        let normalized_schema = if schema.is_empty() { "public" } else { schema };
-
-        self.created_objects
-            .iter()
-            .any(|(s, n)| normalized_schema.eq_ignore_ascii_case(s) && name.eq_ignore_ascii_case(n))
+        self.created_objects.iter().any(|(s, n)| {
+            normalized_schema(schema).eq_ignore_ascii_case(s) && name.eq_ignore_ascii_case(n)
+        })
     }
 
     /// Returns true if the transaction is currently holding an ACCESS EXCLUSIVE lock
@@ -241,8 +276,8 @@ impl TransactionState {
                 )
             }
             pgls_query::NodeEnum::TruncateStmt(_) => true,
-            pgls_query::NodeEnum::VacuumStmt(_) => true,
-            pgls_query::NodeEnum::ReindexStmt(_) => true,
+            pgls_query::NodeEnum::VacuumStmt(stmt) => is_vacuum_full(stmt),
+            pgls_query::NodeEnum::ReindexStmt(stmt) => !is_reindex_concurrent(stmt),
             pgls_query::NodeEnum::RenameStmt(rename_stmt) => rename_stmt.relation.is_some(),
             pgls_query::NodeEnum::RefreshMatViewStmt(stmt) => !stmt.concurrent,
             _ => false,
@@ -251,13 +286,8 @@ impl TransactionState {
 
     /// Record that an object was created, normalizing the schema name
     fn add_created_object(&mut self, schema: String, name: String) {
-        // Normalize schema: store "public" instead of empty string
-        let normalized_schema = if schema.is_empty() {
-            "public".to_string()
-        } else {
-            schema
-        };
-        self.created_objects.push((normalized_schema, name));
+        self.created_objects
+            .push((normalized_schema(&schema).to_string(), name));
     }
 
     /// Reset per-transaction accumulated state.
@@ -281,6 +311,67 @@ impl TransactionState {
             // VALIDATE CONSTRAINT takes SHARE UPDATE EXCLUSIVE
             AlterTableType::AtValidateConstraint
         )
+    }
+
+    /// Returns the existing table targeted by an ALTER TABLE command that takes ACCESS EXCLUSIVE.
+    pub fn access_exclusive_table_for_alter(
+        &self,
+        stmt: &pgls_query::protobuf::AlterTableStmt,
+    ) -> Option<(String, String)> {
+        let relation = stmt.relation.as_ref()?;
+        let has_access_exclusive_cmd = stmt.cmds.iter().any(|cmd| {
+            if let Some(pgls_query::NodeEnum::AlterTableCmd(cmd)) = &cmd.node {
+                Self::is_access_exclusive_subcommand(cmd.subtype())
+            } else {
+                false
+            }
+        });
+
+        if !has_access_exclusive_cmd {
+            return None;
+        }
+
+        let schema = normalized_schema(&relation.schemaname).to_string();
+        let name = relation.relname.clone();
+        if self.has_created_object(&schema, &name) {
+            return None;
+        }
+
+        Some((schema, name))
+    }
+
+    fn update_timeout_flags(&mut self, set_stmt: &pgls_query::protobuf::VariableSetStmt) {
+        use pgls_query::protobuf::VariableSetKind;
+
+        let kind = VariableSetKind::try_from(set_stmt.kind).unwrap_or(VariableSetKind::Undefined);
+        if kind == VariableSetKind::VarResetAll {
+            self.lock_timeout_set = false;
+            self.statement_timeout_set = false;
+            self.idle_in_transaction_timeout_set = false;
+            return;
+        }
+
+        let value_sets_timeout = matches!(
+            kind,
+            VariableSetKind::VarSetValue
+                | VariableSetKind::VarSetCurrent
+                | VariableSetKind::VarSetMulti
+        );
+
+        let flag = if set_stmt.name.eq_ignore_ascii_case("lock_timeout") {
+            &mut self.lock_timeout_set
+        } else if set_stmt.name.eq_ignore_ascii_case("statement_timeout") {
+            &mut self.statement_timeout_set
+        } else if set_stmt
+            .name
+            .eq_ignore_ascii_case("idle_in_transaction_session_timeout")
+        {
+            &mut self.idle_in_transaction_timeout_set
+        } else {
+            return;
+        };
+
+        *flag = value_sets_timeout;
     }
 
     /// Update transaction state based on a statement
@@ -313,16 +404,9 @@ impl TransactionState {
             return;
         }
 
-        // Track SET timeouts
+        // Track SET/RESET timeouts
         if let pgls_query::NodeEnum::VariableSetStmt(set_stmt) = stmt {
-            let name = &set_stmt.name;
-            if name.eq_ignore_ascii_case("lock_timeout") {
-                self.lock_timeout_set = true;
-            } else if name.eq_ignore_ascii_case("statement_timeout") {
-                self.statement_timeout_set = true;
-            } else if name.eq_ignore_ascii_case("idle_in_transaction_session_timeout") {
-                self.idle_in_transaction_timeout_set = true;
-            }
+            self.update_timeout_flags(set_stmt);
         }
 
         // Track created objects
@@ -362,12 +446,10 @@ impl TransactionState {
                 .relation
                 .as_ref()
                 .map(|r| {
-                    let s = if r.schemaname.is_empty() {
-                        "public".to_string()
-                    } else {
-                        r.schemaname.clone()
-                    };
-                    (s, r.relname.clone())
+                    (
+                        normalized_schema(&r.schemaname).to_string(),
+                        r.relname.clone(),
+                    )
                 })
                 .unwrap_or_default();
 
@@ -390,38 +472,17 @@ impl TransactionState {
             }
         }
 
-        // Track ACCESS EXCLUSIVE lock acquisition
-        // Only track ALTER TABLE subtypes that actually take ACCESS EXCLUSIVE locks
+        // Track ACCESS EXCLUSIVE lock acquisition.
         if let pgls_query::NodeEnum::AlterTableStmt(alter_stmt) = stmt
-            && let Some(relation) = &alter_stmt.relation
+            && let Some((schema, name)) = self.access_exclusive_table_for_alter(alter_stmt)
         {
-            let has_access_exclusive_cmd = alter_stmt.cmds.iter().any(|cmd| {
-                if let Some(pgls_query::NodeEnum::AlterTableCmd(cmd)) = &cmd.node {
-                    Self::is_access_exclusive_subcommand(cmd.subtype())
-                } else {
-                    false
-                }
-            });
-
-            if has_access_exclusive_cmd {
-                let schema = &relation.schemaname;
-                let name = &relation.relname;
-                if !self.has_created_object(schema, name) {
-                    self.holding_access_exclusive = true;
-                    let normalized_schema = if schema.is_empty() {
-                        "public".to_string()
-                    } else {
-                        schema.clone()
-                    };
-                    if !self
-                        .access_exclusive_tables
-                        .iter()
-                        .any(|(s, n)| s == &normalized_schema && n == name)
-                    {
-                        self.access_exclusive_tables
-                            .push((normalized_schema, name.clone()));
-                    }
-                }
+            self.holding_access_exclusive = true;
+            if !self
+                .access_exclusive_tables
+                .iter()
+                .any(|(s, n)| s == &schema && n == &name)
+            {
+                self.access_exclusive_tables.push((schema, name));
             }
         }
     }

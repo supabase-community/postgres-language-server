@@ -1094,7 +1094,7 @@
             "null"
           ]
         },
-        "banAddExclusionConstraint": {
+        "avoidAddingExclusionConstraint": {
           "description": "Adding an exclusion constraint acquires an ACCESS EXCLUSIVE lock.",
           "anyOf": [
             {
@@ -1105,7 +1105,7 @@
             }
           ]
         },
-        "banAlterEnumAddValue": {
+        "avoidAlterEnumAddValue": {
           "description": "ALTER TYPE ... ADD VALUE cannot run inside a transaction block in older Postgres versions.",
           "anyOf": [
             {
@@ -1116,7 +1116,7 @@
             }
           ]
         },
-        "banAttachPartition": {
+        "avoidAttachingPartition": {
           "description": "Attaching a partition acquires an ACCESS EXCLUSIVE lock on the parent table.",
           "anyOf": [
             {
@@ -1127,8 +1127,30 @@
             }
           ]
         },
-        "banBlockingRefreshMatview": {
-          "description": "REFRESH MATERIALIZED VIEW without CONCURRENTLY acquires an ACCESS EXCLUSIVE lock.",
+        "avoidCreateTrigger": {
+          "description": "Creating a trigger acquires a SHARE ROW EXCLUSIVE lock on the table.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "avoidEnableDisableTrigger": {
+          "description": "Enabling or disabling a trigger acquires a SHARE ROW EXCLUSIVE lock.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "avoidWideLockWindow": {
+          "description": "Acquiring ACCESS EXCLUSIVE locks on multiple tables widens the lock window.",
           "anyOf": [
             {
               "$ref": "#/definitions/RuleConfiguration"
@@ -1151,17 +1173,6 @@
         },
         "banConcurrentIndexCreationInTransaction": {
           "description": "Concurrent index creation is not allowed within a transaction.",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/RuleConfiguration"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "banCreateTrigger": {
-          "description": "Creating a trigger acquires a SHARE ROW EXCLUSIVE lock on the table.",
           "anyOf": [
             {
               "$ref": "#/definitions/RuleConfiguration"
@@ -1248,28 +1259,6 @@
             }
           ]
         },
-        "banEnableDisableTrigger": {
-          "description": "Enabling or disabling a trigger acquires a SHARE ROW EXCLUSIVE lock.",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/RuleConfiguration"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "banNotValidValidateSameTransaction": {
-          "description": "Validating a constraint in the same transaction it was added as NOT VALID defeats the purpose.",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/RuleConfiguration"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
         "banTruncate": {
           "description": "Truncating a table removes all rows and can cause data loss in production.",
           "anyOf": [
@@ -1316,6 +1305,17 @@
         },
         "changingColumnType": {
           "description": "Changing a column type may require a table rewrite and break existing clients.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "concurrentRefreshMatviewLock": {
+          "description": "REFRESH MATERIALIZED VIEW CONCURRENTLY still acquires an EXCLUSIVE lock.",
           "anyOf": [
             {
               "$ref": "#/definitions/RuleConfiguration"
@@ -1530,6 +1530,17 @@
             }
           ]
         },
+        "requireConcurrentRefreshMatview": {
+          "description": "REFRESH MATERIALIZED VIEW without CONCURRENTLY acquires an ACCESS EXCLUSIVE lock.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "requireConcurrentReindex": {
           "description": "REINDEX without CONCURRENTLY acquires an ACCESS EXCLUSIVE lock on the table.",
           "anyOf": [
@@ -1543,6 +1554,17 @@
         },
         "requireIdleInTransactionTimeout": {
           "description": "Dangerous lock statements should be preceded by SET idle_in_transaction_session_timeout.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "requireSeparateConstraintValidation": {
+          "description": "Validating a constraint in the same transaction it was added as NOT VALID defeats the purpose.",
           "anyOf": [
             {
               "$ref": "#/definitions/RuleConfiguration"
@@ -1576,28 +1598,6 @@
         },
         "transactionNesting": {
           "description": "Detects problematic transaction nesting that could lead to unexpected behavior.",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/RuleConfiguration"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "warnRefreshMatviewConcurrent": {
-          "description": "REFRESH MATERIALIZED VIEW CONCURRENTLY still acquires an EXCLUSIVE lock.",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/RuleConfiguration"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "warnWideLockWindow": {
-          "description": "Acquiring ACCESS EXCLUSIVE locks on multiple tables widens the lock window.",
           "anyOf": [
             {
               "$ref": "#/definitions/RuleConfiguration"

@@ -1,4 +1,6 @@
-use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
+use crate::{
+    LinterDiagnostic, LinterRule, LinterRuleContext, linter_context::is_reindex_concurrent,
+};
 use pgls_analyse::{RuleSource, declare_lint_rule};
 use pgls_console::markup;
 use pgls_diagnostics::Severity;
@@ -39,14 +41,7 @@ impl LinterRule for RequireConcurrentReindex {
         let mut diagnostics = vec![];
 
         if let pgls_query::NodeEnum::ReindexStmt(stmt) = &ctx.stmt() {
-            let is_concurrent = stmt.params.iter().any(|param| {
-                if let Some(pgls_query::NodeEnum::DefElem(def)) = &param.node {
-                    return def.defname == "concurrently";
-                }
-                false
-            });
-
-            if !is_concurrent {
+            if !is_reindex_concurrent(stmt) {
                 diagnostics.push(
                     LinterDiagnostic::new(
                         rule_category!(),

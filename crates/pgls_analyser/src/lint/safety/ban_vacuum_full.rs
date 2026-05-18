@@ -1,4 +1,4 @@
-use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
+use crate::{LinterDiagnostic, LinterRule, LinterRuleContext, linter_context::is_vacuum_full};
 use pgls_analyse::{RuleSource, declare_lint_rule};
 use pgls_console::markup;
 use pgls_diagnostics::Severity;
@@ -40,22 +40,7 @@ impl LinterRule for BanVacuumFull {
         let mut diagnostics = vec![];
 
         if let pgls_query::NodeEnum::VacuumStmt(stmt) = &ctx.stmt() {
-            let is_full = stmt.options.iter().any(|opt| {
-                if let Some(pgls_query::NodeEnum::DefElem(def)) = &opt.node {
-                    if def.defname == "full" {
-                        return match &def.arg {
-                            Some(arg) => match &arg.node {
-                                Some(pgls_query::NodeEnum::Integer(i)) => i.ival != 0,
-                                _ => true,
-                            },
-                            None => true,
-                        };
-                    }
-                }
-                false
-            });
-
-            if is_full {
+            if is_vacuum_full(stmt) {
                 diagnostics.push(
                     LinterDiagnostic::new(
                         rule_category!(),

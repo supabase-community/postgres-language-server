@@ -169,19 +169,27 @@ pub struct Safety {
         Option<RuleConfiguration<pgls_analyser::options::AddingRequiredField>>,
     #[doc = "Adding an exclusion constraint acquires an ACCESS EXCLUSIVE lock."]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub ban_add_exclusion_constraint:
-        Option<RuleConfiguration<pgls_analyser::options::BanAddExclusionConstraint>>,
+    pub avoid_adding_exclusion_constraint:
+        Option<RuleConfiguration<pgls_analyser::options::AvoidAddingExclusionConstraint>>,
     #[doc = "ALTER TYPE ... ADD VALUE cannot run inside a transaction block in older Postgres versions."]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub ban_alter_enum_add_value:
-        Option<RuleConfiguration<pgls_analyser::options::BanAlterEnumAddValue>>,
+    pub avoid_alter_enum_add_value:
+        Option<RuleConfiguration<pgls_analyser::options::AvoidAlterEnumAddValue>>,
     #[doc = "Attaching a partition acquires an ACCESS EXCLUSIVE lock on the parent table."]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub ban_attach_partition: Option<RuleConfiguration<pgls_analyser::options::BanAttachPartition>>,
-    #[doc = "REFRESH MATERIALIZED VIEW without CONCURRENTLY acquires an ACCESS EXCLUSIVE lock."]
+    pub avoid_attaching_partition:
+        Option<RuleConfiguration<pgls_analyser::options::AvoidAttachingPartition>>,
+    #[doc = "Creating a trigger acquires a SHARE ROW EXCLUSIVE lock on the table."]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub ban_blocking_refresh_matview:
-        Option<RuleConfiguration<pgls_analyser::options::BanBlockingRefreshMatview>>,
+    pub avoid_create_trigger: Option<RuleConfiguration<pgls_analyser::options::AvoidCreateTrigger>>,
+    #[doc = "Enabling or disabling a trigger acquires a SHARE ROW EXCLUSIVE lock."]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub avoid_enable_disable_trigger:
+        Option<RuleConfiguration<pgls_analyser::options::AvoidEnableDisableTrigger>>,
+    #[doc = "Acquiring ACCESS EXCLUSIVE locks on multiple tables widens the lock window."]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub avoid_wide_lock_window:
+        Option<RuleConfiguration<pgls_analyser::options::AvoidWideLockWindow>>,
     #[doc = "Using CHAR(n) or CHARACTER(n) types is discouraged."]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ban_char_field: Option<RuleConfiguration<pgls_analyser::options::BanCharField>>,
@@ -189,9 +197,6 @@ pub struct Safety {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ban_concurrent_index_creation_in_transaction:
         Option<RuleConfiguration<pgls_analyser::options::BanConcurrentIndexCreationInTransaction>>,
-    #[doc = "Creating a trigger acquires a SHARE ROW EXCLUSIVE lock on the table."]
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub ban_create_trigger: Option<RuleConfiguration<pgls_analyser::options::BanCreateTrigger>>,
     #[doc = "A DELETE statement without a WHERE clause will remove all rows from the table."]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ban_delete_without_where:
@@ -214,14 +219,6 @@ pub struct Safety {
     #[doc = "Dropping a trigger acquires an ACCESS EXCLUSIVE lock on the table."]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ban_drop_trigger: Option<RuleConfiguration<pgls_analyser::options::BanDropTrigger>>,
-    #[doc = "Enabling or disabling a trigger acquires a SHARE ROW EXCLUSIVE lock."]
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub ban_enable_disable_trigger:
-        Option<RuleConfiguration<pgls_analyser::options::BanEnableDisableTrigger>>,
-    #[doc = "Validating a constraint in the same transaction it was added as NOT VALID defeats the purpose."]
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub ban_not_valid_validate_same_transaction:
-        Option<RuleConfiguration<pgls_analyser::options::BanNotValidValidateSameTransaction>>,
     #[doc = "Truncating a table removes all rows and can cause data loss in production."]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ban_truncate: Option<RuleConfiguration<pgls_analyser::options::BanTruncate>>,
@@ -238,6 +235,10 @@ pub struct Safety {
     #[doc = "Changing a column type may require a table rewrite and break existing clients."]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub changing_column_type: Option<RuleConfiguration<pgls_analyser::options::ChangingColumnType>>,
+    #[doc = "REFRESH MATERIALIZED VIEW CONCURRENTLY still acquires an EXCLUSIVE lock."]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub concurrent_refresh_matview_lock:
+        Option<RuleConfiguration<pgls_analyser::options::ConcurrentRefreshMatviewLock>>,
     #[doc = "Adding constraints without NOT VALID blocks all reads and writes."]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub constraint_missing_not_valid:
@@ -299,6 +300,10 @@ pub struct Safety {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub require_concurrent_index_deletion:
         Option<RuleConfiguration<pgls_analyser::options::RequireConcurrentIndexDeletion>>,
+    #[doc = "REFRESH MATERIALIZED VIEW without CONCURRENTLY acquires an ACCESS EXCLUSIVE lock."]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub require_concurrent_refresh_matview:
+        Option<RuleConfiguration<pgls_analyser::options::RequireConcurrentRefreshMatview>>,
     #[doc = "REINDEX without CONCURRENTLY acquires an ACCESS EXCLUSIVE lock on the table."]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub require_concurrent_reindex:
@@ -307,6 +312,10 @@ pub struct Safety {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub require_idle_in_transaction_timeout:
         Option<RuleConfiguration<pgls_analyser::options::RequireIdleInTransactionTimeout>>,
+    #[doc = "Validating a constraint in the same transaction it was added as NOT VALID defeats the purpose."]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub require_separate_constraint_validation:
+        Option<RuleConfiguration<pgls_analyser::options::RequireSeparateConstraintValidation>>,
     #[doc = "Dangerous lock statements should be preceded by SET statement_timeout."]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub require_statement_timeout:
@@ -319,14 +328,6 @@ pub struct Safety {
     #[doc = "Detects problematic transaction nesting that could lead to unexpected behavior."]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub transaction_nesting: Option<RuleConfiguration<pgls_analyser::options::TransactionNesting>>,
-    #[doc = "REFRESH MATERIALIZED VIEW CONCURRENTLY still acquires an EXCLUSIVE lock."]
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub warn_refresh_matview_concurrent:
-        Option<RuleConfiguration<pgls_analyser::options::WarnRefreshMatviewConcurrent>>,
-    #[doc = "Acquiring ACCESS EXCLUSIVE locks on multiple tables widens the lock window."]
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub warn_wide_lock_window:
-        Option<RuleConfiguration<pgls_analyser::options::WarnWideLockWindow>>,
 }
 impl Safety {
     const GROUP_NAME: &'static str = "safety";
@@ -337,13 +338,14 @@ impl Safety {
         "addingNotNullField",
         "addingPrimaryKeyConstraint",
         "addingRequiredField",
-        "banAddExclusionConstraint",
-        "banAlterEnumAddValue",
-        "banAttachPartition",
-        "banBlockingRefreshMatview",
+        "avoidAddingExclusionConstraint",
+        "avoidAlterEnumAddValue",
+        "avoidAttachingPartition",
+        "avoidCreateTrigger",
+        "avoidEnableDisableTrigger",
+        "avoidWideLockWindow",
         "banCharField",
         "banConcurrentIndexCreationInTransaction",
-        "banCreateTrigger",
         "banDeleteWithoutWhere",
         "banDropColumn",
         "banDropDatabase",
@@ -351,13 +353,12 @@ impl Safety {
         "banDropSchema",
         "banDropTable",
         "banDropTrigger",
-        "banEnableDisableTrigger",
-        "banNotValidValidateSameTransaction",
         "banTruncate",
         "banTruncateCascade",
         "banUpdateWithoutWhere",
         "banVacuumFull",
         "changingColumnType",
+        "concurrentRefreshMatviewLock",
         "constraintMissingNotValid",
         "creatingEnum",
         "disallowUniqueConstraint",
@@ -376,13 +377,13 @@ impl Safety {
         "requireConcurrentDetachPartition",
         "requireConcurrentIndexCreation",
         "requireConcurrentIndexDeletion",
+        "requireConcurrentRefreshMatview",
         "requireConcurrentReindex",
         "requireIdleInTransactionTimeout",
+        "requireSeparateConstraintValidation",
         "requireStatementTimeout",
         "runningStatementWhileHoldingAccessExclusive",
         "transactionNesting",
-        "warnRefreshMatviewConcurrent",
-        "warnWideLockWindow",
     ];
     const RECOMMENDED_RULES_AS_FILTERS: &'static [RuleFilter<'static>] = &[
         RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[0]),
@@ -392,23 +393,23 @@ impl Safety {
         RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[4]),
         RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[6]),
         RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[8]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[9]),
         RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[11]),
         RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[13]),
         RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[14]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[16]),
+        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[15]),
         RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[17]),
         RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[18]),
+        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[19]),
         RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[21]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[22]),
+        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[23]),
         RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[24]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[25]),
         RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[30]),
         RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[31]),
         RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[42]),
         RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[45]),
+        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[46]),
         RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[48]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[51]),
+        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[50]),
     ];
     const ALL_RULES_AS_FILTERS: &'static [RuleFilter<'static>] = &[
         RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[0]),
@@ -509,107 +510,107 @@ impl Safety {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[5]));
             }
         }
-        if let Some(rule) = self.ban_add_exclusion_constraint.as_ref() {
+        if let Some(rule) = self.avoid_adding_exclusion_constraint.as_ref() {
             if rule.is_enabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[6]));
             }
         }
-        if let Some(rule) = self.ban_alter_enum_add_value.as_ref() {
+        if let Some(rule) = self.avoid_alter_enum_add_value.as_ref() {
             if rule.is_enabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[7]));
             }
         }
-        if let Some(rule) = self.ban_attach_partition.as_ref() {
+        if let Some(rule) = self.avoid_attaching_partition.as_ref() {
             if rule.is_enabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[8]));
             }
         }
-        if let Some(rule) = self.ban_blocking_refresh_matview.as_ref() {
+        if let Some(rule) = self.avoid_create_trigger.as_ref() {
             if rule.is_enabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[9]));
             }
         }
-        if let Some(rule) = self.ban_char_field.as_ref() {
+        if let Some(rule) = self.avoid_enable_disable_trigger.as_ref() {
             if rule.is_enabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[10]));
             }
         }
-        if let Some(rule) = self.ban_concurrent_index_creation_in_transaction.as_ref() {
+        if let Some(rule) = self.avoid_wide_lock_window.as_ref() {
             if rule.is_enabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[11]));
             }
         }
-        if let Some(rule) = self.ban_create_trigger.as_ref() {
+        if let Some(rule) = self.ban_char_field.as_ref() {
             if rule.is_enabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[12]));
             }
         }
-        if let Some(rule) = self.ban_delete_without_where.as_ref() {
+        if let Some(rule) = self.ban_concurrent_index_creation_in_transaction.as_ref() {
             if rule.is_enabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[13]));
             }
         }
-        if let Some(rule) = self.ban_drop_column.as_ref() {
+        if let Some(rule) = self.ban_delete_without_where.as_ref() {
             if rule.is_enabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[14]));
             }
         }
-        if let Some(rule) = self.ban_drop_database.as_ref() {
+        if let Some(rule) = self.ban_drop_column.as_ref() {
             if rule.is_enabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[15]));
             }
         }
-        if let Some(rule) = self.ban_drop_not_null.as_ref() {
+        if let Some(rule) = self.ban_drop_database.as_ref() {
             if rule.is_enabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[16]));
             }
         }
-        if let Some(rule) = self.ban_drop_schema.as_ref() {
+        if let Some(rule) = self.ban_drop_not_null.as_ref() {
             if rule.is_enabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[17]));
             }
         }
-        if let Some(rule) = self.ban_drop_table.as_ref() {
+        if let Some(rule) = self.ban_drop_schema.as_ref() {
             if rule.is_enabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[18]));
             }
         }
-        if let Some(rule) = self.ban_drop_trigger.as_ref() {
+        if let Some(rule) = self.ban_drop_table.as_ref() {
             if rule.is_enabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[19]));
             }
         }
-        if let Some(rule) = self.ban_enable_disable_trigger.as_ref() {
+        if let Some(rule) = self.ban_drop_trigger.as_ref() {
             if rule.is_enabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[20]));
             }
         }
-        if let Some(rule) = self.ban_not_valid_validate_same_transaction.as_ref() {
+        if let Some(rule) = self.ban_truncate.as_ref() {
             if rule.is_enabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[21]));
             }
         }
-        if let Some(rule) = self.ban_truncate.as_ref() {
+        if let Some(rule) = self.ban_truncate_cascade.as_ref() {
             if rule.is_enabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[22]));
             }
         }
-        if let Some(rule) = self.ban_truncate_cascade.as_ref() {
+        if let Some(rule) = self.ban_update_without_where.as_ref() {
             if rule.is_enabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[23]));
             }
         }
-        if let Some(rule) = self.ban_update_without_where.as_ref() {
+        if let Some(rule) = self.ban_vacuum_full.as_ref() {
             if rule.is_enabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[24]));
             }
         }
-        if let Some(rule) = self.ban_vacuum_full.as_ref() {
+        if let Some(rule) = self.changing_column_type.as_ref() {
             if rule.is_enabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[25]));
             }
         }
-        if let Some(rule) = self.changing_column_type.as_ref() {
+        if let Some(rule) = self.concurrent_refresh_matview_lock.as_ref() {
             if rule.is_enabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[26]));
             }
@@ -704,19 +705,29 @@ impl Safety {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[44]));
             }
         }
-        if let Some(rule) = self.require_concurrent_reindex.as_ref() {
+        if let Some(rule) = self.require_concurrent_refresh_matview.as_ref() {
             if rule.is_enabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[45]));
             }
         }
-        if let Some(rule) = self.require_idle_in_transaction_timeout.as_ref() {
+        if let Some(rule) = self.require_concurrent_reindex.as_ref() {
             if rule.is_enabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[46]));
             }
         }
-        if let Some(rule) = self.require_statement_timeout.as_ref() {
+        if let Some(rule) = self.require_idle_in_transaction_timeout.as_ref() {
             if rule.is_enabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[47]));
+            }
+        }
+        if let Some(rule) = self.require_separate_constraint_validation.as_ref() {
+            if rule.is_enabled() {
+                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[48]));
+            }
+        }
+        if let Some(rule) = self.require_statement_timeout.as_ref() {
+            if rule.is_enabled() {
+                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[49]));
             }
         }
         if let Some(rule) = self
@@ -724,20 +735,10 @@ impl Safety {
             .as_ref()
         {
             if rule.is_enabled() {
-                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[48]));
-            }
-        }
-        if let Some(rule) = self.transaction_nesting.as_ref() {
-            if rule.is_enabled() {
-                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[49]));
-            }
-        }
-        if let Some(rule) = self.warn_refresh_matview_concurrent.as_ref() {
-            if rule.is_enabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[50]));
             }
         }
-        if let Some(rule) = self.warn_wide_lock_window.as_ref() {
+        if let Some(rule) = self.transaction_nesting.as_ref() {
             if rule.is_enabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[51]));
             }
@@ -776,107 +777,107 @@ impl Safety {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[5]));
             }
         }
-        if let Some(rule) = self.ban_add_exclusion_constraint.as_ref() {
+        if let Some(rule) = self.avoid_adding_exclusion_constraint.as_ref() {
             if rule.is_disabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[6]));
             }
         }
-        if let Some(rule) = self.ban_alter_enum_add_value.as_ref() {
+        if let Some(rule) = self.avoid_alter_enum_add_value.as_ref() {
             if rule.is_disabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[7]));
             }
         }
-        if let Some(rule) = self.ban_attach_partition.as_ref() {
+        if let Some(rule) = self.avoid_attaching_partition.as_ref() {
             if rule.is_disabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[8]));
             }
         }
-        if let Some(rule) = self.ban_blocking_refresh_matview.as_ref() {
+        if let Some(rule) = self.avoid_create_trigger.as_ref() {
             if rule.is_disabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[9]));
             }
         }
-        if let Some(rule) = self.ban_char_field.as_ref() {
+        if let Some(rule) = self.avoid_enable_disable_trigger.as_ref() {
             if rule.is_disabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[10]));
             }
         }
-        if let Some(rule) = self.ban_concurrent_index_creation_in_transaction.as_ref() {
+        if let Some(rule) = self.avoid_wide_lock_window.as_ref() {
             if rule.is_disabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[11]));
             }
         }
-        if let Some(rule) = self.ban_create_trigger.as_ref() {
+        if let Some(rule) = self.ban_char_field.as_ref() {
             if rule.is_disabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[12]));
             }
         }
-        if let Some(rule) = self.ban_delete_without_where.as_ref() {
+        if let Some(rule) = self.ban_concurrent_index_creation_in_transaction.as_ref() {
             if rule.is_disabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[13]));
             }
         }
-        if let Some(rule) = self.ban_drop_column.as_ref() {
+        if let Some(rule) = self.ban_delete_without_where.as_ref() {
             if rule.is_disabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[14]));
             }
         }
-        if let Some(rule) = self.ban_drop_database.as_ref() {
+        if let Some(rule) = self.ban_drop_column.as_ref() {
             if rule.is_disabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[15]));
             }
         }
-        if let Some(rule) = self.ban_drop_not_null.as_ref() {
+        if let Some(rule) = self.ban_drop_database.as_ref() {
             if rule.is_disabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[16]));
             }
         }
-        if let Some(rule) = self.ban_drop_schema.as_ref() {
+        if let Some(rule) = self.ban_drop_not_null.as_ref() {
             if rule.is_disabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[17]));
             }
         }
-        if let Some(rule) = self.ban_drop_table.as_ref() {
+        if let Some(rule) = self.ban_drop_schema.as_ref() {
             if rule.is_disabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[18]));
             }
         }
-        if let Some(rule) = self.ban_drop_trigger.as_ref() {
+        if let Some(rule) = self.ban_drop_table.as_ref() {
             if rule.is_disabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[19]));
             }
         }
-        if let Some(rule) = self.ban_enable_disable_trigger.as_ref() {
+        if let Some(rule) = self.ban_drop_trigger.as_ref() {
             if rule.is_disabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[20]));
             }
         }
-        if let Some(rule) = self.ban_not_valid_validate_same_transaction.as_ref() {
+        if let Some(rule) = self.ban_truncate.as_ref() {
             if rule.is_disabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[21]));
             }
         }
-        if let Some(rule) = self.ban_truncate.as_ref() {
+        if let Some(rule) = self.ban_truncate_cascade.as_ref() {
             if rule.is_disabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[22]));
             }
         }
-        if let Some(rule) = self.ban_truncate_cascade.as_ref() {
+        if let Some(rule) = self.ban_update_without_where.as_ref() {
             if rule.is_disabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[23]));
             }
         }
-        if let Some(rule) = self.ban_update_without_where.as_ref() {
+        if let Some(rule) = self.ban_vacuum_full.as_ref() {
             if rule.is_disabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[24]));
             }
         }
-        if let Some(rule) = self.ban_vacuum_full.as_ref() {
+        if let Some(rule) = self.changing_column_type.as_ref() {
             if rule.is_disabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[25]));
             }
         }
-        if let Some(rule) = self.changing_column_type.as_ref() {
+        if let Some(rule) = self.concurrent_refresh_matview_lock.as_ref() {
             if rule.is_disabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[26]));
             }
@@ -971,19 +972,29 @@ impl Safety {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[44]));
             }
         }
-        if let Some(rule) = self.require_concurrent_reindex.as_ref() {
+        if let Some(rule) = self.require_concurrent_refresh_matview.as_ref() {
             if rule.is_disabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[45]));
             }
         }
-        if let Some(rule) = self.require_idle_in_transaction_timeout.as_ref() {
+        if let Some(rule) = self.require_concurrent_reindex.as_ref() {
             if rule.is_disabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[46]));
             }
         }
-        if let Some(rule) = self.require_statement_timeout.as_ref() {
+        if let Some(rule) = self.require_idle_in_transaction_timeout.as_ref() {
             if rule.is_disabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[47]));
+            }
+        }
+        if let Some(rule) = self.require_separate_constraint_validation.as_ref() {
+            if rule.is_disabled() {
+                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[48]));
+            }
+        }
+        if let Some(rule) = self.require_statement_timeout.as_ref() {
+            if rule.is_disabled() {
+                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[49]));
             }
         }
         if let Some(rule) = self
@@ -991,20 +1002,10 @@ impl Safety {
             .as_ref()
         {
             if rule.is_disabled() {
-                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[48]));
-            }
-        }
-        if let Some(rule) = self.transaction_nesting.as_ref() {
-            if rule.is_disabled() {
-                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[49]));
-            }
-        }
-        if let Some(rule) = self.warn_refresh_matview_concurrent.as_ref() {
-            if rule.is_disabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[50]));
             }
         }
-        if let Some(rule) = self.warn_wide_lock_window.as_ref() {
+        if let Some(rule) = self.transaction_nesting.as_ref() {
             if rule.is_disabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[51]));
             }
@@ -1044,13 +1045,14 @@ impl Safety {
             "addingNotNullField" => Severity::Warning,
             "addingPrimaryKeyConstraint" => Severity::Warning,
             "addingRequiredField" => Severity::Error,
-            "banAddExclusionConstraint" => Severity::Warning,
-            "banAlterEnumAddValue" => Severity::Warning,
-            "banAttachPartition" => Severity::Warning,
-            "banBlockingRefreshMatview" => Severity::Warning,
+            "avoidAddingExclusionConstraint" => Severity::Warning,
+            "avoidAlterEnumAddValue" => Severity::Warning,
+            "avoidAttachingPartition" => Severity::Warning,
+            "avoidCreateTrigger" => Severity::Warning,
+            "avoidEnableDisableTrigger" => Severity::Warning,
+            "avoidWideLockWindow" => Severity::Warning,
             "banCharField" => Severity::Warning,
             "banConcurrentIndexCreationInTransaction" => Severity::Error,
-            "banCreateTrigger" => Severity::Warning,
             "banDeleteWithoutWhere" => Severity::Warning,
             "banDropColumn" => Severity::Warning,
             "banDropDatabase" => Severity::Warning,
@@ -1058,13 +1060,12 @@ impl Safety {
             "banDropSchema" => Severity::Error,
             "banDropTable" => Severity::Warning,
             "banDropTrigger" => Severity::Warning,
-            "banEnableDisableTrigger" => Severity::Warning,
-            "banNotValidValidateSameTransaction" => Severity::Error,
             "banTruncate" => Severity::Error,
             "banTruncateCascade" => Severity::Error,
             "banUpdateWithoutWhere" => Severity::Warning,
             "banVacuumFull" => Severity::Error,
             "changingColumnType" => Severity::Warning,
+            "concurrentRefreshMatviewLock" => Severity::Warning,
             "constraintMissingNotValid" => Severity::Warning,
             "creatingEnum" => Severity::Warning,
             "disallowUniqueConstraint" => Severity::Error,
@@ -1083,13 +1084,13 @@ impl Safety {
             "requireConcurrentDetachPartition" => Severity::Warning,
             "requireConcurrentIndexCreation" => Severity::Warning,
             "requireConcurrentIndexDeletion" => Severity::Warning,
+            "requireConcurrentRefreshMatview" => Severity::Warning,
             "requireConcurrentReindex" => Severity::Warning,
             "requireIdleInTransactionTimeout" => Severity::Warning,
+            "requireSeparateConstraintValidation" => Severity::Error,
             "requireStatementTimeout" => Severity::Warning,
             "runningStatementWhileHoldingAccessExclusive" => Severity::Warning,
             "transactionNesting" => Severity::Warning,
-            "warnRefreshMatviewConcurrent" => Severity::Warning,
-            "warnWideLockWindow" => Severity::Warning,
             _ => unreachable!(),
         }
     }
@@ -1122,20 +1123,28 @@ impl Safety {
                 .adding_required_field
                 .as_ref()
                 .map(|conf| (conf.level(), conf.get_options())),
-            "banAddExclusionConstraint" => self
-                .ban_add_exclusion_constraint
+            "avoidAddingExclusionConstraint" => self
+                .avoid_adding_exclusion_constraint
                 .as_ref()
                 .map(|conf| (conf.level(), conf.get_options())),
-            "banAlterEnumAddValue" => self
-                .ban_alter_enum_add_value
+            "avoidAlterEnumAddValue" => self
+                .avoid_alter_enum_add_value
                 .as_ref()
                 .map(|conf| (conf.level(), conf.get_options())),
-            "banAttachPartition" => self
-                .ban_attach_partition
+            "avoidAttachingPartition" => self
+                .avoid_attaching_partition
                 .as_ref()
                 .map(|conf| (conf.level(), conf.get_options())),
-            "banBlockingRefreshMatview" => self
-                .ban_blocking_refresh_matview
+            "avoidCreateTrigger" => self
+                .avoid_create_trigger
+                .as_ref()
+                .map(|conf| (conf.level(), conf.get_options())),
+            "avoidEnableDisableTrigger" => self
+                .avoid_enable_disable_trigger
+                .as_ref()
+                .map(|conf| (conf.level(), conf.get_options())),
+            "avoidWideLockWindow" => self
+                .avoid_wide_lock_window
                 .as_ref()
                 .map(|conf| (conf.level(), conf.get_options())),
             "banCharField" => self
@@ -1144,10 +1153,6 @@ impl Safety {
                 .map(|conf| (conf.level(), conf.get_options())),
             "banConcurrentIndexCreationInTransaction" => self
                 .ban_concurrent_index_creation_in_transaction
-                .as_ref()
-                .map(|conf| (conf.level(), conf.get_options())),
-            "banCreateTrigger" => self
-                .ban_create_trigger
                 .as_ref()
                 .map(|conf| (conf.level(), conf.get_options())),
             "banDeleteWithoutWhere" => self
@@ -1178,14 +1183,6 @@ impl Safety {
                 .ban_drop_trigger
                 .as_ref()
                 .map(|conf| (conf.level(), conf.get_options())),
-            "banEnableDisableTrigger" => self
-                .ban_enable_disable_trigger
-                .as_ref()
-                .map(|conf| (conf.level(), conf.get_options())),
-            "banNotValidValidateSameTransaction" => self
-                .ban_not_valid_validate_same_transaction
-                .as_ref()
-                .map(|conf| (conf.level(), conf.get_options())),
             "banTruncate" => self
                 .ban_truncate
                 .as_ref()
@@ -1204,6 +1201,10 @@ impl Safety {
                 .map(|conf| (conf.level(), conf.get_options())),
             "changingColumnType" => self
                 .changing_column_type
+                .as_ref()
+                .map(|conf| (conf.level(), conf.get_options())),
+            "concurrentRefreshMatviewLock" => self
+                .concurrent_refresh_matview_lock
                 .as_ref()
                 .map(|conf| (conf.level(), conf.get_options())),
             "constraintMissingNotValid" => self
@@ -1278,12 +1279,20 @@ impl Safety {
                 .require_concurrent_index_deletion
                 .as_ref()
                 .map(|conf| (conf.level(), conf.get_options())),
+            "requireConcurrentRefreshMatview" => self
+                .require_concurrent_refresh_matview
+                .as_ref()
+                .map(|conf| (conf.level(), conf.get_options())),
             "requireConcurrentReindex" => self
                 .require_concurrent_reindex
                 .as_ref()
                 .map(|conf| (conf.level(), conf.get_options())),
             "requireIdleInTransactionTimeout" => self
                 .require_idle_in_transaction_timeout
+                .as_ref()
+                .map(|conf| (conf.level(), conf.get_options())),
+            "requireSeparateConstraintValidation" => self
+                .require_separate_constraint_validation
                 .as_ref()
                 .map(|conf| (conf.level(), conf.get_options())),
             "requireStatementTimeout" => self
@@ -1296,14 +1305,6 @@ impl Safety {
                 .map(|conf| (conf.level(), conf.get_options())),
             "transactionNesting" => self
                 .transaction_nesting
-                .as_ref()
-                .map(|conf| (conf.level(), conf.get_options())),
-            "warnRefreshMatviewConcurrent" => self
-                .warn_refresh_matview_concurrent
-                .as_ref()
-                .map(|conf| (conf.level(), conf.get_options())),
-            "warnWideLockWindow" => self
-                .warn_wide_lock_window
                 .as_ref()
                 .map(|conf| (conf.level(), conf.get_options())),
             _ => None,
