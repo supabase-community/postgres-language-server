@@ -200,13 +200,13 @@ individual fields. The URI takes precedence over any other connection fields.</p
 <pre><code class="language-shell">postgres-language-server check file1.js src/
 </code></pre>
 <h3 id="control-files-via-configuration">Control files via configuration</h3>
-<p>The configuration file can be used to refine which files are processed. You can explicitly list the files to be processed using the <code>files.includes</code> field. <code>files.includes</code> accepts glob patterns such as sql/*<em>/</em>.sql. Negated patterns starting with <code>!</code> can be used to exclude files.</p>
+<p>The configuration file can be used to refine which files are processed. You can explicitly list the files to be processed using the <code>files.include</code> field. <code>files.include</code> accepts glob patterns such as sql/*<em>/</em>.sql. Negated patterns starting with <code>!</code> can be used to exclude files.</p>
 <p>Paths and globs inside the configuration file are resolved relative to the folder the configuration file is in. An exception to this is when a configuration file is extended by another.</p>
 <h4 id="include-files-via-configuration">Include files via configuration</h4>
 <p>Let’s take the following configuration, where we want to include only SQL files (<code>.sql</code>) that are inside the <code>sql/</code> folder:</p>
 <pre><code class="language-json">{
   &quot;files&quot;: {
-    &quot;includes&quot;: [&quot;sql/**/*.sql&quot;]
+    &quot;include&quot;: [&quot;sql/**/*.sql&quot;]
   }
 }
 </code></pre>
