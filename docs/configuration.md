@@ -76,7 +76,7 @@ postgres-language-server check file1.js src/
 
 ### Control files via configuration
 
-The configuration file can be used to refine which files are processed. You can explicitly list the files to be processed using the `files.includes` field. `files.includes` accepts glob patterns such as sql/**/*.sql. Negated patterns starting with `!` can be used to exclude files.
+The configuration file can be used to refine which files are processed. You can explicitly list the files to be processed using the `files.include` field. `files.include` accepts glob patterns such as sql/**/*.sql. Negated patterns starting with `!` can be used to exclude files.
 
 Paths and globs inside the configuration file are resolved relative to the folder the configuration file is in. An exception to this is when a configuration file is extended by another.
 
@@ -86,7 +86,7 @@ Let’s take the following configuration, where we want to include only SQL file
 ```json
 {
   "files": {
-    "includes": ["sql/**/*.sql"]
+    "include": ["sql/**/*.sql"]
   }
 }
 ```
