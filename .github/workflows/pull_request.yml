@@ -136,11 +136,12 @@ jobs:
           key: ${{ runner.os }}-tree-sitter-${{ hashFiles('.tree-sitter-cli-version', 'crates/pgls_treesitter_grammar/grammar.js', 'crates/pgls_treesitter_grammar/tree-sitter.json', 'rust-toolchain.toml', 'Cargo.lock') }}
 
       - name: Setup tree-sitter
-        run: command -v tree-sitter || cargo install tree-sitter-cli --version "$(cat .tree-sitter-cli-version)" --locked
-        shell: bash
+        uses: tree-sitter/setup-action/cli@v2
+        with:
+          tree-sitter-ref: v0.25.9
 
       - name: Setup sqlx-cli
-        run: command -v sqlx ||cargo install sqlx-cli
+        run: command -v sqlx || cargo install sqlx-cli --version 0.8.6 --locked
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
@@ -206,8 +207,9 @@ jobs:
           key: ${{ runner.os }}-tree-sitter-${{ hashFiles('.tree-sitter-cli-version', 'crates/pgls_treesitter_grammar/grammar.js', 'crates/pgls_treesitter_grammar/tree-sitter.json', 'rust-toolchain.toml', 'Cargo.lock') }}
 
       - name: Setup tree-sitter
-        run: command -v tree-sitter || cargo install tree-sitter-cli --version "$(cat .tree-sitter-cli-version)" --locked
-        shell: bash
+        uses: tree-sitter/setup-action/cli@v2
+        with:
+          tree-sitter-ref: v0.25.9
 
       - name: Run clippy
         run: cargo clippy --all-targets -- -D warnings
@@ -246,9 +248,10 @@ jobs:
             ~/.cargo/bin/tree-sitter
             target/**/build/pgls_treesitter_grammar-*/out/generated
           key: ${{ runner.os }}-tree-sitter-${{ hashFiles('.tree-sitter-cli-version', 'crates/pgls_treesitter_grammar/grammar.js', 'crates/pgls_treesitter_grammar/tree-sitter.json', 'rust-toolchain.toml', 'Cargo.lock') }}
-      - name: setup tree-sitter
-        run: command -v tree-sitter || cargo install tree-sitter-cli --version "$(cat .tree-sitter-cli-version)" --locked
-        shell: bash
+      - name: Setup tree-sitter
+        uses: tree-sitter/setup-action/cli@v2
+        with:
+          tree-sitter-ref: v0.25.9
       - name: Build main binary
         run: cargo build -p pgls_cli --release
       - name: Setup Bun
@@ -336,9 +339,10 @@ jobs:
             ~/.cargo/bin/tree-sitter
             target/**/build/pgls_treesitter_grammar-*/out/generated
           key: ${{ runner.os }}-tree-sitter-${{ hashFiles('.tree-sitter-cli-version', 'crates/pgls_treesitter_grammar/grammar.js', 'crates/pgls_treesitter_grammar/tree-sitter.json', 'rust-toolchain.toml', 'Cargo.lock') }}
-      - name: setup tree-sitter
-        run: command -v tree-sitter || cargo install tree-sitter-cli --version "$(cat .tree-sitter-cli-version)" --locked
-        shell: bash
+      - name: Setup tree-sitter
+        uses: tree-sitter/setup-action/cli@v2
+        with:
+          tree-sitter-ref: v0.25.9
       - name: Ensure RustFMT on nightly toolchain
         run: rustup component add rustfmt --toolchain nightly
       - name: Setup Bun

@@ -140,9 +140,17 @@ runs:
           -e POSTGRES_DB=postgres \
           -p 5432:5432 \
           postgres-language-server-dev:latest
-        # Wait for postgres to be ready
-        for _ in {1..30}; do
-          if docker exec postgres pg_isready -U postgres; then
+        # Wait for the image's init scripts to finish before checking readiness;
+        # pg_isready can briefly catch Docker's temporary bootstrap server.
+        for _ in {1..60}; do
+          if docker logs postgres 2>&1 | grep -Eq "PostgreSQL init process complete|Skipping initialization"; then
+            break
+          fi
+          sleep 1
+        done
+
+        for _ in {1..60}; do
+          if docker exec postgres psql -U postgres -d postgres -tAc "SELECT 1" >/dev/null; then
             break
           fi
           sleep 1
