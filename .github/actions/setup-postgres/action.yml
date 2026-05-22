@@ -140,8 +140,8 @@ runs:
           -e POSTGRES_DB=postgres \
           -p 5432:5432 \
           postgres-language-server-dev:latest
-        # The Dockerfile's init script installs the extensions. Wait for init to
-        # finish so pg_isready doesn't catch the temporary bootstrap server.
+        # Wait for the image's init scripts to finish before checking readiness;
+        # pg_isready can briefly catch Docker's temporary bootstrap server.
         for _ in {1..60}; do
           if docker logs postgres 2>&1 | grep -Eq "PostgreSQL init process complete|Skipping initialization"; then
             break
@@ -155,3 +155,13 @@ runs:
           fi
           sleep 1
         done
+
+        # Create extensions in postgres database only (NOT template1)
+        # This avoids polluting test databases - tests that need extensions can create them explicitly
+        echo "Creating extensions in postgres database..."
+        docker exec postgres psql -U postgres -c "CREATE SCHEMA IF NOT EXISTS extensions;"
+        docker exec postgres psql -U postgres -c "CREATE EXTENSION IF NOT EXISTS plpgsql_check SCHEMA extensions;"
+        docker exec postgres psql -U postgres -c "CREATE EXTENSION IF NOT EXISTS pglinter SCHEMA extensions;"
+
+        # Show extension status
+        docker exec postgres psql -U postgres -c "SELECT extname, extversion FROM pg_extension WHERE extname IN ('plpgsql_check', 'pglinter');"
