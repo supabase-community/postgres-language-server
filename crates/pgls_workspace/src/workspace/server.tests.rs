@@ -1,4 +1,7 @@
-use std::sync::Arc;
+use std::{
+    sync::Arc,
+    time::{Duration, Instant},
+};
 
 use pgls_analyse::RuleCategories;
 use pgls_configuration::{Merge, StringSet};
@@ -106,6 +109,70 @@ async fn test_diagnostics(test_db: PgPool) {
     assert_eq!(
         diagnostic.location().span,
         Some(TextRange::new(106.into(), 136.into()))
+    );
+}
+
+#[test]
+fn test_unreachable_database_diagnostics_keep_static_results_and_back_off() {
+    let mut conf = PartialConfiguration::init();
+    conf.merge_with(PartialConfiguration {
+        db: Some(PartialDatabaseConfiguration {
+            connection_string: Some(
+                "postgres://postgres:postgres@127.0.0.1:65432/postgres".to_string(),
+            ),
+            conn_timeout_secs: Some(1),
+            ..Default::default()
+        }),
+        ..Default::default()
+    });
+
+    let workspace = get_test_workspace(Some(conf)).expect("Unable to create test workspace");
+
+    let path = PgLSPath::new("test.sql");
+    let content = "drop table non_existing_table;";
+
+    workspace
+        .open_file(OpenFileParams {
+            path: path.clone(),
+            content: content.into(),
+            version: 1,
+        })
+        .expect("Unable to open test file");
+
+    let pull_diagnostics = || {
+        workspace
+            .pull_file_diagnostics(crate::workspace::PullFileDiagnosticsParams {
+                path: path.clone(),
+                categories: RuleCategories::all(),
+                max_diagnostics: 100,
+                only: vec![],
+                skip: vec![],
+            })
+            .expect("Unable to pull diagnostics")
+            .diagnostics
+    };
+
+    let diagnostics = pull_diagnostics();
+    assert!(
+        diagnostics.iter().any(|d| d
+            .category()
+            .is_some_and(|c| c.name() == "lint/safety/banDropTable")),
+        "Expected static lint diagnostics even when database is unreachable"
+    );
+
+    let second_pull_started = Instant::now();
+    let diagnostics = pull_diagnostics();
+    let second_pull_elapsed = second_pull_started.elapsed();
+
+    assert!(
+        diagnostics.iter().any(|d| d
+            .category()
+            .is_some_and(|c| c.name() == "lint/safety/banDropTable")),
+        "Expected static lint diagnostics during database retry backoff"
+    );
+    assert!(
+        second_pull_elapsed < Duration::from_millis(750),
+        "Expected diagnostics during database retry backoff to finish quickly, took {second_pull_elapsed:?}"
     );
 }
 

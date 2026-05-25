@@ -74,8 +74,8 @@ impl SchemaCacheManager {
     /// Load schema from a database connection.
     /// Returns cached schema if available, otherwise loads from database.
     #[cfg(feature = "db")]
-    pub fn load(&self, pool: PgPool) -> Result<Arc<SchemaCache>, WorkspaceError> {
-        let key: ConnectionKey = (&pool).into();
+    pub fn load(&self, pool: &PgPool) -> Result<Arc<SchemaCache>, WorkspaceError> {
+        let key: ConnectionKey = pool.into();
 
         // Try read lock first for cache hit
         if let Ok(schemas) = self.db_schemas.read()
