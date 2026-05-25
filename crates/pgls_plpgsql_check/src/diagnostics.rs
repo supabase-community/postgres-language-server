@@ -106,6 +106,8 @@ pub struct PlPgSqlCheckDiagnostic {
 #[derive(Debug, Clone)]
 pub struct PlPgSqlCheckAdvices {
     pub code: Option<String>,
+    pub detail: Option<String>,
+    pub hint: Option<String>,
     /// the relation (table or view) where the issue was found, if applicable
     /// only applicable for trigger functions
     pub relation: Option<String>,
@@ -114,15 +116,24 @@ pub struct PlPgSqlCheckAdvices {
 impl Advices for PlPgSqlCheckAdvices {
     fn record(&self, visitor: &mut dyn Visit) -> io::Result<()> {
         // Show the error code if available
-        if let Some(code) = &self.code {
+        if let Some(code) = non_empty(self.code.as_deref()) {
             visitor.record_log(
                 LogCategory::Error,
                 &markup! { "SQL State: " <Emphasis>{code}</Emphasis> },
             )?;
         }
 
+        // Show detail and hint information from plpgsql_check if available.
+        if let Some(detail) = non_empty(self.detail.as_deref()) {
+            visitor.record_log(LogCategory::Info, &markup! { "Detail: " {detail} })?;
+        }
+
+        if let Some(hint) = non_empty(self.hint.as_deref()) {
+            visitor.record_log(LogCategory::Info, &markup! { "Hint: " {hint} })?;
+        }
+
         // Show relation information if available
-        if let Some(relation) = &self.relation {
+        if let Some(relation) = non_empty(self.relation.as_deref()) {
             visitor.record_log(
                 LogCategory::Info,
                 &markup! { "Relation: " <Emphasis>{relation}</Emphasis> },
@@ -131,6 +142,28 @@ impl Advices for PlPgSqlCheckAdvices {
 
         Ok(())
     }
+}
+
+fn non_empty(value: Option<&str>) -> Option<&str> {
+    value.map(str::trim).filter(|value| !value.is_empty())
+}
+
+fn message_with_detail_and_hint(issue: &PlpgSqlCheckIssue) -> MessageAndDescription {
+    let mut message = MessageAndDescription::from(issue.message.clone());
+    let mut description = issue.message.clone();
+
+    if let Some(detail) = non_empty(issue.detail.as_deref()) {
+        description.push_str("\n\nDetail: ");
+        description.push_str(detail);
+    }
+
+    if let Some(hint) = non_empty(issue.hint.as_deref()) {
+        description.push_str("\n\nHint: ");
+        description.push_str(hint);
+    }
+
+    message.set_description(description);
+    message
 }
 
 /// Convert plpgsql_check results into diagnostics with optional relation info for triggers
@@ -152,11 +185,13 @@ pub fn create_diagnostics_from_check_result(
             };
 
             PlPgSqlCheckDiagnostic {
-                message: issue.message.clone().into(),
+                message: message_with_detail_and_hint(issue),
                 severity,
                 span: resolve_span(issue, fn_body, offset),
                 advices: PlPgSqlCheckAdvices {
                     code: issue.sql_state.clone(),
+                    detail: issue.detail.clone(),
+                    hint: issue.hint.clone(),
                     relation: relation.clone(),
                 },
             }
@@ -293,6 +328,8 @@ mod tests {
             issues: vec![PlpgSqlCheckIssue {
                 level: "error".to_string(),
                 message: "column does not exist".to_string(),
+                detail: None,
+                hint: None,
                 statement: Some(Statement {
                     line_number: "2".to_string(),
                     text: "RETURN QUERY".to_string(),
@@ -331,6 +368,61 @@ mod tests {
         assert_eq!(
             diagnostic_span_for(&fn_body, query, position),
             "missing_column"
+        );
+    }
+
+    #[test]
+    fn omits_empty_detail_and_hint_from_description() {
+        let result = PlpgSqlCheckResult {
+            function: "public.f1".to_string(),
+            issues: vec![PlpgSqlCheckIssue {
+                level: "error".to_string(),
+                message: "column does not exist".to_string(),
+                detail: Some("   ".to_string()),
+                hint: None,
+                statement: None,
+                query: None,
+                sql_state: None,
+            }],
+        };
+
+        let diagnostics = create_diagnostics_from_check_result(&result, "BEGIN\nEND", 0, None);
+
+        assert_eq!(
+            pgls_diagnostics::PrintDescription(&diagnostics[0]).to_string(),
+            "column does not exist"
+        );
+    }
+
+    #[test]
+    fn includes_detail_and_hint_in_description_and_advices() {
+        let result = PlpgSqlCheckResult {
+            function: "public.f1".to_string(),
+            issues: vec![PlpgSqlCheckIssue {
+                level: "error".to_string(),
+                message: "cannot cast type text to uuid".to_string(),
+                detail: Some("Input has to match the uuid format.".to_string()),
+                hint: Some("Use gen_random_uuid() or validate the input first.".to_string()),
+                statement: None,
+                query: None,
+                sql_state: Some("42846".to_string()),
+            }],
+        };
+
+        let diagnostics = create_diagnostics_from_check_result(&result, "BEGIN\nEND", 0, None);
+        let diagnostic = &diagnostics[0];
+
+        assert_eq!(
+            pgls_diagnostics::PrintDescription(diagnostic).to_string(),
+            "cannot cast type text to uuid\n\nDetail: Input has to match the uuid format.\n\nHint: Use gen_random_uuid() or validate the input first."
+        );
+        assert_eq!(
+            diagnostic.advices.detail.as_deref(),
+            Some("Input has to match the uuid format.")
+        );
+        assert_eq!(
+            diagnostic.advices.hint.as_deref(),
+            Some("Use gen_random_uuid() or validate the input first.")
         );
     }
 }
