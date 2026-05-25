@@ -58,35 +58,6 @@ pub struct Query {
     pub text: String,
 }
 
-#[cfg(test)]
-mod result_tests {
-    use super::*;
-
-    #[test]
-    fn deserializes_issue_detail_and_hint() {
-        let result: PlpgSqlCheckResult = serde_json::from_str(
-            r#"{
-                "function": "public.f1",
-                "issues": [{
-                    "level": "error",
-                    "message": "cannot cast type text to uuid",
-                    "detail": "Input has to match the uuid format.",
-                    "hint": "Validate the input first.",
-                    "sqlState": "42846"
-                }]
-            }"#,
-        )
-        .expect("plpgsql_check JSON should parse");
-
-        let issue = &result.issues[0];
-        assert_eq!(
-            issue.detail.as_deref(),
-            Some("Input has to match the uuid format.")
-        );
-        assert_eq!(issue.hint.as_deref(), Some("Validate the input first."));
-    }
-}
-
 /// check if the given node is a plpgsql function that should be checked
 fn should_check_function<'a>(
     ast: &'a pgls_query::NodeEnum,
@@ -962,5 +933,34 @@ mod tests {
             .collect();
         assert!(relations.contains(&&"public.table_a".to_string()));
         assert!(relations.contains(&&"public.table_b".to_string()));
+    }
+}
+
+#[cfg(test)]
+mod result_tests {
+    use super::*;
+
+    #[test]
+    fn deserializes_issue_detail_and_hint() {
+        let result: PlpgSqlCheckResult = serde_json::from_str(
+            r#"{
+                "function": "public.f1",
+                "issues": [{
+                    "level": "error",
+                    "message": "cannot cast type text to uuid",
+                    "detail": "Input has to match the uuid format.",
+                    "hint": "Validate the input first.",
+                    "sqlState": "42846"
+                }]
+            }"#,
+        )
+        .expect("plpgsql_check JSON should parse");
+
+        let issue = &result.issues[0];
+        assert_eq!(
+            issue.detail.as_deref(),
+            Some("Input has to match the uuid format.")
+        );
+        assert_eq!(issue.hint.as_deref(), Some("Validate the input first."));
     }
 }
