@@ -32,7 +32,7 @@ use pgls_typecheck::{IdentifierType, TypecheckParams, TypedIdentifier};
 use pgls_workspace_macros::ignored_path;
 use schema_cache_manager::SchemaCacheManager;
 #[cfg(feature = "db")]
-use sqlx::{Executor, PgPool};
+use sqlx::Executor;
 use tracing::{debug, info};
 
 use crate::{
@@ -132,13 +132,6 @@ impl WorkspaceServer {
 
     fn workspaces_mut(&self) -> WorkspaceSettingsHandleMut<'_> {
         WorkspaceSettingsHandleMut::new(&self.settings)
-    }
-
-    #[cfg(feature = "db")]
-    fn get_current_connection(&self) -> Option<PgPool> {
-        let settings = self.workspaces();
-        let settings = settings.settings()?;
-        self.connection.get_pool(&settings.db)
     }
 
     /// Load schema from JSON string.
@@ -429,10 +422,16 @@ impl Workspace for WorkspaceServer {
             .collect();
 
         #[cfg(feature = "db")]
-        let invalidate_disabled_reason = if self.get_current_connection().is_some() {
-            None
-        } else {
-            Some("No database connection available.".into())
+        let invalidate_disabled_reason = match settings {
+            Some(settings)
+                if self
+                    .connection
+                    .with_pool(&settings.db, |_| Ok::<(), WorkspaceError>(()))
+                    .is_some() =>
+            {
+                None
+            }
+            _ => Some("No database connection available.".into()),
         };
 
         #[cfg(not(feature = "db"))]
@@ -477,13 +476,19 @@ impl Workspace for WorkspaceServer {
             });
         };
 
-        let Some(pool) = self.get_current_connection() else {
+        let settings = self.workspaces();
+        let Some(result) = settings.settings().and_then(|settings| {
+            self.connection.with_pool(&settings.db, |pool| {
+                let pool = pool.clone();
+                run_async(async move { pool.execute(sqlx::query(&content)).await })?
+                    .map_err(WorkspaceError::from)
+            })
+        }) else {
             return Ok(ExecuteStatementResult {
                 message: "No database connection available.".into(),
             });
         };
-
-        let result = run_async(async move { pool.execute(sqlx::query(&content)).await })??;
+        let result = result?;
 
         Ok(ExecuteStatementResult {
             message: format!(
@@ -514,8 +519,12 @@ impl Workspace for WorkspaceServer {
             self.schema_cache.clear_all();
         } else {
             // Only clear current connection if one exists
-            if let Some(pool) = self.get_current_connection() {
-                self.schema_cache.clear_connection(&pool);
+            let settings = self.workspaces();
+            if let Some(settings) = settings.settings() {
+                let _ = self.connection.with_pool(&settings.db, |pool| {
+                    self.schema_cache.clear_connection(pool);
+                    Ok::<(), WorkspaceError>(())
+                });
             }
             // If no connection, nothing to clear - just return Ok
         }
@@ -845,46 +854,43 @@ impl Workspace for WorkspaceServer {
             return Ok(PullDiagnosticsResult::default());
         }
 
-        let Some(pool) = self.get_current_connection() else {
-            debug!("No database connection available. Skipping splinter checks.");
-            return Ok(PullDiagnosticsResult::default());
-        };
-
         let (enabled_rules, disabled_rules) = AnalyserVisitorBuilder::new(settings)
             .with_splinter_rules(&params.only, &params.skip)
             .finish();
 
-        let schema_cache = self.schema_cache.load(&pool).ok();
-
-        let pool_clone = pool.clone();
-        let schema_cache_clone = schema_cache.clone();
         let categories = params.categories;
         let splinter_config = settings.splinter.to_configuration();
-        let splinter_result = run_async(async move {
-            let filter = AnalysisFilter {
-                categories,
-                enabled_rules: Some(enabled_rules.as_slice()),
-                disabled_rules: &disabled_rules,
+        let Some(splinter_diagnostics) = self.connection.with_pool(&settings.db, |pool| {
+            let schema_cache = match self.schema_cache.load(pool) {
+                Ok(schema_cache) => Some(schema_cache),
+                Err(err @ WorkspaceError::DatabaseConnectionError(_)) => return Err(err),
+                Err(err) => {
+                    debug!("Unable to load schema cache for splinter: {err}");
+                    None
+                }
             };
-            let splinter_params = pgls_splinter::SplinterParams {
-                conn: &pool_clone,
-                schema_cache: schema_cache_clone.as_deref(),
-                config: Some(&splinter_config),
-            };
-            pgls_splinter::run_splinter(splinter_params, &filter).await
-        });
 
-        let splinter_diagnostics = match splinter_result {
-            Ok(Ok(diags)) => diags,
-            Ok(Err(sql_err)) => {
-                debug!("Splinter SQL error: {:?}", sql_err);
-                return Err(sql_err.into());
-            }
-            Err(join_err) => {
-                debug!("Splinter join error: {:?}", join_err);
-                return Err(join_err);
-            }
+            let pool = pool.clone();
+            let splinter_result = run_async(async move {
+                let filter = AnalysisFilter {
+                    categories,
+                    enabled_rules: Some(enabled_rules.as_slice()),
+                    disabled_rules: &disabled_rules,
+                };
+                let splinter_params = pgls_splinter::SplinterParams {
+                    conn: &pool,
+                    schema_cache: schema_cache.as_deref(),
+                    config: Some(&splinter_config),
+                };
+                pgls_splinter::run_splinter(splinter_params, &filter).await
+            })?;
+
+            splinter_result.map_err(WorkspaceError::from)
+        }) else {
+            debug!("No database connection available. Skipping splinter checks.");
+            return Ok(PullDiagnosticsResult::default());
         };
+        let splinter_diagnostics = splinter_diagnostics?;
 
         let total = splinter_diagnostics.len();
         let max = params.max_diagnostics as usize;
@@ -1061,12 +1067,17 @@ impl Workspace for WorkspaceServer {
             .ok_or(WorkspaceError::not_found())?;
 
         #[cfg(feature = "db")]
-        let schema_cache = {
-            let Some(pool) = self.get_current_connection() else {
-                tracing::debug!("No database connection available. Skipping completions.");
-                return Ok(CompletionsResult::default());
-            };
-            self.schema_cache.load(&pool)?
+        let Some(schema_cache) = self
+            .workspaces()
+            .settings()
+            .and_then(|settings| {
+                self.connection
+                    .with_pool(&settings.db, |pool| self.schema_cache.load(pool))
+            })
+            .transpose()?
+        else {
+            tracing::debug!("No database connection available. Skipping completions.");
+            return Ok(CompletionsResult::default());
         };
 
         #[cfg(not(feature = "db"))]
@@ -1107,12 +1118,17 @@ impl Workspace for WorkspaceServer {
             .ok_or(WorkspaceError::not_found())?;
 
         #[cfg(feature = "db")]
-        let schema_cache = {
-            let Some(pool) = self.get_current_connection() else {
-                tracing::debug!("No database connection available. Skipping hover.");
-                return Ok(OnHoverResult::default());
-            };
-            self.schema_cache.load(&pool)?
+        let Some(schema_cache) = self
+            .workspaces()
+            .settings()
+            .and_then(|settings| {
+                self.connection
+                    .with_pool(&settings.db, |pool| self.schema_cache.load(pool))
+            })
+            .transpose()?
+        else {
+            tracing::debug!("No database connection available. Skipping hover.");
+            return Ok(OnHoverResult::default());
         };
 
         #[cfg(not(feature = "db"))]
