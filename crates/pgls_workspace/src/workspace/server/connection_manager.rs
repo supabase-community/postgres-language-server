@@ -5,9 +5,12 @@ use std::time::{Duration, Instant};
 
 use sqlx::{PgPool, Postgres, pool::PoolOptions, postgres::PgConnectOptions};
 
-use crate::settings::DatabaseSettings;
+use crate::{WorkspaceError, settings::DatabaseSettings};
 
 use super::connection_key::ConnectionKey;
+
+const INITIAL_FAILURE_BACKOFF: Duration = Duration::from_secs(5);
+const MAX_FAILURE_BACKOFF: Duration = Duration::from_secs(60);
 
 /// Cached connection pool with last access time
 struct CachedPool {
@@ -16,15 +19,23 @@ struct CachedPool {
     idle_timeout: Duration,
 }
 
+struct CachedFailure {
+    message: String,
+    attempts: u32,
+    next_retry_at: Instant,
+}
+
 #[derive(Default)]
 pub struct ConnectionManager {
     pools: RwLock<HashMap<ConnectionKey, CachedPool>>,
+    failures: RwLock<HashMap<ConnectionKey, CachedFailure>>,
 }
 
 impl ConnectionManager {
     pub fn new() -> Self {
         Self {
             pools: RwLock::new(HashMap::new()),
+            failures: RwLock::new(HashMap::new()),
         }
     }
 
@@ -37,6 +48,10 @@ impl ConnectionManager {
 
         if !settings.enable_connection {
             tracing::info!("Database connection disabled.");
+            return None;
+        }
+
+        if self.connection_is_in_backoff(&key) {
             return None;
         }
 
@@ -106,5 +121,84 @@ impl ConnectionManager {
         pools.insert(key, cached_pool);
 
         Some(pool)
+    }
+
+    pub(crate) fn with_pool<T>(
+        &self,
+        settings: &DatabaseSettings,
+        operation: impl FnOnce(&PgPool) -> Result<T, WorkspaceError>,
+    ) -> Option<Result<T, WorkspaceError>> {
+        let pool = self.get_pool(settings)?;
+        let result = operation(&pool);
+        self.record_result(&pool, &result);
+        Some(result)
+    }
+
+    fn record_result<T>(&self, pool: &PgPool, result: &Result<T, WorkspaceError>) {
+        match result {
+            Ok(_) => self.clear_failure(&pool.into()),
+            Err(err @ WorkspaceError::DatabaseConnectionError(_)) => {
+                self.record_failure(pool, &err.to_string());
+            }
+            Err(_) => {}
+        }
+    }
+
+    fn record_failure(&self, pool: &PgPool, error: &str) {
+        let key: ConnectionKey = pool.into();
+        let mut failures = self.failures.write().unwrap();
+        let now = Instant::now();
+        let attempts = failures.get(&key).map_or(1, |failure| failure.attempts + 1);
+        let multiplier = 1u32
+            .checked_shl(attempts.saturating_sub(1))
+            .unwrap_or(u32::MAX);
+        let backoff = INITIAL_FAILURE_BACKOFF
+            .saturating_mul(multiplier)
+            .min(MAX_FAILURE_BACKOFF);
+
+        let was_cached = failures.contains_key(&key);
+        failures.insert(
+            key,
+            CachedFailure {
+                message: error.to_string(),
+                attempts,
+                next_retry_at: now + backoff,
+            },
+        );
+
+        if was_cached {
+            tracing::debug!(
+                "Database connection failed again. Retrying after {:?}: {error}",
+                backoff
+            );
+        } else {
+            tracing::warn!(
+                "Database connection failed. Skipping database-backed features for {:?}: {error}",
+                backoff
+            );
+        }
+    }
+
+    fn connection_is_in_backoff(&self, key: &ConnectionKey) -> bool {
+        let failures = self.failures.read().unwrap();
+        let Some(failure) = failures.get(key) else {
+            return false;
+        };
+
+        let now = Instant::now();
+        if now < failure.next_retry_at {
+            tracing::debug!(
+                "Skipping database connection retry during backoff until {:?}: {}",
+                failure.next_retry_at,
+                failure.message
+            );
+            return true;
+        }
+
+        false
+    }
+
+    fn clear_failure(&self, key: &ConnectionKey) {
+        self.failures.write().unwrap().remove(key);
     }
 }
