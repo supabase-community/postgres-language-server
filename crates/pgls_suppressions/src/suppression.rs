@@ -189,29 +189,20 @@ impl Suppression {
 
         match &self.rule_specifier {
             // Check if we suppress the entire category
-            RuleSpecifier::Category(cat) if cat == d_category => return true,
+            RuleSpecifier::Category(cat) => cat == d_category,
 
             // Check if we suppress the category & group
             RuleSpecifier::Group(cat, group) => {
-                if cat == d_category && Some(group.as_str()) == d_group {
-                    return true;
-                }
+                cat == d_category && Some(group.as_str()) == d_group
             }
 
             // Check if we suppress the category & group & specific rule
             RuleSpecifier::Rule(cat, group, rule) => {
-                if cat == d_category
+                cat == d_category
                     && Some(group.as_str()) == d_group
                     && Some(rule.as_str()) == d_rule
-                {
-                    return true;
-                }
             }
-
-            _ => {}
         }
-
-        false
     }
 
     pub(crate) fn to_disabled_diagnostic(&self) -> SuppressionDiagnostic {
