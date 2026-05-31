@@ -12,7 +12,7 @@ pub(super) fn emit_create_policy_stmt(e: &mut EventEmitter, n: &CreatePolicyStmt
     e.space();
     e.token(TokenKind::POLICY_KW);
     e.space();
-    e.token(TokenKind::IDENT(n.policy_name.clone()));
+    super::emit_identifier_maybe_quoted(e, &n.policy_name);
 
     e.line(LineType::SoftOrSpace);
     e.token(TokenKind::ON_KW);

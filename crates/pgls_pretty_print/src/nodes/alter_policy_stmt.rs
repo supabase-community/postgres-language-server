@@ -13,9 +13,7 @@ pub(super) fn emit_alter_policy_stmt(e: &mut EventEmitter, n: &AlterPolicyStmt) 
     e.space();
 
     // Policy name
-    if !n.policy_name.is_empty() {
-        e.token(TokenKind::IDENT(n.policy_name.clone()));
-    }
+    super::emit_identifier_maybe_quoted(e, &n.policy_name);
 
     // Table name
     if let Some(ref table) = n.table {
