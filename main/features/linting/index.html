@@ -159,13 +159,13 @@
 </code></pre>
 <h2 id="suppressing-diagnostics">Suppressing Diagnostics</h2>
 <p>You can suppress specific diagnostics using comments:</p>
-<pre><code class="language-sql">-- pgt-ignore-next-line safety/banDropColumn: Intentionally dropping deprecated column
+<pre><code class="language-sql">-- pgls-ignore lint/safety/banDropColumn: Intentionally dropping deprecated column
 ALTER TABLE users DROP COLUMN deprecated_field;
 
--- pgt-ignore safety/banDropTable: Cleanup during migration
+-- pgls-ignore lint/safety/banDropTable: Cleanup during migration
 DROP TABLE temp_migration_table;
 </code></pre>
-<p>For more details on suppressions check out <a href="" title="../guides/suppressions.md">our guide</a>.</p>
+<p>For more details on suppressions check out <a href="../../guides/suppressions/">our guide</a>.</p>
 <h2 id="schema-aware-analysis">Schema-Aware Analysis</h2>
 <p>Some rules require a database connection to perform schema-aware analysis. If no connection is configured, they are skipped.</p>
 <h2 id="cli-usage">CLI Usage</h2>
