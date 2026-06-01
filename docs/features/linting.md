@@ -35,14 +35,14 @@ Configure linting behavior in your `postgres-language-server.jsonc`:
 You can suppress specific diagnostics using comments:
 
 ```sql
--- pgt-ignore-next-line safety/banDropColumn: Intentionally dropping deprecated column
+-- pgls-ignore lint/safety/banDropColumn: Intentionally dropping deprecated column
 ALTER TABLE users DROP COLUMN deprecated_field;
 
--- pgt-ignore safety/banDropTable: Cleanup during migration
+-- pgls-ignore lint/safety/banDropTable: Cleanup during migration
 DROP TABLE temp_migration_table;
 ```
 
-For more details on suppressions check out [our guide]('../guides/suppressions.md').
+For more details on suppressions check out [our guide](../guides/suppressions.md).
 
 ## Schema-Aware Analysis
 
