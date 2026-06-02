@@ -31,7 +31,7 @@ pub(super) fn emit_replica_identity_stmt(e: &mut EventEmitter, n: &ReplicaIdenti
             e.token(TokenKind::INDEX_KW);
             if !n.name.is_empty() {
                 e.line(LineType::SoftOrSpace);
-                e.token(TokenKind::IDENT(n.name.clone()));
+                super::emit_identifier_maybe_quoted(e, &n.name);
             }
         }
         _ => {

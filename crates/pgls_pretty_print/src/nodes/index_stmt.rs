@@ -57,7 +57,7 @@ pub(super) fn emit_index_stmt(e: &mut EventEmitter, n: &IndexStmt) {
         e.line(crate::emitter::LineType::SoftOrSpace);
         e.token(TokenKind::USING_KW);
         e.space();
-        e.token(TokenKind::IDENT(n.access_method.clone()));
+        super::emit_identifier_maybe_quoted(e, &n.access_method);
     }
 
     // Index columns/expressions
@@ -106,7 +106,7 @@ pub(super) fn emit_index_stmt(e: &mut EventEmitter, n: &IndexStmt) {
         e.line(crate::emitter::LineType::Hard);
         e.token(TokenKind::TABLESPACE_KW);
         e.space();
-        e.token(TokenKind::IDENT(n.table_space.clone()));
+        super::emit_identifier_maybe_quoted(e, &n.table_space);
     }
 
     // WHERE clause (partial index)

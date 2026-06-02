@@ -13,7 +13,7 @@ pub(super) fn emit_close_portal_stmt(e: &mut EventEmitter, n: &ClosePortalStmt) 
     if n.portalname.is_empty() {
         e.token(TokenKind::ALL_KW);
     } else {
-        e.token(TokenKind::IDENT(n.portalname.clone()));
+        super::emit_identifier_maybe_quoted(e, &n.portalname);
     }
 
     e.token(TokenKind::SEMICOLON);

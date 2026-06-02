@@ -14,7 +14,7 @@ pub(super) fn emit_alter_publication_stmt(e: &mut EventEmitter, n: &AlterPublica
 
     // Publication name
     if !n.pubname.is_empty() {
-        e.token(TokenKind::IDENT(n.pubname.clone()));
+        super::emit_identifier_maybe_quoted(e, &n.pubname);
     }
 
     // action: 0=Undefined, 1=AP_AddObjects, 2=AP_DropObjects, 3=AP_SetObjects

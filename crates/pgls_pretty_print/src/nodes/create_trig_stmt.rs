@@ -27,7 +27,7 @@ pub(super) fn emit_create_trig_stmt(e: &mut EventEmitter, n: &CreateTrigStmt) {
 
     e.token(TokenKind::TRIGGER_KW);
     e.space();
-    e.token(TokenKind::IDENT(n.trigname.clone()));
+    super::emit_identifier_maybe_quoted(e, &n.trigname);
 
     // Timing: BEFORE (2), AFTER (4), INSTEAD OF (16)
     // After trigger name, break to new line for timing + events + ON table

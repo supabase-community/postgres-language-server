@@ -14,7 +14,7 @@ pub(super) fn emit_common_table_expr(e: &mut EventEmitter, n: &CommonTableExpr) 
     e.group_start(GroupKind::CommonTableExpr);
 
     // CTE name
-    e.token(TokenKind::IDENT(n.ctename.clone()));
+    super::emit_identifier_maybe_quoted(e, &n.ctename);
 
     // Optional column aliases
     if !n.aliascolnames.is_empty() {

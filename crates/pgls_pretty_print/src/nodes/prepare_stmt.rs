@@ -14,7 +14,7 @@ pub(super) fn emit_prepare_stmt(e: &mut EventEmitter, n: &PrepareStmt) {
     // Statement name
     if !n.name.is_empty() {
         e.space();
-        e.token(TokenKind::IDENT(n.name.clone()));
+        super::emit_identifier_maybe_quoted(e, &n.name);
     }
 
     // Argument types

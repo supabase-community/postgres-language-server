@@ -303,7 +303,7 @@ pub(super) fn emit_constraint(e: &mut EventEmitter, n: &Constraint) {
                 e.space();
                 e.token(TokenKind::USING_KW);
                 e.space();
-                e.token(TokenKind::IDENT(n.access_method.clone()));
+                super::emit_identifier_maybe_quoted(e, &n.access_method);
             }
 
             if !n.exclusions.is_empty() {

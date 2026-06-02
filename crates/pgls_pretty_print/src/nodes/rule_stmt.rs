@@ -22,7 +22,7 @@ pub(super) fn emit_rule_stmt(e: &mut EventEmitter, n: &RuleStmt) {
     e.space();
     e.token(TokenKind::RULE_KW);
     e.space();
-    e.token(TokenKind::IDENT(n.rulename.clone()));
+    super::emit_identifier_maybe_quoted(e, &n.rulename);
 
     e.line(LineType::Hard);
     e.token(TokenKind::AS_KW);

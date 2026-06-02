@@ -88,7 +88,7 @@ pub(super) fn emit_fetch_stmt(e: &mut EventEmitter, n: &FetchStmt) {
         e.line(LineType::SoftOrSpace);
         e.token(TokenKind::FROM_KW);
         e.space();
-        e.token(TokenKind::IDENT(n.portalname.clone()));
+        super::emit_identifier_maybe_quoted(e, &n.portalname);
     }
 
     e.token(TokenKind::SEMICOLON);

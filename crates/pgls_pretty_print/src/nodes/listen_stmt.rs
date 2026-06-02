@@ -10,7 +10,7 @@ pub(super) fn emit_listen_stmt(e: &mut EventEmitter, n: &ListenStmt) {
 
     e.token(TokenKind::LISTEN_KW);
     e.space();
-    e.token(TokenKind::IDENT(n.conditionname.clone()));
+    super::emit_identifier_maybe_quoted(e, &n.conditionname);
 
     e.token(TokenKind::SEMICOLON);
 

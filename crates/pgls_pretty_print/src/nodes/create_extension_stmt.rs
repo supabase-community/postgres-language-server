@@ -21,7 +21,7 @@ pub(super) fn emit_create_extension_stmt(e: &mut EventEmitter, n: &CreateExtensi
         e.space();
     }
 
-    e.token(TokenKind::IDENT(n.extname.clone()));
+    super::emit_identifier_maybe_quoted(e, &n.extname);
 
     if !n.options.is_empty() {
         e.line(LineType::SoftOrSpace);

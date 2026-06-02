@@ -1,0 +1,14 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/single/index_elem_reserved_keyword_0.sql
+---
+create unique
+index "index_user_emails_on_user_id_and_primary"
+on public.user_emails
+using btree
+(
+  user_id,
+  "primary"
+)
+where
+  "primary";

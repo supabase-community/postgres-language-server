@@ -29,7 +29,7 @@ pub(super) fn emit_create_transform_stmt(e: &mut EventEmitter, n: &CreateTransfo
     e.space();
     e.token(TokenKind::LANGUAGE_KW);
     e.space();
-    e.token(TokenKind::IDENT(n.lang.clone()));
+    super::emit_identifier_maybe_quoted(e, &n.lang);
 
     e.line(LineType::SoftOrSpace);
     e.token(TokenKind::L_PAREN);

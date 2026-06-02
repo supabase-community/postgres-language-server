@@ -23,7 +23,7 @@ pub(super) fn emit_alter_role_set_stmt(e: &mut EventEmitter, n: &AlterRoleSetStm
         e.space();
         e.token(TokenKind::DATABASE_KW);
         e.space();
-        e.token(TokenKind::IDENT(n.database.clone()));
+        super::emit_identifier_maybe_quoted(e, &n.database);
     }
 
     // The SET/RESET statement

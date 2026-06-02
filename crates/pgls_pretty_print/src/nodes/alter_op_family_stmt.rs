@@ -23,7 +23,7 @@ pub(super) fn emit_alter_op_family_stmt(e: &mut EventEmitter, n: &AlterOpFamilyS
     e.space();
 
     if !n.amname.is_empty() {
-        e.token(TokenKind::IDENT(n.amname.clone()));
+        super::emit_identifier_maybe_quoted(e, &n.amname);
     }
 
     // Use indent and soft line break for ADD/DROP clause

@@ -29,7 +29,7 @@ pub(super) fn emit_alter_table_move_all_stmt(e: &mut EventEmitter, n: &AlterTabl
     e.space();
     e.token(TokenKind::TABLESPACE_KW);
     e.space();
-    e.token(TokenKind::IDENT(n.orig_tablespacename.clone()));
+    super::emit_identifier_maybe_quoted(e, &n.orig_tablespacename);
 
     // Emit OWNED BY roles if specified
     if !n.roles.is_empty() {
@@ -49,7 +49,7 @@ pub(super) fn emit_alter_table_move_all_stmt(e: &mut EventEmitter, n: &AlterTabl
     e.space();
     e.token(TokenKind::TABLESPACE_KW);
     e.space();
-    e.token(TokenKind::IDENT(n.new_tablespacename.clone()));
+    super::emit_identifier_maybe_quoted(e, &n.new_tablespacename);
 
     if n.nowait {
         e.space();

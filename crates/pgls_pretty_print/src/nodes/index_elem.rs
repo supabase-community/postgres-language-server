@@ -15,7 +15,7 @@ pub(super) fn emit_index_elem(e: &mut EventEmitter, n: &IndexElem) {
         super::emit_node(expr, e);
         e.token(TokenKind::R_PAREN);
     } else if !n.name.is_empty() {
-        e.token(TokenKind::IDENT(n.name.clone()));
+        super::emit_identifier_maybe_quoted(e, &n.name);
     }
 
     // Optional collation

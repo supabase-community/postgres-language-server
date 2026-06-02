@@ -16,7 +16,7 @@ pub(super) fn emit_create_fdw_stmt(e: &mut EventEmitter, n: &CreateFdwStmt) {
     e.space();
     e.token(TokenKind::WRAPPER_KW);
     e.space();
-    e.token(TokenKind::IDENT(n.fdwname.clone()));
+    super::emit_identifier_maybe_quoted(e, &n.fdwname);
 
     // Handler and validator functions
     if !n.func_options.is_empty() {

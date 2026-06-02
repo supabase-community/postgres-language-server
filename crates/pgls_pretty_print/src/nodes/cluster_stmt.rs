@@ -25,7 +25,7 @@ pub(super) fn emit_cluster_stmt(e: &mut EventEmitter, n: &ClusterStmt) {
             e.line(LineType::SoftOrSpace);
             e.token(TokenKind::USING_KW);
             e.space();
-            e.token(TokenKind::IDENT(n.indexname.clone()));
+            super::emit_identifier_maybe_quoted(e, &n.indexname);
         }
     }
 

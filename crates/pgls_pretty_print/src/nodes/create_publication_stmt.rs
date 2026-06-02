@@ -12,7 +12,7 @@ pub(super) fn emit_create_publication_stmt(e: &mut EventEmitter, n: &CreatePubli
     e.space();
     e.token(TokenKind::PUBLICATION_KW);
     e.space();
-    e.token(TokenKind::IDENT(n.pubname.clone()));
+    super::emit_identifier_maybe_quoted(e, &n.pubname);
 
     if n.for_all_tables {
         e.space();

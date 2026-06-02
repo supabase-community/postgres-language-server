@@ -11,7 +11,7 @@ pub(super) fn emit_alter_database_set_stmt(e: &mut EventEmitter, n: &AlterDataba
     e.space();
 
     if !n.dbname.is_empty() {
-        e.token(TokenKind::IDENT(n.dbname.clone()));
+        super::emit_identifier_maybe_quoted(e, &n.dbname);
     }
 
     if let Some(ref setstmt) = n.setstmt {

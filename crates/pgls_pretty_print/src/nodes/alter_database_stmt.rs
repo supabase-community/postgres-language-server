@@ -13,7 +13,7 @@ pub(super) fn emit_alter_database_stmt(e: &mut EventEmitter, n: &AlterDatabaseSt
     e.space();
 
     if !n.dbname.is_empty() {
-        e.token(TokenKind::IDENT(n.dbname.clone()));
+        super::emit_identifier_maybe_quoted(e, &n.dbname);
     }
 
     if !n.options.is_empty() {
