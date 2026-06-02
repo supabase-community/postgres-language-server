@@ -1153,7 +1153,8 @@ impl Workspace for WorkspaceServer {
                     ast: maybe_ast.as_ref(),
                     position: position_in_stmt,
                     stmt_sql: stmt_id.content(),
-                });
+                })
+                .unwrap_or_default();
 
                 Ok(OnHoverResult { markdown_blocks })
             }

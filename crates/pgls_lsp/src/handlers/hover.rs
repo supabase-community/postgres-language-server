@@ -7,7 +7,7 @@ use crate::{adapters::get_cursor_position, diagnostics::LspError, session::Sessi
 pub(crate) fn on_hover(
     session: &Session,
     params: lsp_types::HoverParams,
-) -> Result<lsp_types::HoverContents, LspError> {
+) -> Result<Option<lsp_types::HoverContents>, LspError> {
     let url = params.text_document_position_params.text_document.uri;
     let position = params.text_document_position_params.position;
     let path = session.file_path(&url)?;
@@ -19,20 +19,24 @@ pub(crate) fn on_hover(
         Ok(result) => {
             tracing::debug!("Found hover items: {:#?}", result);
 
-            Ok(lsp_types::HoverContents::Array(
-                result
-                    .into_iter()
-                    .map(MarkedString::from_markdown)
-                    .collect(),
-            ))
+            let hover_items: Vec<MarkedString> = result
+                .into_iter()
+                .map(MarkedString::from_markdown)
+                .collect();
+
+            if hover_items.is_empty() {
+                Ok(None)
+            } else {
+                Ok(Some(lsp_types::HoverContents::Array(hover_items)))
+            }
         }
 
         Err(e) => match e {
             WorkspaceError::DatabaseConnectionError(_) => {
-                Ok(lsp_types::HoverContents::Markup(MarkupContent {
+                Ok(Some(lsp_types::HoverContents::Markup(MarkupContent {
                     kind: lsp_types::MarkupKind::PlainText,
                     value: "Cannot connect to database.".into(),
-                }))
+                })))
             }
             _ => {
                 tracing::error!("Received an error: {:#?}", e);

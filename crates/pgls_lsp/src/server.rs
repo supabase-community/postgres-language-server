@@ -270,8 +270,8 @@ impl LanguageServer for LSPServer {
     #[tracing::instrument(level = "trace", skip_all)]
     async fn hover(&self, params: HoverParams) -> LspResult<Option<Hover>> {
         match handlers::hover::on_hover(&self.session, params) {
-            Ok(result) => LspResult::Ok(Some(Hover {
-                contents: result,
+            Ok(result) => LspResult::Ok(result.map(|contents| Hover {
+                contents,
                 range: None,
             })),
             Err(e) => LspResult::Err(into_lsp_error(e)),
