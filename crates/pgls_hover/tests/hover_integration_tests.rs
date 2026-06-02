@@ -34,7 +34,8 @@ async fn test_hover_at_cursor(name: &str, query: String, setup: Option<&str>, te
         stmt_sql: &sql,
         ast: ast.as_ref(),
         ts_tree: &tree,
-    });
+    })
+    .unwrap_or_default();
 
     let mut snapshot = String::new();
     snapshot.push_str("# Input\n");

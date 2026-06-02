@@ -24,7 +24,7 @@ pub struct OnHoverParams<'a> {
     text = params.stmt_sql,
     position = params.position.to_string()
 ))]
-pub fn on_hover(params: OnHoverParams) -> Vec<String> {
+pub fn on_hover(params: OnHoverParams) -> Option<Vec<String>> {
     let ctx = pgls_treesitter::context::TreesitterContext::new(TreeSitterContextParams {
         position: params.position,
         text: params.stmt_sql,
@@ -123,15 +123,47 @@ pub fn on_hover(params: OnHoverParams) -> Vec<String> {
                     .unwrap_or_default(),
             },
 
-            _ => todo!(),
+            HoveredNode::Policy(_) | HoveredNode::Trigger(_) => return None,
         };
 
-        prioritize_by_context(items, &ctx)
+        let markdown_blocks: Vec<String> = prioritize_by_context(items, &ctx)
             .into_iter()
             .map(|item| format_hover_markdown(&item, params.schema_cache))
             .filter_map(Result::ok)
-            .collect()
+            .collect();
+
+        (!markdown_blocks.is_empty()).then_some(markdown_blocks)
     } else {
-        Default::default()
+        None
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn hover_over_drop_policy_name_returns_none() {
+        let query =
+            r#"drop policy if exists "Av{}atar images are publicly readable" on storage.objects;"#;
+        let position = query.find("{}").unwrap();
+        let sql = query.replace("{}", "");
+
+        let mut parser = tree_sitter::Parser::new();
+        parser
+            .set_language(&pgls_treesitter_grammar::LANGUAGE.into())
+            .unwrap();
+        let tree = parser.parse(&sql, None).unwrap();
+        let schema_cache = SchemaCache::default();
+
+        let hover = on_hover(OnHoverParams {
+            position: TextSize::new(position as u32),
+            schema_cache: &schema_cache,
+            stmt_sql: &sql,
+            ast: None,
+            ts_tree: &tree,
+        });
+
+        assert!(hover.is_none());
     }
 }
