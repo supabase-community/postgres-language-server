@@ -21,7 +21,7 @@ pub(super) fn emit_drop_table_space_stmt(e: &mut EventEmitter, n: &DropTableSpac
 
     if !n.tablespacename.is_empty() {
         e.space();
-        e.token(TokenKind::IDENT(n.tablespacename.clone()));
+        super::emit_identifier_maybe_quoted(e, &n.tablespacename);
     }
 
     e.token(TokenKind::SEMICOLON);

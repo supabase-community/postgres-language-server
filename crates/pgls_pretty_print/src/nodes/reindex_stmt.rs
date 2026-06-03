@@ -55,7 +55,7 @@ pub(super) fn emit_reindex_stmt(e: &mut EventEmitter, n: &ReindexStmt) {
     if let Some(ref relation) = n.relation {
         super::emit_range_var(e, relation);
     } else if !n.name.is_empty() {
-        e.token(TokenKind::IDENT(n.name.clone()));
+        super::emit_identifier_maybe_quoted(e, &n.name);
     }
 
     e.token(TokenKind::SEMICOLON);

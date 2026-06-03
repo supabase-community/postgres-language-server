@@ -39,7 +39,7 @@ pub(super) fn emit_create_op_class_stmt(e: &mut EventEmitter, n: &CreateOpClassS
     e.line(LineType::SoftOrSpace);
     e.token(TokenKind::USING_KW);
     e.space();
-    e.token(TokenKind::IDENT(n.amname.clone()));
+    super::emit_identifier_maybe_quoted(e, &n.amname);
 
     // FAMILY
     if !n.opfamilyname.is_empty() {

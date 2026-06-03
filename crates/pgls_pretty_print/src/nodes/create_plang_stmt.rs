@@ -25,7 +25,7 @@ pub(super) fn emit_create_plang_stmt(e: &mut EventEmitter, n: &CreatePLangStmt) 
 
     e.token(TokenKind::LANGUAGE_KW);
     e.space();
-    e.token(TokenKind::IDENT(n.plname.clone()));
+    super::emit_identifier_maybe_quoted(e, &n.plname);
 
     if !n.plhandler.is_empty() {
         e.space();

@@ -37,7 +37,7 @@ pub(super) fn emit_json_expr(e: &mut EventEmitter, n: &JsonExpr) {
             e.token(TokenKind::COMMA);
             e.space();
         }
-        e.token(TokenKind::IDENT(n.column_name.clone()));
+        super::emit_identifier_maybe_quoted(e, &n.column_name);
         wrote_value = true;
     }
 

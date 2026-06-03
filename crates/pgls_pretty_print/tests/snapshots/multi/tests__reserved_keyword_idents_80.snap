@@ -1,0 +1,164 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/reserved_keyword_idents.sql
+---
+create table "primary" (x int);
+
+create table t1 ("primary" int);
+
+create table t2 (x int constraint "primary" check (x > 0));
+
+alter table t1 set schema "primary";
+
+create view "primary"
+as select 1;
+
+create sequence "primary";
+
+create domain "primary" as int;
+
+create collation "primary" from "default";
+
+create index "primary" on t1 using btree (x);
+
+create unique index "i1"
+on t1
+using btree
+(
+  x,
+  "primary"
+)
+tablespace "primary"
+where
+  "primary";
+
+cluster t1 using "primary";
+
+with "primary" as (select 1 as a) select * from "primary";
+
+select * from t1 as "primary";
+
+select * from t1 as "Mixed Case";
+
+select * from (select 1) as x ("primary");
+
+create trigger "primary" before insert on t1 for each row execute function f();
+
+create event trigger "primary" on ddl_command_start execute function f();
+
+alter event trigger "primary" enable;
+
+create rule "primary"
+as on insert to t1
+do
+  nothing;
+
+prepare "primary" as select 1;;
+
+execute "primary";
+
+deallocate "primary";
+
+listen "primary";
+
+unlisten "primary";
+
+notify "primary";
+
+close "primary";
+
+fetch next from "primary";
+
+create extension "primary";
+
+alter extension "primary" add table t1;
+
+create publication "primary";
+
+alter publication "primary" add table t1;
+
+create foreign data wrapper "primary";
+
+create user mapping for u server "primary";
+
+drop user mapping for u server "primary";
+
+create foreign table ft1 ( x int ) server "primary";
+
+import foreign schema "primary" from server s into "select";
+
+drop database "primary";
+
+alter database "primary" set work_mem = '1MB';
+
+alter role r in database "primary" set work_mem = '1MB';
+
+drop tablespace "primary";
+
+alter table all in tablespace "primary" set tablespace "select";
+
+create index "i2" on t1 using "primary" (x);
+
+create access method "primary" type index handler h;
+
+create operator family of1 using "primary";
+
+alter operator family of1 using "primary" add operator 1 = (int, int);
+
+create operator class oc1 for type int using "primary" as operator 1 =;
+
+alter table t1
+  add constraint "e1" exclude using "primary" (x with =);
+
+create transform for int language "primary"
+(
+  from sql with function f(internal),
+  to sql with function g(int)
+);
+
+create table t3 (x int)
+partition by LIST("primary");
+
+alter table t1
+  replica identity using index "primary";
+
+reindex schema "primary";
+
+alter function f() depends on extension "primary";
+
+alter publication p1 add tables in schema "primary";
+
+reindex schema "MySchema";
+
+select * from t1 as "MyAlias" ("MyCol");
+
+alter table t1
+  drop column "primary";
+
+alter table t1
+  alter column "primary" set not null;
+
+alter domain dom drop constraint "primary";
+
+alter tablespace "primary" set (seq_page_cost = 1.0);
+
+create table t1 (c text compression "primary");
+
+create publication p1 for tables in schema "primary";
+
+create table t1 (x int) tablespace "primary";
+
+create table t1 using "primary" as select 1 as a;
+
+create table t2 tablespace "primary" as select 1 as a;
+
+create trigger tr1
+after update
+on t1
+referencing old table as "primary"
+for each statement
+execute function f();
+
+update t1 set x = 1 where current of "primary";
+
+drop subscription "primary" restrict;

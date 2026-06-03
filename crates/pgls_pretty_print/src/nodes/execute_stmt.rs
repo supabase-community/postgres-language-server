@@ -20,7 +20,7 @@ fn emit_execute_stmt_impl(e: &mut EventEmitter, n: &ExecuteStmt, with_semicolon:
 
     e.token(TokenKind::EXECUTE_KW);
     e.space();
-    e.token(TokenKind::IDENT(n.name.clone()));
+    super::emit_identifier_maybe_quoted(e, &n.name);
 
     if !n.params.is_empty() {
         e.line(LineType::SoftOrSpace);

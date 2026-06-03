@@ -13,7 +13,7 @@ pub(super) fn emit_alter_event_trig_stmt(e: &mut EventEmitter, n: &AlterEventTri
     e.space();
 
     if !n.trigname.is_empty() {
-        e.token(TokenKind::IDENT(n.trigname.clone()));
+        super::emit_identifier_maybe_quoted(e, &n.trigname);
     }
 
     e.space();

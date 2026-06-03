@@ -14,7 +14,7 @@ pub(super) fn emit_alter_extension_contents_stmt(
     e.space();
 
     if !n.extname.is_empty() {
-        e.token(TokenKind::IDENT(n.extname.clone()));
+        super::emit_identifier_maybe_quoted(e, &n.extname);
     }
 
     e.line(LineType::SoftOrSpace);

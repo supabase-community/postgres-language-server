@@ -16,7 +16,7 @@ pub(super) fn emit_import_foreign_schema_stmt(e: &mut EventEmitter, n: &ImportFo
 
     if !n.remote_schema.is_empty() {
         e.space();
-        e.token(TokenKind::IDENT(n.remote_schema.clone()));
+        super::emit_identifier_maybe_quoted(e, &n.remote_schema);
     }
 
     // LIMIT TO / EXCEPT
@@ -45,7 +45,7 @@ pub(super) fn emit_import_foreign_schema_stmt(e: &mut EventEmitter, n: &ImportFo
         e.space();
         e.token(TokenKind::SERVER_KW);
         e.space();
-        e.token(TokenKind::IDENT(n.server_name.clone()));
+        super::emit_identifier_maybe_quoted(e, &n.server_name);
     }
 
     // INTO schema
@@ -53,7 +53,7 @@ pub(super) fn emit_import_foreign_schema_stmt(e: &mut EventEmitter, n: &ImportFo
         e.line(LineType::SoftOrSpace);
         e.token(TokenKind::INTO_KW);
         e.space();
-        e.token(TokenKind::IDENT(n.local_schema.clone()));
+        super::emit_identifier_maybe_quoted(e, &n.local_schema);
     }
 
     // OPTIONS

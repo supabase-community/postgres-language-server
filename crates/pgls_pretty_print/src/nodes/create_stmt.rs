@@ -296,7 +296,7 @@ pub(super) fn emit_create_stmt(e: &mut EventEmitter, n: &CreateStmt) {
         e.line(LineType::SoftOrSpace);
         e.token(TokenKind::TABLESPACE_KW);
         e.space();
-        e.token(TokenKind::IDENT(n.tablespacename.clone()));
+        super::emit_identifier_maybe_quoted(e, &n.tablespacename);
     }
 
     e.token(TokenKind::SEMICOLON);

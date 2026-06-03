@@ -26,7 +26,7 @@ pub(super) fn emit_alter_user_mapping_stmt(e: &mut EventEmitter, n: &AlterUserMa
     e.space();
     e.token(TokenKind::SERVER_KW);
     e.space();
-    e.token(TokenKind::IDENT(n.servername.clone()));
+    super::emit_identifier_maybe_quoted(e, &n.servername);
 
     // Options
     if !n.options.is_empty() {

@@ -33,7 +33,7 @@ pub(super) fn emit_drop_user_mapping_stmt(e: &mut EventEmitter, n: &DropUserMapp
         e.line(LineType::SoftOrSpace);
         e.token(TokenKind::SERVER_KW);
         e.space();
-        e.token(TokenKind::IDENT(n.servername.clone()));
+        super::emit_identifier_maybe_quoted(e, &n.servername);
     }
 
     e.token(TokenKind::SEMICOLON);

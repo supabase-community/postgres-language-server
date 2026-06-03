@@ -17,7 +17,7 @@ pub(super) fn emit_alter_fdw_stmt(e: &mut EventEmitter, n: &AlterFdwStmt) {
     e.space();
 
     if !n.fdwname.is_empty() {
-        e.token(TokenKind::IDENT(n.fdwname.clone()));
+        super::emit_identifier_maybe_quoted(e, &n.fdwname);
     }
 
     // Handler/validator functions in func_options - space-separated, not comma-separated

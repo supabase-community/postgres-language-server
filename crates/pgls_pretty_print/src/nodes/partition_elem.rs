@@ -10,7 +10,7 @@ pub(super) fn emit_partition_elem(e: &mut EventEmitter, n: &PartitionElem) {
 
     // Emit column name if present
     if !n.name.is_empty() {
-        e.token(TokenKind::IDENT(n.name.clone()));
+        super::emit_identifier_maybe_quoted(e, &n.name);
     } else if let Some(ref expr) = n.expr {
         // Emit expression wrapped in parentheses (required by PostgreSQL syntax)
         e.token(TokenKind::L_PAREN);

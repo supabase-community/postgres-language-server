@@ -61,7 +61,7 @@ pub(super) fn emit_create_foreign_table_stmt(e: &mut EventEmitter, n: &CreateFor
     e.space();
     e.token(TokenKind::SERVER_KW);
     e.space();
-    e.token(TokenKind::IDENT(n.servername.clone()));
+    super::emit_identifier_maybe_quoted(e, &n.servername);
 
     // OPTIONS clause
     if !n.options.is_empty() {

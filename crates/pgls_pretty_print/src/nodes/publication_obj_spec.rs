@@ -16,7 +16,7 @@ pub(super) fn emit_publication_obj_spec(e: &mut EventEmitter, n: &PublicationObj
             e.token(TokenKind::SCHEMA_KW);
             if !n.name.is_empty() {
                 e.space();
-                e.token(TokenKind::IDENT(n.name.clone()));
+                super::emit_identifier_maybe_quoted(e, &n.name);
             }
         }
         3 => {

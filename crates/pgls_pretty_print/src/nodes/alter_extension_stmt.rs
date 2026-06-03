@@ -13,7 +13,7 @@ pub(super) fn emit_alter_extension_stmt(e: &mut EventEmitter, n: &AlterExtension
     e.space();
 
     if !n.extname.is_empty() {
-        e.token(TokenKind::IDENT(n.extname.clone()));
+        super::emit_identifier_maybe_quoted(e, &n.extname);
     }
 
     if !n.options.is_empty() {

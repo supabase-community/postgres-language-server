@@ -22,7 +22,7 @@ pub(super) fn emit_dropdb_stmt(e: &mut EventEmitter, n: &DropdbStmt) {
 
     if !n.dbname.is_empty() {
         e.space();
-        e.token(TokenKind::IDENT(n.dbname.clone()));
+        super::emit_identifier_maybe_quoted(e, &n.dbname);
     }
 
     // DROP DATABASE options like (FORCE)

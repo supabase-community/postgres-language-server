@@ -14,7 +14,7 @@ pub(super) fn emit_deallocate_stmt(e: &mut EventEmitter, n: &DeallocateStmt) {
     if n.name.is_empty() || n.name == "ALL" {
         e.token(TokenKind::ALL_KW);
     } else {
-        e.token(TokenKind::IDENT(n.name.clone()));
+        super::emit_identifier_maybe_quoted(e, &n.name);
     }
 
     e.token(TokenKind::SEMICOLON);

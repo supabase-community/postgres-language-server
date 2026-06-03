@@ -15,7 +15,7 @@ pub(super) fn emit_alter_tablespace_options_stmt(
     e.space();
     e.token(TokenKind::TABLESPACE_KW);
     e.space();
-    e.token(TokenKind::IDENT(n.tablespacename.clone()));
+    super::emit_identifier_maybe_quoted(e, &n.tablespacename);
 
     e.line(LineType::SoftOrSpace);
     if n.is_reset {

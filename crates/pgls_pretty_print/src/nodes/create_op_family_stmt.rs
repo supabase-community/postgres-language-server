@@ -22,7 +22,7 @@ pub(super) fn emit_create_op_family_stmt(e: &mut EventEmitter, n: &CreateOpFamil
     e.line(LineType::SoftOrSpace);
     e.token(TokenKind::USING_KW);
     e.space();
-    e.token(TokenKind::IDENT(n.amname.clone()));
+    super::emit_identifier_maybe_quoted(e, &n.amname);
 
     e.token(TokenKind::SEMICOLON);
 

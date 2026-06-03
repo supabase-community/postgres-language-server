@@ -123,7 +123,7 @@ pub(super) fn emit_alter_object_schema_stmt(e: &mut EventEmitter, n: &AlterObjec
         e.space();
         e.token(TokenKind::SCHEMA_KW);
         e.space();
-        e.token(TokenKind::IDENT(n.newschema.clone()));
+        super::emit_identifier_maybe_quoted(e, &n.newschema);
     }
 
     e.token(TokenKind::SEMICOLON);

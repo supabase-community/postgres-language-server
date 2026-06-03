@@ -37,7 +37,7 @@ pub(super) fn emit_alter_object_depends_stmt(e: &mut EventEmitter, n: &AlterObje
 
     if let Some(ref extname) = n.extname {
         e.space();
-        e.token(TokenKind::IDENT(extname.sval.clone()));
+        super::emit_identifier_maybe_quoted(e, &extname.sval);
     }
 
     e.token(TokenKind::SEMICOLON);

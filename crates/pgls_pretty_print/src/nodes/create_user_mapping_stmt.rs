@@ -34,7 +34,7 @@ pub(super) fn emit_create_user_mapping_stmt(e: &mut EventEmitter, n: &CreateUser
         e.line(LineType::SoftOrSpace);
         e.token(TokenKind::SERVER_KW);
         e.space();
-        e.token(TokenKind::IDENT(n.servername.clone()));
+        super::emit_identifier_maybe_quoted(e, &n.servername);
     }
 
     if !n.options.is_empty() {

@@ -16,7 +16,7 @@ pub(super) fn emit_create_am_stmt(e: &mut EventEmitter, n: &CreateAmStmt) {
 
     if !n.amname.is_empty() {
         e.space();
-        e.token(TokenKind::IDENT(n.amname.clone()));
+        super::emit_identifier_maybe_quoted(e, &n.amname);
     }
 
     // TYPE
