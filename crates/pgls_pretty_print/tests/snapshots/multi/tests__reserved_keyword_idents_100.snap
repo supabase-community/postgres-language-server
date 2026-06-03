@@ -131,3 +131,34 @@ alter publication p1 add tables in schema "primary";
 reindex schema "MySchema";
 
 select * from t1 as "MyAlias" ("MyCol");
+
+alter table t1
+  drop column "primary";
+
+alter table t1
+  alter column "primary" set not null;
+
+alter domain dom drop constraint "primary";
+
+alter tablespace "primary" set (seq_page_cost = 1.0);
+
+create table t1 (c text compression "primary");
+
+create publication p1 for tables in schema "primary";
+
+create table t1 (x int) tablespace "primary";
+
+create table t1 using "primary" as select 1 as a;
+
+create table t2 tablespace "primary" as select 1 as a;
+
+create trigger tr1
+after update
+on t1
+referencing old table as "primary"
+for each statement
+execute function f();
+
+update t1 set x = 1 where current of "primary";
+
+drop subscription "primary" restrict;

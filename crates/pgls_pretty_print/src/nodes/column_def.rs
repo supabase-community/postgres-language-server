@@ -22,7 +22,7 @@ pub(super) fn emit_column_def(e: &mut EventEmitter, n: &ColumnDef) {
         e.space();
         e.token(TokenKind::COMPRESSION_KW);
         e.space();
-        e.token(TokenKind::IDENT(n.compression.clone()));
+        super::emit_identifier_maybe_quoted(e, &n.compression);
     }
 
     // Add storage clause if specified

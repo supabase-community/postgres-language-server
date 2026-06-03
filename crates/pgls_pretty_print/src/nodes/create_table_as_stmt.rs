@@ -73,7 +73,7 @@ pub(super) fn emit_create_table_as_stmt(e: &mut EventEmitter, n: &CreateTableAsS
             e.space();
             e.token(TokenKind::USING_KW);
             e.space();
-            e.token(TokenKind::IDENT(into.access_method.clone()));
+            super::emit_identifier_maybe_quoted(e, &into.access_method);
         }
 
         // WITH (options) - like fillfactor
@@ -140,7 +140,7 @@ pub(super) fn emit_create_table_as_stmt(e: &mut EventEmitter, n: &CreateTableAsS
             e.line(LineType::SoftOrSpace);
             e.token(TokenKind::TABLESPACE_KW);
             e.space();
-            e.token(TokenKind::IDENT(into.table_space_name.clone()));
+            super::emit_identifier_maybe_quoted(e, &into.table_space_name);
         }
     }
 

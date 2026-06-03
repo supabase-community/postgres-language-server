@@ -1396,14 +1396,14 @@ tables in schema pub_test3;
 
 create publication testpub3_forschema for tables in schema current_schema;
 
-create publication testpub4_forschema for tables in schema CURRENT_SCHEMA;
+create publication testpub4_forschema for tables in schema "CURRENT_SCHEMA";
 
 create publication testpub5_forschema
 for tables in schema current_schema,
-tables in schema CURRENT_SCHEMA;
+tables in schema "CURRENT_SCHEMA";
 
 create publication testpub6_forschema
-for tables in schema CURRENT_SCHEMA,
+for tables in schema "CURRENT_SCHEMA",
 tables in schema current_schema;
 
 create publication testpub_fortable for table "CURRENT_SCHEMA"."CURRENT_SCHEMA";

@@ -72,7 +72,7 @@ pub(super) fn emit_alter_domain_stmt(e: &mut EventEmitter, n: &AlterDomainStmt) 
             }
             if !n.name.is_empty() {
                 e.space();
-                e.token(TokenKind::IDENT(n.name.clone()));
+                super::emit_identifier_maybe_quoted(e, &n.name);
             }
             // behavior: 0=Undefined, 1=DropRestrict, 2=DropCascade
             // Only emit CASCADE explicitly; RESTRICT is the default
@@ -87,7 +87,7 @@ pub(super) fn emit_alter_domain_stmt(e: &mut EventEmitter, n: &AlterDomainStmt) 
             e.token(TokenKind::CONSTRAINT_KW);
             if !n.name.is_empty() {
                 e.space();
-                e.token(TokenKind::IDENT(n.name.clone()));
+                super::emit_identifier_maybe_quoted(e, &n.name);
             }
         }
         _ => {

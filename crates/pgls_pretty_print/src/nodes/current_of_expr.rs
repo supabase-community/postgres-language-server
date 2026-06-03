@@ -14,7 +14,7 @@ pub(super) fn emit_current_of_expr(e: &mut EventEmitter, n: &CurrentOfExpr) {
 
     if !n.cursor_name.is_empty() {
         e.space();
-        e.token(TokenKind::IDENT(n.cursor_name.clone()));
+        super::emit_identifier_maybe_quoted(e, &n.cursor_name);
     }
 
     e.group_end();

@@ -21,7 +21,7 @@ pub(super) fn emit_drop_subscription_stmt(e: &mut EventEmitter, n: &DropSubscrip
 
     if !n.subname.is_empty() {
         e.space();
-        e.token(TokenKind::IDENT(n.subname.clone()));
+        super::emit_identifier_maybe_quoted(e, &n.subname);
     }
 
     // Add CASCADE or RESTRICT if specified

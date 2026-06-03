@@ -184,6 +184,6 @@ fn emit_trigger_transitions(e: &mut EventEmitter, rels: &[pgls_query::Node]) {
         e.space();
         e.token(TokenKind::AS_KW);
         e.space();
-        e.token(TokenKind::IDENT(transition.name.clone()));
+        super::emit_identifier_maybe_quoted(e, &transition.name);
     });
 }
