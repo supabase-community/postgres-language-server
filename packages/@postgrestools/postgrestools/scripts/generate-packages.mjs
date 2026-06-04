@@ -137,7 +137,7 @@ function copyBinaryToNativePackage(platform, arch, os) {
 
   switch (os) {
     case "linux": {
-      libc = platform.endsWith("musl") ? "musl" : "gnu";
+      libc = platform.endsWith("musl") ? "musl" : "glibc";
       npm_os = "linux";
       break;
     }
