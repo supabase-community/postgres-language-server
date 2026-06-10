@@ -134,6 +134,39 @@ mod tests {
     }
 
     #[test]
+    fn explain_statements() {
+        let single_statements = vec![
+            "EXPLAIN SELECT 1;",
+            "explain select 1;",
+            "EXPLAIN ANALYZE VERBOSE SELECT * FROM contact;",
+            "EXPLAIN ANALYSE SELECT * FROM contact;",
+            "EXPLAIN (ANALYZE, BUFFERS, FORMAT JSON) UPDATE contact SET name = 'x';",
+            "EXPLAIN INSERT INTO contact (id) VALUES (1);",
+            "EXPLAIN DELETE FROM contact WHERE id = 1;",
+            "EXPLAIN WITH x AS (SELECT 1) SELECT * FROM x;",
+            "EXPLAIN CREATE TABLE contact_copy AS SELECT * FROM contact;",
+            "EXPLAIN VALUES (1);",
+        ];
+
+        for stmt in single_statements {
+            Tester::from(stmt).expect_statements(vec![stmt]);
+        }
+
+        Tester::from("EXPLAIN SELECT 1; SELECT 2;")
+            .expect_statements(vec!["EXPLAIN SELECT 1;", "SELECT 2;"]);
+
+        Tester::from("explain select 1\nselect 2")
+            .expect_statements(vec!["explain select 1", "select 2"]);
+
+        Tester::from("explain select 1\n\nselect 2")
+            .expect_statements(vec!["explain select 1", "select 2"]);
+
+        // explain is an unreserved keyword and remains usable as an identifier
+        Tester::from("SELECT explain FROM contact;")
+            .expect_statements(vec!["SELECT explain FROM contact;"]);
+    }
+
+    #[test]
     fn begin_commit() {
         Tester::from(
             "BEGIN;

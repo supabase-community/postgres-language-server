@@ -7,7 +7,7 @@ use super::{
     Splitter,
     data::at_statement_start,
     ddl::{alter, create},
-    dml::{cte, delete, insert, select, update},
+    dml::{cte, delete, explain, insert, select, update},
 };
 
 #[derive(Debug)]
@@ -58,6 +58,7 @@ pub(crate) fn statement(p: &mut Splitter) -> SplitterResult {
         SyntaxKind::DELETE_KW => delete(p),
         SyntaxKind::CREATE_KW => create(p),
         SyntaxKind::ALTER_KW => alter(p),
+        SyntaxKind::EXPLAIN_KW => explain(p),
         _ => unknown(p, &[]),
     };
 
