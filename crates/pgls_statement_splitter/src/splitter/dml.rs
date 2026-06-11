@@ -5,6 +5,7 @@ use crate::splitter::common::SplitterResult;
 use super::{
     Splitter,
     common::{parenthesis, unknown},
+    ddl::create,
 };
 
 pub(crate) fn cte(p: &mut Splitter) -> SplitterResult {
@@ -37,6 +38,38 @@ pub(crate) fn cte(p: &mut Splitter) -> SplitterResult {
         ],
     )?;
     Ok(())
+}
+
+/// `EXPLAIN [ ANALYZE ] [ VERBOSE ] <statement>` and
+/// `EXPLAIN ( option [, ...] ) <statement>`
+///
+/// EXPLAIN is a prefix to the statement it explains, so after consuming the
+/// prefix we delegate to the splitter function of the inner statement instead
+/// of treating its leading keyword as a new statement start.
+pub(crate) fn explain(p: &mut Splitter) -> SplitterResult {
+    p.expect(SyntaxKind::EXPLAIN_KW)?;
+
+    // EXPLAIN (ANALYZE, BUFFERS, FORMAT JSON, ...) <statement>
+    if p.current() == SyntaxKind::L_PAREN {
+        parenthesis(p)?;
+    } else {
+        // legacy EXPLAIN [ANALYZE | ANALYSE] [VERBOSE] <statement>
+        p.eat(SyntaxKind::ANALYZE_KW)?;
+        p.eat(SyntaxKind::ANALYSE_KW)?;
+        p.eat(SyntaxKind::VERBOSE_KW)?;
+    }
+
+    match p.current() {
+        SyntaxKind::WITH_KW => cte(p),
+        SyntaxKind::SELECT_KW => select(p),
+        SyntaxKind::INSERT_KW => insert(p),
+        SyntaxKind::UPDATE_KW => update(p),
+        SyntaxKind::DELETE_KW => delete(p),
+        // EXPLAIN CREATE TABLE AS / CREATE MATERIALIZED VIEW AS
+        SyntaxKind::CREATE_KW => create(p),
+        // MERGE, VALUES, EXECUTE, DECLARE
+        _ => unknown(p, &[]),
+    }
 }
 
 pub(crate) fn select(p: &mut Splitter) -> SplitterResult {
