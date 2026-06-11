@@ -275,6 +275,41 @@ END;",
     }
 
     #[test]
+    fn explain() {
+        let stmts = vec![
+            "EXPLAIN SELECT 1;",
+            "EXPLAIN ANALYZE SELECT 1;",
+            "EXPLAIN ANALYSE SELECT 1;",
+            "EXPLAIN VERBOSE SELECT 1;",
+            "EXPLAIN ANALYZE VERBOSE SELECT 1;",
+            "EXPLAIN (ANALYZE, BUFFERS) SELECT * FROM my_table;",
+            "EXPLAIN (FORMAT JSON) SELECT * FROM my_table WHERE id = 1;",
+            "EXPLAIN INSERT INTO my_table (id) VALUES (1);",
+            "EXPLAIN ANALYZE UPDATE my_table SET col = 1 WHERE id = 2;",
+            "EXPLAIN DELETE FROM my_table WHERE id = 1;",
+            "EXPLAIN WITH cte AS (SELECT 1 AS x) SELECT * FROM cte;",
+            "EXPLAIN CREATE TABLE my_copy AS SELECT * FROM my_table;",
+            "explain analyze select 1;",
+        ];
+
+        for stmt in stmts {
+            Tester::from(stmt).expect_statements(vec![stmt]);
+        }
+    }
+
+    #[test]
+    fn explain_between_statements() {
+        Tester::from("EXPLAIN SELECT 1;\nSELECT 2;")
+            .expect_statements(vec!["EXPLAIN SELECT 1;", "SELECT 2;"]);
+
+        Tester::from("explain select 1\n\nselect 2")
+            .expect_statements(vec!["explain select 1", "select 2"]);
+
+        Tester::from("explain select 1\nselect 2")
+            .expect_statements(vec!["explain select 1", "select 2"]);
+    }
+
+    #[test]
     fn revoke() {
         Tester::from("revoke delete on table \"public\".\"voice_call\" from \"anon\";")
             .expect_statements(vec![

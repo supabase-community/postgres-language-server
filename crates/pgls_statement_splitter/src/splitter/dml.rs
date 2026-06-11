@@ -97,3 +97,33 @@ pub(crate) fn delete(p: &mut Splitter) -> SplitterResult {
 
     unknown(p, &[])
 }
+
+/// `EXPLAIN [ ANALYZE ] [ VERBOSE ] statement` and
+/// `EXPLAIN ( option [, ...] ) statement`
+///
+/// The explained statement must not be treated as the start of a new
+/// statement, so we consume the EXPLAIN prefix and delegate to the splitter
+/// function of the wrapped statement.
+pub(crate) fn explain(p: &mut Splitter) -> SplitterResult {
+    p.expect(SyntaxKind::EXPLAIN_KW)?;
+
+    p.eat(SyntaxKind::ANALYZE_KW)?;
+    p.eat(SyntaxKind::ANALYSE_KW)?;
+    p.eat(SyntaxKind::VERBOSE_KW)?;
+
+    if p.current() == SyntaxKind::L_PAREN {
+        parenthesis(p)?;
+    }
+
+    match p.current() {
+        SyntaxKind::WITH_KW => cte(p),
+        SyntaxKind::SELECT_KW => select(p),
+        SyntaxKind::INSERT_KW => insert(p),
+        SyntaxKind::UPDATE_KW => update(p),
+        SyntaxKind::DELETE_KW => delete(p),
+        // EXPLAIN CREATE TABLE ... AS / CREATE MATERIALIZED VIEW ... AS
+        SyntaxKind::CREATE_KW => create(p),
+        // VALUES, EXECUTE, DECLARE, MERGE
+        _ => unknown(p, &[]),
+    }
+}
