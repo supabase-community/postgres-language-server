@@ -29,7 +29,7 @@ use tower_lsp::lsp_types::Url;
 use tower_lsp::lsp_types::{self, ClientCapabilities};
 use tower_lsp::lsp_types::{MessageType, Registration};
 use tower_lsp::lsp_types::{Unregistration, WorkspaceFolder};
-use tracing::{error, info};
+use tracing::{debug, error, info};
 
 pub(crate) struct ClientInformation {
     #[allow(dead_code)]
@@ -265,6 +265,7 @@ impl Session {
     pub(crate) async fn update_diagnostics(&self, url: lsp_types::Url) -> Result<(), LspError> {
         let pgls_path = self.file_path(&url)?;
         let doc = self.document(&url)?;
+        let captured_version = doc.version;
         if self.configuration_status().is_error() && !self.notified_broken_configuration() {
             self.set_notified_broken_configuration();
             self.client
@@ -306,8 +307,19 @@ impl Session {
                 .collect()
         };
 
+        let current_version = match self.document(&url) {
+            Ok(doc) => doc.version,
+            Err(_) => return Ok(()),
+        };
+        if is_stale_diagnostics(captured_version, current_version) {
+            debug!(
+                "discarding stale diagnostics for {url}: computed for version {captured_version}, current is {current_version}"
+            );
+            return Ok(());
+        }
+
         self.client
-            .publish_diagnostics(url, diagnostics, Some(doc.version))
+            .publish_diagnostics(url, diagnostics, Some(captured_version))
             .await;
 
         Ok(())
@@ -604,5 +616,32 @@ impl Session {
             .map_or(PositionEncoding::Wide(WideEncoding::Utf16), |params| {
                 negotiated_encoding(&params.client_capabilities)
             })
+    }
+}
+
+/// Returns `true` when diagnostics computed for `captured_version` no longer
+/// match the document's `current_version` and must therefore be discarded.
+///
+/// Any mismatch is treated as stale, not just a strictly newer version: a
+/// document that is closed and reopened may have its version reset to a lower
+/// number, so an in-flight run captured at a higher version must not publish
+/// over the freshly reopened document.
+fn is_stale_diagnostics(captured_version: i32, current_version: i32) -> bool {
+    captured_version != current_version
+}
+
+#[cfg(test)]
+mod tests {
+    use super::is_stale_diagnostics;
+
+    #[test]
+    fn stale_diagnostics_are_detected_by_version() {
+        // A newer version arrived while diagnostics were computed.
+        assert!(is_stale_diagnostics(1, 2));
+        // Same version: the result still matches the live document.
+        assert!(!is_stale_diagnostics(2, 2));
+        // Reopened document reset to a lower version: still stale, the
+        // captured result no longer matches the live document.
+        assert!(is_stale_diagnostics(5, 3));
     }
 }
