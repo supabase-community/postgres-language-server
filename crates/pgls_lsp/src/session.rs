@@ -20,16 +20,26 @@ use rustc_hash::FxHashMap;
 use serde_json::Value;
 use std::path::PathBuf;
 use std::sync::Arc;
+use std::sync::Mutex;
 use std::sync::RwLock;
 use std::sync::atomic::Ordering;
 use std::sync::atomic::{AtomicBool, AtomicU8};
+use std::time::Duration;
 use tokio::sync::Notify;
 use tokio::sync::OnceCell;
+use tokio::task::AbortHandle;
 use tower_lsp::lsp_types::Url;
 use tower_lsp::lsp_types::{self, ClientCapabilities};
 use tower_lsp::lsp_types::{MessageType, Registration};
 use tower_lsp::lsp_types::{Unregistration, WorkspaceFolder};
 use tracing::{debug, error, info};
+
+/// Debounce delay for `textDocument/didChange` diagnostics.
+///
+/// After each keystroke the server waits this long before running analysis.
+/// If another change arrives within the window the previous task is cancelled
+/// and the timer resets, so only one analysis run fires per burst.
+const DIAGNOSTIC_DEBOUNCE: Duration = Duration::from_millis(300);
 
 pub(crate) struct ClientInformation {
     #[allow(dead_code)]
@@ -78,6 +88,13 @@ pub(crate) struct Session {
 
     /// Extra configuration from environment variables, applied on every config load.
     env_config: Option<PartialConfiguration>,
+
+    /// Per-URL abort handles for pending debounced diagnostic tasks.
+    ///
+    /// When `did_change` fires, any in-flight handle for the URL is aborted
+    /// before a new task is spawned. This ensures that only one analysis run
+    /// fires at the end of a rapid-fire burst rather than one per keystroke.
+    diagnostic_debounce: Arc<Mutex<FxHashMap<lsp_types::Url, AbortHandle>>>,
 }
 
 /// The parameters provided by the client in the "initialize" request
@@ -174,6 +191,7 @@ impl Session {
             notified_broken_configuration: AtomicBool::new(false),
             notified_deprecated_config: AtomicBool::new(false),
             env_config,
+            diagnostic_debounce: Arc::new(Mutex::new(FxHashMap::default())),
         }
     }
 
@@ -323,6 +341,50 @@ impl Session {
             .await;
 
         Ok(())
+    }
+
+    /// Schedules a debounced diagnostic update for the given URL.
+    ///
+    /// If a diagnostic task for `url` is already pending it is aborted first,
+    /// resetting the debounce window. A new task is spawned that waits
+    /// [`DIAGNOSTIC_DEBOUNCE`] before calling [`Self::update_diagnostics`].
+    /// This prevents a rapid-fire `textDocument/didChange` burst from queuing
+    /// one analysis run per keystroke.
+    pub(crate) fn schedule_diagnostics(self: &Arc<Self>, url: lsp_types::Url) {
+        // Cancel any pending task for this URL.
+        if let Some(handle) = self.diagnostic_debounce.lock().unwrap().remove(&url) {
+            handle.abort();
+        }
+
+        let session = Arc::clone(self);
+        let url_clone = url.clone();
+        let join_handle = tokio::spawn(async move {
+            tokio::time::sleep(DIAGNOSTIC_DEBOUNCE).await;
+            // Remove our own entry so stale handles don't accumulate.
+            session
+                .diagnostic_debounce
+                .lock()
+                .unwrap()
+                .remove(&url_clone);
+            if let Err(err) = session.update_diagnostics(url_clone).await {
+                error!("Failed to update diagnostics: {}", err);
+            }
+        });
+
+        self.diagnostic_debounce
+            .lock()
+            .unwrap()
+            .insert(url, join_handle.abort_handle());
+    }
+
+    /// Cancels any pending debounced diagnostic task for `url`.
+    ///
+    /// Called from `did_close` to ensure no diagnostics are published after
+    /// the document has been closed.
+    pub(crate) fn cancel_pending_diagnostics(&self, url: &lsp_types::Url) {
+        if let Some(handle) = self.diagnostic_debounce.lock().unwrap().remove(url) {
+            handle.abort();
+        }
     }
 
     /// Updates diagnostics for every [`Document`] in this [`Session`]

@@ -1,4 +1,4 @@
-use crate::{documents::Document, session::Session, utils::apply_document_changes};
+use crate::{documents::Document, session::SessionHandle, utils::apply_document_changes};
 use anyhow::Result;
 use pgls_workspace::workspace::{
     ChangeFileParams, CloseFileParams, GetFileContentParams, OpenFileParams,
@@ -9,7 +9,7 @@ use tracing::{error, field};
 /// Handler for `textDocument/didOpen` LSP notification
 #[tracing::instrument(level = "debug", skip(session), err)]
 pub(crate) async fn did_open(
-    session: &Session,
+    session: &SessionHandle,
     params: lsp_types::DidOpenTextDocumentParams,
 ) -> Result<()> {
     let url = params.text_document.uri;
@@ -35,9 +35,15 @@ pub(crate) async fn did_open(
 }
 
 /// Handler for `textDocument/didChange` LSP notification
+///
+/// Document content is updated synchronously so other LSP features (hover,
+/// completion) see the latest text immediately. The expensive diagnostic
+/// analysis is scheduled via [`SessionHandle::schedule_diagnostics`], which
+/// debounces rapid-fire changes so that only one analysis run fires at the
+/// end of a burst rather than one per keystroke.
 #[tracing::instrument(level = "debug", skip_all, fields(url = field::display(&params.text_document.uri), version = params.text_document.version), err)]
 pub(crate) async fn did_change(
-    session: &Session,
+    session: &SessionHandle,
     params: lsp_types::DidChangeTextDocumentParams,
 ) -> Result<()> {
     let url = params.text_document.uri;
@@ -67,9 +73,9 @@ pub(crate) async fn did_change(
         content: text,
     })?;
 
-    if let Err(err) = session.update_diagnostics(url).await {
-        error!("Failed to update diagnostics: {}", err);
-    }
+    // Schedule debounced diagnostics instead of running immediately.
+    // This prevents a keystroke burst from queuing one analysis per change.
+    session.schedule_diagnostics(url);
 
     Ok(())
 }
@@ -77,11 +83,15 @@ pub(crate) async fn did_change(
 /// Handler for `textDocument/didClose` LSP notification
 #[tracing::instrument(level = "debug", skip(session), err)]
 pub(crate) async fn did_close(
-    session: &Session,
+    session: &SessionHandle,
     params: lsp_types::DidCloseTextDocumentParams,
 ) -> Result<()> {
     let url = params.text_document.uri;
     let pgls_path = session.file_path(&url)?;
+
+    // Cancel any pending debounced diagnostic task before removing the document
+    // so that no stale diagnostics are published after the file is closed.
+    session.cancel_pending_diagnostics(&url);
 
     session
         .workspace
