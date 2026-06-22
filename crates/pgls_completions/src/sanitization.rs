@@ -653,34 +653,36 @@ mod tests {
     fn multibyte_characters() {
         is_sanitized_token_with_quote("é"); // should not panic
 
-        // {
-        //     // cursor in the middle of multi-byte char
-        //     // select * from "auth"."é|é; <-- cursor in the middle of the é multi-byte char
-        //     let input = r#"select * from "auth"."é;"#;
-        //     let position = TextSize::new(23);
+        {
+            // cursor in the middle of multi-byte char
+            // select * from "auth"."é|é; <-- cursor in the middle of the é multi-byte char
+            let input = r#"select * from "auth"."é;"#;
+            let position = TextSize::new(23);
 
-        //     let params = get_test_params(input, position);
+            let params = get_test_params(input, position);
 
-        //     let sanitized = SanitizedCompletionParams::from(params);
+            let sanitized = SanitizedCompletionParams::from(params);
 
-        //     assert_eq!(sanitized.text, r#"select * from "auth"."é;"#);
-        // }
+            assert_eq!(sanitized.text, r#"select * from "auth"."é;"#);
+            assert_eq!(sanitized.position, TextSize::new(24)); // adjusts the cursor position to end of multibyte char
+        }
 
-        // {
-        //     // cursor in front of multibyte char
-        //     // select * from "auth"."|é; <-- cursor front of the é multi-byte char
-        //     let input = r#"select * from "auth"."é;"#;
-        //     let position = TextSize::new(22);
+        {
+            // cursor in front of multibyte char
+            // select * from "auth"."|é; <-- cursor front of the é multi-byte char
+            let input = r#"select * from "auth"."é;"#;
+            let position = TextSize::new(22);
 
-        //     let params = get_test_params(input, position);
+            let params = get_test_params(input, position);
 
-        //     let sanitized = SanitizedCompletionParams::from(params);
+            let sanitized = SanitizedCompletionParams::from(params);
 
-        //     assert_eq!(
-        //         sanitized.text,
-        //         r#"select * from "auth"."REPLACED_TOKEN_WITH_QUOTE"é; "#
-        //     );
-        // }
+            assert_eq!(
+                sanitized.text,
+                r#"select * from "auth"."REPLACED_TOKEN_WITH_QUOTE"é; "#
+            );
+            assert_eq!(sanitized.position, TextSize::new(22)); // leaves cursor position as is
+        }
 
         {
             let input = "insert into instruments (name, id, €,  )";
@@ -688,7 +690,7 @@ mod tests {
 
             let params = get_test_params(input, position);
 
-            let _ = SanitizedCompletionParams::from(params);
+            let _ = SanitizedCompletionParams::from(params); // should not panic
         }
     }
 }
