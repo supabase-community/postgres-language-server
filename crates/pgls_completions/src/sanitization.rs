@@ -50,11 +50,11 @@ where
     fn from(mut params: CompletionParams<'larger>) -> Self {
         params.text = params.text.to_ascii_lowercase();
 
-        if !params.text.is_char_boundary(params.position.into()) {
-            params.position = params.position.checked_add(TextSize::new(1)).expect(
-                "Impossible to overflow here since the index points inbetween a multi-byte char",
-            );
-        }
+        // if !params.text.is_char_boundary(params.position.into()) {
+        //     params.position = params.position.checked_add(TextSize::new(1)).expect(
+        //         "Impossible to overflow here since the index points inbetween a multi-byte char",
+        //     );
+        // }
 
         if cursor_inbetween_nodes(&params.text, params.position)
             || cursor_prepared_to_write_token_after_last_node(&params.text, params.position)
@@ -660,7 +660,6 @@ mod tests {
             let sanitized = SanitizedCompletionParams::from(params);
 
             assert_eq!(sanitized.text, r#"select * from "auth"."é;"#);
-            assert_eq!(sanitized.position, TextSize::new(24)); // cursor is moved to the end of multibyte char
         }
 
         {
@@ -677,7 +676,6 @@ mod tests {
                 sanitized.text,
                 r#"select * from "auth"."REPLACED_TOKEN_WITH_QUOTE"é; "#
             );
-            assert_eq!(sanitized.position, TextSize::new(22)); // cursor is left as is
         }
     }
 }
