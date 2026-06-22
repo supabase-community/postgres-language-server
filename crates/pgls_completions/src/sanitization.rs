@@ -50,12 +50,6 @@ where
     fn from(mut params: CompletionParams<'larger>) -> Self {
         params.text = params.text.to_ascii_lowercase();
 
-        // if !params.text.is_char_boundary(params.position.into()) {
-        //     params.position = params.position.checked_add(TextSize::new(1)).expect(
-        //         "Impossible to overflow here since the index points inbetween a multi-byte char",
-        //     );
-        // }
-
         if cursor_inbetween_nodes(&params.text, params.position)
             || cursor_prepared_to_write_token_after_last_node(&params.text, params.position)
             || cursor_before_semicolon(params.tree, params.position)
