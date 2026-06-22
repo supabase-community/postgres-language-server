@@ -54,3 +54,34 @@ pub fn complete(params: CompletionParams) -> Vec<CompletionItem> {
 
     builder.finish()
 }
+
+#[cfg(test)]
+mod tests {
+    use pgls_schema_cache::SchemaCache;
+
+    use super::*;
+
+    fn parse(sql: &str) -> tree_sitter::Tree {
+        let mut parser = tree_sitter::Parser::new();
+        parser
+            .set_language(&pgls_treesitter_grammar::LANGUAGE.into())
+            .expect("Error loading sql language");
+        parser.parse(sql, None).unwrap()
+    }
+
+    #[test]
+    fn complete_handles_cursor_after_multibyte_character() {
+        let text = "è".to_string();
+        let tree = parse(&text);
+        let schema = SchemaCache::default();
+
+        let items = complete(CompletionParams {
+            position: TextSize::new(text.len() as u32),
+            schema: &schema,
+            text,
+            tree: &tree,
+        });
+
+        assert!(items.is_empty());
+    }
+}
