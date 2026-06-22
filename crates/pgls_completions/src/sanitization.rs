@@ -38,7 +38,9 @@ pub(crate) fn is_sanitized_token_with_quote(node_under_cursor_txt: &str) -> bool
     // Node under cursor text will be "REPLACED_TOKEN_WITH_QUOTE".
     // The SANITIZED_TOKEN_WITH_QUOTE does not have the leading ".
     // We need to omit it from the txt.
-    &node_under_cursor_txt[1..] == SANITIZED_TOKEN_WITH_QUOTE
+    node_under_cursor_txt
+        .strip_prefix('"')
+        .is_some_and(|it| it == SANITIZED_TOKEN_WITH_QUOTE)
 }
 
 impl<'larger, 'smaller> From<CompletionParams<'larger>> for SanitizedCompletionParams<'smaller>
@@ -47,6 +49,13 @@ where
 {
     fn from(mut params: CompletionParams<'larger>) -> Self {
         params.text = params.text.to_ascii_lowercase();
+
+        if !params.text.is_char_boundary(params.position.into()) {
+            params.position = params.position.checked_add(TextSize::new(1)).expect(
+                "Impossible to overflow here since the index points inbetween a multi-byte char",
+            );
+        }
+
         if cursor_inbetween_nodes(&params.text, params.position)
             || cursor_prepared_to_write_token_after_last_node(&params.text, params.position)
             || cursor_before_semicolon(params.tree, params.position)
@@ -312,7 +321,7 @@ mod tests {
     use pgls_text_size::TextSize;
 
     use crate::{
-        CompletionParams, SanitizedCompletionParams,
+        CompletionParams, SanitizedCompletionParams, is_sanitized_token_with_quote,
         sanitization::{
             cursor_after_opened_quote, cursor_before_semicolon, cursor_between_parentheses,
             cursor_inbetween_nodes, cursor_on_a_dot,
@@ -634,5 +643,41 @@ mod tests {
             r#"select "user_id", " from something;"#,
             TextSize::new(20)
         ));
+    }
+
+    #[test]
+    fn multibyte_characters() {
+        is_sanitized_token_with_quote("é"); // should not panic
+
+        {
+            // cursor in the middle of multi-byte char
+            // select * from "auth"."é|é; <-- cursor in the middle of the é multi-byte char
+            let input = r#"select * from "auth"."é;"#;
+            let position = TextSize::new(23);
+
+            let params = get_test_params(input, position);
+
+            let sanitized = SanitizedCompletionParams::from(params);
+
+            assert_eq!(sanitized.text, r#"select * from "auth"."é;"#);
+            assert_eq!(sanitized.position, TextSize::new(24)); // cursor is moved to the end of multibyte char
+        }
+
+        {
+            // cursor in front of multibyte char
+            // select * from "auth"."|é; <-- cursor front of the é multi-byte char
+            let input = r#"select * from "auth"."é;"#;
+            let position = TextSize::new(22);
+
+            let params = get_test_params(input, position);
+
+            let sanitized = SanitizedCompletionParams::from(params);
+
+            assert_eq!(
+                sanitized.text,
+                r#"select * from "auth"."REPLACED_TOKEN_WITH_QUOTE"é; "#
+            );
+            assert_eq!(sanitized.position, TextSize::new(22)); // cursor is left as is
+        }
     }
 }
