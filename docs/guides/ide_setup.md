@@ -68,6 +68,30 @@ If the language server isn't working:
 
 The language client is available through [lsp-mode](https://github.com/emacs-lsp/lsp-mode). For more details, refer to their [manual page](https://emacs-lsp.github.io/lsp-mode/page/lsp-postgres/).
 
+## Helix
+
+Add the language server and SQL grammar to your Helix `languages.toml`:
+
+```toml
+[language-server.postgres-language-server]
+command = "postgres-language-server"
+args = ["lsp-proxy"]
+
+[[language]]
+name = "sql"
+scope = "source.sql"
+injection-regex = "sql"
+file-types = ["sql"]
+comment-token = "--"
+roots = ["postgres-language-server.jsonc"]
+language-servers = ["postgres-language-server"]
+grammar = "sql"
+
+[[grammar]]
+name = "sql"
+source = { git = "https://github.com/DerekStride/tree-sitter-sql", rev = "7b51ecda191d36b92f5a90a8d1bc3faef1c7b8b8" }
+```
+
 ## Cursor
 
 The language server is available on the [Open VSX Registry](https://open-vsx.org/extension/supabase/postgrestools). Install it from the extensions panel in Cursor.
