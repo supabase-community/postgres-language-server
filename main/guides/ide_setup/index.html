@@ -83,6 +83,8 @@
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#emacs">Emacs</a>
     </li>
+    <li class="toctree-l2"><a class="reference internal" href="#helix">Helix</a>
+    </li>
     <li class="toctree-l2"><a class="reference internal" href="#cursor">Cursor</a>
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#zed">Zed</a>
@@ -207,6 +209,26 @@
 </ol>
 <h2 id="emacs">Emacs</h2>
 <p>The language client is available through <a href="https://github.com/emacs-lsp/lsp-mode">lsp-mode</a>. For more details, refer to their <a href="https://emacs-lsp.github.io/lsp-mode/page/lsp-postgres/">manual page</a>.</p>
+<h2 id="helix">Helix</h2>
+<p>Add the language server and SQL grammar to your Helix <code>languages.toml</code>:</p>
+<pre><code class="language-toml">[language-server.postgres-language-server]
+command = &quot;postgres-language-server&quot;
+args = [&quot;lsp-proxy&quot;]
+
+[[language]]
+name = &quot;sql&quot;
+scope = &quot;source.sql&quot;
+injection-regex = &quot;sql&quot;
+file-types = [&quot;sql&quot;]
+comment-token = &quot;--&quot;
+roots = [&quot;postgres-language-server.jsonc&quot;]
+language-servers = [&quot;postgres-language-server&quot;]
+grammar = &quot;sql&quot;
+
+[[grammar]]
+name = &quot;sql&quot;
+source = { git = &quot;https://github.com/DerekStride/tree-sitter-sql&quot;, rev = &quot;7b51ecda191d36b92f5a90a8d1bc3faef1c7b8b8&quot; }
+</code></pre>
 <h2 id="cursor">Cursor</h2>
 <p>The language server is available on the <a href="https://open-vsx.org/extension/supabase/postgrestools">Open VSX Registry</a>. Install it from the extensions panel in Cursor.</p>
 <h2 id="zed">Zed</h2>
