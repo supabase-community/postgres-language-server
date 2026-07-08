@@ -949,7 +949,7 @@ impl Workspace for WorkspaceServer {
 
         // Only format SQL function bodies if skip_fn_bodies is false
         if !settings.formatter.skip_fn_bodies {
-            for (id, _stmt_range, _text, ast_result) in &format_candidates {
+            for (id, _stmt_range, text, ast_result) in &format_candidates {
                 if !id.is_child() {
                     continue;
                 }
@@ -962,6 +962,13 @@ impl Workspace for WorkspaceServer {
                     continue;
                 };
 
+                // Comments are not represented in the AST, so reformatting a function
+                // body that contains comments would silently drop them. Leave the
+                // original body untouched in that case.
+                if statement_contains_comment(text) {
+                    continue;
+                }
+
                 let Ok(result) = pgls_pretty_print::format_statement(ast, &config) else {
                     continue;
                 };
@@ -970,17 +977,37 @@ impl Workspace for WorkspaceServer {
             }
         }
 
+        // Reconstruct the file by replacing each statement's source span with its
+        // formatted output while copying the gaps between statements (whitespace and
+        // standalone comments) verbatim. libpg_query drops comments from the AST, so
+        // anything that lives outside a statement's range would otherwise be lost.
+        let source = doc.get_document_content();
+        let mut last_end = 0usize;
+
         for (id, stmt_range, text, ast_result) in format_candidates {
             if id.is_child() {
                 continue;
             }
 
+            let stmt_start = usize::from(stmt_range.start());
+            let stmt_end = usize::from(stmt_range.end());
+
+            // Preserve leading text, blank lines, and standalone comments that precede
+            // this statement.
+            formatted_output.push_str(&source[last_end..stmt_start]);
+            last_end = stmt_end;
+
+            // Leave statements outside the requested range untouched.
             if let Some(filter_range) = params.range
                 && stmt_range.intersect(filter_range).is_none()
             {
-                if !formatted_output.is_empty() {
-                    formatted_output.push_str("\n\n");
-                }
+                formatted_output.push_str(&text);
+                continue;
+            }
+
+            // A comment inside the statement cannot survive a round-trip through the
+            // AST, so keep the original text rather than dropping the comment.
+            if statement_contains_comment(&text) {
                 formatted_output.push_str(&text);
                 continue;
             }
@@ -1001,9 +1028,6 @@ impl Workspace for WorkspaceServer {
                                     range: stmt_range,
                                 });
                             }
-                            if !formatted_output.is_empty() {
-                                formatted_output.push_str("\n\n");
-                            }
                             formatted_output.push_str(&result.formatted);
                         }
                         Err(err) => {
@@ -1015,9 +1039,6 @@ impl Workspace for WorkspaceServer {
                                 .with_file_span(stmt_range),
                             ));
 
-                            if !formatted_output.is_empty() {
-                                formatted_output.push_str("\n\n");
-                            }
                             formatted_output.push_str(&text);
                         }
                     }
@@ -1027,13 +1048,13 @@ impl Workspace for WorkspaceServer {
                         pgls_diagnostics::Error::from(syntax_err).with_file_path(&path_str),
                     ));
 
-                    if !formatted_output.is_empty() {
-                        formatted_output.push_str("\n\n");
-                    }
                     formatted_output.push_str(&text);
                 }
             }
         }
+
+        // Preserve any trailing text or comments after the last statement.
+        formatted_output.push_str(&source[last_end..]);
 
         Ok(PullFormattingResult {
             original: doc.get_document_content().to_string(),
@@ -1167,6 +1188,30 @@ impl Workspace for WorkspaceServer {
 /// if it is a symlink that resolves to a directory.
 fn is_dir(path: &Path) -> bool {
     path.is_dir() || (path.is_symlink() && fs::read_link(path).is_ok_and(|path| path.is_dir()))
+}
+
+/// Returns `true` if the SQL `statement` contains a line (`--`) or block (`/* */`)
+/// comment.
+///
+/// libpg_query strips comments while building the AST, so the formatter (which
+/// renders from the AST) cannot reproduce them. We use the scanner, which exposes
+/// comments as dedicated tokens, to detect them and fall back to the original text.
+/// Comments inside string literals (including dollar-quoted bodies) are part of the
+/// string token and are correctly not reported here.
+fn statement_contains_comment(statement: &str) -> bool {
+    use pgls_query::protobuf::Token;
+
+    match pgls_query::scan(statement) {
+        Ok(scan) => scan.tokens.iter().any(|token| {
+            matches!(
+                Token::try_from(token.token),
+                Ok(Token::SqlComment | Token::CComment)
+            )
+        }),
+        // If scanning fails we cannot reason about the statement; let the regular
+        // formatting path (which will likely fail to parse too) handle it.
+        Err(_) => false,
+    }
 }
 
 #[cfg(all(test, feature = "db"))]
