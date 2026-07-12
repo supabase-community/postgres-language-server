@@ -166,6 +166,11 @@ mod tests {
     }
 
     #[test]
+    fn plpgsql_function_with_leading_space() {
+        assert_no_panic_for_all_positions("BEGIN END; ");
+    }
+
+    #[test]
     fn issue_704_regression() {
         let statements = vec![
             r#"
