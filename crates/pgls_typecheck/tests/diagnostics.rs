@@ -100,6 +100,71 @@ impl TestSetup<'_> {
 }
 
 #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn function_arg_row_type(test_db: PgPool) {
+    // A SQL function whose argument is a table's row type, e.g.
+    // create function get_tbl_name(row_arg public.tbl) returns text
+    // language sql as $$ select row_arg.name $$;
+    // Accessing a field of the row argument must not raise a false-positive
+    // "missing FROM-clause entry" diagnostic.
+    let setup = r#"
+        create table public.tbl (
+            id serial primary key,
+            name text not null
+        );
+    "#;
+
+    TestSetup {
+        name: "function_arg_row_type",
+        setup: Some(setup),
+        query: r#"select row_arg.name"#,
+        test_db: &test_db,
+        typed_identifiers: vec![TypedIdentifier {
+            path: "get_tbl_name".to_string(),
+            name: Some("row_arg".to_string()),
+            type_: IdentifierType {
+                schema: Some("public".to_string()),
+                name: "tbl".to_string(),
+                is_array: false,
+            },
+        }],
+    }
+    .test()
+    .await;
+}
+
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn function_arg_view_row_type(test_db: PgPool) {
+    // A view (like a table) exposes a composite row type, so a function
+    // argument typed as the view must also resolve field access without a
+    // false-positive diagnostic.
+    let setup = r#"
+        create table public.tbl (
+            id serial primary key,
+            name text not null
+        );
+        create view public.tbl_view as select id, name from public.tbl;
+    "#;
+
+    TestSetup {
+        name: "function_arg_view_row_type",
+        setup: Some(setup),
+        query: r#"select row_arg.name"#,
+        test_db: &test_db,
+        typed_identifiers: vec![TypedIdentifier {
+            path: "get_view_name".to_string(),
+            name: Some("row_arg".to_string()),
+            type_: IdentifierType {
+                schema: Some("public".to_string()),
+                name: "tbl_view".to_string(),
+                is_array: false,
+            },
+        }],
+    }
+    .test()
+    .await;
+}
+
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
 async fn invalid_column(test_db: PgPool) {
     TestSetup {
         name: "invalid_column",

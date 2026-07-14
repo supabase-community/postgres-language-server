@@ -363,6 +363,113 @@ mod tests {
     }
 
     #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    async fn test_apply_identifiers_table_row_type(test_db: PgPool) {
+        // A SQL function argument may be a table's row (composite) type, e.g.
+        // `CREATE FUNCTION f(row_arg public.tbl) ... SELECT row_arg.name`.
+        // Field access on such a parameter must resolve to the column's type
+        // and be replaced with that type's default literal.
+        let input = "select row_arg.id + row_arg.name";
+
+        let identifiers = vec![
+            super::TypedIdentifier {
+                path: "get_tbl".to_string(),
+                name: Some("row_arg".to_string()),
+                type_: super::IdentifierType {
+                    schema: Some("public".to_string()),
+                    name: "tbl".to_string(),
+                    is_array: false,
+                },
+            },
+            super::TypedIdentifier {
+                path: "get_tbl".to_string(),
+                name: Some("row_arg".to_string()),
+                type_: super::IdentifierType {
+                    schema: Some("public".to_string()),
+                    name: "tbl".to_string(),
+                    is_array: false,
+                },
+            },
+        ];
+
+        let setup = r#"
+            CREATE TABLE "public"."tbl" (
+                id integer,
+                name text
+            );
+        "#;
+
+        test_db
+            .execute(setup)
+            .await
+            .expect("Failed to setup test database");
+
+        let mut parser = tree_sitter::Parser::new();
+        parser
+            .set_language(&pgls_treesitter_grammar::LANGUAGE.into())
+            .expect("Error loading sql language");
+
+        let schema_cache = pgls_schema_cache::SchemaCache::load(&test_db)
+            .await
+            .expect("Failed to load Schema Cache");
+
+        let tree = parser.parse(input, None).unwrap();
+
+        let replacement = super::apply_identifiers(identifiers, &schema_cache, &tree, input);
+
+        assert_eq!(
+            replacement.text_replacement.text(),
+            // `id` (integer) -> 0, `name` (text) -> ''
+            "select 0 + ''"
+        );
+    }
+
+    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    async fn test_row_type_excludes_system_columns(test_db: PgPool) {
+        // System columns (e.g. `ctid`) are not real fields of a table's row
+        // type, so they must not be loaded as attributes: a reference to one is
+        // left unreplaced so the downstream typecheck still flags it.
+        let input = "select row_arg.ctid";
+
+        let identifiers = vec![super::TypedIdentifier {
+            path: "get_tbl".to_string(),
+            name: Some("row_arg".to_string()),
+            type_: super::IdentifierType {
+                schema: Some("public".to_string()),
+                name: "tbl".to_string(),
+                is_array: false,
+            },
+        }];
+
+        let setup = r#"
+            CREATE TABLE "public"."tbl" (
+                id integer,
+                name text
+            );
+        "#;
+
+        test_db
+            .execute(setup)
+            .await
+            .expect("Failed to setup test database");
+
+        let mut parser = tree_sitter::Parser::new();
+        parser
+            .set_language(&pgls_treesitter_grammar::LANGUAGE.into())
+            .expect("Error loading sql language");
+
+        let schema_cache = pgls_schema_cache::SchemaCache::load(&test_db)
+            .await
+            .expect("Failed to load Schema Cache");
+
+        let tree = parser.parse(input, None).unwrap();
+
+        let replacement = super::apply_identifiers(identifiers, &schema_cache, &tree, input);
+
+        // `ctid` is a system column, so it is not resolved and stays as-is.
+        assert_eq!(replacement.text_replacement.text(), "select row_arg.ctid");
+    }
+
+    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
     async fn test_longer_identifiers(pool: PgPool) {
         // create or replace function retrieve(uid uuid, mail text)
         // returns uuid
