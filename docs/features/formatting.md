@@ -4,10 +4,9 @@
 
 ## Known Limitations
 
-!!! warning "Comments are not yet supported"
-    SQL comments (`--` and `/* */`) will be removed during formatting. This is a temporary limitation that will be addressed in a future release. If your SQL files contain important comments, consider waiting for comment support before using the formatter on those files.
-
 The language server provides SQL formatting that produces consistent, readable code. Built on Postgres' own parser, the formatter ensures 100% syntax compatibility with your SQL.
+
+Comments are not processed during formatting. They get removed before formatting and restored after.
 
 ## Configuration
 
