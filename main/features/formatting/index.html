@@ -145,11 +145,8 @@
 <p><strong>Preview Feature</strong>: The formatter is currently in preview. We'd love feedback from early adopters! Please report any issues or unexpected output at <a href="https://github.com/supabase-community/postgres-language-server/issues">GitHub Issues</a>.</p>
 </blockquote>
 <h2 id="known-limitations">Known Limitations</h2>
-<div class="admonition warning">
-<p class="admonition-title">Comments are not yet supported</p>
-<p>SQL comments (<code>--</code> and <code>/* */</code>) will be removed during formatting. This is a temporary limitation that will be addressed in a future release. If your SQL files contain important comments, consider waiting for comment support before using the formatter on those files.</p>
-</div>
 <p>The language server provides SQL formatting that produces consistent, readable code. Built on Postgres' own parser, the formatter ensures 100% syntax compatibility with your SQL.</p>
+<p>Comments are not processed during formatting. They get removed before formatting and restored after.</p>
 <h2 id="configuration">Configuration</h2>
 <p>Configure formatting behavior in your <code>postgres-language-server.jsonc</code>:</p>
 <pre><code class="language-json">{
