@@ -34,7 +34,8 @@ from
       pg_class c
       join pg_attribute a on a.attrelid = c.oid
     where
-      c.relkind = 'c'
+      c.relkind in ('c', 'r', 'p', 'v', 'm', 'f')
+      and a.attnum > 0
       and not a.attisdropped
     group by
       c.oid
@@ -44,7 +45,7 @@ where
     t.typrelid = 0
     or (
       select
-        c.relkind = 'c'
+        c.relkind in ('c', 'r', 'p', 'v', 'm', 'f')
       from
         pg_class c
       where

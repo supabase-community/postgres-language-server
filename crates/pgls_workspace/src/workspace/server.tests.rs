@@ -778,6 +778,78 @@ async fn test_format_keeps_sql_function_body_intact() {
     );
 }
 
+fn format_content(content: &str) -> String {
+    let mut conf = PartialConfiguration::init();
+    conf.merge_with(PartialConfiguration {
+        format: Some(PartialFormatConfiguration {
+            enabled: Some(true),
+            ..Default::default()
+        }),
+        ..Default::default()
+    });
+
+    let workspace = get_test_workspace(Some(conf)).expect("Unable to create test workspace");
+
+    let path = PgLSPath::new("test.sql");
+    workspace
+        .open_file(OpenFileParams {
+            path: path.clone(),
+            content: content.into(),
+            version: 1,
+        })
+        .expect("Unable to open test file");
+
+    workspace
+        .pull_file_formatting(PullFileFormattingParams { path, range: None })
+        .expect("Unable to pull formatting")
+        .formatted
+}
+
+#[tokio::test]
+async fn test_format_preserves_leading_comment() {
+    let formatted = format_content("-- a header comment\nselect   1;");
+    assert_eq!(formatted, "-- a header comment\nselect 1;");
+}
+
+#[tokio::test]
+async fn test_format_preserves_trailing_comment() {
+    let formatted = format_content("select   amount   from customers; -- selects amount");
+    assert_eq!(formatted, "select amount from customers; -- selects amount");
+}
+
+#[tokio::test]
+async fn test_format_preserves_between_statement_comment() {
+    let formatted = format_content("select   1;\n\n-- in between\n\nselect   2;");
+    assert_eq!(formatted, "select 1;\n\n-- in between\n\nselect 2;");
+}
+
+#[tokio::test]
+async fn test_format_preserves_interior_comment() {
+    // A comment wedged between tokens of a statement cannot survive the AST
+    // round-trip, so the statement is left untouched instead of dropping it.
+    let content = "select amount -- the amount\nfrom customers;";
+    let formatted = format_content(content);
+    assert_eq!(formatted, content);
+}
+
+#[tokio::test]
+async fn test_format_preserves_block_comment() {
+    let content = "select 1 /* keep me */;";
+    let formatted = format_content(content);
+    assert_eq!(formatted, content);
+}
+
+#[tokio::test]
+async fn test_format_preserves_comment_in_sql_function_body() {
+    let content =
+        "create function f() returns int as $$\n  select 1; -- inner comment\n$$ language sql;";
+    let formatted = format_content(content);
+    assert!(
+        formatted.contains("-- inner comment"),
+        "comment inside the function body should be preserved:\n{formatted}",
+    );
+}
+
 #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
 async fn test_cstyle_comments(test_db: PgPool) {
     let mut conf = PartialConfiguration::init();
