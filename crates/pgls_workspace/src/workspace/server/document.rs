@@ -525,6 +525,19 @@ $$;";
     }
 
     #[test]
+    fn hstore_delete_function_has_no_syntax_diagnostic() {
+        let input = "SELECT delete(resource_attributes, 'gen_ai.system');";
+        let d = Document::new(input.to_string(), 1);
+
+        assert!(d.document_diagnostics().is_empty());
+
+        let results = d.iter(AnalyserDiagnosticsMapper).collect::<Vec<_>>();
+        assert_eq!(results.len(), 1);
+        assert!(results[0].0.is_some());
+        assert!(results[0].1.is_none());
+    }
+
+    #[test]
     fn test_execute_statement_mapper() {
         let input = "SELECT 1; INVALID SYNTAX HERE;";
         let d = Document::new(input.to_string(), 1);
