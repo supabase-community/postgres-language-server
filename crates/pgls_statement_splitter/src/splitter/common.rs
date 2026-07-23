@@ -261,6 +261,11 @@ pub(crate) fn unknown(p: &mut Splitter, exclude: &[SyntaxKind]) -> SplitterResul
 
                     p.advance()?;
                 }
+                // DELETE is also an unreserved keyword used by hstore's delete() function.
+                // A DELETE statement must be followed by FROM, so `delete(` cannot start one.
+                Some(SyntaxKind::DELETE_KW) if p.look_ahead(true) == SyntaxKind::L_PAREN => {
+                    p.advance()?;
+                }
                 Some(SyntaxKind::INSERT_KW)
                 | Some(SyntaxKind::UPDATE_KW)
                 | Some(SyntaxKind::DELETE_KW) => {
