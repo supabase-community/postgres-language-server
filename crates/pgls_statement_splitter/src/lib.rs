@@ -554,6 +554,56 @@ values ('insert', new.id, now());",
     }
 
     #[test]
+    fn hstore_function_calls() {
+        let calls = [
+            "hstore(ROW(1, 2))",
+            "akeys('a=>1'::hstore)",
+            "skeys('a=>1'::hstore)",
+            "avals('a=>1'::hstore)",
+            "svals('a=>1'::hstore)",
+            "hstore_to_array('a=>1'::hstore)",
+            "hstore_to_matrix('a=>1'::hstore)",
+            "hstore_to_json('a=>1'::hstore)",
+            "hstore_to_jsonb('a=>1'::hstore)",
+            "hstore_to_json_loose('a=>1'::hstore)",
+            "hstore_to_jsonb_loose('a=>1'::hstore)",
+            "slice('a=>1'::hstore, ARRAY['a'])",
+            "each('a=>1'::hstore)",
+            "exist('a=>1'::hstore, 'a')",
+            "defined('a=>1'::hstore, 'a')",
+            "delete(resource_attributes, 'gen_ai.system')",
+            "delete('a=>1,b=>2'::hstore, ARRAY['a', 'b'])",
+            "delete('a=>1,b=>2'::hstore, 'a=>1'::hstore)",
+            "DeLeTe(resource_attributes, 'gen_ai.system')",
+            "public.delete(resource_attributes, 'gen_ai.system')",
+            "delete /* hstore */ (resource_attributes, 'gen_ai.system')",
+            "populate_record(ROW(1, 2), 'f1=>42'::hstore)",
+        ];
+
+        for call in calls {
+            let statement = format!("SELECT {call};");
+            let tester = Tester::from(statement.as_str());
+            tester
+                .expect_statements(vec![statement.as_str()])
+                .assert_no_errors();
+
+            let range = tester.result.ranges[0];
+            if let Err(error) = pgls_query::parse(&statement[range]) {
+                panic!("Expected hstore function call to parse: {error}");
+            }
+        }
+
+        Tester::from(
+            "UPDATE data SET attributes = delete(attributes, 'obsolete'); DELETE FROM data;",
+        )
+        .expect_statements(vec![
+            "UPDATE data SET attributes = delete(attributes, 'obsolete');",
+            "DELETE FROM data;",
+        ])
+        .assert_no_errors();
+    }
+
+    #[test]
     fn with_ordinality() {
         Tester::from("insert into table (col) select 1 from other t cross join lateral jsonb_array_elements(t.buttons) with ordinality as a(b, nr) where t.buttons is not null;").expect_statements(vec!["insert into table (col) select 1 from other t cross join lateral jsonb_array_elements(t.buttons) with ordinality as a(b, nr) where t.buttons is not null;"]);
     }
