@@ -17,7 +17,7 @@ Configure database connection details in your `postgres-language-server.jsonc` f
 
 ```json
 {
-  "database": {
+  "db": {
     // Database host address (default: "127.0.0.1")
     "host": "localhost",
     // Database port (default: 5432)
@@ -58,7 +58,7 @@ You can control which schemas allow code action statement execution (executing s
 
 ```json
 {
-  "database": {
+  "db": {
     "allowStatementExecutionsAgainst": ["public", "testing"]
   }
 }
@@ -70,7 +70,7 @@ If you prefer to work without a database connection, you can disable all databas
 
 ```json
 {
-  "database": {
+  "db": {
     "disableConnection": true
   }
 }
