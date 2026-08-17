@@ -4,15 +4,33 @@ The Postgres Language Server reports diagnostics for syntax errors in your SQL f
 
 ## How it Works
 
-The language server uses [libpg_query](https://github.com/pganalyze/libpg_query) to parse SQL statements, which is the actual Postgres parser packaged as a library. This ensures 100% compatibility with Postgres syntax.
+The language server first splits SQL files into individual statements. It then uses [libpg_query](https://github.com/pganalyze/libpg_query), which packages the actual Postgres parser, to validate each statement against Postgres syntax.
 
-When you type or modify SQL, the language server:  
-1. Parses the SQL using `libpg_query`  
-2. Reports any syntax errors as diagnostics
+When you type or modify SQL, the language server:
+
+1. Splits the file into individual statements
+2. Parses each statement using `libpg_query`
+3. Reports any syntax errors as diagnostics
+
+### Statement Boundaries
+
+The statement splitter recognizes semicolons and blank lines as statement boundaries. This allows the language server to analyze statements while they are being written, before they have a terminating semicolon.
+
+Avoid blank lines where a single Postgres statement must continue, such as between the final common table expression (CTE) and its main query. For example, write:
+
+```sql
+WITH foo AS (
+    SELECT 1 AS id
+)
+SELECT id
+FROM foo;
+```
+
+Use blank lines between complete statements instead.
 
 ## Features
 
-- Always correct: Uses the same parser as Postgres itself for accurate syntax validation  
+- Postgres-compatible parsing: Uses the same parser as Postgres itself for accurate syntax validation
 - Named Parameter Support: We convert `:param` and `@param` to positional parameters (`$1`, `$2`) so the Postgres parser understands them and the LSP works with ORMs and other tooling  
 - `PL/pgSQL`: In addition to SQL, also validates `PL/pgSQL` function bodies for basic syntax errors  
 
