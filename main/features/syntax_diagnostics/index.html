@@ -53,6 +53,10 @@
                   <li class="toctree-l1 current"><a class="reference internal current" href="#">Syntax Diagnostics</a>
     <ul class="current">
     <li class="toctree-l2"><a class="reference internal" href="#how-it-works">How it Works</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#statement-boundaries">Statement Boundaries</a>
+    </li>
+        </ul>
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#features">Features</a>
     </li>
@@ -133,13 +137,26 @@
                 <h1 id="syntax-diagnostics">Syntax Diagnostics</h1>
 <p>The Postgres Language Server reports diagnostics for syntax errors in your SQL files. Syntax diagnostics are enabled by default and cannot be disabled.</p>
 <h2 id="how-it-works">How it Works</h2>
-<p>The language server uses <a href="https://github.com/pganalyze/libpg_query">libpg_query</a> to parse SQL statements, which is the actual Postgres parser packaged as a library. This ensures 100% compatibility with Postgres syntax.</p>
-<p>When you type or modify SQL, the language server:<br />
-1. Parses the SQL using <code>libpg_query</code><br />
-2. Reports any syntax errors as diagnostics</p>
+<p>The language server first splits SQL files into individual statements. It then uses <a href="https://github.com/pganalyze/libpg_query">libpg_query</a>, which packages the actual Postgres parser, to validate each statement against Postgres syntax.</p>
+<p>When you type or modify SQL, the language server:</p>
+<ol>
+<li>Splits the file into individual statements</li>
+<li>Parses each statement using <code>libpg_query</code></li>
+<li>Reports any syntax errors as diagnostics</li>
+</ol>
+<h3 id="statement-boundaries">Statement Boundaries</h3>
+<p>The statement splitter recognizes semicolons and blank lines as statement boundaries. This allows the language server to analyze statements while they are being written, before they have a terminating semicolon.</p>
+<p>Avoid blank lines where a single Postgres statement must continue, such as between the final common table expression (CTE) and its main query. For example, write:</p>
+<pre><code class="language-sql">WITH foo AS (
+    SELECT 1 AS id
+)
+SELECT id
+FROM foo;
+</code></pre>
+<p>Use blank lines between complete statements instead.</p>
 <h2 id="features">Features</h2>
 <ul>
-<li>Always correct: Uses the same parser as Postgres itself for accurate syntax validation  </li>
+<li>Postgres-compatible parsing: Uses the same parser as Postgres itself for accurate syntax validation</li>
 <li>Named Parameter Support: We convert <code>:param</code> and <code>@param</code> to positional parameters (<code>$1</code>, <code>$2</code>) so the Postgres parser understands them and the LSP works with ORMs and other tooling  </li>
 <li><code>PL/pgSQL</code>: In addition to SQL, also validates <code>PL/pgSQL</code> function bodies for basic syntax errors  </li>
 </ul>
