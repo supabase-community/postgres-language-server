@@ -63,19 +63,20 @@ pub fn parts_of_reference_query<'a>(
     let mut matches = cursor.matches(&PARTS_OF_REFERENCE_QUERY, node, stmt.as_bytes());
 
     if let Some(next) = matches.next() {
-        if next.captures.len() == 1 {
-            return Some((None, None, next.captures[0].node));
+        let captures = next.captures();
+        if captures.len() == 1 {
+            return Some((None, None, captures[0].node));
         };
 
-        if next.captures.len() == 2 {
-            return Some((None, Some(next.captures[0].node), next.captures[1].node));
+        if captures.len() == 2 {
+            return Some((None, Some(captures[0].node), captures[1].node));
         };
 
-        if next.captures.len() == 3 {
+        if captures.len() == 3 {
             return Some((
-                Some(next.captures[0].node),
-                Some(next.captures[1].node),
-                next.captures[2].node,
+                Some(captures[0].node),
+                Some(captures[1].node),
+                captures[2].node,
             ));
         };
     }

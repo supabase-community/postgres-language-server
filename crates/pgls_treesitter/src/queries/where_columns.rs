@@ -85,13 +85,13 @@ impl<'a> Query<'a> for WhereColumnMatch<'a> {
 
             let binary_expr_matches = binary_cursor.matches(
                 &BINARY_EXPR_QUERY,
-                where_match.captures[0].node,
+                where_match.captures()[0].node,
                 stmt.as_bytes(),
             );
 
             binary_expr_matches.for_each(|m| {
-                if m.captures.len() == 1 {
-                    let capture = m.captures[0].node;
+                if m.captures().len() == 1 {
+                    let capture = m.captures()[0].node;
 
                     if let Some((schema, alias, column)) = parts_of_reference_query(capture, stmt) {
                         to_return.push(QueryResult::WhereClauseColumns(WhereColumnMatch {

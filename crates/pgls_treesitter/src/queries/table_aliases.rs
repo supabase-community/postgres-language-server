@@ -76,9 +76,9 @@ impl<'a> Query<'a> for TableAliasMatch<'a> {
         let mut to_return = vec![];
 
         matches.for_each(|m| {
-            if m.captures.len() == 2 {
-                let obj_ref = m.captures[0].node;
-                let alias = m.captures[1].node;
+            if m.captures().len() == 2 {
+                let obj_ref = m.captures()[0].node;
+                let alias = m.captures()[1].node;
                 if let Some((_, schema, table)) = parts_of_reference_query(obj_ref, stmt) {
                     to_return.push(QueryResult::TableAliases(TableAliasMatch {
                         schema,

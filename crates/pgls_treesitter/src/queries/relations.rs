@@ -65,7 +65,7 @@ impl<'a> Query<'a> for RelationMatch<'a> {
         let mut to_return = vec![];
 
         matches.for_each(|m| {
-            m.captures.iter().for_each(|capture| {
+            m.captures().iter().for_each(|capture| {
                 if let Some((_, schema, table)) = parts_of_reference_query(capture.node, stmt) {
                     to_return.push(QueryResult::Relation(RelationMatch { schema, table }));
                 }
