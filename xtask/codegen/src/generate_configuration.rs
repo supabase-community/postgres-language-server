@@ -564,10 +564,10 @@ fn generate_lint_rules_file(
             #(
                 if let Some(rules) = rules.#group_idents.as_ref() {
                     for rule_name in #group_pascal_idents::GROUP_RULES {
-                        if let Some((_, Some(rule_options))) = rules.get_rule_configuration(rule_name) {
-                            if let Some(rule_key) = metadata.find_rule(#group_strings, rule_name) {
-                                analyser_rules.push_rule(rule_key, rule_options);
-                            }
+                        if let Some((_, Some(rule_options))) = rules.get_rule_configuration(rule_name)
+                            && let Some(rule_key) = metadata.find_rule(#group_strings, rule_name)
+                        {
+                            analyser_rules.push_rule(rule_key, rule_options);
                         }
                     }
                 }
@@ -629,16 +629,15 @@ fn generate_lint_group_struct(
         if tool_name == "splinter" {
             let rule_str = Literal::string(rule);
             splinter_ignore_matcher_lines.push(quote! {
-                if let Some(conf) = &self.#rule_identifier {
-                    if let Some(options) = conf.get_options_ref() {
-                        if !options.ignore.is_empty() {
-                            let mut m = pgls_matcher::Matcher::new(pgls_matcher::MatchOptions::default());
-                            for p in &options.ignore {
-                                let _ = m.add_pattern(p);
-                            }
-                            matchers.insert(#rule_str, m);
-                        }
+                if let Some(conf) = &self.#rule_identifier
+                    && let Some(options) = conf.get_options_ref()
+                    && !options.ignore.is_empty()
+                {
+                    let mut m = pgls_matcher::Matcher::new(pgls_matcher::MatchOptions::default());
+                    for p in &options.ignore {
+                        let _ = m.add_pattern(p);
                     }
+                    matchers.insert(#rule_str, m);
                 }
             });
         }
@@ -662,24 +661,24 @@ fn generate_lint_group_struct(
         });
 
         rule_enabled_check_line.push(quote! {
-            if let Some(rule) = self.#rule_identifier.as_ref() {
-                if rule.is_enabled() {
-                    index_set.insert(RuleFilter::Rule(
-                        Self::GROUP_NAME,
-                        Self::GROUP_RULES[#rule_position],
-                    ));
-                }
+            if let Some(rule) = self.#rule_identifier.as_ref()
+                && rule.is_enabled()
+            {
+                index_set.insert(RuleFilter::Rule(
+                    Self::GROUP_NAME,
+                    Self::GROUP_RULES[#rule_position],
+                ));
             }
         });
 
         rule_disabled_check_line.push(quote! {
-            if let Some(rule) = self.#rule_identifier.as_ref() {
-                if rule.is_disabled() {
-                    index_set.insert(RuleFilter::Rule(
-                        Self::GROUP_NAME,
-                        Self::GROUP_RULES[#rule_position],
-                    ));
-                }
+            if let Some(rule) = self.#rule_identifier.as_ref()
+                && rule.is_disabled()
+            {
+                index_set.insert(RuleFilter::Rule(
+                    Self::GROUP_NAME,
+                    Self::GROUP_RULES[#rule_position],
+                ));
             }
         });
 
@@ -1138,13 +1137,13 @@ fn generate_action_group_struct(
         });
 
         rule_enabled_check_line.push(quote! {
-            if let Some(rule) = self.#rule_identifier.as_ref() {
-                if rule.is_enabled() {
-                    index_set.insert(RuleFilter::Rule(
-                        Self::GROUP_NAME,
-                        Self::GROUP_RULES[#rule_position],
-                    ));
-                }
+            if let Some(rule) = self.#rule_identifier.as_ref()
+                && rule.is_enabled()
+            {
+                index_set.insert(RuleFilter::Rule(
+                    Self::GROUP_NAME,
+                    Self::GROUP_RULES[#rule_position],
+                ));
             }
         });
 
