@@ -31,7 +31,7 @@ pub fn criterion_benchmark(c: &mut Criterion) {
         let tbl_token = matches
             .next()
             .expect("invalid TS query for the SQL")
-            .captures[0]
+            .captures()[0]
             .node;
 
         let token_to_replace = black_box("clients");
@@ -129,7 +129,7 @@ where
         let tbl_token = matches
             .next()
             .expect("invalid TS query for the SQL")
-            .captures[0]
+            .captures()[0]
             .node;
 
         let token_to_replace = black_box("and");
@@ -266,7 +266,7 @@ where
         let tbl_token = matches
             .next()
             .expect("invalid TS query for the SQL")
-            .captures[0]
+            .captures()[0]
             .node;
 
         let token_to_replace = black_box("not in");

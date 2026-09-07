@@ -71,7 +71,7 @@ impl<'a> Query<'a> for SelectColumnMatch<'a> {
         let mut to_return = vec![];
 
         matches.for_each(|m| {
-            m.captures.iter().for_each(|capture| {
+            m.captures().iter().for_each(|capture| {
                 if let Some((schema, alias, column)) = parts_of_reference_query(capture.node, stmt)
                 {
                     to_return.push(QueryResult::SelectClauseColumns(SelectColumnMatch {
