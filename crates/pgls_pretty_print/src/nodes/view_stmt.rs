@@ -8,6 +8,14 @@ use crate::{
 use super::node_list::emit_comma_separated_list;
 
 pub(super) fn emit_view_stmt(e: &mut EventEmitter, n: &ViewStmt) {
+    emit_view_stmt_impl(e, n, true);
+}
+
+pub(super) fn emit_view_stmt_no_semicolon(e: &mut EventEmitter, n: &ViewStmt) {
+    emit_view_stmt_impl(e, n, false);
+}
+
+fn emit_view_stmt_impl(e: &mut EventEmitter, n: &ViewStmt, with_semicolon: bool) {
     e.group_start(GroupKind::ViewStmt);
 
     e.token(TokenKind::CREATE_KW);
@@ -110,7 +118,9 @@ pub(super) fn emit_view_stmt(e: &mut EventEmitter, n: &ViewStmt) {
         }
     }
 
-    e.token(TokenKind::SEMICOLON);
+    if with_semicolon {
+        e.token(TokenKind::SEMICOLON);
+    }
 
     e.group_end();
 }

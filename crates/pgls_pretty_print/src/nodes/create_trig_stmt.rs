@@ -8,6 +8,14 @@ use crate::{
 use pgls_query::protobuf::CreateTrigStmt;
 
 pub(super) fn emit_create_trig_stmt(e: &mut EventEmitter, n: &CreateTrigStmt) {
+    emit_create_trig_stmt_impl(e, n, true);
+}
+
+pub(super) fn emit_create_trig_stmt_no_semicolon(e: &mut EventEmitter, n: &CreateTrigStmt) {
+    emit_create_trig_stmt_impl(e, n, false);
+}
+
+fn emit_create_trig_stmt_impl(e: &mut EventEmitter, n: &CreateTrigStmt, with_semicolon: bool) {
     e.group_start(GroupKind::CreateTrigStmt);
 
     e.token(TokenKind::CREATE_KW);
@@ -158,7 +166,9 @@ pub(super) fn emit_create_trig_stmt(e: &mut EventEmitter, n: &CreateTrigStmt) {
     }
     e.token(TokenKind::R_PAREN);
 
-    e.token(TokenKind::SEMICOLON);
+    if with_semicolon {
+        e.token(TokenKind::SEMICOLON);
+    }
 
     e.group_end();
 }
