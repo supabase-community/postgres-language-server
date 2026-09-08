@@ -126,6 +126,40 @@ mod tests {
     }
 
     #[test]
+    fn parses_named_schema_qualifiers() {
+        let cases = [
+            r#"
+SELECT
+    customers.id
+FROM staging.customers
+CROSS JOIN :raw_data.migration_infos;
+"#,
+            "SELECT * FROM @schema.items;",
+            "SELECT * FROM $schema.items;",
+            r#"SELECT * FROM :"schema".items;"#,
+            "SELECT * FROM :table;",
+        ];
+
+        let store = PgQueryStore::new();
+        for input in cases {
+            let result = store.get_or_cache_ast(&StatementId::new(input));
+            assert!(result.is_ok(), "failed to parse {input:?}: {result:?}");
+        }
+    }
+
+    #[test]
+    fn preserves_array_slice_syntax_when_normalizing_parameters() {
+        let input = "SELECT array_to_string(arr[3:array_upper(arr, 1)], ',') FROM t;";
+        let normalized = convert_to_positional_params(input);
+
+        assert_eq!(normalized, input);
+
+        let store = PgQueryStore::new();
+        let result = store.get_or_cache_ast(&StatementId::new(input));
+        assert!(result.is_ok(), "failed to parse {input:?}: {result:?}");
+    }
+
+    #[test]
     fn test_plpgsql_syntax_error() {
         let input = "
 create function test_organisation_id ()
