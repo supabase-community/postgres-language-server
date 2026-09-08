@@ -266,6 +266,57 @@ async fn test_syntax_error(test_db: PgPool) {
 }
 
 #[tokio::test]
+async fn named_parameter_normalization_preserves_syntax_diagnostic_offsets() {
+    let workspace = get_test_workspace(None).expect("Unable to create test workspace");
+    let path = PgLSPath::new("named-parameter.sql");
+    let content = "SELECT * FROM :very_long_schema.existing_table AS t seect 1;";
+
+    workspace
+        .open_file(OpenFileParams {
+            path: path.clone(),
+            content: content.into(),
+            version: 1,
+        })
+        .expect("Unable to open test file");
+
+    let diagnostics = workspace
+        .pull_file_diagnostics(crate::workspace::PullFileDiagnosticsParams {
+            path,
+            categories: RuleCategories::all(),
+            max_diagnostics: 100,
+            only: vec![],
+            skip: vec![],
+        })
+        .expect("Unable to pull diagnostics")
+        .diagnostics;
+
+    let syntax_diagnostic = diagnostics
+        .iter()
+        .find(|diagnostic| {
+            diagnostic
+                .category()
+                .is_some_and(|category| category.name() == "syntax")
+        })
+        .expect("Expected one syntax diagnostic");
+
+    let expected_span = TextRange::new(0.into(), u32::try_from(content.len()).unwrap().into());
+    assert_eq!(syntax_diagnostic.location().span, Some(expected_span));
+
+    let qualifier_start = content
+        .find(":very_long_schema")
+        .expect("query contains the named qualifier");
+    assert_ne!(
+        syntax_diagnostic.location().span,
+        Some(TextRange::new(
+            u32::try_from(qualifier_start).unwrap().into(),
+            u32::try_from(qualifier_start + ":very_long_schema".len())
+                .unwrap()
+                .into()
+        ))
+    );
+}
+
+#[tokio::test]
 async fn correctly_ignores_files() {
     let mut conf = PartialConfiguration::init();
     conf.merge_with(PartialConfiguration {
