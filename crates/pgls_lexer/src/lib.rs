@@ -1,10 +1,12 @@
 mod codegen;
 mod lexed;
 mod lexer;
+mod params;
 
 pub use crate::codegen::syntax_kind::SyntaxKind;
 pub use crate::lexed::{LexDiagnostic, Lexed};
 pub use crate::lexer::Lexer;
+pub use crate::params::convert_to_positional_params;
 
 /// Lex the input string into tokens and diagnostics
 pub fn lex(input: &str) -> Lexed<'_> {
