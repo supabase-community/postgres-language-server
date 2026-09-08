@@ -1,0 +1,8 @@
+---
+source: crates/pgls_typecheck/tests/diagnostics.rs
+assertion_line: 96
+expression: content
+---
+CREATE TABLE t3 AS SELECT t.a FROM ~~~nonexistent_table~~~ AS t;
+
+relation &quot;nonexistent_table&quot; does not exist

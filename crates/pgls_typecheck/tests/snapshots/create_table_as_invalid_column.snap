@@ -1,0 +1,8 @@
+---
+source: crates/pgls_typecheck/tests/diagnostics.rs
+assertion_line: 96
+expression: content
+---
+CREATE TABLE t2 AS SELECT t.~~~nope~~~ FROM t;
+
+column t.nope does not exist

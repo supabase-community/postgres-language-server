@@ -187,6 +187,100 @@ async fn invalid_column(test_db: PgPool) {
 }
 
 #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn create_table_as_invalid_column(test_db: PgPool) {
+    TestSetup {
+        name: "create_table_as_invalid_column",
+        query: "CREATE TABLE t2 AS SELECT t.nope FROM t;",
+        setup: Some("CREATE TABLE t (a INT);"),
+        test_db: &test_db,
+        typed_identifiers: vec![],
+    }
+    .test()
+    .await;
+}
+
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn create_table_as_invalid_relation(test_db: PgPool) {
+    TestSetup {
+        name: "create_table_as_invalid_relation",
+        query: "CREATE TABLE t3 AS SELECT t.a FROM nonexistent_table AS t;",
+        setup: Some("CREATE TABLE t (a INT);"),
+        test_db: &test_db,
+        typed_identifiers: vec![],
+    }
+    .test()
+    .await;
+}
+
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn create_materialized_view_as_invalid_column(test_db: PgPool) {
+    TestSetup {
+        name: "create_materialized_view_as_invalid_column",
+        query: "CREATE MATERIALIZED VIEW mv1 AS SELECT t.nope FROM t;",
+        setup: Some("CREATE TABLE t (a INT);"),
+        test_db: &test_db,
+        typed_identifiers: vec![],
+    }
+    .test()
+    .await;
+}
+
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn create_view_as_invalid_column(test_db: PgPool) {
+    TestSetup {
+        name: "create_view_as_invalid_column",
+        query: "CREATE VIEW v1 AS SELECT t.nope FROM t;",
+        setup: Some("CREATE TABLE t (a INT);"),
+        test_db: &test_db,
+        typed_identifiers: vec![],
+    }
+    .test()
+    .await;
+}
+
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn create_as_valid_queries_do_not_execute_ddl(test_db: PgPool) {
+    test_db
+        .execute("CREATE TABLE t (a INT);")
+        .await
+        .expect("Failed to create test table");
+
+    for (name, query) in [
+        (
+            "create_table_as_valid",
+            "CREATE TABLE t2 AS SELECT t.a FROM t;",
+        ),
+        (
+            "create_materialized_view_as_valid",
+            "CREATE MATERIALIZED VIEW mv1 AS SELECT t.a FROM t;",
+        ),
+        (
+            "create_view_as_valid",
+            "CREATE VIEW v1 AS SELECT t.a FROM t;",
+        ),
+    ] {
+        TestSetup {
+            name,
+            query,
+            setup: None,
+            test_db: &test_db,
+            typed_identifiers: vec![],
+        }
+        .test()
+        .await;
+    }
+
+    for object_name in ["t2", "mv1", "v1"] {
+        let object = sqlx::query_scalar::<_, Option<String>>("SELECT to_regclass($1)::text")
+            .bind(object_name)
+            .fetch_one(&test_db)
+            .await
+            .expect("Failed to check created object");
+        assert_eq!(object, None, "{object_name} should not have been created");
+    }
+}
+
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
 async fn invalid_type_in_function(test_db: PgPool) {
     // create or replace function clean_up(uid uuid)
     // returns void
