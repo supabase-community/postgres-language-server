@@ -1,0 +1,12 @@
+---
+source: crates/pgls_cli/tests/assert_check.rs
+assertion_line: 139
+expression: output
+---
+status: success
+stdout:
+WITH
+
+ x AS (SELECT 1 AS a)
+SELECT x.a FROM x;
+stderr:

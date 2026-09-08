@@ -120,6 +120,30 @@ fn check_stdin_snapshot() {
     target_os = "windows",
     ignore = "snapshot expectations only validated on unix-like platforms"
 )]
+fn check_indented_cte_after_blank_line_does_not_panic() {
+    let output = run_check_with(
+        &[
+            "--config-path",
+            CONFIG_PATH,
+            "--stdin-file-path",
+            "repro.sql",
+            "--log-level",
+            "none",
+        ],
+        Some("WITH\n\n x AS (SELECT 1 AS a)\nSELECT x.a FROM x;\n"),
+        None,
+    );
+
+    assert!(!output.contains("Encountered an unexpected error"));
+    assert!(!output.contains("assertion failed"));
+    assert_snapshot!(output);
+}
+
+#[test]
+#[cfg_attr(
+    target_os = "windows",
+    ignore = "snapshot expectations only validated on unix-like platforms"
+)]
 fn check_directory_traversal_snapshot() {
     let project_dir = Path::new("tests/fixtures/traversal");
     assert_snapshot!(run_check_with(
