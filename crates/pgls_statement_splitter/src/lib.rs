@@ -17,7 +17,7 @@ pub struct SplitResult {
 pub fn split(sql: &str) -> SplitResult {
     let lexed = Lexer::new(sql).lex();
 
-    let mut splitter = Splitter::new(&lexed);
+    let mut splitter = Splitter::with_blank_line_boundaries(&lexed);
 
     let _ = source(&mut splitter);
 
