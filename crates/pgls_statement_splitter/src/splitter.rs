@@ -45,8 +45,6 @@ pub struct Splitter<'a> {
 impl<'a> Splitter<'a> {
     /// Splits on `;` and on structural statement starts only. A blank line is
     /// not a statement boundary.
-    // Unused until split() grows its coarse pass in the next commit.
-    #[allow(dead_code)]
     pub fn new(lexed: &'a Lexed<'a>) -> Self {
         Self::with_options(lexed, false)
     }
