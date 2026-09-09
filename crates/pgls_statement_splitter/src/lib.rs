@@ -5,7 +5,7 @@ pub mod diagnostics;
 mod splitter;
 
 use diagnostics::SplitDiagnostic;
-use pgls_lexer::{Lexed, Lexer, convert_to_positional_params};
+use pgls_lexer::{Lexed, Lexer, SyntaxKind, convert_to_positional_params};
 use pgls_text_size::TextRange;
 use splitter::{SplitResult as PassResult, Splitter, source};
 
@@ -35,15 +35,34 @@ pub fn split(sql: &str) -> SplitResult {
         .into_iter()
         .map(|err| (lexed.range(err.token), err.msg))
         .collect();
+    let mut blank_lines = lexed.has_blank_line().then(|| {
+        (0..lexed.len().saturating_sub(1))
+            .filter(|&idx| {
+                lexed.kind(idx) == SyntaxKind::LINE_ENDING && lexed.line_ending_count(idx) >= 2
+            })
+            .map(|idx| lexed.range(idx))
+            .peekable()
+    });
 
     let mut ranges = Vec::with_capacity(coarse.ranges.len());
     let mut errors: Vec<SplitDiagnostic> = lexed.errors().into_iter().map(Into::into).collect();
 
     for range in coarse.ranges {
+        let contains_blank_line = blank_lines.as_mut().is_some_and(|blank_lines| {
+            while blank_lines
+                .next_if(|blank_line| blank_line.end() <= range.start())
+                .is_some()
+            {}
+
+            blank_lines
+                .peek()
+                .is_some_and(|blank_line| range.contains_range(*blank_line))
+        });
+
         // The two passes differ only in how they treat a blank line, so a
         // fragment without one would come back from the recovery pass
         // byte-identical, errors included. Nothing to ask PostgreSQL about.
-        if !contains_blank_line(&sql[range]) {
+        if !contains_blank_line {
             ranges.push(range);
             errors.extend(
                 coarse_errors
@@ -113,32 +132,6 @@ fn parses(fragment: &str) -> bool {
 /// kept whole, because PostgreSQL happily reads `BEGIN` as a table alias.
 fn splits_into_valid_statements(fragment: &str, pieces: &[TextRange]) -> bool {
     pieces.len() > 1 && pieces.iter().all(|piece| parses(&fragment[*piece]))
-}
-
-/// Whether `s` contains a blank line: two line endings separated only by
-/// horizontal whitespace.
-///
-/// This is a plain text scan, so it also matches blank lines inside string
-/// literals and comments, and it is looser than the splitter's own rule, which
-/// requires consecutive line endings within a single token. Both differences
-/// err the same way: an unnecessary parse, never an incorrect split.
-fn contains_blank_line(s: &str) -> bool {
-    let mut after_line_ending = false;
-
-    for byte in s.bytes() {
-        match byte {
-            b'\n' => {
-                if after_line_ending {
-                    return true;
-                }
-                after_line_ending = true;
-            }
-            b'\r' | b' ' | b'\t' | 0x0b | 0x0c => {}
-            _ => after_line_ending = false,
-        }
-    }
-
-    false
 }
 
 #[cfg(test)]

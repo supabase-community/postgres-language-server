@@ -108,6 +108,13 @@ mod tests {
         let lexed = lex(input);
         assert_eq!(lexed.len(), 1);
         assert_eq!(lexed.kind(0), SyntaxKind::EOF);
+        assert!(!lexed.has_blank_line());
+    }
+
+    #[test]
+    fn test_blank_line_detection() {
+        assert!(!lex("SELECT 1\nSELECT 2").has_blank_line());
+        assert!(lex("SELECT 1\n\nSELECT 2").has_blank_line());
     }
 
     #[test]
