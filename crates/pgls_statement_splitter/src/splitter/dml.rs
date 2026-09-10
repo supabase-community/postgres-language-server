@@ -82,7 +82,7 @@ pub(crate) fn insert(p: &mut Splitter) -> SplitterResult {
     p.expect(SyntaxKind::INSERT_KW)?;
     p.expect(SyntaxKind::INTO_KW)?;
 
-    unknown(p, &[SyntaxKind::SELECT_KW])
+    unknown(p, &[SyntaxKind::WITH_KW, SyntaxKind::SELECT_KW])
 }
 
 pub(crate) fn update(p: &mut Splitter) -> SplitterResult {
