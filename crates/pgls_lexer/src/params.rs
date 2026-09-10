@@ -23,18 +23,25 @@ const IDENTIFIER_CONTEXT: [SyntaxKind; 15] = [
     SyntaxKind::DOT,
 ];
 
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct NamedParameterConversion {
+    pub sql: String,
+    pub has_identifier_parameters: bool,
+}
+
 /// Converts named parameters in a SQL query string to parser-compatible placeholders.
 ///
 /// Replacements preserve the source byte length so parser diagnostics can be mapped directly
 /// back to the original query. A raw colon inside brackets is left untouched because it may be
 /// PostgreSQL array-slice syntax rather than a named parameter.
-pub fn convert_to_positional_params(text: &str) -> String {
+pub fn convert_to_positional_params_with_metadata(text: &str) -> NamedParameterConversion {
     let mut result = String::with_capacity(text.len());
     let mut value_params: HashMap<&str, usize> = HashMap::new();
     let mut identifier_params: HashMap<&str, usize> = HashMap::new();
     let mut value_index = 1;
     let mut identifier_index = 0;
     let mut bracket_depth = 0_usize;
+    let mut has_identifier_parameters = false;
 
     let lexed = lex(text);
     for (token_idx, kind) in lexed.tokens().enumerate() {
@@ -58,6 +65,10 @@ pub fn convert_to_positional_params(text: &str) -> String {
                 _ if previous.is_some_and(|kind| IDENTIFIER_CONTEXT.contains(&kind)) => true,
                 _ => false,
             };
+
+            if is_identifier {
+                has_identifier_parameters = true;
+            }
 
             let replacement = if is_identifier {
                 let index = *identifier_params.entry(token_text).or_insert_with(|| {
@@ -88,7 +99,14 @@ pub fn convert_to_positional_params(text: &str) -> String {
     }
 
     debug_assert_eq!(result.len(), text.len());
-    result
+    NamedParameterConversion {
+        sql: result,
+        has_identifier_parameters,
+    }
+}
+
+pub fn convert_to_positional_params(text: &str) -> String {
+    convert_to_positional_params_with_metadata(text).sql
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -248,5 +266,35 @@ mod tests {
 
         assert_eq!(normalized, "select arr[$1      ], arr[$2    ], arr[$3    ]");
         assert_eq!(normalized.len(), input.len());
+    }
+
+    #[test]
+    fn reports_identifier_parameter_conversion_metadata() {
+        let input = "select * from :raw_data.documents where id = :id";
+        let conversion = convert_to_positional_params_with_metadata(input);
+
+        assert_eq!(
+            conversion.sql,
+            "select * from a        .documents where id = $1 "
+        );
+        assert!(conversion.has_identifier_parameters);
+        assert_eq!(conversion.sql.len(), input.len());
+        assert_eq!(convert_to_positional_params(input), conversion.sql);
+    }
+
+    #[test]
+    fn value_parameters_and_array_slices_do_not_report_identifier_metadata() {
+        let value_input = "select :id, @name, $email, :'status'";
+        let value_conversion = convert_to_positional_params_with_metadata(value_input);
+
+        assert!(!value_conversion.has_identifier_parameters);
+        assert_eq!(value_conversion.sql.len(), value_input.len());
+
+        let slice_input = "select arr[3:array_upper(arr, 1)]";
+        let slice_conversion = convert_to_positional_params_with_metadata(slice_input);
+
+        assert!(!slice_conversion.has_identifier_parameters);
+        assert_eq!(slice_conversion.sql, slice_input);
+        assert_eq!(slice_conversion.sql.len(), slice_input.len());
     }
 }
