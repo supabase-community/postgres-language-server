@@ -353,6 +353,54 @@ END;",
     }
 
     #[test]
+    fn create_as_with_cte() {
+        let create_statements = [
+            "CREATE TABLE target AS",
+            "CREATE MATERIALIZED VIEW target AS",
+            "CREATE VIEW target AS",
+        ];
+
+        for create_as in create_statements {
+            let create = format!(
+                "{create_as}
+WITH cte AS (
+    SELECT 1 AS id
+)
+SELECT id FROM cte;"
+            );
+            let input = format!(
+                "{create}
+SELECT 2;"
+            );
+
+            Tester::from(input.as_str())
+                .expect_statements(vec![create.as_str(), "SELECT 2;"])
+                .assert_no_errors();
+        }
+    }
+
+    #[test]
+    fn create_view_with_options_as_cte() {
+        Tester::from(
+            "CREATE VIEW target WITH (security_invoker) AS
+WITH cte AS (
+    SELECT 1 AS id
+)
+SELECT id FROM cte;
+SELECT 2;",
+        )
+        .expect_statements(vec![
+            "CREATE VIEW target WITH (security_invoker) AS
+WITH cte AS (
+    SELECT 1 AS id
+)
+SELECT id FROM cte;",
+            "SELECT 2;",
+        ])
+        .assert_no_errors();
+    }
+
+    #[test]
     fn c_style_comments() {
         Tester::from("/* this is a test */\nselect 1").expect_statements(vec!["select 1"]);
     }
@@ -450,6 +498,25 @@ LIMIT
     fn with_cte() {
         Tester::from("with test as (select 1 as id) select * from test;")
             .expect_statements(vec!["with test as (select 1 as id) select * from test;"]);
+    }
+
+    #[test]
+    fn with_cte_followed_by_statement() {
+        Tester::from(
+            "WITH cte AS (
+    SELECT 1 AS id
+)
+SELECT id FROM cte;
+SELECT 2;",
+        )
+        .expect_statements(vec![
+            "WITH cte AS (
+    SELECT 1 AS id
+)
+SELECT id FROM cte;",
+            "SELECT 2;",
+        ])
+        .assert_no_errors();
     }
 
     #[test]
