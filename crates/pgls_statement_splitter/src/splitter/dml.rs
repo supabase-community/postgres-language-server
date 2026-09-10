@@ -27,17 +27,13 @@ pub(crate) fn cte(p: &mut Splitter) -> SplitterResult {
         }
     }
 
-    unknown(
-        p,
-        &[
-            SyntaxKind::SELECT_KW,
-            SyntaxKind::INSERT_KW,
-            SyntaxKind::UPDATE_KW,
-            SyntaxKind::DELETE_KW,
-            SyntaxKind::MERGE_KW,
-        ],
-    )?;
-    Ok(())
+    match p.current() {
+        SyntaxKind::SELECT_KW => select(p),
+        SyntaxKind::INSERT_KW => insert(p),
+        SyntaxKind::UPDATE_KW => update(p),
+        SyntaxKind::DELETE_KW => delete(p),
+        _ => unknown(p, &[]),
+    }
 }
 
 /// `EXPLAIN [ ANALYZE ] [ VERBOSE ] <statement>` and
