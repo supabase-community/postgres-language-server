@@ -5,37 +5,133 @@ pub mod diagnostics;
 mod splitter;
 
 use diagnostics::SplitDiagnostic;
-use pgls_lexer::Lexer;
+use pgls_lexer::{Lexed, Lexer, SyntaxKind, convert_to_positional_params};
 use pgls_text_size::TextRange;
-use splitter::{Splitter, source};
+use splitter::{SplitResult as PassResult, Splitter, source};
 
 pub struct SplitResult {
     pub ranges: Vec<TextRange>,
     pub errors: Vec<SplitDiagnostic>,
 }
 
+/// Splits `sql` into the ranges of the statements it contains.
+///
+/// Statements are delimited by `;` and by the statement starts the splitter
+/// knows about. A blank line is *not* a statement boundary, unless splitting on
+/// it is the only reading that makes sense: either the fragment does not parse
+/// as a whole, or it does but splitting it yields several statements that are
+/// each valid on their own — which is what a missing `;` looks like.
+///
+/// That keeps error recovery working while typing, without cutting valid SQL in
+/// two just because it is formatted across a blank line.
 pub fn split(sql: &str) -> SplitResult {
     let lexed = Lexer::new(sql).lex();
+    let coarse = split_pass(&lexed, false);
 
-    let mut splitter = Splitter::new(&lexed);
+    // Resolved to text ranges up front so each one can be attributed to the
+    // fragment that contains it. There is normally none at all.
+    let coarse_errors: Vec<(TextRange, String)> = coarse
+        .errors
+        .into_iter()
+        .map(|err| (lexed.range(err.token), err.msg))
+        .collect();
+    let mut blank_lines = lexed.has_blank_line().then(|| {
+        (0..lexed.len().saturating_sub(1))
+            .filter(|&idx| {
+                lexed.kind(idx) == SyntaxKind::LINE_ENDING && lexed.line_ending_count(idx) >= 2
+            })
+            .map(|idx| lexed.range(idx))
+            .peekable()
+    });
+
+    let mut ranges = Vec::with_capacity(coarse.ranges.len());
+    let mut errors: Vec<SplitDiagnostic> = lexed.errors().into_iter().map(Into::into).collect();
+
+    for range in coarse.ranges {
+        let contains_blank_line = blank_lines.as_mut().is_some_and(|blank_lines| {
+            while blank_lines
+                .next_if(|blank_line| blank_line.end() <= range.start())
+                .is_some()
+            {}
+
+            blank_lines
+                .peek()
+                .is_some_and(|blank_line| range.contains_range(*blank_line))
+        });
+
+        // The two passes differ only in how they treat a blank line, so a
+        // fragment without one would come back from the recovery pass
+        // byte-identical, errors included. Nothing to ask PostgreSQL about.
+        if !contains_blank_line {
+            ranges.push(range);
+            errors.extend(
+                coarse_errors
+                    .iter()
+                    .filter(|(span, _)| range.contains_range(*span))
+                    .map(|(span, msg)| SplitDiagnostic::new(msg.clone(), *span)),
+            );
+            continue;
+        }
+
+        // Recovery pass: re-split this fragment on its own, this time treating
+        // blank lines as statement boundaries. Its lexing errors are ignored;
+        // the whole-source lex above already reported them.
+        let offset = range.start();
+        let fragment = Lexer::new(&sql[range]).lex();
+        let recovered = split_pass(&fragment, true);
+
+        if parses(&sql[range]) && !splits_into_valid_statements(&sql[range], &recovered.ranges) {
+            // PostgreSQL is happy with the fragment as a whole, so any splitter
+            // complaint about it was a false positive. Drop it with the blank line.
+            ranges.push(range);
+            continue;
+        }
+
+        ranges.extend(recovered.ranges.into_iter().map(|r| r + offset));
+        errors.extend(
+            recovered
+                .errors
+                .into_iter()
+                .map(|err| SplitDiagnostic::new(err.msg, fragment.range(err.token) + offset)),
+        );
+    }
+
+    SplitResult { ranges, errors }
+}
+
+fn split_pass(lexed: &Lexed, blank_line_is_boundary: bool) -> PassResult {
+    let mut splitter = if blank_line_is_boundary {
+        Splitter::with_blank_line_boundaries(lexed)
+    } else {
+        Splitter::new(lexed)
+    };
 
     let _ = source(&mut splitter);
 
-    let split_result = splitter.finish();
+    splitter.finish()
+}
 
-    let mut errors: Vec<SplitDiagnostic> = lexed.errors().into_iter().map(Into::into).collect();
+/// Whether PostgreSQL can parse `fragment`.
+///
+/// Named parameters are normalized to positional ones first: libpg_query reads
+/// `$id` as an unterminated dollar-quote and rejects it, so the workspace
+/// applies the same normalization before parsing.
+///
+/// `split_with_parser` runs the raw parser without deserializing the protobuf
+/// AST, which is all that is needed to answer this question.
+fn parses(fragment: &str) -> bool {
+    let normalized = convert_to_positional_params(fragment);
+    pgls_query::split_with_parser(&normalized).is_ok()
+}
 
-    errors.extend(
-        split_result
-            .errors
-            .into_iter()
-            .map(|err| SplitDiagnostic::from_split_error(err, &lexed)),
-    );
-
-    SplitResult {
-        ranges: split_result.ranges,
-        errors,
-    }
+/// Whether splitting `fragment` on its blank lines yields more than one piece,
+/// each a valid statement on its own.
+///
+/// This is what a missing `;` between two statements looks like. Without the
+/// check, `SELECT ... FROM t` followed by a blank line and `BEGIN;` would be
+/// kept whole, because PostgreSQL happily reads `BEGIN` as a table alias.
+fn splits_into_valid_statements(fragment: &str, pieces: &[TextRange]) -> bool {
+    pieces.len() > 1 && pieces.iter().all(|piece| parses(&fragment[*piece]))
 }
 
 #[cfg(test)]
@@ -824,5 +920,79 @@ VALUES
     fn backslash_commands_surrounding_statements() {
         Tester::from("\\dt\nselect 1;\n\\du\nselect 2;\n\\dn")
             .expect_statements(vec!["select 1;", "select 2;"]);
+    }
+
+    // --- Blank lines inside a statement (issue #784) --------------------------
+
+    /// A blank line inside a FROM clause is not a statement boundary.
+    #[test]
+    fn blank_line_inside_from() {
+        Tester::from("SELECT\n\tt.a\nFROM t\n\nLEFT JOIN u ON u.a = t.a;")
+            .assert_single_statement()
+            .assert_no_errors();
+    }
+
+    #[test]
+    fn blank_line_after_last_cte() {
+        Tester::from("with a as (select 1)\n\nselect * from a;")
+            .assert_single_statement()
+            .assert_no_errors();
+    }
+
+    #[test]
+    fn blank_line_between_ctes() {
+        Tester::from("with a as (select 1),\n\nb as (select 2)\n\nselect * from a, b;")
+            .assert_single_statement()
+            .assert_no_errors();
+    }
+
+    /// The recovery pass still splits on blank lines when the fragment cannot
+    /// be parsed, which is what keeps error recovery usable in the editor.
+    #[test]
+    fn blank_line_in_unparsable_sql_still_splits() {
+        Tester::from("random stuff\n\nmore randomness\n\nselect 3").expect_statements(vec![
+            "random stuff",
+            "more randomness",
+            "select 3",
+        ]);
+    }
+
+    /// A blank line inside a string literal is not a boundary either.
+    #[test]
+    fn blank_line_in_string_literal() {
+        Tester::from("select '\n\n' from t;")
+            .assert_single_statement()
+            .assert_no_errors();
+    }
+
+    /// libpg_query rejects named parameters, so the parse check normalizes them
+    /// the same way the workspace does before parsing.
+    #[test]
+    fn blank_line_with_named_param() {
+        Tester::from("select id\nfrom t\n\nwhere id = $some_id;")
+            .assert_single_statement()
+            .assert_no_errors();
+    }
+
+    #[test]
+    fn semicolon_in_comment_and_dollar_quote() {
+        Tester::from("select /*;*/ 1;\nselect $$;$$;")
+            .expect_statements(vec!["select /*;*/ 1;", "select $$;$$;"])
+            .assert_no_errors();
+    }
+
+    /// A missing `;` must not let the next statement be swallowed as an alias:
+    /// `FROM lotest_stash_values BEGIN` parses, `BEGIN` being an unreserved
+    /// keyword, so the blank line is the only thing telling them apart.
+    #[test]
+    fn blank_line_splits_when_both_halves_are_valid_statements() {
+        Tester::from("SELECT a FROM t\n\nBEGIN;")
+            .expect_statements(vec!["SELECT a FROM t", "BEGIN;"]);
+    }
+
+    #[test]
+    fn empty_input() {
+        assert_eq!(split("").ranges.len(), 0);
+        assert_eq!(split("   \n  \n ").ranges.len(), 0);
     }
 }
