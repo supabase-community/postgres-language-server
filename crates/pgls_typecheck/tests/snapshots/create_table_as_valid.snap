@@ -1,0 +1,6 @@
+---
+source: crates/pgls_typecheck/tests/diagnostics.rs
+assertion_line: 96
+expression: content
+---
+No Diagnostic
