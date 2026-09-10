@@ -17,7 +17,7 @@ use document::{ExecuteStatementMapper, TypecheckDiagnosticsMapper};
 #[cfg(feature = "db")]
 use futures::{StreamExt, TryStreamExt, stream};
 #[cfg(feature = "db")]
-use pg_query::convert_to_positional_params;
+use pg_query::convert_to_positional_params_with_metadata;
 use pgls_analyse::AnalysisFilter;
 use pgls_analyser::{Analyser, AnalyserConfig, AnalyserParams, LinterOptions};
 
@@ -610,49 +610,63 @@ impl Workspace for WorkspaceServer {
                                     if let Some(ast) = ast {
                                         // Type checking
                                         if typecheck_enabled {
-                                            let typecheck_result =
-                                                pgls_typecheck::check_sql(TypecheckParams {
-                                                    conn: &pool,
-                                                    sql: convert_to_positional_params(id.content())
-                                                        .as_str(),
-                                                    ast: &ast,
-                                                    tree: &cst,
-                                                    schema_cache: schema_cache.as_ref(),
-                                                    search_path_patterns,
-                                                    identifiers: fn_sig
-                                                        .map(|s| {
-                                                            s.args
-                                                                .iter()
-                                                                .map(|a| TypedIdentifier {
-                                                                    path: s.name.clone(),
-                                                                    name: a.name.clone(),
-                                                                    type_: IdentifierType {
-                                                                        schema: a.type_.schema.clone(),
-                                                                        name: a.type_.name.clone(),
-                                                                        is_array: a.type_.is_array,
-                                                                    },
-                                                                })
-                                                                .collect::<Vec<_>>()
-                                                        })
-                                                        .unwrap_or_default(),
-                                                })
-                                                .await;
+                                            let conversion =
+                                                convert_to_positional_params_with_metadata(
+                                                    id.content(),
+                                                );
 
-                                            match typecheck_result {
-                                                Ok(Some(diag)) => {
-                                                    let r = diag
-                                                        .location()
-                                                        .span
-                                                        .map(|span| span + range.start());
-                                                    diagnostics.push(
-                                                        diag.with_file_path(
-                                                            path.as_path().display().to_string(),
-                                                        )
-                                                        .with_file_span(r.unwrap_or(range)),
-                                                    );
+                                            if !conversion.has_identifier_parameters {
+                                                let typecheck_result =
+                                                    pgls_typecheck::check_sql(TypecheckParams {
+                                                        conn: &pool,
+                                                        sql: conversion.sql.as_str(),
+                                                        ast: &ast,
+                                                        tree: &cst,
+                                                        schema_cache: schema_cache.as_ref(),
+                                                        search_path_patterns,
+                                                        identifiers: fn_sig
+                                                            .map(|s| {
+                                                                s.args
+                                                                    .iter()
+                                                                    .map(|a| TypedIdentifier {
+                                                                        path: s.name.clone(),
+                                                                        name: a.name.clone(),
+                                                                        type_: IdentifierType {
+                                                                            schema: a
+                                                                                .type_
+                                                                                .schema
+                                                                                .clone(),
+                                                                            name: a
+                                                                                .type_
+                                                                                .name
+                                                                                .clone(),
+                                                                            is_array: a
+                                                                                .type_
+                                                                                .is_array,
+                                                                        },
+                                                                    })
+                                                                    .collect::<Vec<_>>()
+                                                            })
+                                                            .unwrap_or_default(),
+                                                    })
+                                                    .await;
+
+                                                match typecheck_result {
+                                                    Ok(Some(diag)) => {
+                                                        let r = diag
+                                                            .location()
+                                                            .span
+                                                            .map(|span| span + range.start());
+                                                        diagnostics.push(
+                                                            diag.with_file_path(
+                                                                path.as_path().display().to_string(),
+                                                            )
+                                                            .with_file_span(r.unwrap_or(range)),
+                                                        );
+                                                    }
+                                                    Ok(None) => {}
+                                                    Err(err) => return Err(err),
                                                 }
-                                                Ok(None) => {}
-                                                Err(err) => return Err(err),
                                             }
                                         }
 

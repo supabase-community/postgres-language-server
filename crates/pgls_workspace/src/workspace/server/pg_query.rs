@@ -2,7 +2,7 @@ use std::num::NonZeroUsize;
 use std::sync::{Arc, LazyLock, Mutex};
 
 use lru::LruCache;
-pub use pgls_lexer::convert_to_positional_params;
+pub use pgls_lexer::{convert_to_positional_params, convert_to_positional_params_with_metadata};
 use pgls_query_ext::diagnostics::*;
 use pgls_text_size::TextRange;
 use regex::Regex;
