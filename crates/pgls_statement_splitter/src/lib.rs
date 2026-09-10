@@ -353,6 +353,23 @@ END;",
     }
 
     #[test]
+    fn insert_with_cte() {
+        let insert = "INSERT INTO target (id)
+WITH source AS (
+    SELECT 1 AS id
+)
+SELECT id FROM source;";
+        let input = format!(
+            "{insert}
+SELECT 2;"
+        );
+
+        Tester::from(input.as_str())
+            .expect_statements(vec![insert, "SELECT 2;"])
+            .assert_no_errors();
+    }
+
+    #[test]
     fn c_style_comments() {
         Tester::from("/* this is a test */\nselect 1").expect_statements(vec!["select 1"]);
     }
