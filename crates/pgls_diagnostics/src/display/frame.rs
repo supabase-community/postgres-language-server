@@ -204,7 +204,8 @@ pub(super) fn print_frame(fmt: &mut fmt::Formatter<'_>, location: Location<'_>) 
                     .checked_sub(line_text.trim_start().text_len())
                     // SAFETY: The length of `line_text.trim_start()` should
                     // never be larger than `line_text` itself
-                    .expect("integer overflow");
+                    .expect("integer overflow")
+                    .min(end_index_relative_to_line);
                 Some(TextRange::new(start_index, end_index_relative_to_line))
             } else {
                 None
@@ -295,8 +296,9 @@ pub(super) fn print_highlighted_frame(
         } else if is_last_line {
             let start_index: u32 = current_text.text_len().into();
 
-            let safe_start_index =
-                start_index.saturating_sub(current_text.trim_start().text_len().into());
+            let safe_start_index = start_index
+                .saturating_sub(current_text.trim_start().text_len().into())
+                .min(end_index_relative_to_line.into());
 
             TextRange::new(TextSize::from(safe_start_index), end_index_relative_to_line)
         } else {
