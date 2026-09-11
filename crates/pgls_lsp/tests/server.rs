@@ -18,7 +18,7 @@ use pgls_workspace::DynRef;
 use serde::Serialize;
 use serde::de::DeserializeOwned;
 use serde_json::Value;
-use serde_json::{from_value, to_value};
+use serde_json::{from_value, json, to_value};
 use sqlx::Executor;
 use sqlx::PgPool;
 use std::any::type_name;
@@ -475,6 +475,122 @@ async fn test_database_connection(test_db: PgPool) -> Result<()> {
     .is_ok();
 
     assert!(notification, "expected diagnostics for unknown column");
+
+    server.shutdown().await?;
+    reader.abort();
+
+    Ok(())
+}
+
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn session_database_context_sets_database_and_ordered_search_path(
+    test_db: PgPool,
+) -> Result<()> {
+    let factory = ServerFactory::default();
+    let mut fs = MemoryFileSystem::default();
+    fs.insert(
+        url!("postgres-language-server.jsonc")
+            .to_file_path()
+            .unwrap(),
+        serde_json::to_string_pretty(&PartialConfiguration::init()).unwrap(),
+    );
+
+    test_db
+        .execute(
+            r#"
+                create schema context_first;
+                create schema context_second;
+                create table context_first.context_users (id integer);
+            "#,
+        )
+        .await
+        .expect("failed to set up the session context schemas");
+
+    let (service, client) = factory
+        .create_with_fs(None, DynRef::Owned(Box::new(fs)))
+        .into_inner();
+    let (stream, sink) = client.split();
+    let mut server = Server::new(service);
+
+    let (sender, mut receiver) = channel(CHANNEL_BUFFER_SIZE);
+    let reader = tokio::spawn(client_handler(stream, sink, sender));
+
+    server.initialize().await?;
+    server.initialized().await?;
+
+    let opts = test_db.connect_options();
+    server
+        .request::<_, ()>(
+            "pgls/setDatabaseContext",
+            "_set_session_database_context",
+            json!({
+                "context": {
+                    "connection": {
+                        "host": opts.get_host(),
+                        "port": opts.get_port(),
+                        "username": "postgres",
+                        "password": "postgres",
+                        "database": opts.get_database().unwrap_or("postgres")
+                    },
+                    "searchPath": ["context_first", "context_second", "public"]
+                }
+            }),
+        )
+        .await?
+        .context("pgls/setDatabaseContext returned None")?;
+
+    assert!(
+        server
+            .request::<_, ()>(
+                "pgls/setDatabaseContext",
+                "_reject_invalid_session_database_context",
+                json!({
+                    "context": {
+                        "connection": {
+                            "host": opts.get_host(),
+                            "port": opts.get_port(),
+                            "username": "postgres",
+                            "password": "postgres",
+                            "database": opts.get_database().unwrap_or("postgres"),
+                            "connectionString": "postgres://forbidden"
+                        },
+                        "searchPath": ["public"]
+                    }
+                }),
+            )
+            .await
+            .is_err(),
+        "malformed context payload must be rejected"
+    );
+
+    server.load_configuration().await?;
+
+    server
+        .open_document("select id, unknown_column from context_users;")
+        .await?;
+
+    let saw_database_diagnostic = tokio::time::timeout(Duration::from_secs(5), async {
+        loop {
+            match receiver.next().await {
+                Some(ServerNotification::PublishDiagnostics(msg))
+                    if msg
+                        .diagnostics
+                        .iter()
+                        .any(|diagnostic| diagnostic.message.contains("unknown_column")) =>
+                {
+                    return true;
+                }
+                _ => continue,
+            }
+        }
+    })
+    .await
+    .is_ok();
+
+    assert!(
+        saw_database_diagnostic,
+        "expected a database-backed diagnostic through the session database context"
+    );
 
     server.shutdown().await?;
     reader.abort();

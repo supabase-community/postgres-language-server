@@ -1,4 +1,5 @@
 use crate::capabilities::server_capabilities;
+use crate::database_context::SetDatabaseContextParams;
 use crate::handlers;
 use crate::session::{
     CapabilitySet, CapabilityStatus, ClientInformation, Session, SessionHandle, SessionKey,
@@ -484,6 +485,23 @@ impl ServerFactory {
             server.session.broadcast_shutdown();
             ready(Ok(Some(())))
         });
+
+        builder = builder.custom_method(
+            "pgls/setDatabaseContext",
+            |server: &LSPServer, params: SetDatabaseContextParams| {
+                let session = server.session.clone();
+                async move {
+                    info!(
+                        method = "pgls/setDatabaseContext",
+                        "Received database context request"
+                    );
+                    session.set_session_database_context(params.context);
+                    session.load_workspace_settings(None).await;
+                    session.update_all_diagnostics().await;
+                    Ok(())
+                }
+            },
+        );
 
         workspace_method!(builder, is_path_ignored);
         workspace_method!(builder, update_settings);
