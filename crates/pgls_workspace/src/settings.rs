@@ -19,7 +19,8 @@ use pgls_configuration::{
     diagnostics::InvalidIgnorePattern,
     files::FilesConfiguration,
     format::{
-        CommaStyle, FormatConfiguration, IndentStyle, KeywordCase, Layout, LogicalOperatorPlacement,
+        CastStyle, CommaStyle, FormatConfiguration, IndentStyle, KeywordCase, Layout,
+        LogicalOperatorPlacement,
     },
     migrations::{MigrationsConfiguration, PartialMigrationsConfiguration},
     pglinter::PglinterConfiguration,
@@ -381,6 +382,7 @@ fn to_formatter_settings(
         comma_style: conf.comma_style,
         logical_operator_placement: conf.logical_operator_placement,
         layout: conf.layout,
+        cast_style: conf.cast_style,
         skip_fn_bodies: conf.skip_fn_bodies,
         ignored_files: to_matcher(working_directory.clone(), Some(&conf.ignore))?,
         included_files: to_matcher(working_directory.clone(), Some(&conf.include))?,
@@ -592,6 +594,9 @@ pub struct FormatterSettings {
     /// How a statement is laid out across lines: fit or expanded. Default: fit.
     pub layout: Layout,
 
+    /// How an explicit cast is spelled: cast or operator. Default: cast.
+    pub cast_style: CastStyle,
+
     /// If true, skip formatting of SQL function bodies (keep them verbatim). Default: false.
     pub skip_fn_bodies: bool,
 
@@ -615,6 +620,7 @@ impl Default for FormatterSettings {
             comma_style: CommaStyle::default(),
             logical_operator_placement: LogicalOperatorPlacement::default(),
             layout: Layout::default(),
+            cast_style: CastStyle::default(),
             skip_fn_bodies: false,
             ignored_files: Matcher::empty(),
             included_files: Matcher::empty(),

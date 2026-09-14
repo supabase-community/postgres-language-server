@@ -954,6 +954,7 @@ impl Workspace for WorkspaceServer {
             comma_style: settings.formatter.comma_style.into(),
             logical_operator_placement: settings.formatter.logical_operator_placement.into(),
             layout: settings.formatter.layout.into(),
+            cast_style: settings.formatter.cast_style.into(),
         };
 
         let mut diagnostics = Vec::new();

@@ -165,6 +165,37 @@ impl From<Layout> for pgls_pretty_print::Layout {
     }
 }
 
+/// How an explicit cast is spelled.
+#[derive(Clone, Copy, Debug, Default, Deserialize, Eq, Merge, PartialEq, Serialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
+#[serde(rename_all = "lowercase")]
+pub enum CastStyle {
+    #[default]
+    Cast,
+    Operator,
+}
+
+impl FromStr for CastStyle {
+    type Err = &'static str;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "cast" => Ok(Self::Cast),
+            "operator" => Ok(Self::Operator),
+            _ => Err("Value not supported for CastStyle. Use 'cast' or 'operator'."),
+        }
+    }
+}
+
+impl From<CastStyle> for pgls_pretty_print::CastStyle {
+    fn from(style: CastStyle) -> Self {
+        match style {
+            CastStyle::Cast => Self::Cast,
+            CastStyle::Operator => Self::Operator,
+        }
+    }
+}
+
 /// The configuration for SQL formatting.
 #[derive(Clone, Debug, Deserialize, Eq, Partial, PartialEq, Serialize)]
 #[partial(derive(Bpaf, Clone, Eq, PartialEq, Merge))]
@@ -203,6 +234,10 @@ pub struct FormatConfiguration {
     /// "expanded" always breaks between clauses. Default: "fit".
     #[partial(bpaf(long("layout")))]
     pub layout: Layout,
+    /// How an explicit cast is spelled: "cast" for `CAST(x AS t)`, "operator" for `x::t`.
+    /// Default: "cast".
+    #[partial(bpaf(long("cast-style")))]
+    pub cast_style: CastStyle,
     /// If `true`, skip formatting of SQL function bodies (keep them verbatim). Default: `false`.
     #[partial(bpaf(long("skip-fn-bodies")))]
     pub skip_fn_bodies: bool,
@@ -227,6 +262,7 @@ impl Default for FormatConfiguration {
             comma_style: CommaStyle::default(),
             logical_operator_placement: LogicalOperatorPlacement::default(),
             layout: Layout::default(),
+            cast_style: CastStyle::default(),
             skip_fn_bodies: false,
             ignore: Default::default(),
             include: Default::default(),
