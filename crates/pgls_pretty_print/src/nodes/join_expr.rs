@@ -21,7 +21,16 @@ pub(super) fn emit_join_expr(e: &mut EventEmitter, n: &JoinExpr) {
     }
 
     if n.larg.is_some() {
-        e.line(LineType::SoftOrSpace);
+        if matches!(e.config().layout, crate::Layout::Expanded) {
+            // A hard break makes every soft line in the current group break too. Close the left
+            // operand's group before emitting it so the joined table and qualification can still
+            // fit.
+            e.group_end();
+            super::emit_layout_break(e);
+            e.group_start(GroupKind::JoinExpr);
+        } else {
+            e.line(LineType::SoftOrSpace);
+        }
     }
 
     let mut first_token = true;
