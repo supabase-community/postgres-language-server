@@ -273,6 +273,10 @@ pub struct FormatConfiguration {
     /// element on the keyword line. Default: "break".
     #[partial(bpaf(long("clause-body-style")))]
     pub clause_body_style: ClauseBodyStyle,
+    /// If `true`, the terminating semicolon goes on its own line when the statement spans several
+    /// lines. Default: `false`.
+    #[partial(bpaf(long("isolate-semicolon")))]
+    pub isolate_semicolon: bool,
     /// If `true`, skip formatting of SQL function bodies (keep them verbatim). Default: `false`.
     #[partial(bpaf(long("skip-fn-bodies")))]
     pub skip_fn_bodies: bool,
@@ -299,6 +303,7 @@ impl Default for FormatConfiguration {
             layout: Layout::default(),
             cast_style: CastStyle::default(),
             clause_body_style: ClauseBodyStyle::default(),
+            isolate_semicolon: false,
             skip_fn_bodies: false,
             ignore: Default::default(),
             include: Default::default(),

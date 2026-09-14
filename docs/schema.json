@@ -571,6 +571,13 @@
             }
           ]
         },
+        "isolateSemicolon": {
+          "description": "If `true`, the terminating semicolon goes on its own line when the statement spans several lines. Default: `false`.",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
         "keywordCase": {
           "description": "Keyword casing: \"upper\" or \"lower\". Default: \"lower\".",
           "anyOf": [

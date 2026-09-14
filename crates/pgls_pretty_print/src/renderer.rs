@@ -25,6 +25,8 @@ pub struct RenderConfig {
     pub constant_case: KeywordCase,
     /// Casing for data types (text, varchar, int, etc.)
     pub type_case: KeywordCase,
+    /// Put the terminating semicolon on its own line when the statement spans several lines.
+    pub isolate_semicolon: bool,
 }
 
 impl Default for RenderConfig {
@@ -36,6 +38,7 @@ impl Default for RenderConfig {
             keyword_case: KeywordCase::default(),
             constant_case: KeywordCase::default(),
             type_case: KeywordCase::default(),
+            isolate_semicolon: false,
         }
     }
 }
