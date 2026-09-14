@@ -38,6 +38,9 @@ fn clear_location(node: &mut NodeEnum) {
             NodeMut::ColumnRef(n) => {
                 (*n).location = 0;
             }
+            NodeMut::WithClause(n) => {
+                (*n).location = 0;
+            }
             NodeMut::ParamRef(n) => {
                 (*n).location = 0;
             }

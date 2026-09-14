@@ -1,0 +1,12 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/single/create_table_as_with_cte.sql
+---
+create table s.t
+as
+  with
+  c as (select x.a from s.x order by x.a)
+  select
+    c.a
+  from
+    c;
