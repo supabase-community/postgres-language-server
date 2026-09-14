@@ -1,0 +1,11 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/single/compact_clause_condition.sql
+---
+select
+	staging.buildings.id
+from
+	staging.buildings
+where staging.buildings.construction_year >
+	1950 and
+	staging.buildings.address_fk is not null;

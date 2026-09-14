@@ -577,9 +577,16 @@ pub(super) fn emit_with_comments_at(
 }
 
 pub(super) fn emit_clause_condition(e: &mut EventEmitter, clause: &Node) {
+    use crate::ClauseBodyStyle;
     use crate::emitter::LineType;
 
-    e.line(LineType::SoftOrSpace);
+    // Compact keeps the condition on the keyword line. The indent stays in both cases so that the
+    // condition's own continuation lines, the second AND of a chain for instance, sit under it.
+    match e.config().clause_body_style {
+        ClauseBodyStyle::Compact => e.space(),
+        ClauseBodyStyle::Break => e.line(LineType::SoftOrSpace),
+    }
+
     e.indent_start();
     emit_node(clause, e);
     e.indent_end();
