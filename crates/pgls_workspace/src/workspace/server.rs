@@ -980,7 +980,11 @@ impl Workspace for WorkspaceServer {
                     continue;
                 };
 
-                formatted_sql_fn_bodies.insert(parent_id, result.formatted);
+                let Some(formatted) = restore_named_parameters(text, &result.formatted, ast) else {
+                    continue;
+                };
+
+                formatted_sql_fn_bodies.insert(parent_id, formatted);
             }
         }
 
@@ -1021,14 +1025,33 @@ impl Workspace for WorkspaceServer {
 
                     match pgls_pretty_print::format_statement(&ast, &text, &config) {
                         Ok(result) => {
-                            if text != result.formatted {
-                                statements.push(StatementFormatResult {
-                                    original: text.clone(),
-                                    formatted: result.formatted.clone(),
-                                    range: stmt_range,
-                                });
+                            match restore_named_parameters(&text, &result.formatted, &ast) {
+                                Some(formatted) => {
+                                    if text != formatted {
+                                        statements.push(StatementFormatResult {
+                                            original: text.clone(),
+                                            formatted: formatted.clone(),
+                                            range: stmt_range,
+                                        });
+                                    }
+                                    formatted_output.push_str(&formatted);
+                                }
+                                None => {
+                                    diagnostics.push(SDiagnostic::new(
+                                        pgls_diagnostics::Error::from(
+                                            WorkspaceError::format_error(
+                                                "Named parameters could not be restored after \
+                                                 formatting, the statement was left untouched"
+                                                    .to_string(),
+                                            ),
+                                        )
+                                        .with_file_path(&path_str)
+                                        .with_file_span(stmt_range),
+                                    ));
+
+                                    formatted_output.push_str(&text);
+                                }
                             }
-                            formatted_output.push_str(&result.formatted);
                         }
                         Err(err) => {
                             diagnostics.push(SDiagnostic::new(
@@ -1188,6 +1211,69 @@ impl Workspace for WorkspaceServer {
 /// if it is a symlink that resolves to a directory.
 fn is_dir(path: &Path) -> bool {
     path.is_dir() || (path.is_symlink() && fs::read_link(path).is_ok_and(|path| path.is_dir()))
+}
+
+/// Put psql named parameters back where the formatter printed their placeholders.
+///
+/// The parser only ever sees placeholders, so the printed statement carries `$1` or a bare
+/// identifier instead of `:'agen_code'` or `:raw_data`. Substitution happens on the token stream
+/// so that a `$1` inside a string literal is left alone, and the result is proven by converting it
+/// back and comparing the normalized ASTs: a statement that does not survive that round trip is
+/// reported as unrestorable and kept as it was written.
+fn restore_named_parameters(
+    original: &str,
+    formatted: &str,
+    original_ast: &pgls_query::NodeEnum,
+) -> Option<String> {
+    use pgls_lexer::{SyntaxKind, lex};
+
+    let conversion = pgls_lexer::convert_to_positional_params_with_metadata(original);
+
+    if conversion.identifier_replacements.is_empty() && conversion.value_replacements.is_empty() {
+        return Some(formatted.to_string());
+    }
+
+    if !conversion.restorable {
+        return None;
+    }
+
+    let lexed = lex(formatted);
+    let mut restored = String::with_capacity(formatted.len());
+
+    for (idx, kind) in lexed.tokens().enumerate() {
+        if kind == SyntaxKind::EOF {
+            break;
+        }
+
+        let text = lexed.text(idx);
+
+        let replacement = match kind {
+            SyntaxKind::IDENT => conversion.identifier_replacements.get(text),
+            SyntaxKind::POSITIONAL_PARAM => text
+                .trim_start_matches('$')
+                .parse::<usize>()
+                .ok()
+                .and_then(|index| conversion.value_replacements.get(&index)),
+            _ => None,
+        };
+
+        match replacement {
+            Some(source_text) => restored.push_str(source_text),
+            None => restored.push_str(text),
+        }
+    }
+
+    let reparsed = pgls_query::parse(&pgls_lexer::convert_to_positional_params(&restored)).ok()?;
+    let mut restored_ast = reparsed.into_root()?;
+    let mut expected_ast = original_ast.clone();
+    pgls_pretty_print::normalize_ast(&mut restored_ast);
+    pgls_pretty_print::normalize_ast(&mut expected_ast);
+
+    if restored_ast == expected_ast {
+        Some(restored)
+    } else {
+        None
+    }
 }
 
 #[cfg(all(test, feature = "db"))]

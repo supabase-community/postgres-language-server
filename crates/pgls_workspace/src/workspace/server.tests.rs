@@ -317,6 +317,39 @@ async fn named_parameter_normalization_preserves_syntax_diagnostic_offsets() {
 }
 
 #[tokio::test]
+async fn format_preserves_named_parameters() {
+    let mut conf = PartialConfiguration::init();
+    conf.merge_with(PartialConfiguration {
+        format: Some(PartialFormatConfiguration {
+            enabled: Some(true),
+            ..Default::default()
+        }),
+        ..Default::default()
+    });
+
+    let workspace = get_test_workspace(Some(conf)).expect("Unable to create test workspace");
+    let path = PgLSPath::new("named-parameter-format.sql");
+    let content = "SELECT x FROM :raw_data.t WHERE t.a = :'agen_code' AND t.b = :var_date;";
+
+    workspace
+        .open_file(OpenFileParams {
+            path: path.clone(),
+            content: content.into(),
+            version: 1,
+        })
+        .expect("Unable to open test file");
+
+    let result = workspace
+        .pull_file_formatting(PullFileFormattingParams { path, range: None })
+        .expect("Unable to format file");
+
+    assert!(result.formatted.contains(":raw_data.t"));
+    assert!(result.formatted.contains(":'agen_code'"));
+    assert!(result.formatted.contains(":var_date"));
+    assert!(!result.formatted.contains("$1"));
+}
+
+#[tokio::test]
 async fn correctly_ignores_files() {
     let mut conf = PartialConfiguration::init();
     conf.merge_with(PartialConfiguration {
