@@ -1,0 +1,5 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/single/create_table_as_cross_join.sql
+---
+create table s.t as select a.id, b.label from s.a inner join s.b on true;
