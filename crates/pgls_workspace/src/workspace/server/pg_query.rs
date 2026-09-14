@@ -115,7 +115,7 @@ mod tests {
 
         assert_eq!(
             result,
-            "grant usage on schema public, app_public, app_hidden to a       ;"
+            "grant usage on schema public, app_public, app_hidden to db_role ;"
         );
 
         let store = PgQueryStore::new();
