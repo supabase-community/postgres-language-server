@@ -553,6 +553,17 @@
           "format": "uint16",
           "minimum": 0.0
         },
+        "logicalOperatorPlacement": {
+          "description": "Where a boolean operator sits when a condition breaks: \"trailing\" or \"leading\". Default: \"trailing\".",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/LogicalOperatorPlacement"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "skipFnBodies": {
           "description": "If `true`, skip formatting of SQL function bodies (keep them verbatim). Default: `false`.",
           "type": [
@@ -687,6 +698,14 @@
         }
       },
       "additionalProperties": false
+    },
+    "LogicalOperatorPlacement": {
+      "description": "Where a boolean operator sits when a condition breaks across lines.",
+      "type": "string",
+      "enum": [
+        "trailing",
+        "leading"
+      ]
     },
     "MigrationsConfiguration": {
       "description": "The configuration of the filesystem",

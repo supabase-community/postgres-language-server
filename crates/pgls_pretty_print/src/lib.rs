@@ -56,6 +56,16 @@ pub enum CommaStyle {
     Leading,
 }
 
+/// Where a boolean operator sits when a condition breaks across lines.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub enum LogicalOperatorPlacement {
+    /// `a = 1 AND` at the end of the line.
+    #[default]
+    Trailing,
+    /// `AND a = 1` at the start of the continuation line.
+    Leading,
+}
+
 #[derive(Debug, Clone)]
 pub struct FormatConfig {
     /// Maximum line width before breaking. Default: 100.
@@ -72,6 +82,8 @@ pub struct FormatConfig {
     pub type_case: KeywordCase,
     /// Where a comma sits when a list breaks. Default: Trailing.
     pub comma_style: CommaStyle,
+    /// Where a boolean operator sits when a condition breaks. Default: Trailing.
+    pub logical_operator_placement: LogicalOperatorPlacement,
 }
 
 impl Default for FormatConfig {
@@ -84,6 +96,7 @@ impl Default for FormatConfig {
             constant_case: KeywordCase::default(),
             type_case: KeywordCase::default(),
             comma_style: CommaStyle::default(),
+            logical_operator_placement: LogicalOperatorPlacement::default(),
         }
     }
 }
@@ -98,6 +111,7 @@ impl From<FormatConfig> for RenderConfig {
             constant_case,
             type_case,
             comma_style: _,
+            logical_operator_placement: _,
         } = config;
 
         Self {
