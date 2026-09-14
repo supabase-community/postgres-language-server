@@ -188,21 +188,27 @@ fn emit_select_stmt_impl(e: &mut EventEmitter, n: &SelectStmt, with_semicolon: b
 
         if !n.target_list.is_empty() {
             e.indent_start();
-            e.line(LineType::SoftOrSpace);
+            super::emit_layout_break(e);
 
-            emit_comma_separated_list(e, &n.target_list, super::emit_node);
+            for (index, target) in n.target_list.iter().enumerate() {
+                if index > 0 {
+                    e.token(TokenKind::COMMA);
+                    super::emit_layout_break(e);
+                }
+                super::emit_node(target, e);
+            }
 
             e.indent_end();
         }
 
         // Emit INTO clause if present (SELECT ... INTO table_name)
         if let Some(ref into_clause) = n.into_clause {
-            e.line(LineType::SoftOrSpace);
+            super::emit_layout_break(e);
             super::emit_into_clause(e, into_clause);
         }
 
         if !n.from_clause.is_empty() {
-            e.line(LineType::SoftOrSpace);
+            super::emit_layout_break(e);
             e.token(TokenKind::FROM_KW);
             e.line(LineType::SoftOrSpace);
 
@@ -214,14 +220,14 @@ fn emit_select_stmt_impl(e: &mut EventEmitter, n: &SelectStmt, with_semicolon: b
         }
 
         if let Some(ref where_clause) = n.where_clause {
-            e.line(LineType::SoftOrSpace);
+            super::emit_layout_break(e);
             e.token(TokenKind::WHERE_KW);
             super::emit_clause_condition(e, where_clause);
         }
 
         // Emit GROUP BY clause if present
         if !n.group_clause.is_empty() {
-            e.line(LineType::SoftOrSpace);
+            super::emit_layout_break(e);
             e.token(TokenKind::GROUP_KW);
             e.space();
             e.token(TokenKind::BY_KW);
@@ -238,14 +244,14 @@ fn emit_select_stmt_impl(e: &mut EventEmitter, n: &SelectStmt, with_semicolon: b
 
         // Emit HAVING clause if present
         if let Some(ref having_clause) = n.having_clause {
-            e.line(LineType::SoftOrSpace);
+            super::emit_layout_break(e);
             e.token(TokenKind::HAVING_KW);
             super::emit_clause_condition(e, having_clause);
         }
 
         // Emit WINDOW clause if present
         if !n.window_clause.is_empty() {
-            e.line(LineType::SoftOrSpace);
+            super::emit_layout_break(e);
             e.token(TokenKind::WINDOW_KW);
             e.line(LineType::SoftOrSpace);
             e.indent_start();
@@ -266,7 +272,7 @@ fn emit_select_stmt_impl(e: &mut EventEmitter, n: &SelectStmt, with_semicolon: b
 
         // Emit ORDER BY clause if present
         if !n.sort_clause.is_empty() {
-            e.line(LineType::SoftOrSpace);
+            super::emit_layout_break(e);
             e.token(TokenKind::ORDER_KW);
             e.space();
             e.token(TokenKind::BY_KW);
@@ -279,7 +285,7 @@ fn emit_select_stmt_impl(e: &mut EventEmitter, n: &SelectStmt, with_semicolon: b
         match n.limit_option() {
             LimitOption::WithTies => {
                 if let Some(ref limit_offset) = n.limit_offset {
-                    e.line(LineType::SoftOrSpace);
+                    super::emit_layout_break(e);
                     e.token(TokenKind::OFFSET_KW);
                     e.space();
                     super::emit_node(limit_offset, e);
@@ -288,7 +294,7 @@ fn emit_select_stmt_impl(e: &mut EventEmitter, n: &SelectStmt, with_semicolon: b
                 }
 
                 if let Some(ref limit_count) = n.limit_count {
-                    e.line(LineType::SoftOrSpace);
+                    super::emit_layout_break(e);
                     e.token(TokenKind::FETCH_KW);
                     e.space();
                     e.token(TokenKind::FIRST_KW);
@@ -304,14 +310,14 @@ fn emit_select_stmt_impl(e: &mut EventEmitter, n: &SelectStmt, with_semicolon: b
             }
             _ => {
                 if let Some(ref limit_count) = n.limit_count {
-                    e.line(LineType::SoftOrSpace);
+                    super::emit_layout_break(e);
                     e.token(TokenKind::LIMIT_KW);
                     e.space();
                     super::emit_node(limit_count, e);
                 }
 
                 if let Some(ref limit_offset) = n.limit_offset {
-                    e.line(LineType::SoftOrSpace);
+                    super::emit_layout_break(e);
                     e.token(TokenKind::OFFSET_KW);
                     e.space();
                     super::emit_node(limit_offset, e);
@@ -324,7 +330,7 @@ fn emit_select_stmt_impl(e: &mut EventEmitter, n: &SelectStmt, with_semicolon: b
                 if let Some(pgls_query::NodeEnum::LockingClause(locking_clause)) =
                     locking.node.as_ref()
                 {
-                    e.line(LineType::SoftOrSpace);
+                    super::emit_layout_break(e);
                     super::emit_locking_clause(e, locking_clause);
                 }
             }

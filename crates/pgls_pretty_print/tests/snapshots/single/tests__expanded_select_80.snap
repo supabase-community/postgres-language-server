@@ -1,0 +1,13 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/single/expanded_select.sql
+---
+select
+	t.a,
+	t.b
+from
+	s.t
+where
+	t.c = 1
+group by t.a
+order by t.a;
