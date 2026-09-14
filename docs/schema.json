@@ -342,6 +342,14 @@
       },
       "additionalProperties": false
     },
+    "CommaStyle": {
+      "description": "Where a comma sits when a list breaks across lines.",
+      "type": "string",
+      "enum": [
+        "trailing",
+        "leading"
+      ]
+    },
     "DatabaseConfiguration": {
       "description": "The configuration of the database connection.",
       "type": "object",
@@ -454,6 +462,17 @@
       "description": "The configuration for SQL formatting.",
       "type": "object",
       "properties": {
+        "commaStyle": {
+          "description": "Where a comma sits when a list breaks: \"trailing\" or \"leading\". Default: \"trailing\".",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/CommaStyle"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "constantCase": {
           "description": "Constant casing (NULL, TRUE, FALSE): \"upper\" or \"lower\". Default: \"lower\".",
           "anyOf": [

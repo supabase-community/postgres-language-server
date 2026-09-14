@@ -18,7 +18,7 @@ use pgls_configuration::{
     database::PartialDatabaseConfiguration,
     diagnostics::InvalidIgnorePattern,
     files::FilesConfiguration,
-    format::{FormatConfiguration, IndentStyle, KeywordCase},
+    format::{CommaStyle, FormatConfiguration, IndentStyle, KeywordCase},
     migrations::{MigrationsConfiguration, PartialMigrationsConfiguration},
     pglinter::PglinterConfiguration,
     plpgsql_check::PlPgSqlCheckConfiguration,
@@ -376,6 +376,7 @@ fn to_formatter_settings(
         keyword_case: conf.keyword_case,
         constant_case: conf.constant_case,
         type_case: conf.type_case,
+        comma_style: conf.comma_style,
         skip_fn_bodies: conf.skip_fn_bodies,
         ignored_files: to_matcher(working_directory.clone(), Some(&conf.ignore))?,
         included_files: to_matcher(working_directory.clone(), Some(&conf.include))?,
@@ -578,6 +579,9 @@ pub struct FormatterSettings {
     /// Data type casing (text, varchar, int): upper or lower. Default: lower.
     pub type_case: KeywordCase,
 
+    /// Where a comma sits when a list breaks: trailing or leading. Default: trailing.
+    pub comma_style: CommaStyle,
+
     /// If true, skip formatting of SQL function bodies (keep them verbatim). Default: false.
     pub skip_fn_bodies: bool,
 
@@ -598,6 +602,7 @@ impl Default for FormatterSettings {
             keyword_case: KeywordCase::default(),
             constant_case: KeywordCase::default(),
             type_case: KeywordCase::default(),
+            comma_style: CommaStyle::default(),
             skip_fn_bodies: false,
             ignored_files: Matcher::empty(),
             included_files: Matcher::empty(),

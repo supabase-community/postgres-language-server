@@ -70,6 +70,37 @@ impl From<KeywordCase> for pgls_pretty_print::renderer::KeywordCase {
     }
 }
 
+/// Where a comma sits when a list breaks across lines.
+#[derive(Clone, Copy, Debug, Default, Deserialize, Eq, Merge, PartialEq, Serialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
+#[serde(rename_all = "lowercase")]
+pub enum CommaStyle {
+    #[default]
+    Trailing,
+    Leading,
+}
+
+impl FromStr for CommaStyle {
+    type Err = &'static str;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "trailing" => Ok(Self::Trailing),
+            "leading" => Ok(Self::Leading),
+            _ => Err("Value not supported for CommaStyle. Use 'trailing' or 'leading'."),
+        }
+    }
+}
+
+impl From<CommaStyle> for pgls_pretty_print::CommaStyle {
+    fn from(style: CommaStyle) -> Self {
+        match style {
+            CommaStyle::Trailing => Self::Trailing,
+            CommaStyle::Leading => Self::Leading,
+        }
+    }
+}
+
 /// The configuration for SQL formatting.
 #[derive(Clone, Debug, Deserialize, Eq, Partial, PartialEq, Serialize)]
 #[partial(derive(Bpaf, Clone, Eq, PartialEq, Merge))]
@@ -97,6 +128,9 @@ pub struct FormatConfiguration {
     /// Data type casing (text, varchar, int): "upper" or "lower". Default: "lower".
     #[partial(bpaf(long("type-case")))]
     pub type_case: KeywordCase,
+    /// Where a comma sits when a list breaks: "trailing" or "leading". Default: "trailing".
+    #[partial(bpaf(long("comma-style")))]
+    pub comma_style: CommaStyle,
     /// If `true`, skip formatting of SQL function bodies (keep them verbatim). Default: `false`.
     #[partial(bpaf(long("skip-fn-bodies")))]
     pub skip_fn_bodies: bool,
@@ -118,6 +152,7 @@ impl Default for FormatConfiguration {
             keyword_case: KeywordCase::default(),
             constant_case: KeywordCase::default(),
             type_case: KeywordCase::default(),
+            comma_style: CommaStyle::default(),
             skip_fn_bodies: false,
             ignore: Default::default(),
             include: Default::default(),

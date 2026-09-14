@@ -46,6 +46,16 @@ pub enum FormatError {
 }
 
 /// Configuration for the SQL formatter.
+/// Where a comma sits when a list breaks across lines.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub enum CommaStyle {
+    /// `a,` at the end of the line.
+    #[default]
+    Trailing,
+    /// `, a` at the start of the continuation line.
+    Leading,
+}
+
 #[derive(Debug, Clone)]
 pub struct FormatConfig {
     /// Maximum line width before breaking. Default: 100.
@@ -60,6 +70,8 @@ pub struct FormatConfig {
     pub constant_case: KeywordCase,
     /// Casing for data types (text, varchar, int). Default: Lower.
     pub type_case: KeywordCase,
+    /// Where a comma sits when a list breaks. Default: Trailing.
+    pub comma_style: CommaStyle,
 }
 
 impl Default for FormatConfig {
@@ -71,19 +83,30 @@ impl Default for FormatConfig {
             keyword_case: KeywordCase::default(),
             constant_case: KeywordCase::default(),
             type_case: KeywordCase::default(),
+            comma_style: CommaStyle::default(),
         }
     }
 }
 
 impl From<FormatConfig> for RenderConfig {
     fn from(config: FormatConfig) -> Self {
+        let FormatConfig {
+            line_width,
+            indent_size,
+            indent_style,
+            keyword_case,
+            constant_case,
+            type_case,
+            comma_style: _,
+        } = config;
+
         Self {
-            max_line_length: config.line_width,
-            indent_size: config.indent_size,
-            indent_style: config.indent_style,
-            keyword_case: config.keyword_case,
-            constant_case: config.constant_case,
-            type_case: config.type_case,
+            max_line_length: line_width,
+            indent_size,
+            indent_style,
+            keyword_case,
+            constant_case,
+            type_case,
         }
     }
 }

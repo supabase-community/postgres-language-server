@@ -37,6 +37,7 @@ Configure formatting behavior in your `postgres-language-server.jsonc`:
 | `keywordCase` | `"lower"` | Casing for SQL keywords: `"upper"` or `"lower"` |
 | `constantCase` | `"lower"` | Casing for constants (NULL, TRUE, FALSE): `"upper"` or `"lower"` |
 | `typeCase` | `"lower"` | Casing for data types (text, int, varchar): `"upper"` or `"lower"` |
+| `commaStyle` | `"trailing"` | Where a comma sits when a list breaks: `"trailing"` or `"leading"` |
 
 ### Example Output
 
