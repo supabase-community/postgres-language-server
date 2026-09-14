@@ -97,6 +97,11 @@ fn parse_fixture(content: &str) -> (FormatConfig, Option<usize>, String) {
             ("clauseBodyStyle", "compact") => {
                 config.clause_body_style = ClauseBodyStyle::Compact;
             }
+            ("isolateSemicolon", value) => {
+                config.isolate_semicolon = value
+                    .parse()
+                    .expect("isolateSemicolon must be true or false");
+            }
             (key, value) => panic!("unknown pgls-format entry: {key}={value}"),
         }
     }
