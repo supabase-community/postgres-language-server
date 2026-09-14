@@ -3,6 +3,7 @@ use dir_test::{Fixture, dir_test};
 use insta::{assert_snapshot, with_settings};
 
 use pgls_pretty_print::{
+    FormatConfig,
     emitter::EventEmitter,
     nodes::emit_node_enum,
     normalize::normalize_ast,
@@ -40,15 +41,13 @@ enum StringState {
 /// A fixture may open with `-- pgls-format: key=value, key=value` to declare the configuration it
 /// must be rendered with. Keeping it in the fixture rather than in the harness is what lets an
 /// option that is off by default own its own test data.
-fn parse_fixture(content: &str) -> (RenderConfig, Option<usize>, String) {
+///
+/// It returns a `FormatConfig`, not a `RenderConfig`: some options decide which tokens exist and
+/// are therefore read by the emitter, so the fixture has to reach both sides of the pipeline.
+fn parse_fixture(content: &str) -> (FormatConfig, Option<usize>, String) {
     const HEADER: &str = "-- pgls-format:";
 
-    let mut config = RenderConfig {
-        max_line_length: 100,
-        indent_size: 2,
-        indent_style: IndentStyle::Spaces,
-        ..Default::default()
-    };
+    let mut config = FormatConfig::default();
     let mut explicit_width = None;
 
     let Some(rest) = content.strip_prefix(HEADER) else {
@@ -68,7 +67,7 @@ fn parse_fixture(content: &str) -> (RenderConfig, Option<usize>, String) {
         match (key.trim(), value.trim()) {
             ("lineWidth", value) => {
                 let width = value.parse().expect("lineWidth must be a number");
-                config.max_line_length = width;
+                config.line_width = width;
                 explicit_width = Some(width);
             }
             ("indentSize", value) => {
@@ -118,13 +117,15 @@ fn test_single(fixture: Fixture<&str>) {
 
         println!("Parsed AST: {ast:#?}");
 
-        let mut emitter = EventEmitter::new();
+        // The emitter gets the fixture config, not the default one: an option that decides which
+        // tokens exist is read here, before the renderer ever sees the events.
+        let mut emitter = EventEmitter::new(fixture_config.clone());
         emit_node_enum(&ast, &mut emitter);
 
         let mut output = String::new();
         let config = RenderConfig {
             max_line_length,
-            ..fixture_config.clone()
+            ..RenderConfig::from(fixture_config.clone())
         };
         let mut renderer = Renderer::new(&mut output, config);
         renderer.render(emitter.events).expect("Failed to render");
@@ -205,13 +206,15 @@ fn test_multi(fixture: Fixture<&str>) {
 
             println!("Parsed AST: {ast:#?}");
 
-            let mut emitter = EventEmitter::new();
+            // The emitter gets the fixture config, not the default one: an option that decides
+            // which tokens exist is read here, before the renderer ever sees the events.
+            let mut emitter = EventEmitter::new(fixture_config.clone());
             emit_node_enum(&ast, &mut emitter);
 
             let mut output = String::new();
             let config = RenderConfig {
                 max_line_length,
-                ..fixture_config.clone()
+                ..RenderConfig::from(fixture_config.clone())
             };
             let mut renderer = Renderer::new(&mut output, config);
             renderer.render(emitter.events).expect("Failed to render");

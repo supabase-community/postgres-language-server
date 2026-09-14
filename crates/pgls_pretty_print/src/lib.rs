@@ -176,6 +176,7 @@ fn format_statement_once(
     }
 
     let mut emitter = emitter::EventEmitter::with_comments(
+        config.clone(),
         attached.leading_by_location,
         attached.trailing_by_location,
     );

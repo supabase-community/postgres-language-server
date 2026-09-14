@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::Comment;
+use crate::{Comment, FormatConfig};
 pub use crate::codegen::group_kind::GroupKind;
 pub use crate::codegen::token_kind::TokenKind;
 
@@ -35,9 +35,14 @@ pub enum LayoutEvent {
     IndentEnd,
 }
 
-#[derive(Debug, Default)]
+/// Collects layout events for the renderer.
+///
+/// The emitter holds the configuration because some options decide which tokens exist at all,
+/// such as where a comma sits in a list, and not merely how a token is rendered.
+#[derive(Debug)]
 pub struct EventEmitter {
     pub events: Vec<LayoutEvent>,
+    config: FormatConfig,
     /// Comments still waiting to be emitted before a node, by source location.
     /// Entries are removed as they are emitted so that a comment cannot be printed twice, and so
     /// that the caller can check the map is empty afterwards.
@@ -50,16 +55,30 @@ pub struct EventEmitter {
 }
 
 impl EventEmitter {
-    pub fn new() -> Self {
-        Self::default()
+    pub fn new(config: FormatConfig) -> Self {
+        Self {
+            events: Vec::new(),
+            config,
+            leading_comments: HashMap::new(),
+            trailing_comments: HashMap::new(),
+            leading_line_comments_require_break: false,
+        }
+    }
+
+    // Later option PRs inspect this while deciding which layout events to emit.
+    #[allow(dead_code)]
+    pub fn config(&self) -> &FormatConfig {
+        &self.config
     }
 
     pub fn with_comments(
+        config: FormatConfig,
         leading_comments: HashMap<i32, Vec<Comment>>,
         trailing_comments: HashMap<i32, Vec<Comment>>,
     ) -> Self {
         Self {
             events: Vec::new(),
+            config,
             leading_comments,
             trailing_comments,
             leading_line_comments_require_break: false,
