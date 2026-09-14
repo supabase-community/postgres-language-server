@@ -1472,9 +1472,7 @@ select not a from (values (true)) as t (a) group by rollup (not a) having not no
 
 select not a from (values (true)) as t (a) group by rollup (not a) having not not a;
 
-select distinct on (
-  a,
-  b)
+select distinct on (a, b)
   a,
   b
 from
@@ -1485,9 +1483,7 @@ group by grouping sets ((a, b), a)
 order by a,
   b;
 
-select distinct on (
-  a,
-  b)
+select distinct on (a, b)
   a,
   b
 from
@@ -1498,9 +1494,7 @@ group by grouping sets ((a, b), a)
 order by a,
   b;
 
-select distinct on (
-  a,
-  b + 1)
+select distinct on (a, b + 1)
   a,
   b + 1
 from
@@ -1511,9 +1505,7 @@ group by grouping sets ((a, b + 1), a)
 order by a,
   b + 1;
 
-select distinct on (
-  a,
-  b + 1)
+select distinct on (a, b + 1)
   a,
   b + 1
 from

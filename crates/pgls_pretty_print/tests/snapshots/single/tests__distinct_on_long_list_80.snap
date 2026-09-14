@@ -1,0 +1,12 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/single/distinct_on_long_list.sql
+---
+select distinct on (addresses.hash)
+  addresses.hash as origin_hash,
+  addresses.entity_type,
+  addresses.entity_fk
+from
+  normalization.addresses
+order by addresses.hash,
+  addresses.entity_type;

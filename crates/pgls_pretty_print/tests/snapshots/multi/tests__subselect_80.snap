@@ -442,8 +442,7 @@ where
       id2
     from
       (
-        select distinct on (
-          id2)
+        select distinct on (id2)
           id1,
           id2
         from

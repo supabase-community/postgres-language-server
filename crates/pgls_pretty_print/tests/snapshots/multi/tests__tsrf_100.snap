@@ -1,7 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/tsrf.sql
-snapshot_kind: text
 ---
 select generate_series(1, 3);
 
@@ -225,8 +224,7 @@ select generate_series(1, 3) is distinct from 2;
 
 select * from int4mul(generate_series(1, 2), 10);
 
-select distinct on (
-  a)
+select distinct on (a)
   a,
   b,
   generate_series(1, 3) as g
@@ -242,8 +240,7 @@ from
   )
   as t (a, b);
 
-select distinct on (
-  a)
+select distinct on (a)
   a,
   b,
   generate_series(1, 3) as g
@@ -261,8 +258,7 @@ from
 order by a,
   b desc;
 
-select distinct on (
-  a)
+select distinct on (a)
   a,
   b,
   generate_series(1, 3) as g
@@ -281,10 +277,7 @@ order by a,
   b desc,
   g desc;
 
-select distinct on (
-  a,
-  b,
-  g)
+select distinct on (a, b, g)
   a,
   b,
   generate_series(1, 3) as g
@@ -303,8 +296,7 @@ order by a,
   b desc,
   g desc;
 
-select distinct on (
-  g)
+select distinct on (g)
   a,
   b,
   generate_series(1, 3) as g
