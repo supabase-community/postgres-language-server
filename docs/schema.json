@@ -296,6 +296,14 @@
         "operator"
       ]
     },
+    "ClauseBodyStyle": {
+      "description": "Where the body of a clause starts.",
+      "type": "string",
+      "enum": [
+        "break",
+        "compact"
+      ]
+    },
     "Cluster": {
       "description": "A list of rules that belong to this group",
       "type": "object",
@@ -475,6 +483,17 @@
           "anyOf": [
             {
               "$ref": "#/definitions/CastStyle"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "clauseBodyStyle": {
+          "description": "Where the body of a clause starts: \"break\" for a new line, \"compact\" to keep the first element on the keyword line. Default: \"break\".",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/ClauseBodyStyle"
             },
             {
               "type": "null"
