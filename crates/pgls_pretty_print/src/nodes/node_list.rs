@@ -1,7 +1,7 @@
 use pgls_query::Node;
 
-use crate::TokenKind;
 use crate::emitter::{EventEmitter, LineType};
+use crate::{CommaStyle, TokenKind};
 
 /// Controls the spacing behavior after separators in list helpers
 #[derive(Clone, Copy, Default)]
@@ -22,12 +22,25 @@ pub(super) fn emit_comma_separated_list_with_spacing<F>(
 ) where
     F: Fn(&Node, &mut EventEmitter),
 {
+    let leading = matches!(e.config().comma_style, CommaStyle::Leading);
+
     for (i, n) in nodes.iter().enumerate() {
         if i > 0 {
-            e.token(TokenKind::COMMA);
-            match spacing {
-                ListSeparatorSpacing::SoftOrSpace => e.line(LineType::SoftOrSpace),
-                ListSeparatorSpacing::Space => e.space(),
+            if leading {
+                // The break opportunity sits before the comma, so a broken list reads
+                // "\n, column" while a single line one still reads "a, b".
+                match spacing {
+                    ListSeparatorSpacing::SoftOrSpace => e.line(LineType::Soft),
+                    ListSeparatorSpacing::Space => {}
+                }
+                e.token(TokenKind::COMMA);
+                e.space();
+            } else {
+                e.token(TokenKind::COMMA);
+                match spacing {
+                    ListSeparatorSpacing::SoftOrSpace => e.line(LineType::SoftOrSpace),
+                    ListSeparatorSpacing::Space => e.space(),
+                }
             }
         }
         render(n, e);

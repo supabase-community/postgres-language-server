@@ -1,0 +1,10 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/single/leading_commas.sql
+---
+select
+	staging.buildings.identification_number
+	, staging.buildings.construction_year
+	, staging.buildings.address_fk
+from
+	staging.buildings;
