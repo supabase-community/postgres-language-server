@@ -133,8 +133,6 @@ pub(super) fn emit_identifier_maybe_quoted(e: &mut EventEmitter, value: &str) {
 ///
 /// A name that needs quotes keeps its own spelling: `"MyType"` and `"MYTYPE"` are two different
 /// types in PostgreSQL, so casing it would change which type is referenced.
-// Task 2 consumes this helper when emitting qualified type names.
-#[allow(dead_code)]
 pub(super) fn emit_type_identifier_maybe_quoted(e: &mut EventEmitter, value: &str) {
     if value.is_empty() {
         return;
