@@ -1,0 +1,3 @@
+ALTER TABLE s.t
+	ADD COLUMN IF NOT EXISTS row_id TEXT,
+	ADD COLUMN IF NOT EXISTS designation_source TEXT;
