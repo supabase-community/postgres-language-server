@@ -50,6 +50,7 @@ pub fn attach_comments(sql: &str, ast: &NodeEnum) -> AttachedComments {
         if !source_comment.comment.line_comment
             || line_prefix.trim().is_empty()
             || ends_with_clause_header(line_prefix)
+            || ends_with_structural_separator(line_prefix)
         {
             match locations
                 .iter()
@@ -127,6 +128,18 @@ fn ends_with_clause_header(line_prefix: &str) -> bool {
 
         prefix.is_empty() || prefix.chars().last().is_some_and(char::is_whitespace)
     })
+}
+
+/// Returns whether `line_prefix` ends with punctuation that separates AST nodes.
+///
+/// Commas and closing delimiters are emitted by parent formatters rather than a dedicated AST
+/// node. A comment after one of them must be emitted before the following node; otherwise it is
+/// incorrectly attached to the last child inside the preceding expression on the next pass.
+fn ends_with_structural_separator(line_prefix: &str) -> bool {
+    matches!(
+        line_prefix.trim_end().chars().last(),
+        Some(',' | ')' | ']' | '}')
+    )
 }
 
 struct SourceComment {
@@ -248,6 +261,24 @@ mod tests {
             .next()
             .expect("one entry");
         assert_eq!(comments[0].text, "-- sort by name");
+        assert!(comments[0].line_comment);
+    }
+
+    #[test]
+    fn a_comment_after_a_separator_attaches_to_the_node_that_follows_it() {
+        let sql = "SELECT a, -- temporarily omit b\nb FROM t";
+        let attached = attach_comments(sql, &parse(sql));
+
+        assert!(attached.unattached.is_empty());
+        assert_eq!(attached.leading_by_location.len(), 1);
+        assert!(attached.trailing_by_location.is_empty());
+
+        let comments = attached
+            .leading_by_location
+            .values()
+            .next()
+            .expect("one entry");
+        assert_eq!(comments[0].text, "-- temporarily omit b");
         assert!(comments[0].line_comment);
     }
 

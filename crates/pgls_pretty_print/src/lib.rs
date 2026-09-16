@@ -255,4 +255,40 @@ mod tests {
         assert!(first.contains("order by -- WHERE"));
         assert_eq!(first, second);
     }
+
+    #[test]
+    fn formatting_a_trailing_comment_after_a_right_hand_operand_is_idempotent() {
+        let sql = "SELECT * FROM t WHERE type_de_variable <> '011' -- exclude VAT\n;";
+        let ast = pgls_query::parse(sql).unwrap().into_root().unwrap();
+        let config = FormatConfig::default();
+
+        let first = format_statement(&ast, sql, &config)
+            .expect("first pass")
+            .formatted;
+        let reparsed = pgls_query::parse(&first).unwrap().into_root().unwrap();
+        let second = format_statement(&reparsed, &first, &config)
+            .expect("second pass")
+            .formatted;
+
+        assert!(first.contains("'011' -- exclude VAT"));
+        assert_eq!(first, second);
+    }
+
+    #[test]
+    fn formatting_a_comment_after_a_list_separator_is_idempotent() {
+        let sql = "SELECT a, -- temporarily omit b\nb FROM t;";
+        let ast = pgls_query::parse(sql).unwrap().into_root().unwrap();
+        let config = FormatConfig::default();
+
+        let first = format_statement(&ast, sql, &config)
+            .expect("first pass")
+            .formatted;
+        let reparsed = pgls_query::parse(&first).unwrap().into_root().unwrap();
+        let second = format_statement(&reparsed, &first, &config)
+            .expect("second pass")
+            .formatted;
+
+        assert!(first.contains("-- temporarily omit b"));
+        assert_eq!(first, second);
+    }
 }
