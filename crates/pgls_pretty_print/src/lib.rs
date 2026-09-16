@@ -532,4 +532,31 @@ mod tests {
 
         assert_eq!(first, second);
     }
+
+    #[test]
+    fn a_comment_before_a_window_definition_is_kept() {
+        let sql = "SELECT bool_or(a <> b) -- has_decimal\nOVER (PARTITION BY c) FROM s.t";
+        let ast = pgls_query::parse(sql).unwrap().into_root().unwrap();
+
+        let result = format_statement(&ast, sql, &FormatConfig::default()).expect("formatted");
+
+        assert!(result.formatted.contains("-- has_decimal"));
+    }
+
+    #[test]
+    fn formatting_a_comment_before_a_window_definition_is_idempotent() {
+        let sql = "SELECT bool_or(a <> b) -- has_decimal\nOVER (PARTITION BY c) FROM s.t";
+        let ast = pgls_query::parse(sql).unwrap().into_root().unwrap();
+        let config = FormatConfig::default();
+
+        let first = format_statement(&ast, sql, &config)
+            .expect("first pass")
+            .formatted;
+        let reparsed = pgls_query::parse(&first).unwrap().into_root().unwrap();
+        let second = format_statement(&reparsed, &first, &config)
+            .expect("second pass")
+            .formatted;
+
+        assert_eq!(first, second);
+    }
 }
