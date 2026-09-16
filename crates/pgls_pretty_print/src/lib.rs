@@ -499,4 +499,37 @@ mod tests {
         assert!(first.contains("-- the last one"));
         assert_eq!(first, second);
     }
+
+    #[test]
+    fn a_comment_in_an_update_set_list_is_kept() {
+        let sql =
+            "UPDATE s.t SET\n-- the reason is deducted from the WHERE below\na = 1 WHERE b = 2";
+        let ast = pgls_query::parse(sql).unwrap().into_root().unwrap();
+
+        let result = format_statement(&ast, sql, &FormatConfig::default()).expect("formatted");
+
+        assert!(
+            result
+                .formatted
+                .contains("-- the reason is deducted from the WHERE below")
+        );
+    }
+
+    #[test]
+    fn formatting_a_comment_in_an_update_set_list_is_idempotent() {
+        let sql =
+            "UPDATE s.t SET\n-- the reason is deducted from the WHERE below\na = 1 WHERE b = 2";
+        let ast = pgls_query::parse(sql).unwrap().into_root().unwrap();
+        let config = FormatConfig::default();
+
+        let first = format_statement(&ast, sql, &config)
+            .expect("first pass")
+            .formatted;
+        let reparsed = pgls_query::parse(&first).unwrap().into_root().unwrap();
+        let second = format_statement(&reparsed, &first, &config)
+            .expect("second pass")
+            .formatted;
+
+        assert_eq!(first, second);
+    }
 }
