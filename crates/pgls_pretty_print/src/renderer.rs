@@ -454,7 +454,7 @@ mod tests {
 
     #[test]
     fn a_block_comment_is_rendered_inline() {
-        let mut emitter = EventEmitter::new(crate::FormatConfig::default());
+        let mut emitter = EventEmitter::new();
         emitter.token(TokenKind::SELECT_KW);
         emitter.space();
         emitter.comment("/* why */".to_string(), false);
@@ -467,7 +467,7 @@ mod tests {
 
     #[test]
     fn a_line_comment_forces_the_group_to_break() {
-        let mut emitter = EventEmitter::new(crate::FormatConfig::default());
+        let mut emitter = EventEmitter::new();
         emitter.group_start(crate::emitter::GroupKind::SelectStmt);
         emitter.token(TokenKind::SELECT_KW);
         emitter.space();

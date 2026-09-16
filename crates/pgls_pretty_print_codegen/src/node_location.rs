@@ -20,7 +20,6 @@ pub fn node_location_mod(analyser: ProtoAnalyzer) -> proc_macro2::TokenStream {
         /// Generated from the protobuf descriptor: a node kind reports its offset when its message
         /// carries a `location` field, and `None` otherwise. Comment attachment relies on it to
         /// find the node a comment sits in front of.
-        #[allow(dead_code)] // Consumed by comment attachment in task 2.
         pub fn node_location(node: &pgls_query::NodeRef<'_>) -> Option<i32> {
             match node {
                 #(#arms),*,

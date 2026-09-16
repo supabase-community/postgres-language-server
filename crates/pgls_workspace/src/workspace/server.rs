@@ -1176,14 +1176,6 @@ fn is_dir(path: &Path) -> bool {
     path.is_dir() || (path.is_symlink() && fs::read_link(path).is_ok_and(|path| path.is_dir()))
 }
 
-/// Returns `true` if the SQL `statement` contains a line (`--`) or block (`/* */`)
-/// comment.
-///
-/// libpg_query strips comments while building the AST, so the formatter (which
-/// renders from the AST) cannot reproduce them. We use the scanner, which exposes
-/// comments as dedicated tokens, to detect them and fall back to the original text.
-/// Comments inside string literals (including dollar-quoted bodies) are part of the
-/// string token and are correctly not reported here.
 #[cfg(all(test, feature = "db"))]
 #[path = "server.tests.rs"]
 mod tests;

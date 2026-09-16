@@ -857,7 +857,7 @@ pub fn emit_node_enum(node: &NodeEnum, e: &mut EventEmitter) {
 #[cfg(test)]
 mod tests {
     use crate::emitter::{EventEmitter, LayoutEvent};
-    use crate::{Comment, FormatConfig, TokenKind, attach_comments};
+    use crate::{Comment, TokenKind, attach_comments};
     use std::collections::HashMap;
 
     #[test]
@@ -870,7 +870,6 @@ mod tests {
 
         let attached = attach_comments(sql, &ast);
         let mut e = EventEmitter::with_comments(
-            FormatConfig::default(),
             attached.leading_by_location,
             attached.trailing_by_location,
         );
@@ -896,7 +895,7 @@ mod tests {
             line_comment: true,
         };
         let leading = HashMap::from([(7, vec![comment])]);
-        let mut e = EventEmitter::with_comments(FormatConfig::default(), leading, HashMap::new());
+        let mut e = EventEmitter::with_comments(leading, HashMap::new());
 
         super::emit_with_comments_at(&mut e, 7, |e| e.token(TokenKind::ONLY_KW));
 
@@ -909,7 +908,7 @@ mod tests {
 
     #[test]
     fn a_negative_location_never_carries_a_comment() {
-        let mut e = EventEmitter::new(FormatConfig::default());
+        let mut e = EventEmitter::new();
 
         super::emit_with_comments_at(&mut e, -1, |e| e.token(TokenKind::ONLY_KW));
 
