@@ -588,4 +588,25 @@ mod tests {
 
         assert_eq!(first, second);
     }
+
+    #[test]
+    fn formatting_comments_on_sequence_options_is_idempotent() {
+        let sql = "CREATE SEQUENCE numbering.missions_seq AS BIGINT START 1 -- first value\n\
+            MAXVALUE 36 -- last base36 value\n\
+            INCREMENT 1 NO CYCLE;";
+        let ast = pgls_query::parse(sql).unwrap().into_root().unwrap();
+        let config = FormatConfig::default();
+
+        let first = format_statement(&ast, sql, &config)
+            .expect("first pass")
+            .formatted;
+        let reparsed = pgls_query::parse(&first).unwrap().into_root().unwrap();
+        let second = format_statement(&reparsed, &first, &config)
+            .expect("second pass")
+            .formatted;
+
+        assert!(first.contains("-- first value"));
+        assert!(first.contains("-- last base36 value"));
+        assert_eq!(first, second);
+    }
 }
