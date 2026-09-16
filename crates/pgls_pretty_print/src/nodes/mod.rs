@@ -528,14 +528,21 @@ use crate::emitter::{EventEmitter, GroupKind};
 use pgls_query::{NodeEnum, protobuf::Node};
 
 pub fn emit_node(node: &Node, e: &mut EventEmitter) {
-    if let Some(inner) = node.node.as_ref()
-        && let Some(location) = crate::codegen::node_location::node_location(&inner.to_ref())
-    {
-        e.take_comments_at(location);
+    let location = node
+        .node
+        .as_ref()
+        .and_then(|inner| crate::codegen::node_location::node_location(&inner.to_ref()));
+
+    if let Some(location) = location {
+        e.take_leading_comments_at(location);
     }
 
     if let Some(ref inner) = node.node {
         emit_node_enum(inner, e)
+    }
+
+    if let Some(location) = location {
+        e.take_trailing_comments_at(location);
     }
 }
 
@@ -839,7 +846,11 @@ mod tests {
             .expect("root");
 
         let attached = attach_comments(sql, &ast);
-        let mut e = EventEmitter::with_comments(FormatConfig::default(), attached.by_location);
+        let mut e = EventEmitter::with_comments(
+            FormatConfig::default(),
+            attached.leading_by_location,
+            attached.trailing_by_location,
+        );
         super::emit_node_enum(&ast, &mut e);
 
         let comments: Vec<&LayoutEvent> = e

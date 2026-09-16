@@ -12,19 +12,24 @@ pub struct Comment {
     pub line_comment: bool,
 }
 
-/// Comments of a statement, indexed by the node they precede.
+/// Comments of a statement, indexed by the node they surround.
 #[derive(Debug, Default)]
 pub struct AttachedComments {
-    pub by_location: HashMap<i32, Vec<Comment>>,
+    /// Comments emitted before the node at this location.
+    pub leading_by_location: HashMap<i32, Vec<Comment>>,
+    /// Comments emitted after the node at this location.
+    pub trailing_by_location: HashMap<i32, Vec<Comment>>,
     /// Comments that no node follows. The caller must not reformat a statement that has any:
     /// emitting it would drop them.
     pub unattached: Vec<Comment>,
 }
 
-/// Attaches every comment of `sql` to the node that starts right after it.
+/// Attaches every comment of `sql` to a nearby AST node.
 ///
 /// Attachment is positional because libpg_query drops comments from the AST, and positional is
 /// enough: nodes carrying an i32 location field preserve the byte offset they were parsed from.
+/// A comment preceded only by whitespace on its line is leading and belongs to the next node. A
+/// comment following SQL on the same line is trailing and belongs to the previous node.
 pub fn attach_comments(sql: &str, ast: &NodeEnum) -> AttachedComments {
     let mut attached = AttachedComments::default();
 
@@ -36,22 +41,55 @@ pub fn attach_comments(sql: &str, ast: &NodeEnum) -> AttachedComments {
     let mut locations = collect_node_locations(ast);
     locations.sort_unstable();
 
-    for (end, comment) in comments {
-        match locations.iter().find(|location| **location as usize >= end) {
-            Some(location) => attached
-                .by_location
-                .entry(*location)
-                .or_default()
-                .push(comment),
-            None => attached.unattached.push(comment),
+    for source_comment in comments {
+        let line_start = sql[..source_comment.start]
+            .rfind('\n')
+            .map_or(0, |offset| offset + 1);
+        let line_prefix = &sql[line_start..source_comment.start];
+
+        if !source_comment.comment.line_comment || line_prefix.trim().is_empty() {
+            match locations
+                .iter()
+                .find(|location| **location as usize >= source_comment.end)
+            {
+                Some(location) => attached
+                    .leading_by_location
+                    .entry(*location)
+                    .or_default()
+                    .push(source_comment.comment),
+                None => attached.unattached.push(source_comment.comment),
+            }
+        } else if line_prefix.trim_end().ends_with(';')
+            || sql[source_comment.end..].trim().is_empty()
+        {
+            attached.unattached.push(source_comment.comment);
+        } else {
+            match locations
+                .iter()
+                .rev()
+                .find(|location| **location as usize <= source_comment.start)
+            {
+                Some(location) => attached
+                    .trailing_by_location
+                    .entry(*location)
+                    .or_default()
+                    .push(source_comment.comment),
+                None => attached.unattached.push(source_comment.comment),
+            }
         }
     }
 
     attached
 }
 
-/// Every comment of the statement, as (end offset, comment), in source order.
-fn collect_comments(sql: &str) -> Vec<(usize, Comment)> {
+struct SourceComment {
+    start: usize,
+    end: usize,
+    comment: Comment,
+}
+
+/// Every comment of the statement, with its source range, in source order.
+fn collect_comments(sql: &str) -> Vec<SourceComment> {
     let Ok(scan) = pgls_query::scan(sql) else {
         return Vec::new();
     };
@@ -70,7 +108,11 @@ fn collect_comments(sql: &str) -> Vec<(usize, Comment)> {
             let end = usize::try_from(token.end).ok()?;
             let text = sql.get(start..end)?.trim_end().to_string();
 
-            Some((end, Comment { text, line_comment }))
+            Some(SourceComment {
+                start,
+                end,
+                comment: Comment { text, line_comment },
+            })
         })
         .collect()
 }
@@ -99,9 +141,14 @@ mod tests {
         let attached = attach_comments(sql, &parse(sql));
 
         assert!(attached.unattached.is_empty());
-        assert_eq!(attached.by_location.len(), 1);
+        assert_eq!(attached.leading_by_location.len(), 1);
+        assert!(attached.trailing_by_location.is_empty());
 
-        let comments = attached.by_location.values().next().expect("one entry");
+        let comments = attached
+            .leading_by_location
+            .values()
+            .next()
+            .expect("one entry");
         assert_eq!(comments.len(), 1);
         assert_eq!(comments[0].text, "-- pick the magic value");
         assert!(comments[0].line_comment);
@@ -112,9 +159,31 @@ mod tests {
         let sql = "SELECT /* inline */ 1 FROM s.t";
         let attached = attach_comments(sql, &parse(sql));
 
-        let comments = attached.by_location.values().next().expect("one entry");
+        let comments = attached
+            .leading_by_location
+            .values()
+            .next()
+            .expect("one entry");
         assert_eq!(comments[0].text, "/* inline */");
         assert!(!comments[0].line_comment);
+    }
+
+    #[test]
+    fn a_trailing_comment_attaches_to_the_node_that_precedes_it() {
+        let sql = "SELECT * FROM t WHERE a = 1 -- context\nAND b = 2";
+        let attached = attach_comments(sql, &parse(sql));
+
+        assert!(attached.unattached.is_empty());
+        assert!(attached.leading_by_location.is_empty());
+        assert_eq!(attached.trailing_by_location.len(), 1);
+
+        let comments = attached
+            .trailing_by_location
+            .values()
+            .next()
+            .expect("one entry");
+        assert_eq!(comments[0].text, "-- context");
+        assert!(comments[0].line_comment);
     }
 
     #[test]
@@ -131,7 +200,8 @@ mod tests {
         let sql = "SELECT 1 FROM s.t";
         let attached = attach_comments(sql, &parse(sql));
 
-        assert!(attached.by_location.is_empty());
+        assert!(attached.leading_by_location.is_empty());
+        assert!(attached.trailing_by_location.is_empty());
         assert!(attached.unattached.is_empty());
     }
 }

@@ -903,6 +903,15 @@ async fn test_format_preserves_interior_comment() {
 }
 
 #[tokio::test]
+async fn test_format_with_trailing_comment_is_idempotent() {
+    let first = format_content("SELECT * FROM t WHERE a = 1 -- condition\nAND b = 2;");
+    let second = format_content(&first);
+
+    assert!(first.contains("1 -- condition"));
+    assert_eq!(first, second);
+}
+
+#[tokio::test]
 async fn test_format_preserves_block_comment() {
     let content = "select 1 /* keep me */;";
     let formatted = format_content(content);

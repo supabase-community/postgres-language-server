@@ -119,7 +119,10 @@ pub fn format_statement(
         });
     }
 
-    let mut emitter = emitter::EventEmitter::with_comments(attached.by_location);
+    let mut emitter = emitter::EventEmitter::with_comments(
+        attached.leading_by_location,
+        attached.trailing_by_location,
+    );
     nodes::emit_node_enum(ast, &mut emitter);
     let pending = emitter.pending_comments();
     if pending > 0 {
@@ -215,5 +218,23 @@ mod tests {
             .expect_err("the trailing comment has no node after it");
 
         assert!(matches!(error, FormatError::UnplaceableComment { .. }));
+    }
+
+    #[test]
+    fn formatting_a_trailing_comment_is_idempotent() {
+        let sql = "SELECT * FROM t WHERE a = 1 -- keep condition context\nAND b = 2;";
+        let ast = pgls_query::parse(sql).unwrap().into_root().unwrap();
+        let config = FormatConfig::default();
+
+        let first = format_statement(&ast, sql, &config)
+            .expect("first pass")
+            .formatted;
+        let reparsed = pgls_query::parse(&first).unwrap().into_root().unwrap();
+        let second = format_statement(&reparsed, &first, &config)
+            .expect("second pass")
+            .formatted;
+
+        assert!(first.contains("1 -- keep condition context"));
+        assert_eq!(first, second);
     }
 }
