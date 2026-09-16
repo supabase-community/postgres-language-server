@@ -434,4 +434,31 @@ mod tests {
 
         assert_eq!(first, second);
     }
+
+    #[test]
+    fn a_comment_after_a_column_type_is_kept() {
+        let sql = "CREATE TABLE s.t (\n\ta int -- the magic column\n\t, b int\n)";
+        let ast = pgls_query::parse(sql).unwrap().into_root().unwrap();
+
+        let result = format_statement(&ast, sql, &FormatConfig::default()).expect("formatted");
+
+        assert!(result.formatted.contains("-- the magic column"));
+    }
+
+    #[test]
+    fn formatting_a_comment_after_a_column_type_is_idempotent() {
+        let sql = "CREATE TABLE s.t (\n\ta int -- the magic column\n\t, b int\n)";
+        let ast = pgls_query::parse(sql).unwrap().into_root().unwrap();
+        let config = FormatConfig::default();
+
+        let first = format_statement(&ast, sql, &config)
+            .expect("first pass")
+            .formatted;
+        let reparsed = pgls_query::parse(&first).unwrap().into_root().unwrap();
+        let second = format_statement(&reparsed, &first, &config)
+            .expect("second pass")
+            .formatted;
+
+        assert_eq!(first, second);
+    }
 }

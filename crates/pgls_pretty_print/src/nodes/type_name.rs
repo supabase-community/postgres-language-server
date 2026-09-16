@@ -17,6 +17,12 @@ const INTERVAL_FULL_RANGE: i32 = 0x7FFF;
 const INTERVAL_FULL_PRECISION: i32 = 0xFFFF;
 
 pub(super) fn emit_type_name(e: &mut EventEmitter, n: &TypeName) {
+    // Column definitions and casts call this helper directly rather than emit_node, so this is the
+    // only place that can emit the comments written next to a type.
+    super::emit_with_comments_at(e, n.location, |e| emit_type_name_tokens(e, n));
+}
+
+fn emit_type_name_tokens(e: &mut EventEmitter, n: &TypeName) {
     e.group_start(GroupKind::TypeName);
 
     if n.setof {
