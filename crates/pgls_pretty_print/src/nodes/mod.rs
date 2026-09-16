@@ -546,6 +546,29 @@ pub fn emit_node(node: &Node, e: &mut EventEmitter) {
     }
 }
 
+/// Emits `body` with the comments attached to `location`, the way `emit_node` does for a child
+/// reached as a `Node`.
+///
+/// A parent that reaches a child through a typed emitter, `emit_range_var` for instance, never
+/// goes through `emit_node`. Without this helper the comments attached to that child stay in the
+/// emitter map and the whole statement is refused rather than reformatted.
+#[allow(dead_code)] // Called by the relation, column and type emitters of the next tasks.
+pub(super) fn emit_with_comments_at(
+    e: &mut EventEmitter,
+    location: i32,
+    body: impl FnOnce(&mut EventEmitter),
+) {
+    // Negative locations are dropped when the comment maps are built, so they hold nothing.
+    if location < 0 {
+        body(e);
+        return;
+    }
+
+    e.take_leading_comments_at(location);
+    body(e);
+    e.take_trailing_comments_at(location);
+}
+
 pub(super) fn emit_clause_condition(e: &mut EventEmitter, clause: &Node) {
     use crate::emitter::LineType;
 
@@ -835,7 +858,8 @@ pub fn emit_node_enum(node: &NodeEnum, e: &mut EventEmitter) {
 #[cfg(test)]
 mod tests {
     use crate::emitter::{EventEmitter, LayoutEvent};
-    use crate::{FormatConfig, attach_comments};
+    use crate::{Comment, FormatConfig, TokenKind, attach_comments};
+    use std::collections::HashMap;
 
     #[test]
     fn a_comment_attached_to_a_node_is_emitted_before_it() {
@@ -864,5 +888,32 @@ mod tests {
             comments[0],
             LayoutEvent::Comment { text, line_comment: true } if text == "-- pick the magic value"
         ));
+    }
+
+    #[test]
+    fn a_typed_child_emitter_consumes_the_comments_of_its_location() {
+        let comment = Comment {
+            text: "-- note".to_string(),
+            line_comment: true,
+        };
+        let leading = HashMap::from([(7, vec![comment])]);
+        let mut e = EventEmitter::with_comments(FormatConfig::default(), leading, HashMap::new());
+
+        super::emit_with_comments_at(&mut e, 7, |e| e.token(TokenKind::ONLY_KW));
+
+        assert_eq!(e.pending_comments(), 0);
+        assert!(e.events.iter().any(|event| matches!(
+            event,
+            LayoutEvent::Comment { text, .. } if text == "-- note"
+        )));
+    }
+
+    #[test]
+    fn a_negative_location_never_carries_a_comment() {
+        let mut e = EventEmitter::new(FormatConfig::default());
+
+        super::emit_with_comments_at(&mut e, -1, |e| e.token(TokenKind::ONLY_KW));
+
+        assert_eq!(e.events, vec![LayoutEvent::Token(TokenKind::ONLY_KW)]);
     }
 }
