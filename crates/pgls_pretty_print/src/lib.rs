@@ -1,10 +1,12 @@
 mod codegen;
+pub mod comments;
 pub mod emitter;
 pub mod nodes;
 pub mod normalize;
 pub mod renderer;
 
 pub use crate::codegen::token_kind::TokenKind;
+pub use crate::comments::{AttachedComments, Comment, attach_comments};
 pub use crate::normalize::normalize_ast;
 pub use crate::renderer::{IndentStyle, KeywordCase, RenderConfig};
 use pgls_query::NodeEnum;
