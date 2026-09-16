@@ -237,4 +237,22 @@ mod tests {
         assert!(first.contains("1 -- keep condition context"));
         assert_eq!(first, second);
     }
+
+    #[test]
+    fn formatting_a_comment_before_an_order_by_clause_is_idempotent() {
+        let sql = "SELECT * FROM t\n-- WHERE\n--  a is active\nORDER BY a;";
+        let ast = pgls_query::parse(sql).unwrap().into_root().unwrap();
+        let config = FormatConfig::default();
+
+        let first = format_statement(&ast, sql, &config)
+            .expect("first pass")
+            .formatted;
+        let reparsed = pgls_query::parse(&first).unwrap().into_root().unwrap();
+        let second = format_statement(&reparsed, &first, &config)
+            .expect("second pass")
+            .formatted;
+
+        assert!(first.contains("order by -- WHERE"));
+        assert_eq!(first, second);
+    }
 }

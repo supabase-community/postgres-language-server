@@ -47,7 +47,10 @@ pub fn attach_comments(sql: &str, ast: &NodeEnum) -> AttachedComments {
             .map_or(0, |offset| offset + 1);
         let line_prefix = &sql[line_start..source_comment.start];
 
-        if !source_comment.comment.line_comment || line_prefix.trim().is_empty() {
+        if !source_comment.comment.line_comment
+            || line_prefix.trim().is_empty()
+            || ends_with_clause_header(line_prefix)
+        {
             match locations
                 .iter()
                 .find(|location| **location as usize >= source_comment.end)
@@ -80,6 +83,50 @@ pub fn attach_comments(sql: &str, ast: &NodeEnum) -> AttachedComments {
     }
 
     attached
+}
+
+/// Returns whether `line_prefix` ends with a SQL clause or connective keyword.
+///
+/// Such a keyword is not represented by an AST node with its own source location. A line comment
+/// immediately after it must therefore be emitted before the following expression, not after the
+/// previously emitted AST node.
+fn ends_with_clause_header(line_prefix: &str) -> bool {
+    const HEADERS: &[&str] = &[
+        "SELECT",
+        "FROM",
+        "WHERE",
+        "GROUP BY",
+        "HAVING",
+        "WINDOW",
+        "ORDER BY",
+        "LIMIT",
+        "OFFSET",
+        "FETCH",
+        "JOIN",
+        "ON",
+        "USING",
+        "AND",
+        "OR",
+        "WHEN",
+        "THEN",
+        "ELSE",
+        "VALUES",
+        "SET",
+        "RETURNING",
+        "UNION",
+        "INTERSECT",
+        "EXCEPT",
+    ];
+
+    let normalized = line_prefix.trim_end().to_ascii_uppercase();
+
+    HEADERS.iter().any(|header| {
+        let Some(prefix) = normalized.strip_suffix(header) else {
+            return false;
+        };
+
+        prefix.is_empty() || prefix.chars().last().is_some_and(char::is_whitespace)
+    })
 }
 
 struct SourceComment {
@@ -183,6 +230,24 @@ mod tests {
             .next()
             .expect("one entry");
         assert_eq!(comments[0].text, "-- context");
+        assert!(comments[0].line_comment);
+    }
+
+    #[test]
+    fn a_comment_after_a_clause_header_attaches_to_the_node_that_follows_it() {
+        let sql = "SELECT * FROM t ORDER BY -- sort by name\nname";
+        let attached = attach_comments(sql, &parse(sql));
+
+        assert!(attached.unattached.is_empty());
+        assert_eq!(attached.leading_by_location.len(), 1);
+        assert!(attached.trailing_by_location.is_empty());
+
+        let comments = attached
+            .leading_by_location
+            .values()
+            .next()
+            .expect("one entry");
+        assert_eq!(comments[0].text, "-- sort by name");
         assert!(comments[0].line_comment);
     }
 
