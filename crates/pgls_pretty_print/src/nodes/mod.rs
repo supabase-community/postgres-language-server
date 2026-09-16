@@ -552,7 +552,6 @@ pub fn emit_node(node: &Node, e: &mut EventEmitter) {
 /// A parent that reaches a child through a typed emitter, `emit_range_var` for instance, never
 /// goes through `emit_node`. Without this helper the comments attached to that child stay in the
 /// emitter map and the whole statement is refused rather than reformatted.
-#[allow(dead_code)] // Called by the relation, column and type emitters of the next tasks.
 pub(super) fn emit_with_comments_at(
     e: &mut EventEmitter,
     location: i32,
