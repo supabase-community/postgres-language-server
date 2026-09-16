@@ -31,6 +31,10 @@ pub enum FormatError {
          Details: {message}"
     )]
     BetaUnsupported { message: String },
+
+    /// A comment could not be placed in the formatted output.
+    #[error("Formatter: {count} comment(s) could not be placed, the statement was left as written")]
+    UnplaceableComment { count: usize },
 }
 
 /// Configuration for the SQL formatter.
@@ -103,11 +107,24 @@ pub struct FormatResult {
 /// * `Err(FormatError)` - If formatting fails or beta safety check fails
 pub fn format_statement(
     ast: &NodeEnum,
+    sql: &str,
     config: &FormatConfig,
 ) -> Result<FormatResult, FormatError> {
-    // Emit layout events from AST
-    let mut emitter = emitter::EventEmitter::new();
+    // A comment that no node follows cannot be placed. Refusing here preserves the original text,
+    // which is safer than emitting a statement that would silently drop it.
+    let attached = comments::attach_comments(sql, ast);
+    if !attached.unattached.is_empty() {
+        return Err(FormatError::UnplaceableComment {
+            count: attached.unattached.len(),
+        });
+    }
+
+    let mut emitter = emitter::EventEmitter::with_comments(attached.by_location);
     nodes::emit_node_enum(ast, &mut emitter);
+    let pending = emitter.pending_comments();
+    if pending > 0 {
+        return Err(FormatError::UnplaceableComment { count: pending });
+    }
 
     // Render to string
     let render_config = RenderConfig {
@@ -164,7 +181,7 @@ mod tests {
         let ast = parsed.into_root().unwrap();
 
         let config = FormatConfig::default();
-        let result = format_statement(&ast, &config).unwrap();
+        let result = format_statement(&ast, sql, &config).unwrap();
 
         assert!(!result.formatted.is_empty());
         // Default keyword_case is Lower, so check for lowercase
@@ -176,5 +193,27 @@ mod tests {
         let config = FormatConfig::default();
         assert_eq!(config.line_width, 100);
         assert_eq!(config.indent_size, 2);
+    }
+
+    #[test]
+    fn a_statement_with_a_comment_is_formatted() {
+        let sql = "SELECT\n-- pick the magic value\n1 FROM s.t";
+        let ast = pgls_query::parse(sql).unwrap().into_root().unwrap();
+
+        let result = format_statement(&ast, sql, &FormatConfig::default()).expect("formatted");
+
+        assert!(result.formatted.contains("-- pick the magic value"));
+        assert!(result.formatted.contains("select"));
+    }
+
+    #[test]
+    fn a_statement_with_an_unplaceable_comment_is_refused() {
+        let sql = "SELECT 1 FROM s.t -- trailing";
+        let ast = pgls_query::parse(sql).unwrap().into_root().unwrap();
+
+        let error = format_statement(&ast, sql, &FormatConfig::default())
+            .expect_err("the trailing comment has no node after it");
+
+        assert!(matches!(error, FormatError::UnplaceableComment { .. }));
     }
 }
