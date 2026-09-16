@@ -656,4 +656,52 @@ mod tests {
         assert!(first.contains("-- regenerate ids from the source number"));
         assert_eq!(first, second);
     }
+
+    #[test]
+    fn formatting_a_leading_comment_between_boolean_operands_is_idempotent() {
+        let sql = r#"
+SELECT *
+FROM accounting_accounts
+WHERE
+    accounting_accounts.line_of_business = 'S'
+    AND staging_buildings.co_ownership_trustee_status
+    AND NOT starts_with(last_line.accounting_class_source, '71')
+    -- classes for accounting_accounts for co_owner_accounts ; not handled in this file...
+    AND (
+        NOT starts_with(last_line.accounting_class_source, '450')
+        -- ... except for those re-mapped in refining due to a missing co_owner_account_fk.
+        OR starts_with(accounting_accounts.accounting_class, '473')
+        OR uaf_accounts.accounting_class_target IS NOT NULL
+    )
+    AND NOT starts_with(accounting_accounts.accounting_class, '450')
+    -- classes for accounting_accounts for banks. For now bank are handled in this file
+    -- AND last_line.accounting_class_source::INT NOT BETWEEN 5000 AND 5999
+    AND (
+        (
+            -- These are class for budgets. They'll be handled in the dedicated export.
+            coalesce(last_line.accounting_class_source, '') ~ '^[0-9]+$'
+            AND NOT (
+                last_line.accounting_class_source >= '6000'
+                AND last_line.accounting_class_source <= '6799'
+            )
+        )
+        OR ( -- Non-numeric classes are also handled in this file
+            coalesce(last_line.accounting_class_source, '') ~ '[A-Z]'
+        )
+    );
+"#;
+        let config = FormatConfig::default();
+
+        let ast = pgls_query::parse(sql).unwrap().into_root().unwrap();
+        let first = format_statement(&ast, sql, &config)
+            .expect("first pass")
+            .formatted;
+        let reparsed = pgls_query::parse(&first).unwrap().into_root().unwrap();
+        let second = format_statement(&reparsed, &first, &config)
+            .expect("second pass")
+            .formatted;
+
+        assert!(first.contains("-- classes for accounting_accounts for banks"));
+        assert_eq!(first, second);
+    }
 }

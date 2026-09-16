@@ -50,13 +50,15 @@ fn emit_not_expr(e: &mut EventEmitter, n: &BoolExpr) {
 }
 
 fn emit_bool_operand(e: &mut EventEmitter, node: &Node, parent_prec: u8) {
-    if needs_parentheses(node, parent_prec) {
-        e.token(TokenKind::L_PAREN);
-        super::emit_node(node, e);
-        e.token(TokenKind::R_PAREN);
-    } else {
-        super::emit_node(node, e);
-    }
+    e.with_leading_comment_line_break(|e| {
+        if needs_parentheses(node, parent_prec) {
+            e.token(TokenKind::L_PAREN);
+            super::emit_node(node, e);
+            e.token(TokenKind::R_PAREN);
+        } else {
+            super::emit_node(node, e);
+        }
+    });
 }
 
 fn needs_parentheses(node: &Node, parent_prec: u8) -> bool {

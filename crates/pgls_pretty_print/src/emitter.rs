@@ -42,6 +42,9 @@ pub struct EventEmitter {
     leading_comments: HashMap<i32, Vec<Comment>>,
     /// Comments still waiting to be emitted after a node, by source location.
     trailing_comments: HashMap<i32, Vec<Comment>>,
+    /// Boolean operands need standalone line comments to start their own line, otherwise a
+    /// comment can join the preceding operand and drift on the next formatting pass.
+    leading_line_comments_require_break: bool,
 }
 
 impl EventEmitter {
@@ -57,6 +60,7 @@ impl EventEmitter {
             events: Vec::new(),
             leading_comments,
             trailing_comments,
+            leading_line_comments_require_break: false,
         }
     }
 
@@ -85,6 +89,9 @@ impl EventEmitter {
 
         for comment in comments {
             let line_comment = comment.line_comment;
+            if line_comment && self.leading_line_comments_require_break {
+                self.force_current_line_break();
+            }
             self.comment(comment.text, line_comment);
             if line_comment {
                 self.line(LineType::Hard);
@@ -115,6 +122,20 @@ impl EventEmitter {
     pub fn pending_comments(&self) -> usize {
         self.leading_comments.values().map(Vec::len).sum::<usize>()
             + self.trailing_comments.values().map(Vec::len).sum::<usize>()
+    }
+
+    pub fn with_leading_comment_line_break(&mut self, body: impl FnOnce(&mut EventEmitter)) {
+        let previous = std::mem::replace(&mut self.leading_line_comments_require_break, true);
+        body(self);
+        self.leading_line_comments_require_break = previous;
+    }
+
+    fn force_current_line_break(&mut self) {
+        match self.events.last_mut() {
+            None => {}
+            Some(LayoutEvent::Line(line_type)) => *line_type = LineType::Hard,
+            Some(_) => self.line(LineType::Hard),
+        }
     }
 
     pub fn group_start(&mut self, kind: GroupKind) {

@@ -160,10 +160,7 @@ fn ends_with_clause_header(line_prefix: &str) -> bool {
 /// Parentheses are deliberately excluded: they can close a semantic expression, so a following
 /// comment belongs to that expression rather than to the next node.
 fn ends_with_structural_separator(line_prefix: &str) -> bool {
-    matches!(
-        line_prefix.trim_end().chars().last(),
-        Some(',' | ']' | '}')
-    )
+    matches!(line_prefix.trim_end().chars().last(), Some(',' | ']' | '}'))
 }
 
 struct SourceComment {
