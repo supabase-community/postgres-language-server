@@ -16,7 +16,15 @@ pub enum LayoutEvent {
     Token(TokenKind),
     Space,
     Line(LineType),
-    GroupStart { kind: GroupKind },
+    /// A comment from the source. `line_comment` is true for `--`, which runs to the end of the
+    /// line and therefore forbids collapsing the enclosing group.
+    Comment {
+        text: String,
+        line_comment: bool,
+    },
+    GroupStart {
+        kind: GroupKind,
+    },
     GroupEnd,
     IndentStart,
     IndentEnd,
@@ -42,6 +50,11 @@ impl EventEmitter {
 
     pub fn line(&mut self, line_type: LineType) {
         self.events.push(LayoutEvent::Line(line_type));
+    }
+
+    pub fn comment(&mut self, text: String, line_comment: bool) {
+        self.events
+            .push(LayoutEvent::Comment { text, line_comment });
     }
 
     pub fn group_start(&mut self, kind: GroupKind) {
