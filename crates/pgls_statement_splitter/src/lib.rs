@@ -418,6 +418,33 @@ SELECT id FROM cte;",
     }
 
     #[test]
+    fn create_as_with_values_cte() {
+        let create = "CREATE TABLE mappers.alur_zones AS
+WITH
+    zone_ranks (zone_alur, tension_rank) AS (
+        VALUES
+            ('Abis', 1),
+            ('A', 2),
+            ('B1', 3),
+            ('B2', 4),
+            ('C', 5)
+    )
+SELECT
+    code_postal AS zip_code,
+    commune,
+    zone_alur
+FROM apis.alur_zones;";
+        let input = format!(
+            "{create}
+SELECT 2;"
+        );
+
+        Tester::from(input.as_str())
+            .expect_statements(vec![create, "SELECT 2;"])
+            .assert_no_errors();
+    }
+
+    #[test]
     fn c_style_comments() {
         Tester::from("/* this is a test */\nselect 1").expect_statements(vec!["select 1"]);
     }
