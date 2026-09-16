@@ -1,7 +1,7 @@
 use std::path::Path;
 
 use convert_case::{Case, Casing};
-use prost_reflect::{DescriptorError, DescriptorPool};
+use prost_reflect::{DescriptorError, DescriptorPool, Kind};
 
 pub(crate) struct ProtoAnalyzer {
     pool: DescriptorPool,
@@ -9,6 +9,9 @@ pub(crate) struct ProtoAnalyzer {
 
 pub(crate) struct EnumVariant {
     pub name: String,
+    /// True when the message behind this variant carries a `location` field, which holds the byte
+    /// offset of the node in the original statement.
+    pub has_location: bool,
 }
 
 impl ProtoAnalyzer {
@@ -44,7 +47,17 @@ impl ProtoAnalyzer {
             let field_name = field.name();
             let variant_name = field_name.to_case(Case::Pascal);
 
-            variants.push(EnumVariant { name: variant_name });
+            let has_location = match field.kind() {
+                Kind::Message(message) => message
+                    .get_field_by_name("location")
+                    .is_some_and(|location| matches!(location.kind(), Kind::Int32)),
+                _ => false,
+            };
+
+            variants.push(EnumVariant {
+                name: variant_name,
+                has_location,
+            });
         }
 
         variants
