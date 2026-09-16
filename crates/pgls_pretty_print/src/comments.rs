@@ -154,13 +154,15 @@ fn ends_with_clause_header(line_prefix: &str) -> bool {
 
 /// Returns whether `line_prefix` ends with punctuation that separates AST nodes.
 ///
-/// Commas and closing delimiters are emitted by parent formatters rather than a dedicated AST
-/// node. A comment after one of them must be emitted before the following node; otherwise it is
+/// Commas, brackets and braces are emitted by parent formatters rather than a dedicated AST node.
+/// A comment after one of them must be emitted before the following node; otherwise it is
 /// incorrectly attached to the last child inside the preceding expression on the next pass.
+/// Parentheses are deliberately excluded: they can close a semantic expression, so a following
+/// comment belongs to that expression rather than to the next node.
 fn ends_with_structural_separator(line_prefix: &str) -> bool {
     matches!(
         line_prefix.trim_end().chars().last(),
-        Some(',' | ')' | ']' | '}')
+        Some(',' | ']' | '}')
     )
 }
 
