@@ -19,9 +19,18 @@ pub struct AttachedComments {
     pub leading_by_location: HashMap<i32, Vec<Comment>>,
     /// Comments emitted after the node at this location.
     pub trailing_by_location: HashMap<i32, Vec<Comment>>,
-    /// Comments that no node follows. The caller must not reformat a statement that has any:
-    /// emitting it would drop them.
+    /// Comments that neither neighbour can hold, which today means a comment written after a
+    /// statement terminator. The caller must not reformat a statement that has any: emitting it
+    /// would drop them.
     pub unattached: Vec<Comment>,
+}
+
+/// Which side of a node a comment ends up on, once the node is known.
+enum Placement {
+    /// Emitted before the node at this location.
+    Leading(i32),
+    /// Emitted after the node at this location.
+    Trailing(i32),
 }
 
 /// Attaches every comment of `sql` to a nearby AST node.
@@ -47,39 +56,52 @@ pub fn attach_comments(sql: &str, ast: &NodeEnum) -> AttachedComments {
             .map_or(0, |offset| offset + 1);
         let line_prefix = &sql[line_start..source_comment.start];
 
-        if !source_comment.comment.line_comment
+        // A line comment written after a terminator documents the next statement, not this one.
+        // Attaching it here would move it across a statement boundary.
+        if source_comment.comment.line_comment && line_prefix.trim_end().ends_with(';') {
+            attached.unattached.push(source_comment.comment);
+            continue;
+        }
+
+        let leads = !source_comment.comment.line_comment
             || line_prefix.trim().is_empty()
             || ends_with_clause_header(line_prefix)
-            || ends_with_structural_separator(line_prefix)
-        {
-            match locations
-                .iter()
-                .find(|location| **location as usize >= source_comment.end)
-            {
-                Some(location) => attached
-                    .leading_by_location
-                    .entry(*location)
-                    .or_default()
-                    .push(source_comment.comment),
-                None => attached.unattached.push(source_comment.comment),
-            }
-        } else if line_prefix.trim_end().ends_with(';')
-            || sql[source_comment.end..].trim().is_empty()
-        {
-            attached.unattached.push(source_comment.comment);
+            || ends_with_structural_separator(line_prefix);
+
+        let next = locations
+            .iter()
+            .find(|location| **location as usize >= source_comment.end)
+            .copied();
+        let previous = locations
+            .iter()
+            .rev()
+            .find(|location| **location as usize <= source_comment.start)
+            .copied();
+
+        // The preferred side first, the other one as a fallback. A comment closing a list or a
+        // statement has no node after it, and printing it after the node it already follows in the
+        // source keeps it where its author wrote it, where refusing the statement keeps nothing.
+        let placement = if leads {
+            next.map(Placement::Leading)
+                .or_else(|| previous.map(Placement::Trailing))
         } else {
-            match locations
-                .iter()
-                .rev()
-                .find(|location| **location as usize <= source_comment.start)
-            {
-                Some(location) => attached
-                    .trailing_by_location
-                    .entry(*location)
-                    .or_default()
-                    .push(source_comment.comment),
-                None => attached.unattached.push(source_comment.comment),
-            }
+            previous
+                .map(Placement::Trailing)
+                .or_else(|| next.map(Placement::Leading))
+        };
+
+        match placement {
+            Some(Placement::Leading(location)) => attached
+                .leading_by_location
+                .entry(location)
+                .or_default()
+                .push(source_comment.comment),
+            Some(Placement::Trailing(location)) => attached
+                .trailing_by_location
+                .entry(location)
+                .or_default()
+                .push(source_comment.comment),
+            None => attached.unattached.push(source_comment.comment),
         }
     }
 
@@ -283,8 +305,23 @@ mod tests {
     }
 
     #[test]
-    fn a_comment_with_no_node_after_it_is_reported_as_unattached() {
+    fn a_comment_with_no_node_after_it_falls_back_to_the_previous_node() {
         let sql = "SELECT 1 FROM s.t -- trailing";
+        let attached = attach_comments(sql, &parse(sql));
+
+        assert!(attached.unattached.is_empty());
+        assert_eq!(attached.trailing_by_location.len(), 1);
+        let comments = attached
+            .trailing_by_location
+            .values()
+            .next()
+            .expect("one entry");
+        assert_eq!(comments[0].text, "-- trailing");
+    }
+
+    #[test]
+    fn a_comment_after_a_statement_terminator_stays_unattached() {
+        let sql = "SELECT 1 FROM s.t; -- trailing";
         let attached = attach_comments(sql, &parse(sql));
 
         assert_eq!(attached.unattached.len(), 1);

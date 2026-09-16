@@ -266,12 +266,12 @@ mod tests {
     }
 
     #[test]
-    fn a_statement_with_an_unplaceable_comment_is_refused() {
-        let sql = "SELECT 1 FROM s.t -- trailing";
+    fn a_comment_after_the_statement_terminator_is_refused() {
+        let sql = "SELECT 1 FROM s.t; -- trailing";
         let ast = pgls_query::parse(sql).unwrap().into_root().unwrap();
 
         let error = format_statement(&ast, sql, &FormatConfig::default())
-            .expect_err("the trailing comment has no node after it");
+            .expect_err("the comment belongs to the next statement");
 
         assert!(matches!(error, FormatError::UnplaceableComment { .. }));
     }
@@ -459,6 +459,44 @@ mod tests {
             .expect("second pass")
             .formatted;
 
+        assert_eq!(first, second);
+    }
+
+    #[test]
+    fn a_comment_closing_a_statement_is_kept() {
+        let sql = "SELECT 1 FROM s.t -- trailing";
+        let ast = pgls_query::parse(sql).unwrap().into_root().unwrap();
+
+        let result = format_statement(&ast, sql, &FormatConfig::default()).expect("formatted");
+
+        assert!(result.formatted.contains("-- trailing"));
+    }
+
+    #[test]
+    fn a_comment_closing_a_column_list_is_kept() {
+        let sql = "CREATE TABLE s.t (\n\tid uuid,\n\tkind text\n--\t\"createdAt\" timestamp\n)";
+        let ast = pgls_query::parse(sql).unwrap().into_root().unwrap();
+
+        let result = format_statement(&ast, sql, &FormatConfig::default()).expect("formatted");
+
+        assert!(result.formatted.contains("\"createdAt\" timestamp"));
+    }
+
+    #[test]
+    fn formatting_a_comment_closing_a_values_list_is_idempotent() {
+        let sql = "INSERT INTO s.t VALUES\n  ('a', 'b')\n, ('c', 'd') -- the last one";
+        let ast = pgls_query::parse(sql).unwrap().into_root().unwrap();
+        let config = FormatConfig::default();
+
+        let first = format_statement(&ast, sql, &config)
+            .expect("first pass")
+            .formatted;
+        let reparsed = pgls_query::parse(&first).unwrap().into_root().unwrap();
+        let second = format_statement(&reparsed, &first, &config)
+            .expect("second pass")
+            .formatted;
+
+        assert!(first.contains("-- the last one"));
         assert_eq!(first, second);
     }
 }
