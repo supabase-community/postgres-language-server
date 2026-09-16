@@ -407,4 +407,31 @@ mod tests {
 
         assert_eq!(first, second);
     }
+
+    #[test]
+    fn a_comment_in_an_insert_column_list_is_kept() {
+        let sql = "INSERT INTO s.t\n(\n  a\n, b -- the management type\n, c\n)\nVALUES (1, 2, 3)";
+        let ast = pgls_query::parse(sql).unwrap().into_root().unwrap();
+
+        let result = format_statement(&ast, sql, &FormatConfig::default()).expect("formatted");
+
+        assert!(result.formatted.contains("-- the management type"));
+    }
+
+    #[test]
+    fn formatting_a_comment_in_an_insert_column_list_is_idempotent() {
+        let sql = "INSERT INTO s.t\n(\n  a\n, b -- the management type\n, c\n)\nVALUES (1, 2, 3)";
+        let ast = pgls_query::parse(sql).unwrap().into_root().unwrap();
+        let config = FormatConfig::default();
+
+        let first = format_statement(&ast, sql, &config)
+            .expect("first pass")
+            .formatted;
+        let reparsed = pgls_query::parse(&first).unwrap().into_root().unwrap();
+        let second = format_statement(&reparsed, &first, &config)
+            .expect("second pass")
+            .formatted;
+
+        assert_eq!(first, second);
+    }
 }

@@ -184,7 +184,11 @@ pub(super) fn emit_column_name_with_indirection(e: &mut EventEmitter, n: &ResTar
 
 // Emit column name only (for INSERT column list)
 pub(super) fn emit_column_name(e: &mut EventEmitter, n: &ResTarget) {
-    e.group_start(GroupKind::ResTarget);
-    emit_column_name_with_indirection(e, n);
-    e.group_end();
+    // The INSERT column list emits its ResTargets itself rather than through emit_node, so this is
+    // the only place that can emit the comments written next to a column name.
+    super::emit_with_comments_at(e, n.location, |e| {
+        e.group_start(GroupKind::ResTarget);
+        emit_column_name_with_indirection(e, n);
+        e.group_end();
+    });
 }
