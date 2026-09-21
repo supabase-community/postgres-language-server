@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 
+use crate::Comment;
 pub use crate::codegen::group_kind::GroupKind;
 pub use crate::codegen::token_kind::TokenKind;
-use crate::Comment;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum LineType {
@@ -73,6 +73,13 @@ impl EventEmitter {
     }
 
     pub fn line(&mut self, line_type: LineType) {
+        if let Some(LayoutEvent::Line(previous)) = self.events.last_mut()
+            && (matches!(&*previous, LineType::Hard) || matches!(&line_type, LineType::Hard))
+        {
+            *previous = LineType::Hard;
+            return;
+        }
+
         self.events.push(LayoutEvent::Line(line_type));
     }
 

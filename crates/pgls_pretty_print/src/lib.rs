@@ -372,23 +372,23 @@ mod tests {
     }
 
     #[test]
-    fn a_comment_after_an_update_target_relation_is_kept() {
+    fn a_comment_after_an_update_target_relation_does_not_add_a_blank_line() {
         let sql = "UPDATE s.t AS x -- remove the strays\nSET a = 1";
         let ast = pgls_query::parse(sql).unwrap().into_root().unwrap();
 
         let result = format_statement(&ast, sql, &FormatConfig::default()).expect("formatted");
 
-        assert!(result.formatted.contains("-- remove the strays"));
+        assert!(result.formatted.contains("-- remove the strays\nset a = 1"));
     }
 
     #[test]
-    fn a_comment_after_a_delete_target_relation_is_kept() {
+    fn a_comment_after_a_delete_target_relation_does_not_add_a_blank_line() {
         let sql = "DELETE FROM s.t -- only the strays\nWHERE a = 1";
         let ast = pgls_query::parse(sql).unwrap().into_root().unwrap();
 
         let result = format_statement(&ast, sql, &FormatConfig::default()).expect("formatted");
 
-        assert!(result.formatted.contains("-- only the strays"));
+        assert!(result.formatted.contains("-- only the strays\nwhere"));
     }
 
     #[test]
