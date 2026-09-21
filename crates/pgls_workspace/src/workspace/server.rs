@@ -953,6 +953,12 @@ impl Workspace for WorkspaceServer {
             type_case: settings.formatter.type_case.into(),
             comma_style: settings.formatter.comma_style.into(),
             logical_operator_placement: settings.formatter.logical_operator_placement.into(),
+            function_argument_groups: settings
+                .formatter
+                .function_argument_groups
+                .iter()
+                .map(|(name, size)| (name.to_lowercase(), usize::from(size.get())))
+                .collect(),
             layout: settings.formatter.layout.into(),
             cast_style: settings.formatter.cast_style.into(),
             clause_body_style: settings.formatter.clause_body_style.into(),

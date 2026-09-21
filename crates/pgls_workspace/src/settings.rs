@@ -381,6 +381,7 @@ fn to_formatter_settings(
         type_case: conf.type_case,
         comma_style: conf.comma_style,
         logical_operator_placement: conf.logical_operator_placement,
+        function_argument_groups: conf.function_argument_groups,
         layout: conf.layout,
         cast_style: conf.cast_style,
         clause_body_style: conf.clause_body_style,
@@ -593,6 +594,9 @@ pub struct FormatterSettings {
     /// Where a boolean operator sits when a condition breaks: trailing or leading. Default: trailing.
     pub logical_operator_placement: LogicalOperatorPlacement,
 
+    /// Function names mapped to the number of adjacent arguments in one logical group.
+    pub function_argument_groups: pgls_configuration::FunctionArgumentGroups,
+
     /// How a statement is laid out across lines: fit or expanded. Default: fit.
     pub layout: Layout,
 
@@ -628,6 +632,7 @@ impl Default for FormatterSettings {
             type_case: KeywordCase::default(),
             comma_style: CommaStyle::default(),
             logical_operator_placement: LogicalOperatorPlacement::default(),
+            function_argument_groups: Default::default(),
             layout: Layout::default(),
             cast_style: CastStyle::default(),
             clause_body_style: ClauseBodyStyle::default(),

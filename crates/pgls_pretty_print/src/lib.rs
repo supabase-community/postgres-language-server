@@ -5,7 +5,7 @@ pub mod nodes;
 pub mod normalize;
 pub mod renderer;
 
-use std::collections::HashSet;
+use std::collections::{BTreeMap, HashSet};
 
 pub use crate::codegen::token_kind::TokenKind;
 pub use crate::comments::{AttachedComments, Comment, attach_comments};
@@ -115,6 +115,8 @@ pub struct FormatConfig {
     pub comma_style: CommaStyle,
     /// Where a boolean operator sits when a condition breaks. Default: Trailing.
     pub logical_operator_placement: LogicalOperatorPlacement,
+    /// Function names mapped to the number of adjacent arguments in one logical group.
+    pub function_argument_groups: BTreeMap<String, usize>,
     /// How a statement is laid out across lines. Default: Fit.
     pub layout: Layout,
     /// How an explicit cast is spelled. Default: Cast.
@@ -137,6 +139,7 @@ impl Default for FormatConfig {
             type_case: KeywordCase::default(),
             comma_style: CommaStyle::default(),
             logical_operator_placement: LogicalOperatorPlacement::default(),
+            function_argument_groups: BTreeMap::new(),
             layout: Layout::default(),
             cast_style: CastStyle::default(),
             clause_body_style: ClauseBodyStyle::default(),
@@ -156,6 +159,7 @@ impl From<FormatConfig> for RenderConfig {
             type_case,
             comma_style: _,
             logical_operator_placement: _,
+            function_argument_groups: _,
             layout: _,
             cast_style: _,
             clause_body_style: _,

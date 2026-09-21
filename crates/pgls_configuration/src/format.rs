@@ -1,8 +1,64 @@
-use crate::StringSet;
+use crate::{Merge as MergeTrait, StringSet};
 use bpaf::Bpaf;
 use pgls_configuration_macros::{Merge, Partial};
 use serde::{Deserialize, Serialize};
-use std::str::FromStr;
+use std::{
+    collections::BTreeMap,
+    num::NonZeroU8,
+    ops::{Deref, DerefMut},
+    str::FromStr,
+};
+
+/// Function names mapped to the number of adjacent arguments that form one logical unit.
+///
+/// Names match the final, unqualified function identifier case-insensitively. For example,
+/// `{ "jsonb_build_object": 2 }` keeps each key/value pair together when the argument list wraps.
+#[derive(Clone, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
+#[cfg_attr(feature = "schema", schemars(transparent))]
+#[serde(transparent)]
+pub struct FunctionArgumentGroups(BTreeMap<String, NonZeroU8>);
+
+impl Deref for FunctionArgumentGroups {
+    type Target = BTreeMap<String, NonZeroU8>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl DerefMut for FunctionArgumentGroups {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
+impl FromStr for FunctionArgumentGroups {
+    type Err = String;
+
+    fn from_str(value: &str) -> Result<Self, Self::Err> {
+        let mut groups = BTreeMap::new();
+
+        for entry in value.split(',').filter(|entry| !entry.trim().is_empty()) {
+            let (name, size) = entry
+                .split_once(':')
+                .ok_or_else(|| format!("expected function:size, got '{entry}'"))?;
+            let size = size
+                .trim()
+                .parse::<NonZeroU8>()
+                .map_err(|_| format!("group size must be between 1 and 255, got '{size}'"))?;
+            groups.insert(name.trim().to_lowercase(), size);
+        }
+
+        Ok(Self(groups))
+    }
+}
+
+impl MergeTrait for FunctionArgumentGroups {
+    fn merge_with(&mut self, other: Self) {
+        self.0.extend(other.0);
+    }
+}
 
 /// Indentation style for the formatter.
 #[derive(Clone, Copy, Debug, Default, Deserialize, Eq, Merge, PartialEq, Serialize)]
@@ -261,6 +317,9 @@ pub struct FormatConfiguration {
     /// Default: "trailing".
     #[partial(bpaf(long("logical-operator-placement")))]
     pub logical_operator_placement: LogicalOperatorPlacement,
+    /// Function names mapped to the number of adjacent arguments in one logical group.
+    #[partial(bpaf(hide))]
+    pub function_argument_groups: FunctionArgumentGroups,
     /// How a statement is laid out: "fit" breaks only when a line would exceed the line width,
     /// "expanded" always breaks between clauses. Default: "fit".
     #[partial(bpaf(long("layout")))]
@@ -300,6 +359,7 @@ impl Default for FormatConfiguration {
             type_case: KeywordCase::default(),
             comma_style: CommaStyle::default(),
             logical_operator_placement: LogicalOperatorPlacement::default(),
+            function_argument_groups: FunctionArgumentGroups::default(),
             layout: Layout::default(),
             cast_style: CastStyle::default(),
             clause_body_style: ClauseBodyStyle::default(),
@@ -320,5 +380,52 @@ impl FormatConfiguration {
 impl PartialFormatConfiguration {
     pub const fn is_disabled(&self) -> bool {
         matches!(self.enabled, Some(false))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn deserializes_function_argument_groups() {
+        let config: PartialFormatConfiguration = serde_json::from_str(
+            r#"{
+                "functionArgumentGroups": {
+                    "json_build_object": 2,
+                    "jsonb_build_object": 2
+                }
+            }"#,
+        )
+        .expect("function argument groups should deserialize");
+
+        let groups = config
+            .function_argument_groups
+            .expect("function argument groups should be configured");
+
+        assert_eq!(groups["json_build_object"].get(), 2);
+        assert_eq!(groups["jsonb_build_object"].get(), 2);
+    }
+
+    #[test]
+    fn parses_function_argument_groups_from_cli_value() {
+        let groups = FunctionArgumentGroups::from_str("json_build_object:2,jsonb_build_object:2")
+            .expect("function argument groups should parse");
+
+        assert_eq!(groups["json_build_object"].get(), 2);
+        assert_eq!(groups["jsonb_build_object"].get(), 2);
+    }
+
+    #[test]
+    fn rejects_zero_sized_function_argument_groups() {
+        let result: Result<PartialFormatConfiguration, _> = serde_json::from_str(
+            r#"{
+                "functionArgumentGroups": {
+                    "jsonb_build_object": 0
+                }
+            }"#,
+        );
+
+        assert!(result.is_err());
     }
 }
