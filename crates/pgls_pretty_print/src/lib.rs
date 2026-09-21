@@ -705,4 +705,39 @@ WHERE
         assert!(first.contains("-- classes for accounting_accounts for banks"));
         assert_eq!(first, second);
     }
+
+    #[test]
+    fn test_long_in_list_fills_available_lines() {
+        let sql = "
+            SELECT *
+            FROM calls
+            WHERE variable_number NOT IN (
+                '3286', '4000', '4001', '4030', '4060', '4200', '4201', '4230',
+                '4260', '4500', '4501', '4530', '4560', '4600', '7001', '7201',
+                '7501', '7601'
+            )
+        ";
+        let parsed = pgls_query::parse(sql).unwrap();
+        let ast = parsed.into_root().unwrap();
+
+        let config = FormatConfig {
+            line_width: 80,
+            ..FormatConfig::default()
+        };
+        let result = format_statement(&ast, sql, &config).unwrap();
+
+        assert_eq!(
+            result.formatted,
+            "select\n\
+             \x20\x20*\n\
+             from\n\
+             \x20\x20calls\n\
+             where\n\
+             \x20\x20variable_number\n\
+             \x20\x20not in (\n\
+             \x20\x20\x20\x20'3286', '4000', '4001', '4030', '4060', '4200', '4201', '4230', '4260',\n\
+             \x20\x20\x20\x20'4500', '4501', '4530', '4560', '4600', '7001', '7201', '7501', '7601'\n\
+             \x20\x20);"
+        );
+    }
 }

@@ -256,8 +256,7 @@ from
 where
   i8
   in (
-    cast(row(123, 456) as int8_tbl),
-    '(4567890123456789,123)'
+    cast(row(123, 456) as int8_tbl), '(4567890123456789,123)'
   );
 
 select
@@ -267,8 +266,7 @@ from
 where
   i8
   in (
-    cast(row(123, 456) as int8_tbl),
-    '(4567890123456789,123)'
+    cast(row(123, 456) as int8_tbl), '(4567890123456789,123)'
   );
 
 select (row(1, 2.0)).f1;

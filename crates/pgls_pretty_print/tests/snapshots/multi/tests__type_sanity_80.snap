@@ -654,16 +654,7 @@ from
 where
   relkind
   not in (
-    'r',
-    'i',
-    'S',
-    't',
-    'v',
-    'm',
-    'c',
-    'f',
-    'p',
-    'I'
+    'r', 'i', 'S', 't', 'v', 'm', 'c', 'f', 'p', 'I'
   ) or
   relpersistence not in ('p', 'u', 't') or
   relreplident not in ('d', 'n', 'f', 'i');

@@ -2661,11 +2661,7 @@ from
 where
   cast(tgrelid as regclass)
   in (
-    'trg_clone',
-    'trg_clone1',
-    'trg_clone2',
-    'trg_clone3',
-    'trg_clone_3_3'
+    'trg_clone', 'trg_clone1', 'trg_clone2', 'trg_clone3', 'trg_clone_3_3'
   )
 group by cast(tgrelid as regclass)
 order by cast(tgrelid as regclass);
@@ -2700,8 +2696,7 @@ from
 where
   tgrelid
   in (
-    cast('parent' as regclass),
-    cast('child1' as regclass)
+    cast('parent' as regclass), cast('child1' as regclass)
   )
 order by cast(cast(tgrelid as regclass) as text);
 
@@ -2717,8 +2712,7 @@ from
 where
   tgrelid
   in (
-    cast('parent' as regclass),
-    cast('child1' as regclass)
+    cast('parent' as regclass), cast('child1' as regclass)
   )
 order by cast(cast(tgrelid as regclass) as text);
 
@@ -2742,8 +2736,7 @@ from
 where
   tgrelid
   in (
-    cast('parent' as regclass),
-    cast('child1' as regclass)
+    cast('parent' as regclass), cast('child1' as regclass)
   )
 order by cast(cast(tgrelid as regclass) as text),
   tgname;
@@ -2763,8 +2756,7 @@ from
 where
   tgrelid
   in (
-    cast('parent' as regclass),
-    cast('child1' as regclass)
+    cast('parent' as regclass), cast('child1' as regclass)
   )
 order by cast(cast(tgrelid as regclass) as text),
   tgname;
@@ -2781,8 +2773,7 @@ from
 where
   tgrelid
   in (
-    cast('parent' as regclass),
-    cast('child1' as regclass)
+    cast('parent' as regclass), cast('child1' as regclass)
   )
 order by cast(cast(tgrelid as regclass) as text),
   tgname;
@@ -2799,8 +2790,7 @@ from
 where
   tgrelid
   in (
-    cast('parent' as regclass),
-    cast('child1' as regclass)
+    cast('parent' as regclass), cast('child1' as regclass)
   )
 order by cast(cast(tgrelid as regclass) as text),
   tgname;
@@ -2825,8 +2815,7 @@ from
 where
   tgrelid
   in (
-    cast('parent' as regclass),
-    cast('child1' as regclass)
+    cast('parent' as regclass), cast('child1' as regclass)
   )
 order by cast(cast(tgrelid as regclass) as text),
   tgfoid;
@@ -2844,8 +2833,7 @@ from
 where
   tgrelid
   in (
-    cast('parent' as regclass),
-    cast('child1' as regclass)
+    cast('parent' as regclass), cast('child1' as regclass)
   )
 order by cast(cast(tgrelid as regclass) as text),
   tgfoid;

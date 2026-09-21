@@ -1,7 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/opr_sanity.sql
-snapshot_kind: text
 ---
 select
   p1.oid,
@@ -280,9 +279,7 @@ from
 where
   p1.prorettype
   in (
-    cast('anyelement' as regtype),
-    cast('anyarray' as regtype),
-    cast('anynonarray' as regtype),
+    cast('anyelement' as regtype), cast('anyarray' as regtype), cast('anynonarray' as regtype),
     cast('anyenum' as regtype)
   ) and
   not (cast('anyelement' as regtype) = any (p1.proargtypes) or
@@ -301,8 +298,7 @@ from
 where
   p1.prorettype
   in (
-    cast('anyrange' as regtype),
-    cast('anymultirange' as regtype)
+    cast('anyrange' as regtype), cast('anymultirange' as regtype)
   ) and
   not (cast('anyrange' as regtype) = any (p1.proargtypes) or
   cast('anymultirange' as regtype) = any (p1.proargtypes))
@@ -316,8 +312,7 @@ from
 where
   p1.prorettype
   in (
-    cast('anycompatible' as regtype),
-    cast('anycompatiblearray' as regtype),
+    cast('anycompatible' as regtype), cast('anycompatiblearray' as regtype),
     cast('anycompatiblenonarray' as regtype)
   ) and
   not (cast('anycompatible' as regtype) = any (p1.proargtypes) or
@@ -559,19 +554,8 @@ from
 where
   proname
   in (
-    'lo_open',
-    'lo_close',
-    'lo_creat',
-    'lo_create',
-    'lo_unlink',
-    'lo_lseek',
-    'lo_lseek64',
-    'lo_tell',
-    'lo_tell64',
-    'lo_truncate',
-    'lo_truncate64',
-    'loread',
-    'lowrite'
+    'lo_open', 'lo_close', 'lo_creat', 'lo_create', 'lo_unlink', 'lo_lseek', 'lo_lseek64',
+    'lo_tell', 'lo_tell64', 'lo_truncate', 'lo_truncate64', 'loread', 'lowrite'
   ) and
   pronamespace =
   (

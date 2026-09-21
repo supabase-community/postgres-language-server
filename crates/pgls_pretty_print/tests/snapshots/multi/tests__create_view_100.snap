@@ -585,12 +585,8 @@ from
 where
   oid
   in (
-    cast('mysecview1' as regclass),
-    cast('mysecview2' as regclass),
-    cast('mysecview3' as regclass),
-    cast('mysecview4' as regclass),
-    cast('mysecview7' as regclass),
-    cast('mysecview8' as regclass),
+    cast('mysecview1' as regclass), cast('mysecview2' as regclass), cast('mysecview3' as regclass),
+    cast('mysecview4' as regclass), cast('mysecview7' as regclass), cast('mysecview8' as regclass),
     cast('mysecview9' as regclass)
   )
 order by relname;
@@ -630,12 +626,8 @@ from
 where
   oid
   in (
-    cast('mysecview1' as regclass),
-    cast('mysecview2' as regclass),
-    cast('mysecview3' as regclass),
-    cast('mysecview4' as regclass),
-    cast('mysecview7' as regclass),
-    cast('mysecview8' as regclass),
+    cast('mysecview1' as regclass), cast('mysecview2' as regclass), cast('mysecview3' as regclass),
+    cast('mysecview4' as regclass), cast('mysecview7' as regclass), cast('mysecview8' as regclass),
     cast('mysecview9' as regclass)
   )
 order by relname;

@@ -152,8 +152,14 @@ impl<W: Write> Renderer<W> {
                     self.write_space()?;
                     i += 1;
                 }
-                LayoutEvent::Line(_) => {
-                    self.write_line_break()?;
+                LayoutEvent::Line(line_type) => {
+                    if matches!(line_type, LineType::Fill)
+                        && self.next_fill_item_fits(events, i + 1)
+                    {
+                        self.write_space()?;
+                    } else {
+                        self.write_line_break()?;
+                    }
                     i += 1;
                 }
                 LayoutEvent::Comment { text, .. } => {
@@ -232,6 +238,9 @@ impl<W: Write> Renderer<W> {
                 LayoutEvent::Line(LineType::SoftOrSpace) => {
                     buffer.push(' '); // Becomes space in single-line mode
                 }
+                LayoutEvent::Line(LineType::Fill) => {
+                    buffer.push(' ');
+                }
                 LayoutEvent::Comment { text, line_comment } => {
                     if *line_comment {
                         // Collapsing would push the code that follows behind the `--`.
@@ -257,12 +266,51 @@ impl<W: Write> Renderer<W> {
             LineType::Hard => {
                 self.write_line_break()?;
             }
-            LineType::Soft | LineType::SoftOrSpace => {
+            LineType::Soft | LineType::SoftOrSpace | LineType::Fill => {
                 // For now, just treat as space outside groups
                 self.write_space()?;
             }
         }
         Ok(())
+    }
+
+    fn next_fill_item_fits(&self, events: &[LayoutEvent], start: usize) -> bool {
+        let Some(item_length) = self.next_fill_item_length(events, start) else {
+            return false;
+        };
+
+        self.current_line_length + 1 + item_length <= self.config.max_line_length
+    }
+
+    fn next_fill_item_length(&self, events: &[LayoutEvent], start: usize) -> Option<usize> {
+        let mut length = 0;
+        let mut depth = 0;
+
+        for event in events.iter().skip(start) {
+            match event {
+                LayoutEvent::Token(token) => {
+                    length += token.render(&self.config).len();
+                }
+                LayoutEvent::Space => length += 1,
+                LayoutEvent::Line(LineType::Hard) => return None,
+                LayoutEvent::Line(LineType::Soft) => {}
+                LayoutEvent::Line(LineType::SoftOrSpace) => length += 1,
+                LayoutEvent::Line(LineType::Fill) if depth == 0 => break,
+                LayoutEvent::Line(LineType::Fill) => length += 1,
+                LayoutEvent::Comment { text, line_comment } => {
+                    if *line_comment {
+                        return None;
+                    }
+                    length += text.len();
+                }
+                LayoutEvent::GroupStart { .. } => depth += 1,
+                LayoutEvent::GroupEnd if depth == 0 => break,
+                LayoutEvent::GroupEnd => depth -= 1,
+                LayoutEvent::IndentStart | LayoutEvent::IndentEnd => {}
+            }
+        }
+
+        Some(length)
     }
 
     fn find_group_end(&self, events: &[LayoutEvent], start: usize) -> usize {

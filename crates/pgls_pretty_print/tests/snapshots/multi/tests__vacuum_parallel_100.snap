@@ -1,7 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/vacuum_parallel.sql
-snapshot_kind: text
 ---
 set max_parallel_maintenance_workers = 4;
 
@@ -41,8 +40,7 @@ from
 where
   oid
   in (
-    cast('regular_sized_index' as regclass),
-    cast('typically_sized_index' as regclass)
+    cast('regular_sized_index' as regclass), cast('typically_sized_index' as regclass)
   ) and
   pg_relation_size(oid) >=
   pg_size_bytes(

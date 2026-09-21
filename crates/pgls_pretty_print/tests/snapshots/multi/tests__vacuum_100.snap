@@ -452,8 +452,7 @@ from
 where
   relid
   in (
-    cast('only_parted' as regclass),
-    cast('only_parted1' as regclass)
+    cast('only_parted' as regclass), cast('only_parted1' as regclass)
   )
 order by relname;
 
@@ -468,8 +467,7 @@ from
 where
   relid
   in (
-    cast('only_parted' as regclass),
-    cast('only_parted1' as regclass)
+    cast('only_parted' as regclass), cast('only_parted1' as regclass)
   )
 order by relname;
 
@@ -494,8 +492,7 @@ from
 where
   relid
   in (
-    cast('only_inh_parent' as regclass),
-    cast('only_inh_child' as regclass)
+    cast('only_inh_parent' as regclass), cast('only_inh_child' as regclass)
   )
 order by relname;
 
@@ -510,8 +507,7 @@ from
 where
   relid
   in (
-    cast('only_inh_parent' as regclass),
-    cast('only_inh_child' as regclass)
+    cast('only_inh_parent' as regclass), cast('only_inh_child' as regclass)
   )
 order by relname;
 
@@ -524,8 +520,7 @@ from
 where
   relid
   in (
-    cast('only_inh_parent' as regclass),
-    cast('only_inh_child' as regclass)
+    cast('only_inh_parent' as regclass), cast('only_inh_child' as regclass)
   )
 order by relname;
 
@@ -540,8 +535,7 @@ from
 where
   relid
   in (
-    cast('only_inh_parent' as regclass),
-    cast('only_inh_child' as regclass)
+    cast('only_inh_parent' as regclass), cast('only_inh_child' as regclass)
   )
 order by relname;
 

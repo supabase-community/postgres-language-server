@@ -42,6 +42,20 @@ where
     emit_comma_separated_list_with_spacing(e, nodes, ListSeparatorSpacing::SoftOrSpace, render);
 }
 
+/// Emit a comma-separated list that packs as many items as possible on each line.
+pub(super) fn emit_fill_comma_separated_list<F>(e: &mut EventEmitter, nodes: &[Node], render: F)
+where
+    F: Fn(&Node, &mut EventEmitter),
+{
+    for (i, n) in nodes.iter().enumerate() {
+        if i > 0 {
+            e.token(TokenKind::COMMA);
+            e.line(LineType::Fill);
+        }
+        render(n, e);
+    }
+}
+
 pub(super) fn emit_dot_separated_list(e: &mut EventEmitter, nodes: &[Node]) {
     emit_dot_separated_list_with(e, nodes, super::emit_node);
 }

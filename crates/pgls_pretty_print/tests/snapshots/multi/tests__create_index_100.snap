@@ -1514,12 +1514,9 @@ where
   classid = cast('pg_class' as regclass) and
   objid
   in (
-    cast('concur_reindex_tab' as regclass),
-    cast('concur_reindex_ind1' as regclass),
-    cast('concur_reindex_ind2' as regclass),
-    cast('concur_reindex_ind3' as regclass),
-    cast('concur_reindex_ind4' as regclass),
-    cast('concur_reindex_matview' as regclass)
+    cast('concur_reindex_tab' as regclass), cast('concur_reindex_ind1' as regclass),
+    cast('concur_reindex_ind2' as regclass), cast('concur_reindex_ind3' as regclass),
+    cast('concur_reindex_ind4' as regclass), cast('concur_reindex_matview' as regclass)
   )
 order by 1,
   2;
@@ -1546,12 +1543,9 @@ where
   classid = cast('pg_class' as regclass) and
   objid
   in (
-    cast('concur_reindex_tab' as regclass),
-    cast('concur_reindex_ind1' as regclass),
-    cast('concur_reindex_ind2' as regclass),
-    cast('concur_reindex_ind3' as regclass),
-    cast('concur_reindex_ind4' as regclass),
-    cast('concur_reindex_matview' as regclass)
+    cast('concur_reindex_tab' as regclass), cast('concur_reindex_ind1' as regclass),
+    cast('concur_reindex_ind2' as regclass), cast('concur_reindex_ind3' as regclass),
+    cast('concur_reindex_ind4' as regclass), cast('concur_reindex_matview' as regclass)
   )
 order by 1,
   2;
@@ -1728,12 +1722,9 @@ where
   classid = cast('pg_class' as regclass) and
   objid
   in (
-    cast('concur_reindex_part' as regclass),
-    cast('concur_reindex_part_0' as regclass),
-    cast('concur_reindex_part_0_1' as regclass),
-    cast('concur_reindex_part_0_2' as regclass),
-    cast('concur_reindex_part_index' as regclass),
-    cast('concur_reindex_part_index_0' as regclass),
+    cast('concur_reindex_part' as regclass), cast('concur_reindex_part_0' as regclass),
+    cast('concur_reindex_part_0_1' as regclass), cast('concur_reindex_part_0_2' as regclass),
+    cast('concur_reindex_part_index' as regclass), cast('concur_reindex_part_index_0' as regclass),
     cast('concur_reindex_part_index_0_1' as regclass),
     cast('concur_reindex_part_index_0_2' as regclass)
   )
@@ -1773,12 +1764,9 @@ where
   classid = cast('pg_class' as regclass) and
   objid
   in (
-    cast('concur_reindex_part' as regclass),
-    cast('concur_reindex_part_0' as regclass),
-    cast('concur_reindex_part_0_1' as regclass),
-    cast('concur_reindex_part_0_2' as regclass),
-    cast('concur_reindex_part_index' as regclass),
-    cast('concur_reindex_part_index_0' as regclass),
+    cast('concur_reindex_part' as regclass), cast('concur_reindex_part_0' as regclass),
+    cast('concur_reindex_part_0_1' as regclass), cast('concur_reindex_part_0_2' as regclass),
+    cast('concur_reindex_part_index' as regclass), cast('concur_reindex_part_index_0' as regclass),
     cast('concur_reindex_part_index_0_1' as regclass),
     cast('concur_reindex_part_index_0_2' as regclass)
   )
@@ -1992,8 +1980,7 @@ from
 where
   starelid
   in (
-    cast('concur_exprs_index_expr' as regclass),
-    cast('concur_exprs_index_pred' as regclass),
+    cast('concur_exprs_index_expr' as regclass), cast('concur_exprs_index_pred' as regclass),
     cast('concur_exprs_index_pred_2' as regclass)
   )
 group by starelid
@@ -2030,8 +2017,7 @@ from
 where
   starelid
   in (
-    cast('concur_exprs_index_expr' as regclass),
-    cast('concur_exprs_index_pred' as regclass),
+    cast('concur_exprs_index_expr' as regclass), cast('concur_exprs_index_pred' as regclass),
     cast('concur_exprs_index_pred_2' as regclass)
   )
 group by starelid
@@ -2046,8 +2032,7 @@ from
 where
   attrelid
   in (
-    cast('concur_exprs_index_expr' as regclass),
-    cast('concur_exprs_index_pred' as regclass),
+    cast('concur_exprs_index_expr' as regclass), cast('concur_exprs_index_pred' as regclass),
     cast('concur_exprs_index_pred_2' as regclass)
   )
 order by cast(cast(attrelid as regclass) as text),
