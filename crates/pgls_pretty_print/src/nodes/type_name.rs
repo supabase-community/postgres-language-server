@@ -5,7 +5,7 @@ use crate::{
 };
 use pgls_query::protobuf::{self, TypeName};
 
-use super::string::emit_identifier_maybe_quoted;
+use super::string::{emit_identifier_maybe_quoted, emit_type_identifier_maybe_quoted};
 
 const INTERVAL_MASK_MONTH: i32 = 1 << 1;
 const INTERVAL_MASK_YEAR: i32 = 1 << 2;
@@ -75,7 +75,7 @@ fn emit_normalized_type_name(e: &mut EventEmitter, name_parts: &[String]) {
     if let Some(words) = builtin_type_keywords(name_parts) {
         emit_keyword_sequence(e, words);
     } else if !name_parts.is_empty() {
-        emit_dot_separated_name(e, name_parts);
+        emit_dot_separated_type_name(e, name_parts);
     } else {
         e.token(TokenKind::IDENT("<?>".to_string()));
     }
@@ -96,6 +96,15 @@ fn emit_dot_separated_name(e: &mut EventEmitter, name_parts: &[String]) {
             e.token(TokenKind::DOT);
         }
         emit_identifier_maybe_quoted(e, part);
+    }
+}
+
+fn emit_dot_separated_type_name(e: &mut EventEmitter, name_parts: &[String]) {
+    for (index, part) in name_parts.iter().enumerate() {
+        if index > 0 {
+            e.token(TokenKind::DOT);
+        }
+        emit_type_identifier_maybe_quoted(e, part);
     }
 }
 

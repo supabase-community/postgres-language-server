@@ -1,0 +1,10 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/single/unique_constraint_nulls_not_distinct.sql
+---
+create table s.expense_types (
+  expense_type_legacy_id text,
+  legacy_branch_code text,
+  unique nulls not distinct (expense_type_legacy_id,
+  legacy_branch_code)
+);

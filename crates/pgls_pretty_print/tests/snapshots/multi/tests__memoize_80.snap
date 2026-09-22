@@ -1,7 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/memoize.sql
-snapshot_kind: text
 ---
 create function explain_memoize(query text, hide_hitmiss boolean)
 returns setof text
@@ -457,8 +456,7 @@ from
   tab_anti as t1
   left outer join
     lateral (
-      select distinct on (
-        a)
+      select distinct on (a)
         a,
         b,
         t1.a as x

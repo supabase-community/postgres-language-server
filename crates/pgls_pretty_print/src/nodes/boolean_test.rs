@@ -10,7 +10,20 @@ pub(super) fn emit_boolean_test(e: &mut EventEmitter, n: &BooleanTest) {
 
     // Emit the argument
     if let Some(ref arg) = n.arg {
+        // AND, OR and NOT bind more loosely than the postfix IS test, so the grouping is lost
+        // unless it is spelled out: `(a OR b) IS TRUE` would come back as `a OR b IS TRUE`, which
+        // parses as `a OR (b IS TRUE)`. Every other argument kind binds tighter and needs nothing.
+        let needs_parens = matches!(arg.node.as_ref(), Some(pgls_query::NodeEnum::BoolExpr(_)));
+
+        if needs_parens {
+            e.token(TokenKind::L_PAREN);
+        }
+
         super::emit_node(arg, e);
+
+        if needs_parens {
+            e.token(TokenKind::R_PAREN);
+        }
     }
 
     e.line(LineType::SoftOrSpace);

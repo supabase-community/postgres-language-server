@@ -103,6 +103,16 @@ fn emit_alter_table_cmd_impl(e: &mut EventEmitter, cmd: &AlterTableCmd, for_type
             } else {
                 e.token(TokenKind::COLUMN_KW);
             }
+            // Dropping the flag turns an idempotent DDL into one that fails on a second run, so
+            // the AST round trip guard refuses the whole statement rather than let it through.
+            if cmd.missing_ok {
+                e.space();
+                e.token(TokenKind::IF_KW);
+                e.space();
+                e.token(TokenKind::NOT_KW);
+                e.space();
+                e.token(TokenKind::EXISTS_KW);
+            }
             if let Some(ref def) = cmd.def {
                 e.space();
                 e.indent_start();
