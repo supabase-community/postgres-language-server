@@ -18,12 +18,68 @@ use pgls_query::{NodeEnum, NodeMut};
 /// the original AST and the AST of reparsed formatted output.
 pub fn normalize_ast(node: &mut NodeEnum) {
     clear_location(node);
+    normalize_bool_expr_associativity(node);
     normalize_a_indirection(node);
     normalize_object_with_args(node);
     normalize_foreign_table_partbound(node);
     normalize_merge_support_func(node);
     normalize_sql_value_function(node);
     normalize_function_body(node);
+}
+
+/// Flatten nested boolean expressions which PostgreSQL represents differently
+/// depending on redundant parentheses.
+///
+/// Only same-operator AND and OR expressions are associative. NOT and mixed
+/// AND/OR expressions retain their original tree shape because parentheses
+/// affect their semantics.
+fn normalize_bool_expr_associativity(node: &mut NodeEnum) {
+    let bool_exprs = node
+        .iter_mut()
+        .filter_map(|node| match node {
+            NodeMut::BoolExpr(bool_expr) => Some(bool_expr),
+            _ => None,
+        })
+        .collect::<Vec<_>>();
+
+    // Process descendants first. Flattening a parent moves its child nodes, so
+    // child pointers must not be used after their parent has been normalized.
+    for bool_expr in bool_exprs.into_iter().rev() {
+        unsafe {
+            flatten_bool_expr_args(&mut *bool_expr);
+        }
+    }
+}
+
+fn flatten_bool_expr_args(bool_expr: &mut pgls_query::protobuf::BoolExpr) {
+    use pgls_query::protobuf::BoolExprType;
+
+    if !matches!(
+        BoolExprType::try_from(bool_expr.boolop),
+        Ok(BoolExprType::AndExpr | BoolExprType::OrExpr)
+    ) {
+        return;
+    }
+
+    let boolop = bool_expr.boolop;
+    let mut flattened = Vec::with_capacity(bool_expr.args.len());
+
+    for mut arg in std::mem::take(&mut bool_expr.args) {
+        let nested_args = match arg.node.as_mut() {
+            Some(NodeEnum::BoolExpr(nested)) if nested.boolop == boolop => {
+                Some(std::mem::take(&mut nested.args))
+            }
+            _ => None,
+        };
+
+        if let Some(mut nested_args) = nested_args {
+            flattened.append(&mut nested_args);
+        } else {
+            flattened.push(arg);
+        }
+    }
+
+    bool_expr.args = flattened;
 }
 
 /// Clear location fields in AST nodes.

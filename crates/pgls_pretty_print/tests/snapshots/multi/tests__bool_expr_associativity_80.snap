@@ -1,0 +1,20 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/bool_expr_associativity.sql
+---
+create table demo_output
+as
+  select
+    *
+  from
+    demo
+  where
+    (demo.accounting_class ~ '^[0-9]+$' and
+    demo.accounting_class >= '6000' and
+    demo.accounting_class <= '6629' or
+    starts_with(demo.accounting_class, '71')) and
+    demo.changed_at > demo.created_at;
+
+select * from demo where (a or b or c) and d;
+
+select * from demo where a and (b or c);

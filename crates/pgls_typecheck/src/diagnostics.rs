@@ -153,6 +153,7 @@ pub(crate) fn create_type_error(
     pg_err: &PgDatabaseError,
     ts: &tree_sitter::Tree,
     typed_replacement: TypedReplacement,
+    source_offset: TextSize,
 ) -> TypecheckDiagnostic {
     let position = pg_err.position().and_then(|pos| match pos {
         sqlx::postgres::PgErrorPosition::Original(pos) => Some(pos - 1),
@@ -171,9 +172,24 @@ pub(crate) fn create_type_error(
         ts.root_node()
             .named_descendant_for_byte_range(pos.into(), pos.into())
             .map(|node| {
+                let node = if source_offset == TextSize::from(0) {
+                    node
+                } else {
+                    node.parent()
+                        .filter(|parent| parent.kind() == "object_reference")
+                        .and_then(|parent| {
+                            let mut cursor = parent.walk();
+                            parent
+                                .children(&mut cursor)
+                                .filter(|child| child.is_named())
+                                .last()
+                        })
+                        .unwrap_or(node)
+                };
+
                 TextRange::new(
-                    node.start_byte().try_into().unwrap(),
-                    node.end_byte().try_into().unwrap(),
+                    TextSize::from(u32::try_from(node.start_byte()).unwrap()) + source_offset,
+                    TextSize::from(u32::try_from(node.end_byte()).unwrap()) + source_offset,
                 )
             })
     });
