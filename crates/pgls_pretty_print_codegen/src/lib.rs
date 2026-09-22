@@ -1,5 +1,6 @@
 mod group_kind;
 mod keywords;
+mod node_location;
 mod proto_analyser;
 mod token_kind;
 
@@ -17,6 +18,12 @@ pub fn token_kind_codegen(_input: proc_macro::TokenStream) -> proc_macro::TokenS
 pub fn group_kind_codegen(_input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let analyser = ProtoAnalyzer::from(&proto_file_path()).unwrap();
     group_kind::group_kind_mod(analyser).into()
+}
+
+#[proc_macro]
+pub fn node_location_codegen(_input: proc_macro::TokenStream) -> proc_macro::TokenStream {
+    let analyser = ProtoAnalyzer::from(&proto_file_path()).unwrap();
+    node_location::node_location_mod(analyser).into()
 }
 
 fn proto_file_path() -> path::PathBuf {

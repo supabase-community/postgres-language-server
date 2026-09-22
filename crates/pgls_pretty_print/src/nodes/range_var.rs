@@ -15,6 +15,12 @@ pub(super) fn emit_range_var_name(e: &mut EventEmitter, n: &RangeVar) {
 }
 
 fn emit_range_var_impl(e: &mut EventEmitter, n: &RangeVar, allow_only: bool) {
+    // The parents of a RangeVar call this helper directly rather than emit_node, so this is the
+    // only place that can emit the comments written next to the relation name.
+    super::emit_with_comments_at(e, n.location, |e| emit_range_var_tokens(e, n, allow_only));
+}
+
+fn emit_range_var_tokens(e: &mut EventEmitter, n: &RangeVar, allow_only: bool) {
     e.group_start(GroupKind::RangeVar);
 
     // ONLY is only valid in DML contexts (SELECT, UPDATE, DELETE, LOCK), not DDL

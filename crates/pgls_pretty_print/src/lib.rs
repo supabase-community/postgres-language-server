@@ -1,10 +1,14 @@
 mod codegen;
+pub mod comments;
 pub mod emitter;
 pub mod nodes;
 pub mod normalize;
 pub mod renderer;
 
+use std::collections::HashSet;
+
 pub use crate::codegen::token_kind::TokenKind;
+pub use crate::comments::{AttachedComments, Comment, attach_comments};
 pub use crate::normalize::normalize_ast;
 pub use crate::renderer::{IndentStyle, KeywordCase, RenderConfig};
 use pgls_query::NodeEnum;
@@ -29,6 +33,16 @@ pub enum FormatError {
          Details: {message}"
     )]
     BetaUnsupported { message: String },
+
+    /// A comment could not be placed in the formatted output.
+    #[error("Formatter: {count} comment(s) could not be placed, the statement was left as written")]
+    UnplaceableComment { count: usize },
+
+    /// Reformatting a statement with comments produced a cycle instead of a fixed layout.
+    #[error(
+        "Formatter: comment layout did not stabilize after {passes} passes, the statement was left as written"
+    )]
+    NonIdempotentCommentLayout { passes: usize },
 }
 
 /// Configuration for the SQL formatter.
@@ -101,11 +115,75 @@ pub struct FormatResult {
 /// * `Err(FormatError)` - If formatting fails or beta safety check fails
 pub fn format_statement(
     ast: &NodeEnum,
+    sql: &str,
     config: &FormatConfig,
 ) -> Result<FormatResult, FormatError> {
-    // Emit layout events from AST
-    let mut emitter = emitter::EventEmitter::new();
+    const MAX_COMMENT_FORMAT_PASSES: usize = 6;
+
+    let attached = comments::attach_comments(sql, ast);
+    let has_comments = !attached.leading_by_location.is_empty()
+        || !attached.trailing_by_location.is_empty()
+        || !attached.unattached.is_empty();
+
+    if !has_comments {
+        return format_statement_once(ast, config, attached);
+    }
+
+    let mut current_sql = sql.to_string();
+    let mut current_ast = ast.clone();
+    let mut attached = attached;
+    let mut seen_layouts = HashSet::from([current_sql.clone()]);
+
+    for pass in 1..=MAX_COMMENT_FORMAT_PASSES {
+        let result = format_statement_once(&current_ast, config, attached)?;
+        if result.formatted == current_sql {
+            return Ok(result);
+        }
+
+        if !seen_layouts.insert(result.formatted.clone()) {
+            return Err(FormatError::NonIdempotentCommentLayout { passes: pass });
+        }
+
+        current_sql = result.formatted;
+        current_ast = pgls_query::parse(&current_sql)
+            .map_err(|e| FormatError::ParseError {
+                message: format!("Formatted SQL failed to parse: {e}"),
+            })?
+            .into_root()
+            .ok_or_else(|| FormatError::ParseError {
+                message: "No root node in parsed output (expected single statement)".to_string(),
+            })?;
+        attached = comments::attach_comments(&current_sql, &current_ast);
+    }
+
+    Err(FormatError::NonIdempotentCommentLayout {
+        passes: MAX_COMMENT_FORMAT_PASSES,
+    })
+}
+
+/// Formats a statement exactly once, including semantic verification.
+fn format_statement_once(
+    ast: &NodeEnum,
+    config: &FormatConfig,
+    attached: AttachedComments,
+) -> Result<FormatResult, FormatError> {
+    // A comment that no node follows cannot be placed. Refusing here preserves the original text,
+    // which is safer than emitting a statement that would silently drop it.
+    if !attached.unattached.is_empty() {
+        return Err(FormatError::UnplaceableComment {
+            count: attached.unattached.len(),
+        });
+    }
+
+    let mut emitter = emitter::EventEmitter::with_comments(
+        attached.leading_by_location,
+        attached.trailing_by_location,
+    );
     nodes::emit_node_enum(ast, &mut emitter);
+    let pending = emitter.pending_comments();
+    if pending > 0 {
+        return Err(FormatError::UnplaceableComment { count: pending });
+    }
 
     // Render to string
     let render_config = RenderConfig {
@@ -162,7 +240,7 @@ mod tests {
         let ast = parsed.into_root().unwrap();
 
         let config = FormatConfig::default();
-        let result = format_statement(&ast, &config).unwrap();
+        let result = format_statement(&ast, sql, &config).unwrap();
 
         assert!(!result.formatted.is_empty());
         // Default keyword_case is Lower, so check for lowercase
@@ -174,5 +252,457 @@ mod tests {
         let config = FormatConfig::default();
         assert_eq!(config.line_width, 100);
         assert_eq!(config.indent_size, 2);
+    }
+
+    #[test]
+    fn a_statement_with_a_comment_is_formatted() {
+        let sql = "SELECT\n-- pick the magic value\n1 FROM s.t";
+        let ast = pgls_query::parse(sql).unwrap().into_root().unwrap();
+
+        let result = format_statement(&ast, sql, &FormatConfig::default()).expect("formatted");
+
+        assert!(result.formatted.contains("-- pick the magic value"));
+        assert!(result.formatted.contains("select"));
+    }
+
+    #[test]
+    fn a_comment_after_the_statement_terminator_is_refused() {
+        let sql = "SELECT 1 FROM s.t; -- trailing";
+        let ast = pgls_query::parse(sql).unwrap().into_root().unwrap();
+
+        let error = format_statement(&ast, sql, &FormatConfig::default())
+            .expect_err("the comment belongs to the next statement");
+
+        assert!(matches!(error, FormatError::UnplaceableComment { .. }));
+    }
+
+    #[test]
+    fn formatting_a_trailing_comment_is_idempotent() {
+        let sql = "SELECT * FROM t WHERE a = 1 -- keep condition context\nAND b = 2;";
+        let ast = pgls_query::parse(sql).unwrap().into_root().unwrap();
+        let config = FormatConfig::default();
+
+        let first = format_statement(&ast, sql, &config)
+            .expect("first pass")
+            .formatted;
+        let reparsed = pgls_query::parse(&first).unwrap().into_root().unwrap();
+        let second = format_statement(&reparsed, &first, &config)
+            .expect("second pass")
+            .formatted;
+
+        assert!(first.contains("1 -- keep condition context"));
+        assert_eq!(first, second);
+    }
+
+    #[test]
+    fn formatting_a_comment_before_an_order_by_clause_is_idempotent() {
+        let sql = "SELECT * FROM t\n-- WHERE\n--  a is active\nORDER BY a;";
+        let ast = pgls_query::parse(sql).unwrap().into_root().unwrap();
+        let config = FormatConfig::default();
+
+        let first = format_statement(&ast, sql, &config)
+            .expect("first pass")
+            .formatted;
+        let reparsed = pgls_query::parse(&first).unwrap().into_root().unwrap();
+        let second = format_statement(&reparsed, &first, &config)
+            .expect("second pass")
+            .formatted;
+
+        assert!(first.contains("order by -- WHERE"));
+        assert_eq!(first, second);
+    }
+
+    #[test]
+    fn formatting_a_trailing_comment_after_a_right_hand_operand_is_idempotent() {
+        let sql = "SELECT * FROM t WHERE type_de_variable <> '011' -- exclude VAT\n;";
+        let ast = pgls_query::parse(sql).unwrap().into_root().unwrap();
+        let config = FormatConfig::default();
+
+        let first = format_statement(&ast, sql, &config)
+            .expect("first pass")
+            .formatted;
+        let reparsed = pgls_query::parse(&first).unwrap().into_root().unwrap();
+        let second = format_statement(&reparsed, &first, &config)
+            .expect("second pass")
+            .formatted;
+
+        assert!(first.contains("'011' -- exclude VAT"));
+        assert_eq!(first, second);
+    }
+
+    #[test]
+    fn formatting_a_comment_after_a_list_separator_is_idempotent() {
+        let sql = "SELECT a, -- temporarily omit b\nb FROM t;";
+        let ast = pgls_query::parse(sql).unwrap().into_root().unwrap();
+        let config = FormatConfig::default();
+
+        let first = format_statement(&ast, sql, &config)
+            .expect("first pass")
+            .formatted;
+        let reparsed = pgls_query::parse(&first).unwrap().into_root().unwrap();
+        let second = format_statement(&reparsed, &first, &config)
+            .expect("second pass")
+            .formatted;
+
+        assert!(first.contains("-- temporarily omit b"));
+        assert_eq!(first, second);
+    }
+
+    #[test]
+    fn formatting_a_comment_before_a_conjunction_is_idempotent() {
+        let sql = "SELECT * FROM s.t WHERE a = 1\n-- keep b out for now\nAND b = 2;";
+        let ast = pgls_query::parse(sql).unwrap().into_root().unwrap();
+        let config = FormatConfig {
+            indent_size: 4,
+            indent_style: IndentStyle::Tabs,
+            keyword_case: KeywordCase::Upper,
+            ..Default::default()
+        };
+
+        let first = format_statement(&ast, sql, &config)
+            .expect("first pass")
+            .formatted;
+        let reparsed = pgls_query::parse(&first).unwrap().into_root().unwrap();
+        let second = format_statement(&reparsed, &first, &config)
+            .expect("second pass")
+            .formatted;
+
+        assert!(first.contains("-- keep b out for now"));
+        assert_eq!(first, second);
+    }
+
+    #[test]
+    fn a_comment_after_an_update_target_relation_does_not_add_a_blank_line() {
+        let sql = "UPDATE s.t AS x -- remove the strays\nSET a = 1";
+        let ast = pgls_query::parse(sql).unwrap().into_root().unwrap();
+
+        let result = format_statement(&ast, sql, &FormatConfig::default()).expect("formatted");
+
+        assert!(result.formatted.contains("-- remove the strays\nset a = 1"));
+    }
+
+    #[test]
+    fn a_comment_after_a_delete_target_relation_does_not_add_a_blank_line() {
+        let sql = "DELETE FROM s.t -- only the strays\nWHERE a = 1";
+        let ast = pgls_query::parse(sql).unwrap().into_root().unwrap();
+
+        let result = format_statement(&ast, sql, &FormatConfig::default()).expect("formatted");
+
+        assert!(result.formatted.contains("-- only the strays\nwhere"));
+    }
+
+    #[test]
+    fn formatting_a_comment_after_a_target_relation_is_idempotent() {
+        let sql = "UPDATE s.t AS x -- remove the strays\nSET a = 1";
+        let ast = pgls_query::parse(sql).unwrap().into_root().unwrap();
+        let config = FormatConfig::default();
+
+        let first = format_statement(&ast, sql, &config)
+            .expect("first pass")
+            .formatted;
+        let reparsed = pgls_query::parse(&first).unwrap().into_root().unwrap();
+        let second = format_statement(&reparsed, &first, &config)
+            .expect("second pass")
+            .formatted;
+
+        assert_eq!(first, second);
+    }
+
+    #[test]
+    fn a_comment_in_an_insert_column_list_is_kept() {
+        let sql = "INSERT INTO s.t\n(\n  a\n, b -- the management type\n, c\n)\nVALUES (1, 2, 3)";
+        let ast = pgls_query::parse(sql).unwrap().into_root().unwrap();
+
+        let result = format_statement(&ast, sql, &FormatConfig::default()).expect("formatted");
+
+        assert!(result.formatted.contains("-- the management type"));
+    }
+
+    #[test]
+    fn formatting_a_comment_in_an_insert_column_list_is_idempotent() {
+        let sql = "INSERT INTO s.t\n(\n  a\n, b -- the management type\n, c\n)\nVALUES (1, 2, 3)";
+        let ast = pgls_query::parse(sql).unwrap().into_root().unwrap();
+        let config = FormatConfig::default();
+
+        let first = format_statement(&ast, sql, &config)
+            .expect("first pass")
+            .formatted;
+        let reparsed = pgls_query::parse(&first).unwrap().into_root().unwrap();
+        let second = format_statement(&reparsed, &first, &config)
+            .expect("second pass")
+            .formatted;
+
+        assert_eq!(first, second);
+    }
+
+    #[test]
+    fn a_comment_after_a_column_type_is_kept() {
+        let sql = "CREATE TABLE s.t (\n\ta int -- the magic column\n\t, b int\n)";
+        let ast = pgls_query::parse(sql).unwrap().into_root().unwrap();
+
+        let result = format_statement(&ast, sql, &FormatConfig::default()).expect("formatted");
+
+        assert!(result.formatted.contains("-- the magic column"));
+    }
+
+    #[test]
+    fn formatting_a_comment_after_a_column_type_is_idempotent() {
+        let sql = "CREATE TABLE s.t (\n\ta int -- the magic column\n\t, b int\n)";
+        let ast = pgls_query::parse(sql).unwrap().into_root().unwrap();
+        let config = FormatConfig::default();
+
+        let first = format_statement(&ast, sql, &config)
+            .expect("first pass")
+            .formatted;
+        let reparsed = pgls_query::parse(&first).unwrap().into_root().unwrap();
+        let second = format_statement(&reparsed, &first, &config)
+            .expect("second pass")
+            .formatted;
+
+        assert_eq!(first, second);
+    }
+
+    #[test]
+    fn a_comment_closing_a_statement_is_kept() {
+        let sql = "SELECT 1 FROM s.t -- trailing";
+        let ast = pgls_query::parse(sql).unwrap().into_root().unwrap();
+
+        let result = format_statement(&ast, sql, &FormatConfig::default()).expect("formatted");
+
+        assert!(result.formatted.contains("-- trailing"));
+    }
+
+    #[test]
+    fn a_comment_closing_a_column_list_is_kept() {
+        let sql = "CREATE TABLE s.t (\n\tid uuid,\n\tkind text,\n\tmigration jsonb\n--\t\"createdAt\" timestamp,\n--\t\"updatedAt\" timestamp\n)";
+        let ast = pgls_query::parse(sql).unwrap().into_root().unwrap();
+
+        let result = format_statement(&ast, sql, &FormatConfig::default()).expect("formatted");
+
+        assert!(result.formatted.contains("\"createdAt\" timestamp"));
+        assert!(!result.formatted.contains("migration jsonb --"));
+    }
+
+    #[test]
+    fn formatting_a_comment_closing_a_values_list_is_idempotent() {
+        let sql = "INSERT INTO s.t VALUES\n  ('a', 'b')\n, ('c', 'd') -- the last one";
+        let ast = pgls_query::parse(sql).unwrap().into_root().unwrap();
+        let config = FormatConfig::default();
+
+        let first = format_statement(&ast, sql, &config)
+            .expect("first pass")
+            .formatted;
+        let reparsed = pgls_query::parse(&first).unwrap().into_root().unwrap();
+        let second = format_statement(&reparsed, &first, &config)
+            .expect("second pass")
+            .formatted;
+
+        assert!(first.contains("-- the last one"));
+        assert_eq!(first, second);
+    }
+
+    #[test]
+    fn a_comment_in_an_update_set_list_is_kept() {
+        let sql =
+            "UPDATE s.t SET\n-- the reason is deducted from the WHERE below\na = 1 WHERE b = 2";
+        let ast = pgls_query::parse(sql).unwrap().into_root().unwrap();
+
+        let result = format_statement(&ast, sql, &FormatConfig::default()).expect("formatted");
+
+        assert!(
+            result
+                .formatted
+                .contains("-- the reason is deducted from the WHERE below")
+        );
+    }
+
+    #[test]
+    fn formatting_a_comment_in_an_update_set_list_is_idempotent() {
+        let sql =
+            "UPDATE s.t SET\n-- the reason is deducted from the WHERE below\na = 1 WHERE b = 2";
+        let ast = pgls_query::parse(sql).unwrap().into_root().unwrap();
+        let config = FormatConfig::default();
+
+        let first = format_statement(&ast, sql, &config)
+            .expect("first pass")
+            .formatted;
+        let reparsed = pgls_query::parse(&first).unwrap().into_root().unwrap();
+        let second = format_statement(&reparsed, &first, &config)
+            .expect("second pass")
+            .formatted;
+
+        assert_eq!(first, second);
+    }
+
+    #[test]
+    fn a_comment_before_a_window_definition_is_kept() {
+        let sql = "SELECT bool_or(a <> b) -- has_decimal\nOVER (PARTITION BY c) FROM s.t";
+        let ast = pgls_query::parse(sql).unwrap().into_root().unwrap();
+
+        let result = format_statement(&ast, sql, &FormatConfig::default()).expect("formatted");
+
+        assert!(result.formatted.contains("-- has_decimal"));
+    }
+
+    #[test]
+    fn formatting_a_comment_before_a_window_definition_is_idempotent() {
+        let sql = "SELECT bool_or(a <> b) -- has_decimal\nOVER (PARTITION BY c) FROM s.t";
+        let ast = pgls_query::parse(sql).unwrap().into_root().unwrap();
+        let config = FormatConfig::default();
+
+        let first = format_statement(&ast, sql, &config)
+            .expect("first pass")
+            .formatted;
+        let reparsed = pgls_query::parse(&first).unwrap().into_root().unwrap();
+        let second = format_statement(&reparsed, &first, &config)
+            .expect("second pass")
+            .formatted;
+
+        assert_eq!(first, second);
+    }
+
+    #[test]
+    fn a_comment_before_a_with_clause_is_kept() {
+        let sql =
+            "INSERT INTO s.u\n-- how this table is fed\nWITH c AS (SELECT 1 AS a)\nSELECT a FROM c";
+        let ast = pgls_query::parse(sql).unwrap().into_root().unwrap();
+
+        let result = format_statement(&ast, sql, &FormatConfig::default()).expect("formatted");
+
+        assert!(result.formatted.contains("-- how this table is fed"));
+    }
+
+    #[test]
+    fn formatting_a_comment_before_a_with_clause_is_idempotent() {
+        let sql =
+            "INSERT INTO s.u\n-- how this table is fed\nWITH c AS (SELECT 1 AS a)\nSELECT a FROM c";
+        let ast = pgls_query::parse(sql).unwrap().into_root().unwrap();
+        let config = FormatConfig::default();
+
+        let first = format_statement(&ast, sql, &config)
+            .expect("first pass")
+            .formatted;
+        let reparsed = pgls_query::parse(&first).unwrap().into_root().unwrap();
+        let second = format_statement(&reparsed, &first, &config)
+            .expect("second pass")
+            .formatted;
+
+        assert_eq!(first, second);
+    }
+
+    #[test]
+    fn formatting_comments_on_sequence_options_is_idempotent() {
+        let sql = "CREATE SEQUENCE numbering.missions_seq AS BIGINT START 1 -- first value\n\
+            MAXVALUE 36 -- last base36 value\n\
+            INCREMENT 1 NO CYCLE;";
+        let ast = pgls_query::parse(sql).unwrap().into_root().unwrap();
+        let config = FormatConfig::default();
+
+        let first = format_statement(&ast, sql, &config)
+            .expect("first pass")
+            .formatted;
+        let reparsed = pgls_query::parse(&first).unwrap().into_root().unwrap();
+        let second = format_statement(&reparsed, &first, &config)
+            .expect("second pass")
+            .formatted;
+
+        assert!(first.contains("-- first value"));
+        assert!(first.contains("-- last base36 value"));
+        assert_eq!(first, second);
+    }
+
+    #[test]
+    fn formatting_comments_after_grouped_conditions_is_idempotent() {
+        let sql = "SELECT * FROM source WHERE ((kind = 'expense' AND code = 'CR') -- expense entries\n\
+            OR (kind IN ('call', 'suspense') AND code = 'CA')) -- call entries\n\
+            AND journal = '19';";
+        let ast = pgls_query::parse(sql).unwrap().into_root().unwrap();
+        let config = FormatConfig::default();
+
+        let first = format_statement(&ast, sql, &config)
+            .expect("first pass")
+            .formatted;
+        let reparsed = pgls_query::parse(&first).unwrap().into_root().unwrap();
+        let second = format_statement(&reparsed, &first, &config)
+            .expect("second pass")
+            .formatted;
+
+        assert!(first.contains("-- expense entries"));
+        assert!(first.contains("-- call entries"));
+        assert_eq!(first, second);
+    }
+
+    #[test]
+    fn formatting_a_comment_between_with_and_update_is_idempotent() {
+        let sql = "WITH source AS (\n\
+            (SELECT 1 AS id)\n\
+            UNION ALL\n\
+            (SELECT 2 AS id)\n\
+            )\n\
+            -- regenerate ids from the source number\n\
+            -- use the last four digits when the source number is numeric\n\
+            -- otherwise increment the highest source number\n\
+            UPDATE target SET id = source.id FROM source WHERE target.id = source.id;";
+        let ast = pgls_query::parse(sql).unwrap().into_root().unwrap();
+        let config = FormatConfig::default();
+
+        let first = format_statement(&ast, sql, &config)
+            .expect("first pass")
+            .formatted;
+        let reparsed = pgls_query::parse(&first).unwrap().into_root().unwrap();
+        let second = format_statement(&reparsed, &first, &config)
+            .expect("second pass")
+            .formatted;
+
+        assert!(first.contains("-- regenerate ids from the source number"));
+        assert_eq!(first, second);
+    }
+
+    #[test]
+    fn formatting_a_leading_comment_between_boolean_operands_is_idempotent() {
+        let sql = r#"
+SELECT *
+FROM accounting_accounts
+WHERE
+    accounting_accounts.line_of_business = 'S'
+    AND staging_buildings.co_ownership_trustee_status
+    AND NOT starts_with(last_line.accounting_class_source, '71')
+    -- classes for accounting_accounts for co_owner_accounts ; not handled in this file...
+    AND (
+        NOT starts_with(last_line.accounting_class_source, '450')
+        -- ... except for those re-mapped in refining due to a missing co_owner_account_fk.
+        OR starts_with(accounting_accounts.accounting_class, '473')
+        OR uaf_accounts.accounting_class_target IS NOT NULL
+    )
+    AND NOT starts_with(accounting_accounts.accounting_class, '450')
+    -- classes for accounting_accounts for banks. For now bank are handled in this file
+    -- AND last_line.accounting_class_source::INT NOT BETWEEN 5000 AND 5999
+    AND (
+        (
+            -- These are class for budgets. They'll be handled in the dedicated export.
+            coalesce(last_line.accounting_class_source, '') ~ '^[0-9]+$'
+            AND NOT (
+                last_line.accounting_class_source >= '6000'
+                AND last_line.accounting_class_source <= '6799'
+            )
+        )
+        OR ( -- Non-numeric classes are also handled in this file
+            coalesce(last_line.accounting_class_source, '') ~ '[A-Z]'
+        )
+    );
+"#;
+        let config = FormatConfig::default();
+
+        let ast = pgls_query::parse(sql).unwrap().into_root().unwrap();
+        let first = format_statement(&ast, sql, &config)
+            .expect("first pass")
+            .formatted;
+        let reparsed = pgls_query::parse(&first).unwrap().into_root().unwrap();
+        let second = format_statement(&reparsed, &first, &config)
+            .expect("second pass")
+            .formatted;
+
+        assert!(first.contains("-- classes for accounting_accounts for banks"));
+        assert_eq!(first, second);
     }
 }

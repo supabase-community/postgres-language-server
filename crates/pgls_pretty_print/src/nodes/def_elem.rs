@@ -376,9 +376,13 @@ pub(super) fn emit_sequence_option(e: &mut EventEmitter, n: &DefElem) {
             }
         }
         "cycle" => {
-            if n.arg.is_some() {
-                // Check if the arg is a boolean/integer indicating CYCLE vs NO CYCLE
-                // For now, just emit CYCLE (TODO: handle NO CYCLE)
+            let cycles = n.arg.as_ref().and_then(|arg| match arg.node.as_ref() {
+                Some(NodeEnum::Boolean(boolean)) => Some(boolean.boolval),
+                Some(NodeEnum::Integer(integer)) => Some(integer.ival != 0),
+                _ => None,
+            });
+
+            if cycles.unwrap_or(false) {
                 e.token(TokenKind::CYCLE_KW);
             } else {
                 e.token(TokenKind::NO_KW);

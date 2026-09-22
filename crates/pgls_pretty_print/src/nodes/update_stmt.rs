@@ -17,6 +17,10 @@ fn emit_update_stmt_impl(e: &mut EventEmitter, n: &UpdateStmt, with_semicolon: b
     if let Some(ref with_clause) = n.with_clause {
         super::emit_with_clause(e, with_clause);
         e.line(LineType::SoftOrSpace);
+
+        if let Some(ref range_var) = n.relation {
+            e.take_leading_comments_at(range_var.location);
+        }
     }
 
     e.token(TokenKind::UPDATE_KW);

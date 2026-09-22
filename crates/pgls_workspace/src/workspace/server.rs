@@ -962,14 +962,7 @@ impl Workspace for WorkspaceServer {
                     continue;
                 };
 
-                // Comments are not represented in the AST, so reformatting a function
-                // body that contains comments would silently drop them. Leave the
-                // original body untouched in that case.
-                if statement_contains_comment(text) {
-                    continue;
-                }
-
-                let Ok(result) = pgls_pretty_print::format_statement(ast, &config) else {
+                let Ok(result) = pgls_pretty_print::format_statement(ast, text, &config) else {
                     continue;
                 };
 
@@ -1005,13 +998,6 @@ impl Workspace for WorkspaceServer {
                 continue;
             }
 
-            // A comment inside the statement cannot survive a round-trip through the
-            // AST, so keep the original text rather than dropping the comment.
-            if statement_contains_comment(&text) {
-                formatted_output.push_str(&text);
-                continue;
-            }
-
             match ast_result {
                 Ok(ast) => {
                     let mut ast = ast;
@@ -1019,7 +1005,7 @@ impl Workspace for WorkspaceServer {
                         sql_function::set_sql_fn_body(&mut ast, formatted_sql_fn_body);
                     }
 
-                    match pgls_pretty_print::format_statement(&ast, &config) {
+                    match pgls_pretty_print::format_statement(&ast, &text, &config) {
                         Ok(result) => {
                             if text != result.formatted {
                                 statements.push(StatementFormatResult {
@@ -1188,30 +1174,6 @@ impl Workspace for WorkspaceServer {
 /// if it is a symlink that resolves to a directory.
 fn is_dir(path: &Path) -> bool {
     path.is_dir() || (path.is_symlink() && fs::read_link(path).is_ok_and(|path| path.is_dir()))
-}
-
-/// Returns `true` if the SQL `statement` contains a line (`--`) or block (`/* */`)
-/// comment.
-///
-/// libpg_query strips comments while building the AST, so the formatter (which
-/// renders from the AST) cannot reproduce them. We use the scanner, which exposes
-/// comments as dedicated tokens, to detect them and fall back to the original text.
-/// Comments inside string literals (including dollar-quoted bodies) are part of the
-/// string token and are correctly not reported here.
-fn statement_contains_comment(statement: &str) -> bool {
-    use pgls_query::protobuf::Token;
-
-    match pgls_query::scan(statement) {
-        Ok(scan) => scan.tokens.iter().any(|token| {
-            matches!(
-                Token::try_from(token.token),
-                Ok(Token::SqlComment | Token::CComment)
-            )
-        }),
-        // If scanning fails we cannot reason about the statement; let the regular
-        // formatting path (which will likely fail to parse too) handle it.
-        Err(_) => false,
-    }
 }
 
 #[cfg(all(test, feature = "db"))]

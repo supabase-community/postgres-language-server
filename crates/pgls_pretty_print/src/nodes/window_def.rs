@@ -36,6 +36,12 @@ enum FrameBoundSide {
 // WindowDef is not a NodeEnum type, so we don't use pub(super)
 // It's a helper structure used within FuncCall and SelectStmt
 pub fn emit_window_def(e: &mut EventEmitter, n: &WindowDef) {
+    // The callers of a window definition reach it directly rather than through emit_node, so this
+    // is the only place that can emit the comments written before the OVER clause.
+    super::emit_with_comments_at(e, n.location, |e| emit_window_def_tokens(e, n));
+}
+
+fn emit_window_def_tokens(e: &mut EventEmitter, n: &WindowDef) {
     // Simple reference to a named window
     if n.refname.is_empty()
         && n.partition_clause.is_empty()
