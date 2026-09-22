@@ -866,4 +866,57 @@ WHERE
         assert!(first.contains("*/\n  , case"), "{first}");
         assert_eq!(first, second);
     }
+
+    #[test]
+    fn formatting_a_multiline_block_comment_before_case_is_idempotent() {
+        let sql = "SELECT id,\n\
+            /* example\n\
+             * previous period\n\
+             */\n\
+            CASE WHEN period_number < 0 THEN starts_at ELSE ends_at END AS boundary\n\
+            FROM periods;";
+        let ast = pgls_query::parse(sql).unwrap().into_root().unwrap();
+        let config = FormatConfig {
+            line_width: 200,
+            ..Default::default()
+        };
+
+        let first = format_statement(&ast, sql, &config)
+            .expect("first pass")
+            .formatted;
+        let reparsed = pgls_query::parse(&first).unwrap().into_root().unwrap();
+        let second = format_statement(&reparsed, &first, &config)
+            .expect("second pass")
+            .formatted;
+
+        assert!(!first.contains("*/ case"));
+        assert!(first.contains("period_number < 0"));
+        assert_eq!(first, second);
+    }
+
+    #[test]
+    fn parenthesized_boolean_groups_are_indented_when_they_wrap() {
+        let sql = "SELECT * FROM accounts \
+            JOIN ribs ON accounts.number = ribs.number \
+            AND ((accounts.person_id = ribs.person_id AND accounts.kind = 'G') \
+            OR (accounts.building_id = ribs.building_id AND accounts.kind = 'S'));";
+        let ast = pgls_query::parse(sql).unwrap().into_root().unwrap();
+        let config = FormatConfig {
+            line_width: 30,
+            ..Default::default()
+        };
+
+        let formatted = format_statement(&ast, sql, &config)
+            .expect("formatted")
+            .formatted;
+
+        assert!(
+            formatted.contains("\n    (\n      (accounts.person_id"),
+            "{formatted}"
+        );
+        assert!(
+            formatted.contains("\n      (accounts.building_id"),
+            "{formatted}"
+        );
+    }
 }

@@ -20,7 +20,7 @@ pub(super) fn emit_bool_expr(e: &mut EventEmitter, n: &BoolExpr) {
 }
 
 fn emit_variadic_bool_expr(e: &mut EventEmitter, n: &BoolExpr, keyword: TokenKind) {
-    let parent_prec = bool_precedence(n.boolop());
+    let parent_kind = n.boolop();
     let leading = matches!(
         e.config().logical_operator_placement,
         LogicalOperatorPlacement::Leading
@@ -49,7 +49,7 @@ fn emit_variadic_bool_expr(e: &mut EventEmitter, n: &BoolExpr, keyword: TokenKin
             }
         }
 
-        emit_bool_operand(e, arg, parent_prec);
+        emit_bool_operand(e, arg, parent_kind);
     }
 }
 
@@ -65,26 +65,51 @@ fn emit_not_expr(e: &mut EventEmitter, n: &BoolExpr) {
 
     if let Some(arg) = n.args.first() {
         e.space();
-        emit_bool_operand(e, arg, bool_precedence(BoolExprType::NotExpr));
+        emit_bool_operand(e, arg, BoolExprType::NotExpr);
     }
 }
 
-fn emit_bool_operand(e: &mut EventEmitter, node: &Node, parent_prec: u8) {
-    e.with_leading_comment_line_break(|e| {
-        if needs_parentheses(node, parent_prec) {
+fn emit_bool_operand(e: &mut EventEmitter, node: &Node, parent_kind: BoolExprType) {
+    e.with_leading_comment_line_break(|e| match parenthesis_layout(node, parent_kind) {
+        Some(ParenthesisLayout::Block) => {
             e.token(TokenKind::L_PAREN);
+            e.indent_start();
+            e.line(LineType::Soft);
             super::emit_node(node, e);
+            e.indent_end();
+            e.line(LineType::Soft);
             e.token(TokenKind::R_PAREN);
-        } else {
-            super::emit_node(node, e);
         }
+        Some(ParenthesisLayout::InlineIndented) => {
+            e.token(TokenKind::L_PAREN);
+            e.indent_start();
+            super::emit_node(node, e);
+            e.indent_end();
+            e.token(TokenKind::R_PAREN);
+        }
+        None => super::emit_node(node, e),
     });
 }
 
-fn needs_parentheses(node: &Node, parent_prec: u8) -> bool {
+#[derive(Clone, Copy)]
+enum ParenthesisLayout {
+    Block,
+    InlineIndented,
+}
+
+fn parenthesis_layout(node: &Node, parent_kind: BoolExprType) -> Option<ParenthesisLayout> {
     match node.node.as_ref() {
-        Some(NodeEnum::BoolExpr(child)) => bool_precedence(child.boolop()) < parent_prec,
-        _ => false,
+        Some(NodeEnum::BoolExpr(child))
+            if bool_precedence(child.boolop()) < bool_precedence(parent_kind) =>
+        {
+            Some(ParenthesisLayout::Block)
+        }
+        Some(NodeEnum::BoolExpr(child))
+            if parent_kind == BoolExprType::OrExpr && child.boolop() == BoolExprType::AndExpr =>
+        {
+            Some(ParenthesisLayout::InlineIndented)
+        }
+        _ => None,
     }
 }
 
