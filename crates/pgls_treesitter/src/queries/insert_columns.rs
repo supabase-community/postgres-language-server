@@ -55,8 +55,8 @@ impl<'a> Query<'a> for InsertColumnMatch<'a> {
         let mut to_return = vec![];
 
         matches.for_each(|m| {
-            if m.captures.len() == 1 {
-                let capture = m.captures[0].node;
+            if m.captures().len() == 1 {
+                let capture = m.captures()[0].node;
                 to_return.push(QueryResult::InsertClauseColumns(InsertColumnMatch {
                     column: capture,
                 }));

@@ -126,7 +126,7 @@ pub struct TreesitterContext<'a> {
     pub is_invocation: bool,
     pub wrapping_statement_range: Option<tree_sitter::Range>,
 
-    pub possible_keywords_at_position: Vec<&'static str>,
+    pub possible_keywords_at_position: Vec<String>,
     pub previous_clause: Option<tree_sitter::Node<'a>>,
     pub current_clause: Option<tree_sitter::Node<'a>>,
 
@@ -447,7 +447,7 @@ impl<'a> TreesitterContext<'a> {
         if let Some(mut lookahead_iterator) = language.lookahead_iterator(parse_state) {
             self.possible_keywords_at_position = lookahead_iterator
                 .iter_names()
-                .filter_map(|kw| kw.strip_prefix("keyword_"))
+                .filter_map(|kw| kw.strip_prefix("keyword_").map(str::to_owned))
                 .collect();
         }
     }

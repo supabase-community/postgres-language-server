@@ -385,7 +385,11 @@ pub fn complete_keywords<'a>(
     }
 
     let keywords_to_try = ALL_KEYWORDS.iter().filter(|kw| {
-        ctx.tree.root_node().has_error() || ctx.possible_keywords_at_position.contains(&kw.name)
+        ctx.tree.root_node().has_error()
+            || ctx
+                .possible_keywords_at_position
+                .iter()
+                .any(|name| name == kw.name)
     });
 
     for kw in keywords_to_try {

@@ -40,9 +40,10 @@ impl LinterRule for RequireConcurrentReindex {
     fn run(ctx: &LinterRuleContext<Self>) -> Vec<LinterDiagnostic> {
         let mut diagnostics = vec![];
 
-        if let pgls_query::NodeEnum::ReindexStmt(stmt) = &ctx.stmt() {
-            if !is_reindex_concurrent(stmt) {
-                diagnostics.push(
+        if let pgls_query::NodeEnum::ReindexStmt(stmt) = &ctx.stmt()
+            && !is_reindex_concurrent(stmt)
+        {
+            diagnostics.push(
                     LinterDiagnostic::new(
                         rule_category!(),
                         None,
@@ -55,7 +56,6 @@ impl LinterRule for RequireConcurrentReindex {
                         "Use REINDEX CONCURRENTLY to rebuild the index without blocking reads and writes.",
                     ),
                 );
-            }
         }
 
         diagnostics

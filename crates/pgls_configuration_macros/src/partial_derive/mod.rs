@@ -111,11 +111,11 @@ pub(crate) fn generate_partial(input: DeriveInput) -> TokenStream {
                 Some(PartialType::Literal(ty)) => ty.clone(),
                 Some(PartialType::Prefixed) => {
                     let mut ty = ty.clone();
-                    if let Type::Path(type_path) = &mut ty {
-                        if let Some(segment) = type_path.path.segments.first_mut() {
-                            segment.ident =
-                                Ident::new(&format!("Partial{}", segment.ident), Span::call_site())
-                        }
+                    if let Type::Path(type_path) = &mut ty
+                        && let Some(segment) = type_path.path.segments.first_mut()
+                    {
+                        segment.ident =
+                            Ident::new(&format!("Partial{}", segment.ident), Span::call_site())
                     }
                     ty
                 }

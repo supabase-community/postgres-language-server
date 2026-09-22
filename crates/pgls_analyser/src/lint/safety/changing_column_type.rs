@@ -54,10 +54,9 @@ impl LinterRule for ChangingColumnType {
                 {
                     if let Some(pgls_query::NodeEnum::ColumnDef(col_def)) =
                         cmd.def.as_ref().and_then(|d| d.node.as_ref())
+                        && is_safe_type_widening(col_def)
                     {
-                        if is_safe_type_widening(col_def) {
-                            continue;
-                        }
+                        continue;
                     }
 
                     diagnostics.push(LinterDiagnostic::new(

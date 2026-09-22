@@ -16,7 +16,7 @@ pub fn criterion_benchmark(c: &mut Criterion) {
                     .expect("Invalid Parse State");
 
                 // contains about 106 nodes for ParseState 32
-                let it: Vec<&'static str> = lh_iterator.iter_names().collect();
+                let it: Vec<&str> = lh_iterator.iter_names().collect();
 
                 black_box(it);
             });

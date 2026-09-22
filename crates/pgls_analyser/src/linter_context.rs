@@ -456,18 +456,16 @@ impl TransactionState {
             for cmd in &alter_stmt.cmds {
                 if let Some(pgls_query::NodeEnum::AlterTableCmd(cmd)) = &cmd.node
                     && cmd.subtype() == pgls_query::protobuf::AlterTableType::AtAddConstraint
-                {
-                    if let Some(pgls_query::NodeEnum::Constraint(constraint)) =
+                    && let Some(pgls_query::NodeEnum::Constraint(constraint)) =
                         cmd.def.as_ref().and_then(|d| d.node.as_ref())
-                    {
-                        if constraint.skip_validation && !constraint.conname.is_empty() {
-                            self.not_valid_constraints.push((
-                                table_schema.clone(),
-                                table_name.clone(),
-                                constraint.conname.clone(),
-                            ));
-                        }
-                    }
+                    && constraint.skip_validation
+                    && !constraint.conname.is_empty()
+                {
+                    self.not_valid_constraints.push((
+                        table_schema.clone(),
+                        table_name.clone(),
+                        constraint.conname.clone(),
+                    ));
                 }
             }
         }

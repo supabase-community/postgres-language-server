@@ -259,79 +259,79 @@ impl Performance {
     }
     pub(crate) fn get_enabled_rules(&self) -> FxHashSet<RuleFilter<'static>> {
         let mut index_set = FxHashSet::default();
-        if let Some(rule) = self.auth_rls_initplan.as_ref() {
-            if rule.is_enabled() {
-                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[0]));
-            }
+        if let Some(rule) = self.auth_rls_initplan.as_ref()
+            && rule.is_enabled()
+        {
+            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[0]));
         }
-        if let Some(rule) = self.duplicate_index.as_ref() {
-            if rule.is_enabled() {
-                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[1]));
-            }
+        if let Some(rule) = self.duplicate_index.as_ref()
+            && rule.is_enabled()
+        {
+            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[1]));
         }
-        if let Some(rule) = self.multiple_permissive_policies.as_ref() {
-            if rule.is_enabled() {
-                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[2]));
-            }
+        if let Some(rule) = self.multiple_permissive_policies.as_ref()
+            && rule.is_enabled()
+        {
+            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[2]));
         }
-        if let Some(rule) = self.no_primary_key.as_ref() {
-            if rule.is_enabled() {
-                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[3]));
-            }
+        if let Some(rule) = self.no_primary_key.as_ref()
+            && rule.is_enabled()
+        {
+            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[3]));
         }
-        if let Some(rule) = self.table_bloat.as_ref() {
-            if rule.is_enabled() {
-                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[4]));
-            }
+        if let Some(rule) = self.table_bloat.as_ref()
+            && rule.is_enabled()
+        {
+            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[4]));
         }
-        if let Some(rule) = self.unindexed_foreign_keys.as_ref() {
-            if rule.is_enabled() {
-                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[5]));
-            }
+        if let Some(rule) = self.unindexed_foreign_keys.as_ref()
+            && rule.is_enabled()
+        {
+            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[5]));
         }
-        if let Some(rule) = self.unused_index.as_ref() {
-            if rule.is_enabled() {
-                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[6]));
-            }
+        if let Some(rule) = self.unused_index.as_ref()
+            && rule.is_enabled()
+        {
+            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[6]));
         }
         index_set
     }
     pub(crate) fn get_disabled_rules(&self) -> FxHashSet<RuleFilter<'static>> {
         let mut index_set = FxHashSet::default();
-        if let Some(rule) = self.auth_rls_initplan.as_ref() {
-            if rule.is_disabled() {
-                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[0]));
-            }
+        if let Some(rule) = self.auth_rls_initplan.as_ref()
+            && rule.is_disabled()
+        {
+            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[0]));
         }
-        if let Some(rule) = self.duplicate_index.as_ref() {
-            if rule.is_disabled() {
-                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[1]));
-            }
+        if let Some(rule) = self.duplicate_index.as_ref()
+            && rule.is_disabled()
+        {
+            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[1]));
         }
-        if let Some(rule) = self.multiple_permissive_policies.as_ref() {
-            if rule.is_disabled() {
-                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[2]));
-            }
+        if let Some(rule) = self.multiple_permissive_policies.as_ref()
+            && rule.is_disabled()
+        {
+            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[2]));
         }
-        if let Some(rule) = self.no_primary_key.as_ref() {
-            if rule.is_disabled() {
-                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[3]));
-            }
+        if let Some(rule) = self.no_primary_key.as_ref()
+            && rule.is_disabled()
+        {
+            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[3]));
         }
-        if let Some(rule) = self.table_bloat.as_ref() {
-            if rule.is_disabled() {
-                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[4]));
-            }
+        if let Some(rule) = self.table_bloat.as_ref()
+            && rule.is_disabled()
+        {
+            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[4]));
         }
-        if let Some(rule) = self.unindexed_foreign_keys.as_ref() {
-            if rule.is_disabled() {
-                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[5]));
-            }
+        if let Some(rule) = self.unindexed_foreign_keys.as_ref()
+            && rule.is_disabled()
+        {
+            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[5]));
         }
-        if let Some(rule) = self.unused_index.as_ref() {
-            if rule.is_disabled() {
-                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[6]));
-            }
+        if let Some(rule) = self.unused_index.as_ref()
+            && rule.is_disabled()
+        {
+            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[6]));
         }
         index_set
     }
@@ -413,82 +413,75 @@ impl Performance {
         &self,
     ) -> rustc_hash::FxHashMap<&'static str, pgls_matcher::Matcher> {
         let mut matchers = rustc_hash::FxHashMap::default();
-        if let Some(conf) = &self.auth_rls_initplan {
-            if let Some(options) = conf.get_options_ref() {
-                if !options.ignore.is_empty() {
-                    let mut m = pgls_matcher::Matcher::new(pgls_matcher::MatchOptions::default());
-                    for p in &options.ignore {
-                        let _ = m.add_pattern(p);
-                    }
-                    matchers.insert("authRlsInitplan", m);
-                }
+        if let Some(conf) = &self.auth_rls_initplan
+            && let Some(options) = conf.get_options_ref()
+            && !options.ignore.is_empty()
+        {
+            let mut m = pgls_matcher::Matcher::new(pgls_matcher::MatchOptions::default());
+            for p in &options.ignore {
+                let _ = m.add_pattern(p);
             }
+            matchers.insert("authRlsInitplan", m);
         }
-        if let Some(conf) = &self.duplicate_index {
-            if let Some(options) = conf.get_options_ref() {
-                if !options.ignore.is_empty() {
-                    let mut m = pgls_matcher::Matcher::new(pgls_matcher::MatchOptions::default());
-                    for p in &options.ignore {
-                        let _ = m.add_pattern(p);
-                    }
-                    matchers.insert("duplicateIndex", m);
-                }
+        if let Some(conf) = &self.duplicate_index
+            && let Some(options) = conf.get_options_ref()
+            && !options.ignore.is_empty()
+        {
+            let mut m = pgls_matcher::Matcher::new(pgls_matcher::MatchOptions::default());
+            for p in &options.ignore {
+                let _ = m.add_pattern(p);
             }
+            matchers.insert("duplicateIndex", m);
         }
-        if let Some(conf) = &self.multiple_permissive_policies {
-            if let Some(options) = conf.get_options_ref() {
-                if !options.ignore.is_empty() {
-                    let mut m = pgls_matcher::Matcher::new(pgls_matcher::MatchOptions::default());
-                    for p in &options.ignore {
-                        let _ = m.add_pattern(p);
-                    }
-                    matchers.insert("multiplePermissivePolicies", m);
-                }
+        if let Some(conf) = &self.multiple_permissive_policies
+            && let Some(options) = conf.get_options_ref()
+            && !options.ignore.is_empty()
+        {
+            let mut m = pgls_matcher::Matcher::new(pgls_matcher::MatchOptions::default());
+            for p in &options.ignore {
+                let _ = m.add_pattern(p);
             }
+            matchers.insert("multiplePermissivePolicies", m);
         }
-        if let Some(conf) = &self.no_primary_key {
-            if let Some(options) = conf.get_options_ref() {
-                if !options.ignore.is_empty() {
-                    let mut m = pgls_matcher::Matcher::new(pgls_matcher::MatchOptions::default());
-                    for p in &options.ignore {
-                        let _ = m.add_pattern(p);
-                    }
-                    matchers.insert("noPrimaryKey", m);
-                }
+        if let Some(conf) = &self.no_primary_key
+            && let Some(options) = conf.get_options_ref()
+            && !options.ignore.is_empty()
+        {
+            let mut m = pgls_matcher::Matcher::new(pgls_matcher::MatchOptions::default());
+            for p in &options.ignore {
+                let _ = m.add_pattern(p);
             }
+            matchers.insert("noPrimaryKey", m);
         }
-        if let Some(conf) = &self.table_bloat {
-            if let Some(options) = conf.get_options_ref() {
-                if !options.ignore.is_empty() {
-                    let mut m = pgls_matcher::Matcher::new(pgls_matcher::MatchOptions::default());
-                    for p in &options.ignore {
-                        let _ = m.add_pattern(p);
-                    }
-                    matchers.insert("tableBloat", m);
-                }
+        if let Some(conf) = &self.table_bloat
+            && let Some(options) = conf.get_options_ref()
+            && !options.ignore.is_empty()
+        {
+            let mut m = pgls_matcher::Matcher::new(pgls_matcher::MatchOptions::default());
+            for p in &options.ignore {
+                let _ = m.add_pattern(p);
             }
+            matchers.insert("tableBloat", m);
         }
-        if let Some(conf) = &self.unindexed_foreign_keys {
-            if let Some(options) = conf.get_options_ref() {
-                if !options.ignore.is_empty() {
-                    let mut m = pgls_matcher::Matcher::new(pgls_matcher::MatchOptions::default());
-                    for p in &options.ignore {
-                        let _ = m.add_pattern(p);
-                    }
-                    matchers.insert("unindexedForeignKeys", m);
-                }
+        if let Some(conf) = &self.unindexed_foreign_keys
+            && let Some(options) = conf.get_options_ref()
+            && !options.ignore.is_empty()
+        {
+            let mut m = pgls_matcher::Matcher::new(pgls_matcher::MatchOptions::default());
+            for p in &options.ignore {
+                let _ = m.add_pattern(p);
             }
+            matchers.insert("unindexedForeignKeys", m);
         }
-        if let Some(conf) = &self.unused_index {
-            if let Some(options) = conf.get_options_ref() {
-                if !options.ignore.is_empty() {
-                    let mut m = pgls_matcher::Matcher::new(pgls_matcher::MatchOptions::default());
-                    for p in &options.ignore {
-                        let _ = m.add_pattern(p);
-                    }
-                    matchers.insert("unusedIndex", m);
-                }
+        if let Some(conf) = &self.unused_index
+            && let Some(options) = conf.get_options_ref()
+            && !options.ignore.is_empty()
+        {
+            let mut m = pgls_matcher::Matcher::new(pgls_matcher::MatchOptions::default());
+            for p in &options.ignore {
+                let _ = m.add_pattern(p);
             }
+            matchers.insert("unusedIndex", m);
         }
         matchers
     }
@@ -628,169 +621,169 @@ impl Security {
     }
     pub(crate) fn get_enabled_rules(&self) -> FxHashSet<RuleFilter<'static>> {
         let mut index_set = FxHashSet::default();
-        if let Some(rule) = self.auth_users_exposed.as_ref() {
-            if rule.is_enabled() {
-                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[0]));
-            }
+        if let Some(rule) = self.auth_users_exposed.as_ref()
+            && rule.is_enabled()
+        {
+            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[0]));
         }
-        if let Some(rule) = self.extension_in_public.as_ref() {
-            if rule.is_enabled() {
-                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[1]));
-            }
+        if let Some(rule) = self.extension_in_public.as_ref()
+            && rule.is_enabled()
+        {
+            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[1]));
         }
-        if let Some(rule) = self.extension_versions_outdated.as_ref() {
-            if rule.is_enabled() {
-                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[2]));
-            }
+        if let Some(rule) = self.extension_versions_outdated.as_ref()
+            && rule.is_enabled()
+        {
+            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[2]));
         }
-        if let Some(rule) = self.fkey_to_auth_unique.as_ref() {
-            if rule.is_enabled() {
-                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[3]));
-            }
+        if let Some(rule) = self.fkey_to_auth_unique.as_ref()
+            && rule.is_enabled()
+        {
+            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[3]));
         }
-        if let Some(rule) = self.foreign_table_in_api.as_ref() {
-            if rule.is_enabled() {
-                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[4]));
-            }
+        if let Some(rule) = self.foreign_table_in_api.as_ref()
+            && rule.is_enabled()
+        {
+            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[4]));
         }
-        if let Some(rule) = self.function_search_path_mutable.as_ref() {
-            if rule.is_enabled() {
-                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[5]));
-            }
+        if let Some(rule) = self.function_search_path_mutable.as_ref()
+            && rule.is_enabled()
+        {
+            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[5]));
         }
-        if let Some(rule) = self.insecure_queue_exposed_in_api.as_ref() {
-            if rule.is_enabled() {
-                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[6]));
-            }
+        if let Some(rule) = self.insecure_queue_exposed_in_api.as_ref()
+            && rule.is_enabled()
+        {
+            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[6]));
         }
-        if let Some(rule) = self.materialized_view_in_api.as_ref() {
-            if rule.is_enabled() {
-                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[7]));
-            }
+        if let Some(rule) = self.materialized_view_in_api.as_ref()
+            && rule.is_enabled()
+        {
+            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[7]));
         }
-        if let Some(rule) = self.policy_exists_rls_disabled.as_ref() {
-            if rule.is_enabled() {
-                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[8]));
-            }
+        if let Some(rule) = self.policy_exists_rls_disabled.as_ref()
+            && rule.is_enabled()
+        {
+            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[8]));
         }
-        if let Some(rule) = self.rls_disabled_in_public.as_ref() {
-            if rule.is_enabled() {
-                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[9]));
-            }
+        if let Some(rule) = self.rls_disabled_in_public.as_ref()
+            && rule.is_enabled()
+        {
+            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[9]));
         }
-        if let Some(rule) = self.rls_enabled_no_policy.as_ref() {
-            if rule.is_enabled() {
-                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[10]));
-            }
+        if let Some(rule) = self.rls_enabled_no_policy.as_ref()
+            && rule.is_enabled()
+        {
+            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[10]));
         }
-        if let Some(rule) = self.rls_policy_always_true.as_ref() {
-            if rule.is_enabled() {
-                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[11]));
-            }
+        if let Some(rule) = self.rls_policy_always_true.as_ref()
+            && rule.is_enabled()
+        {
+            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[11]));
         }
-        if let Some(rule) = self.rls_references_user_metadata.as_ref() {
-            if rule.is_enabled() {
-                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[12]));
-            }
+        if let Some(rule) = self.rls_references_user_metadata.as_ref()
+            && rule.is_enabled()
+        {
+            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[12]));
         }
-        if let Some(rule) = self.security_definer_view.as_ref() {
-            if rule.is_enabled() {
-                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[13]));
-            }
+        if let Some(rule) = self.security_definer_view.as_ref()
+            && rule.is_enabled()
+        {
+            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[13]));
         }
-        if let Some(rule) = self.sensitive_columns_exposed.as_ref() {
-            if rule.is_enabled() {
-                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[14]));
-            }
+        if let Some(rule) = self.sensitive_columns_exposed.as_ref()
+            && rule.is_enabled()
+        {
+            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[14]));
         }
-        if let Some(rule) = self.unsupported_reg_types.as_ref() {
-            if rule.is_enabled() {
-                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[15]));
-            }
+        if let Some(rule) = self.unsupported_reg_types.as_ref()
+            && rule.is_enabled()
+        {
+            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[15]));
         }
         index_set
     }
     pub(crate) fn get_disabled_rules(&self) -> FxHashSet<RuleFilter<'static>> {
         let mut index_set = FxHashSet::default();
-        if let Some(rule) = self.auth_users_exposed.as_ref() {
-            if rule.is_disabled() {
-                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[0]));
-            }
+        if let Some(rule) = self.auth_users_exposed.as_ref()
+            && rule.is_disabled()
+        {
+            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[0]));
         }
-        if let Some(rule) = self.extension_in_public.as_ref() {
-            if rule.is_disabled() {
-                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[1]));
-            }
+        if let Some(rule) = self.extension_in_public.as_ref()
+            && rule.is_disabled()
+        {
+            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[1]));
         }
-        if let Some(rule) = self.extension_versions_outdated.as_ref() {
-            if rule.is_disabled() {
-                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[2]));
-            }
+        if let Some(rule) = self.extension_versions_outdated.as_ref()
+            && rule.is_disabled()
+        {
+            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[2]));
         }
-        if let Some(rule) = self.fkey_to_auth_unique.as_ref() {
-            if rule.is_disabled() {
-                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[3]));
-            }
+        if let Some(rule) = self.fkey_to_auth_unique.as_ref()
+            && rule.is_disabled()
+        {
+            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[3]));
         }
-        if let Some(rule) = self.foreign_table_in_api.as_ref() {
-            if rule.is_disabled() {
-                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[4]));
-            }
+        if let Some(rule) = self.foreign_table_in_api.as_ref()
+            && rule.is_disabled()
+        {
+            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[4]));
         }
-        if let Some(rule) = self.function_search_path_mutable.as_ref() {
-            if rule.is_disabled() {
-                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[5]));
-            }
+        if let Some(rule) = self.function_search_path_mutable.as_ref()
+            && rule.is_disabled()
+        {
+            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[5]));
         }
-        if let Some(rule) = self.insecure_queue_exposed_in_api.as_ref() {
-            if rule.is_disabled() {
-                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[6]));
-            }
+        if let Some(rule) = self.insecure_queue_exposed_in_api.as_ref()
+            && rule.is_disabled()
+        {
+            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[6]));
         }
-        if let Some(rule) = self.materialized_view_in_api.as_ref() {
-            if rule.is_disabled() {
-                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[7]));
-            }
+        if let Some(rule) = self.materialized_view_in_api.as_ref()
+            && rule.is_disabled()
+        {
+            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[7]));
         }
-        if let Some(rule) = self.policy_exists_rls_disabled.as_ref() {
-            if rule.is_disabled() {
-                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[8]));
-            }
+        if let Some(rule) = self.policy_exists_rls_disabled.as_ref()
+            && rule.is_disabled()
+        {
+            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[8]));
         }
-        if let Some(rule) = self.rls_disabled_in_public.as_ref() {
-            if rule.is_disabled() {
-                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[9]));
-            }
+        if let Some(rule) = self.rls_disabled_in_public.as_ref()
+            && rule.is_disabled()
+        {
+            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[9]));
         }
-        if let Some(rule) = self.rls_enabled_no_policy.as_ref() {
-            if rule.is_disabled() {
-                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[10]));
-            }
+        if let Some(rule) = self.rls_enabled_no_policy.as_ref()
+            && rule.is_disabled()
+        {
+            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[10]));
         }
-        if let Some(rule) = self.rls_policy_always_true.as_ref() {
-            if rule.is_disabled() {
-                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[11]));
-            }
+        if let Some(rule) = self.rls_policy_always_true.as_ref()
+            && rule.is_disabled()
+        {
+            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[11]));
         }
-        if let Some(rule) = self.rls_references_user_metadata.as_ref() {
-            if rule.is_disabled() {
-                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[12]));
-            }
+        if let Some(rule) = self.rls_references_user_metadata.as_ref()
+            && rule.is_disabled()
+        {
+            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[12]));
         }
-        if let Some(rule) = self.security_definer_view.as_ref() {
-            if rule.is_disabled() {
-                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[13]));
-            }
+        if let Some(rule) = self.security_definer_view.as_ref()
+            && rule.is_disabled()
+        {
+            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[13]));
         }
-        if let Some(rule) = self.sensitive_columns_exposed.as_ref() {
-            if rule.is_disabled() {
-                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[14]));
-            }
+        if let Some(rule) = self.sensitive_columns_exposed.as_ref()
+            && rule.is_disabled()
+        {
+            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[14]));
         }
-        if let Some(rule) = self.unsupported_reg_types.as_ref() {
-            if rule.is_disabled() {
-                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[15]));
-            }
+        if let Some(rule) = self.unsupported_reg_types.as_ref()
+            && rule.is_disabled()
+        {
+            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[15]));
         }
         index_set
     }
@@ -917,181 +910,165 @@ impl Security {
         &self,
     ) -> rustc_hash::FxHashMap<&'static str, pgls_matcher::Matcher> {
         let mut matchers = rustc_hash::FxHashMap::default();
-        if let Some(conf) = &self.auth_users_exposed {
-            if let Some(options) = conf.get_options_ref() {
-                if !options.ignore.is_empty() {
-                    let mut m = pgls_matcher::Matcher::new(pgls_matcher::MatchOptions::default());
-                    for p in &options.ignore {
-                        let _ = m.add_pattern(p);
-                    }
-                    matchers.insert("authUsersExposed", m);
-                }
+        if let Some(conf) = &self.auth_users_exposed
+            && let Some(options) = conf.get_options_ref()
+            && !options.ignore.is_empty()
+        {
+            let mut m = pgls_matcher::Matcher::new(pgls_matcher::MatchOptions::default());
+            for p in &options.ignore {
+                let _ = m.add_pattern(p);
             }
+            matchers.insert("authUsersExposed", m);
         }
-        if let Some(conf) = &self.extension_in_public {
-            if let Some(options) = conf.get_options_ref() {
-                if !options.ignore.is_empty() {
-                    let mut m = pgls_matcher::Matcher::new(pgls_matcher::MatchOptions::default());
-                    for p in &options.ignore {
-                        let _ = m.add_pattern(p);
-                    }
-                    matchers.insert("extensionInPublic", m);
-                }
+        if let Some(conf) = &self.extension_in_public
+            && let Some(options) = conf.get_options_ref()
+            && !options.ignore.is_empty()
+        {
+            let mut m = pgls_matcher::Matcher::new(pgls_matcher::MatchOptions::default());
+            for p in &options.ignore {
+                let _ = m.add_pattern(p);
             }
+            matchers.insert("extensionInPublic", m);
         }
-        if let Some(conf) = &self.extension_versions_outdated {
-            if let Some(options) = conf.get_options_ref() {
-                if !options.ignore.is_empty() {
-                    let mut m = pgls_matcher::Matcher::new(pgls_matcher::MatchOptions::default());
-                    for p in &options.ignore {
-                        let _ = m.add_pattern(p);
-                    }
-                    matchers.insert("extensionVersionsOutdated", m);
-                }
+        if let Some(conf) = &self.extension_versions_outdated
+            && let Some(options) = conf.get_options_ref()
+            && !options.ignore.is_empty()
+        {
+            let mut m = pgls_matcher::Matcher::new(pgls_matcher::MatchOptions::default());
+            for p in &options.ignore {
+                let _ = m.add_pattern(p);
             }
+            matchers.insert("extensionVersionsOutdated", m);
         }
-        if let Some(conf) = &self.fkey_to_auth_unique {
-            if let Some(options) = conf.get_options_ref() {
-                if !options.ignore.is_empty() {
-                    let mut m = pgls_matcher::Matcher::new(pgls_matcher::MatchOptions::default());
-                    for p in &options.ignore {
-                        let _ = m.add_pattern(p);
-                    }
-                    matchers.insert("fkeyToAuthUnique", m);
-                }
+        if let Some(conf) = &self.fkey_to_auth_unique
+            && let Some(options) = conf.get_options_ref()
+            && !options.ignore.is_empty()
+        {
+            let mut m = pgls_matcher::Matcher::new(pgls_matcher::MatchOptions::default());
+            for p in &options.ignore {
+                let _ = m.add_pattern(p);
             }
+            matchers.insert("fkeyToAuthUnique", m);
         }
-        if let Some(conf) = &self.foreign_table_in_api {
-            if let Some(options) = conf.get_options_ref() {
-                if !options.ignore.is_empty() {
-                    let mut m = pgls_matcher::Matcher::new(pgls_matcher::MatchOptions::default());
-                    for p in &options.ignore {
-                        let _ = m.add_pattern(p);
-                    }
-                    matchers.insert("foreignTableInApi", m);
-                }
+        if let Some(conf) = &self.foreign_table_in_api
+            && let Some(options) = conf.get_options_ref()
+            && !options.ignore.is_empty()
+        {
+            let mut m = pgls_matcher::Matcher::new(pgls_matcher::MatchOptions::default());
+            for p in &options.ignore {
+                let _ = m.add_pattern(p);
             }
+            matchers.insert("foreignTableInApi", m);
         }
-        if let Some(conf) = &self.function_search_path_mutable {
-            if let Some(options) = conf.get_options_ref() {
-                if !options.ignore.is_empty() {
-                    let mut m = pgls_matcher::Matcher::new(pgls_matcher::MatchOptions::default());
-                    for p in &options.ignore {
-                        let _ = m.add_pattern(p);
-                    }
-                    matchers.insert("functionSearchPathMutable", m);
-                }
+        if let Some(conf) = &self.function_search_path_mutable
+            && let Some(options) = conf.get_options_ref()
+            && !options.ignore.is_empty()
+        {
+            let mut m = pgls_matcher::Matcher::new(pgls_matcher::MatchOptions::default());
+            for p in &options.ignore {
+                let _ = m.add_pattern(p);
             }
+            matchers.insert("functionSearchPathMutable", m);
         }
-        if let Some(conf) = &self.insecure_queue_exposed_in_api {
-            if let Some(options) = conf.get_options_ref() {
-                if !options.ignore.is_empty() {
-                    let mut m = pgls_matcher::Matcher::new(pgls_matcher::MatchOptions::default());
-                    for p in &options.ignore {
-                        let _ = m.add_pattern(p);
-                    }
-                    matchers.insert("insecureQueueExposedInApi", m);
-                }
+        if let Some(conf) = &self.insecure_queue_exposed_in_api
+            && let Some(options) = conf.get_options_ref()
+            && !options.ignore.is_empty()
+        {
+            let mut m = pgls_matcher::Matcher::new(pgls_matcher::MatchOptions::default());
+            for p in &options.ignore {
+                let _ = m.add_pattern(p);
             }
+            matchers.insert("insecureQueueExposedInApi", m);
         }
-        if let Some(conf) = &self.materialized_view_in_api {
-            if let Some(options) = conf.get_options_ref() {
-                if !options.ignore.is_empty() {
-                    let mut m = pgls_matcher::Matcher::new(pgls_matcher::MatchOptions::default());
-                    for p in &options.ignore {
-                        let _ = m.add_pattern(p);
-                    }
-                    matchers.insert("materializedViewInApi", m);
-                }
+        if let Some(conf) = &self.materialized_view_in_api
+            && let Some(options) = conf.get_options_ref()
+            && !options.ignore.is_empty()
+        {
+            let mut m = pgls_matcher::Matcher::new(pgls_matcher::MatchOptions::default());
+            for p in &options.ignore {
+                let _ = m.add_pattern(p);
             }
+            matchers.insert("materializedViewInApi", m);
         }
-        if let Some(conf) = &self.policy_exists_rls_disabled {
-            if let Some(options) = conf.get_options_ref() {
-                if !options.ignore.is_empty() {
-                    let mut m = pgls_matcher::Matcher::new(pgls_matcher::MatchOptions::default());
-                    for p in &options.ignore {
-                        let _ = m.add_pattern(p);
-                    }
-                    matchers.insert("policyExistsRlsDisabled", m);
-                }
+        if let Some(conf) = &self.policy_exists_rls_disabled
+            && let Some(options) = conf.get_options_ref()
+            && !options.ignore.is_empty()
+        {
+            let mut m = pgls_matcher::Matcher::new(pgls_matcher::MatchOptions::default());
+            for p in &options.ignore {
+                let _ = m.add_pattern(p);
             }
+            matchers.insert("policyExistsRlsDisabled", m);
         }
-        if let Some(conf) = &self.rls_disabled_in_public {
-            if let Some(options) = conf.get_options_ref() {
-                if !options.ignore.is_empty() {
-                    let mut m = pgls_matcher::Matcher::new(pgls_matcher::MatchOptions::default());
-                    for p in &options.ignore {
-                        let _ = m.add_pattern(p);
-                    }
-                    matchers.insert("rlsDisabledInPublic", m);
-                }
+        if let Some(conf) = &self.rls_disabled_in_public
+            && let Some(options) = conf.get_options_ref()
+            && !options.ignore.is_empty()
+        {
+            let mut m = pgls_matcher::Matcher::new(pgls_matcher::MatchOptions::default());
+            for p in &options.ignore {
+                let _ = m.add_pattern(p);
             }
+            matchers.insert("rlsDisabledInPublic", m);
         }
-        if let Some(conf) = &self.rls_enabled_no_policy {
-            if let Some(options) = conf.get_options_ref() {
-                if !options.ignore.is_empty() {
-                    let mut m = pgls_matcher::Matcher::new(pgls_matcher::MatchOptions::default());
-                    for p in &options.ignore {
-                        let _ = m.add_pattern(p);
-                    }
-                    matchers.insert("rlsEnabledNoPolicy", m);
-                }
+        if let Some(conf) = &self.rls_enabled_no_policy
+            && let Some(options) = conf.get_options_ref()
+            && !options.ignore.is_empty()
+        {
+            let mut m = pgls_matcher::Matcher::new(pgls_matcher::MatchOptions::default());
+            for p in &options.ignore {
+                let _ = m.add_pattern(p);
             }
+            matchers.insert("rlsEnabledNoPolicy", m);
         }
-        if let Some(conf) = &self.rls_policy_always_true {
-            if let Some(options) = conf.get_options_ref() {
-                if !options.ignore.is_empty() {
-                    let mut m = pgls_matcher::Matcher::new(pgls_matcher::MatchOptions::default());
-                    for p in &options.ignore {
-                        let _ = m.add_pattern(p);
-                    }
-                    matchers.insert("rlsPolicyAlwaysTrue", m);
-                }
+        if let Some(conf) = &self.rls_policy_always_true
+            && let Some(options) = conf.get_options_ref()
+            && !options.ignore.is_empty()
+        {
+            let mut m = pgls_matcher::Matcher::new(pgls_matcher::MatchOptions::default());
+            for p in &options.ignore {
+                let _ = m.add_pattern(p);
             }
+            matchers.insert("rlsPolicyAlwaysTrue", m);
         }
-        if let Some(conf) = &self.rls_references_user_metadata {
-            if let Some(options) = conf.get_options_ref() {
-                if !options.ignore.is_empty() {
-                    let mut m = pgls_matcher::Matcher::new(pgls_matcher::MatchOptions::default());
-                    for p in &options.ignore {
-                        let _ = m.add_pattern(p);
-                    }
-                    matchers.insert("rlsReferencesUserMetadata", m);
-                }
+        if let Some(conf) = &self.rls_references_user_metadata
+            && let Some(options) = conf.get_options_ref()
+            && !options.ignore.is_empty()
+        {
+            let mut m = pgls_matcher::Matcher::new(pgls_matcher::MatchOptions::default());
+            for p in &options.ignore {
+                let _ = m.add_pattern(p);
             }
+            matchers.insert("rlsReferencesUserMetadata", m);
         }
-        if let Some(conf) = &self.security_definer_view {
-            if let Some(options) = conf.get_options_ref() {
-                if !options.ignore.is_empty() {
-                    let mut m = pgls_matcher::Matcher::new(pgls_matcher::MatchOptions::default());
-                    for p in &options.ignore {
-                        let _ = m.add_pattern(p);
-                    }
-                    matchers.insert("securityDefinerView", m);
-                }
+        if let Some(conf) = &self.security_definer_view
+            && let Some(options) = conf.get_options_ref()
+            && !options.ignore.is_empty()
+        {
+            let mut m = pgls_matcher::Matcher::new(pgls_matcher::MatchOptions::default());
+            for p in &options.ignore {
+                let _ = m.add_pattern(p);
             }
+            matchers.insert("securityDefinerView", m);
         }
-        if let Some(conf) = &self.sensitive_columns_exposed {
-            if let Some(options) = conf.get_options_ref() {
-                if !options.ignore.is_empty() {
-                    let mut m = pgls_matcher::Matcher::new(pgls_matcher::MatchOptions::default());
-                    for p in &options.ignore {
-                        let _ = m.add_pattern(p);
-                    }
-                    matchers.insert("sensitiveColumnsExposed", m);
-                }
+        if let Some(conf) = &self.sensitive_columns_exposed
+            && let Some(options) = conf.get_options_ref()
+            && !options.ignore.is_empty()
+        {
+            let mut m = pgls_matcher::Matcher::new(pgls_matcher::MatchOptions::default());
+            for p in &options.ignore {
+                let _ = m.add_pattern(p);
             }
+            matchers.insert("sensitiveColumnsExposed", m);
         }
-        if let Some(conf) = &self.unsupported_reg_types {
-            if let Some(options) = conf.get_options_ref() {
-                if !options.ignore.is_empty() {
-                    let mut m = pgls_matcher::Matcher::new(pgls_matcher::MatchOptions::default());
-                    for p in &options.ignore {
-                        let _ = m.add_pattern(p);
-                    }
-                    matchers.insert("unsupportedRegTypes", m);
-                }
+        if let Some(conf) = &self.unsupported_reg_types
+            && let Some(options) = conf.get_options_ref()
+            && !options.ignore.is_empty()
+        {
+            let mut m = pgls_matcher::Matcher::new(pgls_matcher::MatchOptions::default());
+            for p in &options.ignore {
+                let _ = m.add_pattern(p);
             }
+            matchers.insert("unsupportedRegTypes", m);
         }
         matchers
     }
@@ -1104,19 +1081,19 @@ pub fn push_to_analyser_rules(
 ) {
     if let Some(rules) = rules.performance.as_ref() {
         for rule_name in Performance::GROUP_RULES {
-            if let Some((_, Some(rule_options))) = rules.get_rule_configuration(rule_name) {
-                if let Some(rule_key) = metadata.find_rule("performance", rule_name) {
-                    analyser_rules.push_rule(rule_key, rule_options);
-                }
+            if let Some((_, Some(rule_options))) = rules.get_rule_configuration(rule_name)
+                && let Some(rule_key) = metadata.find_rule("performance", rule_name)
+            {
+                analyser_rules.push_rule(rule_key, rule_options);
             }
         }
     }
     if let Some(rules) = rules.security.as_ref() {
         for rule_name in Security::GROUP_RULES {
-            if let Some((_, Some(rule_options))) = rules.get_rule_configuration(rule_name) {
-                if let Some(rule_key) = metadata.find_rule("security", rule_name) {
-                    analyser_rules.push_rule(rule_key, rule_options);
-                }
+            if let Some((_, Some(rule_options))) = rules.get_rule_configuration(rule_name)
+                && let Some(rule_key) = metadata.find_rule("security", rule_name)
+            {
+                analyser_rules.push_rule(rule_key, rule_options);
             }
         }
     }

@@ -67,7 +67,7 @@ impl<'a> Query<'a> for ParameterMatch<'a> {
         let mut result = vec![];
 
         matches.for_each(|m| {
-            let captures = m.captures;
+            let captures = m.captures();
 
             // We expect exactly one capture for a parameter
             if captures.len() == 1 {
