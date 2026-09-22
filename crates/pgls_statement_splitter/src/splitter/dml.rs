@@ -14,6 +14,9 @@ pub(crate) fn cte(p: &mut Splitter) -> SplitterResult {
 
     loop {
         p.expect(SyntaxKind::IDENT)?;
+        if p.current() == SyntaxKind::L_PAREN {
+            parenthesis(p)?;
+        }
         p.expect(SyntaxKind::AS_KW)?;
         // Handle optional [NOT] MATERIALIZED hint (PostgreSQL 12+)
         p.eat(SyntaxKind::NOT_KW)?;
@@ -27,17 +30,13 @@ pub(crate) fn cte(p: &mut Splitter) -> SplitterResult {
         }
     }
 
-    unknown(
-        p,
-        &[
-            SyntaxKind::SELECT_KW,
-            SyntaxKind::INSERT_KW,
-            SyntaxKind::UPDATE_KW,
-            SyntaxKind::DELETE_KW,
-            SyntaxKind::MERGE_KW,
-        ],
-    )?;
-    Ok(())
+    match p.current() {
+        SyntaxKind::SELECT_KW => select(p),
+        SyntaxKind::INSERT_KW => insert(p),
+        SyntaxKind::UPDATE_KW => update(p),
+        SyntaxKind::DELETE_KW => delete(p),
+        _ => unknown(p, &[]),
+    }
 }
 
 /// `EXPLAIN [ ANALYZE ] [ VERBOSE ] <statement>` and
