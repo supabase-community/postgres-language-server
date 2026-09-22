@@ -7,7 +7,9 @@ use crate::TokenKind;
 use crate::emitter::{EventEmitter, GroupKind, LineType};
 
 use super::{
-    node_list::emit_comma_separated_list, string::emit_keyword, window_def::emit_window_definition,
+    node_list::{emit_comma_separated_list, emit_comma_separated_list_with_layout_break},
+    string::emit_keyword,
+    window_def::emit_window_definition,
 };
 
 pub(super) fn emit_select_stmt(e: &mut EventEmitter, n: &SelectStmt) {
@@ -190,13 +192,7 @@ fn emit_select_stmt_impl(e: &mut EventEmitter, n: &SelectStmt, with_semicolon: b
             e.indent_start();
             super::emit_layout_break(e);
 
-            for (index, target) in n.target_list.iter().enumerate() {
-                if index > 0 {
-                    e.token(TokenKind::COMMA);
-                    super::emit_layout_break(e);
-                }
-                super::emit_node(target, e);
-            }
+            emit_comma_separated_list_with_layout_break(e, &n.target_list, super::emit_node);
 
             e.indent_end();
         }

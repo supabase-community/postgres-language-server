@@ -19,8 +19,7 @@ use pgls_configuration::{
     diagnostics::InvalidIgnorePattern,
     files::FilesConfiguration,
     format::{
-        CommaStyle, FormatConfiguration, IndentStyle, KeywordCase, Layout,
-        LogicalOperatorPlacement,
+        CommaStyle, FormatConfiguration, IndentStyle, KeywordCase, Layout, LogicalOperatorPlacement,
     },
     migrations::{MigrationsConfiguration, PartialMigrationsConfiguration},
     pglinter::PglinterConfiguration,

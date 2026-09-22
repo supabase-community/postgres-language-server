@@ -4,7 +4,7 @@ use crate::{
 };
 use pgls_query::protobuf::{InsertStmt, OverridingKind};
 
-use super::node_list::emit_comma_separated_list;
+use super::node_list::{emit_comma_separated_list, emit_comma_separated_list_with_layout_break};
 use super::res_target::emit_column_name;
 
 pub(super) fn emit_insert_stmt(e: &mut EventEmitter, n: &InsertStmt) {
@@ -43,18 +43,13 @@ fn emit_insert_stmt_impl(e: &mut EventEmitter, n: &InsertStmt, with_semicolon: b
         e.line(LineType::Soft);
         e.indent_start();
 
-        for (index, node) in n.cols.iter().enumerate() {
-            if index > 0 {
-                e.token(TokenKind::COMMA);
-                super::emit_layout_break(e);
-            }
-
+        emit_comma_separated_list_with_layout_break(e, &n.cols, |node, e| {
             if let Some(pgls_query::NodeEnum::ResTarget(res_target)) = node.node.as_ref() {
                 emit_column_name(e, res_target);
             } else {
                 super::emit_node(node, e);
             }
-        }
+        });
 
         e.indent_end();
         e.line(LineType::Soft);

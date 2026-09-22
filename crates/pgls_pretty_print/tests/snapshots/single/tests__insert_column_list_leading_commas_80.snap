@@ -1,0 +1,25 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/single/insert_column_list_leading_commas.sql
+---
+insert into login_target.compte_bancaire (
+	id_compte_bancaire
+	, id_personne
+	, ref_personne
+	, titulaire_du_compte_bancaire
+	, domiciliation_bancaire
+	, iban
+	, bic
+	, rib
+)
+select
+	id_compte_bancaire
+	, id_personne
+	, ref_personne
+	, titulaire_du_compte_bancaire
+	, domiciliation_bancaire
+	, iban
+	, bic
+	, rib
+from
+	login_linking.compte_bancaire;
