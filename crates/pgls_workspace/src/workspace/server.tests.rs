@@ -686,6 +686,77 @@ async fn test_disable_typecheck(test_db: PgPool) {
 }
 
 #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn test_create_as_typecheck_diagnostic_offsets(test_db: PgPool) {
+    test_db
+        .execute("CREATE TABLE public.t (a INT);")
+        .await
+        .expect("setup sql failed");
+
+    let options = test_db.connect_options();
+    let mut conf = PartialConfiguration::init();
+    conf.merge_with(PartialConfiguration {
+        db: Some(PartialDatabaseConfiguration {
+            host: Some(options.get_host().to_string()),
+            port: Some(options.get_port()),
+            database: Some(options.get_database().unwrap().to_string()),
+            ..Default::default()
+        }),
+        ..Default::default()
+    });
+
+    let workspace = get_test_workspace(Some(conf)).expect("Unable to create test workspace");
+    let path = PgLSPath::new("test.sql");
+    let content = "SELECT 1;\nCREATE VIEW v1 AS SELECT t.nope FROM t;";
+
+    workspace
+        .open_file(OpenFileParams {
+            path: path.clone(),
+            content: content.into(),
+            version: 1,
+        })
+        .expect("Unable to open test file");
+
+    let diagnostics = workspace
+        .pull_file_diagnostics(crate::workspace::PullFileDiagnosticsParams {
+            path,
+            categories: RuleCategories::all(),
+            max_diagnostics: 100,
+            only: vec![],
+            skip: vec![],
+        })
+        .expect("Unable to pull diagnostics")
+        .diagnostics;
+
+    let typecheck_diagnostics = diagnostics
+        .iter()
+        .filter(|diagnostic| {
+            diagnostic
+                .category()
+                .is_some_and(|category| category.name() == "typecheck")
+                && serde_json::to_string(diagnostic)
+                    .is_ok_and(|serialized| serialized.contains("42703"))
+        })
+        .collect::<Vec<_>>();
+
+    assert_eq!(
+        typecheck_diagnostics.len(),
+        1,
+        "Expected one 42703 typecheck diagnostic, got {diagnostics:#?}"
+    );
+
+    let expected_start = content.find("nope").expect("missing test identifier");
+    let expected_span = TextRange::new(
+        u32::try_from(expected_start).unwrap().into(),
+        u32::try_from(expected_start + "nope".len()).unwrap().into(),
+    );
+
+    assert_eq!(
+        typecheck_diagnostics[0].location().span,
+        Some(expected_span)
+    );
+}
+
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
 async fn test_named_params(_test_db: PgPool) {
     let conf = PartialConfiguration::init();
 
