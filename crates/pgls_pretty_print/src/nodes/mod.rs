@@ -893,6 +893,7 @@ mod tests {
         let comment = Comment {
             text: "-- note".to_string(),
             line_comment: true,
+            own_line: true,
         };
         let leading = HashMap::from([(7, vec![comment])]);
         let mut e = EventEmitter::with_comments(leading, HashMap::new());

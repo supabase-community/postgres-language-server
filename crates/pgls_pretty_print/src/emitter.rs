@@ -116,7 +116,11 @@ impl EventEmitter {
 
         for comment in comments {
             let line_comment = comment.line_comment;
-            self.space();
+            if comment.own_line {
+                self.force_current_line_break();
+            } else {
+                self.space();
+            }
             self.comment(comment.text, line_comment);
             if line_comment {
                 self.line(LineType::Hard);

@@ -10,6 +10,12 @@ pub struct Comment {
     pub text: String,
     /// True for `--` comments, which run to the end of the line and therefore force a break.
     pub line_comment: bool,
+    /// True when the source comment was preceded only by whitespace on its line.
+    ///
+    /// This matters when no AST node follows the comment, for example commented-out columns just
+    /// before a closing parenthesis. They fall back to the previous node for attachment, but must
+    /// still start on their own line rather than being appended to that node.
+    pub own_line: bool,
 }
 
 /// Comments of a statement, indexed by the node they surround.
@@ -50,11 +56,12 @@ pub fn attach_comments(sql: &str, ast: &NodeEnum) -> AttachedComments {
     let mut locations = collect_node_locations(ast);
     locations.sort_unstable();
 
-    for source_comment in comments {
+    for mut source_comment in comments {
         let line_start = sql[..source_comment.start]
             .rfind('\n')
             .map_or(0, |offset| offset + 1);
         let line_prefix = &sql[line_start..source_comment.start];
+        source_comment.comment.own_line = line_prefix.trim().is_empty();
 
         // A line comment written after a terminator documents the next statement, not this one.
         // Attaching it here would move it across a statement boundary.
@@ -192,7 +199,11 @@ fn collect_comments(sql: &str) -> Vec<SourceComment> {
             Some(SourceComment {
                 start,
                 end,
-                comment: Comment { text, line_comment },
+                comment: Comment {
+                    text,
+                    line_comment,
+                    own_line: false,
+                },
             })
         })
         .collect()

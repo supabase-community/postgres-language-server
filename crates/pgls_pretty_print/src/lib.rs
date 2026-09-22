@@ -474,12 +474,13 @@ mod tests {
 
     #[test]
     fn a_comment_closing_a_column_list_is_kept() {
-        let sql = "CREATE TABLE s.t (\n\tid uuid,\n\tkind text\n--\t\"createdAt\" timestamp\n)";
+        let sql = "CREATE TABLE s.t (\n\tid uuid,\n\tkind text,\n\tmigration jsonb\n--\t\"createdAt\" timestamp,\n--\t\"updatedAt\" timestamp\n)";
         let ast = pgls_query::parse(sql).unwrap().into_root().unwrap();
 
         let result = format_statement(&ast, sql, &FormatConfig::default()).expect("formatted");
 
         assert!(result.formatted.contains("\"createdAt\" timestamp"));
+        assert!(!result.formatted.contains("migration jsonb --"));
     }
 
     #[test]
