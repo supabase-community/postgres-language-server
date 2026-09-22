@@ -38,16 +38,32 @@ pub struct Splitter<'a> {
     stmt_ranges: Vec<(usize, usize)>,
     errors: Vec<SplitError>,
     current_stmt_start: Option<usize>,
+    /// Whether a blank line terminates the current statement.
+    blank_line_is_boundary: bool,
 }
 
 impl<'a> Splitter<'a> {
+    /// Splits on `;` and on structural statement starts only. A blank line is
+    /// not a statement boundary.
     pub fn new(lexed: &'a Lexed<'a>) -> Self {
+        Self::with_options(lexed, false)
+    }
+
+    /// Additionally treats a blank line as a statement boundary. Used as a
+    /// recovery pass on fragments PostgreSQL cannot parse, where there is no
+    /// better signal to resynchronize on.
+    pub fn with_blank_line_boundaries(lexed: &'a Lexed<'a>) -> Self {
+        Self::with_options(lexed, true)
+    }
+
+    fn with_options(lexed: &'a Lexed<'a>, blank_line_is_boundary: bool) -> Self {
         Self {
             lexed,
             current_pos: 0,
             stmt_ranges: Vec::new(),
             errors: Vec::new(),
             current_stmt_start: None,
+            blank_line_is_boundary,
         }
     }
 
@@ -178,7 +194,9 @@ impl<'a> Splitter<'a> {
     fn is_trivia(&self, idx: usize) -> bool {
         match self.lexed.kind(idx) {
             k if TRIVIA_TOKENS.contains(&k) => true,
-            SyntaxKind::LINE_ENDING => self.lexed.line_ending_count(idx) < 2,
+            SyntaxKind::LINE_ENDING => {
+                !self.blank_line_is_boundary || self.lexed.line_ending_count(idx) < 2
+            }
             _ => false,
         }
     }

@@ -70,6 +70,34 @@ where
         },
     );
 
+    // A statement whose blank lines sit *inside* it, so that the parse check
+    // actually runs. The cases above only have blank lines between statements,
+    // which the splitter skips without asking PostgreSQL anything.
+    let blank_line_statement = r#"select
+  t.a,
+  t.b
+
+from t
+
+left join u on u.a = t.a
+
+where t.a > 0;
+
+"#;
+
+    let blank_line_content = blank_line_statement.repeat(500);
+
+    c.bench_function(
+        format!(
+            "statement with inner blank lines, length {}",
+            blank_line_content.len()
+        )
+        .as_str(),
+        |b| {
+            b.iter(|| black_box(split(&blank_line_content)));
+        },
+    );
+
     let small_statement = r#"select 1 from public.user where id = 1"#;
     let small_content = small_statement.repeat(500);
 
