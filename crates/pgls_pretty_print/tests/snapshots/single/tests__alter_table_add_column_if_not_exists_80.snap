@@ -1,0 +1,7 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/single/alter_table_add_column_if_not_exists.sql
+---
+alter table s.t
+  add column if not exists row_id text,
+  add column if not exists designation_source text;

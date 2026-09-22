@@ -528,9 +528,44 @@ use crate::emitter::{EventEmitter, GroupKind};
 use pgls_query::{NodeEnum, protobuf::Node};
 
 pub fn emit_node(node: &Node, e: &mut EventEmitter) {
+    let location = node
+        .node
+        .as_ref()
+        .and_then(|inner| crate::codegen::node_location::node_location(&inner.to_ref()));
+
+    if let Some(location) = location {
+        e.take_leading_comments_at(location);
+    }
+
     if let Some(ref inner) = node.node {
         emit_node_enum(inner, e)
     }
+
+    if let Some(location) = location {
+        e.take_trailing_comments_at(location);
+    }
+}
+
+/// Emits `body` with the comments attached to `location`, the way `emit_node` does for a child
+/// reached as a `Node`.
+///
+/// A parent that reaches a child through a typed emitter, `emit_range_var` for instance, never
+/// goes through `emit_node`. Without this helper the comments attached to that child stay in the
+/// emitter map and the whole statement is refused rather than reformatted.
+pub(super) fn emit_with_comments_at(
+    e: &mut EventEmitter,
+    location: i32,
+    body: impl FnOnce(&mut EventEmitter),
+) {
+    // Negative locations are dropped when the comment maps are built, so they hold nothing.
+    if location < 0 {
+        body(e);
+        return;
+    }
+
+    e.take_leading_comments_at(location);
+    body(e);
+    e.take_trailing_comments_at(location);
 }
 
 pub(super) fn emit_clause_condition(e: &mut EventEmitter, clause: &Node) {
@@ -816,5 +851,68 @@ pub fn emit_node_enum(node: &NodeEnum, e: &mut EventEmitter) {
         NodeEnum::CommonTableExpr(n) => emit_common_table_expr(e, n),
         NodeEnum::FromExpr(n) => emit_from_expr(e, n),
         NodeEnum::Query(n) => emit_query(e, n),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::emitter::{EventEmitter, LayoutEvent};
+    use crate::{Comment, TokenKind, attach_comments};
+    use std::collections::HashMap;
+
+    #[test]
+    fn a_comment_attached_to_a_node_is_emitted_before_it() {
+        let sql = "SELECT\n-- pick the magic value\n1 FROM s.t";
+        let ast = pgls_query::parse(sql)
+            .expect("parse")
+            .into_root()
+            .expect("root");
+
+        let attached = attach_comments(sql, &ast);
+        let mut e = EventEmitter::with_comments(
+            attached.leading_by_location,
+            attached.trailing_by_location,
+        );
+        super::emit_node_enum(&ast, &mut e);
+
+        let comments: Vec<&LayoutEvent> = e
+            .events
+            .iter()
+            .filter(|event| matches!(event, LayoutEvent::Comment { .. }))
+            .collect();
+
+        assert_eq!(comments.len(), 1);
+        assert!(matches!(
+            comments[0],
+            LayoutEvent::Comment { text, line_comment: true } if text == "-- pick the magic value"
+        ));
+    }
+
+    #[test]
+    fn a_typed_child_emitter_consumes_the_comments_of_its_location() {
+        let comment = Comment {
+            text: "-- note".to_string(),
+            line_comment: true,
+            own_line: true,
+        };
+        let leading = HashMap::from([(7, vec![comment])]);
+        let mut e = EventEmitter::with_comments(leading, HashMap::new());
+
+        super::emit_with_comments_at(&mut e, 7, |e| e.token(TokenKind::ONLY_KW));
+
+        assert_eq!(e.pending_comments(), 0);
+        assert!(e.events.iter().any(|event| matches!(
+            event,
+            LayoutEvent::Comment { text, .. } if text == "-- note"
+        )));
+    }
+
+    #[test]
+    fn a_negative_location_never_carries_a_comment() {
+        let mut e = EventEmitter::new();
+
+        super::emit_with_comments_at(&mut e, -1, |e| e.token(TokenKind::ONLY_KW));
+
+        assert_eq!(e.events, vec![LayoutEvent::Token(TokenKind::ONLY_KW)]);
     }
 }

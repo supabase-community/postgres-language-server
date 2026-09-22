@@ -30,6 +30,7 @@ pub struct Lexed<'a> {
     pub(crate) start: Vec<u32>,
     pub(crate) error: Vec<LexError>,
     pub(crate) line_ending_counts: Vec<usize>,
+    pub(crate) has_blank_line: bool,
 }
 
 impl Lexed<'_> {
@@ -69,6 +70,11 @@ impl Lexed<'_> {
         );
         assert!(self.kind(idx) == SyntaxKind::LINE_ENDING);
         self.line_ending_counts[idx]
+    }
+
+    /// Returns whether the source contains at least one blank line.
+    pub fn has_blank_line(&self) -> bool {
+        self.has_blank_line
     }
 
     /// Returns the text range of token at the given index

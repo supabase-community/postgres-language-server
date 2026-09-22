@@ -80,6 +80,10 @@ impl<W: Write> Renderer<W> {
                     self.handle_line(line_type)?;
                     i += 1;
                 }
+                LayoutEvent::Comment { text, .. } => {
+                    self.write_text(text)?;
+                    i += 1;
+                }
                 LayoutEvent::GroupStart { .. } => {
                     let group_end = self.find_group_end(events, i);
                     let group_slice = &events[i..=group_end];
@@ -150,6 +154,10 @@ impl<W: Write> Renderer<W> {
                 }
                 LayoutEvent::Line(_) => {
                     self.write_line_break()?;
+                    i += 1;
+                }
+                LayoutEvent::Comment { text, .. } => {
+                    self.write_text(text)?;
                     i += 1;
                 }
                 LayoutEvent::GroupStart { .. } => {
@@ -223,6 +231,14 @@ impl<W: Write> Renderer<W> {
                 }
                 LayoutEvent::Line(LineType::SoftOrSpace) => {
                     buffer.push(' '); // Becomes space in single-line mode
+                }
+                LayoutEvent::Comment { text, line_comment } => {
+                    if *line_comment {
+                        // Collapsing would push the code that follows behind the `--`.
+                        has_hard_breaks = true;
+                        break;
+                    }
+                    buffer.push_str(text);
                 }
                 LayoutEvent::GroupStart { .. } | LayoutEvent::GroupEnd => {
                     // skip group markers for single line test
@@ -434,5 +450,33 @@ mod tests {
 
         let output = render_events(emitter.events, config);
         assert_eq!(output, "SELECT 1 WHERE name IS NOT null AND active = true");
+    }
+
+    #[test]
+    fn a_block_comment_is_rendered_inline() {
+        let mut emitter = EventEmitter::new();
+        emitter.token(TokenKind::SELECT_KW);
+        emitter.space();
+        emitter.comment("/* why */".to_string(), false);
+        emitter.space();
+        emitter.token(TokenKind::INT_NUMBER(1));
+
+        let output = render_events(emitter.events, RenderConfig::default());
+        assert_eq!(output, "select /* why */ 1");
+    }
+
+    #[test]
+    fn a_line_comment_forces_the_group_to_break() {
+        let mut emitter = EventEmitter::new();
+        emitter.group_start(crate::emitter::GroupKind::SelectStmt);
+        emitter.token(TokenKind::SELECT_KW);
+        emitter.space();
+        emitter.comment("-- why".to_string(), true);
+        emitter.line(crate::emitter::LineType::SoftOrSpace);
+        emitter.token(TokenKind::INT_NUMBER(1));
+        emitter.group_end();
+
+        let output = render_events(emitter.events, RenderConfig::default());
+        assert_eq!(output, "select -- why\n1");
     }
 }

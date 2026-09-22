@@ -129,6 +129,22 @@ pub(super) fn emit_identifier_maybe_quoted(e: &mut EventEmitter, value: &str) {
     }
 }
 
+/// Emits a type name part, honouring `type_case` when the name can be written unquoted.
+///
+/// A name that needs quotes keeps its own spelling: `"MyType"` and `"MYTYPE"` are two different
+/// types in PostgreSQL, so casing it would change which type is referenced.
+pub(super) fn emit_type_identifier_maybe_quoted(e: &mut EventEmitter, value: &str) {
+    if value.is_empty() {
+        return;
+    }
+
+    if needs_quoting(value) {
+        emit_identifier(e, value);
+    } else {
+        e.token(TokenKind::TYPE_IDENT(value.to_string()));
+    }
+}
+
 pub(super) fn emit_keyword(e: &mut EventEmitter, keyword: &str) {
     if let Some(token) = TokenKind::from_keyword(keyword) {
         e.token(token);
@@ -252,5 +268,37 @@ fn pick_dollar_delimiter(body: &str, hint: DollarQuoteHint) -> String {
             return tag;
         }
         counter += 1;
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::renderer::{KeywordCase, RenderConfig, Renderer};
+
+    fn render(value: &str, type_case: KeywordCase) -> String {
+        let mut emitter = EventEmitter::new();
+        emit_type_identifier_maybe_quoted(&mut emitter, value);
+
+        let mut output = String::new();
+        let config = RenderConfig {
+            type_case,
+            ..Default::default()
+        };
+        let mut renderer = Renderer::new(&mut output, config);
+        renderer.render(emitter.events).expect("render");
+        output
+    }
+
+    #[test]
+    fn an_unquoted_type_name_follows_the_type_case() {
+        assert_eq!(render("object_id", KeywordCase::Upper), "OBJECT_ID");
+        assert_eq!(render("object_id", KeywordCase::Lower), "object_id");
+    }
+
+    #[test]
+    fn a_type_name_needing_quotes_keeps_its_own_case() {
+        assert_eq!(render("MyType", KeywordCase::Upper), "\"MyType\"");
+        assert_eq!(render("OBJECT_ID", KeywordCase::Lower), "\"OBJECT_ID\"");
     }
 }

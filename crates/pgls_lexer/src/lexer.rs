@@ -12,6 +12,7 @@ pub struct Lexer<'a> {
     offset: usize,
     /// we store line ending counts outside of SyntaxKind because of the u16 represenation of SyntaxKind
     line_ending_counts: Vec<usize>,
+    has_blank_line: bool,
 }
 
 impl<'a> Lexer<'a> {
@@ -24,6 +25,7 @@ impl<'a> Lexer<'a> {
             error: Vec::new(),
             offset: 0,
             line_ending_counts: Vec::new(),
+            has_blank_line: false,
         }
     }
 
@@ -43,6 +45,7 @@ impl<'a> Lexer<'a> {
             start: self.start,
             error: self.error,
             line_ending_counts: self.line_ending_counts,
+            has_blank_line: self.has_blank_line,
         }
     }
 
@@ -63,6 +66,8 @@ impl<'a> Lexer<'a> {
         );
 
         self.line_ending_counts.push(line_ending_count.unwrap_or(0));
+        self.has_blank_line |=
+            kind == SyntaxKind::LINE_ENDING && line_ending_count.is_some_and(|count| count >= 2);
 
         if let Some(err) = err {
             let token = (self.kind.len() - 1) as u32;

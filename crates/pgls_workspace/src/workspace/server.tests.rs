@@ -896,18 +896,26 @@ async fn test_format_preserves_between_statement_comment() {
 
 #[tokio::test]
 async fn test_format_preserves_interior_comment() {
-    // A comment wedged between tokens of a statement cannot survive the AST
-    // round-trip, so the statement is left untouched instead of dropping it.
-    let content = "select amount -- the amount\nfrom customers;";
+    let content = "SELECT\n-- pick the magic value\n1 AS a, 2 AS b FROM s.t;";
     let formatted = format_content(content);
-    assert_eq!(formatted, content);
+    assert!(formatted.contains("-- pick the magic value"));
+    assert_ne!(formatted, content, "the statement was reformatted");
+}
+
+#[tokio::test]
+async fn test_format_with_trailing_comment_is_idempotent() {
+    let first = format_content("SELECT * FROM t WHERE a = 1 -- condition\nAND b = 2;");
+    let second = format_content(&first);
+
+    assert!(first.contains("1 -- condition"));
+    assert_eq!(first, second);
 }
 
 #[tokio::test]
 async fn test_format_preserves_block_comment() {
     let content = "select 1 /* keep me */;";
     let formatted = format_content(content);
-    assert_eq!(formatted, content);
+    assert!(formatted.contains("/* keep me */"));
 }
 
 #[tokio::test]

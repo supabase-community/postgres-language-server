@@ -988,6 +988,22 @@ mod tests {
     }
 
     #[test]
+    fn renders_multiline_spans_ending_before_indentation() {
+        let diag = TestDiagnostic::<LogAdvices> {
+            path: Some("repro.sql".into()),
+            span: Some(TextRange::new(TextSize::from(4), TextSize::from(6))),
+            source_code: Some("WITH\n\n x AS (SELECT 1 AS a)\nSELECT x.a FROM x;".into()),
+            ..TestDiagnostic::empty()
+        };
+
+        let verbose = markup!({ PrintDiagnostic::verbose(&diag) }).to_owned();
+        let search = markup!({ PrintDiagnostic::search(&diag) }).to_owned();
+
+        assert!(!verbose.is_empty());
+        assert!(!search.is_empty());
+    }
+
+    #[test]
     fn test_diff_advice() {
         let diag = TestDiagnostic {
             advice: Some(DiffAdvice),

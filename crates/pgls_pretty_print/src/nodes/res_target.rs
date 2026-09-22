@@ -28,20 +28,24 @@ pub(super) fn emit_res_target(e: &mut EventEmitter, n: &ResTarget) {
 }
 
 pub(super) fn emit_set_clause(e: &mut EventEmitter, n: &ResTarget) {
-    e.group_start(GroupKind::ResTarget);
+    // The SET list emits its ResTargets itself rather than through emit_node, so this is the only
+    // place that can emit the comments written next to an assignment.
+    super::emit_with_comments_at(e, n.location, |e| {
+        e.group_start(GroupKind::ResTarget);
 
-    if !n.name.is_empty() {
-        emit_column_name_with_indirection(e, n);
+        if !n.name.is_empty() {
+            emit_column_name_with_indirection(e, n);
 
-        if let Some(ref val) = n.val {
-            e.space();
-            e.token(TokenKind::IDENT("=".to_string()));
-            e.space();
-            emit_node(val, e);
+            if let Some(ref val) = n.val {
+                e.space();
+                e.token(TokenKind::IDENT("=".to_string()));
+                e.space();
+                emit_node(val, e);
+            }
         }
-    }
 
-    e.group_end();
+        e.group_end();
+    });
 }
 
 pub(super) fn emit_set_clause_list(e: &mut EventEmitter, nodes: &[pgls_query::Node]) {
@@ -184,7 +188,11 @@ pub(super) fn emit_column_name_with_indirection(e: &mut EventEmitter, n: &ResTar
 
 // Emit column name only (for INSERT column list)
 pub(super) fn emit_column_name(e: &mut EventEmitter, n: &ResTarget) {
-    e.group_start(GroupKind::ResTarget);
-    emit_column_name_with_indirection(e, n);
-    e.group_end();
+    // The INSERT column list emits its ResTargets itself rather than through emit_node, so this is
+    // the only place that can emit the comments written next to a column name.
+    super::emit_with_comments_at(e, n.location, |e| {
+        e.group_start(GroupKind::ResTarget);
+        emit_column_name_with_indirection(e, n);
+        e.group_end();
+    });
 }

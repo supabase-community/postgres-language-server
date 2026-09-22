@@ -231,6 +231,18 @@ pub(super) fn emit_constraint(e: &mut EventEmitter, n: &Constraint) {
 
             e.token(TokenKind::UNIQUE_KW);
 
+            // For a table constraint the qualifier sits between the keyword and the column list,
+            // unlike CREATE INDEX where it follows the list. Dropping it would let two NULLs
+            // coexist where the schema forbids it.
+            if n.nulls_not_distinct {
+                e.space();
+                e.token(TokenKind::NULLS_KW);
+                e.space();
+                e.token(TokenKind::NOT_KW);
+                e.space();
+                e.token(TokenKind::DISTINCT_KW);
+            }
+
             if !n.keys.is_empty() {
                 e.space();
                 e.token(TokenKind::L_PAREN);

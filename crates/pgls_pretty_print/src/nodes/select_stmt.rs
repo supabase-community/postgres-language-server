@@ -348,6 +348,10 @@ fn emit_distinct_clause(e: &mut EventEmitter, clause: &[Node]) {
         return;
     }
 
+    // The clause has its own group so that it can stay on one line while the target list breaks,
+    // which is the usual shape of a DISTINCT ON query.
+    e.group_start(GroupKind::SelectStmt);
+
     e.space();
     e.token(TokenKind::ON_KW);
     e.space();
@@ -364,7 +368,12 @@ fn emit_distinct_clause(e: &mut EventEmitter, clause: &[Node]) {
     }
 
     e.indent_end();
+    // Symmetric with the Soft after the opening parenthesis: without it the closing parenthesis
+    // stays glued to the last expression when the list breaks.
+    e.line(LineType::Soft);
     e.token(TokenKind::R_PAREN);
+
+    e.group_end();
 }
 
 /// Determines if we need parentheses around a set operation operand.
