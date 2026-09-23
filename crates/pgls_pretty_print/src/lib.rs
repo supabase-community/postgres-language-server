@@ -778,4 +778,41 @@ WHERE
              \x20\x20);"
         );
     }
+
+    #[test]
+    fn own_line_comment_stays_before_a_leading_comma() {
+        let sql = "SELECT\n\
+            CASE\n\
+              WHEN period_number = 0\n\
+                THEN starts_at + INTERVAL '1 year' * period_number + INTERVAL '1 day'\n\
+              ELSE ends_at + INTERVAL '1 year' * period_number + INTERVAL '1 day'\n\
+            END AS period_start\n\
+            /* example\n\
+               previous period\n\
+              */\n\
+            , CASE\n\
+                WHEN period_number < 0\n\
+                  THEN starts_at + INTERVAL '1 year' * period_number - INTERVAL '1 second'\n\
+                ELSE ends_at + INTERVAL '1 year' * period_number - INTERVAL '1 second'\n\
+              END AS period_end\n\
+            FROM periods;";
+        let ast = pgls_query::parse(sql).unwrap().into_root().unwrap();
+        let config = FormatConfig {
+            line_width: 100,
+            comma_style: CommaStyle::Leading,
+            ..Default::default()
+        };
+
+        let first = format_statement(&ast, sql, &config)
+            .expect("first pass")
+            .formatted;
+        let reparsed = pgls_query::parse(&first).unwrap().into_root().unwrap();
+        let second = format_statement(&reparsed, &first, &config)
+            .expect("second pass")
+            .formatted;
+
+        assert!(!first.contains(", /*"), "{first}");
+        assert!(first.contains("*/\n  , case"), "{first}");
+        assert_eq!(first, second);
+    }
 }

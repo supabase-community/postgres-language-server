@@ -129,6 +129,34 @@ impl EventEmitter {
         }
     }
 
+    /// Emits leading comments before a leading list separator when they were written on their
+    /// own line.
+    ///
+    /// With leading commas, the separator belongs visually to the following item. An own-line
+    /// comment documenting that item must remain before the comma instead of becoming `, /* ... */`.
+    pub fn take_own_line_leading_comments_at(&mut self, location: i32) -> bool {
+        let Some(comments) = self.leading_comments.get(&location) else {
+            return false;
+        };
+        if !comments.iter().any(|comment| comment.own_line) {
+            return false;
+        }
+
+        let comments = self
+            .leading_comments
+            .remove(&location)
+            .expect("leading comments checked above");
+        self.force_current_line_break();
+
+        for comment in comments {
+            let line_comment = comment.line_comment;
+            self.comment(comment.text, line_comment);
+            self.line(LineType::Hard);
+        }
+
+        true
+    }
+
     /// Emits and consumes comments that follow `location`, if any.
     pub fn take_trailing_comments_at(&mut self, location: i32) {
         let Some(comments) = self.trailing_comments.remove(&location) else {

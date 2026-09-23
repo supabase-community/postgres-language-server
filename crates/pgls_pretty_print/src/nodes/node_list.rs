@@ -27,6 +27,14 @@ pub(super) fn emit_comma_separated_list_with_spacing<F>(
     for (i, n) in nodes.iter().enumerate() {
         if i > 0 {
             if leading {
+                if let Some(location) = n
+                    .node
+                    .as_ref()
+                    .and_then(|node| crate::codegen::node_location::node_location(&node.to_ref()))
+                {
+                    e.take_own_line_leading_comments_at(location);
+                }
+
                 // The break opportunity sits before the comma, so a broken list reads
                 // "\n, column" while a single line one still reads "a, b".
                 match spacing {
