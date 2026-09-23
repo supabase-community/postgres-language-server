@@ -436,6 +436,10 @@ export interface PartialFilesConfiguration {
  */
 export interface PartialFormatConfiguration {
   /**
+   * Where a comma sits when a list breaks: "trailing" or "leading". Default: "trailing".
+   */
+  commaStyle?: CommaStyle;
+  /**
    * Constant casing (NULL, TRUE, FALSE): "upper" or "lower". Default: "lower".
    */
   constantCase?: KeywordCase;
@@ -467,6 +471,10 @@ export interface PartialFormatConfiguration {
    * Maximum line width before breaking. Default: 100.
    */
   lineWidth?: number;
+  /**
+   * Where a boolean operator sits when a condition breaks: "trailing" or "leading". Default: "trailing".
+   */
+  logicalOperatorPlacement?: LogicalOperatorPlacement;
   /**
    * If `true`, skip formatting of SQL function bodies (keep them verbatim). Default: `false`.
    */
@@ -625,6 +633,10 @@ If we can't find the configuration, it will attempt to use the current working d
   useIgnoreFile?: boolean;
 }
 /**
+ * Where a comma sits when a list breaks across lines.
+ */
+export type CommaStyle = "trailing" | "leading";
+/**
  * Keyword casing style for the formatter.
  */
 export type KeywordCase = "upper" | "lower";
@@ -632,6 +644,10 @@ export type KeywordCase = "upper" | "lower";
  * Indentation style for the formatter.
  */
 export type IndentStyle = "spaces" | "tabs";
+/**
+ * Where a boolean operator sits when a condition breaks across lines.
+ */
+export type LogicalOperatorPlacement = "trailing" | "leading";
 export interface LinterRules {
   /**
    * It enables ALL rules. The rules that belong to `nursery` won't be enabled.
