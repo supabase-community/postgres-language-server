@@ -1,7 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/polygon.sql
-snapshot_kind: text
 ---
 create table polygon_tbl (f1 polygon);
 
@@ -319,8 +318,10 @@ from
     quad_poly_tbl_ord_idx2 as idx
   on seq.n = idx.n and
     seq.id = idx.id and
-    (seq.dist = idx.dist or
-    seq.dist is null and idx.dist is null)
+    (
+      seq.dist = idx.dist or
+      (seq.dist is null and idx.dist is null)
+    )
 where
   seq.id is null or idx.id is null;
 

@@ -228,9 +228,9 @@ select unique1, unique2 from onek2 where (unique2 = 11 or unique1 = 0) and strin
 
 select unique1, unique2 from onek2 where (unique2 = 11 or unique1 = 0) and stringu1 < 'B';
 
-select unique1, unique2 from onek2 where unique2 = 11 and stringu1 < 'B' or unique1 = 0;
+select unique1, unique2 from onek2 where (unique2 = 11 and stringu1 < 'B') or unique1 = 0;
 
-select unique1, unique2 from onek2 where unique2 = 11 and stringu1 < 'B' or unique1 = 0;
+select unique1, unique2 from onek2 where (unique2 = 11 and stringu1 < 'B') or unique1 = 0;
 
 select 1 as x order by x;
 

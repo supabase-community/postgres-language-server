@@ -829,7 +829,9 @@ from
   pg_attribute
 where
   attrelid = cast('ft1' as regclass) and
-  (attmissingval is not null or atthasmissing);
+  (
+    attmissingval is not null or atthasmissing
+  );
 
 drop foreign table ft1;
 

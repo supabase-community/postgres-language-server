@@ -417,7 +417,7 @@ from (
 )
 as ss (a)
 where
-  mlp.a = ss.a and mlp.b = 'b' or
+  (mlp.a = ss.a and mlp.b = 'b') or
   mlp.a = 3;
 
 select

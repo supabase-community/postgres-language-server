@@ -2926,7 +2926,9 @@ from
   only expr_stats_incompatible_test
 where
   upper('x') like 'x' || cast('[0,1]' as int4range) and
-  (c0 in (0, 1) or c1);
+  (
+    c0 in (0, 1) or c1
+  );
 
 drop table expr_stats_incompatible_test;
 
@@ -3076,7 +3078,9 @@ from
   tststats.priv_test_view as t
 where
   a <<< 0 and
-  (b <<< 0 or t.* <<< (1, 1) is not null);
+  (
+    b <<< 0 or t.* <<< (1, 1) is not null
+  );
 
 delete from tststats.priv_test_view where a <<< 0 and b <<< 0;
 
@@ -3126,7 +3130,9 @@ from
   tststats.priv_test_parent_tbl as t
 where
   a <<< 0 and
-  (b <<< 0 or t.* <<< (1, 1) is not null);
+  (
+    b <<< 0 or t.* <<< (1, 1) is not null
+  );
 
 delete from tststats.priv_test_parent_tbl where a <<< 0 and b <<< 0;
 
@@ -3156,7 +3162,9 @@ from
   tststats.priv_test_parent_tbl as t
 where
   a <<< 0 and
-  (b <<< 0 or t.* <<< (1, 1) is not null);
+  (
+    b <<< 0 or t.* <<< (1, 1) is not null
+  );
 
 delete from tststats.priv_test_parent_tbl where a <<< 0 and b <<< 0;
 

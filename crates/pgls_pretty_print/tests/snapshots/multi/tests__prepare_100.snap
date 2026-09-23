@@ -1,7 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/prepare.sql
-snapshot_kind: text
 ---
 select name, statement, parameter_types, result_types from pg_prepared_statements;
 
@@ -56,10 +55,12 @@ from
   tenk1
 where
   string4 = $1 and
-  (four = $2 or
-  ten = cast($3 as bigint) or
-  true = $4 or
-  odd = cast($5 as int))
+  (
+    four = $2 or
+    ten = cast($3 as bigint) or
+    true = $4 or
+    odd = cast($5 as int)
+  )
 order by unique1;;
 
 execute q3

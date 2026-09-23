@@ -1,7 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/int8.sql
-snapshot_kind: text
 ---
 insert into int8_tbl (q1) values ('      ');
 
@@ -102,7 +101,7 @@ select
 from
   int8_tbl
 where
-  q1 < 1000 or q2 > 0 and q2 < 1000;
+  q1 < 1000 or (q2 > 0 and q2 < 1000);
 
 select q1, q2, q1 / q2 as divide, q1 % q2 as mod from int8_tbl;
 
