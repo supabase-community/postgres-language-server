@@ -167,7 +167,10 @@ pub(crate) fn unknown(p: &mut Splitter, exclude: &[SyntaxKind]) -> SplitterResul
     loop {
         match p.current() {
             SyntaxKind::SEMICOLON => {
-                p.advance()?;
+                // A semicolon definitively terminates the current statement.
+                // Move by one raw token so callers cannot mistake the first
+                // keyword of the next statement for a clause of this one.
+                p.step()?;
                 break;
             }
             SyntaxKind::LINE_ENDING => {

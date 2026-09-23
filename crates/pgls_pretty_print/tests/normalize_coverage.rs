@@ -119,7 +119,6 @@ fn known_exceptions() -> HashSet<&'static str> {
         // ===== Handled in separate normalization functions =====
         "MergeSupportFunc", // handled in normalize_merge_support_func
         "SqlValueFunction", // handled in normalize_sql_value_function
-        "WithClause",       // handled in normalize_merge_support_func_recursive
         // ===== Handled via parent node =====
         "JsonFormat",          // handled via JsonFuncExpr, JsonArrayConstructor, etc.
         "JsonConstructorExpr", // internal JSON constructor - planner node

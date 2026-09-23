@@ -1,0 +1,5 @@
+CREATE TABLE s.t AS
+WITH c AS (
+	SELECT x.a FROM s.x ORDER BY x.a
+)
+SELECT c.a FROM c;

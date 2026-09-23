@@ -21,7 +21,6 @@ pub fn normalize_ast(node: &mut NodeEnum) {
     normalize_bool_expr_associativity(node);
     normalize_a_indirection(node);
     normalize_object_with_args(node);
-    normalize_join_expr(node);
     normalize_foreign_table_partbound(node);
     normalize_merge_support_func(node);
     normalize_sql_value_function(node);
@@ -88,10 +87,15 @@ fn flatten_bool_expr_args(bool_expr: &mut pgls_query::protobuf::BoolExpr) {
 /// Location fields record the byte offset in the original source,
 /// which will differ between the original and reparsed AST.
 fn clear_location(node: &mut NodeEnum) {
+    let mut join_quals_to_clear = Vec::new();
+
     // SAFETY: The iterator provides mutable access to AST node fields
     unsafe {
         node.iter_mut().for_each(|n| match n {
             NodeMut::ColumnRef(n) => {
+                (*n).location = 0;
+            }
+            NodeMut::WithClause(n) => {
                 (*n).location = 0;
             }
             NodeMut::ParamRef(n) => {
@@ -102,6 +106,27 @@ fn clear_location(node: &mut NodeEnum) {
             }
             NodeMut::JoinExpr(n) => {
                 (*n).rtindex = 0;
+                // Lives in the generic pass so that no parent node kind can hide a join from it:
+                // the printer spells a CROSS JOIN as INNER JOIN ON TRUE, and both must compare equal.
+                if (*n).jointype == pgls_query::protobuf::JoinType::JoinInner as i32 {
+                    let is_true_qual = (*n)
+                        .quals
+                        .as_ref()
+                        .and_then(|q| q.node.as_ref())
+                        .map(|node| {
+                            matches!(
+                                node,
+                                NodeEnum::AConst(c)
+                                    if matches!(c.val.as_ref(), Some(pgls_query::protobuf::a_const::Val::Boolval(b)) if b.boolval)
+                            )
+                        })
+                        .unwrap_or(false);
+                    if is_true_qual {
+                        // Defer structural mutations until the iterator has finished. It keeps
+                        // pointers to descendants, which clearing `quals` would invalidate.
+                        join_quals_to_clear.push(n);
+                    }
+                }
             }
             NodeMut::TypeCast(n) => {
                 (*n).location = 0;
@@ -476,6 +501,10 @@ fn clear_location(node: &mut NodeEnum) {
             }
             _ => {}
         });
+
+        for join in join_quals_to_clear {
+            (*join).quals = None;
+        }
     }
 }
 
@@ -884,81 +913,6 @@ fn normalize_object_with_args(node: &mut NodeEnum) {
         NodeEnum::AlterFunctionStmt(stmt) => {
             if let Some(ref mut func) = stmt.func {
                 func.objfuncargs.clear();
-            }
-        }
-        _ => {}
-    }
-}
-
-/// Normalize JoinExpr nodes - normalize semantically equivalent forms.
-fn normalize_join_expr(node: &mut NodeEnum) {
-    match node {
-        NodeEnum::JoinExpr(je) => {
-            // Normalize INNER JOIN ON TRUE to no quals (equivalent to CROSS JOIN)
-            if je.jointype == pgls_query::protobuf::JoinType::JoinInner as i32 {
-                let is_true_qual = je
-                    .quals
-                    .as_ref()
-                    .and_then(|q| q.node.as_ref())
-                    .map(|n| {
-                        matches!(
-                            n,
-                            NodeEnum::AConst(c)
-                                if matches!(c.val.as_ref(), Some(pgls_query::protobuf::a_const::Val::Boolval(b)) if b.boolval)
-                        )
-                    })
-                    .unwrap_or(false);
-                if is_true_qual {
-                    je.quals = None;
-                }
-            }
-            // NOTE: We do NOT clear join alias or join_using_alias here.
-            // If the emitter doesn't emit them, the test should fail and we need to fix the emitter.
-            // Recursively normalize nested joins and subqueries
-            if let Some(ref mut larg) = je.larg
-                && let Some(ref mut n) = larg.node
-            {
-                normalize_join_expr(n);
-            }
-            if let Some(ref mut rarg) = je.rarg
-                && let Some(ref mut n) = rarg.node
-            {
-                normalize_join_expr(n);
-            }
-        }
-        NodeEnum::RangeSubselect(rs) => {
-            if let Some(ref mut sub) = rs.subquery
-                && let Some(ref mut n) = sub.node
-            {
-                normalize_join_expr(n);
-            }
-        }
-        NodeEnum::SelectStmt(stmt) => {
-            for from in &mut stmt.from_clause {
-                if let Some(ref mut n) = from.node {
-                    normalize_join_expr(n);
-                }
-            }
-        }
-        NodeEnum::ViewStmt(vs) => {
-            if let Some(ref mut query) = vs.query
-                && let Some(ref mut n) = query.node
-            {
-                normalize_join_expr(n);
-            }
-        }
-        NodeEnum::DeleteStmt(del) => {
-            if let Some(ref mut where_clause) = del.where_clause
-                && let Some(ref mut n) = where_clause.node
-            {
-                normalize_join_expr(n);
-            }
-        }
-        NodeEnum::SubLink(sl) => {
-            if let Some(ref mut sub) = sl.subselect
-                && let Some(ref mut n) = sub.node
-            {
-                normalize_join_expr(n);
             }
         }
         _ => {}

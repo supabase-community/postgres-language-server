@@ -1102,6 +1102,19 @@ VALUES
     }
 
     #[test]
+    fn cte_after_terminated_create_stays_attached_to_insert() {
+        Tester::from(
+            "SELECT 1;\n\nWITH rand_value AS (SELECT string_agg(fipshash(i::text),'') AS val FROM generate_series(1,60) s(i))\nINSERT INTO brintest_3\nSELECT val, val, val, val FROM rand_value;\n\nSELECT 3;",
+        )
+        .expect_statements(vec![
+            "SELECT 1;",
+            "WITH rand_value AS (SELECT string_agg(fipshash(i::text),'') AS val FROM generate_series(1,60) s(i))\nINSERT INTO brintest_3\nSELECT val, val, val, val FROM rand_value;",
+            "SELECT 3;",
+        ])
+        .assert_no_errors();
+    }
+
+    #[test]
     fn empty_input() {
         assert_eq!(split("").ranges.len(), 0);
         assert_eq!(split("   \n  \n ").ranges.len(), 0);
