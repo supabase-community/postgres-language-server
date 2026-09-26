@@ -288,6 +288,14 @@
       },
       "additionalProperties": false
     },
+    "CastStyle": {
+      "description": "How an explicit cast is spelled.",
+      "type": "string",
+      "enum": [
+        "cast",
+        "operator"
+      ]
+    },
     "Cluster": {
       "description": "A list of rules that belong to this group",
       "type": "object",
@@ -462,6 +470,17 @@
       "description": "The configuration for SQL formatting.",
       "type": "object",
       "properties": {
+        "castStyle": {
+          "description": "How an explicit cast is spelled: \"cast\" for `CAST(x AS t)`, \"operator\" for `x::t`. Default: \"cast\".",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/CastStyle"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "commaStyle": {
           "description": "Where a comma sits when a list breaks: \"trailing\" or \"leading\". Default: \"trailing\".",
           "anyOf": [
