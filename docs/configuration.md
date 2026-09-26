@@ -4,6 +4,12 @@ This guide will help you to understand how to configure the Postgres Language Se
 
 The Postgres Language Server allows you to customize its behavior using CLI options or a configuration file named `postgres-language-server.jsonc`. We recommend that you create a configuration file for each project. This ensures that each team member has the same configuration in the CLI and in any editor that allows Biome integration. Many of the options available in a configuration file are also available in the CLI.
 
+## Client configuration overrides
+
+Clients can issue the LSP request `pgls/set_configuration_overrides` with parameters `{ "overrides": { ... } }` to apply runtime configuration, or `{ "overrides": null }` to clear it. The `overrides` value replaces the previous client override layer; it does not merge with the previous request. The layer is sticky across configuration file reloads. `workspace/didChangeConfiguration` also writes this same sticky layer.
+
+Configuration precedence, from lowest to highest, is: built-in defaults, the configuration file on disk, environment configuration (`DATABASE_URL`, `PGHOST`, and related variables) captured when the server starts, then the sticky client override. The client deliberately has higher precedence than the environment: it is an explicit live instruction from the editor for this session, while the environment describes the shell where the server started. Environment configuration continues to override the file. Clearing the overrides restores the file-plus-environment baseline.
+
 ## Configuration file structure
 
 A configuration file is usually placed in your project’s root folder. It is organized around the tools that are provided. All tools are enabled by default, but some require additional setup like a database connection or the `plpgsql_check` extension.
