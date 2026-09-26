@@ -436,6 +436,10 @@ export interface PartialFilesConfiguration {
  */
 export interface PartialFormatConfiguration {
   /**
+   * How an explicit cast is spelled: "cast" for `CAST(x AS t)`, "operator" for `x::t`. Default: "cast".
+   */
+  castStyle?: CastStyle;
+  /**
    * Where a comma sits when a list breaks: "trailing" or "leading". Default: "trailing".
    */
   commaStyle?: CommaStyle;
@@ -636,6 +640,10 @@ If we can't find the configuration, it will attempt to use the current working d
    */
   useIgnoreFile?: boolean;
 }
+/**
+ * How an explicit cast is spelled.
+ */
+export type CastStyle = "cast" | "operator";
 /**
  * Where a comma sits when a list breaks across lines.
  */
