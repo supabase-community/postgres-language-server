@@ -25,6 +25,16 @@ pub enum Layout {
     Expanded,
 }
 
+/// How an explicit cast is spelled.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub enum CastStyle {
+    /// `CAST(expr AS type)`.
+    #[default]
+    Cast,
+    /// `expr::type`.
+    Operator,
+}
+
 /// Error type for formatting operations.
 #[derive(Debug, Error)]
 pub enum FormatError {
@@ -97,6 +107,8 @@ pub struct FormatConfig {
     pub logical_operator_placement: LogicalOperatorPlacement,
     /// How a statement is laid out across lines. Default: Fit.
     pub layout: Layout,
+    /// How an explicit cast is spelled. Default: Cast.
+    pub cast_style: CastStyle,
 }
 
 impl Default for FormatConfig {
@@ -111,6 +123,7 @@ impl Default for FormatConfig {
             comma_style: CommaStyle::default(),
             logical_operator_placement: LogicalOperatorPlacement::default(),
             layout: Layout::default(),
+            cast_style: CastStyle::default(),
         }
     }
 }
@@ -127,6 +140,7 @@ impl From<FormatConfig> for RenderConfig {
             comma_style: _,
             logical_operator_placement: _,
             layout: _,
+            cast_style: _,
         } = config;
 
         Self {

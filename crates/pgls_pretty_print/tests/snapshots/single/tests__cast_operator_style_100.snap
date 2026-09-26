@@ -1,0 +1,16 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/single/cast_operator_style.sql
+---
+select
+  t.id::bigint,
+  t.name::text,
+  t.id::public.object_id,
+  nullif(t.a, '')::date,
+  (t.a + t.b)::int,
+  (t.a || t.b)::text,
+  t.a::text::bigint,
+  (select MAX(u.id) from s.u)::bigint,
+  case when t.a then 1 else 2 end::text
+from
+  s.t;

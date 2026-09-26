@@ -3,7 +3,7 @@ use dir_test::{Fixture, dir_test};
 use insta::{assert_snapshot, with_settings};
 
 use pgls_pretty_print::{
-    CommaStyle, FormatConfig, Layout, LogicalOperatorPlacement,
+    CastStyle, CommaStyle, FormatConfig, Layout, LogicalOperatorPlacement,
     emitter::EventEmitter,
     nodes::emit_node_enum,
     normalize::normalize_ast,
@@ -91,6 +91,8 @@ fn parse_fixture(content: &str) -> (FormatConfig, Option<usize>, String) {
             }
             ("layout", "expanded") => config.layout = Layout::Expanded,
             ("layout", "fit") => config.layout = Layout::Fit,
+            ("castStyle", "operator") => config.cast_style = CastStyle::Operator,
+            ("castStyle", "cast") => config.cast_style = CastStyle::Cast,
             (key, value) => panic!("unknown pgls-format entry: {key}={value}"),
         }
     }
