@@ -6,6 +6,8 @@ use crate::{
     emitter::{EventEmitter, GroupKind, LineType},
 };
 
+use super::node_list::emit_fill_comma_separated_list;
+
 pub(super) fn emit_a_expr(e: &mut EventEmitter, n: &AExpr) {
     e.group_start(GroupKind::AExpr);
 
@@ -270,6 +272,17 @@ fn emit_aexpr_in(e: &mut EventEmitter, n: &AExpr) {
     if let Some(ref rexpr) = n.rexpr {
         match rexpr.node.as_ref() {
             Some(NodeEnum::SubLink(_)) => super::emit_node(rexpr, e),
+            Some(NodeEnum::List(list)) => {
+                e.token(TokenKind::L_PAREN);
+                e.indent_start();
+                e.line(LineType::Soft);
+                e.group_start(GroupKind::List);
+                emit_fill_comma_separated_list(e, &list.items, super::emit_node);
+                e.group_end();
+                e.indent_end();
+                e.line(LineType::Soft);
+                e.token(TokenKind::R_PAREN);
+            }
             _ => {
                 e.token(TokenKind::L_PAREN);
                 e.indent_start();

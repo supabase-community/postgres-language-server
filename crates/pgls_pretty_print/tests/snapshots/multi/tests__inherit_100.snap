@@ -1819,9 +1819,7 @@ where
   contype = 'n' and
   conrelid
   in (
-    cast('inh_parent' as regclass),
-    cast('inh_child1' as regclass),
-    cast('inh_child2' as regclass)
+    cast('inh_parent' as regclass), cast('inh_child1' as regclass), cast('inh_child2' as regclass)
   )
 order by 2,
   1;
@@ -1844,10 +1842,7 @@ where
   contype = 'n' and
   cast(cast(conrelid as regclass) as text)
   in (
-    'inh_parent',
-    'inh_child1',
-    'inh_child2',
-    'inh_child3'
+    'inh_parent', 'inh_child1', 'inh_child2', 'inh_child3'
   )
 order by 2,
   1;
@@ -1906,10 +1901,7 @@ from
 where
   cast(cast(conrelid as regclass) as text)
   in (
-    'inh_parent',
-    'inh_child',
-    'inh_child2',
-    'inh_child3'
+    'inh_parent', 'inh_child', 'inh_child2', 'inh_child3'
   )
 order by 2,
   1;
@@ -1940,9 +1932,7 @@ where
   contype = 'n' and
   conrelid
   in (
-    cast('inh_parent' as regclass),
-    cast('inh_child1' as regclass),
-    cast('inh_child2' as regclass),
+    cast('inh_parent' as regclass), cast('inh_child1' as regclass), cast('inh_child2' as regclass),
     cast('inh_child3' as regclass)
   )
 order by 2,
@@ -1973,8 +1963,7 @@ where
   contype = 'n' and
   conrelid
   in (
-    cast('inh_parent_1' as regclass),
-    cast('inh_parent_2' as regclass),
+    cast('inh_parent_1' as regclass), cast('inh_parent_2' as regclass),
     cast('inh_child' as regclass)
   )
 order by 2,
@@ -2021,11 +2010,7 @@ where
   contype = 'n' and
   cast(conrelid as regclass)
   in (
-    'inh_p1',
-    'inh_p2',
-    'inh_p3',
-    'inh_p4',
-    'inh_multiparent'
+    'inh_p1', 'inh_p2', 'inh_p3', 'inh_p4', 'inh_multiparent'
   )
 order by cast(cast(conrelid as regclass) as text),
   conname;

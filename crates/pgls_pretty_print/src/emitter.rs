@@ -12,6 +12,8 @@ pub enum LineType {
     Soft,
     /// Break if group doesn't fit, but collapse to space if it does
     SoftOrSpace,
+    /// Break only when the next item would exceed the configured line width.
+    Fill,
 }
 
 #[derive(Debug, Clone, PartialEq)]

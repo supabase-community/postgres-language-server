@@ -447,20 +447,14 @@ select
   tand(x),
   tand(x)
   in (
-    cast('-Infinity' as double precision),
-    -1,
-    0,
-    1,
+    cast('-Infinity' as double precision), -1, 0, 1,
     cast('Infinity' as double precision)
   )
   as tand_exact,
   cotd(x),
   cotd(x)
   in (
-    cast('-Infinity' as double precision),
-    -1,
-    0,
-    1,
+    cast('-Infinity' as double precision), -1, 0, 1,
     cast('Infinity' as double precision)
   )
   as cotd_exact

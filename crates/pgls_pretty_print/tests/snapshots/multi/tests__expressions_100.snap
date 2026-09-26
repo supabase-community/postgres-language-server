@@ -133,17 +133,7 @@ select return_int_input(1) not in (10, 9, 2, 8, 3, 7, 4, 6, 5, 1, null);
 select
   return_int_input(1)
   not in (
-    null,
-    null,
-    null,
-    null,
-    null,
-    null,
-    null,
-    null,
-    null,
-    null,
-    null
+    null, null, null, null, null, null, null, null, null, null, null
   );
 
 select return_int_input(cast(null as int)) not in (10, 9, 2, 8, 3, 7, 4, 6, 5, 1);
@@ -250,16 +240,8 @@ from
 where
   a
   in (
-    cast(1 as myint),
-    cast(2 as myint),
-    cast(3 as myint),
-    cast(4 as myint),
-    cast(5 as myint),
-    cast(6 as myint),
-    cast(7 as myint),
-    cast(8 as myint),
-    cast(9 as myint),
-    null
+    cast(1 as myint), cast(2 as myint), cast(3 as myint), cast(4 as myint), cast(5 as myint),
+    cast(6 as myint), cast(7 as myint), cast(8 as myint), cast(9 as myint), null
   );
 
 select
@@ -269,16 +251,8 @@ from
 where
   a
   not in (
-    cast(1 as myint),
-    cast(2 as myint),
-    cast(3 as myint),
-    cast(4 as myint),
-    cast(5 as myint),
-    cast(6 as myint),
-    cast(7 as myint),
-    cast(8 as myint),
-    cast(9 as myint),
-    null
+    cast(1 as myint), cast(2 as myint), cast(3 as myint), cast(4 as myint), cast(5 as myint),
+    cast(6 as myint), cast(7 as myint), cast(8 as myint), cast(9 as myint), null
   );
 
 select
@@ -288,16 +262,8 @@ from
 where
   a
   not in (
-    cast(0 as myint),
-    cast(2 as myint),
-    cast(3 as myint),
-    cast(4 as myint),
-    cast(5 as myint),
-    cast(6 as myint),
-    cast(7 as myint),
-    cast(8 as myint),
-    cast(9 as myint),
-    null
+    cast(0 as myint), cast(2 as myint), cast(3 as myint), cast(4 as myint), cast(5 as myint),
+    cast(6 as myint), cast(7 as myint), cast(8 as myint), cast(9 as myint), null
   );
 
 select
@@ -307,12 +273,7 @@ from
 where
   a
   in (
-    cast(1 as myint),
-    cast(2 as myint),
-    cast(3 as myint),
-    cast(4 as myint),
-    cast(5 as myint),
-    null
+    cast(1 as myint), cast(2 as myint), cast(3 as myint), cast(4 as myint), cast(5 as myint), null
   );
 
 select
@@ -322,12 +283,7 @@ from
 where
   a
   not in (
-    cast(1 as myint),
-    cast(2 as myint),
-    cast(3 as myint),
-    cast(4 as myint),
-    cast(5 as myint),
-    null
+    cast(1 as myint), cast(2 as myint), cast(3 as myint), cast(4 as myint), cast(5 as myint), null
   );
 
 select
@@ -337,12 +293,7 @@ from
 where
   a
   not in (
-    cast(0 as myint),
-    cast(2 as myint),
-    cast(3 as myint),
-    cast(4 as myint),
-    cast(5 as myint),
-    null
+    cast(0 as myint), cast(2 as myint), cast(3 as myint), cast(4 as myint), cast(5 as myint), null
   );
 
 rollback;

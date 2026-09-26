@@ -1,7 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/stats_import.sql
-snapshot_kind: text
 ---
 create schema "stats_import";
 
@@ -1348,10 +1347,7 @@ where
   cast('stats_import' as regnamespace) and
   c.relname
   in (
-    'test',
-    'test_clone',
-    'is_odd',
-    'is_odd_clone'
+    'test', 'test_clone', 'is_odd', 'is_odd_clone'
   )
 group by c.relname
 order by c.relname;
