@@ -1,4 +1,5 @@
 use crate::adapters::{PositionEncoding, WideEncoding, negotiated_encoding};
+use crate::database_context::SessionDatabaseContext;
 use crate::diagnostics::LspError;
 use crate::documents::Document;
 use crate::utils;
@@ -88,6 +89,10 @@ pub(crate) struct Session {
 
     /// Extra configuration from environment variables, applied on every config load.
     env_config: Option<PartialConfiguration>,
+
+    /// Session-only database context supplied by the client through
+    /// `pgls/setDatabaseContext`, applied on every config load.
+    session_database_context: RwLock<Option<PartialConfiguration>>,
 
     /// Per-URL abort handles for pending debounced diagnostic tasks.
     ///
@@ -191,12 +196,18 @@ impl Session {
             notified_broken_configuration: AtomicBool::new(false),
             notified_deprecated_config: AtomicBool::new(false),
             env_config,
+            session_database_context: RwLock::default(),
             diagnostic_debounce: Arc::new(Mutex::new(FxHashMap::default())),
         }
     }
 
     pub(crate) fn set_config_path(&mut self, path: PathBuf) {
         self.config_path = Some(path);
+    }
+
+    pub(crate) fn set_session_database_context(&self, context: Option<SessionDatabaseContext>) {
+        *self.session_database_context.write().unwrap() =
+            context.map(SessionDatabaseContext::into_partial_configuration);
     }
 
     /// Initialize this session instance with the incoming initialization parameters from the client
@@ -572,41 +583,37 @@ impl Session {
 
                 info!("Update workspace settings.");
 
+                let session_database_context =
+                    self.session_database_context.read().unwrap().clone();
+                fs_configuration = merge_configuration_layers(
+                    fs_configuration,
+                    extra_config,
+                    self.env_config.as_ref(),
+                    session_database_context.as_ref(),
+                );
                 let fs = &self.fs;
-
-                if let Some(ws_configuration) = extra_config {
-                    fs_configuration.merge_with(ws_configuration);
-                }
-
-                // Env vars take highest priority — merge last so they override everything.
-                if let Some(env_config) = &self.env_config {
-                    fs_configuration.merge_with(env_config.clone());
-                }
+                let workspace_path = match &base_path {
+                    ConfigurationPathHint::FromLsp(path)
+                    | ConfigurationPathHint::FromWorkspace(path) => Some(path.clone()),
+                    ConfigurationPathHint::FromUser(_) | ConfigurationPathHint::None => {
+                        fs.working_directory()
+                    }
+                };
 
                 let result = fs_configuration
                     .retrieve_gitignore_matches(&self.fs, configuration_path.as_deref());
 
                 match result {
                     Ok((vcs_base_path, gitignore_matches)) => {
-                        let register_result =
-                            if let ConfigurationPathHint::FromWorkspace(path) = &base_path {
-                                // We don't need the key
-                                self.workspace
-                                    .register_project_folder(RegisterProjectFolderParams {
-                                        path: Some(path.clone()),
-                                        // This is naive, but we don't know if the user has a file already open or not, so we register every project as the current one.
-                                        // The correct one is actually set when the LSP calls `textDocument/didOpen`
-                                        set_as_current_workspace: true,
-                                    })
-                                    .err()
-                            } else {
-                                self.workspace
-                                    .register_project_folder(RegisterProjectFolderParams {
-                                        path: fs.working_directory(),
-                                        set_as_current_workspace: true,
-                                    })
-                                    .err()
-                            };
+                        let register_result = self
+                            .workspace
+                            .register_project_folder(RegisterProjectFolderParams {
+                                path: workspace_path.clone(),
+                                // This is naive, but we don't know if the user has a file already open or not, so we register every project as the current one.
+                                // The correct one is actually set when the LSP calls `textDocument/didOpen`
+                                set_as_current_workspace: true,
+                            })
+                            .err();
                         if let Some(error) = register_result {
                             error!("Failed to register the project folder: {}", error);
                             self.client.log_message(MessageType::ERROR, &error).await;
@@ -614,7 +621,7 @@ impl Session {
                         }
 
                         let result = self.workspace.update_settings(UpdateSettingsParams {
-                            workspace_directory: self.fs.working_directory(),
+                            workspace_directory: workspace_path,
                             configuration: fs_configuration,
                             vcs_base_path,
                             gitignore_matches,
@@ -681,6 +688,35 @@ impl Session {
     }
 }
 
+fn merge_configuration_layers(
+    mut filesystem_configuration: PartialConfiguration,
+    extra_configuration: Option<PartialConfiguration>,
+    environment_configuration: Option<&PartialConfiguration>,
+    session_database_context: Option<&PartialConfiguration>,
+) -> PartialConfiguration {
+    if let Some(extra_configuration) = extra_configuration {
+        filesystem_configuration.merge_with(extra_configuration);
+    }
+    if let Some(environment_configuration) = environment_configuration {
+        filesystem_configuration.merge_with(environment_configuration.clone());
+    }
+    if let Some(session_database_context) = session_database_context {
+        let session_search_path = session_database_context
+            .typecheck
+            .as_ref()
+            .and_then(|typecheck| typecheck.search_path.clone());
+        filesystem_configuration.merge_with(session_database_context.clone());
+        if let Some(database) = filesystem_configuration.db.as_mut() {
+            database.connection_string = None;
+        }
+        if let Some(search_path) = session_search_path {
+            let typecheck = filesystem_configuration.typecheck.get_or_insert_default();
+            typecheck.search_path = Some(search_path);
+        }
+    }
+    filesystem_configuration
+}
+
 /// Returns `true` when diagnostics computed for `captured_version` no longer
 /// match the document's `current_version` and must therefore be discarded.
 ///
@@ -694,7 +730,11 @@ fn is_stale_diagnostics(captured_version: i32, current_version: i32) -> bool {
 
 #[cfg(test)]
 mod tests {
-    use super::is_stale_diagnostics;
+    use super::{is_stale_diagnostics, merge_configuration_layers};
+    use pgls_configuration::{
+        PartialConfiguration, PartialTypecheckConfiguration, StringSet,
+        database::PartialDatabaseConfiguration,
+    };
 
     #[test]
     fn stale_diagnostics_are_detected_by_version() {
@@ -705,5 +745,66 @@ mod tests {
         // Reopened document reset to a lower version: still stale, the
         // captured result no longer matches the live document.
         assert!(is_stale_diagnostics(5, 3));
+    }
+
+    #[test]
+    fn session_context_overrides_project_and_environment_configuration() {
+        let project = PartialConfiguration {
+            db: Some(PartialDatabaseConfiguration {
+                host: Some("project-host".to_string()),
+                connection_string: Some("postgres://project".to_string()),
+                ..Default::default()
+            }),
+            typecheck: Some(PartialTypecheckConfiguration {
+                search_path: Some(StringSet::from_iter(["project".to_string()])),
+                ..Default::default()
+            }),
+            ..Default::default()
+        };
+        let environment = PartialConfiguration {
+            db: Some(PartialDatabaseConfiguration {
+                host: Some("environment-host".to_string()),
+                ..Default::default()
+            }),
+            ..Default::default()
+        };
+        let session_context = PartialConfiguration {
+            db: Some(PartialDatabaseConfiguration {
+                host: Some("session-host".to_string()),
+                disable_connection: Some(false),
+                ..Default::default()
+            }),
+            typecheck: Some(PartialTypecheckConfiguration {
+                search_path: Some(StringSet::from_iter([
+                    "tenant".to_string(),
+                    "public".to_string(),
+                ])),
+                ..Default::default()
+            }),
+            ..Default::default()
+        };
+
+        let merged =
+            merge_configuration_layers(project, None, Some(&environment), Some(&session_context));
+
+        assert_eq!(
+            merged.db.as_ref().and_then(|db| db.host.as_deref()),
+            Some("session-host")
+        );
+        assert_eq!(
+            merged
+                .db
+                .as_ref()
+                .and_then(|db| db.connection_string.as_deref()),
+            None
+        );
+        assert_eq!(
+            merged
+                .typecheck
+                .as_ref()
+                .and_then(|typecheck| typecheck.search_path.as_ref())
+                .map(|path| path.iter().cloned().collect::<Vec<_>>()),
+            Some(vec!["tenant".to_string(), "public".to_string()])
+        );
     }
 }

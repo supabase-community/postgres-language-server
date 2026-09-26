@@ -1,5 +1,6 @@
 mod adapters;
 mod capabilities;
+mod database_context;
 mod diagnostics;
 mod documents;
 mod handlers;
