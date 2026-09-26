@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 
-use crate::{Comment, FormatConfig};
 pub use crate::codegen::group_kind::GroupKind;
 pub use crate::codegen::token_kind::TokenKind;
+use crate::{Comment, FormatConfig};
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum LineType {
