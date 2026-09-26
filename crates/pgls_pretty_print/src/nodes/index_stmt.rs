@@ -7,6 +7,14 @@ use crate::{
 };
 
 pub(super) fn emit_index_stmt(e: &mut EventEmitter, n: &IndexStmt) {
+    emit_index_stmt_impl(e, n, true);
+}
+
+pub(super) fn emit_index_stmt_no_semicolon(e: &mut EventEmitter, n: &IndexStmt) {
+    emit_index_stmt_impl(e, n, false);
+}
+
+fn emit_index_stmt_impl(e: &mut EventEmitter, n: &IndexStmt, with_semicolon: bool) {
     e.group_start(GroupKind::IndexStmt);
 
     // Inner group for CREATE INDEX name (allows this to stay on one line)
@@ -116,6 +124,8 @@ pub(super) fn emit_index_stmt(e: &mut EventEmitter, n: &IndexStmt) {
         super::emit_clause_condition(e, where_clause);
     }
 
-    e.token(TokenKind::SEMICOLON);
+    if with_semicolon {
+        e.token(TokenKind::SEMICOLON);
+    }
     e.group_end();
 }

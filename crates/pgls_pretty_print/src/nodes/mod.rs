@@ -352,14 +352,14 @@ use create_publication_stmt::emit_create_publication_stmt;
 use create_range_stmt::emit_create_range_stmt;
 use create_role_stmt::emit_create_role_stmt;
 use create_schema_stmt::emit_create_schema_stmt;
-use create_seq_stmt::emit_create_seq_stmt;
+use create_seq_stmt::{emit_create_seq_stmt, emit_create_seq_stmt_no_semicolon};
 use create_stats_stmt::emit_create_stats_stmt;
-use create_stmt::emit_create_stmt;
+use create_stmt::{emit_create_stmt, emit_create_stmt_no_semicolon};
 use create_subscription_stmt::emit_create_subscription_stmt;
 use create_table_as_stmt::emit_create_table_as_stmt;
 use create_table_space_stmt::emit_create_table_space_stmt;
 use create_transform_stmt::emit_create_transform_stmt;
-use create_trig_stmt::emit_create_trig_stmt;
+use create_trig_stmt::{emit_create_trig_stmt, emit_create_trig_stmt_no_semicolon};
 use create_user_mapping_stmt::emit_create_user_mapping_stmt;
 use createdb_stmt::emit_createdb_stmt;
 use ctecycle_clause::emit_ctecycle_clause;
@@ -389,12 +389,12 @@ use from_expr::emit_from_expr;
 use func_call::emit_func_call;
 use func_expr::emit_func_expr;
 use grant_role_stmt::emit_grant_role_stmt;
-use grant_stmt::emit_grant_stmt;
+use grant_stmt::{emit_grant_stmt, emit_grant_stmt_no_semicolon};
 use grouping_func::emit_grouping_func;
 use grouping_set::emit_grouping_set;
 use import_foreign_schema_stmt::emit_import_foreign_schema_stmt;
 use index_elem::emit_index_elem;
-use index_stmt::emit_index_stmt;
+use index_stmt::{emit_index_stmt, emit_index_stmt_no_semicolon};
 use infer_clause::emit_infer_clause;
 use inference_elem::emit_inference_elem;
 use inline_code_block::emit_inline_code_block;
@@ -514,7 +514,7 @@ use vacuum_stmt::emit_vacuum_stmt;
 use var::emit_var;
 use variable_set_stmt::{emit_variable_set_stmt, emit_variable_set_stmt_no_semicolon};
 use variable_show_stmt::emit_variable_show_stmt;
-use view_stmt::emit_view_stmt;
+use view_stmt::{emit_view_stmt, emit_view_stmt_no_semicolon};
 use window_clause::emit_window_clause;
 use window_def::emit_window_def;
 use window_func::emit_window_func;
@@ -528,6 +528,14 @@ use crate::emitter::{EventEmitter, GroupKind};
 use pgls_query::{NodeEnum, protobuf::Node};
 
 pub fn emit_node(node: &Node, e: &mut EventEmitter) {
+    emit_node_with(node, e, emit_node_enum);
+}
+
+pub(super) fn emit_node_with(
+    node: &Node,
+    e: &mut EventEmitter,
+    emit: impl FnOnce(&NodeEnum, &mut EventEmitter),
+) {
     let location = node
         .node
         .as_ref()
@@ -538,7 +546,7 @@ pub fn emit_node(node: &Node, e: &mut EventEmitter) {
     }
 
     if let Some(ref inner) = node.node {
-        emit_node_enum(inner, e)
+        emit(inner, e)
     }
 
     if let Some(location) = location {
