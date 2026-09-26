@@ -3,10 +3,11 @@ use dir_test::{Fixture, dir_test};
 use insta::{assert_snapshot, with_settings};
 
 use pgls_pretty_print::{
+    CommaStyle, FormatConfig, LogicalOperatorPlacement,
     emitter::EventEmitter,
     nodes::emit_node_enum,
     normalize::normalize_ast,
-    renderer::{IndentStyle, RenderConfig, Renderer},
+    renderer::{IndentStyle, KeywordCase, RenderConfig, Renderer},
 };
 
 /// Line widths to test - each test file is run at both widths
@@ -37,12 +38,70 @@ enum StringState {
     Dollar(Vec<char>),
 }
 
+/// A fixture may open with `-- pgls-format: key=value, key=value` to declare the configuration it
+/// must be rendered with. Keeping it in the fixture rather than in the harness is what lets an
+/// option that is off by default own its own test data.
+///
+/// It returns a `FormatConfig`, not a `RenderConfig`: some options decide which tokens exist and
+/// are therefore read by the emitter, so the fixture has to reach both sides of the pipeline.
+fn parse_fixture(content: &str) -> (FormatConfig, Option<usize>, String) {
+    const HEADER: &str = "-- pgls-format:";
+
+    let mut config = FormatConfig::default();
+    let mut explicit_width = None;
+
+    let Some(rest) = content.strip_prefix(HEADER) else {
+        return (config, None, content.to_string());
+    };
+
+    let (header, sql) = match rest.split_once('\n') {
+        Some((header, sql)) => (header, sql),
+        None => (rest, ""),
+    };
+
+    for entry in header.split(',') {
+        let Some((key, value)) = entry.split_once('=') else {
+            panic!("malformed pgls-format entry: {entry}");
+        };
+
+        match (key.trim(), value.trim()) {
+            ("lineWidth", value) => {
+                let width = value.parse().expect("lineWidth must be a number");
+                config.line_width = width;
+                explicit_width = Some(width);
+            }
+            ("indentSize", value) => {
+                config.indent_size = value.parse().expect("indentSize must be a number");
+            }
+            ("indentStyle", "tabs") => config.indent_style = IndentStyle::Tabs,
+            ("indentStyle", "spaces") => config.indent_style = IndentStyle::Spaces,
+            ("keywordCase", "upper") => config.keyword_case = KeywordCase::Upper,
+            ("keywordCase", "lower") => config.keyword_case = KeywordCase::Lower,
+            ("constantCase", "upper") => config.constant_case = KeywordCase::Upper,
+            ("constantCase", "lower") => config.constant_case = KeywordCase::Lower,
+            ("typeCase", "upper") => config.type_case = KeywordCase::Upper,
+            ("typeCase", "lower") => config.type_case = KeywordCase::Lower,
+            ("commaStyle", "leading") => config.comma_style = CommaStyle::Leading,
+            ("commaStyle", "trailing") => config.comma_style = CommaStyle::Trailing,
+            ("logicalOperatorPlacement", "leading") => {
+                config.logical_operator_placement = LogicalOperatorPlacement::Leading;
+            }
+            ("logicalOperatorPlacement", "trailing") => {
+                config.logical_operator_placement = LogicalOperatorPlacement::Trailing;
+            }
+            (key, value) => panic!("unknown pgls-format entry: {key}={value}"),
+        }
+    }
+
+    (config, explicit_width, sql.to_string())
+}
+
 #[dir_test(
     dir: "$CARGO_MANIFEST_DIR/tests/data/single/",
     glob: "*.sql",
 )]
 fn test_single(fixture: Fixture<&str>) {
-    let content = fixture.content();
+    let (fixture_config, explicit_width, content) = parse_fixture(fixture.content());
 
     println!("Original content:\n{content}");
 
@@ -53,24 +112,28 @@ fn test_single(fixture: Fixture<&str>) {
         .and_then(|x| x.strip_suffix(".sql"))
         .unwrap();
 
-    // Run test at each configured line width
-    for &max_line_length in &LINE_WIDTHS {
+    let widths: Vec<usize> = match explicit_width {
+        Some(width) => vec![width],
+        None => LINE_WIDTHS.to_vec(),
+    };
+
+    for max_line_length in widths {
         let test_name = format!("{base_test_name}_{max_line_length}");
 
-        let parsed = pgls_query::parse(content).expect("Failed to parse SQL");
+        let parsed = pgls_query::parse(&content).expect("Failed to parse SQL");
         let mut ast = parsed.into_root().expect("No root node found");
 
         println!("Parsed AST: {ast:#?}");
 
-        let mut emitter = EventEmitter::new();
+        // The emitter gets the fixture config, not the default one: an option that decides which
+        // tokens exist is read here, before the renderer ever sees the events.
+        let mut emitter = EventEmitter::new(fixture_config.clone());
         emit_node_enum(&ast, &mut emitter);
 
         let mut output = String::new();
         let config = RenderConfig {
             max_line_length,
-            indent_size: 2,
-            indent_style: IndentStyle::Spaces,
-            ..Default::default()
+            ..RenderConfig::from(fixture_config.clone())
         };
         let mut renderer = Renderer::new(&mut output, config);
         renderer.render(emitter.events).expect("Failed to render");
@@ -119,19 +182,23 @@ fn test_multi(fixture: Fixture<&str>) {
         }
     }
 
-    let content = fixture.content();
+    let (fixture_config, explicit_width, content) = parse_fixture(fixture.content());
     let input_file = absolute_fixture_path;
     let base_test_name = absolute_fixture_path
         .file_name()
         .and_then(|x| x.strip_suffix(".sql"))
         .unwrap();
 
-    // Run test at each configured line width
-    for &max_line_length in &LINE_WIDTHS {
+    let widths: Vec<usize> = match explicit_width {
+        Some(width) => vec![width],
+        None => LINE_WIDTHS.to_vec(),
+    };
+
+    for max_line_length in widths {
         let test_name = format!("{base_test_name}_{max_line_length}");
 
         // Split the content into statements
-        let split_result = pgls_statement_splitter::split(content);
+        let split_result = pgls_statement_splitter::split(&content);
         let mut formatted_statements = Vec::new();
 
         for range in &split_result.ranges {
@@ -147,15 +214,15 @@ fn test_multi(fixture: Fixture<&str>) {
 
             println!("Parsed AST: {ast:#?}");
 
-            let mut emitter = EventEmitter::new();
+            // The emitter gets the fixture config, not the default one: an option that decides
+            // which tokens exist is read here, before the renderer ever sees the events.
+            let mut emitter = EventEmitter::new(fixture_config.clone());
             emit_node_enum(&ast, &mut emitter);
 
             let mut output = String::new();
             let config = RenderConfig {
                 max_line_length,
-                indent_size: 2,
-                indent_style: IndentStyle::Spaces,
-                ..Default::default()
+                ..RenderConfig::from(fixture_config.clone())
             };
             let mut renderer = Renderer::new(&mut output, config);
             renderer.render(emitter.events).expect("Failed to render");

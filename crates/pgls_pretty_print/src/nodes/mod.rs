@@ -870,6 +870,7 @@ mod tests {
 
         let attached = attach_comments(sql, &ast);
         let mut e = EventEmitter::with_comments(
+            Default::default(),
             attached.leading_by_location,
             attached.trailing_by_location,
         );
@@ -896,7 +897,7 @@ mod tests {
             own_line: true,
         };
         let leading = HashMap::from([(7, vec![comment])]);
-        let mut e = EventEmitter::with_comments(leading, HashMap::new());
+        let mut e = EventEmitter::with_comments(Default::default(), leading, HashMap::new());
 
         super::emit_with_comments_at(&mut e, 7, |e| e.token(TokenKind::ONLY_KW));
 
@@ -909,7 +910,7 @@ mod tests {
 
     #[test]
     fn a_negative_location_never_carries_a_comment() {
-        let mut e = EventEmitter::new();
+        let mut e = EventEmitter::new(Default::default());
 
         super::emit_with_comments_at(&mut e, -1, |e| e.token(TokenKind::ONLY_KW));
 

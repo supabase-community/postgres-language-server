@@ -1,0 +1,5 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/single/format_config_header.sql
+---
+SELECT t.a, t.b FROM s.t WHERE t.a > 1;

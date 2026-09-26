@@ -46,6 +46,26 @@ pub enum FormatError {
 }
 
 /// Configuration for the SQL formatter.
+/// Where a comma sits when a list breaks across lines.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub enum CommaStyle {
+    /// `a,` at the end of the line.
+    #[default]
+    Trailing,
+    /// `, a` at the start of the continuation line.
+    Leading,
+}
+
+/// Where a boolean operator sits when a condition breaks across lines.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub enum LogicalOperatorPlacement {
+    /// `a = 1 AND` at the end of the line.
+    #[default]
+    Trailing,
+    /// `AND a = 1` at the start of the continuation line.
+    Leading,
+}
+
 #[derive(Debug, Clone)]
 pub struct FormatConfig {
     /// Maximum line width before breaking. Default: 100.
@@ -60,6 +80,10 @@ pub struct FormatConfig {
     pub constant_case: KeywordCase,
     /// Casing for data types (text, varchar, int). Default: Lower.
     pub type_case: KeywordCase,
+    /// Where a comma sits when a list breaks. Default: Trailing.
+    pub comma_style: CommaStyle,
+    /// Where a boolean operator sits when a condition breaks. Default: Trailing.
+    pub logical_operator_placement: LogicalOperatorPlacement,
 }
 
 impl Default for FormatConfig {
@@ -71,19 +95,32 @@ impl Default for FormatConfig {
             keyword_case: KeywordCase::default(),
             constant_case: KeywordCase::default(),
             type_case: KeywordCase::default(),
+            comma_style: CommaStyle::default(),
+            logical_operator_placement: LogicalOperatorPlacement::default(),
         }
     }
 }
 
 impl From<FormatConfig> for RenderConfig {
     fn from(config: FormatConfig) -> Self {
+        let FormatConfig {
+            line_width,
+            indent_size,
+            indent_style,
+            keyword_case,
+            constant_case,
+            type_case,
+            comma_style: _,
+            logical_operator_placement: _,
+        } = config;
+
         Self {
-            max_line_length: config.line_width,
-            indent_size: config.indent_size,
-            indent_style: config.indent_style,
-            keyword_case: config.keyword_case,
-            constant_case: config.constant_case,
-            type_case: config.type_case,
+            max_line_length: line_width,
+            indent_size,
+            indent_style,
+            keyword_case,
+            constant_case,
+            type_case,
         }
     }
 }
@@ -176,6 +213,7 @@ fn format_statement_once(
     }
 
     let mut emitter = emitter::EventEmitter::with_comments(
+        config.clone(),
         attached.leading_by_location,
         attached.trailing_by_location,
     );
@@ -739,5 +777,42 @@ WHERE
              \x20\x20\x20\x20'4500', '4501', '4530', '4560', '4600', '7001', '7201', '7501', '7601'\n\
              \x20\x20);"
         );
+    }
+
+    #[test]
+    fn own_line_comment_stays_before_a_leading_comma() {
+        let sql = "SELECT\n\
+            CASE\n\
+              WHEN period_number = 0\n\
+                THEN starts_at + INTERVAL '1 year' * period_number + INTERVAL '1 day'\n\
+              ELSE ends_at + INTERVAL '1 year' * period_number + INTERVAL '1 day'\n\
+            END AS period_start\n\
+            /* example\n\
+               previous period\n\
+              */\n\
+            , CASE\n\
+                WHEN period_number < 0\n\
+                  THEN starts_at + INTERVAL '1 year' * period_number - INTERVAL '1 second'\n\
+                ELSE ends_at + INTERVAL '1 year' * period_number - INTERVAL '1 second'\n\
+              END AS period_end\n\
+            FROM periods;";
+        let ast = pgls_query::parse(sql).unwrap().into_root().unwrap();
+        let config = FormatConfig {
+            line_width: 100,
+            comma_style: CommaStyle::Leading,
+            ..Default::default()
+        };
+
+        let first = format_statement(&ast, sql, &config)
+            .expect("first pass")
+            .formatted;
+        let reparsed = pgls_query::parse(&first).unwrap().into_root().unwrap();
+        let second = format_statement(&reparsed, &first, &config)
+            .expect("second pass")
+            .formatted;
+
+        assert!(!first.contains(", /*"), "{first}");
+        assert!(first.contains("*/\n  , case"), "{first}");
+        assert_eq!(first, second);
     }
 }

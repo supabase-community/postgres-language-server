@@ -2,7 +2,7 @@ use pgls_query::protobuf::{BoolExpr, BoolExprType};
 use pgls_query::{Node, NodeEnum};
 
 use crate::{
-    TokenKind,
+    LogicalOperatorPlacement, TokenKind,
     emitter::{EventEmitter, GroupKind, LineType},
 };
 
@@ -21,12 +21,24 @@ pub(super) fn emit_bool_expr(e: &mut EventEmitter, n: &BoolExpr) {
 
 fn emit_variadic_bool_expr(e: &mut EventEmitter, n: &BoolExpr, keyword: TokenKind) {
     let parent_prec = bool_precedence(n.boolop());
+    let leading = matches!(
+        e.config().logical_operator_placement,
+        LogicalOperatorPlacement::Leading
+    );
 
     for (idx, arg) in n.args.iter().enumerate() {
         if idx > 0 {
-            e.space();
-            e.token(keyword.clone());
-            e.line(LineType::SoftOrSpace);
+            if leading {
+                // The break opportunity sits before the keyword, so a broken condition reads
+                // "\n\tAND b = 2" while a single line one still reads "a = 1 AND b = 2".
+                e.line(LineType::SoftOrSpace);
+                e.token(keyword.clone());
+                e.space();
+            } else {
+                e.space();
+                e.token(keyword.clone());
+                e.line(LineType::SoftOrSpace);
+            }
         }
 
         emit_bool_operand(e, arg, parent_prec);

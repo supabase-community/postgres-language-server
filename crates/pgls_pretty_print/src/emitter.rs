@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 
-use crate::Comment;
 pub use crate::codegen::group_kind::GroupKind;
 pub use crate::codegen::token_kind::TokenKind;
+use crate::{Comment, FormatConfig};
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum LineType {
@@ -35,9 +35,14 @@ pub enum LayoutEvent {
     IndentEnd,
 }
 
-#[derive(Debug, Default)]
+/// Collects layout events for the renderer.
+///
+/// The emitter holds the configuration because some options decide which tokens exist at all,
+/// such as where a comma sits in a list, and not merely how a token is rendered.
+#[derive(Debug)]
 pub struct EventEmitter {
     pub events: Vec<LayoutEvent>,
+    config: FormatConfig,
     /// Comments still waiting to be emitted before a node, by source location.
     /// Entries are removed as they are emitted so that a comment cannot be printed twice, and so
     /// that the caller can check the map is empty afterwards.
@@ -50,16 +55,30 @@ pub struct EventEmitter {
 }
 
 impl EventEmitter {
-    pub fn new() -> Self {
-        Self::default()
+    pub fn new(config: FormatConfig) -> Self {
+        Self {
+            events: Vec::new(),
+            config,
+            leading_comments: HashMap::new(),
+            trailing_comments: HashMap::new(),
+            leading_line_comments_require_break: false,
+        }
+    }
+
+    // Later option PRs inspect this while deciding which layout events to emit.
+    #[allow(dead_code)]
+    pub fn config(&self) -> &FormatConfig {
+        &self.config
     }
 
     pub fn with_comments(
+        config: FormatConfig,
         leading_comments: HashMap<i32, Vec<Comment>>,
         trailing_comments: HashMap<i32, Vec<Comment>>,
     ) -> Self {
         Self {
             events: Vec::new(),
+            config,
             leading_comments,
             trailing_comments,
             leading_line_comments_require_break: false,
@@ -108,6 +127,34 @@ impl EventEmitter {
                 self.space();
             }
         }
+    }
+
+    /// Emits leading comments before a leading list separator when they were written on their
+    /// own line.
+    ///
+    /// With leading commas, the separator belongs visually to the following item. An own-line
+    /// comment documenting that item must remain before the comma instead of becoming `, /* ... */`.
+    pub fn take_own_line_leading_comments_at(&mut self, location: i32) -> bool {
+        let Some(comments) = self.leading_comments.get(&location) else {
+            return false;
+        };
+        if !comments.iter().any(|comment| comment.own_line) {
+            return false;
+        }
+
+        let comments = self
+            .leading_comments
+            .remove(&location)
+            .expect("leading comments checked above");
+        self.force_current_line_break();
+
+        for comment in comments {
+            let line_comment = comment.line_comment;
+            self.comment(comment.text, line_comment);
+            self.line(LineType::Hard);
+        }
+
+        true
     }
 
     /// Emits and consumes comments that follow `location`, if any.

@@ -951,6 +951,8 @@ impl Workspace for WorkspaceServer {
             keyword_case: settings.formatter.keyword_case.into(),
             constant_case: settings.formatter.constant_case.into(),
             type_case: settings.formatter.type_case.into(),
+            comma_style: settings.formatter.comma_style.into(),
+            logical_operator_placement: settings.formatter.logical_operator_placement.into(),
         };
 
         let mut diagnostics = Vec::new();
