@@ -42,6 +42,12 @@ impl TryFrom<&Vec<Attribute>> for Attrs {
                                 Ok(())
                             })?;
                         }
+                        Meta::List(_) if meta.path().is_ident("skip_derive") => {
+                            parse_meta_list(meta, |meta| {
+                                opts.derives.remove(meta.path());
+                                Ok(())
+                            })?;
+                        }
                         _ => {
                             opts.nested_attrs.push(meta.into_token_stream());
                         }
