@@ -2,7 +2,7 @@ use std::num::NonZeroUsize;
 use std::sync::{Arc, LazyLock, Mutex};
 
 use lru::LruCache;
-pub use pgls_lexer::convert_to_positional_params;
+pub use pgls_lexer::{convert_to_positional_params, convert_to_positional_params_with_metadata};
 use pgls_query_ext::diagnostics::*;
 use pgls_text_size::TextRange;
 use regex::Regex;
@@ -115,7 +115,7 @@ mod tests {
 
         assert_eq!(
             result,
-            "grant usage on schema public, app_public, app_hidden to a       ;"
+            "grant usage on schema public, app_public, app_hidden to db_role ;"
         );
 
         let store = PgQueryStore::new();
@@ -123,6 +123,40 @@ mod tests {
         let res = store.get_or_cache_ast(&StatementId::new(input));
 
         assert!(res.is_ok());
+    }
+
+    #[test]
+    fn parses_named_schema_qualifiers() {
+        let cases = [
+            r#"
+SELECT
+    customers.id
+FROM staging.customers
+CROSS JOIN :raw_data.migration_infos;
+"#,
+            "SELECT * FROM @schema.items;",
+            "SELECT * FROM $schema.items;",
+            r#"SELECT * FROM :"schema".items;"#,
+            "SELECT * FROM :table;",
+        ];
+
+        let store = PgQueryStore::new();
+        for input in cases {
+            let result = store.get_or_cache_ast(&StatementId::new(input));
+            assert!(result.is_ok(), "failed to parse {input:?}: {result:?}");
+        }
+    }
+
+    #[test]
+    fn preserves_array_slice_syntax_when_normalizing_parameters() {
+        let input = "SELECT array_to_string(arr[3:array_upper(arr, 1)], ',') FROM t;";
+        let normalized = convert_to_positional_params(input);
+
+        assert_eq!(normalized, input);
+
+        let store = PgQueryStore::new();
+        let result = store.get_or_cache_ast(&StatementId::new(input));
+        assert!(result.is_ok(), "failed to parse {input:?}: {result:?}");
     }
 
     #[test]

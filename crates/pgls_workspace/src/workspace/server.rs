@@ -17,7 +17,7 @@ use document::{ExecuteStatementMapper, TypecheckDiagnosticsMapper};
 #[cfg(feature = "db")]
 use futures::{StreamExt, TryStreamExt, stream};
 #[cfg(feature = "db")]
-use pg_query::convert_to_positional_params;
+use pg_query::convert_to_positional_params_with_metadata;
 use pgls_analyse::AnalysisFilter;
 use pgls_analyser::{Analyser, AnalyserConfig, AnalyserParams, LinterOptions};
 
@@ -610,49 +610,63 @@ impl Workspace for WorkspaceServer {
                                     if let Some(ast) = ast {
                                         // Type checking
                                         if typecheck_enabled {
-                                            let typecheck_result =
-                                                pgls_typecheck::check_sql(TypecheckParams {
-                                                    conn: &pool,
-                                                    sql: convert_to_positional_params(id.content())
-                                                        .as_str(),
-                                                    ast: &ast,
-                                                    tree: &cst,
-                                                    schema_cache: schema_cache.as_ref(),
-                                                    search_path_patterns,
-                                                    identifiers: fn_sig
-                                                        .map(|s| {
-                                                            s.args
-                                                                .iter()
-                                                                .map(|a| TypedIdentifier {
-                                                                    path: s.name.clone(),
-                                                                    name: a.name.clone(),
-                                                                    type_: IdentifierType {
-                                                                        schema: a.type_.schema.clone(),
-                                                                        name: a.type_.name.clone(),
-                                                                        is_array: a.type_.is_array,
-                                                                    },
-                                                                })
-                                                                .collect::<Vec<_>>()
-                                                        })
-                                                        .unwrap_or_default(),
-                                                })
-                                                .await;
+                                            let conversion =
+                                                convert_to_positional_params_with_metadata(
+                                                    id.content(),
+                                                );
 
-                                            match typecheck_result {
-                                                Ok(Some(diag)) => {
-                                                    let r = diag
-                                                        .location()
-                                                        .span
-                                                        .map(|span| span + range.start());
-                                                    diagnostics.push(
-                                                        diag.with_file_path(
-                                                            path.as_path().display().to_string(),
-                                                        )
-                                                        .with_file_span(r.unwrap_or(range)),
-                                                    );
+                                            if !conversion.has_identifier_parameters {
+                                                let typecheck_result =
+                                                    pgls_typecheck::check_sql(TypecheckParams {
+                                                        conn: &pool,
+                                                        sql: conversion.sql.as_str(),
+                                                        ast: &ast,
+                                                        tree: &cst,
+                                                        schema_cache: schema_cache.as_ref(),
+                                                        search_path_patterns,
+                                                        identifiers: fn_sig
+                                                            .map(|s| {
+                                                                s.args
+                                                                    .iter()
+                                                                    .map(|a| TypedIdentifier {
+                                                                        path: s.name.clone(),
+                                                                        name: a.name.clone(),
+                                                                        type_: IdentifierType {
+                                                                            schema: a
+                                                                                .type_
+                                                                                .schema
+                                                                                .clone(),
+                                                                            name: a
+                                                                                .type_
+                                                                                .name
+                                                                                .clone(),
+                                                                            is_array: a
+                                                                                .type_
+                                                                                .is_array,
+                                                                        },
+                                                                    })
+                                                                    .collect::<Vec<_>>()
+                                                            })
+                                                            .unwrap_or_default(),
+                                                    })
+                                                    .await;
+
+                                                match typecheck_result {
+                                                    Ok(Some(diag)) => {
+                                                        let r = diag
+                                                            .location()
+                                                            .span
+                                                            .map(|span| span + range.start());
+                                                        diagnostics.push(
+                                                            diag.with_file_path(
+                                                                path.as_path().display().to_string(),
+                                                            )
+                                                            .with_file_span(r.unwrap_or(range)),
+                                                        );
+                                                    }
+                                                    Ok(None) => {}
+                                                    Err(err) => return Err(err),
                                                 }
-                                                Ok(None) => {}
-                                                Err(err) => return Err(err),
                                             }
                                         }
 
@@ -966,7 +980,11 @@ impl Workspace for WorkspaceServer {
                     continue;
                 };
 
-                formatted_sql_fn_bodies.insert(parent_id, result.formatted);
+                let Some(formatted) = restore_named_parameters(text, &result.formatted, ast) else {
+                    continue;
+                };
+
+                formatted_sql_fn_bodies.insert(parent_id, formatted);
             }
         }
 
@@ -1007,14 +1025,33 @@ impl Workspace for WorkspaceServer {
 
                     match pgls_pretty_print::format_statement(&ast, &text, &config) {
                         Ok(result) => {
-                            if text != result.formatted {
-                                statements.push(StatementFormatResult {
-                                    original: text.clone(),
-                                    formatted: result.formatted.clone(),
-                                    range: stmt_range,
-                                });
+                            match restore_named_parameters(&text, &result.formatted, &ast) {
+                                Some(formatted) => {
+                                    if text != formatted {
+                                        statements.push(StatementFormatResult {
+                                            original: text.clone(),
+                                            formatted: formatted.clone(),
+                                            range: stmt_range,
+                                        });
+                                    }
+                                    formatted_output.push_str(&formatted);
+                                }
+                                None => {
+                                    diagnostics.push(SDiagnostic::new(
+                                        pgls_diagnostics::Error::from(
+                                            WorkspaceError::format_error(
+                                                "Named parameters could not be restored after \
+                                                 formatting, the statement was left untouched"
+                                                    .to_string(),
+                                            ),
+                                        )
+                                        .with_file_path(&path_str)
+                                        .with_file_span(stmt_range),
+                                    ));
+
+                                    formatted_output.push_str(&text);
+                                }
                             }
-                            formatted_output.push_str(&result.formatted);
                         }
                         Err(err) => {
                             diagnostics.push(SDiagnostic::new(
@@ -1174,6 +1211,69 @@ impl Workspace for WorkspaceServer {
 /// if it is a symlink that resolves to a directory.
 fn is_dir(path: &Path) -> bool {
     path.is_dir() || (path.is_symlink() && fs::read_link(path).is_ok_and(|path| path.is_dir()))
+}
+
+/// Put psql named parameters back where the formatter printed their placeholders.
+///
+/// The parser only ever sees placeholders, so the printed statement carries `$1` or a bare
+/// identifier instead of `:'agen_code'` or `:raw_data`. Substitution happens on the token stream
+/// so that a `$1` inside a string literal is left alone, and the result is proven by converting it
+/// back and comparing the normalized ASTs: a statement that does not survive that round trip is
+/// reported as unrestorable and kept as it was written.
+fn restore_named_parameters(
+    original: &str,
+    formatted: &str,
+    original_ast: &pgls_query::NodeEnum,
+) -> Option<String> {
+    use pgls_lexer::{SyntaxKind, lex};
+
+    let conversion = pgls_lexer::convert_to_positional_params_with_metadata(original);
+
+    if conversion.identifier_replacements.is_empty() && conversion.value_replacements.is_empty() {
+        return Some(formatted.to_string());
+    }
+
+    if !conversion.restorable {
+        return None;
+    }
+
+    let lexed = lex(formatted);
+    let mut restored = String::with_capacity(formatted.len());
+
+    for (idx, kind) in lexed.tokens().enumerate() {
+        if kind == SyntaxKind::EOF {
+            break;
+        }
+
+        let text = lexed.text(idx);
+
+        let replacement = match kind {
+            SyntaxKind::IDENT => conversion.identifier_replacements.get(text),
+            SyntaxKind::POSITIONAL_PARAM => text
+                .trim_start_matches('$')
+                .parse::<usize>()
+                .ok()
+                .and_then(|index| conversion.value_replacements.get(&index)),
+            _ => None,
+        };
+
+        match replacement {
+            Some(source_text) => restored.push_str(source_text),
+            None => restored.push_str(text),
+        }
+    }
+
+    let reparsed = pgls_query::parse(&pgls_lexer::convert_to_positional_params(&restored)).ok()?;
+    let mut restored_ast = reparsed.into_root()?;
+    let mut expected_ast = original_ast.clone();
+    pgls_pretty_print::normalize_ast(&mut restored_ast);
+    pgls_pretty_print::normalize_ast(&mut expected_ast);
+
+    if restored_ast == expected_ast {
+        Some(restored)
+    } else {
+        None
+    }
 }
 
 #[cfg(all(test, feature = "db"))]

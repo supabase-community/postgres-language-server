@@ -266,6 +266,90 @@ async fn test_syntax_error(test_db: PgPool) {
 }
 
 #[tokio::test]
+async fn named_parameter_normalization_preserves_syntax_diagnostic_offsets() {
+    let workspace = get_test_workspace(None).expect("Unable to create test workspace");
+    let path = PgLSPath::new("named-parameter.sql");
+    let content = "SELECT * FROM :very_long_schema.existing_table AS t seect 1;";
+
+    workspace
+        .open_file(OpenFileParams {
+            path: path.clone(),
+            content: content.into(),
+            version: 1,
+        })
+        .expect("Unable to open test file");
+
+    let diagnostics = workspace
+        .pull_file_diagnostics(crate::workspace::PullFileDiagnosticsParams {
+            path,
+            categories: RuleCategories::all(),
+            max_diagnostics: 100,
+            only: vec![],
+            skip: vec![],
+        })
+        .expect("Unable to pull diagnostics")
+        .diagnostics;
+
+    let syntax_diagnostic = diagnostics
+        .iter()
+        .find(|diagnostic| {
+            diagnostic
+                .category()
+                .is_some_and(|category| category.name() == "syntax")
+        })
+        .expect("Expected one syntax diagnostic");
+
+    let expected_span = TextRange::new(0.into(), u32::try_from(content.len()).unwrap().into());
+    assert_eq!(syntax_diagnostic.location().span, Some(expected_span));
+
+    let qualifier_start = content
+        .find(":very_long_schema")
+        .expect("query contains the named qualifier");
+    assert_ne!(
+        syntax_diagnostic.location().span,
+        Some(TextRange::new(
+            u32::try_from(qualifier_start).unwrap().into(),
+            u32::try_from(qualifier_start + ":very_long_schema".len())
+                .unwrap()
+                .into()
+        ))
+    );
+}
+
+#[tokio::test]
+async fn format_preserves_named_parameters() {
+    let mut conf = PartialConfiguration::init();
+    conf.merge_with(PartialConfiguration {
+        format: Some(PartialFormatConfiguration {
+            enabled: Some(true),
+            ..Default::default()
+        }),
+        ..Default::default()
+    });
+
+    let workspace = get_test_workspace(Some(conf)).expect("Unable to create test workspace");
+    let path = PgLSPath::new("named-parameter-format.sql");
+    let content = "SELECT x FROM :raw_data.t WHERE t.a = :'agen_code' AND t.b = :var_date;";
+
+    workspace
+        .open_file(OpenFileParams {
+            path: path.clone(),
+            content: content.into(),
+            version: 1,
+        })
+        .expect("Unable to open test file");
+
+    let result = workspace
+        .pull_file_formatting(PullFileFormattingParams { path, range: None })
+        .expect("Unable to format file");
+
+    assert!(result.formatted.contains(":raw_data.t"));
+    assert!(result.formatted.contains(":'agen_code'"));
+    assert!(result.formatted.contains(":var_date"));
+    assert!(!result.formatted.contains("$1"));
+}
+
+#[tokio::test]
 async fn correctly_ignores_files() {
     let mut conf = PartialConfiguration::init();
     conf.merge_with(PartialConfiguration {
@@ -753,6 +837,86 @@ async fn test_create_as_typecheck_diagnostic_offsets(test_db: PgPool) {
     assert_eq!(
         typecheck_diagnostics[0].location().span,
         Some(expected_span)
+    );
+}
+
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn named_identifier_params_skip_only_affected_typecheck(test_db: PgPool) {
+    let connect_options = test_db.connect_options();
+    let host = connect_options.get_host().to_string();
+    let port = connect_options.get_port();
+    let database = connect_options
+        .get_database()
+        .expect("test database must have a name")
+        .to_string();
+
+    let mut conf = PartialConfiguration::init();
+    conf.merge_with(PartialConfiguration {
+        db: Some(PartialDatabaseConfiguration {
+            host: Some(host),
+            port: Some(port),
+            database: Some(database),
+            ..Default::default()
+        }),
+        ..Default::default()
+    });
+
+    test_db
+        .execute("CREATE TABLE named_parameter_typecheck_users (id integer PRIMARY KEY);")
+        .await
+        .expect("test table setup must succeed");
+
+    let workspace = get_test_workspace(Some(conf)).expect("Unable to create test workspace");
+    let path = PgLSPath::new("named-identifier-parameter.sql");
+    let content = r#"
+SELECT * FROM :raw_data.documents;
+SELECT missing_column FROM named_parameter_typecheck_users;
+"#;
+
+    workspace
+        .open_file(OpenFileParams {
+            path: path.clone(),
+            content: content.into(),
+            version: 1,
+        })
+        .expect("Unable to open test file");
+
+    let diagnostics = workspace
+        .pull_file_diagnostics(crate::workspace::PullFileDiagnosticsParams {
+            path,
+            categories: RuleCategories::all(),
+            max_diagnostics: 100,
+            only: vec![],
+            skip: vec![],
+        })
+        .expect("Unable to pull diagnostics")
+        .diagnostics;
+
+    let typecheck_diagnostics = diagnostics
+        .iter()
+        .filter(|diagnostic| {
+            diagnostic
+                .category()
+                .is_some_and(|category| category.name() == "typecheck")
+        })
+        .collect::<Vec<_>>();
+
+    assert_eq!(
+        typecheck_diagnostics.len(),
+        1,
+        "only the second statement should produce a typecheck diagnostic: {diagnostics:#?}"
+    );
+
+    let missing_column_start = content
+        .find("missing_column")
+        .expect("test SQL contains the invalid column");
+    let missing_column_end = missing_column_start + "missing_column".len();
+    assert_eq!(
+        typecheck_diagnostics[0].location().span,
+        Some(TextRange::new(
+            u32::try_from(missing_column_start).unwrap().into(),
+            u32::try_from(missing_column_end).unwrap().into(),
+        ))
     );
 }
 
