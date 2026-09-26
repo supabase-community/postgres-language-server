@@ -1,4 +1,5 @@
 use pgls_pretty_print::{
+    FormatConfig,
     emitter::EventEmitter,
     nodes::emit_node_enum,
     normalize::normalize_ast,
@@ -27,7 +28,7 @@ fn create_schema_with_elements_emits_valid_sql() {
     let parsed = pgls_query::parse(content).expect("Failed to parse SQL");
     let mut ast = parsed.into_root().expect("No root node found");
 
-    let mut emitter = EventEmitter::new();
+    let mut emitter = EventEmitter::new(FormatConfig::default());
     emit_node_enum(&ast, &mut emitter);
 
     let mut output = String::new();
