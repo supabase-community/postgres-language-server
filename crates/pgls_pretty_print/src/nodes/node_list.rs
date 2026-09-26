@@ -90,6 +90,14 @@ pub(super) fn emit_comma_separated_list_with_layout_break<F>(
     for (index, node) in nodes.iter().enumerate() {
         if index > 0 {
             if leading {
+                if let Some(location) = node
+                    .node
+                    .as_ref()
+                    .and_then(|node| crate::codegen::node_location::node_location(&node.to_ref()))
+                {
+                    e.take_own_line_leading_comments_at(location);
+                }
+
                 super::emit_layout_break(e);
                 e.token(TokenKind::COMMA);
                 e.space();
