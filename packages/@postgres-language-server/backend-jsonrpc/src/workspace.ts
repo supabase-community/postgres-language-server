@@ -440,6 +440,10 @@ export interface PartialFormatConfiguration {
    */
   castStyle?: CastStyle;
   /**
+   * Where the body of a clause starts: "break" for a new line, "compact" to keep the first element on the keyword line. Default: "break".
+   */
+  clauseBodyStyle?: ClauseBodyStyle;
+  /**
    * Where a comma sits when a list breaks: "trailing" or "leading". Default: "trailing".
    */
   commaStyle?: CommaStyle;
@@ -467,6 +471,10 @@ export interface PartialFormatConfiguration {
    * Indentation style: "spaces" or "tabs". Default: "spaces".
    */
   indentStyle?: IndentStyle;
+  /**
+   * If `true`, the terminating semicolon goes on its own line when the statement spans several lines. Default: `false`.
+   */
+  isolateSemicolon?: boolean;
   /**
    * Keyword casing: "upper" or "lower". Default: "lower".
    */
@@ -644,6 +652,10 @@ If we can't find the configuration, it will attempt to use the current working d
  * How an explicit cast is spelled.
  */
 export type CastStyle = "cast" | "operator";
+/**
+ * Where the body of a clause starts.
+ */
+export type ClauseBodyStyle = "break" | "compact";
 /**
  * Where a comma sits when a list breaks across lines.
  */

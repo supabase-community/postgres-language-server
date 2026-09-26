@@ -1,0 +1,14 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/single/compact_from_clause.sql
+---
+select
+	staging.buildings.id,
+	staging.addresses.city
+from staging.buildings
+	left outer join
+		staging.addresses
+	on staging.addresses.id =
+		staging.buildings.address_fk
+where staging.buildings.construction_year >
+	1950;

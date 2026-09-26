@@ -196,6 +196,37 @@ impl From<CastStyle> for pgls_pretty_print::CastStyle {
     }
 }
 
+/// Where the body of a clause starts.
+#[derive(Clone, Copy, Debug, Default, Deserialize, Eq, Merge, PartialEq, Serialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
+#[serde(rename_all = "lowercase")]
+pub enum ClauseBodyStyle {
+    #[default]
+    Break,
+    Compact,
+}
+
+impl FromStr for ClauseBodyStyle {
+    type Err = &'static str;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "break" => Ok(Self::Break),
+            "compact" => Ok(Self::Compact),
+            _ => Err("Value not supported for clause body style"),
+        }
+    }
+}
+
+impl From<ClauseBodyStyle> for pgls_pretty_print::ClauseBodyStyle {
+    fn from(style: ClauseBodyStyle) -> Self {
+        match style {
+            ClauseBodyStyle::Break => Self::Break,
+            ClauseBodyStyle::Compact => Self::Compact,
+        }
+    }
+}
+
 /// The configuration for SQL formatting.
 #[derive(Clone, Debug, Deserialize, Eq, Partial, PartialEq, Serialize)]
 #[partial(derive(Bpaf, Clone, Eq, PartialEq, Merge))]
@@ -238,6 +269,14 @@ pub struct FormatConfiguration {
     /// Default: "cast".
     #[partial(bpaf(long("cast-style")))]
     pub cast_style: CastStyle,
+    /// Where the body of a clause starts: "break" for a new line, "compact" to keep the first
+    /// element on the keyword line. Default: "break".
+    #[partial(bpaf(long("clause-body-style")))]
+    pub clause_body_style: ClauseBodyStyle,
+    /// If `true`, the terminating semicolon goes on its own line when the statement spans several
+    /// lines. Default: `false`.
+    #[partial(bpaf(long("isolate-semicolon")))]
+    pub isolate_semicolon: bool,
     /// If `true`, skip formatting of SQL function bodies (keep them verbatim). Default: `false`.
     #[partial(bpaf(long("skip-fn-bodies")))]
     pub skip_fn_bodies: bool,
@@ -263,6 +302,8 @@ impl Default for FormatConfiguration {
             logical_operator_placement: LogicalOperatorPlacement::default(),
             layout: Layout::default(),
             cast_style: CastStyle::default(),
+            clause_body_style: ClauseBodyStyle::default(),
+            isolate_semicolon: false,
             skip_fn_bodies: false,
             ignore: Default::default(),
             include: Default::default(),

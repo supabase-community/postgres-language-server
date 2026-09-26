@@ -3,8 +3,8 @@ use pgls_query::{
     protobuf::{LimitOption, SelectStmt, SetOperation},
 };
 
-use crate::TokenKind;
 use crate::emitter::{EventEmitter, GroupKind, LineType};
+use crate::{ClauseBodyStyle, TokenKind};
 
 use super::{
     node_list::{emit_comma_separated_list, emit_comma_separated_list_with_layout_break},
@@ -206,7 +206,13 @@ fn emit_select_stmt_impl(e: &mut EventEmitter, n: &SelectStmt, with_semicolon: b
         if !n.from_clause.is_empty() {
             super::emit_layout_break(e);
             e.token(TokenKind::FROM_KW);
-            e.line(LineType::SoftOrSpace);
+
+            // Compact keeps the first relation on the FROM line; the joins that follow still
+            // break onto their own indented lines.
+            match e.config().clause_body_style {
+                ClauseBodyStyle::Compact => e.space(),
+                ClauseBodyStyle::Break => e.line(LineType::SoftOrSpace),
+            }
 
             e.indent_start();
 
@@ -249,7 +255,10 @@ fn emit_select_stmt_impl(e: &mut EventEmitter, n: &SelectStmt, with_semicolon: b
         if !n.window_clause.is_empty() {
             super::emit_layout_break(e);
             e.token(TokenKind::WINDOW_KW);
-            e.line(LineType::SoftOrSpace);
+            match e.config().clause_body_style {
+                ClauseBodyStyle::Compact => e.space(),
+                ClauseBodyStyle::Break => e.line(LineType::SoftOrSpace),
+            }
             e.indent_start();
             for (idx, window) in n.window_clause.iter().enumerate() {
                 if idx > 0 {

@@ -35,6 +35,16 @@ pub enum CastStyle {
     Operator,
 }
 
+/// Where the body of a clause starts.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub enum ClauseBodyStyle {
+    /// The body starts on the line after the keyword.
+    #[default]
+    Break,
+    /// The first element of the body stays on the keyword line: `FROM plan`.
+    Compact,
+}
+
 /// Error type for formatting operations.
 #[derive(Debug, Error)]
 pub enum FormatError {
@@ -109,6 +119,11 @@ pub struct FormatConfig {
     pub layout: Layout,
     /// How an explicit cast is spelled. Default: Cast.
     pub cast_style: CastStyle,
+    /// Where the body of a clause starts. Default: Break.
+    pub clause_body_style: ClauseBodyStyle,
+    /// Put the terminating semicolon on its own line when the statement spans several lines.
+    /// Default: false.
+    pub isolate_semicolon: bool,
 }
 
 impl Default for FormatConfig {
@@ -124,6 +139,8 @@ impl Default for FormatConfig {
             logical_operator_placement: LogicalOperatorPlacement::default(),
             layout: Layout::default(),
             cast_style: CastStyle::default(),
+            clause_body_style: ClauseBodyStyle::default(),
+            isolate_semicolon: false,
         }
     }
 }
@@ -141,6 +158,8 @@ impl From<FormatConfig> for RenderConfig {
             logical_operator_placement: _,
             layout: _,
             cast_style: _,
+            clause_body_style: _,
+            isolate_semicolon,
         } = config;
 
         Self {
@@ -150,6 +169,7 @@ impl From<FormatConfig> for RenderConfig {
             keyword_case,
             constant_case,
             type_case,
+            isolate_semicolon,
         }
     }
 }
@@ -260,6 +280,7 @@ fn format_statement_once(
         keyword_case: config.keyword_case.clone(),
         constant_case: config.constant_case.clone(),
         type_case: config.type_case.clone(),
+        isolate_semicolon: config.isolate_semicolon,
     };
 
     let mut output = String::new();
