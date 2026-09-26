@@ -24,13 +24,17 @@ impl ScopeTracker {
     }
 
     pub fn register<'a>(&mut self, node: tree_sitter::Node<'a>, position: usize) {
-        if SCOPE_BOUNDARIES.contains(&node.kind()) {
+        // The `program` root node is never registered directly, so the first node
+        // we see is one of its children. Usually that's a scope boundary (a
+        // statement, block, ...), but it can also be a stray token such as a
+        // trailing `;` – in which case we still need a base scope for it.
+        if SCOPE_BOUNDARIES.contains(&node.kind()) || self.scopes.is_empty() {
             self.add_new_scope(node);
         }
 
         self.scopes
             .last_mut()
-            .unwrap_or_else(|| panic!("No top-level grammar-rule found. Please create an issue with the entire Postgres file, noting cursor/hover position."))
+            .expect("a scope was just ensured to exist")
             .ancestors
             .register(node, position);
     }
@@ -163,6 +167,11 @@ mod tests {
     #[test]
     fn scope_boundary_comment() {
         assert_no_panic_for_all_positions("-- a comment\nSELECT 1;");
+    }
+
+    #[test]
+    fn plpgsql_function_with_leading_space() {
+        assert_no_panic_for_all_positions("BEGIN END; ");
     }
 
     #[test]
