@@ -1,7 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/tidscan.sql
-snapshot_kind: text
 ---
 create table tidscan (id int);
 
@@ -59,8 +58,8 @@ select
 from
   tidscan
 where
-  id = 3 and ctid in ('(0,2)', '(0,3)') or
-  ctid = '(0,1)' and id = 1;
+  (id = 3 and ctid in ('(0,2)', '(0,3)')) or
+  (ctid = '(0,1)' and id = 1);
 
 select
   ctid,
@@ -68,8 +67,8 @@ select
 from
   tidscan
 where
-  id = 3 and ctid in ('(0,2)', '(0,3)') or
-  ctid = '(0,1)' and id = 1;
+  (id = 3 and ctid in ('(0,2)', '(0,3)')) or
+  (ctid = '(0,1)' and id = 1);
 
 set enable_hashjoin = off;
 

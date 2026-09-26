@@ -1,7 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/join.sql
-snapshot_kind: text
 ---
 create table j1_tbl (
   i int,
@@ -1808,8 +1807,10 @@ from
   on a.unique2 = b.tenthous
 where
   a.unique1 = 42 and
-  (b.unique2 is null and a.ten = 2 or
-  b.hundred = 3);
+  (
+    (b.unique2 is null and a.ten = 2) or
+    b.hundred = 3
+  );
 
 prepare foo
 (boolean)

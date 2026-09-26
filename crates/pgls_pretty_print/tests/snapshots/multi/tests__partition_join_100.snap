@@ -1,7 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/partition_join.sql
-snapshot_kind: text
 ---
 set enable_partitionwise_join = 'true';
 
@@ -2048,7 +2047,9 @@ where
       prtx2
     where
       prtx2.a = prtx1.a and
-      (prtx2.b = prtx1.b + 1 or prtx2.c = 99)
+      (
+        prtx2.b = prtx1.b + 1 or prtx2.c = 99
+      )
   ) and
   a < 20 and
   c = 91;
@@ -2066,7 +2067,9 @@ where
       prtx2
     where
       prtx2.a = prtx1.a and
-      (prtx2.b = prtx1.b + 1 or prtx2.c = 99)
+      (
+        prtx2.b = prtx1.b + 1 or prtx2.c = 99
+      )
   ) and
   a < 20 and
   c = 91;
@@ -4501,10 +4504,14 @@ from
     beta as t2
   on t1.a = t2.a and t1.c = t2.c
 where
-  (t1.b >= 100 and t1.b < 110 or
-  t1.b >= 200 and t1.b < 210) and
-  (t2.b >= 100 and t2.b < 110 or
-  t2.b >= 200 and t2.b < 210) and
+  (
+    (t1.b >= 100 and t1.b < 110) or
+    (t1.b >= 200 and t1.b < 210)
+  ) and
+  (
+    (t2.b >= 100 and t2.b < 110) or
+    (t2.b >= 200 and t2.b < 210)
+  ) and
   t1.c in ('0004', '0009')
 order by t1.a,
   t1.b,
@@ -4519,10 +4526,14 @@ from
     beta as t2
   on t1.a = t2.a and t1.c = t2.c
 where
-  (t1.b >= 100 and t1.b < 110 or
-  t1.b >= 200 and t1.b < 210) and
-  (t2.b >= 100 and t2.b < 110 or
-  t2.b >= 200 and t2.b < 210) and
+  (
+    (t1.b >= 100 and t1.b < 110) or
+    (t1.b >= 200 and t1.b < 210)
+  ) and
+  (
+    (t2.b >= 100 and t2.b < 110) or
+    (t2.b >= 200 and t2.b < 210)
+  ) and
   t1.c in ('0004', '0009')
 order by t1.a,
   t1.b,
@@ -4537,10 +4548,14 @@ from
     beta as t2
   on t1.a = t2.a and t1.b = t2.b and t1.c = t2.c
 where
-  (t1.b >= 100 and t1.b < 110 or
-  t1.b >= 200 and t1.b < 210) and
-  (t2.b >= 100 and t2.b < 110 or
-  t2.b >= 200 and t2.b < 210) and
+  (
+    (t1.b >= 100 and t1.b < 110) or
+    (t1.b >= 200 and t1.b < 210)
+  ) and
+  (
+    (t2.b >= 100 and t2.b < 110) or
+    (t2.b >= 200 and t2.b < 210)
+  ) and
   t1.c in ('0004', '0009')
 order by t1.a,
   t1.b;
@@ -4554,10 +4569,14 @@ from
     beta as t2
   on t1.a = t2.a and t1.b = t2.b and t1.c = t2.c
 where
-  (t1.b >= 100 and t1.b < 110 or
-  t1.b >= 200 and t1.b < 210) and
-  (t2.b >= 100 and t2.b < 110 or
-  t2.b >= 200 and t2.b < 210) and
+  (
+    (t1.b >= 100 and t1.b < 110) or
+    (t1.b >= 200 and t1.b < 210)
+  ) and
+  (
+    (t2.b >= 100 and t2.b < 110) or
+    (t2.b >= 200 and t2.b < 210)
+  ) and
   t1.c in ('0004', '0009')
 order by t1.a,
   t1.b;

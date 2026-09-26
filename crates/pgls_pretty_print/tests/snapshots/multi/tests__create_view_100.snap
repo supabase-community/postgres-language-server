@@ -1530,7 +1530,7 @@ as select
   x + (y + z) as c6,
   x + (y # z) as c7,
   x > y and (y > z or x > z) as c8,
-  x > y or y > z and not x > z as c9,
+  x > y or (y > z and not x > z) as c9,
   (x, y) <> all (values (1, 2), (3, 4)) as c10,
   (x, y) <= any (values (1, 2), (3, 4)) as c11
 from

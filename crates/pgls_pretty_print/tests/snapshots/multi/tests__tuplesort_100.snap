@@ -1,7 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/tuplesort.sql
-snapshot_kind: text
 ---
 set max_parallel_maintenance_workers = 0;
 
@@ -63,7 +62,9 @@ select
 from
   abbrev_abort_uuids
 where
-  (id < 10 or id > 19990) and
+  (
+    id < 10 or id > 19990
+  ) and
   id % 3 = 0 and
   abort_increasing is not null;
 

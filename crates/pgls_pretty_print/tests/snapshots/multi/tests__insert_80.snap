@@ -574,10 +574,12 @@ from
   pg_attribute
 where
   attname = 'a' and
-  (attrelid = cast('mlparted' as regclass) or
-  attrelid = cast('mlparted1' as regclass) or
-  attrelid =
-  cast('mlparted11' as regclass))
+  (
+    attrelid = cast('mlparted' as regclass) or
+    attrelid = cast('mlparted1' as regclass) or
+    attrelid =
+    cast('mlparted11' as regclass)
+  )
 order by cast(cast(attrelid as regclass) as text);
 
 alter table mlparted1

@@ -254,8 +254,9 @@ impl<W: Write> Renderer<W> {
                     buffer.push(' ');
                 }
                 LayoutEvent::Comment { text, line_comment } => {
-                    if *line_comment {
-                        // Collapsing would push the code that follows behind the `--`.
+                    if *line_comment || text.contains('\n') {
+                        // Collapsing would push code behind a `--` comment or flatten a
+                        // multi-line block comment into the surrounding expression.
                         has_hard_breaks = true;
                         break;
                     }
@@ -349,7 +350,12 @@ impl<W: Write> Renderer<W> {
         }
 
         write!(self.writer, "{text}")?;
-        self.current_line_length += text.len();
+        if let Some((_, last_line)) = text.rsplit_once('\n') {
+            self.current_line_length = last_line.len();
+            self.at_line_start = last_line.is_empty();
+        } else {
+            self.current_line_length += text.len();
+        }
         Ok(())
     }
 

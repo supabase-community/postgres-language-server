@@ -977,10 +977,12 @@ from
   tenk1
 where
   thousand = 42 and
-  (tenthous = 1 or
-  tenthous = 3 or
-  tenthous = 42 or
-  tenthous = 0);
+  (
+    tenthous = 1 or
+    tenthous = 3 or
+    tenthous = 42 or
+    tenthous = 0
+  );
 
 select
   *
@@ -988,10 +990,12 @@ from
   tenk1
 where
   thousand = 42 and
-  (tenthous = 1 or
-  tenthous = 3 or
-  tenthous = 42 or
-  tenthous = 0);
+  (
+    tenthous = 1 or
+    tenthous = 3 or
+    tenthous = 42 or
+    tenthous = 0
+  );
 
 select
   *
@@ -999,9 +1003,11 @@ from
   tenk1
 where
   thousand = 42 and
-  (tenthous = 1 or
-  tenthous = (select 1 + 2) or
-  tenthous = 42);
+  (
+    tenthous = 1 or
+    tenthous = (select 1 + 2) or
+    tenthous = 42
+  );
 
 select
   *
@@ -1009,9 +1015,11 @@ from
   tenk1
 where
   thousand = 42 and
-  (tenthous = 1 or
-  tenthous = (select 1 + 2) or
-  tenthous = 42);
+  (
+    tenthous = 1 or
+    tenthous = (select 1 + 2) or
+    tenthous = 42
+  );
 
 select
   *
@@ -1019,10 +1027,12 @@ from
   tenk1
 where
   thousand = 42 and
-  (tenthous = 1 or
-  tenthous = 3 or
-  tenthous = 42 or
-  tenthous is null);
+  (
+    tenthous = 1 or
+    tenthous = 3 or
+    tenthous = 42 or
+    tenthous is null
+  );
 
 select
   *
@@ -1030,9 +1040,11 @@ from
   tenk1
 where
   thousand = 42 and
-  (tenthous = cast(1 as smallint) or
-  cast(tenthous as smallint) = cast(3 as bigint) or
-  tenthous = cast(42 as bigint));
+  (
+    tenthous = cast(1 as smallint) or
+    cast(tenthous as smallint) = cast(3 as bigint) or
+    tenthous = cast(42 as bigint)
+  );
 
 select
   *
@@ -1040,9 +1052,11 @@ from
   tenk1
 where
   thousand = 42 and
-  (tenthous = cast(1 as smallint) or
-  cast(tenthous as smallint) = cast(3 as bigint) or
-  cast(tenthous as smallint) = cast(42 as bigint));
+  (
+    tenthous = cast(1 as smallint) or
+    cast(tenthous as smallint) = cast(3 as bigint) or
+    cast(tenthous as smallint) = cast(42 as bigint)
+  );
 
 select
   *
@@ -1050,9 +1064,11 @@ from
   tenk1
 where
   thousand = 42 and
-  (tenthous = cast(1 as smallint) or
-  tenthous = cast(3 as bigint) or
-  tenthous = cast(42 as bigint));
+  (
+    tenthous = cast(1 as smallint) or
+    tenthous = cast(3 as bigint) or
+    tenthous = cast(42 as bigint)
+  );
 
 select COUNT(*) from tenk1 where hundred = 42 and (thousand = 42 or thousand = 99);
 
@@ -1068,9 +1084,11 @@ from
   tenk1
 where
   thousand = 42 and
-  (tenthous = cast(1 as numeric) or
-  tenthous = cast(3 as int) or
-  tenthous = cast(42 as numeric));
+  (
+    tenthous = cast(1 as numeric) or
+    tenthous = cast(3 as int) or
+    tenthous = cast(42 as numeric)
+  );
 
 select
   *
@@ -1125,10 +1143,12 @@ from
   tenk1
 where
   hundred = 42 and
-  (thousand < 42 or
-  thousand < 99 or
-  43 > thousand or
-  42 > thousand);
+  (
+    thousand < 42 or
+    thousand < 99 or
+    43 > thousand or
+    42 > thousand
+  );
 
 select
   COUNT(*)
@@ -1136,22 +1156,49 @@ from
   tenk1
 where
   hundred = 42 and
-  (thousand < 42 or
-  thousand < 99 or
-  43 > thousand or
-  42 > thousand);
-
-select COUNT(*) from tenk1 where thousand = 42 and (tenthous = 1 or tenthous = 3) or thousand = 41;
-
-select COUNT(*) from tenk1 where thousand = 42 and (tenthous = 1 or tenthous = 3) or thousand = 41;
+  (
+    thousand < 42 or
+    thousand < 99 or
+    43 > thousand or
+    42 > thousand
+  );
 
 select
   COUNT(*)
 from
   tenk1
 where
-  hundred = 42 and
-  (thousand = 42 or thousand = 99 or tenthous < 2) or
+  (thousand = 42 and (tenthous = 1 or tenthous = 3)) or
+  thousand = 41;
+
+select
+  COUNT(*)
+from
+  tenk1
+where
+  (thousand = 42 and (tenthous = 1 or tenthous = 3)) or
+  thousand = 41;
+
+select
+  COUNT(*)
+from
+  tenk1
+where
+  (hundred = 42 and
+    (
+      thousand = 42 or thousand = 99 or tenthous < 2
+    )) or
+  thousand = 41;
+
+select
+  COUNT(*)
+from
+  tenk1
+where
+  (hundred = 42 and
+    (
+      thousand = 42 or thousand = 99 or tenthous < 2
+    )) or
   thousand = 41;
 
 select
@@ -1160,8 +1207,11 @@ from
   tenk1
 where
   hundred = 42 and
-  (thousand = 42 or thousand = 99 or tenthous < 2) or
-  thousand = 41;
+  (
+    thousand = 42 or
+    thousand = 41 or
+    (thousand = 99 and tenthous = 2)
+  );
 
 select
   COUNT(*)
@@ -1169,19 +1219,11 @@ from
   tenk1
 where
   hundred = 42 and
-  (thousand = 42 or
-  thousand = 41 or
-  thousand = 99 and tenthous = 2);
-
-select
-  COUNT(*)
-from
-  tenk1
-where
-  hundred = 42 and
-  (thousand = 42 or
-  thousand = 41 or
-  thousand = 99 and tenthous = 2);
+  (
+    thousand = 42 or
+    thousand = 41 or
+    (thousand = 99 and tenthous = 2)
+  );
 
 select
   COUNT(*)
@@ -1190,9 +1232,11 @@ from
   tenk2
 where
   tenk1.hundred = 42 and
-  (tenk2.thousand = 42 or
-  tenk1.thousand = 41 or
-  tenk2.tenthous = 2) and
+  (
+    tenk2.thousand = 42 or
+    tenk1.thousand = 41 or
+    tenk2.tenthous = 2
+  ) and
   tenk2.hundred = tenk1.hundred;
 
 select
@@ -1202,9 +1246,11 @@ from
   tenk2
 where
   tenk1.hundred = 42 and
-  (tenk2.thousand = 42 or
-  tenk2.thousand = 41 or
-  tenk2.tenthous = 2) and
+  (
+    tenk2.thousand = 42 or
+    tenk2.thousand = 41 or
+    tenk2.tenthous = 2
+  ) and
   tenk2.hundred = tenk1.hundred;
 
 select
@@ -1214,9 +1260,11 @@ from
   inner join
     tenk2
   on tenk1.hundred = 42 and
-    (tenk2.thousand = 42 or
-    tenk2.thousand = 41 or
-    tenk2.tenthous = 2) and
+    (
+      tenk2.thousand = 42 or
+      tenk2.thousand = 41 or
+      tenk2.tenthous = 2
+    ) and
     tenk2.hundred = tenk1.hundred;
 
 select
@@ -1226,9 +1274,11 @@ from
   left outer join
     tenk2
   on tenk1.hundred = 42 and
-    (tenk2.thousand = 42 or
-    tenk2.thousand = 41 or
-    tenk2.tenthous = 2) and
+    (
+      tenk2.thousand = 42 or
+      tenk2.thousand = 41 or
+      tenk2.tenthous = 2
+    ) and
     tenk2.hundred = tenk1.hundred;
 
 create table dupindexcols as select unique1 as id, cast(stringu2 as text) as f1 from tenk1;

@@ -117,11 +117,12 @@ impl EventEmitter {
 
         for comment in comments {
             let line_comment = comment.line_comment;
+            let multiline = comment.text.contains('\n');
             if line_comment && self.leading_line_comments_require_break {
                 self.force_current_line_break();
             }
             self.comment(comment.text, line_comment);
-            if line_comment {
+            if line_comment || multiline {
                 self.line(LineType::Hard);
             } else {
                 self.space();
@@ -165,13 +166,14 @@ impl EventEmitter {
 
         for comment in comments {
             let line_comment = comment.line_comment;
+            let multiline = comment.text.contains('\n');
             if comment.own_line {
                 self.force_current_line_break();
             } else {
                 self.space();
             }
             self.comment(comment.text, line_comment);
-            if line_comment {
+            if line_comment || multiline {
                 self.line(LineType::Hard);
             } else {
                 self.space();

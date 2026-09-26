@@ -1,7 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/constraints.sql
-snapshot_kind: text
 ---
 create table default_tbl (
   i int default 100,
@@ -147,9 +146,11 @@ create table sys_col_check_tbl (
   state text,
   is_capital boolean,
   altitude int,
-  check (not (is_capital and
-  cast(cast(tableoid as regclass) as text) =
-  'sys_col_check_tbl'))
+  check (not (
+    is_capital and
+    cast(cast(tableoid as regclass) as text) =
+    'sys_col_check_tbl'
+  ))
 );
 
 insert into sys_col_check_tbl values ('Seattle', 'Washington', false, 100);
@@ -165,8 +166,10 @@ create table sys_col_check_tbl (
   state text,
   is_capital boolean,
   altitude int,
-  check (not (is_capital and
-  cast(ctid as text) = 'sys_col_check_tbl'))
+  check (not (
+    is_capital and
+    cast(ctid as text) = 'sys_col_check_tbl'
+  ))
 );
 
 create table insert_child (

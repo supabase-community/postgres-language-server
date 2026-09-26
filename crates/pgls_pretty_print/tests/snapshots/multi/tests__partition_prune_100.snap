@@ -179,7 +179,7 @@ select * from rlp where a = 29;
 
 select * from rlp where a >= 29;
 
-select * from rlp where a < 1 or a > 20 and a < 25;
+select * from rlp where a < 1 or (a > 20 and a < 25);
 
 select * from rlp where a = 20 or a = 40;
 
@@ -191,7 +191,7 @@ select * from rlp where a > 1 and a >= 15;
 
 select * from rlp where a = 1 and a = 3;
 
-select * from rlp where a = 1 and a = 3 or a > 1 and a = 15;
+select * from rlp where (a = 1 and a = 3) or (a > 1 and a = 15);
 
 create table mc3p (
   a int,
@@ -249,18 +249,18 @@ select
 from
   mc3p
 where
-  a = 1 and abs(b) = 1 and c = 1 or
-  a = 10 and abs(b) = 5 and c = 10 or
-  a > 11 and a < 20;
+  (a = 1 and abs(b) = 1 and c = 1) or
+  (a = 10 and abs(b) = 5 and c = 10) or
+  (a > 11 and a < 20);
 
 select
   *
 from
   mc3p
 where
-  a = 1 and abs(b) = 1 and c = 1 or
-  a = 10 and abs(b) = 5 and c = 10 or
-  a > 11 and a < 20 or
+  (a = 1 and abs(b) = 1 and c = 1) or
+  (a = 10 and abs(b) = 5 and c = 10) or
+  (a > 11 and a < 20) or
   a < 1;
 
 select
@@ -268,17 +268,17 @@ select
 from
   mc3p
 where
-  a = 1 and abs(b) = 1 and c = 1 or
-  a = 10 and abs(b) = 5 and c = 10 or
-  a > 11 and a < 20 or
+  (a = 1 and abs(b) = 1 and c = 1) or
+  (a = 10 and abs(b) = 5 and c = 10) or
+  (a > 11 and a < 20) or
   a < 1 or
   a = 1;
 
 select * from mc3p where a = 1 or abs(b) = 1 or c = 1;
 
-select * from mc3p where a = 1 and abs(b) = 1 or a = 10 and abs(b) = 10;
+select * from mc3p where (a = 1 and abs(b) = 1) or (a = 10 and abs(b) = 10);
 
-select * from mc3p where a = 1 and abs(b) = 1 or a = 10 and abs(b) = 9;
+select * from mc3p where (a = 1 and abs(b) = 1) or (a = 10 and abs(b) = 9);
 
 create table mc2p (
   a int,
@@ -626,7 +626,7 @@ select * from lp where a <> 'a';
 
 select * from lp where a <> 'a' and a is null;
 
-select * from lp where a <> 'a' and a <> 'd' or a is null;
+select * from lp where (a <> 'a' and a <> 'd') or a is null;
 
 select * from rlp where a = 15 and b <> 'ab' and b <> 'cd' and b <> 'xy' and b is not null;
 
@@ -794,7 +794,14 @@ select * from hp where a = 2 and b = 'xxx';
 
 select * from hp where a = 1 and b = 'abcde';
 
-select * from hp where a = 1 and b = 'abcde' or a = 2 and b = 'xxx' or a is null and b is null;
+select
+  *
+from
+  hp
+where
+  (a = 1 and b = 'abcde') or
+  (a = 2 and b = 'xxx') or
+  (a is null and b is null);
 
 drop table hp1;
 
