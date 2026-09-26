@@ -1,5 +1,5 @@
 use crate::TokenKind;
-use crate::emitter::{LayoutEvent, LineType};
+use crate::emitter::{GroupKind, LayoutEvent, LineType};
 use std::fmt::Write;
 
 #[derive(Debug, Clone)]
@@ -178,7 +178,7 @@ impl<W: Write> Renderer<W> {
                     self.write_text(text)?;
                     i += 1;
                 }
-                LayoutEvent::GroupStart { .. } => {
+                LayoutEvent::GroupStart { kind } => {
                     let group_end = self.find_group_end(events, i);
                     let group_slice = &events[i..=group_end];
 
@@ -192,7 +192,9 @@ impl<W: Write> Renderer<W> {
                         .get(group_end + 1)
                         .is_some_and(|e| matches!(e, LayoutEvent::Line(LineType::Hard)));
 
-                    let try_single_line = if followed_by_hard_break {
+                    let try_single_line = if matches!(kind, GroupKind::FunctionArgumentGroup)
+                        || followed_by_hard_break
+                    {
                         true
                     } else if let Some(single_line) = self.try_single_line(group_slice) {
                         // Allow small groups to stay on one line even without Hard break

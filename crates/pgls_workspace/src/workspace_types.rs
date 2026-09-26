@@ -50,6 +50,15 @@ fn instance_type<'a>(
         // If the instance type is an object, generate a TS object type with the corresponding properties
         InstanceType::Object => {
             let object = schema.object.as_deref().unwrap();
+
+            if object.properties.is_empty()
+                && let Some(additional_properties) = object.additional_properties.as_deref()
+            {
+                let (ts_type, optional, _) = schema_type(queue, root_schema, additional_properties);
+                assert!(!optional, "optional map values are not supported");
+                return format!("{{ [key: string]: {ts_type} }}");
+            }
+
             let mut members = Vec::new();
             for (property, prop_schema) in &object.properties {
                 let (ts_type, optional, description) = schema_type(queue, root_schema, prop_schema);
@@ -390,4 +399,32 @@ pub fn methods() -> [WorkspaceMethod; 9] {
         workspace_method!(change_file),
         workspace_method!(close_file),
     ]
+}
+
+#[cfg(test)]
+mod tests {
+    use std::collections::BTreeMap;
+
+    use super::*;
+
+    #[derive(JsonSchema)]
+    #[allow(dead_code)]
+    struct MapHolder {
+        values: BTreeMap<String, u8>,
+    }
+
+    #[test]
+    fn generates_typescript_index_signatures_for_maps() {
+        let schema =
+            SchemaGenerator::from(SchemaSettings::openapi3()).root_schema_for::<MapHolder>();
+        let mut declarations = Vec::new();
+        let mut queue = ModuleQueue::default();
+
+        generate_type(&mut declarations, &mut queue, &schema);
+
+        assert_eq!(
+            declarations[0].0,
+            "interface MapHolder {\n\tvalues: { [key: string]: number };\n}"
+        );
+    }
 }

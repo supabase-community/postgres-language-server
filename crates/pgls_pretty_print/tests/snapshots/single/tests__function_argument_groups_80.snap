@@ -1,0 +1,14 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/single/function_argument_groups.sql
+---
+select
+  jsonb_build_object(
+    'amountTTC', to_amount(amount_ttc, invoices.currency),
+    'amountVAT', to_amount(amount_vat, invoices.currency),
+    'rateVAT', case
+      when amount_ht = 0 then 0
+      else cast(round(amount_ttc / amount_ht * 100)
+      as int)
+    end
+  );

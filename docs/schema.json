@@ -529,6 +529,18 @@
             "null"
           ]
         },
+        "functionArgumentGroups": {
+          "description": "Function names mapped to the number of adjacent arguments in one logical group.",
+          "type": [
+            "object",
+            "null"
+          ],
+          "additionalProperties": {
+            "type": "integer",
+            "format": "uint8",
+            "minimum": 1.0
+          }
+        },
         "ignore": {
           "description": "A list of Unix shell style patterns. The formatter will ignore files/folders that will match these patterns.",
           "anyOf": [
