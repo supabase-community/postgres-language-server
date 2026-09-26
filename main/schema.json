@@ -544,6 +544,17 @@
             }
           ]
         },
+        "layout": {
+          "description": "How a statement is laid out: \"fit\" breaks only when a line would exceed the line width, \"expanded\" always breaks between clauses. Default: \"fit\".",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/Layout"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "lineWidth": {
           "description": "Maximum line width before breaking. Default: 100.",
           "type": [
@@ -621,6 +632,14 @@
             "lower"
           ]
         }
+      ]
+    },
+    "Layout": {
+      "description": "How a statement is laid out across lines.",
+      "type": "string",
+      "enum": [
+        "fit",
+        "expanded"
       ]
     },
     "LinterConfiguration": {
