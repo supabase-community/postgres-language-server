@@ -1,0 +1,10 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/single/expanded_joins.sql
+---
+select
+	a
+from
+	a
+	left outer join b on b.a = a.a
+	inner join c on c.a = a.a;

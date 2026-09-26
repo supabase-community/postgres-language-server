@@ -19,7 +19,11 @@ pub(super) fn emit_with_clause(e: &mut EventEmitter, n: &WithClause) {
         }
 
         if !n.ctes.is_empty() {
-            e.line(LineType::SoftOrSpace);
+            if matches!(e.config().layout, crate::Layout::Expanded) {
+                e.space();
+            } else {
+                e.line(LineType::SoftOrSpace);
+            }
             emit_comma_separated_list(e, &n.ctes, |node, e| {
                 super::emit_node(node, e);
             });

@@ -2,7 +2,7 @@ use pgls_query::protobuf::CaseWhen;
 
 use crate::{
     TokenKind,
-    emitter::{EventEmitter, GroupKind, LineType},
+    emitter::{EventEmitter, GroupKind},
 };
 
 pub(super) fn emit_case_when(e: &mut EventEmitter, n: &CaseWhen) {
@@ -15,12 +15,19 @@ pub(super) fn emit_case_when(e: &mut EventEmitter, n: &CaseWhen) {
         super::emit_node(expr, e);
     }
 
-    e.line(LineType::SoftOrSpace);
+    let expanded = matches!(e.config().layout, crate::Layout::Expanded);
+    if expanded {
+        e.indent_start();
+    }
+    super::emit_layout_break(e);
     e.token(TokenKind::THEN_KW);
 
     if let Some(ref result) = n.result {
         e.space();
         super::emit_node(result, e);
+    }
+    if expanded {
+        e.indent_end();
     }
 
     e.group_end();

@@ -4,7 +4,7 @@ use crate::{
 };
 use pgls_query::protobuf::{InsertStmt, OverridingKind};
 
-use super::node_list::emit_comma_separated_list;
+use super::node_list::{emit_comma_separated_list, emit_comma_separated_list_with_layout_break};
 use super::res_target::emit_column_name;
 
 pub(super) fn emit_insert_stmt(e: &mut EventEmitter, n: &InsertStmt) {
@@ -36,18 +36,21 @@ fn emit_insert_stmt_impl(e: &mut EventEmitter, n: &InsertStmt, with_semicolon: b
     // Emit column list if present
     if !n.cols.is_empty() {
         e.space();
-        // Wrap column list in a group so it can try to fit on one line
+        // The column list has its own group so it can fit on one line in fit layout. In expanded
+        // layout the separator breaks below are hard, which makes the group open up on purpose.
         e.group_start(GroupKind::InsertStmt);
         e.token(TokenKind::L_PAREN);
         e.line(LineType::Soft);
         e.indent_start();
-        emit_comma_separated_list(e, &n.cols, |node, e| {
+
+        emit_comma_separated_list_with_layout_break(e, &n.cols, |node, e| {
             if let Some(pgls_query::NodeEnum::ResTarget(res_target)) = node.node.as_ref() {
                 emit_column_name(e, res_target);
             } else {
                 super::emit_node(node, e);
             }
         });
+
         e.indent_end();
         e.line(LineType::Soft);
         e.token(TokenKind::R_PAREN);
@@ -76,7 +79,7 @@ fn emit_insert_stmt_impl(e: &mut EventEmitter, n: &InsertStmt, with_semicolon: b
 
     // Emit VALUES or SELECT or DEFAULT VALUES
     if let Some(ref select_stmt) = n.select_stmt {
-        e.line(LineType::SoftOrSpace);
+        super::emit_layout_break(e);
         // Use no-semicolon variant since INSERT will emit its own semicolon
         if let Some(pgls_query::NodeEnum::SelectStmt(stmt)) = select_stmt.node.as_ref() {
             super::emit_select_stmt_no_semicolon(e, stmt);
@@ -97,7 +100,7 @@ fn emit_insert_stmt_impl(e: &mut EventEmitter, n: &InsertStmt, with_semicolon: b
     }
 
     if !n.returning_list.is_empty() {
-        e.line(LineType::SoftOrSpace);
+        super::emit_layout_break(e);
         e.token(TokenKind::RETURNING_KW);
         e.space();
         emit_comma_separated_list(e, &n.returning_list, super::emit_node);

@@ -31,13 +31,21 @@ fn emit_variadic_bool_expr(e: &mut EventEmitter, n: &BoolExpr, keyword: TokenKin
             if leading {
                 // The break opportunity sits before the keyword, so a broken condition reads
                 // "\n\tAND b = 2" while a single line one still reads "a = 1 AND b = 2".
-                e.line(LineType::SoftOrSpace);
+                if matches!(e.config().layout, crate::Layout::Expanded) {
+                    super::emit_layout_break(e);
+                } else {
+                    e.line(LineType::SoftOrSpace);
+                }
                 e.token(keyword.clone());
                 e.space();
             } else {
                 e.space();
                 e.token(keyword.clone());
-                e.line(LineType::SoftOrSpace);
+                if matches!(e.config().layout, crate::Layout::Expanded) {
+                    super::emit_layout_break(e);
+                } else {
+                    e.line(LineType::SoftOrSpace);
+                }
             }
         }
 

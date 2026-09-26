@@ -24,7 +24,11 @@ pub(super) fn emit_common_table_expr(e: &mut EventEmitter, n: &CommonTableExpr) 
         e.token(TokenKind::R_PAREN);
     }
 
-    e.line(LineType::SoftOrSpace);
+    if matches!(e.config().layout, crate::Layout::Expanded) {
+        e.space();
+    } else {
+        e.line(LineType::SoftOrSpace);
+    }
     e.token(TokenKind::AS_KW);
     e.space();
 

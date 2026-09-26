@@ -77,6 +77,39 @@ where
     }
 }
 
+/// Emit a comma-separated list whose items always break in expanded layout.
+pub(super) fn emit_comma_separated_list_with_layout_break<F>(
+    e: &mut EventEmitter,
+    nodes: &[Node],
+    render: F,
+) where
+    F: Fn(&Node, &mut EventEmitter),
+{
+    let leading = matches!(e.config().comma_style, CommaStyle::Leading);
+
+    for (index, node) in nodes.iter().enumerate() {
+        if index > 0 {
+            if leading {
+                if let Some(location) = node
+                    .node
+                    .as_ref()
+                    .and_then(|node| crate::codegen::node_location::node_location(&node.to_ref()))
+                {
+                    e.take_own_line_leading_comments_at(location);
+                }
+
+                super::emit_layout_break(e);
+                e.token(TokenKind::COMMA);
+                e.space();
+            } else {
+                e.token(TokenKind::COMMA);
+                super::emit_layout_break(e);
+            }
+        }
+        render(node, e);
+    }
+}
+
 pub(super) fn emit_dot_separated_list(e: &mut EventEmitter, nodes: &[Node]) {
     emit_dot_separated_list_with(e, nodes, super::emit_node);
 }

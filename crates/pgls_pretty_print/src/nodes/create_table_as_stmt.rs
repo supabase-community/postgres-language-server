@@ -144,10 +144,20 @@ pub(super) fn emit_create_table_as_stmt(e: &mut EventEmitter, n: &CreateTableAsS
         }
     }
 
-    e.line(LineType::SoftOrSpace);
+    // Keep the statement header together in expanded layout. The query itself owns the following
+    // break, so CTAS reads `CREATE TABLE name AS` rather than isolating `AS`. Fit layout retains
+    // its existing width-dependent choice.
+    let expanded = matches!(e.config().layout, crate::Layout::Expanded);
+    if expanded {
+        e.space();
+    } else {
+        e.line(LineType::SoftOrSpace);
+    }
     e.token(TokenKind::AS_KW);
-    e.indent_start();
-    e.line(LineType::SoftOrSpace);
+    if !expanded {
+        e.indent_start();
+    }
+    super::emit_layout_break(e);
 
     if let Some(ref query) = n.query
         && let Some(ref inner) = query.node
@@ -159,7 +169,9 @@ pub(super) fn emit_create_table_as_stmt(e: &mut EventEmitter, n: &CreateTableAsS
         }
     }
 
-    e.indent_end();
+    if !expanded {
+        e.indent_end();
+    }
 
     // WITH DATA / WITH NO DATA (applies to both CREATE TABLE AS and CREATE MATERIALIZED VIEW)
     if let Some(ref into) = n.into

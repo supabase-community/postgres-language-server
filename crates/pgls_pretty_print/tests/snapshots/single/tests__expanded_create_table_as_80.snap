@@ -1,0 +1,15 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/single/expanded_create_table_as.sql
+---
+CREATE TABLE cleaning.allocation_keys AS
+WITH pre_merged AS (
+	SELECT
+		allocation_keys.id
+	FROM
+		refining.allocation_keys
+)
+SELECT
+	id
+FROM
+	pre_merged;

@@ -468,6 +468,10 @@ export interface PartialFormatConfiguration {
    */
   keywordCase?: KeywordCase;
   /**
+   * How a statement is laid out: "fit" breaks only when a line would exceed the line width, "expanded" always breaks between clauses. Default: "fit".
+   */
+  layout?: Layout;
+  /**
    * Maximum line width before breaking. Default: 100.
    */
   lineWidth?: number;
@@ -644,6 +648,10 @@ export type KeywordCase = "upper" | "lower";
  * Indentation style for the formatter.
  */
 export type IndentStyle = "spaces" | "tabs";
+/**
+ * How a statement is laid out across lines.
+ */
+export type Layout = "fit" | "expanded";
 /**
  * Where a boolean operator sits when a condition breaks across lines.
  */

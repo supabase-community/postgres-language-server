@@ -17,7 +17,15 @@ pub(super) fn emit_res_target(e: &mut EventEmitter, n: &ResTarget) {
         emit_node(val, e);
 
         if !n.name.is_empty() {
-            e.line(LineType::SoftOrSpace);
+            let case_alias_in_expanded_layout =
+                matches!(val.node.as_ref(), Some(NodeEnum::CaseExpr(_)))
+                    && matches!(e.config().layout, crate::Layout::Expanded);
+
+            if case_alias_in_expanded_layout {
+                e.space();
+            } else {
+                e.line(LineType::SoftOrSpace);
+            }
             e.token(TokenKind::AS_KW);
             e.space();
             emit_identifier_maybe_quoted(e, &n.name);

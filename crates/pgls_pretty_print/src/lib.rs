@@ -14,6 +14,17 @@ pub use crate::renderer::{IndentStyle, KeywordCase, RenderConfig};
 use pgls_query::NodeEnum;
 use thiserror::Error;
 
+/// How a statement is laid out across lines.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub enum Layout {
+    /// Break only when a line would exceed the line width.
+    #[default]
+    Fit,
+    /// Always break between the clauses of a statement, whatever the width. The line width then
+    /// only governs breaking inside a clause.
+    Expanded,
+}
+
 /// Error type for formatting operations.
 #[derive(Debug, Error)]
 pub enum FormatError {
@@ -84,6 +95,8 @@ pub struct FormatConfig {
     pub comma_style: CommaStyle,
     /// Where a boolean operator sits when a condition breaks. Default: Trailing.
     pub logical_operator_placement: LogicalOperatorPlacement,
+    /// How a statement is laid out across lines. Default: Fit.
+    pub layout: Layout,
 }
 
 impl Default for FormatConfig {
@@ -97,6 +110,7 @@ impl Default for FormatConfig {
             type_case: KeywordCase::default(),
             comma_style: CommaStyle::default(),
             logical_operator_placement: LogicalOperatorPlacement::default(),
+            layout: Layout::default(),
         }
     }
 }
@@ -112,6 +126,7 @@ impl From<FormatConfig> for RenderConfig {
             type_case,
             comma_style: _,
             logical_operator_placement: _,
+            layout: _,
         } = config;
 
         Self {
@@ -290,6 +305,7 @@ mod tests {
         let config = FormatConfig::default();
         assert_eq!(config.line_width, 100);
         assert_eq!(config.indent_size, 2);
+        assert_eq!(config.layout, Layout::Fit);
     }
 
     #[test]
