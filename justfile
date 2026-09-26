@@ -70,7 +70,7 @@ test:
 
 # Run tests for the crate passed as argument e.g. just test-create pgls_cli
 test-crate name:
-	cargo test run -p {{name}} --no-fail-fast
+	cargo test -p {{name}} --no-fail-fast
 
 # Run doc tests
 test-doc:
