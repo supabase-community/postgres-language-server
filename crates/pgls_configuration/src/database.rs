@@ -6,6 +6,7 @@ use serde::{Deserialize, Serialize};
 /// The configuration of the database connection.
 #[derive(Clone, Deserialize, Eq, Partial, PartialEq, Serialize)]
 #[partial(derive(Bpaf, Clone, Eq, PartialEq, Merge))]
+#[partial(skip_derive(Debug))]
 #[partial(cfg_attr(feature = "schema", derive(schemars::JsonSchema)))]
 #[partial(serde(rename_all = "camelCase", default, deny_unknown_fields))]
 pub struct DatabaseConfiguration {
@@ -77,6 +78,28 @@ impl std::fmt::Debug for DatabaseConfiguration {
     }
 }
 
+impl std::fmt::Debug for PartialDatabaseConfiguration {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("PartialDatabaseConfiguration")
+            .field(
+                "connection_string",
+                &self.connection_string.as_ref().map(|_| "[redacted]"),
+            )
+            .field("host", &self.host)
+            .field("port", &self.port)
+            .field("username", &self.username)
+            .field("password", &self.password.as_ref().map(|_| "[redacted]"))
+            .field("database", &self.database)
+            .field(
+                "allow_statement_executions_against",
+                &self.allow_statement_executions_against,
+            )
+            .field("conn_timeout_secs", &self.conn_timeout_secs)
+            .field("disable_connection", &self.disable_connection)
+            .finish()
+    }
+}
+
 impl Default for DatabaseConfiguration {
     fn default() -> Self {
         Self {
@@ -126,5 +149,42 @@ impl PartialDatabaseConfiguration {
             database: pgdatabase,
             ..Default::default()
         })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::PartialDatabaseConfiguration;
+
+    #[test]
+    fn partial_configuration_debug_redacts_database_secrets() {
+        let cfg = pgls_configuration::PartialConfiguration {
+            db: Some(PartialDatabaseConfiguration {
+                host: Some("localhost".to_string()),
+                password: Some("super-secret".to_string()),
+                connection_string: Some("postgres://user:hunter2@localhost:5432/db".to_string()),
+                ..Default::default()
+            }),
+            ..Default::default()
+        };
+
+        let debug = format!("{cfg:?}");
+        assert!(debug.contains("[redacted]"));
+        assert!(!debug.contains("super-secret"));
+        assert!(!debug.contains("hunter2"));
+        assert!(debug.contains("localhost"));
+    }
+
+    #[test]
+    fn partial_configuration_debug_does_not_redact_unset_database_password() {
+        let cfg = pgls_configuration::PartialConfiguration {
+            db: Some(PartialDatabaseConfiguration {
+                host: Some("localhost".to_string()),
+                ..Default::default()
+            }),
+            ..Default::default()
+        };
+
+        assert!(!format!("{cfg:?}").contains("[redacted]"));
     }
 }
