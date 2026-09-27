@@ -47,6 +47,8 @@
               <ul class="current">
                 <li class="toctree-l1 current"><a class="reference internal current" href="#">Configuration</a>
     <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#client-configuration-overrides">Client configuration overrides</a>
+    </li>
     <li class="toctree-l2"><a class="reference internal" href="#configuration-file-structure">Configuration file structure</a>
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#configuring-a-database-connection">Configuring a database connection</a>
@@ -146,6 +148,9 @@
                 <h1 id="configuration">Configuration</h1>
 <p>This guide will help you to understand how to configure the Postgres Language Server. It explains the structure of the configuration file and how the configuration is resolved.</p>
 <p>The Postgres Language Server allows you to customize its behavior using CLI options or a configuration file named <code>postgres-language-server.jsonc</code>. We recommend that you create a configuration file for each project. This ensures that each team member has the same configuration in the CLI and in any editor that allows Biome integration. Many of the options available in a configuration file are also available in the CLI.</p>
+<h2 id="client-configuration-overrides">Client configuration overrides</h2>
+<p>Clients can issue the LSP request <code>pgls/set_configuration_overrides</code> with parameters <code>{ "overrides": { ... } }</code> to apply runtime configuration, or <code>{ "overrides": null }</code> to clear it. The <code>overrides</code> value replaces the previous client override layer; it does not merge with the previous request. The layer is sticky across configuration file reloads. <code>workspace/didChangeConfiguration</code> also writes this same sticky layer.</p>
+<p>Configuration precedence, from lowest to highest, is: built-in defaults, the configuration file on disk, environment configuration (<code>DATABASE_URL</code>, <code>PGHOST</code>, and related variables) captured when the server starts, then the sticky client override. The client deliberately has higher precedence than the environment: it is an explicit live instruction from the editor for this session, while the environment describes the shell where the server started. Environment configuration continues to override the file. Clearing the overrides restores the file-plus-environment baseline.</p>
 <h2 id="configuration-file-structure">Configuration file structure</h2>
 <p>A configuration file is usually placed in your project’s root folder. It is organized around the tools that are provided. All tools are enabled by default, but some require additional setup like a database connection or the <code>plpgsql_check</code> extension.</p>
 <pre><code class="language-json">{

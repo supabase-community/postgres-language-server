@@ -77,6 +77,8 @@
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#configuration">Configuration</a>
     </li>
+    <li class="toctree-l2"><a class="reference internal" href="#setting-the-connection-from-the-editor">Setting the connection from the editor</a>
+    </li>
     <li class="toctree-l2"><a class="reference internal" href="#security-considerations">Security Considerations</a>
         <ul>
     <li class="toctree-l3"><a class="reference internal" href="#read-only-access">Read-Only Access</a>
@@ -172,6 +174,24 @@
   }
 }
 </code></pre>
+<h2 id="setting-the-connection-from-the-editor">Setting the connection from the editor</h2>
+<p>An editor extension can set the connection for a running language server session with the LSP request <code>pgls/set_configuration_overrides</code>, which takes any configuration and applies it on top of the configuration file:</p>
+<pre><code class="language-json">{
+  &quot;overrides&quot;: {
+    &quot;db&quot;: {
+      &quot;host&quot;: &quot;localhost&quot;,
+      &quot;port&quot;: 5432,
+      &quot;username&quot;: &quot;postgres&quot;,
+      &quot;password&quot;: &quot;your_password&quot;,
+      &quot;database&quot;: &quot;your_database_name&quot;
+    },
+    &quot;typecheck&quot;: {
+      &quot;searchPath&quot;: [&quot;tenant&quot;, &quot;public&quot;]
+    }
+  }
+}
+</code></pre>
+<p>The overrides stay in effect until they are replaced or cleared with <code>{ "overrides": null }</code>, which returns to whatever the configuration file and the environment define. See <a href="../../configuration/#client-configuration-overrides">Client configuration overrides</a> for the precedence rules.</p>
 <h2 id="security-considerations">Security Considerations</h2>
 <h3 id="read-only-access">Read-Only Access</h3>
 <p>The language server primarily needs read access to your database schema. Consider creating a dedicated user with limited permissions:</p>
