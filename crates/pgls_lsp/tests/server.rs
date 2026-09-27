@@ -6,7 +6,7 @@ use futures::Sink;
 use futures::SinkExt;
 use futures::Stream;
 use futures::StreamExt;
-use futures::channel::mpsc::{Sender, channel};
+use futures::channel::mpsc::{Receiver, Sender, channel};
 use pgls_configuration::Merge;
 use pgls_configuration::PartialConfiguration;
 use pgls_configuration::StringSet;
@@ -18,7 +18,7 @@ use pgls_workspace::DynRef;
 use serde::Serialize;
 use serde::de::DeserializeOwned;
 use serde_json::Value;
-use serde_json::{from_value, to_value};
+use serde_json::{from_value, json, to_value};
 use sqlx::Executor;
 use sqlx::PgPool;
 use std::any::type_name;
@@ -44,9 +44,10 @@ use tower_lsp::lsp_types::WorkDoneProgressParams;
 use tower_lsp::lsp_types::WorkspaceFolder;
 use tower_lsp::lsp_types::{
     ClientCapabilities, DidChangeConfigurationParams, DidChangeTextDocumentParams,
-    DidCloseTextDocumentParams, DidOpenTextDocumentParams, InitializeResult, InitializedParams,
-    PublishDiagnosticsParams, TextDocumentContentChangeEvent, TextDocumentIdentifier,
-    TextDocumentItem, Url, VersionedTextDocumentIdentifier,
+    DidChangeWatchedFilesParams, DidCloseTextDocumentParams, DidOpenTextDocumentParams,
+    FileChangeType, FileEvent, InitializeResult, InitializedParams, PublishDiagnosticsParams,
+    TextDocumentContentChangeEvent, TextDocumentIdentifier, TextDocumentItem, Url,
+    VersionedTextDocumentIdentifier,
 };
 use tower_lsp::{jsonrpc::Request, lsp_types::InitializeParams};
 
@@ -330,6 +331,46 @@ impl Server {
             .context("pgls/shutdown returned None")?;
         Ok(())
     }
+
+    /// Sets or clears the sticky client configuration overrides
+    async fn set_configuration_overrides(&mut self, params: Value) -> Result<()> {
+        self.request::<_, ()>(
+            "pgls/set_configuration_overrides",
+            "_set_configuration_overrides",
+            params,
+        )
+        .await?
+        .context("pgls/set_configuration_overrides returned None")?;
+        Ok(())
+    }
+
+    /// Tells the server that the configuration file on disk changed, which triggers a configuration
+    /// reload that carries no client configuration at all
+    async fn change_watched_configuration_file(&mut self) -> Result<()> {
+        self.notify(
+            "workspace/didChangeWatchedFiles",
+            DidChangeWatchedFilesParams {
+                changes: vec![FileEvent {
+                    uri: url!("postgres-language-server.jsonc"),
+                    typ: FileChangeType::CHANGED,
+                }],
+            },
+        )
+        .await
+    }
+
+    /// Replaces the whole content of `document.sql`, which schedules a fresh diagnostics run
+    async fn replace_document(&mut self, version: i32, text: impl Display) -> Result<()> {
+        self.change_document(
+            version,
+            vec![TextDocumentContentChangeEvent {
+                range: None,
+                range_length: None,
+                text: text.to_string(),
+            }],
+        )
+        .await
+    }
 }
 
 /// Number of notifications buffered by the server-to-client channel before it starts blocking the current task
@@ -475,6 +516,155 @@ async fn test_database_connection(test_db: PgPool) -> Result<()> {
     .is_ok();
 
     assert!(notification, "expected diagnostics for unknown column");
+
+    server.shutdown().await?;
+    reader.abort();
+
+    Ok(())
+}
+
+/// The type check error below can only be produced with a database connection and the schema of the
+/// test database.
+fn is_database_backed(diagnostic: &lsp::Diagnostic) -> bool {
+    diagnostic
+        .message
+        .contains("column \"unknown\" does not exist")
+}
+
+/// Drops every notification that is already queued, so that a later assertion cannot be satisfied
+/// by a stale one.
+fn drain_notifications(receiver: &mut Receiver<ServerNotification>) {
+    while let Ok(Some(_)) = receiver.try_next() {}
+}
+
+/// Waits for the diagnostics of the given document version.
+async fn wait_for_diagnostics(
+    receiver: &mut Receiver<ServerNotification>,
+    version: i32,
+) -> Result<PublishDiagnosticsParams> {
+    tokio::time::timeout(Duration::from_secs(5), async {
+        loop {
+            let Some(ServerNotification::PublishDiagnostics(params)) = receiver.next().await else {
+                bail!("the server closed the connection");
+            };
+            if params.version == Some(version) {
+                return Ok(params);
+            }
+        }
+    })
+    .await
+    .with_context(|| format!("timed out waiting for diagnostics of version {version}"))?
+}
+
+/// The configuration file has neither a `db` nor a `typecheck` section and there is no environment
+/// configuration, so the client override layer is the only thing that can enable database features
+/// here — and clearing it has to disable them again.
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn client_configuration_overrides_are_sticky_and_clearable(test_db: PgPool) -> Result<()> {
+    const STATEMENT: &str = "select unknown from public.users;";
+
+    let factory = ServerFactory::default();
+    let mut fs = MemoryFileSystem::default();
+    fs.insert(
+        url!("postgres-language-server.jsonc")
+            .to_file_path()
+            .unwrap(),
+        "{}".to_string(),
+    );
+
+    test_db
+        .execute(
+            r#"
+            create table public.users (
+                id serial primary key,
+                name varchar(255) not null
+            );
+        "#,
+        )
+        .await
+        .expect("Failed to setup test database");
+
+    let (service, client) = factory
+        .create_with_fs(None, DynRef::Owned(Box::new(fs)))
+        .into_inner();
+
+    let (stream, sink) = client.split();
+    let mut server = Server::new(service);
+
+    let (sender, mut receiver) = channel(CHANNEL_BUFFER_SIZE);
+    let reader = tokio::spawn(client_handler(stream, sink, sender));
+
+    server.initialize().await?;
+    server.initialized().await?;
+
+    // The document is opened before the first transition: `textDocument/didOpen` picks the project
+    // a path belongs to, and with a file system that has no working directory every configuration
+    // reload registers another project under the same empty path.
+    server.open_document(STATEMENT).await?;
+
+    let options = test_db.connect_options();
+    server
+        .set_configuration_overrides(json!({
+            "overrides": {
+                "db": {
+                    "host": options.get_host(),
+                    "port": options.get_port(),
+                    "username": "postgres",
+                    "password": "postgres",
+                    "database": options.get_database().unwrap(),
+                }
+            }
+        }))
+        .await?;
+
+    // The request acknowledged the overrides, and they reached the workspace: the diagnostic below
+    // requires a connection to the test database.
+    let connected = tokio::time::timeout(Duration::from_secs(5), async {
+        loop {
+            match receiver.next().await {
+                Some(ServerNotification::PublishDiagnostics(params)) => {
+                    if params.diagnostics.iter().any(is_database_backed) {
+                        return true;
+                    }
+                }
+                None => return false,
+            }
+        }
+    })
+    .await
+    .unwrap_or(false);
+    assert!(
+        connected,
+        "expected a database-backed diagnostic after setting the configuration overrides"
+    );
+
+    // A configuration reload carries no client configuration, but the sticky layer survives it.
+    server.change_watched_configuration_file().await?;
+    drain_notifications(&mut receiver);
+    server.replace_document(1, STATEMENT).await?;
+    assert!(
+        wait_for_diagnostics(&mut receiver, 1)
+            .await?
+            .diagnostics
+            .iter()
+            .any(is_database_backed),
+        "the overrides should have survived a configuration reload"
+    );
+
+    // Clearing them falls back to the configuration file, which has no database at all.
+    server
+        .set_configuration_overrides(json!({ "overrides": null }))
+        .await?;
+    drain_notifications(&mut receiver);
+    server.replace_document(2, STATEMENT).await?;
+    assert!(
+        !wait_for_diagnostics(&mut receiver, 2)
+            .await?
+            .diagnostics
+            .iter()
+            .any(is_database_backed),
+        "clearing the overrides should have disabled the database features again"
+    );
 
     server.shutdown().await?;
     reader.abort();

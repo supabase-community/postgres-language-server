@@ -39,6 +39,29 @@ Configure database connection details in your `postgres-language-server.jsonc` f
 ```
 
 
+## Setting the connection from the editor
+
+An editor extension can set the connection for a running language server session with the LSP request `pgls/set_configuration_overrides`, which takes any configuration and applies it on top of the configuration file:
+
+```json
+{
+  "overrides": {
+    "db": {
+      "host": "localhost",
+      "port": 5432,
+      "username": "postgres",
+      "password": "your_password",
+      "database": "your_database_name"
+    },
+    "typecheck": {
+      "searchPath": ["tenant", "public"]
+    }
+  }
+}
+```
+
+The overrides stay in effect until they are replaced or cleared with `{ "overrides": null }`, which returns to whatever the configuration file and the environment define. See [Client configuration overrides](../configuration.md#client-configuration-overrides) for the precedence rules.
+
 ## Security Considerations
 
 ### Read-Only Access

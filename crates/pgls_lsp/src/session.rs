@@ -1,4 +1,5 @@
 use crate::adapters::{PositionEncoding, WideEncoding, negotiated_encoding};
+use crate::configuration::{ClientOverrides, merge_layers};
 use crate::diagnostics::LspError;
 use crate::documents::Document;
 use crate::utils;
@@ -6,7 +7,6 @@ use anyhow::Result;
 use futures::StreamExt;
 use futures::stream::FuturesUnordered;
 use pgls_analyse::RuleCategoriesBuilder;
-use pgls_configuration::Merge;
 use pgls_configuration::{ConfigurationPathHint, PartialConfiguration};
 use pgls_diagnostics::{DiagnosticExt, Error};
 use pgls_fs::{ConfigName, FileSystem, PgLSPath};
@@ -88,6 +88,33 @@ pub(crate) struct Session {
 
     /// Extra configuration from environment variables, applied on every config load.
     env_config: Option<PartialConfiguration>,
+
+    /// Layer set through workspace/didChangeConfiguration and the custom override request.
+    client_overrides: RwLock<ClientOverrides>,
+
+    /// Serialises a whole configuration transition: storing the layer, reloading the settings and
+    /// refreshing the diagnostics of all open documents.
+    ///
+    /// Two transitions really can run at the same time — the server runs on a multi-threaded
+    /// runtime and tower-lsp handles several messages concurrently — and that matters for three
+    /// things. `register_project_folder` and `update_settings` are separate workspace calls with
+    /// the current-project selection in between, so a parallel transition can make settings land
+    /// on the wrong project. An older transition's diagnostics refresh could publish after a newer
+    /// one, leaving the client with diagnostics computed under superseded settings; the staleness
+    /// check does not catch that, because the document version is unchanged. And a burst of client
+    /// requests would otherwise run one full reload and one type check pass per message.
+    ///
+    /// What it is *not* needed for is the applied layer itself: that is read immediately before the
+    /// synchronous `update_settings` call, so the transition that writes last always writes the
+    /// layer that was current at that moment.
+    configuration_transition: tokio::sync::Mutex<()>,
+
+    /// Configuration transitions currently running, and the highest count observed. The lock above
+    /// keeps both at one; [`Session::max_concurrent_transitions`] lets the tests assert that.
+    #[cfg(test)]
+    running_transitions: std::sync::atomic::AtomicUsize,
+    #[cfg(test)]
+    max_running_transitions: std::sync::atomic::AtomicUsize,
 
     /// Per-URL abort handles for pending debounced diagnostic tasks.
     ///
@@ -191,6 +218,12 @@ impl Session {
             notified_broken_configuration: AtomicBool::new(false),
             notified_deprecated_config: AtomicBool::new(false),
             env_config,
+            client_overrides: RwLock::new(ClientOverrides::default()),
+            configuration_transition: tokio::sync::Mutex::new(()),
+            #[cfg(test)]
+            running_transitions: std::sync::atomic::AtomicUsize::new(0),
+            #[cfg(test)]
+            max_running_transitions: std::sync::atomic::AtomicUsize::new(0),
             diagnostic_debounce: Arc::new(Mutex::new(FxHashMap::default())),
         }
     }
@@ -484,13 +517,11 @@ impl Session {
     /// This function attempts to read the `postgres-language-server.jsonc` configuration file from
     /// the root URI and update the workspace settings accordingly
     #[tracing::instrument(level = "trace", skip(self))]
-    pub(crate) async fn load_workspace_settings(&self, extra_config: Option<PartialConfiguration>) {
+    async fn load_workspace_settings(&self) {
         // Providing a custom configuration path will not allow to support workspaces
         if let Some(config_path) = &self.config_path {
             let base_path = ConfigurationPathHint::FromUser(config_path.clone());
-            let status = self
-                .load_pgls_configuration_file(base_path, extra_config)
-                .await;
+            let status = self.load_pgls_configuration_file(base_path).await;
             self.set_configuration_status(status);
         } else if let Some(folders) = self.get_workspace_folders() {
             info!("Detected workspace folder.");
@@ -504,10 +535,9 @@ impl Session {
                 match base_path {
                     Ok(base_path) => {
                         let status = self
-                            .load_pgls_configuration_file(
-                                ConfigurationPathHint::FromWorkspace(base_path),
-                                extra_config.clone(),
-                            )
+                            .load_pgls_configuration_file(ConfigurationPathHint::FromWorkspace(
+                                base_path,
+                            ))
                             .await;
                         self.set_configuration_status(status);
                     }
@@ -524,9 +554,7 @@ impl Session {
                 None => ConfigurationPathHint::default(),
                 Some(path) => ConfigurationPathHint::FromLsp(path),
             };
-            let status = self
-                .load_pgls_configuration_file(base_path, extra_config)
-                .await;
+            let status = self.load_pgls_configuration_file(base_path).await;
             self.set_configuration_status(status);
         }
     }
@@ -534,12 +562,11 @@ impl Session {
     async fn load_pgls_configuration_file(
         &self,
         base_path: ConfigurationPathHint,
-        extra_config: Option<PartialConfiguration>,
     ) -> ConfigurationStatus {
         match load_configuration(&self.fs, base_path.clone()) {
             Ok(loaded_configuration) => {
                 let LoadedConfiguration {
-                    configuration: mut fs_configuration,
+                    configuration: fs_configuration,
                     directory_path: configuration_path,
                     file_path: configuration_file_path,
                     ..
@@ -573,17 +600,18 @@ impl Session {
                 info!("Update workspace settings.");
 
                 let fs = &self.fs;
+                let (client_overrides, overridden_sections) = {
+                    let overrides = self.client_overrides.read().unwrap();
+                    (overrides.configuration().cloned(), overrides.sections())
+                };
+                let mut configuration = merge_layers(
+                    fs_configuration,
+                    self.env_config.as_ref(),
+                    client_overrides.as_ref(),
+                );
+                overridden_sections.materialize_defaults(&mut configuration);
 
-                if let Some(ws_configuration) = extra_config {
-                    fs_configuration.merge_with(ws_configuration);
-                }
-
-                // Env vars take highest priority — merge last so they override everything.
-                if let Some(env_config) = &self.env_config {
-                    fs_configuration.merge_with(env_config.clone());
-                }
-
-                let result = fs_configuration
+                let result = configuration
                     .retrieve_gitignore_matches(&self.fs, configuration_path.as_deref());
 
                 match result {
@@ -615,7 +643,7 @@ impl Session {
 
                         let result = self.workspace.update_settings(UpdateSettingsParams {
                             workspace_directory: self.fs.working_directory(),
-                            configuration: fs_configuration,
+                            configuration,
                             vcs_base_path,
                             gitignore_matches,
                         });
@@ -641,6 +669,69 @@ impl Session {
                 ConfigurationStatus::Error
             }
         }
+    }
+
+    /// Replaces the sticky client configuration override layer and applies it. `None` clears it.
+    ///
+    /// Storing the layer, reloading the workspace settings and refreshing the diagnostics of all
+    /// open documents happen as one transition under `configuration_transition`, so that two
+    /// concurrent calls cannot interleave.
+    pub(crate) async fn set_client_overrides(
+        &self,
+        overrides: Option<PartialConfiguration>,
+    ) -> ConfigurationStatus {
+        let _transition = self.configuration_transition.lock().await;
+        #[cfg(test)]
+        let _running = self.enter_transition();
+        self.client_overrides.write().unwrap().set(overrides);
+        // Everything from here on is synchronous work behind `.await`s that complete immediately, so
+        // a transition only ever suspends when something makes the server wait. Yielding here in
+        // tests turns that into a reliable suspension point, which is what lets the test suite
+        // observe whether two transitions can overlap.
+        #[cfg(test)]
+        tokio::task::yield_now().await;
+        self.load_workspace_settings().await;
+        self.update_all_diagnostics().await;
+        self.configuration_status()
+    }
+
+    /// Whether a client override layer is currently set.
+    #[cfg(test)]
+    pub(crate) fn has_client_overrides(&self) -> bool {
+        self.client_overrides
+            .read()
+            .unwrap()
+            .configuration()
+            .is_some()
+    }
+
+    /// Reloads the configuration from disk, re-applying the sticky layers.
+    ///
+    /// Diagnostics are left alone: the callers decide whether the reload should refresh them.
+    pub(crate) async fn reload_workspace_settings(&self) -> ConfigurationStatus {
+        let _transition = self.configuration_transition.lock().await;
+        #[cfg(test)]
+        let _running = self.enter_transition();
+        self.load_workspace_settings().await;
+        self.configuration_status()
+    }
+
+    #[cfg(test)]
+    fn enter_transition(&self) -> RunningTransition<'_> {
+        use std::sync::atomic::AtomicUsize;
+
+        let running = self.running_transitions.fetch_add(1, Ordering::Relaxed) + 1;
+        self.max_running_transitions
+            .fetch_max(running, Ordering::Relaxed);
+        RunningTransition {
+            running: &self.running_transitions as &AtomicUsize,
+        }
+    }
+
+    /// The highest number of configuration transitions that ran at the same time.
+    #[cfg(test)]
+    pub(crate) fn max_concurrent_transitions(&self) -> usize {
+        self.max_running_transitions.load(Ordering::Relaxed)
     }
 
     /// Broadcast a shutdown signal to all active connections
@@ -678,6 +769,19 @@ impl Session {
             .map_or(PositionEncoding::Wide(WideEncoding::Utf16), |params| {
                 negotiated_encoding(&params.client_capabilities)
             })
+    }
+}
+
+/// Tracks one running configuration transition for [`Session::max_concurrent_transitions`].
+#[cfg(test)]
+pub(crate) struct RunningTransition<'a> {
+    running: &'a std::sync::atomic::AtomicUsize,
+}
+
+#[cfg(test)]
+impl Drop for RunningTransition<'_> {
+    fn drop(&mut self) {
+        self.running.fetch_sub(1, Ordering::Relaxed);
     }
 }
 
