@@ -116,10 +116,7 @@ select MIN(generate_series(1, 3)) over () from few;
 select id, LAG(id) over (), COUNT(*) over (), generate_series(1, 3) from few;
 
 select
-  SUM(
-    COUNT(*)
-  )
-  over (
+  SUM(COUNT(*)) over (
     partition by generate_series(1, 3)
     order by generate_series(1, 3)
   ),

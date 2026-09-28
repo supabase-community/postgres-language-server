@@ -57,10 +57,19 @@ fn emit_aexpr_op(e: &mut EventEmitter, n: &AExpr) {
                 // Keep the operator attached to the left-hand side and allow the
                 // right-hand side to wrap underneath when the expression exceeds
                 // the line width.
-                e.space();
-                emit_operator(e, &n.name);
-                e.line(LineType::SoftOrSpace);
-                emit_operand_with_parens(e, rexpr, parent_info, OperandSide::Right);
+                if super::is_window_expression(lexpr) {
+                    e.group_start(GroupKind::List);
+                    e.space();
+                    emit_operator(e, &n.name);
+                    e.line(LineType::SoftOrSpace);
+                    emit_operand_with_parens(e, rexpr, parent_info, OperandSide::Right);
+                    e.group_end();
+                } else {
+                    e.space();
+                    emit_operator(e, &n.name);
+                    e.line(LineType::SoftOrSpace);
+                    emit_operand_with_parens(e, rexpr, parent_info, OperandSide::Right);
+                }
             } else {
                 e.space();
                 emit_operator(e, &n.name);

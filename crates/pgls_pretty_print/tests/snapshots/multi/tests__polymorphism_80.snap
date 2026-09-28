@@ -1038,10 +1038,7 @@ select first_el_agg_any(x) from generate_series(1, 10) as x;
 select
   first_el_agg_f8(
     cast(x as double precision)
-  )
-  over (
-    order by x
-  )
+  ) over (order by x)
 from
   generate_series(1, 10) as x;
 

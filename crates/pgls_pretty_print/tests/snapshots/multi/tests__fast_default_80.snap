@@ -543,14 +543,7 @@ select
         generate_series(1, 20) as x
     )
     as real)
-  )
-  over (
-    partition by a,
-    b,
-    c
-    order by b
-  )
-  as z
+  ) over (partition by a, b, c order by b) as z
 from
   t1;
 

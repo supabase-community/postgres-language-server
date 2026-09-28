@@ -1,0 +1,15 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+assertion_line: 171
+input_file: crates/pgls_pretty_print/tests/data/single/window_function_group.sql
+---
+SELECT
+	accounting_lines.id
+	, COUNT(*) OVER (
+		PARTITION BY accounting_lines.accounting_class
+		, COALESCE(source.accounting_account_sub_account_source
+		, accounting_lines.accounting_account_sub_account)
+	) > 1 AS is_shared_target_account
+FROM
+	accounting_lines
+;

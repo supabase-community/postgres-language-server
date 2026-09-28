@@ -21,14 +21,23 @@ pub(super) fn emit_res_target(e: &mut EventEmitter, n: &ResTarget) {
                 matches!(val.node.as_ref(), Some(NodeEnum::CaseExpr(_)))
                     && matches!(e.config().layout, crate::Layout::Expanded);
 
-            if case_alias_in_expanded_layout {
-                e.space();
-            } else {
+            if super::is_window_expression(val) {
+                e.group_start(GroupKind::List);
                 e.line(LineType::SoftOrSpace);
+                e.token(TokenKind::AS_KW);
+                e.space();
+                emit_identifier_maybe_quoted(e, &n.name);
+                e.group_end();
+            } else {
+                if case_alias_in_expanded_layout {
+                    e.space();
+                } else {
+                    e.line(LineType::SoftOrSpace);
+                }
+                e.token(TokenKind::AS_KW);
+                e.space();
+                emit_identifier_maybe_quoted(e, &n.name);
             }
-            e.token(TokenKind::AS_KW);
-            e.space();
-            emit_identifier_maybe_quoted(e, &n.name);
         }
     }
 
