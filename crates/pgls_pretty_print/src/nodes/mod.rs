@@ -527,6 +527,17 @@ use xml_serialize::emit_xml_serialize;
 use crate::emitter::{EventEmitter, GroupKind};
 use pgls_query::{NodeEnum, protobuf::Node};
 
+fn is_window_expression(node: &Node) -> bool {
+    match node.node.as_ref() {
+        Some(NodeEnum::FuncCall(call)) => call.over.is_some(),
+        Some(NodeEnum::AExpr(expr)) => {
+            expr.lexpr.as_deref().is_some_and(is_window_expression)
+                || expr.rexpr.as_deref().is_some_and(is_window_expression)
+        }
+        _ => false,
+    }
+}
+
 pub fn emit_node(node: &Node, e: &mut EventEmitter) {
     emit_node_with(node, e, emit_node_enum);
 }

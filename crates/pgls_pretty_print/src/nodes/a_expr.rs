@@ -57,10 +57,18 @@ fn emit_aexpr_op(e: &mut EventEmitter, n: &AExpr) {
                 // Keep the operator attached to the left-hand side and allow the
                 // right-hand side to wrap underneath when the expression exceeds
                 // the line width.
+                let grouped_suffix =
+                    super::is_window_expression(lexpr) || super::is_window_expression(rexpr);
+                if grouped_suffix {
+                    e.group_start(GroupKind::List);
+                }
                 e.space();
                 emit_operator(e, &n.name);
                 e.line(LineType::SoftOrSpace);
                 emit_operand_with_parens(e, rexpr, parent_info, OperandSide::Right);
+                if grouped_suffix {
+                    e.group_end();
+                }
             } else {
                 e.space();
                 emit_operator(e, &n.name);

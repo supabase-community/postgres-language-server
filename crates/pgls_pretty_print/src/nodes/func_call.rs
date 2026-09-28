@@ -18,6 +18,9 @@ fn get_last_func_name(n: &FuncCall) -> Option<&str> {
 
 pub(super) fn emit_func_call(e: &mut EventEmitter, n: &FuncCall) {
     e.group_start(GroupKind::FuncCall);
+    if n.over.is_some() {
+        e.group_start(GroupKind::List);
+    }
 
     // Determine if this is a special function that needs uppercase treatment
     // For normalize, we need to check if it matches the built-in pattern
@@ -149,6 +152,9 @@ pub(super) fn emit_func_call(e: &mut EventEmitter, n: &FuncCall) {
             emit_standard_function(e, n);
         }
     }
+    if n.over.is_some() {
+        e.group_end();
+    }
 
     if n.agg_within_group {
         debug_assert!(
@@ -189,10 +195,12 @@ pub(super) fn emit_func_call(e: &mut EventEmitter, n: &FuncCall) {
 
     // Handle OVER clause (window functions)
     if let Some(ref over) = n.over {
-        e.line(LineType::SoftOrSpace);
+        e.space();
         e.token(TokenKind::OVER_KW);
         e.space();
+        e.group_start(GroupKind::List);
         super::emit_window_def(e, over);
+        e.group_end();
     }
 
     e.group_end();

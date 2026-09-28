@@ -69,11 +69,9 @@ set enable_bitmapscan = off;
 create temporary table quad_poly_tbl_ord_seq2
 as
   select
-    RANK()
-    over (
+    RANK() over (
       order by p <-> cast('123,456' as point)
-    )
-    as n,
+    ) as n,
     p <-> cast('123,456' as point) as dist,
     id
   from
@@ -310,11 +308,9 @@ set enable_indexscan = 'on';
 set enable_bitmapscan = off;
 
 select
-  RANK()
-  over (
+  RANK() over (
     order by p <-> cast('123,456' as point)
-  )
-  as n,
+  ) as n,
   p <-> cast('123,456' as point) as dist,
   id
 from
@@ -327,11 +323,9 @@ where
 create temporary table quad_poly_tbl_ord_idx2
 as
   select
-    RANK()
-    over (
+    RANK() over (
       order by p <-> cast('123,456' as point)
-    )
-    as n,
+    ) as n,
     p <-> cast('123,456' as point) as dist,
     id
   from

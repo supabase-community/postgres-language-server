@@ -193,11 +193,9 @@ set enable_bitmapscan = off;
 create table quad_box_tbl_ord_seq1
 as
   select
-    RANK()
-    over (
+    RANK() over (
       order by b <-> cast('123,456' as point)
-    )
-    as n,
+    ) as n,
     b <-> cast('123,456' as point) as dist,
     id
   from
@@ -206,11 +204,9 @@ as
 create table quad_box_tbl_ord_seq2
 as
   select
-    RANK()
-    over (
+    RANK() over (
       order by b <-> cast('123,456' as point)
-    )
-    as n,
+    ) as n,
     b <-> cast('123,456' as point) as dist,
     id
   from
@@ -334,11 +330,9 @@ set enable_indexscan = 'on';
 set enable_bitmapscan = off;
 
 select
-  RANK()
-  over (
+  RANK() over (
     order by b <-> cast('123,456' as point)
-  )
-  as n,
+  ) as n,
   b <-> cast('123,456' as point) as dist,
   id
 from
@@ -347,11 +341,9 @@ from
 create temporary table quad_box_tbl_ord_idx1
 as
   select
-    RANK()
-    over (
+    RANK() over (
       order by b <-> cast('123,456' as point)
-    )
-    as n,
+    ) as n,
     b <-> cast('123,456' as point) as dist,
     id
   from
@@ -373,11 +365,9 @@ where
   seq.id is null or idx.id is null;
 
 select
-  RANK()
-  over (
+  RANK() over (
     order by b <-> cast('123,456' as point)
-  )
-  as n,
+  ) as n,
   b <-> cast('123,456' as point) as dist,
   id
 from
@@ -389,11 +379,9 @@ where
 create temporary table quad_box_tbl_ord_idx2
 as
   select
-    RANK()
-    over (
+    RANK() over (
       order by b <-> cast('123,456' as point)
-    )
-    as n,
+    ) as n,
     b <-> cast('123,456' as point) as dist,
     id
   from
