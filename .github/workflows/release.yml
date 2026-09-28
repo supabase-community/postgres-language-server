@@ -29,7 +29,15 @@ jobs:
 
       - name: Set version name
         id: set_version
-        run: echo "version=$(git cliff --bumped-version)" >> "$GITHUB_OUTPUT"
+        run: |
+          version="$(git cliff --bumped-version)"
+          if [[ -z "$version" ]]; then
+            echo "::error::git cliff returned an empty version"
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   wasm:
     name: Build & Test WASM
