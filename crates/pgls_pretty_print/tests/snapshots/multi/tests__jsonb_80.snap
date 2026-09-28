@@ -645,28 +645,19 @@ select jsonb_build_array(variadic cast('{{1,4},{2,5},{3,6}}' as int[][]));
 
 select
   jsonb_build_object(
-    'a',
-    1,
-    'b',
-    1.2,
-    'c',
-    true,
-    'd',
-    null,
-    'e',
-    cast('{"x": 3, "y": [1,2,3]}' as json)
+    'a', 1,
+    'b', 1.2,
+    'c', true,
+    'd', null,
+    'e', cast('{"x": 3, "y": [1,2,3]}' as json)
   );
 
 select
   jsonb_build_object(
-    'a',
-    jsonb_build_object('b', false, 'c', 99),
-    'd',
-    jsonb_build_object(
-      'e',
-      cast(array[9, 8, 7] as int[]),
-      'f',
-      (
+    'a', jsonb_build_object('b', false, 'c', 99),
+    'd', jsonb_build_object(
+      'e', cast(array[9, 8, 7] as int[]),
+      'f', (
         select
           row_to_json(r)
         from
@@ -742,14 +733,11 @@ insert into foo values (847003, 'sub-alpha', 'GESS90');
 
 select
   jsonb_build_object(
-    'turbines',
-    jsonb_object_agg(
+    'turbines', jsonb_object_agg(
       serial_num,
       jsonb_build_object(
-        'name',
-        name,
-        'type',
-        type
+        'name', name,
+        'type', type
       )
     )
   )

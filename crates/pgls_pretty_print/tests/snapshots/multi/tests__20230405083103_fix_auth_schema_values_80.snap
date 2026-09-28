@@ -26,10 +26,8 @@ select
   'email' as provider,
   id as user_id,
   jsonb_build_object(
-    'sub',
-    id,
-    'email',
-    email
+    'sub', id,
+    'email', email
   )
   as identity_data,
   created_at,

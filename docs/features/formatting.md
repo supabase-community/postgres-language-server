@@ -23,8 +23,7 @@ Configure formatting behavior in your `postgres-language-server.jsonc`:
     "constantCase": "lower",
     "typeCase": "lower",
     "functionArgumentGroups": {
-      "json_build_object": 2,
-      "jsonb_build_object": 2
+      "my_pair_func": 2
     }
   }
 }
@@ -58,6 +57,20 @@ select jsonb_build_object(
   'amountTTC', to_amount(amount_ttc, invoices.currency),
   'amountVAT', to_amount(amount_vat, invoices.currency)
 );
+```
+
+`json_build_object` and `jsonb_build_object` are grouped in pairs by default,
+without configuration. Configure a function explicitly to use a different group
+size; a size of `1` opts out of the built-in default:
+
+```json
+{
+  "format": {
+    "functionArgumentGroups": {
+      "jsonb_build_object": 1
+    }
+  }
+}
 ```
 
 ### Example Output

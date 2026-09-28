@@ -16,9 +16,21 @@ fn get_last_func_name(n: &FuncCall) -> Option<&str> {
     })
 }
 
+/// Functions whose arguments form key/value pairs by default, without configuration.
+/// These are PostgreSQL's JSON object constructors: their arguments alternate between
+/// keys and values, so a group size of two keeps each pair together when wrapping.
+/// A configured group size always takes precedence, so `jsonb_build_object: 1` opts out.
+const DEFAULT_GROUPED_FUNCTIONS: [&str; 2] = ["json_build_object", "jsonb_build_object"];
+const DEFAULT_ARGUMENT_GROUP_SIZE: usize = 2;
+
 fn configured_argument_group_size(e: &EventEmitter, n: &FuncCall) -> Option<usize> {
     let name = get_last_func_name(n)?.to_lowercase();
-    e.config().function_argument_groups.get(&name).copied()
+    if let Some(size) = e.config().function_argument_groups.get(&name) {
+        return Some(*size);
+    }
+    DEFAULT_GROUPED_FUNCTIONS
+        .contains(&name.as_str())
+        .then_some(DEFAULT_ARGUMENT_GROUP_SIZE)
 }
 
 fn emit_grouped_arguments(e: &mut EventEmitter, args: &[pgls_query::Node], group_size: usize) {

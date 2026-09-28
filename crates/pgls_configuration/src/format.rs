@@ -12,7 +12,9 @@ use std::{
 /// Function names mapped to the number of adjacent arguments that form one logical unit.
 ///
 /// Names match the final, unqualified function identifier case-insensitively. For example,
-/// `{ "jsonb_build_object": 2 }` keeps each key/value pair together when the argument list wraps.
+/// `{ "my_pair_func": 2 }` keeps each key/value pair together when the argument list wraps.
+/// `json_build_object` and `jsonb_build_object` are grouped in pairs by the formatter without
+/// configuration; a configured size always takes precedence, so `1` disables the default.
 #[derive(Clone, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 #[cfg_attr(feature = "schema", schemars(transparent))]
@@ -334,6 +336,8 @@ pub struct FormatConfiguration {
     #[partial(bpaf(long("isolate-semicolon")))]
     pub isolate_semicolon: bool,
     /// Function names mapped to the number of adjacent arguments in one logical group.
+    /// `json_build_object` and `jsonb_build_object` are grouped in pairs by default;
+    /// configure a size of `1` to opt out.
     #[partial(bpaf(hide))]
     pub function_argument_groups: FunctionArgumentGroups,
     /// If `true`, skip formatting of SQL function bodies (keep them verbatim). Default: `false`.
