@@ -113,7 +113,7 @@ impl<W: Write> Renderer<W> {
     fn render_group(&mut self, group_events: &[LayoutEvent]) -> Result<(), std::fmt::Error> {
         if let Some(single_line) = self.try_single_line(group_events) {
             let would_fit =
-                self.current_line_length + single_line.len() <= self.config.max_line_length;
+                self.effective_line_length() + single_line.len() <= self.config.max_line_length;
             if would_fit {
                 self.write_text(&single_line)?;
                 return Ok(());
@@ -132,7 +132,7 @@ impl<W: Write> Renderer<W> {
         // Try single-line first, independent of parent's break status
         if let Some(single_line) = self.try_single_line(group_events) {
             let would_fit =
-                self.current_line_length + single_line.len() <= self.config.max_line_length;
+                self.effective_line_length() + single_line.len() <= self.config.max_line_length;
             if would_fit {
                 self.write_text(&single_line)?;
                 return Ok(());
@@ -141,6 +141,18 @@ impl<W: Write> Renderer<W> {
 
         // Fall back to breaking
         self.render_events_with_breaks(inner_events)
+    }
+
+    /// The current line length, counting the indentation that will be written when the
+    /// next text starts a line. `current_line_length` is reset to zero by a line break
+    /// and only grows with the indent when text is actually written, so width checks
+    /// made right after a break must account for the pending indentation themselves.
+    fn effective_line_length(&self) -> usize {
+        if self.at_line_start {
+            self.indent_level * self.config.indent_size
+        } else {
+            self.current_line_length
+        }
     }
 
     fn render_events_with_breaks(&mut self, events: &[LayoutEvent]) -> Result<(), std::fmt::Error> {

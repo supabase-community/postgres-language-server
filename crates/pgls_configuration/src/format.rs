@@ -13,8 +13,6 @@ use std::{
 ///
 /// Names match the final, unqualified function identifier case-insensitively. For example,
 /// `{ "my_pair_func": 2 }` keeps each key/value pair together when the argument list wraps.
-/// `json_build_object` and `jsonb_build_object` are grouped in pairs by the formatter without
-/// configuration; a configured size always takes precedence, so `1` disables the default.
 #[derive(Clone, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 #[cfg_attr(feature = "schema", schemars(transparent))]
@@ -412,7 +410,7 @@ mod tests {
     }
 
     #[test]
-    fn parses_function_argument_groups_from_cli_value() {
+    fn parses_function_argument_groups_from_str() {
         let groups = FunctionArgumentGroups::from_str("json_build_object:2,jsonb_build_object:2")
             .expect("function argument groups should parse");
 

@@ -1,6 +1,6 @@
--- pgls-format: lineWidth=80, functionArgumentGroups=jsonb_build_object:1|my_pair_func:2
--- `jsonb_build_object: 1` opts out of the built-in default grouping, while `my_pair_func: 2`
--- groups a custom function.
+-- pgls-format: lineWidth=80, commaStyle=leading, functionArgumentGroups=my_pair_func:2
+-- Leading commas apply to grouped arguments too: the break opportunity sits before the
+-- comma, so a broken grouped list reads "\n, 'key', value".
 SELECT my_pair_func(
     'amountTTC',
     to_amount(amount_ttc, invoices.currency),
@@ -16,5 +16,5 @@ jsonb_build_object(
     users.email,
     'profile',
     users.name
-) AS ungrouped
+) AS ungrouped_default
 FROM users;
