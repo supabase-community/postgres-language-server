@@ -34,8 +34,8 @@ use database::{
 };
 use files::{FilesConfiguration, PartialFilesConfiguration, partial_files_configuration};
 pub use format::{
-    FormatConfiguration, IndentStyle as FormatIndentStyle, KeywordCase, PartialFormatConfiguration,
-    partial_format_configuration,
+    FormatConfiguration, FunctionArgumentGroups, IndentStyle as FormatIndentStyle, KeywordCase,
+    PartialFormatConfiguration, partial_format_configuration,
 };
 pub use linter::{
     LinterConfiguration, PartialLinterConfiguration, Rules, partial_linter_configuration,

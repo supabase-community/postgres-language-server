@@ -1,0 +1,20 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/single/function_argument_groups_default.sql
+---
+select
+  jsonb_build_object(
+    'amountTTC', to_amount(amount_ttc, invoices.currency),
+    'amountVAT', to_amount(amount_vat, invoices.currency),
+    'invoiceReference',
+    format_invoice_number(
+      invoices.series,
+      invoices.issued_on
+    ),
+    'id', users.id
+  ),
+  json_build_object(
+    'profile', jsonb_build_object('name', users.name, 'age', users.age)
+  )
+from
+  users;

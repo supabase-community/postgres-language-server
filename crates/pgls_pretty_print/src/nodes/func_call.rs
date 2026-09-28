@@ -1,5 +1,5 @@
 use crate::{
-    TokenKind,
+    CommaStyle, TokenKind,
     emitter::{EventEmitter, GroupKind, LineType},
     nodes::node_list::emit_comma_separated_list,
 };
@@ -14,6 +14,82 @@ fn get_last_func_name(n: &FuncCall) -> Option<&str> {
             None
         }
     })
+}
+
+/// Functions whose arguments form key/value pairs by default, without configuration.
+/// These are PostgreSQL's JSON object constructors: their arguments alternate between
+/// keys and values, so a group size of two keeps each pair together when wrapping.
+/// A configured group size always takes precedence, so `jsonb_build_object: 1` opts out.
+const DEFAULT_GROUPED_FUNCTIONS: [&str; 2] = ["json_build_object", "jsonb_build_object"];
+const DEFAULT_ARGUMENT_GROUP_SIZE: usize = 2;
+
+fn configured_argument_group_size(e: &EventEmitter, n: &FuncCall) -> Option<usize> {
+    let name = get_last_func_name(n)?;
+    let groups = &e.config().function_argument_groups;
+
+    // Fast path for the common case: nothing is configured and the function is not one of
+    // the defaults. Avoids the lowercase allocation for every function call in the file.
+    if groups.is_empty()
+        && !DEFAULT_GROUPED_FUNCTIONS
+            .iter()
+            .any(|f| f.eq_ignore_ascii_case(name))
+    {
+        return None;
+    }
+
+    let name = name.to_lowercase();
+    if let Some(size) = groups.get(&name) {
+        return Some(*size);
+    }
+    DEFAULT_GROUPED_FUNCTIONS
+        .contains(&name.as_str())
+        .then_some(DEFAULT_ARGUMENT_GROUP_SIZE)
+}
+
+fn emit_grouped_arguments(e: &mut EventEmitter, args: &[pgls_query::Node], group_size: usize) {
+    let leading = matches!(e.config().comma_style, CommaStyle::Leading);
+
+    for (group_index, arguments) in args.chunks(group_size).enumerate() {
+        if group_index > 0 {
+            emit_grouped_comma(e, leading, arguments.first(), LineType::SoftOrSpace);
+        }
+
+        e.group_start(GroupKind::FunctionArgumentGroup);
+        for (argument_index, argument) in arguments.iter().enumerate() {
+            if argument_index > 0 {
+                // `Fill` keeps the pair on one line when it fits and falls back to one
+                // argument per line when it does not, instead of exceeding the line width.
+                emit_grouped_comma(e, leading, Some(argument), LineType::Fill);
+            }
+            super::emit_node(argument, e);
+        }
+        e.group_end();
+    }
+}
+
+/// Emit the comma before a grouped argument, honoring `commaStyle` the same way
+/// `emit_comma_separated_list_with_spacing` does: leading puts the break opportunity
+/// before the comma (`\n, column`), trailing puts it after.
+fn emit_grouped_comma(
+    e: &mut EventEmitter,
+    leading: bool,
+    argument: Option<&pgls_query::Node>,
+    break_type: LineType,
+) {
+    if leading {
+        if let Some(location) = argument
+            .and_then(|arg| arg.node.as_ref())
+            .and_then(|node| crate::codegen::node_location::node_location(&node.to_ref()))
+        {
+            e.take_own_line_leading_comments_at(location);
+        }
+        e.line(LineType::Soft);
+        e.token(TokenKind::COMMA);
+        e.space();
+    } else {
+        e.token(TokenKind::COMMA);
+        e.line(break_type);
+    }
 }
 
 pub(super) fn emit_func_call(e: &mut EventEmitter, n: &FuncCall) {
@@ -249,6 +325,8 @@ fn emit_standard_function(e: &mut EventEmitter, n: &FuncCall) {
                 e.token(TokenKind::VARIADIC_KW);
                 e.space();
                 super::emit_node(n.args.last().unwrap(), e);
+            } else if let Some(group_size) = configured_argument_group_size(e, n) {
+                emit_grouped_arguments(e, &n.args, group_size);
             } else {
                 emit_comma_separated_list(e, &n.args, super::emit_node);
             }

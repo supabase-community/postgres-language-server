@@ -21,7 +21,10 @@ Configure formatting behavior in your `postgres-language-server.jsonc`:
     "indentStyle": "spaces",
     "keywordCase": "lower",
     "constantCase": "lower",
-    "typeCase": "lower"
+    "typeCase": "lower",
+    "functionArgumentGroups": {
+      "my_pair_func": 2
+    }
   }
 }
 ```
@@ -43,6 +46,35 @@ Configure formatting behavior in your `postgres-language-server.jsonc`:
 | `castStyle` | `"cast"` | How an explicit cast is spelled: `"cast"` for `CAST(x AS t)`, `"operator"` for `x::t` |
 | `clauseBodyStyle` | `"break"` | Where a clause body starts: `"break"` for a new line, `"compact"` to keep the first element on the keyword line |
 | `isolateSemicolon` | `false` | Put the terminating semicolon on its own line when the statement spans several lines |
+| `functionArgumentGroups` | `{}` (plus built-in defaults, see below) | Function names mapped to the number of adjacent arguments that should stay together when wrapping |
+
+`functionArgumentGroups` matches the final, unqualified function name
+case-insensitively. A group size of `2` is useful for functions whose arguments
+form key/value pairs:
+
+```sql
+select jsonb_build_object(
+  'amountTTC', to_amount(amount_ttc, invoices.currency),
+  'amountVAT', to_amount(amount_vat, invoices.currency)
+);
+```
+
+A group stays on one line when it fits; when it does not, the formatter breaks
+between its arguments rather than exceeding the line width.
+
+`json_build_object` and `jsonb_build_object` are grouped in pairs by default,
+without configuration. Configure a function explicitly to use a different group
+size; a size of `1` opts out of the built-in default:
+
+```json
+{
+  "format": {
+    "functionArgumentGroups": {
+      "jsonb_build_object": 1
+    }
+  }
+}
+```
 
 ### Example Output
 
