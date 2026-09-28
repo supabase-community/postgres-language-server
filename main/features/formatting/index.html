@@ -157,7 +157,10 @@
     &quot;indentStyle&quot;: &quot;spaces&quot;,
     &quot;keywordCase&quot;: &quot;lower&quot;,
     &quot;constantCase&quot;: &quot;lower&quot;,
-    &quot;typeCase&quot;: &quot;lower&quot;
+    &quot;typeCase&quot;: &quot;lower&quot;,
+    &quot;functionArgumentGroups&quot;: {
+      &quot;my_pair_func&quot;: 2
+    }
   }
 }
 </code></pre>
@@ -236,8 +239,34 @@
 <td><code>false</code></td>
 <td>Put the terminating semicolon on its own line when the statement spans several lines</td>
 </tr>
+<tr>
+<td><code>functionArgumentGroups</code></td>
+<td><code>{}</code> (plus built-in defaults, see below)</td>
+<td>Function names mapped to the number of adjacent arguments that should stay together when wrapping</td>
+</tr>
 </tbody>
 </table>
+<p><code>functionArgumentGroups</code> matches the final, unqualified function name
+case-insensitively. A group size of <code>2</code> is useful for functions whose arguments
+form key/value pairs:</p>
+<pre><code class="language-sql">select jsonb_build_object(
+  'amountTTC', to_amount(amount_ttc, invoices.currency),
+  'amountVAT', to_amount(amount_vat, invoices.currency)
+);
+</code></pre>
+<p>A group stays on one line when it fits; when it does not, the formatter breaks
+between its arguments rather than exceeding the line width.</p>
+<p><code>json_build_object</code> and <code>jsonb_build_object</code> are grouped in pairs by default,
+without configuration. Configure a function explicitly to use a different group
+size; a size of <code>1</code> opts out of the built-in default:</p>
+<pre><code class="language-json">{
+  &quot;format&quot;: {
+    &quot;functionArgumentGroups&quot;: {
+      &quot;jsonb_build_object&quot;: 1
+    }
+  }
+}
+</code></pre>
 <h3 id="example-output">Example Output</h3>
 <p>With default settings (lowercase):</p>
 <pre><code class="language-sql">create table users (
