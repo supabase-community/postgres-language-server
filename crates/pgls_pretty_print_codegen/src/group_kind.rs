@@ -19,6 +19,7 @@ pub fn group_kind_mod(analyser: ProtoAnalyzer) -> proc_macro2::TokenStream {
         #[derive(Clone, PartialEq, Debug)]
         pub enum GroupKind {
             #(#node_enum_variants),*,
+            FunctionArgumentGroup,
         }
     }
 }

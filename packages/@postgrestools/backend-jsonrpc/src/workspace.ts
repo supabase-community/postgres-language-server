@@ -456,6 +456,10 @@ export interface PartialFormatConfiguration {
    */
   enabled?: boolean;
   /**
+   * Function names mapped to the number of adjacent arguments in one logical group.
+   */
+  functionArgumentGroups?: { [key: string]: number };
+  /**
    * A list of Unix shell style patterns. The formatter will ignore files/folders that will match these patterns.
    */
   ignore?: StringSet;

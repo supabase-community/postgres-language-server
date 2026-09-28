@@ -5,7 +5,7 @@ pub mod nodes;
 pub mod normalize;
 pub mod renderer;
 
-use std::collections::HashSet;
+use std::collections::{BTreeMap, HashSet};
 
 pub use crate::codegen::token_kind::TokenKind;
 pub use crate::comments::{AttachedComments, Comment, attach_comments};
@@ -124,6 +124,8 @@ pub struct FormatConfig {
     /// Put the terminating semicolon on its own line when the statement spans several lines.
     /// Default: false.
     pub isolate_semicolon: bool,
+    /// Function names mapped to the number of adjacent arguments in one logical group.
+    pub function_argument_groups: BTreeMap<String, usize>,
 }
 
 impl Default for FormatConfig {
@@ -141,6 +143,7 @@ impl Default for FormatConfig {
             cast_style: CastStyle::default(),
             clause_body_style: ClauseBodyStyle::default(),
             isolate_semicolon: false,
+            function_argument_groups: BTreeMap::new(),
         }
     }
 }
@@ -160,6 +163,7 @@ impl From<FormatConfig> for RenderConfig {
             cast_style: _,
             clause_body_style: _,
             isolate_semicolon,
+            function_argument_groups: _,
         } = config;
 
         Self {

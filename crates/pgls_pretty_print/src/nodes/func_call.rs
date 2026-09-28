@@ -16,6 +16,30 @@ fn get_last_func_name(n: &FuncCall) -> Option<&str> {
     })
 }
 
+fn configured_argument_group_size(e: &EventEmitter, n: &FuncCall) -> Option<usize> {
+    let name = get_last_func_name(n)?.to_lowercase();
+    e.config().function_argument_groups.get(&name).copied()
+}
+
+fn emit_grouped_arguments(e: &mut EventEmitter, args: &[pgls_query::Node], group_size: usize) {
+    for (group_index, arguments) in args.chunks(group_size).enumerate() {
+        if group_index > 0 {
+            e.token(TokenKind::COMMA);
+            e.line(LineType::SoftOrSpace);
+        }
+
+        e.group_start(GroupKind::FunctionArgumentGroup);
+        for (argument_index, argument) in arguments.iter().enumerate() {
+            if argument_index > 0 {
+                e.token(TokenKind::COMMA);
+                e.space();
+            }
+            super::emit_node(argument, e);
+        }
+        e.group_end();
+    }
+}
+
 pub(super) fn emit_func_call(e: &mut EventEmitter, n: &FuncCall) {
     e.group_start(GroupKind::FuncCall);
 
@@ -241,6 +265,8 @@ fn emit_standard_function(e: &mut EventEmitter, n: &FuncCall) {
                 e.token(TokenKind::VARIADIC_KW);
                 e.space();
                 super::emit_node(n.args.last().unwrap(), e);
+            } else if let Some(group_size) = configured_argument_group_size(e, n) {
+                emit_grouped_arguments(e, &n.args, group_size);
             } else {
                 emit_comma_separated_list(e, &n.args, super::emit_node);
             }

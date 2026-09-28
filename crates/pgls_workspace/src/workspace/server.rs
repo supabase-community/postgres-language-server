@@ -957,6 +957,12 @@ impl Workspace for WorkspaceServer {
             cast_style: settings.formatter.cast_style.into(),
             clause_body_style: settings.formatter.clause_body_style.into(),
             isolate_semicolon: settings.formatter.isolate_semicolon,
+            function_argument_groups: settings
+                .formatter
+                .function_argument_groups
+                .iter()
+                .map(|(name, size)| (name.to_lowercase(), usize::from(size.get())))
+                .collect(),
         };
 
         let mut diagnostics = Vec::new();
