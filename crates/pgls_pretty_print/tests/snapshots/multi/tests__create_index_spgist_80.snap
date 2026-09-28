@@ -1,6 +1,7 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/create_index_spgist.sql
+snapshot_kind: text
 ---
 create table quad_point_tbl as select point(unique1, unique2) as p from tenk1;
 

@@ -4446,12 +4446,8 @@ as (
     vs
 )
 select distinct
-  sum_following.s =
-  sum_int_randomrestart(v) over fwd
-  as eq1,
-  -sum_following.s =
-  sum_int_randomrestart(-v) over fwd
-  as eq2,
+  sum_following.s = sum_int_randomrestart(v) over fwd as eq1,
+  -sum_following.s = sum_int_randomrestart(-v) over fwd as eq2,
   100 * 3 + (vs.i - 1) * 3 =
   length(
     logging_agg_nonstrict(cast('' as text)) over fwd
