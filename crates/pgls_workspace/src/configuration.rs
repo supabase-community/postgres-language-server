@@ -9,7 +9,7 @@ use pgls_analyser::LinterRules;
 use pgls_configuration::Merge;
 use pgls_configuration::{
     ConfigurationDiagnostic, ConfigurationPathHint, ConfigurationPayload, PartialConfiguration,
-    VERSION, diagnostics::CantLoadExtendFile, push_to_analyser_rules,
+    VERSION, diagnostics::CantLoadExtendFile,
 };
 use pgls_console::markup;
 use pgls_env::PGLS_WEBSITE;
@@ -217,8 +217,8 @@ pub fn create_config(
 /// Returns the rules applied to a specific [Path], given the [Settings]
 pub fn to_analyser_rules(settings: &Settings) -> LinterRules {
     let mut analyser_rules = LinterRules::default();
-    if let Some(rules) = settings.linter.rules.as_ref() {
-        push_to_analyser_rules(rules, pgls_analyser::METADATA.deref(), &mut analyser_rules);
+    if let Some(rules) = settings.as_linter_rules() {
+        rules.push_to_analyser_rules(pgls_analyser::METADATA.deref(), &mut analyser_rules);
     }
     analyser_rules
 }

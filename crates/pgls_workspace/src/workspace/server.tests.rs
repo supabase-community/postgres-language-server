@@ -103,7 +103,7 @@ async fn test_diagnostics(test_db: PgPool) {
 
     assert_eq!(
         diagnostic.category().map(|c| c.name()),
-        Some("lint/safety/banDropTable")
+        Some("lint/banDropTable")
     );
 
     assert_eq!(
@@ -190,7 +190,7 @@ fn test_unreachable_database_diagnostics_keep_static_results_and_back_off() {
     assert!(
         diagnostics.iter().any(|d| d
             .category()
-            .is_some_and(|c| c.name() == "lint/safety/banDropTable")),
+            .is_some_and(|c| c.name() == "lint/banDropTable")),
         "Expected static lint diagnostics even when database is unreachable"
     );
 
@@ -201,7 +201,7 @@ fn test_unreachable_database_diagnostics_keep_static_results_and_back_off() {
     assert!(
         diagnostics.iter().any(|d| d
             .category()
-            .is_some_and(|c| c.name() == "lint/safety/banDropTable")),
+            .is_some_and(|c| c.name() == "lint/banDropTable")),
         "Expected static lint diagnostics during database retry backoff"
     );
     assert!(
@@ -727,10 +727,7 @@ async fn test_disable_typecheck(test_db: PgPool) {
         .diagnostics;
 
     assert_eq!(
-        diagnostics
-            .iter()
-            .filter(|d| d.category().is_some_and(|c| c.name() == "typecheck"))
-            .count(),
+        diagnostics.iter().filter(|d| is_typecheck(d)).count(),
         1,
         "Expected one typecheck diagnostic"
     );
@@ -760,10 +757,7 @@ async fn test_disable_typecheck(test_db: PgPool) {
         .diagnostics;
 
     assert_eq!(
-        diagnostics
-            .iter()
-            .filter(|d| d.category().is_some_and(|c| c.name() == "typecheck"))
-            .count(),
+        diagnostics.iter().filter(|d| is_typecheck(d)).count(),
         0,
         "Expected no typecheck diagnostic"
     );
@@ -816,22 +810,22 @@ async fn test_create_as_typecheck_diagnostic_offsets(test_db: PgPool) {
         .filter(|diagnostic| {
             diagnostic
                 .category()
-                .is_some_and(|category| category.name() == "typecheck")
-                && serde_json::to_string(diagnostic)
-                    .is_ok_and(|serialized| serialized.contains("42703"))
+                .is_some_and(|category| category.name() == "lint/unknownColumn")
         })
         .collect::<Vec<_>>();
 
     assert_eq!(
         typecheck_diagnostics.len(),
         1,
-        "Expected one 42703 typecheck diagnostic, got {diagnostics:#?}"
+        "Expected one unknownColumn diagnostic, got {diagnostics:#?}"
     );
 
-    let expected_start = content.find("nope").expect("missing test identifier");
+    let expected_start = content.find("t.nope").expect("missing test identifier");
     let expected_span = TextRange::new(
         u32::try_from(expected_start).unwrap().into(),
-        u32::try_from(expected_start + "nope".len()).unwrap().into(),
+        u32::try_from(expected_start + "t.nope".len())
+            .unwrap()
+            .into(),
     );
 
     assert_eq!(
@@ -894,11 +888,7 @@ SELECT missing_column FROM named_parameter_typecheck_users;
 
     let typecheck_diagnostics = diagnostics
         .iter()
-        .filter(|diagnostic| {
-            diagnostic
-                .category()
-                .is_some_and(|category| category.name() == "typecheck")
-        })
+        .filter(|diagnostic| is_typecheck(diagnostic))
         .collect::<Vec<_>>();
 
     assert_eq!(
@@ -1213,7 +1203,7 @@ async fn test_search_path_configuration(test_db: PgPool) {
         // yep, type error!
         assert_eq!(
             diagnostics_glob[0].category().map(|c| c.name()),
-            Some("typecheck")
+            Some("lint/unknownFunction")
         );
     }
 
@@ -1332,4 +1322,14 @@ select * from auth.users;
         TextRange::new(position, position),
         "Expected no syntax diagnostic"
     );
+}
+
+/// Whether the diagnostic comes from a rule of the `typecheck` group or from the database.
+fn is_typecheck(diagnostic: &pgls_diagnostics::serde::Diagnostic) -> bool {
+    diagnostic.category().is_some_and(|category| {
+        category.name() == "typecheck"
+            || category.name().strip_prefix("lint/").is_some_and(|rule| {
+                pgls_analyser::METADATA.group_of(rule) == Some(pgls_analyser::TYPECHECK_GROUP)
+            })
+    })
 }

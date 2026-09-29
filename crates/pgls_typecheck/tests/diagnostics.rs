@@ -43,7 +43,7 @@ impl TestSetup<'_> {
             tree: &tree,
             schema_cache: &schema_cache,
             identifiers: self.typed_identifiers,
-            search_path_patterns: vec![],
+            search_path: &[],
         })
         .await;
 
