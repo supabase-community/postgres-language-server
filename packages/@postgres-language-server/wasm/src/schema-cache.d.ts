@@ -1,4 +1,7 @@
 // Generated file, do not edit by hand, see `xtask/codegen`
+/**
+ * The objects of the connected database, loaded from the database or from JSON.
+ */
 export interface SchemaCache {
   columns?: Column[];
   extensions?: Extension[];
@@ -160,6 +163,10 @@ export interface Table {
   comment?: string;
   dead_rows_estimate: number;
   id: number;
+  /**
+   * Whether the table is a partition or inherits from another table.
+   */
+  is_inheritance_child?: boolean;
   live_rows_estimate: number;
   name: string;
   replica_identity: ReplicaIdentity;

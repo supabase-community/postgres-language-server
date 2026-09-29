@@ -1,18 +1,18 @@
+use crate::Snapshot;
 use globset::Glob;
-use pgls_schema_cache::SchemaCache;
 
 /// Expands the configured search path patterns against the schemas of the database.
 ///
 /// Patterns can be schema names or globs (e.g. `app_*`). The order of the patterns is kept, and
 /// `public` is always included last if it is not matched already.
-pub fn expand_search_path(schema_cache: &SchemaCache, patterns: &[String]) -> Vec<String> {
+pub fn expand_search_path(snapshot: &Snapshot, patterns: &[String]) -> Vec<String> {
     let mut schemas: Vec<String> = Vec::new();
     for pattern in patterns {
         let Ok(glob) = Glob::new(pattern) else {
             continue;
         };
         let matcher = glob.compile_matcher();
-        for schema in &schema_cache.schemas {
+        for schema in &snapshot.schemas {
             if matcher.is_match(schema.name.as_str()) && !schemas.contains(&schema.name) {
                 schemas.push(schema.name.clone());
             }
@@ -32,10 +32,10 @@ mod tests {
 
     #[test]
     fn expands_globs_in_order() {
-        let schema_cache = SchemaCache {
+        let snapshot = Snapshot {
             schemas: ["public", "app_a", "app_b", "private"]
                 .into_iter()
-                .map(|name| pgls_schema_cache::Schema {
+                .map(|name| crate::Schema {
                     name: name.into(),
                     ..Default::default()
                 })
@@ -43,7 +43,7 @@ mod tests {
             ..Default::default()
         };
         assert_eq!(
-            expand_search_path(&schema_cache, &["private".into(), "app_*".into()]),
+            expand_search_path(&snapshot, &["private".into(), "app_*".into()]),
             ["private", "app_a", "app_b", "public"]
         );
     }

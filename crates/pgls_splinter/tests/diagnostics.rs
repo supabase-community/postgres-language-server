@@ -68,7 +68,7 @@ impl TestSetup<'_> {
         let diagnostics = run_splinter(
             SplinterParams {
                 conn: self.test_db,
-                schema_cache: None,
+                snapshot: None,
                 config: None,
             },
             &filter,
@@ -253,7 +253,7 @@ async fn missing_roles_runs_generic_checks_only(test_db: PgPool) {
     let diagnostics = run_splinter(
         SplinterParams {
             conn: &test_db,
-            schema_cache: None,
+            snapshot: None,
             config: None,
         },
         &filter,
@@ -277,7 +277,7 @@ async fn missing_roles_runs_generic_checks_only(test_db: PgPool) {
     let diagnostics_with_issue = run_splinter(
         SplinterParams {
             conn: &test_db,
-            schema_cache: None,
+            snapshot: None,
             config: None,
         },
         &filter,
@@ -310,7 +310,7 @@ async fn ignore_filtering_filters_matching_objects(test_db: PgPool) {
     let diagnostics_without_ignore = run_splinter(
         SplinterParams {
             conn: &test_db,
-            schema_cache: None,
+            snapshot: None,
             config: None,
         },
         &filter,
@@ -365,7 +365,7 @@ async fn ignore_filtering_filters_matching_objects(test_db: PgPool) {
     let diagnostics_with_ignore = run_splinter(
         SplinterParams {
             conn: &test_db,
-            schema_cache: None,
+            snapshot: None,
             config: Some(&splinter_config),
         },
         &filter,
@@ -447,7 +447,7 @@ async fn ignore_filtering_with_schema_wildcard(test_db: PgPool) {
     let diagnostics = run_splinter(
         SplinterParams {
             conn: &test_db,
-            schema_cache: None,
+            snapshot: None,
             config: Some(&splinter_config),
         },
         &filter,
@@ -506,7 +506,7 @@ async fn global_ignore_filters_all_rules(test_db: PgPool) {
     let diagnostics = run_splinter(
         SplinterParams {
             conn: &test_db,
-            schema_cache: None,
+            snapshot: None,
             config: Some(&splinter_config),
         },
         &filter,
@@ -587,7 +587,7 @@ async fn global_ignore_combined_with_per_rule_ignore(test_db: PgPool) {
     let diagnostics = run_splinter(
         SplinterParams {
             conn: &test_db,
-            schema_cache: None,
+            snapshot: None,
             config: Some(&splinter_config),
         },
         &filter,

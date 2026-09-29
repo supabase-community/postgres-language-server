@@ -1,5 +1,5 @@
+use pgls_catalog::Snapshot;
 use pgls_hover::{OnHoverParams, on_hover};
-use pgls_schema_cache::SchemaCache;
 use pgls_test_utils::QueryWithCursorPosition;
 use pgls_text_size::TextSize;
 use sqlx::{Executor, PgPool};
@@ -12,7 +12,7 @@ async fn test_hover_at_cursor(name: &str, query: String, setup: Option<&str>, te
             .expect("Failed to setup test database");
     }
 
-    let schema_cache = SchemaCache::load(test_db)
+    let snapshot = Snapshot::load(test_db)
         .await
         .expect("Failed to load Schema Cache");
 
@@ -30,7 +30,7 @@ async fn test_hover_at_cursor(name: &str, query: String, setup: Option<&str>, te
 
     let hover_results = on_hover(OnHoverParams {
         position: TextSize::new(position as u32),
-        schema_cache: &schema_cache,
+        snapshot: &snapshot,
         stmt_sql: &sql,
         ast: ast.as_ref(),
         ts_tree: &tree,

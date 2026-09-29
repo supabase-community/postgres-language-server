@@ -1,11 +1,11 @@
 use std::cell::OnceCell;
 
 use pgls_analyse::{GroupCategory, RuleCategory, RuleGroup, RuleMetadata};
+use pgls_catalog::Snapshot;
 use pgls_catalog::{
     Catalog, Session,
     resolve::{FunctionContext, Resolution, ResolveParams, resolve},
 };
-use pgls_schema_cache::SchemaCache;
 
 pub(crate) use pgls_catalog::{is_reindex_concurrent, is_vacuum_full};
 
@@ -26,7 +26,7 @@ pub enum FileKind {
 pub struct LinterRuleContext<'a, R: LinterRule> {
     stmt: &'a pgls_query::NodeEnum,
     options: &'a R::Options,
-    schema_cache: Option<&'a SchemaCache>,
+    snapshot: Option<&'a Snapshot>,
     file_context: &'a AnalysedFileContext<'a>,
     statement: &'a StatementContext<'a>,
 }
@@ -38,14 +38,14 @@ where
     pub fn new(
         stmt: &'a pgls_query::NodeEnum,
         options: &'a R::Options,
-        schema_cache: Option<&'a SchemaCache>,
+        snapshot: Option<&'a Snapshot>,
         file_context: &'a AnalysedFileContext,
         statement: &'a StatementContext<'a>,
     ) -> Self {
         Self {
             stmt,
             options,
-            schema_cache,
+            snapshot,
             file_context,
             statement,
         }
@@ -70,8 +70,8 @@ where
         self.file_context
     }
 
-    pub fn schema_cache(&self) -> Option<&SchemaCache> {
-        self.schema_cache
+    pub fn snapshot(&self) -> Option<&Snapshot> {
+        self.snapshot
     }
 
     /// The catalog as it is before the current statement: the database snapshot plus the

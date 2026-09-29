@@ -12,7 +12,7 @@ version              = "0.0.0"
 
 
 [dependencies]
-pgls_schema_cache         = { workspace = true, features = ["serde"] }
+pgls_catalog              = { workspace = true }
 pgls_text_size.workspace  = true
 pgls_treesitter.workspace = true
 
@@ -27,7 +27,7 @@ tree-sitter.workspace             = true
 [dev-dependencies]
 criterion.workspace       = true
 insta.workspace           = true
-pgls_schema_cache         = { workspace = true, features = ["db"] }
+pgls_catalog              = { workspace = true, features = ["db"] }
 pgls_test_utils.workspace = true
 regex                     = "1.12.2"
 sqlx.workspace            = true

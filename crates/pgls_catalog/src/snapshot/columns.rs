@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "db")]
-use crate::schema_cache::SchemaCacheItem;
+use super::SnapshotItem;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
@@ -79,11 +79,11 @@ pub struct ForeignKeyReference {
 }
 
 #[cfg(feature = "db")]
-impl SchemaCacheItem for Column {
+impl SnapshotItem for Column {
     type Item = Column;
 
     async fn load(pool: &sqlx::PgPool) -> Result<Vec<Self::Item>, sqlx::Error> {
-        sqlx::query_file_as!(Column, "src/queries/columns.sql")
+        sqlx::query_file_as!(Column, "src/snapshot/queries/columns.sql")
             .fetch_all(pool)
             .await
     }
@@ -93,7 +93,7 @@ impl SchemaCacheItem for Column {
 mod tests {
     use sqlx::{Executor, PgPool};
 
-    use crate::{SchemaCache, columns::ColumnClassKind};
+    use crate::snapshot::{Snapshot, columns::ColumnClassKind};
 
     #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
     async fn loads_columns(test_db: PgPool) {
@@ -128,7 +128,7 @@ mod tests {
             .await
             .expect("Failed to setup test database");
 
-        let cache = SchemaCache::load(&test_db)
+        let cache = Snapshot::load(&test_db)
             .await
             .expect("Failed to load Schema Cache");
 

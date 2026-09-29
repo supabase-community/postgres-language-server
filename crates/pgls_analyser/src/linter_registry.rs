@@ -74,7 +74,7 @@ pub struct LinterRegistryRuleParams<'a> {
     pub options: &'a LinterOptions,
     pub analysed_file_context: &'a AnalysedFileContext<'a>,
     pub statement: &'a StatementContext<'a>,
-    pub schema_cache: Option<&'a pgls_schema_cache::SchemaCache>,
+    pub snapshot: Option<&'a pgls_catalog::Snapshot>,
 }
 
 /// Executor for rule as a generic function pointer
@@ -95,7 +95,7 @@ impl RegistryLinterRule {
             let ctx = LinterRuleContext::new(
                 params.root,
                 &options,
-                params.schema_cache,
+                params.snapshot,
                 params.analysed_file_context,
                 params.statement,
             );

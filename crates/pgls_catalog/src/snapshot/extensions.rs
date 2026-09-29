@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 
 #[cfg(feature = "db")]
-use crate::schema_cache::SchemaCacheItem;
+use super::SnapshotItem;
 
 #[derive(Debug, Default, Serialize, Deserialize)]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
@@ -16,11 +16,11 @@ pub struct Extension {
 }
 
 #[cfg(feature = "db")]
-impl SchemaCacheItem for Extension {
+impl SnapshotItem for Extension {
     type Item = Extension;
 
     async fn load(pool: &PgPool) -> Result<Vec<Extension>, sqlx::Error> {
-        sqlx::query_file_as!(Extension, "src/queries/extensions.sql")
+        sqlx::query_file_as!(Extension, "src/snapshot/queries/extensions.sql")
             .fetch_all(pool)
             .await
     }

@@ -1,6 +1,6 @@
 use std::sync::{Arc, RwLock};
 
-use pgls_schema_cache::SchemaCache;
+use pgls_catalog::Snapshot;
 
 use crate::WorkspaceError;
 
@@ -25,22 +25,22 @@ use super::{async_helper::run_async, connection_key::ConnectionKey};
 /// DB-only API:
 /// - `load()` - Load schema from database connection
 /// - `clear_connection()` - Clear schema for specific connection
-pub struct SchemaCacheManager {
+pub struct SnapshotManager {
     /// Connection-based schema caches (db mode only)
     #[cfg(feature = "db")]
-    db_schemas: RwLock<HashMap<ConnectionKey, Arc<SchemaCache>>>,
+    db_schemas: RwLock<HashMap<ConnectionKey, Arc<Snapshot>>>,
 
     /// JSON-loaded schema (available in both modes)
-    schema: RwLock<Option<Arc<SchemaCache>>>,
+    schema: RwLock<Option<Arc<Snapshot>>>,
 }
 
-impl Default for SchemaCacheManager {
+impl Default for SnapshotManager {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl SchemaCacheManager {
+impl SnapshotManager {
     pub fn new() -> Self {
         Self {
             #[cfg(feature = "db")]
@@ -53,14 +53,14 @@ impl SchemaCacheManager {
 
     /// Set schema from JSON string.
     pub fn set(&self, json: &str) -> Result<(), WorkspaceError> {
-        let schema: SchemaCache = serde_json::from_str(json)
+        let schema: Snapshot = serde_json::from_str(json)
             .map_err(|e| WorkspaceError::runtime(&format!("Invalid schema JSON: {e}")))?;
         *self.schema.write().unwrap() = Some(Arc::new(schema));
         Ok(())
     }
 
     /// Get the current schema if available.
-    pub fn get(&self) -> Option<Arc<SchemaCache>> {
+    pub fn get(&self) -> Option<Arc<Snapshot>> {
         self.schema.read().unwrap().clone()
     }
 
@@ -74,7 +74,7 @@ impl SchemaCacheManager {
     /// Load schema from a database connection.
     /// Returns cached schema if available, otherwise loads from database.
     #[cfg(feature = "db")]
-    pub fn load(&self, pool: &PgPool) -> Result<Arc<SchemaCache>, WorkspaceError> {
+    pub fn load(&self, pool: &PgPool) -> Result<Arc<Snapshot>, WorkspaceError> {
         let key: ConnectionKey = pool.into();
 
         // Try read lock first for cache hit
@@ -94,12 +94,12 @@ impl SchemaCacheManager {
 
         // Load schema cache from database
         let pool_clone = pool.clone();
-        let schema_cache = Arc::new(run_async(
-            async move { SchemaCache::load(&pool_clone).await },
+        let snapshot = Arc::new(run_async(
+            async move { Snapshot::load(&pool_clone).await },
         )??);
 
-        schemas.insert(key, schema_cache.clone());
-        Ok(schema_cache)
+        schemas.insert(key, snapshot.clone());
+        Ok(snapshot)
     }
 
     /// Clear the schema cache for a specific connection.

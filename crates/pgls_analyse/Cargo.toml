@@ -13,10 +13,10 @@ version              = "0.0.0"
 
 
 [dependencies]
+pgls_catalog               = { workspace = true }
 pgls_console.workspace     = true
 pgls_diagnostics.workspace = true
 pgls_query.workspace       = true
-pgls_schema_cache          = { workspace = true, default-features = false }
 rustc-hash                 = { workspace = true }
 
 enumflags2.workspace     = true

@@ -19,13 +19,13 @@ dashmap                  = "5.5.3"
 hdrhistogram             = { version = "7.5.4", default-features = false }
 path-absolutize          = { version = "3.1.1", optional = false, features = ["use_unix_paths_on_wasm"] }
 pgls_analyse             = { workspace = true }
+pgls_catalog             = { workspace = true, features = ["db"] }
 pgls_configuration       = { workspace = true }
 pgls_console             = { workspace = true }
 pgls_diagnostics         = { workspace = true }
 pgls_env                 = { workspace = true }
 pgls_fs                  = { workspace = true }
 pgls_lsp                 = { workspace = true }
-pgls_schema_cache        = { workspace = true, features = ["db"] }
 pgls_text_edit           = { workspace = true }
 pgls_workspace           = { workspace = true }
 quick-junit              = "0.5.0"

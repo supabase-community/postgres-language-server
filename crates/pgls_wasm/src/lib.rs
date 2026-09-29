@@ -175,7 +175,7 @@ impl Workspace {
 
     /// Set the database schema from JSON.
     ///
-    /// The JSON should match the structure of `SchemaCache`.
+    /// The JSON should match the structure of `Snapshot`.
     /// This is typically exported using `postgres-language-server schema-export`.
     ///
     /// # Arguments

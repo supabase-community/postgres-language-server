@@ -12,17 +12,16 @@ repository.workspace = true
 version              = "0.0.0"
 
 [dependencies]
-pgls_analyse      = { workspace = true }
-pgls_catalog      = { workspace = true }
-pgls_console      = { workspace = true }
-pgls_diagnostics  = { workspace = true }
-pgls_query        = { workspace = true }
-pgls_query_ext    = { workspace = true }
-pgls_schema_cache = { workspace = true, default-features = false }
-pgls_text_size    = { workspace = true }
-rustc-hash        = { workspace = true }
-schemars          = { workspace = true }
-serde             = { workspace = true }
+pgls_analyse     = { workspace = true }
+pgls_catalog     = { workspace = true }
+pgls_console     = { workspace = true }
+pgls_diagnostics = { workspace = true }
+pgls_query       = { workspace = true }
+pgls_query_ext   = { workspace = true }
+pgls_text_size   = { workspace = true }
+rustc-hash       = { workspace = true }
+schemars         = { workspace = true }
+serde            = { workspace = true }
 
 [dev-dependencies]
 insta                   = { version = "1.42.1" }

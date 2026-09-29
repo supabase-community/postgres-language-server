@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use pgls_schema_cache::{ProcKind, SchemaCache, TableKind};
+use crate::{ProcKind, Snapshot, TableKind};
 use rustc_hash::{FxHashMap, FxHashSet};
 
 use super::{Key, key};
@@ -11,7 +11,7 @@ use crate::view::{
 /// Indexed, immutable view of a schema cache. Build it once per schema cache and share it
 /// between files.
 pub struct CatalogBase {
-    schema_cache: Arc<SchemaCache>,
+    snapshot: Arc<Snapshot>,
     schemas: FxHashSet<String>,
     relations: FxHashMap<Key, RelationInfo>,
     /// Names that may be relations the schema cache doesn't list: foreign tables, relations the
@@ -24,19 +24,19 @@ pub struct CatalogBase {
 }
 
 impl CatalogBase {
-    pub fn new(schema_cache: Arc<SchemaCache>) -> Self {
-        let schemas = schema_cache
+    pub fn new(snapshot: Arc<Snapshot>) -> Self {
+        let schemas = snapshot
             .schemas
             .iter()
             .map(|schema| schema.name.clone())
             .collect();
 
-        let types_by_id: FxHashMap<i64, &pgls_schema_cache::PostgresType> =
-            schema_cache.types.iter().map(|t| (t.id, t)).collect();
+        let types_by_id: FxHashMap<i64, &crate::PostgresType> =
+            snapshot.types.iter().map(|t| (t.id, t)).collect();
 
         // Attributes of composite types and row types. Unlike the columns of the schema cache,
         // they are not filtered by column privileges.
-        let attributes_of = |type_: &pgls_schema_cache::PostgresType| -> Option<Vec<ColumnInfo>> {
+        let attributes_of = |type_: &crate::PostgresType| -> Option<Vec<ColumnInfo>> {
             (!type_.attributes.attrs.is_empty()).then(|| {
                 type_
                     .attributes
@@ -52,7 +52,7 @@ impl CatalogBase {
 
         let mut types = FxHashMap::default();
         let mut possible_relations = FxHashSet::default();
-        for type_ in &schema_cache.types {
+        for type_ in &snapshot.types {
             let attributes = attributes_of(type_);
             if attributes.is_some() {
                 possible_relations.insert(key(&type_.schema, &type_.name));
@@ -69,7 +69,7 @@ impl CatalogBase {
         }
 
         let mut columns_by_table: FxHashMap<i64, Vec<ColumnInfo>> = FxHashMap::default();
-        for column in &schema_cache.columns {
+        for column in &snapshot.columns {
             columns_by_table
                 .entry(column.table_oid)
                 .or_default()
@@ -79,7 +79,7 @@ impl CatalogBase {
                 });
         }
 
-        let inheritance_children = schema_cache
+        let inheritance_children = snapshot
             .tables
             .iter()
             .filter(|table| table.is_inheritance_child)
@@ -87,7 +87,7 @@ impl CatalogBase {
             .collect();
 
         let mut relations = FxHashMap::default();
-        for table in &schema_cache.tables {
+        for table in &snapshot.tables {
             let key = key(&table.schema, &table.name);
             let columns = types
                 .get(&key)
@@ -125,7 +125,7 @@ impl CatalogBase {
                     origin: Origin::Database,
                 });
         }
-        for sequence in &schema_cache.sequences {
+        for sequence in &snapshot.sequences {
             relations
                 .entry(key(&sequence.schema, &sequence.name))
                 .or_insert_with(|| RelationInfo {
@@ -138,7 +138,7 @@ impl CatalogBase {
         }
 
         let mut functions: FxHashMap<Key, Vec<FunctionInfo>> = FxHashMap::default();
-        for function in &schema_cache.functions {
+        for function in &snapshot.functions {
             let args = &function.args.args;
             let inputs = args
                 .iter()
@@ -189,7 +189,7 @@ impl CatalogBase {
         }
 
         Self {
-            schema_cache,
+            snapshot,
             schemas,
             relations,
             possible_relations,
@@ -204,24 +204,24 @@ impl CatalogBase {
     pub fn empty() -> Self {
         let schemas = ["public", "pg_catalog"]
             .into_iter()
-            .map(|name| pgls_schema_cache::Schema {
+            .map(|name| crate::Schema {
                 name: name.into(),
                 ..Default::default()
             })
             .collect();
-        Self::new(Arc::new(SchemaCache {
+        Self::new(Arc::new(Snapshot {
             schemas,
             ..Default::default()
         }))
     }
 
     /// Whether this was built from exactly this schema cache.
-    pub fn is_built_from(&self, schema_cache: &Arc<SchemaCache>) -> bool {
-        Arc::ptr_eq(&self.schema_cache, schema_cache)
+    pub fn is_built_from(&self, snapshot: &Arc<Snapshot>) -> bool {
+        Arc::ptr_eq(&self.snapshot, snapshot)
     }
 
-    pub fn schema_cache(&self) -> &SchemaCache {
-        &self.schema_cache
+    pub fn snapshot(&self) -> &Snapshot {
+        &self.snapshot
     }
 
     pub(super) fn has_schema(&self, name: &str) -> bool {
@@ -249,7 +249,7 @@ impl CatalogBase {
     }
 
     pub(super) fn has_installed_extension(&self, name: &str) -> bool {
-        self.schema_cache
+        self.snapshot
             .extensions
             .iter()
             .any(|extension| extension.name == name && extension.installed_version.is_some())

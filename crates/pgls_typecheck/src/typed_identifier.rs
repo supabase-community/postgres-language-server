@@ -1,4 +1,4 @@
-use pgls_schema_cache::PostgresType;
+use pgls_catalog::PostgresType;
 use pgls_text_size::{TextRange, TextRangeReplacement, TextRangeReplacementBuilder, TextSize};
 use pgls_treesitter::queries::{ParameterMatch, TreeSitterQueriesExecutor};
 
@@ -72,7 +72,7 @@ impl TypedReplacement {
 /// Applies the identifiers to the SQL string by replacing them with their default values.
 pub fn apply_identifiers<'a>(
     identifiers: Vec<TypedIdentifier>,
-    schema_cache: &'a pgls_schema_cache::SchemaCache,
+    snapshot: &'a pgls_catalog::Snapshot,
     cst: &'a tree_sitter::Tree,
     sql: &'a str,
 ) -> TypedReplacement {
@@ -92,7 +92,7 @@ pub fn apply_identifiers<'a>(
             let (identifier, position) = find_matching_identifier(&parts, &identifiers)?;
 
             // Resolve the type based on whether we're accessing a field of a composite type
-            let postgres_type = resolve_type(identifier, position, &parts, schema_cache)?;
+            let postgres_type = resolve_type(identifier, position, &parts, snapshot)?;
 
             let default_value =
                 get_formatted_default_value(postgres_type, identifier.type_.is_array);
@@ -227,11 +227,11 @@ fn resolve_type<'a>(
     identifier: &TypedIdentifier,
     position: usize,
     parts: &[&str],
-    schema_cache: &'a pgls_schema_cache::SchemaCache,
+    snapshot: &'a pgls_catalog::Snapshot,
 ) -> Option<&'a PostgresType> {
     if position < parts.len() - 1 {
         // Find the composite type
-        let schema_type = schema_cache.types.iter().find(|t| {
+        let schema_type = snapshot.types.iter().find(|t| {
             identifier
                 .type_
                 .schema
@@ -249,16 +249,16 @@ fn resolve_type<'a>(
             .find(|a| a.name == *field_name)?;
 
         // Find the field's type
-        schema_cache.types.iter().find(|t| t.id == field.type_id)
+        snapshot.types.iter().find(|t| t.id == field.type_id)
     } else {
         // Direct type reference
-        schema_cache.find_type(&identifier.type_.name, identifier.type_.schema.as_deref())
+        snapshot.find_type(&identifier.type_.name, identifier.type_.schema.as_deref())
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use pgls_schema_cache::SchemaCache;
+    use pgls_catalog::Snapshot;
     use sqlx::{Executor, PgPool};
 
     #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
@@ -347,13 +347,13 @@ mod tests {
             .set_language(&pgls_treesitter_grammar::LANGUAGE.into())
             .expect("Error loading sql language");
 
-        let schema_cache = pgls_schema_cache::SchemaCache::load(&test_db)
+        let snapshot = pgls_catalog::Snapshot::load(&test_db)
             .await
             .expect("Failed to load Schema Cache");
 
         let tree = parser.parse(input, None).unwrap();
 
-        let replacement = super::apply_identifiers(identifiers, &schema_cache, &tree, input);
+        let replacement = super::apply_identifiers(identifiers, &snapshot, &tree, input);
 
         assert_eq!(
             replacement.text_replacement.text(),
@@ -408,13 +408,13 @@ mod tests {
             .set_language(&pgls_treesitter_grammar::LANGUAGE.into())
             .expect("Error loading sql language");
 
-        let schema_cache = pgls_schema_cache::SchemaCache::load(&test_db)
+        let snapshot = pgls_catalog::Snapshot::load(&test_db)
             .await
             .expect("Failed to load Schema Cache");
 
         let tree = parser.parse(input, None).unwrap();
 
-        let replacement = super::apply_identifiers(identifiers, &schema_cache, &tree, input);
+        let replacement = super::apply_identifiers(identifiers, &snapshot, &tree, input);
 
         assert_eq!(
             replacement.text_replacement.text(),
@@ -457,13 +457,13 @@ mod tests {
             .set_language(&pgls_treesitter_grammar::LANGUAGE.into())
             .expect("Error loading sql language");
 
-        let schema_cache = pgls_schema_cache::SchemaCache::load(&test_db)
+        let snapshot = pgls_catalog::Snapshot::load(&test_db)
             .await
             .expect("Failed to load Schema Cache");
 
         let tree = parser.parse(input, None).unwrap();
 
-        let replacement = super::apply_identifiers(identifiers, &schema_cache, &tree, input);
+        let replacement = super::apply_identifiers(identifiers, &snapshot, &tree, input);
 
         // `ctid` is a system column, so it is not resolved and stays as-is.
         assert_eq!(replacement.text_replacement.text(), "select row_arg.ctid");
@@ -506,11 +506,11 @@ mod tests {
             .set_language(&pgls_treesitter_grammar::LANGUAGE.into())
             .expect("Error loading sql language");
 
-        let schema_cache = SchemaCache::load(&pool).await.unwrap();
+        let snapshot = Snapshot::load(&pool).await.unwrap();
 
         let tree = parser.parse(input, None).unwrap();
 
-        let replacement = super::apply_identifiers(identifiers, &schema_cache, &tree, input);
+        let replacement = super::apply_identifiers(identifiers, &snapshot, &tree, input);
 
         assert_eq!(
             replacement.text_replacement.text(),

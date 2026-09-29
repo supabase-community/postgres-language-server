@@ -1,6 +1,6 @@
 use crate::update;
 use crate::{project_root, Mode, Result};
-use pgls_schema_cache::SchemaCache;
+use pgls_catalog::Snapshot;
 use pgls_workspace::workspace_types::{generate_type, ModuleQueue};
 use schemars::r#gen::{SchemaGenerator, SchemaSettings};
 
@@ -10,7 +10,7 @@ pub fn generate_schema_types(mode: Mode) -> Result<()> {
 
     let mut declarations: Vec<(String, Option<&String>)> = Vec::new();
     let mut queue = ModuleQueue::default();
-    let schema = SchemaGenerator::from(SchemaSettings::openapi3()).root_schema_for::<SchemaCache>();
+    let schema = SchemaGenerator::from(SchemaSettings::openapi3()).root_schema_for::<Snapshot>();
 
     generate_type(&mut declarations, &mut queue, &schema);
 

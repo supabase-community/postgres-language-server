@@ -1,4 +1,4 @@
-use pgls_schema_cache::{Column, SchemaCache};
+use pgls_catalog::{Column, Snapshot};
 use pgls_treesitter::TreesitterContext;
 
 use crate::{
@@ -12,10 +12,10 @@ use super::helper::with_schema_or_alias;
 
 pub fn complete_columns<'a>(
     ctx: &TreesitterContext<'a>,
-    schema_cache: &'a SchemaCache,
+    snapshot: &'a Snapshot,
     builder: &mut CompletionBuilder<'a>,
 ) {
-    let available_columns = &schema_cache.columns;
+    let available_columns = &snapshot.columns;
 
     for col in available_columns {
         let relevance = CompletionRelevanceData::Column(col);

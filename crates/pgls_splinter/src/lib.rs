@@ -6,8 +6,8 @@ pub mod rule;
 pub mod rules;
 
 use pgls_analyse::{AnalysisFilter, RegistryVisitor, RuleMeta};
+use pgls_catalog::Snapshot;
 use pgls_configuration::splinter::SplinterConfiguration;
-use pgls_schema_cache::SchemaCache;
 use sqlx::PgPool;
 
 pub use diagnostics::{SplinterAdvices, SplinterDiagnostic};
@@ -17,7 +17,7 @@ pub use rule::SplinterRule;
 #[derive(Debug)]
 pub struct SplinterParams<'a> {
     pub conn: &'a PgPool,
-    pub schema_cache: Option<&'a SchemaCache>,
+    pub snapshot: Option<&'a Snapshot>,
     /// Optional splinter configuration for global and per-rule database object filtering
     pub config: Option<&'a SplinterConfiguration>,
 }
@@ -65,7 +65,7 @@ pub async fn run_splinter(
     }
 
     // Check if Supabase roles exist (anon, authenticated, service_role)
-    let has_supabase_roles = params.schema_cache.is_some_and(|cache| {
+    let has_supabase_roles = params.snapshot.is_some_and(|cache| {
         let required_roles = ["anon", "authenticated", "service_role"];
         required_roles.iter().all(|role_name| {
             cache

@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 
 #[cfg(feature = "db")]
-use crate::schema_cache::SchemaCacheItem;
+use super::SnapshotItem;
 
 #[derive(Debug, Clone, PartialEq, Eq, Default, Serialize, Deserialize)]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
@@ -72,15 +72,16 @@ pub struct Table {
     pub dead_rows_estimate: i64,
     pub comment: Option<String>,
     /// Whether the table is a partition or inherits from another table.
+    #[serde(default)]
     pub is_inheritance_child: bool,
 }
 
 #[cfg(feature = "db")]
-impl SchemaCacheItem for Table {
+impl SnapshotItem for Table {
     type Item = Table;
 
     async fn load(pool: &PgPool) -> Result<Vec<Table>, sqlx::Error> {
-        sqlx::query_file_as!(Table, "src/queries/tables.sql")
+        sqlx::query_file_as!(Table, "src/snapshot/queries/tables.sql")
             .fetch_all(pool)
             .await
     }
@@ -90,7 +91,7 @@ impl SchemaCacheItem for Table {
 mod tests {
     use sqlx::{Executor, PgPool};
 
-    use crate::{SchemaCache, tables::TableKind};
+    use crate::snapshot::{Snapshot, tables::TableKind};
 
     #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
     async fn includes_views_in_query(test_db: PgPool) {
@@ -109,7 +110,7 @@ mod tests {
             .await
             .expect("Failed to setup test database");
 
-        let cache = SchemaCache::load(&test_db)
+        let cache = Snapshot::load(&test_db)
             .await
             .expect("Failed to load Schema Cache");
 
@@ -140,7 +141,7 @@ mod tests {
             .await
             .expect("Failed to setup test database");
 
-        let cache = SchemaCache::load(&test_db)
+        let cache = Snapshot::load(&test_db)
             .await
             .expect("Failed to load Schema Cache");
 

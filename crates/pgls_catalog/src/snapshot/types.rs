@@ -4,7 +4,7 @@ use serde_json::Value as JsonValue;
 use sqlx::PgPool;
 
 #[cfg(feature = "db")]
-use crate::schema_cache::SchemaCacheItem;
+use super::SnapshotItem;
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
@@ -54,11 +54,11 @@ pub struct PostgresType {
 }
 
 #[cfg(feature = "db")]
-impl SchemaCacheItem for PostgresType {
+impl SnapshotItem for PostgresType {
     type Item = PostgresType;
 
     async fn load(pool: &PgPool) -> Result<Vec<PostgresType>, sqlx::Error> {
-        sqlx::query_file_as!(PostgresType, "src/queries/types.sql")
+        sqlx::query_file_as!(PostgresType, "src/snapshot/queries/types.sql")
             .fetch_all(pool)
             .await
     }

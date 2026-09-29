@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "db")]
-use crate::schema_cache::SchemaCacheItem;
+use super::SnapshotItem;
 
 #[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
@@ -18,11 +18,11 @@ pub struct Role {
 }
 
 #[cfg(feature = "db")]
-impl SchemaCacheItem for Role {
+impl SnapshotItem for Role {
     type Item = Role;
 
     async fn load(pool: &sqlx::PgPool) -> Result<Vec<Self::Item>, sqlx::Error> {
-        sqlx::query_file_as!(Role, "src/queries/roles.sql")
+        sqlx::query_file_as!(Role, "src/snapshot/queries/roles.sql")
             .fetch_all(pool)
             .await
     }
@@ -34,11 +34,11 @@ mod tests {
 
     use sqlx::Executor;
 
-    use crate::SchemaCache;
+    use crate::snapshot::Snapshot;
 
     #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
     async fn loads_roles(test_db: PgPool) {
-        let cache = SchemaCache::load(&test_db)
+        let cache = Snapshot::load(&test_db)
             .await
             .expect("Failed to load Schema Cache");
 
@@ -71,7 +71,7 @@ mod tests {
 
         test_db.execute(setup).await.expect("Setup failed");
 
-        let cache = SchemaCache::load(&test_db)
+        let cache = Snapshot::load(&test_db)
             .await
             .expect("Failed to load Schema Cache");
 
