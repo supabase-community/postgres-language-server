@@ -1,5 +1,9 @@
 # lockTimeoutWarning
-**Diagnostic Category: `lint/safety/lockTimeoutWarning`**
+**Diagnostic Category: `lint/lockTimeoutWarning`**
+
+**Group: `safety`**
+
+**Applies to: migration files only**
 
 **Since**: `vnext`
 
@@ -31,7 +35,7 @@ ALTER TABLE users ADD COLUMN email TEXT;
 ```
 
 ```sh
-code-block.sql:1:1 lint/safety/lockTimeoutWarning ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+code-block.sql:1:1 lint/lockTimeoutWarning ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   ! Statement takes ACCESS EXCLUSIVE lock on public.users without lock timeout set.
   
@@ -51,7 +55,7 @@ CREATE INDEX users_email_idx ON users(email);
 ```
 
 ```sh
-code-block.sql:1:1 lint/safety/lockTimeoutWarning ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+code-block.sql:1:1 lint/lockTimeoutWarning ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   ! Statement takes SHARE lock on public.users while creating index users_email_idx without lock timeout set.
   
@@ -79,11 +83,16 @@ CREATE INDEX CONCURRENTLY users_email_idx ON users(email);
 {
   "linter": {
     "rules": {
-      "safety": {
-        "lockTimeoutWarning": "error"
-      }
+      "lockTimeoutWarning": "error"
     }
   }
 }
 
+```
+## How to suppress
+
+Suppress this diagnostic with a comment:
+
+```sql
+-- pgls-ignore lockTimeoutWarning
 ```

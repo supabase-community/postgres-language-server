@@ -1,5 +1,9 @@
 # requireConcurrentIndexDeletion
-**Diagnostic Category: `lint/safety/requireConcurrentIndexDeletion`**
+**Diagnostic Category: `lint/requireConcurrentIndexDeletion`**
+
+**Group: `safety`**
+
+**Applies to: migration files only**
 
 **Since**: `vnext`
 
@@ -23,7 +27,7 @@ DROP INDEX IF EXISTS users_email_idx;
 ```
 
 ```sh
-code-block.sql:1:1 lint/safety/requireConcurrentIndexDeletion ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+code-block.sql:1:1 lint/requireConcurrentIndexDeletion ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   ! Dropping an index non-concurrently blocks reads and writes to the table.
   
@@ -48,11 +52,16 @@ DROP INDEX CONCURRENTLY IF EXISTS users_email_idx;
 {
   "linter": {
     "rules": {
-      "safety": {
-        "requireConcurrentIndexDeletion": "error"
-      }
+      "requireConcurrentIndexDeletion": "error"
     }
   }
 }
 
+```
+## How to suppress
+
+Suppress this diagnostic with a comment:
+
+```sql
+-- pgls-ignore requireConcurrentIndexDeletion
 ```

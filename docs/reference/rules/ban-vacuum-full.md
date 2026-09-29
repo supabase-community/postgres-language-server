@@ -1,5 +1,9 @@
 # banVacuumFull
-**Diagnostic Category: `lint/safety/banVacuumFull`**
+**Diagnostic Category: `lint/banVacuumFull`**
+
+**Group: `safety`**
+
+**Applies to: migration files only**
 
 **Since**: `vnext`
 
@@ -25,7 +29,7 @@ vacuum full my_table;
 ```
 
 ```sh
-code-block.sql:1:1 lint/safety/banVacuumFull ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+code-block.sql:1:1 lint/banVacuumFull ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   × VACUUM FULL rewrites the entire table and blocks all access.
   
@@ -50,11 +54,16 @@ vacuum my_table;
 {
   "linter": {
     "rules": {
-      "safety": {
-        "banVacuumFull": "error"
-      }
+      "banVacuumFull": "error"
     }
   }
 }
 
+```
+## How to suppress
+
+Suppress this diagnostic with a comment:
+
+```sql
+-- pgls-ignore banVacuumFull
 ```

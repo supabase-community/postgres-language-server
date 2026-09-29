@@ -1,5 +1,9 @@
 # preferRobustStmts
-**Diagnostic Category: `lint/safety/preferRobustStmts`**
+**Diagnostic Category: `lint/preferRobustStmts`**
+
+**Group: `safety`**
+
+**Applies to: migration files only**
 
 **Since**: `vnext`
 
@@ -23,7 +27,7 @@ CREATE INDEX CONCURRENTLY users_email_idx ON users (email);
 ```
 
 ```sh
-code-block.sql:1:1 lint/safety/preferRobustStmts ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+code-block.sql:1:1 lint/preferRobustStmts ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   ! Concurrent index creation should use IF NOT EXISTS.
   
@@ -41,7 +45,7 @@ DROP INDEX CONCURRENTLY users_email_idx;
 ```
 
 ```sh
-code-block.sql:1:1 lint/safety/preferRobustStmts ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+code-block.sql:1:1 lint/preferRobustStmts ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   ! Concurrent drop should use IF EXISTS.
   
@@ -59,7 +63,7 @@ CREATE TABLE users (id int);
 ```
 
 ```sh
-code-block.sql:1:1 lint/safety/preferRobustStmts ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+code-block.sql:1:1 lint/preferRobustStmts ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   ! CREATE TABLE should use IF NOT EXISTS.
   
@@ -77,7 +81,7 @@ DROP TABLE users;
 ```
 
 ```sh
-code-block.sql:1:1 lint/safety/preferRobustStmts ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+code-block.sql:1:1 lint/preferRobustStmts ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   ! DROP TABLE should use IF EXISTS.
   
@@ -114,11 +118,16 @@ DROP TABLE IF EXISTS users;
 {
   "linter": {
     "rules": {
-      "safety": {
-        "preferRobustStmts": "error"
-      }
+      "preferRobustStmts": "error"
     }
   }
 }
 
+```
+## How to suppress
+
+Suppress this diagnostic with a comment:
+
+```sql
+-- pgls-ignore preferRobustStmts
 ```

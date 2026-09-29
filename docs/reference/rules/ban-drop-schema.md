@@ -1,5 +1,9 @@
 # banDropSchema
-**Diagnostic Category: `lint/safety/banDropSchema`**
+**Diagnostic Category: `lint/banDropSchema`**
+
+**Group: `destructive`**
+
+**Applies to: migration files only**
 
 **Since**: `vnext`
 
@@ -25,7 +29,7 @@ drop schema my_schema;
 ```
 
 ```sh
-code-block.sql:1:1 lint/safety/banDropSchema ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+code-block.sql:1:1 lint/banDropSchema ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   × Dropping a schema will remove all objects within it and may break existing clients.
   
@@ -50,11 +54,16 @@ select 1;
 {
   "linter": {
     "rules": {
-      "safety": {
-        "banDropSchema": "error"
-      }
+      "banDropSchema": "error"
     }
   }
 }
 
+```
+## How to suppress
+
+Suppress this diagnostic with a comment:
+
+```sql
+-- pgls-ignore banDropSchema
 ```

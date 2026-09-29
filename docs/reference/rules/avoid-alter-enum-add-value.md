@@ -1,5 +1,7 @@
 # avoidAlterEnumAddValue
-**Diagnostic Category: `lint/safety/avoidAlterEnumAddValue`**
+**Diagnostic Category: `lint/avoidAlterEnumAddValue`**
+
+**Group: `correctness`**
 
 **Since**: `vnext`
 
@@ -23,7 +25,7 @@ alter type my_enum add value 'new_value';
 ```
 
 ```sh
-code-block.sql:1:1 lint/safety/avoidAlterEnumAddValue ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+code-block.sql:1:1 lint/avoidAlterEnumAddValue ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   ! ALTER TYPE ... ADD VALUE cannot be used in a transaction block before Postgres 12.
   
@@ -48,11 +50,16 @@ alter type my_enum rename value 'old_value' to 'new_value';
 {
   "linter": {
     "rules": {
-      "safety": {
-        "avoidAlterEnumAddValue": "error"
-      }
+      "avoidAlterEnumAddValue": "error"
     }
   }
 }
 
+```
+## How to suppress
+
+Suppress this diagnostic with a comment:
+
+```sql
+-- pgls-ignore avoidAlterEnumAddValue
 ```

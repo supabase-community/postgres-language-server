@@ -1,5 +1,9 @@
 # requireStatementTimeout
-**Diagnostic Category: `lint/safety/requireStatementTimeout`**
+**Diagnostic Category: `lint/requireStatementTimeout`**
+
+**Group: `safety`**
+
+**Applies to: migration files only**
 
 **Since**: `vnext`
 
@@ -22,7 +26,7 @@ ALTER TABLE users ADD COLUMN email TEXT;
 ```
 
 ```sh
-code-block.sql:1:1 lint/safety/requireStatementTimeout ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+code-block.sql:1:1 lint/requireStatementTimeout ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   ! Statement takes a dangerous lock without a statement_timeout set.
   
@@ -47,11 +51,16 @@ CREATE INDEX CONCURRENTLY users_email_idx ON users(email);
 {
   "linter": {
     "rules": {
-      "safety": {
-        "requireStatementTimeout": "error"
-      }
+      "requireStatementTimeout": "error"
     }
   }
 }
 
+```
+## How to suppress
+
+Suppress this diagnostic with a comment:
+
+```sql
+-- pgls-ignore requireStatementTimeout
 ```

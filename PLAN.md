@@ -310,3 +310,60 @@ with no new false positives.
 - Group names: are `destructive` and `security` the right names?
 - Should `banDeleteWithoutWhere` and `banUpdateWithoutWhere` move to `correctness` or a `suspicious` group, since they apply to query files too?
 - How should the overlay treat `CREATE EXTENSION` when the extension is already installed in the connected database? Keep its objects known, or mark them unknown?
+
+## Implementation Status
+
+The first PR covers Phases 0–3.
+
+### Done
+
+- **Phase 0**
+  - `addingNotNullField` no longer returns early on PG ≥ 11.
+  - `preferBigInt` has the options `checkInt` and `checkSmallint`. It replaces `preferBigintOverInt` and `preferBigintOverSmallint`.
+  - `concurrentRefreshMatviewLock` is deleted.
+  - Rules keep the spans they set.
+  - The dead analyser metadata is removed.
+- **Phase 1**
+  - The new crate `pgls_catalog` holds `CatalogBase` (the indexed schema cache), `Catalog` (the overlay with the file's DDL), `Session` (a port of `TransactionState` that adds search path, role, and transaction depth), and the name resolver.
+  - The analyser applies each top-level statement to the catalog and session after running the rules. SQL function bodies are analysed with their parameters in scope and never applied.
+  - `ROLLBACK` and `ROLLBACK TO SAVEPOINT` restore the catalog.
+  - `appliesTo: migration` rules are skipped for files outside `migrations.migrationsDir`.
+- **Phase 2**
+  - Flat IDs and categories (`lint/<rule>`).
+  - `linter.rules.<rule>` and `linter.groups.<group>`, with precedence rule > deprecated `linter.rules.safety.<rule>` > group > preset.
+  - Deprecation warnings: printed by the CLI, and shown once by the LSP via `window/showMessage`.
+  - Suppressions by rule, group, and legacy ID.
+  - `--only`/`--skip` accept flat IDs, and legacy IDs of moved rules.
+  - Regenerated docs and schema.
+- **Phase 3**
+  - The `typecheck` rules `unknownRelation`, `unknownColumn`, `unknownSchema`, `ambiguousColumn`, `unknownFunction` (name and arity), `insertColumnMismatch`, `unknownType`, and `missingFromClauseEntry`.
+  - `EXPLAIN` runs only for statements that are `database_only`, with the search path of the session.
+  - `invalidDropTypeSignature` (#369) is in `correctness`, not `typecheck`. It is syntactic and needs no database.
+
+### Deviations From the Plan
+
+- **No dedup list.** A statement with a static finding is never `database_only`, so the fallback never runs on it and there is nothing to deduplicate. If the fallback reports an error for a `database_only` statement, our resolver missed it, and the error is kept.
+- **`linter.enabled` is enforced.** Before, it was ignored. It now switches the lint groups, and `typecheck.enabled` switches the `typecheck` group.
+- **Views and `CREATE TABLE AS` get column names only.** Their columns are derived by the name resolver, without types, because expression typing is Phase 4.
+- **`CREATE EXTENSION` of an installed extension is a no-op.** The extension's objects are already in the snapshot.
+
+### Known Gaps
+
+These gaps hide errors, except where noted.
+
+- `CASCADE` does not drop dependent objects, and `DROP EXTENSION` does not drop the extension's objects.
+- After a file changes the columns of a database table, the columns of every partition and inheritance child in the database are unknown. The catalog doesn't know which parent each child belongs to.
+- `ALTER TYPE ... ADD ATTRIBUTE ... CASCADE` does not update typed tables (`CREATE TABLE ... OF type`) that exist only in the database. This could cause a false positive.
+- The functional notation for fields, `field(composite_column)`, is reported as an unknown function, unless the argument is a whole row or a function parameter. This could cause a false positive.
+- Scalar functions in `FROM`, `NATURAL` joins, `XMLTABLE`/`JSON_TABLE`, `TABLESAMPLE`, and the `ORDER BY` of set operations have unknown columns and are not checked.
+- Operators, casts, and argument types are not checked (Phase 4).
+- Renaming a schema makes the rest of the file unknown.
+
+### Deferred
+
+- Phase 4: expression typing, and deleting the fallback.
+- Phase 5: fixes and security rules.
+- Moving plpgsql_check into the `typecheck` group.
+- Completions and hover on the catalog snapshot.
+- Flat IDs for splinter.
+- The decision on `pgls_pglinter`.

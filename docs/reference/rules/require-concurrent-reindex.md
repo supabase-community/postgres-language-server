@@ -1,5 +1,9 @@
 # requireConcurrentReindex
-**Diagnostic Category: `lint/safety/requireConcurrentReindex`**
+**Diagnostic Category: `lint/requireConcurrentReindex`**
+
+**Group: `safety`**
+
+**Applies to: migration files only**
 
 **Since**: `vnext`
 
@@ -24,7 +28,7 @@ reindex index my_index;
 ```
 
 ```sh
-code-block.sql:1:1 lint/safety/requireConcurrentReindex ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+code-block.sql:1:1 lint/requireConcurrentReindex ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   ! REINDEX without CONCURRENTLY blocks all table access.
   
@@ -49,11 +53,16 @@ reindex index concurrently my_index;
 {
   "linter": {
     "rules": {
-      "safety": {
-        "requireConcurrentReindex": "error"
-      }
+      "requireConcurrentReindex": "error"
     }
   }
 }
 
+```
+## How to suppress
+
+Suppress this diagnostic with a comment:
+
+```sql
+-- pgls-ignore requireConcurrentReindex
 ```

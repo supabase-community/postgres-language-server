@@ -1,5 +1,9 @@
 # banTruncateCascade
-**Diagnostic Category: `lint/safety/banTruncateCascade`**
+**Diagnostic Category: `lint/banTruncateCascade`**
+
+**Group: `destructive`**
+
+**Applies to: migration files only**
 
 **Since**: `vnext`
 
@@ -30,11 +34,16 @@ Instead, you can manually specify the tables you want.
 {
   "linter": {
     "rules": {
-      "safety": {
-        "banTruncateCascade": "error"
-      }
+      "banTruncateCascade": "error"
     }
   }
 }
 
+```
+## How to suppress
+
+Suppress this diagnostic with a comment:
+
+```sql
+-- pgls-ignore banTruncateCascade
 ```

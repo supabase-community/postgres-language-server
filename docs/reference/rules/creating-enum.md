@@ -1,5 +1,7 @@
 # creatingEnum
-**Diagnostic Category: `lint/safety/creatingEnum`**
+**Diagnostic Category: `lint/creatingEnum`**
+
+**Group: `style`**
 
 **Since**: `vnext`
 
@@ -28,7 +30,7 @@ CREATE TYPE document_type AS ENUM ('invoice', 'receipt', 'other');
 ```
 
 ```sh
-code-block.sql:1:1 lint/safety/creatingEnum ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+code-block.sql:1:1 lint/creatingEnum ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   ! Creating enum type document_type is not recommended.
   
@@ -59,11 +61,16 @@ INSERT INTO document_type VALUES ('invoice'), ('receipt'), ('other');
 {
   "linter": {
     "rules": {
-      "safety": {
-        "creatingEnum": "error"
-      }
+      "creatingEnum": "error"
     }
   }
 }
 
+```
+## How to suppress
+
+Suppress this diagnostic with a comment:
+
+```sql
+-- pgls-ignore creatingEnum
 ```

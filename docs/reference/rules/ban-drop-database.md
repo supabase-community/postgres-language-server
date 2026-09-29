@@ -1,5 +1,9 @@
 # banDropDatabase
-**Diagnostic Category: `lint/safety/banDropDatabase`**
+**Diagnostic Category: `lint/banDropDatabase`**
+
+**Group: `destructive`**
+
+**Applies to: migration files only**
 
 **Since**: `vnext`
 
@@ -18,11 +22,16 @@ Make sure that you really want to drop it.
 {
   "linter": {
     "rules": {
-      "safety": {
-        "banDropDatabase": "error"
-      }
+      "banDropDatabase": "error"
     }
   }
 }
 
+```
+## How to suppress
+
+Suppress this diagnostic with a comment:
+
+```sql
+-- pgls-ignore banDropDatabase
 ```
