@@ -60,6 +60,7 @@ unicode-width            = "0.1.12"
 pgls_analyse                = { path = "./crates/pgls_analyse", version = "0.0.0" }
 pgls_analyser               = { path = "./crates/pgls_analyser", version = "0.0.0" }
 pgls_cli                    = { path = "./crates/pgls_cli", version = "0.0.0" }
+pgls_catalog                = { path = "./crates/pgls_catalog", version = "0.0.0" }
 pgls_completions            = { path = "./crates/pgls_completions", version = "0.0.0" }
 pgls_configuration          = { path = "./crates/pgls_configuration", version = "0.0.0" }
 pgls_configuration_macros   = { path = "./crates/pgls_configuration_macros" }
