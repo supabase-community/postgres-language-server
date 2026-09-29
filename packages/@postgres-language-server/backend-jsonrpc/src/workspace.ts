@@ -62,58 +62,64 @@ export interface Advices {
   advices: Advice[];
 }
 export type Category =
-  | "lint/safety/addSerialColumn"
-  | "lint/safety/addingFieldWithDefault"
-  | "lint/safety/addingForeignKeyConstraint"
-  | "lint/safety/addingNotNullField"
-  | "lint/safety/addingPrimaryKeyConstraint"
-  | "lint/safety/addingRequiredField"
-  | "lint/safety/avoidAddingExclusionConstraint"
-  | "lint/safety/avoidAlterEnumAddValue"
-  | "lint/safety/avoidAttachingPartition"
-  | "lint/safety/requireConcurrentRefreshMatview"
-  | "lint/safety/banCharField"
-  | "lint/safety/banConcurrentIndexCreationInTransaction"
-  | "lint/safety/avoidCreateTrigger"
-  | "lint/safety/banDeleteWithoutWhere"
-  | "lint/safety/banDropColumn"
-  | "lint/safety/banDropDatabase"
-  | "lint/safety/banDropNotNull"
-  | "lint/safety/banDropSchema"
-  | "lint/safety/banDropTable"
-  | "lint/safety/banDropTrigger"
-  | "lint/safety/avoidEnableDisableTrigger"
-  | "lint/safety/requireSeparateConstraintValidation"
-  | "lint/safety/banTruncate"
-  | "lint/safety/banTruncateCascade"
-  | "lint/safety/banUpdateWithoutWhere"
-  | "lint/safety/banVacuumFull"
-  | "lint/safety/changingColumnType"
-  | "lint/safety/constraintMissingNotValid"
-  | "lint/safety/creatingEnum"
-  | "lint/safety/disallowUniqueConstraint"
-  | "lint/safety/lockTimeoutWarning"
-  | "lint/safety/multipleAlterTable"
-  | "lint/safety/preferBigInt"
-  | "lint/safety/preferBigintOverInt"
-  | "lint/safety/preferBigintOverSmallint"
-  | "lint/safety/preferIdentity"
-  | "lint/safety/preferJsonb"
-  | "lint/safety/preferRobustStmts"
-  | "lint/safety/preferTextField"
-  | "lint/safety/preferTimestamptz"
-  | "lint/safety/renamingColumn"
-  | "lint/safety/renamingTable"
-  | "lint/safety/requireConcurrentDetachPartition"
-  | "lint/safety/requireConcurrentIndexCreation"
-  | "lint/safety/requireConcurrentIndexDeletion"
-  | "lint/safety/requireConcurrentReindex"
-  | "lint/safety/requireIdleInTransactionTimeout"
-  | "lint/safety/requireStatementTimeout"
-  | "lint/safety/runningStatementWhileHoldingAccessExclusive"
-  | "lint/safety/transactionNesting"
-  | "lint/safety/concurrentRefreshMatviewLock"
-  | "lint/safety/avoidWideLockWindow"
+  | "lint/addSerialColumn"
+  | "lint/addingFieldWithDefault"
+  | "lint/addingForeignKeyConstraint"
+  | "lint/addingNotNullField"
+  | "lint/addingPrimaryKeyConstraint"
+  | "lint/addingRequiredField"
+  | "lint/ambiguousColumn"
+  | "lint/avoidAddingExclusionConstraint"
+  | "lint/avoidAlterEnumAddValue"
+  | "lint/avoidAttachingPartition"
+  | "lint/avoidCreateTrigger"
+  | "lint/avoidEnableDisableTrigger"
+  | "lint/avoidWideLockWindow"
+  | "lint/banCharField"
+  | "lint/banConcurrentIndexCreationInTransaction"
+  | "lint/banDeleteWithoutWhere"
+  | "lint/banDropColumn"
+  | "lint/banDropDatabase"
+  | "lint/banDropNotNull"
+  | "lint/banDropSchema"
+  | "lint/banDropTable"
+  | "lint/banDropTrigger"
+  | "lint/banTruncate"
+  | "lint/banTruncateCascade"
+  | "lint/banUpdateWithoutWhere"
+  | "lint/banVacuumFull"
+  | "lint/changingColumnType"
+  | "lint/constraintMissingNotValid"
+  | "lint/creatingEnum"
+  | "lint/disallowUniqueConstraint"
+  | "lint/insertColumnMismatch"
+  | "lint/invalidDropTypeSignature"
+  | "lint/lockTimeoutWarning"
+  | "lint/missingFromClauseEntry"
+  | "lint/multipleAlterTable"
+  | "lint/preferBigInt"
+  | "lint/preferIdentity"
+  | "lint/preferJsonb"
+  | "lint/preferRobustStmts"
+  | "lint/preferTextField"
+  | "lint/preferTimestamptz"
+  | "lint/renamingColumn"
+  | "lint/renamingTable"
+  | "lint/requireConcurrentDetachPartition"
+  | "lint/requireConcurrentIndexCreation"
+  | "lint/requireConcurrentIndexDeletion"
+  | "lint/requireConcurrentRefreshMatview"
+  | "lint/requireConcurrentReindex"
+  | "lint/requireIdleInTransactionTimeout"
+  | "lint/requireSeparateConstraintValidation"
+  | "lint/requireStatementTimeout"
+  | "lint/runningStatementWhileHoldingAccessExclusive"
+  | "lint/transactionNesting"
+  | "lint/unknownColumn"
+  | "lint/unknownFunction"
+  | "lint/unknownRelation"
+  | "lint/unknownSchema"
+  | "lint/unknownType"
   | "pglinter/extensionNotInstalled"
   | "pglinter/ruleDisabledInExtension"
   | "pglinter/base/compositePrimaryKeyTooManyColumns"
@@ -510,6 +516,10 @@ export interface PartialLinterConfiguration {
    */
   enabled?: boolean;
   /**
+   * The level of all rules of a group, unless a rule is configured individually.
+   */
+  groups?: LinterGroups;
+  /**
    * A list of Unix shell style patterns. The linter will ignore files/folders that will match these patterns.
    */
   ignore?: StringSet;
@@ -680,47 +690,40 @@ export type Layout = "fit" | "expanded";
  * Where a boolean operator sits when a condition breaks across lines.
  */
 export type LogicalOperatorPlacement = "trailing" | "leading";
-export interface LinterRules {
-  /**
-   * It enables ALL rules. The rules that belong to `nursery` won't be enabled.
-   */
-  all?: boolean;
-  /**
-   * It enables the lint rules recommended by Postgres Language Server. `true` by default.
-   */
-  recommended?: boolean;
-  safety?: Safety;
-}
-export interface PglinterRules {
-  /**
-   * It enables ALL rules. The rules that belong to `nursery` won't be enabled.
-   */
-  all?: boolean;
-  base?: Base;
-  cluster?: Cluster;
-  /**
-   * It enables the lint rules recommended by Postgres Language Server. `true` by default.
-   */
-  recommended?: boolean;
-  schema?: Schema;
-}
-export interface SplinterRules {
-  /**
-   * It enables ALL rules. The rules that belong to `nursery` won't be enabled.
-   */
-  all?: boolean;
-  performance?: Performance;
-  /**
-   * It enables the lint rules recommended by Postgres Language Server. `true` by default.
-   */
-  recommended?: boolean;
-  security?: Security;
-}
-export type VcsClientKind = "git";
 /**
- * A list of rules that belong to this group
+ * The level of all rules of a group, unless a rule is configured individually.
  */
-export interface Safety {
+export interface LinterGroups {
+  /**
+   * Code that fails at runtime for reasons other than names or types.
+   */
+  correctness?: RulePlainConfiguration;
+  /**
+   * Code that loses data or breaks existing clients.
+   */
+  destructive?: RulePlainConfiguration;
+  /**
+   * New rules that are still being tested. Never enabled by presets.
+   */
+  nursery?: RulePlainConfiguration;
+  /**
+   * Valid code that may be dangerous against a live database: locks, rewrites, or blocking.
+   */
+  safety?: RulePlainConfiguration;
+  /**
+   * Security issues in new DDL.
+   */
+  security?: RulePlainConfiguration;
+  /**
+   * Schema design preferences. Not enabled by the recommended preset.
+   */
+  style?: RulePlainConfiguration;
+  /**
+   * Code that fails at runtime because of names or types. Needs a database connection.
+   */
+  typecheck?: RulePlainConfiguration;
+}
+export interface LinterRules {
   /**
    * Adding a column with a SERIAL type or GENERATED ALWAYS AS ... STORED causes a full table rewrite.
    */
@@ -746,9 +749,13 @@ export interface Safety {
    */
   addingRequiredField?: RuleConfiguration_for_Null;
   /**
-   * It enables ALL rules for this group.
+   * It enables ALL rules. The rules that belong to `nursery` won't be enabled.
    */
   all?: boolean;
+  /**
+   * An unqualified column name matches columns of more than one relation in scope.
+   */
+  ambiguousColumn?: RuleConfiguration_for_Null;
   /**
    * Adding an exclusion constraint acquires an ACCESS EXCLUSIVE lock.
    */
@@ -830,10 +837,6 @@ export interface Safety {
    */
   changingColumnType?: RuleConfiguration_for_Null;
   /**
-   * REFRESH MATERIALIZED VIEW CONCURRENTLY still acquires an EXCLUSIVE lock.
-   */
-  concurrentRefreshMatviewLock?: RuleConfiguration_for_Null;
-  /**
    * Adding constraints without NOT VALID blocks all reads and writes.
    */
   constraintMissingNotValid?: RuleConfiguration_for_Null;
@@ -846,9 +849,21 @@ export interface Safety {
    */
   disallowUniqueConstraint?: RuleConfiguration_for_Null;
   /**
+   * An INSERT has a different number of target columns than values.
+   */
+  insertColumnMismatch?: RuleConfiguration_for_Null;
+  /**
+   * DROP TYPE and DROP DOMAIN don't take a parameter list.
+   */
+  invalidDropTypeSignature?: RuleConfiguration_for_Null;
+  /**
    * Taking a dangerous lock without setting a lock timeout can cause indefinite blocking.
    */
   lockTimeoutWarning?: RuleConfiguration_for_Null;
+  /**
+   * A column is qualified with a name that is not in the FROM clause.
+   */
+  missingFromClauseEntry?: RuleConfiguration_for_Null;
   /**
    * Multiple ALTER TABLE statements on the same table should be combined into a single statement.
    */
@@ -856,15 +871,7 @@ export interface Safety {
   /**
    * Prefer BIGINT over smaller integer types.
    */
-  preferBigInt?: RuleConfiguration_for_Null;
-  /**
-   * Prefer BIGINT over INT/INTEGER types.
-   */
-  preferBigintOverInt?: RuleConfiguration_for_Null;
-  /**
-   * Prefer BIGINT over SMALLINT types.
-   */
-  preferBigintOverSmallint?: RuleConfiguration_for_Null;
+  preferBigInt?: RuleConfiguration_for_PreferBigIntOptions;
   /**
    * Prefer using IDENTITY columns over serial columns.
    */
@@ -886,7 +893,7 @@ export interface Safety {
    */
   preferTimestamptz?: RuleConfiguration_for_Null;
   /**
-   * It enables the recommended rules for this group
+   * It enables the lint rules recommended by Postgres Language Server. `true` by default.
    */
   recommended?: boolean;
   /**
@@ -934,9 +941,132 @@ export interface Safety {
    */
   runningStatementWhileHoldingAccessExclusive?: RuleConfiguration_for_Null;
   /**
+   * Deprecated: configure rules directly in `linter.rules`, and groups in `linter.groups`.
+   */
+  safety?: LegacySafetyRules;
+  /**
    * Detects problematic transaction nesting that could lead to unexpected behavior.
    */
   transactionNesting?: RuleConfiguration_for_Null;
+  /**
+   * A column does not exist on the relation or record it is taken from.
+   */
+  unknownColumn?: RuleConfiguration_for_Null;
+  /**
+   * No function with this name accepts this number of arguments.
+   */
+  unknownFunction?: RuleConfiguration_for_Null;
+  /**
+   * A table, view, or materialized view does not exist.
+   */
+  unknownRelation?: RuleConfiguration_for_Null;
+  /**
+   * A schema does not exist.
+   */
+  unknownSchema?: RuleConfiguration_for_Null;
+  /**
+   * A type does not exist.
+   */
+  unknownType?: RuleConfiguration_for_Null;
+}
+export interface PglinterRules {
+  /**
+   * It enables ALL rules. The rules that belong to `nursery` won't be enabled.
+   */
+  all?: boolean;
+  base?: Base;
+  cluster?: Cluster;
+  /**
+   * It enables the lint rules recommended by Postgres Language Server. `true` by default.
+   */
+  recommended?: boolean;
+  schema?: Schema;
+}
+export interface SplinterRules {
+  /**
+   * It enables ALL rules. The rules that belong to `nursery` won't be enabled.
+   */
+  all?: boolean;
+  performance?: Performance;
+  /**
+   * It enables the lint rules recommended by Postgres Language Server. `true` by default.
+   */
+  recommended?: boolean;
+  security?: Security;
+}
+export type VcsClientKind = "git";
+export type RulePlainConfiguration = "warn" | "error" | "info" | "off";
+export type RuleConfiguration_for_Null = RulePlainConfiguration | RuleWithOptions_for_Null;
+export type RuleConfiguration_for_PreferBigIntOptions =
+  | RulePlainConfiguration
+  | RuleWithOptions_for_PreferBigIntOptions;
+/**
+ * The former `linter.rules.safety` group, which contained all rules.
+ */
+export interface LegacySafetyRules {
+  addSerialColumn?: RuleConfiguration_for_Null;
+  addingFieldWithDefault?: RuleConfiguration_for_Null;
+  addingForeignKeyConstraint?: RuleConfiguration_for_Null;
+  addingNotNullField?: RuleConfiguration_for_Null;
+  addingPrimaryKeyConstraint?: RuleConfiguration_for_Null;
+  addingRequiredField?: RuleConfiguration_for_Null;
+  all?: boolean;
+  ambiguousColumn?: RuleConfiguration_for_Null;
+  avoidAddingExclusionConstraint?: RuleConfiguration_for_Null;
+  avoidAlterEnumAddValue?: RuleConfiguration_for_Null;
+  avoidAttachingPartition?: RuleConfiguration_for_Null;
+  avoidCreateTrigger?: RuleConfiguration_for_Null;
+  avoidEnableDisableTrigger?: RuleConfiguration_for_Null;
+  avoidWideLockWindow?: RuleConfiguration_for_Null;
+  banCharField?: RuleConfiguration_for_Null;
+  banConcurrentIndexCreationInTransaction?: RuleConfiguration_for_Null;
+  banDeleteWithoutWhere?: RuleConfiguration_for_Null;
+  banDropColumn?: RuleConfiguration_for_Null;
+  banDropDatabase?: RuleConfiguration_for_Null;
+  banDropNotNull?: RuleConfiguration_for_Null;
+  banDropSchema?: RuleConfiguration_for_Null;
+  banDropTable?: RuleConfiguration_for_Null;
+  banDropTrigger?: RuleConfiguration_for_Null;
+  banTruncate?: RuleConfiguration_for_Null;
+  banTruncateCascade?: RuleConfiguration_for_Null;
+  banUpdateWithoutWhere?: RuleConfiguration_for_Null;
+  banVacuumFull?: RuleConfiguration_for_Null;
+  changingColumnType?: RuleConfiguration_for_Null;
+  concurrentRefreshMatviewLock?: RuleConfiguration_for_Null;
+  constraintMissingNotValid?: RuleConfiguration_for_Null;
+  creatingEnum?: RuleConfiguration_for_Null;
+  disallowUniqueConstraint?: RuleConfiguration_for_Null;
+  insertColumnMismatch?: RuleConfiguration_for_Null;
+  invalidDropTypeSignature?: RuleConfiguration_for_Null;
+  lockTimeoutWarning?: RuleConfiguration_for_Null;
+  missingFromClauseEntry?: RuleConfiguration_for_Null;
+  multipleAlterTable?: RuleConfiguration_for_Null;
+  preferBigInt?: RuleConfiguration_for_PreferBigIntOptions;
+  preferBigintOverInt?: RuleConfiguration_for_Null;
+  preferBigintOverSmallint?: RuleConfiguration_for_Null;
+  preferIdentity?: RuleConfiguration_for_Null;
+  preferJsonb?: RuleConfiguration_for_Null;
+  preferRobustStmts?: RuleConfiguration_for_Null;
+  preferTextField?: RuleConfiguration_for_Null;
+  preferTimestamptz?: RuleConfiguration_for_Null;
+  recommended?: boolean;
+  renamingColumn?: RuleConfiguration_for_Null;
+  renamingTable?: RuleConfiguration_for_Null;
+  requireConcurrentDetachPartition?: RuleConfiguration_for_Null;
+  requireConcurrentIndexCreation?: RuleConfiguration_for_Null;
+  requireConcurrentIndexDeletion?: RuleConfiguration_for_Null;
+  requireConcurrentRefreshMatview?: RuleConfiguration_for_Null;
+  requireConcurrentReindex?: RuleConfiguration_for_Null;
+  requireIdleInTransactionTimeout?: RuleConfiguration_for_Null;
+  requireSeparateConstraintValidation?: RuleConfiguration_for_Null;
+  requireStatementTimeout?: RuleConfiguration_for_Null;
+  runningStatementWhileHoldingAccessExclusive?: RuleConfiguration_for_Null;
+  transactionNesting?: RuleConfiguration_for_Null;
+  unknownColumn?: RuleConfiguration_for_Null;
+  unknownFunction?: RuleConfiguration_for_Null;
+  unknownRelation?: RuleConfiguration_for_Null;
+  unknownSchema?: RuleConfiguration_for_Null;
+  unknownType?: RuleConfiguration_for_Null;
 }
 /**
  * A list of rules that belong to this group
@@ -1175,11 +1305,6 @@ export interface Security {
    */
   unsupportedRegTypes?: RuleConfiguration_for_SplinterRuleOptions;
 }
-export type RuleConfiguration_for_Null = RulePlainConfiguration | RuleWithOptions_for_Null;
-export type RuleConfiguration_for_SplinterRuleOptions =
-  | RulePlainConfiguration
-  | RuleWithOptions_for_SplinterRuleOptions;
-export type RulePlainConfiguration = "warn" | "error" | "info" | "off";
 export interface RuleWithOptions_for_Null {
   /**
    * The severity of the emitted diagnostics by the rule
@@ -1189,6 +1314,23 @@ export interface RuleWithOptions_for_Null {
    * Rule's options
    */
   options: null;
+}
+export interface RuleWithOptions_for_PreferBigIntOptions {
+  /**
+   * The severity of the emitted diagnostics by the rule
+   */
+  level: RulePlainConfiguration;
+  /**
+   * Rule's options
+   */
+  options: PreferBigIntOptions;
+}
+export type RuleConfiguration_for_SplinterRuleOptions =
+  | RulePlainConfiguration
+  | RuleWithOptions_for_SplinterRuleOptions;
+export interface PreferBigIntOptions {
+  checkInt?: boolean;
+  checkSmallint?: boolean;
 }
 export interface RuleWithOptions_for_SplinterRuleOptions {
   /**

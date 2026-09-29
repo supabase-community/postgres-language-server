@@ -1,6 +1,8 @@
 //! Generated file, do not edit by hand, see `xtask/codegen`
 
 #![doc = r" Generated file, do not edit by hand, see `xtask/codegen`"]
+mod resolved;
+pub use resolved::LinterRuleSettings;
 mod rules;
 use crate::StringSet;
 use bpaf::Bpaf;
@@ -18,6 +20,9 @@ pub struct LinterConfiguration {
     #[doc = r" List of rules"]
     #[partial(bpaf(pure(Default::default()), optional, hide))]
     pub rules: Rules,
+    #[doc = r" The level of all rules of a group, unless a rule is configured individually."]
+    #[partial(bpaf(pure(Default::default()), optional, hide))]
+    pub groups: Groups,
     #[doc = r" A list of Unix shell style patterns. The linter will ignore files/folders that will match these patterns."]
     #[partial(bpaf(hide))]
     pub ignore: StringSet,
@@ -35,6 +40,7 @@ impl Default for LinterConfiguration {
         Self {
             enabled: true,
             rules: Default::default(),
+            groups: Default::default(),
             ignore: Default::default(),
             include: Default::default(),
         }

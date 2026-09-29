@@ -200,6 +200,12 @@ impl<'app> CliSession<'app> {
             });
         }
 
+        for deprecation in loaded_configuration.configuration.deprecations() {
+            self.console().log(markup! {
+                <Warn>"Warning: "</Warn>{deprecation}"\n"
+            });
+        }
+
         let mut configuration = loaded_configuration.configuration;
 
         // Env vars override config file but are overridden by explicit CLI args.
