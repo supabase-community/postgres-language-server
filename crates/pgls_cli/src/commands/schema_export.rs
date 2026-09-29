@@ -1,6 +1,6 @@
 //! Schema export command for WASM bindings.
 //!
-//! This command connects to a PostgreSQL database and exports the schema cache
+//! This command connects to a PostgreSQL database and exports the database snapshot
 //! as JSON that can be used with the WASM bindings.
 
 use pgls_catalog::Snapshot;
@@ -45,14 +45,14 @@ pub async fn run_schema_export(
 
     if !write_to_stdout {
         console.log(markup! {
-            "Loading schema cache..."
+            "Loading the database schema..."
         });
     }
 
-    // Load the schema cache
+    // Load the database snapshot
     let snapshot = Snapshot::load(&pool).await.map_err(|e| {
         CliDiagnostic::io_error(std::io::Error::other(format!(
-            "Failed to load schema cache: {e}"
+            "Failed to load the database schema: {e}"
         )))
     })?;
 

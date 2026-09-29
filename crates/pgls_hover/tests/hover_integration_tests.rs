@@ -14,7 +14,7 @@ async fn test_hover_at_cursor(name: &str, query: String, setup: Option<&str>, te
 
     let snapshot = Snapshot::load(test_db)
         .await
-        .expect("Failed to load Schema Cache");
+        .expect("Failed to load snapshot");
 
     let (position, sql) = QueryWithCursorPosition::from(query).get_text_and_position();
 

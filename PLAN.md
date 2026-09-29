@@ -45,9 +45,9 @@ This plan restructures the linter and replaces the `EXPLAIN`-based typechecker w
 
 ### Catalog: Database Snapshot Plus Changes From the Current File
 
-We rework `pgls_schema_cache` into a catalog (working name `pgls_catalog`).
+`pgls_catalog` replaces `pgls_schema_cache`. It is the single model of the database for all features.
 
-- **Base.** The schema cache loaded from the connected database. It is never written back to the database.
+- **Base.** The snapshot (`pgls_catalog::Snapshot`) loaded from the connected database or from JSON. It is never written back to the database.
 - **Extended introspection.** In addition to today's queries, load everything type resolution needs, builtins included:
   - `pg_type` in full: arrays, domains, pseudo-types, composite types, and categories/preferred flags.
   - `pg_proc` in full, including builtins, polymorphism, variadics, defaults, and return sets.
@@ -258,11 +258,11 @@ with no new false positives.
 
 ### Phase 1: Catalog, Session, Analyser Loop
 
-- Rework `pgls_schema_cache` into the indexed catalog with extended introspection (`pg_operator`, `pg_cast`, full `pg_proc` and `pg_type`, default `search_path`).
+- Merge `pgls_schema_cache` into the indexed catalog. The extended introspection (`pg_operator`, `pg_cast`, full `pg_proc` and `pg_type`, default `search_path`) comes with Phase 4.
 - Implement `catalog.apply` for the DDL listed above, plus unknown-object tracking and a record of what the overlay touched.
 - Implement `Session`, and replace `AnalysedFileContext` and `TransactionState` with it. Port the safety rules that read transaction state.
 - Pass the catalog snapshot, session, `file_kind`, and database availability into `RuleContext`.
-- Follow-up: completions and hover use the snapshot at the cursor, so objects created earlier in the file show up.
+- Completions and hover use the snapshot at the cursor, so objects created earlier in the file show up.
 
 ### Phase 2: Flat IDs and Regrouping
 
@@ -324,7 +324,10 @@ The first PR covers Phases 0–3.
   - Rules keep the spans they set.
   - The dead analyser metadata is removed.
 - **Phase 1**
-  - The new crate `pgls_catalog` holds `CatalogBase` (the indexed schema cache), `Catalog` (the overlay with the file's DDL), `Session` (a port of `TransactionState` that adds search path, role, and transaction depth), and the name resolver.
+  - `pgls_catalog` replaces `pgls_schema_cache`. It holds `Snapshot` (the database schema, loaded with the `db` feature or from JSON), `CatalogBase` (the indexed snapshot), `Catalog` (the overlay with the file's DDL), `Session` (a port of `TransactionState` that adds search path, role, and transaction depth), and the name resolver.
+  - `Catalog::snapshot()` turns the overlay back into a `Snapshot`. Completions and hover use it with the statements before the cursor applied, so they show objects the file created and hide the ones it dropped.
+  - The JSON format, the generated `SchemaCache` TypeScript type, and the `invalidateSchemaCache` command are unchanged.
+  - `pgls_type_resolver` is deleted.
   - The analyser applies each top-level statement to the catalog and session after running the rules. SQL function bodies are analysed with their parameters in scope and never applied.
   - `ROLLBACK` and `ROLLBACK TO SAVEPOINT` restore the catalog.
   - `appliesTo: migration` rules are skipped for files outside `migrations.migrationsDir`.
@@ -364,6 +367,5 @@ These gaps hide errors, except where noted.
 - Phase 4: expression typing, and deleting the fallback.
 - Phase 5: fixes and security rules.
 - Moving plpgsql_check into the `typecheck` group.
-- Completions and hover on the catalog snapshot.
 - Flat IDs for splinter.
 - The decision on `pgls_pglinter`.

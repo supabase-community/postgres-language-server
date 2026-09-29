@@ -91,8 +91,8 @@ The project uses a modular Rust workspace with crates prefixed with `pgls_`:
 - `pgls_completions` - Autocompletion engine
 - `pgls_hover` - Hover information provider
 - `pgls_analyser` & `pgls_analyse` - Linting and analysis framework
-- `pgls_typecheck` - Type checking via EXPLAIN
-- `pgls_schema_cache` - In-memory database schema representation
+- `pgls_typecheck` - EXPLAIN fallback for typecheck
+- `pgls_catalog` - Database snapshot, the file's DDL on top of it, and name resolution
 
 **Utilities:**
 - `pgls_diagnostics` - Error and warning reporting
@@ -108,12 +108,12 @@ Located in `packages/`:
 - Legacy main TypeScript package in `packages/@postgrestools/postgrestools/`
 
 ### Database Integration
-The server connects to a Postgres database to build an in-memory schema cache containing tables, columns, functions, and type information. This enables accurate autocompletion and type checking.
+The server connects to a Postgres database and loads a snapshot of its schema (`pgls_catalog::Snapshot`). The catalog applies the DDL of the current file on top of it, so linting, completions, and hover see objects created earlier in the file.
 
 ### Statement Processing Flow
 1. Input source code is split into individual SQL statements
 2. Each statement is parsed using libpg_query (via `pgls_query`)
-3. Statements are analyzed against the schema cache
+3. Statements are analyzed against the catalog
 4. Results are cached and updated incrementally on file changes
 
 ## Testing
@@ -155,7 +155,7 @@ cargo insta review
 Many parser structures are generated from PostgreSQL's protobuf definitions using procedural macros in `pgls_query_macros`. Run `just gen-lint` after modifying analyzer rules or configurations.
 
 ### Database Schema
-The `pgls_schema_cache` crate contains SQL queries in `src/queries/` that introspect the database schema to build the in-memory cache.
+The introspection queries live in `crates/pgls_catalog/src/snapshot/queries/`. After changing one, run `cargo sqlx prepare --workspace` against the test database to update `.sqlx/`.
 
 ### Code Refactoring Tools
 The project has `ast-grep` available for advanced code search and refactoring tasks. ast-grep is a structural search/replace tool that understands code syntax, making it useful for:

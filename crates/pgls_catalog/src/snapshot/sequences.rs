@@ -6,7 +6,7 @@ use super::SnapshotItem;
 
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct Sequence {
     pub id: i64,

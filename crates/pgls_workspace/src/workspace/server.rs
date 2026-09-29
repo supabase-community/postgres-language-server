@@ -1,6 +1,7 @@
 use std::{
     collections::HashMap,
     fs,
+    hash::{DefaultHasher, Hash, Hasher},
     panic::RefUnwindSafe,
     path::{Path, PathBuf},
     sync::{Arc, Mutex, RwLock},
@@ -22,14 +23,14 @@ use pgls_analyse::AnalysisFilter;
 use pgls_analyser::{
     Analyser, AnalyserConfig, AnalyserParams, FileKind, LinterOptions, StatementAnalysis,
 };
-use pgls_catalog::CatalogBase;
+use pgls_catalog::{Catalog, CatalogBase, Session};
 
 use pgls_catalog::Snapshot;
 use pgls_diagnostics::{
     Diagnostic, DiagnosticExt, Error, Severity, serde::Diagnostic as SDiagnostic,
 };
 use pgls_fs::{ConfigName, PgLSPath};
-use pgls_text_size::TextRange;
+use pgls_text_size::{TextRange, TextSize};
 #[cfg(feature = "db")]
 use pgls_typecheck::{IdentifierType, TypecheckParams, TypedIdentifier};
 use pgls_workspace_macros::ignored_path;
@@ -85,11 +86,14 @@ pub struct WorkspaceServer {
 
     documents: RwLock<HashMap<PgLSPath, Document>>,
 
-    /// Manages schema cache storage - supports both DB-loaded and JSON-loaded schemas
+    /// The database snapshots, loaded from a database connection or from JSON
     snapshot: SnapshotManager,
 
-    /// The indexed schema cache the typecheck rules start from
+    /// The indexed database snapshot the catalog starts from
     catalog_base: Mutex<Option<Arc<CatalogBase>>>,
+
+    /// The last snapshot built for completions and hover, by the statements it includes
+    snapshot_before: Mutex<Option<(u64, Arc<Snapshot>)>>,
 
     #[cfg(feature = "db")]
     connection: ConnectionManager,
@@ -118,6 +122,7 @@ impl WorkspaceServer {
             documents: RwLock::new(HashMap::new()),
             snapshot: SnapshotManager::new(),
             catalog_base: Mutex::default(),
+            snapshot_before: Mutex::default(),
             connection: ConnectionManager::new(),
         }
     }
@@ -130,6 +135,7 @@ impl WorkspaceServer {
             documents: RwLock::new(HashMap::new()),
             snapshot: SnapshotManager::new(),
             catalog_base: Mutex::default(),
+            snapshot_before: Mutex::default(),
         }
     }
 
@@ -143,7 +149,7 @@ impl WorkspaceServer {
     }
 
     /// Load schema from JSON string.
-    /// This allows setting a schema cache without a database connection.
+    /// This allows setting a database snapshot without a database connection.
     pub fn set_schema_json(&self, json: &str) -> Result<(), WorkspaceError> {
         self.snapshot.set(json)
     }
@@ -236,7 +242,7 @@ impl WorkspaceServer {
         }
     }
 
-    /// The indexed database schema, built once per schema cache.
+    /// The indexed database snapshot, built once per snapshot.
     fn catalog_base(&self, snapshot: &Arc<Snapshot>) -> Arc<CatalogBase> {
         let mut cached = self.catalog_base.lock().unwrap();
         if let Some(base) = cached.as_ref().filter(|base| base.is_built_from(snapshot)) {
@@ -245,6 +251,56 @@ impl WorkspaceServer {
         let base = Arc::new(CatalogBase::new(Arc::clone(snapshot)));
         *cached = Some(Arc::clone(&base));
         base
+    }
+
+    /// The database snapshot as the statement at `statement_start` sees it: with the objects
+    /// that the statements before it create, change, or drop.
+    fn snapshot_before(
+        &self,
+        doc: &Document,
+        statement_start: TextSize,
+        snapshot: Arc<Snapshot>,
+    ) -> Arc<Snapshot> {
+        let statements: Vec<_> = doc
+            .iter(ExecuteStatementMapper)
+            .take_while(|(_, range, _, _)| range.end() <= statement_start)
+            .filter(|(id, _, _, _)| !id.is_child())
+            .filter_map(|(_, _, sql, ast)| Some((sql, ast?)))
+            .collect();
+        if statements.is_empty() {
+            return snapshot;
+        }
+
+        let search_path = self
+            .workspaces()
+            .settings()
+            .map(|settings| settings.typecheck.search_path.clone())
+            .unwrap_or_default();
+
+        let mut hasher = DefaultHasher::new();
+        Arc::as_ptr(&snapshot).hash(&mut hasher);
+        search_path.hash(&mut hasher);
+        for (sql, _) in &statements {
+            sql.hash(&mut hasher);
+        }
+        let key = hasher.finish();
+
+        let mut cached = self.snapshot_before.lock().unwrap();
+        if let Some((cached_key, cached_snapshot)) = cached.as_ref()
+            && *cached_key == key
+        {
+            return Arc::clone(cached_snapshot);
+        }
+
+        let mut catalog = Catalog::new(Some(self.catalog_base(&snapshot)));
+        let mut session = Session::new(pgls_catalog::expand_search_path(&snapshot, &search_path));
+        for (_, ast) in &statements {
+            catalog.apply(ast, session.search_path());
+            session.apply(ast);
+        }
+        let result = catalog.snapshot().unwrap_or(snapshot);
+        *cached = Some((key, Arc::clone(&result)));
+        result
     }
 
     /// Diagnostics from the database: EXPLAIN for statements whose references are all
@@ -786,7 +842,6 @@ impl Workspace for WorkspaceServer {
         };
         let catalog_base = snapshot
             .as_ref()
-            .filter(|_| typecheck)
             .map(|snapshot| self.catalog_base(snapshot));
 
         let (enabled_rules, disabled_rules) = AnalyserVisitorBuilder::new(settings)
@@ -817,7 +872,6 @@ impl Workspace for WorkspaceServer {
 
         let analysis = analyser.analyse(AnalyserParams {
             stmts: analysable_stmts,
-            snapshot: snapshot.as_deref(),
             catalog_base,
             search_path,
             file_kind: self.file_kind(settings, params.path.as_path()),
@@ -925,7 +979,7 @@ impl Workspace for WorkspaceServer {
                 Ok(snapshot) => Some(snapshot),
                 Err(err @ WorkspaceError::DatabaseConnectionError(_)) => return Err(err),
                 Err(err) => {
-                    debug!("Unable to load schema cache for splinter: {err}");
+                    debug!("Unable to load the database snapshot for splinter: {err}");
                     None
                 }
             };
@@ -1195,6 +1249,7 @@ impl Workspace for WorkspaceServer {
             }
             Some((id, range, cst)) => {
                 let position = params.position - range.start();
+                let snapshot = self.snapshot_before(parsed_doc, range.start(), snapshot);
 
                 let items = pgls_completions::complete(pgls_completions::CompletionParams {
                     position,
@@ -1248,6 +1303,7 @@ impl Workspace for WorkspaceServer {
         {
             Some((stmt_id, range, ts_tree, maybe_ast)) => {
                 let position_in_stmt = params.position - range.start();
+                let snapshot = self.snapshot_before(doc, range.start(), snapshot);
 
                 let markdown_blocks = pgls_hover::on_hover(pgls_hover::OnHoverParams {
                     ts_tree: &ts_tree,

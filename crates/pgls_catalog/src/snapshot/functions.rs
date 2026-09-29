@@ -91,7 +91,7 @@ impl From<Option<JsonValue>> for FunctionArgs {
     }
 }
 
-#[derive(Debug, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct Function {
     /// The Id (`oid`).

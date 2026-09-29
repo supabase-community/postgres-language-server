@@ -40,7 +40,7 @@ impl From<char> for ColumnClassKind {
     }
 }
 
-#[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct Column {
     pub name: String,
@@ -130,7 +130,7 @@ mod tests {
 
         let cache = Snapshot::load(&test_db)
             .await
-            .expect("Failed to load Schema Cache");
+            .expect("Failed to load snapshot");
 
         let public_schema_columns = cache
             .columns

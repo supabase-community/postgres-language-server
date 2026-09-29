@@ -67,7 +67,7 @@ impl PglinterCache {
         })
     }
 
-    /// Create initial cache from schema cache only (disabled rules will need API call later)
+    /// Create initial cache from the database snapshot only (disabled rules will need API call later)
     pub fn from_snapshot(snapshot: &Snapshot) -> Self {
         Self {
             extension_installed: snapshot.extensions.iter().any(|e| e.name == "pglinter"),

@@ -1,12 +1,14 @@
 //! The database snapshot plus the changes made by the statements of the current file.
 //!
-//! [`CatalogBase`] indexes a schema cache once. [`Catalog`] layers the effects of the file's
-//! DDL on top of it without touching the database. Everything the catalog can't be sure about
+//! [`CatalogBase`] indexes the database snapshot once. [`Catalog`] layers the effects of the
+//! file's DDL on top of it without touching the database, and [`Catalog::snapshot`] turns the
+//! result back into a snapshot. Everything the catalog can't be sure about
 //! is reported as [`Lookup::Unknown`], so rules built on it never report false positives.
 
 mod base;
 mod ddl;
 mod derive;
+mod materialize;
 mod names;
 #[cfg(test)]
 mod tests;
@@ -57,13 +59,13 @@ pub struct Catalog {
     tainted: bool,
     /// The catalog at the start of each open transaction and savepoint, restored on
     /// `ROLLBACK`.
-    snapshots: Vec<Snapshot>,
+    savepoints: Vec<Savepoint>,
 }
 
-/// The catalog at `BEGIN` (`savepoint: None`) or `SAVEPOINT`.
+/// The catalog at `BEGIN` (`name: None`) or `SAVEPOINT`.
 #[derive(Clone)]
-struct Snapshot {
-    savepoint: Option<String>,
+struct Savepoint {
+    name: Option<String>,
     catalog: Box<Catalog>,
 }
 
@@ -79,7 +81,7 @@ impl Catalog {
             children: FxHashMap::default(),
             database_columns_changed: false,
             tainted: false,
-            snapshots: Vec::new(),
+            savepoints: Vec::new(),
         }
     }
 

@@ -8,13 +8,13 @@ use crate::view::{
     ColumnInfo, FunctionInfo, FunctionKind, Origin, RelationInfo, RelationKind, TypeInfo,
 };
 
-/// Indexed, immutable view of a schema cache. Build it once per schema cache and share it
+/// Indexed, immutable view of a database snapshot. Build it once per snapshot and share it
 /// between files.
 pub struct CatalogBase {
     snapshot: Arc<Snapshot>,
     schemas: FxHashSet<String>,
     relations: FxHashMap<Key, RelationInfo>,
-    /// Names that may be relations the schema cache doesn't list: foreign tables, relations the
+    /// Names that may be relations the snapshot doesn't list: foreign tables, relations the
     /// user has no privileges on, and composite types. Lookups of them are unknown, not missing.
     possible_relations: FxHashSet<Key>,
     /// Partitions and tables that inherit from another table.
@@ -34,7 +34,7 @@ impl CatalogBase {
         let types_by_id: FxHashMap<i64, &crate::PostgresType> =
             snapshot.types.iter().map(|t| (t.id, t)).collect();
 
-        // Attributes of composite types and row types. Unlike the columns of the schema cache,
+        // Attributes of composite types and row types. Unlike the columns of the snapshot,
         // they are not filtered by column privileges.
         let attributes_of = |type_: &crate::PostgresType| -> Option<Vec<ColumnInfo>> {
             (!type_.attributes.attrs.is_empty()).then(|| {
@@ -144,7 +144,7 @@ impl CatalogBase {
                 .iter()
                 .filter(|arg| matches!(arg.mode.as_str(), "in" | "inout" | "variadic"))
                 .count();
-            // Defaults belong to the last input arguments. The schema cache doesn't attach them to
+            // Defaults belong to the last input arguments. The snapshot doesn't attach them to
             // the right arguments when there are output arguments, but their number is correct.
             let defaults = args
                 .iter()
@@ -215,12 +215,12 @@ impl CatalogBase {
         }))
     }
 
-    /// Whether this was built from exactly this schema cache.
+    /// Whether this was built from exactly this snapshot.
     pub fn is_built_from(&self, snapshot: &Arc<Snapshot>) -> bool {
         Arc::ptr_eq(&self.snapshot, snapshot)
     }
 
-    pub fn snapshot(&self) -> &Snapshot {
+    pub fn snapshot(&self) -> &Arc<Snapshot> {
         &self.snapshot
     }
 

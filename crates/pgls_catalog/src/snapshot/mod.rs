@@ -35,7 +35,7 @@ use sqlx::postgres::PgPool;
 
 // The JSON schema keeps the name `SchemaCache`, which the WASM package exports.
 /// The objects of the connected database, loaded from the database or from JSON.
-#[derive(Debug, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 #[cfg_attr(feature = "schema", schemars(rename = "SchemaCache"))]
 #[serde(default)]
@@ -238,7 +238,7 @@ mod tests {
     async fn it_loads(test_db: PgPool) {
         Snapshot::load(&test_db)
             .await
-            .expect("Couldnt' load Schema Cache");
+            .expect("Failed to load snapshot");
     }
 
     #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
@@ -259,7 +259,7 @@ mod tests {
 
         let cache = Snapshot::load(&test_db)
             .await
-            .expect("Couldn't load Schema Cache");
+            .expect("Failed to load snapshot");
 
         let set: HashSet<String> = cache
             .columns

@@ -23,7 +23,7 @@ pub(crate) async fn get_test_deps(
 
     let snapshot = Snapshot::load(test_db)
         .await
-        .expect("Failed to load Schema Cache");
+        .expect("Failed to load snapshot");
 
     let mut parser = tree_sitter::Parser::new();
     parser
@@ -48,7 +48,7 @@ pub(crate) async fn test_against_connection_string(
 
     let snapshot = Snapshot::load(&pool)
         .await
-        .expect("Failed to load Schema Cache");
+        .expect("Failed to load snapshot");
 
     let mut parser = tree_sitter::Parser::new();
     parser

@@ -349,7 +349,7 @@ mod tests {
 
         let snapshot = pgls_catalog::Snapshot::load(&test_db)
             .await
-            .expect("Failed to load Schema Cache");
+            .expect("Failed to load snapshot");
 
         let tree = parser.parse(input, None).unwrap();
 
@@ -410,7 +410,7 @@ mod tests {
 
         let snapshot = pgls_catalog::Snapshot::load(&test_db)
             .await
-            .expect("Failed to load Schema Cache");
+            .expect("Failed to load snapshot");
 
         let tree = parser.parse(input, None).unwrap();
 
@@ -459,7 +459,7 @@ mod tests {
 
         let snapshot = pgls_catalog::Snapshot::load(&test_db)
             .await
-            .expect("Failed to load Schema Cache");
+            .expect("Failed to load snapshot");
 
         let tree = parser.parse(input, None).unwrap();
 

@@ -12,7 +12,7 @@ use std::collections::HashMap;
 #[cfg(feature = "db")]
 use super::{async_helper::run_async, connection_key::ConnectionKey};
 
-/// Manages schema cache storage and retrieval.
+/// Manages database snapshot storage and retrieval.
 ///
 /// In db mode: supports loading from database connections and/or JSON.
 /// In no-db mode: only supports loading from JSON.
@@ -26,7 +26,7 @@ use super::{async_helper::run_async, connection_key::ConnectionKey};
 /// - `load()` - Load schema from database connection
 /// - `clear_connection()` - Clear schema for specific connection
 pub struct SnapshotManager {
-    /// Connection-based schema caches (db mode only)
+    /// Connection-based snapshots (db mode only)
     #[cfg(feature = "db")]
     db_schemas: RwLock<HashMap<ConnectionKey, Arc<Snapshot>>>,
 
@@ -92,7 +92,7 @@ impl SnapshotManager {
             return Ok(Arc::clone(cache));
         }
 
-        // Load schema cache from database
+        // Load the snapshot from the database
         let pool_clone = pool.clone();
         let snapshot = Arc::new(run_async(
             async move { Snapshot::load(&pool_clone).await },
@@ -102,7 +102,7 @@ impl SnapshotManager {
         Ok(snapshot)
     }
 
-    /// Clear the schema cache for a specific connection.
+    /// Clear the snapshot for a specific connection.
     #[cfg(feature = "db")]
     pub fn clear_connection(&self, pool: &PgPool) {
         let key: ConnectionKey = pool.into();
@@ -110,7 +110,7 @@ impl SnapshotManager {
         schemas.remove(&key);
     }
 
-    /// Clear all connection-based schema caches.
+    /// Clear all connection-based snapshots.
     #[cfg(feature = "db")]
     pub fn clear_all_connections(&self) {
         let mut schemas = self.db_schemas.write().unwrap();

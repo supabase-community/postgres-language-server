@@ -1324,6 +1324,75 @@ select * from auth.users;
     );
 }
 
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn completions_see_the_ddl_before_the_statement(test_db: PgPool) {
+    test_db
+        .execute("create schema auth; create table auth.users (id serial primary key);")
+        .await
+        .expect("setup sql failed");
+
+    let mut conf = PartialConfiguration::init();
+    conf.merge_with(PartialConfiguration {
+        db: Some(PartialDatabaseConfiguration {
+            database: Some(
+                test_db
+                    .connect_options()
+                    .get_database()
+                    .unwrap()
+                    .to_string(),
+            ),
+            ..Default::default()
+        }),
+        ..Default::default()
+    });
+    let workspace = get_test_workspace(Some(conf)).expect("Unable to create test workspace");
+    let path = PgLSPath::new("test.sql");
+
+    let labels = |content: &str| {
+        let position = content
+            .find('|')
+            .map(|idx| pgls_text_size::TextSize::new(idx as u32))
+            .expect("Unable to find cursor position in test content");
+        workspace
+            .open_file(OpenFileParams {
+                path: path.clone(),
+                content: content.replace('|', ""),
+                version: 1,
+            })
+            .expect("Unable to open test file");
+        let completions = workspace
+            .get_completions(crate::workspace::GetCompletionsParams {
+                path: path.clone(),
+                position,
+            })
+            .expect("Unable to request completions");
+        workspace
+            .close_file(crate::workspace::CloseFileParams { path: path.clone() })
+            .expect("Unable to close test file");
+        completions
+            .items
+            .into_iter()
+            .map(|item| item.label)
+            .collect::<Vec<_>>()
+    };
+
+    let tables = labels(
+        "create table auth.sessions (id int, token text);\n\
+         drop table auth.users;\n\
+         select * from auth.|;\n\
+         create table auth.later (id int);",
+    );
+    assert!(tables.contains(&"sessions".to_string()), "{tables:?}");
+    assert!(!tables.contains(&"users".to_string()), "{tables:?}");
+    assert!(!tables.contains(&"later".to_string()), "{tables:?}");
+
+    let columns = labels(
+        "create table auth.sessions (id int, token text);\n\
+         select tok| from auth.sessions;",
+    );
+    assert!(columns.contains(&"token".to_string()), "{columns:?}");
+}
+
 /// Whether the diagnostic comes from a rule of the `typecheck` group or from the database.
 fn is_typecheck(diagnostic: &pgls_diagnostics::serde::Diagnostic) -> bool {
     diagnostic.category().is_some_and(|category| {

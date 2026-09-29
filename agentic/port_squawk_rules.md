@@ -12,8 +12,8 @@ pub struct RuleContext<'a, R: Rule> {
     stmt: &'a pgls_query::NodeEnum,
     // options for that specific rule
     options: &'a R::Options,
-    // the schema cache - also includes the postgres version
-    schema_cache: Option<&'a SchemaCache>,
+    // the database snapshot - also includes the postgres version
+    snapshot: Option<&'a Snapshot>,
     // the file context which contains other statements in that file in case you need them
     file_context: &'a AnalysedFileContext,
 }
@@ -47,7 +47,7 @@ In squawk, you will see:
 ```rust
     // all statements of that file -> our analyser goes statement by statement but has access to the files content via `file_context`
     tree: &[RawStmt],
-    // the postgres version -> we store it in the schema cache
+    // the postgres version -> we store it in the database snapshot
     _pg_version: Option<Version>,
     // for us, this is always true
     _assume_in_transaction: bool,
@@ -63,7 +63,7 @@ LEARNINGS:
 - Use `cargo clippy` to check your code after writing it
 - The `just new-lintrule` command expects severity to be "info", "warn", or "error" (not "warning")
 - RuleDiagnostic methods: `detail(span, msg)` takes two parameters, `note(msg)` takes only one parameter
-- To check Postgres version: access `ctx.schema_cache().is_some_and(|sc| sc.version.major_version)` which gives e.g. 17
+- To check Postgres version: access `ctx.snapshot().is_some_and(|snapshot| snapshot.version.major_version)` which gives e.g. 17
 - NEVER skip anything, or use a subset of something. ALWAYS do the full thing. For example, copy the entire non-volatile functions list from Squawk, not just a subset.
 - If you are missing features from our rule context to be able to properly implement a rule, DO NOT DO IT. Instead, add that rule to the NEEDS FEATURES list below. The node enum is generated from the same source as it is in squawk, so they have feature parity.
 - Remember to run `just gen-lint` after creating a new rule to generate all necessary files
