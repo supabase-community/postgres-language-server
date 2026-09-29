@@ -10,6 +10,7 @@ mod ddl;
 mod derive;
 mod materialize;
 mod names;
+mod overlay;
 #[cfg(test)]
 mod tests;
 

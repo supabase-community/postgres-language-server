@@ -65,6 +65,8 @@ Tree-sitter integration used by features (e.g. completions and hover) that need 
 
 The database catalog. `Snapshot` is the schema of the connected database (tables, columns, functions, types, ...), loaded by introspection queries or from JSON. `Catalog` applies the DDL of the current file on top of it without touching the database, and the name resolver checks statements against the result. Lookups answer found, missing, or unknown, so the typecheck rules only report what is certainly wrong.
 
+Like `pgls_pretty_print`, the per-statement code has one module per parse node: `resolve/nodes/<node>.rs` (`resolve_<node>`) for name resolution and `catalog/ddl/<node>.rs` (`apply_<node>`) for the effects of DDL, each with a single dispatcher in its `mod.rs`.
+
 #### Formatting
 
 ##### `crates/pgls_pretty_print`
