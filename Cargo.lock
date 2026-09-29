@@ -2404,6 +2404,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "pgls_catalog"
+version = "0.0.0"
+dependencies = [
+ "insta",
+ "pgls_query",
+ "pgls_schema_cache",
+ "pgls_text_size",
+ "rustc-hash",
+]
+
+[[package]]
 name = "pgls_cli"
 version = "0.0.0"
 dependencies = [

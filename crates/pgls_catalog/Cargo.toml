@@ -1,0 +1,23 @@
+[package]
+authors.workspace    = true
+categories.workspace = true
+description          = "In-memory catalog, session state and name resolution for statically analysing SQL files"
+edition.workspace    = true
+homepage.workspace   = true
+keywords.workspace   = true
+license.workspace    = true
+name                 = "pgls_catalog"
+repository.workspace = true
+version              = "0.0.0"
+
+[dependencies]
+pgls_query        = { workspace = true }
+pgls_schema_cache = { workspace = true, default-features = false }
+pgls_text_size    = { workspace = true }
+rustc-hash        = { workspace = true }
+
+[dev-dependencies]
+insta = { workspace = true }
+
+[lib]
+doctest = false
