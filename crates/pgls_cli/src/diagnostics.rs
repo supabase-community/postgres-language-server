@@ -316,6 +316,13 @@ impl CliDiagnostic {
     }
 
     /// To throw when there's been an error while parsing an argument
+    pub fn parse_sql_error(message: String) -> Self {
+        Self::ParseError(ParseDiagnostic {
+            source: None,
+            message: MessageAndDescription::from(message),
+        })
+    }
+
     pub fn parse_error_bpaf(source: bpaf::ParseFailure) -> Self {
         Self::ParseError(ParseDiagnostic {
             source: Some(Error::from(BpafError::from(source))),
