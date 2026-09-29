@@ -122,6 +122,20 @@ impl<'a> LintVisitor<'a> {
             self.disabled_rules.extend(disabled_rules);
         }
 
+        // `linter.enabled` switches the lint rules, and `typecheck.enabled` the typecheck rules.
+        let linter_enabled = self.settings.linter.enabled;
+        let typecheck_enabled = self.settings.typecheck.enabled;
+        self.enabled_rules.retain(|filter| {
+            let group = match filter {
+                RuleFilter::Group(group) | RuleFilter::Rule(group, _) => *group,
+            };
+            if group == pgls_analyser::TYPECHECK_GROUP {
+                typecheck_enabled
+            } else {
+                linter_enabled
+            }
+        });
+
         (self.enabled_rules, self.disabled_rules)
     }
 
@@ -281,7 +295,7 @@ impl RegistryVisitor for SplinterVisitor<'_> {
 #[cfg(test)]
 mod tests {
     use pgls_analyse::RuleFilter;
-    use pgls_configuration::{RuleConfiguration, Rules, linter::Safety};
+    use pgls_configuration::{RuleConfiguration, Rules};
 
     use crate::{
         settings::{LinterSettings, Settings},
@@ -293,12 +307,9 @@ mod tests {
         let settings = Settings {
             linter: LinterSettings {
                 rules: Some(Rules {
-                    safety: Some(Safety {
-                        ban_drop_column: Some(RuleConfiguration::Plain(
-                            pgls_configuration::RulePlainConfiguration::Off,
-                        )),
-                        ..Default::default()
-                    }),
+                    ban_drop_column: Some(RuleConfiguration::Plain(
+                        pgls_configuration::RulePlainConfiguration::Off,
+                    )),
                     ..Default::default()
                 }),
                 ..Default::default()
@@ -312,7 +323,7 @@ mod tests {
 
         assert_eq!(
             disabled_rules,
-            vec![RuleFilter::Rule("safety", "banDropColumn")]
+            vec![RuleFilter::Rule("destructive", "banDropColumn")]
         )
     }
 
@@ -360,12 +371,9 @@ mod tests {
         let settings = Settings {
             linter: LinterSettings {
                 rules: Some(Rules {
-                    safety: Some(Safety {
-                        ban_drop_column: Some(RuleConfiguration::Plain(
-                            pgls_configuration::RulePlainConfiguration::Off,
-                        )),
-                        ..Default::default()
-                    }),
+                    ban_drop_column: Some(RuleConfiguration::Plain(
+                        pgls_configuration::RulePlainConfiguration::Off,
+                    )),
                     ..Default::default()
                 }),
                 ..Default::default()
@@ -392,7 +400,7 @@ mod tests {
             .finish();
 
         // Should contain disabled rules from both linter and splinter
-        assert!(disabled_rules.contains(&RuleFilter::Rule("safety", "banDropColumn")));
+        assert!(disabled_rules.contains(&RuleFilter::Rule("destructive", "banDropColumn")));
         assert!(disabled_rules.contains(&RuleFilter::Rule("performance", "authRlsInitplan")));
         assert_eq!(disabled_rules.len(), 2);
     }

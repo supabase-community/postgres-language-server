@@ -8,7 +8,7 @@ use pgls_text_size::{TextRange, TextSize};
 
 use super::{
     annotation::AnnotationStore,
-    pg_query::PgQueryStore,
+    pg_query::{PgQueryStore, convert_to_positional_params_with_metadata},
     sql_function::{SQLFunctionSignature, get_sql_fn_body, get_sql_fn_signature},
     statement_identifier::StatementId,
     tree_sitter::TreeSitterStore,
@@ -277,12 +277,43 @@ impl<'a> StatementMapper<'a> for AnalyserDiagnosticsMapper {
             Err(diag) => (None, Some(diag.clone().span(range))),
         };
 
+        // Statements in the body of a SQL function can reference its parameters.
+        let function = id.parent().and_then(|root| {
+            let parent = parser.ast_db.get_or_cache_ast(&root);
+            let signature = get_sql_fn_signature(parent.as_ref().as_ref().ok()?)?;
+            Some(function_context(signature))
+        });
+
         (
-            ast_option.map(|root| AnalysableStatement { range, root }),
+            ast_option.map(|root| {
+                AnalysableStatement::new(root, range)
+                    .with_sql(id.content())
+                    .with_function(function)
+                    .with_identifier_parameters(
+                        convert_to_positional_params_with_metadata(id.content())
+                            .has_identifier_parameters,
+                    )
+            }),
             diagnostics,
         )
     }
 }
+fn function_context(signature: SQLFunctionSignature) -> pgls_catalog::resolve::FunctionContext {
+    pgls_catalog::resolve::FunctionContext {
+        function_name: signature.name,
+        params: signature
+            .args
+            .into_iter()
+            .map(|arg| pgls_catalog::resolve::FunctionParam {
+                name: arg.name,
+                type_schema: arg.type_.schema,
+                type_name: arg.type_.name,
+                is_array: arg.type_.is_array,
+            })
+            .collect(),
+    }
+}
+
 pub struct WithCSTMapper;
 impl<'a> StatementMapper<'a> for WithCSTMapper {
     type Output = (StatementId, TextRange, Arc<tree_sitter::Tree>);
