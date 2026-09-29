@@ -1,0 +1,18 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+drop type if exists group_composite;
+-- expect_lint/invalidDropTypeSignature
+drop type if exists group_composite (int, text);
+
+```
+
+# Diagnostics
+lint/invalidDropTypeSignature ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Types are dropped by name only, without a parameter list.
+  
+  i Remove the parameter list.

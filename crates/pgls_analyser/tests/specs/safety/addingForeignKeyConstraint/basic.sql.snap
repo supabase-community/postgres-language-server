@@ -4,13 +4,13 @@ expression: snapshot
 ---
 # Input
 ```
--- expect_lint/safety/addingForeignKeyConstraint
+-- expect_lint/addingForeignKeyConstraint
 ALTER TABLE "email" ADD CONSTRAINT "fk_user" FOREIGN KEY ("user_id") REFERENCES "user" ("id");
 
 ```
 
 # Diagnostics
-lint/safety/addingForeignKeyConstraint ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+lint/addingForeignKeyConstraint ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   × Adding a foreign key constraint requires a table scan and locks on both tables.
   

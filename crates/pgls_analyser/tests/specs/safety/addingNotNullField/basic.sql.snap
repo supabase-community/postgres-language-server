@@ -1,20 +1,19 @@
 ---
-source: crates/pgt_analyser/tests/rules_tests.rs
+source: crates/pgls_analyser/tests/rules_tests.rs
 expression: snapshot
-snapshot_kind: text
 ---
 # Input
 ```
--- expect_lint/safety/addingNotNullField
+-- expect_lint/addingNotNullField
 ALTER TABLE "core_recipe" ALTER COLUMN "foo" SET NOT NULL;
 
 ```
 
 # Diagnostics
-lint/safety/addingNotNullField ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+lint/addingNotNullField ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   × Setting a column NOT NULL blocks reads while the table is scanned.
   
   i This operation requires an ACCESS EXCLUSIVE lock and a full table scan to verify all rows.
   
-  i Use a CHECK constraint with NOT VALID instead, then validate it in a separate transaction.
+  i On PostgreSQL 12+, a validated CHECK (column IS NOT NULL) constraint lets PostgreSQL skip the scan.

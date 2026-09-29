@@ -28,6 +28,7 @@ declare_lint_rule! {
         name: "requireStatementTimeout",
         severity: Severity::Warning,
         recommended: false,
+        applies_to: pgls_analyse::AppliesTo::Migration,
         sources: &[RuleSource::Pgfence("missing-statement-timeout")],
     }
 }
@@ -36,7 +37,7 @@ impl LinterRule for RequireStatementTimeout {
     type Options = ();
 
     fn run(ctx: &LinterRuleContext<Self>) -> Vec<LinterDiagnostic> {
-        let tx_state = ctx.file_context().transaction_state();
+        let tx_state = ctx.session();
         if tx_state.has_statement_timeout() {
             return vec![];
         }

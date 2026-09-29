@@ -127,31 +127,13 @@ fn assert_lint(
     });
 
     let result = pgls_statement_splitter::split(code);
-    for stmt_range in result.ranges {
-        match pgls_query::parse(&code[stmt_range]) {
+    let mut stmts = Vec::new();
+    for stmt_range in &result.ranges {
+        let sql = &code[*stmt_range];
+        match pgls_query::parse(sql) {
             Ok(ast) => {
                 if let Some(root) = ast.into_root() {
-                    for rule_diag in analyser.run(pgls_analyser::AnalyserParams {
-                        schema_cache: None,
-                        stmts: vec![AnalysableStatement {
-                            range: stmt_range,
-                            root,
-                        }],
-                    }) {
-                        let diag = pgls_diagnostics::serde::Diagnostic::new(rule_diag);
-
-                        let category = diag.category().expect("linter diagnostic has no code");
-                        let severity = settings.get_severity_from_rule_code(category).expect(
-                                "If you see this error, it means you need to run cargo codegen-configuration",
-                            );
-
-                        let error = diag
-                            .with_severity(severity)
-                            .with_file_path(&file_path)
-                            .with_file_source_code(code);
-
-                        write_diagnostic(code, error)?;
-                    }
+                    stmts.push(AnalysableStatement::new(root, *stmt_range).with_sql(sql));
                 }
             }
             Err(e) => {
@@ -161,6 +143,32 @@ fn assert_lint(
                 write_diagnostic(code, error)?;
             }
         };
+    }
+
+    // Typecheck rules need a database. Examples run against one with empty `public` and
+    // `pg_catalog` schemas and create everything else themselves.
+    let is_typecheck = group == pgls_analyser::TYPECHECK_GROUP;
+    let diagnostics = analyser.run(pgls_analyser::AnalyserParams {
+        stmts,
+        catalog_base: is_typecheck.then(|| std::sync::Arc::new(pgls_catalog::CatalogBase::empty())),
+        search_path: vec!["public".into()],
+        typecheck: is_typecheck,
+        ..Default::default()
+    });
+    for rule_diag in diagnostics {
+        let diag = pgls_diagnostics::serde::Diagnostic::new(rule_diag);
+
+        let category = diag.category().expect("linter diagnostic has no code");
+        let severity = settings
+            .get_severity_from_rule_code(category)
+            .expect("If you see this error, it means you need to run cargo codegen-configuration");
+
+        let error = diag
+            .with_severity(severity)
+            .with_file_path(&file_path)
+            .with_file_source_code(code);
+
+        write_diagnostic(code, error)?;
     }
     if !result.errors.is_empty() {
         // Print all diagnostics to help the user

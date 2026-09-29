@@ -35,6 +35,7 @@ declare_lint_rule! {
         name: "addingFieldWithDefault",
         severity: Severity::Warning,
         recommended: true,
+        applies_to: pgls_analyse::AppliesTo::Migration,
         sources: &[RuleSource::Squawk("adding-field-with-default")],
     }
 }

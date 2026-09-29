@@ -4,12 +4,12 @@ expression: snapshot
 ---
 # Input
 ```
--- expect_lint/safety/avoidCreateTrigger
+-- expect_lint/avoidCreateTrigger
 create trigger my_trigger after insert on my_table for each row execute function my_func();
 ```
 
 # Diagnostics
-lint/safety/avoidCreateTrigger ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+lint/avoidCreateTrigger ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   × Creating a trigger acquires a SHARE ROW EXCLUSIVE lock on the table.
   

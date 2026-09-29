@@ -28,6 +28,7 @@ declare_lint_rule! {
         name: "avoidEnableDisableTrigger",
         severity: Severity::Warning,
         recommended: false,
+        applies_to: pgls_analyse::AppliesTo::Migration,
         sources: &[RuleSource::Pgfence("enable-disable-trigger")],
     }
 }

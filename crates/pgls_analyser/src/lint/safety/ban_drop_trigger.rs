@@ -28,6 +28,7 @@ declare_lint_rule! {
         name: "banDropTrigger",
         severity: Severity::Warning,
         recommended: false,
+        applies_to: pgls_analyse::AppliesTo::Migration,
         sources: &[RuleSource::Pgfence("drop-trigger")],
     }
 }

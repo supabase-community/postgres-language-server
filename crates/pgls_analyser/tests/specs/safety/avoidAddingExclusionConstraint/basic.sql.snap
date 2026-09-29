@@ -4,13 +4,13 @@ expression: snapshot
 ---
 # Input
 ```
--- expect_lint/safety/avoidAddingExclusionConstraint
+-- expect_lint/avoidAddingExclusionConstraint
 alter table my_table add constraint my_excl exclude using gist (col with &&);
 
 ```
 
 # Diagnostics
-lint/safety/avoidAddingExclusionConstraint ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+lint/avoidAddingExclusionConstraint ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   × Adding an exclusion constraint acquires an ACCESS EXCLUSIVE lock.
   

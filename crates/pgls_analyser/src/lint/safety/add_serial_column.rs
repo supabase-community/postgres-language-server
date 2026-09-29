@@ -34,6 +34,7 @@ declare_lint_rule! {
         name: "addSerialColumn",
         severity: Severity::Warning,
         recommended: true,
+        applies_to: pgls_analyse::AppliesTo::Migration,
         sources: &[RuleSource::Eugene("E11")],
     }
 }

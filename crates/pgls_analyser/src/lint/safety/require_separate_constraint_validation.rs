@@ -17,7 +17,7 @@ declare_lint_rule! {
     /// ### Invalid
     ///
     /// Adding a NOT VALID constraint and validating it in the same transaction:
-    /// ```sql
+    /// ```sql,expect_diagnostic
     /// ALTER TABLE orders ADD CONSTRAINT orders_check CHECK (total > 0) NOT VALID;
     /// ALTER TABLE orders VALIDATE CONSTRAINT orders_check;
     /// ```
@@ -33,6 +33,7 @@ declare_lint_rule! {
         name: "requireSeparateConstraintValidation",
         severity: Severity::Error,
         recommended: true,
+        applies_to: pgls_analyse::AppliesTo::Migration,
         sources: &[RuleSource::Pgfence("not-valid-validate-same-tx")],
     }
 }
@@ -47,7 +48,7 @@ impl LinterRule for RequireSeparateConstraintValidation {
             return diagnostics;
         };
 
-        let tx_state = ctx.file_context().transaction_state();
+        let tx_state = ctx.session();
 
         let (table_schema, table_name) = stmt
             .relation

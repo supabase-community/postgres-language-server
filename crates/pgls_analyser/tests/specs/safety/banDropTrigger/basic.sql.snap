@@ -4,12 +4,12 @@ expression: snapshot
 ---
 # Input
 ```
--- expect_lint/safety/banDropTrigger
+-- expect_lint/banDropTrigger
 drop trigger my_trigger on my_table;
 ```
 
 # Diagnostics
-lint/safety/banDropTrigger ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+lint/banDropTrigger ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   × Dropping a trigger acquires an ACCESS EXCLUSIVE lock on the table.
   

@@ -39,6 +39,7 @@ declare_lint_rule! {
         name: "runningStatementWhileHoldingAccessExclusive",
         severity: Severity::Warning,
         recommended: true,
+        applies_to: pgls_analyse::AppliesTo::Migration,
         sources: &[RuleSource::Eugene("E4")],
     }
 }
@@ -50,7 +51,7 @@ impl LinterRule for RunningStatementWhileHoldingAccessExclusive {
         let mut diagnostics = Vec::new();
 
         // Check if we're currently holding an ACCESS EXCLUSIVE lock
-        let tx_state = ctx.file_context().transaction_state();
+        let tx_state = ctx.session();
         if tx_state.is_holding_access_exclusive() {
             diagnostics.push(
                 LinterDiagnostic::new(

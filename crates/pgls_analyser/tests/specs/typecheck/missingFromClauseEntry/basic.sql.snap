@@ -1,0 +1,17 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+create table users (id int8);
+select u.id from users u;
+-- expect_lint/missingFromClauseEntry
+select users.id from users u;
+
+```
+
+# Diagnostics
+lint/missingFromClauseEntry ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Missing FROM-clause entry for users.

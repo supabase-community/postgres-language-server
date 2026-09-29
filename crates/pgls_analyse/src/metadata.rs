@@ -11,6 +11,8 @@ use crate::{categories::RuleCategory, registry::RegistryVisitor};
 )]
 /// Static metadata containing information about a rule
 pub struct RuleMetadata {
+    /// Whether the rule is intended for migration files or all SQL files.
+    pub applies_to: AppliesTo,
     /// It marks if a rule is deprecated, and if so a reason has to be provided.
     pub deprecated: Option<&'static str>,
     /// The version when the rule was implemented
@@ -27,6 +29,16 @@ pub struct RuleMetadata {
     pub severity: Severity,
 }
 
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
+#[cfg_attr(feature = "serde", serde(rename_all = "camelCase"))]
+pub enum AppliesTo {
+    #[default]
+    Any,
+    Migration,
+}
+
 impl RuleMetadata {
     pub const fn new(
         version: &'static str,
@@ -35,6 +47,7 @@ impl RuleMetadata {
         severity: Severity,
     ) -> Self {
         Self {
+            applies_to: AppliesTo::Any,
             deprecated: None,
             version,
             name,
@@ -43,6 +56,11 @@ impl RuleMetadata {
             recommended: false,
             severity,
         }
+    }
+
+    pub const fn applies_to(mut self, applies_to: AppliesTo) -> Self {
+        self.applies_to = applies_to;
+        self
     }
 
     pub const fn recommended(mut self, recommended: bool) -> Self {

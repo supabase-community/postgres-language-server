@@ -42,16 +42,23 @@ fn rule_test(full_path: &'static str, _: &str, _: &str) {
             let text = &query[*r];
             let ast = pgls_query::parse(text).expect("failed to parse SQL");
 
-            AnalysableStatement {
-                root: ast.into_root().expect("Failed to convert AST to root node"),
-                range: *r,
-            }
+            AnalysableStatement::new(
+                ast.into_root().expect("Failed to convert AST to root node"),
+                *r,
+            )
+            .with_sql(text)
         })
         .collect::<Vec<_>>();
 
+    // Typecheck rules need a database. Specs run against one with empty `public` and
+    // `pg_catalog` schemas and create everything else themselves.
+    let is_typecheck = group == pgls_analyser::TYPECHECK_GROUP;
     let results = analyser.run(AnalyserParams {
         stmts,
-        schema_cache: None,
+        catalog_base: is_typecheck.then(|| std::sync::Arc::new(pgls_catalog::CatalogBase::empty())),
+        search_path: vec!["public".into()],
+        typecheck: is_typecheck,
+        ..Default::default()
     });
 
     let mut snapshot = String::new();

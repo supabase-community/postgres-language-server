@@ -1,11 +1,10 @@
 ---
-source: crates/pgt_analyser/tests/rules_tests.rs
+source: crates/pgls_analyser/tests/rules_tests.rs
 expression: snapshot
-snapshot_kind: text
 ---
 # Input
 ```
--- expect_lint/safety/multipleAlterTable
+-- expect_lint/multipleAlterTable
 -- Test ALTER TABLE after other statements
 CREATE TABLE products (id serial PRIMARY KEY);
 ALTER TABLE products ADD COLUMN description text;
@@ -14,7 +13,7 @@ ALTER TABLE products ADD COLUMN price numeric;
 ```
 
 # Diagnostics
-lint/safety/multipleAlterTable ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+lint/multipleAlterTable ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   × Multiple ALTER TABLE statements found for table public.products.
   

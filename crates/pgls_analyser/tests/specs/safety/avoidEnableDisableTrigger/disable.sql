@@ -1,2 +1,2 @@
--- expect_lint/safety/avoidEnableDisableTrigger
+-- expect_lint/avoidEnableDisableTrigger
 alter table my_table disable trigger my_trigger;
