@@ -145,7 +145,12 @@ fn format_role_option(e: &mut EventEmitter, d: &pgls_query::protobuf::DefElem) {
                 e.space();
                 e.token(TokenKind::UNTIL_KW);
                 e.space();
-                super::emit_node(arg, e);
+                // The timestamp is a string literal, not an identifier
+                if let Some(pgls_query::NodeEnum::String(s)) = &arg.node {
+                    super::emit_string_literal(e, s);
+                } else {
+                    super::emit_node(arg, e);
+                }
                 return;
             }
         }

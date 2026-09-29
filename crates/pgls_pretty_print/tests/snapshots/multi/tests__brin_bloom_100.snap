@@ -5,7 +5,7 @@ snapshot_kind: text
 ---
 create table brintest_bloom (
   byteacol bytea,
-  charcol char,
+  charcol "char",
   namecol name,
   int8col bigint,
   int2col smallint,
@@ -33,7 +33,7 @@ with (fillfactor = 10);
 insert into brintest_bloom
 select
   cast(repeat(stringu1, 8) as bytea),
-  cast(substr(stringu1, 1, 1) as char),
+  cast(substr(stringu1, 1, 1) as "char"),
   cast(stringu1 as name),
   142857 * tenthous,
   thousand,
@@ -51,7 +51,7 @@ select
   as macaddr),
   cast('10.2.3.4/24' as inet) + tenthous,
   cast('10.2.3/24' as cidr) + tenthous,
-  cast(substr(stringu1, 1, 1) as char),
+  cast(substr(stringu1, 1, 1) as bpchar),
   cast('1995-08-15' as date) + tenthous,
   cast('01:20:30' as time) +
   thousand * cast('18.5 second' as interval),
@@ -368,7 +368,7 @@ reset enable_bitmapscan;
 insert into brintest_bloom
 select
   cast(repeat(stringu1, 42) as bytea),
-  cast(substr(stringu1, 1, 1) as char),
+  cast(substr(stringu1, 1, 1) as "char"),
   cast(stringu1 as name),
   142857 * tenthous,
   thousand,
@@ -386,7 +386,7 @@ select
   as macaddr),
   cast('10.2.3.4' as inet) + tenthous,
   cast('10.2.3/24' as cidr) + tenthous,
-  cast(substr(stringu1, 1, 1) as char),
+  cast(substr(stringu1, 1, 1) as bpchar),
   cast('1995-08-15' as date) + tenthous,
   cast('01:20:30' as time) +
   thousand * cast('18.5 second' as interval),

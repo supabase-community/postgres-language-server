@@ -165,7 +165,7 @@ select
 from
   (
     values
-      (cast(null as char)),
+      (cast(null as "char")),
       ('1'),
       ('x'),
       ('X'),

@@ -253,7 +253,7 @@ on hub
 for each row
 execute function tg_hub_a();
 
-create function tg_hub_adjustslots(hname char, oldnslots int, newnslots int)
+create function tg_hub_adjustslots(hname bpchar, oldnslots int, newnslots int)
 returns int
 language plpgsql
 as $function$
@@ -273,11 +273,11 @@ begin
 end
 $function$;
 
-comment on function tg_hub_adjustslots_wrong(char, int, int) is 'function with args';
+comment on function tg_hub_adjustslots_wrong(bpchar, int, int) is 'function with args';
 
-comment on function tg_hub_adjustslots(char, int, int) is 'function with args';
+comment on function tg_hub_adjustslots(bpchar, int, int) is 'function with args';
 
-comment on function tg_hub_adjustslots(char, int, int) is null;
+comment on function tg_hub_adjustslots(bpchar, int, int) is null;
 
 create function tg_hslot_biu()
 returns trigger
@@ -660,7 +660,7 @@ on pline
 for each row
 execute function tg_backlink_a("PL");
 
-create function tg_backlink_set(myname char, blname char)
+create function tg_backlink_set(myname bpchar, blname bpchar)
 returns int
 language plpgsql
 as $function$
@@ -713,7 +713,7 @@ begin
 end;
 $function$;
 
-create function tg_backlink_unset(char, char)
+create function tg_backlink_unset(bpchar, bpchar)
 returns int
 language plpgsql
 as $function$
@@ -824,7 +824,7 @@ on phone
 for each row
 execute function tg_slotlink_a("PH");
 
-create function tg_slotlink_set(char, char)
+create function tg_slotlink_set(bpchar, bpchar)
 returns int
 language plpgsql
 as $function$
@@ -907,7 +907,7 @@ begin
 end;
 $function$;
 
-create function tg_slotlink_unset(char, char)
+create function tg_slotlink_unset(bpchar, bpchar)
 returns int
 language plpgsql
 as $function$
@@ -971,7 +971,7 @@ begin
 end;
 $function$;
 
-create function pslot_backlink_view(char)
+create function pslot_backlink_view(bpchar)
 returns text
 language plpgsql
 as $function$
@@ -1014,7 +1014,7 @@ begin
 end;
 $function$;
 
-create function pslot_slotlink_view(char)
+create function pslot_slotlink_view(bpchar)
 returns text
 language plpgsql
 as $function$
@@ -1048,7 +1048,7 @@ begin
 end;
 $function$;
 
-create function wslot_slotlink_view(char)
+create function wslot_slotlink_view(bpchar)
 returns text
 language plpgsql
 as $function$

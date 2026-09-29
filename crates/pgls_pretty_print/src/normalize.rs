@@ -309,32 +309,6 @@ fn clear_location(node: &mut NodeEnum) {
                 {
                     (*n).names.remove(0);
                 }
-
-                // Normalize char to bpchar(1) and bpchar to bpchar(1)
-                if (*n).names.len() == 1
-                    && let Some(NodeEnum::String(type_name)) =
-                        (*n).names.first().and_then(|node| node.node.as_ref())
-                {
-                    let is_char = type_name.sval.eq_ignore_ascii_case("char");
-                    let is_bpchar = type_name.sval.eq_ignore_ascii_case("bpchar");
-                    if (is_char || is_bpchar) && (*n).typmods.is_empty() {
-                        // char/bpchar without size is char(1) = bpchar(1)
-                        (&mut (*n).names)[0] = pgls_query::protobuf::Node {
-                            node: Some(NodeEnum::String(pgls_query::protobuf::String {
-                                sval: "bpchar".to_string(),
-                            })),
-                        };
-                        (*n).typmods.push(pgls_query::protobuf::Node {
-                            node: Some(NodeEnum::AConst(pgls_query::protobuf::AConst {
-                                isnull: false,
-                                location: 0,
-                                val: Some(pgls_query::protobuf::a_const::Val::Ival(
-                                    pgls_query::protobuf::Integer { ival: 1 },
-                                )),
-                            })),
-                        });
-                    }
-                }
             }
             NodeMut::JsonBehavior(n) => {
                 (*n).location = 0;

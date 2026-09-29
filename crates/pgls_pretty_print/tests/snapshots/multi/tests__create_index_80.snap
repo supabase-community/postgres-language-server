@@ -2365,7 +2365,7 @@ $function$;
 create or replace function compare_relfilenode_part(tabname text)
 returns table (
   relname name,
-  relkind char,
+  relkind "char",
   state text
 )
 language plpgsql
