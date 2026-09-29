@@ -1,5 +1,9 @@
 # disallowUniqueConstraint
-**Diagnostic Category: `lint/safety/disallowUniqueConstraint`**
+**Diagnostic Category: `lint/disallowUniqueConstraint`**
+
+**Group: `safety`**
+
+**Applies to: migration files only**
 
 **Since**: `vnext`
 
@@ -23,7 +27,7 @@ ALTER TABLE table_name ADD CONSTRAINT field_name_constraint UNIQUE (field_name);
 ```
 
 ```sh
-code-block.sql:1:1 lint/safety/disallowUniqueConstraint ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+code-block.sql:1:1 lint/disallowUniqueConstraint ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   × Adding a UNIQUE constraint requires an ACCESS EXCLUSIVE lock.
   
@@ -41,7 +45,7 @@ ALTER TABLE foo ADD COLUMN bar text UNIQUE;
 ```
 
 ```sh
-code-block.sql:1:1 lint/safety/disallowUniqueConstraint ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+code-block.sql:1:1 lint/disallowUniqueConstraint ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   × Adding a UNIQUE constraint requires an ACCESS EXCLUSIVE lock.
   
@@ -68,11 +72,16 @@ ADD CONSTRAINT distributors_pkey PRIMARY KEY USING INDEX dist_id_temp_idx;
 {
   "linter": {
     "rules": {
-      "safety": {
-        "disallowUniqueConstraint": "error"
-      }
+      "disallowUniqueConstraint": "error"
     }
   }
 }
 
+```
+## How to suppress
+
+Suppress this diagnostic with a comment:
+
+```sql
+-- pgls-ignore disallowUniqueConstraint
 ```

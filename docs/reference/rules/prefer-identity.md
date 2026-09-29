@@ -1,5 +1,7 @@
 # preferIdentity
-**Diagnostic Category: `lint/safety/preferIdentity`**
+**Diagnostic Category: `lint/preferIdentity`**
+
+**Group: `style`**
 
 **Since**: `vnext`
 
@@ -29,7 +31,7 @@ create table users (
 ```
 
 ```sh
-code-block.sql:1:1 lint/safety/preferIdentity ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+code-block.sql:1:1 lint/preferIdentity ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   ! Prefer IDENTITY columns over SERIAL types.
   
@@ -54,7 +56,7 @@ create table users (
 ```
 
 ```sh
-code-block.sql:1:1 lint/safety/preferIdentity ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+code-block.sql:1:1 lint/preferIdentity ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   ! Prefer IDENTITY columns over SERIAL types.
   
@@ -92,11 +94,16 @@ create table users (
 {
   "linter": {
     "rules": {
-      "safety": {
-        "preferIdentity": "error"
-      }
+      "preferIdentity": "error"
     }
   }
 }
 
+```
+## How to suppress
+
+Suppress this diagnostic with a comment:
+
+```sql
+-- pgls-ignore preferIdentity
 ```

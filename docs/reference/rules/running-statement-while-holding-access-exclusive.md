@@ -1,5 +1,9 @@
 # runningStatementWhileHoldingAccessExclusive
-**Diagnostic Category: `lint/safety/runningStatementWhileHoldingAccessExclusive`**
+**Diagnostic Category: `lint/runningStatementWhileHoldingAccessExclusive`**
+
+**Group: `safety`**
+
+**Applies to: migration files only**
 
 **Since**: `vnext`
 
@@ -35,6 +39,20 @@ SELECT COUNT(*) FROM authors;
 ```
 
 ```sh
+code-block.sql:2:1 lint/runningStatementWhileHoldingAccessExclusive ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Running statement while holding ACCESS EXCLUSIVE lock.
+  
+    1 │ ALTER TABLE authors ADD COLUMN email TEXT;
+  > 2 │ SELECT COUNT(*) FROM authors;
+      │ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    3 │ 
+  
+  i This blocks all access to the table for the duration of this statement.
+  
+  i Run this statement in a separate transaction to minimize lock duration.
+  
+
 ```
 
 ### Valid
@@ -50,11 +68,16 @@ ALTER TABLE authors ADD COLUMN email TEXT;
 {
   "linter": {
     "rules": {
-      "safety": {
-        "runningStatementWhileHoldingAccessExclusive": "error"
-      }
+      "runningStatementWhileHoldingAccessExclusive": "error"
     }
   }
 }
 
+```
+## How to suppress
+
+Suppress this diagnostic with a comment:
+
+```sql
+-- pgls-ignore runningStatementWhileHoldingAccessExclusive
 ```

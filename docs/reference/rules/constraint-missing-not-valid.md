@@ -1,5 +1,9 @@
 # constraintMissingNotValid
-**Diagnostic Category: `lint/safety/constraintMissingNotValid`**
+**Diagnostic Category: `lint/constraintMissingNotValid`**
+
+**Group: `safety`**
+
+**Applies to: migration files only**
 
 **Since**: `vnext`
 
@@ -25,7 +29,7 @@ ALTER TABLE distributors ADD CONSTRAINT distfk FOREIGN KEY (address) REFERENCES 
 ```
 
 ```sh
-code-block.sql:1:1 lint/safety/constraintMissingNotValid ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+code-block.sql:1:1 lint/constraintMissingNotValid ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   ! Adding a constraint without NOT VALID will block reads and writes while validating existing rows.
   
@@ -50,11 +54,16 @@ ALTER TABLE distributors ADD CONSTRAINT distfk FOREIGN KEY (address) REFERENCES 
 {
   "linter": {
     "rules": {
-      "safety": {
-        "constraintMissingNotValid": "error"
-      }
+      "constraintMissingNotValid": "error"
     }
   }
 }
 
+```
+## How to suppress
+
+Suppress this diagnostic with a comment:
+
+```sql
+-- pgls-ignore constraintMissingNotValid
 ```

@@ -1,5 +1,9 @@
 # addingPrimaryKeyConstraint
-**Diagnostic Category: `lint/safety/addingPrimaryKeyConstraint`**
+**Diagnostic Category: `lint/addingPrimaryKeyConstraint`**
+
+**Group: `safety`**
+
+**Applies to: migration files only**
 
 **Since**: `vnext`
 
@@ -25,7 +29,7 @@ ALTER TABLE users ADD PRIMARY KEY (id);
 ```
 
 ```sh
-code-block.sql:1:1 lint/safety/addingPrimaryKeyConstraint ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+code-block.sql:1:1 lint/addingPrimaryKeyConstraint ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   ! Adding a PRIMARY KEY constraint results in locks and table rewrites.
   
@@ -45,7 +49,7 @@ ALTER TABLE items ADD COLUMN id SERIAL PRIMARY KEY;
 ```
 
 ```sh
-code-block.sql:1:1 lint/safety/addingPrimaryKeyConstraint ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+code-block.sql:1:1 lint/addingPrimaryKeyConstraint ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   ! Adding a PRIMARY KEY constraint results in locks and table rewrites.
   
@@ -75,11 +79,16 @@ ALTER TABLE items ADD CONSTRAINT items_pk PRIMARY KEY USING INDEX items_pk;
 {
   "linter": {
     "rules": {
-      "safety": {
-        "addingPrimaryKeyConstraint": "error"
-      }
+      "addingPrimaryKeyConstraint": "error"
     }
   }
 }
 
+```
+## How to suppress
+
+Suppress this diagnostic with a comment:
+
+```sql
+-- pgls-ignore addingPrimaryKeyConstraint
 ```

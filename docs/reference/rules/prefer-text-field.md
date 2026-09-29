@@ -1,5 +1,7 @@
 # preferTextField
-**Diagnostic Category: `lint/safety/preferTextField`**
+**Diagnostic Category: `lint/preferTextField`**
+
+**Group: `style`**
 
 **Since**: `vnext`
 
@@ -27,7 +29,7 @@ CREATE TABLE "core_bar" (
 ```
 
 ```sh
-code-block.sql:1:1 lint/safety/preferTextField ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+code-block.sql:1:1 lint/preferTextField ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   ! Changing the size of a varchar field requires an ACCESS EXCLUSIVE lock.
   
@@ -49,7 +51,7 @@ ALTER TABLE "core_bar" ALTER COLUMN "kind" TYPE varchar(1000) USING "kind"::varc
 ```
 
 ```sh
-code-block.sql:1:1 lint/safety/preferTextField ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+code-block.sql:1:1 lint/preferTextField ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   ! Changing the size of a varchar field requires an ACCESS EXCLUSIVE lock.
   
@@ -78,11 +80,16 @@ ALTER TABLE "core_bar" ADD CONSTRAINT "text_size" CHECK (LENGTH("bravo") <= 100)
 {
   "linter": {
     "rules": {
-      "safety": {
-        "preferTextField": "error"
-      }
+      "preferTextField": "error"
     }
   }
 }
 
+```
+## How to suppress
+
+Suppress this diagnostic with a comment:
+
+```sql
+-- pgls-ignore preferTextField
 ```

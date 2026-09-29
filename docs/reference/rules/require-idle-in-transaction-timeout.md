@@ -1,5 +1,9 @@
 # requireIdleInTransactionTimeout
-**Diagnostic Category: `lint/safety/requireIdleInTransactionTimeout`**
+**Diagnostic Category: `lint/requireIdleInTransactionTimeout`**
+
+**Group: `safety`**
+
+**Applies to: migration files only**
 
 **Since**: `vnext`
 
@@ -23,7 +27,7 @@ ALTER TABLE users ADD COLUMN email TEXT;
 ```
 
 ```sh
-code-block.sql:1:1 lint/safety/requireIdleInTransactionTimeout ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+code-block.sql:1:1 lint/requireIdleInTransactionTimeout ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   ! Statement takes a dangerous lock without idle_in_transaction_session_timeout set.
   
@@ -48,11 +52,16 @@ CREATE INDEX CONCURRENTLY users_email_idx ON users(email);
 {
   "linter": {
     "rules": {
-      "safety": {
-        "requireIdleInTransactionTimeout": "error"
-      }
+      "requireIdleInTransactionTimeout": "error"
     }
   }
 }
 
+```
+## How to suppress
+
+Suppress this diagnostic with a comment:
+
+```sql
+-- pgls-ignore requireIdleInTransactionTimeout
 ```

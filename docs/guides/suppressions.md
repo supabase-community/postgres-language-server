@@ -1,94 +1,64 @@
-# Diagnostics Suppressions
+# Diagnostic Suppressions
 
-You can suppress specific diagnostics or rules in your code using suppression comments. This is useful when you want to ignore a particular rule for an entire file, a line or a block of code.
+Suppress diagnostics with comments in SQL files. Rule IDs are flat and unique (for example, `banDropTable`), while groups are metadata used to suppress related rules.
 
-## How to Suppress a Rule
+## Suppressing a Rule
 
-To suppress a rule, add a comment above the line causing the diagnostic with the following format:
+Place a comment above the statement that causes the diagnostic:
 
 ```sql
--- pgls-ignore lint/safety/banDropTable
+-- pgls-ignore banDropTable
 drop table users;
 ```
 
-You can suppress single rules, groups of rules, or entire categories. The format of the rule to suppress is:
+The accepted specifiers are:
 
-`category(/group(/specific-rule))`
+- `lint` — all lint rules.
+- `banDropTable` or `lint/banDropTable` — one rule.
+- `destructive` or `lint/destructive` — all rules in a group.
+- `typecheck` — typecheck diagnostics and lint rules in the `typecheck` group.
+- Other non-lint diagnostic categories, such as `syntax`, continue to work as category suppressions.
 
-Where group and specific rule are optional.
-
-So, to suppress the `lint/safety/banDropTable` diagnostic, all of these would work:
-
-```sql
--- pgls-ignore lint
--- pgls-ignore lint/safety
--- pgls-ignore lint/safety/banDropTable
-```
-
-You can also add an explanation to the suppression by adding a `:` and the explanation text:
+A colon adds an optional explanation:
 
 ```sql
--- pgls-ignore lint/safety/banDropTable: My startup never had any users.
+-- pgls-ignore banDropTable: My startup never had any users.
 drop table users;
 ```
 
-### Suppressing Rules for Block of Code
+### Blocks and Files
 
-You can suppress rules for blocks of code.
+Use matching start and end specifiers to suppress a block. Equivalent forms such as `banDropTable` and `lint/banDropTable` match as the same rule.
 
 ```sql
-create table users (
-  -- ...
-);
-
--- pgls-ignore-start typecheck: The `users` table will be created with this migration.
+-- pgls-ignore-start typecheck: created in this migration
 alter table users drop constraint users_pkey;
-
 alter table users add primary key (user_id);
 -- pgls-ignore-end typecheck
 ```
 
-Every `pgls-ignore-start` needs a `pgls-ignore-end` suppression comment, and the suppressed rules must match exactly.
-
-This _won't_ work, because the start tag suppresses a different diagnostic:
+Nesting is allowed, and each start needs an end with the same normalized specifier. Use `pgls-ignore-all` at the top of a file to suppress a rule/group/category throughout that file:
 
 ```sql
--- pgls-ignore-start lint/safety/banDropColumn
--- pgls-ignore-end lint/safety
-```
-
-Nesting is allowed, so this works fine:
-
-```sql
--- pgls-ignore-start typecheck: outer
--- pgls-ignore-start lint/safety: inner
--- pgls-ignore-end lint/safety: inner
--- pgls-ignore-end typecheck: outer
-```
-
-### Suppressing Rules for Entire Files
-
-Instead of repeating the same suppression on multiple lines, you can suppress for an entire file.
-
-```sql
--- pgls-ignore-all lint/safety/banDropTable
+-- pgls-ignore-all banDropTable
 
 drop table tasks;
 drop table projects;
-drop table users;
 ```
 
-## Suppressing Multiple Rules
-
-You can suppress multiple rules by adding multiple suppression comments above a statement:
+Multiple comments can suppress multiple rules for a statement:
 
 ```sql
--- pgls-ignore lint/safety/banDropColumn
+-- pgls-ignore banDropColumn
 -- pgls-ignore typecheck
 alter table tasks drop column created_at;
 ```
 
+## Backward Compatibility
+
+Legacy `lint/<group>/<rule>` and `lint/<group>` forms still work, as does the legacy `pgt-ignore` comment prefix. Removed rule names `preferBigintOverInt` and `preferBigintOverSmallint` map to `preferBigInt`. Flat forms are recommended for new suppressions.
+
 ## Notes
 
-- Trying to suppress diagnostics that have already been disabled in your [configuration file](../configuration.md) will show a warning.
-- Trying to suppress diagnostics that don't haven't been raised will also show a warning.
+- Suppressing diagnostics disabled in your [configuration](../configuration.md) reports a warning because the suppression has no effect.
+- Suppressions that match no diagnostic also report a warning.

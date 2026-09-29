@@ -1,5 +1,9 @@
 # addingForeignKeyConstraint
-**Diagnostic Category: `lint/safety/addingForeignKeyConstraint`**
+**Diagnostic Category: `lint/addingForeignKeyConstraint`**
+
+**Group: `safety`**
+
+**Applies to: migration files only**
 
 **Since**: `vnext`
 
@@ -28,7 +32,7 @@ ALTER TABLE "email" ADD CONSTRAINT "fk_user" FOREIGN KEY ("user_id") REFERENCES 
 ```
 
 ```sh
-code-block.sql:1:1 lint/safety/addingForeignKeyConstraint ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+code-block.sql:1:1 lint/addingForeignKeyConstraint ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   ! Adding a foreign key constraint requires a table scan and locks on both tables.
   
@@ -48,7 +52,7 @@ ALTER TABLE "emails" ADD COLUMN "user_id" INT REFERENCES "user" ("id");
 ```
 
 ```sh
-code-block.sql:1:1 lint/safety/addingForeignKeyConstraint ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+code-block.sql:1:1 lint/addingForeignKeyConstraint ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   ! Adding a column with a foreign key constraint requires a table scan and locks.
   
@@ -78,11 +82,16 @@ ALTER TABLE "email" VALIDATE CONSTRAINT "fk_user";
 {
   "linter": {
     "rules": {
-      "safety": {
-        "addingForeignKeyConstraint": "error"
-      }
+      "addingForeignKeyConstraint": "error"
     }
   }
 }
 
+```
+## How to suppress
+
+Suppress this diagnostic with a comment:
+
+```sql
+-- pgls-ignore addingForeignKeyConstraint
 ```

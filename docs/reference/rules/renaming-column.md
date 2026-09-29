@@ -1,5 +1,9 @@
 # renamingColumn
-**Diagnostic Category: `lint/safety/renamingColumn`**
+**Diagnostic Category: `lint/renamingColumn`**
+
+**Group: `destructive`**
+
+**Applies to: migration files only**
 
 **Since**: `vnext`
 
@@ -23,7 +27,7 @@ ALTER TABLE users RENAME COLUMN email TO email_address;
 ```
 
 ```sh
-code-block.sql:1:1 lint/safety/renamingColumn ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+code-block.sql:1:1 lint/renamingColumn ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   ! Renaming a column may break existing clients.
   
@@ -42,11 +46,16 @@ code-block.sql:1:1 lint/safety/renamingColumn ━━━━━━━━━━━�
 {
   "linter": {
     "rules": {
-      "safety": {
-        "renamingColumn": "error"
-      }
+      "renamingColumn": "error"
     }
   }
 }
 
+```
+## How to suppress
+
+Suppress this diagnostic with a comment:
+
+```sql
+-- pgls-ignore renamingColumn
 ```

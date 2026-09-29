@@ -1,5 +1,9 @@
 # multipleAlterTable
-**Diagnostic Category: `lint/safety/multipleAlterTable`**
+**Diagnostic Category: `lint/multipleAlterTable`**
+
+**Group: `safety`**
+
+**Applies to: migration files only**
 
 **Since**: `vnext`
 
@@ -30,6 +34,20 @@ ALTER TABLE authors ALTER COLUMN email SET NOT NULL;
 ```
 
 ```sh
+code-block.sql:2:1 lint/multipleAlterTable ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Multiple ALTER TABLE statements found for table public.authors.
+  
+    1 │ ALTER TABLE authors ALTER COLUMN name SET NOT NULL;
+  > 2 │ ALTER TABLE authors ALTER COLUMN email SET NOT NULL;
+      │ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    3 │ 
+  
+  i Multiple ALTER TABLE statements on the same table require scanning and potentially rewriting the table multiple times.
+  
+  i Combine the ALTER TABLE statements into a single statement with comma-separated actions to scan the table only once.
+  
+
 ```
 
 ### Valid
@@ -46,11 +64,16 @@ ALTER TABLE authors
 {
   "linter": {
     "rules": {
-      "safety": {
-        "multipleAlterTable": "error"
-      }
+      "multipleAlterTable": "error"
     }
   }
 }
 
+```
+## How to suppress
+
+Suppress this diagnostic with a comment:
+
+```sql
+-- pgls-ignore multipleAlterTable
 ```

@@ -1,5 +1,7 @@
 # preferTimestamptz
-**Diagnostic Category: `lint/safety/preferTimestamptz`**
+**Diagnostic Category: `lint/preferTimestamptz`**
+
+**Group: `style`**
 
 **Since**: `vnext`
 
@@ -26,7 +28,7 @@ CREATE TABLE app.users (
 ```
 
 ```sh
-code-block.sql:1:1 lint/safety/preferTimestamptz ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+code-block.sql:1:1 lint/preferTimestamptz ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   ! Prefer TIMESTAMPTZ over TIMESTAMP for better timezone handling.
   
@@ -51,7 +53,7 @@ CREATE TABLE app.accounts (
 ```
 
 ```sh
-code-block.sql:1:1 lint/safety/preferTimestamptz ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+code-block.sql:1:1 lint/preferTimestamptz ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   ! Prefer TIMESTAMPTZ over TIMESTAMP for better timezone handling.
   
@@ -74,7 +76,7 @@ ALTER TABLE app.users ALTER COLUMN created_ts TYPE timestamp;
 ```
 
 ```sh
-code-block.sql:1:1 lint/safety/preferTimestamptz ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+code-block.sql:1:1 lint/preferTimestamptz ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   ! Prefer TIMESTAMPTZ over TIMESTAMP for better timezone handling.
   
@@ -113,11 +115,16 @@ ALTER TABLE app.users ALTER COLUMN created_ts TYPE timestamptz;
 {
   "linter": {
     "rules": {
-      "safety": {
-        "preferTimestamptz": "error"
-      }
+      "preferTimestamptz": "error"
     }
   }
 }
 
+```
+## How to suppress
+
+Suppress this diagnostic with a comment:
+
+```sql
+-- pgls-ignore preferTimestamptz
 ```

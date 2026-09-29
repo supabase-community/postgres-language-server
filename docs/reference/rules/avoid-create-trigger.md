@@ -1,5 +1,9 @@
 # avoidCreateTrigger
-**Diagnostic Category: `lint/safety/avoidCreateTrigger`**
+**Diagnostic Category: `lint/avoidCreateTrigger`**
+
+**Group: `safety`**
+
+**Applies to: migration files only**
 
 **Since**: `vnext`
 
@@ -23,7 +27,7 @@ create trigger my_trigger after insert on my_table for each row execute function
 ```
 
 ```sh
-code-block.sql:1:1 lint/safety/avoidCreateTrigger ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+code-block.sql:1:1 lint/avoidCreateTrigger ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   ! Creating a trigger acquires a SHARE ROW EXCLUSIVE lock on the table.
   
@@ -48,11 +52,16 @@ select 1;
 {
   "linter": {
     "rules": {
-      "safety": {
-        "avoidCreateTrigger": "error"
-      }
+      "avoidCreateTrigger": "error"
     }
   }
 }
 
+```
+## How to suppress
+
+Suppress this diagnostic with a comment:
+
+```sql
+-- pgls-ignore avoidCreateTrigger
 ```

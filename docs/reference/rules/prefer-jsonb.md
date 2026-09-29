@@ -1,5 +1,7 @@
 # preferJsonb
-**Diagnostic Category: `lint/safety/preferJsonb`**
+**Diagnostic Category: `lint/preferJsonb`**
+
+**Group: `style`**
 
 **Since**: `vnext`
 
@@ -35,7 +37,7 @@ CREATE TABLE users (
 ```
 
 ```sh
-code-block.sql:1:1 lint/safety/preferJsonb ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+code-block.sql:1:1 lint/preferJsonb ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   ! Prefer JSONB over JSON for better performance and functionality.
   
@@ -58,7 +60,7 @@ ALTER TABLE users ADD COLUMN metadata json;
 ```
 
 ```sh
-code-block.sql:1:1 lint/safety/preferJsonb ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+code-block.sql:1:1 lint/preferJsonb ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   ! Prefer JSONB over JSON for better performance and functionality.
   
@@ -78,7 +80,7 @@ ALTER TABLE users ALTER COLUMN data TYPE json;
 ```
 
 ```sh
-code-block.sql:1:1 lint/safety/preferJsonb ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+code-block.sql:1:1 lint/preferJsonb ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   ! Prefer JSONB over JSON for better performance and functionality.
   
@@ -115,11 +117,16 @@ ALTER TABLE users ALTER COLUMN data TYPE jsonb;
 {
   "linter": {
     "rules": {
-      "safety": {
-        "preferJsonb": "error"
-      }
+      "preferJsonb": "error"
     }
   }
 }
 
+```
+## How to suppress
+
+Suppress this diagnostic with a comment:
+
+```sql
+-- pgls-ignore preferJsonb
 ```
