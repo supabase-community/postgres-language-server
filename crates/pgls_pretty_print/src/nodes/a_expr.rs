@@ -94,6 +94,12 @@ fn emit_aexpr_op(e: &mut EventEmitter, n: &AExpr) {
                         } else {
                             e.space();
                         }
+                    } else if !needs_parentheses(rexpr, parent_info, OperandSide::Unary)
+                        && starts_with_operator_char(rexpr)
+                    {
+                        // Without a space the two operators would lex as one token, or as the
+                        // start of a comment when both are minus signs.
+                        e.space();
                     }
                     emit_operand_with_parens(e, rexpr, parent_info, OperandSide::Unary);
                 }
@@ -559,6 +565,24 @@ fn extract_simple_operator(name: &[Node]) -> Option<&str> {
     match name[0].node.as_ref() {
         Some(NodeEnum::String(s)) => Some(&s.sval),
         _ => None,
+    }
+}
+
+/// Whether the emitted operand begins with an operator character: a prefix operator, or a numeric
+/// constant carrying its own minus sign.
+fn starts_with_operator_char(node: &Node) -> bool {
+    match node.node.as_ref() {
+        Some(NodeEnum::AExpr(expr)) => {
+            matches!(expr.kind(), AExprKind::AexprOp)
+                && expr.lexpr.is_none()
+                && extract_simple_operator(&expr.name).is_some_and(|op| !operator_needs_space(op))
+        }
+        Some(NodeEnum::AConst(c)) => match c.val.as_ref() {
+            Some(pgls_query::protobuf::a_const::Val::Ival(i)) => i.ival < 0,
+            Some(pgls_query::protobuf::a_const::Val::Fval(f)) => f.fval.starts_with('-'),
+            _ => false,
+        },
+        _ => false,
     }
 }
 
