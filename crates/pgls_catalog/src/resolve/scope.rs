@@ -58,9 +58,18 @@ pub(super) struct Level {
     /// The output column names of the select list, which `ORDER BY` and `GROUP BY` can
     /// reference by bare name.
     pub output_names: Vec<String>,
+    /// Set while resolving the clauses that can reference `output_names`.
+    pub output_names_visible: bool,
 }
 
 impl Level {
+    pub fn with_item(item: Item) -> Self {
+        Self {
+            items: vec![item],
+            ..Default::default()
+        }
+    }
+
     pub fn extend(&mut self, other: Level) {
         self.items.extend(other.items);
         self.merged_columns.extend(other.merged_columns);
@@ -99,9 +108,12 @@ pub(super) enum ColumnLookup {
 }
 
 /// Looks up an unqualified column in the query levels, innermost first.
-pub(super) fn find_column(levels: &[&Level], column: &str, use_output_names: bool) -> ColumnLookup {
+pub(super) fn find_column(levels: &[Level], column: &str) -> ColumnLookup {
     for (depth, level) in levels.iter().rev().enumerate() {
-        if depth == 0 && use_output_names && level.output_names.iter().any(|name| name == column) {
+        if depth == 0
+            && level.output_names_visible
+            && level.output_names.iter().any(|name| name == column)
+        {
             return ColumnLookup::Found;
         }
 
@@ -130,12 +142,12 @@ pub(super) fn find_column(levels: &[&Level], column: &str, use_output_names: boo
 }
 
 /// Finds the item with this name, innermost level first.
-pub(super) fn find_item<'a>(levels: &[&'a Level], name: &str) -> Option<&'a Item> {
+pub(super) fn find_item<'a>(levels: &'a [Level], name: &str) -> Option<&'a Item> {
     levels.iter().rev().find_map(|level| level.item(name))
 }
 
 /// Whether some level contains items whose names we don't know.
-pub(super) fn has_opaque_items(levels: &[&Level]) -> bool {
+pub(super) fn has_opaque_items(levels: &[Level]) -> bool {
     levels.iter().any(|level| level.has_opaque_items)
 }
 
