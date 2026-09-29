@@ -1,22 +1,45 @@
+//! The database snapshot: the objects of the connected database, as loaded by the queries in
+//! `queries/`.
+
+#![allow(dead_code)]
+
+mod columns;
+mod extensions;
+mod functions;
+mod indexes;
+mod policies;
+mod roles;
+mod schemas;
+mod sequences;
+mod tables;
+mod triggers;
+mod types;
+mod versions;
+
+pub use columns::*;
+pub use extensions::Extension;
+pub use functions::{Behavior, Function, FunctionArg, FunctionArgs, ProcKind};
+pub use indexes::Index;
+pub use policies::{Policy, PolicyCommand};
+pub use roles::*;
+pub use schemas::Schema;
+pub use sequences::Sequence;
+pub use tables::{ReplicaIdentity, Table, TableKind};
+pub use triggers::{Trigger, TriggerAffected, TriggerEvent};
+pub use types::{PostgresType, PostgresTypeAttribute, TypeAttributes};
+pub use versions::Version;
+
 use serde::{Deserialize, Serialize};
 #[cfg(feature = "db")]
 use sqlx::postgres::PgPool;
 
-use crate::columns::Column;
-use crate::functions::Function;
-use crate::indexes::Index;
-use crate::policies::Policy;
-use crate::schemas::Schema;
-use crate::sequences::Sequence;
-use crate::tables::Table;
-use crate::types::PostgresType;
-use crate::versions::Version;
-use crate::{Extension, Role, Trigger};
-
+// The JSON schema keeps the name `SchemaCache`, which the WASM package exports.
+/// The objects of the connected database, loaded from the database or from JSON.
 #[derive(Debug, Default, Serialize, Deserialize)]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
+#[cfg_attr(feature = "schema", schemars(rename = "SchemaCache"))]
 #[serde(default)]
-pub struct SchemaCache {
+pub struct Snapshot {
     pub schemas: Vec<Schema>,
     pub tables: Vec<Table>,
     pub functions: Vec<Function>,
@@ -31,9 +54,9 @@ pub struct SchemaCache {
     pub sequences: Vec<Sequence>,
 }
 
-impl SchemaCache {
+impl Snapshot {
     #[cfg(feature = "db")]
-    pub async fn load(pool: &PgPool) -> Result<SchemaCache, sqlx::Error> {
+    pub async fn load(pool: &PgPool) -> Result<Snapshot, sqlx::Error> {
         let (
             schemas,
             tables,
@@ -67,7 +90,7 @@ impl SchemaCache {
             .next()
             .expect("Expected at least one version row");
 
-        Ok(SchemaCache {
+        Ok(Snapshot {
             schemas,
             tables,
             functions,
@@ -197,7 +220,7 @@ impl SchemaCache {
 }
 
 #[cfg(feature = "db")]
-pub trait SchemaCacheItem {
+pub(crate) trait SnapshotItem {
     type Item;
 
     async fn load(pool: &PgPool) -> Result<Vec<Self::Item>, sqlx::Error>;
@@ -209,18 +232,18 @@ mod tests {
 
     use sqlx::{Executor, PgPool};
 
-    use crate::SchemaCache;
+    use super::Snapshot;
 
     #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
     async fn it_loads(test_db: PgPool) {
-        SchemaCache::load(&test_db)
+        Snapshot::load(&test_db)
             .await
             .expect("Couldnt' load Schema Cache");
     }
 
     #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
     async fn it_does_not_have_duplicate_entries(test_db: PgPool) {
-        // we had some duplicate columns in the schema_cache because of indices including the same column multiple times.
+        // we had some duplicate columns in the snapshot because of indices including the same column multiple times.
         // the columns were unnested as duplicates in the query
         let setup = r#"
         CREATE TABLE public.mfa_factors (
@@ -234,7 +257,7 @@ mod tests {
 
         test_db.execute(setup).await.unwrap();
 
-        let cache = SchemaCache::load(&test_db)
+        let cache = Snapshot::load(&test_db)
             .await
             .expect("Couldn't load Schema Cache");
 

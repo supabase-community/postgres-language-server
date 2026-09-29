@@ -11,7 +11,7 @@ static SANITIZED_TOKEN_WITH_QUOTE: &str = r#"REPLACED_TOKEN_WITH_QUOTE""#;
 pub(crate) struct SanitizedCompletionParams<'a> {
     pub position: TextSize,
     pub text: String,
-    pub schema: &'a pgls_schema_cache::SchemaCache,
+    pub schema: &'a pgls_catalog::Snapshot,
     pub tree: Cow<'a, tree_sitter::Tree>,
 }
 
@@ -321,7 +321,7 @@ fn cursor_after_opened_quote(sql: &str, position: TextSize) -> bool {
 
 #[cfg(test)]
 mod tests {
-    use pgls_schema_cache::SchemaCache;
+    use pgls_catalog::Snapshot;
     use pgls_text_size::TextSize;
 
     use crate::{
@@ -339,7 +339,7 @@ mod tests {
             .unwrap();
 
         let tree = Box::new(ts.parse(input, None).unwrap());
-        let cache = Box::new(SchemaCache::default());
+        let cache = Box::new(Snapshot::default());
 
         let leaked_tree = Box::leak(tree);
         let leaked_cache = Box::leak(cache);

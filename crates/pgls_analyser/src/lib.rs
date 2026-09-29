@@ -94,7 +94,7 @@ impl AnalysableStatement {
 #[derive(Default)]
 pub struct AnalyserParams<'a> {
     pub stmts: Vec<AnalysableStatement>,
-    pub schema_cache: Option<&'a pgls_schema_cache::SchemaCache>,
+    pub snapshot: Option<&'a pgls_catalog::Snapshot>,
     /// Indexed database snapshot the catalog starts from. Without it, typecheck rules are
     /// silent.
     pub catalog_base: Option<Arc<CatalogBase>>,
@@ -188,7 +188,7 @@ impl<'a> Analyser<'a> {
                 options: self.options,
                 analysed_file_context: &file_context,
                 statement: &statement,
-                schema_cache: params.schema_cache,
+                snapshot: params.snapshot,
             };
             for rule in &rules {
                 if rule.group == TYPECHECK_GROUP && !typecheck_statement {

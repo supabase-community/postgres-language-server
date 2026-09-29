@@ -17,7 +17,7 @@ pub const LIMIT: usize = 50;
 #[derive(Debug)]
 pub struct CompletionParams<'a> {
     pub position: TextSize,
-    pub schema: &'a pgls_schema_cache::SchemaCache,
+    pub schema: &'a pgls_catalog::Snapshot,
     pub text: String,
     pub tree: &'a tree_sitter::Tree,
 }

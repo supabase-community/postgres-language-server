@@ -1,6 +1,6 @@
 use criterion::{Criterion, black_box, criterion_group, criterion_main};
+use pgls_catalog::Snapshot;
 use pgls_completions::{CompletionParams, benchmark_sanitization};
-use pgls_schema_cache::SchemaCache;
 use pgls_text_size::TextSize;
 
 static CURSOR_POS: &str = "€";
@@ -22,7 +22,7 @@ fn to_params<'a>(
     text: String,
     tree: &'a tree_sitter::Tree,
     pos: usize,
-    cache: &'a SchemaCache,
+    cache: &'a Snapshot,
 ) -> CompletionParams<'a> {
     let pos: u32 = pos.try_into().unwrap();
     CompletionParams {
@@ -37,7 +37,7 @@ pub fn criterion_benchmark(c: &mut Criterion) {
     c.bench_function("small sql, adjusted", |b| {
         let content = format!("select {CURSOR_POS} from users;");
 
-        let cache = SchemaCache::default();
+        let cache = Snapshot::default();
         let (sql, pos) = sql_and_pos(content.as_str());
         let tree = get_tree(sql.as_str());
 
@@ -63,7 +63,7 @@ where
   and not pg_catalog.starts_with(n.nspname, 'pg_toast_temp_');"#
         );
 
-        let cache = SchemaCache::default();
+        let cache = Snapshot::default();
         let (sql, pos) = sql_and_pos(content.as_str());
         let tree = get_tree(sql.as_str());
 
@@ -130,7 +130,7 @@ where
 "#
         );
 
-        let cache = SchemaCache::default();
+        let cache = Snapshot::default();
         let (sql, pos) = sql_and_pos(content.as_str());
         let tree = get_tree(sql.as_str());
 
@@ -140,7 +140,7 @@ where
     c.bench_function("small sql, unadjusted", |b| {
         let content = format!("select e{CURSOR_POS} from users;");
 
-        let cache = SchemaCache::default();
+        let cache = Snapshot::default();
         let (sql, pos) = sql_and_pos(content.as_str());
         let tree = get_tree(sql.as_str());
 
@@ -166,7 +166,7 @@ where
   and not pg_catalog.starts_with(n.nspname, 'pg_toast_temp_');"#
         );
 
-        let cache = SchemaCache::default();
+        let cache = Snapshot::default();
         let (sql, pos) = sql_and_pos(content.as_str());
         let tree = get_tree(sql.as_str());
 
@@ -235,7 +235,7 @@ order by
   sch{CURSOR_POS} "#
         );
 
-        let cache = SchemaCache::default();
+        let cache = Snapshot::default();
         let (sql, pos) = sql_and_pos(content.as_str());
         let tree = get_tree(sql.as_str());
 

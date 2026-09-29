@@ -1,12 +1,12 @@
 use std::sync::Arc;
 
-use pgls_schema_cache::{Function, FunctionArg, FunctionArgs, PostgresType, ProcKind, SchemaCache};
+use crate::{Function, FunctionArg, FunctionArgs, PostgresType, ProcKind, Snapshot};
 
 use super::*;
 use crate::{Catalog, CatalogBase};
 
-fn schema(name: &str) -> pgls_schema_cache::Schema {
-    pgls_schema_cache::Schema {
+fn schema(name: &str) -> crate::Schema {
+    crate::Schema {
         name: name.into(),
         ..Default::default()
     }
@@ -17,10 +17,10 @@ fn type_(id: i64, schema: &str, name: &str, attributes: &[(&str, i64)]) -> Postg
         id,
         schema: schema.into(),
         name: name.into(),
-        attributes: pgls_schema_cache::TypeAttributes {
+        attributes: crate::TypeAttributes {
             attrs: attributes
                 .iter()
-                .map(|(name, type_id)| pgls_schema_cache::PostgresTypeAttribute {
+                .map(|(name, type_id)| crate::PostgresTypeAttribute {
                     name: (*name).into(),
                     type_id: *type_id,
                 })
@@ -92,7 +92,7 @@ fn database() -> Arc<CatalogBase> {
 
     let tables = [(1, "users"), (2, "posts")]
         .into_iter()
-        .map(|(id, name)| pgls_schema_cache::Table {
+        .map(|(id, name)| crate::Table {
             id,
             schema: "public".into(),
             name: name.into(),
@@ -118,7 +118,7 @@ fn database() -> Arc<CatalogBase> {
         function("round", ProcKind::Function, &["in", "in"], 1),
     ];
 
-    let cache = SchemaCache {
+    let cache = Snapshot {
         schemas: vec![schema("public"), schema("pg_catalog")],
         tables,
         types,

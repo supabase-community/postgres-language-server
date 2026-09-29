@@ -1,7 +1,7 @@
 use std::fmt::Write;
 
 use humansize::DECIMAL;
-use pgls_schema_cache::{SchemaCache, Table};
+use pgls_catalog::{Snapshot, Table};
 use pgls_treesitter::TreesitterContext;
 
 use crate::{contextual_priority::ContextualPriority, to_markdown::ToHoverMarkdown};
@@ -12,15 +12,15 @@ impl ToHoverMarkdown for Table {
     fn hover_headline<W: Write>(
         &self,
         writer: &mut W,
-        _schema_cache: &SchemaCache,
+        _snapshot: &Snapshot,
     ) -> Result<(), std::fmt::Error> {
         write!(writer, "`{}.{}`", self.schema, self.name)?;
 
         let table_kind = match self.table_kind {
-            pgls_schema_cache::TableKind::View => " (View)",
-            pgls_schema_cache::TableKind::MaterializedView => " (M.View)",
-            pgls_schema_cache::TableKind::Partitioned => " (Partitioned)",
-            pgls_schema_cache::TableKind::Ordinary => "",
+            pgls_catalog::TableKind::View => " (View)",
+            pgls_catalog::TableKind::MaterializedView => " (M.View)",
+            pgls_catalog::TableKind::Partitioned => " (Partitioned)",
+            pgls_catalog::TableKind::Ordinary => "",
         };
 
         write!(writer, "{table_kind}")?;
@@ -39,14 +39,14 @@ impl ToHoverMarkdown for Table {
     fn hover_body<W: Write>(
         &self,
         writer: &mut W,
-        schema_cache: &SchemaCache,
+        snapshot: &Snapshot,
     ) -> Result<bool, std::fmt::Error> {
         if let Some(comment) = &self.comment {
             write!(writer, "Comment: '{comment}'")?;
             writeln!(writer)?;
         }
 
-        let mut columns: Vec<_> = schema_cache
+        let mut columns: Vec<_> = snapshot
             .columns
             .iter()
             .filter(|column| column.schema_name == self.schema && column.table_name == self.name)
@@ -99,7 +99,7 @@ impl ToHoverMarkdown for Table {
     fn hover_footer<W: Write>(
         &self,
         writer: &mut W,
-        _schema_cache: &SchemaCache,
+        _snapshot: &Snapshot,
     ) -> Result<bool, std::fmt::Error> {
         writeln!(writer)?;
         write!(

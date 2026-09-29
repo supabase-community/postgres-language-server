@@ -17,7 +17,7 @@ pub struct TypecheckParams<'a> {
     pub sql: &'a str,
     pub ast: &'a pgls_query::NodeEnum,
     pub tree: &'a tree_sitter::Tree,
-    pub schema_cache: &'a pgls_schema_cache::SchemaCache,
+    pub snapshot: &'a pgls_catalog::Snapshot,
     pub identifiers: Vec<TypedIdentifier>,
     /// The explicit search path of the session at this statement.
     pub search_path: &'a [String],
@@ -54,7 +54,7 @@ pub async fn check_sql(
     // each typecheck operation.
     conn.close_on_drop();
 
-    let typed_replacement = apply_identifiers(params.identifiers, params.schema_cache, tree, sql);
+    let typed_replacement = apply_identifiers(params.identifiers, params.snapshot, tree, sql);
 
     if !params.search_path.is_empty() {
         let schemas = params

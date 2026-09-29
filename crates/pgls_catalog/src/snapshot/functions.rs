@@ -4,7 +4,7 @@ use serde_json::Value as JsonValue;
 use sqlx::PgPool;
 
 #[cfg(feature = "db")]
-use crate::schema_cache::SchemaCacheItem;
+use super::SnapshotItem;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
@@ -143,11 +143,11 @@ pub struct Function {
 }
 
 #[cfg(feature = "db")]
-impl SchemaCacheItem for Function {
+impl SnapshotItem for Function {
     type Item = Function;
 
     async fn load(pool: &PgPool) -> Result<Vec<Function>, sqlx::Error> {
-        sqlx::query_file_as!(Function, "src/queries/functions.sql")
+        sqlx::query_file_as!(Function, "src/snapshot/queries/functions.sql")
             .fetch_all(pool)
             .await
     }
@@ -157,7 +157,7 @@ impl SchemaCacheItem for Function {
 mod tests {
     use sqlx::{Executor, PgPool};
 
-    use crate::{Behavior, SchemaCache, functions::ProcKind};
+    use crate::snapshot::{Behavior, Snapshot, functions::ProcKind};
 
     #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
     async fn loads(pool: PgPool) {
@@ -211,7 +211,7 @@ mod tests {
 
         pool.execute(setup).await.unwrap();
 
-        let cache = SchemaCache::load(&pool).await.unwrap();
+        let cache = Snapshot::load(&pool).await.unwrap();
 
         // Find and check the function
         let foo_fn = cache

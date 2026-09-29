@@ -1,6 +1,6 @@
 //! Pglinter extension cache for avoiding repeated database queries
 
-use pgls_schema_cache::SchemaCache;
+use pgls_catalog::Snapshot;
 use rustc_hash::{FxHashMap, FxHashSet};
 use sqlx::PgPool;
 
@@ -39,8 +39,8 @@ pub struct PglinterCache {
 
 impl PglinterCache {
     /// Load pglinter extension state from database using official API
-    pub async fn load(conn: &PgPool, schema_cache: &SchemaCache) -> Result<Self, sqlx::Error> {
-        let extension_installed = schema_cache.extensions.iter().any(|e| e.name == "pglinter");
+    pub async fn load(conn: &PgPool, snapshot: &Snapshot) -> Result<Self, sqlx::Error> {
+        let extension_installed = snapshot.extensions.iter().any(|e| e.name == "pglinter");
 
         if !extension_installed {
             return Ok(Self {
@@ -68,9 +68,9 @@ impl PglinterCache {
     }
 
     /// Create initial cache from schema cache only (disabled rules will need API call later)
-    pub fn from_schema_cache(schema_cache: &SchemaCache) -> Self {
+    pub fn from_snapshot(snapshot: &Snapshot) -> Self {
         Self {
-            extension_installed: schema_cache.extensions.iter().any(|e| e.name == "pglinter"),
+            extension_installed: snapshot.extensions.iter().any(|e| e.name == "pglinter"),
             disabled_rules: FxHashSet::default(),
             rule_messages: FxHashMap::default(),
         }

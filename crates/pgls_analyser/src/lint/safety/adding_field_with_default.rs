@@ -47,7 +47,7 @@ impl LinterRule for AddingFieldWithDefault {
         let mut diagnostics = Vec::new();
 
         // Check Postgres version - in 11+, non-volatile defaults are safe
-        let pg_version = ctx.schema_cache().and_then(|sc| sc.version.major_version);
+        let pg_version = ctx.snapshot().and_then(|sc| sc.version.major_version);
 
         if let pgls_query::NodeEnum::AlterTableStmt(stmt) = &ctx.stmt() {
             for cmd in &stmt.cmds {
@@ -96,7 +96,7 @@ impl LinterRule for AddingFieldWithDefault {
                                 {
                                     return is_safe_default_expr(
                                         &raw_expr.node.as_ref().map(|n| Box::new(n.clone())),
-                                        ctx.schema_cache(),
+                                        ctx.snapshot(),
                                     );
                                 }
                                 false
@@ -140,7 +140,7 @@ impl LinterRule for AddingFieldWithDefault {
 
 fn is_safe_default_expr(
     expr: &Option<Box<pgls_query::NodeEnum>>,
-    schema_cache: Option<&pgls_schema_cache::SchemaCache>,
+    snapshot: Option<&pgls_catalog::Snapshot>,
 ) -> bool {
     match expr {
         Some(node) => match node.as_ref() {
@@ -149,7 +149,7 @@ fn is_safe_default_expr(
             // Type casts of constants are safe
             pgls_query::NodeEnum::TypeCast(tc) => is_safe_default_expr(
                 &tc.arg.as_ref().and_then(|a| a.node.clone()).map(Box::new),
-                schema_cache,
+                snapshot,
             ),
             // function calls might be safe if they are non-volatile and have no args
             pgls_query::NodeEnum::FuncCall(fc) => {
@@ -158,7 +158,7 @@ fn is_safe_default_expr(
                     return false;
                 }
 
-                let Some(sc) = schema_cache else {
+                let Some(sc) = snapshot else {
                     return false;
                 };
 
@@ -174,7 +174,7 @@ fn is_safe_default_expr(
                     }
 
                     // must be non-volatile
-                    if f.behavior == pgls_schema_cache::Behavior::Volatile {
+                    if f.behavior == pgls_catalog::Behavior::Volatile {
                         return false;
                     }
 

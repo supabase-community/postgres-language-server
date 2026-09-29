@@ -24,16 +24,16 @@ use pgls_analyser::{
 };
 use pgls_catalog::CatalogBase;
 
+use pgls_catalog::Snapshot;
 use pgls_diagnostics::{
     Diagnostic, DiagnosticExt, Error, Severity, serde::Diagnostic as SDiagnostic,
 };
 use pgls_fs::{ConfigName, PgLSPath};
-use pgls_schema_cache::SchemaCache;
 use pgls_text_size::TextRange;
 #[cfg(feature = "db")]
 use pgls_typecheck::{IdentifierType, TypecheckParams, TypedIdentifier};
 use pgls_workspace_macros::ignored_path;
-use schema_cache_manager::SchemaCacheManager;
+use snapshot_manager::SnapshotManager;
 #[cfg(feature = "db")]
 use sqlx::Executor;
 use tracing::{debug, info};
@@ -74,7 +74,7 @@ mod connection_manager;
 pub(crate) mod document;
 mod migration;
 mod pg_query;
-mod schema_cache_manager;
+mod snapshot_manager;
 mod sql_function;
 mod statement_identifier;
 mod tree_sitter;
@@ -86,7 +86,7 @@ pub struct WorkspaceServer {
     documents: RwLock<HashMap<PgLSPath, Document>>,
 
     /// Manages schema cache storage - supports both DB-loaded and JSON-loaded schemas
-    schema_cache: SchemaCacheManager,
+    snapshot: SnapshotManager,
 
     /// The indexed schema cache the typecheck rules start from
     catalog_base: Mutex<Option<Arc<CatalogBase>>>,
@@ -116,7 +116,7 @@ impl WorkspaceServer {
         Self {
             settings: RwLock::default(),
             documents: RwLock::new(HashMap::new()),
-            schema_cache: SchemaCacheManager::new(),
+            snapshot: SnapshotManager::new(),
             catalog_base: Mutex::default(),
             connection: ConnectionManager::new(),
         }
@@ -128,7 +128,7 @@ impl WorkspaceServer {
         Self {
             settings: RwLock::default(),
             documents: RwLock::new(HashMap::new()),
-            schema_cache: SchemaCacheManager::new(),
+            snapshot: SnapshotManager::new(),
             catalog_base: Mutex::default(),
         }
     }
@@ -145,12 +145,12 @@ impl WorkspaceServer {
     /// Load schema from JSON string.
     /// This allows setting a schema cache without a database connection.
     pub fn set_schema_json(&self, json: &str) -> Result<(), WorkspaceError> {
-        self.schema_cache.set(json)
+        self.snapshot.set(json)
     }
 
     /// Clear the schema.
     pub fn clear_schema(&self) {
-        self.schema_cache.clear();
+        self.snapshot.clear();
     }
 
     /// Split raw SQL into byte ranges of individual statements.
@@ -160,8 +160,8 @@ impl WorkspaceServer {
     }
 
     /// Get a clone of the current schema.
-    pub fn get_schema(&self) -> Option<Arc<SchemaCache>> {
-        self.schema_cache.get()
+    pub fn get_schema(&self) -> Option<Arc<Snapshot>> {
+        self.snapshot.get()
     }
 
     /// Register a new project in the current workspace
@@ -237,15 +237,12 @@ impl WorkspaceServer {
     }
 
     /// The indexed database schema, built once per schema cache.
-    fn catalog_base(&self, schema_cache: &Arc<SchemaCache>) -> Arc<CatalogBase> {
+    fn catalog_base(&self, snapshot: &Arc<Snapshot>) -> Arc<CatalogBase> {
         let mut cached = self.catalog_base.lock().unwrap();
-        if let Some(base) = cached
-            .as_ref()
-            .filter(|base| base.is_built_from(schema_cache))
-        {
+        if let Some(base) = cached.as_ref().filter(|base| base.is_built_from(snapshot)) {
             return Arc::clone(base);
         }
-        let base = Arc::new(CatalogBase::new(Arc::clone(schema_cache)));
+        let base = Arc::new(CatalogBase::new(Arc::clone(snapshot)));
         *cached = Some(Arc::clone(&base));
         base
     }
@@ -267,7 +264,7 @@ impl WorkspaceServer {
         }
 
         let db_diagnostics = self.connection.with_pool(&settings.db, |pool| {
-            let schema_cache = self.schema_cache.load(pool)?;
+            let snapshot = self.snapshot.load(pool)?;
             let input = doc
                 .iter(TypecheckDiagnosticsMapper)
                 .map(|(id, range, ast, cst, fn_sig)| {
@@ -286,7 +283,7 @@ impl WorkspaceServer {
                     .map(|(id, range, ast, cst, fn_sig, statement)| {
                         let pool = pool.clone();
                         let path = path.clone();
-                        let schema_cache = Arc::clone(&schema_cache);
+                        let snapshot = Arc::clone(&snapshot);
                         let plpgsql_check = plpgsql_check.clone();
 
                         async move {
@@ -326,7 +323,7 @@ impl WorkspaceServer {
                                         sql: conversion.sql.as_str(),
                                         ast: &ast,
                                         tree: &cst,
-                                        schema_cache: schema_cache.as_ref(),
+                                        snapshot: snapshot.as_ref(),
                                         search_path: &statement.search_path,
                                         identifiers,
                                     })
@@ -354,7 +351,7 @@ impl WorkspaceServer {
                                         conn: &pool,
                                         sql: id.content(),
                                         ast: &ast,
-                                        schema_cache: schema_cache.as_ref(),
+                                        snapshot: snapshot.as_ref(),
                                         fatal_errors: plpgsql_check.fatal_errors,
                                         other_warnings: plpgsql_check.other_warnings,
                                         extra_warnings: plpgsql_check.extra_warnings,
@@ -714,13 +711,13 @@ impl Workspace for WorkspaceServer {
             // Clear all schemas - both db-loaded and json-loaded
             // DB completions always take precedence when a connection is available,
             // so clearing the json schema keeps behavior consistent
-            self.schema_cache.clear_all();
+            self.snapshot.clear_all();
         } else {
             // Only clear current connection if one exists
             let settings = self.workspaces();
             if let Some(settings) = settings.settings() {
                 let _ = self.connection.with_pool(&settings.db, |pool| {
-                    self.schema_cache.clear_connection(pool);
+                    self.snapshot.clear_connection(pool);
                     Ok::<(), WorkspaceError>(())
                 });
             }
@@ -731,7 +728,7 @@ impl Workspace for WorkspaceServer {
 
     #[cfg(not(feature = "db"))]
     fn invalidate_schema_cache(&self, _all: bool) -> Result<(), WorkspaceError> {
-        self.schema_cache.clear_all();
+        self.snapshot.clear_all();
         Ok(())
     }
 
@@ -767,30 +764,30 @@ impl Workspace for WorkspaceServer {
         let path = params.path.as_path().display().to_string();
 
         #[cfg(feature = "db")]
-        let schema_cache = self
+        let snapshot = self
             .connection
-            .with_pool(&settings.db, |pool| self.schema_cache.load(pool))
+            .with_pool(&settings.db, |pool| self.snapshot.load(pool))
             .and_then(Result::ok);
 
         #[cfg(not(feature = "db"))]
-        let schema_cache = self.schema_cache.get();
+        let snapshot = self.snapshot.get();
 
         /*
          * Static analysis: the lint rules, and the typecheck rules when a database schema is
          * available. The catalog starts from the database schema and follows the DDL of the
          * file.
          */
-        let typecheck = settings.typecheck.enabled && schema_cache.is_some();
-        let search_path = match schema_cache.as_deref() {
-            Some(schema_cache) => {
-                pgls_catalog::expand_search_path(schema_cache, &settings.typecheck.search_path)
+        let typecheck = settings.typecheck.enabled && snapshot.is_some();
+        let search_path = match snapshot.as_deref() {
+            Some(snapshot) => {
+                pgls_catalog::expand_search_path(snapshot, &settings.typecheck.search_path)
             }
             None => settings.typecheck.search_path.clone(),
         };
-        let catalog_base = schema_cache
+        let catalog_base = snapshot
             .as_ref()
             .filter(|_| typecheck)
-            .map(|schema_cache| self.catalog_base(schema_cache));
+            .map(|snapshot| self.catalog_base(snapshot));
 
         let (enabled_rules, disabled_rules) = AnalyserVisitorBuilder::new(settings)
             .with_linter_rules(&params.only, &params.skip)
@@ -820,7 +817,7 @@ impl Workspace for WorkspaceServer {
 
         let analysis = analyser.analyse(AnalyserParams {
             stmts: analysable_stmts,
-            schema_cache: schema_cache.as_deref(),
+            snapshot: snapshot.as_deref(),
             catalog_base,
             search_path,
             file_kind: self.file_kind(settings, params.path.as_path()),
@@ -924,8 +921,8 @@ impl Workspace for WorkspaceServer {
         let categories = params.categories;
         let splinter_config = settings.splinter.to_configuration();
         let Some(splinter_diagnostics) = self.connection.with_pool(&settings.db, |pool| {
-            let schema_cache = match self.schema_cache.load(pool) {
-                Ok(schema_cache) => Some(schema_cache),
+            let snapshot = match self.snapshot.load(pool) {
+                Ok(snapshot) => Some(snapshot),
                 Err(err @ WorkspaceError::DatabaseConnectionError(_)) => return Err(err),
                 Err(err) => {
                     debug!("Unable to load schema cache for splinter: {err}");
@@ -942,7 +939,7 @@ impl Workspace for WorkspaceServer {
                 };
                 let splinter_params = pgls_splinter::SplinterParams {
                     conn: &pool,
-                    schema_cache: schema_cache.as_deref(),
+                    snapshot: snapshot.as_deref(),
                     config: Some(&splinter_config),
                 };
                 pgls_splinter::run_splinter(splinter_params, &filter).await
@@ -1172,12 +1169,12 @@ impl Workspace for WorkspaceServer {
             .ok_or(WorkspaceError::not_found())?;
 
         #[cfg(feature = "db")]
-        let Some(schema_cache) = self
+        let Some(snapshot) = self
             .workspaces()
             .settings()
             .and_then(|settings| {
                 self.connection
-                    .with_pool(&settings.db, |pool| self.schema_cache.load(pool))
+                    .with_pool(&settings.db, |pool| self.snapshot.load(pool))
             })
             .transpose()?
         else {
@@ -1186,7 +1183,7 @@ impl Workspace for WorkspaceServer {
         };
 
         #[cfg(not(feature = "db"))]
-        let Some(schema_cache) = self.schema_cache.get() else {
+        let Some(snapshot) = self.snapshot.get() else {
             tracing::debug!("No schema loaded. Skipping completions.");
             return Ok(CompletionsResult::default());
         };
@@ -1201,7 +1198,7 @@ impl Workspace for WorkspaceServer {
 
                 let items = pgls_completions::complete(pgls_completions::CompletionParams {
                     position,
-                    schema: schema_cache.as_ref(),
+                    schema: snapshot.as_ref(),
                     tree: &cst,
                     text: id.content().to_string(),
                 });
@@ -1223,12 +1220,12 @@ impl Workspace for WorkspaceServer {
             .ok_or(WorkspaceError::not_found())?;
 
         #[cfg(feature = "db")]
-        let Some(schema_cache) = self
+        let Some(snapshot) = self
             .workspaces()
             .settings()
             .and_then(|settings| {
                 self.connection
-                    .with_pool(&settings.db, |pool| self.schema_cache.load(pool))
+                    .with_pool(&settings.db, |pool| self.snapshot.load(pool))
             })
             .transpose()?
         else {
@@ -1237,7 +1234,7 @@ impl Workspace for WorkspaceServer {
         };
 
         #[cfg(not(feature = "db"))]
-        let Some(schema_cache) = self.schema_cache.get() else {
+        let Some(snapshot) = self.snapshot.get() else {
             tracing::debug!("No schema loaded. Skipping hover.");
             return Ok(OnHoverResult::default());
         };
@@ -1254,7 +1251,7 @@ impl Workspace for WorkspaceServer {
 
                 let markdown_blocks = pgls_hover::on_hover(pgls_hover::OnHoverParams {
                     ts_tree: &ts_tree,
-                    schema_cache: &schema_cache,
+                    snapshot: &snapshot,
                     ast: maybe_ast.as_ref(),
                     position: position_in_stmt,
                     stmt_sql: stmt_id.content(),

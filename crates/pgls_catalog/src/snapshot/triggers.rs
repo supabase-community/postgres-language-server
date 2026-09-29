@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "db")]
-use crate::schema_cache::SchemaCacheItem;
+use super::SnapshotItem;
 use strum::{EnumIter, IntoEnumIterator};
 
 #[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -123,11 +123,11 @@ impl From<TriggerQueried> for Trigger {
 }
 
 #[cfg(feature = "db")]
-impl SchemaCacheItem for Trigger {
+impl SnapshotItem for Trigger {
     type Item = Trigger;
 
     async fn load(pool: &sqlx::PgPool) -> Result<Vec<Self::Item>, sqlx::Error> {
-        let results = sqlx::query_file_as!(TriggerQueried, "src/queries/triggers.sql")
+        let results = sqlx::query_file_as!(TriggerQueried, "src/snapshot/queries/triggers.sql")
             .fetch_all(pool)
             .await?;
 
@@ -140,8 +140,8 @@ mod tests {
 
     use sqlx::{Executor, PgPool};
 
-    use crate::{
-        SchemaCache,
+    use crate::snapshot::{
+        Snapshot,
         triggers::{TriggerAffected, TriggerEvent, TriggerTiming},
     };
 
@@ -182,7 +182,7 @@ mod tests {
             .await
             .expect("Failed to setup test database");
 
-        let cache = SchemaCache::load(&test_db)
+        let cache = Snapshot::load(&test_db)
             .await
             .expect("Failed to load Schema Cache");
 
@@ -271,7 +271,7 @@ mod tests {
             .await
             .expect("Failed to setup test database");
 
-        let cache = SchemaCache::load(&test_db)
+        let cache = Snapshot::load(&test_db)
             .await
             .expect("Failed to load Schema Cache");
 

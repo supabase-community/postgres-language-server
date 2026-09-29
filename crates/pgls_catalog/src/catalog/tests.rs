@@ -1,12 +1,12 @@
 use std::sync::Arc;
 
-use pgls_schema_cache::SchemaCache;
+use crate::Snapshot;
 
 use super::{Catalog, CatalogBase};
 use crate::view::{CatalogView, FunctionKind, Lookup, Origin, RelationKind};
 
-fn schema(name: &str) -> pgls_schema_cache::Schema {
-    pgls_schema_cache::Schema {
+fn schema(name: &str) -> crate::Schema {
+    crate::Schema {
         name: name.into(),
         ..Default::default()
     }
@@ -16,7 +16,7 @@ fn schema(name: &str) -> pgls_schema_cache::Schema {
 /// function `public.greet(text, text default)`.
 fn base() -> Arc<CatalogBase> {
     let schemas = vec![schema("public"), schema("app"), schema("pg_catalog")];
-    let tables = vec![pgls_schema_cache::Table {
+    let tables = vec![crate::Table {
         id: 1,
         schema: "public".into(),
         name: "users".into(),
@@ -25,11 +25,11 @@ fn base() -> Arc<CatalogBase> {
     let columns = ["id", "name"]
         .into_iter()
         .enumerate()
-        .map(|(i, name)| pgls_schema_cache::Column {
+        .map(|(i, name)| crate::Column {
             name: name.into(),
             table_name: "users".into(),
             table_oid: 1,
-            class_kind: pgls_schema_cache::ColumnClassKind::OrdinaryTable,
+            class_kind: crate::ColumnClassKind::OrdinaryTable,
             number: i as i64 + 1,
             schema_name: "public".into(),
             type_id: 25,
@@ -42,18 +42,18 @@ fn base() -> Arc<CatalogBase> {
             comment: None,
         })
         .collect();
-    let functions = vec![pgls_schema_cache::Function {
+    let functions = vec![crate::Function {
         schema: "public".into(),
         name: "greet".into(),
-        args: pgls_schema_cache::FunctionArgs {
+        args: crate::FunctionArgs {
             args: vec![
-                pgls_schema_cache::FunctionArg {
+                crate::FunctionArg {
                     mode: "in".into(),
                     name: "first".into(),
                     type_id: 25,
                     has_default: Some(false),
                 },
-                pgls_schema_cache::FunctionArg {
+                crate::FunctionArg {
                     mode: "in".into(),
                     name: "last".into(),
                     type_id: 25,
@@ -63,7 +63,7 @@ fn base() -> Arc<CatalogBase> {
         },
         ..Default::default()
     }];
-    let cache = SchemaCache {
+    let cache = Snapshot {
         schemas,
         tables,
         columns,
@@ -616,7 +616,7 @@ fn column_changes_make_database_children_unknown() {
     let tables = ["events", "events_2024"]
         .into_iter()
         .enumerate()
-        .map(|(i, name)| pgls_schema_cache::Table {
+        .map(|(i, name)| crate::Table {
             id: i as i64 + 1,
             schema: "public".into(),
             name: name.into(),
@@ -624,7 +624,7 @@ fn column_changes_make_database_children_unknown() {
             ..Default::default()
         })
         .collect();
-    let cache = SchemaCache {
+    let cache = Snapshot {
         schemas: vec![schema("public")],
         tables,
         ..Default::default()

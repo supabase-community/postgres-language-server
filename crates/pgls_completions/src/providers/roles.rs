@@ -3,15 +3,15 @@ use crate::{
     builder::{CompletionBuilder, PossibleCompletionItem},
     relevance::{CompletionRelevanceData, filtering::CompletionFilter, scoring::CompletionScore},
 };
-use pgls_schema_cache::SchemaCache;
+use pgls_catalog::Snapshot;
 use pgls_treesitter::TreesitterContext;
 
 pub fn complete_roles<'a>(
     _ctx: &TreesitterContext<'a>,
-    schema_cache: &'a SchemaCache,
+    snapshot: &'a Snapshot,
     builder: &mut CompletionBuilder<'a>,
 ) {
-    let available_roles = &schema_cache.roles;
+    let available_roles = &snapshot.roles;
 
     for role in available_roles {
         let relevance = CompletionRelevanceData::Role(role);
