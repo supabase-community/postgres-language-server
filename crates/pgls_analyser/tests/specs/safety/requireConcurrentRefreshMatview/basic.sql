@@ -1,2 +1,2 @@
--- expect_lint/safety/requireConcurrentRefreshMatview
+-- expect_lint/requireConcurrentRefreshMatview
 refresh materialized view my_view;

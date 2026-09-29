@@ -4,14 +4,14 @@ expression: snapshot
 ---
 # Input
 ```
--- expect_lint/safety/requireSeparateConstraintValidation
+-- expect_lint/requireSeparateConstraintValidation
 ALTER TABLE orders ADD CONSTRAINT orders_check CHECK (total > 0) NOT VALID;
 ALTER TABLE orders VALIDATE CONSTRAINT orders_check;
 
 ```
 
 # Diagnostics
-lint/safety/requireSeparateConstraintValidation ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+lint/requireSeparateConstraintValidation ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   × Constraint orders_check was added as NOT VALID and validated in the same transaction.
   

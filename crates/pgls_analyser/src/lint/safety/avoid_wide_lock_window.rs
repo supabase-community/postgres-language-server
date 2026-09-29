@@ -17,7 +17,7 @@ declare_lint_rule! {
     /// ### Invalid
     ///
     /// Acquiring locks on multiple tables in the same transaction:
-    /// ```sql
+    /// ```sql,expect_diagnostic
     /// ALTER TABLE users ADD COLUMN email TEXT;
     /// ALTER TABLE orders ADD COLUMN total NUMERIC;
     /// ```
@@ -33,6 +33,7 @@ declare_lint_rule! {
         name: "avoidWideLockWindow",
         severity: Severity::Warning,
         recommended: true,
+        applies_to: pgls_analyse::AppliesTo::Migration,
         sources: &[RuleSource::Pgfence("wide-lock-window")],
     }
 }
@@ -43,7 +44,7 @@ impl LinterRule for AvoidWideLockWindow {
     fn run(ctx: &LinterRuleContext<Self>) -> Vec<LinterDiagnostic> {
         let mut diagnostics = vec![];
 
-        let tx_state = ctx.file_context().transaction_state();
+        let tx_state = ctx.session();
         let existing_tables = tx_state.access_exclusive_tables();
 
         if existing_tables.is_empty() {

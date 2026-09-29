@@ -1,0 +1,20 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+-- expect_only_lint/creatingEnum
+-- Enum type with schema qualification
+CREATE TYPE myschema.status AS ENUM ('active', 'inactive', 'pending');
+
+```
+
+# Diagnostics
+lint/creatingEnum ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Creating enum type myschema.status is not recommended.
+  
+  i Enum types are difficult to modify: removing values requires complex migrations, and associating additional data with values is not possible.
+  
+  i Consider using a lookup table with a foreign key constraint instead, which provides more flexibility and easier maintenance.

@@ -4,12 +4,12 @@ expression: snapshot
 ---
 # Input
 ```
--- expect_lint/safety/requireConcurrentDetachPartition
+-- expect_lint/requireConcurrentDetachPartition
 alter table my_table detach partition my_partition;
 ```
 
 # Diagnostics
-lint/safety/requireConcurrentDetachPartition ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+lint/requireConcurrentDetachPartition ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   × Detaching a partition without CONCURRENTLY blocks all table access.
   

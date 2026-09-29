@@ -1,0 +1,18 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+create table items (id int8);
+select * from items;
+drop table items;
+-- expect_lint/unknownRelation
+select * from items;
+
+```
+
+# Diagnostics
+lint/unknownRelation ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Relation items does not exist.

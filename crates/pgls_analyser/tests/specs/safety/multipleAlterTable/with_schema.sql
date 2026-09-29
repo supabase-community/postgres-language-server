@@ -1,4 +1,4 @@
--- expect_lint/safety/multipleAlterTable
+-- expect_lint/multipleAlterTable
 -- Test multiple ALTER TABLE statements with explicit schema
 ALTER TABLE public.users ADD COLUMN age integer;
 ALTER TABLE public.users ADD COLUMN country text;

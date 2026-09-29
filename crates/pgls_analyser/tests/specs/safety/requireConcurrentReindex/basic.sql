@@ -1,2 +1,2 @@
--- expect_lint/safety/requireConcurrentReindex
+-- expect_lint/requireConcurrentReindex
 reindex index my_index;

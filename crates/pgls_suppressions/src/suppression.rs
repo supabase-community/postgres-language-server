@@ -25,7 +25,7 @@ pub(crate) enum SuppressionKind {
 
 #[derive(Debug, PartialEq, Clone, Eq)]
 /// Represents the suppressed rule, as written in the suppression comment.
-/// e.g. `lint/safety/banDropColumn`, or `lint/safety`, or just `lint`.
+/// e.g. `banDropColumn`, or `lint/safety`, or just `lint`.
 /// The format of a rule specifier string is `<category>(/<group>(/<rule>))`.
 ///
 /// `RuleSpecifier` can only be constructed from a `&str` that matches a valid
@@ -61,15 +61,23 @@ impl RuleSpecifier {
     }
 
     pub(crate) fn is_disabled(&self, disabled_rules: &[RuleFilter<'_>]) -> bool {
-        // note: it is not possible to disable entire categories via the config
-        let group = self.group();
-        let rule = self.rule();
-
-        disabled_rules.iter().any(|r| match r {
-            RuleFilter::Group(gr) => group.is_some_and(|specifier_group| specifier_group == *gr),
-            RuleFilter::Rule(gr, ru) => group.is_some_and(|specifier_group| {
-                rule.is_some_and(|specifier_rule| specifier_group == *gr && specifier_rule == *ru)
-            }),
+        let (group, rule) = match self {
+            RuleSpecifier::Rule(category, group, rule) if category == "lint" => {
+                let actual_group: &str = if group.is_empty() {
+                    pgls_analyser::METADATA.group_of(rule).unwrap_or("")
+                } else {
+                    group.as_str()
+                };
+                (Some(actual_group), Some(rule.as_str()))
+            }
+            RuleSpecifier::Group(category, group) if category == "lint" => {
+                (Some(group.as_str()), None)
+            }
+            _ => (None, None),
+        };
+        disabled_rules.iter().any(|filter| match filter {
+            RuleFilter::Group(g) => group == Some(*g),
+            RuleFilter::Rule(g, r) => group == Some(*g) && rule == Some(*r),
         })
     }
 }
@@ -94,13 +102,52 @@ impl From<&Category> for RuleSpecifier {
 impl TryFrom<&str> for RuleSpecifier {
     type Error = String;
 
-    fn try_from(specifier_str: &str) -> Result<Self, Self::Error> {
-        let cat = specifier_str
-            .parse::<&Category>()
-            .map_err(|_| "Invalid rule.".to_string())?;
-
-        Ok(RuleSpecifier::from(cat))
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
+        let invalid = || "Invalid rule.".to_string();
+        let parts: Vec<_> = value.split('/').collect();
+        fn removed(rule: &str) -> &str {
+            match rule {
+                "preferBigintOverInt" | "preferBigintOverSmallint" => "preferBigInt",
+                other => other,
+            }
+        }
+        match parts.as_slice() {
+            ["lint"] => Ok(Self::Category("lint".into())),
+            ["lint", group] if is_lint_group(group) => {
+                Ok(Self::Group("lint".into(), (*group).into()))
+            }
+            ["lint", rule] => {
+                let rule = removed(rule);
+                if pgls_analyser::METADATA.group_of(rule).is_none() {
+                    return Err(invalid());
+                }
+                Ok(Self::Rule("lint".into(), String::new(), rule.into()))
+            }
+            ["lint", _group, rule] => {
+                let rule = removed(rule);
+                if pgls_analyser::METADATA.group_of(rule).is_none() {
+                    return Err(invalid());
+                }
+                Ok(Self::Rule("lint".into(), String::new(), rule.into()))
+            }
+            ["typecheck"] => Ok(Self::Category("typecheck".into())),
+            [group] if is_lint_group(group) => Ok(Self::Group("lint".into(), (*group).into())),
+            [rule] if pgls_analyser::METADATA.group_of(removed(rule)).is_some() => Ok(Self::Rule(
+                "lint".into(),
+                String::new(),
+                removed(rule).into(),
+            )),
+            [_] | [_, _] | [_, _, _] if value.parse::<&Category>().is_ok() => {
+                Ok(RuleSpecifier::from(value.parse::<&Category>().unwrap()))
+            }
+            _ => Err(invalid()),
+        }
     }
+}
+
+fn is_lint_group(group: &str) -> bool {
+    pgls_analyser::METADATA.groups().contains(&group)
+        || matches!(group, "typecheck" | "security" | "nursery")
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -188,15 +235,29 @@ impl Suppression {
         let d_rule = diagnostic_specifier.rule();
 
         match &self.rule_specifier {
-            // Check if we suppress the entire category
+            RuleSpecifier::Category(cat) if cat == "typecheck" => {
+                d_category == "typecheck"
+                    || (d_category == "lint"
+                        && (d_group == Some("typecheck")
+                            || d_rule.is_some_and(|rule| {
+                                pgls_analyser::METADATA.group_of(rule) == Some("typecheck")
+                            })))
+            }
             RuleSpecifier::Category(cat) => cat == d_category,
-
-            // Check if we suppress the category & group
+            RuleSpecifier::Group(cat, group) if cat == "lint" => {
+                (d_category == "typecheck" && group == "typecheck")
+                    || (d_category == "lint"
+                        && (d_group == Some(group.as_str())
+                            || d_rule.is_some_and(|rule| {
+                                pgls_analyser::METADATA.group_of(rule) == Some(group.as_str())
+                            })))
+            }
             RuleSpecifier::Group(cat, group) => {
                 cat == d_category && Some(group.as_str()) == d_group
             }
-
-            // Check if we suppress the category & group & specific rule
+            RuleSpecifier::Rule(cat, _, rule) if cat == "lint" => {
+                d_category == "lint" && d_rule == Some(rule.as_str())
+            }
             RuleSpecifier::Rule(cat, group, rule) => {
                 cat == d_category
                     && Some(group.as_str()) == d_group
@@ -229,7 +290,7 @@ mod tests {
 
     #[test]
     fn test_suppression_from_line_rule() {
-        let line = "-- pgt-ignore lint/safety/banDropColumn: explanation";
+        let line = "-- pgt-ignore banDropColumn: explanation";
         let offset = &TextSize::new(0);
         let suppression = Suppression::from_line(line, offset).unwrap();
 
@@ -238,7 +299,7 @@ mod tests {
             suppression.rule_specifier,
             RuleSpecifier::Rule(
                 "lint".to_string(),
-                "safety".to_string(),
+                "".to_string(),
                 "banDropColumn".to_string()
             )
         );
@@ -288,7 +349,7 @@ mod tests {
 
     #[test]
     fn test_suppression_from_line_file_kind() {
-        let line = "-- pgt-ignore-all lint/safety/banDropColumn: explanation";
+        let line = "-- pgt-ignore-all banDropColumn: explanation";
         let offset = &TextSize::new(0);
         let suppression = Suppression::from_line(line, offset).unwrap();
 
@@ -297,7 +358,7 @@ mod tests {
             suppression.rule_specifier,
             RuleSpecifier::Rule(
                 "lint".to_string(),
-                "safety".to_string(),
+                "".to_string(),
                 "banDropColumn".to_string()
             )
         );
@@ -306,7 +367,7 @@ mod tests {
 
     #[test]
     fn test_suppression_from_line_start_kind() {
-        let line = "-- pgt-ignore-start lint/safety/banDropColumn: explanation";
+        let line = "-- pgt-ignore-start banDropColumn: explanation";
         let offset = &TextSize::new(0);
         let suppression = Suppression::from_line(line, offset).unwrap();
 
@@ -315,7 +376,7 @@ mod tests {
             suppression.rule_specifier,
             RuleSpecifier::Rule(
                 "lint".to_string(),
-                "safety".to_string(),
+                "".to_string(),
                 "banDropColumn".to_string()
             )
         );
@@ -324,7 +385,7 @@ mod tests {
 
     #[test]
     fn test_suppression_from_line_end_kind() {
-        let line = "-- pgt-ignore-end lint/safety/banDropColumn: explanation";
+        let line = "-- pgt-ignore-end banDropColumn: explanation";
         let offset = &TextSize::new(0);
         let suppression = Suppression::from_line(line, offset).unwrap();
 
@@ -333,7 +394,7 @@ mod tests {
             suppression.rule_specifier,
             RuleSpecifier::Rule(
                 "lint".to_string(),
-                "safety".to_string(),
+                "".to_string(),
                 "banDropColumn".to_string()
             )
         );
@@ -342,7 +403,7 @@ mod tests {
 
     #[test]
     fn test_suppression_span_with_offset() {
-        let line = "    \n-- pgt-ignore lint/safety/banDropColumn: explanation";
+        let line = "    \n-- pgt-ignore banDropColumn: explanation";
         let offset = TextSize::new(5);
         let suppression = Suppression::from_line(line, &offset).unwrap();
 
@@ -358,9 +419,9 @@ mod tests {
     #[test]
     fn test_suppression_from_line_invalid_tag_and_missing_specifier() {
         let lines = vec![
-            "-- pgt-ignore-foo lint/safety/banDropColumn: explanation",
-            "-- pgt-ignore foo lint/safety/banDropColumn: explanation",
-            "-- pgt-ignore xyz lint/safety/banDropColumn: explanation",
+            "-- pgt-ignore-foo banDropColumn: explanation",
+            "-- pgt-ignore foo banDropColumn: explanation",
+            "-- pgt-ignore xyz banDropColumn: explanation",
             "-- pgt-ignore",
         ];
         let offset = &TextSize::new(0);
@@ -374,27 +435,15 @@ mod tests {
     fn test_suppression_matches() {
         let cases = vec![
             // the category works for all groups & rules
-            ("-- pgt-ignore lint", "lint/safety/banDropNotNull", true),
-            ("-- pgt-ignore lint", "lint/safety/banDropColumn", true),
+            ("-- pgt-ignore lint", "lint/banDropNotNull", true),
+            ("-- pgt-ignore lint", "lint/banDropColumn", true),
             // the group works for all rules in that group
-            (
-                "-- pgt-ignore lint/safety",
-                "lint/safety/banDropColumn",
-                true,
-            ),
+            ("-- pgt-ignore lint/destructive", "lint/banDropColumn", true),
             ("-- pgt-ignore lint", "typecheck", false),
             ("-- pgt-ignore lint/safety", "typecheck", false),
             // a specific supppression only works for that same rule
-            (
-                "-- pgt-ignore lint/safety/banDropColumn",
-                "lint/safety/banDropColumn",
-                true,
-            ),
-            (
-                "-- pgt-ignore lint/safety/banDropColumn",
-                "lint/safety/banDropTable",
-                false,
-            ),
+            ("-- pgt-ignore banDropColumn", "lint/banDropColumn", true),
+            ("-- pgt-ignore banDropColumn", "lint/banDropTable", false),
         ];
 
         let offset = &TextSize::new(0);
@@ -408,6 +457,62 @@ mod tests {
                 "Suppression line '{suppr_line}' vs specifier '{specifier_str}' should be {expected}"
             );
         }
+    }
+
+    #[test]
+    fn flat_and_legacy_specifiers_are_normalized_and_validated() {
+        assert_eq!(
+            RuleSpecifier::try_from("banDropColumn").unwrap(),
+            RuleSpecifier::try_from("lint/banDropColumn").unwrap()
+        );
+        assert_eq!(
+            RuleSpecifier::try_from("lint/safety/banDropColumn").unwrap(),
+            RuleSpecifier::try_from("banDropColumn").unwrap()
+        );
+        assert_eq!(
+            RuleSpecifier::try_from("preferBigintOverInt").unwrap(),
+            RuleSpecifier::try_from("preferBigInt").unwrap()
+        );
+        assert_eq!(
+            RuleSpecifier::try_from("preferBigintOverSmallint").unwrap(),
+            RuleSpecifier::try_from("preferBigInt").unwrap()
+        );
+        assert!(RuleSpecifier::try_from("concurrentRefreshMatviewLock").is_err());
+        assert!(RuleSpecifier::try_from("notARule").is_err());
+        assert_eq!(
+            RuleSpecifier::try_from("destructive").unwrap(),
+            RuleSpecifier::Group("lint".into(), "destructive".into())
+        );
+        assert_eq!(
+            RuleSpecifier::try_from("lint/security").unwrap(),
+            RuleSpecifier::Group("lint".into(), "security".into())
+        );
+        assert_eq!(
+            RuleSpecifier::try_from("lint/nursery").unwrap(),
+            RuleSpecifier::Group("lint".into(), "nursery".into())
+        );
+    }
+
+    #[test]
+    fn typecheck_specifier_matches_category_and_lint_group() {
+        let category = RuleSpecifier::try_from("typecheck").unwrap();
+        let group = RuleSpecifier::try_from("lint/typecheck").unwrap();
+        let explain_diagnostic = RuleSpecifier::Category("typecheck".into());
+        let lint_diagnostic =
+            RuleSpecifier::Rule("lint".into(), "typecheck".into(), "futureRule".into());
+        let category_suppression =
+            Suppression::from_line("-- pgls-ignore typecheck", &TextSize::new(0)).unwrap();
+        let group_suppression =
+            Suppression::from_line("-- pgls-ignore lint/typecheck", &TextSize::new(0)).unwrap();
+        assert!(category_suppression.matches(&explain_diagnostic));
+        assert!(category_suppression.matches(&lint_diagnostic));
+        assert!(group_suppression.matches(&explain_diagnostic));
+        assert!(group_suppression.matches(&lint_diagnostic));
+        assert_eq!(category, RuleSpecifier::Category("typecheck".into()));
+        assert_eq!(
+            group,
+            RuleSpecifier::Group("lint".into(), "typecheck".into())
+        );
     }
 
     #[test]
@@ -447,7 +552,7 @@ mod tests {
 
     #[test]
     fn test_pgls_prefix_line_suppressions() {
-        let line = "-- pgls-ignore lint/safety/banDropColumn: explanation";
+        let line = "-- pgls-ignore banDropColumn: explanation";
         let offset = &TextSize::new(0);
         let suppression = Suppression::from_line(line, offset).unwrap();
 
@@ -456,7 +561,7 @@ mod tests {
             suppression.rule_specifier,
             RuleSpecifier::Rule(
                 "lint".to_string(),
-                "safety".to_string(),
+                "".to_string(),
                 "banDropColumn".to_string()
             )
         );

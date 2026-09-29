@@ -1,11 +1,10 @@
 ---
-source: crates/pgt_analyser/tests/rules_tests.rs
+source: crates/pgls_analyser/tests/rules_tests.rs
 expression: snapshot
-snapshot_kind: text
 ---
 # Input
 ```
--- expect_only_lint/safety/runningStatementWhileHoldingAccessExclusive
+-- expect_only_lint/runningStatementWhileHoldingAccessExclusive
 -- INSERT after ALTER TABLE should trigger
 ALTER TABLE books ADD COLUMN isbn TEXT;
 INSERT INTO books (title, isbn) VALUES ('Database Systems', '978-0-1234567-8-9');
@@ -13,7 +12,7 @@ INSERT INTO books (title, isbn) VALUES ('Database Systems', '978-0-1234567-8-9')
 ```
 
 # Diagnostics
-lint/safety/runningStatementWhileHoldingAccessExclusive ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+lint/runningStatementWhileHoldingAccessExclusive ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   × Running statement while holding ACCESS EXCLUSIVE lock.
   

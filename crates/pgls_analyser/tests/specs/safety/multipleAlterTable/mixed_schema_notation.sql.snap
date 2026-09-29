@@ -1,11 +1,10 @@
 ---
-source: crates/pgt_analyser/tests/rules_tests.rs
+source: crates/pgls_analyser/tests/rules_tests.rs
 expression: snapshot
-snapshot_kind: text
 ---
 # Input
 ```
--- expect_lint/safety/multipleAlterTable
+-- expect_lint/multipleAlterTable
 -- Test mixing implicit and explicit public schema (should match)
 ALTER TABLE authors ADD COLUMN name text;
 ALTER TABLE public.authors ADD COLUMN email text;
@@ -13,7 +12,7 @@ ALTER TABLE public.authors ADD COLUMN email text;
 ```
 
 # Diagnostics
-lint/safety/multipleAlterTable ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+lint/multipleAlterTable ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   × Multiple ALTER TABLE statements found for table public.authors.
   

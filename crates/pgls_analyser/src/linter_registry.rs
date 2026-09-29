@@ -1,6 +1,6 @@
-use pgls_analyse::{AnalysisFilter, GroupCategory, RuleGroup, RuleKey};
+use pgls_analyse::{AnalysisFilter, AppliesTo, GroupCategory, RuleGroup, RuleKey};
 
-use crate::linter_context::{AnalysedFileContext, LinterRuleContext};
+use crate::linter_context::{AnalysedFileContext, LinterRuleContext, StatementContext};
 use crate::linter_options::LinterOptions;
 use crate::linter_rule::{LinterDiagnostic, LinterRule};
 
@@ -54,6 +54,10 @@ impl IntoIterator for LinterRuleRegistry {
 #[derive(Copy, Clone)]
 pub struct RegistryLinterRule {
     pub run: LinterRuleExecutor,
+    /// Whether the rule only runs on migration files.
+    pub applies_to: AppliesTo,
+    /// The group of the rule.
+    pub group: &'static str,
 }
 
 impl LinterRuleRegistry {
@@ -69,6 +73,7 @@ pub struct LinterRegistryRuleParams<'a> {
     pub root: &'a pgls_query::NodeEnum,
     pub options: &'a LinterOptions,
     pub analysed_file_context: &'a AnalysedFileContext<'a>,
+    pub statement: &'a StatementContext<'a>,
     pub schema_cache: Option<&'a pgls_schema_cache::SchemaCache>,
 }
 
@@ -92,12 +97,17 @@ impl RegistryLinterRule {
                 &options,
                 params.schema_cache,
                 params.analysed_file_context,
+                params.statement,
             );
 
             R::run(&ctx)
         }
 
-        Self { run: run::<R> }
+        Self {
+            run: run::<R>,
+            applies_to: R::METADATA.applies_to,
+            group: <R::Group as RuleGroup>::NAME,
+        }
     }
 }
 

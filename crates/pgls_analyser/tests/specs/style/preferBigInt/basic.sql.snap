@@ -1,0 +1,21 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+-- expect_lint/preferBigInt
+CREATE TABLE users (
+    id integer
+);
+
+```
+
+# Diagnostics
+lint/preferBigInt ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Using smaller integer types can lead to overflow issues.
+  
+  i The 'int4' type has a limited range that may be exceeded as your data grows.
+  
+  i Consider using BIGINT for integer columns to avoid future migration issues.

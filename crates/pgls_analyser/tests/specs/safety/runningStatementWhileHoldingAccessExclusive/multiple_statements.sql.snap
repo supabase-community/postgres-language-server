@@ -1,23 +1,22 @@
 ---
-source: crates/pgt_analyser/tests/rules_tests.rs
+source: crates/pgls_analyser/tests/rules_tests.rs
 expression: snapshot
-snapshot_kind: text
 ---
 # Input
 ```
 -- All statements after ALTER TABLE should trigger
 ALTER TABLE users ADD COLUMN age INT;
 
--- expect_lint/safety/runningStatementWhileHoldingAccessExclusive
+-- expect_lint/runningStatementWhileHoldingAccessExclusive
 UPDATE users SET age = 30;
 
--- expect_lint/safety/runningStatementWhileHoldingAccessExclusive
+-- expect_lint/runningStatementWhileHoldingAccessExclusive
 SELECT * FROM users;
 
 ```
 
 # Diagnostics
-lint/safety/runningStatementWhileHoldingAccessExclusive ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+lint/runningStatementWhileHoldingAccessExclusive ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   × Running statement while holding ACCESS EXCLUSIVE lock.
   
@@ -27,7 +26,7 @@ lint/safety/runningStatementWhileHoldingAccessExclusive ━━━━━━━━
   
 
 
-lint/safety/runningStatementWhileHoldingAccessExclusive ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+lint/runningStatementWhileHoldingAccessExclusive ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   × Running statement while holding ACCESS EXCLUSIVE lock.
   

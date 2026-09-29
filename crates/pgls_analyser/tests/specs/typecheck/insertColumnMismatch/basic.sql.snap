@@ -1,0 +1,31 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+create table users (id int8, name text);
+insert into users (id, name) values (1, 'a');
+insert into users values (1);
+insert into users (id) select id from users;
+-- expect_lint/insertColumnMismatch
+insert into users (id, name) values (1);
+-- expect_lint/insertColumnMismatch
+insert into users values (1, 'a', 'b');
+
+```
+
+# Diagnostics
+lint/insertColumnMismatch ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × INSERT has more target columns than expressions.
+  
+  i Expected 2 values, found 1.
+  
+
+
+lint/insertColumnMismatch ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × INSERT has more expressions than target columns.
+  
+  i Expected 2 values, found 3.

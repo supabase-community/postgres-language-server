@@ -185,6 +185,11 @@ fn generate_lint_mod_file(tool: &ToolConfig) -> String {
             mod options;
             pub use options::SplinterRuleOptions;
         }
+    } else if tool.name == "linter" {
+        quote! {
+            mod resolved;
+            pub use resolved::LinterRuleSettings;
+        }
     } else {
         quote! {}
     };
@@ -237,9 +242,21 @@ fn generate_lint_mod_file(tool: &ToolConfig) -> String {
     };
 
     let splinter_ignore_default = if is_splinter {
+        quote! { ignore: Default::default(), }
+    } else {
+        quote! {}
+    };
+    let linter_groups_field = if tool.name == "linter" {
         quote! {
-            ignore: Default::default(),
+            /// The level of all rules of a group, unless a rule is configured individually.
+            #[partial(bpaf(pure(Default::default()), optional, hide))]
+            pub groups: Groups,
         }
+    } else {
+        quote! {}
+    };
+    let linter_groups_default = if tool.name == "linter" {
+        quote! { groups: Default::default(), }
     } else {
         quote! {}
     };
@@ -291,6 +308,7 @@ fn generate_lint_mod_file(tool: &ToolConfig) -> String {
             #[partial(bpaf(pure(Default::default()), optional, hide))]
             pub rules: Rules,
 
+            #linter_groups_field
             #file_fields
         }
 
@@ -308,6 +326,7 @@ fn generate_lint_mod_file(tool: &ToolConfig) -> String {
                     enabled: true,
                     #splinter_ignore_default
                     rules: Default::default(),
+                    #linter_groups_default
                     #file_defaults
                 }
             }
@@ -327,11 +346,293 @@ fn generate_lint_mod_file(tool: &ToolConfig) -> String {
     crate::reformat(content.to_string()).unwrap()
 }
 
+/// The linter groups, including groups that have no rules yet.
+const LINTER_GROUPS: &[(&str, &str)] = &[
+    (
+        "correctness",
+        "Code that fails at runtime for reasons other than names or types.",
+    ),
+    (
+        "safety",
+        "Valid code that may be dangerous against a live database: locks, rewrites, or blocking.",
+    ),
+    (
+        "destructive",
+        "Code that loses data or breaks existing clients.",
+    ),
+    (
+        "style",
+        "Schema design preferences. Not enabled by the recommended preset.",
+    ),
+    ("security", "Security issues in new DDL."),
+    (
+        "typecheck",
+        "Code that fails at runtime because of names or types. Needs a database connection.",
+    ),
+    (
+        "nursery",
+        "New rules that are still being tested. Never enabled by presets.",
+    ),
+];
+
+/// Rules that were removed when the rules got flat names. `linter.rules.safety.<rule>` still
+/// accepts them.
+const REMOVED_LINTER_RULES: &[&str] = &[
+    "concurrentRefreshMatviewLock",
+    "preferBigintOverInt",
+    "preferBigintOverSmallint",
+];
+
+/// Generates the flat linter configuration: `linter.rules.<rule>` and `linter.groups.<group>`,
+/// plus the deprecated `linter.rules.safety.<rule>`.
+///
+/// The precedence of these settings is implemented by hand in
+/// `pgls_configuration/src/linter/resolved.rs`.
+fn generate_flat_linter_rules_file(
+    groups: BTreeMap<&'static str, BTreeMap<&'static str, RuleMetadata>>,
+) -> Result<String> {
+    for group in groups.keys() {
+        assert!(
+            LINTER_GROUPS.iter().any(|(name, _)| name == group),
+            "the linter group `{group}` is missing in LINTER_GROUPS"
+        );
+    }
+
+    let rules: BTreeMap<&'static str, (&'static str, RuleMetadata)> = groups
+        .into_iter()
+        .flat_map(|(group, rules)| {
+            rules
+                .into_iter()
+                .map(move |(name, metadata)| (name, (group, metadata)))
+        })
+        .collect();
+
+    let mut rule_fields = Vec::new();
+    let mut legacy_fields = Vec::new();
+    let mut rule_metadata = Vec::new();
+    let mut level_arms = Vec::new();
+    let mut options_arms = Vec::new();
+    let mut legacy_names = Vec::new();
+
+    for (name, (group, metadata)) in &rules {
+        let ident = Ident::new(&to_snake_case(name), Span::call_site());
+        let options = Ident::new(&to_capitalized(name), Span::call_site());
+        let name_literal = Literal::string(name);
+        let group_literal = Literal::string(group);
+        let summary = extract_summary_from_docs(metadata.docs);
+        let recommended = metadata.recommended;
+        let severity = severity_tokens(metadata.severity);
+
+        rule_fields.push(quote! {
+            #[doc = #summary]
+            #[serde(skip_serializing_if = "Option::is_none")]
+            pub #ident: Option<RuleConfiguration<pgls_analyser::options::#options>>
+        });
+        legacy_fields.push(quote! {
+            #[serde(skip_serializing_if = "Option::is_none")]
+            pub #ident: Option<RuleConfiguration<pgls_analyser::options::#options>>
+        });
+        rule_metadata.push(quote! {
+            LinterRuleMetadata {
+                group: #group_literal,
+                name: #name_literal,
+                recommended: #recommended,
+                severity: #severity,
+            }
+        });
+        level_arms.push(quote! {
+            #name_literal => self.#ident.as_ref().map(RuleConfiguration::level)
+        });
+        options_arms.push(quote! {
+            #name_literal => self.#ident.as_ref().and_then(RuleConfiguration::get_options)
+        });
+        legacy_names.push((name.to_string(), ident));
+    }
+
+    let mut legacy_level_arms = level_arms.clone();
+    for name in REMOVED_LINTER_RULES {
+        let ident = Ident::new(&to_snake_case(name), Span::call_site());
+        let name_literal = Literal::string(name);
+        legacy_fields.push(quote! {
+            #[serde(skip_serializing_if = "Option::is_none")]
+            pub #ident: Option<RuleConfiguration<()>>
+        });
+        legacy_level_arms.push(quote! {
+            #name_literal => self.#ident.as_ref().map(RuleConfiguration::level)
+        });
+        legacy_names.push((name.to_string(), ident));
+    }
+    legacy_names.sort();
+    let configured_legacy_rules = legacy_names.iter().map(|(name, ident)| {
+        let name_literal = Literal::string(name);
+        quote! {
+            if self.#ident.is_some() {
+                rules.push(#name_literal);
+            }
+        }
+    });
+
+    let group_fields = LINTER_GROUPS.iter().map(|(name, description)| {
+        let ident = Ident::new(name, Span::call_site());
+        let description = Literal::string(description);
+        quote! {
+            #[doc = #description]
+            #[serde(skip_serializing_if = "Option::is_none")]
+            pub #ident: Option<RulePlainConfiguration>
+        }
+    });
+    let group_level_arms = LINTER_GROUPS.iter().map(|(name, _)| {
+        let ident = Ident::new(name, Span::call_site());
+        let name_literal = Literal::string(name);
+        quote! { #name_literal => self.#ident }
+    });
+    let group_names = LINTER_GROUPS.iter().map(|(name, _)| Literal::string(name));
+
+    let content = quote! {
+        //! Generated file, do not edit by hand, see `xtask/codegen`
+
+        use crate::rules::{RuleConfiguration, RulePlainConfiguration};
+        use pgls_analyser::RuleOptions;
+        use pgls_configuration_macros::Merge;
+        use pgls_diagnostics::Severity;
+        #[cfg(feature = "schema")]
+        use schemars::JsonSchema;
+        use serde::{Deserialize, Serialize};
+
+        /// The static metadata of a linter rule.
+        #[derive(Clone, Copy, Debug)]
+        pub struct LinterRuleMetadata {
+            pub group: &'static str,
+            pub name: &'static str,
+            pub recommended: bool,
+            pub severity: Severity,
+        }
+
+        /// All linter rules, sorted by name.
+        pub const LINTER_RULES: &[LinterRuleMetadata] = &[ #( #rule_metadata, )* ];
+
+        /// All linter groups.
+        pub const LINTER_GROUPS: &[&str] = &[ #( #group_names, )* ];
+
+        #[derive(Clone, Debug, Default, Deserialize, Eq, Merge, PartialEq, Serialize)]
+        #[cfg_attr(feature = "schema", derive(JsonSchema))]
+        #[cfg_attr(feature = "schema", schemars(rename = "LinterRules"))]
+        #[serde(rename_all = "camelCase", deny_unknown_fields)]
+        pub struct Rules {
+            /// It enables the lint rules recommended by Postgres Language Server. `true` by default.
+            #[serde(skip_serializing_if = "Option::is_none")]
+            pub recommended: Option<bool>,
+
+            /// It enables ALL rules. The rules that belong to `nursery` won't be enabled.
+            #[serde(skip_serializing_if = "Option::is_none")]
+            pub all: Option<bool>,
+
+            #( #rule_fields, )*
+
+            /// Deprecated: configure rules directly in `linter.rules`, and groups in
+            /// `linter.groups`.
+            #[serde(skip_serializing_if = "Option::is_none")]
+            pub safety: Option<LegacySafetyRules>,
+        }
+
+        impl Rules {
+            /// The level configured for a rule, if any.
+            pub fn rule_level(&self, rule: &str) -> Option<RulePlainConfiguration> {
+                match rule {
+                    #( #level_arms, )*
+                    _ => None,
+                }
+            }
+
+            /// The options configured for a rule, if any.
+            pub fn rule_options(&self, rule: &str) -> Option<RuleOptions> {
+                match rule {
+                    #( #options_arms, )*
+                    _ => None,
+                }
+            }
+        }
+
+        /// The former `linter.rules.safety` group, which contained all rules.
+        #[derive(Clone, Debug, Default, Deserialize, Eq, Merge, PartialEq, Serialize)]
+        #[cfg_attr(feature = "schema", derive(JsonSchema))]
+        #[serde(rename_all = "camelCase", deny_unknown_fields)]
+        pub struct LegacySafetyRules {
+            #[serde(skip_serializing_if = "Option::is_none")]
+            pub recommended: Option<bool>,
+
+            #[serde(skip_serializing_if = "Option::is_none")]
+            pub all: Option<bool>,
+
+            #( #legacy_fields, )*
+        }
+
+        impl LegacySafetyRules {
+            /// The level configured for a rule, if any.
+            pub fn rule_level(&self, rule: &str) -> Option<RulePlainConfiguration> {
+                match rule {
+                    #( #legacy_level_arms, )*
+                    _ => None,
+                }
+            }
+
+            /// The options configured for a rule, if any.
+            pub fn rule_options(&self, rule: &str) -> Option<RuleOptions> {
+                match rule {
+                    #( #options_arms, )*
+                    _ => None,
+                }
+            }
+
+            /// The names of all rules configured here.
+            pub fn configured_rules(&self) -> Vec<&'static str> {
+                let mut rules = Vec::new();
+                #( #configured_legacy_rules )*
+                rules
+            }
+        }
+
+        /// The level of all rules of a group, unless a rule is configured individually.
+        #[derive(Clone, Debug, Default, Deserialize, Eq, Merge, PartialEq, Serialize)]
+        #[cfg_attr(feature = "schema", derive(JsonSchema))]
+        #[cfg_attr(feature = "schema", schemars(rename = "LinterGroups"))]
+        #[serde(rename_all = "camelCase", default, deny_unknown_fields)]
+        pub struct Groups {
+            #( #group_fields, )*
+        }
+
+        impl Groups {
+            /// The level configured for a group, if any.
+            pub fn level(&self, group: &str) -> Option<RulePlainConfiguration> {
+                match group {
+                    #( #group_level_arms, )*
+                    _ => None,
+                }
+            }
+        }
+    };
+
+    crate::reformat(content.to_string())
+}
+
+fn severity_tokens(severity: Severity) -> TokenStream {
+    match severity {
+        Severity::Hint => quote! { Severity::Hint },
+        Severity::Information => quote! { Severity::Information },
+        Severity::Warning => quote! { Severity::Warning },
+        Severity::Error => quote! { Severity::Error },
+        Severity::Fatal => quote! { Severity::Fatal },
+    }
+}
+
 /// Generate the rules.rs file for a Lint tool
 fn generate_lint_rules_file(
     tool: &ToolConfig,
     groups: BTreeMap<&'static str, BTreeMap<&'static str, RuleMetadata>>,
 ) -> Result<String> {
+    if tool.name == "linter" {
+        return generate_flat_linter_rules_file(groups);
+    }
     let mut struct_groups = Vec::with_capacity(groups.len());
     let mut group_pascal_idents = Vec::with_capacity(groups.len());
     let mut group_idents = Vec::with_capacity(groups.len());

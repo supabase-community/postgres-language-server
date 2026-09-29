@@ -1,17 +1,16 @@
 ---
-source: crates/pgt_analyser/tests/rules_tests.rs
+source: crates/pgls_analyser/tests/rules_tests.rs
 expression: snapshot
-snapshot_kind: text
 ---
 # Input
 ```
--- expect_lint/safety/addingFieldWithDefault
+-- expect_lint/addingFieldWithDefault
 ALTER TABLE users ADD COLUMN created_at timestamp DEFAULT now();
 
 ```
 
 # Diagnostics
-lint/safety/addingFieldWithDefault ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+lint/addingFieldWithDefault ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   × Adding a column with a DEFAULT value causes a table rewrite.
   

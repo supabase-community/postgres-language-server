@@ -12,5 +12,7 @@ pub use crate::categories::{
     SUPPRESSION_ACTION_CATEGORY, SourceActionKind,
 };
 pub use crate::filter::{AnalysisFilter, GroupKey, RuleFilter, RuleKey};
-pub use crate::metadata::{GroupCategory, RuleGroup, RuleMeta, RuleMetadata, RuleSource};
+pub use crate::metadata::{
+    AppliesTo, GroupCategory, RuleGroup, RuleMeta, RuleMetadata, RuleSource,
+};
 pub use crate::registry::{MetadataRegistry, RegistryVisitor};

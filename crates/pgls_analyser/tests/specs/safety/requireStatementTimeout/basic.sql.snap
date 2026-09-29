@@ -4,13 +4,13 @@ expression: snapshot
 ---
 # Input
 ```
--- expect_lint/safety/requireStatementTimeout
+-- expect_lint/requireStatementTimeout
 ALTER TABLE users ADD COLUMN email TEXT;
 
 ```
 
 # Diagnostics
-lint/safety/requireStatementTimeout ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+lint/requireStatementTimeout ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   × Statement takes a dangerous lock without a statement_timeout set.
   

@@ -1,0 +1,20 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+SELECT 1;
+-- expect_lint/transactionNesting
+ROLLBACK;
+
+```
+
+# Diagnostics
+lint/transactionNesting ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Attempting to end transaction managed by migration tool.
+  
+  i Migration tools manage transactions automatically. Remove explicit transaction control.
+  
+  i Put migration statements in separate files to have them be in separate transactions.
