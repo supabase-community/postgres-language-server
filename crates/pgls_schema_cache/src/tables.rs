@@ -71,6 +71,8 @@ pub struct Table {
     pub live_rows_estimate: i64,
     pub dead_rows_estimate: i64,
     pub comment: Option<String>,
+    /// Whether the table is a partition or inherits from another table.
+    pub is_inheritance_child: bool,
 }
 
 #[cfg(feature = "db")]

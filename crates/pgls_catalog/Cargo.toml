@@ -11,6 +11,7 @@ repository.workspace = true
 version              = "0.0.0"
 
 [dependencies]
+globset           = "0.4.16"
 pgls_query        = { workspace = true }
 pgls_schema_cache = { workspace = true, default-features = false }
 pgls_text_size    = { workspace = true }

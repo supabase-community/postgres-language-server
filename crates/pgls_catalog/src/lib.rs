@@ -5,11 +5,14 @@
 //! - [`resolve`]: name resolution of a single statement against a [`CatalogView`].
 
 mod catalog;
+mod column_name;
 pub mod resolve;
+mod search_path;
 mod session;
 mod view;
 
 pub use catalog::{Catalog, CatalogBase};
+pub use search_path::expand_search_path;
 pub use session::{Session, is_reindex_concurrent, is_vacuum_full};
 pub use view::{
     CatalogView, ColumnInfo, FunctionInfo, FunctionKind, Lookup, Origin, RelationInfo,

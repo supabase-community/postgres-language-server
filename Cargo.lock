@@ -937,6 +937,7 @@ dependencies = [
  "convert_case",
  "pgls_analyse",
  "pgls_analyser",
+ "pgls_catalog",
  "pgls_cli",
  "pgls_configuration",
  "pgls_console",
@@ -2390,6 +2391,7 @@ version = "0.0.0"
 dependencies = [
  "insta",
  "pgls_analyse",
+ "pgls_catalog",
  "pgls_console",
  "pgls_diagnostics",
  "pgls_query",
@@ -2399,6 +2401,7 @@ dependencies = [
  "pgls_test_macros",
  "pgls_text_size",
  "rustc-hash",
+ "schemars",
  "serde",
  "termcolor",
 ]
@@ -2407,6 +2410,7 @@ dependencies = [
 name = "pgls_catalog"
 version = "0.0.0"
 dependencies = [
+ "globset",
  "insta",
  "pgls_query",
  "pgls_schema_cache",
@@ -2845,6 +2849,7 @@ name = "pgls_suppressions"
 version = "0.0.0"
 dependencies = [
  "pgls_analyse",
+ "pgls_analyser",
  "pgls_diagnostics",
  "pgls_text_size",
  "tracing",
@@ -2939,7 +2944,6 @@ name = "pgls_typecheck"
 version = "0.0.0"
 dependencies = [
  "criterion",
- "globset",
  "insta",
  "itertools 0.14.0",
  "once_cell",
@@ -2989,6 +2993,7 @@ dependencies = [
  "lru",
  "pgls_analyse",
  "pgls_analyser",
+ "pgls_catalog",
  "pgls_completions",
  "pgls_configuration",
  "pgls_console",
@@ -3583,6 +3588,7 @@ dependencies = [
  "anyhow",
  "pgls_analyse",
  "pgls_analyser",
+ "pgls_catalog",
  "pgls_console",
  "pgls_diagnostics",
  "pgls_query",
