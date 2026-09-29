@@ -15,7 +15,15 @@ select
   pg_size_pretty(relation_size) as "size!",
   pg_stat_get_live_tuples(c.oid) as "live_rows_estimate!",
   pg_stat_get_dead_tuples(c.oid) as "dead_rows_estimate!",
-  obj_description(c.oid) as comment
+  obj_description(c.oid) as comment,
+  exists (
+    select
+      1
+    from
+      pg_inherits i
+    where
+      i.inhrelid = c.oid
+  ) as "is_inheritance_child!"
 from
   pg_namespace nc
   join pg_class c on nc.oid = c.relnamespace
