@@ -14,6 +14,8 @@ pub enum LineType {
     SoftOrSpace,
     /// Break only when the next item would exceed the configured line width.
     Fill,
+    /// Like `Fill`, but disappears instead of becoming a space when the item fits.
+    FillNoSpace,
 }
 
 #[derive(Debug, Clone, PartialEq)]
