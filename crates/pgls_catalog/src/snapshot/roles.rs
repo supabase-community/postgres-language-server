@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 #[cfg(feature = "db")]
 use super::SnapshotItem;
 
-#[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct Role {
     pub name: String,
@@ -40,7 +40,7 @@ mod tests {
     async fn loads_roles(test_db: PgPool) {
         let cache = Snapshot::load(&test_db)
             .await
-            .expect("Failed to load Schema Cache");
+            .expect("Failed to load snapshot");
 
         let roles = &cache.roles;
 
@@ -73,7 +73,7 @@ mod tests {
 
         let cache = Snapshot::load(&test_db)
             .await
-            .expect("Failed to load Schema Cache");
+            .expect("Failed to load snapshot");
 
         let roles = &cache.roles;
 

@@ -28,7 +28,7 @@ impl TestSetup<'_> {
 
         let snapshot = pgls_catalog::Snapshot::load(self.test_db)
             .await
-            .expect("Failed to load Schema Cache");
+            .expect("Failed to load snapshot");
 
         let root = pgls_query::parse(self.query)
             .unwrap()

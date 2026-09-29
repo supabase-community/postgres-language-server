@@ -111,7 +111,7 @@ impl TestSetup<'_> {
 
         let snapshot = Snapshot::load(self.test_db)
             .await
-            .expect("Failed to load schema cache");
+            .expect("Failed to load snapshot");
 
         let cache = PglinterCache::load(self.test_db, &snapshot)
             .await
@@ -213,7 +213,7 @@ async fn extension_check(test_db: PgPool) {
 
     let snapshot = Snapshot::load(&test_db)
         .await
-        .expect("Failed to load schema cache");
+        .expect("Failed to load snapshot");
 
     assert!(
         snapshot.extensions.iter().any(|e| e.name == "pglinter"),

@@ -13,7 +13,7 @@ use pgls_query::{NodeEnum, protobuf};
 use protobuf::ObjectType;
 
 use super::{
-    Catalog, Entry, Key, Snapshot,
+    Catalog, Entry, Key, Savepoint,
     base::sequence_columns,
     key,
     names::{QualifiedName, qualified_name, range_var_name, string_value, type_label, type_name},
@@ -90,48 +90,48 @@ impl Catalog {
         match stmt.kind() {
             Kind::TransStmtBegin | Kind::TransStmtStart => {
                 // A nested BEGIN only warns.
-                if self.snapshots.is_empty() {
-                    self.push_snapshot(None);
+                if self.savepoints.is_empty() {
+                    self.push_savepoint(None);
                 }
             }
-            Kind::TransStmtSavepoint => self.push_snapshot(Some(stmt.savepoint_name.clone())),
+            Kind::TransStmtSavepoint => self.push_savepoint(Some(stmt.savepoint_name.clone())),
             Kind::TransStmtRelease => {
                 if let Some(position) = self.savepoint_position(&stmt.savepoint_name) {
-                    self.snapshots.truncate(position);
+                    self.savepoints.truncate(position);
                 }
             }
             Kind::TransStmtRollbackTo => {
                 if let Some(position) = self.savepoint_position(&stmt.savepoint_name) {
-                    let snapshots = self.snapshots[..=position].to_vec();
-                    *self = *snapshots[position].catalog.clone();
-                    self.snapshots = snapshots;
+                    let savepoints = self.savepoints[..=position].to_vec();
+                    *self = *savepoints[position].catalog.clone();
+                    self.savepoints = savepoints;
                 }
             }
             Kind::TransStmtRollback | Kind::TransStmtRollbackPrepared => {
-                if let Some(snapshot) = self.snapshots.first().cloned() {
-                    *self = *snapshot.catalog;
+                if let Some(savepoint) = self.savepoints.first().cloned() {
+                    *self = *savepoint.catalog;
                 }
             }
             Kind::TransStmtCommit | Kind::TransStmtCommitPrepared | Kind::TransStmtPrepare => {
-                self.snapshots.clear();
+                self.savepoints.clear();
             }
             _ => {}
         }
     }
 
-    fn push_snapshot(&mut self, savepoint: Option<String>) {
+    fn push_savepoint(&mut self, name: Option<String>) {
         let mut catalog = self.clone();
-        catalog.snapshots.clear();
-        self.snapshots.push(Snapshot {
-            savepoint,
+        catalog.savepoints.clear();
+        self.savepoints.push(Savepoint {
+            name,
             catalog: Box::new(catalog),
         });
     }
 
     fn savepoint_position(&self, name: &str) -> Option<usize> {
-        self.snapshots
+        self.savepoints
             .iter()
-            .rposition(|snapshot| snapshot.savepoint.as_deref() == Some(name))
+            .rposition(|savepoint| savepoint.name.as_deref() == Some(name))
     }
 
     // ----- schemas -----

@@ -151,7 +151,7 @@ pub async fn run_pglinter(
             continue;
         }
 
-        // Resolve the object from the schema cache
+        // Resolve the object from the database snapshot
         let db_object = resolve_object_from_cache(
             params.snapshot,
             violation.classid,
@@ -182,7 +182,7 @@ async fn fetch_violations(conn: &PgPool) -> Result<Vec<ViolationRow>, sqlx::Erro
     .await
 }
 
-/// Resolve a Postgres object from the schema cache using its catalog OIDs
+/// Resolve a Postgres object from the database snapshot using its catalog OIDs
 fn resolve_object_from_cache(
     snapshot: &Snapshot,
     classid: i64,

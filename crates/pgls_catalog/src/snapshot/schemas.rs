@@ -5,7 +5,7 @@ use sqlx::PgPool;
 #[cfg(feature = "db")]
 use super::SnapshotItem;
 
-#[derive(Debug, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct Schema {
     pub id: i64,

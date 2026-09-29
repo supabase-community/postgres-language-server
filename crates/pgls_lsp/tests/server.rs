@@ -493,7 +493,7 @@ async fn test_database_connection(test_db: PgPool) -> Result<()> {
         .open_document("select unknown from public.users; ")
         .await?;
 
-    // in this test, we want to ensure a database connection is established and the schema cache is
+    // in this test, we want to ensure a database connection is established and the snapshot is
     // loaded. This is the case when the server sends typecheck diagnostics for the query above.
     // so we wait for diagnostics to be sent.
     let notification = tokio::time::timeout(Duration::from_secs(5), async {

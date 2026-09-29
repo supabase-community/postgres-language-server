@@ -56,7 +56,7 @@ impl From<i8> for TableKind {
     }
 }
 
-#[derive(Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct Table {
     pub id: i64,
@@ -112,7 +112,7 @@ mod tests {
 
         let cache = Snapshot::load(&test_db)
             .await
-            .expect("Failed to load Schema Cache");
+            .expect("Failed to load snapshot");
 
         let view = cache
             .tables
@@ -143,7 +143,7 @@ mod tests {
 
         let cache = Snapshot::load(&test_db)
             .await
-            .expect("Failed to load Schema Cache");
+            .expect("Failed to load snapshot");
 
         let mat_view = cache
             .tables

@@ -41,7 +41,7 @@ impl From<Option<JsonValue>> for Enums {
     }
 }
 
-#[derive(Debug, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct PostgresType {
     pub id: i64,

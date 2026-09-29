@@ -638,3 +638,105 @@ fn column_changes_make_database_children_unknown() {
         .unwrap();
     assert!(child.columns.is_none());
 }
+
+fn table_columns(snapshot: &Snapshot, schema: &str, table: &str) -> Vec<String> {
+    let mut columns: Vec<_> = snapshot
+        .columns
+        .iter()
+        .filter(|column| column.schema_name == schema && column.table_name == table)
+        .collect();
+    columns.sort_by_key(|column| column.number);
+    columns.iter().map(|column| column.name.clone()).collect()
+}
+
+#[test]
+fn snapshot_without_changes_is_the_database_snapshot() {
+    let base = base();
+    let catalog = Catalog::new(Some(Arc::clone(&base)));
+    assert!(Arc::ptr_eq(&catalog.snapshot().unwrap(), base.snapshot()));
+    assert!(Catalog::new(None).snapshot().is_none());
+}
+
+#[test]
+fn snapshot_includes_the_changes_of_the_file() {
+    let search_path = path(&["public"]);
+    let catalog = catalog_after(
+        "create schema reporting;
+         create table reporting.daily (day date, total int8);
+         alter table users add column email text;
+         alter table users drop column name;
+         create type mood as enum ('happy', 'sad');
+         create function shout(text) returns text language sql as 'select $1';
+         create sequence counter;",
+        &search_path,
+    );
+    let snapshot = catalog.snapshot().unwrap();
+
+    assert!(
+        snapshot
+            .schemas
+            .iter()
+            .any(|schema| schema.name == "reporting")
+    );
+    let daily = snapshot
+        .tables
+        .iter()
+        .find(|table| table.name == "daily")
+        .unwrap();
+    assert_eq!(daily.schema, "reporting");
+    assert!(daily.id < 0);
+    assert_eq!(
+        table_columns(&snapshot, "reporting", "daily"),
+        ["day", "total"]
+    );
+
+    // Columns that stay keep their database definition.
+    assert_eq!(table_columns(&snapshot, "public", "users"), ["id", "email"]);
+    let id = snapshot
+        .columns
+        .iter()
+        .find(|column| column.table_name == "users" && column.name == "id")
+        .unwrap();
+    assert_eq!(id.table_oid, 1);
+    assert_eq!(id.type_id, 25);
+
+    assert!(snapshot.types.iter().any(|type_| type_.name == "mood"));
+    assert!(
+        snapshot
+            .functions
+            .iter()
+            .any(|function| function.name == "shout")
+    );
+    assert!(
+        snapshot
+            .functions
+            .iter()
+            .any(|function| function.name == "greet")
+    );
+    assert!(
+        snapshot
+            .sequences
+            .iter()
+            .any(|sequence| sequence.name == "counter")
+    );
+}
+
+#[test]
+fn snapshot_excludes_dropped_objects() {
+    let search_path = path(&["public"]);
+    let catalog = catalog_after(
+        "drop table users; drop function greet; drop schema app;",
+        &search_path,
+    );
+    let snapshot = catalog.snapshot().unwrap();
+    assert!(snapshot.tables.is_empty());
+    assert!(snapshot.columns.is_empty());
+    assert!(snapshot.functions.is_empty());
+    assert!(!snapshot.schemas.iter().any(|schema| schema.name == "app"));
+
+    let catalog = catalog_after("alter table users rename to people;", &search_path);
+    let snapshot = catalog.snapshot().unwrap();
+    let tables: Vec<_> = snapshot.tables.iter().map(|table| &table.name).collect();
+    assert_eq!(tables, ["people"]);
+    assert_eq!(table_columns(&snapshot, "public", "people"), ["id", "name"]);
+}

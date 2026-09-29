@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use super::SnapshotItem;
 use strum::{EnumIter, IntoEnumIterator};
 
-#[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub enum TriggerAffected {
     Row,
@@ -22,7 +22,7 @@ impl From<i16> for TriggerAffected {
     }
 }
 
-#[derive(Debug, PartialEq, Eq, EnumIter, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, EnumIter, Serialize, Deserialize)]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub enum TriggerEvent {
     Insert,
@@ -52,7 +52,7 @@ impl From<i16> for TriggerEvents {
     }
 }
 
-#[derive(Debug, PartialEq, Eq, EnumIter, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, EnumIter, Serialize, Deserialize)]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub enum TriggerTiming {
     Before,
@@ -94,7 +94,7 @@ pub struct TriggerQueried {
     details_bitmask: i16,
 }
 
-#[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct Trigger {
     pub name: String,
@@ -184,7 +184,7 @@ mod tests {
 
         let cache = Snapshot::load(&test_db)
             .await
-            .expect("Failed to load Schema Cache");
+            .expect("Failed to load snapshot");
 
         let triggers: Vec<_> = cache
             .triggers
@@ -273,7 +273,7 @@ mod tests {
 
         let cache = Snapshot::load(&test_db)
             .await
-            .expect("Failed to load Schema Cache");
+            .expect("Failed to load snapshot");
 
         let triggers: Vec<_> = cache
             .triggers
