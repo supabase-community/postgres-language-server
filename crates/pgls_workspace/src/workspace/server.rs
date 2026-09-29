@@ -12,17 +12,19 @@ use analyser::AnalyserVisitorBuilder;
 use async_helper::run_async;
 #[cfg(feature = "db")]
 use connection_manager::ConnectionManager;
-use document::{CursorPositionFilter, DefaultMapper, Document, FormatStatementMapper};
 #[cfg(feature = "db")]
-use document::{ExecuteStatementMapper, TypecheckDiagnosticsMapper};
+use document::TypecheckDiagnosticsMapper;
+use document::{
+    CursorPositionFilter, DefaultMapper, Document, ExecuteStatementMapper, FormatStatementMapper,
+};
 #[cfg(feature = "db")]
 use futures::{StreamExt, TryStreamExt, stream};
 #[cfg(feature = "db")]
 use pg_query::convert_to_positional_params_with_metadata;
 use pgls_analyse::AnalysisFilter;
-use pgls_analyser::{
-    Analyser, AnalyserConfig, AnalyserParams, FileKind, LinterOptions, StatementAnalysis,
-};
+#[cfg(feature = "db")]
+use pgls_analyser::StatementAnalysis;
+use pgls_analyser::{Analyser, AnalyserConfig, AnalyserParams, FileKind, LinterOptions};
 use pgls_catalog::{Catalog, CatalogBase, Session};
 
 use pgls_catalog::Snapshot;
