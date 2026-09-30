@@ -532,6 +532,7 @@ fn generate_flat_linter_rules_file(
             /// Deprecated: configure rules directly in `linter.rules`, and groups in
             /// `linter.groups`.
             #[serde(skip_serializing_if = "Option::is_none")]
+            #[deprecated = "Configure rules directly in `linter.rules`, and groups in `linter.groups`."]
             pub safety: Option<LegacySafetyRules>,
         }
 
@@ -556,6 +557,8 @@ fn generate_flat_linter_rules_file(
         /// The former `linter.rules.safety` group, which contained all rules.
         #[derive(Clone, Debug, Default, Deserialize, Eq, Merge, PartialEq, Serialize)]
         #[cfg_attr(feature = "schema", derive(JsonSchema))]
+        // Keeps the name of the former group in the JSON schema and the TypeScript bindings.
+        #[cfg_attr(feature = "schema", schemars(rename = "Safety"))]
         #[serde(rename_all = "camelCase", deny_unknown_fields)]
         pub struct LegacySafetyRules {
             #[serde(skip_serializing_if = "Option::is_none")]

@@ -56,7 +56,7 @@ alter table tasks drop column created_at;
 
 ## Backward Compatibility
 
-Legacy `lint/<group>/<rule>` and `lint/<group>` forms still work, as does the legacy `pgt-ignore` comment prefix. Removed rule names `preferBigintOverInt` and `preferBigintOverSmallint` map to `preferBigInt`. Flat forms are recommended for new suppressions.
+Legacy `lint/<group>/<rule>` and `lint/<group>` forms still work, but report a deprecation warning that names the flat form. `lint/safety` keeps its former meaning: it suppresses every lint rule, like `lint`, because all rules used to be in that group. Use `safety` for today's safety group. Removed rule names `preferBigintOverInt` and `preferBigintOverSmallint` map to `preferBigInt`, also with a warning. The legacy `pgt-ignore` comment prefix still works.
 
 ## Notes
 
