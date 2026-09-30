@@ -77,7 +77,10 @@ impl<'a> SuppressionsParser<'a> {
             let offset = self.line_index.offset_for_line(idx).unwrap();
 
             match Suppression::from_line(line, offset) {
-                Ok(suppr) => self.file_suppressions.push(suppr),
+                Ok(suppr) => {
+                    self.diagnostics.extend(suppr.to_legacy_diagnostic());
+                    self.file_suppressions.push(suppr);
+                }
                 Err(diag) => self.diagnostics.push(diag),
             }
         }
@@ -99,6 +102,7 @@ impl<'a> SuppressionsParser<'a> {
                     continue;
                 }
             };
+            self.diagnostics.extend(suppr.to_legacy_diagnostic());
 
             match suppr.kind {
                 SuppressionKind::File => {
@@ -252,7 +256,7 @@ SELECT 1;
 -- pgt-ignore-all typecheck
 
 SELECT 1;
--- pgt-ignore-all lint/safety
+-- pgt-ignore-all safety
 "#;
 
         let suppressions = SuppressionsParser::parse(doc);
@@ -302,6 +306,7 @@ drop table posts;
                     ),
                     suppression_range: TextRange::new(1.into(), 33.into()),
                     explanation: None,
+                    legacy_replacement: None,
                 },
             }
         );
@@ -347,6 +352,7 @@ drop table posts;
                     ),
                     suppression_range: TextRange::new(52.into(), 84.into()),
                     explanation: None,
+                    legacy_replacement: None,
                 },
             }
         );
@@ -397,7 +403,7 @@ SELECT 2;
 -- pgls-ignore-all typecheck
 
 SELECT 1;
--- pgls-ignore-all lint/safety
+-- pgls-ignore-all safety
 "#;
 
         let suppressions = SuppressionsParser::parse(doc);

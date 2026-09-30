@@ -118,7 +118,7 @@ fn test_suppresses_multiline_alter_table_drop_column() {
 
     let path = PgLSPath::new("test.sql");
     let content = r#"ALTER TABLE users
-    -- pgt-ignore lint/safety/banDropColumn
+    -- pgt-ignore banDropColumn
     DROP COLUMN deprecated_field;"#;
 
     workspace
@@ -143,6 +143,47 @@ fn test_suppresses_multiline_alter_table_drop_column() {
     assert!(
         diagnostics.is_empty(),
         "Expected no diagnostics, got {diagnostics:#?}"
+    );
+}
+
+#[test]
+fn test_legacy_suppression_still_suppresses_and_warns() {
+    let workspace = get_test_workspace(None).expect("Unable to create test workspace");
+
+    let path = PgLSPath::new("test.sql");
+    let content = r#"-- pgls-ignore lint/safety/banDropColumn
+ALTER TABLE users DROP COLUMN deprecated_field;"#;
+
+    workspace
+        .open_file(OpenFileParams {
+            path: path.clone(),
+            content: content.into(),
+            version: 1,
+        })
+        .expect("Unable to open test file");
+
+    let diagnostics = workspace
+        .pull_file_diagnostics(crate::workspace::PullFileDiagnosticsParams {
+            path: path.clone(),
+            categories: RuleCategories::all(),
+            max_diagnostics: 100,
+            only: vec![],
+            skip: vec![],
+        })
+        .expect("Unable to pull diagnostics")
+        .diagnostics;
+
+    assert!(
+        !diagnostics
+            .iter()
+            .any(|d| d.category().map(|c| c.name()) == Some("lint/banDropColumn")),
+        "{diagnostics:#?}"
+    );
+    assert!(
+        diagnostics
+            .iter()
+            .any(|d| d.description_text().contains("Use `banDropColumn` instead")),
+        "{diagnostics:#?}"
     );
 }
 

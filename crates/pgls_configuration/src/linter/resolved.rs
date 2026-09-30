@@ -7,6 +7,9 @@
 //! 3. `linter.groups.<group>`
 //! 4. the presets `linter.rules.all` and `linter.rules.recommended` (never enabling `nursery`)
 
+// This module reads the deprecated settings.
+#![allow(deprecated)]
+
 use pgls_analyse::{MetadataRegistry, RuleFilter};
 use pgls_analyser::{LinterRules, RuleOptions};
 use pgls_diagnostics::{Category, Severity};

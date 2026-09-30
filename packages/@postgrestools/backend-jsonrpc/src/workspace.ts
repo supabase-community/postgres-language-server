@@ -943,7 +943,7 @@ export interface LinterRules {
   /**
    * Deprecated: configure rules directly in `linter.rules`, and groups in `linter.groups`.
    */
-  safety?: LegacySafetyRules;
+  safety?: Safety;
   /**
    * Detects problematic transaction nesting that could lead to unexpected behavior.
    */
@@ -1003,7 +1003,7 @@ export type RuleConfiguration_for_PreferBigIntOptions =
 /**
  * The former `linter.rules.safety` group, which contained all rules.
  */
-export interface LegacySafetyRules {
+export interface Safety {
   addSerialColumn?: RuleConfiguration_for_Null;
   addingFieldWithDefault?: RuleConfiguration_for_Null;
   addingForeignKeyConstraint?: RuleConfiguration_for_Null;

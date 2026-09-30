@@ -99,18 +99,34 @@ impl From<&Category> for RuleSpecifier {
     }
 }
 
+/// The name of a rule that was merged into another rule.
+fn removed(rule: &str) -> &str {
+    match rule {
+        "preferBigintOverInt" | "preferBigintOverSmallint" => "preferBigInt",
+        other => other,
+    }
+}
+
+/// The flat form of a specifier from before rule IDs were flat, if `value` is one.
+///
+/// All rules used to be in `lint/safety`, so `lint/safety` stands for every lint rule. The
+/// `safety` group of today is written without the `lint/` prefix.
+fn legacy_replacement(value: &str) -> Option<String> {
+    match value.split('/').collect::<Vec<_>>().as_slice() {
+        ["lint", "safety"] => Some("lint".into()),
+        ["lint", group] if is_lint_group(group) => Some((*group).into()),
+        ["lint", _group, rule] => Some(removed(rule).into()),
+        ["lint", rule] | [rule] if removed(rule) != *rule => Some(removed(rule).into()),
+        _ => None,
+    }
+}
+
 impl TryFrom<&str> for RuleSpecifier {
     type Error = String;
 
     fn try_from(value: &str) -> Result<Self, Self::Error> {
         let invalid = || "Invalid rule.".to_string();
         let parts: Vec<_> = value.split('/').collect();
-        fn removed(rule: &str) -> &str {
-            match rule {
-                "preferBigintOverInt" | "preferBigintOverSmallint" => "preferBigInt",
-                other => other,
-            }
-        }
         match parts.as_slice() {
             ["lint"] => Ok(Self::Category("lint".into())),
             ["lint", group] if is_lint_group(group) => {
@@ -157,6 +173,8 @@ pub(crate) struct Suppression {
     pub(crate) rule_specifier: RuleSpecifier,
     #[allow(unused)]
     pub(crate) explanation: Option<String>,
+    /// The flat form of a legacy specifier.
+    pub(crate) legacy_replacement: Option<String>,
 }
 
 impl Suppression {
@@ -215,17 +233,32 @@ impl Suppression {
             }
         };
 
-        let rule_specifier =
-            RuleSpecifier::try_from(specifier_str).map_err(|e| SuppressionDiagnostic {
+        let legacy_replacement = legacy_replacement(specifier_str);
+        let rule_specifier = match legacy_replacement.as_deref() {
+            Some("lint") => RuleSpecifier::Category("lint".into()),
+            _ => RuleSpecifier::try_from(specifier_str).map_err(|e| SuppressionDiagnostic {
                 span,
                 message: MessageAndDescription::from(e),
-            })?;
+            })?,
+        };
 
         Ok(Self {
             rule_specifier,
             kind,
             suppression_range: span,
             explanation: explanation.map(|e| e.to_string()),
+            legacy_replacement,
+        })
+    }
+
+    /// A deprecation warning if the suppression uses a legacy specifier.
+    pub(crate) fn to_legacy_diagnostic(&self) -> Option<SuppressionDiagnostic> {
+        let replacement = self.legacy_replacement.as_ref()?;
+        Some(SuppressionDiagnostic {
+            span: self.suppression_range,
+            message: MessageAndDescription::from(format!(
+                "This rule specifier is deprecated. Use `{replacement}` instead."
+            )),
         })
     }
 
@@ -308,7 +341,7 @@ mod tests {
 
     #[test]
     fn test_suppression_from_line_group() {
-        let line = "-- pgt-ignore lint/safety: explanation";
+        let line = "-- pgt-ignore safety: explanation";
         let offset = &TextSize::new(0);
         let suppression = Suppression::from_line(line, offset).unwrap();
 
@@ -494,6 +527,56 @@ mod tests {
     }
 
     #[test]
+    fn legacy_specifiers_are_deprecated() {
+        let cases = [
+            (
+                "-- pgls-ignore lint/safety/banDropColumn",
+                Some("banDropColumn"),
+            ),
+            (
+                "-- pgls-ignore lint/destructive/banDropColumn",
+                Some("banDropColumn"),
+            ),
+            ("-- pgls-ignore preferBigintOverInt", Some("preferBigInt")),
+            (
+                "-- pgls-ignore lint/preferBigintOverSmallint",
+                Some("preferBigInt"),
+            ),
+            ("-- pgls-ignore lint/safety", Some("lint")),
+            ("-- pgls-ignore lint/destructive", Some("destructive")),
+            ("-- pgls-ignore banDropColumn", None),
+            ("-- pgls-ignore lint/banDropColumn", None),
+            ("-- pgls-ignore safety", None),
+            ("-- pgls-ignore lint", None),
+            ("-- pgls-ignore typecheck", None),
+        ];
+        for (line, replacement) in cases {
+            let suppression = Suppression::from_line(line, &TextSize::new(0)).unwrap();
+            assert_eq!(
+                suppression.legacy_replacement.as_deref(),
+                replacement,
+                "{line}"
+            );
+            assert_eq!(
+                suppression.to_legacy_diagnostic().is_some(),
+                replacement.is_some(),
+                "{line}"
+            );
+        }
+    }
+
+    #[test]
+    fn legacy_safety_group_suppresses_every_lint_rule() {
+        // All rules used to be in `lint/safety`.
+        let legacy =
+            Suppression::from_line("-- pgls-ignore lint/safety", &TextSize::new(0)).unwrap();
+        let group = Suppression::from_line("-- pgls-ignore safety", &TextSize::new(0)).unwrap();
+        let destructive = RuleSpecifier::try_from("lint/banDropColumn").unwrap();
+        assert!(legacy.matches(&destructive));
+        assert!(!group.matches(&destructive));
+    }
+
+    #[test]
     fn typecheck_specifier_matches_category_and_lint_group() {
         let category = RuleSpecifier::try_from("typecheck").unwrap();
         let group = RuleSpecifier::try_from("lint/typecheck").unwrap();
@@ -570,7 +653,7 @@ mod tests {
 
     #[test]
     fn test_pgls_prefix_file_kind() {
-        let line = "-- pgls-ignore-all lint/safety: explanation";
+        let line = "-- pgls-ignore-all safety: explanation";
         let offset = &TextSize::new(0);
         let suppression = Suppression::from_line(line, offset).unwrap();
 
