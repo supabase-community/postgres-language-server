@@ -73,7 +73,7 @@ Groups let you set a level for all rules in the group at once:
 }
 ```
 
-Available groups: `correctness`, `safety`, `destructive`, `style`, `security`, `typecheck`, `nursery`.
+Available groups: `correctness`, `safety`, `destructive`, `style`, `typecheck`, `nursery`.
 
 ### Presets
 
@@ -81,7 +81,10 @@ Available groups: `correctness`, `safety`, `destructive`, `style`, `security`, `
 
 ### Typecheck group
 
-`typecheck.enabled` switches the `typecheck` group on or off. Rules in this group require a database connection.
+The rules in the `typecheck` group need a database connection. Two settings affect them:
+
+- `typecheck.enabled: false` turns typechecking off entirely: the `typecheck` rules and the `EXPLAIN`-based check against the database.
+- `linter.groups.typecheck` sets the level of the `typecheck` rules, like any other group. Setting it to `"off"` turns the rules off, but leaves the `EXPLAIN`-based check on.
 
 ### Precedence
 

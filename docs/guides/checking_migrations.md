@@ -31,6 +31,8 @@ postgres-language-server check supabase/migrations --migrations-dir="supabase/mi
 
 This will only check migrations after the specified migration id.
 
+Setting `migrationsDir` also limits where migration-only rules run, such as most rules in the `safety` and `destructive` groups. Files outside the directory are still linted, but skip these rules. Without `migrationsDir`, every rule runs on every file. The [rules reference](../reference/rules.md) marks which rules are migration-only.
+
 !!! note
     The prefix format depends on your migration tool:
 

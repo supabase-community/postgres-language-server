@@ -373,7 +373,6 @@ pub const LINTER_GROUPS: &[&str] = &[
     "safety",
     "destructive",
     "style",
-    "security",
     "typecheck",
     "nursery",
 ];
@@ -1017,7 +1016,7 @@ impl Rules {
         }
     }
 }
-#[doc = r" The former `linter.rules.safety` group, which contained all rules."]
+#[doc = r" The former `linter.rules.safety` group, which contained all rules at the time."]
 #[derive(Clone, Debug, Default, Deserialize, Eq, Merge, PartialEq, Serialize)]
 #[cfg_attr(feature = "schema", derive(JsonSchema))]
 #[cfg_attr(feature = "schema", schemars(rename = "Safety"))]
@@ -1044,8 +1043,6 @@ pub struct LegacySafetyRules {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub adding_required_field:
         Option<RuleConfiguration<pgls_analyser::options::AddingRequiredField>>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub ambiguous_column: Option<RuleConfiguration<pgls_analyser::options::AmbiguousColumn>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub avoid_adding_exclusion_constraint:
         Option<RuleConfiguration<pgls_analyser::options::AvoidAddingExclusionConstraint>>,
@@ -1103,16 +1100,7 @@ pub struct LegacySafetyRules {
     pub disallow_unique_constraint:
         Option<RuleConfiguration<pgls_analyser::options::DisallowUniqueConstraint>>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub insert_column_mismatch:
-        Option<RuleConfiguration<pgls_analyser::options::InsertColumnMismatch>>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub invalid_drop_type_signature:
-        Option<RuleConfiguration<pgls_analyser::options::InvalidDropTypeSignature>>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub lock_timeout_warning: Option<RuleConfiguration<pgls_analyser::options::LockTimeoutWarning>>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub missing_from_clause_entry:
-        Option<RuleConfiguration<pgls_analyser::options::MissingFromClauseEntry>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub multiple_alter_table: Option<RuleConfiguration<pgls_analyser::options::MultipleAlterTable>>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -1162,16 +1150,6 @@ pub struct LegacySafetyRules {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub transaction_nesting: Option<RuleConfiguration<pgls_analyser::options::TransactionNesting>>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub unknown_column: Option<RuleConfiguration<pgls_analyser::options::UnknownColumn>>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub unknown_function: Option<RuleConfiguration<pgls_analyser::options::UnknownFunction>>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub unknown_relation: Option<RuleConfiguration<pgls_analyser::options::UnknownRelation>>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub unknown_schema: Option<RuleConfiguration<pgls_analyser::options::UnknownSchema>>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub unknown_type: Option<RuleConfiguration<pgls_analyser::options::UnknownType>>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub concurrent_refresh_matview_lock: Option<RuleConfiguration<()>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub prefer_bigint_over_int: Option<RuleConfiguration<()>>,
@@ -1206,7 +1184,6 @@ impl LegacySafetyRules {
                 .adding_required_field
                 .as_ref()
                 .map(RuleConfiguration::level),
-            "ambiguousColumn" => self.ambiguous_column.as_ref().map(RuleConfiguration::level),
             "avoidAddingExclusionConstraint" => self
                 .avoid_adding_exclusion_constraint
                 .as_ref()
@@ -1275,20 +1252,8 @@ impl LegacySafetyRules {
                 .disallow_unique_constraint
                 .as_ref()
                 .map(RuleConfiguration::level),
-            "insertColumnMismatch" => self
-                .insert_column_mismatch
-                .as_ref()
-                .map(RuleConfiguration::level),
-            "invalidDropTypeSignature" => self
-                .invalid_drop_type_signature
-                .as_ref()
-                .map(RuleConfiguration::level),
             "lockTimeoutWarning" => self
                 .lock_timeout_warning
-                .as_ref()
-                .map(RuleConfiguration::level),
-            "missingFromClauseEntry" => self
-                .missing_from_clause_entry
                 .as_ref()
                 .map(RuleConfiguration::level),
             "multipleAlterTable" => self
@@ -1352,11 +1317,6 @@ impl LegacySafetyRules {
                 .transaction_nesting
                 .as_ref()
                 .map(RuleConfiguration::level),
-            "unknownColumn" => self.unknown_column.as_ref().map(RuleConfiguration::level),
-            "unknownFunction" => self.unknown_function.as_ref().map(RuleConfiguration::level),
-            "unknownRelation" => self.unknown_relation.as_ref().map(RuleConfiguration::level),
-            "unknownSchema" => self.unknown_schema.as_ref().map(RuleConfiguration::level),
-            "unknownType" => self.unknown_type.as_ref().map(RuleConfiguration::level),
             "concurrentRefreshMatviewLock" => self
                 .concurrent_refresh_matview_lock
                 .as_ref()
@@ -1397,10 +1357,6 @@ impl LegacySafetyRules {
                 .and_then(RuleConfiguration::get_options),
             "addingRequiredField" => self
                 .adding_required_field
-                .as_ref()
-                .and_then(RuleConfiguration::get_options),
-            "ambiguousColumn" => self
-                .ambiguous_column
                 .as_ref()
                 .and_then(RuleConfiguration::get_options),
             "avoidAddingExclusionConstraint" => self
@@ -1495,20 +1451,8 @@ impl LegacySafetyRules {
                 .disallow_unique_constraint
                 .as_ref()
                 .and_then(RuleConfiguration::get_options),
-            "insertColumnMismatch" => self
-                .insert_column_mismatch
-                .as_ref()
-                .and_then(RuleConfiguration::get_options),
-            "invalidDropTypeSignature" => self
-                .invalid_drop_type_signature
-                .as_ref()
-                .and_then(RuleConfiguration::get_options),
             "lockTimeoutWarning" => self
                 .lock_timeout_warning
-                .as_ref()
-                .and_then(RuleConfiguration::get_options),
-            "missingFromClauseEntry" => self
-                .missing_from_clause_entry
                 .as_ref()
                 .and_then(RuleConfiguration::get_options),
             "multipleAlterTable" => self
@@ -1587,26 +1531,6 @@ impl LegacySafetyRules {
                 .transaction_nesting
                 .as_ref()
                 .and_then(RuleConfiguration::get_options),
-            "unknownColumn" => self
-                .unknown_column
-                .as_ref()
-                .and_then(RuleConfiguration::get_options),
-            "unknownFunction" => self
-                .unknown_function
-                .as_ref()
-                .and_then(RuleConfiguration::get_options),
-            "unknownRelation" => self
-                .unknown_relation
-                .as_ref()
-                .and_then(RuleConfiguration::get_options),
-            "unknownSchema" => self
-                .unknown_schema
-                .as_ref()
-                .and_then(RuleConfiguration::get_options),
-            "unknownType" => self
-                .unknown_type
-                .as_ref()
-                .and_then(RuleConfiguration::get_options),
             _ => None,
         }
     }
@@ -1630,9 +1554,6 @@ impl LegacySafetyRules {
         }
         if self.adding_required_field.is_some() {
             rules.push("addingRequiredField");
-        }
-        if self.ambiguous_column.is_some() {
-            rules.push("ambiguousColumn");
         }
         if self.avoid_adding_exclusion_constraint.is_some() {
             rules.push("avoidAddingExclusionConstraint");
@@ -1706,17 +1627,8 @@ impl LegacySafetyRules {
         if self.disallow_unique_constraint.is_some() {
             rules.push("disallowUniqueConstraint");
         }
-        if self.insert_column_mismatch.is_some() {
-            rules.push("insertColumnMismatch");
-        }
-        if self.invalid_drop_type_signature.is_some() {
-            rules.push("invalidDropTypeSignature");
-        }
         if self.lock_timeout_warning.is_some() {
             rules.push("lockTimeoutWarning");
-        }
-        if self.missing_from_clause_entry.is_some() {
-            rules.push("missingFromClauseEntry");
         }
         if self.multiple_alter_table.is_some() {
             rules.push("multipleAlterTable");
@@ -1784,21 +1696,6 @@ impl LegacySafetyRules {
         if self.transaction_nesting.is_some() {
             rules.push("transactionNesting");
         }
-        if self.unknown_column.is_some() {
-            rules.push("unknownColumn");
-        }
-        if self.unknown_function.is_some() {
-            rules.push("unknownFunction");
-        }
-        if self.unknown_relation.is_some() {
-            rules.push("unknownRelation");
-        }
-        if self.unknown_schema.is_some() {
-            rules.push("unknownSchema");
-        }
-        if self.unknown_type.is_some() {
-            rules.push("unknownType");
-        }
         rules
     }
 }
@@ -1820,9 +1717,6 @@ pub struct Groups {
     #[doc = "Schema design preferences. Not enabled by the recommended preset."]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub style: Option<RulePlainConfiguration>,
-    #[doc = "Security issues in new DDL."]
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub security: Option<RulePlainConfiguration>,
     #[doc = "Code that fails at runtime because of names or types. Needs a database connection."]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub typecheck: Option<RulePlainConfiguration>,
@@ -1838,7 +1732,6 @@ impl Groups {
             "safety" => self.safety,
             "destructive" => self.destructive,
             "style" => self.style,
-            "security" => self.security,
             "typecheck" => self.typecheck,
             "nursery" => self.nursery,
             _ => None,

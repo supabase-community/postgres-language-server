@@ -203,7 +203,7 @@ with no new false positives.
 | `safety` | warn, migrations only | valid, but dangerous against a live database: locks, rewrites, blocking |
 | `destructive` | warn, migrations only | loses data or breaks existing clients |
 | `style` | warn, not recommended | schema design preferences |
-| `security` | warn | static checks for security issues in new DDL |
+| `security` | warn | static checks for security issues in new DDL; added with its first rule |
 | `nursery` | off | new rules until they stabilize |
 
 ### Assignment of Existing Rules

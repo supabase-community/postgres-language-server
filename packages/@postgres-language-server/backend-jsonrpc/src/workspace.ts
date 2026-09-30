@@ -181,8 +181,6 @@ export type Category =
   | "syntax"
   | "dummy"
   | "lint"
-  | "lint/performance"
-  | "lint/safety"
   | "splinter"
   | "splinter/performance"
   | "splinter/security"
@@ -711,10 +709,6 @@ export interface LinterGroups {
    */
   safety?: RulePlainConfiguration;
   /**
-   * Security issues in new DDL.
-   */
-  security?: RulePlainConfiguration;
-  /**
    * Schema design preferences. Not enabled by the recommended preset.
    */
   style?: RulePlainConfiguration;
@@ -1001,7 +995,7 @@ export type RuleConfiguration_for_PreferBigIntOptions =
   | RulePlainConfiguration
   | RuleWithOptions_for_PreferBigIntOptions;
 /**
- * The former `linter.rules.safety` group, which contained all rules.
+ * The former `linter.rules.safety` group, which contained all rules at the time.
  */
 export interface Safety {
   addSerialColumn?: RuleConfiguration_for_Null;
@@ -1011,7 +1005,6 @@ export interface Safety {
   addingPrimaryKeyConstraint?: RuleConfiguration_for_Null;
   addingRequiredField?: RuleConfiguration_for_Null;
   all?: boolean;
-  ambiguousColumn?: RuleConfiguration_for_Null;
   avoidAddingExclusionConstraint?: RuleConfiguration_for_Null;
   avoidAlterEnumAddValue?: RuleConfiguration_for_Null;
   avoidAttachingPartition?: RuleConfiguration_for_Null;
@@ -1036,10 +1029,7 @@ export interface Safety {
   constraintMissingNotValid?: RuleConfiguration_for_Null;
   creatingEnum?: RuleConfiguration_for_Null;
   disallowUniqueConstraint?: RuleConfiguration_for_Null;
-  insertColumnMismatch?: RuleConfiguration_for_Null;
-  invalidDropTypeSignature?: RuleConfiguration_for_Null;
   lockTimeoutWarning?: RuleConfiguration_for_Null;
-  missingFromClauseEntry?: RuleConfiguration_for_Null;
   multipleAlterTable?: RuleConfiguration_for_Null;
   preferBigInt?: RuleConfiguration_for_PreferBigIntOptions;
   preferBigintOverInt?: RuleConfiguration_for_Null;
@@ -1062,11 +1052,6 @@ export interface Safety {
   requireStatementTimeout?: RuleConfiguration_for_Null;
   runningStatementWhileHoldingAccessExclusive?: RuleConfiguration_for_Null;
   transactionNesting?: RuleConfiguration_for_Null;
-  unknownColumn?: RuleConfiguration_for_Null;
-  unknownFunction?: RuleConfiguration_for_Null;
-  unknownRelation?: RuleConfiguration_for_Null;
-  unknownSchema?: RuleConfiguration_for_Null;
-  unknownType?: RuleConfiguration_for_Null;
 }
 /**
  * A list of rules that belong to this group
