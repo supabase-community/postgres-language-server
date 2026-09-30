@@ -364,7 +364,6 @@ const LINTER_GROUPS: &[(&str, &str)] = &[
         "style",
         "Schema design preferences. Not enabled by the recommended preset.",
     ),
-    ("security", "Security issues in new DDL."),
     (
         "typecheck",
         "Code that fails at runtime because of names or types. Needs a database connection.",
@@ -373,6 +372,60 @@ const LINTER_GROUPS: &[(&str, &str)] = &[
         "nursery",
         "New rules that are still being tested. Never enabled by presets.",
     ),
+];
+
+/// The rules of the former `linter.rules.safety` group that still exist. Rules added since are
+/// only configurable in `linter.rules`.
+const LEGACY_SAFETY_RULES: &[&str] = &[
+    "addSerialColumn",
+    "addingFieldWithDefault",
+    "addingForeignKeyConstraint",
+    "addingNotNullField",
+    "addingPrimaryKeyConstraint",
+    "addingRequiredField",
+    "avoidAddingExclusionConstraint",
+    "avoidAlterEnumAddValue",
+    "avoidAttachingPartition",
+    "avoidCreateTrigger",
+    "avoidEnableDisableTrigger",
+    "avoidWideLockWindow",
+    "banCharField",
+    "banConcurrentIndexCreationInTransaction",
+    "banDeleteWithoutWhere",
+    "banDropColumn",
+    "banDropDatabase",
+    "banDropNotNull",
+    "banDropSchema",
+    "banDropTable",
+    "banDropTrigger",
+    "banTruncate",
+    "banTruncateCascade",
+    "banUpdateWithoutWhere",
+    "banVacuumFull",
+    "changingColumnType",
+    "constraintMissingNotValid",
+    "creatingEnum",
+    "disallowUniqueConstraint",
+    "lockTimeoutWarning",
+    "multipleAlterTable",
+    "preferBigInt",
+    "preferIdentity",
+    "preferJsonb",
+    "preferRobustStmts",
+    "preferTextField",
+    "preferTimestamptz",
+    "renamingColumn",
+    "renamingTable",
+    "requireConcurrentDetachPartition",
+    "requireConcurrentIndexCreation",
+    "requireConcurrentIndexDeletion",
+    "requireConcurrentRefreshMatview",
+    "requireConcurrentReindex",
+    "requireIdleInTransactionTimeout",
+    "requireSeparateConstraintValidation",
+    "requireStatementTimeout",
+    "runningStatementWhileHoldingAccessExclusive",
+    "transactionNesting",
 ];
 
 /// Rules that were removed when the rules got flat names. `linter.rules.safety.<rule>` still
@@ -413,6 +466,15 @@ fn generate_flat_linter_rules_file(
     let mut level_arms = Vec::new();
     let mut options_arms = Vec::new();
     let mut legacy_names = Vec::new();
+    let mut legacy_level_arms = Vec::new();
+    let mut legacy_options_arms = Vec::new();
+
+    for name in LEGACY_SAFETY_RULES {
+        assert!(
+            rules.contains_key(name),
+            "the legacy safety rule `{name}` doesn't exist anymore; move it to REMOVED_LINTER_RULES"
+        );
+    }
 
     for (name, (group, metadata)) in &rules {
         let ident = Ident::new(&to_snake_case(name), Span::call_site());
@@ -425,10 +487,6 @@ fn generate_flat_linter_rules_file(
 
         rule_fields.push(quote! {
             #[doc = #summary]
-            #[serde(skip_serializing_if = "Option::is_none")]
-            pub #ident: Option<RuleConfiguration<pgls_analyser::options::#options>>
-        });
-        legacy_fields.push(quote! {
             #[serde(skip_serializing_if = "Option::is_none")]
             pub #ident: Option<RuleConfiguration<pgls_analyser::options::#options>>
         });
@@ -446,10 +504,17 @@ fn generate_flat_linter_rules_file(
         options_arms.push(quote! {
             #name_literal => self.#ident.as_ref().and_then(RuleConfiguration::get_options)
         });
-        legacy_names.push((name.to_string(), ident));
+        if LEGACY_SAFETY_RULES.contains(name) {
+            legacy_fields.push(quote! {
+                #[serde(skip_serializing_if = "Option::is_none")]
+                pub #ident: Option<RuleConfiguration<pgls_analyser::options::#options>>
+            });
+            legacy_level_arms.push(level_arms.last().unwrap().clone());
+            legacy_options_arms.push(options_arms.last().unwrap().clone());
+            legacy_names.push((name.to_string(), ident));
+        }
     }
 
-    let mut legacy_level_arms = level_arms.clone();
     for name in REMOVED_LINTER_RULES {
         let ident = Ident::new(&to_snake_case(name), Span::call_site());
         let name_literal = Literal::string(name);
@@ -554,7 +619,7 @@ fn generate_flat_linter_rules_file(
             }
         }
 
-        /// The former `linter.rules.safety` group, which contained all rules.
+        /// The former `linter.rules.safety` group, which contained all rules at the time.
         #[derive(Clone, Debug, Default, Deserialize, Eq, Merge, PartialEq, Serialize)]
         #[cfg_attr(feature = "schema", derive(JsonSchema))]
         // Keeps the name of the former group in the JSON schema and the TypeScript bindings.
@@ -582,7 +647,7 @@ fn generate_flat_linter_rules_file(
             /// The options configured for a rule, if any.
             pub fn rule_options(&self, rule: &str) -> Option<RuleOptions> {
                 match rule {
-                    #( #options_arms, )*
+                    #( #legacy_options_arms, )*
                     _ => None,
                 }
             }

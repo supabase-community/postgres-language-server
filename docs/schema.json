@@ -805,17 +805,6 @@
             }
           ]
         },
-        "security": {
-          "description": "Security issues in new DDL.",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/RulePlainConfiguration"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
         "style": {
           "description": "Schema design preferences. Not enabled by the recommended preset.",
           "anyOf": [
@@ -1917,7 +1906,7 @@
       "additionalProperties": false
     },
     "Safety": {
-      "description": "The former `linter.rules.safety` group, which contained all rules.",
+      "description": "The former `linter.rules.safety` group, which contained all rules at the time.",
       "type": "object",
       "properties": {
         "addSerialColumn": {
@@ -1984,16 +1973,6 @@
           "type": [
             "boolean",
             "null"
-          ]
-        },
-        "ambiguousColumn": {
-          "anyOf": [
-            {
-              "$ref": "#/definitions/RuleConfiguration"
-            },
-            {
-              "type": "null"
-            }
           ]
         },
         "avoidAddingExclusionConstraint": {
@@ -2236,37 +2215,7 @@
             }
           ]
         },
-        "insertColumnMismatch": {
-          "anyOf": [
-            {
-              "$ref": "#/definitions/RuleConfiguration"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "invalidDropTypeSignature": {
-          "anyOf": [
-            {
-              "$ref": "#/definitions/RuleConfiguration"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
         "lockTimeoutWarning": {
-          "anyOf": [
-            {
-              "$ref": "#/definitions/RuleConfiguration"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "missingFromClauseEntry": {
           "anyOf": [
             {
               "$ref": "#/definitions/RuleConfiguration"
@@ -2483,56 +2432,6 @@
           ]
         },
         "transactionNesting": {
-          "anyOf": [
-            {
-              "$ref": "#/definitions/RuleConfiguration"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "unknownColumn": {
-          "anyOf": [
-            {
-              "$ref": "#/definitions/RuleConfiguration"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "unknownFunction": {
-          "anyOf": [
-            {
-              "$ref": "#/definitions/RuleConfiguration"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "unknownRelation": {
-          "anyOf": [
-            {
-              "$ref": "#/definitions/RuleConfiguration"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "unknownSchema": {
-          "anyOf": [
-            {
-              "$ref": "#/definitions/RuleConfiguration"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "unknownType": {
           "anyOf": [
             {
               "$ref": "#/definitions/RuleConfiguration"

@@ -162,8 +162,7 @@ impl TryFrom<&str> for RuleSpecifier {
 }
 
 fn is_lint_group(group: &str) -> bool {
-    pgls_analyser::METADATA.groups().contains(&group)
-        || matches!(group, "typecheck" | "security" | "nursery")
+    pgls_analyser::METADATA.groups().contains(&group) || matches!(group, "typecheck" | "nursery")
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -515,10 +514,6 @@ mod tests {
         assert_eq!(
             RuleSpecifier::try_from("destructive").unwrap(),
             RuleSpecifier::Group("lint".into(), "destructive".into())
-        );
-        assert_eq!(
-            RuleSpecifier::try_from("lint/security").unwrap(),
-            RuleSpecifier::Group("lint".into(), "security".into())
         );
         assert_eq!(
             RuleSpecifier::try_from("lint/nursery").unwrap(),

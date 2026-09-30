@@ -146,8 +146,6 @@ define_categories! {
 
     // Lint groups start
     "lint",
-    "lint/performance",
-    "lint/safety",
     // Lint groups end
 
     // Splinter groups start
