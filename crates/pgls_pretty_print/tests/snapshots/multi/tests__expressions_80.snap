@@ -72,21 +72,21 @@ select * from numeric_view;
 
 create table bpchar_tbl (
   f1 char(16) unique,
-  f2 char
+  f2 bpchar
 );
 
 create view bpchar_view
 as select
   f1,
   cast(f1 as char(14)) as f114,
-  cast(f1 as char) as f1n,
+  cast(f1 as bpchar) as f1n,
   f2,
   cast(f2 as char(14)) as f214,
-  cast(f2 as char) as f2n
+  cast(f2 as bpchar) as f2n
 from
   bpchar_tbl;
 
-select * from bpchar_view where cast(f1 as char) = 'foo';
+select * from bpchar_view where cast(f1 as bpchar) = 'foo';
 
 rollback;
 

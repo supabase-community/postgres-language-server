@@ -5,7 +5,9 @@ use crate::{
 };
 use pgls_query::protobuf::{self, TypeName};
 
-use super::string::{emit_identifier_maybe_quoted, emit_type_identifier_maybe_quoted};
+use super::string::{
+    emit_identifier, emit_identifier_maybe_quoted, emit_type_identifier_maybe_quoted,
+};
 
 const INTERVAL_MASK_MONTH: i32 = 1 << 1;
 const INTERVAL_MASK_YEAR: i32 = 1 << 2;
@@ -38,6 +40,8 @@ fn emit_type_name_tokens(e: &mut EventEmitter, n: &TypeName) {
         // Special handling for TIME/TIMESTAMP WITH TIME ZONE
         // Precision goes after TIME/TIMESTAMP, before WITH TIME ZONE
         emit_time_with_tz_type(e, n, &name_parts);
+    } else if let Some(base) = verbatim_char_type(n, &name_parts) {
+        emit_verbatim_char_type(e, &name_parts, base);
     } else {
         emit_normalized_type_name(e, &name_parts);
     }
@@ -78,6 +82,36 @@ fn emit_normalized_type_name(e: &mut EventEmitter, name_parts: &[String]) {
         emit_dot_separated_type_name(e, name_parts);
     } else {
         e.token(TokenKind::IDENT("<?>".to_string()));
+    }
+}
+
+/// The internal one-byte type `"char"` and an unbounded `bpchar` share their spelling with the
+/// `char` keyword, but `char` means `bpchar(1)`. Emitting the keyword for either type changes what
+/// the statement does, so both are written as they appear in the catalog.
+fn verbatim_char_type(n: &TypeName, name_parts: &[String]) -> Option<&'static str> {
+    let base_name = match name_parts {
+        [name] => name,
+        [schema, name] if is_pg_catalog(schema) => name,
+        _ => return None,
+    };
+
+    match base_name.as_str() {
+        "char" => Some("char"),
+        "bpchar" if n.typmods.is_empty() => Some("bpchar"),
+        _ => None,
+    }
+}
+
+fn emit_verbatim_char_type(e: &mut EventEmitter, name_parts: &[String], base: &str) {
+    if let [schema, _] = name_parts {
+        emit_identifier_maybe_quoted(e, schema);
+        e.token(TokenKind::DOT);
+    }
+
+    if base == "char" {
+        emit_identifier(e, base);
+    } else {
+        e.token(TokenKind::TYPE_IDENT(base.to_string()));
     }
 }
 

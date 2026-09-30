@@ -1,0 +1,14 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/single/char_type_names_0.sql
+snapshot_kind: text
+---
+create table t (
+  a bpchar,
+  b "char",
+  c char(1),
+  d char(3),
+  e pg_catalog.bpchar,
+  f pg_catalog."char",
+  g char(5)
+);

@@ -141,8 +141,8 @@ where
     t1.typalign <>
     case
       when t2.typalign = 'd'
-      then cast('d' as char)
-      else cast('i' as char)
+      then cast('d' as "char")
+      else cast('i' as "char")
     end or
     t2.oid is null
   );
@@ -580,8 +580,8 @@ where
   t2.typalign <>
   case
     when t1.typalign = 'd'
-    then cast('d' as char)
-    else cast('i' as char)
+    then cast('d' as "char")
+    else cast('i' as "char")
   end;
 
 select
@@ -968,8 +968,8 @@ as
     cast(4 as real),
     cast('8' as double precision),
     cast(pi() as numeric),
-    cast('foo' as char),
-    cast('c' as char),
+    cast('foo' as "char"),
+    cast('c' as bpchar),
     cast('abc' as varchar),
     cast('name' as name),
     cast('txt' as text),

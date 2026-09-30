@@ -342,13 +342,13 @@ select * from btree_bpchar where f1 like 'foo%';
 
 select * from btree_bpchar where f1 like 'foo%';
 
-select * from btree_bpchar where cast(f1 as char) like 'foo';
+select * from btree_bpchar where cast(f1 as bpchar) like 'foo';
 
-select * from btree_bpchar where cast(f1 as char) like 'foo';
+select * from btree_bpchar where cast(f1 as bpchar) like 'foo';
 
-select * from btree_bpchar where cast(f1 as char) like 'foo%';
+select * from btree_bpchar where cast(f1 as bpchar) like 'foo%';
 
-select * from btree_bpchar where cast(f1 as char) like 'foo%';
+select * from btree_bpchar where cast(f1 as bpchar) like 'foo%';
 
 insert into btree_bpchar select 'foo' from generate_series(1, 1500);
 
