@@ -835,6 +835,71 @@ WHERE
     }
 
     #[test]
+    fn test_long_in_list_preserves_leading_commas() {
+        let sql = "
+            SELECT *
+            FROM calls
+            WHERE variable_number NOT IN (
+                '3286', '4000', '4001', '4030', '4060', '4200', '4201', '4230',
+                '4260', '4500', '4501', '4530', '4560', '4600', '7001', '7201',
+                '7501', '7601'
+            )
+        ";
+        let parsed = pgls_query::parse(sql).unwrap();
+        let ast = parsed.into_root().unwrap();
+
+        let config = FormatConfig {
+            line_width: 80,
+            comma_style: CommaStyle::Leading,
+            ..FormatConfig::default()
+        };
+        let result = format_statement(&ast, sql, &config).unwrap();
+
+        assert_eq!(
+            result.formatted,
+            "select\n\
+             \x20\x20*\n\
+             from\n\
+             \x20\x20calls\n\
+             where\n\
+             \x20\x20variable_number\n\
+             \x20\x20not in (\n\
+             \x20\x20\x20\x20'3286', '4000', '4001', '4030', '4060', '4200', '4201', '4230', '4260'\n\
+             \x20\x20\x20\x20, '4500', '4501', '4530', '4560', '4600', '7001', '7201', '7501', '7601'\n\
+             \x20\x20);"
+        );
+    }
+
+    #[test]
+    fn test_in_list_with_comment_preserves_leading_commas() {
+        let sql = "
+            SELECT *
+            FROM agencies
+            WHERE login NOT IN (
+                '0728',
+                '0730' -- recreated below
+            )
+        ";
+        let parsed = pgls_query::parse(sql).unwrap();
+        let ast = parsed.into_root().unwrap();
+
+        let config = FormatConfig {
+            comma_style: CommaStyle::Leading,
+            layout: Layout::Expanded,
+            ..FormatConfig::default()
+        };
+        let result = format_statement(&ast, sql, &config).unwrap();
+
+        assert!(
+            result
+                .formatted
+                .contains("'0728'\n    , '0730' -- recreated below"),
+            "{}",
+            result.formatted
+        );
+    }
+
+    #[test]
     fn own_line_comment_stays_before_a_leading_comma() {
         let sql = "SELECT\n\
             CASE\n\
