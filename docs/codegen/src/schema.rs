@@ -20,7 +20,15 @@ pub fn generate_schema(docs_dir: &Path) -> anyhow::Result<()> {
 
 /// Get the content of the configuration schema
 pub(crate) fn get_configuration_schema_content() -> anyhow::Result<String> {
-    let schema = rename_partial_references_in_schema(schema_for!(PartialConfiguration));
+    let mut schema = rename_partial_references_in_schema(schema_for!(PartialConfiguration));
+
+    // Configuration files are parsed as JSONC, which permits trailing commas.
+    // Editors such as VS Code and Zed honor this non-standard keyword and stop
+    // warning about trailing commas.
+    schema
+        .schema
+        .extensions
+        .insert("allowTrailingCommas".to_string(), true.into());
 
     Ok(to_string_pretty(&schema)?)
 }

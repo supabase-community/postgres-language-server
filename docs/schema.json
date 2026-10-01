@@ -134,6 +134,7 @@
     }
   },
   "additionalProperties": false,
+  "allowTrailingCommas": true,
   "definitions": {
     "Base": {
       "description": "A list of rules that belong to this group",
