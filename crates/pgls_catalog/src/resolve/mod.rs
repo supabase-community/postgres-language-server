@@ -8,6 +8,7 @@
 //! references comes unchanged from the database, so that checking it against the database gives
 //! the right answer.
 
+mod column_name;
 mod nodes;
 mod resolver;
 mod scope;
@@ -18,7 +19,7 @@ mod tests;
 use pgls_query::{NodeEnum, protobuf};
 use pgls_text_size::TextRange;
 
-use crate::view::CatalogView;
+use crate::lookup::CatalogView;
 use resolver::Resolver;
 
 /// A parameter of the SQL function whose body is being resolved.

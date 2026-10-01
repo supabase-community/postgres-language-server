@@ -1,4 +1,4 @@
-//! The read-only view of the catalog that name resolution works against.
+//! The lookups that name resolution makes against the catalog.
 //!
 //! [`crate::Catalog`] implements [`CatalogView`] for the real database snapshot plus the
 //! changes of the current file. The resolver only depends on this trait, so it can be tested

@@ -18,7 +18,7 @@ use std::sync::Arc;
 
 use rustc_hash::{FxHashMap, FxHashSet};
 
-use crate::view::{CatalogView, FunctionInfo, Lookup, RelationInfo, TypeInfo};
+use crate::lookup::{CatalogView, FunctionInfo, Lookup, RelationInfo, TypeInfo};
 
 pub use base::CatalogBase;
 

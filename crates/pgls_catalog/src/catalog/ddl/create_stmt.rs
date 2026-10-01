@@ -1,7 +1,7 @@
 use pgls_query::{NodeEnum, protobuf::CreateStmt};
 
 use crate::catalog::{Catalog, key, names::type_name, overlay::column_info};
-use crate::view::{CatalogView, ColumnInfo, Origin, RelationInfo, RelationKind};
+use crate::lookup::{CatalogView, ColumnInfo, Origin, RelationInfo, RelationKind};
 
 pub(super) fn apply_create_stmt(c: &mut Catalog, n: &CreateStmt, search_path: &[String]) {
     create_table(c, n, RelationKind::Table, search_path);

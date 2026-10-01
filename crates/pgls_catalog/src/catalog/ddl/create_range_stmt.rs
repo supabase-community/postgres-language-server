@@ -5,7 +5,7 @@ use crate::catalog::{
     names::{QualifiedName, qualified_name},
     overlay::function_info,
 };
-use crate::view::FunctionKind;
+use crate::lookup::FunctionKind;
 
 /// A range type also creates its multirange type and their constructor functions.
 pub(super) fn apply_create_range_stmt(

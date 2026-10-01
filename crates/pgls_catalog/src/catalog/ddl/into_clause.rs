@@ -1,7 +1,7 @@
 use pgls_query::protobuf::IntoClause;
 
 use crate::catalog::{Catalog, overlay::rename_columns};
-use crate::view::{ColumnInfo, Origin, RelationInfo, RelationKind};
+use crate::lookup::{ColumnInfo, Origin, RelationInfo, RelationKind};
 
 /// Creates the relation of `CREATE TABLE AS`, `CREATE MATERIALIZED VIEW` or `SELECT INTO`.
 pub(super) fn apply_into_clause(

@@ -1,7 +1,7 @@
 use pgls_query::protobuf::CreateSeqStmt;
 
 use crate::catalog::{Catalog, base::sequence_columns};
-use crate::view::{Origin, RelationInfo, RelationKind};
+use crate::lookup::{Origin, RelationInfo, RelationKind};
 
 pub(super) fn apply_create_seq_stmt(c: &mut Catalog, n: &CreateSeqStmt, search_path: &[String]) {
     let Some(range_var) = &n.sequence else {

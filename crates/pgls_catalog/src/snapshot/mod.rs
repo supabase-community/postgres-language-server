@@ -10,6 +10,7 @@ mod indexes;
 mod policies;
 mod roles;
 mod schemas;
+mod search_path;
 mod sequences;
 mod tables;
 mod triggers;

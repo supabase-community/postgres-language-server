@@ -3,7 +3,7 @@
 use pgls_query::{Node, NodeEnum};
 
 use super::{Resolver, resolve_list, string::string_value};
-use crate::column_name::figure_column_name;
+use crate::resolve::column_name::figure_column_name;
 use crate::resolve::{
     FindingKind,
     scope::{Columns, Item, Level},

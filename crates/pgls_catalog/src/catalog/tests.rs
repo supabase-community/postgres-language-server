@@ -3,7 +3,7 @@ use std::sync::Arc;
 use crate::Snapshot;
 
 use super::{Catalog, CatalogBase};
-use crate::view::{CatalogView, FunctionKind, Lookup, Origin, RelationKind};
+use crate::lookup::{CatalogView, FunctionKind, Lookup, Origin, RelationKind};
 
 fn schema(name: &str) -> crate::Schema {
     crate::Schema {

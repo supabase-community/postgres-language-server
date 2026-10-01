@@ -10,8 +10,8 @@ use super::{
     resolve_node,
     string::{string_value, string_values},
 };
+use crate::lookup::Lookup;
 use crate::resolve::scope::{Columns, Item, Level};
-use crate::view::Lookup;
 
 /// A function in FROM, including `ROWS FROM (...)` and `WITH ORDINALITY`. Functions see the FROM
 /// items before them.

@@ -7,7 +7,7 @@ use crate::catalog::{
     Catalog, Entry, key,
     names::{qualified_name, range_var_name},
 };
-use crate::view::{CatalogView, ColumnInfo, Origin};
+use crate::lookup::{CatalogView, ColumnInfo, Origin};
 
 pub(super) fn apply_rename_stmt(c: &mut Catalog, n: &RenameStmt, search_path: &[String]) {
     let object = n.object.as_deref().and_then(|object| object.node.as_ref());

@@ -1,7 +1,7 @@
 use pgls_query::protobuf::ViewStmt;
 
 use crate::catalog::{Catalog, overlay::rename_columns};
-use crate::view::{Origin, RelationInfo, RelationKind};
+use crate::lookup::{Origin, RelationInfo, RelationKind};
 
 pub(super) fn apply_view_stmt(c: &mut Catalog, n: &ViewStmt, search_path: &[String]) {
     let Some(range_var) = &n.view else {

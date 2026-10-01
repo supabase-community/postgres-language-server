@@ -8,7 +8,7 @@ use crate::catalog::{
     names::{range_var_name, type_label},
     overlay::column_info,
 };
-use crate::view::{CatalogView, ColumnInfo, Origin};
+use crate::lookup::{CatalogView, ColumnInfo, Origin};
 
 /// `ALTER TABLE`, and `ALTER TYPE ... ADD/DROP/ALTER ATTRIBUTE` on composite types.
 pub(super) fn apply_alter_table_stmt(c: &mut Catalog, n: &AlterTableStmt, search_path: &[String]) {

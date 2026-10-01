@@ -7,7 +7,7 @@ use super::{
     scope::{Cte, Level},
     span,
 };
-use crate::view::{CatalogView, Lookup, Origin};
+use crate::lookup::{CatalogView, Lookup, Origin};
 
 pub(super) struct Resolver<'a> {
     pub catalog: &'a dyn CatalogView,

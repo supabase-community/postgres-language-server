@@ -3,11 +3,11 @@
 use pgls_query::protobuf::RangeVar;
 
 use super::{Resolver, alias::apply_alias};
+use crate::lookup::{Lookup, RelationKind};
 use crate::resolve::{
     FindingKind,
     scope::{Columns, Item},
 };
-use crate::view::{Lookup, RelationKind};
 
 /// A relation or CTE in FROM.
 pub(super) fn resolve_range_var(r: &mut Resolver, n: &RangeVar) -> Item {

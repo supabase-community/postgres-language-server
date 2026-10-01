@@ -1,7 +1,7 @@
 use pgls_query::protobuf::{CreateSchemaStmt, RoleSpecType};
 
 use crate::catalog::Catalog;
-use crate::view::CatalogView;
+use crate::lookup::CatalogView;
 
 pub(super) fn apply_create_schema_stmt(
     c: &mut Catalog,

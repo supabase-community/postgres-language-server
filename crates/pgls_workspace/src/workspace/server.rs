@@ -295,7 +295,7 @@ impl WorkspaceServer {
         }
 
         let mut catalog = Catalog::new(Some(self.catalog_base(&snapshot)));
-        let mut session = Session::new(pgls_catalog::expand_search_path(&snapshot, &search_path));
+        let mut session = Session::new(snapshot.expand_search_path(&search_path));
         for (_, ast) in &statements {
             catalog.apply(ast, session.search_path());
             session.apply(ast);
@@ -837,9 +837,7 @@ impl Workspace for WorkspaceServer {
          */
         let typecheck = settings.typecheck.enabled && snapshot.is_some();
         let search_path = match snapshot.as_deref() {
-            Some(snapshot) => {
-                pgls_catalog::expand_search_path(snapshot, &settings.typecheck.search_path)
-            }
+            Some(snapshot) => snapshot.expand_search_path(&settings.typecheck.search_path),
             None => settings.typecheck.search_path.clone(),
         };
         let catalog_base = snapshot

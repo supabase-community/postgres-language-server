@@ -1,7 +1,7 @@
 use pgls_query::protobuf::{DefineStmt, ObjectType};
 
 use crate::catalog::{Catalog, names::qualified_name, overlay::function_info};
-use crate::view::FunctionKind;
+use crate::lookup::FunctionKind;
 
 /// `CREATE AGGREGATE`, `CREATE TYPE name (...)` and shell types.
 pub(super) fn apply_define_stmt(c: &mut Catalog, n: &DefineStmt, search_path: &[String]) {
