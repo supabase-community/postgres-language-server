@@ -22,6 +22,7 @@ mod lookup;
 pub mod resolve;
 mod session;
 pub mod snapshot;
+pub mod typing;
 
 pub use catalog::{Catalog, CatalogBase};
 pub use lookup::{
@@ -30,3 +31,4 @@ pub use lookup::{
 };
 pub use session::{Session, is_reindex_concurrent, is_vacuum_full};
 pub use snapshot::*;
+pub use typing::*;

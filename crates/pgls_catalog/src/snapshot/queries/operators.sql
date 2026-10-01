@@ -1,0 +1,1 @@
+select o.oid::int8 as "oid!", n.nspname as "schema!", o.oprname as "name!", case when o.oprkind = 'l' then 'prefix' else 'infix' end as "kind!", o.oprleft::int8 as "left!", o.oprright::int8 as "right!", o.oprresult::int8 as "result!" from pg_operator o join pg_namespace n on n.oid = o.oprnamespace;

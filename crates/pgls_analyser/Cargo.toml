@@ -25,7 +25,10 @@ serde            = { workspace = true }
 
 [dev-dependencies]
 insta                   = { version = "1.42.1" }
+pgls_catalog            = { workspace = true, features = ["db"] }
 pgls_diagnostics        = { workspace = true }
 pgls_statement_splitter = { workspace = true }
 pgls_test_macros        = { workspace = true }
+sqlx                    = { workspace = true }
 termcolor               = { workspace = true }
+tokio                   = { workspace = true }

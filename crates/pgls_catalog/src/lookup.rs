@@ -4,6 +4,10 @@
 //! changes of the current file. The resolver only depends on this trait, so it can be tested
 //! against small in-memory catalogs.
 
+use crate::typing::{
+    Candidates, CastInfo, FunctionSignature, OperatorInfo, Type, TypeId, TypeKind,
+};
+
 /// The result of a catalog lookup.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Lookup<T> {
@@ -61,6 +65,8 @@ pub struct ColumnInfo {
     pub name: String,
     /// The type name, if known (e.g. `int4`, `text`, `public.my_enum`).
     pub type_name: Option<String>,
+    /// Resolved type identity, when available.
+    pub ty: Option<Type>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -95,6 +101,8 @@ pub struct FunctionInfo {
     /// (what `select * from fn()` yields). `None` when unknown or scalar.
     pub return_columns: Option<Vec<ColumnInfo>>,
     pub origin: Origin,
+    /// Complete typing signature when available.
+    pub signature: Option<FunctionSignature>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -104,6 +112,22 @@ pub struct TypeInfo {
     /// Attributes for composite types (including table row types), `None` otherwise or when unknown.
     pub attributes: Option<Vec<ColumnInfo>>,
     pub origin: Origin,
+    /// Database identity.
+    pub id: Option<TypeId>,
+    /// pg_type.typtype.
+    pub kind: Option<TypeKind>,
+    /// pg_type.typcategory.
+    pub category: Option<char>,
+    /// Whether this type is preferred in its category.
+    pub preferred: Option<bool>,
+    /// Element type for true arrays only.
+    pub element: Option<TypeId>,
+    /// Associated array type.
+    pub array: Option<TypeId>,
+    /// Base type for domains.
+    pub base: Option<TypeId>,
+    /// Relation identity for composite types.
+    pub relation: Option<i64>,
 }
 
 /// Read-only access to the catalog as it is before the statement being analysed.
@@ -136,4 +160,42 @@ pub trait CatalogView {
     /// Looks up a type by its internal name (e.g. `int4`, not `integer`). With `schema: None`,
     /// the search path is used.
     fn type_(&self, schema: Option<&str>, name: &str, search_path: &[String]) -> Lookup<TypeInfo>;
+
+    /// Looks up a type by identity.
+    fn type_by_id(&self, _: &TypeId) -> Lookup<TypeInfo> {
+        Lookup::Unknown
+    }
+    /// Looks up a direct cast.
+    fn cast(&self, _: &TypeId, _: &TypeId) -> Lookup<CastInfo> {
+        Lookup::Unknown
+    }
+    /// Returns function candidates; the default catalog has no complete candidate list.
+    fn function_candidates(
+        &self,
+        _: Option<&str>,
+        _: &str,
+        _: &[String],
+    ) -> Candidates<FunctionInfo> {
+        Candidates {
+            items: vec![],
+            complete: false,
+        }
+    }
+    /// Returns operator candidates; the default catalog has no complete candidate list.
+    fn operator_candidates(
+        &self,
+        _: Option<&str>,
+        _: &str,
+        _: crate::typing::OperatorKind,
+        _: &[String],
+    ) -> Candidates<OperatorInfo> {
+        Candidates {
+            items: vec![],
+            complete: false,
+        }
+    }
+    /// Returns the server version when available.
+    fn server_version_num(&self) -> Option<i64> {
+        None
+    }
 }

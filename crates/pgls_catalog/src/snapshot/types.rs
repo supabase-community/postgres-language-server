@@ -45,6 +45,22 @@ impl From<Option<JsonValue>> for Enums {
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct PostgresType {
     pub id: i64,
+    #[serde(default)]
+    pub typtype: String,
+    #[serde(default)]
+    pub typcategory: String,
+    #[serde(default)]
+    pub typispreferred: bool,
+    #[serde(default)]
+    pub typelem: i64,
+    #[serde(default)]
+    pub typarray: i64,
+    #[serde(default)]
+    pub typbasetype: i64,
+    #[serde(default)]
+    pub typrelid: i64,
+    #[serde(default)]
+    pub is_array: bool,
     pub name: String,
     pub schema: String,
     pub format: String,

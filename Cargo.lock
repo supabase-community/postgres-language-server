@@ -2402,7 +2402,9 @@ dependencies = [
  "rustc-hash",
  "schemars",
  "serde",
+ "sqlx",
  "termcolor",
+ "tokio",
 ]
 
 [[package]]

@@ -37,6 +37,8 @@ pub(super) fn apply_create_function_stmt(
             outputs.push(ColumnInfo {
                 name: parameter.name.clone(),
                 type_name: parameter.arg_type.as_ref().and_then(type_label),
+
+                ty: None,
             });
         }
         if matches!(mode, Mode::FuncParamOut | Mode::FuncParamTable) {
