@@ -95,10 +95,27 @@ pub(super) fn infer_expr(r: &mut Resolver<'_>, expr: &NodeEnum) -> Option<Type> 
             }
             id.map(Type::Named)
         }
-        NodeEnum::BoolExpr(_)
-        | NodeEnum::NullTest(_)
-        | NodeEnum::BooleanTest(_)
-        | NodeEnum::DistinctExpr(_)
+        NodeEnum::BoolExpr(n) => {
+            for arg in &n.args {
+                if let Some(arg) = arg.node.as_ref() {
+                    infer_expr(r, arg);
+                }
+            }
+            named(r, "bool")
+        }
+        NodeEnum::NullTest(n) => {
+            if let Some(arg) = n.arg.as_deref().and_then(|x| x.node.as_ref()) {
+                infer_expr(r, arg);
+            }
+            named(r, "bool")
+        }
+        NodeEnum::BooleanTest(n) => {
+            if let Some(arg) = n.arg.as_deref().and_then(|x| x.node.as_ref()) {
+                infer_expr(r, arg);
+            }
+            named(r, "bool")
+        }
+        NodeEnum::DistinctExpr(_)
         | NodeEnum::ScalarArrayOpExpr(_)
         | NodeEnum::RowCompareExpr(_) => named(r, "bool"),
         NodeEnum::NullIfExpr(n) => {
@@ -114,31 +131,28 @@ pub(super) fn infer_expr(r: &mut Resolver<'_>, expr: &NodeEnum) -> Option<Type> 
                 .node
                 .as_ref()
                 .and_then(|x| infer_expr(r, x))?;
-            let _ = select_operator(
-                r.catalog,
-                None,
-                "=",
-                OperatorKind::Infix,
-                Some(&left),
-                &right,
-                r.search_path,
-            );
+            check_operator(r, "=", Some(&left), &right, n.location);
             common_types(r, &[left, right])
         }
-        NodeEnum::SubLink(n) => match protobuf::SubLinkType::try_from(n.sub_link_type).ok()? {
-            protobuf::SubLinkType::ExistsSublink => named(r, "bool"),
-            protobuf::SubLinkType::ExprSublink => {
-                let query = n.subselect.as_deref()?;
-                let columns = super::query_output_types(query, r.catalog, r.search_path)?;
-                (columns.len() == 1)
-                    .then(|| columns[0].ty.clone())
-                    .flatten()
+        NodeEnum::SubLink(n) => {
+            if let Some(test) = n.testexpr.as_deref().and_then(|x| x.node.as_ref()) {
+                infer_expr(r, test);
             }
-            protobuf::SubLinkType::AnySublink | protobuf::SubLinkType::AllSublink => {
-                named(r, "bool")
+            match protobuf::SubLinkType::try_from(n.sub_link_type).ok()? {
+                protobuf::SubLinkType::ExistsSublink => named(r, "bool"),
+                protobuf::SubLinkType::ExprSublink => {
+                    let query = n.subselect.as_deref()?;
+                    let columns = super::query_output_types(query, r.catalog, r.search_path)?;
+                    (columns.len() == 1)
+                        .then(|| columns[0].ty.clone())
+                        .flatten()
+                }
+                protobuf::SubLinkType::AnySublink | protobuf::SubLinkType::AllSublink => {
+                    named(r, "bool")
+                }
+                _ => None,
             }
-            _ => None,
-        },
+        }
         NodeEnum::RowExpr(n) => Some(Type::Record(
             n.args
                 .iter()
@@ -216,18 +230,174 @@ pub(super) fn infer_expr(r: &mut Resolver<'_>, expr: &NodeEnum) -> Option<Type> 
         NodeEnum::AExpr(n) => {
             use protobuf::AExprKind as Kind;
             match Kind::try_from(n.kind).ok()? {
-                Kind::AexprIn
-                | Kind::AexprOpAny
-                | Kind::AexprOpAll
-                | Kind::AexprDistinct
-                | Kind::AexprNotDistinct
-                | Kind::AexprLike
-                | Kind::AexprIlike
-                | Kind::AexprSimilar
-                | Kind::AexprBetween
+                // Port of parse_expr.c `transformAExprDistinct`; ordinary scalar cases use make_distinct_op's `=` lookup.
+                Kind::AexprDistinct | Kind::AexprNotDistinct => {
+                    let left = n
+                        .lexpr
+                        .as_deref()
+                        .and_then(|x| x.node.as_ref())
+                        .and_then(|x| infer_expr(r, x));
+                    let right = n
+                        .rexpr
+                        .as_deref()
+                        .and_then(|x| x.node.as_ref())
+                        .and_then(|x| infer_expr(r, x));
+                    if let (Some(left), Some(right)) = (left.as_ref(), right.as_ref()) {
+                        check_operator(r, "=", Some(left), right, n.location);
+                    }
+                    return named(r, "bool");
+                }
+                // Port of parse_expr.c `transformAExprOpAny`/`transformAExprOpAll`; parse_oper.c `make_scalar_array_op` uses the array element type.
+                Kind::AexprOpAny | Kind::AexprOpAll => {
+                    let left = n
+                        .lexpr
+                        .as_deref()
+                        .and_then(|x| x.node.as_ref())
+                        .and_then(|x| infer_expr(r, x));
+                    let array = n
+                        .rexpr
+                        .as_deref()
+                        .and_then(|x| x.node.as_ref())
+                        .and_then(|x| infer_expr(r, x));
+                    let element = match array {
+                        Some(Type::UnknownLiteral) => Some(Type::UnknownLiteral),
+                        Some(Type::Named(id)) => r
+                            .catalog
+                            .type_by_id(&id)
+                            .found()
+                            .and_then(|i| i.element)
+                            .map(Type::Named),
+                        _ => None,
+                    };
+                    let (Some(left), Some(element)) = (left, element) else {
+                        return named(r, "bool");
+                    };
+                    let op = string_values(&n.name)?.last()?.clone();
+                    check_operator(r, &op, Some(&left), &element, n.location);
+                    return named(r, "bool");
+                }
+                // Port of parse_expr.c `transformAExprIn`: try a common scalar type, then compare items individually.
+                Kind::AexprIn => {
+                    let left = n
+                        .lexpr
+                        .as_deref()
+                        .and_then(|x| x.node.as_ref())
+                        .and_then(|x| infer_expr(r, x));
+                    let rhs = n.rexpr.as_deref().and_then(|x| x.node.as_ref());
+                    let items = match rhs {
+                        Some(NodeEnum::List(list)) => list
+                            .items
+                            .iter()
+                            .filter_map(|item| item.node.as_ref())
+                            .collect::<Vec<_>>(),
+                        Some(node) => vec![node],
+                        None => Vec::new(),
+                    };
+                    let name = if string_values(&n.name)?.last()?.as_str() == "<>" {
+                        "<>"
+                    } else {
+                        "="
+                    };
+                    let types = items
+                        .iter()
+                        .filter_map(|item| infer_expr(r, item))
+                        .collect::<Vec<_>>();
+                    if let Some(left) = left.as_ref() {
+                        if items.len() > 1 && types.len() == items.len() {
+                            // Port of transformAExprIn: common-type array optimization for non-Var items.
+                            if let Selection::Match(common) = select_common_type(
+                                r.catalog,
+                                &[std::iter::once(left.clone())
+                                    .chain(types.clone())
+                                    .collect::<Vec<_>>()]
+                                .concat(),
+                            ) {
+                                if !matches!(common, Type::Record(_)) {
+                                    check_operator(r, name, Some(left), &common, n.location);
+                                    return named(r, "bool");
+                                }
+                            }
+                        }
+                        for ty in &types {
+                            check_operator(r, name, Some(left), ty, n.location);
+                        }
+                    }
+                    return named(r, "bool");
+                }
+                Kind::AexprBetween
                 | Kind::AexprNotBetween
                 | Kind::AexprBetweenSym
-                | Kind::AexprNotBetweenSym => return named(r, "bool"),
+                | Kind::AexprNotBetweenSym => {
+                    let left = n
+                        .lexpr
+                        .as_deref()
+                        .and_then(|x| x.node.as_ref())
+                        .and_then(|x| infer_expr(r, x));
+                    let bounds = n.rexpr.as_deref().and_then(|x| x.node.as_ref());
+                    if let Some(NodeEnum::List(list)) = bounds {
+                        if list.items.len() == 2 {
+                            let low = list.items[0].node.as_ref().and_then(|x| infer_expr(r, x));
+                            let high = list.items[1].node.as_ref().and_then(|x| infer_expr(r, x));
+                            if let (Some(left), Some(low), Some(high)) =
+                                (left.as_ref(), low.as_ref(), high.as_ref())
+                            {
+                                // Port of parse_expr.c `transformAExprBetween`.
+                                let kind = Kind::try_from(n.kind).ok()?;
+                                let (lower, upper) = match kind {
+                                    Kind::AexprNotBetween | Kind::AexprNotBetweenSym => ("<", ">"),
+                                    _ => (">=", "<="),
+                                };
+                                check_operator(r, lower, Some(left), low, n.location);
+                                check_operator(r, upper, Some(left), high, n.location);
+                                if matches!(kind, Kind::AexprBetweenSym | Kind::AexprNotBetweenSym)
+                                {
+                                    check_operator(r, lower, Some(left), high, n.location);
+                                    check_operator(r, upper, Some(left), low, n.location);
+                                }
+                            }
+                        }
+                    }
+                    return named(r, "bool");
+                }
+                // Port of parse_expr.c `transformAExprOp`: LIKE/ILIKE lower to ~~/~~*/!~~/!~~*; SIMILAR is conservatively checked as ~.
+                Kind::AexprLike | Kind::AexprIlike | Kind::AexprSimilar => {
+                    let left = n
+                        .lexpr
+                        .as_deref()
+                        .and_then(|x| x.node.as_ref())
+                        .and_then(|x| infer_expr(r, x));
+                    let right = n
+                        .rexpr
+                        .as_deref()
+                        .and_then(|x| x.node.as_ref())
+                        .and_then(|x| infer_expr(r, x));
+                    if let (Some(left), Some(right)) = (left.as_ref(), right.as_ref()) {
+                        let negated = string_values(&n.name)
+                            .and_then(|v| v.last().cloned())
+                            .as_deref()
+                            == Some("!~~");
+                        let op = match Kind::try_from(n.kind).ok()? {
+                            Kind::AexprLike => {
+                                if negated {
+                                    "!~~"
+                                } else {
+                                    "~~"
+                                }
+                            }
+                            Kind::AexprIlike => {
+                                if negated {
+                                    "!~~*"
+                                } else {
+                                    "~~*"
+                                }
+                            }
+                            _ => "~",
+                        };
+                        check_operator(r, op, Some(left), right, n.location);
+                    }
+                    return named(r, "bool");
+                }
+                // Port of parse_expr.c `transformAExprNullIf`, which selects `=` with make_op.
                 Kind::AexprNullif => {
                     let left = n
                         .lexpr
@@ -241,6 +411,7 @@ pub(super) fn infer_expr(r: &mut Resolver<'_>, expr: &NodeEnum) -> Option<Type> 
                         .node
                         .as_ref()
                         .and_then(|x| infer_expr(r, x))?;
+                    check_operator(r, "=", Some(&left), &right, n.location);
                     return common_types(r, &[left, right]);
                 }
                 _ => {}
@@ -348,11 +519,50 @@ pub(super) fn infer_expr(r: &mut Resolver<'_>, expr: &NodeEnum) -> Option<Type> 
         NodeEnum::CoalesceExpr(n) => common(r, &n.args),
         NodeEnum::MinMaxExpr(n) => common(r, &n.args),
         NodeEnum::CaseExpr(n) => {
+            let test_type = n
+                .arg
+                .as_deref()
+                .and_then(|x| x.node.as_ref())
+                .and_then(|x| infer_expr(r, x));
             let mut results = Vec::new();
             for when in &n.args {
                 let Some(NodeEnum::CaseWhen(when)) = when.node.as_ref() else {
                     return None;
                 };
+                let when_type = when
+                    .expr
+                    .as_deref()
+                    .and_then(|x| x.node.as_ref())
+                    .and_then(|x| infer_expr(r, x));
+                if let (Some(left), Some(right)) = (test_type.as_ref(), when_type.as_ref()) {
+                    // Port of parse_expr.c `transformCaseExpr`'s make_op("=") comparison; unknown candidate
+                    // metadata deliberately suppresses a finding.
+                    let comparison = select_operator(
+                        r.catalog,
+                        None,
+                        "=",
+                        OperatorKind::Infix,
+                        Some(left),
+                        right,
+                        r.search_path,
+                    );
+                    let failure = match comparison {
+                        Selection::NoMatch => Some(crate::resolve::MatchFailure::NoMatch),
+                        Selection::Ambiguous => Some(crate::resolve::MatchFailure::Ambiguous),
+                        _ => None,
+                    };
+                    if let Some(failure) = failure {
+                        r.report(
+                            crate::resolve::FindingKind::OperatorMismatch {
+                                operator: "=".to_owned(),
+                                left: Some(left.clone()),
+                                right: right.clone(),
+                                failure,
+                            },
+                            when.location,
+                        );
+                    }
+                }
                 results.push(
                     when.result
                         .as_deref()
@@ -470,5 +680,54 @@ fn common_types(r: &Resolver<'_>, ts: &[Type]) -> Option<Type> {
     match select_common_type(r.catalog, ts) {
         Selection::Match(t) => Some(t),
         _ => None,
+    }
+}
+
+/// Port of parse_oper.c's `oper`/`make_op` selection; report only proven selection failures.
+fn check_operator(
+    r: &mut Resolver<'_>,
+    operator: &str,
+    left: Option<&Type>,
+    right: &Type,
+    location: i32,
+) {
+    let selection = select_operator(
+        r.catalog,
+        None,
+        operator,
+        OperatorKind::Infix,
+        left,
+        right,
+        r.search_path,
+    );
+    let failure = match selection {
+        Selection::NoMatch => Some(crate::resolve::MatchFailure::NoMatch),
+        Selection::Ambiguous => Some(crate::resolve::MatchFailure::Ambiguous),
+        Selection::Match(operator_result) => {
+            let Lookup::Found(boolean_info) =
+                r.catalog.type_(Some("pg_catalog"), "bool", r.search_path)
+            else {
+                return;
+            };
+            let Some(boolean) = boolean_info.id else {
+                return;
+            };
+            if operator_result.result.as_ref() != Some(&Type::Named(boolean)) {
+                return;
+            }
+            None
+        }
+        Selection::Unknown => None,
+    };
+    if let Some(failure) = failure {
+        r.report(
+            crate::resolve::FindingKind::OperatorMismatch {
+                operator: operator.to_owned(),
+                left: left.cloned(),
+                right: right.clone(),
+                failure,
+            },
+            location,
+        );
     }
 }

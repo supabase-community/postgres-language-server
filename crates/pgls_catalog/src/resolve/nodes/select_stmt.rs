@@ -120,20 +120,66 @@ fn resolve_values(r: &mut Resolver, n: &SelectStmt) -> Columns {
 fn resolve_select(r: &mut Resolver, n: &SelectStmt) -> Columns {
     let mut level = resolve_from_clause(r, &n.from_clause);
     level.output_names = n.target_list.iter().filter_map(output_name).collect();
+    let output_names = level.output_names.clone();
     r.enter_level(level);
 
     resolve_list(r, &n.target_list);
     for node in n.where_clause.iter().chain(&n.having_clause) {
         resolve_node(r, node);
+        if let Some(expr) = node.node.as_ref() {
+            super::super::expr::infer_expr(r, expr);
+        }
     }
     r.set_output_names_visible(true);
-    resolve_list(r, &n.group_clause);
-    resolve_list(r, &n.sort_clause);
-    resolve_list(r, &n.distinct_clause);
+    for node in &n.group_clause {
+        resolve_node(r, node);
+        if let Some(expr) = node.node.as_ref() {
+            if !is_output_reference(expr, &output_names) {
+                super::super::expr::infer_expr(r, expr);
+            }
+        }
+    }
+    for node in &n.sort_clause {
+        resolve_node(r, node);
+        if let Some(expr) = node.node.as_ref().and_then(|sort| match sort {
+            NodeEnum::SortBy(sort) => sort.node.as_deref().and_then(|node| node.node.as_ref()),
+            _ => Some(sort),
+        }) {
+            if !is_output_reference(expr, &output_names) {
+                super::super::expr::infer_expr(r, expr);
+            }
+        }
+    }
+    for node in &n.distinct_clause {
+        resolve_node(r, node);
+        if let Some(expr) = node.node.as_ref() {
+            if !is_output_reference(expr, &output_names) {
+                super::super::expr::infer_expr(r, expr);
+            }
+        }
+    }
     r.set_output_names_visible(false);
-    resolve_list(r, &n.window_clause);
+    for node in &n.window_clause {
+        resolve_node(r, node);
+        if let Some(NodeEnum::WindowDef(window)) = node.node.as_ref() {
+            for expr in window
+                .partition_clause
+                .iter()
+                .chain(&window.order_clause)
+                .chain(window.start_offset.iter().map(|offset| offset.as_ref()))
+                .chain(window.end_offset.iter().map(|offset| offset.as_ref()))
+            {
+                if let Some(expr) = expr.node.as_ref() {
+                    super::super::expr::infer_expr(r, expr);
+                }
+            }
+        }
+    }
     for node in n.limit_offset.iter().chain(&n.limit_count) {
         resolve_node(r, node);
+        if let Some(expr) = node.node.as_ref() {
+            super::super::expr::infer_expr(r, expr);
+        }
     }
 
     let columns = target_list_columns(r, &n.target_list);
@@ -192,6 +238,25 @@ fn resolve_select(r: &mut Resolver, n: &SelectStmt) -> Columns {
     r.output = typed;
     r.exit_level();
     columns
+}
+
+/// Bare output names and ordinal references are resolved by PostgreSQL against the target list.
+fn is_output_reference(expr: &NodeEnum, output_names: &[String]) -> bool {
+    match expr {
+        NodeEnum::ColumnRef(column) if column.fields.len() == 1 => column.fields[0]
+            .node
+            .as_ref()
+            .and_then(|node| match node {
+                NodeEnum::String(value) => Some(value.sval.as_str()),
+                _ => None,
+            })
+            .is_some_and(|name| output_names.iter().any(|output| output == name)),
+        NodeEnum::AConst(value) => value
+            .val
+            .as_ref()
+            .is_some_and(|value| matches!(value, pgls_query::protobuf::a_const::Val::Ival(_))),
+        _ => false,
+    }
 }
 
 /// The name of an entry of the select list, which `ORDER BY` and `GROUP BY` can reference.

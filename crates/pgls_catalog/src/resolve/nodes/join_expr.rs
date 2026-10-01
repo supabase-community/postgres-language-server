@@ -56,6 +56,9 @@ pub(super) fn resolve_join_expr(r: &mut Resolver, n: &JoinExpr, preceding: &Leve
     if let Some(quals) = n.quals.as_deref() {
         r.enter_level(joined);
         resolve_node(r, quals);
+        if let Some(expr) = quals.node.as_ref() {
+            super::super::expr::infer_expr(r, expr);
+        }
         joined = r.exit_level();
     }
 

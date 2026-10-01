@@ -82,6 +82,100 @@ const CASES: &[(&str, Expect)] = &[
     ("select '1' + '1'", Detect("42725", Kind::Operator)),
     ("select 1 + now()", Detect("42883", Kind::Operator)),
     (
+        "select 1 from items where name + 1 > 0",
+        Detect("42883", Kind::Operator),
+    ),
+    (
+        "select 1 from items i join logs l on i.name + 1 = l.id",
+        Detect("42883", Kind::Operator),
+    ),
+    (
+        "select 1 from items group by name + 1",
+        Detect("42883", Kind::Operator),
+    ),
+    (
+        "select 1 from items having name + 1 > 0",
+        Detect("42883", Kind::Operator),
+    ),
+    (
+        "select 1 from items order by name + 1",
+        Detect("42883", Kind::Operator),
+    ),
+    (
+        "delete from items where name + 1 > 0",
+        Detect("42883", Kind::Operator),
+    ),
+    (
+        "update items set qty = 1 where name + 1 > 0",
+        Detect("42883", Kind::Operator),
+    ),
+    (
+        "update items set qty = 1 returning name + 1",
+        Detect("42883", Kind::Operator),
+    ),
+    (
+        "select 1 in (1, 2), 1 = any(array[1, 2]), 1 between 0 and 2",
+        Accept,
+    ),
+    ("select name as n from items group by n order by n", Accept),
+    (
+        "select name like 'x%' from items where flag and not false",
+        Accept,
+    ),
+    (
+        "select qty from items window w as (partition by flag order by qty)",
+        Accept,
+    ),
+    (
+        "select case qty when name then 1 else 2 end from items",
+        Detect("42883", Kind::Operator),
+    ),
+    ("select 1 = any(array[1, 2])", Accept),
+    (
+        "select qty = any(array[name]) from items",
+        Detect("42883", Kind::Operator),
+    ),
+    ("select 1 in (1, 2)", Accept),
+    ("select row(1, 2) = row(1, 2)", Accept),
+    ("select i = i from items i", Accept),
+    ("select i is distinct from i from items i", Accept),
+    ("select (1, 'a')::pair = (1, 'a')::pair", Accept),
+    ("select (1, 'a')::pair in ((1, 'a')::pair)", Accept),
+    ("select i in (select i from items i) from items i", Accept),
+    ("select qty in (select id from items) from items", Accept),
+    ("select qty = any(select id from items) from items", Accept),
+    ("select 1 = any('{1,2}')", Accept),
+    ("select 'happy'::mood = 'happy'", Accept),
+    ("select '[1,2)'::int4range = '[1,2)'", Accept),
+    ("select array[1] = array[1]", Accept),
+    ("select array[1] = '{1}'", Accept),
+    (
+        "select 1 in (qty, name) from items",
+        Detect("42883", Kind::Operator),
+    ),
+    ("select 1 between 0 and 2", Accept),
+    (
+        "select name between qty and id from items",
+        Detect("42883", Kind::Operator),
+    ),
+    (
+        "select name is distinct from qty from items",
+        Detect("42883", Kind::Operator),
+    ),
+    (
+        "select nullif(qty, name) from items",
+        Detect("42883", Kind::Operator),
+    ),
+    ("select 'a' like 'b%'", Accept),
+    ("select 1 like 'b%'", Detect("42883", Kind::Operator)),
+    ("select 'a' ilike 'b%'", Accept),
+    ("select 'a' similar to 'b%'", Accept),
+    (
+        "select 1 from items window w as (partition by name + 1)",
+        Detect("42883", Kind::Operator),
+    ),
+    ("select 1 from items where not flag", Accept),
+    (
         "select name + 1 from items",
         Detect("42883", Kind::Operator),
     ),

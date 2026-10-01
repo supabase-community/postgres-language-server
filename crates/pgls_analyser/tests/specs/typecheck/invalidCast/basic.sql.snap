@@ -1,0 +1,15 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+-- expect_lint/invalidCast
+select timestamp '2020-01-01'::integer;
+
+```
+
+# Diagnostics
+lint/invalidCast ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Cannot cast type timestamp without time zone to integer.

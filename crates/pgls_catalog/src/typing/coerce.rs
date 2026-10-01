@@ -113,8 +113,17 @@ pub fn find_coercion_pathway(
         Lookup::Unknown => return Decision::Unknown,
         Lookup::Missing => {}
     }
-    // Derive array coercions only for true arrays, identified by `element` metadata.
+    // Derive array coercions only for true arrays, identified by `element` metadata. Postgres
+    // never derives them for `oidvector` and `int2vector` targets.
+    let vector_target = match (
+        is_named(c, &target, "oidvector"),
+        is_named(c, &target, "int2vector"),
+    ) {
+        (Decision::Known(oidvector), Decision::Known(int2vector)) => oidvector || int2vector,
+        _ => return Decision::Unknown,
+    };
     match (array_element(c, &source), array_element(c, &target)) {
+        _ if vector_target => {}
         (Decision::Known(Some(se)), Decision::Known(Some(te))) => {
             match find_coercion_pathway(c, &se, &te, context) {
                 Decision::Known(Some(_)) => {
@@ -223,14 +232,19 @@ pub fn can_coerce(
         (Decision::Unknown, _) | (_, Decision::Unknown) => return Decision::Unknown,
         _ => {}
     }
+    // `ISCOMPLEX` also holds for domains over composite types, which are not followed here.
+    // No cast targets `record`, so any other type can't be coerced to it.
     match is_named(c, to, "record") {
-        Decision::Known(true) => match info(c, source) {
-            Decision::Known(t) if t.kind == Some(TypeKind::Composite) => {
-                return Decision::Known(true);
-            }
-            Decision::Known(_) => {}
-            Decision::Unknown => return Decision::Unknown,
-        },
+        Decision::Known(true) => {
+            return match info(c, source) {
+                Decision::Known(t) => match t.kind {
+                    Some(TypeKind::Composite) => Decision::Known(true),
+                    Some(TypeKind::Domain) | Some(TypeKind::Pseudo) | None => Decision::Unknown,
+                    Some(_) => Decision::Known(false),
+                },
+                Decision::Unknown => Decision::Unknown,
+            };
+        }
         Decision::Unknown => return Decision::Unknown,
         Decision::Known(false) => {}
     }

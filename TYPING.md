@@ -111,7 +111,7 @@ fn server_version_num(&self) -> Option<i64>;
 pub fn can_coerce(c: &dyn CatalogView, from: &Type, to: &TypeId, context: CoercionContext)
     -> Decision<bool>;
 // typing/overload.rs
-pub fn select_operator(c: &dyn CatalogView, schema: Option<&str>, name: &str,
+pub fn select_operator(c: &dyn CatalogView, schema: Option<&str>, name: &str, kind: OperatorKind,
     left: Option<&Type>, right: &Type, search_path: &[String]) -> Selection<ResolvedOperator>;
 pub fn select_function(c: &dyn CatalogView, schema: Option<&str>, name: &str,
     args: &[CallArg], search_path: &[String]) -> Selection<ResolvedFunction>;
@@ -154,19 +154,30 @@ The EXPLAIN fallback stays gated on `database_only`. A static finding already cl
 
 ## Testing
 
-- **Unit tests** per module (`typing/tests.rs`, `resolve/tests.rs`, `catalog/tests.rs`) against small handwritten catalogs.
+- **Unit tests** per module against small handwritten catalogs, and database-backed tests (`#[cfg(feature = "db")]`) against a real snapshot where built-ins matter.
 - **Rule specs** (`pgls_analyser/tests/specs/typecheck/<rule>/*.sql`) run against the test database's built-in catalog: the runner loads a `Snapshot` from `postgresql://postgres:postgres@127.0.0.1:5432/postgres` once, keeps only `pg_catalog` and `information_schema` objects, and uses it as the catalog base. No committed fixture. CI runs the tests on Linux, macOS, and Windows, all with Postgres 15.
-- **Differential tests** against the real database: for each statement in a corpus, compare the static result with Postgres (Parse/Describe via `PREPARE`, or `CREATE FUNCTION` inside a rolled-back transaction for function bodies). Every statement Postgres accepts must give zero static type errors; every inferred output type must equal Postgres'. Track how often inference is unknown, so a checker that always says unknown fails.
+- **Differential test** (`resolve/differential_tests.rs`): a corpus of statements, each with its expected outcome (`Accept`, `Detect(sqlstate, kind)`, or `Miss(sqlstate)` for known gaps). Every run first checks the expectation against Postgres (Parse/Describe without executing, or DDL in a rolled-back transaction), then the analysis: statements Postgres accepts must give no finding at all, every inferred output type must equal the type Postgres describes, and `Detect` cases must give the matching finding. Each case runs twice: with the setup in the snapshot, and with the setup applied as file DDL. It prints how many output columns were typed, so a checker that always says unknown shows up.
 
-## Work Breakdown
+## Decisions and Findings
 
-| Worker | Owns | Delivers |
+- `overload.rs` is a direct port: `FuncnameGetCandidates` (argument expansion, defaults, variadic, named arguments, masking by search path, same-schema duplicates are ambiguous), `func_get_detail`, `func_match_argtypes` over a multi-argument `can_coerce_type`, `func_select_candidate` (all four steps), `binary_oper_exact`, and `oper_select_candidate`. Operators reuse the function candidate selection, like Postgres.
+- A name with no candidate of the right arity is `Unknown` in `select_function`: arity is `unknownFunction`'s job. Operators have no such rule, so an operator name without a matching candidate is `NoMatch`.
+- One-argument calls of a type name (`int4(x)`) and `col(row)` field selections are `Unknown` when no function matches, as are `VARIADIC` calls and ordered-set aggregates.
+- `can_coerce` is `Unknown` for anonymous rows (`ROW(...)`) and for composite-to-composite and `record`-to-composite coercions, which Postgres checks at runtime or through inheritance.
+- SQL function results: Postgres resolves unknown literals in the final statement to `text` before comparing, so `returns jsonb ... select '{}'` fails. Each column must be assignable (assignment coercion, Postgres 13+; older versions are stricter, so this never over-reports). Domains are scalar results, even over composite types.
+- Multi-row `INSERT ... VALUES` coerces each row to the target columns on its own; there is no common type across rows. Targets with subscripts or fields (`a[1]`, `c.f`) are not checked.
+- `query_output_types` keeps top-level unknown literals as `unknown` (Postgres describes them as `text`). INSERT ... SELECT needs the unresolved type.
+
+## Status
+
+| Part | Where | State |
 | --- | --- | --- |
-| A: model and catalog | `typing/{mod,model,normalize}.rs`, stubs of `typing/{coerce,overload,polymorphic,common}.rs`, `lookup.rs`, `lib.rs`, `snapshot/**`, `catalog/{base,mod}.rs`, `Cargo.toml`, `.sqlx` | Model, snapshot queries and structs, indexed `CatalogView` API, type normalization |
-| B: overlay | `catalog/ddl/**`, `catalog/{overlay,names,derive,materialize,tests}.rs` | Types of file-created objects, function replacement by signature, invalidation |
-| C: algorithms | `typing/{coerce,overload,polymorphic,common,tests}.rs` | Postgres coercion and overload selection |
-| D: resolver | `resolve/**` | Typed scopes, expression typing, typed findings, SQL function return types |
-| E: rules | `pgls_analyser` sources and specs, workspace integration, generated files | Four new rules and the extended return rule |
-| F: testing | `pgls_analyser/tests/rules_tests.rs`, differential tests | Spec runner on the built-in catalog, differential harness |
-
-Order: A first (contracts); then B, C, D, and F in parallel; then E; then the differential run over everything.
+| Model, snapshot metadata, typed lookups | `typing/{model,normalize}.rs`, `snapshot/**`, `catalog/{base,mod}.rs`, `lookup.rs` | done |
+| Types of file-created objects | `catalog/ddl/**`, `catalog/{overlay,derive,materialize}.rs` | done |
+| Coercion, common type, polymorphism, overloads | `typing/{coerce,common,polymorphic,overload,display}.rs` | done; ranges are unknown |
+| Typed scopes, relations, expressions, findings | `resolve/**` | expressions typed in target lists, VALUES, and assignments; other clauses in progress |
+| SQL function result types | `resolve/nodes/create_function_stmt.rs` | done |
+| Rules | `pgls_analyser/src/lint/typecheck/*` | in progress |
+| Spec runner on the built-in catalog | `pgls_analyser/tests/rules_tests.rs` | done |
+| Differential test | `resolve/differential_tests.rs` | done; grows with each change |
+| Hover with expression types | `pgls_hover` | deferred |

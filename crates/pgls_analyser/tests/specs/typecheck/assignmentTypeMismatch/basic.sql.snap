@@ -1,0 +1,18 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+create table typecheck_assignment (qty integer);
+-- expect_lint/assignmentTypeMismatch
+insert into typecheck_assignment values (timestamp '2020-01-01');
+
+```
+
+# Diagnostics
+lint/assignmentTypeMismatch ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Column "qty" is of type integer but expression is of type timestamp without time zone.
+  
+  i You will need to rewrite or cast the expression.

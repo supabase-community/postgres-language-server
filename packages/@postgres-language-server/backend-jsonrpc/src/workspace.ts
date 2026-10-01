@@ -69,6 +69,7 @@ export type Category =
   | "lint/addingPrimaryKeyConstraint"
   | "lint/addingRequiredField"
   | "lint/ambiguousColumn"
+  | "lint/assignmentTypeMismatch"
   | "lint/avoidAddingExclusionConstraint"
   | "lint/avoidAlterEnumAddValue"
   | "lint/avoidAttachingPartition"
@@ -92,12 +93,15 @@ export type Category =
   | "lint/constraintMissingNotValid"
   | "lint/creatingEnum"
   | "lint/disallowUniqueConstraint"
+  | "lint/functionArgumentMismatch"
   | "lint/functionReturnTypeMismatch"
   | "lint/insertColumnMismatch"
+  | "lint/invalidCast"
   | "lint/invalidDropTypeSignature"
   | "lint/lockTimeoutWarning"
   | "lint/missingFromClauseEntry"
   | "lint/multipleAlterTable"
+  | "lint/operatorTypeMismatch"
   | "lint/preferBigInt"
   | "lint/preferIdentity"
   | "lint/preferJsonb"
@@ -752,6 +756,10 @@ export interface LinterRules {
    */
   ambiguousColumn?: RuleConfiguration_for_Null;
   /**
+   * An expression assigned to a column cannot be coerced to that column's type. The rule needs a database connection to load the table and type catalog.
+   */
+  assignmentTypeMismatch?: RuleConfiguration_for_Null;
+  /**
    * Adding an exclusion constraint acquires an ACCESS EXCLUSIVE lock.
    */
   avoidAddingExclusionConstraint?: RuleConfiguration_for_Null;
@@ -844,6 +852,10 @@ export interface LinterRules {
    */
   disallowUniqueConstraint?: RuleConfiguration_for_Null;
   /**
+   * A function name and argument count exist, but its argument types do not select exactly one overload. The rule needs a database connection to load the function and type catalog.
+   */
+  functionArgumentMismatch?: RuleConfiguration_for_Null;
+  /**
    * The final statement of a SQL function doesn't return what the function is declared to return.
    */
   functionReturnTypeMismatch?: RuleConfiguration_for_Null;
@@ -851,6 +863,10 @@ export interface LinterRules {
    * An INSERT has a different number of target columns than values.
    */
   insertColumnMismatch?: RuleConfiguration_for_Null;
+  /**
+   * An explicit cast is not permitted between the source and target types. The rule needs a database connection to load the type and cast catalog.
+   */
+  invalidCast?: RuleConfiguration_for_Null;
   /**
    * DROP TYPE and DROP DOMAIN don't take a parameter list.
    */
@@ -867,6 +883,10 @@ export interface LinterRules {
    * Multiple ALTER TABLE statements on the same table should be combined into a single statement.
    */
   multipleAlterTable?: RuleConfiguration_for_Null;
+  /**
+   * An operator exists by name but cannot be resolved for the operand types, or has multiple equally suitable candidates.
+   */
+  operatorTypeMismatch?: RuleConfiguration_for_Null;
   /**
    * Prefer BIGINT over smaller integer types.
    */
