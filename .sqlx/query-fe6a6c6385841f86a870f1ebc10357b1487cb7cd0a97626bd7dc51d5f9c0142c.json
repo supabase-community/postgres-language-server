@@ -1,0 +1,104 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "select\n  t.oid :: int8 as \"id!\",\n  t.typtype::text as \"typtype!\",\n  t.typcategory::text as \"typcategory!\",\n  t.typispreferred as \"typispreferred!\",\n  t.typelem::int8 as \"typelem!\",\n  t.typarray::int8 as \"typarray!\",\n  t.typbasetype::int8 as \"typbasetype!\",\n  t.typrelid::int8 as \"typrelid!\",\n  (t.typsubscript = 'array_subscript_handler'::regproc) as \"is_array!\",\n  t.typname as name,\n  n.nspname as \"schema!\",\n  format_type (t.oid, null) as \"format!\",\n  coalesce(t_enums.enums, '[]') as enums,\n  coalesce(t_attributes.attributes, '[]') as attributes,\n  obj_description (t.oid, 'pg_type') as comment\nfrom\n  pg_type t\n  left join pg_namespace n on n.oid = t.typnamespace\n  left join (\n    select\n      enumtypid,\n      jsonb_agg(\n        enumlabel\n        order by\n          enumsortorder\n      ) as enums\n    from\n      pg_enum\n    group by\n      enumtypid\n  ) as t_enums on t_enums.enumtypid = t.oid\n  left join (\n    select\n      oid,\n      jsonb_agg(\n        jsonb_build_object('name', a.attname, 'type_id', a.atttypid :: int8)\n        order by\n          a.attnum asc\n      ) as attributes\n    from\n      pg_class c\n      join pg_attribute a on a.attrelid = c.oid\n    where\n      c.relkind in ('c', 'r', 'p', 'v', 'm', 'f')\n      and a.attnum > 0\n      and not a.attisdropped\n    group by\n      c.oid\n  ) as t_attributes on t_attributes.oid = t.typrelid\nwhere\n  (\n    t.typrelid = 0\n    or (\n      select\n        c.relkind in ('c', 'r', 'p', 'v', 'm', 'f')\n      from\n        pg_class c\n      where\n        c.oid = t.typrelid\n    )\n  );",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id!",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 1,
+        "name": "typtype!",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "typcategory!",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "typispreferred!",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 4,
+        "name": "typelem!",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 5,
+        "name": "typarray!",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 6,
+        "name": "typbasetype!",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 7,
+        "name": "typrelid!",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 8,
+        "name": "is_array!",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 9,
+        "name": "name",
+        "type_info": "Name"
+      },
+      {
+        "ordinal": 10,
+        "name": "schema!",
+        "type_info": "Name"
+      },
+      {
+        "ordinal": 11,
+        "name": "format!",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 12,
+        "name": "enums",
+        "type_info": "Jsonb"
+      },
+      {
+        "ordinal": 13,
+        "name": "attributes",
+        "type_info": "Jsonb"
+      },
+      {
+        "ordinal": 14,
+        "name": "comment",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      null,
+      null,
+      null,
+      false,
+      null,
+      null,
+      null,
+      null,
+      null,
+      false,
+      true,
+      null,
+      null,
+      null,
+      null
+    ]
+  },
+  "hash": "fe6a6c6385841f86a870f1ebc10357b1487cb7cd0a97626bd7dc51d5f9c0142c"
+}

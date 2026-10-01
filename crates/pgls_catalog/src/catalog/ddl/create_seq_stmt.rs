@@ -15,7 +15,7 @@ pub(super) fn apply_create_seq_stmt(c: &mut Catalog, n: &CreateSeqStmt, search_p
         schema: key.0,
         name: key.1,
         kind: RelationKind::Other,
-        columns: Some(sequence_columns()),
+        columns: Some(sequence_columns(&rustc_hash::FxHashMap::default())),
         origin: Origin::File,
     });
 }

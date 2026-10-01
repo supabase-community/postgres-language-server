@@ -1,5 +1,11 @@
 use core::slice;
-use std::{collections::HashMap, fmt::Write, fs::read_to_string, path::Path};
+use std::{
+    collections::{HashMap, HashSet},
+    fmt::Write,
+    fs::read_to_string,
+    path::Path,
+    sync::{Arc, OnceLock},
+};
 
 use pgls_analyse::{AnalysisFilter, RuleFilter};
 use pgls_analyser::{
@@ -7,6 +13,79 @@ use pgls_analyser::{
 };
 use pgls_console::StdDisplay;
 use pgls_diagnostics::PrintDiagnostic;
+
+static TYPECHECK_CATALOG: OnceLock<Arc<pgls_catalog::CatalogBase>> = OnceLock::new();
+
+fn typecheck_catalog() -> Arc<pgls_catalog::CatalogBase> {
+    TYPECHECK_CATALOG
+        .get_or_init(|| {
+            let default_url = "postgresql://postgres:postgres@127.0.0.1:5432/postgres";
+            let database_url = std::env::var("DATABASE_URL").unwrap_or_else(|_| default_url.into());
+            let runtime = tokio::runtime::Runtime::new().expect("failed to create test database runtime");
+            let snapshot = runtime.block_on(async {
+                let pool = sqlx::postgres::PgPoolOptions::new()
+                    .connect(&database_url)
+                    .await
+                    .unwrap_or_else(|error| {
+                        panic!(
+                            "typecheck specs need the test database at {database_url}; run `docker compose up -d` ({error})"
+                        )
+                    });
+                pgls_catalog::Snapshot::load(&pool).await.unwrap_or_else(|error| {
+                    panic!(
+                        "typecheck specs need the test database at {database_url}; run `docker compose up -d` ({error})"
+                    )
+                })
+            });
+            Arc::new(pgls_catalog::CatalogBase::new(Arc::new(builtin_snapshot(snapshot))))
+        })
+        .clone()
+}
+
+fn builtin_snapshot(mut snapshot: pgls_catalog::Snapshot) -> pgls_catalog::Snapshot {
+    let is_builtin = |schema: &str| matches!(schema, "pg_catalog" | "information_schema");
+
+    snapshot.schemas.retain(|schema| is_builtin(&schema.name));
+    snapshot.schemas.push(pgls_catalog::Schema {
+        name: "public".into(),
+        ..Default::default()
+    });
+    snapshot.tables.retain(|table| is_builtin(&table.schema));
+    snapshot
+        .functions
+        .retain(|function| is_builtin(&function.schema));
+    snapshot.types.retain(|ty| is_builtin(&ty.schema));
+    snapshot
+        .columns
+        .retain(|column| is_builtin(&column.schema_name));
+    snapshot
+        .policies
+        .retain(|policy| is_builtin(&policy.schema_name));
+    snapshot
+        .triggers
+        .retain(|trigger| is_builtin(&trigger.table_schema));
+    snapshot.indexes.retain(|index| is_builtin(&index.schema));
+    snapshot
+        .sequences
+        .retain(|sequence| is_builtin(&sequence.schema));
+    snapshot
+        .extensions
+        .retain(|extension| extension.schema.as_deref().is_some_and(is_builtin));
+    snapshot.roles.clear();
+    let builtin_type_ids = snapshot
+        .types
+        .iter()
+        .map(|ty| ty.id)
+        .collect::<HashSet<_>>();
+    // Casts are global catalog entries; retain only casts whose endpoint types are built-ins.
+    snapshot.casts.retain(|cast| {
+        builtin_type_ids.contains(&cast.source) && builtin_type_ids.contains(&cast.target)
+    });
+    snapshot
+        .operators
+        .retain(|operator| is_builtin(&operator.schema));
+    snapshot
+}
 
 pgls_test_macros::gen_tests! {
   "tests/specs/**/*.sql",
@@ -50,12 +129,11 @@ fn rule_test(full_path: &'static str, _: &str, _: &str) {
         })
         .collect::<Vec<_>>();
 
-    // Typecheck rules need a database. Specs run against one with empty `public` and
-    // `pg_catalog` schemas and create everything else themselves.
+    // Typecheck rules use the test database's built-in catalog; user schemas are filtered out.
     let is_typecheck = group == pgls_analyser::TYPECHECK_GROUP;
     let results = analyser.run(AnalyserParams {
         stmts,
-        catalog_base: is_typecheck.then(|| std::sync::Arc::new(pgls_catalog::CatalogBase::empty())),
+        catalog_base: is_typecheck.then(typecheck_catalog),
         search_path: vec!["public".into()],
         typecheck: is_typecheck,
         ..Default::default()

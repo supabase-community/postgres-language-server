@@ -5,6 +5,8 @@ with functions as (
     prosrc,
     prorettype,
     proretset,
+    pronargdefaults,
+    provariadic,
     provolatile,
     prosecdef,
     prolang,
@@ -38,6 +40,8 @@ with functions as (
 )
 select
   f.oid :: int8 as "id!",
+  f.pronargdefaults as "input_defaults!",
+  f.provariadic :: int8 as "variadic_type_id!",
   n.nspname as "schema!",
   f.proname as "name!",
   l.lanname as "language!",

@@ -3,10 +3,12 @@
  * The objects of the connected database, loaded from the database or from JSON.
  */
 export interface SchemaCache {
+  casts?: PostgresCast[];
   columns?: Column[];
   extensions?: Extension[];
   functions?: Function[];
   indexes?: Index[];
+  operators?: PostgresOperator[];
   policies?: Policy[];
   roles?: Role[];
   schemas?: Schema[];
@@ -14,7 +16,20 @@ export interface SchemaCache {
   tables?: Table[];
   triggers?: Trigger[];
   types?: PostgresType[];
+  /**
+   * Whether typing metadata was collected (false for legacy JSON snapshots).
+   */
+  typing_metadata?: boolean;
   version?: Version;
+}
+/**
+ * A cast present in pg_cast.
+ */
+export interface PostgresCast {
+  context: string;
+  method: string;
+  source: number;
+  target: number;
 }
 export interface Column {
   /**
@@ -81,6 +96,10 @@ export interface Function {
    */
   identity_argument_types?: string;
   /**
+   * Number of trailing input arguments with defaults.
+   */
+  input_defaults?: number;
+  /**
    * Does the function returns multiple values of a data type?
    */
   is_set_returning_function: boolean;
@@ -113,12 +132,28 @@ export interface Function {
    * Is the function's security set to `Definer` (true) or `Invoker` (false)?
    */
   security_definer: boolean;
+  /**
+   * Variadic argument element type oid, or zero when not variadic.
+   */
+  variadic_type_id?: number;
 }
 export interface Index {
   id: number;
   name: string;
   schema: string;
   table_name: string;
+}
+/**
+ * An operator present in pg_operator.
+ */
+export interface PostgresOperator {
+  kind: string;
+  left: number;
+  name: string;
+  oid: number;
+  result: number;
+  right: number;
+  schema: string;
 }
 export interface Policy {
   command: PolicyCommand;
@@ -192,8 +227,16 @@ export interface PostgresType {
   enums: Enums;
   format: string;
   id: number;
+  is_array?: boolean;
   name: string;
   schema: string;
+  typarray?: number;
+  typbasetype?: number;
+  typcategory?: string;
+  typelem?: number;
+  typispreferred?: boolean;
+  typrelid?: number;
+  typtype?: string;
 }
 export interface Version {
   active_connections?: number;

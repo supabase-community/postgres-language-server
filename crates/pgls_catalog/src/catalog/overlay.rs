@@ -81,6 +81,15 @@ impl Catalog {
                     name: relation.name.clone(),
                     attributes: relation.columns.clone(),
                     origin: Origin::File,
+
+                    id: None,
+                    kind: None,
+                    category: None,
+                    preferred: None,
+                    element: None,
+                    array: None,
+                    base: None,
+                    relation: None,
                 }),
             );
         }
@@ -183,6 +192,15 @@ impl Catalog {
                 name,
                 attributes,
                 origin: Origin::File,
+
+                id: None,
+                kind: None,
+                category: None,
+                preferred: None,
+                element: None,
+                array: None,
+                base: None,
+                relation: None,
             }),
         );
     }
@@ -310,6 +328,7 @@ pub(super) fn column_info(column: &protobuf::ColumnDef) -> ColumnInfo {
     ColumnInfo {
         name: column.colname.clone(),
         type_name: column.type_name.as_ref().and_then(type_label),
+        ty: None,
     }
 }
 
@@ -329,6 +348,7 @@ pub(super) fn function_info(
         returns_set: false,
         return_columns: None,
         origin: Origin::File,
+        signature: None,
     }
 }
 

@@ -1,5 +1,13 @@
 select
   t.oid :: int8 as "id!",
+  t.typtype::text as "typtype!",
+  t.typcategory::text as "typcategory!",
+  t.typispreferred as "typispreferred!",
+  t.typelem::int8 as "typelem!",
+  t.typarray::int8 as "typarray!",
+  t.typbasetype::int8 as "typbasetype!",
+  t.typrelid::int8 as "typrelid!",
+  (t.typsubscript = 'array_subscript_handler'::regproc) as "is_array!",
   t.typname as name,
   n.nspname as "schema!",
   format_type (t.oid, null) as "format!",

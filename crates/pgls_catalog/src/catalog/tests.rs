@@ -68,6 +68,7 @@ fn base() -> Arc<CatalogBase> {
         tables,
         columns,
         functions,
+        typing_metadata: true,
         ..Default::default()
     };
     Arc::new(CatalogBase::new(Arc::new(cache)))

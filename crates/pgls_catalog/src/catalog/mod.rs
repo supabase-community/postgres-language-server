@@ -19,6 +19,8 @@ use std::sync::Arc;
 use rustc_hash::{FxHashMap, FxHashSet};
 
 use crate::lookup::{CatalogView, FunctionInfo, Lookup, RelationInfo, TypeInfo};
+use crate::typing::Candidates;
+use crate::typing::{CastInfo, OperatorInfo, OperatorKind, TypeId};
 
 pub use base::CatalogBase;
 
@@ -328,5 +330,102 @@ impl CatalogView for Catalog {
                 self.type_in(schema, name)
             }),
         }
+    }
+
+    fn type_by_id(&self, id: &TypeId) -> Lookup<TypeInfo> {
+        match id {
+            TypeId::Snapshot(_) => self
+                .base
+                .as_ref()
+                .and_then(|b| b.type_by_id(id))
+                .cloned()
+                .map(Lookup::Found)
+                .unwrap_or_else(|| self.not_found()),
+            TypeId::File(_) => Lookup::Unknown,
+        }
+    }
+
+    fn cast(&self, source: &TypeId, target: &TypeId) -> Lookup<CastInfo> {
+        let Some(base) = self.base.as_ref() else {
+            return Lookup::Unknown;
+        };
+        if self.tainted {
+            return Lookup::Unknown;
+        }
+        base.cast(source, target)
+            .cloned()
+            .map(Lookup::Found)
+            .unwrap_or_else(|| {
+                if base.snapshot().typing_metadata {
+                    Lookup::Missing
+                } else {
+                    Lookup::Unknown
+                }
+            })
+    }
+
+    fn function_candidates(
+        &self,
+        schema: Option<&str>,
+        name: &str,
+        search_path: &[String],
+    ) -> Candidates<FunctionInfo> {
+        let schemas: Vec<String> = match schema {
+            Some(schema) => vec![schema.to_owned()],
+            None => function_search_path(search_path).collect(),
+        };
+        let mut items = Vec::new();
+        let mut complete = !self.tainted
+            && self
+                .base
+                .as_ref()
+                .is_some_and(|b| b.snapshot().typing_metadata);
+        for schema in schemas {
+            if self.functions.contains_key(&key(&schema, name)) {
+                complete = false;
+            }
+            match self.functions_in(&schema, name) {
+                Lookup::Found(found) => items.extend(found),
+                Lookup::Missing => {}
+                Lookup::Unknown => complete = false,
+            }
+        }
+        Candidates { items, complete }
+    }
+
+    fn operator_candidates(
+        &self,
+        schema: Option<&str>,
+        name: &str,
+        kind: OperatorKind,
+        search_path: &[String],
+    ) -> Candidates<OperatorInfo> {
+        let Some(base) = self.base.as_ref() else {
+            return Candidates {
+                items: vec![],
+                complete: false,
+            };
+        };
+        let schemas: Vec<String> = match schema {
+            Some(s) => vec![s.to_owned()],
+            None => function_search_path(search_path).collect(),
+        };
+        let items = schemas
+            .iter()
+            .filter_map(|s| base.operators(s, name))
+            .flatten()
+            .filter(|op| op.kind == kind)
+            .cloned()
+            .collect();
+        Candidates {
+            items,
+            complete: !self.tainted && base.snapshot().typing_metadata,
+        }
+    }
+
+    fn server_version_num(&self) -> Option<i64> {
+        self.base
+            .as_ref()
+            .and_then(|b| b.snapshot().version.version_num)
     }
 }

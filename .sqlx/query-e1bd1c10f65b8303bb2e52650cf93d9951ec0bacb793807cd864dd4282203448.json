@@ -1,0 +1,56 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "select o.oid::int8 as \"oid!\", n.nspname as \"schema!\", o.oprname as \"name!\", case when o.oprkind = 'l' then 'prefix' else 'infix' end as \"kind!\", o.oprleft::int8 as \"left!\", o.oprright::int8 as \"right!\", o.oprresult::int8 as \"result!\" from pg_operator o join pg_namespace n on n.oid = o.oprnamespace;\n",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "oid!",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 1,
+        "name": "schema!",
+        "type_info": "Name"
+      },
+      {
+        "ordinal": 2,
+        "name": "name!",
+        "type_info": "Name"
+      },
+      {
+        "ordinal": 3,
+        "name": "kind!",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "left!",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 5,
+        "name": "right!",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 6,
+        "name": "result!",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      null,
+      false,
+      false,
+      null,
+      null,
+      null,
+      null
+    ]
+  },
+  "hash": "e1bd1c10f65b8303bb2e52650cf93d9951ec0bacb793807cd864dd4282203448"
+}

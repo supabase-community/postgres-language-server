@@ -19,6 +19,8 @@ impl Catalog {
                 .map(|name| ColumnInfo {
                     name,
                     type_name: None,
+
+                    ty: None,
                 })
                 .collect(),
         )
