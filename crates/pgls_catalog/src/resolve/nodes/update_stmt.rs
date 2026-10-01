@@ -47,7 +47,11 @@ fn resolve_update(r: &mut Resolver, n: &UpdateStmt) -> Columns {
                     &assignment.name,
                     column_type,
                     expr_type,
-                    assignment.location,
+                    assignment
+                        .val
+                        .as_deref()
+                        .and_then(super::insert_stmt::node_location)
+                        .unwrap_or(assignment.location),
                 );
             }
         }

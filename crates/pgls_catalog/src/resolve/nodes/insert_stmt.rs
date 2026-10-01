@@ -68,29 +68,37 @@ fn resolve_insert(r: &mut Resolver, n: &InsertStmt) -> Columns {
                 })
                 .collect()
         };
-        let check = |r: &mut Resolver, value: Option<Type>, target: Option<&TypedColumn>| {
-            if let Some(target) = target
-                && let Some(column_type) = target.ty.clone()
-            {
-                check_assignment(r, &target.name, column_type, value, -1);
-            }
-        };
+        let check =
+            |r: &mut Resolver, value: Option<Type>, target: Option<&TypedColumn>, location: i32| {
+                if let Some(target) = target
+                    && let Some(column_type) = target.ty.clone()
+                {
+                    check_assignment(r, &target.name, column_type, value, location);
+                }
+            };
         match values_rows(source) {
             // Each row of `INSERT ... VALUES` is coerced to the target columns on its own.
             Some(rows) => {
                 for row in rows {
                     for (value, target) in row.iter().zip(&target_types) {
+                        let location = node_location(value).unwrap_or_default();
                         let Some(value) = value.node.as_ref() else {
                             continue;
                         };
                         let value = infer_expr(r, value);
-                        check(r, value, *target);
+                        check(r, value, *target, location);
                     }
                 }
             }
             None => {
-                for (value, target) in source_types.unwrap_or_default().iter().zip(&target_types) {
-                    check(r, value.ty.clone(), *target);
+                for (index, (value, target)) in source_types
+                    .unwrap_or_default()
+                    .iter()
+                    .zip(&target_types)
+                    .enumerate()
+                {
+                    let location = select_target_location(source, index).unwrap_or_default();
+                    check(r, value.ty.clone(), *target, location);
                 }
             }
         }
@@ -121,6 +129,46 @@ fn resolve_insert(r: &mut Resolver, n: &InsertStmt) -> Columns {
     }
 
     resolve_returning_list(r, &n.returning_list, Level::with_item(target))
+}
+
+fn select_target_location(source: &pgls_query::Node, index: usize) -> Option<i32> {
+    let NodeEnum::SelectStmt(select) = source.node.as_ref()? else {
+        return None;
+    };
+    if let Some(row) = select.values_lists.first() {
+        let NodeEnum::List(row) = row.node.as_ref()? else {
+            return None;
+        };
+        return node_location(row.items.get(index)?);
+    }
+    let NodeEnum::ResTarget(target) = select.target_list.get(index)?.node.as_ref()? else {
+        return None;
+    };
+    node_location(target.val.as_deref()?)
+}
+
+pub(super) fn node_location(node: &pgls_query::Node) -> Option<i32> {
+    Some(match node.node.as_ref()? {
+        NodeEnum::AConst(n) => n.location,
+        NodeEnum::ColumnRef(n) => n.location,
+        NodeEnum::AExpr(n) => n.location,
+        NodeEnum::FuncCall(n) => n.location,
+        NodeEnum::TypeCast(n) => n.location,
+        NodeEnum::ParamRef(n) => n.location,
+        NodeEnum::CaseExpr(n) => n.location,
+        NodeEnum::CoalesceExpr(n) => n.location,
+        NodeEnum::MinMaxExpr(n) => n.location,
+        NodeEnum::AArrayExpr(n) => n.location,
+        NodeEnum::BoolExpr(n) => n.location,
+        NodeEnum::NullTest(n) => n.location,
+        NodeEnum::BooleanTest(n) => n.location,
+        NodeEnum::SubLink(n) => n.location,
+        NodeEnum::RowExpr(n) => n.location,
+        NodeEnum::SqlvalueFunction(n) => n.location,
+        NodeEnum::CollateClause(n) => n.location,
+        NodeEnum::AIndirection(_) => return None,
+        _ => return None,
+    })
 }
 
 /// The rows of a plain `VALUES` list.
