@@ -117,6 +117,8 @@ pub(super) fn apply_create_function_stmt(
                         .arg_type
                         .as_ref()
                         .and_then(|ty| crate::normalize_type_name(c, ty, search_path).0)
+                        .and_then(|array_id| c.type_by_id(&array_id).found())
+                        .and_then(|array_type| array_type.element)
                 }
                 _ => None,
             })

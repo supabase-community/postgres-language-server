@@ -1,6 +1,7 @@
 use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::declare_lint_rule;
 use pgls_catalog::resolve::{FindingKind, ReturnMismatch};
+use pgls_catalog::typing::format_type;
 use pgls_console::markup;
 use pgls_diagnostics::Severity;
 
@@ -76,6 +77,25 @@ impl LinterRule for FunctionReturnTypeMismatch {
                             "Final statement returns too many columns: expected {expected}, found {found}."
                         ),
                         ReturnMismatch::NoRows => "Function's final statement must be SELECT or INSERT/UPDATE/DELETE/MERGE RETURNING.".to_string(),
+                        ReturnMismatch::ColumnType {
+                            position,
+                            expected,
+                            found,
+                        } => {
+                            let catalog = ctx.catalog();
+                            let (Some(expected), Some(found)) = (
+                                format_type(catalog, expected),
+                                format_type(catalog, found),
+                            ) else {
+                                return None;
+                            };
+                            match position {
+                                Some(position) => format!(
+                                    "Final statement returns {found} instead of {expected} at column {position}."
+                                ),
+                                None => format!("Actual return type is {found}."),
+                            }
+                        }
                     };
                     Some(
                         LinterDiagnostic::new(

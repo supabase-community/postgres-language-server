@@ -13,8 +13,10 @@ use super::{
 };
 use crate::resolve::{
     FindingKind,
+    expr::{check_assignment, infer_expr},
     scope::{Columns, Level},
 };
+use crate::typing::{Type, TypedColumn};
 
 /// Resolves an INSERT and returns the columns of its RETURNING list.
 pub(super) fn resolve_insert_stmt(r: &mut Resolver, n: &InsertStmt) -> Columns {
@@ -35,6 +37,8 @@ fn resolve_insert(r: &mut Resolver, n: &InsertStmt) -> Columns {
     let target = resolve_target_relation(r, relation);
 
     let mut target_columns = Vec::new();
+    // Targets with subscripts or fields, like `a[1]` or `c.f`, assign to part of a column.
+    let mut partial_targets = Vec::new();
     for column in &n.cols {
         let Some(NodeEnum::ResTarget(column)) = &column.node else {
             r.depends_on_file();
@@ -42,10 +46,54 @@ fn resolve_insert(r: &mut Resolver, n: &InsertStmt) -> Columns {
         };
         check_target_column(r, &target, &column.name, column.location);
         target_columns.push(column.name.clone());
+        partial_targets.push(!column.indirection.is_empty());
     }
 
     if let Some(source) = n.select_stmt.as_deref() {
         resolve_node(r, source);
+        let source_types = r.output.clone();
+
+        // The type of each target column, in the order of the values.
+        let targets = target.typed_columns.as_deref().unwrap_or_default();
+        let target_types: Vec<Option<&TypedColumn>> = if target_columns.is_empty() {
+            targets.iter().map(Some).collect()
+        } else {
+            target_columns
+                .iter()
+                .zip(&partial_targets)
+                .map(|(name, partial)| {
+                    (!partial)
+                        .then(|| targets.iter().find(|column| column.name == *name))
+                        .flatten()
+                })
+                .collect()
+        };
+        let check = |r: &mut Resolver, value: Option<Type>, target: Option<&TypedColumn>| {
+            if let Some(target) = target
+                && let Some(column_type) = target.ty.clone()
+            {
+                check_assignment(r, &target.name, column_type, value, -1);
+            }
+        };
+        match values_rows(source) {
+            // Each row of `INSERT ... VALUES` is coerced to the target columns on its own.
+            Some(rows) => {
+                for row in rows {
+                    for (value, target) in row.iter().zip(&target_types) {
+                        let Some(value) = value.node.as_ref() else {
+                            continue;
+                        };
+                        let value = infer_expr(r, value);
+                        check(r, value, *target);
+                    }
+                }
+            }
+            None => {
+                for (value, target) in source_types.unwrap_or_default().iter().zip(&target_types) {
+                    check(r, value.ty.clone(), *target);
+                }
+            }
+        }
         let found = match &source.node {
             Some(NodeEnum::SelectStmt(select)) => select_width(select),
             _ => None,
@@ -73,6 +121,24 @@ fn resolve_insert(r: &mut Resolver, n: &InsertStmt) -> Columns {
     }
 
     resolve_returning_list(r, &n.returning_list, Level::with_item(target))
+}
+
+/// The rows of a plain `VALUES` list.
+fn values_rows(source: &pgls_query::Node) -> Option<Vec<&[pgls_query::Node]>> {
+    let Some(NodeEnum::SelectStmt(select)) = &source.node else {
+        return None;
+    };
+    if select.op() != SetOperation::SetopNone || select.values_lists.is_empty() {
+        return None;
+    }
+    select
+        .values_lists
+        .iter()
+        .map(|row| match &row.node {
+            Some(NodeEnum::List(row)) => Some(row.items.as_slice()),
+            _ => None,
+        })
+        .collect()
 }
 
 /// The number of columns a query produces, if it is certain.

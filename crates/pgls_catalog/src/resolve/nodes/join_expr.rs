@@ -4,7 +4,10 @@ use super::{
     Resolver, alias::apply_alias, from_clause::resolve_from_item, resolve_node,
     string::string_values,
 };
-use crate::resolve::scope::{Item, Level};
+use crate::{
+    resolve::scope::{Item, Level},
+    typing::{Selection, TypedColumn, select_common_type},
+};
 
 /// A join. Its ON clause sees both sides of the join, but not the FROM items before it.
 pub(super) fn resolve_join_expr(r: &mut Resolver, n: &JoinExpr, preceding: &Level) -> Level {
@@ -20,9 +23,34 @@ pub(super) fn resolve_join_expr(r: &mut Resolver, n: &JoinExpr, preceding: &Leve
     let right = resolve_from_item(r, right, &preceding_right);
 
     let using_columns = string_values(&n.using_clause).unwrap_or_default();
+    let merged = using_columns
+        .iter()
+        .map(|name| {
+            let left_ty = left
+                .items
+                .iter()
+                .find_map(|item| item.type_of(name).flatten());
+            let right_ty = right
+                .items
+                .iter()
+                .find_map(|item| item.type_of(name).flatten());
+            let ty = match (left_ty, right_ty) {
+                (Some(left), Some(right)) => match select_common_type(r.catalog, &[left, right]) {
+                    Selection::Match(ty) => Some(ty),
+                    _ => None,
+                },
+                _ => None,
+            };
+            TypedColumn {
+                name: name.clone(),
+                ty,
+            }
+        })
+        .collect::<Vec<_>>();
     let mut joined = left;
     joined.extend(right);
     joined.merged_columns.extend(using_columns.iter().cloned());
+    joined.merged_typed_columns.extend(merged);
     joined.has_natural_join |= n.is_natural;
 
     if let Some(quals) = n.quals.as_deref() {
@@ -38,11 +66,20 @@ pub(super) fn resolve_join_expr(r: &mut Resolver, n: &JoinExpr, preceding: &Leve
         } else {
             joined.star_columns()
         };
+        let mut item = Item::named(
+            Some(alias.aliasname.clone()),
+            apply_alias(columns, Some(alias)),
+        );
+        if let Some(mut typed) = joined.star_typed_columns() {
+            for (column, name) in typed.iter_mut().zip(&alias.colnames) {
+                if let Some(pgls_query::NodeEnum::String(name)) = name.node.as_ref() {
+                    column.name = name.sval.clone();
+                }
+            }
+            item.typed_columns = Some(typed);
+        }
         return Level {
-            items: vec![Item::named(
-                Some(alias.aliasname.clone()),
-                apply_alias(columns, Some(alias)),
-            )],
+            items: vec![item],
             has_opaque_items: joined.has_opaque_items,
             ..Default::default()
         };
