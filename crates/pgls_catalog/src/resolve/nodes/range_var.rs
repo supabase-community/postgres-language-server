@@ -15,10 +15,21 @@ pub(super) fn resolve_range_var(r: &mut Resolver, n: &RangeVar) -> Item {
     let is_unqualified = n.schemaname.is_empty() && n.catalogname.is_empty();
     if is_unqualified {
         if let Some(cte) = r.ctes.iter().rev().find(|cte| cte.name == n.relname) {
-            return Item::named(
+            let mut item = Item::named(
                 Some(alias.map_or_else(|| cte.name.clone(), |alias| alias.aliasname.clone())),
                 apply_alias(cte.columns.clone(), alias),
             );
+            item.typed_columns = cte.typed_columns.clone().map(|mut columns| {
+                if let Some(alias) = alias {
+                    if let Some(names) = super::string::string_values(&alias.colnames) {
+                        for (column, name) in columns.iter_mut().zip(names) {
+                            column.name = name;
+                        }
+                    }
+                }
+                columns
+            });
+            return item;
         }
     }
     resolve_target_relation(r, n)
@@ -32,6 +43,17 @@ pub(super) fn resolve_target_relation(r: &mut Resolver, n: &RangeVar) -> Item {
         name: Some(alias.map_or_else(|| n.relname.clone(), |alias| alias.aliasname.clone())),
         schema: relation.schema.filter(|_| alias.is_none()),
         columns: apply_alias(relation.columns, alias),
+        typed_columns: relation.typed_columns.map(|mut columns| {
+            if let Some(alias) = alias {
+                for (column, name) in columns.iter_mut().zip(
+                    crate::resolve::nodes::string::string_values(&alias.colnames)
+                        .unwrap_or_default(),
+                ) {
+                    column.name = name;
+                }
+            }
+            columns
+        }),
         has_system_columns: relation.has_system_columns,
     }
 }
@@ -41,6 +63,7 @@ pub(super) fn resolve_target_relation(r: &mut Resolver, n: &RangeVar) -> Item {
 pub(super) struct ResolvedRelation {
     pub schema: Option<String>,
     pub columns: Columns,
+    pub typed_columns: Option<Vec<crate::typing::TypedColumn>>,
     pub has_system_columns: bool,
 }
 
@@ -65,7 +88,17 @@ pub(super) fn lookup_relation(r: &mut Resolver, n: &RangeVar) -> ResolvedRelatio
                 schema: Some(relation.schema),
                 columns: relation
                     .columns
-                    .map(|columns| columns.into_iter().map(|column| column.name).collect()),
+                    .as_ref()
+                    .map(|columns| columns.iter().map(|column| column.name.clone()).collect()),
+                typed_columns: relation.columns.map(|columns| {
+                    columns
+                        .into_iter()
+                        .map(|column| crate::typing::TypedColumn {
+                            name: column.name,
+                            ty: column.ty,
+                        })
+                        .collect()
+                }),
                 has_system_columns: relation.kind != RelationKind::View,
             }
         }

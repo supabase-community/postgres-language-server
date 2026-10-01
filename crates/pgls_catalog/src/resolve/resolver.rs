@@ -22,6 +22,7 @@ pub(super) struct Resolver<'a> {
     pub levels: Vec<Level>,
     /// The common table expressions in scope, innermost last.
     pub ctes: Vec<Cte>,
+    pub output: crate::typing::QueryColumns,
 }
 
 impl<'a> Resolver<'a> {
@@ -40,6 +41,7 @@ impl<'a> Resolver<'a> {
             database_only: true,
             levels: Vec::new(),
             ctes: Vec::new(),
+            output: None,
         }
     }
 

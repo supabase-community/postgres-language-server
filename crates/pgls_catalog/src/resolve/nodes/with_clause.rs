@@ -20,13 +20,16 @@ pub(super) fn resolve_with_clause(r: &mut Resolver, n: &WithClause) {
         r.ctes.extend(definitions.iter().map(|cte| Cte {
             name: cte.ctename.clone(),
             columns: None,
+            typed_columns: None,
         }));
     }
 
     for cte in definitions {
+        let columns = resolve_common_table_expr(r, cte);
         let resolved = Cte {
             name: cte.ctename.clone(),
-            columns: resolve_common_table_expr(r, cte),
+            columns,
+            typed_columns: if n.recursive { None } else { r.output.clone() },
         };
         match r
             .ctes

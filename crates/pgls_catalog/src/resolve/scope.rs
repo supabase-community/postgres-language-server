@@ -1,14 +1,18 @@
 //! The names visible to an expression: FROM items grouped by query level, CTEs, and the
 //! parameters of the SQL function being resolved.
 
+use crate::typing::{Type, TypedColumn};
+
 /// Columns of an item in scope. `None` when they are not known.
 pub(super) type Columns = Option<Vec<String>>;
+pub(super) type TypedColumns = Option<Vec<TypedColumn>>;
 
 /// A common table expression.
 #[derive(Debug, Clone)]
 pub(super) struct Cte {
     pub name: String,
     pub columns: Columns,
+    pub typed_columns: TypedColumns,
 }
 
 /// Something in a FROM clause that columns can come from.
@@ -20,6 +24,7 @@ pub(super) struct Item {
     /// The schema of an unaliased relation, for `schema.table.column`.
     pub schema: Option<String>,
     pub columns: Columns,
+    pub typed_columns: TypedColumns,
     /// Whether the item has system columns (`ctid`, `xmin`, ...).
     pub has_system_columns: bool,
 }
@@ -30,11 +35,20 @@ impl Item {
             name,
             schema: None,
             columns,
+            typed_columns: None,
             has_system_columns: false,
         }
     }
 
     /// Whether the item certainly has the column. `None` if its columns are not known.
+    pub fn type_of(&self, column: &str) -> Option<Option<Type>> {
+        let columns = self.typed_columns.as_ref()?;
+        columns
+            .iter()
+            .find(|c| c.name == column)
+            .map(|c| c.ty.clone())
+    }
+
     pub fn has_column(&self, column: &str) -> Option<bool> {
         let columns = self.columns.as_ref()?;
         Some(
@@ -108,6 +122,38 @@ pub(super) enum ColumnLookup {
 }
 
 /// Looks up an unqualified column in the query levels, innermost first.
+pub(super) fn find_column_type(levels: &[Level], column: &str) -> Option<Type> {
+    for (depth, level) in levels.iter().rev().enumerate() {
+        if depth == 0
+            && level.output_names_visible
+            && level.output_names.iter().any(|n| n == column)
+        {
+            return None;
+        }
+        let matches = level
+            .items
+            .iter()
+            .filter(|item| item.has_column(column) == Some(true))
+            .collect::<Vec<_>>();
+        let uncertain = level.items.iter().any(|item| item.columns.is_none());
+        if !matches.is_empty() {
+            if matches.len() != 1
+                || uncertain
+                || level.merged_columns.iter().any(|c| c == column)
+                || level.has_natural_join
+                || is_system_column(column)
+            {
+                return None;
+            }
+            return matches[0].type_of(column).flatten();
+        }
+        if uncertain {
+            return None;
+        }
+    }
+    None
+}
+
 pub(super) fn find_column(levels: &[Level], column: &str) -> ColumnLookup {
     for (depth, level) in levels.iter().rev().enumerate() {
         if depth == 0

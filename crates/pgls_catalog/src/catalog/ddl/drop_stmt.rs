@@ -9,6 +9,11 @@ use crate::catalog::{
 };
 
 pub(super) fn apply_drop_stmt(c: &mut Catalog, n: &DropStmt, search_path: &[String]) {
+    match n.remove_type() {
+        ObjectType::ObjectCast => c.casts_incomplete = true,
+        ObjectType::ObjectOperator => c.operators_incomplete = true,
+        _ => {}
+    }
     for object in &n.objects {
         let Some(object) = &object.node else {
             continue;
@@ -38,7 +43,12 @@ pub(super) fn apply_drop_stmt(c: &mut Catalog, n: &DropStmt, search_path: &[Stri
                     continue;
                 };
                 if let Some(key) = c.type_key(name.schema(), &name.name, search_path) {
-                    c.types.insert(key, Entry::Dropped);
+                    c.types.insert(key.clone(), Entry::Dropped);
+                    let array_key = (key.0, format!("_{}", key.1));
+                    if c.types.contains_key(&array_key) {
+                        c.types.insert(array_key, Entry::Dropped);
+                    }
+                    c.casts_incomplete = true;
                 }
             }
             ObjectType::ObjectFunction

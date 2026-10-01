@@ -59,7 +59,9 @@ pub(super) fn create_table(
 
     for element in &n.table_elts {
         match element.node.as_ref() {
-            Some(NodeEnum::ColumnDef(column)) => add_columns(Some(vec![column_info(column)])),
+            Some(NodeEnum::ColumnDef(column)) => {
+                add_columns(Some(vec![column_info(c, column, search_path)]))
+            }
             Some(NodeEnum::TableLikeClause(like)) => {
                 let source = like
                     .relation

@@ -14,7 +14,10 @@ mod overlay;
 #[cfg(test)]
 mod tests;
 
-use std::sync::Arc;
+use std::sync::{
+    Arc,
+    atomic::{AtomicU64, Ordering},
+};
 
 use rustc_hash::{FxHashMap, FxHashSet};
 
@@ -60,9 +63,13 @@ pub struct Catalog {
     /// Set once the file ran a statement with effects the catalog can't model (`DO`, `CALL`,
     /// `CREATE EXTENSION` of a new extension, ...). From then on, nothing is known to be missing.
     tainted: bool,
+    casts_incomplete: bool,
+    operators_incomplete: bool,
     /// The catalog at the start of each open transaction and savepoint, restored on
     /// `ROLLBACK`.
     savepoints: Vec<Savepoint>,
+    /// Shared across savepoint snapshots so rolled-back type identities are never reused.
+    next_file_type_id: Arc<AtomicU64>,
 }
 
 /// The catalog at `BEGIN` (`name: None`) or `SAVEPOINT`.
@@ -84,7 +91,10 @@ impl Catalog {
             children: FxHashMap::default(),
             database_columns_changed: false,
             tainted: false,
+            casts_incomplete: false,
+            operators_incomplete: false,
             savepoints: Vec::new(),
+            next_file_type_id: Arc::new(AtomicU64::new(1)),
         }
     }
 
@@ -92,6 +102,10 @@ impl Catalog {
     /// [`Lookup::Unknown`].
     pub fn has_base(&self) -> bool {
         self.base.is_some()
+    }
+
+    pub(super) fn allocate_type_id(&self) -> TypeId {
+        TypeId::File(self.next_file_type_id.fetch_add(1, Ordering::Relaxed))
     }
 
     /// Whether the file ran a statement the catalog can't model.
@@ -341,7 +355,17 @@ impl CatalogView for Catalog {
                 .cloned()
                 .map(Lookup::Found)
                 .unwrap_or_else(|| self.not_found()),
-            TypeId::File(_) => Lookup::Unknown,
+            TypeId::File(id) => self
+                .types
+                .values()
+                .find_map(|entry| match entry {
+                    Entry::Defined(info) if info.id == Some(TypeId::File(*id)) => {
+                        Some(info.clone())
+                    }
+                    _ => None,
+                })
+                .map(Lookup::Found)
+                .unwrap_or_else(|| self.not_found()),
         }
     }
 
@@ -349,7 +373,7 @@ impl CatalogView for Catalog {
         let Some(base) = self.base.as_ref() else {
             return Lookup::Unknown;
         };
-        if self.tainted {
+        if self.tainted || self.casts_incomplete {
             return Lookup::Unknown;
         }
         base.cast(source, target)
@@ -381,11 +405,16 @@ impl CatalogView for Catalog {
                 .as_ref()
                 .is_some_and(|b| b.snapshot().typing_metadata);
         for schema in schemas {
-            if self.functions.contains_key(&key(&schema, name)) {
-                complete = false;
-            }
             match self.functions_in(&schema, name) {
-                Lookup::Found(found) => items.extend(found),
+                Lookup::Found(found) => {
+                    if found.iter().any(|function| {
+                        function.origin == crate::lookup::Origin::File
+                            && function.signature.is_none()
+                    }) {
+                        complete = false;
+                    }
+                    items.extend(found);
+                }
                 Lookup::Missing => {}
                 Lookup::Unknown => complete = false,
             }
@@ -419,7 +448,9 @@ impl CatalogView for Catalog {
             .collect();
         Candidates {
             items,
-            complete: !self.tainted && base.snapshot().typing_metadata,
+            complete: !self.tainted
+                && !self.operators_incomplete
+                && base.snapshot().typing_metadata,
         }
     }
 

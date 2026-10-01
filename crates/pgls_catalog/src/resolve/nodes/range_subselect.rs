@@ -9,18 +9,33 @@ pub(super) fn resolve_range_subselect(
     n: &RangeSubselect,
     preceding: &Level,
 ) -> Item {
+    let mut typed_columns = None;
     let columns = n.subquery.as_deref().and_then(|query| {
-        if !n.lateral {
-            return resolve_node(r, query);
-        }
-        r.enter_level(preceding.clone());
-        let columns = resolve_node(r, query);
-        r.exit_level();
+        let columns = if !n.lateral {
+            resolve_node(r, query)
+        } else {
+            r.enter_level(preceding.clone());
+            let columns = resolve_node(r, query);
+            r.exit_level();
+            columns
+        };
+        typed_columns = r.output.clone();
         columns
     });
     let alias = n.alias.as_ref();
-    Item::named(
+    let mut item = Item::named(
         alias.map(|alias| alias.aliasname.clone()),
         apply_alias(columns, alias),
-    )
+    );
+    item.typed_columns = typed_columns.map(|mut columns| {
+        if let Some(alias) = alias {
+            if let Some(names) = super::string::string_values(&alias.colnames) {
+                for (column, name) in columns.iter_mut().zip(names) {
+                    column.name = name;
+                }
+            }
+        }
+        columns
+    });
+    item
 }
