@@ -17,7 +17,9 @@ pub(super) fn create_table(
     let Some(range_var) = &n.relation else {
         return;
     };
-    let new_key = c.relation_creation_key(range_var, search_path);
+    let Some(new_key) = c.relation_creation_key(range_var, search_path) else {
+        return;
+    };
     if c.skip_existing_relation(&new_key, n.if_not_exists) {
         return;
     }

@@ -7,7 +7,9 @@ pub(super) fn apply_create_seq_stmt(c: &mut Catalog, n: &CreateSeqStmt, search_p
     let Some(range_var) = &n.sequence else {
         return;
     };
-    let key = c.relation_creation_key(range_var, search_path);
+    let Some(key) = c.relation_creation_key(range_var, search_path) else {
+        return;
+    };
     if c.skip_existing_relation(&key, n.if_not_exists) {
         return;
     }

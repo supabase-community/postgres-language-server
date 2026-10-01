@@ -15,7 +15,9 @@ pub(super) fn apply_into_clause(
     let Some(range_var) = &n.rel else {
         return;
     };
-    let key = c.relation_creation_key(range_var, search_path);
+    let Some(key) = c.relation_creation_key(range_var, search_path) else {
+        return;
+    };
     if c.skip_existing_relation(&key, if_not_exists) {
         return;
     }

@@ -106,6 +106,8 @@ pub(super) fn resolve_create_function_stmt(r: &mut Resolver, n: &CreateFunctionS
     let returns_rows = match last {
         // `SELECT ... INTO` is rejected for other reasons.
         NodeEnum::SelectStmt(select) if select.into_clause.is_some() => return,
+        // The type of a `RETURN` expression is not checked.
+        NodeEnum::ReturnStmt(_) => return,
         NodeEnum::SelectStmt(_) => true,
         NodeEnum::InsertStmt(insert) => !insert.returning_list.is_empty(),
         NodeEnum::UpdateStmt(update) => !update.returning_list.is_empty(),

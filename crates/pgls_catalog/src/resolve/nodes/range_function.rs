@@ -23,6 +23,9 @@ pub(super) fn resolve_range_function(
     n: &RangeFunction,
     preceding: &Level,
 ) -> Item {
+    if let Some(expanded) = expand_unnest(n) {
+        return resolve_range_function(r, &expanded, preceding);
+    }
     r.enter_level(preceding.clone());
 
     let mut columns: Columns = Some(Vec::new());
@@ -118,6 +121,84 @@ pub(super) fn resolve_range_function(
     item
 }
 
+/// `unnest(a, b)` in FROM, also as an entry of `ROWS FROM`, is `unnest(a), unnest(b)`. Port of
+/// the special case in `parse_clause.c: transformRangeFunction`.
+fn expand_unnest(n: &RangeFunction) -> Option<RangeFunction> {
+    if !n.coldeflist.is_empty() {
+        return None;
+    }
+    let mut expanded = false;
+    let mut functions = Vec::new();
+    for entry in &n.functions {
+        match multi_argument_unnest(entry) {
+            Some(call) => {
+                expanded = true;
+                functions.extend(call.args.iter().map(|arg| unnest_entry(call, arg)));
+            }
+            None => functions.push(entry.clone()),
+        }
+    }
+    expanded.then(|| RangeFunction {
+        is_rowsfrom: true,
+        functions,
+        ..n.clone()
+    })
+}
+
+/// The call of a `ROWS FROM` entry if it is `unnest` with several arguments and nothing else.
+fn multi_argument_unnest(entry: &Node) -> Option<&FuncCall> {
+    let Some(NodeEnum::List(entry)) = entry.node.as_ref() else {
+        return None;
+    };
+    let has_column_definitions = matches!(
+        entry.items.get(1).and_then(|node| node.node.as_ref()),
+        Some(NodeEnum::List(list)) if !list.items.is_empty()
+    );
+    let Some(NodeEnum::FuncCall(call)) = entry.items.first().and_then(|call| call.node.as_ref())
+    else {
+        return None;
+    };
+    let is_unnest =
+        matches!(string_values(&call.funcname).as_deref(), Some([name]) if name == "unnest");
+    (is_unnest
+        && !has_column_definitions
+        && call.args.len() > 1
+        && call.agg_order.is_empty()
+        && call.agg_filter.is_none()
+        && call.over.is_none()
+        && !call.agg_star
+        && !call.agg_distinct
+        && !call.func_variadic)
+        .then_some(call.as_ref())
+}
+
+/// A `ROWS FROM` entry calling `pg_catalog.unnest(arg)`.
+fn unnest_entry(call: &FuncCall, arg: &Node) -> Node {
+    let string = |sval: &str| Node {
+        node: Some(NodeEnum::String(pgls_query::protobuf::String {
+            sval: sval.to_owned(),
+        })),
+    };
+    let unnest = FuncCall {
+        funcname: vec![string("pg_catalog"), string("unnest")],
+        args: vec![arg.clone()],
+        location: call.location,
+        ..Default::default()
+    };
+    Node {
+        node: Some(NodeEnum::List(pgls_query::protobuf::List {
+            items: vec![
+                Node {
+                    node: Some(NodeEnum::FuncCall(Box::new(unnest))),
+                },
+                Node {
+                    node: Some(NodeEnum::List(pgls_query::protobuf::List::default())),
+                },
+            ],
+        })),
+    }
+}
+
 /// The output columns of a function call in FROM, if all its overloads agree on them.
 fn return_columns(r: &Resolver, call: &FuncCall) -> Columns {
     let names = string_values(&call.funcname)?;
@@ -175,17 +256,33 @@ fn typed_return_columns(r: &mut Resolver, n: &RangeFunction) -> Option<Vec<Typed
         else {
             return None;
         };
-        if let Some(columns) = selected.function.return_columns {
-            output.extend(columns.into_iter().map(|column| TypedColumn {
+        match selected.function.return_columns {
+            // A single output parameter of a composite type expands to its attributes.
+            Some(columns) if columns.len() == 1 => {
+                let column = columns.into_iter().next()?;
+                match composite_attributes(r, column.ty.as_ref()?)? {
+                    Some(attributes) => output.extend(attributes),
+                    None => output.push(TypedColumn {
+                        name: column.name,
+                        ty: column.ty,
+                    }),
+                }
+            }
+            Some(columns) => output.extend(columns.into_iter().map(|column| TypedColumn {
                 name: column.name,
                 ty: column.ty,
-            }));
-        } else {
-            // A scalar function yields one column, typed by the resolved result type.
-            output.push(TypedColumn {
-                name: name.to_owned(),
-                ty: selected.result,
-            });
+            })),
+            None => match composite_attributes(r, selected.result.as_ref()?)? {
+                Some(attributes) => output.extend(attributes),
+                // A scalar function yields one column, named by `chooseScalarFunctionAlias`.
+                None => output.push(TypedColumn {
+                    name: match (&n.alias, n.functions.len()) {
+                        (Some(alias), 1) => alias.aliasname.clone(),
+                        _ => name.to_owned(),
+                    },
+                    ty: selected.result,
+                }),
+            },
         }
     }
     if !n.coldeflist.is_empty() {
@@ -200,6 +297,33 @@ fn typed_return_columns(r: &mut Resolver, n: &RangeFunction) -> Option<Vec<Typed
         }
     }
     Some(output)
+}
+
+/// The attributes of a composite type, or of a domain over one, as `get_expr_result_type`
+/// expands them; `Some(None)` for a scalar type and `None` when it is unknown.
+fn composite_attributes(r: &Resolver, ty: &Type) -> Option<Option<Vec<TypedColumn>>> {
+    let Type::Named(id) = ty else {
+        return None;
+    };
+    let id = match crate::typing::base_type(r.catalog, id) {
+        crate::typing::Decision::Known(id) => id,
+        crate::typing::Decision::Unknown => return None,
+    };
+    let info = r.catalog.type_by_id(&id).found()?;
+    match info.kind? {
+        crate::typing::TypeKind::Composite => Some(Some(
+            info.attributes?
+                .into_iter()
+                .map(|attribute| TypedColumn {
+                    name: attribute.name,
+                    ty: attribute.ty,
+                })
+                .collect(),
+        )),
+        // `record` and other pseudo types need a column definition list.
+        crate::typing::TypeKind::Pseudo => None,
+        _ => Some(None),
+    }
 }
 
 fn column_definition_names(definitions: &[Node]) -> Columns {

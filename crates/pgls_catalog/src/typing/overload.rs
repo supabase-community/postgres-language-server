@@ -291,8 +291,8 @@ fn expand_candidates(
     nargs: usize,
     names: &[String],
 ) -> Option<Vec<Candidate<FunctionInfo>>> {
-    // Candidates with their full argument list, which identifies duplicates.
-    let mut expanded: Vec<(Candidate<FunctionInfo>, Vec<TypeId>)> = Vec::new();
+    // Candidates, and whether each expands variadic arguments.
+    let mut expanded: Vec<(Candidate<FunctionInfo>, bool)> = Vec::new();
     for function in functions {
         let signature = function.signature.as_ref()?;
         let params = signature
@@ -307,8 +307,9 @@ fn expand_candidates(
             continue;
         }
 
+        let mut variadic = false;
         let full: Vec<TypeId> = if names.is_empty() {
-            let variadic = pronargs <= nargs && signature.variadic_element.is_some();
+            variadic = pronargs <= nargs && signature.variadic_element.is_some();
             if pronargs != nargs && !variadic && !use_defaults {
                 continue;
             }
@@ -347,18 +348,25 @@ fn expand_candidates(
             args: full[..nargs].to_vec(),
             ambiguous: false,
         };
-        // A function hides functions with the same arguments later in the search path. Two in
-        // the same schema (through defaults or variadic expansion) make the call ambiguous.
-        if let Some((previous, _)) = expanded
-            .iter_mut()
-            .find(|(_, previous_full)| *previous_full == full)
+        // Candidates with the same types for the call's arguments: one earlier in the search
+        // path hides the later one. In the same schema, a non-variadic candidate beats one that
+        // expands variadic arguments; otherwise the call is ambiguous.
+        if let Some(index) = expanded
+            .iter()
+            .position(|(previous, _)| previous.args == candidate.args)
         {
-            if previous.item.schema == candidate.item.schema {
-                previous.ambiguous = true;
+            let (previous, previous_variadic) = &mut expanded[index];
+            if previous.item.schema != candidate.item.schema || (variadic && !*previous_variadic) {
+                continue;
             }
-            continue;
+            if !variadic && *previous_variadic {
+                expanded.remove(index);
+            } else {
+                previous.ambiguous = true;
+                continue;
+            }
         }
-        expanded.push((candidate, full));
+        expanded.push((candidate, variadic));
     }
     Some(
         expanded

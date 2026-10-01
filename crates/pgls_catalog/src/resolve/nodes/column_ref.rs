@@ -30,7 +30,9 @@ pub(super) fn resolve_column_ref(r: &mut Resolver, n: &ColumnRef) {
                         && item.name.as_deref() == Some(relation.as_str())
                 })
             });
-            if item.is_some_and(|item| item.has_column(name) == Some(false)) {
+            if item.is_some_and(|item| item.has_column(name) == Some(false))
+                && !may_be_function_call(r, name)
+            {
                 r.report(
                     FindingKind::UnknownColumn {
                         relation: Some(format!("{schema}.{relation}")),
@@ -73,7 +75,7 @@ fn resolve_unqualified_column(r: &mut Resolver, name: &str, location: i32) {
 
 fn resolve_qualified_column(r: &mut Resolver, qualifier: &str, name: &str, location: i32) {
     if let Some(item) = find_item(&r.levels, qualifier) {
-        if item.has_column(name) == Some(false) {
+        if item.has_column(name) == Some(false) && !may_be_function_call(r, name) {
             r.report(
                 FindingKind::UnknownColumn {
                     relation: Some(qualifier.to_owned()),
@@ -110,7 +112,9 @@ fn resolve_qualified_column(r: &mut Resolver, qualifier: &str, name: &str, locat
                 _ => None,
             };
             if let Some(attributes) = attributes {
-                if !attributes.iter().any(|attribute| attribute.name == name) {
+                if !attributes.iter().any(|attribute| attribute.name == name)
+                    && !may_be_function_call(r, name)
+                {
                     r.report(
                         FindingKind::UnknownColumn {
                             relation: Some(qualifier.to_owned()),
@@ -130,4 +134,16 @@ fn resolve_qualified_column(r: &mut Resolver, qualifier: &str, name: &str, locat
         },
         location,
     );
+}
+
+/// Postgres reads `t.name` as the function call `name(t)` when `t` has no column `name`
+/// (`parse_expr.c: transformColumnRef`).
+fn may_be_function_call(r: &Resolver, name: &str) -> bool {
+    match r.catalog.functions(None, name, r.search_path) {
+        Lookup::Found(overloads) => overloads
+            .iter()
+            .any(|overload| overload.min_args <= 1 && overload.max_args.is_none_or(|max| max >= 1)),
+        Lookup::Missing => false,
+        Lookup::Unknown => true,
+    }
 }

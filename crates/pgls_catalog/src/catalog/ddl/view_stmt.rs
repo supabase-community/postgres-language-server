@@ -7,7 +7,9 @@ pub(super) fn apply_view_stmt(c: &mut Catalog, n: &ViewStmt, search_path: &[Stri
     let Some(range_var) = &n.view else {
         return;
     };
-    let key = c.relation_creation_key(range_var, search_path);
+    let Some(key) = c.relation_creation_key(range_var, search_path) else {
+        return;
+    };
     let columns = n
         .query
         .as_deref()

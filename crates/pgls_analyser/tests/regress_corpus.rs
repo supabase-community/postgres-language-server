@@ -1,3 +1,4 @@
+use std::time::Duration;
 use std::{
     collections::{BTreeMap, HashSet},
     fs,
@@ -90,7 +91,9 @@ async fn postgres_regression_typecheck_false_positives() {
     let mut admin = PgConnection::connect(&admin_url)
         .await
         .expect("connect to postgres admin db");
-    let catalog = builtin_catalog();
+    let catalog = tokio::task::spawn_blocking(builtin_catalog)
+        .await
+        .expect("load builtin catalog");
     let options = LinterOptions::default();
     let typecheck_rules = [RuleFilter::Group(pgls_analyser::TYPECHECK_GROUP)];
     let analyser = Analyser::new(AnalyserConfig {
@@ -100,12 +103,19 @@ async fn postgres_regression_typecheck_false_positives() {
     let mut report = String::new();
     let mut fp: BTreeMap<String, Vec<String>> = BTreeMap::new();
     let mut tp: BTreeMap<(String, String), usize> = BTreeMap::new();
+    let mut artefacts: Vec<String> = Vec::new();
+    let mut tp_details: BTreeMap<(String, String), Vec<String>> = BTreeMap::new();
     let mut total = 0usize;
     let mut analysed = 0usize;
     let mut skipped = 0usize;
 
     for (file_no, path) in files.iter().enumerate() {
         let db = format!("regress_{file_no}");
+        // A database left over from an interrupted run.
+        sqlx::query(&format!("DROP DATABASE IF EXISTS {db} WITH (FORCE)"))
+            .execute(&mut admin)
+            .await
+            .unwrap_or_else(|e| panic!("drop {db}: {e}"));
         sqlx::query(&format!("CREATE DATABASE {db}"))
             .execute(&mut admin)
             .await
@@ -123,6 +133,8 @@ async fn postgres_regression_typecheck_false_positives() {
         let split = pgls_statement_splitter::split(&cleaned);
         let mut statements = Vec::new();
         let mut status = Vec::new();
+        // Set when a statement hangs on the client side; the connection is unusable from then on.
+        let mut stuck = false;
         for range in &split.ranges {
             let sql = cleaned[*range].trim();
             if sql.is_empty() {
@@ -130,12 +142,17 @@ async fn postgres_regression_typecheck_false_positives() {
                 continue;
             }
             total += 1;
-            let outcome = if transaction_control(sql) || copy_from_stdin(sql) {
+            let outcome = if stuck || transaction_control(sql) || copy_with_client(sql) {
                 PgStatus::Skipped
             } else {
-                match sqlx::query(sql).execute(&mut conn).await {
-                    Ok(_) => PgStatus::Accepted,
-                    Err(e) => {
+                let execute = sqlx::raw_sql(sql).execute(&mut conn);
+                match tokio::time::timeout(Duration::from_secs(30), execute).await {
+                    Err(_) => {
+                        stuck = true;
+                        PgStatus::Skipped
+                    }
+                    Ok(Ok(_)) => PgStatus::Accepted,
+                    Ok(Err(e)) => {
                         let code = e
                             .as_database_error()
                             .and_then(|x| x.code())
@@ -148,6 +165,14 @@ async fn postgres_regression_typecheck_false_positives() {
                     }
                 }
             };
+            if std::env::var_os("REGRESS_DEBUG").is_some() {
+                let state = match &outcome {
+                    PgStatus::Accepted => "accepted".to_owned(),
+                    PgStatus::Rejected(state) => state.clone(),
+                    PgStatus::Skipped => "skipped".to_owned(),
+                };
+                eprintln!("[{state}] {}", truncate(sql, 120));
+            }
             if matches!(&outcome, PgStatus::Skipped) {
                 skipped += 1;
             }
@@ -186,28 +211,52 @@ async fn postgres_regression_typecheck_false_positives() {
             let rule = diagnostic.get_category_name().to_string();
             let message = format!("{}", StdDisplay(PrintDiagnostic::simple(diagnostic)));
             match status.get(index) {
-                Some(PgStatus::Accepted) => fp.entry(rule).or_default().push(format!(
-                    "{}: {}\n  {}\n  PostgreSQL accepted",
-                    relative(path, &root),
-                    truncate(sql, 300),
-                    message.replace('\n', " ")
-                )),
+                Some(PgStatus::Accepted) => {
+                    let file = relative(path, &root);
+                    let entry = format!(
+                        "{file}: {}\n  {}\n  PostgreSQL accepted",
+                        truncate(sql, 300),
+                        message.replace('\n', " ")
+                    );
+                    match known_artefact(&file, sql) {
+                        Some(reason) => artefacts.push(format!("{entry}\n  {reason}")),
+                        None => fp.entry(rule).or_default().push(entry),
+                    }
+                }
                 Some(PgStatus::Rejected(state)) => {
+                    tp_details
+                        .entry((rule.clone(), state.clone()))
+                        .or_default()
+                        .push(format!(
+                            "{}: {}\n  {}",
+                            relative(path, &root),
+                            truncate(sql, 300),
+                            message.replace('\n', " ")
+                        ));
                     *tp.entry((rule, state.clone())).or_default() += 1
                 }
                 Some(PgStatus::Skipped) | None => {}
             }
         }
         conn.close().await.ok();
+        // Roles are shared by all databases.
+        let roles = regress_roles(&mut admin).await;
+        if !roles.is_empty() {
+            if let Ok(mut conn) = PgConnection::connect(&url).await {
+                drop_owned(&mut conn, &roles).await;
+                conn.close().await.ok();
+            }
+        }
         sqlx::query(&format!("DROP DATABASE {db} WITH (FORCE)"))
             .execute(&mut admin)
             .await
             .unwrap_or_else(|e| panic!("drop {db}: {e}"));
+        drop_roles(&mut admin, &roles).await;
     }
     let fp_total = fp.values().map(Vec::len).sum::<usize>();
     let tp_total = tp.values().sum::<usize>();
     report.push_str(&format!(
-        "Statements submitted: {total}\nStatements analysed: {analysed}\nStatements skipped on PostgreSQL side: {skipped}\nFalse positives: {fp_total}\nTrue positives: {tp_total}\n\nHarness caveats: transaction-control and COPY FROM STDIN statements are skipped; COPY payloads are removed during preprocessing, so data-dependent statements may differ from the regression suite.\n\n"
+        "Statements submitted: {total}\nStatements analysed: {analysed}\nStatements skipped on PostgreSQL side: {skipped}\nFalse positives: {fp_total}\nTrue positives: {tp_total}\n\nHarness caveats: transaction-control statements, COPY to or from the client, and statements after one that hangs are skipped; COPY payloads are removed during preprocessing, so data-dependent statements may differ from the regression suite.\n\n"
     ));
     report.push_str("FALSE POSITIVES BY RULE\n");
     for (rule, entries) in &fp {
@@ -215,6 +264,13 @@ async fn postgres_regression_typecheck_false_positives() {
         for entry in entries {
             report.push_str(&format!("{entry}\n"));
         }
+    }
+    report.push_str(&format!(
+        "\nKNOWN HARNESS ARTEFACTS ({})\n",
+        artefacts.len()
+    ));
+    for entry in &artefacts {
+        report.push_str(&format!("{entry}\n"));
     }
     report.push_str("\nTRUE POSITIVES BY RULE\n");
     let mut per_rule: BTreeMap<&str, usize> = BTreeMap::new();
@@ -228,6 +284,13 @@ async fn postgres_regression_typecheck_false_positives() {
     for ((rule, state), count) in &tp {
         report.push_str(&format!("{rule} × {state}: {count}\n"));
     }
+    report.push_str("\nTRUE POSITIVES\n");
+    for ((rule, state), entries) in &tp_details {
+        report.push_str(&format!("\n{rule} × {state}\n"));
+        for entry in entries {
+            report.push_str(&format!("{entry}\n"));
+        }
+    }
     fs::create_dir_all("target").expect("create target report directory");
     fs::write("target/regress-report.txt", &report).expect("write regression report");
     eprintln!("{report}");
@@ -236,6 +299,49 @@ async fn postgres_regression_typecheck_false_positives() {
         "{} typecheck false positives; see target/regress-report.txt",
         fp.values().map(Vec::len).sum::<usize>()
     );
+}
+
+/// Findings on statements Postgres accepted only because an earlier statement of the file
+/// failed. The linter assumes every statement succeeds, like a migration that stops at the
+/// first error.
+const KNOWN_ARTEFACTS: &[(&str, &str, &str)] = &[(
+    "transactions.sql",
+    "writetest",
+    "`DROP TABLE writetest` fails in a read-only session, so the table still exists",
+)];
+
+fn known_artefact(file: &str, sql: &str) -> Option<&'static str> {
+    KNOWN_ARTEFACTS
+        .iter()
+        .find(|(known_file, needle, _)| *known_file == file && sql.contains(needle))
+        .map(|(_, _, reason)| *reason)
+}
+
+/// The roles the regression tests create; they are all named `regress_*`.
+async fn regress_roles(conn: &mut PgConnection) -> Vec<String> {
+    sqlx::query_scalar("select quote_ident(rolname) from pg_roles where rolname like 'regress\\_%'")
+        .fetch_all(conn)
+        .await
+        .expect("list regression roles")
+}
+
+async fn drop_owned(conn: &mut PgConnection, roles: &[String]) {
+    for role in roles {
+        sqlx::raw_sql(&format!("DROP OWNED BY {role} CASCADE"))
+            .execute(&mut *conn)
+            .await
+            .ok();
+    }
+}
+
+async fn drop_roles(admin: &mut PgConnection, roles: &[String]) {
+    drop_owned(admin, roles).await;
+    for role in roles {
+        sqlx::raw_sql(&format!("DROP ROLE IF EXISTS {role}"))
+            .execute(&mut *admin)
+            .await
+            .ok();
+    }
 }
 
 enum PgStatus {
@@ -264,9 +370,10 @@ fn truncate(sql: &str, max: usize) -> String {
         format!("{}…", sql.chars().take(max).collect::<String>())
     }
 }
-fn copy_from_stdin(sql: &str) -> bool {
+/// `COPY` to or from the client. Postgres also accepts `FROM STDOUT` and `TO STDIN`.
+fn copy_with_client(sql: &str) -> bool {
     let upper = sql.to_ascii_uppercase();
-    upper.trim_start().starts_with("COPY ") && upper.contains("FROM STDIN")
+    upper.trim_start().starts_with("COPY ") && (upper.contains("STDIN") || upper.contains("STDOUT"))
 }
 
 fn transaction_control(sql: &str) -> bool {
@@ -301,7 +408,8 @@ fn preprocess(source: &str) -> String {
         output.push_str(line);
         output.push('\n');
         let upper = line.to_ascii_uppercase();
-        if upper.contains("COPY") && upper.contains("FROM STDIN") {
+        if upper.contains("COPY") && (upper.contains("FROM STDIN") || upper.contains("FROM STDOUT"))
+        {
             in_copy = true;
         }
     }
