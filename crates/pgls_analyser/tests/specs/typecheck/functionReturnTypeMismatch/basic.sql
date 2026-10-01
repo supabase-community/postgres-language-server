@@ -18,3 +18,10 @@ create function forget_users(out deleted uuid, out email text) language sql as
 'delete from users_hidden.users';
 create function remove_users() returns setof users_hidden.users language sql as
 'delete from users_hidden.users returning *';
+-- expect_lint/functionReturnTypeMismatch
+create function json_return() returns jsonb language sql as $$ select '{}' $$;
+create table typed_return (id uuid, value integer);
+-- expect_lint/functionReturnTypeMismatch
+create function composite_type_return() returns typed_return language sql as $$
+select '00000000-0000-0000-0000-000000000001'::uuid, '{}';
+$$;

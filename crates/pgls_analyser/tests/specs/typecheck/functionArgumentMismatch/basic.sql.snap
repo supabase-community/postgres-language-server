@@ -1,0 +1,27 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+-- expect_lint/functionArgumentMismatch
+select length(1);
+-- expect_lint/functionArgumentMismatch
+select pg_catalog.length(1);
+
+```
+
+# Diagnostics
+lint/functionArgumentMismatch ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Function length(integer) does not exist.
+  
+  i No function matches the given name and argument types. You might need to add explicit type casts.
+  
+
+
+lint/functionArgumentMismatch ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Function pg_catalog.length(integer) does not exist.
+  
+  i No function matches the given name and argument types. You might need to add explicit type casts.

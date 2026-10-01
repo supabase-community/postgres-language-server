@@ -917,6 +917,17 @@
             }
           ]
         },
+        "assignmentTypeMismatch": {
+          "description": "An expression assigned to a column cannot be coerced to that column's type. The rule needs a database connection to load the table and type catalog.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "avoidAddingExclusionConstraint": {
           "description": "Adding an exclusion constraint acquires an ACCESS EXCLUSIVE lock.",
           "anyOf": [
@@ -1170,6 +1181,17 @@
             }
           ]
         },
+        "functionArgumentMismatch": {
+          "description": "A function name and argument count exist, but its argument types do not select exactly one overload. The rule needs a database connection to load the function and type catalog.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "functionReturnTypeMismatch": {
           "description": "The final statement of a SQL function doesn't return what the function is declared to return.",
           "anyOf": [
@@ -1183,6 +1205,17 @@
         },
         "insertColumnMismatch": {
           "description": "An INSERT has a different number of target columns than values.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "invalidCast": {
+          "description": "An explicit cast is not permitted between the source and target types. The rule needs a database connection to load the type and cast catalog.",
           "anyOf": [
             {
               "$ref": "#/definitions/RuleConfiguration"
@@ -1227,6 +1260,17 @@
         },
         "multipleAlterTable": {
           "description": "Multiple ALTER TABLE statements on the same table should be combined into a single statement.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "operatorTypeMismatch": {
+          "description": "An operator exists by name but cannot be resolved for the operand types, or has multiple equally suitable candidates.",
           "anyOf": [
             {
               "$ref": "#/definitions/RuleConfiguration"

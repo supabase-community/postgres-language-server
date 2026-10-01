@@ -92,9 +92,13 @@ Code that fails at runtime because of names or types. Needs a database connectio
 | Rule name | Description | Recommended | Migrations only |
 | --- | --- | --- | --- |
 | [ambiguousColumn](./rules/ambiguous-column.md) | An unqualified column name matches columns of more than one relation in scope. | ✅ |  |
+| [assignmentTypeMismatch](./rules/assignment-type-mismatch.md) | An expression assigned to a column cannot be coerced to that column's type. The ruleneeds a database connection to load the table and type catalog. | ✅ |  |
+| [functionArgumentMismatch](./rules/function-argument-mismatch.md) | A function name and argument count exist, but its argument types do not select exactlyone overload. The rule needs a database connection to load the function and type catalog. | ✅ |  |
 | [functionReturnTypeMismatch](./rules/function-return-type-mismatch.md) | The final statement of a SQL function doesn't return what the function is declared toreturn. | ✅ |  |
 | [insertColumnMismatch](./rules/insert-column-mismatch.md) | An `INSERT` has a different number of target columns than values. | ✅ |  |
+| [invalidCast](./rules/invalid-cast.md) | An explicit cast is not permitted between the source and target types. The rule needsa database connection to load the type and cast catalog. | ✅ |  |
 | [missingFromClauseEntry](./rules/missing-from-clause-entry.md) | A column is qualified with a name that is not in the `FROM` clause. | ✅ |  |
+| [operatorTypeMismatch](./rules/operator-type-mismatch.md) | An operator exists by name but cannot be resolved for the operand types, or hasmultiple equally suitable candidates. | ✅ |  |
 | [unknownColumn](./rules/unknown-column.md) | A column does not exist on the relation or record it is taken from. | ✅ |  |
 | [unknownFunction](./rules/unknown-function.md) | No function with this name accepts this number of arguments. | ✅ |  |
 | [unknownRelation](./rules/unknown-relation.md) | A table, view, or materialized view does not exist. | ✅ |  |

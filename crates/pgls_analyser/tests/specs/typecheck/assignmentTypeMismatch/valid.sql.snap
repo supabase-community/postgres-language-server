@@ -1,0 +1,11 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+create table typecheck_assignment (qty integer);
+-- expect_no_diagnostics
+insert into typecheck_assignment values (1);
+
+```

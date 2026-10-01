@@ -1,0 +1,27 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+-- expect_lint/operatorTypeMismatch
+select 1 + timestamp '2020-01-01';
+-- expect_lint/operatorTypeMismatch
+select - true;
+
+```
+
+# Diagnostics
+lint/operatorTypeMismatch ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Operator does not exist: integer + timestamp without time zone
+  
+  i No operator matches the given name and argument types. You might need to add explicit type casts.
+  
+
+
+lint/operatorTypeMismatch ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Operator does not exist: - boolean
+  
+  i No operator matches the given name and argument types. You might need to add explicit type casts.

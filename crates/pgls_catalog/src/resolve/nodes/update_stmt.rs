@@ -55,6 +55,9 @@ fn resolve_update(r: &mut Resolver, n: &UpdateStmt) -> Columns {
     }
     if let Some(where_clause) = n.where_clause.as_deref() {
         resolve_node(r, where_clause);
+        if let Some(expr) = where_clause.node.as_ref() {
+            super::super::expr::infer_expr(r, expr);
+        }
     }
 
     let level = r.exit_level();

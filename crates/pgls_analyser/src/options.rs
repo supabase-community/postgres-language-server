@@ -13,6 +13,7 @@ pub type AddingRequiredField =
     <lint::destructive::adding_required_field::AddingRequiredField as crate::LinterRule>::Options;
 pub type AmbiguousColumn =
     <lint::typecheck::ambiguous_column::AmbiguousColumn as crate::LinterRule>::Options;
+pub type AssignmentTypeMismatch = < lint :: typecheck :: assignment_type_mismatch :: AssignmentTypeMismatch as crate :: LinterRule > :: Options ;
 pub type AvoidAddingExclusionConstraint = < lint :: safety :: avoid_adding_exclusion_constraint :: AvoidAddingExclusionConstraint as crate :: LinterRule > :: Options ;
 pub type AvoidAlterEnumAddValue = < lint :: correctness :: avoid_alter_enum_add_value :: AvoidAlterEnumAddValue as crate :: LinterRule > :: Options ;
 pub type AvoidAttachingPartition = < lint :: safety :: avoid_attaching_partition :: AvoidAttachingPartition as crate :: LinterRule > :: Options ;
@@ -47,15 +48,19 @@ pub type ChangingColumnType =
 pub type ConstraintMissingNotValid = < lint :: safety :: constraint_missing_not_valid :: ConstraintMissingNotValid as crate :: LinterRule > :: Options ;
 pub type CreatingEnum = <lint::style::creating_enum::CreatingEnum as crate::LinterRule>::Options;
 pub type DisallowUniqueConstraint = < lint :: safety :: disallow_unique_constraint :: DisallowUniqueConstraint as crate :: LinterRule > :: Options ;
+pub type FunctionArgumentMismatch = < lint :: typecheck :: function_argument_mismatch :: FunctionArgumentMismatch as crate :: LinterRule > :: Options ;
 pub type FunctionReturnTypeMismatch = < lint :: typecheck :: function_return_type_mismatch :: FunctionReturnTypeMismatch as crate :: LinterRule > :: Options ;
 pub type InsertColumnMismatch =
     <lint::typecheck::insert_column_mismatch::InsertColumnMismatch as crate::LinterRule>::Options;
+pub type InvalidCast = <lint::typecheck::invalid_cast::InvalidCast as crate::LinterRule>::Options;
 pub type InvalidDropTypeSignature = < lint :: correctness :: invalid_drop_type_signature :: InvalidDropTypeSignature as crate :: LinterRule > :: Options ;
 pub type LockTimeoutWarning =
     <lint::safety::lock_timeout_warning::LockTimeoutWarning as crate::LinterRule>::Options;
 pub type MissingFromClauseEntry = < lint :: typecheck :: missing_from_clause_entry :: MissingFromClauseEntry as crate :: LinterRule > :: Options ;
 pub type MultipleAlterTable =
     <lint::safety::multiple_alter_table::MultipleAlterTable as crate::LinterRule>::Options;
+pub type OperatorTypeMismatch =
+    <lint::typecheck::operator_type_mismatch::OperatorTypeMismatch as crate::LinterRule>::Options;
 pub type PreferBigInt = <lint::style::prefer_big_int::PreferBigInt as crate::LinterRule>::Options;
 pub type PreferIdentity =
     <lint::style::prefer_identity::PreferIdentity as crate::LinterRule>::Options;
