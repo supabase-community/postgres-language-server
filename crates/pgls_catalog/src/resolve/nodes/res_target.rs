@@ -50,6 +50,53 @@ pub(super) fn resolve_returning_list(r: &mut Resolver, list: &[Node], level: Lev
     r.enter_level(level);
     resolve_list(r, list);
     let columns = target_list_columns(r, list);
+    r.output = columns.as_ref().map(|names| {
+        let mut typed = Vec::new();
+        for target in list {
+            let Some(NodeEnum::ResTarget(target)) = target.node.as_ref() else {
+                continue;
+            };
+            let Some(value) = target.val.as_deref().and_then(|value| value.node.as_ref()) else {
+                continue;
+            };
+            if let NodeEnum::ColumnRef(column) = value {
+                if column
+                    .fields
+                    .last()
+                    .is_some_and(|field| matches!(field.node, Some(NodeEnum::AStar(_))))
+                {
+                    let qualifier = column.fields.iter().rev().nth(1).and_then(string_value);
+                    if let Some(item) = qualifier
+                        .and_then(|name| r.levels.last().and_then(|level| level.item(name)))
+                    {
+                        typed.extend(item.typed_columns.clone().unwrap_or_default());
+                    } else if let Some(level) = r.levels.last() {
+                        typed.extend(level.star_typed_columns().unwrap_or_default());
+                    }
+                    continue;
+                }
+            }
+            typed.push(crate::typing::TypedColumn {
+                name: if target.name.is_empty() {
+                    figure_column_name(value).unwrap_or_default()
+                } else {
+                    target.name.clone()
+                },
+                ty: super::super::expr::infer_expr(r, value),
+            });
+        }
+        if typed.len() == names.len() {
+            typed
+        } else {
+            names
+                .iter()
+                .map(|name| crate::typing::TypedColumn {
+                    name: name.clone(),
+                    ty: None,
+                })
+                .collect()
+        }
+    });
     r.exit_level();
     columns
 }

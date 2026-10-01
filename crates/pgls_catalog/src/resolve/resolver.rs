@@ -105,7 +105,11 @@ impl<'a> Resolver<'a> {
     pub fn report(&mut self, kind: FindingKind, location: i32) {
         let span = self.span(location);
         self.database_only = false;
-        self.findings.push(Finding { kind, span });
+        // Some expressions are typed more than once, e.g. VALUES rows in INSERT.
+        let finding = Finding { kind, span };
+        if !self.findings.contains(&finding) {
+            self.findings.push(finding);
+        }
     }
 
     /// The span of the (possibly qualified) name starting at `location`.

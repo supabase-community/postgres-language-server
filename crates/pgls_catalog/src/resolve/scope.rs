@@ -64,6 +64,8 @@ pub(super) struct Level {
     pub items: Vec<Item>,
     /// Columns merged by `JOIN ... USING`. An unqualified reference to them is not ambiguous.
     pub merged_columns: Vec<String>,
+    /// Types of columns merged by USING, in USING-clause order.
+    pub merged_typed_columns: Vec<TypedColumn>,
     /// Set if the level contains a `NATURAL` join, whose merged columns we don't compute.
     pub has_natural_join: bool,
     /// Set if the level contains items we don't model (`XMLTABLE`, `TABLESAMPLE`, ...), whose
@@ -87,18 +89,42 @@ impl Level {
     pub fn extend(&mut self, other: Level) {
         self.items.extend(other.items);
         self.merged_columns.extend(other.merged_columns);
+        self.merged_typed_columns.extend(other.merged_typed_columns);
         self.has_natural_join |= other.has_natural_join;
         self.has_opaque_items |= other.has_opaque_items;
     }
 
-    /// The columns of `SELECT *`, if known.
-    pub fn star_columns(&self) -> Columns {
-        if self.has_natural_join || !self.merged_columns.is_empty() || self.items.is_empty() {
+    /// Typed columns of `SELECT *`, including columns merged by USING.
+    pub fn star_typed_columns(&self) -> TypedColumns {
+        if self.has_natural_join || self.items.is_empty() {
             return None;
         }
-        let mut columns = Vec::new();
+        let mut output = self.merged_typed_columns.clone();
         for item in &self.items {
-            columns.extend(item.columns.clone()?);
+            let columns = item.typed_columns.as_ref()?;
+            output.extend(
+                columns
+                    .iter()
+                    .filter(|column| !self.merged_columns.contains(&column.name))
+                    .cloned(),
+            );
+        }
+        Some(output)
+    }
+
+    /// The columns of `SELECT *`, if known.
+    pub fn star_columns(&self) -> Columns {
+        if self.has_natural_join || self.items.is_empty() {
+            return None;
+        }
+        let mut columns = self.merged_columns.clone();
+        for item in &self.items {
+            columns.extend(
+                item.columns
+                    .clone()?
+                    .into_iter()
+                    .filter(|column| !self.merged_columns.contains(column)),
+            );
         }
         Some(columns)
     }
@@ -129,6 +155,13 @@ pub(super) fn find_column_type(levels: &[Level], column: &str) -> Option<Type> {
             && level.output_names.iter().any(|n| n == column)
         {
             return None;
+        }
+        if level.merged_columns.iter().any(|c| c == column) {
+            return level
+                .merged_typed_columns
+                .iter()
+                .find(|c| c.name == column)
+                .and_then(|c| c.ty.clone());
         }
         let matches = level
             .items

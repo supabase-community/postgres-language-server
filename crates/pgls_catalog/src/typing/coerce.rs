@@ -198,17 +198,18 @@ pub fn can_coerce(
     context: CoercionContext,
 ) -> Decision<bool> {
     if matches!(from, Type::UnknownLiteral) {
-        return Decision::Known(true);
+        return match is_named(c, to, "internal") {
+            Decision::Known(true) => Decision::Known(false),
+            Decision::Known(false) => Decision::Known(true),
+            Decision::Unknown => Decision::Unknown,
+        };
     }
+    // Anonymous rows convert to composite types at runtime, and to string types through I/O
+    // conversion. Neither is modelled.
     if let Type::Record(_) = from {
         return match is_named(c, to, "record") {
             Decision::Known(true) => Decision::Known(true),
-            Decision::Known(false) => match info(c, to) {
-                Decision::Known(t) if t.kind == Some(TypeKind::Composite) => Decision::Unknown,
-                Decision::Known(_) => Decision::Known(false),
-                Decision::Unknown => Decision::Unknown,
-            },
-            Decision::Unknown => Decision::Unknown,
+            _ => Decision::Unknown,
         };
     }
     let Type::Named(source) = from else {
@@ -245,8 +246,25 @@ pub fn can_coerce(
         Decision::Known(None) => {}
     }
     match find_coercion_pathway(c, source, to, context) {
-        Decision::Known(path) => Decision::Known(path.is_some()),
+        Decision::Known(Some(_)) => Decision::Known(true),
+        Decision::Known(None) => row_coercion(c, source, to),
         Decision::Unknown => Decision::Unknown,
+    }
+}
+
+/// `can_coerce_type` also accepts a `record` for a composite type, which is checked at
+/// runtime, and a composite type for a composite type it inherits from. Neither is modelled,
+/// so both are unknown.
+fn row_coercion(c: &dyn CatalogView, source: &TypeId, target: &TypeId) -> Decision<bool> {
+    let (source, target) = match (info(c, source), info(c, target)) {
+        (Decision::Known(source), Decision::Known(target)) => (source, target),
+        _ => return Decision::Unknown,
+    };
+    match (source.kind, target.kind) {
+        (Some(TypeKind::Pseudo), _) | (_, Some(TypeKind::Pseudo)) => Decision::Unknown,
+        (Some(TypeKind::Composite), Some(TypeKind::Composite)) => Decision::Unknown,
+        (Some(_), Some(_)) => Decision::Known(false),
+        _ => Decision::Unknown,
     }
 }
 

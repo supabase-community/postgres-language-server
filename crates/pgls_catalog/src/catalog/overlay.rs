@@ -381,18 +381,51 @@ impl Catalog {
         };
 
         let arg_count = object.objargs.len();
-        let position = if object.args_unspecified || overloads.len() == 1 {
-            (overloads.len() == 1).then_some(0)
-        } else if overloads.iter().any(|overload| overload.max_args.is_none()) {
-            None
-        } else {
-            let mut candidates = overloads
-                .iter()
-                .enumerate()
-                .filter(|(_, overload)| overload.max_args == Some(arg_count));
+        let argument_types = (!object.args_unspecified)
+            .then(|| {
+                object
+                    .objargs
+                    .iter()
+                    .map(|arg| {
+                        let name = match arg.node.as_ref()? {
+                            pgls_query::NodeEnum::TypeName(name) => name,
+                            _ => return None,
+                        };
+                        crate::normalize_type_name(self, name, search_path).0
+                    })
+                    .collect::<Option<Vec<_>>>()
+            })
+            .flatten();
+        let typed_position = argument_types.as_ref().and_then(|arguments| {
+            let mut candidates = overloads.iter().enumerate().filter(|(_, overload)| {
+                input_types(overload.signature.as_ref())
+                    .is_some_and(|types| types.iter().copied().eq(arguments.iter()))
+            });
             match (candidates.next(), candidates.next()) {
                 (Some((position, _)), None) => Some(position),
                 _ => None,
+            }
+        });
+        let position = if object.args_unspecified || overloads.len() == 1 {
+            (overloads.len() == 1).then_some(0)
+        } else if let Some(position) = typed_position {
+            Some(position)
+        } else {
+            // Unknown argument types retain the old arity fallback. A known but unmatched
+            // signature must not select a different overload merely because its arity agrees.
+            if argument_types.is_some()
+                || overloads.iter().any(|overload| overload.max_args.is_none())
+            {
+                None
+            } else {
+                let mut candidates = overloads
+                    .iter()
+                    .enumerate()
+                    .filter(|(_, overload)| overload.max_args == Some(arg_count));
+                match (candidates.next(), candidates.next()) {
+                    (Some((position, _)), None) => Some(position),
+                    _ => None,
+                }
             }
         };
 
@@ -454,7 +487,21 @@ pub(super) fn column_info(
     let type_id = column
         .type_name
         .as_ref()
-        .and_then(|name| crate::normalize_type_name(catalog, name, search_path).0);
+        .and_then(|name| crate::normalize_type_name(catalog, name, search_path).0)
+        .or_else(|| {
+            // Serial pseudo-types are rewritten to integer columns by PostgreSQL, but they
+            // are not pg_type entries and therefore cannot be normalized by name lookup.
+            let internal_name = match column.type_name.as_ref().and_then(type_label).as_deref() {
+                Some("serial") => "int4",
+                Some("bigserial") => "int8",
+                Some("smallserial") => "int2",
+                _ => return None,
+            };
+            catalog
+                .type_(Some("pg_catalog"), internal_name, search_path)
+                .found()
+                .and_then(|ty| ty.id)
+        });
     let type_name = column.type_name.as_ref().and_then(type_label);
     ColumnInfo {
         name: column.colname.clone(),

@@ -9,6 +9,8 @@
 //! the right answer.
 
 mod column_name;
+#[cfg(all(test, feature = "db"))]
+mod differential_tests;
 pub(crate) mod expr;
 mod nodes;
 mod resolver;
@@ -16,6 +18,8 @@ mod scope;
 mod span;
 #[cfg(test)]
 mod tests;
+#[cfg(all(test, feature = "db"))]
+mod type_tests;
 
 use pgls_query::{NodeEnum, protobuf};
 use pgls_text_size::TextRange;
@@ -68,6 +72,27 @@ pub enum FindingKind {
         column: String,
         candidates: Vec<String>,
     },
+    OperatorMismatch {
+        operator: String,
+        left: Option<crate::typing::Type>,
+        right: crate::typing::Type,
+        failure: MatchFailure,
+    },
+    FunctionArgumentMismatch {
+        schema: Option<String>,
+        name: String,
+        args: Vec<crate::typing::Type>,
+        failure: MatchFailure,
+    },
+    InvalidCast {
+        from: crate::typing::Type,
+        to: crate::typing::Type,
+    },
+    AssignmentMismatch {
+        column: String,
+        column_type: crate::typing::Type,
+        expr_type: crate::typing::Type,
+    },
     UnknownFunction {
         schema: Option<String>,
         name: String,
@@ -95,6 +120,12 @@ pub enum FindingKind {
     },
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum MatchFailure {
+    NoMatch,
+    Ambiguous,
+}
+
 /// How the final statement of a SQL function differs from the declared result.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ReturnMismatch {
@@ -102,6 +133,13 @@ pub enum ReturnMismatch {
     ColumnCount { expected: usize, found: usize },
     /// It is not a query, so it returns no rows.
     NoRows,
+    /// A column can't be assigned to its declared type. `position` is the 1-based column
+    /// of a composite result, `None` for a scalar result.
+    ColumnType {
+        position: Option<usize>,
+        expected: crate::typing::Type,
+        found: crate::typing::Type,
+    },
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

@@ -38,9 +38,34 @@ fn resolve_set_operation(r: &mut Resolver, n: &SelectStmt) -> Columns {
         .larg
         .as_deref()
         .and_then(|left| resolve_select_stmt(r, left));
+    let left_typed = r.output.clone();
     if let Some(right) = n.rarg.as_deref() {
         resolve_select_stmt(r, right);
     }
+    let right_typed = r.output.clone();
+    r.output = match (left_typed, right_typed) {
+        (Some(left), Some(right)) if left.len() == right.len() => Some(
+            left.into_iter()
+                .zip(right)
+                .map(|(left, right)| {
+                    let ty = match (left.ty, right.ty) {
+                        (Some(left), Some(right)) => {
+                            match crate::typing::select_common_type(r.catalog, &[left, right]) {
+                                crate::typing::Selection::Match(ty) => Some(ty),
+                                _ => None,
+                            }
+                        }
+                        _ => None,
+                    };
+                    crate::typing::TypedColumn {
+                        name: left.name,
+                        ty,
+                    }
+                })
+                .collect(),
+        ),
+        _ => None,
+    };
     columns
 }
 
@@ -70,13 +95,18 @@ fn resolve_values(r: &mut Resolver, n: &SelectStmt) -> Columns {
                         NodeEnum::List(row) => row.items.get(index),
                         _ => None,
                     })
-                    .filter_map(|node| node.node.as_ref())
-                    .filter_map(|expr| super::super::expr::infer_expr(r, expr))
-                    .collect::<Vec<_>>();
-                let ty = match crate::typing::select_common_type(r.catalog, &values) {
-                    crate::typing::Selection::Match(ty) => Some(ty),
-                    _ => None,
-                };
+                    .map(|node| {
+                        node.node
+                            .as_ref()
+                            .and_then(|expr| super::super::expr::infer_expr(r, expr))
+                    })
+                    .collect::<Option<Vec<_>>>();
+                let ty = values.and_then(|values| {
+                    match crate::typing::select_common_type(r.catalog, &values) {
+                        crate::typing::Selection::Match(ty) => Some(ty),
+                        _ => None,
+                    }
+                });
                 crate::typing::TypedColumn {
                     name: name.clone(),
                     ty,
@@ -132,9 +162,7 @@ fn resolve_select(r: &mut Resolver, n: &SelectStmt) -> Columns {
                     {
                         out.extend(item.typed_columns.clone().unwrap_or_default());
                     } else if let Some(level) = r.levels.last() {
-                        for item in &level.items {
-                            out.extend(item.typed_columns.clone().unwrap_or_default());
-                        }
+                        out.extend(level.star_typed_columns().unwrap_or_default());
                     }
                     continue;
                 }
