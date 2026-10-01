@@ -1,0 +1,51 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+create schema users_hidden;
+create table users_hidden.users (id uuid, first_name text, last_name text, email text);
+-- GitHub issue #431.
+-- expect_lint/functionReturnTypeMismatch
+create function test_error_42P13_type_column_mismatch(user_id uuid) returns users_hidden.users language sql as
+$$
+select u.id, u.first_name from users_hidden.users u where u.id = user_id;
+$$;
+create function test_column_return(user_id uuid) returns users_hidden.users language sql as
+$$
+select * from users_hidden.users u where u.id = user_id;
+$$;
+-- expect_lint/functionReturnTypeMismatch
+create function names() returns table (first_name text, last_name text) language sql as
+'select first_name, last_name, email from users_hidden.users';
+-- expect_lint/functionReturnTypeMismatch
+create function forget_users(out deleted uuid, out email text) language sql as
+'delete from users_hidden.users';
+create function remove_users() returns setof users_hidden.users language sql as
+'delete from users_hidden.users returning *';
+
+```
+
+# Diagnostics
+lint/functionReturnTypeMismatch ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Return type mismatch in function declared to return users_hidden.users.
+  
+  i Final statement returns too few columns: expected 4, found 2.
+  
+
+
+lint/functionReturnTypeMismatch ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Return type mismatch in function declared to return record.
+  
+  i Final statement returns too many columns: expected 2, found 3.
+  
+
+
+lint/functionReturnTypeMismatch ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Return type mismatch in function declared to return record.
+  
+  i Function's final statement must be SELECT or INSERT/UPDATE/DELETE/MERGE RETURNING.

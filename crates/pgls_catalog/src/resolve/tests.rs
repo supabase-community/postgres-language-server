@@ -537,3 +537,128 @@ fn database_only() {
         "select * from anything"
     ));
 }
+
+#[test]
+fn function_return_types() {
+    let mismatch = |declared: &str, expected: usize, found: usize| {
+        vec![FindingKind::FunctionReturnMismatch {
+            declared: declared.into(),
+            mismatch: ReturnMismatch::ColumnCount { expected, found },
+        }]
+    };
+    let no_rows = |declared: &str| {
+        vec![FindingKind::FunctionReturnMismatch {
+            declared: declared.into(),
+            mismatch: ReturnMismatch::NoRows,
+        }]
+    };
+
+    // GitHub issue #431: a composite result needs one column per attribute, or the whole row.
+    assert_eq!(
+        findings(
+            "create function f(user_id int8) returns users language sql as $$
+                select u.id from users u where u.id = user_id; select u.id, u.name, 1 from users u
+            $$"
+        ),
+        mismatch("users", 2, 3)
+    );
+    assert_eq!(
+        findings("create function f() returns setof public.users language sql as 'select 1, 2, 3'"),
+        mismatch("public.users", 2, 3)
+    );
+    assert_valid(
+        "create function f(user_id int8) returns users language sql as $$ select * from users u where u.id = user_id $$",
+    );
+    assert_valid("create function f() returns users language sql as 'select u from users u'");
+    assert_valid("create function f() returns setof address language sql as $$ select 'a', 'b' $$");
+
+    // Scalars need exactly one column.
+    assert_eq!(
+        findings("create function f() returns int language sql as 'select 1, 2'"),
+        mismatch("int4", 1, 2)
+    );
+    assert_eq!(
+        findings("create function f() returns text[] language sql as 'select 1, 2'"),
+        mismatch("text[]", 1, 2)
+    );
+    assert_valid("create function f(a int, b int) returns int language sql as 'select $1 + $2'");
+
+    // Output parameters and `RETURNS TABLE`.
+    assert_eq!(
+        findings("create function f(a int, out x int, out y text) language sql as 'select a'"),
+        []
+    );
+    assert_eq!(
+        findings(
+            "create function f(a int, out x int, out y text) language sql as 'select a, a, a'"
+        ),
+        mismatch("record", 2, 3)
+    );
+    assert_eq!(
+        findings(
+            "create function f() returns table (x int, y text, z text) language sql as 'select 1, 2'"
+        ),
+        mismatch("record", 3, 2)
+    );
+    assert_eq!(
+        findings("create function f() returns table (x int) language sql as 'select 1, 2'"),
+        mismatch("int4", 1, 2)
+    );
+
+    // `RETURNING`, and statements that return no rows.
+    assert_eq!(
+        findings(
+            "create function f() returns users language sql as 'insert into users (id) values (1) returning id, name, id'"
+        ),
+        mismatch("users", 2, 3)
+    );
+    assert_valid(
+        "create function f() returns users language sql as 'delete from users returning *'",
+    );
+    assert_eq!(
+        findings("create function f() returns int language sql as 'delete from users'"),
+        no_rows("int4")
+    );
+    assert_eq!(
+        findings("create function f() returns record language sql as 'create table t ()'"),
+        no_rows("record")
+    );
+    assert_valid("create function f() returns void language sql as 'delete from users'");
+
+    // `BEGIN ATOMIC` and `RETURN` bodies.
+    assert_eq!(
+        findings(
+            "create function f() returns int language sql begin atomic select 1; select 1, 2; end"
+        ),
+        mismatch("int4", 1, 2)
+    );
+    assert_valid(
+        "create function f() returns users language sql return (select u from users u limit 1)",
+    );
+
+    // Unknown shapes are silent.
+    assert_valid("create function f() returns record language sql as 'select 1, 2'");
+    assert_valid("create function f(a anyelement) returns int language sql as 'select a, a'");
+    assert_valid("create function f() returns anyelement language sql as 'select 1, 2'");
+    assert_valid("create function f() returns users.id%type language sql as 'select 1, 2'");
+    assert_valid("create function f() returns int language sql as 'select * from nope'");
+    assert_valid("create function f() returns int language sql as 'select nope.*, 1 from nope'");
+    assert_valid("create function f() returns int language sql as 'not sql at all'");
+    assert_valid("create function f() returns int language plpgsql as 'select 1, 2'");
+    assert_valid("create procedure p() language sql as 'select 1, 2'");
+    assert_eq!(
+        findings_after(
+            "create type mood as enum ('ok'); create domain name_text as text;",
+            "create function f() returns mood language sql as 'select 1, 2'"
+        ),
+        []
+    );
+    // A composite type created in the file.
+    assert_eq!(
+        findings_after(
+            "create type pair as (a int, b int);",
+            "create function f() returns pair language sql as 'select 1, 2, 3'"
+        ),
+        mismatch("pair", 2, 3)
+    );
+}
