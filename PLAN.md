@@ -117,7 +117,6 @@ for stmt in file:
 | `invalidCast` | no cast path exists between the types |
 | `assignmentTypeMismatch` | INSERT/UPDATE value types not assignable to the target columns |
 | `functionReturnTypeMismatch` | SQL function's final statement does not match the declared return type (#431) |
-| `invalidDropTypeSignature` | `DROP TYPE` with a parameter list (#369) |
 
 The difficult parts are operator and function overload resolution, implicit and assignment casts, polymorphic types (`anyelement`, `anyarray`, `anycompatible*`), `unknown` literals, domains, record and row types, and set-returning functions in FROM.
 
@@ -281,7 +280,7 @@ with no new false positives.
 
 ### Phase 4: Expression Typing
 
-- Implement the step 2 rules. This closes #431 and #369.
+- Implement the step 2 rules. This closes #431.
 - Run both checkers on the corpus and track differences until the exit criteria are met.
 - Delete the `EXPLAIN` fallback and the remaining `pgls_typecheck` `EXPLAIN` code.
 
@@ -298,7 +297,7 @@ with no new false positives.
 | #692 `pg_temp` false positive | overlay + `pg_temp` handling (Phase 3) |
 | #705 row-type argument in SQL function | parameter scopes; fallback skipped for these bodies (Phase 3) |
 | #431 SQL function return type mismatch | `functionReturnTypeMismatch` (Phase 4) |
-| #369 `DROP TYPE` with parameters | `invalidDropTypeSignature` (Phase 4) |
+| #369 `DROP TYPE` with parameters | `invalidDropTypeSignature` in `correctness` (Phase 3) |
 | #365 / #367 drop table as error in non-migration files | `appliesTo`, `destructive` group defaults (Phase 2) |
 | #747 suppression ID confusion | flat IDs (Phase 2) |
 | #523 autofix | `fix` hook (Phase 5) |
