@@ -37,17 +37,19 @@ impl Catalog {
         )
     }
 
-    /// The key of a new relation. Temporary relations live in `pg_temp`.
+    /// The key of a new relation. Temporary relations live in `pg_temp`. `None` for system
+    /// catalogs, where Postgres rejects new relations (`heap_create`).
     pub(super) fn relation_creation_key(
         &self,
         range_var: &protobuf::RangeVar,
         search_path: &[String],
-    ) -> Key {
+    ) -> Option<Key> {
         let name = range_var_name(range_var);
         if range_var.relpersistence == "t" {
-            return key("pg_temp", &name.name);
+            return Some(key("pg_temp", &name.name));
         }
-        self.creation_key(&name, search_path)
+        let key = self.creation_key(&name, search_path);
+        (key.0 != "pg_catalog").then_some(key)
     }
 
     // ----- schemas -----
@@ -124,6 +126,18 @@ impl Catalog {
             }
             Lookup::Missing => false,
         }
+    }
+
+    /// Whether a relation inherits columns from another, as an inheritance child or a partition.
+    pub(super) fn is_inheritance_child(&self, relation: &RelationInfo) -> bool {
+        let key = key(&relation.schema, &relation.name);
+        self.children
+            .values()
+            .any(|children| children.contains(&key))
+            || self
+                .base
+                .as_ref()
+                .is_some_and(|base| base.is_inheritance_child(&relation.schema, &relation.name))
     }
 
     /// Changes the columns of a relation and of its inheritance children and partitions.

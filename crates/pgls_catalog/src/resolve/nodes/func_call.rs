@@ -65,17 +65,32 @@ pub(super) fn resolve_func_call(r: &mut Resolver, n: &FuncCall) {
                 overload.min_args <= arg_count
                     && overload.max_args.is_none_or(|max| arg_count <= max)
             });
-            if !accepts && !may_be_field_access(r, n) {
+            if !accepts && !may_be_field_access(r, n) && !may_be_type_coercion(r, schema, name, n) {
                 r.report(unknown_function(true), n.location);
             }
         }
         Lookup::Missing => {
-            if !may_be_field_access(r, n) {
+            if !may_be_field_access(r, n) && !may_be_type_coercion(r, schema, name, n) {
                 r.report(unknown_function(false), n.location);
             }
         }
         Lookup::Unknown => r.depends_on_file(),
     }
+}
+
+/// Postgres reads a one-argument call of a type name as a cast when no function matches:
+/// `inet(x)` is `x::inet`. Port of the coercion fallback in `parse_func.c: func_get_detail`.
+fn may_be_type_coercion(r: &Resolver, schema: Option<&str>, name: &str, n: &FuncCall) -> bool {
+    let [argument] = n.args.as_slice() else {
+        return false;
+    };
+    if n.agg_star || matches!(argument.node, Some(NodeEnum::NamedArgExpr(_))) {
+        return false;
+    }
+    !matches!(
+        r.catalog.type_(schema, name, r.search_path),
+        Lookup::Missing
+    )
 }
 
 /// Postgres reads `name(row)` as a field access if `row` is a whole row: `name(t)` is the same

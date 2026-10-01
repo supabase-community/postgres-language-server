@@ -30,7 +30,10 @@ pub(super) fn apply_drop_stmt(c: &mut Catalog, n: &DropStmt, search_path: &[Stri
                 let Some(name) = qualified_name(&list.items) else {
                     continue;
                 };
-                if let Some(key) = c.relation_key(name.schema(), &name.name, search_path) {
+                if let Some(key) = c
+                    .relation_key(name.schema(), &name.name, search_path)
+                    .filter(|key| key.0 != "pg_catalog")
+                {
                     c.types.insert(key.clone(), Entry::Dropped);
                     c.relations.insert(key, Entry::Dropped);
                 }

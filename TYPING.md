@@ -167,6 +167,20 @@ The EXPLAIN fallback stays gated on `database_only`. A static finding already cl
 - SQL function results: Postgres resolves unknown literals in the final statement to `text` before comparing, so `returns jsonb ... select '{}'` fails. Each column must be assignable (assignment coercion, Postgres 13+; older versions are stricter, so this never over-reports). Domains are scalar results, even over composite types.
 - Multi-row `INSERT ... VALUES` coerces each row to the target columns on its own; there is no common type across rows. Targets with subscripts or fields (`a[1]`, `c.f`) are not checked.
 - `query_output_types` keeps top-level unknown literals as `unknown` (Postgres describes them as `text`). INSERT ... SELECT needs the unresolved type.
+- The overlay only applies DDL that Postgres would accept where the rejection is static: no relations in `pg_catalog`, no changes to system catalogs, no function with a default before a parameter without one, and no polymorphic result the inputs can't determine (`check_valid_polymorphic_signature`). Dropping or retyping a column of an inheritance child makes its columns unknown.
+- Name resolution follows Postgres' fallbacks: `t.name` may be the call `name(t)`, a one-argument call of a type name is a cast, `unnest(a, b)` in FROM (also inside `ROWS FROM`) is one `unnest` per argument, and the `ON CONFLICT (...) WHERE` predicate doesn't see `excluded`.
+
+## Regression Corpus
+
+`pgls_analyser/tests/regress_corpus.rs` (ignored by default) runs Postgres' own regression SQL through Postgres and the linter, file by file in a fresh database, and fails on any finding for a statement Postgres accepted. It writes `target/regress-report.txt` with false positives, known harness artefacts, and true positives per rule and SQLSTATE.
+
+```sh
+git clone --depth 1 --branch REL_15_STABLE --filter=blob:none --sparse https://github.com/postgres/postgres /tmp/pg15
+(cd /tmp/pg15 && git sparse-checkout set src/test/regress/sql)
+PG_REGRESS_DIR=/tmp/pg15/src/test/regress/sql cargo test -p pgls_analyser --test regress_corpus -- --ignored
+```
+
+On REL_15_STABLE: about 40,000 statements, no false positives, two known artefacts (a `DROP TABLE` that fails in a read-only session). Statements that fail at runtime can't be modelled: the linter assumes every statement of a file succeeds, like a migration that stops at the first error.
 
 ## Status
 
@@ -175,9 +189,10 @@ The EXPLAIN fallback stays gated on `database_only`. A static finding already cl
 | Model, snapshot metadata, typed lookups | `typing/{model,normalize}.rs`, `snapshot/**`, `catalog/{base,mod}.rs`, `lookup.rs` | done |
 | Types of file-created objects | `catalog/ddl/**`, `catalog/{overlay,derive,materialize}.rs` | done |
 | Coercion, common type, polymorphism, overloads | `typing/{coerce,common,polymorphic,overload,display}.rs` | done; ranges are unknown |
-| Typed scopes, relations, expressions, findings | `resolve/**` | expressions typed in target lists, VALUES, and assignments; other clauses in progress |
+| Typed scopes, relations, expressions, findings | `resolve/**` | done; every clause Postgres types |
 | SQL function result types | `resolve/nodes/create_function_stmt.rs` | done |
-| Rules | `pgls_analyser/src/lint/typecheck/*` | in progress |
+| Rules | `pgls_analyser/src/lint/typecheck/*` | done |
 | Spec runner on the built-in catalog | `pgls_analyser/tests/rules_tests.rs` | done |
 | Differential test | `resolve/differential_tests.rs` | done; grows with each change |
+| Regression corpus | `pgls_analyser/tests/regress_corpus.rs` | done; no false positives |
 | Hover with expression types | `pgls_hover` | deferred |

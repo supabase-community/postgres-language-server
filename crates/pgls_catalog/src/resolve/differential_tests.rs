@@ -136,6 +136,43 @@ const CASES: &[(&str, Expect)] = &[
         Detect("42883", Kind::Operator),
     ),
     ("select 1 in (1, 2)", Accept),
+    (
+        "select 1 from items where qty + 1 > 0 and name like 'a%'",
+        Accept,
+    ),
+    ("select q.q from generate_series(1, 2) q", Accept),
+    (
+        "select * from rows from (unnest(array[1, 2], array['a', 'b']), generate_series(1, 2)) with ordinality z(a, b, c, o)",
+        Accept,
+    ),
+    (
+        "select i, v from unnest(array[1, 2], array['a', 'b']) u(i, v)",
+        Accept,
+    ),
+    (
+        "select tsquery('a & b'), regtype('int4'), inet(text('127.0.0.1'))",
+        Accept,
+    ),
+    (
+        "select js from json_populate_record(null::pair, '{}') q(js)",
+        Accept,
+    ),
+    (
+        "select b from json_populate_record(null::pair, '{}') q",
+        Accept,
+    ),
+    ("select jsonb_delete('{\"a\": 1}'::jsonb, 'a')", Accept),
+    ("select nummultirange(numrange(1, 2))", Accept),
+    ("select array[1] = array[1], array[1] = '{1}'", Accept),
+    ("select name(i) from items i", Accept),
+    (
+        "create function f() returns boolean begin atomic ;;return false;; end",
+        Accept,
+    ),
+    (
+        "insert into items (id, name) values (1, 'a') on conflict (id) where name like 'a%' do nothing",
+        Accept,
+    ),
     ("select row(1, 2) = row(1, 2)", Accept),
     ("select i = i from items i", Accept),
     ("select i is distinct from i from items i", Accept),

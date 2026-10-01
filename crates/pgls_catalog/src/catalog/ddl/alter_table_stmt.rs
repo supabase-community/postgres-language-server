@@ -26,7 +26,11 @@ pub(super) fn apply_alter_table_stmt(c: &mut Catalog, n: &AlterTableStmt, search
 
     if n.objtype() == ObjectType::ObjectType {
         let name = range_var_name(range_var);
-        if let Some(mut type_info) = c.type_(name.schema(), &name.name, search_path).found() {
+        if let Some(mut type_info) = c
+            .type_(name.schema(), &name.name, search_path)
+            .found()
+            .filter(|type_info| type_info.schema != "pg_catalog")
+        {
             if let Some(attributes) = type_info.attributes.as_mut() {
                 for command in &commands {
                     apply_column_change(c, attributes, command, search_path);
@@ -39,7 +43,12 @@ pub(super) fn apply_alter_table_stmt(c: &mut Catalog, n: &AlterTableStmt, search
         return;
     }
 
-    let Some(relation) = c.relation_of(range_var, search_path).found() else {
+    // Postgres rejects changes to system catalogs.
+    let Some(relation) = c
+        .relation_of(range_var, search_path)
+        .found()
+        .filter(|relation| relation.schema != "pg_catalog")
+    else {
         return;
     };
     let changes_columns = commands.iter().any(|command| {
@@ -54,6 +63,18 @@ pub(super) fn apply_alter_table_stmt(c: &mut Catalog, n: &AlterTableStmt, search
         return;
     }
 
+    // Postgres rejects dropping or retyping an inherited column, and we don't know which
+    // columns of a child are inherited.
+    let changes_inherited = commands.iter().any(|command| {
+        matches!(
+            command.subtype(),
+            AlterTableType::AtDropColumn | AlterTableType::AtAlterColumnType
+        )
+    });
+    if changes_inherited && c.is_inheritance_child(&relation) {
+        c.change_columns(&relation, |columns| *columns = None);
+        return;
+    }
     let catalog = c.clone();
     c.change_columns(&relation, |columns| {
         if let Some(columns) = columns.as_mut() {

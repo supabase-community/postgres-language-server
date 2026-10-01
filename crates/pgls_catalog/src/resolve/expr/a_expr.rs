@@ -74,27 +74,43 @@ pub(super) fn infer_a_expr(r: &mut Resolver<'_>, n: &pgls_query::protobuf::AExpr
                 };
                 let types = items
                     .iter()
-                    .filter_map(|item| infer_expr(r, item))
+                    .map(|item| infer_expr(r, item))
                     .collect::<Vec<_>>();
-                if let Some(left) = left.as_ref() {
-                    if items.len() > 1 && types.len() == items.len() {
-                        // Port of transformAExprIn: common-type array optimization for non-Var items.
-                        if let Selection::Match(common) = select_common_type(
-                            r.catalog,
-                            &[std::iter::once(left.clone())
-                                .chain(types.clone())
-                                .collect::<Vec<_>>()]
-                            .concat(),
-                        ) {
-                            if !matches!(common, Type::Record(_)) {
-                                check_operator(r, name, Some(left), &common, n.location);
-                                return named(r, "bool");
+                let (Some(left), Some(types)) =
+                    (left.as_ref(), types.into_iter().collect::<Option<Vec<_>>>())
+                else {
+                    return named(r, "bool");
+                };
+                // Column references become `Var`s, which Postgres compares one by one. With more
+                // than one other item, it tries a common type for them and the left side and
+                // compares against an array of that type.
+                let non_vars = items
+                    .iter()
+                    .zip(&types)
+                    .filter(|(item, _)| !matches!(item, NodeEnum::ColumnRef(_)))
+                    .map(|(_, ty)| ty.clone())
+                    .collect::<Vec<_>>();
+                if non_vars.len() > 1 {
+                    let all = std::iter::once(left.clone())
+                        .chain(non_vars)
+                        .collect::<Vec<_>>();
+                    match select_common_type(r.catalog, &all) {
+                        Selection::Match(Type::Named(common)) => {
+                            check_operator(r, name, Some(left), &Type::Named(common), n.location);
+                            for (item, ty) in items.iter().zip(&types) {
+                                if matches!(item, NodeEnum::ColumnRef(_)) {
+                                    check_operator(r, name, Some(left), ty, n.location);
+                                }
                             }
+                            return named(r, "bool");
                         }
+                        Selection::NoMatch | Selection::Ambiguous => {}
+                        // A record common type also falls back; `unknown` is not modelled.
+                        _ => return named(r, "bool"),
                     }
-                    for ty in &types {
-                        check_operator(r, name, Some(left), ty, n.location);
-                    }
+                }
+                for ty in &types {
+                    check_operator(r, name, Some(left), ty, n.location);
                 }
                 return named(r, "bool");
             }
@@ -196,15 +212,9 @@ pub(super) fn infer_a_expr(r: &mut Resolver<'_>, n: &pgls_query::protobuf::AExpr
             _ => return None,
         };
         let right = infer_expr(r, n.rexpr.as_deref()?.node.as_ref()?)?;
-        let left = n
-            .lexpr
-            .as_deref()
-            .and_then(|x| x.node.as_ref())
-            .and_then(|x| infer_expr(r, x));
-        let kind = if left.is_some() {
-            OperatorKind::Infix
-        } else {
-            OperatorKind::Prefix
+        let (kind, left) = match n.lexpr.as_deref().and_then(|x| x.node.as_ref()) {
+            Some(left) => (OperatorKind::Infix, Some(infer_expr(r, left)?)),
+            None => (OperatorKind::Prefix, None),
         };
         let selection = select_operator(
             r.catalog,

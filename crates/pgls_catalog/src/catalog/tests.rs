@@ -884,12 +884,40 @@ mod typing_overlay_tests {
     }
 
     #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    async fn undeterminable_polymorphic_results_are_not_created(test_db: PgPool) {
+        let path = path(&["public"]);
+        let mut catalog = database_catalog(&test_db).await;
+        // Postgres rejects the first three.
+        apply(
+            &mut catalog,
+            "create function p1(x anyelement) returns anyrange language sql as 'select null';
+             create function p2(x anycompatible) returns anycompatiblerange language sql as 'select null';
+             create function p3(x int, out y anyelement) language sql as 'select null';
+             create function p4(x anyrange) returns anyarray language sql as 'select null';
+             create function p5(x anyelement, out y anyarray) language sql as 'select null';",
+            &path,
+        );
+        for name in ["p1", "p2", "p3"] {
+            assert!(
+                matches!(catalog.functions(None, name, &path), Lookup::Missing),
+                "{name}"
+            );
+        }
+        for name in ["p4", "p5"] {
+            assert!(
+                matches!(catalog.functions(None, name, &path), Lookup::Found(_)),
+                "{name}"
+            );
+        }
+    }
+
+    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
     async fn overload_mutations_keep_signature_identity_and_invalidation(test_db: PgPool) {
         let path = path(&["public"]);
         let mut catalog = database_catalog(&test_db).await;
         apply(
             &mut catalog,
-            "create function overlay_f(a int, b text default 'x', variadic c int[]) returns setof int language sql as 'select 1';
+            "create function overlay_f(a int, b text default 'x', variadic c int[] default '{}') returns setof int language sql as 'select 1';
              create function overlay_f(a bigint) returns bigint language sql as 'select 1';
              create function overlay_out(out a int, out b text) returns record language sql as 'select 1, ''x''';",
             &path,
@@ -902,14 +930,14 @@ mod typing_overlay_tests {
         assert!(first.returns_set);
         let signature = first.signature.as_ref().unwrap();
         assert_eq!(signature.arguments.len(), 3);
-        assert_eq!(signature.input_defaults, 1);
+        assert_eq!(signature.input_defaults, 2);
         assert_eq!(
             signature.variadic_element,
             Some(type_id(&catalog, "int4", &path))
         );
         apply(
             &mut catalog,
-            "create or replace function overlay_f(a int, b text default 'y', variadic c int[]) returns setof int language sql as 'select 1';
+            "create or replace function overlay_f(a int, b text default 'y', variadic c int[] default '{}') returns setof int language sql as 'select 1';
              drop function overlay_f(bigint);
              alter function overlay_f(int, text, variadic int[]) rename to renamed_f;",
             &path,
