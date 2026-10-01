@@ -1,0 +1,5 @@
+-- Postgres only checks function bodies when `check_function_bodies` is on.
+-- expect_no_diagnostics
+create table users (id int8, name text);
+set check_function_bodies = off;
+create function first_user() returns users language sql as 'select 1, 2, 3';

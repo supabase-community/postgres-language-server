@@ -43,6 +43,7 @@ define_categories! {
     "lint/constraintMissingNotValid": "https://pg-language-server.com/latest/reference/rules/constraint-missing-not-valid/",
     "lint/creatingEnum": "https://pg-language-server.com/latest/reference/rules/creating-enum/",
     "lint/disallowUniqueConstraint": "https://pg-language-server.com/latest/reference/rules/disallow-unique-constraint/",
+    "lint/functionReturnTypeMismatch": "https://pg-language-server.com/latest/reference/rules/function-return-type-mismatch/",
     "lint/insertColumnMismatch": "https://pg-language-server.com/latest/reference/rules/insert-column-mismatch/",
     "lint/invalidDropTypeSignature": "https://pg-language-server.com/latest/reference/rules/invalid-drop-type-signature/",
     "lint/lockTimeoutWarning": "https://pg-language-server.com/latest/reference/rules/lock-timeout-warning/",

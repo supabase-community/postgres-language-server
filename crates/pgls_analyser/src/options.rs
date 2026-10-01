@@ -47,6 +47,7 @@ pub type ChangingColumnType =
 pub type ConstraintMissingNotValid = < lint :: safety :: constraint_missing_not_valid :: ConstraintMissingNotValid as crate :: LinterRule > :: Options ;
 pub type CreatingEnum = <lint::style::creating_enum::CreatingEnum as crate::LinterRule>::Options;
 pub type DisallowUniqueConstraint = < lint :: safety :: disallow_unique_constraint :: DisallowUniqueConstraint as crate :: LinterRule > :: Options ;
+pub type FunctionReturnTypeMismatch = < lint :: typecheck :: function_return_type_mismatch :: FunctionReturnTypeMismatch as crate :: LinterRule > :: Options ;
 pub type InsertColumnMismatch =
     <lint::typecheck::insert_column_mismatch::InsertColumnMismatch as crate::LinterRule>::Options;
 pub type InvalidDropTypeSignature = < lint :: correctness :: invalid_drop_type_signature :: InvalidDropTypeSignature as crate :: LinterRule > :: Options ;
