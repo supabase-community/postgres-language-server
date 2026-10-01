@@ -10,6 +10,7 @@ pub(super) fn apply_define_stmt(c: &mut Catalog, n: &DefineStmt, search_path: &[
     };
     match n.kind() {
         ObjectType::ObjectType => c.define_type(&name, None, search_path),
+        ObjectType::ObjectOperator => c.operators_incomplete = true,
         ObjectType::ObjectAggregate => {
             let (schema, name) = c.creation_key(&name, search_path);
             // The arity of aggregates (ordered-set, `*`, variadic) is not modelled.

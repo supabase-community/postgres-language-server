@@ -29,7 +29,7 @@ pub(super) fn apply_alter_table_stmt(c: &mut Catalog, n: &AlterTableStmt, search
         if let Some(mut type_info) = c.type_(name.schema(), &name.name, search_path).found() {
             if let Some(attributes) = type_info.attributes.as_mut() {
                 for command in &commands {
-                    apply_column_change(attributes, command);
+                    apply_column_change(c, attributes, command, search_path);
                 }
             }
             type_info.origin = Origin::File;
@@ -54,10 +54,11 @@ pub(super) fn apply_alter_table_stmt(c: &mut Catalog, n: &AlterTableStmt, search
         return;
     }
 
+    let catalog = c.clone();
     c.change_columns(&relation, |columns| {
         if let Some(columns) = columns.as_mut() {
             for command in &commands {
-                apply_column_change(columns, command);
+                apply_column_change(&catalog, columns, command, search_path);
             }
         }
     });
@@ -65,14 +66,19 @@ pub(super) fn apply_alter_table_stmt(c: &mut Catalog, n: &AlterTableStmt, search
 
 /// Applies `ADD COLUMN`, `DROP COLUMN` and `ALTER COLUMN TYPE` (and their `ATTRIBUTE`
 /// counterparts).
-fn apply_column_change(columns: &mut Vec<ColumnInfo>, command: &AlterTableCmd) {
+fn apply_column_change(
+    c: &Catalog,
+    columns: &mut Vec<ColumnInfo>,
+    command: &AlterTableCmd,
+    search_path: &[String],
+) {
     match command.subtype() {
         AlterTableType::AtAddColumn => {
             if let Some(NodeEnum::ColumnDef(column)) =
                 command.def.as_deref().and_then(|def| def.node.as_ref())
                 && !columns.iter().any(|c| c.name == column.colname)
             {
-                columns.push(column_info(column));
+                columns.push(column_info(c, column, search_path));
             }
         }
         AlterTableType::AtDropColumn => columns.retain(|column| column.name != command.name),
@@ -84,6 +90,11 @@ fn apply_column_change(columns: &mut Vec<ColumnInfo>, command: &AlterTableCmd) {
                     .find(|column| column.name == command.name),
             ) {
                 column.type_name = definition.type_name.as_ref().and_then(type_label);
+                column.ty = definition
+                    .type_name
+                    .as_ref()
+                    .and_then(|name| crate::normalize_type_name(c, name, search_path).0)
+                    .map(crate::typing::Type::Named);
             }
         }
         _ => {}

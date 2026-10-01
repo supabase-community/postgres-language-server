@@ -9,6 +9,7 @@
 //! the right answer.
 
 mod column_name;
+pub(crate) mod expr;
 mod nodes;
 mod resolver;
 mod scope;
@@ -20,6 +21,7 @@ use pgls_query::{NodeEnum, protobuf};
 use pgls_text_size::TextRange;
 
 use crate::lookup::CatalogView;
+use crate::typing::QueryColumns;
 use resolver::Resolver;
 
 /// A parameter of the SQL function whose body is being resolved.
@@ -148,6 +150,17 @@ pub fn query_output_columns(
     search_path: &[String],
 ) -> Option<Vec<String>> {
     nodes::resolve_node(&mut Resolver::new(catalog, search_path, None, None), query)
+}
+
+/// The inferred output names and types of a query, or `None` when its shape is unknown.
+pub fn query_output_types(
+    query: &protobuf::Node,
+    catalog: &dyn CatalogView,
+    search_path: &[String],
+) -> QueryColumns {
+    let mut resolver = Resolver::new(catalog, search_path, None, None);
+    nodes::resolve_node(&mut resolver, query);
+    resolver.output
 }
 
 /// Whether the statement kind can be checked against the database with `EXPLAIN`.

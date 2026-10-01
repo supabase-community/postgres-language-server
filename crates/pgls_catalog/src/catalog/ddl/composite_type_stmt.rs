@@ -15,7 +15,7 @@ pub(super) fn apply_composite_type_stmt(
         .coldeflist
         .iter()
         .filter_map(|node| match &node.node {
-            Some(NodeEnum::ColumnDef(column)) => Some(column_info(column)),
+            Some(NodeEnum::ColumnDef(column)) => Some(column_info(c, column, search_path)),
             _ => None,
         })
         .collect();
