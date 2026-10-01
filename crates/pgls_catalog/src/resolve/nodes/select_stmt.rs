@@ -9,7 +9,7 @@ use super::{
     Resolver, from_clause::resolve_from_clause, res_target::target_list_columns, resolve_list,
     resolve_node, with_clause::resolve_with_clause,
 };
-use crate::column_name::figure_column_name;
+use crate::resolve::column_name::figure_column_name;
 use crate::resolve::scope::Columns;
 
 /// Resolves a query and returns its output columns, if known.

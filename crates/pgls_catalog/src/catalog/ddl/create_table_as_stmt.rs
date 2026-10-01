@@ -2,7 +2,7 @@ use pgls_query::protobuf::{CreateTableAsStmt, ObjectType};
 
 use super::into_clause::apply_into_clause;
 use crate::catalog::Catalog;
-use crate::view::RelationKind;
+use crate::lookup::RelationKind;
 
 /// `CREATE TABLE AS` and `CREATE MATERIALIZED VIEW`.
 pub(super) fn apply_create_table_as_stmt(

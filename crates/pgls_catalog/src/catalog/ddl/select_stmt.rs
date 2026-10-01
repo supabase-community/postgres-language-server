@@ -2,7 +2,7 @@ use pgls_query::{Node, NodeEnum, protobuf::SelectStmt};
 
 use super::into_clause::apply_into_clause;
 use crate::catalog::Catalog;
-use crate::view::RelationKind;
+use crate::lookup::RelationKind;
 
 /// `SELECT ... INTO` creates a table.
 pub(super) fn apply_select_stmt(c: &mut Catalog, n: &SelectStmt, search_path: &[String]) {

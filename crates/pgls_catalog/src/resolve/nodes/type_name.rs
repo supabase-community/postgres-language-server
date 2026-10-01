@@ -1,8 +1,8 @@
 use pgls_query::protobuf::TypeName;
 
 use super::{Resolver, string::string_values};
+use crate::lookup::Lookup;
 use crate::resolve::FindingKind;
-use crate::view::Lookup;
 
 /// Types whose input is the name of a catalog object, which we don't resolve.
 const OBJECT_NAME_TYPES: &[&str] = &[

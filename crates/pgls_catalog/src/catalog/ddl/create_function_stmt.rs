@@ -8,7 +8,7 @@ use crate::catalog::{
     names::{qualified_name, type_label, type_name},
     overlay::function_info,
 };
-use crate::view::{CatalogView, ColumnInfo, FunctionKind};
+use crate::lookup::{CatalogView, ColumnInfo, FunctionKind};
 
 /// `CREATE FUNCTION` and `CREATE PROCEDURE` add an overload.
 pub(super) fn apply_create_function_stmt(

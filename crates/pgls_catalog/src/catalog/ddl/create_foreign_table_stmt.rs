@@ -2,7 +2,7 @@ use pgls_query::protobuf::CreateForeignTableStmt;
 
 use super::create_stmt::create_table;
 use crate::catalog::Catalog;
-use crate::view::RelationKind;
+use crate::lookup::RelationKind;
 
 pub(super) fn apply_create_foreign_table_stmt(
     c: &mut Catalog,

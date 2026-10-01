@@ -6,11 +6,11 @@ use std::sync::Arc;
 use rustc_hash::FxHashMap;
 
 use super::{Catalog, Entry, Key};
+use crate::lookup::{ColumnInfo, FunctionKind, Origin, RelationInfo, RelationKind};
 use crate::snapshot::{
     Column, ColumnClassKind, Function, PostgresType, PostgresTypeAttribute, ProcKind, Schema,
     Sequence, Snapshot, Table, TableKind, TypeAttributes,
 };
-use crate::view::{ColumnInfo, FunctionKind, Origin, RelationInfo, RelationKind};
 
 impl Catalog {
     /// The database snapshot with the changes of the file applied.

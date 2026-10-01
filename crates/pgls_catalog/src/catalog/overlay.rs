@@ -7,7 +7,7 @@ use super::{
     Catalog, Entry, Key, key,
     names::{QualifiedName, qualified_name, range_var_name, string_value, type_label},
 };
-use crate::view::{
+use crate::lookup::{
     CatalogView, ColumnInfo, FunctionInfo, FunctionKind, Lookup, Origin, RelationInfo,
     RelationKind, TypeInfo,
 };

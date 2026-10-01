@@ -3,7 +3,7 @@
 use pgls_query::protobuf;
 
 use super::Catalog;
-use crate::view::ColumnInfo;
+use crate::lookup::ColumnInfo;
 
 impl Catalog {
     /// The output columns of a query, or `None` when they can't be derived with certainty.

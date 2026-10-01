@@ -4,7 +4,7 @@ use crate::{ProcKind, Snapshot, TableKind};
 use rustc_hash::{FxHashMap, FxHashSet};
 
 use super::{Key, key};
-use crate::view::{
+use crate::lookup::{
     ColumnInfo, FunctionInfo, FunctionKind, Origin, RelationInfo, RelationKind, TypeInfo,
 };
 

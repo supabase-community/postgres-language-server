@@ -7,8 +7,8 @@ use super::{
     Resolver, resolve_list, resolve_node,
     string::{string_value, string_values},
 };
+use crate::lookup::Lookup;
 use crate::resolve::{FindingKind, scope::find_item};
-use crate::view::Lookup;
 
 pub(super) fn resolve_func_call(r: &mut Resolver, n: &FuncCall) {
     resolve_list(r, &n.args);

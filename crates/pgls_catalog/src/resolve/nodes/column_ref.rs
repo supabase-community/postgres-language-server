@@ -1,11 +1,11 @@
 use pgls_query::{NodeEnum, protobuf::ColumnRef};
 
 use super::{Resolver, string::string_values};
+use crate::lookup::Lookup;
 use crate::resolve::{
     FindingKind,
     scope::{ColumnLookup, find_column, find_item, has_opaque_items},
 };
-use crate::view::Lookup;
 
 pub(super) fn resolve_column_ref(r: &mut Resolver, n: &ColumnRef) {
     // `*` and `t.*`
