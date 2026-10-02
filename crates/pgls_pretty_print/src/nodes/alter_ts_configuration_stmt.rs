@@ -3,7 +3,10 @@ use crate::{
     TokenKind,
     emitter::{EventEmitter, GroupKind, LineType},
 };
-use pgls_query::protobuf::AlterTsConfigurationStmt;
+use pgls_query::{
+    NodeEnum,
+    protobuf::{AlterTsConfigType, AlterTsConfigurationStmt, Node},
+};
 
 pub(super) fn emit_alter_ts_configuration_stmt(e: &mut EventEmitter, n: &AlterTsConfigurationStmt) {
     e.group_start(GroupKind::AlterTsconfigurationStmt);
@@ -20,34 +23,25 @@ pub(super) fn emit_alter_ts_configuration_stmt(e: &mut EventEmitter, n: &AlterTs
     // Configuration name
     emit_dot_separated_list(e, &n.cfgname);
 
-    // Kind: 0=Undefined, 1=ADD_MAPPING, 2=ALTER_MAPPING_FOR_TOKEN, 3=REPLACE_DICT, 4=REPLACE_DICT_FOR_TOKEN, 5=DROP_MAPPING
-    match n.kind {
-        1 => {
-            e.line(LineType::SoftOrSpace);
-            e.token(TokenKind::ADD_KW);
-            e.space();
-            e.token(TokenKind::MAPPING_KW);
-        }
-        2 | 4 => {
-            e.line(LineType::SoftOrSpace);
-            e.token(TokenKind::ALTER_KW);
-            e.space();
-            e.token(TokenKind::MAPPING_KW);
-        }
-        3 => {
-            // REPLACE dict (without MAPPING keyword)
-            // Handled below with replace flag
-        }
-        5 => {
-            e.line(LineType::SoftOrSpace);
-            e.token(TokenKind::DROP_KW);
-            e.space();
-            e.token(TokenKind::MAPPING_KW);
-        }
-        _ => {}
+    let kind = n.kind();
+
+    e.line(LineType::SoftOrSpace);
+    match kind {
+        AlterTsConfigType::AlterTsconfigAddMapping => e.token(TokenKind::ADD_KW),
+        AlterTsConfigType::AlterTsconfigDropMapping => e.token(TokenKind::DROP_KW),
+        _ => e.token(TokenKind::ALTER_KW),
+    }
+    e.space();
+    e.token(TokenKind::MAPPING_KW);
+
+    if kind == AlterTsConfigType::AlterTsconfigDropMapping && n.missing_ok {
+        e.space();
+        e.token(TokenKind::IF_KW);
+        e.space();
+        e.token(TokenKind::EXISTS_KW);
     }
 
-    // FOR token type
+    // FOR token types (every form except the token-less REPLACE)
     if !n.tokentype.is_empty() {
         e.line(LineType::SoftOrSpace);
         e.token(TokenKind::FOR_KW);
@@ -55,21 +49,34 @@ pub(super) fn emit_alter_ts_configuration_stmt(e: &mut EventEmitter, n: &AlterTs
         emit_comma_separated_list(e, &n.tokentype, super::emit_node);
     }
 
-    // WITH dictionaries
-    if !n.dicts.is_empty() {
+    if n.replace {
+        // REPLACE old_dict WITH new_dict: dicts holds exactly the old and the new dictionary
+        if let [old, new] = n.dicts.as_slice() {
+            e.line(LineType::SoftOrSpace);
+            e.token(TokenKind::REPLACE_KW);
+            e.space();
+            emit_dictionary(old, e);
+            e.line(LineType::SoftOrSpace);
+            e.token(TokenKind::WITH_KW);
+            e.space();
+            emit_dictionary(new, e);
+        }
+    } else if !n.dicts.is_empty() {
         e.line(LineType::SoftOrSpace);
         e.token(TokenKind::WITH_KW);
         e.space();
-        emit_comma_separated_list(e, &n.dicts, super::emit_node);
-    }
-
-    // REPLACE flag (for ALTER MAPPING ... REPLACE)
-    if n.replace && (n.kind == 2 || n.kind == 4) {
-        e.space();
-        e.token(TokenKind::REPLACE_KW);
+        emit_comma_separated_list(e, &n.dicts, emit_dictionary);
     }
 
     e.token(TokenKind::SEMICOLON);
 
     e.group_end();
+}
+
+/// A dictionary is a possibly qualified name, stored as a `List` of its parts.
+fn emit_dictionary(node: &Node, e: &mut EventEmitter) {
+    match node.node.as_ref() {
+        Some(NodeEnum::List(list)) => emit_dot_separated_list(e, &list.items),
+        _ => super::emit_node(node, e),
+    }
 }
