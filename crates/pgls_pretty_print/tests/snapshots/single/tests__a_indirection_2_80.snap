@@ -1,0 +1,16 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/single/a_indirection_2.sql
+---
+explain (VERBOSE, COSTS 'off')
+select
+  (r).column2
+from
+  (
+    select
+      r
+    from
+      (values (1, 2), (3, 4)) as r
+    limit 1
+  )
+  as ss;

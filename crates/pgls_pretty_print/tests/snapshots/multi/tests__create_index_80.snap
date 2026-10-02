@@ -127,7 +127,7 @@ from
 where
   home_base <@
   cast('(200,200),(2000,1000)' as box)
-order by home_base[0][0];
+order by (home_base[0])[0];
 
 select
   COUNT(*)
@@ -210,7 +210,7 @@ from
 where
   home_base <@
   cast('(200,200),(2000,1000)' as box)
-order by home_base[0][0];
+order by (home_base[0])[0];
 
 select
   *
@@ -219,7 +219,7 @@ from
 where
   home_base <@
   cast('(200,200),(2000,1000)' as box)
-order by home_base[0][0];
+order by (home_base[0])[0];
 
 select
   COUNT(*)

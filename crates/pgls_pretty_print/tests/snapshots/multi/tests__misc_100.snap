@@ -179,7 +179,7 @@ select p.name, name(p.hobbies) from person as p;
 
 select distinct hobbies_r.name, name(hobbies_r.equipment) from hobbies_r order by 1, 2;
 
-select hobbies_r.name, hobbies_r.equipment.name from hobbies_r;
+select hobbies_r.name, (hobbies_r.equipment).name from hobbies_r;
 
 select p.name, name(p.hobbies), name(equipment(p.hobbies)) from only person as p;
 
@@ -187,9 +187,9 @@ select p.name, name(p.hobbies), name(equipment(p.hobbies)) from person as p;
 
 select name(equipment(p.hobbies)), p.name, name(p.hobbies) from only person as p;
 
-select p.hobbies.equipment.name, p.name, name(p.hobbies) from person as p;
+select (p.hobbies).equipment.name, p.name, name(p.hobbies) from person as p;
 
-select p.hobbies.equipment.name, name(p.hobbies), p.name from only person as p;
+select (p.hobbies).equipment.name, name(p.hobbies), p.name from only person as p;
 
 select name(equipment(p.hobbies)), name(p.hobbies), p.name from person as p;
 

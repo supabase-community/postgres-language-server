@@ -178,15 +178,15 @@ insert into dcomptable (d1."r") values (11);
 
 select * from dcomptable;
 
-select d1.r, d1.i, d1.* from dcomptable;
+select (d1).r, (d1).i, (d1).* from dcomptable;
 
-update dcomptable set d1."r" = d1.r + 1 where d1.i > 0;
+update dcomptable set d1."r" = (d1).r + 1 where (d1).i > 0;
 
 select * from dcomptable;
 
-alter domain dcomptype add constraint "c1" check (value.r <= value.i);
+alter domain dcomptype add constraint "c1" check ((value).r <= (value).i);
 
-alter domain dcomptype add constraint "c2" check (value.r > value.i);
+alter domain dcomptype add constraint "c2" check ((value).r > (value).i);
 
 select cast(row(2, 1) as dcomptype);
 
@@ -200,22 +200,22 @@ insert into dcomptable (d1."r", d1."i") values (99, 100);
 
 insert into dcomptable (d1."r", d1."i") values (100, 99);
 
-update dcomptable set d1."r" = d1.r + 1 where d1.i > 0;
+update dcomptable set d1."r" = (d1).r + 1 where (d1).i > 0;
 
-update dcomptable set d1."r" = d1.r - 1, d1."i" = d1.i + 1 where d1.i > 0;
+update dcomptable set d1."r" = (d1).r - 1, d1."i" = (d1).i + 1 where (d1).i > 0;
 
 select * from dcomptable;
 
-update dcomptable set d1."r" = d1.r - 1, d1."i" = d1.i + 1 where d1.i > 0;
+update dcomptable set d1."r" = (d1).r - 1, d1."i" = (d1).i + 1 where (d1).i > 0;
 
 create rule silly
 as on delete to dcomptable
 do instead
   update dcomptable
-  set d1."r" = d1.r - 1,
-  d1."i" = d1.i + 1
+  set d1."r" = (d1).r - 1,
+  d1."i" = (d1).i + 1
   where
-    d1.i > 0;;
+    (d1).i > 0;;
 
 create function makedcomp(r double precision, i double precision)
 returns dcomptype
@@ -242,7 +242,7 @@ create type comptype as (r double precision, i double precision);
 
 create domain dcomptype as comptype;
 
-alter domain dcomptype add constraint "c1" check (value.r > 0);
+alter domain dcomptype add constraint "c1" check ((value).r > 0);
 
 comment on constraint c1 on domain dcomptype is 'random commentary';
 
@@ -379,7 +379,7 @@ insert into dposintatable values (array[cast(array[42] as posint[])]);
 
 insert into dposintatable values (array[cast(array[42] as dposinta)]);
 
-select f1, f1[1], f1[1][1] from dposintatable;
+select f1, f1[1], (f1[1])[1] from dposintatable;
 
 select pg_typeof(f1) from dposintatable;
 
@@ -387,11 +387,11 @@ select pg_typeof(f1[1]) from dposintatable;
 
 select pg_typeof(f1[1][1]) from dposintatable;
 
-select pg_typeof(f1[1][1]) from dposintatable;
+select pg_typeof((f1[1])[1]) from dposintatable;
 
 update dposintatable set f1[2] = array[99];
 
-select f1, f1[1], f1[2][1] from dposintatable;
+select f1, f1[1], (f1[2])[1] from dposintatable;
 
 update dposintatable set f1[2][1] = array[97];
 
@@ -401,7 +401,7 @@ drop domain posint cascade;
 
 create type comptype as (cf1 int, cf2 int);
 
-create domain dcomptype as comptype check (value.cf1 > 0);
+create domain dcomptype as comptype check ((value).cf1 > 0);
 
 create table dcomptable (f1 dcomptype[]);
 

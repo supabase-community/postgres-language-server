@@ -783,7 +783,7 @@ create domain js_int_array_2d as int[][] check (array_length(value, 2) = 3);
 
 create type j_unordered_pair as (x int, y int);
 
-create domain j_ordered_pair as j_unordered_pair check (value.x <= value.y);
+create domain j_ordered_pair as j_unordered_pair check ((value).x <= (value).y);
 
 create type jsrec as (
   i int,

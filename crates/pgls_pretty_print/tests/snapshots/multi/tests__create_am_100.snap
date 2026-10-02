@@ -55,7 +55,7 @@ from
   fast_emp4000
 where
   home_base <@ cast('(200,200),(2000,1000)' as box)
-order by home_base[0][0];
+order by (home_base[0])[0];
 
 select
   *
@@ -63,7 +63,7 @@ from
   fast_emp4000
 where
   home_base <@ cast('(200,200),(2000,1000)' as box)
-order by home_base[0][0];
+order by (home_base[0])[0];
 
 select COUNT(*) from fast_emp4000 where home_base && cast('(1000,1000,0,0)' as box);
 
