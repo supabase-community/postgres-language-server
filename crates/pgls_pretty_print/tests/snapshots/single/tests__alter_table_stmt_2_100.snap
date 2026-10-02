@@ -1,0 +1,7 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/single/alter_table_stmt_2.sql
+---
+alter table fail_part
+  alter column b type char(2) collate "POSIX",
+  alter column c type text collate "C" using cast(c as text);

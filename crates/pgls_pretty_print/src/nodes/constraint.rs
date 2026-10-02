@@ -207,18 +207,7 @@ pub(super) fn emit_constraint(e: &mut EventEmitter, n: &Constraint) {
                 emit_identifier(e, &n.indexspace);
             }
 
-            // DEFERRABLE handling for PRIMARY KEY
-            if n.deferrable {
-                e.space();
-                e.token(TokenKind::DEFERRABLE_KW);
-
-                if n.initdeferred {
-                    e.space();
-                    e.token(TokenKind::INITIALLY_KW);
-                    e.space();
-                    e.token(TokenKind::DEFERRED_KW);
-                }
-            }
+            emit_deferrable(e, n);
         }
         x if x == ConstrType::ConstrUnique as i32 => {
             // CONSTRAINT name UNIQUE (columns)
@@ -287,18 +276,7 @@ pub(super) fn emit_constraint(e: &mut EventEmitter, n: &Constraint) {
                 emit_identifier(e, &n.indexspace);
             }
 
-            // DEFERRABLE handling for UNIQUE
-            if n.deferrable {
-                e.space();
-                e.token(TokenKind::DEFERRABLE_KW);
-
-                if n.initdeferred {
-                    e.space();
-                    e.token(TokenKind::INITIALLY_KW);
-                    e.space();
-                    e.token(TokenKind::DEFERRED_KW);
-                }
-            }
+            emit_deferrable(e, n);
         }
         x if x == ConstrType::ConstrExclusion as i32 => {
             // CONSTRAINT name EXCLUDE [USING method] (exclusion_list) [WHERE (predicate)]
@@ -382,6 +360,8 @@ pub(super) fn emit_constraint(e: &mut EventEmitter, n: &Constraint) {
                 super::emit_clause_condition(e, where_clause);
                 e.token(TokenKind::R_PAREN);
             }
+
+            emit_deferrable(e, n);
         }
         x if x == ConstrType::ConstrForeign as i32 => {
             // CONSTRAINT name FOREIGN KEY (fk_attrs) REFERENCES pktable (pk_attrs) [actions]
@@ -510,6 +490,21 @@ pub(super) fn emit_constraint(e: &mut EventEmitter, n: &Constraint) {
     }
 
     e.group_end();
+}
+
+/// `INITIALLY DEFERRED` implies `DEFERRABLE` in the AST, so emitting both round-trips either spelling.
+fn emit_deferrable(e: &mut EventEmitter, n: &Constraint) {
+    if n.deferrable {
+        e.space();
+        e.token(TokenKind::DEFERRABLE_KW);
+
+        if n.initdeferred {
+            e.space();
+            e.token(TokenKind::INITIALLY_KW);
+            e.space();
+            e.token(TokenKind::DEFERRED_KW);
+        }
+    }
 }
 
 fn emit_exclusion_operator(e: &mut EventEmitter, node: &pgls_query::Node) {
