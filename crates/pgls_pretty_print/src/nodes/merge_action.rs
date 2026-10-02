@@ -2,7 +2,7 @@ use crate::{
     TokenKind,
     emitter::{EventEmitter, GroupKind, LineType},
 };
-use pgls_query::protobuf::{CmdType, MergeAction, MergeMatchKind, MergeWhenClause};
+use pgls_query::protobuf::{CmdType, MergeAction, MergeMatchKind, MergeWhenClause, OverridingKind};
 
 use super::res_target::emit_set_clause_list;
 
@@ -81,6 +81,26 @@ pub(super) fn emit_merge_when_clause(e: &mut EventEmitter, clause: &MergeWhenCla
                 e.line(LineType::Soft);
                 e.token(TokenKind::R_PAREN);
                 e.group_end();
+            }
+
+            match clause.r#override() {
+                OverridingKind::OverridingUserValue => {
+                    e.line(LineType::SoftOrSpace);
+                    e.token(TokenKind::OVERRIDING_KW);
+                    e.space();
+                    e.token(TokenKind::USER_KW);
+                    e.space();
+                    e.token(TokenKind::VALUE_KW);
+                }
+                OverridingKind::OverridingSystemValue => {
+                    e.line(LineType::SoftOrSpace);
+                    e.token(TokenKind::OVERRIDING_KW);
+                    e.space();
+                    e.token(TokenKind::SYSTEM_KW);
+                    e.space();
+                    e.token(TokenKind::VALUE_KW);
+                }
+                OverridingKind::OverridingNotSet | OverridingKind::Undefined => {}
             }
 
             // Values list - wrap in group for compact formatting

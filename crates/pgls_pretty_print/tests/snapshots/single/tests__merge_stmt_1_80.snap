@@ -1,0 +1,21 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/single/merge_stmt_1.sql
+---
+merge into itest15 as t
+using (
+  select
+    20 as s_a,
+    'inserted by merge' as s_b
+)
+as s
+on t.a = s.s_a
+when not matched and
+  s.s_a > 10
+then insert (a, b)
+overriding user value
+values (s.s_a, s.s_b)
+when not matched by target
+then insert
+overriding system value
+values (s.s_a, s.s_b);
