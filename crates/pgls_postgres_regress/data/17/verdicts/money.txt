@@ -1,0 +1,113 @@
+7:1 accepted
+9:1 accepted
+10:1 accepted
+11:1 accepted
+12:1 accepted
+13:1 accepted
+14:1 accepted
+15:1 accepted
+16:1 accepted
+17:1 accepted
+18:1 accepted
+19:1 accepted
+20:1 accepted
+21:1 accepted
+22:1 accepted
+23:1 accepted
+24:1 accepted
+25:1 accepted
+26:1 accepted
+27:1 accepted
+28:1 accepted
+29:1 accepted
+32:1 accepted
+33:1 accepted
+34:1 accepted
+35:1 accepted
+36:1 accepted
+37:1 accepted
+40:1 accepted
+41:1 accepted
+42:1 accepted
+43:1 accepted
+44:1 accepted
+45:1 accepted
+47:1 accepted
+48:1 accepted
+49:1 accepted
+50:1 accepted
+52:1 accepted
+53:1 accepted
+54:1 accepted
+56:1 accepted
+57:1 accepted
+58:1 accepted
+60:1 accepted
+61:1 accepted
+62:1 accepted
+64:1 accepted
+65:1 accepted
+66:1 accepted
+68:1 accepted
+69:1 accepted
+70:1 accepted
+72:1 accepted
+73:1 accepted
+74:1 accepted
+77:1 accepted
+78:1 accepted
+79:1 rejected 22003
+80:1 rejected 22003
+81:1 accepted
+82:1 accepted
+83:1 accepted
+84:1 rejected 22003
+85:1 rejected 22003
+88:1 accepted
+89:1 accepted
+92:1 accepted
+93:1 accepted
+94:1 accepted
+95:1 accepted
+98:1 accepted
+99:1 accepted
+101:1 rejected 22003
+102:1 rejected 22003
+105:1 rejected 22003
+106:1 rejected 22003
+109:1 accepted
+110:1 accepted
+111:1 accepted
+112:1 accepted
+113:1 accepted
+116:1 accepted
+117:1 accepted
+118:1 accepted
+121:1 accepted
+122:1 accepted
+123:1 accepted
+124:1 accepted
+125:1 accepted
+126:1 accepted
+127:1 accepted
+128:1 accepted
+129:1 accepted
+130:1 accepted
+131:1 accepted
+134:1 accepted
+135:1 accepted
+136:1 accepted
+137:1 accepted
+140:1 rejected 22003
+141:1 rejected 22003
+142:1 rejected 22003
+143:1 rejected 22003
+144:1 rejected 22003
+145:1 rejected 22003
+146:1 rejected 22003
+147:1 rejected 22003
+148:1 rejected 22003
+149:1 rejected 22012
+150:1 rejected 22003
+151:1 rejected 22003
+152:1 rejected 22003

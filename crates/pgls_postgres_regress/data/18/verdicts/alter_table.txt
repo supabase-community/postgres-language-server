@@ -1,0 +1,1678 @@
+6:1 accepted
+7:1 accepted
+8:1 accepted
+10:1 accepted
+16:1 accepted
+18:1 rejected 42P01
+19:1 accepted
+20:1 accepted
+22:1 rejected 42701
+24:1 accepted
+26:1 accepted
+28:1 accepted
+30:1 accepted
+32:1 accepted
+34:1 accepted
+36:1 accepted
+38:1 accepted
+40:1 accepted
+42:1 accepted
+44:1 accepted
+46:1 accepted
+49:1 accepted
+51:1 accepted
+53:1 accepted
+55:1 accepted
+57:1 accepted
+59:1 accepted
+61:1 accepted
+63:1 accepted
+65:1 accepted
+67:1 accepted
+69:1 accepted
+78:1 accepted
+80:1 accepted
+83:1 accepted
+87:1 accepted
+89:1 accepted
+91:1 accepted
+93:1 accepted
+95:1 accepted
+97:1 accepted
+99:1 accepted
+101:1 accepted
+103:1 accepted
+105:1 accepted
+107:1 accepted
+109:1 accepted
+112:1 accepted
+114:1 accepted
+116:1 accepted
+118:1 accepted
+120:1 accepted
+122:1 accepted
+124:1 accepted
+126:1 accepted
+128:1 accepted
+130:1 accepted
+132:1 accepted
+141:1 accepted
+143:1 accepted
+145:1 rejected 22023
+147:1 rejected 0A000
+149:1 accepted
+153:1 rejected 0A000
+155:1 rejected 42703
+157:1 accepted
+159:1 accepted
+165:1 accepted
+166:1 accepted
+168:1 accepted
+170:1 accepted
+171:1 accepted
+173:1 accepted
+175:1 rejected 42P01
+176:1 accepted
+177:1 accepted
+179:1 accepted
+180:1 accepted
+183:1 accepted
+184:1 accepted
+185:1 accepted
+186:1 accepted
+187:1 accepted
+188:1 accepted
+189:1 accepted
+190:1 rejected 42501
+191:1 rejected 42501
+192:1 rejected 42501
+193:1 rejected 42501
+194:1 accepted
+195:1 accepted
+201:1 accepted
+202:1 accepted
+203:1 accepted
+204:1 accepted
+205:1 accepted
+206:1 accepted
+207:1 accepted
+208:1 accepted
+209:1 accepted
+212:1 accepted
+213:1 accepted
+214:1 accepted
+215:1 accepted
+216:1 accepted
+220:1 accepted
+221:1 accepted
+223:1 rejected 42P01
+224:1 rejected 42P01
+226:1 accepted
+227:1 rejected 42P01
+228:1 accepted
+231:1 accepted
+232:1 accepted
+233:1 accepted
+234:1 accepted
+235:1 skipped
+236:1 accepted
+237:1 accepted
+238:1 accepted
+242:1 skipped
+243:1 skipped
+244:1 accepted
+245:1 accepted
+246:1 accepted
+250:1 skipped
+251:1 skipped
+252:1 accepted
+253:1 accepted
+254:1 accepted
+258:1 skipped
+259:1 accepted
+262:1 rejected 42P01
+263:1 rejected 42P01
+265:1 accepted
+266:1 rejected 42P01
+267:1 accepted
+270:1 accepted
+271:1 accepted
+273:1 rejected 42P01
+274:1 accepted
+275:1 accepted
+277:1 rejected 42P01
+279:1 rejected 42P01
+280:1 rejected 42P01
+283:1 rejected 42P01
+284:1 rejected 42P01
+285:1 rejected 42P01
+288:1 rejected 42P01
+289:1 rejected 42P01
+290:1 rejected 42P01
+293:1 rejected 42P01
+294:1 rejected 42704
+295:1 rejected 42P01
+296:1 rejected 42704
+297:1 rejected 42P01
+300:1 accepted
+302:1 accepted
+304:1 rejected 42P16
+305:1 rejected 42P16
+306:1 accepted
+309:1 accepted
+310:1 accepted
+311:1 accepted
+314:1 accepted
+315:1 accepted
+318:1 accepted
+319:1 accepted
+320:1 accepted
+321:1 accepted
+324:1 accepted
+327:1 accepted
+329:1 accepted
+331:1 accepted
+334:1 accepted
+335:1 accepted
+339:1 accepted
+341:1 accepted
+343:1 accepted
+345:1 accepted
+348:1 accepted
+349:1 accepted
+350:1 accepted
+351:1 accepted
+354:1 accepted
+355:1 accepted
+356:1 accepted
+359:1 rejected 42703
+362:1 rejected 42703
+365:1 rejected 23503
+368:1 accepted
+371:1 accepted
+372:1 accepted
+374:1 accepted
+377:1 accepted
+378:1 rejected 23503
+381:1 accepted
+384:1 accepted
+385:1 accepted
+388:1 rejected 23514
+389:1 accepted
+390:1 accepted
+391:1 rejected 23514
+392:1 accepted
+393:1 accepted
+394:1 accepted
+395:1 rejected 55000
+398:1 accepted
+399:1 accepted
+400:1 accepted
+402:1 accepted
+403:1 accepted
+404:1 rejected 23514
+405:1 accepted
+406:1 accepted
+409:1 accepted
+410:1 accepted
+411:1 accepted
+412:1 accepted
+413:1 accepted
+416:1 accepted
+417:1 accepted
+418:1 accepted
+419:1 accepted
+420:1 accepted
+422:1 rejected 23514
+423:1 accepted
+425:1 accepted
+426:1 accepted
+428:1 accepted
+433:1 rejected 42830
+435:1 accepted
+437:1 accepted
+439:1 accepted
+441:1 accepted
+443:1 accepted
+445:1 accepted
+449:1 accepted
+450:1 accepted
+454:1 accepted
+455:1 accepted
+456:1 accepted
+457:1 accepted
+458:1 accepted
+459:1 accepted
+460:1 accepted
+461:1 accepted
+463:1 accepted
+464:1 accepted
+467:1 accepted
+476:1 accepted
+477:1 accepted
+478:1 accepted
+480:1 rejected 42804
+483:1 rejected 42804
+484:1 accepted
+487:1 accepted
+488:1 accepted
+490:1 accepted
+491:1 rejected 23503
+492:1 accepted
+496:1 accepted
+497:1 rejected 42804
+498:1 accepted
+499:1 accepted
+502:1 accepted
+503:1 accepted
+504:1 accepted
+505:1 accepted
+507:1 accepted
+508:1 rejected 23503
+509:1 accepted
+510:1 accepted
+512:1 accepted
+515:1 accepted
+516:1 rejected 42804
+517:1 accepted
+519:1 accepted
+520:1 rejected 42804
+522:1 accepted
+524:1 accepted
+525:1 rejected 42804
+528:1 rejected 42804
+530:1 accepted
+531:1 accepted
+535:1 accepted
+536:1 accepted
+538:1 accepted
+540:1 accepted
+542:1 accepted
+545:1 accepted
+547:1 accepted
+548:1 accepted
+550:1 accepted
+551:1 accepted
+553:1 accepted
+555:1 accepted
+559:1 accepted
+568:1 accepted
+570:1 accepted
+572:1 rejected 23514
+574:1 accepted
+575:1 accepted
+578:1 accepted
+580:1 accepted
+582:1 rejected 23514
+583:1 accepted
+584:1 accepted
+587:1 accepted
+589:1 rejected 42703
+590:1 accepted
+593:1 accepted
+595:1 accepted
+597:1 rejected 23514
+599:1 accepted
+600:1 accepted
+603:1 accepted
+604:1 accepted
+606:1 rejected 23514
+607:1 accepted
+610:1 accepted
+611:1 accepted
+612:1 accepted
+613:1 accepted
+615:1 rejected 23514
+616:1 accepted
+618:1 rejected 23514
+619:1 accepted
+620:1 accepted
+621:1 accepted
+622:1 accepted
+625:1 accepted
+626:1 accepted
+627:1 accepted
+628:1 accepted
+630:1 rejected 42P01
+632:1 accepted
+633:1 accepted
+635:1 accepted
+636:1 rejected 42804
+638:1 accepted
+639:1 rejected 42804
+641:1 accepted
+642:1 rejected 42804
+643:1 accepted
+645:1 accepted
+646:1 accepted
+647:1 accepted
+648:1 accepted
+650:1 rejected 42P07
+651:1 rejected 42P07
+652:1 rejected 42P07
+654:1 accepted
+655:1 accepted
+656:1 accepted
+660:1 accepted
+661:1 accepted
+663:1 accepted
+665:1 accepted
+667:1 rejected 23514
+668:1 accepted
+670:1 rejected 23514
+671:1 accepted
+672:1 accepted
+676:1 accepted
+678:1 accepted
+680:1 accepted
+682:1 rejected 23505
+684:1 accepted
+686:1 rejected 23505
+687:1 accepted
+690:1 accepted
+692:1 accepted
+693:1 accepted
+695:1 rejected 23505
+696:1 accepted
+697:1 accepted
+701:1 accepted
+703:1 rejected 42703
+704:1 accepted
+707:1 accepted
+709:1 accepted
+711:1 accepted
+713:1 rejected 23505
+715:1 accepted
+716:1 accepted
+717:1 accepted
+718:1 accepted
+721:1 accepted
+722:1 accepted
+724:1 accepted
+725:1 rejected 23505
+726:1 accepted
+730:1 accepted
+732:1 accepted
+734:1 accepted
+736:1 rejected 23505
+738:1 accepted
+740:1 rejected 23502
+742:1 rejected 42P16
+744:1 accepted
+746:1 accepted
+747:1 accepted
+750:1 accepted
+752:1 accepted
+753:1 accepted
+755:1 rejected 23505
+756:1 accepted
+757:1 accepted
+760:1 accepted
+762:1 accepted
+764:1 rejected 23502
+765:1 accepted
+766:1 accepted
+770:1 accepted
+772:1 rejected 42703
+773:1 accepted
+777:1 accepted
+778:1 accepted
+780:1 rejected 23502
+782:1 accepted
+783:1 accepted
+786:1 accepted
+787:1 accepted
+788:1 accepted
+791:1 accepted
+795:1 accepted
+796:1 accepted
+797:1 accepted
+798:1 accepted
+802:1 accepted
+803:1 accepted
+804:1 accepted
+805:1 accepted
+806:1 accepted
+809:1 accepted
+810:1 accepted
+811:1 accepted
+812:1 rejected 23514
+813:1 accepted
+816:1 accepted
+818:1 accepted
+820:1 rejected 42P16
+822:1 accepted
+824:1 rejected 23505
+825:1 rejected 23502
+826:1 rejected 23502
+827:1 rejected 23502
+829:1 accepted
+830:1 accepted
+831:1 accepted
+832:1 accepted
+835:1 accepted
+837:1 accepted
+838:1 rejected 23505
+839:1 rejected 23502
+840:1 accepted
+844:1 rejected 42501
+845:1 rejected 42501
+848:1 rejected 42P01
+849:1 rejected 42P01
+853:1 accepted
+854:1 accepted
+856:1 rejected 42P16
+858:1 accepted
+859:1 accepted
+861:1 accepted
+862:1 rejected 23502
+863:1 accepted
+864:1 accepted
+867:1 rejected 42703
+868:1 rejected 42703
+871:1 accepted
+872:1 rejected 42809
+873:1 rejected 42809
+874:1 accepted
+876:1 accepted
+879:1 accepted
+880:1 accepted
+882:1 accepted
+883:1 rejected 23502
+884:1 accepted
+886:1 accepted
+887:1 rejected 23502
+888:1 accepted
+890:1 accepted
+891:1 accepted
+892:1 accepted
+893:1 accepted
+895:1 accepted
+896:1 accepted
+899:1 rejected 23502
+901:1 rejected 23502
+904:1 accepted
+905:1 accepted
+907:1 accepted
+909:1 accepted
+910:1 accepted
+911:1 accepted
+914:1 accepted
+915:1 accepted
+916:1 accepted
+917:1 accepted
+918:1 accepted
+919:1 accepted
+921:1 skipped
+922:1 accepted
+924:1 skipped
+928:1 accepted
+929:1 accepted
+931:1 accepted
+932:1 rejected 23502
+933:1 rejected 23502
+934:1 accepted
+935:1 accepted
+936:1 accepted
+937:1 rejected 23502
+938:1 rejected 23502
+939:1 accepted
+940:1 accepted
+943:1 accepted
+947:1 accepted
+948:1 accepted
+949:1 accepted
+950:1 accepted
+951:1 accepted
+952:1 accepted
+953:1 accepted
+954:1 accepted
+955:1 accepted
+958:1 rejected 22P02
+959:1 accepted
+962:1 rejected 42703
+967:1 accepted
+968:1 rejected 42601
+970:34 rejected 42P01
+971:1 accepted
+972:1 accepted
+973:1 accepted
+974:1 accepted
+975:1 accepted
+976:1 accepted
+978:1 rejected 42704
+979:1 accepted
+980:1 accepted
+984:1 rejected 42501
+987:1 rejected 42P01
+990:1 accepted
+991:1 accepted
+992:1 accepted
+993:1 rejected 42703
+996:1 accepted
+997:1 rejected 42703
+998:1 rejected 42703
+999:1 rejected 42703
+1000:1 rejected 42703
+1001:1 accepted
+1002:1 rejected 42703
+1003:1 rejected 42703
+1004:1 accepted
+1005:1 rejected 42703
+1006:1 rejected 42703
+1007:1 rejected 42703
+1008:1 rejected 42703
+1009:1 rejected 42703
+1010:1 rejected 42703
+1013:1 rejected 42703
+1014:1 rejected 42703
+1015:1 rejected 42703
+1016:1 rejected 42703
+1019:1 rejected 42601
+1020:1 rejected 42601
+1021:1 accepted
+1022:1 rejected 42703
+1023:1 rejected 42703
+1024:1 rejected 42703
+1025:1 rejected 42703
+1026:1 accepted
+1027:1 rejected 42703
+1028:1 rejected 42703
+1029:1 rejected 42703
+1030:1 rejected 42703
+1033:1 rejected 42703
+1034:1 rejected 42703
+1035:1 accepted
+1038:1 rejected 42703
+1041:1 accepted
+1044:1 rejected 42601
+1047:1 rejected 0A000
+1050:1 accepted
+1051:1 accepted
+1052:1 rejected 42809
+1053:1 accepted
+1056:1 rejected 42703
+1057:1 rejected 42703
+1058:1 rejected 42703
+1059:1 rejected 42703
+1060:1 rejected 42703
+1061:1 rejected 42703
+1062:1 rejected 42703
+1063:1 rejected 42703
+1064:1 rejected 42703
+1065:1 rejected 42703
+1066:1 rejected 42703
+1067:1 rejected 42703
+1068:1 rejected 42703
+1069:1 rejected 42703
+1070:1 rejected 42703
+1071:1 rejected 42703
+1072:1 rejected 42703
+1073:1 rejected 42703
+1074:1 rejected 42703
+1075:1 rejected 42703
+1076:1 rejected 42703
+1077:1 rejected 42703
+1078:1 rejected 42703
+1079:1 rejected 42703
+1080:1 rejected 42703
+1081:1 rejected 42703
+1082:1 accepted
+1083:1 rejected 42703
+1084:1 rejected 42703
+1085:1 rejected 42703
+1086:1 rejected 42703
+1087:1 accepted
+1088:1 rejected 42703
+1089:1 rejected 42703
+1092:1 accepted
+1093:1 accepted
+1094:1 accepted
+1095:1 accepted
+1096:1 accepted
+1097:1 accepted
+1098:1 accepted
+1101:1 accepted
+1102:1 accepted
+1103:1 accepted
+1104:1 accepted
+1106:1 accepted
+1109:1 accepted
+1110:1 rejected 23514
+1111:1 accepted
+1112:1 accepted
+1113:1 rejected 23514
+1114:1 rejected 23502
+1115:1 accepted
+1118:1 accepted
+1119:1 accepted
+1120:1 accepted
+1121:1 accepted
+1122:1 accepted
+1124:1 accepted
+1125:1 accepted
+1126:1 accepted
+1127:1 accepted
+1128:1 accepted
+1130:1 accepted
+1131:1 accepted
+1134:1 accepted
+1136:1 rejected 42804
+1137:1 rejected 42804
+1138:1 rejected 42P21
+1139:1 accepted
+1141:1 accepted
+1142:1 accepted
+1145:1 accepted
+1146:1 accepted
+1147:1 accepted
+1148:1 skipped
+1149:1 skipped
+1150:1 skipped
+1151:1 skipped
+1154:1 accepted
+1155:1 skipped
+1158:1 accepted
+1159:1 skipped
+1161:1 skipped
+1163:1 skipped
+1166:1 accepted
+1167:1 accepted
+1171:1 accepted
+1172:1 accepted
+1173:1 accepted
+1176:1 rejected 42P16
+1177:1 rejected 42P16
+1182:1 accepted
+1183:1 accepted
+1184:1 accepted
+1186:1 accepted
+1187:1 accepted
+1188:1 accepted
+1191:1 rejected 42P16
+1192:1 rejected 42P16
+1193:1 rejected 42P16
+1196:1 accepted
+1197:1 accepted
+1200:1 accepted
+1201:1 accepted
+1204:1 accepted
+1207:1 rejected 42P16
+1210:1 accepted
+1213:1 rejected 42601
+1217:1 accepted
+1218:1 accepted
+1221:1 rejected 42P16
+1223:1 accepted
+1225:1 accepted
+1226:1 accepted
+1227:1 rejected 42703
+1229:1 accepted
+1231:1 accepted
+1232:1 accepted
+1235:1 rejected 42P16
+1236:1 accepted
+1238:1 rejected 42703
+1240:1 accepted
+1242:1 accepted
+1243:1 accepted
+1246:1 rejected 42P16
+1247:1 accepted
+1249:1 accepted
+1251:1 accepted
+1253:1 accepted
+1254:1 accepted
+1257:1 rejected 42P16
+1258:1 accepted
+1260:1 accepted
+1262:1 accepted
+1264:1 accepted
+1265:1 accepted
+1266:1 accepted
+1267:1 accepted
+1269:1 accepted
+1275:1 accepted
+1277:1 accepted
+1279:1 rejected 42P16
+1281:1 accepted
+1283:1 rejected 42703
+1285:1 accepted
+1288:1 accepted
+1289:1 rejected 42703
+1290:1 accepted
+1292:1 accepted
+1297:1 accepted
+1301:1 accepted
+1302:1 accepted
+1303:1 accepted
+1304:1 accepted
+1306:1 accepted
+1313:1 accepted
+1314:1 accepted
+1316:1 accepted
+1317:1 accepted
+1319:1 accepted
+1320:1 rejected 23514
+1321:1 accepted
+1323:1 accepted
+1324:1 accepted
+1325:1 accepted
+1327:1 accepted
+1332:1 accepted
+1333:1 accepted
+1335:1 accepted
+1336:1 accepted
+1338:1 accepted
+1340:1 accepted
+1341:1 accepted
+1342:1 accepted
+1343:1 accepted
+1344:1 accepted
+1345:1 accepted
+1348:1 rejected 42804
+1349:1 accepted
+1351:1 accepted
+1354:1 accepted
+1355:1 accepted
+1356:1 accepted
+1358:1 rejected 42804
+1359:1 rejected 42804
+1360:1 accepted
+1362:1 accepted
+1364:1 rejected 23514
+1365:1 accepted
+1367:1 accepted
+1369:1 accepted
+1374:1 accepted
+1375:1 rejected 42804
+1377:1 accepted
+1378:1 rejected 42883
+1380:1 accepted
+1381:1 rejected 42704
+1382:1 accepted
+1384:1 accepted
+1387:1 accepted
+1389:1 accepted
+1392:1 accepted
+1394:1 accepted
+1396:1 accepted
+1398:1 accepted
+1400:1 accepted
+1402:1 accepted
+1403:1 accepted
+1406:1 accepted
+1407:1 accepted
+1411:1 accepted
+1414:1 accepted
+1417:1 accepted
+1419:1 accepted
+1420:1 accepted
+1421:1 accepted
+1423:1 accepted
+1425:1 accepted
+1430:1 accepted
+1432:1 accepted
+1436:1 skipped
+1437:1 accepted
+1438:1 accepted
+1439:1 skipped
+1442:1 accepted
+1443:1 accepted
+1444:1 rejected 0A000
+1445:1 accepted
+1447:1 accepted
+1448:1 accepted
+1449:1 rejected 42804
+1450:1 accepted
+1452:1 accepted
+1453:1 accepted
+1454:1 rejected 0A000
+1455:1 accepted
+1458:1 accepted
+1459:1 accepted
+1460:1 accepted
+1461:1 accepted
+1462:1 accepted
+1463:1 accepted
+1464:1 accepted
+1467:1 accepted
+1469:1 accepted
+1472:1 accepted
+1476:1 accepted
+1478:1 accepted
+1479:1 accepted
+1480:1 accepted
+1482:1 accepted
+1483:1 accepted
+1484:1 accepted
+1486:1 accepted
+1487:1 accepted
+1488:1 accepted
+1489:1 accepted
+1491:1 accepted
+1495:1 accepted
+1508:1 accepted
+1512:1 accepted
+1514:1 accepted
+1527:1 accepted
+1532:1 accepted
+1535:1 accepted
+1536:1 rejected 42P16
+1537:1 rejected 42P16
+1538:1 accepted
+1539:1 rejected 42P16
+1540:1 accepted
+1541:1 rejected 42P16
+1542:1 accepted
+1543:1 rejected 42P16
+1546:1 accepted
+1547:1 accepted
+1549:1 accepted
+1551:1 accepted
+1552:1 accepted
+1554:1 accepted
+1555:1 accepted
+1559:1 rejected 0A000
+1562:1 accepted
+1563:1 accepted
+1568:1 accepted
+1569:1 accepted
+1572:1 accepted
+1576:1 accepted
+1579:1 accepted
+1584:1 accepted
+1585:1 accepted
+1586:1 accepted
+1587:1 accepted
+1590:1 accepted
+1594:1 accepted
+1597:1 accepted
+1604:1 accepted
+1605:1 accepted
+1606:1 accepted
+1607:1 accepted
+1608:1 accepted
+1610:1 accepted
+1611:1 accepted
+1612:1 accepted
+1613:1 accepted
+1614:1 accepted
+1615:1 accepted
+1616:1 accepted
+1617:1 accepted
+1618:1 accepted
+1619:1 accepted
+1620:1 accepted
+1622:1 rejected 0A000
+1625:1 accepted
+1626:1 accepted
+1627:1 skipped
+1628:1 accepted
+1629:1 accepted
+1630:1 skipped
+1632:1 accepted
+1635:1 accepted
+1636:1 accepted
+1637:1 accepted
+1638:1 accepted
+1641:1 accepted
+1642:1 accepted
+1644:1 accepted
+1647:1 accepted
+1648:1 accepted
+1650:1 accepted
+1651:1 accepted
+1652:1 accepted
+1655:1 skipped
+1656:1 rejected 42P01
+1657:1 accepted
+1658:1 accepted
+1659:1 rejected 42P01
+1662:1 accepted
+1663:1 accepted
+1666:1 rejected 55000
+1668:1 rejected 42P01
+1669:1 accepted
+1670:1 skipped
+1677:1 accepted
+1691:1 accepted
+1692:1 accepted
+1693:1 accepted
+1696:1 accepted
+1701:1 accepted
+1707:1 accepted
+1712:1 accepted
+1718:1 accepted
+1724:1 accepted
+1732:1 accepted
+1733:1 accepted
+1738:1 rejected 42704
+1739:1 accepted
+1751:1 rejected 42P01
+1752:1 accepted
+1764:1 accepted
+1765:1 accepted
+1766:1 accepted
+1767:1 accepted
+1769:1 skipped
+1769:8 accepted
+1770:1 accepted
+1771:1 skipped
+1773:1 skipped
+1773:8 accepted
+1774:1 accepted
+1775:1 skipped
+1777:1 skipped
+1777:8 accepted
+1778:1 accepted
+1779:1 skipped
+1781:1 skipped
+1781:8 accepted
+1782:1 accepted
+1783:1 skipped
+1785:1 skipped
+1785:8 accepted
+1786:1 accepted
+1787:1 skipped
+1789:1 skipped
+1789:8 accepted
+1790:1 accepted
+1791:1 skipped
+1793:1 skipped
+1793:8 accepted
+1794:1 accepted
+1795:1 skipped
+1797:1 skipped
+1797:8 accepted
+1798:1 accepted
+1799:1 skipped
+1802:1 skipped
+1802:8 accepted
+1803:1 accepted
+1804:1 skipped
+1806:1 skipped
+1806:8 accepted
+1807:1 accepted
+1808:1 skipped
+1810:1 skipped
+1810:8 accepted
+1811:1 accepted
+1812:1 skipped
+1814:1 skipped
+1815:1 accepted
+1817:1 accepted
+1822:1 accepted
+1823:1 skipped
+1825:1 skipped
+1826:1 accepted
+1827:1 accepted
+1828:1 accepted
+1829:1 skipped
+1831:1 skipped
+1832:1 accepted
+1834:1 accepted
+1835:1 skipped
+1836:1 skipped
+1837:1 accepted
+1838:1 accepted
+1839:1 skipped
+1841:1 accepted
+1854:1 rejected 22023
+1855:1 rejected 22023
+1856:1 accepted
+1857:1 accepted
+1859:1 skipped
+1860:1 accepted
+1861:1 accepted
+1862:1 accepted
+1863:1 skipped
+1868:1 skipped
+1869:1 accepted
+1870:1 accepted
+1871:1 accepted
+1872:1 skipped
+1875:1 accepted
+1876:1 accepted
+1877:1 accepted
+1878:1 accepted
+1883:1 accepted
+1886:1 accepted
+1887:1 accepted
+1888:1 accepted
+1890:1 accepted
+1893:1 accepted
+1894:1 accepted
+1895:1 accepted
+1901:1 accepted
+1902:1 accepted
+1904:1 accepted
+1906:1 accepted
+1908:1 accepted
+1910:1 accepted
+1912:1 accepted
+1914:1 accepted
+1917:1 accepted
+1919:1 accepted
+1922:1 accepted
+1924:1 accepted
+1925:1 accepted
+1926:1 accepted
+1927:1 accepted
+1929:1 accepted
+1930:1 accepted
+1932:1 accepted
+1933:1 accepted
+1934:1 accepted
+1935:1 accepted
+1936:1 accepted
+1937:1 accepted
+1938:1 accepted
+1939:1 accepted
+1940:1 accepted
+1941:1 accepted
+1942:1 accepted
+1943:1 accepted
+1944:1 accepted
+1945:1 accepted
+1946:1 accepted
+1947:1 accepted
+1950:1 accepted
+1952:1 accepted
+1953:1 accepted
+1955:1 accepted
+1957:1 accepted
+1959:1 accepted
+1962:1 accepted
+1968:1 accepted
+1971:1 rejected 42P01
+1973:1 accepted
+1976:1 rejected 42701
+1978:1 accepted
+1981:1 accepted
+1984:1 accepted
+1987:1 rejected 42703
+1989:1 accepted
+1991:1 accepted
+1994:1 rejected 42703
+1995:1 accepted
+1998:1 accepted
+2000:1 accepted
+2001:1 accepted
+2002:1 rejected 0A000
+2004:1 accepted
+2005:1 accepted
+2006:1 accepted
+2007:1 rejected 0A000
+2009:1 accepted
+2010:1 accepted
+2012:1 accepted
+2013:1 accepted
+2014:1 accepted
+2018:1 rejected 2BP01
+2019:1 accepted
+2023:1 rejected 2BP01
+2024:1 accepted
+2028:1 rejected 2BP01
+2029:1 accepted
+2033:1 rejected 2BP01
+2034:1 accepted
+2039:1 accepted
+2040:1 accepted
+2042:1 accepted
+2043:1 accepted
+2044:1 rejected 2BP01
+2045:1 accepted
+2047:1 accepted
+2048:1 accepted
+2053:1 accepted
+2054:1 accepted
+2055:1 accepted
+2057:1 accepted
+2058:1 accepted
+2064:1 accepted
+2065:1 accepted
+2066:1 accepted
+2067:1 accepted
+2068:1 accepted
+2069:1 accepted
+2070:1 accepted
+2071:1 accepted
+2072:1 accepted
+2073:1 accepted
+2074:1 accepted
+2076:1 accepted
+2077:1 rejected 42804
+2078:1 rejected 42804
+2079:1 rejected 42804
+2080:1 rejected 42804
+2081:1 rejected 42804
+2082:1 rejected 42809
+2083:1 accepted
+2085:1 accepted
+2086:1 accepted
+2087:1 accepted
+2091:1 accepted
+2092:1 accepted
+2093:1 accepted
+2095:1 rejected 23514
+2096:1 accepted
+2101:1 accepted
+2102:1 accepted
+2103:1 accepted
+2104:1 accepted
+2105:1 accepted
+2106:1 accepted
+2108:1 accepted
+2109:1 accepted
+2111:1 accepted
+2112:1 accepted
+2113:1 accepted
+2114:1 accepted
+2115:1 accepted
+2116:1 accepted
+2120:1 accepted
+2121:1 accepted
+2126:1 accepted
+2127:1 accepted
+2128:1 accepted
+2129:1 accepted
+2130:1 rejected 42710
+2131:1 accepted
+2132:1 accepted
+2133:1 rejected 42P07
+2134:1 rejected 42710
+2135:1 rejected 42710
+2136:1 accepted
+2137:1 accepted
+2139:1 accepted
+2143:1 accepted
+2149:1 accepted
+2151:1 accepted
+2152:1 accepted
+2153:1 accepted
+2154:1 accepted
+2155:1 accepted
+2156:1 accepted
+2158:1 accepted
+2159:1 accepted
+2160:1 accepted
+2166:1 accepted
+2167:1 accepted
+2168:1 accepted
+2169:1 accepted
+2170:1 accepted
+2171:1 accepted
+2174:1 rejected 0A000
+2175:1 rejected 42704
+2176:1 rejected 42804
+2179:1 accepted
+2180:1 accepted
+2181:1 accepted
+2186:1 accepted
+2188:1 accepted
+2189:1 accepted
+2190:1 accepted
+2191:1 accepted
+2194:1 accepted
+2195:1 rejected 42804
+2198:1 accepted
+2199:1 accepted
+2200:1 accepted
+2208:1 accepted
+2216:1 accepted
+2222:1 accepted
+2224:1 rejected 42501
+2226:1 accepted
+2227:1 accepted
+2228:1 accepted
+2229:1 accepted
+2231:1 accepted
+2232:1 accepted
+2233:1 accepted
+2234:1 accepted
+2235:1 accepted
+2236:1 accepted
+2237:1 accepted
+2238:1 accepted
+2239:1 accepted
+2240:1 accepted
+2243:1 accepted
+2245:1 accepted
+2251:1 accepted
+2252:1 accepted
+2253:1 accepted
+2254:1 rejected 42P16
+2255:1 accepted
+2257:1 accepted
+2263:1 accepted
+2264:1 accepted
+2265:1 accepted
+2266:1 accepted
+2269:1 accepted
+2271:1 accepted
+2277:1 accepted
+2278:1 accepted
+2279:1 rejected 42P16
+2280:1 accepted
+2281:1 accepted
+2282:1 accepted
+2284:1 accepted
+2290:1 accepted
+2291:1 accepted
+2292:1 accepted
+2293:1 accepted
+2296:1 accepted
+2298:1 accepted
+2301:1 rejected 42701
+2303:1 rejected 42701
+2306:1 accepted
+2308:1 accepted
+2311:1 rejected 42701
+2315:1 accepted
+2319:1 accepted
+2323:1 accepted
+2328:1 accepted
+2331:1 accepted
+2334:1 accepted
+2336:1 accepted
+2338:1 accepted
+2340:1 accepted
+2342:1 accepted
+2345:1 accepted
+2349:1 accepted
+2350:1 accepted
+2351:1 accepted
+2352:1 accepted
+2356:1 accepted
+2358:1 accepted
+2359:1 accepted
+2360:1 accepted
+2364:1 accepted
+2366:1 accepted
+2367:1 accepted
+2371:1 accepted
+2373:1 accepted
+2374:1 accepted
+2378:1 accepted
+2380:1 accepted
+2381:1 accepted
+2384:1 accepted
+2387:1 accepted
+2393:1 accepted
+2397:1 rejected 42P16
+2398:1 rejected 42P16
+2399:1 rejected 42P16
+2400:1 rejected 42P16
+2403:1 rejected 42809
+2406:1 accepted
+2410:1 rejected 42809
+2411:1 rejected 42809
+2414:1 rejected 42P16
+2416:1 accepted
+2423:1 accepted
+2426:1 accepted
+2427:1 rejected 42809
+2428:1 accepted
+2431:1 accepted
+2436:1 accepted
+2437:1 rejected 42P16
+2438:1 accepted
+2441:1 rejected 42P01
+2444:1 accepted
+2445:1 accepted
+2446:1 accepted
+2447:1 accepted
+2448:1 accepted
+2449:1 rejected 42501
+2452:1 rejected 42P01
+2453:1 accepted
+2454:1 rejected 42P01
+2455:1 rejected 2BP01
+2456:1 accepted
+2459:1 accepted
+2460:1 accepted
+2461:1 rejected 42809
+2462:1 rejected 42809
+2463:1 accepted
+2465:1 accepted
+2466:1 accepted
+2468:1 accepted
+2469:1 rejected 23514
+2470:1 accepted
+2473:1 accepted
+2474:1 accepted
+2475:1 rejected 42809
+2476:1 accepted
+2479:1 accepted
+2480:1 accepted
+2481:1 rejected 42809
+2482:1 accepted
+2485:1 accepted
+2486:1 rejected 42804
+2487:1 accepted
+2490:1 accepted
+2491:1 rejected 42804
+2492:1 accepted
+2495:1 accepted
+2499:1 rejected 42804
+2500:1 accepted
+2501:1 rejected 42P21
+2502:1 accepted
+2505:1 accepted
+2509:1 rejected 42804
+2512:1 accepted
+2513:1 rejected 42804
+2514:1 accepted
+2517:1 accepted
+2522:1 accepted
+2524:1 accepted
+2525:1 accepted
+2528:1 accepted
+2532:1 rejected 42P17
+2533:1 accepted
+2536:1 accepted
+2537:1 rejected 42P17
+2538:1 accepted
+2540:1 accepted
+2541:1 accepted
+2544:1 accepted
+2545:1 rejected 42P17
+2548:1 accepted
+2554:1 accepted
+2555:1 accepted
+2556:1 rejected 23514
+2559:1 accepted
+2560:1 accepted
+2563:1 accepted
+2564:1 accepted
+2565:1 accepted
+2566:1 rejected 23514
+2568:1 accepted
+2569:1 accepted
+2573:1 accepted
+2581:1 accepted
+2584:1 accepted
+2585:1 accepted
+2586:1 accepted
+2589:1 accepted
+2590:1 accepted
+2593:1 accepted
+2599:1 accepted
+2603:1 accepted
+2605:1 rejected 23514
+2608:1 accepted
+2609:1 accepted
+2613:1 accepted
+2617:1 accepted
+2620:1 accepted
+2623:1 accepted
+2624:1 rejected 42P17
+2627:1 accepted
+2628:1 accepted
+2629:1 rejected 23514
+2632:1 accepted
+2636:1 accepted
+2641:1 accepted
+2642:1 accepted
+2643:1 rejected 23514
+2646:1 accepted
+2647:1 accepted
+2648:1 accepted
+2649:1 accepted
+2650:1 accepted
+2653:1 accepted
+2654:1 accepted
+2659:1 accepted
+2664:1 accepted
+2665:1 accepted
+2670:1 accepted
+2674:1 accepted
+2682:1 accepted
+2683:1 accepted
+2684:1 accepted
+2688:1 accepted
+2689:1 accepted
+2690:1 accepted
+2691:1 accepted
+2692:1 rejected 23514
+2696:1 accepted
+2697:1 accepted
+2698:1 accepted
+2699:1 accepted
+2700:1 accepted
+2701:1 rejected 23514
+2703:1 accepted
+2704:1 accepted
+2707:1 rejected 42809
+2710:1 rejected 42P07
+2711:1 rejected 42P07
+2717:1 accepted
+2718:1 accepted
+2719:1 accepted
+2722:1 accepted
+2723:1 accepted
+2724:1 accepted
+2725:1 accepted
+2726:1 accepted
+2728:1 accepted
+2729:1 accepted
+2730:1 accepted
+2738:1 rejected 42704
+2742:1 rejected 42P01
+2743:1 rejected 42P01
+2744:1 rejected 42P01
+2745:1 rejected 42P01
+2746:1 rejected 42P01
+2751:1 rejected 42P01
+2752:1 rejected 42P01
+2753:1 rejected 42P01
+2756:1 rejected 42P01
+2757:1 rejected 42P01
+2761:1 rejected 42P01
+2766:1 rejected 42P01
+2767:1 rejected 42P01
+2768:1 rejected 42P01
+2771:1 rejected 42P01
+2772:1 rejected 42P01
+2775:1 rejected 42P01
+2776:1 rejected 42P01
+2777:1 rejected 42P01
+2778:1 rejected 42P01
+2779:1 rejected 42P01
+2786:1 accepted
+2787:1 rejected 42809
+2788:1 rejected 42809
+2789:1 rejected 42809
+2790:1 accepted
+2793:1 rejected 42P01
+2794:1 rejected 42P01
+2797:1 accepted
+2798:1 rejected 42P01
+2799:1 rejected 42P01
+2801:1 rejected 42P01
+2802:1 accepted
+2806:1 accepted
+2807:1 accepted
+2808:1 accepted
+2809:1 accepted
+2812:1 accepted
+2815:1 accepted
+2816:1 accepted
+2817:1 accepted
+2818:1 accepted
+2819:1 accepted
+2822:1 accepted
+2825:1 accepted
+2826:1 skipped
+2828:1 accepted
+2829:1 skipped
+2830:1 accepted
+2832:1 rejected 55000
+2834:1 rejected 55000
+2835:1 accepted
+2837:1 rejected 42P01
+2841:1 accepted
+2842:1 accepted
+2845:1 accepted
+2849:1 accepted
+2850:1 accepted
+2851:1 accepted
+2852:1 accepted
+2853:1 accepted
+2854:1 accepted
+2859:1 rejected 42P16
+2860:1 rejected 42P16
+2863:1 rejected 42809
+2864:1 rejected 42P16
+2867:1 rejected 42P16
+2868:1 rejected 42P16
+2872:1 rejected 42P16
+2873:1 rejected 42P16
+2876:1 accepted
+2877:1 accepted
+2878:1 accepted
+2879:1 accepted
+2884:1 accepted
+2885:1 accepted
+2886:1 accepted
+2887:1 accepted
+2890:1 accepted
+2891:1 rejected 42P16
+2892:1 rejected 42P16
+2895:1 accepted
+2896:1 accepted
+2897:1 accepted
+2898:1 rejected 42P16
+2901:1 rejected 42P16
+2904:1 rejected 42809
+2905:1 accepted
+2906:1 rejected 42809
+2907:1 rejected 42809
+2912:1 rejected 42P16
+2913:1 rejected 42P16
+2916:1 accepted
+2917:1 accepted
+2920:1 accepted
+2921:1 accepted
+2922:1 rejected 42P01
+2925:1 accepted
+2926:1 accepted
+2927:1 accepted
+2928:1 accepted
+2929:1 accepted
+2930:1 accepted
+2931:1 accepted
+2933:1 accepted
+2941:1 accepted
+2943:1 accepted
+2945:1 rejected 23514
+2948:1 accepted
+2949:1 accepted
+2952:1 accepted
+2953:1 accepted
+2954:1 accepted
+2955:1 accepted
+2956:1 accepted
+2958:1 accepted
+2959:1 accepted
+2960:1 accepted
+2961:1 accepted
+2962:1 accepted
+2963:1 accepted
+2965:1 accepted
+2969:1 accepted
+2970:1 accepted
+2971:1 accepted
+2972:1 accepted
+2973:1 accepted
+2977:1 rejected 23514
+2978:1 accepted
+2979:1 accepted
+2982:1 accepted
+2987:1 accepted
+2988:1 rejected 23514
+2990:1 accepted
+2994:1 accepted
+2995:1 accepted
+2996:1 accepted
+2997:1 accepted
+2998:1 rejected 42809
+2999:1 rejected 42809
+3000:1 accepted
+3001:1 accepted
+3002:1 accepted
+3006:1 accepted
+3007:1 accepted
+3014:1 accepted
+3016:1 rejected 55006
+3017:1 accepted
+3018:1 accepted
+3023:1 accepted
+3025:1 accepted
+3029:1 accepted
+3030:1 accepted
+3031:1 accepted
+3032:1 accepted
+3033:1 accepted
+3034:1 accepted
+3042:1 accepted
+3044:1 accepted
+3045:1 accepted
+3046:1 accepted
+3048:1 accepted
+3051:1 accepted
+3054:1 accepted
+3066:1 accepted
+3071:1 accepted
+3077:1 accepted
+3078:1 accepted
+3079:1 accepted
+3080:1 accepted
+3081:1 accepted
+3082:1 accepted
+3084:1 accepted
+3085:1 accepted
+3086:1 accepted
+3087:1 accepted
+3088:1 accepted
+3089:1 accepted
+3095:1 accepted
+3096:1 accepted
+3097:1 rejected 0A000
+3098:1 accepted
+3100:1 accepted
+3101:1 rejected 0A000
+3102:1 accepted
+3104:1 accepted
+3105:1 rejected 0A000
+3106:1 accepted
+3112:1 accepted
+3113:1 accepted
+3114:1 accepted
+3115:1 accepted
+3117:1 accepted
+3120:1 accepted
+3121:1 accepted
+3125:1 accepted
+3126:1 accepted
+3129:1 accepted
+3130:1 accepted
+3133:1 accepted
+3139:1 accepted
+3140:1 accepted
+3141:1 accepted
+3144:1 accepted
+3147:1 accepted
+3149:1 rejected 23514
+3151:1 accepted
+3152:1 accepted
+3155:1 accepted
+3156:1 accepted
+3157:1 accepted
+3158:1 accepted
+3159:1 accepted
+3160:1 accepted
+3161:1 accepted
+3163:1 accepted
+3164:1 accepted
+3165:1 accepted

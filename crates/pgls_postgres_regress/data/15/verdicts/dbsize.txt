@@ -1,0 +1,25 @@
+1:1 accepted
+6:1 accepted
+15:1 accepted
+22:1 accepted
+31:1 accepted
+35:1 accepted
+40:1 accepted
+45:1 accepted
+50:1 accepted
+55:1 rejected 22023
+56:1 rejected 22023
+57:1 rejected 22023
+58:1 rejected 22003
+59:1 rejected 22003
+60:1 rejected 22003
+61:1 rejected 22023
+62:1 rejected 22023
+64:1 rejected 22023
+65:1 rejected 22023
+66:1 rejected 22023
+67:1 rejected 22023
+68:1 rejected 22023
+70:1 rejected 22023
+71:1 rejected 22023
+72:1 rejected 22023

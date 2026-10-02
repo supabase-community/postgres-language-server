@@ -1,0 +1,65 @@
+11:1 rejected 42601
+14:1 rejected 42883
+16:1 rejected 42601
+20:1 accepted
+21:1 accepted
+22:1 rejected 42501
+26:1 rejected 42501
+30:1 rejected 42501
+34:1 rejected 42501
+36:1 rejected 42704
+37:1 rejected 42704
+38:1 rejected 42704
+42:1 rejected 42704
+43:1 rejected 42704
+51:1 accepted
+52:1 accepted
+60:1 accepted
+94:1 accepted
+95:1 accepted
+121:1 rejected 42883
+132:1 rejected 42883
+156:1 rejected 42883
+180:1 rejected 42883
+204:1 rejected 42883
+226:1 accepted
+227:1 accepted
+243:1 rejected 42883
+245:1 rejected 42883
+246:1 rejected 42883
+247:1 rejected 42883
+248:1 rejected 42883
+249:1 rejected 42883
+250:1 rejected 42883
+255:1 accepted
+256:1 accepted
+267:1 rejected 42883
+269:1 rejected 42883
+274:1 accepted
+275:1 accepted
+287:1 rejected 42883
+289:1 rejected 42883
+290:1 rejected 42883
+295:1 accepted
+296:1 accepted
+310:1 rejected 42883
+312:1 rejected 42883
+318:1 accepted
+319:1 accepted
+327:1 rejected 42883
+329:1 rejected 42883
+330:1 rejected 42883
+331:1 rejected 42883
+336:1 accepted
+337:1 accepted
+345:1 rejected 42883
+347:1 rejected 42883
+348:1 rejected 42883
+353:1 accepted
+354:1 accepted
+367:1 rejected 42883
+369:1 rejected 42883
+370:1 rejected 42883
+371:1 rejected 42883
+372:1 rejected 42883
+373:1 rejected 42883

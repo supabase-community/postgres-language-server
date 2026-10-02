@@ -1,0 +1,4 @@
+1:1 accepted
+9:1 accepted
+18:1 accepted
+31:1 rejected 42883

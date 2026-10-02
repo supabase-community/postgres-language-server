@@ -2704,6 +2704,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "pgls_postgres_regress"
+version = "0.0.0"
+dependencies = [
+ "pgls_statement_splitter",
+ "pgls_text_size",
+ "sqlx",
+ "tokio",
+]
+
+[[package]]
 name = "pgls_pretty_print"
 version = "0.0.0"
 dependencies = [
@@ -2740,6 +2750,7 @@ dependencies = [
  "easy-parallel",
  "fs_extra",
  "glob",
+ "pgls_postgres_regress",
  "pgls_query_macros",
  "prost",
  "prost-build",

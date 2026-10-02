@@ -1,0 +1,27 @@
+[package]
+authors.workspace    = true
+categories.workspace = true
+description          = "Postgres regression SQL with Postgres' verdict per statement, for every supported major version"
+edition.workspace    = true
+homepage.workspace   = true
+keywords.workspace   = true
+license.workspace    = true
+name                 = "pgls_postgres_regress"
+repository.workspace = true
+version              = "0.0.0"
+
+
+[dependencies]
+pgls_statement_splitter.workspace = true
+pgls_text_size.workspace          = true
+
+sqlx  = { workspace = true, optional = true }
+tokio = { workspace = true, optional = true }
+
+[features]
+# Dependencies of the recorder, which needs Docker and the network.
+record = ["dep:sqlx", "dep:tokio"]
+
+[[bin]]
+name              = "record"
+required-features = ["record"]

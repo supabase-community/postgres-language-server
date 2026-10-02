@@ -1,0 +1,44 @@
+5:1 accepted
+7:1 accepted
+8:1 accepted
+10:1 accepted
+11:1 accepted
+12:1 accepted
+13:1 accepted
+14:1 accepted
+15:1 accepted
+17:1 accepted
+18:1 accepted
+20:1 rejected 22007
+23:1 accepted
+25:1 accepted
+27:1 accepted
+29:1 accepted
+31:1 accepted
+34:1 accepted
+35:1 accepted
+36:1 accepted
+37:1 accepted
+38:1 rejected 22008
+39:1 rejected 22008
+40:1 rejected 22008
+41:1 rejected 22008
+44:1 accepted
+45:1 accepted
+46:1 accepted
+47:1 accepted
+48:1 accepted
+59:1 rejected 42725
+64:1 accepted
+65:1 accepted
+66:1 accepted
+67:1 accepted
+68:1 accepted
+69:1 rejected 0A000
+70:1 rejected 22023
+71:1 rejected 0A000
+72:1 accepted
+76:1 accepted
+77:1 accepted
+78:1 accepted
+79:1 accepted

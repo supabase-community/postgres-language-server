@@ -1,0 +1,34 @@
+10:1 rejected 42601
+11:1 rejected 42601
+12:1 rejected 42601
+13:1 rejected 42601
+14:1 rejected 42601
+15:1 rejected 42601
+16:1 rejected 42601
+17:1 rejected 42601
+18:1 rejected 42601
+19:1 rejected 42601
+27:1 accepted
+29:1 rejected 42P01
+32:1 rejected 42P01
+35:1 accepted
+40:1 accepted
+42:1 rejected 42P01
+46:1 rejected 42P01
+49:1 accepted
+54:1 accepted
+56:1 rejected 42P01
+60:1 rejected 42P01
+64:1 accepted
+71:1 accepted
+73:1 rejected 42P01
+77:1 rejected 42P01
+81:1 accepted
+83:1 accepted
+90:1 accepted
+95:1 accepted
+100:1 accepted
+107:1 accepted
+109:1 accepted
+111:1 accepted
+113:1 accepted

@@ -1,0 +1,14 @@
+14:1 accepted
+22:1 accepted
+29:1 accepted
+53:1 accepted
+60:1 accepted
+66:1 accepted
+69:1 accepted
+75:1 accepted
+99:1 accepted
+105:1 accepted
+107:1 accepted
+112:1 accepted
+114:1 accepted
+115:1 accepted

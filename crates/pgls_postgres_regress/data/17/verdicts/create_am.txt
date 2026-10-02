@@ -1,0 +1,142 @@
+6:1 accepted
+9:1 rejected 42883
+10:1 rejected 42809
+14:1 rejected 42P01
+17:1 accepted
+39:1 rejected 42P01
+43:1 skipped
+44:1 rejected 42704
+45:1 accepted
+46:1 accepted
+47:1 accepted
+49:1 rejected 42P01
+53:1 rejected 42P01
+57:1 rejected 42P01
+59:1 rejected 42P01
+61:1 rejected 42P01
+63:1 rejected 42P01
+65:1 skipped
+68:1 accepted
+73:1 skipped
+74:1 rejected 25P01
+75:1 rejected 42704
+76:1 skipped
+84:1 rejected 22023
+87:1 rejected 22023
+90:1 rejected 55000
+94:1 accepted
+97:1 rejected 42883
+98:1 rejected 42809
+100:1 accepted
+106:1 accepted
+107:1 accepted
+108:1 accepted
+111:1 accepted
+112:1 accepted
+115:1 rejected 42601
+118:1 rejected 42601
+121:1 rejected 42601
+124:1 accepted
+125:1 accepted
+128:1 accepted
+129:1 accepted
+131:1 accepted
+133:1 accepted
+135:1 accepted
+136:1 accepted
+137:1 accepted
+138:1 accepted
+139:1 accepted
+141:1 accepted
+142:1 accepted
+145:1 accepted
+160:1 accepted
+168:1 accepted
+170:1 accepted
+173:1 accepted
+174:1 accepted
+182:1 accepted
+183:1 accepted
+190:1 accepted
+191:1 accepted
+193:1 accepted
+195:1 skipped
+196:1 accepted
+197:1 accepted
+198:1 accepted
+200:1 accepted
+201:1 accepted
+202:1 accepted
+204:1 skipped
+206:1 accepted
+207:1 accepted
+209:1 accepted
+210:1 accepted
+212:1 accepted
+214:1 accepted
+215:1 rejected 0A000
+216:1 rejected 0A000
+217:1 accepted
+218:1 accepted
+221:1 accepted
+222:1 accepted
+228:1 accepted
+231:1 skipped
+232:1 accepted
+233:1 accepted
+236:1 accepted
+237:1 accepted
+244:1 accepted
+245:1 accepted
+247:1 accepted
+254:1 accepted
+255:1 accepted
+256:1 accepted
+259:1 accepted
+266:1 accepted
+267:1 accepted
+268:1 accepted
+271:1 accepted
+272:1 accepted
+275:1 accepted
+276:1 accepted
+277:1 accepted
+279:1 accepted
+280:1 accepted
+282:1 accepted
+283:1 accepted
+284:1 accepted
+286:1 accepted
+287:1 accepted
+288:1 accepted
+291:1 accepted
+292:1 accepted
+296:1 accepted
+299:1 accepted
+300:1 accepted
+303:1 accepted
+305:1 accepted
+312:1 accepted
+313:1 skipped
+316:1 skipped
+317:1 accepted
+320:1 accepted
+321:1 accepted
+322:1 accepted
+323:1 accepted
+324:1 accepted
+325:1 accepted
+328:1 accepted
+331:1 accepted
+332:1 accepted
+333:1 accepted
+334:1 accepted
+335:1 accepted
+338:1 accepted
+352:1 skipped
+356:1 rejected 42601
+357:1 rejected 42704
+358:1 rejected 42704
+359:1 rejected 55000
+362:1 rejected 42P17
+365:1 rejected 2BP01

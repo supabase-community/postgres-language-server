@@ -1,0 +1,12 @@
+1:1 accepted
+8:1 accepted
+16:1 accepted
+18:1 accepted
+23:1 accepted
+28:1 accepted
+30:1 accepted
+36:1 accepted
+44:1 accepted
+46:1 accepted
+51:1 accepted
+56:1 accepted

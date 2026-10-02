@@ -1,0 +1,43 @@
+9:1 accepted
+16:1 accepted
+23:1 accepted
+30:1 accepted
+37:1 accepted
+44:1 accepted
+51:1 accepted
+58:1 accepted
+66:1 accepted
+74:1 accepted
+83:1 accepted
+90:1 accepted
+99:1 accepted
+107:1 accepted
+115:1 accepted
+124:1 accepted
+134:1 rejected 42883
+136:1 rejected 42883
+139:1 accepted
+147:1 accepted
+155:1 accepted
+163:1 accepted
+173:1 accepted
+183:1 accepted
+194:1 accepted
+202:1 accepted
+203:1 accepted
+209:1 accepted
+211:1 accepted
+221:1 accepted
+230:1 accepted
+240:1 accepted
+241:1 accepted
+247:1 accepted
+250:1 accepted
+251:1 rejected 42883
+253:1 rejected 42883
+255:1 accepted
+260:1 accepted
+261:1 accepted
+262:1 accepted
+263:1 accepted
+264:1 accepted

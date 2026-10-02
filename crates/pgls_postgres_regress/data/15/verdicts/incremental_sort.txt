@@ -1,0 +1,109 @@
+3:1 rejected 42P01
+8:1 rejected 42P01
+14:1 accepted
+15:1 rejected 42P01
+17:1 accepted
+19:1 accepted
+21:1 accepted
+37:1 accepted
+74:1 accepted
+97:1 accepted
+122:1 accepted
+123:1 accepted
+124:1 accepted
+125:1 accepted
+126:1 accepted
+127:1 accepted
+128:1 accepted
+129:1 accepted
+130:1 accepted
+131:1 accepted
+132:1 accepted
+133:1 accepted
+134:1 accepted
+137:1 accepted
+138:1 accepted
+139:1 accepted
+140:1 accepted
+142:1 accepted
+143:1 accepted
+144:1 accepted
+145:1 accepted
+148:1 accepted
+149:1 accepted
+150:1 accepted
+151:1 accepted
+156:1 accepted
+157:1 accepted
+160:1 skipped
+163:1 accepted
+164:1 accepted
+165:1 accepted
+166:1 accepted
+167:1 accepted
+168:1 accepted
+169:1 skipped
+171:1 accepted
+172:1 accepted
+173:1 accepted
+174:1 accepted
+177:1 accepted
+178:1 accepted
+179:1 accepted
+180:1 accepted
+181:1 accepted
+182:1 accepted
+183:1 accepted
+184:1 accepted
+185:1 accepted
+186:1 accepted
+187:1 accepted
+188:1 accepted
+189:1 accepted
+192:1 accepted
+193:1 accepted
+194:1 accepted
+195:1 accepted
+196:1 accepted
+197:1 accepted
+198:1 accepted
+199:1 accepted
+200:1 accepted
+201:1 accepted
+202:1 accepted
+203:1 accepted
+204:1 accepted
+206:1 accepted
+209:1 accepted
+210:1 accepted
+211:1 accepted
+212:1 accepted
+213:1 accepted
+215:1 accepted
+216:1 accepted
+217:1 accepted
+218:1 accepted
+220:1 accepted
+221:1 accepted
+223:1 accepted
+224:1 accepted
+227:1 accepted
+228:1 accepted
+232:1 accepted
+234:1 accepted
+240:1 accepted
+241:1 accepted
+242:1 accepted
+243:1 accepted
+244:1 accepted
+245:1 accepted
+246:1 accepted
+249:1 rejected 42P01
+251:1 rejected 42P01
+255:1 rejected 42P01
+257:1 rejected 42P01
+262:1 rejected 42P01
+269:1 rejected 42P01
+273:1 rejected 42P01
+279:1 rejected 42P01
+281:1 rejected 42P01

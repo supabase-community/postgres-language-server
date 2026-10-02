@@ -1,0 +1,194 @@
+2:1 accepted
+5:1 accepted
+6:1 accepted
+7:1 accepted
+8:1 rejected 55000
+10:1 accepted
+13:1 accepted
+15:1 accepted
+19:1 accepted
+20:1 rejected 55000
+21:1 accepted
+22:1 accepted
+23:1 rejected 42601
+24:1 rejected 55000
+25:1 rejected 22023
+28:1 accepted
+31:1 rejected 22023
+34:1 rejected 42601
+37:1 rejected 42601
+40:1 rejected 42601
+42:1 accepted
+43:1 accepted
+44:1 accepted
+45:1 accepted
+46:1 accepted
+47:1 accepted
+48:1 accepted
+49:1 accepted
+51:1 accepted
+52:1 accepted
+53:1 accepted
+54:1 accepted
+59:1 accepted
+60:1 rejected 428C9
+61:1 accepted
+62:1 rejected 428C9
+63:1 rejected 428C9
+64:1 rejected 428C9
+65:1 accepted
+67:1 accepted
+68:1 accepted
+69:1 accepted
+70:1 accepted
+71:1 accepted
+73:1 accepted
+74:1 accepted
+75:1 accepted
+76:1 accepted
+77:1 accepted
+79:1 accepted
+80:1 accepted
+82:1 accepted
+83:1 accepted
+85:1 accepted
+93:1 accepted
+98:1 accepted
+100:1 accepted
+102:1 accepted
+107:1 rejected 428C9
+109:1 accepted
+111:1 accepted
+113:1 accepted
+119:1 accepted
+120:1 accepted
+121:1 accepted
+124:1 rejected 428C9
+125:1 accepted
+126:1 accepted
+131:1 accepted
+133:1 skipped
+138:1 skipped
+143:1 accepted
+148:1 accepted
+149:1 rejected 55000
+150:1 accepted
+152:1 rejected 23502
+153:1 accepted
+154:1 accepted
+155:1 accepted
+158:1 rejected 42P01
+163:1 accepted
+164:1 accepted
+166:1 accepted
+167:1 accepted
+169:1 accepted
+170:1 accepted
+172:1 accepted
+173:1 accepted
+175:1 accepted
+176:1 accepted
+178:1 accepted
+179:1 accepted
+181:1 accepted
+183:1 rejected 428C9
+184:1 accepted
+186:1 accepted
+188:1 accepted
+193:1 accepted
+195:1 accepted
+196:1 accepted
+198:1 accepted
+199:1 accepted
+205:1 rejected 42601
+208:1 accepted
+209:1 rejected 55000
+211:1 accepted
+212:1 accepted
+215:1 rejected 22023
+218:1 accepted
+219:1 accepted
+220:1 accepted
+224:1 accepted
+225:1 accepted
+228:1 accepted
+231:1 accepted
+236:1 accepted
+244:1 accepted
+245:1 accepted
+247:1 accepted
+248:1 accepted
+249:1 accepted
+250:1 accepted
+252:1 accepted
+254:1 rejected 55000
+259:1 rejected 0A000
+264:1 accepted
+265:1 accepted
+266:1 accepted
+269:1 accepted
+272:1 accepted
+273:1 accepted
+274:1 accepted
+275:1 accepted
+277:1 accepted
+278:1 accepted
+279:1 accepted
+280:1 rejected 42P16
+282:1 accepted
+285:1 accepted
+286:1 accepted
+287:1 accepted
+290:1 accepted
+291:1 accepted
+292:1 accepted
+293:1 accepted
+294:1 accepted
+295:1 accepted
+296:1 accepted
+297:1 accepted
+298:1 accepted
+301:1 accepted
+303:1 accepted
+307:1 accepted
+312:1 accepted
+315:1 accepted
+320:1 accepted
+323:1 accepted
+328:1 accepted
+332:1 rejected 23502
+336:1 accepted
+342:1 accepted
+347:1 accepted
+348:1 rejected 0A000
+349:1 accepted
+354:1 accepted
+355:1 rejected 0A000
+358:1 accepted
+363:1 accepted
+364:1 accepted
+365:1 accepted
+366:1 accepted
+370:1 rejected 42601
+371:1 rejected 42601
+372:1 accepted
+373:1 accepted
+374:1 accepted
+375:1 accepted
+378:1 accepted
+379:1 accepted
+381:1 rejected 428C9
+388:1 accepted
+394:1 accepted
+400:1 accepted
+406:1 accepted
+412:1 accepted
+418:1 accepted
+419:1 accepted
+420:1 accepted
+421:1 accepted
+425:1 accepted
+426:1 accepted
+427:1 accepted
+428:1 accepted
+429:1 accepted

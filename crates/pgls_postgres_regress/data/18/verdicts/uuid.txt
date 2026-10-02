@@ -1,0 +1,68 @@
+3:1 accepted
+8:1 accepted
+13:1 accepted
+21:1 rejected 22P02
+23:1 rejected 22P02
+25:1 rejected 22P02
+26:1 rejected 22P02
+28:1 rejected 22P02
+29:1 rejected 22P02
+32:1 accepted
+33:1 accepted
+36:1 accepted
+37:1 accepted
+38:1 accepted
+41:1 accepted
+44:1 accepted
+45:1 accepted
+48:1 accepted
+51:1 accepted
+54:1 accepted
+57:1 accepted
+60:1 accepted
+63:1 accepted
+66:1 accepted
+67:1 accepted
+70:1 accepted
+72:1 accepted
+75:1 accepted
+79:1 accepted
+84:1 rejected 23505
+87:1 accepted
+90:1 accepted
+91:1 accepted
+92:1 accepted
+93:1 accepted
+96:1 accepted
+97:1 accepted
+100:1 accepted
+101:1 accepted
+102:1 accepted
+103:1 accepted
+106:1 accepted
+107:1 accepted
+108:1 accepted
+109:1 accepted
+112:1 accepted
+113:1 accepted
+114:1 accepted
+115:1 accepted
+116:1 accepted
+119:1 accepted
+120:1 accepted
+127:1 accepted
+135:1 rejected 22008
+136:1 rejected 22008
+139:1 rejected 22008
+142:1 rejected 22008
+145:1 accepted
+150:1 accepted
+151:1 accepted
+152:1 accepted
+153:1 accepted
+154:1 accepted
+157:1 accepted
+158:1 accepted
+159:1 accepted
+160:1 accepted
+164:1 accepted

@@ -1,0 +1,150 @@
+1:1 accepted
+3:1 accepted
+10:1 accepted
+18:1 accepted
+24:1 accepted
+35:1 accepted
+37:1 accepted
+42:1 accepted
+49:1 rejected 22023
+54:1 rejected 22023
+59:1 rejected 22023
+65:1 rejected 22023
+71:1 rejected 42P01
+77:1 rejected XX000
+83:1 rejected XX000
+89:1 accepted
+94:1 skipped
+95:1 accepted
+100:1 accepted
+104:1 accepted
+108:1 skipped
+111:1 accepted
+112:1 accepted
+117:1 accepted
+119:1 accepted
+121:1 accepted
+131:1 skipped
+133:1 accepted
+138:1 accepted
+142:1 accepted
+146:1 skipped
+148:1 accepted
+153:1 accepted
+162:1 accepted
+167:1 accepted
+172:1 accepted
+177:1 accepted
+182:1 accepted
+187:1 accepted
+192:1 accepted
+197:1 accepted
+203:1 accepted
+209:1 accepted
+214:1 accepted
+219:1 accepted
+224:1 accepted
+230:1 accepted
+235:1 accepted
+240:1 accepted
+246:1 accepted
+251:1 accepted
+259:1 accepted
+264:1 accepted
+270:1 accepted
+275:1 accepted
+277:1 accepted
+282:1 accepted
+284:1 rejected 42809
+288:1 rejected 42809
+290:1 accepted
+292:1 rejected 42809
+299:1 rejected 22023
+306:1 rejected 3F000
+314:1 rejected 22023
+321:1 rejected 42P01
+329:1 rejected 22023
+337:1 rejected 22023
+345:1 rejected 42703
+355:1 rejected 22023
+364:1 rejected 22023
+371:1 rejected 0A000
+379:1 rejected 22023
+387:1 accepted
+397:1 accepted
+409:1 accepted
+416:1 accepted
+424:1 accepted
+432:1 accepted
+440:1 accepted
+449:1 accepted
+457:1 accepted
+466:1 accepted
+474:1 accepted
+484:1 accepted
+492:1 accepted
+502:1 accepted
+510:1 accepted
+520:1 accepted
+528:1 accepted
+538:1 accepted
+546:1 accepted
+556:1 accepted
+564:1 accepted
+573:1 accepted
+581:1 accepted
+590:1 accepted
+598:1 accepted
+606:1 accepted
+614:1 accepted
+623:1 accepted
+631:1 accepted
+640:1 accepted
+648:1 accepted
+658:1 accepted
+666:1 accepted
+675:1 accepted
+683:1 accepted
+692:1 accepted
+700:1 accepted
+709:1 accepted
+717:1 accepted
+726:1 accepted
+734:1 accepted
+742:1 accepted
+750:1 accepted
+760:1 accepted
+768:1 accepted
+778:1 accepted
+786:1 accepted
+795:1 accepted
+803:1 accepted
+812:1 accepted
+820:1 accepted
+829:1 accepted
+837:1 accepted
+846:1 accepted
+854:1 accepted
+861:1 accepted
+872:1 accepted
+893:1 accepted
+902:1 accepted
+905:1 accepted
+907:1 accepted
+910:1 accepted
+915:1 accepted
+941:1 accepted
+950:1 accepted
+977:1 accepted
+1004:1 accepted
+1031:1 accepted
+1058:1 accepted
+1065:1 accepted
+1071:1 accepted
+1079:1 accepted
+1080:1 accepted
+1088:1 accepted
+1093:1 accepted
+1101:1 accepted
+1107:1 accepted
+1108:1 accepted

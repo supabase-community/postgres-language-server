@@ -1,0 +1,77 @@
+7:1 accepted
+9:1 accepted
+13:1 accepted
+15:1 accepted
+17:1 accepted
+19:1 accepted
+21:1 accepted
+25:1 rejected 42P01
+29:1 rejected 42P01
+34:1 rejected 42P01
+41:1 rejected 42P01
+46:1 accepted
+48:1 rejected 42P01
+53:1 accepted
+57:1 accepted
+59:1 accepted
+61:1 accepted
+63:1 accepted
+64:1 accepted
+66:1 accepted
+68:1 accepted
+69:1 accepted
+71:1 rejected 42P01
+76:1 accepted
+77:1 accepted
+79:1 rejected 42P01
+84:1 accepted
+85:1 accepted
+87:1 accepted
+91:1 accepted
+93:1 accepted
+96:1 accepted
+98:1 rejected 0A000
+101:1 rejected 42P17
+104:1 accepted
+108:1 accepted
+110:1 accepted
+112:1 accepted
+113:1 accepted
+115:1 accepted
+119:1 accepted
+120:1 accepted
+122:1 accepted
+123:1 accepted
+125:1 accepted
+129:1 accepted
+130:1 accepted
+132:1 accepted
+133:1 accepted
+136:1 accepted
+137:1 accepted
+139:1 accepted
+142:1 accepted
+144:1 accepted
+146:1 accepted
+147:1 accepted
+150:1 accepted
+151:1 accepted
+153:1 accepted
+155:1 accepted
+156:1 accepted
+157:1 accepted
+161:1 accepted
+162:1 accepted
+163:1 accepted
+164:1 accepted
+166:1 accepted
+169:1 accepted
+171:1 accepted
+176:1 accepted
+178:1 accepted
+179:1 accepted
+180:1 accepted
+183:1 accepted
+184:1 rejected 42P01
+185:1 accepted
+186:1 accepted

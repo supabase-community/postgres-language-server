@@ -1,0 +1,43 @@
+4:1 accepted
+5:1 accepted
+6:1 accepted
+7:1 accepted
+8:1 accepted
+9:1 accepted
+11:1 accepted
+12:1 accepted
+13:1 accepted
+14:1 accepted
+15:1 accepted
+16:1 accepted
+18:1 accepted
+24:1 skipped
+28:1 skipped
+32:1 skipped
+36:1 skipped
+40:1 skipped
+44:1 skipped
+49:1 skipped
+53:1 skipped
+57:1 skipped
+61:1 skipped
+65:1 skipped
+81:1 accepted
+82:1 accepted
+83:1 accepted
+86:1 skipped
+86:29 rejected 22012
+87:1 rejected 42601
+87:14 skipped
+88:1 skipped
+88:29 skipped
+88:57 rejected 42601
+88:68 accepted
+90:1 accepted
+91:1 rejected 42601
+91:12 skipped
+91:36 skipped
+91:60 accepted
+94:1 rejected 42601
+96:1 accepted
+97:1 accepted

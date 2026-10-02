@@ -1,0 +1,12 @@
+15:1 accepted
+17:1 accepted
+21:1 accepted
+22:1 accepted
+26:1 accepted
+27:1 accepted
+30:1 accepted
+33:1 accepted
+38:1 accepted
+40:1 accepted
+43:1 accepted
+47:1 accepted

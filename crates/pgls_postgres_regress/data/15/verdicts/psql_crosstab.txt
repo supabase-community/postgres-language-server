@@ -1,0 +1,29 @@
+5:1 accepted
+16:1 accepted
+19:1 accepted
+27:1 accepted
+32:1 accepted
+41:1 accepted
+45:1 accepted
+50:1 accepted
+55:1 accepted
+60:1 rejected 42601
+63:1 rejected 42601
+67:1 accepted
+73:1 accepted
+78:1 accepted
+83:1 accepted
+87:1 accepted
+91:1 accepted
+95:1 accepted
+99:1 accepted
+103:1 accepted
+107:1 accepted
+111:1 rejected 42601
+113:1 accepted
+116:1 accepted
+118:1 accepted
+119:1 rejected 42601
+121:1 accepted
+122:1 rejected 42601
+124:1 accepted

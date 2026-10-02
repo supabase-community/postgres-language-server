@@ -1,0 +1,6 @@
+5:1 accepted
+6:1 accepted
+7:1 accepted
+9:1 accepted
+13:1 accepted
+27:1 accepted

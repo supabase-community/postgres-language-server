@@ -1,0 +1,130 @@
+8:1 accepted
+13:1 accepted
+18:1 accepted
+23:1 accepted
+29:1 rejected 42601
+32:1 rejected 42601
+35:1 rejected 42601
+38:1 rejected 42601
+40:1 accepted
+41:1 accepted
+42:1 accepted
+43:1 accepted
+53:1 accepted
+55:1 accepted
+57:1 accepted
+59:1 accepted
+65:1 accepted
+69:1 accepted
+73:1 accepted
+77:1 accepted
+81:1 accepted
+85:1 accepted
+89:1 accepted
+93:1 accepted
+97:1 accepted
+101:1 accepted
+105:1 accepted
+109:1 accepted
+119:1 accepted
+125:1 accepted
+134:1 accepted
+140:1 accepted
+149:1 accepted
+155:1 accepted
+163:1 accepted
+169:1 accepted
+178:1 accepted
+184:1 accepted
+192:1 accepted
+198:1 accepted
+206:1 accepted
+213:1 accepted
+228:1 rejected 42P01
+233:1 rejected 42P01
+248:1 accepted
+249:1 accepted
+250:1 accepted
+251:1 rejected 42P01
+253:1 rejected 42P01
+258:1 rejected 42P01
+260:1 rejected 42P01
+265:1 rejected 42P01
+267:1 rejected 42P01
+269:1 rejected 42P01
+271:1 rejected 42P01
+273:1 rejected 42P01
+275:1 rejected 42P01
+282:1 accepted
+283:1 accepted
+284:1 accepted
+285:1 accepted
+287:1 accepted
+288:1 accepted
+290:1 accepted
+291:1 accepted
+294:1 accepted
+295:1 accepted
+296:1 accepted
+298:1 accepted
+299:1 accepted
+301:1 accepted
+302:1 accepted
+305:1 accepted
+306:1 accepted
+307:1 accepted
+311:1 accepted
+312:1 accepted
+313:1 accepted
+315:1 accepted
+317:1 accepted
+318:1 accepted
+320:1 accepted
+322:1 accepted
+324:1 accepted
+325:1 accepted
+327:1 accepted
+330:1 accepted
+335:1 accepted
+336:1 accepted
+337:1 accepted
+341:1 accepted
+353:1 accepted
+354:1 accepted
+355:1 accepted
+370:1 accepted
+371:1 accepted
+372:1 accepted
+373:1 accepted
+375:1 accepted
+381:1 accepted
+382:1 accepted
+385:1 accepted
+386:1 accepted
+390:1 accepted
+391:1 accepted
+394:1 accepted
+395:1 accepted
+400:1 accepted
+401:1 accepted
+402:1 accepted
+405:1 accepted
+406:1 accepted
+415:1 accepted
+418:1 rejected 22023
+421:1 accepted
+422:1 accepted
+423:1 skipped
+424:1 accepted
+425:1 accepted
+426:1 accepted
+427:1 skipped
+428:1 accepted
+429:1 accepted
+433:1 accepted
+434:1 rejected 42809
+435:1 accepted
+437:1 accepted
+438:1 accepted
+439:1 rejected 42809
+440:1 accepted

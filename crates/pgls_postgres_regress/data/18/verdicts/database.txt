@@ -1,0 +1,16 @@
+1:1 accepted
+3:1 accepted
+4:1 rejected 42704
+5:1 accepted
+6:1 accepted
+9:1 skipped
+10:1 accepted
+14:1 accepted
+15:1 skipped
+17:1 accepted
+18:1 accepted
+19:1 accepted
+20:1 accepted
+22:1 accepted
+23:1 accepted
+24:1 accepted

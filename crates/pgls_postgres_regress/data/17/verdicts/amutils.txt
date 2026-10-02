@@ -1,0 +1,10 @@
+5:1 rejected 42P01
+22:1 rejected 42P01
+39:1 rejected 42P01
+54:1 rejected 42P01
+67:1 accepted
+78:1 accepted
+80:1 accepted
+82:1 accepted
+90:1 accepted
+92:1 accepted
