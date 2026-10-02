@@ -9,6 +9,7 @@ use crate::catalog::{
     overlay::function_info,
 };
 use crate::lookup::{CatalogView, ColumnInfo, FunctionKind};
+use crate::typing::{Decision, TypeId, is_valid_polymorphic_signature};
 
 /// `CREATE FUNCTION` and `CREATE PROCEDURE` add an overload.
 pub(super) fn apply_create_function_stmt(
@@ -50,9 +51,9 @@ pub(super) fn apply_create_function_stmt(
             .as_ref()
             .and_then(|ty| crate::normalize_type_name(c, ty, search_path).0);
         let argument_mode = match mode {
-            Mode::FuncParamInout => crate::typing::FunctionArgumentMode::InOut,
-            Mode::FuncParamVariadic => crate::typing::FunctionArgumentMode::Variadic,
-            _ => crate::typing::FunctionArgumentMode::In,
+            Mode::FuncParamInout => crate::FunctionArgumentMode::InOut,
+            Mode::FuncParamVariadic => crate::FunctionArgumentMode::Variadic,
+            _ => crate::FunctionArgumentMode::In,
         };
         let is_output = matches!(mode, Mode::FuncParamOut | Mode::FuncParamTable);
         // Postgres rejects defaults for output parameters, and input parameters without a
@@ -65,7 +66,7 @@ pub(super) fn apply_create_function_stmt(
         if is_output {
             continue;
         }
-        arguments.push(crate::typing::FunctionArgument {
+        arguments.push(crate::FunctionArgument {
             name: (!parameter.name.is_empty()).then(|| parameter.name.clone()),
             ty: argument_type,
             mode: argument_mode,
@@ -118,20 +119,16 @@ pub(super) fn apply_create_function_stmt(
         None
     };
     // Postgres rejects polymorphic results that the inputs can't determine (`ProcedureCreate`).
-    let input_types: Option<Vec<Option<&str>>> = arguments
+    let inputs: Vec<Option<TypeId>> = arguments
         .iter()
-        .map(|argument| polymorphic_name(c, argument.ty.as_ref()?))
+        .map(|argument| argument.ty.clone())
         .collect();
-    if let Some(input_types) = input_types {
-        let results = std::iter::once(return_type.as_ref())
-            .chain(output_types.iter().map(Option::as_ref))
-            .flatten();
-        for result in results {
-            if let Some(Some(result)) = polymorphic_name(c, result) {
-                if !valid_polymorphic_result(result, &input_types) {
-                    return;
-                }
-            }
+    let results = std::iter::once(return_type.as_ref())
+        .chain(output_types.iter().map(Option::as_ref))
+        .flatten();
+    for result in results {
+        if is_valid_polymorphic_signature(c, result, &inputs) == Decision::Known(false) {
+            return;
         }
     }
     let variadic_type = n
@@ -153,14 +150,13 @@ pub(super) fn apply_create_function_stmt(
             .map(Some),
     };
     // A variadic function whose element type is unknown can't be matched.
-    function.signature =
-        variadic_element.map(|variadic_element| crate::typing::FunctionSignature {
-            arguments,
-            input_defaults: defaults,
-            variadic_element,
-            return_type,
-            returns_set,
-        });
+    function.signature = variadic_element.map(|variadic_element| crate::FunctionSignature {
+        arguments,
+        input_defaults: defaults,
+        variadic_element,
+        return_type,
+        returns_set,
+    });
     c.add_function(function);
 }
 
@@ -180,47 +176,4 @@ fn variadic_element(c: &Catalog, id: &crate::typing::TypeId) -> Option<crate::ty
         }
     }
     info.element
-}
-
-/// The name of a type if it is polymorphic, `Some(None)` if it is not, and `None` if the type
-/// is unknown.
-fn polymorphic_name(c: &Catalog, id: &crate::typing::TypeId) -> Option<Option<&'static str>> {
-    const POLYMORPHIC: &[&str] = &[
-        "anyelement",
-        "anyarray",
-        "anynonarray",
-        "anyenum",
-        "anyrange",
-        "anymultirange",
-        "anycompatible",
-        "anycompatiblearray",
-        "anycompatiblenonarray",
-        "anycompatiblerange",
-        "anycompatiblemultirange",
-    ];
-    let info = c.type_by_id(id).found()?;
-    if info.schema != "pg_catalog" {
-        return Some(None);
-    }
-    Some(POLYMORPHIC.iter().copied().find(|name| *name == info.name))
-}
-
-/// Whether the polymorphic result type can be determined from the input types. Port of
-/// `parse_coerce.c: check_valid_polymorphic_signature`.
-fn valid_polymorphic_result(result: &str, inputs: &[Option<&str>]) -> bool {
-    let family1 = |name: &str| {
-        matches!(
-            name,
-            "anyelement" | "anyarray" | "anynonarray" | "anyenum" | "anyrange" | "anymultirange"
-        )
-    };
-    let accepts: &dyn Fn(&str) -> bool = match result {
-        "anyrange" | "anymultirange" => &|name| matches!(name, "anyrange" | "anymultirange"),
-        "anycompatiblerange" | "anycompatiblemultirange" => {
-            &|name| matches!(name, "anycompatiblerange" | "anycompatiblemultirange")
-        }
-        name if family1(name) => &family1,
-        _ => &|name: &str| name.starts_with("anycompatible"),
-    };
-    inputs.iter().flatten().any(|input| accepts(input))
 }

@@ -744,8 +744,9 @@ fn snapshot_excludes_dropped_objects() {
 #[cfg(feature = "db")]
 mod typing_overlay_tests {
     use super::path;
+    use crate::TypeKind;
     use crate::lookup::{CatalogView, Lookup};
-    use crate::typing::{Type, TypeId, TypeKind};
+    use crate::typing::{Type, TypeId};
     use crate::{Catalog, CatalogBase, Snapshot};
     use sqlx::PgPool;
     use std::sync::Arc;
@@ -998,12 +999,7 @@ mod typing_overlay_tests {
         ));
         assert!(
             !catalog
-                .operator_candidates(
-                    Some("public"),
-                    "##",
-                    crate::typing::OperatorKind::Infix,
-                    &path
-                )
+                .operator_candidates(Some("public"), "##", crate::OperatorKind::Infix, &path)
                 .complete
         );
         apply(&mut catalog, "do $$ begin null; end $$;", &path);

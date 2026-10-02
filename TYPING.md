@@ -27,19 +27,35 @@ Rules:
 
 ## Architecture
 
+Three layers, each depending only on the one below:
+
+```text
+pgls_analyser   lint/typecheck/*    findings -> diagnostics, messages via format_type
+resolve/        walks a statement   "what type is this expression, and is it an error?"
+typing/         pure algorithms     "can int4 become text?", "which `+` does int4 + numeric pick?"
+lookup.rs       CatalogView         facts: types, functions, operators, casts
+                                    (snapshot + the file's DDL, in catalog/)
+```
+
 ```text
 typing/
-  mod.rs          re-exports
-  model.rs        TypeId, Type, TypedColumn, Decision, Selection, CoercionContext, Candidates,
-                  TypeInfo metadata, FunctionSignature, OperatorInfo, CastInfo
-  normalize.rs    parser TypeName -> TypeId
-  coerce.rs       can_coerce, find_coercion_pathway, is_binary_coercible (parse_coerce.c)
-  overload.rs     operator and function candidate selection (parse_oper.c, parse_func.c)
-  polymorphic.rs  anyelement/anyarray/anycompatible (parse_coerce.c)
-  common.rs       select_common_type (parse_coerce.c)
-  tests.rs
+  mod.rs          module docs + re-exports
+  model.rs        Type, TypeId, TypedColumn, Decision, Selection, CoercionContext, CallArg,
+                  ResolvedFunction, ResolvedOperator
+  types.rs        facts about one type: base_type, type_category, array_element,
+                  normalize_type_name (name -> id), format_type (id -> name)
+  coerce.rs       can X become Y: can_coerce, find_coercion_pathway, is_binary_coercible
+  unify.rs        which type several inputs agree on: select_common_type, polymorphic
+                  consistency and result, is_valid_polymorphic_signature
+  overload/
+    mod.rs        shared selection: match_argtypes, select_candidate (func_select_candidate)
+    candidates.rs which overloads a call sees: defaults, variadic, named arguments, masking
+    function.rs   select_function (func_get_detail)
+    operator.rs   select_operator (oper, binary_oper_exact)
+lookup.rs         CatalogView and the facts it returns: TypeInfo, FunctionSignature,
+                  OperatorInfo, CastInfo, Candidates, TypeKind
 resolve/expr/     expression typing, one module per expression node
-resolve/nodes/    the existing query/scope modules, now carrying column types
+resolve/nodes/    the query/scope modules, carrying column types
 snapshot/         casts.rs, operators.rs, extended types.rs/functions.rs + SQL
 ```
 
@@ -110,12 +126,13 @@ fn server_version_num(&self) -> Option<i64>;
 // typing/coerce.rs
 pub fn can_coerce(c: &dyn CatalogView, from: &Type, to: &TypeId, context: CoercionContext)
     -> Decision<bool>;
-// typing/overload.rs
+// typing/overload/operator.rs
 pub fn select_operator(c: &dyn CatalogView, schema: Option<&str>, name: &str, kind: OperatorKind,
     left: Option<&Type>, right: &Type, search_path: &[String]) -> Selection<ResolvedOperator>;
+// typing/overload/function.rs
 pub fn select_function(c: &dyn CatalogView, schema: Option<&str>, name: &str,
     args: &[CallArg], search_path: &[String]) -> Selection<ResolvedFunction>;
-// typing/common.rs
+// typing/unify.rs
 pub fn select_common_type(c: &dyn CatalogView, types: &[Type]) -> Selection<Type>;
 // resolve/expr/mod.rs
 pub(crate) fn infer_expr(r: &mut Resolver<'_>, expr: &NodeEnum) -> Option<Type>;
@@ -186,9 +203,9 @@ On REL_15_STABLE: about 40,000 statements, no false positives, two known artefac
 
 | Part | Where | State |
 | --- | --- | --- |
-| Model, snapshot metadata, typed lookups | `typing/{model,normalize}.rs`, `snapshot/**`, `catalog/{base,mod}.rs`, `lookup.rs` | done |
+| Model, snapshot metadata, typed lookups | `typing/{model,types}.rs`, `snapshot/**`, `catalog/{base,mod}.rs`, `lookup.rs` | done |
 | Types of file-created objects | `catalog/ddl/**`, `catalog/{overlay,derive,materialize}.rs` | done |
-| Coercion, common type, polymorphism, overloads | `typing/{coerce,common,polymorphic,overload,display}.rs` | done; ranges are unknown |
+| Coercion, common type, polymorphism, overloads | `typing/{coerce,unify}.rs`, `typing/overload/` | done; ranges are unknown |
 | Typed scopes, relations, expressions, findings | `resolve/**` | done; every clause Postgres types |
 | SQL function result types | `resolve/nodes/create_function_stmt.rs` | done |
 | Rules | `pgls_analyser/src/lint/typecheck/*` | done |

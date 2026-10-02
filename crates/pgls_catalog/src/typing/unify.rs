@@ -1,6 +1,109 @@
-use crate::typing::coerce::base_type;
-use crate::typing::{Decision, Selection, Type, TypeId, select_common_type};
-use crate::{CatalogView, lookup::Lookup};
+//! Which type several inputs agree on: the common type of `UNION`, `CASE`, `COALESCE`, and
+//! `VALUES` columns, and the actual types behind polymorphic arguments and results.
+
+use crate::typing::coerce::can_coerce;
+use crate::typing::types::{base_type, type_category};
+use crate::typing::{CoercionContext, Decision, Selection, Type, TypeId};
+use crate::{CatalogView, Lookup};
+
+// ----- common type -----
+
+fn text_type(c: &dyn CatalogView) -> Decision<Type> {
+    match c.type_(Some("pg_catalog"), "text", &[]) {
+        Lookup::Found(info) => match info.id {
+            Some(id) => Decision::Known(Type::Named(id)),
+            None => Decision::Unknown,
+        },
+        Lookup::Missing | Lookup::Unknown => Decision::Unknown,
+    }
+}
+
+/// Port of PostgreSQL `select_common_type`, including `verify_common_type` and
+/// `coerce_to_common_type`'s implicit-coercibility validation.
+pub fn select_common_type(c: &dyn CatalogView, types: &[Type]) -> Selection<Type> {
+    let Some(first) = types.first() else {
+        return Selection::Unknown;
+    };
+    if !matches!(first, Type::UnknownLiteral) && types.iter().all(|ty| ty == first) {
+        return Selection::Match(first.clone());
+    }
+    // Anonymous rows have no catalog identity or modeled row coercion.
+    if types.iter().any(|t| matches!(t, Type::Record(_))) {
+        return Selection::Unknown;
+    }
+
+    let mut selected: Option<TypeId> = None;
+    let mut selected_category = None;
+    let mut selected_preferred = false;
+    for ty in types {
+        let Type::Named(id) = ty else { continue };
+        let base = match base_type(c, id) {
+            Decision::Known(base) => base,
+            Decision::Unknown => return Selection::Unknown,
+        };
+        if selected.as_ref() == Some(&base) {
+            continue;
+        }
+        let (category, preferred) = match type_category(c, &base) {
+            Decision::Known(category) => category,
+            Decision::Unknown => return Selection::Unknown,
+        };
+        if let Some(current) = selected.as_ref() {
+            if category != selected_category.unwrap_or(category) {
+                return Selection::NoMatch;
+            }
+            if !selected_preferred {
+                match (
+                    can_coerce(
+                        c,
+                        &Type::Named(current.clone()),
+                        &base,
+                        CoercionContext::Implicit,
+                    ),
+                    can_coerce(
+                        c,
+                        &Type::Named(base.clone()),
+                        current,
+                        CoercionContext::Implicit,
+                    ),
+                ) {
+                    (Decision::Known(true), Decision::Known(false)) => {
+                        selected = Some(base);
+                        selected_category = Some(category);
+                        selected_preferred = preferred;
+                    }
+                    (Decision::Known(_), Decision::Known(_)) => {}
+                    _ => return Selection::Unknown,
+                }
+            }
+        } else {
+            selected = Some(base);
+            selected_category = Some(category);
+            selected_preferred = preferred;
+        }
+    }
+
+    let result = match selected {
+        Some(id) => Type::Named(id),
+        None => match text_type(c) {
+            Decision::Known(ty) => ty,
+            Decision::Unknown => return Selection::Unknown,
+        },
+    };
+    let Type::Named(target) = &result else {
+        return Selection::Unknown;
+    };
+    for ty in types {
+        match can_coerce(c, ty, target, CoercionContext::Implicit) {
+            Decision::Known(true) => {}
+            Decision::Known(false) => return Selection::NoMatch,
+            Decision::Unknown => return Selection::Unknown,
+        }
+    }
+    Selection::Match(result)
+}
+
+// ----- polymorphic types -----
 
 fn poly_id(c: &dyn CatalogView, name: &str) -> Option<TypeId> {
     match c.type_(Some("pg_catalog"), name, &[]) {
@@ -57,9 +160,9 @@ pub fn check_generic_type_consistency(
             // Range bindings aren't modelled, but an input that isn't a range (or multirange)
             // can't match at all.
             let expected = if is(&ids[10], declared) || is(&ids[11], declared) {
-                crate::typing::TypeKind::Multirange
+                crate::TypeKind::Multirange
             } else {
-                crate::typing::TypeKind::Range
+                crate::TypeKind::Range
             };
             let base = match base_type(c, input) {
                 Decision::Known(base) => base,
@@ -105,7 +208,7 @@ pub fn check_generic_type_consistency(
         } else if is(&ids[1], declared) || is(&ids[3], declared) || is(&ids[4], declared) {
             if is(&ids[4], declared) {
                 match c.type_by_id(input) {
-                    Lookup::Found(info) if info.kind == Some(crate::typing::TypeKind::Enum) => {}
+                    Lookup::Found(info) if info.kind == Some(crate::TypeKind::Enum) => {}
                     Lookup::Found(_) => return Decision::Known(false),
                     _ => return Decision::Unknown,
                 }
@@ -310,8 +413,158 @@ pub fn resolve_polymorphic_result(
     }
 }
 
+/// Whether the inputs of a function determine its polymorphic result type. Port of
+/// `parse_coerce.c: check_valid_polymorphic_signature`. Unknown when a type is unknown.
+pub fn is_valid_polymorphic_signature(
+    c: &dyn CatalogView,
+    result: &TypeId,
+    inputs: &[Option<TypeId>],
+) -> Decision<bool> {
+    let Some(result) = polymorphic_name(c, result) else {
+        return Decision::Unknown;
+    };
+    let Some(inputs) = inputs
+        .iter()
+        .map(|input| polymorphic_name(c, input.as_ref()?))
+        .collect::<Option<Vec<_>>>()
+    else {
+        return Decision::Unknown;
+    };
+    let Some(result) = result else {
+        return Decision::Known(true);
+    };
+    let family1 = |name: &str| {
+        matches!(
+            name,
+            "anyelement" | "anyarray" | "anynonarray" | "anyenum" | "anyrange" | "anymultirange"
+        )
+    };
+    let accepts: &dyn Fn(&str) -> bool = match result {
+        "anyrange" | "anymultirange" => &|name| matches!(name, "anyrange" | "anymultirange"),
+        "anycompatiblerange" | "anycompatiblemultirange" => {
+            &|name| matches!(name, "anycompatiblerange" | "anycompatiblemultirange")
+        }
+        name if family1(name) => &family1,
+        _ => &|name: &str| name.starts_with("anycompatible"),
+    };
+    Decision::Known(inputs.iter().flatten().any(|input| accepts(input)))
+}
+
+/// The name of a type if it is polymorphic, `Some(None)` if it is not, and `None` if the type
+/// is unknown.
+fn polymorphic_name(c: &dyn CatalogView, id: &TypeId) -> Option<Option<&'static str>> {
+    const POLYMORPHIC: &[&str] = &[
+        "anyelement",
+        "anyarray",
+        "anynonarray",
+        "anyenum",
+        "anyrange",
+        "anymultirange",
+        "anycompatible",
+        "anycompatiblearray",
+        "anycompatiblenonarray",
+        "anycompatiblerange",
+        "anycompatiblemultirange",
+    ];
+    let info = c.type_by_id(id).found()?;
+    if info.schema != "pg_catalog" {
+        return Some(None);
+    }
+    Some(POLYMORPHIC.iter().copied().find(|name| *name == info.name))
+}
+
 #[cfg(all(test, feature = "db"))]
-mod tests {
+mod common_type_tests {
+    use super::*;
+    use crate::{Catalog, CatalogBase, CatalogView, Lookup, Snapshot};
+    use sqlx::{Executor, PgPool};
+    use std::sync::Arc;
+
+    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    async fn postgres_common_types(test_db: PgPool) {
+        test_db
+            .execute("CREATE DOMAIN public.typing_int_domain AS int4")
+            .await
+            .unwrap();
+        let snapshot = Arc::new(Snapshot::load(&test_db).await.unwrap());
+        let catalog = Catalog::new(Some(Arc::new(CatalogBase::new(snapshot))));
+        assert_eq!(
+            select_common_type(
+                &catalog,
+                &[
+                    Type::Named(TypeId::Snapshot(23)),
+                    Type::Named(TypeId::Snapshot(20))
+                ]
+            ),
+            Selection::Match(Type::Named(TypeId::Snapshot(20)))
+        );
+        assert_eq!(
+            select_common_type(&catalog, &[Type::UnknownLiteral, Type::UnknownLiteral]),
+            Selection::Match(Type::Named(TypeId::Snapshot(25)))
+        );
+        assert_eq!(
+            select_common_type(
+                &catalog,
+                &[
+                    Type::Named(TypeId::Snapshot(23)),
+                    Type::Named(TypeId::Snapshot(1700))
+                ]
+            ),
+            Selection::Match(Type::Named(TypeId::Snapshot(1700)))
+        );
+        assert_eq!(
+            select_common_type(
+                &catalog,
+                &[Type::Named(TypeId::Snapshot(23)), Type::UnknownLiteral]
+            ),
+            Selection::Match(Type::Named(TypeId::Snapshot(23)))
+        );
+        assert_eq!(
+            select_common_type(
+                &catalog,
+                &[
+                    Type::Named(TypeId::Snapshot(23)),
+                    Type::Named(TypeId::Snapshot(25))
+                ]
+            ),
+            Selection::NoMatch
+        );
+        assert_eq!(
+            select_common_type(
+                &catalog,
+                &[
+                    Type::Named(TypeId::Snapshot(1700)),
+                    Type::Named(TypeId::Snapshot(23))
+                ]
+            ),
+            Selection::Match(Type::Named(TypeId::Snapshot(1700)))
+        );
+        let domain = match catalog.type_(Some("public"), "typing_int_domain", &[]) {
+            Lookup::Found(info) => info.id.unwrap(),
+            other => panic!("expected test domain in snapshot, got {other:?}"),
+        };
+        assert_eq!(
+            select_common_type(
+                &catalog,
+                &[Type::Named(domain), Type::Named(TypeId::Snapshot(23))]
+            ),
+            Selection::Match(Type::Named(TypeId::Snapshot(23)))
+        );
+        assert_eq!(
+            select_common_type(
+                &catalog,
+                &[
+                    Type::Named(TypeId::Snapshot(25)),
+                    Type::Named(TypeId::Snapshot(1043))
+                ]
+            ),
+            Selection::Match(Type::Named(TypeId::Snapshot(25)))
+        );
+    }
+}
+
+#[cfg(all(test, feature = "db"))]
+mod polymorphic_tests {
     use super::{check_generic_type_consistency, resolve_polymorphic_result};
     use crate::lookup::CatalogView;
     use crate::typing::{Decision, Type};

@@ -11,7 +11,8 @@ use crate::snapshot::{
     Column, ColumnClassKind, Function, PostgresType, PostgresTypeAttribute, ProcKind, Schema,
     Sequence, Snapshot, Table, TableKind, TypeAttributes,
 };
-use crate::typing::{FunctionArgumentMode, Type, TypeId, TypeKind};
+use crate::typing::{Type, TypeId};
+use crate::{FunctionArgumentMode, TypeKind};
 
 impl Catalog {
     /// The database snapshot with the changes of the file applied.

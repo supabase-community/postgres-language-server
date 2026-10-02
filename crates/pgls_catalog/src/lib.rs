@@ -26,8 +26,9 @@ pub mod typing;
 
 pub use catalog::{Catalog, CatalogBase};
 pub use lookup::{
-    CatalogView, ColumnInfo, FunctionInfo, FunctionKind, Lookup, Origin, RelationInfo,
-    RelationKind, TypeInfo,
+    Candidates, CastContext, CastInfo, CastMethod, CatalogView, ColumnInfo, FunctionArgument,
+    FunctionArgumentMode, FunctionInfo, FunctionKind, FunctionSignature, Lookup, OperatorInfo,
+    OperatorKind, Origin, RelationInfo, RelationKind, TypeInfo, TypeKind,
 };
 pub use session::{Session, is_reindex_concurrent, is_vacuum_full};
 pub use snapshot::*;

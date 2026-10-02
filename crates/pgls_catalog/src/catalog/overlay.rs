@@ -1,7 +1,8 @@
 //! The changes that statements are made of: defining, moving, and dropping relations, types,
 //! functions, and schemas in the overlay.
 
-use crate::typing::{FunctionArgumentMode, FunctionSignature, TypeId};
+use crate::typing::TypeId;
+use crate::{FunctionArgumentMode, FunctionSignature};
 use pgls_query::{Node, protobuf};
 
 use super::{
@@ -94,7 +95,7 @@ impl Catalog {
                             })
                             .unwrap_or_else(|| self.allocate_type_id()),
                     ),
-                    kind: Some(crate::typing::TypeKind::Composite),
+                    kind: Some(crate::TypeKind::Composite),
                     category: Some('C'),
                     preferred: Some(false),
                     element: None,
@@ -235,7 +236,7 @@ impl Catalog {
             schema,
             name,
             attributes,
-            crate::typing::TypeKind::Composite,
+            crate::TypeKind::Composite,
             'C',
             None,
         );
@@ -246,7 +247,7 @@ impl Catalog {
         schema: String,
         name: String,
         attributes: Option<Vec<ColumnInfo>>,
-        kind: crate::typing::TypeKind,
+        kind: crate::TypeKind,
         category: char,
         base: Option<crate::typing::TypeId>,
     ) {
@@ -279,7 +280,7 @@ impl Catalog {
                 attributes: None,
                 origin: Origin::File,
                 id: Some(array_id),
-                kind: Some(crate::typing::TypeKind::Base),
+                kind: Some(crate::TypeKind::Base),
                 category: Some('A'),
                 preferred: Some(false),
                 element: Some(id),
@@ -320,7 +321,7 @@ impl Catalog {
                 attributes,
                 origin: Origin::File,
                 id: Some(array_id),
-                kind: Some(crate::typing::TypeKind::Base),
+                kind: Some(crate::TypeKind::Base),
                 category: Some('A'),
                 preferred: Some(false),
                 element: Some(row_id),

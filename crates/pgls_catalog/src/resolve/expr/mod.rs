@@ -23,10 +23,11 @@ use super::{
     scope::{find_column_type, find_item},
 };
 use crate::{
+    OperatorKind,
     lookup::Lookup,
     typing::{
-        CallArg, CoercionContext, Decision, OperatorKind, Selection, Type, can_coerce,
-        normalize_type_name, select_common_type, select_function, select_operator,
+        CallArg, CoercionContext, Decision, Selection, Type, can_coerce, normalize_type_name,
+        select_common_type, select_function, select_operator,
     },
 };
 pub(super) use assignment::check_assignment;
