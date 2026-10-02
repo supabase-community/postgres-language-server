@@ -1,5 +1,9 @@
 # avoidAddingExclusionConstraint
-**Diagnostic Category: `lint/safety/avoidAddingExclusionConstraint`**
+**Diagnostic Category: `lint/avoidAddingExclusionConstraint`**
+
+**Group: `safety`**
+
+**Applies to: migration files only**
 
 **Since**: `vnext`
 
@@ -27,7 +31,7 @@ alter table my_table add constraint my_excl exclude using gist (col with &&);
 ```
 
 ```sh
-code-block.sql:1:1 lint/safety/avoidAddingExclusionConstraint ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+code-block.sql:1:1 lint/avoidAddingExclusionConstraint ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   ! Adding an exclusion constraint acquires an ACCESS EXCLUSIVE lock.
   
@@ -52,11 +56,16 @@ alter table my_table add constraint my_check check (col > 0) not valid;
 {
   "linter": {
     "rules": {
-      "safety": {
-        "avoidAddingExclusionConstraint": "error"
-      }
+      "avoidAddingExclusionConstraint": "error"
     }
   }
 }
 
+```
+## How to suppress
+
+Suppress this diagnostic with a comment:
+
+```sql
+-- pgls-ignore avoidAddingExclusionConstraint
 ```

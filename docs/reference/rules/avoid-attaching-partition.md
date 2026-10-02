@@ -1,5 +1,9 @@
 # avoidAttachingPartition
-**Diagnostic Category: `lint/safety/avoidAttachingPartition`**
+**Diagnostic Category: `lint/avoidAttachingPartition`**
+
+**Group: `safety`**
+
+**Applies to: migration files only**
 
 **Since**: `vnext`
 
@@ -25,7 +29,7 @@ alter table my_table attach partition my_partition for values from ('2024-01-01'
 ```
 
 ```sh
-code-block.sql:1:1 lint/safety/avoidAttachingPartition ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+code-block.sql:1:1 lint/avoidAttachingPartition ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   ! Attaching a partition acquires an ACCESS EXCLUSIVE lock on the parent table.
   
@@ -50,11 +54,16 @@ select 1;
 {
   "linter": {
     "rules": {
-      "safety": {
-        "avoidAttachingPartition": "error"
-      }
+      "avoidAttachingPartition": "error"
     }
   }
 }
 
+```
+## How to suppress
+
+Suppress this diagnostic with a comment:
+
+```sql
+-- pgls-ignore avoidAttachingPartition
 ```

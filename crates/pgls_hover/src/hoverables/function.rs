@@ -1,6 +1,6 @@
 use std::fmt::Write;
 
-use pgls_schema_cache::{Function, SchemaCache};
+use pgls_catalog::{Function, Snapshot};
 use pgls_treesitter::TreesitterContext;
 
 use crate::{contextual_priority::ContextualPriority, to_markdown::ToHoverMarkdown};
@@ -13,7 +13,7 @@ impl ToHoverMarkdown for Function {
     fn hover_headline<W: Write>(
         &self,
         writer: &mut W,
-        _schema_cache: &SchemaCache,
+        _snapshot: &Snapshot,
     ) -> Result<(), std::fmt::Error> {
         write!(writer, "`{}.{}", self.schema, self.name)?;
 
@@ -35,21 +35,21 @@ impl ToHoverMarkdown for Function {
     fn hover_body<W: Write>(
         &self,
         writer: &mut W,
-        _schema_cache: &SchemaCache,
+        _snapshot: &Snapshot,
     ) -> Result<bool, std::fmt::Error> {
         let kind_text = match self.kind {
-            pgls_schema_cache::ProcKind::Function => "Function",
-            pgls_schema_cache::ProcKind::Procedure => "Procedure",
-            pgls_schema_cache::ProcKind::Aggregate => "Aggregate",
-            pgls_schema_cache::ProcKind::Window => "Window",
+            pgls_catalog::ProcKind::Function => "Function",
+            pgls_catalog::ProcKind::Procedure => "Procedure",
+            pgls_catalog::ProcKind::Aggregate => "Aggregate",
+            pgls_catalog::ProcKind::Window => "Window",
         };
 
         write!(writer, "{kind_text}")?;
 
         let behavior_text = match self.behavior {
-            pgls_schema_cache::Behavior::Immutable => " - Immutable",
-            pgls_schema_cache::Behavior::Stable => " - Stable",
-            pgls_schema_cache::Behavior::Volatile => "",
+            pgls_catalog::Behavior::Immutable => " - Immutable",
+            pgls_catalog::Behavior::Stable => " - Stable",
+            pgls_catalog::Behavior::Volatile => "",
         };
 
         write!(writer, "{behavior_text}")?;
@@ -66,7 +66,7 @@ impl ToHoverMarkdown for Function {
     fn hover_footer<W: Write>(
         &self,
         writer: &mut W,
-        _schema_cache: &SchemaCache,
+        _snapshot: &Snapshot,
     ) -> Result<bool, std::fmt::Error> {
         if let Some(def) = self.definition.as_ref() {
             /*
@@ -133,10 +133,10 @@ impl ContextualPriority for Function {
 
         // aggregate and window functions are commonly used
         match self.kind {
-            pgls_schema_cache::ProcKind::Aggregate => score += 20.0,
-            pgls_schema_cache::ProcKind::Window => score += 15.0,
-            pgls_schema_cache::ProcKind::Function => score += 10.0,
-            pgls_schema_cache::ProcKind::Procedure => score += 5.0,
+            pgls_catalog::ProcKind::Aggregate => score += 20.0,
+            pgls_catalog::ProcKind::Window => score += 15.0,
+            pgls_catalog::ProcKind::Function => score += 10.0,
+            pgls_catalog::ProcKind::Procedure => score += 5.0,
         }
 
         score

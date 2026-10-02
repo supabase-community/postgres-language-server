@@ -937,6 +937,7 @@ dependencies = [
  "convert_case",
  "pgls_analyse",
  "pgls_analyser",
+ "pgls_catalog",
  "pgls_cli",
  "pgls_configuration",
  "pgls_console",
@@ -2374,10 +2375,10 @@ name = "pgls_analyse"
 version = "0.0.0"
 dependencies = [
  "enumflags2",
+ "pgls_catalog",
  "pgls_console",
  "pgls_diagnostics",
  "pgls_query",
- "pgls_schema_cache",
  "pgls_text_size",
  "rustc-hash",
  "schemars",
@@ -2390,17 +2391,36 @@ version = "0.0.0"
 dependencies = [
  "insta",
  "pgls_analyse",
+ "pgls_catalog",
  "pgls_console",
  "pgls_diagnostics",
  "pgls_query",
  "pgls_query_ext",
- "pgls_schema_cache",
  "pgls_statement_splitter",
  "pgls_test_macros",
  "pgls_text_size",
  "rustc-hash",
+ "schemars",
  "serde",
  "termcolor",
+]
+
+[[package]]
+name = "pgls_catalog"
+version = "0.0.0"
+dependencies = [
+ "futures-util",
+ "globset",
+ "insta",
+ "pgls_query",
+ "pgls_test_utils",
+ "pgls_text_size",
+ "rustc-hash",
+ "schemars",
+ "serde",
+ "serde_json",
+ "sqlx",
+ "strum",
 ]
 
 [[package]]
@@ -2418,13 +2438,13 @@ dependencies = [
  "mimalloc",
  "path-absolutize",
  "pgls_analyse",
+ "pgls_catalog",
  "pgls_configuration",
  "pgls_console",
  "pgls_diagnostics",
  "pgls_env",
  "pgls_fs",
  "pgls_lsp",
- "pgls_schema_cache",
  "pgls_test_utils",
  "pgls_text_edit",
  "pgls_workspace",
@@ -2450,7 +2470,7 @@ dependencies = [
  "criterion",
  "fuzzy-matcher",
  "insta",
- "pgls_schema_cache",
+ "pgls_catalog",
  "pgls_test_utils",
  "pgls_text_size",
  "pgls_treesitter",
@@ -2582,8 +2602,8 @@ version = "0.0.0"
 dependencies = [
  "humansize",
  "insta",
+ "pgls_catalog",
  "pgls_query",
- "pgls_schema_cache",
  "pgls_test_utils",
  "pgls_text_size",
  "pgls_treesitter",
@@ -2673,10 +2693,10 @@ version = "0.0.0"
 dependencies = [
  "insta",
  "pgls_analyse",
+ "pgls_catalog",
  "pgls_console",
  "pgls_diagnostics",
  "pgls_diagnostics_categories",
- "pgls_schema_cache",
  "pgls_test_utils",
  "rustc-hash",
  "serde",
@@ -2689,11 +2709,11 @@ dependencies = [
 name = "pgls_plpgsql_check"
 version = "0.0.0"
 dependencies = [
+ "pgls_catalog",
  "pgls_console",
  "pgls_diagnostics",
  "pgls_query",
  "pgls_query_ext",
- "pgls_schema_cache",
  "pgls_test_utils",
  "pgls_text_size",
  "regex",
@@ -2781,34 +2801,16 @@ dependencies = [
 ]
 
 [[package]]
-name = "pgls_schema_cache"
-version = "0.0.0"
-dependencies = [
- "anyhow",
- "async-std",
- "futures-util",
- "pgls_console",
- "pgls_diagnostics",
- "pgls_test_utils",
- "schemars",
- "serde",
- "serde_json",
- "sqlx",
- "strum",
- "tokio",
-]
-
-[[package]]
 name = "pgls_splinter"
 version = "0.0.0"
 dependencies = [
  "insta",
  "pgls_analyse",
+ "pgls_catalog",
  "pgls_configuration",
  "pgls_console",
  "pgls_diagnostics",
  "pgls_matcher",
- "pgls_schema_cache",
  "pgls_test_utils",
  "serde",
  "serde_json",
@@ -2834,6 +2836,7 @@ name = "pgls_suppressions"
 version = "0.0.0"
 dependencies = [
  "pgls_analyse",
+ "pgls_analyser",
  "pgls_diagnostics",
  "pgls_text_size",
  "tracing",
@@ -2895,7 +2898,7 @@ name = "pgls_treesitter"
 version = "0.0.0"
 dependencies = [
  "clap",
- "pgls_schema_cache",
+ "pgls_catalog",
  "pgls_test_utils",
  "pgls_text_size",
  "pgls_treesitter_grammar",
@@ -2916,26 +2919,17 @@ dependencies = [
 ]
 
 [[package]]
-name = "pgls_type_resolver"
-version = "0.0.0"
-dependencies = [
- "pgls_query",
- "pgls_schema_cache",
-]
-
-[[package]]
 name = "pgls_typecheck"
 version = "0.0.0"
 dependencies = [
  "criterion",
- "globset",
  "insta",
  "itertools 0.14.0",
  "once_cell",
+ "pgls_catalog",
  "pgls_console",
  "pgls_diagnostics",
  "pgls_query",
- "pgls_schema_cache",
  "pgls_test_utils",
  "pgls_text_size",
  "pgls_treesitter",
@@ -2953,12 +2947,12 @@ version = "0.0.0"
 dependencies = [
  "lsp-types 0.97.0",
  "pgls_analyse",
+ "pgls_catalog",
  "pgls_completions",
  "pgls_configuration",
  "pgls_diagnostics",
  "pgls_fs",
  "pgls_query",
- "pgls_schema_cache",
  "pgls_text_size",
  "pgls_treesitter_grammar",
  "pgls_workspace",
@@ -2978,6 +2972,7 @@ dependencies = [
  "lru",
  "pgls_analyse",
  "pgls_analyser",
+ "pgls_catalog",
  "pgls_completions",
  "pgls_configuration",
  "pgls_console",
@@ -2992,7 +2987,6 @@ dependencies = [
  "pgls_pretty_print",
  "pgls_query",
  "pgls_query_ext",
- "pgls_schema_cache",
  "pgls_splinter",
  "pgls_statement_splitter",
  "pgls_suppressions",
@@ -3572,6 +3566,7 @@ dependencies = [
  "anyhow",
  "pgls_analyse",
  "pgls_analyser",
+ "pgls_catalog",
  "pgls_console",
  "pgls_diagnostics",
  "pgls_query",
@@ -5579,10 +5574,10 @@ dependencies = [
  "convert_case",
  "pgls_analyse",
  "pgls_analyser",
+ "pgls_catalog",
  "pgls_diagnostics",
  "pgls_env",
  "pgls_pglinter",
- "pgls_schema_cache",
  "pgls_splinter",
  "pgls_workspace",
  "proc-macro2",

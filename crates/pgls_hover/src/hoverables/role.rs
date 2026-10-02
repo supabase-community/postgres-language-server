@@ -1,15 +1,15 @@
 use std::fmt::Write;
 
-use pgls_schema_cache::{Role, SchemaCache};
+use pgls_catalog::{Role, Snapshot};
 use pgls_treesitter::TreesitterContext;
 
 use crate::{contextual_priority::ContextualPriority, to_markdown::ToHoverMarkdown};
 
-impl ToHoverMarkdown for pgls_schema_cache::Role {
+impl ToHoverMarkdown for pgls_catalog::Role {
     fn hover_headline<W: Write>(
         &self,
         writer: &mut W,
-        _schema_cache: &SchemaCache,
+        _snapshot: &Snapshot,
     ) -> Result<(), std::fmt::Error> {
         write!(writer, "`{}`", self.name)?;
 
@@ -19,7 +19,7 @@ impl ToHoverMarkdown for pgls_schema_cache::Role {
     fn hover_body<W: Write>(
         &self,
         writer: &mut W,
-        _schema_cache: &SchemaCache,
+        _snapshot: &Snapshot,
     ) -> Result<bool, std::fmt::Error> {
         if let Some(comm) = self.comment.as_ref() {
             write!(writer, "Comment: '{comm}'")?;
@@ -92,7 +92,7 @@ impl ToHoverMarkdown for pgls_schema_cache::Role {
     fn hover_footer<W: Write>(
         &self,
         _writer: &mut W,
-        _schema_cache: &SchemaCache,
+        _snapshot: &Snapshot,
     ) -> Result<bool, std::fmt::Error> {
         Ok(false)
     }

@@ -1,4 +1,4 @@
--- expect_lint/safety/multipleAlterTable
+-- expect_lint/multipleAlterTable
 -- Test ALTER TABLE after other statements
 CREATE TABLE products (id serial PRIMARY KEY);
 ALTER TABLE products ADD COLUMN description text;

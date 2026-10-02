@@ -96,7 +96,7 @@ macro_rules! declare_lint_group {
         // "lint" prefix, the name of this group, and the rule name argument
         #[allow(unused_macros)]
         macro_rules! group_category {
-            ( $rule_name:tt ) => { $crate::category_concat!( "lint", $name, $rule_name ) };
+            ( $rule_name:tt ) => { $crate::category_concat!( "lint", $rule_name ) };
         }
 
         // Re-export the macro for child modules, so `declare_rule!` can access

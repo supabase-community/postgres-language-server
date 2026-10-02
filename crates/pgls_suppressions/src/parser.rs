@@ -77,7 +77,10 @@ impl<'a> SuppressionsParser<'a> {
             let offset = self.line_index.offset_for_line(idx).unwrap();
 
             match Suppression::from_line(line, offset) {
-                Ok(suppr) => self.file_suppressions.push(suppr),
+                Ok(suppr) => {
+                    self.diagnostics.extend(suppr.to_legacy_diagnostic());
+                    self.file_suppressions.push(suppr);
+                }
                 Err(diag) => self.diagnostics.push(diag),
             }
         }
@@ -99,6 +102,7 @@ impl<'a> SuppressionsParser<'a> {
                     continue;
                 }
             };
+            self.diagnostics.extend(suppr.to_legacy_diagnostic());
 
             match suppr.kind {
                 SuppressionKind::File => {
@@ -179,7 +183,7 @@ mod tests {
     fn test_parse_line_suppressions() {
         let doc = r#"
 SELECT 1;
--- pgt-ignore lint/safety/banDropColumn
+-- pgt-ignore banDropColumn
 SELECT 2;
 "#;
         let suppressions = SuppressionsParser::parse(doc);
@@ -195,7 +199,7 @@ SELECT 2;
             suppression.rule_specifier,
             RuleSpecifier::Rule(
                 "lint".to_string(),
-                "safety".to_string(),
+                "".to_string(),
                 "banDropColumn".to_string()
             )
         );
@@ -205,9 +209,9 @@ SELECT 2;
     fn test_parse_multiple_line_suppressions() {
         let doc = r#"
 SELECT 1;
--- pgt-ignore lint/safety/banDropColumn
--- pgt-ignore lint/safety/banDropTable
--- pgt-ignore lint/safety/banDropNotNull
+-- pgt-ignore banDropColumn
+-- pgt-ignore banDropTable
+-- pgt-ignore banDropNotNull
 "#;
 
         let suppressions = SuppressionsParser::parse(doc);
@@ -252,7 +256,7 @@ SELECT 1;
 -- pgt-ignore-all typecheck
 
 SELECT 1;
--- pgt-ignore-all lint/safety
+-- pgt-ignore-all safety
 "#;
 
         let suppressions = SuppressionsParser::parse(doc);
@@ -278,11 +282,11 @@ SELECT 1;
     #[test]
     fn parses_range_suppressions() {
         let doc = r#"
--- pgt-ignore-start lint/safety/banDropTable
+-- pgt-ignore-start banDropTable
 drop table users;
 drop table auth;
 drop table posts;
--- pgt-ignore-end lint/safety/banDropTable
+-- pgt-ignore-end banDropTable
 "#;
 
         let suppressions = SuppressionsParser::parse(doc);
@@ -292,31 +296,41 @@ drop table posts;
         assert_eq!(
             suppressions.range_suppressions[0],
             RangeSuppression {
-                suppressed_range: TextRange::new(1.into(), 141.into()),
+                suppressed_range: TextRange::new(1.into(), 117.into()),
                 start_suppression: Suppression {
                     kind: SuppressionKind::Start,
                     rule_specifier: RuleSpecifier::Rule(
                         "lint".to_string(),
-                        "safety".to_string(),
+                        "".to_string(),
                         "banDropTable".to_string()
                     ),
-                    suppression_range: TextRange::new(1.into(), 45.into()),
+                    suppression_range: TextRange::new(1.into(), 33.into()),
                     explanation: None,
+                    legacy_replacement: None,
                 },
             }
         );
     }
 
     #[test]
+    fn range_pairs_match_normalized_flat_and_legacy_ids() {
+        let suppressions = SuppressionsParser::parse(
+            "-- pgls-ignore-start banDropColumn\nALTER TABLE t DROP COLUMN x;\n-- pgls-ignore-end lint/banDropColumn\n",
+        );
+        assert_eq!(suppressions.range_suppressions.len(), 1);
+        assert!(suppressions.diagnostics.is_empty());
+    }
+
+    #[test]
     fn parses_range_suppressions_with_errors() {
         let doc = r#"
--- pgt-ignore-start lint/safety/banDropTable
+-- pgt-ignore-start banDropTable
 drop table users;
--- pgt-ignore-start lint/safety/banDropTable
+-- pgt-ignore-start banDropTable
 drop table auth;
 drop table posts;
--- pgt-ignore-end lint/safety/banDropTable
--- pgt-ignore-end lint/safety/banDropColumn
+-- pgt-ignore-end banDropTable
+-- pgt-ignore-end banDropColumn
 "#;
 
         let suppressions = SuppressionsParser::parse(doc);
@@ -328,16 +342,17 @@ drop table posts;
         assert_eq!(
             suppressions.range_suppressions[0],
             RangeSuppression {
-                suppressed_range: TextRange::new(64.into(), 186.into()),
+                suppressed_range: TextRange::new(52.into(), 150.into()),
                 start_suppression: Suppression {
                     kind: SuppressionKind::Start,
                     rule_specifier: RuleSpecifier::Rule(
                         "lint".to_string(),
-                        "safety".to_string(),
+                        "".to_string(),
                         "banDropTable".to_string()
                     ),
-                    suppression_range: TextRange::new(64.into(), 108.into()),
+                    suppression_range: TextRange::new(52.into(), 84.into()),
                     explanation: None,
+                    legacy_replacement: None,
                 },
             }
         );
@@ -359,7 +374,7 @@ drop table posts;
     fn test_parse_pgls_prefix_line_suppressions() {
         let doc = r#"
 SELECT 1;
--- pgls-ignore lint/safety/banDropColumn
+-- pgls-ignore banDropColumn
 SELECT 2;
 "#;
         let suppressions = SuppressionsParser::parse(doc);
@@ -375,7 +390,7 @@ SELECT 2;
             suppression.rule_specifier,
             RuleSpecifier::Rule(
                 "lint".to_string(),
-                "safety".to_string(),
+                "".to_string(),
                 "banDropColumn".to_string()
             )
         );
@@ -388,7 +403,7 @@ SELECT 2;
 -- pgls-ignore-all typecheck
 
 SELECT 1;
--- pgls-ignore-all lint/safety
+-- pgls-ignore-all safety
 "#;
 
         let suppressions = SuppressionsParser::parse(doc);
@@ -409,11 +424,11 @@ SELECT 1;
     #[test]
     fn test_parse_pgls_prefix_range_suppressions() {
         let doc = r#"
--- pgls-ignore-start lint/safety/banDropTable
+-- pgls-ignore-start banDropTable
 drop table users;
 drop table auth;
 drop table posts;
--- pgls-ignore-end lint/safety/banDropTable
+-- pgls-ignore-end banDropTable
 "#;
 
         let suppressions = SuppressionsParser::parse(doc);
@@ -425,7 +440,7 @@ drop table posts;
                 .rule_specifier,
             RuleSpecifier::Rule(
                 "lint".to_string(),
-                "safety".to_string(),
+                "".to_string(),
                 "banDropTable".to_string()
             )
         );
@@ -437,7 +452,7 @@ drop table posts;
 -- pgt-ignore-all lint
 
 SELECT 1;
--- pgls-ignore lint/safety/banDropColumn
+-- pgls-ignore banDropColumn
 SELECT 2;
 -- pgt-ignore typecheck
 "#;

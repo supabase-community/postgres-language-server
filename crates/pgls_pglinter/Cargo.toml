@@ -12,9 +12,9 @@ version              = "0.0.0"
 
 [dependencies]
 pgls_analyse.workspace                = true
+pgls_catalog                          = { workspace = true }
 pgls_diagnostics.workspace            = true
 pgls_diagnostics_categories.workspace = true
-pgls_schema_cache.workspace           = true
 rustc-hash.workspace                  = true
 serde.workspace                       = true
 serde_json.workspace                  = true
@@ -22,8 +22,8 @@ sqlx.workspace                        = true
 
 [dev-dependencies]
 insta.workspace           = true
+pgls_catalog              = { workspace = true, features = ["db"] }
 pgls_console.workspace    = true
-pgls_schema_cache         = { workspace = true, features = ["db"] }
 pgls_test_utils.workspace = true
 
 [build-dependencies]

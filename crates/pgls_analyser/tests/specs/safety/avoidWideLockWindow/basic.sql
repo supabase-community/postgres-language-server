@@ -1,3 +1,3 @@
--- expect_lint/safety/avoidWideLockWindow
+-- expect_lint/avoidWideLockWindow
 ALTER TABLE users ADD COLUMN email TEXT;
 ALTER TABLE orders ADD COLUMN total NUMERIC;

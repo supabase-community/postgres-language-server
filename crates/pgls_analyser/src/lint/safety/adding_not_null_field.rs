@@ -6,12 +6,9 @@ use pgls_diagnostics::Severity;
 declare_lint_rule! {
     /// Setting a column NOT NULL blocks reads while the table is scanned.
     ///
-    /// In Postgres versions before 11, adding a NOT NULL constraint to an existing column requires
-    /// a full table scan to verify that all existing rows satisfy the constraint. This operation
-    /// takes an ACCESS EXCLUSIVE lock, blocking all reads and writes.
-    ///
-    /// In Postgres 11+, this operation is much faster as it can skip the full table scan for
-    /// newly added columns with default values.
+    /// Setting NOT NULL on an existing column scans the table under an ACCESS EXCLUSIVE lock,
+    /// blocking reads and writes. On PostgreSQL 12+, a validated CHECK (column IS NOT NULL)
+    /// constraint allows PostgreSQL to skip this scan.
     ///
     /// Instead of using SET NOT NULL, consider using a CHECK constraint with NOT VALID, then
     /// validating it in a separate transaction. This allows reads and writes to continue.
@@ -38,6 +35,7 @@ declare_lint_rule! {
         name: "addingNotNullField",
         severity: Severity::Warning,
         recommended: true,
+        applies_to: pgls_analyse::AppliesTo::Migration,
         sources: &[RuleSource::Squawk("adding-not-null-field")],
     }
 }
@@ -47,14 +45,6 @@ impl LinterRule for AddingNotNullField {
 
     fn run(ctx: &LinterRuleContext<Self>) -> Vec<LinterDiagnostic> {
         let mut diagnostics = Vec::new();
-
-        // In Postgres 11+, this is less of a concern
-        if ctx
-            .schema_cache()
-            .is_some_and(|sc| sc.version.major_version.is_some_and(|v| v >= 11))
-        {
-            return diagnostics;
-        }
 
         if let pgls_query::NodeEnum::AlterTableStmt(stmt) = &ctx.stmt() {
             for cmd in &stmt.cmds {
@@ -68,7 +58,7 @@ impl LinterRule for AddingNotNullField {
                                 "Setting a column NOT NULL blocks reads while the table is scanned."
                             },
                         ).detail(None, "This operation requires an ACCESS EXCLUSIVE lock and a full table scan to verify all rows.")
-                        .note("Use a CHECK constraint with NOT VALID instead, then validate it in a separate transaction."));
+                        .note("On PostgreSQL 12+, a validated CHECK (column IS NOT NULL) constraint lets PostgreSQL skip the scan."));
                 }
             }
         }

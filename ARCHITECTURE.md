@@ -6,7 +6,7 @@ This document describes the high-level architecture of postgres_lsp. If you want
 
 ### Bird's Eye View
 
-On the highest level, the postgres language server is a thing which accepts input source code, cuts it into individual sql statements and parses and analyses each. In addition, it connects to a postgres database and stores an im-memory schema cache with all required type information such as tables, columns and functions. The result of the parsing is used alongside the schema cache to answer queries about a statement.
+On the highest level, the postgres language server is a thing which accepts input source code, cuts it into individual sql statements and parses and analyses each. In addition, it connects to a postgres database and loads a snapshot of its schema with all required type information such as tables, columns and functions. The result of the parsing is used alongside the catalog (the snapshot plus the DDL of the file) to answer queries about a statement.
 
 The client can submit a delta of input data (typically, a change to a single file), and the server will update the affected statements and their analysis accordingly. The underlying engine makes sure that we only re-parse and re-analyse what is necessary.
 
@@ -25,7 +25,7 @@ This section talks briefly about various important crates and data structures. A
 
 ##### `crates/pgls_workspace`
 
-The main API for consumers of the IDE (both the LSP and the CLI). It stores the internal state of the workspace — the schema cache, the parsed documents and their per-feature analysis — and orchestrates the feature crates. Its `_macros` companion (`pgls_workspace_macros`) generates repetitive glue code.
+The main API for consumers of the IDE (both the LSP and the CLI). It stores the internal state of the workspace — the database snapshots, the parsed documents and their per-feature analysis — and orchestrates the feature crates. Its `_macros` companion (`pgls_workspace_macros`) generates repetitive glue code.
 
 ##### `crates/pgls_fs`
 
@@ -61,13 +61,11 @@ Cuts the input source code into individual SQL statements.
 
 Tree-sitter integration used by features (e.g. completions and hover) that need positional/CST context. `pgls_treesitter_grammar` holds the grammar.
 
-##### `crates/pgls_schema_cache`
+##### `crates/pgls_catalog`
 
-In-memory representation of the database schema (tables, columns, functions, types). Built from introspection SQL queries and used to resolve types efficiently.
+The database catalog. `Snapshot` is the schema of the connected database (tables, columns, functions, types, ...), loaded by introspection queries or from JSON. `Catalog` applies the DDL of the current file on top of it without touching the database, and the name resolver checks statements against the result. Lookups answer found, missing, or unknown, so the typecheck rules only report what is certainly wrong.
 
-##### `crates/pgls_type_resolver`
-
-Utility crate used by the feature crates to resolve source types to the actual types in the schema cache.
+Like `pgls_pretty_print`, the per-statement code has one module per parse node: `resolve/nodes/<node>.rs` (`resolve_<node>`) for name resolution and `catalog/ddl/<node>.rs` (`apply_<node>`) for the effects of DDL, each with a single dispatcher in its `mod.rs`.
 
 #### Formatting
 
@@ -105,7 +103,7 @@ Handles `-- pgls-ignore` style rule suppression comments.
 
 ##### `crates/pgls_completions`, `crates/pgls_hover`
 
-Autocompletion and hover providers. They operate on the schema cache plus a single statement and its parse results, and are intentionally free of any language-server flavour so they can be reused from the CLI.
+Autocompletion and hover providers. They operate on the catalog as of the statement at the cursor plus that statement and its parse results, and are intentionally free of any language-server flavour so they can be reused from the CLI.
 
 #### Diagnostics and utilities
 

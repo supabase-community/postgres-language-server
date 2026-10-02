@@ -8,10 +8,10 @@
 #![cfg(not(target_os = "windows"))]
 
 use pgls_analyse::AnalysisFilter;
+use pgls_catalog::Snapshot;
 use pgls_console::fmt::{Formatter, HTML};
 use pgls_diagnostics::{Diagnostic, LogCategory, Visit};
 use pgls_pglinter::{PglinterCache, PglinterParams, run_pglinter};
-use pgls_schema_cache::SchemaCache;
 use sqlx::PgPool;
 use std::fmt::Write;
 use std::io;
@@ -109,11 +109,11 @@ impl TestSetup<'_> {
             .await
             .expect("Failed to setup test database");
 
-        let schema_cache = SchemaCache::load(self.test_db)
+        let snapshot = Snapshot::load(self.test_db)
             .await
-            .expect("Failed to load schema cache");
+            .expect("Failed to load snapshot");
 
-        let cache = PglinterCache::load(self.test_db, &schema_cache)
+        let cache = PglinterCache::load(self.test_db, &snapshot)
             .await
             .expect("Failed to load pglinter cache");
 
@@ -121,7 +121,7 @@ impl TestSetup<'_> {
         let diagnostics = run_pglinter(
             PglinterParams {
                 conn: self.test_db,
-                schema_cache: &schema_cache,
+                snapshot: &snapshot,
             },
             &filter,
             Some(&cache),
@@ -211,12 +211,12 @@ async fn extension_check(test_db: PgPool) {
         .await
         .expect("pglinter extension not available");
 
-    let schema_cache = SchemaCache::load(&test_db)
+    let snapshot = Snapshot::load(&test_db)
         .await
-        .expect("Failed to load schema cache");
+        .expect("Failed to load snapshot");
 
     assert!(
-        schema_cache.extensions.iter().any(|e| e.name == "pglinter"),
+        snapshot.extensions.iter().any(|e| e.name == "pglinter"),
         "pglinter extension not found"
     );
 }

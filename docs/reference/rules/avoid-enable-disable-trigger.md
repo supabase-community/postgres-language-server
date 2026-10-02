@@ -1,5 +1,9 @@
 # avoidEnableDisableTrigger
-**Diagnostic Category: `lint/safety/avoidEnableDisableTrigger`**
+**Diagnostic Category: `lint/avoidEnableDisableTrigger`**
+
+**Group: `safety`**
+
+**Applies to: migration files only**
 
 **Since**: `vnext`
 
@@ -22,7 +26,7 @@ alter table my_table enable trigger my_trigger;
 ```
 
 ```sh
-code-block.sql:1:1 lint/safety/avoidEnableDisableTrigger ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+code-block.sql:1:1 lint/avoidEnableDisableTrigger ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   ! Enabling or disabling a trigger acquires a SHARE ROW EXCLUSIVE lock.
   
@@ -47,11 +51,16 @@ select 1;
 {
   "linter": {
     "rules": {
-      "safety": {
-        "avoidEnableDisableTrigger": "error"
-      }
+      "avoidEnableDisableTrigger": "error"
     }
   }
 }
 
+```
+## How to suppress
+
+Suppress this diagnostic with a comment:
+
+```sql
+-- pgls-ignore avoidEnableDisableTrigger
 ```

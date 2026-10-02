@@ -1,5 +1,9 @@
 # avoidWideLockWindow
-**Diagnostic Category: `lint/safety/avoidWideLockWindow`**
+**Diagnostic Category: `lint/avoidWideLockWindow`**
+
+**Group: `safety`**
+
+**Applies to: migration files only**
 
 **Since**: `vnext`
 
@@ -29,6 +33,21 @@ ALTER TABLE users ADD COLUMN email TEXT;
 ALTER TABLE orders ADD COLUMN total NUMERIC;
 ```
 
+```sh
+code-block.sql:2:1 lint/avoidWideLockWindow ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Acquiring a lock on public.orders while already holding ACCESS EXCLUSIVE locks on other tables.
+  
+    1 │ ALTER TABLE users ADD COLUMN email TEXT;
+  > 2 │ ALTER TABLE orders ADD COLUMN total NUMERIC;
+      │ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    3 │ 
+  
+  i This widens the lock window. Split into separate transactions to minimize lock duration.
+  
+
+```
+
 ### Valid
 
 ```sql
@@ -41,11 +60,16 @@ select 1;
 {
   "linter": {
     "rules": {
-      "safety": {
-        "avoidWideLockWindow": "error"
-      }
+      "avoidWideLockWindow": "error"
     }
   }
 }
 
+```
+## How to suppress
+
+Suppress this diagnostic with a comment:
+
+```sql
+-- pgls-ignore avoidWideLockWindow
 ```

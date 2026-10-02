@@ -210,7 +210,7 @@ pub enum TaskCommand {
     /// Generate pglinter rules from pglinter_repo/sql/rules.sql
     #[bpaf(command)]
     Pglinter,
-    /// Generate schema cache TypeScript types
+    /// Generate the TypeScript types of the database snapshot
     #[bpaf(command)]
     SchemaTypes,
 }

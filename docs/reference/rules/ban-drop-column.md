@@ -1,5 +1,9 @@
 # banDropColumn
-**Diagnostic Category: `lint/safety/banDropColumn`**
+**Diagnostic Category: `lint/banDropColumn`**
+
+**Group: `destructive`**
+
+**Applies to: migration files only**
 
 **Since**: `vnext`
 
@@ -25,7 +29,7 @@ alter table test drop column id;
 ```
 
 ```sh
-code-block.sql:1:1 lint/safety/banDropColumn ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+code-block.sql:1:1 lint/banDropColumn ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   ! Dropping a column may break existing clients.
   
@@ -44,11 +48,16 @@ code-block.sql:1:1 lint/safety/banDropColumn ━━━━━━━━━━━�
 {
   "linter": {
     "rules": {
-      "safety": {
-        "banDropColumn": "error"
-      }
+      "banDropColumn": "error"
     }
   }
 }
 
+```
+## How to suppress
+
+Suppress this diagnostic with a comment:
+
+```sql
+-- pgls-ignore banDropColumn
 ```

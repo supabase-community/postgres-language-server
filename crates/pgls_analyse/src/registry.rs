@@ -72,6 +72,24 @@ impl MetadataRegistry {
         Some(key.into_rule_key())
     }
 
+    /// Return the group containing a flat rule name.
+    pub fn group_of(&self, rule: &str) -> Option<&'static str> {
+        self.inner
+            .iter()
+            .find(|key| key.inner.1 == rule)
+            .map(|key| key.inner.0)
+    }
+
+    /// Return all registered rule groups.
+    pub fn groups(&self) -> Vec<&'static str> {
+        self.inner
+            .iter()
+            .map(|key| key.inner.0)
+            .collect::<BTreeSet<_>>()
+            .into_iter()
+            .collect()
+    }
+
     pub(crate) fn insert_rule(&mut self, group: &'static str, rule: &'static str) {
         self.inner.insert(MetadataKey {
             inner: (group, rule),

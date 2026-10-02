@@ -1,5 +1,9 @@
 # banTruncate
-**Diagnostic Category: `lint/safety/banTruncate`**
+**Diagnostic Category: `lint/banTruncate`**
+
+**Group: `destructive`**
+
+**Applies to: migration files only**
 
 **Since**: `vnext`
 
@@ -25,7 +29,7 @@ truncate my_table;
 ```
 
 ```sh
-code-block.sql:1:1 lint/safety/banTruncate ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+code-block.sql:1:1 lint/banTruncate ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   × Truncating a table removes all rows and can cause data loss.
   
@@ -50,11 +54,16 @@ delete from my_table where expired_at < now();
 {
   "linter": {
     "rules": {
-      "safety": {
-        "banTruncate": "error"
-      }
+      "banTruncate": "error"
     }
   }
 }
 
+```
+## How to suppress
+
+Suppress this diagnostic with a comment:
+
+```sql
+-- pgls-ignore banTruncate
 ```

@@ -1,0 +1,17 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+create type mood as enum ('happy', 'sad');
+select null::mood;
+-- expect_lint/unknownType
+select null::missing_type;
+
+```
+
+# Diagnostics
+lint/unknownType ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Type missing_type does not exist.

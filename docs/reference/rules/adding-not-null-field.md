@@ -1,5 +1,9 @@
 # addingNotNullField
-**Diagnostic Category: `lint/safety/addingNotNullField`**
+**Diagnostic Category: `lint/addingNotNullField`**
+
+**Group: `safety`**
+
+**Applies to: migration files only**
 
 **Since**: `vnext`
 
@@ -12,12 +16,9 @@
 ## Description
 Setting a column NOT NULL blocks reads while the table is scanned.
 
-In Postgres versions before 11, adding a NOT NULL constraint to an existing column requires
-a full table scan to verify that all existing rows satisfy the constraint. This operation
-takes an ACCESS EXCLUSIVE lock, blocking all reads and writes.
-
-In Postgres 11+, this operation is much faster as it can skip the full table scan for
-newly added columns with default values.
+Setting NOT NULL on an existing column scans the table under an ACCESS EXCLUSIVE lock,
+blocking reads and writes. On PostgreSQL 12+, a validated CHECK (column IS NOT NULL)
+constraint allows PostgreSQL to skip this scan.
 
 Instead of using SET NOT NULL, consider using a CHECK constraint with NOT VALID, then
 validating it in a separate transaction. This allows reads and writes to continue.
@@ -31,7 +32,7 @@ ALTER TABLE "core_recipe" ALTER COLUMN "foo" SET NOT NULL;
 ```
 
 ```sh
-code-block.sql:1:1 lint/safety/addingNotNullField ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+code-block.sql:1:1 lint/addingNotNullField ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   ! Setting a column NOT NULL blocks reads while the table is scanned.
   
@@ -41,7 +42,7 @@ code-block.sql:1:1 lint/safety/addingNotNullField ━━━━━━━━━━
   
   i This operation requires an ACCESS EXCLUSIVE lock and a full table scan to verify all rows.
   
-  i Use a CHECK constraint with NOT VALID instead, then validate it in a separate transaction.
+  i On PostgreSQL 12+, a validated CHECK (column IS NOT NULL) constraint lets PostgreSQL skip the scan.
   
 
 ```
@@ -61,11 +62,16 @@ ALTER TABLE "core_recipe" VALIDATE CONSTRAINT foo_not_null;
 {
   "linter": {
     "rules": {
-      "safety": {
-        "addingNotNullField": "error"
-      }
+      "addingNotNullField": "error"
     }
   }
 }
 
+```
+## How to suppress
+
+Suppress this diagnostic with a comment:
+
+```sql
+-- pgls-ignore addingNotNullField
 ```

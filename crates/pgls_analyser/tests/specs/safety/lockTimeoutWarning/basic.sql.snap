@@ -1,17 +1,16 @@
 ---
-source: crates/pgt_analyser/tests/rules_tests.rs
+source: crates/pgls_analyser/tests/rules_tests.rs
 expression: snapshot
-snapshot_kind: text
 ---
 # Input
 ```
--- expect_only_lint/safety/lockTimeoutWarning
+-- expect_only_lint/lockTimeoutWarning
 -- ALTER TABLE without lock timeout should trigger the rule
 ALTER TABLE authors ADD COLUMN email TEXT;
 ```
 
 # Diagnostics
-lint/safety/lockTimeoutWarning ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+lint/lockTimeoutWarning ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   × Statement takes ACCESS EXCLUSIVE lock on public.authors without lock timeout set.
   

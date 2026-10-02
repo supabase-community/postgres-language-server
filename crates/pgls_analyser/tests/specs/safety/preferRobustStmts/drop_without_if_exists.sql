@@ -1,2 +1,2 @@
--- expect_lint/safety/preferRobustStmts
+-- expect_lint/preferRobustStmts
 DROP INDEX CONCURRENTLY users_email_idx;

@@ -1,5 +1,9 @@
 # addingFieldWithDefault
-**Diagnostic Category: `lint/safety/addingFieldWithDefault`**
+**Diagnostic Category: `lint/addingFieldWithDefault`**
+
+**Group: `safety`**
+
+**Applies to: migration files only**
 
 **Since**: `vnext`
 
@@ -30,7 +34,7 @@ ALTER TABLE "core_recipe" ADD COLUMN "foo" integer DEFAULT 10;
 ```
 
 ```sh
-code-block.sql:1:1 lint/safety/addingFieldWithDefault ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+code-block.sql:1:1 lint/addingFieldWithDefault ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   ! Adding a column with a DEFAULT value causes a table rewrite.
   
@@ -59,11 +63,16 @@ ALTER TABLE "core_recipe" ALTER COLUMN "foo" SET DEFAULT 10;
 {
   "linter": {
     "rules": {
-      "safety": {
-        "addingFieldWithDefault": "error"
-      }
+      "addingFieldWithDefault": "error"
     }
   }
 }
 
+```
+## How to suppress
+
+Suppress this diagnostic with a comment:
+
+```sql
+-- pgls-ignore addingFieldWithDefault
 ```

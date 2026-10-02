@@ -1,5 +1,9 @@
 # requireSeparateConstraintValidation
-**Diagnostic Category: `lint/safety/requireSeparateConstraintValidation`**
+**Diagnostic Category: `lint/requireSeparateConstraintValidation`**
+
+**Group: `safety`**
+
+**Applies to: migration files only**
 
 **Since**: `vnext`
 
@@ -29,6 +33,21 @@ ALTER TABLE orders ADD CONSTRAINT orders_check CHECK (total > 0) NOT VALID;
 ALTER TABLE orders VALIDATE CONSTRAINT orders_check;
 ```
 
+```sh
+code-block.sql:2:1 lint/requireSeparateConstraintValidation ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Constraint orders_check was added as NOT VALID and validated in the same transaction.
+  
+    1 │ ALTER TABLE orders ADD CONSTRAINT orders_check CHECK (total > 0) NOT VALID;
+  > 2 │ ALTER TABLE orders VALIDATE CONSTRAINT orders_check;
+      │ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    3 │ 
+  
+  i Run VALIDATE CONSTRAINT in a separate transaction to avoid holding locks during validation.
+  
+
+```
+
 ### Valid
 
 ```sql
@@ -41,11 +60,16 @@ select 1;
 {
   "linter": {
     "rules": {
-      "safety": {
-        "requireSeparateConstraintValidation": "error"
-      }
+      "requireSeparateConstraintValidation": "error"
     }
   }
 }
 
+```
+## How to suppress
+
+Suppress this diagnostic with a comment:
+
+```sql
+-- pgls-ignore requireSeparateConstraintValidation
 ```

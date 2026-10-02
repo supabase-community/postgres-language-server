@@ -1,15 +1,15 @@
 use std::fmt::Write;
 
-use pgls_schema_cache::{Column, SchemaCache};
+use pgls_catalog::{Column, Snapshot};
 use pgls_treesitter::TreesitterContext;
 
 use crate::{contextual_priority::ContextualPriority, to_markdown::ToHoverMarkdown};
 
-impl ToHoverMarkdown for pgls_schema_cache::Column {
+impl ToHoverMarkdown for pgls_catalog::Column {
     fn hover_headline<W: Write>(
         &self,
         writer: &mut W,
-        _schema_cache: &SchemaCache,
+        _snapshot: &Snapshot,
     ) -> Result<(), std::fmt::Error> {
         write!(
             writer,
@@ -21,7 +21,7 @@ impl ToHoverMarkdown for pgls_schema_cache::Column {
     fn hover_body<W: Write>(
         &self,
         writer: &mut W,
-        _schema_cache: &SchemaCache,
+        _snapshot: &Snapshot,
     ) -> Result<bool, std::fmt::Error> {
         if let Some(comment) = &self.comment {
             write!(writer, "Comment: '{comment}'")?;
@@ -57,7 +57,7 @@ impl ToHoverMarkdown for pgls_schema_cache::Column {
     fn hover_footer<W: Write>(
         &self,
         writer: &mut W,
-        _schema_cache: &SchemaCache,
+        _snapshot: &Snapshot,
     ) -> Result<bool, std::fmt::Error> {
         if let Some(default) = &self.default_expr {
             writeln!(writer)?;
@@ -133,7 +133,7 @@ mod tests {
             name: name.to_string(),
             table_name: table.to_string(),
             table_oid: 1,
-            class_kind: pgls_schema_cache::ColumnClassKind::OrdinaryTable,
+            class_kind: pgls_catalog::ColumnClassKind::OrdinaryTable,
             schema_name: schema.to_string(),
             type_id: 23,
             type_name: Some("integer".to_string()),

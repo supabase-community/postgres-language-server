@@ -20,7 +20,13 @@ A configuration file is usually placed in your project’s root folder. It is or
   "linter": {
     "enabled": true,
     "rules": {
-      "recommended": true
+      "recommended": true,
+      "banDropColumn": "off",
+      "preferBigInt": { "level": "warn", "options": { "checkSmallint": false } }
+    },
+    "groups": {
+      "safety": "warn",
+      "style": "off"
     }
   },
   "typecheck": {
@@ -35,6 +41,71 @@ A configuration file is usually placed in your project’s root folder. It is or
   }
 }
 ```
+
+### Linter rules
+
+Rule names are flat and unique across all groups. Configure each rule directly under `linter.rules`:
+
+```jsonc
+"linter": {
+  "rules": {
+    "banDropColumn": "off",                // simple level: "off" | "info" | "warn" | "error"
+    "preferBigInt": {                        // or with options
+      "level": "warn",
+      "options": { "checkInt": true, "checkSmallint": false }
+    }
+  }
+}
+```
+
+The `preferBigInt` rule accepts the options `checkInt` (default `true`) and `checkSmallint` (default `true`).
+
+### Linter groups
+
+Groups let you set a level for all rules in the group at once:
+
+```jsonc
+"linter": {
+  "groups": {
+    "style": "off",
+    "destructive": "error"
+  }
+}
+```
+
+Available groups: `correctness`, `safety`, `destructive`, `style`, `typecheck`, `nursery`.
+
+### Presets
+
+`linter.rules.recommended` (default `true`) enables all rules marked as recommended. `linter.rules.all` enables every rule. Nursery rules are never enabled by presets.
+
+### Typecheck group
+
+The rules in the `typecheck` group need a database connection. Two settings affect them:
+
+- `typecheck.enabled: false` turns typechecking off entirely: the `typecheck` rules and the `EXPLAIN`-based check against the database.
+- `linter.groups.typecheck` sets the level of the `typecheck` rules, like any other group. Setting it to `"off"` turns the rules off, but leaves the `EXPLAIN`-based check on.
+
+### Precedence
+
+From highest to lowest:
+
+1. `linter.rules.<rule>` — explicit rule setting
+2. `linter.rules.safety.<rule>` — deprecated per-rule setting (see below)
+3. `linter.groups.<group>` — group level
+4. `linter.rules.recommended` / `linter.rules.all` preset (nursery never enabled)
+
+### Deprecated `linter.rules.safety` form
+
+The former nested form `linter.rules.safety.<rule>` is still accepted but prints a deprecation warning. Use `linter.rules.<rule>` instead.
+
+Removed rules:
+
+| Old rule | Replacement |
+| --- | --- |
+| `preferBigintOverInt` | `preferBigInt` with `{ "checkInt": true }` |
+| `preferBigintOverSmallint` | `preferBigInt` with `{ "checkSmallint": true }` |
+| `concurrentRefreshMatviewLock` | Dropped; `requireConcurrentRefreshMatview` covers it |
 
 ## Configuring a database connection
 

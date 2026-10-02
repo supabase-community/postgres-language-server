@@ -4,12 +4,12 @@ expression: snapshot
 ---
 # Input
 ```
--- expect_lint/safety/requireConcurrentRefreshMatview
+-- expect_lint/requireConcurrentRefreshMatview
 refresh materialized view my_view;
 ```
 
 # Diagnostics
-lint/safety/requireConcurrentRefreshMatview ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+lint/requireConcurrentRefreshMatview ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   × REFRESH MATERIALIZED VIEW without CONCURRENTLY blocks all reads.
   

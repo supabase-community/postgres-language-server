@@ -38,8 +38,8 @@ pub use format::{
     PartialFormatConfiguration, partial_format_configuration,
 };
 pub use linter::{
-    LinterConfiguration, PartialLinterConfiguration, Rules, partial_linter_configuration,
-    push_to_analyser_rules,
+    LinterConfiguration, LinterRuleSettings, PartialLinterConfiguration, Rules,
+    partial_linter_configuration,
 };
 use migrations::{
     MigrationsConfiguration, PartialMigrationsConfiguration, partial_migrations_configuration,
@@ -190,6 +190,16 @@ impl PartialConfiguration {
                 disable_connection: Some(false),
             }),
         }
+    }
+
+    /// A message for each deprecated setting in use.
+    pub fn deprecations(&self) -> Vec<String> {
+        let Some(linter) = &self.linter else {
+            return Vec::new();
+        };
+        let rules = linter.get_rules();
+        let groups = linter.groups.clone().unwrap_or_default();
+        LinterRuleSettings::new(&rules, &groups).deprecations()
     }
 }
 

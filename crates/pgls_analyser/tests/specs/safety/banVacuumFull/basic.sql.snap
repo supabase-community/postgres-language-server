@@ -4,12 +4,12 @@ expression: snapshot
 ---
 # Input
 ```
--- expect_lint/safety/banVacuumFull
+-- expect_lint/banVacuumFull
 vacuum full my_table;
 ```
 
 # Diagnostics
-lint/safety/banVacuumFull ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+lint/banVacuumFull ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   × VACUUM FULL rewrites the entire table and blocks all access.
   

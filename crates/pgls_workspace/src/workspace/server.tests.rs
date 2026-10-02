@@ -103,7 +103,7 @@ async fn test_diagnostics(test_db: PgPool) {
 
     assert_eq!(
         diagnostic.category().map(|c| c.name()),
-        Some("lint/safety/banDropTable")
+        Some("lint/banDropTable")
     );
 
     assert_eq!(
@@ -118,7 +118,7 @@ fn test_suppresses_multiline_alter_table_drop_column() {
 
     let path = PgLSPath::new("test.sql");
     let content = r#"ALTER TABLE users
-    -- pgt-ignore lint/safety/banDropColumn
+    -- pgt-ignore banDropColumn
     DROP COLUMN deprecated_field;"#;
 
     workspace
@@ -143,6 +143,47 @@ fn test_suppresses_multiline_alter_table_drop_column() {
     assert!(
         diagnostics.is_empty(),
         "Expected no diagnostics, got {diagnostics:#?}"
+    );
+}
+
+#[test]
+fn test_legacy_suppression_still_suppresses_and_warns() {
+    let workspace = get_test_workspace(None).expect("Unable to create test workspace");
+
+    let path = PgLSPath::new("test.sql");
+    let content = r#"-- pgls-ignore lint/safety/banDropColumn
+ALTER TABLE users DROP COLUMN deprecated_field;"#;
+
+    workspace
+        .open_file(OpenFileParams {
+            path: path.clone(),
+            content: content.into(),
+            version: 1,
+        })
+        .expect("Unable to open test file");
+
+    let diagnostics = workspace
+        .pull_file_diagnostics(crate::workspace::PullFileDiagnosticsParams {
+            path: path.clone(),
+            categories: RuleCategories::all(),
+            max_diagnostics: 100,
+            only: vec![],
+            skip: vec![],
+        })
+        .expect("Unable to pull diagnostics")
+        .diagnostics;
+
+    assert!(
+        !diagnostics
+            .iter()
+            .any(|d| d.category().map(|c| c.name()) == Some("lint/banDropColumn")),
+        "{diagnostics:#?}"
+    );
+    assert!(
+        diagnostics
+            .iter()
+            .any(|d| d.description_text().contains("Use `banDropColumn` instead")),
+        "{diagnostics:#?}"
     );
 }
 
@@ -190,7 +231,7 @@ fn test_unreachable_database_diagnostics_keep_static_results_and_back_off() {
     assert!(
         diagnostics.iter().any(|d| d
             .category()
-            .is_some_and(|c| c.name() == "lint/safety/banDropTable")),
+            .is_some_and(|c| c.name() == "lint/banDropTable")),
         "Expected static lint diagnostics even when database is unreachable"
     );
 
@@ -201,7 +242,7 @@ fn test_unreachable_database_diagnostics_keep_static_results_and_back_off() {
     assert!(
         diagnostics.iter().any(|d| d
             .category()
-            .is_some_and(|c| c.name() == "lint/safety/banDropTable")),
+            .is_some_and(|c| c.name() == "lint/banDropTable")),
         "Expected static lint diagnostics during database retry backoff"
     );
     assert!(
@@ -727,10 +768,7 @@ async fn test_disable_typecheck(test_db: PgPool) {
         .diagnostics;
 
     assert_eq!(
-        diagnostics
-            .iter()
-            .filter(|d| d.category().is_some_and(|c| c.name() == "typecheck"))
-            .count(),
+        diagnostics.iter().filter(|d| is_typecheck(d)).count(),
         1,
         "Expected one typecheck diagnostic"
     );
@@ -760,10 +798,7 @@ async fn test_disable_typecheck(test_db: PgPool) {
         .diagnostics;
 
     assert_eq!(
-        diagnostics
-            .iter()
-            .filter(|d| d.category().is_some_and(|c| c.name() == "typecheck"))
-            .count(),
+        diagnostics.iter().filter(|d| is_typecheck(d)).count(),
         0,
         "Expected no typecheck diagnostic"
     );
@@ -816,22 +851,22 @@ async fn test_create_as_typecheck_diagnostic_offsets(test_db: PgPool) {
         .filter(|diagnostic| {
             diagnostic
                 .category()
-                .is_some_and(|category| category.name() == "typecheck")
-                && serde_json::to_string(diagnostic)
-                    .is_ok_and(|serialized| serialized.contains("42703"))
+                .is_some_and(|category| category.name() == "lint/unknownColumn")
         })
         .collect::<Vec<_>>();
 
     assert_eq!(
         typecheck_diagnostics.len(),
         1,
-        "Expected one 42703 typecheck diagnostic, got {diagnostics:#?}"
+        "Expected one unknownColumn diagnostic, got {diagnostics:#?}"
     );
 
-    let expected_start = content.find("nope").expect("missing test identifier");
+    let expected_start = content.find("t.nope").expect("missing test identifier");
     let expected_span = TextRange::new(
         u32::try_from(expected_start).unwrap().into(),
-        u32::try_from(expected_start + "nope".len()).unwrap().into(),
+        u32::try_from(expected_start + "t.nope".len())
+            .unwrap()
+            .into(),
     );
 
     assert_eq!(
@@ -894,11 +929,7 @@ SELECT missing_column FROM named_parameter_typecheck_users;
 
     let typecheck_diagnostics = diagnostics
         .iter()
-        .filter(|diagnostic| {
-            diagnostic
-                .category()
-                .is_some_and(|category| category.name() == "typecheck")
-        })
+        .filter(|diagnostic| is_typecheck(diagnostic))
         .collect::<Vec<_>>();
 
     assert_eq!(
@@ -1213,7 +1244,7 @@ async fn test_search_path_configuration(test_db: PgPool) {
         // yep, type error!
         assert_eq!(
             diagnostics_glob[0].category().map(|c| c.name()),
-            Some("typecheck")
+            Some("lint/unknownFunction")
         );
     }
 
@@ -1332,4 +1363,83 @@ select * from auth.users;
         TextRange::new(position, position),
         "Expected no syntax diagnostic"
     );
+}
+
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn completions_see_the_ddl_before_the_statement(test_db: PgPool) {
+    test_db
+        .execute("create schema auth; create table auth.users (id serial primary key);")
+        .await
+        .expect("setup sql failed");
+
+    let mut conf = PartialConfiguration::init();
+    conf.merge_with(PartialConfiguration {
+        db: Some(PartialDatabaseConfiguration {
+            database: Some(
+                test_db
+                    .connect_options()
+                    .get_database()
+                    .unwrap()
+                    .to_string(),
+            ),
+            ..Default::default()
+        }),
+        ..Default::default()
+    });
+    let workspace = get_test_workspace(Some(conf)).expect("Unable to create test workspace");
+    let path = PgLSPath::new("test.sql");
+
+    let labels = |content: &str| {
+        let position = content
+            .find('|')
+            .map(|idx| pgls_text_size::TextSize::new(idx as u32))
+            .expect("Unable to find cursor position in test content");
+        workspace
+            .open_file(OpenFileParams {
+                path: path.clone(),
+                content: content.replace('|', ""),
+                version: 1,
+            })
+            .expect("Unable to open test file");
+        let completions = workspace
+            .get_completions(crate::workspace::GetCompletionsParams {
+                path: path.clone(),
+                position,
+            })
+            .expect("Unable to request completions");
+        workspace
+            .close_file(crate::workspace::CloseFileParams { path: path.clone() })
+            .expect("Unable to close test file");
+        completions
+            .items
+            .into_iter()
+            .map(|item| item.label)
+            .collect::<Vec<_>>()
+    };
+
+    let tables = labels(
+        "create table auth.sessions (id int, token text);\n\
+         drop table auth.users;\n\
+         select * from auth.|;\n\
+         create table auth.later (id int);",
+    );
+    assert!(tables.contains(&"sessions".to_string()), "{tables:?}");
+    assert!(!tables.contains(&"users".to_string()), "{tables:?}");
+    assert!(!tables.contains(&"later".to_string()), "{tables:?}");
+
+    let columns = labels(
+        "create table auth.sessions (id int, token text);\n\
+         select tok| from auth.sessions;",
+    );
+    assert!(columns.contains(&"token".to_string()), "{columns:?}");
+}
+
+/// Whether the diagnostic comes from a rule of the `typecheck` group or from the database.
+fn is_typecheck(diagnostic: &pgls_diagnostics::serde::Diagnostic) -> bool {
+    diagnostic.category().is_some_and(|category| {
+        category.name() == "typecheck"
+            || category.name().strip_prefix("lint/").is_some_and(|rule| {
+                pgls_analyser::METADATA.group_of(rule) == Some(pgls_analyser::TYPECHECK_GROUP)
+            })
+    })
 }

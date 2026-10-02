@@ -7,11 +7,12 @@ pub(crate) struct Migration {
     pub(crate) name: String,
 }
 
-/// Get the migration associated with a path, if it is a migration file
-pub(crate) fn get_migration(path: &Path, migrations_dir: &Path) -> Option<Migration> {
-    // Check if path is a child of the migration directory
-    let is_child = path
-        .canonicalize()
+/// Whether the path is inside the migrations directory.
+pub(crate) fn is_in_migrations_dir(path: &Path, migrations_dir: &Path) -> bool {
+    if path.starts_with(migrations_dir) {
+        return true;
+    }
+    path.canonicalize()
         .ok()
         .and_then(|canonical_child| {
             migrations_dir
@@ -19,9 +20,12 @@ pub(crate) fn get_migration(path: &Path, migrations_dir: &Path) -> Option<Migrat
                 .ok()
                 .map(|canonical_dir| canonical_child.starts_with(&canonical_dir))
         })
-        .unwrap_or(false);
+        .unwrap_or(false)
+}
 
-    if !is_child {
+/// Get the migration associated with a path, if it is a migration file
+pub(crate) fn get_migration(path: &Path, migrations_dir: &Path) -> Option<Migration> {
+    if !is_in_migrations_dir(path, migrations_dir) {
         return None;
     }
 

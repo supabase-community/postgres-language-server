@@ -1,5 +1,9 @@
 # requireConcurrentIndexCreation
-**Diagnostic Category: `lint/safety/requireConcurrentIndexCreation`**
+**Diagnostic Category: `lint/requireConcurrentIndexCreation`**
+
+**Group: `safety`**
+
+**Applies to: migration files only**
 
 **Since**: `vnext`
 
@@ -23,7 +27,7 @@ CREATE INDEX users_email_idx ON users (email);
 ```
 
 ```sh
-code-block.sql:1:1 lint/safety/requireConcurrentIndexCreation ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+code-block.sql:1:1 lint/requireConcurrentIndexCreation ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   ! Creating an index non-concurrently blocks writes to the table.
   
@@ -48,11 +52,16 @@ CREATE INDEX CONCURRENTLY users_email_idx ON users (email);
 {
   "linter": {
     "rules": {
-      "safety": {
-        "requireConcurrentIndexCreation": "error"
-      }
+      "requireConcurrentIndexCreation": "error"
     }
   }
 }
 
+```
+## How to suppress
+
+Suppress this diagnostic with a comment:
+
+```sql
+-- pgls-ignore requireConcurrentIndexCreation
 ```

@@ -7,8 +7,8 @@ pub mod rule;
 pub mod rules;
 
 use pgls_analyse::{AnalysisFilter, RegistryVisitor, RuleMeta};
+use pgls_catalog::Snapshot;
 use pgls_diagnostics::DatabaseObjectOwned;
-use pgls_schema_cache::SchemaCache;
 use rustc_hash::FxHashMap;
 use sqlx::PgPool;
 
@@ -38,7 +38,7 @@ struct ViolationRow {
 #[derive(Debug)]
 pub struct PglinterParams<'a> {
     pub conn: &'a PgPool,
-    pub schema_cache: &'a SchemaCache,
+    pub snapshot: &'a Snapshot,
 }
 
 /// Visitor that collects enabled pglinter rules based on filter
@@ -89,7 +89,7 @@ pub async fn run_pglinter(
     // Check extension installed
     let extension_installed = cache.map(|c| c.extension_installed).unwrap_or_else(|| {
         params
-            .schema_cache
+            .snapshot
             .extensions
             .iter()
             .any(|e| e.name == "pglinter")
@@ -151,9 +151,9 @@ pub async fn run_pglinter(
             continue;
         }
 
-        // Resolve the object from the schema cache
+        // Resolve the object from the database snapshot
         let db_object = resolve_object_from_cache(
-            params.schema_cache,
+            params.snapshot,
             violation.classid,
             violation.objid,
             violation.objsubid,
@@ -182,9 +182,9 @@ async fn fetch_violations(conn: &PgPool) -> Result<Vec<ViolationRow>, sqlx::Erro
     .await
 }
 
-/// Resolve a Postgres object from the schema cache using its catalog OIDs
+/// Resolve a Postgres object from the database snapshot using its catalog OIDs
 fn resolve_object_from_cache(
-    schema_cache: &SchemaCache,
+    snapshot: &Snapshot,
     classid: i64,
     objid: i64,
     objsubid: i32,
@@ -193,7 +193,7 @@ fn resolve_object_from_cache(
         pg_catalog::PG_CLASS => {
             // pg_class contains tables, views, indexes, sequences, etc.
             // Try tables first, then indexes, then sequences
-            schema_cache
+            snapshot
                 .find_table_by_id(objid)
                 .map(|t| DatabaseObjectOwned {
                     schema: Some(t.schema.clone()),
@@ -201,7 +201,7 @@ fn resolve_object_from_cache(
                     object_type: Some(format!("{:?}", t.table_kind).to_lowercase()),
                 })
                 .or_else(|| {
-                    schema_cache
+                    snapshot
                         .find_index_by_id(objid)
                         .map(|i| DatabaseObjectOwned {
                             schema: Some(i.schema.clone()),
@@ -210,7 +210,7 @@ fn resolve_object_from_cache(
                         })
                 })
                 .or_else(|| {
-                    schema_cache
+                    snapshot
                         .find_sequence_by_id(objid)
                         .map(|s| DatabaseObjectOwned {
                             schema: Some(s.schema.clone()),
@@ -221,7 +221,7 @@ fn resolve_object_from_cache(
         }
         pg_catalog::PG_PROC => {
             // Functions and procedures
-            schema_cache
+            snapshot
                 .find_function_by_id(objid)
                 .map(|f| DatabaseObjectOwned {
                     schema: Some(f.schema.clone()),
@@ -231,7 +231,7 @@ fn resolve_object_from_cache(
         }
         pg_catalog::PG_TYPE => {
             // Types
-            schema_cache
+            snapshot
                 .find_type_by_id(objid)
                 .map(|t| DatabaseObjectOwned {
                     schema: Some(t.schema.clone()),
@@ -241,7 +241,7 @@ fn resolve_object_from_cache(
         }
         pg_catalog::PG_NAMESPACE => {
             // Schemas
-            schema_cache
+            snapshot
                 .find_schema_by_id(objid)
                 .map(|s| DatabaseObjectOwned {
                     schema: None,
@@ -253,7 +253,7 @@ fn resolve_object_from_cache(
             // Columns: objid is table OID, objsubid is column number (attnum)
             // Find the column by table OID and column number
             let col_num = i64::from(objsubid);
-            schema_cache
+            snapshot
                 .columns
                 .iter()
                 .find(|c| c.table_oid == objid && c.number == col_num)

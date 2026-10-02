@@ -1,5 +1,7 @@
 # preferBigInt
-**Diagnostic Category: `lint/safety/preferBigInt`**
+**Diagnostic Category: `lint/preferBigInt`**
+
+**Group: `style`**
 
 **Since**: `vnext`
 
@@ -28,7 +30,7 @@ CREATE TABLE users (
 ```
 
 ```sh
-code-block.sql:1:1 lint/safety/preferBigInt ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+code-block.sql:1:1 lint/preferBigInt ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   ! Using smaller integer types can lead to overflow issues.
   
@@ -53,7 +55,7 @@ CREATE TABLE users (
 ```
 
 ```sh
-code-block.sql:1:1 lint/safety/preferBigInt ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+code-block.sql:1:1 lint/preferBigInt ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   ! Using smaller integer types can lead to overflow issues.
   
@@ -91,11 +93,16 @@ CREATE TABLE users (
 {
   "linter": {
     "rules": {
-      "safety": {
-        "preferBigInt": "error"
-      }
+      "preferBigInt": "error"
     }
   }
 }
 
+```
+## How to suppress
+
+Suppress this diagnostic with a comment:
+
+```sql
+-- pgls-ignore preferBigInt
 ```

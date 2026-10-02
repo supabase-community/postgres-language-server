@@ -4,13 +4,13 @@ expression: snapshot
 ---
 # Input
 ```
--- expect_lint/safety/avoidEnableDisableTrigger
+-- expect_lint/avoidEnableDisableTrigger
 alter table my_table enable trigger my_trigger;
 
 ```
 
 # Diagnostics
-lint/safety/avoidEnableDisableTrigger ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+lint/avoidEnableDisableTrigger ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   × Enabling or disabling a trigger acquires a SHARE ROW EXCLUSIVE lock.
   

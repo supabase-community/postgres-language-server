@@ -1,6 +1,6 @@
 use std::fmt::Write;
 
-use pgls_schema_cache::{PostgresType, SchemaCache};
+use pgls_catalog::{PostgresType, Snapshot};
 use pgls_treesitter::TreesitterContext;
 
 use crate::{contextual_priority::ContextualPriority, to_markdown::ToHoverMarkdown};
@@ -9,7 +9,7 @@ impl ToHoverMarkdown for PostgresType {
     fn hover_headline<W: Write>(
         &self,
         writer: &mut W,
-        _schema_cache: &SchemaCache,
+        _snapshot: &Snapshot,
     ) -> Result<(), std::fmt::Error> {
         write!(writer, "`{}.{}` (Custom Type)", self.schema, self.name)?;
         Ok(())
@@ -18,7 +18,7 @@ impl ToHoverMarkdown for PostgresType {
     fn hover_body<W: Write>(
         &self,
         writer: &mut W,
-        schema_cache: &SchemaCache,
+        snapshot: &Snapshot,
     ) -> Result<bool, std::fmt::Error> {
         if let Some(comment) = &self.comment {
             write!(writer, "Comment: '{comment}'")?;
@@ -33,7 +33,7 @@ impl ToHoverMarkdown for PostgresType {
             for attribute in &self.attributes.attrs {
                 write!(writer, "- {}", attribute.name)?;
 
-                if let Some(type_info) = schema_cache.find_type_by_id(attribute.type_id) {
+                if let Some(type_info) = snapshot.find_type_by_id(attribute.type_id) {
                     write!(writer, ": ")?;
 
                     if type_info.schema != "pg_catalog" {
@@ -69,7 +69,7 @@ impl ToHoverMarkdown for PostgresType {
     fn hover_footer<W: Write>(
         &self,
         writer: &mut W,
-        _schema_cache: &SchemaCache,
+        _snapshot: &Snapshot,
     ) -> Result<bool, std::fmt::Error> {
         writeln!(writer)?;
         Ok(true)

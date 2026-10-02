@@ -1,2 +1,2 @@
--- expect_lint/safety/requireIdleInTransactionTimeout
+-- expect_lint/requireIdleInTransactionTimeout
 ALTER TABLE users ADD COLUMN email TEXT;

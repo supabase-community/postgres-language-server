@@ -1,0 +1,17 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+-- expect_lint/changingColumnType
+ALTER TABLE "core_recipe" ALTER COLUMN "count" TYPE bigint;
+
+```
+
+# Diagnostics
+lint/changingColumnType ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Changing a column type requires a table rewrite and blocks reads and writes.
+  
+  i Consider creating a new column with the desired type, migrating data, and then dropping the old column.

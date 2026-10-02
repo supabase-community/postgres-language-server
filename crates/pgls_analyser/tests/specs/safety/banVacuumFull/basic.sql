@@ -1,2 +1,2 @@
--- expect_lint/safety/banVacuumFull
+-- expect_lint/banVacuumFull
 vacuum full my_table;

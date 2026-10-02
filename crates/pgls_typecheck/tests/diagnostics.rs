@@ -26,9 +26,9 @@ impl TestSetup<'_> {
             .set_language(&pgls_treesitter_grammar::LANGUAGE.into())
             .expect("Error loading sql language");
 
-        let schema_cache = pgls_schema_cache::SchemaCache::load(self.test_db)
+        let snapshot = pgls_catalog::Snapshot::load(self.test_db)
             .await
-            .expect("Failed to load Schema Cache");
+            .expect("Failed to load snapshot");
 
         let root = pgls_query::parse(self.query)
             .unwrap()
@@ -41,9 +41,9 @@ impl TestSetup<'_> {
             sql: self.query,
             ast: &root,
             tree: &tree,
-            schema_cache: &schema_cache,
+            snapshot: &snapshot,
             identifiers: self.typed_identifiers,
-            search_path_patterns: vec![],
+            search_path: &[],
         })
         .await;
 
