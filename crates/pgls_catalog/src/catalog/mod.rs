@@ -114,6 +114,12 @@ impl Catalog {
         self.tainted
     }
 
+    /// Records a statement whose effects are unknown, e.g. one that doesn't parse. From then on,
+    /// nothing is known to be missing.
+    pub fn taint(&mut self) {
+        self.tainted = true;
+    }
+
     /// The result of a lookup that found nothing.
     fn not_found<T>(&self) -> Lookup<T> {
         if self.base.is_none() || self.tainted {

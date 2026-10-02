@@ -94,6 +94,9 @@ impl AnalysableStatement {
 #[derive(Default)]
 pub struct AnalyserParams {
     pub stmts: Vec<AnalysableStatement>,
+    /// The top-level statements that don't parse, in file order. Once one of them may have
+    /// changed the catalog, nothing is known to be missing.
+    pub unparsable: Vec<UnparsableStatement>,
     /// The database snapshot the catalog starts from. Without it, typecheck rules are silent.
     pub catalog_base: Option<Arc<CatalogBase>>,
     /// Explicit search path at the start of the file.
@@ -101,6 +104,13 @@ pub struct AnalyserParams {
     pub file_kind: FileKind,
     /// Whether the rules of the typecheck group run.
     pub typecheck: bool,
+}
+
+/// A top-level statement that doesn't parse, e.g. because it uses syntax of a newer Postgres.
+#[derive(Debug, Clone)]
+pub struct UnparsableStatement {
+    pub range: TextRange,
+    pub sql: String,
 }
 
 /// What the analyser learned about a single statement.
@@ -173,7 +183,15 @@ impl<'a> Analyser<'a> {
             })
             .collect();
 
+        let mut unparsable = params.unparsable.iter().peekable();
         for (i, stmt) in params.stmts.iter().enumerate() {
+            while let Some(skipped) =
+                unparsable.next_if(|skipped| skipped.range.start() < stmt.range.start())
+            {
+                if may_change_catalog(&skipped.sql) {
+                    file_context.taint_catalog();
+                }
+            }
             // The catalog and session can't follow statements on placeholder names, like
             // `drop table :name`, so the rest of the file isn't typechecked.
             if stmt.has_identifier_parameters && !is_plain_query(&roots[i]) {
@@ -226,6 +244,56 @@ impl<'a> Analyser<'a> {
         }
 
         result
+    }
+}
+
+/// Whether a statement that doesn't parse may have changed the catalog. Queries, `COPY`,
+/// maintenance, cursors, prepared statements, comments and privileges can't create, drop or
+/// rename objects, unless they are `SELECT ... INTO` or `EXPLAIN ANALYZE CREATE TABLE AS`. For
+/// anything else we can't tell.
+fn may_change_catalog(sql: &str) -> bool {
+    use pgls_query::protobuf::Token;
+    let Ok(scan) = pgls_query::scan(sql) else {
+        return true;
+    };
+    let mut tokens = scan
+        .tokens
+        .iter()
+        .map(|token| token.token())
+        .filter(|token| !matches!(token, Token::SqlComment | Token::CComment | Token::Ascii40));
+    match tokens.next() {
+        Some(
+            Token::Insert
+            | Token::Update
+            | Token::DeleteP
+            | Token::Merge
+            | Token::Copy
+            | Token::Analyse
+            | Token::Analyze
+            | Token::Vacuum
+            | Token::Reindex
+            | Token::Cluster
+            | Token::Checkpoint
+            | Token::LockP
+            | Token::Listen
+            | Token::Notify
+            | Token::Unlisten
+            | Token::Show
+            | Token::Declare
+            | Token::Fetch
+            | Token::Move
+            | Token::Close
+            | Token::Prepare
+            | Token::Execute
+            | Token::Deallocate
+            | Token::Comment
+            | Token::Grant
+            | Token::Revoke,
+        ) => false,
+        Some(Token::Select | Token::With | Token::Values | Token::Table | Token::Explain) => {
+            tokens.any(|token| matches!(token, Token::Into | Token::Create))
+        }
+        _ => true,
     }
 }
 
