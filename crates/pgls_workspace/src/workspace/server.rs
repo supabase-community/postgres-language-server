@@ -865,13 +865,16 @@ impl Workspace for WorkspaceServer {
 
         let mut analysable_stmts = vec![];
         let mut syntax_diagnostics = vec![];
-        for (stmt, diagnostic) in doc.iter(AnalyserDiagnosticsMapper) {
+        let mut unparsable = vec![];
+        for (stmt, diagnostic, unparsable_range) in doc.iter(AnalyserDiagnosticsMapper) {
             analysable_stmts.extend(stmt);
             syntax_diagnostics.extend(diagnostic);
+            unparsable.extend(unparsable_range);
         }
 
         let analysis = analyser.analyse(AnalyserParams {
             stmts: analysable_stmts,
+            unparsable,
             catalog_base,
             search_path,
             file_kind: self.file_kind(settings, params.path.as_path()),

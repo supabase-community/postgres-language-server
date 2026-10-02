@@ -10,6 +10,7 @@ use std::{
 use pgls_analyse::{AnalysisFilter, RuleFilter};
 use pgls_analyser::{
     AnalysableStatement, Analyser, AnalyserConfig, AnalyserParams, LinterDiagnostic, LinterOptions,
+    UnparsableStatement,
 };
 use pgls_console::StdDisplay;
 use pgls_diagnostics::PrintDiagnostic;
@@ -114,25 +115,31 @@ fn rule_test(full_path: &'static str, _: &str, _: &str) {
 
     let split = pgls_statement_splitter::split(&query);
 
-    let stmts = split
-        .ranges
-        .iter()
-        .map(|r| {
-            let text = &query[*r];
-            let ast = pgls_query::parse(text).expect("failed to parse SQL");
-
-            AnalysableStatement::new(
-                ast.into_root().expect("Failed to convert AST to root node"),
-                *r,
-            )
-            .with_sql(text)
-        })
-        .collect::<Vec<_>>();
+    // Statements that don't parse are passed on as such, like the workspace does.
+    let mut stmts = Vec::new();
+    let mut unparsable = Vec::new();
+    for r in &split.ranges {
+        let text = &query[*r];
+        match pgls_query::parse(text) {
+            Ok(ast) => stmts.push(
+                AnalysableStatement::new(
+                    ast.into_root().expect("Failed to convert AST to root node"),
+                    *r,
+                )
+                .with_sql(text),
+            ),
+            Err(_) => unparsable.push(UnparsableStatement {
+                range: *r,
+                sql: text.to_owned(),
+            }),
+        }
+    }
 
     // Typecheck rules use the test database's built-in catalog; user schemas are filtered out.
     let is_typecheck = group == pgls_analyser::TYPECHECK_GROUP;
     let results = analyser.run(AnalyserParams {
         stmts,
+        unparsable,
         catalog_base: is_typecheck.then(typecheck_catalog),
         search_path: vec!["public".into()],
         typecheck: is_typecheck,

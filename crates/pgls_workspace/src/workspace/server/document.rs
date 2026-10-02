@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use pgls_analyser::AnalysableStatement;
+use pgls_analyser::{AnalysableStatement, UnparsableStatement};
 use pgls_diagnostics::{Diagnostic, DiagnosticExt, serde::Diagnostic as SDiagnostic};
 use pgls_query_ext::diagnostics::SyntaxDiagnostic;
 use pgls_suppressions::Suppressions;
@@ -258,7 +258,13 @@ impl<'a> StatementMapper<'a> for TypecheckDiagnosticsMapper {
 
 pub struct AnalyserDiagnosticsMapper;
 impl<'a> StatementMapper<'a> for AnalyserDiagnosticsMapper {
-    type Output = (Option<AnalysableStatement>, Option<SyntaxDiagnostic>);
+    /// The statement if it parses, its syntax error, and the statement again if it is a
+    /// top-level statement that doesn't parse.
+    type Output = (
+        Option<AnalysableStatement>,
+        Option<SyntaxDiagnostic>,
+        Option<UnparsableStatement>,
+    );
 
     fn map(&self, parser: &'a Document, id: StatementId, range: TextRange) -> Self::Output {
         let maybe_node = parser.ast_db.get_or_cache_ast(&id);
@@ -276,6 +282,11 @@ impl<'a> StatementMapper<'a> for AnalyserDiagnosticsMapper {
             }
             Err(diag) => (None, Some(diag.clone().span(range))),
         };
+        let unparsable =
+            (ast_option.is_none() && id.parent().is_none()).then(|| UnparsableStatement {
+                range,
+                sql: id.content().to_owned(),
+            });
 
         // Statements in the body of a SQL function can reference its parameters.
         let function = id.parent().and_then(|root| {
@@ -295,6 +306,7 @@ impl<'a> StatementMapper<'a> for AnalyserDiagnosticsMapper {
                     )
             }),
             diagnostics,
+            unparsable,
         )
     }
 }
@@ -473,7 +485,7 @@ $$;";
         let results = d.iter(AnalyserDiagnosticsMapper).collect::<Vec<_>>();
 
         assert_eq!(results.len(), 1);
-        let (ast, diagnostic) = &results[0];
+        let (ast, diagnostic, _) = &results[0];
 
         // Should have parsed the CREATE FUNCTION statement
         assert!(ast.is_some());
@@ -504,7 +516,7 @@ $$;";
         let results = d.iter(AnalyserDiagnosticsMapper).collect::<Vec<_>>();
 
         assert_eq!(results.len(), 1);
-        let (ast, diagnostic) = &results[0];
+        let (ast, diagnostic, _) = &results[0];
 
         // Should have parsed the CREATE FUNCTION statement
         assert!(ast.is_some());
