@@ -1,0 +1,10 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/single/alter_tsconfiguration_stmt_4.sql
+---
+alter text search configuration myconfig
+alter mapping
+for asciiword,
+word
+with public.english_stem,
+pg_catalog.simple;
