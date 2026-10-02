@@ -4,6 +4,7 @@ Many rules are inspired by or directly ported from other tools. This page lists 
 ## Exclusive rules
 
 - [ambiguousColumn](./rules/ambiguous-column.md) 
+- [functionReturnTypeMismatch](./rules/function-return-type-mismatch.md) 
 - [insertColumnMismatch](./rules/insert-column-mismatch.md) 
 - [invalidDropTypeSignature](./rules/invalid-drop-type-signature.md) 
 - [missingFromClauseEntry](./rules/missing-from-clause-entry.md) 

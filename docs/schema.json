@@ -1170,6 +1170,17 @@
             }
           ]
         },
+        "functionReturnTypeMismatch": {
+          "description": "The final statement of a SQL function doesn't return what the function is declared to return.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "insertColumnMismatch": {
           "description": "An INSERT has a different number of target columns than values.",
           "anyOf": [

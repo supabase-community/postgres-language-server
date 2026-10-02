@@ -92,6 +92,7 @@ export type Category =
   | "lint/constraintMissingNotValid"
   | "lint/creatingEnum"
   | "lint/disallowUniqueConstraint"
+  | "lint/functionReturnTypeMismatch"
   | "lint/insertColumnMismatch"
   | "lint/invalidDropTypeSignature"
   | "lint/lockTimeoutWarning"
@@ -842,6 +843,10 @@ export interface LinterRules {
    * Disallow adding a UNIQUE constraint without using an existing index.
    */
   disallowUniqueConstraint?: RuleConfiguration_for_Null;
+  /**
+   * The final statement of a SQL function doesn't return what the function is declared to return.
+   */
+  functionReturnTypeMismatch?: RuleConfiguration_for_Null;
   /**
    * An INSERT has a different number of target columns than values.
    */

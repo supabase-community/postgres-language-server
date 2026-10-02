@@ -92,6 +92,7 @@ Code that fails at runtime because of names or types. Needs a database connectio
 | Rule name | Description | Recommended | Migrations only |
 | --- | --- | --- | --- |
 | [ambiguousColumn](./rules/ambiguous-column.md) | An unqualified column name matches columns of more than one relation in scope. | ✅ |  |
+| [functionReturnTypeMismatch](./rules/function-return-type-mismatch.md) | The final statement of a SQL function doesn't return what the function is declared toreturn. | ✅ |  |
 | [insertColumnMismatch](./rules/insert-column-mismatch.md) | An `INSERT` has a different number of target columns than values. | ✅ |  |
 | [missingFromClauseEntry](./rules/missing-from-clause-entry.md) | A column is qualified with a name that is not in the `FROM` clause. | ✅ |  |
 | [unknownColumn](./rules/unknown-column.md) | A column does not exist on the relation or record it is taken from. | ✅ |  |

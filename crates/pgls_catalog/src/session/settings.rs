@@ -1,4 +1,5 @@
-//! The settings that affect name resolution: `search_path` and `role`.
+//! The settings that affect name resolution and validation: `search_path`, `role`, and
+//! `check_function_bodies`.
 
 use pgls_query::{
     NodeEnum,
@@ -21,6 +22,12 @@ pub(super) struct Settings {
     transaction_role: Option<Option<String>>,
     /// Role to restore when the transaction ends after `SET LOCAL ROLE`.
     local_role: Option<Option<String>>,
+    /// Whether `check_function_bodies` is off, so `CREATE FUNCTION` doesn't validate bodies.
+    function_bodies_unchecked: bool,
+    /// `function_bodies_unchecked` at the start of the outermost explicit transaction.
+    transaction_function_bodies_unchecked: Option<bool>,
+    /// `function_bodies_unchecked` to restore when the transaction ends after `SET LOCAL`.
+    local_function_bodies_unchecked: Option<bool>,
 }
 
 impl Settings {
@@ -40,10 +47,15 @@ impl Settings {
         self.role.as_deref()
     }
 
+    pub(super) fn check_function_bodies(&self) -> bool {
+        !self.function_bodies_unchecked
+    }
+
     /// Remembers the settings at the start of the outermost transaction.
     pub(super) fn begin(&mut self) {
         self.transaction_search_path = Some(self.search_path.clone());
         self.transaction_role = Some(self.role.clone());
+        self.transaction_function_bodies_unchecked = Some(self.function_bodies_unchecked);
     }
 
     /// Keeps the settings of the transaction, except those set with `SET LOCAL`.
@@ -54,8 +66,12 @@ impl Settings {
         if let Some(role) = self.local_role.take() {
             self.role = role;
         }
+        if let Some(unchecked) = self.local_function_bodies_unchecked.take() {
+            self.function_bodies_unchecked = unchecked;
+        }
         self.transaction_search_path = None;
         self.transaction_role = None;
+        self.transaction_function_bodies_unchecked = None;
     }
 
     /// Restores the settings of the start of the transaction.
@@ -66,8 +82,12 @@ impl Settings {
         if let Some(role) = self.transaction_role.take() {
             self.role = role;
         }
+        if let Some(unchecked) = self.transaction_function_bodies_unchecked.take() {
+            self.function_bodies_unchecked = unchecked;
+        }
         self.local_search_path = None;
         self.local_role = None;
+        self.local_function_bodies_unchecked = None;
     }
 
     pub(super) fn apply_variable_set(&mut self, stmt: &protobuf::VariableSetStmt) {
@@ -75,6 +95,7 @@ impl Settings {
         if kind == VariableSetKind::VarResetAll {
             self.search_path = self.initial_search_path.clone();
             self.role = None;
+            self.function_bodies_unchecked = false;
             return;
         }
         let resets = matches!(
@@ -118,7 +139,39 @@ impl Settings {
             } else {
                 role
             };
+        } else if stmt.name.eq_ignore_ascii_case("check_function_bodies") {
+            if stmt.is_local && self.local_function_bodies_unchecked.is_none() {
+                self.local_function_bodies_unchecked = Some(self.function_bodies_unchecked);
+            }
+            if resets {
+                self.function_bodies_unchecked = false;
+            } else if let Some(enabled) = stmt
+                .args
+                .first()
+                .and_then(|a| a.node.as_ref())
+                .and_then(boolean_value)
+            {
+                self.function_bodies_unchecked = !enabled;
+            }
         }
+    }
+}
+
+/// The value of a boolean setting, like `off` or `true`.
+fn boolean_value(node: &NodeEnum) -> Option<bool> {
+    if let NodeEnum::AConst(value) = node
+        && let Some(protobuf::a_const::Val::Ival(value)) = &value.val
+    {
+        return match value.ival {
+            0 => Some(false),
+            1 => Some(true),
+            _ => None,
+        };
+    }
+    match variable_value(node)?.to_ascii_lowercase().as_str() {
+        "on" | "true" | "yes" => Some(true),
+        "off" | "false" | "no" => Some(false),
+        _ => None,
     }
 }
 

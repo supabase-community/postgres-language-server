@@ -200,6 +200,12 @@ pub const LINTER_RULES: &[LinterRuleMetadata] = &[
     },
     LinterRuleMetadata {
         group: "typecheck",
+        name: "functionReturnTypeMismatch",
+        recommended: true,
+        severity: Severity::Error,
+    },
+    LinterRuleMetadata {
+        group: "typecheck",
         name: "insertColumnMismatch",
         recommended: true,
         severity: Severity::Error,
@@ -492,6 +498,10 @@ pub struct Rules {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub disallow_unique_constraint:
         Option<RuleConfiguration<pgls_analyser::options::DisallowUniqueConstraint>>,
+    #[doc = "The final statement of a SQL function doesn't return what the function is declared to return."]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub function_return_type_mismatch:
+        Option<RuleConfiguration<pgls_analyser::options::FunctionReturnTypeMismatch>>,
     #[doc = "An INSERT has a different number of target columns than values."]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub insert_column_mismatch:
@@ -690,6 +700,10 @@ impl Rules {
             "creatingEnum" => self.creating_enum.as_ref().map(RuleConfiguration::level),
             "disallowUniqueConstraint" => self
                 .disallow_unique_constraint
+                .as_ref()
+                .map(RuleConfiguration::level),
+            "functionReturnTypeMismatch" => self
+                .function_return_type_mismatch
                 .as_ref()
                 .map(RuleConfiguration::level),
             "insertColumnMismatch" => self
@@ -898,6 +912,10 @@ impl Rules {
                 .and_then(RuleConfiguration::get_options),
             "disallowUniqueConstraint" => self
                 .disallow_unique_constraint
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "functionReturnTypeMismatch" => self
+                .function_return_type_mismatch
                 .as_ref()
                 .and_then(RuleConfiguration::get_options),
             "insertColumnMismatch" => self

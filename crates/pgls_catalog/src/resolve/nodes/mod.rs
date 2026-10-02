@@ -5,6 +5,7 @@ mod alias;
 mod column_ref;
 mod common_table_expr;
 mod copy_stmt;
+mod create_function_stmt;
 mod create_table_as_stmt;
 mod declare_cursor_stmt;
 mod delete_stmt;
@@ -31,6 +32,7 @@ use super::{resolver::Resolver, scope::Columns};
 
 use column_ref::resolve_column_ref;
 use copy_stmt::resolve_copy_stmt;
+use create_function_stmt::resolve_create_function_stmt;
 use create_table_as_stmt::resolve_create_table_as_stmt;
 use declare_cursor_stmt::resolve_declare_cursor_stmt;
 use delete_stmt::resolve_delete_stmt;
@@ -54,6 +56,7 @@ pub(super) fn resolve_node_enum(r: &mut Resolver, node: &NodeEnum) -> Columns {
         NodeEnum::InsertStmt(n) => return resolve_insert_stmt(r, n),
         NodeEnum::UpdateStmt(n) => return resolve_update_stmt(r, n),
         NodeEnum::DeleteStmt(n) => return resolve_delete_stmt(r, n),
+        NodeEnum::CreateFunctionStmt(n) => resolve_create_function_stmt(r, n),
         NodeEnum::CreateTableAsStmt(n) => resolve_create_table_as_stmt(r, n),
         NodeEnum::ViewStmt(n) => resolve_view_stmt(r, n),
         NodeEnum::ExplainStmt(n) => resolve_explain_stmt(r, n),

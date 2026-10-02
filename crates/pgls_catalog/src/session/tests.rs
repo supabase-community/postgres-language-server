@@ -168,3 +168,29 @@ fn rollback_forgets_local_role() {
     apply(&mut s, "COMMIT");
     assert_eq!(s.role(), Some("committed_role"));
 }
+
+#[test]
+fn check_function_bodies() {
+    let mut s = Session::new(vec!["public".into()]);
+    assert!(s.check_function_bodies());
+    apply(&mut s, "SET check_function_bodies = false");
+    assert!(!s.check_function_bodies());
+    apply(&mut s, "SET check_function_bodies TO on");
+    assert!(s.check_function_bodies());
+    apply(&mut s, "SET check_function_bodies = 0");
+    assert!(!s.check_function_bodies());
+    apply(&mut s, "RESET check_function_bodies");
+    assert!(s.check_function_bodies());
+    apply(&mut s, "BEGIN");
+    apply(&mut s, "SET LOCAL check_function_bodies = off");
+    assert!(!s.check_function_bodies());
+    apply(&mut s, "COMMIT");
+    assert!(s.check_function_bodies());
+    apply(&mut s, "BEGIN");
+    apply(&mut s, "SET check_function_bodies = off");
+    apply(&mut s, "ROLLBACK");
+    assert!(s.check_function_bodies());
+    apply(&mut s, "SET check_function_bodies = off");
+    apply(&mut s, "RESET ALL");
+    assert!(s.check_function_bodies());
+}

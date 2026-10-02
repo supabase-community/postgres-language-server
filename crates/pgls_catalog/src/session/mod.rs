@@ -40,6 +40,10 @@ impl Session {
     pub fn role(&self) -> Option<&str> {
         self.settings.role()
     }
+    /// Returns whether `CREATE FUNCTION` validates function bodies (`check_function_bodies`).
+    pub fn check_function_bodies(&self) -> bool {
+        self.settings.check_function_bodies()
+    }
     /// Returns the transaction nesting depth (0 = not in an explicit transaction).
     pub fn transaction_depth(&self) -> usize {
         self.transaction_depth

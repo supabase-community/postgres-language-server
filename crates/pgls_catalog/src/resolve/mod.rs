@@ -84,6 +84,22 @@ pub enum FindingKind {
     MissingFromClauseEntry {
         name: String,
     },
+    /// The final statement of a SQL function doesn't return what the function is declared to
+    /// return.
+    FunctionReturnMismatch {
+        /// The declared result type, e.g. `users`, `int4`, or `record`.
+        declared: String,
+        mismatch: ReturnMismatch,
+    },
+}
+
+/// How the final statement of a SQL function differs from the declared result.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ReturnMismatch {
+    /// It returns `found` columns instead of `expected`.
+    ColumnCount { expected: usize, found: usize },
+    /// It is not a query, so it returns no rows.
+    NoRows,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
