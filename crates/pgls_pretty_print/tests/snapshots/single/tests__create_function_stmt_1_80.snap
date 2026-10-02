@@ -1,0 +1,11 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/single/create_function_stmt_1.sql
+snapshot_kind: text
+---
+create function functest_s_13()
+returns boolean
+begin atomic
+  select 1;
+  select false;
+end;

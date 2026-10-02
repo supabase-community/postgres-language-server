@@ -165,8 +165,8 @@ $procedure$;
 
 call ptest7(least('a', 'b'), 'a');
 
-create procedure ptest8(x text) begin atomic
-  
+create procedure ptest8(x text)
+begin atomic
 end;
 
 select pg_get_functiondef(cast('ptest8' as regproc));

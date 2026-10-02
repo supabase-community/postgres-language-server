@@ -842,7 +842,8 @@ create table brintest_expr (n int);
 create function brintest_func()
 returns int
 language sql
-immutable return 0;;
+immutable
+return 0;
 
 begin;
 
