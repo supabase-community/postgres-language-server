@@ -20,5 +20,7 @@ thiserror.workspace                 = true
 camino.workspace                  = true
 dir-test.workspace                = true
 insta.workspace                   = true
+pgls_postgres_regress.workspace   = true
 pgls_statement_splitter.workspace = true
+rayon.workspace                   = true
 regex.workspace                   = true

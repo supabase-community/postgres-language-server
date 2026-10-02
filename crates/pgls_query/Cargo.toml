@@ -30,5 +30,4 @@ prost-build = "0.13.5"
 which       = "6.0.0"
 
 [dev-dependencies]
-easy-parallel         = "3.2.0"
-pgls_postgres_regress = { workspace = true }
+easy-parallel = "3.2.0"
