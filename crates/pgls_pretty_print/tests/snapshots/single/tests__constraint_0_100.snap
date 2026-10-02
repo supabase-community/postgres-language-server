@@ -1,0 +1,9 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/single/constraint_0.sql
+---
+create table deferred_excl (
+  f1 int,
+  f2 int,
+  constraint "deferred_excl_con" exclude using btree (f1 with =) deferrable initially deferred
+);

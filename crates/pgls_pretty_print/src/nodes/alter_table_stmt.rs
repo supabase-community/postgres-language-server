@@ -119,6 +119,12 @@ fn emit_alter_table_cmd_impl(e: &mut EventEmitter, cmd: &AlterTableCmd, for_type
                 emit_node(def, e);
                 e.indent_end();
             }
+            // Only ALTER TYPE ... ADD ATTRIBUTE accepts a drop behavior; it decides whether typed
+            // tables using the type are altered too.
+            if matches!(cmd.behavior(), DropBehavior::DropCascade) {
+                e.space();
+                e.token(TokenKind::CASCADE_KW);
+            }
         }
         AlterTableType::AtDropColumn => {
             e.token(TokenKind::DROP_KW);
@@ -167,6 +173,11 @@ fn emit_alter_table_cmd_impl(e: &mut EventEmitter, cmd: &AlterTableCmd, for_type
                 if let Some(ref typename) = column_def.type_name {
                     e.space();
                     super::emit_type_name(e, typename);
+                }
+
+                if let Some(ref coll_clause) = column_def.coll_clause {
+                    e.space();
+                    super::emit_collate_clause(e, coll_clause);
                 }
 
                 // Emit compression clause if specified
@@ -724,15 +735,20 @@ fn emit_alter_table_cmd_impl(e: &mut EventEmitter, cmd: &AlterTableCmd, for_type
                 e.space();
                 super::emit_identifier_maybe_quoted(e, &cmd.name);
             }
-            e.space();
-            e.token(TokenKind::SET_KW);
-            // def is a List of DefElem options
+            // def is a List of DefElem options. Every option carries its own SET prefix except
+            // RESTART, which Postgres rejects behind SET.
             if let Some(ref def) = cmd.def
                 && let Some(NodeEnum::List(list)) = &def.node
             {
+                e.group_start(GroupKind::List);
+                e.indent_start();
                 for opt in &list.items {
                     if let Some(NodeEnum::DefElem(de)) = &opt.node {
-                        e.space();
+                        e.line(LineType::SoftOrSpace);
+                        if de.defname != "restart" {
+                            e.token(TokenKind::SET_KW);
+                            e.space();
+                        }
                         // Handle special "generated" option that specifies ALWAYS/BY DEFAULT
                         if de.defname == "generated" {
                             e.token(TokenKind::GENERATED_KW);
@@ -757,6 +773,8 @@ fn emit_alter_table_cmd_impl(e: &mut EventEmitter, cmd: &AlterTableCmd, for_type
                         }
                     }
                 }
+                e.indent_end();
+                e.group_end();
             }
         }
         AlterTableType::AtDropIdentity => {

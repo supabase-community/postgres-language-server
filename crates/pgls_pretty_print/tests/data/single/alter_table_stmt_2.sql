@@ -1,0 +1,1 @@
+ALTER TABLE fail_part ALTER b TYPE char (2) COLLATE "POSIX", ALTER c TYPE text COLLATE "C" USING c::text;
