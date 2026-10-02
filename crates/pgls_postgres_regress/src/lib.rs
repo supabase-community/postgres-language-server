@@ -6,12 +6,16 @@
 //! - `SOURCE`: the pinned upstream tag, e.g. `REL_17_11`
 //! - `sql/*.sql`: the upstream regression files, verbatim
 //! - `verdicts/*.txt`: one `line:col verdict` line per statement
+//! - `catalog.json.gz`: the catalog of a fresh database on that version, as gzipped
+//!   `pgls_catalog::Snapshot` JSON
 //!
 //! Everything is recorded by `just record-regress <major> [tag]`; reading it needs neither the
-//! network nor a database.
+//! network nor a database. `just record-regress <major> --catalog-only` re-records only the
+//! catalog, e.g. after the snapshot queries change.
 
 use std::{
     fmt, fs,
+    io::Read,
     path::{Path, PathBuf},
 };
 
@@ -86,7 +90,27 @@ pub struct Version {
     dir: PathBuf,
 }
 
+/// The name of the catalog file in `data/<major>/`.
+pub const CATALOG_FILE: &str = "catalog.json.gz";
+
 impl Version {
+    /// The catalog of a fresh database on this version, as `pgls_catalog::Snapshot` JSON.
+    pub fn catalog_json(&self) -> String {
+        let path = self.dir.join(CATALOG_FILE);
+        let file = fs::File::open(&path).unwrap_or_else(|e| {
+            panic!(
+                "read {}: {e}; run `just record-regress {} --catalog-only`",
+                path.display(),
+                self.major
+            )
+        });
+        let mut json = String::new();
+        flate2::read::GzDecoder::new(file)
+            .read_to_string(&mut json)
+            .unwrap_or_else(|e| panic!("decompress {}: {e}", path.display()));
+        json
+    }
+
     /// Loads every file of this version, sorted by name.
     ///
     /// Panics if the statements the splitter finds don't match the recorded verdicts.

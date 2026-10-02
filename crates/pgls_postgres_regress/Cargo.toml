@@ -12,15 +12,18 @@ version              = "0.0.0"
 
 
 [dependencies]
+flate2.workspace                  = true
 pgls_statement_splitter.workspace = true
 pgls_text_size.workspace          = true
 
-sqlx  = { workspace = true, optional = true }
-tokio = { workspace = true, optional = true }
+pgls_catalog = { workspace = true, features = ["db"], optional = true }
+serde_json   = { workspace = true, optional = true }
+sqlx         = { workspace = true, optional = true }
+tokio        = { workspace = true, optional = true }
 
 [features]
 # Dependencies of the recorder, which needs Docker and the network.
-record = ["dep:sqlx", "dep:tokio"]
+record = ["dep:pgls_catalog", "dep:serde_json", "dep:sqlx", "dep:tokio"]
 
 [[bin]]
 name              = "record"
