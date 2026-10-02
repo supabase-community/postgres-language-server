@@ -1,0 +1,45 @@
+7:1 accepted
+8:1 accepted
+9:1 accepted
+12:1 rejected 22P02
+13:1 rejected 22P02
+14:1 rejected 22P02
+15:1 rejected 22P02
+17:1 accepted
+22:1 accepted
+23:1 accepted
+24:1 accepted
+25:1 accepted
+26:1 accepted
+28:1 accepted
+33:1 accepted
+38:1 accepted
+43:1 accepted
+47:1 accepted
+51:1 accepted
+52:1 accepted
+53:1 accepted
+56:1 accepted
+57:1 rejected 22P02
+60:1 skipped
+61:1 accepted
+62:1 rejected 42601
+63:1 rejected 42601
+64:1 skipped
+67:1 skipped
+68:1 rejected 42601
+71:1 skipped
+72:1 rejected 42601
+75:1 skipped
+76:1 rejected 42601
+78:1 rejected 42601
+79:1 rejected 42601
+80:1 rejected 42601
+81:1 accepted
+82:1 accepted
+83:1 accepted
+85:1 skipped
+87:1 skipped
+88:1 accepted
+101:1 rejected 42601
+102:1 skipped

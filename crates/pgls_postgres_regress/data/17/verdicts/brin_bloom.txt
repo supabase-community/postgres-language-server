@@ -1,0 +1,40 @@
+1:1 accepted
+26:1 rejected 42P01
+52:1 rejected 42P01
+59:1 rejected 22023
+63:1 rejected 22023
+66:1 rejected 22023
+70:1 accepted
+96:1 accepted
+101:1 accepted
+211:1 accepted
+292:1 accepted
+293:1 accepted
+295:1 rejected 42P01
+320:1 accepted
+321:1 accepted
+323:1 accepted
+324:1 accepted
+327:1 rejected 42809
+328:1 rejected 42P01
+329:1 accepted
+332:1 rejected 22003
+333:1 accepted
+334:1 accepted
+335:1 accepted
+338:1 accepted
+341:1 accepted
+343:1 accepted
+354:1 accepted
+356:1 accepted
+358:1 accepted
+360:1 accepted
+362:1 rejected 22003
+363:1 rejected 22003
+367:1 accepted
+368:1 accepted
+369:1 accepted
+370:1 accepted
+371:1 accepted
+374:1 accepted
+376:1 accepted

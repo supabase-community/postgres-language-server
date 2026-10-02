@@ -2704,15 +2704,27 @@ dependencies = [
 ]
 
 [[package]]
+name = "pgls_postgres_regress"
+version = "0.0.0"
+dependencies = [
+ "pgls_statement_splitter",
+ "pgls_text_size",
+ "sqlx",
+ "tokio",
+]
+
+[[package]]
 name = "pgls_pretty_print"
 version = "0.0.0"
 dependencies = [
  "camino",
  "dir-test",
  "insta",
+ "pgls_postgres_regress",
  "pgls_pretty_print_codegen",
  "pgls_query",
  "pgls_statement_splitter",
+ "rayon",
  "regex",
  "thiserror 1.0.69",
 ]

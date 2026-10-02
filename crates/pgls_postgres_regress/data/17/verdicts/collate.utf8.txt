@@ -1,0 +1,24 @@
+7:1 rejected 42601
+12:1 accepted
+18:1 rejected 42809
+20:1 accepted
+22:1 accepted
+23:1 accepted
+26:1 accepted
+29:1 accepted
+37:1 accepted
+45:1 accepted
+48:1 accepted
+49:1 accepted
+50:1 accepted
+54:1 accepted
+55:1 accepted
+56:1 accepted
+57:1 accepted
+58:1 accepted
+59:1 accepted
+63:1 accepted
+64:1 accepted
+65:1 accepted
+66:1 accepted
+67:1 accepted

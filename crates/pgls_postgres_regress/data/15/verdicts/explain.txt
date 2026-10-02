@@ -1,0 +1,32 @@
+13:1 accepted
+37:1 accepted
+56:1 accepted
+60:1 accepted
+64:1 rejected 42P01
+65:1 rejected 42P01
+66:1 rejected 42P01
+67:1 rejected 42P01
+68:1 rejected 42P01
+69:1 rejected 42P01
+70:1 rejected 42P01
+71:1 rejected 42P01
+75:1 accepted
+76:1 rejected 42P01
+77:1 accepted
+83:1 skipped
+84:1 accepted
+85:1 rejected 42P01
+88:1 rejected 42P01
+89:1 skipped
+99:1 skipped
+101:1 accepted
+102:1 accepted
+103:1 accepted
+104:1 accepted
+106:1 rejected 42P01
+118:1 skipped
+121:1 accepted
+123:1 accepted
+126:1 accepted
+129:1 accepted
+130:1 rejected 42P01

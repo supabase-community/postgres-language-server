@@ -1,0 +1,332 @@
+11:1 rejected 42601
+17:1 accepted
+19:1 accepted
+20:1 accepted
+21:1 accepted
+23:1 accepted
+25:1 accepted
+26:1 accepted
+27:1 accepted
+29:1 accepted
+30:1 accepted
+32:1 accepted
+34:1 accepted
+39:1 accepted
+40:1 accepted
+42:1 accepted
+44:1 accepted
+47:1 accepted
+50:1 rejected 42809
+51:1 rejected 42809
+52:1 rejected 42809
+54:1 rejected 42723
+55:1 accepted
+56:1 rejected 42501
+57:1 accepted
+58:1 accepted
+59:1 accepted
+61:1 rejected 42723
+62:1 accepted
+63:1 rejected 42501
+64:1 accepted
+65:1 accepted
+67:1 accepted
+68:1 accepted
+70:1 accepted
+72:1 accepted
+75:1 accepted
+79:1 rejected 42501
+80:1 accepted
+81:1 rejected 42501
+82:1 rejected 42501
+83:1 rejected 42501
+84:1 rejected 42723
+86:1 rejected 42501
+87:1 accepted
+88:1 rejected 42501
+89:1 rejected 42501
+90:1 rejected 42501
+91:1 rejected 42723
+93:1 accepted
+95:1 accepted
+109:1 accepted
+110:1 accepted
+111:1 accepted
+113:1 rejected 42710
+114:1 accepted
+115:1 rejected 42501
+116:1 accepted
+117:1 accepted
+119:1 accepted
+120:1 accepted
+121:1 accepted
+123:1 rejected 42501
+124:1 accepted
+125:1 rejected 42501
+126:1 rejected 42501
+127:1 rejected 42501
+128:1 rejected 42710
+130:1 accepted
+132:1 accepted
+141:1 accepted
+142:1 accepted
+144:1 accepted
+145:1 accepted
+147:1 rejected 42710
+148:1 accepted
+150:1 rejected 42710
+151:1 accepted
+153:1 accepted
+154:1 accepted
+159:1 accepted
+160:1 accepted
+162:1 accepted
+163:1 accepted
+165:1 accepted
+166:1 rejected 42710
+167:1 rejected 42501
+168:1 accepted
+170:1 rejected 42501
+171:1 rejected 42501
+172:1 accepted
+174:1 accepted
+175:1 accepted
+183:1 accepted
+185:1 accepted
+186:1 accepted
+188:1 rejected 42501
+189:1 accepted
+190:1 accepted
+192:1 accepted
+194:1 accepted
+196:1 rejected 42501
+197:1 rejected 42501
+198:1 rejected 42501
+202:1 accepted
+204:1 accepted
+214:1 accepted
+215:1 accepted
+216:1 accepted
+217:1 accepted
+219:1 accepted
+220:1 accepted
+221:1 accepted
+222:1 accepted
+224:1 accepted
+226:1 rejected 42710
+227:1 accepted
+228:1 rejected 42501
+229:1 accepted
+230:1 accepted
+232:1 rejected 42710
+233:1 accepted
+234:1 rejected 42501
+235:1 accepted
+236:1 accepted
+238:1 accepted
+240:1 accepted
+241:1 accepted
+242:1 accepted
+243:1 accepted
+245:1 accepted
+246:1 accepted
+247:1 accepted
+248:1 accepted
+250:1 accepted
+252:1 rejected 42501
+253:1 accepted
+254:1 rejected 42501
+255:1 rejected 42501
+256:1 rejected 42501
+257:1 rejected 42710
+259:1 rejected 42501
+260:1 accepted
+261:1 rejected 42501
+262:1 rejected 42501
+263:1 rejected 42501
+264:1 rejected 42710
+266:1 accepted
+268:1 accepted
+275:1 accepted
+284:1 skipped
+285:1 accepted
+286:1 accepted
+295:1 accepted
+303:1 accepted
+304:1 skipped
+307:1 accepted
+308:1 rejected 42704
+309:1 rejected 42P17
+310:1 rejected 42P17
+311:1 rejected 42601
+312:1 rejected 42P17
+313:1 rejected 42P17
+314:1 rejected 42601
+315:1 accepted
+318:1 skipped
+319:1 accepted
+320:1 accepted
+321:1 accepted
+322:1 rejected 42501
+323:1 accepted
+324:1 accepted
+325:1 skipped
+328:1 skipped
+329:1 accepted
+330:1 accepted
+331:1 accepted
+332:1 accepted
+333:1 accepted
+334:1 rejected 42501
+335:1 skipped
+338:1 rejected 42501
+339:1 rejected 42704
+340:1 rejected 42704
+341:1 rejected 42704
+345:1 rejected 42501
+346:1 rejected 42704
+347:1 rejected 42704
+350:1 rejected 42501
+351:1 rejected 42704
+352:1 rejected 42704
+355:1 rejected 42501
+356:1 rejected 42704
+357:1 rejected 42704
+360:1 rejected 42501
+361:1 rejected 42704
+362:1 rejected 42704
+363:1 rejected 42704
+366:1 skipped
+367:1 rejected 42501
+368:1 accepted
+369:1 rejected 42704
+370:1 rejected 42704
+371:1 skipped
+374:1 skipped
+375:1 rejected 42501
+376:1 accepted
+377:1 rejected 42704
+378:1 rejected 42704
+379:1 skipped
+382:1 skipped
+383:1 rejected 42501
+384:1 accepted
+385:1 rejected 42704
+386:1 rejected 42704
+387:1 skipped
+390:1 skipped
+391:1 rejected 42501
+392:1 accepted
+393:1 rejected 42704
+394:1 rejected 42704
+395:1 skipped
+399:1 rejected 42501
+400:1 rejected 42704
+401:1 rejected 42704
+404:1 rejected 42501
+405:1 rejected 42704
+406:1 rejected 42704
+407:1 rejected 42704
+408:1 rejected 42704
+416:1 rejected 42704
+423:1 rejected 42704
+430:1 rejected 42704
+435:1 rejected 42501
+436:1 rejected 42704
+437:1 rejected 42704
+445:1 rejected 42704
+447:1 rejected 42704
+448:1 rejected 42704
+451:1 rejected 42501
+452:1 rejected 42704
+453:1 rejected 42704
+454:1 rejected 42704
+455:1 rejected 42704
+456:1 rejected 42704
+457:1 rejected 42704
+462:1 accepted
+463:1 accepted
+464:1 accepted
+465:1 accepted
+467:1 rejected 42710
+468:1 accepted
+469:1 rejected 42501
+470:1 accepted
+471:1 accepted
+473:1 accepted
+474:1 accepted
+475:1 accepted
+476:1 accepted
+478:1 rejected 42501
+479:1 accepted
+480:1 rejected 42501
+481:1 rejected 42501
+482:1 rejected 42501
+483:1 rejected 42710
+485:1 accepted
+486:1 accepted
+495:1 accepted
+496:1 accepted
+497:1 accepted
+499:1 rejected 42710
+500:1 accepted
+501:1 rejected 42501
+502:1 accepted
+503:1 accepted
+505:1 accepted
+506:1 accepted
+507:1 accepted
+509:1 rejected 42501
+510:1 accepted
+511:1 rejected 42501
+512:1 rejected 42501
+513:1 rejected 42501
+514:1 rejected 42710
+516:1 accepted
+518:1 accepted
+527:1 accepted
+528:1 accepted
+529:1 accepted
+531:1 rejected 42710
+532:1 accepted
+533:1 rejected 42501
+534:1 accepted
+535:1 accepted
+537:1 accepted
+538:1 accepted
+539:1 accepted
+541:1 rejected 42501
+542:1 accepted
+543:1 rejected 42501
+544:1 rejected 42501
+545:1 rejected 42501
+546:1 rejected 42710
+548:1 accepted
+550:1 accepted
+559:1 accepted
+560:1 accepted
+562:1 rejected 42710
+563:1 accepted
+564:1 accepted
+566:1 accepted
+567:1 rejected 42710
+570:1 rejected 42601
+572:1 accepted
+581:1 accepted
+583:1 accepted
+586:1 rejected 42710
+587:1 accepted
+588:1 accepted
+590:1 accepted
+592:1 rejected 42710
+595:1 rejected 42601
+597:1 accepted
+605:1 accepted
+606:1 accepted
+608:1 accepted
+609:1 accepted
+611:1 accepted
+612:1 accepted
+614:1 accepted
+615:1 accepted
+616:1 accepted

@@ -1,0 +1,265 @@
+1:1 accepted
+6:1 accepted
+7:1 accepted
+8:1 rejected 2200N
+12:1 rejected 42601
+17:1 accepted
+20:1 accepted
+21:1 accepted
+22:1 accepted
+23:1 accepted
+24:1 accepted
+27:1 accepted
+28:1 accepted
+29:1 rejected 2200S
+30:1 rejected 2200S
+31:1 accepted
+34:1 accepted
+38:1 accepted
+39:1 rejected 42804
+40:1 rejected 2200N
+41:1 accepted
+42:1 accepted
+43:1 accepted
+44:1 accepted
+47:1 accepted
+51:1 rejected 42601
+54:1 accepted
+56:1 rejected 42P01
+58:1 rejected 42601
+60:1 accepted
+61:1 accepted
+62:1 accepted
+63:1 accepted
+64:1 accepted
+65:1 accepted
+66:1 accepted
+67:1 accepted
+68:1 accepted
+69:1 accepted
+71:1 accepted
+72:1 accepted
+73:1 rejected 22008
+74:1 accepted
+77:1 accepted
+78:1 accepted
+79:1 accepted
+80:1 accepted
+81:1 rejected 2200N
+82:1 rejected 2200N
+83:1 accepted
+84:1 accepted
+85:1 rejected 2200N
+86:1 accepted
+88:1 rejected 2200M
+89:1 rejected 2200M
+90:1 accepted
+91:1 rejected 2200M
+92:1 rejected 2200M
+93:1 accepted
+94:1 accepted
+95:1 rejected 2200M
+96:1 accepted
+99:1 accepted
+100:1 rejected 42601
+101:1 accepted
+102:1 accepted
+103:1 rejected 2200T
+104:1 accepted
+105:1 rejected 42601
+106:1 accepted
+107:1 accepted
+108:1 accepted
+111:1 accepted
+112:1 accepted
+113:1 accepted
+114:1 accepted
+115:1 accepted
+116:1 accepted
+117:1 accepted
+118:1 accepted
+121:1 accepted
+138:1 accepted
+139:1 accepted
+140:1 rejected 2200L
+143:1 accepted
+144:1 accepted
+146:1 accepted
+147:1 accepted
+149:1 rejected 2200L
+150:1 accepted
+152:1 rejected 2200L
+153:1 accepted
+155:1 accepted
+156:1 accepted
+158:1 rejected 2200L
+159:1 accepted
+161:1 rejected 2200L
+162:1 accepted
+164:1 accepted
+165:1 accepted
+167:1 accepted
+168:1 accepted
+170:1 accepted
+171:1 accepted
+173:1 accepted
+174:1 accepted
+176:1 accepted
+177:1 accepted
+179:1 accepted
+180:1 accepted
+182:1 accepted
+183:1 accepted
+184:1 accepted
+185:1 accepted
+186:1 rejected 2200N
+189:1 accepted
+190:1 accepted
+191:1 rejected 42P01
+196:1 accepted
+197:1 accepted
+200:1 accepted
+202:1 accepted
+203:1 accepted
+204:1 rejected 2200M
+205:1 rejected 2200M
+207:1 accepted
+208:1 accepted
+209:1 accepted
+210:1 accepted
+211:1 accepted
+212:1 accepted
+213:1 rejected 2200N
+214:1 rejected 2200N
+215:1 rejected 2200N
+220:1 accepted
+221:1 accepted
+222:1 accepted
+223:1 rejected 42P01
+224:1 accepted
+225:1 accepted
+226:1 accepted
+227:1 accepted
+228:1 accepted
+229:1 accepted
+230:1 accepted
+232:1 accepted
+237:1 accepted
+238:1 accepted
+239:1 rejected 22000
+240:1 accepted
+241:1 accepted
+242:1 accepted
+243:1 accepted
+244:1 accepted
+245:1 accepted
+246:1 accepted
+247:1 accepted
+248:1 accepted
+249:1 accepted
+250:1 accepted
+251:1 accepted
+252:1 accepted
+253:1 accepted
+254:1 accepted
+257:1 accepted
+293:1 accepted
+294:1 accepted
+295:1 accepted
+296:1 accepted
+297:1 accepted
+298:1 accepted
+300:1 accepted
+301:1 accepted
+302:1 accepted
+303:1 accepted
+305:1 accepted
+306:1 accepted
+307:1 accepted
+308:1 accepted
+310:1 accepted
+311:1 accepted
+312:1 accepted
+313:1 accepted
+314:1 accepted
+315:1 accepted
+317:1 accepted
+318:1 accepted
+319:1 accepted
+323:1 accepted
+324:1 accepted
+325:1 accepted
+326:1 accepted
+328:1 accepted
+329:1 accepted
+330:1 accepted
+331:1 accepted
+332:1 accepted
+333:1 accepted
+334:1 accepted
+335:1 accepted
+336:1 accepted
+337:1 accepted
+338:1 accepted
+339:1 accepted
+340:1 accepted
+341:1 accepted
+342:1 accepted
+344:1 accepted
+345:1 accepted
+358:1 rejected 2200M
+362:1 rejected 2200M
+366:1 accepted
+369:1 accepted
+370:1 accepted
+372:1 accepted
+375:1 accepted
+376:1 accepted
+410:1 accepted
+423:1 accepted
+436:1 accepted
+440:1 accepted
+441:1 accepted
+444:1 rejected 42P10
+446:1 rejected 42601
+449:1 accepted
+454:1 accepted
+459:1 accepted
+463:1 rejected 0A000
+468:1 accepted
+473:1 accepted
+487:1 accepted
+489:1 accepted
+490:1 accepted
+491:1 accepted
+492:1 accepted
+493:1 accepted
+494:1 accepted
+495:1 accepted
+497:1 accepted
+498:1 rejected 21000
+501:1 accepted
+504:1 accepted
+505:1 accepted
+507:1 accepted
+522:1 accepted
+524:1 accepted
+528:1 accepted
+546:1 accepted
+559:1 accepted
+572:1 accepted
+586:1 accepted
+602:1 rejected 22004
+617:1 accepted
+640:1 accepted
+662:1 accepted
+664:1 accepted
+665:1 accepted
+666:1 accepted
+667:1 accepted
+669:1 accepted
+670:1 accepted
+671:1 accepted
+674:1 accepted
+676:1 accepted
+679:1 accepted

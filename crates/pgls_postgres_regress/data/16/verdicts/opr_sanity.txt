@@ -1,0 +1,130 @@
+25:1 accepted
+41:1 accepted
+44:1 accepted
+49:1 accepted
+55:1 accepted
+61:1 accepted
+66:1 accepted
+70:1 accepted
+78:1 accepted
+93:1 accepted
+120:1 accepted
+133:1 accepted
+146:1 accepted
+159:1 accepted
+168:1 accepted
+177:1 accepted
+186:1 accepted
+195:1 accepted
+204:1 accepted
+219:1 accepted
+229:1 accepted
+246:1 accepted
+256:1 accepted
+268:1 accepted
+285:1 accepted
+298:1 accepted
+308:1 accepted
+313:1 accepted
+318:1 accepted
+323:1 accepted
+328:1 accepted
+333:1 accepted
+339:1 accepted
+353:1 accepted
+367:1 accepted
+374:1 accepted
+381:1 accepted
+396:1 accepted
+410:1 accepted
+430:1 accepted
+440:1 accepted
+448:1 accepted
+457:1 accepted
+461:1 accepted
+473:1 rejected 42883
+482:1 accepted
+505:1 accepted
+518:1 accepted
+526:1 accepted
+548:1 accepted
+559:1 accepted
+566:1 accepted
+574:1 accepted
+587:1 accepted
+604:1 accepted
+619:1 accepted
+626:1 accepted
+635:1 accepted
+641:1 accepted
+650:1 accepted
+659:1 accepted
+668:1 accepted
+677:1 accepted
+686:1 rejected 42883
+695:1 rejected 42883
+707:1 accepted
+718:1 accepted
+736:1 accepted
+749:1 accepted
+762:1 accepted
+783:1 accepted
+802:1 accepted
+809:1 accepted
+817:1 accepted
+835:1 accepted
+847:1 accepted
+854:1 accepted
+861:1 accepted
+867:1 rejected 42883
+891:1 rejected 42883
+914:1 rejected 42883
+923:1 accepted
+928:1 accepted
+936:1 accepted
+943:1 rejected 42883
+964:1 rejected 42883
+986:1 rejected 42883
+1009:1 rejected 42883
+1018:1 accepted
+1028:1 rejected 42883
+1038:1 accepted
+1047:1 accepted
+1057:1 accepted
+1068:1 accepted
+1080:1 accepted
+1092:1 accepted
+1099:1 accepted
+1107:1 accepted
+1118:1 accepted
+1135:1 accepted
+1144:1 accepted
+1152:1 accepted
+1161:1 accepted
+1170:1 accepted
+1178:1 accepted
+1185:1 accepted
+1192:1 accepted
+1201:1 accepted
+1208:1 accepted
+1214:1 accepted
+1224:1 accepted
+1236:1 accepted
+1241:1 accepted
+1248:1 accepted
+1257:1 accepted
+1265:1 accepted
+1273:1 rejected 42883
+1286:1 rejected 42883
+1297:1 accepted
+1303:1 accepted
+1314:1 accepted
+1324:1 accepted
+1330:1 accepted
+1344:1 accepted
+1359:1 accepted
+1366:1 accepted
+1376:1 rejected 42883
+1389:1 accepted
+1406:1 accepted
+1415:1 accepted

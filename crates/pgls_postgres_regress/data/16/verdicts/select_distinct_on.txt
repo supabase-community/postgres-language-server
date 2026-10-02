@@ -1,0 +1,8 @@
+5:1 rejected 42P01
+10:1 rejected 42P01
+14:1 rejected 42P01
+19:1 rejected 42P01
+27:1 rejected 42P01
+32:1 rejected 42P01
+36:1 rejected 42P01
+42:1 rejected 42P01

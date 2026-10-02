@@ -1,0 +1,15 @@
+1:1 accepted
+3:1 accepted
+4:1 accepted
+5:1 accepted
+8:1 skipped
+9:1 accepted
+13:1 accepted
+14:1 skipped
+16:1 accepted
+17:1 accepted
+18:1 accepted
+19:1 accepted
+21:1 accepted
+22:1 accepted
+23:1 accepted

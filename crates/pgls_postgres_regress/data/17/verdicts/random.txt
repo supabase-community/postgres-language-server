@@ -1,0 +1,48 @@
+14:1 accepted
+22:1 accepted
+29:1 accepted
+53:1 accepted
+60:1 accepted
+66:1 accepted
+69:1 accepted
+75:1 accepted
+99:1 accepted
+106:1 rejected 22023
+107:1 rejected 22023
+108:1 rejected 22023
+109:1 rejected 22023
+110:1 rejected 22023
+111:1 rejected 22023
+112:1 rejected 22023
+115:1 accepted
+116:1 accepted
+117:1 accepted
+124:1 accepted
+130:1 accepted
+136:1 accepted
+143:1 accepted
+147:1 accepted
+152:1 accepted
+157:1 accepted
+163:1 accepted
+171:1 accepted
+174:1 accepted
+178:1 accepted
+183:1 accepted
+204:1 accepted
+208:1 accepted
+229:1 accepted
+233:1 accepted
+254:1 accepted
+260:1 accepted
+262:1 accepted
+267:1 accepted
+269:1 accepted
+270:1 accepted
+273:1 accepted
+274:1 accepted
+275:1 accepted
+276:1 accepted
+277:1 accepted
+278:1 accepted
+279:1 accepted

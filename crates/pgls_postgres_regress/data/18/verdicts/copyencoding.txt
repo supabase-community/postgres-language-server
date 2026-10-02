@@ -1,0 +1,4 @@
+6:1 rejected 42601
+17:1 accepted
+23:1 rejected 42601
+23:40 rejected 42601

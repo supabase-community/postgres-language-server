@@ -1,0 +1,76 @@
+8:1 rejected 42P01
+9:1 rejected 42P01
+10:1 rejected 42P01
+11:1 rejected 42P01
+12:1 rejected 42P01
+13:1 rejected 42P01
+14:1 rejected 42P01
+15:1 rejected 42P01
+18:1 rejected 42P01
+21:1 accepted
+22:1 accepted
+23:1 accepted
+24:1 accepted
+27:1 accepted
+28:1 accepted
+29:1 accepted
+31:1 rejected 42P01
+33:1 rejected 42P01
+35:1 rejected 42P01
+37:1 rejected 42P01
+39:1 rejected 42P01
+41:1 rejected 42P01
+43:1 rejected 42P01
+45:1 rejected 42P01
+47:1 rejected 42P01
+49:1 rejected 42P01
+51:1 rejected 42P01
+53:1 rejected 42P01
+55:1 rejected 42P01
+57:1 rejected 42P01
+60:1 rejected 42P01
+63:1 rejected 42P01
+65:1 rejected 42P01
+67:1 rejected 42P01
+70:1 rejected 42P01
+72:1 rejected 42P01
+74:1 rejected 42P01
+77:1 rejected 42P01
+79:1 rejected 42P01
+81:1 rejected 42P01
+84:1 rejected 42P01
+86:1 rejected 42P01
+88:1 rejected 42P01
+91:1 accepted
+92:1 accepted
+95:1 rejected 22003
+96:1 rejected 22003
+97:1 accepted
+100:1 accepted
+110:1 accepted
+122:1 accepted
+123:1 accepted
+124:1 accepted
+126:1 rejected 22P02
+127:1 rejected 22P02
+128:1 rejected 22P02
+131:1 accepted
+132:1 rejected 22003
+133:1 accepted
+134:1 rejected 22003
+135:1 accepted
+136:1 rejected 22003
+138:1 accepted
+139:1 rejected 22003
+140:1 accepted
+141:1 rejected 22003
+142:1 accepted
+143:1 rejected 22003
+148:1 accepted
+149:1 accepted
+150:1 accepted
+151:1 accepted
+152:1 accepted
+155:1 rejected 22P02
+156:1 rejected 22P02
+157:1 rejected 22P02

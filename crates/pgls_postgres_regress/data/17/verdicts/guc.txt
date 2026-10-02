@@ -1,0 +1,147 @@
+3:1 accepted
+6:1 accepted
+7:1 accepted
+8:1 accepted
+9:1 accepted
+10:1 accepted
+13:1 accepted
+14:1 accepted
+15:1 accepted
+16:1 accepted
+17:1 accepted
+20:1 skipped
+21:1 accepted
+22:1 accepted
+23:1 accepted
+24:1 accepted
+25:1 accepted
+26:1 skipped
+27:1 accepted
+28:1 accepted
+29:1 accepted
+32:1 skipped
+33:1 accepted
+34:1 accepted
+35:1 accepted
+36:1 accepted
+37:1 accepted
+38:1 skipped
+39:1 accepted
+40:1 accepted
+41:1 accepted
+44:1 skipped
+45:1 accepted
+46:1 accepted
+47:1 accepted
+48:1 accepted
+49:1 skipped
+50:1 accepted
+51:1 accepted
+52:1 accepted
+53:1 accepted
+54:1 accepted
+55:1 skipped
+56:1 accepted
+57:1 accepted
+58:1 skipped
+59:1 accepted
+60:1 accepted
+61:1 accepted
+62:1 accepted
+63:1 skipped
+64:1 accepted
+65:1 accepted
+66:1 accepted
+67:1 accepted
+68:1 accepted
+69:1 skipped
+70:1 accepted
+71:1 accepted
+72:1 accepted
+73:1 skipped
+74:1 accepted
+75:1 accepted
+76:1 accepted
+77:1 skipped
+78:1 accepted
+79:1 accepted
+80:1 accepted
+83:1 skipped
+84:1 accepted
+85:1 accepted
+86:1 accepted
+87:1 skipped
+88:1 accepted
+89:1 accepted
+90:1 accepted
+91:1 accepted
+92:1 accepted
+93:1 skipped
+94:1 accepted
+95:1 accepted
+96:1 accepted
+97:1 skipped
+98:1 accepted
+99:1 accepted
+100:1 accepted
+103:1 skipped
+104:1 accepted
+105:1 accepted
+106:1 accepted
+107:1 skipped
+108:1 accepted
+109:1 accepted
+110:1 accepted
+111:1 accepted
+112:1 accepted
+113:1 skipped
+114:1 accepted
+115:1 accepted
+116:1 accepted
+117:1 skipped
+118:1 accepted
+119:1 accepted
+120:1 accepted
+123:1 skipped
+124:1 accepted
+125:1 accepted
+126:1 accepted
+127:1 accepted
+128:1 accepted
+129:1 accepted
+130:1 accepted
+131:1 skipped
+132:1 accepted
+133:1 accepted
+134:1 accepted
+140:1 accepted
+141:1 accepted
+142:1 accepted
+143:1 accepted
+144:1 accepted
+145:1 accepted
+148:1 rejected 22023
+149:1 rejected 22023
+150:1 rejected 42704
+154:1 rejected 42704
+155:1 accepted
+156:1 accepted
+157:1 accepted
+158:1 accepted
+159:1 accepted
+160:1 accepted
+161:1 rejected 42602
+162:1 rejected 42704
+163:1 rejected 42602
+164:1 rejected 42704
+168:1 accepted
+169:1 accepted
+170:1 rejected 42602
+171:1 rejected 42704
+176:1 rejected 42601
+176:54 rejected 42601
+177:1 accepted
+178:1 accepted
+179:1 accepted
+186:1 rejected 42601
+186:20 rejected 42601

@@ -1,0 +1,5 @@
+19:1 rejected 42601
+23:1 rejected 58P01
+29:1 rejected 42601
+32:1 rejected 42601
+34:1 rejected 42883

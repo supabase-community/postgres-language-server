@@ -1,0 +1,205 @@
+2:1 rejected 42601
+3:1 accepted
+4:1 accepted
+5:1 accepted
+6:1 rejected 42804
+7:1 accepted
+8:1 accepted
+10:1 accepted
+11:1 accepted
+12:1 rejected 42804
+13:1 rejected 42846
+15:1 accepted
+16:1 rejected 22030
+17:1 accepted
+19:1 accepted
+20:1 accepted
+21:1 accepted
+22:1 accepted
+23:1 accepted
+24:1 accepted
+26:1 accepted
+27:1 accepted
+30:1 rejected 42601
+31:1 accepted
+32:1 accepted
+33:1 accepted
+34:1 accepted
+35:1 accepted
+36:1 accepted
+37:1 accepted
+38:1 accepted
+39:1 accepted
+40:1 accepted
+41:1 accepted
+42:1 accepted
+44:1 accepted
+45:1 accepted
+48:1 rejected 42601
+49:1 accepted
+50:1 accepted
+51:1 accepted
+52:1 accepted
+53:1 accepted
+54:1 accepted
+55:1 accepted
+56:1 accepted
+59:1 rejected 42804
+62:1 accepted
+63:1 accepted
+66:1 accepted
+67:1 accepted
+68:1 accepted
+69:1 accepted
+70:1 accepted
+71:1 accepted
+72:1 accepted
+73:1 rejected 0A000
+74:1 rejected 22023
+75:1 accepted
+76:1 accepted
+77:1 accepted
+78:1 rejected 0A000
+79:1 rejected 0A000
+81:1 rejected 42804
+82:1 rejected 42804
+83:1 accepted
+84:1 rejected 42804
+85:1 accepted
+86:1 rejected 42804
+88:1 rejected 22004
+89:1 accepted
+90:1 accepted
+92:1 accepted
+93:1 accepted
+96:1 accepted
+97:1 accepted
+99:1 accepted
+100:1 accepted
+103:1 rejected 22023
+104:1 rejected 22023
+106:1 accepted
+113:1 accepted
+129:1 accepted
+130:1 accepted
+132:1 accepted
+133:1 accepted
+134:1 accepted
+135:1 accepted
+137:1 accepted
+138:1 accepted
+139:1 accepted
+141:1 rejected 22030
+143:1 rejected 22030
+144:1 rejected 22030
+145:1 rejected 22030
+146:1 rejected 22030
+148:1 rejected 22030
+149:1 rejected 22030
+150:1 accepted
+151:1 rejected 22030
+152:1 accepted
+153:1 accepted
+157:1 accepted
+158:1 accepted
+161:1 accepted
+162:1 rejected 22023
+163:1 accepted
+164:1 accepted
+165:1 accepted
+168:1 accepted
+169:1 accepted
+170:1 accepted
+171:1 accepted
+172:1 accepted
+173:1 accepted
+174:1 accepted
+175:1 rejected 0A000
+176:1 rejected 22023
+177:1 accepted
+178:1 accepted
+179:1 accepted
+180:1 rejected 0A000
+181:1 rejected 0A000
+183:1 accepted
+185:1 accepted
+186:1 accepted
+187:1 accepted
+188:1 accepted
+189:1 accepted
+190:1 accepted
+192:1 accepted
+193:1 accepted
+194:1 accepted
+196:1 accepted
+197:1 accepted
+198:1 accepted
+201:1 accepted
+202:1 accepted
+205:1 rejected 42601
+206:1 rejected 42601
+207:1 rejected 42601
+210:1 accepted
+214:1 accepted
+218:1 accepted
+221:1 accepted
+224:1 accepted
+227:1 accepted
+231:1 accepted
+236:1 accepted
+251:1 accepted
+257:1 accepted
+261:1 rejected 22004
+263:1 rejected 22023
+265:1 accepted
+273:1 accepted
+283:1 rejected 22030
+286:1 rejected 22030
+289:1 accepted
+292:1 rejected 22030
+295:1 rejected 22030
+298:1 accepted
+301:1 rejected 22030
+305:1 accepted
+308:1 accepted
+313:1 accepted
+315:1 accepted
+318:1 rejected 22030
+321:1 rejected 22030
+325:1 accepted
+329:1 accepted
+334:1 accepted
+337:1 accepted
+342:1 accepted
+345:1 accepted
+349:1 accepted
+353:1 accepted
+359:1 accepted
+362:1 accepted
+366:1 accepted
+370:1 accepted
+376:1 accepted
+379:1 accepted
+382:1 accepted
+387:1 accepted
+390:1 accepted
+391:1 accepted
+392:1 accepted
+393:1 accepted
+394:1 accepted
+395:1 accepted
+396:1 rejected 42804
+401:1 accepted
+403:1 accepted
+405:1 accepted
+411:1 rejected 42846
+412:1 rejected 42846
+414:1 accepted
+415:1 accepted
+417:1 accepted
+420:1 accepted
+422:1 rejected 22021
+424:1 accepted
+426:1 accepted
+444:1 rejected 42703
+453:13 rejected 42601

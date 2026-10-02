@@ -1,0 +1,17 @@
+4:1 accepted
+5:1 accepted
+10:1 accepted
+11:1 rejected 42601
+11:51 rejected 42601
+12:1 rejected 42P01
+13:1 rejected 42P01
+14:1 rejected 42P01
+15:1 rejected 42P01
+17:1 rejected 42P01
+18:1 accepted
+19:1 accepted
+20:1 accepted
+21:1 rejected 42P01
+23:1 rejected 42P01
+25:1 accepted
+26:1 rejected 2BP01

@@ -1,0 +1,133 @@
+12:1 accepted
+13:1 accepted
+14:1 accepted
+15:1 accepted
+16:1 accepted
+17:1 accepted
+18:1 accepted
+19:1 accepted
+20:1 accepted
+21:1 accepted
+22:1 accepted
+23:1 accepted
+24:1 accepted
+27:1 skipped
+28:1 rejected 25P01
+29:1 rejected 25P01
+30:1 rejected 25P01
+31:1 rejected 42601
+31:31 rejected 42601
+32:1 rejected 25P01
+33:1 rejected 25P01
+34:1 rejected 25P01
+35:1 rejected 25P01
+36:1 skipped
+39:1 skipped
+40:1 rejected 25P01
+41:1 rejected 25P01
+42:1 rejected 25P01
+43:1 rejected 42601
+43:31 rejected 42601
+44:1 rejected 25P01
+45:1 rejected 25P01
+46:1 rejected 25P01
+47:1 rejected 25P01
+48:1 skipped
+51:1 skipped
+52:1 rejected 25P01
+54:1 accepted
+57:1 skipped
+58:1 skipped
+59:1 rejected 25P01
+61:1 accepted
+64:1 skipped
+65:1 skipped
+66:1 rejected 25P01
+68:1 accepted
+71:1 skipped
+72:1 skipped
+73:1 rejected 25P01
+75:1 accepted
+78:1 skipped
+79:1 skipped
+80:1 rejected 25P01
+82:1 accepted
+85:1 skipped
+86:1 skipped
+87:1 rejected 25P01
+89:1 accepted
+92:1 skipped
+94:1 accepted
+95:1 skipped
+96:1 rejected 25P01
+97:1 skipped
+98:1 accepted
+99:1 skipped
+100:1 rejected 25P01
+101:1 skipped
+104:1 accepted
+105:1 accepted
+106:1 skipped
+107:1 rejected 25P01
+108:1 skipped
+112:1 accepted
+113:1 accepted
+115:1 skipped
+116:1 rejected 25P01
+117:1 skipped
+118:1 skipped
+119:1 rejected 25P01
+120:1 skipped
+121:1 skipped
+122:1 rejected 25P01
+123:1 skipped
+124:1 accepted
+125:1 accepted
+129:1 accepted
+131:1 skipped
+132:1 rejected 25P01
+133:1 skipped
+134:1 accepted
+135:1 accepted
+136:1 accepted
+137:1 skipped
+138:1 rejected 25P01
+140:1 accepted
+143:1 skipped
+144:1 accepted
+145:1 accepted
+149:1 accepted
+150:1 accepted
+152:1 skipped
+153:1 rejected 25P01
+154:1 skipped
+155:1 accepted
+156:1 accepted
+157:1 accepted
+159:1 skipped
+160:1 rejected 25P01
+161:1 skipped
+162:1 accepted
+163:1 accepted
+164:1 skipped
+165:1 rejected 25P01
+167:1 accepted
+170:1 skipped
+171:1 accepted
+172:1 accepted
+177:1 accepted
+178:1 accepted
+179:1 accepted
+180:1 accepted
+181:1 accepted
+182:1 accepted
+183:1 accepted
+184:1 accepted
+185:1 accepted
+186:1 accepted
+187:1 accepted
+188:1 accepted
+189:1 accepted
+193:1 accepted
+195:1 rejected 42601
+200:1 rejected 42883

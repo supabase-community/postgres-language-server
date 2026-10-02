@@ -1,0 +1,29 @@
+9:1 rejected 42704
+11:1 rejected 42P01
+15:1 rejected XX000
+18:1 rejected 42P01
+21:1 rejected 42P01
+24:1 rejected 42P01
+27:1 rejected 42P01
+30:1 rejected 42P01
+33:1 rejected 42P01
+36:1 rejected 42P01
+39:1 rejected 42P01
+42:1 rejected 42P01
+45:1 rejected 42P01
+48:1 rejected 42P01
+51:1 rejected 42P01
+54:1 rejected 42P01
+58:1 rejected 42P01
+62:1 rejected 42704
+66:1 rejected 42P01
+70:1 rejected 42P01
+74:1 rejected 42P01
+78:1 rejected 42P01
+82:1 accepted
+83:1 accepted
+84:1 accepted
+87:1 accepted
+91:1 rejected 42P01
+92:1 rejected 42P01
+93:1 accepted

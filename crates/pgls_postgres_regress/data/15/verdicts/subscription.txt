@@ -1,0 +1,115 @@
+5:1 accepted
+6:1 accepted
+7:1 accepted
+8:1 accepted
+11:1 rejected 42601
+14:1 rejected 42601
+17:1 skipped
+18:1 rejected 42601
+19:1 skipped
+22:1 rejected 42601
+25:1 rejected 42710
+28:1 accepted
+30:1 accepted
+31:1 accepted
+34:1 rejected 42710
+37:1 accepted
+38:1 rejected 42501
+39:1 accepted
+42:1 rejected 42601
+43:1 rejected 42601
+44:1 rejected 42601
+45:1 rejected 42601
+46:1 rejected 42601
+47:1 rejected 42601
+48:1 rejected 42601
+49:1 rejected 42601
+52:1 accepted
+54:1 rejected 55000
+55:1 rejected 55000
+57:1 accepted
+60:1 rejected 42601
+64:1 rejected 08006
+67:1 rejected 42601
+71:1 accepted
+72:1 accepted
+73:1 accepted
+76:1 rejected 42602
+79:1 rejected 42704
+80:1 rejected 42601
+83:1 accepted
+88:1 accepted
+91:1 rejected 22023
+95:1 skipped
+96:1 accepted
+100:1 accepted
+104:1 skipped
+107:1 accepted
+108:1 rejected 42501
+109:1 accepted
+111:1 accepted
+112:1 accepted
+113:1 rejected 22023
+118:1 accepted
+121:1 rejected 42501
+122:1 accepted
+124:1 accepted
+127:1 skipped
+128:1 rejected 08006
+129:1 skipped
+131:1 accepted
+134:1 skipped
+135:1 accepted
+136:1 skipped
+138:1 accepted
+139:1 rejected 42704
+142:1 rejected 42601
+145:1 accepted
+149:1 accepted
+150:1 accepted
+154:1 accepted
+157:1 rejected 42601
+160:1 accepted
+164:1 accepted
+165:1 accepted
+170:1 rejected 42710
+173:1 rejected 42710
+176:1 accepted
+179:1 rejected 42710
+184:1 rejected 42710
+187:1 rejected 42P17
+190:1 rejected 42P17
+193:1 accepted
+197:1 accepted
+199:1 accepted
+202:1 accepted
+206:1 skipped
+207:1 rejected 08006
+208:1 skipped
+210:1 skipped
+211:1 rejected 08006
+212:1 skipped
+214:1 accepted
+216:1 rejected 25001
+218:1 accepted
+219:1 accepted
+220:1 accepted
+221:1 accepted
+224:1 rejected 42601
+227:1 accepted
+231:1 rejected 42601
+234:1 accepted
+238:1 accepted
+239:1 accepted
+242:1 accepted
+246:1 accepted
+247:1 accepted
+250:1 rejected 42601
+253:1 accepted
+257:1 accepted
+261:1 accepted
+262:1 accepted
+264:1 accepted
+265:1 accepted
+266:1 accepted
+267:1 accepted

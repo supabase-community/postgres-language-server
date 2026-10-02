@@ -1,0 +1,135 @@
+9:1 accepted
+10:1 accepted
+11:1 accepted
+13:1 accepted
+14:1 accepted
+20:1 accepted
+21:1 accepted
+22:1 accepted
+23:1 accepted
+24:1 accepted
+25:1 accepted
+30:1 accepted
+31:1 accepted
+32:1 rejected 23505
+33:1 rejected 23505
+36:1 accepted
+37:1 accepted
+38:1 accepted
+39:1 accepted
+43:1 accepted
+44:1 accepted
+45:1 accepted
+46:1 accepted
+47:1 accepted
+52:1 accepted
+53:1 accepted
+54:1 rejected 23505
+60:1 accepted
+62:1 accepted
+63:1 accepted
+65:1 rejected 23505
+66:1 accepted
+68:1 accepted
+70:1 accepted
+71:1 accepted
+73:1 rejected 23505
+74:1 rejected 23502
+75:1 accepted
+76:1 accepted
+78:1 accepted
+80:1 accepted
+81:1 accepted
+83:1 accepted
+84:1 accepted
+85:1 accepted
+87:1 accepted
+89:1 accepted
+90:1 accepted
+92:1 rejected 23505
+93:1 accepted
+95:1 accepted
+97:1 accepted
+98:1 accepted
+100:1 rejected 23505
+101:1 rejected 23502
+102:1 accepted
+103:1 accepted
+105:1 accepted
+107:1 accepted
+108:1 accepted
+110:1 rejected 23P01
+111:1 accepted
+112:1 accepted
+118:1 accepted
+119:1 accepted
+120:1 accepted
+121:1 accepted
+122:1 accepted
+123:1 accepted
+130:1 accepted
+131:1 accepted
+132:1 accepted
+133:1 accepted
+134:1 accepted
+135:1 accepted
+142:1 accepted
+143:1 accepted
+144:1 accepted
+145:1 accepted
+146:1 accepted
+147:1 accepted
+148:1 accepted
+153:1 accepted
+154:1 accepted
+155:1 rejected 0A000
+156:1 accepted
+157:1 rejected 0A000
+158:1 rejected 42703
+159:1 accepted
+164:1 accepted
+165:1 accepted
+166:1 accepted
+167:1 accepted
+168:1 accepted
+174:1 accepted
+175:1 accepted
+176:1 accepted
+177:1 accepted
+178:1 rejected 42P01
+179:1 accepted
+180:1 accepted
+181:1 accepted
+182:1 accepted
+187:1 accepted
+188:1 rejected 0A000
+189:1 accepted
+190:1 accepted
+191:1 rejected 0A000
+192:1 rejected 0A000
+193:1 accepted
+194:1 accepted
+195:1 accepted
+200:1 accepted
+201:1 accepted
+202:1 accepted
+203:1 accepted
+204:1 accepted
+206:1 rejected 23505
+207:1 accepted
+208:1 accepted
+209:1 accepted
+214:1 accepted
+215:1 accepted
+216:1 accepted
+217:1 accepted
+219:1 accepted
+224:1 accepted
+225:1 accepted
+226:1 accepted
+227:1 accepted
+228:1 accepted
+231:1 accepted
+234:1 accepted
+236:1 accepted
+238:1 accepted

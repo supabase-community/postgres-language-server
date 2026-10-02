@@ -64,6 +64,10 @@ _touch file:
 _touch file:
   (gci {{file}}).LastWriteTime = Get-Date
 
+# Records the Postgres regression fixtures of a major version (needs Docker), e.g. just record-regress 17 REL_17_12
+record-regress major tag="":
+	cargo run -p pgls_postgres_regress --features record --bin record -- {{major}} {{tag}}
+
 # Run tests of all crates
 test:
 	cargo test run --no-fail-fast

@@ -1,0 +1,343 @@
+5:1 accepted
+6:1 accepted
+9:1 accepted
+10:1 accepted
+11:1 accepted
+12:1 accepted
+13:1 accepted
+14:1 accepted
+15:1 accepted
+16:1 accepted
+18:1 accepted
+20:1 accepted
+21:1 accepted
+22:1 accepted
+23:1 accepted
+24:1 accepted
+25:1 accepted
+26:1 accepted
+27:1 accepted
+28:1 accepted
+29:1 accepted
+32:1 rejected 22007
+33:1 rejected 22007
+36:1 accepted
+37:1 accepted
+38:1 accepted
+39:1 accepted
+40:1 accepted
+44:1 accepted
+46:1 accepted
+49:1 accepted
+52:1 accepted
+55:1 accepted
+58:1 accepted
+61:1 accepted
+64:1 accepted
+70:1 accepted
+71:1 accepted
+78:1 rejected 22015
+79:1 rejected 22015
+80:1 rejected 22008
+81:1 rejected 22008
+84:1 rejected 22008
+86:1 accepted
+91:1 accepted
+92:1 accepted
+93:1 accepted
+95:1 accepted
+96:1 accepted
+98:1 accepted
+108:1 accepted
+109:1 skipped
+120:1 accepted
+123:1 accepted
+126:1 accepted
+129:1 accepted
+132:1 accepted
+134:1 accepted
+135:1 accepted
+137:1 accepted
+140:1 rejected 22008
+141:1 rejected 22008
+142:1 rejected 22008
+143:1 rejected 22008
+144:1 rejected 22008
+145:1 rejected 22008
+151:1 accepted
+154:1 accepted
+160:1 accepted
+164:1 accepted
+165:1 accepted
+167:1 rejected 22008
+168:1 rejected 22008
+172:1 accepted
+174:1 accepted
+175:1 accepted
+176:1 rejected 22008
+177:1 rejected 22008
+178:1 accepted
+179:1 accepted
+180:1 rejected 22008
+181:1 rejected 22008
+184:1 accepted
+185:1 accepted
+187:1 accepted
+189:1 accepted
+191:1 rejected 22007
+192:1 rejected 22007
+193:1 rejected 22007
+194:1 rejected 22007
+195:1 rejected 22007
+196:1 accepted
+197:1 accepted
+198:1 accepted
+199:1 accepted
+200:1 accepted
+201:1 accepted
+204:1 accepted
+205:1 accepted
+206:1 accepted
+207:1 accepted
+208:1 accepted
+209:1 accepted
+210:1 accepted
+211:1 accepted
+212:1 accepted
+213:1 accepted
+214:1 accepted
+215:1 rejected 22007
+216:1 accepted
+217:1 accepted
+218:1 rejected 22007
+219:1 accepted
+220:1 accepted
+221:1 rejected 22007
+222:1 accepted
+223:1 accepted
+224:1 rejected 22007
+225:1 accepted
+226:1 accepted
+227:1 rejected 22007
+228:1 accepted
+229:1 accepted
+230:1 accepted
+231:1 accepted
+232:1 accepted
+233:1 accepted
+234:1 accepted
+235:1 rejected 22007
+236:1 rejected 22007
+237:1 rejected 22007
+240:1 accepted
+241:1 accepted
+242:1 accepted
+243:1 accepted
+244:1 accepted
+245:1 rejected 22007
+246:1 accepted
+247:1 accepted
+248:1 accepted
+249:1 rejected 22007
+250:1 accepted
+251:1 accepted
+252:1 rejected 22007
+253:1 accepted
+254:1 accepted
+257:1 accepted
+262:1 accepted
+263:1 accepted
+270:1 accepted
+271:1 accepted
+277:1 accepted
+283:1 accepted
+284:1 accepted
+290:1 accepted
+296:1 rejected 22007
+299:1 accepted
+300:1 accepted
+309:1 accepted
+310:1 accepted
+319:1 accepted
+320:1 accepted
+324:1 accepted
+334:1 accepted
+335:1 accepted
+336:1 accepted
+337:1 accepted
+338:1 accepted
+339:1 accepted
+340:1 rejected 22007
+343:1 accepted
+344:1 accepted
+345:1 accepted
+346:1 accepted
+349:1 accepted
+350:1 accepted
+351:1 accepted
+352:1 accepted
+353:1 accepted
+354:1 accepted
+355:1 accepted
+356:1 accepted
+357:1 accepted
+358:1 accepted
+360:1 accepted
+361:1 accepted
+363:1 accepted
+365:1 accepted
+366:1 accepted
+369:1 rejected 22015
+370:1 rejected 22015
+371:1 rejected 22015
+372:1 rejected 22015
+373:1 rejected 22015
+374:1 rejected 22015
+375:1 rejected 22015
+376:1 rejected 22015
+377:1 rejected 22015
+378:1 rejected 22015
+379:1 rejected 22015
+380:1 rejected 22015
+381:1 rejected 22015
+382:1 rejected 22015
+383:1 rejected 22015
+384:1 rejected 22015
+386:1 rejected 22015
+387:1 rejected 22015
+388:1 rejected 22008
+389:1 rejected 22015
+390:1 rejected 22015
+393:1 rejected 22015
+394:1 rejected 22015
+395:1 rejected 22015
+396:1 rejected 22015
+397:1 rejected 22015
+398:1 rejected 22015
+399:1 rejected 22015
+400:1 rejected 22015
+402:1 rejected 22015
+403:1 rejected 22015
+404:1 rejected 22015
+405:1 rejected 22015
+407:1 rejected 22015
+408:1 rejected 22015
+409:1 rejected 22015
+410:1 rejected 22015
+412:1 rejected 22015
+413:1 rejected 22015
+414:1 rejected 22015
+415:1 rejected 22015
+416:1 rejected 22015
+417:1 rejected 22015
+419:1 rejected 22015
+420:1 rejected 22015
+421:1 rejected 22015
+422:1 rejected 22015
+423:1 rejected 22015
+424:1 rejected 22015
+427:1 rejected 22015
+428:1 rejected 22015
+429:1 rejected 22015
+430:1 rejected 22015
+431:1 rejected 22015
+432:1 rejected 22015
+433:1 rejected 22015
+434:1 rejected 22015
+436:1 rejected 22015
+437:1 rejected 22015
+438:1 rejected 22015
+439:1 rejected 22015
+440:1 rejected 22015
+441:1 rejected 22015
+442:1 rejected 22015
+443:1 rejected 22015
+445:1 rejected 22015
+446:1 rejected 22015
+447:1 rejected 22015
+448:1 rejected 22015
+450:1 rejected 22015
+451:1 rejected 22015
+452:1 rejected 22015
+453:1 rejected 22015
+455:1 rejected 22015
+456:1 rejected 22015
+457:1 rejected 22015
+458:1 rejected 22015
+460:1 rejected 22015
+461:1 rejected 22015
+462:1 rejected 22015
+463:1 rejected 22015
+465:1 rejected 22015
+466:1 rejected 22015
+467:1 rejected 22015
+468:1 rejected 22015
+471:1 rejected 22015
+472:1 rejected 22015
+473:1 rejected 22015
+474:1 rejected 22015
+476:1 rejected 22015
+477:1 rejected 22015
+478:1 rejected 22015
+479:1 rejected 22015
+481:1 rejected 22015
+482:1 rejected 22015
+483:1 rejected 22015
+484:1 rejected 22015
+486:1 rejected 22015
+487:1 rejected 22015
+489:1 rejected 22015
+490:1 rejected 22015
+492:1 rejected 22015
+493:1 rejected 22015
+495:1 rejected 22015
+496:1 rejected 22015
+499:1 rejected 22015
+500:1 rejected 22015
+501:1 rejected 22015
+502:1 rejected 22015
+503:1 rejected 22015
+504:1 rejected 22015
+507:1 rejected 22015
+508:1 rejected 22015
+510:1 rejected 22015
+511:1 rejected 22015
+513:1 rejected 22007
+514:1 rejected 22007
+517:1 rejected 22015
+518:1 rejected 22015
+519:1 rejected 22015
+520:1 rejected 22015
+523:1 accepted
+524:1 accepted
+525:1 accepted
+526:1 accepted
+527:1 accepted
+528:1 accepted
+529:1 accepted
+530:1 accepted
+533:1 accepted
+534:1 accepted
+537:1 accepted
+538:1 accepted
+539:1 accepted
+541:1 accepted
+542:1 accepted
+544:1 rejected 22003
+545:1 rejected 22003
+546:1 rejected 22008
+547:1 rejected 22008
+548:1 accepted
+553:1 accepted
+569:1 rejected 22023
+570:1 rejected 0A000
+572:1 accepted
+573:1 accepted
+574:1 accepted
+575:1 accepted
+577:1 accepted
+578:1 accepted
+579:1 accepted
+580:1 accepted
+584:1 accepted
+592:1 accepted

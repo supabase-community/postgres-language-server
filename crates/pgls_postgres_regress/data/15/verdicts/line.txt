@@ -1,0 +1,25 @@
+7:1 accepted
+9:1 accepted
+10:1 accepted
+11:1 accepted
+12:1 accepted
+13:1 accepted
+14:1 accepted
+16:1 accepted
+17:1 accepted
+20:1 accepted
+22:1 accepted
+25:1 rejected 22P02
+26:1 rejected 22P02
+27:1 rejected 22P02
+28:1 rejected 22P02
+29:1 rejected 22P02
+30:1 rejected 22P02
+31:1 rejected 22P02
+32:1 rejected 22P02
+33:1 rejected 22P02
+34:1 rejected 22P02
+35:1 rejected 22P02
+37:1 rejected 22023
+39:1 accepted
+41:1 accepted

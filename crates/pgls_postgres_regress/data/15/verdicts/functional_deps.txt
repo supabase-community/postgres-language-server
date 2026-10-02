@@ -1,0 +1,40 @@
+3:1 accepted
+11:1 accepted
+23:1 accepted
+28:1 rejected 42803
+33:1 rejected 42803
+38:1 rejected 42803
+45:1 accepted
+51:1 rejected 42803
+59:1 accepted
+65:1 rejected 42803
+71:1 accepted
+77:1 rejected 42803
+85:1 accepted
+86:1 accepted
+89:1 accepted
+94:1 rejected 42803
+98:1 accepted
+101:1 accepted
+108:1 accepted
+120:1 accepted
+130:1 accepted
+136:1 accepted
+145:1 rejected 42803
+151:1 accepted
+157:1 rejected 2BP01
+159:1 accepted
+163:1 accepted
+169:1 rejected 2BP01
+170:1 rejected 2BP01
+172:1 accepted
+177:1 accepted
+186:1 rejected 2BP01
+188:1 accepted
+191:1 accepted
+194:1 rejected 2BP01
+196:1 accepted
+201:1 accepted
+206:1 accepted
+208:1 accepted
+210:1 rejected 42803

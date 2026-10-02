@@ -1,0 +1,44 @@
+10:1 accepted
+11:1 accepted
+12:1 accepted
+13:1 accepted
+14:1 accepted
+15:1 accepted
+16:1 accepted
+17:1 accepted
+18:1 accepted
+19:1 accepted
+20:1 accepted
+24:1 accepted
+27:1 accepted
+31:1 rejected 42803
+34:1 accepted
+37:1 accepted
+41:1 accepted
+44:1 accepted
+47:1 accepted
+50:1 accepted
+54:1 rejected 42P10
+58:1 rejected 42702
+64:1 accepted
+69:1 accepted
+74:1 accepted
+78:1 accepted
+83:1 accepted
+89:1 accepted
+94:1 accepted
+100:1 accepted
+105:1 accepted
+111:1 rejected 42803
+114:1 accepted
+117:1 accepted
+121:1 accepted
+124:1 accepted
+129:1 rejected 42702
+134:1 accepted
+140:1 rejected 42702
+146:1 accepted
+151:1 accepted
+154:1 accepted
+155:1 accepted
+156:1 accepted

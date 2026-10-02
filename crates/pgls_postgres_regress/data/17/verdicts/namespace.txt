@@ -1,0 +1,48 @@
+7:1 accepted
+9:1 accepted
+10:8 rejected 42P01
+12:8 rejected 42P01
+15:8 rejected 3F000
+21:1 accepted
+22:1 skipped
+23:1 accepted
+24:1 accepted
+25:8 rejected 42P01
+26:1 skipped
+27:1 accepted
+31:1 skipped
+32:1 accepted
+33:1 rejected 42P06
+34:8 rejected 42P01
+35:1 accepted
+36:1 skipped
+37:1 accepted
+38:1 accepted
+41:1 accepted
+44:1 rejected 42P01
+45:1 rejected 42P01
+46:1 rejected 42P01
+48:1 rejected 42P01
+49:1 rejected 42P01
+51:1 accepted
+52:1 accepted
+56:1 rejected 42P06
+57:1 accepted
+58:1 accepted
+59:8 accepted
+64:1 accepted
+67:1 accepted
+75:1 accepted
+76:1 accepted
+78:1 accepted
+85:1 accepted
+86:1 accepted
+87:1 accepted
+91:1 accepted
+92:1 accepted
+93:1 accepted
+94:1 accepted
+95:1 accepted
+96:1 accepted
+98:1 accepted
+100:1 accepted

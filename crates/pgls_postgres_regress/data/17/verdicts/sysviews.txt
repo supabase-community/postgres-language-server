@@ -1,0 +1,27 @@
+11:1 accepted
+13:1 accepted
+17:1 accepted
+26:1 skipped
+27:1 rejected 25P01
+30:1 rejected 34000
+31:1 accepted
+33:1 skipped
+36:1 accepted
+39:1 accepted
+41:1 accepted
+44:1 accepted
+48:1 accepted
+52:1 accepted
+55:1 accepted
+58:1 accepted
+61:1 accepted
+64:1 accepted
+67:1 accepted
+71:1 accepted
+75:1 accepted
+84:1 accepted
+85:1 accepted
+87:1 accepted
+88:1 accepted
+89:1 accepted
+90:1 accepted

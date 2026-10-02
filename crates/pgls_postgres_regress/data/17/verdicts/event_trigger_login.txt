@@ -1,0 +1,11 @@
+2:1 accepted
+3:1 accepted
+4:1 accepted
+10:1 accepted
+11:1 accepted
+13:1 accepted
+15:1 accepted
+18:1 rejected 42601
+21:1 accepted
+22:1 accepted
+23:1 accepted

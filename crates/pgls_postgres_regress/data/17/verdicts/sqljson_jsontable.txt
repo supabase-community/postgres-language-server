@@ -1,0 +1,120 @@
+4:1 rejected 42601
+7:1 rejected 42601
+8:1 rejected 42601
+9:1 accepted
+10:1 rejected 2203A
+13:1 rejected 42712
+16:1 rejected 42601
+18:1 rejected 42P10
+21:1 rejected 42712
+24:1 accepted
+25:1 accepted
+26:1 accepted
+29:1 accepted
+30:1 accepted
+33:1 accepted
+37:1 accepted
+38:1 accepted
+47:1 accepted
+67:1 accepted
+84:1 accepted
+100:1 accepted
+120:1 accepted
+123:1 rejected 42804
+126:1 accepted
+129:1 accepted
+132:1 accepted
+137:1 rejected 22003
+139:1 rejected 22026
+141:1 accepted
+146:1 accepted
+158:1 accepted
+169:1 accepted
+179:1 accepted
+188:1 accepted
+206:1 accepted
+207:1 accepted
+208:1 accepted
+209:1 accepted
+210:1 accepted
+213:1 accepted
+223:1 accepted
+233:1 accepted
+234:1 accepted
+235:1 accepted
+236:1 accepted
+237:1 accepted
+238:1 accepted
+241:1 rejected 42601
+242:1 accepted
+245:1 accepted
+250:1 rejected 22P02
+258:1 rejected 22P02
+265:1 rejected 22035
+266:1 rejected 2203A
+267:1 rejected 22035
+269:1 accepted
+270:1 accepted
+271:1 accepted
+274:1 accepted
+275:1 accepted
+276:1 rejected 42804
+277:1 rejected 42804
+278:1 rejected 42804
+280:1 rejected 42804
+281:1 rejected 22001
+282:1 accepted
+283:1 accepted
+284:1 accepted
+287:1 accepted
+288:1 accepted
+289:1 accepted
+290:1 rejected 42804
+291:1 rejected 23514
+292:1 rejected 42804
+293:1 accepted
+294:1 accepted
+297:1 accepted
+298:1 accepted
+299:1 accepted
+300:1 accepted
+301:1 accepted
+302:1 accepted
+304:1 accepted
+307:1 rejected 42601
+309:1 accepted
+312:1 accepted
+321:1 accepted
+330:1 rejected 0A000
+333:1 rejected 22034
+338:1 rejected 42712
+349:1 accepted
+360:1 rejected 42712
+371:1 rejected 42712
+391:1 accepted
+393:1 accepted
+403:1 accepted
+419:1 accepted
+438:1 accepted
+463:1 accepted
+465:1 accepted
+466:1 accepted
+471:1 accepted
+478:1 accepted
+491:1 accepted
+500:1 accepted
+515:1 accepted
+528:1 accepted
+542:1 accepted
+543:1 accepted
+546:1 rejected 42601
+550:1 rejected 42601
+551:1 rejected 42601
+552:1 rejected 42601
+553:1 rejected 42601
+557:1 accepted
+560:1 accepted
+563:1 accepted
+566:1 accepted
+569:1 accepted
+572:1 accepted

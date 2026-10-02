@@ -1,0 +1,116 @@
+7:1 rejected 42P01
+8:1 accepted
+9:1 accepted
+10:1 accepted
+11:1 accepted
+12:1 accepted
+13:1 accepted
+14:1 accepted
+15:1 accepted
+16:1 accepted
+17:1 accepted
+18:1 accepted
+19:1 accepted
+20:1 accepted
+21:1 accepted
+22:1 accepted
+23:1 accepted
+24:1 accepted
+25:1 accepted
+27:1 rejected 22P02
+28:1 rejected 22P02
+30:1 rejected 22P02
+31:1 rejected 22P02
+32:1 accepted
+36:1 accepted
+37:1 accepted
+39:1 accepted
+41:1 accepted
+43:1 accepted
+46:1 accepted
+50:1 accepted
+51:1 accepted
+53:1 accepted
+56:1 accepted
+64:1 accepted
+65:1 accepted
+68:1 accepted
+71:1 accepted
+74:1 rejected 22023
+75:1 rejected 22023
+78:1 accepted
+79:1 accepted
+80:1 accepted
+82:1 accepted
+83:1 accepted
+85:1 accepted
+86:1 accepted
+88:1 accepted
+89:1 accepted
+91:1 accepted
+92:1 accepted
+93:1 accepted
+96:1 accepted
+97:1 accepted
+98:1 accepted
+99:1 accepted
+100:1 accepted
+101:1 accepted
+102:1 accepted
+103:1 accepted
+104:1 accepted
+105:1 accepted
+106:1 accepted
+107:1 accepted
+108:1 accepted
+111:1 accepted
+113:1 accepted
+115:1 accepted
+116:1 accepted
+119:1 accepted
+120:1 accepted
+121:1 accepted
+122:1 accepted
+123:1 accepted
+124:1 accepted
+125:1 accepted
+126:1 accepted
+127:1 accepted
+128:1 accepted
+129:1 accepted
+130:1 accepted
+131:1 accepted
+134:1 accepted
+136:1 accepted
+138:1 accepted
+139:1 accepted
+142:1 accepted
+143:1 accepted
+144:1 accepted
+145:1 accepted
+146:1 accepted
+147:1 accepted
+148:1 accepted
+149:1 accepted
+150:1 accepted
+151:1 accepted
+152:1 accepted
+153:1 accepted
+154:1 accepted
+155:1 accepted
+157:1 rejected 22003
+158:1 rejected 22003
+159:1 rejected 22003
+160:1 rejected 22003
+162:1 accepted
+163:1 accepted
+166:1 accepted
+168:1 rejected 22023
+170:1 accepted
+173:1 accepted
+268:1 accepted
+269:1 accepted
+270:1 accepted
+271:1 accepted
+273:1 accepted
+274:1 accepted

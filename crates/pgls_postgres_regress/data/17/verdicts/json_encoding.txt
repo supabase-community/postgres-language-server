@@ -1,0 +1,44 @@
+7:1 rejected 42601
+13:1 accepted
+18:1 rejected 22P02
+19:1 rejected 22P02
+20:1 rejected 22P02
+21:1 accepted
+22:1 accepted
+26:1 accepted
+27:1 rejected 22P02
+28:1 rejected 22P02
+29:1 rejected 22P02
+30:1 rejected 22P02
+34:1 accepted
+35:1 accepted
+36:1 accepted
+37:1 accepted
+38:1 accepted
+40:1 accepted
+41:1 accepted
+42:1 accepted
+43:1 rejected 22P05
+44:1 accepted
+49:1 rejected 22P02
+50:1 rejected 22P02
+51:1 rejected 22P02
+52:1 accepted
+53:1 rejected 22P05
+56:1 accepted
+60:1 accepted
+61:1 rejected 22P02
+62:1 rejected 22P02
+63:1 rejected 22P02
+64:1 rejected 22P02
+68:1 accepted
+69:1 accepted
+70:1 accepted
+71:1 rejected 22P05
+72:1 accepted
+74:1 accepted
+75:1 accepted
+76:1 accepted
+77:1 rejected 22P05
+78:1 accepted
+82:1 accepted
