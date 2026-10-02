@@ -27,8 +27,12 @@ serde            = { workspace = true }
 insta                   = { version = "1.42.1" }
 pgls_catalog            = { workspace = true, features = ["db"] }
 pgls_diagnostics        = { workspace = true }
+pgls_lexer              = { workspace = true }
+pgls_postgres_regress   = { workspace = true }
 pgls_statement_splitter = { workspace = true }
 pgls_test_macros        = { workspace = true }
+rayon                   = { workspace = true }
+serde_json              = { workspace = true }
 sqlx                    = { workspace = true }
 termcolor               = { workspace = true }
 tokio                   = { workspace = true }

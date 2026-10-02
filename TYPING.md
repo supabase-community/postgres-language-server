@@ -189,15 +189,11 @@ The EXPLAIN fallback stays gated on `database_only`. A static finding already cl
 
 ## Regression Corpus
 
-`pgls_analyser/tests/regress_corpus.rs` (ignored by default) runs Postgres' own regression SQL through Postgres and the linter, file by file in a fresh database, and fails on any finding for a statement Postgres accepted. It writes `target/regress-report.txt` with false positives, known harness artefacts, and true positives per rule and SQLSTATE.
+`pgls_analyser/tests/postgres_regress.rs` runs the type-check rules over Postgres' own regression SQL of every supported version (15–18), from the fixtures in `pgls_postgres_regress`: the upstream files, Postgres' verdict per statement, and the catalog of a fresh database on that version. It is a normal `cargo test` without network or database. A finding on a statement Postgres accepted fails the test; the findings on statements Postgres rejected are snapshotted per version (`tests/snapshots/postgres_regress__typecheck_<major>.snap`), so a change in what we detect shows up in review.
 
-```sh
-git clone --depth 1 --branch REL_15_STABLE --filter=blob:none --sparse https://github.com/postgres/postgres /tmp/pg15
-(cd /tmp/pg15 && git sparse-checkout set src/test/regress/sql)
-PG_REGRESS_DIR=/tmp/pg15/src/test/regress/sql cargo test -p pgls_analyser --test regress_corpus -- --ignored
-```
+Re-record a version with `just record-regress <major> [tag]` (needs Docker), or only its catalog with `just record-regress <major> --catalog-only` after the snapshot queries change.
 
-On REL_15_STABLE: about 40,000 statements, no false positives, two known artefacts (a `DROP TABLE` that fails in a read-only session). Statements that fail at runtime can't be modelled: the linter assumes every statement of a file succeeds, like a migration that stops at the first error.
+Statements that fail at runtime can't be modelled: the linter assumes every statement of a file succeeds, like a migration that stops at the first error. The test allowlists such findings as known artefacts (a `DROP TABLE` that fails in a read-only session).
 
 ## Status
 
@@ -211,5 +207,5 @@ On REL_15_STABLE: about 40,000 statements, no false positives, two known artefac
 | Rules | `pgls_analyser/src/lint/typecheck/*` | done |
 | Spec runner on the built-in catalog | `pgls_analyser/tests/rules_tests.rs` | done |
 | Differential test | `resolve/differential_tests.rs` | done; grows with each change |
-| Regression corpus | `pgls_analyser/tests/regress_corpus.rs` | done; no false positives |
+| Regression corpus | `pgls_analyser/tests/postgres_regress.rs` | done; no false positives on 15–18 |
 | Hover with expression types | `pgls_hover` | deferred |
