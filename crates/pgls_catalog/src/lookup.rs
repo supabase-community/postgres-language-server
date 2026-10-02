@@ -4,9 +4,7 @@
 //! changes of the current file. The resolver only depends on this trait, so it can be tested
 //! against small in-memory catalogs.
 
-use crate::typing::{
-    Candidates, CastInfo, FunctionSignature, OperatorInfo, Type, TypeId, TypeKind,
-};
+use crate::typing::{Type, TypeId};
 
 /// The result of a catalog lookup.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -186,7 +184,7 @@ pub trait CatalogView {
         &self,
         _: Option<&str>,
         _: &str,
-        _: crate::typing::OperatorKind,
+        _: crate::OperatorKind,
         _: &[String],
     ) -> Candidates<OperatorInfo> {
         Candidates {
@@ -198,4 +196,95 @@ pub trait CatalogView {
     fn server_version_num(&self) -> Option<i64> {
         None
     }
+}
+
+// ----- facts for typing -----
+
+/// Candidate objects visible to a lookup.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Candidates<T> {
+    pub items: Vec<T>,
+    pub complete: bool,
+}
+
+/// pg_type.typtype.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum TypeKind {
+    Base,
+    Composite,
+    Domain,
+    Enum,
+    Pseudo,
+    Range,
+    Multirange,
+}
+
+/// Operator arity.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum OperatorKind {
+    Prefix,
+    Infix,
+}
+
+/// The mode of a function argument.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum FunctionArgumentMode {
+    In,
+    InOut,
+    Variadic,
+}
+
+/// An input argument of a function.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct FunctionArgument {
+    pub name: Option<String>,
+    pub ty: Option<TypeId>,
+    pub mode: FunctionArgumentMode,
+}
+
+/// The typing-relevant function definition.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct FunctionSignature {
+    pub arguments: Vec<FunctionArgument>,
+    pub input_defaults: usize,
+    pub variadic_element: Option<TypeId>,
+    pub return_type: Option<TypeId>,
+    pub returns_set: bool,
+}
+
+/// A database operator.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct OperatorInfo {
+    pub oid: i64,
+    pub schema: String,
+    pub name: String,
+    pub kind: OperatorKind,
+    pub left: Option<TypeId>,
+    pub right: Option<TypeId>,
+    pub result: Option<TypeId>,
+}
+
+/// A cast context from pg_cast.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum CastContext {
+    Implicit,
+    Assignment,
+    Explicit,
+}
+
+/// A cast implementation from pg_cast.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum CastMethod {
+    Function,
+    InputOutput,
+    Binary,
+}
+
+/// A catalog cast.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CastInfo {
+    pub source: TypeId,
+    pub target: TypeId,
+    pub context: CastContext,
+    pub method: CastMethod,
 }

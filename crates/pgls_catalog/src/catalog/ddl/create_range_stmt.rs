@@ -33,9 +33,9 @@ pub(super) fn apply_create_range_stmt(
             type_name.clone(),
             None,
             if type_name == &range_name {
-                crate::typing::TypeKind::Range
+                crate::TypeKind::Range
             } else {
-                crate::typing::TypeKind::Multirange
+                crate::TypeKind::Multirange
             },
             if type_name == &range_name { 'R' } else { 'M' },
             None,

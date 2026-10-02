@@ -7,10 +7,11 @@ use pgls_query::{
 };
 
 use super::{Resolver, resolve_node_enum, string::string_values};
+use crate::TypeKind;
 use crate::lookup::Lookup;
 use crate::resolve::{FindingKind, FunctionContext, FunctionParam, ReturnMismatch};
 use crate::typing::{
-    CoercionContext, Decision, Type, TypeId, TypeKind, can_coerce, format_type_with_search_path,
+    CoercionContext, Decision, Type, TypeId, can_coerce, format_type_with_search_path,
     normalize_type_name,
 };
 

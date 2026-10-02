@@ -252,9 +252,10 @@ mod tests {
     use sqlx::{Executor, PgPool};
 
     use super::Snapshot;
+    use crate::OperatorKind;
     use crate::catalog::{Catalog, CatalogBase};
     use crate::lookup::{CatalogView, Lookup};
-    use crate::typing::{OperatorKind, TypeId};
+    use crate::typing::TypeId;
     use std::sync::Arc;
 
     #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]

@@ -19,13 +19,6 @@ pub(super) fn apply_create_domain_stmt(
             .and_then(|id| c.type_by_id(id).found())
             .and_then(|info| info.category)
             .unwrap_or('U');
-        c.define_type_with_metadata(
-            schema,
-            name,
-            None,
-            crate::typing::TypeKind::Domain,
-            category,
-            base,
-        );
+        c.define_type_with_metadata(schema, name, None, crate::TypeKind::Domain, category, base);
     }
 }

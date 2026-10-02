@@ -311,7 +311,7 @@ fn composite_attributes(r: &Resolver, ty: &Type) -> Option<Option<Vec<TypedColum
     };
     let info = r.catalog.type_by_id(&id).found()?;
     match info.kind? {
-        crate::typing::TypeKind::Composite => Some(Some(
+        crate::TypeKind::Composite => Some(Some(
             info.attributes?
                 .into_iter()
                 .map(|attribute| TypedColumn {
@@ -321,7 +321,7 @@ fn composite_attributes(r: &Resolver, ty: &Type) -> Option<Option<Vec<TypedColum
                 .collect(),
         )),
         // `record` and other pseudo types need a column definition list.
-        crate::typing::TypeKind::Pseudo => None,
+        crate::TypeKind::Pseudo => None,
         _ => Some(None),
     }
 }

@@ -21,9 +21,10 @@ use std::sync::{
 
 use rustc_hash::{FxHashMap, FxHashSet};
 
+use crate::Candidates;
 use crate::lookup::{CatalogView, FunctionInfo, Lookup, RelationInfo, TypeInfo};
-use crate::typing::Candidates;
-use crate::typing::{CastInfo, OperatorInfo, OperatorKind, TypeId};
+use crate::typing::TypeId;
+use crate::{CastInfo, OperatorInfo, OperatorKind};
 
 pub use base::CatalogBase;
 

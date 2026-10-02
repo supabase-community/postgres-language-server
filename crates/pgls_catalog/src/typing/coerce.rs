@@ -1,5 +1,9 @@
-use crate::typing::{CastContext, CastMethod, CoercionContext, Decision, Type, TypeId};
-use crate::{CatalogView, Lookup, TypeInfo, TypeKind};
+//! Whether a value of one type can become another: Postgres' coercion rules.
+
+use crate::typing::types::{array_element, base_type, info, is_array, type_category};
+use crate::typing::{CoercionContext, Decision, Type, TypeId};
+use crate::{CastContext, CastMethod};
+use crate::{CatalogView, Lookup, TypeKind};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum CoercionPathway {
@@ -7,63 +11,6 @@ pub enum CoercionPathway {
     Func,
     ArrayCoerce,
     CoerceViaIo,
-}
-
-fn info(c: &dyn CatalogView, id: &TypeId) -> Decision<TypeInfo> {
-    match c.type_by_id(id) {
-        Lookup::Found(t) => Decision::Known(t),
-        _ => Decision::Unknown,
-    }
-}
-
-/// Port of PostgreSQL `getBaseType`.
-pub fn base_type(c: &dyn CatalogView, id: &TypeId) -> Decision<TypeId> {
-    let mut current = id.clone();
-    loop {
-        let meta = match info(c, &current) {
-            Decision::Known(t) => t,
-            Decision::Unknown => return Decision::Unknown,
-        };
-        match meta.kind {
-            Some(TypeKind::Domain) => {}
-            Some(_) => return Decision::Known(current),
-            None => return Decision::Unknown,
-        }
-        let Some(base) = meta.base else {
-            return Decision::Unknown;
-        };
-        if base == current {
-            return Decision::Known(current);
-        }
-        current = base;
-    }
-}
-
-/// Port of PostgreSQL `get_type_category_preferred` / `IsPreferredType`.
-pub fn type_category(c: &dyn CatalogView, id: &TypeId) -> Decision<(char, bool)> {
-    match info(c, id) {
-        Decision::Known(t) => match (t.category, t.preferred) {
-            (Some(category), Some(preferred)) => Decision::Known((category, preferred)),
-            _ => Decision::Unknown,
-        },
-        Decision::Unknown => Decision::Unknown,
-    }
-}
-
-/// Port of PostgreSQL `type_is_array`.
-pub fn is_array(c: &dyn CatalogView, id: &TypeId) -> Decision<bool> {
-    match info(c, id) {
-        Decision::Known(t) => Decision::Known(t.element.is_some()),
-        Decision::Unknown => Decision::Unknown,
-    }
-}
-
-/// Port of PostgreSQL `get_element_type` for true-array metadata.
-pub fn array_element(c: &dyn CatalogView, id: &TypeId) -> Decision<Option<TypeId>> {
-    match info(c, id) {
-        Decision::Known(t) => Decision::Known(t.element),
-        Decision::Unknown => Decision::Unknown,
-    }
 }
 
 fn cast_context(context: CastContext) -> u8 {

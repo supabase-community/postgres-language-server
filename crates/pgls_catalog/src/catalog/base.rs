@@ -1,8 +1,9 @@
 use std::sync::Arc;
 
-use crate::typing::{
+use crate::typing::{Type, TypeId};
+use crate::{
     CastContext, CastInfo, CastMethod, FunctionArgument, FunctionArgumentMode, FunctionSignature,
-    OperatorInfo, OperatorKind, Type, TypeId, TypeKind,
+    OperatorInfo, OperatorKind, TypeKind,
 };
 use crate::{ProcKind, Snapshot, TableKind};
 use rustc_hash::{FxHashMap, FxHashSet};
