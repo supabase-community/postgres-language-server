@@ -1264,7 +1264,7 @@ select
   int4range(0, 100),
   null;
 
-create index "is_odd" on stats_import.test using btree ((comp.a % 2 = 1));
+create index "is_odd" on stats_import.test using btree (((comp).a % 2 = 1));
 
 analyze stats_import.test;
 
@@ -1275,7 +1275,7 @@ create index "is_odd_clone"
 on stats_import.test_clone
 using btree
 (
-  (comp.a % 2 = 1)
+  ((comp).a % 2 = 1)
 );
 
 select

@@ -56,7 +56,7 @@ select * from quadtable;
 
 select f1, q.c1 from quadtable;
 
-select f1, q.c1, qq.q.c1.i from quadtable as qq;
+select f1, (q).c1, (qq.q).c1.i from quadtable as qq;
 
 create temporary table people (
   fn fullname,
@@ -93,11 +93,11 @@ insert into pp values (repeat('abcdefghijkl', 100000));
 
 insert into people select cast(('Jim', f1, null) as fullname), current_date from pp;
 
-select fn.first, substr(fn.last, 1, 20), length(fn.last) from people;
+select (fn).first, substr((fn).last, 1, 20), length((fn).last) from people;
 
 update people set fn."first" = 'Jack';
 
-select fn.first, substr(fn.last, 1, 20), length(fn.last) from people;
+select (fn).first, substr((fn).last, 1, 20), length((fn).last) from people;
 
 select row(1, 2) < row(1, 3) as "true";
 
@@ -277,11 +277,11 @@ select (row(1, 2.0)).nosuch;
 
 select (row(1, 2.0)).*;
 
-select r.f1 from (select row(1, 2.0) as r) as ss;
+select (r).f1 from (select row(1, 2.0) as r) as ss;
 
-select r.f3 from (select row(1, 2.0) as r) as ss;
+select (r).f3 from (select row(1, 2.0) as r) as ss;
 
-select r.* from (select row(1, 2.0) as r) as ss;
+select (r).* from (select row(1, 2.0) as r) as ss;
 
 select row();
 
@@ -741,7 +741,7 @@ where
     from
       (select c as c1) as s
     where
-      (select c1.f1 > 0)
+      (select (c1).f1 > 0)
   ) is not null;
 
 with
@@ -758,7 +758,7 @@ where
     from
       (select c as c1) as s
     where
-      (select c1.f1 > 0)
+      (select (c1).f1 > 0)
   ) is not null;
 
 select
@@ -772,18 +772,18 @@ where
     from
       (select c as c1) as s
     where
-      (select c1.f1 > 0)
+      (select (c1).f1 > 0)
   ) is not null;
 
 select pg_get_viewdef('composite_v', true);
 
 drop view composite_v;
 
-select ss.a.x, ss.a.n from (select information_schema._pg_expandarray(array[1, 2]) as a) as ss;
+select (ss.a).x, (ss.a).n from (select information_schema._pg_expandarray(array[1, 2]) as a) as ss;
 
 select
-  ss.a.x,
-  ss.a.n
+  (ss.a).x,
+  (ss.a).n
 from
   (
     select
@@ -798,7 +798,7 @@ with
 cte (c) as materialized (select row(1, 2)),
 cte2 (c) as (select * from cte)
 select
-  c.f1
+  (c).f1
 from
   cte2 as t;
 
@@ -806,7 +806,7 @@ with
 cte (c) as materialized (select row(1, 2)),
 cte2 (c) as (select * from cte)
 select
-  c.f1
+  (c).f1
 from
   cte2 as t
 where
@@ -821,9 +821,9 @@ insert into compositetable (a, b) values ('fa', 'fb');
 
 select d.a from (select compositetable as d from compositetable) as s;
 
-select d.a, d.b from (select compositetable as d from compositetable) as s;
+select (d).a, (d).b from (select compositetable as d from compositetable) as s;
 
-select d.ctid from (select compositetable as d from compositetable) as s;
+select (d).ctid from (select compositetable as d from compositetable) as s;
 
 select (cast(null as compositetable)).nonexistent;
 

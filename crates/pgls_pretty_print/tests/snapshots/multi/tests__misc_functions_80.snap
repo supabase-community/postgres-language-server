@@ -231,11 +231,11 @@ select * from pg_ls_waldir() limit 0;
 select COUNT(*) > 0 as ok from (select * from pg_ls_waldir() limit 1) as ss;
 
 select
-  w.size = 'segsize' as ok
+  (w).size = 'segsize' as ok
 from
   (select pg_ls_waldir() as w) as ss
 where
-  length(w.name) = 24
+  length((w).name) = 24
 limit 1;
 
 select COUNT(*) >= 0 as ok from pg_ls_archive_statusdir();

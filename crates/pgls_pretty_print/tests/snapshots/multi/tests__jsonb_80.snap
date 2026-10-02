@@ -1041,7 +1041,8 @@ create domain jsb_int_array_2d as int[][] check (array_length(value, 2) = 3);
 
 create type jb_unordered_pair as (x int, y int);
 
-create domain jb_ordered_pair as jb_unordered_pair check (value.x <= value.y);
+create domain jb_ordered_pair as jb_unordered_pair
+  check ((value).x <= (value).y);
 
 create type jsbrec as (
   i int,

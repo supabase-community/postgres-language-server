@@ -1,4 +1,4 @@
-use pgls_query::protobuf::AIndirection;
+use pgls_query::{NodeEnum, protobuf::AIndirection};
 
 use crate::{
     TokenKind,
@@ -8,50 +8,16 @@ use crate::{
 pub(super) fn emit_a_indirection(e: &mut EventEmitter, n: &AIndirection) {
     e.group_start(GroupKind::AIndirection);
 
-    // Collect all indirections, flattening nested AIndirection nodes
-    let (base_arg, all_indirections) = flatten_a_indirection(n);
-
-    // Emit the base expression
-    // Some expressions need parentheses when used with indirection (e.g., ROW(...), FuncCall for .*)
-    let needs_parens = if let Some(ref arg) = base_arg {
-        let has_indices = all_indirections
-            .iter()
-            .any(|node| matches!(node.node.as_ref(), Some(pgls_query::NodeEnum::AIndices(_))));
-
-        let has_star_or_field = all_indirections.iter().any(|node| {
-            matches!(
-                node.node.as_ref(),
-                Some(pgls_query::NodeEnum::AStar(_) | pgls_query::NodeEnum::String(_))
-            )
-        });
-
-        let safe_without_parens = matches!(
-            arg.node.as_ref(),
-            Some(pgls_query::NodeEnum::ColumnRef(_) | pgls_query::NodeEnum::ParamRef(_))
-        );
-
-        // Function calls and type casts need parens for .* expansion and field access
-        let needs_parens_for_field_access = matches!(
-            arg.node.as_ref(),
-            Some(
-                pgls_query::NodeEnum::FuncCall(_)
-                    | pgls_query::NodeEnum::JsonFuncExpr(_)
-                    | pgls_query::NodeEnum::TypeCast(_)
-            )
-        );
-
-        matches!(arg.node.as_ref(), Some(pgls_query::NodeEnum::RowExpr(_)))
-            || (has_indices && !safe_without_parens)
-            || (has_star_or_field && needs_parens_for_field_access)
-    } else {
-        false
-    };
+    let needs_parens = n
+        .arg
+        .as_ref()
+        .is_some_and(|arg| base_needs_parens(arg.node.as_ref(), n));
 
     if needs_parens {
         e.token(TokenKind::L_PAREN);
     }
 
-    if let Some(ref arg) = base_arg {
+    if let Some(ref arg) = n.arg {
         super::emit_node(arg, e);
     }
 
@@ -60,10 +26,10 @@ pub(super) fn emit_a_indirection(e: &mut EventEmitter, n: &AIndirection) {
     }
 
     // Emit indirection operators (array subscripts, field selections)
-    for indirection in &all_indirections {
+    for indirection in &n.indirection {
         // Field selection and star expansion need a dot before them
         match &indirection.node {
-            Some(pgls_query::NodeEnum::String(_)) | Some(pgls_query::NodeEnum::AStar(_)) => {
+            Some(NodeEnum::String(_)) | Some(NodeEnum::AStar(_)) => {
                 e.token(TokenKind::DOT);
             }
             _ => {}
@@ -74,29 +40,22 @@ pub(super) fn emit_a_indirection(e: &mut EventEmitter, n: &AIndirection) {
     e.group_end();
 }
 
-/// Flatten nested AIndirection nodes into a single base expression and a list of all indirections
-fn flatten_a_indirection(
-    n: &AIndirection,
-) -> (Option<Box<pgls_query::Node>>, Vec<pgls_query::Node>) {
-    let mut all_indirections = Vec::new();
-    let mut current = n;
-
-    // Traverse nested AIndirection nodes
-    loop {
-        // Prepend current indirections (so inner ones come first)
-        let mut current_indirections = current.indirection.clone();
-        current_indirections.append(&mut all_indirections);
-        all_indirections = current_indirections;
-
-        // Check if arg is another AIndirection
-        if let Some(ref arg) = current.arg
-            && let Some(pgls_query::NodeEnum::AIndirection(inner)) = arg.node.as_ref()
-        {
-            current = inner;
-            continue;
+/// The parser only builds an `AIndirection` without parentheses for a parameter or for a column
+/// reference whose indirection starts with a subscript: `r.f` and `r.*` stay a `ColumnRef`, and
+/// `x[1][2]` is a single `AIndirection` while `(x[1])[2]` nests one in another. Everything else
+/// keeps its shape only when the base is parenthesized.
+fn base_needs_parens(arg: Option<&NodeEnum>, n: &AIndirection) -> bool {
+    match arg {
+        Some(NodeEnum::ParamRef(_)) => false,
+        Some(NodeEnum::ColumnRef(_)) => !matches!(
+            n.indirection.first().and_then(|node| node.node.as_ref()),
+            Some(NodeEnum::AIndices(_))
+        ),
+        // `(SELECT ...)[1]` already carries its parentheses
+        Some(NodeEnum::SubLink(sub_link)) => {
+            sub_link.sub_link_type() != pgls_query::protobuf::SubLinkType::ExprSublink
         }
-        break;
+        Some(_) => true,
+        None => false,
     }
-
-    (current.arg.clone(), all_indirections)
 }

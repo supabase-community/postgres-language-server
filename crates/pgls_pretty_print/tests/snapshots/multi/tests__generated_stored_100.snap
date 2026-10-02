@@ -1120,7 +1120,7 @@ alter table gtest31_1
   alter column b type varchar;
 
 alter table gtest31_2
-  add constraint "cc" check (y.b is not null);
+  add constraint "cc" check ((y).b is not null);
 
 alter table gtest31_1
   alter column b set expression
@@ -1129,7 +1129,7 @@ alter table gtest31_1
 alter table gtest31_2
   drop constraint cc;
 
-create statistics gtest31_2_stat on (y.b is not null) from gtest31_2;
+create statistics gtest31_2_stat on ((y).b is not null) from gtest31_2;
 
 alter table gtest31_1
   alter column b set expression
@@ -1137,7 +1137,7 @@ alter table gtest31_1
 
 drop statistics gtest31_2_stat;
 
-create index "gtest31_2_y_idx" on gtest31_2 using btree ((y.b));
+create index "gtest31_2_y_idx" on gtest31_2 using btree (((y).b));
 
 alter table gtest31_1
   alter column b set expression

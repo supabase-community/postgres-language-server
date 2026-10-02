@@ -1500,17 +1500,17 @@ create temporary table dest (f1 textandtext[]);
 
 insert into dest select array[cast(row(f1, f1) as textandtext)] from src;
 
-select length(fipshash(f1[1].c2)) from dest;
+select length(fipshash((f1[1]).c2)) from dest;
 
 delete from src;
 
-select length(fipshash(f1[1].c2)) from dest;
+select length(fipshash((f1[1]).c2)) from dest;
 
 truncate src;
 
 drop table src;
 
-select length(fipshash(f1[1].c2)) from dest;
+select length(fipshash((f1[1]).c2)) from dest;
 
 drop table dest;
 

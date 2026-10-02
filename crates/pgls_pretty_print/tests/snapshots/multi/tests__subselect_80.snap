@@ -22,11 +22,11 @@ select (select 2 union select 2);
 
 select (select 2 union select 2);
 
-select ((select array[1, 2, 3]))[1];
+select (select array[1, 2, 3])[1];
 
-select ((select array[1, 2, 3]))[2];
+select (select array[1, 2, 3])[2];
 
-select ((select array[1, 2, 3]))[3];
+select (select array[1, 2, 3])[3];
 
 create table subselect_tbl (
   f1 int,

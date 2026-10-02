@@ -1,0 +1,11 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/single/a_indirection_1.sql
+---
+select
+  *
+from
+  fast_emp4000
+order by (home_base[0])[0],
+  home_base[0][0],
+  (arr[1:2])[1];

@@ -1,0 +1,5 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/single/update_stmt_1.sql
+---
+update dcomptable set d1."r" = (d1).r - 1, d1."i" = (d1).i + 1 where (d1).i > 0;

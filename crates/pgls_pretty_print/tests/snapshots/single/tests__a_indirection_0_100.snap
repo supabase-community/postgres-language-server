@@ -1,0 +1,14 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/single/a_indirection_0.sql
+---
+select
+  (r).column2 as col_a,
+  (ss.a).x,
+  (c).*,
+  (k).word
+from
+  cte as t
+where
+  (r).column1 = (rr).column1 and
+  (select (c1).f1 > 0);

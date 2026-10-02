@@ -1495,8 +1495,8 @@ where
   ev_type = '1';
 
 select
-  r.column2 as col_a,
-  rr.column2 as col_b
+  (r).column2 as col_a,
+  (rr).column2 as col_b
 from
   cte
   inner join
@@ -1508,17 +1508,17 @@ from
       limit 2
     )
     as ss
-  on r.column1 = rr.column1;
+  on (r).column1 = (rr).column1;
 
 select pg_get_viewdef('tt24v', true);
 
-select k.word from cte;
+select (k).word from cte;
 
 select pg_get_viewdef('tt25v', true);
 
 select * from tt24v;
 
-select r.column2 from (select r from (values (1, 2), (3, 4)) as r limit 1) as ss;
+select (r).column2 from (select r from (values (1, 2), (3, 4)) as r limit 1) as ss;
 
 create view tt26v
 as select
