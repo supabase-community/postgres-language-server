@@ -76,6 +76,9 @@ pub(super) struct Level {
     pub output_names: Vec<String>,
     /// Set while resolving the clauses that can reference `output_names`.
     pub output_names_visible: bool,
+    /// Items only reachable by name, whose columns unqualified references and `*` don't see:
+    /// `old` and `new` in a RETURNING list.
+    pub qualified_only: Vec<Item>,
 }
 
 impl Level {
@@ -132,6 +135,7 @@ impl Level {
     pub fn item(&self, name: &str) -> Option<&Item> {
         self.items
             .iter()
+            .chain(&self.qualified_only)
             .find(|item| item.name.as_deref() == Some(name))
     }
 }

@@ -19,7 +19,7 @@ pub(super) fn resolve_range_subselect(
             r.exit_level();
             columns
         };
-        typed_columns = r.output.clone();
+        typed_columns = crate::resolve::resolve_unknown_outputs(r.catalog, r.output.clone());
         columns
     });
     let alias = n.alias.as_ref();

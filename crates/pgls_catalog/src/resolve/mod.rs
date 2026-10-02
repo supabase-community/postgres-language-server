@@ -24,8 +24,8 @@ mod type_tests;
 use pgls_query::{NodeEnum, protobuf};
 use pgls_text_size::TextRange;
 
-use crate::lookup::CatalogView;
-use crate::typing::QueryColumns;
+use crate::lookup::{CatalogView, Lookup};
+use crate::typing::{QueryColumns, Type};
 use resolver::Resolver;
 
 /// A parameter of the SQL function whose body is being resolved.
@@ -198,7 +198,32 @@ pub fn query_output_types(
 ) -> QueryColumns {
     let mut resolver = Resolver::new(catalog, search_path, None, None);
     nodes::resolve_node(&mut resolver, query);
-    resolver.output
+    resolve_unknown_outputs(catalog, resolver.output)
+}
+
+/// Port of `parse_target.c: resolveTargetListUnknowns`: output columns of unknown type become
+/// text. Postgres does this for every query except the source of an INSERT and the branches of a
+/// set operation, which coerce the unknowns to their target type instead.
+pub(crate) fn resolve_unknown_outputs(
+    catalog: &dyn CatalogView,
+    columns: QueryColumns,
+) -> QueryColumns {
+    let mut columns = columns?;
+    if columns
+        .iter()
+        .any(|column| column.ty == Some(Type::UnknownLiteral))
+    {
+        let text = match catalog.type_(Some("pg_catalog"), "text", &[]) {
+            Lookup::Found(info) => info.id.map(Type::Named),
+            _ => None,
+        };
+        for column in &mut columns {
+            if column.ty == Some(Type::UnknownLiteral) {
+                column.ty = text.clone();
+            }
+        }
+    }
+    Some(columns)
 }
 
 /// Whether the statement kind can be checked against the database with `EXPLAIN`.

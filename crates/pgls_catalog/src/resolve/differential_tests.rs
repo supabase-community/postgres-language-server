@@ -75,6 +75,20 @@ const CASES: &[(&str, Expect)] = &[
         Accept,
     ),
     ("select 1 operator(pg_catalog.+) 1", Accept),
+    // Integer constants too large for `Ival`, typed by `make_const`
+    (
+        "select -2147483648, 2147483648, -9223372036854775808, 9223372036854775808",
+        Accept,
+    ),
+    ("select '[]'::jsonb -> -2147483648", Accept),
+    // Unknown-type output columns of subqueries and CTEs become text
+    ("select val from (select null as val) s", Accept),
+    ("with c as (select 'x' as v) select v from c", Accept),
+    ("select (select 'x')", Accept),
+    (
+        "select array_agg(distinct val) from (select null as val from generate_series(1, 2)) s",
+        Accept,
+    ),
     (
         "select 'a' like 'b', 1 in (1, 2), 1 between 0 and 2, 1 is distinct from 2",
         Accept,

@@ -47,7 +47,8 @@ pub(super) fn target_list_columns(r: &Resolver, targets: &[Node]) -> Columns {
 }
 
 /// Resolves a RETURNING list against `level` and returns its columns.
-pub(super) fn resolve_returning_list(r: &mut Resolver, list: &[Node], level: Level) -> Columns {
+pub(super) fn resolve_returning_list(r: &mut Resolver, list: &[Node], mut level: Level) -> Columns {
+    add_old_and_new(r, &mut level);
     r.enter_level(level);
     resolve_list(r, list);
     let columns = target_list_columns(r, list);
@@ -113,4 +114,29 @@ pub(super) fn check_target_column(r: &mut Resolver, target: &Item, column: &str,
             location,
         );
     }
+}
+
+/// Since Postgres 18, `old` and `new` in a RETURNING list are the target row before and after
+/// the change, unless an item of the statement has that name (`transformReturningClause`). The
+/// first item of `level` is the target relation.
+fn add_old_and_new(r: &Resolver, level: &mut Level) {
+    if r.catalog
+        .server_version_num()
+        .is_some_and(|version| version < 180000)
+    {
+        return;
+    }
+    let Some(target) = level.items.first() else {
+        return;
+    };
+    let mut aliases = Vec::new();
+    for name in ["old", "new"] {
+        if level.item(name).is_none() {
+            let mut item = target.clone();
+            item.name = Some(name.to_owned());
+            item.schema = None;
+            aliases.push(item);
+        }
+    }
+    level.qualified_only.extend(aliases);
 }

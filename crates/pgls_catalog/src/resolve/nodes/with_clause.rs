@@ -29,7 +29,11 @@ pub(super) fn resolve_with_clause(r: &mut Resolver, n: &WithClause) {
         let resolved = Cte {
             name: cte.ctename.clone(),
             columns,
-            typed_columns: if n.recursive { None } else { r.output.clone() },
+            typed_columns: if n.recursive {
+                None
+            } else {
+                crate::resolve::resolve_unknown_outputs(r.catalog, r.output.clone())
+            },
         };
         match r
             .ctes
