@@ -77,9 +77,7 @@ async fn infers_query_output_types(test_db: PgPool) {
         (
             "",
             "select 1, 3000000000, 1.5, 'a', true, null",
-            vec![
-                "integer", "bigint", "numeric", "text", "boolean", "text",
-            ],
+            vec!["integer", "bigint", "numeric", "text", "boolean", "text"],
         ),
         (
             "",
