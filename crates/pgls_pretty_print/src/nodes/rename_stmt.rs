@@ -1,6 +1,6 @@
 use pgls_query::{
     NodeEnum,
-    protobuf::{ObjectType, RenameStmt},
+    protobuf::{DropBehavior, ObjectType, RenameStmt},
 };
 
 use crate::{
@@ -77,8 +77,17 @@ pub(super) fn emit_rename_stmt(e: &mut EventEmitter, n: &RenameStmt) {
             emit_keyworded_rename(e, TokenKind::CONSTRAINT_KW, &n.subname, &n.newname);
         }
         ObjectType::ObjectAttribute => {
-            emit_object_head(e, n);
+            // The composite type name is stored as a RangeVar in `relation`; it is not an
+            // inheritance target, so ONLY must not be emitted
+            if let Some(ref relation) = n.relation {
+                e.space();
+                super::emit_range_var_name(e, relation);
+            }
             emit_attribute_rename(e, &n.subname, &n.newname);
+            if matches!(n.behavior(), DropBehavior::DropCascade) {
+                e.space();
+                e.token(TokenKind::CASCADE_KW);
+            }
         }
         ObjectType::ObjectAggregate => {
             emit_aggregate_head(e, n);
@@ -238,7 +247,15 @@ fn emit_relation_head(e: &mut EventEmitter, n: &RenameStmt) {
 fn emit_object_head(e: &mut EventEmitter, n: &RenameStmt) {
     if let Some(ref object) = n.object {
         e.space();
-        emit_node(object, e);
+        emit_object_name(e, object);
+    }
+}
+
+fn emit_object_name(e: &mut EventEmitter, object: &pgls_query::Node) {
+    match &object.node {
+        // Qualified names (`any_name`) arrive as a list of strings
+        Some(NodeEnum::List(list)) => emit_dot_separated_list(e, &list.items),
+        _ => emit_node(object, e),
     }
 }
 
@@ -248,7 +265,7 @@ fn emit_default_head(e: &mut EventEmitter, n: &RenameStmt) {
         emit_range_var(e, relation);
     } else if let Some(ref object) = n.object {
         e.space();
-        emit_node(object, e);
+        emit_object_name(e, object);
     } else if !n.subname.is_empty() {
         e.space();
         emit_identifier_maybe_quoted(e, &n.subname);

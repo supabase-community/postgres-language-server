@@ -1,0 +1,5 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/single/rename_stmt_2.sql
+---
+alter type public.test_type rename attribute d to dd;

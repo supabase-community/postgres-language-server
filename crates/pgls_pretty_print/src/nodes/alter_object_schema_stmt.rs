@@ -112,7 +112,11 @@ pub(super) fn emit_alter_object_schema_stmt(e: &mut EventEmitter, n: &AlterObjec
                     super::emit_node(object, e);
                 }
             }
-            _ => super::emit_node(object, e),
+            _ => match &object.node {
+                // Qualified names (`any_name`) arrive as a list of strings
+                Some(NodeEnum::List(list)) => emit_dot_separated_list(e, &list.items),
+                _ => super::emit_node(object, e),
+            },
         }
     }
 
