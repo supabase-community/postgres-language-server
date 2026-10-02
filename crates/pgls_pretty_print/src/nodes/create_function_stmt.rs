@@ -100,20 +100,27 @@ pub(super) fn emit_create_function_stmt(e: &mut EventEmitter, n: &CreateFunction
     }
 
     // SQL body (if present, modern syntax)
+    let mut body_emits_semicolon = false;
     if let Some(ref sql_body) = n.sql_body {
         match sql_body.node.as_ref() {
             Some(pgls_query::NodeEnum::ReturnStmt(_)) => {
-                e.space();
+                // RETURN emits its own semicolon
+                e.line(LineType::Hard);
                 super::emit_node(sql_body, e);
+                body_emits_semicolon = true;
             }
             _ => {
-                e.space();
+                e.line(LineType::Hard);
                 e.token(TokenKind::BEGIN_KW);
                 e.space();
                 e.token(TokenKind::ATOMIC_KW);
                 e.indent_start();
-                e.line(LineType::Hard);
-                super::emit_node(sql_body, e);
+                // A BEGIN ATOMIC body is a single-item list wrapping the list of statements.
+                // Each statement emits its own semicolon.
+                for stmt in begin_atomic_statements(sql_body) {
+                    e.line(LineType::Hard);
+                    super::emit_node(stmt, e);
+                }
                 e.indent_end();
                 e.line(LineType::Hard);
                 e.token(TokenKind::END_KW);
@@ -121,9 +128,27 @@ pub(super) fn emit_create_function_stmt(e: &mut EventEmitter, n: &CreateFunction
         }
     }
 
-    e.token(TokenKind::SEMICOLON);
+    if !body_emits_semicolon {
+        e.token(TokenKind::SEMICOLON);
+    }
 
     e.group_end();
+}
+
+fn begin_atomic_statements(sql_body: &pgls_query::protobuf::Node) -> &[pgls_query::protobuf::Node] {
+    let Some(pgls_query::NodeEnum::List(outer)) = &sql_body.node else {
+        return std::slice::from_ref(sql_body);
+    };
+
+    match outer.items.as_slice() {
+        [inner] => match &inner.node {
+            Some(pgls_query::NodeEnum::List(stmts)) => &stmts.items,
+            // An empty body: the statement list is NIL
+            None => &[],
+            _ => &outer.items,
+        },
+        _ => &outer.items,
+    }
 }
 
 pub(super) fn emit_function_parameter(e: &mut EventEmitter, fp: &FunctionParameter) {
@@ -187,31 +212,33 @@ fn emit_function_parameter_list(e: &mut EventEmitter, params: &[&FunctionParamet
 /// Returns the canonical order for a function option.
 /// Postgres's canonical order (as seen in pg_dump output) is:
 /// 1. LANGUAGE
-/// 2. WINDOW
-/// 3. IMMUTABLE / STABLE / VOLATILE (volatility)
-/// 4. LEAKPROOF / NOT LEAKPROOF
-/// 5. STRICT / CALLED ON NULL INPUT (strict)
-/// 6. SECURITY DEFINER / SECURITY INVOKER (security)
-/// 7. PARALLEL (parallel)
-/// 8. COST (cost)
-/// 9. ROWS (rows)
-/// 10. SUPPORT (support)
-/// 11. SET options (set)
-/// 12. AS (function body)
+/// 2. TRANSFORM
+/// 3. WINDOW
+/// 4. IMMUTABLE / STABLE / VOLATILE (volatility)
+/// 5. LEAKPROOF / NOT LEAKPROOF
+/// 6. STRICT / CALLED ON NULL INPUT (strict)
+/// 7. SECURITY DEFINER / SECURITY INVOKER (security)
+/// 8. PARALLEL (parallel)
+/// 9. COST (cost)
+/// 10. ROWS (rows)
+/// 11. SUPPORT (support)
+/// 12. SET options (set)
+/// 13. AS (function body)
 fn option_order(defname: &str) -> usize {
     match defname.to_lowercase().as_str() {
         "language" => 0,
-        "window" => 1,
-        "volatility" => 2,
-        "leakproof" => 3,
-        "strict" => 4,
-        "security" => 5,
-        "parallel" => 6,
-        "cost" => 7,
-        "rows" => 8,
-        "support" => 9,
-        "set" => 10,
-        "as" => 11,
+        "transform" => 1,
+        "window" => 2,
+        "volatility" => 3,
+        "leakproof" => 4,
+        "strict" => 5,
+        "security" => 6,
+        "parallel" => 7,
+        "cost" => 8,
+        "rows" => 9,
+        "support" => 10,
+        "set" => 11,
+        "as" => 12,
         _ => 100, // Unknown options go last
     }
 }
@@ -399,6 +426,30 @@ pub(super) fn format_function_option(
                 } else {
                     super::emit_node(arg, e);
                 }
+            }
+        }
+        "transform" => {
+            // TRANSFORM FOR TYPE a, FOR TYPE b: the arg is the list of type names
+            e.token(TokenKind::TRANSFORM_KW);
+            e.space();
+            if let Some(ref arg) = d.arg
+                && let Some(pgls_query::NodeEnum::List(list)) = &arg.node
+            {
+                e.group_start(GroupKind::List);
+                e.indent_start();
+                for (index, item) in list.items.iter().enumerate() {
+                    if index > 0 {
+                        e.token(TokenKind::COMMA);
+                        e.line(LineType::SoftOrSpace);
+                    }
+                    e.token(TokenKind::FOR_KW);
+                    e.space();
+                    e.token(TokenKind::TYPE_KW);
+                    e.space();
+                    super::emit_node(item, e);
+                }
+                e.indent_end();
+                e.group_end();
             }
         }
         "window" => {

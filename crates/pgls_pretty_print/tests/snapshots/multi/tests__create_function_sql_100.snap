@@ -319,13 +319,16 @@ select pg_get_functiondef(cast('functest_F_2' as regproc));
 
 create function functest_s_1(a text, b date)
 returns boolean
-language sql return a = 'abcd' and b > '2001-01-01';;
+language sql
+return a = 'abcd' and b > '2001-01-01';
 
 create function functest_s_2(a text[])
-returns int return cast(a[1] as int);;
+returns int
+return cast(a[1] as int);
 
 create function functest_s_3()
-returns boolean return false;;
+returns boolean
+return false;
 
 commit;
 
@@ -350,15 +353,18 @@ returns int
 language sql
 as $function$
 SELECT x * 2
-$function$ return x * 3;;
+$function$
+return x * 3;
 
 create function functest_s_xx(x anyarray)
 returns anyelement
-language sql return x[1];;
+language sql
+return x[1];
 
 create function functest_s_xx(x date)
 returns boolean
-language sql return x > 1;;
+language sql
+return x > 1;
 
 select case when x % 2 = 0 then true else false end;
 
@@ -400,7 +406,8 @@ create view functestv3
 as select * from functest3;
 
 create function functest_s_14()
-returns bigint return (select COUNT(*) from functestv3);;
+returns bigint
+return (select COUNT(*) from functestv3);
 
 select functest_s_14();
 
@@ -472,7 +479,8 @@ $function$;
 
 create function functest_is_6()
 returns int
-language sql return nextval('functest1');;
+language sql
+return nextval('functest1');
 
 create table functest2 (
   a int,
@@ -481,7 +489,8 @@ create table functest2 (
 
 create function functest_is_7()
 returns int
-language sql return (select COUNT(a) from functest2);;
+language sql
+return (select COUNT(a) from functest2);
 
 select
   r0.routine_name,

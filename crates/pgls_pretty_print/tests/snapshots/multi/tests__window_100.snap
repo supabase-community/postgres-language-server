@@ -1525,7 +1525,8 @@ drop function
 create function unbounded(x int)
 returns int
 language sql
-immutable return x;;
+immutable
+return x;
 
 select
   SUM(unique1) over ( rows between 1 preceding and 1 following),

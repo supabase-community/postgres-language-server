@@ -1,0 +1,1 @@
+CREATE FUNCTION f(a int) RETURNS int LANGUAGE sql RETURN a + 1;

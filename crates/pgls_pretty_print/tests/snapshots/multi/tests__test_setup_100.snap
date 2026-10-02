@@ -251,15 +251,17 @@ returns text
 immutable
 leakproof
 strict
-parallel SAFE return substr(encode(sha256($1), 'hex'), 1, 32);;
+parallel SAFE
+return substr(encode(sha256($1), 'hex'), 1, 32);
 
 create function fipshash(text)
 returns text
 immutable
 leakproof
 strict
-parallel SAFE return substr(
+parallel SAFE
+return substr(
   encode(sha256(cast($1 as bytea)), 'hex'),
   1,
   32
-);;
+);

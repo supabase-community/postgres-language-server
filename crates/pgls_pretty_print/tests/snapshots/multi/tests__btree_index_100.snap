@@ -448,7 +448,8 @@ create table btree_test_expr (n int);
 create function btree_test_func()
 returns int
 language sql
-immutable return 0;;
+immutable
+return 0;
 
 begin;
 
