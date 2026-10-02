@@ -1,0 +1,7 @@
+MERGE INTO itest15 t
+USING (SELECT 20 AS s_a, 'inserted by merge' AS s_b) s
+ON t.a = s.s_a
+WHEN NOT MATCHED AND s.s_a > 10 THEN
+	INSERT (a, b) OVERRIDING USER VALUE VALUES (s.s_a, s.s_b)
+WHEN NOT MATCHED THEN
+	INSERT OVERRIDING SYSTEM VALUE VALUES (s.s_a, s.s_b);
