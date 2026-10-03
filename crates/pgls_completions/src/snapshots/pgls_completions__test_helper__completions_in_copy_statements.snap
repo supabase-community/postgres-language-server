@@ -1,0 +1,406 @@
+---
+source: crates/pgls_completions/src/test_helper.rs
+expression: final_snapshot
+---
+***Setup***
+
+create table instruments (
+    id bigint primary key generated always as identity,
+    name text not null,
+    z text
+);
+
+create table others (
+    id serial primary key,
+    a text,
+    b text
+);
+
+
+--------------
+
+***Case 1:***
+
+c|
+
+Results:
+copy - copy (Keyword)
+create - create (Keyword)
+select - select (Keyword)
+truncate - truncate (Keyword)
+
+--------------
+
+copy |
+
+Results:
+instruments - public.instruments (Table)
+others - public.others (Table)
+_sqlx_migrations - public._sqlx_migrations (Table)
+information_schema - information_schema (Schema)
+pg_catalog - pg_catalog (Schema)
+
+--------------
+
+copy i|
+
+Results:
+instruments - public.instruments (Table)
+information_schema - information_schema (Schema)
+information_schema.information_schema_catalog_name - information_schema.information_schema_catalog_name (Table)
+public - public (Schema)
+pg_catalog.pg_ident_file_mappings - pg_catalog.pg_ident_file_mappings (Table)
+
+--------------
+
+copy instruments |
+
+Results:
+from - from (Keyword)
+to - to (Keyword)
+
+--------------
+
+copy instruments t|
+
+Results:
+to - to (Keyword)
+
+--------------
+
+copy instruments to |
+
+Results:
+program - program (Keyword)
+stdin - stdin (Keyword)
+stdout - stdout (Keyword)
+
+--------------
+
+copy instruments to s|
+
+Results:
+stdin - stdin (Keyword)
+stdout - stdout (Keyword)
+
+--------------
+
+copy instruments to stdout; |
+
+Results:
+copy - copy (Keyword)
+create - create (Keyword)
+drop - drop (Keyword)
+insert - insert (Keyword)
+reset - reset (Keyword)
+
+--------------
+
+
+
+
+
+***Case 2:***
+
+copy instruments |
+
+Results:
+from - from (Keyword)
+to - to (Keyword)
+
+--------------
+
+copy instruments f|
+
+Results:
+from - from (Keyword)
+
+--------------
+
+copy instruments from |
+
+Results:
+program - program (Keyword)
+stdin - stdin (Keyword)
+stdout - stdout (Keyword)
+
+--------------
+
+copy instruments from s|
+
+Results:
+stdin - stdin (Keyword)
+stdout - stdout (Keyword)
+
+--------------
+
+copy instruments from stdin; |
+
+
+
+
+***Case 3:***
+
+copy instruments (|) to stdout;
+
+Results:
+id - public.instruments.id (Column)
+name - public.instruments.name (Column)
+z - public.instruments.z (Column)
+a - public.others.a (Column)
+b - public.others.b (Column)
+
+--------------
+
+copy instruments (i|) to stdout;
+
+Results:
+id - public.instruments.id (Column)
+ident - pg_catalog.pg_backend_memory_contexts.ident (Column)
+identity_cycle - information_schema.columns.identity_cycle (Column)
+identity_generation - information_schema.columns.identity_generation (Column)
+identity_increment - information_schema.columns.identity_increment (Column)
+
+--------------
+
+copy instruments (id, |) to stdout;
+
+Results:
+id - public.instruments.id (Column)
+name - public.instruments.name (Column)
+z - public.instruments.z (Column)
+a - public.others.a (Column)
+b - public.others.b (Column)
+
+--------------
+
+copy instruments (id, n|) to stdout;
+
+Results:
+name - public.instruments.name (Column)
+n_dead_tup - pg_catalog.pg_stat_all_tables.n_dead_tup (Column)
+n_distinct - pg_catalog.pg_stats.n_distinct (Column)
+n_ins_since_vacuum - pg_catalog.pg_stat_all_tables.n_ins_since_vacuum (Column)
+n_live_tup - pg_catalog.pg_stat_all_tables.n_live_tup (Column)
+
+--------------
+
+copy instruments (id, name |) to stdout;
+
+
+
+
+***Case 4:***
+
+copy instruments to stdout |
+
+Results:
+binary - binary (Keyword)
+csv - csv (Keyword)
+delimiter - delimiter (Keyword)
+with - with (Keyword)
+
+--------------
+
+copy instruments to stdout w|
+
+Results:
+with - with (Keyword)
+
+--------------
+
+copy instruments to stdout with |
+
+Results:
+binary - binary (Keyword)
+csv - csv (Keyword)
+delimiter - delimiter (Keyword)
+
+--------------
+
+copy instruments to stdout with (|
+copy instruments to stdout with (|)
+
+Results:
+default - default (Keyword)
+delimiter - delimiter (Keyword)
+encoding - encoding (Keyword)
+escape - escape (Keyword)
+force_not_null - force_not_null (Keyword)
+
+--------------
+
+copy instruments to stdout with (f|)
+
+Results:
+force_not_null - force_not_null (Keyword)
+force_null - force_null (Keyword)
+force_quote - force_quote (Keyword)
+format - format (Keyword)
+freeze - freeze (Keyword)
+
+--------------
+
+copy instruments to stdout with (format |)
+copy instruments to stdout with (format c|)
+
+Results:
+csv - csv (Keyword)
+
+--------------
+
+copy instruments to stdout with (format csv, |)
+copy instruments to stdout with (format csv, h|)
+copy instruments to stdout with (format csv, header); |
+
+Results:
+copy - copy (Keyword)
+create - create (Keyword)
+drop - drop (Keyword)
+insert - insert (Keyword)
+reset - reset (Keyword)
+
+--------------
+
+
+
+
+
+***Case 5:***
+
+copy instruments from stdin |
+
+Results:
+binary - binary (Keyword)
+csv - csv (Keyword)
+delimiter - delimiter (Keyword)
+where - where (Keyword)
+with - with (Keyword)
+
+--------------
+
+copy instruments from stdin w|
+
+Results:
+where - where (Keyword)
+with - with (Keyword)
+
+--------------
+
+copy instruments from stdin with |
+
+Results:
+binary - binary (Keyword)
+csv - csv (Keyword)
+delimiter - delimiter (Keyword)
+
+--------------
+
+copy instruments from stdin with (|
+copy instruments from stdin with (|)
+
+Results:
+default - default (Keyword)
+delimiter - delimiter (Keyword)
+encoding - encoding (Keyword)
+escape - escape (Keyword)
+force_not_null - force_not_null (Keyword)
+
+--------------
+
+copy instruments from stdin with (f|)
+
+Results:
+force_not_null - force_not_null (Keyword)
+force_null - force_null (Keyword)
+force_quote - force_quote (Keyword)
+format - format (Keyword)
+freeze - freeze (Keyword)
+
+--------------
+
+copy instruments from stdin with (format |)
+copy instruments from stdin with (format c|)
+
+Results:
+csv - csv (Keyword)
+
+--------------
+
+copy instruments from stdin with (format csv, |)
+copy instruments from stdin with (format csv, h|)
+copy instruments from stdin with (format csv, header); |
+
+
+
+
+***Case 6:***
+
+copy (|) to stdout;
+
+Results:
+select - select (Keyword)
+table - table (Keyword)
+tables - tables (Keyword)
+tablespace - tablespace (Keyword)
+values - values (Keyword)
+
+--------------
+
+copy (s|) to stdout;
+
+Results:
+select - select (Keyword)
+tables - tables (Keyword)
+tablespace - tablespace (Keyword)
+values - values (Keyword)
+
+--------------
+
+copy (select |) to stdout;
+copy (select * |) to stdout;
+copy (select * f|) to stdout;
+
+Results:
+for - for (Keyword)
+from - from (Keyword)
+offset - offset (Keyword)
+
+--------------
+
+copy (select * from |) to stdout;
+copy (select * from i|) to stdout;
+
+Results:
+instruments - public.instruments (Table)
+information_schema - information_schema (Schema)
+public - public (Schema)
+information_schema.information_schema_catalog_name - information_schema.information_schema_catalog_name (Table)
+pg_catalog.pg_ident_file_mappings - pg_catalog.pg_ident_file_mappings (Table)
+
+--------------
+
+copy (select * from instruments |) to stdout;
+copy (select * from instruments w|) to stdout;
+
+Results:
+where - where (Keyword)
+window - window (Keyword)
+
+--------------
+
+copy (select * from instruments where |) to stdout;
+copy (select * from instruments where i|) to stdout;
+
+Results:
+id - public.instruments.id (Column)
+ident - pg_catalog.pg_backend_memory_contexts.ident (Column)
+identity_cycle - information_schema.columns.identity_cycle (Column)
+identity_generation - information_schema.columns.identity_generation (Column)
+identity_increment - information_schema.columns.identity_increment (Column)
+
+--------------
+
+copy (select * from instruments where id |) to stdout;
+copy (select * from instruments where id > |) to stdout;
+copy (select * from instruments where id > 0 |) to stdout;
