@@ -14,11 +14,17 @@ mod overlay;
 #[cfg(test)]
 mod tests;
 
-use std::sync::Arc;
+use std::sync::{
+    Arc,
+    atomic::{AtomicU64, Ordering},
+};
 
 use rustc_hash::{FxHashMap, FxHashSet};
 
+use crate::Candidates;
 use crate::lookup::{CatalogView, FunctionInfo, Lookup, RelationInfo, TypeInfo};
+use crate::typing::TypeId;
+use crate::{CastInfo, OperatorInfo, OperatorKind};
 
 pub use base::CatalogBase;
 
@@ -58,9 +64,13 @@ pub struct Catalog {
     /// Set once the file ran a statement with effects the catalog can't model (`DO`, `CALL`,
     /// `CREATE EXTENSION` of a new extension, ...). From then on, nothing is known to be missing.
     tainted: bool,
+    casts_incomplete: bool,
+    operators_incomplete: bool,
     /// The catalog at the start of each open transaction and savepoint, restored on
     /// `ROLLBACK`.
     savepoints: Vec<Savepoint>,
+    /// Shared across savepoint snapshots so rolled-back type identities are never reused.
+    next_file_type_id: Arc<AtomicU64>,
 }
 
 /// The catalog at `BEGIN` (`name: None`) or `SAVEPOINT`.
@@ -82,7 +92,10 @@ impl Catalog {
             children: FxHashMap::default(),
             database_columns_changed: false,
             tainted: false,
+            casts_incomplete: false,
+            operators_incomplete: false,
             savepoints: Vec::new(),
+            next_file_type_id: Arc::new(AtomicU64::new(1)),
         }
     }
 
@@ -92,9 +105,19 @@ impl Catalog {
         self.base.is_some()
     }
 
+    pub(super) fn allocate_type_id(&self) -> TypeId {
+        TypeId::File(self.next_file_type_id.fetch_add(1, Ordering::Relaxed))
+    }
+
     /// Whether the file ran a statement the catalog can't model.
     pub fn is_tainted(&self) -> bool {
         self.tainted
+    }
+
+    /// Records a statement whose effects are unknown, e.g. one that doesn't parse. From then on,
+    /// nothing is known to be missing.
+    pub fn taint(&mut self) {
+        self.tainted = true;
     }
 
     /// The result of a lookup that found nothing.
@@ -232,7 +255,9 @@ fn key(schema: &str, name: &str) -> Key {
 }
 
 /// Schemas searched for relations and types: `pg_temp` and `pg_catalog` come first unless the
-/// search path lists them explicitly.
+/// search path lists them explicitly. Port of [`finalNamespacePath`].
+///
+/// [`finalNamespacePath`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/catalog/namespace.c#L4201
 fn relation_search_path(search_path: &[String]) -> impl Iterator<Item = String> + '_ {
     let implicit = ["pg_temp", "pg_catalog"]
         .into_iter()
@@ -241,8 +266,11 @@ fn relation_search_path(search_path: &[String]) -> impl Iterator<Item = String> 
     implicit.chain(explicit_schemas(search_path))
 }
 
-/// Schemas searched for functions: `pg_catalog` comes first unless listed explicitly, and
-/// `pg_temp` is never searched.
+/// Schemas searched for functions: `pg_catalog` comes first unless listed explicitly
+/// ([`finalNamespacePath`]), and `pg_temp` is never searched ([`FuncnameGetCandidates`]).
+///
+/// [`finalNamespacePath`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/catalog/namespace.c#L4201
+/// [`FuncnameGetCandidates`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/catalog/namespace.c#L1192
 fn function_search_path(search_path: &[String]) -> impl Iterator<Item = String> + '_ {
     let implicit = (!search_path.iter().any(|s| s == "pg_catalog")).then(|| "pg_catalog".into());
     implicit
@@ -328,5 +356,119 @@ impl CatalogView for Catalog {
                 self.type_in(schema, name)
             }),
         }
+    }
+
+    fn type_by_id(&self, id: &TypeId) -> Lookup<TypeInfo> {
+        match id {
+            TypeId::Snapshot(_) => self
+                .base
+                .as_ref()
+                .and_then(|b| b.type_by_id(id))
+                .cloned()
+                .map(Lookup::Found)
+                .unwrap_or_else(|| self.not_found()),
+            TypeId::File(id) => self
+                .types
+                .values()
+                .find_map(|entry| match entry {
+                    Entry::Defined(info) if info.id == Some(TypeId::File(*id)) => {
+                        Some(info.clone())
+                    }
+                    _ => None,
+                })
+                .map(Lookup::Found)
+                .unwrap_or_else(|| self.not_found()),
+        }
+    }
+
+    fn cast(&self, source: &TypeId, target: &TypeId) -> Lookup<CastInfo> {
+        let Some(base) = self.base.as_ref() else {
+            return Lookup::Unknown;
+        };
+        if self.tainted || self.casts_incomplete {
+            return Lookup::Unknown;
+        }
+        base.cast(source, target)
+            .cloned()
+            .map(Lookup::Found)
+            .unwrap_or_else(|| {
+                if base.snapshot().typing_metadata {
+                    Lookup::Missing
+                } else {
+                    Lookup::Unknown
+                }
+            })
+    }
+
+    fn function_candidates(
+        &self,
+        schema: Option<&str>,
+        name: &str,
+        search_path: &[String],
+    ) -> Candidates<FunctionInfo> {
+        let schemas: Vec<String> = match schema {
+            Some(schema) => vec![schema.to_owned()],
+            None => function_search_path(search_path).collect(),
+        };
+        let mut items = Vec::new();
+        let mut complete = !self.tainted
+            && self
+                .base
+                .as_ref()
+                .is_some_and(|b| b.snapshot().typing_metadata);
+        for schema in schemas {
+            match self.functions_in(&schema, name) {
+                Lookup::Found(found) => {
+                    if found.iter().any(|function| {
+                        function.origin == crate::lookup::Origin::File
+                            && function.signature.is_none()
+                    }) {
+                        complete = false;
+                    }
+                    items.extend(found);
+                }
+                Lookup::Missing => {}
+                Lookup::Unknown => complete = false,
+            }
+        }
+        Candidates { items, complete }
+    }
+
+    fn operator_candidates(
+        &self,
+        schema: Option<&str>,
+        name: &str,
+        kind: OperatorKind,
+        search_path: &[String],
+    ) -> Candidates<OperatorInfo> {
+        let Some(base) = self.base.as_ref() else {
+            return Candidates {
+                items: vec![],
+                complete: false,
+            };
+        };
+        let schemas: Vec<String> = match schema {
+            Some(s) => vec![s.to_owned()],
+            None => function_search_path(search_path).collect(),
+        };
+        let items = schemas
+            .iter()
+            .filter_map(|s| base.operators(s, name))
+            .flatten()
+            .filter(|op| op.kind == kind)
+            .cloned()
+            .collect();
+        Candidates {
+            items,
+            complete: !self.tainted
+                && !self.operators_incomplete
+                && base.snapshot().typing_metadata,
+        }
+    }
+
+    fn server_version_num(&self) -> Option<i64> {
+        self.base
+            .as_ref()
+            .and_then(|b| b.snapshot().version.version_num)
     }
 }

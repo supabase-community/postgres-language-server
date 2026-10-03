@@ -2394,15 +2394,21 @@ dependencies = [
  "pgls_catalog",
  "pgls_console",
  "pgls_diagnostics",
+ "pgls_lexer",
+ "pgls_postgres_regress",
  "pgls_query",
  "pgls_query_ext",
  "pgls_statement_splitter",
  "pgls_test_macros",
  "pgls_text_size",
+ "rayon",
  "rustc-hash",
  "schemars",
  "serde",
+ "serde_json",
+ "sqlx",
  "termcolor",
+ "tokio",
 ]
 
 [[package]]
@@ -2727,8 +2733,11 @@ dependencies = [
 name = "pgls_postgres_regress"
 version = "0.0.0"
 dependencies = [
+ "flate2",
+ "pgls_catalog",
  "pgls_statement_splitter",
  "pgls_text_size",
+ "serde_json",
  "sqlx",
  "tokio",
 ]

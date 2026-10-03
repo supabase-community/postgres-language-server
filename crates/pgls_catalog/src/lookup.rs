@@ -4,6 +4,8 @@
 //! changes of the current file. The resolver only depends on this trait, so it can be tested
 //! against small in-memory catalogs.
 
+use crate::typing::{Type, TypeId};
+
 /// The result of a catalog lookup.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Lookup<T> {
@@ -61,6 +63,8 @@ pub struct ColumnInfo {
     pub name: String,
     /// The type name, if known (e.g. `int4`, `text`, `public.my_enum`).
     pub type_name: Option<String>,
+    /// Resolved type identity, when available.
+    pub ty: Option<Type>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -95,6 +99,8 @@ pub struct FunctionInfo {
     /// (what `select * from fn()` yields). `None` when unknown or scalar.
     pub return_columns: Option<Vec<ColumnInfo>>,
     pub origin: Origin,
+    /// Complete typing signature when available.
+    pub signature: Option<FunctionSignature>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -104,6 +110,22 @@ pub struct TypeInfo {
     /// Attributes for composite types (including table row types), `None` otherwise or when unknown.
     pub attributes: Option<Vec<ColumnInfo>>,
     pub origin: Origin,
+    /// Database identity.
+    pub id: Option<TypeId>,
+    /// pg_type.typtype.
+    pub kind: Option<TypeKind>,
+    /// pg_type.typcategory.
+    pub category: Option<char>,
+    /// Whether this type is preferred in its category.
+    pub preferred: Option<bool>,
+    /// Element type for true arrays only.
+    pub element: Option<TypeId>,
+    /// Associated array type.
+    pub array: Option<TypeId>,
+    /// Base type for domains.
+    pub base: Option<TypeId>,
+    /// Relation identity for composite types.
+    pub relation: Option<i64>,
 }
 
 /// Read-only access to the catalog as it is before the statement being analysed.
@@ -111,7 +133,10 @@ pub struct TypeInfo {
 /// All `search_path` arguments are the explicit search path of the session. Implementations
 /// apply Postgres' implicit rules on top of it: `pg_catalog` is searched first unless it is
 /// listed explicitly, and `pg_temp` is searched first for relations and types (never for
-/// functions) unless it is listed explicitly.
+/// functions) unless it is listed explicitly ([`finalNamespacePath`], [`FuncnameGetCandidates`]).
+///
+/// [`finalNamespacePath`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/catalog/namespace.c#L4201
+/// [`FuncnameGetCandidates`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/catalog/namespace.c#L1192
 pub trait CatalogView {
     /// Looks up a relation. With `schema: None`, the search path is used.
     fn relation(
@@ -136,4 +161,133 @@ pub trait CatalogView {
     /// Looks up a type by its internal name (e.g. `int4`, not `integer`). With `schema: None`,
     /// the search path is used.
     fn type_(&self, schema: Option<&str>, name: &str, search_path: &[String]) -> Lookup<TypeInfo>;
+
+    /// Looks up a type by identity.
+    fn type_by_id(&self, _: &TypeId) -> Lookup<TypeInfo> {
+        Lookup::Unknown
+    }
+    /// Looks up a direct cast.
+    fn cast(&self, _: &TypeId, _: &TypeId) -> Lookup<CastInfo> {
+        Lookup::Unknown
+    }
+    /// Returns function candidates; the default catalog has no complete candidate list.
+    fn function_candidates(
+        &self,
+        _: Option<&str>,
+        _: &str,
+        _: &[String],
+    ) -> Candidates<FunctionInfo> {
+        Candidates {
+            items: vec![],
+            complete: false,
+        }
+    }
+    /// Returns operator candidates; the default catalog has no complete candidate list.
+    fn operator_candidates(
+        &self,
+        _: Option<&str>,
+        _: &str,
+        _: crate::OperatorKind,
+        _: &[String],
+    ) -> Candidates<OperatorInfo> {
+        Candidates {
+            items: vec![],
+            complete: false,
+        }
+    }
+    /// Returns the server version when available.
+    fn server_version_num(&self) -> Option<i64> {
+        None
+    }
+}
+
+// ----- facts for typing -----
+
+/// Candidate objects visible to a lookup.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Candidates<T> {
+    pub items: Vec<T>,
+    pub complete: bool,
+}
+
+/// pg_type.typtype.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum TypeKind {
+    Base,
+    Composite,
+    Domain,
+    Enum,
+    Pseudo,
+    Range,
+    Multirange,
+}
+
+/// Operator arity.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum OperatorKind {
+    Prefix,
+    Infix,
+}
+
+/// The mode of a function argument.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum FunctionArgumentMode {
+    In,
+    InOut,
+    Variadic,
+}
+
+/// An input argument of a function.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct FunctionArgument {
+    pub name: Option<String>,
+    pub ty: Option<TypeId>,
+    pub mode: FunctionArgumentMode,
+}
+
+/// The typing-relevant function definition.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct FunctionSignature {
+    pub arguments: Vec<FunctionArgument>,
+    pub input_defaults: usize,
+    pub variadic_element: Option<TypeId>,
+    pub return_type: Option<TypeId>,
+    pub returns_set: bool,
+}
+
+/// A database operator.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct OperatorInfo {
+    pub oid: i64,
+    pub schema: String,
+    pub name: String,
+    pub kind: OperatorKind,
+    pub left: Option<TypeId>,
+    pub right: Option<TypeId>,
+    pub result: Option<TypeId>,
+}
+
+/// A cast context from pg_cast.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum CastContext {
+    Implicit,
+    Assignment,
+    Explicit,
+}
+
+/// A cast implementation from pg_cast.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum CastMethod {
+    Function,
+    InputOutput,
+    Binary,
+}
+
+/// A catalog cast.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CastInfo {
+    pub source: TypeId,
+    pub target: TypeId,
+    pub context: CastContext,
+    pub method: CastMethod,
 }

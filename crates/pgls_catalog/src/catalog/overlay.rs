@@ -1,6 +1,8 @@
 //! The changes that statements are made of: defining, moving, and dropping relations, types,
 //! functions, and schemas in the overlay.
 
+use crate::typing::TypeId;
+use crate::{FunctionArgumentMode, FunctionSignature};
 use pgls_query::{Node, protobuf};
 
 use super::{
@@ -36,17 +38,21 @@ impl Catalog {
         )
     }
 
-    /// The key of a new relation. Temporary relations live in `pg_temp`.
+    /// The key of a new relation. Temporary relations live in `pg_temp`. `None` for system
+    /// catalogs, where Postgres rejects new relations ([`heap_create`]).
+    ///
+    /// [`heap_create`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/catalog/heap.c#L285
     pub(super) fn relation_creation_key(
         &self,
         range_var: &protobuf::RangeVar,
         search_path: &[String],
-    ) -> Key {
+    ) -> Option<Key> {
         let name = range_var_name(range_var);
         if range_var.relpersistence == "t" {
-            return key("pg_temp", &name.name);
+            return Some(key("pg_temp", &name.name));
         }
-        self.creation_key(&name, search_path)
+        let key = self.creation_key(&name, search_path);
+        (key.0 != "pg_catalog").then_some(key)
     }
 
     // ----- schemas -----
@@ -81,8 +87,26 @@ impl Catalog {
                     name: relation.name.clone(),
                     attributes: relation.columns.clone(),
                     origin: Origin::File,
+
+                    id: Some(
+                        self.types
+                            .get(&key)
+                            .and_then(|entry| match entry {
+                                Entry::Defined(existing) => existing.id.clone(),
+                                _ => None,
+                            })
+                            .unwrap_or_else(|| self.allocate_type_id()),
+                    ),
+                    kind: Some(crate::TypeKind::Composite),
+                    category: Some('C'),
+                    preferred: Some(false),
+                    element: None,
+                    array: None,
+                    base: None,
+                    relation: None,
                 }),
             );
+            self.ensure_array_type(&relation.schema, &relation.name, None);
         }
         self.relations.insert(key, Entry::Defined(relation));
     }
@@ -105,6 +129,18 @@ impl Catalog {
             }
             Lookup::Missing => false,
         }
+    }
+
+    /// Whether a relation inherits columns from another, as an inheritance child or a partition.
+    pub(super) fn is_inheritance_child(&self, relation: &RelationInfo) -> bool {
+        let key = key(&relation.schema, &relation.name);
+        self.children
+            .values()
+            .any(|children| children.contains(&key))
+            || self
+                .base
+                .as_ref()
+                .is_some_and(|base| base.is_inheritance_child(&relation.schema, &relation.name))
     }
 
     /// Changes the columns of a relation and of its inheritance children and partitions.
@@ -158,7 +194,29 @@ impl Catalog {
 
         self.relations.insert(old_key.clone(), Entry::Dropped);
         if relation.kind != RelationKind::Other {
+            let old_type = self.types.get(&old_key).and_then(|entry| match entry {
+                Entry::Defined(info) => Some(info.clone()),
+                _ => None,
+            });
             self.types.insert(old_key.clone(), Entry::Dropped);
+            if let Some(mut info) = old_type {
+                let old_array = key(&info.schema, &format!("_{}", info.name));
+                let array_info = self.types.get(&old_array).and_then(|entry| match entry {
+                    Entry::Defined(info) => Some(info.clone()),
+                    _ => None,
+                });
+                self.types.insert(old_array, Entry::Dropped);
+                info.schema = relation.schema.clone();
+                info.name = relation.name.clone();
+                self.types
+                    .insert(key(&info.schema, &info.name), Entry::Defined(info.clone()));
+                if let Some(mut array) = array_info {
+                    array.schema = relation.schema.clone();
+                    array.name = format!("_{}", relation.name);
+                    self.types
+                        .insert(key(&array.schema, &array.name), Entry::Defined(array));
+                }
+            }
         }
         if let Some(children) = self.children.remove(&old_key) {
             self.children
@@ -176,13 +234,102 @@ impl Catalog {
         search_path: &[String],
     ) {
         let (schema, name) = self.creation_key(name, search_path);
+        self.define_type_with_metadata(
+            schema,
+            name,
+            attributes,
+            crate::TypeKind::Composite,
+            'C',
+            None,
+        );
+    }
+
+    pub(super) fn define_type_with_metadata(
+        &mut self,
+        schema: String,
+        name: String,
+        attributes: Option<Vec<ColumnInfo>>,
+        kind: crate::TypeKind,
+        category: char,
+        base: Option<crate::typing::TypeId>,
+    ) {
+        let type_key = key(&schema, &name);
+        let id = self.allocate_type_id();
+        let array_name = format!("_{name}");
+        let array_id = self.allocate_type_id();
         self.types.insert(
-            key(&schema, &name),
+            type_key,
+            Entry::Defined(TypeInfo {
+                schema: schema.clone(),
+                name: name.clone(),
+                attributes: attributes.clone(),
+                origin: Origin::File,
+                id: Some(id.clone()),
+                kind: Some(kind),
+                category: Some(category),
+                preferred: Some(false),
+                element: None,
+                array: Some(array_id.clone()),
+                base,
+                relation: None,
+            }),
+        );
+        self.types.insert(
+            key(&schema, &array_name),
             Entry::Defined(TypeInfo {
                 schema,
-                name,
+                name: array_name,
+                attributes: None,
+                origin: Origin::File,
+                id: Some(array_id),
+                kind: Some(crate::TypeKind::Base),
+                category: Some('A'),
+                preferred: Some(false),
+                element: Some(id),
+                array: None,
+                base: None,
+                relation: None,
+            }),
+        );
+    }
+
+    fn ensure_array_type(&mut self, schema: &str, name: &str, attributes: Option<Vec<ColumnInfo>>) {
+        let row_key = key(schema, name);
+        let row_id = self.types.get(&row_key).and_then(|entry| match entry {
+            Entry::Defined(info) => info.id.clone(),
+            _ => None,
+        });
+        let Some(row_id) = row_id else {
+            return;
+        };
+        let array_name = format!("_{name}");
+        let array_key = key(schema, &array_name);
+        let array_id = self
+            .types
+            .get(&array_key)
+            .and_then(|entry| match entry {
+                Entry::Defined(info) => info.id.clone(),
+                _ => None,
+            })
+            .unwrap_or_else(|| self.allocate_type_id());
+        if let Some(Entry::Defined(row)) = self.types.get_mut(&row_key) {
+            row.array = Some(array_id.clone());
+        }
+        self.types.insert(
+            array_key,
+            Entry::Defined(TypeInfo {
+                schema: schema.to_owned(),
+                name: array_name,
                 attributes,
                 origin: Origin::File,
+                id: Some(array_id),
+                kind: Some(crate::TypeKind::Base),
+                category: Some('A'),
+                preferred: Some(false),
+                element: Some(row_id),
+                array: None,
+                base: None,
+                relation: None,
             }),
         );
     }
@@ -218,7 +365,17 @@ impl Catalog {
         let key = key(&function.schema, &function.name);
         let entry = match self.functions_in(&key.0, &key.1) {
             Lookup::Found(mut overloads) => {
-                overloads.push(function);
+                // `CREATE OR REPLACE` replaces the overload with the same input types. When
+                // the types are not all known, we can't tell, so the overload is added.
+                let replaced = input_types(function.signature.as_ref()).and_then(|types| {
+                    overloads.iter().position(|existing| {
+                        input_types(existing.signature.as_ref()).as_ref() == Some(&types)
+                    })
+                });
+                match replaced {
+                    Some(position) => overloads[position] = function,
+                    None => overloads.push(function),
+                }
                 Entry::Defined(overloads)
             }
             Lookup::Missing => Entry::Defined(vec![function]),
@@ -241,18 +398,51 @@ impl Catalog {
         };
 
         let arg_count = object.objargs.len();
-        let position = if object.args_unspecified || overloads.len() == 1 {
-            (overloads.len() == 1).then_some(0)
-        } else if overloads.iter().any(|overload| overload.max_args.is_none()) {
-            None
-        } else {
-            let mut candidates = overloads
-                .iter()
-                .enumerate()
-                .filter(|(_, overload)| overload.max_args == Some(arg_count));
+        let argument_types = (!object.args_unspecified)
+            .then(|| {
+                object
+                    .objargs
+                    .iter()
+                    .map(|arg| {
+                        let name = match arg.node.as_ref()? {
+                            pgls_query::NodeEnum::TypeName(name) => name,
+                            _ => return None,
+                        };
+                        crate::normalize_type_name(self, name, search_path).0
+                    })
+                    .collect::<Option<Vec<_>>>()
+            })
+            .flatten();
+        let typed_position = argument_types.as_ref().and_then(|arguments| {
+            let mut candidates = overloads.iter().enumerate().filter(|(_, overload)| {
+                input_types(overload.signature.as_ref())
+                    .is_some_and(|types| types.iter().copied().eq(arguments.iter()))
+            });
             match (candidates.next(), candidates.next()) {
                 (Some((position, _)), None) => Some(position),
                 _ => None,
+            }
+        });
+        let position = if object.args_unspecified || overloads.len() == 1 {
+            (overloads.len() == 1).then_some(0)
+        } else if let Some(position) = typed_position {
+            Some(position)
+        } else {
+            // Unknown argument types retain the old arity fallback. A known but unmatched
+            // signature must not select a different overload merely because its arity agrees.
+            if argument_types.is_some()
+                || overloads.iter().any(|overload| overload.max_args.is_none())
+            {
+                None
+            } else {
+                let mut candidates = overloads
+                    .iter()
+                    .enumerate()
+                    .filter(|(_, overload)| overload.max_args == Some(arg_count));
+                match (candidates.next(), candidates.next()) {
+                    (Some((position, _)), None) => Some(position),
+                    _ => None,
+                }
             }
         };
 
@@ -306,10 +496,34 @@ impl Catalog {
     }
 }
 
-pub(super) fn column_info(column: &protobuf::ColumnDef) -> ColumnInfo {
+pub(super) fn column_info(
+    catalog: &Catalog,
+    column: &protobuf::ColumnDef,
+    search_path: &[String],
+) -> ColumnInfo {
+    let type_id = column
+        .type_name
+        .as_ref()
+        .and_then(|name| crate::normalize_type_name(catalog, name, search_path).0)
+        .or_else(|| {
+            // Serial pseudo-types are rewritten to integer columns by PostgreSQL, but they
+            // are not pg_type entries and therefore cannot be normalized by name lookup.
+            let internal_name = match column.type_name.as_ref().and_then(type_label).as_deref() {
+                Some("serial") => "int4",
+                Some("bigserial") => "int8",
+                Some("smallserial") => "int2",
+                _ => return None,
+            };
+            catalog
+                .type_(Some("pg_catalog"), internal_name, search_path)
+                .found()
+                .and_then(|ty| ty.id)
+        });
+    let type_name = column.type_name.as_ref().and_then(type_label);
     ColumnInfo {
         name: column.colname.clone(),
-        type_name: column.type_name.as_ref().and_then(type_label),
+        type_name,
+        ty: type_id.map(crate::typing::Type::Named),
     }
 }
 
@@ -329,6 +543,7 @@ pub(super) fn function_info(
         returns_set: false,
         return_columns: None,
         origin: Origin::File,
+        signature: None,
     }
 }
 
@@ -346,4 +561,21 @@ pub(super) fn rename_columns(
         column.name = string_value(name)?.to_owned();
     }
     Some(columns)
+}
+
+/// The input argument types of a function, or `None` if any of them is unknown.
+fn input_types(signature: Option<&FunctionSignature>) -> Option<Vec<&TypeId>> {
+    signature?
+        .arguments
+        .iter()
+        .filter(|arg| {
+            matches!(
+                arg.mode,
+                FunctionArgumentMode::In
+                    | FunctionArgumentMode::InOut
+                    | FunctionArgumentMode::Variadic
+            )
+        })
+        .map(|arg| arg.ty.as_ref())
+        .collect()
 }

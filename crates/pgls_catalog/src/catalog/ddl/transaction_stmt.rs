@@ -2,7 +2,16 @@ use pgls_query::protobuf::{TransactionStmt, TransactionStmtKind as Kind};
 
 use crate::catalog::{Catalog, Savepoint};
 
-/// DDL is transactional: `ROLLBACK` restores the catalog of `BEGIN` or the savepoint.
+/// DDL is transactional: `ROLLBACK` restores the catalog of `BEGIN` or the savepoint. Models
+/// [`BeginTransactionBlock`], [`DefineSavepoint`], [`RollbackToSavepoint`], [`ReleaseSavepoint`],
+/// [`EndTransactionBlock`] and [`UserAbortTransactionBlock`].
+///
+/// [`BeginTransactionBlock`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/access/transam/xact.c#L3924
+/// [`DefineSavepoint`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/access/transam/xact.c#L4373
+/// [`RollbackToSavepoint`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/access/transam/xact.c#L4567
+/// [`ReleaseSavepoint`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/access/transam/xact.c#L4458
+/// [`EndTransactionBlock`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/access/transam/xact.c#L4044
+/// [`UserAbortTransactionBlock`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/access/transam/xact.c#L4204
 pub(super) fn apply_transaction_stmt(c: &mut Catalog, n: &TransactionStmt) {
     match n.kind() {
         Kind::TransStmtBegin | Kind::TransStmtStart => {

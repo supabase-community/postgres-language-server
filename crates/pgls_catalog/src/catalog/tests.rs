@@ -68,6 +68,7 @@ fn base() -> Arc<CatalogBase> {
         tables,
         columns,
         functions,
+        typing_metadata: true,
         ..Default::default()
     };
     Arc::new(CatalogBase::new(Arc::new(cache)))
@@ -282,7 +283,7 @@ fn derived_columns_of_views_and_table_as() {
         column_names(&catalog, None, "t5", &search_path).unwrap(),
         ["id", "name"]
     );
-    // Joins are not expanded, so the columns are unknown.
+    // `USING (id)` merges `id`, but `name` appears twice, which Postgres rejects.
     assert!(
         catalog
             .relation(None, "v6", &search_path)
@@ -739,4 +740,270 @@ fn snapshot_excludes_dropped_objects() {
     let tables: Vec<_> = snapshot.tables.iter().map(|table| &table.name).collect();
     assert_eq!(tables, ["people"]);
     assert_eq!(table_columns(&snapshot, "public", "people"), ["id", "name"]);
+}
+#[cfg(feature = "db")]
+mod typing_overlay_tests {
+    use super::path;
+    use crate::TypeKind;
+    use crate::lookup::{CatalogView, Lookup};
+    use crate::typing::{Type, TypeId};
+    use crate::{Catalog, CatalogBase, Snapshot};
+    use sqlx::PgPool;
+    use std::sync::Arc;
+
+    async fn database_catalog(test_db: &PgPool) -> Catalog {
+        let snapshot = Snapshot::load(test_db).await.expect("load snapshot");
+        Catalog::new(Some(Arc::new(CatalogBase::new(Arc::new(snapshot)))))
+    }
+
+    fn apply(catalog: &mut Catalog, sql: &str, search_path: &[String]) {
+        let parsed = pgls_query::parse(sql).expect("valid sql");
+        for stmt in parsed.stmts() {
+            catalog.apply(stmt, search_path);
+        }
+    }
+
+    fn type_id(catalog: &Catalog, name: &str, path: &[String]) -> TypeId {
+        catalog
+            .type_(Some("pg_catalog"), name, path)
+            .found()
+            .and_then(|ty| ty.id)
+            .unwrap_or_else(|| panic!("missing pg_catalog.{name}"))
+    }
+
+    fn column_type(catalog: &Catalog, table: &str, column: &str, path: &[String]) -> Option<Type> {
+        catalog
+            .relation(None, table, path)
+            .found()?
+            .columns?
+            .into_iter()
+            .find(|item| item.name == column)?
+            .ty
+    }
+
+    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    async fn created_table_columns_have_type_identities(test_db: PgPool) {
+        let path = path(&["public"]);
+        let mut catalog = database_catalog(&test_db).await;
+        apply(
+            &mut catalog,
+            "create type mood as enum ('ok');
+             create domain positive_int as int check (value > 0);
+             create type pair as (left_value int, right_value text);
+             create table typed (
+               i int, b bigint, t text, v varchar(10), n numeric(5,2), z timestamptz,
+               a int[], aa int[][], s serial, bs bigserial, ss smallserial,
+               m mood, d positive_int, p pair
+             );
+             create table typed_copy (like typed);
+             create table more (value int);
+             alter table more alter column value type bigint;
+             alter table more rename column value to renamed;",
+            &path,
+        );
+        let expected = [
+            ("i", "int4"),
+            ("b", "int8"),
+            ("t", "text"),
+            ("v", "varchar"),
+            ("n", "numeric"),
+            ("z", "timestamptz"),
+            ("a", "_int4"),
+            ("aa", "_int4"),
+            ("s", "int4"),
+            ("bs", "int8"),
+            ("ss", "int2"),
+        ];
+        for (column, pg_type) in expected {
+            assert_eq!(
+                column_type(&catalog, "typed", column, &path),
+                Some(Type::Named(type_id(&catalog, pg_type, &path))),
+                "typed.{column}"
+            );
+        }
+        for (column, type_name) in [("m", "mood"), ("d", "positive_int"), ("p", "pair")] {
+            let expected = catalog
+                .type_(None, type_name, &path)
+                .found()
+                .unwrap()
+                .id
+                .unwrap();
+            assert_eq!(
+                column_type(&catalog, "typed", column, &path),
+                Some(Type::Named(expected))
+            );
+        }
+        for (column, pg_type) in expected {
+            assert_eq!(
+                column_type(&catalog, "typed_copy", column, &path),
+                Some(Type::Named(type_id(&catalog, pg_type, &path))),
+                "LIKE copied {column}"
+            );
+        }
+        assert_eq!(
+            column_type(&catalog, "more", "renamed", &path),
+            Some(Type::Named(type_id(&catalog, "int8", &path)))
+        );
+        let mood = catalog.type_(None, "mood", &path).found().unwrap();
+        let mood_id = mood.id.clone().unwrap();
+        assert_eq!(mood.kind, Some(TypeKind::Enum));
+        assert_eq!(mood.category, Some('E'));
+        let mood_array = catalog.type_(None, "_mood", &path).found().unwrap();
+        assert_eq!(mood_array.element, Some(mood_id.clone()));
+        assert_eq!(mood.array, mood_array.id);
+        let domain = catalog.type_(None, "positive_int", &path).found().unwrap();
+        assert_eq!(domain.kind, Some(TypeKind::Domain));
+        assert_eq!(domain.base, Some(type_id(&catalog, "int4", &path)));
+        let pair = catalog.type_(None, "pair", &path).found().unwrap();
+        assert_eq!(pair.kind, Some(TypeKind::Composite));
+        assert_eq!(pair.category, Some('C'));
+        assert_eq!(pair.attributes.unwrap().len(), 2);
+
+        let original_id = mood.id.unwrap();
+        apply(
+            &mut catalog,
+            "alter type mood rename to feeling; alter type feeling set schema public;",
+            &path,
+        );
+        assert_eq!(
+            catalog
+                .type_(Some("public"), "feeling", &path)
+                .found()
+                .unwrap()
+                .id,
+            Some(original_id.clone())
+        );
+        apply(
+            &mut catalog,
+            "drop type feeling; create type feeling as enum ('new');",
+            &path,
+        );
+        assert_ne!(
+            catalog.type_(None, "feeling", &path).found().unwrap().id,
+            Some(original_id)
+        );
+    }
+
+    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    async fn undeterminable_polymorphic_results_are_not_created(test_db: PgPool) {
+        let path = path(&["public"]);
+        let mut catalog = database_catalog(&test_db).await;
+        // Postgres rejects the first three.
+        apply(
+            &mut catalog,
+            "create function p1(x anyelement) returns anyrange language sql as 'select null';
+             create function p2(x anycompatible) returns anycompatiblerange language sql as 'select null';
+             create function p3(x int, out y anyelement) language sql as 'select null';
+             create function p4(x anyrange) returns anyarray language sql as 'select null';
+             create function p5(x anyelement, out y anyarray) language sql as 'select null';",
+            &path,
+        );
+        for name in ["p1", "p2", "p3"] {
+            assert!(
+                matches!(catalog.functions(None, name, &path), Lookup::Missing),
+                "{name}"
+            );
+        }
+        for name in ["p4", "p5"] {
+            assert!(
+                matches!(catalog.functions(None, name, &path), Lookup::Found(_)),
+                "{name}"
+            );
+        }
+    }
+
+    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    async fn overload_mutations_keep_signature_identity_and_invalidation(test_db: PgPool) {
+        let path = path(&["public"]);
+        let mut catalog = database_catalog(&test_db).await;
+        apply(
+            &mut catalog,
+            "create function overlay_f(a int, b text default 'x', variadic c int[] default '{}') returns setof int language sql as 'select 1';
+             create function overlay_f(a bigint) returns bigint language sql as 'select 1';
+             create function overlay_out(out a int, out b text) returns record language sql as 'select 1, ''x''';",
+            &path,
+        );
+        let Lookup::Found(candidates) = catalog.functions(None, "overlay_f", &path) else {
+            panic!("functions missing")
+        };
+        assert_eq!(candidates.len(), 2);
+        let first = candidates.iter().find(|f| f.returns_set).unwrap();
+        assert!(first.returns_set);
+        let signature = first.signature.as_ref().unwrap();
+        assert_eq!(signature.arguments.len(), 3);
+        assert_eq!(signature.input_defaults, 2);
+        assert_eq!(
+            signature.variadic_element,
+            Some(type_id(&catalog, "int4", &path))
+        );
+        apply(
+            &mut catalog,
+            "create or replace function overlay_f(a int, b text default 'y', variadic c int[] default '{}') returns setof int language sql as 'select 1';
+             drop function overlay_f(bigint);
+             alter function overlay_f(int, text, variadic int[]) rename to renamed_f;",
+            &path,
+        );
+        assert!(matches!(
+            catalog.functions(None, "overlay_f", &path),
+            Lookup::Missing
+        ));
+        let Lookup::Found(renamed) = catalog.functions(None, "renamed_f", &path) else {
+            panic!("renamed overload missing")
+        };
+        assert_eq!(renamed.len(), 1);
+        assert_eq!(renamed[0].signature.as_ref().unwrap().arguments.len(), 3);
+        let out = catalog
+            .functions(None, "overlay_out", &path)
+            .found()
+            .unwrap();
+        assert_eq!(out[0].return_columns.as_ref().unwrap().len(), 2);
+        assert!(out[0].signature.as_ref().unwrap().return_type.is_none());
+    }
+
+    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    async fn derived_columns_and_ddl_invalidation_are_typed(test_db: PgPool) {
+        let path = path(&["public"]);
+        let mut catalog = database_catalog(&test_db).await;
+        apply(
+            &mut catalog,
+            "create table typed_source (id int, name text);
+             create view typed_view as select id, name from typed_source;
+             create table typed_ctas as select 1 as a, 'x'::text as b;
+             create cast (int as text) with inout;
+             create operator public.## (leftarg = int, rightarg = int, function = int4pl);",
+            &path,
+        );
+        let source = catalog
+            .relation(None, "typed_source", &path)
+            .found()
+            .unwrap();
+        let view = catalog.relation(None, "typed_view", &path).found().unwrap();
+        let source_columns = source.columns.unwrap();
+        let view_columns = view.columns.unwrap();
+        assert_eq!(view_columns[0].ty, source_columns[0].ty);
+        assert_eq!(view_columns[1].ty, source_columns[1].ty);
+        assert_eq!(
+            column_type(&catalog, "typed_ctas", "a", &path),
+            Some(Type::Named(type_id(&catalog, "int4", &path)))
+        );
+        assert_eq!(
+            column_type(&catalog, "typed_ctas", "b", &path),
+            Some(Type::Named(type_id(&catalog, "text", &path)))
+        );
+        assert!(matches!(
+            catalog.cast(
+                &type_id(&catalog, "int4", &path),
+                &type_id(&catalog, "text", &path)
+            ),
+            Lookup::Unknown
+        ));
+        assert!(
+            !catalog
+                .operator_candidates(Some("public"), "##", crate::OperatorKind::Infix, &path)
+                .complete
+        );
+        apply(&mut catalog, "do $$ begin null; end $$;", &path);
+        assert!(catalog.is_tainted());
+        assert!(!catalog.function_candidates(None, "abs", &path).complete);
+    }
 }

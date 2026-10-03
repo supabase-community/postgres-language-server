@@ -3,10 +3,12 @@
 
 #![allow(dead_code)]
 
+mod casts;
 mod columns;
 mod extensions;
 mod functions;
 mod indexes;
+mod operators;
 mod policies;
 mod roles;
 mod schemas;
@@ -17,10 +19,12 @@ mod triggers;
 mod types;
 mod versions;
 
+pub use casts::PostgresCast;
 pub use columns::*;
 pub use extensions::Extension;
 pub use functions::{Behavior, Function, FunctionArg, FunctionArgs, ProcKind};
 pub use indexes::Index;
+pub use operators::PostgresOperator;
 pub use policies::{Policy, PolicyCommand};
 pub use roles::*;
 pub use schemas::Schema;
@@ -53,6 +57,13 @@ pub struct Snapshot {
     pub roles: Vec<Role>,
     pub indexes: Vec<Index>,
     pub sequences: Vec<Sequence>,
+    #[serde(default)]
+    pub casts: Vec<PostgresCast>,
+    #[serde(default)]
+    pub operators: Vec<PostgresOperator>,
+    /// Whether typing metadata was collected (false for legacy JSON snapshots).
+    #[serde(default)]
+    pub typing_metadata: bool,
 }
 
 impl Snapshot {
@@ -71,6 +82,8 @@ impl Snapshot {
             extensions,
             indexes,
             sequences,
+            casts,
+            operators,
         ) = futures_util::try_join!(
             Schema::load(pool),
             Table::load(pool),
@@ -84,6 +97,8 @@ impl Snapshot {
             Extension::load(pool),
             Index::load(pool),
             Sequence::load(pool),
+            PostgresCast::load(pool),
+            PostgresOperator::load(pool),
         )?;
 
         let version = versions
@@ -104,6 +119,9 @@ impl Snapshot {
             extensions,
             indexes,
             sequences,
+            casts,
+            operators,
+            typing_metadata: true,
         })
     }
 
@@ -234,12 +252,74 @@ mod tests {
     use sqlx::{Executor, PgPool};
 
     use super::Snapshot;
+    use crate::OperatorKind;
+    use crate::catalog::{Catalog, CatalogBase};
+    use crate::lookup::{CatalogView, Lookup};
+    use crate::typing::TypeId;
+    use std::sync::Arc;
 
     #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
     async fn it_loads(test_db: PgPool) {
         Snapshot::load(&test_db)
             .await
             .expect("Failed to load snapshot");
+    }
+
+    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    async fn typing_snapshot_has_catalog_metadata(test_db: PgPool) {
+        test_db.execute("CREATE FUNCTION public.typing_defaults(a int, b int DEFAULT 3) RETURNS int LANGUAGE sql AS 'SELECT a + b'").await.unwrap();
+        let snapshot = Arc::new(Snapshot::load(&test_db).await.unwrap());
+        assert!(snapshot.typing_metadata);
+        let array = snapshot.find_type("_int4", Some("pg_catalog")).unwrap();
+        let scalar = snapshot.find_type("int4", Some("pg_catalog")).unwrap();
+        assert!(array.is_array);
+        assert_eq!(array.typelem, scalar.id);
+        assert_eq!(scalar.typarray, array.id);
+
+        let catalog = Catalog::new(Some(Arc::new(CatalogBase::new(snapshot))));
+        assert!(matches!(
+            catalog.cast(&TypeId::Snapshot(23), &TypeId::Snapshot(20)),
+            Lookup::Found(_)
+        ));
+        assert_eq!(
+            catalog.cast(&TypeId::Snapshot(23), &TypeId::Snapshot(25)),
+            Lookup::Missing
+        );
+        assert!(
+            catalog
+                .operator_candidates(None, "+", OperatorKind::Infix, &[])
+                .items
+                .iter()
+                .any(|op| {
+                    op.left == Some(TypeId::Snapshot(23))
+                        && op.right == Some(TypeId::Snapshot(23))
+                        && op.result == Some(TypeId::Snapshot(23))
+                })
+        );
+        let functions = catalog.function_candidates(None, "now", &[]);
+        assert!(
+            functions.items.iter().any(|f| f
+                .signature
+                .as_ref()
+                .is_some_and(
+                    |s| s.arguments.is_empty() && s.return_type == Some(TypeId::Snapshot(1184))
+                ))
+        );
+        let series = catalog.function_candidates(None, "generate_series", &[]);
+        assert!(!series.items.is_empty());
+        let defaults = catalog.function_candidates(Some("public"), "typing_defaults", &[]);
+        assert!(
+            defaults
+                .items
+                .iter()
+                .any(|f| f.signature.as_ref().is_some_and(|s| s.input_defaults == 1))
+        );
+        let format = catalog.function_candidates(None, "format", &[]);
+        assert!(format.items.iter().any(|f| {
+            f.signature
+                .as_ref()
+                .is_some_and(|s| s.variadic_element.is_some())
+        }));
     }
 
     #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]

@@ -97,6 +97,14 @@ pub struct Function {
     /// The Id (`oid`).
     pub id: i64,
 
+    /// Number of trailing input arguments with defaults.
+    #[serde(default)]
+    pub input_defaults: i16,
+
+    /// Variadic argument element type oid, or zero when not variadic.
+    #[serde(default)]
+    pub variadic_type_id: i64,
+
     /// The name of the schema the function belongs to.
     pub schema: String,
 

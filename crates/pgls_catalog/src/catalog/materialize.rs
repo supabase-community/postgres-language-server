@@ -6,11 +6,13 @@ use std::sync::Arc;
 use rustc_hash::FxHashMap;
 
 use super::{Catalog, Entry, Key};
-use crate::lookup::{ColumnInfo, FunctionKind, Origin, RelationInfo, RelationKind};
+use crate::lookup::{FunctionInfo, FunctionKind, Origin, RelationInfo, RelationKind, TypeInfo};
 use crate::snapshot::{
     Column, ColumnClassKind, Function, PostgresType, PostgresTypeAttribute, ProcKind, Schema,
     Sequence, Snapshot, Table, TableKind, TypeAttributes,
 };
+use crate::typing::{Type, TypeId};
+use crate::{FunctionArgumentMode, TypeKind};
 
 impl Catalog {
     /// The database snapshot with the changes of the file applied.
@@ -31,6 +33,7 @@ impl Catalog {
         let mut builder = Builder {
             snapshot: Snapshot::clone(base.snapshot()),
             next_id: -1,
+            type_ids: rustc_hash::FxHashMap::default(),
         };
 
         for schema in &self.dropped_schemas {
@@ -39,6 +42,13 @@ impl Catalog {
         for (name, exists) in &self.schemas {
             if *exists {
                 builder.create_schema(name);
+            }
+        }
+        for entry in self.types.values() {
+            if let Entry::Defined(type_) = entry
+                && type_.origin == Origin::File
+            {
+                builder.allocate_type(type_);
             }
         }
         for ((schema, name), entry) in &self.relations {
@@ -50,9 +60,7 @@ impl Catalog {
         }
         for (key, entry) in &self.types {
             match entry {
-                Entry::Defined(type_) if type_.origin == Origin::File => {
-                    builder.define_type(key, type_.attributes.as_deref());
-                }
+                Entry::Defined(type_) if type_.origin == Origin::File => {}
                 Entry::Dropped => builder
                     .snapshot
                     .types
@@ -60,12 +68,19 @@ impl Catalog {
                 _ => {}
             }
         }
+        for (key, entry) in &self.types {
+            if let Entry::Defined(type_) = entry
+                && type_.origin == Origin::File
+            {
+                builder.define_type(key, type_);
+            }
+        }
         for (key, entry) in &self.functions {
             match entry {
                 Entry::Defined(overloads) => {
                     for function in overloads {
                         if function.origin == Origin::File {
-                            builder.add_function(key, function.kind, function.returns_set);
+                            builder.add_function(key, function);
                         }
                     }
                 }
@@ -81,10 +96,23 @@ impl Catalog {
     }
 }
 
+fn type_kind_code(kind: TypeKind) -> char {
+    match kind {
+        TypeKind::Base => 'b',
+        TypeKind::Composite => 'c',
+        TypeKind::Domain => 'd',
+        TypeKind::Enum => 'e',
+        TypeKind::Pseudo => 'p',
+        TypeKind::Range => 'r',
+        TypeKind::Multirange => 'm',
+    }
+}
+
 struct Builder {
     snapshot: Snapshot,
     /// Ids of objects created by the file are negative, so they never collide with oids.
     next_id: i64,
+    type_ids: rustc_hash::FxHashMap<TypeId, i64>,
 }
 
 impl Builder {
@@ -222,7 +250,15 @@ impl Builder {
                     class_kind: class_kind.clone(),
                     number: number as i64 + 1,
                     schema_name: relation.schema.clone(),
-                    type_id: self.type_id(column.type_name.as_deref()),
+                    type_id: column
+                        .ty
+                        .as_ref()
+                        .and_then(|ty| match ty {
+                            Type::Named(id) => self.id_for(id),
+                            _ => None,
+                        })
+                        .unwrap_or_else(|| self.type_id(column.type_name.as_deref())),
+
                     type_name: column.type_name.clone(),
                     is_nullable: true,
                     is_primary_key: false,
@@ -251,7 +287,23 @@ impl Builder {
         }
     }
 
-    fn define_type(&mut self, (schema, name): &Key, attributes: Option<&[ColumnInfo]>) {
+    fn allocate_type(&mut self, info: &TypeInfo) {
+        let Some(TypeId::File(file_id)) = &info.id else {
+            return;
+        };
+        if self
+            .snapshot
+            .types
+            .iter()
+            .any(|type_| type_.schema == info.schema && type_.name == info.name)
+        {
+            return;
+        }
+        let id = self.next_id();
+        self.type_ids.insert(TypeId::File(*file_id), id);
+    }
+
+    fn define_type(&mut self, (schema, name): &Key, info: &TypeInfo) {
         let exists = self
             .snapshot
             .types
@@ -260,39 +312,121 @@ impl Builder {
         if exists {
             return;
         }
-        let attrs = attributes
+        let Some(id) = info.id.as_ref().and_then(|id| self.id_for(id)) else {
+            return;
+        };
+        let attrs = info
+            .attributes
+            .as_deref()
             .unwrap_or_default()
             .iter()
             .map(|attribute| PostgresTypeAttribute {
                 name: attribute.name.clone(),
-                type_id: self.type_id(attribute.type_name.as_deref()),
+                type_id: attribute
+                    .ty
+                    .as_ref()
+                    .and_then(|ty| match ty {
+                        Type::Named(id) => self.id_for(id),
+                        _ => None,
+                    })
+                    .unwrap_or_else(|| self.type_id(attribute.type_name.as_deref())),
             })
             .collect();
-        let id = self.next_id();
-        self.snapshot.types.push(PostgresType {
+        let mut type_ = PostgresType {
             id,
             name: name.clone(),
             schema: schema.clone(),
             attributes: TypeAttributes { attrs },
             ..Default::default()
+        };
+        type_.typtype = info
+            .kind
+            .map(type_kind_code)
+            .unwrap_or_default()
+            .to_string();
+        type_.typcategory = info.category.map(|c| c.to_string()).unwrap_or_default();
+        type_.typispreferred = info.preferred.unwrap_or(false);
+        type_.typelem = info
+            .element
+            .as_ref()
+            .and_then(|id| self.id_for(id))
+            .unwrap_or(0);
+        type_.typarray = info
+            .array
+            .as_ref()
+            .and_then(|id| self.id_for(id))
+            .unwrap_or(0);
+        type_.typbasetype = info
+            .base
+            .as_ref()
+            .and_then(|id| self.id_for(id))
+            .unwrap_or(0);
+        type_.typrelid = info.relation.unwrap_or_else(|| {
+            self.snapshot
+                .tables
+                .iter()
+                .find(|table| table.schema == *schema && table.name == *name)
+                .map_or(0, |table| table.id)
         });
+        type_.is_array = info.element.is_some();
+        self.snapshot.types.push(type_);
     }
 
-    fn add_function(&mut self, (schema, name): &Key, kind: FunctionKind, returns_set: bool) {
+    fn add_function(&mut self, (schema, name): &Key, info: &FunctionInfo) {
+        let signature = info.signature.as_ref();
+        let args = signature
+            .map(|signature| {
+                signature
+                    .arguments
+                    .iter()
+                    .map(|argument| crate::snapshot::FunctionArg {
+                        mode: match argument.mode {
+                            FunctionArgumentMode::In => "in",
+                            FunctionArgumentMode::InOut => "inout",
+                            FunctionArgumentMode::Variadic => "variadic",
+                        }
+                        .into(),
+                        name: argument.name.clone().unwrap_or_default(),
+                        type_id: argument
+                            .ty
+                            .as_ref()
+                            .and_then(|id| self.id_for(id))
+                            .unwrap_or(0),
+                        has_default: Some(false),
+                    })
+                    .collect()
+            })
+            .unwrap_or_default();
         let id = self.next_id();
         self.snapshot.functions.push(Function {
             id,
             schema: schema.clone(),
             name: name.clone(),
-            kind: match kind {
+            kind: match info.kind {
                 FunctionKind::Function => ProcKind::Function,
                 FunctionKind::Aggregate => ProcKind::Aggregate,
                 FunctionKind::Window => ProcKind::Window,
                 FunctionKind::Procedure => ProcKind::Procedure,
             },
-            is_set_returning_function: returns_set,
+            is_set_returning_function: signature.map_or(info.returns_set, |s| s.returns_set),
+            input_defaults: signature.map_or(0, |s| s.input_defaults as i16),
+            variadic_type_id: signature
+                .and_then(|s| s.variadic_element.as_ref())
+                .and_then(|id| self.id_for(id))
+                .unwrap_or(0),
+            return_type_id: signature
+                .and_then(|s| s.return_type.as_ref())
+                .and_then(|id| self.id_for(id)),
+            args: crate::snapshot::FunctionArgs { args },
             ..Default::default()
         });
+    }
+
+    fn id_for(&self, id: &TypeId) -> Option<i64> {
+        match id {
+            TypeId::Snapshot(id) => Some(*id),
+            TypeId::File(_) => self.type_ids.get(id).copied(),
+        }
     }
 
     /// The oid of a type, given its name as the catalog writes it (`int4`, `public.my_enum`).

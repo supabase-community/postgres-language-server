@@ -61,6 +61,12 @@ pub const LINTER_RULES: &[LinterRuleMetadata] = &[
         severity: Severity::Error,
     },
     LinterRuleMetadata {
+        group: "typecheck",
+        name: "assignmentTypeMismatch",
+        recommended: true,
+        severity: Severity::Error,
+    },
+    LinterRuleMetadata {
         group: "safety",
         name: "avoidAddingExclusionConstraint",
         recommended: true,
@@ -200,6 +206,12 @@ pub const LINTER_RULES: &[LinterRuleMetadata] = &[
     },
     LinterRuleMetadata {
         group: "typecheck",
+        name: "functionArgumentMismatch",
+        recommended: true,
+        severity: Severity::Error,
+    },
+    LinterRuleMetadata {
+        group: "typecheck",
         name: "functionReturnTypeMismatch",
         recommended: true,
         severity: Severity::Error,
@@ -207,6 +219,12 @@ pub const LINTER_RULES: &[LinterRuleMetadata] = &[
     LinterRuleMetadata {
         group: "typecheck",
         name: "insertColumnMismatch",
+        recommended: true,
+        severity: Severity::Error,
+    },
+    LinterRuleMetadata {
+        group: "typecheck",
+        name: "invalidCast",
         recommended: true,
         severity: Severity::Error,
     },
@@ -233,6 +251,12 @@ pub const LINTER_RULES: &[LinterRuleMetadata] = &[
         name: "multipleAlterTable",
         recommended: true,
         severity: Severity::Warning,
+    },
+    LinterRuleMetadata {
+        group: "typecheck",
+        name: "operatorTypeMismatch",
+        recommended: true,
+        severity: Severity::Error,
     },
     LinterRuleMetadata {
         group: "style",
@@ -419,6 +443,10 @@ pub struct Rules {
     #[doc = "An unqualified column name matches columns of more than one relation in scope."]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ambiguous_column: Option<RuleConfiguration<pgls_analyser::options::AmbiguousColumn>>,
+    #[doc = "An expression assigned to a column cannot be coerced to that column's type. The rule needs a database connection to load the table and type catalog."]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub assignment_type_mismatch:
+        Option<RuleConfiguration<pgls_analyser::options::AssignmentTypeMismatch>>,
     #[doc = "Adding an exclusion constraint acquires an ACCESS EXCLUSIVE lock."]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub avoid_adding_exclusion_constraint:
@@ -498,6 +526,10 @@ pub struct Rules {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub disallow_unique_constraint:
         Option<RuleConfiguration<pgls_analyser::options::DisallowUniqueConstraint>>,
+    #[doc = "A function name and argument count exist, but its argument types do not select exactly one overload. The rule needs a database connection to load the function and type catalog."]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub function_argument_mismatch:
+        Option<RuleConfiguration<pgls_analyser::options::FunctionArgumentMismatch>>,
     #[doc = "The final statement of a SQL function doesn't return what the function is declared to return."]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub function_return_type_mismatch:
@@ -506,6 +538,9 @@ pub struct Rules {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub insert_column_mismatch:
         Option<RuleConfiguration<pgls_analyser::options::InsertColumnMismatch>>,
+    #[doc = "An explicit cast is not permitted between the source and target types. The rule needs a database connection to load the type and cast catalog."]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub invalid_cast: Option<RuleConfiguration<pgls_analyser::options::InvalidCast>>,
     #[doc = "DROP TYPE and DROP DOMAIN don't take a parameter list."]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub invalid_drop_type_signature:
@@ -520,6 +555,10 @@ pub struct Rules {
     #[doc = "Multiple ALTER TABLE statements on the same table should be combined into a single statement."]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub multiple_alter_table: Option<RuleConfiguration<pgls_analyser::options::MultipleAlterTable>>,
+    #[doc = "An operator exists by name but cannot be resolved for the operand types, or has multiple equally suitable candidates."]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub operator_type_mismatch:
+        Option<RuleConfiguration<pgls_analyser::options::OperatorTypeMismatch>>,
     #[doc = "Prefer BIGINT over smaller integer types."]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub prefer_big_int: Option<RuleConfiguration<pgls_analyser::options::PreferBigInt>>,
@@ -634,6 +673,10 @@ impl Rules {
                 .as_ref()
                 .map(RuleConfiguration::level),
             "ambiguousColumn" => self.ambiguous_column.as_ref().map(RuleConfiguration::level),
+            "assignmentTypeMismatch" => self
+                .assignment_type_mismatch
+                .as_ref()
+                .map(RuleConfiguration::level),
             "avoidAddingExclusionConstraint" => self
                 .avoid_adding_exclusion_constraint
                 .as_ref()
@@ -702,6 +745,10 @@ impl Rules {
                 .disallow_unique_constraint
                 .as_ref()
                 .map(RuleConfiguration::level),
+            "functionArgumentMismatch" => self
+                .function_argument_mismatch
+                .as_ref()
+                .map(RuleConfiguration::level),
             "functionReturnTypeMismatch" => self
                 .function_return_type_mismatch
                 .as_ref()
@@ -710,6 +757,7 @@ impl Rules {
                 .insert_column_mismatch
                 .as_ref()
                 .map(RuleConfiguration::level),
+            "invalidCast" => self.invalid_cast.as_ref().map(RuleConfiguration::level),
             "invalidDropTypeSignature" => self
                 .invalid_drop_type_signature
                 .as_ref()
@@ -724,6 +772,10 @@ impl Rules {
                 .map(RuleConfiguration::level),
             "multipleAlterTable" => self
                 .multiple_alter_table
+                .as_ref()
+                .map(RuleConfiguration::level),
+            "operatorTypeMismatch" => self
+                .operator_type_mismatch
                 .as_ref()
                 .map(RuleConfiguration::level),
             "preferBigInt" => self.prefer_big_int.as_ref().map(RuleConfiguration::level),
@@ -822,6 +874,10 @@ impl Rules {
                 .ambiguous_column
                 .as_ref()
                 .and_then(RuleConfiguration::get_options),
+            "assignmentTypeMismatch" => self
+                .assignment_type_mismatch
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
             "avoidAddingExclusionConstraint" => self
                 .avoid_adding_exclusion_constraint
                 .as_ref()
@@ -914,12 +970,20 @@ impl Rules {
                 .disallow_unique_constraint
                 .as_ref()
                 .and_then(RuleConfiguration::get_options),
+            "functionArgumentMismatch" => self
+                .function_argument_mismatch
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
             "functionReturnTypeMismatch" => self
                 .function_return_type_mismatch
                 .as_ref()
                 .and_then(RuleConfiguration::get_options),
             "insertColumnMismatch" => self
                 .insert_column_mismatch
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "invalidCast" => self
+                .invalid_cast
                 .as_ref()
                 .and_then(RuleConfiguration::get_options),
             "invalidDropTypeSignature" => self
@@ -936,6 +1000,10 @@ impl Rules {
                 .and_then(RuleConfiguration::get_options),
             "multipleAlterTable" => self
                 .multiple_alter_table
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "operatorTypeMismatch" => self
+                .operator_type_mismatch
                 .as_ref()
                 .and_then(RuleConfiguration::get_options),
             "preferBigInt" => self

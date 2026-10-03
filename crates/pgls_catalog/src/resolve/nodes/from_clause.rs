@@ -19,7 +19,9 @@ pub(super) fn resolve_from_clause(r: &mut Resolver, from: &[Node]) -> Level {
 }
 
 /// Resolves one FROM item. `preceding` holds the items before it, which LATERAL items and
-/// functions can reference.
+/// functions can reference. Port of [`transformFromClauseItem`].
+///
+/// [`transformFromClauseItem`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_clause.c#L1054
 pub(super) fn resolve_from_item(r: &mut Resolver, node: &Node, preceding: &Level) -> Level {
     let item = match node.node.as_ref() {
         Some(NodeEnum::RangeVar(n)) => resolve_range_var(r, n),

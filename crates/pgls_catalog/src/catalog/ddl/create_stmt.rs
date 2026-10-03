@@ -3,6 +3,11 @@ use pgls_query::{NodeEnum, protobuf::CreateStmt};
 use crate::catalog::{Catalog, key, names::type_name, overlay::column_info};
 use crate::lookup::{CatalogView, ColumnInfo, Origin, RelationInfo, RelationKind};
 
+/// `CREATE TABLE`. Models [`DefineRelation`], which merges inherited columns with
+/// [`MergeAttributes`].
+///
+/// [`DefineRelation`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/commands/tablecmds.c#L765
+/// [`MergeAttributes`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/commands/tablecmds.c#L2555
 pub(super) fn apply_create_stmt(c: &mut Catalog, n: &CreateStmt, search_path: &[String]) {
     create_table(c, n, RelationKind::Table, search_path);
 }
@@ -17,7 +22,9 @@ pub(super) fn create_table(
     let Some(range_var) = &n.relation else {
         return;
     };
-    let new_key = c.relation_creation_key(range_var, search_path);
+    let Some(new_key) = c.relation_creation_key(range_var, search_path) else {
+        return;
+    };
     if c.skip_existing_relation(&new_key, n.if_not_exists) {
         return;
     }
@@ -59,7 +66,9 @@ pub(super) fn create_table(
 
     for element in &n.table_elts {
         match element.node.as_ref() {
-            Some(NodeEnum::ColumnDef(column)) => add_columns(Some(vec![column_info(column)])),
+            Some(NodeEnum::ColumnDef(column)) => {
+                add_columns(Some(vec![column_info(c, column, search_path)]))
+            }
             Some(NodeEnum::TableLikeClause(like)) => {
                 let source = like
                     .relation

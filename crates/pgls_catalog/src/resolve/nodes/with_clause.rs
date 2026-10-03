@@ -4,7 +4,9 @@ use super::{Resolver, common_table_expr::resolve_common_table_expr};
 use crate::resolve::scope::Cte;
 
 /// Resolves the CTEs of a WITH clause and brings them into scope. The query that owns the
-/// clause removes them again.
+/// clause removes them again. Port of [`transformWithClause`].
+///
+/// [`transformWithClause`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_cte.c#L110
 pub(super) fn resolve_with_clause(r: &mut Resolver, n: &WithClause) {
     let definitions: Vec<_> = n
         .ctes
@@ -20,13 +22,20 @@ pub(super) fn resolve_with_clause(r: &mut Resolver, n: &WithClause) {
         r.ctes.extend(definitions.iter().map(|cte| Cte {
             name: cte.ctename.clone(),
             columns: None,
+            typed_columns: None,
         }));
     }
 
     for cte in definitions {
+        let columns = resolve_common_table_expr(r, cte);
         let resolved = Cte {
             name: cte.ctename.clone(),
-            columns: resolve_common_table_expr(r, cte),
+            columns,
+            typed_columns: if n.recursive {
+                None
+            } else {
+                crate::resolve::resolve_unknown_outputs(r.catalog, r.output.clone())
+            },
         };
         match r
             .ctes

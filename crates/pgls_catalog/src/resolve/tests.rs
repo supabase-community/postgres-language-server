@@ -402,6 +402,31 @@ fn updates_and_deletes() {
 }
 
 #[test]
+fn returning_old_and_new() {
+    // Postgres 18 adds `old` and `new`; the snapshot here has no server version.
+    assert_valid("update users set name = 'x' returning old.name, new.name, old.*");
+    assert_eq!(
+        findings("delete from users returning old.nope"),
+        [unknown_column(Some("old"), "nope")]
+    );
+    // A FROM item named `old` hides the alias.
+    assert_valid("update users set name = old.title from posts as old returning old.title");
+    // Only reachable by name: `*` and unqualified columns don't see them twice.
+    assert_valid("insert into users values (1, 'x') returning name");
+}
+
+#[test]
+fn names_of_sql_json_and_xml_expressions() {
+    assert_valid(
+        "select json_object, json_array, json_arrayagg, xmlconcat, xmlserialize from (select json_object('a': 1), json_array(1), json_arrayagg(1), xmlconcat(null), xmlserialize(content null as text)) s",
+    );
+    assert_eq!(
+        findings("select nope from (select json_object('a': 1), xmlconcat(null)) s"),
+        [unknown_column(None, "nope")]
+    );
+}
+
+#[test]
 fn wrappers() {
     assert_eq!(
         findings("create view v as select nope from users"),
@@ -564,7 +589,7 @@ fn function_return_types() {
     );
     assert_eq!(
         findings("create function f() returns setof public.users language sql as 'select 1, 2, 3'"),
-        mismatch("public.users", 2, 3)
+        mismatch("users", 2, 3)
     );
     assert_valid(
         "create function f(user_id int8) returns users language sql as $$ select * from users u where u.id = user_id $$",
@@ -575,7 +600,7 @@ fn function_return_types() {
     // Scalars need exactly one column.
     assert_eq!(
         findings("create function f() returns int language sql as 'select 1, 2'"),
-        mismatch("int4", 1, 2)
+        mismatch("integer", 1, 2)
     );
     assert_eq!(
         findings("create function f() returns text[] language sql as 'select 1, 2'"),
@@ -602,7 +627,7 @@ fn function_return_types() {
     );
     assert_eq!(
         findings("create function f() returns table (x int) language sql as 'select 1, 2'"),
-        mismatch("int4", 1, 2)
+        mismatch("integer", 1, 2)
     );
 
     // `RETURNING`, and statements that return no rows.
@@ -617,7 +642,7 @@ fn function_return_types() {
     );
     assert_eq!(
         findings("create function f() returns int language sql as 'delete from users'"),
-        no_rows("int4")
+        no_rows("integer")
     );
     assert_eq!(
         findings("create function f() returns record language sql as 'create table t ()'"),
@@ -630,7 +655,7 @@ fn function_return_types() {
         findings(
             "create function f() returns int language sql begin atomic select 1; select 1, 2; end"
         ),
-        mismatch("int4", 1, 2)
+        mismatch("integer", 1, 2)
     );
     assert_valid(
         "create function f() returns users language sql return (select u from users u limit 1)",
@@ -646,12 +671,13 @@ fn function_return_types() {
     assert_valid("create function f() returns int language sql as 'not sql at all'");
     assert_valid("create function f() returns int language plpgsql as 'select 1, 2'");
     assert_valid("create procedure p() language sql as 'select 1, 2'");
+    // Enums are scalars.
     assert_eq!(
         findings_after(
             "create type mood as enum ('ok'); create domain name_text as text;",
             "create function f() returns mood language sql as 'select 1, 2'"
         ),
-        []
+        mismatch("mood", 1, 2)
     );
     // A composite type created in the file.
     assert_eq!(

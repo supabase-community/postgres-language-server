@@ -1,5 +1,7 @@
 //! Checks the final statement of a SQL function against its declared result, like Postgres does
-//! when it creates the function (`42P13`).
+//! when it creates the function (`42P13`), in [`check_sql_fn_retval`].
+//!
+//! [`check_sql_fn_retval`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/executor/functions.c#L2116
 
 use pgls_query::{
     NodeEnum,
@@ -7,8 +9,13 @@ use pgls_query::{
 };
 
 use super::{Resolver, resolve_node_enum, string::string_values};
+use crate::TypeKind;
 use crate::lookup::Lookup;
 use crate::resolve::{FindingKind, FunctionContext, FunctionParam, ReturnMismatch};
+use crate::typing::{
+    CoercionContext, Decision, Type, TypeId, can_coerce, format_type_with_search_path,
+    normalize_type_name,
+};
 
 /// Pseudo-types. Functions returning them have no fixed shape, and polymorphic arguments make
 /// Postgres skip the check of the body.
@@ -52,12 +59,14 @@ enum Declared {
     },
 }
 
-#[derive(Clone, Copy)]
 enum Shape {
-    /// Exactly one column.
-    Scalar,
-    /// One column per attribute, or a single column holding the whole row.
-    Row(usize),
+    /// Exactly one column of this type.
+    Scalar(Option<TypeId>),
+    /// One column per attribute, or a single column holding the whole row of type `row`.
+    Row {
+        row: Option<TypeId>,
+        attributes: Vec<Option<TypeId>>,
+    },
 }
 
 pub(super) fn resolve_create_function_stmt(r: &mut Resolver, n: &CreateFunctionStmt) {
@@ -100,6 +109,8 @@ pub(super) fn resolve_create_function_stmt(r: &mut Resolver, n: &CreateFunctionS
     let returns_rows = match last {
         // `SELECT ... INTO` is rejected for other reasons.
         NodeEnum::SelectStmt(select) if select.into_clause.is_some() => return,
+        // The type of a `RETURN` expression is not checked.
+        NodeEnum::ReturnStmt(_) => return,
         NodeEnum::SelectStmt(_) => true,
         NodeEnum::InsertStmt(insert) => !insert.returning_list.is_empty(),
         NodeEnum::UpdateStmt(update) => !update.returning_list.is_empty(),
@@ -121,21 +132,83 @@ pub(super) fn resolve_create_function_stmt(r: &mut Resolver, n: &CreateFunctionS
     let Some(shape) = shape else {
         return;
     };
-    let Some(found) = output_column_count(r, n, &params, last) else {
+    let Some(found) = output_columns(r, n, &params, last) else {
         return;
     };
-    let expected = match shape {
-        Shape::Scalar if found != 1 => 1,
-        Shape::Row(columns) if found != 1 && found != columns => columns,
-        _ => return,
+    if let Some(mismatch) = compare(r, &shape, &found) {
+        r.report(
+            FindingKind::FunctionReturnMismatch {
+                declared: label,
+                mismatch,
+            },
+            location,
+        );
+    }
+}
+
+/// How the final statement's columns differ from the declared result. Port of
+/// [`check_sql_stmt_retval`] (through [`check_sql_fn_retval`], which only looks at the last
+/// statement since Postgres 18) and [`coerce_fn_result_column`]: each column must be assignable
+/// to its declared type.
+///
+/// [`check_sql_stmt_retval`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/executor/functions.c#L2150
+/// [`check_sql_fn_retval`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/executor/functions.c#L2116
+/// [`coerce_fn_result_column`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/executor/functions.c#L2520
+fn compare(r: &Resolver, shape: &Shape, found: &[Option<Type>]) -> Option<ReturnMismatch> {
+    // `None` if it is unknown whether the column can be assigned.
+    let assignable = |found: &Option<Type>, expected: &Option<TypeId>| -> Option<bool> {
+        let (found, expected) = (found.as_ref()?, expected.as_ref()?);
+        match can_coerce(r.catalog, found, expected, CoercionContext::Assignment) {
+            Decision::Known(assignable) => Some(assignable),
+            Decision::Unknown => None,
+        }
     };
-    r.report(
-        FindingKind::FunctionReturnMismatch {
-            declared: label,
-            mismatch: ReturnMismatch::ColumnCount { expected, found },
+    let column_type = |position: Option<usize>, expected: &Option<TypeId>, found: &Option<Type>| {
+        Some(ReturnMismatch::ColumnType {
+            position,
+            expected: Type::Named(expected.clone()?),
+            found: found.clone()?,
+        })
+    };
+    match shape {
+        Shape::Scalar(_) if found.len() != 1 => Some(ReturnMismatch::ColumnCount {
+            expected: 1,
+            found: found.len(),
+        }),
+        Shape::Scalar(expected) => match assignable(&found[0], expected)? {
+            true => None,
+            false => column_type(None, expected, &found[0]),
         },
-        location,
-    );
+        Shape::Row { row, attributes } => {
+            // A single column may hold the whole row.
+            if found.len() == 1 {
+                match assignable(&found[0], row)? {
+                    true => return None,
+                    false if attributes.len() != 1 => {
+                        return Some(ReturnMismatch::ColumnCount {
+                            expected: attributes.len(),
+                            found: 1,
+                        });
+                    }
+                    false => {}
+                }
+            }
+            if found.len() != attributes.len() {
+                return Some(ReturnMismatch::ColumnCount {
+                    expected: attributes.len(),
+                    found: found.len(),
+                });
+            }
+            for (position, (expected, found)) in attributes.iter().zip(found).enumerate() {
+                match assignable(found, expected) {
+                    Some(true) => {}
+                    Some(false) => return column_type(Some(position + 1), expected, found),
+                    None => return None,
+                }
+            }
+            None
+        }
+    }
 }
 
 fn is_sql_function(n: &CreateFunctionStmt) -> bool {
@@ -211,7 +284,13 @@ fn declared_result(
         [output] => declared_type(r, output),
         [first, ..] => Some(Declared::Value {
             label: "record".into(),
-            shape: Some(Shape::Row(outputs.len())),
+            shape: Some(Shape::Row {
+                row: type_id(r, "record"),
+                attributes: outputs
+                    .iter()
+                    .map(|output| normalize_type_name(r.catalog, output, r.search_path).0)
+                    .collect(),
+            }),
             location: first.location,
         }),
     }
@@ -252,15 +331,46 @@ fn declared_type(r: &Resolver, type_name: &TypeName) -> Option<Declared> {
     let Lookup::Found(type_info) = r.catalog.type_(schema, name, r.search_path) else {
         return None;
     };
+    let (id, _) = normalize_type_name(r.catalog, type_name, r.search_path);
+    if let Some(id) = &id {
+        label = format_type_with_search_path(r.catalog, &Type::Named(id.clone()), r.search_path)
+            .unwrap_or(label);
+    }
     let shape = if is_array {
-        Some(Shape::Scalar)
-    } else if let Some(attributes) = &type_info.attributes {
-        Some(Shape::Row(attributes.len()))
-    } else if type_info.schema == "pg_catalog" {
-        Some(Shape::Scalar)
+        Some(Shape::Scalar(id))
     } else {
-        // Enums, domains, ranges, and composite types with unknown attributes.
-        None
+        match type_info.kind {
+            // Postgres treats domains as scalars, even over composite types.
+            Some(TypeKind::Composite) => {
+                type_info.attributes.as_ref().map(|attributes| Shape::Row {
+                    row: id,
+                    attributes: attributes
+                        .iter()
+                        .map(|attribute| match &attribute.ty {
+                            Some(Type::Named(ty)) => Some(ty.clone()),
+                            _ => None,
+                        })
+                        .collect(),
+                })
+            }
+            Some(
+                TypeKind::Base
+                | TypeKind::Domain
+                | TypeKind::Enum
+                | TypeKind::Range
+                | TypeKind::Multirange,
+            ) => Some(Shape::Scalar(id)),
+            Some(TypeKind::Pseudo) => None,
+            // Without metadata, attributes mean a composite type.
+            None if type_info.attributes.is_some() => {
+                type_info.attributes.as_ref().map(|attributes| Shape::Row {
+                    row: id,
+                    attributes: vec![None; attributes.len()],
+                })
+            }
+            None if type_info.schema == "pg_catalog" => Some(Shape::Scalar(id)),
+            None => None,
+        }
     };
     Some(Declared::Value {
         label,
@@ -280,13 +390,21 @@ fn is_pseudo_type(type_name: &TypeName) -> bool {
     }
 }
 
-/// The number of columns the final statement returns, if it is known with certainty.
-fn output_column_count(
+fn type_id(r: &Resolver, name: &str) -> Option<TypeId> {
+    match r.catalog.type_(Some("pg_catalog"), name, r.search_path) {
+        Lookup::Found(info) => info.id,
+        _ => None,
+    }
+}
+
+/// The types of the columns the final statement returns, if the columns are known with
+/// certainty. Unknown literals are `text`: Postgres resolves them before checking the result.
+fn output_columns(
     r: &Resolver,
     n: &CreateFunctionStmt,
     params: &[&FunctionParameter],
     last: &NodeEnum,
-) -> Option<usize> {
+) -> Option<Vec<Option<Type>>> {
     let function = FunctionContext {
         function_name: string_values(&n.funcname)?.pop()?,
         params: params
@@ -307,5 +425,23 @@ fn output_column_count(
     // The body is resolved on its own, and its findings are reported for its statements.
     let mut body = Resolver::new(r.catalog, r.search_path, Some(&function), None);
     let columns = resolve_node_enum(&mut body, last)?;
-    body.findings.is_empty().then_some(columns.len())
+    if !body.findings.is_empty() {
+        return None;
+    }
+    let types: Vec<Option<Type>> = match body.output.take() {
+        Some(output) if output.len() == columns.len() => {
+            output.into_iter().map(|column| column.ty).collect()
+        }
+        _ => vec![None; columns.len()],
+    };
+    let text = type_id(r, "text").map(Type::Named);
+    Some(
+        types
+            .into_iter()
+            .map(|ty| match ty {
+                Some(Type::UnknownLiteral) => text.clone(),
+                ty => ty,
+            })
+            .collect(),
+    )
 }

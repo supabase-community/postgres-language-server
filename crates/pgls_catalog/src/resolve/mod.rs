@@ -9,17 +9,23 @@
 //! the right answer.
 
 mod column_name;
+#[cfg(all(test, feature = "db"))]
+mod differential_tests;
+pub(crate) mod expr;
 mod nodes;
 mod resolver;
 mod scope;
 mod span;
 #[cfg(test)]
 mod tests;
+#[cfg(all(test, feature = "db"))]
+mod type_tests;
 
 use pgls_query::{NodeEnum, protobuf};
 use pgls_text_size::TextRange;
 
-use crate::lookup::CatalogView;
+use crate::lookup::{CatalogView, Lookup};
+use crate::typing::{QueryColumns, Type};
 use resolver::Resolver;
 
 /// A parameter of the SQL function whose body is being resolved.
@@ -66,6 +72,27 @@ pub enum FindingKind {
         column: String,
         candidates: Vec<String>,
     },
+    OperatorMismatch {
+        operator: String,
+        left: Option<crate::typing::Type>,
+        right: crate::typing::Type,
+        failure: MatchFailure,
+    },
+    FunctionArgumentMismatch {
+        schema: Option<String>,
+        name: String,
+        args: Vec<crate::typing::Type>,
+        failure: MatchFailure,
+    },
+    InvalidCast {
+        from: crate::typing::Type,
+        to: crate::typing::Type,
+    },
+    AssignmentMismatch {
+        column: String,
+        column_type: crate::typing::Type,
+        expr_type: crate::typing::Type,
+    },
     UnknownFunction {
         schema: Option<String>,
         name: String,
@@ -93,6 +120,12 @@ pub enum FindingKind {
     },
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum MatchFailure {
+    NoMatch,
+    Ambiguous,
+}
+
 /// How the final statement of a SQL function differs from the declared result.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ReturnMismatch {
@@ -100,6 +133,13 @@ pub enum ReturnMismatch {
     ColumnCount { expected: usize, found: usize },
     /// It is not a query, so it returns no rows.
     NoRows,
+    /// A column can't be assigned to its declared type. `position` is the 1-based column
+    /// of a composite result, `None` for a scalar result.
+    ColumnType {
+        position: Option<usize>,
+        expected: crate::typing::Type,
+        found: crate::typing::Type,
+    },
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -148,6 +188,44 @@ pub fn query_output_columns(
     search_path: &[String],
 ) -> Option<Vec<String>> {
     nodes::resolve_node(&mut Resolver::new(catalog, search_path, None, None), query)
+}
+
+/// The inferred output names and types of a query, or `None` when its shape is unknown.
+pub fn query_output_types(
+    query: &protobuf::Node,
+    catalog: &dyn CatalogView,
+    search_path: &[String],
+) -> QueryColumns {
+    let mut resolver = Resolver::new(catalog, search_path, None, None);
+    nodes::resolve_node(&mut resolver, query);
+    resolve_unknown_outputs(catalog, resolver.output)
+}
+
+/// Port of [`resolveTargetListUnknowns`]: output columns of unknown type become
+/// text. Postgres does this for every query except the source of an INSERT and the branches of a
+/// set operation, which coerce the unknowns to their target type instead.
+///
+/// [`resolveTargetListUnknowns`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_target.c#L288
+pub(crate) fn resolve_unknown_outputs(
+    catalog: &dyn CatalogView,
+    columns: QueryColumns,
+) -> QueryColumns {
+    let mut columns = columns?;
+    if columns
+        .iter()
+        .any(|column| column.ty == Some(Type::UnknownLiteral))
+    {
+        let text = match catalog.type_(Some("pg_catalog"), "text", &[]) {
+            Lookup::Found(info) => info.id.map(Type::Named),
+            _ => None,
+        };
+        for column in &mut columns {
+            if column.ty == Some(Type::UnknownLiteral) {
+                column.ty = text.clone();
+            }
+        }
+    }
+    Some(columns)
 }
 
 /// Whether the statement kind can be checked against the database with `EXPLAIN`.

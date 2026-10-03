@@ -12,13 +12,22 @@ impl Catalog {
         query: &protobuf::Node,
         search_path: &[String],
     ) -> Option<Vec<ColumnInfo>> {
-        let columns = crate::resolve::query_output_columns(query, self, search_path)?;
+        let columns = crate::resolve::query_output_types(query, self, search_path)?;
+        // Postgres rejects a relation with duplicate column names.
+        if columns
+            .iter()
+            .enumerate()
+            .any(|(i, column)| columns[..i].iter().any(|other| other.name == column.name))
+        {
+            return None;
+        }
         Some(
             columns
                 .into_iter()
-                .map(|name| ColumnInfo {
-                    name,
+                .map(|column| ColumnInfo {
+                    name: column.name,
                     type_name: None,
+                    ty: column.ty,
                 })
                 .collect(),
         )

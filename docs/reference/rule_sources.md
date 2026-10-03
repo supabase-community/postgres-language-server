@@ -4,10 +4,14 @@ Many rules are inspired by or directly ported from other tools. This page lists 
 ## Exclusive rules
 
 - [ambiguousColumn](./rules/ambiguous-column.md) 
+- [assignmentTypeMismatch](./rules/assignment-type-mismatch.md) 
+- [functionArgumentMismatch](./rules/function-argument-mismatch.md) 
 - [functionReturnTypeMismatch](./rules/function-return-type-mismatch.md) 
 - [insertColumnMismatch](./rules/insert-column-mismatch.md) 
+- [invalidCast](./rules/invalid-cast.md) 
 - [invalidDropTypeSignature](./rules/invalid-drop-type-signature.md) 
 - [missingFromClauseEntry](./rules/missing-from-clause-entry.md) 
+- [operatorTypeMismatch](./rules/operator-type-mismatch.md) 
 - [unknownColumn](./rules/unknown-column.md) 
 - [unknownFunction](./rules/unknown-function.md) 
 - [unknownRelation](./rules/unknown-relation.md) 

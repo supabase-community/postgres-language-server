@@ -79,6 +79,8 @@ impl Catalog {
             NodeEnum::RenameStmt(n) => apply_rename_stmt(c, n, search_path),
             NodeEnum::AlterObjectSchemaStmt(n) => apply_alter_object_schema_stmt(c, n, search_path),
             NodeEnum::DropStmt(n) => apply_drop_stmt(c, n, search_path),
+            NodeEnum::CreateCastStmt(_) => c.casts_incomplete = true,
+            NodeEnum::AlterOperatorStmt(_) => c.operators_incomplete = true,
             NodeEnum::TransactionStmt(n) => apply_transaction_stmt(c, n),
             NodeEnum::CreateExtensionStmt(n) => apply_create_extension_stmt(c, n),
             // These run arbitrary code or create objects we can't see.

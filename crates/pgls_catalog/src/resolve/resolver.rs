@@ -22,6 +22,7 @@ pub(super) struct Resolver<'a> {
     pub levels: Vec<Level>,
     /// The common table expressions in scope, innermost last.
     pub ctes: Vec<Cte>,
+    pub output: crate::typing::QueryColumns,
 }
 
 impl<'a> Resolver<'a> {
@@ -40,6 +41,7 @@ impl<'a> Resolver<'a> {
             database_only: true,
             levels: Vec::new(),
             ctes: Vec::new(),
+            output: None,
         }
     }
 
@@ -101,16 +103,47 @@ impl<'a> Resolver<'a> {
     }
 
     pub fn report(&mut self, kind: FindingKind, location: i32) {
-        let span = self.span(location);
+        let span = self.name_span(location);
+        self.report_with_span(kind, span);
+    }
+
+    pub fn report_with_span(&mut self, kind: FindingKind, span: Option<TextRange>) {
         self.database_only = false;
-        self.findings.push(Finding { kind, span });
+        // Some expressions are typed more than once, e.g. VALUES rows in INSERT.
+        let finding = Finding { kind, span };
+        if !self.findings.contains(&finding) {
+            self.findings.push(finding);
+        }
     }
 
     /// The span of the (possibly qualified) name starting at `location`.
-    fn span(&self, location: i32) -> Option<TextRange> {
+    pub fn name_span(&self, location: i32) -> Option<TextRange> {
+        self.span_to(location, span::reference_end)
+    }
+
+    /// The span of the operator token starting at `location`.
+    pub fn operator_span(&self, location: i32) -> Option<TextRange> {
+        self.span_to(location, span::operator_end)
+    }
+
+    pub fn cast_span(&self, location: i32) -> Option<TextRange> {
+        self.span_to(location, span::cast_end)
+    }
+
+    /// The span of the first token of an expression starting at `location`.
+    pub fn expression_span(&self, location: i32) -> Option<TextRange> {
+        self.span_to(location, |sql, start| {
+            span::reference_end(sql, start).or_else(|| span::token_end(sql, start))
+        })
+    }
+
+    fn span_to(
+        &self,
+        location: i32,
+        end_fn: fn(&str, usize) -> Option<usize>,
+    ) -> Option<TextRange> {
         let start = usize::try_from(location).ok()?;
-        let sql = self.sql?;
-        let end = span::reference_end(sql, start)?;
+        let end = end_fn(self.sql?, start)?;
         Some(TextRange::new(
             TextSize::try_from(start).ok()?,
             TextSize::try_from(end).ok()?,

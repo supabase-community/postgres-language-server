@@ -65,12 +65,12 @@ pub(super) fn resolve_func_call(r: &mut Resolver, n: &FuncCall) {
                 overload.min_args <= arg_count
                     && overload.max_args.is_none_or(|max| arg_count <= max)
             });
-            if !accepts && !may_be_field_access(r, n) {
+            if !accepts && !may_be_field_access(r, n) && !may_be_type_coercion(r, schema, name, n) {
                 r.report(unknown_function(true), n.location);
             }
         }
         Lookup::Missing => {
-            if !may_be_field_access(r, n) {
+            if !may_be_field_access(r, n) && !may_be_type_coercion(r, schema, name, n) {
                 r.report(unknown_function(false), n.location);
             }
         }
@@ -78,8 +78,30 @@ pub(super) fn resolve_func_call(r: &mut Resolver, n: &FuncCall) {
     }
 }
 
+/// Postgres reads a one-argument call of a type name as a cast when no function matches:
+/// `inet(x)` is `x::inet`. Port of the coercion fallback in [`func_get_detail`], which finds
+/// the type with [`FuncNameAsType`].
+///
+/// [`func_get_detail`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_func.c#L1450
+/// [`FuncNameAsType`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_func.c#L1936
+fn may_be_type_coercion(r: &Resolver, schema: Option<&str>, name: &str, n: &FuncCall) -> bool {
+    let [argument] = n.args.as_slice() else {
+        return false;
+    };
+    if n.agg_star || matches!(argument.node, Some(NodeEnum::NamedArgExpr(_))) {
+        return false;
+    }
+    !matches!(
+        r.catalog.type_(schema, name, r.search_path),
+        Lookup::Missing
+    )
+}
+
 /// Postgres reads `name(row)` as a field access if `row` is a whole row: `name(t)` is the same
-/// as `t.name`.
+/// as `t.name` ([`ParseComplexProjection`], from [`ParseFuncOrColumn`]).
+///
+/// [`ParseComplexProjection`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_func.c#L1967
+/// [`ParseFuncOrColumn`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_func.c#L90
 fn may_be_field_access(r: &Resolver, n: &FuncCall) -> bool {
     let [argument] = n.args.as_slice() else {
         return false;

@@ -1,10 +1,11 @@
 //! Records the regression fixtures of one Postgres major version.
 //!
-//! Usage: `record <major> [tag]`, normally through `just record-regress`. Without a tag, the one in
-//! `data/<major>/SOURCE` is used.
+//! Usage: `record <major> [tag] [--catalog-only]`, normally through `just record-regress`. Without
+//! a tag, the one in `data/<major>/SOURCE` is used.
 //!
 //! Fetches `src/test/regress/sql` of the tag, copies the files verbatim, runs every statement
-//! against `postgres:<major>.<minor>` in Docker and writes Postgres' verdict per statement.
+//! against `postgres:<major>.<minor>` in Docker and writes Postgres' verdict per statement. It also
+//! writes the catalog of a fresh database. With `--catalog-only`, only the catalog is re-recorded.
 
 use std::{
     fs,
@@ -13,18 +14,22 @@ use std::{
     time::Duration,
 };
 
-use pgls_postgres_regress::{Statement, Verdict, data_dir, preprocess, split, verdicts_file};
+use pgls_postgres_regress::{
+    CATALOG_FILE, Statement, Verdict, data_dir, preprocess, split, verdicts_file,
+};
 use sqlx::{Connection, Executor, PgConnection};
 
 const PASSWORD: &str = "postgres";
 
 #[tokio::main]
 async fn main() {
-    let args = std::env::args().skip(1).collect::<Vec<_>>();
+    let mut args = std::env::args().skip(1).collect::<Vec<_>>();
+    let catalog_only = args.iter().any(|x| x == "--catalog-only");
+    args.retain(|x| x != "--catalog-only");
     let (major, tag) = match args.as_slice() {
         [major] => (major, None),
         [major, tag] => (major, Some(tag.clone())),
-        _ => fail("usage: record <major> [tag]"),
+        _ => fail("usage: record <major> [tag] [--catalog-only]"),
     };
     let major: u32 = major
         .parse()
@@ -46,7 +51,9 @@ async fn main() {
             ))
         });
 
-    copy_upstream(&tag, &dir);
+    if !catalog_only {
+        copy_upstream(&tag, &dir);
+    }
 
     let container = Container::start(&format!("postgres:{version}"));
     let ctrl_c_id = container.id.clone();
@@ -71,6 +78,12 @@ async fn main() {
         matches,
         "server version {server_version} doesn't match {tag}"
     );
+
+    // Before the regression files run, the `postgres` database is still fresh.
+    record_catalog(&format!("{base_url}/postgres"), &dir).await;
+    if catalog_only {
+        return;
+    }
 
     let sql_dir = dir.join("sql");
     let verdicts_dir = dir.join("verdicts");
@@ -100,6 +113,30 @@ async fn main() {
     eprintln!(
         "Postgres {server_version}: {} accepted, {} rejected, {} skipped",
         totals.accepted, totals.rejected, totals.skipped
+    );
+}
+
+/// Writes the catalog of the database at `url` as gzipped `pgls_catalog::Snapshot` JSON.
+async fn record_catalog(url: &str, dir: &Path) {
+    let pool = sqlx::postgres::PgPoolOptions::new()
+        .max_connections(1)
+        .connect(url)
+        .await
+        .expect("connect to Postgres");
+    let snapshot = pgls_catalog::Snapshot::load(&pool)
+        .await
+        .expect("load the catalog");
+    pool.close().await;
+    let file = fs::File::create(dir.join(CATALOG_FILE)).expect("create catalog file");
+    let mut gz = flate2::write::GzEncoder::new(file, flate2::Compression::best());
+    serde_json::to_writer(&mut gz, &snapshot).expect("write catalog");
+    gz.finish().expect("finish catalog file");
+    eprintln!(
+        "Recorded the catalog: {} types, {} functions, {} operators, {} casts",
+        snapshot.types.len(),
+        snapshot.functions.len(),
+        snapshot.operators.len(),
+        snapshot.casts.len()
     );
 }
 

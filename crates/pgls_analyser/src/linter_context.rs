@@ -186,6 +186,12 @@ impl<'a> AnalysedFileContext<'a> {
         &self.session
     }
 
+    /// Records a statement that may have changed the catalog in ways it can't model, e.g. one
+    /// that doesn't parse.
+    pub fn taint_catalog(&mut self) {
+        self.catalog.taint();
+    }
+
     /// Moves to the next statement.
     ///
     /// Executed statements (`applies_effects`) update the catalog and the session. Statements
