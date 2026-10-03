@@ -3,6 +3,9 @@ use pgls_query::protobuf::{CreateSchemaStmt, RoleSpecType};
 use crate::catalog::Catalog;
 use crate::lookup::CatalogView;
 
+/// `CREATE SCHEMA`, including the objects it creates. Models [`CreateSchemaCommand`].
+///
+/// [`CreateSchemaCommand`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/commands/schemacmds.c#L52
 pub(super) fn apply_create_schema_stmt(
     c: &mut Catalog,
     n: &CreateSchemaStmt,

@@ -1,5 +1,10 @@
 use super::*;
 
+/// The target type of a cast, and a finding when no explicit coercion exists. Port of
+/// [`transformTypeCast`], which coerces with [`can_coerce_type`] in the explicit context.
+///
+/// [`transformTypeCast`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_expr.c#L2714
+/// [`can_coerce_type`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_coerce.c#L557
 pub(super) fn infer_type_cast(
     r: &mut Resolver<'_>,
     n: &pgls_query::protobuf::TypeCast,

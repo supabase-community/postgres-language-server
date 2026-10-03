@@ -5,7 +5,9 @@ use pgls_query::{
 
 use crate::catalog::{Catalog, names::qualified_name};
 
-/// `ALTER ... SET SCHEMA`.
+/// `ALTER ... SET SCHEMA`. Models [`ExecAlterObjectSchemaStmt`].
+///
+/// [`ExecAlterObjectSchemaStmt`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/commands/alter.c#L534
 pub(super) fn apply_alter_object_schema_stmt(
     c: &mut Catalog,
     n: &AlterObjectSchemaStmt,

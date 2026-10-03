@@ -1,12 +1,18 @@
 //! Which overloads a call can see, with their argument types expanded for the call. Port of
-//! `namespace.c: FuncnameGetCandidates` and `OpernameGetCandidates`.
+//! [`FuncnameGetCandidates`] and [`OpernameGetCandidates`].
+//!
+//! [`FuncnameGetCandidates`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/catalog/namespace.c#L1192
+//! [`OpernameGetCandidates`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/catalog/namespace.c#L1888
 
 use super::Candidate;
 use crate::typing::TypeId;
 use crate::{FunctionInfo, OperatorInfo, OperatorKind};
 
-/// Port of `namespace.c: FuncnameGetCandidates` for a call with `nargs` arguments, the last
-/// `names.len()` of which are named. Returns `None` when a candidate can't be evaluated.
+/// Port of [`FuncnameGetCandidates`] for a call with `nargs` arguments, the last `names.len()`
+/// of which are named: expands variadic and default arguments, and hides functions with the same
+/// arguments later in the search path. Returns `None` when a candidate can't be evaluated.
+///
+/// [`FuncnameGetCandidates`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/catalog/namespace.c#L1192
 pub(super) fn expand_candidates(
     functions: Vec<FunctionInfo>,
     nargs: usize,
@@ -98,7 +104,9 @@ pub(super) fn expand_candidates(
 }
 
 /// Maps the call's arguments to parameter positions, followed by the positions of the
-/// parameters filled in from defaults. Port of `namespace.c: MatchNamedCall`.
+/// parameters filled in from defaults. Port of [`MatchNamedCall`].
+///
+/// [`MatchNamedCall`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/catalog/namespace.c#L1585
 pub(super) fn match_named_call(
     params: &[Option<&str>],
     nargs: usize,
@@ -138,9 +146,11 @@ pub(super) fn match_named_call(
     Some(order)
 }
 
-/// Port of `namespace.c: OpernameGetCandidates`: an operator hides operators with the same
+/// Port of [`OpernameGetCandidates`]: an operator hides operators with the same
 /// argument types later in the search path. `operators` come in search path order. `None` when
 /// an operator's argument types are unknown.
+///
+/// [`OpernameGetCandidates`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/catalog/namespace.c#L1888
 pub(super) fn visible_operators(
     operators: Vec<OperatorInfo>,
     kind: OperatorKind,

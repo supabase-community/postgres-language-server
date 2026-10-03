@@ -1,5 +1,7 @@
 //! Checks the final statement of a SQL function against its declared result, like Postgres does
-//! when it creates the function (`42P13`).
+//! when it creates the function (`42P13`), in [`check_sql_fn_retval`].
+//!
+//! [`check_sql_fn_retval`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/executor/functions.c#L2116
 
 use pgls_query::{
     NodeEnum,
@@ -145,8 +147,13 @@ pub(super) fn resolve_create_function_stmt(r: &mut Resolver, n: &CreateFunctionS
 }
 
 /// How the final statement's columns differ from the declared result. Port of
-/// `functions.c: check_sql_fn_retval` and `coerce_fn_result_column`: each column must be
-/// assignable to its declared type.
+/// [`check_sql_stmt_retval`] (through [`check_sql_fn_retval`], which only looks at the last
+/// statement since Postgres 18) and [`coerce_fn_result_column`]: each column must be assignable
+/// to its declared type.
+///
+/// [`check_sql_stmt_retval`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/executor/functions.c#L2150
+/// [`check_sql_fn_retval`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/executor/functions.c#L2116
+/// [`coerce_fn_result_column`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/executor/functions.c#L2520
 fn compare(r: &Resolver, shape: &Shape, found: &[Option<Type>]) -> Option<ReturnMismatch> {
     // `None` if it is unknown whether the column can be assigned.
     let assignable = |found: &Option<Type>, expected: &Option<TypeId>| -> Option<bool> {

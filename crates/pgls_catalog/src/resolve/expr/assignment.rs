@@ -1,6 +1,11 @@
 use super::super::resolver::Resolver;
 use crate::typing::{CoercionContext, Decision, Type, can_coerce};
 
+/// Reports a value that can't be assigned to a column of INSERT or UPDATE, like
+/// [`transformAssignedExpr`] does with an assignment coercion. Unknown literals are coerced at
+/// runtime and never reported.
+///
+/// [`transformAssignedExpr`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_target.c#L455
 pub(crate) fn check_assignment(
     r: &mut Resolver<'_>,
     column: &str,

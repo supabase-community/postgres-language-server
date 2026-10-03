@@ -1,5 +1,11 @@
 use super::*;
 
+/// Subscripts and field selection. Port of [`transformIndirection`] for true arrays
+/// ([`transformContainerSubscripts`]) and composite fields ([`ParseComplexProjection`]).
+///
+/// [`transformIndirection`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_expr.c#L437
+/// [`transformContainerSubscripts`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_node.c#L243
+/// [`ParseComplexProjection`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_func.c#L1967
 pub(super) fn infer_a_indirection(
     r: &mut Resolver<'_>,
     n: &pgls_query::protobuf::AIndirection,

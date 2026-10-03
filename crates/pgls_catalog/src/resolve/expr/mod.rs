@@ -1,4 +1,7 @@
-//! Conservative expression type inference used while resolving query output columns.
+//! Conservative expression type inference used while resolving query output columns. Each
+//! module follows the `transform*` function of [`transformExprRecurse`] for its node.
+//!
+//! [`transformExprRecurse`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_expr.c#L137
 mod a_array_expr;
 mod a_const;
 mod a_expr;
@@ -115,7 +118,9 @@ fn string_values(nodes: &[pgls_query::Node]) -> Option<Vec<String>> {
         .map(|n| string_value(n).map(str::to_owned))
         .collect()
 }
-/// The common type of the arguments, if all their types are known.
+/// The common type of the arguments, if all their types are known ([`select_common_type`]).
+///
+/// [`select_common_type`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_coerce.c#L1345
 fn common(r: &mut Resolver<'_>, args: &[pgls_query::Node]) -> Option<Type> {
     let types = args
         .iter()
@@ -130,7 +135,11 @@ fn common_types(r: &Resolver<'_>, ts: &[Type]) -> Option<Type> {
     }
 }
 
-/// Port of parse_oper.c's `oper`/`make_op` selection; report only proven selection failures.
+/// Checks the `=` that `IS DISTINCT FROM`, `NULLIF` and simple `CASE` compare with, like
+/// [`make_op`] (through [`oper`]) does. Reports only proven selection failures.
+///
+/// [`make_op`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_oper.c#L660
+/// [`oper`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_oper.c#L370
 fn check_operator(
     r: &mut Resolver<'_>,
     operator: &str,

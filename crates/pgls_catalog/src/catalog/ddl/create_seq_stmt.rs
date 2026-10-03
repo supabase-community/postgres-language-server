@@ -3,6 +3,9 @@ use pgls_query::protobuf::CreateSeqStmt;
 use crate::catalog::{Catalog, base::sequence_columns};
 use crate::lookup::{Origin, RelationInfo, RelationKind};
 
+/// `CREATE SEQUENCE`. Models [`DefineSequence`].
+///
+/// [`DefineSequence`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/commands/sequence.c#L121
 pub(super) fn apply_create_seq_stmt(c: &mut Catalog, n: &CreateSeqStmt, search_path: &[String]) {
     let Some(range_var) = &n.sequence else {
         return;

@@ -8,6 +8,11 @@ use crate::catalog::{
     names::{qualified_name, type_name},
 };
 
+/// `DROP TABLE`, `DROP TYPE`, `DROP FUNCTION`, and the other `DROP` statements. Models
+/// [`RemoveRelations`] and [`RemoveObjects`].
+///
+/// [`RemoveRelations`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/commands/tablecmds.c#L1547
+/// [`RemoveObjects`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/commands/dropcmds.c#L53
 pub(super) fn apply_drop_stmt(c: &mut Catalog, n: &DropStmt, search_path: &[String]) {
     match n.remove_type() {
         ObjectType::ObjectCast => c.casts_incomplete = true,

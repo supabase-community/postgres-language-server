@@ -3,6 +3,9 @@ use pgls_query::protobuf::ViewStmt;
 use crate::catalog::{Catalog, overlay::rename_columns};
 use crate::lookup::{Origin, RelationInfo, RelationKind};
 
+/// `CREATE VIEW`. Models [`DefineView`].
+///
+/// [`DefineView`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/commands/view.c#L356
 pub(super) fn apply_view_stmt(c: &mut Catalog, n: &ViewStmt, search_path: &[String]) {
     let Some(range_var) = &n.view else {
         return;

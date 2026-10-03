@@ -255,7 +255,9 @@ fn key(schema: &str, name: &str) -> Key {
 }
 
 /// Schemas searched for relations and types: `pg_temp` and `pg_catalog` come first unless the
-/// search path lists them explicitly.
+/// search path lists them explicitly. Port of [`finalNamespacePath`].
+///
+/// [`finalNamespacePath`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/catalog/namespace.c#L4201
 fn relation_search_path(search_path: &[String]) -> impl Iterator<Item = String> + '_ {
     let implicit = ["pg_temp", "pg_catalog"]
         .into_iter()
@@ -264,8 +266,11 @@ fn relation_search_path(search_path: &[String]) -> impl Iterator<Item = String> 
     implicit.chain(explicit_schemas(search_path))
 }
 
-/// Schemas searched for functions: `pg_catalog` comes first unless listed explicitly, and
-/// `pg_temp` is never searched.
+/// Schemas searched for functions: `pg_catalog` comes first unless listed explicitly
+/// ([`finalNamespacePath`]), and `pg_temp` is never searched ([`FuncnameGetCandidates`]).
+///
+/// [`finalNamespacePath`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/catalog/namespace.c#L4201
+/// [`FuncnameGetCandidates`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/catalog/namespace.c#L1192
 fn function_search_path(search_path: &[String]) -> impl Iterator<Item = String> + '_ {
     let implicit = (!search_path.iter().any(|s| s == "pg_catalog")).then(|| "pg_catalog".into());
     implicit

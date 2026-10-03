@@ -18,7 +18,13 @@ use crate::resolve::{
 };
 use crate::typing::{Type, TypedColumn};
 
-/// Resolves an INSERT and returns the columns of its RETURNING list.
+/// Resolves an INSERT and returns the columns of its RETURNING list. Port of
+/// [`transformInsertStmt`]: the target columns ([`checkInsertTargets`]), the number of
+/// values, and the assignment of each value ([`transformInsertRow`]).
+///
+/// [`transformInsertStmt`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/analyze.c#L633
+/// [`checkInsertTargets`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_target.c#L1018
+/// [`transformInsertRow`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/analyze.c#L1060
 pub(super) fn resolve_insert_stmt(r: &mut Resolver, n: &InsertStmt) -> Columns {
     let ctes = r.ctes.len();
     if let Some(with) = &n.with_clause {

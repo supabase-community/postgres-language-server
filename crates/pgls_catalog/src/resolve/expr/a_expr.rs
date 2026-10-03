@@ -1,10 +1,16 @@
 use super::*;
 
+/// Operators, `IS DISTINCT FROM`, `= ANY`, `IN`, `BETWEEN`, `LIKE` and `NULLIF`, which
+/// [`transformExprRecurse`] dispatches on the kind of the `A_Expr`.
+///
+/// [`transformExprRecurse`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_expr.c#L137
 pub(super) fn infer_a_expr(r: &mut Resolver<'_>, n: &pgls_query::protobuf::AExpr) -> Option<Type> {
     {
         use protobuf::AExprKind as Kind;
         match Kind::try_from(n.kind).ok()? {
-            // Port of parse_expr.c `transformAExprDistinct`; ordinary scalar cases use make_distinct_op's `=` lookup.
+            // Port of `transformAExprDistinct`; scalar cases look up `=` like `make_distinct_op`:
+            // https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_expr.c#L1031
+            // https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_expr.c#L3084
             Kind::AexprDistinct | Kind::AexprNotDistinct => {
                 let left = n
                     .lexpr
@@ -21,7 +27,10 @@ pub(super) fn infer_a_expr(r: &mut Resolver<'_>, n: &pgls_query::protobuf::AExpr
                 }
                 return named(r, "bool");
             }
-            // Port of parse_expr.c `transformAExprOpAny`/`transformAExprOpAll`; parse_oper.c `make_scalar_array_op` uses the array element type.
+            // Port of `transformAExprOpAny` and `transformAExprOpAll`; `make_scalar_array_op` uses
+            // the array element type:
+            // https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_expr.c#L1003
+            // https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_oper.c#L792
             Kind::AexprOpAny | Kind::AexprOpAll => {
                 let left = n
                     .lexpr
@@ -50,7 +59,8 @@ pub(super) fn infer_a_expr(r: &mut Resolver<'_>, n: &pgls_query::protobuf::AExpr
                 check_operator(r, &op, Some(&left), &element, n.location);
                 return named(r, "bool");
             }
-            // Port of parse_expr.c `transformAExprIn`: try a common scalar type, then compare items individually.
+            // Port of `transformAExprIn`: try a common scalar type, then compare items one by one:
+            // https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_expr.c#L1125
             Kind::AexprIn => {
                 let left = n
                     .lexpr
@@ -131,7 +141,8 @@ pub(super) fn infer_a_expr(r: &mut Resolver<'_>, n: &pgls_query::protobuf::AExpr
                         if let (Some(left), Some(low), Some(high)) =
                             (left.as_ref(), low.as_ref(), high.as_ref())
                         {
-                            // Port of parse_expr.c `transformAExprBetween`.
+                            // Port of `transformAExprBetween`:
+                            // https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_expr.c#L1294
                             let kind = Kind::try_from(n.kind).ok()?;
                             let (lower, upper) = match kind {
                                 Kind::AexprNotBetween | Kind::AexprNotBetweenSym => ("<", ">"),
@@ -148,7 +159,9 @@ pub(super) fn infer_a_expr(r: &mut Resolver<'_>, n: &pgls_query::protobuf::AExpr
                 }
                 return named(r, "bool");
             }
-            // Port of parse_expr.c `transformAExprOp`: LIKE/ILIKE lower to ~~/~~*/!~~/!~~*; SIMILAR is conservatively checked as ~.
+            // Port of `transformAExprOp`: LIKE/ILIKE lower to ~~/~~*/!~~/!~~*; SIMILAR is
+            // conservatively checked as ~:
+            // https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_expr.c#L922
             Kind::AexprLike | Kind::AexprIlike | Kind::AexprSimilar => {
                 let left = n
                     .lexpr
@@ -186,7 +199,8 @@ pub(super) fn infer_a_expr(r: &mut Resolver<'_>, n: &pgls_query::protobuf::AExpr
                 }
                 return named(r, "bool");
             }
-            // Port of parse_expr.c `transformAExprNullIf`, which selects `=` with make_op.
+            // Port of `transformAExprNullIf`, which selects `=` with `make_op`:
+            // https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_expr.c#L1082
             Kind::AexprNullif => {
                 let left = n
                     .lexpr

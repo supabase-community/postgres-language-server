@@ -1,4 +1,6 @@
-//! Function selection. Port of `parse_func.c: func_get_detail`.
+//! Function selection. Port of [`func_get_detail`].
+//!
+//! [`func_get_detail`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_func.c#L1450
 
 use super::candidates::expand_candidates;
 use super::{Pseudo, match_argtypes, resolve_result, select_candidate};
@@ -8,7 +10,10 @@ use crate::{CatalogView, Lookup, TypeKind};
 /// Selects the function for a call. Returns `Unknown` when no function with this name and
 /// argument count is visible; that's the job of the name and arity check.
 ///
-/// Port of `parse_func.c: func_get_detail`.
+/// Port of [`func_get_detail`]: an exact match, then a type-name call as a cast, then the
+/// candidates the arguments can be coerced to, and the best of them.
+///
+/// [`func_get_detail`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_func.c#L1450
 pub fn select_function(
     c: &dyn CatalogView,
     schema: Option<&str>,
@@ -60,7 +65,9 @@ pub fn select_function(
     let best = if let Some(exact) = exact {
         Some(exact.clone())
     } else {
-        // A one-argument call of a type name may be a cast, like `int4(x)` or `text(x)`.
+        // A one-argument call of a type name may be a cast, like `int4(x)` or `text(x)`
+        // (`func_get_detail`, with `FuncNameAsType`):
+        // https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_func.c#L1936
         if inputs.len() == 1
             && names.is_empty()
             && !matches!(c.type_(schema, name, search_path), Lookup::Missing)
@@ -73,7 +80,8 @@ pub fn select_function(
         };
         match matches.len() {
             0 => {
-                // `ParseFuncOrColumn` tries `col(row)` as a field selection next.
+                // `ParseFuncOrColumn` tries `col(row)` as a field selection next:
+                // https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_func.c#L90
                 if inputs.len() == 1 && names.is_empty() && !is_scalar(c, &inputs[0]) {
                     return Selection::Unknown;
                 }

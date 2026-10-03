@@ -1,5 +1,9 @@
 use super::*;
 
+/// `CASE` is the common type of its results. Port of [`transformCaseExpr`], which also
+/// compares the test value of a simple `CASE` with each `WHEN` value using `=`.
+///
+/// [`transformCaseExpr`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_expr.c#L1642
 pub(super) fn infer_case_expr(
     r: &mut Resolver<'_>,
     n: &pgls_query::protobuf::CaseExpr,
@@ -21,8 +25,9 @@ pub(super) fn infer_case_expr(
                 .and_then(|x| x.node.as_ref())
                 .and_then(|x| infer_expr(r, x));
             if let (Some(left), Some(right)) = (test_type.as_ref(), when_type.as_ref()) {
-                // Port of parse_expr.c `transformCaseExpr`'s make_op("=") comparison; unknown candidate
-                // metadata deliberately suppresses a finding.
+                // Port of the `=` comparison `transformCaseExpr` builds with `make_op`; unknown
+                // candidate metadata deliberately suppresses a finding:
+                // https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_expr.c#L1642
                 let comparison = select_operator(
                     r.catalog,
                     None,

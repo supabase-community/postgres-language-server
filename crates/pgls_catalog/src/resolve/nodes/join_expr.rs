@@ -9,7 +9,15 @@ use crate::{
     typing::{Selection, TypedColumn, select_common_type},
 };
 
-/// A join. Its ON clause sees both sides of the join, but not the FROM items before it.
+/// A join. Its ON clause sees both sides of the join, but not the FROM items before it, and
+/// `USING` merges the columns of both sides into their common type. Port of the `JoinExpr` case
+/// of [`transformFromClauseItem`], with [`transformJoinUsingClause`], [`buildMergedJoinVar`] and
+/// [`transformJoinOnClause`].
+///
+/// [`transformFromClauseItem`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_clause.c#L1054
+/// [`transformJoinUsingClause`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_clause.c#L306
+/// [`buildMergedJoinVar`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_clause.c#L1666
+/// [`transformJoinOnClause`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_clause.c#L365
 pub(super) fn resolve_join_expr(r: &mut Resolver, n: &JoinExpr, preceding: &Level) -> Level {
     let (Some(left), Some(right)) = (n.larg.as_deref(), n.rarg.as_deref()) else {
         r.depends_on_file();
