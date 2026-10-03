@@ -402,6 +402,31 @@ fn updates_and_deletes() {
 }
 
 #[test]
+fn returning_old_and_new() {
+    // Postgres 18 adds `old` and `new`; the snapshot here has no server version.
+    assert_valid("update users set name = 'x' returning old.name, new.name, old.*");
+    assert_eq!(
+        findings("delete from users returning old.nope"),
+        [unknown_column(Some("old"), "nope")]
+    );
+    // A FROM item named `old` hides the alias.
+    assert_valid("update users set name = old.title from posts as old returning old.title");
+    // Only reachable by name: `*` and unqualified columns don't see them twice.
+    assert_valid("insert into users values (1, 'x') returning name");
+}
+
+#[test]
+fn names_of_sql_json_and_xml_expressions() {
+    assert_valid(
+        "select json_object, json_array, json_arrayagg, xmlconcat, xmlserialize from (select json_object('a': 1), json_array(1), json_arrayagg(1), xmlconcat(null), xmlserialize(content null as text)) s",
+    );
+    assert_eq!(
+        findings("select nope from (select json_object('a': 1), xmlconcat(null)) s"),
+        [unknown_column(None, "nope")]
+    );
+}
+
+#[test]
 fn wrappers() {
     assert_eq!(
         findings("create view v as select nope from users"),

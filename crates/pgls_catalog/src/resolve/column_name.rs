@@ -4,15 +4,20 @@ use pgls_query::{NodeEnum, protobuf};
 
 const UNNAMED: &str = "?column?";
 
-/// The column name Postgres chooses for an unnamed select list entry (`FigureColname`).
+/// The column name Postgres chooses for an unnamed select list entry. Port of [`FigureColname`].
 ///
 /// Returns `None` if we can't tell.
+///
+/// [`FigureColname`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_target.c#L1713
 pub(crate) fn figure_column_name(value: &NodeEnum) -> Option<String> {
     figure_column_name_with_strength(value).map(|(name, _)| name)
 }
 
 /// The column name together with how strong that choice is. A type cast uses the name of its
-/// argument only if that name is strong (2), and its type name otherwise.
+/// argument only if that name is strong (2), and its type name otherwise. Port of
+/// [`FigureColnameInternal`].
+///
+/// [`FigureColnameInternal`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_target.c#L1752
 fn figure_column_name_with_strength(value: &NodeEnum) -> Option<(String, u8)> {
     let named = |name: &str| Some((name.to_owned(), 2));
     match value {
@@ -91,6 +96,40 @@ fn figure_column_name_with_strength(value: &NodeEnum) -> Option<(String, u8)> {
                 Op::SvfopCurrentSchema => "current_schema",
                 _ => return None,
             })
+        }
+        NodeEnum::MergeSupportFunc(_) => named("merge_action"),
+        NodeEnum::XmlExpr(expr) => {
+            use protobuf::XmlExprOp as Op;
+            match expr.op() {
+                Op::IsXmlconcat => named("xmlconcat"),
+                Op::IsXmlelement => named("xmlelement"),
+                Op::IsXmlforest => named("xmlforest"),
+                Op::IsXmlparse => named("xmlparse"),
+                Op::IsXmlpi => named("xmlpi"),
+                Op::IsXmlroot => named("xmlroot"),
+                Op::IsXmlserialize => named("xmlserialize"),
+                Op::IsDocument => Some((UNNAMED.into(), 0)),
+                Op::Undefined => None,
+            }
+        }
+        NodeEnum::XmlSerialize(_) => named("xmlserialize"),
+        NodeEnum::JsonParseExpr(_) => named("json"),
+        NodeEnum::JsonScalarExpr(_) => named("json_scalar"),
+        NodeEnum::JsonSerializeExpr(_) => named("json_serialize"),
+        NodeEnum::JsonObjectConstructor(_) => named("json_object"),
+        NodeEnum::JsonArrayConstructor(_) | NodeEnum::JsonArrayQueryConstructor(_) => {
+            named("json_array")
+        }
+        NodeEnum::JsonObjectAgg(_) => named("json_objectagg"),
+        NodeEnum::JsonArrayAgg(_) => named("json_arrayagg"),
+        NodeEnum::JsonFuncExpr(expr) => {
+            use protobuf::JsonExprOp as Op;
+            match expr.op() {
+                Op::JsonExistsOp => named("json_exists"),
+                Op::JsonQueryOp => named("json_query"),
+                Op::JsonValueOp => named("json_value"),
+                Op::JsonTableOp | Op::Undefined => None,
+            }
         }
         NodeEnum::AConst(_)
         | NodeEnum::AExpr(_)
