@@ -12,7 +12,9 @@ pub(super) fn info(c: &dyn CatalogView, id: &TypeId) -> Decision<TypeInfo> {
     }
 }
 
-/// Port of PostgreSQL `getBaseType`.
+/// Port of [`getBaseType`]: the type a domain is based on, through nested domains.
+///
+/// [`getBaseType`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/utils/cache/lsyscache.c#L2823
 pub fn base_type(c: &dyn CatalogView, id: &TypeId) -> Decision<TypeId> {
     let mut current = id.clone();
     loop {
@@ -35,7 +37,12 @@ pub fn base_type(c: &dyn CatalogView, id: &TypeId) -> Decision<TypeId> {
     }
 }
 
-/// Port of PostgreSQL `get_type_category_preferred` / `IsPreferredType`.
+/// The `typcategory` and `typispreferred` of a type. Port of [`get_type_category_preferred`],
+/// which [`TypeCategory`] and [`IsPreferredType`] read.
+///
+/// [`get_type_category_preferred`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/utils/cache/lsyscache.c#L3012
+/// [`TypeCategory`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_coerce.c#L2979
+/// [`IsPreferredType`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_coerce.c#L2998
 pub fn type_category(c: &dyn CatalogView, id: &TypeId) -> Decision<(char, bool)> {
     match info(c, id) {
         Decision::Known(t) => match (t.category, t.preferred) {
@@ -46,7 +53,9 @@ pub fn type_category(c: &dyn CatalogView, id: &TypeId) -> Decision<(char, bool)>
     }
 }
 
-/// Port of PostgreSQL `type_is_array`.
+/// Port of [`type_is_array`]: whether the type has an element type.
+///
+/// [`type_is_array`]: https://github.com/postgres/postgres/blob/REL_18_6/src/include/utils/lsyscache.h#L218
 pub fn is_array(c: &dyn CatalogView, id: &TypeId) -> Decision<bool> {
     match info(c, id) {
         Decision::Known(t) => Decision::Known(t.element.is_some()),
@@ -54,7 +63,9 @@ pub fn is_array(c: &dyn CatalogView, id: &TypeId) -> Decision<bool> {
     }
 }
 
-/// Port of PostgreSQL `get_element_type` for true-array metadata.
+/// Port of [`get_element_type`]: the element type of a true array type.
+///
+/// [`get_element_type`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/utils/cache/lsyscache.c#L3061
 pub fn array_element(c: &dyn CatalogView, id: &TypeId) -> Decision<Option<TypeId>> {
     match info(c, id) {
         Decision::Known(t) => Decision::Known(t.element),
@@ -62,7 +73,10 @@ pub fn array_element(c: &dyn CatalogView, id: &TypeId) -> Decision<Option<TypeId
     }
 }
 
-/// Resolves a parser type name and returns its identity plus its SETOF flag.
+/// Resolves a parser type name and returns its identity plus its SETOF flag. Port of
+/// [`LookupTypeNameExtended`], without typmods, which are not checked.
+///
+/// [`LookupTypeNameExtended`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_type.c#L73
 pub fn normalize_type_name(
     catalog: &dyn CatalogView,
     name: &protobuf::TypeName,
@@ -104,7 +118,9 @@ pub fn type_from_info(info: &TypeInfo) -> Option<crate::typing::Type> {
     info.id.clone().map(crate::typing::Type::Named)
 }
 
-/// PostgreSQL `format_type_be`-style display for inferred types.
+/// Displays a type like [`format_type_be`] does.
+///
+/// [`format_type_be`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/utils/adt/format_type.c#L343
 pub fn format_type(c: &dyn CatalogView, ty: &Type) -> Option<String> {
     format_type_with_search_path(c, ty, &[])
 }
@@ -122,7 +138,10 @@ pub fn format_type_with_search_path(
     }
 }
 
-// Port of PostgreSQL `format_type_be` for catalog types used by diagnostics.
+/// Port of [`format_type_extended`] without typmods: SQL-standard names for built-in types,
+/// and the schema only when the type is not visible on the search path.
+///
+/// [`format_type_extended`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/utils/adt/format_type.c#L112
 fn format_named(
     c: &dyn CatalogView,
     id: &TypeId,

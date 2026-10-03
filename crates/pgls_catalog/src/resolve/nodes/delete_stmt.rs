@@ -6,7 +6,10 @@ use super::{
 };
 use crate::resolve::scope::{Columns, Level};
 
-/// Resolves a DELETE and returns the columns of its RETURNING list.
+/// Resolves a DELETE and returns the columns of its RETURNING list. Port of
+/// [`transformDeleteStmt`].
+///
+/// [`transformDeleteStmt`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/analyze.c#L553
 pub(super) fn resolve_delete_stmt(r: &mut Resolver, n: &DeleteStmt) -> Columns {
     let ctes = r.ctes.len();
     if let Some(with) = &n.with_clause {

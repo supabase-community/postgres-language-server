@@ -1,9 +1,13 @@
-//! Operator and function overload resolution, ported from Postgres' `parse_func.c`,
-//! `parse_oper.c`, and `namespace.c`.
+//! Operator and function overload resolution, ported from Postgres' [`parse_func.c`],
+//! [`parse_oper.c`], and [`namespace.c`].
 //!
 //! Selection only proves an error (`NoMatch` or `Ambiguous`) when the candidate list is
 //! complete and every step of the algorithm had the information it needed. Anything else is
 //! `Unknown`.
+//!
+//! [`parse_func.c`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_func.c
+//! [`parse_oper.c`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_oper.c
+//! [`namespace.c`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/catalog/namespace.c
 
 mod candidates;
 mod function;
@@ -29,8 +33,9 @@ pub(super) struct Candidate<T> {
     ambiguous: bool,
 }
 
-/// Keeps the candidates the inputs can be coerced to. Port of
-/// `parse_func.c: func_match_argtypes`.
+/// Keeps the candidates the inputs can be coerced to. Port of [`func_match_argtypes`].
+///
+/// [`func_match_argtypes`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_func.c#L978
 pub(super) fn match_argtypes<T>(
     c: &dyn CatalogView,
     pseudo: &Pseudo,
@@ -49,7 +54,9 @@ pub(super) fn match_argtypes<T>(
 }
 
 /// Whether all inputs can be coerced implicitly to the targets, including the consistency
-/// of polymorphic arguments. Port of `parse_coerce.c: can_coerce_type`.
+/// of polymorphic arguments. Port of [`can_coerce_type`].
+///
+/// [`can_coerce_type`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_coerce.c#L557
 pub(super) fn can_coerce_args(
     c: &dyn CatalogView,
     pseudo: &Pseudo,
@@ -90,7 +97,10 @@ pub(super) fn can_coerce_args(
 }
 
 /// Picks the best of several matching candidates, or `None` if there is no unique best one.
-/// Port of `parse_func.c: func_select_candidate`.
+/// Port of [`func_select_candidate`]: prefer exact matches, then preferred types, then the
+/// category of unknown inputs, then the other inputs' types.
+///
+/// [`func_select_candidate`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_func.c#L1063
 pub(super) fn select_candidate<T: Clone>(
     c: &dyn CatalogView,
     pseudo: &Pseudo,
@@ -276,7 +286,9 @@ pub(super) fn keep_best<T>(
 }
 
 /// The result type, with polymorphic result types resolved from the inputs. `None` when the
-/// result is `"any"`-like or can't be resolved.
+/// result is `"any"`-like or can't be resolved ([`enforce_generic_type_consistency`]).
+///
+/// [`enforce_generic_type_consistency`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_coerce.c#L2134
 pub(super) fn resolve_result(
     c: &dyn CatalogView,
     pseudo: &Pseudo,

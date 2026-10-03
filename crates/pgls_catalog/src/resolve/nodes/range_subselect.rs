@@ -3,7 +3,10 @@ use pgls_query::protobuf::RangeSubselect;
 use super::{Resolver, alias::apply_alias, resolve_node};
 use crate::resolve::scope::{Item, Level};
 
-/// A subquery in FROM. Only a LATERAL subquery sees the FROM items before it.
+/// A subquery in FROM. Only a LATERAL subquery sees the FROM items before it. Port of
+/// [`transformRangeSubselect`].
+///
+/// [`transformRangeSubselect`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_clause.c#L405
 pub(super) fn resolve_range_subselect(
     r: &mut Resolver,
     n: &RangeSubselect,

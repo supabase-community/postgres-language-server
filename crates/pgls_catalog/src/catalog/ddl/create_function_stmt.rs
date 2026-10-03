@@ -11,7 +11,12 @@ use crate::catalog::{
 use crate::lookup::{CatalogView, ColumnInfo, FunctionKind};
 use crate::typing::{Decision, TypeId, is_valid_polymorphic_signature};
 
-/// `CREATE FUNCTION` and `CREATE PROCEDURE` add an overload.
+/// `CREATE FUNCTION` and `CREATE PROCEDURE` add an overload. Models [`CreateFunction`], with the parameter
+/// checks of [`interpret_function_parameter_list`] and the result checks of [`ProcedureCreate`].
+///
+/// [`CreateFunction`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/commands/functioncmds.c#L1026
+/// [`interpret_function_parameter_list`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/commands/functioncmds.c#L183
+/// [`ProcedureCreate`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/catalog/pg_proc.c#L98
 pub(super) fn apply_create_function_stmt(
     c: &mut Catalog,
     n: &CreateFunctionStmt,
@@ -57,7 +62,8 @@ pub(super) fn apply_create_function_stmt(
         };
         let is_output = matches!(mode, Mode::FuncParamOut | Mode::FuncParamTable);
         // Postgres rejects defaults for output parameters, and input parameters without a
-        // default after one with a default (`interpret_function_parameter_list`).
+        // default after one with a default (`interpret_function_parameter_list`):
+        // https://github.com/postgres/postgres/blob/REL_18_6/src/backend/commands/functioncmds.c#L183
         if parameter.defexpr.is_some() && is_output
             || parameter.defexpr.is_none() && !is_output && defaults > 0
         {
@@ -118,7 +124,8 @@ pub(super) fn apply_create_function_stmt(
     } else {
         None
     };
-    // Postgres rejects polymorphic results that the inputs can't determine (`ProcedureCreate`).
+    // Postgres rejects polymorphic results that the inputs can't determine (`ProcedureCreate`):
+    // https://github.com/postgres/postgres/blob/REL_18_6/src/backend/catalog/pg_proc.c#L98
     let inputs: Vec<Option<TypeId>> = arguments
         .iter()
         .map(|argument| argument.ty.clone())
@@ -161,7 +168,9 @@ pub(super) fn apply_create_function_stmt(
 }
 
 /// The element type of a variadic parameter. Port of the `provariadic` logic in
-/// `functioncmds.c: interpret_function_parameter_list`.
+/// [`interpret_function_parameter_list`].
+///
+/// [`interpret_function_parameter_list`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/commands/functioncmds.c#L183
 fn variadic_element(c: &Catalog, id: &crate::typing::TypeId) -> Option<crate::typing::TypeId> {
     let info = c.type_by_id(id).found()?;
     if info.schema == "pg_catalog" {

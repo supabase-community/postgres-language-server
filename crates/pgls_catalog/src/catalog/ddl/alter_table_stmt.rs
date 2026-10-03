@@ -11,6 +11,12 @@ use crate::catalog::{
 use crate::lookup::{CatalogView, ColumnInfo, Origin};
 
 /// `ALTER TABLE`, and `ALTER TYPE ... ADD/DROP/ALTER ATTRIBUTE` on composite types.
+/// Models the column changes of [`ATExecAddColumn`], [`ATExecDropColumn`] and
+/// [`ATExecAlterColumnType`].
+///
+/// [`ATExecAddColumn`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/commands/tablecmds.c#L7226
+/// [`ATExecDropColumn`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/commands/tablecmds.c#L9291
+/// [`ATExecAlterColumnType`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/commands/tablecmds.c#L14747
 pub(super) fn apply_alter_table_stmt(c: &mut Catalog, n: &AlterTableStmt, search_path: &[String]) {
     let Some(range_var) = &n.relation else {
         return;

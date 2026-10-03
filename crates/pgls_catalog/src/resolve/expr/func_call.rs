@@ -1,5 +1,11 @@
 use super::*;
 
+/// The result type of a function call, and a finding when no function or no unique best
+/// function matches its arguments. Port of [`ParseFuncOrColumn`], which selects the function
+/// with [`func_get_detail`].
+///
+/// [`ParseFuncOrColumn`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_func.c#L90
+/// [`func_get_detail`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_func.c#L1450
 pub(super) fn infer_func_call(
     r: &mut Resolver<'_>,
     n: &pgls_query::protobuf::FuncCall,

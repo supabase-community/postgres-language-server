@@ -201,9 +201,11 @@ pub fn query_output_types(
     resolve_unknown_outputs(catalog, resolver.output)
 }
 
-/// Port of `parse_target.c: resolveTargetListUnknowns`: output columns of unknown type become
+/// Port of [`resolveTargetListUnknowns`]: output columns of unknown type become
 /// text. Postgres does this for every query except the source of an INSERT and the branches of a
 /// set operation, which coerce the unknowns to their target type instead.
+///
+/// [`resolveTargetListUnknowns`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_target.c#L288
 pub(crate) fn resolve_unknown_outputs(
     catalog: &dyn CatalogView,
     columns: QueryColumns,

@@ -1,5 +1,9 @@
 use super::*;
 
+/// `EXISTS`, `ANY`/`ALL` and `IN` subqueries are bool, a scalar subquery is the type of its only
+/// column. Port of [`transformSubLink`].
+///
+/// [`transformSubLink`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_expr.c#L1782
 pub(super) fn infer_sub_link(
     r: &mut Resolver<'_>,
     n: &pgls_query::protobuf::SubLink,

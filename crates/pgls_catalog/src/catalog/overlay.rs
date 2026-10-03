@@ -39,7 +39,9 @@ impl Catalog {
     }
 
     /// The key of a new relation. Temporary relations live in `pg_temp`. `None` for system
-    /// catalogs, where Postgres rejects new relations (`heap_create`).
+    /// catalogs, where Postgres rejects new relations ([`heap_create`]).
+    ///
+    /// [`heap_create`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/catalog/heap.c#L285
     pub(super) fn relation_creation_key(
         &self,
         range_var: &protobuf::RangeVar,

@@ -1,5 +1,8 @@
 use super::*;
 
+/// `ROW(...)` is an anonymous record of its fields. Port of [`transformRowExpr`].
+///
+/// [`transformRowExpr`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_expr.c#L2188
 pub(super) fn infer_row_expr(
     r: &mut Resolver<'_>,
     n: &pgls_query::protobuf::RowExpr,

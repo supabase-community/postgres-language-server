@@ -133,7 +133,10 @@ pub struct TypeInfo {
 /// All `search_path` arguments are the explicit search path of the session. Implementations
 /// apply Postgres' implicit rules on top of it: `pg_catalog` is searched first unless it is
 /// listed explicitly, and `pg_temp` is searched first for relations and types (never for
-/// functions) unless it is listed explicitly.
+/// functions) unless it is listed explicitly ([`finalNamespacePath`], [`FuncnameGetCandidates`]).
+///
+/// [`finalNamespacePath`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/catalog/namespace.c#L4201
+/// [`FuncnameGetCandidates`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/catalog/namespace.c#L1192
 pub trait CatalogView {
     /// Looks up a relation. With `schema: None`, the search path is used.
     fn relation(

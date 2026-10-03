@@ -79,7 +79,11 @@ pub(super) fn resolve_func_call(r: &mut Resolver, n: &FuncCall) {
 }
 
 /// Postgres reads a one-argument call of a type name as a cast when no function matches:
-/// `inet(x)` is `x::inet`. Port of the coercion fallback in `parse_func.c: func_get_detail`.
+/// `inet(x)` is `x::inet`. Port of the coercion fallback in [`func_get_detail`], which finds
+/// the type with [`FuncNameAsType`].
+///
+/// [`func_get_detail`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_func.c#L1450
+/// [`FuncNameAsType`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_func.c#L1936
 fn may_be_type_coercion(r: &Resolver, schema: Option<&str>, name: &str, n: &FuncCall) -> bool {
     let [argument] = n.args.as_slice() else {
         return false;
@@ -94,7 +98,10 @@ fn may_be_type_coercion(r: &Resolver, schema: Option<&str>, name: &str, n: &Func
 }
 
 /// Postgres reads `name(row)` as a field access if `row` is a whole row: `name(t)` is the same
-/// as `t.name`.
+/// as `t.name` ([`ParseComplexProjection`], from [`ParseFuncOrColumn`]).
+///
+/// [`ParseComplexProjection`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_func.c#L1967
+/// [`ParseFuncOrColumn`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_func.c#L90
 fn may_be_field_access(r: &Resolver, n: &FuncCall) -> bool {
     let [argument] = n.args.as_slice() else {
         return false;

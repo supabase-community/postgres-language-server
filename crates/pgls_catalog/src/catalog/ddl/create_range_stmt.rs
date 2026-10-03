@@ -3,7 +3,10 @@ use pgls_query::{NodeEnum, protobuf::CreateRangeStmt};
 use crate::catalog::{Catalog, names::qualified_name, overlay::function_info};
 use crate::lookup::FunctionKind;
 
-/// A range type also creates its multirange type and their constructor functions.
+/// A range type also creates its multirange type and their constructor functions. Models
+/// [`DefineRange`].
+///
+/// [`DefineRange`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/commands/typecmds.c#L1388
 pub(super) fn apply_create_range_stmt(
     c: &mut Catalog,
     n: &CreateRangeStmt,

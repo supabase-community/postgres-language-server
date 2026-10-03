@@ -3,10 +3,13 @@ use pgls_query::{NodeEnum, protobuf::OnConflictClause};
 use super::{Resolver, res_target::check_target_column, resolve_node};
 use crate::resolve::scope::{Item, Level};
 
-/// `ON CONFLICT` sees the target relation and the row proposed for insertion, `excluded`.
+/// `ON CONFLICT` sees the target relation and the row proposed for insertion, `excluded`. Port
+/// of [`transformOnConflictClause`].
+///
+/// [`transformOnConflictClause`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/analyze.c#L1170
 pub(super) fn resolve_on_conflict_clause(r: &mut Resolver, n: &OnConflictClause, target: &Item) {
     // The arbiter's index predicate sees only the target relation, like in
-    // `parse_clause.c: transformOnConflictArbiter`.
+    // `transformOnConflictArbiter`: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_clause.c#L3297
     if let Some(where_clause) = n
         .infer
         .as_ref()

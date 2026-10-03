@@ -31,8 +31,12 @@ pub(super) fn resolve_select_stmt(r: &mut Resolver, n: &SelectStmt) -> Columns {
     columns
 }
 
-/// Set operations take their column names from the left-most query. Their ORDER BY and LIMIT
-/// reference the output columns and are not checked.
+/// Set operations take their column names from the left-most query and the common type of each
+/// column pair. Their ORDER BY and LIMIT reference the output columns and are not checked. Port
+/// of [`transformSetOperationStmt`] and [`transformSetOperationTree`].
+///
+/// [`transformSetOperationStmt`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/analyze.c#L1751
+/// [`transformSetOperationTree`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/analyze.c#L2056
 fn resolve_set_operation(r: &mut Resolver, n: &SelectStmt) -> Columns {
     let columns = n
         .larg
@@ -69,6 +73,10 @@ fn resolve_set_operation(r: &mut Resolver, n: &SelectStmt) -> Columns {
     columns
 }
 
+/// `VALUES` names its columns `column1`, `column2`, ..., and types each as the common type of
+/// its rows. Port of [`transformValuesClause`].
+///
+/// [`transformValuesClause`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/analyze.c#L1532
 fn resolve_values(r: &mut Resolver, n: &SelectStmt) -> Columns {
     let mut width = None;
     for row in &n.values_lists {
@@ -117,6 +125,10 @@ fn resolve_values(r: &mut Resolver, n: &SelectStmt) -> Columns {
     columns
 }
 
+/// A plain SELECT: its FROM clause, select list, WHERE, GROUP BY, HAVING, window and ORDER BY
+/// clauses, in the order of [`transformSelectStmt`].
+///
+/// [`transformSelectStmt`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/analyze.c#L1389
 fn resolve_select(r: &mut Resolver, n: &SelectStmt) -> Columns {
     let mut level = resolve_from_clause(r, &n.from_clause);
     level.output_names = n.target_list.iter().filter_map(output_name).collect();
@@ -240,7 +252,10 @@ fn resolve_select(r: &mut Resolver, n: &SelectStmt) -> Columns {
     columns
 }
 
-/// Bare output names and ordinal references are resolved by PostgreSQL against the target list.
+/// Bare output names and ordinal references are resolved by Postgres against the target list
+/// ([`findTargetlistEntrySQL92`]).
+///
+/// [`findTargetlistEntrySQL92`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_clause.c#L2006
 fn is_output_reference(expr: &NodeEnum, output_names: &[String]) -> bool {
     match expr {
         NodeEnum::ColumnRef(column) if column.fields.len() == 1 => column.fields[0]

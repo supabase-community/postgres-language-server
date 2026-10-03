@@ -9,6 +9,12 @@ use crate::catalog::{
 };
 use crate::lookup::{CatalogView, ColumnInfo, Origin};
 
+/// `ALTER ... RENAME`. Models [`ExecRenameStmt`], with [`RenameRelation`] for relations and
+/// [`renameatt`] for columns.
+///
+/// [`ExecRenameStmt`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/commands/alter.c#L373
+/// [`RenameRelation`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/commands/tablecmds.c#L4215
+/// [`renameatt`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/commands/tablecmds.c#L4018
 pub(super) fn apply_rename_stmt(c: &mut Catalog, n: &RenameStmt, search_path: &[String]) {
     let object = n.object.as_deref().and_then(|object| object.node.as_ref());
     match n.rename_type() {

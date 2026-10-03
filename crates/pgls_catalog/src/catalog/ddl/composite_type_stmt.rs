@@ -2,7 +2,9 @@ use pgls_query::{NodeEnum, protobuf::CompositeTypeStmt};
 
 use crate::catalog::{Catalog, Entry, names::range_var_name, overlay::column_info};
 
-/// `CREATE TYPE name AS (...)`.
+/// `CREATE TYPE name AS (...)`. Models [`DefineCompositeType`].
+///
+/// [`DefineCompositeType`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/commands/typecmds.c#L2575
 pub(super) fn apply_composite_type_stmt(
     c: &mut Catalog,
     n: &CompositeTypeStmt,

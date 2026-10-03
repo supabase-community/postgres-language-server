@@ -17,7 +17,10 @@ use crate::{
 };
 
 /// A function in FROM, including `ROWS FROM (...)` and `WITH ORDINALITY`. Functions see the FROM
-/// items before them.
+/// items before them. Port of [`transformRangeFunction`] and [`addRangeTableEntryForFunction`].
+///
+/// [`transformRangeFunction`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_clause.c#L463
+/// [`addRangeTableEntryForFunction`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_relation.c#L1783
 pub(super) fn resolve_range_function(
     r: &mut Resolver,
     n: &RangeFunction,
@@ -122,7 +125,9 @@ pub(super) fn resolve_range_function(
 }
 
 /// `unnest(a, b)` in FROM, also as an entry of `ROWS FROM`, is `unnest(a), unnest(b)`. Port of
-/// the special case in `parse_clause.c: transformRangeFunction`.
+/// the special case in [`transformRangeFunction`].
+///
+/// [`transformRangeFunction`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_clause.c#L463
 fn expand_unnest(n: &RangeFunction) -> Option<RangeFunction> {
     if !n.coldeflist.is_empty() {
         return None;

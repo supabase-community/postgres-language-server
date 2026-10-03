@@ -3,7 +3,9 @@ use pgls_query::protobuf::{DefineStmt, ObjectType};
 use crate::catalog::{Catalog, names::qualified_name, overlay::function_info};
 use crate::lookup::FunctionKind;
 
-/// `CREATE AGGREGATE`, `CREATE TYPE name (...)` and shell types.
+/// `CREATE AGGREGATE`, `CREATE TYPE name (...)` and shell types. Models [`DefineType`].
+///
+/// [`DefineType`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/commands/typecmds.c#L153
 pub(super) fn apply_define_stmt(c: &mut Catalog, n: &DefineStmt, search_path: &[String]) {
     let Some(name) = qualified_name(&n.defnames) else {
         return;

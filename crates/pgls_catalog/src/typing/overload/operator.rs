@@ -1,4 +1,7 @@
-//! Operator selection. Port of `parse_oper.c`.
+//! Operator selection. Port of [`oper`] and [`left_oper`].
+//!
+//! [`oper`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_oper.c#L370
+//! [`left_oper`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_oper.c#L518
 
 use super::candidates::visible_operators;
 use super::{Candidate, Pseudo, match_argtypes, resolve_result, select_candidate};
@@ -8,7 +11,12 @@ use crate::{CatalogView, OperatorInfo, OperatorKind};
 
 /// Selects the operator for an operator expression. `left` is `None` for prefix operators.
 ///
-/// Port of `parse_oper.c: oper` and `left_oper`.
+/// Port of [`oper`] and [`left_oper`]: an exact match, then the candidates the inputs can be
+/// coerced to, and the best of them ([`oper_select_candidate`]).
+///
+/// [`oper`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_oper.c#L370
+/// [`left_oper`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_oper.c#L518
+/// [`oper_select_candidate`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_oper.c#L312
 pub fn select_operator(
     c: &dyn CatalogView,
     schema: Option<&str>,
@@ -49,7 +57,7 @@ pub fn select_operator(
         };
     }
 
-    // `oper_select_candidate`
+    // `oper_select_candidate`: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_oper.c#L312
     let matches = match match_argtypes(c, &pseudo, &inputs, visible) {
         Decision::Known(matches) => matches,
         Decision::Unknown => return Selection::Unknown,
@@ -68,8 +76,11 @@ pub fn select_operator(
     }
 }
 
-/// Port of `parse_oper.c: binary_oper_exact` (and the exact lookup of `left_oper`). Returns
-/// `None` when there is no exact match.
+/// Port of [`binary_oper_exact`] (and the exact lookup of [`left_oper`]). Returns `None` when
+/// there is no exact match.
+///
+/// [`binary_oper_exact`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_oper.c#L262
+/// [`left_oper`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_oper.c#L518
 pub(super) fn exact_operator(
     c: &dyn CatalogView,
     visible: &[Candidate<OperatorInfo>],

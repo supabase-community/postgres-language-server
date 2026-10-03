@@ -9,7 +9,11 @@ use crate::resolve::{
     scope::{Columns, Item},
 };
 
-/// A relation or CTE in FROM.
+/// A relation or CTE in FROM. A name without schema is a CTE first ([`transformFromClauseItem`]
+/// and [`addRangeTableEntryForCTE`]).
+///
+/// [`transformFromClauseItem`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_clause.c#L1054
+/// [`addRangeTableEntryForCTE`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_relation.c#L2364
 pub(super) fn resolve_range_var(r: &mut Resolver, n: &RangeVar) -> Item {
     let alias = n.alias.as_ref();
     let is_unqualified = n.schemaname.is_empty() && n.catalogname.is_empty();
@@ -65,7 +69,10 @@ pub(super) struct ResolvedRelation {
     pub has_system_columns: bool,
 }
 
-/// Looks up a relation. Reports it if it doesn't exist.
+/// Looks up a relation. Reports it if it doesn't exist. Port of [`RangeVarGetRelidExtended`],
+/// which searches the schemas of the search path in order.
+///
+/// [`RangeVarGetRelidExtended`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/catalog/namespace.c#L441
 pub(super) fn lookup_relation(r: &mut Resolver, n: &RangeVar) -> ResolvedRelation {
     let unknown = ResolvedRelation::default();
     if !n.catalogname.is_empty() {

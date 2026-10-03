@@ -3,6 +3,11 @@ use pgls_query::{NodeEnum, protobuf::CreateStmt};
 use crate::catalog::{Catalog, key, names::type_name, overlay::column_info};
 use crate::lookup::{CatalogView, ColumnInfo, Origin, RelationInfo, RelationKind};
 
+/// `CREATE TABLE`. Models [`DefineRelation`], which merges inherited columns with
+/// [`MergeAttributes`].
+///
+/// [`DefineRelation`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/commands/tablecmds.c#L765
+/// [`MergeAttributes`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/commands/tablecmds.c#L2555
 pub(super) fn apply_create_stmt(c: &mut Catalog, n: &CreateStmt, search_path: &[String]) {
     create_table(c, n, RelationKind::Table, search_path);
 }

@@ -3,6 +3,9 @@ use pgls_query::protobuf::CreateDomainStmt;
 use crate::catalog::{Catalog, names::qualified_name};
 use crate::lookup::CatalogView;
 
+/// `CREATE DOMAIN`. Models [`DefineDomain`].
+///
+/// [`DefineDomain`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/commands/typecmds.c#L698
 pub(super) fn apply_create_domain_stmt(
     c: &mut Catalog,
     n: &CreateDomainStmt,
