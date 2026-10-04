@@ -275,6 +275,8 @@ const CASES: &[(&str, Expect)] = &[
         "select upper(name), length(name), lower(note) from items, logs",
         Accept,
     ),
+    // Functional notation for fields of a composite column
+    ("select a(p), b(items.p) from items", Accept),
     ("select length(1)", Detect("42883", Kind::Function)),
     ("select upper(1)", Detect("42883", Kind::Function)),
     (

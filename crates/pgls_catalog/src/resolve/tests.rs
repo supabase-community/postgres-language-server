@@ -427,6 +427,13 @@ fn names_of_sql_json_and_xml_expressions() {
 }
 
 #[test]
+fn functional_field_notation() {
+    // `a(p)` is field `a` of the composite column `p` (`ParseFuncOrColumn`).
+    let setup = "create type pr as (a int, b text); create table tt (id int, p pr);";
+    assert_eq!(findings_after(setup, "select a(p), b(tt.p) from tt"), []);
+}
+
+#[test]
 fn wrappers() {
     assert_eq!(
         findings("create view v as select nope from users"),

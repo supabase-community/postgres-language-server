@@ -2,7 +2,7 @@
 source: crates/pgls_analyser/tests/postgres_regress.rs
 expression: "report(&version, analysed, &rejected, &artefacts)"
 ---
-REL_15_19: 39939 statements, 1588 findings on statements Postgres rejected
+REL_15_19: 39939 statements, 1583 findings on statements Postgres rejected
 
 ambiguousColumn 42702: 6
 functionArgumentMismatch 42725: 5
@@ -16,8 +16,8 @@ operatorTypeMismatch 42883: 9
 unknownColumn 42703: 36
 unknownColumn 42P01: 3
 unknownFunction 42704: 4
-unknownFunction 42883: 94
-unknownFunction 42P01: 21
+unknownFunction 42883: 92
+unknownFunction 42P01: 18
 unknownRelation 0A000: 2
 unknownRelation 25006: 2
 unknownRelation 42501: 1
@@ -42,11 +42,8 @@ aggregates.sql:157:1 42P01 unknownRelation
 aggregates.sql:158:1 42P01 unknownRelation
 aggregates.sql:160:1 42P01 unknownRelation
 aggregates.sql:163:1 42P01 unknownRelation
-aggregates.sql:167:1 42P01 unknownFunction
 aggregates.sql:167:1 42P01 unknownRelation
-aggregates.sql:168:1 42P01 unknownFunction
 aggregates.sql:168:1 42P01 unknownRelation
-aggregates.sql:169:1 42P01 unknownFunction
 aggregates.sql:169:1 42P01 unknownRelation
 aggregates.sql:170:1 42P01 unknownFunction
 aggregates.sql:170:1 42P01 unknownRelation
@@ -1185,8 +1182,6 @@ rowtypes.sql:446:1 42P01 unknownRelation
 rowtypes.sql:449:1 42P01 unknownRelation
 rowtypes.sql:452:1 42P01 unknownRelation
 rowtypes.sql:456:1 42P01 unknownRelation
-sanity_check.sql:31:1 42883 unknownFunction
-sanity_check.sql:31:1 42883 unknownFunction
 select.sql:8:1 42P01 unknownRelation
 select.sql:15:1 42P01 unknownRelation
 select.sql:22:1 42P01 unknownRelation

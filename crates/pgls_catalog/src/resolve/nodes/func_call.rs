@@ -3,12 +3,14 @@ use pgls_query::{
     protobuf::{CoercionForm, FuncCall},
 };
 
-use super::{
-    Resolver, resolve_list, resolve_node,
-    string::{string_value, string_values},
-};
+use super::{Resolver, resolve_list, resolve_node, string::string_values};
+use crate::TypeKind;
 use crate::lookup::Lookup;
-use crate::resolve::{FindingKind, scope::find_item};
+use crate::resolve::{
+    FindingKind,
+    scope::{find_column_type, find_item},
+};
+use crate::typing::{Decision, Type, base_type};
 
 pub(super) fn resolve_func_call(r: &mut Resolver, n: &FuncCall) {
     resolve_list(r, &n.args);
@@ -97,8 +99,8 @@ fn may_be_type_coercion(r: &Resolver, schema: Option<&str>, name: &str, n: &Func
     )
 }
 
-/// Postgres reads `name(row)` as a field access if `row` is a whole row: `name(t)` is the same
-/// as `t.name` ([`ParseComplexProjection`], from [`ParseFuncOrColumn`]).
+/// Postgres reads `name(row)` as a field access if `row` is a whole row or a composite value:
+/// `name(t)` is the same as `t.name`, and `name(t.col)` as `(t.col).name` ([`ParseComplexProjection`], from [`ParseFuncOrColumn`]).
 ///
 /// [`ParseComplexProjection`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_func.c#L1967
 /// [`ParseFuncOrColumn`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_func.c#L90
@@ -107,13 +109,37 @@ fn may_be_field_access(r: &Resolver, n: &FuncCall) -> bool {
         return false;
     };
     match argument.node.as_ref() {
-        Some(NodeEnum::ColumnRef(column)) => match column.fields.as_slice() {
-            [name] => string_value(name).is_some_and(|name| {
-                find_item(&r.levels, name).is_some() || r.function_param(name).is_some()
-            }),
-            _ => false,
+        Some(NodeEnum::ColumnRef(column)) => match string_values(&column.fields).as_deref() {
+            // A whole row, a function parameter, or a column that may be composite.
+            Some([name]) => {
+                find_item(&r.levels, name).is_some()
+                    || r.function_param(name).is_some()
+                    || may_be_composite(r, find_column_type(&r.levels, name))
+            }
+            Some([table, name]) => may_be_composite(
+                r,
+                find_item(&r.levels, table).and_then(|item| item.type_of(name).flatten()),
+            ),
+            _ => true,
         },
         Some(NodeEnum::ParamRef(_) | NodeEnum::RowExpr(_) | NodeEnum::AIndirection(_)) => true,
         _ => false,
+    }
+}
+
+/// Whether a value of this type may be a row: unless it is known to be a scalar.
+fn may_be_composite(r: &Resolver, ty: Option<Type>) -> bool {
+    let Some(Type::Named(id)) = ty else {
+        return true;
+    };
+    let Decision::Known(base) = base_type(r.catalog, &id) else {
+        return true;
+    };
+    match r.catalog.type_by_id(&base) {
+        Lookup::Found(info) => !matches!(
+            info.kind,
+            Some(kind) if kind != TypeKind::Composite && kind != TypeKind::Pseudo
+        ),
+        _ => true,
     }
 }
