@@ -144,14 +144,12 @@ impl<'a> LintVisitor<'a> {
         R: RuleMeta + 'static,
     {
         // Do not report unused suppression comment diagnostics if a single rule is run.
-        for selector in self.only {
-            let filter = RuleFilter::from(selector);
+        for filter in self.only.iter().flat_map(|selector| selector.filters()) {
             if filter.match_rule::<R>() {
                 self.enabled_rules.insert(filter);
             }
         }
-        for selector in self.skip {
-            let filter = RuleFilter::from(selector);
+        for filter in self.skip.iter().flat_map(|selector| selector.filters()) {
             if filter.match_rule::<R>() {
                 self.disabled_rules.insert(filter);
             }
@@ -167,16 +165,22 @@ impl RegistryVisitor for LintVisitor<'_> {
     }
 
     fn record_group<G: RuleGroup>(&mut self) {
-        for selector in self.only {
-            if RuleFilter::from(selector).match_group::<G>() {
-                G::record_rules(self)
-            }
+        if self
+            .only
+            .iter()
+            .flat_map(|selector| selector.filters())
+            .any(|filter| filter.match_group::<G>())
+        {
+            G::record_rules(self)
         }
 
-        for selector in self.skip {
-            if RuleFilter::from(selector).match_group::<G>() {
-                G::record_rules(self)
-            }
+        if self
+            .skip
+            .iter()
+            .flat_map(|selector| selector.filters())
+            .any(|filter| filter.match_group::<G>())
+        {
+            G::record_rules(self)
         }
     }
 
@@ -247,14 +251,12 @@ impl<'a> SplinterVisitor<'a> {
     where
         R: RuleMeta + 'static,
     {
-        for selector in self.only {
-            let filter = RuleFilter::from(selector);
+        for filter in self.only.iter().flat_map(|selector| selector.filters()) {
             if filter.match_rule::<R>() {
                 self.enabled_rules.insert(filter);
             }
         }
-        for selector in self.skip {
-            let filter = RuleFilter::from(selector);
+        for filter in self.skip.iter().flat_map(|selector| selector.filters()) {
             if filter.match_rule::<R>() {
                 self.disabled_rules.insert(filter);
             }
@@ -271,16 +273,22 @@ impl RegistryVisitor for SplinterVisitor<'_> {
     }
 
     fn record_group<G: RuleGroup>(&mut self) {
-        for selector in self.only {
-            if RuleFilter::from(selector).match_group::<G>() {
-                G::record_rules(self)
-            }
+        if self
+            .only
+            .iter()
+            .flat_map(|selector| selector.filters())
+            .any(|filter| filter.match_group::<G>())
+        {
+            G::record_rules(self)
         }
 
-        for selector in self.skip {
-            if RuleFilter::from(selector).match_group::<G>() {
-                G::record_rules(self)
-            }
+        if self
+            .skip
+            .iter()
+            .flat_map(|selector| selector.filters())
+            .any(|filter| filter.match_group::<G>())
+        {
+            G::record_rules(self)
         }
     }
 

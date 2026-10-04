@@ -99,12 +99,9 @@ impl From<&Category> for RuleSpecifier {
     }
 }
 
-/// The name of a rule that was merged into another rule.
+/// The rule that replaces `rule`, if it was merged into another rule, or `rule` itself.
 fn removed(rule: &str) -> &str {
-    match rule {
-        "preferBigintOverInt" | "preferBigintOverSmallint" => "preferBigInt",
-        other => other,
-    }
+    pgls_analyser::replacement_of_removed_rule(rule).unwrap_or(rule)
 }
 
 /// The flat form of a specifier from before rule IDs were flat, if `value` is one.
@@ -509,7 +506,10 @@ mod tests {
             RuleSpecifier::try_from("preferBigintOverSmallint").unwrap(),
             RuleSpecifier::try_from("preferBigInt").unwrap()
         );
-        assert!(RuleSpecifier::try_from("concurrentRefreshMatviewLock").is_err());
+        assert_eq!(
+            RuleSpecifier::try_from("lint/safety/concurrentRefreshMatviewLock").unwrap(),
+            RuleSpecifier::try_from("requireConcurrentRefreshMatview").unwrap()
+        );
         assert!(RuleSpecifier::try_from("notARule").is_err());
         assert_eq!(
             RuleSpecifier::try_from("destructive").unwrap(),

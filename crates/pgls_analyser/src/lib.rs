@@ -50,6 +50,25 @@ pub struct Analyser<'a> {
 /// snapshot is available.
 pub const TYPECHECK_GROUP: &str = "typecheck";
 
+/// Released rules that were merged into another rule, with the rule that replaces them. Configs,
+/// suppression comments, and rule selectors that name them keep working.
+pub const REMOVED_RULES: &[(&str, &str)] = &[
+    ("preferBigintOverInt", "preferBigInt"),
+    ("preferBigintOverSmallint", "preferBigInt"),
+    (
+        "concurrentRefreshMatviewLock",
+        "requireConcurrentRefreshMatview",
+    ),
+];
+
+/// The rule that replaces a removed rule, if `name` is one.
+pub fn replacement_of_removed_rule(name: &str) -> Option<&'static str> {
+    REMOVED_RULES
+        .iter()
+        .find(|(removed, _)| *removed == name)
+        .map(|(_, replacement)| *replacement)
+}
+
 #[derive(Debug)]
 pub struct AnalysableStatement {
     pub root: pgls_query::NodeEnum,

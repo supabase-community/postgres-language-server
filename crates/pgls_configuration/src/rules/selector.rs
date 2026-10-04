@@ -32,22 +32,21 @@ impl AnalyzerGroup {
 pub enum RuleSelector {
     Group(AnalyzerGroup),
     Rule(AnalyzerGroup, &'static str),
+    /// Every linter rule: `safety` and `lint/safety`, from when all linter rules were in the
+    /// `safety` group.
+    AllLinterRules,
 }
 
-impl From<RuleSelector> for RuleFilter<'static> {
-    fn from(value: RuleSelector) -> Self {
-        match value {
-            RuleSelector::Group(group) => RuleFilter::Group(group.as_str()),
-            RuleSelector::Rule(group, name) => RuleFilter::Rule(group.as_str(), name),
-        }
-    }
-}
-
-impl<'a> From<&'a RuleSelector> for RuleFilter<'static> {
-    fn from(value: &'a RuleSelector) -> Self {
-        match value {
-            RuleSelector::Group(group) => RuleFilter::Group(group.as_str()),
-            RuleSelector::Rule(group, name) => RuleFilter::Rule(group.as_str(), name),
+impl RuleSelector {
+    /// The filters that select the same rules.
+    pub fn filters(self) -> Vec<RuleFilter<'static>> {
+        match self {
+            RuleSelector::Group(group) => vec![RuleFilter::Group(group.as_str())],
+            RuleSelector::Rule(group, name) => vec![RuleFilter::Rule(group.as_str(), name)],
+            RuleSelector::AllLinterRules => crate::linter::LINTER_GROUPS
+                .iter()
+                .map(|group| RuleFilter::Group(group))
+                .collect(),
         }
     }
 }
@@ -88,12 +87,17 @@ impl FromStr for RuleSelector {
         }
 
         // Linter rules have flat IDs: `lint/<rule>` or `<rule>`. The former `<group>/<rule>`
-        // is still accepted, even if the rule moved to another group since.
+        // is still accepted, even if the rule moved to another group since, and so are the
+        // names of removed rules.
         let rest = selector.strip_prefix("lint/").unwrap_or(selector);
+        if rest == "safety" {
+            return Ok(RuleSelector::AllLinterRules);
+        }
         let name = match rest.split_once('/') {
             Some((_, rule)) => rule,
             None => rest,
         };
+        let name = pgls_analyser::replacement_of_removed_rule(name).unwrap_or(name);
         if let Some(rule) = crate::linter::LINTER_RULES
             .iter()
             .find(|rule| rule.name == name)
@@ -122,6 +126,7 @@ impl serde::Serialize for RuleSelector {
                 let group_name = group.as_str();
                 serializer.serialize_str(&format!("{prefix}/{group_name}"))
             }
+            RuleSelector::AllLinterRules => serializer.serialize_str("lint/safety"),
             RuleSelector::Rule(group, rule_name) => {
                 if matches!(group, AnalyzerGroup::Linter(_)) {
                     serializer.serialize_str(rule_name)
@@ -161,5 +166,61 @@ impl schemars::JsonSchema for RuleSelector {
     }
     fn json_schema(r#gen: &mut schemars::r#gen::SchemaGenerator) -> schemars::schema::Schema {
         String::json_schema(r#gen)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn parses_flat_and_legacy_selectors() {
+        let rule = |name| {
+            Ok(RuleSelector::Rule(
+                AnalyzerGroup::Linter("destructive"),
+                name,
+            ))
+        };
+        assert_eq!(
+            RuleSelector::from_str("banDropColumn"),
+            rule("banDropColumn")
+        );
+        assert_eq!(
+            RuleSelector::from_str("lint/banDropColumn"),
+            rule("banDropColumn")
+        );
+        assert_eq!(
+            RuleSelector::from_str("safety/banDropColumn"),
+            rule("banDropColumn")
+        );
+        assert_eq!(
+            RuleSelector::from_str("lint/safety/banDropColumn"),
+            rule("banDropColumn")
+        );
+        assert_eq!(
+            RuleSelector::from_str("destructive"),
+            Ok(RuleSelector::Group(AnalyzerGroup::Linter("destructive")))
+        );
+        // Every linter rule was in `safety` before rules had groups.
+        assert_eq!(
+            RuleSelector::from_str("safety"),
+            Ok(RuleSelector::AllLinterRules)
+        );
+        assert_eq!(
+            RuleSelector::from_str("lint/safety"),
+            Ok(RuleSelector::AllLinterRules)
+        );
+        assert_eq!(
+            RuleSelector::AllLinterRules.filters().len(),
+            crate::linter::LINTER_GROUPS.len()
+        );
+        // Removed rules select the rule that replaced them.
+        for (removed, replacement) in pgls_analyser::REMOVED_RULES {
+            assert!(matches!(
+                RuleSelector::from_str(&format!("safety/{removed}")),
+                Ok(RuleSelector::Rule(_, name)) if name == *replacement
+            ));
+        }
+        assert!(RuleSelector::from_str("notARule").is_err());
     }
 }
