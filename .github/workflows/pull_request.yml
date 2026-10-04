@@ -42,10 +42,17 @@ jobs:
         uses: moonrepo/setup-rust@v1
         with:
           components: rustfmt
-          bins: taplo-cli
           cache-base: main
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # The release binary, because building taplo-cli without its lockfile picks up
+      # dependencies that need a newer Rust than our toolchain.
+      - name: Install taplo
+        run: |
+          curl -fsSL https://github.com/tamasfe/taplo/releases/download/0.10.0/taplo-linux-x86_64.gz \
+            | gunzip > "$HOME/.cargo/bin/taplo"
+          chmod +x "$HOME/.cargo/bin/taplo"
+          taplo --version
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
@@ -329,10 +336,17 @@ jobs:
         uses: moonrepo/setup-rust@v1
         with:
           components: rustfmt
-          bins: taplo-cli
           cache-base: main
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # The release binary, because building taplo-cli without its lockfile picks up
+      # dependencies that need a newer Rust than our toolchain.
+      - name: Install taplo
+        run: |
+          curl -fsSL https://github.com/tamasfe/taplo/releases/download/0.10.0/taplo-linux-x86_64.gz \
+            | gunzip > "$HOME/.cargo/bin/taplo"
+          chmod +x "$HOME/.cargo/bin/taplo"
+          taplo --version
       - uses: actions/cache@v5
         with:
           path: |
