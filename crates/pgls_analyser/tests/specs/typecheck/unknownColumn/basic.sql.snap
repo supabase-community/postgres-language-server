@@ -1,0 +1,17 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+create table users (id int8, name text);
+select id, name from users;
+-- expect_lint/unknownColumn
+select email from users;
+
+```
+
+# Diagnostics
+lint/unknownColumn ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Column email does not exist.

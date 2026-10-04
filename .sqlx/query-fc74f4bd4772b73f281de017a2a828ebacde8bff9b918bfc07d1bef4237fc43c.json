@@ -1,0 +1,38 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "select castsource::int8 as \"source!\", casttarget::int8 as \"target!\", castcontext::text as \"context!\", castmethod::text as \"method!\" from pg_cast;\n",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "source!",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 1,
+        "name": "target!",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 2,
+        "name": "context!",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "method!",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      null,
+      null,
+      null,
+      null
+    ]
+  },
+  "hash": "fc74f4bd4772b73f281de017a2a828ebacde8bff9b918bfc07d1bef4237fc43c"
+}

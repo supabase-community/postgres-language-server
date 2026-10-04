@@ -9,6 +9,7 @@ version     = "0.0.0"
 anyhow                  = { workspace = true }
 pgls_analyse            = { workspace = true }
 pgls_analyser           = { workspace = true }
+pgls_catalog            = { workspace = true }
 pgls_console            = { workspace = true }
 pgls_diagnostics        = { workspace = true }
 pgls_query              = { workspace = true }

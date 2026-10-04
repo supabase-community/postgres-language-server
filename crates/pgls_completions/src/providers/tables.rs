@@ -1,4 +1,4 @@
-use pgls_schema_cache::{SchemaCache, Table};
+use pgls_catalog::{Snapshot, Table};
 use pgls_treesitter::TreesitterContext;
 
 use crate::{
@@ -13,20 +13,18 @@ use super::helper::with_schema_or_alias;
 
 pub fn complete_tables<'a>(
     ctx: &'a TreesitterContext,
-    schema_cache: &'a SchemaCache,
+    snapshot: &'a Snapshot,
     builder: &mut CompletionBuilder<'a>,
 ) {
-    let available_tables = &schema_cache.tables;
+    let available_tables = &snapshot.tables;
 
     for table in available_tables {
         let relevance = CompletionRelevanceData::Table(table);
 
         let detail: Option<String> = match table.table_kind {
-            pgls_schema_cache::TableKind::Ordinary | pgls_schema_cache::TableKind::Partitioned => {
-                None
-            }
-            pgls_schema_cache::TableKind::View => Some("View".into()),
-            pgls_schema_cache::TableKind::MaterializedView => Some("MView".into()),
+            pgls_catalog::TableKind::Ordinary | pgls_catalog::TableKind::Partitioned => None,
+            pgls_catalog::TableKind::View => Some("View".into()),
+            pgls_catalog::TableKind::MaterializedView => Some("MView".into()),
         };
 
         let item = PossibleCompletionItem {

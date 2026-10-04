@@ -1,5 +1,9 @@
 # requireConcurrentRefreshMatview
-**Diagnostic Category: `lint/safety/requireConcurrentRefreshMatview`**
+**Diagnostic Category: `lint/requireConcurrentRefreshMatview`**
+
+**Group: `safety`**
+
+**Applies to: migration files only**
 
 **Since**: `vnext`
 
@@ -25,7 +29,7 @@ refresh materialized view my_view;
 ```
 
 ```sh
-code-block.sql:1:1 lint/safety/requireConcurrentRefreshMatview ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+code-block.sql:1:1 lint/requireConcurrentRefreshMatview ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   ! REFRESH MATERIALIZED VIEW without CONCURRENTLY blocks all reads.
   
@@ -50,11 +54,16 @@ refresh materialized view concurrently my_view;
 {
   "linter": {
     "rules": {
-      "safety": {
-        "requireConcurrentRefreshMatview": "error"
-      }
+      "requireConcurrentRefreshMatview": "error"
     }
   }
 }
 
+```
+## How to suppress
+
+Suppress this diagnostic with a comment:
+
+```sql
+-- pgls-ignore requireConcurrentRefreshMatview
 ```

@@ -29,6 +29,7 @@ declare_lint_rule! {
         name: "requireIdleInTransactionTimeout",
         severity: Severity::Warning,
         recommended: false,
+        applies_to: pgls_analyse::AppliesTo::Migration,
         sources: &[RuleSource::Pgfence("missing-idle-timeout")],
     }
 }
@@ -37,7 +38,7 @@ impl LinterRule for RequireIdleInTransactionTimeout {
     type Options = ();
 
     fn run(ctx: &LinterRuleContext<Self>) -> Vec<LinterDiagnostic> {
-        let tx_state = ctx.file_context().transaction_state();
+        let tx_state = ctx.session();
         if tx_state.has_idle_in_transaction_timeout() {
             return vec![];
         }

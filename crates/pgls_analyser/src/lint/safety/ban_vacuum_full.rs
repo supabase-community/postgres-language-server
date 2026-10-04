@@ -29,6 +29,7 @@ declare_lint_rule! {
         name: "banVacuumFull",
         severity: Severity::Error,
         recommended: true,
+        applies_to: pgls_analyse::AppliesTo::Migration,
         sources: &[RuleSource::Pgfence("vacuum-full")],
     }
 }

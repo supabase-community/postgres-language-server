@@ -77,6 +77,9 @@ pub(crate) struct Session {
     /// A flag to notify a message to the user when they are using the deprecated config filename
     notified_deprecated_config: AtomicBool,
 
+    /// Whether the user was told about deprecated settings in the configuration.
+    notified_deprecated_settings: AtomicBool,
+
     /// File system to read files inside the workspace
     pub(crate) fs: DynRef<'static, dyn FileSystem>,
 
@@ -217,6 +220,7 @@ impl Session {
             config_path: None,
             notified_broken_configuration: AtomicBool::new(false),
             notified_deprecated_config: AtomicBool::new(false),
+            notified_deprecated_settings: AtomicBool::new(false),
             env_config,
             client_overrides: RwLock::new(ClientOverrides::default()),
             configuration_transition: tokio::sync::Mutex::new(()),
@@ -595,6 +599,23 @@ impl Session {
                                     .await;
                     self.notified_deprecated_config
                         .store(true, Ordering::Relaxed);
+                }
+
+                let deprecations = fs_configuration.deprecations();
+                if !deprecations.is_empty()
+                    && !self
+                        .notified_deprecated_settings
+                        .swap(true, Ordering::Relaxed)
+                {
+                    self.client
+                        .show_message(
+                            MessageType::WARNING,
+                            format!(
+                                "Your configuration uses deprecated settings:\n{}",
+                                deprecations.join("\n")
+                            ),
+                        )
+                        .await;
                 }
 
                 info!("Update workspace settings.");

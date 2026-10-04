@@ -1,5 +1,9 @@
 # addSerialColumn
-**Diagnostic Category: `lint/safety/addSerialColumn`**
+**Diagnostic Category: `lint/addSerialColumn`**
+
+**Group: `safety`**
+
+**Applies to: migration files only**
 
 **Since**: `vnext`
 
@@ -28,7 +32,7 @@ ALTER TABLE prices ADD COLUMN id serial;
 ```
 
 ```sh
-code-block.sql:1:1 lint/safety/addSerialColumn ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+code-block.sql:1:1 lint/addSerialColumn ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   ! Adding a column with type serial requires a table rewrite.
   
@@ -48,7 +52,7 @@ ALTER TABLE prices ADD COLUMN id bigserial;
 ```
 
 ```sh
-code-block.sql:1:1 lint/safety/addSerialColumn ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+code-block.sql:1:1 lint/addSerialColumn ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   ! Adding a column with type bigserial requires a table rewrite.
   
@@ -68,7 +72,7 @@ ALTER TABLE prices ADD COLUMN total int GENERATED ALWAYS AS (price * quantity) S
 ```
 
 ```sh
-code-block.sql:1:1 lint/safety/addSerialColumn ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+code-block.sql:1:1 lint/addSerialColumn ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   ! Adding a column with GENERATED ALWAYS AS ... STORED requires a table rewrite.
   
@@ -89,11 +93,16 @@ code-block.sql:1:1 lint/safety/addSerialColumn ━━━━━━━━━━━
 {
   "linter": {
     "rules": {
-      "safety": {
-        "addSerialColumn": "error"
-      }
+      "addSerialColumn": "error"
     }
   }
 }
 
+```
+## How to suppress
+
+Suppress this diagnostic with a comment:
+
+```sql
+-- pgls-ignore addSerialColumn
 ```

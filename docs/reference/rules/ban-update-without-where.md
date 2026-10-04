@@ -1,5 +1,7 @@
 # banUpdateWithoutWhere
-**Diagnostic Category: `lint/safety/banUpdateWithoutWhere`**
+**Diagnostic Category: `lint/banUpdateWithoutWhere`**
+
+**Group: `destructive`**
 
 **Since**: `vnext`
 
@@ -24,7 +26,7 @@ update my_table set col = 'value';
 ```
 
 ```sh
-code-block.sql:1:1 lint/safety/banUpdateWithoutWhere ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+code-block.sql:1:1 lint/banUpdateWithoutWhere ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   ! An UPDATE without a WHERE clause will modify all rows in the table.
   
@@ -49,11 +51,16 @@ update my_table set col = 'value' where id = 1;
 {
   "linter": {
     "rules": {
-      "safety": {
-        "banUpdateWithoutWhere": "error"
-      }
+      "banUpdateWithoutWhere": "error"
     }
   }
 }
 
+```
+## How to suppress
+
+Suppress this diagnostic with a comment:
+
+```sql
+-- pgls-ignore banUpdateWithoutWhere
 ```

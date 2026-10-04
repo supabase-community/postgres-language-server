@@ -710,6 +710,17 @@
             "null"
           ]
         },
+        "groups": {
+          "description": "The level of all rules of a group, unless a rule is configured individually.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/LinterGroups"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "ignore": {
           "description": "A list of Unix shell style patterns. The linter will ignore files/folders that will match these patterns.",
           "anyOf": [
@@ -746,14 +757,593 @@
       },
       "additionalProperties": false
     },
+    "LinterGroups": {
+      "description": "The level of all rules of a group, unless a rule is configured individually.",
+      "type": "object",
+      "properties": {
+        "correctness": {
+          "description": "Code that fails at runtime for reasons other than names or types.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RulePlainConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "destructive": {
+          "description": "Code that loses data or breaks existing clients.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RulePlainConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "nursery": {
+          "description": "New rules that are still being tested. Never enabled by presets.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RulePlainConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "safety": {
+          "description": "Valid code that may be dangerous against a live database: locks, rewrites, or blocking.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RulePlainConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "style": {
+          "description": "Schema design preferences. Not enabled by the recommended preset.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RulePlainConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "typecheck": {
+          "description": "Code that fails at runtime because of names or types. Needs a database connection.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RulePlainConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
     "LinterRules": {
       "type": "object",
       "properties": {
+        "addSerialColumn": {
+          "description": "Adding a column with a SERIAL type or GENERATED ALWAYS AS ... STORED causes a full table rewrite.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "addingFieldWithDefault": {
+          "description": "Adding a column with a DEFAULT value may lead to a table rewrite while holding an ACCESS EXCLUSIVE lock.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "addingForeignKeyConstraint": {
+          "description": "Adding a foreign key constraint requires a table scan and a SHARE ROW EXCLUSIVE lock on both tables, which blocks writes.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "addingNotNullField": {
+          "description": "Setting a column NOT NULL blocks reads while the table is scanned.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "addingPrimaryKeyConstraint": {
+          "description": "Adding a primary key constraint results in locks and table rewrites.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "addingRequiredField": {
+          "description": "Adding a new column that is NOT NULL and has no default value to an existing table effectively makes it required.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "all": {
           "description": "It enables ALL rules. The rules that belong to `nursery` won't be enabled.",
           "type": [
             "boolean",
             "null"
+          ]
+        },
+        "ambiguousColumn": {
+          "description": "An unqualified column name matches columns of more than one relation in scope.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "assignmentTypeMismatch": {
+          "description": "An expression assigned to a column cannot be coerced to that column's type. The rule needs a database connection to load the table and type catalog.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "avoidAddingExclusionConstraint": {
+          "description": "Adding an exclusion constraint acquires an ACCESS EXCLUSIVE lock.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "avoidAlterEnumAddValue": {
+          "description": "ALTER TYPE ... ADD VALUE cannot run inside a transaction block in older Postgres versions.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "avoidAttachingPartition": {
+          "description": "Attaching a partition acquires an ACCESS EXCLUSIVE lock on the parent table.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "avoidCreateTrigger": {
+          "description": "Creating a trigger acquires a SHARE ROW EXCLUSIVE lock on the table.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "avoidEnableDisableTrigger": {
+          "description": "Enabling or disabling a trigger acquires a SHARE ROW EXCLUSIVE lock.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "avoidWideLockWindow": {
+          "description": "Acquiring ACCESS EXCLUSIVE locks on multiple tables widens the lock window.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "banCharField": {
+          "description": "Using CHAR(n) or CHARACTER(n) types is discouraged.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "banConcurrentIndexCreationInTransaction": {
+          "description": "Concurrent index creation is not allowed within a transaction.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "banDeleteWithoutWhere": {
+          "description": "A DELETE statement without a WHERE clause will remove all rows from the table.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "banDropColumn": {
+          "description": "Dropping a column may break existing clients.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "banDropDatabase": {
+          "description": "Dropping a database may break existing clients (and everything else, really).",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "banDropNotNull": {
+          "description": "Dropping a NOT NULL constraint may break existing clients.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "banDropSchema": {
+          "description": "Dropping a schema will remove all objects within it and may break existing clients.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "banDropTable": {
+          "description": "Dropping a table may break existing clients.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "banDropTrigger": {
+          "description": "Dropping a trigger acquires an ACCESS EXCLUSIVE lock on the table.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "banTruncate": {
+          "description": "Truncating a table removes all rows and can cause data loss in production.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "banTruncateCascade": {
+          "description": "Using TRUNCATE's CASCADE option will truncate any tables that are also foreign-keyed to the specified tables.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "banUpdateWithoutWhere": {
+          "description": "An UPDATE statement without a WHERE clause will modify all rows in the table.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "banVacuumFull": {
+          "description": "VACUUM FULL rewrites the entire table and acquires an ACCESS EXCLUSIVE lock.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "changingColumnType": {
+          "description": "Changing a column type may require a table rewrite and break existing clients.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "constraintMissingNotValid": {
+          "description": "Adding constraints without NOT VALID blocks all reads and writes.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "creatingEnum": {
+          "description": "Creating enum types is not recommended for new applications.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "disallowUniqueConstraint": {
+          "description": "Disallow adding a UNIQUE constraint without using an existing index.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "functionArgumentMismatch": {
+          "description": "A function name and argument count exist, but its argument types do not select exactly one overload. The rule needs a database connection to load the function and type catalog.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "functionReturnTypeMismatch": {
+          "description": "The final statement of a SQL function doesn't return what the function is declared to return.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "insertColumnMismatch": {
+          "description": "An INSERT has a different number of target columns than values.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "invalidCast": {
+          "description": "An explicit cast is not permitted between the source and target types. The rule needs a database connection to load the type and cast catalog.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "invalidDropTypeSignature": {
+          "description": "DROP TYPE and DROP DOMAIN don't take a parameter list.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "lockTimeoutWarning": {
+          "description": "Taking a dangerous lock without setting a lock timeout can cause indefinite blocking.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "missingFromClauseEntry": {
+          "description": "A column is qualified with a name that is not in the FROM clause.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "multipleAlterTable": {
+          "description": "Multiple ALTER TABLE statements on the same table should be combined into a single statement.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "operatorTypeMismatch": {
+          "description": "An operator exists by name but cannot be resolved for the operand types, or has multiple equally suitable candidates.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "preferBigInt": {
+          "description": "Prefer BIGINT over smaller integer types.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/PreferBigIntConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "preferIdentity": {
+          "description": "Prefer using IDENTITY columns over serial columns.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "preferJsonb": {
+          "description": "Prefer JSONB over JSON types.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "preferRobustStmts": {
+          "description": "Prefer statements with guards for robustness in migrations.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "preferTextField": {
+          "description": "Prefer using TEXT over VARCHAR(n) types.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "preferTimestamptz": {
+          "description": "Prefer TIMESTAMPTZ over TIMESTAMP types.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
           ]
         },
         "recommended": {
@@ -763,10 +1353,199 @@
             "null"
           ]
         },
+        "renamingColumn": {
+          "description": "Renaming columns may break existing queries and application code.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "renamingTable": {
+          "description": "Renaming tables may break existing queries and application code.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "requireConcurrentDetachPartition": {
+          "description": "Detaching a partition without CONCURRENTLY acquires an ACCESS EXCLUSIVE lock.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "requireConcurrentIndexCreation": {
+          "description": "Creating indexes non-concurrently can lock the table for writes.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "requireConcurrentIndexDeletion": {
+          "description": "Dropping indexes non-concurrently can lock the table for reads.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "requireConcurrentRefreshMatview": {
+          "description": "REFRESH MATERIALIZED VIEW without CONCURRENTLY acquires an ACCESS EXCLUSIVE lock.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "requireConcurrentReindex": {
+          "description": "REINDEX without CONCURRENTLY acquires an ACCESS EXCLUSIVE lock on the table.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "requireIdleInTransactionTimeout": {
+          "description": "Dangerous lock statements should be preceded by SET idle_in_transaction_session_timeout.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "requireSeparateConstraintValidation": {
+          "description": "Validating a constraint in the same transaction it was added as NOT VALID defeats the purpose.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "requireStatementTimeout": {
+          "description": "Dangerous lock statements should be preceded by SET statement_timeout.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "runningStatementWhileHoldingAccessExclusive": {
+          "description": "Running additional statements while holding an ACCESS EXCLUSIVE lock blocks all table access.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "safety": {
+          "description": "Deprecated: configure rules directly in `linter.rules`, and groups in `linter.groups`.",
+          "deprecated": true,
           "anyOf": [
             {
               "$ref": "#/definitions/Safety"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "transactionNesting": {
+          "description": "Detects problematic transaction nesting that could lead to unexpected behavior.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "unknownColumn": {
+          "description": "A column does not exist on the relation or record it is taken from.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "unknownFunction": {
+          "description": "No function with this name accepts this number of arguments.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "unknownRelation": {
+          "description": "A table, view, or materialized view does not exist.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "unknownSchema": {
+          "description": "A schema does not exist.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "unknownType": {
+          "description": "A type does not exist.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
             },
             {
               "type": "null"
@@ -1070,6 +1849,29 @@
       },
       "additionalProperties": false
     },
+    "PreferBigIntConfiguration": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/RulePlainConfiguration"
+        },
+        {
+          "$ref": "#/definitions/RuleWithPreferBigIntOptions"
+        }
+      ]
+    },
+    "PreferBigIntOptions": {
+      "type": "object",
+      "properties": {
+        "checkInt": {
+          "default": true,
+          "type": "boolean"
+        },
+        "checkSmallint": {
+          "default": true,
+          "type": "boolean"
+        }
+      }
+    },
     "RuleConfiguration": {
       "anyOf": [
         {
@@ -1106,6 +1908,32 @@
       },
       "additionalProperties": false
     },
+    "RuleWithPreferBigIntOptions": {
+      "type": "object",
+      "required": [
+        "level",
+        "options"
+      ],
+      "properties": {
+        "level": {
+          "description": "The severity of the emitted diagnostics by the rule",
+          "allOf": [
+            {
+              "$ref": "#/definitions/RulePlainConfiguration"
+            }
+          ]
+        },
+        "options": {
+          "description": "Rule's options",
+          "allOf": [
+            {
+              "$ref": "#/definitions/PreferBigIntOptions"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
     "RuleWithSplinterRuleOptions": {
       "type": "object",
       "required": [
@@ -1133,11 +1961,10 @@
       "additionalProperties": false
     },
     "Safety": {
-      "description": "A list of rules that belong to this group",
+      "description": "The former `linter.rules.safety` group, which contained all rules at the time.",
       "type": "object",
       "properties": {
         "addSerialColumn": {
-          "description": "Adding a column with a SERIAL type or GENERATED ALWAYS AS ... STORED causes a full table rewrite.",
           "anyOf": [
             {
               "$ref": "#/definitions/RuleConfiguration"
@@ -1148,7 +1975,6 @@
           ]
         },
         "addingFieldWithDefault": {
-          "description": "Adding a column with a DEFAULT value may lead to a table rewrite while holding an ACCESS EXCLUSIVE lock.",
           "anyOf": [
             {
               "$ref": "#/definitions/RuleConfiguration"
@@ -1159,7 +1985,6 @@
           ]
         },
         "addingForeignKeyConstraint": {
-          "description": "Adding a foreign key constraint requires a table scan and a SHARE ROW EXCLUSIVE lock on both tables, which blocks writes.",
           "anyOf": [
             {
               "$ref": "#/definitions/RuleConfiguration"
@@ -1170,7 +1995,6 @@
           ]
         },
         "addingNotNullField": {
-          "description": "Setting a column NOT NULL blocks reads while the table is scanned.",
           "anyOf": [
             {
               "$ref": "#/definitions/RuleConfiguration"
@@ -1181,7 +2005,6 @@
           ]
         },
         "addingPrimaryKeyConstraint": {
-          "description": "Adding a primary key constraint results in locks and table rewrites.",
           "anyOf": [
             {
               "$ref": "#/definitions/RuleConfiguration"
@@ -1192,7 +2015,6 @@
           ]
         },
         "addingRequiredField": {
-          "description": "Adding a new column that is NOT NULL and has no default value to an existing table effectively makes it required.",
           "anyOf": [
             {
               "$ref": "#/definitions/RuleConfiguration"
@@ -1203,14 +2025,12 @@
           ]
         },
         "all": {
-          "description": "It enables ALL rules for this group.",
           "type": [
             "boolean",
             "null"
           ]
         },
         "avoidAddingExclusionConstraint": {
-          "description": "Adding an exclusion constraint acquires an ACCESS EXCLUSIVE lock.",
           "anyOf": [
             {
               "$ref": "#/definitions/RuleConfiguration"
@@ -1221,7 +2041,6 @@
           ]
         },
         "avoidAlterEnumAddValue": {
-          "description": "ALTER TYPE ... ADD VALUE cannot run inside a transaction block in older Postgres versions.",
           "anyOf": [
             {
               "$ref": "#/definitions/RuleConfiguration"
@@ -1232,7 +2051,6 @@
           ]
         },
         "avoidAttachingPartition": {
-          "description": "Attaching a partition acquires an ACCESS EXCLUSIVE lock on the parent table.",
           "anyOf": [
             {
               "$ref": "#/definitions/RuleConfiguration"
@@ -1243,7 +2061,6 @@
           ]
         },
         "avoidCreateTrigger": {
-          "description": "Creating a trigger acquires a SHARE ROW EXCLUSIVE lock on the table.",
           "anyOf": [
             {
               "$ref": "#/definitions/RuleConfiguration"
@@ -1254,7 +2071,6 @@
           ]
         },
         "avoidEnableDisableTrigger": {
-          "description": "Enabling or disabling a trigger acquires a SHARE ROW EXCLUSIVE lock.",
           "anyOf": [
             {
               "$ref": "#/definitions/RuleConfiguration"
@@ -1265,7 +2081,6 @@
           ]
         },
         "avoidWideLockWindow": {
-          "description": "Acquiring ACCESS EXCLUSIVE locks on multiple tables widens the lock window.",
           "anyOf": [
             {
               "$ref": "#/definitions/RuleConfiguration"
@@ -1276,7 +2091,6 @@
           ]
         },
         "banCharField": {
-          "description": "Using CHAR(n) or CHARACTER(n) types is discouraged.",
           "anyOf": [
             {
               "$ref": "#/definitions/RuleConfiguration"
@@ -1287,7 +2101,6 @@
           ]
         },
         "banConcurrentIndexCreationInTransaction": {
-          "description": "Concurrent index creation is not allowed within a transaction.",
           "anyOf": [
             {
               "$ref": "#/definitions/RuleConfiguration"
@@ -1298,7 +2111,6 @@
           ]
         },
         "banDeleteWithoutWhere": {
-          "description": "A DELETE statement without a WHERE clause will remove all rows from the table.",
           "anyOf": [
             {
               "$ref": "#/definitions/RuleConfiguration"
@@ -1309,7 +2121,6 @@
           ]
         },
         "banDropColumn": {
-          "description": "Dropping a column may break existing clients.",
           "anyOf": [
             {
               "$ref": "#/definitions/RuleConfiguration"
@@ -1320,7 +2131,6 @@
           ]
         },
         "banDropDatabase": {
-          "description": "Dropping a database may break existing clients (and everything else, really).",
           "anyOf": [
             {
               "$ref": "#/definitions/RuleConfiguration"
@@ -1331,7 +2141,6 @@
           ]
         },
         "banDropNotNull": {
-          "description": "Dropping a NOT NULL constraint may break existing clients.",
           "anyOf": [
             {
               "$ref": "#/definitions/RuleConfiguration"
@@ -1342,7 +2151,6 @@
           ]
         },
         "banDropSchema": {
-          "description": "Dropping a schema will remove all objects within it and may break existing clients.",
           "anyOf": [
             {
               "$ref": "#/definitions/RuleConfiguration"
@@ -1353,7 +2161,6 @@
           ]
         },
         "banDropTable": {
-          "description": "Dropping a table may break existing clients.",
           "anyOf": [
             {
               "$ref": "#/definitions/RuleConfiguration"
@@ -1364,7 +2171,6 @@
           ]
         },
         "banDropTrigger": {
-          "description": "Dropping a trigger acquires an ACCESS EXCLUSIVE lock on the table.",
           "anyOf": [
             {
               "$ref": "#/definitions/RuleConfiguration"
@@ -1375,7 +2181,6 @@
           ]
         },
         "banTruncate": {
-          "description": "Truncating a table removes all rows and can cause data loss in production.",
           "anyOf": [
             {
               "$ref": "#/definitions/RuleConfiguration"
@@ -1386,7 +2191,6 @@
           ]
         },
         "banTruncateCascade": {
-          "description": "Using TRUNCATE's CASCADE option will truncate any tables that are also foreign-keyed to the specified tables.",
           "anyOf": [
             {
               "$ref": "#/definitions/RuleConfiguration"
@@ -1397,7 +2201,6 @@
           ]
         },
         "banUpdateWithoutWhere": {
-          "description": "An UPDATE statement without a WHERE clause will modify all rows in the table.",
           "anyOf": [
             {
               "$ref": "#/definitions/RuleConfiguration"
@@ -1408,7 +2211,6 @@
           ]
         },
         "banVacuumFull": {
-          "description": "VACUUM FULL rewrites the entire table and acquires an ACCESS EXCLUSIVE lock.",
           "anyOf": [
             {
               "$ref": "#/definitions/RuleConfiguration"
@@ -1419,7 +2221,6 @@
           ]
         },
         "changingColumnType": {
-          "description": "Changing a column type may require a table rewrite and break existing clients.",
           "anyOf": [
             {
               "$ref": "#/definitions/RuleConfiguration"
@@ -1430,7 +2231,6 @@
           ]
         },
         "concurrentRefreshMatviewLock": {
-          "description": "REFRESH MATERIALIZED VIEW CONCURRENTLY still acquires an EXCLUSIVE lock.",
           "anyOf": [
             {
               "$ref": "#/definitions/RuleConfiguration"
@@ -1441,7 +2241,6 @@
           ]
         },
         "constraintMissingNotValid": {
-          "description": "Adding constraints without NOT VALID blocks all reads and writes.",
           "anyOf": [
             {
               "$ref": "#/definitions/RuleConfiguration"
@@ -1452,7 +2251,6 @@
           ]
         },
         "creatingEnum": {
-          "description": "Creating enum types is not recommended for new applications.",
           "anyOf": [
             {
               "$ref": "#/definitions/RuleConfiguration"
@@ -1463,7 +2261,6 @@
           ]
         },
         "disallowUniqueConstraint": {
-          "description": "Disallow adding a UNIQUE constraint without using an existing index.",
           "anyOf": [
             {
               "$ref": "#/definitions/RuleConfiguration"
@@ -1474,7 +2271,6 @@
           ]
         },
         "lockTimeoutWarning": {
-          "description": "Taking a dangerous lock without setting a lock timeout can cause indefinite blocking.",
           "anyOf": [
             {
               "$ref": "#/definitions/RuleConfiguration"
@@ -1485,7 +2281,6 @@
           ]
         },
         "multipleAlterTable": {
-          "description": "Multiple ALTER TABLE statements on the same table should be combined into a single statement.",
           "anyOf": [
             {
               "$ref": "#/definitions/RuleConfiguration"
@@ -1496,10 +2291,9 @@
           ]
         },
         "preferBigInt": {
-          "description": "Prefer BIGINT over smaller integer types.",
           "anyOf": [
             {
-              "$ref": "#/definitions/RuleConfiguration"
+              "$ref": "#/definitions/PreferBigIntConfiguration"
             },
             {
               "type": "null"
@@ -1507,7 +2301,6 @@
           ]
         },
         "preferBigintOverInt": {
-          "description": "Prefer BIGINT over INT/INTEGER types.",
           "anyOf": [
             {
               "$ref": "#/definitions/RuleConfiguration"
@@ -1518,7 +2311,6 @@
           ]
         },
         "preferBigintOverSmallint": {
-          "description": "Prefer BIGINT over SMALLINT types.",
           "anyOf": [
             {
               "$ref": "#/definitions/RuleConfiguration"
@@ -1529,7 +2321,6 @@
           ]
         },
         "preferIdentity": {
-          "description": "Prefer using IDENTITY columns over serial columns.",
           "anyOf": [
             {
               "$ref": "#/definitions/RuleConfiguration"
@@ -1540,7 +2331,6 @@
           ]
         },
         "preferJsonb": {
-          "description": "Prefer JSONB over JSON types.",
           "anyOf": [
             {
               "$ref": "#/definitions/RuleConfiguration"
@@ -1551,7 +2341,6 @@
           ]
         },
         "preferRobustStmts": {
-          "description": "Prefer statements with guards for robustness in migrations.",
           "anyOf": [
             {
               "$ref": "#/definitions/RuleConfiguration"
@@ -1562,7 +2351,6 @@
           ]
         },
         "preferTextField": {
-          "description": "Prefer using TEXT over VARCHAR(n) types.",
           "anyOf": [
             {
               "$ref": "#/definitions/RuleConfiguration"
@@ -1573,7 +2361,6 @@
           ]
         },
         "preferTimestamptz": {
-          "description": "Prefer TIMESTAMPTZ over TIMESTAMP types.",
           "anyOf": [
             {
               "$ref": "#/definitions/RuleConfiguration"
@@ -1584,14 +2371,12 @@
           ]
         },
         "recommended": {
-          "description": "It enables the recommended rules for this group",
           "type": [
             "boolean",
             "null"
           ]
         },
         "renamingColumn": {
-          "description": "Renaming columns may break existing queries and application code.",
           "anyOf": [
             {
               "$ref": "#/definitions/RuleConfiguration"
@@ -1602,7 +2387,6 @@
           ]
         },
         "renamingTable": {
-          "description": "Renaming tables may break existing queries and application code.",
           "anyOf": [
             {
               "$ref": "#/definitions/RuleConfiguration"
@@ -1613,7 +2397,6 @@
           ]
         },
         "requireConcurrentDetachPartition": {
-          "description": "Detaching a partition without CONCURRENTLY acquires an ACCESS EXCLUSIVE lock.",
           "anyOf": [
             {
               "$ref": "#/definitions/RuleConfiguration"
@@ -1624,7 +2407,6 @@
           ]
         },
         "requireConcurrentIndexCreation": {
-          "description": "Creating indexes non-concurrently can lock the table for writes.",
           "anyOf": [
             {
               "$ref": "#/definitions/RuleConfiguration"
@@ -1635,7 +2417,6 @@
           ]
         },
         "requireConcurrentIndexDeletion": {
-          "description": "Dropping indexes non-concurrently can lock the table for reads.",
           "anyOf": [
             {
               "$ref": "#/definitions/RuleConfiguration"
@@ -1646,7 +2427,6 @@
           ]
         },
         "requireConcurrentRefreshMatview": {
-          "description": "REFRESH MATERIALIZED VIEW without CONCURRENTLY acquires an ACCESS EXCLUSIVE lock.",
           "anyOf": [
             {
               "$ref": "#/definitions/RuleConfiguration"
@@ -1657,7 +2437,6 @@
           ]
         },
         "requireConcurrentReindex": {
-          "description": "REINDEX without CONCURRENTLY acquires an ACCESS EXCLUSIVE lock on the table.",
           "anyOf": [
             {
               "$ref": "#/definitions/RuleConfiguration"
@@ -1668,7 +2447,6 @@
           ]
         },
         "requireIdleInTransactionTimeout": {
-          "description": "Dangerous lock statements should be preceded by SET idle_in_transaction_session_timeout.",
           "anyOf": [
             {
               "$ref": "#/definitions/RuleConfiguration"
@@ -1679,7 +2457,6 @@
           ]
         },
         "requireSeparateConstraintValidation": {
-          "description": "Validating a constraint in the same transaction it was added as NOT VALID defeats the purpose.",
           "anyOf": [
             {
               "$ref": "#/definitions/RuleConfiguration"
@@ -1690,7 +2467,6 @@
           ]
         },
         "requireStatementTimeout": {
-          "description": "Dangerous lock statements should be preceded by SET statement_timeout.",
           "anyOf": [
             {
               "$ref": "#/definitions/RuleConfiguration"
@@ -1701,7 +2477,6 @@
           ]
         },
         "runningStatementWhileHoldingAccessExclusive": {
-          "description": "Running additional statements while holding an ACCESS EXCLUSIVE lock blocks all table access.",
           "anyOf": [
             {
               "$ref": "#/definitions/RuleConfiguration"
@@ -1712,7 +2487,6 @@
           ]
         },
         "transactionNesting": {
-          "description": "Detects problematic transaction nesting that could lead to unexpected behavior.",
           "anyOf": [
             {
               "$ref": "#/definitions/RuleConfiguration"

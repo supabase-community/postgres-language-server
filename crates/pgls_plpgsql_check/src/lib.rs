@@ -13,7 +13,7 @@ pub struct PlPgSqlCheckParams<'a> {
     pub conn: &'a PgPool,
     pub sql: &'a str,
     pub ast: &'a pgls_query::NodeEnum,
-    pub schema_cache: &'a pgls_schema_cache::SchemaCache,
+    pub snapshot: &'a pgls_catalog::Snapshot,
     pub fatal_errors: bool,
     pub other_warnings: bool,
     pub extra_warnings: bool,
@@ -61,7 +61,7 @@ pub struct Query {
 /// check if the given node is a plpgsql function that should be checked
 fn should_check_function<'a>(
     ast: &'a pgls_query::NodeEnum,
-    schema_cache: &pgls_schema_cache::SchemaCache,
+    snapshot: &pgls_catalog::Snapshot,
 ) -> Option<&'a CreateFunctionStmt> {
     let create_fn = match ast {
         pgls_query::NodeEnum::CreateFunctionStmt(stmt) => stmt,
@@ -74,7 +74,7 @@ fn should_check_function<'a>(
         return None;
     }
 
-    if !schema_cache
+    if !snapshot
         .extensions
         .iter()
         .any(|e| e.name == "plpgsql_check")
@@ -191,7 +191,7 @@ fn build_extra_params(options: &PlPgSqlCheckParams<'_>) -> String {
 pub async fn check_plpgsql(
     params: PlPgSqlCheckParams<'_>,
 ) -> Result<Vec<PlPgSqlCheckDiagnostic>, sqlx::Error> {
-    let create_fn = match should_check_function(params.ast, params.schema_cache) {
+    let create_fn = match should_check_function(params.ast, params.snapshot) {
         Some(stmt) => stmt,
         None => return Ok(vec![]),
     };
@@ -238,7 +238,7 @@ pub async fn check_plpgsql(
     let results_with_relations: Vec<(String, Option<String>)> = if is_trigger {
         let mut results = Vec::new();
 
-        for trigger in params.schema_cache.triggers.iter() {
+        for trigger in params.snapshot.triggers.iter() {
             if trigger.proc_name == fn_name
                 && (fn_schema.is_none() || fn_schema.as_deref() == Some(&trigger.proc_schema))
             {
@@ -306,13 +306,13 @@ mod tests {
         let ast = pgls_query::parse(create_fn_sql)?
             .into_root()
             .ok_or("Failed to parse SQL root")?;
-        let schema_cache = pgls_schema_cache::SchemaCache::load(test_db).await?;
+        let snapshot = pgls_catalog::Snapshot::load(test_db).await?;
 
         let diagnostics = super::check_plpgsql(super::PlPgSqlCheckParams {
             conn: test_db,
             sql: create_fn_sql,
             ast: &ast,
-            schema_cache: &schema_cache,
+            snapshot: &snapshot,
             fatal_errors: true,
             other_warnings: true,
             extra_warnings: true,

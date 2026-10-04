@@ -1,5 +1,7 @@
 # transactionNesting
-**Diagnostic Category: `lint/safety/transactionNesting`**
+**Diagnostic Category: `lint/transactionNesting`**
+
+**Group: `correctness`**
 
 **Since**: `vnext`
 
@@ -25,7 +27,7 @@ SELECT 1;
 ```
 
 ```sh
-code-block.sql:1:1 lint/safety/transactionNesting ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+code-block.sql:1:1 lint/transactionNesting ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   ! Transaction already managed by migration tool.
   
@@ -47,7 +49,7 @@ COMMIT; -- No transaction to commit
 ```
 
 ```sh
-code-block.sql:2:1 lint/safety/transactionNesting ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+code-block.sql:2:1 lint/transactionNesting ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   ! Attempting to end transaction managed by migration tool.
   
@@ -69,11 +71,16 @@ code-block.sql:2:1 lint/safety/transactionNesting ━━━━━━━━━━
 {
   "linter": {
     "rules": {
-      "safety": {
-        "transactionNesting": "error"
-      }
+      "transactionNesting": "error"
     }
   }
 }
 
+```
+## How to suppress
+
+Suppress this diagnostic with a comment:
+
+```sql
+-- pgls-ignore transactionNesting
 ```

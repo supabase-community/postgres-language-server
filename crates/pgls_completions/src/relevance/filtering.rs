@@ -1,4 +1,4 @@
-use pgls_schema_cache::ProcKind;
+use pgls_catalog::ProcKind;
 use pgls_treesitter::{
     context::{TreesitterContext, WrappingClause, WrappingNode},
     goto_node_at_position, previous_sibling_completed,

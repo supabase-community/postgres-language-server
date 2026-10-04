@@ -122,6 +122,20 @@ impl<'a> LintVisitor<'a> {
             self.disabled_rules.extend(disabled_rules);
         }
 
+        // `linter.enabled` switches the lint rules, and `typecheck.enabled` the typecheck rules.
+        let linter_enabled = self.settings.linter.enabled;
+        let typecheck_enabled = self.settings.typecheck.enabled;
+        self.enabled_rules.retain(|filter| {
+            let group = match filter {
+                RuleFilter::Group(group) | RuleFilter::Rule(group, _) => *group,
+            };
+            if group == pgls_analyser::TYPECHECK_GROUP {
+                typecheck_enabled
+            } else {
+                linter_enabled
+            }
+        });
+
         (self.enabled_rules, self.disabled_rules)
     }
 
@@ -130,14 +144,12 @@ impl<'a> LintVisitor<'a> {
         R: RuleMeta + 'static,
     {
         // Do not report unused suppression comment diagnostics if a single rule is run.
-        for selector in self.only {
-            let filter = RuleFilter::from(selector);
+        for filter in self.only.iter().flat_map(|selector| selector.filters()) {
             if filter.match_rule::<R>() {
                 self.enabled_rules.insert(filter);
             }
         }
-        for selector in self.skip {
-            let filter = RuleFilter::from(selector);
+        for filter in self.skip.iter().flat_map(|selector| selector.filters()) {
             if filter.match_rule::<R>() {
                 self.disabled_rules.insert(filter);
             }
@@ -153,16 +165,22 @@ impl RegistryVisitor for LintVisitor<'_> {
     }
 
     fn record_group<G: RuleGroup>(&mut self) {
-        for selector in self.only {
-            if RuleFilter::from(selector).match_group::<G>() {
-                G::record_rules(self)
-            }
+        if self
+            .only
+            .iter()
+            .flat_map(|selector| selector.filters())
+            .any(|filter| filter.match_group::<G>())
+        {
+            G::record_rules(self)
         }
 
-        for selector in self.skip {
-            if RuleFilter::from(selector).match_group::<G>() {
-                G::record_rules(self)
-            }
+        if self
+            .skip
+            .iter()
+            .flat_map(|selector| selector.filters())
+            .any(|filter| filter.match_group::<G>())
+        {
+            G::record_rules(self)
         }
     }
 
@@ -233,14 +251,12 @@ impl<'a> SplinterVisitor<'a> {
     where
         R: RuleMeta + 'static,
     {
-        for selector in self.only {
-            let filter = RuleFilter::from(selector);
+        for filter in self.only.iter().flat_map(|selector| selector.filters()) {
             if filter.match_rule::<R>() {
                 self.enabled_rules.insert(filter);
             }
         }
-        for selector in self.skip {
-            let filter = RuleFilter::from(selector);
+        for filter in self.skip.iter().flat_map(|selector| selector.filters()) {
             if filter.match_rule::<R>() {
                 self.disabled_rules.insert(filter);
             }
@@ -257,16 +273,22 @@ impl RegistryVisitor for SplinterVisitor<'_> {
     }
 
     fn record_group<G: RuleGroup>(&mut self) {
-        for selector in self.only {
-            if RuleFilter::from(selector).match_group::<G>() {
-                G::record_rules(self)
-            }
+        if self
+            .only
+            .iter()
+            .flat_map(|selector| selector.filters())
+            .any(|filter| filter.match_group::<G>())
+        {
+            G::record_rules(self)
         }
 
-        for selector in self.skip {
-            if RuleFilter::from(selector).match_group::<G>() {
-                G::record_rules(self)
-            }
+        if self
+            .skip
+            .iter()
+            .flat_map(|selector| selector.filters())
+            .any(|filter| filter.match_group::<G>())
+        {
+            G::record_rules(self)
         }
     }
 
@@ -281,7 +303,7 @@ impl RegistryVisitor for SplinterVisitor<'_> {
 #[cfg(test)]
 mod tests {
     use pgls_analyse::RuleFilter;
-    use pgls_configuration::{RuleConfiguration, Rules, linter::Safety};
+    use pgls_configuration::{RuleConfiguration, Rules};
 
     use crate::{
         settings::{LinterSettings, Settings},
@@ -293,12 +315,9 @@ mod tests {
         let settings = Settings {
             linter: LinterSettings {
                 rules: Some(Rules {
-                    safety: Some(Safety {
-                        ban_drop_column: Some(RuleConfiguration::Plain(
-                            pgls_configuration::RulePlainConfiguration::Off,
-                        )),
-                        ..Default::default()
-                    }),
+                    ban_drop_column: Some(RuleConfiguration::Plain(
+                        pgls_configuration::RulePlainConfiguration::Off,
+                    )),
                     ..Default::default()
                 }),
                 ..Default::default()
@@ -312,7 +331,7 @@ mod tests {
 
         assert_eq!(
             disabled_rules,
-            vec![RuleFilter::Rule("safety", "banDropColumn")]
+            vec![RuleFilter::Rule("destructive", "banDropColumn")]
         )
     }
 
@@ -360,12 +379,9 @@ mod tests {
         let settings = Settings {
             linter: LinterSettings {
                 rules: Some(Rules {
-                    safety: Some(Safety {
-                        ban_drop_column: Some(RuleConfiguration::Plain(
-                            pgls_configuration::RulePlainConfiguration::Off,
-                        )),
-                        ..Default::default()
-                    }),
+                    ban_drop_column: Some(RuleConfiguration::Plain(
+                        pgls_configuration::RulePlainConfiguration::Off,
+                    )),
                     ..Default::default()
                 }),
                 ..Default::default()
@@ -392,7 +408,7 @@ mod tests {
             .finish();
 
         // Should contain disabled rules from both linter and splinter
-        assert!(disabled_rules.contains(&RuleFilter::Rule("safety", "banDropColumn")));
+        assert!(disabled_rules.contains(&RuleFilter::Rule("destructive", "banDropColumn")));
         assert!(disabled_rules.contains(&RuleFilter::Rule("performance", "authRlsInitplan")));
         assert_eq!(disabled_rules.len(), 2);
     }

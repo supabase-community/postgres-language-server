@@ -4,7 +4,7 @@ The language server requires a database connection for schema-dependent features
 
 ## Features requiring database connection
 
-- Type checking using `EXPLAIN`
+- Type checking
 - Autocompletion for tables, columns, functions, and schemas
 - Hover information for database objects
 - PL/pgSQL analysis via `plpgsql_check` extension

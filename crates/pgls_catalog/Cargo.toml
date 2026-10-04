@@ -1,0 +1,36 @@
+[package]
+authors.workspace    = true
+categories.workspace = true
+description          = "The database catalog: a snapshot of the database, the changes of the current file, and name resolution"
+edition.workspace    = true
+homepage.workspace   = true
+keywords.workspace   = true
+license.workspace    = true
+name                 = "pgls_catalog"
+repository.workspace = true
+version              = "0.0.0"
+
+[features]
+# Load the snapshot from a database connection. Disable for WASM builds.
+db = ["dep:sqlx", "dep:futures-util"]
+# Derive JSON schemas for the snapshot types, used by codegen.
+schema = ["dep:schemars"]
+
+[dependencies]
+futures-util   = { version = "0.3.31", optional = true }
+globset        = "0.4.16"
+pgls_query     = { workspace = true }
+pgls_text_size = { workspace = true }
+rustc-hash     = { workspace = true }
+schemars       = { workspace = true, optional = true }
+serde          = { workspace = true, features = ["derive"] }
+serde_json     = { workspace = true }
+sqlx           = { workspace = true, optional = true }
+strum          = { workspace = true }
+
+[dev-dependencies]
+insta           = { workspace = true }
+pgls_test_utils = { workspace = true }
+
+[lib]
+doctest = false

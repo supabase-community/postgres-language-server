@@ -16,7 +16,7 @@ pub trait LinterRule: RuleMeta + Sized {
     type Options: Default + Clone + Debug;
 
     /// Execute the rule on the given AST context
-    /// `schema_cache` will only be available if the user has a working database connection.
+    /// `snapshot` will only be available if the user has a working database connection.
     fn run(rule_context: &LinterRuleContext<Self>) -> Vec<LinterDiagnostic>;
 }
 

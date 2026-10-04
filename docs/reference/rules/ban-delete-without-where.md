@@ -1,5 +1,7 @@
 # banDeleteWithoutWhere
-**Diagnostic Category: `lint/safety/banDeleteWithoutWhere`**
+**Diagnostic Category: `lint/banDeleteWithoutWhere`**
+
+**Group: `destructive`**
 
 **Since**: `vnext`
 
@@ -25,7 +27,7 @@ delete from my_table;
 ```
 
 ```sh
-code-block.sql:1:1 lint/safety/banDeleteWithoutWhere ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+code-block.sql:1:1 lint/banDeleteWithoutWhere ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   ! A DELETE without a WHERE clause will remove all rows from the table.
   
@@ -50,11 +52,16 @@ delete from my_table where expired_at < now();
 {
   "linter": {
     "rules": {
-      "safety": {
-        "banDeleteWithoutWhere": "error"
-      }
+      "banDeleteWithoutWhere": "error"
     }
   }
 }
 
+```
+## How to suppress
+
+Suppress this diagnostic with a comment:
+
+```sql
+-- pgls-ignore banDeleteWithoutWhere
 ```

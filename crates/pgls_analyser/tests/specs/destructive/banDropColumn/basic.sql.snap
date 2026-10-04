@@ -1,0 +1,17 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+-- expect_lint/banDropColumn
+alter table test
+drop column id;
+```
+
+# Diagnostics
+lint/banDropColumn ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Dropping a column may break existing clients.
+  
+  i You can leave the column as nullable or delete the column once queries no longer select or modify the column.

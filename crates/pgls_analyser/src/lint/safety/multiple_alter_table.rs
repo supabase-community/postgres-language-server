@@ -36,6 +36,7 @@ declare_lint_rule! {
         name: "multipleAlterTable",
         severity: Severity::Warning,
         recommended: true,
+        applies_to: pgls_analyse::AppliesTo::Migration,
         sources: &[RuleSource::Eugene("W12")],
     }
 }

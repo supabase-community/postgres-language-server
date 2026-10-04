@@ -127,7 +127,7 @@ pub fn generate_new_analyser_rule(
         // We sort rules to reduce conflicts between contributions made in parallel.
         let rule_line = match category {
             Category::Lint => format!(
-                r#"    "lint/{group}/{rule_name_camel}": "{PGLS_WEBSITE}/latest/reference/rules/{kebab_case_rule}/","#
+                r#"    "lint/{rule_name_camel}": "{PGLS_WEBSITE}/latest/reference/rules/{kebab_case_rule}/","#
             ),
         };
         let lint_start = match category {
@@ -165,7 +165,7 @@ pub fn generate_new_analyser_rule(
     let test_file_name = format!("{}/basic.sql", test_folder.display());
     std::fs::write(
         test_file_name.clone(),
-        gen_sql(format!("lint/{group}/{rule_name_camel}").as_str()),
+        gen_sql(format!("lint/{rule_name_camel}").as_str()),
     )
     .unwrap_or_else(|_| panic!("To write {}", test_file_name));
 }

@@ -1,5 +1,9 @@
 # banDropNotNull
-**Diagnostic Category: `lint/safety/banDropNotNull`**
+**Diagnostic Category: `lint/banDropNotNull`**
+
+**Group: `destructive`**
+
+**Applies to: migration files only**
 
 **Since**: `vnext`
 
@@ -25,7 +29,7 @@ alter table users alter column email drop not null;
 ```
 
 ```sh
-code-block.sql:1:1 lint/safety/banDropNotNull ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+code-block.sql:1:1 lint/banDropNotNull ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   ! Dropping a NOT NULL constraint may break existing clients.
   
@@ -44,11 +48,16 @@ code-block.sql:1:1 lint/safety/banDropNotNull ━━━━━━━━━━━�
 {
   "linter": {
     "rules": {
-      "safety": {
-        "banDropNotNull": "error"
-      }
+      "banDropNotNull": "error"
     }
   }
 }
 
+```
+## How to suppress
+
+Suppress this diagnostic with a comment:
+
+```sql
+-- pgls-ignore banDropNotNull
 ```

@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use pgls_analyser::AnalysableStatement;
+use pgls_analyser::{AnalysableStatement, UnparsableStatement};
 use pgls_diagnostics::{Diagnostic, DiagnosticExt, serde::Diagnostic as SDiagnostic};
 use pgls_query_ext::diagnostics::SyntaxDiagnostic;
 use pgls_suppressions::Suppressions;
@@ -8,7 +8,7 @@ use pgls_text_size::{TextRange, TextSize};
 
 use super::{
     annotation::AnnotationStore,
-    pg_query::PgQueryStore,
+    pg_query::{PgQueryStore, convert_to_positional_params_with_metadata},
     sql_function::{SQLFunctionSignature, get_sql_fn_body, get_sql_fn_signature},
     statement_identifier::StatementId,
     tree_sitter::TreeSitterStore,
@@ -258,7 +258,13 @@ impl<'a> StatementMapper<'a> for TypecheckDiagnosticsMapper {
 
 pub struct AnalyserDiagnosticsMapper;
 impl<'a> StatementMapper<'a> for AnalyserDiagnosticsMapper {
-    type Output = (Option<AnalysableStatement>, Option<SyntaxDiagnostic>);
+    /// The statement if it parses, its syntax error, and the statement again if it is a
+    /// top-level statement that doesn't parse.
+    type Output = (
+        Option<AnalysableStatement>,
+        Option<SyntaxDiagnostic>,
+        Option<UnparsableStatement>,
+    );
 
     fn map(&self, parser: &'a Document, id: StatementId, range: TextRange) -> Self::Output {
         let maybe_node = parser.ast_db.get_or_cache_ast(&id);
@@ -276,13 +282,50 @@ impl<'a> StatementMapper<'a> for AnalyserDiagnosticsMapper {
             }
             Err(diag) => (None, Some(diag.clone().span(range))),
         };
+        let unparsable =
+            (ast_option.is_none() && id.parent().is_none()).then(|| UnparsableStatement {
+                range,
+                sql: id.content().to_owned(),
+            });
+
+        // Statements in the body of a SQL function can reference its parameters.
+        let function = id.parent().and_then(|root| {
+            let parent = parser.ast_db.get_or_cache_ast(&root);
+            let signature = get_sql_fn_signature(parent.as_ref().as_ref().ok()?)?;
+            Some(function_context(signature))
+        });
 
         (
-            ast_option.map(|root| AnalysableStatement { range, root }),
+            ast_option.map(|root| {
+                AnalysableStatement::new(root, range)
+                    .with_sql(id.content())
+                    .with_function(function)
+                    .with_identifier_parameters(
+                        convert_to_positional_params_with_metadata(id.content())
+                            .has_identifier_parameters,
+                    )
+            }),
             diagnostics,
+            unparsable,
         )
     }
 }
+fn function_context(signature: SQLFunctionSignature) -> pgls_catalog::resolve::FunctionContext {
+    pgls_catalog::resolve::FunctionContext {
+        function_name: signature.name,
+        params: signature
+            .args
+            .into_iter()
+            .map(|arg| pgls_catalog::resolve::FunctionParam {
+                name: arg.name,
+                type_schema: arg.type_.schema,
+                type_name: arg.type_.name,
+                is_array: arg.type_.is_array,
+            })
+            .collect(),
+    }
+}
+
 pub struct WithCSTMapper;
 impl<'a> StatementMapper<'a> for WithCSTMapper {
     type Output = (StatementId, TextRange, Arc<tree_sitter::Tree>);
@@ -442,7 +485,7 @@ $$;";
         let results = d.iter(AnalyserDiagnosticsMapper).collect::<Vec<_>>();
 
         assert_eq!(results.len(), 1);
-        let (ast, diagnostic) = &results[0];
+        let (ast, diagnostic, _) = &results[0];
 
         // Should have parsed the CREATE FUNCTION statement
         assert!(ast.is_some());
@@ -473,7 +516,7 @@ $$;";
         let results = d.iter(AnalyserDiagnosticsMapper).collect::<Vec<_>>();
 
         assert_eq!(results.len(), 1);
-        let (ast, diagnostic) = &results[0];
+        let (ast, diagnostic, _) = &results[0];
 
         // Should have parsed the CREATE FUNCTION statement
         assert!(ast.is_some());

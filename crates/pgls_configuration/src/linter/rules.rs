@@ -2,48 +2,410 @@
 
 #![doc = r" Generated file, do not edit by hand, see `xtask/codegen`"]
 use crate::rules::{RuleConfiguration, RulePlainConfiguration};
-use pgls_analyse::RuleFilter;
 use pgls_analyser::RuleOptions;
 use pgls_configuration_macros::Merge;
-use pgls_diagnostics::{Category, Severity};
-use rustc_hash::FxHashSet;
+use pgls_diagnostics::Severity;
 #[cfg(feature = "schema")]
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-#[derive(
-    Clone,
-    Copy,
-    Debug,
-    Eq,
-    Hash,
-    Merge,
-    Ord,
-    PartialEq,
-    PartialOrd,
-    serde :: Deserialize,
-    serde :: Serialize,
-)]
-#[cfg_attr(feature = "schema", derive(JsonSchema))]
-#[serde(rename_all = "camelCase")]
-pub enum RuleGroup {
-    Safety,
+#[doc = r" The static metadata of a linter rule."]
+#[derive(Clone, Copy, Debug)]
+pub struct LinterRuleMetadata {
+    pub group: &'static str,
+    pub name: &'static str,
+    pub recommended: bool,
+    pub severity: Severity,
 }
-impl RuleGroup {
-    pub const fn as_str(self) -> &'static str {
-        match self {
-            Self::Safety => Safety::GROUP_NAME,
-        }
-    }
-}
-impl std::str::FromStr for RuleGroup {
-    type Err = &'static str;
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s {
-            Safety::GROUP_NAME => Ok(Self::Safety),
-            _ => Err("This rule group doesn't exist."),
-        }
-    }
-}
+#[doc = r" All linter rules, sorted by name."]
+pub const LINTER_RULES: &[LinterRuleMetadata] = &[
+    LinterRuleMetadata {
+        group: "safety",
+        name: "addSerialColumn",
+        recommended: true,
+        severity: Severity::Warning,
+    },
+    LinterRuleMetadata {
+        group: "safety",
+        name: "addingFieldWithDefault",
+        recommended: true,
+        severity: Severity::Warning,
+    },
+    LinterRuleMetadata {
+        group: "safety",
+        name: "addingForeignKeyConstraint",
+        recommended: true,
+        severity: Severity::Warning,
+    },
+    LinterRuleMetadata {
+        group: "safety",
+        name: "addingNotNullField",
+        recommended: true,
+        severity: Severity::Warning,
+    },
+    LinterRuleMetadata {
+        group: "safety",
+        name: "addingPrimaryKeyConstraint",
+        recommended: true,
+        severity: Severity::Warning,
+    },
+    LinterRuleMetadata {
+        group: "destructive",
+        name: "addingRequiredField",
+        recommended: false,
+        severity: Severity::Error,
+    },
+    LinterRuleMetadata {
+        group: "typecheck",
+        name: "ambiguousColumn",
+        recommended: true,
+        severity: Severity::Error,
+    },
+    LinterRuleMetadata {
+        group: "typecheck",
+        name: "assignmentTypeMismatch",
+        recommended: true,
+        severity: Severity::Error,
+    },
+    LinterRuleMetadata {
+        group: "safety",
+        name: "avoidAddingExclusionConstraint",
+        recommended: true,
+        severity: Severity::Warning,
+    },
+    LinterRuleMetadata {
+        group: "correctness",
+        name: "avoidAlterEnumAddValue",
+        recommended: false,
+        severity: Severity::Warning,
+    },
+    LinterRuleMetadata {
+        group: "safety",
+        name: "avoidAttachingPartition",
+        recommended: true,
+        severity: Severity::Warning,
+    },
+    LinterRuleMetadata {
+        group: "safety",
+        name: "avoidCreateTrigger",
+        recommended: false,
+        severity: Severity::Warning,
+    },
+    LinterRuleMetadata {
+        group: "safety",
+        name: "avoidEnableDisableTrigger",
+        recommended: false,
+        severity: Severity::Warning,
+    },
+    LinterRuleMetadata {
+        group: "safety",
+        name: "avoidWideLockWindow",
+        recommended: true,
+        severity: Severity::Warning,
+    },
+    LinterRuleMetadata {
+        group: "style",
+        name: "banCharField",
+        recommended: false,
+        severity: Severity::Warning,
+    },
+    LinterRuleMetadata {
+        group: "correctness",
+        name: "banConcurrentIndexCreationInTransaction",
+        recommended: true,
+        severity: Severity::Error,
+    },
+    LinterRuleMetadata {
+        group: "destructive",
+        name: "banDeleteWithoutWhere",
+        recommended: true,
+        severity: Severity::Warning,
+    },
+    LinterRuleMetadata {
+        group: "destructive",
+        name: "banDropColumn",
+        recommended: true,
+        severity: Severity::Warning,
+    },
+    LinterRuleMetadata {
+        group: "destructive",
+        name: "banDropDatabase",
+        recommended: false,
+        severity: Severity::Warning,
+    },
+    LinterRuleMetadata {
+        group: "destructive",
+        name: "banDropNotNull",
+        recommended: true,
+        severity: Severity::Warning,
+    },
+    LinterRuleMetadata {
+        group: "destructive",
+        name: "banDropSchema",
+        recommended: true,
+        severity: Severity::Error,
+    },
+    LinterRuleMetadata {
+        group: "destructive",
+        name: "banDropTable",
+        recommended: true,
+        severity: Severity::Warning,
+    },
+    LinterRuleMetadata {
+        group: "safety",
+        name: "banDropTrigger",
+        recommended: false,
+        severity: Severity::Warning,
+    },
+    LinterRuleMetadata {
+        group: "destructive",
+        name: "banTruncate",
+        recommended: true,
+        severity: Severity::Error,
+    },
+    LinterRuleMetadata {
+        group: "destructive",
+        name: "banTruncateCascade",
+        recommended: false,
+        severity: Severity::Error,
+    },
+    LinterRuleMetadata {
+        group: "destructive",
+        name: "banUpdateWithoutWhere",
+        recommended: true,
+        severity: Severity::Warning,
+    },
+    LinterRuleMetadata {
+        group: "safety",
+        name: "banVacuumFull",
+        recommended: true,
+        severity: Severity::Error,
+    },
+    LinterRuleMetadata {
+        group: "destructive",
+        name: "changingColumnType",
+        recommended: false,
+        severity: Severity::Warning,
+    },
+    LinterRuleMetadata {
+        group: "safety",
+        name: "constraintMissingNotValid",
+        recommended: false,
+        severity: Severity::Warning,
+    },
+    LinterRuleMetadata {
+        group: "style",
+        name: "creatingEnum",
+        recommended: false,
+        severity: Severity::Warning,
+    },
+    LinterRuleMetadata {
+        group: "safety",
+        name: "disallowUniqueConstraint",
+        recommended: false,
+        severity: Severity::Error,
+    },
+    LinterRuleMetadata {
+        group: "typecheck",
+        name: "functionArgumentMismatch",
+        recommended: true,
+        severity: Severity::Error,
+    },
+    LinterRuleMetadata {
+        group: "typecheck",
+        name: "functionReturnTypeMismatch",
+        recommended: true,
+        severity: Severity::Error,
+    },
+    LinterRuleMetadata {
+        group: "typecheck",
+        name: "insertColumnMismatch",
+        recommended: true,
+        severity: Severity::Error,
+    },
+    LinterRuleMetadata {
+        group: "typecheck",
+        name: "invalidCast",
+        recommended: true,
+        severity: Severity::Error,
+    },
+    LinterRuleMetadata {
+        group: "correctness",
+        name: "invalidDropTypeSignature",
+        recommended: true,
+        severity: Severity::Error,
+    },
+    LinterRuleMetadata {
+        group: "safety",
+        name: "lockTimeoutWarning",
+        recommended: true,
+        severity: Severity::Warning,
+    },
+    LinterRuleMetadata {
+        group: "typecheck",
+        name: "missingFromClauseEntry",
+        recommended: true,
+        severity: Severity::Error,
+    },
+    LinterRuleMetadata {
+        group: "safety",
+        name: "multipleAlterTable",
+        recommended: true,
+        severity: Severity::Warning,
+    },
+    LinterRuleMetadata {
+        group: "typecheck",
+        name: "operatorTypeMismatch",
+        recommended: true,
+        severity: Severity::Error,
+    },
+    LinterRuleMetadata {
+        group: "style",
+        name: "preferBigInt",
+        recommended: false,
+        severity: Severity::Warning,
+    },
+    LinterRuleMetadata {
+        group: "style",
+        name: "preferIdentity",
+        recommended: false,
+        severity: Severity::Warning,
+    },
+    LinterRuleMetadata {
+        group: "style",
+        name: "preferJsonb",
+        recommended: false,
+        severity: Severity::Warning,
+    },
+    LinterRuleMetadata {
+        group: "safety",
+        name: "preferRobustStmts",
+        recommended: false,
+        severity: Severity::Warning,
+    },
+    LinterRuleMetadata {
+        group: "style",
+        name: "preferTextField",
+        recommended: false,
+        severity: Severity::Warning,
+    },
+    LinterRuleMetadata {
+        group: "style",
+        name: "preferTimestamptz",
+        recommended: false,
+        severity: Severity::Warning,
+    },
+    LinterRuleMetadata {
+        group: "destructive",
+        name: "renamingColumn",
+        recommended: false,
+        severity: Severity::Warning,
+    },
+    LinterRuleMetadata {
+        group: "destructive",
+        name: "renamingTable",
+        recommended: false,
+        severity: Severity::Warning,
+    },
+    LinterRuleMetadata {
+        group: "safety",
+        name: "requireConcurrentDetachPartition",
+        recommended: true,
+        severity: Severity::Warning,
+    },
+    LinterRuleMetadata {
+        group: "safety",
+        name: "requireConcurrentIndexCreation",
+        recommended: false,
+        severity: Severity::Warning,
+    },
+    LinterRuleMetadata {
+        group: "safety",
+        name: "requireConcurrentIndexDeletion",
+        recommended: false,
+        severity: Severity::Warning,
+    },
+    LinterRuleMetadata {
+        group: "safety",
+        name: "requireConcurrentRefreshMatview",
+        recommended: true,
+        severity: Severity::Warning,
+    },
+    LinterRuleMetadata {
+        group: "safety",
+        name: "requireConcurrentReindex",
+        recommended: true,
+        severity: Severity::Warning,
+    },
+    LinterRuleMetadata {
+        group: "safety",
+        name: "requireIdleInTransactionTimeout",
+        recommended: false,
+        severity: Severity::Warning,
+    },
+    LinterRuleMetadata {
+        group: "safety",
+        name: "requireSeparateConstraintValidation",
+        recommended: true,
+        severity: Severity::Error,
+    },
+    LinterRuleMetadata {
+        group: "safety",
+        name: "requireStatementTimeout",
+        recommended: false,
+        severity: Severity::Warning,
+    },
+    LinterRuleMetadata {
+        group: "safety",
+        name: "runningStatementWhileHoldingAccessExclusive",
+        recommended: true,
+        severity: Severity::Warning,
+    },
+    LinterRuleMetadata {
+        group: "correctness",
+        name: "transactionNesting",
+        recommended: false,
+        severity: Severity::Warning,
+    },
+    LinterRuleMetadata {
+        group: "typecheck",
+        name: "unknownColumn",
+        recommended: true,
+        severity: Severity::Error,
+    },
+    LinterRuleMetadata {
+        group: "typecheck",
+        name: "unknownFunction",
+        recommended: true,
+        severity: Severity::Error,
+    },
+    LinterRuleMetadata {
+        group: "typecheck",
+        name: "unknownRelation",
+        recommended: true,
+        severity: Severity::Error,
+    },
+    LinterRuleMetadata {
+        group: "typecheck",
+        name: "unknownSchema",
+        recommended: true,
+        severity: Severity::Error,
+    },
+    LinterRuleMetadata {
+        group: "typecheck",
+        name: "unknownType",
+        recommended: true,
+        severity: Severity::Error,
+    },
+];
+#[doc = r" All linter groups."]
+pub const LINTER_GROUPS: &[&str] = &[
+    "correctness",
+    "safety",
+    "destructive",
+    "style",
+    "typecheck",
+    "nursery",
+];
 #[derive(Clone, Debug, Default, Deserialize, Eq, Merge, PartialEq, Serialize)]
 #[cfg_attr(feature = "schema", derive(JsonSchema))]
 #[cfg_attr(feature = "schema", schemars(rename = "LinterRules"))]
@@ -53,95 +415,6 @@ pub struct Rules {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub recommended: Option<bool>,
     #[doc = r" It enables ALL rules. The rules that belong to `nursery` won't be enabled."]
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub all: Option<bool>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub safety: Option<Safety>,
-}
-impl Rules {
-    #[doc = r" Checks if the code coming from [pgls_diagnostics::Diagnostic] corresponds to a rule."]
-    #[doc = r" Usually the code is built like {group}/{rule_name}"]
-    pub fn has_rule(group: RuleGroup, rule_name: &str) -> Option<&'static str> {
-        match group {
-            RuleGroup::Safety => Safety::has_rule(rule_name),
-        }
-    }
-    #[doc = r" Given a category coming from [Diagnostic](pgls_diagnostics::Diagnostic), this function returns"]
-    #[doc = r" the [Severity](pgls_diagnostics::Severity) associated to the rule, if the configuration changed it."]
-    #[doc = r" If the severity is off or not set, then the function returns the default severity of the rule,"]
-    #[doc = r" which is configured at the rule definition."]
-    #[doc = r" The function can return `None` if the rule is not properly configured."]
-    pub fn get_severity_from_code(&self, category: &Category) -> Option<Severity> {
-        let mut split_code = category.name().split('/');
-        let _category_prefix = split_code.next();
-        debug_assert_eq!(_category_prefix, Some("lint"));
-        let group = <RuleGroup as std::str::FromStr>::from_str(split_code.next()?).ok()?;
-        let rule_name = split_code.next()?;
-        let rule_name = Self::has_rule(group, rule_name)?;
-        let severity = match group {
-            RuleGroup::Safety => self
-                .safety
-                .as_ref()
-                .and_then(|group| group.get_rule_configuration(rule_name))
-                .filter(|(level, _)| !matches!(level, RulePlainConfiguration::Off))
-                .map_or_else(|| Safety::severity(rule_name), |(level, _)| level.into()),
-        };
-        Some(severity)
-    }
-    #[doc = r" Ensure that `recommended` is set to `true` or implied."]
-    pub fn set_recommended(&mut self) {
-        if self.all != Some(true) && self.recommended == Some(false) {
-            self.recommended = Some(true)
-        }
-        if let Some(group) = &mut self.safety {
-            group.recommended = None;
-        }
-    }
-    pub(crate) const fn is_recommended_false(&self) -> bool {
-        matches!(self.recommended, Some(false))
-    }
-    pub(crate) const fn is_all_true(&self) -> bool {
-        matches!(self.all, Some(true))
-    }
-    #[doc = r" It returns the enabled rules by default."]
-    #[doc = r""]
-    #[doc = r" The enabled rules are calculated from the difference with the disabled rules."]
-    pub fn as_enabled_rules(&self) -> FxHashSet<RuleFilter<'static>> {
-        let mut enabled_rules = FxHashSet::default();
-        let mut disabled_rules = FxHashSet::default();
-        if let Some(group) = self.safety.as_ref() {
-            group.collect_preset_rules(
-                self.is_all_true(),
-                !self.is_recommended_false(),
-                &mut enabled_rules,
-            );
-            enabled_rules.extend(&group.get_enabled_rules());
-            disabled_rules.extend(&group.get_disabled_rules());
-        } else if self.is_all_true() {
-            enabled_rules.extend(Safety::all_rules_as_filters());
-        } else if !self.is_recommended_false() {
-            enabled_rules.extend(Safety::recommended_rules_as_filters());
-        }
-        enabled_rules.difference(&disabled_rules).copied().collect()
-    }
-    #[doc = r" It returns the disabled rules by configuration."]
-    pub fn as_disabled_rules(&self) -> FxHashSet<RuleFilter<'static>> {
-        let mut disabled_rules = FxHashSet::default();
-        if let Some(group) = self.safety.as_ref() {
-            disabled_rules.extend(&group.get_disabled_rules());
-        }
-        disabled_rules
-    }
-}
-#[derive(Clone, Debug, Default, Deserialize, Eq, Merge, PartialEq, Serialize)]
-#[cfg_attr(feature = "schema", derive(JsonSchema))]
-#[serde(rename_all = "camelCase", default, deny_unknown_fields)]
-#[doc = r" A list of rules that belong to this group"]
-pub struct Safety {
-    #[doc = r" It enables the recommended rules for this group"]
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub recommended: Option<bool>,
-    #[doc = r" It enables ALL rules for this group."]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub all: Option<bool>,
     #[doc = "Adding a column with a SERIAL type or GENERATED ALWAYS AS ... STORED causes a full table rewrite."]
@@ -167,6 +440,13 @@ pub struct Safety {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub adding_required_field:
         Option<RuleConfiguration<pgls_analyser::options::AddingRequiredField>>,
+    #[doc = "An unqualified column name matches columns of more than one relation in scope."]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ambiguous_column: Option<RuleConfiguration<pgls_analyser::options::AmbiguousColumn>>,
+    #[doc = "An expression assigned to a column cannot be coerced to that column's type. The rule needs a database connection to load the table and type catalog."]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub assignment_type_mismatch:
+        Option<RuleConfiguration<pgls_analyser::options::AssignmentTypeMismatch>>,
     #[doc = "Adding an exclusion constraint acquires an ACCESS EXCLUSIVE lock."]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub avoid_adding_exclusion_constraint:
@@ -235,10 +515,6 @@ pub struct Safety {
     #[doc = "Changing a column type may require a table rewrite and break existing clients."]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub changing_column_type: Option<RuleConfiguration<pgls_analyser::options::ChangingColumnType>>,
-    #[doc = "REFRESH MATERIALIZED VIEW CONCURRENTLY still acquires an EXCLUSIVE lock."]
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub concurrent_refresh_matview_lock:
-        Option<RuleConfiguration<pgls_analyser::options::ConcurrentRefreshMatviewLock>>,
     #[doc = "Adding constraints without NOT VALID blocks all reads and writes."]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub constraint_missing_not_valid:
@@ -250,23 +526,42 @@ pub struct Safety {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub disallow_unique_constraint:
         Option<RuleConfiguration<pgls_analyser::options::DisallowUniqueConstraint>>,
+    #[doc = "A function name and argument count exist, but its argument types do not select exactly one overload. The rule needs a database connection to load the function and type catalog."]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub function_argument_mismatch:
+        Option<RuleConfiguration<pgls_analyser::options::FunctionArgumentMismatch>>,
+    #[doc = "The final statement of a SQL function doesn't return what the function is declared to return."]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub function_return_type_mismatch:
+        Option<RuleConfiguration<pgls_analyser::options::FunctionReturnTypeMismatch>>,
+    #[doc = "An INSERT has a different number of target columns than values."]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub insert_column_mismatch:
+        Option<RuleConfiguration<pgls_analyser::options::InsertColumnMismatch>>,
+    #[doc = "An explicit cast is not permitted between the source and target types. The rule needs a database connection to load the type and cast catalog."]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub invalid_cast: Option<RuleConfiguration<pgls_analyser::options::InvalidCast>>,
+    #[doc = "DROP TYPE and DROP DOMAIN don't take a parameter list."]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub invalid_drop_type_signature:
+        Option<RuleConfiguration<pgls_analyser::options::InvalidDropTypeSignature>>,
     #[doc = "Taking a dangerous lock without setting a lock timeout can cause indefinite blocking."]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub lock_timeout_warning: Option<RuleConfiguration<pgls_analyser::options::LockTimeoutWarning>>,
+    #[doc = "A column is qualified with a name that is not in the FROM clause."]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub missing_from_clause_entry:
+        Option<RuleConfiguration<pgls_analyser::options::MissingFromClauseEntry>>,
     #[doc = "Multiple ALTER TABLE statements on the same table should be combined into a single statement."]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub multiple_alter_table: Option<RuleConfiguration<pgls_analyser::options::MultipleAlterTable>>,
+    #[doc = "An operator exists by name but cannot be resolved for the operand types, or has multiple equally suitable candidates."]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub operator_type_mismatch:
+        Option<RuleConfiguration<pgls_analyser::options::OperatorTypeMismatch>>,
     #[doc = "Prefer BIGINT over smaller integer types."]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub prefer_big_int: Option<RuleConfiguration<pgls_analyser::options::PreferBigInt>>,
-    #[doc = "Prefer BIGINT over INT/INTEGER types."]
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub prefer_bigint_over_int:
-        Option<RuleConfiguration<pgls_analyser::options::PreferBigintOverInt>>,
-    #[doc = "Prefer BIGINT over SMALLINT types."]
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub prefer_bigint_over_smallint:
-        Option<RuleConfiguration<pgls_analyser::options::PreferBigintOverSmallint>>,
     #[doc = "Prefer using IDENTITY columns over serial columns."]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub prefer_identity: Option<RuleConfiguration<pgls_analyser::options::PreferIdentity>>,
@@ -328,1006 +623,1204 @@ pub struct Safety {
     #[doc = "Detects problematic transaction nesting that could lead to unexpected behavior."]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub transaction_nesting: Option<RuleConfiguration<pgls_analyser::options::TransactionNesting>>,
+    #[doc = "A column does not exist on the relation or record it is taken from."]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub unknown_column: Option<RuleConfiguration<pgls_analyser::options::UnknownColumn>>,
+    #[doc = "No function with this name accepts this number of arguments."]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub unknown_function: Option<RuleConfiguration<pgls_analyser::options::UnknownFunction>>,
+    #[doc = "A table, view, or materialized view does not exist."]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub unknown_relation: Option<RuleConfiguration<pgls_analyser::options::UnknownRelation>>,
+    #[doc = "A schema does not exist."]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub unknown_schema: Option<RuleConfiguration<pgls_analyser::options::UnknownSchema>>,
+    #[doc = "A type does not exist."]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub unknown_type: Option<RuleConfiguration<pgls_analyser::options::UnknownType>>,
+    #[doc = r" Deprecated: configure rules directly in `linter.rules`, and groups in"]
+    #[doc = r" `linter.groups`."]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[deprecated = "Configure rules directly in `linter.rules`, and groups in `linter.groups`."]
+    pub safety: Option<LegacySafetyRules>,
 }
-impl Safety {
-    const GROUP_NAME: &'static str = "safety";
-    pub(crate) const GROUP_RULES: &'static [&'static str] = &[
-        "addSerialColumn",
-        "addingFieldWithDefault",
-        "addingForeignKeyConstraint",
-        "addingNotNullField",
-        "addingPrimaryKeyConstraint",
-        "addingRequiredField",
-        "avoidAddingExclusionConstraint",
-        "avoidAlterEnumAddValue",
-        "avoidAttachingPartition",
-        "avoidCreateTrigger",
-        "avoidEnableDisableTrigger",
-        "avoidWideLockWindow",
-        "banCharField",
-        "banConcurrentIndexCreationInTransaction",
-        "banDeleteWithoutWhere",
-        "banDropColumn",
-        "banDropDatabase",
-        "banDropNotNull",
-        "banDropSchema",
-        "banDropTable",
-        "banDropTrigger",
-        "banTruncate",
-        "banTruncateCascade",
-        "banUpdateWithoutWhere",
-        "banVacuumFull",
-        "changingColumnType",
-        "concurrentRefreshMatviewLock",
-        "constraintMissingNotValid",
-        "creatingEnum",
-        "disallowUniqueConstraint",
-        "lockTimeoutWarning",
-        "multipleAlterTable",
-        "preferBigInt",
-        "preferBigintOverInt",
-        "preferBigintOverSmallint",
-        "preferIdentity",
-        "preferJsonb",
-        "preferRobustStmts",
-        "preferTextField",
-        "preferTimestamptz",
-        "renamingColumn",
-        "renamingTable",
-        "requireConcurrentDetachPartition",
-        "requireConcurrentIndexCreation",
-        "requireConcurrentIndexDeletion",
-        "requireConcurrentRefreshMatview",
-        "requireConcurrentReindex",
-        "requireIdleInTransactionTimeout",
-        "requireSeparateConstraintValidation",
-        "requireStatementTimeout",
-        "runningStatementWhileHoldingAccessExclusive",
-        "transactionNesting",
-    ];
-    const RECOMMENDED_RULES_AS_FILTERS: &'static [RuleFilter<'static>] = &[
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[0]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[1]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[2]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[3]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[4]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[6]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[8]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[11]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[13]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[14]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[15]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[17]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[18]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[19]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[21]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[23]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[24]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[30]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[31]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[42]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[45]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[46]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[48]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[50]),
-    ];
-    const ALL_RULES_AS_FILTERS: &'static [RuleFilter<'static>] = &[
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[0]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[1]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[2]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[3]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[4]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[5]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[6]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[7]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[8]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[9]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[10]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[11]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[12]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[13]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[14]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[15]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[16]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[17]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[18]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[19]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[20]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[21]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[22]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[23]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[24]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[25]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[26]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[27]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[28]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[29]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[30]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[31]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[32]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[33]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[34]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[35]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[36]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[37]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[38]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[39]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[40]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[41]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[42]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[43]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[44]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[45]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[46]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[47]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[48]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[49]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[50]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[51]),
-    ];
-    #[doc = r" Retrieves the recommended rules"]
-    pub(crate) fn is_recommended_true(&self) -> bool {
-        matches!(self.recommended, Some(true))
-    }
-    pub(crate) fn is_recommended_unset(&self) -> bool {
-        self.recommended.is_none()
-    }
-    pub(crate) fn is_all_true(&self) -> bool {
-        matches!(self.all, Some(true))
-    }
-    pub(crate) fn is_all_unset(&self) -> bool {
-        self.all.is_none()
-    }
-    pub(crate) fn get_enabled_rules(&self) -> FxHashSet<RuleFilter<'static>> {
-        let mut index_set = FxHashSet::default();
-        if let Some(rule) = self.add_serial_column.as_ref()
-            && rule.is_enabled()
-        {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[0]));
-        }
-        if let Some(rule) = self.adding_field_with_default.as_ref()
-            && rule.is_enabled()
-        {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[1]));
-        }
-        if let Some(rule) = self.adding_foreign_key_constraint.as_ref()
-            && rule.is_enabled()
-        {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[2]));
-        }
-        if let Some(rule) = self.adding_not_null_field.as_ref()
-            && rule.is_enabled()
-        {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[3]));
-        }
-        if let Some(rule) = self.adding_primary_key_constraint.as_ref()
-            && rule.is_enabled()
-        {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[4]));
-        }
-        if let Some(rule) = self.adding_required_field.as_ref()
-            && rule.is_enabled()
-        {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[5]));
-        }
-        if let Some(rule) = self.avoid_adding_exclusion_constraint.as_ref()
-            && rule.is_enabled()
-        {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[6]));
-        }
-        if let Some(rule) = self.avoid_alter_enum_add_value.as_ref()
-            && rule.is_enabled()
-        {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[7]));
-        }
-        if let Some(rule) = self.avoid_attaching_partition.as_ref()
-            && rule.is_enabled()
-        {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[8]));
-        }
-        if let Some(rule) = self.avoid_create_trigger.as_ref()
-            && rule.is_enabled()
-        {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[9]));
-        }
-        if let Some(rule) = self.avoid_enable_disable_trigger.as_ref()
-            && rule.is_enabled()
-        {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[10]));
-        }
-        if let Some(rule) = self.avoid_wide_lock_window.as_ref()
-            && rule.is_enabled()
-        {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[11]));
-        }
-        if let Some(rule) = self.ban_char_field.as_ref()
-            && rule.is_enabled()
-        {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[12]));
-        }
-        if let Some(rule) = self.ban_concurrent_index_creation_in_transaction.as_ref()
-            && rule.is_enabled()
-        {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[13]));
-        }
-        if let Some(rule) = self.ban_delete_without_where.as_ref()
-            && rule.is_enabled()
-        {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[14]));
-        }
-        if let Some(rule) = self.ban_drop_column.as_ref()
-            && rule.is_enabled()
-        {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[15]));
-        }
-        if let Some(rule) = self.ban_drop_database.as_ref()
-            && rule.is_enabled()
-        {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[16]));
-        }
-        if let Some(rule) = self.ban_drop_not_null.as_ref()
-            && rule.is_enabled()
-        {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[17]));
-        }
-        if let Some(rule) = self.ban_drop_schema.as_ref()
-            && rule.is_enabled()
-        {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[18]));
-        }
-        if let Some(rule) = self.ban_drop_table.as_ref()
-            && rule.is_enabled()
-        {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[19]));
-        }
-        if let Some(rule) = self.ban_drop_trigger.as_ref()
-            && rule.is_enabled()
-        {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[20]));
-        }
-        if let Some(rule) = self.ban_truncate.as_ref()
-            && rule.is_enabled()
-        {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[21]));
-        }
-        if let Some(rule) = self.ban_truncate_cascade.as_ref()
-            && rule.is_enabled()
-        {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[22]));
-        }
-        if let Some(rule) = self.ban_update_without_where.as_ref()
-            && rule.is_enabled()
-        {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[23]));
-        }
-        if let Some(rule) = self.ban_vacuum_full.as_ref()
-            && rule.is_enabled()
-        {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[24]));
-        }
-        if let Some(rule) = self.changing_column_type.as_ref()
-            && rule.is_enabled()
-        {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[25]));
-        }
-        if let Some(rule) = self.concurrent_refresh_matview_lock.as_ref()
-            && rule.is_enabled()
-        {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[26]));
-        }
-        if let Some(rule) = self.constraint_missing_not_valid.as_ref()
-            && rule.is_enabled()
-        {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[27]));
-        }
-        if let Some(rule) = self.creating_enum.as_ref()
-            && rule.is_enabled()
-        {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[28]));
-        }
-        if let Some(rule) = self.disallow_unique_constraint.as_ref()
-            && rule.is_enabled()
-        {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[29]));
-        }
-        if let Some(rule) = self.lock_timeout_warning.as_ref()
-            && rule.is_enabled()
-        {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[30]));
-        }
-        if let Some(rule) = self.multiple_alter_table.as_ref()
-            && rule.is_enabled()
-        {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[31]));
-        }
-        if let Some(rule) = self.prefer_big_int.as_ref()
-            && rule.is_enabled()
-        {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[32]));
-        }
-        if let Some(rule) = self.prefer_bigint_over_int.as_ref()
-            && rule.is_enabled()
-        {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[33]));
-        }
-        if let Some(rule) = self.prefer_bigint_over_smallint.as_ref()
-            && rule.is_enabled()
-        {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[34]));
-        }
-        if let Some(rule) = self.prefer_identity.as_ref()
-            && rule.is_enabled()
-        {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[35]));
-        }
-        if let Some(rule) = self.prefer_jsonb.as_ref()
-            && rule.is_enabled()
-        {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[36]));
-        }
-        if let Some(rule) = self.prefer_robust_stmts.as_ref()
-            && rule.is_enabled()
-        {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[37]));
-        }
-        if let Some(rule) = self.prefer_text_field.as_ref()
-            && rule.is_enabled()
-        {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[38]));
-        }
-        if let Some(rule) = self.prefer_timestamptz.as_ref()
-            && rule.is_enabled()
-        {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[39]));
-        }
-        if let Some(rule) = self.renaming_column.as_ref()
-            && rule.is_enabled()
-        {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[40]));
-        }
-        if let Some(rule) = self.renaming_table.as_ref()
-            && rule.is_enabled()
-        {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[41]));
-        }
-        if let Some(rule) = self.require_concurrent_detach_partition.as_ref()
-            && rule.is_enabled()
-        {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[42]));
-        }
-        if let Some(rule) = self.require_concurrent_index_creation.as_ref()
-            && rule.is_enabled()
-        {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[43]));
-        }
-        if let Some(rule) = self.require_concurrent_index_deletion.as_ref()
-            && rule.is_enabled()
-        {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[44]));
-        }
-        if let Some(rule) = self.require_concurrent_refresh_matview.as_ref()
-            && rule.is_enabled()
-        {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[45]));
-        }
-        if let Some(rule) = self.require_concurrent_reindex.as_ref()
-            && rule.is_enabled()
-        {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[46]));
-        }
-        if let Some(rule) = self.require_idle_in_transaction_timeout.as_ref()
-            && rule.is_enabled()
-        {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[47]));
-        }
-        if let Some(rule) = self.require_separate_constraint_validation.as_ref()
-            && rule.is_enabled()
-        {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[48]));
-        }
-        if let Some(rule) = self.require_statement_timeout.as_ref()
-            && rule.is_enabled()
-        {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[49]));
-        }
-        if let Some(rule) = self
-            .running_statement_while_holding_access_exclusive
-            .as_ref()
-            && rule.is_enabled()
-        {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[50]));
-        }
-        if let Some(rule) = self.transaction_nesting.as_ref()
-            && rule.is_enabled()
-        {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[51]));
-        }
-        index_set
-    }
-    pub(crate) fn get_disabled_rules(&self) -> FxHashSet<RuleFilter<'static>> {
-        let mut index_set = FxHashSet::default();
-        if let Some(rule) = self.add_serial_column.as_ref()
-            && rule.is_disabled()
-        {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[0]));
-        }
-        if let Some(rule) = self.adding_field_with_default.as_ref()
-            && rule.is_disabled()
-        {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[1]));
-        }
-        if let Some(rule) = self.adding_foreign_key_constraint.as_ref()
-            && rule.is_disabled()
-        {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[2]));
-        }
-        if let Some(rule) = self.adding_not_null_field.as_ref()
-            && rule.is_disabled()
-        {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[3]));
-        }
-        if let Some(rule) = self.adding_primary_key_constraint.as_ref()
-            && rule.is_disabled()
-        {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[4]));
-        }
-        if let Some(rule) = self.adding_required_field.as_ref()
-            && rule.is_disabled()
-        {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[5]));
-        }
-        if let Some(rule) = self.avoid_adding_exclusion_constraint.as_ref()
-            && rule.is_disabled()
-        {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[6]));
-        }
-        if let Some(rule) = self.avoid_alter_enum_add_value.as_ref()
-            && rule.is_disabled()
-        {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[7]));
-        }
-        if let Some(rule) = self.avoid_attaching_partition.as_ref()
-            && rule.is_disabled()
-        {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[8]));
-        }
-        if let Some(rule) = self.avoid_create_trigger.as_ref()
-            && rule.is_disabled()
-        {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[9]));
-        }
-        if let Some(rule) = self.avoid_enable_disable_trigger.as_ref()
-            && rule.is_disabled()
-        {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[10]));
-        }
-        if let Some(rule) = self.avoid_wide_lock_window.as_ref()
-            && rule.is_disabled()
-        {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[11]));
-        }
-        if let Some(rule) = self.ban_char_field.as_ref()
-            && rule.is_disabled()
-        {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[12]));
-        }
-        if let Some(rule) = self.ban_concurrent_index_creation_in_transaction.as_ref()
-            && rule.is_disabled()
-        {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[13]));
-        }
-        if let Some(rule) = self.ban_delete_without_where.as_ref()
-            && rule.is_disabled()
-        {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[14]));
-        }
-        if let Some(rule) = self.ban_drop_column.as_ref()
-            && rule.is_disabled()
-        {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[15]));
-        }
-        if let Some(rule) = self.ban_drop_database.as_ref()
-            && rule.is_disabled()
-        {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[16]));
-        }
-        if let Some(rule) = self.ban_drop_not_null.as_ref()
-            && rule.is_disabled()
-        {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[17]));
-        }
-        if let Some(rule) = self.ban_drop_schema.as_ref()
-            && rule.is_disabled()
-        {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[18]));
-        }
-        if let Some(rule) = self.ban_drop_table.as_ref()
-            && rule.is_disabled()
-        {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[19]));
-        }
-        if let Some(rule) = self.ban_drop_trigger.as_ref()
-            && rule.is_disabled()
-        {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[20]));
-        }
-        if let Some(rule) = self.ban_truncate.as_ref()
-            && rule.is_disabled()
-        {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[21]));
-        }
-        if let Some(rule) = self.ban_truncate_cascade.as_ref()
-            && rule.is_disabled()
-        {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[22]));
-        }
-        if let Some(rule) = self.ban_update_without_where.as_ref()
-            && rule.is_disabled()
-        {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[23]));
-        }
-        if let Some(rule) = self.ban_vacuum_full.as_ref()
-            && rule.is_disabled()
-        {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[24]));
-        }
-        if let Some(rule) = self.changing_column_type.as_ref()
-            && rule.is_disabled()
-        {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[25]));
-        }
-        if let Some(rule) = self.concurrent_refresh_matview_lock.as_ref()
-            && rule.is_disabled()
-        {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[26]));
-        }
-        if let Some(rule) = self.constraint_missing_not_valid.as_ref()
-            && rule.is_disabled()
-        {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[27]));
-        }
-        if let Some(rule) = self.creating_enum.as_ref()
-            && rule.is_disabled()
-        {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[28]));
-        }
-        if let Some(rule) = self.disallow_unique_constraint.as_ref()
-            && rule.is_disabled()
-        {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[29]));
-        }
-        if let Some(rule) = self.lock_timeout_warning.as_ref()
-            && rule.is_disabled()
-        {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[30]));
-        }
-        if let Some(rule) = self.multiple_alter_table.as_ref()
-            && rule.is_disabled()
-        {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[31]));
-        }
-        if let Some(rule) = self.prefer_big_int.as_ref()
-            && rule.is_disabled()
-        {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[32]));
-        }
-        if let Some(rule) = self.prefer_bigint_over_int.as_ref()
-            && rule.is_disabled()
-        {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[33]));
-        }
-        if let Some(rule) = self.prefer_bigint_over_smallint.as_ref()
-            && rule.is_disabled()
-        {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[34]));
-        }
-        if let Some(rule) = self.prefer_identity.as_ref()
-            && rule.is_disabled()
-        {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[35]));
-        }
-        if let Some(rule) = self.prefer_jsonb.as_ref()
-            && rule.is_disabled()
-        {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[36]));
-        }
-        if let Some(rule) = self.prefer_robust_stmts.as_ref()
-            && rule.is_disabled()
-        {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[37]));
-        }
-        if let Some(rule) = self.prefer_text_field.as_ref()
-            && rule.is_disabled()
-        {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[38]));
-        }
-        if let Some(rule) = self.prefer_timestamptz.as_ref()
-            && rule.is_disabled()
-        {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[39]));
-        }
-        if let Some(rule) = self.renaming_column.as_ref()
-            && rule.is_disabled()
-        {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[40]));
-        }
-        if let Some(rule) = self.renaming_table.as_ref()
-            && rule.is_disabled()
-        {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[41]));
-        }
-        if let Some(rule) = self.require_concurrent_detach_partition.as_ref()
-            && rule.is_disabled()
-        {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[42]));
-        }
-        if let Some(rule) = self.require_concurrent_index_creation.as_ref()
-            && rule.is_disabled()
-        {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[43]));
-        }
-        if let Some(rule) = self.require_concurrent_index_deletion.as_ref()
-            && rule.is_disabled()
-        {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[44]));
-        }
-        if let Some(rule) = self.require_concurrent_refresh_matview.as_ref()
-            && rule.is_disabled()
-        {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[45]));
-        }
-        if let Some(rule) = self.require_concurrent_reindex.as_ref()
-            && rule.is_disabled()
-        {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[46]));
-        }
-        if let Some(rule) = self.require_idle_in_transaction_timeout.as_ref()
-            && rule.is_disabled()
-        {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[47]));
-        }
-        if let Some(rule) = self.require_separate_constraint_validation.as_ref()
-            && rule.is_disabled()
-        {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[48]));
-        }
-        if let Some(rule) = self.require_statement_timeout.as_ref()
-            && rule.is_disabled()
-        {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[49]));
-        }
-        if let Some(rule) = self
-            .running_statement_while_holding_access_exclusive
-            .as_ref()
-            && rule.is_disabled()
-        {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[50]));
-        }
-        if let Some(rule) = self.transaction_nesting.as_ref()
-            && rule.is_disabled()
-        {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[51]));
-        }
-        index_set
-    }
-    #[doc = r" Checks if, given a rule name, matches one of the rules contained in this category"]
-    pub(crate) fn has_rule(rule_name: &str) -> Option<&'static str> {
-        Some(Self::GROUP_RULES[Self::GROUP_RULES.binary_search(&rule_name).ok()?])
-    }
-    pub(crate) fn recommended_rules_as_filters() -> &'static [RuleFilter<'static>] {
-        Self::RECOMMENDED_RULES_AS_FILTERS
-    }
-    pub(crate) fn all_rules_as_filters() -> &'static [RuleFilter<'static>] {
-        Self::ALL_RULES_AS_FILTERS
-    }
-    #[doc = r" Select preset rules"]
-    pub(crate) fn collect_preset_rules(
-        &self,
-        parent_is_all: bool,
-        parent_is_recommended: bool,
-        enabled_rules: &mut FxHashSet<RuleFilter<'static>>,
-    ) {
-        if self.is_all_true() || self.is_all_unset() && parent_is_all {
-            enabled_rules.extend(Self::all_rules_as_filters());
-        } else if self.is_recommended_true()
-            || self.is_recommended_unset() && self.is_all_unset() && parent_is_recommended
-        {
-            enabled_rules.extend(Self::recommended_rules_as_filters());
-        }
-    }
-    pub(crate) fn severity(rule_name: &str) -> Severity {
-        match rule_name {
-            "addSerialColumn" => Severity::Warning,
-            "addingFieldWithDefault" => Severity::Warning,
-            "addingForeignKeyConstraint" => Severity::Warning,
-            "addingNotNullField" => Severity::Warning,
-            "addingPrimaryKeyConstraint" => Severity::Warning,
-            "addingRequiredField" => Severity::Error,
-            "avoidAddingExclusionConstraint" => Severity::Warning,
-            "avoidAlterEnumAddValue" => Severity::Warning,
-            "avoidAttachingPartition" => Severity::Warning,
-            "avoidCreateTrigger" => Severity::Warning,
-            "avoidEnableDisableTrigger" => Severity::Warning,
-            "avoidWideLockWindow" => Severity::Warning,
-            "banCharField" => Severity::Warning,
-            "banConcurrentIndexCreationInTransaction" => Severity::Error,
-            "banDeleteWithoutWhere" => Severity::Warning,
-            "banDropColumn" => Severity::Warning,
-            "banDropDatabase" => Severity::Warning,
-            "banDropNotNull" => Severity::Warning,
-            "banDropSchema" => Severity::Error,
-            "banDropTable" => Severity::Warning,
-            "banDropTrigger" => Severity::Warning,
-            "banTruncate" => Severity::Error,
-            "banTruncateCascade" => Severity::Error,
-            "banUpdateWithoutWhere" => Severity::Warning,
-            "banVacuumFull" => Severity::Error,
-            "changingColumnType" => Severity::Warning,
-            "concurrentRefreshMatviewLock" => Severity::Warning,
-            "constraintMissingNotValid" => Severity::Warning,
-            "creatingEnum" => Severity::Warning,
-            "disallowUniqueConstraint" => Severity::Error,
-            "lockTimeoutWarning" => Severity::Warning,
-            "multipleAlterTable" => Severity::Warning,
-            "preferBigInt" => Severity::Warning,
-            "preferBigintOverInt" => Severity::Warning,
-            "preferBigintOverSmallint" => Severity::Warning,
-            "preferIdentity" => Severity::Warning,
-            "preferJsonb" => Severity::Warning,
-            "preferRobustStmts" => Severity::Warning,
-            "preferTextField" => Severity::Warning,
-            "preferTimestamptz" => Severity::Warning,
-            "renamingColumn" => Severity::Warning,
-            "renamingTable" => Severity::Warning,
-            "requireConcurrentDetachPartition" => Severity::Warning,
-            "requireConcurrentIndexCreation" => Severity::Warning,
-            "requireConcurrentIndexDeletion" => Severity::Warning,
-            "requireConcurrentRefreshMatview" => Severity::Warning,
-            "requireConcurrentReindex" => Severity::Warning,
-            "requireIdleInTransactionTimeout" => Severity::Warning,
-            "requireSeparateConstraintValidation" => Severity::Error,
-            "requireStatementTimeout" => Severity::Warning,
-            "runningStatementWhileHoldingAccessExclusive" => Severity::Warning,
-            "transactionNesting" => Severity::Warning,
-            _ => unreachable!(),
-        }
-    }
-    pub(crate) fn get_rule_configuration(
-        &self,
-        rule_name: &str,
-    ) -> Option<(RulePlainConfiguration, Option<RuleOptions>)> {
-        match rule_name {
+impl Rules {
+    #[doc = r" The level configured for a rule, if any."]
+    pub fn rule_level(&self, rule: &str) -> Option<RulePlainConfiguration> {
+        match rule {
             "addSerialColumn" => self
                 .add_serial_column
                 .as_ref()
-                .map(|conf| (conf.level(), conf.get_options())),
+                .map(RuleConfiguration::level),
             "addingFieldWithDefault" => self
                 .adding_field_with_default
                 .as_ref()
-                .map(|conf| (conf.level(), conf.get_options())),
+                .map(RuleConfiguration::level),
             "addingForeignKeyConstraint" => self
                 .adding_foreign_key_constraint
                 .as_ref()
-                .map(|conf| (conf.level(), conf.get_options())),
+                .map(RuleConfiguration::level),
             "addingNotNullField" => self
                 .adding_not_null_field
                 .as_ref()
-                .map(|conf| (conf.level(), conf.get_options())),
+                .map(RuleConfiguration::level),
             "addingPrimaryKeyConstraint" => self
                 .adding_primary_key_constraint
                 .as_ref()
-                .map(|conf| (conf.level(), conf.get_options())),
+                .map(RuleConfiguration::level),
             "addingRequiredField" => self
                 .adding_required_field
                 .as_ref()
-                .map(|conf| (conf.level(), conf.get_options())),
+                .map(RuleConfiguration::level),
+            "ambiguousColumn" => self.ambiguous_column.as_ref().map(RuleConfiguration::level),
+            "assignmentTypeMismatch" => self
+                .assignment_type_mismatch
+                .as_ref()
+                .map(RuleConfiguration::level),
             "avoidAddingExclusionConstraint" => self
                 .avoid_adding_exclusion_constraint
                 .as_ref()
-                .map(|conf| (conf.level(), conf.get_options())),
+                .map(RuleConfiguration::level),
             "avoidAlterEnumAddValue" => self
                 .avoid_alter_enum_add_value
                 .as_ref()
-                .map(|conf| (conf.level(), conf.get_options())),
+                .map(RuleConfiguration::level),
             "avoidAttachingPartition" => self
                 .avoid_attaching_partition
                 .as_ref()
-                .map(|conf| (conf.level(), conf.get_options())),
+                .map(RuleConfiguration::level),
             "avoidCreateTrigger" => self
                 .avoid_create_trigger
                 .as_ref()
-                .map(|conf| (conf.level(), conf.get_options())),
+                .map(RuleConfiguration::level),
             "avoidEnableDisableTrigger" => self
                 .avoid_enable_disable_trigger
                 .as_ref()
-                .map(|conf| (conf.level(), conf.get_options())),
+                .map(RuleConfiguration::level),
             "avoidWideLockWindow" => self
                 .avoid_wide_lock_window
                 .as_ref()
-                .map(|conf| (conf.level(), conf.get_options())),
-            "banCharField" => self
-                .ban_char_field
-                .as_ref()
-                .map(|conf| (conf.level(), conf.get_options())),
+                .map(RuleConfiguration::level),
+            "banCharField" => self.ban_char_field.as_ref().map(RuleConfiguration::level),
             "banConcurrentIndexCreationInTransaction" => self
                 .ban_concurrent_index_creation_in_transaction
                 .as_ref()
-                .map(|conf| (conf.level(), conf.get_options())),
+                .map(RuleConfiguration::level),
             "banDeleteWithoutWhere" => self
                 .ban_delete_without_where
                 .as_ref()
-                .map(|conf| (conf.level(), conf.get_options())),
-            "banDropColumn" => self
-                .ban_drop_column
-                .as_ref()
-                .map(|conf| (conf.level(), conf.get_options())),
+                .map(RuleConfiguration::level),
+            "banDropColumn" => self.ban_drop_column.as_ref().map(RuleConfiguration::level),
             "banDropDatabase" => self
                 .ban_drop_database
                 .as_ref()
-                .map(|conf| (conf.level(), conf.get_options())),
+                .map(RuleConfiguration::level),
             "banDropNotNull" => self
                 .ban_drop_not_null
                 .as_ref()
-                .map(|conf| (conf.level(), conf.get_options())),
-            "banDropSchema" => self
-                .ban_drop_schema
-                .as_ref()
-                .map(|conf| (conf.level(), conf.get_options())),
-            "banDropTable" => self
-                .ban_drop_table
-                .as_ref()
-                .map(|conf| (conf.level(), conf.get_options())),
-            "banDropTrigger" => self
-                .ban_drop_trigger
-                .as_ref()
-                .map(|conf| (conf.level(), conf.get_options())),
-            "banTruncate" => self
-                .ban_truncate
-                .as_ref()
-                .map(|conf| (conf.level(), conf.get_options())),
+                .map(RuleConfiguration::level),
+            "banDropSchema" => self.ban_drop_schema.as_ref().map(RuleConfiguration::level),
+            "banDropTable" => self.ban_drop_table.as_ref().map(RuleConfiguration::level),
+            "banDropTrigger" => self.ban_drop_trigger.as_ref().map(RuleConfiguration::level),
+            "banTruncate" => self.ban_truncate.as_ref().map(RuleConfiguration::level),
             "banTruncateCascade" => self
                 .ban_truncate_cascade
                 .as_ref()
-                .map(|conf| (conf.level(), conf.get_options())),
+                .map(RuleConfiguration::level),
             "banUpdateWithoutWhere" => self
                 .ban_update_without_where
                 .as_ref()
-                .map(|conf| (conf.level(), conf.get_options())),
-            "banVacuumFull" => self
-                .ban_vacuum_full
-                .as_ref()
-                .map(|conf| (conf.level(), conf.get_options())),
+                .map(RuleConfiguration::level),
+            "banVacuumFull" => self.ban_vacuum_full.as_ref().map(RuleConfiguration::level),
             "changingColumnType" => self
                 .changing_column_type
                 .as_ref()
-                .map(|conf| (conf.level(), conf.get_options())),
-            "concurrentRefreshMatviewLock" => self
-                .concurrent_refresh_matview_lock
-                .as_ref()
-                .map(|conf| (conf.level(), conf.get_options())),
+                .map(RuleConfiguration::level),
             "constraintMissingNotValid" => self
                 .constraint_missing_not_valid
                 .as_ref()
-                .map(|conf| (conf.level(), conf.get_options())),
-            "creatingEnum" => self
-                .creating_enum
-                .as_ref()
-                .map(|conf| (conf.level(), conf.get_options())),
+                .map(RuleConfiguration::level),
+            "creatingEnum" => self.creating_enum.as_ref().map(RuleConfiguration::level),
             "disallowUniqueConstraint" => self
                 .disallow_unique_constraint
                 .as_ref()
-                .map(|conf| (conf.level(), conf.get_options())),
+                .map(RuleConfiguration::level),
+            "functionArgumentMismatch" => self
+                .function_argument_mismatch
+                .as_ref()
+                .map(RuleConfiguration::level),
+            "functionReturnTypeMismatch" => self
+                .function_return_type_mismatch
+                .as_ref()
+                .map(RuleConfiguration::level),
+            "insertColumnMismatch" => self
+                .insert_column_mismatch
+                .as_ref()
+                .map(RuleConfiguration::level),
+            "invalidCast" => self.invalid_cast.as_ref().map(RuleConfiguration::level),
+            "invalidDropTypeSignature" => self
+                .invalid_drop_type_signature
+                .as_ref()
+                .map(RuleConfiguration::level),
             "lockTimeoutWarning" => self
                 .lock_timeout_warning
                 .as_ref()
-                .map(|conf| (conf.level(), conf.get_options())),
+                .map(RuleConfiguration::level),
+            "missingFromClauseEntry" => self
+                .missing_from_clause_entry
+                .as_ref()
+                .map(RuleConfiguration::level),
             "multipleAlterTable" => self
                 .multiple_alter_table
                 .as_ref()
-                .map(|conf| (conf.level(), conf.get_options())),
-            "preferBigInt" => self
-                .prefer_big_int
+                .map(RuleConfiguration::level),
+            "operatorTypeMismatch" => self
+                .operator_type_mismatch
                 .as_ref()
-                .map(|conf| (conf.level(), conf.get_options())),
-            "preferBigintOverInt" => self
-                .prefer_bigint_over_int
-                .as_ref()
-                .map(|conf| (conf.level(), conf.get_options())),
-            "preferBigintOverSmallint" => self
-                .prefer_bigint_over_smallint
-                .as_ref()
-                .map(|conf| (conf.level(), conf.get_options())),
-            "preferIdentity" => self
-                .prefer_identity
-                .as_ref()
-                .map(|conf| (conf.level(), conf.get_options())),
-            "preferJsonb" => self
-                .prefer_jsonb
-                .as_ref()
-                .map(|conf| (conf.level(), conf.get_options())),
+                .map(RuleConfiguration::level),
+            "preferBigInt" => self.prefer_big_int.as_ref().map(RuleConfiguration::level),
+            "preferIdentity" => self.prefer_identity.as_ref().map(RuleConfiguration::level),
+            "preferJsonb" => self.prefer_jsonb.as_ref().map(RuleConfiguration::level),
             "preferRobustStmts" => self
                 .prefer_robust_stmts
                 .as_ref()
-                .map(|conf| (conf.level(), conf.get_options())),
+                .map(RuleConfiguration::level),
             "preferTextField" => self
                 .prefer_text_field
                 .as_ref()
-                .map(|conf| (conf.level(), conf.get_options())),
+                .map(RuleConfiguration::level),
             "preferTimestamptz" => self
                 .prefer_timestamptz
                 .as_ref()
-                .map(|conf| (conf.level(), conf.get_options())),
-            "renamingColumn" => self
-                .renaming_column
-                .as_ref()
-                .map(|conf| (conf.level(), conf.get_options())),
-            "renamingTable" => self
-                .renaming_table
-                .as_ref()
-                .map(|conf| (conf.level(), conf.get_options())),
+                .map(RuleConfiguration::level),
+            "renamingColumn" => self.renaming_column.as_ref().map(RuleConfiguration::level),
+            "renamingTable" => self.renaming_table.as_ref().map(RuleConfiguration::level),
             "requireConcurrentDetachPartition" => self
                 .require_concurrent_detach_partition
                 .as_ref()
-                .map(|conf| (conf.level(), conf.get_options())),
+                .map(RuleConfiguration::level),
             "requireConcurrentIndexCreation" => self
                 .require_concurrent_index_creation
                 .as_ref()
-                .map(|conf| (conf.level(), conf.get_options())),
+                .map(RuleConfiguration::level),
             "requireConcurrentIndexDeletion" => self
                 .require_concurrent_index_deletion
                 .as_ref()
-                .map(|conf| (conf.level(), conf.get_options())),
+                .map(RuleConfiguration::level),
             "requireConcurrentRefreshMatview" => self
                 .require_concurrent_refresh_matview
                 .as_ref()
-                .map(|conf| (conf.level(), conf.get_options())),
+                .map(RuleConfiguration::level),
             "requireConcurrentReindex" => self
                 .require_concurrent_reindex
                 .as_ref()
-                .map(|conf| (conf.level(), conf.get_options())),
+                .map(RuleConfiguration::level),
             "requireIdleInTransactionTimeout" => self
                 .require_idle_in_transaction_timeout
                 .as_ref()
-                .map(|conf| (conf.level(), conf.get_options())),
+                .map(RuleConfiguration::level),
             "requireSeparateConstraintValidation" => self
                 .require_separate_constraint_validation
                 .as_ref()
-                .map(|conf| (conf.level(), conf.get_options())),
+                .map(RuleConfiguration::level),
             "requireStatementTimeout" => self
                 .require_statement_timeout
                 .as_ref()
-                .map(|conf| (conf.level(), conf.get_options())),
+                .map(RuleConfiguration::level),
             "runningStatementWhileHoldingAccessExclusive" => self
                 .running_statement_while_holding_access_exclusive
                 .as_ref()
-                .map(|conf| (conf.level(), conf.get_options())),
+                .map(RuleConfiguration::level),
             "transactionNesting" => self
                 .transaction_nesting
                 .as_ref()
-                .map(|conf| (conf.level(), conf.get_options())),
+                .map(RuleConfiguration::level),
+            "unknownColumn" => self.unknown_column.as_ref().map(RuleConfiguration::level),
+            "unknownFunction" => self.unknown_function.as_ref().map(RuleConfiguration::level),
+            "unknownRelation" => self.unknown_relation.as_ref().map(RuleConfiguration::level),
+            "unknownSchema" => self.unknown_schema.as_ref().map(RuleConfiguration::level),
+            "unknownType" => self.unknown_type.as_ref().map(RuleConfiguration::level),
+            _ => None,
+        }
+    }
+    #[doc = r" The options configured for a rule, if any."]
+    pub fn rule_options(&self, rule: &str) -> Option<RuleOptions> {
+        match rule {
+            "addSerialColumn" => self
+                .add_serial_column
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "addingFieldWithDefault" => self
+                .adding_field_with_default
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "addingForeignKeyConstraint" => self
+                .adding_foreign_key_constraint
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "addingNotNullField" => self
+                .adding_not_null_field
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "addingPrimaryKeyConstraint" => self
+                .adding_primary_key_constraint
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "addingRequiredField" => self
+                .adding_required_field
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "ambiguousColumn" => self
+                .ambiguous_column
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "assignmentTypeMismatch" => self
+                .assignment_type_mismatch
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "avoidAddingExclusionConstraint" => self
+                .avoid_adding_exclusion_constraint
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "avoidAlterEnumAddValue" => self
+                .avoid_alter_enum_add_value
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "avoidAttachingPartition" => self
+                .avoid_attaching_partition
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "avoidCreateTrigger" => self
+                .avoid_create_trigger
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "avoidEnableDisableTrigger" => self
+                .avoid_enable_disable_trigger
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "avoidWideLockWindow" => self
+                .avoid_wide_lock_window
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "banCharField" => self
+                .ban_char_field
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "banConcurrentIndexCreationInTransaction" => self
+                .ban_concurrent_index_creation_in_transaction
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "banDeleteWithoutWhere" => self
+                .ban_delete_without_where
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "banDropColumn" => self
+                .ban_drop_column
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "banDropDatabase" => self
+                .ban_drop_database
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "banDropNotNull" => self
+                .ban_drop_not_null
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "banDropSchema" => self
+                .ban_drop_schema
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "banDropTable" => self
+                .ban_drop_table
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "banDropTrigger" => self
+                .ban_drop_trigger
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "banTruncate" => self
+                .ban_truncate
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "banTruncateCascade" => self
+                .ban_truncate_cascade
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "banUpdateWithoutWhere" => self
+                .ban_update_without_where
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "banVacuumFull" => self
+                .ban_vacuum_full
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "changingColumnType" => self
+                .changing_column_type
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "constraintMissingNotValid" => self
+                .constraint_missing_not_valid
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "creatingEnum" => self
+                .creating_enum
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "disallowUniqueConstraint" => self
+                .disallow_unique_constraint
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "functionArgumentMismatch" => self
+                .function_argument_mismatch
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "functionReturnTypeMismatch" => self
+                .function_return_type_mismatch
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "insertColumnMismatch" => self
+                .insert_column_mismatch
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "invalidCast" => self
+                .invalid_cast
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "invalidDropTypeSignature" => self
+                .invalid_drop_type_signature
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "lockTimeoutWarning" => self
+                .lock_timeout_warning
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "missingFromClauseEntry" => self
+                .missing_from_clause_entry
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "multipleAlterTable" => self
+                .multiple_alter_table
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "operatorTypeMismatch" => self
+                .operator_type_mismatch
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "preferBigInt" => self
+                .prefer_big_int
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "preferIdentity" => self
+                .prefer_identity
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "preferJsonb" => self
+                .prefer_jsonb
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "preferRobustStmts" => self
+                .prefer_robust_stmts
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "preferTextField" => self
+                .prefer_text_field
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "preferTimestamptz" => self
+                .prefer_timestamptz
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "renamingColumn" => self
+                .renaming_column
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "renamingTable" => self
+                .renaming_table
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "requireConcurrentDetachPartition" => self
+                .require_concurrent_detach_partition
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "requireConcurrentIndexCreation" => self
+                .require_concurrent_index_creation
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "requireConcurrentIndexDeletion" => self
+                .require_concurrent_index_deletion
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "requireConcurrentRefreshMatview" => self
+                .require_concurrent_refresh_matview
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "requireConcurrentReindex" => self
+                .require_concurrent_reindex
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "requireIdleInTransactionTimeout" => self
+                .require_idle_in_transaction_timeout
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "requireSeparateConstraintValidation" => self
+                .require_separate_constraint_validation
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "requireStatementTimeout" => self
+                .require_statement_timeout
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "runningStatementWhileHoldingAccessExclusive" => self
+                .running_statement_while_holding_access_exclusive
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "transactionNesting" => self
+                .transaction_nesting
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "unknownColumn" => self
+                .unknown_column
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "unknownFunction" => self
+                .unknown_function
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "unknownRelation" => self
+                .unknown_relation
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "unknownSchema" => self
+                .unknown_schema
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "unknownType" => self
+                .unknown_type
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
             _ => None,
         }
     }
 }
-#[doc = r" Push the configured rules to the analyser"]
-pub fn push_to_analyser_rules(
-    rules: &Rules,
-    metadata: &pgls_analyse::MetadataRegistry,
-    analyser_rules: &mut pgls_analyser::LinterRules,
-) {
-    if let Some(rules) = rules.safety.as_ref() {
-        for rule_name in Safety::GROUP_RULES {
-            if let Some((_, Some(rule_options))) = rules.get_rule_configuration(rule_name)
-                && let Some(rule_key) = metadata.find_rule("safety", rule_name)
-            {
-                analyser_rules.push_rule(rule_key, rule_options);
-            }
+#[doc = r" The former `linter.rules.safety` group, which contained all rules at the time."]
+#[derive(Clone, Debug, Default, Deserialize, Eq, Merge, PartialEq, Serialize)]
+#[cfg_attr(feature = "schema", derive(JsonSchema))]
+#[cfg_attr(feature = "schema", schemars(rename = "Safety"))]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct LegacySafetyRules {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub recommended: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub all: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub add_serial_column: Option<RuleConfiguration<pgls_analyser::options::AddSerialColumn>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub adding_field_with_default:
+        Option<RuleConfiguration<pgls_analyser::options::AddingFieldWithDefault>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub adding_foreign_key_constraint:
+        Option<RuleConfiguration<pgls_analyser::options::AddingForeignKeyConstraint>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub adding_not_null_field:
+        Option<RuleConfiguration<pgls_analyser::options::AddingNotNullField>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub adding_primary_key_constraint:
+        Option<RuleConfiguration<pgls_analyser::options::AddingPrimaryKeyConstraint>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub adding_required_field:
+        Option<RuleConfiguration<pgls_analyser::options::AddingRequiredField>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub avoid_adding_exclusion_constraint:
+        Option<RuleConfiguration<pgls_analyser::options::AvoidAddingExclusionConstraint>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub avoid_alter_enum_add_value:
+        Option<RuleConfiguration<pgls_analyser::options::AvoidAlterEnumAddValue>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub avoid_attaching_partition:
+        Option<RuleConfiguration<pgls_analyser::options::AvoidAttachingPartition>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub avoid_create_trigger: Option<RuleConfiguration<pgls_analyser::options::AvoidCreateTrigger>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub avoid_enable_disable_trigger:
+        Option<RuleConfiguration<pgls_analyser::options::AvoidEnableDisableTrigger>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub avoid_wide_lock_window:
+        Option<RuleConfiguration<pgls_analyser::options::AvoidWideLockWindow>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ban_char_field: Option<RuleConfiguration<pgls_analyser::options::BanCharField>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ban_concurrent_index_creation_in_transaction:
+        Option<RuleConfiguration<pgls_analyser::options::BanConcurrentIndexCreationInTransaction>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ban_delete_without_where:
+        Option<RuleConfiguration<pgls_analyser::options::BanDeleteWithoutWhere>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ban_drop_column: Option<RuleConfiguration<pgls_analyser::options::BanDropColumn>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ban_drop_database: Option<RuleConfiguration<pgls_analyser::options::BanDropDatabase>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ban_drop_not_null: Option<RuleConfiguration<pgls_analyser::options::BanDropNotNull>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ban_drop_schema: Option<RuleConfiguration<pgls_analyser::options::BanDropSchema>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ban_drop_table: Option<RuleConfiguration<pgls_analyser::options::BanDropTable>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ban_drop_trigger: Option<RuleConfiguration<pgls_analyser::options::BanDropTrigger>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ban_truncate: Option<RuleConfiguration<pgls_analyser::options::BanTruncate>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ban_truncate_cascade: Option<RuleConfiguration<pgls_analyser::options::BanTruncateCascade>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ban_update_without_where:
+        Option<RuleConfiguration<pgls_analyser::options::BanUpdateWithoutWhere>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ban_vacuum_full: Option<RuleConfiguration<pgls_analyser::options::BanVacuumFull>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub changing_column_type: Option<RuleConfiguration<pgls_analyser::options::ChangingColumnType>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub constraint_missing_not_valid:
+        Option<RuleConfiguration<pgls_analyser::options::ConstraintMissingNotValid>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub creating_enum: Option<RuleConfiguration<pgls_analyser::options::CreatingEnum>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub disallow_unique_constraint:
+        Option<RuleConfiguration<pgls_analyser::options::DisallowUniqueConstraint>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub lock_timeout_warning: Option<RuleConfiguration<pgls_analyser::options::LockTimeoutWarning>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub multiple_alter_table: Option<RuleConfiguration<pgls_analyser::options::MultipleAlterTable>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub prefer_big_int: Option<RuleConfiguration<pgls_analyser::options::PreferBigInt>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub prefer_identity: Option<RuleConfiguration<pgls_analyser::options::PreferIdentity>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub prefer_jsonb: Option<RuleConfiguration<pgls_analyser::options::PreferJsonb>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub prefer_robust_stmts: Option<RuleConfiguration<pgls_analyser::options::PreferRobustStmts>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub prefer_text_field: Option<RuleConfiguration<pgls_analyser::options::PreferTextField>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub prefer_timestamptz: Option<RuleConfiguration<pgls_analyser::options::PreferTimestamptz>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub renaming_column: Option<RuleConfiguration<pgls_analyser::options::RenamingColumn>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub renaming_table: Option<RuleConfiguration<pgls_analyser::options::RenamingTable>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub require_concurrent_detach_partition:
+        Option<RuleConfiguration<pgls_analyser::options::RequireConcurrentDetachPartition>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub require_concurrent_index_creation:
+        Option<RuleConfiguration<pgls_analyser::options::RequireConcurrentIndexCreation>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub require_concurrent_index_deletion:
+        Option<RuleConfiguration<pgls_analyser::options::RequireConcurrentIndexDeletion>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub require_concurrent_refresh_matview:
+        Option<RuleConfiguration<pgls_analyser::options::RequireConcurrentRefreshMatview>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub require_concurrent_reindex:
+        Option<RuleConfiguration<pgls_analyser::options::RequireConcurrentReindex>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub require_idle_in_transaction_timeout:
+        Option<RuleConfiguration<pgls_analyser::options::RequireIdleInTransactionTimeout>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub require_separate_constraint_validation:
+        Option<RuleConfiguration<pgls_analyser::options::RequireSeparateConstraintValidation>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub require_statement_timeout:
+        Option<RuleConfiguration<pgls_analyser::options::RequireStatementTimeout>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub running_statement_while_holding_access_exclusive: Option<
+        RuleConfiguration<pgls_analyser::options::RunningStatementWhileHoldingAccessExclusive>,
+    >,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub transaction_nesting: Option<RuleConfiguration<pgls_analyser::options::TransactionNesting>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub concurrent_refresh_matview_lock: Option<RuleConfiguration<()>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub prefer_bigint_over_int: Option<RuleConfiguration<()>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub prefer_bigint_over_smallint: Option<RuleConfiguration<()>>,
+}
+impl LegacySafetyRules {
+    #[doc = r" The level configured for a rule, if any."]
+    pub fn rule_level(&self, rule: &str) -> Option<RulePlainConfiguration> {
+        match rule {
+            "addSerialColumn" => self
+                .add_serial_column
+                .as_ref()
+                .map(RuleConfiguration::level),
+            "addingFieldWithDefault" => self
+                .adding_field_with_default
+                .as_ref()
+                .map(RuleConfiguration::level),
+            "addingForeignKeyConstraint" => self
+                .adding_foreign_key_constraint
+                .as_ref()
+                .map(RuleConfiguration::level),
+            "addingNotNullField" => self
+                .adding_not_null_field
+                .as_ref()
+                .map(RuleConfiguration::level),
+            "addingPrimaryKeyConstraint" => self
+                .adding_primary_key_constraint
+                .as_ref()
+                .map(RuleConfiguration::level),
+            "addingRequiredField" => self
+                .adding_required_field
+                .as_ref()
+                .map(RuleConfiguration::level),
+            "avoidAddingExclusionConstraint" => self
+                .avoid_adding_exclusion_constraint
+                .as_ref()
+                .map(RuleConfiguration::level),
+            "avoidAlterEnumAddValue" => self
+                .avoid_alter_enum_add_value
+                .as_ref()
+                .map(RuleConfiguration::level),
+            "avoidAttachingPartition" => self
+                .avoid_attaching_partition
+                .as_ref()
+                .map(RuleConfiguration::level),
+            "avoidCreateTrigger" => self
+                .avoid_create_trigger
+                .as_ref()
+                .map(RuleConfiguration::level),
+            "avoidEnableDisableTrigger" => self
+                .avoid_enable_disable_trigger
+                .as_ref()
+                .map(RuleConfiguration::level),
+            "avoidWideLockWindow" => self
+                .avoid_wide_lock_window
+                .as_ref()
+                .map(RuleConfiguration::level),
+            "banCharField" => self.ban_char_field.as_ref().map(RuleConfiguration::level),
+            "banConcurrentIndexCreationInTransaction" => self
+                .ban_concurrent_index_creation_in_transaction
+                .as_ref()
+                .map(RuleConfiguration::level),
+            "banDeleteWithoutWhere" => self
+                .ban_delete_without_where
+                .as_ref()
+                .map(RuleConfiguration::level),
+            "banDropColumn" => self.ban_drop_column.as_ref().map(RuleConfiguration::level),
+            "banDropDatabase" => self
+                .ban_drop_database
+                .as_ref()
+                .map(RuleConfiguration::level),
+            "banDropNotNull" => self
+                .ban_drop_not_null
+                .as_ref()
+                .map(RuleConfiguration::level),
+            "banDropSchema" => self.ban_drop_schema.as_ref().map(RuleConfiguration::level),
+            "banDropTable" => self.ban_drop_table.as_ref().map(RuleConfiguration::level),
+            "banDropTrigger" => self.ban_drop_trigger.as_ref().map(RuleConfiguration::level),
+            "banTruncate" => self.ban_truncate.as_ref().map(RuleConfiguration::level),
+            "banTruncateCascade" => self
+                .ban_truncate_cascade
+                .as_ref()
+                .map(RuleConfiguration::level),
+            "banUpdateWithoutWhere" => self
+                .ban_update_without_where
+                .as_ref()
+                .map(RuleConfiguration::level),
+            "banVacuumFull" => self.ban_vacuum_full.as_ref().map(RuleConfiguration::level),
+            "changingColumnType" => self
+                .changing_column_type
+                .as_ref()
+                .map(RuleConfiguration::level),
+            "constraintMissingNotValid" => self
+                .constraint_missing_not_valid
+                .as_ref()
+                .map(RuleConfiguration::level),
+            "creatingEnum" => self.creating_enum.as_ref().map(RuleConfiguration::level),
+            "disallowUniqueConstraint" => self
+                .disallow_unique_constraint
+                .as_ref()
+                .map(RuleConfiguration::level),
+            "lockTimeoutWarning" => self
+                .lock_timeout_warning
+                .as_ref()
+                .map(RuleConfiguration::level),
+            "multipleAlterTable" => self
+                .multiple_alter_table
+                .as_ref()
+                .map(RuleConfiguration::level),
+            "preferBigInt" => self.prefer_big_int.as_ref().map(RuleConfiguration::level),
+            "preferIdentity" => self.prefer_identity.as_ref().map(RuleConfiguration::level),
+            "preferJsonb" => self.prefer_jsonb.as_ref().map(RuleConfiguration::level),
+            "preferRobustStmts" => self
+                .prefer_robust_stmts
+                .as_ref()
+                .map(RuleConfiguration::level),
+            "preferTextField" => self
+                .prefer_text_field
+                .as_ref()
+                .map(RuleConfiguration::level),
+            "preferTimestamptz" => self
+                .prefer_timestamptz
+                .as_ref()
+                .map(RuleConfiguration::level),
+            "renamingColumn" => self.renaming_column.as_ref().map(RuleConfiguration::level),
+            "renamingTable" => self.renaming_table.as_ref().map(RuleConfiguration::level),
+            "requireConcurrentDetachPartition" => self
+                .require_concurrent_detach_partition
+                .as_ref()
+                .map(RuleConfiguration::level),
+            "requireConcurrentIndexCreation" => self
+                .require_concurrent_index_creation
+                .as_ref()
+                .map(RuleConfiguration::level),
+            "requireConcurrentIndexDeletion" => self
+                .require_concurrent_index_deletion
+                .as_ref()
+                .map(RuleConfiguration::level),
+            "requireConcurrentRefreshMatview" => self
+                .require_concurrent_refresh_matview
+                .as_ref()
+                .map(RuleConfiguration::level),
+            "requireConcurrentReindex" => self
+                .require_concurrent_reindex
+                .as_ref()
+                .map(RuleConfiguration::level),
+            "requireIdleInTransactionTimeout" => self
+                .require_idle_in_transaction_timeout
+                .as_ref()
+                .map(RuleConfiguration::level),
+            "requireSeparateConstraintValidation" => self
+                .require_separate_constraint_validation
+                .as_ref()
+                .map(RuleConfiguration::level),
+            "requireStatementTimeout" => self
+                .require_statement_timeout
+                .as_ref()
+                .map(RuleConfiguration::level),
+            "runningStatementWhileHoldingAccessExclusive" => self
+                .running_statement_while_holding_access_exclusive
+                .as_ref()
+                .map(RuleConfiguration::level),
+            "transactionNesting" => self
+                .transaction_nesting
+                .as_ref()
+                .map(RuleConfiguration::level),
+            "concurrentRefreshMatviewLock" => self
+                .concurrent_refresh_matview_lock
+                .as_ref()
+                .map(RuleConfiguration::level),
+            "preferBigintOverInt" => self
+                .prefer_bigint_over_int
+                .as_ref()
+                .map(RuleConfiguration::level),
+            "preferBigintOverSmallint" => self
+                .prefer_bigint_over_smallint
+                .as_ref()
+                .map(RuleConfiguration::level),
+            _ => None,
         }
     }
+    #[doc = r" The options configured for a rule, if any."]
+    pub fn rule_options(&self, rule: &str) -> Option<RuleOptions> {
+        match rule {
+            "addSerialColumn" => self
+                .add_serial_column
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "addingFieldWithDefault" => self
+                .adding_field_with_default
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "addingForeignKeyConstraint" => self
+                .adding_foreign_key_constraint
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "addingNotNullField" => self
+                .adding_not_null_field
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "addingPrimaryKeyConstraint" => self
+                .adding_primary_key_constraint
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "addingRequiredField" => self
+                .adding_required_field
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "avoidAddingExclusionConstraint" => self
+                .avoid_adding_exclusion_constraint
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "avoidAlterEnumAddValue" => self
+                .avoid_alter_enum_add_value
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "avoidAttachingPartition" => self
+                .avoid_attaching_partition
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "avoidCreateTrigger" => self
+                .avoid_create_trigger
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "avoidEnableDisableTrigger" => self
+                .avoid_enable_disable_trigger
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "avoidWideLockWindow" => self
+                .avoid_wide_lock_window
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "banCharField" => self
+                .ban_char_field
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "banConcurrentIndexCreationInTransaction" => self
+                .ban_concurrent_index_creation_in_transaction
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "banDeleteWithoutWhere" => self
+                .ban_delete_without_where
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "banDropColumn" => self
+                .ban_drop_column
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "banDropDatabase" => self
+                .ban_drop_database
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "banDropNotNull" => self
+                .ban_drop_not_null
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "banDropSchema" => self
+                .ban_drop_schema
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "banDropTable" => self
+                .ban_drop_table
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "banDropTrigger" => self
+                .ban_drop_trigger
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "banTruncate" => self
+                .ban_truncate
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "banTruncateCascade" => self
+                .ban_truncate_cascade
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "banUpdateWithoutWhere" => self
+                .ban_update_without_where
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "banVacuumFull" => self
+                .ban_vacuum_full
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "changingColumnType" => self
+                .changing_column_type
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "constraintMissingNotValid" => self
+                .constraint_missing_not_valid
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "creatingEnum" => self
+                .creating_enum
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "disallowUniqueConstraint" => self
+                .disallow_unique_constraint
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "lockTimeoutWarning" => self
+                .lock_timeout_warning
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "multipleAlterTable" => self
+                .multiple_alter_table
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "preferBigInt" => self
+                .prefer_big_int
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "preferIdentity" => self
+                .prefer_identity
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "preferJsonb" => self
+                .prefer_jsonb
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "preferRobustStmts" => self
+                .prefer_robust_stmts
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "preferTextField" => self
+                .prefer_text_field
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "preferTimestamptz" => self
+                .prefer_timestamptz
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "renamingColumn" => self
+                .renaming_column
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "renamingTable" => self
+                .renaming_table
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "requireConcurrentDetachPartition" => self
+                .require_concurrent_detach_partition
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "requireConcurrentIndexCreation" => self
+                .require_concurrent_index_creation
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "requireConcurrentIndexDeletion" => self
+                .require_concurrent_index_deletion
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "requireConcurrentRefreshMatview" => self
+                .require_concurrent_refresh_matview
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "requireConcurrentReindex" => self
+                .require_concurrent_reindex
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "requireIdleInTransactionTimeout" => self
+                .require_idle_in_transaction_timeout
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "requireSeparateConstraintValidation" => self
+                .require_separate_constraint_validation
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "requireStatementTimeout" => self
+                .require_statement_timeout
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "runningStatementWhileHoldingAccessExclusive" => self
+                .running_statement_while_holding_access_exclusive
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "transactionNesting" => self
+                .transaction_nesting
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            _ => None,
+        }
+    }
+    #[doc = r" The names of all rules configured here."]
+    pub fn configured_rules(&self) -> Vec<&'static str> {
+        let mut rules = Vec::new();
+        if self.add_serial_column.is_some() {
+            rules.push("addSerialColumn");
+        }
+        if self.adding_field_with_default.is_some() {
+            rules.push("addingFieldWithDefault");
+        }
+        if self.adding_foreign_key_constraint.is_some() {
+            rules.push("addingForeignKeyConstraint");
+        }
+        if self.adding_not_null_field.is_some() {
+            rules.push("addingNotNullField");
+        }
+        if self.adding_primary_key_constraint.is_some() {
+            rules.push("addingPrimaryKeyConstraint");
+        }
+        if self.adding_required_field.is_some() {
+            rules.push("addingRequiredField");
+        }
+        if self.avoid_adding_exclusion_constraint.is_some() {
+            rules.push("avoidAddingExclusionConstraint");
+        }
+        if self.avoid_alter_enum_add_value.is_some() {
+            rules.push("avoidAlterEnumAddValue");
+        }
+        if self.avoid_attaching_partition.is_some() {
+            rules.push("avoidAttachingPartition");
+        }
+        if self.avoid_create_trigger.is_some() {
+            rules.push("avoidCreateTrigger");
+        }
+        if self.avoid_enable_disable_trigger.is_some() {
+            rules.push("avoidEnableDisableTrigger");
+        }
+        if self.avoid_wide_lock_window.is_some() {
+            rules.push("avoidWideLockWindow");
+        }
+        if self.ban_char_field.is_some() {
+            rules.push("banCharField");
+        }
+        if self.ban_concurrent_index_creation_in_transaction.is_some() {
+            rules.push("banConcurrentIndexCreationInTransaction");
+        }
+        if self.ban_delete_without_where.is_some() {
+            rules.push("banDeleteWithoutWhere");
+        }
+        if self.ban_drop_column.is_some() {
+            rules.push("banDropColumn");
+        }
+        if self.ban_drop_database.is_some() {
+            rules.push("banDropDatabase");
+        }
+        if self.ban_drop_not_null.is_some() {
+            rules.push("banDropNotNull");
+        }
+        if self.ban_drop_schema.is_some() {
+            rules.push("banDropSchema");
+        }
+        if self.ban_drop_table.is_some() {
+            rules.push("banDropTable");
+        }
+        if self.ban_drop_trigger.is_some() {
+            rules.push("banDropTrigger");
+        }
+        if self.ban_truncate.is_some() {
+            rules.push("banTruncate");
+        }
+        if self.ban_truncate_cascade.is_some() {
+            rules.push("banTruncateCascade");
+        }
+        if self.ban_update_without_where.is_some() {
+            rules.push("banUpdateWithoutWhere");
+        }
+        if self.ban_vacuum_full.is_some() {
+            rules.push("banVacuumFull");
+        }
+        if self.changing_column_type.is_some() {
+            rules.push("changingColumnType");
+        }
+        if self.concurrent_refresh_matview_lock.is_some() {
+            rules.push("concurrentRefreshMatviewLock");
+        }
+        if self.constraint_missing_not_valid.is_some() {
+            rules.push("constraintMissingNotValid");
+        }
+        if self.creating_enum.is_some() {
+            rules.push("creatingEnum");
+        }
+        if self.disallow_unique_constraint.is_some() {
+            rules.push("disallowUniqueConstraint");
+        }
+        if self.lock_timeout_warning.is_some() {
+            rules.push("lockTimeoutWarning");
+        }
+        if self.multiple_alter_table.is_some() {
+            rules.push("multipleAlterTable");
+        }
+        if self.prefer_big_int.is_some() {
+            rules.push("preferBigInt");
+        }
+        if self.prefer_bigint_over_int.is_some() {
+            rules.push("preferBigintOverInt");
+        }
+        if self.prefer_bigint_over_smallint.is_some() {
+            rules.push("preferBigintOverSmallint");
+        }
+        if self.prefer_identity.is_some() {
+            rules.push("preferIdentity");
+        }
+        if self.prefer_jsonb.is_some() {
+            rules.push("preferJsonb");
+        }
+        if self.prefer_robust_stmts.is_some() {
+            rules.push("preferRobustStmts");
+        }
+        if self.prefer_text_field.is_some() {
+            rules.push("preferTextField");
+        }
+        if self.prefer_timestamptz.is_some() {
+            rules.push("preferTimestamptz");
+        }
+        if self.renaming_column.is_some() {
+            rules.push("renamingColumn");
+        }
+        if self.renaming_table.is_some() {
+            rules.push("renamingTable");
+        }
+        if self.require_concurrent_detach_partition.is_some() {
+            rules.push("requireConcurrentDetachPartition");
+        }
+        if self.require_concurrent_index_creation.is_some() {
+            rules.push("requireConcurrentIndexCreation");
+        }
+        if self.require_concurrent_index_deletion.is_some() {
+            rules.push("requireConcurrentIndexDeletion");
+        }
+        if self.require_concurrent_refresh_matview.is_some() {
+            rules.push("requireConcurrentRefreshMatview");
+        }
+        if self.require_concurrent_reindex.is_some() {
+            rules.push("requireConcurrentReindex");
+        }
+        if self.require_idle_in_transaction_timeout.is_some() {
+            rules.push("requireIdleInTransactionTimeout");
+        }
+        if self.require_separate_constraint_validation.is_some() {
+            rules.push("requireSeparateConstraintValidation");
+        }
+        if self.require_statement_timeout.is_some() {
+            rules.push("requireStatementTimeout");
+        }
+        if self
+            .running_statement_while_holding_access_exclusive
+            .is_some()
+        {
+            rules.push("runningStatementWhileHoldingAccessExclusive");
+        }
+        if self.transaction_nesting.is_some() {
+            rules.push("transactionNesting");
+        }
+        rules
+    }
 }
-#[test]
-fn test_order() {
-    for items in Safety::GROUP_RULES.windows(2) {
-        assert!(items[0] < items[1], "{} < {}", items[0], items[1]);
+#[doc = r" The level of all rules of a group, unless a rule is configured individually."]
+#[derive(Clone, Debug, Default, Deserialize, Eq, Merge, PartialEq, Serialize)]
+#[cfg_attr(feature = "schema", derive(JsonSchema))]
+#[cfg_attr(feature = "schema", schemars(rename = "LinterGroups"))]
+#[serde(rename_all = "camelCase", default, deny_unknown_fields)]
+pub struct Groups {
+    #[doc = "Code that fails at runtime for reasons other than names or types."]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub correctness: Option<RulePlainConfiguration>,
+    #[doc = "Valid code that may be dangerous against a live database: locks, rewrites, or blocking."]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub safety: Option<RulePlainConfiguration>,
+    #[doc = "Code that loses data or breaks existing clients."]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub destructive: Option<RulePlainConfiguration>,
+    #[doc = "Schema design preferences. Not enabled by the recommended preset."]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub style: Option<RulePlainConfiguration>,
+    #[doc = "Code that fails at runtime because of names or types. Needs a database connection."]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub typecheck: Option<RulePlainConfiguration>,
+    #[doc = "New rules that are still being tested. Never enabled by presets."]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub nursery: Option<RulePlainConfiguration>,
+}
+impl Groups {
+    #[doc = r" The level configured for a group, if any."]
+    pub fn level(&self, group: &str) -> Option<RulePlainConfiguration> {
+        match group {
+            "correctness" => self.correctness,
+            "safety" => self.safety,
+            "destructive" => self.destructive,
+            "style" => self.style,
+            "typecheck" => self.typecheck,
+            "nursery" => self.nursery,
+            _ => None,
+        }
     }
 }

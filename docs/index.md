@@ -16,7 +16,7 @@ The following features are available today:
 
 - [Autocompletion & Hover](features/editor_features.md)
 - [Syntax Diagnostics](features/syntax_diagnostics.md)
-- [Type Checking](features/type_checking.md) (via `EXPLAIN` error insights)
+- [Type Checking](features/type_checking.md)
 - [Formatting](features/formatting.md)
 - [Migration Linting](features/linting.md)
 - [Database Linting](features/database_linting.md)

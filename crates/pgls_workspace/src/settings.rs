@@ -316,9 +316,12 @@ impl Settings {
         &self.linter
     }
 
-    /// Returns linter rules.
-    pub fn as_linter_rules(&self) -> Option<Cow<'_, pgls_configuration::linter::Rules>> {
-        self.linter.rules.as_ref().map(Cow::Borrowed)
+    /// Returns the rule settings of the linter.
+    pub fn as_linter_rules(&self) -> Option<pgls_configuration::LinterRuleSettings<'_>> {
+        self.linter
+            .rules
+            .as_ref()
+            .map(|rules| pgls_configuration::LinterRuleSettings::new(rules, &self.linter.groups))
     }
 
     /// Returns splinter rules.
@@ -333,17 +336,15 @@ impl Settings {
 
     /// It retrieves the severity based on the `code` of the rule and the current configuration.
     ///
-    /// The code of the has the following pattern: `{group}/{rule_name}`.
+    /// The code of the rule has the pattern `lint/{rule_name}`.
     ///
     /// It returns [None] if the `code` doesn't match any rule.
     pub fn get_severity_from_rule_code(
         &self,
         code: &Category,
     ) -> Option<pgls_diagnostics::Severity> {
-        self.linter
-            .rules
-            .as_ref()
-            .and_then(|r| r.get_severity_from_code(code))
+        self.as_linter_rules()
+            .and_then(|rules| rules.get_severity_from_code(code))
     }
 }
 
@@ -354,6 +355,7 @@ fn to_linter_settings(
     Ok(LinterSettings {
         enabled: conf.enabled,
         rules: Some(conf.rules),
+        groups: conf.groups,
         ignored_files: to_matcher(working_directory.clone(), Some(&conf.ignore))?,
         included_files: to_matcher(working_directory.clone(), Some(&conf.include))?,
     })
@@ -512,6 +514,9 @@ pub struct LinterSettings {
     /// List of rules
     pub rules: Option<pgls_configuration::linter::Rules>,
 
+    /// The level of all rules of a group
+    pub groups: pgls_configuration::linter::Groups,
+
     /// List of ignored paths/files to match
     pub ignored_files: Matcher,
 
@@ -524,6 +529,7 @@ impl Default for LinterSettings {
         Self {
             enabled: true,
             rules: Some(pgls_configuration::linter::Rules::default()),
+            groups: Default::default(),
             ignored_files: Matcher::empty(),
             included_files: Matcher::empty(),
         }
@@ -664,7 +670,7 @@ impl Default for PglinterSettings {
 }
 
 /// plpgsql_check settings for the entire workspace
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct PlPgSqlCheckSettings {
     pub enabled: bool,
     pub fatal_errors: bool,

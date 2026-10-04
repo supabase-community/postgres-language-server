@@ -1,5 +1,5 @@
 use insta::assert_snapshot;
-use pgls_schema_cache::SchemaCache;
+use pgls_catalog::Snapshot;
 use pgls_test_utils::QueryWithCursorPosition;
 use pgls_text_size::TextRange;
 use regex::Regex;
@@ -13,7 +13,7 @@ pub(crate) async fn get_test_deps(
     setup: Option<&str>,
     input: QueryWithCursorPosition,
     test_db: &PgPool,
-) -> (tree_sitter::Tree, pgls_schema_cache::SchemaCache) {
+) -> (tree_sitter::Tree, pgls_catalog::Snapshot) {
     if let Some(setup) = setup {
         test_db
             .execute(setup)
@@ -21,9 +21,9 @@ pub(crate) async fn get_test_deps(
             .expect("Failed to execute setup query");
     }
 
-    let schema_cache = SchemaCache::load(test_db)
+    let snapshot = Snapshot::load(test_db)
         .await
-        .expect("Failed to load Schema Cache");
+        .expect("Failed to load snapshot");
 
     let mut parser = tree_sitter::Parser::new();
     parser
@@ -32,7 +32,7 @@ pub(crate) async fn get_test_deps(
 
     let tree = parser.parse(input.to_string(), None).unwrap();
 
-    (tree, schema_cache)
+    (tree, snapshot)
 }
 
 /// Careful: This will connect against the passed database.
@@ -41,14 +41,14 @@ pub(crate) async fn get_test_deps(
 pub(crate) async fn test_against_connection_string(
     conn_str: &str,
     input: QueryWithCursorPosition,
-) -> (tree_sitter::Tree, pgls_schema_cache::SchemaCache) {
+) -> (tree_sitter::Tree, pgls_catalog::Snapshot) {
     let pool = sqlx::PgPool::connect(conn_str)
         .await
         .expect("Unable to connect to database.");
 
-    let schema_cache = SchemaCache::load(&pool)
+    let snapshot = Snapshot::load(&pool)
         .await
-        .expect("Failed to load Schema Cache");
+        .expect("Failed to load snapshot");
 
     let mut parser = tree_sitter::Parser::new();
     parser
@@ -57,19 +57,19 @@ pub(crate) async fn test_against_connection_string(
 
     let tree = parser.parse(input.to_string(), None).unwrap();
 
-    (tree, schema_cache)
+    (tree, snapshot)
 }
 
 pub(crate) fn get_test_params<'a>(
     tree: &'a tree_sitter::Tree,
-    schema_cache: &'a pgls_schema_cache::SchemaCache,
+    snapshot: &'a pgls_catalog::Snapshot,
     sql: QueryWithCursorPosition,
 ) -> CompletionParams<'a> {
     let (position, text) = sql.get_text_and_position();
 
     CompletionParams {
         position: (position as u32).into(),
-        schema: schema_cache,
+        schema: snapshot,
         tree,
         text,
     }
@@ -266,7 +266,7 @@ impl TestCompletionsCase {
 
     async fn generate_snapshot(
         &self,
-        schema_cache: &SchemaCache,
+        snapshot: &Snapshot,
         parser: &mut tree_sitter::Parser,
     ) -> String {
         let mut stmt_parts = self.surrounding_statement.split("<sql>");
@@ -328,7 +328,7 @@ impl TestCompletionsCase {
                                 self.completions_snapshot(
                                     query.into(),
                                     &mut snapshot_result,
-                                    schema_cache,
+                                    snapshot,
                                     parser,
                                     comment,
                                 )
@@ -348,7 +348,7 @@ impl TestCompletionsCase {
                                 self.completions_snapshot(
                                     query1.into(),
                                     &mut snapshot_result,
-                                    schema_cache,
+                                    snapshot,
                                     parser,
                                     comment,
                                 )
@@ -365,7 +365,7 @@ impl TestCompletionsCase {
                                 self.completions_snapshot(
                                     query2.into(),
                                     &mut snapshot_result,
-                                    schema_cache,
+                                    snapshot,
                                     parser,
                                     comment,
                                 )
@@ -389,7 +389,7 @@ impl TestCompletionsCase {
                                 self.completions_snapshot(
                                     query1.into(),
                                     &mut snapshot_result,
-                                    schema_cache,
+                                    snapshot,
                                     parser,
                                     comment,
                                 )
@@ -407,7 +407,7 @@ impl TestCompletionsCase {
                                 self.completions_snapshot(
                                     query2.into(),
                                     &mut snapshot_result,
-                                    schema_cache,
+                                    snapshot,
                                     parser,
                                     comment,
                                 )
@@ -434,7 +434,7 @@ impl TestCompletionsCase {
                                 self.completions_snapshot(
                                     query.into(),
                                     &mut snapshot_result,
-                                    schema_cache,
+                                    snapshot,
                                     parser,
                                     if comment_indicator
                                         .is_some_and(|txt| og_part.starts_with(txt.as_str()))
@@ -463,7 +463,7 @@ impl TestCompletionsCase {
                                 self.completions_snapshot(
                                     query.into(),
                                     &mut snapshot_result,
-                                    schema_cache,
+                                    snapshot,
                                     parser,
                                     None,
                                 )
@@ -505,7 +505,7 @@ impl TestCompletionsCase {
         &self,
         query: QueryWithCursorPosition,
         writer: &mut String,
-        schema: &SchemaCache,
+        schema: &Snapshot,
         parser: &mut tree_sitter::Parser,
         comment: Option<&str>,
     ) {
@@ -613,9 +613,9 @@ impl<'a> TestCompletionsSuite<'a> {
             writeln!(final_snapshot).unwrap();
         }
 
-        let cache = SchemaCache::load(self.pool)
+        let cache = Snapshot::load(self.pool)
             .await
-            .expect("Problem loading SchemaCache");
+            .expect("Problem loading Snapshot");
 
         let mut parser = tree_sitter::Parser::new();
         parser

@@ -174,6 +174,12 @@ pub enum RulePlainConfiguration {
     Off,
 }
 
+impl Merge for RulePlainConfiguration {
+    fn merge_with(&mut self, other: Self) {
+        *self = other;
+    }
+}
+
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[cfg_attr(feature = "schema", derive(JsonSchema))]
 #[serde(rename_all = "camelCase", deny_unknown_fields, untagged)]

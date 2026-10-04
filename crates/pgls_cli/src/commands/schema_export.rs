@@ -1,10 +1,10 @@
 //! Schema export command for WASM bindings.
 //!
-//! This command connects to a PostgreSQL database and exports the schema cache
+//! This command connects to a PostgreSQL database and exports the database snapshot
 //! as JSON that can be used with the WASM bindings.
 
+use pgls_catalog::Snapshot;
 use pgls_console::{ConsoleExt, EnvConsole, markup};
-use pgls_schema_cache::SchemaCache;
 use sqlx::postgres::PgPoolOptions;
 use std::io::Write;
 use std::path::Path;
@@ -45,14 +45,14 @@ pub async fn run_schema_export(
 
     if !write_to_stdout {
         console.log(markup! {
-            "Loading schema cache..."
+            "Loading the database schema..."
         });
     }
 
-    // Load the schema cache
-    let schema_cache = SchemaCache::load(&pool).await.map_err(|e| {
+    // Load the database snapshot
+    let snapshot = Snapshot::load(&pool).await.map_err(|e| {
         CliDiagnostic::io_error(std::io::Error::other(format!(
-            "Failed to load schema cache: {e}"
+            "Failed to load the database schema: {e}"
         )))
     })?;
 
@@ -63,7 +63,7 @@ pub async fn run_schema_export(
     }
 
     // Serialize to JSON
-    let json = serde_json::to_string_pretty(&schema_cache).map_err(|e| {
+    let json = serde_json::to_string_pretty(&snapshot).map_err(|e| {
         CliDiagnostic::io_error(std::io::Error::other(format!(
             "Failed to serialize schema: {e}"
         )))
@@ -86,16 +86,16 @@ pub async fn run_schema_export(
             "\nSchema summary:"
         });
         console.log(markup! {
-            "  Schemas: "{schema_cache.schemas.len().to_string()}
+            "  Schemas: "{snapshot.schemas.len().to_string()}
         });
         console.log(markup! {
-            "  Tables: "{schema_cache.tables.len().to_string()}
+            "  Tables: "{snapshot.tables.len().to_string()}
         });
         console.log(markup! {
-            "  Functions: "{schema_cache.functions.len().to_string()}
+            "  Functions: "{snapshot.functions.len().to_string()}
         });
         console.log(markup! {
-            "  Types: "{schema_cache.types.len().to_string()}
+            "  Types: "{snapshot.types.len().to_string()}
         });
     } else {
         // Write to stdout

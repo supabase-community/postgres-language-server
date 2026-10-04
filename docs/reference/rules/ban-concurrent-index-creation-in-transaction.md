@@ -1,5 +1,7 @@
 # banConcurrentIndexCreationInTransaction
-**Diagnostic Category: `lint/safety/banConcurrentIndexCreationInTransaction`**
+**Diagnostic Category: `lint/banConcurrentIndexCreationInTransaction`**
+
+**Group: `correctness`**
 
 **Since**: `vnext`
 
@@ -33,11 +35,16 @@ CREATE INDEX CONCURRENTLY "field_name_idx" ON "table_name" ("field_name");
 {
   "linter": {
     "rules": {
-      "safety": {
-        "banConcurrentIndexCreationInTransaction": "error"
-      }
+      "banConcurrentIndexCreationInTransaction": "error"
     }
   }
 }
 
+```
+## How to suppress
+
+Suppress this diagnostic with a comment:
+
+```sql
+-- pgls-ignore banConcurrentIndexCreationInTransaction
 ```

@@ -4,12 +4,12 @@ expression: snapshot
 ---
 # Input
 ```
--- expect_lint/safety/avoidAttachingPartition
+-- expect_lint/avoidAttachingPartition
 alter table my_table attach partition my_partition for values from ('2024-01-01') to ('2025-01-01');
 ```
 
 # Diagnostics
-lint/safety/avoidAttachingPartition ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+lint/avoidAttachingPartition ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   × Attaching a partition acquires an ACCESS EXCLUSIVE lock on the parent table.
   

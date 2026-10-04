@@ -493,18 +493,14 @@ async fn test_database_connection(test_db: PgPool) -> Result<()> {
         .open_document("select unknown from public.users; ")
         .await?;
 
-    // in this test, we want to ensure a database connection is established and the schema cache is
+    // in this test, we want to ensure a database connection is established and the snapshot is
     // loaded. This is the case when the server sends typecheck diagnostics for the query above.
     // so we wait for diagnostics to be sent.
     let notification = tokio::time::timeout(Duration::from_secs(5), async {
         loop {
             match receiver.next().await {
                 Some(ServerNotification::PublishDiagnostics(msg)) => {
-                    if msg
-                        .diagnostics
-                        .iter()
-                        .any(|d| d.message.contains("column \"unknown\" does not exist"))
-                    {
+                    if msg.diagnostics.iter().any(is_database_backed) {
                         return true;
                     }
                 }
@@ -526,9 +522,10 @@ async fn test_database_connection(test_db: PgPool) -> Result<()> {
 /// The type check error below can only be produced with a database connection and the schema of the
 /// test database.
 fn is_database_backed(diagnostic: &lsp::Diagnostic) -> bool {
-    diagnostic
-        .message
-        .contains("column \"unknown\" does not exist")
+    matches!(
+        &diagnostic.code,
+        Some(lsp::NumberOrString::String(code)) if code == "lint/unknownColumn"
+    )
 }
 
 /// Drops every notification that is already queued, so that a later assertion cannot be satisfied
@@ -2216,7 +2213,7 @@ ALTER TABLE ONLY "public"."campaign_contact_list"
                         .filter(|d| {
                             d.code.as_ref().is_none_or(|c| match c {
                                 lsp::NumberOrString::Number(_) => true,
-                                lsp::NumberOrString::String(s) => !s.starts_with("lint/safety"),
+                                lsp::NumberOrString::String(s) => !s.starts_with("lint/"),
                             })
                         })
                         .count()

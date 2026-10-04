@@ -1,6 +1,6 @@
 use std::fmt::Write;
 
-use pgls_schema_cache::{Schema, SchemaCache};
+use pgls_catalog::{Schema, Snapshot};
 use pgls_treesitter::TreesitterContext;
 
 use crate::{contextual_priority::ContextualPriority, to_markdown::ToHoverMarkdown};
@@ -9,7 +9,7 @@ impl ToHoverMarkdown for Schema {
     fn hover_headline<W: Write>(
         &self,
         writer: &mut W,
-        _schema_cache: &SchemaCache,
+        _snapshot: &Snapshot,
     ) -> Result<(), std::fmt::Error> {
         write!(writer, "`{}` - owned by {}", self.name, self.owner)?;
 
@@ -19,7 +19,7 @@ impl ToHoverMarkdown for Schema {
     fn hover_body<W: Write>(
         &self,
         writer: &mut W,
-        _schema_cache: &SchemaCache,
+        _snapshot: &Snapshot,
     ) -> Result<bool, std::fmt::Error> {
         if let Some(comment) = &self.comment {
             write!(writer, "Comment: '{comment}'")?;
@@ -57,7 +57,7 @@ impl ToHoverMarkdown for Schema {
     fn hover_footer<W: Write>(
         &self,
         writer: &mut W,
-        _schema_cache: &SchemaCache,
+        _snapshot: &Snapshot,
     ) -> Result<bool, std::fmt::Error> {
         writeln!(writer)?;
         write!(

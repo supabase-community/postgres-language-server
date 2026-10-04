@@ -35,6 +35,7 @@ declare_lint_rule! {
         name: "disallowUniqueConstraint",
         severity: Severity::Error,
         recommended: false,
+        applies_to: pgls_analyse::AppliesTo::Migration,
         sources: &[RuleSource::Squawk("disallow-unique-constraint")],
     }
 }

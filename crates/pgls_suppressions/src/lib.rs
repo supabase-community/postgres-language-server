@@ -90,8 +90,8 @@ impl Suppressions {
 
         // Users may use many suppressions for a single diagnostic, like so:
         // ```
-        // -- pgt-ignore lint/safety/banDropTable
-        // -- pgt-ignore lint/safety/banDropColumn
+        // -- pgt-ignore banDropTable
+        // -- pgt-ignore banDropColumn
         // <statement causing two diagnostics>
         // ```
         // So to find a matching diagnostic for any suppression, we're moving
@@ -316,14 +316,14 @@ mod tests {
         let doc = r#"
             select 2;
 
-            -- pgt-ignore lint/safety/banDropTable
+            -- pgt-ignore banDropTable
             select 1;
             "#;
 
         let suppressions = super::Suppressions::from(doc);
 
         let disabled_diagnostics = suppressions.get_disabled_diagnostic_suppressions_as_errors(&[
-            pgls_analyse::RuleFilter::Group("safety"),
+            pgls_analyse::RuleFilter::Group("destructive"),
         ]);
 
         assert_eq!(disabled_diagnostics.len(), 1);
@@ -331,7 +331,7 @@ mod tests {
         assert_eq!(
             disabled_diagnostics[0],
             SuppressionDiagnostic {
-                span: TextRange::new(36.into(), 74.into()),
+                span: TextRange::new(36.into(), 62.into()),
                 message: MessageAndDescription::from("This rule has been disabled via the configuration. The suppression has no effect.".to_string())
             }
         );

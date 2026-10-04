@@ -1,5 +1,9 @@
 # addingRequiredField
-**Diagnostic Category: `lint/safety/addingRequiredField`**
+**Diagnostic Category: `lint/addingRequiredField`**
+
+**Group: `destructive`**
+
+**Applies to: migration files only**
 
 **Since**: `vnext`
 
@@ -29,11 +33,16 @@ alter table test add column count int not null default 0;
 {
   "linter": {
     "rules": {
-      "safety": {
-        "addingRequiredField": "error"
-      }
+      "addingRequiredField": "error"
     }
   }
 }
 
+```
+## How to suppress
+
+Suppress this diagnostic with a comment:
+
+```sql
+-- pgls-ignore addingRequiredField
 ```

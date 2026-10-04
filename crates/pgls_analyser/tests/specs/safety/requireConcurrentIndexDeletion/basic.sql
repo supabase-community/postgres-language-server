@@ -1,2 +1,2 @@
--- expect_lint/safety/requireConcurrentIndexDeletion
+-- expect_lint/requireConcurrentIndexDeletion
 DROP INDEX IF EXISTS users_email_idx;

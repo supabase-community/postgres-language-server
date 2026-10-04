@@ -1,0 +1,18 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+assertion_line: 156
+expression: snapshot
+---
+# Input
+```
+-- A query that doesn't parse can't create anything, so later statements are still checked.
+-- expect_lint/unknownRelation
+select * frm somewhere;
+select * from missing_table;
+
+```
+
+# Diagnostics
+lint/unknownRelation ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Relation missing_table does not exist.

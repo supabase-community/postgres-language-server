@@ -40,6 +40,7 @@ declare_lint_rule! {
         name: "lockTimeoutWarning",
         severity: Severity::Warning,
         recommended: true,
+        applies_to: pgls_analyse::AppliesTo::Migration,
         sources: &[RuleSource::Eugene("E9")],
     }
 }
@@ -51,7 +52,7 @@ impl LinterRule for LockTimeoutWarning {
         let mut diagnostics = Vec::new();
 
         // Check if lock timeout has been set in the transaction
-        let tx_state = ctx.file_context().transaction_state();
+        let tx_state = ctx.session();
         if tx_state.has_lock_timeout() {
             return diagnostics;
         }

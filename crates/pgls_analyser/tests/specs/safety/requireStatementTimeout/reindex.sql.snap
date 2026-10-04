@@ -4,13 +4,13 @@ expression: snapshot
 ---
 # Input
 ```
--- expect_lint/safety/requireStatementTimeout
+-- expect_lint/requireStatementTimeout
 REINDEX INDEX my_index;
 
 ```
 
 # Diagnostics
-lint/safety/requireStatementTimeout ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+lint/requireStatementTimeout ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   × Statement takes a dangerous lock without a statement_timeout set.
   

@@ -29,6 +29,7 @@ declare_lint_rule! {
         name: "avoidAttachingPartition",
         severity: Severity::Warning,
         recommended: true,
+        applies_to: pgls_analyse::AppliesTo::Migration,
         sources: &[RuleSource::Pgfence("attach-partition")],
     }
 }

@@ -1,5 +1,9 @@
 # banDropTable
-**Diagnostic Category: `lint/safety/banDropTable`**
+**Diagnostic Category: `lint/banDropTable`**
+
+**Group: `destructive`**
+
+**Applies to: migration files only**
 
 **Since**: `vnext`
 
@@ -26,7 +30,7 @@ drop table some_table;
 ```
 
 ```sh
-code-block.sql:1:1 lint/safety/banDropTable ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+code-block.sql:1:1 lint/banDropTable ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   ! Dropping a table may break existing clients.
   
@@ -45,11 +49,16 @@ code-block.sql:1:1 lint/safety/banDropTable ━━━━━━━━━━━━
 {
   "linter": {
     "rules": {
-      "safety": {
-        "banDropTable": "error"
-      }
+      "banDropTable": "error"
     }
   }
 }
 
+```
+## How to suppress
+
+Suppress this diagnostic with a comment:
+
+```sql
+-- pgls-ignore banDropTable
 ```

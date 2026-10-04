@@ -1,5 +1,9 @@
 # banDropTrigger
-**Diagnostic Category: `lint/safety/banDropTrigger`**
+**Diagnostic Category: `lint/banDropTrigger`**
+
+**Group: `safety`**
+
+**Applies to: migration files only**
 
 **Since**: `vnext`
 
@@ -22,7 +26,7 @@ drop trigger my_trigger on my_table;
 ```
 
 ```sh
-code-block.sql:1:1 lint/safety/banDropTrigger ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+code-block.sql:1:1 lint/banDropTrigger ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   ! Dropping a trigger acquires an ACCESS EXCLUSIVE lock on the table.
   
@@ -47,11 +51,16 @@ select 1;
 {
   "linter": {
     "rules": {
-      "safety": {
-        "banDropTrigger": "error"
-      }
+      "banDropTrigger": "error"
     }
   }
 }
 
+```
+## How to suppress
+
+Suppress this diagnostic with a comment:
+
+```sql
+-- pgls-ignore banDropTrigger
 ```

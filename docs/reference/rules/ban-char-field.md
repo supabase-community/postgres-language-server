@@ -1,5 +1,7 @@
 # banCharField
-**Diagnostic Category: `lint/safety/banCharField`**
+**Diagnostic Category: `lint/banCharField`**
+
+**Group: `style`**
 
 **Since**: `vnext`
 
@@ -28,7 +30,7 @@ CREATE TABLE "core_bar" (
 ```
 
 ```sh
-code-block.sql:1:1 lint/safety/banCharField ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+code-block.sql:1:1 lint/banCharField ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   ! CHAR type is discouraged due to space padding behavior.
   
@@ -62,11 +64,16 @@ CREATE TABLE "core_bar" (
 {
   "linter": {
     "rules": {
-      "safety": {
-        "banCharField": "error"
-      }
+      "banCharField": "error"
     }
   }
 }
 
+```
+## How to suppress
+
+Suppress this diagnostic with a comment:
+
+```sql
+-- pgls-ignore banCharField
 ```

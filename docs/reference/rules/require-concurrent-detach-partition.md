@@ -1,5 +1,9 @@
 # requireConcurrentDetachPartition
-**Diagnostic Category: `lint/safety/requireConcurrentDetachPartition`**
+**Diagnostic Category: `lint/requireConcurrentDetachPartition`**
+
+**Group: `safety`**
+
+**Applies to: migration files only**
 
 **Since**: `vnext`
 
@@ -25,7 +29,7 @@ alter table my_table detach partition my_partition;
 ```
 
 ```sh
-code-block.sql:1:1 lint/safety/requireConcurrentDetachPartition ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+code-block.sql:1:1 lint/requireConcurrentDetachPartition ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   ! Detaching a partition without CONCURRENTLY blocks all table access.
   
@@ -50,11 +54,16 @@ alter table my_table detach partition my_partition concurrently;
 {
   "linter": {
     "rules": {
-      "safety": {
-        "requireConcurrentDetachPartition": "error"
-      }
+      "requireConcurrentDetachPartition": "error"
     }
   }
 }
 
+```
+## How to suppress
+
+Suppress this diagnostic with a comment:
+
+```sql
+-- pgls-ignore requireConcurrentDetachPartition
 ```

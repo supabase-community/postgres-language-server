@@ -1,5 +1,9 @@
 # renamingTable
-**Diagnostic Category: `lint/safety/renamingTable`**
+**Diagnostic Category: `lint/renamingTable`**
+
+**Group: `destructive`**
+
+**Applies to: migration files only**
 
 **Since**: `vnext`
 
@@ -23,7 +27,7 @@ ALTER TABLE users RENAME TO app_users;
 ```
 
 ```sh
-code-block.sql:1:1 lint/safety/renamingTable ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+code-block.sql:1:1 lint/renamingTable ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   ! Renaming a table may break existing clients.
   
@@ -42,11 +46,16 @@ code-block.sql:1:1 lint/safety/renamingTable ━━━━━━━━━━━�
 {
   "linter": {
     "rules": {
-      "safety": {
-        "renamingTable": "error"
-      }
+      "renamingTable": "error"
     }
   }
 }
 
+```
+## How to suppress
+
+Suppress this diagnostic with a comment:
+
+```sql
+-- pgls-ignore renamingTable
 ```

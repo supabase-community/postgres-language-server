@@ -1,5 +1,9 @@
 # changingColumnType
-**Diagnostic Category: `lint/safety/changingColumnType`**
+**Diagnostic Category: `lint/changingColumnType`**
+
+**Group: `destructive`**
+
+**Applies to: migration files only**
 
 **Since**: `vnext`
 
@@ -32,7 +36,7 @@ ALTER TABLE "core_recipe" ALTER COLUMN "count" TYPE bigint;
 ```
 
 ```sh
-code-block.sql:1:1 lint/safety/changingColumnType ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+code-block.sql:1:1 lint/changingColumnType ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   ! Changing a column type requires a table rewrite and blocks reads and writes.
   
@@ -57,11 +61,16 @@ ALTER TABLE "core_recipe" ALTER COLUMN "edits" TYPE text;
 {
   "linter": {
     "rules": {
-      "safety": {
-        "changingColumnType": "error"
-      }
+      "changingColumnType": "error"
     }
   }
 }
 
+```
+## How to suppress
+
+Suppress this diagnostic with a comment:
+
+```sql
+-- pgls-ignore changingColumnType
 ```

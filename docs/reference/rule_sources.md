@@ -3,7 +3,20 @@ Many rules are inspired by or directly ported from other tools. This page lists 
 
 ## Exclusive rules
 
-_No exclusive rules available._
+- [ambiguousColumn](./rules/ambiguous-column.md) 
+- [assignmentTypeMismatch](./rules/assignment-type-mismatch.md) 
+- [functionArgumentMismatch](./rules/function-argument-mismatch.md) 
+- [functionReturnTypeMismatch](./rules/function-return-type-mismatch.md) 
+- [insertColumnMismatch](./rules/insert-column-mismatch.md) 
+- [invalidCast](./rules/invalid-cast.md) 
+- [invalidDropTypeSignature](./rules/invalid-drop-type-signature.md) 
+- [missingFromClauseEntry](./rules/missing-from-clause-entry.md) 
+- [operatorTypeMismatch](./rules/operator-type-mismatch.md) 
+- [unknownColumn](./rules/unknown-column.md) 
+- [unknownFunction](./rules/unknown-function.md) 
+- [unknownRelation](./rules/unknown-relation.md) 
+- [unknownSchema](./rules/unknown-schema.md) 
+- [unknownType](./rules/unknown-type.md) 
 
 ## Rules from other sources
 
@@ -38,8 +51,6 @@ _No exclusive rules available._
 | [constraint-missing-not-valid](https://squawkhq.com/docs/constraint-missing-not-valid) |[constraintMissingNotValid](./rules/constraint-missing-not-valid.md) |
 | [disallow-unique-constraint](https://squawkhq.com/docs/disallow-unique-constraint) |[disallowUniqueConstraint](./rules/disallow-unique-constraint.md) |
 | [prefer-big-int](https://squawkhq.com/docs/prefer-big-int) |[preferBigInt](./rules/prefer-big-int.md) |
-| [prefer-bigint-over-int](https://squawkhq.com/docs/prefer-bigint-over-int) |[preferBigintOverInt](./rules/prefer-bigint-over-int.md) |
-| [prefer-bigint-over-smallint](https://squawkhq.com/docs/prefer-bigint-over-smallint) |[preferBigintOverSmallint](./rules/prefer-bigint-over-smallint.md) |
 | [prefer-identity](https://squawkhq.com/docs/prefer-identity) |[preferIdentity](./rules/prefer-identity.md) |
 | [prefer-robust-stmts](https://squawkhq.com/docs/prefer-robust-stmts) |[preferRobustStmts](./rules/prefer-robust-stmts.md) |
 | [prefer-text-field](https://squawkhq.com/docs/prefer-text-field) |[preferTextField](./rules/prefer-text-field.md) |
@@ -67,7 +78,6 @@ _No exclusive rules available._
 | [missing-statement-timeout](https://github.com/flvmnt/pgfence) |[requireStatementTimeout](./rules/require-statement-timeout.md) |
 | [not-valid-validate-same-tx](https://github.com/flvmnt/pgfence) |[requireSeparateConstraintValidation](./rules/require-separate-constraint-validation.md) |
 | [refresh-matview-blocking](https://github.com/flvmnt/pgfence) |[requireConcurrentRefreshMatview](./rules/require-concurrent-refresh-matview.md) |
-| [refresh-matview-concurrent](https://github.com/flvmnt/pgfence) |[concurrentRefreshMatviewLock](./rules/concurrent-refresh-matview-lock.md) |
 | [reindex-non-concurrent](https://github.com/flvmnt/pgfence) |[requireConcurrentReindex](./rules/require-concurrent-reindex.md) |
 | [truncate](https://github.com/flvmnt/pgfence) |[banTruncate](./rules/ban-truncate.md) |
 | [update-in-migration](https://github.com/flvmnt/pgfence) |[banUpdateWithoutWhere](./rules/ban-update-without-where.md) |

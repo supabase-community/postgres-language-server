@@ -1,2 +1,2 @@
--- expect_lint/safety/requireStatementTimeout
+-- expect_lint/requireStatementTimeout
 REFRESH MATERIALIZED VIEW my_view;

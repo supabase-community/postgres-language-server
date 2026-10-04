@@ -22,7 +22,7 @@ The following features are available today:
 
 - [Autocompletion & Hover](https://pg-language-server.com/latest/features/editor_features/)
 - [Syntax Diagnostics](https://pg-language-server.com/latest/features/syntax_diagnostics/)
-- [Type Checking](https://pg-language-server.com/latest/features/type_checking/) (via `EXPLAIN` error insights)
+- [Type Checking](https://pg-language-server.com/latest/features/type_checking/)
 - [Formatting](https://pg-language-server.com/latest/features/formatting/)
 - [Migration Linting](https://pg-language-server.com/latest/features/linting/)
 - [Database Linting](https://pg-language-server.com/latest/features/database_linting/)

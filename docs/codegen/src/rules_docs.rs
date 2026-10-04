@@ -1,6 +1,6 @@
 use anyhow::{Result, bail};
 use convert_case::{Case, Casing};
-use pgls_analyse::{AnalysisFilter, RuleFilter, RuleMetadata};
+use pgls_analyse::{AnalysisFilter, AppliesTo, RuleFilter, RuleMetadata};
 use pgls_analyser::{AnalysableStatement, Analyser, AnalyserConfig, LinterOptions};
 use pgls_console::StdDisplay;
 use pgls_diagnostics::{Diagnostic, DiagnosticExt, PrintDiagnostic};
@@ -52,12 +52,18 @@ fn generate_rule_doc(
 
     writeln!(content, "# {rule}")?;
 
-    writeln!(content, "**Diagnostic Category: `lint/{group}/{rule}`**")?;
+    writeln!(content, "**Diagnostic Category: `lint/{rule}`**")?;
+    writeln!(content)?;
+    writeln!(content, "**Group: `{group}`**")?;
 
-    let is_recommended = meta.recommended;
+    if meta.applies_to == AppliesTo::Migration {
+        writeln!(content)?;
+        writeln!(content, "**Applies to: migration files only**")?;
+    }
 
     // add deprecation notice
     if let Some(reason) = &meta.deprecated {
+        writeln!(content)?;
         writeln!(content, "> [!WARNING]")?;
         writeln!(
             content,
@@ -69,8 +75,7 @@ fn generate_rule_doc(
     writeln!(content, "**Since**: `v{}`", meta.version)?;
     writeln!(content)?;
 
-    // add recommended notice
-    if is_recommended {
+    if meta.recommended {
         writeln!(content, "> [!NOTE]")?;
         writeln!(
             content,
@@ -80,7 +85,6 @@ fn generate_rule_doc(
 
     writeln!(content)?;
 
-    // add source information
     if !meta.sources.is_empty() {
         writeln!(content, "**Sources**: ")?;
 
@@ -98,25 +102,21 @@ fn generate_rule_doc(
 
     write_documentation(group, rule, meta.docs, &mut content)?;
 
-    write_how_to_configure(group, rule, &mut content)?;
+    write_how_to_configure(rule, &mut content)?;
+
+    write_how_to_suppress(rule, &mut content)?;
 
     Ok(String::from_utf8(content)?)
 }
 
-fn write_how_to_configure(
-    group: &'static str,
-    rule: &'static str,
-    content: &mut Vec<u8>,
-) -> io::Result<()> {
+fn write_how_to_configure(rule: &'static str, content: &mut Vec<u8>) -> io::Result<()> {
     writeln!(content, "## How to configure")?;
     let json = format!(
         r#"
 {{
   "linter": {{
     "rules": {{
-      "{group}": {{
-        "{rule}": "error"
-      }}
+      "{rule}": "error"
     }}
   }}
 }}
@@ -125,6 +125,18 @@ fn write_how_to_configure(
 
     writeln!(content, "```json")?;
     writeln!(content, "{json}")?;
+    writeln!(content, "```")?;
+
+    Ok(())
+}
+
+fn write_how_to_suppress(rule: &'static str, content: &mut Vec<u8>) -> io::Result<()> {
+    writeln!(content, "## How to suppress")?;
+    writeln!(content)?;
+    writeln!(content, "Suppress this diagnostic with a comment:")?;
+    writeln!(content)?;
+    writeln!(content, "```sql")?;
+    writeln!(content, "-- pgls-ignore {rule}")?;
     writeln!(content, "```")?;
 
     Ok(())
@@ -437,33 +449,15 @@ fn print_diagnostics(
         filter,
     });
 
-    // split and parse each statement
-    let stmts = pgls_statement_splitter::split(code);
-    for stmt_range in stmts.ranges {
-        match pgls_query::parse(&code[stmt_range]) {
+    // Analyse all statements of the block together, as rules can depend on earlier statements.
+    let result = pgls_statement_splitter::split(code);
+    let mut stmts = Vec::new();
+    for stmt_range in &result.ranges {
+        let sql = &code[*stmt_range];
+        match pgls_query::parse(sql) {
             Ok(ast) => {
                 if let Some(root) = ast.into_root() {
-                    for rule_diag in analyser.run(pgls_analyser::AnalyserParams {
-                        schema_cache: None,
-                        stmts: vec![AnalysableStatement {
-                            range: stmt_range,
-                            root,
-                        }],
-                    }) {
-                        let diag = pgls_diagnostics::serde::Diagnostic::new(rule_diag);
-
-                        let category = diag.category().expect("linter diagnostic has no code");
-                        let severity = settings.get_severity_from_rule_code(category).expect(
-                                "If you see this error, it means you need to run cargo codegen-configuration",
-                            );
-
-                        let error = diag
-                            .with_severity(severity)
-                            .with_file_path(&file_path)
-                            .with_file_source_code(code);
-
-                        write_diagnostic(code, error)?;
-                    }
+                    stmts.push(AnalysableStatement::new(root, *stmt_range).with_sql(sql));
                 }
             }
             Err(e) => {
@@ -473,6 +467,32 @@ fn print_diagnostics(
                 write_diagnostic(code, error)?;
             }
         };
+    }
+
+    // Typecheck rules need a database. Examples run against one with empty `public` and
+    // `pg_catalog` schemas and create everything else themselves.
+    let is_typecheck = group == pgls_analyser::TYPECHECK_GROUP;
+    let diagnostics = analyser.run(pgls_analyser::AnalyserParams {
+        stmts,
+        catalog_base: is_typecheck.then(|| std::sync::Arc::new(pgls_catalog::CatalogBase::empty())),
+        search_path: vec!["public".into()],
+        typecheck: is_typecheck,
+        ..Default::default()
+    });
+    for rule_diag in diagnostics {
+        let diag = pgls_diagnostics::serde::Diagnostic::new(rule_diag);
+
+        let category = diag.category().expect("linter diagnostic has no code");
+        let severity = settings
+            .get_severity_from_rule_code(category)
+            .expect("If you see this error, it means you need to run cargo codegen-configuration");
+
+        let error = diag
+            .with_severity(severity)
+            .with_file_path(&file_path)
+            .with_file_source_code(code);
+
+        write_diagnostic(code, error)?;
     }
 
     Ok(())

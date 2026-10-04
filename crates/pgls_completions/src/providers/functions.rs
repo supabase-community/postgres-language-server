@@ -1,4 +1,4 @@
-use pgls_schema_cache::{Function, SchemaCache};
+use pgls_catalog::{Function, Snapshot};
 use pgls_treesitter::TreesitterContext;
 
 use crate::{
@@ -12,10 +12,10 @@ use super::helper::with_schema_or_alias;
 
 pub fn complete_functions<'a>(
     ctx: &'a TreesitterContext,
-    schema_cache: &'a SchemaCache,
+    snapshot: &'a Snapshot,
     builder: &mut CompletionBuilder<'a>,
 ) {
-    let available_functions = &schema_cache.functions;
+    let available_functions = &snapshot.functions;
 
     for func in available_functions {
         let relevance = CompletionRelevanceData::Function(func);

@@ -19,6 +19,7 @@ ignore                            = { workspace = true }
 json-strip-comments               = { workspace = true }
 pgls_analyse                      = { workspace = true, features = ["serde"] }
 pgls_analyser                     = { workspace = true }
+pgls_catalog                      = { workspace = true }
 pgls_completions                  = { workspace = true }
 pgls_configuration                = { workspace = true }
 pgls_console                      = { workspace = true }
@@ -31,7 +32,6 @@ pgls_matcher                      = { workspace = true }
 pgls_pretty_print                 = { workspace = true }
 pgls_query                        = { workspace = true }
 pgls_query_ext                    = { workspace = true }
-pgls_schema_cache                 = { workspace = true, features = ["serde"] }
 pgls_statement_splitter           = { workspace = true }
 pgls_suppressions                 = { workspace = true }
 pgls_text_edit.workspace          = true
@@ -67,7 +67,7 @@ db = [
   "dep:pgls_plpgsql_check",
   "dep:pgls_splinter",
   "dep:pgls_typecheck",
-  "pgls_schema_cache/db",
+  "pgls_catalog/db",
 ]
 default = ["db"]
 schema = [

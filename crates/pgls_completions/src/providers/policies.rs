@@ -1,4 +1,4 @@
-use pgls_schema_cache::SchemaCache;
+use pgls_catalog::Snapshot;
 use pgls_treesitter::TreesitterContext;
 
 use crate::{
@@ -12,10 +12,10 @@ use super::helper::get_range_to_replace;
 
 pub fn complete_policies<'a>(
     ctx: &TreesitterContext<'a>,
-    schema_cache: &'a SchemaCache,
+    snapshot: &'a Snapshot,
     builder: &mut CompletionBuilder<'a>,
 ) {
-    let available_policies = &schema_cache.policies;
+    let available_policies = &snapshot.policies;
 
     for pol in available_policies {
         let text = if node_text_surrounded_by_quotes(ctx) {
