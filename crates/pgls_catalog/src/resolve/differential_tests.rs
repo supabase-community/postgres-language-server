@@ -644,10 +644,8 @@ async fn agrees_with_postgres(pool: PgPool) {
                         failures.push(format!("{sql}\n    [{mode}] not detected: {findings:?}"));
                     }
                 }
-                (Miss(_), _) => {
-                    if findings.iter().any(|f| kind(f).is_some()) {
-                        failures.push(format!("{sql}\n    [{mode}] now detected: {findings:?}"));
-                    }
+                (Miss(_), _) if findings.iter().any(|f| kind(f).is_some()) => {
+                    failures.push(format!("{sql}\n    [{mode}] now detected: {findings:?}"));
                 }
                 _ => {}
             }

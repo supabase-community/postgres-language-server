@@ -66,22 +66,21 @@ pub(super) fn resolve_returning_list(r: &mut Resolver, list: &[Node], mut level:
             let Some(value) = target.val.as_deref().and_then(|value| value.node.as_ref()) else {
                 continue;
             };
-            if let NodeEnum::ColumnRef(column) = value {
-                if column
+            if let NodeEnum::ColumnRef(column) = value
+                && column
                     .fields
                     .last()
                     .is_some_and(|field| matches!(field.node, Some(NodeEnum::AStar(_))))
+            {
+                let qualifier = column.fields.iter().rev().nth(1).and_then(string_value);
+                if let Some(item) =
+                    qualifier.and_then(|name| r.levels.last().and_then(|level| level.item(name)))
                 {
-                    let qualifier = column.fields.iter().rev().nth(1).and_then(string_value);
-                    if let Some(item) = qualifier
-                        .and_then(|name| r.levels.last().and_then(|level| level.item(name)))
-                    {
-                        typed.extend(item.typed_columns.clone().unwrap_or_default());
-                    } else if let Some(level) = r.levels.last() {
-                        typed.extend(level.star_typed_columns().unwrap_or_default());
-                    }
-                    continue;
+                    typed.extend(item.typed_columns.clone().unwrap_or_default());
+                } else if let Some(level) = r.levels.last() {
+                    typed.extend(level.star_typed_columns().unwrap_or_default());
                 }
+                continue;
             }
             typed.push(crate::typing::TypedColumn {
                 name: if target.name.is_empty() {

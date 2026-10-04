@@ -31,11 +31,11 @@ pub(super) fn resolve_range_subselect(
         apply_alias(columns, alias),
     );
     item.typed_columns = typed_columns.map(|mut columns| {
-        if let Some(alias) = alias {
-            if let Some(names) = super::string::string_values(&alias.colnames) {
-                for (column, name) in columns.iter_mut().zip(names) {
-                    column.name = name;
-                }
+        if let Some(alias) = alias
+            && let Some(names) = super::string::string_values(&alias.colnames)
+        {
+            for (column, name) in columns.iter_mut().zip(names) {
+                column.name = name;
             }
         }
         columns

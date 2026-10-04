@@ -145,10 +145,10 @@ fn resolve_select(r: &mut Resolver, n: &SelectStmt) -> Columns {
     r.set_output_names_visible(true);
     for node in &n.group_clause {
         resolve_node(r, node);
-        if let Some(expr) = node.node.as_ref() {
-            if !is_output_reference(expr, &output_names) {
-                super::super::expr::infer_expr(r, expr);
-            }
+        if let Some(expr) = node.node.as_ref()
+            && !is_output_reference(expr, &output_names)
+        {
+            super::super::expr::infer_expr(r, expr);
         }
     }
     for node in &n.sort_clause {
@@ -156,18 +156,17 @@ fn resolve_select(r: &mut Resolver, n: &SelectStmt) -> Columns {
         if let Some(expr) = node.node.as_ref().and_then(|sort| match sort {
             NodeEnum::SortBy(sort) => sort.node.as_deref().and_then(|node| node.node.as_ref()),
             _ => Some(sort),
-        }) {
-            if !is_output_reference(expr, &output_names) {
-                super::super::expr::infer_expr(r, expr);
-            }
+        }) && !is_output_reference(expr, &output_names)
+        {
+            super::super::expr::infer_expr(r, expr);
         }
     }
     for node in &n.distinct_clause {
         resolve_node(r, node);
-        if let Some(expr) = node.node.as_ref() {
-            if !is_output_reference(expr, &output_names) {
-                super::super::expr::infer_expr(r, expr);
-            }
+        if let Some(expr) = node.node.as_ref()
+            && !is_output_reference(expr, &output_names)
+        {
+            super::super::expr::infer_expr(r, expr);
         }
     }
     r.set_output_names_visible(false);
@@ -204,26 +203,24 @@ fn resolve_select(r: &mut Resolver, n: &SelectStmt) -> Columns {
             let Some(value) = t.val.as_deref().and_then(|v| v.node.as_ref()) else {
                 continue;
             };
-            if let NodeEnum::ColumnRef(c) = value {
-                if c.fields
+            if let NodeEnum::ColumnRef(c) = value
+                && c.fields
                     .last()
                     .is_some_and(|f| matches!(f.node, Some(NodeEnum::AStar(_))))
+            {
+                let qualifier = c
+                    .fields
+                    .iter()
+                    .rev()
+                    .nth(1)
+                    .and_then(|f| super::string::string_value(f));
+                if let Some(item) = qualifier.and_then(|q| r.levels.last().and_then(|l| l.item(q)))
                 {
-                    let qualifier = c
-                        .fields
-                        .iter()
-                        .rev()
-                        .nth(1)
-                        .and_then(|f| super::string::string_value(f));
-                    if let Some(item) =
-                        qualifier.and_then(|q| r.levels.last().and_then(|l| l.item(q)))
-                    {
-                        out.extend(item.typed_columns.clone().unwrap_or_default());
-                    } else if let Some(level) = r.levels.last() {
-                        out.extend(level.star_typed_columns().unwrap_or_default());
-                    }
-                    continue;
+                    out.extend(item.typed_columns.clone().unwrap_or_default());
+                } else if let Some(level) = r.levels.last() {
+                    out.extend(level.star_typed_columns().unwrap_or_default());
                 }
+                continue;
             }
             let name = if !t.name.is_empty() {
                 t.name.clone()

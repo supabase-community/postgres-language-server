@@ -134,26 +134,26 @@ pub(super) fn infer_a_expr(r: &mut Resolver<'_>, n: &pgls_query::protobuf::AExpr
                     .and_then(|x| x.node.as_ref())
                     .and_then(|x| infer_expr(r, x));
                 let bounds = n.rexpr.as_deref().and_then(|x| x.node.as_ref());
-                if let Some(NodeEnum::List(list)) = bounds {
-                    if list.items.len() == 2 {
-                        let low = list.items[0].node.as_ref().and_then(|x| infer_expr(r, x));
-                        let high = list.items[1].node.as_ref().and_then(|x| infer_expr(r, x));
-                        if let (Some(left), Some(low), Some(high)) =
-                            (left.as_ref(), low.as_ref(), high.as_ref())
-                        {
-                            // Port of `transformAExprBetween`:
-                            // https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_expr.c#L1294
-                            let kind = Kind::try_from(n.kind).ok()?;
-                            let (lower, upper) = match kind {
-                                Kind::AexprNotBetween | Kind::AexprNotBetweenSym => ("<", ">"),
-                                _ => (">=", "<="),
-                            };
-                            check_operator(r, lower, Some(left), low, n.location);
-                            check_operator(r, upper, Some(left), high, n.location);
-                            if matches!(kind, Kind::AexprBetweenSym | Kind::AexprNotBetweenSym) {
-                                check_operator(r, lower, Some(left), high, n.location);
-                                check_operator(r, upper, Some(left), low, n.location);
-                            }
+                if let Some(NodeEnum::List(list)) = bounds
+                    && list.items.len() == 2
+                {
+                    let low = list.items[0].node.as_ref().and_then(|x| infer_expr(r, x));
+                    let high = list.items[1].node.as_ref().and_then(|x| infer_expr(r, x));
+                    if let (Some(left), Some(low), Some(high)) =
+                        (left.as_ref(), low.as_ref(), high.as_ref())
+                    {
+                        // Port of `transformAExprBetween`:
+                        // https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_expr.c#L1294
+                        let kind = Kind::try_from(n.kind).ok()?;
+                        let (lower, upper) = match kind {
+                            Kind::AexprNotBetween | Kind::AexprNotBetweenSym => ("<", ">"),
+                            _ => (">=", "<="),
+                        };
+                        check_operator(r, lower, Some(left), low, n.location);
+                        check_operator(r, upper, Some(left), high, n.location);
+                        if matches!(kind, Kind::AexprBetweenSym | Kind::AexprNotBetweenSym) {
+                            check_operator(r, lower, Some(left), high, n.location);
+                            check_operator(r, upper, Some(left), low, n.location);
                         }
                     }
                 }

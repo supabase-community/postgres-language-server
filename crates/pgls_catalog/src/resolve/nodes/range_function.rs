@@ -90,13 +90,13 @@ pub(super) fn resolve_range_function(
         columns.push("ordinality".into());
     }
     let mut typed_columns = typed_return_columns(r, n);
-    if n.ordinality {
-        if let Some(columns) = typed_columns.as_mut() {
-            columns.push(TypedColumn {
-                name: "ordinality".into(),
-                ty: named_type(r, "int8"),
-            });
-        }
+    if n.ordinality
+        && let Some(columns) = typed_columns.as_mut()
+    {
+        columns.push(TypedColumn {
+            name: "ordinality".into(),
+            ty: named_type(r, "int8"),
+        });
     }
 
     // When the overloads disagree on their columns, the selected one decides.

@@ -195,10 +195,10 @@ pub fn check_generic_type_consistency(
                 return Decision::Known(false);
             };
             if is(&ids[2], declared) {
-                if let Some(previous) = &array {
-                    if previous != &flattened {
-                        return Decision::Known(false);
-                    }
+                if let Some(previous) = &array
+                    && previous != &flattened
+                {
+                    return Decision::Known(false);
                 }
                 array = Some(flattened);
             } else {
@@ -228,10 +228,10 @@ pub fn check_generic_type_consistency(
                     _ => return Decision::Unknown,
                 }
             }
-            if let Some(previous) = &elem {
-                if previous != input {
-                    return Decision::Known(false);
-                }
+            if let Some(previous) = &elem
+                && previous != input
+            {
+                return Decision::Known(false);
             }
             elem = Some(input.clone());
         }
@@ -604,7 +604,7 @@ mod polymorphic_tests {
             check_generic_type_consistency(
                 &catalog,
                 &[Type::Named(int4.clone())],
-                &[anyelement.clone()]
+                std::slice::from_ref(&anyelement)
             ),
             Decision::Known(true)
         );
@@ -612,7 +612,7 @@ mod polymorphic_tests {
             resolve_polymorphic_result(
                 &catalog,
                 &[Type::Named(int4.clone())],
-                &[anyelement.clone()],
+                std::slice::from_ref(&anyelement),
                 &anyelement
             ),
             Decision::Known(Some(Type::Named(int4)))
