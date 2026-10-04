@@ -29,10 +29,7 @@ pub fn parse(statement: &str) -> Result<ParseResult> {
         Err(Error::Parse(message))
     } else {
         let data = unsafe {
-            std::slice::from_raw_parts(
-                result.parse_tree.data as *const u8,
-                result.parse_tree.len as usize,
-            )
+            std::slice::from_raw_parts(result.parse_tree.data as *const u8, result.parse_tree.len)
         };
         let stderr = unsafe { CStr::from_ptr(result.stderr_buffer) }
             .to_string_lossy()

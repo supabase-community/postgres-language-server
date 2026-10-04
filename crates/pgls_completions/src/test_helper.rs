@@ -94,19 +94,19 @@ impl CompletionAssertion {
                 assert_eq!(
                     &item.label, label,
                     "Expected label to be {}, but got {}",
-                    label, &item.label
+                    label, item.label
                 );
             }
             CompletionAssertion::LabelAndKind(label, kind) => {
                 assert_eq!(
                     &item.label, label,
                     "Expected label to be {}, but got {}",
-                    label, &item.label
+                    label, item.label
                 );
                 assert_eq!(
                     &item.kind, kind,
                     "Expected kind to be {:?}, but got {:?}",
-                    kind, &item.kind
+                    kind, item.kind
                 );
             }
             CompletionAssertion::LabelNotExists(label) => {
@@ -125,12 +125,12 @@ impl CompletionAssertion {
                 assert_eq!(
                     &item.label, label,
                     "Expected label to be {}, but got {}",
-                    label, &item.label
+                    label, item.label
                 );
                 assert_eq!(
                     &item.description, desc,
                     "Expected desc to be {}, but got {}",
-                    desc, &item.description
+                    desc, item.description
                 );
             }
             CompletionAssertion::CompletionTextAndRange(txt, text_range) => {
@@ -152,7 +152,7 @@ impl CompletionAssertion {
                     text_range,
                     item.completion_text
                         .as_ref()
-                        .map(|t| format!("{:?}", &t.range))
+                        .map(|t| format!("{:?}", t.range))
                         .unwrap_or("None".to_string())
                 );
             }
@@ -195,7 +195,7 @@ pub(crate) async fn assert_complete_results(
 
     existing
         .into_iter()
-        .zip(items.into_iter())
+        .zip(items)
         .for_each(|(assertion, result)| {
             assertion.assert(&result);
         });

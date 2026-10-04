@@ -23,23 +23,21 @@ pub(super) fn emit_sort_by(e: &mut EventEmitter, n: &SortBy) {
             e.space();
             e.token(TokenKind::DESC_KW);
         }
-        x if x == SortByDir::SortbyUsing as i32 => {
-            if !n.use_op.is_empty() {
-                e.space();
-                e.token(TokenKind::USING_KW);
-                e.space();
+        x if x == SortByDir::SortbyUsing as i32 && !n.use_op.is_empty() => {
+            e.space();
+            e.token(TokenKind::USING_KW);
+            e.space();
 
-                // Emit operator - could be qualified like schema.op
-                if n.use_op.len() > 1 {
-                    // Multiple parts: use OPERATOR(schema.op) syntax
-                    e.token(TokenKind::OPERATOR_KW);
-                    e.token(TokenKind::L_PAREN);
-                    emit_operator_name(e, &n.use_op);
-                    e.token(TokenKind::R_PAREN);
-                } else if n.use_op.len() == 1 {
-                    // Single part: use direct operator syntax
-                    emit_operator_name(e, &n.use_op);
-                }
+            // Emit operator - could be qualified like schema.op
+            if n.use_op.len() > 1 {
+                // Multiple parts: use OPERATOR(schema.op) syntax
+                e.token(TokenKind::OPERATOR_KW);
+                e.token(TokenKind::L_PAREN);
+                emit_operator_name(e, &n.use_op);
+                e.token(TokenKind::R_PAREN);
+            } else if n.use_op.len() == 1 {
+                // Single part: use direct operator syntax
+                emit_operator_name(e, &n.use_op);
             }
         }
         _ => {

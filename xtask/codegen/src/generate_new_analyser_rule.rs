@@ -117,7 +117,7 @@ pub fn generate_new_analyser_rule(
         rule_folder.display(),
         crate::to_snake_case(rule_name)
     );
-    std::fs::write(file_name.clone(), code).unwrap_or_else(|_| panic!("To write {}", &file_name));
+    std::fs::write(file_name.clone(), code).unwrap_or_else(|_| panic!("To write {}", file_name));
 
     let categories_path = "crates/pgls_diagnostics_categories/src/categories.rs";
     let mut categories = std::fs::read_to_string(categories_path).unwrap();
@@ -167,5 +167,5 @@ pub fn generate_new_analyser_rule(
         test_file_name.clone(),
         gen_sql(format!("lint/{group}/{rule_name_camel}").as_str()),
     )
-    .unwrap_or_else(|_| panic!("To write {}", &test_file_name));
+    .unwrap_or_else(|_| panic!("To write {}", test_file_name));
 }

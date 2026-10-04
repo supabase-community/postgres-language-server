@@ -46,16 +46,11 @@ impl LinterRule for AvoidAddingExclusionConstraint {
                 for cmd in &stmt.cmds {
                     if let Some(pgls_query::NodeEnum::AlterTableCmd(cmd)) = &cmd.node
                         && cmd.subtype() == pgls_query::protobuf::AlterTableType::AtAddConstraint
-                    {
-                        if let Some(pgls_query::NodeEnum::Constraint(constraint)) =
+                        && let Some(pgls_query::NodeEnum::Constraint(constraint)) =
                             cmd.def.as_ref().and_then(|d| d.node.as_ref())
-                        {
-                            if constraint.contype()
-                                == pgls_query::protobuf::ConstrType::ConstrExclusion
-                            {
-                                diagnostics.push(exclusion_diagnostic());
-                            }
-                        }
+                        && constraint.contype() == pgls_query::protobuf::ConstrType::ConstrExclusion
+                    {
+                        diagnostics.push(exclusion_diagnostic());
                     }
                 }
             }
@@ -63,11 +58,9 @@ impl LinterRule for AvoidAddingExclusionConstraint {
                 for constraint_node in &stmt.constraints {
                     if let Some(pgls_query::NodeEnum::Constraint(constraint)) =
                         &constraint_node.node
+                        && constraint.contype() == pgls_query::protobuf::ConstrType::ConstrExclusion
                     {
-                        if constraint.contype() == pgls_query::protobuf::ConstrType::ConstrExclusion
-                        {
-                            diagnostics.push(exclusion_diagnostic());
-                        }
+                        diagnostics.push(exclusion_diagnostic());
                     }
                 }
             }
