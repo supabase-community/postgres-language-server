@@ -160,7 +160,7 @@ fn write_documentation(
 
                 // Erase the lintdoc-specific attributes in the output by
                 // re-generating the language ID from the source type
-                write!(content, "```{}", &test.tag)?;
+                write!(content, "```{}", test.tag)?;
                 writeln!(content)?;
 
                 language = Some((test, String::new()));
