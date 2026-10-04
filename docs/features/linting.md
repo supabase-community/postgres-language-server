@@ -4,7 +4,7 @@ The language server provides static analysis through linting rules that detect p
 
 ## Rules
 
-Rules are organized into categories like Safety, Performance, and Style. Each rule can be configured individually or disabled entirely.
+Every rule has a flat name, like `banDropColumn`, and belongs to a group: `correctness`, `safety`, `destructive`, `style`, `typecheck`, or `nursery`. Rules can be configured individually, and groups in bulk.
 
 See the [Rules Reference](../reference/rules.md) for the complete list of available rules and their descriptions.
 
@@ -18,17 +18,20 @@ Configure linting behavior in your `postgres-language-server.jsonc`:
     // Enable/disable the linter entirely
     "enabled": true,
     "rules": {
-      // Configure rule groups
-      "safety": {
-        // Individual rule configuration
-        "banDropColumn": "error",    // error, warn, info, hint, off
-        "banDropTable": "warn",
-        "addingRequiredField": "off"
-      }
+      // Individual rule configuration: error, warn, info, hint, off
+      "banDropColumn": "error",
+      "banDropTable": "warn",
+      "addingRequiredField": "off"
+    },
+    // Configure whole groups
+    "groups": {
+      "style": "off"
     }
   }
 }
 ```
+
+The former nested form `"rules": { "safety": { ... } }` still works, but prints a deprecation warning. See [Configuration](../configuration.md) for the details.
 
 ## Suppressing Diagnostics
 
@@ -46,7 +49,7 @@ For more details on suppressions check out [our guide](../guides/suppressions.md
 
 ## Schema-Aware Analysis
 
-Some rules require a database connection to perform schema-aware analysis. If no connection is configured, they are skipped.
+Some rules require a database connection to perform schema-aware analysis, like the rules of the `typecheck` group described in [Type Checking](type_checking.md). If no connection is configured, they are skipped.
 
 ## CLI Usage
 
@@ -55,12 +58,8 @@ The linter can also be used via the CLI for CI integration:
 ```bash
 # Lint specific files
 postgres-language-server check migrations/
-
-# With specific rules
-postgres-language-server check migrations/ --only safety/banDropColumn
-
-# Skip certain rules
-postgres-language-server check migrations/ --skip safety/banDropTable
 ```
+
+Which rules run is set in the configuration file, see above.
 
 See the [CLI Reference](../reference/cli.md) for more options, and check the guide on [linting migrations](../guides/checking_migrations.md).

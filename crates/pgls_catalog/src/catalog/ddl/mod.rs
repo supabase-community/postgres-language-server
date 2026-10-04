@@ -9,6 +9,12 @@
 //! Known gaps, all of which can only hide errors, never report wrong ones:
 //! - `CASCADE` does not drop dependent objects.
 //! - `DROP EXTENSION` does not drop the extension's objects.
+//! - After a file changes the columns of a database table, the columns of every partition and
+//!   inheritance child in the database are unknown: we don't know which parent each belongs to.
+//! - `ALTER TYPE ... ADD ATTRIBUTE ... CASCADE` does not update typed tables (`CREATE TABLE ...
+//!   OF type`) that exist only in the database. This is the one gap that could report a column
+//!   as missing.
+//! - Renaming a schema makes the rest of the file unknown.
 
 mod alter_object_schema_stmt;
 mod alter_table_stmt;

@@ -8,6 +8,12 @@
 //! The algorithms are ported from the latest supported Postgres, [`REL_18_6`], and each port
 //! links the function it follows. Postgres 15 to 17 resolve types the same way.
 //!
+//! Not modelled yet, so always unknown: range and multirange polymorphism, ordered-set and
+//! hypothetical aggregates, `VARIADIC` calls, custom subscripting (like `jsonb['key']`),
+//! conversions between composite types through inheritance, and row comparisons other than
+//! equality. Typmods, domain constraints and the contents of literals are checked at runtime by
+//! Postgres and are ignored.
+//!
 //! [`REL_18_6`]: https://github.com/postgres/postgres/tree/REL_18_6/src/backend/parser
 
 mod coerce;

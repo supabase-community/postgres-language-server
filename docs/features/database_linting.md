@@ -106,13 +106,9 @@ The database linter can be run via the CLI:
 ```bash
 # Run database linting
 postgres-language-server dblint
-
-# With specific rules
-postgres-language-server dblint --only security/rlsDisabledInPublic
-
-# Skip certain rules
-postgres-language-server dblint --skip performance/tableBloat
 ```
+
+Which rules run is set in the configuration file.
 
 See the [CLI Reference](../reference/cli.md) for more options.
 
