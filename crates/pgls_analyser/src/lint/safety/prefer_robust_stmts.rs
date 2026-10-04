@@ -131,9 +131,8 @@ impl LinterRule for PreferRobustStmts {
                     );
                 }
             }
-            pgls_query::NodeEnum::CreateStmt(stmt) => {
-                if !stmt.if_not_exists {
-                    diagnostics.push(
+            pgls_query::NodeEnum::CreateStmt(stmt) if !stmt.if_not_exists => {
+                diagnostics.push(
                         LinterDiagnostic::new(
                             rule_category!(),
                             None,
@@ -146,7 +145,6 @@ impl LinterRule for PreferRobustStmts {
                             "Add IF NOT EXISTS to make the migration re-runnable if it fails.",
                         ),
                     );
-                }
             }
             _ => {}
         }

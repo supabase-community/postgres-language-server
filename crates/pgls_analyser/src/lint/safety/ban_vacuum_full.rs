@@ -39,9 +39,10 @@ impl LinterRule for BanVacuumFull {
     fn run(ctx: &LinterRuleContext<Self>) -> Vec<LinterDiagnostic> {
         let mut diagnostics = vec![];
 
-        if let pgls_query::NodeEnum::VacuumStmt(stmt) = &ctx.stmt() {
-            if is_vacuum_full(stmt) {
-                diagnostics.push(
+        if let pgls_query::NodeEnum::VacuumStmt(stmt) = &ctx.stmt()
+            && is_vacuum_full(stmt)
+        {
+            diagnostics.push(
                     LinterDiagnostic::new(
                         rule_category!(),
                         None,
@@ -54,7 +55,6 @@ impl LinterRule for BanVacuumFull {
                         "Use regular VACUUM or pg_repack for online table maintenance without blocking reads and writes.",
                     ),
                 );
-            }
         }
 
         diagnostics

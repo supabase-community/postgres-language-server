@@ -99,9 +99,9 @@ fn load_config(
         ConfigurationPathHint::FromWorkspace(ref path) => path.clone(),
         // Path hint from user means the command is invoked from the CLI
         // So we use the working directory (CWD) as the resolution base path
-        ConfigurationPathHint::FromUser(_) | ConfigurationPathHint::None => file_system
-            .working_directory()
-            .map_or(PathBuf::new(), |working_directory| working_directory),
+        ConfigurationPathHint::FromUser(_) | ConfigurationPathHint::None => {
+            file_system.working_directory().unwrap_or_default()
+        }
     };
 
     // If the configuration path hint is from user and is a file path,

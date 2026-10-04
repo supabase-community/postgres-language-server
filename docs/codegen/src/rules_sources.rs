@@ -40,8 +40,8 @@ pub fn generate_rule_sources(docs_dir: &Path) -> anyhow::Result<()> {
     let mut buffer = Vec::new();
 
     let rules = groups
-        .into_iter()
-        .flat_map(|(_, rule)| rule)
+        .into_values()
+        .flatten()
         .collect::<BTreeMap<&str, RuleMetadata>>();
 
     let mut rules_by_source = BTreeMap::<String, BTreeSet<SourceSet>>::new();
@@ -119,8 +119,8 @@ pub fn generate_database_rule_sources(docs_dir: &Path) -> anyhow::Result<()> {
     let crate::utils::SplinterRulesVisitor { groups } = visitor;
 
     let rules: Vec<_> = groups
-        .into_iter()
-        .flat_map(|(_, rules)| rules.into_iter())
+        .into_values()
+        .flat_map(|rules| rules.into_iter())
         .collect();
 
     // Group rules by source (currently all from Splinter)

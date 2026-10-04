@@ -404,6 +404,8 @@ mod tests {
     };
     use pgls_diagnostics_macros::Diagnostic;
 
+    // Only used by the serialization tests below, which are commented out.
+    #[allow(dead_code)]
     #[derive(Debug, Diagnostic)]
     #[diagnostic(
         severity = Warning,
@@ -439,6 +441,7 @@ mod tests {
         }
     }
 
+    #[allow(dead_code)]
     #[derive(Debug)]
     struct TestAdvices;
 

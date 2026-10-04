@@ -23,9 +23,8 @@ pub fn scan(sql: &str) -> Result<protobuf::ScanResult> {
             .to_string();
         Err(Error::Scan(message))
     } else {
-        let data = unsafe {
-            std::slice::from_raw_parts(result.pbuf.data as *const u8, result.pbuf.len as usize)
-        };
+        let data =
+            unsafe { std::slice::from_raw_parts(result.pbuf.data as *const u8, result.pbuf.len) };
         protobuf::ScanResult::decode(data).map_err(Error::Decode)
     };
     unsafe { pg_query_free_scan_result(result) };

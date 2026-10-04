@@ -82,7 +82,7 @@ impl QueryResult<'_> {
 // This trait enforces that for any `Self` that implements `Query`,
 // its &Self must implement TryFrom<&QueryResult>
 pub(crate) trait QueryTryFrom<'a>: Sized {
-    type Ref: for<'any> TryFrom<&'a QueryResult<'a>, Error = String>;
+    type Ref: TryFrom<&'a QueryResult<'a>, Error = String>;
 }
 
 pub(crate) trait Query<'a>: QueryTryFrom<'a> {

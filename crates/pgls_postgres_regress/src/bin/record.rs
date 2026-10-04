@@ -200,11 +200,11 @@ async fn record_file(
 
     // Roles are shared by all databases.
     let roles = regress_roles(admin).await;
-    if !roles.is_empty() {
-        if let Ok(mut conn) = PgConnection::connect(&url).await {
-            drop_owned(&mut conn, &roles).await;
-            conn.close().await.ok();
-        }
+    if !roles.is_empty()
+        && let Ok(mut conn) = PgConnection::connect(&url).await
+    {
+        drop_owned(&mut conn, &roles).await;
+        conn.close().await.ok();
     }
     sqlx::raw_sql(&format!("DROP DATABASE {db} WITH (FORCE)"))
         .execute(&mut *admin)

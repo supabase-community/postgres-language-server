@@ -73,7 +73,7 @@ impl Advices for SplinterAdvices {
         // Show remediation
         visitor.record_log(
             LogCategory::Info,
-            &format!("Remediation: {}", &self.remediation),
+            &format!("Remediation: {}", self.remediation),
         )?;
 
         Ok(())
