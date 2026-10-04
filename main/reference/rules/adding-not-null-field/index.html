@@ -122,7 +122,9 @@
             <div class="section" itemprop="articleBody">
               
                 <h1 id="addingnotnullfield">addingNotNullField</h1>
-<p><strong>Diagnostic Category: <code>lint/safety/addingNotNullField</code></strong></p>
+<p><strong>Diagnostic Category: <code>lint/addingNotNullField</code></strong></p>
+<p><strong>Group: <code>safety</code></strong></p>
+<p><strong>Applies to: migration files only</strong></p>
 <p><strong>Since</strong>: <code>vnext</code></p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
@@ -132,18 +134,16 @@
 - Inspired from: <a href="https://squawkhq.com/docs/adding-not-null-field" target="_blank"><code>squawk/adding-not-null-field</code></a></p>
 <h2 id="description">Description</h2>
 <p>Setting a column NOT NULL blocks reads while the table is scanned.</p>
-<p>In Postgres versions before 11, adding a NOT NULL constraint to an existing column requires
-a full table scan to verify that all existing rows satisfy the constraint. This operation
-takes an ACCESS EXCLUSIVE lock, blocking all reads and writes.</p>
-<p>In Postgres 11+, this operation is much faster as it can skip the full table scan for
-newly added columns with default values.</p>
+<p>Setting NOT NULL on an existing column scans the table under an ACCESS EXCLUSIVE lock,
+blocking reads and writes. On PostgreSQL 12+, a validated CHECK (column IS NOT NULL)
+constraint allows PostgreSQL to skip this scan.</p>
 <p>Instead of using SET NOT NULL, consider using a CHECK constraint with NOT VALID, then
 validating it in a separate transaction. This allows reads and writes to continue.</p>
 <h2 id="examples">Examples</h2>
 <h3 id="invalid">Invalid</h3>
 <pre><code class="language-sql">ALTER TABLE &quot;core_recipe&quot; ALTER COLUMN &quot;foo&quot; SET NOT NULL;
 </code></pre>
-<pre><code class="language-sh">code-block.sql:1:1 lint/safety/addingNotNullField ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+<pre><code class="language-sh">code-block.sql:1:1 lint/addingNotNullField ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   ! Setting a column NOT NULL blocks reads while the table is scanned.
 
@@ -153,7 +153,7 @@ validating it in a separate transaction. This allows reads and writes to continu
 
   i This operation requires an ACCESS EXCLUSIVE lock and a full table scan to verify all rows.
 
-  i Use a CHECK constraint with NOT VALID instead, then validate it in a separate transaction.
+  i On PostgreSQL 12+, a validated CHECK (column IS NOT NULL) constraint lets PostgreSQL skip the scan.
 
 
 </code></pre>
@@ -168,13 +168,15 @@ ALTER TABLE &quot;core_recipe&quot; VALIDATE CONSTRAINT foo_not_null;
 {
   &quot;linter&quot;: {
     &quot;rules&quot;: {
-      &quot;safety&quot;: {
-        &quot;addingNotNullField&quot;: &quot;error&quot;
-      }
+      &quot;addingNotNullField&quot;: &quot;error&quot;
     }
   }
 }
 
+</code></pre>
+<h2 id="how-to-suppress">How to suppress</h2>
+<p>Suppress this diagnostic with a comment:</p>
+<pre><code class="language-sql">-- pgls-ignore addingNotNullField
 </code></pre>
               
             </div>

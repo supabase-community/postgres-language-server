@@ -122,7 +122,8 @@
             <div class="section" itemprop="articleBody">
               
                 <h1 id="preferbigint">preferBigInt</h1>
-<p><strong>Diagnostic Category: <code>lint/safety/preferBigInt</code></strong></p>
+<p><strong>Diagnostic Category: <code>lint/preferBigInt</code></strong></p>
+<p><strong>Group: <code>style</code></strong></p>
 <p><strong>Since</strong>: <code>vnext</code></p>
 <p><strong>Sources</strong>: 
 - Inspired from: <a href="https://squawkhq.com/docs/prefer-big-int" target="_blank"><code>squawk/prefer-big-int</code></a></p>
@@ -139,7 +140,7 @@ modern systems, while the cost of migrating to a larger type later can be signif
     id integer
 );
 </code></pre>
-<pre><code class="language-sh">code-block.sql:1:1 lint/safety/preferBigInt ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+<pre><code class="language-sh">code-block.sql:1:1 lint/preferBigInt ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   ! Using smaller integer types can lead to overflow issues.
 
@@ -160,7 +161,7 @@ modern systems, while the cost of migrating to a larger type later can be signif
     id serial
 );
 </code></pre>
-<pre><code class="language-sh">code-block.sql:1:1 lint/safety/preferBigInt ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+<pre><code class="language-sh">code-block.sql:1:1 lint/preferBigInt ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   ! Using smaller integer types can lead to overflow issues.
 
@@ -191,13 +192,15 @@ modern systems, while the cost of migrating to a larger type later can be signif
 {
   &quot;linter&quot;: {
     &quot;rules&quot;: {
-      &quot;safety&quot;: {
-        &quot;preferBigInt&quot;: &quot;error&quot;
-      }
+      &quot;preferBigInt&quot;: &quot;error&quot;
     }
   }
 }
 
+</code></pre>
+<h2 id="how-to-suppress">How to suppress</h2>
+<p>Suppress this diagnostic with a comment:</p>
+<pre><code class="language-sql">-- pgls-ignore preferBigInt
 </code></pre>
               
             </div>

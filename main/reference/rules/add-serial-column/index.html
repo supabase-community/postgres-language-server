@@ -122,7 +122,9 @@
             <div class="section" itemprop="articleBody">
               
                 <h1 id="addserialcolumn">addSerialColumn</h1>
-<p><strong>Diagnostic Category: <code>lint/safety/addSerialColumn</code></strong></p>
+<p><strong>Diagnostic Category: <code>lint/addSerialColumn</code></strong></p>
+<p><strong>Group: <code>safety</code></strong></p>
+<p><strong>Applies to: migration files only</strong></p>
 <p><strong>Since</strong>: <code>vnext</code></p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
@@ -141,7 +143,7 @@ computing and storing values for all existing rows. Both operations require rewr
 <h3 id="invalid">Invalid</h3>
 <pre><code class="language-sql">ALTER TABLE prices ADD COLUMN id serial;
 </code></pre>
-<pre><code class="language-sh">code-block.sql:1:1 lint/safety/addSerialColumn ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+<pre><code class="language-sh">code-block.sql:1:1 lint/addSerialColumn ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   ! Adding a column with type serial requires a table rewrite.
 
@@ -157,7 +159,7 @@ computing and storing values for all existing rows. Both operations require rewr
 </code></pre>
 <pre><code class="language-sql">ALTER TABLE prices ADD COLUMN id bigserial;
 </code></pre>
-<pre><code class="language-sh">code-block.sql:1:1 lint/safety/addSerialColumn ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+<pre><code class="language-sh">code-block.sql:1:1 lint/addSerialColumn ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   ! Adding a column with type bigserial requires a table rewrite.
 
@@ -173,7 +175,7 @@ computing and storing values for all existing rows. Both operations require rewr
 </code></pre>
 <pre><code class="language-sql">ALTER TABLE prices ADD COLUMN total int GENERATED ALWAYS AS (price * quantity) STORED;
 </code></pre>
-<pre><code class="language-sh">code-block.sql:1:1 lint/safety/addSerialColumn ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+<pre><code class="language-sh">code-block.sql:1:1 lint/addSerialColumn ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   ! Adding a column with GENERATED ALWAYS AS ... STORED requires a table rewrite.
 
@@ -192,13 +194,15 @@ computing and storing values for all existing rows. Both operations require rewr
 {
   &quot;linter&quot;: {
     &quot;rules&quot;: {
-      &quot;safety&quot;: {
-        &quot;addSerialColumn&quot;: &quot;error&quot;
-      }
+      &quot;addSerialColumn&quot;: &quot;error&quot;
     }
   }
 }
 
+</code></pre>
+<h2 id="how-to-suppress">How to suppress</h2>
+<p>Suppress this diagnostic with a comment:</p>
+<pre><code class="language-sql">-- pgls-ignore addSerialColumn
 </code></pre>
               
             </div>

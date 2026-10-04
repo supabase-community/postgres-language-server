@@ -143,6 +143,7 @@
 <pre><code>postgres-language-server check supabase/migrations --migrations-dir=&quot;supabase/migrations&quot; --after=20250301120000
 </code></pre>
 <p>This will only check migrations after the specified migration id.</p>
+<p>Setting <code>migrationsDir</code> also limits where migration-only rules run, such as most rules in the <code>safety</code> and <code>destructive</code> groups. Files outside the directory are still linted, but skip these rules. Without <code>migrationsDir</code>, every rule runs on every file. The <a href="../../reference/rules/">rules reference</a> marks which rules are migration-only.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>The prefix format depends on your migration tool:</p>

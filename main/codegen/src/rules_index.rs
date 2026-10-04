@@ -50,26 +50,32 @@ fn generate_group(
 
     writeln!(content, "\n## {group_name}")?;
     writeln!(content)?;
-    write_markup_to_string(content, description)?;
-    writeln!(content)?;
-    writeln!(content)?;
-    writeln!(content, "| Rule name | Description | Properties |")?;
-    writeln!(content, "| --- | --- | --- |")?;
+    if let Some(desc) = description {
+        write_markup_to_string(content, desc)?;
+        writeln!(content)?;
+        writeln!(content)?;
+    }
+    writeln!(
+        content,
+        "| Rule name | Description | Recommended | Migrations only |"
+    )?;
+    writeln!(content, "| --- | --- | --- | --- |")?;
 
     for (rule_name, rule_metadata) in rules {
-        let is_recommended = rule_metadata.recommended;
         let dashed_rule = rule_name.to_case(Case::Kebab);
 
-        let mut properties = String::new();
-        if is_recommended {
-            properties.push('✅');
-        }
+        let recommended = if rule_metadata.recommended { "✅" } else { "" };
+        let migrations_only = if rule_metadata.applies_to == pgls_analyse::AppliesTo::Migration {
+            "✅"
+        } else {
+            ""
+        };
 
         let summary = generate_rule_summary(rule_metadata.docs)?;
 
         write!(
             content,
-            "| [{rule_name}](./rules/{dashed_rule}.md) | {summary} | {properties} |"
+            "| [{rule_name}](./rules/{dashed_rule}.md) | {summary} | {recommended} | {migrations_only} |"
         )?;
 
         writeln!(content)?;
@@ -78,15 +84,61 @@ fn generate_group(
     Ok(())
 }
 
-fn extract_group_metadata(group: &str) -> (&str, Markup<'_>) {
+fn extract_group_metadata(group: &str) -> (&str, Option<Markup<'_>>) {
     match group {
+        "correctness" => (
+            "Correctness",
+            Some(markup! {
+                "Code that fails at runtime for reasons other than names or types."
+            }),
+        ),
         "safety" => (
             "Safety",
-            markup! {
-                "Rules that detect potential safety issues in your code."
-            },
+            Some(markup! {
+                "Valid code that may be dangerous against a live database: locks, rewrites, or blocking."
+            }),
         ),
-        _ => panic!("Unknown group ID {group:?}"),
+        "destructive" => (
+            "Destructive",
+            Some(markup! {
+                "Code that loses data or breaks existing clients."
+            }),
+        ),
+        "style" => (
+            "Style",
+            Some(markup! {
+                "Schema design preferences. Not enabled by the recommended preset."
+            }),
+        ),
+        "security" => (
+            "Security",
+            Some(markup! {
+                "Security issues in new DDL."
+            }),
+        ),
+        "typecheck" => (
+            "Typecheck",
+            Some(markup! {
+                "Code that fails at runtime because of names or types. Needs a database connection."
+            }),
+        ),
+        "nursery" => (
+            "Nursery",
+            Some(markup! {
+                "New rules that are still being tested. Never enabled by presets."
+            }),
+        ),
+        _ => {
+            let title = group
+                .chars()
+                .next()
+                .map(|c| c.to_uppercase().to_string())
+                .unwrap_or_default()
+                + &group[1..];
+            // Leak the title so it lives as long as &'static str is not needed;
+            // we return &str tied to group's lifetime which is 'static.
+            (Box::leak(title.into_boxed_str()), None)
+        }
     }
 }
 

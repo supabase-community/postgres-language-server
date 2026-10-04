@@ -122,7 +122,9 @@
             <div class="section" itemprop="articleBody">
               
                 <h1 id="requireconcurrentindexdeletion">requireConcurrentIndexDeletion</h1>
-<p><strong>Diagnostic Category: <code>lint/safety/requireConcurrentIndexDeletion</code></strong></p>
+<p><strong>Diagnostic Category: <code>lint/requireConcurrentIndexDeletion</code></strong></p>
+<p><strong>Group: <code>safety</code></strong></p>
+<p><strong>Applies to: migration files only</strong></p>
 <p><strong>Since</strong>: <code>vnext</code></p>
 <p><strong>Sources</strong>: 
 - Inspired from: <a href="https://squawkhq.com/docs/require-concurrent-index-deletion" target="_blank"><code>squawk/require-concurrent-index-deletion</code></a></p>
@@ -135,7 +137,7 @@ Use DROP INDEX CONCURRENTLY to drop the index without blocking concurrent operat
 <h3 id="invalid">Invalid</h3>
 <pre><code class="language-sql">DROP INDEX IF EXISTS users_email_idx;
 </code></pre>
-<pre><code class="language-sh">code-block.sql:1:1 lint/safety/requireConcurrentIndexDeletion ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+<pre><code class="language-sh">code-block.sql:1:1 lint/requireConcurrentIndexDeletion ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   ! Dropping an index non-concurrently blocks reads and writes to the table.
 
@@ -155,13 +157,15 @@ Use DROP INDEX CONCURRENTLY to drop the index without blocking concurrent operat
 {
   &quot;linter&quot;: {
     &quot;rules&quot;: {
-      &quot;safety&quot;: {
-        &quot;requireConcurrentIndexDeletion&quot;: &quot;error&quot;
-      }
+      &quot;requireConcurrentIndexDeletion&quot;: &quot;error&quot;
     }
   }
 }
 
+</code></pre>
+<h2 id="how-to-suppress">How to suppress</h2>
+<p>Suppress this diagnostic with a comment:</p>
+<pre><code class="language-sql">-- pgls-ignore requireConcurrentIndexDeletion
 </code></pre>
               
             </div>

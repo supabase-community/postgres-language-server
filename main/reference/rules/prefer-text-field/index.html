@@ -122,7 +122,8 @@
             <div class="section" itemprop="articleBody">
               
                 <h1 id="prefertextfield">preferTextField</h1>
-<p><strong>Diagnostic Category: <code>lint/safety/preferTextField</code></strong></p>
+<p><strong>Diagnostic Category: <code>lint/preferTextField</code></strong></p>
+<p><strong>Group: <code>style</code></strong></p>
 <p><strong>Since</strong>: <code>vnext</code></p>
 <p><strong>Sources</strong>: 
 - Inspired from: <a href="https://squawkhq.com/docs/prefer-text-field" target="_blank"><code>squawk/prefer-text-field</code></a></p>
@@ -139,7 +140,7 @@ VALIDATE call.</p>
     &quot;alpha&quot; varchar(100) NOT NULL
 );
 </code></pre>
-<pre><code class="language-sh">code-block.sql:1:1 lint/safety/preferTextField ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+<pre><code class="language-sh">code-block.sql:1:1 lint/preferTextField ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   ! Changing the size of a varchar field requires an ACCESS EXCLUSIVE lock.
 
@@ -157,7 +158,7 @@ VALIDATE call.</p>
 </code></pre>
 <pre><code class="language-sql">ALTER TABLE &quot;core_bar&quot; ALTER COLUMN &quot;kind&quot; TYPE varchar(1000) USING &quot;kind&quot;::varchar(1000);
 </code></pre>
-<pre><code class="language-sh">code-block.sql:1:1 lint/safety/preferTextField ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+<pre><code class="language-sh">code-block.sql:1:1 lint/preferTextField ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   ! Changing the size of a varchar field requires an ACCESS EXCLUSIVE lock.
 
@@ -181,13 +182,15 @@ ALTER TABLE &quot;core_bar&quot; ADD CONSTRAINT &quot;text_size&quot; CHECK (LEN
 {
   &quot;linter&quot;: {
     &quot;rules&quot;: {
-      &quot;safety&quot;: {
-        &quot;preferTextField&quot;: &quot;error&quot;
-      }
+      &quot;preferTextField&quot;: &quot;error&quot;
     }
   }
 }
 
+</code></pre>
+<h2 id="how-to-suppress">How to suppress</h2>
+<p>Suppress this diagnostic with a comment:</p>
+<pre><code class="language-sql">-- pgls-ignore preferTextField
 </code></pre>
               
             </div>

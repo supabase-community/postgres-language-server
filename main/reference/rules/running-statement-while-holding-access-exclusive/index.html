@@ -122,7 +122,9 @@
             <div class="section" itemprop="articleBody">
               
                 <h1 id="runningstatementwhileholdingaccessexclusive">runningStatementWhileHoldingAccessExclusive</h1>
-<p><strong>Diagnostic Category: <code>lint/safety/runningStatementWhileHoldingAccessExclusive</code></strong></p>
+<p><strong>Diagnostic Category: <code>lint/runningStatementWhileHoldingAccessExclusive</code></strong></p>
+<p><strong>Group: <code>safety</code></strong></p>
+<p><strong>Applies to: migration files only</strong></p>
 <p><strong>Since</strong>: <code>vnext</code></p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
@@ -148,7 +150,21 @@ other operations in separate transactions.</p>
 <pre><code class="language-sql">ALTER TABLE authors ADD COLUMN email TEXT;
 SELECT COUNT(*) FROM authors;
 </code></pre>
-<pre><code class="language-sh"></code></pre>
+<pre><code class="language-sh">code-block.sql:2:1 lint/runningStatementWhileHoldingAccessExclusive ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Running statement while holding ACCESS EXCLUSIVE lock.
+
+    1 │ ALTER TABLE authors ADD COLUMN email TEXT;
+  &gt; 2 │ SELECT COUNT(*) FROM authors;
+      │ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    3 │ 
+
+  i This blocks all access to the table for the duration of this statement.
+
+  i Run this statement in a separate transaction to minimize lock duration.
+
+
+</code></pre>
 <h3 id="valid">Valid</h3>
 <pre><code class="language-sql">-- Run ALTER TABLE alone, other queries in separate transactions
 ALTER TABLE authors ADD COLUMN email TEXT;
@@ -158,13 +174,15 @@ ALTER TABLE authors ADD COLUMN email TEXT;
 {
   &quot;linter&quot;: {
     &quot;rules&quot;: {
-      &quot;safety&quot;: {
-        &quot;runningStatementWhileHoldingAccessExclusive&quot;: &quot;error&quot;
-      }
+      &quot;runningStatementWhileHoldingAccessExclusive&quot;: &quot;error&quot;
     }
   }
 }
 
+</code></pre>
+<h2 id="how-to-suppress">How to suppress</h2>
+<p>Suppress this diagnostic with a comment:</p>
+<pre><code class="language-sql">-- pgls-ignore runningStatementWhileHoldingAccessExclusive
 </code></pre>
               
             </div>

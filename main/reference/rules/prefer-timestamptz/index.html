@@ -122,7 +122,8 @@
             <div class="section" itemprop="articleBody">
               
                 <h1 id="prefertimestamptz">preferTimestamptz</h1>
-<p><strong>Diagnostic Category: <code>lint/safety/preferTimestamptz</code></strong></p>
+<p><strong>Diagnostic Category: <code>lint/preferTimestamptz</code></strong></p>
+<p><strong>Group: <code>style</code></strong></p>
 <p><strong>Since</strong>: <code>vnext</code></p>
 <p><strong>Sources</strong>: 
 - Inspired from: <a href="https://squawkhq.com/docs/prefer-timestamptz" target="_blank"><code>squawk/prefer-timestamptz</code></a></p>
@@ -138,7 +139,7 @@ when events occurred in absolute time.</p>
     created_ts timestamp
 );
 </code></pre>
-<pre><code class="language-sh">code-block.sql:1:1 lint/safety/preferTimestamptz ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+<pre><code class="language-sh">code-block.sql:1:1 lint/preferTimestamptz ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   ! Prefer TIMESTAMPTZ over TIMESTAMP for better timezone handling.
 
@@ -159,7 +160,7 @@ when events occurred in absolute time.</p>
     created_ts timestamp without time zone
 );
 </code></pre>
-<pre><code class="language-sh">code-block.sql:1:1 lint/safety/preferTimestamptz ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+<pre><code class="language-sh">code-block.sql:1:1 lint/preferTimestamptz ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   ! Prefer TIMESTAMPTZ over TIMESTAMP for better timezone handling.
 
@@ -178,7 +179,7 @@ when events occurred in absolute time.</p>
 </code></pre>
 <pre><code class="language-sql">ALTER TABLE app.users ALTER COLUMN created_ts TYPE timestamp;
 </code></pre>
-<pre><code class="language-sh">code-block.sql:1:1 lint/safety/preferTimestamptz ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+<pre><code class="language-sh">code-block.sql:1:1 lint/preferTimestamptz ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   ! Prefer TIMESTAMPTZ over TIMESTAMP for better timezone handling.
 
@@ -208,13 +209,15 @@ when events occurred in absolute time.</p>
 {
   &quot;linter&quot;: {
     &quot;rules&quot;: {
-      &quot;safety&quot;: {
-        &quot;preferTimestamptz&quot;: &quot;error&quot;
-      }
+      &quot;preferTimestamptz&quot;: &quot;error&quot;
     }
   }
 }
 
+</code></pre>
+<h2 id="how-to-suppress">How to suppress</h2>
+<p>Suppress this diagnostic with a comment:</p>
+<pre><code class="language-sql">-- pgls-ignore preferTimestamptz
 </code></pre>
               
             </div>

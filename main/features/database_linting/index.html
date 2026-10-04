@@ -246,13 +246,8 @@
 <p>The database linter can be run via the CLI:</p>
 <pre><code class="language-bash"># Run database linting
 postgres-language-server dblint
-
-# With specific rules
-postgres-language-server dblint --only security/rlsDisabledInPublic
-
-# Skip certain rules
-postgres-language-server dblint --skip performance/tableBloat
 </code></pre>
+<p>Which rules run is set in the configuration file.</p>
 <p>See the <a href="../../reference/cli/">CLI Reference</a> for more options.</p>
 <h2 id="database-connection">Database Connection</h2>
 <p>The database linter requires a database connection to analyze the schema. Configure your connection in <code>postgres-language-server.jsonc</code>:</p>

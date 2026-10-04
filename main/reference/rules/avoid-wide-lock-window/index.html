@@ -122,7 +122,9 @@
             <div class="section" itemprop="articleBody">
               
                 <h1 id="avoidwidelockwindow">avoidWideLockWindow</h1>
-<p><strong>Diagnostic Category: <code>lint/safety/avoidWideLockWindow</code></strong></p>
+<p><strong>Diagnostic Category: <code>lint/avoidWideLockWindow</code></strong></p>
+<p><strong>Group: <code>safety</code></strong></p>
+<p><strong>Applies to: migration files only</strong></p>
 <p><strong>Since</strong>: <code>vnext</code></p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
@@ -142,6 +144,19 @@ This increases the chance of blocking concurrent operations and causing downtime
 <pre><code class="language-sql">ALTER TABLE users ADD COLUMN email TEXT;
 ALTER TABLE orders ADD COLUMN total NUMERIC;
 </code></pre>
+<pre><code class="language-sh">code-block.sql:2:1 lint/avoidWideLockWindow ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Acquiring a lock on public.orders while already holding ACCESS EXCLUSIVE locks on other tables.
+
+    1 │ ALTER TABLE users ADD COLUMN email TEXT;
+  &gt; 2 │ ALTER TABLE orders ADD COLUMN total NUMERIC;
+      │ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    3 │ 
+
+  i This widens the lock window. Split into separate transactions to minimize lock duration.
+
+
+</code></pre>
 <h3 id="valid">Valid</h3>
 <pre><code class="language-sql">select 1;
 </code></pre>
@@ -150,13 +165,15 @@ ALTER TABLE orders ADD COLUMN total NUMERIC;
 {
   &quot;linter&quot;: {
     &quot;rules&quot;: {
-      &quot;safety&quot;: {
-        &quot;avoidWideLockWindow&quot;: &quot;error&quot;
-      }
+      &quot;avoidWideLockWindow&quot;: &quot;error&quot;
     }
   }
 }
 
+</code></pre>
+<h2 id="how-to-suppress">How to suppress</h2>
+<p>Suppress this diagnostic with a comment:</p>
+<pre><code class="language-sql">-- pgls-ignore avoidWideLockWindow
 </code></pre>
               
             </div>

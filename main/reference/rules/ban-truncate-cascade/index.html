@@ -122,7 +122,9 @@
             <div class="section" itemprop="articleBody">
               
                 <h1 id="bantruncatecascade">banTruncateCascade</h1>
-<p><strong>Diagnostic Category: <code>lint/safety/banTruncateCascade</code></strong></p>
+<p><strong>Diagnostic Category: <code>lint/banTruncateCascade</code></strong></p>
+<p><strong>Group: <code>destructive</code></strong></p>
+<p><strong>Applies to: migration files only</strong></p>
 <p><strong>Since</strong>: <code>vnext</code></p>
 <p><strong>Sources</strong>: 
 - Inspired from: <a href="https://squawkhq.com/docs/ban-truncate-cascade" target="_blank"><code>squawk/ban-truncate-cascade</code></a></p>
@@ -140,13 +142,15 @@
 {
   &quot;linter&quot;: {
     &quot;rules&quot;: {
-      &quot;safety&quot;: {
-        &quot;banTruncateCascade&quot;: &quot;error&quot;
-      }
+      &quot;banTruncateCascade&quot;: &quot;error&quot;
     }
   }
 }
 
+</code></pre>
+<h2 id="how-to-suppress">How to suppress</h2>
+<p>Suppress this diagnostic with a comment:</p>
+<pre><code class="language-sql">-- pgls-ignore banTruncateCascade
 </code></pre>
               
             </div>

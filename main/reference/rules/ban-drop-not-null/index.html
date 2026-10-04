@@ -122,7 +122,9 @@
             <div class="section" itemprop="articleBody">
               
                 <h1 id="bandropnotnull">banDropNotNull</h1>
-<p><strong>Diagnostic Category: <code>lint/safety/banDropNotNull</code></strong></p>
+<p><strong>Diagnostic Category: <code>lint/banDropNotNull</code></strong></p>
+<p><strong>Group: <code>destructive</code></strong></p>
+<p><strong>Applies to: migration files only</strong></p>
 <p><strong>Since</strong>: <code>vnext</code></p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
@@ -138,7 +140,7 @@
 <h3 id="invalid">Invalid</h3>
 <pre><code class="language-sql">alter table users alter column email drop not null;
 </code></pre>
-<pre><code class="language-sh">code-block.sql:1:1 lint/safety/banDropNotNull ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+<pre><code class="language-sh">code-block.sql:1:1 lint/banDropNotNull ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   ! Dropping a NOT NULL constraint may break existing clients.
 
@@ -155,13 +157,15 @@
 {
   &quot;linter&quot;: {
     &quot;rules&quot;: {
-      &quot;safety&quot;: {
-        &quot;banDropNotNull&quot;: &quot;error&quot;
-      }
+      &quot;banDropNotNull&quot;: &quot;error&quot;
     }
   }
 }
 
+</code></pre>
+<h2 id="how-to-suppress">How to suppress</h2>
+<p>Suppress this diagnostic with a comment:</p>
+<pre><code class="language-sql">-- pgls-ignore banDropNotNull
 </code></pre>
               
             </div>

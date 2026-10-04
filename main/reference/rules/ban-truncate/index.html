@@ -122,7 +122,9 @@
             <div class="section" itemprop="articleBody">
               
                 <h1 id="bantruncate">banTruncate</h1>
-<p><strong>Diagnostic Category: <code>lint/safety/banTruncate</code></strong></p>
+<p><strong>Diagnostic Category: <code>lint/banTruncate</code></strong></p>
+<p><strong>Group: <code>destructive</code></strong></p>
+<p><strong>Applies to: migration files only</strong></p>
 <p><strong>Since</strong>: <code>vnext</code></p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
@@ -139,7 +141,7 @@ rolled back in all scenarios. In a migration context, this is almost always a mi
 <h3 id="invalid">Invalid</h3>
 <pre><code class="language-sql">truncate my_table;
 </code></pre>
-<pre><code class="language-sh">code-block.sql:1:1 lint/safety/banTruncate ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+<pre><code class="language-sh">code-block.sql:1:1 lint/banTruncate ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   × Truncating a table removes all rows and can cause data loss.
 
@@ -159,13 +161,15 @@ rolled back in all scenarios. In a migration context, this is almost always a mi
 {
   &quot;linter&quot;: {
     &quot;rules&quot;: {
-      &quot;safety&quot;: {
-        &quot;banTruncate&quot;: &quot;error&quot;
-      }
+      &quot;banTruncate&quot;: &quot;error&quot;
     }
   }
 }
 
+</code></pre>
+<h2 id="how-to-suppress">How to suppress</h2>
+<p>Suppress this diagnostic with a comment:</p>
+<pre><code class="language-sql">-- pgls-ignore banTruncate
 </code></pre>
               
             </div>

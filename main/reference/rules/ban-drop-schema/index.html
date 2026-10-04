@@ -122,7 +122,9 @@
             <div class="section" itemprop="articleBody">
               
                 <h1 id="bandropschema">banDropSchema</h1>
-<p><strong>Diagnostic Category: <code>lint/safety/banDropSchema</code></strong></p>
+<p><strong>Diagnostic Category: <code>lint/banDropSchema</code></strong></p>
+<p><strong>Group: <code>destructive</code></strong></p>
+<p><strong>Applies to: migration files only</strong></p>
 <p><strong>Since</strong>: <code>vnext</code></p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
@@ -139,7 +141,7 @@ dependent applications.</p>
 <h3 id="invalid">Invalid</h3>
 <pre><code class="language-sql">drop schema my_schema;
 </code></pre>
-<pre><code class="language-sh">code-block.sql:1:1 lint/safety/banDropSchema ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+<pre><code class="language-sh">code-block.sql:1:1 lint/banDropSchema ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   × Dropping a schema will remove all objects within it and may break existing clients.
 
@@ -159,13 +161,15 @@ dependent applications.</p>
 {
   &quot;linter&quot;: {
     &quot;rules&quot;: {
-      &quot;safety&quot;: {
-        &quot;banDropSchema&quot;: &quot;error&quot;
-      }
+      &quot;banDropSchema&quot;: &quot;error&quot;
     }
   }
 }
 
+</code></pre>
+<h2 id="how-to-suppress">How to suppress</h2>
+<p>Suppress this diagnostic with a comment:</p>
+<pre><code class="language-sql">-- pgls-ignore banDropSchema
 </code></pre>
               
             </div>

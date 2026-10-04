@@ -137,7 +137,7 @@
                 <h1 id="linting">Linting</h1>
 <p>The language server provides static analysis through linting rules that detect potential issues in your SQL code. The linter analyses SQL statements for safety issues, best practices violations, and problems that could break existing applications.</p>
 <h2 id="rules">Rules</h2>
-<p>Rules are organized into categories like Safety, Performance, and Style. Each rule can be configured individually or disabled entirely.</p>
+<p>Every rule has a flat name, like <code>banDropColumn</code>, and belongs to a group: <code>correctness</code>, <code>safety</code>, <code>destructive</code>, <code>style</code>, <code>typecheck</code>, or <code>nursery</code>. Rules can be configured individually, and groups in bulk.</p>
 <p>See the <a href="../../reference/rules/">Rules Reference</a> for the complete list of available rules and their descriptions.</p>
 <h2 id="configuration">Configuration</h2>
 <p>Configure linting behavior in your <code>postgres-language-server.jsonc</code>:</p>
@@ -146,39 +146,36 @@
     // Enable/disable the linter entirely
     &quot;enabled&quot;: true,
     &quot;rules&quot;: {
-      // Configure rule groups
-      &quot;safety&quot;: {
-        // Individual rule configuration
-        &quot;banDropColumn&quot;: &quot;error&quot;,    // error, warn, info, hint, off
-        &quot;banDropTable&quot;: &quot;warn&quot;,
-        &quot;addingRequiredField&quot;: &quot;off&quot;
-      }
+      // Individual rule configuration: error, warn, info, hint, off
+      &quot;banDropColumn&quot;: &quot;error&quot;,
+      &quot;banDropTable&quot;: &quot;warn&quot;,
+      &quot;addingRequiredField&quot;: &quot;off&quot;
+    },
+    // Configure whole groups
+    &quot;groups&quot;: {
+      &quot;style&quot;: &quot;off&quot;
     }
   }
 }
 </code></pre>
+<p>The former nested form <code>"rules": { "safety": { ... } }</code> still works, but prints a deprecation warning. See <a href="../../configuration/">Configuration</a> for the details.</p>
 <h2 id="suppressing-diagnostics">Suppressing Diagnostics</h2>
 <p>You can suppress specific diagnostics using comments:</p>
-<pre><code class="language-sql">-- pgls-ignore lint/safety/banDropColumn: Intentionally dropping deprecated column
+<pre><code class="language-sql">-- pgls-ignore banDropColumn: Intentionally dropping deprecated column
 ALTER TABLE users DROP COLUMN deprecated_field;
 
--- pgls-ignore lint/safety/banDropTable: Cleanup during migration
+-- pgls-ignore banDropTable: Cleanup during migration
 DROP TABLE temp_migration_table;
 </code></pre>
 <p>For more details on suppressions check out <a href="../../guides/suppressions/">our guide</a>.</p>
 <h2 id="schema-aware-analysis">Schema-Aware Analysis</h2>
-<p>Some rules require a database connection to perform schema-aware analysis. If no connection is configured, they are skipped.</p>
+<p>Some rules require a database connection to perform schema-aware analysis, like the rules of the <code>typecheck</code> group described in <a href="../type_checking/">Type Checking</a>. If no connection is configured, they are skipped.</p>
 <h2 id="cli-usage">CLI Usage</h2>
 <p>The linter can also be used via the CLI for CI integration:</p>
 <pre><code class="language-bash"># Lint specific files
 postgres-language-server check migrations/
-
-# With specific rules
-postgres-language-server check migrations/ --only safety/banDropColumn
-
-# Skip certain rules
-postgres-language-server check migrations/ --skip safety/banDropTable
 </code></pre>
+<p>Which rules run is set in the configuration file, see above.</p>
 <p>See the <a href="../../reference/cli/">CLI Reference</a> for more options, and check the guide on <a href="../../guides/checking_migrations/">linting migrations</a>.</p>
               
             </div>

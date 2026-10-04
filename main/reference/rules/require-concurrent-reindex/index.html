@@ -122,7 +122,9 @@
             <div class="section" itemprop="articleBody">
               
                 <h1 id="requireconcurrentreindex">requireConcurrentReindex</h1>
-<p><strong>Diagnostic Category: <code>lint/safety/requireConcurrentReindex</code></strong></p>
+<p><strong>Diagnostic Category: <code>lint/requireConcurrentReindex</code></strong></p>
+<p><strong>Group: <code>safety</code></strong></p>
+<p><strong>Applies to: migration files only</strong></p>
 <p><strong>Since</strong>: <code>vnext</code></p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
@@ -138,7 +140,7 @@ to rebuild the index without blocking concurrent operations.</p>
 <h3 id="invalid">Invalid</h3>
 <pre><code class="language-sql">reindex index my_index;
 </code></pre>
-<pre><code class="language-sh">code-block.sql:1:1 lint/safety/requireConcurrentReindex ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+<pre><code class="language-sh">code-block.sql:1:1 lint/requireConcurrentReindex ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   ! REINDEX without CONCURRENTLY blocks all table access.
 
@@ -158,13 +160,15 @@ to rebuild the index without blocking concurrent operations.</p>
 {
   &quot;linter&quot;: {
     &quot;rules&quot;: {
-      &quot;safety&quot;: {
-        &quot;requireConcurrentReindex&quot;: &quot;error&quot;
-      }
+      &quot;requireConcurrentReindex&quot;: &quot;error&quot;
     }
   }
 }
 
+</code></pre>
+<h2 id="how-to-suppress">How to suppress</h2>
+<p>Suppress this diagnostic with a comment:</p>
+<pre><code class="language-sql">-- pgls-ignore requireConcurrentReindex
 </code></pre>
               
             </div>

@@ -122,7 +122,9 @@
             <div class="section" itemprop="articleBody">
               
                 <h1 id="avoidaddingexclusionconstraint">avoidAddingExclusionConstraint</h1>
-<p><strong>Diagnostic Category: <code>lint/safety/avoidAddingExclusionConstraint</code></strong></p>
+<p><strong>Diagnostic Category: <code>lint/avoidAddingExclusionConstraint</code></strong></p>
+<p><strong>Group: <code>safety</code></strong></p>
+<p><strong>Applies to: migration files only</strong></p>
 <p><strong>Since</strong>: <code>vnext</code></p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
@@ -140,7 +142,7 @@ Use <code>SET lock_timeout</code> to limit the impact on concurrent operations.<
 <h3 id="invalid">Invalid</h3>
 <pre><code class="language-sql">alter table my_table add constraint my_excl exclude using gist (col with &amp;&amp;);
 </code></pre>
-<pre><code class="language-sh">code-block.sql:1:1 lint/safety/avoidAddingExclusionConstraint ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+<pre><code class="language-sh">code-block.sql:1:1 lint/avoidAddingExclusionConstraint ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   ! Adding an exclusion constraint acquires an ACCESS EXCLUSIVE lock.
 
@@ -160,13 +162,15 @@ Use <code>SET lock_timeout</code> to limit the impact on concurrent operations.<
 {
   &quot;linter&quot;: {
     &quot;rules&quot;: {
-      &quot;safety&quot;: {
-        &quot;avoidAddingExclusionConstraint&quot;: &quot;error&quot;
-      }
+      &quot;avoidAddingExclusionConstraint&quot;: &quot;error&quot;
     }
   }
 }
 
+</code></pre>
+<h2 id="how-to-suppress">How to suppress</h2>
+<p>Suppress this diagnostic with a comment:</p>
+<pre><code class="language-sql">-- pgls-ignore avoidAddingExclusionConstraint
 </code></pre>
               
             </div>

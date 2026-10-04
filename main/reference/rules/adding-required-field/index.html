@@ -122,7 +122,9 @@
             <div class="section" itemprop="articleBody">
               
                 <h1 id="addingrequiredfield">addingRequiredField</h1>
-<p><strong>Diagnostic Category: <code>lint/safety/addingRequiredField</code></strong></p>
+<p><strong>Diagnostic Category: <code>lint/addingRequiredField</code></strong></p>
+<p><strong>Group: <code>destructive</code></strong></p>
+<p><strong>Applies to: migration files only</strong></p>
 <p><strong>Since</strong>: <code>vnext</code></p>
 <p><strong>Sources</strong>: 
 - Inspired from: <a href="https://squawkhq.com/docs/adding-required-field" target="_blank"><code>squawk/adding-required-field</code></a></p>
@@ -140,13 +142,15 @@ Alternatively, if using Postgres version 11 or later, add a DEFAULT value that i
 {
   &quot;linter&quot;: {
     &quot;rules&quot;: {
-      &quot;safety&quot;: {
-        &quot;addingRequiredField&quot;: &quot;error&quot;
-      }
+      &quot;addingRequiredField&quot;: &quot;error&quot;
     }
   }
 }
 
+</code></pre>
+<h2 id="how-to-suppress">How to suppress</h2>
+<p>Suppress this diagnostic with a comment:</p>
+<pre><code class="language-sql">-- pgls-ignore addingRequiredField
 </code></pre>
               
             </div>

@@ -122,7 +122,9 @@
             <div class="section" itemprop="articleBody">
               
                 <h1 id="renamingcolumn">renamingColumn</h1>
-<p><strong>Diagnostic Category: <code>lint/safety/renamingColumn</code></strong></p>
+<p><strong>Diagnostic Category: <code>lint/renamingColumn</code></strong></p>
+<p><strong>Group: <code>destructive</code></strong></p>
+<p><strong>Applies to: migration files only</strong></p>
 <p><strong>Since</strong>: <code>vnext</code></p>
 <p><strong>Sources</strong>: 
 - Inspired from: <a href="https://squawkhq.com/docs/renaming-column" target="_blank"><code>squawk/renaming-column</code></a></p>
@@ -135,7 +137,7 @@ no dependencies exist.</p>
 <h3 id="invalid">Invalid</h3>
 <pre><code class="language-sql">ALTER TABLE users RENAME COLUMN email TO email_address;
 </code></pre>
-<pre><code class="language-sh">code-block.sql:1:1 lint/safety/renamingColumn ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+<pre><code class="language-sh">code-block.sql:1:1 lint/renamingColumn ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   ! Renaming a column may break existing clients.
 
@@ -152,13 +154,15 @@ no dependencies exist.</p>
 {
   &quot;linter&quot;: {
     &quot;rules&quot;: {
-      &quot;safety&quot;: {
-        &quot;renamingColumn&quot;: &quot;error&quot;
-      }
+      &quot;renamingColumn&quot;: &quot;error&quot;
     }
   }
 }
 
+</code></pre>
+<h2 id="how-to-suppress">How to suppress</h2>
+<p>Suppress this diagnostic with a comment:</p>
+<pre><code class="language-sql">-- pgls-ignore renamingColumn
 </code></pre>
               
             </div>

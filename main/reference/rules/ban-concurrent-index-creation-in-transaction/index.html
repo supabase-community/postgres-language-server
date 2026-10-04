@@ -122,7 +122,8 @@
             <div class="section" itemprop="articleBody">
               
                 <h1 id="banconcurrentindexcreationintransaction">banConcurrentIndexCreationInTransaction</h1>
-<p><strong>Diagnostic Category: <code>lint/safety/banConcurrentIndexCreationInTransaction</code></strong></p>
+<p><strong>Diagnostic Category: <code>lint/banConcurrentIndexCreationInTransaction</code></strong></p>
+<p><strong>Group: <code>correctness</code></strong></p>
 <p><strong>Since</strong>: <code>vnext</code></p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
@@ -144,13 +145,15 @@
 {
   &quot;linter&quot;: {
     &quot;rules&quot;: {
-      &quot;safety&quot;: {
-        &quot;banConcurrentIndexCreationInTransaction&quot;: &quot;error&quot;
-      }
+      &quot;banConcurrentIndexCreationInTransaction&quot;: &quot;error&quot;
     }
   }
 }
 
+</code></pre>
+<h2 id="how-to-suppress">How to suppress</h2>
+<p>Suppress this diagnostic with a comment:</p>
+<pre><code class="language-sql">-- pgls-ignore banConcurrentIndexCreationInTransaction
 </code></pre>
               
             </div>

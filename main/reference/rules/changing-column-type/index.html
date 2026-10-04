@@ -122,7 +122,9 @@
             <div class="section" itemprop="articleBody">
               
                 <h1 id="changingcolumntype">changingColumnType</h1>
-<p><strong>Diagnostic Category: <code>lint/safety/changingColumnType</code></strong></p>
+<p><strong>Diagnostic Category: <code>lint/changingColumnType</code></strong></p>
+<p><strong>Group: <code>destructive</code></strong></p>
+<p><strong>Applies to: migration files only</strong></p>
 <p><strong>Since</strong>: <code>vnext</code></p>
 <p><strong>Sources</strong>: 
 - Inspired from: <a href="https://squawkhq.com/docs/changing-column-type" target="_blank"><code>squawk/changing-column-type</code></a></p>
@@ -143,7 +145,7 @@ migrating the data, and then dropping the old column.</p>
 <h3 id="invalid">Invalid</h3>
 <pre><code class="language-sql">ALTER TABLE &quot;core_recipe&quot; ALTER COLUMN &quot;count&quot; TYPE bigint;
 </code></pre>
-<pre><code class="language-sh">code-block.sql:1:1 lint/safety/changingColumnType ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+<pre><code class="language-sh">code-block.sql:1:1 lint/changingColumnType ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   ! Changing a column type requires a table rewrite and blocks reads and writes.
 
@@ -163,13 +165,15 @@ migrating the data, and then dropping the old column.</p>
 {
   &quot;linter&quot;: {
     &quot;rules&quot;: {
-      &quot;safety&quot;: {
-        &quot;changingColumnType&quot;: &quot;error&quot;
-      }
+      &quot;changingColumnType&quot;: &quot;error&quot;
     }
   }
 }
 
+</code></pre>
+<h2 id="how-to-suppress">How to suppress</h2>
+<p>Suppress this diagnostic with a comment:</p>
+<pre><code class="language-sql">-- pgls-ignore changingColumnType
 </code></pre>
               
             </div>

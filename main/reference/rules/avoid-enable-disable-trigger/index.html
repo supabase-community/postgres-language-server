@@ -122,7 +122,9 @@
             <div class="section" itemprop="articleBody">
               
                 <h1 id="avoidenabledisabletrigger">avoidEnableDisableTrigger</h1>
-<p><strong>Diagnostic Category: <code>lint/safety/avoidEnableDisableTrigger</code></strong></p>
+<p><strong>Diagnostic Category: <code>lint/avoidEnableDisableTrigger</code></strong></p>
+<p><strong>Group: <code>safety</code></strong></p>
+<p><strong>Applies to: migration files only</strong></p>
 <p><strong>Since</strong>: <code>vnext</code></p>
 <p><strong>Sources</strong>: 
 - Inspired from: <a href="https://github.com/flvmnt/pgfence" target="_blank"><code>pgfence/enable-disable-trigger</code></a></p>
@@ -134,7 +136,7 @@ This can cause downtime on busy tables.</p>
 <h3 id="invalid">Invalid</h3>
 <pre><code class="language-sql">alter table my_table enable trigger my_trigger;
 </code></pre>
-<pre><code class="language-sh">code-block.sql:1:1 lint/safety/avoidEnableDisableTrigger ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+<pre><code class="language-sh">code-block.sql:1:1 lint/avoidEnableDisableTrigger ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   ! Enabling or disabling a trigger acquires a SHARE ROW EXCLUSIVE lock.
 
@@ -154,13 +156,15 @@ This can cause downtime on busy tables.</p>
 {
   &quot;linter&quot;: {
     &quot;rules&quot;: {
-      &quot;safety&quot;: {
-        &quot;avoidEnableDisableTrigger&quot;: &quot;error&quot;
-      }
+      &quot;avoidEnableDisableTrigger&quot;: &quot;error&quot;
     }
   }
 }
 
+</code></pre>
+<h2 id="how-to-suppress">How to suppress</h2>
+<p>Suppress this diagnostic with a comment:</p>
+<pre><code class="language-sql">-- pgls-ignore avoidEnableDisableTrigger
 </code></pre>
               
             </div>

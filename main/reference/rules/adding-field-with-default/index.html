@@ -122,7 +122,9 @@
             <div class="section" itemprop="articleBody">
               
                 <h1 id="addingfieldwithdefault">addingFieldWithDefault</h1>
-<p><strong>Diagnostic Category: <code>lint/safety/addingFieldWithDefault</code></strong></p>
+<p><strong>Diagnostic Category: <code>lint/addingFieldWithDefault</code></strong></p>
+<p><strong>Group: <code>safety</code></strong></p>
+<p><strong>Applies to: migration files only</strong></p>
 <p><strong>Since</strong>: <code>vnext</code></p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
@@ -144,7 +146,7 @@ which holds an ACCESS EXCLUSIVE lock on the table and blocks all reads and write
 <h3 id="invalid">Invalid</h3>
 <pre><code class="language-sql">ALTER TABLE &quot;core_recipe&quot; ADD COLUMN &quot;foo&quot; integer DEFAULT 10;
 </code></pre>
-<pre><code class="language-sh">code-block.sql:1:1 lint/safety/addingFieldWithDefault ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+<pre><code class="language-sh">code-block.sql:1:1 lint/addingFieldWithDefault ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   ! Adding a column with a DEFAULT value causes a table rewrite.
 
@@ -168,13 +170,15 @@ ALTER TABLE &quot;core_recipe&quot; ALTER COLUMN &quot;foo&quot; SET DEFAULT 10;
 {
   &quot;linter&quot;: {
     &quot;rules&quot;: {
-      &quot;safety&quot;: {
-        &quot;addingFieldWithDefault&quot;: &quot;error&quot;
-      }
+      &quot;addingFieldWithDefault&quot;: &quot;error&quot;
     }
   }
 }
 
+</code></pre>
+<h2 id="how-to-suppress">How to suppress</h2>
+<p>Suppress this diagnostic with a comment:</p>
+<pre><code class="language-sql">-- pgls-ignore addingFieldWithDefault
 </code></pre>
               
             </div>

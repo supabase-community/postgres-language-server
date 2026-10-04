@@ -122,7 +122,9 @@
             <div class="section" itemprop="articleBody">
               
                 <h1 id="requirestatementtimeout">requireStatementTimeout</h1>
-<p><strong>Diagnostic Category: <code>lint/safety/requireStatementTimeout</code></strong></p>
+<p><strong>Diagnostic Category: <code>lint/requireStatementTimeout</code></strong></p>
+<p><strong>Group: <code>safety</code></strong></p>
+<p><strong>Applies to: migration files only</strong></p>
 <p><strong>Since</strong>: <code>vnext</code></p>
 <p><strong>Sources</strong>: 
 - Inspired from: <a href="https://github.com/flvmnt/pgfence" target="_blank"><code>pgfence/missing-statement-timeout</code></a></p>
@@ -134,7 +136,7 @@
 <h3 id="invalid">Invalid</h3>
 <pre><code class="language-sql">ALTER TABLE users ADD COLUMN email TEXT;
 </code></pre>
-<pre><code class="language-sh">code-block.sql:1:1 lint/safety/requireStatementTimeout ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+<pre><code class="language-sh">code-block.sql:1:1 lint/requireStatementTimeout ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   ! Statement takes a dangerous lock without a statement_timeout set.
 
@@ -154,13 +156,15 @@
 {
   &quot;linter&quot;: {
     &quot;rules&quot;: {
-      &quot;safety&quot;: {
-        &quot;requireStatementTimeout&quot;: &quot;error&quot;
-      }
+      &quot;requireStatementTimeout&quot;: &quot;error&quot;
     }
   }
 }
 
+</code></pre>
+<h2 id="how-to-suppress">How to suppress</h2>
+<p>Suppress this diagnostic with a comment:</p>
+<pre><code class="language-sql">-- pgls-ignore requireStatementTimeout
 </code></pre>
               
             </div>

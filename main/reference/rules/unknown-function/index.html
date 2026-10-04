@@ -3,9 +3,9 @@
 <head>
     <meta charset="utf-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><link rel="canonical" href="https://pg-language-server.com/main/reference/rules/prefer-bigint-over-int/" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><link rel="canonical" href="https://pg-language-server.com/main/reference/rules/unknown-function/" />
       <link rel="shortcut icon" href="../../../img/favicon.ico" />
-    <title>preferBigintOverInt - Postgres Language Server</title>
+    <title>unknownFunction - Postgres Language Server</title>
     <link rel="stylesheet" href="../../../css/theme.css" />
     <link rel="stylesheet" href="../../../css/theme_extra.css" />
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
@@ -13,9 +13,9 @@
     
       <script>
         // Current page data
-        var mkdocs_page_name = "preferBigintOverInt";
-        var mkdocs_page_input_path = "reference/rules/prefer-bigint-over-int.md";
-        var mkdocs_page_url = "/main/reference/rules/prefer-bigint-over-int/";
+        var mkdocs_page_name = "unknownFunction";
+        var mkdocs_page_input_path = "reference/rules/unknown-function.md";
+        var mkdocs_page_url = "/main/reference/rules/unknown-function/";
       </script>
     
     <!--[if lt IE 9]>
@@ -111,9 +111,9 @@
         <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
   <ul class="wy-breadcrumbs">
     <li><a href="../../.." class="icon icon-home" aria-label="Docs"></a></li>
-      <li class="breadcrumb-item active">preferBigintOverInt</li>
+      <li class="breadcrumb-item active">unknownFunction</li>
     <li class="wy-breadcrumbs-aside">
-          <a href="https://github.com/supabase-community/postgres-language-server/edit/master/docs/reference/rules/prefer-bigint-over-int.md">Edit on supabase-community/postgres-language-server</a>
+          <a href="https://github.com/supabase-community/postgres-language-server/edit/master/docs/reference/rules/unknown-function.md">Edit on supabase-community/postgres-language-server</a>
     </li>
   </ul>
   <hr/>
@@ -121,87 +121,52 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
             <div class="section" itemprop="articleBody">
               
-                <h1 id="preferbigintoverint">preferBigintOverInt</h1>
-<p><strong>Diagnostic Category: <code>lint/safety/preferBigintOverInt</code></strong></p>
+                <h1 id="unknownfunction">unknownFunction</h1>
+<p><strong>Diagnostic Category: <code>lint/unknownFunction</code></strong></p>
+<p><strong>Group: <code>typecheck</code></strong></p>
 <p><strong>Since</strong>: <code>vnext</code></p>
-<p><strong>Sources</strong>: 
-- Inspired from: <a href="https://squawkhq.com/docs/prefer-bigint-over-int" target="_blank"><code>squawk/prefer-bigint-over-int</code></a></p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This rule is recommended. A diagnostic error will appear when linting your code.</p>
+</div>
 <h2 id="description">Description</h2>
-<p>Prefer BIGINT over INT/INTEGER types.</p>
-<p>Using INTEGER (INT4) can lead to overflow issues, especially for ID columns.
-While SMALLINT might be acceptable for certain use cases with known small ranges,
-INTEGER often becomes a limiting factor as applications grow.</p>
-<p>The storage difference between INTEGER (4 bytes) and BIGINT (8 bytes) is minimal,
-but the cost of migrating when you hit the 2.1 billion limit can be significant.</p>
+<p>No function with this name accepts this number of arguments.</p>
+<p>Functions are looked up in the connected database and in the functions created earlier in
+the same file, following the search path. Default arguments and <code>VARIADIC</code> parameters are
+taken into account. Argument types are not checked yet.</p>
+<p>Postgres raises <code>42883 undefined_function</code> for these statements.</p>
 <h2 id="examples">Examples</h2>
 <h3 id="invalid">Invalid</h3>
-<pre><code class="language-sql">CREATE TABLE users (
-    id integer
-);
+<pre><code class="language-sql">select missing_function();
 </code></pre>
-<pre><code class="language-sh">code-block.sql:1:1 lint/safety/preferBigintOverInt ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+<pre><code class="language-sh">code-block.sql:1:8 lint/unknownFunction ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-  ! INTEGER type may lead to overflow issues.
+  × Function missing_function does not exist.
 
-  &gt; 1 │ CREATE TABLE users (
-      │ ^^^^^^^^^^^^^^^^^^^^
-  &gt; 2 │     id integer
-  &gt; 3 │ );
-      │ ^^
-    4 │ 
-
-  i INTEGER has a maximum value of 2,147,483,647 which can be exceeded by ID columns and counters.
-
-  i Consider using BIGINT instead for better future-proofing.
-
-
-</code></pre>
-<pre><code class="language-sql">CREATE TABLE users (
-    id serial
-);
-</code></pre>
-<pre><code class="language-sh">code-block.sql:1:1 lint/safety/preferBigintOverInt ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-  ! INTEGER type may lead to overflow issues.
-
-  &gt; 1 │ CREATE TABLE users (
-      │ ^^^^^^^^^^^^^^^^^^^^
-  &gt; 2 │     id serial
-  &gt; 3 │ );
-      │ ^^
-    4 │ 
-
-  i INTEGER has a maximum value of 2,147,483,647 which can be exceeded by ID columns and counters.
-
-  i Consider using BIGINT instead for better future-proofing.
+  &gt; 1 │ select missing_function();
+      │        ^^^^^^^^^^^^^^^^
+    2 │ 
 
 
 </code></pre>
 <h3 id="valid">Valid</h3>
-<pre><code class="language-sql">CREATE TABLE users (
-    id bigint
-);
-</code></pre>
-<pre><code class="language-sql">CREATE TABLE users (
-    id bigserial
-);
-</code></pre>
-<pre><code class="language-sql">CREATE TABLE users (
-    id smallint
-);
+<pre><code class="language-sql">create function add_one(value int8) returns int8 language sql as 'select value + 1';
+select add_one(1);
 </code></pre>
 <h2 id="how-to-configure">How to configure</h2>
 <pre><code class="language-json">
 {
   &quot;linter&quot;: {
     &quot;rules&quot;: {
-      &quot;safety&quot;: {
-        &quot;preferBigintOverInt&quot;: &quot;error&quot;
-      }
+      &quot;unknownFunction&quot;: &quot;error&quot;
     }
   }
 }
 
+</code></pre>
+<h2 id="how-to-suppress">How to suppress</h2>
+<p>Suppress this diagnostic with a comment:</p>
+<pre><code class="language-sql">-- pgls-ignore unknownFunction
 </code></pre>
               
             </div>

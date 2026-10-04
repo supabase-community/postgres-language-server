@@ -122,7 +122,8 @@
             <div class="section" itemprop="articleBody">
               
                 <h1 id="bandeletewithoutwhere">banDeleteWithoutWhere</h1>
-<p><strong>Diagnostic Category: <code>lint/safety/banDeleteWithoutWhere</code></strong></p>
+<p><strong>Diagnostic Category: <code>lint/banDeleteWithoutWhere</code></strong></p>
+<p><strong>Group: <code>destructive</code></strong></p>
 <p><strong>Since</strong>: <code>vnext</code></p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
@@ -139,7 +140,7 @@ its implications), or add a <code>WHERE true</code> to signal intent.</p>
 <h3 id="invalid">Invalid</h3>
 <pre><code class="language-sql">delete from my_table;
 </code></pre>
-<pre><code class="language-sh">code-block.sql:1:1 lint/safety/banDeleteWithoutWhere ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+<pre><code class="language-sh">code-block.sql:1:1 lint/banDeleteWithoutWhere ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   ! A DELETE without a WHERE clause will remove all rows from the table.
 
@@ -159,13 +160,15 @@ its implications), or add a <code>WHERE true</code> to signal intent.</p>
 {
   &quot;linter&quot;: {
     &quot;rules&quot;: {
-      &quot;safety&quot;: {
-        &quot;banDeleteWithoutWhere&quot;: &quot;error&quot;
-      }
+      &quot;banDeleteWithoutWhere&quot;: &quot;error&quot;
     }
   }
 }
 
+</code></pre>
+<h2 id="how-to-suppress">How to suppress</h2>
+<p>Suppress this diagnostic with a comment:</p>
+<pre><code class="language-sql">-- pgls-ignore banDeleteWithoutWhere
 </code></pre>
               
             </div>

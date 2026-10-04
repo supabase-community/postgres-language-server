@@ -3,9 +3,9 @@
 <head>
     <meta charset="utf-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><link rel="canonical" href="https://pg-language-server.com/main/reference/rules/concurrent-refresh-matview-lock/" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><link rel="canonical" href="https://pg-language-server.com/main/reference/rules/insert-column-mismatch/" />
       <link rel="shortcut icon" href="../../../img/favicon.ico" />
-    <title>concurrentRefreshMatviewLock - Postgres Language Server</title>
+    <title>insertColumnMismatch - Postgres Language Server</title>
     <link rel="stylesheet" href="../../../css/theme.css" />
     <link rel="stylesheet" href="../../../css/theme_extra.css" />
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
@@ -13,9 +13,9 @@
     
       <script>
         // Current page data
-        var mkdocs_page_name = "concurrentRefreshMatviewLock";
-        var mkdocs_page_input_path = "reference/rules/concurrent-refresh-matview-lock.md";
-        var mkdocs_page_url = "/main/reference/rules/concurrent-refresh-matview-lock/";
+        var mkdocs_page_name = "insertColumnMismatch";
+        var mkdocs_page_input_path = "reference/rules/insert-column-mismatch.md";
+        var mkdocs_page_url = "/main/reference/rules/insert-column-mismatch/";
       </script>
     
     <!--[if lt IE 9]>
@@ -111,9 +111,9 @@
         <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
   <ul class="wy-breadcrumbs">
     <li><a href="../../.." class="icon icon-home" aria-label="Docs"></a></li>
-      <li class="breadcrumb-item active">concurrentRefreshMatviewLock</li>
+      <li class="breadcrumb-item active">insertColumnMismatch</li>
     <li class="wy-breadcrumbs-aside">
-          <a href="https://github.com/supabase-community/postgres-language-server/edit/master/docs/reference/rules/concurrent-refresh-matview-lock.md">Edit on supabase-community/postgres-language-server</a>
+          <a href="https://github.com/supabase-community/postgres-language-server/edit/master/docs/reference/rules/insert-column-mismatch.md">Edit on supabase-community/postgres-language-server</a>
     </li>
   </ul>
   <hr/>
@@ -121,47 +121,56 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
             <div class="section" itemprop="articleBody">
               
-                <h1 id="concurrentrefreshmatviewlock">concurrentRefreshMatviewLock</h1>
-<p><strong>Diagnostic Category: <code>lint/safety/concurrentRefreshMatviewLock</code></strong></p>
+                <h1 id="insertcolumnmismatch">insertColumnMismatch</h1>
+<p><strong>Diagnostic Category: <code>lint/insertColumnMismatch</code></strong></p>
+<p><strong>Group: <code>typecheck</code></strong></p>
 <p><strong>Since</strong>: <code>vnext</code></p>
-<p><strong>Sources</strong>: 
-- Inspired from: <a href="https://github.com/flvmnt/pgfence" target="_blank"><code>pgfence/refresh-matview-concurrent</code></a></p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This rule is recommended. A diagnostic error will appear when linting your code.</p>
+</div>
 <h2 id="description">Description</h2>
-<p><code>REFRESH MATERIALIZED VIEW CONCURRENTLY</code> still acquires an <code>EXCLUSIVE</code> lock.</p>
-<p>While concurrent refresh allows reads during the refresh, it still blocks DDL
-and other write operations on the materialized view. On large views, this can
-take a long time.</p>
+<p>An <code>INSERT</code> has a different number of target columns than values.</p>
+<p>With an explicit column list, every row of <code>VALUES</code> (or the <code>SELECT</code> list) must have
+exactly one value per column. Without one, there can't be more values than the table has
+columns.</p>
+<p>Postgres raises <code>42601 syntax_error</code> for these statements.</p>
 <h2 id="examples">Examples</h2>
 <h3 id="invalid">Invalid</h3>
-<pre><code class="language-sql">refresh materialized view concurrently my_view;
+<pre><code class="language-sql">create table users (id int8, name text);
+insert into users (id, name) values (1);
 </code></pre>
-<pre><code class="language-sh">code-block.sql:1:1 lint/safety/concurrentRefreshMatviewLock ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+<pre><code class="language-sh">code-block.sql:2:1 lint/insertColumnMismatch ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-  ! REFRESH MATERIALIZED VIEW CONCURRENTLY still acquires an EXCLUSIVE lock.
+  × INSERT has more target columns than expressions.
 
-  &gt; 1 │ refresh materialized view concurrently my_view;
-      │ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-    2 │ 
+    1 │ create table users (id int8, name text);
+  &gt; 2 │ insert into users (id, name) values (1);
+      │ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    3 │ 
 
-  i Concurrent refresh allows reads but still blocks DDL and writes. Consider the impact on long-running refreshes.
+  i Expected 2 values, found 1.
 
 
 </code></pre>
 <h3 id="valid">Valid</h3>
-<pre><code class="language-sql">select 1;
+<pre><code class="language-sql">create table users (id int8, name text);
+insert into users (id, name) values (1, 'Ada');
 </code></pre>
 <h2 id="how-to-configure">How to configure</h2>
 <pre><code class="language-json">
 {
   &quot;linter&quot;: {
     &quot;rules&quot;: {
-      &quot;safety&quot;: {
-        &quot;concurrentRefreshMatviewLock&quot;: &quot;error&quot;
-      }
+      &quot;insertColumnMismatch&quot;: &quot;error&quot;
     }
   }
 }
 
+</code></pre>
+<h2 id="how-to-suppress">How to suppress</h2>
+<p>Suppress this diagnostic with a comment:</p>
+<pre><code class="language-sql">-- pgls-ignore insertColumnMismatch
 </code></pre>
               
             </div>

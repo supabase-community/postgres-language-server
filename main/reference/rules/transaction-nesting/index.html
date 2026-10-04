@@ -122,7 +122,8 @@
             <div class="section" itemprop="articleBody">
               
                 <h1 id="transactionnesting">transactionNesting</h1>
-<p><strong>Diagnostic Category: <code>lint/safety/transactionNesting</code></strong></p>
+<p><strong>Diagnostic Category: <code>lint/transactionNesting</code></strong></p>
+<p><strong>Group: <code>correctness</code></strong></p>
 <p><strong>Since</strong>: <code>vnext</code></p>
 <p><strong>Sources</strong>: 
 - Inspired from: <a href="https://squawkhq.com/docs/transaction-nesting" target="_blank"><code>squawk/transaction-nesting</code></a></p>
@@ -137,7 +138,7 @@ or errors in database migrations.</p>
 -- Migration tools already manage transactions
 SELECT 1;
 </code></pre>
-<pre><code class="language-sh">code-block.sql:1:1 lint/safety/transactionNesting ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+<pre><code class="language-sh">code-block.sql:1:1 lint/transactionNesting ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   ! Transaction already managed by migration tool.
 
@@ -155,7 +156,7 @@ SELECT 1;
 <pre><code class="language-sql">SELECT 1;
 COMMIT; -- No transaction to commit
 </code></pre>
-<pre><code class="language-sh">code-block.sql:2:1 lint/safety/transactionNesting ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+<pre><code class="language-sh">code-block.sql:2:1 lint/transactionNesting ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   ! Attempting to end transaction managed by migration tool.
 
@@ -175,13 +176,15 @@ COMMIT; -- No transaction to commit
 {
   &quot;linter&quot;: {
     &quot;rules&quot;: {
-      &quot;safety&quot;: {
-        &quot;transactionNesting&quot;: &quot;error&quot;
-      }
+      &quot;transactionNesting&quot;: &quot;error&quot;
     }
   }
 }
 
+</code></pre>
+<h2 id="how-to-suppress">How to suppress</h2>
+<p>Suppress this diagnostic with a comment:</p>
+<pre><code class="language-sql">-- pgls-ignore transactionNesting
 </code></pre>
               
             </div>

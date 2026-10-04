@@ -50,6 +50,20 @@
     <li class="toctree-l2"><a class="reference internal" href="#client-configuration-overrides">Client configuration overrides</a>
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#configuration-file-structure">Configuration file structure</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#linter-rules">Linter rules</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#linter-groups">Linter groups</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#presets">Presets</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#typecheck-group">Typecheck group</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#precedence">Precedence</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#deprecated-linterrulessafety-form">Deprecated linter.rules.safety form</a>
+    </li>
+        </ul>
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#configuring-a-database-connection">Configuring a database connection</a>
     </li>
@@ -158,7 +172,13 @@
   &quot;linter&quot;: {
     &quot;enabled&quot;: true,
     &quot;rules&quot;: {
-      &quot;recommended&quot;: true
+      &quot;recommended&quot;: true,
+      &quot;banDropColumn&quot;: &quot;off&quot;,
+      &quot;preferBigInt&quot;: { &quot;level&quot;: &quot;warn&quot;, &quot;options&quot;: { &quot;checkSmallint&quot;: false } }
+    },
+    &quot;groups&quot;: {
+      &quot;safety&quot;: &quot;warn&quot;,
+      &quot;style&quot;: &quot;off&quot;
     }
   },
   &quot;typecheck&quot;: {
@@ -173,6 +193,70 @@
   }
 }
 </code></pre>
+<h3 id="linter-rules">Linter rules</h3>
+<p>Rule names are flat and unique across all groups. Configure each rule directly under <code>linter.rules</code>:</p>
+<pre><code class="language-jsonc">&quot;linter&quot;: {
+  &quot;rules&quot;: {
+    &quot;banDropColumn&quot;: &quot;off&quot;,                // simple level: &quot;off&quot; | &quot;info&quot; | &quot;warn&quot; | &quot;error&quot;
+    &quot;preferBigInt&quot;: {                        // or with options
+      &quot;level&quot;: &quot;warn&quot;,
+      &quot;options&quot;: { &quot;checkInt&quot;: true, &quot;checkSmallint&quot;: false }
+    }
+  }
+}
+</code></pre>
+<p>The <code>preferBigInt</code> rule accepts the options <code>checkInt</code> (default <code>true</code>) and <code>checkSmallint</code> (default <code>true</code>).</p>
+<h3 id="linter-groups">Linter groups</h3>
+<p>Groups let you set a level for all rules in the group at once:</p>
+<pre><code class="language-jsonc">&quot;linter&quot;: {
+  &quot;groups&quot;: {
+    &quot;style&quot;: &quot;off&quot;,
+    &quot;destructive&quot;: &quot;error&quot;
+  }
+}
+</code></pre>
+<p>Available groups: <code>correctness</code>, <code>safety</code>, <code>destructive</code>, <code>style</code>, <code>typecheck</code>, <code>nursery</code>.</p>
+<h3 id="presets">Presets</h3>
+<p><code>linter.rules.recommended</code> (default <code>true</code>) enables all rules marked as recommended. <code>linter.rules.all</code> enables every rule. Nursery rules are never enabled by presets.</p>
+<h3 id="typecheck-group">Typecheck group</h3>
+<p>The rules in the <code>typecheck</code> group need a database connection. Two settings affect them:</p>
+<ul>
+<li><code>typecheck.enabled: false</code> turns typechecking off entirely: the <code>typecheck</code> rules and the <code>EXPLAIN</code>-based check against the database.</li>
+<li><code>linter.groups.typecheck</code> sets the level of the <code>typecheck</code> rules, like any other group. Setting it to <code>"off"</code> turns the rules off, but leaves the <code>EXPLAIN</code>-based check on.</li>
+</ul>
+<h3 id="precedence">Precedence</h3>
+<p>From highest to lowest:</p>
+<ol>
+<li><code>linter.rules.&lt;rule&gt;</code> — explicit rule setting</li>
+<li><code>linter.rules.safety.&lt;rule&gt;</code> — deprecated per-rule setting (see below)</li>
+<li><code>linter.groups.&lt;group&gt;</code> — group level</li>
+<li><code>linter.rules.recommended</code> / <code>linter.rules.all</code> preset (nursery never enabled)</li>
+</ol>
+<h3 id="deprecated-linterrulessafety-form">Deprecated <code>linter.rules.safety</code> form</h3>
+<p>The former nested form <code>linter.rules.safety.&lt;rule&gt;</code> is still accepted but prints a deprecation warning. Use <code>linter.rules.&lt;rule&gt;</code> instead.</p>
+<p>Removed rules:</p>
+<table>
+<thead>
+<tr>
+<th>Old rule</th>
+<th>Replacement</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>preferBigintOverInt</code></td>
+<td><code>preferBigInt</code> with <code>{ "checkInt": true }</code></td>
+</tr>
+<tr>
+<td><code>preferBigintOverSmallint</code></td>
+<td><code>preferBigInt</code> with <code>{ "checkSmallint": true }</code></td>
+</tr>
+<tr>
+<td><code>concurrentRefreshMatviewLock</code></td>
+<td>Dropped; <code>requireConcurrentRefreshMatview</code> covers it</td>
+</tr>
+</tbody>
+</table>
 <h2 id="configuring-a-database-connection">Configuring a database connection</h2>
 <p>Some tools that the Postgres Language Server provides are implemented as mere interfaces on top of functionality that is provided by the database itself. This ensures correctness, but requires an active connection to a Postgres database. We strongly recommend to only connect to a local development database.</p>
 <pre><code class="language-json">{

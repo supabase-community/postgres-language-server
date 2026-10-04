@@ -122,7 +122,9 @@
             <div class="section" itemprop="articleBody">
               
                 <h1 id="multiplealtertable">multipleAlterTable</h1>
-<p><strong>Diagnostic Category: <code>lint/safety/multipleAlterTable</code></strong></p>
+<p><strong>Diagnostic Category: <code>lint/multipleAlterTable</code></strong></p>
+<p><strong>Group: <code>safety</code></strong></p>
+<p><strong>Applies to: migration files only</strong></p>
 <p><strong>Since</strong>: <code>vnext</code></p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
@@ -143,7 +145,21 @@ the time locks are held.</p>
 <pre><code class="language-sql">ALTER TABLE authors ALTER COLUMN name SET NOT NULL;
 ALTER TABLE authors ALTER COLUMN email SET NOT NULL;
 </code></pre>
-<pre><code class="language-sh"></code></pre>
+<pre><code class="language-sh">code-block.sql:2:1 lint/multipleAlterTable ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Multiple ALTER TABLE statements found for table public.authors.
+
+    1 │ ALTER TABLE authors ALTER COLUMN name SET NOT NULL;
+  &gt; 2 │ ALTER TABLE authors ALTER COLUMN email SET NOT NULL;
+      │ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    3 │ 
+
+  i Multiple ALTER TABLE statements on the same table require scanning and potentially rewriting the table multiple times.
+
+  i Combine the ALTER TABLE statements into a single statement with comma-separated actions to scan the table only once.
+
+
+</code></pre>
 <h3 id="valid">Valid</h3>
 <pre><code class="language-sql">ALTER TABLE authors
   ALTER COLUMN name SET NOT NULL,
@@ -154,13 +170,15 @@ ALTER TABLE authors ALTER COLUMN email SET NOT NULL;
 {
   &quot;linter&quot;: {
     &quot;rules&quot;: {
-      &quot;safety&quot;: {
-        &quot;multipleAlterTable&quot;: &quot;error&quot;
-      }
+      &quot;multipleAlterTable&quot;: &quot;error&quot;
     }
   }
 }
 
+</code></pre>
+<h2 id="how-to-suppress">How to suppress</h2>
+<p>Suppress this diagnostic with a comment:</p>
+<pre><code class="language-sql">-- pgls-ignore multipleAlterTable
 </code></pre>
               
             </div>

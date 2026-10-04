@@ -75,15 +75,13 @@
                   </li>
                   <li class="toctree-l1 current"><a class="reference internal current" href="#">Suppressions</a>
     <ul class="current">
-    <li class="toctree-l2"><a class="reference internal" href="#how-to-suppress-a-rule">How to Suppress a Rule</a>
+    <li class="toctree-l2"><a class="reference internal" href="#suppressing-a-rule">Suppressing a Rule</a>
         <ul>
-    <li class="toctree-l3"><a class="reference internal" href="#suppressing-rules-for-block-of-code">Suppressing Rules for Block of Code</a>
-    </li>
-    <li class="toctree-l3"><a class="reference internal" href="#suppressing-rules-for-entire-files">Suppressing Rules for Entire Files</a>
+    <li class="toctree-l3"><a class="reference internal" href="#blocks-and-files">Blocks and Files</a>
     </li>
         </ul>
     </li>
-    <li class="toctree-l2"><a class="reference internal" href="#suppressing-multiple-rules">Suppressing Multiple Rules</a>
+    <li class="toctree-l2"><a class="reference internal" href="#backward-compatibility">Backward Compatibility</a>
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#notes">Notes</a>
     </li>
@@ -136,66 +134,49 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
             <div class="section" itemprop="articleBody">
               
-                <h1 id="diagnostics-suppressions">Diagnostics Suppressions</h1>
-<p>You can suppress specific diagnostics or rules in your code using suppression comments. This is useful when you want to ignore a particular rule for an entire file, a line or a block of code.</p>
-<h2 id="how-to-suppress-a-rule">How to Suppress a Rule</h2>
-<p>To suppress a rule, add a comment above the line causing the diagnostic with the following format:</p>
-<pre><code class="language-sql">-- pgls-ignore lint/safety/banDropTable
+                <h1 id="diagnostic-suppressions">Diagnostic Suppressions</h1>
+<p>Suppress diagnostics with comments in SQL files. Rule IDs are flat and unique (for example, <code>banDropTable</code>), while groups are metadata used to suppress related rules.</p>
+<h2 id="suppressing-a-rule">Suppressing a Rule</h2>
+<p>Place a comment above the statement that causes the diagnostic:</p>
+<pre><code class="language-sql">-- pgls-ignore banDropTable
 drop table users;
 </code></pre>
-<p>You can suppress single rules, groups of rules, or entire categories. The format of the rule to suppress is:</p>
-<p><code>category(/group(/specific-rule))</code></p>
-<p>Where group and specific rule are optional.</p>
-<p>So, to suppress the <code>lint/safety/banDropTable</code> diagnostic, all of these would work:</p>
-<pre><code class="language-sql">-- pgls-ignore lint
--- pgls-ignore lint/safety
--- pgls-ignore lint/safety/banDropTable
-</code></pre>
-<p>You can also add an explanation to the suppression by adding a <code>:</code> and the explanation text:</p>
-<pre><code class="language-sql">-- pgls-ignore lint/safety/banDropTable: My startup never had any users.
+<p>The accepted specifiers are:</p>
+<ul>
+<li><code>lint</code> — all lint rules.</li>
+<li><code>banDropTable</code> or <code>lint/banDropTable</code> — one rule.</li>
+<li><code>destructive</code> or <code>lint/destructive</code> — all rules in a group.</li>
+<li><code>typecheck</code> — typecheck diagnostics and lint rules in the <code>typecheck</code> group.</li>
+<li>Other non-lint diagnostic categories, such as <code>syntax</code>, continue to work as category suppressions.</li>
+</ul>
+<p>A colon adds an optional explanation:</p>
+<pre><code class="language-sql">-- pgls-ignore banDropTable: My startup never had any users.
 drop table users;
 </code></pre>
-<h3 id="suppressing-rules-for-block-of-code">Suppressing Rules for Block of Code</h3>
-<p>You can suppress rules for blocks of code.</p>
-<pre><code class="language-sql">create table users (
-  -- ...
-);
-
--- pgls-ignore-start typecheck: The `users` table will be created with this migration.
+<h3 id="blocks-and-files">Blocks and Files</h3>
+<p>Use matching start and end specifiers to suppress a block. Equivalent forms such as <code>banDropTable</code> and <code>lint/banDropTable</code> match as the same rule.</p>
+<pre><code class="language-sql">-- pgls-ignore-start typecheck: created in this migration
 alter table users drop constraint users_pkey;
-
 alter table users add primary key (user_id);
 -- pgls-ignore-end typecheck
 </code></pre>
-<p>Every <code>pgls-ignore-start</code> needs a <code>pgls-ignore-end</code> suppression comment, and the suppressed rules must match exactly.</p>
-<p>This <em>won't</em> work, because the start tag suppresses a different diagnostic:</p>
-<pre><code class="language-sql">-- pgls-ignore-start lint/safety/banDropColumn
--- pgls-ignore-end lint/safety
-</code></pre>
-<p>Nesting is allowed, so this works fine:</p>
-<pre><code class="language-sql">-- pgls-ignore-start typecheck: outer
--- pgls-ignore-start lint/safety: inner
--- pgls-ignore-end lint/safety: inner
--- pgls-ignore-end typecheck: outer
-</code></pre>
-<h3 id="suppressing-rules-for-entire-files">Suppressing Rules for Entire Files</h3>
-<p>Instead of repeating the same suppression on multiple lines, you can suppress for an entire file.</p>
-<pre><code class="language-sql">-- pgls-ignore-all lint/safety/banDropTable
+<p>Nesting is allowed, and each start needs an end with the same normalized specifier. Use <code>pgls-ignore-all</code> at the top of a file to suppress a rule/group/category throughout that file:</p>
+<pre><code class="language-sql">-- pgls-ignore-all banDropTable
 
 drop table tasks;
 drop table projects;
-drop table users;
 </code></pre>
-<h2 id="suppressing-multiple-rules">Suppressing Multiple Rules</h2>
-<p>You can suppress multiple rules by adding multiple suppression comments above a statement:</p>
-<pre><code class="language-sql">-- pgls-ignore lint/safety/banDropColumn
+<p>Multiple comments can suppress multiple rules for a statement:</p>
+<pre><code class="language-sql">-- pgls-ignore banDropColumn
 -- pgls-ignore typecheck
 alter table tasks drop column created_at;
 </code></pre>
+<h2 id="backward-compatibility">Backward Compatibility</h2>
+<p>Legacy <code>lint/&lt;group&gt;/&lt;rule&gt;</code> and <code>lint/&lt;group&gt;</code> forms still work, but report a deprecation warning that names the flat form. <code>lint/safety</code> keeps its former meaning: it suppresses every lint rule, like <code>lint</code>, because all rules used to be in that group. Use <code>safety</code> for today's safety group. Removed rule names <code>preferBigintOverInt</code> and <code>preferBigintOverSmallint</code> map to <code>preferBigInt</code>, also with a warning. The legacy <code>pgt-ignore</code> comment prefix still works.</p>
 <h2 id="notes">Notes</h2>
 <ul>
-<li>Trying to suppress diagnostics that have already been disabled in your <a href="../../configuration/">configuration file</a> will show a warning.</li>
-<li>Trying to suppress diagnostics that don't haven't been raised will also show a warning.</li>
+<li>Suppressing diagnostics disabled in your <a href="../../configuration/">configuration</a> reports a warning because the suppression has no effect.</li>
+<li>Suppressions that match no diagnostic also report a warning.</li>
 </ul>
               
             </div>

@@ -122,7 +122,9 @@
             <div class="section" itemprop="articleBody">
               
                 <h1 id="addingforeignkeyconstraint">addingForeignKeyConstraint</h1>
-<p><strong>Diagnostic Category: <code>lint/safety/addingForeignKeyConstraint</code></strong></p>
+<p><strong>Diagnostic Category: <code>lint/addingForeignKeyConstraint</code></strong></p>
+<p><strong>Group: <code>safety</code></strong></p>
+<p><strong>Applies to: migration files only</strong></p>
 <p><strong>Since</strong>: <code>vnext</code></p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
@@ -141,7 +143,7 @@ This approach only takes a SHARE UPDATE EXCLUSIVE lock when validating, allowing
 <h3 id="invalid">Invalid</h3>
 <pre><code class="language-sql">ALTER TABLE &quot;email&quot; ADD CONSTRAINT &quot;fk_user&quot; FOREIGN KEY (&quot;user_id&quot;) REFERENCES &quot;user&quot; (&quot;id&quot;);
 </code></pre>
-<pre><code class="language-sh">code-block.sql:1:1 lint/safety/addingForeignKeyConstraint ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+<pre><code class="language-sh">code-block.sql:1:1 lint/addingForeignKeyConstraint ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   ! Adding a foreign key constraint requires a table scan and locks on both tables.
 
@@ -157,7 +159,7 @@ This approach only takes a SHARE UPDATE EXCLUSIVE lock when validating, allowing
 </code></pre>
 <pre><code class="language-sql">ALTER TABLE &quot;emails&quot; ADD COLUMN &quot;user_id&quot; INT REFERENCES &quot;user&quot; (&quot;id&quot;);
 </code></pre>
-<pre><code class="language-sh">code-block.sql:1:1 lint/safety/addingForeignKeyConstraint ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+<pre><code class="language-sh">code-block.sql:1:1 lint/addingForeignKeyConstraint ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   ! Adding a column with a foreign key constraint requires a table scan and locks.
 
@@ -182,13 +184,15 @@ ALTER TABLE &quot;email&quot; VALIDATE CONSTRAINT &quot;fk_user&quot;;
 {
   &quot;linter&quot;: {
     &quot;rules&quot;: {
-      &quot;safety&quot;: {
-        &quot;addingForeignKeyConstraint&quot;: &quot;error&quot;
-      }
+      &quot;addingForeignKeyConstraint&quot;: &quot;error&quot;
     }
   }
 }
 
+</code></pre>
+<h2 id="how-to-suppress">How to suppress</h2>
+<p>Suppress this diagnostic with a comment:</p>
+<pre><code class="language-sql">-- pgls-ignore addingForeignKeyConstraint
 </code></pre>
               
             </div>

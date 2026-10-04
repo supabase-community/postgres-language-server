@@ -3,9 +3,9 @@
 <head>
     <meta charset="utf-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><link rel="canonical" href="https://pg-language-server.com/main/reference/rules/prefer-bigint-over-smallint/" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><link rel="canonical" href="https://pg-language-server.com/main/reference/rules/unknown-type/" />
       <link rel="shortcut icon" href="../../../img/favicon.ico" />
-    <title>preferBigintOverSmallint - Postgres Language Server</title>
+    <title>unknownType - Postgres Language Server</title>
     <link rel="stylesheet" href="../../../css/theme.css" />
     <link rel="stylesheet" href="../../../css/theme_extra.css" />
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
@@ -13,9 +13,9 @@
     
       <script>
         // Current page data
-        var mkdocs_page_name = "preferBigintOverSmallint";
-        var mkdocs_page_input_path = "reference/rules/prefer-bigint-over-smallint.md";
-        var mkdocs_page_url = "/main/reference/rules/prefer-bigint-over-smallint/";
+        var mkdocs_page_name = "unknownType";
+        var mkdocs_page_input_path = "reference/rules/unknown-type.md";
+        var mkdocs_page_url = "/main/reference/rules/unknown-type/";
       </script>
     
     <!--[if lt IE 9]>
@@ -111,9 +111,9 @@
         <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
   <ul class="wy-breadcrumbs">
     <li><a href="../../.." class="icon icon-home" aria-label="Docs"></a></li>
-      <li class="breadcrumb-item active">preferBigintOverSmallint</li>
+      <li class="breadcrumb-item active">unknownType</li>
     <li class="wy-breadcrumbs-aside">
-          <a href="https://github.com/supabase-community/postgres-language-server/edit/master/docs/reference/rules/prefer-bigint-over-smallint.md">Edit on supabase-community/postgres-language-server</a>
+          <a href="https://github.com/supabase-community/postgres-language-server/edit/master/docs/reference/rules/unknown-type.md">Edit on supabase-community/postgres-language-server</a>
     </li>
   </ul>
   <hr/>
@@ -121,83 +121,51 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
             <div class="section" itemprop="articleBody">
               
-                <h1 id="preferbigintoversmallint">preferBigintOverSmallint</h1>
-<p><strong>Diagnostic Category: <code>lint/safety/preferBigintOverSmallint</code></strong></p>
+                <h1 id="unknowntype">unknownType</h1>
+<p><strong>Diagnostic Category: <code>lint/unknownType</code></strong></p>
+<p><strong>Group: <code>typecheck</code></strong></p>
 <p><strong>Since</strong>: <code>vnext</code></p>
-<p><strong>Sources</strong>: 
-- Inspired from: <a href="https://squawkhq.com/docs/prefer-bigint-over-smallint" target="_blank"><code>squawk/prefer-bigint-over-smallint</code></a></p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This rule is recommended. A diagnostic error will appear when linting your code.</p>
+</div>
 <h2 id="description">Description</h2>
-<p>Prefer BIGINT over SMALLINT types.</p>
-<p>SMALLINT has a very limited range (-32,768 to 32,767) that is easily exceeded.
-Even for values that seem small initially, using SMALLINT can lead to problems
-as your application grows.</p>
-<p>The storage savings of SMALLINT (2 bytes) vs BIGINT (8 bytes) are negligible
-on modern systems, while the cost of migrating when you exceed the limit is high.</p>
+<p>A type does not exist.</p>
+<p>Types are looked up in the connected database and in the types created earlier in the same
+file, following the search path.</p>
+<p>Postgres raises <code>42704 undefined_object</code> for these statements.</p>
 <h2 id="examples">Examples</h2>
 <h3 id="invalid">Invalid</h3>
-<pre><code class="language-sql">CREATE TABLE users (
-    age smallint
-);
+<pre><code class="language-sql">select null::missing_type;
 </code></pre>
-<pre><code class="language-sh">code-block.sql:1:1 lint/safety/preferBigintOverSmallint ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+<pre><code class="language-sh">code-block.sql:1:14 lint/unknownType ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-  ! SMALLINT has a very limited range that is easily exceeded.
+  × Type missing_type does not exist.
 
-  &gt; 1 │ CREATE TABLE users (
-      │ ^^^^^^^^^^^^^^^^^^^^
-  &gt; 2 │     age smallint
-  &gt; 3 │ );
-      │ ^^
-    4 │ 
-
-  i SMALLINT can only store values from -32,768 to 32,767. This range is often insufficient.
-
-  i Consider using INTEGER or BIGINT for better range and future-proofing.
-
-
-</code></pre>
-<pre><code class="language-sql">CREATE TABLE products (
-    quantity smallserial
-);
-</code></pre>
-<pre><code class="language-sh">code-block.sql:1:1 lint/safety/preferBigintOverSmallint ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-  ! SMALLINT has a very limited range that is easily exceeded.
-
-  &gt; 1 │ CREATE TABLE products (
-      │ ^^^^^^^^^^^^^^^^^^^^^^^
-  &gt; 2 │     quantity smallserial
-  &gt; 3 │ );
-      │ ^^
-    4 │ 
-
-  i SMALLINT can only store values from -32,768 to 32,767. This range is often insufficient.
-
-  i Consider using INTEGER or BIGINT for better range and future-proofing.
+  &gt; 1 │ select null::missing_type;
+      │              ^^^^^^^^^^^^
+    2 │ 
 
 
 </code></pre>
 <h3 id="valid">Valid</h3>
-<pre><code class="language-sql">CREATE TABLE users (
-    age integer
-);
-</code></pre>
-<pre><code class="language-sql">CREATE TABLE products (
-    quantity bigint
-);
+<pre><code class="language-sql">create type mood as enum ('happy', 'sad');
+select null::mood;
 </code></pre>
 <h2 id="how-to-configure">How to configure</h2>
 <pre><code class="language-json">
 {
   &quot;linter&quot;: {
     &quot;rules&quot;: {
-      &quot;safety&quot;: {
-        &quot;preferBigintOverSmallint&quot;: &quot;error&quot;
-      }
+      &quot;unknownType&quot;: &quot;error&quot;
     }
   }
 }
 
+</code></pre>
+<h2 id="how-to-suppress">How to suppress</h2>
+<p>Suppress this diagnostic with a comment:</p>
+<pre><code class="language-sql">-- pgls-ignore unknownType
 </code></pre>
               
             </div>

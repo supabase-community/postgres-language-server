@@ -122,7 +122,9 @@
             <div class="section" itemprop="articleBody">
               
                 <h1 id="requireconcurrentrefreshmatview">requireConcurrentRefreshMatview</h1>
-<p><strong>Diagnostic Category: <code>lint/safety/requireConcurrentRefreshMatview</code></strong></p>
+<p><strong>Diagnostic Category: <code>lint/requireConcurrentRefreshMatview</code></strong></p>
+<p><strong>Group: <code>safety</code></strong></p>
+<p><strong>Applies to: migration files only</strong></p>
 <p><strong>Since</strong>: <code>vnext</code></p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
@@ -139,7 +141,7 @@ Note: concurrent refresh requires a unique index on the materialized view.</p>
 <h3 id="invalid">Invalid</h3>
 <pre><code class="language-sql">refresh materialized view my_view;
 </code></pre>
-<pre><code class="language-sh">code-block.sql:1:1 lint/safety/requireConcurrentRefreshMatview ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+<pre><code class="language-sh">code-block.sql:1:1 lint/requireConcurrentRefreshMatview ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   ! REFRESH MATERIALIZED VIEW without CONCURRENTLY blocks all reads.
 
@@ -159,13 +161,15 @@ Note: concurrent refresh requires a unique index on the materialized view.</p>
 {
   &quot;linter&quot;: {
     &quot;rules&quot;: {
-      &quot;safety&quot;: {
-        &quot;requireConcurrentRefreshMatview&quot;: &quot;error&quot;
-      }
+      &quot;requireConcurrentRefreshMatview&quot;: &quot;error&quot;
     }
   }
 }
 
+</code></pre>
+<h2 id="how-to-suppress">How to suppress</h2>
+<p>Suppress this diagnostic with a comment:</p>
+<pre><code class="language-sql">-- pgls-ignore requireConcurrentRefreshMatview
 </code></pre>
               
             </div>

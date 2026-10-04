@@ -122,7 +122,9 @@
             <div class="section" itemprop="articleBody">
               
                 <h1 id="bandroptrigger">banDropTrigger</h1>
-<p><strong>Diagnostic Category: <code>lint/safety/banDropTrigger</code></strong></p>
+<p><strong>Diagnostic Category: <code>lint/banDropTrigger</code></strong></p>
+<p><strong>Group: <code>safety</code></strong></p>
+<p><strong>Applies to: migration files only</strong></p>
 <p><strong>Since</strong>: <code>vnext</code></p>
 <p><strong>Sources</strong>: 
 - Inspired from: <a href="https://github.com/flvmnt/pgfence" target="_blank"><code>pgfence/drop-trigger</code></a></p>
@@ -134,7 +136,7 @@ It may also break application logic that depends on the trigger's behavior.</p>
 <h3 id="invalid">Invalid</h3>
 <pre><code class="language-sql">drop trigger my_trigger on my_table;
 </code></pre>
-<pre><code class="language-sh">code-block.sql:1:1 lint/safety/banDropTrigger ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+<pre><code class="language-sh">code-block.sql:1:1 lint/banDropTrigger ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   ! Dropping a trigger acquires an ACCESS EXCLUSIVE lock on the table.
 
@@ -154,13 +156,15 @@ It may also break application logic that depends on the trigger's behavior.</p>
 {
   &quot;linter&quot;: {
     &quot;rules&quot;: {
-      &quot;safety&quot;: {
-        &quot;banDropTrigger&quot;: &quot;error&quot;
-      }
+      &quot;banDropTrigger&quot;: &quot;error&quot;
     }
   }
 }
 
+</code></pre>
+<h2 id="how-to-suppress">How to suppress</h2>
+<p>Suppress this diagnostic with a comment:</p>
+<pre><code class="language-sql">-- pgls-ignore banDropTrigger
 </code></pre>
               
             </div>

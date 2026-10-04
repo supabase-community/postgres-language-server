@@ -122,7 +122,9 @@
             <div class="section" itemprop="articleBody">
               
                 <h1 id="bandroptable">banDropTable</h1>
-<p><strong>Diagnostic Category: <code>lint/safety/banDropTable</code></strong></p>
+<p><strong>Diagnostic Category: <code>lint/banDropTable</code></strong></p>
+<p><strong>Group: <code>destructive</code></strong></p>
+<p><strong>Applies to: migration files only</strong></p>
 <p><strong>Since</strong>: <code>vnext</code></p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
@@ -139,7 +141,7 @@ Be sure to back up the table before deleting it, just in case you need to restor
 <h2 id="examples">Examples</h2>
 <pre><code class="language-sql">drop table some_table;
 </code></pre>
-<pre><code class="language-sh">code-block.sql:1:1 lint/safety/banDropTable ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+<pre><code class="language-sh">code-block.sql:1:1 lint/banDropTable ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   ! Dropping a table may break existing clients.
 
@@ -156,13 +158,15 @@ Be sure to back up the table before deleting it, just in case you need to restor
 {
   &quot;linter&quot;: {
     &quot;rules&quot;: {
-      &quot;safety&quot;: {
-        &quot;banDropTable&quot;: &quot;error&quot;
-      }
+      &quot;banDropTable&quot;: &quot;error&quot;
     }
   }
 }
 
+</code></pre>
+<h2 id="how-to-suppress">How to suppress</h2>
+<p>Suppress this diagnostic with a comment:</p>
+<pre><code class="language-sql">-- pgls-ignore banDropTable
 </code></pre>
               
             </div>

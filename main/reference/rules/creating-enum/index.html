@@ -122,7 +122,8 @@
             <div class="section" itemprop="articleBody">
               
                 <h1 id="creatingenum">creatingEnum</h1>
-<p><strong>Diagnostic Category: <code>lint/safety/creatingEnum</code></strong></p>
+<p><strong>Diagnostic Category: <code>lint/creatingEnum</code></strong></p>
+<p><strong>Group: <code>style</code></strong></p>
 <p><strong>Since</strong>: <code>vnext</code></p>
 <p><strong>Sources</strong>: 
 - Inspired from: <a href="https://kaveland.no/eugene/hints/W13/index.html" target="_blank"><code>eugene/W13</code></a></p>
@@ -140,7 +141,7 @@
 <h3 id="invalid">Invalid</h3>
 <pre><code class="language-sql">CREATE TYPE document_type AS ENUM ('invoice', 'receipt', 'other');
 </code></pre>
-<pre><code class="language-sh">code-block.sql:1:1 lint/safety/creatingEnum ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+<pre><code class="language-sh">code-block.sql:1:1 lint/creatingEnum ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   ! Creating enum type document_type is not recommended.
 
@@ -166,13 +167,15 @@ INSERT INTO document_type VALUES ('invoice'), ('receipt'), ('other');
 {
   &quot;linter&quot;: {
     &quot;rules&quot;: {
-      &quot;safety&quot;: {
-        &quot;creatingEnum&quot;: &quot;error&quot;
-      }
+      &quot;creatingEnum&quot;: &quot;error&quot;
     }
   }
 }
 
+</code></pre>
+<h2 id="how-to-suppress">How to suppress</h2>
+<p>Suppress this diagnostic with a comment:</p>
+<pre><code class="language-sql">-- pgls-ignore creatingEnum
 </code></pre>
               
             </div>

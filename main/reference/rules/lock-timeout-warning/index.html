@@ -122,7 +122,9 @@
             <div class="section" itemprop="articleBody">
               
                 <h1 id="locktimeoutwarning">lockTimeoutWarning</h1>
-<p><strong>Diagnostic Category: <code>lint/safety/lockTimeoutWarning</code></strong></p>
+<p><strong>Diagnostic Category: <code>lint/lockTimeoutWarning</code></strong></p>
+<p><strong>Group: <code>safety</code></strong></p>
+<p><strong>Applies to: migration files only</strong></p>
 <p><strong>Since</strong>: <code>vnext</code></p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
@@ -145,7 +147,7 @@ the statement will fail rather than blocking indefinitely.</p>
 <h3 id="invalid">Invalid</h3>
 <pre><code class="language-sql">ALTER TABLE users ADD COLUMN email TEXT;
 </code></pre>
-<pre><code class="language-sh">code-block.sql:1:1 lint/safety/lockTimeoutWarning ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+<pre><code class="language-sh">code-block.sql:1:1 lint/lockTimeoutWarning ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   ! Statement takes ACCESS EXCLUSIVE lock on public.users without lock timeout set.
 
@@ -161,7 +163,7 @@ the statement will fail rather than blocking indefinitely.</p>
 </code></pre>
 <pre><code class="language-sql">CREATE INDEX users_email_idx ON users(email);
 </code></pre>
-<pre><code class="language-sh">code-block.sql:1:1 lint/safety/lockTimeoutWarning ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+<pre><code class="language-sh">code-block.sql:1:1 lint/lockTimeoutWarning ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   ! Statement takes SHARE lock on public.users while creating index users_email_idx without lock timeout set.
 
@@ -184,13 +186,15 @@ CREATE INDEX CONCURRENTLY users_email_idx ON users(email);
 {
   &quot;linter&quot;: {
     &quot;rules&quot;: {
-      &quot;safety&quot;: {
-        &quot;lockTimeoutWarning&quot;: &quot;error&quot;
-      }
+      &quot;lockTimeoutWarning&quot;: &quot;error&quot;
     }
   }
 }
 
+</code></pre>
+<h2 id="how-to-suppress">How to suppress</h2>
+<p>Suppress this diagnostic with a comment:</p>
+<pre><code class="language-sql">-- pgls-ignore lockTimeoutWarning
 </code></pre>
               
             </div>

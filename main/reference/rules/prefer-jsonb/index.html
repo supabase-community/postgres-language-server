@@ -122,7 +122,8 @@
             <div class="section" itemprop="articleBody">
               
                 <h1 id="preferjsonb">preferJsonb</h1>
-<p><strong>Diagnostic Category: <code>lint/safety/preferJsonb</code></strong></p>
+<p><strong>Diagnostic Category: <code>lint/preferJsonb</code></strong></p>
+<p><strong>Group: <code>style</code></strong></p>
 <p><strong>Since</strong>: <code>vnext</code></p>
 <p><strong>Sources</strong>: 
 - Inspired from: <a href="https://kaveland.no/eugene/hints/E3/index.html" target="_blank"><code>eugene/E3</code></a></p>
@@ -148,7 +149,7 @@ Unlike JSON, JSONB stores data in a decomposed binary format which provides seve
     data json
 );
 </code></pre>
-<pre><code class="language-sh">code-block.sql:1:1 lint/safety/preferJsonb ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+<pre><code class="language-sh">code-block.sql:1:1 lint/preferJsonb ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   ! Prefer JSONB over JSON for better performance and functionality.
 
@@ -167,7 +168,7 @@ Unlike JSON, JSONB stores data in a decomposed binary format which provides seve
 </code></pre>
 <pre><code class="language-sql">ALTER TABLE users ADD COLUMN metadata json;
 </code></pre>
-<pre><code class="language-sh">code-block.sql:1:1 lint/safety/preferJsonb ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+<pre><code class="language-sh">code-block.sql:1:1 lint/preferJsonb ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   ! Prefer JSONB over JSON for better performance and functionality.
 
@@ -183,7 +184,7 @@ Unlike JSON, JSONB stores data in a decomposed binary format which provides seve
 </code></pre>
 <pre><code class="language-sql">ALTER TABLE users ALTER COLUMN data TYPE json;
 </code></pre>
-<pre><code class="language-sh">code-block.sql:1:1 lint/safety/preferJsonb ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+<pre><code class="language-sh">code-block.sql:1:1 lint/preferJsonb ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   ! Prefer JSONB over JSON for better performance and functionality.
 
@@ -211,13 +212,15 @@ Unlike JSON, JSONB stores data in a decomposed binary format which provides seve
 {
   &quot;linter&quot;: {
     &quot;rules&quot;: {
-      &quot;safety&quot;: {
-        &quot;preferJsonb&quot;: &quot;error&quot;
-      }
+      &quot;preferJsonb&quot;: &quot;error&quot;
     }
   }
 }
 
+</code></pre>
+<h2 id="how-to-suppress">How to suppress</h2>
+<p>Suppress this diagnostic with a comment:</p>
+<pre><code class="language-sql">-- pgls-ignore preferJsonb
 </code></pre>
               
             </div>

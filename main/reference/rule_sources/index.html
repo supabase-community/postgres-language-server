@@ -139,7 +139,22 @@
                 <h1 id="rule-sources">Rule Sources</h1>
 <p>Many rules are inspired by or directly ported from other tools. This page lists the sources of each rule.</p>
 <h2 id="exclusive-rules">Exclusive rules</h2>
-<p><em>No exclusive rules available.</em></p>
+<ul>
+<li><a href="../rules/ambiguous-column/">ambiguousColumn</a> </li>
+<li><a href="../rules/assignment-type-mismatch/">assignmentTypeMismatch</a> </li>
+<li><a href="../rules/function-argument-mismatch/">functionArgumentMismatch</a> </li>
+<li><a href="../rules/function-return-type-mismatch/">functionReturnTypeMismatch</a> </li>
+<li><a href="../rules/insert-column-mismatch/">insertColumnMismatch</a> </li>
+<li><a href="../rules/invalid-cast/">invalidCast</a> </li>
+<li><a href="../rules/invalid-drop-type-signature/">invalidDropTypeSignature</a> </li>
+<li><a href="../rules/missing-from-clause-entry/">missingFromClauseEntry</a> </li>
+<li><a href="../rules/operator-type-mismatch/">operatorTypeMismatch</a> </li>
+<li><a href="../rules/unknown-column/">unknownColumn</a> </li>
+<li><a href="../rules/unknown-function/">unknownFunction</a> </li>
+<li><a href="../rules/unknown-relation/">unknownRelation</a> </li>
+<li><a href="../rules/unknown-schema/">unknownSchema</a> </li>
+<li><a href="../rules/unknown-type/">unknownType</a> </li>
+</ul>
 <h2 id="rules-from-other-sources">Rules from other sources</h2>
 <h3 id="eugene">Eugene</h3>
 <table>
@@ -250,14 +265,6 @@
 <td><a href="../rules/prefer-big-int/">preferBigInt</a></td>
 </tr>
 <tr>
-<td><a href="https://squawkhq.com/docs/prefer-bigint-over-int">prefer-bigint-over-int</a></td>
-<td><a href="../rules/prefer-bigint-over-int/">preferBigintOverInt</a></td>
-</tr>
-<tr>
-<td><a href="https://squawkhq.com/docs/prefer-bigint-over-smallint">prefer-bigint-over-smallint</a></td>
-<td><a href="../rules/prefer-bigint-over-smallint/">preferBigintOverSmallint</a></td>
-</tr>
-<tr>
 <td><a href="https://squawkhq.com/docs/prefer-identity">prefer-identity</a></td>
 <td><a href="../rules/prefer-identity/">preferIdentity</a></td>
 </tr>
@@ -355,10 +362,6 @@
 <tr>
 <td><a href="https://github.com/flvmnt/pgfence">refresh-matview-blocking</a></td>
 <td><a href="../rules/require-concurrent-refresh-matview/">requireConcurrentRefreshMatview</a></td>
-</tr>
-<tr>
-<td><a href="https://github.com/flvmnt/pgfence">refresh-matview-concurrent</a></td>
-<td><a href="../rules/concurrent-refresh-matview-lock/">concurrentRefreshMatviewLock</a></td>
 </tr>
 <tr>
 <td><a href="https://github.com/flvmnt/pgfence">reindex-non-concurrent</a></td>

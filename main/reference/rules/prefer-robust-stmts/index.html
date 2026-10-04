@@ -122,7 +122,9 @@
             <div class="section" itemprop="articleBody">
               
                 <h1 id="preferrobuststmts">preferRobustStmts</h1>
-<p><strong>Diagnostic Category: <code>lint/safety/preferRobustStmts</code></strong></p>
+<p><strong>Diagnostic Category: <code>lint/preferRobustStmts</code></strong></p>
+<p><strong>Group: <code>safety</code></strong></p>
+<p><strong>Applies to: migration files only</strong></p>
 <p><strong>Since</strong>: <code>vnext</code></p>
 <p><strong>Sources</strong>: 
 - Inspired from: <a href="https://squawkhq.com/docs/prefer-robust-stmts" target="_blank"><code>squawk/prefer-robust-stmts</code></a></p>
@@ -135,7 +137,7 @@ This allows migrations to be safely re-run if they fail partway through.</p>
 <h3 id="invalid">Invalid</h3>
 <pre><code class="language-sql">CREATE INDEX CONCURRENTLY users_email_idx ON users (email);
 </code></pre>
-<pre><code class="language-sh">code-block.sql:1:1 lint/safety/preferRobustStmts ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+<pre><code class="language-sh">code-block.sql:1:1 lint/preferRobustStmts ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   ! Concurrent index creation should use IF NOT EXISTS.
 
@@ -149,7 +151,7 @@ This allows migrations to be safely re-run if they fail partway through.</p>
 </code></pre>
 <pre><code class="language-sql">DROP INDEX CONCURRENTLY users_email_idx;
 </code></pre>
-<pre><code class="language-sh">code-block.sql:1:1 lint/safety/preferRobustStmts ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+<pre><code class="language-sh">code-block.sql:1:1 lint/preferRobustStmts ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   ! Concurrent drop should use IF EXISTS.
 
@@ -163,7 +165,7 @@ This allows migrations to be safely re-run if they fail partway through.</p>
 </code></pre>
 <pre><code class="language-sql">CREATE TABLE users (id int);
 </code></pre>
-<pre><code class="language-sh">code-block.sql:1:1 lint/safety/preferRobustStmts ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+<pre><code class="language-sh">code-block.sql:1:1 lint/preferRobustStmts ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   ! CREATE TABLE should use IF NOT EXISTS.
 
@@ -177,7 +179,7 @@ This allows migrations to be safely re-run if they fail partway through.</p>
 </code></pre>
 <pre><code class="language-sql">DROP TABLE users;
 </code></pre>
-<pre><code class="language-sh">code-block.sql:1:1 lint/safety/preferRobustStmts ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+<pre><code class="language-sh">code-block.sql:1:1 lint/preferRobustStmts ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   ! DROP TABLE should use IF EXISTS.
 
@@ -203,13 +205,15 @@ This allows migrations to be safely re-run if they fail partway through.</p>
 {
   &quot;linter&quot;: {
     &quot;rules&quot;: {
-      &quot;safety&quot;: {
-        &quot;preferRobustStmts&quot;: &quot;error&quot;
-      }
+      &quot;preferRobustStmts&quot;: &quot;error&quot;
     }
   }
 }
 
+</code></pre>
+<h2 id="how-to-suppress">How to suppress</h2>
+<p>Suppress this diagnostic with a comment:</p>
+<pre><code class="language-sql">-- pgls-ignore preferRobustStmts
 </code></pre>
               
             </div>

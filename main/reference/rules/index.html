@@ -86,7 +86,15 @@
                   </li>
                   <li class="toctree-l1 current"><a class="reference internal current" href="#">Linter Rules</a>
     <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#correctness">Correctness</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#destructive">Destructive</a>
+    </li>
     <li class="toctree-l2"><a class="reference internal" href="#safety">Safety</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#style">Style</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#typecheck">Typecheck</a>
     </li>
     </ul>
                   </li>
@@ -129,16 +137,148 @@
                 <h1 id="rules">Rules</h1>
 <p>Below the list of rules supported by the Postgres Language Server, divided by group. Here's a legend of the emojis:</p>
 <ul>
-<li>The icon ✅ indicates that the rule is part of the recommended rules.  </li>
+<li>The ✅ in the <strong>Recommended</strong> column means the rule is part of the recommended preset.</li>
+<li>The ✅ in the <strong>Migrations only</strong> column means the rule only runs on files inside the configured <code>migrations.migrationsDir</code>.</li>
 </ul>
-<h2 id="safety">Safety</h2>
-<p>Rules that detect potential safety issues in your code.</p>
+<h2 id="correctness">Correctness</h2>
+<p>Code that fails at runtime for reasons other than names or types.</p>
 <table>
 <thead>
 <tr>
 <th>Rule name</th>
 <th>Description</th>
-<th>Properties</th>
+<th>Recommended</th>
+<th>Migrations only</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="avoid-alter-enum-add-value/">avoidAlterEnumAddValue</a></td>
+<td><code>ALTER TYPE ... ADD VALUE</code> cannot run inside a transaction block in older Postgres versions.</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td><a href="ban-concurrent-index-creation-in-transaction/">banConcurrentIndexCreationInTransaction</a></td>
+<td>Concurrent index creation is not allowed within a transaction.</td>
+<td>✅</td>
+<td></td>
+</tr>
+<tr>
+<td><a href="invalid-drop-type-signature/">invalidDropTypeSignature</a></td>
+<td><code>DROP TYPE</code> and <code>DROP DOMAIN</code> don't take a parameter list.</td>
+<td>✅</td>
+<td></td>
+</tr>
+<tr>
+<td><a href="transaction-nesting/">transactionNesting</a></td>
+<td>Detects problematic transaction nesting that could lead to unexpected behavior.</td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h2 id="destructive">Destructive</h2>
+<p>Code that loses data or breaks existing clients.</p>
+<table>
+<thead>
+<tr>
+<th>Rule name</th>
+<th>Description</th>
+<th>Recommended</th>
+<th>Migrations only</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="adding-required-field/">addingRequiredField</a></td>
+<td>Adding a new column that is NOT NULL and has no default value to an existing table effectively makes it required.</td>
+<td></td>
+<td>✅</td>
+</tr>
+<tr>
+<td><a href="ban-delete-without-where/">banDeleteWithoutWhere</a></td>
+<td>A <code>DELETE</code> statement without a <code>WHERE</code> clause will remove all rows from the table.</td>
+<td>✅</td>
+<td></td>
+</tr>
+<tr>
+<td><a href="ban-drop-column/">banDropColumn</a></td>
+<td>Dropping a column may break existing clients.</td>
+<td>✅</td>
+<td>✅</td>
+</tr>
+<tr>
+<td><a href="ban-drop-database/">banDropDatabase</a></td>
+<td>Dropping a database may break existing clients (and everything else, really).</td>
+<td></td>
+<td>✅</td>
+</tr>
+<tr>
+<td><a href="ban-drop-not-null/">banDropNotNull</a></td>
+<td>Dropping a NOT NULL constraint may break existing clients.</td>
+<td>✅</td>
+<td>✅</td>
+</tr>
+<tr>
+<td><a href="ban-drop-schema/">banDropSchema</a></td>
+<td>Dropping a schema will remove all objects within it and may break existing clients.</td>
+<td>✅</td>
+<td>✅</td>
+</tr>
+<tr>
+<td><a href="ban-drop-table/">banDropTable</a></td>
+<td>Dropping a table may break existing clients.</td>
+<td>✅</td>
+<td>✅</td>
+</tr>
+<tr>
+<td><a href="ban-truncate/">banTruncate</a></td>
+<td>Truncating a table removes all rows and can cause data loss in production.</td>
+<td>✅</td>
+<td>✅</td>
+</tr>
+<tr>
+<td><a href="ban-truncate-cascade/">banTruncateCascade</a></td>
+<td>Using <code>TRUNCATE</code>'s <code>CASCADE</code> option will truncate any tables that are also foreign-keyed to the specified tables.</td>
+<td></td>
+<td>✅</td>
+</tr>
+<tr>
+<td><a href="ban-update-without-where/">banUpdateWithoutWhere</a></td>
+<td>An <code>UPDATE</code> statement without a <code>WHERE</code> clause will modify all rows in the table.</td>
+<td>✅</td>
+<td></td>
+</tr>
+<tr>
+<td><a href="changing-column-type/">changingColumnType</a></td>
+<td>Changing a column type may require a table rewrite and break existing clients.</td>
+<td></td>
+<td>✅</td>
+</tr>
+<tr>
+<td><a href="renaming-column/">renamingColumn</a></td>
+<td>Renaming columns may break existing queries and application code.</td>
+<td></td>
+<td>✅</td>
+</tr>
+<tr>
+<td><a href="renaming-table/">renamingTable</a></td>
+<td>Renaming tables may break existing queries and application code.</td>
+<td></td>
+<td>✅</td>
+</tr>
+</tbody>
+</table>
+<h2 id="safety">Safety</h2>
+<p>Valid code that may be dangerous against a live database: locks, rewrites, or blocking.</p>
+<table>
+<thead>
+<tr>
+<th>Rule name</th>
+<th>Description</th>
+<th>Recommended</th>
+<th>Migrations only</th>
 </tr>
 </thead>
 <tbody>
@@ -146,260 +286,304 @@
 <td><a href="add-serial-column/">addSerialColumn</a></td>
 <td>Adding a column with a SERIAL type or GENERATED ALWAYS AS ... STORED causes a full table rewrite.</td>
 <td>✅</td>
+<td>✅</td>
 </tr>
 <tr>
 <td><a href="adding-field-with-default/">addingFieldWithDefault</a></td>
 <td>Adding a column with a DEFAULT value may lead to a table rewrite while holding an ACCESS EXCLUSIVE lock.</td>
+<td>✅</td>
 <td>✅</td>
 </tr>
 <tr>
 <td><a href="adding-foreign-key-constraint/">addingForeignKeyConstraint</a></td>
 <td>Adding a foreign key constraint requires a table scan and a SHARE ROW EXCLUSIVE lock on both tables, which blocks writes.</td>
 <td>✅</td>
+<td>✅</td>
 </tr>
 <tr>
 <td><a href="adding-not-null-field/">addingNotNullField</a></td>
 <td>Setting a column NOT NULL blocks reads while the table is scanned.</td>
+<td>✅</td>
 <td>✅</td>
 </tr>
 <tr>
 <td><a href="adding-primary-key-constraint/">addingPrimaryKeyConstraint</a></td>
 <td>Adding a primary key constraint results in locks and table rewrites.</td>
 <td>✅</td>
-</tr>
-<tr>
-<td><a href="adding-required-field/">addingRequiredField</a></td>
-<td>Adding a new column that is NOT NULL and has no default value to an existing table effectively makes it required.</td>
-<td></td>
+<td>✅</td>
 </tr>
 <tr>
 <td><a href="avoid-adding-exclusion-constraint/">avoidAddingExclusionConstraint</a></td>
 <td>Adding an exclusion constraint acquires an <code>ACCESS EXCLUSIVE</code> lock.</td>
 <td>✅</td>
-</tr>
-<tr>
-<td><a href="avoid-alter-enum-add-value/">avoidAlterEnumAddValue</a></td>
-<td><code>ALTER TYPE ... ADD VALUE</code> cannot run inside a transaction block in older Postgres versions.</td>
-<td></td>
+<td>✅</td>
 </tr>
 <tr>
 <td><a href="avoid-attaching-partition/">avoidAttachingPartition</a></td>
 <td>Attaching a partition acquires an <code>ACCESS EXCLUSIVE</code> lock on the parent table.</td>
+<td>✅</td>
 <td>✅</td>
 </tr>
 <tr>
 <td><a href="avoid-create-trigger/">avoidCreateTrigger</a></td>
 <td>Creating a trigger acquires a <code>SHARE ROW EXCLUSIVE</code> lock on the table.</td>
 <td></td>
+<td>✅</td>
 </tr>
 <tr>
 <td><a href="avoid-enable-disable-trigger/">avoidEnableDisableTrigger</a></td>
 <td>Enabling or disabling a trigger acquires a <code>SHARE ROW EXCLUSIVE</code> lock.</td>
 <td></td>
+<td>✅</td>
 </tr>
 <tr>
 <td><a href="avoid-wide-lock-window/">avoidWideLockWindow</a></td>
 <td>Acquiring ACCESS EXCLUSIVE locks on multiple tables widens the lock window.</td>
 <td>✅</td>
-</tr>
-<tr>
-<td><a href="ban-char-field/">banCharField</a></td>
-<td>Using CHAR(n) or CHARACTER(n) types is discouraged.</td>
-<td></td>
-</tr>
-<tr>
-<td><a href="ban-concurrent-index-creation-in-transaction/">banConcurrentIndexCreationInTransaction</a></td>
-<td>Concurrent index creation is not allowed within a transaction.</td>
-<td>✅</td>
-</tr>
-<tr>
-<td><a href="ban-delete-without-where/">banDeleteWithoutWhere</a></td>
-<td>A <code>DELETE</code> statement without a <code>WHERE</code> clause will remove all rows from the table.</td>
-<td>✅</td>
-</tr>
-<tr>
-<td><a href="ban-drop-column/">banDropColumn</a></td>
-<td>Dropping a column may break existing clients.</td>
-<td>✅</td>
-</tr>
-<tr>
-<td><a href="ban-drop-database/">banDropDatabase</a></td>
-<td>Dropping a database may break existing clients (and everything else, really).</td>
-<td></td>
-</tr>
-<tr>
-<td><a href="ban-drop-not-null/">banDropNotNull</a></td>
-<td>Dropping a NOT NULL constraint may break existing clients.</td>
-<td>✅</td>
-</tr>
-<tr>
-<td><a href="ban-drop-schema/">banDropSchema</a></td>
-<td>Dropping a schema will remove all objects within it and may break existing clients.</td>
-<td>✅</td>
-</tr>
-<tr>
-<td><a href="ban-drop-table/">banDropTable</a></td>
-<td>Dropping a table may break existing clients.</td>
 <td>✅</td>
 </tr>
 <tr>
 <td><a href="ban-drop-trigger/">banDropTrigger</a></td>
 <td>Dropping a trigger acquires an <code>ACCESS EXCLUSIVE</code> lock on the table.</td>
 <td></td>
-</tr>
-<tr>
-<td><a href="ban-truncate/">banTruncate</a></td>
-<td>Truncating a table removes all rows and can cause data loss in production.</td>
-<td>✅</td>
-</tr>
-<tr>
-<td><a href="ban-truncate-cascade/">banTruncateCascade</a></td>
-<td>Using <code>TRUNCATE</code>'s <code>CASCADE</code> option will truncate any tables that are also foreign-keyed to the specified tables.</td>
-<td></td>
-</tr>
-<tr>
-<td><a href="ban-update-without-where/">banUpdateWithoutWhere</a></td>
-<td>An <code>UPDATE</code> statement without a <code>WHERE</code> clause will modify all rows in the table.</td>
 <td>✅</td>
 </tr>
 <tr>
 <td><a href="ban-vacuum-full/">banVacuumFull</a></td>
 <td><code>VACUUM FULL</code> rewrites the entire table and acquires an <code>ACCESS EXCLUSIVE</code> lock.</td>
 <td>✅</td>
-</tr>
-<tr>
-<td><a href="changing-column-type/">changingColumnType</a></td>
-<td>Changing a column type may require a table rewrite and break existing clients.</td>
-<td></td>
-</tr>
-<tr>
-<td><a href="concurrent-refresh-matview-lock/">concurrentRefreshMatviewLock</a></td>
-<td><code>REFRESH MATERIALIZED VIEW CONCURRENTLY</code> still acquires an <code>EXCLUSIVE</code> lock.</td>
-<td></td>
+<td>✅</td>
 </tr>
 <tr>
 <td><a href="constraint-missing-not-valid/">constraintMissingNotValid</a></td>
 <td>Adding constraints without NOT VALID blocks all reads and writes.</td>
 <td></td>
-</tr>
-<tr>
-<td><a href="creating-enum/">creatingEnum</a></td>
-<td>Creating enum types is not recommended for new applications.</td>
-<td></td>
+<td>✅</td>
 </tr>
 <tr>
 <td><a href="disallow-unique-constraint/">disallowUniqueConstraint</a></td>
 <td>Disallow adding a UNIQUE constraint without using an existing index.</td>
 <td></td>
+<td>✅</td>
 </tr>
 <tr>
 <td><a href="lock-timeout-warning/">lockTimeoutWarning</a></td>
 <td>Taking a dangerous lock without setting a lock timeout can cause indefinite blocking.</td>
+<td>✅</td>
 <td>✅</td>
 </tr>
 <tr>
 <td><a href="multiple-alter-table/">multipleAlterTable</a></td>
 <td>Multiple ALTER TABLE statements on the same table should be combined into a single statement.</td>
 <td>✅</td>
-</tr>
-<tr>
-<td><a href="prefer-big-int/">preferBigInt</a></td>
-<td>Prefer BIGINT over smaller integer types.</td>
-<td></td>
-</tr>
-<tr>
-<td><a href="prefer-bigint-over-int/">preferBigintOverInt</a></td>
-<td>Prefer BIGINT over INT/INTEGER types.</td>
-<td></td>
-</tr>
-<tr>
-<td><a href="prefer-bigint-over-smallint/">preferBigintOverSmallint</a></td>
-<td>Prefer BIGINT over SMALLINT types.</td>
-<td></td>
-</tr>
-<tr>
-<td><a href="prefer-identity/">preferIdentity</a></td>
-<td>Prefer using IDENTITY columns over serial columns.</td>
-<td></td>
-</tr>
-<tr>
-<td><a href="prefer-jsonb/">preferJsonb</a></td>
-<td>Prefer JSONB over JSON types.</td>
-<td></td>
+<td>✅</td>
 </tr>
 <tr>
 <td><a href="prefer-robust-stmts/">preferRobustStmts</a></td>
 <td>Prefer statements with guards for robustness in migrations.</td>
 <td></td>
-</tr>
-<tr>
-<td><a href="prefer-text-field/">preferTextField</a></td>
-<td>Prefer using TEXT over VARCHAR(n) types.</td>
-<td></td>
-</tr>
-<tr>
-<td><a href="prefer-timestamptz/">preferTimestamptz</a></td>
-<td>Prefer TIMESTAMPTZ over TIMESTAMP types.</td>
-<td></td>
-</tr>
-<tr>
-<td><a href="renaming-column/">renamingColumn</a></td>
-<td>Renaming columns may break existing queries and application code.</td>
-<td></td>
-</tr>
-<tr>
-<td><a href="renaming-table/">renamingTable</a></td>
-<td>Renaming tables may break existing queries and application code.</td>
-<td></td>
+<td>✅</td>
 </tr>
 <tr>
 <td><a href="require-concurrent-detach-partition/">requireConcurrentDetachPartition</a></td>
 <td>Detaching a partition without <code>CONCURRENTLY</code> acquires an <code>ACCESS EXCLUSIVE</code> lock.</td>
+<td>✅</td>
 <td>✅</td>
 </tr>
 <tr>
 <td><a href="require-concurrent-index-creation/">requireConcurrentIndexCreation</a></td>
 <td>Creating indexes non-concurrently can lock the table for writes.</td>
 <td></td>
+<td>✅</td>
 </tr>
 <tr>
 <td><a href="require-concurrent-index-deletion/">requireConcurrentIndexDeletion</a></td>
 <td>Dropping indexes non-concurrently can lock the table for reads.</td>
 <td></td>
+<td>✅</td>
 </tr>
 <tr>
 <td><a href="require-concurrent-refresh-matview/">requireConcurrentRefreshMatview</a></td>
 <td><code>REFRESH MATERIALIZED VIEW</code> without <code>CONCURRENTLY</code> acquires an <code>ACCESS EXCLUSIVE</code> lock.</td>
+<td>✅</td>
 <td>✅</td>
 </tr>
 <tr>
 <td><a href="require-concurrent-reindex/">requireConcurrentReindex</a></td>
 <td><code>REINDEX</code> without <code>CONCURRENTLY</code> acquires an <code>ACCESS EXCLUSIVE</code> lock on the table.</td>
 <td>✅</td>
+<td>✅</td>
 </tr>
 <tr>
 <td><a href="require-idle-in-transaction-timeout/">requireIdleInTransactionTimeout</a></td>
 <td>Dangerous lock statements should be preceded by <code>SET idle_in_transaction_session_timeout</code>.</td>
 <td></td>
+<td>✅</td>
 </tr>
 <tr>
 <td><a href="require-separate-constraint-validation/">requireSeparateConstraintValidation</a></td>
 <td>Validating a constraint in the same transaction it was added as <code>NOT VALID</code> defeats the purpose.</td>
+<td>✅</td>
 <td>✅</td>
 </tr>
 <tr>
 <td><a href="require-statement-timeout/">requireStatementTimeout</a></td>
 <td>Dangerous lock statements should be preceded by <code>SET statement_timeout</code>.</td>
 <td></td>
+<td>✅</td>
 </tr>
 <tr>
 <td><a href="running-statement-while-holding-access-exclusive/">runningStatementWhileHoldingAccessExclusive</a></td>
 <td>Running additional statements while holding an ACCESS EXCLUSIVE lock blocks all table access.</td>
 <td>✅</td>
+<td>✅</td>
+</tr>
+</tbody>
+</table>
+<h2 id="style">Style</h2>
+<p>Schema design preferences. Not enabled by the recommended preset.</p>
+<table>
+<thead>
+<tr>
+<th>Rule name</th>
+<th>Description</th>
+<th>Recommended</th>
+<th>Migrations only</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="ban-char-field/">banCharField</a></td>
+<td>Using CHAR(n) or CHARACTER(n) types is discouraged.</td>
+<td></td>
+<td></td>
 </tr>
 <tr>
-<td><a href="transaction-nesting/">transactionNesting</a></td>
-<td>Detects problematic transaction nesting that could lead to unexpected behavior.</td>
+<td><a href="creating-enum/">creatingEnum</a></td>
+<td>Creating enum types is not recommended for new applications.</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td><a href="prefer-big-int/">preferBigInt</a></td>
+<td>Prefer BIGINT over smaller integer types.</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td><a href="prefer-identity/">preferIdentity</a></td>
+<td>Prefer using IDENTITY columns over serial columns.</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td><a href="prefer-jsonb/">preferJsonb</a></td>
+<td>Prefer JSONB over JSON types.</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td><a href="prefer-text-field/">preferTextField</a></td>
+<td>Prefer using TEXT over VARCHAR(n) types.</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td><a href="prefer-timestamptz/">preferTimestamptz</a></td>
+<td>Prefer TIMESTAMPTZ over TIMESTAMP types.</td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h2 id="typecheck">Typecheck</h2>
+<p>Code that fails at runtime because of names or types. Needs a database connection.</p>
+<table>
+<thead>
+<tr>
+<th>Rule name</th>
+<th>Description</th>
+<th>Recommended</th>
+<th>Migrations only</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="ambiguous-column/">ambiguousColumn</a></td>
+<td>An unqualified column name matches columns of more than one relation in scope.</td>
+<td>✅</td>
+<td></td>
+</tr>
+<tr>
+<td><a href="assignment-type-mismatch/">assignmentTypeMismatch</a></td>
+<td>An expression assigned to a column cannot be coerced to that column's type. The ruleneeds a database connection to load the table and type catalog.</td>
+<td>✅</td>
+<td></td>
+</tr>
+<tr>
+<td><a href="function-argument-mismatch/">functionArgumentMismatch</a></td>
+<td>A function name and argument count exist, but its argument types do not select exactlyone overload. The rule needs a database connection to load the function and type catalog.</td>
+<td>✅</td>
+<td></td>
+</tr>
+<tr>
+<td><a href="function-return-type-mismatch/">functionReturnTypeMismatch</a></td>
+<td>The final statement of a SQL function doesn't return what the function is declared toreturn.</td>
+<td>✅</td>
+<td></td>
+</tr>
+<tr>
+<td><a href="insert-column-mismatch/">insertColumnMismatch</a></td>
+<td>An <code>INSERT</code> has a different number of target columns than values.</td>
+<td>✅</td>
+<td></td>
+</tr>
+<tr>
+<td><a href="invalid-cast/">invalidCast</a></td>
+<td>An explicit cast is not permitted between the source and target types. The rule needsa database connection to load the type and cast catalog.</td>
+<td>✅</td>
+<td></td>
+</tr>
+<tr>
+<td><a href="missing-from-clause-entry/">missingFromClauseEntry</a></td>
+<td>A column is qualified with a name that is not in the <code>FROM</code> clause.</td>
+<td>✅</td>
+<td></td>
+</tr>
+<tr>
+<td><a href="operator-type-mismatch/">operatorTypeMismatch</a></td>
+<td>An operator exists by name but cannot be resolved for the operand types, or hasmultiple equally suitable candidates.</td>
+<td>✅</td>
+<td></td>
+</tr>
+<tr>
+<td><a href="unknown-column/">unknownColumn</a></td>
+<td>A column does not exist on the relation or record it is taken from.</td>
+<td>✅</td>
+<td></td>
+</tr>
+<tr>
+<td><a href="unknown-function/">unknownFunction</a></td>
+<td>No function with this name accepts this number of arguments.</td>
+<td>✅</td>
+<td></td>
+</tr>
+<tr>
+<td><a href="unknown-relation/">unknownRelation</a></td>
+<td>A table, view, or materialized view does not exist.</td>
+<td>✅</td>
+<td></td>
+</tr>
+<tr>
+<td><a href="unknown-schema/">unknownSchema</a></td>
+<td>A schema does not exist.</td>
+<td>✅</td>
+<td></td>
+</tr>
+<tr>
+<td><a href="unknown-type/">unknownType</a></td>
+<td>A type does not exist.</td>
+<td>✅</td>
 <td></td>
 </tr>
 </tbody>

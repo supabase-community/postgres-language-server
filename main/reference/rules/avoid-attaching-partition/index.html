@@ -122,7 +122,9 @@
             <div class="section" itemprop="articleBody">
               
                 <h1 id="avoidattachingpartition">avoidAttachingPartition</h1>
-<p><strong>Diagnostic Category: <code>lint/safety/avoidAttachingPartition</code></strong></p>
+<p><strong>Diagnostic Category: <code>lint/avoidAttachingPartition</code></strong></p>
+<p><strong>Group: <code>safety</code></strong></p>
+<p><strong>Applies to: migration files only</strong></p>
 <p><strong>Since</strong>: <code>vnext</code></p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
@@ -139,7 +141,7 @@ with the correct constraints upfront, or use a staging table approach.</p>
 <h3 id="invalid">Invalid</h3>
 <pre><code class="language-sql">alter table my_table attach partition my_partition for values from ('2024-01-01') to ('2025-01-01');
 </code></pre>
-<pre><code class="language-sh">code-block.sql:1:1 lint/safety/avoidAttachingPartition ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+<pre><code class="language-sh">code-block.sql:1:1 lint/avoidAttachingPartition ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   ! Attaching a partition acquires an ACCESS EXCLUSIVE lock on the parent table.
 
@@ -159,13 +161,15 @@ with the correct constraints upfront, or use a staging table approach.</p>
 {
   &quot;linter&quot;: {
     &quot;rules&quot;: {
-      &quot;safety&quot;: {
-        &quot;avoidAttachingPartition&quot;: &quot;error&quot;
-      }
+      &quot;avoidAttachingPartition&quot;: &quot;error&quot;
     }
   }
 }
 
+</code></pre>
+<h2 id="how-to-suppress">How to suppress</h2>
+<p>Suppress this diagnostic with a comment:</p>
+<pre><code class="language-sql">-- pgls-ignore avoidAttachingPartition
 </code></pre>
               
             </div>

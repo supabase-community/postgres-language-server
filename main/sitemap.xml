@@ -121,6 +121,14 @@
          <lastmod>2026-10-04</lastmod>
     </url>
     <url>
+         <loc>https://pg-language-server.com/main/reference/rules/ambiguous-column/</loc>
+         <lastmod>2026-10-04</lastmod>
+    </url>
+    <url>
+         <loc>https://pg-language-server.com/main/reference/rules/assignment-type-mismatch/</loc>
+         <lastmod>2026-10-04</lastmod>
+    </url>
+    <url>
          <loc>https://pg-language-server.com/main/reference/rules/auth-rls-initplan/</loc>
          <lastmod>2026-10-04</lastmod>
     </url>
@@ -209,10 +217,6 @@
          <lastmod>2026-10-04</lastmod>
     </url>
     <url>
-         <loc>https://pg-language-server.com/main/reference/rules/concurrent-refresh-matview-lock/</loc>
-         <lastmod>2026-10-04</lastmod>
-    </url>
-    <url>
          <loc>https://pg-language-server.com/main/reference/rules/constraint-missing-not-valid/</loc>
          <lastmod>2026-10-04</lastmod>
     </url>
@@ -245,6 +249,14 @@
          <lastmod>2026-10-04</lastmod>
     </url>
     <url>
+         <loc>https://pg-language-server.com/main/reference/rules/function-argument-mismatch/</loc>
+         <lastmod>2026-10-04</lastmod>
+    </url>
+    <url>
+         <loc>https://pg-language-server.com/main/reference/rules/function-return-type-mismatch/</loc>
+         <lastmod>2026-10-04</lastmod>
+    </url>
+    <url>
          <loc>https://pg-language-server.com/main/reference/rules/function-search-path-mutable/</loc>
          <lastmod>2026-10-04</lastmod>
     </url>
@@ -253,11 +265,27 @@
          <lastmod>2026-10-04</lastmod>
     </url>
     <url>
+         <loc>https://pg-language-server.com/main/reference/rules/insert-column-mismatch/</loc>
+         <lastmod>2026-10-04</lastmod>
+    </url>
+    <url>
+         <loc>https://pg-language-server.com/main/reference/rules/invalid-cast/</loc>
+         <lastmod>2026-10-04</lastmod>
+    </url>
+    <url>
+         <loc>https://pg-language-server.com/main/reference/rules/invalid-drop-type-signature/</loc>
+         <lastmod>2026-10-04</lastmod>
+    </url>
+    <url>
          <loc>https://pg-language-server.com/main/reference/rules/lock-timeout-warning/</loc>
          <lastmod>2026-10-04</lastmod>
     </url>
     <url>
          <loc>https://pg-language-server.com/main/reference/rules/materialized-view-in-api/</loc>
+         <lastmod>2026-10-04</lastmod>
+    </url>
+    <url>
+         <loc>https://pg-language-server.com/main/reference/rules/missing-from-clause-entry/</loc>
          <lastmod>2026-10-04</lastmod>
     </url>
     <url>
@@ -273,19 +301,15 @@
          <lastmod>2026-10-04</lastmod>
     </url>
     <url>
+         <loc>https://pg-language-server.com/main/reference/rules/operator-type-mismatch/</loc>
+         <lastmod>2026-10-04</lastmod>
+    </url>
+    <url>
          <loc>https://pg-language-server.com/main/reference/rules/policy-exists-rls-disabled/</loc>
          <lastmod>2026-10-04</lastmod>
     </url>
     <url>
          <loc>https://pg-language-server.com/main/reference/rules/prefer-big-int/</loc>
-         <lastmod>2026-10-04</lastmod>
-    </url>
-    <url>
-         <loc>https://pg-language-server.com/main/reference/rules/prefer-bigint-over-int/</loc>
-         <lastmod>2026-10-04</lastmod>
-    </url>
-    <url>
-         <loc>https://pg-language-server.com/main/reference/rules/prefer-bigint-over-smallint/</loc>
          <lastmod>2026-10-04</lastmod>
     </url>
     <url>
@@ -386,6 +410,26 @@
     </url>
     <url>
          <loc>https://pg-language-server.com/main/reference/rules/unindexed-foreign-keys/</loc>
+         <lastmod>2026-10-04</lastmod>
+    </url>
+    <url>
+         <loc>https://pg-language-server.com/main/reference/rules/unknown-column/</loc>
+         <lastmod>2026-10-04</lastmod>
+    </url>
+    <url>
+         <loc>https://pg-language-server.com/main/reference/rules/unknown-function/</loc>
+         <lastmod>2026-10-04</lastmod>
+    </url>
+    <url>
+         <loc>https://pg-language-server.com/main/reference/rules/unknown-relation/</loc>
+         <lastmod>2026-10-04</lastmod>
+    </url>
+    <url>
+         <loc>https://pg-language-server.com/main/reference/rules/unknown-schema/</loc>
+         <lastmod>2026-10-04</lastmod>
+    </url>
+    <url>
+         <loc>https://pg-language-server.com/main/reference/rules/unknown-type/</loc>
          <lastmod>2026-10-04</lastmod>
     </url>
     <url>
