@@ -70,10 +70,9 @@ fn apply_column_change(columns: &mut Vec<ColumnInfo>, command: &AlterTableCmd) {
         AlterTableType::AtAddColumn => {
             if let Some(NodeEnum::ColumnDef(column)) =
                 command.def.as_deref().and_then(|def| def.node.as_ref())
+                && !columns.iter().any(|c| c.name == column.colname)
             {
-                if !columns.iter().any(|c| c.name == column.colname) {
-                    columns.push(column_info(column));
-                }
+                columns.push(column_info(column));
             }
         }
         AlterTableType::AtDropColumn => columns.retain(|column| column.name != command.name),

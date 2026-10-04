@@ -37,10 +37,10 @@ pub(super) fn resolve_type_name(r: &mut Resolver, n: &TypeName) {
             return;
         }
     };
-    if let Some(schema) = schema {
-        if r.check_schema(schema, n.location) {
-            return;
-        }
+    if let Some(schema) = schema
+        && r.check_schema(schema, n.location)
+    {
+        return;
     }
 
     match r.catalog.type_(schema, name, r.search_path) {

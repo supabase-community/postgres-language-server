@@ -75,10 +75,10 @@ pub(super) fn resolve_range_function(
     if !n.coldeflist.is_empty() {
         columns = column_definition_names(&n.coldeflist);
     }
-    if n.ordinality {
-        if let Some(columns) = columns.as_mut() {
-            columns.push("ordinality".into());
-        }
+    if n.ordinality
+        && let Some(columns) = columns.as_mut()
+    {
+        columns.push("ordinality".into());
     }
 
     let alias = n.alias.as_ref();

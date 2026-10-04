@@ -23,18 +23,17 @@ pub(super) fn target_list_columns(r: &Resolver, targets: &[Node]) -> Columns {
             .as_deref()
             .and_then(|value| value.node.as_ref())?;
 
-        if let NodeEnum::ColumnRef(column) = value {
-            if let Some((last, qualifier)) = column.fields.split_last() {
-                if matches!(last.node, Some(NodeEnum::AStar(_))) {
-                    let expanded = match qualifier {
-                        [] => level.star_columns()?,
-                        [name] => level.item(string_value(name)?)?.columns.clone()?,
-                        _ => return None,
-                    };
-                    columns.extend(expanded);
-                    continue;
-                }
-            }
+        if let NodeEnum::ColumnRef(column) = value
+            && let Some((last, qualifier)) = column.fields.split_last()
+            && matches!(last.node, Some(NodeEnum::AStar(_)))
+        {
+            let expanded = match qualifier {
+                [] => level.star_columns()?,
+                [name] => level.item(string_value(name)?)?.columns.clone()?,
+                _ => return None,
+            };
+            columns.extend(expanded);
+            continue;
         }
 
         if !target.name.is_empty() {

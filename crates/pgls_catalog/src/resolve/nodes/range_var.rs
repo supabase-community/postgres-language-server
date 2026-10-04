@@ -13,13 +13,11 @@ use crate::resolve::{
 pub(super) fn resolve_range_var(r: &mut Resolver, n: &RangeVar) -> Item {
     let alias = n.alias.as_ref();
     let is_unqualified = n.schemaname.is_empty() && n.catalogname.is_empty();
-    if is_unqualified {
-        if let Some(cte) = r.ctes.iter().rev().find(|cte| cte.name == n.relname) {
-            return Item::named(
-                Some(alias.map_or_else(|| cte.name.clone(), |alias| alias.aliasname.clone())),
-                apply_alias(cte.columns.clone(), alias),
-            );
-        }
+    if is_unqualified && let Some(cte) = r.ctes.iter().rev().find(|cte| cte.name == n.relname) {
+        return Item::named(
+            Some(alias.map_or_else(|| cte.name.clone(), |alias| alias.aliasname.clone())),
+            apply_alias(cte.columns.clone(), alias),
+        );
     }
     resolve_target_relation(r, n)
 }
@@ -52,10 +50,10 @@ pub(super) fn lookup_relation(r: &mut Resolver, n: &RangeVar) -> ResolvedRelatio
         return unknown;
     }
     let schema = (!n.schemaname.is_empty()).then_some(n.schemaname.as_str());
-    if let Some(schema) = schema {
-        if r.check_schema(schema, n.location) {
-            return unknown;
-        }
+    if let Some(schema) = schema
+        && r.check_schema(schema, n.location)
+    {
+        return unknown;
     }
 
     match r.catalog.relation(schema, &n.relname, r.search_path) {

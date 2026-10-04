@@ -39,10 +39,10 @@ pub(super) fn apply_rename_stmt(c: &mut Catalog, n: &RenameStmt, search_path: &[
             }
         }
         ObjectType::ObjectType | ObjectType::ObjectDomain => {
-            if let Some(NodeEnum::List(list)) = object {
-                if let Some(name) = qualified_name(&list.items) {
-                    c.move_type(&name, None, Some(&n.newname), search_path);
-                }
+            if let Some(NodeEnum::List(list)) = object
+                && let Some(name) = qualified_name(&list.items)
+            {
+                c.move_type(&name, None, Some(&n.newname), search_path);
             }
         }
         ObjectType::ObjectFunction

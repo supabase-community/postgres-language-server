@@ -109,16 +109,16 @@ fn resolve_qualified_column(r: &mut Resolver, qualifier: &str, name: &str, locat
                 Lookup::Found(type_info) => type_info.attributes,
                 _ => None,
             };
-            if let Some(attributes) = attributes {
-                if !attributes.iter().any(|attribute| attribute.name == name) {
-                    r.report(
-                        FindingKind::UnknownColumn {
-                            relation: Some(qualifier.to_owned()),
-                            column: name.to_owned(),
-                        },
-                        location,
-                    );
-                }
+            if let Some(attributes) = attributes
+                && !attributes.iter().any(|attribute| attribute.name == name)
+            {
+                r.report(
+                    FindingKind::UnknownColumn {
+                        relation: Some(qualifier.to_owned()),
+                        column: name.to_owned(),
+                    },
+                    location,
+                );
             }
             return;
         }

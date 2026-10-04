@@ -38,10 +38,10 @@ pub(super) fn resolve_func_call(r: &mut Resolver, n: &FuncCall) {
             return;
         }
     };
-    if let Some(schema) = schema {
-        if r.check_schema(schema, n.location) {
-            return;
-        }
+    if let Some(schema) = schema
+        && r.check_schema(schema, n.location)
+    {
+        return;
     }
 
     let arg_count = if n.agg_star { 0 } else { n.args.len() };
