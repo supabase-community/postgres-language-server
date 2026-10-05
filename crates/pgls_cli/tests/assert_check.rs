@@ -222,6 +222,7 @@ async fn check_accepts_tls_connection_strings(test_db: PgPool) {
     std::fs::remove_file(sql_file).expect("failed to remove temporary SQL file");
 }
 
+#[cfg(target_os = "linux")]
 const UNKNOWN_COLUMN_PATH: &str = "tests/fixtures/unknown_column.sql";
 
 #[cfg(target_os = "linux")]
