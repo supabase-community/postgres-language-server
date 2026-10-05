@@ -111,8 +111,8 @@ pub enum PgLSCommand {
     Start {
         /// Allows to change the prefix applied to the file name of the logs.
         #[bpaf(
-            env("PGT_LOG_PREFIX_NAME"),
             env("PGLS_LOG_PREFIX_NAME"),
+            env("PGT_LOG_PREFIX_NAME"),
             long("log-prefix-name"),
             argument("STRING"),
             hide_usage,
@@ -123,8 +123,8 @@ pub enum PgLSCommand {
 
         /// Allows to change the folder where logs are stored.
         #[bpaf(
-            env("PGT_LOG_PATH"),
             env("PGLS_LOG_PATH"),
+            env("PGT_LOG_PATH"),
             long("log-path"),
             argument("PATH"),
             hide_usage,
@@ -134,8 +134,8 @@ pub enum PgLSCommand {
         /// Allows to set a custom file path to the configuration file,
         /// or a custom directory path to find `postgres-language-server.jsonc`
         #[bpaf(
-            env("PGT_LOG_PREFIX_NAME"),
-            env("PGLS_LOG_PREFIX_NAME"),
+            env("PGLS_CONFIG_PATH"),
+            env("PGT_CONFIG_PATH"),
             long("config-path"),
             argument("PATH")
         )]
@@ -155,8 +155,8 @@ pub enum PgLSCommand {
     LspProxy {
         /// Allows to change the prefix applied to the file name of the logs.
         #[bpaf(
-            env("PGT_LOG_PREFIX_NAME"),
             env("PGLS_LOG_PREFIX_NAME"),
+            env("PGT_LOG_PREFIX_NAME"),
             long("log-prefix-name"),
             argument("STRING"),
             hide_usage,
@@ -166,8 +166,8 @@ pub enum PgLSCommand {
         log_prefix_name: String,
         /// Allows to change the folder where logs are stored.
         #[bpaf(
-            env("PGT_LOG_PATH"),
             env("PGLS_LOG_PATH"),
+            env("PGT_LOG_PATH"),
             long("log-path"),
             argument("PATH"),
             hide_usage,
@@ -177,8 +177,8 @@ pub enum PgLSCommand {
         /// Allows to set a custom file path to the configuration file,
         /// or a custom directory path to find `postgres-language-server.jsonc`
         #[bpaf(
-            env("PGT_CONFIG_PATH"),
             env("PGLS_CONFIG_PATH"),
+            env("PGT_CONFIG_PATH"),
             long("config-path"),
             argument("PATH")
         )]
@@ -210,8 +210,8 @@ pub enum PgLSCommand {
     RunServer {
         /// Allows to change the prefix applied to the file name of the logs.
         #[bpaf(
-            env("PGT_LOG_PREFIX_NAME"),
             env("PGLS_LOG_PREFIX_NAME"),
+            env("PGT_LOG_PREFIX_NAME"),
             long("log-prefix-name"),
             argument("STRING"),
             hide_usage,
@@ -222,8 +222,8 @@ pub enum PgLSCommand {
 
         /// Allows to change the folder where logs are stored.
         #[bpaf(
-            env("PGT_LOG_PATH"),
             env("PGLS_LOG_PATH"),
+            env("PGT_LOG_PATH"),
             long("log-path"),
             argument("PATH"),
             hide_usage,
@@ -233,8 +233,8 @@ pub enum PgLSCommand {
 
         /// Allows to change the log level. Default is debug. This will only affect "pgls*" crates. All others are logged with info level.
         #[bpaf(
-            env("PGT_LOG_LEVEL"),
             env("PGLS_LOG_LEVEL"),
+            env("PGT_LOG_LEVEL"),
             long("log-level"),
             argument("trace|debug|info|warn|error|none"),
             fallback(String::from("debug"))
@@ -243,8 +243,8 @@ pub enum PgLSCommand {
 
         /// Allows to change the logging format kind. Default is hierarchical.
         #[bpaf(
-            env("PGT_LOG_KIND"),
             env("PGLS_LOG_KIND"),
+            env("PGT_LOG_KIND"),
             long("log-kind"),
             argument("hierarchical|bunyan"),
             fallback(String::from("hierarchical"))
@@ -256,8 +256,8 @@ pub enum PgLSCommand {
         /// Allows to set a custom file path to the configuration file,
         /// or a custom directory path to find `postgres-language-server.jsonc`
         #[bpaf(
-            env("PGT_CONFIG_PATH"),
             env("PGLS_CONFIG_PATH"),
+            env("PGT_CONFIG_PATH"),
             long("config-path"),
             argument("PATH")
         )]
