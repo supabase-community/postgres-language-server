@@ -169,6 +169,13 @@ where
         self.request("pgls/pull_db_diagnostics", params)
     }
 
+    fn check_database_connection(
+        &self,
+        params: crate::features::diagnostics::CheckDatabaseConnectionParams,
+    ) -> Result<crate::features::diagnostics::CheckDatabaseConnectionResult, WorkspaceError> {
+        self.request("pgls/check_database_connection", params)
+    }
+
     fn get_completions(
         &self,
         params: super::GetCompletionsParams,

@@ -17,6 +17,7 @@ use crate::{
         },
         completions::{CompletionsResult, GetCompletionsParams},
         diagnostics::{
+            CheckDatabaseConnectionParams, CheckDatabaseConnectionResult,
             PullDatabaseDiagnosticsParams, PullDiagnosticsResult, PullFileDiagnosticsParams,
         },
         format::{PullFileFormattingParams, PullFormattingResult},
@@ -117,6 +118,15 @@ pub trait Workspace: Send + Sync + RefUnwindSafe {
         &self,
         params: PullDatabaseDiagnosticsParams,
     ) -> Result<PullDiagnosticsResult, WorkspaceError>;
+
+    /// Connects to the configured database and loads its schema, which the database-backed
+    /// checks need. Reports why that failed, including for a connection that failed recently
+    /// and is waiting to be retried. Reports nothing when no database is configured or the
+    /// connection is disabled.
+    fn check_database_connection(
+        &self,
+        params: CheckDatabaseConnectionParams,
+    ) -> Result<CheckDatabaseConnectionResult, WorkspaceError>;
 
     /// Retrieves a list of available code_actions for a file/cursor_position
     fn pull_code_actions(

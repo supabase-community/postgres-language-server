@@ -1,14 +1,16 @@
 use crate::cli_options::CliOptions;
 use crate::commands::get_files_to_process_with_cli_options;
+use crate::diagnostics::DatabaseUnavailable;
 use crate::execute::{StdinPayload, run_files, run_stdin};
 use crate::reporter::Report;
 use crate::{CliDiagnostic, CliSession, VcsIntegration};
 use crate::{ExecutionConfig, ExecutionMode, VcsTargeting};
 use pgls_configuration::PartialConfiguration;
 use pgls_console::Console;
-use pgls_diagnostics::category;
+use pgls_diagnostics::{Error, category};
 use pgls_fs::FileSystem;
 use pgls_workspace::DynRef;
+use pgls_workspace::features::diagnostics::CheckDatabaseConnectionParams;
 use std::ffi::OsString;
 
 pub struct CheckArgs {
@@ -50,12 +52,27 @@ pub fn check(
         let payload = read_stdin_payload(stdin_path, session.console())?;
         run_stdin(&mut session, &execution, payload)
     } else {
-        let report: Report = run_files(&mut session, &execution, paths)?;
+        let database_error = check_database_connection(&session)?;
+        let mut report: Report = run_files(&mut session, &execution, paths)?;
+        if let Some(error) = database_error {
+            report.prepend_diagnostic(error);
+        }
 
         let exit_result = enforce_exit_codes(cli_options, &report);
         session.report("check", cli_options, &report)?;
         exit_result
     }
+}
+
+/// A configured database that cannot be reached is an error: the checks that need it would
+/// otherwise be skipped silently.
+fn check_database_connection(session: &CliSession) -> Result<Option<Error>, CliDiagnostic> {
+    let result = session
+        .workspace()
+        .check_database_connection(CheckDatabaseConnectionParams::default())?;
+    Ok(result
+        .error
+        .map(|message| Error::from(DatabaseUnavailable::new(message))))
 }
 
 fn resolve_paths(

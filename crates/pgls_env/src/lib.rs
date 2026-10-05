@@ -41,6 +41,7 @@ pub struct PgLSEnv {
     pub pgport: PgLSEnvVariable,
     pub pguser: PgLSEnvVariable,
     pub pgpassword: PgLSEnvVariable,
+    pub pgpassfile: PgLSEnvVariable,
     pub pgdatabase: PgLSEnvVariable,
 
     // DEPRECATED - kept for backward compatibility
@@ -82,6 +83,10 @@ impl PgLSEnv {
             pgpassword: PgLSEnvVariable::new(
                 "PGPASSWORD",
                 "The password to connect to the database.",
+            ),
+            pgpassfile: PgLSEnvVariable::new(
+                "PGPASSFILE",
+                "The password file to look up the password in when none is configured. Default: `~/.pgpass`.",
             ),
             pgdatabase: PgLSEnvVariable::new(
                 "PGDATABASE",
@@ -181,7 +186,13 @@ impl Display for PgLSEnv {
         };
 
         let sensitive = [&self.database_url, &self.pgpassword];
-        let non_sensitive = [&self.pghost, &self.pgport, &self.pguser, &self.pgdatabase];
+        let non_sensitive = [
+            &self.pghost,
+            &self.pgport,
+            &self.pguser,
+            &self.pgpassfile,
+            &self.pgdatabase,
+        ];
 
         for var in sensitive {
             match var.value() {

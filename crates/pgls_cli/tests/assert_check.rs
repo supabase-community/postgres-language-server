@@ -222,6 +222,186 @@ async fn check_accepts_tls_connection_strings(test_db: PgPool) {
     std::fs::remove_file(sql_file).expect("failed to remove temporary SQL file");
 }
 
+const UNKNOWN_COLUMN_PATH: &str = "tests/fixtures/unknown_column.sql";
+
+#[cfg(target_os = "linux")]
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn check_fails_when_database_login_fails(test_db: PgPool) {
+    let opts = test_db.connect_options();
+    let port = opts.get_port().to_string();
+
+    assert_snapshot!(run_check_without_db_env(
+        &[
+            "--host",
+            opts.get_host(),
+            "--port",
+            &port,
+            "--username",
+            "postgres",
+            "--password",
+            "wrong-password",
+            "--database",
+            opts.get_database().unwrap_or("postgres"),
+            UNKNOWN_COLUMN_PATH,
+        ],
+        &[],
+    ));
+}
+
+#[cfg(target_os = "linux")]
+#[test]
+fn check_fails_when_database_is_unreachable() {
+    // Nothing listens on port 1.
+    let output = run_check_without_db_env(
+        &[
+            "--host",
+            "127.0.0.1",
+            "--port",
+            "1",
+            "--conn_timeout_secs",
+            "1",
+            UNKNOWN_COLUMN_PATH,
+        ],
+        &[],
+    );
+
+    assert!(output.starts_with("status: failure"), "{output}");
+    assert!(output.contains("database/connection"), "{output}");
+}
+
+#[cfg(target_os = "linux")]
+#[test]
+fn check_without_database_succeeds_with_disable_db() {
+    let output = run_check_without_db_env(
+        &[
+            "--host",
+            "127.0.0.1",
+            "--port",
+            "1",
+            "--conn_timeout_secs",
+            "1",
+            "--disable-db",
+            UNKNOWN_COLUMN_PATH,
+        ],
+        &[],
+    );
+
+    assert!(output.starts_with("status: success"), "{output}");
+    assert!(!output.contains("database/connection"), "{output}");
+}
+
+#[cfg(target_os = "linux")]
+#[test]
+fn check_without_database_succeeds_with_disable_connection_in_config() {
+    let mut cmd = cargo_bin_cmd!("postgres-language-server");
+    let output = cmd
+        .env_remove("DATABASE_URL")
+        .env_remove("PGHOST")
+        .args([
+            "check",
+            "--config-path",
+            "tests/fixtures/disable_connection/postgres-language-server.jsonc",
+            "--log-level",
+            "none",
+            UNKNOWN_COLUMN_PATH,
+        ])
+        .output()
+        .expect("failed to run CLI");
+    let output = normalize_output(
+        output.status,
+        &String::from_utf8_lossy(&output.stdout),
+        &String::from_utf8_lossy(&output.stderr),
+    );
+
+    assert!(output.starts_with("status: success"), "{output}");
+    assert!(!output.contains("database/connection"), "{output}");
+}
+
+#[cfg(target_os = "linux")]
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn check_reads_the_password_from_pgpassfile(test_db: PgPool) {
+    use std::os::unix::fs::PermissionsExt;
+
+    let opts = test_db.connect_options();
+    let host = opts.get_host().to_string();
+    let port = opts.get_port().to_string();
+    let database = opts.get_database().unwrap_or("postgres").to_string();
+    let role = format!("pgls_pgpass_{}", std::process::id());
+    sqlx::query(&format!("drop role if exists {role}"))
+        .execute(&test_db)
+        .await
+        .unwrap();
+    sqlx::query(&format!(
+        "create role {role} login password 'pgpass:secret'"
+    ))
+    .execute(&test_db)
+    .await
+    .unwrap();
+
+    let passfile = std::env::temp_dir().join(format!("{role}.pgpass"));
+    std::fs::write(
+        &passfile,
+        format!("# comment\n{host}:{port}:{database}:{role}:pgpass\\:secret\n"),
+    )
+    .unwrap();
+    std::fs::set_permissions(&passfile, std::fs::Permissions::from_mode(0o600)).unwrap();
+
+    let output = run_check_without_db_env(
+        &[
+            "--host",
+            &host,
+            "--port",
+            &port,
+            "--username",
+            &role,
+            "--database",
+            &database,
+            UNKNOWN_COLUMN_PATH,
+        ],
+        &[("PGPASSFILE", passfile.to_str().unwrap())],
+    );
+
+    std::fs::remove_file(&passfile).unwrap();
+    sqlx::query(&format!("drop role {role}"))
+        .execute(&test_db)
+        .await
+        .unwrap();
+
+    // The column check needs the database schema, so it only runs after a successful login.
+    assert!(!output.contains("database/connection"), "{output}");
+    assert!(output.contains("lint/unknownColumn"), "{output}");
+}
+
+/// Runs `check` with the database settings given in `args` only, without the connection
+/// settings of the environment running the tests.
+#[cfg(target_os = "linux")]
+fn run_check_without_db_env(args: &[&str], envs: &[(&str, &str)]) -> String {
+    let mut cmd = cargo_bin_cmd!("postgres-language-server");
+    for var in [
+        "DATABASE_URL",
+        "PGHOST",
+        "PGPORT",
+        "PGUSER",
+        "PGPASSWORD",
+        "PGDATABASE",
+    ] {
+        cmd.env_remove(var);
+    }
+    // Keep the passfile of the user running the tests out of it.
+    cmd.env("PGPASSFILE", "/nonexistent/pgpass");
+    cmd.envs(envs.iter().copied());
+
+    let mut full_args = vec!["check", "--config-path", CONFIG_PATH, "--log-level", "none"];
+    full_args.extend_from_slice(args);
+    let output = cmd.args(full_args).output().expect("failed to run CLI");
+
+    normalize_output(
+        output.status,
+        &String::from_utf8_lossy(&output.stdout),
+        &String::from_utf8_lossy(&output.stderr),
+    )
+}
+
 fn run_check(args: &[&str]) -> String {
     let mut full_args = vec!["--config-path", CONFIG_PATH, "--log-level", "none"];
     full_args.extend_from_slice(args);

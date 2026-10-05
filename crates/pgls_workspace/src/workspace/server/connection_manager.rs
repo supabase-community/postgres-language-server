@@ -6,9 +6,14 @@ use std::time::{Duration, Instant};
 
 use sqlx::{PgPool, Postgres, pool::PoolOptions, postgres::PgConnectOptions};
 
-use crate::{WorkspaceError, settings::DatabaseSettings};
+use crate::{
+    WorkspaceError,
+    diagnostics::DatabaseConnectionError,
+    settings::{DEFAULT_DATABASE_PASSWORD, DatabaseSettings},
+};
 
 use super::connection_key::ConnectionKey;
+use super::pgpass::{PassfileTarget, password_from_passfile};
 
 const INITIAL_FAILURE_BACKOFF: Duration = Duration::from_secs(5);
 const MAX_FAILURE_BACKOFF: Duration = Duration::from_secs(60);
@@ -24,6 +29,48 @@ fn settings_fingerprint(settings: &DatabaseSettings) -> u64 {
     hasher.finish()
 }
 
+/// The configured password, else the one from the password file, else the default.
+fn password(settings: &DatabaseSettings) -> String {
+    settings
+        .password
+        .clone()
+        .or_else(|| {
+            password_from_passfile(&PassfileTarget {
+                host: &settings.host,
+                port: settings.port,
+                database: &settings.database,
+                username: &settings.username,
+            })
+        })
+        .unwrap_or_else(|| DEFAULT_DATABASE_PASSWORD.to_string())
+}
+
+/// sqlx looks up the password file for a connection string too, but unlike libpq it does not
+/// unescape the password and falls back to `~/.pgpass` when `PGPASSFILE` has no entry. Prefer
+/// the libpq lookup when the connection string and `PGPASSWORD` have no password.
+fn connection_string_options(uri: &str) -> Result<PgConnectOptions, sqlx::Error> {
+    let options = PgConnectOptions::from_str(uri)?;
+    let url = url::Url::parse(uri).map_err(|err| sqlx::Error::Configuration(err.into()))?;
+    let has_password = url.password().is_some()
+        || url.query_pairs().any(|(key, _)| key == "password")
+        || std::env::var_os("PGPASSWORD").is_some_and(|password| !password.is_empty());
+    if has_password {
+        return Ok(options);
+    }
+
+    let password = password_from_passfile(&PassfileTarget {
+        host: options.get_host(),
+        port: options.get_port(),
+        // Postgres connects to the database named like the user by default.
+        database: options.get_database().unwrap_or(options.get_username()),
+        username: options.get_username(),
+    });
+    Ok(match password {
+        Some(password) => options.password(&password),
+        None => options,
+    })
+}
+
 /// Cached connection pool with last access time
 struct CachedPool {
     pool: PgPool,
@@ -33,6 +80,7 @@ struct CachedPool {
 }
 
 struct CachedFailure {
+    error: DatabaseConnectionError,
     message: String,
     settings_fingerprint: u64,
     attempts: u32,
@@ -112,7 +160,7 @@ impl ConnectionManager {
 
         // Create a new pool
         let config = if let Some(uri) = settings.connection_string.as_ref() {
-            match PgConnectOptions::from_str(uri) {
+            match connection_string_options(uri) {
                 Ok(options) => options,
                 Err(err) => {
                     tracing::error!("Failed to parse database connection URI: {err}");
@@ -120,11 +168,11 @@ impl ConnectionManager {
                 }
             }
         } else {
-            PgConnectOptions::new()
+            PgConnectOptions::new_without_pgpass()
                 .host(&settings.host)
                 .port(settings.port)
                 .username(&settings.username)
-                .password(&settings.password)
+                .password(&password(settings))
                 .database(&settings.database)
         };
 
@@ -148,6 +196,25 @@ impl ConnectionManager {
         Some(pool)
     }
 
+    /// Like [`Self::with_pool`], but returns the error of a connection that failed recently
+    /// instead of skipping it during the backoff.
+    pub(crate) fn try_with_pool<T>(
+        &self,
+        settings: &DatabaseSettings,
+        operation: impl FnOnce(&PgPool) -> Result<T, WorkspaceError>,
+    ) -> Option<Result<T, WorkspaceError>> {
+        if settings.enable_connection
+            && let Some(error) = self.failure_in_backoff(
+                &ConnectionKey::from(settings),
+                settings_fingerprint(settings),
+            )
+        {
+            return Some(Err(WorkspaceError::DatabaseConnectionError(error)));
+        }
+
+        self.with_pool(settings, operation)
+    }
+
     pub(crate) fn with_pool<T>(
         &self,
         settings: &DatabaseSettings,
@@ -168,14 +235,20 @@ impl ConnectionManager {
     ) {
         match result {
             Ok(_) => self.clear_failure(key),
-            Err(err @ WorkspaceError::DatabaseConnectionError(_)) => {
-                self.record_failure(key, settings_fingerprint, &err.to_string());
+            Err(err @ WorkspaceError::DatabaseConnectionError(error)) => {
+                self.record_failure(key, settings_fingerprint, error, &err.to_string());
             }
             Err(_) => {}
         }
     }
 
-    fn record_failure(&self, key: &ConnectionKey, settings_fingerprint: u64, error: &str) {
+    fn record_failure(
+        &self,
+        key: &ConnectionKey,
+        settings_fingerprint: u64,
+        error: &DatabaseConnectionError,
+        message: &str,
+    ) {
         let mut failures = self.failures.write().unwrap();
         let now = Instant::now();
         let attempts = failures.get(key).map_or(1, |failure| failure.attempts + 1);
@@ -190,7 +263,8 @@ impl ConnectionManager {
         failures.insert(
             key.clone(),
             CachedFailure {
-                message: error.to_string(),
+                error: error.clone(),
+                message: message.to_string(),
                 settings_fingerprint,
                 attempts,
                 next_retry_at: now + backoff,
@@ -199,29 +273,36 @@ impl ConnectionManager {
 
         if was_cached {
             tracing::debug!(
-                "Database connection failed again. Retrying after {:?}: {error}",
+                "Database connection failed again. Retrying after {:?}: {message}",
                 backoff
             );
         } else {
             tracing::warn!(
-                "Database connection failed. Skipping database-backed features for {:?}: {error}",
+                "Database connection failed. Skipping database-backed features for {:?}: {message}",
                 backoff
             );
         }
     }
 
     fn connection_is_in_backoff(&self, key: &ConnectionKey, settings_fingerprint: u64) -> bool {
+        self.failure_in_backoff(key, settings_fingerprint).is_some()
+    }
+
+    /// The failure that holds back the next connection attempt, if any.
+    fn failure_in_backoff(
+        &self,
+        key: &ConnectionKey,
+        settings_fingerprint: u64,
+    ) -> Option<DatabaseConnectionError> {
         let mut failures = self.failures.write().unwrap();
         if failures
             .get(key)
             .is_some_and(|failure| failure.settings_fingerprint != settings_fingerprint)
         {
             failures.remove(key);
-            return false;
+            return None;
         }
-        let Some(failure) = failures.get(key) else {
-            return false;
-        };
+        let failure = failures.get(key)?;
 
         let now = Instant::now();
         if now < failure.next_retry_at {
@@ -230,10 +311,10 @@ impl ConnectionManager {
                 failure.next_retry_at,
                 failure.message
             );
-            return true;
+            return Some(failure.error.clone());
         }
 
-        false
+        None
     }
 
     fn clear_failure(&self, key: &ConnectionKey) {
@@ -273,7 +354,7 @@ mod tests {
         let first = manager.get_pool(&settings).unwrap();
         first.close().await;
 
-        settings.password = "changed-password".to_string();
+        settings.password = Some("changed-password".to_string());
         let changed_fingerprint = settings_fingerprint(&settings);
         let pool = manager.get_pool(&settings).unwrap();
 
@@ -298,6 +379,7 @@ mod tests {
         manager.failures.write().unwrap().insert(
             key.clone(),
             CachedFailure {
+                error: authentication_failed(),
                 message: "authentication failed".to_string(),
                 settings_fingerprint: old_fingerprint,
                 attempts: 1,
@@ -305,10 +387,38 @@ mod tests {
             },
         );
 
-        settings.password = "corrected-password".to_string();
+        settings.password = Some("corrected-password".to_string());
         let new_fingerprint = settings_fingerprint(&settings);
         assert!(!manager.connection_is_in_backoff(&key, new_fingerprint));
         assert!(!manager.failures.read().unwrap().contains_key(&key));
         assert!(manager.get_pool(&settings).is_some());
+    }
+
+    fn authentication_failed() -> DatabaseConnectionError {
+        DatabaseConnectionError {
+            message: "password authentication failed".to_string(),
+            code: Some("28P01".to_string()),
+        }
+    }
+
+    #[test]
+    fn try_with_pool_reports_the_failure_during_backoff() {
+        let manager = ConnectionManager::new();
+        let settings = settings();
+        let key = ConnectionKey::from(&settings);
+        manager.record_failure(
+            &key,
+            settings_fingerprint(&settings),
+            &authentication_failed(),
+            "authentication failed",
+        );
+
+        assert!(manager.with_pool(&settings, |_| Ok(())).is_none());
+        let result = manager.try_with_pool(&settings, |_| Ok(()));
+        assert!(matches!(
+            result,
+            Some(Err(WorkspaceError::DatabaseConnectionError(error)))
+                if error.message == "password authentication failed"
+        ));
     }
 }

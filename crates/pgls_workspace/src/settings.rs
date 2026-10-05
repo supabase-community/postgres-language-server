@@ -723,6 +723,9 @@ impl Default for TypecheckSettings {
     }
 }
 
+/// The password used when neither the configuration, `PGPASSWORD`, nor the password file has one.
+pub const DEFAULT_DATABASE_PASSWORD: &str = "postgres";
+
 /// Database settings for the entire workspace
 pub struct DatabaseSettings {
     pub enable_connection: bool,
@@ -730,7 +733,9 @@ pub struct DatabaseSettings {
     pub host: String,
     pub port: u16,
     pub username: String,
-    pub password: String,
+    /// The password from the configuration or `PGPASSWORD`. Without one, the connection looks
+    /// it up in the password file and falls back to [`DEFAULT_DATABASE_PASSWORD`].
+    pub password: Option<String>,
     pub database: String,
     pub conn_timeout_secs: Duration,
     pub allow_statement_executions: bool,
@@ -766,7 +771,7 @@ impl Default for DatabaseSettings {
             host: "127.0.0.1".to_string(),
             port: 5432,
             username: "postgres".to_string(),
-            password: "postgres".to_string(),
+            password: None,
             database: "postgres".to_string(),
             conn_timeout_secs: Duration::from_secs(10),
             allow_statement_executions: true,
@@ -836,7 +841,8 @@ impl From<PartialDatabaseConfiguration> for DatabaseSettings {
 
             port,
             username,
-            password: value.password.unwrap_or(d.password),
+            // An empty password counts as none, as in libpq.
+            password: value.password.filter(|password| !password.is_empty()),
             database,
             host,
 

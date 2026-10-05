@@ -19,6 +19,17 @@ pub struct PullDiagnosticsResult {
     pub skipped_diagnostics: u32,
 }
 
+#[derive(Debug, Default, serde::Serialize, serde::Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
+pub struct CheckDatabaseConnectionParams {}
+
+#[derive(Debug, Default, serde::Serialize, serde::Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
+pub struct CheckDatabaseConnectionResult {
+    /// Why the configured database cannot be used, if it cannot.
+    pub error: Option<String>,
+}
+
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct PullDatabaseDiagnosticsParams {
