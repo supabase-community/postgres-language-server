@@ -32,5 +32,12 @@ fn test_statement_splitter() {
             expected_count,
             split.ranges.len()
         );
+
+        assert!(
+            split.errors.is_empty(),
+            "Unexpected errors for file {}: {:?}",
+            test_name,
+            split.errors
+        );
     }
 }

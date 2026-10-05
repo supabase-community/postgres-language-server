@@ -641,6 +641,58 @@ LIMIT
     }
 
     #[test]
+    fn cte_names_unreserved_keywords() {
+        Tester::from(
+            "WITH constraints AS (SELECT 1 AS n),
+     indexes AS (SELECT 2 AS n),
+     comments AS (SELECT 3 AS n),
+     functions AS (SELECT 4 AS n)
+SELECT * FROM constraints, indexes, comments, functions;",
+        )
+        .assert_single_statement()
+        .assert_no_errors();
+
+        for stmt in [
+            "WITH name AS (SELECT 1) SELECT * FROM name;",
+            "with source as (select 1), target as (select 2) select * from source, target;",
+            "WITH RECURSIVE data(n) AS (SELECT 1 UNION ALL SELECT n + 1 FROM data WHERE n < 3) SELECT * FROM data;",
+            "WITH version AS NOT MATERIALIZED (SELECT 1) SELECT * FROM version;",
+            // column name keywords
+            "WITH int AS (SELECT 1), values AS (SELECT 2) SELECT * FROM int, values;",
+            // RECURSIVE is unreserved too
+            "WITH recursive AS (SELECT 1) SELECT * FROM recursive;",
+            "WITH recursive(n) AS (SELECT 1) SELECT * FROM recursive;",
+            "WITH RECURSIVE recursive AS (SELECT 1) SELECT * FROM recursive;",
+            "WITH \"select\" AS (SELECT 1) SELECT * FROM \"select\";",
+            "CREATE VIEW v AS WITH constraints AS (SELECT 1) SELECT * FROM constraints;",
+            "EXPLAIN WITH indexes AS (SELECT 1) SELECT * FROM indexes;",
+        ] {
+            Tester::from(stmt)
+                .expect_statements(vec![stmt])
+                .assert_no_errors();
+        }
+    }
+
+    #[test]
+    fn cte_names_reserved_keywords() {
+        // reserved and type or function name keywords are no `ColId`
+        for (stmt, name) in [
+            ("WITH select AS (SELECT 1) SELECT 1;", 5..11),
+            ("WITH left AS (SELECT 1) SELECT 1;", 5..9),
+        ] {
+            let result = split(stmt);
+            assert_eq!(
+                result.errors.first(),
+                Some(&SplitDiagnostic::new(
+                    "Expected IDENT",
+                    TextRange::new(name.start.into(), name.end.into())
+                )),
+                "{stmt}"
+            );
+        }
+    }
+
+    #[test]
     fn with_cte_followed_by_statement() {
         Tester::from(
             "WITH cte AS (
