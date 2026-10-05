@@ -951,6 +951,102 @@ SELECT missing_column FROM named_parameter_typecheck_users;
     );
 }
 
+/// The typecheck diagnostics of `content`, checked against `test_db`.
+fn typecheck_diagnostics(
+    test_db: &PgPool,
+    content: &str,
+) -> Vec<pgls_diagnostics::serde::Diagnostic> {
+    let mut conf = PartialConfiguration::init();
+    conf.merge_with(PartialConfiguration {
+        db: Some(PartialDatabaseConfiguration {
+            database: Some(
+                test_db
+                    .connect_options()
+                    .get_database()
+                    .unwrap()
+                    .to_string(),
+            ),
+            ..Default::default()
+        }),
+        ..Default::default()
+    });
+    let workspace = get_test_workspace(Some(conf)).expect("Unable to create test workspace");
+    let path = PgLSPath::new("test.sql");
+    workspace
+        .open_file(OpenFileParams {
+            path: path.clone(),
+            content: content.into(),
+            version: 1,
+        })
+        .expect("Unable to open test file");
+    workspace
+        .pull_file_diagnostics(crate::workspace::PullFileDiagnosticsParams {
+            path,
+            categories: RuleCategories::all(),
+            max_diagnostics: 100,
+            only: vec![],
+            skip: vec![],
+        })
+        .expect("Unable to pull diagnostics")
+        .diagnostics
+        .into_iter()
+        .filter(is_typecheck)
+        .collect()
+}
+
+/// GitHub issue #835: `RETURNS TABLE` columns are not parameters of the body, and `r.received_at`
+/// is a column of `r` even if an output column has the same name.
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn sql_function_output_columns_are_not_parameters(test_db: PgPool) {
+    test_db
+        .execute("CREATE TABLE ev (id bigint PRIMARY KEY, received_at timestamptz NOT NULL);")
+        .await
+        .expect("test table setup must succeed");
+
+    let content = r#"
+CREATE OR REPLACE FUNCTION next_after(p_above bigint) RETURNS TABLE(id bigint, received_at timestamptz)
+    LANGUAGE sql STABLE
+    AS $$
+    SELECT r.id, r.received_at
+    FROM   ev r
+    WHERE  r.id > p_above
+    ORDER  BY r.received_at, r.id
+    LIMIT  1
+$$;
+"#;
+    let diagnostics = typecheck_diagnostics(&test_db, content);
+    assert!(diagnostics.is_empty(), "{diagnostics:#?}");
+
+    // A type error involving the input parameter is still reported.
+    let content = r#"
+CREATE OR REPLACE FUNCTION next_after(p_above bigint) RETURNS TABLE(id bigint, received_at timestamptz)
+    LANGUAGE sql STABLE
+    AS $$
+    SELECT r.id, r.received_at
+    FROM   ev r
+    WHERE  r.received_at > p_above
+    ORDER  BY r.received_at, r.id
+    LIMIT  1
+$$;
+"#;
+    let diagnostics = typecheck_diagnostics(&test_db, content);
+    assert_eq!(diagnostics.len(), 1, "{diagnostics:#?}");
+    let message = diagnostics[0].description_text();
+    assert!(
+        message.contains("timestamp with time zone > bigint"),
+        "{message}"
+    );
+
+    // Output parameters are not in scope in the body.
+    let diagnostics = typecheck_diagnostics(
+        &test_db,
+        "CREATE FUNCTION f(a int, OUT x int) LANGUAGE sql AS $$ SELECT x FROM ev $$;",
+    );
+    assert_eq!(diagnostics.len(), 1, "{diagnostics:#?}");
+    let message = diagnostics[0].description_text();
+    assert!(message.contains("Column x does not exist"), "{message}");
+}
+
 #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
 async fn test_named_params(_test_db: PgPool) {
     let conf = PartialConfiguration::init();

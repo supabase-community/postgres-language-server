@@ -1,3 +1,4 @@
+use pgls_query::protobuf::FunctionParameterMode;
 use pgls_text_size::TextRange;
 
 #[derive(Debug, Clone)]
@@ -48,6 +49,18 @@ pub fn get_sql_fn_signature(ast: &pgls_query::NodeEnum) -> Option<SQLFunctionSig
     let mut fn_args = Vec::new();
     for arg in &create_fn.parameters {
         if let Some(pgls_query::NodeEnum::FunctionParameter(node)) = &arg.node {
+            // The body only sees the input parameters, by name and as `$n`
+            // ([`get_func_input_arg_names`] in [`prepare_sql_fn_parse_info`]).
+            //
+            // [`get_func_input_arg_names`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/utils/fmgr/funcapi.c#L1522
+            // [`prepare_sql_fn_parse_info`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/executor/functions.c#L251
+            if matches!(
+                node.mode(),
+                FunctionParameterMode::FuncParamOut | FunctionParameterMode::FuncParamTable
+            ) {
+                continue;
+            }
+
             let arg_name = (!node.name.is_empty()).then_some(node.name.clone());
 
             let arg_type = node.arg_type.as_ref()?;
@@ -180,6 +193,36 @@ mod tests {
         let arg2 = sig.args.get(1).unwrap();
         assert_eq!(arg2.name, Some("test1".to_string()));
         assert_eq!(arg2.type_.name, "int4");
+    }
+
+    #[test]
+    fn output_parameters_are_not_arguments() {
+        let names = |input: &str| {
+            let ast = pgls_query::parse(input).unwrap().into_root().unwrap();
+            get_sql_fn_signature(&ast)
+                .unwrap()
+                .args
+                .into_iter()
+                .map(|arg| arg.name)
+                .collect::<Vec<_>>()
+        };
+
+        assert_eq!(
+            names(
+                "create function f(p_above bigint) returns table(id bigint, received_at timestamptz) language sql as 'select 1, now()'"
+            ),
+            [Some("p_above".to_string())]
+        );
+        assert_eq!(
+            names(
+                "create function f(out x int, a text, inout b int, variadic c int[]) language sql as 'select 1, 2'"
+            ),
+            [
+                Some("a".to_string()),
+                Some("b".to_string()),
+                Some("c".to_string())
+            ]
+        );
     }
 
     #[test]
