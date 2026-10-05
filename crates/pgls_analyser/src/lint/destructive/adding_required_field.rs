@@ -17,7 +17,7 @@ declare_lint_rule! {
     /// ## Valid in Postgres >= 11
     /// alter table test add column count int not null default 0;
     pub AddingRequiredField {
-        version: "next",
+        version: "0.1.0",
         name: "addingRequiredField",
         severity: Severity::Error,
         recommended: false,

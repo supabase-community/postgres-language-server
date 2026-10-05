@@ -28,7 +28,7 @@ declare_lint_rule! {
     /// ```
     ///
     pub UnknownType {
-        version: "next",
+        version: "0.27.0",
         name: "unknownType",
         severity: Severity::Error,
         recommended: true,

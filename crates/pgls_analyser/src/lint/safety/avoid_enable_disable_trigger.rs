@@ -24,7 +24,7 @@ declare_lint_rule! {
     /// ```
     ///
     pub AvoidEnableDisableTrigger {
-        version: "next",
+        version: "0.25.0",
         name: "avoidEnableDisableTrigger",
         severity: Severity::Warning,
         recommended: false,

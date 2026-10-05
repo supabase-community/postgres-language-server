@@ -19,7 +19,7 @@ declare_lint_rule! {
     /// ```
     ///
     pub BanConcurrentIndexCreationInTransaction {
-        version: "next",
+        version: "0.15.0",
         name: "banConcurrentIndexCreationInTransaction",
         severity: Severity::Error,
         recommended: true,

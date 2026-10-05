@@ -1,13 +1,9 @@
 # transactionNesting
-**Diagnostic Category: `lint/transactionNesting`**
 
-**Group: `correctness`**
+**Group** [`correctness`](../rules.md#correctness) · **Since** `0.15.0`  
+**Diagnostic** `lint/transactionNesting`
 
-**Since**: `vnext`
-
-
-**Sources**: 
-- Inspired from: <a href="https://squawkhq.com/docs/transaction-nesting" target="_blank"><code>squawk/transaction-nesting</code></a>
+**Sources**: inspired by [`squawk/transaction-nesting`](https://squawkhq.com/docs/transaction-nesting)
 
 ## Description
 Detects problematic transaction nesting that could lead to unexpected behavior.

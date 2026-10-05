@@ -1,15 +1,9 @@
 # preferRobustStmts
-**Diagnostic Category: `lint/preferRobustStmts`**
 
-**Group: `safety`**
+**Group** [`safety`](../rules.md#safety) · **Migrations only** · **Since** `0.15.0`  
+**Diagnostic** `lint/preferRobustStmts`
 
-**Applies to: migration files only**
-
-**Since**: `vnext`
-
-
-**Sources**: 
-- Inspired from: <a href="https://squawkhq.com/docs/prefer-robust-stmts" target="_blank"><code>squawk/prefer-robust-stmts</code></a>
+**Sources**: inspired by [`squawk/prefer-robust-stmts`](https://squawkhq.com/docs/prefer-robust-stmts)
 
 ## Description
 Prefer statements with guards for robustness in migrations.

@@ -1,17 +1,9 @@
 # requireConcurrentDetachPartition
-**Diagnostic Category: `lint/requireConcurrentDetachPartition`**
 
-**Group: `safety`**
+**Group** [`safety`](../rules.md#safety) · **Recommended** · **Migrations only** · **Since** `0.25.0`  
+**Diagnostic** `lint/requireConcurrentDetachPartition`
 
-**Applies to: migration files only**
-
-**Since**: `vnext`
-
-> [!NOTE]
-> This rule is recommended. A diagnostic error will appear when linting your code.
-
-**Sources**: 
-- Inspired from: <a href="https://github.com/flvmnt/pgfence" target="_blank"><code>pgfence/detach-partition</code></a>
+**Sources**: inspired by [`pgfence/detach-partition`](https://github.com/flvmnt/pgfence)
 
 ## Description
 Detaching a partition without `CONCURRENTLY` acquires an `ACCESS EXCLUSIVE` lock.

@@ -25,7 +25,7 @@ declare_lint_rule! {
     /// ```
     ///
     pub BanTruncate {
-        version: "next",
+        version: "0.25.0",
         name: "banTruncate",
         severity: Severity::Error,
         recommended: true,

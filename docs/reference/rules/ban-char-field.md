@@ -1,13 +1,9 @@
 # banCharField
-**Diagnostic Category: `lint/banCharField`**
 
-**Group: `style`**
+**Group** [`style`](../rules.md#style) · **Since** `0.15.0`  
+**Diagnostic** `lint/banCharField`
 
-**Since**: `vnext`
-
-
-**Sources**: 
-- Inspired from: <a href="https://squawkhq.com/docs/ban-char-field" target="_blank"><code>squawk/ban-char-field</code></a>
+**Sources**: inspired by [`squawk/ban-char-field`](https://squawkhq.com/docs/ban-char-field)
 
 ## Description
 Using CHAR(n) or CHARACTER(n) types is discouraged.

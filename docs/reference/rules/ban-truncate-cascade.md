@@ -1,15 +1,9 @@
 # banTruncateCascade
-**Diagnostic Category: `lint/banTruncateCascade`**
 
-**Group: `destructive`**
+**Group** [`destructive`](../rules.md#destructive) · **Migrations only** · **Since** `0.9.0`  
+**Diagnostic** `lint/banTruncateCascade`
 
-**Applies to: migration files only**
-
-**Since**: `vnext`
-
-
-**Sources**: 
-- Inspired from: <a href="https://squawkhq.com/docs/ban-truncate-cascade" target="_blank"><code>squawk/ban-truncate-cascade</code></a>
+**Sources**: inspired by [`squawk/ban-truncate-cascade`](https://squawkhq.com/docs/ban-truncate-cascade)
 
 ## Description
 Using `TRUNCATE`'s `CASCADE` option will truncate any tables that are also foreign-keyed to the specified tables.

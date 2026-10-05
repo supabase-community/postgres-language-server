@@ -31,7 +31,7 @@ declare_lint_rule! {
     /// ```
     ///
     pub AddingNotNullField {
-        version: "next",
+        version: "0.15.0",
         name: "addingNotNullField",
         severity: Severity::Warning,
         recommended: true,

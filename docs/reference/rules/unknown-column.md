@@ -1,12 +1,7 @@
 # unknownColumn
-**Diagnostic Category: `lint/unknownColumn`**
 
-**Group: `typecheck`**
-
-**Since**: `vnext`
-
-> [!NOTE]
-> This rule is recommended. A diagnostic error will appear when linting your code.
+**Group** [`typecheck`](../rules.md#typecheck) · **Recommended** · **Needs a database connection** · **Since** `0.27.0`  
+**Diagnostic** `lint/unknownColumn` · **Postgres error** `42703`
 
 ## Description
 A column does not exist on the relation or record it is taken from.

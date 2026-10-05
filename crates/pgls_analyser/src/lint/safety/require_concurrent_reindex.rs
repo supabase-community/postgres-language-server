@@ -26,7 +26,7 @@ declare_lint_rule! {
     /// ```
     ///
     pub RequireConcurrentReindex {
-        version: "next",
+        version: "0.25.0",
         name: "requireConcurrentReindex",
         severity: Severity::Warning,
         recommended: true,

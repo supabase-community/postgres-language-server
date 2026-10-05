@@ -34,7 +34,7 @@ declare_lint_rule! {
     /// ```
     ///
     pub CreatingEnum {
-        version: "next",
+        version: "0.17.0",
         name: "creatingEnum",
         severity: Severity::Warning,
         recommended: false,

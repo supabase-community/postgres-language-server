@@ -30,7 +30,7 @@ declare_lint_rule! {
     /// ```
     ///
     pub AmbiguousColumn {
-        version: "next",
+        version: "0.27.0",
         name: "ambiguousColumn",
         severity: Severity::Error,
         recommended: true,

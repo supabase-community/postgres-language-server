@@ -18,7 +18,7 @@ declare_lint_rule! {
     /// alter table users alter column email drop not null;
     /// ```
     pub BanDropNotNull {
-        version: "next",
+        version: "0.1.0",
         name: "banDropNotNull",
         severity: Severity::Warning,
         recommended: true,

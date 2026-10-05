@@ -55,27 +55,28 @@ fn generate_group(
         writeln!(content)?;
         writeln!(content)?;
     }
-    writeln!(
-        content,
-        "| Rule name | Description | Recommended | Migrations only |"
-    )?;
-    writeln!(content, "| --- | --- | --- | --- |")?;
+    writeln!(content, "| Rule | Description |")?;
+    writeln!(content, "| --- | --- |")?;
 
     for (rule_name, rule_metadata) in rules {
         let dashed_rule = rule_name.to_case(Case::Kebab);
 
-        let recommended = if rule_metadata.recommended { "✅" } else { "" };
-        let migrations_only = if rule_metadata.applies_to == pgls_analyse::AppliesTo::Migration {
-            "✅"
-        } else {
-            ""
-        };
+        let mut markers = String::new();
+        if rule_metadata.recommended {
+            markers.push_str(" ✅");
+        }
+        if rule_metadata.applies_to == pgls_analyse::AppliesTo::Migration {
+            markers.push_str(" 🛠");
+        }
+        if group == pgls_analyser::TYPECHECK_GROUP {
+            markers.push_str(" 🔌");
+        }
 
         let summary = generate_rule_summary(rule_metadata.docs)?;
 
         write!(
             content,
-            "| [{rule_name}](./rules/{dashed_rule}.md) | {summary} | {recommended} | {migrations_only} |"
+            "| [{rule_name}](./rules/{dashed_rule}.md){markers} | {summary} |"
         )?;
 
         writeln!(content)?;
@@ -119,7 +120,7 @@ fn extract_group_metadata(group: &str) -> (&str, Option<Markup<'_>>) {
         "typecheck" => (
             "Typecheck",
             Some(markup! {
-                "Code that fails at runtime because of names or types. Needs a database connection."
+                "Code that fails at runtime because of names or types."
             }),
         ),
         "nursery" => (
@@ -165,6 +166,9 @@ fn generate_rule_summary(docs: &'static str) -> io::Result<String> {
             }
             Event::Code(code) => {
                 buffer.push_str(format!("`{code}`").as_str());
+            }
+            Event::SoftBreak | Event::HardBreak => {
+                buffer.push(' ');
             }
             Event::End(TagEnd::Paragraph) => {
                 return Ok(buffer);
@@ -216,27 +220,27 @@ fn generate_splinter_group(
     write_markup_to_string(content, description)?;
     writeln!(content)?;
     writeln!(content)?;
-    writeln!(content, "| Rule name | Description | Properties |")?;
-    writeln!(content, "| --- | --- | --- |")?;
+    writeln!(content, "| Rule | Description |")?;
+    writeln!(content, "| --- | --- |")?;
 
     for (rule_name, rule_metadata) in rules {
         let is_recommended = rule_metadata.metadata.recommended;
         let requires_supabase = rule_metadata.requires_supabase;
         let dashed_rule = rule_name.to_case(Case::Kebab);
 
-        let mut properties = String::new();
+        let mut markers = String::new();
         if is_recommended {
-            properties.push_str("✅ ");
+            markers.push_str(" ✅");
         }
         if requires_supabase {
-            properties.push('⚡');
+            markers.push_str(" ⚡");
         }
 
-        let summary = rule_metadata.description;
+        let summary = utils::unescape_backticks(rule_metadata.description);
 
         write!(
             content,
-            "| [{rule_name}](./rules/{dashed_rule}.md) | {summary} | {properties} |"
+            "| [{rule_name}](./database-rules/{dashed_rule}.md){markers} | {summary} |"
         )?;
 
         writeln!(content)?;

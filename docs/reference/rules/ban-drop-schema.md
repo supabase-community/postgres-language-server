@@ -1,17 +1,9 @@
 # banDropSchema
-**Diagnostic Category: `lint/banDropSchema`**
 
-**Group: `destructive`**
+**Group** [`destructive`](../rules.md#destructive) · **Recommended** · **Migrations only** · **Since** `0.25.0`  
+**Diagnostic** `lint/banDropSchema`
 
-**Applies to: migration files only**
-
-**Since**: `vnext`
-
-> [!NOTE]
-> This rule is recommended. A diagnostic error will appear when linting your code.
-
-**Sources**: 
-- Inspired from: <a href="https://github.com/flvmnt/pgfence" target="_blank"><code>pgfence/drop-schema</code></a>
+**Sources**: inspired by [`pgfence/drop-schema`](https://github.com/flvmnt/pgfence)
 
 ## Description
 Dropping a schema will remove all objects within it and may break existing clients.

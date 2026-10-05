@@ -1,12 +1,7 @@
 # unknownSchema
-**Diagnostic Category: `lint/unknownSchema`**
 
-**Group: `typecheck`**
-
-**Since**: `vnext`
-
-> [!NOTE]
-> This rule is recommended. A diagnostic error will appear when linting your code.
+**Group** [`typecheck`](../rules.md#typecheck) · **Recommended** · **Needs a database connection** · **Since** `0.27.0`  
+**Diagnostic** `lint/unknownSchema` · **Postgres error** `3F000`
 
 ## Description
 A schema does not exist.

@@ -1,12 +1,7 @@
 # invalidDropTypeSignature
-**Diagnostic Category: `lint/invalidDropTypeSignature`**
 
-**Group: `correctness`**
-
-**Since**: `vnext`
-
-> [!NOTE]
-> This rule is recommended. A diagnostic error will appear when linting your code.
+**Group** [`correctness`](../rules.md#correctness) · **Recommended** · **Since** `0.27.0`  
+**Diagnostic** `lint/invalidDropTypeSignature` · **Postgres error** `42601`
 
 ## Description
 `DROP TYPE` and `DROP DOMAIN` don't take a parameter list.

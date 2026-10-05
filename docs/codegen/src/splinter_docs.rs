@@ -19,12 +19,12 @@ fn strip_metadata_from_sql(sql: &str) -> String {
 ///
 /// * `docs_dir`: Path to the docs directory.
 pub fn generate_splinter_docs(docs_dir: &Path) -> anyhow::Result<()> {
-    let rules_dir = docs_dir.join("reference/rules");
+    let rules_dir = docs_dir.join("reference/database-rules");
 
-    // Ensure rules directory exists (created by linter docs generation)
-    if !rules_dir.exists() {
-        fs::create_dir_all(&rules_dir)?;
+    if rules_dir.exists() {
+        fs::remove_dir_all(&rules_dir)?;
     }
+    fs::create_dir_all(&rules_dir)?;
 
     let mut visitor = crate::utils::SplinterRulesVisitor::default();
     pgls_splinter::registry::visit_registry(&mut visitor);
@@ -53,56 +53,74 @@ fn generate_splinter_rule_doc(
     writeln!(content, "# {rule}")?;
     writeln!(content)?;
 
-    writeln!(
-        content,
-        "**Diagnostic Category: `splinter/{group}/{rule}`**"
-    )?;
-    writeln!(content)?;
-
-    // Add severity
-    let severity_str = match meta.severity {
+    let severity = match meta.severity {
         pgls_diagnostics::Severity::Information => "Info",
         pgls_diagnostics::Severity::Warning => "Warning",
         pgls_diagnostics::Severity::Error => "Error",
         _ => "Info",
     };
-    writeln!(content, "**Severity**: {severity_str}")?;
+    let mut properties = vec![
+        format!("**Group** [`{group}`](../database_rules.md#{group})"),
+        format!("**Severity** {severity}"),
+    ];
+    if meta.recommended {
+        properties.push("**Recommended**".to_string());
+    }
+    if splinter_meta.requires_supabase {
+        properties.push("**Requires Supabase**".to_string());
+    }
+    writeln!(content, "{}  ", properties.join(" · "))?;
+    writeln!(content, "**Diagnostic** `splinter/{group}/{rule}`")?;
     writeln!(content)?;
 
-    // Add Supabase requirement notice
     if splinter_meta.requires_supabase {
-        writeln!(content, "> [!NOTE]")?;
+        writeln!(content, "!!! note")?;
         writeln!(
             content,
-            "> This rule requires a Supabase database/project and will be automatically skipped if not detected."
+            "    This rule needs a Supabase database. It is skipped when the Supabase roles don't exist."
         )?;
         writeln!(content)?;
     }
 
     writeln!(content, "## Description")?;
     writeln!(content)?;
-
-    // Use description from trait
-    writeln!(content, "{}", splinter_meta.description)?;
+    writeln!(
+        content,
+        "{}",
+        crate::utils::unescape_backticks(splinter_meta.description)
+    )?;
     writeln!(content)?;
 
-    // Add remediation section
     writeln!(content, "## Remediation")?;
     writeln!(content)?;
-    writeln!(content, "{}", splinter_meta.remediation)?;
+    let remediation = crate::utils::unescape_backticks(splinter_meta.remediation);
+    if remediation.starts_with("http") && !remediation.contains(char::is_whitespace) {
+        writeln!(
+            content,
+            "See the [Supabase database linter docs]({remediation})."
+        )?;
+    } else {
+        writeln!(content, "{remediation}")?;
+    }
     writeln!(content)?;
 
-    // Add SQL query section (with metadata stripped)
-    writeln!(content, "## SQL Query")?;
-    writeln!(content)?;
-    writeln!(content, "```sql")?;
-    let sql_without_metadata = strip_metadata_from_sql(splinter_meta.sql_content);
-    writeln!(content, "{sql_without_metadata}")?;
-    writeln!(content, "```")?;
-    writeln!(content)?;
-
-    // Add configuration section
     write_how_to_configure(group, rule, &mut content)?;
+
+    // The query is long; keep it collapsed at the end of the page.
+    writeln!(content)?;
+    writeln!(content, "## SQL query")?;
+    writeln!(content)?;
+    writeln!(content, "??? note \"Show the query\"")?;
+    writeln!(content)?;
+    writeln!(content, "    ```sql")?;
+    for line in strip_metadata_from_sql(splinter_meta.sql_content).lines() {
+        if line.is_empty() {
+            writeln!(content)?;
+        } else {
+            writeln!(content, "    {line}")?;
+        }
+    }
+    writeln!(content, "    ```")?;
 
     Ok(String::from_utf8(content)?)
 }

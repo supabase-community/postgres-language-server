@@ -1,15 +1,9 @@
 # avoidEnableDisableTrigger
-**Diagnostic Category: `lint/avoidEnableDisableTrigger`**
 
-**Group: `safety`**
+**Group** [`safety`](../rules.md#safety) · **Migrations only** · **Since** `0.25.0`  
+**Diagnostic** `lint/avoidEnableDisableTrigger`
 
-**Applies to: migration files only**
-
-**Since**: `vnext`
-
-
-**Sources**: 
-- Inspired from: <a href="https://github.com/flvmnt/pgfence" target="_blank"><code>pgfence/enable-disable-trigger</code></a>
+**Sources**: inspired by [`pgfence/enable-disable-trigger`](https://github.com/flvmnt/pgfence)
 
 ## Description
 Enabling or disabling a trigger acquires a `SHARE ROW EXCLUSIVE` lock.

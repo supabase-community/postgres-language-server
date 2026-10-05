@@ -1,17 +1,9 @@
 # addingForeignKeyConstraint
-**Diagnostic Category: `lint/addingForeignKeyConstraint`**
 
-**Group: `safety`**
+**Group** [`safety`](../rules.md#safety) · **Recommended** · **Migrations only** · **Since** `0.15.0`  
+**Diagnostic** `lint/addingForeignKeyConstraint`
 
-**Applies to: migration files only**
-
-**Since**: `vnext`
-
-> [!NOTE]
-> This rule is recommended. A diagnostic error will appear when linting your code.
-
-**Sources**: 
-- Inspired from: <a href="https://squawkhq.com/docs/adding-foreign-key-constraint" target="_blank"><code>squawk/adding-foreign-key-constraint</code></a>
+**Sources**: inspired by [`squawk/adding-foreign-key-constraint`](https://squawkhq.com/docs/adding-foreign-key-constraint)
 
 ## Description
 Adding a foreign key constraint requires a table scan and a SHARE ROW EXCLUSIVE lock on both tables, which blocks writes.

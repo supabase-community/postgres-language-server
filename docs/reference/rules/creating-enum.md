@@ -1,13 +1,9 @@
 # creatingEnum
-**Diagnostic Category: `lint/creatingEnum`**
 
-**Group: `style`**
+**Group** [`style`](../rules.md#style) · **Since** `0.17.0`  
+**Diagnostic** `lint/creatingEnum`
 
-**Since**: `vnext`
-
-
-**Sources**: 
-- Inspired from: <a href="https://kaveland.no/eugene/hints/W13/index.html" target="_blank"><code>eugene/W13</code></a>
+**Sources**: inspired by [`eugene/W13`](https://kaveland.no/eugene/hints/W13/index.html)
 
 ## Description
 Creating enum types is not recommended for new applications.

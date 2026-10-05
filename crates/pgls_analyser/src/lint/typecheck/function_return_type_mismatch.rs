@@ -41,7 +41,7 @@ declare_lint_rule! {
     /// ```
     ///
     pub FunctionReturnTypeMismatch {
-        version: "next",
+        version: "0.27.0",
         name: "functionReturnTypeMismatch",
         severity: Severity::Error,
         recommended: true,

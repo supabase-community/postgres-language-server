@@ -8,7 +8,7 @@ declare_lint_rule! {
     ///
     /// Make sure that you really want to drop it.
     pub BanDropDatabase {
-        version: "next",
+        version: "0.9.0",
         name: "banDropDatabase",
         severity: Severity::Warning,
         recommended: false,

@@ -1,15 +1,9 @@
 # avoidCreateTrigger
-**Diagnostic Category: `lint/avoidCreateTrigger`**
 
-**Group: `safety`**
+**Group** [`safety`](../rules.md#safety) · **Migrations only** · **Since** `0.25.0`  
+**Diagnostic** `lint/avoidCreateTrigger`
 
-**Applies to: migration files only**
-
-**Since**: `vnext`
-
-
-**Sources**: 
-- Inspired from: <a href="https://github.com/flvmnt/pgfence" target="_blank"><code>pgfence/create-trigger</code></a>
+**Sources**: inspired by [`pgfence/create-trigger`](https://github.com/flvmnt/pgfence)
 
 ## Description
 Creating a trigger acquires a `SHARE ROW EXCLUSIVE` lock on the table.

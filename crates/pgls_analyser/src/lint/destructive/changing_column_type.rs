@@ -33,7 +33,7 @@ declare_lint_rule! {
     /// ```
     ///
     pub ChangingColumnType {
-        version: "next",
+        version: "0.15.0",
         name: "changingColumnType",
         severity: Severity::Warning,
         recommended: false,

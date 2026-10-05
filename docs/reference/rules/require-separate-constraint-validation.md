@@ -1,17 +1,9 @@
 # requireSeparateConstraintValidation
-**Diagnostic Category: `lint/requireSeparateConstraintValidation`**
 
-**Group: `safety`**
+**Group** [`safety`](../rules.md#safety) · **Recommended** · **Migrations only** · **Since** `0.25.0`  
+**Diagnostic** `lint/requireSeparateConstraintValidation`
 
-**Applies to: migration files only**
-
-**Since**: `vnext`
-
-> [!NOTE]
-> This rule is recommended. A diagnostic error will appear when linting your code.
-
-**Sources**: 
-- Inspired from: <a href="https://github.com/flvmnt/pgfence" target="_blank"><code>pgfence/not-valid-validate-same-tx</code></a>
+**Sources**: inspired by [`pgfence/not-valid-validate-same-tx`](https://github.com/flvmnt/pgfence)
 
 ## Description
 Validating a constraint in the same transaction it was added as `NOT VALID` defeats the purpose.

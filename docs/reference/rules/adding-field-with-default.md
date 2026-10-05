@@ -1,17 +1,9 @@
 # addingFieldWithDefault
-**Diagnostic Category: `lint/addingFieldWithDefault`**
 
-**Group: `safety`**
+**Group** [`safety`](../rules.md#safety) · **Recommended** · **Migrations only** · **Since** `0.15.0`  
+**Diagnostic** `lint/addingFieldWithDefault`
 
-**Applies to: migration files only**
-
-**Since**: `vnext`
-
-> [!NOTE]
-> This rule is recommended. A diagnostic error will appear when linting your code.
-
-**Sources**: 
-- Inspired from: <a href="https://squawkhq.com/docs/adding-field-with-default" target="_blank"><code>squawk/adding-field-with-default</code></a>
+**Sources**: inspired by [`squawk/adding-field-with-default`](https://squawkhq.com/docs/adding-field-with-default)
 
 ## Description
 Adding a column with a DEFAULT value may lead to a table rewrite while holding an ACCESS EXCLUSIVE lock.

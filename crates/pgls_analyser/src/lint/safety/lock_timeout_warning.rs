@@ -36,7 +36,7 @@ declare_lint_rule! {
     /// ```
     ///
     pub LockTimeoutWarning {
-        version: "next",
+        version: "0.17.0",
         name: "lockTimeoutWarning",
         severity: Severity::Warning,
         recommended: true,

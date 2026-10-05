@@ -19,8 +19,9 @@ pub(crate) fn replace_section(
     section_identifier: &str,
     replacement: &str,
 ) -> String {
+    // Markdown formatters rewrite `(BEGIN X)` to `"BEGIN X"`, so accept both.
     let pattern = format!(
-        r"(\[//\]: # \(BEGIN {section_identifier}\)\n)(?s).*?(\n\[//\]: # \(END {section_identifier}\))"
+        r#"(\[//\]: # [("]BEGIN {section_identifier}[)"]\n)(?s).*?(\n\[//\]: # [("]END {section_identifier}[)"])"#
     );
     let re = Regex::new(&pattern).unwrap();
 
@@ -117,4 +118,9 @@ impl RegistryVisitor for SplinterRulesVisitor {
             },
         );
     }
+}
+
+/// Splinter's descriptions come from SQL string literals, which escape backticks.
+pub(crate) fn unescape_backticks(text: &str) -> String {
+    text.replace("\\`", "`")
 }

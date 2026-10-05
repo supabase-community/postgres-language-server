@@ -25,7 +25,7 @@ declare_lint_rule! {
     /// ```
     ///
     pub RequireConcurrentRefreshMatview {
-        version: "next",
+        version: "0.25.0",
         name: "requireConcurrentRefreshMatview",
         severity: Severity::Warning,
         recommended: true,

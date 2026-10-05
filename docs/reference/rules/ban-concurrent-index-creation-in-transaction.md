@@ -1,15 +1,9 @@
 # banConcurrentIndexCreationInTransaction
-**Diagnostic Category: `lint/banConcurrentIndexCreationInTransaction`**
 
-**Group: `correctness`**
+**Group** [`correctness`](../rules.md#correctness) · **Recommended** · **Since** `0.15.0`  
+**Diagnostic** `lint/banConcurrentIndexCreationInTransaction`
 
-**Since**: `vnext`
-
-> [!NOTE]
-> This rule is recommended. A diagnostic error will appear when linting your code.
-
-**Sources**: 
-- Inspired from: <a href="https://squawkhq.com/docs/ban-concurrent-index-creation-in-transaction" target="_blank"><code>squawk/ban-concurrent-index-creation-in-transaction</code></a>
+**Sources**: inspired by [`squawk/ban-concurrent-index-creation-in-transaction`](https://squawkhq.com/docs/ban-concurrent-index-creation-in-transaction)
 
 ## Description
 Concurrent index creation is not allowed within a transaction.

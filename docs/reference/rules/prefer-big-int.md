@@ -1,13 +1,9 @@
 # preferBigInt
-**Diagnostic Category: `lint/preferBigInt`**
 
-**Group: `style`**
+**Group** [`style`](../rules.md#style) · **Since** `0.15.0`  
+**Diagnostic** `lint/preferBigInt`
 
-**Since**: `vnext`
-
-
-**Sources**: 
-- Inspired from: <a href="https://squawkhq.com/docs/prefer-big-int" target="_blank"><code>squawk/prefer-big-int</code></a>
+**Sources**: inspired by [`squawk/prefer-big-int`](https://squawkhq.com/docs/prefer-big-int)
 
 ## Description
 Prefer BIGINT over smaller integer types.

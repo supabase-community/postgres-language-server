@@ -29,7 +29,7 @@ declare_lint_rule! {
     /// ```
     ///
     pub RequireSeparateConstraintValidation {
-        version: "next",
+        version: "0.25.0",
         name: "requireSeparateConstraintValidation",
         severity: Severity::Error,
         recommended: true,

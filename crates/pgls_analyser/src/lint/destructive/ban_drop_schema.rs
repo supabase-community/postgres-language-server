@@ -25,7 +25,7 @@ declare_lint_rule! {
     /// ```
     ///
     pub BanDropSchema {
-        version: "next",
+        version: "0.25.0",
         name: "banDropSchema",
         severity: Severity::Error,
         recommended: true,

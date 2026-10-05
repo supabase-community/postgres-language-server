@@ -1,12 +1,7 @@
 # missingFromClauseEntry
-**Diagnostic Category: `lint/missingFromClauseEntry`**
 
-**Group: `typecheck`**
-
-**Since**: `vnext`
-
-> [!NOTE]
-> This rule is recommended. A diagnostic error will appear when linting your code.
+**Group** [`typecheck`](../rules.md#typecheck) · **Recommended** · **Needs a database connection** · **Since** `0.27.0`  
+**Diagnostic** `lint/missingFromClauseEntry` · **Postgres error** `42P01`
 
 ## Description
 A column is qualified with a name that is not in the `FROM` clause.

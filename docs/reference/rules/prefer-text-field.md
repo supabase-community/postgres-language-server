@@ -1,13 +1,9 @@
 # preferTextField
-**Diagnostic Category: `lint/preferTextField`**
 
-**Group: `style`**
+**Group** [`style`](../rules.md#style) · **Since** `0.15.0`  
+**Diagnostic** `lint/preferTextField`
 
-**Since**: `vnext`
-
-
-**Sources**: 
-- Inspired from: <a href="https://squawkhq.com/docs/prefer-text-field" target="_blank"><code>squawk/prefer-text-field</code></a>
+**Sources**: inspired by [`squawk/prefer-text-field`](https://squawkhq.com/docs/prefer-text-field)
 
 ## Description
 Prefer using TEXT over VARCHAR(n) types.

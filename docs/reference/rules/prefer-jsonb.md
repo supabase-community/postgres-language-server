@@ -1,13 +1,9 @@
 # preferJsonb
-**Diagnostic Category: `lint/preferJsonb`**
 
-**Group: `style`**
+**Group** [`style`](../rules.md#style) · **Since** `0.15.0`  
+**Diagnostic** `lint/preferJsonb`
 
-**Since**: `vnext`
-
-
-**Sources**: 
-- Inspired from: <a href="https://kaveland.no/eugene/hints/E3/index.html" target="_blank"><code>eugene/E3</code></a>
+**Sources**: inspired by [`eugene/E3`](https://kaveland.no/eugene/hints/E3/index.html)
 
 ## Description
 Prefer JSONB over JSON types.

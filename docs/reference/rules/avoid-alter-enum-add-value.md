@@ -1,13 +1,9 @@
 # avoidAlterEnumAddValue
-**Diagnostic Category: `lint/avoidAlterEnumAddValue`**
 
-**Group: `correctness`**
+**Group** [`correctness`](../rules.md#correctness) · **Since** `0.25.0`  
+**Diagnostic** `lint/avoidAlterEnumAddValue`
 
-**Since**: `vnext`
-
-
-**Sources**: 
-- Inspired from: <a href="https://github.com/flvmnt/pgfence" target="_blank"><code>pgfence/alter-enum-add-value</code></a>
+**Sources**: inspired by [`pgfence/alter-enum-add-value`](https://github.com/flvmnt/pgfence)
 
 ## Description
 `ALTER TYPE ... ADD VALUE` cannot run inside a transaction block in older Postgres versions.

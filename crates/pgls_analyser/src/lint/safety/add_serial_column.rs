@@ -30,7 +30,7 @@ declare_lint_rule! {
     /// ```
     ///
     pub AddSerialColumn {
-        version: "next",
+        version: "0.17.0",
         name: "addSerialColumn",
         severity: Severity::Warning,
         recommended: true,

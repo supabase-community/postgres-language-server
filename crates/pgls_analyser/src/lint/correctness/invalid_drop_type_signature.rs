@@ -24,7 +24,7 @@ declare_lint_rule! {
     /// ```
     ///
     pub InvalidDropTypeSignature {
-        version: "next",
+        version: "0.27.0",
         name: "invalidDropTypeSignature",
         severity: Severity::Error,
         recommended: true,

@@ -108,7 +108,7 @@ lint-ci:
 
 serve-docs:
     uv sync
-    uv run mkdocs serve
+    uv run zensical serve
 
 # When you finished coding, run this command. Note that you should have already committed your changes.
 # If you haven't run `sqlx prepare` at least once, you need to run `docker compose up`

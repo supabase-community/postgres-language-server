@@ -24,7 +24,7 @@ declare_lint_rule! {
     /// ```
     ///
     pub RequireStatementTimeout {
-        version: "next",
+        version: "0.25.0",
         name: "requireStatementTimeout",
         severity: Severity::Warning,
         recommended: false,

@@ -137,7 +137,15 @@ impl PartialConfiguration {
     /// Returns the initial configuration.
     pub fn init() -> Self {
         Self {
-            schema: Some(format!("{PGLS_WEBSITE}/schemas/{VERSION}/schema.json")),
+            // The docs site publishes the schema of every release under its version.
+            schema: Some(format!(
+                "{PGLS_WEBSITE}/{}/schema.json",
+                if pgls_env::is_unstable() {
+                    "latest"
+                } else {
+                    VERSION
+                }
+            )),
             extends: Some(StringSet::default()),
             files: Some(PartialFilesConfiguration {
                 ignore: Some(Default::default()),

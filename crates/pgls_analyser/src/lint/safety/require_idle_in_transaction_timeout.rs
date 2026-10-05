@@ -25,7 +25,7 @@ declare_lint_rule! {
     /// ```
     ///
     pub RequireIdleInTransactionTimeout {
-        version: "next",
+        version: "0.25.0",
         name: "requireIdleInTransactionTimeout",
         severity: Severity::Warning,
         recommended: false,

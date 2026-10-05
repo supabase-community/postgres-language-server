@@ -29,7 +29,7 @@ declare_lint_rule! {
     /// ```
     ///
     pub AvoidWideLockWindow {
-        version: "next",
+        version: "0.25.0",
         name: "avoidWideLockWindow",
         severity: Severity::Warning,
         recommended: true,

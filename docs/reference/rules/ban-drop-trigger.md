@@ -1,15 +1,9 @@
 # banDropTrigger
-**Diagnostic Category: `lint/banDropTrigger`**
 
-**Group: `safety`**
+**Group** [`safety`](../rules.md#safety) · **Migrations only** · **Since** `0.25.0`  
+**Diagnostic** `lint/banDropTrigger`
 
-**Applies to: migration files only**
-
-**Since**: `vnext`
-
-
-**Sources**: 
-- Inspired from: <a href="https://github.com/flvmnt/pgfence" target="_blank"><code>pgfence/drop-trigger</code></a>
+**Sources**: inspired by [`pgfence/drop-trigger`](https://github.com/flvmnt/pgfence)
 
 ## Description
 Dropping a trigger acquires an `ACCESS EXCLUSIVE` lock on the table.

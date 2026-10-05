@@ -29,7 +29,7 @@ declare_lint_rule! {
     /// ```
     ///
     pub UnknownRelation {
-        version: "next",
+        version: "0.27.0",
         name: "unknownRelation",
         severity: Severity::Error,
         recommended: true,

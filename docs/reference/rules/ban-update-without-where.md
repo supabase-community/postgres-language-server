@@ -1,15 +1,9 @@
 # banUpdateWithoutWhere
-**Diagnostic Category: `lint/banUpdateWithoutWhere`**
 
-**Group: `destructive`**
+**Group** [`destructive`](../rules.md#destructive) · **Recommended** · **Since** `0.25.0`  
+**Diagnostic** `lint/banUpdateWithoutWhere` · **Postgres error** `WHERE`
 
-**Since**: `vnext`
-
-> [!NOTE]
-> This rule is recommended. A diagnostic error will appear when linting your code.
-
-**Sources**: 
-- Inspired from: <a href="https://github.com/flvmnt/pgfence" target="_blank"><code>pgfence/update-in-migration</code></a>
+**Sources**: inspired by [`pgfence/update-in-migration`](https://github.com/flvmnt/pgfence)
 
 ## Description
 An `UPDATE` statement without a `WHERE` clause will modify all rows in the table.

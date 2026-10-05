@@ -19,7 +19,7 @@ declare_lint_rule! {
     /// ```
     ///
     pub RenamingTable {
-        version: "next",
+        version: "0.15.0",
         name: "renamingTable",
         severity: Severity::Warning,
         recommended: false,

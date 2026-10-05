@@ -30,7 +30,7 @@ declare_lint_rule! {
     /// ```
     ///
     pub InsertColumnMismatch {
-        version: "next",
+        version: "0.27.0",
         name: "insertColumnMismatch",
         severity: Severity::Error,
         recommended: true,

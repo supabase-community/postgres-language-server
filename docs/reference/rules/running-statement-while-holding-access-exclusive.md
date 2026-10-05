@@ -1,17 +1,9 @@
 # runningStatementWhileHoldingAccessExclusive
-**Diagnostic Category: `lint/runningStatementWhileHoldingAccessExclusive`**
 
-**Group: `safety`**
+**Group** [`safety`](../rules.md#safety) · **Recommended** · **Migrations only** · **Since** `0.17.0`  
+**Diagnostic** `lint/runningStatementWhileHoldingAccessExclusive`
 
-**Applies to: migration files only**
-
-**Since**: `vnext`
-
-> [!NOTE]
-> This rule is recommended. A diagnostic error will appear when linting your code.
-
-**Sources**: 
-- Inspired from: <a href="https://kaveland.no/eugene/hints/E4/index.html" target="_blank"><code>eugene/E4</code></a>
+**Sources**: inspired by [`eugene/E4`](https://kaveland.no/eugene/hints/E4/index.html)
 
 ## Description
 Running additional statements while holding an ACCESS EXCLUSIVE lock blocks all table access.

@@ -25,6 +25,7 @@ You’ll now have a `postgres-language-server.jsonc` file in your directory:
 ```json
 {
   "$schema": "https://pg-language-server.com/latest/schema.json",
+  "extends": [],
   "vcs": {
     "enabled": false,
     "clientKind": "git",
@@ -39,6 +40,21 @@ You’ll now have a `postgres-language-server.jsonc` file in your directory:
       "recommended": true
     }
   },
+  "splinter": {
+    "enabled": true
+  },
+  "format": {
+    "enabled": false
+  },
+  "pglinter": {
+    "enabled": false
+  },
+  "typecheck": {
+    "enabled": true
+  },
+  "plpgsqlCheck": {
+    "enabled": true
+  },
   "db": {
     "host": "127.0.0.1",
     "port": 5432,
@@ -46,7 +62,7 @@ You’ll now have a `postgres-language-server.jsonc` file in your directory:
     "password": "postgres",
     "database": "postgres",
     "connTimeoutSecs": 10,
-    "allowStatementExecutionsAgainst": ["127.0.0.1/*", "localhost/*"]
+    "disableConnection": false
   }
 }
 ```

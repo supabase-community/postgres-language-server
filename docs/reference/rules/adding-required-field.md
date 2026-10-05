@@ -1,15 +1,9 @@
 # addingRequiredField
-**Diagnostic Category: `lint/addingRequiredField`**
 
-**Group: `destructive`**
+**Group** [`destructive`](../rules.md#destructive) · **Migrations only** · **Since** `0.1.0`  
+**Diagnostic** `lint/addingRequiredField`
 
-**Applies to: migration files only**
-
-**Since**: `vnext`
-
-
-**Sources**: 
-- Inspired from: <a href="https://squawkhq.com/docs/adding-required-field" target="_blank"><code>squawk/adding-required-field</code></a>
+**Sources**: inspired by [`squawk/adding-required-field`](https://squawkhq.com/docs/adding-required-field)
 
 ## Description
 Adding a new column that is NOT NULL and has no default value to an existing table effectively makes it required.

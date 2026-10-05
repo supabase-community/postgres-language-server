@@ -32,7 +32,7 @@ declare_lint_rule! {
     /// ```
     ///
     pub AddingPrimaryKeyConstraint {
-        version: "next",
+        version: "0.15.0",
         name: "addingPrimaryKeyConstraint",
         severity: Severity::Warning,
         recommended: true,

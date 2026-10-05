@@ -1,12 +1,7 @@
 # unknownRelation
-**Diagnostic Category: `lint/unknownRelation`**
 
-**Group: `typecheck`**
-
-**Since**: `vnext`
-
-> [!NOTE]
-> This rule is recommended. A diagnostic error will appear when linting your code.
+**Group** [`typecheck`](../rules.md#typecheck) · **Recommended** · **Needs a database connection** · **Since** `0.27.0`  
+**Diagnostic** `lint/unknownRelation` · **Postgres error** `42P01`
 
 ## Description
 A table, view, or materialized view does not exist.

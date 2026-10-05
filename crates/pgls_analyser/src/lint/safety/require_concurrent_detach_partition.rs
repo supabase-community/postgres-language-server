@@ -25,7 +25,7 @@ declare_lint_rule! {
     /// ```
     ///
     pub RequireConcurrentDetachPartition {
-        version: "next",
+        version: "0.25.0",
         name: "requireConcurrentDetachPartition",
         severity: Severity::Warning,
         recommended: true,

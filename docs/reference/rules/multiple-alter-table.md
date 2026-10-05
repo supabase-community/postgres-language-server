@@ -1,17 +1,9 @@
 # multipleAlterTable
-**Diagnostic Category: `lint/multipleAlterTable`**
 
-**Group: `safety`**
+**Group** [`safety`](../rules.md#safety) · **Recommended** · **Migrations only** · **Since** `0.17.0`  
+**Diagnostic** `lint/multipleAlterTable`
 
-**Applies to: migration files only**
-
-**Since**: `vnext`
-
-> [!NOTE]
-> This rule is recommended. A diagnostic error will appear when linting your code.
-
-**Sources**: 
-- Inspired from: <a href="https://kaveland.no/eugene/hints/W12/index.html" target="_blank"><code>eugene/W12</code></a>
+**Sources**: inspired by [`eugene/W12`](https://kaveland.no/eugene/hints/W12/index.html)
 
 ## Description
 Multiple ALTER TABLE statements on the same table should be combined into a single statement.

@@ -1,15 +1,9 @@
 # banDeleteWithoutWhere
-**Diagnostic Category: `lint/banDeleteWithoutWhere`**
 
-**Group: `destructive`**
+**Group** [`destructive`](../rules.md#destructive) · **Recommended** · **Since** `0.25.0`  
+**Diagnostic** `lint/banDeleteWithoutWhere` · **Postgres error** `WHERE`
 
-**Since**: `vnext`
-
-> [!NOTE]
-> This rule is recommended. A diagnostic error will appear when linting your code.
-
-**Sources**: 
-- Inspired from: <a href="https://github.com/flvmnt/pgfence" target="_blank"><code>pgfence/delete-without-where</code></a>
+**Sources**: inspired by [`pgfence/delete-without-where`](https://github.com/flvmnt/pgfence)
 
 ## Description
 A `DELETE` statement without a `WHERE` clause will remove all rows from the table.

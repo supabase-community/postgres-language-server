@@ -50,7 +50,7 @@ declare_lint_rule! {
     /// ```
     ///
     pub PreferTimestamptz {
-        version: "next",
+        version: "0.15.0",
         name: "preferTimestamptz",
         severity: Severity::Warning,
         recommended: false,

@@ -1,17 +1,9 @@
 # banVacuumFull
-**Diagnostic Category: `lint/banVacuumFull`**
 
-**Group: `safety`**
+**Group** [`safety`](../rules.md#safety) · **Recommended** · **Migrations only** · **Since** `0.25.0`  
+**Diagnostic** `lint/banVacuumFull`
 
-**Applies to: migration files only**
-
-**Since**: `vnext`
-
-> [!NOTE]
-> This rule is recommended. A diagnostic error will appear when linting your code.
-
-**Sources**: 
-- Inspired from: <a href="https://github.com/flvmnt/pgfence" target="_blank"><code>pgfence/vacuum-full</code></a>
+**Sources**: inspired by [`pgfence/vacuum-full`](https://github.com/flvmnt/pgfence)
 
 ## Description
 `VACUUM FULL` rewrites the entire table and acquires an `ACCESS EXCLUSIVE` lock.

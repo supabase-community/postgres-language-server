@@ -1,17 +1,9 @@
 # banDropTable
-**Diagnostic Category: `lint/banDropTable`**
 
-**Group: `destructive`**
+**Group** [`destructive`](../rules.md#destructive) · **Recommended** · **Migrations only** · **Since** `0.1.0`  
+**Diagnostic** `lint/banDropTable`
 
-**Applies to: migration files only**
-
-**Since**: `vnext`
-
-> [!NOTE]
-> This rule is recommended. A diagnostic error will appear when linting your code.
-
-**Sources**: 
-- Inspired from: <a href="https://squawkhq.com/docs/ban-drop-table" target="_blank"><code>squawk/ban-drop-table</code></a>
+**Sources**: inspired by [`squawk/ban-drop-table`](https://squawkhq.com/docs/ban-drop-table)
 
 ## Description
 Dropping a table may break existing clients.
