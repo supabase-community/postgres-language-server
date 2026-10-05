@@ -76,6 +76,11 @@ pub fn generate_env_variables(docs_dir: &Path) -> Result<()> {
         env.pgdatabase.description()
     )?;
 
+    writeln!(content, "## Deprecated\n")?;
+    writeln!(
+        content,
+        "The names from before the rename to Postgres Language Server still work. Use the `PGLS_*` names above instead.\n"
+    )?;
     writeln!(
         content,
         "### `{}`\n\n {}\n",

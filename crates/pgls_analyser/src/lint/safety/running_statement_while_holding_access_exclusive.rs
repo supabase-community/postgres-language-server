@@ -35,7 +35,7 @@ declare_lint_rule! {
     /// ```
     ///
     pub RunningStatementWhileHoldingAccessExclusive {
-        version: "next",
+        version: "0.17.0",
         name: "runningStatementWhileHoldingAccessExclusive",
         severity: Severity::Warning,
         recommended: true,

@@ -1,12 +1,7 @@
 # ambiguousColumn
-**Diagnostic Category: `lint/ambiguousColumn`**
 
-**Group: `typecheck`**
-
-**Since**: `vnext`
-
-> [!NOTE]
-> This rule is recommended. A diagnostic error will appear when linting your code.
+**Group** [`typecheck`](../rules.md#typecheck) · **Recommended** · **Needs a database connection** · **Since** `0.27.0`  
+**Diagnostic** `lint/ambiguousColumn` · **Postgres error** `42702`
 
 ## Description
 An unqualified column name matches columns of more than one relation in scope.

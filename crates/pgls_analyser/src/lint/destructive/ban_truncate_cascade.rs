@@ -21,7 +21,7 @@ declare_lint_rule! {
     ///
     /// `truncate a, b;`
     pub BanTruncateCascade {
-        version: "next",
+        version: "0.9.0",
         name: "banTruncateCascade",
         severity: Severity::Error,
         recommended: false,

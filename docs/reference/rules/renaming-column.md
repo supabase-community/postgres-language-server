@@ -1,15 +1,9 @@
 # renamingColumn
-**Diagnostic Category: `lint/renamingColumn`**
 
-**Group: `destructive`**
+**Group** [`destructive`](../rules.md#destructive) · **Migrations only** · **Since** `0.15.0`  
+**Diagnostic** `lint/renamingColumn`
 
-**Applies to: migration files only**
-
-**Since**: `vnext`
-
-
-**Sources**: 
-- Inspired from: <a href="https://squawkhq.com/docs/renaming-column" target="_blank"><code>squawk/renaming-column</code></a>
+**Sources**: inspired by [`squawk/renaming-column`](https://squawkhq.com/docs/renaming-column)
 
 ## Description
 Renaming columns may break existing queries and application code.

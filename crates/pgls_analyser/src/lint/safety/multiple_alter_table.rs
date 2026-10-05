@@ -32,7 +32,7 @@ declare_lint_rule! {
     /// ```
     ///
     pub MultipleAlterTable {
-        version: "next",
+        version: "0.17.0",
         name: "multipleAlterTable",
         severity: Severity::Warning,
         recommended: true,

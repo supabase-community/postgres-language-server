@@ -25,7 +25,7 @@ declare_lint_rule! {
     /// ```
     ///
     pub AvoidAttachingPartition {
-        version: "next",
+        version: "0.25.0",
         name: "avoidAttachingPartition",
         severity: Severity::Warning,
         recommended: true,

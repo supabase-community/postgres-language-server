@@ -24,7 +24,7 @@ declare_lint_rule! {
     /// ```
     ///
     pub BanDropTrigger {
-        version: "next",
+        version: "0.25.0",
         name: "banDropTrigger",
         severity: Severity::Warning,
         recommended: false,

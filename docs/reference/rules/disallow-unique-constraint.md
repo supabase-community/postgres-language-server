@@ -1,15 +1,9 @@
 # disallowUniqueConstraint
-**Diagnostic Category: `lint/disallowUniqueConstraint`**
 
-**Group: `safety`**
+**Group** [`safety`](../rules.md#safety) · **Migrations only** · **Since** `0.15.0`  
+**Diagnostic** `lint/disallowUniqueConstraint`
 
-**Applies to: migration files only**
-
-**Since**: `vnext`
-
-
-**Sources**: 
-- Inspired from: <a href="https://squawkhq.com/docs/disallow-unique-constraint" target="_blank"><code>squawk/disallow-unique-constraint</code></a>
+**Sources**: inspired by [`squawk/disallow-unique-constraint`](https://squawkhq.com/docs/disallow-unique-constraint)
 
 ## Description
 Disallow adding a UNIQUE constraint without using an existing index.

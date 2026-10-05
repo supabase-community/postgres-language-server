@@ -1,13 +1,9 @@
 # preferTimestamptz
-**Diagnostic Category: `lint/preferTimestamptz`**
 
-**Group: `style`**
+**Group** [`style`](../rules.md#style) · **Since** `0.15.0`  
+**Diagnostic** `lint/preferTimestamptz`
 
-**Since**: `vnext`
-
-
-**Sources**: 
-- Inspired from: <a href="https://squawkhq.com/docs/prefer-timestamptz" target="_blank"><code>squawk/prefer-timestamptz</code></a>
+**Sources**: inspired by [`squawk/prefer-timestamptz`](https://squawkhq.com/docs/prefer-timestamptz)
 
 ## Description
 Prefer TIMESTAMPTZ over TIMESTAMP types.

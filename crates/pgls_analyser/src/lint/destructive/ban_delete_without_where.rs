@@ -25,7 +25,7 @@ declare_lint_rule! {
     /// ```
     ///
     pub BanDeleteWithoutWhere {
-        version: "next",
+        version: "0.25.0",
         name: "banDeleteWithoutWhere",
         severity: Severity::Warning,
         recommended: true,

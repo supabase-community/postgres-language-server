@@ -1,18 +1,12 @@
 # invalidCast
-**Diagnostic Category: `lint/invalidCast`**
 
-**Group: `typecheck`**
-
-**Since**: `vnext`
-
-> [!NOTE]
-> This rule is recommended. A diagnostic error will appear when linting your code.
+**Group** [`typecheck`](../rules.md#typecheck) · **Recommended** · **Needs a database connection** · **Since** `0.27.0`  
+**Diagnostic** `lint/invalidCast` · **Postgres error** `42846`
 
 ## Description
-An explicit cast is not permitted between the source and target types. The rule needs
-a database connection to load the type and cast catalog.
+An explicit cast is not permitted between the source and target types.
 
-Postgres reports SQLSTATE `42846` (`cannot_coerce`).
+Postgres raises `42846 cannot_coerce` for these statements.
 
 ## Examples
 
@@ -23,6 +17,15 @@ select timestamp '2020-01-01'::integer;
 ```
 
 ```sh
+code-block.sql:1:30 lint/invalidCast ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Cannot cast type timestamp without time zone to integer.
+  
+  > 1 │ select timestamp '2020-01-01'::integer;
+      │                              ^^^^^^^^^
+    2 │ 
+  
+
 ```
 
 ### Valid

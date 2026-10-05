@@ -44,7 +44,7 @@ declare_lint_rule! {
     /// ```
     ///
     pub PreferBigInt {
-        version: "next",
+        version: "0.15.0",
         name: "preferBigInt",
         severity: Severity::Warning,
         recommended: false,

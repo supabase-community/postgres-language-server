@@ -28,7 +28,7 @@ declare_lint_rule! {
     /// ```
     ///
     pub UnknownSchema {
-        version: "next",
+        version: "0.27.0",
         name: "unknownSchema",
         severity: Severity::Error,
         recommended: true,

@@ -29,7 +29,7 @@ declare_lint_rule! {
     /// ```
     ///
     pub MissingFromClauseEntry {
-        version: "next",
+        version: "0.27.0",
         name: "missingFromClauseEntry",
         severity: Severity::Error,
         recommended: true,

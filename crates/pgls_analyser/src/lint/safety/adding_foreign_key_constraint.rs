@@ -35,7 +35,7 @@ declare_lint_rule! {
     /// ```
     ///
     pub AddingForeignKeyConstraint {
-        version: "next",
+        version: "0.15.0",
         name: "addingForeignKeyConstraint",
         severity: Severity::Warning,
         recommended: true,

@@ -1,17 +1,9 @@
 # lockTimeoutWarning
-**Diagnostic Category: `lint/lockTimeoutWarning`**
 
-**Group: `safety`**
+**Group** [`safety`](../rules.md#safety) · **Recommended** · **Migrations only** · **Since** `0.17.0`  
+**Diagnostic** `lint/lockTimeoutWarning`
 
-**Applies to: migration files only**
-
-**Since**: `vnext`
-
-> [!NOTE]
-> This rule is recommended. A diagnostic error will appear when linting your code.
-
-**Sources**: 
-- Inspired from: <a href="https://kaveland.no/eugene/hints/E9/index.html" target="_blank"><code>eugene/E9</code></a>
+**Sources**: inspired by [`eugene/E9`](https://kaveland.no/eugene/hints/E9/index.html)
 
 ## Description
 Taking a dangerous lock without setting a lock timeout can cause indefinite blocking.

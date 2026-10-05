@@ -1,12 +1,7 @@
 # insertColumnMismatch
-**Diagnostic Category: `lint/insertColumnMismatch`**
 
-**Group: `typecheck`**
-
-**Since**: `vnext`
-
-> [!NOTE]
-> This rule is recommended. A diagnostic error will appear when linting your code.
+**Group** [`typecheck`](../rules.md#typecheck) · **Recommended** · **Needs a database connection** · **Since** `0.27.0`  
+**Diagnostic** `lint/insertColumnMismatch` · **Postgres error** `42601`
 
 ## Description
 An `INSERT` has a different number of target columns than values.

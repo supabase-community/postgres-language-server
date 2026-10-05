@@ -1,15 +1,9 @@
 # constraintMissingNotValid
-**Diagnostic Category: `lint/constraintMissingNotValid`**
 
-**Group: `safety`**
+**Group** [`safety`](../rules.md#safety) · **Migrations only** · **Since** `0.15.0`  
+**Diagnostic** `lint/constraintMissingNotValid`
 
-**Applies to: migration files only**
-
-**Since**: `vnext`
-
-
-**Sources**: 
-- Inspired from: <a href="https://squawkhq.com/docs/constraint-missing-not-valid" target="_blank"><code>squawk/constraint-missing-not-valid</code></a>
+**Sources**: inspired by [`squawk/constraint-missing-not-valid`](https://squawkhq.com/docs/constraint-missing-not-valid)
 
 ## Description
 Adding constraints without NOT VALID blocks all reads and writes.

@@ -1,12 +1,7 @@
 # functionReturnTypeMismatch
-**Diagnostic Category: `lint/functionReturnTypeMismatch`**
 
-**Group: `typecheck`**
-
-**Since**: `vnext`
-
-> [!NOTE]
-> This rule is recommended. A diagnostic error will appear when linting your code.
+**Group** [`typecheck`](../rules.md#typecheck) · **Recommended** · **Needs a database connection** · **Since** `0.27.0`  
+**Diagnostic** `lint/functionReturnTypeMismatch` · **Postgres error** `42P13`
 
 ## Description
 The final statement of a SQL function doesn't return what the function is declared to

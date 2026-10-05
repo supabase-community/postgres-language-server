@@ -1,15 +1,9 @@
 # requireStatementTimeout
-**Diagnostic Category: `lint/requireStatementTimeout`**
 
-**Group: `safety`**
+**Group** [`safety`](../rules.md#safety) · **Migrations only** · **Since** `0.25.0`  
+**Diagnostic** `lint/requireStatementTimeout`
 
-**Applies to: migration files only**
-
-**Since**: `vnext`
-
-
-**Sources**: 
-- Inspired from: <a href="https://github.com/flvmnt/pgfence" target="_blank"><code>pgfence/missing-statement-timeout</code></a>
+**Sources**: inspired by [`pgfence/missing-statement-timeout`](https://github.com/flvmnt/pgfence)
 
 ## Description
 Dangerous lock statements should be preceded by `SET statement_timeout`.

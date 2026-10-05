@@ -1,15 +1,9 @@
 # requireConcurrentIndexCreation
-**Diagnostic Category: `lint/requireConcurrentIndexCreation`**
 
-**Group: `safety`**
+**Group** [`safety`](../rules.md#safety) · **Migrations only** · **Since** `0.15.0`  
+**Diagnostic** `lint/requireConcurrentIndexCreation`
 
-**Applies to: migration files only**
-
-**Since**: `vnext`
-
-
-**Sources**: 
-- Inspired from: <a href="https://squawkhq.com/docs/require-concurrent-index-creation" target="_blank"><code>squawk/require-concurrent-index-creation</code></a>
+**Sources**: inspired by [`squawk/require-concurrent-index-creation`](https://squawkhq.com/docs/require-concurrent-index-creation)
 
 ## Description
 Creating indexes non-concurrently can lock the table for writes.

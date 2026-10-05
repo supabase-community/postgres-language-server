@@ -1,17 +1,9 @@
 # addingPrimaryKeyConstraint
-**Diagnostic Category: `lint/addingPrimaryKeyConstraint`**
 
-**Group: `safety`**
+**Group** [`safety`](../rules.md#safety) · **Recommended** · **Migrations only** · **Since** `0.15.0`  
+**Diagnostic** `lint/addingPrimaryKeyConstraint`
 
-**Applies to: migration files only**
-
-**Since**: `vnext`
-
-> [!NOTE]
-> This rule is recommended. A diagnostic error will appear when linting your code.
-
-**Sources**: 
-- Inspired from: <a href="https://squawkhq.com/docs/adding-serial-primary-key-field" target="_blank"><code>squawk/adding-serial-primary-key-field</code></a>
+**Sources**: inspired by [`squawk/adding-serial-primary-key-field`](https://squawkhq.com/docs/adding-serial-primary-key-field)
 
 ## Description
 Adding a primary key constraint results in locks and table rewrites.

@@ -25,7 +25,7 @@ declare_lint_rule! {
     /// ```
     ///
     pub RequireConcurrentIndexCreation {
-        version: "next",
+        version: "0.15.0",
         name: "requireConcurrentIndexCreation",
         severity: Severity::Warning,
         recommended: false,

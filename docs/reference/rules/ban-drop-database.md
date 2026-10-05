@@ -1,15 +1,9 @@
 # banDropDatabase
-**Diagnostic Category: `lint/banDropDatabase`**
 
-**Group: `destructive`**
+**Group** [`destructive`](../rules.md#destructive) · **Migrations only** · **Since** `0.9.0`  
+**Diagnostic** `lint/banDropDatabase`
 
-**Applies to: migration files only**
-
-**Since**: `vnext`
-
-
-**Sources**: 
-- Inspired from: <a href="https://squawkhq.com/docs/ban-drop-database" target="_blank"><code>squawk/ban-drop-database</code></a>
+**Sources**: inspired by [`squawk/ban-drop-database`](https://squawkhq.com/docs/ban-drop-database)
 
 ## Description
 Dropping a database may break existing clients (and everything else, really).

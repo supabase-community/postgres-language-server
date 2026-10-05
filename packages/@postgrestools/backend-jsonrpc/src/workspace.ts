@@ -756,7 +756,7 @@ export interface LinterRules {
    */
   ambiguousColumn?: RuleConfiguration_for_Null;
   /**
-   * An expression assigned to a column cannot be coerced to that column's type. The rule needs a database connection to load the table and type catalog.
+   * An expression assigned to a column cannot be coerced to that column's type.
    */
   assignmentTypeMismatch?: RuleConfiguration_for_Null;
   /**
@@ -852,7 +852,7 @@ export interface LinterRules {
    */
   disallowUniqueConstraint?: RuleConfiguration_for_Null;
   /**
-   * A function name and argument count exist, but its argument types do not select exactly one overload. The rule needs a database connection to load the function and type catalog.
+   * A function name and argument count exist, but its argument types do not select exactly one overload.
    */
   functionArgumentMismatch?: RuleConfiguration_for_Null;
   /**
@@ -864,7 +864,7 @@ export interface LinterRules {
    */
   insertColumnMismatch?: RuleConfiguration_for_Null;
   /**
-   * An explicit cast is not permitted between the source and target types. The rule needs a database connection to load the type and cast catalog.
+   * An explicit cast is not permitted between the source and target types.
    */
   invalidCast?: RuleConfiguration_for_Null;
   /**

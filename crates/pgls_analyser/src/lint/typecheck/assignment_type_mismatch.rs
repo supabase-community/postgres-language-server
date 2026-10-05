@@ -5,10 +5,9 @@ use pgls_catalog::typing::format_type;
 use pgls_diagnostics::Severity;
 
 declare_lint_rule! {
-    /// An expression assigned to a column cannot be coerced to that column's type. The rule
-    /// needs a database connection to load the table and type catalog.
+    /// An expression assigned to a column cannot be coerced to that column's type.
     ///
-    /// Postgres reports SQLSTATE `42804` (`datatype_mismatch`).
+    /// Postgres raises `42804 datatype_mismatch` for these statements.
     ///
     /// ## Examples
     ///
@@ -27,7 +26,7 @@ declare_lint_rule! {
     /// ```
     ///
     pub AssignmentTypeMismatch {
-        version: "next",
+        version: "0.27.0",
         name: "assignmentTypeMismatch",
         severity: Severity::Error,
         recommended: true,

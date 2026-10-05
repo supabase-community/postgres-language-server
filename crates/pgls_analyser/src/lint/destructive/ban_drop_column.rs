@@ -19,7 +19,7 @@ declare_lint_rule! {
     /// ```
     ///
     pub BanDropColumn {
-        version: "next",
+        version: "0.1.0",
         name: "banDropColumn",
         severity: Severity::Warning,
         recommended: true,

@@ -1,17 +1,9 @@
 # addSerialColumn
-**Diagnostic Category: `lint/addSerialColumn`**
 
-**Group: `safety`**
+**Group** [`safety`](../rules.md#safety) · **Recommended** · **Migrations only** · **Since** `0.17.0`  
+**Diagnostic** `lint/addSerialColumn`
 
-**Applies to: migration files only**
-
-**Since**: `vnext`
-
-> [!NOTE]
-> This rule is recommended. A diagnostic error will appear when linting your code.
-
-**Sources**: 
-- Inspired from: <a href="https://kaveland.no/eugene/hints/E11/index.html" target="_blank"><code>eugene/E11</code></a>
+**Sources**: inspired by [`eugene/E11`](https://kaveland.no/eugene/hints/E11/index.html)
 
 ## Description
 Adding a column with a SERIAL type or GENERATED ALWAYS AS ... STORED causes a full table rewrite.

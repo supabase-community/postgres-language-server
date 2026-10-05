@@ -443,7 +443,7 @@ pub struct Rules {
     #[doc = "An unqualified column name matches columns of more than one relation in scope."]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ambiguous_column: Option<RuleConfiguration<pgls_analyser::options::AmbiguousColumn>>,
-    #[doc = "An expression assigned to a column cannot be coerced to that column's type. The rule needs a database connection to load the table and type catalog."]
+    #[doc = "An expression assigned to a column cannot be coerced to that column's type."]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub assignment_type_mismatch:
         Option<RuleConfiguration<pgls_analyser::options::AssignmentTypeMismatch>>,
@@ -526,7 +526,7 @@ pub struct Rules {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub disallow_unique_constraint:
         Option<RuleConfiguration<pgls_analyser::options::DisallowUniqueConstraint>>,
-    #[doc = "A function name and argument count exist, but its argument types do not select exactly one overload. The rule needs a database connection to load the function and type catalog."]
+    #[doc = "A function name and argument count exist, but its argument types do not select exactly one overload."]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub function_argument_mismatch:
         Option<RuleConfiguration<pgls_analyser::options::FunctionArgumentMismatch>>,
@@ -538,7 +538,7 @@ pub struct Rules {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub insert_column_mismatch:
         Option<RuleConfiguration<pgls_analyser::options::InsertColumnMismatch>>,
-    #[doc = "An explicit cast is not permitted between the source and target types. The rule needs a database connection to load the type and cast catalog."]
+    #[doc = "An explicit cast is not permitted between the source and target types."]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub invalid_cast: Option<RuleConfiguration<pgls_analyser::options::InvalidCast>>,
     #[doc = "DROP TYPE and DROP DOMAIN don't take a parameter list."]

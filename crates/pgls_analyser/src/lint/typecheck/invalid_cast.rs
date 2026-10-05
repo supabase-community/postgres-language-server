@@ -5,10 +5,9 @@ use pgls_catalog::typing::format_type;
 use pgls_diagnostics::Severity;
 
 declare_lint_rule! {
-    /// An explicit cast is not permitted between the source and target types. The rule needs
-    /// a database connection to load the type and cast catalog.
+    /// An explicit cast is not permitted between the source and target types.
     ///
-    /// Postgres reports SQLSTATE `42846` (`cannot_coerce`).
+    /// Postgres raises `42846 cannot_coerce` for these statements.
     ///
     /// ## Examples
     ///
@@ -25,7 +24,7 @@ declare_lint_rule! {
     /// ```
     ///
     pub InvalidCast {
-        version: "next",
+        version: "0.27.0",
         name: "invalidCast",
         severity: Severity::Error,
         recommended: true,

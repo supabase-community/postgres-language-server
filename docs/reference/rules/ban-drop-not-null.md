@@ -1,17 +1,9 @@
 # banDropNotNull
-**Diagnostic Category: `lint/banDropNotNull`**
 
-**Group: `destructive`**
+**Group** [`destructive`](../rules.md#destructive) · **Recommended** · **Migrations only** · **Since** `0.1.0`  
+**Diagnostic** `lint/banDropNotNull`
 
-**Applies to: migration files only**
-
-**Since**: `vnext`
-
-> [!NOTE]
-> This rule is recommended. A diagnostic error will appear when linting your code.
-
-**Sources**: 
-- Inspired from: <a href="https://squawkhq.com/docs/ban-drop-not-null" target="_blank"><code>squawk/ban-drop-not-null</code></a>
+**Sources**: inspired by [`squawk/ban-drop-not-null`](https://squawkhq.com/docs/ban-drop-not-null)
 
 ## Description
 Dropping a NOT NULL constraint may break existing clients.

@@ -1,17 +1,9 @@
 # addingNotNullField
-**Diagnostic Category: `lint/addingNotNullField`**
 
-**Group: `safety`**
+**Group** [`safety`](../rules.md#safety) · **Recommended** · **Migrations only** · **Since** `0.15.0`  
+**Diagnostic** `lint/addingNotNullField`
 
-**Applies to: migration files only**
-
-**Since**: `vnext`
-
-> [!NOTE]
-> This rule is recommended. A diagnostic error will appear when linting your code.
-
-**Sources**: 
-- Inspired from: <a href="https://squawkhq.com/docs/adding-not-null-field" target="_blank"><code>squawk/adding-not-null-field</code></a>
+**Sources**: inspired by [`squawk/adding-not-null-field`](https://squawkhq.com/docs/adding-not-null-field)
 
 ## Description
 Setting a column NOT NULL blocks reads while the table is scanned.

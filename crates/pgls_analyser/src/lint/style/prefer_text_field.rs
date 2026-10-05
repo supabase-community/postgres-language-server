@@ -37,7 +37,7 @@ declare_lint_rule! {
     /// ```
     ///
     pub PreferTextField {
-        version: "next",
+        version: "0.15.0",
         name: "preferTextField",
         severity: Severity::Warning,
         recommended: false,

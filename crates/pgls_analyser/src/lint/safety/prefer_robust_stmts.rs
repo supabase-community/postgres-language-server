@@ -49,7 +49,7 @@ declare_lint_rule! {
     /// ```
     ///
     pub PreferRobustStmts {
-        version: "next",
+        version: "0.15.0",
         name: "preferRobustStmts",
         severity: Severity::Warning,
         recommended: false,

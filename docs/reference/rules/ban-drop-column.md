@@ -1,17 +1,9 @@
 # banDropColumn
-**Diagnostic Category: `lint/banDropColumn`**
 
-**Group: `destructive`**
+**Group** [`destructive`](../rules.md#destructive) · **Recommended** · **Migrations only** · **Since** `0.1.0`  
+**Diagnostic** `lint/banDropColumn`
 
-**Applies to: migration files only**
-
-**Since**: `vnext`
-
-> [!NOTE]
-> This rule is recommended. A diagnostic error will appear when linting your code.
-
-**Sources**: 
-- Inspired from: <a href="https://squawkhq.com/docs/ban-drop-column" target="_blank"><code>squawk/ban-drop-column</code></a>
+**Sources**: inspired by [`squawk/ban-drop-column`](https://squawkhq.com/docs/ban-drop-column)
 
 ## Description
 Dropping a column may break existing clients.

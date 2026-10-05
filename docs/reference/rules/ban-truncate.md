@@ -1,17 +1,9 @@
 # banTruncate
-**Diagnostic Category: `lint/banTruncate`**
 
-**Group: `destructive`**
+**Group** [`destructive`](../rules.md#destructive) · **Recommended** · **Migrations only** · **Since** `0.25.0`  
+**Diagnostic** `lint/banTruncate`
 
-**Applies to: migration files only**
-
-**Since**: `vnext`
-
-> [!NOTE]
-> This rule is recommended. A diagnostic error will appear when linting your code.
-
-**Sources**: 
-- Inspired from: <a href="https://github.com/flvmnt/pgfence" target="_blank"><code>pgfence/truncate</code></a>
+**Sources**: inspired by [`pgfence/truncate`](https://github.com/flvmnt/pgfence)
 
 ## Description
 Truncating a table removes all rows and can cause data loss in production.

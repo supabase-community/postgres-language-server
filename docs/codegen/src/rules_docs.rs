@@ -51,52 +51,63 @@ fn generate_rule_doc(
     let mut content = Vec::new();
 
     writeln!(content, "# {rule}")?;
-
-    writeln!(content, "**Diagnostic Category: `lint/{rule}`**")?;
-    writeln!(content)?;
-    writeln!(content, "**Group: `{group}`**")?;
-
-    if meta.applies_to == AppliesTo::Migration {
-        writeln!(content)?;
-        writeln!(content, "**Applies to: migration files only**")?;
-    }
-
-    // add deprecation notice
-    if let Some(reason) = &meta.deprecated {
-        writeln!(content)?;
-        writeln!(content, "> [!WARNING]")?;
-        writeln!(
-            content,
-            "> This rule is deprecated and will be removed in the next major release.\n**Reason**: {reason}"
-        )?;
-    }
-
-    writeln!(content)?;
-    writeln!(content, "**Since**: `v{}`", meta.version)?;
     writeln!(content)?;
 
+    // One compact metadata block instead of a line per property.
+    let mut properties = vec![format!("**Group** [`{group}`](../rules.md#{group})")];
     if meta.recommended {
-        writeln!(content, "> [!NOTE]")?;
+        properties.push("**Recommended**".to_string());
+    }
+    if meta.applies_to == AppliesTo::Migration {
+        properties.push("**Migrations only**".to_string());
+    }
+    if group == pgls_analyser::TYPECHECK_GROUP {
+        properties.push("**Needs a database connection**".to_string());
+    }
+    let since = if meta.version == "next" {
+        "Unreleased".to_string()
+    } else {
+        meta.version.to_string()
+    };
+    properties.push(format!("**Since** `{since}`"));
+    writeln!(content, "{}  ", properties.join(" · "))?;
+
+    let mut identifiers = vec![format!("**Diagnostic** `lint/{rule}`")];
+    let codes = postgres_error_codes(meta.docs);
+    if !codes.is_empty() {
+        let codes = codes
+            .iter()
+            .map(|code| format!("`{code}`"))
+            .collect::<Vec<_>>()
+            .join(", ");
+        identifiers.push(format!("**Postgres error** {codes}"));
+    }
+    writeln!(content, "{}", identifiers.join(" · "))?;
+    writeln!(content)?;
+
+    if let Some(reason) = &meta.deprecated {
+        writeln!(content, "!!! warning \"Deprecated\"")?;
         writeln!(
             content,
-            "> This rule is recommended. A diagnostic error will appear when linting your code."
+            "    This rule is deprecated and will be removed in the next major release. {reason}"
         )?;
+        writeln!(content)?;
     }
-
-    writeln!(content)?;
 
     if !meta.sources.is_empty() {
-        writeln!(content, "**Sources**: ")?;
-
-        for source in meta.sources {
-            let rule_name = source.to_namespaced_rule_name();
-            let source_rule_url = source.to_rule_url();
-            write!(content, "- Inspired from: ")?;
-            writeln!(
-                content,
-                "<a href=\"{source_rule_url}\" target=\"_blank\"><code>{rule_name}</code></a>"
-            )?;
-        }
+        let sources = meta
+            .sources
+            .iter()
+            .map(|source| {
+                format!(
+                    "[`{}`]({})",
+                    source.to_namespaced_rule_name(),
+                    source.to_rule_url()
+                )
+            })
+            .collect::<Vec<_>>()
+            .join(", ");
+        writeln!(content, "**Sources**: inspired by {sources}")?;
         writeln!(content)?;
     }
 
@@ -107,6 +118,29 @@ fn generate_rule_doc(
     write_how_to_suppress(rule, &mut content)?;
 
     Ok(String::from_utf8(content)?)
+}
+
+/// The Postgres error codes a rule's documentation names, like `42P01` in
+/// "Postgres raises `42P01 undefined_table`".
+fn postgres_error_codes(docs: &str) -> Vec<&str> {
+    let mut codes = Vec::new();
+    for span in docs.split('`').skip(1).step_by(2) {
+        let Some((code, condition)) = span.split_once(' ') else {
+            continue;
+        };
+        let is_code = code.len() == 5
+            && code
+                .chars()
+                .all(|c| c.is_ascii_digit() || c.is_ascii_uppercase());
+        let is_condition = !condition.is_empty()
+            && condition
+                .chars()
+                .all(|c| c.is_ascii_lowercase() || c == '_');
+        if is_code && is_condition && !codes.contains(&code) {
+            codes.push(code);
+        }
+    }
+    codes
 }
 
 fn write_how_to_configure(rule: &'static str, content: &mut Vec<u8>) -> io::Result<()> {
@@ -469,12 +503,12 @@ fn print_diagnostics(
         };
     }
 
-    // Typecheck rules need a database. Examples run against one with empty `public` and
-    // `pg_catalog` schemas and create everything else themselves.
+    // Typecheck rules need a database. Examples run against the built-in catalog of a fresh
+    // database on the latest supported Postgres, and create everything else themselves.
     let is_typecheck = group == pgls_analyser::TYPECHECK_GROUP;
     let diagnostics = analyser.run(pgls_analyser::AnalyserParams {
         stmts,
-        catalog_base: is_typecheck.then(|| std::sync::Arc::new(pgls_catalog::CatalogBase::empty())),
+        catalog_base: is_typecheck.then(builtin_catalog),
         search_path: vec!["public".into()],
         typecheck: is_typecheck,
         ..Default::default()
@@ -496,4 +530,22 @@ fn print_diagnostics(
     }
 
     Ok(())
+}
+
+/// The catalog of a fresh database on the latest Postgres version with regression fixtures.
+fn builtin_catalog() -> std::sync::Arc<pgls_catalog::CatalogBase> {
+    static CATALOG: std::sync::OnceLock<std::sync::Arc<pgls_catalog::CatalogBase>> =
+        std::sync::OnceLock::new();
+    CATALOG
+        .get_or_init(|| {
+            let version = pgls_postgres_regress::versions()
+                .pop()
+                .expect("regression fixtures for at least one version");
+            let snapshot: pgls_catalog::Snapshot =
+                serde_json::from_str(&version.catalog_json()).expect("parse the built-in catalog");
+            std::sync::Arc::new(pgls_catalog::CatalogBase::new(std::sync::Arc::new(
+                snapshot,
+            )))
+        })
+        .clone()
 }

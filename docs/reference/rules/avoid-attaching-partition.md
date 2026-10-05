@@ -1,17 +1,9 @@
 # avoidAttachingPartition
-**Diagnostic Category: `lint/avoidAttachingPartition`**
 
-**Group: `safety`**
+**Group** [`safety`](../rules.md#safety) · **Recommended** · **Migrations only** · **Since** `0.25.0`  
+**Diagnostic** `lint/avoidAttachingPartition`
 
-**Applies to: migration files only**
-
-**Since**: `vnext`
-
-> [!NOTE]
-> This rule is recommended. A diagnostic error will appear when linting your code.
-
-**Sources**: 
-- Inspired from: <a href="https://github.com/flvmnt/pgfence" target="_blank"><code>pgfence/attach-partition</code></a>
+**Sources**: inspired by [`pgfence/attach-partition`](https://github.com/flvmnt/pgfence)
 
 ## Description
 Attaching a partition acquires an `ACCESS EXCLUSIVE` lock on the parent table.

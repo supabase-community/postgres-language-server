@@ -1,15 +1,9 @@
 # requireConcurrentIndexDeletion
-**Diagnostic Category: `lint/requireConcurrentIndexDeletion`**
 
-**Group: `safety`**
+**Group** [`safety`](../rules.md#safety) · **Migrations only** · **Since** `0.15.0`  
+**Diagnostic** `lint/requireConcurrentIndexDeletion`
 
-**Applies to: migration files only**
-
-**Since**: `vnext`
-
-
-**Sources**: 
-- Inspired from: <a href="https://squawkhq.com/docs/require-concurrent-index-deletion" target="_blank"><code>squawk/require-concurrent-index-deletion</code></a>
+**Sources**: inspired by [`squawk/require-concurrent-index-deletion`](https://squawkhq.com/docs/require-concurrent-index-deletion)
 
 ## Description
 Dropping indexes non-concurrently can lock the table for reads.

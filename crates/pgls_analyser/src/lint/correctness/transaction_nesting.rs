@@ -26,7 +26,7 @@ declare_lint_rule! {
     /// ```
     ///
     pub TransactionNesting {
-        version: "next",
+        version: "0.15.0",
         name: "transactionNesting",
         severity: Severity::Warning,
         recommended: false,

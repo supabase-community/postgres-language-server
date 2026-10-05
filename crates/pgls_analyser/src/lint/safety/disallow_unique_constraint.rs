@@ -31,7 +31,7 @@ declare_lint_rule! {
     /// ```
     ///
     pub DisallowUniqueConstraint {
-        version: "next",
+        version: "0.15.0",
         name: "disallowUniqueConstraint",
         severity: Severity::Error,
         recommended: false,

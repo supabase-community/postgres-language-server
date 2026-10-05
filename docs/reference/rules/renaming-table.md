@@ -1,15 +1,9 @@
 # renamingTable
-**Diagnostic Category: `lint/renamingTable`**
 
-**Group: `destructive`**
+**Group** [`destructive`](../rules.md#destructive) · **Migrations only** · **Since** `0.15.0`  
+**Diagnostic** `lint/renamingTable`
 
-**Applies to: migration files only**
-
-**Since**: `vnext`
-
-
-**Sources**: 
-- Inspired from: <a href="https://squawkhq.com/docs/renaming-table" target="_blank"><code>squawk/renaming-table</code></a>
+**Sources**: inspired by [`squawk/renaming-table`](https://squawkhq.com/docs/renaming-table)
 
 ## Description
 Renaming tables may break existing queries and application code.

@@ -1,13 +1,9 @@
 # preferIdentity
-**Diagnostic Category: `lint/preferIdentity`**
 
-**Group: `style`**
+**Group** [`style`](../rules.md#style) · **Since** `0.15.0`  
+**Diagnostic** `lint/preferIdentity`
 
-**Since**: `vnext`
-
-
-**Sources**: 
-- Inspired from: <a href="https://squawkhq.com/docs/prefer-identity" target="_blank"><code>squawk/prefer-identity</code></a>
+**Sources**: inspired by [`squawk/prefer-identity`](https://squawkhq.com/docs/prefer-identity)
 
 ## Description
 Prefer using IDENTITY columns over serial columns.

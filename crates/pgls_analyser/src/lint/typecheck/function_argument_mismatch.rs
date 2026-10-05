@@ -6,10 +6,10 @@ use pgls_diagnostics::Severity;
 
 declare_lint_rule! {
     /// A function name and argument count exist, but its argument types do not select exactly
-    /// one overload. The rule needs a database connection to load the function and type catalog.
+    /// one overload.
     ///
-    /// Postgres reports SQLSTATE `42883` when no function matches and `42725` when a function
-    /// call is ambiguous.
+    /// Postgres raises `42883 undefined_function` when no function matches, and
+    /// `42725 ambiguous_function` when the call is ambiguous.
     ///
     /// ## Examples
     ///
@@ -28,7 +28,7 @@ declare_lint_rule! {
     /// ```
     ///
     pub FunctionArgumentMismatch {
-        version: "next",
+        version: "0.27.0",
         name: "functionArgumentMismatch",
         severity: Severity::Error,
         recommended: true,

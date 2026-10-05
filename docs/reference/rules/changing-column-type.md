@@ -1,15 +1,9 @@
 # changingColumnType
-**Diagnostic Category: `lint/changingColumnType`**
 
-**Group: `destructive`**
+**Group** [`destructive`](../rules.md#destructive) · **Migrations only** · **Since** `0.15.0`  
+**Diagnostic** `lint/changingColumnType`
 
-**Applies to: migration files only**
-
-**Since**: `vnext`
-
-
-**Sources**: 
-- Inspired from: <a href="https://squawkhq.com/docs/changing-column-type" target="_blank"><code>squawk/changing-column-type</code></a>
+**Sources**: inspired by [`squawk/changing-column-type`](https://squawkhq.com/docs/changing-column-type)
 
 ## Description
 Changing a column type may require a table rewrite and break existing clients.

@@ -43,6 +43,10 @@
 
  The name of the database to connect to.
 
+## Deprecated
+
+The names from before the rename to Postgres Language Server still work. Use the `PGLS_*` names above instead.
+
 ### `PGT_LOG_PATH`
 
  The directory where the Daemon logs will be saved. Deprecated, use PGLS_LOG_PATH instead.

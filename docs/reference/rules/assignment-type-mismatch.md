@@ -1,18 +1,12 @@
 # assignmentTypeMismatch
-**Diagnostic Category: `lint/assignmentTypeMismatch`**
 
-**Group: `typecheck`**
-
-**Since**: `vnext`
-
-> [!NOTE]
-> This rule is recommended. A diagnostic error will appear when linting your code.
+**Group** [`typecheck`](../rules.md#typecheck) · **Recommended** · **Needs a database connection** · **Since** `0.27.0`  
+**Diagnostic** `lint/assignmentTypeMismatch` · **Postgres error** `42804`
 
 ## Description
-An expression assigned to a column cannot be coerced to that column's type. The rule
-needs a database connection to load the table and type catalog.
+An expression assigned to a column cannot be coerced to that column's type.
 
-Postgres reports SQLSTATE `42804` (`datatype_mismatch`).
+Postgres raises `42804 datatype_mismatch` for these statements.
 
 ## Examples
 
@@ -24,6 +18,18 @@ insert into typecheck_assignment values (timestamp '2020-01-01');
 ```
 
 ```sh
+code-block.sql:2:1 lint/assignmentTypeMismatch ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Column "qty" is of type integer but expression is of type timestamp without time zone.
+  
+    1 │ create table typecheck_assignment (qty integer);
+  > 2 │ insert into typecheck_assignment values (timestamp '2020-01-01');
+      │ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    3 │ 
+  
+  i You will need to rewrite or cast the expression.
+  
+
 ```
 
 ### Valid

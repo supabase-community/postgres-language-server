@@ -18,7 +18,7 @@ declare_lint_rule! {
     /// drop table some_table;
     /// ```
     pub BanDropTable {
-        version: "next",
+        version: "0.1.0",
         name: "banDropTable",
         severity: Severity::Warning,
         recommended: true,

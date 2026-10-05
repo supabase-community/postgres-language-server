@@ -1,15 +1,9 @@
 # requireIdleInTransactionTimeout
-**Diagnostic Category: `lint/requireIdleInTransactionTimeout`**
 
-**Group: `safety`**
+**Group** [`safety`](../rules.md#safety) · **Migrations only** · **Since** `0.25.0`  
+**Diagnostic** `lint/requireIdleInTransactionTimeout`
 
-**Applies to: migration files only**
-
-**Since**: `vnext`
-
-
-**Sources**: 
-- Inspired from: <a href="https://github.com/flvmnt/pgfence" target="_blank"><code>pgfence/missing-idle-timeout</code></a>
+**Sources**: inspired by [`pgfence/missing-idle-timeout`](https://github.com/flvmnt/pgfence)
 
 ## Description
 Dangerous lock statements should be preceded by `SET idle_in_transaction_session_timeout`.

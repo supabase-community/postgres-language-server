@@ -29,7 +29,7 @@ declare_lint_rule! {
     /// ```
     ///
     pub UnknownFunction {
-        version: "next",
+        version: "0.27.0",
         name: "unknownFunction",
         severity: Severity::Error,
         recommended: true,

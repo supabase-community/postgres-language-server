@@ -31,7 +31,7 @@ declare_lint_rule! {
     /// ```
     ///
     pub AddingFieldWithDefault {
-        version: "next",
+        version: "0.15.0",
         name: "addingFieldWithDefault",
         severity: Severity::Warning,
         recommended: true,

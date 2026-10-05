@@ -165,7 +165,7 @@ fn generate_database_sources_content(
         for (rule_name, kebab_rule_name) in rules {
             writeln!(
                 buffer,
-                "| [{rule_name}]({source_url}) | [{rule_name}](./rules/{kebab_rule_name}.md) |"
+                "| [{rule_name}]({source_url}) | [{rule_name}](./database-rules/{kebab_rule_name}.md) |"
             )?;
         }
     }

@@ -1,12 +1,7 @@
 # unknownType
-**Diagnostic Category: `lint/unknownType`**
 
-**Group: `typecheck`**
-
-**Since**: `vnext`
-
-> [!NOTE]
-> This rule is recommended. A diagnostic error will appear when linting your code.
+**Group** [`typecheck`](../rules.md#typecheck) · **Recommended** · **Needs a database connection** · **Since** `0.27.0`  
+**Diagnostic** `lint/unknownType` · **Postgres error** `42704`
 
 ## Description
 A type does not exist.
