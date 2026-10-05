@@ -335,4 +335,9 @@
 1710:1 accepted
 1713:1 rejected 42601
 1714:1 rejected 42601
-1715:1 rejected 42P01
+1715:1 accepted
+1718:1 rejected 42P01
+1723:1 accepted
+1724:1 accepted
+1725:1 accepted
+1726:1 accepted

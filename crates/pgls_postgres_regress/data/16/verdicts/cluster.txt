@@ -173,4 +173,27 @@
 282:1 accepted
 283:1 skipped
 286:1 accepted
-287:1 rejected 42P01
+287:1 accepted
+290:1 skipped
+291:1 accepted
+292:1 accepted
+293:1 accepted
+294:1 accepted
+295:1 accepted
+296:1 skipped
+299:1 accepted
+300:1 accepted
+303:1 skipped
+304:1 accepted
+305:1 accepted
+306:1 accepted
+307:1 accepted
+308:1 accepted
+309:1 skipped
+312:1 accepted
+313:1 accepted
+314:1 accepted
+315:1 accepted
+316:1 rejected 42P01
+317:1 accepted
+319:1 accepted
