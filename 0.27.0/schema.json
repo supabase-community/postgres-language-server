@@ -918,7 +918,7 @@
           ]
         },
         "assignmentTypeMismatch": {
-          "description": "An expression assigned to a column cannot be coerced to that column's type. The rule needs a database connection to load the table and type catalog.",
+          "description": "An expression assigned to a column cannot be coerced to that column's type.",
           "anyOf": [
             {
               "$ref": "#/definitions/RuleConfiguration"
@@ -1182,7 +1182,7 @@
           ]
         },
         "functionArgumentMismatch": {
-          "description": "A function name and argument count exist, but its argument types do not select exactly one overload. The rule needs a database connection to load the function and type catalog.",
+          "description": "A function name and argument count exist, but its argument types do not select exactly one overload.",
           "anyOf": [
             {
               "$ref": "#/definitions/RuleConfiguration"
@@ -1215,7 +1215,7 @@
           ]
         },
         "invalidCast": {
-          "description": "An explicit cast is not permitted between the source and target types. The rule needs a database connection to load the type and cast catalog.",
+          "description": "An explicit cast is not permitted between the source and target types.",
           "anyOf": [
             {
               "$ref": "#/definitions/RuleConfiguration"
