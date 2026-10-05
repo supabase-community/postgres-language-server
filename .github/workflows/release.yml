@@ -276,3 +276,39 @@ jobs:
             echo "[Link](${{ steps.create-release.outputs.url }})"
             echo ""
           } >> "$GITHUB_STEP_SUMMARY"
+
+  # New rules are written with `version: "next"`. Once the version of a release is known, open a
+  # PR that sets it.
+  stamp_rule_versions:
+    name: Stamp Rule Versions
+    runs-on: ubuntu-latest
+    needs: [extract_version, create_changelog_and_release]
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Open a PR that stamps the version
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ needs.extract_version.outputs.version }}
+        run: |
+          files=$(grep -rl 'version: "next"' crates/pgls_analyser/src/lint || true)
+          if [ -z "$files" ]; then
+            echo "No unreleased rules."
+            exit 0
+          fi
+          branch="chore/stamp-rule-versions-$VERSION"
+          git config user.name 'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          git checkout -b "$branch"
+          echo "$files" | xargs sed -i "s/version: \"next\"/version: \"$VERSION\"/"
+          sed -i "s/\*\*Since\*\* \`Unreleased\`/**Since** \`$VERSION\`/" docs/reference/rules/*.md
+          git commit -am "chore: stamp the version of rules released in $VERSION"
+          git push origin "$branch"
+          gh pr create --base main --head "$branch" \
+            --title "chore: stamp the version of rules released in $VERSION" \
+            --body "Sets the version of the rules first released in $VERSION."

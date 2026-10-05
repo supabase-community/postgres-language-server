@@ -6,12 +6,33 @@ repo_name: supabase-community/postgres-language-server
 repo_url: https://github.com/supabase-community/postgres-language-server
 
 theme:
-  name: "readthedocs"
+  name: material
   features:
-    - navigation.expand
+    - content.code.copy
+    - content.tabs.link
+    - navigation.footer
+    - navigation.sections
+    - navigation.top
+    - navigation.tracking
+    - search.highlight
+  icon:
+    repo: fontawesome/brands/github
   palette:
-    primary: grey
-    accent: red
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      toggle:
+        icon: lucide/sun
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      toggle:
+        icon: lucide/moon
+        name: Switch to light mode
+
+extra:
+  version:
+    provider: mike
+
 nav:
   - Getting Started: getting_started.md
   - Manual Installation: manual_installation.md
@@ -31,6 +52,7 @@ nav:
       - Suppressions: guides/suppressions.md
       - Integrate with VCS: guides/vcs_integration.md
       - Continuous Integration: guides/continuous_integration.md
+      - Upgrading to 0.27: guides/upgrading_to_0_27.md
   - Reference:
       - CLI Commands: reference/cli.md
       - Linter Rules: reference/rules.md
@@ -41,8 +63,46 @@ nav:
       - Environment Variables: reference/env_variables.md
 
 plugins:
-  - gh-admonitions
+  - search
   - mike
+  # The docs generator lives in docs/codegen.
+  - exclude:
+      glob:
+        - codegen/**
+  - redirects:
+      # Database rule pages moved out of the linter rules folder in 0.27.
+      redirect_maps:
+        reference/rules/auth-rls-initplan.md: reference/database-rules/auth-rls-initplan.md
+        reference/rules/auth-users-exposed.md: reference/database-rules/auth-users-exposed.md
+        reference/rules/duplicate-index.md: reference/database-rules/duplicate-index.md
+        reference/rules/extension-in-public.md: reference/database-rules/extension-in-public.md
+        reference/rules/extension-versions-outdated.md: reference/database-rules/extension-versions-outdated.md
+        reference/rules/fkey-to-auth-unique.md: reference/database-rules/fkey-to-auth-unique.md
+        reference/rules/foreign-table-in-api.md: reference/database-rules/foreign-table-in-api.md
+        reference/rules/function-search-path-mutable.md: reference/database-rules/function-search-path-mutable.md
+        reference/rules/insecure-queue-exposed-in-api.md: reference/database-rules/insecure-queue-exposed-in-api.md
+        reference/rules/materialized-view-in-api.md: reference/database-rules/materialized-view-in-api.md
+        reference/rules/multiple-permissive-policies.md: reference/database-rules/multiple-permissive-policies.md
+        reference/rules/no-primary-key.md: reference/database-rules/no-primary-key.md
+        reference/rules/policy-exists-rls-disabled.md: reference/database-rules/policy-exists-rls-disabled.md
+        reference/rules/rls-disabled-in-public.md: reference/database-rules/rls-disabled-in-public.md
+        reference/rules/rls-enabled-no-policy.md: reference/database-rules/rls-enabled-no-policy.md
+        reference/rules/rls-policy-always-true.md: reference/database-rules/rls-policy-always-true.md
+        reference/rules/rls-references-user-metadata.md: reference/database-rules/rls-references-user-metadata.md
+        reference/rules/security-definer-view.md: reference/database-rules/security-definer-view.md
+        reference/rules/sensitive-columns-exposed.md: reference/database-rules/sensitive-columns-exposed.md
+        reference/rules/table-bloat.md: reference/database-rules/table-bloat.md
+        reference/rules/unindexed-foreign-keys.md: reference/database-rules/unindexed-foreign-keys.md
+        reference/rules/unsupported-reg-types.md: reference/database-rules/unsupported-reg-types.md
+        reference/rules/unused-index.md: reference/database-rules/unused-index.md
 
 markdown_extensions:
   - admonition
+  - attr_list
+  - md_in_html
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - toc:
+      permalink: true

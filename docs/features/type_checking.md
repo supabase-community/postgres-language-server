@@ -8,9 +8,7 @@ When the language server connects to your database, it loads a snapshot of its s
 
 Each statement is checked against this catalog by the rules of the `typecheck` group. The type checks follow Postgres' own algorithms for coercion, overload resolution, and common types, so they agree with what Postgres does at runtime.
 
-The rules only report what Postgres would certainly reject. Whenever the language server can't be sure, for example after a `DO` block or a `CREATE EXTENSION` whose effects it can't see, it stays silent.
-
-Statements that only reference objects that exist unchanged in the database are also checked with `EXPLAIN` as a fallback. This catches errors the static rules don't model yet, for `SELECT`, `INSERT`, `UPDATE`, and `DELETE` statements.
+The rules only report what Postgres would certainly reject. Whenever the language server can't be sure, for example after a `DO` block or a `CREATE EXTENSION` whose effects it can't see, it stays silent. They are tested against Postgres' own regression suite for versions 15 to 18.
 
 ## What Gets Checked
 
@@ -41,7 +39,7 @@ The `typecheck` rules are configured like any other linter rule or group:
 }
 ```
 
-`typecheck.enabled: false` turns off both the `typecheck` rules and the `EXPLAIN` fallback.
+`typecheck.enabled: false` turns type checking off entirely.
 
 You can configure the schemas included in the search path for type checking:
 
@@ -62,4 +60,11 @@ Even if not specified, the LSP will always search`"public"` in last position. A 
 
 ## Requirements
 
-Type checking requires an active database connection. Without one, the `typecheck` rules are skipped. The `EXPLAIN` fallback also needs permission to prepare statements in your database.
+Type checking needs a database connection to load the schema. Without one, the `typecheck` rules are skipped. The rules never send your statements to the database.
+
+## Legacy: `EXPLAIN`-based checking
+
+Before the `typecheck` rules, the language server checked statements by running `EXPLAIN` on them. This check still runs for `SELECT`, `INSERT`, `UPDATE`, and `DELETE` statements that only reference objects that exist unchanged in the database, and reports the errors Postgres returns. It needs permission to prepare statements in your database.
+
+!!! warning
+    The `EXPLAIN`-based check is deprecated and will be removed in the next major release. The `typecheck` rules replace it.

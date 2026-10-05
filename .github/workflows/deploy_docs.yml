@@ -1,19 +1,19 @@
 name: Build and Deploy Documentation
 
+# mike commits each version of the site to the gh-pages branch, which GitHub Pages serves.
 on:
   push:
     branches:
       - main
-    # paths:
-    #   - "docs/**"
-    #   - "mkdocs.yml"
   release:
     types: [published]
 
 permissions:
   contents: write
-  pages: write
-  id-token: write
+
+concurrency:
+  group: docs
+  cancel-in-progress: false
 
 jobs:
   build:
@@ -39,36 +39,21 @@ jobs:
           git config user.name 'github-actions[bot]'
           git config user.email 'github-actions[bot]@users.noreply.github.com'
 
-      - name: Build Docs Website
+      # Rules added since the last release show "Unreleased" until their version is stamped in the
+      # source; the released docs show the version they ship in.
+      - name: Stamp unreleased rules
+        if: github.event_name == 'release'
+        env:
+          VERSION: ${{ github.event.release.tag_name }}
+        run: sed -i "s/\*\*Since\*\* \`Unreleased\`/**Since** \`$VERSION\`/" docs/reference/rules/*.md
+
+      - name: Build and push the docs
+        env:
+          VERSION: ${{ github.event.release.tag_name }}
         run: |
           if [ "${{ github.event_name }}" = "release" ]; then
-            uv run mike deploy --push --update-aliases ${{ github.event.release.tag_name }} latest
+            uv run mike deploy --push --update-aliases "$VERSION" latest
             uv run mike set-default --push latest
           else
             uv run mike deploy --push main
           fi
-
-  deploy:
-    needs: build
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          ref: gh-pages
-
-      - name: Setup Pages
-        uses: actions/configure-pages@v5
-
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: '.'
-
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
-
