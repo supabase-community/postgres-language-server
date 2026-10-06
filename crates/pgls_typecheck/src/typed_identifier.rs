@@ -209,27 +209,40 @@ fn find_matching_identifier<'a>(
     parts: &[&str],
     identifiers: &'a [TypedIdentifier],
 ) -> Option<(&'a TypedIdentifier, usize)> {
+    // The parameter with this name ([`sql_fn_resolve_param_name`]).
+    //
+    // [`sql_fn_resolve_param_name`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/executor/functions.c#L515
     let param = |name: &str| {
         identifiers
             .iter()
             .find(|identifier| identifier.name.as_deref() == Some(name))
     };
+    // The parameter with this name, if `function` is the name of the function. `path` holds the
+    // function name.
     let function_param =
         |function: &str, name: &str| param(name).filter(|identifier| identifier.path == function);
 
+    // The returned position is the index of the parameter's name in `parts`. Any part after it is
+    // a field of a composite parameter, which `resolve_type` looks up.
     match parts {
         [name] => match name.strip_prefix('$') {
+            // `$n` is the n-th parameter, counting from 1. `$0` and numbers past the last
+            // parameter name nothing.
             Some(number) => {
                 let number = number.parse::<usize>().ok()?;
                 Some((identifiers.get(number.checked_sub(1)?)?, 0))
             }
+            // `param`
             None => Some((param(name)?, 0)),
         },
-        // `fn_name.param` takes precedence over `param.field`.
+        // `fn_name.param`, else `param.field`: the first reading takes precedence. If `first` is
+        // neither the function nor a parameter, as in `alias.column`, this is a column reference.
         [first, second] => function_param(first, second)
             .map(|identifier| (identifier, 1))
             .or_else(|| Some((param(first)?, 0))),
+        // `fn_name.param.field`: the first part must be the function name.
         [function, name, _field] => Some((function_param(function, name)?, 1)),
+        // Postgres never reads four or more parts as a parameter.
         _ => None,
     }
 }

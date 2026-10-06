@@ -50,7 +50,11 @@ pub fn get_sql_fn_signature(ast: &pgls_query::NodeEnum) -> Option<SQLFunctionSig
     for arg in &create_fn.parameters {
         if let Some(pgls_query::NodeEnum::FunctionParameter(node)) = &arg.node {
             // The body only sees the input parameters, by name and as `$n`
-            // ([`get_func_input_arg_names`] in [`prepare_sql_fn_parse_info`]).
+            // ([`get_func_input_arg_names`] in [`prepare_sql_fn_parse_info`]). `OUT` and
+            // `RETURNS TABLE` columns only describe the result: their names are not in scope,
+            // and they don't count for `$n`, so `$1` in `f(OUT x int, a text)` is `a`. `INOUT`
+            // and `VARIADIC` parameters are inputs and stay. The position in `fn_args` is the
+            // `n` of `$n`.
             //
             // [`get_func_input_arg_names`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/utils/fmgr/funcapi.c#L1522
             // [`prepare_sql_fn_parse_info`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/executor/functions.c#L251
