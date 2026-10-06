@@ -72,6 +72,12 @@ pub fn generate_env_variables(docs_dir: &Path) -> Result<()> {
     writeln!(
         content,
         "### `{}`\n\n {}\n",
+        env.pgpassfile.name(),
+        env.pgpassfile.description()
+    )?;
+    writeln!(
+        content,
+        "### `{}`\n\n {}\n",
         env.pgdatabase.name(),
         env.pgdatabase.description()
     )?;

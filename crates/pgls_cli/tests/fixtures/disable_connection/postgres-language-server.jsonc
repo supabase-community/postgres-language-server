@@ -1,0 +1,10 @@
+{
+  "$schema": "https://pg-language-server.com/schema/postgres-language-server.schema.json",
+  "db": {
+    // Nothing listens on port 1.
+    "host": "127.0.0.1",
+    "port": 1,
+    "connTimeoutSecs": 1,
+    "disableConnection": true
+  }
+}

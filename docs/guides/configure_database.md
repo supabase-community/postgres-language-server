@@ -24,7 +24,7 @@ Configure database connection details in your `postgres-language-server.jsonc` f
     "port": 5432,
     // Database username (default: "postgres")
     "username": "postgres",
-    // Database password (default: "postgres")
+    // Database password (default: `PGPASSWORD`, then the password file, then "postgres")
     "password": "your_password",
     // Database name to connect to (default: "postgres")
     "database": "your_database_name",
@@ -38,6 +38,24 @@ Configure database connection details in your `postgres-language-server.jsonc` f
 }
 ```
 
+## Password file
+
+When neither the configuration, the connection string, nor `PGPASSWORD` provides a password, the password is looked up in the [password file](https://www.postgresql.org/docs/current/libpq-pgpass.html), the same way `psql` and other libpq clients do:
+
+- The file is `PGPASSFILE` if set, else `~/.pgpass` (`%APPDATA%\postgresql\pgpass.conf` on Windows).
+- Each line is `hostname:port:database:username:password`. `*` matches any value, and `:` and `\` in a field are escaped with `\`. The first line that matches the host, port, database, and username of the connection wins.
+- The host is compared literally: an entry for `localhost` does not match `"host": "127.0.0.1"`.
+- On Unix-like systems such as Linux and macOS, the file is ignored if its group or others can access it. Restrict it with `chmod 0600 ~/.pgpass`.
+
+If no entry matches, the connection uses the default password `postgres`, except with a connection string, which then connects without a password.
+
+## Connection failures
+
+When a database is configured (`host` or `connectionString`, or `PGHOST` or `DATABASE_URL` in the environment), `postgres-language-server check` treats a failed connection or login as an error: it reports a `database/connection` diagnostic, still runs the checks that do not need the database, and exits with a non-zero code. This way a CI run cannot pass with the database-backed checks silently skipped.
+
+To check without a database, disable the connection with `--disable-db` or `"disableConnection": true` (see [Disabling Database Features](#disabling-database-features)).
+
+The language server keeps working without the database when the connection fails, and retries it in the background.
 
 ## Setting the connection from the editor
 

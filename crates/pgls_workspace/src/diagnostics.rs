@@ -242,14 +242,17 @@ impl From<VcsDiagnostic> for WorkspaceError {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, Diagnostic)]
+#[derive(Clone, Debug, Serialize, Deserialize, Diagnostic)]
 #[diagnostic(
     category = "database/connection",
-    message = "Database error: {message}"
+    message(
+        message("Database error: "{self.message}),
+        description = "Database error: {message}"
+    )
 )]
 pub struct DatabaseConnectionError {
-    message: String,
-    code: Option<String>,
+    pub(crate) message: String,
+    pub(crate) code: Option<String>,
 }
 
 #[cfg(feature = "db")]

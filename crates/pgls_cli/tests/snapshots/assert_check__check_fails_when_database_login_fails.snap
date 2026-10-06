@@ -1,0 +1,19 @@
+---
+source: crates/pgls_cli/tests/assert_check.rs
+expression: "run_check_without_db_env(&[\"--host\", opts.get_host(), \"--port\", &port,\n\"--username\", \"postgres\", \"--password\", \"wrong-password\", \"--database\",\nopts.get_database().unwrap_or(\"postgres\"), UNKNOWN_COLUMN_PATH,], &[],)"
+---
+status: failure
+stdout:
+Checked 1 file in <duration>. No fixes applied.
+Found 1 error.
+stderr:
+database/connection ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Database error: password authentication failed for user "postgres"
+  
+  i The checks that need the database were skipped. Fix the connection settings, or pass --disable-db or set db.disableConnection to check without a database.
+  
+
+check ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Some errors were emitted while running checks.

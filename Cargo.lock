@@ -3019,6 +3019,7 @@ dependencies = [
  "tokio",
  "tracing",
  "tree-sitter",
+ "url",
 ]
 
 [[package]]

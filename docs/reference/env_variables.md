@@ -39,6 +39,10 @@
 
  The password to connect to the database.
 
+### `PGPASSFILE`
+
+ The password file to look up the password in when none is configured. Default: `~/.pgpass`.
+
 ### `PGDATABASE`
 
  The name of the database to connect to.

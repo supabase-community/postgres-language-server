@@ -50,7 +50,10 @@ use crate::{
             CommandActionCategory, ExecuteStatementParams, ExecuteStatementResult,
         },
         completions::{CompletionsResult, GetCompletionsParams, get_statement_for_completions},
-        diagnostics::{PullDiagnosticsResult, PullFileDiagnosticsParams},
+        diagnostics::{
+            CheckDatabaseConnectionParams, CheckDatabaseConnectionResult, PullDiagnosticsResult,
+            PullFileDiagnosticsParams,
+        },
         format::{PullFileFormattingParams, PullFormattingResult, StatementFormatResult},
         on_hover::{OnHoverParams, OnHoverResult},
     },
@@ -77,6 +80,8 @@ mod connection_manager;
 pub(crate) mod document;
 mod migration;
 mod pg_query;
+#[cfg(feature = "db")]
+mod pgpass;
 mod snapshot_manager;
 mod sql_function;
 mod statement_identifier;
@@ -1200,6 +1205,38 @@ impl Workspace for WorkspaceServer {
             statements,
             diagnostics,
         })
+    }
+
+    #[cfg(feature = "db")]
+    fn check_database_connection(
+        &self,
+        _params: CheckDatabaseConnectionParams,
+    ) -> Result<CheckDatabaseConnectionResult, WorkspaceError> {
+        let settings = self.workspaces();
+        let Some(settings) = settings.settings() else {
+            return Ok(CheckDatabaseConnectionResult::default());
+        };
+
+        let result = self
+            .connection
+            .try_with_pool(&settings.db, |pool| self.snapshot.load(pool).map(|_| ()));
+        match result {
+            None | Some(Ok(())) => Ok(CheckDatabaseConnectionResult::default()),
+            Some(Err(err @ WorkspaceError::DatabaseConnectionError(_))) => {
+                Ok(CheckDatabaseConnectionResult {
+                    error: Some(err.to_string()),
+                })
+            }
+            Some(Err(err)) => Err(err),
+        }
+    }
+
+    #[cfg(not(feature = "db"))]
+    fn check_database_connection(
+        &self,
+        _params: CheckDatabaseConnectionParams,
+    ) -> Result<CheckDatabaseConnectionResult, WorkspaceError> {
+        Ok(CheckDatabaseConnectionResult::default())
     }
 
     #[cfg(not(feature = "db"))]

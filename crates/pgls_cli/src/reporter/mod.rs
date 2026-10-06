@@ -99,6 +99,14 @@ impl Report {
             traversal,
         }
     }
+
+    /// Adds a diagnostic that does not belong to a single file, ahead of the file diagnostics.
+    pub fn prepend_diagnostic(&mut self, diagnostic: Error) {
+        let (errors, warnings) = count_levels(std::slice::from_ref(&diagnostic));
+        self.errors += errors;
+        self.warnings += warnings;
+        self.diagnostics.insert(0, diagnostic);
+    }
 }
 
 pub trait ReportWriter {

@@ -163,6 +163,41 @@ pub struct CheckError {
     message: MessageAndDescription,
 }
 
+/// The configured database could not be used, so the checks that need it did not run.
+#[derive(Debug, Diagnostic)]
+#[diagnostic(category = "database/connection", severity = Error)]
+pub struct DatabaseUnavailable {
+    #[message]
+    #[description]
+    message: MessageAndDescription,
+
+    #[advice]
+    advice: DatabaseUnavailableAdvice,
+}
+
+impl DatabaseUnavailable {
+    pub fn new(message: impl Into<String>) -> Self {
+        Self {
+            message: MessageAndDescription::from(message.into()),
+            advice: DatabaseUnavailableAdvice,
+        }
+    }
+}
+
+#[derive(Debug)]
+struct DatabaseUnavailableAdvice;
+
+impl Advices for DatabaseUnavailableAdvice {
+    fn record(&self, visitor: &mut dyn Visit) -> std::io::Result<()> {
+        visitor.record_log(
+            LogCategory::Info,
+            &markup! {
+                "The checks that need the database were skipped. Fix the connection settings, or pass "<Emphasis>"--disable-db"</Emphasis>" or set "<Emphasis>"db.disableConnection"</Emphasis>" to check without a database."
+            },
+        )
+    }
+}
+
 #[derive(Debug, Diagnostic)]
 #[diagnostic(
     severity = Error,
