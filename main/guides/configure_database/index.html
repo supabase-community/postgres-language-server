@@ -756,6 +756,28 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#password-file" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Password file
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#connection-failures" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Connection failures
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#setting-the-connection-from-the-editor" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -1252,6 +1274,28 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#password-file" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Password file
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#connection-failures" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Connection failures
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#setting-the-connection-from-the-editor" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -1352,7 +1396,7 @@
 <span class="w">    </span><span class="nt">"port"</span><span class="p">:</span><span class="w"> </span><span class="mi">5432</span><span class="p">,</span>
 <span class="w">    </span><span class="c1">// Database username (default: "postgres")</span>
 <span class="w">    </span><span class="nt">"username"</span><span class="p">:</span><span class="w"> </span><span class="s2">"postgres"</span><span class="p">,</span>
-<span class="w">    </span><span class="c1">// Database password (default: "postgres")</span>
+<span class="w">    </span><span class="c1">// Database password (default: `PGPASSWORD`, then the password file, then "postgres")</span>
 <span class="w">    </span><span class="nt">"password"</span><span class="p">:</span><span class="w"> </span><span class="s2">"your_password"</span><span class="p">,</span>
 <span class="w">    </span><span class="c1">// Database name to connect to (default: "postgres")</span>
 <span class="w">    </span><span class="nt">"database"</span><span class="p">:</span><span class="w"> </span><span class="s2">"your_database_name"</span><span class="p">,</span>
@@ -1365,6 +1409,19 @@
 <span class="w">  </span><span class="p">}</span>
 <span class="p">}</span>
 </code></pre></div>
+<h2 id="password-file">Password file<a class="headerlink" href="#password-file" title="Permanent link">&para;</a></h2>
+<p>When neither the configuration, the connection string, nor <code>PGPASSWORD</code> provides a password, the password is looked up in the <a href="https://www.postgresql.org/docs/current/libpq-pgpass.html">password file</a>, the same way <code>psql</code> and other libpq clients do:</p>
+<ul>
+<li>The file is <code>PGPASSFILE</code> if set, else <code>~/.pgpass</code> (<code>%APPDATA%\postgresql\pgpass.conf</code> on Windows).</li>
+<li>Each line is <code>hostname:port:database:username:password</code>. <code>*</code> matches any value, and <code>:</code> and <code>\</code> in a field are escaped with <code>\</code>. The first line that matches the host, port, database, and username of the connection wins.</li>
+<li>The host is compared literally: an entry for <code>localhost</code> does not match <code>"host": "127.0.0.1"</code>.</li>
+<li>On Unix-like systems such as Linux and macOS, the file is ignored if its group or others can access it. Restrict it with <code>chmod 0600 ~/.pgpass</code>.</li>
+</ul>
+<p>If no entry matches, the connection uses the default password <code>postgres</code>, except with a connection string, which then connects without a password.</p>
+<h2 id="connection-failures">Connection failures<a class="headerlink" href="#connection-failures" title="Permanent link">&para;</a></h2>
+<p>When a database is configured (<code>host</code> or <code>connectionString</code>, or <code>PGHOST</code> or <code>DATABASE_URL</code> in the environment), <code>postgres-language-server check</code> treats a failed connection or login as an error: it reports a <code>database/connection</code> diagnostic, still runs the checks that do not need the database, and exits with a non-zero code. This way a CI run cannot pass with the database-backed checks silently skipped.</p>
+<p>To check without a database, disable the connection with <code>--disable-db</code> or <code>"disableConnection": true</code> (see <a href="#disabling-database-features">Disabling Database Features</a>).</p>
+<p>The language server keeps working without the database when the connection fails, and retries it in the background.</p>
 <h2 id="setting-the-connection-from-the-editor">Setting the connection from the editor<a class="headerlink" href="#setting-the-connection-from-the-editor" title="Permanent link">&para;</a></h2>
 <p>An editor extension can set the connection for a running language server session with the LSP request <code>pgls/set_configuration_overrides</code>, which takes any configuration and applies it on top of the configuration file:</p>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
