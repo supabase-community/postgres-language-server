@@ -3,7 +3,7 @@ mod lexed;
 mod lexer;
 mod params;
 
-pub use crate::codegen::syntax_kind::SyntaxKind;
+pub use crate::codegen::syntax_kind::{KeywordCategory, SyntaxKind};
 pub use crate::lexed::{LexDiagnostic, Lexed};
 pub use crate::lexer::Lexer;
 pub use crate::params::{

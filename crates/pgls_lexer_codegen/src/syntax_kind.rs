@@ -66,23 +66,35 @@ pub fn syntax_kind_mod() -> proc_macro2::TokenStream {
     let mut enum_variants: Vec<TokenStream> = Vec::new();
     let mut from_kw_match_arms: Vec<TokenStream> = Vec::new();
     let mut is_kw_match_arms: Vec<TokenStream> = Vec::new();
+    let mut keyword_category_match_arms: Vec<TokenStream> = Vec::new();
 
     let mut is_trivia_match_arms: Vec<TokenStream> = Vec::new();
 
     // collect keywords
     for kw in &all_keywords {
-        if kw.to_uppercase().contains("WHITESPACE") {
+        let name = &kw.name;
+        if name.to_uppercase().contains("WHITESPACE") {
             continue; // Skip whitespace as it is handled separately
         }
 
-        let kind_ident = format_ident!("{}_KW", kw.to_case(Case::UpperSnake));
+        let kind_ident = format_ident!("{}_KW", name.to_case(Case::UpperSnake));
+        let category = match kw.category.as_str() {
+            "UNRESERVED_KEYWORD" => format_ident!("Unreserved"),
+            "COL_NAME_KEYWORD" => format_ident!("ColName"),
+            "TYPE_FUNC_NAME_KEYWORD" => format_ident!("TypeFuncName"),
+            "RESERVED_KEYWORD" => format_ident!("Reserved"),
+            other => panic!("Unknown keyword category {other} for keyword {name}"),
+        };
 
         enum_variants.push(quote! { #kind_ident });
         from_kw_match_arms.push(quote! {
-            #kw => Some(SyntaxKind::#kind_ident)
+            #name => Some(SyntaxKind::#kind_ident)
         });
         is_kw_match_arms.push(quote! {
             SyntaxKind::#kind_ident => true
+        });
+        keyword_category_match_arms.push(quote! {
+            SyntaxKind::#kind_ident => Some(KeywordCategory::#category)
         });
     }
 
@@ -126,6 +138,22 @@ pub fn syntax_kind_mod() -> proc_macro2::TokenStream {
             #(#enum_variants),*,
         }
 
+        /// How reserved a keyword is, i.e. where Postgres accepts it as a name.
+        ///
+        /// See the categories in https://github.com/postgres/postgres/blob/REL_18_6/src/include/parser/kwlist.h
+        /// and the name classification hierarchy in https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/gram.y#L17619
+        #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
+        pub enum KeywordCategory {
+            /// Available for use as any kind of name.
+            Unreserved,
+            /// Can be a column or table name, but not a function or type name.
+            ColName,
+            /// Can be a function or type name, but not a column or table name.
+            TypeFuncName,
+            /// Can only be a column label after `AS`.
+            Reserved,
+        }
+
         impl SyntaxKind {
             pub(crate) fn from_keyword(ident: &str) -> Option<SyntaxKind> {
                 let lower_ident = ident.to_ascii_lowercase();
@@ -139,6 +167,14 @@ pub fn syntax_kind_mod() -> proc_macro2::TokenStream {
                 match self {
                     #(#is_kw_match_arms),*,
                     _ => false
+                }
+            }
+
+            /// The category of a keyword, `None` for any other token.
+            pub fn keyword_category(&self) -> Option<KeywordCategory> {
+                match self {
+                    #(#keyword_category_match_arms),*,
+                    _ => None
                 }
             }
 

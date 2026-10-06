@@ -5,7 +5,7 @@ mod dml;
 
 pub use common::source;
 
-use pgls_lexer::{Lexed, SyntaxKind};
+use pgls_lexer::{KeywordCategory, Lexed, SyntaxKind};
 use pgls_text_size::TextRange;
 
 use crate::splitter::common::{ReachedEOFException, SplitterResult};
@@ -23,6 +23,18 @@ pub static TRIVIA_TOKENS: &[SyntaxKind] = &[
     SyntaxKind::COMMENT,
     // LINE_ENDING is relevant
 ];
+
+/// Whether `kind` is a `ColId`, a name Postgres accepts for a table or column:
+/// an identifier, or an unreserved or column name keyword.
+///
+/// https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/gram.y#L17632
+fn is_col_id(kind: SyntaxKind) -> bool {
+    kind == SyntaxKind::IDENT
+        || matches!(
+            kind.keyword_category(),
+            Some(KeywordCategory::Unreserved | KeywordCategory::ColName)
+        )
+}
 
 /// Internal error type used during splitting
 #[derive(Debug, Clone)]
@@ -198,6 +210,16 @@ impl<'a> Splitter<'a> {
                 !self.blank_line_is_boundary || self.lexed.line_ending_count(idx) < 2
             }
             _ => false,
+        }
+    }
+
+    /// Like [`expect`] for a `ColId`, see [`is_col_id`].
+    fn expect_col_id(&mut self) -> SplitterResult {
+        if is_col_id(self.current()) {
+            self.advance()?;
+            Ok(())
+        } else {
+            self.expect(SyntaxKind::IDENT)
         }
     }
 

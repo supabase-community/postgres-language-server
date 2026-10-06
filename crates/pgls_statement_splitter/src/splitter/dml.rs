@@ -10,10 +10,13 @@ use super::{
 
 pub(crate) fn cte(p: &mut Splitter) -> SplitterResult {
     p.expect(SyntaxKind::WITH_KW)?;
-    p.eat(SyntaxKind::RECURSIVE_KW)?;
+    // RECURSIVE is unreserved, so `WITH recursive AS (...)` names a CTE
+    if !matches!(p.look_ahead(true), SyntaxKind::AS_KW | SyntaxKind::L_PAREN) {
+        p.eat(SyntaxKind::RECURSIVE_KW)?;
+    }
 
     loop {
-        p.expect(SyntaxKind::IDENT)?;
+        p.expect_col_id()?;
         if p.current() == SyntaxKind::L_PAREN {
             parenthesis(p)?;
         }
