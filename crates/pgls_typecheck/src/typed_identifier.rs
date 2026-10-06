@@ -198,28 +198,53 @@ pub fn resolve_default_value(pg_type: &PostgresType) -> String {
     }
 }
 
-// Helper function to find the matching identifier and its position in the path
+/// Finds the parameter a reference names, and the position of the parameter's name in the path.
+/// Port of the name forms of [`sql_fn_param_ref`] and [`sql_fn_post_column_ref`]: `$n`, `param`,
+/// `fn_name.param`, `param.field` and `fn_name.param.field`. Any other qualified name, such as
+/// `alias.column`, is not a parameter.
+///
+/// [`sql_fn_param_ref`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/executor/functions.c#L469
+/// [`sql_fn_post_column_ref`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/executor/functions.c#L353
 fn find_matching_identifier<'a>(
     parts: &[&str],
     identifiers: &'a [TypedIdentifier],
 ) -> Option<(&'a TypedIdentifier, usize)> {
-    // Case 1: Parameter reference (e.g., $2)
-    if parts.len() == 1 && parts[0].starts_with('$') {
-        let idx = parts[0][1..].parse::<usize>().ok()?;
-        let identifier = identifiers.get(idx - 1)?;
-        return Some((identifier, idx));
-    }
-
-    // Case 2: Named reference (e.g., fn_name.custom_type.v_test2)
-    identifiers.iter().find_map(|identifier| {
-        let name = identifier.name.as_ref()?;
-
-        parts
+    // The parameter with this name ([`sql_fn_resolve_param_name`]).
+    //
+    // [`sql_fn_resolve_param_name`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/executor/functions.c#L515
+    let param = |name: &str| {
+        identifiers
             .iter()
-            .enumerate()
-            .find(|(_idx, part)| **part == name)
-            .map(|(idx, _)| (identifier, idx))
-    })
+            .find(|identifier| identifier.name.as_deref() == Some(name))
+    };
+    // The parameter with this name, if `function` is the name of the function. `path` holds the
+    // function name.
+    let function_param =
+        |function: &str, name: &str| param(name).filter(|identifier| identifier.path == function);
+
+    // The returned position is the index of the parameter's name in `parts`. Any part after it is
+    // a field of a composite parameter, which `resolve_type` looks up.
+    match parts {
+        [name] => match name.strip_prefix('$') {
+            // `$n` is the n-th parameter, counting from 1. `$0` and numbers past the last
+            // parameter name nothing.
+            Some(number) => {
+                let number = number.parse::<usize>().ok()?;
+                Some((identifiers.get(number.checked_sub(1)?)?, 0))
+            }
+            // `param`
+            None => Some((param(name)?, 0)),
+        },
+        // `fn_name.param`, else `param.field`: the first reading takes precedence. If `first` is
+        // neither the function nor a parameter, as in `alias.column`, this is a column reference.
+        [first, second] => function_param(first, second)
+            .map(|identifier| (identifier, 1))
+            .or_else(|| Some((param(first)?, 0))),
+        // `fn_name.param.field`: the first part must be the function name.
+        [function, name, _field] => Some((function_param(function, name)?, 1)),
+        // Postgres never reads four or more parts as a parameter.
+        _ => None,
+    }
 }
 
 // Helper function to resolve the type based on the identifier and path
@@ -467,6 +492,42 @@ mod tests {
 
         // `ctid` is a system column, so it is not resolved and stays as-is.
         assert_eq!(replacement.text_replacement.text(), "select row_arg.ctid");
+    }
+
+    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    async fn test_qualified_column_is_not_a_parameter(pool: PgPool) {
+        // create function next_after(received_at timestamptz) returns bigint as $$
+        //   select r.id from ev r where r.received_at > received_at order by r.received_at
+        // $$ language sql;
+        // `r.received_at` is the column of `r`, while `received_at` and
+        // `next_after.received_at` are the parameter.
+        let input = "select r.id from ev r where r.received_at > received_at and next_after.received_at is not null order by r.received_at";
+
+        let identifiers = vec![super::TypedIdentifier {
+            path: "next_after".to_string(),
+            name: Some("received_at".to_string()),
+            type_: super::IdentifierType {
+                schema: None,
+                name: "timestamptz".to_string(),
+                is_array: false,
+            },
+        }];
+
+        let mut parser = tree_sitter::Parser::new();
+        parser
+            .set_language(&pgls_treesitter_grammar::LANGUAGE.into())
+            .expect("Error loading sql language");
+
+        let snapshot = Snapshot::load(&pool).await.unwrap();
+
+        let tree = parser.parse(input, None).unwrap();
+
+        let replacement = super::apply_identifiers(identifiers, &snapshot, &tree, input);
+
+        assert_eq!(
+            replacement.text_replacement.text(),
+            "select r.id from ev r where r.received_at > '1970-01-01 00:00:00+00' and '1970-01-01 00:00:00+00' is not null order by r.received_at"
+        );
     }
 
     #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
