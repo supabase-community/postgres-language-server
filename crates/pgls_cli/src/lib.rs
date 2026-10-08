@@ -11,6 +11,8 @@ use pgls_configuration::Merge;
 use pgls_configuration::PartialConfiguration;
 use pgls_console::{ColorMode, Console, ConsoleExt, markup};
 use pgls_fs::{ConfigName, FileSystem, OsFileSystem};
+use std::path::PathBuf;
+
 use pgls_workspace::{App, DynRef, Workspace, WorkspaceRef};
 
 mod changed;
@@ -110,6 +112,14 @@ impl<'app> CliSession<'app> {
                     since,
                 },
             ),
+            PgLSCommand::Parse {
+                file,
+                stdin_file_path,
+            } => {
+                let path = file.or_else(|| stdin_file_path.as_deref().map(PathBuf::from));
+                let input = commands::parse::read_input(path.as_deref())?;
+                commands::parse::run_parse(&input, path.as_deref())
+            }
             PgLSCommand::Clean => commands::clean::clean(self),
             PgLSCommand::Start {
                 config_path,

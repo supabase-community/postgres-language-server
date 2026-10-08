@@ -14,6 +14,7 @@ pub(crate) mod daemon;
 pub(crate) mod dblint;
 pub(crate) mod format;
 pub(crate) mod init;
+pub(crate) mod parse;
 pub(crate) mod schema_export;
 pub(crate) mod version;
 
@@ -189,6 +190,18 @@ pub enum PgLSCommand {
     },
 
     #[bpaf(command)]
+    /// Parses a SQL file (or standard input) and writes the parse tree as a protobuf `ParseResult` message.
+    #[bpaf(command)]
+    Parse {
+        /// Path to the SQL file to parse. When omitted, the SQL is read from standard input.
+        #[bpaf(long("file"), argument("PATH"), optional)]
+        file: Option<PathBuf>,
+
+        /// Alias of --file, mirroring the format command.
+        #[bpaf(long("stdin-file-path"), argument("PATH"), optional, hide_usage)]
+        stdin_file_path: Option<String>,
+    },
+
     /// Cleans the logs emitted by the daemon.
     Clean,
 
@@ -281,6 +294,7 @@ impl PgLSCommand {
             | PgLSCommand::RunServer { .. }
             | PgLSCommand::Clean
             | PgLSCommand::SchemaExport { .. }
+            | PgLSCommand::Parse { .. }
             | PgLSCommand::PrintSocket => None,
         }
     }

@@ -15,16 +15,18 @@
   * [`postgres-language-server stop`↴](#postgres-language-server-stop)
   * [`postgres-language-server init`↴](#postgres-language-server-init)
   * [`postgres-language-server lsp-proxy`↴](#postgres-language-server-lsp-proxy)
-  * [`postgres-language-server clean`↴](#postgres-language-server-clean)
+  * [`postgres-language-server parse`↴](#postgres-language-server-parse)
   * [`postgres-language-server schema-export`↴](#postgres-language-server-schema-export)
 
 ## postgres-language-server
 
 Postgres Language Server official CLI. Use it to check the health of your project or run it to check single files.
 
-**Usage**: **`postgres-language-server`** _`COMMAND ...`_
+**Usage**: **`postgres-language-server`** (_`COMMAND ...`_ | **`--clean`**)
 
 **Available options:**
+- **`    --clean`** &mdash; 
+  Cleans the logs emitted by the daemon.
 - **`-h`**, **`--help`** &mdash; 
   Prints help information
 - **`-V`**, **`--version`** &mdash; 
@@ -49,8 +51,8 @@ Postgres Language Server official CLI. Use it to check the health of your projec
   Bootstraps a new project. Creates a configuration file with some defaults.
 - **`lsp-proxy`** &mdash; 
   Acts as a server for the Language Server Protocol over stdin/stdout.
-- **`clean`** &mdash; 
-  Cleans the logs emitted by the daemon.
+- **`parse`** &mdash; 
+  Parses a SQL file (or standard input) and writes the parse tree as a protobuf `ParseResult` message.
 - **`schema-export`** &mdash; 
   Exports the database schema to JSON for use with WASM bindings.
 
@@ -570,13 +572,17 @@ Acts as a server for the Language Server Protocol over stdin/stdout.
   Prints help information
 
 
-## postgres-language-server clean
+## postgres-language-server parse
 
-Cleans the logs emitted by the daemon.
+Parses a SQL file (or standard input) and writes the parse tree as a protobuf `ParseResult` message.
 
-**Usage**: **`postgres-language-server`** **`clean`** 
+**Usage**: **`postgres-language-server`** **`parse`** \[**`--file`**=_`PATH`_\]
 
 **Available options:**
+- **`    --file`**=_`PATH`_ &mdash; 
+  Path to the SQL file to parse. When omitted, the SQL is read from standard input.
+- **`    --stdin-file-path`**=_`PATH`_ &mdash; 
+  Alias of --file, mirroring the format command.
 - **`-h`**, **`--help`** &mdash; 
   Prints help information
 
