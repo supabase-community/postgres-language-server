@@ -1,0 +1,18 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+assertion_line: 184
+input_file: crates/pgls_pretty_print/tests/data/single/min_max_expr_1.sql
+---
+SELECT
+	*
+FROM
+	t
+	LEFT OUTER JOIN
+		payment_types AS source_payment_types
+	ON source_payment_types.value_en =
+		GREATEST(
+			rent_issuance_parameters_payment_types.value
+			, translating.leases.rent_issuance_parameters_payment_type
+			, staging.leases.payment_type_source
+		)
+;

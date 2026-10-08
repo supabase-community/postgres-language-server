@@ -1,5 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
+assertion_line: 286
 input_file: crates/pgls_pretty_print/tests/data/multi/opr_sanity.sql
 ---
 select
@@ -1360,8 +1361,10 @@ where
     not ptr.pronargs =
     case
       when a.aggkind = 'n' then p.pronargs + 1
-      else greatest(p.pronargs - a.aggnumdirectargs,
-      1) +
+      else greatest(
+        p.pronargs - a.aggnumdirectargs,
+        1
+      ) +
       1
     end or
     not binary_coercible(
@@ -1514,8 +1517,10 @@ where
     not ptr.pronargs =
     case
       when a.aggkind = 'n' then p.pronargs + 1
-      else greatest(p.pronargs - a.aggnumdirectargs,
-      1) +
+      else greatest(
+        p.pronargs - a.aggnumdirectargs,
+        1
+      ) +
       1
     end or
     not binary_coercible(
@@ -1561,8 +1566,10 @@ where
     not ptr.pronargs =
     case
       when a.aggkind = 'n' then p.pronargs + 1
-      else greatest(p.pronargs - a.aggnumdirectargs,
-      1) +
+      else greatest(
+        p.pronargs - a.aggnumdirectargs,
+        1
+      ) +
       1
     end or
     not binary_coercible(
