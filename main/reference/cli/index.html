@@ -1127,13 +1127,15 @@
 <li><a href="#postgres-language-server-stop"><code>postgres-language-server stop</code>↴</a></li>
 <li><a href="#postgres-language-server-init"><code>postgres-language-server init</code>↴</a></li>
 <li><a href="#postgres-language-server-lsp-proxy"><code>postgres-language-server lsp-proxy</code>↴</a></li>
-<li><a href="#postgres-language-server-clean"><code>postgres-language-server clean</code>↴</a></li>
+<li><a href="#postgres-language-server-parse"><code>postgres-language-server parse</code>↴</a></li>
 <li><a href="#postgres-language-server-schema-export"><code>postgres-language-server schema-export</code>↴</a></li>
 </ul>
 <h2 id="postgres-language-server">postgres-language-server<a class="headerlink" href="#postgres-language-server" title="Permanent link">&para;</a></h2>
 <p>Postgres Language Server official CLI. Use it to check the health of your project or run it to check single files.</p>
-<p><strong>Usage</strong>: <strong><code>postgres-language-server</code></strong> <em><code>COMMAND ...</code></em></p>
+<p><strong>Usage</strong>: <strong><code>postgres-language-server</code></strong> (<em><code>COMMAND ...</code></em> | <strong><code>--clean</code></strong>)</p>
 <p><strong>Available options:</strong>
+- <strong><code>--clean</code></strong> &mdash; 
+  Cleans the logs emitted by the daemon.
 - <strong><code>-h</code></strong>, <strong><code>--help</code></strong> &mdash; 
   Prints help information
 - <strong><code>-V</code></strong>, <strong><code>--version</code></strong> &mdash; 
@@ -1155,8 +1157,8 @@
   Bootstraps a new project. Creates a configuration file with some defaults.
 - <strong><code>lsp-proxy</code></strong> &mdash; 
   Acts as a server for the Language Server Protocol over stdin/stdout.
-- <strong><code>clean</code></strong> &mdash; 
-  Cleans the logs emitted by the daemon.
+- <strong><code>parse</code></strong> &mdash; 
+  Parses a SQL file (or standard input) and writes the parse tree as a protobuf <code>ParseResult</code> message.
 - <strong><code>schema-export</code></strong> &mdash; 
   Exports the database schema to JSON for use with WASM bindings.</p>
 <h2 id="postgres-language-server-version">postgres-language-server version<a class="headerlink" href="#postgres-language-server-version" title="Permanent link">&para;</a></h2>
@@ -1567,10 +1569,14 @@
 <p>Uses environment variable <strong><code>PGLS_CONFIG_PATH</code></strong>
 - <strong><code>-h</code></strong>, <strong><code>--help</code></strong> &mdash; 
   Prints help information</p>
-<h2 id="postgres-language-server-clean">postgres-language-server clean<a class="headerlink" href="#postgres-language-server-clean" title="Permanent link">&para;</a></h2>
-<p>Cleans the logs emitted by the daemon.</p>
-<p><strong>Usage</strong>: <strong><code>postgres-language-server</code></strong> <strong><code>clean</code></strong> </p>
+<h2 id="postgres-language-server-parse">postgres-language-server parse<a class="headerlink" href="#postgres-language-server-parse" title="Permanent link">&para;</a></h2>
+<p>Parses a SQL file (or standard input) and writes the parse tree as a protobuf <code>ParseResult</code> message.</p>
+<p><strong>Usage</strong>: <strong><code>postgres-language-server</code></strong> <strong><code>parse</code></strong> [<strong><code>--file</code></strong>=<em><code>PATH</code></em>]</p>
 <p><strong>Available options:</strong>
+- <strong><code>--file</code></strong>=<em><code>PATH</code></em> &mdash; 
+  Path to the SQL file to parse. When omitted, the SQL is read from standard input.
+- <strong><code>--stdin-file-path</code></strong>=<em><code>PATH</code></em> &mdash; 
+  Alias of --file, mirroring the format command.
 - <strong><code>-h</code></strong>, <strong><code>--help</code></strong> &mdash; 
   Prints help information</p>
 <h2 id="postgres-language-server-schema-export">postgres-language-server schema-export<a class="headerlink" href="#postgres-language-server-schema-export" title="Permanent link">&para;</a></h2>
