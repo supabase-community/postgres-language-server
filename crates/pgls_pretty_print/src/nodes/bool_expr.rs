@@ -16,7 +16,7 @@ pub(super) fn emit_bool_expr(e: &mut EventEmitter, n: &BoolExpr) {
         BoolExprType::Undefined => unreachable!("Undefined BoolExprType"),
     }
 
-    e.group_end();
+    e.expression_group_end();
 }
 
 fn emit_variadic_bool_expr(e: &mut EventEmitter, n: &BoolExpr, keyword: TokenKind) {
@@ -29,6 +29,13 @@ fn emit_variadic_bool_expr(e: &mut EventEmitter, n: &BoolExpr, keyword: TokenKin
     for (idx, arg) in n.args.iter().enumerate() {
         if idx > 0 {
             if leading {
+                if let Some(location) = arg
+                    .node
+                    .as_ref()
+                    .and_then(crate::comments::first_node_location)
+                {
+                    e.take_own_line_leading_comments_at(location);
+                }
                 // The break opportunity sits before the keyword, so a broken condition reads
                 // "\n\tAND b = 2" while a single line one still reads "a = 1 AND b = 2".
                 if matches!(e.config().layout, crate::Layout::Expanded) {

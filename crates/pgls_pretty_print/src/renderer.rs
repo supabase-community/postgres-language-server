@@ -50,6 +50,7 @@ pub struct Renderer<W: Write> {
     current_line_length: usize,
     indent_level: usize,
     at_line_start: bool,
+    after_line_comment: bool,
 }
 
 impl<W: Write> Renderer<W> {
@@ -60,6 +61,7 @@ impl<W: Write> Renderer<W> {
             current_line_length: 0,
             indent_level: 0,
             at_line_start: true,
+            after_line_comment: false,
         }
     }
 
@@ -84,8 +86,9 @@ impl<W: Write> Renderer<W> {
                     self.handle_line(line_type)?;
                     i += 1;
                 }
-                LayoutEvent::Comment { text, .. } => {
+                LayoutEvent::Comment { text, line_comment } => {
                     self.write_text(text)?;
+                    self.after_line_comment = *line_comment;
                     i += 1;
                 }
                 LayoutEvent::GroupStart { .. } => {
@@ -186,8 +189,9 @@ impl<W: Write> Renderer<W> {
                     }
                     i += 1;
                 }
-                LayoutEvent::Comment { text, .. } => {
+                LayoutEvent::Comment { text, line_comment } => {
                     self.write_text(text)?;
+                    self.after_line_comment = *line_comment;
                     i += 1;
                 }
                 LayoutEvent::GroupStart { kind } => {
@@ -366,6 +370,7 @@ impl<W: Write> Renderer<W> {
     }
 
     fn write_text(&mut self, text: &str) -> Result<(), std::fmt::Error> {
+        self.after_line_comment = false;
         if self.at_line_start {
             self.write_indentation()?;
             self.at_line_start = false;
@@ -390,6 +395,9 @@ impl<W: Write> Renderer<W> {
     }
 
     fn write_line_break(&mut self) -> Result<(), std::fmt::Error> {
+        if self.at_line_start && self.after_line_comment {
+            return Ok(());
+        }
         writeln!(self.writer)?;
         self.current_line_length = 0;
         self.at_line_start = true;

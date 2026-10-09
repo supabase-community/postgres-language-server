@@ -120,7 +120,7 @@ impl EventEmitter {
         for comment in comments {
             let line_comment = comment.line_comment;
             let multiline = comment.text.contains('\n');
-            if line_comment && self.leading_line_comments_require_break {
+            if line_comment && comment.own_line && self.leading_line_comments_require_break {
                 self.force_current_line_break();
             }
             self.comment(comment.text, line_comment);
@@ -208,6 +208,29 @@ impl EventEmitter {
 
     pub fn group_end(&mut self) {
         self.events.push(LayoutEvent::GroupEnd);
+    }
+
+    pub fn expression_group_end(&mut self) {
+        // A comment after the final operand should not force the whole expression to expand.
+        // Keep its suffix outside the group while preserving its position in the SQL.
+        let suffix_start = self.events.len().checked_sub(3);
+        if let Some(start) = suffix_start
+            && matches!(
+                &self.events[start..],
+                [
+                    LayoutEvent::Space,
+                    LayoutEvent::Comment {
+                        line_comment: true,
+                        ..
+                    },
+                    LayoutEvent::Line(LineType::Hard)
+                ]
+            )
+        {
+            self.events.insert(start, LayoutEvent::GroupEnd);
+            return;
+        }
+        self.group_end();
     }
 
     pub fn indent_start(&mut self) {

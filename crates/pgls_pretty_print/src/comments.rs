@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use pgls_query::{NodeEnum, protobuf::Token};
+use pgls_query::{NodeEnum, NodeRef, protobuf::BoolExprType, protobuf::Token};
 
 use crate::codegen::node_location::node_location;
 
@@ -161,13 +161,17 @@ fn ends_with_clause_header(line_prefix: &str) -> bool {
 
 /// Returns whether `line_prefix` ends with punctuation that separates AST nodes.
 ///
-/// Commas, brackets and braces are emitted by parent formatters rather than a dedicated AST node.
+/// Commas, opening parentheses, brackets and braces are emitted by parent formatters rather than
+/// a dedicated AST node.
 /// A comment after one of them must be emitted before the following node; otherwise it is
 /// incorrectly attached to the last child inside the preceding expression on the next pass.
-/// Parentheses are deliberately excluded: they can close a semantic expression, so a following
-/// comment belongs to that expression rather than to the next node.
+/// A closing parenthesis can finish a semantic expression, so a following comment belongs to that
+/// expression rather than to the next node.
 fn ends_with_structural_separator(line_prefix: &str) -> bool {
-    matches!(line_prefix.trim_end().chars().last(), Some(',' | ']' | '}'))
+    matches!(
+        line_prefix.trim_end().chars().last(),
+        Some(',' | '(' | ']' | '}')
+    )
 }
 
 struct SourceComment {
@@ -211,9 +215,21 @@ fn collect_comments(sql: &str) -> Vec<SourceComment> {
 
 fn collect_node_locations(ast: &NodeEnum) -> Vec<i32> {
     ast.iter()
+        // AND/OR locations point between their operands, but the BoolExpr is emitted before
+        // either operand. Attach comments there to the following operand instead.
+        .filter(|node| {
+            !matches!(node, NodeRef::BoolExpr(expr) if expr.boolop() != BoolExprType::NotExpr)
+        })
         .filter_map(|node| node_location(&node))
         .filter(|location| *location >= 0)
         .collect()
+}
+
+pub(crate) fn first_node_location(ast: &NodeEnum) -> Option<i32> {
+    ast.iter()
+        .filter_map(|node| node_location(&node))
+        .filter(|location| *location >= 0)
+        .min()
 }
 
 #[cfg(test)]
