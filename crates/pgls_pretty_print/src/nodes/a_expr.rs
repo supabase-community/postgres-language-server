@@ -9,6 +9,14 @@ use crate::{
 use super::node_list::emit_fill_comma_separated_list;
 
 pub(super) fn emit_a_expr(e: &mut EventEmitter, n: &AExpr) {
+    if let Some(location) = n
+        .lexpr
+        .as_ref()
+        .and_then(|node| node.node.as_ref())
+        .and_then(crate::comments::first_node_location)
+    {
+        e.take_leading_comments_at(location);
+    }
     e.group_start(GroupKind::AExpr);
 
     match n.kind() {
@@ -29,7 +37,7 @@ pub(super) fn emit_a_expr(e: &mut EventEmitter, n: &AExpr) {
         AExprKind::Undefined => {}
     }
 
-    e.group_end();
+    e.expression_group_end();
 }
 
 // Basic binary operator: left op right
