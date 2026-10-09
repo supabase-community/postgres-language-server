@@ -9,6 +9,17 @@ select max(id) from users
 ```
 
 # Hover Results
+### `pg_catalog.max(anyarray) → anyarray`  
+```plain  
+Aggregate - Immutable - Security INVOKER  
+```  
+---    
+```sql  
+  
+```
+
+---
+
 ### `pg_catalog.max(bigint) → bigint`  
 ```plain  
 Aggregate - Immutable - Security INVOKER  
@@ -174,17 +185,6 @@ Aggregate - Immutable - Security INVOKER
 
 ---
 
-### `pg_catalog.max(anyarray) → anyarray`  
-```plain  
-Aggregate - Immutable - Security INVOKER  
-```  
----    
-```sql  
-  
-```
-
----
-
 ### `pg_catalog.max(character) → character`  
 ```plain  
 Aggregate - Immutable - Security INVOKER  
@@ -197,6 +197,17 @@ Aggregate - Immutable - Security INVOKER
 ---
 
 ### `pg_catalog.max(tid) → tid`  
+```plain  
+Aggregate - Immutable - Security INVOKER  
+```  
+---    
+```sql  
+  
+```
+
+---
+
+### `pg_catalog.max(anyenum) → anyenum`  
 ```plain  
 Aggregate - Immutable - Security INVOKER  
 ```  
@@ -230,17 +241,6 @@ Aggregate - Immutable - Security INVOKER
 ---
 
 ### `pg_catalog.max(xid8) → xid8`  
-```plain  
-Aggregate - Immutable - Security INVOKER  
-```  
----    
-```sql  
-  
-```
-
----
-
-### `pg_catalog.max(anyenum) → anyenum`  
 ```plain  
 Aggregate - Immutable - Security INVOKER  
 ```  

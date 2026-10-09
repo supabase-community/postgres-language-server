@@ -131,4 +131,7 @@ from
       ) as t2
     group by
       t1.oid
-  ) f_args on f_args.oid = f.oid;
+  ) f_args on f_args.oid = f.oid
+-- keep the order stable across query plans, consumers list overloads in this order
+order by
+  f.oid;
