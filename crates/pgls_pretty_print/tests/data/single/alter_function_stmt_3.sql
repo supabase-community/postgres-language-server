@@ -1,0 +1,1 @@
+ALTER PROCEDURE do_work(integer) SECURITY INVOKER SET work_mem = '64MB' RESET ALL;

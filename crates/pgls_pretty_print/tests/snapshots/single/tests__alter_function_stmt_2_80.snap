@@ -1,0 +1,14 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/single/alter_function_stmt_2.sql
+---
+alter function my_schema.compute_totals(int, text)
+  immutable
+  leakproof
+  strict
+  security definer
+  parallel SAFE
+  cost 10
+  rows 5
+  set search_path to public, pg_temp
+  reset work_mem;
