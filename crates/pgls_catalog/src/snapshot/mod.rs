@@ -66,16 +66,35 @@ pub struct Snapshot {
     pub typing_metadata: bool,
 }
 
+/// Logs the failure of a non-essential part of the snapshot and yields `None`.
+///
+/// A single bad catalog row must not discard the entire snapshot, which would disable
+/// every database-backed feature instead of only the one that failed to load.
+#[cfg(feature = "db")]
+fn lenient<T>(name: &str, result: Result<Vec<T>, sqlx::Error>) -> Option<Vec<T>> {
+    match result {
+        Ok(items) => Some(items),
+        Err(err) => {
+            tracing::warn!(
+                "Failed to load {} into the database snapshot: {}",
+                name,
+                err
+            );
+            None
+        }
+    }
+}
+
 impl Snapshot {
     #[cfg(feature = "db")]
     pub async fn load(pool: &PgPool) -> Result<Snapshot, sqlx::Error> {
         let (
             schemas,
             tables,
+            columns,
+            versions,
             functions,
             types,
-            versions,
-            columns,
             policies,
             triggers,
             roles,
@@ -84,13 +103,13 @@ impl Snapshot {
             sequences,
             casts,
             operators,
-        ) = futures_util::try_join!(
+        ) = futures_util::join!(
             Schema::load(pool),
             Table::load(pool),
+            Column::load(pool),
+            Version::load(pool),
             Function::load(pool),
             PostgresType::load(pool),
-            Version::load(pool),
-            Column::load(pool),
             Policy::load(pool),
             Trigger::load(pool),
             Role::load(pool),
@@ -99,29 +118,43 @@ impl Snapshot {
             Sequence::load(pool),
             PostgresCast::load(pool),
             PostgresOperator::load(pool),
-        )?;
+        );
 
-        let version = versions
-            .into_iter()
-            .next()
-            .expect("Expected at least one version row");
+        // schemas, tables and columns are what the core features are built on, so a
+        // failure there is still a hard error.
+        let schemas = schemas?;
+        let tables = tables?;
+        let columns = columns?;
+
+        let version = versions?.into_iter().next().unwrap_or_default();
+
+        let functions = lenient("functions", functions);
+        let types = lenient("types", types);
+        let casts = lenient("casts", casts);
+        let operators = lenient("operators", operators);
+
+        // type inference may only report what Postgres would certainly reject, so it
+        // needs the full picture: if any of the objects it relies on is missing, the
+        // typing metadata counts as incomplete.
+        let typing_metadata =
+            functions.is_some() && types.is_some() && casts.is_some() && operators.is_some();
 
         Ok(Snapshot {
             schemas,
             tables,
-            functions,
-            types,
-            version,
             columns,
-            policies,
-            triggers,
-            roles,
-            extensions,
-            indexes,
-            sequences,
-            casts,
-            operators,
-            typing_metadata: true,
+            version,
+            functions: functions.unwrap_or_default(),
+            types: types.unwrap_or_default(),
+            casts: casts.unwrap_or_default(),
+            operators: operators.unwrap_or_default(),
+            policies: lenient("policies", policies).unwrap_or_default(),
+            triggers: lenient("triggers", triggers).unwrap_or_default(),
+            roles: lenient("roles", roles).unwrap_or_default(),
+            extensions: lenient("extensions", extensions).unwrap_or_default(),
+            indexes: lenient("indexes", indexes).unwrap_or_default(),
+            sequences: lenient("sequences", sequences).unwrap_or_default(),
+            typing_metadata,
         })
     }
 
@@ -320,6 +353,34 @@ mod tests {
                 .as_ref()
                 .is_some_and(|s| s.variadic_element.is_some())
         }));
+    }
+
+    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    async fn it_loads_with_an_orphaned_catalog_row(test_db: PgPool) {
+        // a `pg_proc` row whose namespace does not exist anymore used to make the
+        // `functions` query return a null schema, which failed to decode and discarded
+        // the entire snapshot - including tables and columns.
+        let setup = r#"
+        CREATE TABLE public.users (id uuid PRIMARY KEY);
+
+        CREATE FUNCTION public.orphaned() RETURNS int LANGUAGE sql AS 'select 1';
+        CREATE FUNCTION public.healthy() RETURNS int LANGUAGE sql AS 'select 1';
+
+        UPDATE pg_catalog.pg_proc
+        SET pronamespace = 2147483647
+        WHERE proname = 'orphaned';
+        "#;
+
+        test_db.execute(setup).await.unwrap();
+
+        let snapshot = Snapshot::load(&test_db)
+            .await
+            .expect("Failed to load snapshot");
+
+        assert!(snapshot.tables.iter().any(|t| t.name == "users"));
+        // the orphaned row is skipped, but the other functions still load
+        assert!(snapshot.functions.iter().any(|f| f.name == "healthy"));
+        assert!(!snapshot.functions.iter().any(|f| f.name == "orphaned"));
     }
 
     #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]

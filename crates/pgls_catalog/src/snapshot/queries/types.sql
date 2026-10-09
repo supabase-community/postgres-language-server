@@ -16,7 +16,9 @@ select
   obj_description (t.oid, 'pg_type') as comment
 from
   pg_type t
-  left join pg_namespace n on n.oid = t.typnamespace
+  -- inner join: a type without a namespace is an orphaned catalog row. skip it
+  -- instead of failing the entire snapshot load.
+  join pg_namespace n on n.oid = t.typnamespace
   left join (
     select
       enumtypid,
