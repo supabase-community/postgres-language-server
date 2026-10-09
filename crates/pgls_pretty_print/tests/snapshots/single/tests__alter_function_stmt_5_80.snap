@@ -1,0 +1,8 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/single/alter_function_stmt_5.sql
+---
+alter function my_support_target(internal)
+  strict
+  support my_support_fn
+  set search_path from current;
