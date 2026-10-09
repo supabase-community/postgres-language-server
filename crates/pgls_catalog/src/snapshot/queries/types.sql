@@ -16,7 +16,8 @@ select
   obj_description (t.oid, 'pg_type') as comment
 from
   pg_type t
-  left join pg_namespace n on n.oid = t.typnamespace
+  -- inner join skips orphaned types whose namespace is gone
+  join pg_namespace n on n.oid = t.typnamespace
   left join (
     select
       enumtypid,

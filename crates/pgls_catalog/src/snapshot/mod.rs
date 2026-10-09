@@ -350,4 +350,41 @@ mod tests {
 
         assert_eq!(set.len(), cache.columns.len());
     }
+
+    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    async fn it_skips_orphaned_catalog_objects(test_db: PgPool) {
+        // objects whose namespace no longer exists must be skipped instead of failing the
+        // whole snapshot. deleting the `pg_namespace` row directly leaves them orphaned.
+        let setup = r#"
+        CREATE SCHEMA orphaned;
+        CREATE TYPE orphaned.mood AS ENUM ('happy', 'sad');
+        CREATE FUNCTION orphaned.trigger_fn() RETURNS trigger LANGUAGE plpgsql AS 'BEGIN RETURN NEW; END';
+        CREATE TABLE orphaned.items (id int);
+        CREATE TRIGGER items_trigger BEFORE INSERT ON orphaned.items
+            FOR EACH ROW EXECUTE FUNCTION orphaned.trigger_fn();
+        CREATE POLICY items_policy ON orphaned.items USING (true);
+
+        CREATE TABLE public.users (id int);
+        CREATE FUNCTION public.healthy() RETURNS int LANGUAGE sql AS 'SELECT 1';
+        CREATE TRIGGER users_trigger BEFORE INSERT ON public.users
+            FOR EACH ROW EXECUTE FUNCTION orphaned.trigger_fn();
+
+        DELETE FROM pg_catalog.pg_namespace WHERE nspname = 'orphaned';
+        "#;
+
+        test_db.execute(setup).await.unwrap();
+
+        let snapshot = Snapshot::load(&test_db)
+            .await
+            .expect("Failed to load snapshot");
+
+        assert!(snapshot.tables.iter().any(|t| t.name == "users"));
+        assert!(snapshot.functions.iter().any(|f| f.name == "healthy"));
+
+        assert!(!snapshot.functions.iter().any(|f| f.name == "trigger_fn"));
+        assert!(!snapshot.types.iter().any(|t| t.name == "mood"));
+        assert!(!snapshot.tables.iter().any(|t| t.name == "items"));
+        assert!(snapshot.triggers.is_empty());
+        assert!(snapshot.policies.is_empty());
+    }
 }
