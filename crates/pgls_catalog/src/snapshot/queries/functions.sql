@@ -69,8 +69,9 @@ select
   f.prosecdef as "security_definer!"
 from
   functions f
-  left join pg_namespace n on f.pronamespace = n.oid
-  left join pg_language l on f.prolang = l.oid
+  -- inner joins skip orphaned functions whose namespace or language is gone
+  join pg_namespace n on f.pronamespace = n.oid
+  join pg_language l on f.prolang = l.oid
   left join pg_type rt on rt.oid = f.prorettype
   left join (
     select
@@ -130,4 +131,7 @@ from
       ) as t2
     group by
       t1.oid
-  ) f_args on f_args.oid = f.oid;
+  ) f_args on f_args.oid = f.oid
+-- keep the order stable across query plans, consumers list overloads in this order
+order by
+  f.oid;

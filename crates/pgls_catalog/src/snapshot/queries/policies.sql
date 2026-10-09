@@ -8,4 +8,7 @@ select
   qual as "security_qualification", 
   with_check
 from 
- pg_catalog.pg_policies;
+ pg_catalog.pg_policies
+-- pg_policies left joins the namespace, skip policies on orphaned tables
+where
+ schemaname is not null;
