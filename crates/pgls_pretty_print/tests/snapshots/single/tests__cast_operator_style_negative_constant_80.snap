@@ -1,0 +1,5 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/single/cast_operator_style_negative_constant.sql
+---
+select (-2147483648)::int, (-1.5)::numeric, (-12345)::money, 1::int;

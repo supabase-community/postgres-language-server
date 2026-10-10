@@ -4,7 +4,7 @@ use crate::{
 };
 use pgls_query::{
     Node, NodeEnum,
-    protobuf::{AExprKind, TypeCast},
+    protobuf::{AExprKind, TypeCast, a_const::Val},
 };
 
 pub(super) fn emit_type_cast(e: &mut EventEmitter, n: &TypeCast) {
@@ -15,6 +15,16 @@ pub(super) fn emit_type_cast(e: &mut EventEmitter, n: &TypeCast) {
         CastStyle::Cast => emit_cast_call(e, n),
     }
 
+    e.group_end();
+}
+
+/// Emits `CAST(expr AS type)` whatever the configured cast style.
+///
+/// A cast in a `FROM` clause is a table function, and only the `CAST(...)` spelling is accepted
+/// there: `FROM (1 + 2)::int` is a syntax error.
+pub(super) fn emit_type_cast_call(e: &mut EventEmitter, n: &TypeCast) {
+    e.group_start(GroupKind::TypeCast);
+    emit_cast_call(e, n);
     e.group_end();
 }
 
@@ -64,9 +74,14 @@ fn emit_operator_cast(e: &mut EventEmitter, n: &TypeCast) {
 fn needs_parentheses(node: &Node) -> bool {
     match node.node.as_ref() {
         Some(NodeEnum::AExpr(a_expr)) => a_expr.kind != AExprKind::AexprNullif as i32,
+        // A negative constant is emitted with its sign, and `-1::int` casts 1 before negating it.
+        Some(NodeEnum::AConst(a_const)) => match a_const.val.as_ref() {
+            Some(Val::Ival(i)) => i.ival < 0,
+            Some(Val::Fval(f)) => f.fval.starts_with('-'),
+            _ => false,
+        },
         Some(
-            NodeEnum::AConst(_)
-            | NodeEnum::ColumnRef(_)
+            NodeEnum::ColumnRef(_)
             | NodeEnum::ParamRef(_)
             | NodeEnum::FuncCall(_)
             | NodeEnum::NullIfExpr(_)
