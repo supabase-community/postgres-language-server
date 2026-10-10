@@ -132,4 +132,6 @@ from
       ) as t2
     group by
       t1.oid
-  ) f_args on f_args.oid = f.oid;
+  ) f_args on f_args.oid = f.oid
+order by
+  f.oid;
