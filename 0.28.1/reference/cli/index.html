@@ -1,0 +1,1704 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="A collection of language tools and a Language Server Protocol (LSP) implementation for Postgres, focusing on developer experience and reliable SQL tooling.">
+      
+      
+      
+        <link rel="canonical" href="https://pg-language-server.com/0.28.1/reference/cli/">
+      
+      
+        <link rel="prev" href="../../guides/upgrading_to_0_27/">
+      
+      
+        <link rel="next" href="../rules/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="zensical-0.0.67">
+    
+    
+      
+        <title>CLI Commands - Postgres Language Server</title>
+      
+    
+    
+      
+        
+      
+      <link rel="stylesheet" href="../../assets/stylesheets/modern/main.4ae390e2.min.css">
+      
+        
+          
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/modern/palette.96d1a7e4.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:300,300i,400,400i,500,500i,700,700i%7CJetBrains+Mono:400,400i,700,700i&amp;display=fallback">
+        <style>:root{--md-text-font:"Inter";--md-code-font:"JetBrains Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../..",location),__md_scope.pathname.endsWith("/")||(__md_scope=new URL(__md_scope.pathname+"/",location)),__md_hash=e=>[...e].reduce(((e,t)=>(e<<5)-e+t.charCodeAt(0)),0),__md_get=(e,t=localStorage,_=__md_scope)=>JSON.parse(t.getItem(_.pathname+"."+e)),__md_set=(e,t,_=localStorage,a=__md_scope)=>{try{_.setItem(a.pathname+"."+e,JSON.stringify(t))}catch(e){}},document.documentElement.setAttribute("data-platform",navigator.platform)</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer" aria-label="Navigation"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#cli-reference" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      <div data-md-color-scheme="default" data-md-component="outdated" hidden>
+        
+      </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="Postgres Language Server" class="md-header__button md-logo" aria-label="Postgres Language Server" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-book-open" viewBox="0 0 24 24"><path d="M12 5v16M20.001 19A2 2 0 0 0 22 17V5a2 2 0 0 0-1.999-2L16 3.002A5 5 0 0 0 12 5a5 5 0 0 0-4-2H4a2 2 0 0 0-2 2v12a2 2 0 0 0 1.999 2H8a5 5 0 0 1 4 2 5 5 0 0 1 4-2z"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer" aria-label="Navigation">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-menu" viewBox="0 0 24 24"><path d="M4 5h16M4 12h16M4 19h16"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Postgres Language Server
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              CLI Commands
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-moon" viewBox="0 0 24 24"><path d="M20.985 12.486a9 9 0 1 1-9.473-9.472c.405-.022.617.46.402.803a6 6 0 0 0 8.268 8.268c.344-.215.825-.004.803.401"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search" aria-label="Search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-search" viewBox="0 0 24 24"><path d="m21 21-4.34-4.34"/><circle cx="11" cy="11" r="8"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog" aria-label="Search">
+  <button type="button" class="md-search__button">
+    Search
+  </button>
+</div>
+      
+    
+    <div class="md-header__source">
+      
+        <a href="https://github.com/supabase-community/postgres-language-server" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.3.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2026 Fonticons, Inc.--><path fill="currentColor" d="M216.5 362.5c-66-8-112.5-55.5-112.5-117 0-25 9-52 24-70-6.5-16.5-5.5-51.5 2-66 20-2.5 47 8 63 22.5 19-6 39-9 63.5-9s44.5 3 62.5 8.5c15.5-14 43-24.5 63-22 7 13.5 8 48.5 1.5 65.5 16 19 24.5 44.5 24.5 70.5 0 61.5-46.5 108-113.5 116.5 17 11 28.5 35 28.5 62.5v52c0 15 12.5 23.5 27.5 17.5C441 459.5 512 369 512 257 512 115.5 397 0 255.5 0S0 115.5 0 257c0 111 70.5 203 165.5 237.5 13.5 5 26.5-4 26.5-17.5v-40c-7 3-16 5-24 5-33 0-52.5-18-66.5-51.5-5.5-13.5-11.5-21.5-23-23-6-.5-8-3-8-6 0-6 10-10.5 20-10.5 14.5 0 27 9 40 27.5 10 14.5 20.5 21 33 21s20.5-4.5 32-16c8.5-8.5 15-16 21-21"/></svg>
+  </div>
+  <div class="md-source__repository">
+    supabase-community/postgres-language-server
+  </div>
+</a>
+      
+    </div>
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="Postgres Language Server" class="md-nav__button md-logo" aria-label="Postgres Language Server" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-book-open" viewBox="0 0 24 24"><path d="M12 5v16M20.001 19A2 2 0 0 0 22 17V5a2 2 0 0 0-1.999-2L16 3.002A5 5 0 0 0 12 5a5 5 0 0 0-4-2H4a2 2 0 0 0-2 2v12a2 2 0 0 0 1.999 2H8a5 5 0 0 1 4 2 5 5 0 0 1 4-2z"/></svg>
+
+    </a>
+    Postgres Language Server
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/supabase-community/postgres-language-server" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.3.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2026 Fonticons, Inc.--><path fill="currentColor" d="M216.5 362.5c-66-8-112.5-55.5-112.5-117 0-25 9-52 24-70-6.5-16.5-5.5-51.5 2-66 20-2.5 47 8 63 22.5 19-6 39-9 63.5-9s44.5 3 62.5 8.5c15.5-14 43-24.5 63-22 7 13.5 8 48.5 1.5 65.5 16 19 24.5 44.5 24.5 70.5 0 61.5-46.5 108-113.5 116.5 17 11 28.5 35 28.5 62.5v52c0 15 12.5 23.5 27.5 17.5C441 459.5 512 369 512 257 512 115.5 397 0 255.5 0S0 115.5 0 257c0 111 70.5 203 165.5 237.5 13.5 5 26.5-4 26.5-17.5v-40c-7 3-16 5-24 5-33 0-52.5-18-66.5-51.5-5.5-13.5-11.5-21.5-23-23-6-.5-8-3-8-6 0-6 10-10.5 20-10.5 14.5 0 27 9 40 27.5 10 14.5 20.5 21 33 21s20.5-4.5 32-16c8.5-8.5 15-16 21-21"/></svg>
+  </div>
+  <div class="md-source__repository">
+    supabase-community/postgres-language-server
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../getting_started/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Getting Started
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../manual_installation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Manual Installation
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../configuration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Configuration
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Features
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        
+          <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_4">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  Features
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../features/syntax_diagnostics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Syntax Diagnostics
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../features/linting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Linting
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../features/database_linting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Database Linting
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../features/type_checking/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Type Checking
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../features/formatting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Formatting
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../features/plpgsql/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  PL/pgSQL Support
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../features/editor_features/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Autocompletion & Hover
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Guides
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        
+          <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_5">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  Guides
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/ide_setup/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Use in your IDE
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/checking_migrations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Checking Migrations
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/configure_database/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Configure database connection
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/suppressions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Suppressions
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/vcs_integration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Integrate with VCS
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/continuous_integration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Continuous Integration
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/upgrading_to_0_27/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Upgrading to 0.27
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Reference
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        
+          <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="true">
+            <label class="md-nav__title" for="__nav_6">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  Reference
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+                  
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      
+      
+      
+        
+      
+      
+      <a href="././" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  CLI Commands
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../rules/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Linter Rules
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../rule_sources/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Linter Rule Sources
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../database_rules/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Database Linter Rules
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../database_rule_sources/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Database Linter Rule Sources
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../related_work/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Related Work
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../env_variables/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Environment Variables
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  
+                    
+                    
+                    
+                      
+                    
+                    
+                  
+                  <div class="md-sidebar__inner">
+                    
+
+
+<nav class="md-nav md-nav--secondary" aria-label="On this page">
+  
+  
+  
+    
+  
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+  
+  
+
+
+<h1 id="cli-reference">CLI Reference<a class="headerlink" href="#cli-reference" title="Permanent link">&para;</a></h1>
+<h1 id="command-summary">Command summary<a class="headerlink" href="#command-summary" title="Permanent link">&para;</a></h1>
+<ul>
+<li><a href="#postgres-language-server"><code>postgres-language-server</code>↴</a></li>
+<li><a href="#postgres-language-server-version"><code>postgres-language-server version</code>↴</a></li>
+<li><a href="#postgres-language-server-dblint"><code>postgres-language-server dblint</code>↴</a></li>
+<li><a href="#postgres-language-server-check"><code>postgres-language-server check</code>↴</a></li>
+<li><a href="#postgres-language-server-format"><code>postgres-language-server format</code>↴</a></li>
+<li><a href="#postgres-language-server-start"><code>postgres-language-server start</code>↴</a></li>
+<li><a href="#postgres-language-server-stop"><code>postgres-language-server stop</code>↴</a></li>
+<li><a href="#postgres-language-server-init"><code>postgres-language-server init</code>↴</a></li>
+<li><a href="#postgres-language-server-lsp-proxy"><code>postgres-language-server lsp-proxy</code>↴</a></li>
+<li><a href="#postgres-language-server-parse"><code>postgres-language-server parse</code>↴</a></li>
+<li><a href="#postgres-language-server-schema-export"><code>postgres-language-server schema-export</code>↴</a></li>
+</ul>
+<h2 id="postgres-language-server">postgres-language-server<a class="headerlink" href="#postgres-language-server" title="Permanent link">&para;</a></h2>
+<p>Postgres Language Server official CLI. Use it to check the health of your project or run it to check single files.</p>
+<p><strong>Usage</strong>: <strong><code>postgres-language-server</code></strong> (<em><code>COMMAND ...</code></em> | <strong><code>--clean</code></strong>)</p>
+<p><strong>Available options:</strong>
+- <strong><code>--clean</code></strong> &mdash; 
+  Cleans the logs emitted by the daemon.
+- <strong><code>-h</code></strong>, <strong><code>--help</code></strong> &mdash; 
+  Prints help information
+- <strong><code>-V</code></strong>, <strong><code>--version</code></strong> &mdash; 
+  Prints version information</p>
+<p><strong>Available commands:</strong>
+- <strong><code>version</code></strong> &mdash; 
+  Shows the version information and quit.
+- <strong><code>dblint</code></strong> &mdash; 
+  Lints your database schema.
+- <strong><code>check</code></strong> &mdash; 
+  Runs everything to the requested files.
+- <strong><code>format</code></strong> &mdash; 
+  Formats the requested files.
+- <strong><code>start</code></strong> &mdash; 
+  Starts the daemon server process.
+- <strong><code>stop</code></strong> &mdash; 
+  Stops the daemon server process.
+- <strong><code>init</code></strong> &mdash; 
+  Bootstraps a new project. Creates a configuration file with some defaults.
+- <strong><code>lsp-proxy</code></strong> &mdash; 
+  Acts as a server for the Language Server Protocol over stdin/stdout.
+- <strong><code>parse</code></strong> &mdash; 
+  Parses a SQL file (or standard input) and writes the parse tree as a protobuf <code>ParseResult</code> message.
+- <strong><code>schema-export</code></strong> &mdash; 
+  Exports the database schema to JSON for use with WASM bindings.</p>
+<h2 id="postgres-language-server-version">postgres-language-server version<a class="headerlink" href="#postgres-language-server-version" title="Permanent link">&para;</a></h2>
+<p>Shows the version information and quit.</p>
+<p><strong>Usage</strong>: <strong><code>postgres-language-server</code></strong> <strong><code>version</code></strong> </p>
+<p><strong>Global options applied to all commands</strong>
+- <strong><code>--colors</code></strong>=<em><code>&lt;off|force&gt;</code></em> &mdash; 
+  Set the formatting mode for markup: "off" prints everything as plain text, "force" forces the formatting of markup using ANSI even if the console output is determined to be incompatible
+- <strong><code>--use-server</code></strong> &mdash; 
+  Connect to a running instance of the daemon server.
+- <strong><code>--verbose</code></strong> &mdash; 
+  Print additional diagnostics, and some diagnostics show more information. Also, print out what files were processed and which ones were modified.
+- <strong><code>--config-path</code></strong>=<em><code>PATH</code></em> &mdash; 
+  Set the file path to the configuration file, or the directory path to find <code>postgres-language-server.jsonc</code>. If used, it disables the default configuration file resolution.
+- <strong><code>--max-diagnostics</code></strong>=<em><code>&lt;none|&lt;NUMBER&gt;&gt;</code></em> &mdash; 
+  Cap the amount of diagnostics displayed. When <code>none</code> is provided, the limit is lifted.</p>
+<p>[default: 20]
+- <strong><code>--skip-errors</code></strong> &mdash; 
+  Skip over files containing syntax errors instead of emitting an error diagnostic.
+- <strong><code>--no-errors-on-unmatched</code></strong> &mdash; 
+  Silence errors that would be emitted in case no files were processed during the execution of the command.
+- <strong><code>--error-on-warnings</code></strong> &mdash; 
+  Tell Postgres Language Server to exit with an error code if some diagnostics emit warnings.
+- <strong><code>--reporter</code></strong>=<em><code>&lt;json|json-pretty|github|junit|summary|gitlab&gt;</code></em> &mdash; 
+  Allows to change how diagnostics and summary are reported.
+- <strong><code>--log-level</code></strong>=<em><code>&lt;none|debug|info|warn|error&gt;</code></em> &mdash; 
+  The level of logging. In order, from the most verbose to the least verbose: debug, info, warn, error.</p>
+<p>The value <code>none</code> won't show any logging.</p>
+<p>Uses environment variable <strong><code>PGLS_LOG_LEVEL</code></strong></p>
+<p>[default: none]
+- <strong><code>--log-kind</code></strong>=<em><code>&lt;pretty|compact|json&gt;</code></em> &mdash; 
+  How the log should look like.</p>
+<p>[default: pretty]
+- <strong><code>--diagnostic-level</code></strong>=<em><code>&lt;info|warn|error&gt;</code></em> &mdash; 
+  The level of diagnostics to show. In order, from the lowest to the most important: info, warn, error. Passing <code>--diagnostic-level=error</code> will cause Postgres Tools to print only diagnostics that contain only errors.</p>
+<p>[default: info]</p>
+<p><strong>Available options:</strong>
+- <strong><code>-h</code></strong>, <strong><code>--help</code></strong> &mdash; 
+  Prints help information</p>
+<h2 id="postgres-language-server-dblint">postgres-language-server dblint<a class="headerlink" href="#postgres-language-server-dblint" title="Permanent link">&para;</a></h2>
+<p>Lints your database schema.</p>
+<p><strong>Usage</strong>: <strong><code>postgres-language-server</code></strong> <strong><code>dblint</code></strong> </p>
+<p><strong>The configuration that is contained inside the configuration file.</strong>
+- <strong><code>--vcs-enabled</code></strong>=<em><code>&lt;true|false&gt;</code></em> &mdash; 
+  Whether we should integrate itself with the VCS client
+- <strong><code>--vcs-client-kind</code></strong>=<em><code>&lt;git&gt;</code></em> &mdash; 
+  The kind of client.
+- <strong><code>--vcs-use-ignore-file</code></strong>=<em><code>&lt;true|false&gt;</code></em> &mdash; 
+  Whether we should use the VCS ignore file. When [true], we will ignore the files specified in the ignore file.
+- <strong><code>--vcs-root</code></strong>=<em><code>PATH</code></em> &mdash; 
+  The folder where we should check for VCS files. By default, we will use the same folder where <code>postgres-language-server.jsonc</code> was found.</p>
+<p>If we can't find the configuration, it will attempt to use the current working directory. If no current working directory can't be found, we won't use the VCS integration, and a diagnostic will be emitted
+- <strong><code>--vcs-default-branch</code></strong>=<em><code>BRANCH</code></em> &mdash; 
+  The main branch of the project
+- <strong><code>--files-max-size</code></strong>=<em><code>NUMBER</code></em> &mdash; 
+  The maximum allowed size for source code files in bytes. Files above this limit will be ignored for performance reasons. Defaults to 1 MiB
+- <strong><code>--migrations-dir</code></strong>=<em><code>ARG</code></em> &mdash; 
+  The directory where the migration files are stored
+- <strong><code>--after</code></strong>=<em><code>ARG</code></em> &mdash; 
+  Ignore any migrations before this timestamp
+- <strong><code>--line-width</code></strong>=<em><code>ARG</code></em> &mdash; 
+  Maximum line width before breaking. Default: 100.
+- <strong><code>--indent-size</code></strong>=<em><code>ARG</code></em> &mdash; 
+  Number of spaces (or tab width) for indentation. Default: 2.
+- <strong><code>--indent-style</code></strong>=<em><code>ARG</code></em> &mdash; 
+  Indentation style: "spaces" or "tabs". Default: "spaces".
+- <strong><code>--keyword-case</code></strong>=<em><code>ARG</code></em> &mdash; 
+  Keyword casing: "upper" or "lower". Default: "lower".
+- <strong><code>--constant-case</code></strong>=<em><code>ARG</code></em> &mdash; 
+  Constant casing (NULL, TRUE, FALSE): "upper" or "lower". Default: "lower".
+- <strong><code>--type-case</code></strong>=<em><code>ARG</code></em> &mdash; 
+  Data type casing (text, varchar, int): "upper" or "lower". Default: "lower".
+- <strong><code>--comma-style</code></strong>=<em><code>ARG</code></em> &mdash; 
+  Where a comma sits when a list breaks: "trailing" or "leading". Default: "trailing".
+- <strong><code>--logical-operator-placement</code></strong>=<em><code>ARG</code></em> &mdash; 
+  Where a boolean operator sits when a condition breaks: "trailing" or "leading". Default: "trailing".
+- <strong><code>--layout</code></strong>=<em><code>ARG</code></em> &mdash; 
+  How a statement is laid out: "fit" breaks only when a line would exceed the line width, "expanded" always breaks between clauses. Default: "fit".
+- <strong><code>--cast-style</code></strong>=<em><code>ARG</code></em> &mdash; 
+  How an explicit cast is spelled: "cast" for <code>CAST(x AS t)</code>, "operator" for <code>x::t</code>. Default: "cast".
+- <strong><code>--clause-body-style</code></strong>=<em><code>ARG</code></em> &mdash; 
+  Where the body of a clause starts: "break" for a new line, "compact" to keep the first element on the keyword line. Default: "break".
+- <strong><code>--isolate-semicolon</code></strong>=<em><code>ARG</code></em> &mdash; 
+  If <code>true</code>, the terminating semicolon goes on its own line when the statement spans several lines. Default: <code>false</code>.
+- <strong><code>--skip-fn-bodies</code></strong>=<em><code>ARG</code></em> &mdash; 
+  If <code>true</code>, skip formatting of SQL function bodies (keep them verbatim). Default: <code>false</code>.
+- <strong><code>--search_path</code></strong>=<em><code>ARG</code></em> &mdash; 
+  Default search path schemas for type checking. Can be a list of schema names or glob patterns like ["public", "app_<em>"]. If not specified, defaults to ["public"].
+- </em><em><code>--connection-string</code></em><em>=<em><code>ARG</code></em> &mdash; 
+  A connection string that encodes the full connection setup. When provided, it takes precedence over the individual fields. Can also be set via the <code>DATABASE_URL</code> environment variable.
+- </em><em><code>--host</code></em><em>=<em><code>ARG</code></em> &mdash; 
+  The host of the database. Required if you want database-related features. All else falls back to sensible defaults. Can also be set via the <code>PGHOST</code> environment variable.
+- </em><em><code>--port</code></em><em>=<em><code>ARG</code></em> &mdash; 
+  The port of the database. Can also be set via the <code>PGPORT</code> environment variable.
+- </em><em><code>--username</code></em><em>=<em><code>ARG</code></em> &mdash; 
+  The username to connect to the database. Can also be set via the <code>PGUSER</code> environment variable.
+- </em><em><code>--password</code></em><em>=<em><code>ARG</code></em> &mdash; 
+  The password to connect to the database. Can also be set via the <code>PGPASSWORD</code> environment variable.
+- </em><em><code>--database</code></em><em>=<em><code>ARG</code></em> &mdash; 
+  The name of the database. Can also be set via the <code>PGDATABASE</code> environment variable.
+- </em><em><code>--allow_statement_executions_against</code></em><em>=<em><code>ARG</code></em>
+- </em><em><code>--conn_timeout_secs</code></em>*=<em><code>ARG</code></em> &mdash; 
+  The connection timeout in seconds.</p>
+<p>[default: Some(10)]
+- <strong><code>--disable-db</code></strong> &mdash; 
+  Actively disable all database-related features.</p>
+<p><strong>Global options applied to all commands</strong>
+- <strong><code>--colors</code></strong>=<em><code>&lt;off|force&gt;</code></em> &mdash; 
+  Set the formatting mode for markup: "off" prints everything as plain text, "force" forces the formatting of markup using ANSI even if the console output is determined to be incompatible
+- <strong><code>--use-server</code></strong> &mdash; 
+  Connect to a running instance of the daemon server.
+- <strong><code>--verbose</code></strong> &mdash; 
+  Print additional diagnostics, and some diagnostics show more information. Also, print out what files were processed and which ones were modified.
+- <strong><code>--config-path</code></strong>=<em><code>PATH</code></em> &mdash; 
+  Set the file path to the configuration file, or the directory path to find <code>postgres-language-server.jsonc</code>. If used, it disables the default configuration file resolution.
+- <strong><code>--max-diagnostics</code></strong>=<em><code>&lt;none|&lt;NUMBER&gt;&gt;</code></em> &mdash; 
+  Cap the amount of diagnostics displayed. When <code>none</code> is provided, the limit is lifted.</p>
+<p>[default: 20]
+- <strong><code>--skip-errors</code></strong> &mdash; 
+  Skip over files containing syntax errors instead of emitting an error diagnostic.
+- <strong><code>--no-errors-on-unmatched</code></strong> &mdash; 
+  Silence errors that would be emitted in case no files were processed during the execution of the command.
+- <strong><code>--error-on-warnings</code></strong> &mdash; 
+  Tell Postgres Language Server to exit with an error code if some diagnostics emit warnings.
+- <strong><code>--reporter</code></strong>=<em><code>&lt;json|json-pretty|github|junit|summary|gitlab&gt;</code></em> &mdash; 
+  Allows to change how diagnostics and summary are reported.
+- <strong><code>--log-level</code></strong>=<em><code>&lt;none|debug|info|warn|error&gt;</code></em> &mdash; 
+  The level of logging. In order, from the most verbose to the least verbose: debug, info, warn, error.</p>
+<p>The value <code>none</code> won't show any logging.</p>
+<p>Uses environment variable <strong><code>PGLS_LOG_LEVEL</code></strong></p>
+<p>[default: none]
+- <strong><code>--log-kind</code></strong>=<em><code>&lt;pretty|compact|json&gt;</code></em> &mdash; 
+  How the log should look like.</p>
+<p>[default: pretty]
+- <strong><code>--diagnostic-level</code></strong>=<em><code>&lt;info|warn|error&gt;</code></em> &mdash; 
+  The level of diagnostics to show. In order, from the lowest to the most important: info, warn, error. Passing <code>--diagnostic-level=error</code> will cause Postgres Tools to print only diagnostics that contain only errors.</p>
+<p>[default: info]</p>
+<p><strong>Available options:</strong>
+- <strong><code>-h</code></strong>, <strong><code>--help</code></strong> &mdash; 
+  Prints help information</p>
+<h2 id="postgres-language-server-check">postgres-language-server check<a class="headerlink" href="#postgres-language-server-check" title="Permanent link">&para;</a></h2>
+<p>Runs everything to the requested files.</p>
+<p><strong>Usage</strong>: <strong><code>postgres-language-server</code></strong> <strong><code>check</code></strong> [<strong><code>--staged</code></strong>] [<strong><code>--changed</code></strong>] [<strong><code>--since</code></strong>=<em><code>REF</code></em>] [<em><code>PATH</code></em>]...</p>
+<p><strong>The configuration that is contained inside the configuration file.</strong>
+- <strong><code>--vcs-enabled</code></strong>=<em><code>&lt;true|false&gt;</code></em> &mdash; 
+  Whether we should integrate itself with the VCS client
+- <strong><code>--vcs-client-kind</code></strong>=<em><code>&lt;git&gt;</code></em> &mdash; 
+  The kind of client.
+- <strong><code>--vcs-use-ignore-file</code></strong>=<em><code>&lt;true|false&gt;</code></em> &mdash; 
+  Whether we should use the VCS ignore file. When [true], we will ignore the files specified in the ignore file.
+- <strong><code>--vcs-root</code></strong>=<em><code>PATH</code></em> &mdash; 
+  The folder where we should check for VCS files. By default, we will use the same folder where <code>postgres-language-server.jsonc</code> was found.</p>
+<p>If we can't find the configuration, it will attempt to use the current working directory. If no current working directory can't be found, we won't use the VCS integration, and a diagnostic will be emitted
+- <strong><code>--vcs-default-branch</code></strong>=<em><code>BRANCH</code></em> &mdash; 
+  The main branch of the project
+- <strong><code>--files-max-size</code></strong>=<em><code>NUMBER</code></em> &mdash; 
+  The maximum allowed size for source code files in bytes. Files above this limit will be ignored for performance reasons. Defaults to 1 MiB
+- <strong><code>--migrations-dir</code></strong>=<em><code>ARG</code></em> &mdash; 
+  The directory where the migration files are stored
+- <strong><code>--after</code></strong>=<em><code>ARG</code></em> &mdash; 
+  Ignore any migrations before this timestamp
+- <strong><code>--line-width</code></strong>=<em><code>ARG</code></em> &mdash; 
+  Maximum line width before breaking. Default: 100.
+- <strong><code>--indent-size</code></strong>=<em><code>ARG</code></em> &mdash; 
+  Number of spaces (or tab width) for indentation. Default: 2.
+- <strong><code>--indent-style</code></strong>=<em><code>ARG</code></em> &mdash; 
+  Indentation style: "spaces" or "tabs". Default: "spaces".
+- <strong><code>--keyword-case</code></strong>=<em><code>ARG</code></em> &mdash; 
+  Keyword casing: "upper" or "lower". Default: "lower".
+- <strong><code>--constant-case</code></strong>=<em><code>ARG</code></em> &mdash; 
+  Constant casing (NULL, TRUE, FALSE): "upper" or "lower". Default: "lower".
+- <strong><code>--type-case</code></strong>=<em><code>ARG</code></em> &mdash; 
+  Data type casing (text, varchar, int): "upper" or "lower". Default: "lower".
+- <strong><code>--comma-style</code></strong>=<em><code>ARG</code></em> &mdash; 
+  Where a comma sits when a list breaks: "trailing" or "leading". Default: "trailing".
+- <strong><code>--logical-operator-placement</code></strong>=<em><code>ARG</code></em> &mdash; 
+  Where a boolean operator sits when a condition breaks: "trailing" or "leading". Default: "trailing".
+- <strong><code>--layout</code></strong>=<em><code>ARG</code></em> &mdash; 
+  How a statement is laid out: "fit" breaks only when a line would exceed the line width, "expanded" always breaks between clauses. Default: "fit".
+- <strong><code>--cast-style</code></strong>=<em><code>ARG</code></em> &mdash; 
+  How an explicit cast is spelled: "cast" for <code>CAST(x AS t)</code>, "operator" for <code>x::t</code>. Default: "cast".
+- <strong><code>--clause-body-style</code></strong>=<em><code>ARG</code></em> &mdash; 
+  Where the body of a clause starts: "break" for a new line, "compact" to keep the first element on the keyword line. Default: "break".
+- <strong><code>--isolate-semicolon</code></strong>=<em><code>ARG</code></em> &mdash; 
+  If <code>true</code>, the terminating semicolon goes on its own line when the statement spans several lines. Default: <code>false</code>.
+- <strong><code>--skip-fn-bodies</code></strong>=<em><code>ARG</code></em> &mdash; 
+  If <code>true</code>, skip formatting of SQL function bodies (keep them verbatim). Default: <code>false</code>.
+- <strong><code>--search_path</code></strong>=<em><code>ARG</code></em> &mdash; 
+  Default search path schemas for type checking. Can be a list of schema names or glob patterns like ["public", "app_<em>"]. If not specified, defaults to ["public"].
+- </em><em><code>--connection-string</code></em><em>=<em><code>ARG</code></em> &mdash; 
+  A connection string that encodes the full connection setup. When provided, it takes precedence over the individual fields. Can also be set via the <code>DATABASE_URL</code> environment variable.
+- </em><em><code>--host</code></em><em>=<em><code>ARG</code></em> &mdash; 
+  The host of the database. Required if you want database-related features. All else falls back to sensible defaults. Can also be set via the <code>PGHOST</code> environment variable.
+- </em><em><code>--port</code></em><em>=<em><code>ARG</code></em> &mdash; 
+  The port of the database. Can also be set via the <code>PGPORT</code> environment variable.
+- </em><em><code>--username</code></em><em>=<em><code>ARG</code></em> &mdash; 
+  The username to connect to the database. Can also be set via the <code>PGUSER</code> environment variable.
+- </em><em><code>--password</code></em><em>=<em><code>ARG</code></em> &mdash; 
+  The password to connect to the database. Can also be set via the <code>PGPASSWORD</code> environment variable.
+- </em><em><code>--database</code></em><em>=<em><code>ARG</code></em> &mdash; 
+  The name of the database. Can also be set via the <code>PGDATABASE</code> environment variable.
+- </em><em><code>--allow_statement_executions_against</code></em><em>=<em><code>ARG</code></em>
+- </em><em><code>--conn_timeout_secs</code></em>*=<em><code>ARG</code></em> &mdash; 
+  The connection timeout in seconds.</p>
+<p>[default: Some(10)]
+- <strong><code>--disable-db</code></strong> &mdash; 
+  Actively disable all database-related features.</p>
+<p><strong>Global options applied to all commands</strong>
+- <strong><code>--colors</code></strong>=<em><code>&lt;off|force&gt;</code></em> &mdash; 
+  Set the formatting mode for markup: "off" prints everything as plain text, "force" forces the formatting of markup using ANSI even if the console output is determined to be incompatible
+- <strong><code>--use-server</code></strong> &mdash; 
+  Connect to a running instance of the daemon server.
+- <strong><code>--verbose</code></strong> &mdash; 
+  Print additional diagnostics, and some diagnostics show more information. Also, print out what files were processed and which ones were modified.
+- <strong><code>--config-path</code></strong>=<em><code>PATH</code></em> &mdash; 
+  Set the file path to the configuration file, or the directory path to find <code>postgres-language-server.jsonc</code>. If used, it disables the default configuration file resolution.
+- <strong><code>--max-diagnostics</code></strong>=<em><code>&lt;none|&lt;NUMBER&gt;&gt;</code></em> &mdash; 
+  Cap the amount of diagnostics displayed. When <code>none</code> is provided, the limit is lifted.</p>
+<p>[default: 20]
+- <strong><code>--skip-errors</code></strong> &mdash; 
+  Skip over files containing syntax errors instead of emitting an error diagnostic.
+- <strong><code>--no-errors-on-unmatched</code></strong> &mdash; 
+  Silence errors that would be emitted in case no files were processed during the execution of the command.
+- <strong><code>--error-on-warnings</code></strong> &mdash; 
+  Tell Postgres Language Server to exit with an error code if some diagnostics emit warnings.
+- <strong><code>--reporter</code></strong>=<em><code>&lt;json|json-pretty|github|junit|summary|gitlab&gt;</code></em> &mdash; 
+  Allows to change how diagnostics and summary are reported.
+- <strong><code>--log-level</code></strong>=<em><code>&lt;none|debug|info|warn|error&gt;</code></em> &mdash; 
+  The level of logging. In order, from the most verbose to the least verbose: debug, info, warn, error.</p>
+<p>The value <code>none</code> won't show any logging.</p>
+<p>Uses environment variable <strong><code>PGLS_LOG_LEVEL</code></strong></p>
+<p>[default: none]
+- <strong><code>--log-kind</code></strong>=<em><code>&lt;pretty|compact|json&gt;</code></em> &mdash; 
+  How the log should look like.</p>
+<p>[default: pretty]
+- <strong><code>--diagnostic-level</code></strong>=<em><code>&lt;info|warn|error&gt;</code></em> &mdash; 
+  The level of diagnostics to show. In order, from the lowest to the most important: info, warn, error. Passing <code>--diagnostic-level=error</code> will cause Postgres Tools to print only diagnostics that contain only errors.</p>
+<p>[default: info]</p>
+<p><strong>Available positional items:</strong>
+- <em><code>PATH</code></em> &mdash; 
+  Single file, single path or list of paths</p>
+<p><strong>Available options:</strong>
+- <strong><code>--stdin-file-path</code></strong>=<em><code>PATH</code></em> &mdash; 
+  Use this option when you want to format code piped from <code>stdin</code>, and print the output to <code>stdout</code>.</p>
+<p>The file doesn't need to exist on disk, what matters is the extension of the file. Based on the extension, we know how to check the code.</p>
+<p>Example: <code>echo 'let a;' | pgls_cli check --stdin-file-path=test.sql</code>
+- <strong><code>--staged</code></strong> &mdash; 
+  When set to true, only the files that have been staged (the ones prepared to be committed) will be linted. This option should be used when working locally.
+- <strong><code>--changed</code></strong> &mdash; 
+  When set to true, only the files that have been changed compared to your <code>defaultBranch</code> configuration will be linted. This option should be used in CI environments.
+- <strong><code>--since</code></strong>=<em><code>REF</code></em> &mdash; 
+  Use this to specify the base branch to compare against when you're using the --changed flag and the <code>defaultBranch</code> is not set in your <code>postgres-language-server.jsonc</code>
+- <strong><code>-h</code></strong>, <strong><code>--help</code></strong> &mdash; 
+  Prints help information</p>
+<h2 id="postgres-language-server-format">postgres-language-server format<a class="headerlink" href="#postgres-language-server-format" title="Permanent link">&para;</a></h2>
+<p>Formats the requested files.</p>
+<p><strong>Usage</strong>: <strong><code>postgres-language-server</code></strong> <strong><code>format</code></strong> [<strong><code>--write</code></strong>] [<strong><code>--staged</code></strong>] [<strong><code>--changed</code></strong>] [<strong><code>--since</code></strong>=<em><code>REF</code></em>] [<em><code>PATH</code></em>]...</p>
+<p><strong>The configuration that is contained inside the configuration file.</strong>
+- <strong><code>--vcs-enabled</code></strong>=<em><code>&lt;true|false&gt;</code></em> &mdash; 
+  Whether we should integrate itself with the VCS client
+- <strong><code>--vcs-client-kind</code></strong>=<em><code>&lt;git&gt;</code></em> &mdash; 
+  The kind of client.
+- <strong><code>--vcs-use-ignore-file</code></strong>=<em><code>&lt;true|false&gt;</code></em> &mdash; 
+  Whether we should use the VCS ignore file. When [true], we will ignore the files specified in the ignore file.
+- <strong><code>--vcs-root</code></strong>=<em><code>PATH</code></em> &mdash; 
+  The folder where we should check for VCS files. By default, we will use the same folder where <code>postgres-language-server.jsonc</code> was found.</p>
+<p>If we can't find the configuration, it will attempt to use the current working directory. If no current working directory can't be found, we won't use the VCS integration, and a diagnostic will be emitted
+- <strong><code>--vcs-default-branch</code></strong>=<em><code>BRANCH</code></em> &mdash; 
+  The main branch of the project
+- <strong><code>--files-max-size</code></strong>=<em><code>NUMBER</code></em> &mdash; 
+  The maximum allowed size for source code files in bytes. Files above this limit will be ignored for performance reasons. Defaults to 1 MiB
+- <strong><code>--migrations-dir</code></strong>=<em><code>ARG</code></em> &mdash; 
+  The directory where the migration files are stored
+- <strong><code>--after</code></strong>=<em><code>ARG</code></em> &mdash; 
+  Ignore any migrations before this timestamp
+- <strong><code>--line-width</code></strong>=<em><code>ARG</code></em> &mdash; 
+  Maximum line width before breaking. Default: 100.
+- <strong><code>--indent-size</code></strong>=<em><code>ARG</code></em> &mdash; 
+  Number of spaces (or tab width) for indentation. Default: 2.
+- <strong><code>--indent-style</code></strong>=<em><code>ARG</code></em> &mdash; 
+  Indentation style: "spaces" or "tabs". Default: "spaces".
+- <strong><code>--keyword-case</code></strong>=<em><code>ARG</code></em> &mdash; 
+  Keyword casing: "upper" or "lower". Default: "lower".
+- <strong><code>--constant-case</code></strong>=<em><code>ARG</code></em> &mdash; 
+  Constant casing (NULL, TRUE, FALSE): "upper" or "lower". Default: "lower".
+- <strong><code>--type-case</code></strong>=<em><code>ARG</code></em> &mdash; 
+  Data type casing (text, varchar, int): "upper" or "lower". Default: "lower".
+- <strong><code>--comma-style</code></strong>=<em><code>ARG</code></em> &mdash; 
+  Where a comma sits when a list breaks: "trailing" or "leading". Default: "trailing".
+- <strong><code>--logical-operator-placement</code></strong>=<em><code>ARG</code></em> &mdash; 
+  Where a boolean operator sits when a condition breaks: "trailing" or "leading". Default: "trailing".
+- <strong><code>--layout</code></strong>=<em><code>ARG</code></em> &mdash; 
+  How a statement is laid out: "fit" breaks only when a line would exceed the line width, "expanded" always breaks between clauses. Default: "fit".
+- <strong><code>--cast-style</code></strong>=<em><code>ARG</code></em> &mdash; 
+  How an explicit cast is spelled: "cast" for <code>CAST(x AS t)</code>, "operator" for <code>x::t</code>. Default: "cast".
+- <strong><code>--clause-body-style</code></strong>=<em><code>ARG</code></em> &mdash; 
+  Where the body of a clause starts: "break" for a new line, "compact" to keep the first element on the keyword line. Default: "break".
+- <strong><code>--isolate-semicolon</code></strong>=<em><code>ARG</code></em> &mdash; 
+  If <code>true</code>, the terminating semicolon goes on its own line when the statement spans several lines. Default: <code>false</code>.
+- <strong><code>--skip-fn-bodies</code></strong>=<em><code>ARG</code></em> &mdash; 
+  If <code>true</code>, skip formatting of SQL function bodies (keep them verbatim). Default: <code>false</code>.
+- <strong><code>--search_path</code></strong>=<em><code>ARG</code></em> &mdash; 
+  Default search path schemas for type checking. Can be a list of schema names or glob patterns like ["public", "app_<em>"]. If not specified, defaults to ["public"].
+- </em><em><code>--connection-string</code></em><em>=<em><code>ARG</code></em> &mdash; 
+  A connection string that encodes the full connection setup. When provided, it takes precedence over the individual fields. Can also be set via the <code>DATABASE_URL</code> environment variable.
+- </em><em><code>--host</code></em><em>=<em><code>ARG</code></em> &mdash; 
+  The host of the database. Required if you want database-related features. All else falls back to sensible defaults. Can also be set via the <code>PGHOST</code> environment variable.
+- </em><em><code>--port</code></em><em>=<em><code>ARG</code></em> &mdash; 
+  The port of the database. Can also be set via the <code>PGPORT</code> environment variable.
+- </em><em><code>--username</code></em><em>=<em><code>ARG</code></em> &mdash; 
+  The username to connect to the database. Can also be set via the <code>PGUSER</code> environment variable.
+- </em><em><code>--password</code></em><em>=<em><code>ARG</code></em> &mdash; 
+  The password to connect to the database. Can also be set via the <code>PGPASSWORD</code> environment variable.
+- </em><em><code>--database</code></em><em>=<em><code>ARG</code></em> &mdash; 
+  The name of the database. Can also be set via the <code>PGDATABASE</code> environment variable.
+- </em><em><code>--allow_statement_executions_against</code></em><em>=<em><code>ARG</code></em>
+- </em><em><code>--conn_timeout_secs</code></em>*=<em><code>ARG</code></em> &mdash; 
+  The connection timeout in seconds.</p>
+<p>[default: Some(10)]
+- <strong><code>--disable-db</code></strong> &mdash; 
+  Actively disable all database-related features.</p>
+<p><strong>Global options applied to all commands</strong>
+- <strong><code>--colors</code></strong>=<em><code>&lt;off|force&gt;</code></em> &mdash; 
+  Set the formatting mode for markup: "off" prints everything as plain text, "force" forces the formatting of markup using ANSI even if the console output is determined to be incompatible
+- <strong><code>--use-server</code></strong> &mdash; 
+  Connect to a running instance of the daemon server.
+- <strong><code>--verbose</code></strong> &mdash; 
+  Print additional diagnostics, and some diagnostics show more information. Also, print out what files were processed and which ones were modified.
+- <strong><code>--config-path</code></strong>=<em><code>PATH</code></em> &mdash; 
+  Set the file path to the configuration file, or the directory path to find <code>postgres-language-server.jsonc</code>. If used, it disables the default configuration file resolution.
+- <strong><code>--max-diagnostics</code></strong>=<em><code>&lt;none|&lt;NUMBER&gt;&gt;</code></em> &mdash; 
+  Cap the amount of diagnostics displayed. When <code>none</code> is provided, the limit is lifted.</p>
+<p>[default: 20]
+- <strong><code>--skip-errors</code></strong> &mdash; 
+  Skip over files containing syntax errors instead of emitting an error diagnostic.
+- <strong><code>--no-errors-on-unmatched</code></strong> &mdash; 
+  Silence errors that would be emitted in case no files were processed during the execution of the command.
+- <strong><code>--error-on-warnings</code></strong> &mdash; 
+  Tell Postgres Language Server to exit with an error code if some diagnostics emit warnings.
+- <strong><code>--reporter</code></strong>=<em><code>&lt;json|json-pretty|github|junit|summary|gitlab&gt;</code></em> &mdash; 
+  Allows to change how diagnostics and summary are reported.
+- <strong><code>--log-level</code></strong>=<em><code>&lt;none|debug|info|warn|error&gt;</code></em> &mdash; 
+  The level of logging. In order, from the most verbose to the least verbose: debug, info, warn, error.</p>
+<p>The value <code>none</code> won't show any logging.</p>
+<p>Uses environment variable <strong><code>PGLS_LOG_LEVEL</code></strong></p>
+<p>[default: none]
+- <strong><code>--log-kind</code></strong>=<em><code>&lt;pretty|compact|json&gt;</code></em> &mdash; 
+  How the log should look like.</p>
+<p>[default: pretty]
+- <strong><code>--diagnostic-level</code></strong>=<em><code>&lt;info|warn|error&gt;</code></em> &mdash; 
+  The level of diagnostics to show. In order, from the lowest to the most important: info, warn, error. Passing <code>--diagnostic-level=error</code> will cause Postgres Tools to print only diagnostics that contain only errors.</p>
+<p>[default: info]</p>
+<p><strong>Available positional items:</strong>
+- <em><code>PATH</code></em> &mdash; 
+  Single file, single path or list of paths</p>
+<p><strong>Available options:</strong>
+- <strong><code>--write</code></strong> &mdash; 
+  Write formatted output back to files
+- <strong><code>--staged</code></strong> &mdash; 
+  When set to true, only the files that have been staged (the ones prepared to be committed) will be formatted. This option should be used when working locally.
+- <strong><code>--changed</code></strong> &mdash; 
+  When set to true, only the files that have been changed compared to your <code>defaultBranch</code> configuration will be formatted. This option should be used in CI environments.
+- <strong><code>--since</code></strong>=<em><code>REF</code></em> &mdash; 
+  Use this to specify the base branch to compare against when you're using the --changed flag and the <code>defaultBranch</code> is not set in your <code>postgres-language-server.jsonc</code>
+- <strong><code>-h</code></strong>, <strong><code>--help</code></strong> &mdash; 
+  Prints help information</p>
+<h2 id="postgres-language-server-start">postgres-language-server start<a class="headerlink" href="#postgres-language-server-start" title="Permanent link">&para;</a></h2>
+<p>Starts the daemon server process.</p>
+<p><strong>Usage</strong>: <strong><code>postgres-language-server</code></strong> <strong><code>start</code></strong> [<strong><code>--config-path</code></strong>=<em><code>PATH</code></em>]</p>
+<p><strong>Available options:</strong>
+- <strong><code>--log-prefix-name</code></strong>=<em><code>STRING</code></em> &mdash; 
+  Allows to change the prefix applied to the file name of the logs.</p>
+<p>Uses environment variable <strong><code>PGLS_LOG_PREFIX_NAME</code></strong></p>
+<p>[default: server.log]
+- <strong><code>--log-path</code></strong>=<em><code>PATH</code></em> &mdash; 
+  Allows to change the folder where logs are stored.</p>
+<p>Uses environment variable <strong><code>PGLS_LOG_PATH</code></strong>
+- <strong><code>--config-path</code></strong>=<em><code>PATH</code></em> &mdash; 
+  Allows to set a custom file path to the configuration file, or a custom directory path to find <code>postgres-language-server.jsonc</code></p>
+<p>Uses environment variable <strong><code>PGLS_CONFIG_PATH</code></strong>
+- <strong><code>-h</code></strong>, <strong><code>--help</code></strong> &mdash; 
+  Prints help information</p>
+<h2 id="postgres-language-server-stop">postgres-language-server stop<a class="headerlink" href="#postgres-language-server-stop" title="Permanent link">&para;</a></h2>
+<p>Stops the daemon server process.</p>
+<p><strong>Usage</strong>: <strong><code>postgres-language-server</code></strong> <strong><code>stop</code></strong> </p>
+<p><strong>Available options:</strong>
+- <strong><code>-h</code></strong>, <strong><code>--help</code></strong> &mdash; 
+  Prints help information</p>
+<h2 id="postgres-language-server-init">postgres-language-server init<a class="headerlink" href="#postgres-language-server-init" title="Permanent link">&para;</a></h2>
+<p>Bootstraps a new project. Creates a configuration file with some defaults.</p>
+<p><strong>Usage</strong>: <strong><code>postgres-language-server</code></strong> <strong><code>init</code></strong> </p>
+<p><strong>Available options:</strong>
+- <strong><code>-h</code></strong>, <strong><code>--help</code></strong> &mdash; 
+  Prints help information</p>
+<h2 id="postgres-language-server-lsp-proxy">postgres-language-server lsp-proxy<a class="headerlink" href="#postgres-language-server-lsp-proxy" title="Permanent link">&para;</a></h2>
+<p>Acts as a server for the Language Server Protocol over stdin/stdout.</p>
+<p><strong>Usage</strong>: <strong><code>postgres-language-server</code></strong> <strong><code>lsp-proxy</code></strong> [<strong><code>--config-path</code></strong>=<em><code>PATH</code></em>]</p>
+<p><strong>Available options:</strong>
+- <strong><code>--log-prefix-name</code></strong>=<em><code>STRING</code></em> &mdash; 
+  Allows to change the prefix applied to the file name of the logs.</p>
+<p>Uses environment variable <strong><code>PGLS_LOG_PREFIX_NAME</code></strong></p>
+<p>[default: server.log]
+- <strong><code>--log-path</code></strong>=<em><code>PATH</code></em> &mdash; 
+  Allows to change the folder where logs are stored.</p>
+<p>Uses environment variable <strong><code>PGLS_LOG_PATH</code></strong>
+- <strong><code>--config-path</code></strong>=<em><code>PATH</code></em> &mdash; 
+  Allows to set a custom file path to the configuration file, or a custom directory path to find <code>postgres-language-server.jsonc</code></p>
+<p>Uses environment variable <strong><code>PGLS_CONFIG_PATH</code></strong>
+- <strong><code>-h</code></strong>, <strong><code>--help</code></strong> &mdash; 
+  Prints help information</p>
+<h2 id="postgres-language-server-parse">postgres-language-server parse<a class="headerlink" href="#postgres-language-server-parse" title="Permanent link">&para;</a></h2>
+<p>Parses a SQL file (or standard input) and writes the parse tree as a protobuf <code>ParseResult</code> message.</p>
+<p><strong>Usage</strong>: <strong><code>postgres-language-server</code></strong> <strong><code>parse</code></strong> [<strong><code>--file</code></strong>=<em><code>PATH</code></em>]</p>
+<p><strong>Available options:</strong>
+- <strong><code>--file</code></strong>=<em><code>PATH</code></em> &mdash; 
+  Path to the SQL file to parse. When omitted, the SQL is read from standard input.
+- <strong><code>--stdin-file-path</code></strong>=<em><code>PATH</code></em> &mdash; 
+  Alias of --file, mirroring the format command.
+- <strong><code>-h</code></strong>, <strong><code>--help</code></strong> &mdash; 
+  Prints help information</p>
+<h2 id="postgres-language-server-schema-export">postgres-language-server schema-export<a class="headerlink" href="#postgres-language-server-schema-export" title="Permanent link">&para;</a></h2>
+<p>Exports the database schema to JSON for use with WASM bindings. Writes to stdout by default, or to a file if --output is specified.</p>
+<p><strong>Usage</strong>: <strong><code>postgres-language-server</code></strong> <strong><code>schema-export</code></strong> [<strong><code>-c</code></strong>=<em><code>URL</code></em>] [<strong><code>-o</code></strong>=<em><code>PATH</code></em>]</p>
+<p><strong>Available options:</strong>
+- <strong><code>-c</code></strong>, <strong><code>--connection-string</code></strong>=<em><code>URL</code></em> &mdash; 
+  PostgreSQL connection string (e.g., postgres://user:pass@host/db). Can also be set via the <code>DATABASE_URL</code> environment variable.
+- <strong><code>-o</code></strong>, <strong><code>--output</code></strong>=<em><code>PATH</code></em> &mdash; 
+  Output file path for the JSON schema (defaults to stdout if not specified)
+- <strong><code>-h</code></strong>, <strong><code>--help</code></strong> &mdash; 
+  Prints help information</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-circle-arrow-up" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m16 12-4-4-4 4M12 16V8"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer" >
+        
+          
+          <a href="../../guides/upgrading_to_0_27/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Upgrading to 0.27">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-arrow-left" viewBox="0 0 24 24"><path d="m12 19-7-7 7-7M19 12H5"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                Upgrading to 0.27
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="../rules/" class="md-footer__link md-footer__link--next" aria-label="Next: Linter Rules">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                Linter Rules
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-arrow-right" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://zensical.org/" target="_blank" rel="noopener">
+      Zensical
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog" role="status" aria-atomic="true">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      
+      
+        
+        
+          
+        
+      <script id="__config" type="application/json">{"annotate":null,"base":"../..","features":["content.code.copy","content.tabs.link","navigation.footer","navigation.sections","navigation.top","navigation.tracking","search.highlight"],"redirect":"../../redirect.json","search":"../../assets/javascripts/workers/search.7d14d953.min.js","tags":null,"translations":{"clipboard.copied":"Copied to clipboard","clipboard.copy":"Copy to clipboard","clipboard.error":"Could not copy to clipboard","search.result.more.one":"1 more on this page","search.result.more.other":"# more on this page","search.result.none":"No matching documents","search.result.one":"1 matching document","search.result.other":"# matching documents","search.result.placeholder":"Type to start searching","search.result.term.missing":"Missing","select.version":"Select version"},"version":{"provider":"mike"}}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.67a597eb.min.js"></script>
+      
+    
+  </body>
+</html>
