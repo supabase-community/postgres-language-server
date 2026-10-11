@@ -1,0 +1,5 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/single/cast_operator_style_from_clause.sql
+---
+select * from cast(1 + 2 as int) as a, rows from (cast('x' as text)) as b;
