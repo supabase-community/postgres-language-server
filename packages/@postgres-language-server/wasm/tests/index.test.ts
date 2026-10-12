@@ -5,7 +5,7 @@
 import { beforeAll, beforeEach, describe, expect, test } from "bun:test";
 
 import { type LanguageServer, createLanguageServer } from "../src/lsp";
-import { type Workspace, createWorkspace } from "../src/workspace";
+import { type FormatOptions, type Workspace, createWorkspace, format } from "../src/workspace";
 
 // =============================================================================
 // Workspace API Tests
@@ -277,6 +277,49 @@ alter table deal_type add column key text not null;
         end: new TextEncoder().encode(sql).length,
       },
     ]);
+  });
+});
+
+// =============================================================================
+// Format Tests
+// =============================================================================
+
+describe("Format", () => {
+  const sql = 'CREATE TABLE "public"."t" ("id" "uuid" NOT NULL)';
+  let workspace: Workspace;
+
+  beforeAll(async () => {
+    workspace = await createWorkspace();
+  });
+
+  test("formatSql uses defaults", () => {
+    const result = workspace.formatSql(sql);
+    expect(result.formatted).toBe("create table public.t (id uuid not null);");
+    expect(result.diagnostics).toEqual([]);
+  });
+
+  test("formatSql applies options", () => {
+    const result = workspace.formatSql(sql, { keywordCase: "upper" });
+    expect(result.formatted).toBe("CREATE TABLE public.t (id uuid NOT NULL);");
+  });
+
+  test("format formats a workspace file and reports unformattable statements", () => {
+    workspace.insertFile("/format.sql", "select 1;\n\nSELEC 2;\n");
+    const result = workspace.format("/format.sql", { keywordCase: "upper" });
+    expect(result.formatted).toBe("SELECT 1;\n\nSELEC 2;\n");
+    expect(result.diagnostics.length).toBe(1);
+  });
+
+  test("format throws on invalid options", () => {
+    expect(() =>
+      workspace.formatSql(sql, { keywordCase: "shout" } as unknown as FormatOptions),
+    ).toThrow();
+  });
+
+  test("top-level format returns the formatted string", async () => {
+    expect(await format(sql, { keywordCase: "upper" })).toBe(
+      "CREATE TABLE public.t (id uuid NOT NULL);",
+    );
   });
 });
 

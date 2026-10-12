@@ -62,6 +62,67 @@ export interface Statement {
 }
 
 /**
+ * Formatter options.
+ *
+ * Mirrors the `format` section of `postgres-language-server.jsonc` (same names
+ * and defaults). Omitted options use their defaults. Formatting is always
+ * enabled when calling a format function explicitly.
+ */
+export interface FormatOptions {
+  /** Maximum line width before breaking. Default: 100. */
+  lineWidth?: number;
+  /** Number of spaces (or tab width) for indentation. Default: 2. */
+  indentSize?: number;
+  /** Indentation style. Default: "spaces". */
+  indentStyle?: "spaces" | "tabs";
+  /** Keyword casing. Default: "lower". */
+  keywordCase?: "upper" | "lower";
+  /** Constant casing (NULL, TRUE, FALSE). Default: "lower". */
+  constantCase?: "upper" | "lower";
+  /** Data type casing (text, varchar, int). Default: "lower". */
+  typeCase?: "upper" | "lower";
+  /** Where a comma sits when a list breaks. Default: "trailing". */
+  commaStyle?: "trailing" | "leading";
+  /** Where a boolean operator sits when a condition breaks. Default: "trailing". */
+  logicalOperatorPlacement?: "trailing" | "leading";
+  /**
+   * How a statement is laid out: "fit" breaks only when a line would exceed the
+   * line width, "expanded" always breaks between clauses. Default: "fit".
+   */
+  layout?: "fit" | "expanded";
+  /** How an explicit cast is spelled: `CAST(x AS t)` or `x::t`. Default: "cast". */
+  castStyle?: "cast" | "operator";
+  /**
+   * Where the body of a clause starts: "break" for a new line, "compact" to keep
+   * the first element on the keyword line. Default: "break".
+   */
+  clauseBodyStyle?: "break" | "compact";
+  /**
+   * If `true`, the terminating semicolon goes on its own line when the statement
+   * spans several lines. Default: `false`.
+   */
+  isolateSemicolon?: boolean;
+  /**
+   * Function names mapped to the number of adjacent arguments in one logical group
+   * (1-255). `json_build_object` and `jsonb_build_object` are grouped in pairs by
+   * default; configure a size of `1` to opt out.
+   */
+  functionArgumentGroups?: Record<string, number>;
+  /** If `true`, keep SQL function bodies verbatim. Default: `false`. */
+  skipFnBodies?: boolean;
+}
+
+/**
+ * The result of formatting SQL.
+ */
+export interface FormatResult {
+  /** The formatted SQL. Statements that could not be formatted are kept verbatim. */
+  formatted: string;
+  /** Diagnostics for statements that could not be formatted. */
+  diagnostics: Diagnostic[];
+}
+
+/**
  * A JSON-RPC message (request, response, or notification).
  * This is the standard LSP message format.
  */
@@ -95,6 +156,8 @@ export interface PGLSModule {
   _pgls_insert_file(pathPtr: number, contentPtr: number): number;
   _pgls_remove_file(pathPtr: number): void;
   _pgls_lint(pathPtr: number): number;
+  _pgls_format(pathPtr: number, optionsPtr: number): number;
+  _pgls_format_sql(sqlPtr: number, optionsPtr: number): number;
   _pgls_complete(pathPtr: number, offset: number): number;
   _pgls_hover(pathPtr: number, offset: number): number;
   _pgls_parse(sqlPtr: number): number;

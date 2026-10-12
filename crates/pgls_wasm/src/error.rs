@@ -11,6 +11,8 @@ pub enum WasmError {
     InvalidSchema(String),
     /// SQL parsing error.
     ParseError(String),
+    /// Invalid options JSON.
+    InvalidOptions(String),
     /// Internal error.
     Internal(String),
 }
@@ -21,6 +23,7 @@ impl fmt::Display for WasmError {
             WasmError::FileNotFound(msg) => write!(f, "File not found: {msg}"),
             WasmError::InvalidSchema(msg) => write!(f, "Invalid schema: {msg}"),
             WasmError::ParseError(msg) => write!(f, "Parse error: {msg}"),
+            WasmError::InvalidOptions(msg) => write!(f, "Invalid options: {msg}"),
             WasmError::Internal(msg) => write!(f, "Internal error: {msg}"),
         }
     }

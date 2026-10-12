@@ -14,10 +14,10 @@ bun add @postgres-language-server/wasm
 
 This package provides two separate APIs. Choose the one that fits your use case:
 
-| API                | Use Case                            | Import Path                                |
-| ------------------ | ----------------------------------- | ------------------------------------------ |
-| **Workspace**      | Direct parse, lint, complete, hover | `@postgres-language-server/wasm/workspace` |
-| **LanguageServer** | Full LSP JSON-RPC protocol          | `@postgres-language-server/wasm/lsp`       |
+| API                | Use Case                                    | Import Path                                |
+| ------------------ | ------------------------------------------- | ------------------------------------------ |
+| **Workspace**      | Direct parse, lint, format, complete, hover | `@postgres-language-server/wasm/workspace` |
+| **LanguageServer** | Full LSP JSON-RPC protocol                  | `@postgres-language-server/wasm/lsp`       |
 
 Each API manages its own workspace independently. Use one or the other, not both.
 
@@ -47,6 +47,32 @@ const completions = workspace.complete("/query.sql", 14); // position after "FRO
 
 // Get hover info
 const hover = workspace.hover("/query.sql", 14); // position over "users"
+```
+
+### Formatting
+
+Format SQL in-process. Options mirror the `format` section of
+`postgres-language-server.jsonc` (same names and defaults, see `FormatOptions`).
+Formatting is always enabled when you call a format function, regardless of `enabled`.
+
+```typescript
+import { createWorkspace, format } from "@postgres-language-server/wasm";
+
+// One-off: loads the WASM module on first use and returns the formatted SQL
+const sql = await format('CREATE TABLE "public"."t" ("id" "uuid" NOT NULL)', {
+  keywordCase: "upper",
+});
+// "CREATE TABLE public.t (id uuid NOT NULL);"
+
+// With a workspace: synchronous, and also returns diagnostics
+const workspace = await createWorkspace();
+const result = workspace.formatSql("select 1;\n\nSELEC 2;", { lineWidth: 80 });
+result.formatted; // statements that cannot be formatted are kept verbatim
+result.diagnostics; // one diagnostic per statement that could not be formatted
+
+// Format a file that was added with insertFile
+workspace.insertFile("/query.sql", "select * from users");
+const { formatted } = workspace.format("/query.sql", { indentStyle: "tabs" });
 ```
 
 ### With Schema
@@ -143,11 +169,15 @@ lsp.handleMessage({
 | `insertFile(path, content)` | Add or update a file in the workspace       |
 | `removeFile(path)`          | Remove a file from the workspace            |
 | `lint(path)`                | Get diagnostics for a file                  |
+| `format(path, options?)`    | Format a file, returns `FormatResult`       |
+| `formatSql(sql, options?)`  | Format a SQL string, returns `FormatResult` |
 | `complete(path, offset)`    | Get completions at position                 |
 | `hover(path, offset)`       | Get hover info at position                  |
 | `setSchema(json)`           | Set database schema                         |
 | `clearSchema()`             | Clear the current schema                    |
 | `version()`                 | Get library version                         |
+
+The top-level `format(sql, options?)` function returns a `Promise<string>` with the formatted SQL.
 
 ### LanguageServer
 

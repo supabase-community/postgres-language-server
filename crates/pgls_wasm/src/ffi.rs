@@ -2,7 +2,7 @@
 //!
 //! This module provides two independent APIs:
 //!
-//! 1. **Workspace API** (`pgls_*` functions) - Direct access to parse, lint, complete, hover
+//! 1. **Workspace API** (`pgls_*` functions) - Direct access to parse, lint, format, complete, hover
 //! 2. **Language Server API** (`pgls_lsp_*` functions) - LSP JSON-RPC message handling
 //!
 //! Each API has its own independent workspace. Choose one based on your use case:
@@ -187,6 +187,81 @@ pub unsafe extern "C" fn pgls_lint(path: *const c_char) -> *mut c_char {
         let result = ws.lint(path_str).map(|diagnostics| {
             serde_json::to_string(&diagnostics).unwrap_or_else(|e| format!("ERROR: {e}"))
         });
+        result_to_c_string(result)
+    })
+}
+
+/// Read an optional options JSON string. A null pointer means "use defaults".
+///
+/// # Safety
+/// The pointer must be null or point to a valid null-terminated string.
+unsafe fn options_from_ptr<'a>(options: *const c_char) -> Result<&'a str, WasmError> {
+    if options.is_null() {
+        return Ok("");
+    }
+    // SAFETY: Caller guarantees options is valid
+    unsafe { c_str_to_str(options) }
+        .ok_or_else(|| WasmError::InvalidOptions("Invalid options pointer".to_string()))
+}
+
+/// Format a file in the workspace.
+/// `options` is a JSON object mirroring the `format` section of the configuration file,
+/// or NULL / an empty string for defaults.
+/// Returns a JSON `FormatResult` (`{"formatted": ..., "diagnostics": [...]}`),
+/// or an error message starting with "ERROR:".
+/// The returned string must be freed with `pgls_free_string`.
+///
+/// # Safety
+/// The path pointer must be valid and point to a null-terminated UTF-8 string.
+/// The options pointer must be NULL or point to a null-terminated UTF-8 string.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn pgls_format(path: *const c_char, options: *const c_char) -> *mut c_char {
+    // SAFETY: Caller guarantees path is valid
+    let path_str = match unsafe { c_str_to_str(path) } {
+        Some(s) => s,
+        None => return str_to_c_string("ERROR: Invalid path pointer"),
+    };
+    // SAFETY: Caller guarantees options is NULL or valid
+    let options_str = match unsafe { options_from_ptr(options) } {
+        Ok(s) => s,
+        Err(e) => return str_to_c_string(&format!("ERROR: {e}")),
+    };
+
+    with_workspace(|ws| {
+        let result = ws
+            .format(path_str, options_str)
+            .map(|result| serde_json::to_string(&result).unwrap_or_else(|e| format!("ERROR: {e}")));
+        result_to_c_string(result)
+    })
+}
+
+/// Format a SQL string without adding it to the workspace.
+/// See `pgls_format` for the options and result format.
+/// The returned string must be freed with `pgls_free_string`.
+///
+/// # Safety
+/// The sql pointer must be valid and point to a null-terminated UTF-8 string.
+/// The options pointer must be NULL or point to a null-terminated UTF-8 string.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn pgls_format_sql(
+    sql: *const c_char,
+    options: *const c_char,
+) -> *mut c_char {
+    // SAFETY: Caller guarantees sql is valid
+    let sql_str = match unsafe { c_str_to_str(sql) } {
+        Some(s) => s,
+        None => return str_to_c_string("ERROR: Invalid SQL pointer"),
+    };
+    // SAFETY: Caller guarantees options is NULL or valid
+    let options_str = match unsafe { options_from_ptr(options) } {
+        Ok(s) => s,
+        Err(e) => return str_to_c_string(&format!("ERROR: {e}")),
+    };
+
+    with_workspace(|ws| {
+        let result = ws
+            .format_sql(sql_str, options_str)
+            .map(|result| serde_json::to_string(&result).unwrap_or_else(|e| format!("ERROR: {e}")));
         result_to_c_string(result)
     })
 }
@@ -389,6 +464,49 @@ mod tests {
             assert!(!result.is_null());
             let result_str = CStr::from_ptr(result).to_str().unwrap();
             assert!(result_str.contains("error") || result_str.len() > 2); // Has errors
+            pgls_free_string(result);
+        }
+    }
+
+    #[test]
+    fn test_ffi_format() {
+        pgls_init();
+
+        unsafe {
+            let sql = CString::new(r#"CREATE TABLE "public"."t" ("id" "uuid" NOT NULL)"#).unwrap();
+            let options = CString::new(r#"{"keywordCase":"upper"}"#).unwrap();
+            let result = pgls_format_sql(sql.as_ptr(), options.as_ptr());
+            assert!(!result.is_null());
+            let result_str = CStr::from_ptr(result).to_str().unwrap();
+            let parsed: serde_json::Value = serde_json::from_str(result_str).unwrap();
+            assert_eq!(
+                parsed["formatted"],
+                "CREATE TABLE public.t (id uuid NOT NULL);"
+            );
+            assert_eq!(parsed["diagnostics"], serde_json::json!([]));
+            pgls_free_string(result);
+
+            // NULL options use defaults
+            let path = CString::new("/ffi-format.sql").unwrap();
+            assert!(pgls_insert_file(path.as_ptr(), sql.as_ptr()).is_null());
+            let result = pgls_format(path.as_ptr(), std::ptr::null());
+            assert!(!result.is_null());
+            let result_str = CStr::from_ptr(result).to_str().unwrap();
+            let parsed: serde_json::Value = serde_json::from_str(result_str).unwrap();
+            assert_eq!(
+                parsed["formatted"],
+                "create table public.t (id uuid not null);"
+            );
+            pgls_free_string(result);
+
+            // Invalid options
+            let options = CString::new("{\"keywordCase\":1}").unwrap();
+            let result = pgls_format(path.as_ptr(), options.as_ptr());
+            let result_str = CStr::from_ptr(result).to_str().unwrap();
+            assert!(
+                result_str.starts_with("ERROR: Invalid options"),
+                "{result_str}"
+            );
             pgls_free_string(result);
         }
     }
