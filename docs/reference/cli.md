@@ -490,6 +490,12 @@ Formats the requested files.
 **Available options:**
 - **`    --write`** &mdash; 
   Write formatted output back to files
+- **`    --stdin-file-path`**=_`PATH`_ &mdash; 
+  Use this option when you want to format code piped from `stdin`, and print the output to `stdout`.
+
+  The file doesn't need to exist on disk. The path is used to resolve the configuration (e.g. ignored files) and to label diagnostics, which are printed to `stderr`.
+
+  Example: `echo 'select 1' | postgres-language-server format --stdin-file-path=test.sql`
 - **`    --staged`** &mdash; 
   When set to true, only the files that have been staged (the ones prepared to be committed) will be formatted. This option should be used when working locally.
 - **`    --changed`** &mdash; 

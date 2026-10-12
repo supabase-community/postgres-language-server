@@ -1,12 +1,11 @@
 use crate::cli_options::CliOptions;
-use crate::commands::get_files_to_process_with_cli_options;
+use crate::commands::{get_files_to_process_with_cli_options, read_stdin_payload};
 use crate::diagnostics::DatabaseUnavailable;
-use crate::execute::{StdinPayload, run_files, run_stdin};
+use crate::execute::{run_files, run_stdin};
 use crate::reporter::Report;
 use crate::{CliDiagnostic, CliSession, VcsIntegration};
 use crate::{ExecutionConfig, ExecutionMode, VcsTargeting};
 use pgls_configuration::PartialConfiguration;
-use pgls_console::Console;
 use pgls_diagnostics::{Error, category};
 use pgls_fs::FileSystem;
 use pgls_workspace::DynRef;
@@ -49,7 +48,7 @@ pub fn check(
     let execution = ExecutionConfig::new(mode, max_diagnostics);
 
     if let Some(stdin_path) = args.stdin_file_path.as_deref() {
-        let payload = read_stdin_payload(stdin_path, session.console())?;
+        let payload = read_stdin_payload(stdin_path, session.console(), "check")?;
         run_stdin(&mut session, &execution, payload)
     } else {
         let database_error = check_database_connection(&session)?;
@@ -97,21 +96,6 @@ fn resolve_paths(
     }
 
     Ok(paths)
-}
-
-fn read_stdin_payload(
-    path: &str,
-    console: &mut dyn Console,
-) -> Result<StdinPayload, CliDiagnostic> {
-    let input_code = console.read();
-    if let Some(input_code) = input_code {
-        Ok(StdinPayload {
-            path: path.into(),
-            content: input_code,
-        })
-    } else {
-        Err(CliDiagnostic::missing_argument("stdin", "check"))
-    }
 }
 
 fn enforce_exit_codes(cli_options: &CliOptions, payload: &Report) -> Result<(), CliDiagnostic> {

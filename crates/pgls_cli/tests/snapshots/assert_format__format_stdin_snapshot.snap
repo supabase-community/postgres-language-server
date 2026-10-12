@@ -1,0 +1,11 @@
+---
+source: crates/pgls_cli/tests/assert_format.rs
+expression: "run_format_stdin(&[\"--stdin-file-path\", \"virtual.sql\"],\n\"SELECT a,b FROM t;\\n\\n-- keep me\\nselect 1\\n\")"
+---
+status: success
+stdout:
+select a, b from t;
+
+-- keep me
+select 1;
+stderr:

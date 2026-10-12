@@ -1,6 +1,6 @@
 use crate::cli_options::CliOptions;
-use crate::commands::get_files_to_process_with_cli_options;
-use crate::execute::run_files;
+use crate::commands::{get_files_to_process_with_cli_options, read_stdin_payload};
+use crate::execute::{run_files, run_stdin};
 use crate::reporter::Report;
 use crate::{CliDiagnostic, CliSession, VcsIntegration};
 use crate::{ExecutionConfig, ExecutionMode, VcsTargeting};
@@ -14,6 +14,7 @@ pub struct FormatArgs {
     pub configuration: Option<PartialConfiguration>,
     pub paths: Vec<OsString>,
     pub write: bool,
+    pub stdin_file_path: Option<String>,
     pub staged: bool,
     pub changed: bool,
     pub since: Option<String>,
@@ -29,8 +30,6 @@ pub fn format(
     let configuration = session.prepare_with_config(cli_options, args.configuration.clone())?;
     session.setup_workspace(configuration.clone(), VcsIntegration::Enabled)?;
 
-    let paths = resolve_paths(session.fs(), &configuration, &args)?;
-
     let vcs = VcsTargeting {
         staged: args.staged,
         changed: args.changed,
@@ -42,6 +41,12 @@ pub fn format(
     };
     let execution = ExecutionConfig::new(mode, u32::MAX);
 
+    if let Some(stdin_path) = args.stdin_file_path.as_deref() {
+        let payload = read_stdin_payload(stdin_path, session.console(), "format")?;
+        return run_stdin(&mut session, &execution, payload);
+    }
+
+    let paths = resolve_paths(session.fs(), &configuration, &args)?;
     let report: Report = run_files(&mut session, &execution, paths)?;
 
     let exit_result = enforce_exit_codes(cli_options, &report);
@@ -92,6 +97,21 @@ fn enforce_exit_codes(cli_options: &CliOptions, payload: &Report) -> Result<(), 
 }
 
 fn validate_args(args: &FormatArgs) -> Result<(), CliDiagnostic> {
+    if args.stdin_file_path.is_some() {
+        let incompatible = [
+            ("PATH", !args.paths.is_empty()),
+            ("write", args.write),
+            ("staged", args.staged),
+            ("changed", args.changed),
+        ];
+        if let Some((argument, _)) = incompatible.iter().find(|(_, is_set)| *is_set) {
+            return Err(CliDiagnostic::incompatible_arguments(
+                "stdin-file-path",
+                *argument,
+            ));
+        }
+    }
+
     if args.since.is_some() {
         if !args.changed {
             return Err(CliDiagnostic::incompatible_arguments("since", "changed"));

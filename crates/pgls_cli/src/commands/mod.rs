@@ -1,9 +1,11 @@
 use crate::changed::{get_changed_files, get_staged_files};
 use crate::cli_options::{CliOptions, CliReporter, ColorsArg, cli_options};
+use crate::execute::StdinPayload;
 use crate::logging::LoggingKind;
 use crate::{CliDiagnostic, LoggingLevel, VERSION};
 use bpaf::Bpaf;
 use pgls_configuration::{PartialConfiguration, partial_configuration};
+use pgls_console::Console;
 use pgls_fs::FileSystem;
 use pgls_workspace::DynRef;
 use std::ffi::OsString;
@@ -86,6 +88,15 @@ pub enum PgLSCommand {
         /// Write formatted output back to files
         #[bpaf(long("write"), switch)]
         write: bool,
+
+        /// Use this option when you want to format code piped from `stdin`, and print the output to `stdout`.
+        ///
+        /// The file doesn't need to exist on disk. The path is used to resolve the configuration
+        /// (e.g. ignored files) and to label diagnostics, which are printed to `stderr`.
+        ///
+        /// Example: `echo 'select 1' | postgres-language-server format --stdin-file-path=test.sql`
+        #[bpaf(long("stdin-file-path"), argument("PATH"), hide_usage)]
+        stdin_file_path: Option<String>,
 
         /// When set to true, only the files that have been staged (the ones prepared to be committed)
         /// will be formatted. This option should be used when working locally.
@@ -370,6 +381,21 @@ pub(crate) fn get_files_to_process_with_cli_options(
         Ok(Some(get_staged_files(fs)?))
     } else {
         Ok(None)
+    }
+}
+
+/// Reads the code piped to `stdin` for the given virtual file path.
+pub(crate) fn read_stdin_payload(
+    path: &str,
+    console: &mut dyn Console,
+    subcommand: &str,
+) -> Result<StdinPayload, CliDiagnostic> {
+    match console.read() {
+        Some(content) => Ok(StdinPayload {
+            path: path.into(),
+            content,
+        }),
+        None => Err(CliDiagnostic::missing_argument("stdin", subcommand)),
     }
 }
 

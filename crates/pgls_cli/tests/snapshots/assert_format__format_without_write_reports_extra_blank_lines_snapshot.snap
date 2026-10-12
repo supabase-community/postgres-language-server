@@ -1,0 +1,24 @@
+---
+source: crates/pgls_cli/tests/assert_format.rs
+expression: "run_format(&[BLANK_LINES_PATH])"
+---
+status: failure
+stdout:
+Processed 1 file in <duration>. No fixes applied.
+Found 1 error.
+stderr:
+tests/fixtures/format/blank_lines.sql format ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Statement could be formatted using `--write`
+  
+    1 1 │   select 1;
+    2 2 │   
+    3   │ - 
+    4   │ - 
+    5 3 │   select 2;
+    6 4 │   
+  
+
+format ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Some errors were emitted while running checks.
