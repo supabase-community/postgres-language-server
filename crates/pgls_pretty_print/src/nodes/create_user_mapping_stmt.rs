@@ -1,10 +1,9 @@
 use crate::{
     TokenKind,
     emitter::{EventEmitter, GroupKind, LineType},
+    nodes::node_list::emit_parenthesized_list,
 };
 use pgls_query::protobuf::CreateUserMappingStmt;
-
-use super::node_list::emit_parenthesized_list;
 
 pub(super) fn emit_create_user_mapping_stmt(e: &mut EventEmitter, n: &CreateUserMappingStmt) {
     e.group_start(GroupKind::CreateUserMappingStmt);

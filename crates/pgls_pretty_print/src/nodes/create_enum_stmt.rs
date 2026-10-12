@@ -3,9 +3,8 @@ use pgls_query::protobuf::CreateEnumStmt;
 use crate::{
     TokenKind,
     emitter::{EventEmitter, GroupKind},
+    nodes::node_list::emit_parenthesized_list,
 };
-
-use super::node_list::emit_parenthesized_list;
 
 pub(super) fn emit_create_enum_stmt(e: &mut EventEmitter, n: &CreateEnumStmt) {
     e.group_start(GroupKind::CreateEnumStmt);

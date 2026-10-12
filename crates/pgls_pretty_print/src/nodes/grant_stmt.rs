@@ -237,12 +237,7 @@ fn emit_access_priv(e: &mut EventEmitter, priv_node: &pgls_query::protobuf::Acce
     if priv_node.priv_name.is_empty() && !priv_node.cols.is_empty() {
         e.token(TokenKind::ALL_KW);
     } else if !priv_node.priv_name.is_empty() {
-        for (index, word) in priv_node.priv_name.split(' ').enumerate() {
-            if index > 0 {
-                e.space();
-            }
-            super::emit_keyword(e, word);
-        }
+        super::emit_keywords(e, &priv_node.priv_name);
     }
 
     // Handle column privileges

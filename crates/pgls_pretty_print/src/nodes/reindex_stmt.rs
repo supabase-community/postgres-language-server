@@ -3,9 +3,8 @@ use pgls_query::{NodeEnum, protobuf::ReindexStmt};
 use crate::{
     TokenKind,
     emitter::{EventEmitter, GroupKind, LineType},
+    nodes::node_list::emit_parenthesized_list,
 };
-
-use super::node_list::emit_parenthesized_list;
 
 pub(super) fn emit_reindex_stmt(e: &mut EventEmitter, n: &ReindexStmt) {
     e.group_start(GroupKind::ReindexStmt);

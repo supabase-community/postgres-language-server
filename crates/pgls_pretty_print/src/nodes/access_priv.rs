@@ -8,17 +8,8 @@ pub(super) fn emit_access_priv(e: &mut EventEmitter, n: &AccessPriv) {
     e.group_start(GroupKind::AccessPriv);
 
     if !n.priv_name.is_empty() {
-        // Privilege names are read case-insensitively, `alter system` being the only one of two
-        // words, so they follow the keyword case whether or not they are keywords.
-        for (index, word) in n.priv_name.split(' ').enumerate() {
-            if index > 0 {
-                e.space();
-            }
-            match TokenKind::from_keyword(word) {
-                Some(keyword) => e.token(keyword),
-                None => e.token(TokenKind::WORD(word.to_string())),
-            }
-        }
+        // Privilege names, `alter system` included, follow the keyword case.
+        super::emit_keywords(e, &n.priv_name);
     } else {
         // Empty priv_name means ALL privileges
         e.token(TokenKind::ALL_KW);

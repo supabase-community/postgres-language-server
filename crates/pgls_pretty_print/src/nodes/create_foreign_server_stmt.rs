@@ -4,8 +4,10 @@ use crate::{
 };
 use pgls_query::protobuf::CreateForeignServerStmt;
 
-use super::node_list::emit_parenthesized_list;
-use super::string::{emit_identifier_maybe_quoted, emit_keyword, emit_single_quoted_str};
+use super::{
+    node_list::emit_parenthesized_list,
+    string::{emit_identifier_maybe_quoted, emit_keyword, emit_single_quoted_str},
+};
 
 pub(super) fn emit_create_foreign_server_stmt(e: &mut EventEmitter, n: &CreateForeignServerStmt) {
     e.group_start(GroupKind::CreateForeignServerStmt);

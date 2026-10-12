@@ -5,8 +5,10 @@ use crate::{
     emitter::{EventEmitter, GroupKind, LineType},
 };
 
-use super::node_list::emit_parenthesized_list;
-use super::{emit_node, select_stmt::emit_select_stmt_no_semicolon, string::emit_string};
+use super::{
+    emit_node, node_list::emit_parenthesized_list, select_stmt::emit_select_stmt_no_semicolon,
+    string::emit_string,
+};
 
 pub(super) fn emit_create_table_as_stmt(e: &mut EventEmitter, n: &CreateTableAsStmt) {
     e.group_start(GroupKind::CreateTableAsStmt);

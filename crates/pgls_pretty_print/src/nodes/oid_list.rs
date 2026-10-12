@@ -2,12 +2,10 @@ use pgls_query::protobuf::OidList;
 
 use crate::emitter::{EventEmitter, GroupKind};
 
-use super::node_list::emit_parenthesized_list;
-
 pub(super) fn emit_oid_list(e: &mut EventEmitter, n: &OidList) {
     e.group_start(GroupKind::OidList);
 
-    emit_parenthesized_list(e, &n.items, super::emit_node);
+    super::node_list::emit_parenthesized_list(e, &n.items, super::emit_node);
 
     e.group_end();
 }

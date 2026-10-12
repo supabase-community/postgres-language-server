@@ -4,9 +4,9 @@ use pgls_query::protobuf::{AlterOperatorStmt, DefElem, List, ObjectWithArgs};
 use crate::{
     TokenKind,
     emitter::{EventEmitter, GroupKind, LineType},
+    nodes::node_list::emit_parenthesized_list,
 };
 
-use super::node_list::emit_parenthesized_list;
 use super::string::emit_identifier_maybe_quoted;
 
 pub(super) fn emit_alter_operator_stmt(e: &mut EventEmitter, n: &AlterOperatorStmt) {

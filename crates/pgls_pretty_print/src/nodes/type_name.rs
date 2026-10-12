@@ -1,10 +1,10 @@
 use crate::{
     TokenKind,
     emitter::{EventEmitter, GroupKind},
+    nodes::node_list::emit_parenthesized_list,
 };
 use pgls_query::protobuf::{self, TypeName};
 
-use super::node_list::emit_parenthesized_list;
 use super::string::{
     emit_identifier, emit_identifier_maybe_quoted, emit_type_identifier_maybe_quoted,
     needs_quoting_as_function_or_type_name,
@@ -233,17 +233,12 @@ fn is_time_with_tz_type(name_parts: &[String]) -> bool {
 }
 
 fn emit_time_with_tz_type(e: &mut EventEmitter, n: &TypeName, name_parts: &[String]) {
-    let base_name = match name_parts {
-        [name] => name,
-        [schema, name] if is_pg_catalog(schema) => name,
-        _ => {
-            emit_normalized_type_name(e, name_parts);
-            return;
-        }
+    let [_, name] = name_parts else {
+        emit_normalized_type_name(e, name_parts);
+        return;
     };
 
-    let lowered = base_name.to_ascii_lowercase();
-    match lowered.as_str() {
+    match name.as_str() {
         "timetz" => {
             e.token(TokenKind::TIME_KW);
             // Emit precision if any

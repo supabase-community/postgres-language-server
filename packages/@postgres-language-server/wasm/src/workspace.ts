@@ -260,7 +260,7 @@ export async function createWorkspace(options?: WorkspaceOptions): Promise<Works
  * ```
  */
 export async function format(sql: string, options?: FormatOptions): Promise<string> {
-  const workspace = new Workspace(await loadWasm());
+  const workspace = await createWorkspace();
   return workspace.formatSql(sql, options).formatted;
 }
 

@@ -67,11 +67,12 @@ fn emit_operator_cast(e: &mut EventEmitter, n: &TypeCast) {
     }
 }
 
-/// Whitelist of self contained expressions that can carry a `::` without parentheses.
+/// Whitelist of self contained expressions that can carry a `::`, or be the operand of other
+/// high-precedence syntax such as `AT TIME ZONE`, without parentheses.
 ///
 /// Anything absent from this list is parenthesised, which is always valid SQL. Listing the unsafe
 /// kinds instead would fail open on any node nobody thought about.
-fn needs_parentheses(node: &Node) -> bool {
+pub(super) fn needs_parentheses(node: &Node) -> bool {
     match node.node.as_ref() {
         Some(NodeEnum::AExpr(a_expr)) => a_expr.kind != AExprKind::AexprNullif as i32,
         // A negative constant is emitted with its sign, and `-1::int` casts 1 before negating it.

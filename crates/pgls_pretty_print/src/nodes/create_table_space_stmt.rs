@@ -5,7 +5,6 @@ use crate::{
     emitter::{EventEmitter, GroupKind},
 };
 
-use super::node_list::emit_parenthesized_list;
 use super::string::{emit_identifier_maybe_quoted, emit_keyword, emit_single_quoted_str};
 
 pub(super) fn emit_create_table_space_stmt(e: &mut EventEmitter, n: &CreateTableSpaceStmt) {
@@ -39,7 +38,7 @@ pub(super) fn emit_create_table_space_stmt(e: &mut EventEmitter, n: &CreateTable
         e.space();
         e.token(TokenKind::WITH_KW);
         e.space();
-        emit_parenthesized_list(e, &n.options, super::emit_node);
+        super::node_list::emit_parenthesized_list(e, &n.options, super::emit_node);
     }
 
     e.token(TokenKind::SEMICOLON);

@@ -1,10 +1,9 @@
 use crate::{
     TokenKind,
     emitter::{EventEmitter, GroupKind, LineType},
+    nodes::node_list::emit_parenthesized_list,
 };
 use pgls_query::protobuf::TableSampleClause;
-
-use super::node_list::emit_parenthesized_list;
 
 pub(super) fn emit_table_sample_clause(e: &mut EventEmitter, clause: &TableSampleClause) {
     e.group_start(GroupKind::TableSampleClause);

@@ -1,10 +1,9 @@
 use crate::{
     TokenKind,
     emitter::{EventEmitter, GroupKind},
+    nodes::node_list::emit_parenthesized_list,
 };
 use pgls_query::protobuf::{RowCompareExpr, RowCompareType};
-
-use super::node_list::emit_parenthesized_list;
 
 pub(super) fn emit_row_compare_expr(e: &mut EventEmitter, n: &RowCompareExpr) {
     e.group_start(GroupKind::RowCompareExpr);

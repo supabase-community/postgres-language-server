@@ -6,7 +6,6 @@ use crate::{
 };
 
 use super::emit_node;
-use super::node_list::emit_parenthesized_list;
 
 pub(super) fn emit_execute_stmt(e: &mut EventEmitter, n: &ExecuteStmt) {
     emit_execute_stmt_impl(e, n, true);
@@ -25,7 +24,7 @@ fn emit_execute_stmt_impl(e: &mut EventEmitter, n: &ExecuteStmt, with_semicolon:
 
     if !n.params.is_empty() {
         e.line(LineType::SoftOrSpace);
-        emit_parenthesized_list(e, &n.params, emit_node);
+        super::node_list::emit_parenthesized_list(e, &n.params, emit_node);
     }
 
     if with_semicolon {

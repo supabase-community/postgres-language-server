@@ -3,9 +3,8 @@ use pgls_query::protobuf::IndexStmt;
 use crate::{
     TokenKind,
     emitter::{EventEmitter, GroupKind, LineType},
+    nodes::node_list::emit_parenthesized_list,
 };
-
-use super::node_list::emit_parenthesized_list;
 
 pub(super) fn emit_index_stmt(e: &mut EventEmitter, n: &IndexStmt) {
     emit_index_stmt_impl(e, n, true);

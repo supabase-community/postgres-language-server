@@ -293,48 +293,7 @@ pub(super) fn emit_constraint(e: &mut EventEmitter, n: &Constraint) {
 
             if !n.exclusions.is_empty() {
                 e.space();
-                e.group_start(GroupKind::List);
-                e.token(TokenKind::L_PAREN);
-                e.indent_start();
-                e.line(LineType::Soft);
-
-                for (idx, exclusion) in n.exclusions.iter().enumerate() {
-                    if idx > 0 {
-                        e.token(TokenKind::COMMA);
-                        e.line(LineType::SoftOrSpace);
-                    }
-
-                    let exclusion_list = assert_node_variant!(List, exclusion);
-                    debug_assert!(exclusion_list.items.len() >= 2);
-
-                    if let Some(index_elem) = exclusion_list.items.first() {
-                        super::emit_node(index_elem, e);
-                    }
-
-                    if let Some(operators) = exclusion_list.items.get(1) {
-                        e.space();
-                        e.token(TokenKind::WITH_KW);
-                        e.space();
-
-                        match operators.node.as_ref() {
-                            Some(pgls_query::NodeEnum::List(op_list)) => {
-                                for (op_idx, op) in op_list.items.iter().enumerate() {
-                                    if op_idx > 0 {
-                                        e.token(TokenKind::COMMA);
-                                        e.space();
-                                    }
-                                    emit_exclusion_operator(e, op);
-                                }
-                            }
-                            _ => emit_exclusion_operator(e, operators),
-                        }
-                    }
-                }
-
-                e.indent_end();
-                e.line(LineType::Soft);
-                e.token(TokenKind::R_PAREN);
-                e.group_end();
+                emit_parenthesized_list(e, &n.exclusions, emit_exclusion);
             }
 
             // INCLUDE (columns)
@@ -510,6 +469,35 @@ fn emit_deferrable(e: &mut EventEmitter, n: &Constraint, continued: &mut bool) {
             e.token(TokenKind::INITIALLY_KW);
             e.space();
             e.token(TokenKind::DEFERRED_KW);
+        }
+    }
+}
+
+/// Emits one element of an exclusion constraint: `column WITH operator`.
+fn emit_exclusion(exclusion: &pgls_query::Node, e: &mut EventEmitter) {
+    let exclusion_list = assert_node_variant!(List, exclusion);
+    debug_assert!(exclusion_list.items.len() >= 2);
+
+    if let Some(index_elem) = exclusion_list.items.first() {
+        super::emit_node(index_elem, e);
+    }
+
+    if let Some(operators) = exclusion_list.items.get(1) {
+        e.space();
+        e.token(TokenKind::WITH_KW);
+        e.space();
+
+        match operators.node.as_ref() {
+            Some(pgls_query::NodeEnum::List(op_list)) => {
+                for (op_idx, op) in op_list.items.iter().enumerate() {
+                    if op_idx > 0 {
+                        e.token(TokenKind::COMMA);
+                        e.space();
+                    }
+                    emit_exclusion_operator(e, op);
+                }
+            }
+            _ => emit_exclusion_operator(e, operators),
         }
     }
 }

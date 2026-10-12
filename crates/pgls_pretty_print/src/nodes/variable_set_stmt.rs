@@ -14,14 +14,10 @@ fn emit_set_arg(node: &Node, e: &mut EventEmitter) {
     if let Some(NodeEnum::AConst(a_const)) = &node.node
         && let Some(pgls_query::protobuf::a_const::Val::Sval(s)) = &a_const.val
     {
-        // Check if this looks like it should be an identifier (not a quoted string)
         // In SET statements, simple identifiers like schema names are stored as string constants
-        // but should be emitted without quotes
+        // but should be emitted without quotes. A value that an unquoted word cannot spell keeps
+        // its quotes: unquoted, `SET datestyle = German` would set `german`.
         let val = &s.sval;
-
-        // Emit as identifier (no quotes) if it looks like a simple identifier
-        // This includes schema names, role names, etc.
-        // An unquoted word is folded to lowercase: `SET datestyle = German` would set `german`.
         if !super::string::needs_quoting(val) {
             e.group_start(GroupKind::String);
             e.token(TokenKind::IDENT(val.clone()));

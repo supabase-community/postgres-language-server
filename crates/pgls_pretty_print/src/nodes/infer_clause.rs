@@ -5,8 +5,7 @@ use crate::{
     emitter::{EventEmitter, GroupKind, LineType},
 };
 
-use super::node_list::emit_parenthesized_list;
-use super::string::emit_identifier_maybe_quoted;
+use super::{node_list::emit_parenthesized_list, string::emit_identifier_maybe_quoted};
 
 pub(super) fn emit_infer_clause(e: &mut EventEmitter, n: &InferClause) {
     e.group_start(GroupKind::InferClause);

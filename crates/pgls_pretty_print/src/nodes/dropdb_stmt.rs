@@ -3,9 +3,8 @@ use pgls_query::{NodeEnum, protobuf::DropdbStmt};
 use crate::{
     TokenKind,
     emitter::{EventEmitter, GroupKind},
+    nodes::node_list::emit_parenthesized_list,
 };
-
-use super::node_list::emit_parenthesized_list;
 
 pub(super) fn emit_dropdb_stmt(e: &mut EventEmitter, n: &DropdbStmt) {
     e.group_start(GroupKind::DropdbStmt);

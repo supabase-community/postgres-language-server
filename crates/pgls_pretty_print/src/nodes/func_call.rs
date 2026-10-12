@@ -314,7 +314,7 @@ fn emit_sql_syntax_call(e: &mut EventEmitter, n: &FuncCall) -> bool {
         ("extract", [field, source]) => {
             e.token(TokenKind::EXTRACT_KW);
             e.token(TokenKind::L_PAREN);
-            emit_word_or_literal(e, field);
+            emit_extract_field(e, field);
             e.space();
             e.token(TokenKind::FROM_KW);
             e.space();
@@ -509,16 +509,13 @@ fn normalization_form(node: &Node) -> Option<TokenKind> {
     }
 }
 
-/// Emits the field of `EXTRACT`, stored as a string: as the word it was written as when it is one.
-fn emit_word_or_literal(e: &mut EventEmitter, node: &Node) {
+/// Emits the field of `EXTRACT`, stored as a string, as the word it was written as when it is one.
+fn emit_extract_field(e: &mut EventEmitter, node: &Node) {
     if let Some(NodeEnum::AConst(a_const)) = &node.node
         && let Some(Val::Sval(field)) = &a_const.val
         && !needs_quoting(&field.sval)
     {
-        match TokenKind::from_keyword(&field.sval) {
-            Some(keyword) => e.token(keyword),
-            None => e.token(TokenKind::IDENT(field.sval.clone())),
-        }
+        super::emit_keyword(e, &field.sval);
         return;
     }
 
@@ -528,23 +525,11 @@ fn emit_word_or_literal(e: &mut EventEmitter, node: &Node) {
 /// Emits an operand of SQL-standard syntax, in parentheses unless it is a single term that binds
 /// tighter than any operator.
 fn emit_parenthesized_unless_simple(e: &mut EventEmitter, node: &Node) {
-    let is_simple = match &node.node {
-        Some(NodeEnum::ColumnRef(_) | NodeEnum::ParamRef(_) | NodeEnum::TypeCast(_)) => true,
-        Some(NodeEnum::FuncCall(call)) => call.funcformat != CoercionForm::CoerceSqlSyntax as i32,
-        Some(NodeEnum::AConst(a_const)) => match &a_const.val {
-            Some(Val::Ival(integer)) => integer.ival >= 0,
-            Some(Val::Fval(float)) => !float.fval.starts_with('-'),
-            Some(Val::Sval(_) | Val::Bsval(_) | Val::Boolval(_)) => true,
-            None => true,
-        },
-        _ => false,
-    };
-
-    if is_simple {
-        super::emit_node(node, e);
-    } else {
+    if super::type_cast::needs_parentheses(node) {
         e.token(TokenKind::L_PAREN);
         super::emit_node(node, e);
         e.token(TokenKind::R_PAREN);
+    } else {
+        super::emit_node(node, e);
     }
 }

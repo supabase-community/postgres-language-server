@@ -3,9 +3,8 @@ use pgls_query::protobuf::PrepareStmt;
 use crate::{
     TokenKind,
     emitter::{EventEmitter, GroupKind, LineType},
+    nodes::node_list::emit_parenthesized_list,
 };
-
-use super::node_list::emit_parenthesized_list;
 
 pub(super) fn emit_prepare_stmt(e: &mut EventEmitter, n: &PrepareStmt) {
     e.group_start(GroupKind::PrepareStmt);

@@ -5,8 +5,6 @@ use crate::{
     emitter::{EventEmitter, GroupKind},
 };
 
-use super::node_list::emit_parenthesized_list;
-
 pub(super) fn emit_index_elem(e: &mut EventEmitter, n: &IndexElem) {
     e.group_start(GroupKind::IndexElem);
 
@@ -38,7 +36,7 @@ pub(super) fn emit_index_elem(e: &mut EventEmitter, n: &IndexElem) {
 
         // Optional opclass options (e.g., tsvector_ops(siglen = 1000))
         if !n.opclassopts.is_empty() {
-            emit_parenthesized_list(e, &n.opclassopts, |node, emitter| {
+            super::node_list::emit_parenthesized_list(e, &n.opclassopts, |node, emitter| {
                 if let Some(pgls_query::NodeEnum::DefElem(def)) = node.node.as_ref() {
                     emitter.token(TokenKind::IDENT(def.defname.clone()));
                     if let Some(ref arg) = def.arg {
