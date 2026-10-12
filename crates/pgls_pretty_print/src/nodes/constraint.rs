@@ -530,7 +530,7 @@ fn emit_foreign_key_action(
     // Caller handles line break - we just emit the action
     e.token(TokenKind::ON_KW);
     e.space();
-    super::emit_word(e, event);
+    super::emit_keyword(e, event);
     e.space();
 
     match action {

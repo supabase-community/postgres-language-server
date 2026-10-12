@@ -16,9 +16,9 @@ pub(super) fn emit_partition_spec(e: &mut EventEmitter, n: &PartitionSpec) {
     // Emit partition strategy
     // PartitionStrategy: Undefined = 0, List = 1, Range = 2, Hash = 3
     match n.strategy {
-        1 => super::emit_word(e, "list"),
+        1 => super::emit_keyword(e, "list"),
         2 => e.token(TokenKind::RANGE_KW),
-        3 => super::emit_word(e, "hash"),
+        3 => super::emit_keyword(e, "hash"),
         _ => {}
     }
 

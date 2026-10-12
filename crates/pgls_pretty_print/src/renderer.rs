@@ -120,26 +120,13 @@ impl<W: Write> Renderer<W> {
         group_events: &[LayoutEvent],
         trailing_width: usize,
     ) -> Result<(), std::fmt::Error> {
-        if let Some(single_line) = self.try_single_line(group_events)
-            && self.fits(&single_line, trailing_width)
-        {
+        if let Some(single_line) = self.single_line_if_fits(group_events, trailing_width) {
             self.write_text(&single_line)?;
             return Ok(());
         }
 
         // Skip the GroupStart and GroupEnd markers.
         self.render_events_with_breaks(&group_events[1..group_events.len() - 1], trailing_width)
-    }
-
-    /// Whether `text` fits on the current line, followed by `trailing_width` columns that cannot
-    /// move to the next line. Only the first line of a text spanning several lines, a function
-    /// body for instance, sits on the current one.
-    fn fits(&self, text: &str, trailing_width: usize) -> bool {
-        let width = match text.split_once('\n') {
-            Some((first_line, _)) => first_line.len(),
-            None => text.len() + trailing_width,
-        };
-        self.effective_line_length() + width <= self.config.max_line_length
     }
 
     /// The width of the text that follows a group without a break opportunity in between, such as
@@ -189,7 +176,7 @@ impl<W: Write> Renderer<W> {
                 LayoutEvent::Token(token) => {
                     // This path is only taken when the enclosing group broke, so the statement
                     // already spans several lines and the terminator can stand alone. A statement
-                    // that fits is rendered by try_single_line, which never reaches this code, and
+                    // that fits is rendered by single_line_if_fits, which never reaches this code, and
                     // therefore keeps its semicolon attached.
                     if self.config.isolate_semicolon && matches!(token, TokenKind::SEMICOLON) {
                         self.write_line_break()?;
@@ -241,52 +228,60 @@ impl<W: Write> Renderer<W> {
         Ok(())
     }
 
-    fn try_single_line(&self, group_events: &[LayoutEvent]) -> Option<String> {
+    /// The group on one line, if it can be collapsed and fits on the current line followed by
+    /// `trailing_width` columns that cannot move to the next line. Only the first line of a text
+    /// spanning several lines, a function body for instance, sits on the current one.
+    ///
+    /// Measuring stops as soon as the line is full, so a large group that cannot fit is not
+    /// rendered in full for every level it is nested in.
+    fn single_line_if_fits(
+        &self,
+        group_events: &[LayoutEvent],
+        trailing_width: usize,
+    ) -> Option<String> {
+        let available = self
+            .config
+            .max_line_length
+            .saturating_sub(self.effective_line_length());
         let mut buffer = String::new();
-        let mut has_hard_breaks = false;
+        // Set once the text reaches a line break, after which the width no longer matters.
+        let mut first_line_fits = false;
 
         for event in group_events {
             match event {
-                LayoutEvent::Token(token) => {
-                    let text = token.render(&self.config);
-                    buffer.push_str(&text);
-                }
-                LayoutEvent::Space => {
-                    buffer.push(' ');
-                }
-                LayoutEvent::Line(LineType::Hard) => {
-                    has_hard_breaks = true;
-                    break;
-                }
-                LayoutEvent::Line(LineType::Soft) => {
-                    // soft lines disappear in single-line mode (no space)
-                }
-                LayoutEvent::Line(LineType::SoftOrSpace) => {
-                    buffer.push(' '); // Becomes space in single-line mode
-                }
-                LayoutEvent::Line(LineType::Fill) => {
-                    buffer.push(' ');
-                }
-                LayoutEvent::Line(LineType::FillNoSpace) => {}
+                LayoutEvent::Token(token) => buffer.push_str(&token.render(&self.config)),
+                LayoutEvent::Space
+                | LayoutEvent::Line(LineType::SoftOrSpace)
+                | LayoutEvent::Line(LineType::Fill) => buffer.push(' '),
+                // Collapsing would push code behind a `--` comment or flatten a multi-line block
+                // comment into the surrounding expression.
+                LayoutEvent::Line(LineType::Hard) => return None,
                 LayoutEvent::Comment { text, line_comment } => {
                     if *line_comment || text.contains('\n') {
-                        // Collapsing would push code behind a `--` comment or flatten a
-                        // multi-line block comment into the surrounding expression.
-                        has_hard_breaks = true;
-                        break;
+                        return None;
                     }
                     buffer.push_str(text);
                 }
-                LayoutEvent::GroupStart { .. } | LayoutEvent::GroupEnd => {
-                    // skip group markers for single line test
-                }
-                LayoutEvent::IndentStart | LayoutEvent::IndentEnd => {
-                    // skip indent changes for single line test
+                LayoutEvent::Line(LineType::Soft | LineType::FillNoSpace)
+                | LayoutEvent::GroupStart { .. }
+                | LayoutEvent::GroupEnd
+                | LayoutEvent::IndentStart
+                | LayoutEvent::IndentEnd => {}
+            }
+
+            if !first_line_fits {
+                match buffer.split_once('\n') {
+                    Some((first_line, _)) if first_line.len() <= available => {
+                        first_line_fits = true;
+                    }
+                    Some(_) => return None,
+                    None if buffer.len() + trailing_width > available => return None,
+                    None => {}
                 }
             }
         }
 
-        if has_hard_breaks { None } else { Some(buffer) }
+        Some(buffer)
     }
 
     fn handle_line(&mut self, line_type: &LineType) -> Result<(), std::fmt::Error> {

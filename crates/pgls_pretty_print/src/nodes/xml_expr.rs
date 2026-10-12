@@ -1,11 +1,9 @@
 use crate::{
     TokenKind,
     emitter::{EventEmitter, GroupKind, LineType},
-    nodes::node_list::emit_comma_separated_list,
+    nodes::node_list::{emit_comma_separated_list, emit_parenthesized_list},
 };
 use pgls_query::protobuf::{XmlExpr, XmlOptionType};
-
-use super::node_list::emit_parenthesized_list;
 
 pub(super) fn emit_xml_expr(e: &mut EventEmitter, n: &XmlExpr) {
     e.group_start(GroupKind::XmlExpr);

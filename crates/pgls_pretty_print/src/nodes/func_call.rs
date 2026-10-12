@@ -1,7 +1,7 @@
 use crate::{
     CommaStyle, TokenKind,
     emitter::{EventEmitter, GroupKind, LineType},
-    nodes::node_list::emit_comma_separated_list,
+    nodes::node_list::{emit_comma_separated_list, emit_parenthesized_list},
 };
 use pgls_query::{
     Node, NodeEnum,
@@ -10,7 +10,7 @@ use pgls_query::{
 
 use super::string::{
     emit_identifier, needs_quoting, needs_quoting_as_column_name,
-    needs_quoting_as_function_or_type_name, needs_quoting_except_keywords,
+    needs_quoting_as_function_or_type_name, needs_quoting_as_label,
 };
 
 /// Get the last part of the function name (the actual function name without schema)
@@ -272,7 +272,7 @@ fn emit_function_name(e: &mut EventEmitter, funcname: &[Node]) {
                 && !matches!(*part, "overlay" | "substring")
         } else if index == parts.len() - 1 {
             // A qualified function name can be any word, keywords included.
-            needs_quoting_except_keywords(part)
+            needs_quoting_as_label(part)
         } else {
             needs_quoting_as_column_name(part)
         };
@@ -393,13 +393,9 @@ fn emit_sql_syntax_call(e: &mut EventEmitter, n: &FuncCall) -> bool {
             super::emit_node(string, e);
             e.token(TokenKind::R_PAREN);
         }
-        ("normalize", [string, rest @ ..]) if rest.len() <= 1 => {
-            let form = match rest {
-                [form] => match normalization_form(form) {
-                    Some(form) => Some(form),
-                    None => return false,
-                },
-                _ => None,
+        ("normalize", [string, rest @ ..]) => {
+            let Some(form) = optional_normalization_form(rest) else {
+                return false;
             };
             e.token(TokenKind::NORMALIZE_KW);
             e.token(TokenKind::L_PAREN);
@@ -411,13 +407,9 @@ fn emit_sql_syntax_call(e: &mut EventEmitter, n: &FuncCall) -> bool {
             }
             e.token(TokenKind::R_PAREN);
         }
-        ("is_normalized", [string, rest @ ..]) if rest.len() <= 1 => {
-            let form = match rest {
-                [form] => match normalization_form(form) {
-                    Some(form) => Some(form),
-                    None => return false,
-                },
-                _ => None,
+        ("is_normalized", [string, rest @ ..]) => {
+            let Some(form) = optional_normalization_form(rest) else {
+                return false;
             };
             e.token(TokenKind::L_PAREN);
             emit_parenthesized_unless_simple(e, string);
@@ -454,23 +446,13 @@ fn emit_sql_syntax_call(e: &mut EventEmitter, n: &FuncCall) -> bool {
             e.token(TokenKind::LOCAL_KW);
             e.token(TokenKind::R_PAREN);
         }
-        ("overlaps", [start1, end1, start2, end2]) => {
+        ("overlaps", [_, _, _, _]) => {
             e.token(TokenKind::L_PAREN);
-            e.token(TokenKind::L_PAREN);
-            super::emit_node(start1, e);
-            e.token(TokenKind::COMMA);
-            e.space();
-            super::emit_node(end1, e);
-            e.token(TokenKind::R_PAREN);
+            emit_parenthesized_list(e, &args[..2], super::emit_node);
             e.space();
             e.token(TokenKind::OVERLAPS_KW);
             e.space();
-            e.token(TokenKind::L_PAREN);
-            super::emit_node(start2, e);
-            e.token(TokenKind::COMMA);
-            e.space();
-            super::emit_node(end2, e);
-            e.token(TokenKind::R_PAREN);
+            emit_parenthesized_list(e, &args[2..], super::emit_node);
             e.token(TokenKind::R_PAREN);
         }
         ("pg_collation_for", [expr]) => {
@@ -498,6 +480,16 @@ fn emit_sql_syntax_call(e: &mut EventEmitter, n: &FuncCall) -> bool {
     }
 
     true
+}
+
+/// The optional normalization form argument of `NORMALIZE` and `IS NORMALIZED`: `Some(None)` when
+/// there is none, `None` when the arguments are not a form the syntax can spell.
+fn optional_normalization_form(args: &[Node]) -> Option<Option<TokenKind>> {
+    match args {
+        [] => Some(None),
+        [form] => normalization_form(form).map(Some),
+        _ => None,
+    }
 }
 
 /// The keyword of a Unicode normalization form, stored as the string `NFC`, `NFD`, `NFKC` or `NFKD`.

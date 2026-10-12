@@ -1,11 +1,9 @@
 use crate::{
     TokenKind,
     emitter::{EventEmitter, GroupKind, LineType},
-    nodes::node_list::emit_comma_separated_list,
+    nodes::node_list::{emit_comma_separated_list, emit_parenthesized_list},
 };
 use pgls_query::{NodeEnum, protobuf::CreatePublicationStmt};
-
-use super::node_list::emit_parenthesized_list;
 
 pub(super) fn emit_create_publication_stmt(e: &mut EventEmitter, n: &CreatePublicationStmt) {
     e.group_start(GroupKind::CreatePublicationStmt);

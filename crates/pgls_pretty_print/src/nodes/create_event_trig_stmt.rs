@@ -43,7 +43,7 @@ pub(super) fn emit_create_event_trig_stmt(e: &mut EventEmitter, n: &CreateEventT
             // Each when clause is a DefElem with defname=tag and arg=List of values
             if let Some(pgls_query::NodeEnum::DefElem(def_elem)) = when.node.as_ref() {
                 // Emit TAG name
-                super::emit_word(e, &def_elem.defname);
+                super::emit_keyword(e, &def_elem.defname);
                 e.space();
                 e.token(TokenKind::IN_KW);
                 e.space();

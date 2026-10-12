@@ -123,7 +123,7 @@ pub(super) fn emit_grant_role_option(e: &mut EventEmitter, n: &DefElem) {
     });
 
     // Emit the option name
-    super::emit_word(e, defname);
+    super::emit_keyword(e, defname);
 
     // Emit TRUE or FALSE
     if let Some(val) = is_true {
@@ -293,7 +293,7 @@ pub(super) fn emit_role_option(e: &mut EventEmitter, n: &DefElem) {
         _ => {
             // Fallback for unknown role options
             if !n.defname.is_empty() {
-                super::emit_word(e, &n.defname);
+                super::emit_keyword(e, &n.defname);
             }
             if let Some(ref arg) = n.arg {
                 e.space();

@@ -184,7 +184,7 @@ pub(super) fn emit_function_parameter(e: &mut EventEmitter, fp: &FunctionParamet
         if super::string::needs_quoting_as_function_or_type_name(&fp.name) {
             super::emit_identifier(e, &fp.name);
         } else {
-            super::emit_identifier_maybe_quoted(e, &fp.name);
+            e.token(TokenKind::IDENT(fp.name.clone()));
         }
         e.space();
     }
@@ -329,7 +329,7 @@ pub(super) fn format_function_option(
                         "IMMUTABLE" => e.token(TokenKind::IMMUTABLE_KW),
                         "STABLE" => e.token(TokenKind::STABLE_KW),
                         "VOLATILE" => e.token(TokenKind::VOLATILE_KW),
-                        _ => super::emit_word(e, &s.sval),
+                        _ => super::emit_keyword(e, &s.sval),
                     }
                 } else {
                     super::emit_node(arg, e);
@@ -394,7 +394,7 @@ pub(super) fn format_function_option(
             e.space();
             if let Some(ref arg) = d.arg {
                 if let Some(pgls_query::NodeEnum::String(s)) = &arg.node {
-                    super::emit_word(e, &s.sval);
+                    super::emit_keyword(e, &s.sval);
                 } else {
                     super::emit_node(arg, e);
                 }
@@ -465,7 +465,7 @@ pub(super) fn format_function_option(
         }
         _ => {
             // Default: emit option name and value
-            super::emit_word(e, &d.defname);
+            super::emit_keyword(e, &d.defname);
             if let Some(ref arg) = d.arg {
                 e.space();
                 super::emit_node(arg, e);

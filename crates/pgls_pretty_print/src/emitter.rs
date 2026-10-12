@@ -106,7 +106,7 @@ impl EventEmitter {
     }
 
     /// The source text of the first string literal at or after `location`.
-    pub fn source_string_literal_from(&self, location: i32) -> Option<&str> {
+    pub(crate) fn source_string_literal_from(&self, location: i32) -> Option<&str> {
         let source = self.source.as_ref()?;
         let location = usize::try_from(location).ok()?;
         let index = source
@@ -142,16 +142,13 @@ impl EventEmitter {
         // A comment held for a comma follows it. Other tokens closing the item before the comma,
         // a parenthesis or an alias for instance, are written first. A statement never ends on a
         // comma, so the terminator flushes what is left.
-        if self.comments_after_separator.is_empty() {
-            self.events.push(LayoutEvent::Token(token));
-        } else if matches!(token, TokenKind::COMMA) {
-            self.events.push(LayoutEvent::Token(token));
+        let is_comma = matches!(token, TokenKind::COMMA);
+        if matches!(token, TokenKind::SEMICOLON) {
             self.flush_comments_after_separator();
-        } else {
-            if matches!(token, TokenKind::SEMICOLON) {
-                self.flush_comments_after_separator();
-            }
-            self.events.push(LayoutEvent::Token(token));
+        }
+        self.events.push(LayoutEvent::Token(token));
+        if is_comma {
+            self.flush_comments_after_separator();
         }
     }
 

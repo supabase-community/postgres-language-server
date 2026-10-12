@@ -18,7 +18,7 @@ pub(super) fn emit_reindex_stmt(e: &mut EventEmitter, n: &ReindexStmt) {
         emit_parenthesized_list(e, &n.params, |node, emitter| {
             if let Some(NodeEnum::DefElem(def)) = node.node.as_ref() {
                 // Emit option name
-                super::emit_word(emitter, &def.defname);
+                super::emit_keyword(emitter, &def.defname);
                 // Emit option value if present
                 if let Some(ref arg) = def.arg {
                     emitter.space();

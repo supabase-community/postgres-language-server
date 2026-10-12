@@ -1,5 +1,4 @@
-use super::node_list::emit_comma_separated_list;
-use super::node_list::emit_parenthesized_list;
+use super::node_list::{emit_comma_separated_list, emit_parenthesized_list};
 use crate::{
     TokenKind,
     emitter::{EventEmitter, GroupKind},

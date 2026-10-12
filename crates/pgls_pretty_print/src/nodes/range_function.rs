@@ -3,8 +3,7 @@ use pgls_query::protobuf::RangeFunction;
 use crate::TokenKind;
 use crate::emitter::{EventEmitter, GroupKind, LineType};
 
-use super::node_list::emit_comma_separated_list;
-use super::node_list::emit_parenthesized_list;
+use super::node_list::{emit_comma_separated_list, emit_parenthesized_list};
 
 /// Emits a function of a `FROM` item. A cast there must keep the `CAST(...)` spelling.
 fn emit_function(e: &mut EventEmitter, node: &pgls_query::Node) {

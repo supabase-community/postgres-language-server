@@ -524,95 +524,133 @@ order by 1,
   2;
 
 select
-  ((cast('2000-11-27' as timestamp with time zone), cast('2000-11-28'
-  as timestamp with time zone)) overlaps (cast('2000-11-27 12:00'
-  as timestamp with time zone), cast('2000-11-30' as timestamp with time zone)))
+  ((
+    cast('2000-11-27' as timestamp with time zone),
+    cast('2000-11-28' as timestamp with time zone)
+  ) overlaps (
+    cast('2000-11-27 12:00' as timestamp with time zone),
+    cast('2000-11-30' as timestamp with time zone)
+  ))
   as "True";
 
 select
-  ((cast('2000-11-26' as timestamp with time zone), cast('2000-11-27'
-  as timestamp with time zone)) overlaps (cast('2000-11-27 12:00'
-  as timestamp with time zone), cast('2000-11-30' as timestamp with time zone)))
+  ((
+    cast('2000-11-26' as timestamp with time zone),
+    cast('2000-11-27' as timestamp with time zone)
+  ) overlaps (
+    cast('2000-11-27 12:00' as timestamp with time zone),
+    cast('2000-11-30' as timestamp with time zone)
+  ))
   as "False";
 
 select
-  ((cast('2000-11-27' as timestamp with time zone), cast('2000-11-28'
-  as timestamp with time zone)) overlaps (cast('2000-11-27 12:00'
-  as timestamp with time zone), cast('1 day' as interval)))
+  ((
+    cast('2000-11-27' as timestamp with time zone),
+    cast('2000-11-28' as timestamp with time zone)
+  ) overlaps (
+    cast('2000-11-27 12:00' as timestamp with time zone),
+    cast('1 day' as interval)
+  ))
   as "True";
 
 select
-  ((cast('2000-11-27' as timestamp with time zone), cast('12 hours'
-  as interval)) overlaps (cast('2000-11-27 12:00'
-  as timestamp with time zone), cast('2000-11-30' as timestamp with time zone)))
+  ((
+    cast('2000-11-27' as timestamp with time zone),
+    cast('12 hours' as interval)
+  ) overlaps (
+    cast('2000-11-27 12:00' as timestamp with time zone),
+    cast('2000-11-30' as timestamp with time zone)
+  ))
   as "False";
 
 select
-  ((cast('2000-11-27' as timestamp with time zone), cast('12 hours'
-  as interval)) overlaps (cast('2000-11-27'
-  as timestamp with time zone), cast('12 hours' as interval)))
+  ((
+    cast('2000-11-27' as timestamp with time zone),
+    cast('12 hours' as interval)
+  ) overlaps (
+    cast('2000-11-27' as timestamp with time zone),
+    cast('12 hours' as interval)
+  ))
   as "True";
 
 select
-  ((cast('2000-11-27' as timestamp with time zone), cast('12 hours'
-  as interval)) overlaps (cast('2000-11-27 12:00'
-  as timestamp with time zone), cast('12 hours' as interval)))
+  ((
+    cast('2000-11-27' as timestamp with time zone),
+    cast('12 hours' as interval)
+  ) overlaps (
+    cast('2000-11-27 12:00' as timestamp with time zone),
+    cast('12 hours' as interval)
+  ))
   as "False";
 
 select
-  ((cast('2000-11-27' as timestamp), cast('2000-11-28'
-  as timestamp)) overlaps (cast('2000-11-27 12:00'
-  as timestamp), cast('2000-11-30' as timestamp)))
+  ((cast('2000-11-27' as timestamp), cast('2000-11-28' as timestamp)) overlaps (
+    cast('2000-11-27 12:00' as timestamp),
+    cast('2000-11-30' as timestamp)
+  ))
   as "True";
 
 select
-  ((cast('2000-11-26' as timestamp), cast('2000-11-27'
-  as timestamp)) overlaps (cast('2000-11-27 12:00'
-  as timestamp), cast('2000-11-30' as timestamp)))
+  ((cast('2000-11-26' as timestamp), cast('2000-11-27' as timestamp)) overlaps (
+    cast('2000-11-27 12:00' as timestamp),
+    cast('2000-11-30' as timestamp)
+  ))
   as "False";
 
 select
-  ((cast('2000-11-27' as timestamp), cast('2000-11-28'
-  as timestamp)) overlaps (cast('2000-11-27 12:00' as timestamp), cast('1 day'
-  as interval)))
+  ((cast('2000-11-27' as timestamp), cast('2000-11-28' as timestamp)) overlaps (
+    cast('2000-11-27 12:00' as timestamp),
+    cast('1 day' as interval)
+  ))
   as "True";
 
 select
-  ((cast('2000-11-27' as timestamp), cast('12 hours'
-  as interval)) overlaps (cast('2000-11-27 12:00'
-  as timestamp), cast('2000-11-30' as timestamp)))
+  ((cast('2000-11-27' as timestamp), cast('12 hours' as interval)) overlaps (
+    cast('2000-11-27 12:00' as timestamp),
+    cast('2000-11-30' as timestamp)
+  ))
   as "False";
 
 select
-  ((cast('2000-11-27' as timestamp), cast('12 hours'
-  as interval)) overlaps (cast('2000-11-27' as timestamp), cast('12 hours'
-  as interval)))
+  ((cast('2000-11-27' as timestamp), cast('12 hours' as interval)) overlaps (
+    cast('2000-11-27' as timestamp),
+    cast('12 hours' as interval)
+  ))
   as "True";
 
 select
-  ((cast('2000-11-27' as timestamp), cast('12 hours'
-  as interval)) overlaps (cast('2000-11-27 12:00' as timestamp), cast('12 hours'
-  as interval)))
+  ((cast('2000-11-27' as timestamp), cast('12 hours' as interval)) overlaps (
+    cast('2000-11-27 12:00' as timestamp),
+    cast('12 hours' as interval)
+  ))
   as "False";
 
 select
-  ((cast('00:00' as time), cast('01:00' as time)) overlaps (cast('00:30'
-  as time), cast('01:30' as time)))
+  ((cast('00:00' as time), cast('01:00' as time)) overlaps (
+    cast('00:30' as time),
+    cast('01:30' as time)
+  ))
   as "True";
 
 select
-  ((cast('00:00' as time), cast('1 hour' as interval)) overlaps (cast('00:30'
-  as time), cast('1 hour' as interval)))
+  ((cast('00:00' as time), cast('1 hour' as interval)) overlaps (
+    cast('00:30' as time),
+    cast('1 hour' as interval)
+  ))
   as "True";
 
 select
-  ((cast('00:00' as time), cast('1 hour' as interval)) overlaps (cast('01:30'
-  as time), cast('1 hour' as interval)))
+  ((cast('00:00' as time), cast('1 hour' as interval)) overlaps (
+    cast('01:30' as time),
+    cast('1 hour' as interval)
+  ))
   as "False";
 
 select
-  ((cast('00:00' as time), cast('1 hour' as interval)) overlaps (cast('01:30'
-  as time), cast('1 day' as interval)))
+  ((cast('00:00' as time), cast('1 hour' as interval)) overlaps (
+    cast('01:30' as time),
+    cast('1 day' as interval)
+  ))
   as "False";
 
 create table temp_timestamp (f1 timestamp with time zone);

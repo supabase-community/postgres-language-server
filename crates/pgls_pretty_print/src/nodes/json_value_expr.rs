@@ -94,7 +94,7 @@ fn emit_json_format_with_prefix(e: &mut EventEmitter, format: &JsonFormat, prefi
             }
             e.token(TokenKind::FORMAT_KW);
             e.space();
-            super::emit_word(e, "jsonb");
+            super::emit_keyword(e, "jsonb");
             wrote_any = true;
         }
         JsonFormatType::Undefined | JsonFormatType::JsFormatDefault => {}
@@ -135,5 +135,5 @@ fn emit_encoding(e: &mut EventEmitter, label: &str, needs_space: bool) {
     }
     e.token(TokenKind::ENCODING_KW);
     e.space();
-    super::emit_word(e, label);
+    super::emit_keyword(e, label);
 }

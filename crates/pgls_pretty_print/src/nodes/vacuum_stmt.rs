@@ -5,8 +5,7 @@ use crate::{
     emitter::{EventEmitter, GroupKind, LineType},
 };
 
-use super::node_list::emit_comma_separated_list;
-use super::node_list::emit_parenthesized_list;
+use super::node_list::{emit_comma_separated_list, emit_parenthesized_list};
 
 pub(super) fn emit_vacuum_stmt(e: &mut EventEmitter, n: &VacuumStmt) {
     e.group_start(GroupKind::VacuumStmt);
@@ -23,7 +22,7 @@ pub(super) fn emit_vacuum_stmt(e: &mut EventEmitter, n: &VacuumStmt) {
         emit_parenthesized_list(e, &n.options, |node, emitter| {
             if let Some(NodeEnum::DefElem(def)) = node.node.as_ref() {
                 // Emit option name
-                super::emit_word(emitter, &def.defname);
+                super::emit_keyword(emitter, &def.defname);
                 // Emit option value if present
                 if let Some(ref arg) = def.arg {
                     emitter.space();

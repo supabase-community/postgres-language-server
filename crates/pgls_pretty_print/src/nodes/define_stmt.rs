@@ -1,12 +1,13 @@
 use pgls_query::NodeEnum;
 use pgls_query::protobuf::{DefElem, DefineStmt, List, Node, ObjectType};
 
-use super::node_list::emit_parenthesized_list;
 use super::string::emit_identifier_maybe_quoted;
 use crate::{
     TokenKind,
     emitter::{EventEmitter, GroupKind, LineType},
-    nodes::node_list::{emit_comma_separated_list, emit_dot_separated_list},
+    nodes::node_list::{
+        emit_comma_separated_list, emit_dot_separated_list, emit_parenthesized_list,
+    },
 };
 
 /// Emit collation definition (FROM clause or parenthesized options)
@@ -208,7 +209,7 @@ fn emit_operator_name(e: &mut EventEmitter, defnames: &[Node]) {
 }
 
 fn emit_operator_def_elem(e: &mut EventEmitter, def: &DefElem) {
-    super::emit_word(e, &def.defname);
+    super::emit_keyword(e, &def.defname);
 
     if let Some(ref arg) = def.arg {
         e.space();

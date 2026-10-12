@@ -199,7 +199,7 @@ fn format_role_option(e: &mut EventEmitter, d: &pgls_query::protobuf::DefElem) {
     }
 
     // Default formatting for other options
-    super::emit_word(e, &d.defname);
+    super::emit_keyword(e, &d.defname);
     if let Some(ref arg) = d.arg {
         e.space();
         super::emit_node(arg, e);

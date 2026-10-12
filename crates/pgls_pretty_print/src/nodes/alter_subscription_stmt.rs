@@ -1,6 +1,5 @@
-use super::node_list::emit_parenthesized_list;
 use super::{
-    node_list::emit_comma_separated_list,
+    node_list::{emit_comma_separated_list, emit_parenthesized_list},
     string::{emit_identifier_maybe_quoted, emit_keyword, emit_single_quoted_str},
 };
 use crate::{

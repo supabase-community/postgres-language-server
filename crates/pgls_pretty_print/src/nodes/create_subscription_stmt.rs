@@ -1,11 +1,10 @@
 use crate::{
     TokenKind,
     emitter::{EventEmitter, GroupKind},
-    nodes::node_list::emit_comma_separated_list,
+    nodes::node_list::{emit_comma_separated_list, emit_parenthesized_list},
 };
 use pgls_query::{NodeEnum, protobuf::CreateSubscriptionStmt};
 
-use super::node_list::emit_parenthesized_list;
 use super::string::{emit_identifier_maybe_quoted, emit_keyword, emit_single_quoted_str};
 
 pub(super) fn emit_create_subscription_stmt(e: &mut EventEmitter, n: &CreateSubscriptionStmt) {

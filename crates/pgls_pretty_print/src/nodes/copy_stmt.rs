@@ -1,6 +1,5 @@
-use super::node_list::emit_parenthesized_list;
 use super::{
-    node_list::emit_comma_separated_list,
+    node_list::{emit_comma_separated_list, emit_parenthesized_list},
     string::{emit_keyword, emit_single_quoted_str},
 };
 use crate::{
@@ -115,7 +114,7 @@ pub(super) fn emit_copy_stmt(e: &mut EventEmitter, n: &CopyStmt) {
 fn emit_copy_option(e: &mut EventEmitter, n: &pgls_query::protobuf::DefElem) {
     e.group_start(GroupKind::DefElem);
 
-    super::emit_word(e, &n.defname);
+    super::emit_keyword(e, &n.defname);
 
     // Handle the value based on its type
     if let Some(ref arg) = n.arg

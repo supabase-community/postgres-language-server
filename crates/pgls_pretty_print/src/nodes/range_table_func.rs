@@ -1,11 +1,9 @@
 use crate::{
     TokenKind,
     emitter::{EventEmitter, GroupKind, LineType},
-    nodes::node_list::emit_comma_separated_list,
+    nodes::node_list::{emit_comma_separated_list, emit_parenthesized_list},
 };
 use pgls_query::{NodeEnum, protobuf::RangeTableFunc};
-
-use super::node_list::emit_parenthesized_list;
 
 pub(super) fn emit_range_table_func(e: &mut EventEmitter, n: &RangeTableFunc) {
     e.group_start(GroupKind::RangeTableFunc);

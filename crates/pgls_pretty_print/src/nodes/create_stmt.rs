@@ -3,8 +3,7 @@ use pgls_query::protobuf::{CreateStmt, node::Node as NodeEnum};
 use crate::TokenKind;
 use crate::emitter::{EventEmitter, GroupKind, LineType};
 
-use super::node_list::emit_comma_separated_list;
-use super::node_list::emit_parenthesized_list;
+use super::node_list::{emit_comma_separated_list, emit_parenthesized_list};
 
 /// Emit a column override for typed tables (OF typename).
 /// These use the syntax: column_name WITH OPTIONS constraints

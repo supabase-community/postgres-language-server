@@ -32,7 +32,7 @@ pub(super) fn emit_dropdb_stmt(e: &mut EventEmitter, n: &DropdbStmt) {
         emit_parenthesized_list(e, &n.options, |node, emitter| {
             if let Some(NodeEnum::DefElem(def)) = node.node.as_ref() {
                 // Options like FORCE have just the name, no value
-                super::emit_word(emitter, &def.defname);
+                super::emit_keyword(emitter, &def.defname);
             }
         });
     }

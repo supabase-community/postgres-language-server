@@ -43,7 +43,7 @@ pub(super) fn emit_create_policy_stmt(e: &mut EventEmitter, n: &CreatePolicyStmt
             "INSERT" => e.token(TokenKind::INSERT_KW),
             "UPDATE" => e.token(TokenKind::UPDATE_KW),
             "DELETE" => e.token(TokenKind::DELETE_KW),
-            _ => super::emit_word(e, &n.cmd_name),
+            _ => super::emit_keyword(e, &n.cmd_name),
         }
     }
 

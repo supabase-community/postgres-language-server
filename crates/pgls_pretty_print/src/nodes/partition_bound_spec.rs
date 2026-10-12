@@ -55,12 +55,12 @@ pub(super) fn emit_partition_bound_spec(e: &mut EventEmitter, n: &PartitionBound
             e.token(TokenKind::WITH_KW);
             e.space();
             e.token(TokenKind::L_PAREN);
-            super::emit_word(e, "modulus");
+            super::emit_keyword(e, "modulus");
             e.space();
             e.token(TokenKind::IDENT(n.modulus.to_string()));
             e.token(TokenKind::COMMA);
             e.space();
-            super::emit_word(e, "remainder");
+            super::emit_keyword(e, "remainder");
             e.space();
             e.token(TokenKind::IDENT(n.remainder.to_string()));
             e.token(TokenKind::R_PAREN);

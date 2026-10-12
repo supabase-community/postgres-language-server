@@ -2,8 +2,7 @@ use crate::TokenKind;
 use crate::emitter::{EventEmitter, GroupKind};
 use pgls_query::protobuf::CreateOpClassItem;
 
-use super::node_list::emit_dot_separated_list;
-use super::node_list::emit_parenthesized_list;
+use super::node_list::{emit_dot_separated_list, emit_parenthesized_list};
 use super::object_with_args::{emit_object_name_only, emit_object_with_args};
 
 pub(super) fn emit_create_op_class_item(e: &mut EventEmitter, n: &CreateOpClassItem) {

@@ -3,10 +3,8 @@ use pgls_query::{NodeEnum, protobuf::AlterTypeStmt};
 use crate::{
     TokenKind,
     emitter::{EventEmitter, GroupKind, LineType},
-    nodes::node_list::emit_dot_separated_list,
+    nodes::node_list::{emit_dot_separated_list, emit_parenthesized_list},
 };
-
-use super::node_list::emit_parenthesized_list;
 
 pub(super) fn emit_alter_type_stmt(e: &mut EventEmitter, n: &AlterTypeStmt) {
     e.group_start(GroupKind::AlterTypeStmt);

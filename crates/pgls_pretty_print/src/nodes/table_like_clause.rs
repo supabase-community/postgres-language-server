@@ -57,7 +57,7 @@ pub(super) fn emit_table_like_clause(e: &mut EventEmitter, n: &TableLikeClause) 
                 e.line(LineType::SoftOrSpace);
                 e.token(TokenKind::INCLUDING_KW);
                 e.space();
-                super::emit_word(e, name);
+                super::emit_keyword(e, name);
             }
         }
     }

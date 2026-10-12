@@ -65,25 +65,22 @@ pub(super) fn emit_type_identifier_maybe_quoted(e: &mut EventEmitter, value: &st
     }
 }
 
-/// Emits a word the grammar reads case-insensitively, such as an option name, in the keyword case.
-pub(super) fn emit_word(e: &mut EventEmitter, word: &str) {
+/// Emits a word the grammar reads case-insensitively in the keyword case. It need not be a
+/// keyword: option and privilege names such as `usage` are plain words.
+pub(super) fn emit_keyword(e: &mut EventEmitter, word: &str) {
     match TokenKind::from_keyword(word) {
         Some(keyword) => e.token(keyword),
         None => e.token(TokenKind::WORD(word.to_string())),
     }
 }
 
-pub(super) fn emit_keyword(e: &mut EventEmitter, keyword: &str) {
-    emit_word(e, keyword);
-}
-
 /// Emits words separated by spaces, such as `ACCESS EXCLUSIVE`, in the keyword case.
-pub(super) fn emit_words(e: &mut EventEmitter, words: &str) {
+pub(super) fn emit_keywords(e: &mut EventEmitter, words: &str) {
     for (index, word) in words.split(' ').enumerate() {
         if index > 0 {
             e.space();
         }
-        emit_word(e, word);
+        emit_keyword(e, word);
     }
 }
 
@@ -196,7 +193,7 @@ pub(super) fn needs_quoting_as_column_name(value: &str) -> bool {
 
 /// Whether a name that may be any word, keywords included, must be quoted. The grammar spells it
 /// as `ColLabel`, the trailing part of a qualified function name for instance.
-pub(super) fn needs_quoting_except_keywords(value: &str) -> bool {
+pub(super) fn needs_quoting_as_label(value: &str) -> bool {
     needs_quoting(value) && keyword_category(value).is_none()
 }
 

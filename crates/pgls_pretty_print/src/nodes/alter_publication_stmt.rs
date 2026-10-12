@@ -2,8 +2,7 @@ use crate::TokenKind;
 use crate::emitter::{EventEmitter, GroupKind, LineType};
 use pgls_query::protobuf::AlterPublicationStmt;
 
-use super::node_list::emit_comma_separated_list;
-use super::node_list::emit_parenthesized_list;
+use super::node_list::{emit_comma_separated_list, emit_parenthesized_list};
 
 pub(super) fn emit_alter_publication_stmt(e: &mut EventEmitter, n: &AlterPublicationStmt) {
     e.group_start(GroupKind::AlterPublicationStmt);

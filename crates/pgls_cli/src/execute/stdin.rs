@@ -5,7 +5,7 @@ use pgls_console::{ConsoleExt, markup};
 use pgls_diagnostics::{DiagnosticExt, Error, PrintDiagnostic, category};
 use pgls_fs::PgLSPath;
 use pgls_workspace::features::format::PullFileFormattingParams;
-use pgls_workspace::workspace::{FileGuard, IsPathIgnoredParams, OpenFileParams};
+use pgls_workspace::workspace::{FileGuard, OpenFileParams};
 
 pub(crate) fn process(
     session: &mut CliSession,
@@ -29,14 +29,6 @@ fn format(session: &mut CliSession, payload: StdinPayload) -> Result<(), CliDiag
     let pgls_path = PgLSPath::new(&payload.path);
     let workspace = session.workspace();
 
-    let is_ignored = workspace.is_path_ignored(IsPathIgnoredParams {
-        pgls_path: pgls_path.clone(),
-    })?;
-    if is_ignored {
-        session.console().append(markup! {{payload.content}});
-        return Ok(());
-    }
-
     let result = {
         let guard = FileGuard::open(
             workspace,
@@ -52,7 +44,7 @@ fn format(session: &mut CliSession, payload: StdinPayload) -> Result<(), CliDiag
         })?
     };
 
-    // The workspace returns an empty result when the formatter is disabled.
+    // The workspace returns an empty result for an ignored file or a disabled formatter.
     let output = if result.original == payload.content {
         result.formatted
     } else {

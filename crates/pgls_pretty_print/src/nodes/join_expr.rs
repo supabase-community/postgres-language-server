@@ -3,8 +3,7 @@ use pgls_query::protobuf::{JoinExpr, JoinType};
 use crate::TokenKind;
 use crate::emitter::{EventEmitter, GroupKind, LineType};
 
-use super::node_list::emit_comma_separated_list;
-use super::node_list::emit_parenthesized_list;
+use super::node_list::{emit_comma_separated_list, emit_parenthesized_list};
 use super::string::emit_identifier_maybe_quoted;
 
 pub(super) fn emit_join_expr(e: &mut EventEmitter, n: &JoinExpr) {

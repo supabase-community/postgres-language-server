@@ -5,8 +5,7 @@ use crate::{
     emitter::{EventEmitter, GroupKind, LineType},
 };
 
-use super::node_list::emit_comma_separated_list;
-use super::node_list::emit_parenthesized_list;
+use super::node_list::{emit_comma_separated_list, emit_parenthesized_list};
 
 pub(super) fn emit_view_stmt(e: &mut EventEmitter, n: &ViewStmt) {
     emit_view_stmt_impl(e, n, true);

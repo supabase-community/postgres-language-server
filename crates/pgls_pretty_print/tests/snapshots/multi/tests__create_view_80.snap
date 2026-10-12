@@ -1089,8 +1089,10 @@ as select
   ((cast('2022-12-01' as date) + cast('1 day' as interval)) at time zone 'UTC')
   as atz,
   extract(day from now()) as extr,
-  ((now(), cast('1 day'
-  as interval)) overlaps (current_timestamp(2), cast('1 day' as interval)))
+  ((now(), cast('1 day' as interval)) overlaps (
+    current_timestamp(2),
+    cast('1 day' as interval)
+  ))
   as o,
   ('foo' is normalized) as isn,
   ('foo' is nfkc normalized) as isnn,

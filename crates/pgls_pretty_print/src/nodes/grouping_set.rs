@@ -4,8 +4,7 @@ use crate::{
 };
 use pgls_query::protobuf::{GroupingSet, GroupingSetKind};
 
-use super::node_list::emit_comma_separated_list;
-use super::node_list::emit_parenthesized_list;
+use super::node_list::{emit_comma_separated_list, emit_parenthesized_list};
 
 pub(super) fn emit_grouping_set(e: &mut EventEmitter, n: &GroupingSet) {
     e.group_start(GroupKind::GroupingSet);

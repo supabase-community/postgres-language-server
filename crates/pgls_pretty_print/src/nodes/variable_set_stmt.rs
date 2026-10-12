@@ -21,7 +21,8 @@ fn emit_set_arg(node: &Node, e: &mut EventEmitter) {
 
         // Emit as identifier (no quotes) if it looks like a simple identifier
         // This includes schema names, role names, etc.
-        if is_simple_identifier(val) {
+        // An unquoted word is folded to lowercase: `SET datestyle = German` would set `german`.
+        if !super::string::needs_quoting(val) {
             e.group_start(GroupKind::String);
             e.token(TokenKind::IDENT(val.clone()));
             e.group_end();
@@ -34,12 +35,6 @@ fn emit_set_arg(node: &Node, e: &mut EventEmitter) {
     super::emit_node(node, e);
 }
 
-/// Whether a string reads the same written as an unquoted word. An unquoted word is folded to
-/// lowercase, so `SET datestyle = German` would set `german`.
-fn is_simple_identifier(s: &str) -> bool {
-    !super::string::needs_quoting(s)
-}
-
 /// Emit a dot-separated variable name, quoting parts that need it
 fn emit_variable_name(e: &mut EventEmitter, name: &str) {
     let parts: Vec<&str> = name.split('.').collect();
@@ -47,7 +42,7 @@ fn emit_variable_name(e: &mut EventEmitter, name: &str) {
         if i > 0 {
             e.token(TokenKind::DOT);
         }
-        if is_simple_identifier(part) {
+        if !super::string::needs_quoting(part) {
             e.token(TokenKind::IDENT(part.to_string()));
         } else {
             // Quote the identifier
@@ -226,7 +221,7 @@ fn emit_variable_set_stmt_inner(e: &mut EventEmitter, n: &VariableSetStmt) {
             // Special syntax: SET SESSION CHARACTERISTICS AS TRANSACTION ...
             e.token(TokenKind::SESSION_KW);
             e.space();
-            super::emit_word(e, "characteristics");
+            super::emit_keyword(e, "characteristics");
             e.space();
             e.token(TokenKind::AS_KW);
             e.space();
@@ -243,7 +238,7 @@ fn emit_variable_set_stmt_inner(e: &mut EventEmitter, n: &VariableSetStmt) {
             // SET TRANSACTION SNAPSHOT 'snapshot_id'
             e.token(TokenKind::TRANSACTION_KW);
             e.space();
-            super::emit_word(e, "snapshot");
+            super::emit_keyword(e, "snapshot");
             e.space();
             // The snapshot id is in args as a string
             if !n.args.is_empty() {
@@ -361,7 +356,7 @@ fn emit_transaction_option(e: &mut EventEmitter, def: &pgls_query::protobuf::Def
         }
         _ => {
             // Unknown transaction option - emit as identifier
-            super::emit_word(e, &def.defname);
+            super::emit_keyword(e, &def.defname);
             if let Some(ref arg) = def.arg {
                 e.space();
                 super::emit_node(arg, e);
