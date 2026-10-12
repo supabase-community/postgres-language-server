@@ -3,7 +3,7 @@ source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/database.sql
 snapshot_kind: text
 ---
-create database "regression_tbd" with encoding = 'utf8'
+create database regression_tbd with encoding = 'utf8'
 lc_collate = 'C'
 lc_ctype = 'C'
 template = 'template0';

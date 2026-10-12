@@ -5,6 +5,7 @@ use crate::{
 };
 use pgls_query::{NodeEnum, protobuf::CreateSubscriptionStmt};
 
+use super::node_list::emit_parenthesized_list;
 use super::string::{emit_identifier_maybe_quoted, emit_keyword, emit_single_quoted_str};
 
 pub(super) fn emit_create_subscription_stmt(e: &mut EventEmitter, n: &CreateSubscriptionStmt) {
@@ -35,9 +36,7 @@ pub(super) fn emit_create_subscription_stmt(e: &mut EventEmitter, n: &CreateSubs
         e.space();
         e.token(TokenKind::WITH_KW);
         e.space();
-        e.token(TokenKind::L_PAREN);
-        emit_comma_separated_list(e, &n.options, super::emit_node);
-        e.token(TokenKind::R_PAREN);
+        emit_parenthesized_list(e, &n.options, super::emit_node);
     }
 
     e.token(TokenKind::SEMICOLON);

@@ -1104,7 +1104,12 @@ impl Workspace for WorkspaceServer {
                     continue;
                 };
 
-                formatted_sql_fn_bodies.insert(parent_id, formatted);
+                // A body that formatting leaves alone keeps its own layout. A reformatted one
+                // goes on the lines between its dollar quotes.
+                if formatted.trim() == text.trim() {
+                    continue;
+                }
+                formatted_sql_fn_bodies.insert(parent_id, format!("\n{formatted}\n"));
             }
         }
 
@@ -1115,6 +1120,9 @@ impl Workspace for WorkspaceServer {
         let source = doc.get_document_content();
         let mut last_end = 0usize;
 
+        // Formatting a range leaves everything outside its statements as written.
+        let normalize_gaps = params.range.is_none();
+
         for (id, stmt_range, text, ast_result) in format_candidates {
             if id.is_child() {
                 continue;
@@ -1123,9 +1131,19 @@ impl Workspace for WorkspaceServer {
             let stmt_start = usize::from(stmt_range.start());
             let stmt_end = usize::from(stmt_range.end());
 
-            // Preserve leading text, blank lines, and standalone comments that precede
-            // this statement.
-            formatted_output.push_str(&source[last_end..stmt_start]);
+            // Preserve the standalone comments that precede this statement, with at most one
+            // blank line between statements and none before the first.
+            let gap = &source[last_end..stmt_start];
+            if normalize_gaps {
+                let position = if last_end == 0 {
+                    GapPosition::Start
+                } else {
+                    GapPosition::Between
+                };
+                formatted_output.push_str(&normalize_gap(gap, position));
+            } else {
+                formatted_output.push_str(gap);
+            }
             last_end = stmt_end;
 
             // Leave statements outside the requested range untouched.
@@ -1197,7 +1215,16 @@ impl Workspace for WorkspaceServer {
         }
 
         // Preserve any trailing text or comments after the last statement.
-        formatted_output.push_str(&source[last_end..]);
+        if normalize_gaps {
+            let position = if last_end == 0 {
+                GapPosition::Whole
+            } else {
+                GapPosition::End
+            };
+            formatted_output.push_str(&normalize_gap(&source[last_end..], position));
+        } else {
+            formatted_output.push_str(&source[last_end..]);
+        }
 
         Ok(PullFormattingResult {
             original: doc.get_document_content().to_string(),
@@ -1365,6 +1392,76 @@ impl Workspace for WorkspaceServer {
 /// if it is a symlink that resolves to a directory.
 fn is_dir(path: &Path) -> bool {
     path.is_dir() || (path.is_symlink() && fs::read_link(path).is_ok_and(|path| path.is_dir()))
+}
+
+/// Where the text between two statements sits in the file.
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum GapPosition {
+    /// Before the first statement.
+    Start,
+    /// Between two statements.
+    Between,
+    /// After the last statement.
+    End,
+    /// The whole file, which has no statement.
+    Whole,
+}
+
+/// Normalizes the blank lines in the text between statements, which only holds whitespace and
+/// comments: at most one blank line between two statements, and none at the start or the end of
+/// the file. Comments and the line breaks around them are kept, and so is the final line break.
+fn normalize_gap(gap: &str, position: GapPosition) -> String {
+    let at_start = matches!(position, GapPosition::Start | GapPosition::Whole);
+    let at_end = matches!(position, GapPosition::End | GapPosition::Whole);
+
+    let mut lines: Vec<&str> = gap.split('\n').collect();
+    // Without a line break the gap sits inside one line, between two statements for instance.
+    if lines.len() == 1 {
+        return match (at_start, at_end) {
+            (_, true) => gap.trim_end().to_string(),
+            (true, false) => String::new(),
+            (false, false) => gap.to_string(),
+        };
+    }
+
+    // The first line ends the line of the previous statement and the last one starts the line of
+    // the next statement. Only the lines in between are whole lines.
+    let first = lines.remove(0);
+    let last = lines.pop().unwrap_or_default();
+
+    let mut kept: Vec<&str> = Vec::new();
+    if !(at_start && first.trim().is_empty()) {
+        kept.push(first);
+    }
+    // Whether the last kept line is a blank one, which the first line never is.
+    let mut follows_blank = false;
+    for line in lines {
+        let is_blank = line.trim().is_empty();
+        if is_blank && (follows_blank || kept.is_empty()) {
+            continue;
+        }
+        kept.push(if is_blank { "" } else { line });
+        follows_blank = is_blank;
+    }
+
+    if at_end {
+        if follows_blank {
+            kept.pop();
+        }
+        let mut result = kept.join("\n");
+        if last.trim().is_empty() {
+            result.push('\n');
+        } else {
+            if !kept.is_empty() {
+                result.push('\n');
+            }
+            result.push_str(last);
+        }
+        return result;
+    }
+
+    kept.push(last);
+    kept.join("\n")
 }
 
 /// Put psql named parameters back where the formatter printed their placeholders.

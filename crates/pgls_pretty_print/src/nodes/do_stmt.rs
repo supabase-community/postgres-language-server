@@ -6,7 +6,7 @@ use crate::{
 };
 
 use super::string::{
-    DollarQuoteHint, emit_dollar_quoted_str_with_hint, emit_identifier_maybe_quoted, emit_keyword,
+    DollarQuoteHint, emit_body_literal, emit_identifier_maybe_quoted, emit_keyword,
 };
 
 pub(super) fn emit_do_stmt(e: &mut EventEmitter, n: &DoStmt) {
@@ -71,14 +71,14 @@ pub(super) fn emit_do_stmt(e: &mut EventEmitter, n: &DoStmt) {
             e.space();
             emit_identifier_maybe_quoted(e, lang);
         }
-        if let Some((code, _)) = &body {
+        if let Some((code, location)) = &body {
             e.line(LineType::SoftOrSpace);
-            emit_dollar_quoted_str_with_hint(e, code, DollarQuoteHint::Do);
+            emit_body_literal(e, code, *location, DollarQuoteHint::Do);
         }
     } else {
-        if let Some((code, _)) = &body {
+        if let Some((code, location)) = &body {
             e.line(LineType::SoftOrSpace);
-            emit_dollar_quoted_str_with_hint(e, code, DollarQuoteHint::Do);
+            emit_body_literal(e, code, *location, DollarQuoteHint::Do);
         }
         if let Some((lang, _)) = &language {
             e.line(LineType::SoftOrSpace);

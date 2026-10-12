@@ -4,39 +4,24 @@ input_file: crates/pgls_pretty_print/tests/data/multi/random.sql
 ---
 select
   r,
-  COUNT(*)
+  count(*)
 from
-  (
-    select
-      random() as r
-    from
-      generate_series(1, 1000)
-  )
-  as ss
+  (select random() as r from generate_series(1, 1000)) as ss
 group by r
 having
-  COUNT(*) > 1;
+  count(*) > 1;
 
 select
-  COUNT(*) filter (where r < 0 or r >= 1)
-  as out_of_range,
-  COUNT(*) filter (where r < 0.01) > 0
-  as has_small,
-  COUNT(*) filter (where r > 0.99) > 0
-  as has_large
+  count(*) filter (where r < 0 or r >= 1) as out_of_range,
+  count(*) filter (where r < 0.01) > 0 as has_small,
+  count(*) filter (where r > 0.99) > 0 as has_large
 from
-  (
-    select
-      random() as r
-    from
-      generate_series(1, 2000)
-  )
-  as ss;
+  (select random() as r from generate_series(1, 2000)) as ss;
 
 create function ks_test_uniform_random()
 returns boolean
 language plpgsql
-as $function$
+as $$
 DECLARE
   n int := 1000;        -- Number of samples
   c float8 := 1.94947;  -- Critical value for 99.9% confidence
@@ -52,7 +37,7 @@ BEGIN
   );
   RETURN ok;
 END
-$function$;
+$$;
 
 select
   ks_test_uniform_random() or
@@ -62,49 +47,31 @@ select
 
 select
   r,
-  COUNT(*)
+  count(*)
 from
-  (
-    select
-      random_normal() as r
-    from
-      generate_series(1, 1000)
-  )
-  as ss
+  (select random_normal() as r from generate_series(1, 1000)) as ss
 group by r
 having
-  COUNT(*) > 1;
+  count(*) > 1;
 
 select
   r,
-  COUNT(*)
+  count(*)
 from
-  (
-    select
-      random_normal(10, 0) as r
-    from
-      generate_series(1, 100)
-  )
-  as ss
+  (select random_normal(10, 0) as r from generate_series(1, 100)) as ss
 group by r;
 
 select
   r,
-  COUNT(*)
+  count(*)
 from
-  (
-    select
-      random_normal(-10, 0) as r
-    from
-      generate_series(1, 100)
-  )
-  as ss
+  (select random_normal(-10, 0) as r from generate_series(1, 100)) as ss
 group by r;
 
 create function ks_test_normal_random()
 returns boolean
 language plpgsql
-as $function$
+as $$
 DECLARE
   n int := 1000;        -- Number of samples
   c float8 := 1.94947;  -- Critical value for 99.9% confidence
@@ -121,12 +88,10 @@ BEGIN
   );
   RETURN ok;
 END
-$function$;
+$$;
 
 select
-  ks_test_normal_random() or
-  ks_test_normal_random() or
-  ks_test_normal_random()
+  ks_test_normal_random() or ks_test_normal_random() or ks_test_normal_random()
   as standard_normal;
 
 select random(1, 0);
@@ -151,194 +116,109 @@ select random(3.14, 3.14);
 
 select
   r,
-  COUNT(*)
+  count(*)
 from
   (
-    select
-      random(-2147483648, 2147483647) as r
-    from
-      generate_series(1, 1000)
+    select random(-2147483648, 2147483647) as r from generate_series(1, 1000)
   )
   as ss
 group by r
 having
-  COUNT(*) > 2;
+  count(*) > 2;
 
 select
   r,
-  COUNT(*)
+  count(*)
 from
   (
     select
-      random_normal(
-        -9223372036854775808,
-        9223372036854775807
-      )
-      as r
+      random_normal(-9223372036854775808, 9223372036854775807) as r
     from
       generate_series(1, 1000)
   )
   as ss
 group by r
 having
-  COUNT(*) > 1;
+  count(*) > 1;
 
 select
   r,
-  COUNT(*)
+  count(*)
 from
-  (
-    select
-      random_normal(0, 1 - 1e-15) as r
-    from
-      generate_series(1, 1000)
-  )
-  as ss
+  (select random_normal(0, 1 - 1e-15) as r from generate_series(1, 1000)) as ss
 group by r
 having
-  COUNT(*) > 1;
+  count(*) > 1;
 
 select
-  COUNT(*) filter (where r < -2104533975) >
-  0
-  as has_small,
-  COUNT(*) filter (where r > 2104533974) >
-  0
-  as has_large
+  count(*) filter (where r < -2104533975) > 0 as has_small,
+  count(*) filter (where r > 2104533974) > 0 as has_large
+from
+  (
+    select random(-2147483648, 2147483647) as r from generate_series(1, 2000)
+  )
+  as ss;
+
+select
+  count(*) filter (where r < -1500000000 or r > 1500000000) as out_of_range,
+  count(*) filter (where r < -1470000000) > 0 as has_small,
+  count(*) filter (where r > 1470000000) > 0 as has_large
+from
+  (
+    select random(-1500000000, 1500000000) as r from generate_series(1, 2000)
+  )
+  as ss;
+
+select
+  count(*) filter (where r < -9038904596117680292) > 0 as has_small,
+  count(*) filter (where r > 9038904596117680291) > 0 as has_large
 from
   (
     select
-      random(-2147483648, 2147483647) as r
+      random(-9223372036854775808, 9223372036854775807) as r
     from
       generate_series(1, 2000)
   )
   as ss;
 
 select
-  COUNT(
-    *
-  )
-  filter (where
-    r < -1500000000 or r > 1500000000)
+  count(*) filter (where r < -1500000000000000 or r > 1500000000000000)
   as out_of_range,
-  COUNT(*) filter (where r < -1470000000) >
-  0
-  as has_small,
-  COUNT(*) filter (where r > 1470000000) >
-  0
-  as has_large
+  count(*) filter (where r < -1470000000000000) > 0 as has_small,
+  count(*) filter (where r > 1470000000000000) > 0 as has_large
 from
   (
     select
-      random(-1500000000, 1500000000) as r
+      random(-1500000000000000, 1500000000000000) as r
     from
       generate_series(1, 2000)
   )
   as ss;
 
 select
-  COUNT(
-    *
-  )
-  filter (where
-    r < -9038904596117680292) >
-  0
-  as has_small,
-  COUNT(
-    *
-  )
-  filter (where
-    r > 9038904596117680291) >
-  0
-  as has_large
+  count(*) filter (where r < -1.5 or r > 1.5) as out_of_range,
+  count(*) filter (where r < -1.47) > 0 as has_small,
+  count(*) filter (where r > 1.47) > 0 as has_large
 from
   (
     select
-      random(
-        -9223372036854775808,
-        9223372036854775807
-      )
-      as r
+      random(-1.500000000000000, 1.500000000000000) as r
     from
       generate_series(1, 2000)
   )
   as ss;
 
 select
-  COUNT(
-    *
-  )
-  filter (where
-    r < -1500000000000000 or
-    r > 1500000000000000)
-  as out_of_range,
-  COUNT(
-    *
-  )
-  filter (where
-    r < -1470000000000000) >
-  0
-  as has_small,
-  COUNT(
-    *
-  )
-  filter (where
-    r > 1470000000000000) >
-  0
-  as has_large
+  min(r),
+  max(r),
+  count(r)
 from
-  (
-    select
-      random(
-        -1500000000000000,
-        1500000000000000
-      )
-      as r
-    from
-      generate_series(1, 2000)
-  )
-  as ss;
+  (select distinct random(-50, 49) as r from generate_series(1, 2500));
 
 select
-  COUNT(
-    *
-  )
-  filter (where
-    r < -1.5 or r > 1.5)
-  as out_of_range,
-  COUNT(*) filter (where r < -1.47) > 0
-  as has_small,
-  COUNT(*) filter (where r > 1.47) > 0
-  as has_large
-from
-  (
-    select
-      random(
-        -1.500000000000000,
-        1.500000000000000
-      )
-      as r
-    from
-      generate_series(1, 2000)
-  )
-  as ss;
-
-select
-  MIN(r),
-  MAX(r),
-  COUNT(r)
-from
-  (
-    select distinct
-      random(-50, 49) as r
-    from
-      generate_series(1, 2500)
-  );
-
-select
-  MIN(r),
-  MAX(r),
-  COUNT(r)
+  min(r),
+  max(r),
+  count(r)
 from
   (
     select distinct
@@ -348,21 +228,16 @@ from
   );
 
 select
-  MIN(r),
-  MAX(r),
-  COUNT(r)
+  min(r),
+  max(r),
+  count(r)
 from
-  (
-    select distinct
-      random(-0.5, 0.49) as r
-    from
-      generate_series(1, 2500)
-  );
+  (select distinct random(-0.5, 0.49) as r from generate_series(1, 2500));
 
 create function ks_test_uniform_random_int_in_range()
 returns boolean
 language plpgsql
-as $function$
+as $$
 DECLARE
   n int := 1000;        -- Number of samples
   c float8 := 1.94947;  -- Critical value for 99.9% confidence
@@ -378,7 +253,7 @@ BEGIN
   );
   RETURN ok;
 END
-$function$;
+$$;
 
 select
   ks_test_uniform_random_int_in_range() or
@@ -389,7 +264,7 @@ select
 create function ks_test_uniform_random_bigint_in_range()
 returns boolean
 language plpgsql
-as $function$
+as $$
 DECLARE
   n int := 1000;        -- Number of samples
   c float8 := 1.94947;  -- Critical value for 99.9% confidence
@@ -405,7 +280,7 @@ BEGIN
   );
   RETURN ok;
 END
-$function$;
+$$;
 
 select
   ks_test_uniform_random_bigint_in_range() or
@@ -416,7 +291,7 @@ select
 create function ks_test_uniform_random_numeric_in_range()
 returns boolean
 language plpgsql
-as $function$
+as $$
 DECLARE
   n int := 1000;        -- Number of samples
   c float8 := 1.94947;  -- Critical value for 99.9% confidence
@@ -432,7 +307,7 @@ BEGIN
   );
   RETURN ok;
 END
-$function$;
+$$;
 
 select
   ks_test_uniform_random_numeric_in_range() or
@@ -448,24 +323,14 @@ set extra_float_digits = -1;
 
 select random_normal() from generate_series(1, 10);
 
-select
-  random_normal(
-    "mean" := 1,
-    "stddev" := 0.1
-  )
-  as r
-from
-  generate_series(1, 10);
+select random_normal(mean := 1, stddev := 0.1) as r from generate_series(1, 10);
 
 select random(1, 6) from generate_series(1, 10);
 
 select random(-2147483648, 2147483647) from generate_series(1, 10);
 
 select
-  random(
-    -9223372036854775808,
-    9223372036854775807
-  )
+  random(-9223372036854775808, 9223372036854775807)
 from
   generate_series(1, 10);
 
@@ -477,32 +342,20 @@ select random(0, 1 - 1e-30) from generate_series(1, 10);
 
 select
   n,
-  random(
-    0,
-    trim_scale(abs(1 - 10.0 ^ -n))
-  )
+  random(0, trim_scale(abs(1 - 10.0 ^ -n)))
 from
   generate_series(-20, 20) as n;
 
 select
-  random(
-    cast('1979-02-08' as date),
-    cast('2025-07-03' as date)
-  )
+  random(cast('1979-02-08' as date), cast('2025-07-03' as date))
   as random_date_multiple_years;
 
 select
-  random(
-    cast('4714-11-24 BC' as date),
-    cast('5874897-12-31 AD' as date)
-  )
+  random(cast('4714-11-24 BC' as date), cast('5874897-12-31 AD' as date))
   as random_date_maximum_range;
 
 select
-  random(
-    cast('1979-02-08' as date),
-    cast('1979-02-08' as date)
-  )
+  random(cast('1979-02-08' as date), cast('1979-02-08' as date))
   as random_date_empty_range;
 
 select random(cast('2024-12-31' as date), cast('2024-01-01' as date));
@@ -512,34 +365,25 @@ select random(cast('-infinity' as date), cast('2024-01-01' as date));
 select random(cast('2024-12-31' as date), cast('infinity' as date));
 
 select
-  random(
-    cast('1979-02-08' as timestamp),
-    cast('2025-07-03' as timestamp)
-  )
+  random(cast('1979-02-08' as timestamp), cast('2025-07-03' as timestamp))
   as random_timestamp_multiple_years;
 
 select
   random(
     cast('4714-11-24 BC' as timestamp),
-    cast('294276-12-31 23:59:59.999999'
-    as timestamp)
+    cast('294276-12-31 23:59:59.999999' as timestamp)
   )
   as random_timestamp_maximum_range;
 
 select
   random(
-    cast('2024-07-01 12:00:00.000001'
-    as timestamp),
-    cast('2024-07-01 12:00:00.999999'
-    as timestamp)
+    cast('2024-07-01 12:00:00.000001' as timestamp),
+    cast('2024-07-01 12:00:00.999999' as timestamp)
   )
   as random_narrow_range;
 
 select
-  random(
-    cast('1979-02-08' as timestamp),
-    cast('1979-02-08' as timestamp)
-  )
+  random(cast('1979-02-08' as timestamp), cast('1979-02-08' as timestamp))
   as random_timestamp_empty_range;
 
 select random(cast('2024-12-31' as timestamp), cast('2024-01-01' as timestamp));
@@ -550,60 +394,46 @@ select random(cast('2024-12-31' as timestamp), cast('infinity' as timestamp));
 
 select
   random(
-    cast('1979-02-08 +01'
-    as timestamp with time zone),
-    cast('2025-07-03 +02'
-    as timestamp with time zone)
+    cast('1979-02-08 +01' as timestamptz),
+    cast('2025-07-03 +02' as timestamptz)
   )
   as random_timestamptz_multiple_years;
 
 select
   random(
-    cast('4714-11-24 BC +00'
-    as timestamp with time zone),
-    cast('294276-12-31 23:59:59.999999 +00'
-    as timestamp with time zone)
+    cast('4714-11-24 BC +00' as timestamptz),
+    cast('294276-12-31 23:59:59.999999 +00' as timestamptz)
   )
   as random_timestamptz_maximum_range;
 
 select
   random(
-    cast('2024-07-01 12:00:00.000001 +04'
-    as timestamp with time zone),
-    cast('2024-07-01 12:00:00.999999 +04'
-    as timestamp with time zone)
+    cast('2024-07-01 12:00:00.000001 +04' as timestamptz),
+    cast('2024-07-01 12:00:00.999999 +04' as timestamptz)
   )
   as random_timestamptz_narrow_range;
 
 select
   random(
-    cast('1979-02-08 +05'
-    as timestamp with time zone),
-    cast('1979-02-08 +05'
-    as timestamp with time zone)
+    cast('1979-02-08 +05' as timestamptz),
+    cast('1979-02-08 +05' as timestamptz)
   )
   as random_timestamptz_empty_range;
 
 select
   random(
-    cast('2024-01-01 +06'
-    as timestamp with time zone),
-    cast('2024-01-01 +07'
-    as timestamp with time zone)
+    cast('2024-01-01 +06' as timestamptz),
+    cast('2024-01-01 +07' as timestamptz)
   );
 
 select
   random(
-    cast('-infinity'
-    as timestamp with time zone),
-    cast('2024-01-01 +07'
-    as timestamp with time zone)
+    cast('-infinity' as timestamptz),
+    cast('2024-01-01 +07' as timestamptz)
   );
 
 select
   random(
-    cast('2024-01-01 +06'
-    as timestamp with time zone),
-    cast('infinity'
-    as timestamp with time zone)
+    cast('2024-01-01 +06' as timestamptz),
+    cast('infinity' as timestamptz)
   );

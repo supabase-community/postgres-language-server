@@ -32,8 +32,7 @@ values
       from
         app.packages
       where
-        package_name =
-        'langchain-embedding_search'
+        package_name = 'langchain-embedding_search'
     ),
     (1, 0, 0),
     '

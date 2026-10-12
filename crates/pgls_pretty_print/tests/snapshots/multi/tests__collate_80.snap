@@ -2,7 +2,7 @@
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/collate.sql
 ---
-create schema "collate_tests";
+create schema collate_tests;
 
 set search_path to collate_tests;
 
@@ -95,27 +95,13 @@ select a, lower(x collate "C"), lower(y collate "C") from collate_test10;
 select a, x, y from collate_test10 order by lower(y), a;
 
 create view collview1
-as select
-  *
-from
-  collate_test1
-where
-  b collate "C" >= 'bbc';
+as select * from collate_test1 where b collate "C" >= 'bbc';
 
 create view collview2
-as select
-  a,
-  b
-from
-  collate_test1
-order by b collate "C";
+as select a, b from collate_test1 order by b collate "C";
 
 create view collview3
-as select
-  a,
-  lower((x || x) collate "POSIX")
-from
-  collate_test10;
+as select a, lower((x || x) collate "POSIX") from collate_test10;
 
 select
   table_name,
@@ -185,9 +171,9 @@ select
 from
   collate_test10;
 
-select MIN(b), MAX(b) from collate_test1;
+select min(b), max(b) from collate_test1;
 
-select MIN(b), MAX(b) from collate_test2;
+select min(b), max(b) from collate_test2;
 
 select array_agg(b order by b) from collate_test1;
 
@@ -198,10 +184,7 @@ select string_agg(x collate "C", y collate "POSIX") from collate_test10;
 select array_agg(x collate "C" order by y collate "POSIX") from collate_test10;
 
 select
-  array_agg(
-    a order by x collate "C",
-      y collate "POSIX"
-  )
+  array_agg(a order by x collate "C", y collate "POSIX")
 from
   collate_test10;
 
@@ -218,13 +201,7 @@ select a, b from collate_test2 where a > 1 order by 2;
 
 select a, b from collate_test2
 except
-select
-  a,
-  b
-from
-  collate_test2
-where
-  a < 2
+select a, b from collate_test2 where a < 2
 order by 2;
 
 select a, b from collate_test1
@@ -236,11 +213,7 @@ select a, b from collate_test1 union all select a, b from collate_test2;
 
 select a, b from collate_test1 union select a, b from collate_test2 order by 2;
 
-select
-  a,
-  b collate "C"
-from
-  collate_test1
+select a, b collate "C" from collate_test1
 union
 select a, b from collate_test2
 order by 2;
@@ -251,9 +224,7 @@ select a, b from collate_test1 except select a, b from collate_test2 order by 2;
 
 create table test_u
 as
-  select a, b from collate_test1
-  union all
-  select a, b from collate_test2;
+  select a, b from collate_test1 union all select a, b from collate_test2;
 
 select x < y from collate_test10;
 
@@ -264,20 +235,9 @@ select x, y from collate_test10 order by x || y;
 with recursive
 foo (x)
 as (
-  select
-    x
-  from
-    (
-      values ('a' collate "C"), ('b')
-    )
-    as t (x)
+  select x from (values ('a' collate "C"), ('b')) as t (x)
   union all
-  select
-    (x || 'c') collate "POSIX"
-  from
-    foo
-  where
-    length(x) < 10
+  select (x || 'c') collate "POSIX" from foo where length(x) < 10
 )
 select
   *
@@ -289,46 +249,28 @@ select
   b,
   a < b as lt
 from
-  (
-    values
-      ('a', 'B'),
-      ('A', 'b' collate "C")
-  )
-  as v (a, b);
+  (values ('a', 'B'), ('A', 'b' collate "C")) as v (a, b);
 
 select
   *
 from
   collate_test10
 where
-  not (x, y) in
-  (
-    select y, x from collate_test10
-  );
+  not (x, y) in (select y, x from collate_test10);
 
 select
   *
 from
   collate_test10
 where
-  not (x collate "POSIX", y collate "C") in
-  (
-    select y, x from collate_test10
-  );
+  not (x collate "POSIX", y collate "C") in (select y, x from collate_test10);
 
 select
   *
 from
   collate_test10
 where
-  not (x, y) in
-  (
-    select
-      y collate "C",
-      x collate "POSIX"
-    from
-      collate_test10
-  );
+  not (x, y) in (select y collate "C", x collate "POSIX" from collate_test10);
 
 select a, cast(b as varchar) from collate_test1 order by 2;
 
@@ -337,83 +279,50 @@ select a, cast(b as varchar) from collate_test2 order by 2;
 create function vc(text)
 returns text
 language sql
-as $function$
-select $1::varchar
-$function$;
+as 'select $1::varchar';
 
 select a, b from collate_test1 order by a, vc(b);
 
 select
   *
 from
-  unnest(
-    (
-      select
-        array_agg(b order by b)
-      from
-        collate_test1
-    )
-  )
+  unnest((select array_agg(b order by b) from collate_test1))
 order by 1;
 
 select
   *
 from
-  unnest(
-    (
-      select
-        array_agg(b order by b)
-      from
-        collate_test2
-    )
-  )
+  unnest((select array_agg(b order by b) from collate_test2))
 order by 1;
 
 create function dup(anyelement)
 returns anyelement
 language sql
-as $function$
-select $1
-$function$;
+as 'select $1';
 
 select a, dup(b) from collate_test1 order by 2;
 
 select a, dup(b) from collate_test2 order by 2;
 
-create index "collate_test1_idx1" on collate_test1 using btree (b);
+create index collate_test1_idx1 on collate_test1 using btree (b);
 
-create index "collate_test1_idx2"
-on collate_test1
-using btree
-(
+create index collate_test1_idx2 on collate_test1 using btree (
   b collate "POSIX"
 );
 
-create index "collate_test1_idx3"
-on collate_test1
-using btree
-(
+create index collate_test1_idx3 on collate_test1 using btree (
   (b collate "POSIX")
 );
 
-create index "collate_test1_idx4"
-on collate_test1
-using btree
-(
+create index collate_test1_idx4 on collate_test1 using btree (
   ((b || 'foo') collate "POSIX")
 );
 
-create index "collate_test1_idx5"
-on collate_test1
-using btree
-(
+create index collate_test1_idx5 on collate_test1 using btree (
   a collate "POSIX"
 );
 
-create index "collate_test1_idx6"
-on collate_test1
-using btree
-(
+create index collate_test1_idx6 on collate_test1 using btree (
   (a collate "POSIX")
 );
 
@@ -447,16 +356,12 @@ create table collate_test22 (f2 text collate "POSIX");
 insert into collate_test22 values ('foo'), ('bar'), ('baz');
 
 alter table collate_test22
-  add foreign key
-  (f2)
-  references collate_test20;
+  add foreign key (f2) references collate_test20;
 
 delete from collate_test22 where f2 = 'baz';
 
 alter table collate_test22
-  add foreign key
-  (f2)
-  references collate_test20;
+  add foreign key (f2) references collate_test20;
 
 reset enable_seqscan;
 
@@ -500,23 +405,16 @@ create temporary table vctable (f1 varchar(25));
 
 insert into vctable values ('foo' collate "C");
 
-select pg_collation_for('foo');
+select collation for ('foo');
 
-select pg_collation_for(cast('foo' as text));
+select collation for (cast('foo' as text));
 
-select pg_collation_for((select a from collate_test1 limit 1));
+select collation for ((select a from collate_test1 limit 1));
 
-select pg_collation_for((select b from collate_test1 limit 1));
+select collation for ((select b from collate_test1 limit 1));
 
 create view collate_on_int
-as select
-  c1 + 1 as c1p
-from
-  (
-    select
-      cast('4' collate "C" as int) as c1
-  )
-  as ss;
+as select c1 + 1 as c1p from (select cast('4' collate "C" as int) as c1) as ss;
 
 create collation coll_dup_chk (
   lc_collate = "POSIX",

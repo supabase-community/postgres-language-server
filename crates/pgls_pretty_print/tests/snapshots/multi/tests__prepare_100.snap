@@ -32,53 +32,27 @@ select name, statement, parameter_types, result_types from pg_prepared_statement
 
 prepare q2
 (text)
-as select
-  datname,
-  datistemplate,
-  datallowconn
-from
-  pg_database
-where
-  datname = $1;;
+as select datname, datistemplate, datallowconn from pg_database where datname = $1;;
 
 execute q2 ('postgres');
 
 prepare q3
-(text,
-int,
-double precision,
-boolean,
-smallint)
+(text, int, double precision, boolean, smallint)
 as select
   *
 from
   tenk1
 where
-  string4 = $1 and
-  (
-    four = $2 or
-    ten = cast($3 as bigint) or
-    true = $4 or
-    odd = cast($5 as int)
-  )
+  string4 = $1 and (four = $2 or ten = cast($3 as bigint) or true = $4 or odd = cast($5 as int))
 order by unique1;;
 
 execute q3
-('AAAAxx',
-cast(5 as smallint),
-cast(10.5 as double precision),
-false,
-cast(4 as bigint));
+('AAAAxx', cast(5 as smallint), cast(10.5 as double precision), false, cast(4 as bigint));
 
 execute q3 ('bool');
 
 execute q3
-('bytea',
-cast(5 as smallint),
-cast(10.5 as double precision),
-false,
-cast(4 as bigint),
-true);
+('bytea', cast(5 as smallint), cast(10.5 as double precision), false, cast(4 as bigint), true);
 
 execute q3 (cast(5 as smallint), cast(10.5 as double precision), false, cast(4 as bigint), 'bytea');
 

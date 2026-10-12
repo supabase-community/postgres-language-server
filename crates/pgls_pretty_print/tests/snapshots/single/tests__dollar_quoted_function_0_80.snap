@@ -6,8 +6,8 @@ snapshot_kind: text
 create function test_func()
 returns void
 language plpgsql
-as $function$
+as $$
 BEGIN
     RAISE NOTICE 'Hello, world!';
 END;
-$function$;
+$$;

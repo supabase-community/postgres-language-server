@@ -38,8 +38,7 @@ select
 from
   point_tbl as p
 where
-  p.f1 <@
-  cast('[(0,0),(-10,0),(-10,10)]' as path);
+  p.f1 <@ cast('[(0,0),(-10,0),(-10,10)]' as path);
 
 select p.* from point_tbl as p where not cast('(0,0,100,100)' as box) @> p.f1;
 
@@ -91,16 +90,14 @@ from
   point_tbl as p1,
   point_tbl as p2
 where
-  p1.f1 <-> p2.f1 > 3 and
-  p1.f1 << p2.f1 and
-  p1.f1 |>> p2.f1
+  p1.f1 <-> p2.f1 > 3 and p1.f1 << p2.f1 and p1.f1 |>> p2.f1
 order by distance;
 
 create temporary table point_gist_tbl (f1 point);
 
 insert into point_gist_tbl select '(0,0)' from generate_series(0, 1000);
 
-create index "point_gist_tbl_index" on point_gist_tbl using gist (f1);
+create index point_gist_tbl_index on point_gist_tbl using gist (f1);
 
 insert into point_gist_tbl values ('(0.0000009,0.0000009)');
 
@@ -111,29 +108,25 @@ set enable_indexscan = 'false';
 set enable_bitmapscan = 'false';
 
 select
-  COUNT(*)
+  count(*)
 from
   point_gist_tbl
 where
-  f1 ~=
-  cast('(0.0000009,0.0000009)' as point);
+  f1 ~= cast('(0.0000009,0.0000009)' as point);
 
 select
-  COUNT(*)
+  count(*)
 from
   point_gist_tbl
 where
-  f1 <@
-  cast('(0.0000009,0.0000009),(0.0000009,0.0000009)'
-  as box);
+  f1 <@ cast('(0.0000009,0.0000009),(0.0000009,0.0000009)' as box);
 
 select
-  COUNT(*)
+  count(*)
 from
   point_gist_tbl
 where
-  f1 ~=
-  cast('(0.0000018,0.0000018)' as point);
+  f1 ~= cast('(0.0000018,0.0000018)' as point);
 
 set enable_seqscan = 'false';
 
@@ -142,29 +135,25 @@ set enable_indexscan = 'true';
 set enable_bitmapscan = 'true';
 
 select
-  COUNT(*)
+  count(*)
 from
   point_gist_tbl
 where
-  f1 ~=
-  cast('(0.0000009,0.0000009)' as point);
+  f1 ~= cast('(0.0000009,0.0000009)' as point);
 
 select
-  COUNT(*)
+  count(*)
 from
   point_gist_tbl
 where
-  f1 <@
-  cast('(0.0000009,0.0000009),(0.0000009,0.0000009)'
-  as box);
+  f1 <@ cast('(0.0000009,0.0000009),(0.0000009,0.0000009)' as box);
 
 select
-  COUNT(*)
+  count(*)
 from
   point_gist_tbl
 where
-  f1 ~=
-  cast('(0.0000018,0.0000018)' as point);
+  f1 ~= cast('(0.0000018,0.0000018)' as point);
 
 reset enable_seqscan;
 

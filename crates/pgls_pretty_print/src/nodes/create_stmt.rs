@@ -4,6 +4,7 @@ use crate::TokenKind;
 use crate::emitter::{EventEmitter, GroupKind, LineType};
 
 use super::node_list::emit_comma_separated_list;
+use super::node_list::emit_parenthesized_list;
 
 /// Emit a column override for typed tables (OF typename).
 /// These use the syntax: column_name WITH OPTIONS constraints
@@ -234,9 +235,7 @@ fn emit_create_stmt_impl(e: &mut EventEmitter, n: &CreateStmt, with_semicolon: b
             e.line(LineType::Hard);
             e.token(TokenKind::INHERITS_KW);
             e.space();
-            e.token(TokenKind::L_PAREN);
-            emit_comma_separated_list(e, &n.inh_relations, super::emit_node);
-            e.token(TokenKind::R_PAREN);
+            emit_parenthesized_list(e, &n.inh_relations, super::emit_node);
         }
 
         // Add PARTITION BY clause for regular partitioned tables

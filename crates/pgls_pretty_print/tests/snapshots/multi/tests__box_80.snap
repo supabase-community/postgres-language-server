@@ -70,12 +70,9 @@ select height(f1), width(f1) from box_tbl;
 create temporary table box_temp (f1 box);
 
 insert into box_temp
-select
-  box(point(i, i), point(i * 2, i * 2))
-from
-  generate_series(1, 50) as i;
+select box(point(i, i), point(i * 2, i * 2)) from generate_series(1, 50) as i;
 
-create index "box_spgist" on box_temp using spgist (f1);
+create index box_spgist on box_temp using spgist (f1);
 
 insert into box_temp
 values
@@ -84,9 +81,7 @@ values
   ('(-3,4.3333333333)(40,1)'),
   ('(0,100)(0,infinity)'),
   ('(-infinity,0)(0,infinity)'),
-  (
-    '(-infinity,-infinity)(infinity,infinity)'
-  );
+  ('(-infinity,-infinity)(infinity,infinity)');
 
 set enable_seqscan = 'false';
 
@@ -150,39 +145,23 @@ create table quad_box_tbl (
 insert into quad_box_tbl
 select
   (x - 1) * 100 + y,
-  box(
-    point(x * 10, y * 10),
-    point(x * 10 + 5, y * 10 + 5)
-  )
+  box(point(x * 10, y * 10), point(x * 10 + 5, y * 10 + 5))
 from
   generate_series(1, 100) as x,
   generate_series(1, 100) as y;
 
 insert into quad_box_tbl
-select
-  i,
-  '((200, 300),(210, 310))'
-from
-  generate_series(10001, 11000) as i;
+select i, '((200, 300),(210, 310))' from generate_series(10001, 11000) as i;
 
 insert into quad_box_tbl
 values
   (11001, null),
   (11002, null),
-  (
-    11003,
-    '((-infinity,-infinity),(infinity,infinity))'
-  ),
-  (
-    11004,
-    '((-infinity,100),(-infinity,500))'
-  ),
-  (
-    11005,
-    '((-infinity,-infinity),(700,infinity))'
-  );
+  (11003, '((-infinity,-infinity),(infinity,infinity))'),
+  (11004, '((-infinity,100),(-infinity,500))'),
+  (11005, '((-infinity,-infinity),(700,infinity))');
 
-create index "quad_box_tbl_idx" on quad_box_tbl using spgist (b);
+create index quad_box_tbl_idx on quad_box_tbl using spgist (b);
 
 set enable_seqscan = 'on';
 
@@ -193,9 +172,7 @@ set enable_bitmapscan = off;
 create table quad_box_tbl_ord_seq1
 as
   select
-    RANK() over (
-      order by b <-> cast('123,456' as point)
-    ) as n,
+    rank() over (order by b <-> cast('123,456' as point)) as n,
     b <-> cast('123,456' as point) as dist,
     id
   from
@@ -204,16 +181,13 @@ as
 create table quad_box_tbl_ord_seq2
 as
   select
-    RANK() over (
-      order by b <-> cast('123,456' as point)
-    ) as n,
+    rank() over (order by b <-> cast('123,456' as point)) as n,
     b <-> cast('123,456' as point) as dist,
     id
   from
     quad_box_tbl
   where
-    b <@
-    cast('((200,300),(500,600))' as box);
+    b <@ cast('((200,300),(500,600))' as box);
 
 set enable_seqscan = off;
 
@@ -222,117 +196,102 @@ set enable_indexscan = 'on';
 set enable_bitmapscan = 'on';
 
 select
-  COUNT(*)
+  count(*)
 from
   quad_box_tbl
 where
-  b <<
-  cast('((100,200),(300,500))' as box);
+  b << cast('((100,200),(300,500))' as box);
 
 select
-  COUNT(*)
+  count(*)
 from
   quad_box_tbl
 where
-  b &<
-  cast('((100,200),(300,500))' as box);
+  b &< cast('((100,200),(300,500))' as box);
 
 select
-  COUNT(*)
+  count(*)
 from
   quad_box_tbl
 where
-  b &&
-  cast('((100,200),(300,500))' as box);
+  b && cast('((100,200),(300,500))' as box);
 
 select
-  COUNT(*)
+  count(*)
 from
   quad_box_tbl
 where
-  b &>
-  cast('((100,200),(300,500))' as box);
+  b &> cast('((100,200),(300,500))' as box);
 
 select
-  COUNT(*)
+  count(*)
 from
   quad_box_tbl
 where
-  b >>
-  cast('((100,200),(300,500))' as box);
+  b >> cast('((100,200),(300,500))' as box);
 
 select
-  COUNT(*)
+  count(*)
 from
   quad_box_tbl
 where
-  b >>
-  cast('((100,200),(300,500))' as box);
+  b >> cast('((100,200),(300,500))' as box);
 
 select
-  COUNT(*)
+  count(*)
 from
   quad_box_tbl
 where
-  b <<|
-  cast('((100,200),(300,500))' as box);
+  b <<| cast('((100,200),(300,500))' as box);
 
 select
-  COUNT(*)
+  count(*)
 from
   quad_box_tbl
 where
-  b &<|
-  cast('((100,200),(300,500))' as box);
+  b &<| cast('((100,200),(300,500))' as box);
 
 select
-  COUNT(*)
+  count(*)
 from
   quad_box_tbl
 where
-  b |&>
-  cast('((100,200),(300,500))' as box);
+  b |&> cast('((100,200),(300,500))' as box);
 
 select
-  COUNT(*)
+  count(*)
 from
   quad_box_tbl
 where
-  b |>>
-  cast('((100,200),(300,500))' as box);
+  b |>> cast('((100,200),(300,500))' as box);
 
 select
-  COUNT(*)
+  count(*)
 from
   quad_box_tbl
 where
-  b @>
-  cast('((201,301),(202,303))' as box);
+  b @> cast('((201,301),(202,303))' as box);
 
 select
-  COUNT(*)
+  count(*)
 from
   quad_box_tbl
 where
-  b <@
-  cast('((100,200),(300,500))' as box);
+  b <@ cast('((100,200),(300,500))' as box);
 
 select
-  COUNT(*)
+  count(*)
 from
   quad_box_tbl
 where
-  b ~=
-  cast('((200,300),(205,305))' as box);
+  b ~= cast('((200,300),(205,305))' as box);
 
 set enable_indexscan = 'on';
 
 set enable_bitmapscan = off;
 
 select
-  RANK() over (
-    order by b <-> cast('123,456' as point)
-  ) as n,
+  rank() over (order by b <-> cast('123,456' as point)) as n,
   b <-> cast('123,456' as point) as dist,
   id
 from
@@ -341,9 +300,7 @@ from
 create temporary table quad_box_tbl_ord_idx1
 as
   select
-    RANK() over (
-      order by b <-> cast('123,456' as point)
-    ) as n,
+    rank() over (order by b <-> cast('123,456' as point)) as n,
     b <-> cast('123,456' as point) as dist,
     id
   from
@@ -358,37 +315,30 @@ from
   on seq.n = idx.n and
     seq.id = idx.id and
     (
-      seq.dist = idx.dist or
-      (seq.dist is null and idx.dist is null)
+      seq.dist = idx.dist or (seq.dist is null and idx.dist is null)
     )
 where
   seq.id is null or idx.id is null;
 
 select
-  RANK() over (
-    order by b <-> cast('123,456' as point)
-  ) as n,
+  rank() over (order by b <-> cast('123,456' as point)) as n,
   b <-> cast('123,456' as point) as dist,
   id
 from
   quad_box_tbl
 where
-  b <@
-  cast('((200,300),(500,600))' as box);
+  b <@ cast('((200,300),(500,600))' as box);
 
 create temporary table quad_box_tbl_ord_idx2
 as
   select
-    RANK() over (
-      order by b <-> cast('123,456' as point)
-    ) as n,
+    rank() over (order by b <-> cast('123,456' as point)) as n,
     b <-> cast('123,456' as point) as dist,
     id
   from
     quad_box_tbl
   where
-    b <@
-    cast('((200,300),(500,600))' as box);
+    b <@ cast('((200,300),(500,600))' as box);
 
 select
   *
@@ -399,8 +349,7 @@ from
   on seq.n = idx.n and
     seq.id = idx.id and
     (
-      seq.dist = idx.dist or
-      (seq.dist is null and idx.dist is null)
+      seq.dist = idx.dist or (seq.dist is null and idx.dist is null)
     )
 where
   seq.id is null or idx.id is null;

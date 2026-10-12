@@ -4,6 +4,8 @@ use crate::{
 };
 use pgls_query::protobuf::PublicationTable;
 
+use super::node_list::emit_parenthesized_list;
+
 pub(super) fn emit_publication_table(e: &mut EventEmitter, n: &PublicationTable) {
     e.group_start(GroupKind::PublicationTable);
 
@@ -13,9 +15,7 @@ pub(super) fn emit_publication_table(e: &mut EventEmitter, n: &PublicationTable)
 
     if !n.columns.is_empty() {
         e.space();
-        e.token(TokenKind::L_PAREN);
-        super::node_list::emit_comma_separated_list(e, &n.columns, super::emit_node);
-        e.token(TokenKind::R_PAREN);
+        emit_parenthesized_list(e, &n.columns, super::emit_node);
     }
 
     if let Some(ref where_clause) = n.where_clause {

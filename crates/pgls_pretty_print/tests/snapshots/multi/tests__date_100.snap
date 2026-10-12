@@ -372,107 +372,107 @@ select
 from
   date_tbl;
 
-select EXTRACT('epoch' from cast('1970-01-01' as date));
+select extract(epoch from cast('1970-01-01' as date));
 
-select EXTRACT('century' from cast('0101-12-31 BC' as date));
+select extract(century from cast('0101-12-31 BC' as date));
 
-select EXTRACT('century' from cast('0100-12-31 BC' as date));
+select extract(century from cast('0100-12-31 BC' as date));
 
-select EXTRACT('century' from cast('0001-12-31 BC' as date));
+select extract(century from cast('0001-12-31 BC' as date));
 
-select EXTRACT('century' from cast('0001-01-01' as date));
+select extract(century from cast('0001-01-01' as date));
 
-select EXTRACT('century' from cast('0001-01-01 AD' as date));
+select extract(century from cast('0001-01-01 AD' as date));
 
-select EXTRACT('century' from cast('1900-12-31' as date));
+select extract(century from cast('1900-12-31' as date));
 
-select EXTRACT('century' from cast('1901-01-01' as date));
+select extract(century from cast('1901-01-01' as date));
 
-select EXTRACT('century' from cast('2000-12-31' as date));
+select extract(century from cast('2000-12-31' as date));
 
-select EXTRACT('century' from cast('2001-01-01' as date));
+select extract(century from cast('2001-01-01' as date));
 
-select EXTRACT('century' from current_date) >= 21 as "true";
+select extract(century from current_date) >= 21 as "true";
 
-select EXTRACT('millennium' from cast('0001-12-31 BC' as date));
+select extract(millennium from cast('0001-12-31 BC' as date));
 
-select EXTRACT('millennium' from cast('0001-01-01 AD' as date));
+select extract(millennium from cast('0001-01-01 AD' as date));
 
-select EXTRACT('millennium' from cast('1000-12-31' as date));
+select extract(millennium from cast('1000-12-31' as date));
 
-select EXTRACT('millennium' from cast('1001-01-01' as date));
+select extract(millennium from cast('1001-01-01' as date));
 
-select EXTRACT('millennium' from cast('2000-12-31' as date));
+select extract(millennium from cast('2000-12-31' as date));
 
-select EXTRACT('millennium' from cast('2001-01-01' as date));
+select extract(millennium from cast('2001-01-01' as date));
 
-select EXTRACT('millennium' from current_date);
+select extract(millennium from current_date);
 
-select EXTRACT('decade' from cast('1994-12-25' as date));
+select extract(decade from cast('1994-12-25' as date));
 
-select EXTRACT('decade' from cast('0010-01-01' as date));
+select extract(decade from cast('0010-01-01' as date));
 
-select EXTRACT('decade' from cast('0009-12-31' as date));
+select extract(decade from cast('0009-12-31' as date));
 
-select EXTRACT('decade' from cast('0001-01-01 BC' as date));
+select extract(decade from cast('0001-01-01 BC' as date));
 
-select EXTRACT('decade' from cast('0002-12-31 BC' as date));
+select extract(decade from cast('0002-12-31 BC' as date));
 
-select EXTRACT('decade' from cast('0011-01-01 BC' as date));
+select extract(decade from cast('0011-01-01 BC' as date));
 
-select EXTRACT('decade' from cast('0012-12-31 BC' as date));
+select extract(decade from cast('0012-12-31 BC' as date));
 
-select EXTRACT('microseconds' from cast('2020-08-11' as date));
+select extract(microseconds from cast('2020-08-11' as date));
 
-select EXTRACT('milliseconds' from cast('2020-08-11' as date));
+select extract(milliseconds from cast('2020-08-11' as date));
 
-select EXTRACT('second' from cast('2020-08-11' as date));
+select extract(second from cast('2020-08-11' as date));
 
-select EXTRACT('minute' from cast('2020-08-11' as date));
+select extract(minute from cast('2020-08-11' as date));
 
-select EXTRACT('hour' from cast('2020-08-11' as date));
+select extract(hour from cast('2020-08-11' as date));
 
-select EXTRACT('day' from cast('2020-08-11' as date));
+select extract(day from cast('2020-08-11' as date));
 
-select EXTRACT('month' from cast('2020-08-11' as date));
+select extract(month from cast('2020-08-11' as date));
 
-select EXTRACT('year' from cast('2020-08-11' as date));
+select extract(year from cast('2020-08-11' as date));
 
-select EXTRACT('year' from cast('2020-08-11 BC' as date));
+select extract(year from cast('2020-08-11 BC' as date));
 
-select EXTRACT('decade' from cast('2020-08-11' as date));
+select extract(decade from cast('2020-08-11' as date));
 
-select EXTRACT('century' from cast('2020-08-11' as date));
+select extract(century from cast('2020-08-11' as date));
 
-select EXTRACT('millennium' from cast('2020-08-11' as date));
+select extract(millennium from cast('2020-08-11' as date));
 
-select EXTRACT('isoyear' from cast('2020-08-11' as date));
+select extract(isoyear from cast('2020-08-11' as date));
 
-select EXTRACT('isoyear' from cast('2020-08-11 BC' as date));
+select extract(isoyear from cast('2020-08-11 BC' as date));
 
-select EXTRACT('quarter' from cast('2020-08-11' as date));
+select extract(quarter from cast('2020-08-11' as date));
 
-select EXTRACT('week' from cast('2020-08-11' as date));
+select extract(week from cast('2020-08-11' as date));
 
-select EXTRACT('dow' from cast('2020-08-11' as date));
+select extract(dow from cast('2020-08-11' as date));
 
-select EXTRACT('dow' from cast('2020-08-16' as date));
+select extract(dow from cast('2020-08-16' as date));
 
-select EXTRACT('isodow' from cast('2020-08-11' as date));
+select extract(isodow from cast('2020-08-11' as date));
 
-select EXTRACT('isodow' from cast('2020-08-16' as date));
+select extract(isodow from cast('2020-08-16' as date));
 
-select EXTRACT('doy' from cast('2020-08-11' as date));
+select extract(doy from cast('2020-08-11' as date));
 
-select EXTRACT('timezone' from cast('2020-08-11' as date));
+select extract(timezone from cast('2020-08-11' as date));
 
-select EXTRACT('timezone_m' from cast('2020-08-11' as date));
+select extract(timezone_m from cast('2020-08-11' as date));
 
-select EXTRACT('timezone_h' from cast('2020-08-11' as date));
+select extract(timezone_h from cast('2020-08-11' as date));
 
-select EXTRACT('epoch' from cast('2020-08-11' as date));
+select extract(epoch from cast('2020-08-11' as date));
 
-select EXTRACT('julian' from cast('2020-08-11' as date));
+select extract(julian from cast('2020-08-11' as date));
 
 select date_trunc('MILLENNIUM', cast('1970-03-20 04:30:00.00000' as timestamp));
 
@@ -507,43 +507,43 @@ select
 
 select cast('infinity' as date) = cast('+infinity' as date) as t;
 
-select EXTRACT('day' from cast('infinity' as date));
+select extract(day from cast('infinity' as date));
 
-select EXTRACT('day' from cast('-infinity' as date));
+select extract(day from cast('-infinity' as date));
 
-select EXTRACT('day' from cast('infinity' as date));
+select extract(day from cast('infinity' as date));
 
-select EXTRACT('month' from cast('infinity' as date));
+select extract(month from cast('infinity' as date));
 
-select EXTRACT('quarter' from cast('infinity' as date));
+select extract(quarter from cast('infinity' as date));
 
-select EXTRACT('week' from cast('infinity' as date));
+select extract(week from cast('infinity' as date));
 
-select EXTRACT('dow' from cast('infinity' as date));
+select extract(dow from cast('infinity' as date));
 
-select EXTRACT('isodow' from cast('infinity' as date));
+select extract(isodow from cast('infinity' as date));
 
-select EXTRACT('doy' from cast('infinity' as date));
+select extract(doy from cast('infinity' as date));
 
-select EXTRACT('epoch' from cast('infinity' as date));
+select extract(epoch from cast('infinity' as date));
 
-select EXTRACT('epoch' from cast('-infinity' as date));
+select extract(epoch from cast('-infinity' as date));
 
-select EXTRACT('year' from cast('infinity' as date));
+select extract(year from cast('infinity' as date));
 
-select EXTRACT('decade' from cast('infinity' as date));
+select extract(decade from cast('infinity' as date));
 
-select EXTRACT('century' from cast('infinity' as date));
+select extract(century from cast('infinity' as date));
 
-select EXTRACT('millennium' from cast('infinity' as date));
+select extract(millennium from cast('infinity' as date));
 
-select EXTRACT('julian' from cast('infinity' as date));
+select extract(julian from cast('infinity' as date));
 
-select EXTRACT('isoyear' from cast('infinity' as date));
+select extract(isoyear from cast('infinity' as date));
 
-select EXTRACT('epoch' from cast('infinity' as date));
+select extract(epoch from cast('infinity' as date));
 
-select EXTRACT('microsec' from cast('infinity' as date));
+select extract(microsec from cast('infinity' as date));
 
 select make_date(2013, 7, 15);
 

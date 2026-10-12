@@ -10,8 +10,8 @@ public.update_profile(
 )
 returns void
 language plpgsql
-as $function$
-declare
+as $$
+  declare
     v_is_org boolean;
   begin
     update app.accounts a
@@ -24,4 +24,4 @@ declare
           bio = coalesce($3, o.bio)
     where o.handle = $1;
   end;
-$function$;
+$$;

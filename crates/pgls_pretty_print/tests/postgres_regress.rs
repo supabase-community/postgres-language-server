@@ -1,5 +1,5 @@
 //! Formats every statement Postgres accepted in its own regression suite and checks that the output
-//! parses back to the same AST.
+//! parses back to the same AST, and that formatting the output again changes nothing.
 
 use std::panic::{AssertUnwindSafe, catch_unwind};
 
@@ -71,25 +71,35 @@ fn round_trip(sql: &str) -> Result<(), String> {
     let mut expected = ast.clone();
     normalize_ast(&mut expected);
     for max_line_length in LINE_WIDTHS {
-        let output = catch_unwind(AssertUnwindSafe(|| format(&ast, max_line_length)))
+        let output = catch_unwind(AssertUnwindSafe(|| format(&ast, sql, max_line_length)))
             .map_err(|_| format!("formatter panicked at width {max_line_length}"))?;
-        let mut formatted = pgls_query::parse(&output)
+        let reparsed = pgls_query::parse(&output)
             .map_err(|e| format!("output doesn't parse at width {max_line_length}: {e}\n{output}"))?
             .into_root()
             .ok_or("output has no statement")?;
+        let mut formatted = reparsed.clone();
         normalize_ast(&mut formatted);
         if formatted != expected {
             return Err(format!(
                 "output has a different AST at width {max_line_length}\n{output}"
             ));
         }
+        let reformatted = catch_unwind(AssertUnwindSafe(|| {
+            format(&reparsed, &output, max_line_length)
+        }))
+        .map_err(|_| format!("formatter panicked on its own output at width {max_line_length}"))?;
+        if reformatted != output {
+            return Err(format!(
+                "formatting is not idempotent at width {max_line_length}\n{output}\n---\n{reformatted}"
+            ));
+        }
     }
     Ok(())
 }
 
-fn format(ast: &pgls_query::NodeEnum, max_line_length: usize) -> String {
+fn format(ast: &pgls_query::NodeEnum, sql: &str, max_line_length: usize) -> String {
     let config = FormatConfig::default();
-    let mut emitter = EventEmitter::new(config.clone());
+    let mut emitter = EventEmitter::new(config.clone()).with_source(sql);
     emit_node_enum(ast, &mut emitter);
     let mut output = String::new();
     let config = RenderConfig {

@@ -3,23 +3,23 @@ source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/btree_index.sql
 ---
 create table bt_i4_heap (
-  seqno int,
-  random int
+  seqno int4,
+  random int4
 );
 
 create table bt_name_heap (
   seqno name,
-  random int
+  random int4
 );
 
 create table bt_txt_heap (
   seqno text,
-  random int
+  random int4
 );
 
 create table bt_f8_heap (
-  seqno double precision,
-  random int
+  seqno float8,
+  random int4
 );
 
 copy bt_i4_heap from 'filename';
@@ -38,13 +38,13 @@ analyze bt_txt_heap;
 
 analyze bt_f8_heap;
 
-create index "bt_i4_index" on bt_i4_heap using btree (seqno int4_ops);
+create index bt_i4_index on bt_i4_heap using btree (seqno int4_ops);
 
-create index "bt_name_index" on bt_name_heap using btree (seqno name_ops);
+create index bt_name_index on bt_name_heap using btree (seqno name_ops);
 
-create index "bt_txt_index" on bt_txt_heap using btree (seqno text_ops);
+create index bt_txt_index on bt_txt_heap using btree (seqno text_ops);
 
-create index "bt_f8_index" on bt_f8_heap using btree (seqno float8_ops);
+create index bt_f8_index on bt_f8_heap using btree (seqno float8_ops);
 
 select b.* from bt_i4_heap as b where b.seqno < 1;
 
@@ -64,23 +64,11 @@ select b.* from bt_txt_heap as b where b.seqno >= cast('9999' as text);
 
 select b.* from bt_txt_heap as b where b.seqno = cast('4500' as text);
 
-select b.* from bt_f8_heap as b where b.seqno < cast('1' as double precision);
+select b.* from bt_f8_heap as b where b.seqno < cast('1' as float8);
 
-select
-  b.*
-from
-  bt_f8_heap as b
-where
-  b.seqno >=
-  cast('9999' as double precision);
+select b.* from bt_f8_heap as b where b.seqno >= cast('9999' as float8);
 
-select
-  b.*
-from
-  bt_f8_heap as b
-where
-  b.seqno =
-  cast('4500' as double precision);
+select b.* from bt_f8_heap as b where b.seqno = cast('4500' as float8);
 
 select
   proname,
@@ -115,8 +103,7 @@ select
 from
   pg_proc
 where
-  (proname, pronamespace) <
-  ('abs', 1000000)
+  (proname, pronamespace) < ('abs', 1000000)
 order by proname desc,
   proargtypes desc,
   pronamespace desc
@@ -129,8 +116,7 @@ select
 from
   pg_proc
 where
-  (proname, pronamespace) <
-  ('abs', 1000000)
+  (proname, pronamespace) < ('abs', 1000000)
 order by proname desc,
   proargtypes desc,
   pronamespace desc
@@ -143,8 +129,7 @@ select
 from
   pg_proc
 where
-  (proname, proargtypes) >= ('abs', null) and
-  proname <= 'abs'
+  (proname, proargtypes) >= ('abs', null) and proname <= 'abs'
 order by proname,
   proargtypes,
   pronamespace;
@@ -156,8 +141,7 @@ select
 from
   pg_proc
 where
-  (proname, proargtypes) >= ('abs', null) and
-  proname <= 'abs'
+  (proname, proargtypes) >= ('abs', null) and proname <= 'abs'
 order by proname,
   proargtypes,
   pronamespace;
@@ -169,8 +153,7 @@ select
 from
   pg_proc
 where
-  proname >= 'abs' and
-  (proname, proargtypes) < ('abs', null)
+  proname >= 'abs' and (proname, proargtypes) < ('abs', null)
 order by proname,
   proargtypes,
   pronamespace;
@@ -182,8 +165,7 @@ select
 from
   pg_proc
 where
-  proname >= 'abs' and
-  (proname, proargtypes) < ('abs', null)
+  proname >= 'abs' and (proname, proargtypes) < ('abs', null)
 order by proname,
   proargtypes,
   pronamespace;
@@ -195,8 +177,7 @@ select
 from
   pg_proc
 where
-  proname >= 'abs' and
-  (proname, proargtypes) <= ('abs', null)
+  proname >= 'abs' and (proname, proargtypes) <= ('abs', null)
 order by proname desc,
   proargtypes desc,
   pronamespace desc;
@@ -208,8 +189,7 @@ select
 from
   pg_proc
 where
-  proname >= 'abs' and
-  (proname, proargtypes) <= ('abs', null)
+  proname >= 'abs' and (proname, proargtypes) <= ('abs', null)
 order by proname desc,
   proargtypes desc,
   pronamespace desc;
@@ -221,8 +201,7 @@ select
 from
   pg_proc
 where
-  (proname, proargtypes) > ('abs', null) and
-  proname <= 'abs'
+  (proname, proargtypes) > ('abs', null) and proname <= 'abs'
 order by proname desc,
   proargtypes desc,
   pronamespace desc;
@@ -234,8 +213,7 @@ select
 from
   pg_proc
 where
-  (proname, proargtypes) > ('abs', null) and
-  proname <= 'abs'
+  (proname, proargtypes) > ('abs', null) and proname <= 'abs'
 order by proname desc,
   proargtypes desc,
   pronamespace desc;
@@ -276,8 +254,7 @@ select
 from
   tenk1
 where
-  thousand in (182, 183) and
-  tenthous > 7550;
+  thousand in (182, 183) and tenthous > 7550;
 
 select
   thousand,
@@ -285,8 +262,7 @@ select
 from
   tenk1
 where
-  thousand in (182, 183) and
-  tenthous > 7550;
+  thousand in (182, 183) and tenthous > 7550;
 
 set enable_seqscan = 'false';
 
@@ -359,16 +335,14 @@ select
 from
   tenk1
 where
-  thousand in (364, 366, 380) and
-  tenthous = 200000;
+  thousand in (364, 366, 380) and tenthous = 200000;
 
 select
   thousand
 from
   tenk1
 where
-  thousand in (364, 366, 380) and
-  tenthous = 200000;
+  thousand in (364, 366, 380) and tenthous = 200000;
 
 set enable_seqscan = 'false';
 
@@ -408,12 +382,7 @@ reset enable_bitmapscan;
 
 create temporary table btree_bpchar (f1 text collate "C");
 
-create index
-on btree_bpchar
-using btree
-(
-  f1 bpchar_ops
-)
+create index on btree_bpchar using btree (f1 bpchar_ops)
 with (deduplicate_items = 'on');
 
 insert into btree_bpchar values ('foo'), ('fool'), ('bar'), ('quux');
@@ -439,31 +408,19 @@ insert into btree_bpchar select 'foo' from generate_series(1, 1500);
 create table dedup_unique_test_table (a int)
 with (autovacuum_enabled = 'false');
 
-create unique index "dedup_unique"
-on dedup_unique_test_table
-using btree
-(
-  a
-)
+create unique index dedup_unique on dedup_unique_test_table using btree (a)
 with (deduplicate_items = 'on');
 
-create unique index "plain_unique"
-on dedup_unique_test_table
-using btree
-(
-  a
-)
+create unique index plain_unique on dedup_unique_test_table using btree (a)
 with (deduplicate_items = off);
 
-do
-$do$
+do $$
 BEGIN
     FOR r IN 1..1350 LOOP
         DELETE FROM dedup_unique_test_table;
         INSERT INTO dedup_unique_test_table SELECT 1;
     END LOOP;
-END
-$do$;
+END$$;
 
 drop index plain_unique;
 
@@ -472,28 +429,18 @@ delete from dedup_unique_test_table where a = 1;
 insert into dedup_unique_test_table select i from generate_series(0, 450) as i;
 
 create table btree_tall_tbl (
-  id int,
+  id int4,
   t text
 );
 
 alter table btree_tall_tbl
   alter column t set storage plain;
 
-create index "btree_tall_idx"
-on btree_tall_tbl
-using btree
-(
-  t,
-  id
-)
+create index btree_tall_idx on btree_tall_tbl using btree (t, id)
 with (fillfactor = 10);
 
 insert into btree_tall_tbl
-select
-  g,
-  repeat('x', 250)
-from
-  generate_series(1, 130) as g;
+select g, repeat('x', 250) from generate_series(1, 130) as g;
 
 insert into btree_tall_tbl select g, null from generate_series(50, 60) as g;
 
@@ -521,13 +468,7 @@ create table delete_test_table (
 );
 
 insert into delete_test_table
-select
-  i,
-  1,
-  2,
-  3
-from
-  generate_series(1, 80000) as i;
+select i, 1, 2, 3 from generate_series(1, 80000) as i;
 
 alter table delete_test_table
   add primary key (a, b, c, d);
@@ -537,13 +478,7 @@ delete from delete_test_table where a < 79990;
 vacuum delete_test_table;
 
 insert into delete_test_table
-select
-  i,
-  1,
-  2,
-  3
-from
-  generate_series(1, 1000) as i;
+select i, 1, 2, 3 from generate_series(1, 1000) as i;
 
 create index on btree_tall_tbl using btree (id int4_ops(foo = 1));
 
@@ -561,10 +496,7 @@ set local min_parallel_table_scan_size = 0;
 
 set local max_parallel_maintenance_workers = 4;
 
-create index "btree_test_expr_idx"
-on btree_test_expr
-using btree
-(
+create index btree_test_expr_idx on btree_test_expr using btree (
   (btree_test_func())
 );
 
@@ -574,17 +506,17 @@ drop table btree_test_expr;
 
 drop function btree_test_func();
 
-create index "btree_tall_idx2" on btree_tall_tbl using btree (id);
+create index btree_tall_idx2 on btree_tall_tbl using btree (id);
 
 alter index btree_tall_idx2
   alter column id set (n_distinct = 100);
 
 drop index btree_tall_idx2;
 
-create table btree_part (id int)
+create table btree_part (id int4)
 partition by range(id);
 
-create index "btree_part_idx" on btree_part using btree (id);
+create index btree_part_idx on btree_part using btree (id);
 
 alter index btree_part_idx
   alter column id set (n_distinct = 100);

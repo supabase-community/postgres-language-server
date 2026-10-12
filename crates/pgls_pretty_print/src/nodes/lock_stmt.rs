@@ -42,7 +42,7 @@ pub(super) fn emit_lock_stmt(e: &mut EventEmitter, n: &LockStmt) {
             8 => "ACCESS EXCLUSIVE",
             _ => "ACCESS EXCLUSIVE", // default
         };
-        e.token(TokenKind::IDENT(mode_str.to_string()));
+        super::emit_words(e, mode_str);
         e.space();
         e.token(TokenKind::MODE_KW);
     }

@@ -19,15 +19,12 @@ select
 from
   generate_series(1, 8000) as x;
 
-create index "tbl_gist_idx" on tbl_gist using gist (c4) include (c1, c2, c3);
+create index tbl_gist_idx on tbl_gist using gist (c4) include (c1, c2, c3);
 
 select
   pg_get_indexdef(i.indexrelid)
 from
-  pg_index as i
-  inner join
-    pg_class as c
-  on i.indexrelid = c.oid
+  pg_index as i inner join pg_class as c on i.indexrelid = c.oid
 where
   i.indrelid = cast('tbl_gist' as regclass)
 order by c.relname;
@@ -49,7 +46,7 @@ create table tbl_gist (
   c4 box
 );
 
-create index "tbl_gist_idx" on tbl_gist using gist (c4) include (c1, c2, c3);
+create index tbl_gist_idx on tbl_gist using gist (c4) include (c1, c2, c3);
 
 insert into tbl_gist
 select
@@ -63,10 +60,7 @@ from
 select
   pg_get_indexdef(i.indexrelid)
 from
-  pg_index as i
-  inner join
-    pg_class as c
-  on i.indexrelid = c.oid
+  pg_index as i inner join pg_class as c on i.indexrelid = c.oid
 where
   i.indrelid = cast('tbl_gist' as regclass)
 order by c.relname;
@@ -97,7 +91,7 @@ select
 from
   generate_series(1, 10) as x;
 
-create index concurrently "tbl_gist_idx" on tbl_gist using gist (c4) include (c1, c2, c3);
+create index concurrently tbl_gist_idx on tbl_gist using gist (c4) include (c1, c2, c3);
 
 select indexdef from pg_indexes where tablename = 'tbl_gist' order by indexname;
 
@@ -119,7 +113,7 @@ select
 from
   generate_series(1, 10) as x;
 
-create index "tbl_gist_idx" on tbl_gist using gist (c4) include (c1, c3);
+create index tbl_gist_idx on tbl_gist using gist (c4) include (c1, c3);
 
 select indexdef from pg_indexes where tablename = 'tbl_gist' order by indexname;
 
@@ -150,7 +144,7 @@ select
 from
   generate_series(1, 10) as x;
 
-create index "tbl_gist_idx" on tbl_gist using gist (c4) include (c1, c3);
+create index tbl_gist_idx on tbl_gist using gist (c4) include (c1, c3);
 
 update tbl_gist set c1 = 100 where c1 = 2;
 
@@ -176,7 +170,7 @@ select
 from
   generate_series(1, 10) as x;
 
-create index "tbl_gist_idx" on tbl_gist using gist (c4) include (c1, c3);
+create index tbl_gist_idx on tbl_gist using gist (c4) include (c1, c3);
 
 alter table tbl_gist
   alter column c1 type bigint;
@@ -191,10 +185,7 @@ create table tbl_gist (
   c2 int,
   c3 int,
   c4 box,
-  exclude using gist (c4 with &&)
-  include ("c1",
-  "c2",
-  "c3")
+  exclude using gist (c4 with &&) include (c1, c2, c3)
 );
 
 insert into tbl_gist
@@ -211,10 +202,7 @@ select
   x,
   2 * x,
   3 * x,
-  box(
-    point(3 * x, 2 * x),
-    point(3 * x + 1, 2 * x + 1)
-  )
+  box(point(3 * x, 2 * x), point(3 * x + 1, 2 * x + 1))
 from
   generate_series(1, 10) as x;
 

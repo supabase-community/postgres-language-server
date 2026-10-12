@@ -8,7 +8,5 @@ select
 from staging.buildings
 	left outer join
 		staging.addresses
-	on staging.addresses.id =
-		staging.buildings.address_fk
-where staging.buildings.construction_year >
-	1950;
+	on staging.addresses.id = staging.buildings.address_fk
+where staging.buildings.construction_year > 1950;

@@ -38,9 +38,9 @@ insert into macaddr_data values (14, '08:00:2a:01:02:04');
 
 select * from macaddr_data;
 
-create index "macaddr_data_btree" on macaddr_data using btree (b);
+create index macaddr_data_btree on macaddr_data using btree (b);
 
-create index "macaddr_data_hash" on macaddr_data using hash (b);
+create index macaddr_data_hash on macaddr_data using hash (b);
 
 select a, b, trunc(b) from macaddr_data order by 2, 1;
 

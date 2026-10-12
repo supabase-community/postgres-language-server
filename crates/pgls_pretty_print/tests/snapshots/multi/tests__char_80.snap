@@ -4,9 +4,7 @@ input_file: crates/pgls_pretty_print/tests/data/multi/char.sql
 snapshot_kind: text
 ---
 select
-  cast('c' as pg_catalog.bpchar) =
-  cast('c' as pg_catalog.bpchar)
-  as "true";
+  cast('c' as pg_catalog.bpchar) = cast('c' as pg_catalog.bpchar) as "true";
 
 create temporary table char_tbl (f1 char(1));
 

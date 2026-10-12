@@ -1,9 +1,10 @@
-use super::node_list::emit_comma_separated_list;
 use crate::{
     TokenKind,
     emitter::{EventEmitter, GroupKind, LineType},
 };
 use pgls_query::protobuf::AlterTableSpaceOptionsStmt;
+
+use super::node_list::emit_parenthesized_list;
 
 pub(super) fn emit_alter_tablespace_options_stmt(
     e: &mut EventEmitter,
@@ -26,9 +27,7 @@ pub(super) fn emit_alter_tablespace_options_stmt(
 
     if !n.options.is_empty() {
         e.space();
-        e.token(TokenKind::L_PAREN);
-        emit_comma_separated_list(e, &n.options, super::emit_node);
-        e.token(TokenKind::R_PAREN);
+        emit_parenthesized_list(e, &n.options, super::emit_node);
     }
 
     e.token(TokenKind::SEMICOLON);

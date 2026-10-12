@@ -18,19 +18,13 @@ select
   )
   as column_dependencies
 from
-  repeated_references as rep
-  inner join
-    pks_fks
-  using (
-    "resorigtbl",
-    "resorigcol")
+  repeated_references as rep inner join pks_fks using ( resorigtbl, resorigcol)
   inner join
     pg_class as tbl
   on tbl.oid = rep.resorigtbl
   inner join
     pg_attribute as col
-  on col.attrelid = tbl.oid and
-    col.attnum = rep.resorigcol
+  on col.attrelid = tbl.oid and col.attnum = rep.resorigcol
   inner join
     pg_namespace as sch
   on sch.oid = tbl.relnamespace
@@ -44,8 +38,6 @@ group by sch.nspname,
 having
   ncol =
   array_length(
-    array_agg(
-      row(col.attname, view_columns) order by pks_fks.ord
-    ),
+    array_agg(row(col.attname, view_columns) order by pks_fks.ord),
     1
   );

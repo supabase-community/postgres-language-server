@@ -4,20 +4,12 @@ input_file: crates/pgls_pretty_print/tests/data/multi/collate.icu.utf8.sql
 ---
 select
   getdatabaseencoding() <> 'UTF8' or
-  (
-    select
-      COUNT(*)
-    from
-      pg_collation
-    where
-      collprovider = 'i' and collname <> 'unicode'
-  ) =
-  0
+  (select count(*) from pg_collation where collprovider = 'i' and collname <> 'unicode') = 0
   as skip_test;
 
 set client_encoding to utf8;
 
-create schema "collate_tests";
+create schema collate_tests;
 
 set search_path to collate_tests;
 
@@ -214,27 +206,13 @@ select 'bÄ±t' ~* 'BIT' collate "tr-x-icu" as "false";
 select relname from pg_class where relname ~* '^abc';
 
 create view collview1
-as select
-  *
-from
-  collate_test1
-where
-  b collate "C" >= 'bbc';
+as select * from collate_test1 where b collate "C" >= 'bbc';
 
 create view collview2
-as select
-  a,
-  b
-from
-  collate_test1
-order by b collate "C";
+as select a, b from collate_test1 order by b collate "C";
 
 create view collview3
-as select
-  a,
-  lower((x || x) collate "C")
-from
-  collate_test10;
+as select a, lower((x || x) collate "C") from collate_test10;
 
 select
   table_name,
@@ -287,11 +265,11 @@ select a, cast(b as testdomain_sv) from collate_test3 order by 2;
 
 select a, lower(cast(x as testdomain)), lower(cast(y as testdomain)) from collate_test10;
 
-select MIN(b), MAX(b) from collate_test1;
+select min(b), max(b) from collate_test1;
 
-select MIN(b), MAX(b) from collate_test2;
+select min(b), max(b) from collate_test2;
 
-select MIN(b), MAX(b) from collate_test3;
+select min(b), max(b) from collate_test3;
 
 select array_agg(b order by b) from collate_test1;
 
@@ -330,17 +308,9 @@ select x, y from collate_test10 order by x || y;
 with recursive
 foo (x)
 as (
-  select
-    x
-  from
-    (values ('a' collate "en-x-icu"), ('b')) as t (x)
+  select x from (values ('a' collate "en-x-icu"), ('b')) as t (x)
   union all
-  select
-    (x || 'c') collate "de-x-icu"
-  from
-    foo
-  where
-    length(x) < 10
+  select (x || 'c') collate "de-x-icu" from foo where length(x) < 10
 )
 select
   *
@@ -356,23 +326,17 @@ select a, cast(b as varchar) from collate_test3 order by 2;
 create function mylt(text, text)
 returns boolean
 language sql
-as $function$
-select $1 < $2
-$function$;
+as $$ select $1 < $2 $$;
 
 create function mylt_noninline(text, text)
 returns boolean
 language sql
-as $function$
-select $1 < $2 limit 1
-$function$;
+as $$ select $1 < $2 limit 1 $$;
 
 create function mylt_plpgsql(text, text)
 returns boolean
 language plpgsql
-as $function$
-begin return $1 < $2; end
-$function$;
+as $$ begin return $1 < $2; end $$;
 
 select
   a.b as a,
@@ -403,28 +367,28 @@ order by a.b,
 create function mylt2(x text, y text)
 returns boolean
 language plpgsql
-as $function$
+as $$
 declare
   xx text := x;
   yy text := y;
 begin
   return xx < yy;
 end
-$function$;
+$$;
 
 select mylt2('a', 'B' collate "en-x-icu") as t, mylt2('a', 'B' collate "C") as f;
 
 create or replace function mylt2(x text, y text)
 returns boolean
 language plpgsql
-as $function$
+as $$
 declare
   xx text COLLATE "POSIX" := x;
   yy text := y;
 begin
   return xx < yy;
 end
-$function$;
+$$;
 
 select mylt2('a', 'B') as f;
 
@@ -441,9 +405,7 @@ select * from unnest((select array_agg(b order by b) from collate_test3)) order 
 create function dup(anyelement)
 returns anyelement
 language sql
-as $function$
-select $1
-$function$;
+as 'select $1';
 
 select a, dup(b) from collate_test1 order by 2;
 
@@ -451,17 +413,17 @@ select a, dup(b) from collate_test2 order by 2;
 
 select a, dup(b) from collate_test3 order by 2;
 
-create index "collate_test1_idx1" on collate_test1 using btree (b);
+create index collate_test1_idx1 on collate_test1 using btree (b);
 
-create index "collate_test1_idx2" on collate_test1 using btree (b collate "C");
+create index collate_test1_idx2 on collate_test1 using btree (b collate "C");
 
-create index "collate_test1_idx3" on collate_test1 using btree ((b collate "C"));
+create index collate_test1_idx3 on collate_test1 using btree ((b collate "C"));
 
-create index "collate_test1_idx4" on collate_test1 using btree (((b || 'foo') collate "POSIX"));
+create index collate_test1_idx4 on collate_test1 using btree (((b || 'foo') collate "POSIX"));
 
-create index "collate_test1_idx5" on collate_test1 using btree (a collate "C");
+create index collate_test1_idx5 on collate_test1 using btree (a collate "C");
 
-create index "collate_test1_idx6" on collate_test1 using btree ((a collate "C"));
+create index collate_test1_idx6 on collate_test1 using btree ((a collate "C"));
 
 select
   relname,
@@ -486,29 +448,27 @@ reset enable_seqscan;
 
 create role regress_test_role;
 
-create schema "test_schema";
+create schema test_schema;
 
 set client_min_messages = warning;
 
 set icu_validation_level = disabled;
 
-do
-$do$
+do $$
 BEGIN
   EXECUTE 'CREATE COLLATION test0 (provider = icu, locale = ' ||
           quote_literal((SELECT CASE WHEN datlocprovider='i' THEN datlocale ELSE datcollate END FROM pg_database WHERE datname = current_database())) || ');';
 END
-$do$;
+$$;
 
 create collation test0 from "C";
 
-do
-$do$
+do $$
 BEGIN
   EXECUTE 'CREATE COLLATION test1 (provider = icu, locale = ' ||
           quote_literal((SELECT CASE WHEN datlocprovider='i' THEN datlocale ELSE datcollate END FROM pg_database WHERE datname = current_database())) || ');';
 END
-$do$;
+$$;
 
 reset icu_validation_level;
 
@@ -557,10 +517,7 @@ select
   nspname,
   obj_description(pg_collation.oid, 'pg_collation')
 from
-  pg_collation
-  inner join
-    pg_namespace
-  on collnamespace = pg_namespace.oid
+  pg_collation inner join pg_namespace on collnamespace = pg_namespace.oid
 where
   collname like 'test%'
 order by 1;
@@ -600,7 +557,7 @@ create table collate_dep_test4t (
   b text
 );
 
-create index "collate_dep_test4i" on collate_dep_test4t using btree (b collate test0);
+create index collate_dep_test4i on collate_dep_test4t using btree (b collate test0);
 
 drop collation test0;
 
@@ -610,9 +567,9 @@ drop table collate_dep_test1, collate_dep_test4t;
 
 drop type collate_dep_test2;
 
-create type textrange_c as range (subtype = text, collation = "C");
+create type textrange_c as range (subtype = text, "collation" = "C");
 
-create type textrange_en_us as range (subtype = text, collation = "en-x-icu");
+create type textrange_en_us as range (subtype = text, "collation" = "en-x-icu");
 
 select textrange_c('A', 'Z') @> cast('b' as text);
 
@@ -671,8 +628,7 @@ create collation testcoll_de_phonebook (provider = icu, locale = 'de@collation=p
 
 select
   'Goldmann' < 'GÃ¶tz' collate "de-x-icu",
-  'Goldmann' >
-  'GÃ¶tz' collate "testcoll_de_phonebook";
+  'Goldmann' > 'GÃ¶tz' collate "testcoll_de_phonebook";
 
 create collation testcoll_rules1 (provider = icu, locale = '', rules = '&a < g');
 
@@ -824,11 +780,11 @@ select distinct x from test3cs order by x;
 
 reset enable_hashagg;
 
-select COUNT(distinct x) from test3cs;
+select count(distinct x) from test3cs;
 
-select x, COUNT(*) from test3cs group by x order by x;
+select x, count(*) from test3cs group by x order by x;
 
-select x, ROW_NUMBER() over (order by x), RANK() over (order by x) from test3cs order by x;
+select x, row_number() over (order by x), rank() over (order by x) from test3cs order by x;
 
 create unique index on test1cs using btree (x);
 
@@ -880,11 +836,11 @@ select x from test2ci except select x from test1ci;
 
 select distinct x from test3ci order by x;
 
-select COUNT(distinct x) from test3ci;
+select count(distinct x) from test3ci;
 
-select x, COUNT(*) from test3ci group by x order by x;
+select x, count(*) from test3ci group by x order by x;
 
-select x, ROW_NUMBER() over (order by x), RANK() over (order by x) from test3ci order by x;
+select x, row_number() over (order by x), rank() over (order by x) from test3ci order by x;
 
 create unique index on test1ci using btree (x);
 
@@ -936,11 +892,11 @@ select x from test2bpci except select x from test1bpci;
 
 select distinct x from test3bpci order by x;
 
-select COUNT(distinct x) from test3bpci;
+select count(distinct x) from test3bpci;
 
-select x, COUNT(*) from test3bpci group by x order by x;
+select x, count(*) from test3bpci group by x order by x;
 
-select x, ROW_NUMBER() over (order by x), RANK() over (order by x) from test3bpci order by x;
+select x, row_number() over (order by x), rank() over (order by x) from test3bpci order by x;
 
 create unique index on test1bpci using btree (x);
 
@@ -987,9 +943,7 @@ select
 from
   pg_type
 where
-  typname like 'int_' and
-  typname <>
-  cast('INT2' as text) collate "case_insensitive"
+  typname like 'int_' and typname <> cast('INT2' as text) collate "case_insensitive"
 order by typname;
 
 select
@@ -997,9 +951,7 @@ select
 from
   pg_type
 where
-  typname like 'int_' and
-  cast('INT2' as text) <>
-  typname collate "case_insensitive"
+  typname like 'int_' and cast('INT2' as text) <> typname collate "case_insensitive"
 order by typname;
 
 create temporary table outer_text (
@@ -1056,7 +1008,7 @@ create table test4nfd (
 
 insert into test4nfd values (1, 'cote'), (2, 'cÃ´te'), (3, 'cotÃ©'), (4, 'cÃ´tÃ©');
 
-update test4nfd set b = NORMALIZE(b, NFD);
+update test4nfd set b = normalize(b, nfd);
 
 select a, b, replace(b collate "ignore_accents", 'co', 'ma') from test4;
 
@@ -1099,30 +1051,20 @@ select 'foox' like 'foo\' collate "ignore_accents";
 create table test10pk (x text collate "case_sensitive" primary key);
 
 create table test10fk (
-  x text
-  collate "case_insensitive"
-  references test10pk (x)
-  on DELETE cascade
-  on UPDATE cascade
+  x text collate "case_insensitive" references test10pk (x) on delete cascade on update cascade
 );
 
 create table test11pk (x text collate "case_insensitive" primary key);
 
 create table test11fk (
-  x text
-  collate "case_sensitive"
-  references test11pk (x)
-  on DELETE cascade
-  on UPDATE cascade
+  x text collate "case_sensitive" references test11pk (x) on delete cascade on update cascade
 );
 
 create table test12pk (x text collate "case_insensitive" primary key);
 
 create table test12fk (
   a int,
-  b text
-  collate "case_insensitive"
-  references test12pk (x)
+  b text collate "case_insensitive" references test12pk (x)
 );
 
 insert into test12pk values ('abc');
@@ -1141,9 +1083,7 @@ create table test12pk (x text collate "case_insensitive" primary key);
 
 create table test12fk (
   a int,
-  b text
-  collate "case_insensitive"
-  references test12pk (x) on UPDATE restrict
+  b text collate "case_insensitive" references test12pk (x) on update restrict
 );
 
 insert into test12pk values ('abc');
@@ -1162,9 +1102,7 @@ create table test12pk (x text collate "case_insensitive" primary key);
 
 create table test12fk (
   a int,
-  b text
-  collate "case_insensitive"
-  references test12pk (x) on UPDATE cascade
+  b text collate "case_insensitive" references test12pk (x) on update cascade
 );
 
 insert into test12pk values ('abc');
@@ -1183,7 +1121,7 @@ create table test20 (
   a int,
   b text collate "case_insensitive"
 )
-partition by LIST(b);
+partition by list(b);
 
 create table test20_1 partition of test20 for values in ('abc');
 
@@ -1211,71 +1149,71 @@ create table test22 (
   a int,
   b text collate "case_sensitive"
 )
-partition by HASH(b);
+partition by hash(b);
 
-create table test22_0 partition of test22 for values with (MODULUS 2, REMAINDER 0);
+create table test22_0 partition of test22 for values with (modulus 2, remainder 0);
 
-create table test22_1 partition of test22 for values with (MODULUS 2, REMAINDER 1);
+create table test22_1 partition of test22 for values with (modulus 2, remainder 1);
 
 insert into test22 values (1, 'def');
 
 insert into test22 values (2, 'DEF');
 
-select (select COUNT(*) from test22_0) = (select COUNT(*) from test22_1);
+select (select count(*) from test22_0) = (select count(*) from test22_1);
 
 create table test22a (
   a int,
   b text[] collate "case_sensitive"
 )
-partition by HASH(b);
+partition by hash(b);
 
-create table test22a_0 partition of test22a for values with (MODULUS 2, REMAINDER 0);
+create table test22a_0 partition of test22a for values with (modulus 2, remainder 0);
 
-create table test22a_1 partition of test22a for values with (MODULUS 2, REMAINDER 1);
+create table test22a_1 partition of test22a for values with (modulus 2, remainder 1);
 
 insert into test22a values (1, array['def']);
 
 insert into test22a values (2, array['DEF']);
 
-select (select COUNT(*) from test22a_0) = (select COUNT(*) from test22a_1);
+select (select count(*) from test22a_0) = (select count(*) from test22a_1);
 
 create table test23 (
   a int,
   b text collate "case_insensitive"
 )
-partition by HASH(b);
+partition by hash(b);
 
-create table test23_0 partition of test23 for values with (MODULUS 2, REMAINDER 0);
+create table test23_0 partition of test23 for values with (modulus 2, remainder 0);
 
-create table test23_1 partition of test23 for values with (MODULUS 2, REMAINDER 1);
+create table test23_1 partition of test23 for values with (modulus 2, remainder 1);
 
 insert into test23 values (1, 'def');
 
 insert into test23 values (2, 'DEF');
 
-select (select COUNT(*) from test23_0) <> (select COUNT(*) from test23_1);
+select (select count(*) from test23_0) <> (select count(*) from test23_1);
 
 create table test23a (
   a int,
   b text[] collate "case_insensitive"
 )
-partition by HASH(b);
+partition by hash(b);
 
-create table test23a_0 partition of test23a for values with (MODULUS 2, REMAINDER 0);
+create table test23a_0 partition of test23a for values with (modulus 2, remainder 0);
 
-create table test23a_1 partition of test23a for values with (MODULUS 2, REMAINDER 1);
+create table test23a_1 partition of test23a for values with (modulus 2, remainder 1);
 
 insert into test23a values (1, array['def']);
 
 insert into test23a values (2, array['DEF']);
 
-select (select COUNT(*) from test23a_0) <> (select COUNT(*) from test23a_1);
+select (select count(*) from test23a_0) <> (select count(*) from test23a_1);
 
 create table test30 (
   a int,
   b char(3) collate "case_insensitive"
 )
-partition by LIST(b);
+partition by list(b);
 
 create table test30_1 partition of test30 for values in ('abc');
 
@@ -1303,33 +1241,33 @@ create table test32 (
   a int,
   b char(3) collate "case_sensitive"
 )
-partition by HASH(b);
+partition by hash(b);
 
-create table test32_0 partition of test32 for values with (MODULUS 2, REMAINDER 0);
+create table test32_0 partition of test32 for values with (modulus 2, remainder 0);
 
-create table test32_1 partition of test32 for values with (MODULUS 2, REMAINDER 1);
+create table test32_1 partition of test32 for values with (modulus 2, remainder 1);
 
 insert into test32 values (1, 'def');
 
 insert into test32 values (2, 'DEF');
 
-select (select COUNT(*) from test32_0) = (select COUNT(*) from test32_1);
+select (select count(*) from test32_0) = (select count(*) from test32_1);
 
 create table test33 (
   a int,
   b char(3) collate "case_insensitive"
 )
-partition by HASH(b);
+partition by hash(b);
 
-create table test33_0 partition of test33 for values with (MODULUS 2, REMAINDER 0);
+create table test33_0 partition of test33 for values with (modulus 2, remainder 0);
 
-create table test33_1 partition of test33 for values with (MODULUS 2, REMAINDER 1);
+create table test33_1 partition of test33 for values with (modulus 2, remainder 1);
 
 insert into test33 values (1, 'def');
 
 insert into test33 values (2, 'DEF');
 
-select (select COUNT(*) from test33_0) <> (select COUNT(*) from test33_1);
+select (select count(*) from test33_0) <> (select count(*) from test33_1);
 
 set max_parallel_workers_per_gather = 0;
 
@@ -1339,18 +1277,14 @@ create table pagg_tab3 (
   a text,
   c text collate "case_insensitive"
 )
-partition by LIST(c collate "C");
+partition by list(c collate "C");
 
 create table pagg_tab3_p1 partition of pagg_tab3 for values in ('a', 'b');
 
 create table pagg_tab3_p2 partition of pagg_tab3 for values in ('B', 'A');
 
 insert into pagg_tab3
-select
-  i % 4 + 1,
-  substr('abAB', i % 4 + 1, 1)
-from
-  generate_series(0, 19) as i;
+select i % 4 + 1, substr('abAB', i % 4 + 1, 1) from generate_series(0, 19) as i;
 
 analyze pagg_tab3;
 
@@ -1358,7 +1292,7 @@ set enable_partitionwise_aggregate = 'false';
 
 select
   upper(c collate "case_insensitive"),
-  COUNT(c)
+  count(c)
 from
   pagg_tab3
 group by c collate "case_insensitive"
@@ -1366,7 +1300,7 @@ order by 1;
 
 select
   upper(c collate "case_insensitive"),
-  COUNT(c)
+  count(c)
 from
   pagg_tab3
 group by c collate "case_insensitive"
@@ -1376,7 +1310,7 @@ set enable_partitionwise_aggregate = 'true';
 
 select
   upper(c collate "case_insensitive"),
-  COUNT(c)
+  count(c)
 from
   pagg_tab3
 group by c collate "case_insensitive"
@@ -1384,37 +1318,31 @@ order by 1;
 
 select
   upper(c collate "case_insensitive"),
-  COUNT(c)
+  count(c)
 from
   pagg_tab3
 group by c collate "case_insensitive"
 order by 1;
 
-select c collate "C", COUNT(c) from pagg_tab3 group by c collate "C" order by 1;
+select c collate "C", count(c) from pagg_tab3 group by c collate "C" order by 1;
 
-select c collate "C", COUNT(c) from pagg_tab3 group by c collate "C" order by 1;
+select c collate "C", count(c) from pagg_tab3 group by c collate "C" order by 1;
 
 set enable_partitionwise_join = 'false';
 
 select
   t1.c,
-  COUNT(t2.c)
+  count(t2.c)
 from
-  pagg_tab3 as t1
-  inner join
-    pagg_tab3 as t2
-  on t1.c = t2.c
+  pagg_tab3 as t1 inner join pagg_tab3 as t2 on t1.c = t2.c
 group by 1
 order by t1.c collate "C";
 
 select
   t1.c,
-  COUNT(t2.c)
+  count(t2.c)
 from
-  pagg_tab3 as t1
-  inner join
-    pagg_tab3 as t2
-  on t1.c = t2.c
+  pagg_tab3 as t1 inner join pagg_tab3 as t2 on t1.c = t2.c
 group by 1
 order by t1.c collate "C";
 
@@ -1422,45 +1350,33 @@ set enable_partitionwise_join = 'true';
 
 select
   t1.c,
-  COUNT(t2.c)
+  count(t2.c)
 from
-  pagg_tab3 as t1
-  inner join
-    pagg_tab3 as t2
-  on t1.c = t2.c
+  pagg_tab3 as t1 inner join pagg_tab3 as t2 on t1.c = t2.c
 group by 1
 order by t1.c collate "C";
 
 select
   t1.c,
-  COUNT(t2.c)
+  count(t2.c)
 from
-  pagg_tab3 as t1
-  inner join
-    pagg_tab3 as t2
-  on t1.c = t2.c
+  pagg_tab3 as t1 inner join pagg_tab3 as t2 on t1.c = t2.c
 group by 1
 order by t1.c collate "C";
 
 select
   t1.c collate "C",
-  COUNT(t2.c)
+  count(t2.c)
 from
-  pagg_tab3 as t1
-  inner join
-    pagg_tab3 as t2
-  on t1.c = t2.c collate "C"
+  pagg_tab3 as t1 inner join pagg_tab3 as t2 on t1.c = t2.c collate "C"
 group by t1.c collate "C"
 order by t1.c collate "C";
 
 select
   t1.c collate "C",
-  COUNT(t2.c)
+  count(t2.c)
 from
-  pagg_tab3 as t1
-  inner join
-    pagg_tab3 as t2
-  on t1.c = t2.c collate "C"
+  pagg_tab3 as t1 inner join pagg_tab3 as t2 on t1.c = t2.c collate "C"
 group by t1.c collate "C"
 order by t1.c collate "C";
 
@@ -1468,23 +1384,17 @@ set enable_partitionwise_join = 'false';
 
 select
   t1.c collate "C",
-  COUNT(t2.c)
+  count(t2.c)
 from
-  pagg_tab3 as t1
-  inner join
-    pagg_tab3 as t2
-  on t1.c = t2.c collate "C"
+  pagg_tab3 as t1 inner join pagg_tab3 as t2 on t1.c = t2.c collate "C"
 group by t1.c collate "C"
 order by t1.c collate "C";
 
 select
   t1.c collate "C",
-  COUNT(t2.c)
+  count(t2.c)
 from
-  pagg_tab3 as t1
-  inner join
-    pagg_tab3 as t2
-  on t1.c = t2.c collate "C"
+  pagg_tab3 as t1 inner join pagg_tab3 as t2 on t1.c = t2.c collate "C"
 group by t1.c collate "C"
 order by t1.c collate "C";
 
@@ -1494,40 +1404,30 @@ create table pagg_tab4 (
   c text collate "case_insensitive",
   b text collate "case_insensitive"
 )
-partition by LIST(b collate "C");
+partition by list(b collate "C");
 
 create table pagg_tab4_p1 partition of pagg_tab4 for values in ('a', 'b');
 
 create table pagg_tab4_p2 partition of pagg_tab4 for values in ('B', 'A');
 
 insert into pagg_tab4 (b, c)
-select
-  substr('abAB', i % 4 + 1, 1),
-  substr('abAB', i % 2 + 1, 1)
-from
-  generate_series(0, 11) as i;
+select substr('abAB', i % 4 + 1, 1), substr('abAB', i % 2 + 1, 1) from generate_series(0, 11) as i;
 
 analyze pagg_tab4;
 
 select
   t1.c,
-  COUNT(t2.c)
+  count(t2.c)
 from
-  pagg_tab3 as t1
-  inner join
-    pagg_tab4 as t2
-  on t1.c = t2.c and t1.c = t2.b
+  pagg_tab3 as t1 inner join pagg_tab4 as t2 on t1.c = t2.c and t1.c = t2.b
 group by 1
 order by t1.c collate "C";
 
 select
   t1.c,
-  COUNT(t2.c)
+  count(t2.c)
 from
-  pagg_tab3 as t1
-  inner join
-    pagg_tab4 as t2
-  on t1.c = t2.c and t1.c = t2.b
+  pagg_tab3 as t1 inner join pagg_tab4 as t2 on t1.c = t2.c and t1.c = t2.b
 group by 1
 order by t1.c collate "C";
 
@@ -1535,25 +1435,17 @@ create table pagg_tab5 (
   c text collate "case_insensitive",
   b text collate "case_insensitive"
 )
-partition by LIST(c collate case_insensitive);
+partition by list(c collate case_insensitive);
 
 create table pagg_tab5_p1 partition of pagg_tab5 for values in ('a', 'b');
 
 create table pagg_tab5_p2 partition of pagg_tab5 for values in ('c', 'd');
 
 insert into pagg_tab5 (b, c)
-select
-  substr('abAB', i % 4 + 1, 1),
-  substr('abAB', i % 2 + 1, 1)
-from
-  generate_series(0, 5) as i;
+select substr('abAB', i % 4 + 1, 1), substr('abAB', i % 2 + 1, 1) from generate_series(0, 5) as i;
 
 insert into pagg_tab5 (b, c)
-select
-  substr('cdCD', i % 4 + 1, 1),
-  substr('cdCD', i % 2 + 1, 1)
-from
-  generate_series(0, 5) as i;
+select substr('cdCD', i % 4 + 1, 1), substr('cdCD', i % 2 + 1, 1) from generate_series(0, 5) as i;
 
 analyze pagg_tab5;
 
@@ -1561,47 +1453,33 @@ create table pagg_tab6 (
   c text collate "case_insensitive",
   b text collate "case_insensitive"
 )
-partition by LIST(b collate case_insensitive);
+partition by list(b collate case_insensitive);
 
 create table pagg_tab6_p1 partition of pagg_tab6 for values in ('a', 'b');
 
 create table pagg_tab6_p2 partition of pagg_tab6 for values in ('c', 'd');
 
 insert into pagg_tab6 (b, c)
-select
-  substr('abAB', i % 4 + 1, 1),
-  substr('abAB', i % 2 + 1, 1)
-from
-  generate_series(0, 5) as i;
+select substr('abAB', i % 4 + 1, 1), substr('abAB', i % 2 + 1, 1) from generate_series(0, 5) as i;
 
 insert into pagg_tab6 (b, c)
-select
-  substr('cdCD', i % 4 + 1, 1),
-  substr('cdCD', i % 2 + 1, 1)
-from
-  generate_series(0, 5) as i;
+select substr('cdCD', i % 4 + 1, 1), substr('cdCD', i % 2 + 1, 1) from generate_series(0, 5) as i;
 
 analyze pagg_tab6;
 
 select
   t1.c,
-  COUNT(t2.c)
+  count(t2.c)
 from
-  pagg_tab5 as t1
-  inner join
-    pagg_tab6 as t2
-  on t1.c = t2.c and t1.c = t2.b
+  pagg_tab5 as t1 inner join pagg_tab6 as t2 on t1.c = t2.c and t1.c = t2.b
 group by 1
 order by t1.c collate "C";
 
 select
   t1.c,
-  COUNT(t2.c)
+  count(t2.c)
 from
-  pagg_tab5 as t1
-  inner join
-    pagg_tab6 as t2
-  on t1.c = t2.c and t1.c = t2.b
+  pagg_tab5 as t1 inner join pagg_tab6 as t2 on t1.c = t2.c and t1.c = t2.b
 group by 1
 order by t1.c collate "C";
 
@@ -1609,23 +1487,17 @@ set enable_partitionwise_join = 'false';
 
 select
   t1.c,
-  COUNT(t2.c)
+  count(t2.c)
 from
-  pagg_tab5 as t1
-  inner join
-    pagg_tab6 as t2
-  on t1.c = t2.c and t1.c = t2.b
+  pagg_tab5 as t1 inner join pagg_tab6 as t2 on t1.c = t2.c and t1.c = t2.b
 group by 1
 order by t1.c collate "C";
 
 select
   t1.c,
-  COUNT(t2.c)
+  count(t2.c)
 from
-  pagg_tab5 as t1
-  inner join
-    pagg_tab6 as t2
-  on t1.c = t2.c and t1.c = t2.b
+  pagg_tab5 as t1 inner join pagg_tab6 as t2 on t1.c = t2.c and t1.c = t2.b
 group by 1
 order by t1.c collate "C";
 

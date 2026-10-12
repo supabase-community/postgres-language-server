@@ -94,9 +94,9 @@ insert into macaddr8_data values (21, '08002b0102030405');
 
 select * from macaddr8_data order by 1;
 
-create index "macaddr8_data_btree" on macaddr8_data using btree (b);
+create index macaddr8_data_btree on macaddr8_data using btree (b);
 
-create index "macaddr8_data_hash" on macaddr8_data using hash (b);
+create index macaddr8_data_hash on macaddr8_data using hash (b);
 
 select a, b, trunc(b) from macaddr8_data order by 2, 1;
 
@@ -113,16 +113,14 @@ select cast(b as macaddr) >= '08:00:2b:01:02:04' from macaddr8_data where a = 1;
 select b = '08:00:2b:ff:fe:01:02:03' from macaddr8_data where a = 1;
 
 select
-  cast(b as macaddr) <>
-  cast('08:00:2b:01:02:04' as macaddr)
+  cast(b as macaddr) <> cast('08:00:2b:01:02:04' as macaddr)
 from
   macaddr8_data
 where
   a = 1;
 
 select
-  cast(b as macaddr) <>
-  cast('08:00:2b:01:02:03' as macaddr)
+  cast(b as macaddr) <> cast('08:00:2b:01:02:03' as macaddr)
 from
   macaddr8_data
 where

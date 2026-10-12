@@ -11,14 +11,11 @@ create table parallel_vacuum_table (a int) with (autovacuum_enabled = off);
 
 insert into parallel_vacuum_table select i from generate_series(1, 10000) as i;
 
-create index "regular_sized_index" on parallel_vacuum_table using btree (a);
+create index regular_sized_index on parallel_vacuum_table using btree (a);
 
-create index "typically_sized_index" on parallel_vacuum_table using btree (a);
+create index typically_sized_index on parallel_vacuum_table using btree (a);
 
-create index "vacuum_in_leader_small_index"
-on parallel_vacuum_table
-using btree
-(
+create index vacuum_in_leader_small_index on parallel_vacuum_table using btree (
   (1)
 );
 
@@ -30,40 +27,28 @@ select
     from
       pg_class
     where
-      oid =
-      cast('vacuum_in_leader_small_index'
-      as regclass) and
+      oid = cast('vacuum_in_leader_small_index' as regclass) and
       pg_relation_size(oid) <
-      pg_size_bytes(
-        current_setting(
-          'min_parallel_index_scan_size'
-        )
-      )
+      pg_size_bytes(current_setting('min_parallel_index_scan_size'))
   )
   as leader_will_handle_small_index;
 
 select
-  COUNT(*)
-  as trigger_parallel_vacuum_nindexes
+  count(*) as trigger_parallel_vacuum_nindexes
 from
   pg_class
 where
   oid
   in (
     cast('regular_sized_index' as regclass),
-    cast('typically_sized_index'
-    as regclass)
+    cast('typically_sized_index' as regclass)
   ) and
   pg_relation_size(oid) >=
-  pg_size_bytes(
-    current_setting(
-      'min_parallel_index_scan_size'
-    )
-  );
+  pg_size_bytes(current_setting('min_parallel_index_scan_size'));
 
 delete from parallel_vacuum_table;
 
-vacuum (PARALLEL 4, INDEX_CLEANUP "on") parallel_vacuum_table;
+vacuum (parallel 4, index_cleanup "on") parallel_vacuum_table;
 
 insert into parallel_vacuum_table select i from generate_series(1, 10000) as i;
 

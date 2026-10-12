@@ -26,14 +26,7 @@ insert into app.package_versions (
 )
 values
   (
-    (
-      select
-        id
-      from
-        app.packages
-      where
-        package_name = 'olirice-read_once'
-    ),
+    (select id from app.packages where package_name = 'olirice-read_once'),
     (0, 3, 1),
     '
 

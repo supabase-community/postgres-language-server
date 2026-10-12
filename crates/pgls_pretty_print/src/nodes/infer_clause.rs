@@ -5,7 +5,8 @@ use crate::{
     emitter::{EventEmitter, GroupKind, LineType},
 };
 
-use super::{node_list::emit_comma_separated_list, string::emit_identifier_maybe_quoted};
+use super::node_list::emit_parenthesized_list;
+use super::string::emit_identifier_maybe_quoted;
 
 pub(super) fn emit_infer_clause(e: &mut EventEmitter, n: &InferClause) {
     e.group_start(GroupKind::InferClause);
@@ -17,9 +18,7 @@ pub(super) fn emit_infer_clause(e: &mut EventEmitter, n: &InferClause) {
         e.space();
         emit_identifier_maybe_quoted(e, &n.conname);
     } else if !n.index_elems.is_empty() {
-        e.token(TokenKind::L_PAREN);
-        emit_comma_separated_list(e, &n.index_elems, super::emit_node);
-        e.token(TokenKind::R_PAREN);
+        emit_parenthesized_list(e, &n.index_elems, super::emit_node);
     }
 
     if let Some(ref where_clause) = n.where_clause {

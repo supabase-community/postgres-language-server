@@ -216,8 +216,7 @@ create temporary sequence myseq3;
 create temporary table t1 (
   f1 serial,
   f2 int default nextval('myseq2'),
-  f3 int
-  default nextval(cast('myseq3' as text))
+  f3 int default nextval(cast('myseq3' as text))
 );
 
 drop sequence t1_f1_seq;

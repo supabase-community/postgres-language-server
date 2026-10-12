@@ -5,7 +5,7 @@ input_file: crates/pgls_pretty_print/tests/data/multi/explain.sql
 create function explain_filter(text)
 returns setof text
 language plpgsql
-as $function$
+as $$
 declare
     ln text;
 begin
@@ -24,12 +24,12 @@ begin
         return next ln;
     end loop;
 end;
-$function$;
+$$;
 
 create function explain_filter_to_json(text)
 returns jsonb
 language plpgsql
-as $function$
+as $$
 declare
     data text := '';
     ln text;
@@ -42,7 +42,7 @@ begin
     end loop;
     return data::jsonb;
 end;
-$function$;
+$$;
 
 set jit = off;
 
@@ -51,9 +51,7 @@ set track_io_timing = off;
 select explain_filter('explain select * from int8_tbl i8');
 
 select
-  explain_filter(
-    'explain (analyze, buffers off) select * from int8_tbl i8'
-  );
+  explain_filter('explain (analyze, buffers off) select * from int8_tbl i8');
 
 select
   explain_filter(
@@ -76,14 +74,10 @@ select
   );
 
 select
-  explain_filter(
-    'explain (buffers, format text) select * from int8_tbl i8'
-  );
+  explain_filter('explain (buffers, format text) select * from int8_tbl i8');
 
 select
-  explain_filter(
-    'explain (buffers, format json) select * from int8_tbl i8'
-  );
+  explain_filter('explain (buffers, format json) select * from int8_tbl i8');
 
 select
   explain_filter(
@@ -111,13 +105,9 @@ set local plan_cache_mode = force_generic_plan;
 select
   true as "OK"
 from
-  explain_filter(
-    'explain (settings) select * from int8_tbl i8'
-  )
-  as ln
+  explain_filter('explain (settings) select * from int8_tbl i8') as ln
 where
-  ln ~
-  '^ *Settings: .*plan_cache_mode = ''force_generic_plan''';
+  ln ~ '^ *Settings: .*plan_cache_mode = ''force_generic_plan''';
 
 select
   explain_filter_to_json(
@@ -162,7 +152,7 @@ create table gen_part (
   key1 int not null,
   key2 int not null
 )
-partition by LIST(key1);
+partition by list(key1);
 
 create table gen_part_1
 partition of gen_part
@@ -194,26 +184,18 @@ set max_parallel_workers_per_gather = 4;
 
 select
   jsonb_pretty(
-    explain_filter_to_json(
-      'explain (analyze, verbose, buffers, format json)
-                         select * from tenk1 order by tenthous'
-    ) #-
-    '{0,Plan,Plans,0,Plans,0,Workers}' #-
-    '{0,Plan,Plans,0,Workers}' #-
-    '{0,Plan,Plans,0,Sort Method}' #-
-    '{0,Plan,Plans,0,Sort Space Type}'
+    explain_filter_to_json('explain (analyze, verbose, buffers, format json)
+                         select * from tenk1 order by tenthous') #- '{0,Plan,Plans,0,Plans,0,Workers}' #- '{0,Plan,Plans,0,Workers}' #- '{0,Plan,Plans,0,Sort Method}' #- '{0,Plan,Plans,0,Sort Space Type}'
   );
 
 rollback;
 
-create temporary table t1 (f1 double precision);
+create temporary table t1 (f1 float8);
 
-create function pg_temp.mysin(double precision)
-returns double precision
+create function pg_temp.mysin(float8)
+returns float8
 language plpgsql
-as $function$
-begin return sin($1); end
-$function$;
+as 'begin return sin($1); end';
 
 select
   explain_filter(

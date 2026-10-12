@@ -179,9 +179,13 @@ pub(super) fn emit_function_parameter(e: &mut EventEmitter, fp: &FunctionParamet
         FunctionParameterMode::Undefined => {}
     }
 
-    // Parameter name
+    // Parameter name, which the grammar spells as a function or type name
     if !fp.name.is_empty() {
-        super::emit_identifier_maybe_quoted(e, &fp.name);
+        if super::string::needs_quoting_as_function_or_type_name(&fp.name) {
+            super::emit_identifier(e, &fp.name);
+        } else {
+            super::emit_identifier_maybe_quoted(e, &fp.name);
+        }
         e.space();
     }
 
@@ -277,7 +281,7 @@ pub(super) fn format_function_option(
                         // Single item: either library name (C) or SQL body (SQL/plpgsql)
                         if let Some(pgls_query::NodeEnum::String(s)) = &list.items[0].node {
                             // Use dollar quotes for function bodies (they handle embedded quotes better)
-                            super::emit_dollar_quoted_str_with_hint(e, &s.sval, hint);
+                            super::emit_body_literal(e, &s.sval, d.location, hint);
                         } else {
                             super::emit_node(&list.items[0], e);
                         }
@@ -325,7 +329,7 @@ pub(super) fn format_function_option(
                         "IMMUTABLE" => e.token(TokenKind::IMMUTABLE_KW),
                         "STABLE" => e.token(TokenKind::STABLE_KW),
                         "VOLATILE" => e.token(TokenKind::VOLATILE_KW),
-                        _ => e.token(TokenKind::IDENT(volatility)),
+                        _ => super::emit_word(e, &s.sval),
                     }
                 } else {
                     super::emit_node(arg, e);
@@ -390,8 +394,7 @@ pub(super) fn format_function_option(
             e.space();
             if let Some(ref arg) = d.arg {
                 if let Some(pgls_query::NodeEnum::String(s)) = &arg.node {
-                    let parallel = s.sval.to_uppercase();
-                    e.token(TokenKind::IDENT(parallel));
+                    super::emit_word(e, &s.sval);
                 } else {
                     super::emit_node(arg, e);
                 }
@@ -462,8 +465,7 @@ pub(super) fn format_function_option(
         }
         _ => {
             // Default: emit option name and value
-            let defname_upper = d.defname.to_uppercase();
-            e.token(TokenKind::IDENT(defname_upper));
+            super::emit_word(e, &d.defname);
             if let Some(ref arg) = d.arg {
                 e.space();
                 super::emit_node(arg, e);

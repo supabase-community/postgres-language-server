@@ -16,7 +16,7 @@ insert into char_tbl (f1) values ('a'), ('ab'), ('abcd'), ('abcd    ');
 
 vacuum char_tbl;
 
-create table float8_tbl (f1 double precision);
+create table float8_tbl (f1 float8);
 
 insert into float8_tbl (f1)
 values
@@ -28,19 +28,14 @@ values
 
 vacuum float8_tbl;
 
-create table int2_tbl (f1 smallint);
+create table int2_tbl (f1 int2);
 
 insert into int2_tbl (f1)
-values
-  ('0   '),
-  ('  1234 '),
-  ('    -1234'),
-  ('32767'),
-  ('-32767');
+values ('0   '), ('  1234 '), ('    -1234'), ('32767'), ('-32767');
 
 vacuum int2_tbl;
 
-create table int4_tbl (f1 int);
+create table int4_tbl (f1 int4);
 
 insert into int4_tbl (f1)
 values
@@ -53,8 +48,8 @@ values
 vacuum int4_tbl;
 
 create table int8_tbl (
-  q1 bigint,
-  q2 bigint
+  q1 int8,
+  q2 int8
 );
 
 insert into int8_tbl
@@ -63,9 +58,7 @@ values
   ('123   ', '4567890123456789'),
   ('4567890123456789', '123'),
   (+4567890123456789, '4567890123456789'),
-  (
-    '+4567890123456789', '-4567890123456789'
-  );
+  ('+4567890123456789', '-4567890123456789');
 
 vacuum int8_tbl;
 
@@ -97,19 +90,19 @@ insert into varchar_tbl (f1) values ('a'), ('ab'), ('abcd'), ('abcd    ');
 vacuum varchar_tbl;
 
 create table onek (
-  unique1 int,
-  unique2 int,
-  two int,
-  four int,
-  ten int,
-  twenty int,
-  hundred int,
-  thousand int,
-  twothousand int,
-  fivethous int,
-  tenthous int,
-  odd int,
-  even int,
+  unique1 int4,
+  unique2 int4,
+  two int4,
+  four int4,
+  ten int4,
+  twenty int4,
+  hundred int4,
+  thousand int4,
+  twothousand int4,
+  fivethous int4,
+  tenthous int4,
+  odd int4,
+  even int4,
   stringu1 name,
   stringu2 name,
   string4 name
@@ -117,26 +110,26 @@ create table onek (
 
 copy onek from 'filename';
 
-vacuum (ANALYZE) onek;
+vacuum (analyze) onek;
 
 create table onek2 as select * from onek;
 
-vacuum (ANALYZE) onek2;
+vacuum (analyze) onek2;
 
 create table tenk1 (
-  unique1 int,
-  unique2 int,
-  two int,
-  four int,
-  ten int,
-  twenty int,
-  hundred int,
-  thousand int,
-  twothousand int,
-  fivethous int,
-  tenthous int,
-  odd int,
-  even int,
+  unique1 int4,
+  unique2 int4,
+  two int4,
+  four int4,
+  ten int4,
+  twenty int4,
+  hundred int4,
+  thousand int4,
+  twothousand int4,
+  fivethous int4,
+  tenthous int4,
+  odd int4,
+  even int4,
   stringu1 name,
   stringu2 name,
   string4 name
@@ -144,46 +137,45 @@ create table tenk1 (
 
 copy tenk1 from 'filename';
 
-vacuum (ANALYZE) tenk1;
+vacuum (analyze) tenk1;
 
 create table tenk2 as select * from tenk1;
 
-vacuum (ANALYZE) tenk2;
+vacuum (analyze) tenk2;
 
 create table person (
   name text,
-  age int,
+  age int4,
   location point
 );
 
 copy person from 'filename';
 
-vacuum (ANALYZE) person;
+vacuum (analyze) person;
 
 create table emp (
-  salary int,
+  salary int4,
   manager name
 )
 inherits (person);
 
 copy emp from 'filename';
 
-vacuum (ANALYZE) emp;
+vacuum (analyze) emp;
 
-create table student (gpa double precision)
+create table student (gpa float8)
 inherits (person);
 
 copy student from 'filename';
 
-vacuum (ANALYZE) student;
+vacuum (analyze) student;
 
-create table stud_emp (percent int)
-inherits (emp,
-student);
+create table stud_emp (percent int4)
+inherits (emp, student);
 
 copy stud_emp from 'filename';
 
-vacuum (ANALYZE) stud_emp;
+vacuum (analyze) stud_emp;
 
 create table road (
   name text,
@@ -192,84 +184,75 @@ create table road (
 
 copy road from 'filename';
 
-vacuum (ANALYZE) road;
+vacuum (analyze) road;
 
 create table ihighway ()
 inherits (road);
 
 insert into ihighway select * from only road where name ~ 'I- .*';
 
-vacuum (ANALYZE) ihighway;
+vacuum (analyze) ihighway;
 
 create table shighway (surface text)
 inherits (road);
 
 insert into shighway
-select
-  *,
-  'asphalt'
-from
-  only road
-where
-  name ~ 'State Hwy.*';
+select *, 'asphalt' from only road where name ~ 'State Hwy.*';
 
-vacuum (ANALYZE) shighway;
+vacuum (analyze) shighway;
 
 create type stoplight as enum ('red', 'yellow', 'green');
 
-create type float8range as range (
-  subtype = double precision,
-  subtype_diff = float8mi
-);
+create type float8range as range (subtype = float8, subtype_diff = float8mi);
 
-create type textrange as range (subtype = text, collation = "C");
+create type textrange as range (subtype = text, "collation" = "C");
 
 create function binary_coercible(oid, oid)
-returns boolean
+returns bool
 language c
 stable
 strict
-parallel SAFE
+parallel safe
 as 'regresslib', 'binary_coercible';
 
-create function part_hashint4_noop(value int, seed bigint)
-returns bigint
+create function part_hashint4_noop(value int4, seed int8)
+returns int8
 language sql
 immutable
 strict
-parallel SAFE
-as $function$
-select value + seed;
-$function$;
+parallel safe
+as $$
+    select value + seed;
+    $$;
 
 create operator class part_test_int4_ops
-  for type int
+  for type int4
   using hash
   as operator 1 =,
-  function 2 part_hashint4_noop(int, bigint);
+  function 2 part_hashint4_noop(int4, int8);
 
-create function part_hashtext_length(value text, seed bigint)
-returns bigint
+create function part_hashtext_length(value text, seed int8)
+returns int8
 language sql
 immutable
 strict
-parallel SAFE
-as $function$
-select length(coalesce(value, ''))::int8
-$function$;
+parallel safe
+as $$
+    select length(coalesce(value, ''))::int8
+    $$;
 
 create operator class part_test_text_ops
   for type text
   using hash
   as operator 1 =,
-  function 2 part_hashtext_length(text, bigint);
+  function 2 part_hashtext_length(text, int8);
 
 create function fipshash(bytea)
 returns text
 immutable
 leakproof
 strict
-parallel SAFE
+parallel safe
 return substr(encode(sha256($1), 'hex'), 1, 32);
 
 create function fipshash(text)
@@ -277,9 +260,5 @@ returns text
 immutable
 leakproof
 strict
-parallel SAFE
-return substr(
-  encode(sha256(cast($1 as bytea)), 'hex'),
-  1,
-  32
-);
+parallel safe
+return substr(encode(sha256(cast($1 as bytea)), 'hex'), 1, 32);

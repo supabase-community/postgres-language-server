@@ -9,32 +9,26 @@ returns casttesttype
 language internal
 immutable
 strict
-as $function$
-textin
-$function$;
+as 'textin';
 
 create function casttesttype_out(casttesttype)
 returns cstring
 language internal
 immutable
 strict
-as $function$
-textout
-$function$;
+as 'textout';
 
 create type casttesttype (
   internallength = variable,
   input = casttesttype_in,
   output = casttesttype_out,
-  alignment = int
+  alignment = int4
 );
 
 create function casttestfunc(casttesttype)
-returns int
+returns int4
 language sql
-as $function$
-SELECT 1;
-$function$;
+as $$ SELECT 1; $$;
 
 select casttestfunc(cast('foo' as text));
 
@@ -50,53 +44,41 @@ create cast (text as casttesttype) without function as implicit;
 
 select casttestfunc(cast('foo' as text));
 
-select cast(cast(1234 as int) as casttesttype);
+select cast(cast(1234 as int4) as casttesttype);
 
-create cast (int as casttesttype) with inout;
+create cast (int4 as casttesttype) with inout;
 
-select cast(cast(1234 as int) as casttesttype);
+select cast(cast(1234 as int4) as casttesttype);
 
-drop cast (int as casttesttype);
+drop cast (int4 as casttesttype);
 
-create function int4_casttesttype(int)
+create function int4_casttesttype(int4)
 returns casttesttype
 language sql
-as $function$
-SELECT ('foo'::text || $1::text)::casttesttype;
-$function$;
+as $$ SELECT ('foo'::text || $1::text)::casttesttype; $$;
 
-create cast (int as casttesttype)
-with function int4_casttesttype(int)
+create cast (int4 as casttesttype)
+with function int4_casttesttype(int4)
 as implicit;
 
-select cast(cast(1234 as int) as casttesttype);
+select cast(cast(1234 as int4) as casttesttype);
 
-drop function int4_casttesttype(int) cascade;
+drop function int4_casttesttype(int4) cascade;
 
-create function bar_int4_text(int)
+create function bar_int4_text(int4)
 returns text
 language sql
-as $function$
-SELECT ('bar'::text || $1::text);
-$function$;
+as $$ SELECT ('bar'::text || $1::text); $$;
 
-create cast (int as casttesttype) with function bar_int4_text(int) as implicit;
+create cast (int4 as casttesttype)
+with function bar_int4_text(int4)
+as implicit;
 
-select cast(cast(1234 as int) as casttesttype);
+select cast(cast(1234 as int4) as casttesttype);
 
 select
-  pg_describe_object(
-    classid,
-    objid,
-    objsubid
-  )
-  as obj,
-  pg_describe_object(
-    refclassid,
-    refobjid,
-    refobjsubid
-  )
-  as objref,
+  pg_describe_object(classid, objid, objsubid) as obj,
+  pg_describe_object(refclassid, refobjid, refobjsubid) as objref,
   deptype
 from
   pg_depend
@@ -110,7 +92,6 @@ where
       pg_cast
     where
       castsource = cast('int4' as regtype) and
-      casttarget =
-      cast('casttesttype' as regtype)
+      casttarget = cast('casttesttype' as regtype)
   )
 order by refclassid;

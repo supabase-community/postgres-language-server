@@ -30,10 +30,7 @@ select * from pred_tab as t1 left outer join pred_tab as t2 on t1.a is not null;
 select
   *
 from
-  pred_tab as t1
-  full outer join
-    pred_tab as t2
-  on t1.a = t2.a
+  pred_tab as t1 full outer join pred_tab as t2 on t1.a = t2.a
   left outer join
     pred_tab as t3
   on t2.a is not null;
@@ -43,10 +40,7 @@ select * from pred_tab as t1 left outer join pred_tab as t2 on t1.a is null;
 select
   *
 from
-  pred_tab as t1
-  left outer join
-    pred_tab as t2
-  on t1.a = 1
+  pred_tab as t1 left outer join pred_tab as t2 on t1.a = 1
   left outer join
     pred_tab as t3
   on t2.a is null;
@@ -56,10 +50,7 @@ select * from pred_tab as t1 left outer join pred_tab as t2 on t1.a is not null 
 select
   *
 from
-  pred_tab as t1
-  full outer join
-    pred_tab as t2
-  on t1.a = t2.a
+  pred_tab as t1 full outer join pred_tab as t2 on t1.a = t2.a
   left outer join
     pred_tab as t3
   on t2.a is not null or t2.b = 1;
@@ -69,10 +60,7 @@ select * from pred_tab as t1 left outer join pred_tab as t2 on t1.a is null or t
 select
   *
 from
-  pred_tab as t1
-  left outer join
-    pred_tab as t2
-  on t1.a = 1
+  pred_tab as t1 left outer join pred_tab as t2 on t1.a = 1
   left outer join
     pred_tab as t3
   on t2.a is null or t2.c is null;
@@ -166,10 +154,7 @@ analyze pred_tab_notnull;
 select
   *
 from
-  pred_tab as t1
-  left outer join
-    pred_tab as t2
-  on true
+  pred_tab as t1 left outer join pred_tab as t2 on true
   left outer join
     pred_tab_notnull as t3
   on t2.a = t3.a
@@ -180,10 +165,7 @@ from
 select
   *
 from
-  pred_tab as t1
-  left outer join
-    pred_tab as t2
-  on true
+  pred_tab as t1 left outer join pred_tab as t2 on true
   left outer join
     pred_tab_notnull as t3
   on t2.a = t3.a
@@ -194,10 +176,7 @@ from
 select
   *
 from
-  pred_tab as t1
-  left outer join
-    pred_tab as t2
-  on true
+  pred_tab as t1 left outer join pred_tab as t2 on true
   left outer join
     pred_tab_notnull as t3
   on t2.a = t3.a
@@ -208,10 +187,7 @@ from
 select
   *
 from
-  pred_tab as t1
-  left outer join
-    pred_tab as t2
-  on true
+  pred_tab as t1 left outer join pred_tab as t2 on true
   left outer join
     pred_tab_notnull as t3
   on t2.a = t3.a
@@ -226,13 +202,13 @@ drop table pred_tab_notnull;
 create table pred_tab1 (
   a int not null,
   b int,
-  constraint "check_tab1" check (a is null or b > 2)
+  constraint check_tab1 check (a is null or b > 2)
 );
 
 create table pred_tab2 (
   a int,
   b int,
-  constraint "check_a" check (a is not null)
+  constraint check_a check (a is not null)
 );
 
 set constraint_exclusion = 'on';

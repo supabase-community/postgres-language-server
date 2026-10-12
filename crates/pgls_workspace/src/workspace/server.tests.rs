@@ -1220,6 +1220,60 @@ async fn test_format_preserves_comment_in_sql_function_body() {
     );
 }
 
+#[tokio::test]
+async fn test_format_normalizes_blank_lines_between_statements() {
+    let formatted = format_content("\n\n\nselect   1;\n\n\n\nselect   2;\n\n\n");
+    assert_eq!(formatted, "select 1;\n\nselect 2;\n");
+}
+
+#[tokio::test]
+async fn test_format_keeps_comments_when_normalizing_blank_lines() {
+    let formatted = format_content(
+        "\n\n-- header\n\n\nselect 1; -- one\n\n\n-- about two\nselect 2;\n\n\n-- footer\n\n",
+    );
+    assert_eq!(
+        formatted,
+        "-- header\n\nselect 1; -- one\n\n-- about two\nselect 2;\n\n-- footer\n"
+    );
+}
+
+#[tokio::test]
+async fn test_format_keeps_statements_on_one_line_apart() {
+    let formatted = format_content("select   1; select   2;");
+    assert_eq!(formatted, "select 1; select 2;");
+}
+
+#[tokio::test]
+async fn test_format_keeps_plpgsql_body_and_dollar_quote_tag() {
+    let content = "CREATE FUNCTION f() RETURNS boolean LANGUAGE plpgsql AS $$\nBEGIN\n  RETURN true;\nEND\n$$;";
+    let formatted = format_content(content);
+    assert_eq!(
+        formatted,
+        "create function f()\nreturns boolean\nlanguage plpgsql\nas $$\nBEGIN\n  RETURN true;\nEND\n$$;"
+    );
+}
+
+#[tokio::test]
+async fn test_format_keeps_formatted_sql_function_body_as_written() {
+    let content = "create function f() returns int language sql as $body$\n  select 1;\n$body$;";
+    let formatted = format_content(content);
+    assert_eq!(
+        formatted,
+        "create function f()\nreturns int\nlanguage sql\nas $body$\n  select 1;\n$body$;"
+    );
+}
+
+#[tokio::test]
+async fn test_format_puts_reformatted_sql_function_body_on_its_own_lines() {
+    let content = "create function f() returns int language sql as $body$SELECT   1$body$;";
+    let formatted = format_content(content);
+    assert_eq!(
+        formatted,
+        "create function f()\nreturns int\nlanguage sql\nas $body$\nselect 1;\n$body$;"
+    );
+    assert_eq!(format_content(&formatted), formatted);
+}
+
 #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
 async fn test_cstyle_comments(test_db: PgPool) {
     let mut conf = PartialConfiguration::init();

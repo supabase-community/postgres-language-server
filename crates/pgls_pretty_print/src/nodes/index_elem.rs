@@ -2,8 +2,10 @@ use pgls_query::protobuf::{IndexElem, SortByDir, SortByNulls};
 
 use crate::{
     TokenKind,
-    emitter::{EventEmitter, GroupKind, LineType},
+    emitter::{EventEmitter, GroupKind},
 };
+
+use super::node_list::emit_parenthesized_list;
 
 pub(super) fn emit_index_elem(e: &mut EventEmitter, n: &IndexElem) {
     e.group_start(GroupKind::IndexElem);
@@ -18,9 +20,12 @@ pub(super) fn emit_index_elem(e: &mut EventEmitter, n: &IndexElem) {
         super::emit_identifier_maybe_quoted(e, &n.name);
     }
 
+    // The clauses after the column stay on its line: after a broken expression, they follow the
+    // closing parenthesis instead of reading as a column of their own.
+
     // Optional collation
     if !n.collation.is_empty() {
-        e.line(LineType::SoftOrSpace);
+        e.space();
         e.token(TokenKind::COLLATE_KW);
         e.space();
         super::node_list::emit_dot_separated_list(e, &n.collation);
@@ -28,13 +33,12 @@ pub(super) fn emit_index_elem(e: &mut EventEmitter, n: &IndexElem) {
 
     // Optional opclass
     if !n.opclass.is_empty() {
-        e.line(LineType::SoftOrSpace);
+        e.space();
         super::node_list::emit_dot_separated_list(e, &n.opclass);
 
         // Optional opclass options (e.g., tsvector_ops(siglen = 1000))
         if !n.opclassopts.is_empty() {
-            e.token(TokenKind::L_PAREN);
-            super::node_list::emit_comma_separated_list(e, &n.opclassopts, |node, emitter| {
+            emit_parenthesized_list(e, &n.opclassopts, |node, emitter| {
                 if let Some(pgls_query::NodeEnum::DefElem(def)) = node.node.as_ref() {
                     emitter.token(TokenKind::IDENT(def.defname.clone()));
                     if let Some(ref arg) = def.arg {
@@ -45,7 +49,6 @@ pub(super) fn emit_index_elem(e: &mut EventEmitter, n: &IndexElem) {
                     }
                 }
             });
-            e.token(TokenKind::R_PAREN);
         }
     }
 
@@ -65,13 +68,13 @@ pub(super) fn emit_index_elem(e: &mut EventEmitter, n: &IndexElem) {
     // NULLS FIRST/LAST
     match n.nulls_ordering() {
         SortByNulls::SortbyNullsFirst => {
-            e.line(LineType::SoftOrSpace);
+            e.space();
             e.token(TokenKind::NULLS_KW);
             e.space();
             e.token(TokenKind::FIRST_KW);
         }
         SortByNulls::SortbyNullsLast => {
-            e.line(LineType::SoftOrSpace);
+            e.space();
             e.token(TokenKind::NULLS_KW);
             e.space();
             e.token(TokenKind::LAST_KW);

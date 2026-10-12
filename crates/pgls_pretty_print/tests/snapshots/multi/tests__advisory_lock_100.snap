@@ -30,7 +30,7 @@ order by classid,
 
 select pg_advisory_unlock_all();
 
-select COUNT(*) from pg_locks where locktype = 'advisory' and database = 'datoid';
+select count(*) from pg_locks where locktype = 'advisory' and database = 'datoid';
 
 select
   pg_advisory_unlock(1),
@@ -40,7 +40,7 @@ select
 
 commit;
 
-select COUNT(*) from pg_locks where locktype = 'advisory' and database = 'datoid';
+select count(*) from pg_locks where locktype = 'advisory' and database = 'datoid';
 
 begin;
 
@@ -98,7 +98,7 @@ select
   pg_advisory_unlock_shared(2, 2),
   pg_advisory_unlock_shared(2, 2);
 
-select COUNT(*) from pg_locks where locktype = 'advisory' and database = 'datoid';
+select count(*) from pg_locks where locktype = 'advisory' and database = 'datoid';
 
 begin;
 
@@ -148,7 +148,7 @@ order by classid,
 
 select pg_advisory_unlock_all();
 
-select COUNT(*) from pg_locks where locktype = 'advisory' and database = 'datoid';
+select count(*) from pg_locks where locktype = 'advisory' and database = 'datoid';
 
 begin;
 
@@ -179,7 +179,7 @@ order by classid,
 
 commit;
 
-select COUNT(*) from pg_locks where locktype = 'advisory' and database = 'datoid';
+select count(*) from pg_locks where locktype = 'advisory' and database = 'datoid';
 
 select
   pg_advisory_lock(1),
@@ -216,7 +216,7 @@ select
   pg_advisory_unlock_shared(2, 2),
   pg_advisory_unlock_shared(2, 2);
 
-select COUNT(*) from pg_locks where locktype = 'advisory' and database = 'datoid';
+select count(*) from pg_locks where locktype = 'advisory' and database = 'datoid';
 
 select
   pg_advisory_lock(1),
@@ -245,4 +245,4 @@ order by classid,
 
 select pg_advisory_unlock_all();
 
-select COUNT(*) from pg_locks where locktype = 'advisory' and database = 'datoid';
+select count(*) from pg_locks where locktype = 'advisory' and database = 'datoid';

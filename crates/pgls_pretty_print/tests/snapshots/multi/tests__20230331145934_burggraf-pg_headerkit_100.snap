@@ -19,18 +19,7 @@ values
   );
 
 insert into app.package_versions (package_id, version_struct, sql, description_md)
-values
-  (
-    (
-      select
-        id
-      from
-        app.packages
-      where
-        package_name = 'burggraf-pg_headerkit'
-    ),
-    (1, 0, 0),
-    '
+values ((select id from app.packages where package_name = 'burggraf-pg_headerkit'), (1, 0, 0), '
 CREATE SCHEMA IF NOT EXISTS hdr;
 
 CREATE TABLE IF NOT EXISTS hdr.allow_list (
@@ -231,8 +220,7 @@ CREATE OR REPLACE FUNCTION hdr.is_android() RETURNS boolean
     SELECT hdr.header(''user-agent'') ILIKE ''%android%''
 $$;
 
-',
-    '
+', '
 # pg_headerkit: PostgREST Header Kit
 A set of functions for adding special features to your application that use PostgREST API calls to your PostgreSQL database.  These functions can be used inside PostgreSQL functions that can give your application the following capabilities at the database level:
 
@@ -273,5 +261,4 @@ See: [PostgREST Header Hacking](https://github.com/burggraf/postgrest-header-hac
 | hdr.is_iphone()                | is iphone?                                              | none        | boolean                        |
 | hdr.is_ipad()                  | is ipad?                                                | none        | boolean                        |
 | hdr.is_android()               | is android?                                             | none        | boolean                        |
-'
-  );
+');

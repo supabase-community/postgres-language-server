@@ -3,7 +3,7 @@ source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/guc.sql
 snapshot_kind: text
 ---
-show "datestyle";
+show datestyle;
 
 set intervalstyle = asd;
 
@@ -11,89 +11,89 @@ set vacuum_cost_delay = 40;
 
 set datestyle = 'ISO, YMD';
 
-show "vacuum_cost_delay";
+show vacuum_cost_delay;
 
-show "datestyle";
+show datestyle;
 
-select cast('2006-08-13 12:34:56' as timestamp with time zone);
+select cast('2006-08-13 12:34:56' as timestamptz);
 
 set local vacuum_cost_delay = 50;
 
-show "vacuum_cost_delay";
+show vacuum_cost_delay;
 
-set local datestyle = SQL;
+set local datestyle = 'SQL';
 
-show "datestyle";
+show datestyle;
 
-select cast('2006-08-13 12:34:56' as timestamp with time zone);
+select cast('2006-08-13 12:34:56' as timestamptz);
 
 begin;
 
 set local vacuum_cost_delay = 50;
 
-show "vacuum_cost_delay";
+show vacuum_cost_delay;
 
-set local datestyle = SQL;
+set local datestyle = 'SQL';
 
-show "datestyle";
+show datestyle;
 
-select cast('2006-08-13 12:34:56' as timestamp with time zone);
+select cast('2006-08-13 12:34:56' as timestamptz);
 
 commit;
 
-show "vacuum_cost_delay";
+show vacuum_cost_delay;
 
-show "datestyle";
+show datestyle;
 
-select cast('2006-08-13 12:34:56' as timestamp with time zone);
+select cast('2006-08-13 12:34:56' as timestamptz);
 
 begin;
 
 set vacuum_cost_delay = 60;
 
-show "vacuum_cost_delay";
+show vacuum_cost_delay;
 
-set datestyle = German;
+set datestyle = 'German';
 
-show "datestyle";
+show datestyle;
 
-select cast('2006-08-13 12:34:56' as timestamp with time zone);
+select cast('2006-08-13 12:34:56' as timestamptz);
 
 rollback;
 
-show "vacuum_cost_delay";
+show vacuum_cost_delay;
 
-show "datestyle";
+show datestyle;
 
-select cast('2006-08-13 12:34:56' as timestamp with time zone);
+select cast('2006-08-13 12:34:56' as timestamptz);
 
 begin;
 
 set vacuum_cost_delay = 70;
 
-set datestyle = MDY;
+set datestyle = 'MDY';
 
-show "datestyle";
+show datestyle;
 
-select cast('2006-08-13 12:34:56' as timestamp with time zone);
+select cast('2006-08-13 12:34:56' as timestamptz);
 
 savepoint first_sp;
 
 set vacuum_cost_delay = 80.1;
 
-show "vacuum_cost_delay";
+show vacuum_cost_delay;
 
 set datestyle = 'German, DMY';
 
-show "datestyle";
+show datestyle;
 
-select cast('2006-08-13 12:34:56' as timestamp with time zone);
+select cast('2006-08-13 12:34:56' as timestamptz);
 
 rollback to savepoint first_sp;
 
-show "datestyle";
+show datestyle;
 
-select cast('2006-08-13 12:34:56' as timestamp with time zone);
+select cast('2006-08-13 12:34:56' as timestamptz);
 
 savepoint second_sp;
 
@@ -101,117 +101,117 @@ set vacuum_cost_delay = '900us';
 
 set datestyle = 'SQL, YMD';
 
-show "datestyle";
+show datestyle;
 
-select cast('2006-08-13 12:34:56' as timestamp with time zone);
+select cast('2006-08-13 12:34:56' as timestamptz);
 
 savepoint third_sp;
 
 set vacuum_cost_delay = 100;
 
-show "vacuum_cost_delay";
+show vacuum_cost_delay;
 
 set datestyle = 'Postgres, MDY';
 
-show "datestyle";
+show datestyle;
 
-select cast('2006-08-13 12:34:56' as timestamp with time zone);
+select cast('2006-08-13 12:34:56' as timestamptz);
 
 rollback to savepoint third_sp;
 
-show "vacuum_cost_delay";
+show vacuum_cost_delay;
 
-show "datestyle";
+show datestyle;
 
-select cast('2006-08-13 12:34:56' as timestamp with time zone);
+select cast('2006-08-13 12:34:56' as timestamptz);
 
 rollback to savepoint second_sp;
 
-show "vacuum_cost_delay";
+show vacuum_cost_delay;
 
-show "datestyle";
+show datestyle;
 
-select cast('2006-08-13 12:34:56' as timestamp with time zone);
+select cast('2006-08-13 12:34:56' as timestamptz);
 
 rollback;
 
-show "vacuum_cost_delay";
+show vacuum_cost_delay;
 
-show "datestyle";
+show datestyle;
 
-select cast('2006-08-13 12:34:56' as timestamp with time zone);
+select cast('2006-08-13 12:34:56' as timestamptz);
 
 begin;
 
-show "vacuum_cost_delay";
+show vacuum_cost_delay;
 
-show "datestyle";
+show datestyle;
 
-select cast('2006-08-13 12:34:56' as timestamp with time zone);
+select cast('2006-08-13 12:34:56' as timestamptz);
 
 savepoint sp;
 
 set local vacuum_cost_delay = 30;
 
-show "vacuum_cost_delay";
+show vacuum_cost_delay;
 
 set local datestyle = 'Postgres, MDY';
 
-show "datestyle";
+show datestyle;
 
-select cast('2006-08-13 12:34:56' as timestamp with time zone);
+select cast('2006-08-13 12:34:56' as timestamptz);
 
 rollback to savepoint sp;
 
-show "vacuum_cost_delay";
+show vacuum_cost_delay;
 
-show "datestyle";
+show datestyle;
 
-select cast('2006-08-13 12:34:56' as timestamp with time zone);
+select cast('2006-08-13 12:34:56' as timestamptz);
 
 rollback;
 
-show "vacuum_cost_delay";
+show vacuum_cost_delay;
 
-show "datestyle";
+show datestyle;
 
-select cast('2006-08-13 12:34:56' as timestamp with time zone);
+select cast('2006-08-13 12:34:56' as timestamptz);
 
 begin;
 
-show "vacuum_cost_delay";
+show vacuum_cost_delay;
 
-show "datestyle";
+show datestyle;
 
-select cast('2006-08-13 12:34:56' as timestamp with time zone);
+select cast('2006-08-13 12:34:56' as timestamptz);
 
 savepoint sp;
 
 set local vacuum_cost_delay = 30;
 
-show "vacuum_cost_delay";
+show vacuum_cost_delay;
 
 set local datestyle = 'Postgres, MDY';
 
-show "datestyle";
+show datestyle;
 
-select cast('2006-08-13 12:34:56' as timestamp with time zone);
+select cast('2006-08-13 12:34:56' as timestamptz);
 
 release savepoint sp;
 
-show "vacuum_cost_delay";
+show vacuum_cost_delay;
 
-show "datestyle";
+show datestyle;
 
-select cast('2006-08-13 12:34:56' as timestamp with time zone);
+select cast('2006-08-13 12:34:56' as timestamptz);
 
 rollback;
 
-show "vacuum_cost_delay";
+show vacuum_cost_delay;
 
-show "datestyle";
+show datestyle;
 
-select cast('2006-08-13 12:34:56' as timestamp with time zone);
+select cast('2006-08-13 12:34:56' as timestamptz);
 
 begin;
 
@@ -219,37 +219,37 @@ set vacuum_cost_delay = 40;
 
 set local vacuum_cost_delay = 50;
 
-show "vacuum_cost_delay";
+show vacuum_cost_delay;
 
 set datestyle = 'ISO, DMY';
 
 set local datestyle = 'Postgres, MDY';
 
-show "datestyle";
+show datestyle;
 
-select cast('2006-08-13 12:34:56' as timestamp with time zone);
+select cast('2006-08-13 12:34:56' as timestamptz);
 
 commit;
 
-show "vacuum_cost_delay";
+show vacuum_cost_delay;
 
-show "datestyle";
+show datestyle;
 
-select cast('2006-08-13 12:34:56' as timestamp with time zone);
+select cast('2006-08-13 12:34:56' as timestamptz);
 
 set datestyle = iso, ymd;
 
-show "datestyle";
+show datestyle;
 
-select cast('2006-08-13 12:34:56' as timestamp with time zone);
+select cast('2006-08-13 12:34:56' as timestamptz);
 
 reset datestyle;
 
-show "datestyle";
+show datestyle;
 
-select cast('2006-08-13 12:34:56' as timestamp with time zone);
+select cast('2006-08-13 12:34:56' as timestamptz);
 
-set seq_page_cost = NaN;
+set seq_page_cost = 'NaN';
 
 set vacuum_cost_delay = '10s';
 

@@ -94,9 +94,9 @@ insert into macaddr8_data values (21, '08002b0102030405');
 
 select * from macaddr8_data order by 1;
 
-create index "macaddr8_data_btree" on macaddr8_data using btree (b);
+create index macaddr8_data_btree on macaddr8_data using btree (b);
 
-create index "macaddr8_data_hash" on macaddr8_data using hash (b);
+create index macaddr8_data_hash on macaddr8_data using hash (b);
 
 select a, b, trunc(b) from macaddr8_data order by 2, 1;
 

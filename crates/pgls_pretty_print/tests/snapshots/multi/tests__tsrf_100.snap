@@ -46,9 +46,9 @@ set enable_hashagg = 0;
 
 select
   few.dataa,
-  COUNT(*),
-  MIN(id),
-  MAX(id),
+  count(*),
+  min(id),
+  max(id),
   unnest(cast('{1,1,3}' as int[]))
 from
   few
@@ -58,9 +58,9 @@ group by few.dataa;
 
 select
   few.dataa,
-  COUNT(*),
-  MIN(id),
-  MAX(id),
+  count(*),
+  min(id),
+  max(id),
   unnest(cast('{1,1,3}' as int[]))
 from
   few
@@ -71,9 +71,9 @@ group by few.dataa,
 
 select
   few.dataa,
-  COUNT(*),
-  MIN(id),
-  MAX(id),
+  count(*),
+  min(id),
+  max(id),
   unnest(cast('{1,1,3}' as int[]))
 from
   few
@@ -84,15 +84,15 @@ group by few.dataa,
 
 reset enable_hashagg;
 
-select dataa, generate_series(1, 1), COUNT(*) from few group by 1 having COUNT(*) > 1;
+select dataa, generate_series(1, 1), count(*) from few group by 1 having count(*) > 1;
 
-select dataa, generate_series(1, 1), COUNT(*) from few group by 1, 2 having COUNT(*) > 1;
+select dataa, generate_series(1, 1), count(*) from few group by 1, 2 having count(*) > 1;
 
-select few.dataa, COUNT(*) from few where dataa = 'a' group by few.dataa order by 2;
+select few.dataa, count(*) from few where dataa = 'a' group by few.dataa order by 2;
 
 select
   few.dataa,
-  COUNT(*)
+  count(*)
 from
   few
 where
@@ -105,21 +105,18 @@ select q1, case when q1 > 0 then generate_series(1, 3) else 0 end from int8_tbl;
 
 select q1, coalesce(generate_series(1, 3), 0) from int8_tbl;
 
-select MIN(generate_series(1, 3)) from few;
+select min(generate_series(1, 3)) from few;
 
-select SUM(cast(3 = any (select generate_series(1, 4)) as int));
+select sum(cast(3 = any (select generate_series(1, 4)) as int));
 
-select SUM(cast(3 = any (select LAG(x) over (order by x) from generate_series(1, 4) as x) as int));
+select sum(cast(3 = any (select lag(x) over (order by x) from generate_series(1, 4) as x) as int));
 
-select MIN(generate_series(1, 3)) over () from few;
+select min(generate_series(1, 3)) over () from few;
 
-select id, LAG(id) over (), COUNT(*) over (), generate_series(1, 3) from few;
+select id, lag(id) over (), count(*) over (), generate_series(1, 3) from few;
 
 select
-  SUM(COUNT(*)) over (
-    partition by generate_series(1, 3)
-    order by generate_series(1, 3)
-  ),
+  sum(count(*)) over (partition by generate_series(1, 3) order by generate_series(1, 3)),
   generate_series(1, 3) as g
 from
   few
@@ -127,9 +124,9 @@ group by g;
 
 select
   few.dataa,
-  COUNT(*),
-  MIN(id),
-  MAX(id),
+  count(*),
+  min(id),
+  max(id),
   generate_series(1, 3)
 from
   few
@@ -143,7 +140,7 @@ select
   dataa,
   datab as b,
   generate_series(1, 2) as g,
-  COUNT(*)
+  count(*)
 from
   few
 group by cube (dataa, datab);
@@ -152,7 +149,7 @@ select
   dataa,
   datab as b,
   generate_series(1, 2) as g,
-  COUNT(*)
+  count(*)
 from
   few
 group by cube (dataa, datab)
@@ -162,7 +159,7 @@ select
   dataa,
   datab as b,
   generate_series(1, 2) as g,
-  COUNT(*)
+  count(*)
 from
   few
 group by cube (dataa, datab)
@@ -172,7 +169,7 @@ select
   dataa,
   datab as b,
   generate_series(1, 2) as g,
-  COUNT(*)
+  count(*)
 from
   few
 group by cube (dataa, datab, g);
@@ -181,7 +178,7 @@ select
   dataa,
   datab as b,
   generate_series(1, 2) as g,
-  COUNT(*)
+  count(*)
 from
   few
 group by cube (dataa, datab, g)
@@ -191,7 +188,7 @@ select
   dataa,
   datab as b,
   generate_series(1, 2) as g,
-  COUNT(*)
+  count(*)
 from
   few
 group by cube (dataa, datab, g)
@@ -226,32 +223,14 @@ select distinct on (a)
   b,
   generate_series(1, 3) as g
 from
-  (
-    values
-      (3, 2),
-      (3, 1),
-      (1, 1),
-      (1, 4),
-      (5, 3),
-      (5, 1)
-  )
-  as t (a, b);
+  (values (3, 2), (3, 1), (1, 1), (1, 4), (5, 3), (5, 1)) as t (a, b);
 
 select distinct on (a)
   a,
   b,
   generate_series(1, 3) as g
 from
-  (
-    values
-      (3, 2),
-      (3, 1),
-      (1, 1),
-      (1, 4),
-      (5, 3),
-      (5, 1)
-  )
-  as t (a, b)
+  (values (3, 2), (3, 1), (1, 1), (1, 4), (5, 3), (5, 1)) as t (a, b)
 order by a,
   b desc;
 
@@ -260,16 +239,7 @@ select distinct on (a)
   b,
   generate_series(1, 3) as g
 from
-  (
-    values
-      (3, 2),
-      (3, 1),
-      (1, 1),
-      (1, 4),
-      (5, 3),
-      (5, 1)
-  )
-  as t (a, b)
+  (values (3, 2), (3, 1), (1, 1), (1, 4), (5, 3), (5, 1)) as t (a, b)
 order by a,
   b desc,
   g desc;
@@ -279,16 +249,7 @@ select distinct on (a, b, g)
   b,
   generate_series(1, 3) as g
 from
-  (
-    values
-      (3, 2),
-      (3, 1),
-      (1, 1),
-      (1, 4),
-      (5, 3),
-      (5, 1)
-  )
-  as t (a, b)
+  (values (3, 2), (3, 1), (1, 1), (1, 4), (5, 3), (5, 1)) as t (a, b)
 order by a,
   b desc,
   g desc;
@@ -298,16 +259,7 @@ select distinct on (g)
   b,
   generate_series(1, 3) as g
 from
-  (
-    values
-      (3, 2),
-      (3, 1),
-      (1, 1),
-      (1, 4),
-      (5, 3),
-      (5, 1)
-  )
-  as t (a, b);
+  (values (3, 2), (3, 1), (1, 1), (1, 4), (5, 3), (5, 1)) as t (a, b);
 
 select a, generate_series(1, 2) from (values (1), (2), (3)) as r (a) limit 2 offset 2;
 
@@ -317,7 +269,7 @@ select (select generate_series(1, 3) limit 1 offset few.id) from few;
 
 select (select generate_series(1, 3) limit 1 offset g.i) from generate_series(0, 3) as g (i);
 
-create operator |@| (PROCEDURE = unnest, RIGHTARG = anyarray);
+create operator |@| (procedure = unnest, rightarg = anyarray);
 
 select |@|array[1, 2, 3];
 

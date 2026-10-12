@@ -5,6 +5,8 @@ use crate::{
 };
 use pgls_query::{NodeEnum, protobuf::CreateStatsStmt};
 
+use super::node_list::emit_parenthesized_list;
+
 pub(super) fn emit_create_stats_stmt(e: &mut EventEmitter, n: &CreateStatsStmt) {
     e.group_start(GroupKind::CreateStatsStmt);
 
@@ -29,13 +31,11 @@ pub(super) fn emit_create_stats_stmt(e: &mut EventEmitter, n: &CreateStatsStmt) 
     // Statistics types (e.g., ndistinct, dependencies)
     if !n.stat_types.is_empty() {
         e.line(LineType::SoftOrSpace);
-        e.token(TokenKind::L_PAREN);
-        emit_comma_separated_list(e, &n.stat_types, |node, e| {
+        emit_parenthesized_list(e, &n.stat_types, |node, e| {
             if let Some(NodeEnum::String(s)) = &node.node {
                 e.token(TokenKind::IDENT(s.sval.clone()));
             }
         });
-        e.token(TokenKind::R_PAREN);
     }
 
     e.line(LineType::SoftOrSpace);

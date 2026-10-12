@@ -7,7 +7,7 @@ alter function my_schema.compute_totals(int, text)
   leakproof
   strict
   security definer
-  parallel SAFE
+  parallel safe
   cost 10
   rows 5
   set search_path to public, pg_temp

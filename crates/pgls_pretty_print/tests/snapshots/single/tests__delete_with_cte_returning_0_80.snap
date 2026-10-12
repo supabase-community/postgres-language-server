@@ -6,13 +6,7 @@ snapshot_kind: text
 with
 stale
 as (
-  select
-    id
-  from
-    sessions
-  where
-    last_seen <
-    NOW() - cast('30 days' as interval)
+  select id from sessions where last_seen < now() - cast('30 days' as interval)
 )
 delete from sessions
 using stale

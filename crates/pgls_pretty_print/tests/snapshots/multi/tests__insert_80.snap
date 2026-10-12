@@ -3,8 +3,8 @@ source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/insert.sql
 ---
 create table inserttest (
-  col1 int,
-  col2 int not null,
+  col1 int4,
+  col2 int4 not null,
   col3 text default 'testing'
 );
 
@@ -34,11 +34,7 @@ insert into inserttest
 values
   (10, 20, '40'),
   (-1, 2, default),
-  (
-    (select 2),
-    (select i from (values (3)) as foo (i)),
-    'values are fun!'
-  );
+  ((select 2), (select i from (values (3)) as foo (i)), 'values are fun!');
 
 select * from inserttest;
 
@@ -63,10 +59,7 @@ insert into large_tuple_test select 2, repeat('a', 1000);
 
 select
   pg_size_pretty(
-    pg_relation_size(
-      cast('large_tuple_test' as regclass),
-      'main'
-    )
+    pg_relation_size(cast('large_tuple_test' as regclass), 'main')
   );
 
 insert into large_tuple_test select 3, null;
@@ -124,8 +117,7 @@ create table inserttest2 (
 create rule irule1
 as on insert to inserttest2
 do
-  insert into inserttest (f3."if2"[1], f3."if2"[2])
-  values (new.f1, new.f2);;
+  insert into inserttest (f3."if2"[1], f3."if2"[2]) values (new.f1, new.f2);;
 
 create rule irule2
 as on insert to inserttest2
@@ -193,16 +185,10 @@ insert into inserttestb (f3, f4[1]."if2"[1], f4[1]."if2"[2])
 values (row(1, '{x}'), 'foo', 'bar');
 
 insert into inserttestb (f3, f4[1]."if2"[1], f4[1]."if2"[2])
-values
-  (row(1, '{x}'), 'foo', 'bar'),
-  (row(2, '{y}'), 'baz', 'quux');
+values (row(1, '{x}'), 'foo', 'bar'), (row(2, '{y}'), 'baz', 'quux');
 
 insert into inserttestb (f3, f4[1]."if2"[1], f4[1]."if2"[2])
-select
-  cast(row(1, '{x}')
-  as insert_test_domain),
-  'bear',
-  'beer';
+select cast(row(1, '{x}') as insert_test_domain), 'bear', 'beer';
 
 select * from inserttesta;
 
@@ -216,8 +202,7 @@ create table inserttest2 (
 create rule irule1
 as on insert to inserttest2
 do
-  insert into inserttestb (f3."if2"[1], f3."if2"[2])
-  values (new.f1, new.f2);;
+  insert into inserttestb (f3."if2"[1], f3."if2"[2]) values (new.f1, new.f2);;
 
 create rule irule2
 as on insert to inserttest2
@@ -238,12 +223,10 @@ drop domain insert_pos_ints;
 drop domain insert_test_domain;
 
 create domain insert_nnarray as int[]
-  check (value[1] is not null and
-  value[2] is not null);
+  check (value[1] is not null and value[2] is not null);
 
 create domain insert_test_domain as insert_test_type
-  check ((value).if1 is not null and
-  (value).if2 is not null);
+  check ((value).if1 is not null and (value).if2 is not null);
 
 create table inserttesta (f1 insert_nnarray);
 
@@ -309,7 +292,7 @@ create table list_parted (
   a text,
   b int
 )
-partition by LIST((lower(a)));
+partition by list((lower(a)));
 
 create table part_aa_bb partition of list_parted for values in ('aa', 'bb');
 
@@ -349,7 +332,7 @@ drop table part_default;
 create table part_xx_yy
 partition of list_parted
 for values in ('xx', 'yy')
-partition by LIST(a);
+partition by list(a);
 
 create table part_xx_yy_p1 partition of part_xx_yy for values in ('xx');
 
@@ -478,8 +461,8 @@ insert into list_parted (b) values (1);
 select
   cast(cast(tableoid as regclass) as text),
   a,
-  MIN(b) as min_b,
-  MAX(b) as max_b
+  min(b) as min_b,
+  max(b) as max_b
 from
   list_parted
 group by 1,
@@ -487,23 +470,23 @@ group by 1,
 order by 1;
 
 create table hash_parted (a int)
-partition by HASH(a part_test_int4_ops);
+partition by hash(a part_test_int4_ops);
 
 create table hpart0
 partition of hash_parted
-for values with (MODULUS 4, REMAINDER 0);
+for values with (modulus 4, remainder 0);
 
 create table hpart1
 partition of hash_parted
-for values with (MODULUS 4, REMAINDER 1);
+for values with (modulus 4, remainder 1);
 
 create table hpart2
 partition of hash_parted
-for values with (MODULUS 4, REMAINDER 2);
+for values with (modulus 4, remainder 2);
 
 create table hpart3
 partition of hash_parted
-for values with (MODULUS 4, REMAINDER 3);
+for values with (modulus 4, remainder 3);
 
 insert into hash_parted values (generate_series(1, 10));
 
@@ -526,7 +509,7 @@ drop table range_parted, list_parted;
 drop table hash_parted;
 
 create table list_parted (a int)
-partition by LIST(a);
+partition by list(a);
 
 create table part_default partition of list_parted default;
 
@@ -577,8 +560,7 @@ where
   (
     attrelid = cast('mlparted' as regclass) or
     attrelid = cast('mlparted1' as regclass) or
-    attrelid =
-    cast('mlparted11' as regclass)
+    attrelid = cast('mlparted11' as regclass)
   )
 order by cast(cast(attrelid as regclass) as text);
 
@@ -588,8 +570,7 @@ alter table mlparted1
 
 alter table mlparted
   attach partition
-  mlparted1
-  for values from (1, 2) to (1, 10);
+  mlparted1 for values from (1, 2) to (1, 10);
 
 insert into mlparted values (1, 2);
 
@@ -600,17 +581,17 @@ insert into mlparted (a, b) values (1, 5);
 truncate mlparted;
 
 alter table mlparted
-  add constraint "check_b" check (b = 3);
+  add constraint check_b check (b = 3);
 
 create function mlparted11_trig_fn()
 returns trigger
 language plpgsql
-as $function$
+as $$
 begin
   NEW.b := 4;
   return NEW;
 end;
-$function$;
+$$;
 
 create trigger mlparted11_trig
 before insert
@@ -630,7 +611,7 @@ create table lparted_nonullpart (
   a int,
   b char(1)
 )
-partition by LIST(b);
+partition by list(b);
 
 create table lparted_nonullpart_a
 partition of lparted_nonullpart
@@ -652,8 +633,7 @@ create table mlparted2 (
 
 alter table mlparted
   attach partition
-  mlparted2
-  for values from (1, 10) to (1, 20);
+  mlparted2 for values from (1, 10) to (1, 20);
 
 create table mlparted3 partition of mlparted for values from (1, 20) to (1, 30);
 
@@ -667,28 +647,21 @@ alter table mlparted4
 
 alter table mlparted
   attach partition
-  mlparted4
-  for values from (1, 30) to (1, 40);
+  mlparted4 for values from (1, 30) to (1, 40);
 
 with
-ins (a,
-b,
-c)
+ins (a, b, c)
 as (
   insert into mlparted (b, a)
-  select
-    s.a,
-    1
-  from
-    generate_series(2, 39) as s (a)
+  select s.a, 1 from generate_series(2, 39) as s (a)
   returning cast(tableoid as regclass),
   *
 )
 select
   a,
   b,
-  MIN(c),
-  MAX(c)
+  min(c),
+  max(c)
 from
   ins
 group by a,
@@ -703,7 +676,7 @@ create table mlparted5 (
   a int not null,
   b int not null
 )
-partition by LIST(c);
+partition by list(c);
 
 create table mlparted5a (
   a int not null,
@@ -717,20 +690,17 @@ alter table mlparted5
 
 alter table mlparted
   attach partition
-  mlparted5
-  for values from (1, 40) to (1, 50);
+  mlparted5 for values from (1, 40) to (1, 50);
 
 alter table mlparted
-  add constraint "check_b" check (a = 1 and b < 45);
+  add constraint check_b check (a = 1 and b < 45);
 
 insert into mlparted values (1, 45, 'a');
 
 create function mlparted5abrtrig_func()
 returns trigger
 language plpgsql
-as $function$
-begin new.c = 'b'; return new; end;
-$function$;
+as $$ begin new.c = 'b'; return new; end; $$;
 
 create trigger mlparted5abrtrig
 before insert
@@ -788,12 +758,12 @@ partition by range(c);
 create table mlparted5_ab
 partition of mlparted5
 for values from ('a') to ('c')
-partition by LIST(c);
+partition by list(c);
 
 create table mlparted5_cd
 partition of mlparted5
 for values from ('c') to ('e')
-partition by LIST(c);
+partition by list(c);
 
 create table mlparted5_a partition of mlparted5_ab for values in ('a');
 
@@ -855,7 +825,7 @@ create table key_desc (
   a int,
   b int
 )
-partition by LIST((a + 0));
+partition by list((a + 0));
 
 create table key_desc_1
 partition of key_desc
@@ -864,9 +834,9 @@ partition by range(b);
 
 create user regress_insert_other_user;
 
-grant SELECT (a) on table key_desc_1 to regress_insert_other_user;
+grant select (a) on table key_desc_1 to regress_insert_other_user;
 
-grant INSERT on table key_desc to regress_insert_other_user;
+grant insert on table key_desc to regress_insert_other_user;
 
 set role to regress_insert_other_user;
 
@@ -874,7 +844,7 @@ insert into key_desc values (1, 1);
 
 reset role;
 
-grant SELECT (b) on table key_desc_1 to regress_insert_other_user;
+grant select (b) on table key_desc_1 to regress_insert_other_user;
 
 set role to regress_insert_other_user;
 
@@ -901,75 +871,39 @@ partition by range(a, (abs(b)), c);
 
 create table mcrparted0
 partition of mcrparted
-for values from (minvalue,
-0,
-0) to (1,
-maxvalue,
-maxvalue);
+for values from (minvalue, 0, 0) to (1, maxvalue, maxvalue);
 
 create table mcrparted2
 partition of mcrparted
-for values from (10,
-6,
-minvalue) to (10,
-maxvalue,
-minvalue);
+for values from (10, 6, minvalue) to (10, maxvalue, minvalue);
 
 create table mcrparted4
 partition of mcrparted
-for values from (21,
-minvalue,
-0) to (30,
-20,
-minvalue);
+for values from (21, minvalue, 0) to (30, 20, minvalue);
 
 create table mcrparted0
 partition of mcrparted
-for values from (minvalue,
-minvalue,
-minvalue) to (1,
-maxvalue,
-maxvalue);
+for values from (minvalue, minvalue, minvalue) to (1, maxvalue, maxvalue);
 
 create table mcrparted1
 partition of mcrparted
-for values from (2,
-1,
-minvalue) to (10,
-5,
-10);
+for values from (2, 1, minvalue) to (10, 5, 10);
 
 create table mcrparted2
 partition of mcrparted
-for values from (10,
-6,
-minvalue) to (10,
-maxvalue,
-maxvalue);
+for values from (10, 6, minvalue) to (10, maxvalue, maxvalue);
 
 create table mcrparted3
 partition of mcrparted
-for values from (11,
-1,
-1) to (20,
-10,
-10);
+for values from (11, 1, 1) to (20, 10, 10);
 
 create table mcrparted4
 partition of mcrparted
-for values from (21,
-minvalue,
-minvalue) to (30,
-20,
-maxvalue);
+for values from (21, minvalue, minvalue) to (30, 20, maxvalue);
 
 create table mcrparted5
 partition of mcrparted
-for values from (30,
-21,
-20) to (maxvalue,
-maxvalue,
-maxvalue);
+for values from (30, 21, 20) to (maxvalue, maxvalue, maxvalue);
 
 insert into mcrparted values (null, null, null);
 
@@ -1015,16 +949,14 @@ create table brtrigpartcon (
   a int,
   b text
 )
-partition by LIST(a);
+partition by list(a);
 
 create table brtrigpartcon1 partition of brtrigpartcon for values in (1);
 
 create or replace function brtrigpartcon1trigf()
 returns trigger
 language plpgsql
-as $function$
-begin new.a := 2; return new; end
-$function$;
+as $$begin new.a := 2; return new; end$$;
 
 create trigger brtrigpartcon1trig
 before insert
@@ -1044,21 +976,15 @@ create table inserttest3 (
 
 create role regress_coldesc_role;
 
-grant INSERT on table inserttest3 to regress_coldesc_role;
+grant insert on table inserttest3 to regress_coldesc_role;
 
-grant INSERT on table brtrigpartcon to regress_coldesc_role;
+grant insert on table brtrigpartcon to regress_coldesc_role;
 
-revoke SELECT on table brtrigpartcon from regress_coldesc_role;
+revoke select on table brtrigpartcon from regress_coldesc_role;
 
 set role to regress_coldesc_role;
 
-with
-result
-as (
-  insert into brtrigpartcon
-  values (1, 'hi there')
-  returning 1
-)
+with result as (insert into brtrigpartcon values (1, 'hi there') returning 1)
 insert into inserttest3 (f3)
 select * from result;
 
@@ -1080,7 +1006,7 @@ create table donothingbrtrig_test (
   a int,
   b text
 )
-partition by LIST(a);
+partition by list(a);
 
 create table donothingbrtrig_test1 (
   b text,
@@ -1099,9 +1025,7 @@ alter table donothingbrtrig_test2
 create or replace function donothingbrtrig_func()
 returns trigger
 language plpgsql
-as $function$
-begin raise notice 'b: %', new.b; return NULL; end
-$function$;
+as $$begin raise notice 'b: %', new.b; return NULL; end$$;
 
 create trigger donothingbrtrig1
 before insert
@@ -1141,51 +1065,35 @@ partition by range(a, b);
 
 create table mcrparted1_lt_b
 partition of mcrparted
-for values from (minvalue,
-minvalue) to ('b',
-minvalue);
+for values from (minvalue, minvalue) to ('b', minvalue);
 
 create table mcrparted2_b
 partition of mcrparted
-for values from ('b',
-minvalue) to ('c',
-minvalue);
+for values from ('b', minvalue) to ('c', minvalue);
 
 create table mcrparted3_c_to_common
 partition of mcrparted
-for values from ('c',
-minvalue) to ('common',
-minvalue);
+for values from ('c', minvalue) to ('common', minvalue);
 
 create table mcrparted4_common_lt_0
 partition of mcrparted
-for values from ('common',
-minvalue) to ('common',
-0);
+for values from ('common', minvalue) to ('common', 0);
 
 create table mcrparted5_common_0_to_10
 partition of mcrparted
-for values from ('common',
-0) to ('common',
-10);
+for values from ('common', 0) to ('common', 10);
 
 create table mcrparted6_common_ge_10
 partition of mcrparted
-for values from ('common',
-10) to ('common',
-maxvalue);
+for values from ('common', 10) to ('common', maxvalue);
 
 create table mcrparted7_gt_common_lt_d
 partition of mcrparted
-for values from ('common',
-maxvalue) to ('d',
-minvalue);
+for values from ('common', maxvalue) to ('d', minvalue);
 
 create table mcrparted8_ge_d
 partition of mcrparted
-for values from ('d',
-minvalue) to (maxvalue,
-maxvalue);
+for values from ('d', minvalue) to (maxvalue, maxvalue);
 
 insert into mcrparted
 values
@@ -1206,7 +1114,7 @@ select cast(tableoid as regclass), * from mcrparted order by a, b;
 drop table mcrparted;
 
 create table returningwrtest (a int)
-partition by LIST(a);
+partition by list(a);
 
 create table returningwrtest1 partition of returningwrtest for values in (1);
 

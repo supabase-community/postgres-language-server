@@ -18,20 +18,13 @@ create table prt1_p3 partition of prt1 for values from (500) to (600);
 create table prt1_p2 partition of prt1 for values from (250) to (500);
 
 insert into prt1
-select
-  i,
-  i % 25,
-  to_char(i, 'FM0000')
-from
-  generate_series(0, 599) as i
-where
-  i % 2 = 0;
+select i, i % 25, to_char(i, 'FM0000') from generate_series(0, 599) as i where i % 2 = 0;
 
-create index "iprt1_p1_a" on prt1_p1 using btree (a);
+create index iprt1_p1_a on prt1_p1 using btree (a);
 
-create index "iprt1_p2_a" on prt1_p2 using btree (a);
+create index iprt1_p2_a on prt1_p2 using btree (a);
 
-create index "iprt1_p3_a" on prt1_p3 using btree (a);
+create index iprt1_p3_a on prt1_p3 using btree (a);
 
 analyze prt1;
 
@@ -49,20 +42,13 @@ create table prt2_p2 partition of prt2 for values from (250) to (500);
 create table prt2_p3 partition of prt2 for values from (500) to (600);
 
 insert into prt2
-select
-  i % 25,
-  i,
-  to_char(i, 'FM0000')
-from
-  generate_series(0, 599) as i
-where
-  i % 3 = 0;
+select i % 25, i, to_char(i, 'FM0000') from generate_series(0, 599) as i where i % 3 = 0;
 
-create index "iprt2_p1_b" on prt2_p1 using btree (b);
+create index iprt2_p1_b on prt2_p1 using btree (b);
 
-create index "iprt2_p2_b" on prt2_p2 using btree (b);
+create index iprt2_p2_b on prt2_p2 using btree (b);
 
-create index "iprt2_p3_b" on prt2_p3 using btree (b);
+create index iprt2_p3_b on prt2_p3 using btree (b);
 
 analyze prt2;
 
@@ -119,35 +105,20 @@ order by t1.a,
   t2.b;
 
 select
-  COUNT(*)
+  count(*)
 from
-  prt1 as t1
-  left outer join
-    prt1 as t2
-  on t1.a = t2.a
-  left outer join
-    prt1 as t3
-  on t2.a = t3.a;
+  prt1 as t1 left outer join prt1 as t2 on t1.a = t2.a left outer join prt1 as t3 on t2.a = t3.a;
 
 select
-  COUNT(*)
+  count(*)
 from
-  prt1 as t1
-  left outer join
-    prt1 as t2
-  on t1.a = t2.a
-  left outer join
-    prt1 as t3
-  on t2.a = t3.a;
+  prt1 as t1 left outer join prt1 as t2 on t1.a = t2.a left outer join prt1 as t3 on t2.a = t3.a;
 
 select
   t1,
   t2
 from
-  prt1 as t1
-  left outer join
-    prt2 as t2
-  on t1.a = t2.b
+  prt1 as t1 left outer join prt2 as t2 on t1.a = t2.b
 where
   t1.b = 0
 order by t1.a,
@@ -157,10 +128,7 @@ select
   t1,
   t2
 from
-  prt1 as t1
-  left outer join
-    prt2 as t2
-  on t1.a = t2.b
+  prt1 as t1 left outer join prt2 as t2 on t1.a = t2.b
 where
   t1.b = 0
 order by t1.a,
@@ -172,10 +140,7 @@ select
   t2.b,
   t2.c
 from
-  prt1 as t1
-  right outer join
-    prt2 as t2
-  on t1.a = t2.b
+  prt1 as t1 right outer join prt2 as t2 on t1.a = t2.b
 where
   t2.a = 0
 order by t1.a,
@@ -187,10 +152,7 @@ select
   t2.b,
   t2.c
 from
-  prt1 as t1
-  right outer join
-    prt2 as t2
-  on t1.a = t2.b
+  prt1 as t1 right outer join prt2 as t2 on t1.a = t2.b
 where
   t2.a = 0
 order by t1.a,
@@ -202,15 +164,9 @@ select
   t2.b,
   t2.c
 from
-  (
-    select 50 as phv, * from prt1 where prt1.b = 0
-  )
-  as t1
+  (select 50 as phv, * from prt1 where prt1.b = 0) as t1
   full outer join
-    (
-      select 75 as phv, * from prt2 where prt2.a = 0
-    )
-    as t2
+    (select 75 as phv, * from prt2 where prt2.a = 0) as t2
   on t1.a = t2.b
 where
   t1.phv = t1.a or t2.phv = t2.b
@@ -223,15 +179,9 @@ select
   t2.b,
   t2.c
 from
-  (
-    select 50 as phv, * from prt1 where prt1.b = 0
-  )
-  as t1
+  (select 50 as phv, * from prt1 where prt1.b = 0) as t1
   full outer join
-    (
-      select 75 as phv, * from prt2 where prt2.a = 0
-    )
-    as t2
+    (select 75 as phv, * from prt2 where prt2.a = 0) as t2
   on t1.a = t2.b
 where
   t1.phv = t1.a or t2.phv = t2.b
@@ -247,10 +197,7 @@ from
   prt1 as t1,
   prt2 as t2
 where
-  t1.a = t2.b and
-  t1.a < 450 and
-  t2.b > 250 and
-  t1.b = 0
+  t1.a = t2.b and t1.a < 450 and t2.b > 250 and t1.b = 0
 order by t1.a,
   t2.b;
 
@@ -263,10 +210,7 @@ from
   prt1 as t1,
   prt2 as t2
 where
-  t1.a = t2.b and
-  t1.a < 450 and
-  t2.b > 250 and
-  t1.b = 0
+  t1.a = t2.b and t1.a < 450 and t2.b > 250 and t1.b = 0
 order by t1.a,
   t2.b;
 
@@ -335,11 +279,7 @@ select
 from
   prt1 as t1
 where
-  t1.a in
-  (
-    select t2.b from prt2 as t2 where t2.a = 0
-  ) and
-  t1.b = 0
+  t1.a in (select t2.b from prt2 as t2 where t2.a = 0) and t1.b = 0
 order by t1.a;
 
 select
@@ -347,38 +287,28 @@ select
 from
   prt1 as t1
 where
-  t1.a in
-  (
-    select t2.b from prt2 as t2 where t2.a = 0
-  ) and
-  t1.b = 0
+  t1.a in (select t2.b from prt2 as t2 where t2.a = 0) and t1.b = 0
 order by t1.a;
 
 select
-  SUM(t1.a),
-  AVG(t1.a),
-  SUM(t1.b),
-  AVG(t1.b)
+  sum(t1.a),
+  avg(t1.a),
+  sum(t1.b),
+  avg(t1.b)
 from
   prt1 as t1
 where
-  not exists
-  (
-    select 1 from prt2 as t2 where t1.a = t2.b
-  );
+  not exists (select 1 from prt2 as t2 where t1.a = t2.b);
 
 select
-  SUM(t1.a),
-  AVG(t1.a),
-  SUM(t1.b),
-  AVG(t1.b)
+  sum(t1.a),
+  avg(t1.a),
+  sum(t1.b),
+  avg(t1.b)
 from
   prt1 as t1
 where
-  not exists
-  (
-    select 1 from prt2 as t2 where t1.a = t2.b
-  );
+  not exists (select 1 from prt2 as t2 where t1.a = t2.b);
 
 select
   *
@@ -469,66 +399,34 @@ select
 from
   prt1 as t1
   inner join
-    lateral (
-      select
-        *
-      from
-        prt1 as t2
-        tablesample system (t1.a)
-        repeatable (t1.b)
-    )
-    as s
+    lateral (select * from prt1 as t2 tablesample system (t1.a) repeatable (t1.b)) as s
   on t1.a = s.a;
 
 select
-  COUNT(*)
+  count(*)
 from
-  prt1 as t1
-  left outer join
-    lateral (
-      select t1.b as t1b, t2.* from prt2 as t2
-    )
-    as s
-  on t1.a = s.b
+  prt1 as t1 left outer join lateral (select t1.b as t1b, t2.* from prt2 as t2) as s on t1.a = s.b
 where
   s.t1b = s.a;
 
 select
-  COUNT(*)
+  count(*)
 from
-  prt1 as t1
-  left outer join
-    lateral (
-      select t1.b as t1b, t2.* from prt2 as t2
-    )
-    as s
-  on t1.a = s.b
+  prt1 as t1 left outer join lateral (select t1.b as t1b, t2.* from prt2 as t2) as s on t1.a = s.b
 where
   s.t1b = s.a;
 
 select
-  COUNT(*)
+  count(*)
 from
-  prt1 as t1
-  left outer join
-    lateral (
-      select t1.b as t1b, t2.* from prt2 as t2
-    )
-    as s
-  on t1.a = s.b
+  prt1 as t1 left outer join lateral (select t1.b as t1b, t2.* from prt2 as t2) as s on t1.a = s.b
 where
   s.t1b = s.b;
 
 select
-  COUNT(*)
+  count(*)
 from
-  prt1 as t1
-  left outer join
-    lateral (
-      select t1.b as t1b, t2.* from prt2 as t2
-    )
-    as s
-  on t1.a = s.b
+  prt1 as t1 left outer join lateral (select t1.b as t1b, t2.* from prt2 as t2) as s on t1.a = s.b
 where
   s.t1b = s.b;
 
@@ -540,12 +438,7 @@ select
   a,
   b
 from
-  prt1
-  full outer join
-    prt2 as p2 (b, a, c)
-  using (
-    "a",
-    "b")
+  prt1 full outer join prt2 as p2 (b, a, c) using ( a, b)
 where
   a between 490 and 510
 group by 1,
@@ -557,12 +450,7 @@ select
   a,
   b
 from
-  prt1
-  full outer join
-    prt2 as p2 (b, a, c)
-  using (
-    "a",
-    "b")
+  prt1 full outer join prt2 as p2 (b, a, c) using ( a, b)
 where
   a between 490 and 510
 group by 1,
@@ -596,11 +484,11 @@ create table prt1_e_p3 partition of prt1_e for values from (500) to (600);
 
 insert into prt1_e select i, i, i % 25 from generate_series(0, 599, 2) as i;
 
-create index "iprt1_e_p1_ab2" on prt1_e_p1 using btree (((a + b) / 2));
+create index iprt1_e_p1_ab2 on prt1_e_p1 using btree (((a + b) / 2));
 
-create index "iprt1_e_p2_ab2" on prt1_e_p2 using btree (((a + b) / 2));
+create index iprt1_e_p2_ab2 on prt1_e_p2 using btree (((a + b) / 2));
 
-create index "iprt1_e_p3_ab2" on prt1_e_p3 using btree (((a + b) / 2));
+create index iprt1_e_p3_ab2 on prt1_e_p3 using btree (((a + b) / 2));
 
 analyze prt1_e;
 
@@ -659,9 +547,7 @@ from
   prt2 as t2,
   prt1_e as t3
 where
-  t1.a = t2.b and
-  t1.a = (t3.a + t3.b) / 2 and
-  t1.b = 0
+  t1.a = t2.b and t1.a = (t3.a + t3.b) / 2 and t1.b = 0
 order by t1.a,
   t2.b;
 
@@ -677,9 +563,7 @@ from
   prt2 as t2,
   prt1_e as t3
 where
-  t1.a = t2.b and
-  t1.a = (t3.a + t3.b) / 2 and
-  t1.b = 0
+  t1.a = t2.b and t1.a = (t3.a + t3.b) / 2 and t1.b = 0
 order by t1.a,
   t2.b;
 
@@ -691,10 +575,7 @@ select
   t3.a + t3.b,
   t3.c
 from
-  prt1 as t1
-  left outer join
-    prt2 as t2
-  on t1.a = t2.b
+  prt1 as t1 left outer join prt2 as t2 on t1.a = t2.b
   left outer join
     prt1_e as t3
   on t1.a = (t3.a + t3.b) / 2
@@ -712,10 +593,7 @@ select
   t3.a + t3.b,
   t3.c
 from
-  prt1 as t1
-  left outer join
-    prt2 as t2
-  on t1.a = t2.b
+  prt1 as t1 left outer join prt2 as t2 on t1.a = t2.b
   left outer join
     prt1_e as t3
   on t1.a = (t3.a + t3.b) / 2
@@ -733,10 +611,7 @@ select
   t3.a + t3.b,
   t3.c
 from
-  prt1 as t1
-  left outer join
-    prt2 as t2
-  on t1.a = t2.b
+  prt1 as t1 left outer join prt2 as t2 on t1.a = t2.b
   right outer join
     prt1_e as t3
   on t1.a = (t3.a + t3.b) / 2
@@ -754,10 +629,7 @@ select
   t3.a + t3.b,
   t3.c
 from
-  prt1 as t1
-  left outer join
-    prt2 as t2
-  on t1.a = t2.b
+  prt1 as t1 left outer join prt2 as t2 on t1.a = t2.b
   right outer join
     prt1_e as t3
   on t1.a = (t3.a + t3.b) / 2
@@ -768,80 +640,60 @@ order by t1.a,
   t3.a + t3.b;
 
 select
-  COUNT(*)
+  count(*)
 from
-  prt1
-  full outer join
-    prt2 as p2 (b, a, c)
-  using (
-    "a",
-    "b")
+  prt1 full outer join prt2 as p2 (b, a, c) using ( a, b)
   full outer join
     prt2 as p3 (b, a, c)
   using (
-    "a",
-    "b")
+    a,
+    b)
 where
   a between 490 and 510;
 
 select
-  COUNT(*)
+  count(*)
 from
-  prt1
-  full outer join
-    prt2 as p2 (b, a, c)
-  using (
-    "a",
-    "b")
+  prt1 full outer join prt2 as p2 (b, a, c) using ( a, b)
   full outer join
     prt2 as p3 (b, a, c)
   using (
-    "a",
-    "b")
+    a,
+    b)
 where
   a between 490 and 510;
 
 select
-  COUNT(*)
+  count(*)
 from
-  prt1
-  full outer join
-    prt2 as p2 (b, a, c)
-  using (
-    "a",
-    "b")
+  prt1 full outer join prt2 as p2 (b, a, c) using ( a, b)
   full outer join
     prt2 as p3 (b, a, c)
   using (
-    "a",
-    "b")
+    a,
+    b)
   full outer join
     prt1 as p4 (a, b, c)
   using (
-    "a",
-    "b")
+    a,
+    b)
 where
   a between 490 and 510;
 
 select
-  COUNT(*)
+  count(*)
 from
-  prt1
-  full outer join
-    prt2 as p2 (b, a, c)
-  using (
-    "a",
-    "b")
+  prt1 full outer join prt2 as p2 (b, a, c) using ( a, b)
   full outer join
     prt2 as p3 (b, a, c)
   using (
-    "a",
-    "b")
+    a,
+    b)
   full outer join
     prt1 as p4 (a, b, c)
   using (
-    "a",
-    "b")
+    a,
+    b)
 where
   a between 490 and 510;
 
@@ -853,26 +705,15 @@ select
   t3.a + t3.b,
   t3.phv
 from
-  (
-    select 50 as phv, * from prt1 where prt1.b = 0
-  )
-  as t1
+  (select 50 as phv, * from prt1 where prt1.b = 0) as t1
   full outer join
-    (
-      select 75 as phv, * from prt2 where prt2.a = 0
-    )
-    as t2
+    (select 75 as phv, * from prt2 where prt2.a = 0) as t2
   on t1.a = t2.b
   full outer join
-    (
-      select 50 as phv, * from prt1_e where prt1_e.c = 0
-    )
-    as t3
+    (select 50 as phv, * from prt1_e where prt1_e.c = 0) as t3
   on t1.a = (t3.a + t3.b) / 2
 where
-  t1.a = t1.phv or
-  t2.b = t2.phv or
-  (t3.a + t3.b) / 2 = t3.phv
+  t1.a = t1.phv or t2.b = t2.phv or (t3.a + t3.b) / 2 = t3.phv
 order by t1.a,
   t2.b,
   t3.a + t3.b;
@@ -885,26 +726,15 @@ select
   t3.a + t3.b,
   t3.phv
 from
-  (
-    select 50 as phv, * from prt1 where prt1.b = 0
-  )
-  as t1
+  (select 50 as phv, * from prt1 where prt1.b = 0) as t1
   full outer join
-    (
-      select 75 as phv, * from prt2 where prt2.a = 0
-    )
-    as t2
+    (select 75 as phv, * from prt2 where prt2.a = 0) as t2
   on t1.a = t2.b
   full outer join
-    (
-      select 50 as phv, * from prt1_e where prt1_e.c = 0
-    )
-    as t3
+    (select 50 as phv, * from prt1_e where prt1_e.c = 0) as t3
   on t1.a = (t3.a + t3.b) / 2
 where
-  t1.a = t1.phv or
-  t2.b = t2.phv or
-  (t3.a + t3.b) / 2 = t3.phv
+  t1.a = t1.phv or t2.b = t2.phv or (t3.a + t3.b) / 2 = t3.phv
 order by t1.a,
   t2.b,
   t3.a + t3.b;
@@ -916,13 +746,7 @@ from
 where
   t1.a in
   (
-    select
-      t1.b
-    from
-      prt2 as t1,
-      prt1_e as t2
-    where
-      t1.a = 0 and t1.b = (t2.a + t2.b) / 2
+    select t1.b from prt2 as t1, prt1_e as t2 where t1.a = 0 and t1.b = (t2.a + t2.b) / 2
   ) and
   t1.b = 0
 order by t1.a;
@@ -934,13 +758,7 @@ from
 where
   t1.a in
   (
-    select
-      t1.b
-    from
-      prt2 as t1,
-      prt1_e as t2
-    where
-      t1.a = 0 and t1.b = (t2.a + t2.b) / 2
+    select t1.b from prt2 as t1, prt1_e as t2 where t1.a = 0 and t1.b = (t2.a + t2.b) / 2
   ) and
   t1.b = 0
 order by t1.a;
@@ -957,15 +775,7 @@ where
     from
       prt2 as t1
     where
-      t1.b in
-      (
-        select
-          (t1.a + t1.b) / 2
-        from
-          prt1_e as t1
-        where
-          t1.c = 0
-      )
+      t1.b in (select (t1.a + t1.b) / 2 from prt1_e as t1 where t1.c = 0)
   ) and
   t1.b = 0
 order by t1.a;
@@ -982,15 +792,7 @@ where
     from
       prt2 as t1
     where
-      t1.b in
-      (
-        select
-          (t1.a + t1.b) / 2
-        from
-          prt1_e as t1
-        where
-          t1.c = 0
-      )
+      t1.b in (select (t1.a + t1.b) / 2 from prt1_e as t1 where t1.c = 0)
   ) and
   t1.b = 0
 order by t1.a;
@@ -1011,15 +813,7 @@ where
     from
       prt2 as t1
     where
-      t1.b in
-      (
-        select
-          (t1.a + t1.b) / 2
-        from
-          prt1_e as t1
-        where
-          t1.c = 0
-      )
+      t1.b in (select (t1.a + t1.b) / 2 from prt1_e as t1 where t1.c = 0)
   ) and
   t1.b = 0
 order by t1.a;
@@ -1036,15 +830,7 @@ where
     from
       prt2 as t1
     where
-      t1.b in
-      (
-        select
-          (t1.a + t1.b) / 2
-        from
-          prt1_e as t1
-        where
-          t1.c = 0
-      )
+      t1.b in (select (t1.a + t1.b) / 2 from prt1_e as t1 where t1.c = 0)
   ) and
   t1.b = 0
 order by t1.a;
@@ -1057,10 +843,7 @@ select
   t3.a + t3.b,
   t3.c
 from
-  prt1 as t1
-  left outer join
-    prt2 as t2
-  on t1.a = t2.b
+  prt1 as t1 left outer join prt2 as t2 on t1.a = t2.b
   right outer join
     prt1_e as t3
   on t1.a = (t3.a + t3.b) / 2
@@ -1078,10 +861,7 @@ select
   t3.a + t3.b,
   t3.c
 from
-  prt1 as t1
-  left outer join
-    prt2 as t2
-  on t1.a = t2.b
+  prt1 as t1 left outer join prt2 as t2 on t1.a = t2.b
   right outer join
     prt1_e as t3
   on t1.a = (t3.a + t3.b) / 2
@@ -1124,8 +904,7 @@ from
   prt1 as t1,
   prt2 as t2
 where
-  cast(t1 as text) = cast(t2 as text) and
-  t1.a = t2.b
+  cast(t1 as text) = cast(t2 as text) and t1.a = t2.b
 order by t1.a;
 
 select
@@ -1135,8 +914,7 @@ from
   prt1 as t1,
   prt2 as t2
 where
-  cast(t1 as text) = cast(t2 as text) and
-  t1.a = t2.b
+  cast(t1 as text) = cast(t2 as text) and t1.a = t2.b
 order by t1.a;
 
 reset enable_hashjoin;
@@ -1186,8 +964,7 @@ from
   (select * from prt1_m where prt1_m.c = 0) as t1
   full outer join
     (select * from prt2_m where prt2_m.c = 0) as t2
-  on t1.a = (t2.b + t2.a) / 2 and
-    t2.b = (t1.a + t1.b) / 2
+  on t1.a = (t2.b + t2.a) / 2 and t2.b = (t1.a + t1.b) / 2
 order by t1.a,
   t2.b;
 
@@ -1200,8 +977,7 @@ from
   (select * from prt1_m where prt1_m.c = 0) as t1
   full outer join
     (select * from prt2_m where prt2_m.c = 0) as t2
-  on t1.a = (t2.b + t2.a) / 2 and
-    t2.b = (t1.a + t1.b) / 2
+  on t1.a = (t2.b + t2.a) / 2 and t2.b = (t1.a + t1.b) / 2
 order by t1.a,
   t2.b;
 
@@ -1210,7 +986,7 @@ create table plt1 (
   b int,
   c text
 )
-partition by LIST(c);
+partition by list(c);
 
 create table plt1_p1 partition of plt1 for values in ('0000', '0003', '0004', '0010');
 
@@ -1227,7 +1003,7 @@ create table plt2 (
   b int,
   c text
 )
-partition by LIST(c);
+partition by list(c);
 
 create table plt2_p1 partition of plt2 for values in ('0000', '0003', '0004', '0010');
 
@@ -1244,7 +1020,7 @@ create table plt1_e (
   b int,
   c text
 )
-partition by LIST((ltrim(c, 'A')));
+partition by list((ltrim(c, 'A')));
 
 create table plt1_e_p1 partition of plt1_e for values in ('0000', '0003', '0004', '0010');
 
@@ -1253,19 +1029,14 @@ create table plt1_e_p2 partition of plt1_e for values in ('0001', '0005', '0002'
 create table plt1_e_p3 partition of plt1_e for values in ('0006', '0007', '0008', '0011');
 
 insert into plt1_e
-select
-  i,
-  i,
-  'A' || to_char(i / 50, 'FM0000')
-from
-  generate_series(0, 599, 2) as i;
+select i, i, 'A' || to_char(i / 50, 'FM0000') from generate_series(0, 599, 2) as i;
 
 analyze plt1_e;
 
 select
-  AVG(t1.a),
-  AVG(t2.b),
-  AVG(t3.a + t3.b),
+  avg(t1.a),
+  avg(t2.b),
+  avg(t3.a + t3.b),
   t1.c,
   t2.c,
   t3.c
@@ -1274,9 +1045,7 @@ from
   plt2 as t2,
   plt1_e as t3
 where
-  t1.b = t2.b and
-  t1.c = t2.c and
-  ltrim(t3.c, 'A') = t1.c
+  t1.b = t2.b and t1.c = t2.c and ltrim(t3.c, 'A') = t1.c
 group by t1.c,
   t2.c,
   t3.c
@@ -1285,9 +1054,9 @@ order by t1.c,
   t3.c;
 
 select
-  AVG(t1.a),
-  AVG(t2.b),
-  AVG(t3.a + t3.b),
+  avg(t1.a),
+  avg(t2.b),
+  avg(t3.a + t3.b),
   t1.c,
   t2.c,
   t3.c
@@ -1296,9 +1065,7 @@ from
   plt2 as t2,
   plt1_e as t3
 where
-  t1.b = t2.b and
-  t1.c = t2.c and
-  ltrim(t3.c, 'A') = t1.c
+  t1.b = t2.b and t1.c = t2.c and ltrim(t3.c, 'A') = t1.c
 group by t1.c,
   t2.c,
   t3.c
@@ -1323,10 +1090,7 @@ select
   t2.b,
   t2.c
 from
-  (select * from prt1 where a = 1 and a = 2) as t1
-  left outer join
-    prt2 as t2
-  on t1.a = t2.b;
+  (select * from prt1 where a = 1 and a = 2) as t1 left outer join prt2 as t2 on t1.a = t2.b;
 
 select
   t1.a,
@@ -1334,10 +1098,7 @@ select
   t2.b,
   t2.c
 from
-  (select * from prt1 where a = 1 and a = 2) as t1
-  right outer join
-    prt2 as t2
-  on t1.a = t2.b,
+  (select * from prt1 where a = 1 and a = 2) as t1 right outer join prt2 as t2 on t1.a = t2.b,
   prt1 as t3
 where
   t2.b = t3.a;
@@ -1348,10 +1109,7 @@ select
   t2.b,
   t2.c
 from
-  (select * from prt1 where a = 1 and a = 2) as t1
-  full outer join
-    prt2 as t2
-  on t1.a = t2.b
+  (select * from prt1 where a = 1 and a = 2) as t1 full outer join prt2 as t2 on t1.a = t2.b
 where
   t2.a = 0
 order by t1.a,
@@ -1362,13 +1120,13 @@ create table pht1 (
   b int,
   c text
 )
-partition by HASH(c);
+partition by hash(c);
 
-create table pht1_p1 partition of pht1 for values with (MODULUS 3, REMAINDER 0);
+create table pht1_p1 partition of pht1 for values with (modulus 3, remainder 0);
 
-create table pht1_p2 partition of pht1 for values with (MODULUS 3, REMAINDER 1);
+create table pht1_p2 partition of pht1 for values with (modulus 3, remainder 1);
 
-create table pht1_p3 partition of pht1 for values with (MODULUS 3, REMAINDER 2);
+create table pht1_p3 partition of pht1 for values with (modulus 3, remainder 2);
 
 insert into pht1 select i, i, to_char(i / 50, 'FM0000') from generate_series(0, 599, 2) as i;
 
@@ -1379,13 +1137,13 @@ create table pht2 (
   b int,
   c text
 )
-partition by HASH(c);
+partition by hash(c);
 
-create table pht2_p1 partition of pht2 for values with (MODULUS 3, REMAINDER 0);
+create table pht2_p1 partition of pht2 for values with (modulus 3, remainder 0);
 
-create table pht2_p2 partition of pht2 for values with (MODULUS 3, REMAINDER 1);
+create table pht2_p2 partition of pht2 for values with (modulus 3, remainder 1);
 
-create table pht2_p3 partition of pht2 for values with (MODULUS 3, REMAINDER 2);
+create table pht2_p3 partition of pht2 for values with (modulus 3, remainder 2);
 
 insert into pht2 select i, i, to_char(i / 50, 'FM0000') from generate_series(0, 599, 3) as i;
 
@@ -1396,28 +1154,23 @@ create table pht1_e (
   b int,
   c text
 )
-partition by HASH((ltrim(c, 'A')));
+partition by hash((ltrim(c, 'A')));
 
-create table pht1_e_p1 partition of pht1_e for values with (MODULUS 3, REMAINDER 0);
+create table pht1_e_p1 partition of pht1_e for values with (modulus 3, remainder 0);
 
-create table pht1_e_p2 partition of pht1_e for values with (MODULUS 3, REMAINDER 1);
+create table pht1_e_p2 partition of pht1_e for values with (modulus 3, remainder 1);
 
-create table pht1_e_p3 partition of pht1_e for values with (MODULUS 3, REMAINDER 2);
+create table pht1_e_p3 partition of pht1_e for values with (modulus 3, remainder 2);
 
 insert into pht1_e
-select
-  i,
-  i,
-  'A' || to_char(i / 50, 'FM0000')
-from
-  generate_series(0, 299, 2) as i;
+select i, i, 'A' || to_char(i / 50, 'FM0000') from generate_series(0, 299, 2) as i;
 
 analyze pht1_e;
 
 select
-  AVG(t1.a),
-  AVG(t2.b),
-  AVG(t3.a + t3.b),
+  avg(t1.a),
+  avg(t2.b),
+  avg(t3.a + t3.b),
   t1.c,
   t2.c,
   t3.c
@@ -1426,9 +1179,7 @@ from
   pht2 as t2,
   pht1_e as t3
 where
-  t1.b = t2.b and
-  t1.c = t2.c and
-  ltrim(t3.c, 'A') = t1.c
+  t1.b = t2.b and t1.c = t2.c and ltrim(t3.c, 'A') = t1.c
 group by t1.c,
   t2.c,
   t3.c
@@ -1437,9 +1188,9 @@ order by t1.c,
   t3.c;
 
 select
-  AVG(t1.a),
-  AVG(t2.b),
-  AVG(t3.a + t3.b),
+  avg(t1.a),
+  avg(t2.b),
+  avg(t3.a + t3.b),
   t1.c,
   t2.c,
   t3.c
@@ -1448,9 +1199,7 @@ from
   pht2 as t2,
   pht1_e as t3
 where
-  t1.b = t2.b and
-  t1.c = t2.c and
-  ltrim(t3.c, 'A') = t1.c
+  t1.b = t2.b and t1.c = t2.c and ltrim(t3.c, 'A') = t1.c
 group by t1.c,
   t2.c,
   t3.c
@@ -1512,15 +1261,12 @@ alter table plt2
 analyze plt2;
 
 select
-  AVG(t1.a),
-  AVG(t2.b),
+  avg(t1.a),
+  avg(t2.b),
   t1.c,
   t2.c
 from
-  plt1 as t1
-  right outer join
-    plt2 as t2
-  on t1.c = t2.c
+  plt1 as t1 right outer join plt2 as t2 on t1.c = t2.c
 where
   t1.a % 25 = 0
 group by t1.c,
@@ -1537,7 +1283,7 @@ partition by range(a);
 
 create table prt1_l_p1 partition of prt1_l for values from (0) to (250);
 
-create table prt1_l_p2 partition of prt1_l for values from (250) to (500) partition by LIST(c);
+create table prt1_l_p2 partition of prt1_l for values from (250) to (500) partition by list(c);
 
 create table prt1_l_p2_p1 partition of prt1_l_p2 for values in ('0000', '0001');
 
@@ -1562,7 +1308,7 @@ partition by range(b);
 
 create table prt2_l_p1 partition of prt2_l for values from (0) to (250);
 
-create table prt2_l_p2 partition of prt2_l for values from (250) to (500) partition by LIST(c);
+create table prt2_l_p2 partition of prt2_l for values from (250) to (500) partition by list(c);
 
 create table prt2_l_p2_p1 partition of prt2_l_p2 for values in ('0000', '0001');
 
@@ -1636,10 +1382,7 @@ select
   t2.b,
   t2.c
 from
-  prt1_l as t1
-  left outer join
-    prt2_l as t2
-  on t1.a = t2.b and t1.c = t2.c
+  prt1_l as t1 left outer join prt2_l as t2 on t1.a = t2.b and t1.c = t2.c
 where
   t1.b = 0
 order by t1.a,
@@ -1651,10 +1394,7 @@ select
   t2.b,
   t2.c
 from
-  prt1_l as t1
-  left outer join
-    prt2_l as t2
-  on t1.a = t2.b and t1.c = t2.c
+  prt1_l as t1 left outer join prt2_l as t2 on t1.a = t2.b and t1.c = t2.c
 where
   t1.b = 0
 order by t1.a,
@@ -1666,10 +1406,7 @@ select
   t2.b,
   t2.c
 from
-  prt1_l as t1
-  right outer join
-    prt2_l as t2
-  on t1.a = t2.b and t1.c = t2.c
+  prt1_l as t1 right outer join prt2_l as t2 on t1.a = t2.b and t1.c = t2.c
 where
   t2.a = 0
 order by t1.a,
@@ -1681,10 +1418,7 @@ select
   t2.b,
   t2.c
 from
-  prt1_l as t1
-  right outer join
-    prt2_l as t2
-  on t1.a = t2.b and t1.c = t2.c
+  prt1_l as t1 right outer join prt2_l as t2 on t1.a = t2.b and t1.c = t2.c
 where
   t2.a = 0
 order by t1.a,
@@ -1729,10 +1463,7 @@ from
         t3.b as t3b,
         least(t1.a, t2.a, t3.b)
       from
-        prt1_l as t2
-        inner join
-          prt2_l as t3
-        on t2.a = t3.b and t2.c = t3.c
+        prt1_l as t2 inner join prt2_l as t3 on t2.a = t3.b and t2.c = t3.c
     )
     as ss
   on t1.a = ss.t2a and t1.c = ss.t2c
@@ -1753,10 +1484,7 @@ from
         t3.b as t3b,
         least(t1.a, t2.a, t3.b)
       from
-        prt1_l as t2
-        inner join
-          prt2_l as t3
-        on t2.a = t3.b and t2.c = t3.c
+        prt1_l as t2 inner join prt2_l as t3 on t2.a = t3.b and t2.c = t3.c
     )
     as ss
   on t1.a = ss.t2a and t1.c = ss.t2c
@@ -1769,39 +1497,25 @@ select
 from
   prt1_l as t1
   inner join
-    lateral (
-      select
-        *
-      from
-        prt1_l as t2
-        tablesample system (t1.a)
-        repeatable (t1.b)
-    )
-    as s
+    lateral (select * from prt1_l as t2 tablesample system (t1.a) repeatable (t1.b)) as s
   on t1.a = s.a and t1.b = s.b and t1.c = s.c;
 
 select
-  COUNT(*)
+  count(*)
 from
   prt1_l as t1
   left outer join
-    lateral (
-      select t1.b as t1b, t2.* from prt2_l as t2
-    )
-    as s
+    lateral (select t1.b as t1b, t2.* from prt2_l as t2) as s
   on t1.a = s.b and t1.b = s.a and t1.c = s.c
 where
   s.t1b = s.a;
 
 select
-  COUNT(*)
+  count(*)
 from
   prt1_l as t1
   left outer join
-    lateral (
-      select t1.b as t1b, t2.* from prt2_l as t2
-    )
-    as s
+    lateral (select t1.b as t1b, t2.* from prt2_l as t2) as s
   on t1.a = s.b and t1.b = s.a and t1.c = s.c
 where
   s.t1b = s.a;
@@ -1825,10 +1539,7 @@ where
       1
     from
       int4_tbl,
-      lateral (
-        select int4_tbl.f1 from int8_tbl limit 2
-      )
-      as ss
+      lateral (select int4_tbl.f1 from int8_tbl limit 2) as ss
     where
       prt1_l.c is null
   );
@@ -1853,25 +1564,15 @@ create table prt2_n (
   b int,
   c text
 )
-partition by LIST(c);
+partition by list(c);
 
 create table prt2_n_p1
 partition of prt2_n
-for values in ('0000',
-'0003',
-'0004',
-'0010',
-'0006',
-'0007');
+for values in ('0000', '0003', '0004', '0010', '0006', '0007');
 
 create table prt2_n_p2
 partition of prt2_n
-for values in ('0001',
-'0005',
-'0002',
-'0009',
-'0008',
-'0011');
+for values in ('0001', '0005', '0002', '0009', '0008', '0011');
 
 insert into prt2_n select i, i, to_char(i / 50, 'FM0000') from generate_series(0, 599, 2) as i;
 
@@ -1882,7 +1583,7 @@ create table prt3_n (
   b int,
   c text
 )
-partition by LIST(c);
+partition by list(c);
 
 create table prt3_n_p1 partition of prt3_n for values in ('0000', '0004', '0006', '0007');
 
@@ -1941,13 +1642,7 @@ select
   t2.b,
   t2.c
 from
-  prt1_n as t1
-  inner join
-    prt2_n as t2
-  on t1.c = t2.c
-  inner join
-    plt1 as t3
-  on t1.c = t3.c;
+  prt1_n as t1 inner join prt2_n as t2 on t1.c = t2.c inner join plt1 as t3 on t1.c = t3.c;
 
 select t1.a, t1.c, t2.b, t2.c from prt1_n as t1 full outer join prt1 as t2 on t1.c = t2.c;
 
@@ -1980,13 +1675,7 @@ create temporary table prtx2_3 partition of prtx2 for values from (21) to (31);
 insert into prtx1 select 1 + i % 30, i, i from generate_series(1, 1000) as i;
 
 insert into prtx2
-select
-  1 + i % 30,
-  i,
-  i
-from
-  generate_series(1, 500) as i,
-  generate_series(1, 10) as j;
+select 1 + i % 30, i, i from generate_series(1, 500) as i, generate_series(1, 10) as j;
 
 create index on prtx2 using btree (b);
 
@@ -2003,14 +1692,7 @@ from
 where
   not exists
   (
-    select
-      1
-    from
-      prtx2
-    where
-      prtx2.a = prtx1.a and
-      prtx2.b = prtx1.b and
-      prtx2.c = 123
+    select 1 from prtx2 where prtx2.a = prtx1.a and prtx2.b = prtx1.b and prtx2.c = 123
   ) and
   a < 20 and
   c = 120;
@@ -2022,14 +1704,7 @@ from
 where
   not exists
   (
-    select
-      1
-    from
-      prtx2
-    where
-      prtx2.a = prtx1.a and
-      prtx2.b = prtx1.b and
-      prtx2.c = 123
+    select 1 from prtx2 where prtx2.a = prtx1.a and prtx2.b = prtx1.b and prtx2.c = 123
   ) and
   a < 20 and
   c = 120;
@@ -2041,15 +1716,7 @@ from
 where
   not exists
   (
-    select
-      1
-    from
-      prtx2
-    where
-      prtx2.a = prtx1.a and
-      (
-        prtx2.b = prtx1.b + 1 or prtx2.c = 99
-      )
+    select 1 from prtx2 where prtx2.a = prtx1.a and (prtx2.b = prtx1.b + 1 or prtx2.c = 99)
   ) and
   a < 20 and
   c = 91;
@@ -2061,15 +1728,7 @@ from
 where
   not exists
   (
-    select
-      1
-    from
-      prtx2
-    where
-      prtx2.a = prtx1.a and
-      (
-        prtx2.b = prtx1.b + 1 or prtx2.c = 99
-      )
+    select 1 from prtx2 where prtx2.a = prtx1.a and (prtx2.b = prtx1.b + 1 or prtx2.c = 99)
   ) and
   a < 20 and
   c = 91;
@@ -2087,7 +1746,7 @@ create table prt1_adv_p2 partition of prt1_adv for values from (200) to (300);
 
 create table prt1_adv_p3 partition of prt1_adv for values from (300) to (400);
 
-create index "prt1_adv_a_idx" on prt1_adv using btree (a);
+create index prt1_adv_a_idx on prt1_adv using btree (a);
 
 insert into prt1_adv select i, i % 25, to_char(i, 'FM0000') from generate_series(100, 399) as i;
 
@@ -2106,7 +1765,7 @@ create table prt2_adv_p2 partition of prt2_adv for values from (200) to (300);
 
 create table prt2_adv_p3 partition of prt2_adv for values from (350) to (500);
 
-create index "prt2_adv_b_idx" on prt2_adv using btree (b);
+create index prt2_adv_b_idx on prt2_adv using btree (b);
 
 insert into prt2_adv_p1 select i % 25, i, to_char(i, 'FM0000') from generate_series(100, 149) as i;
 
@@ -2122,10 +1781,7 @@ select
   t2.b,
   t2.c
 from
-  prt1_adv as t1
-  inner join
-    prt2_adv as t2
-  on t1.a = t2.b
+  prt1_adv as t1 inner join prt2_adv as t2 on t1.a = t2.b
 where
   t1.b = 0
 order by t1.a,
@@ -2137,10 +1793,7 @@ select
   t2.b,
   t2.c
 from
-  prt1_adv as t1
-  inner join
-    prt2_adv as t2
-  on t1.a = t2.b
+  prt1_adv as t1 inner join prt2_adv as t2 on t1.a = t2.b
 where
   t1.b = 0
 order by t1.a,
@@ -2151,11 +1804,7 @@ select
 from
   prt1_adv as t1
 where
-  exists
-  (
-    select 1 from prt2_adv as t2 where t1.a = t2.b
-  ) and
-  t1.b = 0
+  exists (select 1 from prt2_adv as t2 where t1.a = t2.b) and t1.b = 0
 order by t1.a;
 
 select
@@ -2163,11 +1812,7 @@ select
 from
   prt1_adv as t1
 where
-  exists
-  (
-    select 1 from prt2_adv as t2 where t1.a = t2.b
-  ) and
-  t1.b = 0
+  exists (select 1 from prt2_adv as t2 where t1.a = t2.b) and t1.b = 0
 order by t1.a;
 
 select
@@ -2176,10 +1821,7 @@ select
   t2.b,
   t2.c
 from
-  prt1_adv as t1
-  left outer join
-    prt2_adv as t2
-  on t1.a = t2.b
+  prt1_adv as t1 left outer join prt2_adv as t2 on t1.a = t2.b
 where
   t1.b = 0
 order by t1.a,
@@ -2191,10 +1833,7 @@ select
   t2.b,
   t2.c
 from
-  prt1_adv as t1
-  left outer join
-    prt2_adv as t2
-  on t1.a = t2.b
+  prt1_adv as t1 left outer join prt2_adv as t2 on t1.a = t2.b
 where
   t1.b = 0
 order by t1.a,
@@ -2205,11 +1844,7 @@ select
 from
   prt1_adv as t1
 where
-  not exists
-  (
-    select 1 from prt2_adv as t2 where t1.a = t2.b
-  ) and
-  t1.b = 0
+  not exists (select 1 from prt2_adv as t2 where t1.a = t2.b) and t1.b = 0
 order by t1.a;
 
 select
@@ -2217,11 +1852,7 @@ select
 from
   prt1_adv as t1
 where
-  not exists
-  (
-    select 1 from prt2_adv as t2 where t1.a = t2.b
-  ) and
-  t1.b = 0
+  not exists (select 1 from prt2_adv as t2 where t1.a = t2.b) and t1.b = 0
 order by t1.a;
 
 select
@@ -2230,27 +1861,9 @@ select
   t2.b,
   t2.c
 from
-  (
-    select
-      175 as phv,
-      *
-    from
-      prt1_adv
-    where
-      prt1_adv.b = 0
-  )
-  as t1
+  (select 175 as phv, * from prt1_adv where prt1_adv.b = 0) as t1
   full outer join
-    (
-      select
-        425 as phv,
-        *
-      from
-        prt2_adv
-      where
-        prt2_adv.a = 0
-    )
-    as t2
+    (select 425 as phv, * from prt2_adv where prt2_adv.a = 0) as t2
   on t1.a = t2.b
 where
   t1.phv = t1.a or t2.phv = t2.b
@@ -2263,27 +1876,9 @@ select
   t2.b,
   t2.c
 from
-  (
-    select
-      175 as phv,
-      *
-    from
-      prt1_adv
-    where
-      prt1_adv.b = 0
-  )
-  as t1
+  (select 175 as phv, * from prt1_adv where prt1_adv.b = 0) as t1
   full outer join
-    (
-      select
-        425 as phv,
-        *
-      from
-        prt2_adv
-      where
-        prt2_adv.a = 0
-    )
-    as t2
+    (select 425 as phv, * from prt2_adv where prt2_adv.a = 0) as t2
   on t1.a = t2.b
 where
   t1.phv = t1.a or t2.phv = t2.b
@@ -2302,10 +1897,7 @@ select
   t2.b,
   t2.c
 from
-  prt1_adv as t1
-  inner join
-    prt2_adv as t2
-  on t1.a = t2.b
+  prt1_adv as t1 inner join prt2_adv as t2 on t1.a = t2.b
 where
   t1.b = 0
 order by t1.a,
@@ -2317,10 +1909,7 @@ select
   t2.b,
   t2.c
 from
-  prt1_adv as t1
-  inner join
-    prt2_adv as t2
-  on t1.a = t2.b
+  prt1_adv as t1 inner join prt2_adv as t2 on t1.a = t2.b
 where
   t1.b = 0
 order by t1.a,
@@ -2331,11 +1920,7 @@ select
 from
   prt1_adv as t1
 where
-  exists
-  (
-    select 1 from prt2_adv as t2 where t1.a = t2.b
-  ) and
-  t1.b = 0
+  exists (select 1 from prt2_adv as t2 where t1.a = t2.b) and t1.b = 0
 order by t1.a;
 
 select
@@ -2343,11 +1928,7 @@ select
 from
   prt1_adv as t1
 where
-  exists
-  (
-    select 1 from prt2_adv as t2 where t1.a = t2.b
-  ) and
-  t1.b = 0
+  exists (select 1 from prt2_adv as t2 where t1.a = t2.b) and t1.b = 0
 order by t1.a;
 
 select
@@ -2356,10 +1937,7 @@ select
   t2.b,
   t2.c
 from
-  prt1_adv as t1
-  left outer join
-    prt2_adv as t2
-  on t1.a = t2.b
+  prt1_adv as t1 left outer join prt2_adv as t2 on t1.a = t2.b
 where
   t1.b = 0
 order by t1.a,
@@ -2371,10 +1949,7 @@ select
   t2.b,
   t2.c
 from
-  prt1_adv as t1
-  left outer join
-    prt2_adv as t2
-  on t1.a = t2.b
+  prt1_adv as t1 left outer join prt2_adv as t2 on t1.a = t2.b
 where
   t1.b = 0
 order by t1.a,
@@ -2386,10 +1961,7 @@ select
   t2.a,
   t2.c
 from
-  prt2_adv as t1
-  left outer join
-    prt1_adv as t2
-  on t1.b = t2.a
+  prt2_adv as t1 left outer join prt1_adv as t2 on t1.b = t2.a
 where
   t1.a = 0
 order by t1.b,
@@ -2400,11 +1972,7 @@ select
 from
   prt1_adv as t1
 where
-  not exists
-  (
-    select 1 from prt2_adv as t2 where t1.a = t2.b
-  ) and
-  t1.b = 0
+  not exists (select 1 from prt2_adv as t2 where t1.a = t2.b) and t1.b = 0
 order by t1.a;
 
 select
@@ -2412,11 +1980,7 @@ select
 from
   prt1_adv as t1
 where
-  not exists
-  (
-    select 1 from prt2_adv as t2 where t1.a = t2.b
-  ) and
-  t1.b = 0
+  not exists (select 1 from prt2_adv as t2 where t1.a = t2.b) and t1.b = 0
 order by t1.a;
 
 select
@@ -2424,11 +1988,7 @@ select
 from
   prt2_adv as t1
 where
-  not exists
-  (
-    select 1 from prt1_adv as t2 where t1.b = t2.a
-  ) and
-  t1.a = 0
+  not exists (select 1 from prt1_adv as t2 where t1.b = t2.a) and t1.a = 0
 order by t1.b;
 
 select
@@ -2437,27 +1997,9 @@ select
   t2.b,
   t2.c
 from
-  (
-    select
-      175 as phv,
-      *
-    from
-      prt1_adv
-    where
-      prt1_adv.b = 0
-  )
-  as t1
+  (select 175 as phv, * from prt1_adv where prt1_adv.b = 0) as t1
   full outer join
-    (
-      select
-        425 as phv,
-        *
-      from
-        prt2_adv
-      where
-        prt2_adv.a = 0
-    )
-    as t2
+    (select 425 as phv, * from prt2_adv where prt2_adv.a = 0) as t2
   on t1.a = t2.b
 where
   t1.phv = t1.a or t2.phv = t2.b
@@ -2472,10 +2014,7 @@ select
   t3.a,
   t3.c
 from
-  prt2_adv as t1
-  left outer join
-    prt1_adv as t2
-  on t1.b = t2.a
+  prt2_adv as t1 left outer join prt1_adv as t2 on t1.b = t2.a
   inner join
     prt1_adv as t3
   on t1.b = t3.a
@@ -2493,10 +2032,7 @@ select
   t3.a,
   t3.c
 from
-  prt2_adv as t1
-  left outer join
-    prt1_adv as t2
-  on t1.b = t2.a
+  prt2_adv as t1 left outer join prt1_adv as t2 on t1.b = t2.a
   inner join
     prt1_adv as t3
   on t1.b = t3.a
@@ -2526,10 +2062,7 @@ select
   t2.b,
   t2.c
 from
-  prt1_adv as t1
-  inner join
-    prt2_adv as t2
-  on t1.a = t2.b
+  prt1_adv as t1 inner join prt2_adv as t2 on t1.a = t2.b
 where
   t1.b = 0
 order by t1.a,
@@ -2540,11 +2073,7 @@ select
 from
   prt1_adv as t1
 where
-  exists
-  (
-    select 1 from prt2_adv as t2 where t1.a = t2.b
-  ) and
-  t1.b = 0
+  exists (select 1 from prt2_adv as t2 where t1.a = t2.b) and t1.b = 0
 order by t1.a;
 
 select
@@ -2553,10 +2082,7 @@ select
   t2.b,
   t2.c
 from
-  prt1_adv as t1
-  left outer join
-    prt2_adv as t2
-  on t1.a = t2.b
+  prt1_adv as t1 left outer join prt2_adv as t2 on t1.a = t2.b
 where
   t1.b = 0
 order by t1.a,
@@ -2567,11 +2093,7 @@ select
 from
   prt1_adv as t1
 where
-  not exists
-  (
-    select 1 from prt2_adv as t2 where t1.a = t2.b
-  ) and
-  t1.b = 0
+  not exists (select 1 from prt2_adv as t2 where t1.a = t2.b) and t1.b = 0
 order by t1.a;
 
 select
@@ -2580,27 +2102,9 @@ select
   t2.b,
   t2.c
 from
-  (
-    select
-      175 as phv,
-      *
-    from
-      prt1_adv
-    where
-      prt1_adv.b = 0
-  )
-  as t1
+  (select 175 as phv, * from prt1_adv where prt1_adv.b = 0) as t1
   full outer join
-    (
-      select
-        425 as phv,
-        *
-      from
-        prt2_adv
-      where
-        prt2_adv.a = 0
-    )
-    as t2
+    (select 425 as phv, * from prt2_adv where prt2_adv.a = 0) as t2
   on t1.a = t2.b
 where
   t1.phv = t1.a or t2.phv = t2.b
@@ -2633,10 +2137,7 @@ select
   t2.b,
   t2.c
 from
-  prt1_adv as t1
-  inner join
-    prt2_adv as t2
-  on t1.a = t2.b
+  prt1_adv as t1 inner join prt2_adv as t2 on t1.a = t2.b
 where
   t1.b = 0
 order by t1.a,
@@ -2648,10 +2149,7 @@ select
   t2.b,
   t2.c
 from
-  prt1_adv as t1
-  inner join
-    prt2_adv as t2
-  on t1.a = t2.b
+  prt1_adv as t1 inner join prt2_adv as t2 on t1.a = t2.b
 where
   t1.b = 0
 order by t1.a,
@@ -2675,10 +2173,7 @@ select
   t2.b,
   t2.c
 from
-  prt1_adv as t1
-  inner join
-    prt2_adv as t2
-  on t1.a = t2.b
+  prt1_adv as t1 inner join prt2_adv as t2 on t1.a = t2.b
 where
   t1.b = 0
 order by t1.a,
@@ -2700,10 +2195,7 @@ select
   t2.b,
   t2.c
 from
-  prt1_adv as t1
-  inner join
-    prt2_adv as t2
-  on t1.a = t2.b
+  prt1_adv as t1 inner join prt2_adv as t2 on t1.a = t2.b
 where
   t1.b = 0
 order by t1.a,
@@ -2728,7 +2220,7 @@ create table prt3_adv_p1 partition of prt3_adv for values from (200) to (300);
 
 create table prt3_adv_p2 partition of prt3_adv for values from (300) to (400);
 
-create index "prt3_adv_a_idx" on prt3_adv using btree (a);
+create index prt3_adv_a_idx on prt3_adv using btree (a);
 
 insert into prt3_adv select i, i % 25, to_char(i, 'FM0000') from generate_series(200, 399) as i;
 
@@ -2742,10 +2234,7 @@ select
   t3.a,
   t3.c
 from
-  prt1_adv as t1
-  left outer join
-    prt2_adv as t2
-  on t1.a = t2.b
+  prt1_adv as t1 left outer join prt2_adv as t2 on t1.a = t2.b
   left outer join
     prt3_adv as t3
   on t1.a = t3.a
@@ -2763,10 +2252,7 @@ select
   t3.a,
   t3.c
 from
-  prt1_adv as t1
-  left outer join
-    prt2_adv as t2
-  on t1.a = t2.b
+  prt1_adv as t1 left outer join prt2_adv as t2 on t1.a = t2.b
   left outer join
     prt3_adv as t3
   on t1.a = t3.a
@@ -2795,7 +2281,7 @@ create table prt1_adv_p2 partition of prt1_adv for values from (200) to (300);
 
 create table prt1_adv_p3 partition of prt1_adv for values from (300) to (400);
 
-create index "prt1_adv_a_idx" on prt1_adv using btree (a);
+create index prt1_adv_a_idx on prt1_adv using btree (a);
 
 insert into prt1_adv select i, i % 25, to_char(i, 'FM0000') from generate_series(100, 399) as i;
 
@@ -2812,7 +2298,7 @@ create table prt2_adv_p1 partition of prt2_adv for values from (100) to (200);
 
 create table prt2_adv_p2 partition of prt2_adv for values from (200) to (400);
 
-create index "prt2_adv_b_idx" on prt2_adv using btree (b);
+create index prt2_adv_b_idx on prt2_adv using btree (b);
 
 insert into prt2_adv select i % 25, i, to_char(i, 'FM0000') from generate_series(100, 399) as i;
 
@@ -2824,10 +2310,7 @@ select
   t2.b,
   t2.c
 from
-  prt1_adv as t1
-  inner join
-    prt2_adv as t2
-  on t1.a = t2.b
+  prt1_adv as t1 inner join prt2_adv as t2 on t1.a = t2.b
 where
   t1.a < 300 and t1.b = 0
 order by t1.a,
@@ -2839,10 +2322,7 @@ select
   t2.b,
   t2.c
 from
-  prt1_adv as t1
-  inner join
-    prt2_adv as t2
-  on t1.a = t2.b
+  prt1_adv as t1 inner join prt2_adv as t2 on t1.a = t2.b
 where
   t1.a < 300 and t1.b = 0
 order by t1.a,
@@ -2864,10 +2344,7 @@ select
   t2.b,
   t2.c
 from
-  prt1_adv as t1
-  inner join
-    prt2_adv as t2
-  on t1.a = t2.b
+  prt1_adv as t1 inner join prt2_adv as t2 on t1.a = t2.b
 where
   t1.a >= 100 and t1.a < 300 and t1.b = 0
 order by t1.a,
@@ -2879,10 +2356,7 @@ select
   t2.b,
   t2.c
 from
-  prt1_adv as t1
-  inner join
-    prt2_adv as t2
-  on t1.a = t2.b
+  prt1_adv as t1 inner join prt2_adv as t2 on t1.a = t2.b
 where
   t1.a >= 100 and t1.a < 300 and t1.b = 0
 order by t1.a,
@@ -2897,7 +2371,7 @@ create table plt1_adv (
   b int,
   c text
 )
-partition by LIST(c);
+partition by list(c);
 
 create table plt1_adv_p1 partition of plt1_adv for values in ('0001', '0003');
 
@@ -2922,7 +2396,7 @@ create table plt2_adv (
   b int,
   c text
 )
-partition by LIST(c);
+partition by list(c);
 
 create table plt2_adv_p1 partition of plt2_adv for values in ('0002', '0003');
 
@@ -2948,10 +2422,7 @@ select
   t2.a,
   t2.c
 from
-  plt1_adv as t1
-  inner join
-    plt2_adv as t2
-  on t1.a = t2.a and t1.c = t2.c
+  plt1_adv as t1 inner join plt2_adv as t2 on t1.a = t2.a and t1.c = t2.c
 where
   t1.b < 10
 order by t1.a;
@@ -2962,10 +2433,7 @@ select
   t2.a,
   t2.c
 from
-  plt1_adv as t1
-  inner join
-    plt2_adv as t2
-  on t1.a = t2.a and t1.c = t2.c
+  plt1_adv as t1 inner join plt2_adv as t2 on t1.a = t2.a and t1.c = t2.c
 where
   t1.b < 10
 order by t1.a;
@@ -2975,16 +2443,7 @@ select
 from
   plt1_adv as t1
 where
-  exists
-  (
-    select
-      1
-    from
-      plt2_adv as t2
-    where
-      t1.a = t2.a and t1.c = t2.c
-  ) and
-  t1.b < 10
+  exists (select 1 from plt2_adv as t2 where t1.a = t2.a and t1.c = t2.c) and t1.b < 10
 order by t1.a;
 
 select
@@ -2992,16 +2451,7 @@ select
 from
   plt1_adv as t1
 where
-  exists
-  (
-    select
-      1
-    from
-      plt2_adv as t2
-    where
-      t1.a = t2.a and t1.c = t2.c
-  ) and
-  t1.b < 10
+  exists (select 1 from plt2_adv as t2 where t1.a = t2.a and t1.c = t2.c) and t1.b < 10
 order by t1.a;
 
 select
@@ -3010,10 +2460,7 @@ select
   t2.a,
   t2.c
 from
-  plt1_adv as t1
-  left outer join
-    plt2_adv as t2
-  on t1.a = t2.a and t1.c = t2.c
+  plt1_adv as t1 left outer join plt2_adv as t2 on t1.a = t2.a and t1.c = t2.c
 where
   t1.b < 10
 order by t1.a;
@@ -3024,10 +2471,7 @@ select
   t2.a,
   t2.c
 from
-  plt1_adv as t1
-  left outer join
-    plt2_adv as t2
-  on t1.a = t2.a and t1.c = t2.c
+  plt1_adv as t1 left outer join plt2_adv as t2 on t1.a = t2.a and t1.c = t2.c
 where
   t1.b < 10
 order by t1.a;
@@ -3037,16 +2481,7 @@ select
 from
   plt1_adv as t1
 where
-  not exists
-  (
-    select
-      1
-    from
-      plt2_adv as t2
-    where
-      t1.a = t2.a and t1.c = t2.c
-  ) and
-  t1.b < 10
+  not exists (select 1 from plt2_adv as t2 where t1.a = t2.a and t1.c = t2.c) and t1.b < 10
 order by t1.a;
 
 select
@@ -3054,16 +2489,7 @@ select
 from
   plt1_adv as t1
 where
-  not exists
-  (
-    select
-      1
-    from
-      plt2_adv as t2
-    where
-      t1.a = t2.a and t1.c = t2.c
-  ) and
-  t1.b < 10
+  not exists (select 1 from plt2_adv as t2 where t1.a = t2.a and t1.c = t2.c) and t1.b < 10
 order by t1.a;
 
 select
@@ -3072,10 +2498,7 @@ select
   t2.a,
   t2.c
 from
-  plt1_adv as t1
-  full outer join
-    plt2_adv as t2
-  on t1.a = t2.a and t1.c = t2.c
+  plt1_adv as t1 full outer join plt2_adv as t2 on t1.a = t2.a and t1.c = t2.c
 where
   coalesce(t1.b, 0) < 10 and coalesce(t2.b, 0) < 10
 order by t1.a,
@@ -3087,10 +2510,7 @@ select
   t2.a,
   t2.c
 from
-  plt1_adv as t1
-  full outer join
-    plt2_adv as t2
-  on t1.a = t2.a and t1.c = t2.c
+  plt1_adv as t1 full outer join plt2_adv as t2 on t1.a = t2.a and t1.c = t2.c
 where
   coalesce(t1.b, 0) < 10 and coalesce(t2.b, 0) < 10
 order by t1.a,
@@ -3108,10 +2528,7 @@ select
   t2.a,
   t2.c
 from
-  plt1_adv as t1
-  inner join
-    plt2_adv as t2
-  on t1.a = t2.a and t1.c = t2.c
+  plt1_adv as t1 inner join plt2_adv as t2 on t1.a = t2.a and t1.c = t2.c
 where
   t1.b < 10
 order by t1.a;
@@ -3122,10 +2539,7 @@ select
   t2.a,
   t2.c
 from
-  plt1_adv as t1
-  inner join
-    plt2_adv as t2
-  on t1.a = t2.a and t1.c = t2.c
+  plt1_adv as t1 inner join plt2_adv as t2 on t1.a = t2.a and t1.c = t2.c
 where
   t1.b < 10
 order by t1.a;
@@ -3135,16 +2549,7 @@ select
 from
   plt1_adv as t1
 where
-  exists
-  (
-    select
-      1
-    from
-      plt2_adv as t2
-    where
-      t1.a = t2.a and t1.c = t2.c
-  ) and
-  t1.b < 10
+  exists (select 1 from plt2_adv as t2 where t1.a = t2.a and t1.c = t2.c) and t1.b < 10
 order by t1.a;
 
 select
@@ -3152,16 +2557,7 @@ select
 from
   plt1_adv as t1
 where
-  exists
-  (
-    select
-      1
-    from
-      plt2_adv as t2
-    where
-      t1.a = t2.a and t1.c = t2.c
-  ) and
-  t1.b < 10
+  exists (select 1 from plt2_adv as t2 where t1.a = t2.a and t1.c = t2.c) and t1.b < 10
 order by t1.a;
 
 select
@@ -3170,10 +2566,7 @@ select
   t2.a,
   t2.c
 from
-  plt1_adv as t1
-  left outer join
-    plt2_adv as t2
-  on t1.a = t2.a and t1.c = t2.c
+  plt1_adv as t1 left outer join plt2_adv as t2 on t1.a = t2.a and t1.c = t2.c
 where
   t1.b < 10
 order by t1.a;
@@ -3184,10 +2577,7 @@ select
   t2.a,
   t2.c
 from
-  plt1_adv as t1
-  left outer join
-    plt2_adv as t2
-  on t1.a = t2.a and t1.c = t2.c
+  plt1_adv as t1 left outer join plt2_adv as t2 on t1.a = t2.a and t1.c = t2.c
 where
   t1.b < 10
 order by t1.a;
@@ -3198,10 +2588,7 @@ select
   t2.a,
   t2.c
 from
-  plt2_adv as t1
-  left outer join
-    plt1_adv as t2
-  on t1.a = t2.a and t1.c = t2.c
+  plt2_adv as t1 left outer join plt1_adv as t2 on t1.a = t2.a and t1.c = t2.c
 where
   t1.b < 10
 order by t1.a;
@@ -3211,16 +2598,7 @@ select
 from
   plt1_adv as t1
 where
-  not exists
-  (
-    select
-      1
-    from
-      plt2_adv as t2
-    where
-      t1.a = t2.a and t1.c = t2.c
-  ) and
-  t1.b < 10
+  not exists (select 1 from plt2_adv as t2 where t1.a = t2.a and t1.c = t2.c) and t1.b < 10
 order by t1.a;
 
 select
@@ -3228,16 +2606,7 @@ select
 from
   plt1_adv as t1
 where
-  not exists
-  (
-    select
-      1
-    from
-      plt2_adv as t2
-    where
-      t1.a = t2.a and t1.c = t2.c
-  ) and
-  t1.b < 10
+  not exists (select 1 from plt2_adv as t2 where t1.a = t2.a and t1.c = t2.c) and t1.b < 10
 order by t1.a;
 
 select
@@ -3245,16 +2614,7 @@ select
 from
   plt2_adv as t1
 where
-  not exists
-  (
-    select
-      1
-    from
-      plt1_adv as t2
-    where
-      t1.a = t2.a and t1.c = t2.c
-  ) and
-  t1.b < 10
+  not exists (select 1 from plt1_adv as t2 where t1.a = t2.a and t1.c = t2.c) and t1.b < 10
 order by t1.a;
 
 select
@@ -3263,10 +2623,7 @@ select
   t2.a,
   t2.c
 from
-  plt1_adv as t1
-  full outer join
-    plt2_adv as t2
-  on t1.a = t2.a and t1.c = t2.c
+  plt1_adv as t1 full outer join plt2_adv as t2 on t1.a = t2.a and t1.c = t2.c
 where
   coalesce(t1.b, 0) < 10 and coalesce(t2.b, 0) < 10
 order by t1.a,
@@ -3283,14 +2640,7 @@ create table plt2_adv_p2_1 partition of plt2_adv for values in ('0004');
 create table plt2_adv_p2_2 partition of plt2_adv for values in ('0006');
 
 insert into plt2_adv
-select
-  i,
-  i,
-  to_char(i % 10, 'FM0000')
-from
-  generate_series(1, 299) as i
-where
-  i % 10 in (4, 6);
+select i, i, to_char(i % 10, 'FM0000') from generate_series(1, 299) as i where i % 10 in (4, 6);
 
 analyze plt2_adv;
 
@@ -3300,10 +2650,7 @@ select
   t2.a,
   t2.c
 from
-  plt1_adv as t1
-  inner join
-    plt2_adv as t2
-  on t1.a = t2.a and t1.c = t2.c
+  plt1_adv as t1 inner join plt2_adv as t2 on t1.a = t2.a and t1.c = t2.c
 where
   t1.b < 10
 order by t1.a;
@@ -3313,16 +2660,7 @@ select
 from
   plt1_adv as t1
 where
-  exists
-  (
-    select
-      1
-    from
-      plt2_adv as t2
-    where
-      t1.a = t2.a and t1.c = t2.c
-  ) and
-  t1.b < 10
+  exists (select 1 from plt2_adv as t2 where t1.a = t2.a and t1.c = t2.c) and t1.b < 10
 order by t1.a;
 
 select
@@ -3331,10 +2669,7 @@ select
   t2.a,
   t2.c
 from
-  plt1_adv as t1
-  left outer join
-    plt2_adv as t2
-  on t1.a = t2.a and t1.c = t2.c
+  plt1_adv as t1 left outer join plt2_adv as t2 on t1.a = t2.a and t1.c = t2.c
 where
   t1.b < 10
 order by t1.a;
@@ -3344,16 +2679,7 @@ select
 from
   plt1_adv as t1
 where
-  not exists
-  (
-    select
-      1
-    from
-      plt2_adv as t2
-    where
-      t1.a = t2.a and t1.c = t2.c
-  ) and
-  t1.b < 10
+  not exists (select 1 from plt2_adv as t2 where t1.a = t2.a and t1.c = t2.c) and t1.b < 10
 order by t1.a;
 
 select
@@ -3362,10 +2688,7 @@ select
   t2.a,
   t2.c
 from
-  plt1_adv as t1
-  full outer join
-    plt2_adv as t2
-  on t1.a = t2.a and t1.c = t2.c
+  plt1_adv as t1 full outer join plt2_adv as t2 on t1.a = t2.a and t1.c = t2.c
 where
   coalesce(t1.b, 0) < 10 and coalesce(t2.b, 0) < 10
 order by t1.a,
@@ -3386,14 +2709,7 @@ alter table plt1_adv
 create table plt1_adv_p1_null partition of plt1_adv for values in (null, '0001', '0003');
 
 insert into plt1_adv
-select
-  i,
-  i,
-  to_char(i % 10, 'FM0000')
-from
-  generate_series(1, 299) as i
-where
-  i % 10 in (1, 3);
+select i, i, to_char(i % 10, 'FM0000') from generate_series(1, 299) as i where i % 10 in (1, 3);
 
 insert into plt1_adv values (-1, -1, null);
 
@@ -3406,14 +2722,7 @@ alter table plt2_adv
 create table plt2_adv_p3_null partition of plt2_adv for values in (null, '0007', '0009');
 
 insert into plt2_adv
-select
-  i,
-  i,
-  to_char(i % 10, 'FM0000')
-from
-  generate_series(1, 299) as i
-where
-  i % 10 in (7, 9);
+select i, i, to_char(i % 10, 'FM0000') from generate_series(1, 299) as i where i % 10 in (7, 9);
 
 insert into plt2_adv values (-1, -1, null);
 
@@ -3425,10 +2734,7 @@ select
   t2.a,
   t2.c
 from
-  plt1_adv as t1
-  inner join
-    plt2_adv as t2
-  on t1.a = t2.a and t1.c = t2.c
+  plt1_adv as t1 inner join plt2_adv as t2 on t1.a = t2.a and t1.c = t2.c
 where
   t1.b < 10
 order by t1.a;
@@ -3439,10 +2745,7 @@ select
   t2.a,
   t2.c
 from
-  plt1_adv as t1
-  inner join
-    plt2_adv as t2
-  on t1.a = t2.a and t1.c = t2.c
+  plt1_adv as t1 inner join plt2_adv as t2 on t1.a = t2.a and t1.c = t2.c
 where
   t1.b < 10
 order by t1.a;
@@ -3452,16 +2755,7 @@ select
 from
   plt1_adv as t1
 where
-  exists
-  (
-    select
-      1
-    from
-      plt2_adv as t2
-    where
-      t1.a = t2.a and t1.c = t2.c
-  ) and
-  t1.b < 10
+  exists (select 1 from plt2_adv as t2 where t1.a = t2.a and t1.c = t2.c) and t1.b < 10
 order by t1.a;
 
 select
@@ -3469,16 +2763,7 @@ select
 from
   plt1_adv as t1
 where
-  exists
-  (
-    select
-      1
-    from
-      plt2_adv as t2
-    where
-      t1.a = t2.a and t1.c = t2.c
-  ) and
-  t1.b < 10
+  exists (select 1 from plt2_adv as t2 where t1.a = t2.a and t1.c = t2.c) and t1.b < 10
 order by t1.a;
 
 select
@@ -3487,10 +2772,7 @@ select
   t2.a,
   t2.c
 from
-  plt1_adv as t1
-  left outer join
-    plt2_adv as t2
-  on t1.a = t2.a and t1.c = t2.c
+  plt1_adv as t1 left outer join plt2_adv as t2 on t1.a = t2.a and t1.c = t2.c
 where
   t1.b < 10
 order by t1.a;
@@ -3501,10 +2783,7 @@ select
   t2.a,
   t2.c
 from
-  plt1_adv as t1
-  left outer join
-    plt2_adv as t2
-  on t1.a = t2.a and t1.c = t2.c
+  plt1_adv as t1 left outer join plt2_adv as t2 on t1.a = t2.a and t1.c = t2.c
 where
   t1.b < 10
 order by t1.a;
@@ -3514,16 +2793,7 @@ select
 from
   plt1_adv as t1
 where
-  not exists
-  (
-    select
-      1
-    from
-      plt2_adv as t2
-    where
-      t1.a = t2.a and t1.c = t2.c
-  ) and
-  t1.b < 10
+  not exists (select 1 from plt2_adv as t2 where t1.a = t2.a and t1.c = t2.c) and t1.b < 10
 order by t1.a;
 
 select
@@ -3531,16 +2801,7 @@ select
 from
   plt1_adv as t1
 where
-  not exists
-  (
-    select
-      1
-    from
-      plt2_adv as t2
-    where
-      t1.a = t2.a and t1.c = t2.c
-  ) and
-  t1.b < 10
+  not exists (select 1 from plt2_adv as t2 where t1.a = t2.a and t1.c = t2.c) and t1.b < 10
 order by t1.a;
 
 select
@@ -3549,10 +2810,7 @@ select
   t2.a,
   t2.c
 from
-  plt1_adv as t1
-  full outer join
-    plt2_adv as t2
-  on t1.a = t2.a and t1.c = t2.c
+  plt1_adv as t1 full outer join plt2_adv as t2 on t1.a = t2.a and t1.c = t2.c
 where
   coalesce(t1.b, 0) < 10 and coalesce(t2.b, 0) < 10
 order by t1.a,
@@ -3564,10 +2822,7 @@ select
   t2.a,
   t2.c
 from
-  plt1_adv as t1
-  full outer join
-    plt2_adv as t2
-  on t1.a = t2.a and t1.c = t2.c
+  plt1_adv as t1 full outer join plt2_adv as t2 on t1.a = t2.a and t1.c = t2.c
 where
   coalesce(t1.b, 0) < 10 and coalesce(t2.b, 0) < 10
 order by t1.a,
@@ -3599,10 +2854,7 @@ select
   t2.a,
   t2.c
 from
-  plt1_adv as t1
-  inner join
-    plt2_adv as t2
-  on t1.a = t2.a and t1.c = t2.c
+  plt1_adv as t1 inner join plt2_adv as t2 on t1.a = t2.a and t1.c = t2.c
 where
   t1.b < 10
 order by t1.a;
@@ -3613,10 +2865,7 @@ select
   t2.a,
   t2.c
 from
-  plt1_adv as t1
-  inner join
-    plt2_adv as t2
-  on t1.a = t2.a and t1.c = t2.c
+  plt1_adv as t1 inner join plt2_adv as t2 on t1.a = t2.a and t1.c = t2.c
 where
   t1.b < 10
 order by t1.a;
@@ -3627,10 +2876,7 @@ select
   t2.a,
   t2.c
 from
-  plt1_adv as t1
-  left outer join
-    plt2_adv as t2
-  on t1.a = t2.a and t1.c = t2.c
+  plt1_adv as t1 left outer join plt2_adv as t2 on t1.a = t2.a and t1.c = t2.c
 where
   t1.b < 10
 order by t1.a;
@@ -3641,10 +2887,7 @@ select
   t2.a,
   t2.c
 from
-  plt1_adv as t1
-  full outer join
-    plt2_adv as t2
-  on t1.a = t2.a and t1.c = t2.c
+  plt1_adv as t1 full outer join plt2_adv as t2 on t1.a = t2.a and t1.c = t2.c
 where
   coalesce(t1.b, 0) < 10 and coalesce(t2.b, 0) < 10
 order by t1.a,
@@ -3662,10 +2905,7 @@ select
   t2.a,
   t2.c
 from
-  plt1_adv as t1
-  inner join
-    plt2_adv as t2
-  on t1.a = t2.a and t1.c = t2.c
+  plt1_adv as t1 inner join plt2_adv as t2 on t1.a = t2.a and t1.c = t2.c
 where
   t1.b < 10
 order by t1.a;
@@ -3676,10 +2916,7 @@ select
   t2.a,
   t2.c
 from
-  plt1_adv as t1
-  inner join
-    plt2_adv as t2
-  on t1.a = t2.a and t1.c = t2.c
+  plt1_adv as t1 inner join plt2_adv as t2 on t1.a = t2.a and t1.c = t2.c
 where
   t1.b < 10
 order by t1.a;
@@ -3690,10 +2927,7 @@ select
   t2.a,
   t2.c
 from
-  plt1_adv as t1
-  left outer join
-    plt2_adv as t2
-  on t1.a = t2.a and t1.c = t2.c
+  plt1_adv as t1 left outer join plt2_adv as t2 on t1.a = t2.a and t1.c = t2.c
 where
   t1.b < 10
 order by t1.a;
@@ -3704,10 +2938,7 @@ select
   t2.a,
   t2.c
 from
-  plt1_adv as t1
-  left outer join
-    plt2_adv as t2
-  on t1.a = t2.a and t1.c = t2.c
+  plt1_adv as t1 left outer join plt2_adv as t2 on t1.a = t2.a and t1.c = t2.c
 where
   t1.b < 10
 order by t1.a;
@@ -3718,10 +2949,7 @@ select
   t2.a,
   t2.c
 from
-  plt1_adv as t1
-  full outer join
-    plt2_adv as t2
-  on t1.a = t2.a and t1.c = t2.c
+  plt1_adv as t1 full outer join plt2_adv as t2 on t1.a = t2.a and t1.c = t2.c
 where
   coalesce(t1.b, 0) < 10 and coalesce(t2.b, 0) < 10
 order by t1.a,
@@ -3733,10 +2961,7 @@ select
   t2.a,
   t2.c
 from
-  plt1_adv as t1
-  full outer join
-    plt2_adv as t2
-  on t1.a = t2.a and t1.c = t2.c
+  plt1_adv as t1 full outer join plt2_adv as t2 on t1.a = t2.a and t1.c = t2.c
 where
   coalesce(t1.b, 0) < 10 and coalesce(t2.b, 0) < 10
 order by t1.a,
@@ -3750,10 +2975,7 @@ select
   t3.a,
   t3.c
 from
-  plt1_adv as t1
-  left outer join
-    plt2_adv as t2
-  on t1.a = t2.a and t1.c = t2.c
+  plt1_adv as t1 left outer join plt2_adv as t2 on t1.a = t2.a and t1.c = t2.c
   left outer join
     plt1_adv as t3
   on t1.a = t3.a and t1.c = t3.c
@@ -3769,10 +2991,7 @@ select
   t3.a,
   t3.c
 from
-  plt1_adv as t1
-  left outer join
-    plt2_adv as t2
-  on t1.a = t2.a and t1.c = t2.c
+  plt1_adv as t1 left outer join plt2_adv as t2 on t1.a = t2.a and t1.c = t2.c
   left outer join
     plt1_adv as t3
   on t1.a = t3.a and t1.c = t3.c
@@ -3806,10 +3025,7 @@ select
   t2.a,
   t2.c
 from
-  plt1_adv as t1
-  inner join
-    plt2_adv as t2
-  on t1.a = t2.a and t1.c = t2.c
+  plt1_adv as t1 inner join plt2_adv as t2 on t1.a = t2.a and t1.c = t2.c
 where
   t1.b < 10
 order by t1.a;
@@ -3820,10 +3036,7 @@ select
   t2.a,
   t2.c
 from
-  plt1_adv as t1
-  inner join
-    plt2_adv as t2
-  on t1.a = t2.a and t1.c = t2.c
+  plt1_adv as t1 inner join plt2_adv as t2 on t1.a = t2.a and t1.c = t2.c
 where
   t1.b < 10
 order by t1.a;
@@ -3835,14 +3048,7 @@ alter table plt2_adv
 create table plt2_adv_p2_ext partition of plt2_adv for values in ('0004', '0005', '0006');
 
 insert into plt2_adv
-select
-  i,
-  i,
-  to_char(i % 10, 'FM0000')
-from
-  generate_series(1, 299) as i
-where
-  i % 10 in (4, 5, 6);
+select i, i, to_char(i % 10, 'FM0000') from generate_series(1, 299) as i where i % 10 in (4, 5, 6);
 
 analyze plt2_adv;
 
@@ -3852,10 +3058,7 @@ select
   t2.a,
   t2.c
 from
-  plt1_adv as t1
-  inner join
-    plt2_adv as t2
-  on t1.a = t2.a and t1.c = t2.c
+  plt1_adv as t1 inner join plt2_adv as t2 on t1.a = t2.a and t1.c = t2.c
 where
   t1.b < 10
 order by t1.a;
@@ -3876,10 +3079,7 @@ select
   t2.a,
   t2.c
 from
-  plt1_adv as t1
-  inner join
-    plt2_adv as t2
-  on t1.a = t2.a and t1.c = t2.c
+  plt1_adv as t1 inner join plt2_adv as t2 on t1.a = t2.a and t1.c = t2.c
 where
   t1.b < 10
 order by t1.a;
@@ -3897,7 +3097,7 @@ create table plt3_adv (
   b int,
   c text
 )
-partition by LIST(c);
+partition by list(c);
 
 create table plt3_adv_p1 partition of plt3_adv for values in ('0004', '0006');
 
@@ -3923,10 +3123,7 @@ select
   t3.a,
   t3.c
 from
-  plt1_adv as t1
-  left outer join
-    plt2_adv as t2
-  on t1.a = t2.a and t1.c = t2.c
+  plt1_adv as t1 left outer join plt2_adv as t2 on t1.a = t2.a and t1.c = t2.c
   left outer join
     plt3_adv as t3
   on t1.a = t3.a and t1.c = t3.c
@@ -3942,10 +3139,7 @@ select
   t3.a,
   t3.c
 from
-  plt1_adv as t1
-  left outer join
-    plt2_adv as t2
-  on t1.a = t2.a and t1.c = t2.c
+  plt1_adv as t1 left outer join plt2_adv as t2 on t1.a = t2.a and t1.c = t2.c
   left outer join
     plt3_adv as t3
   on t1.a = t3.a and t1.c = t3.c
@@ -3958,14 +3152,7 @@ drop table plt2_adv_p1;
 create table plt2_adv_p1_null partition of plt2_adv for values in (null, '0001', '0003');
 
 insert into plt2_adv
-select
-  i,
-  i,
-  to_char(i % 10, 'FM0000')
-from
-  generate_series(1, 299) as i
-where
-  i % 10 in (1, 3);
+select i, i, to_char(i % 10, 'FM0000') from generate_series(1, 299) as i where i % 10 in (1, 3);
 
 insert into plt2_adv values (-1, -1, null);
 
@@ -3977,10 +3164,7 @@ select
   t2.a,
   t2.c
 from
-  plt1_adv as t1
-  inner join
-    plt2_adv as t2
-  on t1.a = t2.a and t1.c = t2.c
+  plt1_adv as t1 inner join plt2_adv as t2 on t1.a = t2.a and t1.c = t2.c
 where
   t1.b < 10
 order by t1.a;
@@ -3991,10 +3175,7 @@ select
   t2.a,
   t2.c
 from
-  plt1_adv as t1
-  inner join
-    plt2_adv as t2
-  on t1.a = t2.a and t1.c = t2.c
+  plt1_adv as t1 inner join plt2_adv as t2 on t1.a = t2.a and t1.c = t2.c
 where
   t1.b < 10
 order by t1.a;
@@ -4013,10 +3194,7 @@ select
   t2.a,
   t2.c
 from
-  plt1_adv as t1
-  inner join
-    plt2_adv as t2
-  on t1.a = t2.a and t1.c = t2.c
+  plt1_adv as t1 inner join plt2_adv as t2 on t1.a = t2.a and t1.c = t2.c
 where
   t1.b < 10
 order by t1.a;
@@ -4027,10 +3205,7 @@ select
   t2.a,
   t2.c
 from
-  plt1_adv as t1
-  inner join
-    plt2_adv as t2
-  on t1.a = t2.a and t1.c = t2.c
+  plt1_adv as t1 inner join plt2_adv as t2 on t1.a = t2.a and t1.c = t2.c
 where
   t1.b < 10
 order by t1.a;
@@ -4046,7 +3221,7 @@ create table plt1_adv (
   b int,
   c text
 )
-partition by LIST(c);
+partition by list(c);
 
 create table plt1_adv_p1 partition of plt1_adv for values in ('0001');
 
@@ -4075,7 +3250,7 @@ create table plt2_adv (
   b int,
   c text
 )
-partition by LIST(c);
+partition by list(c);
 
 create table plt2_adv_p1 partition of plt2_adv for values in ('0001', '0002');
 
@@ -4105,10 +3280,7 @@ select
   t2.a,
   t2.c
 from
-  plt1_adv as t1
-  inner join
-    plt2_adv as t2
-  on t1.a = t2.a and t1.c = t2.c
+  plt1_adv as t1 inner join plt2_adv as t2 on t1.a = t2.a and t1.c = t2.c
 where
   t1.c in ('0003', '0004', '0005') and t1.b < 10
 order by t1.a;
@@ -4119,10 +3291,7 @@ select
   t2.a,
   t2.c
 from
-  plt1_adv as t1
-  inner join
-    plt2_adv as t2
-  on t1.a = t2.a and t1.c = t2.c
+  plt1_adv as t1 inner join plt2_adv as t2 on t1.a = t2.a and t1.c = t2.c
 where
   t1.c in ('0003', '0004', '0005') and t1.b < 10
 order by t1.a;
@@ -4133,10 +3302,7 @@ select
   t2.a,
   t2.c
 from
-  plt1_adv as t1
-  left outer join
-    plt2_adv as t2
-  on t1.a = t2.a and t1.c = t2.c
+  plt1_adv as t1 left outer join plt2_adv as t2 on t1.a = t2.a and t1.c = t2.c
 where
   t1.c is null and t1.b < 10
 order by t1.a;
@@ -4147,10 +3313,7 @@ select
   t2.a,
   t2.c
 from
-  plt1_adv as t1
-  left outer join
-    plt2_adv as t2
-  on t1.a = t2.a and t1.c = t2.c
+  plt1_adv as t1 left outer join plt2_adv as t2 on t1.a = t2.a and t1.c = t2.c
 where
   t1.c is null and t1.b < 10
 order by t1.a;
@@ -4169,10 +3332,7 @@ select
   t2.a,
   t2.c
 from
-  plt1_adv as t1
-  inner join
-    plt2_adv as t2
-  on t1.a = t2.a and t1.c = t2.c
+  plt1_adv as t1 inner join plt2_adv as t2 on t1.a = t2.a and t1.c = t2.c
 where
   t1.c in ('0003', '0004', '0005') and t1.b < 10
 order by t1.a;
@@ -4183,10 +3343,7 @@ select
   t2.a,
   t2.c
 from
-  plt1_adv as t1
-  inner join
-    plt2_adv as t2
-  on t1.a = t2.a and t1.c = t2.c
+  plt1_adv as t1 inner join plt2_adv as t2 on t1.a = t2.a and t1.c = t2.c
 where
   t1.c in ('0003', '0004', '0005') and t1.b < 10
 order by t1.a;
@@ -4197,10 +3354,7 @@ select
   t2.a,
   t2.c
 from
-  plt1_adv as t1
-  left outer join
-    plt2_adv as t2
-  on t1.a = t2.a and t1.c = t2.c
+  plt1_adv as t1 left outer join plt2_adv as t2 on t1.a = t2.a and t1.c = t2.c
 where
   t1.c is null and t1.b < 10
 order by t1.a;
@@ -4211,10 +3365,7 @@ select
   t2.a,
   t2.c
 from
-  plt1_adv as t1
-  left outer join
-    plt2_adv as t2
-  on t1.a = t2.a and t1.c = t2.c
+  plt1_adv as t1 left outer join plt2_adv as t2 on t1.a = t2.a and t1.c = t2.c
 where
   t1.c is null and t1.b < 10
 order by t1.a;
@@ -4228,7 +3379,7 @@ create table plt1_adv (
   b int,
   c text
 )
-partition by LIST(c);
+partition by list(c);
 
 create table plt1_adv_p1 partition of plt1_adv for values in ('0000', '0001', '0002');
 
@@ -4243,21 +3394,14 @@ create table plt2_adv (
   b int,
   c text
 )
-partition by LIST(c);
+partition by list(c);
 
 create table plt2_adv_p1 partition of plt2_adv for values in ('0002');
 
 create table plt2_adv_p2 partition of plt2_adv for values in ('0003', '0004');
 
 insert into plt2_adv
-select
-  i,
-  i,
-  to_char(i % 5, 'FM0000')
-from
-  generate_series(0, 24) as i
-where
-  i % 5 in (2, 3, 4);
+select i, i, to_char(i % 5, 'FM0000') from generate_series(0, 24) as i where i % 5 in (2, 3, 4);
 
 analyze plt2_adv;
 
@@ -4266,21 +3410,14 @@ create table plt3_adv (
   b int,
   c text
 )
-partition by LIST(c);
+partition by list(c);
 
 create table plt3_adv_p1 partition of plt3_adv for values in ('0001');
 
 create table plt3_adv_p2 partition of plt3_adv for values in ('0003', '0004');
 
 insert into plt3_adv
-select
-  i,
-  i,
-  to_char(i % 5, 'FM0000')
-from
-  generate_series(0, 24) as i
-where
-  i % 5 in (1, 3, 4);
+select i, i, to_char(i % 5, 'FM0000') from generate_series(0, 24) as i where i % 5 in (1, 3, 4);
 
 analyze plt3_adv;
 
@@ -4292,16 +3429,12 @@ select
   t3.a,
   t3.c
 from
-  plt1_adv as t1
-  left outer join
-    plt2_adv as t2
-  on t1.c = t2.c
+  plt1_adv as t1 left outer join plt2_adv as t2 on t1.c = t2.c
   full outer join
     plt3_adv as t3
   on t1.c = t3.c
 where
-  coalesce(t1.a, 0) % 5 <> 3 and
-  coalesce(t1.a, 0) % 5 <> 4
+  coalesce(t1.a, 0) % 5 <> 3 and coalesce(t1.a, 0) % 5 <> 4
 order by t1.c,
   t1.a,
   t2.a,
@@ -4315,16 +3448,12 @@ select
   t3.a,
   t3.c
 from
-  plt1_adv as t1
-  left outer join
-    plt2_adv as t2
-  on t1.c = t2.c
+  plt1_adv as t1 left outer join plt2_adv as t2 on t1.c = t2.c
   full outer join
     plt3_adv as t3
   on t1.c = t3.c
 where
-  coalesce(t1.a, 0) % 5 <> 3 and
-  coalesce(t1.a, 0) % 5 <> 4
+  coalesce(t1.a, 0) % 5 <> 3 and coalesce(t1.a, 0) % 5 <> 4
 order by t1.c,
   t1.a,
   t2.a,
@@ -4348,7 +3477,7 @@ partition of alpha
 for values from ('-Infinity') to (0)
 partition by range(b);
 
-create table alpha_pos partition of alpha for values from (0) to (10.0) partition by LIST(c);
+create table alpha_pos partition of alpha for values from (0) to (10.0) partition by list(c);
 
 create table alpha_neg_p1 partition of alpha_neg for values from (100) to (200);
 
@@ -4393,7 +3522,7 @@ partition by range(a);
 
 create table beta_neg partition of beta for values from (-10.0) to (0) partition by range(b);
 
-create table beta_pos partition of beta for values from (0) to ('Infinity') partition by LIST(c);
+create table beta_pos partition of beta for values from (0) to ('Infinity') partition by list(c);
 
 create table beta_neg_p1 partition of beta_neg for values from (100) to (150);
 
@@ -4473,10 +3602,7 @@ select
   t1.*,
   t2.*
 from
-  alpha as t1
-  inner join
-    beta as t2
-  on t1.a = t2.a and t1.b = t2.b
+  alpha as t1 inner join beta as t2 on t1.a = t2.a and t1.b = t2.b
 where
   t1.b >= 125 and t1.b < 225
 order by t1.a,
@@ -4486,10 +3612,7 @@ select
   t1.*,
   t2.*
 from
-  alpha as t1
-  inner join
-    beta as t2
-  on t1.a = t2.a and t1.b = t2.b
+  alpha as t1 inner join beta as t2 on t1.a = t2.a and t1.b = t2.b
 where
   t1.b >= 125 and t1.b < 225
 order by t1.a,
@@ -4499,18 +3622,13 @@ select
   t1.*,
   t2.*
 from
-  alpha as t1
-  inner join
-    beta as t2
-  on t1.a = t2.a and t1.c = t2.c
+  alpha as t1 inner join beta as t2 on t1.a = t2.a and t1.c = t2.c
 where
   (
-    (t1.b >= 100 and t1.b < 110) or
-    (t1.b >= 200 and t1.b < 210)
+    (t1.b >= 100 and t1.b < 110) or (t1.b >= 200 and t1.b < 210)
   ) and
   (
-    (t2.b >= 100 and t2.b < 110) or
-    (t2.b >= 200 and t2.b < 210)
+    (t2.b >= 100 and t2.b < 110) or (t2.b >= 200 and t2.b < 210)
   ) and
   t1.c in ('0004', '0009')
 order by t1.a,
@@ -4521,18 +3639,13 @@ select
   t1.*,
   t2.*
 from
-  alpha as t1
-  inner join
-    beta as t2
-  on t1.a = t2.a and t1.c = t2.c
+  alpha as t1 inner join beta as t2 on t1.a = t2.a and t1.c = t2.c
 where
   (
-    (t1.b >= 100 and t1.b < 110) or
-    (t1.b >= 200 and t1.b < 210)
+    (t1.b >= 100 and t1.b < 110) or (t1.b >= 200 and t1.b < 210)
   ) and
   (
-    (t2.b >= 100 and t2.b < 110) or
-    (t2.b >= 200 and t2.b < 210)
+    (t2.b >= 100 and t2.b < 110) or (t2.b >= 200 and t2.b < 210)
   ) and
   t1.c in ('0004', '0009')
 order by t1.a,
@@ -4543,18 +3656,13 @@ select
   t1.*,
   t2.*
 from
-  alpha as t1
-  inner join
-    beta as t2
-  on t1.a = t2.a and t1.b = t2.b and t1.c = t2.c
+  alpha as t1 inner join beta as t2 on t1.a = t2.a and t1.b = t2.b and t1.c = t2.c
 where
   (
-    (t1.b >= 100 and t1.b < 110) or
-    (t1.b >= 200 and t1.b < 210)
+    (t1.b >= 100 and t1.b < 110) or (t1.b >= 200 and t1.b < 210)
   ) and
   (
-    (t2.b >= 100 and t2.b < 110) or
-    (t2.b >= 200 and t2.b < 210)
+    (t2.b >= 100 and t2.b < 110) or (t2.b >= 200 and t2.b < 210)
   ) and
   t1.c in ('0004', '0009')
 order by t1.a,
@@ -4564,18 +3672,13 @@ select
   t1.*,
   t2.*
 from
-  alpha as t1
-  inner join
-    beta as t2
-  on t1.a = t2.a and t1.b = t2.b and t1.c = t2.c
+  alpha as t1 inner join beta as t2 on t1.a = t2.a and t1.b = t2.b and t1.c = t2.c
 where
   (
-    (t1.b >= 100 and t1.b < 110) or
-    (t1.b >= 200 and t1.b < 210)
+    (t1.b >= 100 and t1.b < 110) or (t1.b >= 200 and t1.b < 210)
   ) and
   (
-    (t2.b >= 100 and t2.b < 110) or
-    (t2.b >= 200 and t2.b < 210)
+    (t2.b >= 100 and t2.b < 110) or (t2.b >= 200 and t2.b < 210)
   ) and
   t1.c in ('0004', '0009')
 order by t1.a,
@@ -4603,10 +3706,7 @@ select
   x.id,
   y.id
 from
-  fract_t as x
-  left outer join
-    fract_t as y
-  using ("id")
+  fract_t as x left outer join fract_t as y using (id)
 order by x.id asc
 limit 10;
 
@@ -4614,10 +3714,7 @@ select
   x.id,
   y.id
 from
-  fract_t as x
-  left outer join
-    fract_t as y
-  using ("id")
+  fract_t as x left outer join fract_t as y using (id)
 order by x.id desc
 limit 10;
 
@@ -4625,26 +3722,23 @@ select
   x.id,
   y.id
 from
-  fract_t as x
-  left outer join
-    fract_t as y
-  using ("id")
+  fract_t as x left outer join fract_t as y using (id)
 order by x.id desc
 limit 2;
 
-create index "pht1_c_idx" on pht1 using btree (c);
+create index pht1_c_idx on pht1 using btree (c);
 
-select * from pht1 as p1 inner join pht1 as p2 using ("c") limit 1;
+select * from pht1 as p1 inner join pht1 as p2 using (c) limit 1;
 
-select * from pht1 as p1 inner join pht1 as p2 using ("c") limit 100;
+select * from pht1 as p1 inner join pht1 as p2 using (c) limit 100;
 
-select * from pht1 as p1 inner join pht1 as p2 using ("c") limit 1000;
+select * from pht1 as p1 inner join pht1 as p2 using (c) limit 1000;
 
 set max_parallel_workers_per_gather = 1;
 
 set debug_parallel_query = 'on';
 
-select * from pht1 as p1 inner join pht1 as p2 using ("c") limit 100;
+select * from pht1 as p1 inner join pht1 as p2 using (c) limit 100;
 
 reset debug_parallel_query;
 

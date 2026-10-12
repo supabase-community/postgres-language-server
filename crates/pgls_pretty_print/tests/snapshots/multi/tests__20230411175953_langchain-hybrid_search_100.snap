@@ -11,26 +11,11 @@ insert into app.packages (
 )
 values
   (
-    'langchain',
-    'hybrid_search',
-    'Search documents by embedding and full text',
-    true,
-    '{pg_vector}'
+    'langchain', 'hybrid_search', 'Search documents by embedding and full text', true, '{pg_vector}'
   );
 
 insert into app.package_versions (package_id, version_struct, sql, description_md)
-values
-  (
-    (
-      select
-        id
-      from
-        app.packages
-      where
-        package_name = 'langchain-hybrid_search'
-    ),
-    (1, 0, 0),
-    '
+values ((select id from app.packages where package_name = 'langchain-hybrid_search'), (1, 0, 0), '
 -- Enforce requirements
 -- Workaround to https://github.com/aws/pg_tle/issues/183
 do $$
@@ -108,8 +93,7 @@ using query_text, match_count;
 end;
 $$ language plpgsql;
 
-',
-    '
+', '
 # hybrid_search
 
 Langchain supports hybrid search with a Supabase Postgres database. The hybrid search combines the postgres pgvector extension (similarity search) and Full-Text Search (keyword search) to retrieve documents. You can add documents via SupabaseVectorStore addDocuments function. SupabaseHybridKeyWordSearch accepts embedding, supabase client, number of results for similarity search, and number of results for keyword search as parameters. The getRelevantDocuments function produces a list of documents that has duplicates removed and is sorted by relevance score.
@@ -165,5 +149,4 @@ export const run = async () => {
 ```
 
 For more details, checkout the LangChain Supabase Hybrid Search docs: https://js.langchain.com/docs/modules/indexes/retrievers/supabase-hybrid
-'
-  );
+');

@@ -6,8 +6,8 @@ create or replace function app.update_avatar_id()
 returns trigger
 language plpgsql
 security definer
-as $function$
-declare
+as $$
+    declare
         v_handle app.valid_name;
         v_affected_account app.accounts := null;
     begin
@@ -33,12 +33,11 @@ declare
 
         return new;
     end;
-$function$;
+    $$;
 
 alter policy storage_objects_insert_policy
 on storage.objects
 with check (app.is_handle_maintainer(
   auth.uid(),
-  cast((string_to_array(name, cast('/' as text)))[1]
-  as app.valid_name)
+  cast((string_to_array(name, cast('/' as text)))[1] as app.valid_name)
 ));

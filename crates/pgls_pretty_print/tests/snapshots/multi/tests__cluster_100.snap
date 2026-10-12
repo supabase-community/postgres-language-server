@@ -13,19 +13,16 @@ create table clstr_tst (
   b int,
   c text,
   d text,
-  constraint "clstr_tst_con"
-  foreign key
-  (b)
-  references clstr_tst_s
+  constraint clstr_tst_con foreign key (b) references clstr_tst_s
 );
 
-create index "clstr_tst_b" on clstr_tst using btree (b);
+create index clstr_tst_b on clstr_tst using btree (b);
 
-create index "clstr_tst_c" on clstr_tst using btree (c);
+create index clstr_tst_c on clstr_tst using btree (c);
 
-create index "clstr_tst_c_b" on clstr_tst using btree (c, b);
+create index clstr_tst_c_b on clstr_tst using btree (c, b);
 
-create index "clstr_tst_b_c" on clstr_tst using btree (b, c);
+create index clstr_tst_b_c on clstr_tst using btree (b, c);
 
 insert into clstr_tst_s (b) values (0);
 
@@ -108,17 +105,17 @@ insert into clstr_tst (b, c, d) values (6, 'seis', repeat('xyzzy', 100000));
 
 cluster clstr_tst using clstr_tst_c;
 
-select a, b, c, SUBSTRING(d from 1 for cast(30 as int)), length(d) from clstr_tst;
+select a, b, c, substring(d from 1 for cast(30 as int)), length(d) from clstr_tst;
 
-select a, b, c, SUBSTRING(d from 1 for cast(30 as int)), length(d) from clstr_tst order by a;
+select a, b, c, substring(d from 1 for cast(30 as int)), length(d) from clstr_tst order by a;
 
-select a, b, c, SUBSTRING(d from 1 for cast(30 as int)), length(d) from clstr_tst order by b;
+select a, b, c, substring(d from 1 for cast(30 as int)), length(d) from clstr_tst order by b;
 
-select a, b, c, SUBSTRING(d from 1 for cast(30 as int)), length(d) from clstr_tst order by c;
+select a, b, c, substring(d from 1 for cast(30 as int)), length(d) from clstr_tst order by c;
 
 insert into clstr_tst_inh values (0, 100, 'in child table');
 
-select a, b, c, SUBSTRING(d from 1 for cast(30 as int)), length(d) from clstr_tst;
+select a, b, c, substring(d from 1 for cast(30 as int)), length(d) from clstr_tst;
 
 insert into clstr_tst (b, c) values (1111, 'this should fail');
 
@@ -127,11 +124,7 @@ select conname from pg_constraint where conrelid = cast('clstr_tst' as regclass)
 select
   relname,
   relkind,
-  exists
-  (
-    select 1 from pg_class where oid = c.reltoastrelid
-  )
-  as hastoast
+  exists (select 1 from pg_class where oid = c.reltoastrelid) as hastoast
 from
   pg_class as c
 where
@@ -196,7 +189,7 @@ alter table clstr_1
 alter table clstr_3
   owner to regress_clstr_user;
 
-grant SELECT on table clstr_2 to regress_clstr_user;
+grant select on table clstr_2 to regress_clstr_user;
 
 insert into clstr_1 values (2);
 
@@ -328,13 +321,13 @@ create table clstrpart3 partition of clstrpart default partition by range(a);
 
 create table clstrpart33 partition of clstrpart3 default;
 
-create index "clstrpart_only_idx" on only clstrpart using btree (a);
+create index clstrpart_only_idx on only clstrpart using btree (a);
 
 cluster clstrpart using clstrpart_only_idx;
 
 drop index clstrpart_only_idx;
 
-create index "clstrpart_idx" on clstrpart using btree (a);
+create index clstrpart_idx on clstrpart using btree (a);
 
 create temporary table old_cluster_info
 as
@@ -344,8 +337,7 @@ as
     relfilenode,
     relkind
   from
-    pg_partition_tree(cast('clstrpart' as regclass))
-    as tree
+    pg_partition_tree(cast('clstrpart' as regclass)) as tree
     inner join
       pg_class as c
     on c.oid = tree.relid;
@@ -360,8 +352,7 @@ as
     relfilenode,
     relkind
   from
-    pg_partition_tree(cast('clstrpart' as regclass))
-    as tree
+    pg_partition_tree(cast('clstrpart' as regclass)) as tree
     inner join
       pg_class as c
     on c.oid = tree.relid;
@@ -372,10 +363,7 @@ select
   old.relkind,
   old.relfilenode = new.relfilenode
 from
-  old_cluster_info as old
-  inner join
-    new_cluster_info as new
-  using ("relname")
+  old_cluster_info as old inner join new_cluster_info as new using (relname)
 order by relname collate "C";
 
 cluster clstrpart;
@@ -389,9 +377,9 @@ alter table clstrpart
 drop table clstrpart;
 
 create table ptnowner (i int unique)
-partition by LIST(i);
+partition by list(i);
 
-create index "ptnowner_i_idx" on ptnowner using btree (i);
+create index ptnowner_i_idx on ptnowner using btree (i);
 
 create table ptnowner1 partition of ptnowner for values in (1);
 
@@ -418,10 +406,7 @@ as
     relname,
     relfilenode
   from
-    pg_partition_tree('ptnowner') as tree
-    inner join
-      pg_class as c
-    on c.oid = tree.relid;
+    pg_partition_tree('ptnowner') as tree inner join pg_class as c on c.oid = tree.relid;
 
 set session authorization regress_ptnowner;
 
@@ -433,10 +418,7 @@ select
   a.relname,
   a.relfilenode = b.relfilenode
 from
-  pg_class as a
-  inner join
-    ptnowner_oldnodes as b
-  using ("oid")
+  pg_class as a inner join ptnowner_oldnodes as b using (oid)
 order by a.relname collate "C";
 
 drop table ptnowner;
@@ -445,7 +427,7 @@ drop role regress_ptnowner;
 
 create table clstr_4 as select * from tenk1;
 
-create index "cluster_sort" on clstr_4 using btree (hundred, thousand, tenthous);
+create index cluster_sort on clstr_4 using btree (hundred, thousand, tenthous);
 
 set enable_indexscan = off;
 
@@ -459,18 +441,17 @@ from
   (
     select
       hundred,
-      LAG(hundred) over () as lhundred,
+      lag(hundred) over () as lhundred,
       thousand,
-      LAG(thousand) over () as lthousand,
+      lag(thousand) over () as lthousand,
       tenthous,
-      LAG(tenthous) over () as ltenthous
+      lag(tenthous) over () as ltenthous
     from
       clstr_4
   )
   as ss
 where
-  row(hundred, thousand, tenthous) <=
-  row(lhundred, lthousand, ltenthous);
+  row(hundred, thousand, tenthous) <= row(lhundred, lthousand, ltenthous);
 
 reset enable_indexscan;
 
@@ -483,15 +464,11 @@ create table clstr_expression (
 );
 
 insert into clstr_expression (a, b)
-select
-  g.i % 42,
-  'prefix' || g.i
-from
-  generate_series(1, 133) as g (i);
+select g.i % 42, 'prefix' || g.i from generate_series(1, 133) as g (i);
 
-create index "clstr_expression_minus_a" on clstr_expression using btree ((-a), b);
+create index clstr_expression_minus_a on clstr_expression using btree ((-a), b);
 
-create index "clstr_expression_upper_b" on clstr_expression using btree ((upper(b)));
+create index clstr_expression_upper_b on clstr_expression using btree ((upper(b)));
 
 begin;
 

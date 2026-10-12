@@ -29,10 +29,7 @@ select cast('''\\as'' ab\c ab\\c AB\\\c ab\\\\c' as tsvector);
 
 select
   tsvectorin(
-    tsvectorout(
-      cast('''\\as'' ab\c ab\\c AB\\\c ab\\\\c'
-      as tsvector)
-    )
+    tsvectorout(cast('''\\as'' ab\c ab\\c AB\\\c ab\\\\c' as tsvector))
   );
 
 select '''w'':4A,3B,2C,1D,5 a:8';
@@ -198,36 +195,25 @@ select cast('a b:89  ca:23A,64b d:34c' as tsvector) @@ 'd:AC & c:*C' as "false";
 select cast('a b:89  ca:23A,64b d:34c' as tsvector) @@ 'd:AC & c:*CB' as "true";
 
 select
-  cast('a b:89  ca:23A,64b cb:80c d:34c'
-  as tsvector) @@
-  'd:AC & c:*C'
+  cast('a b:89  ca:23A,64b cb:80c d:34c' as tsvector) @@ 'd:AC & c:*C'
   as "true";
 
 select
-  cast('a b:89  ca:23A,64c cb:80b d:34c'
-  as tsvector) @@
-  'd:AC & c:*C'
+  cast('a b:89  ca:23A,64c cb:80b d:34c' as tsvector) @@ 'd:AC & c:*C'
   as "true";
 
 select
-  cast('a b:89  ca:23A,64c cb:80b d:34c'
-  as tsvector) @@
-  'd:AC & c:*B'
+  cast('a b:89  ca:23A,64c cb:80b d:34c' as tsvector) @@ 'd:AC & c:*B'
   as "true";
 
 select
-  cast('wa:1D wb:2A' as tsvector) @@
-  cast('w:*D & w:*A' as tsquery)
-  as "true";
+  cast('wa:1D wb:2A' as tsvector) @@ cast('w:*D & w:*A' as tsquery) as "true";
 
 select
-  cast('wa:1D wb:2A' as tsvector) @@
-  cast('w:*D <-> w:*A' as tsquery)
-  as "true";
+  cast('wa:1D wb:2A' as tsvector) @@ cast('w:*D <-> w:*A' as tsquery) as "true";
 
 select
-  cast('wa:1A wb:2D' as tsvector) @@
-  cast('w:*D <-> w:*A' as tsquery)
+  cast('wa:1A wb:2D' as tsvector) @@ cast('w:*D <-> w:*A' as tsquery)
   as "false";
 
 select cast('wa:1A' as tsvector) @@ cast('w:*A' as tsquery) as "true";
@@ -249,25 +235,21 @@ select strip(cast('wa:1A' as tsvector)) @@ cast('!w:*D' as tsquery) as "false";
 select cast('supernova' as tsvector) @@ cast('super' as tsquery) as "false";
 
 select
-  cast('supeanova supernova' as tsvector) @@
-  cast('super' as tsquery)
+  cast('supeanova supernova' as tsvector) @@ cast('super' as tsquery)
   as "false";
 
 select
-  cast('supeznova supernova' as tsvector) @@
-  cast('super' as tsquery)
+  cast('supeznova supernova' as tsvector) @@ cast('super' as tsquery)
   as "false";
 
 select cast('supernova' as tsvector) @@ cast('super:*' as tsquery) as "true";
 
 select
-  cast('supeanova supernova' as tsvector) @@
-  cast('super:*' as tsquery)
+  cast('supeanova supernova' as tsvector) @@ cast('super:*' as tsquery)
   as "true";
 
 select
-  cast('supeznova supernova' as tsvector) @@
-  cast('super:*' as tsquery)
+  cast('supeznova supernova' as tsvector) @@ cast('super:*' as tsquery)
   as "true";
 
 select to_tsvector('simple', '1 2 3 1') @@ '1 <-> 2' as "true";
@@ -458,10 +440,7 @@ select strip(cast('base hidden rebel spaceship strike' as tsvector));
 
 select
   ts_delete(
-    to_tsvector(
-      'english',
-      'Rebel spaceships, striking from a hidden base'
-    ),
+    to_tsvector('english', 'Rebel spaceships, striking from a hidden base'),
     'spaceship'
   );
 
@@ -495,8 +474,7 @@ select
 
 select
   ts_delete(
-    cast('base hidden rebel spaceship strike'
-    as tsvector),
+    cast('base hidden rebel spaceship strike' as tsvector),
     'spaceship'
   );
 
@@ -530,30 +508,20 @@ select
 
 select
   ts_delete(
-    cast('base hidden rebel spaceship strike'
-    as tsvector),
+    cast('base hidden rebel spaceship strike' as tsvector),
     array['spaceship', 'leya', 'rebel']
   );
 
 select
   ts_delete(
-    cast('base hidden rebel spaceship strike'
-    as tsvector),
-    array['spaceship',
-    'leya',
-    'rebel',
-    'rebel']
+    cast('base hidden rebel spaceship strike' as tsvector),
+    array['spaceship', 'leya', 'rebel', 'rebel']
   );
 
 select
   ts_delete(
-    cast('base hidden rebel spaceship strike'
-    as tsvector),
-    array['spaceship',
-    'leya',
-    'rebel',
-    '',
-    null]
+    cast('base hidden rebel spaceship strike' as tsvector),
+    array['spaceship', 'leya', 'rebel', '', null]
   );
 
 select
@@ -590,19 +558,10 @@ select
   );
 
 select
-  tsvector_to_array(
-    cast('base hidden rebel spaceship strike'
-    as tsvector)
-  );
+  tsvector_to_array(cast('base hidden rebel spaceship strike' as tsvector));
 
 select
-  array_to_tsvector(
-    array['base',
-    'hidden',
-    'rebel',
-    'spaceship',
-    'strike']
-  );
+  array_to_tsvector(array['base', 'hidden', 'rebel', 'spaceship', 'strike']);
 
 select array_to_tsvector(array['base', 'hidden', 'rebel', 'spaceship', null]);
 
@@ -619,39 +578,34 @@ select
 
 select
   setweight(
-    cast('a:1,3A asd:1C w:5,6,12B,13A zxc:81,222A,567'
-    as tsvector),
+    cast('a:1,3A asd:1C w:5,6,12B,13A zxc:81,222A,567' as tsvector),
     'c'
   );
 
 select
   setweight(
-    cast('a:1,3A asd:1C w:5,6,12B,13A zxc:81,222A,567'
-    as tsvector),
+    cast('a:1,3A asd:1C w:5,6,12B,13A zxc:81,222A,567' as tsvector),
     'c',
     '{a}'
   );
 
 select
   setweight(
-    cast('a:1,3A asd:1C w:5,6,12B,13A zxc:81,222A,567'
-    as tsvector),
+    cast('a:1,3A asd:1C w:5,6,12B,13A zxc:81,222A,567' as tsvector),
     'c',
     '{a}'
   );
 
 select
   setweight(
-    cast('a:1,3A asd:1C w:5,6,12B,13A zxc:81,222A,567'
-    as tsvector),
+    cast('a:1,3A asd:1C w:5,6,12B,13A zxc:81,222A,567' as tsvector),
     'c',
     '{a,zxc}'
   );
 
 select
   setweight(
-    cast('a asd w:5,6,12B,13A zxc'
-    as tsvector),
+    cast('a asd w:5,6,12B,13A zxc' as tsvector),
     'c',
     array['a', 'zxc', '', null]
   );
@@ -667,7 +621,6 @@ select ts_filter(cast('base hidden rebel spaceship strike' as tsvector), '{a}');
 
 select
   ts_filter(
-    cast('base hidden rebel spaceship strike'
-    as tsvector),
+    cast('base hidden rebel spaceship strike' as tsvector),
     '{a,b,NULL}'
   );

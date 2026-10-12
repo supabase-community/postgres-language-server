@@ -19,11 +19,9 @@ use pgls_query::{NodeEnum, NodeMut};
 pub fn normalize_ast(node: &mut NodeEnum) {
     clear_location(node);
     normalize_bool_expr_associativity(node);
-    normalize_object_with_args(node);
     normalize_foreign_table_partbound(node);
     normalize_merge_support_func(node);
-    normalize_sql_value_function(node);
-    normalize_function_body(node);
+    normalize_function_options(node);
 }
 
 /// Flatten nested boolean expressions which PostgreSQL represents differently
@@ -135,22 +133,9 @@ fn clear_location(node: &mut NodeEnum) {
             }
             NodeMut::FuncCall(n) => {
                 (*n).location = 0;
-                // Normalize funcformat to CoerceExplicitCall since we emit as regular function call
+                // SQL-standard syntax the printer does not know is written as a call to the same
+                // `pg_catalog` function, which only differs in this flag.
                 (*n).funcformat = pgls_query::protobuf::CoercionForm::CoerceExplicitCall.into();
-                // Remove pg_catalog prefix from function names
-                if (*n).funcname.len() == 2
-                    && let Some(NodeEnum::String(schema)) =
-                        (*n).funcname.first().and_then(|node| node.node.as_ref())
-                    && schema.sval.eq_ignore_ascii_case("pg_catalog")
-                {
-                    (*n).funcname.remove(0);
-                }
-                // Normalize function names to lowercase for case-insensitive comparison
-                for func_name_node in &mut (*n).funcname {
-                    if let Some(NodeEnum::String(s)) = func_name_node.node.as_mut() {
-                        s.sval = s.sval.to_lowercase();
-                    }
-                }
             }
             NodeMut::NamedArgExpr(n) => {
                 (*n).location = 0;
@@ -300,14 +285,6 @@ fn clear_location(node: &mut NodeEnum) {
             }
             NodeMut::TypeName(n) => {
                 (*n).location = 0;
-
-                if (*n).names.len() == 2
-                    && let Some(NodeEnum::String(schema)) =
-                        (*n).names.first().and_then(|node| node.node.as_ref())
-                    && schema.sval.eq_ignore_ascii_case("pg_catalog")
-                {
-                    (*n).names.remove(0);
-                }
             }
             NodeMut::JsonBehavior(n) => {
                 (*n).location = 0;
@@ -414,14 +391,6 @@ fn clear_location(node: &mut NodeEnum) {
                     }
                 }
             }
-            NodeMut::FunctionParameter(n) => {
-                // Normalize FunctionParameter mode to FuncParamDefault
-                // When emitting objargs (TypeName), reparsing creates objfuncargs (FunctionParameter)
-                // with potentially different modes (e.g., FuncParamVariadic vs FuncParamDefault)
-                (*n).mode = pgls_query::protobuf::FunctionParameterMode::FuncParamDefault as i32;
-                // Clear name as DROP FUNCTION can be parsed with or without param names
-                (*n).name.clear();
-            }
             NodeMut::IndexElem(n) => {
                 // Normalize DefElem args in opclassopts from TypeName to String
                 for opt in (*n).opclassopts.iter_mut() {
@@ -458,66 +427,12 @@ fn clear_location(node: &mut NodeEnum) {
             NodeMut::XmlExpr(n) => {
                 (*n).location = 0;
             }
-            NodeMut::VariableSetStmt(n) => {
-                // SET statement values are case-insensitive in PostgreSQL
-                // e.g., SET xmloption = DOCUMENT vs SET xmloption = document
-                for arg in &mut (*n).args {
-                    if let Some(NodeEnum::AConst(aconst)) = arg.node.as_mut() {
-                        aconst.location = 0;
-                        if let Some(pgls_query::protobuf::a_const::Val::Sval(s)) =
-                            aconst.val.as_mut()
-                        {
-                            s.sval = s.sval.to_lowercase();
-                        }
-                    }
-                }
-            }
             _ => {}
         });
 
         for join in join_quals_to_clear {
             (*join).quals = None;
         }
-    }
-}
-
-/// Normalize ObjectWithArgs by clearing objfuncargs.
-///
-/// When we emit from objargs, the reparsed objfuncargs may differ in count
-/// (e.g., OUT parameters in objfuncargs but not in objargs).
-fn normalize_object_with_args(node: &mut NodeEnum) {
-    match node {
-        NodeEnum::ObjectWithArgs(owa) => {
-            // Clear objfuncargs - we emit from objargs only
-            owa.objfuncargs.clear();
-        }
-        NodeEnum::DropStmt(ds) => {
-            for obj in &mut ds.objects {
-                if let Some(ref mut n) = obj.node {
-                    normalize_object_with_args(n);
-                }
-            }
-        }
-        NodeEnum::AlterObjectSchemaStmt(stmt) => {
-            if let Some(ref mut obj) = stmt.object
-                && let Some(ref mut n) = obj.node
-            {
-                normalize_object_with_args(n);
-            }
-        }
-        NodeEnum::CommentStmt(stmt) => {
-            if let Some(ref mut obj) = stmt.object
-                && let Some(ref mut n) = obj.node
-            {
-                normalize_object_with_args(n);
-            }
-        }
-        NodeEnum::AlterFunctionStmt(stmt) => {
-            if let Some(ref mut func) = stmt.func {
-                func.objfuncargs.clear();
-            }
-        }
-        _ => {}
     }
 }
 
@@ -692,131 +607,6 @@ fn process_select_stmt_box(stmt: &mut pgls_query::protobuf::SelectStmt) {
     }
 }
 
-/// Normalize SqlvalueFunction nodes to FuncCall for comparison.
-///
-/// PostgreSQL represents CURRENT_SCHEMA, CURRENT_USER, etc. as SqlvalueFunction
-/// internally, but when we emit them as functions and reparse, they become FuncCall.
-fn normalize_sql_value_function(node: &mut NodeEnum) {
-    normalize_sql_value_function_recursive(node);
-}
-
-fn normalize_sql_value_function_recursive(node: &mut NodeEnum) {
-    // First recursively process all children
-    match node {
-        NodeEnum::SelectStmt(stmt) => {
-            for target in &mut stmt.target_list {
-                if let Some(ref mut n) = target.node {
-                    normalize_sql_value_function_recursive(n);
-                }
-            }
-            for from in &mut stmt.from_clause {
-                if let Some(ref mut n) = from.node {
-                    normalize_sql_value_function_recursive(n);
-                }
-            }
-            if let Some(ref mut w) = stmt.where_clause
-                && let Some(ref mut n) = w.node
-            {
-                normalize_sql_value_function_recursive(n);
-            }
-        }
-        NodeEnum::AExpr(expr) => {
-            if let Some(ref mut l) = expr.lexpr
-                && let Some(ref mut n) = l.node
-            {
-                // Check if this is a SqlvalueFunction that needs conversion
-                if let NodeEnum::SqlvalueFunction(svf) = n {
-                    if let Some(func_call) = sql_value_to_func_call(svf) {
-                        *n = NodeEnum::FuncCall(Box::new(func_call));
-                    }
-                } else {
-                    normalize_sql_value_function_recursive(n);
-                }
-            }
-            if let Some(ref mut r) = expr.rexpr
-                && let Some(ref mut n) = r.node
-            {
-                if let NodeEnum::SqlvalueFunction(svf) = n {
-                    if let Some(func_call) = sql_value_to_func_call(svf) {
-                        *n = NodeEnum::FuncCall(Box::new(func_call));
-                    }
-                } else {
-                    normalize_sql_value_function_recursive(n);
-                }
-            }
-        }
-        NodeEnum::ResTarget(rt) => {
-            if let Some(ref mut v) = rt.val
-                && let Some(ref mut n) = v.node
-            {
-                if let NodeEnum::SqlvalueFunction(svf) = n {
-                    if let Some(func_call) = sql_value_to_func_call(svf) {
-                        *n = NodeEnum::FuncCall(Box::new(func_call));
-                    }
-                } else {
-                    normalize_sql_value_function_recursive(n);
-                }
-            }
-        }
-        NodeEnum::FuncCall(fc) => {
-            for arg in &mut fc.args {
-                if let Some(ref mut n) = arg.node {
-                    if let NodeEnum::SqlvalueFunction(svf) = n {
-                        if let Some(func_call) = sql_value_to_func_call(svf) {
-                            *n = NodeEnum::FuncCall(Box::new(func_call));
-                        }
-                    } else {
-                        normalize_sql_value_function_recursive(n);
-                    }
-                }
-            }
-        }
-        _ => {}
-    }
-}
-
-fn sql_value_to_func_call(
-    svf: &pgls_query::protobuf::SqlValueFunction,
-) -> Option<pgls_query::protobuf::FuncCall> {
-    // Map SqlValueFunctionOp to function name
-    let func_name = match svf.op() {
-        pgls_query::protobuf::SqlValueFunctionOp::SvfopCurrentSchema => "current_schema",
-        pgls_query::protobuf::SqlValueFunctionOp::SvfopCurrentUser => "current_user",
-        pgls_query::protobuf::SqlValueFunctionOp::SvfopSessionUser => "session_user",
-        pgls_query::protobuf::SqlValueFunctionOp::SvfopUser => "user",
-        pgls_query::protobuf::SqlValueFunctionOp::SvfopCurrentCatalog => "current_catalog",
-        pgls_query::protobuf::SqlValueFunctionOp::SvfopCurrentDate => "current_date",
-        pgls_query::protobuf::SqlValueFunctionOp::SvfopCurrentTime => "current_time",
-        pgls_query::protobuf::SqlValueFunctionOp::SvfopCurrentTimeN => return None, // Has args
-        pgls_query::protobuf::SqlValueFunctionOp::SvfopCurrentTimestamp => "current_timestamp",
-        pgls_query::protobuf::SqlValueFunctionOp::SvfopCurrentTimestampN => return None, // Has args
-        pgls_query::protobuf::SqlValueFunctionOp::SvfopLocaltime => "localtime",
-        pgls_query::protobuf::SqlValueFunctionOp::SvfopLocaltimeN => return None, // Has args
-        pgls_query::protobuf::SqlValueFunctionOp::SvfopLocaltimestamp => "localtimestamp",
-        pgls_query::protobuf::SqlValueFunctionOp::SvfopLocaltimestampN => return None, // Has args
-        pgls_query::protobuf::SqlValueFunctionOp::SvfopCurrentRole => "current_role",
-        _ => return None,
-    };
-
-    Some(pgls_query::protobuf::FuncCall {
-        funcname: vec![pgls_query::protobuf::Node {
-            node: Some(NodeEnum::String(pgls_query::protobuf::String {
-                sval: func_name.to_string(),
-            })),
-        }],
-        args: vec![],
-        agg_order: vec![],
-        agg_filter: None,
-        over: None,
-        agg_within_group: false,
-        agg_star: false,
-        agg_distinct: false,
-        func_variadic: false,
-        funcformat: pgls_query::protobuf::CoercionForm::CoerceExplicitCall.into(),
-        location: 0,
-    })
-}
-
 /// Returns the canonical order for a function option.
 /// Postgres's canonical order (as seen in pg_dump output) is:
 /// 1. LANGUAGE
@@ -860,53 +650,11 @@ fn sort_function_options(options: &mut [pgls_query::protobuf::Node]) {
     });
 }
 
-/// Normalize function body strings by trimming whitespace.
-///
-/// The formatter emits function bodies on separate lines from the dollar-quote delimiters,
-/// which adds leading/trailing newlines to the body. This normalization trims these
-/// so that semantically equivalent bodies compare equal.
-///
-/// Also sorts function options to canonical order so that semantically equivalent
-/// option orderings compare equal.
-fn normalize_function_body(node: &mut NodeEnum) {
+/// Sorts function options to the canonical order the printer writes them in.
+fn normalize_function_options(node: &mut NodeEnum) {
     match node {
-        NodeEnum::CreateFunctionStmt(stmt) => {
-            // Sort options to canonical order
-            sort_function_options(&mut stmt.options);
-
-            for opt in &mut stmt.options {
-                if let Some(NodeEnum::DefElem(def)) = opt.node.as_mut()
-                    && def.defname.eq_ignore_ascii_case("as")
-                    && let Some(ref mut arg) = def.arg
-                    && let Some(NodeEnum::List(list)) = arg.node.as_mut()
-                {
-                    // Trim whitespace from each string in the list (function body)
-                    for item in &mut list.items {
-                        if let Some(NodeEnum::String(s)) = item.node.as_mut() {
-                            s.sval = s.sval.trim().to_string();
-                        }
-                    }
-                }
-            }
-        }
-        NodeEnum::DoStmt(stmt) => {
-            for arg in &mut stmt.args {
-                if let Some(NodeEnum::DefElem(def)) = arg.node.as_mut()
-                    && def.defname.eq_ignore_ascii_case("as")
-                    && let Some(ref mut arg) = def.arg
-                    && let Some(NodeEnum::String(s)) = arg.node.as_mut()
-                {
-                    s.sval = s.sval.trim().to_string();
-                }
-            }
-        }
-        NodeEnum::InlineCodeBlock(block) => {
-            block.source_text = block.source_text.trim().to_string();
-        }
-        NodeEnum::AlterFunctionStmt(stmt) => {
-            // Sort actions to canonical order
-            sort_function_options(&mut stmt.actions);
-        }
+        NodeEnum::CreateFunctionStmt(stmt) => sort_function_options(&mut stmt.options),
+        NodeEnum::AlterFunctionStmt(stmt) => sort_function_options(&mut stmt.actions),
         _ => {}
     }
 }

@@ -24,13 +24,7 @@ insert into line_tbl values ('{NaN,NaN,NaN}');
 insert into line_tbl values ('[(1,3),(2,3)]');
 
 insert into line_tbl
-values
-  (
-    line(
-      cast('(3,1)' as point),
-      cast('(3,2)' as point)
-    )
-  );
+values (line(cast('(3,1)' as point), cast('(3,2)' as point)));
 
 insert into line_tbl values ('{}');
 
@@ -55,23 +49,13 @@ insert into line_tbl values ('[(1,2),(3,4)');
 insert into line_tbl values ('[(1,2),(1,2)]');
 
 insert into line_tbl
-values
-  (
-    line(
-      cast('(1,0)' as point),
-      cast('(1,0)' as point)
-    )
-  );
+values (line(cast('(1,0)' as point), cast('(1,0)' as point)));
 
 select * from line_tbl;
 
 select
-  cast('{nan, 1, nan}' as line) =
-  cast('{nan, 1, nan}' as line)
-  as "true",
-  cast('{nan, 1, nan}' as line) =
-  cast('{nan, 2, nan}' as line)
-  as "false";
+  cast('{nan, 1, nan}' as line) = cast('{nan, 1, nan}' as line) as "true",
+  cast('{nan, 1, nan}' as line) = cast('{nan, 2, nan}' as line) as "false";
 
 select pg_input_is_valid('{1, 1}', 'line');
 

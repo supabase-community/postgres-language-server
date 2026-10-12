@@ -45,7 +45,7 @@ select cast('[1]' as jsonb) @? 'strict $[1]';
 
 select jsonb_path_query('[1]', 'strict $[1]');
 
-select jsonb_path_query('[1]', 'strict $[1]', "silent" := true);
+select jsonb_path_query('[1]', 'strict $[1]', silent := true);
 
 select cast('[1]' as jsonb) @? 'lax $[10000000000000000]';
 
@@ -83,13 +83,13 @@ select cast('1' as jsonb) @? '$ ? ((@ == 1) is unknown)';
 
 select cast('[{"a": 1}, {"a": 2}]' as jsonb) @? '$[0 to 1] ? (@.a > 1)';
 
-select jsonb_path_exists('[{"a": 1}, {"a": 2}, 3]', 'lax $[*].a', "silent" := false);
+select jsonb_path_exists('[{"a": 1}, {"a": 2}, 3]', 'lax $[*].a', silent := false);
 
-select jsonb_path_exists('[{"a": 1}, {"a": 2}, 3]', 'lax $[*].a', "silent" := true);
+select jsonb_path_exists('[{"a": 1}, {"a": 2}, 3]', 'lax $[*].a', silent := true);
 
-select jsonb_path_exists('[{"a": 1}, {"a": 2}, 3]', 'strict $[*].a', "silent" := false);
+select jsonb_path_exists('[{"a": 1}, {"a": 2}, 3]', 'strict $[*].a', silent := false);
 
-select jsonb_path_exists('[{"a": 1}, {"a": 2}, 3]', 'strict $[*].a', "silent" := true);
+select jsonb_path_exists('[{"a": 1}, {"a": 2}, 3]', 'strict $[*].a', silent := true);
 
 select jsonb_path_query('1', 'lax $.a');
 
@@ -97,21 +97,21 @@ select jsonb_path_query('1', 'strict $.a');
 
 select jsonb_path_query('1', 'strict $.*');
 
-select jsonb_path_query('1', 'strict $.a', "silent" := true);
+select jsonb_path_query('1', 'strict $.a', silent := true);
 
-select jsonb_path_query('1', 'strict $.*', "silent" := true);
+select jsonb_path_query('1', 'strict $.*', silent := true);
 
 select jsonb_path_query('[]', 'lax $.a');
 
 select jsonb_path_query('[]', 'strict $.a');
 
-select jsonb_path_query('[]', 'strict $.a', "silent" := true);
+select jsonb_path_query('[]', 'strict $.a', silent := true);
 
 select jsonb_path_query('{}', 'lax $.a');
 
 select jsonb_path_query('{}', 'strict $.a');
 
-select jsonb_path_query('{}', 'strict $.a', "silent" := true);
+select jsonb_path_query('{}', 'strict $.a', silent := true);
 
 select jsonb_path_query('1', 'strict $[1]');
 
@@ -121,13 +121,13 @@ select jsonb_path_query('[]', 'strict $[1]');
 
 select jsonb_path_query('[]', 'strict $["a"]');
 
-select jsonb_path_query('1', 'strict $[1]', "silent" := true);
+select jsonb_path_query('1', 'strict $[1]', silent := true);
 
-select jsonb_path_query('1', 'strict $[*]', "silent" := true);
+select jsonb_path_query('1', 'strict $[*]', silent := true);
 
-select jsonb_path_query('[]', 'strict $[1]', "silent" := true);
+select jsonb_path_query('[]', 'strict $[1]', silent := true);
 
-select jsonb_path_query('[]', 'strict $["a"]', "silent" := true);
+select jsonb_path_query('[]', 'strict $["a"]', silent := true);
 
 select jsonb_path_query('{"a": 12, "b": {"a": 13}}', '$.a');
 
@@ -167,7 +167,7 @@ select jsonb_path_query('[1,2,3]', 'lax $[*]');
 
 select jsonb_path_query('[1,2,3]', 'strict $[*].a');
 
-select jsonb_path_query('[1,2,3]', 'strict $[*].a', "silent" := true);
+select jsonb_path_query('[1,2,3]', 'strict $[*].a', silent := true);
 
 select jsonb_path_query('[]', '$[last]');
 
@@ -175,7 +175,7 @@ select jsonb_path_query('[]', '$[last ? (exists(last))]');
 
 select jsonb_path_query('[]', 'strict $[last]');
 
-select jsonb_path_query('[]', 'strict $[last]', "silent" := true);
+select jsonb_path_query('[]', 'strict $[last]', silent := true);
 
 select jsonb_path_query('[1]', '$[last]');
 
@@ -187,7 +187,7 @@ select jsonb_path_query('[1,2,3]', '$[last ? (@.type() == "number")]');
 
 select jsonb_path_query('[1,2,3]', '$[last ? (@.type() == "string")]');
 
-select jsonb_path_query('[1,2,3]', '$[last ? (@.type() == "string")]', "silent" := true);
+select jsonb_path_query('[1,2,3]', '$[last ? (@.type() == "string")]', silent := true);
 
 select * from jsonb_path_query('{"a": 10}', '$');
 
@@ -208,11 +208,7 @@ select * from jsonb_path_query('[10,11,12,13,14,15]', '$[*] ? (@ < $value)', '{"
 select
   *
 from
-  jsonb_path_query(
-    '[10,11,12,13,14,15]',
-    '$[0,1] ? (@ < $x.value)',
-    '{"x": {"value" : 13}}'
-  );
+  jsonb_path_query('[10,11,12,13,14,15]', '$[0,1] ? (@ < $x.value)', '{"x": {"value" : 13}}');
 
 select * from jsonb_path_query('[10,11,12,13,14,15]', '$[0 to 2] ? (@ < $value)', '{"value" : 15}');
 
@@ -311,80 +307,37 @@ select jsonb_path_query('{"g": [{"x": 2}, {"y": 3}]}', 'lax $.g ? (exists (@.x))
 select jsonb_path_query('{"g": [{"x": 2}, {"y": 3}]}', 'lax $.g ? (exists (@.x + "3"))');
 
 select
-  jsonb_path_query(
-    '{"g": [{"x": 2}, {"y": 3}]}',
-    'lax $.g ? ((exists (@.x + "3")) is unknown)'
-  );
+  jsonb_path_query('{"g": [{"x": 2}, {"y": 3}]}', 'lax $.g ? ((exists (@.x + "3")) is unknown)');
 
 select jsonb_path_query('{"g": [{"x": 2}, {"y": 3}]}', 'strict $.g[*] ? (exists (@.x))');
 
 select
-  jsonb_path_query(
-    '{"g": [{"x": 2}, {"y": 3}]}',
-    'strict $.g[*] ? ((exists (@.x)) is unknown)'
-  );
+  jsonb_path_query('{"g": [{"x": 2}, {"y": 3}]}', 'strict $.g[*] ? ((exists (@.x)) is unknown)');
 
 select jsonb_path_query('{"g": [{"x": 2}, {"y": 3}]}', 'strict $.g ? (exists (@[*].x))');
 
 select
-  jsonb_path_query(
-    '{"g": [{"x": 2}, {"y": 3}]}',
-    'strict $.g ? ((exists (@[*].x)) is unknown)'
-  );
+  jsonb_path_query('{"g": [{"x": 2}, {"y": 3}]}', 'strict $.g ? ((exists (@[*].x)) is unknown)');
 
 select
   x,
   y,
-  jsonb_path_query(
-    '[true, false, null]',
-    '$[*] ? (@ == true  &&  ($x == true && $y == true) ||
+  jsonb_path_query('[true, false, null]', '$[*] ? (@ == true  &&  ($x == true && $y == true) ||
 				 @ == false && !($x == true && $y == true) ||
-				 @ == null  &&  ($x == true && $y == true) is unknown)',
-    jsonb_build_object('x', x, 'y', y)
-  )
-  as "x && y"
+				 @ == null  &&  ($x == true && $y == true) is unknown)', jsonb_build_object('x', x, 'y', y)) as "x && y"
 from
-  (
-    values
-      (cast('true' as jsonb)),
-      ('false'),
-      ('"null"')
-  )
-  as x (x),
-  (
-    values
-      (cast('true' as jsonb)),
-      ('false'),
-      ('"null"')
-  )
-  as y (y);
+  (values (cast('true' as jsonb)), ('false'), ('"null"')) as x (x),
+  (values (cast('true' as jsonb)), ('false'), ('"null"')) as y (y);
 
 select
   x,
   y,
-  jsonb_path_query(
-    '[true, false, null]',
-    '$[*] ? (@ == true  &&  ($x == true || $y == true) ||
+  jsonb_path_query('[true, false, null]', '$[*] ? (@ == true  &&  ($x == true || $y == true) ||
 				 @ == false && !($x == true || $y == true) ||
-				 @ == null  &&  ($x == true || $y == true) is unknown)',
-    jsonb_build_object('x', x, 'y', y)
-  )
-  as "x || y"
+				 @ == null  &&  ($x == true || $y == true) is unknown)', jsonb_build_object('x', x, 'y', y)) as "x || y"
 from
-  (
-    values
-      (cast('true' as jsonb)),
-      ('false'),
-      ('"null"')
-  )
-  as x (x),
-  (
-    values
-      (cast('true' as jsonb)),
-      ('false'),
-      ('"null"')
-  )
-  as y (y);
+  (values (cast('true' as jsonb)), ('false'), ('"null"')) as x (x),
+  (values (cast('true' as jsonb)), ('false'), ('"null"')) as y (y);
 
 select cast('{"a": 1, "b":1}' as jsonb) @? '$ ? (@.a == @.b)';
 
@@ -450,13 +403,13 @@ select jsonb_path_query('"a"', '-$');
 
 select jsonb_path_query('[1,"2",3]', '+$');
 
-select jsonb_path_query('1', '$ + "2"', "silent" := true);
+select jsonb_path_query('1', '$ + "2"', silent := true);
 
-select jsonb_path_query('[1, 2]', '3 * $', "silent" := true);
+select jsonb_path_query('[1, 2]', '3 * $', silent := true);
 
-select jsonb_path_query('"a"', '-$', "silent" := true);
+select jsonb_path_query('"a"', '-$', silent := true);
 
-select jsonb_path_query('[1,"2",3]', '+$', "silent" := true);
+select jsonb_path_query('[1,"2",3]', '+$', silent := true);
 
 select cast('["1",2,0,3]' as jsonb) @? '-$[*]';
 
@@ -474,7 +427,7 @@ select jsonb_path_query('{"a": [2, 3, 4]}', 'lax -$.a');
 
 select jsonb_path_query('{"a": [1, 2]}', 'lax $.a * 3');
 
-select jsonb_path_query('{"a": [1, 2]}', 'lax $.a * 3', "silent" := true);
+select jsonb_path_query('{"a": [1, 2]}', 'lax $.a * 3', silent := true);
 
 select jsonb_path_query('{"a": [1,2,3], "b": [3,4,5]}', '$.*');
 
@@ -522,13 +475,13 @@ select jsonb_path_match('[[1, true], [2, false]]', 'strict $[*] ? (@[0] > $x) [1
 
 select jsonb_path_match('[[1, true], [2, false]]', 'strict $[*] ? (@[0] < $x) [1]', '{"x": 2}');
 
-select jsonb_path_match('[{"a": 1}, {"a": 2}, 3]', 'lax exists($[*].a)', "silent" := false);
+select jsonb_path_match('[{"a": 1}, {"a": 2}, 3]', 'lax exists($[*].a)', silent := false);
 
-select jsonb_path_match('[{"a": 1}, {"a": 2}, 3]', 'lax exists($[*].a)', "silent" := true);
+select jsonb_path_match('[{"a": 1}, {"a": 2}, 3]', 'lax exists($[*].a)', silent := true);
 
-select jsonb_path_match('[{"a": 1}, {"a": 2}, 3]', 'strict exists($[*].a)', "silent" := false);
+select jsonb_path_match('[{"a": 1}, {"a": 2}, 3]', 'strict exists($[*].a)', silent := false);
 
-select jsonb_path_match('[{"a": 1}, {"a": 2}, 3]', 'strict exists($[*].a)', "silent" := true);
+select jsonb_path_match('[{"a": 1}, {"a": 2}, 3]', 'strict exists($[*].a)', silent := true);
 
 select jsonb_path_query('[null,1,true,"a",[],{}]', '$.type()');
 
@@ -562,7 +515,7 @@ select
   jsonb_path_query(
     '[1,null,true,"11",[],[1],[1,2,3],{},{"a":1,"b":2}]',
     'strict $[*].size()',
-    "silent" := true
+    silent := true
   );
 
 select jsonb_path_query('[1,null,true,"11",[],[1],[1,2,3],{},{"a":1,"b":2}]', 'lax $[*].size()');
@@ -579,7 +532,7 @@ select jsonb_path_query('[0, 1, -2, -3.4, 5.6]', '$[*].ceiling().abs().type()');
 
 select jsonb_path_query('[{},1]', '$[*].keyvalue()');
 
-select jsonb_path_query('[{},1]', '$[*].keyvalue()', "silent" := true);
+select jsonb_path_query('[{},1]', '$[*].keyvalue()', silent := true);
 
 select jsonb_path_query('{}', '$.keyvalue()');
 
@@ -601,9 +554,9 @@ select jsonb_path_query('null', '$.double()');
 
 select jsonb_path_query('true', '$.double()');
 
-select jsonb_path_query('null', '$.double()', "silent" := true);
+select jsonb_path_query('null', '$.double()', silent := true);
 
-select jsonb_path_query('true', '$.double()', "silent" := true);
+select jsonb_path_query('true', '$.double()', silent := true);
 
 select jsonb_path_query('[]', '$.double()');
 
@@ -611,9 +564,9 @@ select jsonb_path_query('[]', 'strict $.double()');
 
 select jsonb_path_query('{}', '$.double()');
 
-select jsonb_path_query('[]', 'strict $.double()', "silent" := true);
+select jsonb_path_query('[]', 'strict $.double()', silent := true);
 
-select jsonb_path_query('{}', '$.double()', "silent" := true);
+select jsonb_path_query('{}', '$.double()', silent := true);
 
 select jsonb_path_query('1.23', '$.double()');
 
@@ -631,9 +584,9 @@ select jsonb_path_query('"inf"', '$.double()');
 
 select jsonb_path_query('"-inf"', '$.double()');
 
-select jsonb_path_query('"inf"', '$.double()', "silent" := true);
+select jsonb_path_query('"inf"', '$.double()', silent := true);
 
-select jsonb_path_query('"-inf"', '$.double()', "silent" := true);
+select jsonb_path_query('"-inf"', '$.double()', silent := true);
 
 select jsonb_path_query('{}', '$.abs()');
 
@@ -641,11 +594,11 @@ select jsonb_path_query('true', '$.floor()');
 
 select jsonb_path_query('"1.2"', '$.ceiling()');
 
-select jsonb_path_query('{}', '$.abs()', "silent" := true);
+select jsonb_path_query('{}', '$.abs()', silent := true);
 
-select jsonb_path_query('true', '$.floor()', "silent" := true);
+select jsonb_path_query('true', '$.floor()', silent := true);
 
-select jsonb_path_query('"1.2"', '$.ceiling()', "silent" := true);
+select jsonb_path_query('"1.2"', '$.ceiling()', silent := true);
 
 select jsonb_path_query('["", "a", "abc", "abcabc"]', '$[*] ? (@ starts with "abc")');
 
@@ -664,16 +617,10 @@ select
 select jsonb_path_query('[[null, 1, "abc", "abcabc"]]', 'lax $ ? (@[*] starts with "abc")');
 
 select
-  jsonb_path_query(
-    '[[null, 1, "abd", "abdabc"]]',
-    'lax $ ? ((@[*] starts with "abc") is unknown)'
-  );
+  jsonb_path_query('[[null, 1, "abd", "abdabc"]]', 'lax $ ? ((@[*] starts with "abc") is unknown)');
 
 select
-  jsonb_path_query(
-    '[null, 1, "abd", "abdabc"]',
-    'lax $[*] ? ((@ starts with "abc") is unknown)'
-  );
+  jsonb_path_query('[null, 1, "abd", "abdabc"]', 'lax $[*] ? ((@ starts with "abc") is unknown)');
 
 select
   jsonb_path_query(
@@ -766,10 +713,7 @@ select jsonb_path_query('"10-03-2017 12:34"', '$.datetime("dd-mm-yyyy").type()')
 select jsonb_path_query('"10-03-2017 12:34"', '       $.datetime("dd-mm-yyyy HH24:MI").type()');
 
 select
-  jsonb_path_query(
-    '"10-03-2017 12:34 +05:20"',
-    '$.datetime("dd-mm-yyyy HH24:MI TZH:TZM").type()'
-  );
+  jsonb_path_query('"10-03-2017 12:34 +05:20"', '$.datetime("dd-mm-yyyy HH24:MI TZH:TZM").type()');
 
 select jsonb_path_query('"12:34:56"', '$.datetime("HH24:MI:SS").type()');
 
@@ -785,9 +729,9 @@ select jsonb_path_query('null', '$.bigint()');
 
 select jsonb_path_query('true', '$.bigint()');
 
-select jsonb_path_query('null', '$.bigint()', "silent" := true);
+select jsonb_path_query('null', '$.bigint()', silent := true);
 
-select jsonb_path_query('true', '$.bigint()', "silent" := true);
+select jsonb_path_query('true', '$.bigint()', silent := true);
 
 select jsonb_path_query('[]', '$.bigint()');
 
@@ -795,9 +739,9 @@ select jsonb_path_query('[]', 'strict $.bigint()');
 
 select jsonb_path_query('{}', '$.bigint()');
 
-select jsonb_path_query('[]', 'strict $.bigint()', "silent" := true);
+select jsonb_path_query('[]', 'strict $.bigint()', silent := true);
 
-select jsonb_path_query('{}', '$.bigint()', "silent" := true);
+select jsonb_path_query('{}', '$.bigint()', silent := true);
 
 select jsonb_path_query('"1.23"', '$.bigint()');
 
@@ -813,9 +757,9 @@ select jsonb_path_query('"inf"', '$.bigint()');
 
 select jsonb_path_query('"-inf"', '$.bigint()');
 
-select jsonb_path_query('"inf"', '$.bigint()', "silent" := true);
+select jsonb_path_query('"inf"', '$.bigint()', silent := true);
 
-select jsonb_path_query('"-inf"', '$.bigint()', "silent" := true);
+select jsonb_path_query('"-inf"', '$.bigint()', silent := true);
 
 select jsonb_path_query('123', '$.bigint()');
 
@@ -843,7 +787,7 @@ select jsonb_path_query('123', '$.bigint() * 2');
 
 select jsonb_path_query('null', '$.boolean()');
 
-select jsonb_path_query('null', '$.boolean()', "silent" := true);
+select jsonb_path_query('null', '$.boolean()', silent := true);
 
 select jsonb_path_query('[]', '$.boolean()');
 
@@ -851,9 +795,9 @@ select jsonb_path_query('[]', 'strict $.boolean()');
 
 select jsonb_path_query('{}', '$.boolean()');
 
-select jsonb_path_query('[]', 'strict $.boolean()', "silent" := true);
+select jsonb_path_query('[]', 'strict $.boolean()', silent := true);
 
-select jsonb_path_query('{}', '$.boolean()', "silent" := true);
+select jsonb_path_query('{}', '$.boolean()', silent := true);
 
 select jsonb_path_query('1.23', '$.boolean()');
 
@@ -871,9 +815,9 @@ select jsonb_path_query('"inf"', '$.boolean()');
 
 select jsonb_path_query('"-inf"', '$.boolean()');
 
-select jsonb_path_query('"inf"', '$.boolean()', "silent" := true);
+select jsonb_path_query('"inf"', '$.boolean()', silent := true);
 
-select jsonb_path_query('"-inf"', '$.boolean()', "silent" := true);
+select jsonb_path_query('"-inf"', '$.boolean()', silent := true);
 
 select jsonb_path_query('"100"', '$.boolean()');
 
@@ -957,9 +901,9 @@ select jsonb_path_query('null', '$.decimal()');
 
 select jsonb_path_query('true', '$.decimal()');
 
-select jsonb_path_query('null', '$.decimal()', "silent" := true);
+select jsonb_path_query('null', '$.decimal()', silent := true);
 
-select jsonb_path_query('true', '$.decimal()', "silent" := true);
+select jsonb_path_query('true', '$.decimal()', silent := true);
 
 select jsonb_path_query('[]', '$.decimal()');
 
@@ -967,9 +911,9 @@ select jsonb_path_query('[]', 'strict $.decimal()');
 
 select jsonb_path_query('{}', '$.decimal()');
 
-select jsonb_path_query('[]', 'strict $.decimal()', "silent" := true);
+select jsonb_path_query('[]', 'strict $.decimal()', silent := true);
 
-select jsonb_path_query('{}', '$.decimal()', "silent" := true);
+select jsonb_path_query('{}', '$.decimal()', silent := true);
 
 select jsonb_path_query('1.23', '$.decimal()');
 
@@ -987,9 +931,9 @@ select jsonb_path_query('"inf"', '$.decimal()');
 
 select jsonb_path_query('"-inf"', '$.decimal()');
 
-select jsonb_path_query('"inf"', '$.decimal()', "silent" := true);
+select jsonb_path_query('"inf"', '$.decimal()', silent := true);
 
-select jsonb_path_query('"-inf"', '$.decimal()', "silent" := true);
+select jsonb_path_query('"-inf"', '$.decimal()', silent := true);
 
 select jsonb_path_query('123', '$.decimal()');
 
@@ -1045,9 +989,9 @@ select jsonb_path_query('null', '$.integer()');
 
 select jsonb_path_query('true', '$.integer()');
 
-select jsonb_path_query('null', '$.integer()', "silent" := true);
+select jsonb_path_query('null', '$.integer()', silent := true);
 
-select jsonb_path_query('true', '$.integer()', "silent" := true);
+select jsonb_path_query('true', '$.integer()', silent := true);
 
 select jsonb_path_query('[]', '$.integer()');
 
@@ -1055,9 +999,9 @@ select jsonb_path_query('[]', 'strict $.integer()');
 
 select jsonb_path_query('{}', '$.integer()');
 
-select jsonb_path_query('[]', 'strict $.integer()', "silent" := true);
+select jsonb_path_query('[]', 'strict $.integer()', silent := true);
 
-select jsonb_path_query('{}', '$.integer()', "silent" := true);
+select jsonb_path_query('{}', '$.integer()', silent := true);
 
 select jsonb_path_query('"1.23"', '$.integer()');
 
@@ -1073,9 +1017,9 @@ select jsonb_path_query('"inf"', '$.integer()');
 
 select jsonb_path_query('"-inf"', '$.integer()');
 
-select jsonb_path_query('"inf"', '$.integer()', "silent" := true);
+select jsonb_path_query('"inf"', '$.integer()', silent := true);
 
-select jsonb_path_query('"-inf"', '$.integer()', "silent" := true);
+select jsonb_path_query('"-inf"', '$.integer()', silent := true);
 
 select jsonb_path_query('123', '$.integer()');
 
@@ -1101,9 +1045,9 @@ select jsonb_path_query('null', '$.number()');
 
 select jsonb_path_query('true', '$.number()');
 
-select jsonb_path_query('null', '$.number()', "silent" := true);
+select jsonb_path_query('null', '$.number()', silent := true);
 
-select jsonb_path_query('true', '$.number()', "silent" := true);
+select jsonb_path_query('true', '$.number()', silent := true);
 
 select jsonb_path_query('[]', '$.number()');
 
@@ -1111,9 +1055,9 @@ select jsonb_path_query('[]', 'strict $.number()');
 
 select jsonb_path_query('{}', '$.number()');
 
-select jsonb_path_query('[]', 'strict $.number()', "silent" := true);
+select jsonb_path_query('[]', 'strict $.number()', silent := true);
 
-select jsonb_path_query('{}', '$.number()', "silent" := true);
+select jsonb_path_query('{}', '$.number()', silent := true);
 
 select jsonb_path_query('1.23', '$.number()');
 
@@ -1131,9 +1075,9 @@ select jsonb_path_query('"inf"', '$.number()');
 
 select jsonb_path_query('"-inf"', '$.number()');
 
-select jsonb_path_query('"inf"', '$.number()', "silent" := true);
+select jsonb_path_query('"inf"', '$.number()', silent := true);
 
-select jsonb_path_query('"-inf"', '$.number()', "silent" := true);
+select jsonb_path_query('"-inf"', '$.number()', silent := true);
 
 select jsonb_path_query('123', '$.number()');
 
@@ -1153,7 +1097,7 @@ select jsonb_path_query('12.3', '$.number() * 2');
 
 select jsonb_path_query('null', '$.string()');
 
-select jsonb_path_query('null', '$.string()', "silent" := true);
+select jsonb_path_query('null', '$.string()', silent := true);
 
 select jsonb_path_query('[]', '$.string()');
 
@@ -1161,9 +1105,9 @@ select jsonb_path_query('[]', 'strict $.string()');
 
 select jsonb_path_query('{}', '$.string()');
 
-select jsonb_path_query('[]', 'strict $.string()', "silent" := true);
+select jsonb_path_query('[]', 'strict $.string()', silent := true);
 
-select jsonb_path_query('{}', '$.string()', "silent" := true);
+select jsonb_path_query('{}', '$.string()', silent := true);
 
 select jsonb_path_query('1.23', '$.string()');
 
@@ -1211,9 +1155,9 @@ select jsonb_path_query('"2023-08-15"', '$.date().string()');
 
 begin;
 
-set local time zone UTC;
+set local time zone 'UTC';
 
-set local datestyle = German;
+set local datestyle = 'German';
 
 select jsonb_path_query('"2023-08-15 12:34:56 +5:30"', '$.timestamp_tz().string()');
 
@@ -2036,8 +1980,7 @@ select
 select
   jsonb_path_query(
     '"1000000-01-01"',
-    cast('$.datetime() > "2020-01-01 12:00:00".datetime()'
-    as jsonpath)
+    cast('$.datetime() > "2020-01-01 12:00:00".datetime()' as jsonpath)
   );
 
 set timezone to default;
@@ -2062,19 +2005,19 @@ select
   jsonb_path_query_array(
     '[{"a": 1}, {"a": 2}, {"a": 3}, {"a": 5}]',
     '$[*].a ? (@ > $min && @ < $max)',
-    "vars" := '{"min": 1, "max": 4}'
+    vars := '{"min": 1, "max": 4}'
   );
 
 select
   jsonb_path_query_array(
     '[{"a": 1}, {"a": 2}, {"a": 3}, {"a": 5}]',
     '$[*].a ? (@ > $min && @ < $max)',
-    "vars" := '{"min": 3, "max": 4}'
+    vars := '{"min": 3, "max": 4}'
   );
 
 select jsonb_path_query_first('[{"a": 1}, {"a": 2}, {}]', 'strict $[*].a');
 
-select jsonb_path_query_first('[{"a": 1}, {"a": 2}, {}]', 'strict $[*].a', "silent" := true);
+select jsonb_path_query_first('[{"a": 1}, {"a": 2}, {}]', 'strict $[*].a', silent := true);
 
 select jsonb_path_query_first('[{"a": 1}, {"a": 2}]', '$[*].a');
 
@@ -2086,14 +2029,14 @@ select
   jsonb_path_query_first(
     '[{"a": 1}, {"a": 2}, {"a": 3}, {"a": 5}]',
     '$[*].a ? (@ > $min && @ < $max)',
-    "vars" := '{"min": 1, "max": 4}'
+    vars := '{"min": 1, "max": 4}'
   );
 
 select
   jsonb_path_query_first(
     '[{"a": 1}, {"a": 2}, {"a": 3}, {"a": 5}]',
     '$[*].a ? (@ > $min && @ < $max)',
-    "vars" := '{"min": 3, "max": 4}'
+    vars := '{"min": 3, "max": 4}'
   );
 
 select jsonb_path_query_first('[{"a": 1}]', '$undefined_var');
@@ -2110,43 +2053,43 @@ select
   jsonb_path_exists(
     '[{"a": 1}, {"a": 2}, {"a": 3}, {"a": 5}]',
     '$[*] ? (@.a > $min && @.a < $max)',
-    "vars" := '{"min": 1, "max": 4}'
+    vars := '{"min": 1, "max": 4}'
   );
 
 select
   jsonb_path_exists(
     '[{"a": 1}, {"a": 2}, {"a": 3}, {"a": 5}]',
     '$[*] ? (@.a > $min && @.a < $max)',
-    "vars" := '{"min": 3, "max": 4}'
+    vars := '{"min": 3, "max": 4}'
   );
 
 select jsonb_path_exists('[{"a": 1}]', '$undefined_var');
 
 select jsonb_path_exists('[{"a": 1}]', 'false');
 
-select jsonb_path_match('true', '$', "silent" := false);
+select jsonb_path_match('true', '$', silent := false);
 
-select jsonb_path_match('false', '$', "silent" := false);
+select jsonb_path_match('false', '$', silent := false);
 
-select jsonb_path_match('null', '$', "silent" := false);
+select jsonb_path_match('null', '$', silent := false);
 
-select jsonb_path_match('1', '$', "silent" := true);
+select jsonb_path_match('1', '$', silent := true);
 
-select jsonb_path_match('1', '$', "silent" := false);
+select jsonb_path_match('1', '$', silent := false);
 
-select jsonb_path_match('"a"', '$', "silent" := false);
+select jsonb_path_match('"a"', '$', silent := false);
 
-select jsonb_path_match('{}', '$', "silent" := false);
+select jsonb_path_match('{}', '$', silent := false);
 
-select jsonb_path_match('[true]', '$', "silent" := false);
+select jsonb_path_match('[true]', '$', silent := false);
 
-select jsonb_path_match('{}', 'lax $.a', "silent" := false);
+select jsonb_path_match('{}', 'lax $.a', silent := false);
 
-select jsonb_path_match('{}', 'strict $.a', "silent" := false);
+select jsonb_path_match('{}', 'strict $.a', silent := false);
 
-select jsonb_path_match('{}', 'strict $.a', "silent" := true);
+select jsonb_path_match('{}', 'strict $.a', silent := true);
 
-select jsonb_path_match('[true, true]', '$[*]', "silent" := false);
+select jsonb_path_match('[true, true]', '$[*]', silent := false);
 
 select cast('[{"a": 1}, {"a": 2}]' as jsonb) @@ '$[*].a > 1';
 
@@ -2159,16 +2102,14 @@ select jsonb_path_match('[{"a": 1}]', '$undefined_var');
 select jsonb_path_match('[{"a": 1}]', 'false');
 
 with
-str (j,
-num)
+str (j, num)
 as (
   select
     jsonb_build_object('s', s),
     num
   from
     unnest(
-      cast('{"", "a", "ab", "abc", "abcd", "b", "A", "AB", "ABC", "ABc", "ABcD", "B"}'
-      as text[])
+      cast('{"", "a", "ab", "abc", "abcd", "b", "A", "AB", "ABC", "ABc", "ABcD", "B"}' as text[])
     )
     with ordinality
     as a (s, num)
@@ -2176,36 +2117,11 @@ as (
 select
   s1.j,
   s2.j,
-  jsonb_path_query_first(
-    s1.j,
-    '$.s < $s',
-    "vars" := s2.j
-  )
-  as lt,
-  jsonb_path_query_first(
-    s1.j,
-    '$.s <= $s',
-    "vars" := s2.j
-  )
-  as le,
-  jsonb_path_query_first(
-    s1.j,
-    '$.s == $s',
-    "vars" := s2.j
-  )
-  as eq,
-  jsonb_path_query_first(
-    s1.j,
-    '$.s >= $s',
-    "vars" := s2.j
-  )
-  as ge,
-  jsonb_path_query_first(
-    s1.j,
-    '$.s > $s',
-    "vars" := s2.j
-  )
-  as gt
+  jsonb_path_query_first(s1.j, '$.s < $s', vars := s2.j) as lt,
+  jsonb_path_query_first(s1.j, '$.s <= $s', vars := s2.j) as le,
+  jsonb_path_query_first(s1.j, '$.s == $s', vars := s2.j) as eq,
+  jsonb_path_query_first(s1.j, '$.s >= $s', vars := s2.j) as ge,
+  jsonb_path_query_first(s1.j, '$.s > $s', vars := s2.j) as gt
 from
   str as s1,
   str as s2

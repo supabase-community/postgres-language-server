@@ -18,18 +18,16 @@ create view ro_view2
 as select a, b from base_tbl group by a, b;
 
 create view ro_view3
-as select 1 from base_tbl having MAX(a) > 0;
+as select 1 from base_tbl having max(a) > 0;
 
 create view ro_view4
-as select COUNT(*) from base_tbl;
+as select count(*) from base_tbl;
 
 create view ro_view5
-as select a, RANK() over () from base_tbl;
+as select a, rank() over () from base_tbl;
 
 create view ro_view6
-as select a, b from base_tbl
-union
-select -a, b from base_tbl;
+as select a, b from base_tbl union select -a, b from base_tbl;
 
 select * from t;
 
@@ -43,12 +41,7 @@ create view ro_view10
 as select 1 as a;
 
 create view ro_view11
-as select
-  b1.a,
-  b2.b
-from
-  base_tbl as b1,
-  base_tbl as b2;
+as select b1.a, b2.b from base_tbl as b1, base_tbl as b2;
 
 create view ro_view12
 as select * from generate_series(1, 10) as g (a);
@@ -77,12 +70,7 @@ create view ro_view19
 as select * from uv_seq;
 
 create view ro_view20
-as select
-  a,
-  b,
-  generate_series(1, a) as g
-from
-  base_tbl;
+as select a, b, generate_series(1, a) as g from base_tbl;
 
 select
   table_name,
@@ -268,14 +256,7 @@ create table base_tbl (
 insert into base_tbl select i, 'Row ' || i from generate_series(-2, 2) as g (i);
 
 create view rw_view1
-as select
-  *,
-  'Const' as c,
-  (select concat('b: ', b)) as d
-from
-  base_tbl
-where
-  a > 0;
+as select *, 'Const' as c, (select concat('b: ', b)) as d from base_tbl where a > 0;
 
 select table_name, is_insertable_into from information_schema.tables where table_name = 'rw_view1';
 
@@ -321,7 +302,7 @@ update rw_view1 set a = 6 where a = 5;
 delete from rw_view1 where a = 5;
 
 create table base_tbl_hist (
-  ts timestamp with time zone default NOW(),
+  ts timestamptz default now(),
   a int,
   b text
 );
@@ -329,8 +310,7 @@ create table base_tbl_hist (
 create rule base_tbl_log
 as on insert to rw_view1
 do
-  insert into base_tbl_hist (a, b)
-  values (new.a, new.b);;
+  insert into base_tbl_hist (a, b) values (new.a, new.b);;
 
 select
   table_name,
@@ -357,25 +337,10 @@ create table base_tbl (
 insert into base_tbl select i, 'Row ' || i from generate_series(-2, 2) as g (i);
 
 create view rw_view1
-as select
-  b as bb,
-  a as aa,
-  'Const1' as c
-from
-  base_tbl
-where
-  a > 0;
+as select b as bb, a as aa, 'Const1' as c from base_tbl where a > 0;
 
 create view rw_view2
-as select
-  aa as aaa,
-  bb as bbb,
-  c as c1,
-  'Const2' as c2
-from
-  rw_view1
-where
-  aa < 10;
+as select aa as aaa, bb as bbb, c as c1, 'Const2' as c2 from rw_view1 where aa < 10;
 
 select table_name, is_insertable_into from information_schema.tables where table_name = 'rw_view2';
 
@@ -466,9 +431,7 @@ order by table_name,
 create rule rw_view1_ins_rule
 as on insert to rw_view1
 do instead
-  insert into base_tbl
-  values (new.a, new.b)
-  returning *;;
+  insert into base_tbl values (new.a, new.b) returning *;;
 
 select
   table_name,
@@ -503,11 +466,7 @@ order by table_name,
 create rule rw_view1_upd_rule
 as on update to rw_view1
 do instead
-  update base_tbl
-  set b = new.b
-  where
-    a = old.a
-  returning new.*;;
+  update base_tbl set b = new.b where a = old.a returning new.*;;
 
 select
   table_name,
@@ -542,10 +501,7 @@ order by table_name,
 create rule rw_view1_del_rule
 as on delete to rw_view1
 do instead
-  delete from base_tbl
-  where
-    a = old.a
-  returning old.*;;
+  delete from base_tbl where a = old.a returning old.*;;
 
 select
   table_name,
@@ -586,11 +542,7 @@ drop rule rw_view1_upd_rule on rw_view1;
 create rule rw_view1_upd_rule
 as on update to rw_view1
 do instead
-  update base_tbl
-  set b = new.b
-  where
-    a = old.a
-  returning *;;
+  update base_tbl set b = new.b where a = old.a returning *;;
 
 update rw_view2 set b = 'Row three' where a = 3 returning old.*, new.*;
 
@@ -614,23 +566,10 @@ create table base_tbl (
 insert into base_tbl select i, 'Row ' || i from generate_series(-2, 2) as g (i);
 
 create view rw_view1
-as select
-  *,
-  'Const1' as c1
-from
-  base_tbl
-where
-  a > 0
-offset 0;
+as select *, 'Const1' as c1 from base_tbl where a > 0 offset 0;
 
 create view rw_view2
-as select
-  *,
-  'Const2' as c2
-from
-  rw_view1
-where
-  a < 10;
+as select *, 'Const2' as c2 from rw_view1 where a < 10;
 
 select
   table_name,
@@ -668,7 +607,7 @@ order by table_name,
 create function rw_view1_trig_fn()
 returns trigger
 language plpgsql
-as $function$
+as $$
 BEGIN
   IF TG_OP = 'INSERT' THEN
     INSERT INTO base_tbl VALUES (NEW.a, NEW.b);
@@ -683,7 +622,7 @@ BEGIN
     RETURN OLD;
   END IF;
 END;
-$function$;
+$$;
 
 create trigger rw_view1_ins_trig
 instead of insert
@@ -849,9 +788,7 @@ as select b as bb, a as aa from base_tbl;
 create function rw_view1_aa(x rw_view1)
 returns int
 language sql
-as $function$
-SELECT x.aa
-$function$;
+as $$ SELECT x.aa $$;
 
 update rw_view1 as v
 set bb = 'Updated row 2'
@@ -892,13 +829,13 @@ as select b as bb, c as cc, a as aa from base_tbl;
 
 insert into rw_view1 values ('Row 2', 2.0, 2);
 
-grant SELECT on table base_tbl to regress_view_user2;
+grant select on table base_tbl to regress_view_user2;
 
-grant SELECT on table rw_view1 to regress_view_user2;
+grant select on table rw_view1 to regress_view_user2;
 
-grant UPDATE (a, c) on table base_tbl to regress_view_user2;
+grant update (a, c) on table base_tbl to regress_view_user2;
 
-grant UPDATE (bb, cc) on table rw_view1 to regress_view_user2;
+grant update (bb, cc) on table rw_view1 to regress_view_user2;
 
 reset session_authorization;
 
@@ -941,7 +878,7 @@ reset session_authorization;
 
 set session authorization regress_view_user1;
 
-grant INSERT, DELETE on table base_tbl to regress_view_user2;
+grant insert, delete on table base_tbl to regress_view_user2;
 
 reset session_authorization;
 
@@ -965,9 +902,9 @@ reset session_authorization;
 
 set session authorization regress_view_user1;
 
-revoke INSERT, DELETE on table base_tbl from regress_view_user2;
+revoke insert, delete on table base_tbl from regress_view_user2;
 
-grant INSERT, DELETE on table rw_view1 to regress_view_user2;
+grant insert, delete on table rw_view1 to regress_view_user2;
 
 reset session_authorization;
 
@@ -1023,7 +960,7 @@ update rw_view2 set b = 'bar' where a = 1;
 
 reset session_authorization;
 
-grant SELECT on table base_tbl to regress_view_user1;
+grant select on table base_tbl to regress_view_user1;
 
 set session authorization regress_view_user1;
 
@@ -1043,7 +980,7 @@ update rw_view2 set b = 'bar' where a = 1;
 
 set session authorization regress_view_user1;
 
-grant SELECT on table rw_view1 to regress_view_user2;
+grant select on table rw_view1 to regress_view_user2;
 
 set session authorization regress_view_user2;
 
@@ -1055,7 +992,7 @@ update rw_view2 set b = 'bar' where a = 1;
 
 reset session_authorization;
 
-grant UPDATE on table base_tbl to regress_view_user1;
+grant update on table base_tbl to regress_view_user1;
 
 set session authorization regress_view_user1;
 
@@ -1075,7 +1012,7 @@ update rw_view2 set b = 'bar' where a = 1;
 
 set session authorization regress_view_user1;
 
-grant UPDATE on table rw_view1 to regress_view_user2;
+grant update on table rw_view1 to regress_view_user2;
 
 set session authorization regress_view_user2;
 
@@ -1087,7 +1024,7 @@ update rw_view2 set b = 'bar' where a = 1;
 
 reset session_authorization;
 
-revoke UPDATE on table base_tbl from regress_view_user1;
+revoke update on table base_tbl from regress_view_user1;
 
 set session authorization regress_view_user1;
 
@@ -1127,9 +1064,9 @@ alter view rw_view1
 
 insert into rw_view1 values ('Row 2', 2.0, 2);
 
-grant SELECT on table rw_view1 to regress_view_user2;
+grant select on table rw_view1 to regress_view_user2;
 
-grant UPDATE (bb, cc) on table rw_view1 to regress_view_user2;
+grant update (bb, cc) on table rw_view1 to regress_view_user2;
 
 set session authorization regress_view_user2;
 
@@ -1151,9 +1088,9 @@ delete from rw_view1;
 
 set session authorization regress_view_user1;
 
-grant SELECT on table base_tbl to regress_view_user2;
+grant select on table base_tbl to regress_view_user2;
 
-grant UPDATE (a, c) on table base_tbl to regress_view_user2;
+grant update (a, c) on table base_tbl to regress_view_user2;
 
 set session authorization regress_view_user2;
 
@@ -1173,7 +1110,7 @@ update rw_view1 set bb = bb;
 
 set session authorization regress_view_user1;
 
-grant INSERT, DELETE on table base_tbl to regress_view_user2;
+grant insert, delete on table base_tbl to regress_view_user2;
 
 set session authorization regress_view_user2;
 
@@ -1187,9 +1124,9 @@ delete from rw_view1 where aa = 2;
 
 set session authorization regress_view_user1;
 
-revoke INSERT, DELETE on table base_tbl from regress_view_user2;
+revoke insert, delete on table base_tbl from regress_view_user2;
 
-grant INSERT, DELETE on table rw_view1 to regress_view_user2;
+grant insert, delete on table rw_view1 to regress_view_user2;
 
 set session authorization regress_view_user2;
 
@@ -1199,7 +1136,7 @@ delete from rw_view1 where aa = 2;
 
 set session authorization regress_view_user1;
 
-grant INSERT, DELETE on table base_tbl to regress_view_user2;
+grant insert, delete on table base_tbl to regress_view_user2;
 
 set session authorization regress_view_user2;
 
@@ -1236,14 +1173,9 @@ update rw_view1 set aa = aa;
 set session authorization regress_view_user2;
 
 create view rw_view2
-as select
-  cc as ccc,
-  aa as aaa,
-  bb as bbb
-from
-  rw_view1;
+as select cc as ccc, aa as aaa, bb as bbb from rw_view1;
 
-grant SELECT, UPDATE on table rw_view2 to regress_view_user3;
+grant select, update on table rw_view2 to regress_view_user3;
 
 select * from rw_view2;
 
@@ -1251,9 +1183,9 @@ update rw_view2 set aaa = aaa;
 
 reset session_authorization;
 
-grant SELECT on table base_tbl to regress_view_user1;
+grant select on table base_tbl to regress_view_user1;
 
-grant UPDATE (a, b) on table base_tbl to regress_view_user1;
+grant update (a, b) on table base_tbl to regress_view_user1;
 
 set session authorization regress_view_user1;
 
@@ -1277,32 +1209,32 @@ update rw_view2 set aaa = aaa;
 
 set session authorization regress_view_user1;
 
-grant SELECT on table rw_view1 to regress_view_user2;
+grant select on table rw_view1 to regress_view_user2;
 
-grant UPDATE (bb, cc) on table rw_view1 to regress_view_user2;
-
-set session authorization regress_view_user2;
-
-select * from rw_view2;
-
-update rw_view2 set bbb = bbb;
-
-set session authorization regress_view_user3;
-
-select * from rw_view2;
-
-update rw_view2 set bbb = bbb;
-
-reset session_authorization;
-
-grant SELECT on table base_tbl to regress_view_user2;
-
-grant UPDATE (a, c) on table base_tbl to regress_view_user2;
+grant update (bb, cc) on table rw_view1 to regress_view_user2;
 
 set session authorization regress_view_user2;
 
 select * from rw_view2;
 
+update rw_view2 set bbb = bbb;
+
+set session authorization regress_view_user3;
+
+select * from rw_view2;
+
+update rw_view2 set bbb = bbb;
+
+reset session_authorization;
+
+grant select on table base_tbl to regress_view_user2;
+
+grant update (a, c) on table base_tbl to regress_view_user2;
+
+set session authorization regress_view_user2;
+
+select * from rw_view2;
+
 update rw_view2 set aaa = aaa;
 
 update rw_view2 set bbb = bbb;
@@ -1321,9 +1253,9 @@ update rw_view2 set ccc = ccc;
 
 reset session_authorization;
 
-grant SELECT on table base_tbl to regress_view_user3;
+grant select on table base_tbl to regress_view_user3;
 
-grant UPDATE (a, c) on table base_tbl to regress_view_user3;
+grant update (a, c) on table base_tbl to regress_view_user3;
 
 set session authorization regress_view_user3;
 
@@ -1337,7 +1269,7 @@ update rw_view2 set ccc = ccc;
 
 reset session_authorization;
 
-revoke SELECT, UPDATE on table base_tbl from regress_view_user1;
+revoke select, update on table base_tbl from regress_view_user1;
 
 set session authorization regress_view_user1;
 
@@ -1367,7 +1299,7 @@ update rw_view2 set ccc = ccc;
 
 reset session_authorization;
 
-revoke SELECT, UPDATE on table base_tbl from regress_view_user2;
+revoke select, update on table base_tbl from regress_view_user2;
 
 set session authorization regress_view_user2;
 
@@ -1437,7 +1369,7 @@ insert into base_tbl values (2, 'Row 2');
 create function rw_view1_trig_fn()
 returns trigger
 language plpgsql
-as $function$
+as $$
 BEGIN
   IF TG_OP = 'INSERT' THEN
     UPDATE base_tbl SET b=NEW.b WHERE a=1;
@@ -1445,7 +1377,7 @@ BEGIN
   END IF;
   RETURN NULL;
 END;
-$function$;
+$$;
 
 create trigger rw_view1_ins_trig
 after insert
@@ -1513,16 +1445,7 @@ create table base_tbl (a double precision);
 insert into base_tbl select i / 10.0 from generate_series(1, 10) as g (i);
 
 create view rw_view1
-as select
-  ctid,
-  sin(a) as s,
-  a,
-  cos(a) as c
-from
-  base_tbl
-where
-  a <> 0
-order by abs(a);
+as select ctid, sin(a) as s, a, cos(a) as c from base_tbl where a <> 0 order by abs(a);
 
 insert into rw_view1 values (null, null, 1.1, null);
 
@@ -1539,14 +1462,7 @@ update rw_view1 set a = 1.05 where a = 1.1 returning s;
 delete from rw_view1 where a = 1.05;
 
 create view rw_view2
-as select
-  s,
-  c,
-  s / c as t,
-  a as base_a,
-  ctid
-from
-  rw_view1;
+as select s, c, s / c as t, a as base_a, ctid from rw_view1;
 
 insert into rw_view2 values (null, null, null, 1.1, null);
 
@@ -1610,11 +1526,7 @@ select
   events & 8 <> 0 as ins,
   events & 16 <> 0 as del
 from
-  pg_relation_is_updatable(
-    cast('rw_view3' as regclass),
-    false
-  )
-  as t (events);
+  pg_catalog.pg_relation_is_updatable(cast('rw_view3' as regclass), false) as t (events);
 
 drop table base_tbl cascade;
 
@@ -1870,15 +1782,7 @@ create table ref_tbl (a int primary key);
 insert into ref_tbl select * from generate_series(1, 10);
 
 create view rw_view1
-as select
-  *
-from
-  base_tbl as b
-where
-  exists
-  (
-    select 1 from ref_tbl as r where r.a = b.a
-  )
+as select * from base_tbl as b where exists (select 1 from ref_tbl as r where r.a = b.a)
 with cascaded check option;
 
 insert into rw_view1 values (5);
@@ -1903,12 +1807,12 @@ create table base_tbl (
 create function base_tbl_trig_fn()
 returns trigger
 language plpgsql
-as $function$
+as $$
 BEGIN
   NEW.b := 10;
   RETURN NEW;
 END;
-$function$;
+$$;
 
 create trigger base_tbl_trig
 before insert or update
@@ -1941,7 +1845,7 @@ as select a from base_tbl where a < b;
 create function rw_view1_trig_fn()
 returns trigger
 language plpgsql
-as $function$
+as $$
 BEGIN
   IF TG_OP = 'INSERT' THEN
     INSERT INTO base_tbl VALUES (NEW.a, 10);
@@ -1954,7 +1858,7 @@ BEGIN
     RETURN OLD;
   END IF;
 END;
-$function$;
+$$;
 
 create trigger rw_view1_trig
 instead of insert or delete or update
@@ -2041,23 +1945,18 @@ create table base_tbl (
 insert into base_tbl values ('Tom', 'public'), ('Dick', 'private'), ('Harry', 'public');
 
 create view rw_view1
-as select
-  person
-from
-  base_tbl
-where
-  visibility = 'public';
+as select person from base_tbl where visibility = 'public';
 
 create function snoop(anyelement)
 returns boolean
 language plpgsql
 cost 0.000001
-as $function$
+as $$
 BEGIN
   RAISE NOTICE 'snooped value: %', $1;
   RETURN true;
 END;
-$function$;
+$$;
 
 create or replace function leakproof(anyelement)
 returns boolean
@@ -2065,11 +1964,11 @@ language plpgsql
 immutable
 leakproof
 strict
-as $function$
+as $$
 BEGIN
   RETURN true;
 END;
-$function$;
+$$;
 
 select * from rw_view1 where snoop(person);
 
@@ -2162,24 +2061,14 @@ insert into base_tbl values (1, 'Row 1', false), (2, 'Row 2', true);
 
 create rule base_tbl_ins_rule
 as on insert to base_tbl where
-  exists
-  (
-    select 1 from base_tbl as t where t.id = new.id
-  )
+  exists (select 1 from base_tbl as t where t.id = new.id)
 do instead
-  update base_tbl
-  set data = new.data,
-  deleted = false
-  where
-    id = new.id;;
+  update base_tbl set data = new.data, deleted = false where id = new.id;;
 
 create rule base_tbl_del_rule
 as on delete to base_tbl
 do instead
-  update base_tbl
-  set deleted = true
-  where
-    id = old.id;;
+  update base_tbl set deleted = true where id = old.id;;
 
 create view rw_view1
   with (security_barrier = 'true')
@@ -2205,7 +2094,7 @@ create table t1 (
   c text
 );
 
-create index "t1_a_idx" on t1 using btree (a);
+create index t1_a_idx on t1 using btree (a);
 
 insert into t1 select i, i, 't1' from generate_series(1, 10) as g (i);
 
@@ -2214,7 +2103,7 @@ analyze t1;
 create table t11 (d text)
 inherits (t1);
 
-create index "t11_a_idx" on t11 using btree (a);
+create index t11_a_idx on t11 using btree (a);
 
 insert into t11 select i, i, 't11', 't11d' from generate_series(1, 10) as g (i);
 
@@ -2223,27 +2112,19 @@ analyze t11;
 create table t12 (e int[])
 inherits (t1);
 
-create index "t12_a_idx" on t12 using btree (a);
+create index t12_a_idx on t12 using btree (a);
 
 insert into t12 select i, i, 't12', cast('{1,2}' as int[]) from generate_series(1, 10) as g (i);
 
 analyze t12;
 
 create table t111 ()
-inherits (t11,
-t12);
+inherits (t11, t12);
 
-create index "t111_a_idx" on t111 using btree (a);
+create index t111_a_idx on t111 using btree (a);
 
 insert into t111
-select
-  i,
-  i,
-  't111',
-  't111d',
-  cast('{1,1,1}' as int[])
-from
-  generate_series(1, 10) as g (i);
+select i, i, 't111', 't111d', cast('{1,1,1}' as int[]) from generate_series(1, 10) as g (i);
 
 analyze t111;
 
@@ -2251,13 +2132,11 @@ create view v1
   with (security_barrier = 'true')
 as select
   *,
-  (select d from t11 where t11.a = t1.a limit 1)
-  as d
+  (select d from t11 where t11.a = t1.a limit 1) as d
 from
   t1
 where
-  a > 5 and
-  exists (select 1 from t12 where t12.a = t1.a);
+  a > 5 and exists (select 1 from t12 where t12.a = t1.a);
 
 select * from v1 where a = 3;
 
@@ -2294,12 +2173,7 @@ create table tx2 (b int);
 create table tx3 (c int);
 
 create view vx1
-as select
-  a
-from
-  tx1
-where
-  exists (select 1 from tx2 inner join tx3 on b = c);
+as select a from tx1 where exists (select 1 from tx2 inner join tx3 on b = c);
 
 insert into vx1 values (1);
 
@@ -2322,12 +2196,7 @@ create table tx2 (b int);
 create table tx3 (c int);
 
 create view vx1
-as select
-  a
-from
-  tx1
-where
-  exists (select 1 from tx2 inner join tx3 on b = c);
+as select a from tx1 where exists (select 1 from tx2 inner join tx3 on b = c);
 
 insert into vx1 values (1);
 
@@ -2370,12 +2239,7 @@ alter table tx3
   drop column d;
 
 create view vx1
-as select
-  a
-from
-  tx1
-where
-  exists (select 1 from tx2 inner join tx3 on b = c);
+as select a from tx1 where exists (select 1 from tx2 inner join tx3 on b = c);
 
 insert into vx1 values (1);
 
@@ -2412,12 +2276,7 @@ with cascaded check option;
 
 create view v2
   with (security_barrier = 'true')
-as select
-  *
-from
-  v1
-where
-  exists (select 1 from t2 where t2.cc = v1.c)
+as select * from v1 where exists (select 1 from t2 where t2.cc = v1.c)
 with cascaded check option;
 
 insert into v2 values (2, 'two', 20);
@@ -2531,15 +2390,11 @@ select
   events & 8 <> 0 as ins,
   events & 16 <> 0 as del
 from
-  pg_relation_is_updatable(
-    cast('uv_pt' as regclass),
-    false
-  )
-  as t (events);
+  pg_catalog.pg_relation_is_updatable(cast('uv_pt' as regclass), false) as t (events);
 
-select pg_column_is_updatable(cast('uv_pt' as regclass), cast(1 as smallint), false);
+select pg_catalog.pg_column_is_updatable(cast('uv_pt' as regclass), cast(1 as smallint), false);
 
-select pg_column_is_updatable(cast('uv_pt' as regclass), cast(2 as smallint), false);
+select pg_catalog.pg_column_is_updatable(cast('uv_pt' as regclass), cast(2 as smallint), false);
 
 select
   table_name,
@@ -2577,17 +2432,12 @@ drop view uv_ptv, uv_ptv_wco;
 drop table uv_pt, uv_pt1, uv_pt11;
 
 create table wcowrtest (a int)
-partition by LIST(a);
+partition by list(a);
 
 create table wcowrtest1 partition of wcowrtest for values in (1);
 
 create view wcowrtest_v
-as select
-  *
-from
-  wcowrtest
-where
-  wcowrtest = cast('(2)' as wcowrtest)
+as select * from wcowrtest where wcowrtest = cast('(2)' as wcowrtest)
 with cascaded check option;
 
 insert into wcowrtest_v values (1);
@@ -2616,15 +2466,7 @@ create table sometable (
 insert into sometable values (1, 'a'), (2, 'b');
 
 create view wcowrtest_v2
-as select
-  *
-from
-  wcowrtest as r
-where
-  r in
-  (
-    select s from sometable as s where r.a = s.a
-  )
+as select * from wcowrtest as r where r in (select s from sometable as s where r.a = s.a)
 with cascaded check option;
 
 insert into wcowrtest_v2 values (2, 'no such row in sometable');
@@ -2641,13 +2483,7 @@ create table uv_iocu_tab (
 insert into uv_iocu_tab values ('xyxyxy', 0);
 
 create view uv_iocu_view
-as select
-  b,
-  b + 1 as c,
-  a,
-  cast('2.0' as text) as two
-from
-  uv_iocu_tab;
+as select b, b + 1 as c, a, cast('2.0' as text) as two from uv_iocu_tab;
 
 insert into uv_iocu_view (a, b)
 values ('xyxyxy', 1)
@@ -2661,33 +2497,17 @@ select * from uv_iocu_tab;
 
 insert into uv_iocu_view (a, b)
 values ('xyxyxy', 3)
-on conflict
-(a)
-do
-update
-set b = cast(excluded.two as double precision);
+on conflict (a) do update set b = cast(excluded.two as double precision);
 
 select * from uv_iocu_tab;
 
 insert into uv_iocu_view (a, b)
 values ('xyxyxy', 3)
-on conflict
-(a)
-do
-update
-set b = excluded.b
-where
-  excluded.c > 0;
+on conflict (a) do update set b = excluded.b where excluded.c > 0;
 
 insert into uv_iocu_view (a, b)
 values ('xyxyxy', 3)
-on conflict
-(a)
-do
-update
-set b = excluded.b
-where
-  excluded.c > 0;
+on conflict (a) do update set b = excluded.b where excluded.c > 0;
 
 select * from uv_iocu_tab;
 
@@ -2701,12 +2521,7 @@ create table uv_iocu_tab (
 );
 
 create view uv_iocu_view
-as select
-  b as bb,
-  a as aa,
-  cast(uv_iocu_tab as text) as cc
-from
-  uv_iocu_tab;
+as select b as bb, a as aa, cast(uv_iocu_tab as text) as cc from uv_iocu_tab;
 
 insert into uv_iocu_view (aa, bb) values (1, 'x');
 
@@ -2718,9 +2533,7 @@ do
 update
 set bb = 'Rejected: ' || excluded.*
 where
-  excluded.aa > 0 and
-  excluded.bb <> '' and
-  excluded.cc is not null;
+  excluded.aa > 0 and excluded.bb <> '' and excluded.cc is not null;
 
 insert into uv_iocu_view (aa, bb)
 values (1, 'y')
@@ -2730,9 +2543,7 @@ do
 update
 set bb = 'Rejected: ' || excluded.*
 where
-  excluded.aa > 0 and
-  excluded.bb <> '' and
-  excluded.cc is not null;
+  excluded.aa > 0 and excluded.bb <> '' and excluded.cc is not null;
 
 select * from uv_iocu_view;
 
@@ -2742,11 +2553,7 @@ insert into uv_iocu_view (aa, bb) values (1, 'x');
 
 insert into uv_iocu_view (aa)
 values (1)
-on conflict
-(aa)
-do
-update
-set bb = 'Rejected: ' || excluded.*;
+on conflict (aa) do update set bb = 'Rejected: ' || excluded.*;
 
 select * from uv_iocu_view;
 
@@ -2755,11 +2562,7 @@ alter table uv_iocu_tab
 
 insert into uv_iocu_view (aa)
 values (1)
-on conflict
-(aa)
-do
-update
-set bb = 'Rejected: ' || excluded.*;
+on conflict (aa) do update set bb = 'Rejected: ' || excluded.*;
 
 select * from uv_iocu_view;
 
@@ -2768,11 +2571,7 @@ alter view uv_iocu_view
 
 insert into uv_iocu_view (aa)
 values (1)
-on conflict
-(aa)
-do
-update
-set bb = 'Rejected: ' || excluded.*;
+on conflict (aa) do update set bb = 'Rejected: ' || excluded.*;
 
 select * from uv_iocu_view;
 
@@ -2799,11 +2598,11 @@ insert into base_tbl values (1, 'xxx', 1.0);
 create view rw_view1
 as select b as bb, c as cc, a as aa from base_tbl;
 
-grant SELECT (aa, bb) on table rw_view1 to regress_view_user2;
+grant select (aa, bb) on table rw_view1 to regress_view_user2;
 
-grant INSERT on table rw_view1 to regress_view_user2;
+grant insert on table rw_view1 to regress_view_user2;
 
-grant UPDATE (bb) on table rw_view1 to regress_view_user2;
+grant update (bb) on table rw_view1 to regress_view_user2;
 
 set session authorization regress_view_user2;
 
@@ -2815,11 +2614,7 @@ insert into rw_view1 values ('yyy', 2.0, 1) on conflict (aa) do update set bb = 
 
 insert into rw_view1
 values ('zzz', 2.0, 1)
-on conflict
-(aa)
-do
-update
-set bb = rw_view1.bb || 'xxx';
+on conflict (aa) do update set bb = rw_view1.bb || 'xxx';
 
 insert into rw_view1 values ('zzz', 2.0, 1) on conflict (aa) do update set cc = 3.0;
 
@@ -2829,11 +2624,11 @@ select * from base_tbl;
 
 set session authorization regress_view_user1;
 
-grant SELECT (a, b) on table base_tbl to regress_view_user2;
+grant select (a, b) on table base_tbl to regress_view_user2;
 
-grant INSERT (a, b) on table base_tbl to regress_view_user2;
+grant insert (a, b) on table base_tbl to regress_view_user2;
 
-grant UPDATE (a, b) on table base_tbl to regress_view_user2;
+grant update (a, b) on table base_tbl to regress_view_user2;
 
 set session authorization regress_view_user2;
 
@@ -2907,9 +2702,7 @@ insert into base_tab_def values (2), (3);
 insert into base_tab_def values (4, default, default, default, default);
 
 insert into base_tab_def
-values
-  (5, default, default, default, default),
-  (6, default, default, default, default);
+values (5, default, default, default, default), (6, default, default, default, default);
 
 insert into base_tab_def_view values (11);
 
@@ -2918,9 +2711,7 @@ insert into base_tab_def_view values (12), (13);
 insert into base_tab_def_view values (14, default, default, default, default);
 
 insert into base_tab_def_view
-values
-  (15, default, default, default, default),
-  (16, default, default, default, default);
+values (15, default, default, default, default), (16, default, default, default, default);
 
 insert into base_tab_def_view values (17), (default);
 
@@ -2929,12 +2720,12 @@ select * from base_tab_def order by a;
 create function base_tab_def_view_instrig_func()
 returns trigger
 language plpgsql
-as $function$
+as $$
 begin
   insert into base_tab_def values (new.a, new.b, new.c, new.d, new.e);
   return new;
 end;
-$function$;
+$$;
 
 create trigger base_tab_def_view_instrig
 instead of insert
@@ -2951,9 +2742,7 @@ insert into base_tab_def values (2), (3);
 insert into base_tab_def values (4, default, default, default, default);
 
 insert into base_tab_def
-values
-  (5, default, default, default, default),
-  (6, default, default, default, default);
+values (5, default, default, default, default), (6, default, default, default, default);
 
 insert into base_tab_def_view values (11);
 
@@ -2962,9 +2751,7 @@ insert into base_tab_def_view values (12), (13);
 insert into base_tab_def_view values (14, default, default, default, default);
 
 insert into base_tab_def_view
-values
-  (15, default, default, default, default),
-  (16, default, default, default, default);
+values (15, default, default, default, default), (16, default, default, default, default);
 
 insert into base_tab_def_view values (17), (default);
 
@@ -2977,8 +2764,7 @@ drop function base_tab_def_view_instrig_func;
 create rule base_tab_def_view_ins_rule
 as on insert to base_tab_def_view
 do instead
-  insert into base_tab_def
-  values (new.a, new.b, new.c, new.d, new.e);;
+  insert into base_tab_def values (new.a, new.b, new.c, new.d, new.e);;
 
 truncate base_tab_def;
 
@@ -2989,9 +2775,7 @@ insert into base_tab_def values (2), (3);
 insert into base_tab_def values (4, default, default, default, default);
 
 insert into base_tab_def
-values
-  (5, default, default, default, default),
-  (6, default, default, default, default);
+values (5, default, default, default, default), (6, default, default, default, default);
 
 insert into base_tab_def_view values (11);
 
@@ -3000,9 +2784,7 @@ insert into base_tab_def_view values (12), (13);
 insert into base_tab_def_view values (14, default, default, default, default);
 
 insert into base_tab_def_view
-values
-  (15, default, default, default, default),
-  (16, default, default, default, default);
+values (15, default, default, default, default), (16, default, default, default, default);
 
 insert into base_tab_def_view values (17), (default);
 
@@ -3013,8 +2795,7 @@ drop rule base_tab_def_view_ins_rule on base_tab_def_view;
 create rule base_tab_def_view_ins_rule
 as on insert to base_tab_def_view
 do
-  insert into base_tab_def
-  values (new.a, new.b, new.c, new.d, new.e);;
+  insert into base_tab_def values (new.a, new.b, new.c, new.d, new.e);;
 
 truncate base_tab_def;
 
@@ -3025,9 +2806,7 @@ insert into base_tab_def values (2), (3);
 insert into base_tab_def values (4, default, default, default, default);
 
 insert into base_tab_def
-values
-  (5, default, default, default, default),
-  (6, default, default, default, default);
+values (5, default, default, default, default), (6, default, default, default, default);
 
 insert into base_tab_def_view values (11);
 
@@ -3036,9 +2815,7 @@ insert into base_tab_def_view values (12), (13);
 insert into base_tab_def_view values (14, default, default, default, default);
 
 insert into base_tab_def_view
-values
-  (15, default, default, default, default),
-  (16, default, default, default, default);
+values (15, default, default, default, default), (16, default, default, default, default);
 
 insert into base_tab_def_view values (17), (default);
 
@@ -3053,9 +2830,7 @@ truncate base_tab_def;
 insert into base_tab_def_view values (1, default, default, default, default);
 
 insert into base_tab_def_view
-values
-  (2, default, default, default, default),
-  (3, default, default, default, default);
+values (2, default, default, default, default), (3, default, default, default, default);
 
 select * from base_tab_def order by a, e nulls first;
 
@@ -3077,9 +2852,7 @@ alter view base_tab_view
   alter column c set default 'View default';
 
 insert into base_tab_view (b[1], b[2], c, b[5], b[4], a, b[3])
-values
-  (1, 2, default, 5, 4, default, 3),
-  (10, 11, 'C value', 14, 13, 100, 12);
+values (1, 2, default, 5, 4, default, 3), (10, 11, 'C value', 14, 13, 100, 12);
 
 select * from base_tab order by a;
 

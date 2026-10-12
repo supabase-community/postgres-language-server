@@ -7,39 +7,29 @@ insert into storage.buckets (id, name) values ('avatars', 'avatars');
 create table app.handle_registry (
   handle app.valid_name primary key not null,
   is_organization boolean not null,
-  created_at timestamp with time zone
-  not null
-  default NOW(),
+  created_at timestamptz not null default now(),
   unique (handle, is_organization)
 );
 
 create table app.accounts (
   id uuid primary key references auth.users (id),
   handle app.valid_name not null unique,
-  is_organization boolean
-  generated always as (false) stored,
+  is_organization boolean generated always as (false) stored,
   avatar_id uuid references storage.objects (id),
-  display_name text
-  check (length(display_name) <= 128),
+  display_name text check (length(display_name) <= 128),
   bio text check (length(bio) <= 512),
   contact_email app.email_address,
-  created_at timestamp with time zone
-  not null
-  default NOW(),
-  constraint "fk_handle_registry"
-  foreign key
-  (handle,
-  is_organization)
-  references app.handle_registry (handle,
-  is_organization)
+  created_at timestamptz not null default now(),
+  constraint fk_handle_registry foreign key (handle, is_organization)
+    references app.handle_registry (handle, is_organization)
 );
 
 create or replace function app.register_account()
 returns trigger
 language plpgsql
 security definer
-as $function$
-begin
+as $$
+    begin
         insert into app.handle_registry (handle, is_organization)
           values (
             new.raw_user_meta_data ->> 'handle',
@@ -56,7 +46,7 @@ begin
           );
           return new;
     end;
-$function$;
+    $$;
 
 create or replace trigger on_auth_user_created
 after insert
@@ -67,38 +57,24 @@ execute function app.register_account();
 create table app.organizations (
   id uuid primary key default gen_random_uuid(),
   handle app.valid_name not null unique,
-  is_organization boolean
-  generated always as (true) stored,
+  is_organization boolean generated always as (true) stored,
   avatar_id uuid references storage.objects (id),
-  display_name text
-  check (length(display_name) <= 128),
+  display_name text check (length(display_name) <= 128),
   bio text check (length(bio) <= 512),
   contact_email app.email_address,
-  created_at timestamp with time zone
-  not null
-  default NOW(),
-  constraint "fk_handle_registry"
-  foreign key
-  (handle,
-  is_organization)
-  references app.handle_registry (handle,
-  is_organization)
+  created_at timestamptz not null default now(),
+  constraint fk_handle_registry foreign key (handle, is_organization)
+    references app.handle_registry (handle, is_organization)
 );
 
 create type app.membership_role as enum ('maintainer');
 
 create table app.members (
   id uuid primary key default uuid_generate_v4(),
-  organization_id uuid
-  not null
-  references app.organizations (id),
-  account_id uuid
-  not null
-  references app.accounts (id),
+  organization_id uuid not null references app.organizations (id),
+  account_id uuid not null references app.accounts (id),
   role app.membership_role not null,
-  created_at timestamp with time zone
-  not null
-  default NOW(),
+  created_at timestamptz not null default now(),
   unique (organization_id, account_id)
 );
 
@@ -106,14 +82,14 @@ create or replace function app.register_organization_creator_as_member()
 returns trigger
 language plpgsql
 security definer
-as $function$
-begin
+as $$
+    begin
         insert into app.members(organization_id, account_id, role)
         values (new.id, auth.uid(), 'maintainer');
 
         return new;
     end;
-$function$;
+    $$;
 
 create or replace trigger on_app_organization_created
 after insert
@@ -125,8 +101,8 @@ create or replace function app.update_avatar_id()
 returns trigger
 language plpgsql
 security definer
-as $function$
-declare
+as $$
+    declare
         v_handle app.valid_name;
         v_affected_account app.accounts := null;
     begin
@@ -152,7 +128,7 @@ declare
 
         return new;
     end;
-$function$;
+    $$;
 
 create or replace trigger on_storage_object_created
 after insert

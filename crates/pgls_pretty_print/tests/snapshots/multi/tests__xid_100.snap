@@ -79,7 +79,7 @@ create table xid8_t1 (x xid8);
 
 insert into xid8_t1 values ('0'), ('010'), ('42'), ('0xffffffffffffffff'), ('-1');
 
-select MIN(x), MAX(x) from xid8_t1;
+select min(x), max(x) from xid8_t1;
 
 create index on xid8_t1 using btree (x);
 
@@ -141,10 +141,7 @@ order by nr;
 
 select
   id,
-  pg_visible_in_snapshot(
-    cast(cast(id as text) as xid8),
-    snap
-  )
+  pg_visible_in_snapshot(cast(cast(id as text) as xid8), snap)
 from
   snapshot_test,
   generate_series(11, 21) as id
@@ -153,10 +150,7 @@ where
 
 select
   id,
-  pg_visible_in_snapshot(
-    cast(cast(id as text) as xid8),
-    snap
-  )
+  pg_visible_in_snapshot(cast(cast(id as text) as xid8), snap)
 from
   snapshot_test,
   generate_series(90, 160) as id
@@ -230,7 +224,7 @@ begin;
 create function test_future_xid_status(xid8)
 returns void
 language plpgsql
-as $function$
+as $$
 BEGIN
   PERFORM pg_xact_status($1);
   RAISE EXCEPTION 'didn''t ERROR at xid in the future as expected';
@@ -238,7 +232,7 @@ EXCEPTION
   WHEN invalid_parameter_value THEN
     RAISE NOTICE 'Got expected error for xid in the future';
 END;
-$function$;
+$$;
 
 select test_future_xid_status(cast(cast('inprogress' + 10000 as text) as xid8));
 

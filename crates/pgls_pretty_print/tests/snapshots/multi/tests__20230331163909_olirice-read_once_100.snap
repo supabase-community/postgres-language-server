@@ -9,28 +9,10 @@ insert into app.packages (
   control_relocatable,
   control_requires
 )
-values
-  (
-    'olirice',
-    'read_once',
-    'Send messages that can only be read once',
-    false,
-    '{pg_cron}'
-  );
+values ('olirice', 'read_once', 'Send messages that can only be read once', false, '{pg_cron}');
 
 insert into app.package_versions (package_id, version_struct, sql, description_md)
-values
-  (
-    (
-      select
-        id
-      from
-        app.packages
-      where
-        package_name = 'olirice-read_once'
-    ),
-    (0, 3, 1),
-    '
+values ((select id from app.packages where package_name = 'olirice-read_once'), (0, 3, 1), '
 
 -- Enforce requirements
 -- Workaround to https://github.com/aws/pg_tle/issues/183
@@ -92,8 +74,7 @@ $$
     where read_once.messages.id = $1
     returning contents;
 $$
-',
-    '
+', '
 
 # read_once
 
@@ -168,5 +149,4 @@ create or replace function read_message(
 )
     returns text
 ```
-'
-  );
+');

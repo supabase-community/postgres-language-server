@@ -10,5 +10,4 @@ select
 from
   cte as t
 where
-  (r).column1 = (rr).column1 and
-  (select (c1).f1 > 0);
+  (r).column1 = (rr).column1 and (select (c1).f1 > 0);

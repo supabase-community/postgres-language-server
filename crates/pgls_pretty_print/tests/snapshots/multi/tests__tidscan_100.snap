@@ -34,8 +34,7 @@ select
 from
   tidscan
 where
-  (id = 3 and ctid in ('(0,2)', '(0,3)')) or
-  (ctid = '(0,1)' and id = 1);
+  (id = 3 and ctid in ('(0,2)', '(0,3)')) or (ctid = '(0,1)' and id = 1);
 
 select
   ctid,
@@ -43,8 +42,7 @@ select
 from
   tidscan
 where
-  (id = 3 and ctid in ('(0,2)', '(0,3)')) or
-  (ctid = '(0,1)' and id = 1);
+  (id = 3 and ctid in ('(0,2)', '(0,3)')) or (ctid = '(0,1)' and id = 1);
 
 set enable_hashjoin = off;
 
@@ -54,10 +52,7 @@ select
   t2.ctid,
   t2.*
 from
-  tidscan as t1
-  inner join
-    tidscan as t2
-  on t1.ctid = t2.ctid
+  tidscan as t1 inner join tidscan as t2 on t1.ctid = t2.ctid
 where
   t1.id = 1;
 
@@ -67,10 +62,7 @@ select
   t2.ctid,
   t2.*
 from
-  tidscan as t1
-  inner join
-    tidscan as t2
-  on t1.ctid = t2.ctid
+  tidscan as t1 inner join tidscan as t2 on t1.ctid = t2.ctid
 where
   t1.id = 1;
 
@@ -80,10 +72,7 @@ select
   t2.ctid,
   t2.*
 from
-  tidscan as t1
-  left outer join
-    tidscan as t2
-  on t1.ctid = t2.ctid
+  tidscan as t1 left outer join tidscan as t2 on t1.ctid = t2.ctid
 where
   t1.id = 1;
 
@@ -93,10 +82,7 @@ select
   t2.ctid,
   t2.*
 from
-  tidscan as t1
-  left outer join
-    tidscan as t2
-  on t1.ctid = t2.ctid
+  tidscan as t1 left outer join tidscan as t2 on t1.ctid = t2.ctid
 where
   t1.id = 1;
 
@@ -104,15 +90,9 @@ reset enable_hashjoin;
 
 begin;
 
-declare "c"
+declare c
 cursor
-for select
-  ctid,
-  *
-from
-  tidscan
-where
-  ctid = any (cast(array['(0,1)', '(0,2)'] as tid[]));;
+for select ctid, * from tidscan where ctid = any (cast(array['(0,1)', '(0,2)'] as tid[]));;
 
 fetch forward all from c;
 
@@ -124,7 +104,7 @@ rollback;
 
 begin;
 
-declare "c" cursor for select ctid, * from tidscan;;
+declare c cursor for select ctid, * from tidscan;;
 
 fetch next from c;
 
@@ -144,15 +124,15 @@ update tidscan set id = -id where current of c returning *;
 
 rollback;
 
-select COUNT(*) from tenk1 as t1 inner join tenk1 as t2 on t1.ctid = t2.ctid;
+select count(*) from tenk1 as t1 inner join tenk1 as t2 on t1.ctid = t2.ctid;
 
-select COUNT(*) from tenk1 as t1 inner join tenk1 as t2 on t1.ctid = t2.ctid;
+select count(*) from tenk1 as t1 inner join tenk1 as t2 on t1.ctid = t2.ctid;
 
 set enable_hashjoin = off;
 
-select COUNT(*) from tenk1 as t1 inner join tenk1 as t2 on t1.ctid = t2.ctid;
+select count(*) from tenk1 as t1 inner join tenk1 as t2 on t1.ctid = t2.ctid;
 
-select COUNT(*) from tenk1 as t1 inner join tenk1 as t2 on t1.ctid = t2.ctid;
+select count(*) from tenk1 as t1 inner join tenk1 as t2 on t1.ctid = t2.ctid;
 
 reset enable_hashjoin;
 

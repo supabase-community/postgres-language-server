@@ -216,7 +216,7 @@ pub fn format_statement(
         || !attached.unattached.is_empty();
 
     if !has_comments {
-        return format_statement_once(ast, config, attached);
+        return format_statement_once(ast, sql, config, attached);
     }
 
     let mut current_sql = sql.to_string();
@@ -225,7 +225,7 @@ pub fn format_statement(
     let mut seen_layouts = HashSet::from([current_sql.clone()]);
 
     for pass in 1..=MAX_COMMENT_FORMAT_PASSES {
-        let result = format_statement_once(&current_ast, config, attached)?;
+        let result = format_statement_once(&current_ast, &current_sql, config, attached)?;
         if result.formatted == current_sql {
             return Ok(result);
         }
@@ -254,6 +254,7 @@ pub fn format_statement(
 /// Formats a statement exactly once, including semantic verification.
 fn format_statement_once(
     ast: &NodeEnum,
+    sql: &str,
     config: &FormatConfig,
     attached: AttachedComments,
 ) -> Result<FormatResult, FormatError> {
@@ -269,7 +270,8 @@ fn format_statement_once(
         config.clone(),
         attached.leading_by_location,
         attached.trailing_by_location,
-    );
+    )
+    .with_source(sql);
     nodes::emit_node_enum(ast, &mut emitter);
     let pending = emitter.pending_comments();
     if pending > 0 {

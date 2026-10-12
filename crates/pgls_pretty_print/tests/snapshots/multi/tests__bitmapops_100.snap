@@ -18,9 +18,9 @@ select
 from
   generate_series(1, 70000) as r;
 
-create index "i_bmtest_a" on bmscantest using btree (a);
+create index i_bmtest_a on bmscantest using btree (a);
 
-create index "i_bmtest_b" on bmscantest using btree (b);
+create index i_bmtest_b on bmscantest using btree (b);
 
 set enable_indexscan = 'false';
 
@@ -28,12 +28,12 @@ set enable_seqscan = 'false';
 
 set work_mem = 64;
 
-select COUNT(*) from bmscantest where a = 1 and b = 1;
+select count(*) from bmscantest where a = 1 and b = 1;
 
-vacuum (FREEZE) bmscantest;
+vacuum (freeze) bmscantest;
 
-select COUNT(*) from bmscantest where a = 1 and b = 1;
+select count(*) from bmscantest where a = 1 and b = 1;
 
-select COUNT(*) from bmscantest where a = 1 or b = 1;
+select count(*) from bmscantest where a = 1 or b = 1;
 
 drop table bmscantest;

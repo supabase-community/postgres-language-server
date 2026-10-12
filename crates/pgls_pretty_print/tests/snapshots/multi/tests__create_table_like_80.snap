@@ -33,14 +33,14 @@ create table inhf (
   like inhx
 );
 
-create table inhf (like inhx including CONSTRAINTS including DEFAULTS);
+create table inhf (like inhx including constraints including defaults);
 
 insert into inhf default values;
 
 select * from inhf;
 
 alter table inhx
-  add constraint "foo" check (xx = 'text');
+  add constraint foo check (xx = 'text');
 
 alter table inhx
   add primary key (xx);
@@ -53,7 +53,7 @@ drop table inhg;
 
 create table inhg (
   x text,
-  like inhx including CONSTRAINTS,
+  like inhx including constraints,
   y text
 );
 
@@ -82,7 +82,7 @@ insert into test_like_id_2 (b) values ('b2');
 
 select * from test_like_id_2;
 
-create table test_like_id_3 (like test_like_id_1 including IDENTITY);
+create table test_like_id_3 (like test_like_id_1 including identity);
 
 insert into test_like_id_3 (b) values ('b3');
 
@@ -100,7 +100,7 @@ insert into test_like_gen_2 (a) values (1);
 
 select * from test_like_gen_2;
 
-create table test_like_gen_3 (like test_like_gen_1 including GENERATED);
+create table test_like_gen_3 (like test_like_gen_1 including generated);
 
 insert into test_like_gen_3 (a) values (1);
 
@@ -116,14 +116,12 @@ create table test_like_4 (
 
 create table test_like_4a (like test_like_4);
 
-create table test_like_4b (like test_like_4 including DEFAULTS);
+create table test_like_4b (like test_like_4 including defaults);
 
-create table test_like_4c (like test_like_4 including GENERATED);
+create table test_like_4c (like test_like_4 including generated);
 
 create table test_like_4d (
-  like test_like_4
-  including DEFAULTS
-  including GENERATED
+  like test_like_4 including defaults including generated
 );
 
 insert into test_like_4a (a) values (11);
@@ -154,8 +152,7 @@ create table test_like_5x (
 );
 
 create table test_like_5c (like test_like_4 including all)
-inherits (test_like_5,
-test_like_5x);
+inherits (test_like_5, test_like_5x);
 
 create table test_like_6 (
   a int,
@@ -178,7 +175,7 @@ drop table test_like_6, test_like_6c;
 
 create table inhg (
   x text,
-  like inhx including INDEXES,
+  like inhx including indexes,
   y text
 );
 
@@ -190,7 +187,7 @@ drop table inhg;
 
 create table inhg (
   x text,
-  like inhx including INDEXES,
+  like inhx including indexes,
   primary key (x)
 );
 
@@ -199,18 +196,11 @@ create table inhz (
   yy int unique
 );
 
-create unique index "inhz_xx_idx"
-on inhz
-using btree
-(
-  xx
-)
-where
-  xx <> 'test';
+create unique index inhz_xx_idx on inhz using btree (xx) where xx <> 'test';
 
 create table inhg (
   x text unique,
-  like inhz including INDEXES
+  like inhz including indexes
 );
 
 insert into inhg (xx, yy, x) values ('test', 5, 10);
@@ -225,19 +215,19 @@ drop table inhz;
 
 create table inhz (
   x text references inhz,
-  like inhx including INDEXES
+  like inhx including indexes
 );
 
 drop table inhz;
 
 alter table ctlt1
-  add constraint "cc" check (length(b) > 100) not valid;
+  add constraint cc check (length(b) > 100) not valid;
 
-create index "ctlt1_b_key" on ctlt1 using btree (b);
+create index ctlt1_b_key on ctlt1 using btree (b);
 
-create index "ctlt1_fnidx" on ctlt1 using btree ((a || b));
+create index ctlt1_fnidx on ctlt1 using btree ((a || b));
 
-create statistics ctlt1_a_b_stat on "a", "b" from ctlt1;
+create statistics ctlt1_a_b_stat on a, b from ctlt1;
 
 create statistics ctlt1_expr_stat on (a || b) from ctlt1;
 
@@ -278,7 +268,7 @@ alter table ctlt3
 alter table ctlt3
   alter column a set storage main;
 
-create index "ctlt3_fnidx" on ctlt3 using btree ((a || c));
+create index ctlt3_fnidx on ctlt3 using btree ((a || c));
 
 comment on column ctlt3.a is 'A3';
 
@@ -295,13 +285,13 @@ alter table ctlt4
   alter column c set storage external;
 
 create table ctlt12_storage (
-  like ctlt1 including STORAGE,
-  like ctlt2 including STORAGE
+  like ctlt1 including storage,
+  like ctlt2 including storage
 );
 
 create table ctlt12_comments (
-  like ctlt1 including COMMENTS,
-  like ctlt2 including COMMENTS
+  like ctlt1 including comments,
+  like ctlt2 including comments
 );
 
 select
@@ -311,13 +301,11 @@ from
   pg_description,
   pg_constraint as c
 where
-  classoid =
-  cast('pg_constraint' as regclass) and
+  classoid = cast('pg_constraint' as regclass) and
   objoid = c.oid and
-  c.conrelid =
-  cast('ctlt12_comments' as regclass);
+  c.conrelid = cast('ctlt12_comments' as regclass);
 
-create table ctlt1_inh (like ctlt1 including COMMENTS including CONSTRAINTS)
+create table ctlt1_inh (like ctlt1 including comments including constraints)
 inherits (ctlt1);
 
 select
@@ -326,22 +314,19 @@ from
   pg_description,
   pg_constraint as c
 where
-  classoid =
-  cast('pg_constraint' as regclass) and
+  classoid = cast('pg_constraint' as regclass) and
   objoid = c.oid and
-  c.conrelid =
-  cast('ctlt1_inh' as regclass);
+  c.conrelid = cast('ctlt1_inh' as regclass);
 
 create table ctlt13_inh ()
-inherits (ctlt1,
-ctlt3);
+inherits (ctlt1, ctlt3);
 
 create table ctlt13_like (
   like ctlt3
-  including COMMENTS
-  including CONSTRAINTS
-  including INDEXES
-  including STORAGE
+  including comments
+  including constraints
+  including indexes
+  including storage
 )
 inherits (ctlt1);
 
@@ -351,11 +336,9 @@ from
   pg_description,
   pg_constraint as c
 where
-  classoid =
-  cast('pg_constraint' as regclass) and
+  classoid = cast('pg_constraint' as regclass) and
   objoid = c.oid and
-  c.conrelid =
-  cast('ctlt13_like' as regclass);
+  c.conrelid = cast('ctlt13_like' as regclass);
 
 create table ctlt_all (like ctlt1 including all);
 
@@ -371,8 +354,7 @@ where
   classoid = cast('pg_class' as regclass) and
   objoid = i.indexrelid and
   c.oid = i.indexrelid and
-  i.indrelid =
-  cast('ctlt_all' as regclass)
+  i.indrelid = cast('ctlt_all' as regclass)
 order by c.relname,
   objsubid;
 
@@ -384,19 +366,16 @@ from
   pg_description,
   pg_statistic_ext as s
 where
-  classoid =
-  cast('pg_statistic_ext' as regclass) and
+  classoid = cast('pg_statistic_ext' as regclass) and
   objoid = s.oid and
-  s.stxrelid =
-  cast('ctlt_all' as regclass)
+  s.stxrelid = cast('ctlt_all' as regclass)
 order by s.stxname,
   objsubid;
 
 create table inh_error1 ()
-inherits (ctlt1,
-ctlt4);
+inherits (ctlt1, ctlt4);
 
-create table inh_error2 (like ctlt4 including STORAGE)
+create table inh_error2 (like ctlt4 including storage)
 inherits (ctlt1);
 
 create table pg_attrdef (like ctlt1 including all);
@@ -405,7 +384,7 @@ drop table public.pg_attrdef;
 
 begin;
 
-create schema "ctl_schema";
+create schema ctl_schema;
 
 set local search_path to ctl_schema, public;
 
@@ -434,9 +413,7 @@ comment on constraint noinh_con_copy_c_not_null
 on noinh_con_copy is 'not null c no inherit';
 
 create table noinh_con_copy1 (
-  like noinh_con_copy
-  including COMMENTS
-  including CONSTRAINTS
+  like noinh_con_copy including comments including constraints
 );
 
 select
@@ -446,15 +423,13 @@ from
   pg_description,
   pg_constraint as c
 where
-  classoid =
-  cast('pg_constraint' as regclass) and
+  classoid = cast('pg_constraint' as regclass) and
   objoid = c.oid and
-  c.conrelid =
-  cast('noinh_con_copy1' as regclass)
+  c.conrelid = cast('noinh_con_copy1' as regclass)
 order by conname collate "C";
 
 create table noinh_con_copy1_parted (like noinh_con_copy including all)
-partition by LIST(a);
+partition by list(a);
 
 drop table noinh_con_copy, noinh_con_copy1;
 
@@ -498,14 +473,14 @@ create table ctl_table (
   e int default 1
 );
 
-create index "ctl_table_a_key" on ctl_table using btree (a);
+create index ctl_table_a_key on ctl_table using btree (a);
 
 comment on column ctl_table.b is 'Column b';
 
-create statistics ctl_table_stat on "a", "b" from ctl_table;
+create statistics ctl_table_stat on a, b from ctl_table;
 
 alter table ctl_table
-  add constraint "foo" check (b = 'text');
+  add constraint foo check (b = 'text');
 
 alter table ctl_table
   alter column b set storage main;
@@ -518,9 +493,7 @@ select
 from
   pg_attribute
 where
-  attrelid =
-  cast('ctl_foreign_table1' as regclass) and
-  attnum > 0
+  attrelid = cast('ctl_foreign_table1' as regclass) and attnum > 0
 order by attnum;
 
 create foreign table ctl_foreign_table2 (
@@ -533,9 +506,7 @@ select
 from
   pg_attribute
 where
-  attrelid =
-  cast('ctl_foreign_table2' as regclass) and
-  attnum > 0
+  attrelid = cast('ctl_foreign_table2' as regclass) and attnum > 0
 order by attnum;
 
 drop table ctl_table;

@@ -4,7 +4,8 @@ use crate::TokenKind;
 use crate::emitter::{EventEmitter, GroupKind, LineType};
 
 use super::node_list::emit_comma_separated_list;
-use super::string::emit_identifier;
+use super::node_list::emit_parenthesized_list;
+use super::string::emit_identifier_maybe_quoted;
 
 pub(super) fn emit_join_expr(e: &mut EventEmitter, n: &JoinExpr) {
     e.group_start(GroupKind::JoinExpr);
@@ -109,7 +110,7 @@ pub(super) fn emit_join_expr(e: &mut EventEmitter, n: &JoinExpr) {
             emit_comma_separated_list(e, &n.using_clause, |node, e| {
                 // For USING clause, String nodes should be identifiers
                 if let Some(pgls_query::NodeEnum::String(s)) = node.node.as_ref() {
-                    emit_identifier(e, &s.sval);
+                    emit_identifier_maybe_quoted(e, &s.sval);
                 } else {
                     super::emit_node(node, e);
                 }
@@ -118,7 +119,7 @@ pub(super) fn emit_join_expr(e: &mut EventEmitter, n: &JoinExpr) {
         } else {
             emit_comma_separated_list(e, &n.using_clause, |node, e| {
                 if let Some(pgls_query::NodeEnum::String(s)) = node.node.as_ref() {
-                    emit_identifier(e, &s.sval);
+                    emit_identifier_maybe_quoted(e, &s.sval);
                 } else {
                     super::emit_node(node, e);
                 }
@@ -132,7 +133,7 @@ pub(super) fn emit_join_expr(e: &mut EventEmitter, n: &JoinExpr) {
             e.space();
             e.token(TokenKind::AS_KW);
             e.space();
-            emit_identifier(e, &using_alias.aliasname);
+            emit_identifier_maybe_quoted(e, &using_alias.aliasname);
         }
     } else if let Some(ref quals) = n.quals {
         e.line(LineType::SoftOrSpace);
@@ -157,20 +158,18 @@ pub(super) fn emit_join_expr(e: &mut EventEmitter, n: &JoinExpr) {
         e.space();
         e.token(TokenKind::AS_KW);
         e.space();
-        emit_identifier(e, &alias.aliasname);
+        emit_identifier_maybe_quoted(e, &alias.aliasname);
 
         // Emit column aliases if present
         if !alias.colnames.is_empty() {
             e.space();
-            e.token(TokenKind::L_PAREN);
-            emit_comma_separated_list(e, &alias.colnames, |node, emitter| {
+            emit_parenthesized_list(e, &alias.colnames, |node, emitter| {
                 if let Some(pgls_query::NodeEnum::String(s)) = node.node.as_ref() {
-                    emit_identifier(emitter, &s.sval);
+                    emit_identifier_maybe_quoted(emitter, &s.sval);
                 } else {
                     super::emit_node(node, emitter);
                 }
             });
-            e.token(TokenKind::R_PAREN);
         }
     }
 

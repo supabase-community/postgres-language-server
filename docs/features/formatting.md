@@ -2,11 +2,21 @@
 
 > **Preview Feature**: The formatter is currently in preview. We'd love feedback from early adopters! Please report any issues or unexpected output at [GitHub Issues](https://github.com/supabase-community/postgres-language-server/issues).
 
-## Known Limitations
-
 The language server provides SQL formatting that produces consistent, readable code. Built on Postgres' own parser, the formatter ensures 100% syntax compatibility with your SQL.
 
-Comments are not processed during formatting. They get removed before formatting and restored after.
+## What the formatter changes
+
+The formatter changes whitespace, line breaks, the case of keywords, types and constants, and quotes that an identifier does not need. It does not change what is written:
+
+- Schema qualifiers stay as written, `pg_catalog.` included.
+- Function bodies, their dollar-quote tags (`$$`, `$body$`, ...) and string literals are kept byte for byte. Only `language sql` bodies are reformatted, unless `skipFnBodies` is set.
+- Function signatures keep their argument names and modes, in `ALTER FUNCTION`, `GRANT` and `DROP` as well.
+- Identifiers that need quotes keep them: mixed case, reserved words such as `"user"`, and special characters.
+- Comments stay where they were written, including comments at the end of a line.
+
+The formatter checks every statement: if the formatted statement would not parse to the same tree as the original, the statement is left as written and a diagnostic is reported.
+
+Between statements, the formatter keeps at most one blank line, and removes blank lines at the start and the end of the file.
 
 ## Configuration
 
@@ -107,7 +117,7 @@ SELECT * FROM users WHERE active = TRUE;
 Format files using the CLI:
 
 ```bash
-# Format and show diff
+# Check formatting and show a diff for every statement that would change
 postgres-language-server format file.sql
 
 # Format and write changes
@@ -117,9 +127,42 @@ postgres-language-server format file.sql --write
 postgres-language-server format migrations/ --write
 ```
 
+### Check mode
+
+Without `--write`, `format` does not modify any file. For every statement that would be reformatted it prints a diagnostic with the file path and a diff to stderr, followed by a summary (`Processed N files ... Found N errors.`). The command exits with a non-zero code if any file is not formatted or could not be formatted (e.g. because of a syntax error), and with `0` otherwise. This makes it suitable for CI:
+
+```bash
+postgres-language-server format migrations/
+```
+
+`--staged` and `--changed` (optionally with `--since=<REF>`) limit the run to the files staged for commit or changed compared to your default branch.
+
+### Formatting stdin
+
+Use `--stdin-file-path=<PATH>` to format SQL piped through stdin, for example from an editor or a script. Only the formatted SQL is printed to stdout:
+
+```bash
+echo "SELECT a,b FROM t;" | postgres-language-server format --stdin-file-path=query.sql
+# select a, b from t;
+```
+
+The file doesn't need to exist. Its path is used to apply the project configuration (for example, a path matching `files.ignore` is printed back unchanged) and to label diagnostics. If a statement cannot be formatted, it is printed unchanged, its diagnostics are written to stderr, and the command exits with a non-zero code. When the formatter is disabled, the input is printed unchanged. `--stdin-file-path` cannot be combined with file paths, `--write`, `--staged` or `--changed`.
+
 ## Editor Integration
 
 The formatter integrates with your editor via the Language Server Protocol. Use your editor's format document command (typically bound to a keyboard shortcut) to format SQL files.
+
+## JavaScript API
+
+The `@postgres-language-server/wasm` package formats SQL in-process, with the same options as the `format` section of the configuration file:
+
+```typescript
+import { format } from "@postgres-language-server/wasm";
+
+const sql = await format('CREATE TABLE "public"."t" ("id" "uuid" NOT NULL)', {
+  keywordCase: "lower",
+});
+```
 
 ## Ignoring Files
 

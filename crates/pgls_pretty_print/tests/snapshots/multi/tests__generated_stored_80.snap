@@ -2,9 +2,9 @@
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/generated_stored.sql
 ---
-create schema "generated_stored_tests";
+create schema generated_stored_tests;
 
-grant USAGE on schema generated_stored_tests to public;
+grant usage on schema generated_stored_tests to public;
 
 set search_path to generated_stored_tests;
 
@@ -46,9 +46,7 @@ order by 1,
 
 create table gtest_err_1 (
   a int primary key,
-  b int
-  generated always as (a * 2) stored
-  generated always as (a * 3) stored
+  b int generated always as (a * 2) stored generated always as (a * 3) stored
 );
 
 create table gtest_err_2a (
@@ -64,8 +62,7 @@ create table gtest_err_2b (
 
 create table gtest_err_2c (
   a int primary key,
-  b int
-  generated always as (num_nulls(gtest_err_2c)) stored
+  b int generated always as (num_nulls(gtest_err_2c)) stored
 );
 
 create table gtest_err_3 (
@@ -75,60 +72,49 @@ create table gtest_err_3 (
 
 create table gtest_err_4 (
   a int primary key,
-  b double precision
-  generated always as (random()) stored
+  b double precision generated always as (random()) stored
 );
 
 create table gtest2 (
   a int,
-  b text
-  generated always as (a || ' sec') stored
+  b text generated always as (a || ' sec') stored
 );
 
 drop table gtest2;
 
 create table gtest_err_5a (
   a int primary key,
-  b int
-  default 5
-  generated always as (a * 2) stored
+  b int default 5 generated always as (a * 2) stored
 );
 
 create table gtest_err_5b (
   a int primary key,
-  b int
-  generated always as identity
-  generated always as (a * 2) stored
+  b int generated always as identity generated always as (a * 2) stored
 );
 
 create table gtest_err_6a (
   a int primary key,
-  b boolean
-  generated always as (xmin <> 37) stored
+  b bool generated always as (xmin <> 37) stored
 );
 
 create table gtest_err_7a (
   a int primary key,
-  b int
-  generated always as (AVG(a)) stored
+  b int generated always as (avg(a)) stored
 );
 
 create table gtest_err_7b (
   a int primary key,
-  b int
-  generated always as (ROW_NUMBER() over (order by a)) stored
+  b int generated always as (row_number() over (order by a)) stored
 );
 
 create table gtest_err_7c (
   a int primary key,
-  b int
-  generated always as ((select a)) stored
+  b int generated always as ((select a)) stored
 );
 
 create table gtest_err_7d (
   a int primary key,
-  b int
-  generated always as (generate_series(1, a)) stored
+  b int generated always as (generate_series(1, a)) stored
 );
 
 insert into gtest1 values (1);
@@ -194,10 +180,8 @@ create table gtestm (
   id int primary key,
   f1 int,
   f2 int,
-  f3 int
-  generated always as (f1 * 2) stored,
-  f4 int
-  generated always as (f2 * 2) stored
+  f3 int generated always as (f1 * 2) stored,
+  f4 int generated always as (f2 * 2) stored
 );
 
 insert into gtestm values (1, 5, 100);
@@ -293,8 +277,7 @@ inherits (gtest1);
 
 create table gtestx (
   x int,
-  b int
-  generated always as (a * 22) stored
+  b int generated always as (a * 22) stored
 )
 inherits (gtest1);
 
@@ -334,8 +317,7 @@ create table gtesty (
 );
 
 create table gtest1_y ()
-inherits (gtest0,
-gtesty);
+inherits (gtest0, gtesty);
 
 drop table gtesty;
 
@@ -345,24 +327,20 @@ create table gtesty (
 );
 
 create table gtest1_y ()
-inherits (gtest1,
-gtesty);
+inherits (gtest1, gtesty);
 
 drop table gtesty;
 
 create table gtesty (
   x int,
-  b int
-  generated always as (x * 22) stored
+  b int generated always as (x * 22) stored
 );
 
 create table gtest1_y ()
-inherits (gtest1,
-gtesty);
+inherits (gtest1, gtesty);
 
 create table gtest1_y (b int generated always as (x + 1) stored)
-inherits (gtest1,
-gtesty);
+inherits (gtest1, gtesty);
 
 create table gtestp (f1 int);
 
@@ -394,8 +372,7 @@ select * from gtest3 order by a;
 
 create table gtest3a (
   a text,
-  b text
-  generated always as (a || '+' || a) stored
+  b text generated always as (a || '+' || a) stored
 );
 
 insert into gtest3a (a) values ('a'), ('b'), ('c'), (null);
@@ -452,8 +429,7 @@ create type double_int as (a int, b int);
 
 create table gtest4 (
   a int,
-  b double_int
-  generated always as ((a * 2, a * 3)) stored
+  b double_int generated always as ((a * 2, a * 3)) stored
 );
 
 insert into gtest4 values (1), (6);
@@ -466,16 +442,14 @@ drop type double_int;
 
 create table gtest_tableoid (
   a int primary key,
-  b boolean
-  generated always as (tableoid =
-  cast('gtest_tableoid' as regclass)) stored
+  b bool
+    generated always as (tableoid = cast('gtest_tableoid' as regclass)) stored
 );
 
 insert into gtest_tableoid values (1), (2);
 
 alter table gtest_tableoid
-  add column c regclass
-    generated always as (tableoid) stored;
+  add column c regclass generated always as (tableoid) stored;
 
 select * from gtest_tableoid;
 
@@ -511,28 +485,25 @@ create table gtest11 (
 
 insert into gtest11 values (1, 10), (2, 20);
 
-grant SELECT (a, c) on table gtest11 to regress_user11;
+grant select (a, c) on table gtest11 to regress_user11;
 
 create function gf1(a int)
 returns int
 language sql
 immutable
-as $function$
-SELECT a * 3
-$function$;
+as $$ SELECT a * 3 $$;
 
 revoke all on function gf1(int) from public;
 
 create table gtest12 (
   a int primary key,
   b int,
-  c int
-  generated always as (gf1(b)) stored
+  c int generated always as (gf1(b)) stored
 );
 
 insert into gtest12 values (1, 10), (2, 20);
 
-grant SELECT (a, c), INSERT on table gtest12 to regress_user11;
+grant select (a, c), insert on table gtest12 to regress_user11;
 
 set role to regress_user11;
 
@@ -558,9 +529,7 @@ drop role regress_user11;
 
 create table gtest20 (
   a int primary key,
-  b int
-  generated always as (a * 2) stored
-  check (b < 50)
+  b int generated always as (a * 2) stored check (b < 50)
 );
 
 insert into gtest20 (a) values (10);
@@ -588,14 +557,10 @@ alter table gtest20a
   add check (b < 50);
 
 alter table gtest20a
-  add column c double precision
-    default random()
-    check (b < 50);
+  add column c float8 default random() check (b < 50);
 
 alter table gtest20a
-  add column c double precision
-    default random()
-    check (b < 61);
+  add column c float8 default random() check (b < 61);
 
 create table gtest20b (
   a int primary key,
@@ -607,7 +572,7 @@ insert into gtest20b (a) values (10);
 insert into gtest20b (a) values (30);
 
 alter table gtest20b
-  add constraint "chk" check (b < 50) not valid;
+  add constraint chk check (b < 50) not valid;
 
 alter table gtest20b
   validate constraint chk;
@@ -618,7 +583,7 @@ create table gtest20c (
 );
 
 alter table gtest20c
-  add constraint "whole_row_check" check (gtest20c is not null);
+  add constraint whole_row_check check (gtest20c is not null);
 
 insert into gtest20c values (1);
 
@@ -626,9 +591,7 @@ insert into gtest20c values (null);
 
 create table gtest21a (
   a int primary key,
-  b int
-  generated always as (nullif(a, 0)) stored
-  not null
+  b int generated always as (nullif(a, 0)) stored not null
 );
 
 insert into gtest21a (a) values (1);
@@ -637,8 +600,7 @@ insert into gtest21a (a) values (0);
 
 create table gtest21b (
   a int primary key,
-  b int
-  generated always as (nullif(a, 0)) stored
+  b int generated always as (nullif(a, 0)) stored
 );
 
 alter table gtest21b
@@ -655,9 +617,7 @@ insert into gtest21b (a) values (0);
 
 create table gtest22a (
   a int primary key,
-  b int
-  generated always as (a / 2) stored
-  unique
+  b int generated always as (a / 2) stored unique
 );
 
 insert into gtest22a values (2);
@@ -681,18 +641,11 @@ create table gtest22c (
   b int generated always as (a * 2) stored
 );
 
-create index "gtest22c_b_idx" on gtest22c using btree (b);
+create index gtest22c_b_idx on gtest22c using btree (b);
 
-create index "gtest22c_expr_idx" on gtest22c using btree ((b * 3));
+create index gtest22c_expr_idx on gtest22c using btree ((b * 3));
 
-create index "gtest22c_pred_idx"
-on gtest22c
-using btree
-(
-  a
-)
-where
-  b > 0;
+create index gtest22c_pred_idx on gtest22c using btree (a) where b > 0;
 
 insert into gtest22c values (1), (2), (3);
 
@@ -744,24 +697,20 @@ insert into gtest23a values (1, 11), (2, 22), (3, 33);
 create table gtest23x (
   a int primary key,
   b int
-  generated always as (a * 2) stored
-  references gtest23a (x)
-  on UPDATE cascade
+    generated always as (a * 2) stored
+    references gtest23a (x) on update cascade
 );
 
 create table gtest23x (
   a int primary key,
   b int
-  generated always as (a * 2) stored
-  references gtest23a (x)
-  on DELETE set null
+    generated always as (a * 2) stored
+    references gtest23a (x) on delete set null
 );
 
 create table gtest23b (
   a int primary key,
-  b int
-  generated always as (a * 2) stored
-  references gtest23a (x)
+  b int generated always as (a * 2) stored references gtest23a (x)
 );
 
 insert into gtest23b values (1);
@@ -801,8 +750,7 @@ create domain gtestdomain1 as int check (value < 10);
 
 create table gtest24 (
   a int primary key,
-  b gtestdomain1
-  generated always as (a * 2) stored
+  b gtestdomain1 generated always as (a * 2) stored
 );
 
 insert into gtest24 (a) values (4);
@@ -813,8 +761,7 @@ create type gtestdomain1range as range (subtype = gtestdomain1);
 
 create table gtest24r (
   a int primary key,
-  b gtestdomain1range
-  generated always as (gtestdomain1range(a, a + 5)) stored
+  b gtestdomain1range generated always as (gtestdomain1range(a, a + 5)) stored
 );
 
 insert into gtest24r (a) values (4);
@@ -825,8 +772,7 @@ create domain gtestdomainnn as int check (value is not null);
 
 create table gtest24nn (
   a int,
-  b gtestdomainnn
-  generated always as (a * 2) stored
+  b gtestdomainnn generated always as (a * 2) stored
 );
 
 insert into gtest24nn (a) values (4);
@@ -860,22 +806,19 @@ for values from ('2016-07-01') to ('2016-08-01');
 create table gtest_child (
   f1 date not null,
   f2 bigint,
-  f3 bigint
-  generated always as (f2 * 2) stored
+  f3 bigint generated always as (f2 * 2) stored
 );
 
 alter table gtest_parent
   attach partition
-  gtest_child
-  for values from ('2016-07-01') to ('2016-08-01');
+  gtest_child for values from ('2016-07-01') to ('2016-08-01');
 
 drop table gtest_parent, gtest_child;
 
 create table gtest_parent (
   f1 date not null,
   f2 bigint,
-  f3 bigint
-  generated always as (f2 * 2) stored
+  f3 bigint generated always as (f2 * 2) stored
 )
 partition by range(f1);
 
@@ -912,8 +855,7 @@ create table gtest_child3 (
 
 alter table gtest_parent
   attach partition
-  gtest_child3
-  for values from ('2016-09-01') to ('2016-10-01');
+  gtest_child3 for values from ('2016-09-01') to ('2016-10-01');
 
 drop table gtest_child3;
 
@@ -925,8 +867,7 @@ create table gtest_child3 (
 
 alter table gtest_parent
   attach partition
-  gtest_child3
-  for values from ('2016-09-01') to ('2016-10-01');
+  gtest_child3 for values from ('2016-09-01') to ('2016-10-01');
 
 drop table gtest_child3;
 
@@ -938,29 +879,25 @@ create table gtest_child3 (
 
 alter table gtest_parent
   attach partition
-  gtest_child3
-  for values from ('2016-09-01') to ('2016-10-01');
+  gtest_child3 for values from ('2016-09-01') to ('2016-10-01');
 
 drop table gtest_child3;
 
 alter table gtest_parent
   attach partition
-  gtest_child3
-  for values from ('2016-09-01') to ('2016-10-01');
+  gtest_child3 for values from ('2016-09-01') to ('2016-10-01');
 
 drop table gtest_child3;
 
 create table gtest_child3 (
   f1 date not null,
   f2 bigint,
-  f3 bigint
-  generated always as (f2 * 33) stored
+  f3 bigint generated always as (f2 * 33) stored
 );
 
 alter table gtest_parent
   attach partition
-  gtest_child3
-  for values from ('2016-09-01') to ('2016-10-01');
+  gtest_child3 for values from ('2016-09-01') to ('2016-10-01');
 
 insert into gtest_parent (f1, f2) values ('2016-07-15', 1);
 
@@ -999,16 +936,14 @@ select cast(tableoid as regclass), * from gtest_parent order by 1, 2, 3;
 create table gtest_part_key (
   f1 date not null,
   f2 bigint,
-  f3 bigint
-  generated always as (f2 * 2) stored
+  f3 bigint generated always as (f2 * 2) stored
 )
 partition by range(f3);
 
 create table gtest_part_key (
   f1 date not null,
   f2 bigint,
-  f3 bigint
-  generated always as (f2 * 2) stored
+  f3 bigint generated always as (f2 * 2) stored
 )
 partition by range((f3 * 3));
 
@@ -1037,17 +972,15 @@ alter table gtest25
   add column d int default 101;
 
 alter table gtest25
-  alter column d type double precision,
-  add column y double precision
-    generated always as (d * 4) stored;
+  alter column d type float8,
+  add column y float8 generated always as (d * 4) stored;
 
 select * from gtest25 order by a;
 
 create table gtest27 (
   a int,
   b int,
-  x int
-  generated always as ((a + b) * 2) stored
+  x int generated always as ((a + b) * 2) stored
 );
 
 insert into gtest27 (a, b) values (3, 7), (4, 11);
@@ -1070,12 +1003,11 @@ alter table gtest27
   drop column x,
   alter column a type bigint,
   alter column b type bigint,
-  add column x bigint
-    generated always as ((a + b) * 2) stored;
+  add column x bigint generated always as ((a + b) * 2) stored;
 
 alter table gtest27
-  alter column a type double precision,
-  alter column b type double precision;
+  alter column a type float8,
+  alter column b type float8;
 
 select * from gtest27;
 
@@ -1145,8 +1077,7 @@ alter table gtest30_1
 
 create table gtest31_1 (
   a int,
-  b text
-  generated always as ('hello') stored,
+  b text generated always as ('hello') stored,
   c text
 );
 
@@ -1159,7 +1090,7 @@ alter table gtest31_1
   alter column b type varchar;
 
 alter table gtest31_2
-  add constraint "cc" check ((y).b is not null);
+  add constraint cc check ((y).b is not null);
 
 alter table gtest31_1
   alter column b set expression
@@ -1176,7 +1107,7 @@ alter table gtest31_1
 
 drop statistics gtest31_2_stat;
 
-create index "gtest31_2_y_idx" on gtest31_2 using btree (((y).b));
+create index gtest31_2_y_idx on gtest31_2 using btree (((y).b));
 
 alter table gtest31_1
   alter column b set expression
@@ -1186,11 +1117,10 @@ drop table gtest31_1, gtest31_2;
 
 create table gtest31_1 (
   a int,
-  b text
-  generated always as ('hello') stored,
+  b text generated always as ('hello') stored,
   c text
 )
-partition by LIST(a);
+partition by list(a);
 
 create table gtest31_2 (
   x int,
@@ -1210,7 +1140,7 @@ create table gtest26 (
 create function gtest_trigger_func()
 returns trigger
 language plpgsql
-as $function$
+as $$
 BEGIN
   IF tg_op IN ('DELETE', 'UPDATE') THEN
     RAISE INFO '%: %: old = %', TG_NAME, TG_WHEN, OLD;
@@ -1224,7 +1154,7 @@ BEGIN
     RETURN NEW;
   END IF;
 END
-$function$;
+$$;
 
 create trigger gtest1
 before delete or update
@@ -1289,12 +1219,12 @@ drop trigger gtest3 on gtest26;
 create function gtest_trigger_func3()
 returns trigger
 language plpgsql
-as $function$
+as $$
 BEGIN
   RAISE NOTICE 'OK';
   RETURN NEW;
 END
-$function$;
+$$;
 
 create trigger gtest11
 before update of b
@@ -1311,13 +1241,13 @@ truncate gtest26;
 create function gtest_trigger_func4()
 returns trigger
 language plpgsql
-as $function$
+as $$
 BEGIN
   NEW.a = 10;
   NEW.b = 300;
   RETURN NEW;
 END;
-$function$;
+$$;
 
 create trigger gtest12_01
 before insert or update
@@ -1355,7 +1285,7 @@ create table gtest28a (
 alter table gtest28a
   drop column a;
 
-create table gtest28b (like gtest28a including GENERATED);
+create table gtest28b (like gtest28a including generated);
 
 select
   attrelid,

@@ -53,7 +53,7 @@ execute vprep;
 create function cache_test(int)
 returns int
 language plpgsql
-as $function$
+as $$
 declare total int;
 begin
 	create temp table t1(f1 int);
@@ -65,7 +65,7 @@ begin
 	drop table t1;
 	return total;
 end
-$function$;
+$$;
 
 select cache_test(1);
 
@@ -79,11 +79,10 @@ as select 2 + 2 as f1;
 create function cache_test_2()
 returns int
 language plpgsql
-as $function$
+as $$
 begin
 	return f1 from v1;
-end
-$function$;
+end$$;
 
 select cache_test_2();
 
@@ -93,16 +92,15 @@ as select 2 + 2 + 4 as f1;
 select cache_test_2();
 
 create or replace temporary view v1
-as select
-  2 + 2 + 4 + (select MAX(unique1) from tenk1) as f1;
+as select 2 + 2 + 4 + (select max(unique1) from tenk1) as f1;
 
 select cache_test_2();
 
-create schema "s1";
+create schema s1;
 
 create table abc (f1 int);
 
-create schema "s2";
+create schema s2;
 
 create table abc (f1 int);
 
@@ -123,7 +121,7 @@ select f1 from abc;
 execute p1;
 
 alter table s1.abc
-  add column f2 double precision;
+  add column f2 float8;
 
 execute p1;
 
@@ -148,7 +146,7 @@ execute p2;
 create function cachebug()
 returns void
 language plpgsql
-as $function$
+as $$
 declare r int;
 begin
   drop table if exists temptable cascade;
@@ -157,15 +155,14 @@ begin
   for r in select * from vv loop
     raise notice '%', r;
   end loop;
-end
-$function$;
+end$$;
 
 select cachebug();
 
 select cachebug();
 
 create table pc_list_parted (a int)
-partition by LIST(a);
+partition by list(a);
 
 create table pc_list_part_null partition of pc_list_parted for values in (null);
 
@@ -205,19 +202,19 @@ create index on test_mode using btree (a);
 
 analyze test_mode;
 
-prepare test_mode_pp (int) as select COUNT(*) from test_mode where a = $1;;
+prepare test_mode_pp (int) as select count(*) from test_mode where a = $1;;
 
 select name, generic_plans, custom_plans from pg_prepared_statements where name = 'test_mode_pp';
 
 set plan_cache_mode = auto;
 
-explain (COSTS 'off') execute test_mode_pp (2);
+explain (costs 'off') execute test_mode_pp (2);
 
 select name, generic_plans, custom_plans from pg_prepared_statements where name = 'test_mode_pp';
 
 set plan_cache_mode = force_generic_plan;
 
-explain (COSTS 'off') execute test_mode_pp (2);
+explain (costs 'off') execute test_mode_pp (2);
 
 select name, generic_plans, custom_plans from pg_prepared_statements where name = 'test_mode_pp';
 
@@ -237,11 +234,11 @@ execute test_mode_pp (1);
 
 select name, generic_plans, custom_plans from pg_prepared_statements where name = 'test_mode_pp';
 
-explain (COSTS 'off') execute test_mode_pp (2);
+explain (costs 'off') execute test_mode_pp (2);
 
 set plan_cache_mode = force_custom_plan;
 
-explain (COSTS 'off') execute test_mode_pp (2);
+explain (costs 'off') execute test_mode_pp (2);
 
 select name, generic_plans, custom_plans from pg_prepared_statements where name = 'test_mode_pp';
 

@@ -5,6 +5,8 @@ use crate::{
 };
 use pgls_query::protobuf::{XmlExpr, XmlOptionType};
 
+use super::node_list::emit_parenthesized_list;
+
 pub(super) fn emit_xml_expr(e: &mut EventEmitter, n: &XmlExpr) {
     e.group_start(GroupKind::XmlExpr);
 
@@ -22,9 +24,7 @@ pub(super) fn emit_xml_expr(e: &mut EventEmitter, n: &XmlExpr) {
         1 => {
             // XMLCONCAT
             e.token(TokenKind::XMLCONCAT_KW);
-            e.token(TokenKind::L_PAREN);
-            emit_comma_separated_list(e, &n.args, super::emit_node);
-            e.token(TokenKind::R_PAREN);
+            emit_parenthesized_list(e, &n.args, super::emit_node);
         }
         2 => {
             // XMLELEMENT
@@ -40,9 +40,7 @@ pub(super) fn emit_xml_expr(e: &mut EventEmitter, n: &XmlExpr) {
                 e.token(TokenKind::COMMA);
                 e.space();
                 e.token(TokenKind::XMLATTRIBUTES_KW);
-                e.token(TokenKind::L_PAREN);
-                emit_comma_separated_list(e, &n.named_args, super::emit_node);
-                e.token(TokenKind::R_PAREN);
+                emit_parenthesized_list(e, &n.named_args, super::emit_node);
             }
 
             // Args represent content
@@ -57,9 +55,7 @@ pub(super) fn emit_xml_expr(e: &mut EventEmitter, n: &XmlExpr) {
         3 => {
             // XMLFOREST
             e.token(TokenKind::XMLFOREST_KW);
-            e.token(TokenKind::L_PAREN);
-            emit_comma_separated_list(e, &n.named_args, super::emit_node);
-            e.token(TokenKind::R_PAREN);
+            emit_parenthesized_list(e, &n.named_args, super::emit_node);
         }
         4 => {
             // XMLPARSE

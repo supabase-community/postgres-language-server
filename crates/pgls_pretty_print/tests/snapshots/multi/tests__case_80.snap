@@ -42,11 +42,7 @@ select '4' as "One", case when 1 > 2 then 3 else 4 end as "ELSE default";
 
 select
   '6' as "One",
-  case
-    when 1 > 2 then 3
-    when 4 < 5 then 6
-    else 7
-  end
+  case when 1 > 2 then 3 when 4 < 5 then 6 else 7 end
   as "Two WHEN with default";
 
 select '7' as "None", case when random() < 0 then 1 end as "NULL on no matches";
@@ -120,10 +116,7 @@ update case_tbl set i = case when i >= 2 then 2 * i else 3 * i end;
 select * from case_tbl;
 
 update case_tbl
-set i = case
-  when b.i >= 2 then 2 * j
-  else 3 * j
-end
+set i = case when b.i >= 2 then 2 * j else 3 * j end
 from case2_tbl as b
 where
   j = -case_tbl.i;
@@ -136,9 +129,7 @@ create function vol(text)
 returns text
 language plpgsql
 volatile
-as $function$
-begin return $1; end
-$function$;
+as 'begin return $1; end';
 
 select
   case case vol('bar')
@@ -157,25 +148,22 @@ create function volfoo(text)
 returns foodomain
 language plpgsql
 volatile
-as $function$
-begin return $1::foodomain; end
-$function$;
+as 'begin return $1::foodomain; end';
 
 create function inline_eq(foodomain, foodomain)
 returns boolean
 language sql
-as $function$
-SELECT CASE $2::text WHEN $1::text THEN true ELSE false END
-$function$;
+as 'SELECT CASE $2::text WHEN $1::text THEN true ELSE false END';
 
-create operator = (PROCEDURE = inline_eq,
-LEFTARG = foodomain,
-RIGHTARG = foodomain);
+create operator = (
+  procedure = inline_eq,
+  leftarg = foodomain,
+  rightarg = foodomain
+);
 
 select
   case volfoo('bar')
-    when cast('foo' as foodomain)
-    then 'is foo'
+    when cast('foo' as foodomain) then 'is foo'
     else 'is not foo'
   end;
 
@@ -189,33 +177,28 @@ create function make_ad(int, int)
 returns arrdomain
 language plpgsql
 volatile
-as $function$
-declare x arrdomain;
+as 'declare x arrdomain;
    begin
      x := array[$1,$2];
      return x;
-   end
-$function$;
+   end';
 
 create function ad_eq(arrdomain, arrdomain)
 returns boolean
 language plpgsql
-as $function$
-begin return array_eq($1, $2); end
-$function$;
+as 'begin return array_eq($1, $2); end';
 
-create operator = (PROCEDURE = ad_eq,
-LEFTARG = arrdomain,
-RIGHTARG = arrdomain);
+create operator = (
+  procedure = ad_eq,
+  leftarg = arrdomain,
+  rightarg = arrdomain
+);
 
 select
   case make_ad(1, 2)
-    when cast(array[2, 4] as arrdomain)
-    then 'wrong'
-    when cast(array[2, 5] as arrdomain)
-    then 'still wrong'
-    when cast(array[1, 2] as arrdomain)
-    then 'right'
+    when cast(array[2, 4] as arrdomain) then 'wrong'
+    when cast(array[2, 5] as arrdomain) then 'still wrong'
+    when cast(array[1, 2] as arrdomain) then 'right'
   end;
 
 select nullif(make_ad(1, 2), cast(array[2, 3] as arrdomain));
@@ -230,8 +213,7 @@ select
   case cast('foo' as text)
     when 'foo'
     then array['a', 'b', 'c', 'd'] ||
-    cast(enum_range(cast(null as casetestenum))
-    as text[])
+    cast(enum_range(cast(null as casetestenum)) as text[])
     else array['x', 'y']
   end;
 

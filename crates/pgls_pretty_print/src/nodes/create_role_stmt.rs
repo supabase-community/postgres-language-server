@@ -199,8 +199,7 @@ fn format_role_option(e: &mut EventEmitter, d: &pgls_query::protobuf::DefElem) {
     }
 
     // Default formatting for other options
-    let defname_upper = d.defname.to_uppercase();
-    e.token(TokenKind::IDENT(defname_upper));
+    super::emit_word(e, &d.defname);
     if let Some(ref arg) = d.arg {
         e.space();
         super::emit_node(arg, e);

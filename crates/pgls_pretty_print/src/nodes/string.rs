@@ -2,89 +2,9 @@ use pgls_query::protobuf::String as PgString;
 
 use crate::{
     TokenKind,
-    emitter::{EventEmitter, GroupKind, LineType},
+    codegen::token_kind::{KeywordCategory, keyword_category},
+    emitter::{EventEmitter, GroupKind},
 };
-
-const RESERVED_KEYWORDS: &[&str] = &[
-    "all",
-    "analyse",
-    "analyze",
-    "and",
-    "any",
-    "array",
-    "as",
-    "asc",
-    "asymmetric",
-    "both",
-    "case",
-    "cast",
-    "check",
-    "collate",
-    "column",
-    "constraint",
-    "create",
-    "current_catalog",
-    "current_date",
-    "current_role",
-    "current_time",
-    "current_timestamp",
-    "current_user",
-    "default",
-    "deferrable",
-    "desc",
-    "distinct",
-    "do",
-    "else",
-    "end",
-    "except",
-    "false",
-    "fetch",
-    "for",
-    "foreign",
-    "from",
-    "grant",
-    "group",
-    "having",
-    "in",
-    "initially",
-    "intersect",
-    "into",
-    "lateral",
-    "leading",
-    "limit",
-    "localtime",
-    "localtimestamp",
-    "not",
-    "null",
-    "offset",
-    "on",
-    "only",
-    "or",
-    "order",
-    "placing",
-    "primary",
-    "references",
-    "returning",
-    "select",
-    "session_user",
-    "some",
-    "symmetric",
-    "system_user",
-    "table",
-    "then",
-    "to",
-    "trailing",
-    "true",
-    "union",
-    "unique",
-    "user",
-    "using",
-    "variadic",
-    "when",
-    "where",
-    "window",
-    "with",
-];
 
 pub(super) fn emit_string(e: &mut EventEmitter, n: &PgString) {
     e.group_start(GroupKind::String);
@@ -122,7 +42,7 @@ pub(super) fn emit_identifier_maybe_quoted(e: &mut EventEmitter, value: &str) {
         return;
     }
 
-    if needs_quoting(value) {
+    if needs_quoting_as_column_name(value) {
         emit_identifier(e, value);
     } else {
         e.token(TokenKind::IDENT(value.to_string()));
@@ -145,11 +65,25 @@ pub(super) fn emit_type_identifier_maybe_quoted(e: &mut EventEmitter, value: &st
     }
 }
 
+/// Emits a word the grammar reads case-insensitively, such as an option name, in the keyword case.
+pub(super) fn emit_word(e: &mut EventEmitter, word: &str) {
+    match TokenKind::from_keyword(word) {
+        Some(keyword) => e.token(keyword),
+        None => e.token(TokenKind::WORD(word.to_string())),
+    }
+}
+
 pub(super) fn emit_keyword(e: &mut EventEmitter, keyword: &str) {
-    if let Some(token) = TokenKind::from_keyword(keyword) {
-        e.token(token);
-    } else {
-        e.token(TokenKind::IDENT(keyword.to_string()));
+    emit_word(e, keyword);
+}
+
+/// Emits words separated by spaces, such as `ACCESS EXCLUSIVE`, in the keyword case.
+pub(super) fn emit_words(e: &mut EventEmitter, words: &str) {
+    for (index, word) in words.split(' ').enumerate() {
+        if index > 0 {
+            e.space();
+        }
+        emit_word(e, word);
     }
 }
 
@@ -170,24 +104,62 @@ pub enum DollarQuoteHint {
     Do,
 }
 
-pub(super) fn emit_dollar_quoted_str_with_hint(
+/// Emits a function or `DO` body, whose string literal starts at or after `location`.
+///
+/// A body that still reads as it does in the source is written back exactly as it was quoted
+/// there, so the tag of `$$ ... $$` and every byte in between survive formatting. A body that
+/// changed, or whose source is unknown, is dollar-quoted verbatim: with the tag of the source
+/// literal when the new body allows it, or with a tag picked from `hint`.
+pub(super) fn emit_body_literal(
     e: &mut EventEmitter,
     value: &str,
+    location: i32,
     hint: DollarQuoteHint,
 ) {
-    let delimiter = pick_dollar_delimiter(value, hint);
-    // Trim leading/trailing whitespace from the body for cleaner formatting,
-    // then emit: delimiter, newline, body, newline, delimiter
-    // This puts the function body on its own lines for readability
-    let trimmed_body = value.trim();
+    let source_literal = e.source_string_literal_from(location);
+
+    if let Some(literal) = source_literal
+        && decode_literal(literal).as_deref() == Some(value)
+    {
+        e.token(TokenKind::STRING(literal.to_string()));
+        return;
+    }
+
+    let delimiter = source_literal
+        .and_then(dollar_quote_tag)
+        .filter(|tag| can_dollar_quote(value, tag))
+        .map(str::to_string)
+        .unwrap_or_else(|| pick_dollar_delimiter(value, hint));
     e.token(TokenKind::DOLLAR_QUOTE_DELIMITER(delimiter.clone()));
-    e.line(LineType::Hard);
-    e.token(TokenKind::DOLLAR_QUOTE_BODY(trimmed_body.to_string()));
-    e.line(LineType::Hard);
+    e.token(TokenKind::DOLLAR_QUOTE_BODY(value.to_string()));
     e.token(TokenKind::DOLLAR_QUOTE_DELIMITER(delimiter));
 }
 
-fn needs_quoting(value: &str) -> bool {
+/// The value of a plain or dollar-quoted string literal, `None` for any other form.
+fn decode_literal(literal: &str) -> Option<String> {
+    if let Some(tag) = dollar_quote_tag(literal) {
+        let body = literal.strip_prefix(tag)?.strip_suffix(tag)?;
+        return Some(body.to_string());
+    }
+
+    let body = literal.strip_prefix('\'')?.strip_suffix('\'')?;
+    Some(body.replace("''", "'"))
+}
+
+/// The opening tag of a dollar-quoted literal, `$$` or `$tag$`.
+fn dollar_quote_tag(literal: &str) -> Option<&str> {
+    let rest = literal.strip_prefix('$')?;
+    let end = rest.find('$')?;
+    Some(&literal[..end + 2])
+}
+
+/// Whether `value` can be quoted with `tag`: the first occurrence of the tag after the opening one
+/// must be the closing one.
+fn can_dollar_quote(value: &str, tag: &str) -> bool {
+    format!("{value}{tag}").find(tag) == Some(value.len())
+}
+
+pub(super) fn needs_quoting(value: &str) -> bool {
     if value.is_empty() {
         return true;
     }
@@ -213,8 +185,28 @@ fn needs_quoting(value: &str) -> bool {
         return true;
     }
 
-    let lower = value.to_ascii_lowercase();
-    RESERVED_KEYWORDS.binary_search(&lower.as_str()).is_ok()
+    keyword_category(value) == Some(KeywordCategory::Reserved)
+}
+
+/// Whether a schema, table or column name must be quoted. The grammar spells it as `ColId`, which
+/// excludes the keywords that may name a function or type.
+pub(super) fn needs_quoting_as_column_name(value: &str) -> bool {
+    needs_quoting(value) || keyword_category(value) == Some(KeywordCategory::TypeFuncName)
+}
+
+/// Whether a name that may be any word, keywords included, must be quoted. The grammar spells it
+/// as `ColLabel`, the trailing part of a qualified function name for instance.
+pub(super) fn needs_quoting_except_keywords(value: &str) -> bool {
+    needs_quoting(value) && keyword_category(value).is_none()
+}
+
+/// Whether an unqualified function or type name must be quoted.
+///
+/// The grammar spells such a name as `type_function_name`, which excludes column name keywords as
+/// well as reserved ones: unquoted, `coalesce(a)` or `interval` would parse as the SQL construct of
+/// the same name rather than as a reference to the named object.
+pub(super) fn needs_quoting_as_function_or_type_name(value: &str) -> bool {
+    needs_quoting(value) || keyword_category(value) == Some(KeywordCategory::ColName)
 }
 
 /// Pick a dollar quote delimiter that doesn't conflict with the body content.
@@ -255,7 +247,7 @@ fn pick_dollar_delimiter(body: &str, hint: DollarQuoteHint) -> String {
     };
 
     for tag in preferred_tags {
-        if !body.contains(tag) {
+        if can_dollar_quote(body, tag) {
             return (*tag).to_string();
         }
     }
@@ -264,7 +256,7 @@ fn pick_dollar_delimiter(body: &str, hint: DollarQuoteHint) -> String {
     let mut counter = 0usize;
     loop {
         let tag = format!("$f{counter}$");
-        if !body.contains(&tag) {
+        if can_dollar_quote(body, &tag) {
             return tag;
         }
         counter += 1;

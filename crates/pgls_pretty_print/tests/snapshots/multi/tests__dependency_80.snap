@@ -15,7 +15,7 @@ create table deptest (
   f2 text
 );
 
-grant SELECT on table deptest to regress_dep_group;
+grant select on table deptest to regress_dep_group;
 
 grant all on table deptest to regress_dep_user, regress_dep_user2;
 
@@ -23,23 +23,23 @@ drop role regress_dep_user;
 
 drop role regress_dep_group;
 
-revoke SELECT on table deptest from regress_dep_group;
+revoke select on table deptest from regress_dep_group;
 
 drop role regress_dep_group;
 
-revoke SELECT,
-INSERT,
-UPDATE,
-DELETE,
-TRUNCATE,
-REFERENCES,
-MAINTAIN
+revoke select,
+insert,
+update,
+delete,
+truncate,
+references,
+maintain
 on table deptest
 from regress_dep_user;
 
 drop role regress_dep_user;
 
-revoke TRIGGER on table deptest from regress_dep_user;
+revoke trigger on table deptest from regress_dep_user;
 
 drop role regress_dep_user;
 
@@ -93,11 +93,11 @@ drop owned by regress_dep_user1;
 
 grant all on table deptest1 to regress_dep_user1;
 
-grant CREATE on database regression to regress_dep_user1;
+grant create on database regression to regress_dep_user1;
 
 set session authorization regress_dep_user1;
 
-create schema "deptest";
+create schema deptest;
 
 create table deptest (
   a serial primary key,
@@ -107,20 +107,16 @@ create table deptest (
 alter default privileges
 for role regress_dep_user1
 in schema deptest
-grant all
-on tables
-to regress_dep_user2;
+grant all on tables to regress_dep_user2;
 
 create function deptest_func()
 returns void
 language plpgsql
-as $function$
-BEGIN END;
-$function$;
+as $$ BEGIN END; $$;
 
 create type deptest_enum as enum ('red');
 
-create type deptest_range as range (subtype = int);
+create type deptest_range as range (subtype = int4);
 
 create table deptest2 (f1 int);
 
@@ -136,10 +132,7 @@ create type deptest_t as (a int);
 select
   typowner = relowner
 from
-  pg_type
-  inner join
-    pg_class as c
-  on typrelid = c.oid
+  pg_type inner join pg_class as c on typrelid = c.oid
 where
   typname = 'deptest_t';
 
@@ -150,10 +143,7 @@ reassign owned by regress_dep_user1 to regress_dep_user2;
 select
   typowner = relowner
 from
-  pg_type
-  inner join
-    pg_class as c
-  on typrelid = c.oid
+  pg_type inner join pg_class as c on typrelid = c.oid
 where
   typname = 'deptest_t';
 

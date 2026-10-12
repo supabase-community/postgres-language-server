@@ -15,7 +15,7 @@ test_enc_conversion(
   bytea,
   name,
   name,
-  boolean,
+  bool,
   out validlen int,
   out result bytea
 )
@@ -63,7 +63,7 @@ test_conv(
   out error text
 )
 language plpgsql
-as $function$
+as $$
 declare
   validlen int;
 begin
@@ -81,7 +81,7 @@ begin
   end;
   return;
 end;
-$function$;
+$$;
 
 create table utf8_verification_inputs (
   inbytes bytea,
@@ -92,44 +92,24 @@ insert into utf8_verification_inputs
 values
   ('\x66006f', 'NUL byte'),
   ('\xaf', 'bare continuation'),
-  (
-    '\xc5',
-    'missing second byte in 2-byte char'
-  ),
+  ('\xc5', 'missing second byte in 2-byte char'),
   ('\xc080', 'smallest 2-byte overlong'),
   ('\xc1bf', 'largest 2-byte overlong'),
-  (
-    '\xc280', 'next 2-byte after overlongs'
-  ),
+  ('\xc280', 'next 2-byte after overlongs'),
   ('\xdfbf', 'largest 2-byte'),
-  (
-    '\xe9af',
-    'missing third byte in 3-byte char'
-  ),
+  ('\xe9af', 'missing third byte in 3-byte char'),
   ('\xe08080', 'smallest 3-byte overlong'),
   ('\xe09fbf', 'largest 3-byte overlong'),
-  (
-    '\xe0a080', 'next 3-byte after overlong'
-  ),
+  ('\xe0a080', 'next 3-byte after overlong'),
   ('\xed9fbf', 'last before surrogates'),
   ('\xeda080', 'smallest surrogate'),
   ('\xedbfbf', 'largest surrogate'),
   ('\xee8080', 'next after surrogates'),
   ('\xefbfbf', 'largest 3-byte'),
-  (
-    '\xf1afbf',
-    'missing fourth byte in 4-byte char'
-  ),
-  (
-    '\xf0808080', 'smallest 4-byte overlong'
-  ),
-  (
-    '\xf08fbfbf', 'largest 4-byte overlong'
-  ),
-  (
-    '\xf0908080',
-    'next 4-byte after overlong'
-  ),
+  ('\xf1afbf', 'missing fourth byte in 4-byte char'),
+  ('\xf0808080', 'smallest 4-byte overlong'),
+  ('\xf08fbfbf', 'largest 4-byte overlong'),
+  ('\xf0908080', 'next 4-byte after overlong'),
   ('\xf48fbfbf', 'largest 4-byte'),
   ('\xf4908080', 'smallest too large'),
   ('\xfa9a9a8a8a', '5-byte');
@@ -146,11 +126,35 @@ as (
   select
     inbytes,
     description,
-    (test_conv(
-      inbytes || cast(repeat('.', 3) as bytea),
-      'utf8',
-      'utf8'
-    )).error
+    (test_conv(inbytes || cast(repeat('.', 3) as bytea), 'utf8', 'utf8')).error
+  from
+    utf8_verification_inputs
+),
+test_padded
+as (
+  select
+    description,
+    (test_conv(inbytes || cast(repeat('.', 64) as bytea), 'utf8', 'utf8')).error
+  from
+    test_bytes
+)
+select
+  description,
+  b.error as orig_error,
+  p.error as error_after_padding
+from
+  test_padded as p inner join test_bytes as b using (description)
+where
+  p.error is distinct from b.error
+order by description;
+
+with
+test_bytes
+as (
+  select
+    inbytes,
+    description,
+    (test_conv(inbytes || cast(repeat('.', 3) as bytea), 'utf8', 'utf8')).error
   from
     utf8_verification_inputs
 ),
@@ -159,7 +163,7 @@ as (
   select
     description,
     (test_conv(
-      inbytes ||
+      cast(repeat('.', 64 - length(inbytes)) as bytea) || inbytes ||
       cast(repeat('.', 64) as bytea),
       'utf8',
       'utf8'
@@ -172,10 +176,7 @@ select
   b.error as orig_error,
   p.error as error_after_padding
 from
-  test_padded as p
-  inner join
-    test_bytes as b
-  using ("description")
+  test_padded as p inner join test_bytes as b using (description)
 where
   p.error is distinct from b.error
 order by description;
@@ -186,11 +187,7 @@ as (
   select
     inbytes,
     description,
-    (test_conv(
-      inbytes || cast(repeat('.', 3) as bytea),
-      'utf8',
-      'utf8'
-    )).error
+    (test_conv(inbytes || cast(repeat('.', 3) as bytea), 'utf8', 'utf8')).error
   from
     utf8_verification_inputs
 ),
@@ -199,50 +196,7 @@ as (
   select
     description,
     (test_conv(
-      cast(repeat('.', 64 - length(inbytes))
-      as bytea) ||
-      inbytes ||
-      cast(repeat('.', 64) as bytea),
-      'utf8',
-      'utf8'
-    )).error
-  from
-    test_bytes
-)
-select
-  description,
-  b.error as orig_error,
-  p.error as error_after_padding
-from
-  test_padded as p
-  inner join
-    test_bytes as b
-  using ("description")
-where
-  p.error is distinct from b.error
-order by description;
-
-with
-test_bytes
-as (
-  select
-    inbytes,
-    description,
-    (test_conv(
-      inbytes || cast(repeat('.', 3) as bytea),
-      'utf8',
-      'utf8'
-    )).error
-  from
-    utf8_verification_inputs
-),
-test_padded
-as (
-  select
-    description,
-    (test_conv(
-      cast(repeat('.', 64) as bytea) ||
-      inbytes ||
+      cast(repeat('.', 64) as bytea) || inbytes ||
       cast(repeat('.', 3) as bytea),
       'utf8',
       'utf8'
@@ -255,10 +209,7 @@ select
   b.error as orig_error,
   p.error as error_after_padding
 from
-  test_padded as p
-  inner join
-    test_bytes as b
-  using ("description")
+  test_padded as p inner join test_bytes as b using (description)
 where
   p.error is distinct from b.error
 order by description;
@@ -269,11 +220,7 @@ as (
   select
     inbytes,
     description,
-    (test_conv(
-      inbytes || cast(repeat('.', 3) as bytea),
-      'utf8',
-      'utf8'
-    )).error
+    (test_conv(inbytes || cast(repeat('.', 3) as bytea), 'utf8', 'utf8')).error
   from
     utf8_verification_inputs
 ),
@@ -282,9 +229,7 @@ as (
   select
     description,
     (test_conv(
-      cast(repeat('.', 64 - length(inbytes))
-      as bytea) ||
-      inbytes ||
+      cast(repeat('.', 64 - length(inbytes)) as bytea) || inbytes ||
       cast(repeat('.', 3) as bytea),
       'utf8',
       'utf8'
@@ -297,10 +242,7 @@ select
   b.error as orig_error,
   p.error as error_after_padding
 from
-  test_padded as p
-  inner join
-    test_bytes as b
-  using ("description")
+  test_padded as p inner join test_bytes as b using (description)
 where
   p.error is distinct from b.error
 order by description;
@@ -313,54 +255,25 @@ create table utf8_inputs (
 insert into utf8_inputs
 values
   ('\x666f6f', 'valid, pure ASCII'),
-  (
-    '\xc3a4c3b6', 'valid, extra latin chars'
-  ),
+  ('\xc3a4c3b6', 'valid, extra latin chars'),
   ('\xd184d0bed0be', 'valid, cyrillic'),
-  (
-    '\x666f6fe8b1a1', 'valid, kanji/Chinese'
-  ),
-  (
-    '\xe382abe3829a',
-    'valid, two chars that combine to one in EUC_JIS_2004'
-  ),
-  (
-    '\xe382ab',
-    'only first half of combined char in EUC_JIS_2004'
-  ),
-  (
-    '\xe382abe382',
-    'incomplete combination when converted EUC_JIS_2004'
-  ),
-  (
-    '\xecbd94eb81bceba6ac',
-    'valid, Hangul, Korean'
-  ),
-  (
-    '\x666f6fefa8aa',
-    'valid, needs mapping function to convert to GB18030'
-  ),
-  (
-    '\x66e8b1ff6f6f',
-    'invalid byte sequence'
-  ),
+  ('\x666f6fe8b1a1', 'valid, kanji/Chinese'),
+  ('\xe382abe3829a', 'valid, two chars that combine to one in EUC_JIS_2004'),
+  ('\xe382ab', 'only first half of combined char in EUC_JIS_2004'),
+  ('\xe382abe382', 'incomplete combination when converted EUC_JIS_2004'),
+  ('\xecbd94eb81bceba6ac', 'valid, Hangul, Korean'),
+  ('\x666f6fefa8aa', 'valid, needs mapping function to convert to GB18030'),
+  ('\x66e8b1ff6f6f', 'invalid byte sequence'),
   ('\x66006f', 'invalid, NUL byte'),
   ('\x666f6fe8b100', 'invalid, NUL byte'),
-  (
-    '\x666f6fe8b1',
-    'incomplete character at end'
-  );
+  ('\x666f6fe8b1', 'incomplete character at end');
 
 select description, (test_conv(inbytes, 'utf8', 'utf8')).* from utf8_inputs;
 
 select
   description,
   inbytes,
-  (test_conv(
-    inbytes,
-    'utf8',
-    'euc_jis_2004'
-  )).*
+  (test_conv(inbytes, 'utf8', 'euc_jis_2004')).*
 from
   utf8_inputs;
 
@@ -408,10 +321,7 @@ insert into euc_jis_2004_inputs
 values
   ('\x666f6f', 'valid, pure ASCII'),
   ('\x666f6fbedd', 'valid'),
-  (
-    '\xa5f7',
-    'valid, translates to two UTF-8 chars '
-  ),
+  ('\xa5f7', 'valid, translates to two UTF-8 chars '),
   ('\xbeddbe', 'incomplete char '),
   ('\x666f6f00bedd', 'invalid, NUL byte'),
   ('\x666f6fbe00dd', 'invalid, NUL byte'),
@@ -421,22 +331,14 @@ values
 select
   description,
   inbytes,
-  (test_conv(
-    inbytes,
-    'euc_jis_2004',
-    'euc_jis_2004'
-  )).*
+  (test_conv(inbytes, 'euc_jis_2004', 'euc_jis_2004')).*
 from
   euc_jis_2004_inputs;
 
 select
   description,
   inbytes,
-  (test_conv(
-    inbytes,
-    'euc_jis_2004',
-    'utf8'
-  )).*
+  (test_conv(inbytes, 'euc_jis_2004', 'utf8')).*
 from
   euc_jis_2004_inputs;
 
@@ -449,19 +351,10 @@ insert into shiftjis2004_inputs
 values
   ('\x666f6f', 'valid, pure ASCII'),
   ('\x666f6f8fdb', 'valid'),
-  (
-    '\x666f6f81c0',
-    'valid, no translation to UTF-8'
-  ),
-  (
-    '\x666f6f82f5',
-    'valid, translates to two UTF-8 chars '
-  ),
+  ('\x666f6f81c0', 'valid, no translation to UTF-8'),
+  ('\x666f6f82f5', 'valid, translates to two UTF-8 chars '),
   ('\x666f6f8fdb8f', 'incomplete char '),
-  (
-    '\x666f6f820a',
-    'incomplete char, followed by newline '
-  ),
+  ('\x666f6f820a', 'incomplete char, followed by newline '),
   ('\x666f6f008fdb', 'invalid, NUL byte'),
   ('\x666f6f8f00db', 'invalid, NUL byte'),
   ('\x666f6f8fdb00', 'invalid, NUL byte');
@@ -469,33 +362,21 @@ values
 select
   description,
   inbytes,
-  (test_conv(
-    inbytes,
-    'shiftjis2004',
-    'shiftjis2004'
-  )).*
+  (test_conv(inbytes, 'shiftjis2004', 'shiftjis2004')).*
 from
   shiftjis2004_inputs;
 
 select
   description,
   inbytes,
-  (test_conv(
-    inbytes,
-    'shiftjis2004',
-    'utf8'
-  )).*
+  (test_conv(inbytes, 'shiftjis2004', 'utf8')).*
 from
   shiftjis2004_inputs;
 
 select
   description,
   inbytes,
-  (test_conv(
-    inbytes,
-    'shiftjis2004',
-    'euc_jis_2004'
-  )).*
+  (test_conv(inbytes, 'shiftjis2004', 'euc_jis_2004')).*
 from
   shiftjis2004_inputs;
 
@@ -508,37 +389,18 @@ insert into gb18030_inputs
 values
   ('\x666f6f', 'valid, pure ASCII'),
   ('\x666f6fcff3', 'valid'),
-  (
-    '\x666f6f8431a530',
-    'valid, no translation to UTF-8'
-  ),
-  (
-    '\x666f6f84309c38',
-    'valid, translates to UTF-8 by mapping function'
-  ),
+  ('\x666f6f8431a530', 'valid, no translation to UTF-8'),
+  ('\x666f6f84309c38', 'valid, translates to UTF-8 by mapping function'),
   ('\x666f6f84309c', 'incomplete char '),
-  (
-    '\x666f6f84309c0a',
-    'incomplete char, followed by newline '
-  ),
+  ('\x666f6f84309c0a', 'incomplete char, followed by newline '),
   ('\x666f6f84', 'incomplete char at end'),
-  (
-    '\x666f6f84309c3800',
-    'invalid, NUL byte'
-  ),
-  (
-    '\x666f6f84309c0038',
-    'invalid, NUL byte'
-  );
+  ('\x666f6f84309c3800', 'invalid, NUL byte'),
+  ('\x666f6f84309c0038', 'invalid, NUL byte');
 
 select
   description,
   inbytes,
-  (test_conv(
-    cast(cast(inbytes as text) as bytea),
-    'gb18030',
-    'gb18030'
-  )).*
+  (test_conv(cast(cast(inbytes as text) as bytea), 'gb18030', 'gb18030')).*
 from
   gb18030_inputs;
 
@@ -565,11 +427,7 @@ values
 select
   description,
   inbytes,
-  (test_conv(
-    inbytes,
-    'iso8859-5',
-    'iso8859-5'
-  )).*
+  (test_conv(inbytes, 'iso8859-5', 'iso8859-5')).*
 from
   iso8859_5_inputs;
 
@@ -590,11 +448,7 @@ from
 select
   description,
   inbytes,
-  (test_conv(
-    inbytes,
-    'iso8859_5',
-    'mule_internal'
-  )).*
+  (test_conv(inbytes, 'iso8859_5', 'mule_internal')).*
 from
   iso8859_5_inputs;
 
@@ -607,10 +461,7 @@ insert into big5_inputs
 values
   ('\x666f6f', 'valid, pure ASCII'),
   ('\x666f6fb648', 'valid'),
-  (
-    '\x666f6fa27f',
-    'valid, no translation to UTF-8'
-  ),
+  ('\x666f6fa27f', 'valid, no translation to UTF-8'),
   ('\x666f6fb60048', 'invalid, NUL byte'),
   ('\x666f6fb64800', 'invalid, NUL byte');
 
@@ -631,11 +482,7 @@ from
 select
   description,
   inbytes,
-  (test_conv(
-    inbytes,
-    'big5',
-    'mule_internal'
-  )).*
+  (test_conv(inbytes, 'big5', 'mule_internal')).*
 from
   big5_inputs;
 
@@ -648,85 +495,53 @@ insert into mic_inputs
 values
   ('\x666f6f', 'valid, pure ASCII'),
   ('\x8bc68bcf8bcf', 'valid (in KOI8R)'),
-  (
-    '\x8bc68bcf8b',
-    'invalid,incomplete char'
-  ),
+  ('\x8bc68bcf8b', 'invalid,incomplete char'),
   ('\x92bedd', 'valid (in SHIFT_JIS)'),
   ('\x92be', 'invalid, incomplete char)'),
   ('\x666f6f95a3c1', 'valid (in Big5)'),
-  (
-    '\x666f6f95a3',
-    'invalid, incomplete char'
-  ),
+  ('\x666f6f95a3', 'invalid, incomplete char'),
   ('\x9200bedd', 'invalid, NUL byte'),
   ('\x92bedd00', 'invalid, NUL byte'),
-  (
-    '\x8b00c68bcf8bcf', 'invalid, NUL byte'
-  );
+  ('\x8b00c68bcf8bcf', 'invalid, NUL byte');
 
 select
   description,
   inbytes,
-  (test_conv(
-    inbytes,
-    'mule_internal',
-    'mule_internal'
-  )).*
+  (test_conv(inbytes, 'mule_internal', 'mule_internal')).*
 from
   mic_inputs;
 
 select
   description,
   inbytes,
-  (test_conv(
-    inbytes,
-    'mule_internal',
-    'koi8r'
-  )).*
+  (test_conv(inbytes, 'mule_internal', 'koi8r')).*
 from
   mic_inputs;
 
 select
   description,
   inbytes,
-  (test_conv(
-    inbytes,
-    'mule_internal',
-    'iso8859-5'
-  )).*
+  (test_conv(inbytes, 'mule_internal', 'iso8859-5')).*
 from
   mic_inputs;
 
 select
   description,
   inbytes,
-  (test_conv(
-    inbytes,
-    'mule_internal',
-    'sjis'
-  )).*
+  (test_conv(inbytes, 'mule_internal', 'sjis')).*
 from
   mic_inputs;
 
 select
   description,
   inbytes,
-  (test_conv(
-    inbytes,
-    'mule_internal',
-    'big5'
-  )).*
+  (test_conv(inbytes, 'mule_internal', 'big5')).*
 from
   mic_inputs;
 
 select
   description,
   inbytes,
-  (test_conv(
-    inbytes,
-    'mule_internal',
-    'euc_jp'
-  )).*
+  (test_conv(inbytes, 'mule_internal', 'euc_jp')).*
 from
   mic_inputs;

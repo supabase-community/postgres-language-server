@@ -34,38 +34,10 @@ fn emit_set_arg(node: &Node, e: &mut EventEmitter) {
     super::emit_node(node, e);
 }
 
-/// Check if a string should be emitted as a simple unquoted identifier
+/// Whether a string reads the same written as an unquoted word. An unquoted word is folded to
+/// lowercase, so `SET datestyle = German` would set `german`.
 fn is_simple_identifier(s: &str) -> bool {
-    if s.is_empty() {
-        return false;
-    }
-
-    // Must start with letter or underscore
-    let first_char = s.chars().next().unwrap();
-    if !first_char.is_ascii_alphabetic() && first_char != '_' {
-        return false;
-    }
-
-    // Rest must be alphanumeric, underscore, or dollar sign
-    if !s
-        .chars()
-        .all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '$')
-    {
-        return false;
-    }
-
-    // Check for reserved keywords that must be quoted
-    // These are common SQL keywords that can't be used as unquoted values
-    let reserved_keywords = [
-        "all", "and", "as", "asc", "between", "by", "case", "check", "create", "default", "delete",
-        "desc", "distinct", "drop", "else", "end", "false", "for", "from", "full", "group",
-        "having", "if", "in", "index", "inner", "insert", "into", "is", "join", "left", "like",
-        "limit", "not", "null", "offset", "on", "or", "order", "outer", "primary", "right",
-        "select", "set", "table", "then", "to", "true", "union", "unique", "update", "using",
-        "values", "when", "where", "with", "any", "some", "none", "only",
-    ];
-
-    !reserved_keywords.contains(&s.to_lowercase().as_str())
+    !super::string::needs_quoting(s)
 }
 
 /// Emit a dot-separated variable name, quoting parts that need it
@@ -254,7 +226,7 @@ fn emit_variable_set_stmt_inner(e: &mut EventEmitter, n: &VariableSetStmt) {
             // Special syntax: SET SESSION CHARACTERISTICS AS TRANSACTION ...
             e.token(TokenKind::SESSION_KW);
             e.space();
-            e.token(TokenKind::IDENT("CHARACTERISTICS".to_string()));
+            super::emit_word(e, "characteristics");
             e.space();
             e.token(TokenKind::AS_KW);
             e.space();
@@ -271,14 +243,15 @@ fn emit_variable_set_stmt_inner(e: &mut EventEmitter, n: &VariableSetStmt) {
             // SET TRANSACTION SNAPSHOT 'snapshot_id'
             e.token(TokenKind::TRANSACTION_KW);
             e.space();
-            e.token(TokenKind::IDENT("SNAPSHOT".to_string()));
+            super::emit_word(e, "snapshot");
             e.space();
             // The snapshot id is in args as a string
             if !n.args.is_empty() {
                 super::emit_node(&n.args[0], e);
             }
         } else {
-            emit_variable_name(e, &n.name);
+            // SET TRANSACTION
+            e.token(TokenKind::TRANSACTION_KW);
 
             // Emit transaction options from args (DefElems) with soft line breaks
             for arg in &n.args {
@@ -388,7 +361,7 @@ fn emit_transaction_option(e: &mut EventEmitter, def: &pgls_query::protobuf::Def
         }
         _ => {
             // Unknown transaction option - emit as identifier
-            e.token(TokenKind::IDENT(def.defname.to_uppercase()));
+            super::emit_word(e, &def.defname);
             if let Some(ref arg) = def.arg {
                 e.space();
                 super::emit_node(arg, e);

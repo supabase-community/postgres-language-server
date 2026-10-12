@@ -9,8 +9,8 @@ create domain app.valid_name as extensions.citext check (value ~ '^[A-z][A-z0-9\
 create or replace function app.exception(message text)
 returns text
 language plpgsql
-as $function$
-begin
+as $$
+        begin
                 raise exception using errcode='22000', message=message;
         end;
-$function$;
+        $$;

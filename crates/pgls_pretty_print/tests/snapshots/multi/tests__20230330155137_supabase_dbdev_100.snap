@@ -9,28 +9,10 @@ insert into app.packages (
   control_relocatable,
   control_requires
 )
-values
-  (
-    'supabase',
-    'dbdev',
-    'Install pacakges from the dbdev package index',
-    false,
-    '{}'
-  );
+values ('supabase', 'dbdev', 'Install pacakges from the dbdev package index', false, '{}');
 
 insert into app.package_versions (package_id, version_struct, sql, description_md)
-values
-  (
-    (
-      select
-        id
-      from
-        app.packages
-      where
-        package_name = 'supabase-dbdev'
-    ),
-    (0, 0, 2),
-    '
+values ((select id from app.packages where package_name = 'supabase-dbdev'), (0, 0, 2), '
 
 create schema dbdev;
 
@@ -206,8 +188,7 @@ begin
 end;
 $$;
 
-',
-    '
+', '
 # dbdev
 
 dbdev is the SQL client for database.new and is the primary way end users interact with the package (pglet) registry.
@@ -297,5 +278,4 @@ create extension "handle-package_name"
     schema ''public''
     version ''1.2.3'';
 ```
-'
-  );
+');

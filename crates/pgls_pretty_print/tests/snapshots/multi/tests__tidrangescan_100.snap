@@ -22,12 +22,8 @@ insert into tidrangescan select i, repeat('x', 100) from generate_series(1, 200)
 
 delete from tidrangescan
 where
-  cast(SUBSTRING(cast(ctid as text) from ',(\d+)\)')
-  as int) >
-  10 or
-  cast(SUBSTRING(cast(ctid as text) from '\((\d+),')
-  as int) >
-  2;
+  cast(substring(cast(ctid as text) from ',(\d+)\)') as int) > 10 or
+  cast(substring(cast(ctid as text) from '\((\d+),') as int) > 2;
 
 vacuum tidrangescan;
 
@@ -82,15 +78,7 @@ select
   t2.c
 from
   tidrangescan as t,
-  lateral (
-    select
-      COUNT(*) as c
-    from
-      tidrangescan as t2
-    where
-      t2.ctid <= t.ctid
-  )
-  as t2
+  lateral (select count(*) as c from tidrangescan as t2 where t2.ctid <= t.ctid) as t2
 where
   t.ctid < '(1,0)';
 
@@ -99,31 +87,16 @@ select
   t2.c
 from
   tidrangescan as t,
-  lateral (
-    select
-      COUNT(*) as c
-    from
-      tidrangescan as t2
-    where
-      t2.ctid <= t.ctid
-  )
-  as t2
+  lateral (select count(*) as c from tidrangescan as t2 where t2.ctid <= t.ctid) as t2
 where
   t.ctid < '(1,0)';
 
-explain (COSTS 'off')
-declare "c" scroll
-cursor
-for select
-  ctid
-from
-  tidrangescan
-where
-  ctid < '(1,0)';;
+explain (costs 'off')
+declare c scroll cursor for select ctid from tidrangescan where ctid < '(1,0)';;
 
 begin;
 
-declare "c" scroll cursor for select ctid from tidrangescan where ctid < '(1,0)';;
+declare c scroll cursor for select ctid from tidrangescan where ctid < '(1,0)';;
 
 fetch next from c;
 

@@ -18,11 +18,7 @@ select spcoptions from pg_tablespace where spcname = 'regress_tblspacewith';
 drop tablespace regress_tblspacewith;
 
 select
-  regexp_replace(
-    pg_tablespace_location(oid),
-    '(pg_tblspc)/(\d+)',
-    '\1/NNN'
-  )
+  regexp_replace(pg_tablespace_location(oid), '(pg_tblspc)/(\d+)', '\1/NNN')
 from
   pg_tablespace
 where
@@ -36,25 +32,25 @@ alter tablespace regress_tblspace reset (random_page_cost = 2.0);
 
 alter tablespace regress_tblspace reset (random_page_cost, effective_io_concurrency);
 
-reindex (TABLESPACE regress_tblspace) table pg_am;
+reindex (tablespace regress_tblspace) table pg_am;
 
-reindex (TABLESPACE regress_tblspace, CONCURRENTLY) table pg_am;
+reindex (tablespace regress_tblspace, concurrently) table pg_am;
 
-reindex (TABLESPACE regress_tblspace) table pg_authid;
+reindex (tablespace regress_tblspace) table pg_authid;
 
-reindex (TABLESPACE regress_tblspace, CONCURRENTLY) table pg_authid;
+reindex (tablespace regress_tblspace, concurrently) table pg_authid;
 
-reindex (TABLESPACE regress_tblspace) index pg_toast.pg_toast_1262_index;
+reindex (tablespace regress_tblspace) index pg_toast.pg_toast_1262_index;
 
-reindex (TABLESPACE regress_tblspace, CONCURRENTLY) index pg_toast.pg_toast_1262_index;
+reindex (tablespace regress_tblspace, concurrently) index pg_toast.pg_toast_1262_index;
 
-reindex (TABLESPACE regress_tblspace) table pg_toast.pg_toast_1262;
+reindex (tablespace regress_tblspace) table pg_toast.pg_toast_1262;
 
-reindex (TABLESPACE regress_tblspace, CONCURRENTLY) table pg_toast.pg_toast_1262;
+reindex (tablespace regress_tblspace, concurrently) table pg_toast.pg_toast_1262;
 
-reindex (TABLESPACE pg_global) table pg_authid;
+reindex (tablespace pg_global) table pg_authid;
 
-reindex (TABLESPACE pg_global, CONCURRENTLY) table pg_authid;
+reindex (tablespace pg_global, concurrently) table pg_authid;
 
 create table regress_tblspace_test_tbl (
   num1 bigint,
@@ -63,24 +59,19 @@ create table regress_tblspace_test_tbl (
 );
 
 insert into regress_tblspace_test_tbl (num1, num2, t)
-select
-  round(random() * 100),
-  random(),
-  'text'
-from
-  generate_series(1, 10) as s (i);
+select round(random() * 100), random(), 'text' from generate_series(1, 10) as s (i);
 
-create index "regress_tblspace_test_tbl_idx" on regress_tblspace_test_tbl using btree (num1);
+create index regress_tblspace_test_tbl_idx on regress_tblspace_test_tbl using btree (num1);
 
-reindex (TABLESPACE pg_global) index regress_tblspace_test_tbl_idx;
+reindex (tablespace pg_global) index regress_tblspace_test_tbl_idx;
 
-reindex (TABLESPACE pg_global, CONCURRENTLY) index regress_tblspace_test_tbl_idx;
+reindex (tablespace pg_global, concurrently) index regress_tblspace_test_tbl_idx;
 
 begin;
 
-reindex (TABLESPACE regress_tblspace) index regress_tblspace_test_tbl_idx;
+reindex (tablespace regress_tblspace) index regress_tblspace_test_tbl_idx;
 
-reindex (TABLESPACE regress_tblspace) table regress_tblspace_test_tbl;
+reindex (tablespace regress_tblspace) table regress_tblspace_test_tbl;
 
 rollback;
 
@@ -90,8 +81,7 @@ from
   pg_class as c,
   pg_tablespace as s
 where
-  c.reltablespace = s.oid and
-  s.spcname = 'regress_tblspace';
+  c.reltablespace = s.oid and s.spcname = 'regress_tblspace';
 
 select relfilenode as main_filenode from pg_class where relname = 'regress_tblspace_test_tbl_idx';
 
@@ -108,11 +98,10 @@ where
       pg_class as c,
       pg_index as i
     where
-      i.indrelid = c.reltoastrelid and
-      c.relname = 'regress_tblspace_test_tbl'
+      i.indrelid = c.reltoastrelid and c.relname = 'regress_tblspace_test_tbl'
   );
 
-reindex (TABLESPACE regress_tblspace) table regress_tblspace_test_tbl;
+reindex (tablespace regress_tblspace) table regress_tblspace_test_tbl;
 
 select
   c.relname
@@ -120,8 +109,7 @@ from
   pg_class as c,
   pg_tablespace as s
 where
-  c.reltablespace = s.oid and
-  s.spcname = 'regress_tblspace'
+  c.reltablespace = s.oid and s.spcname = 'regress_tblspace'
 order by c.relname;
 
 alter table regress_tblspace_test_tbl
@@ -136,8 +124,7 @@ from
   pg_class as c,
   pg_tablespace as s
 where
-  c.reltablespace = s.oid and
-  s.spcname = 'regress_tblspace'
+  c.reltablespace = s.oid and s.spcname = 'regress_tblspace'
 order by c.relname;
 
 alter index regress_tblspace_test_tbl_idx
@@ -149,11 +136,10 @@ from
   pg_class as c,
   pg_tablespace as s
 where
-  c.reltablespace = s.oid and
-  s.spcname = 'regress_tblspace'
+  c.reltablespace = s.oid and s.spcname = 'regress_tblspace'
 order by c.relname;
 
-reindex (TABLESPACE regress_tblspace, CONCURRENTLY) table regress_tblspace_test_tbl;
+reindex (tablespace regress_tblspace, concurrently) table regress_tblspace_test_tbl;
 
 select
   c.relname
@@ -161,8 +147,7 @@ from
   pg_class as c,
   pg_tablespace as s
 where
-  c.reltablespace = s.oid and
-  s.spcname = 'regress_tblspace'
+  c.reltablespace = s.oid and s.spcname = 'regress_tblspace'
 order by c.relname;
 
 select
@@ -185,8 +170,7 @@ where
       pg_class as c,
       pg_index as i
     where
-      i.indrelid = c.reltoastrelid and
-      c.relname = 'regress_tblspace_test_tbl'
+      i.indrelid = c.reltoastrelid and c.relname = 'regress_tblspace_test_tbl'
   );
 
 drop table regress_tblspace_test_tbl;
@@ -200,7 +184,7 @@ partition by range(c1);
 create table tbspace_reindex_part_0
 partition of tbspace_reindex_part
 for values from (0) to (10)
-partition by LIST(c2);
+partition by list(c2);
 
 create table tbspace_reindex_part_0_1 partition of tbspace_reindex_part_0 for values in (1);
 
@@ -209,29 +193,29 @@ create table tbspace_reindex_part_0_2 partition of tbspace_reindex_part_0 for va
 create table tbspace_reindex_part_10
 partition of tbspace_reindex_part
 for values from (10) to (20)
-partition by LIST(c2);
+partition by list(c2);
 
-create index "tbspace_reindex_part_index" on only tbspace_reindex_part using btree (c1);
+create index tbspace_reindex_part_index on only tbspace_reindex_part using btree (c1);
 
-create index "tbspace_reindex_part_index_0" on only tbspace_reindex_part_0 using btree (c1);
+create index tbspace_reindex_part_index_0 on only tbspace_reindex_part_0 using btree (c1);
 
 alter index tbspace_reindex_part_index
   attach partition
   tbspace_reindex_part_index_0;
 
-create index "tbspace_reindex_part_index_10" on only tbspace_reindex_part_10 using btree (c1);
+create index tbspace_reindex_part_index_10 on only tbspace_reindex_part_10 using btree (c1);
 
 alter index tbspace_reindex_part_index
   attach partition
   tbspace_reindex_part_index_10;
 
-create index "tbspace_reindex_part_index_0_1" on only tbspace_reindex_part_0_1 using btree (c1);
+create index tbspace_reindex_part_index_0_1 on only tbspace_reindex_part_0_1 using btree (c1);
 
 alter index tbspace_reindex_part_index_0
   attach partition
   tbspace_reindex_part_index_0_1;
 
-create index "tbspace_reindex_part_index_0_2" on only tbspace_reindex_part_0_2 using btree (c1);
+create index tbspace_reindex_part_index_0_2 on only tbspace_reindex_part_0_2 using btree (c1);
 
 alter index tbspace_reindex_part_index_0
   attach partition
@@ -258,32 +242,27 @@ as
   where
     relname ~ 'tbspace_reindex_part_index';
 
-reindex (TABLESPACE regress_tblspace, CONCURRENTLY) table tbspace_reindex_part;
+reindex (tablespace regress_tblspace, concurrently) table tbspace_reindex_part;
 
 select
   b.relname,
   case
-    when a.relfilenode = b.relfilenode
-    then 'relfilenode is unchanged'
+    when a.relfilenode = b.relfilenode then 'relfilenode is unchanged'
     else 'relfilenode has changed'
   end
   as filenode,
   case
-    when a.reltablespace = b.reltablespace
-    then 'reltablespace is unchanged'
+    when a.reltablespace = b.reltablespace then 'reltablespace is unchanged'
     else 'reltablespace has changed'
   end
   as tbspace
 from
-  reindex_temp_before as b
-  inner join
-    pg_class as a
-  on b.relname = a.relname
+  reindex_temp_before as b inner join pg_class as a on b.relname = a.relname
 order by 1;
 
 drop table tbspace_reindex_part;
 
-create schema "testschema";
+create schema testschema;
 
 create table testschema.foo (i int) tablespace regress_tblspace;
 
@@ -322,16 +301,9 @@ from
   pg_catalog.pg_tablespace as t,
   pg_catalog.pg_class as c
 where
-  c.reltablespace = t.oid and
-  c.relname = 'asexecute';
+  c.reltablespace = t.oid and c.relname = 'asexecute';
 
-create index "foo_idx"
-on testschema.foo
-using btree
-(
-  i
-)
-tablespace regress_tblspace;
+create index foo_idx on testschema.foo using btree (i) tablespace regress_tblspace;
 
 select
   relname,
@@ -343,7 +315,7 @@ where
   c.reltablespace = t.oid and c.relname = 'foo_idx';
 
 create table testschema.part (a int)
-partition by LIST(a);
+partition by list(a);
 
 set default_tablespace = pg_global;
 
@@ -371,7 +343,7 @@ create table testschema.part_4 partition of testschema.part for values in (4) ta
 create table testschema.part_56
 partition of testschema.part
 for values in (5, 6)
-partition by LIST(a);
+partition by list(a);
 
 alter table testschema.part
   set tablespace pg_default;
@@ -379,12 +351,12 @@ alter table testschema.part
 create table testschema.part_78
 partition of testschema.part
 for values in (7, 8)
-partition by LIST(a);
+partition by list(a);
 
 create table testschema.part_910
 partition of testschema.part
 for values in (9, 10)
-partition by LIST(a)
+partition by list(a)
 tablespace regress_tblspace;
 
 reset default_tablespace;
@@ -392,22 +364,18 @@ reset default_tablespace;
 create table testschema.part_78
 partition of testschema.part
 for values in (7, 8)
-partition by LIST(a);
+partition by list(a);
 
 select
   relname,
   spcname
 from
-  pg_catalog.pg_class as c
-  inner join
-    pg_catalog.pg_namespace as n
-  on c.relnamespace = n.oid
+  pg_catalog.pg_class as c inner join pg_catalog.pg_namespace as n on c.relnamespace = n.oid
   left outer join
     pg_catalog.pg_tablespace as t
   on c.reltablespace = t.oid
 where
-  c.relname like 'part%' and
-  n.nspname = 'testschema'
+  c.relname like 'part%' and n.nspname = 'testschema'
 order by relname;
 
 reset default_tablespace;
@@ -415,17 +383,11 @@ reset default_tablespace;
 drop table testschema.part;
 
 create table testschema.part (a int)
-partition by LIST(a);
+partition by list(a);
 
 create table testschema.part1 partition of testschema.part for values in (1);
 
-create index "part_a_idx"
-on testschema.part
-using btree
-(
-  a
-)
-tablespace regress_tblspace;
+create index part_a_idx on testschema.part using btree (a) tablespace regress_tblspace;
 
 create table testschema.part2 partition of testschema.part for values in (2);
 
@@ -436,34 +398,33 @@ from
   pg_catalog.pg_tablespace as t,
   pg_catalog.pg_class as c
 where
-  c.reltablespace = t.oid and
-  c.relname like 'part%_idx'
+  c.reltablespace = t.oid and c.relname like 'part%_idx'
 order by relname;
 
 create table testschema.dflt (a int primary key)
-partition by LIST(a)
+partition by list(a)
 tablespace pg_default;
 
-create table testschema.dflt (a int primary key using index tablespace "pg_default")
-partition by LIST(a);
+create table testschema.dflt (a int primary key using index tablespace pg_default)
+partition by list(a);
 
 set default_tablespace = pg_default;
 
 create table testschema.dflt (a int primary key)
-partition by LIST(a)
+partition by list(a)
 tablespace regress_tblspace;
 
-create table testschema.dflt (a int primary key using index tablespace "regress_tblspace")
-partition by LIST(a);
+create table testschema.dflt (a int primary key using index tablespace regress_tblspace)
+partition by list(a);
 
-create table testschema.dflt (a int primary key using index tablespace "regress_tblspace")
-partition by LIST(a)
+create table testschema.dflt (a int primary key using index tablespace regress_tblspace)
+partition by list(a)
 tablespace regress_tblspace;
 
 set default_tablespace = '';
 
 create table testschema.dflt2 (a int primary key)
-partition by LIST(a);
+partition by list(a);
 
 drop table testschema.dflt, testschema.dflt2;
 
@@ -471,22 +432,16 @@ create table testschema.test_default_tab (id bigint) tablespace regress_tblspace
 
 insert into testschema.test_default_tab values (1);
 
-create index "test_index1" on testschema.test_default_tab using btree (id);
+create index test_index1 on testschema.test_default_tab using btree (id);
 
-create index "test_index2"
-on testschema.test_default_tab
-using btree
-(
-  id
-)
+create index test_index2 on testschema.test_default_tab using btree (id)
 tablespace regress_tblspace;
 
 alter table testschema.test_default_tab
-  add constraint "test_index3" primary key (id);
+  add constraint test_index3 primary key (id);
 
 alter table testschema.test_default_tab
-  add constraint "test_index4" unique (id)
-  using index tablespace "regress_tblspace";
+  add constraint test_index4 unique (id) using index tablespace regress_tblspace;
 
 set default_tablespace = regress_tblspace;
 
@@ -514,7 +469,7 @@ create table testschema.test_default_tab_p (
   id bigint,
   val bigint
 )
-partition by LIST(id)
+partition by list(id)
 tablespace regress_tblspace;
 
 create table testschema.test_default_tab_p1
@@ -523,22 +478,16 @@ for values in (1);
 
 insert into testschema.test_default_tab_p values (1);
 
-create index "test_index1" on testschema.test_default_tab_p using btree (val);
+create index test_index1 on testschema.test_default_tab_p using btree (val);
 
-create index "test_index2"
-on testschema.test_default_tab_p
-using btree
-(
-  val
-)
+create index test_index2 on testschema.test_default_tab_p using btree (val)
 tablespace regress_tblspace;
 
 alter table testschema.test_default_tab_p
-  add constraint "test_index3" primary key (id);
+  add constraint test_index3 primary key (id);
 
 alter table testschema.test_default_tab_p
-  add constraint "test_index4" unique (id)
-  using index tablespace "regress_tblspace";
+  add constraint test_index4 unique (id) using index tablespace regress_tblspace;
 
 set default_tablespace = regress_tblspace;
 
@@ -569,12 +518,12 @@ insert into testschema.test_tab values (1);
 set default_tablespace = regress_tblspace;
 
 alter table testschema.test_tab
-  add constraint "test_tab_unique" unique (id);
+  add constraint test_tab_unique unique (id);
 
 set default_tablespace = '';
 
 alter table testschema.test_tab
-  add constraint "test_tab_pkey" primary key (id);
+  add constraint test_tab_pkey primary key (id);
 
 select * from testschema.test_tab;
 
@@ -589,13 +538,13 @@ create table testschema.test_tab (
 set default_tablespace = regress_tblspace;
 
 alter table testschema.test_tab
-  add constraint "test_tab_unique" unique (a);
+  add constraint test_tab_unique unique (a);
 
-create index "test_tab_a_idx" on testschema.test_tab using btree (a);
+create index test_tab_a_idx on testschema.test_tab using btree (a);
 
 set default_tablespace = '';
 
-create index "test_tab_b_idx" on testschema.test_tab using btree (b);
+create index test_tab_b_idx on testschema.test_tab using btree (b);
 
 alter table testschema.test_tab
   alter column b type bigint,
@@ -605,7 +554,7 @@ drop table testschema.test_tab;
 
 create table testschema.atable as values (1), (2);
 
-create unique index "anindex" on testschema.atable using btree (column1);
+create unique index anindex on testschema.atable using btree (column1);
 
 alter table testschema.atable
   set tablespace regress_tblspace;
@@ -626,7 +575,7 @@ insert into testschema.atable values (3);
 
 insert into testschema.atable values (1);
 
-select COUNT(*) from testschema.atable;
+select count(*) from testschema.atable;
 
 create materialized view testschema.amv as select * from testschema.atable;
 
@@ -635,7 +584,7 @@ alter materialized view testschema.amv
 
 refresh materialized view testschema.amv;
 
-select COUNT(*) from testschema.amv;
+select count(*) from testschema.amv;
 
 create tablespace regress_badspace location '/no/such/location';
 
@@ -658,19 +607,13 @@ create role regress_tablespace_user1 login;
 
 create role regress_tablespace_user2 login;
 
-grant USAGE on schema testschema to regress_tablespace_user2;
+grant usage on schema testschema to regress_tablespace_user2;
 
 alter tablespace regress_tblspace owner to regress_tablespace_user1;
 
 create table testschema.tablespace_acl (c int);
 
-create index "k"
-on testschema.tablespace_acl
-using btree
-(
-  c
-)
-tablespace regress_tblspace;
+create index k on testschema.tablespace_acl using btree (c) tablespace regress_tblspace;
 
 alter table testschema.tablespace_acl
   owner to regress_tablespace_user2;
@@ -682,9 +625,9 @@ create table tablespace_table (i int) tablespace regress_tblspace;
 alter table testschema.tablespace_acl
   alter column c type bigint;
 
-reindex (TABLESPACE regress_tblspace) table tablespace_table;
+reindex (tablespace regress_tblspace) table tablespace_table;
 
-reindex (TABLESPACE regress_tblspace, CONCURRENTLY) table tablespace_table;
+reindex (tablespace regress_tblspace, concurrently) table tablespace_table;
 
 reset role;
 

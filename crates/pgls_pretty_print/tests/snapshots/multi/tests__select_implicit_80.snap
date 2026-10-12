@@ -32,26 +32,26 @@ insert into test_missing_target values (9, 4, 'CCCC', 'j');
 
 select
   c,
-  COUNT(*)
+  count(*)
 from
   test_missing_target
 group by test_missing_target.c
 order by c;
 
 select
-  COUNT(*)
+  count(*)
 from
   test_missing_target
 group by test_missing_target.c
 order by c;
 
-select COUNT(*) from test_missing_target group by a order by b;
+select count(*) from test_missing_target group by a order by b;
 
-select COUNT(*) from test_missing_target group by b order by b;
+select count(*) from test_missing_target group by b order by b;
 
 select
   test_missing_target.b,
-  COUNT(*)
+  count(*)
 from
   test_missing_target
 group by b
@@ -59,16 +59,16 @@ order by b;
 
 select c from test_missing_target order by a;
 
-select COUNT(*) from test_missing_target group by b order by b desc;
+select count(*) from test_missing_target group by b order by b desc;
 
-select COUNT(*) from test_missing_target order by 1 desc;
+select count(*) from test_missing_target order by 1 desc;
 
-select c, COUNT(*) from test_missing_target group by 1 order by 1;
+select c, count(*) from test_missing_target group by 1 order by 1;
 
-select c, COUNT(*) from test_missing_target group by 3;
+select c, count(*) from test_missing_target group by 3;
 
 select
-  COUNT(*)
+  count(*)
 from
   test_missing_target as x,
   test_missing_target as y
@@ -85,7 +85,7 @@ select a / 2, a / 2 from test_missing_target group by a / 2 order by a / 2;
 
 select
   x.b,
-  COUNT(*)
+  count(*)
 from
   test_missing_target as x,
   test_missing_target as y
@@ -95,7 +95,7 @@ group by x.b
 order by x.b;
 
 select
-  COUNT(*)
+  count(*)
 from
   test_missing_target as x,
   test_missing_target as y
@@ -107,7 +107,7 @@ order by x.b;
 create table test_missing_target2
 as
   select
-    COUNT(*)
+    count(*)
   from
     test_missing_target as x,
     test_missing_target as y
@@ -120,26 +120,26 @@ select * from test_missing_target2;
 
 select
   a % 2,
-  COUNT(b)
+  count(b)
 from
   test_missing_target
 group by test_missing_target.a % 2
 order by test_missing_target.a % 2;
 
 select
-  COUNT(c)
+  count(c)
 from
   test_missing_target
 group by lower(test_missing_target.c)
 order by lower(test_missing_target.c);
 
-select COUNT(a) from test_missing_target group by a order by b;
+select count(a) from test_missing_target group by a order by b;
 
-select COUNT(b) from test_missing_target group by b / 2 order by b / 2;
+select count(b) from test_missing_target group by b / 2 order by b / 2;
 
 select
   lower(test_missing_target.c),
-  COUNT(c)
+  count(c)
 from
   test_missing_target
 group by lower(c)
@@ -148,14 +148,14 @@ order by lower(c);
 select a from test_missing_target order by upper(d);
 
 select
-  COUNT(b)
+  count(b)
 from
   test_missing_target
 group by (b + 1) / 2
 order by (b + 1) / 2 desc;
 
 select
-  COUNT(x.a)
+  count(x.a)
 from
   test_missing_target as x,
   test_missing_target as y
@@ -166,7 +166,7 @@ order by b / 2;
 
 select
   x.b / 2,
-  COUNT(x.b)
+  count(x.b)
 from
   test_missing_target as x,
   test_missing_target as y
@@ -176,7 +176,7 @@ group by x.b / 2
 order by x.b / 2;
 
 select
-  COUNT(b)
+  count(b)
 from
   test_missing_target as x,
   test_missing_target as y
@@ -187,7 +187,7 @@ group by x.b / 2;
 create table test_missing_target3
 as
   select
-    COUNT(x.b)
+    count(x.b)
   from
     test_missing_target as x,
     test_missing_target as y

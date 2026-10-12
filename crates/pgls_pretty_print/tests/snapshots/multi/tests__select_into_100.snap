@@ -10,13 +10,13 @@ select * into sitmp1 from onek2 where onek2.unique1 < 2;
 
 drop table sitmp1;
 
-create schema "selinto_schema";
+create schema selinto_schema;
 
 create user regress_selinto_user;
 
 alter default privileges
 for role regress_selinto_user
-revoke INSERT on tables from regress_selinto_user;
+revoke insert on tables from regress_selinto_user;
 
 grant all on schema selinto_schema to public;
 
@@ -46,7 +46,7 @@ reset session_authorization;
 
 alter default privileges
 for role regress_selinto_user
-grant INSERT on tables to regress_selinto_user;
+grant insert on tables to regress_selinto_user;
 
 set session authorization regress_selinto_user;
 
@@ -98,27 +98,25 @@ drop table ctas_nodata_4;
 create function make_table()
 returns void
 language sql
-as $function$
-CREATE TABLE created_table AS SELECT * FROM int8_tbl;
-$function$;
+as $$
+  CREATE TABLE created_table AS SELECT * FROM int8_tbl;
+$$;
 
 select make_table();
 
 select * from created_table;
 
-do
-$do$
+do $$
 BEGIN
 	EXECUTE 'EXPLAIN ANALYZE SELECT * INTO TABLE easi FROM int8_tbl';
 	EXECUTE 'EXPLAIN ANALYZE CREATE TABLE easi2 AS SELECT * FROM int8_tbl WITH NO DATA';
-END
-$do$;
+END$$;
 
 drop table created_table;
 
 drop table easi, easi2;
 
-declare "foo" cursor for select 1 into int4_tbl;;
+declare foo cursor for select 1 into int4_tbl;;
 
 copy (select 1 into frak union select 2) to 'blob';
 

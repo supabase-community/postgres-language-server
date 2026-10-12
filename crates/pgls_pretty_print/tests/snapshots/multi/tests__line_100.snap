@@ -52,12 +52,8 @@ insert into line_tbl values (line(cast('(1,0)' as point), cast('(1,0)' as point)
 select * from line_tbl;
 
 select
-  cast('{nan, 1, nan}' as line) =
-  cast('{nan, 1, nan}' as line)
-  as "true",
-  cast('{nan, 1, nan}' as line) =
-  cast('{nan, 2, nan}' as line)
-  as "false";
+  cast('{nan, 1, nan}' as line) = cast('{nan, 1, nan}' as line) as "true",
+  cast('{nan, 1, nan}' as line) = cast('{nan, 2, nan}' as line) as "false";
 
 select pg_input_is_valid('{1, 1}', 'line');
 

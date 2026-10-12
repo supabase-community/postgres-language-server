@@ -47,37 +47,20 @@ select
   cast(unique1 as oid),
   cast(format('(%s,%s)', tenthous, twenty) as tid),
   (four + 1.0) / (hundred + 1),
-  cast(odd as double precision) / (tenthous + 1),
-  cast(format(
-    '%s:00:%s:00:%s:00',
-    to_hex(odd),
-    to_hex(even),
-    to_hex(hundred)
-  )
-  as macaddr),
+  cast(odd as float8) / (tenthous + 1),
+  cast(format('%s:00:%s:00:%s:00', to_hex(odd), to_hex(even), to_hex(hundred)) as macaddr),
   cast('10.2.3.4/24' as inet) + tenthous,
   cast('10.2.3/24' as cidr) + tenthous,
   cast(substr(stringu1, 1, 1) as bpchar),
   cast('1995-08-15' as date) + tenthous,
-  cast('01:20:30' as time) +
-  thousand * cast('18.5 second' as interval),
-  cast('1942-07-23 03:05:09' as timestamp) +
-  tenthous * cast('36.38 hours' as interval),
-  cast('1972-10-10 03:00'
-  as timestamp with time zone) +
-  thousand * cast('1 hour' as interval),
-  justify_days(
-    justify_hours(
-      tenthous * cast('12 minutes' as interval)
-    )
-  ),
-  cast('01:30:20+02' as time with time zone) +
-  hundred * cast('15 seconds' as interval),
+  cast('01:20:30' as time) + thousand * cast('18.5 second' as interval),
+  cast('1942-07-23 03:05:09' as timestamp) + tenthous * cast('36.38 hours' as interval),
+  cast('1972-10-10 03:00' as timestamptz) + thousand * cast('1 hour' as interval),
+  justify_days(justify_hours(tenthous * cast('12 minutes' as interval))),
+  cast('01:30:20+02' as timetz) + hundred * cast('15 seconds' as interval),
   cast(thousand as bit(10)),
-  cast(cast(tenthous as bit(16)) as bit varying),
-  cast(tenthous as numeric(36, 30)) * fivethous *
-  even /
-  (hundred + 1),
+  cast(cast(tenthous as bit(16)) as varbit),
+  cast(tenthous as numeric(36, 30)) * fivethous * even / (hundred + 1),
   cast(format(
     '%s%s-%s-%s-%s-%s%s%s',
     to_char(tenthous, 'FM0000'),
@@ -91,12 +74,8 @@ select
   )
   as uuid),
   int4range(thousand, twothousand),
-  cast(format('%s/%s%s', odd, even, tenthous)
-  as pg_lsn),
-  box(
-    point(odd, even),
-    point(thousand, twothousand)
-  )
+  cast(format('%s/%s%s', odd, even, tenthous) as pg_lsn),
+  box(point(odd, even), point(thousand, twothousand))
 from
   tenk1
 order by unique2
@@ -104,10 +83,8 @@ limit 100;
 
 insert into brintest (inetcol, cidrcol, int4rangecol)
 select
-  cast('fe80::6e40:8ff:fea9:8c46' as inet) +
-  tenthous,
-  cast('fe80::6e40:8ff:fea9:8c46' as cidr) +
-  tenthous,
+  cast('fe80::6e40:8ff:fea9:8c46' as inet) + tenthous,
+  cast('fe80::6e40:8ff:fea9:8c46' as cidr) + tenthous,
   cast('empty' as int4range)
 from
   tenk1
@@ -115,10 +92,7 @@ order by thousand,
   tenthous
 limit 25;
 
-create index "brinidx"
-on brintest
-using brin
-(
+create index brinidx on brintest using brin (
   byteacol,
   charcol,
   namecol,
@@ -171,13 +145,7 @@ values
     '{AAAAAA, AAAAAA, BNAAAABNAAAABNAAAABNAAAABNAAAABNAAAABNAAAABNAAAA, ZZZZZZ, ZZZZZZ}',
     '{100, 100, 1, 100, 100}'
   ),
-  (
-    'charcol',
-    '"char"',
-    '{>, >=, =, <=, <}',
-    '{A, A, M, Z, Z}',
-    '{97, 100, 6, 100, 98}'
-  ),
+  ('charcol', '"char"', '{>, >=, =, <=, <}', '{A, A, M, Z, Z}', '{97, 100, 6, 100, 98}'),
   (
     'namecol',
     'name',
@@ -185,20 +153,8 @@ values
     '{AAAAAA, AAAAAA, MAAAAA, ZZAAAA, ZZAAAA}',
     '{100, 100, 2, 100, 100}'
   ),
-  (
-    'int2col',
-    'int2',
-    '{>, >=, =, <=, <}',
-    '{0, 0, 800, 999, 999}',
-    '{100, 100, 1, 100, 100}'
-  ),
-  (
-    'int2col',
-    'int4',
-    '{>, >=, =, <=, <}',
-    '{0, 0, 800, 999, 1999}',
-    '{100, 100, 1, 100, 100}'
-  ),
+  ('int2col', 'int2', '{>, >=, =, <=, <}', '{0, 0, 800, 999, 999}', '{100, 100, 1, 100, 100}'),
+  ('int2col', 'int4', '{>, >=, =, <=, <}', '{0, 0, 800, 999, 1999}', '{100, 100, 1, 100, 100}'),
   (
     'int2col',
     'int8',
@@ -206,20 +162,8 @@ values
     '{0, 0, 800, 999, 1428427143}',
     '{100, 100, 1, 100, 100}'
   ),
-  (
-    'int4col',
-    'int2',
-    '{>, >=, =, <=, <}',
-    '{0, 0, 800, 1999, 1999}',
-    '{100, 100, 1, 100, 100}'
-  ),
-  (
-    'int4col',
-    'int4',
-    '{>, >=, =, <=, <}',
-    '{0, 0, 800, 1999, 1999}',
-    '{100, 100, 1, 100, 100}'
-  ),
+  ('int4col', 'int2', '{>, >=, =, <=, <}', '{0, 0, 800, 1999, 1999}', '{100, 100, 1, 100, 100}'),
+  ('int4col', 'int4', '{>, >=, =, <=, <}', '{0, 0, 800, 1999, 1999}', '{100, 100, 1, 100, 100}'),
   (
     'int4col',
     'int8',
@@ -227,20 +171,8 @@ values
     '{0, 0, 800, 1999, 1428427143}',
     '{100, 100, 1, 100, 100}'
   ),
-  (
-    'int8col',
-    'int2',
-    '{>, >=}',
-    '{0, 0}',
-    '{100, 100}'
-  ),
-  (
-    'int8col',
-    'int4',
-    '{>, >=}',
-    '{0, 0}',
-    '{100, 100}'
-  ),
+  ('int8col', 'int2', '{>, >=}', '{0, 0}', '{100, 100}'),
+  ('int8col', 'int4', '{>, >=}', '{0, 0}', '{100, 100}'),
   (
     'int8col',
     'int8',
@@ -255,13 +187,7 @@ values
     '{ABABAB, ABABAB, BNAAAABNAAAABNAAAABNAAAABNAAAABNAAAABNAAAABNAAAA, ZZAAAA, ZZAAAA}',
     '{100, 100, 1, 100, 100}'
   ),
-  (
-    'oidcol',
-    'oid',
-    '{>, >=, =, <=, <}',
-    '{0, 0, 8800, 9999, 9999}',
-    '{100, 100, 1, 100, 100}'
-  ),
+  ('oidcol', 'oid', '{>, >=, =, <=, <}', '{0, 0, 8800, 9999, 9999}', '{100, 100, 1, 100, 100}'),
   (
     'tidcol',
     'tid',
@@ -283,20 +209,8 @@ values
     '{0.0103093, 0.0103093, 1, 1, 1}',
     '{100, 100, 4, 100, 96}'
   ),
-  (
-    'float8col',
-    'float4',
-    '{>, >=, =, <=, <}',
-    '{0, 0, 0, 1.98, 1.98}',
-    '{99, 100, 1, 100, 100}'
-  ),
-  (
-    'float8col',
-    'float8',
-    '{>, >=, =, <=, <}',
-    '{0, 0, 0, 1.98, 1.98}',
-    '{99, 100, 1, 100, 100}'
-  ),
+  ('float8col', 'float4', '{>, >=, =, <=, <}', '{0, 0, 0, 1.98, 1.98}', '{99, 100, 1, 100, 100}'),
+  ('float8col', 'float8', '{>, >=, =, <=, <}', '{0, 0, 0, 1.98, 1.98}', '{99, 100, 1, 100, 100}'),
   (
     'macaddrcol',
     'macaddr',
@@ -360,13 +274,7 @@ values
     '{fe80::/32, fe80::6e40:8ff:fea9:8c46, fe80::/32, fe80::6e40:8ff:fea9:8c46}',
     '{25, 1, 25, 1}'
   ),
-  (
-    'bpcharcol',
-    'bpchar',
-    '{>, >=, =, <=, <}',
-    '{A, A, W, Z, Z}',
-    '{97, 100, 6, 100, 98}'
-  ),
+  ('bpcharcol', 'bpchar', '{>, >=, =, <=, <}', '{A, A, W, Z, Z}', '{97, 100, 6, 100, 98}'),
   (
     'datecol',
     'date',
@@ -466,9 +374,7 @@ values
     '{0/1200, 0/1200, 44/455222, 198/1999799, 198/1999799, NULL, NULL}',
     '{100, 100, 1, 100, 100, 25, 100}'
   ),
-  (
-    'boxcol', 'point', '{@>}', '{"(500,43)"}', '{11}'
-  ),
+  ('boxcol', 'point', '{@>}', '{"(500,43)"}', '{11}'),
   (
     'boxcol',
     'box',
@@ -477,8 +383,7 @@ values
     '{100, 100, 100, 99, 96, 100, 100, 99, 96, 1, 99, 1}'
   );
 
-do
-$do$
+do $x$
 DECLARE
 	r record;
 	r2 record;
@@ -557,7 +462,7 @@ BEGIN
 		IF count != r.matches THEN RAISE WARNING 'unexpected number of results % for %', count, r; END IF;
 	END LOOP;
 END;
-$do$;
+$x$;
 
 reset enable_seqscan;
 
@@ -575,37 +480,20 @@ select
   cast(unique1 as oid),
   cast(format('(%s,%s)', tenthous, twenty) as tid),
   (four + 1.0) / (hundred + 1),
-  cast(odd as double precision) / (tenthous + 1),
-  cast(format(
-    '%s:00:%s:00:%s:00',
-    to_hex(odd),
-    to_hex(even),
-    to_hex(hundred)
-  )
-  as macaddr),
+  cast(odd as float8) / (tenthous + 1),
+  cast(format('%s:00:%s:00:%s:00', to_hex(odd), to_hex(even), to_hex(hundred)) as macaddr),
   cast('10.2.3.4' as inet) + tenthous,
   cast('10.2.3/24' as cidr) + tenthous,
   cast(substr(stringu1, 1, 1) as bpchar),
   cast('1995-08-15' as date) + tenthous,
-  cast('01:20:30' as time) +
-  thousand * cast('18.5 second' as interval),
-  cast('1942-07-23 03:05:09' as timestamp) +
-  tenthous * cast('36.38 hours' as interval),
-  cast('1972-10-10 03:00'
-  as timestamp with time zone) +
-  thousand * cast('1 hour' as interval),
-  justify_days(
-    justify_hours(
-      tenthous * cast('12 minutes' as interval)
-    )
-  ),
-  cast('01:30:20' as time with time zone) +
-  hundred * cast('15 seconds' as interval),
+  cast('01:20:30' as time) + thousand * cast('18.5 second' as interval),
+  cast('1942-07-23 03:05:09' as timestamp) + tenthous * cast('36.38 hours' as interval),
+  cast('1972-10-10 03:00' as timestamptz) + thousand * cast('1 hour' as interval),
+  justify_days(justify_hours(tenthous * cast('12 minutes' as interval))),
+  cast('01:30:20' as timetz) + hundred * cast('15 seconds' as interval),
   cast(thousand as bit(10)),
-  cast(cast(tenthous as bit(16)) as bit varying),
-  cast(tenthous as numeric(36, 30)) * fivethous *
-  even /
-  (hundred + 1),
+  cast(cast(tenthous as bit(16)) as varbit),
+  cast(tenthous as numeric(36, 30)) * fivethous * even / (hundred + 1),
   cast(format(
     '%s%s-%s-%s-%s-%s%s%s',
     to_char(tenthous, 'FM0000'),
@@ -619,12 +507,8 @@ select
   )
   as uuid),
   int4range(thousand, twothousand),
-  cast(format('%s/%s%s', odd, even, tenthous)
-  as pg_lsn),
-  box(
-    point(odd, even),
-    point(thousand, twothousand)
-  )
+  cast(format('%s/%s%s', odd, even, tenthous) as pg_lsn),
+  box(point(odd, even), point(thousand, twothousand))
 from
   tenk1
 order by unique2
@@ -655,16 +539,9 @@ select brin_desummarize_range('brinidx', 100000000);
 
 create table brin_summarize (value int) with (fillfactor = 10, autovacuum_enabled = 'false');
 
-create index "brin_summarize_idx"
-on brin_summarize
-using brin
-(
-  value
-)
-with (pages_per_range = 2);
+create index brin_summarize_idx on brin_summarize using brin (value) with (pages_per_range = 2);
 
-do
-$do$
+do $$
 DECLARE curtid tid;
 BEGIN
   LOOP
@@ -672,7 +549,7 @@ BEGIN
     EXIT WHEN curtid > tid '(2, 0)';
   END LOOP;
 END;
-$do$;
+$$;
 
 select brin_summarize_range('brin_summarize_idx', 0);
 
@@ -688,7 +565,7 @@ select brin_summarize_range('brin_summarize_idx', 4294967296);
 
 create table brintest_2 (n numrange);
 
-create index "brinidx_2" on brintest_2 using brin (n);
+create index brinidx_2 on brintest_2 using brin (n);
 
 insert into brintest_2 values ('empty');
 
@@ -709,23 +586,11 @@ create table brin_test (
 
 insert into brin_test select x / 100, x % 100 from generate_series(1, 10000) as x (x);
 
-create index "brin_test_a_idx"
-on brin_test
-using brin
-(
-  a
-)
-with (pages_per_range = 2);
+create index brin_test_a_idx on brin_test using brin (a) with (pages_per_range = 2);
 
-create index "brin_test_b_idx"
-on brin_test
-using brin
-(
-  b
-)
-with (pages_per_range = 2);
+create index brin_test_b_idx on brin_test using brin (b) with (pages_per_range = 2);
 
-vacuum (ANALYZE) brin_test;
+vacuum (analyze) brin_test;
 
 select * from brin_test where a = 1;
 
@@ -741,19 +606,16 @@ create table brintest_3 (
 with
 rand_value
 as (
-  select
-    string_agg(fipshash(cast(i as text)), '') as val
-  from
-    generate_series(1, 60) as s (i)
+  select string_agg(fipshash(cast(i as text)), '') as val from generate_series(1, 60) as s (i)
 )
 insert into brintest_3
 select val, val, val, val from rand_value;
 
-create index "brin_test_toast_idx" on brintest_3 using brin (b, c);
+create index brin_test_toast_idx on brintest_3 using brin (b, c);
 
 delete from brintest_3;
 
-create index concurrently "brin_test_temp_idx" on brintest_3 using btree (a);
+create index concurrently brin_test_temp_idx on brintest_3 using btree (a);
 
 drop index brin_test_temp_idx;
 
@@ -762,10 +624,7 @@ vacuum brintest_3;
 with
 rand_value
 as (
-  select
-    string_agg(fipshash(cast(-i as text)), '') as val
-  from
-    generate_series(1, 60) as s (i)
+  select string_agg(fipshash(cast(-i as text)), '') as val from generate_series(1, 60) as s (i)
 )
 insert into brintest_3
 select val, val, val, val from rand_value;
@@ -794,7 +653,7 @@ set local min_parallel_table_scan_size = 0;
 
 set local max_parallel_maintenance_workers = 4;
 
-create index "brintest_expr_idx" on brintest_expr using brin ((brintest_func()));
+create index brintest_expr_idx on brintest_expr using brin ((brintest_func()));
 
 commit;
 
@@ -804,7 +663,7 @@ drop function brintest_func();
 
 create unlogged table brintest_unlogged (n numrange);
 
-create index "brinidx_unlogged" on brintest_unlogged using brin (n);
+create index brinidx_unlogged on brintest_unlogged using brin (n);
 
 insert into brintest_unlogged values (numrange(0, 2 ^ cast(1000 as numeric)));
 
@@ -814,10 +673,10 @@ create table brin_insert_optimization (a int);
 
 insert into brin_insert_optimization values (1);
 
-create index "brin_insert_optimization_idx" on brin_insert_optimization using brin (a);
+create index brin_insert_optimization_idx on brin_insert_optimization using brin (a);
 
 update brin_insert_optimization set a = a;
 
-reindex (CONCURRENTLY) index brin_insert_optimization_idx;
+reindex (concurrently) index brin_insert_optimization_idx;
 
 drop table brin_insert_optimization;

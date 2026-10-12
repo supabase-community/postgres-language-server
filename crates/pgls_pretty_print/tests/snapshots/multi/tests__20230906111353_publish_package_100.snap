@@ -2,9 +2,9 @@
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/20230906111353_publish_package.sql
 ---
-grant INSERT (partial_name, handle, control_description) on table app.packages to authenticated;
+grant insert (partial_name, handle, control_description) on table app.packages to authenticated;
 
-grant UPDATE (control_description) on table app.packages to authenticated;
+grant update (control_description) on table app.packages to authenticated;
 
 create policy packages_update_policy
 on app.packages
@@ -20,7 +20,7 @@ public.publish_package(
 )
 returns void
 language plpgsql
-as $function$
+as $$
 declare
     account app.accounts = account from app.accounts account where id = auth.uid();
 begin
@@ -34,7 +34,7 @@ begin
     do update
     set control_description = excluded.control_description;
 end;
-$function$;
+$$;
 
 create or replace function
 public.publish_package_version(
@@ -45,7 +45,7 @@ public.publish_package_version(
 )
 returns uuid
 language plpgsql
-as $function$
+as $$
 declare
     account app.accounts = account from app.accounts account where id = auth.uid();
     package_id uuid;
@@ -70,7 +70,7 @@ begin
         return null;
     end;
 end;
-$function$;
+$$;
 
 create or replace function
 public.publish_package_upgrade(
@@ -81,7 +81,7 @@ public.publish_package_upgrade(
 )
 returns uuid
 language plpgsql
-as $function$
+as $$
 declare
     account app.accounts = account from app.accounts account where id = auth.uid();
     package_id uuid;
@@ -106,4 +106,4 @@ begin
         return null;
     end;
 end;
-$function$;
+$$;

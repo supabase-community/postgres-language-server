@@ -10,5 +10,5 @@ create table t (
   d char(3),
   e pg_catalog.bpchar,
   f pg_catalog."char",
-  g char(5)
+  g bpchar(5)
 );

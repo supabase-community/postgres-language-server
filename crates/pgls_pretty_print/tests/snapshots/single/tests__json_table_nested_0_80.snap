@@ -7,8 +7,7 @@ select
   *
 from
   json_table(
-    cast('{"outer": [{"items": [1, null]}]}'
-    as jsonb),
+    cast('{"outer": [{"items": [1, null]}]}' as jsonb),
     '$.outer[*]'
     columns (
       outer_row_id for ordinality,

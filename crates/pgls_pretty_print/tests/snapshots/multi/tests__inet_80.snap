@@ -51,11 +51,7 @@ insert into inet_tbl (c, i) values ('1234::1234::1234', '::1.2.3.4');
 insert into inet_tbl (c, i) values (cidr('192.168.1.2/30'), '192.168.1.226');
 
 insert into inet_tbl (c, i)
-values
-  (
-    cidr('ffff:ffff:ffff:ffff::/24'),
-    '::192.168.1.226'
-  );
+values (cidr('ffff:ffff:ffff:ffff::/24'), '::192.168.1.226');
 
 select c as cidr, i as inet from inet_tbl;
 
@@ -126,27 +122,23 @@ select
 from
   inet_tbl;
 
-select MAX(i) as max, MIN(i) as min from inet_tbl;
+select max(i) as max, min(i) as min from inet_tbl;
 
-select MAX(c) as max, MIN(c) as min from inet_tbl;
+select max(c) as max, min(c) as min from inet_tbl;
 
 select
   c as cidr,
-  set_masklen(cidr(text(c)), 24)
-  as "set_masklen(cidr)",
+  set_masklen(cidr(text(c)), 24) as "set_masklen(cidr)",
   i as inet,
-  set_masklen(inet(text(i)), 24)
-  as "set_masklen(inet)"
+  set_masklen(inet(text(i)), 24) as "set_masklen(inet)"
 from
   inet_tbl;
 
 select
   c as cidr,
-  set_masklen(cidr(text(c)), -1)
-  as "set_masklen(cidr)",
+  set_masklen(cidr(text(c)), -1) as "set_masklen(cidr)",
   i as inet,
-  set_masklen(inet(text(i)), -1)
-  as "set_masklen(inet)"
+  set_masklen(inet(text(i)), -1) as "set_masklen(inet)"
 from
   inet_tbl;
 
@@ -154,7 +146,7 @@ select set_masklen(inet(text(i)), 33) from inet_tbl;
 
 select set_masklen(cidr(text(c)), 33) from inet_tbl;
 
-create index "inet_idx1" on inet_tbl using btree (i);
+create index inet_idx1 on inet_tbl using btree (i);
 
 set enable_seqscan = off;
 
@@ -178,7 +170,7 @@ set enable_seqscan = 'on';
 
 drop index inet_idx1;
 
-create index "inet_idx2" on inet_tbl using gist (i inet_ops);
+create index inet_idx2 on inet_tbl using gist (i inet_ops);
 
 set enable_seqscan = off;
 
@@ -212,7 +204,7 @@ set enable_seqscan = 'on';
 
 drop index inet_idx2;
 
-create index "inet_idx3" on inet_tbl using spgist (i);
+create index inet_idx3 on inet_tbl using spgist (i);
 
 set enable_seqscan = off;
 
@@ -346,150 +338,48 @@ from
       (cast('255.255.255.253/32' as inet)),
       (cast('255.255.255.252/32' as inet)),
       (cast('255.3.0.0/0' as inet)),
-      (
-        cast('0000:0000:0000:0000:0000:0000:0000:0000/0'
-        as inet)
-      ),
-      (
-        cast('0000:0000:0000:0000:0000:0000:0000:0000/128'
-        as inet)
-      ),
-      (
-        cast('0000:0000:0000:0000:0000:0000:0000:0001/128'
-        as inet)
-      ),
+      (cast('0000:0000:0000:0000:0000:0000:0000:0000/0' as inet)),
+      (cast('0000:0000:0000:0000:0000:0000:0000:0000/128' as inet)),
+      (cast('0000:0000:0000:0000:0000:0000:0000:0001/128' as inet)),
       (cast('10:23::f1/64' as inet)),
       (cast('10:23::f1/65' as inet)),
       (cast('10:23::ffff' as inet)),
       (cast('127::1' as inet)),
       (cast('127::2' as inet)),
-      (
-        cast('8000:0000:0000:0000:0000:0000:0000:0000/1'
-        as inet)
-      ),
-      (
-        cast('::1:ffff:ffff:ffff:ffff/128'
-        as inet)
-      ),
-      (
-        cast('::2:ffff:ffff:ffff:ffff/128'
-        as inet)
-      ),
+      (cast('8000:0000:0000:0000:0000:0000:0000:0000/1' as inet)),
+      (cast('::1:ffff:ffff:ffff:ffff/128' as inet)),
+      (cast('::2:ffff:ffff:ffff:ffff/128' as inet)),
       (cast('::4:3:2:0/24' as inet)),
       (cast('::4:3:2:1/24' as inet)),
       (cast('::4:3:2:2/24' as inet)),
-      (
-        cast('ffff:83e7:f118:57dc:6093:6d92:689d:58cf/70'
-        as inet)
-      ),
-      (
-        cast('ffff:84b0:4775:536e:c3ed:7116:a6d6:34f0/44'
-        as inet)
-      ),
-      (
-        cast('ffff:8566:f84:5867:47f1:7867:d2ba:8a1a/69'
-        as inet)
-      ),
-      (
-        cast('ffff:8883:f028:7d2:4d68:d510:7d6b:ac43/73'
-        as inet)
-      ),
-      (
-        cast('ffff:8ae8:7c14:65b3:196:8e4a:89ae:fb30/89'
-        as inet)
-      ),
-      (
-        cast('ffff:8dd0:646:694c:7c16:7e35:6a26:171/104'
-        as inet)
-      ),
-      (
-        cast('ffff:8eef:cbf:700:eda3:ae32:f4b4:318b/121'
-        as inet)
-      ),
-      (
-        cast('ffff:90e7:e744:664:a93:8efe:1f25:7663/122'
-        as inet)
-      ),
-      (
-        cast('ffff:9597:c69c:8b24:57a:8639:ec78:6026/111'
-        as inet)
-      ),
-      (
-        cast('ffff:9e86:79ea:f16e:df31:8e4d:7783:532e/88'
-        as inet)
-      ),
-      (
-        cast('ffff:a0c7:82d3:24de:f762:6e1f:316d:3fb2/23'
-        as inet)
-      ),
-      (
-        cast('ffff:fffa:ffff:ffff:ffff:ffff:ffff:ffff/0'
-        as inet)
-      ),
-      (
-        cast('ffff:fffb:ffff:ffff:ffff:ffff:ffff:ffff/0'
-        as inet)
-      ),
-      (
-        cast('ffff:fffc:ffff:ffff:ffff:ffff:ffff:ffff/0'
-        as inet)
-      ),
-      (
-        cast('ffff:fffd:ffff:ffff:ffff:ffff:ffff:ffff/0'
-        as inet)
-      ),
-      (
-        cast('ffff:fffe:ffff:ffff:ffff:ffff:ffff:ffff/0'
-        as inet)
-      ),
-      (
-        cast('ffff:ffff:ffff:fffa:ffff:ffff:ffff:ffff/0'
-        as inet)
-      ),
-      (
-        cast('ffff:ffff:ffff:fffb:ffff:ffff:ffff:ffff/0'
-        as inet)
-      ),
-      (
-        cast('ffff:ffff:ffff:fffc:ffff:ffff:ffff:ffff/0'
-        as inet)
-      ),
-      (
-        cast('ffff:ffff:ffff:fffd::/128'
-        as inet)
-      ),
-      (
-        cast('ffff:ffff:ffff:fffd:ffff:ffff:ffff:ffff/0'
-        as inet)
-      ),
-      (
-        cast('ffff:ffff:ffff:fffe::/128'
-        as inet)
-      ),
-      (
-        cast('ffff:ffff:ffff:fffe:ffff:ffff:ffff:ffff/0'
-        as inet)
-      ),
-      (
-        cast('ffff:ffff:ffff:ffff:4:3:2:0/24'
-        as inet)
-      ),
-      (
-        cast('ffff:ffff:ffff:ffff:4:3:2:1/24'
-        as inet)
-      ),
-      (
-        cast('ffff:ffff:ffff:ffff:4:3:2:2/24'
-        as inet)
-      ),
-      (
-        cast('ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff/0'
-        as inet)
-      ),
-      (
-        cast('ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff/128'
-        as inet)
-      )
+      (cast('ffff:83e7:f118:57dc:6093:6d92:689d:58cf/70' as inet)),
+      (cast('ffff:84b0:4775:536e:c3ed:7116:a6d6:34f0/44' as inet)),
+      (cast('ffff:8566:f84:5867:47f1:7867:d2ba:8a1a/69' as inet)),
+      (cast('ffff:8883:f028:7d2:4d68:d510:7d6b:ac43/73' as inet)),
+      (cast('ffff:8ae8:7c14:65b3:196:8e4a:89ae:fb30/89' as inet)),
+      (cast('ffff:8dd0:646:694c:7c16:7e35:6a26:171/104' as inet)),
+      (cast('ffff:8eef:cbf:700:eda3:ae32:f4b4:318b/121' as inet)),
+      (cast('ffff:90e7:e744:664:a93:8efe:1f25:7663/122' as inet)),
+      (cast('ffff:9597:c69c:8b24:57a:8639:ec78:6026/111' as inet)),
+      (cast('ffff:9e86:79ea:f16e:df31:8e4d:7783:532e/88' as inet)),
+      (cast('ffff:a0c7:82d3:24de:f762:6e1f:316d:3fb2/23' as inet)),
+      (cast('ffff:fffa:ffff:ffff:ffff:ffff:ffff:ffff/0' as inet)),
+      (cast('ffff:fffb:ffff:ffff:ffff:ffff:ffff:ffff/0' as inet)),
+      (cast('ffff:fffc:ffff:ffff:ffff:ffff:ffff:ffff/0' as inet)),
+      (cast('ffff:fffd:ffff:ffff:ffff:ffff:ffff:ffff/0' as inet)),
+      (cast('ffff:fffe:ffff:ffff:ffff:ffff:ffff:ffff/0' as inet)),
+      (cast('ffff:ffff:ffff:fffa:ffff:ffff:ffff:ffff/0' as inet)),
+      (cast('ffff:ffff:ffff:fffb:ffff:ffff:ffff:ffff/0' as inet)),
+      (cast('ffff:ffff:ffff:fffc:ffff:ffff:ffff:ffff/0' as inet)),
+      (cast('ffff:ffff:ffff:fffd::/128' as inet)),
+      (cast('ffff:ffff:ffff:fffd:ffff:ffff:ffff:ffff/0' as inet)),
+      (cast('ffff:ffff:ffff:fffe::/128' as inet)),
+      (cast('ffff:ffff:ffff:fffe:ffff:ffff:ffff:ffff/0' as inet)),
+      (cast('ffff:ffff:ffff:ffff:4:3:2:0/24' as inet)),
+      (cast('ffff:ffff:ffff:ffff:4:3:2:1/24' as inet)),
+      (cast('ffff:ffff:ffff:ffff:4:3:2:2/24' as inet)),
+      (cast('ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff/0' as inet)),
+      (cast('ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff/128' as inet))
   )
   as i (a)
 order by a;

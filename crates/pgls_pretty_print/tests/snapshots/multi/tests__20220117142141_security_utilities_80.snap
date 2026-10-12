@@ -10,8 +10,8 @@ app.is_organization_maintainer(
 returns boolean
 language sql
 stable
-as $function$
--- Does the currently authenticated user have permission to admin orgs and org members?
+as $$
+    -- Does the currently authenticated user have permission to admin orgs and org members?
     select
         exists(
             select
@@ -23,14 +23,14 @@ as $function$
                 and m.organization_id = $2
                 and m.role = 'maintainer'
         )
-$function$;
+$$;
 
 create function app.is_handle_maintainer(account_id uuid, handle app.valid_name)
 returns boolean
 language sql
 stable
-as $function$
-select
+as $$
+    select
         exists(
             select
                 1
@@ -52,14 +52,14 @@ select
                 and m.account_id = $1
                 and o.handle = $2
             )
-$function$;
+$$;
 
 create function app.is_package_maintainer(account_id uuid, package_id uuid)
 returns boolean
 language sql
 stable
-as $function$
-select
+as $$
+    select
         exists(
             select
                 1
@@ -86,7 +86,7 @@ select
                 and m.account_id = $1
                 and p.id = $2
             )
-$function$;
+$$;
 
 create function
 app.is_package_version_maintainer(
@@ -96,11 +96,11 @@ app.is_package_version_maintainer(
 returns boolean
 language sql
 stable
-as $function$
-select
+as $$
+    select
         app.is_package_maintainer($1, pv.package_id)
     from
         app.package_versions pv
     where
         pv.id = $2
-$function$;
+$$;

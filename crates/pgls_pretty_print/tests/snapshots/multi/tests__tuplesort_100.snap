@@ -21,21 +21,13 @@ insert into abbrev_abort_uuids (
   noabort_decreasing
 )
 select
-  cast('00000000-0000-0000-0000-' ||
-  to_char(g.i, '000000000000FM')
-  as uuid)
-  as abort_increasing,
-  cast('00000000-0000-0000-0000-' ||
-  to_char(20000 - g.i, '000000000000FM')
-  as uuid)
+  cast('00000000-0000-0000-0000-' || to_char(g.i, '000000000000FM') as uuid) as abort_increasing,
+  cast('00000000-0000-0000-0000-' || to_char(20000 - g.i, '000000000000FM') as uuid)
   as abort_decreasing,
-  cast(to_char(g.i % 10009, '00000000FM') ||
-  '-0000-0000-0000-' ||
-  to_char(g.i, '000000000000FM')
+  cast(to_char(g.i % 10009, '00000000FM') || '-0000-0000-0000-' || to_char(g.i, '000000000000FM')
   as uuid)
   as noabort_increasing,
-  cast(to_char((20000 - g.i) % 10009, '00000000FM') ||
-  '-0000-0000-0000-' ||
+  cast(to_char((20000 - g.i) % 10009, '00000000FM') || '-0000-0000-0000-' ||
   to_char(20000 - g.i, '000000000000FM')
   as uuid)
   as noabort_decreasing
@@ -62,11 +54,7 @@ select
 from
   abbrev_abort_uuids
 where
-  (
-    id < 10 or id > 19990
-  ) and
-  id % 3 = 0 and
-  abort_increasing is not null;
+  (id < 10 or id > 19990) and id % 3 = 0 and abort_increasing is not null;
 
 select
   abort_increasing,
@@ -116,17 +104,11 @@ from
 order by noabort_increasing nulls first
 limit 5;
 
-create index "abbrev_abort_uuids__noabort_increasing_idx"
-on abbrev_abort_uuids
-using btree
-(
+create index abbrev_abort_uuids__noabort_increasing_idx on abbrev_abort_uuids using btree (
   noabort_increasing
 );
 
-create index "abbrev_abort_uuids__noabort_decreasing_idx"
-on abbrev_abort_uuids
-using btree
-(
+create index abbrev_abort_uuids__noabort_decreasing_idx on abbrev_abort_uuids using btree (
   noabort_decreasing
 );
 
@@ -166,17 +148,11 @@ from
 order by noabort_decreasing
 limit 5;
 
-create index "abbrev_abort_uuids__abort_increasing_idx"
-on abbrev_abort_uuids
-using btree
-(
+create index abbrev_abort_uuids__abort_increasing_idx on abbrev_abort_uuids using btree (
   abort_increasing
 );
 
-create index "abbrev_abort_uuids__abort_decreasing_idx"
-on abbrev_abort_uuids
-using btree
-(
+create index abbrev_abort_uuids__abort_decreasing_idx on abbrev_abort_uuids using btree (
   abort_decreasing
 );
 
@@ -340,34 +316,21 @@ select
   left(a, 10),
   b
 from
-  (
-    values
-      (repeat('a', 512 * 1024), 1),
-      (repeat('b', 512 * 1024), 2)
-  )
-  as v (a, b)
+  (values (repeat('a', 512 * 1024), 1), (repeat('b', 512 * 1024), 2)) as v (a, b)
 order by v.a desc;
 
 begin;
 
 set local enable_indexscan = 'false';
 
-explain (COSTS 'off')
-declare "c" scroll
+explain (costs 'off')
+declare c scroll
 cursor
-for select
-  noabort_decreasing
-from
-  abbrev_abort_uuids
-order by noabort_decreasing;;
+for select noabort_decreasing from abbrev_abort_uuids order by noabort_decreasing;;
 
-declare "c" scroll
+declare c scroll
 cursor
-for select
-  noabort_decreasing
-from
-  abbrev_abort_uuids
-order by noabort_decreasing;;
+for select noabort_decreasing from abbrev_abort_uuids order by noabort_decreasing;;
 
 fetch next from c;
 
@@ -405,22 +368,14 @@ set local enable_indexscan = 'false';
 
 set local work_mem = '100kB';
 
-explain (COSTS 'off')
-declare "c" scroll
+explain (costs 'off')
+declare c scroll
 cursor
-for select
-  noabort_decreasing
-from
-  abbrev_abort_uuids
-order by noabort_decreasing;;
+for select noabort_decreasing from abbrev_abort_uuids order by noabort_decreasing;;
 
-declare "c" scroll
+declare c scroll
 cursor
-for select
-  noabort_decreasing
-from
-  abbrev_abort_uuids
-order by noabort_decreasing;;
+for select noabort_decreasing from abbrev_abort_uuids order by noabort_decreasing;;
 
 fetch next from c;
 
@@ -454,39 +409,20 @@ commit;
 
 select
   (array_agg(id order by id desc nulls first))[0:5],
-  (array_agg(
-    abort_increasing order by abort_increasing desc nulls last
-  ))[0:5],
-  (array_agg(
-    cast(id as text) order by cast(id as text) desc nulls last
-  ))[0:5],
+  (array_agg(abort_increasing order by abort_increasing desc nulls last))[0:5],
+  (array_agg(cast(id as text) order by cast(id as text) desc nulls last))[0:5],
   percentile_disc(0.99) within group (order by id),
   percentile_disc(0.01) within group (order by id),
-  percentile_disc(
-    0.8
-  )
-  within group (order by abort_increasing),
-  percentile_disc(
-    0.2
-  )
-  within group (order by cast(id as text)),
-  RANK(
+  percentile_disc(0.8) within group (order by abort_increasing),
+  percentile_disc(0.2) within group (order by cast(id as text)),
+  rank(
     '00000000-0000-0000-0000-000000000000',
     '2',
     '2'
   )
-  within group (
-    order by noabort_increasing,
-    id,
-    cast(id as text)
-  )
+  within group (order by noabort_increasing, id, cast(id as text))
 from
-  (
-    select * from abbrev_abort_uuids
-    union all
-    select null, null, null, null, null
-  )
-  as s;
+  (select * from abbrev_abort_uuids union all select null, null, null, null, null) as s;
 
 begin;
 
@@ -494,39 +430,20 @@ set local work_mem = '100kB';
 
 select
   (array_agg(id order by id desc nulls first))[0:5],
-  (array_agg(
-    abort_increasing order by abort_increasing desc nulls last
-  ))[0:5],
-  (array_agg(
-    cast(id as text) order by cast(id as text) desc nulls last
-  ))[0:5],
+  (array_agg(abort_increasing order by abort_increasing desc nulls last))[0:5],
+  (array_agg(cast(id as text) order by cast(id as text) desc nulls last))[0:5],
   percentile_disc(0.99) within group (order by id),
   percentile_disc(0.01) within group (order by id),
-  percentile_disc(
-    0.8
-  )
-  within group (order by abort_increasing),
-  percentile_disc(
-    0.2
-  )
-  within group (order by cast(id as text)),
-  RANK(
+  percentile_disc(0.8) within group (order by abort_increasing),
+  percentile_disc(0.2) within group (order by cast(id as text)),
+  rank(
     '00000000-0000-0000-0000-000000000000',
     '2',
     '2'
   )
-  within group (
-    order by noabort_increasing,
-    id,
-    cast(id as text)
-  )
+  within group (order by noabort_increasing, id, cast(id as text))
 from
-  (
-    select * from abbrev_abort_uuids
-    union all
-    select null, null, null, null, null
-  )
-  as s;
+  (select * from abbrev_abort_uuids union all select null, null, null, null, null) as s;
 
 rollback;
 
@@ -537,13 +454,7 @@ create temporary table test_mark_restore (
 );
 
 insert into test_mark_restore (col1, col2, col12)
-select
-  a.i,
-  b.i,
-  a.i * b.i
-from
-  generate_series(1, 500) as a (i),
-  generate_series(1, 5) as b (i);
+select a.i, b.i, a.i * b.i from generate_series(1, 500) as a (i), generate_series(1, 5) as b (i);
 
 begin;
 
@@ -553,8 +464,7 @@ set local enable_hashjoin = off;
 
 set local enable_material = off;
 
-select
-  '
+select '
     SELECT col12, count(distinct a.col1), count(distinct a.col2), count(distinct b.col1), count(distinct b.col2), count(*)
     FROM test_mark_restore a
         JOIN test_mark_restore b USING(col12)
@@ -562,8 +472,7 @@ select
     HAVING count(*) > 1
     ORDER BY 2 DESC, 1 DESC, 3 DESC, 4 DESC, 5 DESC, 6 DESC
     LIMIT 10
-'
-  as qry;
+' as qry;
 
 set local work_mem = '100kB';
 

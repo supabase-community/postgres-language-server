@@ -84,12 +84,8 @@ from
   as x (size);
 
 select
-  pg_size_pretty(
-    cast('-9223372036854775808' as bigint)
-  ),
-  pg_size_pretty(
-    cast('9223372036854775807' as bigint)
-  );
+  pg_size_pretty(cast('-9223372036854775808' as bigint)),
+  pg_size_pretty(cast('9223372036854775807' as bigint));
 
 select
   size,

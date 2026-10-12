@@ -65,23 +65,23 @@ select * from pg_input_error_info('15:36:39 America/New_York', 'time');
 
 select f1 + cast('00:01' as time) as "Illegal" from time_tbl;
 
-select EXTRACT('microsecond' from cast('2020-05-26 13:30:25.575401' as time));
+select extract(microsecond from cast('2020-05-26 13:30:25.575401' as time));
 
-select EXTRACT('millisecond' from cast('2020-05-26 13:30:25.575401' as time));
+select extract(millisecond from cast('2020-05-26 13:30:25.575401' as time));
 
-select EXTRACT('second' from cast('2020-05-26 13:30:25.575401' as time));
+select extract(second from cast('2020-05-26 13:30:25.575401' as time));
 
-select EXTRACT('minute' from cast('2020-05-26 13:30:25.575401' as time));
+select extract(minute from cast('2020-05-26 13:30:25.575401' as time));
 
-select EXTRACT('hour' from cast('2020-05-26 13:30:25.575401' as time));
+select extract(hour from cast('2020-05-26 13:30:25.575401' as time));
 
-select EXTRACT('day' from cast('2020-05-26 13:30:25.575401' as time));
+select extract(day from cast('2020-05-26 13:30:25.575401' as time));
 
-select EXTRACT('fortnight' from cast('2020-05-26 13:30:25.575401' as time));
+select extract(fortnight from cast('2020-05-26 13:30:25.575401' as time));
 
-select EXTRACT('timezone' from cast('2020-05-26 13:30:25.575401' as time));
+select extract(timezone from cast('2020-05-26 13:30:25.575401' as time));
 
-select EXTRACT('epoch' from cast('2020-05-26 13:30:25.575401' as time));
+select extract(epoch from cast('2020-05-26 13:30:25.575401' as time));
 
 select date_part('microsecond', cast('2020-05-26 13:30:25.575401' as time));
 

@@ -15,9 +15,9 @@ select * from persons;
 create function get_all_persons()
 returns setof person_type
 language sql
-as $function$
-SELECT * FROM persons;
-$function$;
+as $$
+    SELECT * FROM persons;
+$$;
 
 select * from get_all_persons();
 
@@ -84,9 +84,7 @@ insert into persons values (1, 'test');
 create function namelen(person_type)
 returns int
 language sql
-as $function$
-SELECT length($1.name)
-$function$;
+as $$ SELECT length($1.name) $$;
 
 select id, namelen(persons) from persons;
 

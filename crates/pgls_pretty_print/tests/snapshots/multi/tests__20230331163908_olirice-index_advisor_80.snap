@@ -26,14 +26,7 @@ insert into app.package_versions (
 )
 values
   (
-    (
-      select
-        id
-      from
-        app.packages
-      where
-        package_name = 'olirice-index_advisor'
-    ),
+    (select id from app.packages where package_name = 'olirice-index_advisor'),
     (0, 1, 0),
     '
 

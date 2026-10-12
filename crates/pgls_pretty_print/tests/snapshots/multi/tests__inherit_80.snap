@@ -11,9 +11,7 @@ create table c (cc text)
 inherits (a);
 
 create table d (dd text)
-inherits (b,
-c,
-a);
+inherits (b, c, a);
 
 insert into a (aa) values ('aaa');
 
@@ -188,21 +186,14 @@ create table some_tab_child ()
 inherits (some_tab);
 
 insert into some_tab_child
-select
-  i,
-  i + 1,
-  0
-from
-  generate_series(1, 1000) as i;
+select i, i + 1, 0 from generate_series(1, 1000) as i;
 
 create index on some_tab_child using btree (f1, f2);
 
 create function some_tab_stmt_trig_func()
 returns trigger
 language plpgsql
-as $function$
-begin raise notice 'updating some_tab'; return NULL; end;
-$function$;
+as $$begin raise notice 'updating some_tab'; return NULL; end;$$;
 
 create trigger some_tab_stmt_trig
 before update
@@ -283,8 +274,7 @@ insert into bar2 values (4, 4, 4);
 update bar set f2 = f2 + 100 where f1 in (select f1 from foo);
 
 select
-  cast(cast(tableoid as regclass) as text)
-  as relname,
+  cast(cast(tableoid as regclass) as text) as relname,
   bar.*
 from
   bar
@@ -293,18 +283,12 @@ order by 1,
 
 update bar
 set f2 = f2 + 100
-from (
-  select f1 from foo
-  union all
-  select f1 + 3 from foo
-)
-as ss
+from (select f1 from foo union all select f1 + 3 from foo) as ss
 where
   bar.f1 = ss.f1;
 
 select
-  cast(cast(tableoid as regclass) as text)
-  as relname,
+  cast(cast(tableoid as regclass) as text) as relname,
   bar.*
 from
   bar
@@ -324,7 +308,7 @@ create table parted_tab (
   a int,
   b char(1)
 )
-partition by LIST(a);
+partition by list(a);
 
 create table parted_tab_part1 partition of parted_tab for values in (1);
 
@@ -336,18 +320,12 @@ insert into parted_tab values (1, 'a'), (2, 'a'), (3, 'a');
 
 update parted_tab
 set b = 'b'
-from (
-  select a from some_tab
-  union all
-  select a + 1 from some_tab
-)
-as ss (a)
+from (select a from some_tab union all select a + 1 from some_tab) as ss (a)
 where
   parted_tab.a = ss.a;
 
 select
-  cast(cast(tableoid as regclass) as text)
-  as relname,
+  cast(cast(tableoid as regclass) as text) as relname,
   parted_tab.*
 from
   parted_tab
@@ -360,18 +338,12 @@ insert into parted_tab values (1, 'a'), (2, 'a'), (3, 'a');
 
 update parted_tab
 set b = 'b'
-from (
-  select 0 from parted_tab
-  union all
-  select 1 from parted_tab
-)
-as ss (a)
+from (select 0 from parted_tab union all select 1 from parted_tab) as ss (a)
 where
   parted_tab.a = ss.a;
 
 select
-  cast(cast(tableoid as regclass) as text)
-  as relname,
+  cast(cast(tableoid as regclass) as text) as relname,
   parted_tab.*
 from
   parted_tab
@@ -387,14 +359,14 @@ create table mlparted_tab (
   b char(1),
   c text
 )
-partition by LIST(a);
+partition by list(a);
 
 create table mlparted_tab_part1 partition of mlparted_tab for values in (1);
 
 create table mlparted_tab_part2
 partition of mlparted_tab
 for values in (2)
-partition by LIST(b);
+partition by list(b);
 
 create table mlparted_tab_part3 partition of mlparted_tab for values in (3);
 
@@ -410,19 +382,12 @@ insert into mlparted_tab values (1, 'a'), (2, 'a'), (2, 'b'), (3, 'a');
 
 update mlparted_tab as mlp
 set c = 'xxx'
-from (
-  select a from some_tab
-  union all
-  select a + 1 from some_tab
-)
-as ss (a)
+from (select a from some_tab union all select a + 1 from some_tab) as ss (a)
 where
-  (mlp.a = ss.a and mlp.b = 'b') or
-  mlp.a = 3;
+  (mlp.a = ss.a and mlp.b = 'b') or mlp.a = 3;
 
 select
-  cast(cast(tableoid as regclass) as text)
-  as relname,
+  cast(cast(tableoid as regclass) as text) as relname,
   mlparted_tab.*
 from
   mlparted_tab
@@ -433,23 +398,20 @@ drop table mlparted_tab;
 
 drop table some_tab cascade;
 
-create table firstparent (tomorrow date default (cast(NOW() as date) + 1));
+create table firstparent (tomorrow date default (cast(now() as date) + 1));
 
-create table secondparent (tomorrow date default (cast(NOW() as date) + 1));
+create table secondparent (tomorrow date default (cast(now() as date) + 1));
 
 create table jointchild ()
-inherits (firstparent,
-secondparent);
+inherits (firstparent, secondparent);
 
-create table thirdparent (tomorrow date default (cast(NOW() as date) - 1));
+create table thirdparent (tomorrow date default (cast(now() as date) - 1));
 
 create table otherchild ()
-inherits (firstparent,
-thirdparent);
+inherits (firstparent, thirdparent);
 
-create table otherchild (tomorrow date default NOW())
-inherits (firstparent,
-thirdparent);
+create table otherchild (tomorrow date default now())
+inherits (firstparent, thirdparent);
 
 drop table firstparent, secondparent, jointchild, thirdparent, otherchild;
 
@@ -471,8 +433,7 @@ create temporary table parent2 (
 );
 
 create temporary table childtab (f4 int)
-inherits (parent1,
-parent2);
+inherits (parent1, parent2);
 
 alter table parent1
   alter column f1 type bigint;
@@ -483,10 +444,10 @@ alter table parent1
 create table p1 (ff1 int);
 
 alter table p1
-  add constraint "p1chk" check (ff1 > 0) no inherit;
+  add constraint p1chk check (ff1 > 0) no inherit;
 
 alter table p1
-  add constraint "p2chk" check (ff1 > 10);
+  add constraint p2chk check (ff1 > 10);
 
 select
   pc.relname,
@@ -496,10 +457,7 @@ select
   pgc.coninhcount,
   pgc.connoinherit
 from
-  pg_class as pc
-  inner join
-    pg_constraint as pgc
-  on pgc.conrelid = pc.oid
+  pg_class as pc inner join pg_constraint as pgc on pgc.conrelid = pc.oid
 where
   pc.relname = 'p1'
 order by 1,
@@ -508,7 +466,7 @@ order by 1,
 create table c1 ()
 inherits (p1);
 
-create table c2 (constraint "p2chk" check (ff1 > 10) no inherit)
+create table c2 (constraint p2chk check (ff1 > 10) no inherit)
 inherits (p1);
 
 drop table p1 cascade;
@@ -531,9 +489,7 @@ select cast(derived as base) from derived;
 select cast(cast(null as derived) as base);
 
 select
-  cast(cast(cast(row(i, b) as more_derived)
-  as derived)
-  as base)
+  cast(cast(cast(row(i, b) as more_derived) as derived) as base)
 from
   more_derived;
 
@@ -552,13 +508,10 @@ create table p2 (f1 text);
 create function p2text(p2)
 returns text
 language sql
-as $function$
-select $1.f1
-$function$;
+as 'select $1.f1';
 
 create table c1 (f3 int)
-inherits (p1,
-p2);
+inherits (p1, p2);
 
 insert into c1 values (123456789, 'hi', 42);
 
@@ -575,7 +528,7 @@ drop table p1;
 create table ac (aa text);
 
 alter table ac
-  add constraint "ac_check" check (aa is not null);
+  add constraint ac_check check (aa is not null);
 
 create table bc (bb text)
 inherits (ac);
@@ -586,13 +539,9 @@ select
   pgc.contype,
   pgc.conislocal,
   pgc.coninhcount,
-  pg_get_expr(pgc.conbin, pc.oid)
-  as consrc
+  pg_get_expr(pgc.conbin, pc.oid) as consrc
 from
-  pg_class as pc
-  inner join
-    pg_constraint as pgc
-  on pgc.conrelid = pc.oid
+  pg_class as pc inner join pg_constraint as pgc on pgc.conrelid = pc.oid
 where
   pc.relname in ('ac', 'bc')
 order by 1,
@@ -614,13 +563,9 @@ select
   pgc.contype,
   pgc.conislocal,
   pgc.coninhcount,
-  pg_get_expr(pgc.conbin, pc.oid)
-  as consrc
+  pg_get_expr(pgc.conbin, pc.oid) as consrc
 from
-  pg_class as pc
-  inner join
-    pg_constraint as pgc
-  on pgc.conrelid = pc.oid
+  pg_class as pc inner join pg_constraint as pgc on pgc.conrelid = pc.oid
 where
   pc.relname in ('ac', 'bc')
 order by 1,
@@ -635,13 +580,9 @@ select
   pgc.contype,
   pgc.conislocal,
   pgc.coninhcount,
-  pg_get_expr(pgc.conbin, pc.oid)
-  as consrc
+  pg_get_expr(pgc.conbin, pc.oid) as consrc
 from
-  pg_class as pc
-  inner join
-    pg_constraint as pgc
-  on pgc.conrelid = pc.oid
+  pg_class as pc inner join pg_constraint as pgc on pgc.conrelid = pc.oid
 where
   pc.relname in ('ac', 'bc')
 order by 1,
@@ -663,20 +604,16 @@ select
   pgc.contype,
   pgc.conislocal,
   pgc.coninhcount,
-  pg_get_expr(pgc.conbin, pc.oid)
-  as consrc
+  pg_get_expr(pgc.conbin, pc.oid) as consrc
 from
-  pg_class as pc
-  inner join
-    pg_constraint as pgc
-  on pgc.conrelid = pc.oid
+  pg_class as pc inner join pg_constraint as pgc on pgc.conrelid = pc.oid
 where
   pc.relname in ('ac', 'bc')
 order by 1,
   2;
 
 alter table ac
-  add constraint "ac_check" check (aa is not null);
+  add constraint ac_check check (aa is not null);
 
 alter table bc
   no inherit ac;
@@ -687,13 +624,9 @@ select
   pgc.contype,
   pgc.conislocal,
   pgc.coninhcount,
-  pg_get_expr(pgc.conbin, pc.oid)
-  as consrc
+  pg_get_expr(pgc.conbin, pc.oid) as consrc
 from
-  pg_class as pc
-  inner join
-    pg_constraint as pgc
-  on pgc.conrelid = pc.oid
+  pg_class as pc inner join pg_constraint as pgc on pgc.conrelid = pc.oid
 where
   pc.relname in ('ac', 'bc')
 order by 1,
@@ -708,13 +641,9 @@ select
   pgc.contype,
   pgc.conislocal,
   pgc.coninhcount,
-  pg_get_expr(pgc.conbin, pc.oid)
-  as consrc
+  pg_get_expr(pgc.conbin, pc.oid) as consrc
 from
-  pg_class as pc
-  inner join
-    pg_constraint as pgc
-  on pgc.conrelid = pc.oid
+  pg_class as pc inner join pg_constraint as pgc on pgc.conrelid = pc.oid
 where
   pc.relname in ('ac', 'bc')
 order by 1,
@@ -729,13 +658,9 @@ select
   pgc.contype,
   pgc.conislocal,
   pgc.coninhcount,
-  pg_get_expr(pgc.conbin, pc.oid)
-  as consrc
+  pg_get_expr(pgc.conbin, pc.oid) as consrc
 from
-  pg_class as pc
-  inner join
-    pg_constraint as pgc
-  on pgc.conrelid = pc.oid
+  pg_class as pc inner join pg_constraint as pgc on pgc.conrelid = pc.oid
 where
   pc.relname in ('ac', 'bc')
 order by 1,
@@ -745,13 +670,11 @@ drop table bc;
 
 drop table ac;
 
-create table ac (a int constraint "check_a" check (a <> 0));
+create table ac (a int constraint check_a check (a <> 0));
 
 create table bc (
-  a int
-  constraint "check_a" check (a <> 0),
-  b int
-  constraint "check_b" check (b <> 0)
+  a int constraint check_a check (a <> 0),
+  b int constraint check_b check (b <> 0)
 )
 inherits (ac);
 
@@ -761,13 +684,9 @@ select
   pgc.contype,
   pgc.conislocal,
   pgc.coninhcount,
-  pg_get_expr(pgc.conbin, pc.oid)
-  as consrc
+  pg_get_expr(pgc.conbin, pc.oid) as consrc
 from
-  pg_class as pc
-  inner join
-    pg_constraint as pgc
-  on pgc.conrelid = pc.oid
+  pg_class as pc inner join pg_constraint as pgc on pgc.conrelid = pc.oid
 where
   pc.relname in ('ac', 'bc')
 order by 1,
@@ -777,13 +696,12 @@ drop table bc;
 
 drop table ac;
 
-create table ac (a int constraint "check_a" check (a <> 0));
+create table ac (a int constraint check_a check (a <> 0));
 
-create table bc (b int constraint "check_b" check (b <> 0));
+create table bc (b int constraint check_b check (b <> 0));
 
-create table cc (c int constraint "check_c" check (c <> 0))
-inherits (ac,
-bc);
+create table cc (c int constraint check_c check (c <> 0))
+inherits (ac, bc);
 
 select
   pc.relname,
@@ -791,13 +709,9 @@ select
   pgc.contype,
   pgc.conislocal,
   pgc.coninhcount,
-  pg_get_expr(pgc.conbin, pc.oid)
-  as consrc
+  pg_get_expr(pgc.conbin, pc.oid) as consrc
 from
-  pg_class as pc
-  inner join
-    pg_constraint as pgc
-  on pgc.conrelid = pc.oid
+  pg_class as pc inner join pg_constraint as pgc on pgc.conrelid = pc.oid
 where
   pc.relname in ('ac', 'bc', 'cc')
 order by 1,
@@ -812,13 +726,9 @@ select
   pgc.contype,
   pgc.conislocal,
   pgc.coninhcount,
-  pg_get_expr(pgc.conbin, pc.oid)
-  as consrc
+  pg_get_expr(pgc.conbin, pc.oid) as consrc
 from
-  pg_class as pc
-  inner join
-    pg_constraint as pgc
-  on pgc.conrelid = pc.oid
+  pg_class as pc inner join pg_constraint as pgc on pgc.conrelid = pc.oid
 where
   pc.relname in ('ac', 'bc', 'cc')
 order by 1,
@@ -835,13 +745,12 @@ create table p1 (f1 int);
 create table p2 (f2 int);
 
 create table c1 (f3 int)
-inherits (p1,
-p2);
+inherits (p1, p2);
 
 insert into c1 values (1, -1, 2);
 
 alter table p2
-  add constraint "cc" check (f2 > 0);
+  add constraint cc check (f2 > 0);
 
 alter table p2
   add check (f2 > 0);
@@ -856,12 +765,10 @@ alter table p2
 insert into c1 values (1, -1, 2);
 
 create table c2 (f3 int)
-inherits (p1,
-p2);
+inherits (p1, p2);
 
 create table c3 (f4 int)
-inherits (c1,
-c2);
+inherits (c1, c2);
 
 drop table p1 cascade;
 
@@ -879,8 +786,7 @@ alter table pp1
   add column a1 int check (a1 > 0);
 
 create table cc2 (f4 double precision)
-inherits (pp1,
-cc1);
+inherits (pp1, cc1);
 
 alter table pp1
   add column a2 int check (a2 > 0);
@@ -898,8 +804,7 @@ create table inhs1 (
 );
 
 create table inhts (d int)
-inherits (inht1,
-inhs1);
+inherits (inht1, inhs1);
 
 alter table inht1 rename column a to aa;
 
@@ -920,9 +825,7 @@ create table inhtc ()
 inherits (inhtb);
 
 create table inhtd ()
-inherits (inhta,
-inhtb,
-inhtc);
+inherits (inhta, inhtb, inhtc);
 
 alter table inhta
   add column i int,
@@ -937,14 +840,12 @@ create table inht3 (y int)
 inherits (inht1);
 
 create table inht4 (z int)
-inherits (inht2,
-inht3);
+inherits (inht2, inht3);
 
 alter table inht1 rename column aa to aaa;
 
 create table inhts (d int)
-inherits (inht2,
-inhs1);
+inherits (inht2, inhs1);
 
 alter table inht1 rename column aaa to aaaa;
 
@@ -953,16 +854,9 @@ alter table inht1 rename column b to bb;
 with recursive
 r
 as (
-  select
-    cast('inht1' as regclass) as inhrelid
+  select cast('inht1' as regclass) as inhrelid
   union all
-  select
-    c.inhrelid
-  from
-    pg_inherits as c,
-    r
-  where
-    r.inhrelid = c.inhparent
+  select c.inhrelid from pg_inherits as c, r where r.inhrelid = c.inhparent
 )
 select
   cast(a.attrelid as regclass),
@@ -973,7 +867,7 @@ from
   (
     select
       inhrelid,
-      COUNT(*) as expected
+      count(*) as expected
     from
       pg_inherits
     where
@@ -986,8 +880,7 @@ from
   on e.inhrelid = a.attrelid
 where
   not attislocal
-order by cast(cast(a.attrelid as regclass)
-  as name),
+order by cast(cast(a.attrelid as regclass) as name),
   a.attnum;
 
 drop table inht1, inhs1 cascade;
@@ -1027,8 +920,7 @@ drop table test_ex_constraints;
 create table test_primary_constraints (id int primary key);
 
 create table test_foreign_constraints (
-  id1 int
-  references test_primary_constraints (id)
+  id1 int references test_primary_constraints (id)
 );
 
 create table test_foreign_constraints_inh ()
@@ -1049,8 +941,7 @@ insert into inh_fk_1 values (1), (2), (3);
 
 create table inh_fk_2 (
   x int primary key,
-  y int
-  references inh_fk_1 on DELETE cascade
+  y int references inh_fk_1 on delete cascade
 );
 
 insert into inh_fk_2 values (11, 1), (22, 2), (33, 3);
@@ -1074,27 +965,25 @@ create table p1_c1 ()
 inherits (p1);
 
 alter table p1
-  add constraint "inh_check_constraint1" check (f1 > 0);
+  add constraint inh_check_constraint1 check (f1 > 0);
 
 alter table p1_c1
-  add constraint "inh_check_constraint1" check (f1 > 0);
+  add constraint inh_check_constraint1 check (f1 > 0);
 
 alter table p1_c1
-  add constraint "inh_check_constraint2" check (f1 < 10);
+  add constraint inh_check_constraint2 check (f1 < 10);
 
 alter table p1
-  add constraint "inh_check_constraint2" check (f1 < 10);
+  add constraint inh_check_constraint2 check (f1 < 10);
 
-create table p1_c2 (f1 int constraint "inh_check_constraint4" check (f1 < 10))
+create table p1_c2 (f1 int constraint inh_check_constraint4 check (f1 < 10))
 inherits (p1);
 
 create table p1_c3 ()
-inherits (p1,
-p1_c1);
+inherits (p1, p1_c1);
 
 select
-  cast(cast(conrelid as regclass) as text)
-  as relname,
+  cast(cast(conrelid as regclass) as text) as relname,
   conname,
   conislocal,
   coninhcount,
@@ -1119,9 +1008,9 @@ alter table p1_c1
 
 drop table p1, p1_c1;
 
-create table p1 (f1 int constraint "f1_pos" check (f1 > 0));
+create table p1 (f1 int constraint f1_pos check (f1 > 0));
 
-create table p1_c1 (f1 int constraint "f1_pos" check (f1 > 0))
+create table p1_c1 (f1 int constraint f1_pos check (f1 > 0))
 inherits (p1);
 
 alter table p1_c1
@@ -1132,17 +1021,15 @@ alter table p1
 
 drop table p1 cascade;
 
-create table p1 (f1 int constraint "f1_pos" check (f1 > 0));
+create table p1 (f1 int constraint f1_pos check (f1 > 0));
 
-create table p2 (f1 int constraint "f1_pos" check (f1 > 0));
+create table p2 (f1 int constraint f1_pos check (f1 > 0));
 
 create table p1p2_c1 (f1 int)
-inherits (p1,
-p2);
+inherits (p1, p2);
 
-create table p1p2_c2 (f1 int constraint "f1_pos" check (f1 > 0))
-inherits (p1,
-p2);
+create table p1p2_c2 (f1 int constraint f1_pos check (f1 > 0))
+inherits (p1, p2);
 
 alter table p2
   drop constraint f1_pos;
@@ -1152,7 +1039,7 @@ alter table p1
 
 drop table p1, p2 cascade;
 
-create table p1 (f1 int constraint "f1_pos" check (f1 > 0));
+create table p1 (f1 int constraint f1_pos check (f1 > 0));
 
 create table p1_c1 ()
 inherits (p1);
@@ -1161,26 +1048,23 @@ create table p1_c2 ()
 inherits (p1);
 
 create table p1_c1c2 ()
-inherits (p1_c1,
-p1_c2);
+inherits (p1_c1, p1_c2);
 
 alter table p1
   drop constraint f1_pos;
 
 drop table p1 cascade;
 
-create table p1 (f1 int constraint "f1_pos" check (f1 > 0));
+create table p1 (f1 int constraint f1_pos check (f1 > 0));
 
 create table p1_c1 ()
 inherits (p1);
 
-create table p1_c2 (constraint "f1_pos" check (f1 > 0))
+create table p1_c2 (constraint f1_pos check (f1 > 0))
 inherits (p1);
 
 create table p1_c1c2 ()
-inherits (p1_c1,
-p1_c2,
-p1);
+inherits (p1_c1, p1_c2, p1);
 
 alter table p1_c2
   drop constraint f1_pos;
@@ -1202,10 +1086,10 @@ create table invalid_check_con_child ()
 inherits (invalid_check_con);
 
 alter table invalid_check_con_child
-  add constraint "inh_check_constraint" check (f1 > 0) not valid;
+  add constraint inh_check_constraint check (f1 > 0) not valid;
 
 alter table invalid_check_con
-  add constraint "inh_check_constraint" check (f1 > 0);
+  add constraint inh_check_constraint check (f1 > 0);
 
 alter table invalid_check_con_child
   drop constraint inh_check_constraint;
@@ -1213,18 +1097,17 @@ alter table invalid_check_con_child
 insert into invalid_check_con values (0);
 
 alter table invalid_check_con_child
-  add constraint "inh_check_constraint" check (f1 > 0);
+  add constraint inh_check_constraint check (f1 > 0);
 
 alter table invalid_check_con
-  add constraint "inh_check_constraint" check (f1 > 0) not valid;
+  add constraint inh_check_constraint check (f1 > 0) not valid;
 
 insert into invalid_check_con values (0);
 
 insert into invalid_check_con_child values (0);
 
 select
-  cast(cast(conrelid as regclass) as text)
-  as relname,
+  cast(cast(conrelid as regclass) as text) as relname,
   conname,
   convalidated,
   conislocal,
@@ -1237,14 +1120,9 @@ where
 order by 1,
   2;
 
-create temporary table patest0 (id,
-x)
+create temporary table patest0 (id, x)
 as
-  select
-    x,
-    x
-  from
-    generate_series(0, 1000) as x;
+  select x, x from generate_series(0, 1000) as x;
 
 create temporary table patest1 ()
 inherits (patest0);
@@ -1256,11 +1134,11 @@ inherits (patest0);
 
 insert into patest2 select x, x from generate_series(0, 1000) as x;
 
-create index "patest0i" on patest0 using btree (id);
+create index patest0i on patest0 using btree (id);
 
-create index "patest1i" on patest1 using btree (id);
+create index patest1i on patest1 using btree (id);
 
-create index "patest2i" on patest2 using btree (id);
+create index patest2i on patest2 using btree (id);
 
 analyze patest0;
 
@@ -1271,36 +1149,24 @@ analyze patest2;
 select
   *
 from
-  patest0
-  inner join
-    (select f1 from int4_tbl limit 1) as ss
-  on id = f1;
+  patest0 inner join (select f1 from int4_tbl limit 1) as ss on id = f1;
 
 select
   *
 from
-  patest0
-  inner join
-    (select f1 from int4_tbl limit 1) as ss
-  on id = f1;
+  patest0 inner join (select f1 from int4_tbl limit 1) as ss on id = f1;
 
 drop index patest2i;
 
 select
   *
 from
-  patest0
-  inner join
-    (select f1 from int4_tbl limit 1) as ss
-  on id = f1;
+  patest0 inner join (select f1 from int4_tbl limit 1) as ss on id = f1;
 
 select
   *
 from
-  patest0
-  inner join
-    (select f1 from int4_tbl limit 1) as ss
-  on id = f1;
+  patest0 inner join (select f1 from int4_tbl limit 1) as ss on id = f1;
 
 drop table patest0 cascade;
 
@@ -1318,11 +1184,11 @@ inherits (matest0);
 create table matest3 (id int primary key)
 inherits (matest0);
 
-create index "matest0i" on matest0 using btree ((1 - id));
+create index matest0i on matest0 using btree ((1 - id));
 
-create index "matest1i" on matest1 using btree ((1 - id));
+create index matest1i on matest1 using btree ((1 - id));
 
-create index "matest3i" on matest3 using btree ((1 - id));
+create index matest3i on matest3 using btree ((1 - id));
 
 insert into matest1 (name) values ('Test 1');
 
@@ -1342,9 +1208,9 @@ select * from matest0 order by 1 - id;
 
 select * from matest0 order by 1 - id;
 
-select MIN(1 - id) from matest0;
+select min(1 - id) from matest0;
 
-select MIN(1 - id) from matest0;
+select min(1 - id) from matest0;
 
 reset enable_indexscan;
 
@@ -1356,9 +1222,9 @@ select * from matest0 order by 1 - id;
 
 select * from matest0 order by 1 - id;
 
-select MIN(1 - id) from matest0;
+select min(1 - id) from matest0;
 
-select MIN(1 - id) from matest0;
+select min(1 - id) from matest0;
 
 reset enable_seqscan;
 
@@ -1368,9 +1234,7 @@ select
   1 - id as c
 from
   (
-    select id from matest3 as t1
-    union all
-    select id * 2 from matest3 as t2
+    select id from matest3 as t1 union all select id * 2 from matest3 as t2
   )
   as ss
 order by c;
@@ -1379,9 +1243,7 @@ select
   1 - id as c
 from
   (
-    select id from matest3 as t1
-    union all
-    select id * 2 from matest3 as t2
+    select id from matest3 as t1 union all select id * 2 from matest3 as t2
   )
   as ss
 order by c;
@@ -1398,9 +1260,9 @@ create table matest0 (
 create table matest1 ()
 inherits (matest0);
 
-create index "matest0i" on matest0 using btree (b, c);
+create index matest0i on matest0 using btree (b, c);
 
-create index "matest1i" on matest1 using btree (b, c);
+create index matest1i on matest1 using btree (b, c);
 
 set enable_nestloop = off;
 
@@ -1447,12 +1309,7 @@ select thousand, thousand from tenk1
 order by thousand,
   tenthous;
 
-select
-  thousand,
-  tenthous,
-  thousand + tenthous as x
-from
-  tenk1
+select thousand, tenthous, thousand + tenthous as x from tenk1
 union all
 select 42, 42, hundred from tenk1
 order by thousand,
@@ -1460,16 +1317,12 @@ order by thousand,
 
 select thousand, tenthous from tenk1
 union all
-select
-  thousand,
-  cast(random() as int)
-from
-  tenk1
+select thousand, cast(random() as int) from tenk1
 order by thousand,
   tenthous;
 
 select
-  MIN(x)
+  min(x)
 from
   (
     select unique1 as x from tenk1 as a
@@ -1479,20 +1332,12 @@ from
   as s;
 
 select
-  MIN(y)
+  min(y)
 from
   (
-    select
-      unique1 as x,
-      unique1 as y
-    from
-      tenk1 as a
+    select unique1 as x, unique1 as y from tenk1 as a
     union all
-    select
-      unique2 as x,
-      unique2 as y
-    from
-      tenk1 as b
+    select unique2 as x, unique2 as y from tenk1 as b
   )
   as s;
 
@@ -1501,17 +1346,9 @@ select
   y
 from
   (
-    select
-      thousand as x,
-      tenthous as y
-    from
-      tenk1 as a
+    select thousand as x, tenthous as y from tenk1 as a
     union all
-    select
-      unique2 as x,
-      unique2 as y
-    from
-      tenk1 as b
+    select unique2 as x, unique2 as y from tenk1 as b
   )
   as s
 order by x,
@@ -1523,17 +1360,9 @@ select
       f.i
     from
       (
-        (select
-          d + g.i
-        from
-          generate_series(4, 30, 3) as d
-        order by 1)
+        (select d + g.i from generate_series(4, 30, 3) as d order by 1)
         union all
-        (select
-          d + g.i
-        from
-          generate_series(0, 30, 5) as d
-        order by 1)
+        (select d + g.i from generate_series(0, 30, 5) as d order by 1)
       )
       as f (i)
     order by f.i
@@ -1548,17 +1377,9 @@ select
       f.i
     from
       (
-        (select
-          d + g.i
-        from
-          generate_series(4, 30, 3) as d
-        order by 1)
+        (select d + g.i from generate_series(4, 30, 3) as d order by 1)
         union all
-        (select
-          d + g.i
-        from
-          generate_series(0, 30, 5) as d
-        order by 1)
+        (select d + g.i from generate_series(0, 30, 5) as d order by 1)
       )
       as f (i)
     order by f.i
@@ -1591,24 +1412,10 @@ insert into inhpar select x, cast(x as text) from generate_series(1, 5) as x;
 insert into inhcld select cast(x as text), x from generate_series(6, 10) as x;
 
 update inhpar as i
-set (f1, f2) = (
-  select
-    i.f1,
-    i.f2 || '-'
-  from
-    int4_tbl
-  limit 1
-);
+set (f1, f2) = (select i.f1, i.f2 || '-' from int4_tbl limit 1);
 
 update inhpar as i
-set (f1, f2) = (
-  select
-    i.f1,
-    i.f2 || '-'
-  from
-    int4_tbl
-  limit 1
-);
+set (f1, f2) = (select i.f1, i.f2 || '-' from int4_tbl limit 1);
 
 select * from inhpar;
 
@@ -1641,34 +1448,16 @@ alter table inhpar
 insert into inhpar select x, cast(x as text) from generate_series(1, 10) as x;
 
 update inhpar as i
-set (f1, f2) = (
-  select
-    i.f1,
-    i.f2 || '-'
-  from
-    int4_tbl
-  limit 1
-);
+set (f1, f2) = (select i.f1, i.f2 || '-' from int4_tbl limit 1);
 
 update inhpar as i
-set (f1, f2) = (
-  select
-    i.f1,
-    i.f2 || '-'
-  from
-    int4_tbl
-  limit 1
-);
+set (f1, f2) = (select i.f1, i.f2 || '-' from int4_tbl limit 1);
 
 select * from inhpar;
 
 insert into inhpar as i
 values (3), (7)
-on conflict
-(f1)
-do
-update
-set (f1, f2) = (select i.f1, i.f2 || '+');
+on conflict (f1) do update set (f1, f2) = (select i.f1, i.f2 || '+');
 
 select * from inhpar order by f1;
 
@@ -1700,13 +1489,10 @@ create table cc1 (
 inherits (pp1);
 
 create table cc2 (f4 double precision)
-inherits (pp1,
-cc1);
+inherits (pp1, cc1);
 
 create table cc3 ()
-inherits (pp1,
-cc1,
-cc2);
+inherits (pp1, cc1, cc2);
 
 alter table pp1
   alter column f1 set not null;
@@ -1723,7 +1509,7 @@ alter table cc3
 drop table cc3;
 
 alter table cc1
-  add column a2 int constraint "nn" not null;
+  add column a2 int constraint nn not null;
 
 alter table pp1
   alter column f1 set not null;
@@ -1763,8 +1549,7 @@ create table inh_cc1 (
 inherits (inh_pp1);
 
 create table inh_cc2 (f4 double precision)
-inherits (inh_pp1,
-inh_cc1);
+inherits (inh_pp1, inh_cc1);
 
 alter table inh_pp1
   alter column f1 set not null;
@@ -1786,8 +1571,7 @@ create table inh_cc1 (
 inherits (inh_pp1);
 
 create table inh_cc2 (f4 double precision)
-inherits (inh_pp1,
-inh_cc1);
+inherits (inh_pp1, inh_cc1);
 
 alter table inh_pp1
   alter column f1 drop not null;
@@ -1800,21 +1584,19 @@ create table inh_child (i int)
 inherits (inh_parent);
 
 create table inh_grandchild ()
-inherits (inh_parent,
-inh_child);
+inherits (inh_parent, inh_child);
 
 alter table inh_parent
   add column i int not null;
 
 drop table inh_parent, inh_child, inh_grandchild;
 
-create table inh_parent1 (a int constraint "nn" not null);
+create table inh_parent1 (a int constraint nn not null);
 
-create table inh_parent2 (b int constraint "nn" not null);
+create table inh_parent2 (b int constraint nn not null);
 
 create table inh_child1 ()
-inherits (inh_parent1,
-inh_parent2);
+inherits (inh_parent1, inh_parent2);
 
 alter table inh_child2
   no inherit inh_parent2;
@@ -1836,8 +1618,7 @@ create table inh_parent2 (
 );
 
 create table inh_child ()
-inherits (inh_parent1,
-inh_parent2);
+inherits (inh_parent1, inh_parent2);
 
 select
   cast(conrelid as regclass),
@@ -1879,8 +1660,7 @@ select
     from
       pg_attribute
     where
-      attrelid = conrelid and
-      attnum = conkey[1]
+      attrelid = conrelid and attnum = conkey[1]
   ),
   coninhcount,
   conislocal,
@@ -1888,8 +1668,7 @@ select
 from
   pg_constraint
 where
-  contype = 'n' and
-  cast(cast(conrelid as regclass) as text) like 'inh\_nn\_%'
+  contype = 'n' and cast(cast(conrelid as regclass) as text) like 'inh\_nn\_%'
 order by 2,
   1;
 
@@ -2003,16 +1782,13 @@ create table inh_child (a int primary key)
 inherits (inh_parent);
 
 alter table inh_parent
-  add constraint "inh_parent_excl" exclude using btree ((1) with =);
+  add constraint inh_parent_excl exclude using btree ((1) with =);
 
 alter table inh_parent
-  add constraint "inh_parent_uq" unique (a);
+  add constraint inh_parent_uq unique (a);
 
 alter table inh_parent
-  add constraint "inh_parent_fk"
-  foreign key
-  (a)
-  references inh_parent (a);
+  add constraint inh_parent_fk foreign key (a) references inh_parent (a);
 
 create table inh_child2 ()
 inherits (inh_parent);
@@ -2049,8 +1825,7 @@ create table inh_child2 ()
 inherits (inh_parent);
 
 create table inh_child3 ()
-inherits (inh_child1,
-inh_child2);
+inherits (inh_child1, inh_child2);
 
 select
   cast(conrelid as regclass),
@@ -2080,8 +1855,7 @@ create table inh_child (
   f1 int not null,
   f2 text not null
 )
-inherits (inh_parent_1,
-inh_parent_2);
+inherits (inh_parent_1, inh_parent_2);
 
 select
   cast(conrelid as regclass),
@@ -2117,10 +1891,7 @@ create table inh_p4 (
 );
 
 create table inh_multiparent ()
-inherits (inh_p1,
-inh_p2,
-inh_p3,
-inh_p4);
+inherits (inh_p1, inh_p2, inh_p3, inh_p4);
 
 select
   cast(conrelid as regclass),
@@ -2132,8 +1903,7 @@ select
     from
       pg_attribute
     where
-      attrelid = conrelid and
-      attnum = conkey[1]
+      attrelid = conrelid and attnum = conkey[1]
   ),
   coninhcount,
   conislocal
@@ -2152,8 +1922,7 @@ create table inh_multiparent2 (
   a int not null,
   f1 int
 )
-inherits (inh_p3,
-inh_multiparent);
+inherits (inh_p3, inh_multiparent);
 
 select
   cast(conrelid as regclass),
@@ -2165,8 +1934,7 @@ select
     from
       pg_attribute
     where
-      attrelid = conrelid and
-      attnum = conkey[1]
+      attrelid = conrelid and attnum = conkey[1]
   ),
   coninhcount,
   conislocal
@@ -2280,8 +2048,7 @@ create table inh_nn3 ()
 inherits (inh_nn2);
 
 create table inh_nn4 ()
-inherits (inh_nn1,
-inh_nn2);
+inherits (inh_nn1, inh_nn2);
 
 select
   cast(conrelid as regclass),
@@ -2319,10 +2086,7 @@ from
   pg_constraint
 where
   contype = 'n' and
-  cast(cast(conrelid as regclass) as text)
-  in (
-    'inh_nn1', 'inh_nn2', 'inh_nn3'
-  )
+  cast(cast(conrelid as regclass) as text) in ('inh_nn1', 'inh_nn2', 'inh_nn3')
 order by 2,
   1;
 
@@ -2337,20 +2101,14 @@ from
   pg_constraint
 where
   contype = 'n' and
-  cast(cast(conrelid as regclass) as text)
-  in (
-    'inh_nn1', 'inh_nn2', 'inh_nn3'
-  )
+  cast(cast(conrelid as regclass) as text) in ('inh_nn1', 'inh_nn2', 'inh_nn3')
 order by 2,
   1;
 
 drop table inh_nn1, inh_nn2, inh_nn3;
 
 create table inh_nn1 (
-  f1 int
-  check (f1 > 5)
-  primary key
-  references inh_nn1,
+  f1 int check (f1 > 5) primary key references inh_nn1,
   f2 int not null
 );
 
@@ -2365,7 +2123,7 @@ create role regress_bob;
 
 grant all on schema public to regress_alice, regress_bob;
 
-grant REGRESS_ALICE to regress_bob;
+grant regress_alice to regress_bob;
 
 set session authorization regress_alice;
 
@@ -2424,7 +2182,7 @@ drop table inh_perm_parent cascade;
 drop table inh_temp_parent cascade;
 
 create table list_parted (a varchar)
-partition by LIST(a);
+partition by list(a);
 
 create table part_ab_cd partition of list_parted for values in ('ab', 'cd');
 
@@ -2453,7 +2211,7 @@ partition by range(a);
 create table part_1_10
 partition of range_list_parted
 for values from (1) to (10)
-partition by LIST(b);
+partition by list(b);
 
 create table part_1_10_ab partition of part_1_10 for values in ('ab');
 
@@ -2462,7 +2220,7 @@ create table part_1_10_cd partition of part_1_10 for values in ('cd');
 create table part_10_20
 partition of range_list_parted
 for values from (10) to (20)
-partition by LIST(b);
+partition by list(b);
 
 create table part_10_20_ab partition of part_10_20 for values in ('ab');
 
@@ -2471,7 +2229,7 @@ create table part_10_20_cd partition of part_10_20 for values in ('cd');
 create table part_21_30
 partition of range_list_parted
 for values from (21) to (30)
-partition by LIST(b);
+partition by list(b);
 
 create table part_21_30_ab partition of part_21_30 for values in ('ab');
 
@@ -2480,7 +2238,7 @@ create table part_21_30_cd partition of part_21_30 for values in ('cd');
 create table part_40_inf
 partition of range_list_parted
 for values from (40) to (maxvalue)
-partition by LIST(b);
+partition by list(b);
 
 create table part_40_inf_ab partition of part_40_inf for values in ('ab');
 
@@ -2519,11 +2277,7 @@ create table mcrparted_def partition of mcrparted default;
 
 create table mcrparted0
 partition of mcrparted
-for values from (minvalue,
-minvalue,
-minvalue) to (1,
-1,
-1);
+for values from (minvalue, minvalue, minvalue) to (1, 1, 1);
 
 create table mcrparted1
 partition of mcrparted
@@ -2531,35 +2285,19 @@ for values from (1, 1, 1) to (10, 5, 10);
 
 create table mcrparted2
 partition of mcrparted
-for values from (10,
-5,
-10) to (10,
-10,
-10);
+for values from (10, 5, 10) to (10, 10, 10);
 
 create table mcrparted3
 partition of mcrparted
-for values from (11,
-1,
-1) to (20,
-10,
-10);
+for values from (11, 1, 1) to (20, 10, 10);
 
 create table mcrparted4
 partition of mcrparted
-for values from (20,
-10,
-10) to (20,
-20,
-20);
+for values from (20, 10, 10) to (20, 20, 20);
 
 create table mcrparted5
 partition of mcrparted
-for values from (20,
-20,
-20) to (maxvalue,
-maxvalue,
-maxvalue);
+for values from (20, 20, 20) to (maxvalue, maxvalue, maxvalue);
 
 select * from mcrparted where a = 0;
 
@@ -2585,17 +2323,17 @@ create table parted_minmax1
 partition of parted_minmax
 for values from (1) to (10);
 
-create index "parted_minmax1i" on parted_minmax1 using btree (a, b);
+create index parted_minmax1i on parted_minmax1 using btree (a, b);
 
 insert into parted_minmax values (1, '12345');
 
-select MIN(a), MAX(a) from parted_minmax where b = '12345';
+select min(a), max(a) from parted_minmax where b = '12345';
 
-select MIN(a), MAX(a) from parted_minmax where b = '12345';
+select min(a), max(a) from parted_minmax where b = '12345';
 
 drop table parted_minmax;
 
-create index "mcrparted_a_abs_c_idx" on mcrparted using btree (a, (abs(b)), c);
+create index mcrparted_a_abs_c_idx on mcrparted using btree (a, (abs(b)), c);
 
 select * from mcrparted order by a, abs(b), c;
 
@@ -2609,12 +2347,8 @@ drop table mcrparted5;
 
 create table mcrparted5
 partition of mcrparted
-for values from (20,
-20,
-20) to (maxvalue,
-maxvalue,
-maxvalue)
-partition by LIST(a);
+for values from (20, 20, 20) to (maxvalue, maxvalue, maxvalue)
+partition by list(a);
 
 create table mcrparted5a partition of mcrparted5 for values in (20);
 
@@ -2633,7 +2367,7 @@ set enable_bitmapscan = off;
 set enable_sort = off;
 
 create table mclparted (a int)
-partition by LIST(a);
+partition by list(a);
 
 create table mclparted1 partition of mclparted for values in (1);
 
@@ -2697,8 +2431,8 @@ reset enable_bitmapscan;
 
 drop table mcrparted;
 
-create table bool_lp (b boolean)
-partition by LIST(b);
+create table bool_lp (b bool)
+partition by list(b);
 
 create table bool_lp_true partition of bool_lp for values in (true);
 
@@ -2711,34 +2445,26 @@ select * from bool_lp order by b;
 drop table bool_lp;
 
 create table bool_rp (
-  b boolean,
+  b bool,
   a int
 )
 partition by range(b, a);
 
 create table bool_rp_false_1k
 partition of bool_rp
-for values from (false,
-0) to (false,
-1000);
+for values from (false, 0) to (false, 1000);
 
 create table bool_rp_true_1k
 partition of bool_rp
-for values from (true,
-0) to (true,
-1000);
+for values from (true, 0) to (true, 1000);
 
 create table bool_rp_false_2k
 partition of bool_rp
-for values from (false,
-1000) to (false,
-2000);
+for values from (false, 1000) to (false, 2000);
 
 create table bool_rp_true_2k
 partition of bool_rp
-for values from (true,
-1000) to (true,
-2000);
+for values from (true, 1000) to (true, 2000);
 
 create index on bool_rp using btree (b, a);
 
@@ -2780,14 +2506,14 @@ create table permtest_parent (
   b text,
   c text
 )
-partition by LIST(a);
+partition by list(a);
 
 create table permtest_child (
   b text,
   c text,
   a int
 )
-partition by LIST(b);
+partition by list(b);
 
 create table permtest_grandchild (
   c text,
@@ -2819,7 +2545,7 @@ create role regress_no_child_access;
 
 revoke all on table permtest_grandchild from regress_no_child_access;
 
-grant SELECT on table permtest_parent to regress_no_child_access;
+grant select on table permtest_parent to regress_no_child_access;
 
 set session authorization regress_no_child_access;
 
@@ -2843,7 +2569,7 @@ reset session_authorization;
 
 revoke all on table permtest_parent from regress_no_child_access;
 
-grant SELECT (a, c) on table permtest_parent to regress_no_child_access;
+grant select (a, c) on table permtest_parent to regress_no_child_access;
 
 set session authorization regress_no_child_access;
 
@@ -2877,21 +2603,21 @@ create table errtst_parent (
   partid int not null,
   shdata int not null,
   data int not null default 0,
-  constraint "shdata_small" check (shdata < 3)
+  constraint shdata_small check (shdata < 3)
 )
 partition by range(partid);
 
 create table errtst_child_fastdef (
   partid int not null,
   shdata int not null,
-  constraint "shdata_small" check (shdata < 3)
+  constraint shdata_small check (shdata < 3)
 );
 
 create table errtst_child_plaindef (
   partid int not null,
   shdata int not null,
   data int not null default 0,
-  constraint "shdata_small" check (shdata < 3),
+  constraint shdata_small check (shdata < 3),
   check (data < 10)
 );
 
@@ -2899,7 +2625,7 @@ create table errtst_child_reorder (
   data int not null default 0,
   shdata int not null,
   partid int not null,
-  constraint "shdata_small" check (shdata < 3),
+  constraint shdata_small check (shdata < 3),
   check (data < 10)
 );
 
@@ -2907,22 +2633,19 @@ alter table errtst_child_fastdef
   add column data int not null default 0;
 
 alter table errtst_child_fastdef
-  add constraint "errtest_child_fastdef_data_check" check (data < 10);
+  add constraint errtest_child_fastdef_data_check check (data < 10);
 
 alter table errtst_parent
   attach partition
-  errtst_child_fastdef
-  for values from (0) to (10);
+  errtst_child_fastdef for values from (0) to (10);
 
 alter table errtst_parent
   attach partition
-  errtst_child_plaindef
-  for values from (10) to (20);
+  errtst_child_plaindef for values from (10) to (20);
 
 alter table errtst_parent
   attach partition
-  errtst_child_reorder
-  for values from (20) to (30);
+  errtst_child_reorder for values from (20) to (30);
 
 insert into errtst_parent (partid, shdata, data) values ('0', '1', '5');
 
@@ -3021,12 +2744,7 @@ create table tuplesest_tab (
 );
 
 insert into tuplesest_parted
-select
-  i % 200,
-  i % 300,
-  i % 400
-from
-  generate_series(1, 1000) as i;
+select i % 200, i % 300, i % 400 from generate_series(1, 1000) as i;
 
 insert into tuplesest_tab select i, i from generate_series(1, 100) as i;
 
@@ -3039,16 +2757,7 @@ select
 from
   tuplesest_tab
   inner join
-    (
-      select
-        b
-      from
-        tuplesest_parted
-      where
-        c < 100
-      group by b
-    )
-    as sub
+    (select b from tuplesest_parted where c < 100 group by b) as sub
   on tuplesest_tab.a = sub.b;
 
 drop table tuplesest_parted;

@@ -35,36 +35,18 @@ select
   cast(unique1 as oid),
   cast(format('(%s,%s)', tenthous, twenty) as tid),
   (four + 1.0) / (hundred + 1),
-  cast(odd as double precision) / (tenthous + 1),
-  cast(format(
-    '%s:00:%s:00:%s:00',
-    to_hex(odd),
-    to_hex(even),
-    to_hex(hundred)
-  )
-  as macaddr),
-  cast(substr(fipshash(cast(unique1 as text)), 1, 16)
-  as macaddr8),
+  cast(odd as float8) / (tenthous + 1),
+  cast(format('%s:00:%s:00:%s:00', to_hex(odd), to_hex(even), to_hex(hundred)) as macaddr),
+  cast(substr(fipshash(cast(unique1 as text)), 1, 16) as macaddr8),
   cast('10.2.3.4/24' as inet) + tenthous,
   cast('10.2.3/24' as cidr) + tenthous,
   cast('1995-08-15' as date) + tenthous,
-  cast('01:20:30' as time) +
-  thousand * cast('18.5 second' as interval),
-  cast('1942-07-23 03:05:09' as timestamp) +
-  tenthous * cast('36.38 hours' as interval),
-  cast('1972-10-10 03:00'
-  as timestamp with time zone) +
-  thousand * cast('1 hour' as interval),
-  justify_days(
-    justify_hours(
-      tenthous * cast('12 minutes' as interval)
-    )
-  ),
-  cast('01:30:20+02' as time with time zone) +
-  hundred * cast('15 seconds' as interval),
-  cast(tenthous as numeric(36, 30)) * fivethous *
-  even /
-  (hundred + 1),
+  cast('01:20:30' as time) + thousand * cast('18.5 second' as interval),
+  cast('1942-07-23 03:05:09' as timestamp) + tenthous * cast('36.38 hours' as interval),
+  cast('1972-10-10 03:00' as timestamptz) + thousand * cast('1 hour' as interval),
+  justify_days(justify_hours(tenthous * cast('12 minutes' as interval))),
+  cast('01:30:20+02' as timetz) + hundred * cast('15 seconds' as interval),
+  cast(tenthous as numeric(36, 30)) * fivethous * even / (hundred + 1),
   cast(format(
     '%s%s-%s-%s-%s-%s%s%s',
     to_char(tenthous, 'FM0000'),
@@ -77,8 +59,7 @@ select
     to_char(tenthous, 'FM0000')
   )
   as uuid),
-  cast(format('%s/%s%s', odd, even, tenthous)
-  as pg_lsn)
+  cast(format('%s/%s%s', odd, even, tenthous) as pg_lsn)
 from
   tenk1
 order by unique2
@@ -86,36 +67,23 @@ limit 100;
 
 insert into brintest_multi (inetcol, cidrcol)
 select
-  cast('fe80::6e40:8ff:fea9:8c46' as inet) +
-  tenthous,
-  cast('fe80::6e40:8ff:fea9:8c46' as cidr) +
-  tenthous
+  cast('fe80::6e40:8ff:fea9:8c46' as inet) + tenthous,
+  cast('fe80::6e40:8ff:fea9:8c46' as cidr) + tenthous
 from
   tenk1
 order by thousand,
   tenthous
 limit 25;
 
-create index "brinidx_multi"
-on brintest_multi
-using brin
-(
-  int8col
-  int8_minmax_multi_ops(values_per_range = 7)
+create index brinidx_multi on brintest_multi using brin (
+  int8col int8_minmax_multi_ops(values_per_range = 7)
 );
 
-create index "brinidx_multi"
-on brintest_multi
-using brin
-(
-  int8col
-  int8_minmax_multi_ops(values_per_range = 257)
+create index brinidx_multi on brintest_multi using brin (
+  int8col int8_minmax_multi_ops(values_per_range = 257)
 );
 
-create index "brinidx_multi"
-on brintest_multi
-using brin
-(
+create index brinidx_multi on brintest_multi using brin (
   int8col int8_minmax_multi_ops,
   int2col int2_minmax_multi_ops,
   int4col int4_minmax_multi_ops,
@@ -140,10 +108,7 @@ using brin
 
 drop index brinidx_multi;
 
-create index "brinidx_multi"
-on brintest_multi
-using brin
-(
+create index brinidx_multi on brintest_multi using brin (
   int8col int8_minmax_multi_ops,
   int2col int2_minmax_multi_ops,
   int4col int4_minmax_multi_ops,
@@ -179,20 +144,8 @@ create table brinopers_multi (
 
 insert into brinopers_multi
 values
-  (
-    'int2col',
-    'int2',
-    '{>, >=, =, <=, <}',
-    '{0, 0, 800, 999, 999}',
-    '{100, 100, 1, 100, 100}'
-  ),
-  (
-    'int2col',
-    'int4',
-    '{>, >=, =, <=, <}',
-    '{0, 0, 800, 999, 1999}',
-    '{100, 100, 1, 100, 100}'
-  ),
+  ('int2col', 'int2', '{>, >=, =, <=, <}', '{0, 0, 800, 999, 999}', '{100, 100, 1, 100, 100}'),
+  ('int2col', 'int4', '{>, >=, =, <=, <}', '{0, 0, 800, 999, 1999}', '{100, 100, 1, 100, 100}'),
   (
     'int2col',
     'int8',
@@ -200,20 +153,8 @@ values
     '{0, 0, 800, 999, 1428427143}',
     '{100, 100, 1, 100, 100}'
   ),
-  (
-    'int4col',
-    'int2',
-    '{>, >=, =, <=, <}',
-    '{0, 0, 800, 1999, 1999}',
-    '{100, 100, 1, 100, 100}'
-  ),
-  (
-    'int4col',
-    'int4',
-    '{>, >=, =, <=, <}',
-    '{0, 0, 800, 1999, 1999}',
-    '{100, 100, 1, 100, 100}'
-  ),
+  ('int4col', 'int2', '{>, >=, =, <=, <}', '{0, 0, 800, 1999, 1999}', '{100, 100, 1, 100, 100}'),
+  ('int4col', 'int4', '{>, >=, =, <=, <}', '{0, 0, 800, 1999, 1999}', '{100, 100, 1, 100, 100}'),
   (
     'int4col',
     'int8',
@@ -221,20 +162,8 @@ values
     '{0, 0, 800, 1999, 1428427143}',
     '{100, 100, 1, 100, 100}'
   ),
-  (
-    'int8col',
-    'int2',
-    '{>, >=}',
-    '{0, 0}',
-    '{100, 100}'
-  ),
-  (
-    'int8col',
-    'int4',
-    '{>, >=}',
-    '{0, 0}',
-    '{100, 100}'
-  ),
+  ('int8col', 'int2', '{>, >=}', '{0, 0}', '{100, 100}'),
+  ('int8col', 'int4', '{>, >=}', '{0, 0}', '{100, 100}'),
   (
     'int8col',
     'int8',
@@ -242,13 +171,7 @@ values
     '{0, 0, 1257141600, 1428427143, 1428427143}',
     '{100, 100, 1, 100, 100}'
   ),
-  (
-    'oidcol',
-    'oid',
-    '{>, >=, =, <=, <}',
-    '{0, 0, 8800, 9999, 9999}',
-    '{100, 100, 1, 100, 100}'
-  ),
+  ('oidcol', 'oid', '{>, >=, =, <=, <}', '{0, 0, 8800, 9999, 9999}', '{100, 100, 1, 100, 100}'),
   (
     'tidcol',
     'tid',
@@ -270,20 +193,8 @@ values
     '{0.0103093, 0.0103093, 1, 1, 1}',
     '{100, 100, 4, 100, 96}'
   ),
-  (
-    'float8col',
-    'float4',
-    '{>, >=, =, <=, <}',
-    '{0, 0, 0, 1.98, 1.98}',
-    '{99, 100, 1, 100, 100}'
-  ),
-  (
-    'float8col',
-    'float8',
-    '{>, >=, =, <=, <}',
-    '{0, 0, 0, 1.98, 1.98}',
-    '{99, 100, 1, 100, 100}'
-  ),
+  ('float8col', 'float4', '{>, >=, =, <=, <}', '{0, 0, 0, 1.98, 1.98}', '{99, 100, 1, 100, 100}'),
+  ('float8col', 'float8', '{>, >=, =, <=, <}', '{0, 0, 0, 1.98, 1.98}', '{99, 100, 1, 100, 100}'),
   (
     'macaddrcol',
     'macaddr',
@@ -397,8 +308,7 @@ values
     '{100, 100, 1, 100, 100, 25, 100}'
   );
 
-do
-$do$
+do $x$
 DECLARE
 	r record;
 	r2 record;
@@ -477,7 +387,7 @@ BEGIN
 		IF count != r.matches THEN RAISE WARNING 'unexpected number of results % for %', count, r; END IF;
 	END LOOP;
 END;
-$do$;
+$x$;
 
 reset enable_seqscan;
 
@@ -491,36 +401,18 @@ select
   cast(unique1 as oid),
   cast(format('(%s,%s)', tenthous, twenty) as tid),
   (four + 1.0) / (hundred + 1),
-  cast(odd as double precision) / (tenthous + 1),
-  cast(format(
-    '%s:00:%s:00:%s:00',
-    to_hex(odd),
-    to_hex(even),
-    to_hex(hundred)
-  )
-  as macaddr),
-  cast(substr(fipshash(cast(unique1 as text)), 1, 16)
-  as macaddr8),
+  cast(odd as float8) / (tenthous + 1),
+  cast(format('%s:00:%s:00:%s:00', to_hex(odd), to_hex(even), to_hex(hundred)) as macaddr),
+  cast(substr(fipshash(cast(unique1 as text)), 1, 16) as macaddr8),
   cast('10.2.3.4' as inet) + tenthous,
   cast('10.2.3/24' as cidr) + tenthous,
   cast('1995-08-15' as date) + tenthous,
-  cast('01:20:30' as time) +
-  thousand * cast('18.5 second' as interval),
-  cast('1942-07-23 03:05:09' as timestamp) +
-  tenthous * cast('36.38 hours' as interval),
-  cast('1972-10-10 03:00'
-  as timestamp with time zone) +
-  thousand * cast('1 hour' as interval),
-  justify_days(
-    justify_hours(
-      tenthous * cast('12 minutes' as interval)
-    )
-  ),
-  cast('01:30:20' as time with time zone) +
-  hundred * cast('15 seconds' as interval),
-  cast(tenthous as numeric(36, 30)) * fivethous *
-  even /
-  (hundred + 1),
+  cast('01:20:30' as time) + thousand * cast('18.5 second' as interval),
+  cast('1942-07-23 03:05:09' as timestamp) + tenthous * cast('36.38 hours' as interval),
+  cast('1972-10-10 03:00' as timestamptz) + thousand * cast('1 hour' as interval),
+  justify_days(justify_hours(tenthous * cast('12 minutes' as interval))),
+  cast('01:30:20' as timetz) + hundred * cast('15 seconds' as interval),
+  cast(tenthous as numeric(36, 30)) * fivethous * even / (hundred + 1),
   cast(format(
     '%s%s-%s-%s-%s-%s%s%s',
     to_char(tenthous, 'FM0000'),
@@ -533,8 +425,7 @@ select
     to_char(tenthous, 'FM0000')
   )
   as uuid),
-  cast(format('%s/%s%s', odd, even, tenthous)
-  as pg_lsn)
+  cast(format('%s/%s%s', odd, even, tenthous) as pg_lsn)
 from
   tenk1
 order by unique2
@@ -575,26 +466,20 @@ select brin_desummarize_range('brinidx_multi', 0);
 
 select brin_desummarize_range('brinidx_multi', 100000000);
 
-create table brin_large_range (a int);
+create table brin_large_range (a int4);
 
 insert into brin_large_range select i from generate_series(1, 10000) as s (i);
 
-create index "brin_large_range_idx" on brin_large_range using brin (a int4_minmax_multi_ops);
+create index brin_large_range_idx on brin_large_range using brin (a int4_minmax_multi_ops);
 
 drop table brin_large_range;
 
 create table brin_summarize_multi (value int) with (fillfactor = 10, autovacuum_enabled = 'false');
 
-create index "brin_summarize_multi_idx"
-on brin_summarize_multi
-using brin
-(
-  value
-)
+create index brin_summarize_multi_idx on brin_summarize_multi using brin (value)
 with (pages_per_range = 2);
 
-do
-$do$
+do $$
 DECLARE curtid tid;
 BEGIN
   LOOP
@@ -602,7 +487,7 @@ BEGIN
     EXIT WHEN curtid > tid '(2, 0)';
   END LOOP;
 END;
-$do$;
+$$;
 
 select brin_summarize_range('brin_summarize_multi_idx', 0);
 
@@ -623,23 +508,11 @@ create table brin_test_multi (
 
 insert into brin_test_multi select x / 100, x % 100 from generate_series(1, 10000) as x (x);
 
-create index "brin_test_multi_a_idx"
-on brin_test_multi
-using brin
-(
-  a
-)
-with (pages_per_range = 2);
+create index brin_test_multi_a_idx on brin_test_multi using brin (a) with (pages_per_range = 2);
 
-create index "brin_test_multi_b_idx"
-on brin_test_multi
-using brin
-(
-  b
-)
-with (pages_per_range = 2);
+create index brin_test_multi_b_idx on brin_test_multi using brin (b) with (pages_per_range = 2);
 
-vacuum (ANALYZE) brin_test_multi;
+vacuum (analyze) brin_test_multi;
 
 select * from brin_test_multi where a = 1;
 
@@ -658,63 +531,53 @@ select
 from
   generate_series(1, 1000) as s (i);
 
-create index "brin_test_multi_1_idx_1"
-on brin_test_multi_1
-using brin
-(
-  a int4_minmax_multi_ops
-)
+create index brin_test_multi_1_idx_1 on brin_test_multi_1 using brin (a int4_minmax_multi_ops)
 with (pages_per_range = 5);
 
-create index "brin_test_multi_1_idx_2"
-on brin_test_multi_1
-using brin
-(
-  b int8_minmax_multi_ops
-)
+create index brin_test_multi_1_idx_2 on brin_test_multi_1 using brin (b int8_minmax_multi_ops)
 with (pages_per_range = 5);
 
 set enable_seqscan = off;
 
-select COUNT(*) from brin_test_multi_1 where a < 37;
+select count(*) from brin_test_multi_1 where a < 37;
 
-select COUNT(*) from brin_test_multi_1 where a < 113;
+select count(*) from brin_test_multi_1 where a < 113;
 
-select COUNT(*) from brin_test_multi_1 where a <= 177;
+select count(*) from brin_test_multi_1 where a <= 177;
 
-select COUNT(*) from brin_test_multi_1 where a <= 25;
+select count(*) from brin_test_multi_1 where a <= 25;
 
-select COUNT(*) from brin_test_multi_1 where a > 120;
+select count(*) from brin_test_multi_1 where a > 120;
 
-select COUNT(*) from brin_test_multi_1 where a >= 180;
+select count(*) from brin_test_multi_1 where a >= 180;
 
-select COUNT(*) from brin_test_multi_1 where a > 71;
+select count(*) from brin_test_multi_1 where a > 71;
 
-select COUNT(*) from brin_test_multi_1 where a >= 63;
+select count(*) from brin_test_multi_1 where a >= 63;
 
-select COUNT(*) from brin_test_multi_1 where a = 207;
+select count(*) from brin_test_multi_1 where a = 207;
 
-select COUNT(*) from brin_test_multi_1 where a = 177;
+select count(*) from brin_test_multi_1 where a = 177;
 
-select COUNT(*) from brin_test_multi_1 where b < 73;
+select count(*) from brin_test_multi_1 where b < 73;
 
-select COUNT(*) from brin_test_multi_1 where b <= 47;
+select count(*) from brin_test_multi_1 where b <= 47;
 
-select COUNT(*) from brin_test_multi_1 where b < 199;
+select count(*) from brin_test_multi_1 where b < 199;
 
-select COUNT(*) from brin_test_multi_1 where b <= 150;
+select count(*) from brin_test_multi_1 where b <= 150;
 
-select COUNT(*) from brin_test_multi_1 where b > 93;
+select count(*) from brin_test_multi_1 where b > 93;
 
-select COUNT(*) from brin_test_multi_1 where b > 37;
+select count(*) from brin_test_multi_1 where b > 37;
 
-select COUNT(*) from brin_test_multi_1 where b >= 215;
+select count(*) from brin_test_multi_1 where b >= 215;
 
-select COUNT(*) from brin_test_multi_1 where b > 201;
+select count(*) from brin_test_multi_1 where b > 201;
 
-select COUNT(*) from brin_test_multi_1 where b = 88;
+select count(*) from brin_test_multi_1 where b = 88;
 
-select COUNT(*) from brin_test_multi_1 where b = 103;
+select count(*) from brin_test_multi_1 where b = 103;
 
 truncate brin_test_multi_1;
 
@@ -725,45 +588,45 @@ select
 from
   generate_series(1, 1000) as s (i);
 
-select COUNT(*) from brin_test_multi_1 where a < 37;
+select count(*) from brin_test_multi_1 where a < 37;
 
-select COUNT(*) from brin_test_multi_1 where a < 113;
+select count(*) from brin_test_multi_1 where a < 113;
 
-select COUNT(*) from brin_test_multi_1 where a <= 177;
+select count(*) from brin_test_multi_1 where a <= 177;
 
-select COUNT(*) from brin_test_multi_1 where a <= 25;
+select count(*) from brin_test_multi_1 where a <= 25;
 
-select COUNT(*) from brin_test_multi_1 where a > 120;
+select count(*) from brin_test_multi_1 where a > 120;
 
-select COUNT(*) from brin_test_multi_1 where a >= 180;
+select count(*) from brin_test_multi_1 where a >= 180;
 
-select COUNT(*) from brin_test_multi_1 where a > 71;
+select count(*) from brin_test_multi_1 where a > 71;
 
-select COUNT(*) from brin_test_multi_1 where a >= 63;
+select count(*) from brin_test_multi_1 where a >= 63;
 
-select COUNT(*) from brin_test_multi_1 where a = 207;
+select count(*) from brin_test_multi_1 where a = 207;
 
-select COUNT(*) from brin_test_multi_1 where a = 177;
+select count(*) from brin_test_multi_1 where a = 177;
 
-select COUNT(*) from brin_test_multi_1 where b < 73;
+select count(*) from brin_test_multi_1 where b < 73;
 
-select COUNT(*) from brin_test_multi_1 where b <= 47;
+select count(*) from brin_test_multi_1 where b <= 47;
 
-select COUNT(*) from brin_test_multi_1 where b < 199;
+select count(*) from brin_test_multi_1 where b < 199;
 
-select COUNT(*) from brin_test_multi_1 where b <= 150;
+select count(*) from brin_test_multi_1 where b <= 150;
 
-select COUNT(*) from brin_test_multi_1 where b > 93;
+select count(*) from brin_test_multi_1 where b > 93;
 
-select COUNT(*) from brin_test_multi_1 where b > 37;
+select count(*) from brin_test_multi_1 where b > 37;
 
-select COUNT(*) from brin_test_multi_1 where b >= 215;
+select count(*) from brin_test_multi_1 where b >= 215;
 
-select COUNT(*) from brin_test_multi_1 where b > 201;
+select count(*) from brin_test_multi_1 where b > 201;
 
-select COUNT(*) from brin_test_multi_1 where b = 88;
+select count(*) from brin_test_multi_1 where b = 88;
 
-select COUNT(*) from brin_test_multi_1 where b = 103;
+select count(*) from brin_test_multi_1 where b = 103;
 
 drop table brin_test_multi_1;
 
@@ -777,41 +640,30 @@ select
 from
   (
     select
-      ROW_NUMBER() over (order by v) as c,
+      row_number() over (order by v) as c,
       v
     from
-      (
-        select
-          fipshash(cast(i / 13 as text)) as v
-        from
-          generate_series(1, 1000) as s (i)
-      )
-      as foo
+      (select fipshash(cast(i / 13 as text)) as v from generate_series(1, 1000) as s (i)) as foo
   )
   as bar
 order by c + 25 * random();
 
-create index "brin_test_multi_2_idx"
-on brin_test_multi_2
-using brin
-(
-  a uuid_minmax_multi_ops
-)
+create index brin_test_multi_2_idx on brin_test_multi_2 using brin (a uuid_minmax_multi_ops)
 with (pages_per_range = 5);
 
 set enable_seqscan = off;
 
-select COUNT(*) from brin_test_multi_2 where a < '3d914f93-48c9-cc0f-f8a7-9716700b9fcd';
+select count(*) from brin_test_multi_2 where a < '3d914f93-48c9-cc0f-f8a7-9716700b9fcd';
 
-select COUNT(*) from brin_test_multi_2 where a > '3d914f93-48c9-cc0f-f8a7-9716700b9fcd';
+select count(*) from brin_test_multi_2 where a > '3d914f93-48c9-cc0f-f8a7-9716700b9fcd';
 
-select COUNT(*) from brin_test_multi_2 where a <= 'f369cb89-fc62-7e66-8987-007d121ed1ea';
+select count(*) from brin_test_multi_2 where a <= 'f369cb89-fc62-7e66-8987-007d121ed1ea';
 
-select COUNT(*) from brin_test_multi_2 where a >= 'aea92132-c4cb-eb26-3e6a-c2bf6c183b5d';
+select count(*) from brin_test_multi_2 where a >= 'aea92132-c4cb-eb26-3e6a-c2bf6c183b5d';
 
-select COUNT(*) from brin_test_multi_2 where a = '5feceb66-ffc8-6f38-d952-786c6d696c79';
+select count(*) from brin_test_multi_2 where a = '5feceb66-ffc8-6f38-d952-786c6d696c79';
 
-select COUNT(*) from brin_test_multi_2 where a = '86e50149-6586-6131-2a9e-0b35558d84f6';
+select count(*) from brin_test_multi_2 where a = '86e50149-6586-6131-2a9e-0b35558d84f6';
 
 truncate brin_test_multi_2;
 
@@ -821,62 +673,47 @@ select
 from
   (
     select
-      ROW_NUMBER() over (order by v) as c,
+      row_number() over (order by v) as c,
       v
     from
-      (
-        select
-          fipshash(cast(i / 13 as text)) as v
-        from
-          generate_series(1, 1000) as s (i)
-      )
-      as foo
+      (select fipshash(cast(i / 13 as text)) as v from generate_series(1, 1000) as s (i)) as foo
   )
   as bar
 order by c + 25 * random();
 
-select COUNT(*) from brin_test_multi_2 where a < '3d914f93-48c9-cc0f-f8a7-9716700b9fcd';
+select count(*) from brin_test_multi_2 where a < '3d914f93-48c9-cc0f-f8a7-9716700b9fcd';
 
-select COUNT(*) from brin_test_multi_2 where a > '3d914f93-48c9-cc0f-f8a7-9716700b9fcd';
+select count(*) from brin_test_multi_2 where a > '3d914f93-48c9-cc0f-f8a7-9716700b9fcd';
 
-select COUNT(*) from brin_test_multi_2 where a <= 'f369cb89-fc62-7e66-8987-007d121ed1ea';
+select count(*) from brin_test_multi_2 where a <= 'f369cb89-fc62-7e66-8987-007d121ed1ea';
 
-select COUNT(*) from brin_test_multi_2 where a >= 'aea92132-c4cb-eb26-3e6a-c2bf6c183b5d';
+select count(*) from brin_test_multi_2 where a >= 'aea92132-c4cb-eb26-3e6a-c2bf6c183b5d';
 
-select COUNT(*) from brin_test_multi_2 where a = '5feceb66-ffc8-6f38-d952-786c6d696c79';
+select count(*) from brin_test_multi_2 where a = '5feceb66-ffc8-6f38-d952-786c6d696c79';
 
-select COUNT(*) from brin_test_multi_2 where a = '86e50149-6586-6131-2a9e-0b35558d84f6';
+select count(*) from brin_test_multi_2 where a = '86e50149-6586-6131-2a9e-0b35558d84f6';
 
 drop table brin_test_multi_2;
 
 reset enable_seqscan;
 
-create table brin_timestamp_test (a timestamp with time zone);
+create table brin_timestamp_test (a timestamptz);
 
 set datestyle = iso;
 
 insert into brin_timestamp_test
 select
-  cast('4713-01-01 00:00:01 BC'
-  as timestamp with time zone) +
-  cast(i || ' seconds' as interval)
+  cast('4713-01-01 00:00:01 BC' as timestamptz) + cast(i || ' seconds' as interval)
 from
   generate_series(1, 30) as s (i);
 
 insert into brin_timestamp_test
 select
-  cast('294276-12-01 00:00:01'
-  as timestamp with time zone) +
-  cast(i || ' seconds' as interval)
+  cast('294276-12-01 00:00:01' as timestamptz) + cast(i || ' seconds' as interval)
 from
   generate_series(1, 30) as s (i);
 
-create index
-on brin_timestamp_test
-using brin
-(
-  a timestamptz_minmax_multi_ops
-)
+create index on brin_timestamp_test using brin (a timestamptz_minmax_multi_ops)
 with (pages_per_range = 1);
 
 drop table brin_timestamp_test;
@@ -884,24 +721,12 @@ drop table brin_timestamp_test;
 create table brin_date_test (a date);
 
 insert into brin_date_test
-select
-  cast('4713-01-01 BC' as date) + i
-from
-  generate_series(1, 30) as s (i);
+select cast('4713-01-01 BC' as date) + i from generate_series(1, 30) as s (i);
 
 insert into brin_date_test
-select
-  cast('5874897-12-01' as date) + i
-from
-  generate_series(1, 30) as s (i);
+select cast('5874897-12-01' as date) + i from generate_series(1, 30) as s (i);
 
-create index
-on brin_date_test
-using brin
-(
-  a date_minmax_multi_ops
-)
-with (pages_per_range = 1);
+create index on brin_date_test using brin (a date_minmax_multi_ops) with (pages_per_range = 1);
 
 set enable_seqscan = off;
 
@@ -926,12 +751,7 @@ from
   )
   as s (i);
 
-create index
-on brin_timestamp_test
-using brin
-(
-  a timestamp_minmax_multi_ops
-)
+create index on brin_timestamp_test using brin (a timestamp_minmax_multi_ops)
 with (pages_per_range = 1);
 
 set enable_seqscan = off;
@@ -949,18 +769,9 @@ create table brin_date_test (a date);
 insert into brin_date_test values ('-infinity'), ('infinity');
 
 insert into brin_date_test
-select
-  cast('2000-01-01' as date) + i
-from
-  generate_series(1, 40) as s (i);
+select cast('2000-01-01' as date) + i from generate_series(1, 40) as s (i);
 
-create index
-on brin_date_test
-using brin
-(
-  a date_minmax_multi_ops
-)
-with (pages_per_range = 1);
+create index on brin_date_test using brin (a date_minmax_multi_ops) with (pages_per_range = 1);
 
 set enable_seqscan = off;
 
@@ -977,23 +788,12 @@ reset datestyle;
 create table brin_interval_test (a interval);
 
 insert into brin_interval_test
-select
-  cast(i || ' years' as interval)
-from
-  generate_series(-178000000, -177999980) as s (i);
+select cast(i || ' years' as interval) from generate_series(-178000000, -177999980) as s (i);
 
 insert into brin_interval_test
-select
-  cast(i || ' years' as interval)
-from
-  generate_series(177999980, 178000000) as s (i);
+select cast(i || ' years' as interval) from generate_series(177999980, 178000000) as s (i);
 
-create index
-on brin_interval_test
-using brin
-(
-  a interval_minmax_multi_ops
-)
+create index on brin_interval_test using brin (a interval_minmax_multi_ops)
 with (pages_per_range = 1);
 
 set enable_seqscan = off;
@@ -1011,17 +811,9 @@ create table brin_interval_test (a interval);
 insert into brin_interval_test values ('-infinity'), ('infinity');
 
 insert into brin_interval_test
-select
-  cast(i || ' days' as interval)
-from
-  generate_series(100, 140) as s (i);
+select cast(i || ' days' as interval) from generate_series(100, 140) as s (i);
 
-create index
-on brin_interval_test
-using brin
-(
-  a interval_minmax_multi_ops
-)
+create index on brin_interval_test using brin (a interval_minmax_multi_ops)
 with (pages_per_range = 1);
 
 set enable_seqscan = off;

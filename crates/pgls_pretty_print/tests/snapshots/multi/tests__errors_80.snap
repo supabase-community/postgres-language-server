@@ -47,52 +47,52 @@ commit;
 
 create aggregate newavg2 (
   sfunc = int4pl,
-  basetype = int,
-  stype = int,
+  basetype = int4,
+  stype = int4,
   finalfunc = int2um,
   initcond = '0'
 );
 
-create aggregate newcnt1 (sfunc = int4inc, stype = int, initcond = '0');
+create aggregate newcnt1 (sfunc = int4inc, stype = int4, initcond = '0');
 
 drop index nonesuch;
 
 drop aggregate newcnt(nonesuch);
 
-drop aggregate nonesuch(int);
+drop aggregate nonesuch(int4);
 
-drop aggregate newcnt(real);
+drop aggregate newcnt(float4);
 
 drop function nonesuch();
 
 drop type nonesuch;
 
-drop operator === (int, int);
+drop operator === (int4, int4);
 
-drop operator = (nonesuch, int);
+drop operator = (nonesuch, int4);
 
-drop operator = (int, nonesuch);
+drop operator = (int4, nonesuch);
 
 drop rule nonesuch on noplace;
 
 select 1 / 0;
 
-select cast(1 as bigint) / 0;
+select cast(1 as int8) / 0;
 
-select 1 / cast(0 as bigint);
+select 1 / cast(0 as int8);
 
-select cast(1 as smallint) / 0;
+select cast(1 as int2) / 0;
 
-select 1 / cast(0 as smallint);
+select 1 / cast(0 as int2);
 
 select cast(1 as numeric) / 0;
 
 select 1 / cast(0 as numeric);
 
-select cast(1 as double precision) / 0;
+select cast(1 as float8) / 0;
 
-select 1 / cast(0 as double precision);
+select 1 / cast(0 as float8);
 
-select cast(1 as real) / 0;
+select cast(1 as float4) / 0;
 
-select 1 / cast(0 as real);
+select 1 / cast(0 as float4);

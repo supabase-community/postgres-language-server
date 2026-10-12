@@ -6,6 +6,7 @@ use crate::{
 };
 
 use super::node_list::emit_comma_separated_list;
+use super::node_list::emit_parenthesized_list;
 
 pub(super) fn emit_view_stmt(e: &mut EventEmitter, n: &ViewStmt) {
     emit_view_stmt_impl(e, n, true);
@@ -69,9 +70,7 @@ fn emit_view_stmt_impl(e: &mut EventEmitter, n: &ViewStmt, with_semicolon: bool)
         e.indent_start();
         e.token(TokenKind::WITH_KW);
         e.space();
-        e.token(TokenKind::L_PAREN);
-        emit_comma_separated_list(e, &n.options, super::emit_node);
-        e.token(TokenKind::R_PAREN);
+        emit_parenthesized_list(e, &n.options, super::emit_node);
         e.indent_end();
     }
 

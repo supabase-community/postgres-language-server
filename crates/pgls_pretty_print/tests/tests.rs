@@ -153,7 +153,7 @@ fn test_single(fixture: Fixture<&str>) {
 
         // The emitter gets the fixture config, not the default one: an option that decides which
         // tokens exist is read here, before the renderer ever sees the events.
-        let mut emitter = EventEmitter::new(fixture_config.clone());
+        let mut emitter = EventEmitter::new(fixture_config.clone()).with_source(&content);
         emit_node_enum(&ast, &mut emitter);
 
         let mut output = String::new();
@@ -242,7 +242,7 @@ fn test_multi(fixture: Fixture<&str>) {
 
             // The emitter gets the fixture config, not the default one: an option that decides
             // which tokens exist is read here, before the renderer ever sees the events.
-            let mut emitter = EventEmitter::new(fixture_config.clone());
+            let mut emitter = EventEmitter::new(fixture_config.clone()).with_source(trimmed);
             emit_node_enum(&ast, &mut emitter);
 
             let mut output = String::new();

@@ -17,7 +17,7 @@ pub(super) fn emit_create_event_trig_stmt(e: &mut EventEmitter, n: &CreateEventT
     // Trigger name
     if !n.trigname.is_empty() {
         e.space();
-        super::emit_identifier(e, &n.trigname);
+        super::emit_identifier_maybe_quoted(e, &n.trigname);
     }
 
     // ON event_name
@@ -42,8 +42,8 @@ pub(super) fn emit_create_event_trig_stmt(e: &mut EventEmitter, n: &CreateEventT
             }
             // Each when clause is a DefElem with defname=tag and arg=List of values
             if let Some(pgls_query::NodeEnum::DefElem(def_elem)) = when.node.as_ref() {
-                // Emit TAG name (uppercased)
-                e.token(TokenKind::IDENT(def_elem.defname.to_uppercase()));
+                // Emit TAG name
+                super::emit_word(e, &def_elem.defname);
                 e.space();
                 e.token(TokenKind::IN_KW);
                 e.space();

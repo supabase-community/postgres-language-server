@@ -37,9 +37,8 @@ pub(super) fn emit_explain_stmt(e: &mut EventEmitter, n: &ExplainStmt) {
 
 fn emit_explain_option(e: &mut EventEmitter, node: &pgls_query::Node) {
     if let Some(NodeEnum::DefElem(def)) = &node.node {
-        // Emit the option name in uppercase
         if !def.defname.is_empty() {
-            e.token(TokenKind::IDENT(def.defname.to_uppercase()));
+            super::emit_word(e, &def.defname);
         }
 
         // Emit the option value if present (no equals sign for EXPLAIN)

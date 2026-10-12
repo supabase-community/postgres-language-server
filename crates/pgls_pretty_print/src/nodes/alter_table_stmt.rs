@@ -808,7 +808,7 @@ fn emit_alter_table_cmd_impl(e: &mut EventEmitter, cmd: &AlterTableCmd, for_type
             if let Some(ref def) = cmd.def
                 && let Some(NodeEnum::Constraint(c)) = &def.node
             {
-                super::string::emit_identifier(e, &c.conname);
+                super::emit_identifier_maybe_quoted(e, &c.conname);
 
                 // DEFERRABLE or NOT DEFERRABLE
                 if c.deferrable {

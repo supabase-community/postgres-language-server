@@ -103,13 +103,9 @@ select
   *
 from
   onek,
-  (
-    values (147, 'RFAAAA'), (931, 'VJAAAA')
-  )
-  as v (i, j)
+  (values (147, 'RFAAAA'), (931, 'VJAAAA')) as v (i, j)
 where
-  onek.unique1 = v.i and
-  onek.stringu1 = v.j;
+  onek.unique1 = v.i and onek.stringu1 = v.j;
 
 select
   *
@@ -123,13 +119,7 @@ from
             i
           from
             (
-              values
-                (10000),
-                (2),
-                (389),
-                (1000),
-                (2000),
-                ((select 10029))
+              values (10000), (2), (389), (1000), (2000), ((select 10029))
             )
             as foo (i)
           order by i asc
@@ -146,21 +136,12 @@ select
 from
   onek
 where
-  (unique1, ten) in
-  (
-    values
-      (1, 1),
-      (20, 0),
-      (99, 9),
-      (17, 99)
-  )
+  (unique1, ten) in (values (1, 1), (20, 0), (99, 9), (17, 99))
 order by unique1;
 
 values (1, 2), (3, 4 + 4), (7, 77.7);
 
-values (1, 2), (3, 4 + 4), (7, 77.7)
-union all
-select 2 + 2, 57
+values (1, 2), (3, 4 + 4), (7, 77.7) union all select 2 + 2, 57
 union all
 select * from int8_tbl;
 
@@ -184,7 +165,7 @@ select * from foo order by f1 desc;
 
 select * from foo order by f1 desc nulls last;
 
-create index "fooi" on foo using btree (f1);
+create index fooi on foo using btree (f1);
 
 set enable_sort = 'false';
 
@@ -198,7 +179,7 @@ select * from foo order by f1 desc nulls last;
 
 drop index fooi;
 
-create index "fooi" on foo using btree (f1 desc);
+create index fooi on foo using btree (f1 desc);
 
 select * from foo order by f1;
 
@@ -210,7 +191,7 @@ select * from foo order by f1 desc nulls last;
 
 drop index fooi;
 
-create index "fooi" on foo using btree (f1 desc nulls last);
+create index fooi on foo using btree (f1 desc nulls last);
 
 select * from foo order by f1;
 
@@ -260,10 +241,7 @@ select
 from
   onek2
 where
-  (
-    unique2 = 11 or unique1 = 0
-  ) and
-  stringu1 < 'B';
+  (unique2 = 11 or unique1 = 0) and stringu1 < 'B';
 
 select
   unique1,
@@ -271,10 +249,7 @@ select
 from
   onek2
 where
-  (
-    unique2 = 11 or unique1 = 0
-  ) and
-  stringu1 < 'B';
+  (unique2 = 11 or unique1 = 0) and stringu1 < 'B';
 
 select
   unique1,
@@ -282,8 +257,7 @@ select
 from
   onek2
 where
-  (unique2 = 11 and stringu1 < 'B') or
-  unique1 = 0;
+  (unique2 = 11 and stringu1 < 'B') or unique1 = 0;
 
 select
   unique1,
@@ -291,8 +265,7 @@ select
 from
   onek2
 where
-  (unique2 = 11 and stringu1 < 'B') or
-  unique1 = 0;
+  (unique2 = 11 and stringu1 < 'B') or unique1 = 0;
 
 select 1 as x order by x;
 
@@ -300,9 +273,7 @@ create function sillysrf(int)
 returns setof int
 language sql
 immutable
-as $function$
-values (1),(10),(2),($1)
-$function$;
+as 'values (1),(10),(2),($1)';
 
 select sillysrf(42);
 
@@ -318,12 +289,12 @@ create table list_parted_tbl (
   a int,
   b int
 )
-partition by LIST(a);
+partition by list(a);
 
 create table list_parted_tbl1
 partition of list_parted_tbl
 for values in (1)
-partition by LIST(b);
+partition by list(b);
 
 select * from list_parted_tbl;
 

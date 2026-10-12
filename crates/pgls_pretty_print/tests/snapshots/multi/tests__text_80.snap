@@ -4,13 +4,11 @@ input_file: crates/pgls_pretty_print/tests/data/multi/text.sql
 snapshot_kind: text
 ---
 select
-  cast('this is a text string' as text) =
-  cast('this is a text string' as text)
+  cast('this is a text string' as text) = cast('this is a text string' as text)
   as "true";
 
 select
-  cast('this is a text string' as text) =
-  cast('this is a text strin' as text)
+  cast('this is a text string' as text) = cast('this is a text strin' as text)
   as "false";
 
 select * from text_tbl;
@@ -136,10 +134,7 @@ select format('%2$s, %1$s', variadic array[1, 2]);
 select format('Hello', variadic cast(null as int[]));
 
 select
-  format(
-    string_agg('%s', ','),
-    variadic array_agg(i)
-  )
+  format(string_agg('%s', ','), variadic array_agg(i))
 from
   generate_series(1, 200) as g (i);
 

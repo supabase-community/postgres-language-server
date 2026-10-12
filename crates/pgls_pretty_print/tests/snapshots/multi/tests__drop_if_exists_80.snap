@@ -26,7 +26,7 @@ drop index test_index_exists;
 
 drop index if exists test_index_exists;
 
-create index "test_index_exists" on test_exists using btree (a);
+create index test_index_exists on test_exists using btree (a);
 
 drop index if exists test_index_exists;
 
@@ -46,7 +46,7 @@ drop schema test_schema_exists;
 
 drop schema if exists test_schema_exists;
 
-create schema "test_schema_exists";
+create schema test_schema_exists;
 
 drop schema if exists test_schema_exists;
 
@@ -160,9 +160,9 @@ drop operator @#@ (int, int);
 
 drop operator if exists @#@ (int, int);
 
-create operator @#@ (LEFTARG = bigint, RIGHTARG = bigint, PROCEDURE = int8xor);
+create operator @#@ (leftarg = int8, rightarg = int8, procedure = int8xor);
 
-drop operator @#@ (bigint, bigint);
+drop operator @#@ (int8, int8);
 
 drop language test_language_exists;
 
@@ -207,9 +207,7 @@ drop rule if exists test_rule_exists on no_such_schema.no_such_table;
 create rule test_rule_exists
 as on insert to test_exists
 do instead
-  insert into test_exists
-  values
-    (new.a, new.b || cast(new.a as text));;
+  insert into test_exists values (new.a, new.b || cast(new.a as text));;
 
 drop rule test_rule_exists on test_exists;
 
@@ -282,9 +280,7 @@ drop operator if exists no_such_schema.+ (int, int);
 drop operator if exists + (no_such_type, no_such_type);
 
 drop operator if exists
-  + (
-    no_such_schema.no_such_type,
-    no_such_schema.no_such_type);
+  + (no_such_schema.no_such_type, no_such_schema.no_such_type);
 
 drop operator if exists # (none, no_such_schema.no_such_type);
 
@@ -315,16 +311,12 @@ drop view if exists no_such_schema.foo;
 create function test_ambiguous_funcname(int)
 returns int
 language sql
-as $function$
-select $1;
-$function$;
+as $$ select $1; $$;
 
 create function test_ambiguous_funcname(text)
 returns text
 language sql
-as $function$
-select $1;
-$function$;
+as $$ select $1; $$;
 
 drop function test_ambiguous_funcname;
 
@@ -336,15 +328,11 @@ drop function test_ambiguous_funcname(text);
 
 create procedure test_ambiguous_procname(int)
 language plpgsql
-as $procedure$
-begin end;
-$procedure$;
+as $$ begin end; $$;
 
 create procedure test_ambiguous_procname(text)
 language plpgsql
-as $procedure$
-begin end;
-$procedure$;
+as $$ begin end; $$;
 
 drop procedure test_ambiguous_procname;
 
@@ -356,10 +344,10 @@ drop procedure test_ambiguous_procname(int);
 
 drop procedure test_ambiguous_procname(text);
 
-drop database test_database_exists (FORCE);
+drop database test_database_exists (force);
 
 drop database test_database_exists;
 
-drop database if exists test_database_exists (FORCE);
+drop database if exists test_database_exists (force);
 
 drop database if exists test_database_exists;

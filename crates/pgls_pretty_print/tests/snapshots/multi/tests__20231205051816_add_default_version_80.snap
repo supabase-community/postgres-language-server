@@ -4,12 +4,10 @@ input_file: crates/pgls_pretty_print/tests/data/multi/20231205051816_add_default
 ---
 alter table app.packages
   add column default_version_struct app.semver
-    not null
-    default app.text_to_semver('0.0.0'),
+      not null
+      default app.text_to_semver('0.0.0'),
   add column default_version text
-    generated always as (app.semver_to_text(
-      default_version_struct
-    )) stored;
+      generated always as (app.semver_to_text(default_version_struct)) stored;
 
 update app.packages
 set default_version_struct = app.text_to_semver(pp.latest_version)
@@ -46,35 +44,39 @@ from
   )
   as newest_ver;
 
-grant INSERT (partial_name,
-handle,
-control_description,
-control_relocatable,
-control_requires,
-default_version_struct)
+grant insert (
+  partial_name,
+  handle,
+  control_description,
+  control_relocatable,
+  control_requires,
+  default_version_struct
+)
 on table app.packages
 to authenticated;
 
-grant UPDATE (control_description,
-control_relocatable,
-control_requires,
-default_version_struct)
+grant update (
+  control_description,
+  control_relocatable,
+  control_requires,
+  default_version_struct
+)
 on table app.packages
 to authenticated;
 
-drop function public.publish_package(app.valid_name, varchar, boolean, text[]);
+drop function public.publish_package(app.valid_name, varchar, bool, text[]);
 
 create or replace function
 public.publish_package(
   package_name app.valid_name,
   package_description varchar(1000),
-  relocatable boolean default false,
+  relocatable bool default false,
   requires text[] default '{}',
   default_version text default null
 )
 returns void
 language plpgsql
-as $function$
+as $$
 declare
     account app.accounts = account from app.accounts account where id = auth.uid();
     require text;
@@ -108,4 +110,4 @@ begin
         control_requires = excluded.control_requires,
         default_version_struct = excluded.default_version_struct;
 end;
-$function$;
+$$;

@@ -9,7 +9,7 @@ create table idxpart (
 )
 partition by range(a);
 
-create index "idxpart_idx" on idxpart using btree (a);
+create index idxpart_idx on idxpart using btree (a);
 
 select relhassubclass from pg_class where relname = 'idxpart_idx';
 
@@ -23,7 +23,7 @@ create table idxpart2 partition of idxpart for values from (10) to (100) partiti
 
 create table idxpart21 partition of idxpart2 for values from (0) to (100);
 
-create index "idxpart_idx" on only idxpart using btree (a);
+create index idxpart_idx on only idxpart using btree (a);
 
 select relhassubclass from pg_class where relname = 'idxpart_idx';
 
@@ -37,10 +37,7 @@ select
   relhassubclass,
   cast(inhparent as regclass)
 from
-  pg_class
-  left outer join
-    pg_index as ix
-  on indexrelid = oid
+  pg_class left outer join pg_index as ix on indexrelid = oid
   left outer join
     pg_inherits
   on ix.indexrelid = inhrelid
@@ -83,7 +80,7 @@ partition by range(a);
 
 create table idxpart1 partition of idxpart for values from (minvalue) to (maxvalue);
 
-create index "partidx_abc_idx" on idxpart using btree (a, b, c);
+create index partidx_abc_idx on idxpart using btree (a, b, c);
 
 insert into idxpart (a, b, c) select i, i, i from generate_series(1, 50) as i;
 
@@ -99,9 +96,9 @@ create table idxpart (
 )
 partition by range(a);
 
-create index "idxparti" on idxpart using btree (a);
+create index idxparti on idxpart using btree (a);
 
-create index "idxparti2" on idxpart using btree (b, c);
+create index idxparti2 on idxpart using btree (b, c);
 
 create table idxpart1 (like idxpart);
 
@@ -109,9 +106,9 @@ alter table idxpart
   attach partition
   idxpart1 for values from (0) to (10);
 
-create index "idxpart_c" on only idxpart using btree (c);
+create index idxpart_c on only idxpart using btree (c);
 
-create index "idxpart1_c" on idxpart1 using btree (c);
+create index idxpart1_c on idxpart1 using btree (c);
 
 alter table idxpart_c
   attach partition
@@ -154,10 +151,7 @@ select
   relhassubclass,
   cast(inhparent as regclass)
 from
-  pg_class
-  left outer join
-    pg_index as ix
-  on indexrelid = oid
+  pg_class left outer join pg_index as ix on indexrelid = oid
   left outer join
     pg_inherits
   on ix.indexrelid = inhrelid
@@ -213,23 +207,15 @@ partition by range(a, b);
 
 create table idxpart1 partition of idxpart for values from (0, 0) to (10, 10);
 
-create index "idxpart_a_b_idx" on only idxpart using btree (a, b);
+create index idxpart_a_b_idx on only idxpart using btree (a, b);
 
-create index "idxpart1_a_b_idx" on idxpart1 using btree (a, b);
+create index idxpart1_a_b_idx on idxpart1 using btree (a, b);
 
-create index "idxpart1_tst1" on idxpart1 using btree (b, a);
+create index idxpart1_tst1 on idxpart1 using btree (b, a);
 
-create index "idxpart1_tst2" on idxpart1 using hash (a);
+create index idxpart1_tst2 on idxpart1 using hash (a);
 
-create index "idxpart1_tst3"
-on idxpart1
-using btree
-(
-  a,
-  b
-)
-where
-  a > 10;
+create index idxpart1_tst3 on idxpart1 using btree (a, b) where a > 10;
 
 alter index idxpart
   attach partition
@@ -267,7 +253,7 @@ alter index idxpart_a_b_idx
   attach partition
   idxpart1_a_b_idx;
 
-create index "idxpart1_2_a_b" on idxpart1 using btree (a, b);
+create index idxpart1_2_a_b on idxpart1 using btree (a, b);
 
 alter index idxpart_a_b_idx
   attach partition
@@ -296,14 +282,7 @@ create table idxpart1 (
 
 create index on idxpart1 using hash (a);
 
-create index
-on idxpart1
-using btree
-(
-  a
-)
-where
-  b > 1;
+create index on idxpart1 using btree (a) where b > 1;
 
 create index on idxpart1 using btree ((a + 0));
 
@@ -339,10 +318,7 @@ select
   cast(indrelid as regclass),
   cast(inhparent as regclass)
 from
-  pg_index as idx
-  left outer join
-    pg_inherits as inh
-  on idx.indexrelid = inh.inhrelid
+  pg_index as idx left outer join pg_inherits as inh on idx.indexrelid = inh.inhrelid
 where
   cast(cast(indexrelid as regclass) as text) like 'idxpart%'
 order by cast(cast(indexrelid as regclass) as text) collate "C";
@@ -356,10 +332,7 @@ select
   cast(indrelid as regclass),
   cast(inhparent as regclass)
 from
-  pg_index as idx
-  left outer join
-    pg_inherits as inh
-  on idx.indexrelid = inh.inhrelid
+  pg_index as idx left outer join pg_inherits as inh on idx.indexrelid = inh.inhrelid
 where
   cast(cast(indexrelid as regclass) as text) like 'idxpart%'
 order by cast(cast(indexrelid as regclass) as text) collate "C";
@@ -380,25 +353,22 @@ create table idxpart (
   a int,
   b int,
   c text,
-  d boolean
+  d bool
 )
 partition by range(a);
 
-create index "idxparti" on idxpart using btree (a);
+create index idxparti on idxpart using btree (a);
 
-create index "idxparti2" on idxpart using btree (b, c);
+create index idxparti2 on idxpart using btree (b, c);
 
-create table idxpart1 (like idxpart including INDEXES);
+create table idxpart1 (like idxpart including indexes);
 
 select
   relname,
   relkind,
   cast(inhparent as regclass)
 from
-  pg_class
-  left outer join
-    pg_index as ix
-  on indexrelid = oid
+  pg_class left outer join pg_index as ix on indexrelid = oid
   left outer join
     pg_inherits
   on ix.indexrelid = inhrelid
@@ -415,10 +385,7 @@ select
   relkind,
   cast(inhparent as regclass)
 from
-  pg_class
-  left outer join
-    pg_index as ix
-  on indexrelid = oid
+  pg_class left outer join pg_index as ix on indexrelid = oid
   left outer join
     pg_inherits
   on ix.indexrelid = inhrelid
@@ -426,24 +393,14 @@ where
   relname like 'idxpart%'
 order by relname;
 
-create index
-on idxpart1
-using btree
-(
-  (a + b)
-)
-where
-  d = true;
+create index on idxpart1 using btree ((a + b)) where d = true;
 
 select
   relname,
   relkind,
   cast(inhparent as regclass)
 from
-  pg_class
-  left outer join
-    pg_index as ix
-  on indexrelid = oid
+  pg_class left outer join pg_index as ix on indexrelid = oid
   left outer join
     pg_inherits
   on ix.indexrelid = inhrelid
@@ -451,24 +408,14 @@ where
   relname like 'idxpart%'
 order by relname;
 
-create index "idxparti3"
-on idxpart
-using btree
-(
-  (a + b)
-)
-where
-  d = true;
+create index idxparti3 on idxpart using btree ((a + b)) where d = true;
 
 select
   relname,
   relkind,
   cast(inhparent as regclass)
 from
-  pg_class
-  left outer join
-    pg_index as ix
-  on indexrelid = oid
+  pg_class left outer join pg_index as ix on indexrelid = oid
   left outer join
     pg_inherits
   on ix.indexrelid = inhrelid
@@ -712,10 +659,7 @@ select
   cast(inhparent as regclass) as parent,
   pg_get_indexdef as childdef
 from
-  pg_class
-  left outer join
-    pg_inherits
-  on inhrelid = oid,
+  pg_class left outer join pg_inherits on inhrelid = oid,
   lateral pg_get_indexdef(pg_class.oid)
 where
   relkind in ('i', 'I') and relname like 'idxpart%'
@@ -751,10 +695,7 @@ select
   cast(inhparent as regclass) as parent,
   pg_get_indexdef as childdef
 from
-  pg_class
-  left outer join
-    pg_inherits
-  on inhrelid = oid,
+  pg_class left outer join pg_inherits on inhrelid = oid,
   lateral pg_get_indexdef(pg_class.oid)
 where
   relkind in ('i', 'I') and relname like 'idxpart%'
@@ -799,47 +740,19 @@ alter table idxpart
   attach partition
   idxpart1 for values from (0) to (1000);
 
-create index "idxpart_1_idx" on only idxpart using btree (b, a);
+create index idxpart_1_idx on only idxpart using btree (b, a);
 
-create index "idxpart1_1_idx" on idxpart1 using btree (b, a);
+create index idxpart1_1_idx on idxpart1 using btree (b, a);
 
-create index "idxpart1_1b_idx" on idxpart1 using btree (b);
+create index idxpart1_1b_idx on idxpart1 using btree (b);
 
-create index "idxpart_2_idx"
-on only idxpart
-using btree
-(
-  (b + a)
-)
-where
-  a > 1;
+create index idxpart_2_idx on only idxpart using btree ((b + a)) where a > 1;
 
-create index "idxpart1_2_idx"
-on idxpart1
-using btree
-(
-  (b + a)
-)
-where
-  a > 1;
+create index idxpart1_2_idx on idxpart1 using btree ((b + a)) where a > 1;
 
-create index "idxpart1_2b_idx"
-on idxpart1
-using btree
-(
-  (a + b)
-)
-where
-  a > 1;
+create index idxpart1_2b_idx on idxpart1 using btree ((a + b)) where a > 1;
 
-create index "idxpart1_2c_idx"
-on idxpart1
-using btree
-(
-  (b + a)
-)
-where
-  b > 1;
+create index idxpart1_2c_idx on idxpart1 using btree ((b + a)) where b > 1;
 
 alter index idxpart_1_idx
   attach partition
@@ -866,10 +779,7 @@ select
   cast(inhparent as regclass) as parent,
   pg_get_indexdef as childdef
 from
-  pg_class
-  left outer join
-    pg_inherits
-  on inhrelid = oid,
+  pg_class left outer join pg_inherits on inhrelid = oid,
   lateral pg_get_indexdef(pg_class.oid)
 where
   relkind in ('i', 'I') and relname like 'idxpart%'
@@ -884,9 +794,9 @@ create table idxpart (
 )
 partition by range(a);
 
-create index "idxparti" on idxpart using btree (a);
+create index idxparti on idxpart using btree (a);
 
-create index "idxparti2" on idxpart using btree (c, b);
+create index idxparti2 on idxpart using btree (c, b);
 
 create table idxpart1 (
   c text,
@@ -916,10 +826,7 @@ select
   c.relname,
   pg_get_indexdef(indexrelid)
 from
-  pg_class as c
-  inner join
-    pg_index as i
-  on c.oid = i.indexrelid
+  pg_class as c inner join pg_index as i on c.oid = i.indexrelid
 where
   cast(cast(indrelid as regclass) as text) like 'idxpart%'
 order by cast(cast(indexrelid as regclass) as text) collate "C";
@@ -978,10 +885,7 @@ select
   c.relname,
   pg_get_indexdef(indexrelid)
 from
-  pg_class as c
-  inner join
-    pg_index as i
-  on c.oid = i.indexrelid
+  pg_class as c inner join pg_index as i on c.oid = i.indexrelid
 where
   cast(cast(indrelid as regclass) as text) like 'idxpart%'
 order by cast(cast(indexrelid as regclass) as text) collate "C";
@@ -1026,14 +930,7 @@ create table idxpart2 (
   a int
 );
 
-create index
-on idxpart2
-using btree
-(
-  a
-)
-where
-  b > 1000;
+create index on idxpart2 using btree (a) where b > 1000;
 
 alter table idxpart2
   drop column col1,
@@ -1043,23 +940,13 @@ alter table idxpart
   attach partition
   idxpart2 for values from (1000) to (2000);
 
-create index
-on idxpart
-using btree
-(
-  a
-)
-where
-  b > 1000;
+create index on idxpart using btree (a) where b > 1000;
 
 select
   c.relname,
   pg_get_indexdef(indexrelid)
 from
-  pg_class as c
-  inner join
-    pg_index as i
-  on c.oid = i.indexrelid
+  pg_class as c inner join pg_index as i on c.oid = i.indexrelid
 where
   cast(cast(indrelid as regclass) as text) like 'idxpart%'
 order by cast(cast(indexrelid as regclass) as text) collate "C";
@@ -1100,8 +987,7 @@ select
 from
   pg_attribute
 where
-  cast(cast(attrelid as regclass) as text) like 'idxpart%' and
-  attnum > 0
+  cast(cast(attrelid as regclass) as text) like 'idxpart%' and attnum > 0
 order by cast(attrelid as regclass),
   attnum;
 
@@ -1141,8 +1027,7 @@ select
 from
   pg_attribute
 where
-  cast(cast(attrelid as regclass) as text) like 'idxpart%' and
-  attnum > 0
+  cast(cast(attrelid as regclass) as text) like 'idxpart%' and attnum > 0
 order by cast(attrelid as regclass),
   attnum;
 
@@ -1497,11 +1382,11 @@ order by cast(cast(conrelid as regclass) as text),
 drop table idxpart;
 
 create table idxpart (i int)
-partition by HASH(i);
+partition by hash(i);
 
-create table idxpart0 partition of idxpart (i) for values with (MODULUS 2, REMAINDER 0);
+create table idxpart0 partition of idxpart (i) for values with (modulus 2, remainder 0);
 
-create table idxpart1 partition of idxpart (i) for values with (MODULUS 2, REMAINDER 1);
+create table idxpart1 partition of idxpart (i) for values with (modulus 2, remainder 1);
 
 alter table idxpart0
   add primary key (i);
@@ -1520,10 +1405,7 @@ select
   connoinherit,
   convalidated
 from
-  pg_index as idx
-  left outer join
-    pg_inherits as inh
-  on idx.indexrelid = inh.inhrelid
+  pg_index as idx left outer join pg_inherits as inh on idx.indexrelid = inh.inhrelid
   left outer join
     pg_constraint as con
   on idx.indexrelid = con.conindid
@@ -1555,10 +1437,7 @@ select
   connoinherit,
   convalidated
 from
-  pg_index as idx
-  left outer join
-    pg_inherits as inh
-  on idx.indexrelid = inh.inhrelid
+  pg_index as idx left outer join pg_inherits as inh on idx.indexrelid = inh.inhrelid
   left outer join
     pg_constraint as con
   on idx.indexrelid = con.conindid
@@ -1640,10 +1519,7 @@ select
   connoinherit,
   convalidated
 from
-  pg_index as idx
-  left outer join
-    pg_inherits as inh
-  on idx.indexrelid = inh.inhrelid
+  pg_index as idx left outer join pg_inherits as inh on idx.indexrelid = inh.inhrelid
   left outer join
     pg_constraint as con
   on idx.indexrelid = con.conindid
@@ -1666,10 +1542,7 @@ select
   connoinherit,
   convalidated
 from
-  pg_index as idx
-  left outer join
-    pg_inherits as inh
-  on idx.indexrelid = inh.inhrelid
+  pg_index as idx left outer join pg_inherits as inh on idx.indexrelid = inh.inhrelid
   left outer join
     pg_constraint as con
   on idx.indexrelid = con.conindid
@@ -1737,10 +1610,7 @@ select
   connoinherit,
   convalidated
 from
-  pg_index as idx
-  left outer join
-    pg_inherits as inh
-  on idx.indexrelid = inh.inhrelid
+  pg_index as idx left outer join pg_inherits as inh on idx.indexrelid = inh.inhrelid
   left outer join
     pg_constraint as con
   on idx.indexrelid = con.conindid
@@ -1830,19 +1700,19 @@ create table idxpart1 partition of idxpart for values from (0) to (100000);
 
 set enable_seqscan = off;
 
-create index "idxpart_brin" on idxpart using brin (b);
+create index idxpart_brin on idxpart using brin (b);
 
 select * from idxpart where b = 'abcd';
 
 drop index idxpart_brin;
 
-create index "idxpart_spgist" on idxpart using spgist (b);
+create index idxpart_spgist on idxpart using spgist (b);
 
 select * from idxpart where b = 'abcd';
 
 drop index idxpart_spgist;
 
-create index "idxpart_gin" on idxpart using gin (c);
+create index idxpart_gin on idxpart using gin (c);
 
 select * from idxpart where c @> array[42];
 
@@ -1901,7 +1771,7 @@ alter table idxpart
   attach partition
   idxpart3 for values from (1000) to (2000);
 
-create schema "regress_indexing";
+create schema regress_indexing;
 
 set search_path to regress_indexing;
 
@@ -1950,7 +1820,7 @@ create table covidxpart (
   a int,
   b int
 )
-partition by LIST(a);
+partition by list(a);
 
 create unique index on covidxpart using btree (a) include (b);
 
@@ -1999,7 +1869,7 @@ insert into covidxpart values (4, 1);
 create unique index on covidxpart using btree (b) include (a);
 
 create table parted_pk_detach_test (a int primary key)
-partition by LIST(a);
+partition by list(a);
 
 create table parted_pk_detach_test1 partition of parted_pk_detach_test for values in (1);
 
@@ -2016,7 +1886,7 @@ alter table parted_pk_detach_test1
 drop table parted_pk_detach_test, parted_pk_detach_test1;
 
 create table parted_uniq_detach_test (a int unique)
-partition by LIST(a);
+partition by list(a);
 
 create table parted_uniq_detach_test1 partition of parted_uniq_detach_test for values in (1);
 
@@ -2037,17 +1907,17 @@ create table parted_index_col_drop (
   b int,
   c int
 )
-partition by LIST(a);
+partition by list(a);
 
 create table parted_index_col_drop1
 partition of parted_index_col_drop
 for values in (1)
-partition by LIST(a);
+partition by list(a);
 
 create table parted_index_col_drop2
 partition of parted_index_col_drop
 for values in (2)
-partition by LIST(a);
+partition by list(a);
 
 create table parted_index_col_drop11 partition of parted_index_col_drop1 for values in (1);
 
@@ -2065,7 +1935,7 @@ drop table parted_index_col_drop;
 create table parted_inval_tab (a int)
 partition by range(a);
 
-create index "parted_inval_idx" on parted_inval_tab using btree (a);
+create index parted_inval_idx on parted_inval_tab using btree (a);
 
 create table parted_inval_tab_1 (a int)
 partition by range(a);
@@ -2074,7 +1944,7 @@ create table parted_inval_tab_1_1 partition of parted_inval_tab_1 for values fro
 
 create table parted_inval_tab_1_2 partition of parted_inval_tab_1 for values from (10) to (20);
 
-create index "parted_inval_ixd_1" on only parted_inval_tab_1 using btree (a);
+create index parted_inval_ixd_1 on only parted_inval_tab_1 using btree (a);
 
 alter table parted_inval_tab
   attach partition
@@ -2086,10 +1956,7 @@ select
   cast(indrelid as regclass),
   cast(inhparent as regclass)
 from
-  pg_index as idx
-  left outer join
-    pg_inherits as inh
-  on idx.indexrelid = inh.inhrelid
+  pg_index as idx left outer join pg_inherits as inh on idx.indexrelid = inh.inhrelid
 where
   cast(cast(indexrelid as regclass) as text) like 'parted_inval%'
 order by cast(cast(indexrelid as regclass) as text) collate "C";
@@ -2118,9 +1985,9 @@ create table parted_isvalid_tab_12 partition of parted_isvalid_tab_1 for values 
 
 insert into parted_isvalid_tab_11 values (1, 0);
 
-create index concurrently "parted_isvalid_idx_11" on parted_isvalid_tab_11 using btree ((a / b));
+create index concurrently parted_isvalid_idx_11 on parted_isvalid_tab_11 using btree ((a / b));
 
-create index "parted_isvalid_idx" on parted_isvalid_tab using btree ((a / b));
+create index parted_isvalid_idx on parted_isvalid_tab using btree ((a / b));
 
 select
   cast(indexrelid as regclass),
@@ -2128,10 +1995,7 @@ select
   cast(indrelid as regclass),
   cast(inhparent as regclass)
 from
-  pg_index as idx
-  left outer join
-    pg_inherits as inh
-  on idx.indexrelid = inh.inhrelid
+  pg_index as idx left outer join pg_inherits as inh on idx.indexrelid = inh.inhrelid
 where
   cast(cast(indexrelid as regclass) as text) like 'parted_isvalid%'
 order by cast(cast(indexrelid as regclass) as text) collate "C";
@@ -2150,14 +2014,14 @@ partition by range(id);
 
 create table parted_replica_tab_11 partition of parted_replica_tab_1 for values from (1) to (5);
 
-create unique index "parted_replica_idx" on only parted_replica_tab using btree (id);
+create unique index parted_replica_idx on only parted_replica_tab using btree (id);
 
-create unique index "parted_replica_idx_1" on only parted_replica_tab_1 using btree (id);
+create unique index parted_replica_idx_1 on only parted_replica_tab_1 using btree (id);
 
 alter table only parted_replica_tab_1
   replica identity using index parted_replica_idx_1;
 
-create unique index "parted_replica_idx_11" on parted_replica_tab_11 using btree (id);
+create unique index parted_replica_idx_11 on parted_replica_tab_11 using btree (id);
 
 select
   cast(indexrelid as regclass),
@@ -2166,10 +2030,7 @@ select
   cast(indrelid as regclass),
   cast(inhparent as regclass)
 from
-  pg_index as idx
-  left outer join
-    pg_inherits as inh
-  on idx.indexrelid = inh.inhrelid
+  pg_index as idx left outer join pg_inherits as inh on idx.indexrelid = inh.inhrelid
 where
   cast(cast(indexrelid as regclass) as text) like 'parted_replica%'
 order by cast(cast(indexrelid as regclass) as text) collate "C";
@@ -2185,10 +2046,7 @@ select
   cast(indrelid as regclass),
   cast(inhparent as regclass)
 from
-  pg_index as idx
-  left outer join
-    pg_inherits as inh
-  on idx.indexrelid = inh.inhrelid
+  pg_index as idx left outer join pg_inherits as inh on idx.indexrelid = inh.inhrelid
 where
   cast(cast(indexrelid as regclass) as text) like 'parted_replica%'
 order by cast(cast(indexrelid as regclass) as text) collate "C";
@@ -2209,10 +2067,7 @@ select
   cast(indrelid as regclass),
   cast(inhparent as regclass)
 from
-  pg_index as idx
-  left outer join
-    pg_inherits as inh
-  on idx.indexrelid = inh.inhrelid
+  pg_index as idx left outer join pg_inherits as inh on idx.indexrelid = inh.inhrelid
 where
   cast(cast(indexrelid as regclass) as text) like 'parted_replica%'
 order by cast(cast(indexrelid as regclass) as text) collate "C";
@@ -2222,31 +2077,22 @@ drop table parted_replica_tab;
 create table test_pg_index_toast_table (a int);
 
 create or replace function test_pg_index_toast_func(a int, b int[])
-returns boolean
+returns bool
 language sql
 immutable
-as $function$
-select true
-$function$;
+as $$ select true $$;
 
 select array_agg(n) as b from generate_series(1, 10000) as n;
 
-create index
-concurrently "test_pg_index_toast_index"
-on test_pg_index_toast_table
-using btree
-(
+create index concurrently test_pg_index_toast_index on test_pg_index_toast_table using btree (
   (test_pg_index_toast_func(a, 'b'))
 );
 
-reindex (CONCURRENTLY) index test_pg_index_toast_index;
+reindex (concurrently) index test_pg_index_toast_index;
 
 drop index concurrently test_pg_index_toast_index;
 
-create index "test_pg_index_toast_index"
-on test_pg_index_toast_table
-using btree
-(
+create index test_pg_index_toast_index on test_pg_index_toast_table using btree (
   (test_pg_index_toast_func(a, 'b'))
 );
 

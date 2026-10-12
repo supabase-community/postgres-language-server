@@ -2,18 +2,14 @@
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/20220117142142_security_definitions.sql
 ---
-grant INSERT (handle,
-is_organization)
+grant insert (handle, is_organization)
 on table app.handle_registry
 to authenticated;
 
 alter table app.accounts
   enable row level security;
 
-grant UPDATE (avatar_id,
-display_name,
-bio,
-contact_email)
+grant update (avatar_id, display_name, bio, contact_email)
 on table app.accounts
 to authenticated;
 
@@ -34,18 +30,11 @@ using (true);
 alter table app.organizations
   enable row level security;
 
-grant INSERT (handle,
-avatar_id,
-display_name,
-bio,
-contact_email)
+grant insert (handle, avatar_id, display_name, bio, contact_email)
 on table app.organizations
 to authenticated;
 
-grant UPDATE (avatar_id,
-display_name,
-bio,
-contact_email)
+grant update (avatar_id, display_name, bio, contact_email)
 on table app.organizations
 to authenticated;
 
@@ -61,10 +50,7 @@ on app.organizations
 as permissive
 for update
 to authenticated
-using (app.is_organization_maintainer(
-  auth.uid(),
-  id
-));
+using (app.is_organization_maintainer(auth.uid(), id));
 
 create policy organizations_select_policy
 on app.organizations
@@ -76,33 +62,25 @@ using (true);
 alter table app.members
   enable row level security;
 
-grant INSERT (organization_id,
-account_id,
-role)
+grant insert (organization_id, account_id, role)
 on table app.members
 to authenticated;
 
-grant DELETE on table app.members to authenticated;
+grant delete on table app.members to authenticated;
 
 create policy members_insert_policy
 on app.members
 as permissive
 for insert
 to authenticated
-with check (app.is_organization_maintainer(
-  auth.uid(),
-  organization_id
-));
+with check (app.is_organization_maintainer(auth.uid(), organization_id));
 
 create policy members_delete_policy
 on app.members
 as permissive
 for delete
 to authenticated
-using (app.is_organization_maintainer(
-  auth.uid(),
-  organization_id
-));
+using (app.is_organization_maintainer(auth.uid(), organization_id));
 
 create policy members_select_policy
 on app.members
@@ -114,17 +92,14 @@ using (true);
 alter table app.packages
   enable row level security;
 
-grant INSERT (partial_name, handle) on table app.packages to authenticated;
+grant insert (partial_name, handle) on table app.packages to authenticated;
 
 create policy package_insert_policy
 on app.packages
 as permissive
 for insert
 to authenticated
-with check (app.is_handle_maintainer(
-  auth.uid(),
-  handle
-));
+with check (app.is_handle_maintainer(auth.uid(), handle));
 
 create policy packages_select_policy
 on app.packages
@@ -136,10 +111,7 @@ using (true);
 alter table app.package_versions
   enable row level security;
 
-grant INSERT (package_id,
-version_struct,
-sql,
-description_md)
+grant insert (package_id, version_struct, sql, description_md)
 on table app.package_versions
 to authenticated;
 
@@ -148,20 +120,14 @@ on app.package_versions
 as permissive
 for insert
 to authenticated
-with check (app.is_package_maintainer(
-  auth.uid(),
-  package_id
-));
+with check (app.is_package_maintainer(auth.uid(), package_id));
 
 create policy package_versions_update_policy
 on app.package_versions
 as permissive
 for update
 to authenticated
-using (app.is_package_maintainer(
-  auth.uid(),
-  package_id
-));
+using (app.is_package_maintainer(auth.uid(), package_id));
 
 create policy package_versions_select_policy
 on app.package_versions
@@ -173,10 +139,7 @@ using (true);
 alter table app.package_upgrades
   enable row level security;
 
-grant INSERT (package_id,
-from_version_struct,
-to_version_struct,
-sql)
+grant insert (package_id, from_version_struct, to_version_struct, sql)
 on table app.package_upgrades
 to authenticated;
 
@@ -185,20 +148,14 @@ on app.package_upgrades
 as permissive
 for insert
 to authenticated
-with check (app.is_package_maintainer(
-  auth.uid(),
-  package_id
-));
+with check (app.is_package_maintainer(auth.uid(), package_id));
 
 create policy package_upgrades_update_policy
 on app.package_upgrades
 as permissive
 for update
 to authenticated
-using (app.is_package_maintainer(
-  auth.uid(),
-  package_id
-));
+using (app.is_package_maintainer(auth.uid(), package_id));
 
 create policy package_upgrades_select_policy
 on app.package_upgrades
@@ -214,8 +171,7 @@ for insert
 to authenticated
 with check (app.is_handle_maintainer(
   auth.uid(),
-  cast((string_to_array(name, cast('-' as text)))[1]
-  as app.valid_name)
+  cast((string_to_array(name, cast('-' as text)))[1] as app.valid_name)
 ));
 
 create policy storage_objects_select_policy

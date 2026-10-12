@@ -25,9 +25,9 @@ create table tid_tab (a int);
 
 insert into tid_tab values (1), (2);
 
-select MIN(ctid) from tid_tab;
+select min(ctid) from tid_tab;
 
-select MAX(ctid) from tid_tab;
+select max(ctid) from tid_tab;
 
 truncate tid_tab;
 
@@ -51,7 +51,7 @@ select currtid2(cast('tid_seq' as text), cast('(0,1)' as tid));
 
 drop sequence tid_seq;
 
-create index "tid_ind" on tid_tab using btree (a);
+create index tid_ind on tid_tab using btree (a);
 
 select currtid2(cast('tid_ind' as text), cast('(0,1)' as tid));
 

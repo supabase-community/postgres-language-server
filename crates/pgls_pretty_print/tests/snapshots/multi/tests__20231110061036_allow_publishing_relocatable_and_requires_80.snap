@@ -116,17 +116,17 @@ values
   ('test_parser'),
   ('wal2json');
 
-grant INSERT (partial_name,
-handle,
-control_description,
-control_relocatable,
-control_requires)
+grant insert (
+  partial_name,
+  handle,
+  control_description,
+  control_relocatable,
+  control_requires
+)
 on table app.packages
 to authenticated;
 
-grant UPDATE (control_description,
-control_relocatable,
-control_requires)
+grant update (control_description, control_relocatable, control_requires)
 on table app.packages
 to authenticated;
 
@@ -134,12 +134,12 @@ create or replace function
 public.publish_package(
   package_name app.valid_name,
   package_description varchar(1000),
-  relocatable boolean default false,
+  relocatable bool default false,
   requires text[] default '{}'
 )
 returns void
 language plpgsql
-as $function$
+as $$
 declare
     account app.accounts = account from app.accounts account where id = auth.uid();
     require text;
@@ -168,4 +168,4 @@ begin
         control_relocatable = excluded.control_relocatable,
         control_requires = excluded.control_requires;
 end;
-$function$;
+$$;

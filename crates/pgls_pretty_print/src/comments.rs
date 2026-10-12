@@ -16,6 +16,9 @@ pub struct Comment {
     /// before a closing parenthesis. They fall back to the previous node for attachment, but must
     /// still start on their own line rather than being appended to that node.
     pub own_line: bool,
+    /// True for a line comment written after a list comma, `a, -- note`. It stays after the comma
+    /// rather than moving onto the next item's line.
+    pub after_separator: bool,
 }
 
 /// Comments of a statement, indexed by the node they surround.
@@ -70,10 +73,17 @@ pub fn attach_comments(sql: &str, ast: &NodeEnum) -> AttachedComments {
             continue;
         }
 
-        let leads = !source_comment.comment.line_comment
-            || line_prefix.trim().is_empty()
-            || ends_with_clause_header(line_prefix)
-            || ends_with_structural_separator(line_prefix);
+        // A line comment ending a line after a comma belongs to the item before the comma. The
+        // emitter holds it back until that comma is written.
+        source_comment.comment.after_separator = source_comment.comment.line_comment
+            && !source_comment.comment.own_line
+            && line_prefix.trim_end().ends_with(',');
+
+        let leads = !source_comment.comment.after_separator
+            && (!source_comment.comment.line_comment
+                || line_prefix.trim().is_empty()
+                || ends_with_clause_header(line_prefix)
+                || ends_with_structural_separator(line_prefix));
 
         let next = locations
             .iter()
@@ -207,6 +217,7 @@ fn collect_comments(sql: &str) -> Vec<SourceComment> {
                     text,
                     line_comment,
                     own_line: false,
+                    after_separator: false,
                 },
             })
         })
@@ -313,21 +324,31 @@ mod tests {
     }
 
     #[test]
-    fn a_comment_after_a_separator_attaches_to_the_node_that_follows_it() {
-        let sql = "SELECT a, -- temporarily omit b\nb FROM t";
+    fn a_line_comment_after_a_comma_stays_with_the_item_before_it() {
+        let sql = "SELECT a, -- the first column\nb FROM t";
+        let attached = attach_comments(sql, &parse(sql));
+
+        assert!(attached.unattached.is_empty());
+        assert!(attached.leading_by_location.is_empty());
+        assert_eq!(attached.trailing_by_location.len(), 1);
+
+        let comments = attached
+            .trailing_by_location
+            .values()
+            .next()
+            .expect("one entry");
+        assert_eq!(comments[0].text, "-- the first column");
+        assert!(comments[0].after_separator);
+    }
+
+    #[test]
+    fn a_comment_after_an_opening_parenthesis_attaches_to_the_node_that_follows_it() {
+        let sql = "SELECT f( -- the argument\na) FROM t";
         let attached = attach_comments(sql, &parse(sql));
 
         assert!(attached.unattached.is_empty());
         assert_eq!(attached.leading_by_location.len(), 1);
         assert!(attached.trailing_by_location.is_empty());
-
-        let comments = attached
-            .leading_by_location
-            .values()
-            .next()
-            .expect("one entry");
-        assert_eq!(comments[0].text, "-- temporarily omit b");
-        assert!(comments[0].line_comment);
     }
 
     #[test]

@@ -49,14 +49,9 @@ create table distinct_on_tbl (
 );
 
 insert into distinct_on_tbl
-select
-  i % 10,
-  i % 10,
-  i % 10
-from
-  generate_series(1, 1000) as i;
+select i % 10, i % 10, i % 10 from generate_series(1, 1000) as i;
 
-create index "distinct_on_tbl_x_y_idx" on distinct_on_tbl using btree (x, y);
+create index distinct_on_tbl_x_y_idx on distinct_on_tbl using btree (x, y);
 
 analyze distinct_on_tbl;
 
@@ -70,19 +65,13 @@ select distinct on (y, x)
   x,
   y
 from
-  (
-    select * from distinct_on_tbl order by x
-  )
-  as s;
+  (select * from distinct_on_tbl order by x) as s;
 
 select distinct on (y, x)
   x,
   y
 from
-  (
-    select * from distinct_on_tbl order by x
-  )
-  as s;
+  (select * from distinct_on_tbl order by x) as s;
 
 select distinct on (y, x) x, y from distinct_on_tbl order by y;
 
@@ -92,16 +81,7 @@ select distinct on (y, x)
   x,
   y
 from
-  (
-    select
-      *
-    from
-      distinct_on_tbl
-    order by x,
-      z,
-      y
-  )
-  as s
+  (select * from distinct_on_tbl order by x, z, y) as s
 order by y,
   x,
   z;
@@ -110,16 +90,7 @@ select distinct on (y, x)
   x,
   y
 from
-  (
-    select
-      *
-    from
-      distinct_on_tbl
-    order by x,
-      z,
-      y
-  )
-  as s
+  (select * from distinct_on_tbl order by x, z, y) as s
 order by y,
   x,
   z;

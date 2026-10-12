@@ -30,15 +30,9 @@ select
   attname,
   cast(atttypid as regtype)
 from
-  pg_class as c
-  inner join
-    pg_attribute as a
-  on c.oid = attrelid
+  pg_class as c inner join pg_attribute as a on c.oid = attrelid
 where
-  c.oid < 16384 and
-  reltoastrelid = 0 and
-  relkind = 'r' and
-  attstorage <> 'p'
+  c.oid < 16384 and reltoastrelid = 0 and relkind = 'r' and attstorage <> 'p'
 order by 1,
   2;
 
@@ -49,19 +43,13 @@ from
 where
   relnamespace = cast('pg_catalog' as regnamespace) and
   relkind = 'r' and
-  not pg_class.oid in
-  (
-    select indrelid from pg_index where indisprimary
-  )
+  not pg_class.oid in (select indrelid from pg_index where indisprimary)
 order by 1;
 
 select
   relname
 from
-  pg_class as c
-  inner join
-    pg_index as i
-  on c.oid = i.indexrelid
+  pg_class as c inner join pg_index as i on c.oid = i.indexrelid
 where
   relnamespace = cast('pg_catalog' as regnamespace) and
   relkind = 'i' and

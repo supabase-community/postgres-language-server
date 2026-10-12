@@ -27,10 +27,7 @@ select pg_input_is_valid('<?xml version="1.0" standalone="y"?><foo/>', 'xml');
 select
   message
 from
-  pg_input_error_info(
-    '<?xml version="1.0" standalone="y"?><foo/>',
-    'xml'
-  );
+  pg_input_error_info('<?xml version="1.0" standalone="y"?><foo/>', 'xml');
 
 select xmlcomment('test');
 
@@ -43,9 +40,11 @@ select xmlcomment('--test');
 select xmlcomment('te st');
 
 select
-  xmlconcat(xmlcomment('hello'),
-  xmlelement(name qux, 'foo'),
-  xmlcomment('world'));
+  xmlconcat(
+    xmlcomment('hello'),
+    xmlelement(name qux, 'foo'),
+    xmlcomment('world')
+  );
 
 select xmlconcat('hello', 'you');
 
@@ -56,17 +55,18 @@ select xmlconcat('bad', '<syntax');
 select xmlconcat('<foo/>', null, '<?xml version="1.1" standalone="no"?><bar/>');
 
 select
-  xmlconcat('<?xml version="1.1"?><foo/>',
-  null,
-  '<?xml version="1.1" standalone="no"?><bar/>');
+  xmlconcat(
+    '<?xml version="1.1"?><foo/>',
+    null,
+    '<?xml version="1.1" standalone="no"?><bar/>'
+  );
 
 select xmlconcat(null);
 
 select xmlconcat(null, null);
 
 select
-  xmlelement(name element, xmlattributes(1 as one,
-  'deuce' as two), 'content');
+  xmlelement(name element, xmlattributes(1 as one, 'deuce' as two), 'content');
 
 select xmlelement(name element, xmlattributes('unnamed and wrong'));
 
@@ -99,15 +99,18 @@ select xmlelement(name foo, cast('bar' as bytea));
 select xmlelement(name foo, xmlattributes(true as bar));
 
 select
-  xmlelement(name foo, xmlattributes(cast('2009-04-09 00:24:37' as timestamp)
-  as bar));
+  xmlelement(name foo, xmlattributes(
+    cast('2009-04-09 00:24:37' as timestamp) as bar
+  ));
 
 select
   xmlelement(name foo, xmlattributes(cast('infinity' as timestamp) as bar));
 
 select
-  xmlelement(name foo, xmlattributes('<>&"''' as funny,
-  cast('b<a/>r' as xml) as funnier));
+  xmlelement(name foo, xmlattributes(
+    '<>&"''' as funny,
+    cast('b<a/>r' as xml) as funnier
+  ));
 
 select xmlparse(content '');
 
@@ -178,7 +181,8 @@ select
   as xml), version no value, standalone yes);
 
 select
-  xmlroot(xmlroot(cast('<foo/>' as xml), version '1.0'), version '1.1', standalone no);
+  xmlroot(xmlroot(cast('<foo/>'
+  as xml), version '1.0'), version '1.1', standalone no);
 
 select
   xmlroot('<?xml version="1.1" standalone="yes"?><foo/>', version no value, standalone no);
@@ -190,83 +194,85 @@ select
   xmlroot('<?xml version="1.1" standalone="yes"?><foo/>', version no value);
 
 select
-  xmlroot(xmlelement(name gazonk, xmlattributes('val' as name,
-  1 + 1 as num), xmlelement(name qux, 'foo')), version '1.0', standalone yes);
+  xmlroot(xmlelement(name gazonk, xmlattributes(
+    'val' as name,
+    1 + 1 as num
+  ), xmlelement(name qux, 'foo')), version '1.0', standalone yes);
 
-select XMLSERIALIZE(CONTENT data as varchar(20)) from xmltest;
+select xmlserialize(content data as varchar(20)) from xmltest;
 
-select XMLSERIALIZE(CONTENT 'good' as char(10));
+select xmlserialize(content 'good' as char(10));
 
-select XMLSERIALIZE(DOCUMENT 'bad' as text);
-
-select
-  XMLSERIALIZE(DOCUMENT '<foo><bar><val x="y">42</val></bar></foo>' as text INDENT);
-
-select
-  XMLSERIALIZE(CONTENT '<foo><bar><val x="y">42</val></bar></foo>' as text INDENT);
+select xmlserialize(document 'bad' as text);
 
 select
-  XMLSERIALIZE(DOCUMENT '<foo><bar><val x="y">42</val></bar></foo>' as text);
+  xmlserialize(document '<foo><bar><val x="y">42</val></bar></foo>' as text indent);
 
 select
-  XMLSERIALIZE(CONTENT '<foo><bar><val x="y">42</val></bar></foo>' as text);
+  xmlserialize(content '<foo><bar><val x="y">42</val></bar></foo>' as text indent);
 
 select
-  XMLSERIALIZE(DOCUMENT '<foo>73</foo><bar><val x="y">42</val></bar>' as text INDENT);
+  xmlserialize(document '<foo><bar><val x="y">42</val></bar></foo>' as text);
 
 select
-  XMLSERIALIZE(CONTENT '<foo>73</foo><bar><val x="y">42</val></bar>' as text INDENT);
+  xmlserialize(content '<foo><bar><val x="y">42</val></bar></foo>' as text);
 
 select
-  XMLSERIALIZE(DOCUMENT 'text node<foo>73</foo>text node<bar><val x="y">42</val></bar>' as text INDENT);
+  xmlserialize(document '<foo>73</foo><bar><val x="y">42</val></bar>' as text indent);
 
 select
-  XMLSERIALIZE(CONTENT 'text node<foo>73</foo>text node<bar><val x="y">42</val></bar>' as text INDENT);
+  xmlserialize(content '<foo>73</foo><bar><val x="y">42</val></bar>' as text indent);
 
 select
-  XMLSERIALIZE(DOCUMENT '<foo><bar><val x="y">42</val><val x="y">text node<val>73</val></val></bar></foo>' as text INDENT);
+  xmlserialize(document 'text node<foo>73</foo>text node<bar><val x="y">42</val></bar>' as text indent);
 
 select
-  XMLSERIALIZE(CONTENT '<foo><bar><val x="y">42</val><val x="y">text node<val>73</val></val></bar></foo>' as text INDENT);
-
-select XMLSERIALIZE(DOCUMENT '' as text INDENT);
-
-select XMLSERIALIZE(CONTENT '' as text INDENT);
-
-select XMLSERIALIZE(DOCUMENT '  ' as text INDENT);
-
-select XMLSERIALIZE(CONTENT '  ' as text INDENT);
-
-select XMLSERIALIZE(DOCUMENT null as text INDENT);
-
-select XMLSERIALIZE(CONTENT null as text INDENT);
+  xmlserialize(content 'text node<foo>73</foo>text node<bar><val x="y">42</val></bar>' as text indent);
 
 select
-  XMLSERIALIZE(DOCUMENT '<?xml version="1.0" encoding="UTF-8"?><foo><bar><val>73</val></bar></foo>' as text INDENT);
+  xmlserialize(document '<foo><bar><val x="y">42</val><val x="y">text node<val>73</val></val></bar></foo>' as text indent);
 
 select
-  XMLSERIALIZE(CONTENT '<?xml version="1.0" encoding="UTF-8"?><foo><bar><val>73</val></bar></foo>' as text INDENT);
+  xmlserialize(content '<foo><bar><val x="y">42</val><val x="y">text node<val>73</val></val></bar></foo>' as text indent);
 
-select XMLSERIALIZE(DOCUMENT '<!DOCTYPE a><a/>' as text INDENT);
+select xmlserialize(document '' as text indent);
 
-select XMLSERIALIZE(CONTENT '<!DOCTYPE a><a/>' as text INDENT);
+select xmlserialize(content '' as text indent);
 
-select XMLSERIALIZE(DOCUMENT '<foo><bar></bar></foo>' as text INDENT);
+select xmlserialize(document '  ' as text indent);
 
-select XMLSERIALIZE(CONTENT '<foo><bar></bar></foo>' as text INDENT);
+select xmlserialize(content '  ' as text indent);
 
-select
-  XMLSERIALIZE(DOCUMENT '<foo><bar><val x="y">42</val></bar></foo>' as text) =
-  XMLSERIALIZE(DOCUMENT '<foo><bar><val x="y">42</val></bar></foo>' as text);
+select xmlserialize(document null as text indent);
 
-select
-  XMLSERIALIZE(CONTENT '<foo><bar><val x="y">42</val></bar></foo>' as text) =
-  XMLSERIALIZE(CONTENT '<foo><bar><val x="y">42</val></bar></foo>' as text);
-
-select XMLSERIALIZE(DOCUMENT '<foo>   <bar></bar>    </foo>' as text INDENT);
+select xmlserialize(content null as text indent);
 
 select
-  XMLSERIALIZE(CONTENT 'text node<foo>    <bar></bar>   </foo>' as text INDENT);
+  xmlserialize(document '<?xml version="1.0" encoding="UTF-8"?><foo><bar><val>73</val></bar></foo>' as text indent);
+
+select
+  xmlserialize(content '<?xml version="1.0" encoding="UTF-8"?><foo><bar><val>73</val></bar></foo>' as text indent);
+
+select xmlserialize(document '<!DOCTYPE a><a/>' as text indent);
+
+select xmlserialize(content '<!DOCTYPE a><a/>' as text indent);
+
+select xmlserialize(document '<foo><bar></bar></foo>' as text indent);
+
+select xmlserialize(content '<foo><bar></bar></foo>' as text indent);
+
+select
+  xmlserialize(document '<foo><bar><val x="y">42</val></bar></foo>' as text) =
+  xmlserialize(document '<foo><bar><val x="y">42</val></bar></foo>' as text);
+
+select
+  xmlserialize(content '<foo><bar><val x="y">42</val></bar></foo>' as text) =
+  xmlserialize(content '<foo><bar><val x="y">42</val></bar></foo>' as text);
+
+select xmlserialize(document '<foo>   <bar></bar>    </foo>' as text indent);
+
+select
+  xmlserialize(content 'text node<foo>    <bar></bar>   </foo>' as text indent);
 
 select cast('<foo>bar</foo>' as xml) is document;
 
@@ -290,7 +296,7 @@ select xmlpi(name "123");
 
 prepare foo (xml) as select xmlconcat('<foo/>', $1);;
 
-set xmloption = DOCUMENT;
+set xmloption = 'DOCUMENT';
 
 execute foo ('<bar/>');
 
@@ -298,7 +304,7 @@ execute foo ('bad');
 
 select cast('<!DOCTYPE a><a/><b/>' as xml);
 
-set xmloption = CONTENT;
+set xmloption = 'CONTENT';
 
 execute foo ('<bar/>');
 
@@ -326,8 +332,10 @@ as select xmlconcat('hello', 'you');
 
 create view xmlview3
 as select
-  xmlelement(name element, xmlattributes(1 as ":one:",
-  'deuce' as two), 'content&');
+  xmlelement(name element, xmlattributes(
+    1 as ":one:",
+    'deuce' as two
+  ), 'content&');
 
 create view xmlview4
 as select
@@ -342,24 +350,19 @@ create view xmlview6
 as select xmlpi(name foo, 'bar');
 
 create view xmlview7
-as select
-  xmlroot(cast('<foo/>' as xml), version no value, standalone yes);
+as select xmlroot(cast('<foo/>' as xml), version no value, standalone yes);
 
 create view xmlview8
-as select
-  XMLSERIALIZE(CONTENT 'good' as char(10));
+as select xmlserialize(content 'good' as char(10));
 
 create view xmlview9
-as select
-  XMLSERIALIZE(CONTENT 'good' as text);
+as select xmlserialize(content 'good' as text);
 
 create view xmlview10
-as select
-  XMLSERIALIZE(DOCUMENT '<foo><bar>42</bar></foo>' as text INDENT);
+as select xmlserialize(document '<foo><bar>42</bar></foo>' as text indent);
 
 create view xmlview11
-as select
-  XMLSERIALIZE(DOCUMENT '<foo><bar>42</bar></foo>' as varchar);
+as select xmlserialize(document '<foo><bar>42</bar></foo>' as varchar);
 
 select
   table_name,
@@ -423,8 +426,7 @@ select xpath('/nosuchtag', '<root/>');
 
 select xpath('root', '<root/>');
 
-do
-$do$
+do $$
 DECLARE
   xml_declaration text := '<?xml version="1.0" encoding="ISO-8859-1"?>';
   degree_symbol text;
@@ -457,7 +459,7 @@ EXCEPTION
   OR feature_not_supported THEN
     RAISE LOG 'skip: %', SQLERRM;
 END
-$do$;
+$$;
 
 select
   xmlexists('//town[text() = ''Toronto'']' passing '<towns><town>Bidford-on-Avon</town><town>Cwmbran</town><town>Bristol</town></towns>');
@@ -515,35 +517,32 @@ values
     as xml)
   );
 
-select COUNT(id) from xmltest where xmlexists('/menu/beer' passing data);
+select count(id) from xmltest where xmlexists('/menu/beer' passing data);
 
-select COUNT(id) from xmltest where xmlexists('/menu/beer' passing data);
+select count(id) from xmltest where xmlexists('/menu/beer' passing data);
 
-select COUNT(id) from xmltest where xmlexists('/menu/beers' passing data);
+select count(id) from xmltest where xmlexists('/menu/beers' passing data);
 
 select
-  COUNT(id)
+  count(id)
 from
   xmltest
 where
   xmlexists('/menu/beers/name[text() = ''Molson'']' passing data);
 
-select COUNT(id) from xmltest where xpath_exists('/menu/beer', data);
+select count(id) from xmltest where xpath_exists('/menu/beer', data);
 
-select COUNT(id) from xmltest where xpath_exists('/menu/beers', data);
+select count(id) from xmltest where xpath_exists('/menu/beers', data);
 
 select
-  COUNT(id)
+  count(id)
 from
   xmltest
 where
-  xpath_exists(
-    '/menu/beers/name[text() = ''Molson'']',
-    data
-  );
+  xpath_exists('/menu/beers/name[text() = ''Molson'']', data);
 
 select
-  COUNT(id)
+  count(id)
 from
   xmltest
 where
@@ -554,7 +553,7 @@ where
   );
 
 select
-  COUNT(id)
+  count(id)
 from
   xmltest
 where
@@ -565,7 +564,7 @@ where
   );
 
 select
-  COUNT(id)
+  count(id)
 from
   xmltest
 where
@@ -579,7 +578,7 @@ create table query (expr text);
 
 insert into query values ('/menu/beers/cost[text() = ''lots'']');
 
-select COUNT(id) from xmltest, query where xmlexists(expr passing data);
+select count(id) from xmltest, query where xmlexists(expr passing data);
 
 select xml_is_well_formed_document('<foo>bar</foo>');
 
@@ -649,10 +648,7 @@ select
 
 create table xmldata (data xml);
 
-insert into xmldata
-values
-  (
-    '<ROWS>
+insert into xmldata values ('<ROWS>
 <ROW id="1">
   <COUNTRY_ID>AU</COUNTRY_ID>
   <COUNTRY_NAME>Australia</COUNTRY_NAME>
@@ -683,8 +679,7 @@ values
   <COUNTRY_NAME>Singapore</COUNTRY_NAME>
   <REGION_ID>3</REGION_ID><SIZE unit="km">791</SIZE>
 </ROW>
-</ROWS>'
-  );
+</ROWS>');
 
 select
   xmltable.*
@@ -775,13 +770,7 @@ from
 select
   *
 from
-  xmltable(
-
-    '.'
-    passing '<foo/>'
-    columns
-      a text path 'foo/namespace::node()'
-  );
+  xmltable( '.' passing '<foo/>' columns a text path 'foo/namespace::node()');
 
 prepare pp
 as select
@@ -1021,10 +1010,7 @@ from
 where
   "COUNTRY_NAME" = 'Japan';
 
-insert into xmldata
-values
-  (
-    '<ROWS>
+insert into xmldata values ('<ROWS>
 <ROW id="10">
   <COUNTRY_ID>CZ</COUNTRY_ID>
   <COUNTRY_NAME>Czech Republic</COUNTRY_NAME>
@@ -1040,13 +1026,9 @@ values
   <COUNTRY_NAME>France</COUNTRY_NAME>
   <REGION_ID>2</REGION_ID>
 </ROW>
-</ROWS>'
-  );
+</ROWS>');
 
-insert into xmldata
-values
-  (
-    '<ROWS>
+insert into xmldata values ('<ROWS>
 <ROW id="20">
   <COUNTRY_ID>EG</COUNTRY_ID>
   <COUNTRY_NAME>Egypt</COUNTRY_NAME>
@@ -1057,8 +1039,7 @@ values
   <COUNTRY_NAME>Sudan</COUNTRY_NAME>
   <REGION_ID>1</REGION_ID>
 </ROW>
-</ROWS>'
-  );
+</ROWS>');
 
 select
   xmltable.*
@@ -1148,14 +1129,10 @@ as (
     proowner,
     cast(procost as numeric),
     pronargs,
-    array_to_string(proargnames, ',')
-    as proargnames,
+    array_to_string(proargnames, ',') as proargnames,
     case
       when proargtypes <> ''
-      then array_to_string(
-        cast(proargtypes as oid[]),
-        ','
-      )
+      then array_to_string(cast(proargtypes as oid[]), ',')
     end
     as proargtypes
   from
@@ -1166,12 +1143,14 @@ as (
 y
 as (
   select
-    xmlelement(name proc, xmlforest(proname,
-    proowner,
-    procost,
-    pronargs,
-    proargnames,
-    proargtypes))
+    xmlelement(name proc, xmlforest(
+      proname,
+      proowner,
+      procost,
+      pronargs,
+      proargnames,
+      proargtypes
+    ))
     as proc
   from
     x
@@ -1207,14 +1186,10 @@ as (
     proowner,
     cast(procost as numeric),
     pronargs,
-    array_to_string(proargnames, ',')
-    as proargnames,
+    array_to_string(proargnames, ',') as proargnames,
     case
       when proargtypes <> ''
-      then array_to_string(
-        cast(proargtypes as oid[]),
-        ','
-      )
+      then array_to_string(cast(proargtypes as oid[]), ',')
     end
     as proargtypes
   from
@@ -1224,12 +1199,14 @@ y
 as (
   select
     xmlelement(name data, xmlagg(
-      xmlelement(name proc, xmlforest(proname,
-      proowner,
-      procost,
-      pronargs,
-      proargnames,
-      proargtypes))
+      xmlelement(name proc, xmlforest(
+        proname,
+        proowner,
+        procost,
+        pronargs,
+        proargnames,
+        proargtypes
+      ))
     ))
     as doc
   from
@@ -1358,7 +1335,5 @@ select xmltext('foo & <"bar">');
 
 select
   xmltext(
-    'x' || cast('<P>73</P>' as xml) || .42 ||
-    true ||
-    cast('j' as char(1))
+    'x' || cast('<P>73</P>' as xml) || .42 || true || cast('j' as char(1))
   );

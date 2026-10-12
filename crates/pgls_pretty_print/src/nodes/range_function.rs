@@ -4,6 +4,7 @@ use crate::TokenKind;
 use crate::emitter::{EventEmitter, GroupKind, LineType};
 
 use super::node_list::emit_comma_separated_list;
+use super::node_list::emit_parenthesized_list;
 
 /// Emits a function of a `FROM` item. A cast there must keep the `CAST(...)` spelling.
 fn emit_function(e: &mut EventEmitter, node: &pgls_query::Node) {
@@ -48,9 +49,7 @@ pub(super) fn emit_range_function(e: &mut EventEmitter, n: &RangeFunction) {
                         e.space();
                         e.token(TokenKind::AS_KW);
                         e.space();
-                        e.token(TokenKind::L_PAREN);
-                        emit_comma_separated_list(e, &col_defs, super::emit_node);
-                        e.token(TokenKind::R_PAREN);
+                        emit_parenthesized_list(e, &col_defs, super::emit_node);
                     }
                 }
             } else {

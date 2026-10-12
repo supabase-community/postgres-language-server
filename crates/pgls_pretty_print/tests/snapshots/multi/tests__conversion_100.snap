@@ -10,7 +10,7 @@ as 'regresslib', 'test_enc_setup';
 
 select from test_enc_setup();
 
-create function test_enc_conversion(bytea, name, name, boolean, out validlen int, out result bytea)
+create function test_enc_conversion(bytea, name, name, bool, out validlen int, out result bytea)
 language c
 strict
 as 'regresslib', 'test_enc_conversion';
@@ -51,7 +51,7 @@ test_conv(
   out error text
 )
 language plpgsql
-as $function$
+as $$
 declare
   validlen int;
 begin
@@ -69,7 +69,7 @@ begin
   end;
   return;
 end;
-$function$;
+$$;
 
 create table utf8_verification_inputs (
   inbytes bytea,
@@ -110,11 +110,7 @@ as (
   select
     inbytes,
     description,
-    (test_conv(
-      inbytes || cast(repeat('.', 3) as bytea),
-      'utf8',
-      'utf8'
-    )).error
+    (test_conv(inbytes || cast(repeat('.', 3) as bytea), 'utf8', 'utf8')).error
   from
     utf8_verification_inputs
 ),
@@ -122,11 +118,7 @@ test_padded
 as (
   select
     description,
-    (test_conv(
-      inbytes || cast(repeat('.', 64) as bytea),
-      'utf8',
-      'utf8'
-    )).error
+    (test_conv(inbytes || cast(repeat('.', 64) as bytea), 'utf8', 'utf8')).error
   from
     test_bytes
 )
@@ -135,10 +127,7 @@ select
   b.error as orig_error,
   p.error as error_after_padding
 from
-  test_padded as p
-  inner join
-    test_bytes as b
-  using ("description")
+  test_padded as p inner join test_bytes as b using (description)
 where
   p.error is distinct from b.error
 order by description;
@@ -149,11 +138,7 @@ as (
   select
     inbytes,
     description,
-    (test_conv(
-      inbytes || cast(repeat('.', 3) as bytea),
-      'utf8',
-      'utf8'
-    )).error
+    (test_conv(inbytes || cast(repeat('.', 3) as bytea), 'utf8', 'utf8')).error
   from
     utf8_verification_inputs
 ),
@@ -162,9 +147,7 @@ as (
   select
     description,
     (test_conv(
-      cast(repeat('.', 64 - length(inbytes)) as bytea) ||
-      inbytes ||
-      cast(repeat('.', 64) as bytea),
+      cast(repeat('.', 64 - length(inbytes)) as bytea) || inbytes || cast(repeat('.', 64) as bytea),
       'utf8',
       'utf8'
     )).error
@@ -176,10 +159,7 @@ select
   b.error as orig_error,
   p.error as error_after_padding
 from
-  test_padded as p
-  inner join
-    test_bytes as b
-  using ("description")
+  test_padded as p inner join test_bytes as b using (description)
 where
   p.error is distinct from b.error
 order by description;
@@ -190,11 +170,7 @@ as (
   select
     inbytes,
     description,
-    (test_conv(
-      inbytes || cast(repeat('.', 3) as bytea),
-      'utf8',
-      'utf8'
-    )).error
+    (test_conv(inbytes || cast(repeat('.', 3) as bytea), 'utf8', 'utf8')).error
   from
     utf8_verification_inputs
 ),
@@ -203,8 +179,7 @@ as (
   select
     description,
     (test_conv(
-      cast(repeat('.', 64) as bytea) || inbytes ||
-      cast(repeat('.', 3) as bytea),
+      cast(repeat('.', 64) as bytea) || inbytes || cast(repeat('.', 3) as bytea),
       'utf8',
       'utf8'
     )).error
@@ -216,10 +191,7 @@ select
   b.error as orig_error,
   p.error as error_after_padding
 from
-  test_padded as p
-  inner join
-    test_bytes as b
-  using ("description")
+  test_padded as p inner join test_bytes as b using (description)
 where
   p.error is distinct from b.error
 order by description;
@@ -230,11 +202,7 @@ as (
   select
     inbytes,
     description,
-    (test_conv(
-      inbytes || cast(repeat('.', 3) as bytea),
-      'utf8',
-      'utf8'
-    )).error
+    (test_conv(inbytes || cast(repeat('.', 3) as bytea), 'utf8', 'utf8')).error
   from
     utf8_verification_inputs
 ),
@@ -243,9 +211,7 @@ as (
   select
     description,
     (test_conv(
-      cast(repeat('.', 64 - length(inbytes)) as bytea) ||
-      inbytes ||
-      cast(repeat('.', 3) as bytea),
+      cast(repeat('.', 64 - length(inbytes)) as bytea) || inbytes || cast(repeat('.', 3) as bytea),
       'utf8',
       'utf8'
     )).error
@@ -257,10 +223,7 @@ select
   b.error as orig_error,
   p.error as error_after_padding
 from
-  test_padded as p
-  inner join
-    test_bytes as b
-  using ("description")
+  test_padded as p inner join test_bytes as b using (description)
 where
   p.error is distinct from b.error
 order by description;
@@ -276,23 +239,11 @@ values
   ('\xc3a4c3b6', 'valid, extra latin chars'),
   ('\xd184d0bed0be', 'valid, cyrillic'),
   ('\x666f6fe8b1a1', 'valid, kanji/Chinese'),
-  (
-    '\xe382abe3829a',
-    'valid, two chars that combine to one in EUC_JIS_2004'
-  ),
-  (
-    '\xe382ab',
-    'only first half of combined char in EUC_JIS_2004'
-  ),
-  (
-    '\xe382abe382',
-    'incomplete combination when converted EUC_JIS_2004'
-  ),
+  ('\xe382abe3829a', 'valid, two chars that combine to one in EUC_JIS_2004'),
+  ('\xe382ab', 'only first half of combined char in EUC_JIS_2004'),
+  ('\xe382abe382', 'incomplete combination when converted EUC_JIS_2004'),
   ('\xecbd94eb81bceba6ac', 'valid, Hangul, Korean'),
-  (
-    '\x666f6fefa8aa',
-    'valid, needs mapping function to convert to GB18030'
-  ),
+  ('\x666f6fefa8aa', 'valid, needs mapping function to convert to GB18030'),
   ('\x66e8b1ff6f6f', 'invalid byte sequence'),
   ('\x66006f', 'invalid, NUL byte'),
   ('\x666f6fe8b100', 'invalid, NUL byte'),
@@ -321,9 +272,7 @@ insert into euc_jis_2004_inputs
 values
   ('\x666f6f', 'valid, pure ASCII'),
   ('\x666f6fbedd', 'valid'),
-  (
-    '\xa5f7', 'valid, translates to two UTF-8 chars '
-  ),
+  ('\xa5f7', 'valid, translates to two UTF-8 chars '),
   ('\xbeddbe', 'incomplete char '),
   ('\x666f6f00bedd', 'invalid, NUL byte'),
   ('\x666f6fbe00dd', 'invalid, NUL byte'),
@@ -354,15 +303,9 @@ values
   ('\x666f6f', 'valid, pure ASCII'),
   ('\x666f6f8fdb', 'valid'),
   ('\x666f6f81c0', 'valid, no translation to UTF-8'),
-  (
-    '\x666f6f82f5',
-    'valid, translates to two UTF-8 chars '
-  ),
+  ('\x666f6f82f5', 'valid, translates to two UTF-8 chars '),
   ('\x666f6f8fdb8f', 'incomplete char '),
-  (
-    '\x666f6f820a',
-    'incomplete char, followed by newline '
-  ),
+  ('\x666f6f820a', 'incomplete char, followed by newline '),
   ('\x666f6f008fdb', 'invalid, NUL byte'),
   ('\x666f6f8f00db', 'invalid, NUL byte'),
   ('\x666f6f8fdb00', 'invalid, NUL byte');
@@ -397,19 +340,10 @@ insert into gb18030_inputs
 values
   ('\x666f6f', 'valid, pure ASCII'),
   ('\x666f6fcff3', 'valid'),
-  (
-    '\x666f6f8431a530',
-    'valid, no translation to UTF-8'
-  ),
-  (
-    '\x666f6f84309c38',
-    'valid, translates to UTF-8 by mapping function'
-  ),
+  ('\x666f6f8431a530', 'valid, no translation to UTF-8'),
+  ('\x666f6f84309c38', 'valid, translates to UTF-8 by mapping function'),
   ('\x666f6f84309c', 'incomplete char '),
-  (
-    '\x666f6f84309c0a',
-    'incomplete char, followed by newline '
-  ),
+  ('\x666f6f84309c0a', 'incomplete char, followed by newline '),
   ('\x666f6f84', 'incomplete char at end'),
   ('\x666f6f84309c3800', 'invalid, NUL byte'),
   ('\x666f6f84309c0038', 'invalid, NUL byte');
@@ -417,11 +351,7 @@ values
 select
   description,
   inbytes,
-  (test_conv(
-    cast(cast(inbytes as text) as bytea),
-    'gb18030',
-    'gb18030'
-  )).*
+  (test_conv(cast(cast(inbytes as text) as bytea), 'gb18030', 'gb18030')).*
 from
   gb18030_inputs;
 
@@ -493,11 +423,7 @@ values
 select
   description,
   inbytes,
-  (test_conv(
-    inbytes,
-    'mule_internal',
-    'mule_internal'
-  )).*
+  (test_conv(inbytes, 'mule_internal', 'mule_internal')).*
 from
   mic_inputs;
 

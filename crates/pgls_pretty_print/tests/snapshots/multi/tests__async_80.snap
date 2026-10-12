@@ -19,7 +19,7 @@ select
     'sample_message1'
   );
 
-notify "notify_async2";
+notify notify_async2;
 
 listen notify_async2;
 

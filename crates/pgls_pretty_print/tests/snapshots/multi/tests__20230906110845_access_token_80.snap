@@ -3,34 +3,19 @@ source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/20230906110845_access_token.sql
 ---
 create table app.access_tokens (
-  id uuid
-  primary key
-  default gen_random_uuid(),
-  user_id uuid
-  not null
-  references auth.users (id)
-  on DELETE cascade,
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users (id) on delete cascade,
   token_hash bytea not null,
-  token_name text
-  not null
-  check (length(token_name) <= 64),
-  plaintext_suffix text
-  not null
-  check (length(plaintext_suffix) = 4),
-  created_at timestamp with time zone
-  not null
-  default NOW()
+  token_name text not null check (length(token_name) <= 64),
+  plaintext_suffix text not null check (length(plaintext_suffix) = 4),
+  created_at timestamptz not null default now()
 );
 
-grant INSERT (id,
-user_id,
-token_hash,
-token_name,
-plaintext_suffix)
+grant insert (id, user_id, token_hash, token_name, plaintext_suffix)
 on table app.access_tokens
 to authenticated;
 
-grant DELETE on table app.access_tokens to authenticated;
+grant delete on table app.access_tokens to authenticated;
 
 alter table app.access_tokens
   enable row level security;
@@ -60,27 +45,27 @@ create or replace function app.base64url_encode(input bytea)
 returns text
 language plpgsql
 strict
-as $function$
+as $$
 begin
     return replace(replace(encode(input, 'base64'), '/', '_'), '+', '-');
 end;
-$function$;
+$$;
 
 create or replace function app.base64url_decode(input text)
 returns text
 language plpgsql
 strict
-as $function$
+as $$
 begin
     return decode(replace(replace(input, '-', '+'), '_', '/'), 'base64');
 end;
-$function$;
+$$;
 
 create or replace function public.new_access_token(token_name text)
 returns text
 language plpgsql
 strict
-as $function$
+as $$
 <<fn>>
 declare
     account app.accounts = account from app.accounts account where id = auth.uid();
@@ -102,20 +87,20 @@ begin
     -- String returned has a length 64
     return 'dbd_' || replace(token_id::text, '-', '') || token_text;
 end;
-$function$;
+$$;
 
 create type app.access_token_struct as (
   id uuid,
   token_name text,
   masked_token text,
-  created_at timestamp with time zone
+  created_at timestamptz
 );
 
 create or replace function public.get_access_tokens()
 returns setof app.access_token_struct
 language plpgsql
 strict
-as $function$
+as $$
 declare
     account app.accounts = account from app.accounts account where id = auth.uid();
 begin
@@ -129,20 +114,20 @@ begin
     from app.access_tokens at
     where at.user_id = account.id;
 end;
-$function$;
+$$;
 
 create or replace function public.delete_access_token(token_id uuid)
 returns void
 language plpgsql
 strict
-as $function$
+as $$
 declare
     account app.accounts = account from app.accounts account where id = auth.uid();
 begin
     delete from app.access_tokens at
     where at.user_id = account.id and at.id = token_id;
 end;
-$function$;
+$$;
 
 create type app.user_id_and_token_hash as (user_id uuid, token_hash bytea);
 
@@ -151,7 +136,7 @@ returns text
 language plpgsql
 strict
 security definer
-as $function$
+as $$
 declare
     token_id uuid;
     token bytea;
@@ -201,4 +186,4 @@ begin
         'exp', expiry_at
     ), jwt_secret);
 end;
-$function$;
+$$;

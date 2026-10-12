@@ -5,8 +5,8 @@ input_file: crates/pgls_pretty_print/tests/data/multi/20220117142138_developer_t
 create or replace function app.simulate_login(email citext)
 returns void
 language sql
-as $function$
-/*
+as $$
+    /*
     Simulated JWT of logged in user
     */
 
@@ -29,4 +29,4 @@ as $function$
             true
         ),
         set_config('role', 'authenticated', true)
-$function$;
+$$;

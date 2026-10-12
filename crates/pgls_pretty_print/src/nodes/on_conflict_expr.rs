@@ -4,6 +4,8 @@ use crate::{
 };
 use pgls_query::protobuf::{OnConflictAction, OnConflictExpr};
 
+use super::node_list::emit_parenthesized_list;
+
 pub(super) fn emit_on_conflict_expr(e: &mut EventEmitter, n: &OnConflictExpr) {
     e.group_start(GroupKind::OnConflictExpr);
 
@@ -13,9 +15,7 @@ pub(super) fn emit_on_conflict_expr(e: &mut EventEmitter, n: &OnConflictExpr) {
 
     if !n.arbiter_elems.is_empty() {
         e.space();
-        e.token(TokenKind::L_PAREN);
-        super::node_list::emit_comma_separated_list(e, &n.arbiter_elems, super::emit_node);
-        e.token(TokenKind::R_PAREN);
+        emit_parenthesized_list(e, &n.arbiter_elems, super::emit_node);
     }
 
     if n.constraint != 0 {

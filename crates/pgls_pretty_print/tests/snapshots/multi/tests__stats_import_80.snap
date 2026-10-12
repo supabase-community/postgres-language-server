@@ -2,7 +2,7 @@
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/stats_import.sql
 ---
-create schema "stats_import";
+create schema stats_import;
 
 create type stats_import.complex_type as (
   a int,
@@ -22,7 +22,7 @@ create table stats_import.test (
 with (autovacuum_enabled = 'false');
 
 select
-  pg_restore_relation_stats(
+  pg_catalog.pg_restore_relation_stats(
     'schemaname',
     'stats_import',
     'relname',
@@ -37,7 +37,7 @@ select
     cast(27 as int)
   );
 
-create index "test_i" on stats_import.test using btree (id);
+create index test_i on stats_import.test using btree (id);
 
 select
   relname,
@@ -48,14 +48,13 @@ select
 from
   pg_class
 where
-  oid =
-  cast('stats_import.test' as regclass)
+  oid = cast('stats_import.test' as regclass)
 order by relname;
 
 select pg_clear_relation_stats('stats_import', 'test');
 
 select
-  pg_restore_relation_stats(
+  pg_catalog.pg_restore_relation_stats(
     'relname',
     'test',
     'relpages',
@@ -63,7 +62,7 @@ select
   );
 
 select
-  pg_restore_relation_stats(
+  pg_catalog.pg_restore_relation_stats(
     'schemaname',
     'stats_import',
     'relpages',
@@ -71,7 +70,7 @@ select
   );
 
 select
-  pg_restore_relation_stats(
+  pg_catalog.pg_restore_relation_stats(
     'schemaname',
     cast(3.6 as double precision),
     'relname',
@@ -81,7 +80,7 @@ select
   );
 
 select
-  pg_restore_relation_stats(
+  pg_catalog.pg_restore_relation_stats(
     'schemaname',
     'stats_import',
     'relname',
@@ -91,7 +90,7 @@ select
   );
 
 select
-  pg_restore_relation_stats(
+  pg_catalog.pg_restore_relation_stats(
     'schemaname',
     'stats_import',
     'relname',
@@ -127,13 +126,12 @@ select
 from
   pg_class
 where
-  oid =
-  cast('stats_import.test_i' as regclass);
+  oid = cast('stats_import.test_i' as regclass);
 
 begin;
 
 select
-  pg_restore_relation_stats(
+  pg_catalog.pg_restore_relation_stats(
     'schemaname',
     'stats_import',
     'relname',
@@ -147,8 +145,7 @@ select
 from
   pg_locks
 where
-  relation =
-  cast('stats_import.test' as regclass) and
+  relation = cast('stats_import.test' as regclass) and
   pid = pg_backend_pid() and
   granted;
 
@@ -157,8 +154,7 @@ select
 from
   pg_locks
 where
-  relation =
-  cast('stats_import.test_i' as regclass) and
+  relation = cast('stats_import.test_i' as regclass) and
   pid = pg_backend_pid() and
   granted;
 
@@ -172,7 +168,7 @@ partition of stats_import.part_parent
 for values from (0) to (10)
 with (autovacuum_enabled = 'false');
 
-create index "part_parent_i" on stats_import.part_parent using btree (i);
+create index part_parent_i on stats_import.part_parent using btree (i);
 
 analyze stats_import.part_parent;
 
@@ -181,14 +177,12 @@ select
 from
   pg_class
 where
-  oid =
-  cast('stats_import.part_parent'
-  as regclass);
+  oid = cast('stats_import.part_parent' as regclass);
 
 begin;
 
 select
-  pg_restore_relation_stats(
+  pg_catalog.pg_restore_relation_stats(
     'schemaname',
     'stats_import',
     'relname',
@@ -202,9 +196,7 @@ select
 from
   pg_locks
 where
-  relation =
-  cast('stats_import.part_parent'
-  as regclass) and
+  relation = cast('stats_import.part_parent' as regclass) and
   pid = pg_backend_pid() and
   granted;
 
@@ -213,9 +205,7 @@ select
 from
   pg_locks
 where
-  relation =
-  cast('stats_import.part_parent_i'
-  as regclass) and
+  relation = cast('stats_import.part_parent_i' as regclass) and
   pid = pg_backend_pid() and
   granted;
 
@@ -226,9 +216,7 @@ select
 from
   pg_class
 where
-  oid =
-  cast('stats_import.part_parent_i'
-  as regclass);
+  oid = cast('stats_import.part_parent_i' as regclass);
 
 select
   pg_restore_relation_stats(
@@ -256,8 +244,7 @@ select
 from
   pg_class
 where
-  oid =
-  cast('stats_import.test' as regclass);
+  oid = cast('stats_import.test' as regclass);
 
 select
   pg_restore_relation_stats(
@@ -277,8 +264,7 @@ select
 from
   pg_class
 where
-  oid =
-  cast('stats_import.test' as regclass);
+  oid = cast('stats_import.test' as regclass);
 
 select
   pg_restore_relation_stats(
@@ -298,8 +284,7 @@ select
 from
   pg_class
 where
-  oid =
-  cast('stats_import.test' as regclass);
+  oid = cast('stats_import.test' as regclass);
 
 select
   pg_restore_relation_stats(
@@ -319,8 +304,7 @@ select
 from
   pg_class
 where
-  oid =
-  cast('stats_import.test' as regclass);
+  oid = cast('stats_import.test' as regclass);
 
 select
   pg_restore_relation_stats(
@@ -342,8 +326,7 @@ select
 from
   pg_class
 where
-  oid =
-  cast('stats_import.test' as regclass);
+  oid = cast('stats_import.test' as regclass);
 
 select
   pg_restore_relation_stats(
@@ -369,8 +352,7 @@ select
 from
   pg_class
 where
-  oid =
-  cast('stats_import.test' as regclass);
+  oid = cast('stats_import.test' as regclass);
 
 select
   pg_restore_relation_stats(
@@ -391,13 +373,12 @@ select
 from
   pg_class
 where
-  oid =
-  cast('stats_import.test' as regclass);
+  oid = cast('stats_import.test' as regclass);
 
 select
-  pg_clear_relation_stats(
-    "schemaname" := 'stats_import',
-    "relname" := 'test'
+  pg_catalog.pg_clear_relation_stats(
+    schemaname := 'stats_import',
+    relname := 'test'
   );
 
 select
@@ -407,13 +388,12 @@ select
 from
   pg_class
 where
-  oid =
-  cast('stats_import.test' as regclass);
+  oid = cast('stats_import.test' as regclass);
 
 create sequence stats_import.testseq;
 
 select
-  pg_restore_relation_stats(
+  pg_catalog.pg_restore_relation_stats(
     'schemaname',
     'stats_import',
     'relname',
@@ -421,22 +401,22 @@ select
   );
 
 select
-  pg_clear_relation_stats(
-    "schemaname" := 'stats_import',
-    "relname" := 'testseq'
+  pg_catalog.pg_clear_relation_stats(
+    schemaname := 'stats_import',
+    relname := 'testseq'
   );
 
 create view stats_import.testview
 as select * from stats_import.test;
 
 select
-  pg_clear_relation_stats(
-    "schemaname" := 'stats_import',
-    "relname" := 'testview'
+  pg_catalog.pg_clear_relation_stats(
+    schemaname := 'stats_import',
+    relname := 'testview'
   );
 
 select
-  pg_restore_attribute_stats(
+  pg_catalog.pg_restore_attribute_stats(
     'relname',
     'test',
     'attname',
@@ -448,7 +428,7 @@ select
   );
 
 select
-  pg_restore_attribute_stats(
+  pg_catalog.pg_restore_attribute_stats(
     'schemaname',
     'nope',
     'relname',
@@ -462,7 +442,7 @@ select
   );
 
 select
-  pg_restore_attribute_stats(
+  pg_catalog.pg_restore_attribute_stats(
     'schemaname',
     'stats_import',
     'attname',
@@ -474,7 +454,7 @@ select
   );
 
 select
-  pg_restore_attribute_stats(
+  pg_catalog.pg_restore_attribute_stats(
     'schemaname',
     'stats_import',
     'relname',
@@ -488,7 +468,7 @@ select
   );
 
 select
-  pg_restore_attribute_stats(
+  pg_catalog.pg_restore_attribute_stats(
     'schemaname',
     'stats_import',
     'relname',
@@ -502,7 +482,7 @@ select
   );
 
 select
-  pg_restore_attribute_stats(
+  pg_catalog.pg_restore_attribute_stats(
     'schemaname',
     'stats_import',
     'relname',
@@ -516,7 +496,7 @@ select
   );
 
 select
-  pg_restore_attribute_stats(
+  pg_catalog.pg_restore_attribute_stats(
     'schemaname',
     'stats_import',
     'relname',
@@ -534,7 +514,7 @@ select
   );
 
 select
-  pg_restore_attribute_stats(
+  pg_catalog.pg_restore_attribute_stats(
     'schemaname',
     'stats_import',
     'relname',
@@ -550,7 +530,7 @@ select
   );
 
 select
-  pg_restore_attribute_stats(
+  pg_catalog.pg_restore_attribute_stats(
     'schemaname',
     'stats_import',
     'relname',
@@ -562,7 +542,7 @@ select
   );
 
 select
-  pg_restore_attribute_stats(
+  pg_catalog.pg_restore_attribute_stats(
     'schemaname',
     'stats_import',
     'relname',
@@ -576,7 +556,7 @@ select
   );
 
 select
-  pg_restore_attribute_stats(
+  pg_catalog.pg_restore_attribute_stats(
     'schemaname',
     'stats_import',
     'relname',
@@ -590,7 +570,7 @@ select
   );
 
 select
-  pg_restore_attribute_stats(
+  pg_catalog.pg_restore_attribute_stats(
     'schemaname',
     'stats_import',
     'relname',
@@ -620,7 +600,7 @@ where
   attname = 'id';
 
 select
-  pg_restore_attribute_stats(
+  pg_catalog.pg_restore_attribute_stats(
     'schemaname',
     'stats_import',
     'relname',
@@ -644,7 +624,7 @@ where
   attname = 'id';
 
 select
-  pg_restore_attribute_stats(
+  pg_catalog.pg_restore_attribute_stats(
     'schemaname',
     'stats_import',
     'relname',
@@ -670,7 +650,7 @@ where
   attname = 'id';
 
 select
-  pg_restore_attribute_stats(
+  pg_catalog.pg_restore_attribute_stats(
     'schemaname',
     'stats_import',
     'relname',
@@ -696,7 +676,7 @@ where
   attname = 'id';
 
 select
-  pg_restore_attribute_stats(
+  pg_catalog.pg_restore_attribute_stats(
     'schemaname',
     'stats_import',
     'relname',
@@ -722,7 +702,7 @@ where
   attname = 'id';
 
 select
-  pg_restore_attribute_stats(
+  pg_catalog.pg_restore_attribute_stats(
     'schemaname',
     'stats_import',
     'relname',
@@ -750,7 +730,7 @@ where
   attname = 'id';
 
 select
-  pg_restore_attribute_stats(
+  pg_catalog.pg_restore_attribute_stats(
     'schemaname',
     'stats_import',
     'relname',
@@ -778,7 +758,7 @@ where
   attname = 'id';
 
 select
-  pg_restore_attribute_stats(
+  pg_catalog.pg_restore_attribute_stats(
     'schemaname',
     'stats_import',
     'relname',
@@ -804,7 +784,7 @@ where
   attname = 'id';
 
 select
-  pg_restore_attribute_stats(
+  pg_catalog.pg_restore_attribute_stats(
     'schemaname',
     'stats_import',
     'relname',
@@ -830,7 +810,7 @@ where
   attname = 'id';
 
 select
-  pg_restore_attribute_stats(
+  pg_catalog.pg_restore_attribute_stats(
     'schemaname',
     'stats_import',
     'relname',
@@ -854,7 +834,7 @@ where
   attname = 'id';
 
 select
-  pg_restore_attribute_stats(
+  pg_catalog.pg_restore_attribute_stats(
     'schemaname',
     'stats_import',
     'relname',
@@ -880,7 +860,7 @@ where
   attname = 'tags';
 
 select
-  pg_restore_attribute_stats(
+  pg_catalog.pg_restore_attribute_stats(
     'schemaname',
     'stats_import',
     'relname',
@@ -907,7 +887,7 @@ where
   attname = 'tags';
 
 select
-  pg_restore_attribute_stats(
+  pg_catalog.pg_restore_attribute_stats(
     'schemaname',
     'stats_import',
     'relname',
@@ -935,7 +915,7 @@ where
   attname = 'id';
 
 select
-  pg_restore_attribute_stats(
+  pg_catalog.pg_restore_attribute_stats(
     'schemaname',
     'stats_import',
     'relname',
@@ -961,7 +941,7 @@ where
   attname = 'arange';
 
 select
-  pg_restore_attribute_stats(
+  pg_catalog.pg_restore_attribute_stats(
     'schemaname',
     'stats_import',
     'relname',
@@ -987,7 +967,7 @@ where
   attname = 'arange';
 
 select
-  pg_restore_attribute_stats(
+  pg_catalog.pg_restore_attribute_stats(
     'schemaname',
     'stats_import',
     'relname',
@@ -1013,7 +993,7 @@ where
   attname = 'arange';
 
 select
-  pg_restore_attribute_stats(
+  pg_catalog.pg_restore_attribute_stats(
     'schemaname',
     'stats_import',
     'relname',
@@ -1025,8 +1005,7 @@ select
     'null_frac',
     cast(0.31 as real),
     'range_bounds_histogram',
-    cast('{"[-1,1)","[0,4)","[1,4)","[1,100)"}'
-    as text)
+    cast('{"[-1,1)","[0,4)","[1,4)","[1,100)"}' as text)
   );
 
 select
@@ -1040,7 +1019,7 @@ where
   attname = 'id';
 
 select
-  pg_restore_attribute_stats(
+  pg_catalog.pg_restore_attribute_stats(
     'schemaname',
     'stats_import',
     'relname',
@@ -1050,8 +1029,7 @@ select
     'inherited',
     cast(false as boolean),
     'range_bounds_histogram',
-    cast('{"[-1,1)","[0,4)","[1,4)","[1,100)"}'
-    as text)
+    cast('{"[-1,1)","[0,4)","[1,4)","[1,100)"}' as text)
   );
 
 select
@@ -1065,7 +1043,7 @@ where
   attname = 'arange';
 
 select
-  pg_restore_attribute_stats(
+  pg_catalog.pg_restore_attribute_stats(
     'schemaname',
     'stats_import',
     'relname',
@@ -1093,7 +1071,7 @@ where
   attname = 'arange';
 
 select
-  pg_restore_attribute_stats(
+  pg_catalog.pg_restore_attribute_stats(
     'schemaname',
     'stats_import',
     'relname',
@@ -1121,7 +1099,7 @@ where
   attname = 'id';
 
 select
-  pg_restore_attribute_stats(
+  pg_catalog.pg_restore_attribute_stats(
     'schemaname',
     'stats_import',
     'relname',
@@ -1147,7 +1125,7 @@ where
   attname = 'tags';
 
 select
-  pg_restore_attribute_stats(
+  pg_catalog.pg_restore_attribute_stats(
     'schemaname',
     'stats_import',
     'relname',
@@ -1173,7 +1151,7 @@ where
   attname = 'tags';
 
 select
-  pg_restore_attribute_stats(
+  pg_catalog.pg_restore_attribute_stats(
     'schemaname',
     'stats_import',
     'relname',
@@ -1199,7 +1177,7 @@ where
   attname = 'tags';
 
 select
-  pg_restore_attribute_stats(
+  pg_catalog.pg_restore_attribute_stats(
     'schemaname',
     'stats_import',
     'relname',
@@ -1228,11 +1206,7 @@ insert into stats_import.test
 select
   1,
   'one',
-  cast((1,
-  1.1,
-  'ONE',
-  '2001-01-01',
-  '{ "xkey": "xval" }')
+  cast((1, 1.1, 'ONE', '2001-01-01', '{ "xkey": "xval" }')
   as stats_import.complex_type),
   int4range(1, 4),
   array['red', 'green']
@@ -1240,11 +1214,7 @@ union all
 select
   2,
   'two',
-  cast((2,
-  2.2,
-  'TWO',
-  '2002-02-02',
-  '[true, 4, "six"]')
+  cast((2, 2.2, 'TWO', '2002-02-02', '[true, 4, "six"]')
   as stats_import.complex_type),
   int4range(1, 4),
   array['blue', 'yellow']
@@ -1252,29 +1222,20 @@ union all
 select
   3,
   'tre',
-  cast((3, 3.3, 'TRE', '2003-03-03', null)
-  as stats_import.complex_type),
+  cast((3, 3.3, 'TRE', '2003-03-03', null) as stats_import.complex_type),
   int4range(-1, 1),
   array['"orange"', 'purple', 'cyan']
 union all
-select
-  4,
-  'four',
-  null,
-  int4range(0, 100),
-  null;
+select 4, 'four', null, int4range(0, 100), null;
 
-create index "is_odd" on stats_import.test using btree (((comp).a % 2 = 1));
+create index is_odd on stats_import.test using btree (((comp).a % 2 = 1));
 
 analyze stats_import.test;
 
 create table stats_import.test_clone (like stats_import.test)
 with (autovacuum_enabled = 'false');
 
-create index "is_odd_clone"
-on stats_import.test_clone
-using btree
-(
+create index is_odd_clone on stats_import.test_clone using btree (
   ((comp).a % 2 = 1)
 );
 
@@ -1287,7 +1248,7 @@ select
 from
   pg_catalog.pg_stats as s
   inner join
-    lateral pg_restore_attribute_stats(
+    lateral pg_catalog.pg_restore_attribute_stats(
       'schemaname',
       'stats_import',
       'relname',
@@ -1328,27 +1289,19 @@ from
     as r
   on true
 where
-  s.schemaname = 'stats_import' and
-  s.tablename in ('test', 'is_odd')
+  s.schemaname = 'stats_import' and s.tablename in ('test', 'is_odd')
 order by s.tablename,
   s.attname,
   s.inherited;
 
 select
   c.relname,
-  COUNT(*) as num_stats
+  count(*) as num_stats
 from
-  pg_class as c
-  inner join
-    pg_statistic as s
-  on s.starelid = c.oid
+  pg_class as c inner join pg_statistic as s on s.starelid = c.oid
 where
-  c.relnamespace =
-  cast('stats_import' as regnamespace) and
-  c.relname
-  in (
-    'test', 'test_clone', 'is_odd', 'is_odd_clone'
-  )
+  c.relnamespace = cast('stats_import' as regnamespace) and
+  c.relname in ('test', 'test_clone', 'is_odd', 'is_odd_clone')
 group by c.relname
 order by c.relname;
 
@@ -1388,11 +1341,9 @@ from
   pg_statistic as s
   inner join
     pg_attribute as a
-  on a.attrelid = s.starelid and
-    a.attnum = s.staattnum
+  on a.attrelid = s.starelid and a.attnum = s.staattnum
 where
-  s.starelid =
-  cast('stats_import.test' as regclass)
+  s.starelid = cast('stats_import.test' as regclass)
 except
 select
   a.attname,
@@ -1430,12 +1381,9 @@ from
   pg_statistic as s
   inner join
     pg_attribute as a
-  on a.attrelid = s.starelid and
-    a.attnum = s.staattnum
+  on a.attrelid = s.starelid and a.attnum = s.staattnum
 where
-  s.starelid =
-  cast('stats_import.test_clone'
-  as regclass);
+  s.starelid = cast('stats_import.test_clone' as regclass);
 
 select
   a.attname,
@@ -1473,12 +1421,9 @@ from
   pg_statistic as s
   inner join
     pg_attribute as a
-  on a.attrelid = s.starelid and
-    a.attnum = s.staattnum
+  on a.attrelid = s.starelid and a.attnum = s.staattnum
 where
-  s.starelid =
-  cast('stats_import.test_clone'
-  as regclass)
+  s.starelid = cast('stats_import.test_clone' as regclass)
 except
 select
   a.attname,
@@ -1516,11 +1461,9 @@ from
   pg_statistic as s
   inner join
     pg_attribute as a
-  on a.attrelid = s.starelid and
-    a.attnum = s.staattnum
+  on a.attrelid = s.starelid and a.attnum = s.staattnum
 where
-  s.starelid =
-  cast('stats_import.test' as regclass);
+  s.starelid = cast('stats_import.test' as regclass);
 
 select
   a.attname,
@@ -1558,11 +1501,9 @@ from
   pg_statistic as s
   inner join
     pg_attribute as a
-  on a.attrelid = s.starelid and
-    a.attnum = s.staattnum
+  on a.attrelid = s.starelid and a.attnum = s.staattnum
 where
-  s.starelid =
-  cast('stats_import.is_odd' as regclass)
+  s.starelid = cast('stats_import.is_odd' as regclass)
 except
 select
   a.attname,
@@ -1600,12 +1541,9 @@ from
   pg_statistic as s
   inner join
     pg_attribute as a
-  on a.attrelid = s.starelid and
-    a.attnum = s.staattnum
+  on a.attrelid = s.starelid and a.attnum = s.staattnum
 where
-  s.starelid =
-  cast('stats_import.is_odd_clone'
-  as regclass);
+  s.starelid = cast('stats_import.is_odd_clone' as regclass);
 
 select
   a.attname,
@@ -1643,12 +1581,9 @@ from
   pg_statistic as s
   inner join
     pg_attribute as a
-  on a.attrelid = s.starelid and
-    a.attnum = s.staattnum
+  on a.attrelid = s.starelid and a.attnum = s.staattnum
 where
-  s.starelid =
-  cast('stats_import.is_odd_clone'
-  as regclass)
+  s.starelid = cast('stats_import.is_odd_clone' as regclass)
 except
 select
   a.attname,
@@ -1686,14 +1621,12 @@ from
   pg_statistic as s
   inner join
     pg_attribute as a
-  on a.attrelid = s.starelid and
-    a.attnum = s.staattnum
+  on a.attrelid = s.starelid and a.attnum = s.staattnum
 where
-  s.starelid =
-  cast('stats_import.is_odd' as regclass);
+  s.starelid = cast('stats_import.is_odd' as regclass);
 
 select
-  COUNT(*)
+  count(*)
 from
   pg_stats
 where
@@ -1703,15 +1636,15 @@ where
   attname = 'arange';
 
 select
-  pg_clear_attribute_stats(
-    "schemaname" := 'stats_import',
-    "relname" := 'test',
-    "attname" := 'arange',
-    "inherited" := false
+  pg_catalog.pg_clear_attribute_stats(
+    schemaname := 'stats_import',
+    relname := 'test',
+    attname := 'arange',
+    inherited := false
   );
 
 select
-  COUNT(*)
+  count(*)
 from
   pg_stats
 where
@@ -1747,12 +1680,11 @@ select
 from
   pg_class
 where
-  oid =
-  cast('pg_temp.stats_temp' as regclass)
+  oid = cast('pg_temp.stats_temp' as regclass)
 order by relname;
 
 select
-  pg_restore_attribute_stats(
+  pg_catalog.pg_restore_attribute_stats(
     'schemaname',
     'pg_temp',
     'relname',

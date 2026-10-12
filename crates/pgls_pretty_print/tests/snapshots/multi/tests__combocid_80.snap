@@ -51,7 +51,7 @@ begin;
 
 insert into combocidtest values (333);
 
-declare "c" cursor for select ctid, cmin, * from combocidtest;;
+declare c cursor for select ctid, cmin, * from combocidtest;;
 
 delete from combocidtest;
 

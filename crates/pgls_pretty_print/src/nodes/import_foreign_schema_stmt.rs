@@ -5,6 +5,8 @@ use crate::{
     emitter::{EventEmitter, GroupKind, LineType},
 };
 
+use super::node_list::emit_parenthesized_list;
+
 pub(super) fn emit_import_foreign_schema_stmt(e: &mut EventEmitter, n: &ImportForeignSchemaStmt) {
     e.group_start(GroupKind::ImportForeignSchemaStmt);
 
@@ -33,9 +35,7 @@ pub(super) fn emit_import_foreign_schema_stmt(e: &mut EventEmitter, n: &ImportFo
             e.token(TokenKind::EXCEPT_KW);
         }
         e.space();
-        e.token(TokenKind::L_PAREN);
-        super::node_list::emit_comma_separated_list(e, &n.table_list, super::emit_node);
-        e.token(TokenKind::R_PAREN);
+        emit_parenthesized_list(e, &n.table_list, super::emit_node);
     }
 
     // FROM SERVER
@@ -61,12 +61,10 @@ pub(super) fn emit_import_foreign_schema_stmt(e: &mut EventEmitter, n: &ImportFo
         e.line(LineType::SoftOrSpace);
         e.token(TokenKind::OPTIONS_KW);
         e.space();
-        e.token(TokenKind::L_PAREN);
-        super::node_list::emit_comma_separated_list(e, &n.options, |n, e| {
+        emit_parenthesized_list(e, &n.options, |n, e| {
             let def_elem = assert_node_variant!(DefElem, n);
             super::emit_options_def_elem(e, def_elem);
         });
-        e.token(TokenKind::R_PAREN);
     }
 
     e.token(TokenKind::SEMICOLON);
