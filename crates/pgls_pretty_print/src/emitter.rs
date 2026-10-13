@@ -54,6 +54,8 @@ pub struct EventEmitter {
     /// Boolean operands need standalone line comments to start their own line, otherwise a
     /// comment can join the preceding operand and drift on the next formatting pass.
     leading_line_comments_require_break: bool,
+    /// Line comments written after a list comma, waiting for the emitter to reach that comma.
+    comments_after_separator: Vec<Comment>,
 }
 
 impl EventEmitter {
@@ -64,6 +66,7 @@ impl EventEmitter {
             leading_comments: HashMap::new(),
             trailing_comments: HashMap::new(),
             leading_line_comments_require_break: false,
+            comments_after_separator: Vec::new(),
         }
     }
 
@@ -84,11 +87,22 @@ impl EventEmitter {
             leading_comments,
             trailing_comments,
             leading_line_comments_require_break: false,
+            comments_after_separator: Vec::new(),
         }
     }
 
     pub fn token(&mut self, token: TokenKind) {
+        // A comment held for a comma follows it. Other tokens closing the item before the comma,
+        // a parenthesis or an alias for instance, are written first. A statement never ends on a
+        // comma, so the terminator flushes what is left.
+        let is_comma = matches!(token, TokenKind::COMMA);
+        if matches!(token, TokenKind::SEMICOLON) {
+            self.flush_comments_after_separator();
+        }
         self.events.push(LayoutEvent::Token(token));
+        if is_comma {
+            self.flush_comments_after_separator();
+        }
     }
 
     pub fn space(&mut self) {
@@ -96,6 +110,11 @@ impl EventEmitter {
     }
 
     pub fn line(&mut self, line_type: LineType) {
+        // With leading commas, the comma follows a line break: the comment ends the item's line.
+        if matches!(self.config.comma_style, crate::CommaStyle::Leading) {
+            self.flush_comments_after_separator();
+        }
+
         if let Some(LayoutEvent::Line(previous)) = self.events.last_mut()
             && (matches!(&*previous, LineType::Hard) || matches!(&line_type, LineType::Hard))
         {
@@ -107,8 +126,20 @@ impl EventEmitter {
     }
 
     pub fn comment(&mut self, text: String, line_comment: bool) {
+        self.flush_comments_after_separator();
         self.events
             .push(LayoutEvent::Comment { text, line_comment });
+    }
+
+    fn flush_comments_after_separator(&mut self) {
+        for comment in std::mem::take(&mut self.comments_after_separator) {
+            self.events.push(LayoutEvent::Space);
+            self.events.push(LayoutEvent::Comment {
+                text: comment.text,
+                line_comment: true,
+            });
+            self.line(LineType::Hard);
+        }
     }
 
     /// Emits and consumes comments that precede `location`, if any.
@@ -167,6 +198,11 @@ impl EventEmitter {
         };
 
         for comment in comments {
+            if comment.after_separator {
+                self.comments_after_separator.push(comment);
+                continue;
+            }
+
             let line_comment = comment.line_comment;
             let multiline = comment.text.contains('\n');
             if comment.own_line {
@@ -186,6 +222,7 @@ impl EventEmitter {
     pub fn pending_comments(&self) -> usize {
         self.leading_comments.values().map(Vec::len).sum::<usize>()
             + self.trailing_comments.values().map(Vec::len).sum::<usize>()
+            + self.comments_after_separator.len()
     }
 
     pub fn with_leading_comment_line_break(&mut self, body: impl FnOnce(&mut EventEmitter)) {

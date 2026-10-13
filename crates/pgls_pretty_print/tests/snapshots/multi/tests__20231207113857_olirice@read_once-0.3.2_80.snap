@@ -10,14 +10,7 @@ insert into app.package_versions (
 )
 values
   (
-    (
-      select
-        id
-      from
-        app.packages
-      where
-        package_alias = 'olirice@read_once'
-    ),
+    (select id from app.packages where package_alias = 'olirice@read_once'),
     (0, 3, 2),
     '
 

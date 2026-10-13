@@ -114,23 +114,17 @@ select
   *
 from
   int8_tbl
-limit case
-  when random() < 0.5
-  then cast(null as bigint)
-end;
+limit case when random() < 0.5 then cast(null as bigint) end;
 
 select
   *
 from
   int8_tbl
-offset case
-  when random() < 0.5
-  then cast(null as bigint)
-end;
+offset case when random() < 0.5 then cast(null as bigint) end;
 
 begin;
 
-declare "c1" cursor for select * from int8_tbl limit 10;;
+declare c1 cursor for select * from int8_tbl limit 10;;
 
 fetch forward all from c1;
 
@@ -144,7 +138,7 @@ fetch prior from c1;
 
 fetch forward all from c1;
 
-declare "c2" cursor for select * from int8_tbl limit 3;;
+declare c2 cursor for select * from int8_tbl limit 3;;
 
 fetch forward all from c2;
 
@@ -158,7 +152,7 @@ fetch prior from c2;
 
 fetch forward all from c2;
 
-declare "c3" cursor for select * from int8_tbl offset 3;;
+declare c3 cursor for select * from int8_tbl offset 3;;
 
 fetch forward all from c3;
 
@@ -172,7 +166,7 @@ fetch prior from c3;
 
 fetch forward all from c3;
 
-declare "c4" cursor for select * from int8_tbl offset 10;;
+declare c4 cursor for select * from int8_tbl offset 10;;
 
 fetch forward all from c4;
 

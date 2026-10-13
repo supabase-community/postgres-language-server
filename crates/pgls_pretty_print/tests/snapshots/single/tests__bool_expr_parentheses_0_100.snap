@@ -7,10 +7,4 @@ select
 from
   demo
 where
-  (
-    flag_a or flag_b
-  ) and
-  not (flag_c or flag_d) and
-  (
-    (flag_e and flag_f) or flag_g
-  );
+  (flag_a or flag_b) and not (flag_c or flag_d) and ((flag_e and flag_f) or flag_g);

@@ -17,118 +17,108 @@ create table pagg_tab (
   c text,
   d int
 )
-partition by LIST(c);
+partition by list(c);
 
 create table pagg_tab_p1
 partition of pagg_tab
-for values in ('0000',
-'0001',
-'0002',
-'0003',
-'0004');
+for values in ('0000', '0001', '0002', '0003', '0004');
 
 create table pagg_tab_p2 partition of pagg_tab for values in ('0005', '0006', '0007', '0008');
 
 create table pagg_tab_p3 partition of pagg_tab for values in ('0009', '0010', '0011');
 
 insert into pagg_tab
-select
-  i % 20,
-  i % 30,
-  to_char(i % 12, 'FM0000'),
-  i % 30
-from
-  generate_series(0, 2999) as i;
+select i % 20, i % 30, to_char(i % 12, 'FM0000'), i % 30 from generate_series(0, 2999) as i;
 
 analyze pagg_tab;
 
 select
   c,
-  SUM(a),
-  AVG(b),
-  COUNT(*),
-  MIN(a),
-  MAX(b)
+  sum(a),
+  avg(b),
+  count(*),
+  min(a),
+  max(b)
 from
   pagg_tab
 group by c
 having
-  AVG(d) < 15
+  avg(d) < 15
 order by 1,
   2,
   3;
 
 select
   c,
-  SUM(a),
-  AVG(b),
-  COUNT(*),
-  MIN(a),
-  MAX(b)
+  sum(a),
+  avg(b),
+  count(*),
+  min(a),
+  max(b)
 from
   pagg_tab
 group by c
 having
-  AVG(d) < 15
+  avg(d) < 15
 order by 1,
   2,
   3;
 
 select
   a,
-  SUM(b),
-  AVG(b),
-  COUNT(*),
-  MIN(a),
-  MAX(b)
+  sum(b),
+  avg(b),
+  count(*),
+  min(a),
+  max(b)
 from
   pagg_tab
 group by a
 having
-  AVG(d) < 15
+  avg(d) < 15
 order by 1,
   2,
   3;
 
 select
   a,
-  SUM(b),
-  AVG(b),
-  COUNT(*),
-  MIN(a),
-  MAX(b)
+  sum(b),
+  avg(b),
+  count(*),
+  min(a),
+  max(b)
 from
   pagg_tab
 group by a
 having
-  AVG(d) < 15
+  avg(d) < 15
 order by 1,
   2,
   3;
 
-select a, c, COUNT(*) from pagg_tab group by a, c;
+select a, c, count(*) from pagg_tab group by a, c;
 
-select a, c, COUNT(*) from pagg_tab group by c, a;
+select a, c, count(*) from pagg_tab group by c, a;
 
-select c, a, COUNT(*) from pagg_tab group by a, c;
+select c, a, count(*) from pagg_tab group by a, c;
 
-select c, SUM(a) from pagg_tab where 1 = 2 group by c;
+select c, sum(a) from pagg_tab where 1 = 2 group by c;
 
-select c, SUM(a) from pagg_tab where 1 = 2 group by c;
+select c, sum(a) from pagg_tab where 1 = 2 group by c;
 
-select c, SUM(a) from pagg_tab where c = 'x' group by c;
+select c, sum(a) from pagg_tab where c = 'x' group by c;
 
-select c, SUM(a) from pagg_tab where c = 'x' group by c;
+select c, sum(a) from pagg_tab where c = 'x' group by c;
 
 set enable_hashagg = 'false';
 
-select c, SUM(a), AVG(b), COUNT(*) from pagg_tab group by 1 having AVG(d) < 15 order by 1, 2, 3;
+select c, sum(a), avg(b), count(*) from pagg_tab group by 1 having avg(d) < 15 order by 1, 2, 3;
 
-select c, SUM(a), AVG(b), COUNT(*) from pagg_tab group by 1 having AVG(d) < 15 order by 1, 2, 3;
+select c, sum(a), avg(b), count(*) from pagg_tab group by 1 having avg(d) < 15 order by 1, 2, 3;
 
-select a, SUM(b), AVG(b), COUNT(*) from pagg_tab group by 1 having AVG(d) < 15 order by 1, 2, 3;
+select a, sum(b), avg(b), count(*) from pagg_tab group by 1 having avg(d) < 15 order by 1, 2, 3;
 
-select a, SUM(b), AVG(b), COUNT(*) from pagg_tab group by 1 having AVG(d) < 15 order by 1, 2, 3;
+select a, sum(b), avg(b), count(*) from pagg_tab group by 1 having avg(d) < 15 order by 1, 2, 3;
 
 select c from pagg_tab group by c order by 1;
 
@@ -140,11 +130,11 @@ select a from pagg_tab where a < 3 group by a order by 1;
 
 reset enable_hashagg;
 
-select c, SUM(a) from pagg_tab group by rollup (c) order by 1, 2;
+select c, sum(a) from pagg_tab group by rollup (c) order by 1, 2;
 
-select c, SUM(b order by a) from pagg_tab group by c order by 1, 2;
+select c, sum(b order by a) from pagg_tab group by c order by 1, 2;
 
-select a, SUM(b order by a) from pagg_tab group by a order by 1, 2;
+select a, sum(b order by a) from pagg_tab group by a order by 1, 2;
 
 create table pagg_tab1 (
   x int,
@@ -180,8 +170,8 @@ analyze pagg_tab2;
 
 select
   t1.x,
-  SUM(t1.y),
-  COUNT(*)
+  sum(t1.y),
+  count(*)
 from
   pagg_tab1 as t1,
   pagg_tab2 as t2
@@ -194,8 +184,8 @@ order by 1,
 
 select
   t1.x,
-  SUM(t1.y),
-  COUNT(*)
+  sum(t1.y),
+  count(*)
 from
   pagg_tab1 as t1,
   pagg_tab2 as t2
@@ -208,8 +198,8 @@ order by 1,
 
 select
   t1.x,
-  SUM(t1.y),
-  COUNT(t1)
+  sum(t1.y),
+  count(t1)
 from
   pagg_tab1 as t1,
   pagg_tab2 as t2
@@ -222,8 +212,8 @@ order by 1,
 
 select
   t1.x,
-  SUM(t1.y),
-  COUNT(t1)
+  sum(t1.y),
+  count(t1)
 from
   pagg_tab1 as t1,
   pagg_tab2 as t2
@@ -236,8 +226,8 @@ order by 1,
 
 select
   t2.y,
-  SUM(t1.y),
-  COUNT(*)
+  sum(t1.y),
+  count(*)
 from
   pagg_tab1 as t1,
   pagg_tab2 as t2
@@ -252,8 +242,8 @@ set enable_hashagg = 'false';
 
 select
   t1.y,
-  SUM(t1.x),
-  COUNT(*)
+  sum(t1.x),
+  count(*)
 from
   pagg_tab1 as t1,
   pagg_tab2 as t2
@@ -261,15 +251,15 @@ where
   t1.x = t2.y
 group by t1.y
 having
-  AVG(t1.x) > 10
+  avg(t1.x) > 10
 order by 1,
   2,
   3;
 
 select
   t1.y,
-  SUM(t1.x),
-  COUNT(*)
+  sum(t1.x),
+  count(*)
 from
   pagg_tab1 as t1,
   pagg_tab2 as t2
@@ -277,7 +267,7 @@ where
   t1.x = t2.y
 group by t1.y
 having
-  AVG(t1.x) > 10
+  avg(t1.x) > 10
 order by 1,
   2,
   3;
@@ -286,74 +276,56 @@ reset enable_hashagg;
 
 select
   b.y,
-  SUM(a.y)
+  sum(a.y)
 from
-  pagg_tab1 as a
-  left outer join
-    pagg_tab2 as b
-  on a.x = b.y
+  pagg_tab1 as a left outer join pagg_tab2 as b on a.x = b.y
 group by b.y
 order by 1 nulls last;
 
 select
   b.y,
-  SUM(a.y)
+  sum(a.y)
 from
-  pagg_tab1 as a
-  left outer join
-    pagg_tab2 as b
-  on a.x = b.y
+  pagg_tab1 as a left outer join pagg_tab2 as b on a.x = b.y
 group by b.y
 order by 1 nulls last;
 
 select
   b.y,
-  SUM(a.y)
+  sum(a.y)
 from
-  pagg_tab1 as a
-  right outer join
-    pagg_tab2 as b
-  on a.x = b.y
+  pagg_tab1 as a right outer join pagg_tab2 as b on a.x = b.y
 group by b.y
 order by 1 nulls last;
 
 select
   b.y,
-  SUM(a.y)
+  sum(a.y)
 from
-  pagg_tab1 as a
-  right outer join
-    pagg_tab2 as b
-  on a.x = b.y
+  pagg_tab1 as a right outer join pagg_tab2 as b on a.x = b.y
 group by b.y
 order by 1 nulls last;
 
 select
   a.x,
-  SUM(b.x)
+  sum(b.x)
 from
-  pagg_tab1 as a
-  full outer join
-    pagg_tab2 as b
-  on a.x = b.y
+  pagg_tab1 as a full outer join pagg_tab2 as b on a.x = b.y
 group by a.x
 order by 1 nulls last;
 
 select
   a.x,
-  SUM(b.x)
+  sum(b.x)
 from
-  pagg_tab1 as a
-  full outer join
-    pagg_tab2 as b
-  on a.x = b.y
+  pagg_tab1 as a full outer join pagg_tab2 as b on a.x = b.y
 group by a.x
 order by 1 nulls last;
 
 select
   a.x,
   b.y,
-  COUNT(*)
+  count(*)
 from
   (select * from pagg_tab1 where x < 20) as a
   left outer join
@@ -369,7 +341,7 @@ order by 1,
 select
   a.x,
   b.y,
-  COUNT(*)
+  count(*)
 from
   (select * from pagg_tab1 where x < 20) as a
   left outer join
@@ -385,7 +357,7 @@ order by 1,
 select
   a.x,
   b.y,
-  COUNT(*)
+  count(*)
 from
   (select * from pagg_tab1 where x < 20) as a
   full outer join
@@ -401,7 +373,7 @@ order by 1,
 select
   a.x,
   b.y,
-  COUNT(*)
+  count(*)
 from
   (select * from pagg_tab1 where x < 20) as a
   full outer join
@@ -417,15 +389,9 @@ order by 1,
 select
   a.x,
   a.y,
-  COUNT(*)
+  count(*)
 from
-  (
-    select * from pagg_tab1 where x = 1 and x = 2
-  )
-  as a
-  left outer join
-    pagg_tab2 as b
-  on a.x = b.y
+  (select * from pagg_tab1 where x = 1 and x = 2) as a left outer join pagg_tab2 as b on a.x = b.y
 group by a.x,
   a.y
 order by 1,
@@ -434,15 +400,9 @@ order by 1,
 select
   a.x,
   a.y,
-  COUNT(*)
+  count(*)
 from
-  (
-    select * from pagg_tab1 where x = 1 and x = 2
-  )
-  as a
-  left outer join
-    pagg_tab2 as b
-  on a.x = b.y
+  (select * from pagg_tab1 where x = 1 and x = 2) as a left outer join pagg_tab2 as b on a.x = b.y
 group by a.x,
   a.y
 order by 1,
@@ -465,36 +425,36 @@ insert into pagg_tab_m select i % 30, i % 40, i % 50 from generate_series(0, 299
 
 analyze pagg_tab_m;
 
-select a, SUM(b), AVG(c), COUNT(*) from pagg_tab_m group by a having AVG(c) < 22 order by 1, 2, 3;
+select a, sum(b), avg(c), count(*) from pagg_tab_m group by a having avg(c) < 22 order by 1, 2, 3;
 
-select a, SUM(b), AVG(c), COUNT(*) from pagg_tab_m group by a having AVG(c) < 22 order by 1, 2, 3;
+select a, sum(b), avg(c), count(*) from pagg_tab_m group by a having avg(c) < 22 order by 1, 2, 3;
 
 select
   a,
-  SUM(b),
-  AVG(c),
-  COUNT(*)
+  sum(b),
+  avg(c),
+  count(*)
 from
   pagg_tab_m
 group by a,
   (a + b) / 2
 having
-  SUM(b) < 50
+  sum(b) < 50
 order by 1,
   2,
   3;
 
 select
   a,
-  SUM(b),
-  AVG(c),
-  COUNT(*)
+  sum(b),
+  avg(c),
+  count(*)
 from
   pagg_tab_m
 group by a,
   (a + b) / 2
 having
-  SUM(b) < 50
+  sum(b) < 50
 order by 1,
   2,
   3;
@@ -502,16 +462,16 @@ order by 1,
 select
   a,
   c,
-  SUM(b),
-  AVG(c),
-  COUNT(*)
+  sum(b),
+  avg(c),
+  count(*)
 from
   pagg_tab_m
 group by (a + b) / 2,
   2,
   1
 having
-  SUM(b) = 50 and AVG(c) > 25
+  sum(b) = 50 and avg(c) > 25
 order by 1,
   2,
   3;
@@ -519,16 +479,16 @@ order by 1,
 select
   a,
   c,
-  SUM(b),
-  AVG(c),
-  COUNT(*)
+  sum(b),
+  avg(c),
+  count(*)
 from
   pagg_tab_m
 group by (a + b) / 2,
   2,
   1
 having
-  SUM(b) = 50 and AVG(c) > 25
+  sum(b) = 50 and avg(c) > 25
 order by 1,
   2,
   3;
@@ -545,7 +505,7 @@ create table pagg_tab_ml_p1 partition of pagg_tab_ml for values from (0) to (12)
 create table pagg_tab_ml_p2
 partition of pagg_tab_ml
 for values from (12) to (20)
-partition by LIST(c);
+partition by list(c);
 
 create table pagg_tab_ml_p2_s1 partition of pagg_tab_ml_p2 for values in ('0000', '0001', '0002');
 
@@ -575,12 +535,7 @@ alter table pagg_tab_ml
   pagg_tab_ml_p3 for values from (20) to (30);
 
 insert into pagg_tab_ml
-select
-  i % 30,
-  i % 10,
-  to_char(i % 4, 'FM0000')
-from
-  generate_series(0, 29999) as i;
+select i % 30, i % 10, to_char(i % 4, 'FM0000') from generate_series(0, 29999) as i;
 
 analyze pagg_tab_ml;
 
@@ -590,63 +545,63 @@ set parallel_setup_cost = 0;
 
 select
   a,
-  SUM(b),
+  sum(b),
   array_agg(distinct c),
-  COUNT(*)
+  count(*)
 from
   pagg_tab_ml
 group by a
 having
-  AVG(b) < 3
+  avg(b) < 3
 order by 1,
   2,
   3;
 
 select
   a,
-  SUM(b),
+  sum(b),
   array_agg(distinct c),
-  COUNT(*)
+  count(*)
 from
   pagg_tab_ml
 group by a
 having
-  AVG(b) < 3
+  avg(b) < 3
 order by 1,
   2,
   3;
 
-select a, SUM(b), array_agg(distinct c), COUNT(*) from pagg_tab_ml group by a having AVG(b) < 3;
+select a, sum(b), array_agg(distinct c), count(*) from pagg_tab_ml group by a having avg(b) < 3;
 
 reset parallel_setup_cost;
 
-select a, SUM(b), COUNT(*) from pagg_tab_ml group by a having AVG(b) < 3 order by 1, 2, 3;
+select a, sum(b), count(*) from pagg_tab_ml group by a having avg(b) < 3 order by 1, 2, 3;
 
-select a, SUM(b), COUNT(*) from pagg_tab_ml group by a having AVG(b) < 3 order by 1, 2, 3;
+select a, sum(b), count(*) from pagg_tab_ml group by a having avg(b) < 3 order by 1, 2, 3;
 
-select b, SUM(a), COUNT(*) from pagg_tab_ml group by b order by 1, 2, 3;
+select b, sum(a), count(*) from pagg_tab_ml group by b order by 1, 2, 3;
 
-select b, SUM(a), COUNT(*) from pagg_tab_ml group by b having AVG(a) < 15 order by 1, 2, 3;
+select b, sum(a), count(*) from pagg_tab_ml group by b having avg(a) < 15 order by 1, 2, 3;
 
-select a, SUM(b), COUNT(*) from pagg_tab_ml group by a, b, c having AVG(b) > 7 order by 1, 2, 3;
+select a, sum(b), count(*) from pagg_tab_ml group by a, b, c having avg(b) > 7 order by 1, 2, 3;
 
-select a, SUM(b), COUNT(*) from pagg_tab_ml group by a, b, c having AVG(b) > 7 order by 1, 2, 3;
+select a, sum(b), count(*) from pagg_tab_ml group by a, b, c having avg(b) > 7 order by 1, 2, 3;
 
 set min_parallel_table_scan_size = '8kB';
 
 set parallel_setup_cost = 0;
 
-select a, SUM(b), COUNT(*) from pagg_tab_ml group by a having AVG(b) < 3 order by 1, 2, 3;
+select a, sum(b), count(*) from pagg_tab_ml group by a having avg(b) < 3 order by 1, 2, 3;
 
-select a, SUM(b), COUNT(*) from pagg_tab_ml group by a having AVG(b) < 3 order by 1, 2, 3;
+select a, sum(b), count(*) from pagg_tab_ml group by a having avg(b) < 3 order by 1, 2, 3;
 
-select b, SUM(a), COUNT(*) from pagg_tab_ml group by b order by 1, 2, 3;
+select b, sum(a), count(*) from pagg_tab_ml group by b order by 1, 2, 3;
 
-select b, SUM(a), COUNT(*) from pagg_tab_ml group by b having AVG(a) < 15 order by 1, 2, 3;
+select b, sum(a), count(*) from pagg_tab_ml group by b having avg(a) < 15 order by 1, 2, 3;
 
-select a, SUM(b), COUNT(*) from pagg_tab_ml group by a, b, c having AVG(b) > 7 order by 1, 2, 3;
+select a, sum(b), count(*) from pagg_tab_ml group by a, b, c having avg(b) > 7 order by 1, 2, 3;
 
-select a, SUM(b), COUNT(*) from pagg_tab_ml group by a, b, c having AVG(b) > 7 order by 1, 2, 3;
+select a, sum(b), count(*) from pagg_tab_ml group by a, b, c having avg(b) > 7 order by 1, 2, 3;
 
 set parallel_setup_cost = 10;
 
@@ -666,34 +621,34 @@ insert into pagg_tab_para select i % 30, i % 20 from generate_series(0, 29999) a
 
 analyze pagg_tab_para;
 
-select x, SUM(y), AVG(y), COUNT(*) from pagg_tab_para group by x having AVG(y) < 7 order by 1, 2, 3;
+select x, sum(y), avg(y), count(*) from pagg_tab_para group by x having avg(y) < 7 order by 1, 2, 3;
 
-select x, SUM(y), AVG(y), COUNT(*) from pagg_tab_para group by x having AVG(y) < 7 order by 1, 2, 3;
+select x, sum(y), avg(y), count(*) from pagg_tab_para group by x having avg(y) < 7 order by 1, 2, 3;
 
 select
   y,
-  SUM(x),
-  AVG(x),
-  COUNT(*)
+  sum(x),
+  avg(x),
+  count(*)
 from
   pagg_tab_para
 group by y
 having
-  AVG(x) < 12
+  avg(x) < 12
 order by 1,
   2,
   3;
 
 select
   y,
-  SUM(x),
-  AVG(x),
-  COUNT(*)
+  sum(x),
+  avg(x),
+  count(*)
 from
   pagg_tab_para
 group by y
 having
-  AVG(x) < 12
+  avg(x) < 12
 order by 1,
   2,
   3;
@@ -708,30 +663,30 @@ analyze pagg_tab_para;
 
 select
   x,
-  SUM(y),
-  AVG(y),
-  SUM(x + y),
-  COUNT(*)
+  sum(y),
+  avg(y),
+  sum(x + y),
+  count(*)
 from
   pagg_tab_para
 group by x
 having
-  AVG(y) < 7
+  avg(y) < 7
 order by 1,
   2,
   3;
 
 select
   x,
-  SUM(y),
-  AVG(y),
-  SUM(x + y),
-  COUNT(*)
+  sum(y),
+  avg(y),
+  sum(x + y),
+  count(*)
 from
   pagg_tab_para
 group by x
 having
-  AVG(y) < 7
+  avg(y) < 7
 order by 1,
   2,
   3;
@@ -743,30 +698,30 @@ analyze pagg_tab_para;
 
 select
   x,
-  SUM(y),
-  AVG(y),
-  SUM(x + y),
-  COUNT(*)
+  sum(y),
+  avg(y),
+  sum(x + y),
+  count(*)
 from
   pagg_tab_para
 group by x
 having
-  AVG(y) < 7
+  avg(y) < 7
 order by 1,
   2,
   3;
 
 select
   x,
-  SUM(y),
-  AVG(y),
-  SUM(x + y),
-  COUNT(*)
+  sum(y),
+  avg(y),
+  sum(x + y),
+  count(*)
 from
   pagg_tab_para
 group by x
 having
-  AVG(y) < 7
+  avg(y) < 7
 order by 1,
   2,
   3;
@@ -775,6 +730,6 @@ reset min_parallel_table_scan_size;
 
 reset parallel_setup_cost;
 
-select x, SUM(y), AVG(y), COUNT(*) from pagg_tab_para group by x having AVG(y) < 7 order by 1, 2, 3;
+select x, sum(y), avg(y), count(*) from pagg_tab_para group by x having avg(y) < 7 order by 1, 2, 3;
 
-select x, SUM(y), AVG(y), COUNT(*) from pagg_tab_para group by x having AVG(y) < 7 order by 1, 2, 3;
+select x, sum(y), avg(y), count(*) from pagg_tab_para group by x having avg(y) < 7 order by 1, 2, 3;

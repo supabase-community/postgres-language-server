@@ -19,25 +19,25 @@ insert into copytest values ('Mac', 'abcdef', 3);
 insert into copytest values ('esc\ape', 'a\r\\
 \nb', 4);
 
-copy copytest to 'filename' with (FORMAT 'csv');
+copy copytest to 'filename' with (format 'csv');
 
 create temporary table copytest2 (like copytest);
 
-copy copytest2 from 'filename' with (FORMAT 'csv');
+copy copytest2 from 'filename' with (format 'csv');
 
 select * from copytest except select * from copytest2;
 
 truncate copytest2;
 
-copy copytest to 'filename' with (FORMAT 'csv', QUOTE '''', ESCAPE '\');
+copy copytest to 'filename' with (format 'csv', quote '''', escape '\');
 
-copy copytest2 from 'filename' with (FORMAT 'csv', QUOTE '''', ESCAPE '\');
+copy copytest2 from 'filename' with (format 'csv', quote '''', escape '\');
 
 select * from copytest except select * from copytest2;
 
 truncate copytest2;
 
-copy copytest2 (test) from 'filename' with (FORMAT 'csv');
+copy copytest2 (test) from 'filename' with (format 'csv');
 
 select test from copytest2 order by test collate "C";
 
@@ -53,41 +53,41 @@ create temporary table copytest3 (
   "col with "" quote" int
 );
 
-copy copytest3 from stdout with (FORMAT 'csv', HEADER);
+copy copytest3 from stdout with (format 'csv', header);
 
-copy copytest3 to stdout with (FORMAT 'csv', HEADER);
+copy copytest3 to stdout with (format 'csv', header);
 
 create temporary table copytest4 (
   c1 int,
   "colname with tab: 	" text
 );
 
-copy copytest4 from stdout with (HEADER);
+copy copytest4 from stdout with (header);
 
-copy copytest4 to stdout with (HEADER);
+copy copytest4 to stdout with (header);
 
 create temporary table copytest5 (c1 int);
 
-copy copytest5 from stdout with (FORMAT 'csv', HEADER 2);
+copy copytest5 from stdout with (format 'csv', header 2);
 
 truncate copytest5;
 
-copy copytest5 from stdout with (FORMAT 'csv', HEADER 4);
+copy copytest5 from stdout with (format 'csv', header 4);
 
-select COUNT(*) from copytest5;
+select count(*) from copytest5;
 
 truncate copytest5;
 
-copy copytest5 from stdout with (FORMAT 'csv', HEADER 5);
+copy copytest5 from stdout with (format 'csv', header 5);
 
-select COUNT(*) from copytest5;
+select count(*) from copytest5;
 
 create table parted_copytest (
   a int,
   b int,
   c text
 )
-partition by LIST(b);
+partition by list(b);
 
 create table parted_copytest_a1 (
   c text,
@@ -125,14 +125,14 @@ begin;
 
 truncate parted_copytest;
 
-copy parted_copytest from 'filename' with (FREEZE);
+copy parted_copytest from 'filename' with (freeze);
 
 rollback;
 
 select
   cast(tableoid as regclass),
-  COUNT(*),
-  SUM(a)
+  count(*),
+  sum(a)
 from
   parted_copytest
 group by tableoid
@@ -143,11 +143,11 @@ truncate parted_copytest;
 create function part_ins_func()
 returns trigger
 language plpgsql
-as $function$
+as $$
 begin
   return new;
 end;
-$function$;
+$$;
 
 create trigger part_ins_trig
 before insert
@@ -159,8 +159,8 @@ copy parted_copytest from 'filename';
 
 select
   cast(tableoid as regclass),
-  COUNT(*),
-  SUM(a)
+  count(*),
+  sum(a)
 from
   parted_copytest
 group by tableoid
@@ -182,16 +182,16 @@ drop table parted_copytest;
 
 create table tab_progress_reporting (
   name text,
-  age int,
+  age int4,
   location point,
-  salary int,
+  salary int4,
   manager name
 );
 
 create function notice_after_tab_progress_reporting()
 returns trigger
 language plpgsql
-as $function$
+as $$
 declare report record;
 begin
   -- The fields ignored here are the ones that may not remain
@@ -215,7 +215,7 @@ begin
   raise info 'progress: %', report.value::text;
   return new;
 end;
-$function$;
+$$;
 
 create trigger check_after_tab_progress_reporting
 after insert
@@ -229,7 +229,7 @@ truncate tab_progress_reporting;
 
 copy tab_progress_reporting from 'filename' where salary < 2000;
 
-copy tab_progress_reporting from stdout with (ON_ERROR 'ignore');
+copy tab_progress_reporting from stdout with (on_error 'ignore');
 
 drop trigger check_after_tab_progress_reporting on tab_progress_reporting;
 
@@ -275,16 +275,16 @@ copy oversized_column_default from stdout;
 
 copy oversized_column_default (col2) from stdout;
 
-copy oversized_column_default from stdout with (DEFAULT '');
+copy oversized_column_default from stdout with (default '');
 
 drop table oversized_column_default;
 
 create table parted_si (
   id int not null,
   data text not null,
-  rand double precision not null default random()
+  rand float8 not null default random()
 )
-partition by LIST((id % 2));
+partition by list((id % 2));
 
 create table parted_si_p_even partition of parted_si for values in (0);
 
@@ -295,7 +295,7 @@ copy parted_si (id, data) from 'filename';
 select
   cast(tableoid as regclass),
   id % 2 = 0 as is_even,
-  COUNT(*)
+  count(*)
 from
   parted_si
 group by 1,
@@ -312,7 +312,7 @@ create server copytest_server foreign data wrapper copytest_wrapper;
 
 create foreign table copytest_foreign_table ( a int ) server copytest_server;
 
-copy copytest_foreign_table from stdout with (FREEZE);
+copy copytest_foreign_table from stdout with (freeze);
 
 create materialized view copytest_mv as select 1 as id with no data;
 

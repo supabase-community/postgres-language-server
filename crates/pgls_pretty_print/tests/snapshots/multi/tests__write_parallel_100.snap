@@ -27,19 +27,11 @@ drop table parallel_write;
 
 create materialized view parallel_mat_view
 as
-  select
-    length(stringu1)
-  from
-    tenk1
-  group by length(stringu1);
+  select length(stringu1) from tenk1 group by length(stringu1);
 
 create materialized view parallel_mat_view
 as
-  select
-    length(stringu1)
-  from
-    tenk1
-  group by length(stringu1);
+  select length(stringu1) from tenk1 group by length(stringu1);
 
 create unique index on parallel_mat_view using btree (length);
 

@@ -3,18 +3,7 @@ source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/20231207113857_olirice@read_once-0.3.2.sql
 ---
 insert into app.package_versions (package_id, version_struct, sql, description_md)
-values
-  (
-    (
-      select
-        id
-      from
-        app.packages
-      where
-        package_alias = 'olirice@read_once'
-    ),
-    (0, 3, 2),
-    '
+values ((select id from app.packages where package_alias = 'olirice@read_once'), (0, 3, 2), '
 
 -- Enforce requirements
 -- Workaround to https://github.com/aws/pg_tle/issues/183
@@ -76,8 +65,7 @@ $$
     where read_once.messages.id = $1
     returning contents;
 $$
-',
-    '
+', '
 
 # read_once
 
@@ -152,5 +140,4 @@ create or replace function read_message(
 )
     returns text
 ```
-'
-  );
+');

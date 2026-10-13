@@ -13,9 +13,7 @@ select
 from
   pg_constraint
   left outer join
-    lateral unnest(conkey)
-    with ordinality
-    as _ (col, ord)
+    lateral unnest(conkey) with ordinality as _ (col, ord)
   on true
 where
   contype in ('p', 'f')
@@ -30,9 +28,7 @@ select
 from
   pg_constraint
   left outer join
-    lateral unnest(confkey)
-    with ordinality
-    as _ (col, ord)
+    lateral unnest(confkey) with ordinality as _ (col, ord)
   on true
 where
   contype = 'f';

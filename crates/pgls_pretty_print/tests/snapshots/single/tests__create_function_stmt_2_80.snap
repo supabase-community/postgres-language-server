@@ -7,6 +7,4 @@ create function public.sql_func_with_transform(int)
 returns int
 language sql
 transform for type int, for type text
-as $function$
-select $1 + 1
-$function$;
+as $$select $1 + 1$$;

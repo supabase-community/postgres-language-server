@@ -2,7 +2,7 @@
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/float4.sql
 ---
-create table float4_tbl (f1 real);
+create table float4_tbl (f1 float4);
 
 insert into float4_tbl (f1) values ('    0.0');
 
@@ -22,13 +22,13 @@ insert into float4_tbl (f1) values ('10e-70');
 
 insert into float4_tbl (f1) values ('-10e-70');
 
-insert into float4_tbl (f1) values (cast('10e70' as double precision));
+insert into float4_tbl (f1) values (cast('10e70' as float8));
 
-insert into float4_tbl (f1) values (cast('-10e70' as double precision));
+insert into float4_tbl (f1) values (cast('-10e70' as float8));
 
-insert into float4_tbl (f1) values (cast('10e-70' as double precision));
+insert into float4_tbl (f1) values (cast('10e-70' as float8));
 
-insert into float4_tbl (f1) values (cast('-10e-70' as double precision));
+insert into float4_tbl (f1) values (cast('-10e-70' as float8));
 
 insert into float4_tbl (f1) values ('10e400');
 
@@ -62,33 +62,33 @@ select pg_input_is_valid('1e400', 'float4');
 
 select * from pg_input_error_info('1e400', 'float4');
 
-select cast('NaN' as real);
+select cast('NaN' as float4);
 
-select cast('nan' as real);
+select cast('nan' as float4);
 
-select cast('   NAN  ' as real);
+select cast('   NAN  ' as float4);
 
-select cast('infinity' as real);
+select cast('infinity' as float4);
 
-select cast('          -INFINiTY   ' as real);
+select cast('          -INFINiTY   ' as float4);
 
-select cast('N A N' as real);
+select cast('N A N' as float4);
 
-select cast('NaN x' as real);
+select cast('NaN x' as float4);
 
-select cast(' INFINITY    x' as real);
+select cast(' INFINITY    x' as float4);
 
-select cast('Infinity' as real) + 100.0;
+select cast('Infinity' as float4) + 100.0;
 
-select cast('Infinity' as real) / cast('Infinity' as real);
+select cast('Infinity' as float4) / cast('Infinity' as float4);
 
-select cast('42' as real) / cast('Infinity' as real);
+select cast('42' as float4) / cast('Infinity' as float4);
 
-select cast('nan' as real) / cast('nan' as real);
+select cast('nan' as float4) / cast('nan' as float4);
 
-select cast('nan' as real) / cast('0' as real);
+select cast('nan' as float4) / cast('0' as float4);
 
-select cast(cast('nan' as numeric) as real);
+select cast(cast('nan' as numeric) as float4);
 
 select * from float4_tbl;
 
@@ -122,63 +122,63 @@ update float4_tbl set f1 = float4_tbl.f1 * '-1' where float4_tbl.f1 > '0.0';
 
 select * from float4_tbl order by 1;
 
-select cast(cast('32767.4' as real) as smallint);
+select cast(cast('32767.4' as float4) as int2);
 
-select cast(cast('32767.6' as real) as smallint);
+select cast(cast('32767.6' as float4) as int2);
 
-select cast(cast('-32768.4' as real) as smallint);
+select cast(cast('-32768.4' as float4) as int2);
 
-select cast(cast('-32768.6' as real) as smallint);
+select cast(cast('-32768.6' as float4) as int2);
 
-select cast(cast('2147483520' as real) as int);
+select cast(cast('2147483520' as float4) as int4);
 
-select cast(cast('2147483647' as real) as int);
+select cast(cast('2147483647' as float4) as int4);
 
-select cast(cast('-2147483648.5' as real) as int);
+select cast(cast('-2147483648.5' as float4) as int4);
 
-select cast(cast('-2147483900' as real) as int);
+select cast(cast('-2147483900' as float4) as int4);
 
-select cast(cast('9223369837831520256' as real) as bigint);
+select cast(cast('9223369837831520256' as float4) as int8);
 
-select cast(cast('9223372036854775807' as real) as bigint);
+select cast(cast('9223372036854775807' as float4) as int8);
 
-select cast(cast('-9223372036854775808.5' as real) as bigint);
+select cast(cast('-9223372036854775808.5' as float4) as int8);
 
-select cast(cast('-9223380000000000000' as real) as bigint);
+select cast(cast('-9223380000000000000' as float4) as int8);
 
-select float4send(cast('5e-20' as real));
+select float4send(cast('5e-20' as float4));
 
-select float4send(cast('67e14' as real));
+select float4send(cast('67e14' as float4));
 
-select float4send(cast('985e15' as real));
+select float4send(cast('985e15' as float4));
 
-select float4send(cast('55895e-16' as real));
+select float4send(cast('55895e-16' as float4));
 
-select float4send(cast('7038531e-32' as real));
+select float4send(cast('7038531e-32' as float4));
 
-select float4send(cast('702990899e-20' as real));
+select float4send(cast('702990899e-20' as float4));
 
-select float4send(cast('3e-23' as real));
+select float4send(cast('3e-23' as float4));
 
-select float4send(cast('57e18' as real));
+select float4send(cast('57e18' as float4));
 
-select float4send(cast('789e-35' as real));
+select float4send(cast('789e-35' as float4));
 
-select float4send(cast('2539e-18' as real));
+select float4send(cast('2539e-18' as float4));
 
-select float4send(cast('76173e28' as real));
+select float4send(cast('76173e28' as float4));
 
-select float4send(cast('887745e-11' as real));
+select float4send(cast('887745e-11' as float4));
 
-select float4send(cast('5382571e-37' as real));
+select float4send(cast('5382571e-37' as float4));
 
-select float4send(cast('82381273e-35' as real));
+select float4send(cast('82381273e-35' as float4));
 
-select float4send(cast('750486563e-38' as real));
+select float4send(cast('750486563e-38' as float4));
 
-select float4send(cast('1.17549435e-38' as real));
+select float4send(cast('1.17549435e-38' as float4));
 
-select float4send(cast('1.1754944e-38' as real));
+select float4send(cast('1.1754944e-38' as float4));
 
 create type xfloat4;
 
@@ -187,24 +187,20 @@ returns xfloat4
 language internal
 immutable
 strict
-as $function$
-int4in
-$function$;
+as $$int4in$$;
 
 create function xfloat4out(xfloat4)
 returns cstring
 language internal
 immutable
 strict
-as $function$
-int4out
-$function$;
+as $$int4out$$;
 
-create type xfloat4 (input = xfloat4in, output = xfloat4out, like = real);
+create type xfloat4 (input = xfloat4in, output = xfloat4out, "like" = float4);
 
-create cast (xfloat4 as real) without function;
+create cast (xfloat4 as float4) without function;
 
-create cast (real as xfloat4) without function;
+create cast (float4 as xfloat4) without function;
 
 create cast (xfloat4 as int) without function;
 
@@ -240,15 +236,7 @@ select
   float4send(flt) as ibits,
   flt
 from
-  (
-    select
-      cast(cast(cast(bits as int) as xfloat4) as real)
-      as flt
-    from
-      testdata
-    offset 0
-  )
-  as s;
+  (select cast(cast(cast(bits as int) as xfloat4) as float4) as flt from testdata offset 0) as s;
 
 with
 testdata (bits)
@@ -519,21 +507,10 @@ as (
 select
   float4send(flt) as ibits,
   flt,
-  cast(cast(flt as text) as real) as r_flt,
-  float4send(cast(cast(flt as text) as real))
-  as obits,
-  float4send(cast(cast(flt as text) as real)) =
-  float4send(flt)
-  as correct
+  cast(cast(flt as text) as float4) as r_flt,
+  float4send(cast(cast(flt as text) as float4)) as obits,
+  float4send(cast(cast(flt as text) as float4)) = float4send(flt) as correct
 from
-  (
-    select
-      cast(cast(cast(bits as int) as xfloat4) as real)
-      as flt
-    from
-      testdata
-    offset 0
-  )
-  as s;
+  (select cast(cast(cast(bits as int) as xfloat4) as float4) as flt from testdata offset 0) as s;
 
 drop type xfloat4 cascade;

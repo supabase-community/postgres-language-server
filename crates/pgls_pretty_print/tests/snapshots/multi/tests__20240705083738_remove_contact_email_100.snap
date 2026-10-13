@@ -14,10 +14,7 @@ as select
   acc.bio,
   acc.created_at
 from
-  app.accounts as acc
-  left outer join
-    storage.objects as obj
-  on acc.avatar_id = obj.id;
+  app.accounts as acc left outer join storage.objects as obj on acc.avatar_id = obj.id;
 
 drop view if exists public.organizations;
 
@@ -31,7 +28,4 @@ as select
   org.bio,
   org.created_at
 from
-  app.organizations as org
-  left outer join
-    storage.objects as obj
-  on org.avatar_id = obj.id;
+  app.organizations as org left outer join storage.objects as obj on org.avatar_id = obj.id;

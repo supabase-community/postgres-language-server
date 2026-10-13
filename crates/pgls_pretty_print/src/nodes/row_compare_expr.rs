@@ -1,16 +1,14 @@
 use crate::{
     TokenKind,
     emitter::{EventEmitter, GroupKind},
-    nodes::node_list::emit_comma_separated_list,
+    nodes::node_list::emit_parenthesized_list,
 };
 use pgls_query::protobuf::{RowCompareExpr, RowCompareType};
 
 pub(super) fn emit_row_compare_expr(e: &mut EventEmitter, n: &RowCompareExpr) {
     e.group_start(GroupKind::RowCompareExpr);
 
-    e.token(TokenKind::L_PAREN);
-    emit_comma_separated_list(e, &n.largs, super::emit_node);
-    e.token(TokenKind::R_PAREN);
+    emit_parenthesized_list(e, &n.largs, super::emit_node);
 
     e.space();
 
@@ -30,9 +28,7 @@ pub(super) fn emit_row_compare_expr(e: &mut EventEmitter, n: &RowCompareExpr) {
 
     e.space();
 
-    e.token(TokenKind::L_PAREN);
-    emit_comma_separated_list(e, &n.rargs, super::emit_node);
-    e.token(TokenKind::R_PAREN);
+    emit_parenthesized_list(e, &n.rargs, super::emit_node);
 
     e.group_end();
 }

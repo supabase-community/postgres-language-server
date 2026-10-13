@@ -16,7 +16,7 @@ pub(super) fn emit_createdb_stmt(e: &mut EventEmitter, n: &CreatedbStmt) {
 
     if !n.dbname.is_empty() {
         e.space();
-        super::emit_identifier(e, &n.dbname);
+        super::emit_identifier_maybe_quoted(e, &n.dbname);
     }
 
     // Emit database options (WITH CONNECTION LIMIT, ENCODING, etc.)

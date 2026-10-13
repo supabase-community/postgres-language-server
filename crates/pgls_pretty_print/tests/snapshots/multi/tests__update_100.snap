@@ -54,15 +54,7 @@ select * from update_test;
 update update_test set (c, b) = ('car', a + b), b = a + 1 where a = 10;
 
 update update_test
-set (b, a) = (
-  select
-    a,
-    b
-  from
-    update_test
-  where
-    b = 41 and c = 'car'
-)
+set (b, a) = (select a, b from update_test where b = 41 and c = 'car')
 where
   a = 100 and b = 20;
 
@@ -76,9 +68,7 @@ set (b, a) = (
   from
     update_test as i
   where
-    i.a = o.a and
-    i.b = o.b and
-    i.c is not distinct from o.c
+    i.a = o.a and i.b = o.b and i.c is not distinct from o.c
 );
 
 select * from update_test;
@@ -104,16 +94,12 @@ update update_test set c = repeat('x', 10000) where c = 'car';
 select a, b, char_length(c) from update_test;
 
 update update_test as t
-set (a, b) = (
-  select b, a from update_test as s where s.a = t.a
-)
+set (a, b) = (select b, a from update_test as s where s.a = t.a)
 where
   current_user = session_user;
 
 update update_test as t
-set (a, b) = (
-  select b, a from update_test as s where s.a = t.a
-)
+set (a, b) = (select b, a from update_test as s where s.a = t.a)
 where
   current_user = session_user;
 
@@ -124,11 +110,7 @@ insert into upsert_test values (1, 'Boo'), (3, 'Zoo');
 with aaa as (select 1 as a, 'Foo' as b)
 insert into upsert_test
 values (1, 'Bar')
-on conflict
-(a)
-do
-update
-set (b, a) = (select b, a from aaa)
+on conflict (a) do update set (b, a) = (select b, a from aaa)
 returning *;
 
 insert into upsert_test
@@ -137,15 +119,7 @@ on conflict
 (a)
 do
 update
-set (b, a) = (
-  select
-    b || ', Correlated',
-    a
-  from
-    upsert_test as i
-  where
-    i.a = upsert_test.a
-)
+set (b, a) = (select b || ', Correlated', a from upsert_test as i where i.a = upsert_test.a)
 returning *;
 
 insert into upsert_test
@@ -154,15 +128,7 @@ on conflict
 (a)
 do
 update
-set (b, a) = (
-  select
-    b || ', Excluded',
-    a
-  from
-    upsert_test as i
-  where
-    i.a = excluded.a
-)
+set (b, a) = (select b || ', Excluded', a from upsert_test as i where i.a = excluded.a)
 returning *;
 
 insert into upsert_test
@@ -171,18 +137,9 @@ on conflict
 (a)
 do
 update
-set (b, a) = (
-  select
-    b || ', Excluded',
-    a
-  from
-    upsert_test as i
-  where
-    i.a = excluded.a
-)
+set (b, a) = (select b || ', Excluded', a from upsert_test as i where i.a = excluded.a)
 returning cast(tableoid as regclass),
-xmin = cast(pg_current_xact_id() as xid)
-as xmin_correct,
+xmin = cast(pg_current_xact_id() as xid) as xmin_correct,
 xmax = 0 as xmax_correct;
 
 insert into upsert_test
@@ -191,20 +148,10 @@ on conflict
 (a)
 do
 update
-set (b, a) = (
-  select
-    b || ', Excluded',
-    a
-  from
-    upsert_test as i
-  where
-    i.a = excluded.a
-)
+set (b, a) = (select b || ', Excluded', a from upsert_test as i where i.a = excluded.a)
 returning cast(tableoid as regclass),
-xmin = cast(pg_current_xact_id() as xid)
-as xmin_correct,
-xmax = cast(pg_current_xact_id() as xid)
-as xmax_correct;
+xmin = cast(pg_current_xact_id() as xid) as xmin_correct,
+xmax = cast(pg_current_xact_id() as xid) as xmax_correct;
 
 drop table update_test;
 
@@ -214,7 +161,7 @@ create table upsert_test (
   a int primary key,
   b text
 )
-partition by LIST(a);
+partition by list(a);
 
 create table upsert_test_1 partition of upsert_test for values in (1);
 
@@ -232,27 +179,13 @@ insert into upsert_test values (1, 'Boo'), (2, 'Zoo');
 with aaa as (select 1 as a, 'Foo' as b)
 insert into upsert_test
 values (1, 'Bar')
-on conflict
-(a)
-do
-update
-set (b, a) = (select b, a from aaa)
+on conflict (a) do update set (b, a) = (select b, a from aaa)
 returning *;
 
 with aaa as (select 1 as ctea, ' Foo' as cteb)
 insert into upsert_test
 values (1, 'Bar'), (2, 'Baz')
-on conflict
-(a)
-do
-update
-set (b, a) = (
-  select
-    upsert_test.b || cteb,
-    upsert_test.a
-  from
-    aaa
-)
+on conflict (a) do update set (b, a) = (select upsert_test.b || cteb, upsert_test.a from aaa)
 returning *;
 
 drop table upsert_test;
@@ -276,8 +209,7 @@ create table part_b_20_b_30 (
 
 alter table range_parted
   attach partition
-  part_b_20_b_30
-  for values from ('b', 20) to ('b', 30);
+  part_b_20_b_30 for values from ('b', 20) to ('b', 30);
 
 create table part_b_10_b_20 (
   e varchar,
@@ -292,8 +224,7 @@ create table part_b_1_b_10 partition of range_parted for values from ('b', 1) to
 
 alter table range_parted
   attach partition
-  part_b_10_b_20
-  for values from ('b', 10) to ('b', 20);
+  part_b_10_b_20 for values from ('b', 10) to ('b', 20);
 
 create table part_a_10_a_20 partition of range_parted for values from ('a', 10) to ('a', 20);
 
@@ -369,12 +300,7 @@ create table mintab (c1 int);
 insert into mintab values (120);
 
 create view upview
-as select
-  *
-from
-  range_parted
-where
-  (select c > c1 from mintab)
+as select * from range_parted where (select c > c1 from mintab)
 with cascaded check option;
 
 update upview set c = 199 where b = 4;
@@ -392,15 +318,15 @@ update range_parted set c = 95 where a = 'b' and b > 10 and c > 100 returning ra
 create function trans_updatetrigfunc()
 returns trigger
 language plpgsql
-as $function$
-begin
+as $$
+  begin
     raise notice 'trigger = %, old table = %, new table = %',
                  TG_NAME,
                  (select string_agg(old_table::text, ', ' ORDER BY a) FROM old_table),
                  (select string_agg(new_table::text, ', ' ORDER BY a) FROM new_table);
     return null;
   end;
-$function$;
+$$;
 
 create trigger trans_updatetrig
 after update
@@ -438,12 +364,11 @@ drop trigger trans_inserttrig on range_parted;
 create function func_parted_mod_b()
 returns trigger
 language plpgsql
-as $function$
+as $$
 BEGIN
    NEW.b = NEW.b + 1;
    return NEW;
-END
-$function$;
+END $$;
 
 create trigger trig_c1_100
 before insert or update
@@ -508,12 +433,11 @@ reset session_authorization;
 create function func_d_1_15()
 returns trigger
 language plpgsql
-as $function$
+as $$
 BEGIN
    NEW.c = NEW.c + 1; -- Make even numbers odd, or vice versa
    return NEW;
-END
-$function$;
+END $$;
 
 create trigger trig_d_1_15 before insert on part_d_1_15 for each row execute function func_d_1_15();
 
@@ -557,8 +481,7 @@ as restrictive
 for update
 to public
 using (true)
-with check (range_parted =
-cast(row('b', 10, 112, 1, null) as range_parted));
+with check (range_parted = cast(row('b', 10, 112, 1, null) as range_parted));
 
 set session authorization regress_range_parted_user;
 
@@ -587,13 +510,13 @@ drop table mintab;
 create function trigfunc()
 returns trigger
 language plpgsql
-as $function$
-begin
+as $$
+  begin
     raise notice 'trigger = % fired on table % during %',
                  TG_NAME, TG_TABLE_NAME, TG_OP;
     return null;
   end;
-$function$;
+$$;
 
 create trigger parent_delete_trig
 after delete
@@ -717,7 +640,7 @@ create table list_parted (
   a text,
   b int
 )
-partition by LIST(a);
+partition by list(a);
 
 create table list_part1 partition of list_parted for values in ('a', 'b');
 
@@ -737,7 +660,7 @@ create table utrtest (
   a int,
   b text
 )
-partition by LIST(a);
+partition by list(a);
 
 create table utr1 (
   a int check (a in (1)),
@@ -765,15 +688,13 @@ insert into utrtest
 values (1, 'foo')
 returning *,
 cast(tableoid as regclass),
-xmin = cast(pg_current_xact_id() as xid)
-as xmin_ok;
+xmin = cast(pg_current_xact_id() as xid) as xmin_ok;
 
 insert into utrtest
 values (2, 'bar')
 returning *,
 cast(tableoid as regclass),
-xmin = cast(pg_current_xact_id() as xid)
-as xmin_ok;
+xmin = cast(pg_current_xact_id() as xid) as xmin_ok;
 
 insert into utrtest values (2, 'bar') returning *, cast(tableoid as regclass);
 
@@ -784,8 +705,7 @@ where
   a = s.x
 returning *,
 cast(tableoid as regclass),
-xmin = cast(pg_current_xact_id() as xid)
-as xmin_ok;
+xmin = cast(pg_current_xact_id() as xid) as xmin_ok;
 
 update utrtest
 set a = 3 - a
@@ -794,8 +714,7 @@ where
   a = s.x
 returning *,
 cast(tableoid as regclass),
-xmin = cast(pg_current_xact_id() as xid)
-as xmin_ok;
+xmin = cast(pg_current_xact_id() as xid) as xmin_ok;
 
 update utrtest
 set a = 3 - a
@@ -808,23 +727,22 @@ cast(tableoid as regclass);
 delete from utrtest
 returning *,
 cast(tableoid as regclass),
-xmax = cast(pg_current_xact_id() as xid)
-as xmax_ok;
+xmax = cast(pg_current_xact_id() as xid) as xmax_ok;
 
 drop table utrtest;
 
 create table list_parted (
   a numeric,
   b int,
-  c bigint
+  c int8
 )
-partition by LIST(a);
+partition by list(a);
 
-create table sub_parted partition of list_parted for values in (1) partition by LIST(b);
+create table sub_parted partition of list_parted for values in (1) partition by list(b);
 
 create table sub_part1 (
   b int,
-  c bigint,
+  c int8,
   a numeric
 );
 
@@ -834,7 +752,7 @@ alter table sub_parted
 
 create table sub_part2 (
   b int,
-  c bigint,
+  c int8,
   a numeric
 );
 
@@ -845,7 +763,7 @@ alter table sub_parted
 create table list_part1 (
   a numeric,
   b int,
-  c bigint
+  c int8
 );
 
 alter table list_parted
@@ -871,12 +789,11 @@ select cast(cast(tableoid as regclass) as text), * from list_parted where a = 2 
 create function func_parted_mod_b()
 returns trigger
 language plpgsql
-as $function$
+as $$
 BEGIN
    NEW.b = 2; -- This is changing partition key column.
    return NEW;
-END
-$function$;
+END $$;
 
 create trigger parted_mod_b
 before update
@@ -895,12 +812,11 @@ drop trigger parted_mod_b on sub_part1;
 create or replace function func_parted_mod_b()
 returns trigger
 language plpgsql
-as $function$
+as $$
 BEGIN
    raise notice 'Trigger: Got OLD row %, but returning NULL', OLD;
    return NULL;
-END
-$function$;
+END $$;
 
 create trigger trig_skip_delete
 before delete
@@ -932,34 +848,31 @@ drop table non_parted;
 
 drop table list_parted;
 
-create or replace function dummy_hashint4(a int, seed bigint)
-returns bigint
+create or replace function dummy_hashint4(a int4, seed int8)
+returns int8
 language plpgsql
 immutable
-as $function$
-begin return (a + seed); end;
-$function$;
+as $$ begin return (a + seed); end; $$;
 
 create operator class custom_opclass
-  for type int
+  for type int4
   using hash
   as operator 1 =,
-  function 2 dummy_hashint4(int, bigint);
+  function 2 dummy_hashint4(int4, int8);
 
 create table hash_parted (
   a int,
   b int
 )
-partition by HASH(a custom_opclass,
-b custom_opclass);
+partition by hash(a custom_opclass, b custom_opclass);
 
-create table hpart1 partition of hash_parted for values with (MODULUS 2, REMAINDER 1);
+create table hpart1 partition of hash_parted for values with (modulus 2, remainder 1);
 
-create table hpart2 partition of hash_parted for values with (MODULUS 4, REMAINDER 2);
+create table hpart2 partition of hash_parted for values with (modulus 4, remainder 2);
 
-create table hpart3 partition of hash_parted for values with (MODULUS 8, REMAINDER 0);
+create table hpart3 partition of hash_parted for values with (modulus 8, remainder 0);
 
-create table hpart4 partition of hash_parted for values with (MODULUS 8, REMAINDER 4);
+create table hpart4 partition of hash_parted for values with (modulus 8, remainder 4);
 
 insert into hpart1 values (1, 1);
 
@@ -977,4 +890,4 @@ drop table hash_parted;
 
 drop operator class custom_opclass using hash;
 
-drop function dummy_hashint4(int, bigint);
+drop function dummy_hashint4(a int4, seed int8);

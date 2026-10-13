@@ -14,12 +14,7 @@ as (
     col as resorigcol,
     ord
   from
-    pg_constraint
-    left outer join
-      lateral unnest(conkey)
-      with ordinality
-      as _ (col, ord)
-    on true
+    pg_constraint left outer join lateral unnest(conkey) with ordinality as _ (col, ord) on true
   where
     contype in ('p', 'f')
   union
@@ -31,12 +26,7 @@ as (
     col,
     ord
   from
-    pg_constraint
-    left outer join
-      lateral unnest(confkey)
-      with ordinality
-      as _ (col, ord)
-    on true
+    pg_constraint left outer join lateral unnest(confkey) with ordinality as _ (col, ord) on true
   where
     contype = 'f'
 ),
@@ -48,10 +38,7 @@ as (
     c.relname as view_name,
     r.ev_action as view_definition
   from
-    pg_class as c
-    inner join
-      pg_namespace as n
-    on n.oid = c.relnamespace
+    pg_class as c inner join pg_namespace as n on n.oid = c.relnamespace
     inner join
       pg_rewrite as r
     on r.ev_class = c.oid
@@ -149,10 +136,7 @@ as (
     view_id,
     view_schema,
     view_name,
-    json_array_elements(
-      view_definition -> 0 -> 'targetList'
-    )
-    as entry
+    json_array_elements(view_definition -> 0 -> 'targetList') as entry
   from
     transform_json
 ),
@@ -168,23 +152,9 @@ as (
   from
     target_entries
 ),
-recursion (view_id,
-view_schema,
-view_name,
-view_column,
-resorigtbl,
-resorigcol,
-is_cycle,
-path)
+recursion (view_id, view_schema, view_name, view_column, resorigtbl, resorigcol, is_cycle, path)
 as (
-  select
-    r.*,
-    false,
-    array[resorigtbl]
-  from
-    results as r
-  where
-    true
+  select r.*, false, array[resorigtbl] from results as r where true
   union all
   select
     view.view_id,
@@ -199,8 +169,7 @@ as (
     recursion as view
     inner join
       results as tab
-    on view.resorigtbl = tab.view_id and
-      view.resorigcol = tab.view_column
+    on view.resorigtbl = tab.view_id and view.resorigcol = tab.view_column
   where
     not is_cycle
 ),
@@ -217,8 +186,7 @@ as (
     recursion
     inner join
       pg_attribute as vcol
-    on vcol.attrelid = view_id and
-      vcol.attnum = view_column
+    on vcol.attrelid = view_id and vcol.attnum = view_column
   group by view_id,
     view_schema,
     view_name,
@@ -240,19 +208,13 @@ select
   )
   as column_dependencies
 from
-  repeated_references as rep
-  inner join
-    pks_fks
-  using (
-    "resorigtbl",
-    "resorigcol")
+  repeated_references as rep inner join pks_fks using ( resorigtbl, resorigcol)
   inner join
     pg_class as tbl
   on tbl.oid = rep.resorigtbl
   inner join
     pg_attribute as col
-  on col.attrelid = tbl.oid and
-    col.attnum = rep.resorigcol
+  on col.attrelid = tbl.oid and col.attnum = rep.resorigcol
   inner join
     pg_namespace as sch
   on sch.oid = tbl.relnamespace
@@ -264,10 +226,4 @@ group by sch.nspname,
   pks_fks.contype,
   pks_fks.ncol
 having
-  ncol =
-  array_length(
-    array_agg(
-      row(col.attname, view_columns) order by pks_fks.ord
-    ),
-    1
-  );
+  ncol = array_length(array_agg(row(col.attname, view_columns) order by pks_fks.ord), 1);

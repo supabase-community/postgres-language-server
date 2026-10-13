@@ -3,18 +3,7 @@ source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/20231207113329_olirice@index_advisor-0.2.1.sql
 ---
 insert into app.package_versions (package_id, version_struct, sql, description_md)
-values
-  (
-    (
-      select
-        id
-      from
-        app.packages
-      where
-        package_alias = 'olirice@index_advisor'
-    ),
-    (0, 2, 1),
-    '
+values ((select id from app.packages where package_alias = 'olirice@index_advisor'), (0, 2, 1), '
 
 -- Enforce requirements
 -- Workaround to https://github.com/aws/pg_tle/issues/183
@@ -221,8 +210,7 @@ begin
 end;
 $$;
 
-',
-    '
+', '
 
 # index_advisor
 
@@ -350,5 +338,4 @@ from
                                                                                     "CREATE INDEX ON public.review USING btree (book_id)"}
 (3 rows)
 ```
-'
-  );
+');

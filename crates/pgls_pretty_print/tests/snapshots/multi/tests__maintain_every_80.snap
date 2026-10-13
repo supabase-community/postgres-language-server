@@ -22,8 +22,7 @@ select
 from
   pg_class
 where
-  oid =
-  cast('past_inh_db_parent' as regclass);
+  oid = cast('past_inh_db_parent' as regclass);
 
 drop table past_inh_db_child;
 
@@ -39,8 +38,7 @@ select
 from
   pg_class
 where
-  oid =
-  cast('past_inh_db_parent' as regclass);
+  oid = cast('past_inh_db_parent' as regclass);
 
 drop table past_inh_db_parent, past_inh_db_other;
 

@@ -8,13 +8,13 @@ create or replace function app.is_valid(app.semver_struct)
 returns boolean
 language sql
 immutable
-as $function$
-select (
+as $$
+    select (
         ($1).major is not null
         and ($1).minor is not null
         and ($1).patch is not null
     )
-$function$;
+$$;
 
 create domain app.semver as app.semver_struct check (app.is_valid(value));
 
@@ -22,19 +22,19 @@ create function app.semver_exception(version text)
 returns app.semver_struct
 language plpgsql
 immutable
-as $function$
+as $$
 begin
     raise exception using errcode='22000', message=format('Invalid semver %L', version);
 end;
-$function$;
+$$;
 
 create function app.text_to_semver(text)
 returns app.semver_struct
 language sql
 immutable
 strict
-as $function$
-with s(version) as (
+as $$
+    with s(version) as (
         select (
             split_part($1, '.', 1),
             split_part($1, '.', 2),
@@ -48,13 +48,13 @@ with s(version) as (
        end
     from
         s
-$function$;
+$$;
 
 create or replace function app.semver_to_text(app.semver)
 returns text
 language sql
 immutable
-as $function$
-select
+as $$
+    select
         format('%s.%s.%s', $1.major, $1.minor, $1.patch)
-$function$;
+$$;

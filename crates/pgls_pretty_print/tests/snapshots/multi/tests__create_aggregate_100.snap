@@ -4,25 +4,25 @@ input_file: crates/pgls_pretty_print/tests/data/multi/create_aggregate.sql
 ---
 create aggregate newavg (
   sfunc = int4_avg_accum,
-  basetype = int,
+  basetype = int4,
   stype = _int8,
   finalfunc = int8_avg,
   initcond1 = '{0,0}'
 );
 
-comment on aggregate newavg_wrong(int) is 'an agg comment';
+comment on aggregate newavg_wrong(int4) is 'an agg comment';
 
-comment on aggregate newavg(int) is 'an agg comment';
+comment on aggregate newavg(int4) is 'an agg comment';
 
-comment on aggregate newavg(int) is null;
+comment on aggregate newavg(int4) is null;
 
-create aggregate newsum (sfunc1 = int4pl, basetype = int, stype1 = int, initcond1 = '0');
+create aggregate newsum (sfunc1 = int4pl, basetype = int4, stype1 = int4, initcond1 = '0');
 
-create aggregate newcnt (*) (sfunc = int8inc, stype = bigint, initcond = '0', parallel = safe);
+create aggregate newcnt (*) (sfunc = int8inc, stype = int8, initcond = '0', parallel = safe);
 
-create aggregate oldcnt (sfunc = int8inc, basetype = 'ANY', stype = bigint, initcond = '0');
+create aggregate oldcnt (sfunc = int8inc, basetype = 'ANY', stype = int8, initcond = '0');
 
-create aggregate newcnt ("any") (sfunc = int8inc_any, stype = bigint, initcond = '0');
+create aggregate newcnt ("any") (sfunc = int8inc_any, stype = int8, initcond = '0');
 
 comment on aggregate nosuchagg(*) is 'should fail';
 
@@ -30,16 +30,14 @@ comment on aggregate newcnt(*) is 'an agg(*) comment';
 
 comment on aggregate newcnt("any") is 'an agg(any) comment';
 
-create function sum3(bigint, bigint, bigint)
-returns bigint
+create function sum3(int8, int8, int8)
+returns int8
 language sql
 immutable
 strict
-as $function$
-select $1 + $2 + $3
-$function$;
+as $$select $1 + $2 + $3$$;
 
-create aggregate sum2 (bigint, bigint) (sfunc = sum3, stype = bigint, initcond = '0');
+create aggregate sum2 (int8, int8) (sfunc = sum3, stype = int8, initcond = '0');
 
 create type aggtype as (a int, b int, c text);
 
@@ -48,17 +46,13 @@ returns aggtype[]
 language sql
 immutable
 strict
-as $function$
-select array_append($1,ROW($2,$3,$4)::aggtype)
-$function$;
+as $$select array_append($1,ROW($2,$3,$4)::aggtype)$$;
 
 create function aggfns_trans(aggtype[], int, int, text)
 returns aggtype[]
 language sql
 immutable
-as $function$
-select array_append($1,ROW($2,$3,$4)::aggtype)
-$function$;
+as $$select array_append($1,ROW($2,$3,$4)::aggtype)$$;
 
 create aggregate aggfstr (int, int, text) (sfunc = aggf_trans, stype = aggtype[], initcond = '{}');
 
@@ -71,45 +65,37 @@ create aggregate aggfns (
   initcond = '{}'
 );
 
-create function least_accum(bigint, bigint)
-returns bigint
+create function least_accum(int8, int8)
+returns int8
 language sql
-as $function$
-select least($1, $2)
-$function$;
+as $$select least($1, $2)$$;
 
-create aggregate least_agg (int) (stype = bigint, sfunc = least_accum);
+create aggregate least_agg (int4) (stype = int8, sfunc = least_accum);
 
-drop function least_accum(bigint, bigint);
+drop function least_accum(int8, int8);
 
 create function least_accum(anycompatible, anycompatible)
 returns anycompatible
 language sql
-as $function$
-select least($1, $2)
-$function$;
+as $$select least($1, $2)$$;
 
-create aggregate least_agg (int) (stype = bigint, sfunc = least_accum);
+create aggregate least_agg (int4) (stype = int8, sfunc = least_accum);
 
-create aggregate least_agg (bigint) (stype = bigint, sfunc = least_accum);
+create aggregate least_agg (int8) (stype = int8, sfunc = least_accum);
 
 drop function least_accum(anycompatible, anycompatible) cascade;
 
 create function least_accum(anyelement, variadic anyarray)
 returns anyelement
 language sql
-as $function$
-select least($1, min($2[i])) from generate_subscripts($2,1) g(i)
-$function$;
+as $$select least($1, min($2[i])) from generate_subscripts($2,1) g(i)$$;
 
 create aggregate least_agg (variadic items anyarray) (stype = anyelement, sfunc = least_accum);
 
 create function cleast_accum(anycompatible, variadic anycompatiblearray)
 returns anycompatible
 language sql
-as $function$
-select least($1, min($2[i])) from generate_subscripts($2,1) g(i)
-$function$;
+as $$select least($1, min($2[i])) from generate_subscripts($2,1) g(i)$$;
 
 create aggregate cleast_agg (
   variadic items anycompatiblearray
@@ -119,7 +105,7 @@ create aggregate cleast_agg (
 );
 
 create aggregate my_percentile_disc (
-  double precision, anyelement
+  float8, anyelement
 ) (
   stype = internal,
   sfunc = ordered_set_transition,
@@ -138,16 +124,16 @@ create aggregate my_rank (
   hypothetical
 );
 
-alter aggregate my_percentile_disc(double precision, anyelement) rename to test_percentile_disc;
+alter aggregate my_percentile_disc(float8, anyelement) rename to test_percentile_disc;
 
-alter aggregate my_rank("any") rename to test_rank;
+alter aggregate my_rank(variadic "any") rename to test_rank;
 
 create aggregate sumdouble (
-  double precision
+  float8
 ) (
-  stype = double precision,
+  stype = float8,
   sfunc = float8pl,
-  mstype = double precision,
+  mstype = float8,
   msfunc = float8pl,
   minvfunc = float8mi
 );
@@ -273,67 +259,61 @@ create or replace aggregate myavg (
 
 create or replace aggregate myavg (numeric) (stype = numeric, sfunc = numeric_add);
 
-create function sum4(bigint, bigint, bigint, bigint)
-returns bigint
+create function sum4(int8, int8, int8, int8)
+returns int8
 language sql
 immutable
 strict
-as $function$
-select $1 + $2 + $3 + $4
-$function$;
+as $$select $1 + $2 + $3 + $4$$;
 
-create or replace aggregate sum3 (bigint, bigint, bigint) (stype = bigint, sfunc = sum4);
+create or replace aggregate sum3 (int8, int8, int8) (stype = int8, sfunc = sum4);
 
-drop function sum4(bigint, bigint, bigint, bigint);
+drop function sum4(int8, int8, int8, int8);
 
 drop aggregate myavg(numeric);
 
 create aggregate mysum (int) (stype = int, sfunc = int4pl, parallel = pear);
 
-create function float8mi_n(double precision, double precision)
-returns double precision
+create function float8mi_n(float8, float8)
+returns float8
 language sql
-as $function$
-SELECT $1 - $2;
-$function$;
+as $$ SELECT $1 - $2; $$;
 
 create aggregate invalidsumdouble (
-  double precision
+  float8
 ) (
-  stype = double precision,
+  stype = float8,
   sfunc = float8pl,
-  mstype = double precision,
+  mstype = float8,
   msfunc = float8pl,
   minvfunc = float8mi_n
 );
 
-create function float8mi_int(double precision, double precision)
+create function float8mi_int(float8, float8)
 returns int
 language sql
-as $function$
-SELECT CAST($1 - $2 AS INT);
-$function$;
+as $$ SELECT CAST($1 - $2 AS INT); $$;
 
 create aggregate wrongreturntype (
-  double precision
+  float8
 ) (
-  stype = double precision,
+  stype = float8,
   sfunc = float8pl,
-  mstype = double precision,
+  mstype = float8,
   msfunc = float8pl,
   minvfunc = float8mi_int
 );
 
 create aggregate case_agg (
   "Sfunc1" = int4pl,
-  "Basetype" = int,
-  "Stype1" = int,
+  "Basetype" = int4,
+  "Stype1" = int4,
   "Initcond1" = '0',
   "Parallel" = safe
 );
 
 create aggregate case_agg (
-  double precision
+  float8
 ) (
   "Stype" = internal,
   "Sfunc" = ordered_set_transition,

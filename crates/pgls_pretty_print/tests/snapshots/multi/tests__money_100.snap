@@ -23,29 +23,29 @@ select 2 * m from money_data;
 
 select m / 2 from money_data;
 
-select m * cast(2 as smallint) from money_data;
+select m * cast(2 as int2) from money_data;
 
-select cast(2 as smallint) * m from money_data;
+select cast(2 as int2) * m from money_data;
 
-select m / cast(2 as smallint) from money_data;
+select m / cast(2 as int2) from money_data;
 
-select m * cast(2 as bigint) from money_data;
+select m * cast(2 as int8) from money_data;
 
-select cast(2 as bigint) * m from money_data;
+select cast(2 as int8) * m from money_data;
 
-select m / cast(2 as bigint) from money_data;
+select m / cast(2 as int8) from money_data;
 
-select m * cast(2 as double precision) from money_data;
+select m * cast(2 as float8) from money_data;
 
-select cast(2 as double precision) * m from money_data;
+select cast(2 as float8) * m from money_data;
 
-select m / cast(2 as double precision) from money_data;
+select m / cast(2 as float8) from money_data;
 
-select m * cast(2 as real) from money_data;
+select m * cast(2 as float4) from money_data;
 
-select cast(2 as real) * m from money_data;
+select cast(2 as float4) * m from money_data;
 
-select m / cast(2 as real) from money_data;
+select m / cast(2 as float4) from money_data;
 
 select m = '$123.00' from money_data;
 
@@ -157,9 +157,9 @@ select cast('-92233720368547758.085' as money);
 
 select cast('92233720368547758.075' as money);
 
-select cast('878.08' as money) / cast(11 as double precision);
+select cast('878.08' as money) / cast(11 as float8);
 
-select cast('878.08' as money) / cast(11 as real);
+select cast('878.08' as money) / cast(11 as float4);
 
 select cast('878.08' as money) / cast(11 as bigint);
 
@@ -183,15 +183,15 @@ select cast(-1234567890 as money);
 
 select cast(-12345678901234567 as money);
 
-select cast(cast(1234567890 as int) as money);
+select cast(cast(1234567890 as int4) as money);
 
-select cast(cast(12345678901234567 as bigint) as money);
+select cast(cast(12345678901234567 as int8) as money);
 
 select cast(cast(12345678901234567 as numeric) as money);
 
-select cast(cast(-1234567890 as int) as money);
+select cast(cast(-1234567890 as int4) as money);
 
-select cast(cast(-12345678901234567 as bigint) as money);
+select cast(cast(-12345678901234567 as int8) as money);
 
 select cast(cast(-12345678901234567 as numeric) as money);
 
@@ -207,16 +207,16 @@ select cast('92233720368547758.07' as money) + cast('0.01' as money);
 
 select cast('-92233720368547758.08' as money) - cast('0.01' as money);
 
-select cast('92233720368547758.07' as money) * cast(2 as double precision);
+select cast('92233720368547758.07' as money) * cast(2 as float8);
 
-select cast('-1' as money) / cast(1.175494e-38 as real);
+select cast('-1' as money) / cast(1.175494e-38 as float4);
 
-select cast('92233720368547758.07' as money) * cast(2 as int);
+select cast('92233720368547758.07' as money) * cast(2 as int4);
 
-select cast('1' as money) / cast(0 as smallint);
+select cast('1' as money) / cast(0 as int2);
 
-select cast('42' as money) * cast('inf' as double precision);
+select cast('42' as money) * cast('inf' as float8);
 
-select cast('42' as money) * cast('-inf' as double precision);
+select cast('42' as money) * cast('-inf' as float8);
 
-select cast('42' as money) * cast('nan' as real);
+select cast('42' as money) * cast('nan' as float4);

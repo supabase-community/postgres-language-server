@@ -38,9 +38,7 @@ pub(super) fn emit_create_table_space_stmt(e: &mut EventEmitter, n: &CreateTable
         e.space();
         e.token(TokenKind::WITH_KW);
         e.space();
-        e.token(TokenKind::L_PAREN);
-        super::node_list::emit_comma_separated_list(e, &n.options, super::emit_node);
-        e.token(TokenKind::R_PAREN);
+        super::node_list::emit_parenthesized_list(e, &n.options, super::emit_node);
     }
 
     e.token(TokenKind::SEMICOLON);

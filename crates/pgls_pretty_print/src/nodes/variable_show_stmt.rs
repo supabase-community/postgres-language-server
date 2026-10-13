@@ -12,7 +12,7 @@ pub(super) fn emit_variable_show_stmt(e: &mut EventEmitter, n: &VariableShowStmt
 
     if !n.name.is_empty() {
         e.space();
-        super::emit_identifier(e, &n.name);
+        super::emit_identifier_maybe_quoted(e, &n.name);
     }
 
     e.token(TokenKind::SEMICOLON);

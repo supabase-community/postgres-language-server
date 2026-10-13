@@ -6,9 +6,9 @@ create or replace function app.to_package_name(handle app.valid_name, partial_na
 returns text
 language sql
 immutable
-as $function$
-select format('%s@%s', $1, $2)
-$function$;
+as $$
+    select format('%s@%s', $1, $2)
+$$;
 
 alter table app.packages
   add column package_alias text null;
@@ -55,10 +55,7 @@ as select
   pv.created_at,
   pa.package_alias
 from
-  app.packages as pa
-  inner join
-    app.package_versions as pv
-  on pa.id = pv.package_id;
+  app.packages as pa inner join app.package_versions as pv on pa.id = pv.package_id;
 
 create or replace view public.package_upgrades
 as select
@@ -71,18 +68,15 @@ as select
   pu.created_at,
   pa.package_alias
 from
-  app.packages as pa
-  inner join
-    app.package_upgrades as pu
-  on pa.id = pu.package_id;
+  app.packages as pa inner join app.package_upgrades as pu on pa.id = pu.package_id;
 
 create or replace function public.register_download(package_name text)
 returns void
 language sql
 security definer
-as $function$
-insert into app.downloads(package_id)
+as $$
+    insert into app.downloads(package_id)
     select id
     from app.packages ap
     where ap.package_name = $1 or ap.package_alias = $1
-$function$;
+$$;

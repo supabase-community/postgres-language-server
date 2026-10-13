@@ -17,14 +17,10 @@ create table reloptions_test2 (i int) with (fillfactor = 2);
 create table reloptions_test2 (i int) with (fillfactor = 110);
 
 create table reloptions_test2 (i int)
-with (
-  autovacuum_analyze_scale_factor = -10.0
-);
+with (autovacuum_analyze_scale_factor = -10.0);
 
 create table reloptions_test2 (i int)
-with (
-  autovacuum_analyze_scale_factor = 110.0
-);
+with (autovacuum_analyze_scale_factor = 110.0);
 
 create table reloptions_test2 (i int) with (not_existing_option = 2);
 
@@ -44,22 +40,17 @@ create table reloptions_test2 (i int) with (autovacuum_enabled = 30.5);
 create table reloptions_test2 (i int) with (autovacuum_enabled = 'string');
 
 create table reloptions_test2 (i int)
-with (
-  autovacuum_analyze_scale_factor = 'string'
-);
+with (autovacuum_analyze_scale_factor = 'string');
 
 create table reloptions_test2 (i int)
-with (
-  autovacuum_analyze_scale_factor = 'true'
-);
+with (autovacuum_analyze_scale_factor = 'true');
 
 create table reloptions_test2 (i int) with (fillfactor = 30, fillfactor = 40);
 
 create table reloptions_test2 (i int) with (fillfactor);
 
 alter table reloptions_test
-  set (fillfactor = 31,
-  autovacuum_analyze_scale_factor = 0.3);
+  set (fillfactor = 31, autovacuum_analyze_scale_factor = 0.3);
 
 select reloptions from pg_class where oid = cast('reloptions_test' as regclass);
 
@@ -74,17 +65,14 @@ alter table reloptions_test
 select reloptions from pg_class where oid = cast('reloptions_test' as regclass);
 
 alter table reloptions_test
-  reset (autovacuum_enabled,
-  autovacuum_analyze_scale_factor);
+  reset (autovacuum_enabled, autovacuum_analyze_scale_factor);
 
 select
   reloptions
 from
   pg_class
 where
-  oid =
-  cast('reloptions_test' as regclass) and
-  reloptions is null;
+  oid = cast('reloptions_test' as regclass) and reloptions is null;
 
 alter table reloptions_test
   reset (fillfactor = 12);
@@ -92,8 +80,7 @@ alter table reloptions_test
 update pg_class
 set reloptions = '{fillfactor=13,autovacuum_enabled=false,illegal_option=4}'
 where
-  oid =
-  cast('reloptions_test' as regclass);
+  oid = cast('reloptions_test' as regclass);
 
 alter table reloptions_test
   reset (illegal_option);
@@ -116,7 +103,7 @@ select reloptions from pg_class where oid = cast('reloptions_test' as regclass);
 
 insert into reloptions_test values (1, null), (null, null);
 
-vacuum (FREEZE, DISABLE_PAGE_SKIPPING) reloptions_test;
+vacuum (freeze, disable_page_skipping) reloptions_test;
 
 select pg_relation_size('reloptions_test') > 0;
 
@@ -132,8 +119,7 @@ where
     from
       pg_class
     where
-      oid =
-      cast('reloptions_test' as regclass)
+      oid = cast('reloptions_test' as regclass)
   );
 
 alter table reloptions_test
@@ -143,24 +129,21 @@ select reloptions from pg_class where oid = cast('reloptions_test' as regclass);
 
 insert into reloptions_test values (1, null), (null, null);
 
-vacuum (FREEZE, DISABLE_PAGE_SKIPPING) reloptions_test;
+vacuum (freeze, disable_page_skipping) reloptions_test;
 
 select pg_relation_size('reloptions_test') = 0;
 
 drop table reloptions_test;
 
 create table reloptions_test (s varchar)
-with (
-  toast.autovacuum_vacuum_cost_delay = 23
-);
+with (toast.autovacuum_vacuum_cost_delay = 23);
 
 select
   reltoastrelid as toast_oid
 from
   pg_class
 where
-  oid =
-  cast('reloptions_test' as regclass);
+  oid = cast('reloptions_test' as regclass);
 
 select reloptions from pg_class where oid = 'toast_oid';
 
@@ -199,16 +182,10 @@ where
     from
       pg_class
     where
-      oid =
-      cast('reloptions_test' as regclass)
+      oid = cast('reloptions_test' as regclass)
   );
 
-create index "reloptions_test_idx"
-on reloptions_test
-using btree
-(
-  s
-)
+create index reloptions_test_idx on reloptions_test using btree (s)
 with (fillfactor = 30);
 
 select
@@ -216,39 +193,18 @@ select
 from
   pg_class
 where
-  oid =
-  cast('reloptions_test_idx' as regclass);
+  oid = cast('reloptions_test_idx' as regclass);
 
-create index "reloptions_test_idx"
-on reloptions_test
-using btree
-(
-  s
-)
+create index reloptions_test_idx on reloptions_test using btree (s)
 with (not_existing_option = 2);
 
-create index "reloptions_test_idx"
-on reloptions_test
-using btree
-(
-  s
-)
+create index reloptions_test_idx on reloptions_test using btree (s)
 with (not_existing_ns.fillfactor = 2);
 
-create index "reloptions_test_idx2"
-on reloptions_test
-using btree
-(
-  s
-)
+create index reloptions_test_idx2 on reloptions_test using btree (s)
 with (fillfactor = 1);
 
-create index "reloptions_test_idx2"
-on reloptions_test
-using btree
-(
-  s
-)
+create index reloptions_test_idx2 on reloptions_test using btree (s)
 with (fillfactor = 130);
 
 alter index reloptions_test_idx
@@ -259,10 +215,9 @@ select
 from
   pg_class
 where
-  oid =
-  cast('reloptions_test_idx' as regclass);
+  oid = cast('reloptions_test_idx' as regclass);
 
-create index "reloptions_test_idx3" on reloptions_test using btree (s);
+create index reloptions_test_idx3 on reloptions_test using btree (s);
 
 alter index reloptions_test_idx3
   set (fillfactor = 40);
@@ -272,5 +227,4 @@ select
 from
   pg_class
 where
-  oid =
-  cast('reloptions_test_idx3' as regclass);
+  oid = cast('reloptions_test_idx3' as regclass);

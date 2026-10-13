@@ -2,11 +2,11 @@
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/namespace.sql
 ---
-select set_config('search_path', ' ', false);
+select pg_catalog.set_config('search_path', ' ', false);
 
-create schema "test_ns_schema_1";
+create schema test_ns_schema_1;
 
-create unique index "abc_a_idx" on abc using btree (a);
+create unique index abc_a_idx on abc using btree (a);
 
 create view abc_view
 as select a + 1 as a, b + 1 as b from abc;
@@ -22,46 +22,38 @@ begin;
 
 set search_path to public, test_ns_schema_1;
 
-create schema "test_ns_schema_2";
+create schema test_ns_schema_2;
 
 create view abc_view
 as select c from abc;
 
 commit;
 
-show "search_path";
+show search_path;
 
 begin;
 
 set search_path to public, test_ns_schema_1;
 
-create schema "test_ns_schema_2";
+create schema test_ns_schema_2;
 
 create view abc_view
 as select a from abc;
 
-show "search_path";
+show search_path;
 
 commit;
 
-show "search_path";
+show search_path;
 
 drop schema test_ns_schema_2 cascade;
 
 select
-  COUNT(*)
+  count(*)
 from
   pg_class
 where
-  relnamespace =
-  (
-    select
-      oid
-    from
-      pg_namespace
-    where
-      nspname = 'test_ns_schema_1'
-  );
+  relnamespace = (select oid from pg_namespace where nspname = 'test_ns_schema_1');
 
 insert into test_ns_schema_1.abc default values;
 
@@ -76,25 +68,17 @@ select * from test_ns_schema_1.abc_view;
 alter schema test_ns_schema_1 rename to test_ns_schema_renamed;
 
 select
-  COUNT(*)
+  count(*)
 from
   pg_class
 where
-  relnamespace =
-  (
-    select
-      oid
-    from
-      pg_namespace
-    where
-      nspname = 'test_ns_schema_1'
-  );
+  relnamespace = (select oid from pg_namespace where nspname = 'test_ns_schema_1');
 
-create schema "test_ns_schema_renamed";
+create schema test_ns_schema_renamed;
 
-create schema if not exists "test_ns_schema_renamed";
+create schema if not exists test_ns_schema_renamed;
 
-create schema if not exists "test_ns_schema_renamed";
+create schema if not exists test_ns_schema_renamed;
 
 create table abc (
   a serial,
@@ -104,21 +88,13 @@ create table abc (
 drop schema test_ns_schema_renamed cascade;
 
 select
-  COUNT(*)
+  count(*)
 from
   pg_class
 where
-  relnamespace =
-  (
-    select
-      oid
-    from
-      pg_namespace
-    where
-      nspname = 'test_ns_schema_renamed'
-  );
+  relnamespace = (select oid from pg_namespace where nspname = 'test_ns_schema_renamed');
 
-create schema "test_maint_search_path";
+create schema test_maint_search_path;
 
 set search_path to test_maint_search_path;
 
@@ -126,12 +102,12 @@ create function fn(int)
 returns int
 language plpgsql
 immutable
-as $function$
-BEGIN
+as $$
+  BEGIN
     RAISE NOTICE 'current search_path: %', current_setting('search_path');
     RETURN $1;
   END;
-$function$;
+$$;
 
 create table test_maint (i int);
 
@@ -139,13 +115,13 @@ insert into test_maint values (1), (2);
 
 create materialized view test_maint_mv as select fn(i) from test_maint;
 
-create index "test_maint_idx" on test_maint_search_path.test_maint using btree ((fn(i)));
+create index test_maint_idx on test_maint_search_path.test_maint using btree ((fn(i)));
 
 reindex table test_maint_search_path.test_maint;
 
 analyze test_maint_search_path.test_maint;
 
-vacuum (FULL) test_maint_search_path.test_maint;
+vacuum (full) test_maint_search_path.test_maint;
 
 cluster test_maint_search_path.test_maint using test_maint_idx;
 

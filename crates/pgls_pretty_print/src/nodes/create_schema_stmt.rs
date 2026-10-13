@@ -29,7 +29,7 @@ pub(super) fn emit_create_schema_stmt(e: &mut EventEmitter, n: &CreateSchemaStmt
 
     if !n.schemaname.is_empty() {
         e.space();
-        super::emit_identifier(e, &n.schemaname);
+        super::emit_identifier_maybe_quoted(e, &n.schemaname);
     }
 
     // AUTHORIZATION clause

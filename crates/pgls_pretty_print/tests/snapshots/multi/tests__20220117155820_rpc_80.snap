@@ -10,8 +10,8 @@ public.search_packages(
 returns setof public.packages
 language sql
 stable
-as $function$
-select *
+as $$
+    select *
     from public.packages
     where
         ($1 is null or handle <% $1 or handle ~ $1)
@@ -20,4 +20,4 @@ select *
     order by
         coalesce(extensions.similarity($1, handle), 0) + coalesce(extensions.similarity($2, partial_name), 0) desc,
         created_at desc;
-$function$;
+$$;

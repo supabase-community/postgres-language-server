@@ -82,11 +82,7 @@ truncate trunc_c, truncate_a, trunc_d, trunc_e;
 
 truncate trunc_c, truncate_a, trunc_d, trunc_e, trunc_b;
 
-select * from truncate_a
-union all
-select * from trunc_c
-union all
-select * from trunc_b
+select * from truncate_a union all select * from trunc_c union all select * from trunc_b
 union all
 select * from trunc_d;
 
@@ -104,11 +100,7 @@ insert into trunc_e values (1, 1);
 
 truncate trunc_c cascade;
 
-select * from truncate_a
-union all
-select * from trunc_c
-union all
-select * from trunc_b
+select * from truncate_a union all select * from trunc_c union all select * from trunc_b
 union all
 select * from trunc_d;
 
@@ -213,7 +205,7 @@ create table trunc_trigger_log (
 create function trunctrigger()
 returns trigger
 language plpgsql
-as $function$
+as $$
 declare c bigint;
 begin
     execute 'select count(*) from ' || quote_ident(tg_table_name) into c;
@@ -221,7 +213,7 @@ begin
       (TG_OP, TG_LEVEL, TG_WHEN, TG_ARGV[0], tg_table_name, c);
     return null;
 end;
-$function$;
+$$;
 
 insert into trunc_trigger_test values (1, 'foo', 'bar'), (2, 'baz', 'quux');
 
@@ -231,13 +223,13 @@ on trunc_trigger_test
 for each statement
 execute function trunctrigger("before trigger truncate");
 
-select COUNT(*) as "Row count in test table" from trunc_trigger_test;
+select count(*) as "Row count in test table" from trunc_trigger_test;
 
 select * from trunc_trigger_log;
 
 truncate trunc_trigger_test;
 
-select COUNT(*) as "Row count in test table" from trunc_trigger_test;
+select count(*) as "Row count in test table" from trunc_trigger_test;
 
 select * from trunc_trigger_log;
 
@@ -253,13 +245,13 @@ on trunc_trigger_test
 for each statement
 execute function trunctrigger("after trigger truncate");
 
-select COUNT(*) as "Row count in test table" from trunc_trigger_test;
+select count(*) as "Row count in test table" from trunc_trigger_test;
 
 select * from trunc_trigger_log;
 
 truncate trunc_trigger_test;
 
-select COUNT(*) as "Row count in test table" from trunc_trigger_test;
+select count(*) as "Row count in test table" from trunc_trigger_test;
 
 select * from trunc_trigger_log;
 
@@ -348,7 +340,7 @@ create table truncparted (
   a int,
   b char(1)
 )
-partition by LIST(a);
+partition by list(a);
 
 truncate only truncparted;
 
@@ -365,24 +357,24 @@ drop table truncparted;
 create function tp_ins_data()
 returns void
 language plpgsql
-as $function$
-BEGIN
+as $$
+  BEGIN
 	INSERT INTO truncprim VALUES (1), (100), (150);
 	INSERT INTO truncpart VALUES (1), (100), (150);
   END
-$function$;
+$$;
 
 create function tp_chk_data(out pktb regclass, out pkval int, out fktb regclass, out fkval int)
 returns setof record
 language plpgsql
-as $function$
-BEGIN
+as $$
+  BEGIN
     RETURN QUERY SELECT
       pk.tableoid::regclass, pk.a, fk.tableoid::regclass, fk.a
     FROM truncprim pk FULL JOIN truncpart fk USING (a)
     ORDER BY 2, 4;
   END
-$function$;
+$$;
 
 create table truncprim (a int primary key);
 
@@ -443,7 +435,7 @@ insert into trunc_a values (0), (5), (10), (15), (20), (25);
 
 create table ref_b (
   b int primary key,
-  a int references trunc_a (a) on DELETE cascade
+  a int references trunc_a (a) on delete cascade
 );
 
 insert into ref_b values (10, 0), (50, 5), (100, 10), (150, 15);
@@ -456,7 +448,7 @@ drop table ref_b;
 
 create table ref_c (
   c int primary key,
-  a int references trunc_a (a) on DELETE cascade
+  a int references trunc_a (a) on delete cascade
 )
 partition by range(c);
 

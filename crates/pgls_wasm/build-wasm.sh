@@ -82,6 +82,8 @@ EXPORTED_FUNCTIONS="[
   '_pgls_insert_file',
   '_pgls_remove_file',
   '_pgls_lint',
+  '_pgls_format',
+  '_pgls_format_sql',
   '_pgls_complete',
   '_pgls_hover',
   '_pgls_parse',

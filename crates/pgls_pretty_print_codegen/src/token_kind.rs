@@ -35,6 +35,7 @@ const LITERALS: &[&str] = &[
     "IDENT",
     "BOOLEAN",
     "TYPE_IDENT", // Data type names (text, varchar, int, etc.)
+    "WORD",       // Words read case-insensitively that are not keywords, such as privilege names
 ];
 
 const VARIANT_DATA: &[(&str, &str)] = &[
@@ -52,12 +53,33 @@ const VARIANT_DATA: &[(&str, &str)] = &[
     ("COMMENT", "String"),                // /* comment text */
     ("BOOLEAN", "bool"),                  // true, false
     ("TYPE_IDENT", "String"),             // text, varchar, int (data type names)
+    ("WORD", "String"),                   // usage, maintain (rendered with the keyword case)
 ];
 
 pub fn token_kind_mod() -> proc_macro2::TokenStream {
     let keywords = keyword_kinds().expect("Failed to get keyword kinds");
 
-    let KeywordKinds { all_keywords, .. } = keywords;
+    let KeywordKinds {
+        all_keywords,
+        categories,
+    } = keywords;
+
+    let category_match_arms: Vec<TokenStream> = categories
+        .iter()
+        .map(|(name, category)| {
+            let variant = format_ident!(
+                "{}",
+                match category.as_str() {
+                    "UNRESERVED_KEYWORD" => "Unreserved",
+                    "COL_NAME_KEYWORD" => "ColName",
+                    "TYPE_FUNC_NAME_KEYWORD" => "TypeFuncName",
+                    "RESERVED_KEYWORD" => "Reserved",
+                    other => panic!("unknown keyword category {other}"),
+                }
+            );
+            quote! { #name => Some(KeywordCategory::#variant) }
+        })
+        .collect();
 
     let mut enum_variants: Vec<TokenStream> = Vec::new();
     let mut from_kw_match_arms: Vec<TokenStream> = Vec::new();
@@ -124,6 +146,28 @@ pub fn token_kind_mod() -> proc_macro2::TokenStream {
             #(#enum_variants),*,
         }
 
+        /// The grammar category of a keyword, which decides where it can be used as a name.
+        #[derive(Clone, Copy, PartialEq, Eq, Debug)]
+        pub enum KeywordCategory {
+            /// Usable as any name.
+            Unreserved,
+            /// Usable as a column or table name, but not as a function or type name.
+            ColName,
+            /// Usable as a function or type name, but not as a column or table name.
+            TypeFuncName,
+            /// Only usable as a column label (after `AS`) or when quoted.
+            Reserved,
+        }
+
+        /// Returns the category of `ident` when it is a keyword. `ident` must be lowercase, the
+        /// way the parser stores an unquoted name.
+        pub fn keyword_category(ident: &str) -> Option<KeywordCategory> {
+            match ident {
+                #(#category_match_arms),*,
+                _ => None
+            }
+        }
+
         impl TokenKind {
             pub(crate) fn from_keyword(ident: &str) -> Option<TokenKind> {
                 let lower_ident = ident.to_ascii_lowercase();
@@ -150,6 +194,10 @@ pub fn token_kind_mod() -> proc_macro2::TokenStream {
                     TokenKind::TYPE_IDENT(type_name) => match config.type_case {
                         crate::renderer::KeywordCase::Upper => type_name.to_uppercase(),
                         crate::renderer::KeywordCase::Lower => type_name.to_lowercase(),
+                    },
+                    TokenKind::WORD(word) => match config.keyword_case {
+                        crate::renderer::KeywordCase::Upper => word.to_uppercase(),
+                        crate::renderer::KeywordCase::Lower => word.to_lowercase(),
                     },
                     TokenKind::STRING(s) => s.clone(),
                     TokenKind::ESC_STRING(s) => s.clone(),

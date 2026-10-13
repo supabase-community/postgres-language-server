@@ -7,25 +7,25 @@ create table user_logins (
   who text
 );
 
-grant SELECT on table user_logins to public;
+grant select on table user_logins to public;
 
 create function on_login_proc()
 returns event_trigger
 language plpgsql
-as $function$
+as $$
 BEGIN
   INSERT INTO user_logins (who) VALUES (SESSION_USER);
   RAISE NOTICE 'You are welcome!';
 END;
-$function$;
+$$;
 
-create event trigger "on_login_trigger" on login execute function on_login_proc();
+create event trigger on_login_trigger on login execute function on_login_proc();
 
 alter event trigger on_login_trigger enable always;
 
-select COUNT(*) from user_logins;
+select count(*) from user_logins;
 
-select COUNT(*) from user_logins;
+select count(*) from user_logins;
 
 select dathasloginevt from pg_database where datname = 'DBNAME';
 

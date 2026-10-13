@@ -9,28 +9,10 @@ insert into app.packages (
   control_relocatable,
   control_requires
 )
-values
-  (
-    'olirice',
-    'asciiplot',
-    'A Toy ASCII Plotting Library',
-    false,
-    '{}'
-  );
+values ('olirice', 'asciiplot', 'A Toy ASCII Plotting Library', false, '{}');
 
 insert into app.package_versions (package_id, version_struct, sql, description_md)
-values
-  (
-    (
-      select
-        id
-      from
-        app.packages
-      where
-        package_name = 'olirice-asciiplot'
-    ),
-    (0, 0, 1),
-    '
+values ((select id from app.packages where package_name = 'olirice-asciiplot'), (0, 0, 1), '
 CREATE TYPE scatter_state AS (
   x_arr NUMERIC[],
   y_arr NUMERIC[],
@@ -124,8 +106,7 @@ CREATE AGGREGATE scatter(
 
 comment on type scatter_state is e''internal'';
 
-',
-    '
+', '
 # asciiplot
 
 asciiplot is a toy library for producing ASCII scatterplots from PostgreSQL queries.
@@ -164,28 +145,10 @@ from
 |   *
 */
 ```
-'
-  );
+');
 
-insert into app.package_upgrades (
-  package_id,
-  from_version_struct,
-  to_version_struct,
-  sql
-)
+insert into app.package_upgrades (package_id, from_version_struct, to_version_struct, sql)
 values
-  (
-    (
-      select
-        id
-      from
-        app.packages
-      where
-        package_name = 'olirice-asciiplot'
-    ),
-    (0, 0, 1),
-    (0, 0, 2),
-    '
+  ((select id from app.packages where package_name = 'olirice-asciiplot'), (0, 0, 1), (0, 0, 2), '
 comment on type scatter_state is e''internal'';
-'
-  );
+');

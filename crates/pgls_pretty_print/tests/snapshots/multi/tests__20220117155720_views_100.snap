@@ -12,10 +12,7 @@ as select
   acc.contact_email,
   acc.created_at
 from
-  app.accounts as acc
-  left outer join
-    storage.objects as obj
-  on acc.avatar_id = obj.id;
+  app.accounts as acc left outer join storage.objects as obj on acc.avatar_id = obj.id;
 
 create view public.organizations
 as select
@@ -27,19 +24,10 @@ as select
   org.contact_email,
   org.created_at
 from
-  app.organizations as org
-  left outer join
-    storage.objects as obj
-  on org.avatar_id = obj.id;
+  app.organizations as org left outer join storage.objects as obj on org.avatar_id = obj.id;
 
 create view public.members
-as select
-  aio.organization_id,
-  aio.account_id,
-  aio.role,
-  aio.created_at
-from
-  app.members as aio;
+as select aio.organization_id, aio.account_id, aio.role, aio.created_at from app.members as aio;
 
 create view public.packages
 as select
@@ -78,10 +66,7 @@ as select
   pa.control_requires,
   pv.created_at
 from
-  app.packages as pa
-  inner join
-    app.package_versions as pv
-  on pa.id = pv.package_id;
+  app.packages as pa inner join app.package_versions as pv on pa.id = pv.package_id;
 
 create view public.package_upgrades
 as select
@@ -93,7 +78,4 @@ as select
   pu.sql,
   pu.created_at
 from
-  app.packages as pa
-  inner join
-    app.package_upgrades as pu
-  on pa.id = pu.package_id;
+  app.packages as pa inner join app.package_upgrades as pu on pa.id = pu.package_id;

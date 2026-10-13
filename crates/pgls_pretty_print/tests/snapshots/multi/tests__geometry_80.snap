@@ -20,10 +20,7 @@ select
 from
   point_tbl as p1
 where
-  ishorizontal(
-    p1.f1,
-    cast('(0,0)' as point)
-  );
+  ishorizontal(p1.f1, cast('(0,0)' as point));
 
 select p1.f1 from point_tbl as p1 where p1.f1 ?- cast('(0,0)' as point);
 
@@ -32,10 +29,7 @@ select
 from
   point_tbl as p1
 where
-  isvertical(
-    p1.f1,
-    cast('(5.1,34.5)' as point)
-  );
+  isvertical(p1.f1, cast('(5.1,34.5)' as point));
 
 select p1.f1 from point_tbl as p1 where p1.f1 ?| cast('(5.1,34.5)' as point);
 
@@ -698,7 +692,7 @@ where
 
 select c.f1, p.f1, c.f1 <-> p.f1 from circle_tbl as c, polygon_tbl as p;
 
-create index "gcircleind" on circle_tbl using gist (f1);
+create index gcircleind on circle_tbl using gist (f1);
 
 select * from circle_tbl where f1 && circle(point(1, -2), 1) order by area(f1);
 
@@ -706,15 +700,14 @@ select * from circle_tbl where f1 && circle(point(1, -2), 1) order by area(f1);
 
 select * from circle_tbl where f1 && circle(point(1, -2), 1) order by area(f1);
 
-create index "gpolygonind" on polygon_tbl using gist (f1);
+create index gpolygonind on polygon_tbl using gist (f1);
 
 select
   *
 from
   polygon_tbl
 where
-  f1 @>
-  cast('((1,1),(2,2),(2,1))' as polygon)
+  f1 @> cast('((1,1),(2,2),(2,1))' as polygon)
 order by (poly_center(f1))[0];
 
 select
@@ -722,8 +715,7 @@ select
 from
   polygon_tbl
 where
-  f1 @>
-  cast('((1,1),(2,2),(2,1))' as polygon)
+  f1 @> cast('((1,1),(2,2),(2,1))' as polygon)
 order by (poly_center(f1))[0];
 
 select
@@ -731,8 +723,7 @@ select
 from
   polygon_tbl
 where
-  f1 @>
-  cast('((1,1),(2,2),(2,1))' as polygon)
+  f1 @> cast('((1,1),(2,2),(2,1))' as polygon)
 order by (poly_center(f1))[0];
 
 select pg_input_is_valid('(1', 'circle');

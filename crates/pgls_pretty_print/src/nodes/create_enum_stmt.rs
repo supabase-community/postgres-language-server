@@ -3,7 +3,7 @@ use pgls_query::protobuf::CreateEnumStmt;
 use crate::{
     TokenKind,
     emitter::{EventEmitter, GroupKind},
-    nodes::node_list::emit_comma_separated_list,
+    nodes::node_list::emit_parenthesized_list,
 };
 
 pub(super) fn emit_create_enum_stmt(e: &mut EventEmitter, n: &CreateEnumStmt) {
@@ -27,12 +27,10 @@ pub(super) fn emit_create_enum_stmt(e: &mut EventEmitter, n: &CreateEnumStmt) {
     // Emit the enum values list (as string literals with quotes)
     if !n.vals.is_empty() {
         e.space();
-        e.token(TokenKind::L_PAREN);
-        emit_comma_separated_list(e, &n.vals, |n, e| {
+        emit_parenthesized_list(e, &n.vals, |n, e| {
             let s = assert_node_variant!(String, n);
             super::string::emit_string_literal(e, s);
         });
-        e.token(TokenKind::R_PAREN);
     }
 
     e.token(TokenKind::SEMICOLON);

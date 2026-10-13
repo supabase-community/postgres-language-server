@@ -120,13 +120,11 @@ select cast(to_regnamespace('-') as oid);
 select cast(to_regdatabase('-') as oid);
 
 create table regrole_test (
-  rolid oid
-  default cast('regress_regrole_test' as regrole)
+  rolid oid default cast('regress_regrole_test' as regrole)
 );
 
 create table regdatabase_test (
-  datid oid
-  default cast('template1' as regdatabase)
+  datid oid default cast('template1' as regdatabase)
 );
 
 drop role regress_regrole_test;

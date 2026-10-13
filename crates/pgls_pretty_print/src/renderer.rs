@@ -1,5 +1,5 @@
 use crate::TokenKind;
-use crate::emitter::{GroupKind, LayoutEvent, LineType};
+use crate::emitter::{LayoutEvent, LineType};
 use std::fmt::Write;
 
 #[derive(Debug, Clone)]
@@ -93,8 +93,8 @@ impl<W: Write> Renderer<W> {
                 }
                 LayoutEvent::GroupStart { .. } => {
                     let group_end = self.find_group_end(events, i);
-                    let group_slice = &events[i..=group_end];
-                    self.render_group(group_slice)?;
+                    let trailing_width = self.trailing_width(&events[group_end + 1..], 0);
+                    self.render_group(&events[i..=group_end], trailing_width)?;
                     i = group_end + 1;
                 }
                 LayoutEvent::GroupEnd => {
@@ -113,37 +113,44 @@ impl<W: Write> Renderer<W> {
         Ok(())
     }
 
-    fn render_group(&mut self, group_events: &[LayoutEvent]) -> Result<(), std::fmt::Error> {
-        if let Some(single_line) = self.try_single_line(group_events) {
-            let would_fit =
-                self.effective_line_length() + single_line.len() <= self.config.max_line_length;
-            if would_fit {
-                self.write_text(&single_line)?;
-                return Ok(());
-            }
+    /// Renders a group on one line when it fits, `trailing_width` included, and breaks it
+    /// otherwise. A nested group decides on its own, whether or not its parent broke.
+    fn render_group(
+        &mut self,
+        group_events: &[LayoutEvent],
+        trailing_width: usize,
+    ) -> Result<(), std::fmt::Error> {
+        if let Some(single_line) = self.single_line_if_fits(group_events, trailing_width) {
+            self.write_text(&single_line)?;
+            return Ok(());
         }
 
-        self.render_events_with_breaks(group_events)
+        // Skip the GroupStart and GroupEnd markers.
+        self.render_events_with_breaks(&group_events[1..group_events.len() - 1], trailing_width)
     }
 
-    /// Render an inner group, allowing it to try single-line independently of parent's break status.
-    /// This enables nested groups to stay compact even when the parent group is breaking.
-    fn render_inner_group(&mut self, group_events: &[LayoutEvent]) -> Result<(), std::fmt::Error> {
-        // Extract inner events (skip GroupStart and GroupEnd markers)
-        let inner_events = &group_events[1..group_events.len() - 1];
-
-        // Try single-line first, independent of parent's break status
-        if let Some(single_line) = self.try_single_line(group_events) {
-            let would_fit =
-                self.effective_line_length() + single_line.len() <= self.config.max_line_length;
-            if would_fit {
-                self.write_text(&single_line)?;
-                return Ok(());
+    /// The width of the text that follows a group without a break opportunity in between, such as
+    /// the comma after a list item. `outer_trailing_width` is what follows the enclosing events.
+    fn trailing_width(&self, events: &[LayoutEvent], outer_trailing_width: usize) -> usize {
+        let mut width = 0;
+        for event in events {
+            match event {
+                LayoutEvent::Token(token) => {
+                    let text = token.render(&self.config);
+                    match text.split_once('\n') {
+                        Some((first_line, _)) => return width + first_line.len(),
+                        None => width += text.len(),
+                    }
+                }
+                LayoutEvent::Space => width += 1,
+                LayoutEvent::GroupStart { .. }
+                | LayoutEvent::GroupEnd
+                | LayoutEvent::IndentStart
+                | LayoutEvent::IndentEnd => {}
+                LayoutEvent::Line(_) | LayoutEvent::Comment { .. } => return width,
             }
         }
-
-        // Fall back to breaking
-        self.render_events_with_breaks(inner_events)
+        width + outer_trailing_width
     }
 
     /// The current line length, counting the indentation that will be written when the
@@ -158,14 +165,18 @@ impl<W: Write> Renderer<W> {
         }
     }
 
-    fn render_events_with_breaks(&mut self, events: &[LayoutEvent]) -> Result<(), std::fmt::Error> {
+    fn render_events_with_breaks(
+        &mut self,
+        events: &[LayoutEvent],
+        trailing_width: usize,
+    ) -> Result<(), std::fmt::Error> {
         let mut i = 0;
         while i < events.len() {
             match &events[i] {
                 LayoutEvent::Token(token) => {
                     // This path is only taken when the enclosing group broke, so the statement
                     // already spans several lines and the terminator can stand alone. A statement
-                    // that fits is rendered by try_single_line, which never reaches this code, and
+                    // that fits is rendered by single_line_if_fits, which never reaches this code, and
                     // therefore keeps its semicolon attached.
                     if self.config.isolate_semicolon && matches!(token, TokenKind::SEMICOLON) {
                         self.write_line_break()?;
@@ -194,39 +205,11 @@ impl<W: Write> Renderer<W> {
                     self.after_line_comment = *line_comment;
                     i += 1;
                 }
-                LayoutEvent::GroupStart { kind } => {
+                LayoutEvent::GroupStart { .. } => {
                     let group_end = self.find_group_end(events, i);
-                    let group_slice = &events[i..=group_end];
-
-                    // Decide whether to try single-line for this nested group.
-                    // We try single-line in two cases:
-                    // 1. Followed by a Hard break (semantic boundary like RETURNS after
-                    //    function signature)
-                    // 2. The group's single-line form is small enough to fit on its own
-                    //    (allows compact column lists, function args, etc.)
-                    let followed_by_hard_break = events
-                        .get(group_end + 1)
-                        .is_some_and(|e| matches!(e, LayoutEvent::Line(LineType::Hard)));
-
-                    let try_single_line = if matches!(kind, GroupKind::FunctionArgumentGroup)
-                        || followed_by_hard_break
-                    {
-                        true
-                    } else if let Some(single_line) = self.try_single_line(group_slice) {
-                        // Allow small groups to stay on one line even without Hard break
-                        // This keeps column lists, function args compact
-                        single_line.len() <= self.config.max_line_length / 2
-                    } else {
-                        false
-                    };
-
-                    if try_single_line {
-                        self.render_inner_group(group_slice)?;
-                    } else {
-                        // Force nested group to break
-                        let inner_events = &events[i + 1..group_end];
-                        self.render_events_with_breaks(inner_events)?;
-                    }
+                    let group_trailing_width =
+                        self.trailing_width(&events[group_end + 1..], trailing_width);
+                    self.render_group(&events[i..=group_end], group_trailing_width)?;
                     i = group_end + 1;
                 }
                 LayoutEvent::GroupEnd => {
@@ -245,52 +228,60 @@ impl<W: Write> Renderer<W> {
         Ok(())
     }
 
-    fn try_single_line(&self, group_events: &[LayoutEvent]) -> Option<String> {
+    /// The group on one line, if it can be collapsed and fits on the current line followed by
+    /// `trailing_width` columns that cannot move to the next line. Only the first line of a text
+    /// spanning several lines, a function body for instance, sits on the current one.
+    ///
+    /// Measuring stops as soon as the line is full, so a large group that cannot fit is not
+    /// rendered in full for every level it is nested in.
+    fn single_line_if_fits(
+        &self,
+        group_events: &[LayoutEvent],
+        trailing_width: usize,
+    ) -> Option<String> {
+        let available = self
+            .config
+            .max_line_length
+            .saturating_sub(self.effective_line_length());
         let mut buffer = String::new();
-        let mut has_hard_breaks = false;
+        // Set once the text reaches a line break, after which the width no longer matters.
+        let mut first_line_fits = false;
 
         for event in group_events {
             match event {
-                LayoutEvent::Token(token) => {
-                    let text = token.render(&self.config);
-                    buffer.push_str(&text);
-                }
-                LayoutEvent::Space => {
-                    buffer.push(' ');
-                }
-                LayoutEvent::Line(LineType::Hard) => {
-                    has_hard_breaks = true;
-                    break;
-                }
-                LayoutEvent::Line(LineType::Soft) => {
-                    // soft lines disappear in single-line mode (no space)
-                }
-                LayoutEvent::Line(LineType::SoftOrSpace) => {
-                    buffer.push(' '); // Becomes space in single-line mode
-                }
-                LayoutEvent::Line(LineType::Fill) => {
-                    buffer.push(' ');
-                }
-                LayoutEvent::Line(LineType::FillNoSpace) => {}
+                LayoutEvent::Token(token) => buffer.push_str(&token.render(&self.config)),
+                LayoutEvent::Space
+                | LayoutEvent::Line(LineType::SoftOrSpace)
+                | LayoutEvent::Line(LineType::Fill) => buffer.push(' '),
+                // Collapsing would push code behind a `--` comment or flatten a multi-line block
+                // comment into the surrounding expression.
+                LayoutEvent::Line(LineType::Hard) => return None,
                 LayoutEvent::Comment { text, line_comment } => {
                     if *line_comment || text.contains('\n') {
-                        // Collapsing would push code behind a `--` comment or flatten a
-                        // multi-line block comment into the surrounding expression.
-                        has_hard_breaks = true;
-                        break;
+                        return None;
                     }
                     buffer.push_str(text);
                 }
-                LayoutEvent::GroupStart { .. } | LayoutEvent::GroupEnd => {
-                    // skip group markers for single line test
-                }
-                LayoutEvent::IndentStart | LayoutEvent::IndentEnd => {
-                    // skip indent changes for single line test
+                LayoutEvent::Line(LineType::Soft | LineType::FillNoSpace)
+                | LayoutEvent::GroupStart { .. }
+                | LayoutEvent::GroupEnd
+                | LayoutEvent::IndentStart
+                | LayoutEvent::IndentEnd => {}
+            }
+
+            if !first_line_fits {
+                match buffer.split_once('\n') {
+                    Some((first_line, _)) if first_line.len() <= available => {
+                        first_line_fits = true;
+                    }
+                    Some(_) => return None,
+                    None if buffer.len() + trailing_width > available => return None,
+                    None => {}
                 }
             }
         }
 
-        if has_hard_breaks { None } else { Some(buffer) }
+        Some(buffer)
     }
 
     fn handle_line(&mut self, line_type: &LineType) -> Result<(), std::fmt::Error> {

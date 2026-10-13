@@ -14,7 +14,7 @@ set local enable_hashjoin = 'on';
 create or replace function find_hash(node json)
 returns json
 language plpgsql
-as $function$
+as $$
 declare
   x json;
   child json;
@@ -32,7 +32,7 @@ begin
     return null;
   end if;
 end;
-$function$;
+$$;
 
 create or replace function hash_join_batches(query text)
 returns table (
@@ -40,7 +40,7 @@ returns table (
   final int
 )
 language plpgsql
-as $function$
+as $$
 declare
   whole_plan json;
   hash_node json;
@@ -54,7 +54,7 @@ begin
     return next;
   end loop;
 end;
-$function$;
+$$;
 
 create table simple as select generate_series(1, 20000) as id, 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
 
@@ -65,9 +65,7 @@ analyze simple;
 
 create table bigger_than_it_looks
 as
-  select
-    generate_series(1, 20000) as id,
-    'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+  select generate_series(1, 20000) as id, 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
 
 alter table bigger_than_it_looks
   set (autovacuum_enabled = 'false');
@@ -93,11 +91,7 @@ alter table extremely_skewed
 analyze extremely_skewed;
 
 insert into extremely_skewed
-select
-  42 as id,
-  'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
-from
-  generate_series(1, 20000);
+select 42 as id, 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' from generate_series(1, 20000);
 
 update pg_class
 set reltuples = 2,
@@ -118,19 +112,17 @@ set local work_mem = '4MB';
 
 set local hash_mem_multiplier = 1.0;
 
-select COUNT(*) from simple as r inner join simple as s using ("id");
+select count(*) from simple as r inner join simple as s using (id);
 
-select COUNT(*) from simple as r inner join simple as s using ("id");
+select count(*) from simple as r inner join simple as s using (id);
 
 select
   original > 1 as initially_multibatch,
   final > original as increased_batches
 from
-  hash_join_batches(
-    '
+  hash_join_batches('
   select count(*) from simple r join simple s using (id);
-'
-  );
+');
 
 rollback to savepoint settings;
 
@@ -144,19 +136,17 @@ set local hash_mem_multiplier = 1.0;
 
 set local enable_parallel_hash = off;
 
-select COUNT(*) from simple as r inner join simple as s using ("id");
+select count(*) from simple as r inner join simple as s using (id);
 
-select COUNT(*) from simple as r inner join simple as s using ("id");
+select count(*) from simple as r inner join simple as s using (id);
 
 select
   original > 1 as initially_multibatch,
   final > original as increased_batches
 from
-  hash_join_batches(
-    '
+  hash_join_batches('
   select count(*) from simple r join simple s using (id);
-'
-  );
+');
 
 rollback to savepoint settings;
 
@@ -170,19 +160,17 @@ set local hash_mem_multiplier = 1.0;
 
 set local enable_parallel_hash = 'on';
 
-select COUNT(*) from simple as r inner join simple as s using ("id");
+select count(*) from simple as r inner join simple as s using (id);
 
-select COUNT(*) from simple as r inner join simple as s using ("id");
+select count(*) from simple as r inner join simple as s using (id);
 
 select
   original > 1 as initially_multibatch,
   final > original as increased_batches
 from
-  hash_join_batches(
-    '
+  hash_join_batches('
   select count(*) from simple r join simple s using (id);
-'
-  );
+');
 
 rollback to savepoint settings;
 
@@ -194,19 +182,17 @@ set local work_mem = '128kB';
 
 set local hash_mem_multiplier = 1.0;
 
-select COUNT(*) from simple as r inner join simple as s using ("id");
+select count(*) from simple as r inner join simple as s using (id);
 
-select COUNT(*) from simple as r inner join simple as s using ("id");
+select count(*) from simple as r inner join simple as s using (id);
 
 select
   original > 1 as initially_multibatch,
   final > original as increased_batches
 from
-  hash_join_batches(
-    '
+  hash_join_batches('
   select count(*) from simple r join simple s using (id);
-'
-  );
+');
 
 rollback to savepoint settings;
 
@@ -220,19 +206,17 @@ set local hash_mem_multiplier = 1.0;
 
 set local enable_parallel_hash = off;
 
-select COUNT(*) from simple as r inner join simple as s using ("id");
+select count(*) from simple as r inner join simple as s using (id);
 
-select COUNT(*) from simple as r inner join simple as s using ("id");
+select count(*) from simple as r inner join simple as s using (id);
 
 select
   original > 1 as initially_multibatch,
   final > original as increased_batches
 from
-  hash_join_batches(
-    '
+  hash_join_batches('
   select count(*) from simple r join simple s using (id);
-'
-  );
+');
 
 rollback to savepoint settings;
 
@@ -246,21 +230,19 @@ set local hash_mem_multiplier = 1.0;
 
 set local enable_parallel_hash = 'on';
 
-select COUNT(*) from simple as r inner join simple as s using ("id");
+select count(*) from simple as r inner join simple as s using (id);
 
-select COUNT(*) from simple as r inner join simple as s using ("id");
+select count(*) from simple as r inner join simple as s using (id);
 
 select
   original > 1 as initially_multibatch,
   final > original as increased_batches
 from
-  hash_join_batches(
-    '
+  hash_join_batches('
   select count(*) from simple r join simple s using (id);
-'
-  );
+');
 
-select COUNT(*) from simple as r full outer join simple as s using ("id");
+select count(*) from simple as r full outer join simple as s using (id);
 
 rollback to savepoint settings;
 
@@ -272,19 +254,17 @@ set local work_mem = '128kB';
 
 set local hash_mem_multiplier = 1.0;
 
-select COUNT(*) from simple as r inner join bigger_than_it_looks as s using ("id");
+select count(*) from simple as r inner join bigger_than_it_looks as s using (id);
 
-select COUNT(*) from simple as r inner join bigger_than_it_looks as s using ("id");
+select count(*) from simple as r inner join bigger_than_it_looks as s using (id);
 
 select
   original > 1 as initially_multibatch,
   final > original as increased_batches
 from
-  hash_join_batches(
-    '
+  hash_join_batches('
   select count(*) FROM simple r JOIN bigger_than_it_looks s USING (id);
-'
-  );
+');
 
 rollback to savepoint settings;
 
@@ -298,19 +278,17 @@ set local hash_mem_multiplier = 1.0;
 
 set local enable_parallel_hash = off;
 
-select COUNT(*) from simple as r inner join bigger_than_it_looks as s using ("id");
+select count(*) from simple as r inner join bigger_than_it_looks as s using (id);
 
-select COUNT(*) from simple as r inner join bigger_than_it_looks as s using ("id");
+select count(*) from simple as r inner join bigger_than_it_looks as s using (id);
 
 select
   original > 1 as initially_multibatch,
   final > original as increased_batches
 from
-  hash_join_batches(
-    '
+  hash_join_batches('
   select count(*) from simple r join bigger_than_it_looks s using (id);
-'
-  );
+');
 
 rollback to savepoint settings;
 
@@ -324,19 +302,17 @@ set local hash_mem_multiplier = 1.0;
 
 set local enable_parallel_hash = 'on';
 
-select COUNT(*) from simple as r inner join bigger_than_it_looks as s using ("id");
+select count(*) from simple as r inner join bigger_than_it_looks as s using (id);
 
-select COUNT(*) from simple as r inner join bigger_than_it_looks as s using ("id");
+select count(*) from simple as r inner join bigger_than_it_looks as s using (id);
 
 select
   original > 1 as initially_multibatch,
   final > original as increased_batches
 from
-  hash_join_batches(
-    '
+  hash_join_batches('
   select count(*) from simple r join bigger_than_it_looks s using (id);
-'
-  );
+');
 
 rollback to savepoint settings;
 
@@ -348,18 +324,13 @@ set local work_mem = '128kB';
 
 set local hash_mem_multiplier = 1.0;
 
-select COUNT(*) from simple as r inner join extremely_skewed as s using ("id");
+select count(*) from simple as r inner join extremely_skewed as s using (id);
 
-select COUNT(*) from simple as r inner join extremely_skewed as s using ("id");
+select count(*) from simple as r inner join extremely_skewed as s using (id);
 
-select
-  *
-from
-  hash_join_batches(
-    '
+select * from hash_join_batches('
   select count(*) from simple r join extremely_skewed s using (id);
-'
-  );
+');
 
 rollback to savepoint settings;
 
@@ -373,18 +344,13 @@ set local hash_mem_multiplier = 1.0;
 
 set local enable_parallel_hash = off;
 
-select COUNT(*) from simple as r inner join extremely_skewed as s using ("id");
+select count(*) from simple as r inner join extremely_skewed as s using (id);
 
-select COUNT(*) from simple as r inner join extremely_skewed as s using ("id");
+select count(*) from simple as r inner join extremely_skewed as s using (id);
 
-select
-  *
-from
-  hash_join_batches(
-    '
+select * from hash_join_batches('
   select count(*) from simple r join extremely_skewed s using (id);
-'
-  );
+');
 
 rollback to savepoint settings;
 
@@ -398,18 +364,13 @@ set local hash_mem_multiplier = 1.0;
 
 set local enable_parallel_hash = 'on';
 
-select COUNT(*) from simple as r inner join extremely_skewed as s using ("id");
+select count(*) from simple as r inner join extremely_skewed as s using (id);
 
-select COUNT(*) from simple as r inner join extremely_skewed as s using ("id");
+select count(*) from simple as r inner join extremely_skewed as s using (id);
 
-select
-  *
-from
-  hash_join_batches(
-    '
+select * from hash_join_batches('
   select count(*) from simple r join extremely_skewed s using (id);
-'
-  );
+');
 
 rollback to savepoint settings;
 
@@ -462,53 +423,26 @@ set work_mem = '64kB';
 set hash_mem_multiplier = 1.0;
 
 select
-  COUNT(*)
+  count(*)
 from
   join_foo
   left outer join
-    (
-      select
-        b1.id,
-        b1.t
-      from
-        join_bar as b1
-        inner join
-          join_bar as b2
-        using ("id")
-    )
-    as ss
-  on join_foo.id < ss.id + 1 and
-    join_foo.id > ss.id - 1;
+    (select b1.id, b1.t from join_bar as b1 inner join join_bar as b2 using (id)) as ss
+  on join_foo.id < ss.id + 1 and join_foo.id > ss.id - 1;
 
 select
-  COUNT(*)
+  count(*)
 from
   join_foo
   left outer join
-    (
-      select
-        b1.id,
-        b1.t
-      from
-        join_bar as b1
-        inner join
-          join_bar as b2
-        using ("id")
-    )
-    as ss
-  on join_foo.id < ss.id + 1 and
-    join_foo.id > ss.id - 1;
+    (select b1.id, b1.t from join_bar as b1 inner join join_bar as b2 using (id)) as ss
+  on join_foo.id < ss.id + 1 and join_foo.id > ss.id - 1;
 
-select
-  final > 1 as multibatch
-from
-  hash_join_batches(
-    '
+select final > 1 as multibatch from hash_join_batches('
   select count(*) from join_foo
     left join (select b1.id, b1.t from join_bar b1 join join_bar b2 using (id)) ss
     on join_foo.id < ss.id + 1 and join_foo.id > ss.id - 1;
-'
-  );
+');
 
 rollback to savepoint settings;
 
@@ -535,53 +469,26 @@ set work_mem = '4MB';
 set hash_mem_multiplier = 1.0;
 
 select
-  COUNT(*)
+  count(*)
 from
   join_foo
   left outer join
-    (
-      select
-        b1.id,
-        b1.t
-      from
-        join_bar as b1
-        inner join
-          join_bar as b2
-        using ("id")
-    )
-    as ss
-  on join_foo.id < ss.id + 1 and
-    join_foo.id > ss.id - 1;
+    (select b1.id, b1.t from join_bar as b1 inner join join_bar as b2 using (id)) as ss
+  on join_foo.id < ss.id + 1 and join_foo.id > ss.id - 1;
 
 select
-  COUNT(*)
+  count(*)
 from
   join_foo
   left outer join
-    (
-      select
-        b1.id,
-        b1.t
-      from
-        join_bar as b1
-        inner join
-          join_bar as b2
-        using ("id")
-    )
-    as ss
-  on join_foo.id < ss.id + 1 and
-    join_foo.id > ss.id - 1;
+    (select b1.id, b1.t from join_bar as b1 inner join join_bar as b2 using (id)) as ss
+  on join_foo.id < ss.id + 1 and join_foo.id > ss.id - 1;
 
-select
-  final > 1 as multibatch
-from
-  hash_join_batches(
-    '
+select final > 1 as multibatch from hash_join_batches('
   select count(*) from join_foo
     left join (select b1.id, b1.t from join_bar b1 join join_bar b2 using (id)) ss
     on join_foo.id < ss.id + 1 and join_foo.id > ss.id - 1;
-'
-  );
+');
 
 rollback to savepoint settings;
 
@@ -608,53 +515,26 @@ set work_mem = '64kB';
 set hash_mem_multiplier = 1.0;
 
 select
-  COUNT(*)
+  count(*)
 from
   join_foo
   left outer join
-    (
-      select
-        b1.id,
-        b1.t
-      from
-        join_bar as b1
-        inner join
-          join_bar as b2
-        using ("id")
-    )
-    as ss
-  on join_foo.id < ss.id + 1 and
-    join_foo.id > ss.id - 1;
+    (select b1.id, b1.t from join_bar as b1 inner join join_bar as b2 using (id)) as ss
+  on join_foo.id < ss.id + 1 and join_foo.id > ss.id - 1;
 
 select
-  COUNT(*)
+  count(*)
 from
   join_foo
   left outer join
-    (
-      select
-        b1.id,
-        b1.t
-      from
-        join_bar as b1
-        inner join
-          join_bar as b2
-        using ("id")
-    )
-    as ss
-  on join_foo.id < ss.id + 1 and
-    join_foo.id > ss.id - 1;
+    (select b1.id, b1.t from join_bar as b1 inner join join_bar as b2 using (id)) as ss
+  on join_foo.id < ss.id + 1 and join_foo.id > ss.id - 1;
 
-select
-  final > 1 as multibatch
-from
-  hash_join_batches(
-    '
+select final > 1 as multibatch from hash_join_batches('
   select count(*) from join_foo
     left join (select b1.id, b1.t from join_bar b1 join join_bar b2 using (id)) ss
     on join_foo.id < ss.id + 1 and join_foo.id > ss.id - 1;
-'
-  );
+');
 
 rollback to savepoint settings;
 
@@ -681,53 +561,26 @@ set work_mem = '4MB';
 set hash_mem_multiplier = 1.0;
 
 select
-  COUNT(*)
+  count(*)
 from
   join_foo
   left outer join
-    (
-      select
-        b1.id,
-        b1.t
-      from
-        join_bar as b1
-        inner join
-          join_bar as b2
-        using ("id")
-    )
-    as ss
-  on join_foo.id < ss.id + 1 and
-    join_foo.id > ss.id - 1;
+    (select b1.id, b1.t from join_bar as b1 inner join join_bar as b2 using (id)) as ss
+  on join_foo.id < ss.id + 1 and join_foo.id > ss.id - 1;
 
 select
-  COUNT(*)
+  count(*)
 from
   join_foo
   left outer join
-    (
-      select
-        b1.id,
-        b1.t
-      from
-        join_bar as b1
-        inner join
-          join_bar as b2
-        using ("id")
-    )
-    as ss
-  on join_foo.id < ss.id + 1 and
-    join_foo.id > ss.id - 1;
+    (select b1.id, b1.t from join_bar as b1 inner join join_bar as b2 using (id)) as ss
+  on join_foo.id < ss.id + 1 and join_foo.id > ss.id - 1;
 
-select
-  final > 1 as multibatch
-from
-  hash_join_batches(
-    '
+select final > 1 as multibatch from hash_join_batches('
   select count(*) from join_foo
     left join (select b1.id, b1.t from join_bar b1 join join_bar b2 using (id)) ss
     on join_foo.id < ss.id + 1 and join_foo.id > ss.id - 1;
-'
-  );
+');
 
 rollback to savepoint settings;
 
@@ -735,9 +588,9 @@ savepoint settings;
 
 set local max_parallel_workers_per_gather = 0;
 
-select COUNT(*) from simple as r full outer join simple as s using ("id");
+select count(*) from simple as r full outer join simple as s using (id);
 
-select COUNT(*) from simple as r full outer join simple as s using ("id");
+select count(*) from simple as r full outer join simple as s using (id);
 
 rollback to savepoint settings;
 
@@ -747,9 +600,9 @@ set enable_parallel_hash = off;
 
 set local max_parallel_workers_per_gather = 2;
 
-select COUNT(*) from simple as r full outer join simple as s using ("id");
+select count(*) from simple as r full outer join simple as s using (id);
 
-select COUNT(*) from simple as r full outer join simple as s using ("id");
+select count(*) from simple as r full outer join simple as s using (id);
 
 rollback to savepoint settings;
 
@@ -757,9 +610,9 @@ savepoint settings;
 
 set local max_parallel_workers_per_gather = 2;
 
-select COUNT(*) from simple as r full outer join simple as s using ("id");
+select count(*) from simple as r full outer join simple as s using (id);
 
-select COUNT(*) from simple as r full outer join simple as s using ("id");
+select count(*) from simple as r full outer join simple as s using (id);
 
 rollback to savepoint settings;
 
@@ -767,9 +620,9 @@ savepoint settings;
 
 set local max_parallel_workers_per_gather = 0;
 
-select COUNT(*) from simple as r full outer join simple as s on r.id = 0 - s.id;
+select count(*) from simple as r full outer join simple as s on r.id = 0 - s.id;
 
-select COUNT(*) from simple as r full outer join simple as s on r.id = 0 - s.id;
+select count(*) from simple as r full outer join simple as s on r.id = 0 - s.id;
 
 rollback to savepoint settings;
 
@@ -779,9 +632,9 @@ set enable_parallel_hash = off;
 
 set local max_parallel_workers_per_gather = 2;
 
-select COUNT(*) from simple as r full outer join simple as s on r.id = 0 - s.id;
+select count(*) from simple as r full outer join simple as s on r.id = 0 - s.id;
 
-select COUNT(*) from simple as r full outer join simple as s on r.id = 0 - s.id;
+select count(*) from simple as r full outer join simple as s on r.id = 0 - s.id;
 
 rollback to savepoint settings;
 
@@ -789,9 +642,9 @@ savepoint settings;
 
 set local max_parallel_workers_per_gather = 2;
 
-select COUNT(*) from simple as r full outer join simple as s on r.id = 0 - s.id;
+select count(*) from simple as r full outer join simple as s on r.id = 0 - s.id;
 
-select COUNT(*) from simple as r full outer join simple as s on r.id = 0 - s.id;
+select count(*) from simple as r full outer join simple as s on r.id = 0 - s.id;
 
 rollback to savepoint settings;
 
@@ -806,36 +659,19 @@ set work_mem = '128kB';
 set hash_mem_multiplier = 1.0;
 
 select
-  length(MAX(s.t))
+  length(max(s.t))
 from
-  wide
-  left outer join
-    (
-      select id, coalesce(t, '') || '' as t from wide
-    )
-    as s
-  using ("id");
+  wide left outer join (select id, coalesce(t, '') || '' as t from wide) as s using (id);
 
 select
-  length(MAX(s.t))
+  length(max(s.t))
 from
-  wide
-  left outer join
-    (
-      select id, coalesce(t, '') || '' as t from wide
-    )
-    as s
-  using ("id");
+  wide left outer join (select id, coalesce(t, '') || '' as t from wide) as s using (id);
 
-select
-  final > 1 as multibatch
-from
-  hash_join_batches(
-    '
+select final > 1 as multibatch from hash_join_batches('
   select length(max(s.t))
   from wide left join (select id, coalesce(t, '''') || '''' as t from wide) s using (id);
-'
-  );
+');
 
 rollback to savepoint settings;
 
@@ -862,10 +698,7 @@ update hjtest_matchbits_t2 set id = 2;
 select
   *
 from
-  hjtest_matchbits_t1 as t1
-  full outer join
-    hjtest_matchbits_t2 as t2
-  on t1.id = t2.id
+  hjtest_matchbits_t1 as t1 full outer join hjtest_matchbits_t2 as t2 on t1.id = t2.id
 order by t1.id;
 
 reset parallel_setup_cost;
@@ -888,11 +721,11 @@ create table hjtest_1 (
   a text,
   b int,
   id int,
-  c boolean
+  c bool
 );
 
 create table hjtest_2 (
-  a boolean,
+  a bool,
   id int,
   b text,
   c int
@@ -992,10 +825,7 @@ from
       t1.fivethous,
       i4.f1
     from
-      tenk1 as t1
-      inner join
-        int4_tbl as i4
-      on t1.fivethous = i4.f1 + i8.q2
+      tenk1 as t1 inner join int4_tbl as i4 on t1.fivethous = i4.f1 + i8.q2
     order by 1,
       2
   )
@@ -1011,10 +841,7 @@ from
       t1.fivethous,
       i4.f1
     from
-      tenk1 as t1
-      inner join
-        int4_tbl as i4
-      on t1.fivethous = i4.f1 + i8.q2
+      tenk1 as t1 inner join int4_tbl as i4 on t1.fivethous = i4.f1 + i8.q2
     order by 1,
       2
   )

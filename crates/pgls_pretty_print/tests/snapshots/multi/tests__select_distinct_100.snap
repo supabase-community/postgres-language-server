@@ -12,9 +12,9 @@ select distinct two, string4, ten from onek order by two using <, string4 using 
 
 select distinct p.age from person as p order by age using >;
 
-select COUNT(*) from (select distinct two, four, two from tenk1) as ss;
+select count(*) from (select distinct two, four, two from tenk1) as ss;
 
-select COUNT(*) from (select distinct two, four, two from tenk1) as ss;
+select count(*) from (select distinct two, four, two from tenk1) as ss;
 
 set work_mem = '64kB';
 
@@ -30,10 +30,7 @@ set jit_above_cost = default;
 
 create table distinct_group_2
 as
-  select distinct
-    cast(g % 1000 as text)
-  from
-    generate_series(0, 9999) as g;
+  select distinct cast(g % 1000 as text) from generate_series(0, 9999) as g;
 
 set enable_seqscan = 0;
 
@@ -55,30 +52,19 @@ set jit_above_cost = default;
 
 create table distinct_hash_2
 as
-  select distinct
-    cast(g % 1000 as text)
-  from
-    generate_series(0, 9999) as g;
+  select distinct cast(g % 1000 as text) from generate_series(0, 9999) as g;
 
 set enable_sort = 'true';
 
 set work_mem = default;
 
-select * from distinct_hash_1
-except
-select * from distinct_group_1
+select * from distinct_hash_1 except select * from distinct_group_1
 union all
-(select * from distinct_group_1
-except
-select * from distinct_hash_1);
+(select * from distinct_group_1 except select * from distinct_hash_1);
 
-select * from distinct_hash_1
-except
-select * from distinct_group_1
+select * from distinct_hash_1 except select * from distinct_group_1
 union all
-(select * from distinct_group_1
-except
-select * from distinct_hash_1);
+(select * from distinct_group_1 except select * from distinct_hash_1);
 
 drop table distinct_hash_1;
 
@@ -103,24 +89,24 @@ select distinct four from tenk1;
 create or replace function distinct_func(a int)
 returns int
 language plpgsql
-parallel UNSAFE
-as $function$
-BEGIN
+parallel unsafe
+as $$
+  BEGIN
     RETURN a;
   END;
-$function$;
+$$;
 
 select distinct distinct_func(1) from tenk1;
 
 create or replace function distinct_func(a int)
 returns int
 language plpgsql
-parallel SAFE
-as $function$
-BEGIN
+parallel safe
+as $$
+  BEGIN
     RETURN a;
   END;
-$function$;
+$$;
 
 select distinct distinct_func(1) from tenk1;
 
@@ -199,7 +185,7 @@ create table distinct_tbl (
 
 insert into distinct_tbl select i % 10, i % 10 from generate_series(1, 1000) as i;
 
-create index "distinct_tbl_x_y_idx" on distinct_tbl using btree (x, y);
+create index distinct_tbl_x_y_idx on distinct_tbl using btree (x, y);
 
 analyze distinct_tbl;
 

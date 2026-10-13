@@ -21,8 +21,7 @@ values
       from
         app.packages
       where
-        handle = 'langchain' and
-        partial_name = 'embedding_search'
+        handle = 'langchain' and partial_name = 'embedding_search'
     ),
     (1, 1, 0),
     (1, 1, 1),
@@ -46,8 +45,7 @@ values
       from
         app.packages
       where
-        handle = 'langchain' and
-        partial_name = 'hybrid_search'
+        handle = 'langchain' and partial_name = 'hybrid_search'
     ),
     (1, 1, 0),
     (1, 1, 1),
@@ -65,14 +63,7 @@ insert into app.package_upgrades (
 )
 values
   (
-    (
-      select
-        id
-      from
-        app.packages
-      where
-        partial_name = 'pg_headerkit'
-    ),
+    (select id from app.packages where partial_name = 'pg_headerkit'),
     (1, 0, 0),
     (1, 0, 1),
     '

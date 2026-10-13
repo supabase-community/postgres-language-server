@@ -24,14 +24,14 @@ partition by range(a);
 create table ptif_test0
 partition of ptif_test
 for values from (minvalue) to (0)
-partition by LIST(b);
+partition by list(b);
 
 create table ptif_test01 partition of ptif_test0 for values in (1);
 
 create table ptif_test1
 partition of ptif_test
 for values from (0) to (100)
-partition by LIST(b);
+partition by list(b);
 
 create table ptif_test11 partition of ptif_test1 for values in (1);
 
@@ -40,7 +40,7 @@ create table ptif_test2 partition of ptif_test for values from (100) to (200);
 create table ptif_test3
 partition of ptif_test
 for values from (200) to (maxvalue)
-partition by LIST(b);
+partition by list(b);
 
 select pg_partition_root('ptif_test');
 
@@ -50,39 +50,39 @@ select pg_partition_root('ptif_test01');
 
 select pg_partition_root('ptif_test3');
 
-create index "ptif_test_index" on only ptif_test using btree (a);
+create index ptif_test_index on only ptif_test using btree (a);
 
-create index "ptif_test0_index" on only ptif_test0 using btree (a);
+create index ptif_test0_index on only ptif_test0 using btree (a);
 
 alter index ptif_test_index
   attach partition
   ptif_test0_index;
 
-create index "ptif_test01_index" on ptif_test01 using btree (a);
+create index ptif_test01_index on ptif_test01 using btree (a);
 
 alter index ptif_test0_index
   attach partition
   ptif_test01_index;
 
-create index "ptif_test1_index" on only ptif_test1 using btree (a);
+create index ptif_test1_index on only ptif_test1 using btree (a);
 
 alter index ptif_test_index
   attach partition
   ptif_test1_index;
 
-create index "ptif_test11_index" on ptif_test11 using btree (a);
+create index ptif_test11_index on ptif_test11 using btree (a);
 
 alter index ptif_test1_index
   attach partition
   ptif_test11_index;
 
-create index "ptif_test2_index" on ptif_test2 using btree (a);
+create index ptif_test2_index on ptif_test2 using btree (a);
 
 alter index ptif_test_index
   attach partition
   ptif_test2_index;
 
-create index "ptif_test3_index" on ptif_test3 using btree (a);
+create index ptif_test3_index on ptif_test3 using btree (a);
 
 alter index ptif_test_index
   attach partition
@@ -141,10 +141,7 @@ select
   level,
   isleaf
 from
-  pg_partition_tree(
-    pg_partition_root('ptif_test01')
-  )
-  as p
+  pg_partition_tree(pg_partition_root('ptif_test01')) as p
   inner join
     pg_class as c
   on p.relid = c.oid;
@@ -163,8 +160,7 @@ select
   level,
   isleaf
 from
-  pg_partition_tree('ptif_test0_index')
-  as p
+  pg_partition_tree('ptif_test0_index') as p
   inner join
     pg_class as c
   on p.relid = c.oid;
@@ -175,8 +171,7 @@ select
   level,
   isleaf
 from
-  pg_partition_tree('ptif_test01_index')
-  as p
+  pg_partition_tree('ptif_test01_index') as p
   inner join
     pg_class as c
   on p.relid = c.oid;
@@ -187,8 +182,7 @@ select
   level,
   isleaf
 from
-  pg_partition_tree('ptif_test3_index')
-  as p
+  pg_partition_tree('ptif_test3_index') as p
   inner join
     pg_class as c
   on p.relid = c.oid;
@@ -199,10 +193,7 @@ select
   level,
   isleaf
 from
-  pg_partition_tree(
-    pg_partition_root('ptif_test01_index')
-  )
-  as p
+  pg_partition_tree(pg_partition_root('ptif_test01_index')) as p
   inner join
     pg_class as c
   on p.relid = c.oid;

@@ -20,14 +20,36 @@ pub(super) fn emit_bool_expr(e: &mut EventEmitter, n: &BoolExpr) {
 }
 
 fn emit_variadic_bool_expr(e: &mut EventEmitter, n: &BoolExpr, keyword: TokenKind) {
+    let mut is_first = true;
+    emit_variadic_operands(e, n, &keyword, &mut is_first);
+}
+
+/// Emits the operands of an AND or OR chain. A nested chain of the same operator is emitted as part
+/// of this one: `(a AND b) AND c` reads as `a AND b AND c`, which it means, and lays out the same
+/// way it does once formatted.
+fn emit_variadic_operands(
+    e: &mut EventEmitter,
+    n: &BoolExpr,
+    keyword: &TokenKind,
+    is_first: &mut bool,
+) {
     let parent_kind = n.boolop();
     let leading = matches!(
         e.config().logical_operator_placement,
         LogicalOperatorPlacement::Leading
     );
 
-    for (idx, arg) in n.args.iter().enumerate() {
-        if idx > 0 {
+    for arg in &n.args {
+        if let Some(NodeEnum::BoolExpr(nested)) = arg.node.as_ref()
+            && nested.boolop() == parent_kind
+        {
+            super::emit_with_comments_at(e, nested.location, |e| {
+                emit_variadic_operands(e, nested, keyword, is_first);
+            });
+            continue;
+        }
+
+        if !*is_first {
             if leading {
                 if let Some(location) = arg
                     .node
@@ -55,6 +77,7 @@ fn emit_variadic_bool_expr(e: &mut EventEmitter, n: &BoolExpr, keyword: TokenKin
                 }
             }
         }
+        *is_first = false;
 
         emit_bool_operand(e, arg, parent_kind);
     }

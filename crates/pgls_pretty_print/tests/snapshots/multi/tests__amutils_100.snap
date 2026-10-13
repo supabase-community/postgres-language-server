@@ -6,17 +6,8 @@ snapshot_kind: text
 select
   prop,
   pg_indexam_has_property(a.oid, prop) as "AM",
-  pg_index_has_property(
-    cast('onek_hundred' as regclass),
-    prop
-  )
-  as "Index",
-  pg_index_column_has_property(
-    cast('onek_hundred' as regclass),
-    1,
-    prop
-  )
-  as "Column"
+  pg_index_has_property(cast('onek_hundred' as regclass), prop) as "Index",
+  pg_index_column_has_property(cast('onek_hundred' as regclass), 1, prop) as "Column"
 from
   pg_am as a,
   unnest(
@@ -50,17 +41,8 @@ order by ord;
 select
   prop,
   pg_indexam_has_property(a.oid, prop) as "AM",
-  pg_index_has_property(
-    cast('gcircleind' as regclass),
-    prop
-  )
-  as "Index",
-  pg_index_column_has_property(
-    cast('gcircleind' as regclass),
-    1,
-    prop
-  )
-  as "Column"
+  pg_index_has_property(cast('gcircleind' as regclass), prop) as "Index",
+  pg_index_column_has_property(cast('gcircleind' as regclass), 1, prop) as "Column"
 from
   pg_am as a,
   unnest(
@@ -93,48 +75,13 @@ order by ord;
 
 select
   prop,
-  pg_index_column_has_property(
-    cast('onek_hundred' as regclass),
-    1,
-    prop
-  )
-  as btree,
-  pg_index_column_has_property(
-    cast('hash_i4_index' as regclass),
-    1,
-    prop
-  )
-  as hash,
-  pg_index_column_has_property(
-    cast('gcircleind' as regclass),
-    1,
-    prop
-  )
-  as gist,
-  pg_index_column_has_property(
-    cast('sp_radix_ind' as regclass),
-    1,
-    prop
-  )
-  as spgist_radix,
-  pg_index_column_has_property(
-    cast('sp_quad_ind' as regclass),
-    1,
-    prop
-  )
-  as spgist_quad,
-  pg_index_column_has_property(
-    cast('botharrayidx' as regclass),
-    1,
-    prop
-  )
-  as gin,
-  pg_index_column_has_property(
-    cast('brinidx' as regclass),
-    1,
-    prop
-  )
-  as brin
+  pg_index_column_has_property(cast('onek_hundred' as regclass), 1, prop) as btree,
+  pg_index_column_has_property(cast('hash_i4_index' as regclass), 1, prop) as hash,
+  pg_index_column_has_property(cast('gcircleind' as regclass), 1, prop) as gist,
+  pg_index_column_has_property(cast('sp_radix_ind' as regclass), 1, prop) as spgist_radix,
+  pg_index_column_has_property(cast('sp_quad_ind' as regclass), 1, prop) as spgist_quad,
+  pg_index_column_has_property(cast('botharrayidx' as regclass), 1, prop) as gin,
+  pg_index_column_has_property(cast('brinidx' as regclass), 1, prop) as brin
 from
   unnest(
     cast(array['asc',
@@ -155,44 +102,15 @@ order by ord;
 
 select
   prop,
-  pg_index_has_property(
-    cast('onek_hundred' as regclass),
-    prop
-  )
-  as btree,
-  pg_index_has_property(
-    cast('hash_i4_index' as regclass),
-    prop
-  )
-  as hash,
-  pg_index_has_property(
-    cast('gcircleind' as regclass),
-    prop
-  )
-  as gist,
-  pg_index_has_property(
-    cast('sp_radix_ind' as regclass),
-    prop
-  )
-  as spgist,
-  pg_index_has_property(
-    cast('botharrayidx' as regclass),
-    prop
-  )
-  as gin,
-  pg_index_has_property(
-    cast('brinidx' as regclass),
-    prop
-  )
-  as brin
+  pg_index_has_property(cast('onek_hundred' as regclass), prop) as btree,
+  pg_index_has_property(cast('hash_i4_index' as regclass), prop) as hash,
+  pg_index_has_property(cast('gcircleind' as regclass), prop) as gist,
+  pg_index_has_property(cast('sp_radix_ind' as regclass), prop) as spgist,
+  pg_index_has_property(cast('botharrayidx' as regclass), prop) as gin,
+  pg_index_has_property(cast('brinidx' as regclass), prop) as brin
 from
   unnest(
-    cast(array['clusterable',
-    'index_scan',
-    'bitmap_scan',
-    'backward_scan',
-    'bogus']
-    as text[])
+    cast(array['clusterable', 'index_scan', 'bitmap_scan', 'backward_scan', 'bogus'] as text[])
   )
   with ordinality
   as u (prop, ord)
@@ -205,12 +123,7 @@ select
 from
   pg_am as a,
   unnest(
-    cast(array['can_order',
-    'can_unique',
-    'can_multi_col',
-    'can_exclude',
-    'can_include',
-    'bogus']
+    cast(array['can_order', 'can_unique', 'can_multi_col', 'can_exclude', 'can_include', 'bogus']
     as text[])
   )
   with ordinality
@@ -227,7 +140,7 @@ create temporary table foo (
   f4 int
 );
 
-create index "fooindex" on foo using btree (f1 desc, f2 asc, f3 nulls first, f4 nulls last);
+create index fooindex on foo using btree (f1 desc, f2 asc, f3 nulls first, f4 nulls last);
 
 select
   col,
@@ -249,7 +162,7 @@ from
 order by col,
   idx;
 
-create index "foocover" on foo using btree (f1) include (f2, f3);
+create index foocover on foo using btree (f1) include (f2, f3);
 
 select
   col,

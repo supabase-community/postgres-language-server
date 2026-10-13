@@ -89,14 +89,7 @@ select
   tt,
   kk
 from
-  (j1_tbl
-  inner join
-    j2_tbl
-  on true) as "tx" ("ii",
-  "jj",
-  "tt",
-  "ii2",
-  "kk");
+  (j1_tbl inner join j2_tbl on true) as tx (ii, jj, tt, ii2, kk);
 
 select
   tx.ii,
@@ -106,109 +99,58 @@ from
   (j1_tbl as t1 (a, b, c)
   inner join
     j2_tbl as t2 (d, e)
-  on true) as "tx" ("ii",
-  "jj",
-  "tt",
-  "ii2",
-  "kk");
+  on true) as tx (ii, jj, tt, ii2, kk);
 
 select
   *
 from
-  j1_tbl inner join j2_tbl as a on true
-  inner join
-    j2_tbl as b
-  on true;
+  j1_tbl inner join j2_tbl as a on true inner join j2_tbl as b on true;
 
-select * from j1_tbl inner join j2_tbl using ("i");
+select * from j1_tbl inner join j2_tbl using (i);
 
-select * from j1_tbl inner join j2_tbl using ("i");
+select * from j1_tbl inner join j2_tbl using (i);
 
 select
   *
 from
-  j1_tbl as t1 (a, b, c)
-  inner join
-    j2_tbl as t2 (a, d)
-  using ("a")
+  j1_tbl as t1 (a, b, c) inner join j2_tbl as t2 (a, d) using (a)
 order by a,
   d;
 
 select
   *
 from
-  j1_tbl as t1 (a, b, c)
-  inner join
-    j2_tbl as t2 (a, b)
-  using ("b")
+  j1_tbl as t1 (a, b, c) inner join j2_tbl as t2 (a, b) using (b)
 order by b,
   t1.a;
 
-select * from j1_tbl inner join j2_tbl using ("i") where j1_tbl.t = 'one';
+select * from j1_tbl inner join j2_tbl using (i) where j1_tbl.t = 'one';
 
-select
-  *
-from
-  j1_tbl
-  inner join
-    j2_tbl
-  using ("i") as "x"
-where
-  j1_tbl.t = 'one';
+select * from j1_tbl inner join j2_tbl using (i) as x where j1_tbl.t = 'one';
 
-select
-  *
-from
-  (j1_tbl
-  inner join
-    j2_tbl
-  using ("i")) as "x"
-where
-  j1_tbl.t = 'one';
+select * from (j1_tbl inner join j2_tbl using (i)) as x where j1_tbl.t = 'one';
 
-select * from j1_tbl inner join j2_tbl using ("i") as "x" where x.i = 1;
+select * from j1_tbl inner join j2_tbl using (i) as x where x.i = 1;
 
-select * from j1_tbl inner join j2_tbl using ("i") as "x" where x.t = 'one';
+select * from j1_tbl inner join j2_tbl using (i) as x where x.t = 'one';
 
-select
-  *
-from
-  (j1_tbl
-  inner join
-    j2_tbl
-  using ("i") as "x") as "xx"
-where
-  x.i = 1;
+select * from (j1_tbl inner join j2_tbl using (i) as x) as xx where x.i = 1;
 
-select * from j1_tbl as a1 inner join j2_tbl as a2 using ("i") as "a1";
+select * from j1_tbl as a1 inner join j2_tbl as a2 using (i) as a1;
 
-select
-  x.*
-from
-  j1_tbl
-  inner join
-    j2_tbl
-  using ("i") as "x"
-where
-  j1_tbl.t = 'one';
+select x.* from j1_tbl inner join j2_tbl using (i) as x where j1_tbl.t = 'one';
 
 select
   row(x.*)
 from
-  j1_tbl
-  inner join
-    j2_tbl
-  using ("i") as "x"
+  j1_tbl inner join j2_tbl using (i) as x
 where
   j1_tbl.t = 'one';
 
 select
   row_to_json(x.*)
 from
-  j1_tbl
-  inner join
-    j2_tbl
-  using ("i") as "x"
+  j1_tbl inner join j2_tbl using (i) as x
 where
   j1_tbl.t = 'one';
 
@@ -226,21 +168,21 @@ select * from j1_tbl inner join j2_tbl on j1_tbl.i = j2_tbl.k;
 
 select * from j1_tbl inner join j2_tbl on j1_tbl.i <= j2_tbl.k;
 
-select * from j1_tbl left outer join j2_tbl using ("i") order by i, k, t;
+select * from j1_tbl left outer join j2_tbl using (i) order by i, k, t;
 
-select * from j1_tbl left outer join j2_tbl using ("i") order by i, k, t;
+select * from j1_tbl left outer join j2_tbl using (i) order by i, k, t;
 
-select * from j1_tbl right outer join j2_tbl using ("i");
+select * from j1_tbl right outer join j2_tbl using (i);
 
-select * from j1_tbl right outer join j2_tbl using ("i");
+select * from j1_tbl right outer join j2_tbl using (i);
 
-select * from j1_tbl full outer join j2_tbl using ("i") order by i, k, t;
+select * from j1_tbl full outer join j2_tbl using (i) order by i, k, t;
 
-select * from j1_tbl full outer join j2_tbl using ("i") order by i, k, t;
+select * from j1_tbl full outer join j2_tbl using (i) order by i, k, t;
 
-select * from j1_tbl left outer join j2_tbl using ("i") where k = 1;
+select * from j1_tbl left outer join j2_tbl using (i) where k = 1;
 
-select * from j1_tbl left outer join j2_tbl using ("i") where i = 1;
+select * from j1_tbl left outer join j2_tbl using (i) where i = 1;
 
 select
   *
@@ -255,8 +197,7 @@ where
     from
       tenk1 as c
     where
-      b.twothousand = c.twothousand and
-      b.fivethous <> c.fivethous
+      b.twothousand = c.twothousand and b.fivethous <> c.fivethous
   ) and
   a.tenthous = b.tenthous and
   a.tenthous < 5000;
@@ -293,18 +234,12 @@ insert into t3 values ('dd', 33);
 select
   *
 from
-  t1 full outer join t2 using ("name")
-  full outer join
-    t3
-  using ("name");
+  t1 full outer join t2 using (name) full outer join t3 using (name);
 
 select
   *
 from
-  (select * from t2) as s2
-  inner join
-    (select * from t3) as s3
-  using ("name");
+  (select * from t2) as s2 inner join (select * from t3) as s3 using (name);
 
 select
   *
@@ -312,7 +247,7 @@ from
   (select * from t2) as s2
   left outer join
     (select * from t3) as s3
-  using ("name");
+  using (name);
 
 select
   *
@@ -320,142 +255,46 @@ from
   (select * from t2) as s2
   full outer join
     (select * from t3) as s3
-  using ("name");
+  using (name);
 
 select
   *
 from
-  (
-    select
-      name,
-      n as s2_n,
-      2 as s2_2
-    from
-      t2
-  )
-  as s2
+  (select name, n as s2_n, 2 as s2_2 from t2) as s2
   natural join
-    (
-      select
-        name,
-        n as s3_n,
-        3 as s3_2
-      from
-        t3
-    )
-    as s3;
+    (select name, n as s3_n, 3 as s3_2 from t3) as s3;
 
 select
   *
 from
-  (
-    select
-      name,
-      n as s2_n,
-      2 as s2_2
-    from
-      t2
-  )
-  as s2
+  (select name, n as s2_n, 2 as s2_2 from t2) as s2
   natural left join
-    (
-      select
-        name,
-        n as s3_n,
-        3 as s3_2
-      from
-        t3
-    )
-    as s3;
+    (select name, n as s3_n, 3 as s3_2 from t3) as s3;
 
 select
   *
 from
-  (
-    select
-      name,
-      n as s2_n,
-      2 as s2_2
-    from
-      t2
-  )
-  as s2
+  (select name, n as s2_n, 2 as s2_2 from t2) as s2
   natural full join
-    (
-      select
-        name,
-        n as s3_n,
-        3 as s3_2
-      from
-        t3
-    )
-    as s3;
+    (select name, n as s3_n, 3 as s3_2 from t3) as s3;
 
 select
   *
 from
-  (
-    select
-      name,
-      n as s1_n,
-      1 as s1_1
-    from
-      t1
-  )
-  as s1
+  (select name, n as s1_n, 1 as s1_1 from t1) as s1
   natural join
-    (
-      select
-        name,
-        n as s2_n,
-        2 as s2_2
-      from
-        t2
-    )
-    as s2
+    (select name, n as s2_n, 2 as s2_2 from t2) as s2
   natural join
-    (
-      select
-        name,
-        n as s3_n,
-        3 as s3_2
-      from
-        t3
-    )
-    as s3;
+    (select name, n as s3_n, 3 as s3_2 from t3) as s3;
 
 select
   *
 from
-  (
-    select
-      name,
-      n as s1_n,
-      1 as s1_1
-    from
-      t1
-  )
-  as s1
+  (select name, n as s1_n, 1 as s1_1 from t1) as s1
   natural full join
-    (
-      select
-        name,
-        n as s2_n,
-        2 as s2_2
-      from
-        t2
-    )
-    as s2
+    (select name, n as s2_n, 2 as s2_2 from t2) as s2
   natural full join
-    (
-      select
-        name,
-        n as s3_n,
-        3 as s3_2
-      from
-        t3
-    )
-    as s3;
+    (select name, n as s3_n, 3 as s3_2 from t3) as s3;
 
 select
   *
@@ -481,15 +320,7 @@ from
       select
         *
       from
-        (
-          select
-            name,
-            n as s2_n,
-            2 as s2_2
-          from
-            t2
-        )
-        as s2
+        (select name, n as s2_n, 2 as s2_2 from t2) as s2
         natural full join
           (select name, n as s3_n from t3) as s3
     )
@@ -542,10 +373,7 @@ select * from x left outer join y on x1 = y1 and y2 is not null;
 select
   *
 from
-  x left outer join y on x1 = y1
-  left outer join
-    x as xx (xx1, xx2)
-  on x1 = xx1;
+  x left outer join y on x1 = y1 left outer join x as xx (xx1, xx2) on x1 = xx1;
 
 select
   *
@@ -574,35 +402,26 @@ from
 select
   *
 from
-  x left outer join y on x1 = y1
-  left outer join
-    x as xx (xx1, xx2)
-  on x1 = xx1
+  x left outer join y on x1 = y1 left outer join x as xx (xx1, xx2) on x1 = xx1
 where
   x2 is not null;
 
 select
   *
 from
-  x left outer join y on x1 = y1
-  left outer join
-    x as xx (xx1, xx2)
-  on x1 = xx1
+  x left outer join y on x1 = y1 left outer join x as xx (xx1, xx2) on x1 = xx1
 where
   y2 is not null;
 
 select
   *
 from
-  x left outer join y on x1 = y1
-  left outer join
-    x as xx (xx1, xx2)
-  on x1 = xx1
+  x left outer join y on x1 = y1 left outer join x as xx (xx1, xx2) on x1 = xx1
 where
   xx2 is not null;
 
 select
-  COUNT(*)
+  count(*)
 from
   tenk1 as a
 where
@@ -611,39 +430,24 @@ where
     select
       unique1
     from
-      tenk1 as b
-      inner join
-        tenk1 as c
-      using ("unique1")
+      tenk1 as b inner join tenk1 as c using (unique1)
     where
       b.unique2 = 42
   );
 
 select
-  COUNT(*)
+  count(*)
 from
   tenk1 as x
 where
   x.unique1 in
   (
-    select
-      a.f1
-    from
-      int4_tbl as a,
-      float8_tbl as b
-    where
-      a.f1 = b.f1
+    select a.f1 from int4_tbl as a, float8_tbl as b where a.f1 = b.f1
   ) and
   x.unique1 = 0 and
   x.unique1 in
   (
-    select
-      aa.f1
-    from
-      int4_tbl as aa,
-      float8_tbl as bb
-    where
-      aa.f1 = bb.f1
+    select aa.f1 from int4_tbl as aa, float8_tbl as bb where aa.f1 = bb.f1
   );
 
 begin;
@@ -653,30 +457,18 @@ set geqo = 'on';
 set geqo_threshold = 2;
 
 select
-  COUNT(*)
+  count(*)
 from
   tenk1 as x
 where
   x.unique1 in
   (
-    select
-      a.f1
-    from
-      int4_tbl as a,
-      float8_tbl as b
-    where
-      a.f1 = b.f1
+    select a.f1 from int4_tbl as a, float8_tbl as b where a.f1 = b.f1
   ) and
   x.unique1 = 0 and
   x.unique1 in
   (
-    select
-      aa.f1
-    from
-      int4_tbl as aa,
-      float8_tbl as bb
-    where
-      aa.f1 = bb.f1
+    select aa.f1 from int4_tbl as aa, float8_tbl as bb where aa.f1 = bb.f1
   );
 
 rollback;
@@ -687,10 +479,7 @@ select
   unique1,
   unique1
 from
-  tenk1
-  right outer join
-    b_star
-  on aa = unique1
+  tenk1 right outer join b_star on aa = unique1
 where
   bb < bb and bb is null;
 
@@ -700,10 +489,7 @@ select
   unique1,
   unique1
 from
-  tenk1
-  right outer join
-    b_star
-  on aa = unique1
+  tenk1 right outer join b_star on aa = unique1
 where
   bb < bb and bb is null;
 
@@ -712,10 +498,7 @@ select
 from
   int8_tbl as i1
   left outer join
-    int8_tbl as i2
-    inner join
-      (select 123 as x) as ss
-    on i2.q1 = x
+    int8_tbl as i2 inner join (select 123 as x) as ss on i2.q1 = x
   on i1.q2 = i2.q2
 order by 1,
   2;
@@ -725,26 +508,20 @@ select
 from
   int8_tbl as i1
   left outer join
-    int8_tbl as i2
-    inner join
-      (select 123 as x) as ss
-    on i2.q1 = x
+    int8_tbl as i2 inner join (select 123 as x) as ss on i2.q1 = x
   on i1.q2 = i2.q2
 order by 1,
   2;
 
 select
-  COUNT(*)
+  count(*)
 from
   (
     select
       t3.tenthous as x1,
       coalesce(t1.stringu1, t2.stringu1) as x2
     from
-      tenk1 as t1
-      left outer join
-        tenk1 as t2
-      on t1.unique1 = t2.unique1
+      tenk1 as t1 left outer join tenk1 as t2 on t1.unique1 = t2.unique1
       inner join
         tenk1 as t3
       on t1.unique2 = t3.unique2
@@ -753,9 +530,7 @@ from
   tenk1 as t4,
   tenk1 as t5
 where
-  t4.thousand = t5.unique1 and
-  ss.x1 = t4.tenthous and
-  ss.x2 = t5.stringu1;
+  t4.thousand = t5.unique1 and ss.x1 = t4.tenthous and ss.x2 = t5.stringu1;
 
 select
   a.f1,
@@ -764,24 +539,10 @@ select
   t.tenthous
 from
   tenk1 as t,
-  (
-    select
-      SUM(f1) + 1 as f1
-    from
-      int4_tbl as i4a
-  )
-  as a,
-  (
-    select
-      SUM(f1) as f1
-    from
-      int4_tbl as i4b
-  )
-  as b
+  (select sum(f1) + 1 as f1 from int4_tbl as i4a) as a,
+  (select sum(f1) as f1 from int4_tbl as i4b) as b
 where
-  b.f1 = t.thousand and
-  a.f1 = b.f1 and
-  a.f1 + b.f1 + 999 = t.tenthous;
+  b.f1 = t.thousand and a.f1 = b.f1 and a.f1 + b.f1 + 999 = t.tenthous;
 
 select
   a.f1,
@@ -790,24 +551,10 @@ select
   t.tenthous
 from
   tenk1 as t,
-  (
-    select
-      SUM(f1) + 1 as f1
-    from
-      int4_tbl as i4a
-  )
-  as a,
-  (
-    select
-      SUM(f1) as f1
-    from
-      int4_tbl as i4b
-  )
-  as b
+  (select sum(f1) + 1 as f1 from int4_tbl as i4a) as a,
+  (select sum(f1) as f1 from int4_tbl as i4b) as b
 where
-  b.f1 = t.thousand and
-  a.f1 = b.f1 and
-  a.f1 + b.f1 + 999 = t.tenthous;
+  b.f1 = t.thousand and a.f1 = b.f1 and a.f1 + b.f1 + 999 = t.tenthous;
 
 select
   t1.unique1,
@@ -817,15 +564,7 @@ from
   inner join
     tenk1 as t2
   on t1.two = t2.two and
-    t1.unique1 =
-    (
-      select
-        MIN(unique1)
-      from
-        tenk1
-      where
-        t2.unique1 = unique1
-    )
+    t1.unique1 = (select min(unique1) from tenk1 where t2.unique1 = unique1)
 where
   t1.unique1 < 10 and t2.unique1 < 10
 order by t1.unique1;
@@ -838,15 +577,7 @@ from
   inner join
     tenk1 as t2
   on t1.two = t2.two and
-    t1.unique1 =
-    (
-      select
-        MIN(unique1)
-      from
-        tenk1
-      where
-        t2.unique1 = unique1
-    )
+    t1.unique1 = (select min(unique1) from tenk1 where t2.unique1 = unique1)
 where
   t1.unique1 < 10 and t2.unique1 < 10
 order by t1.unique1;
@@ -855,10 +586,7 @@ select
   t1.f1
 from
   int4_tbl as t1,
-  int4_tbl as t2
-  left outer join
-    int4_tbl as t3
-  on t3.f1 > 0
+  int4_tbl as t2 left outer join int4_tbl as t3 on t3.f1 > 0
   left outer join
     int4_tbl as t4
   on t3.f1 > 1
@@ -869,10 +597,7 @@ select
   t1.f1
 from
   int4_tbl as t1,
-  int4_tbl as t2
-  left outer join
-    int4_tbl as t3
-  on t3.f1 > 0
+  int4_tbl as t2 left outer join int4_tbl as t3 on t3.f1 > 0
   left outer join
     int4_tbl as t4
   on t3.f1 > 1
@@ -882,10 +607,7 @@ where
 select
   *
 from
-  int4_tbl as t1
-  left outer join
-    int4_tbl as t2
-  on true
+  int4_tbl as t1 left outer join int4_tbl as t2 on true
   left outer join
     int4_tbl as t3
   on t2.f1 > 0
@@ -896,10 +618,7 @@ from
 select
   *
 from
-  onek as t1
-  left outer join
-    onek as t2
-  on t1.unique1 = t2.unique1
+  onek as t1 left outer join onek as t2 on t1.unique1 = t2.unique1
   left outer join
     onek as t3
   on t2.unique1 <> t3.unique1
@@ -914,12 +633,9 @@ from
   left outer join
     (
       select
-        NOW()
+        now()
       from
-        int4_tbl as t2
-        left outer join
-          int4_tbl as t3
-        on t2.f1 = t3.f1
+        int4_tbl as t2 left outer join int4_tbl as t3 on t2.f1 = t3.f1
         left outer join
           int4_tbl as t4
         on t3.f1 = t4.f1
@@ -933,10 +649,7 @@ from
 select
   *
 from
-  int4_tbl as t1
-  left outer join
-    int4_tbl as t2
-  on true
+  int4_tbl as t1 left outer join int4_tbl as t2 on true
   left outer join
     int4_tbl as t3
   on true
@@ -947,10 +660,7 @@ from
 select
   *
 from
-  int4_tbl as t1
-  left outer join
-    int4_tbl as t2
-  on true
+  int4_tbl as t1 left outer join int4_tbl as t2 on true
   left outer join
     int4_tbl as t3
   on t2.f1 = t3.f1
@@ -963,10 +673,7 @@ select
 from
   int4_tbl as t1
   left outer join
-    int4_tbl as t2
-    left outer join
-      int4_tbl as t3
-    on t2.f1 > 0
+    int4_tbl as t2 left outer join int4_tbl as t3 on t2.f1 > 0
   on t2.f1 > 1
   left outer join
     int4_tbl as t4
@@ -983,10 +690,7 @@ from
       select
         t2.f1
       from
-        int4_tbl as t2
-        left outer join
-          int4_tbl as t3
-        on t2.f1 > 0
+        int4_tbl as t2 left outer join int4_tbl as t3 on t2.f1 > 0
       where
         t3.f1 is null
     )
@@ -1005,10 +709,7 @@ from
       select
         t2.f1
       from
-        int4_tbl as t2
-        left outer join
-          int4_tbl as t3
-        on t2.f1 > 0
+        int4_tbl as t2 left outer join int4_tbl as t3 on t2.f1 > 0
       where
         t2.f1 <> coalesce(t3.f1, -1)
     )
@@ -1021,17 +722,13 @@ from
 select
   *
 from
-  onek as t1
-  left outer join
-    onek as t2
-  on t1.unique1 = t2.unique1
+  onek as t1 left outer join onek as t2 on t1.unique1 = t2.unique1
   left outer join
     onek as t3
   on t2.unique1 = t3.unique1
   left outer join
     onek as t4
-  on t3.unique1 = t4.unique1 and
-    t2.unique2 = t4.unique2;
+  on t3.unique1 = t4.unique1 and t2.unique2 = t4.unique2;
 
 select
   *
@@ -1040,10 +737,7 @@ from
   left outer join
     int8_tbl as t2
     left outer join
-      int8_tbl as t3
-      full outer join
-        int8_tbl as t4
-      on false
+      int8_tbl as t3 full outer join int8_tbl as t4 on false
     on false
     left outer join
       int8_tbl as t5
@@ -1053,72 +747,33 @@ from
 select
   *
 from
-  int8_tbl as t1
+  int8_tbl as t1 left outer join int8_tbl as t2 on true
   left outer join
-    int8_tbl as t2
-  on true
-  left outer join
-    lateral (
-      select
-        *
-      from
-        int8_tbl as t3
-      where
-        t3.q1 = t2.q1
-      offset 0
-    )
-    as s
+    lateral (select * from int8_tbl as t3 where t3.q1 = t2.q1 offset 0) as s
   on t2.q1 = 1;
 
 select
   *
 from
-  int8_tbl as t1
+  int8_tbl as t1 left outer join int8_tbl as t2 on true
   left outer join
-    int8_tbl as t2
-  on true
-  left outer join
-    lateral (
-      select
-        *
-      from
-        generate_series(t2.q1, 100)
-    )
-    as s
+    lateral (select * from generate_series(t2.q1, 100)) as s
   on t2.q1 = 1;
 
 select
   *
 from
-  int8_tbl as t1
+  int8_tbl as t1 left outer join int8_tbl as t2 on true
   left outer join
-    int8_tbl as t2
-  on true
-  left outer join
-    lateral (
-      select t2.q1 from int8_tbl as t3
-    )
-    as s
+    lateral (select t2.q1 from int8_tbl as t3) as s
   on t2.q1 = 1;
 
 select
   *
 from
-  onek as t1
+  onek as t1 left outer join onek as t2 on true
   left outer join
-    onek as t2
-  on true
-  left outer join
-    lateral (
-      select
-        *
-      from
-        onek as t3
-      where
-        t3.two = t2.two
-      offset 0
-    )
-    as s
+    lateral (select * from onek as t3 where t3.two = t2.two offset 0) as s
   on t2.unique1 = 1;
 
 select
@@ -1126,83 +781,39 @@ select
 from
   j1_tbl
   full outer join
-    (
-      select
-        *
-      from
-        j2_tbl
-      order by j2_tbl.i desc,
-        j2_tbl.k asc
-    )
-    as j2_tbl
-  on j1_tbl.i = j2_tbl.i and
-    j1_tbl.i = j2_tbl.k;
+    (select * from j2_tbl order by j2_tbl.i desc, j2_tbl.k asc) as j2_tbl
+  on j1_tbl.i = j2_tbl.i and j1_tbl.i = j2_tbl.k;
 
 select
   *
 from
   j1_tbl
   full outer join
-    (
-      select
-        *
-      from
-        j2_tbl
-      order by j2_tbl.i desc,
-        j2_tbl.k asc
-    )
-    as j2_tbl
-  on j1_tbl.i = j2_tbl.i and
-    j1_tbl.i = j2_tbl.k;
+    (select * from j2_tbl order by j2_tbl.i desc, j2_tbl.k asc) as j2_tbl
+  on j1_tbl.i = j2_tbl.i and j1_tbl.i = j2_tbl.k;
 
 select
-  COUNT(*)
+  count(*)
 from
   (
-    select
-      *
-    from
-      tenk1 as x
-    order by x.thousand,
-      x.twothousand,
-      x.fivethous
+    select * from tenk1 as x order by x.thousand, x.twothousand, x.fivethous
   )
   as x
   left outer join
-    (
-      select
-        *
-      from
-        tenk1 as y
-      order by y.unique2
-    )
-    as y
+    (select * from tenk1 as y order by y.unique2) as y
   on x.thousand = y.unique2 and
     x.twothousand = y.hundred and
     x.fivethous = y.unique2;
 
 select
-  COUNT(*)
+  count(*)
 from
   (
-    select
-      *
-    from
-      tenk1 as x
-    order by x.thousand,
-      x.twothousand,
-      x.fivethous
+    select * from tenk1 as x order by x.thousand, x.twothousand, x.fivethous
   )
   as x
   left outer join
-    (
-      select
-        *
-      from
-        tenk1 as y
-      order by y.unique2
-    )
-    as y
+    (select * from tenk1 as y order by y.unique2) as y
   on x.thousand = y.unique2 and
     x.twothousand = y.hundred and
     x.fivethous = y.unique2;
@@ -1216,12 +827,9 @@ set enable_hashagg = 0;
 select
   x.thousand,
   x.twothousand,
-  COUNT(*)
+  count(*)
 from
-  tenk1 as x
-  inner join
-    tenk1 as y
-  on x.thousand = y.thousand
+  tenk1 as x inner join tenk1 as y on x.thousand = y.thousand
 group by x.thousand,
   x.twothousand
 order by x.thousand desc,
@@ -1280,7 +888,7 @@ delete from t3 using t1 as table1 where t3.x = table1.a;
 
 select * from t3;
 
-delete from t3 using t1 inner join t2 using ("a") where t3.x > t1.a;
+delete from t3 using t1 inner join t2 using (a) where t3.x > t1.a;
 
 select * from t3;
 
@@ -1313,7 +921,7 @@ select
   foo.*,
   unnamed_join.*
 from
-  t1 inner join t2 using ("a") as "foo",
+  t1 inner join t2 using (a) as foo,
   t3 as unnamed_join
 for update of unnamed_join;
 
@@ -1321,7 +929,7 @@ select
   foo.*,
   unnamed_join.*
 from
-  t1 inner join t2 using ("a") as "foo",
+  t1 inner join t2 using (a) as foo,
   t3 as unnamed_join
 for update of foo;
 
@@ -1329,10 +937,7 @@ select
   bar.*,
   unnamed_join.*
 from
-  (t1
-  inner join
-    t2
-  using ("a") as "foo") as "bar",
+  (t1 inner join t2 using (a) as foo) as bar,
   t3 as unnamed_join
 for update of foo;
 
@@ -1340,16 +945,13 @@ select
   bar.*,
   unnamed_join.*
 from
-  (t1
-  inner join
-    t2
-  using ("a") as "foo") as "bar",
+  (t1 inner join t2 using (a) as foo) as bar,
   t3 as unnamed_join
 for update of bar;
 
 create temporary table tt1 (
-  tt1_id int,
-  joincol int
+  tt1_id int4,
+  joincol int4
 );
 
 insert into tt1 values (1, 11);
@@ -1357,8 +959,8 @@ insert into tt1 values (1, 11);
 insert into tt1 values (2, null);
 
 create temporary table tt2 (
-  tt2_id int,
-  joincol int
+  tt2_id int4,
+  joincol int4
 );
 
 insert into tt2 values (21, 11);
@@ -1397,32 +999,14 @@ select
 from
   tbl_ra as t1
 where
-  not exists
-  (
-    select
-      1
-    from
-      tbl_ra as t2
-    where
-      t2.b = t1.a
-  ) and
-  t1.b < 2;
+  not exists (select 1 from tbl_ra as t2 where t2.b = t1.a) and t1.b < 2;
 
 select
   *
 from
   tbl_ra as t1
 where
-  not exists
-  (
-    select
-      1
-    from
-      tbl_ra as t2
-    where
-      t2.b = t1.a
-  ) and
-  t1.b < 2;
+  not exists (select 1 from tbl_ra as t2 where t2.b = t1.a) and t1.b < 2;
 
 reset enable_hashjoin;
 
@@ -1448,11 +1032,7 @@ from
       from
         tbl_rs as t2
       where
-        t2.a in
-        (
-          select t1.a + t3.a from tbl_rs as t3
-        ) and
-        t2.a < 5
+        t2.a in (select t1.a + t3.a from tbl_rs as t3) and t2.a < 5
     )
   on true;
 
@@ -1467,11 +1047,7 @@ from
       from
         tbl_rs as t2
       where
-        t2.a in
-        (
-          select t1.a + t3.a from tbl_rs as t3
-        ) and
-        t2.a < 5
+        t2.a in (select t1.a + t3.a from tbl_rs as t3) and t2.a < 5
     )
   on true;
 
@@ -1482,22 +1058,20 @@ set enable_mergejoin = off;
 set enable_memoize = off;
 
 select
-  COUNT(*)
+  count(*)
 from
   tenk1 as a,
   tenk1 as b
 where
-  a.hundred = b.thousand and
-  b.fivethous % 10 < 10;
+  a.hundred = b.thousand and b.fivethous % 10 < 10;
 
 select
-  COUNT(*)
+  count(*)
 from
   tenk1 as a,
   tenk1 as b
 where
-  a.hundred = b.thousand and
-  b.fivethous % 10 < 10;
+  a.hundred = b.thousand and b.fivethous % 10 < 10;
 
 reset work_mem;
 
@@ -1511,11 +1085,7 @@ create temporary table tt3 (
 );
 
 insert into tt3
-select
-  x,
-  repeat('xyzzy', 100)
-from
-  generate_series(1, 10000) as x;
+select x, repeat('xyzzy', 100) from generate_series(1, 10000) as x;
 
 analyze tt3;
 
@@ -1536,10 +1106,7 @@ from
       select
         b.f1
       from
-        tt3 as b
-        left outer join
-          tt3 as c
-        on b.f1 = c.f1
+        tt3 as b left outer join tt3 as c on b.f1 = c.f1
       where
         coalesce(c.f1, 0) = 0
     )
@@ -1558,10 +1125,7 @@ from
       select
         b.f1
       from
-        tt3 as b
-        left outer join
-          tt3 as c
-        on b.f1 = c.f1
+        tt3 as b left outer join tt3 as c on b.f1 = c.f1
       where
         coalesce(c.f1, 0) = 0
     )
@@ -1580,48 +1144,26 @@ select
 from
   tenk1 as a
 where
-  not unique1 in
-  (
-    select unique2 from tenk1 as b
-  );
+  not unique1 in (select unique2 from tenk1 as b);
 
 select
   a.*
 from
   tenk1 as a
 where
-  exists
-  (
-    select
-      1
-    from
-      tenk1 as b
-    where
-      a.unique1 = b.unique2
-  );
+  exists (select 1 from tenk1 as b where a.unique1 = b.unique2);
 
 select
   a.*
 from
   tenk1 as a
 where
-  not exists
-  (
-    select
-      1
-    from
-      tenk1 as b
-    where
-      a.unique1 = b.unique2
-  );
+  not exists (select 1 from tenk1 as b where a.unique1 = b.unique2);
 
 select
   a.*
 from
-  tenk1 as a
-  left outer join
-    tenk1 as b
-  on a.unique1 = b.unique2
+  tenk1 as a left outer join tenk1 as b on a.unique1 = b.unique2
 where
   b.unique2 is null;
 
@@ -1632,14 +1174,7 @@ select
 from
   tenk1
 where
-  (hundred, thousand) in
-  (
-    select
-      twothousand,
-      twothousand
-    from
-      onek
-  );
+  (hundred, thousand) in (select twothousand, twothousand from onek);
 
 reset enable_memoize;
 
@@ -1650,13 +1185,7 @@ from
 where
   exists
   (
-    select
-      1
-    from
-      tenk1 as b
-    where
-      a.unique1 = b.unique2
-    group by b.unique1
+    select 1 from tenk1 as b where a.unique1 = b.unique2 group by b.unique1
   );
 
 create temporary table tt4x (
@@ -1675,19 +1204,13 @@ where
     select
       1
     from
-      tt4x as t2
-      left outer join
-        tt4x as t3
-      on t2.c3 = t3.c1
+      tt4x as t2 left outer join tt4x as t3 on t2.c3 = t3.c1
       left outer join
         (
           select
             t5.c1 as c1
           from
-            tt4x as t4
-            left outer join
-              tt4x as t5
-            on t4.c2 = t5.c1
+            tt4x as t4 left outer join tt4x as t5 on t4.c2 = t5.c1
         )
         as a1
       on t3.c2 = a1.c1
@@ -1745,10 +1268,7 @@ select
 from
   yy
   left outer join
-    (
-      select * from yy where pkyy = 101
-    )
-    as yya
+    (select * from yy where pkyy = 101) as yya
   on yy.pkyy = yya.pkyy
   left outer join
     xx as xxa
@@ -1770,27 +1290,17 @@ insert into zt2 values (53);
 select
   *
 from
-  zt2 left outer join zt3 on f2 = f3
-  left outer join
-    zt1
-  on f3 = f1
+  zt2 left outer join zt3 on f2 = f3 left outer join zt1 on f3 = f1
 where
   f2 = 53;
 
 create temporary view zv1
-as select
-  *,
-  cast('dummy' as text) as junk
-from
-  zt1;
+as select *, cast('dummy' as text) as junk from zt1;
 
 select
   *
 from
-  zt2 left outer join zt3 on f2 = f3
-  left outer join
-    zv1
-  on f3 = f1
+  zt2 left outer join zt3 on f2 = f3 left outer join zv1 on f3 = f1
 where
   f2 = 53;
 
@@ -1801,35 +1311,20 @@ select
   b.unique2,
   b.hundred
 from
-  tenk1 as a
-  left outer join
-    tenk1 as b
-  on a.unique2 = b.tenthous
+  tenk1 as a left outer join tenk1 as b on a.unique2 = b.tenthous
 where
-  a.unique1 = 42 and
-  (
-    (b.unique2 is null and a.ten = 2) or
-    b.hundred = 3
-  );
+  a.unique1 = 42 and ((b.unique2 is null and a.ten = 2) or b.hundred = 3);
 
 prepare foo
-(boolean)
+(bool)
 as select
-  COUNT(*)
+  count(*)
 from
   tenk1 as a
   left outer join
     tenk1 as b
   on a.unique2 = b.unique1 and
-    exists
-    (
-      select
-        1
-      from
-        tenk1 as c
-      where
-        c.thousand = b.unique2 and $1
-    );;
+    exists (select 1 from tenk1 as c where c.thousand = b.unique2 and $1);;
 
 execute foo (true);
 
@@ -1874,29 +1369,23 @@ rollback;
 
 select
   t1.q2,
-  COUNT(t2.*)
+  count(t2.*)
 from
-  int8_tbl as t1
-  left outer join
-    int8_tbl as t2
-  on t1.q2 = t2.q1
+  int8_tbl as t1 left outer join int8_tbl as t2 on t1.q2 = t2.q1
 group by t1.q2
 order by 1;
 
 select
   t1.q2,
-  COUNT(t2.*)
+  count(t2.*)
 from
-  int8_tbl as t1
-  left outer join
-    (select * from int8_tbl) as t2
-  on t1.q2 = t2.q1
+  int8_tbl as t1 left outer join (select * from int8_tbl) as t2 on t1.q2 = t2.q1
 group by t1.q2
 order by 1;
 
 select
   t1.q2,
-  COUNT(t2.*)
+  count(t2.*)
 from
   int8_tbl as t1
   left outer join
@@ -1907,19 +1396,11 @@ order by 1;
 
 select
   t1.q2,
-  COUNT(t2.*)
+  count(t2.*)
 from
   int8_tbl as t1
   left outer join
-    (
-      select
-        q1,
-        case when q2 = 1 then 1 else q2 end
-        as q2
-      from
-        int8_tbl
-    )
-    as t2
+    (select q1, case when q2 = 1 then 1 else q2 end as q2 from int8_tbl) as t2
   on t1.q2 = t2.q1
 group by t1.q2
 order by 1;
@@ -1928,19 +1409,19 @@ begin;
 
 create temporary table a (
   code char(1) not null,
-  constraint "a_pk" primary key (code)
+  constraint a_pk primary key (code)
 );
 
 create temporary table b (
   a char(1) not null,
   num int not null,
-  constraint "b_pk" primary key (a, num)
+  constraint b_pk primary key (a, num)
 );
 
 create temporary table c (
   name char(1) not null,
   a char(1),
-  constraint "c_pk" primary key (name)
+  constraint c_pk primary key (name)
 );
 
 insert into a (code) values ('p');
@@ -1973,15 +1454,7 @@ from
       from
         a
         left outer join
-          (
-            select
-              COUNT(1) as cnt,
-              b.a
-            from
-              b
-            group by b.a
-          )
-          as b_grp
+          (select count(1) as cnt, b.a from b group by b.a) as b_grp
         on a.code = b_grp.a
     )
     as ss
@@ -2052,22 +1525,10 @@ select
   qq,
   unique1
 from
-  (
-    select
-      coalesce(q1, 0) as qq
-    from
-      int8_tbl as a
-  )
-  as ss1
+  (select coalesce(q1, 0) as qq from int8_tbl as a) as ss1
   full outer join
-    (
-      select
-        coalesce(q2, -1) as qq
-      from
-        int8_tbl as b
-    )
-    as ss2
-  using ("qq")
+    (select coalesce(q2, -1) as qq from int8_tbl as b) as ss2
+  using (qq)
   inner join
     tenk1 as c
   on qq = unique2;
@@ -2076,22 +1537,10 @@ select
   qq,
   unique1
 from
-  (
-    select
-      coalesce(q1, 0) as qq
-    from
-      int8_tbl as a
-  )
-  as ss1
+  (select coalesce(q1, 0) as qq from int8_tbl as a) as ss1
   full outer join
-    (
-      select
-        coalesce(q2, -1) as qq
-      from
-        int8_tbl as b
-    )
-    as ss2
-  using ("qq")
+    (select coalesce(q2, -1) as qq from int8_tbl as b) as ss2
+  using (qq)
   inner join
     tenk1 as c
   on qq = unique2;
@@ -2147,14 +1596,7 @@ from
       from
         nt2 as nt2
         left outer join
-          (
-            select
-              nt1.*,
-              nt1.id is not null as a3
-            from
-              nt1
-          )
-          as ss1
+          (select nt1.*, nt1.id is not null as a3 from nt1) as ss1
         on ss1.id = nt2.nt1_id
     )
     as ss2
@@ -2174,14 +1616,7 @@ from
       from
         nt2 as nt2
         left outer join
-          (
-            select
-              nt1.*,
-              nt1.id is not null as a3
-            from
-              nt1
-          )
-          as ss1
+          (select nt1.*, nt1.id is not null as a3 from nt1) as ss1
         on ss1.id = nt2.nt1_id
     )
     as ss2
@@ -2194,26 +1629,10 @@ select
 from
   int8_tbl as t1
   left outer join
-    (
-      select
-        q1 as x,
-        42 as y
-      from
-        int8_tbl as t2
-    )
-    as ss
+    (select q1 as x, 42 as y from int8_tbl as t2) as ss
   on t1.q2 = ss.x
 where
-  1 =
-  (
-    select
-      1
-    from
-      int8_tbl as t3
-    where
-      ss.y is not null
-    limit 1
-  )
+  1 = (select 1 from int8_tbl as t3 where ss.y is not null limit 1)
 order by 1,
   2;
 
@@ -2222,26 +1641,10 @@ select
 from
   int8_tbl as t1
   left outer join
-    (
-      select
-        q1 as x,
-        42 as y
-      from
-        int8_tbl as t2
-    )
-    as ss
+    (select q1 as x, 42 as y from int8_tbl as t2) as ss
   on t1.q2 = ss.x
 where
-  1 =
-  (
-    select
-      1
-    from
-      int8_tbl as t3
-    where
-      ss.y is not null
-    limit 1
-  )
+  1 = (select 1 from int8_tbl as t3 where ss.y is not null limit 1)
 order by 1,
   2;
 
@@ -2314,10 +1717,7 @@ analyze q2;
 select
   *
 from
-  tenk1
-  inner join
-    int4_tbl
-  on f1 = twothousand,
+  tenk1 inner join int4_tbl on f1 = twothousand,
   q1,
   q2
 where
@@ -2326,10 +1726,7 @@ where
 select
   *
 from
-  tenk1
-  inner join
-    int4_tbl
-  on f1 = twothousand,
+  tenk1 inner join int4_tbl on f1 = twothousand,
   q1,
   q2
 where
@@ -2342,10 +1739,7 @@ from
   int8_tbl as a,
   int8_tbl as b
 where
-  thousand = a.q1 and
-  tenthous = b.q1 and
-  a.q2 = 1 and
-  b.q2 = 2;
+  thousand = a.q1 and tenthous = b.q1 and a.q2 = 1 and b.q2 = 2;
 
 select
   t1.unique2,
@@ -2375,8 +1769,7 @@ from
     tenk1 as t2
   on subq1.y1 = t2.unique1
 where
-  t1.unique2 < 42 and
-  t1.stringu1 > t2.stringu2;
+  t1.unique2 < 42 and t1.stringu1 > t2.stringu2;
 
 select
   t1.unique2,
@@ -2406,16 +1799,12 @@ from
     tenk1 as t2
   on subq1.y1 = t2.unique1
 where
-  t1.unique2 < 42 and
-  t1.stringu1 > t2.stringu2;
+  t1.unique2 < 42 and t1.stringu1 > t2.stringu2;
 
 select
   ss1.d1
 from
-  tenk1 as t1
-  inner join
-    tenk1 as t2
-  on t1.tenthous = t2.ten
+  tenk1 as t1 inner join tenk1 as t2 on t1.tenthous = t2.ten
   inner join
     int8_tbl as i8
     left outer join
@@ -2423,15 +1812,10 @@ from
       inner join
         (
           select
-            cast(64
-            as information_schema.cardinal_number)
-            as d1
+            cast(64 as information_schema.cardinal_number) as d1
           from
             tenk1 as t3,
-            lateral (
-              select abs(t3.unique1) + random()
-            )
-            as ss0 (x)
+            lateral (select abs(t3.unique1) + random()) as ss0 (x)
           where
             t3.fivethous < 0
         )
@@ -2445,10 +1829,7 @@ where
 select
   ss1.d1
 from
-  tenk1 as t1
-  inner join
-    tenk1 as t2
-  on t1.tenthous = t2.ten
+  tenk1 as t1 inner join tenk1 as t2 on t1.tenthous = t2.ten
   inner join
     int8_tbl as i8
     left outer join
@@ -2456,15 +1837,10 @@ from
       inner join
         (
           select
-            cast(64
-            as information_schema.cardinal_number)
-            as d1
+            cast(64 as information_schema.cardinal_number) as d1
           from
             tenk1 as t3,
-            lateral (
-              select abs(t3.unique1) + random()
-            )
-            as ss0 (x)
+            lateral (select abs(t3.unique1) + random()) as ss0 (x)
           where
             t3.fivethous < 0
         )
@@ -2503,8 +1879,7 @@ from
     tenk1 as t2
   on subq1.y1 = t2.unique1
 where
-  t1.unique2 < 42 and
-  t1.stringu1 > t2.stringu2;
+  t1.unique2 < 42 and t1.stringu1 > t2.stringu2;
 
 select
   t1.unique2,
@@ -2534,32 +1909,19 @@ from
     tenk1 as t2
   on subq1.y1 = t2.unique1
 where
-  t1.unique2 < 42 and
-  t1.stringu1 > t2.stringu2;
+  t1.unique2 < 42 and t1.stringu1 > t2.stringu2;
 
 select
   *
 from
-  (select 1 as x) as ss1
-  left outer join
-    (select 2 as y) as ss2
-  on true,
-  lateral (
-    select ss2.y as z limit 1
-  )
-  as ss3;
+  (select 1 as x) as ss1 left outer join (select 2 as y) as ss2 on true,
+  lateral (select ss2.y as z limit 1) as ss3;
 
 select
   *
 from
-  (select 1 as x) as ss1
-  left outer join
-    (select 2 as y) as ss2
-  on true,
-  lateral (
-    select ss2.y as z limit 1
-  )
-  as ss3;
+  (select 1 as x) as ss1 left outer join (select 2 as y) as ss2 on true,
+  lateral (select ss2.y as z limit 1) as ss3;
 
 begin;
 
@@ -2580,10 +1942,7 @@ from
             t3.q1 as x
           from
             int8_tbl as t3,
-            lateral (
-              select t2.q1, t3.q1 offset 0
-            )
-            as s
+            lateral (select t2.q1, t3.q1 offset 0) as s
         )
     )
   on true;
@@ -2599,10 +1958,7 @@ select
 from
   t as t1
   left outer join
-    (
-      select 1 as x, * from t as t2 (i2)
-    )
-    as t2ss
+    (select 1 as x, * from t as t2 (i2)) as t2ss
   on t1.i = t2ss.i2
   left outer join
     t as t3 (i3)
@@ -2649,10 +2005,7 @@ from
         (select true) as x
       from
         int4_tbl as i4,
-        lateral (
-          select i4.f1 as y limit 1
-        )
-        as ss1
+        lateral (select i4.f1 as y limit 1) as ss1
       where
         i4.f1 = 0
     )
@@ -2661,10 +2014,7 @@ from
   right outer join
     (select false as z) as ss3
   on true,
-  lateral (
-    select i8.q2 as q2l where x limit 1
-  )
-  as ss4
+  lateral (select i8.q2 as q2l where x limit 1) as ss4
 where
   i8.q2 = 123;
 
@@ -2687,37 +2037,22 @@ from
   right outer join
     (select false as z) as ss3
   on true,
-  lateral (
-    select i8.q2 as q2l where x limit 1
-  )
-  as ss4
+  lateral (select i8.q2 as q2l where x limit 1) as ss4
 where
   i8.q2 = 123;
 
 select
   *
 from
-  (select 0 as z) as t1
-  left outer join
-    (select true as a) as t2
-  on true,
-  lateral (
-    select true as b union all select a as b
-  )
-  as t3
+  (select 0 as z) as t1 left outer join (select true as a) as t2 on true,
+  lateral (select true as b union all select a as b) as t3
 where
   b;
 
 select
   *
 from
-  (select 0 as z) as t1
-  left outer join
-    (select true as a) as t2
-  on true,
-  lateral (
-    select true as b union all select a as b
-  )
-  as t3
+  (select 0 as z) as t1 left outer join (select true as a) as t2 on true,
+  lateral (select true as b union all select a as b) as t3
 where
   b;

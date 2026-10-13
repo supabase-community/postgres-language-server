@@ -1,5 +1,5 @@
 use super::{
-    node_list::emit_comma_separated_list,
+    node_list::{emit_comma_separated_list, emit_parenthesized_list},
     string::{emit_identifier_maybe_quoted, emit_keyword, emit_single_quoted_str},
 };
 use crate::{
@@ -98,9 +98,7 @@ pub(super) fn emit_alter_subscription_stmt(e: &mut EventEmitter, n: &AlterSubscr
             e.token(TokenKind::WITH_KW);
             e.space();
         }
-        e.token(TokenKind::L_PAREN);
-        emit_comma_separated_list(e, &n.options, super::emit_node);
-        e.token(TokenKind::R_PAREN);
+        emit_parenthesized_list(e, &n.options, super::emit_node);
     }
 
     e.token(TokenKind::SEMICOLON);

@@ -9,28 +9,11 @@ insert into app.packages (
   control_relocatable,
   control_requires
 )
-values
-  (
-    'langchain',
-    'embedding_search',
-    'Search document embeddings',
-    true,
-    '{pg_vector}'
-  );
+values ('langchain', 'embedding_search', 'Search document embeddings', true, '{pg_vector}');
 
 insert into app.package_versions (package_id, version_struct, sql, description_md)
 values
-  (
-    (
-      select
-        id
-      from
-        app.packages
-      where
-        package_name = 'langchain-embedding_search'
-    ),
-    (1, 0, 0),
-    '
+  ((select id from app.packages where package_name = 'langchain-embedding_search'), (1, 0, 0), '
 -- Enforce requirements
 -- Workaround to https://github.com/aws/pg_tle/issues/183
 do $$
@@ -86,8 +69,7 @@ begin
 end;
 $$;
 
-',
-    '
+', '
 # embedding_search
 
 [LangChain](https://js.langchain.com/docs/) is a framework for developing applications powered by language models with a plugable architecture.
@@ -144,5 +126,4 @@ export const run = async () => {
 ```
 
 For more details, checkout the LangChain Supabase integration docs: https://js.langchain.com/docs/modules/indexes/vector_stores/integrations/supabase
-'
-  );
+');

@@ -9,10 +9,7 @@ create temporary table foo (
 );
 
 insert into foo (f2, f3)
-values
-  ('test', default),
-  ('More', 11),
-  (upper('more'), 7 + 9)
+values ('test', default), ('More', 11), (upper('more'), 7 + 9)
 returning *,
 f1 + f3 as sum;
 
@@ -29,29 +26,23 @@ select * from foo;
 insert into foo
 select f1 + 10, f2, f3 + 99 from foo
 returning *,
-f1 + 112 in (select q1 from int8_tbl)
-as subplan,
-exists (select * from int4_tbl)
-as initplan;
+f1 + 112 in (select q1 from int8_tbl) as subplan,
+exists (select * from int4_tbl) as initplan;
 
 update foo
 set f3 = f3 * 2
 where
   f1 > 10
 returning *,
-f1 + 112 in (select q1 from int8_tbl)
-as subplan,
-exists (select * from int4_tbl)
-as initplan;
+f1 + 112 in (select q1 from int8_tbl) as subplan,
+exists (select * from int4_tbl) as initplan;
 
 delete from foo
 where
   f1 > 10
 returning *,
-f1 + 112 in (select q1 from int8_tbl)
-as subplan,
-exists (select * from int4_tbl)
-as initplan;
+f1 + 112 in (select q1 from int8_tbl) as subplan,
+exists (select * from int4_tbl) as initplan;
 
 update foo
 set f3 = f3 * 2
@@ -78,7 +69,7 @@ inherits (foo);
 insert into foochild values (123, 'child', 999, -123);
 
 alter table foo
-  add column f4 bigint default 99;
+  add column f4 int8 default 99;
 
 select * from foo;
 
@@ -119,17 +110,12 @@ insert into voo values (12, 'zoo') returning *, f1 * 2;
 create or replace rule voo_i
 as on insert to voo
 do instead
-  insert into foo
-  values (new.*, 57)
-  returning *;;
+  insert into foo values (new.*, 57) returning *;;
 
 create or replace rule voo_i
 as on insert to voo
 do instead
-  insert into foo
-  values (new.*, 57)
-  returning f1,
-  f2;;
+  insert into foo values (new.*, 57) returning f1, f2;;
 
 insert into voo values (13, 'zit2');
 
@@ -142,13 +128,7 @@ select * from voo;
 create or replace rule voo_u
 as on update to voo
 do instead
-  update foo
-  set f1 = new.f1,
-  f2 = new.f2
-  where
-    f1 = old.f1
-  returning f1,
-  f2;;
+  update foo set f1 = new.f1, f2 = new.f2 where f1 = old.f1 returning f1, f2;;
 
 update voo set f1 = f1 + 1 where f2 = 'zoo2';
 
@@ -161,11 +141,7 @@ select * from voo;
 create or replace rule voo_d
 as on delete to voo
 do instead
-  delete from foo
-  where
-    f1 = old.f1
-  returning f1,
-  f2;;
+  delete from foo where f1 = old.f1 returning f1, f2;;
 
 delete from foo where f1 = 13;
 
@@ -186,9 +162,7 @@ create function foo_f()
 returns setof foo
 language sql
 stable
-as $function$
-SELECT * FROM foo OFFSET 0
-$function$;
+as $$ SELECT * FROM foo OFFSET 0 $$;
 
 update foo
 set f2 = foo_f.f2
@@ -201,15 +175,13 @@ select * from foo;
 
 drop function foo_f();
 
-create type foo_t as (f1 int, f2 text, f3 int, f4 bigint);
+create type foo_t as (f1 int, f2 text, f3 int, f4 int8);
 
 create function foo_f()
 returns setof foo_t
 language sql
 stable
-as $function$
-SELECT * FROM foo OFFSET 0
-$function$;
+as $$ SELECT * FROM foo OFFSET 0 $$;
 
 update foo
 set f2 = foo_f.f2
@@ -236,11 +208,7 @@ insert into joinme values ('zoo2', 54321);
 insert into joinme values ('other', 0);
 
 create temporary view joinview
-as select
-  foo.*,
-  other
-from
-  foo inner join joinme on f2 = f2j;
+as select foo.*, other from foo inner join joinme on f2 = f2j;
 
 select * from joinview;
 
@@ -275,10 +243,7 @@ insert into foo as bar default values returning bar.f3;
 truncate foo;
 
 insert into foo
-values
-  (1, 'xxx', 10, 20),
-  (2, 'more', 42, 141),
-  (3, 'zoo2', 57, 99);
+values (1, 'xxx', 10, 20), (2, 'more', 42, 141), (3, 'zoo2', 57, 99);
 
 insert into foo
 values (4)
@@ -300,7 +265,7 @@ new.ctid,
 new.*,
 *;
 
-create unique index "foo_f1_idx" on foo using btree (f1);
+create unique index foo_f1_idx on foo using btree (f1);
 
 update foo
 set f4 = 100
@@ -314,9 +279,7 @@ cast(new.tableoid as regclass),
 new.ctid,
 new.*,
 new,
-cast(old.f4 as text) || '->' ||
-cast(new.f4 as text)
-as change;
+cast(old.f4 as text) || '->' || cast(new.f4 as text) as change;
 
 update foo
 set f4 = 100
@@ -330,9 +293,7 @@ cast(new.tableoid as regclass),
 new.ctid,
 new.*,
 new,
-cast(old.f4 as text) || '->' ||
-cast(new.f4 as text)
-as change;
+cast(old.f4 as text) || '->' || cast(new.f4 as text) as change;
 
 delete from foo
 where
@@ -358,113 +319,41 @@ new.*,
 
 insert into foo
 values (5, 'subquery test')
-returning (
-  select
-    MAX(old.f4 + x)
-  from
-    generate_series(1, 10) as x
-)
-as old_max,
-(
-  select
-    MAX(new.f4 + x)
-  from
-    generate_series(1, 10) as x
-)
-as new_max;
+returning (select max(old.f4 + x) from generate_series(1, 10) as x) as old_max,
+(select max(new.f4 + x) from generate_series(1, 10) as x) as new_max;
 
 insert into foo
 values (5, 'subquery test')
-returning (
-  select
-    MAX(old.f4 + x)
-  from
-    generate_series(1, 10) as x
-)
-as old_max,
-(
-  select
-    MAX(new.f4 + x)
-  from
-    generate_series(1, 10) as x
-)
-as new_max;
+returning (select max(old.f4 + x) from generate_series(1, 10) as x) as old_max,
+(select max(new.f4 + x) from generate_series(1, 10) as x) as new_max;
 
 update foo
 set f4 = 100
 where
   f1 = 5
 returning (select old.f4 = new.f4),
-(
-  select
-    MAX(old.f4 + x)
-  from
-    generate_series(1, 10) as x
-)
-as old_max,
-(
-  select
-    MAX(new.f4 + x)
-  from
-    generate_series(1, 10) as x
-)
-as new_max;
+(select max(old.f4 + x) from generate_series(1, 10) as x) as old_max,
+(select max(new.f4 + x) from generate_series(1, 10) as x) as new_max;
 
 update foo
 set f4 = 100
 where
   f1 = 5
 returning (select old.f4 = new.f4),
-(
-  select
-    MAX(old.f4 + x)
-  from
-    generate_series(1, 10) as x
-)
-as old_max,
-(
-  select
-    MAX(new.f4 + x)
-  from
-    generate_series(1, 10) as x
-)
-as new_max;
+(select max(old.f4 + x) from generate_series(1, 10) as x) as old_max,
+(select max(new.f4 + x) from generate_series(1, 10) as x) as new_max;
 
 delete from foo
 where
   f1 = 5
-returning (
-  select
-    MAX(old.f4 + x)
-  from
-    generate_series(1, 10) as x
-)
-as old_max,
-(
-  select
-    MAX(new.f4 + x)
-  from
-    generate_series(1, 10) as x
-)
-as new_max;
+returning (select max(old.f4 + x) from generate_series(1, 10) as x) as old_max,
+(select max(new.f4 + x) from generate_series(1, 10) as x) as new_max;
 
 delete from foo
 where
   f1 = 5
-returning (
-  select
-    MAX(old.f4 + x)
-  from
-    generate_series(1, 10) as x
-)
-as old_max,
-(
-  select
-    MAX(new.f4 + x)
-  from
-    generate_series(1, 10) as x
-)
-as new_max;
+returning (select max(old.f4 + x) from generate_series(1, 10) as x) as old_max,
+(select max(new.f4 + x) from generate_series(1, 10) as x) as new_max;
 
 create rule foo_del_rule
 as on delete to foo
@@ -502,7 +391,7 @@ new.f3 - old.f3 as delta_f3;
 create function joinview_upd_trig_fn()
 returns trigger
 language plpgsql
-as $function$
+as $$
 BEGIN
   RAISE NOTICE 'UPDATE: % -> %', old, new;
   UPDATE foo SET f1 = new.f1, f3 = new.f3, f4 = new.f4 * 10
@@ -510,7 +399,7 @@ BEGIN
     RETURNING new.f1, new.f4 INTO new.f1, new.f4;  -- should fail
   RETURN NEW;
 END;
-$function$;
+$$;
 
 create trigger joinview_upd_trig
 instead of update
@@ -533,7 +422,7 @@ new.f3 - old.f3 as delta_f3;
 create or replace function joinview_upd_trig_fn()
 returns trigger
 language plpgsql
-as $function$
+as $$
 BEGIN
   RAISE NOTICE 'UPDATE: % -> %', old, new;
   UPDATE foo SET f1 = new.f1, f3 = new.f3, f4 = new.f4 * 10
@@ -541,7 +430,7 @@ BEGIN
     RETURNING WITH (new AS n) new.f1, n.f4 INTO new.f1, new.f4;  -- now ok
   RETURN NEW;
 END;
-$function$;
+$$;
 
 update joinview
 set f3 = f3 + 1,
@@ -606,10 +495,10 @@ drop table public.tt;
 
 create table foo_parted (
   a int,
-  b double precision,
+  b float8,
   c text
 )
-partition by LIST(a);
+partition by list(a);
 
 create table foo_part_s1 partition of foo_parted for values in (1);
 
@@ -618,7 +507,7 @@ create table foo_part_s2 partition of foo_parted for values in (2);
 create table foo_part_d1 (
   c text,
   a int,
-  b double precision
+  b float8
 );
 
 alter table foo_parted
@@ -626,7 +515,7 @@ alter table foo_parted
   foo_part_d1 for values in (3);
 
 create table foo_part_d2 (
-  b double precision,
+  b float8,
   c text,
   a int
 );
@@ -636,11 +525,7 @@ alter table foo_parted
   foo_part_d2 for values in (4);
 
 insert into foo_parted
-values
-  (1, 17.1, 'P1'),
-  (2, 17.2, 'P2'),
-  (3, 17.3, 'P3'),
-  (4, 17.4, 'P4')
+values (1, 17.1, 'P1'), (2, 17.2, 'P2'), (3, 17.3, 'P3'), (4, 17.4, 'P4')
 returning cast(old.tableoid as regclass),
 old.ctid,
 old.*,

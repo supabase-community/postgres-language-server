@@ -10,7 +10,7 @@ select
   (t.a + t.b)::int,
   (t.a || t.b)::text,
   t.a::text::bigint,
-  (select MAX(u.id) from s.u)::bigint,
+  (select max(u.id) from s.u)::bigint,
   case when t.a then 1 else 2 end::text
 from
   s.t;

@@ -38,9 +38,7 @@ create table quad_poly_tbl (
 insert into quad_poly_tbl
 select
   (x - 1) * 100 + y,
-  polygon(
-    circle(point(x * 10, y * 10), 1 + (x + y) % 10)
-  )
+  polygon(circle(point(x * 10, y * 10), 1 + (x + y) % 10))
 from
   generate_series(1, 100) as x,
   generate_series(1, 100) as y;
@@ -48,14 +46,13 @@ from
 insert into quad_poly_tbl
 select
   i,
-  cast('((200, 300),(210, 310),(230, 290))'
-  as polygon)
+  cast('((200, 300),(210, 310),(230, 290))' as polygon)
 from
   generate_series(10001, 11000) as i;
 
 insert into quad_poly_tbl values (11001, null), (11002, null), (11003, null);
 
-create index "quad_poly_tbl_idx" on quad_poly_tbl using spgist (p);
+create index quad_poly_tbl_idx on quad_poly_tbl using spgist (p);
 
 set enable_seqscan = 'on';
 
@@ -66,15 +63,13 @@ set enable_bitmapscan = off;
 create temporary table quad_poly_tbl_ord_seq2
 as
   select
-    RANK() over (order by p <-> cast('123,456' as point)) as n,
+    rank() over (order by p <-> cast('123,456' as point)) as n,
     p <-> cast('123,456' as point) as dist,
     id
   from
     quad_poly_tbl
   where
-    p <@
-    cast('((300,300),(400,600),(600,500),(700,200))'
-    as polygon);
+    p <@ cast('((300,300),(400,600),(600,500),(700,200))' as polygon);
 
 set enable_seqscan = off;
 
@@ -83,220 +78,176 @@ set enable_indexscan = off;
 set enable_bitmapscan = 'on';
 
 select
-  COUNT(*)
+  count(*)
 from
   quad_poly_tbl
 where
-  p <<
-  cast('((300,300),(400,600),(600,500),(700,200))'
-  as polygon);
+  p << cast('((300,300),(400,600),(600,500),(700,200))' as polygon);
 
 select
-  COUNT(*)
+  count(*)
 from
   quad_poly_tbl
 where
-  p <<
-  cast('((300,300),(400,600),(600,500),(700,200))'
-  as polygon);
+  p << cast('((300,300),(400,600),(600,500),(700,200))' as polygon);
 
 select
-  COUNT(*)
+  count(*)
 from
   quad_poly_tbl
 where
-  p &<
-  cast('((300,300),(400,600),(600,500),(700,200))'
-  as polygon);
+  p &< cast('((300,300),(400,600),(600,500),(700,200))' as polygon);
 
 select
-  COUNT(*)
+  count(*)
 from
   quad_poly_tbl
 where
-  p &<
-  cast('((300,300),(400,600),(600,500),(700,200))'
-  as polygon);
+  p &< cast('((300,300),(400,600),(600,500),(700,200))' as polygon);
 
 select
-  COUNT(*)
+  count(*)
 from
   quad_poly_tbl
 where
-  p &&
-  cast('((300,300),(400,600),(600,500),(700,200))'
-  as polygon);
+  p && cast('((300,300),(400,600),(600,500),(700,200))' as polygon);
 
 select
-  COUNT(*)
+  count(*)
 from
   quad_poly_tbl
 where
-  p &&
-  cast('((300,300),(400,600),(600,500),(700,200))'
-  as polygon);
+  p && cast('((300,300),(400,600),(600,500),(700,200))' as polygon);
 
 select
-  COUNT(*)
+  count(*)
 from
   quad_poly_tbl
 where
-  p &>
-  cast('((300,300),(400,600),(600,500),(700,200))'
-  as polygon);
+  p &> cast('((300,300),(400,600),(600,500),(700,200))' as polygon);
 
 select
-  COUNT(*)
+  count(*)
 from
   quad_poly_tbl
 where
-  p &>
-  cast('((300,300),(400,600),(600,500),(700,200))'
-  as polygon);
+  p &> cast('((300,300),(400,600),(600,500),(700,200))' as polygon);
 
 select
-  COUNT(*)
+  count(*)
 from
   quad_poly_tbl
 where
-  p >>
-  cast('((300,300),(400,600),(600,500),(700,200))'
-  as polygon);
+  p >> cast('((300,300),(400,600),(600,500),(700,200))' as polygon);
 
 select
-  COUNT(*)
+  count(*)
 from
   quad_poly_tbl
 where
-  p >>
-  cast('((300,300),(400,600),(600,500),(700,200))'
-  as polygon);
+  p >> cast('((300,300),(400,600),(600,500),(700,200))' as polygon);
 
 select
-  COUNT(*)
+  count(*)
 from
   quad_poly_tbl
 where
-  p <<|
-  cast('((300,300),(400,600),(600,500),(700,200))'
-  as polygon);
+  p <<| cast('((300,300),(400,600),(600,500),(700,200))' as polygon);
 
 select
-  COUNT(*)
+  count(*)
 from
   quad_poly_tbl
 where
-  p <<|
-  cast('((300,300),(400,600),(600,500),(700,200))'
-  as polygon);
+  p <<| cast('((300,300),(400,600),(600,500),(700,200))' as polygon);
 
 select
-  COUNT(*)
+  count(*)
 from
   quad_poly_tbl
 where
-  p &<|
-  cast('((300,300),(400,600),(600,500),(700,200))'
-  as polygon);
+  p &<| cast('((300,300),(400,600),(600,500),(700,200))' as polygon);
 
 select
-  COUNT(*)
+  count(*)
 from
   quad_poly_tbl
 where
-  p &<|
-  cast('((300,300),(400,600),(600,500),(700,200))'
-  as polygon);
+  p &<| cast('((300,300),(400,600),(600,500),(700,200))' as polygon);
 
 select
-  COUNT(*)
+  count(*)
 from
   quad_poly_tbl
 where
-  p |&>
-  cast('((300,300),(400,600),(600,500),(700,200))'
-  as polygon);
+  p |&> cast('((300,300),(400,600),(600,500),(700,200))' as polygon);
 
 select
-  COUNT(*)
+  count(*)
 from
   quad_poly_tbl
 where
-  p |&>
-  cast('((300,300),(400,600),(600,500),(700,200))'
-  as polygon);
+  p |&> cast('((300,300),(400,600),(600,500),(700,200))' as polygon);
 
 select
-  COUNT(*)
+  count(*)
 from
   quad_poly_tbl
 where
-  p |>>
-  cast('((300,300),(400,600),(600,500),(700,200))'
-  as polygon);
+  p |>> cast('((300,300),(400,600),(600,500),(700,200))' as polygon);
 
 select
-  COUNT(*)
+  count(*)
 from
   quad_poly_tbl
 where
-  p |>>
-  cast('((300,300),(400,600),(600,500),(700,200))'
-  as polygon);
+  p |>> cast('((300,300),(400,600),(600,500),(700,200))' as polygon);
 
 select
-  COUNT(*)
+  count(*)
 from
   quad_poly_tbl
 where
-  p <@
-  cast('((300,300),(400,600),(600,500),(700,200))'
-  as polygon);
+  p <@ cast('((300,300),(400,600),(600,500),(700,200))' as polygon);
 
 select
-  COUNT(*)
+  count(*)
 from
   quad_poly_tbl
 where
-  p <@
-  cast('((300,300),(400,600),(600,500),(700,200))'
-  as polygon);
+  p <@ cast('((300,300),(400,600),(600,500),(700,200))' as polygon);
 
-select COUNT(*) from quad_poly_tbl where p @> cast('((340,550),(343,552),(341,553))' as polygon);
+select count(*) from quad_poly_tbl where p @> cast('((340,550),(343,552),(341,553))' as polygon);
 
-select COUNT(*) from quad_poly_tbl where p @> cast('((340,550),(343,552),(341,553))' as polygon);
+select count(*) from quad_poly_tbl where p @> cast('((340,550),(343,552),(341,553))' as polygon);
 
-select COUNT(*) from quad_poly_tbl where p ~= cast('((200, 300),(210, 310),(230, 290))' as polygon);
+select count(*) from quad_poly_tbl where p ~= cast('((200, 300),(210, 310),(230, 290))' as polygon);
 
-select COUNT(*) from quad_poly_tbl where p ~= cast('((200, 300),(210, 310),(230, 290))' as polygon);
+select count(*) from quad_poly_tbl where p ~= cast('((200, 300),(210, 310),(230, 290))' as polygon);
 
 set enable_indexscan = 'on';
 
 set enable_bitmapscan = off;
 
 select
-  RANK() over (order by p <-> cast('123,456' as point)) as n,
+  rank() over (order by p <-> cast('123,456' as point)) as n,
   p <-> cast('123,456' as point) as dist,
   id
 from
   quad_poly_tbl
 where
-  p <@
-  cast('((300,300),(400,600),(600,500),(700,200))'
-  as polygon);
+  p <@ cast('((300,300),(400,600),(600,500),(700,200))' as polygon);
 
 create temporary table quad_poly_tbl_ord_idx2
 as
   select
-    RANK() over (order by p <-> cast('123,456' as point)) as n,
+    rank() over (order by p <-> cast('123,456' as point)) as n,
     p <-> cast('123,456' as point) as dist,
     id
   from
     quad_poly_tbl
   where
-    p <@
-    cast('((300,300),(400,600),(600,500),(700,200))'
-    as polygon);
+    p <@ cast('((300,300),(400,600),(600,500),(700,200))' as polygon);
 
 select
   *
@@ -307,8 +258,7 @@ from
   on seq.n = idx.n and
     seq.id = idx.id and
     (
-      seq.dist = idx.dist or
-      (seq.dist is null and idx.dist is null)
+      seq.dist = idx.dist or (seq.dist is null and idx.dist is null)
     )
 where
   seq.id is null or idx.id is null;

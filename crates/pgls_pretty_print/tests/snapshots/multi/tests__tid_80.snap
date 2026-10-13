@@ -7,8 +7,7 @@ select
   cast('(0,0)' as tid) as tid00,
   cast('(0,1)' as tid) as tid01,
   cast('(-1,0)' as tid) as tidm10,
-  cast('(4294967295,65535)' as tid)
-  as tidmax;
+  cast('(4294967295,65535)' as tid) as tidmax;
 
 select cast('(4294967296,1)' as tid);
 
@@ -26,9 +25,9 @@ create table tid_tab (a int);
 
 insert into tid_tab values (1), (2);
 
-select MIN(ctid) from tid_tab;
+select min(ctid) from tid_tab;
 
-select MAX(ctid) from tid_tab;
+select max(ctid) from tid_tab;
 
 truncate tid_tab;
 
@@ -52,7 +51,7 @@ select currtid2(cast('tid_seq' as text), cast('(0,1)' as tid));
 
 drop sequence tid_seq;
 
-create index "tid_ind" on tid_tab using btree (a);
+create index tid_ind on tid_tab using btree (a);
 
 select currtid2(cast('tid_ind' as text), cast('(0,1)' as tid));
 

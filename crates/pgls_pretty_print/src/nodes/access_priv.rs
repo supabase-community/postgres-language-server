@@ -2,13 +2,14 @@ use crate::TokenKind;
 use crate::emitter::{EventEmitter, GroupKind, LineType};
 use pgls_query::protobuf::AccessPriv;
 
-use super::node_list::emit_comma_separated_list;
+use super::node_list::emit_parenthesized_list;
 
 pub(super) fn emit_access_priv(e: &mut EventEmitter, n: &AccessPriv) {
     e.group_start(GroupKind::AccessPriv);
 
     if !n.priv_name.is_empty() {
-        e.token(TokenKind::IDENT(n.priv_name.clone().to_uppercase()));
+        // Privilege names, `alter system` included, follow the keyword case.
+        super::emit_keywords(e, &n.priv_name);
     } else {
         // Empty priv_name means ALL privileges
         e.token(TokenKind::ALL_KW);
@@ -19,9 +20,7 @@ pub(super) fn emit_access_priv(e: &mut EventEmitter, n: &AccessPriv) {
     // Optional column list for column-level privileges
     if !n.cols.is_empty() {
         e.line(LineType::SoftOrSpace);
-        e.token(TokenKind::L_PAREN);
-        emit_comma_separated_list(e, &n.cols, super::emit_node);
-        e.token(TokenKind::R_PAREN);
+        emit_parenthesized_list(e, &n.cols, super::emit_node);
     }
 
     e.group_end();

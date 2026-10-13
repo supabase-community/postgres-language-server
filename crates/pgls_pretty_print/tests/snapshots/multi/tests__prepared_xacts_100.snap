@@ -125,7 +125,7 @@ insert into pxtest4 values (1);
 
 insert into pxtest4 values (2);
 
-declare "foo" cursor for select * from pxtest4;;
+declare foo cursor for select * from pxtest4;;
 
 fetch next from foo;
 
@@ -139,7 +139,7 @@ select gid from pg_prepared_xacts where gid ~ '^regress_' order by gid;
 
 begin;
 
-lock table pxtest3 in ACCESS SHARE mode nowait;
+lock table pxtest3 in access share mode nowait;
 
 rollback;
 
@@ -147,7 +147,7 @@ select gid from pg_prepared_xacts where gid ~ '^regress_' order by gid;
 
 begin;
 
-lock table pxtest3 in ACCESS SHARE mode nowait;
+lock table pxtest3 in access share mode nowait;
 
 rollback;
 

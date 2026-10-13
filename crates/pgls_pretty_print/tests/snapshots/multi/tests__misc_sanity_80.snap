@@ -12,10 +12,7 @@ where
   refobjid = 0 or
   classid = 0 or
   objid = 0 or
-  deptype
-  not in (
-    'a', 'e', 'i', 'n', 'x', 'P', 'S'
-  );
+  deptype not in ('a', 'e', 'i', 'n', 'x', 'P', 'S');
 
 select
   *
@@ -33,15 +30,9 @@ select
   attname,
   cast(atttypid as regtype)
 from
-  pg_class as c
-  inner join
-    pg_attribute as a
-  on c.oid = attrelid
+  pg_class as c inner join pg_attribute as a on c.oid = attrelid
 where
-  c.oid < 16384 and
-  reltoastrelid = 0 and
-  relkind = 'r' and
-  attstorage <> 'p'
+  c.oid < 16384 and reltoastrelid = 0 and relkind = 'r' and attstorage <> 'p'
 order by 1,
   2;
 
@@ -50,34 +41,18 @@ select
 from
   pg_class
 where
-  relnamespace =
-  cast('pg_catalog' as regnamespace) and
+  relnamespace = cast('pg_catalog' as regnamespace) and
   relkind = 'r' and
-  not pg_class.oid in
-  (
-    select
-      indrelid
-    from
-      pg_index
-    where
-      indisprimary
-  )
+  not pg_class.oid in (select indrelid from pg_index where indisprimary)
 order by 1;
 
 select
   relname
 from
-  pg_class as c
-  inner join
-    pg_index as i
-  on c.oid = i.indexrelid
+  pg_class as c inner join pg_index as i on c.oid = i.indexrelid
 where
-  relnamespace =
-  cast('pg_catalog' as regnamespace) and
+  relnamespace = cast('pg_catalog' as regnamespace) and
   relkind = 'i' and
   i.indisunique and
-  not c.oid in
-  (
-    select conindid from pg_constraint
-  )
+  not c.oid in (select conindid from pg_constraint)
 order by 1;

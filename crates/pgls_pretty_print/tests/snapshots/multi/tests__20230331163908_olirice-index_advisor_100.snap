@@ -9,28 +9,10 @@ insert into app.packages (
   control_relocatable,
   control_requires
 )
-values
-  (
-    'olirice',
-    'index_advisor',
-    'Recommend indexes for a given SQL query',
-    true,
-    '{hypopg}'
-  );
+values ('olirice', 'index_advisor', 'Recommend indexes for a given SQL query', true, '{hypopg}');
 
 insert into app.package_versions (package_id, version_struct, sql, description_md)
-values
-  (
-    (
-      select
-        id
-      from
-        app.packages
-      where
-        package_name = 'olirice-index_advisor'
-    ),
-    (0, 1, 0),
-    '
+values ((select id from app.packages where package_name = 'olirice-index_advisor'), (0, 1, 0), '
 
 
 -- Enforce requirements
@@ -215,8 +197,7 @@ begin
 end;
 $$;
 
-',
-    '
+', '
 
 # index_advisor
 
@@ -330,5 +311,4 @@ returns
 #### Description
 For a given *query*, searches for a set of SQL DDL `create index` statements that improve the query''s execution time;
 
-'
-  );
+');

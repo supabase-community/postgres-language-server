@@ -2,7 +2,7 @@
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/rowtypes.sql
 ---
-create type complex as (r double precision, i double precision);
+create type complex as (r float8, i float8);
 
 create temporary table fullname (
   first text,
@@ -125,11 +125,11 @@ select row('ABC', 'DEF') ~>=~ row('DEF', 'ABC') as "false";
 
 select row('ABC', 'DEF') ~~ row('DEF', 'ABC') as fail;
 
-select row(1, 2) = row(1, cast(2 as bigint));
+select row(1, 2) = row(1, cast(2 as int8));
 
 select row(1, 2) in (row(3, 4), row(1, 2));
 
-select row(1, 2) in (row(3, 4), row(1, cast(2 as bigint)));
+select row(1, 2) in (row(3, 4), row(1, cast(2 as int8)));
 
 select
   unique1,
@@ -137,11 +137,7 @@ select
 from
   tenk1
 where
-  (unique1, unique2) < any
-  (
-    select ten, ten from tenk1 where hundred < 3
-  ) and
-  unique1 <= 20
+  (unique1, unique2) < any (select ten, ten from tenk1 where hundred < 3) and unique1 <= 20
 order by 1;
 
 select
@@ -254,20 +250,14 @@ select
 from
   int8_tbl as i8
 where
-  i8
-  in (
-    cast(row(123, 456) as int8_tbl), '(4567890123456789,123)'
-  );
+  i8 in (cast(row(123, 456) as int8_tbl), '(4567890123456789,123)');
 
 select
   *
 from
   int8_tbl as i8
 where
-  i8
-  in (
-    cast(row(123, 456) as int8_tbl), '(4567890123456789,123)'
-  );
+  i8 in (cast(row(123, 456) as int8_tbl), '(4567890123456789,123)');
 
 select (row(1, 2.0)).f1;
 
@@ -295,7 +285,7 @@ select row(1, 1.1) = any (array[row(7, 7.7), row(1, 1.1), row(0, 0.0)]);
 
 select row(1, 1.1) = any (array[row(7, 7.7), row(1, 1.0), row(0, 0.0)]);
 
-create type cantcompare as (p point, r double precision);
+create type cantcompare as (p point, r float8);
 
 create temporary table cc (f1 cantcompare);
 
@@ -381,7 +371,7 @@ select cast(row(1, -3) as testtype1) *> cast(row(1, -2) as testtype1);
 
 select cast(row(1, -2) as testtype1) *< cast(row(1, 3) as testtype1);
 
-create type testtype2 as (a smallint, b boolean);
+create type testtype2 as (a smallint, b bool);
 
 select cast(row(1, true) as testtype2) *< cast(row(2, true) as testtype2);
 
@@ -432,8 +422,7 @@ select
   q.d = row(row(4))
 from
   unnest(
-    array[row(1, row(2), array[row(3)], row(row(4))),
-    row(2, row(3), array[row(4)], row(row(5)))]
+    array[row(1, row(2), array[row(3)], row(row(4))), row(2, row(3), array[row(4)], row(row(5)))]
   )
   as q
   (a int, b record, c record[], d record);
@@ -455,30 +444,25 @@ create type price_key as (id int);
 create function price_key_from_table(price)
 returns price_key
 language sql
-as $function$
-SELECT $1.id
-$function$;
+as $$
+    SELECT $1.id
+$$;
 
 create function price_key_from_input(price_input)
 returns price_key
 language sql
-as $function$
-SELECT $1.id
-$function$;
+as $$
+    SELECT $1.id
+$$;
 
 insert into price values (1, false, 42), (10, false, 100), (11, true, 17.99);
 
 update price
 set active = true,
 price = input_prices.price
-from unnest(
-  cast(array[(10, 123.00), (11, 99.99)]
-  as price_input[])
-)
-as input_prices
+from unnest(cast(array[(10, 123.00), (11, 99.99)] as price_input[])) as input_prices
 where
-  price_key_from_table(price.*) =
-  price_key_from_input(input_prices.*);
+  price_key_from_table(price.*) = price_key_from_input(input_prices.*);
 
 select * from price;
 
@@ -492,30 +476,30 @@ create temporary table compos (
 create function fcompos1(v compos)
 returns void
 language sql
-as $function$
+as $$
 insert into compos values (v);  -- fail
-$function$;
+$$;
 
 create function fcompos1(v compos)
 returns void
 language sql
-as $function$
+as $$
 insert into compos values (v.*);
-$function$;
+$$;
 
 create function fcompos2(v compos)
 returns void
 language sql
-as $function$
+as $$
 select fcompos1(v);
-$function$;
+$$;
 
 create function fcompos3(v compos)
 returns void
 language sql
-as $function$
+as $$
 select fcompos1(fcompos3.v.*);
-$function$;
+$$;
 
 select fcompos1(row(1, 'one'));
 
@@ -550,9 +534,7 @@ select last(f) from fullname as f;
 create function longname(fullname)
 returns text
 language sql
-as $function$
-select $1.first || ' ' || $1.last
-$function$;
+as $$select $1.first || ' ' || $1.last$$;
 
 select f.longname from fullname as f;
 
@@ -584,15 +566,18 @@ select row_to_json(ss) from (select q1 as a, q2 as b from int8_tbl offset 0) as 
 select
   row_to_json(q)
 from
+  (select thousand, tenthous from tenk1 where thousand = 42 and tenthous < 2000 offset 0) as q;
+
+select
+  row_to_json(q)
+from
+  (select thousand, tenthous from tenk1 where thousand = 42 and tenthous < 2000 offset 0) as q;
+
+select
+  row_to_json(q)
+from
   (
-    select
-      thousand,
-      tenthous
-    from
-      tenk1
-    where
-      thousand = 42 and tenthous < 2000
-    offset 0
+    select thousand as x, tenthous as y from tenk1 where thousand = 42 and tenthous < 2000 offset 0
   )
   as q;
 
@@ -600,44 +585,7 @@ select
   row_to_json(q)
 from
   (
-    select
-      thousand,
-      tenthous
-    from
-      tenk1
-    where
-      thousand = 42 and tenthous < 2000
-    offset 0
-  )
-  as q;
-
-select
-  row_to_json(q)
-from
-  (
-    select
-      thousand as x,
-      tenthous as y
-    from
-      tenk1
-    where
-      thousand = 42 and tenthous < 2000
-    offset 0
-  )
-  as q;
-
-select
-  row_to_json(q)
-from
-  (
-    select
-      thousand as x,
-      tenthous as y
-    from
-      tenk1
-    where
-      thousand = 42 and tenthous < 2000
-    offset 0
+    select thousand as x, tenthous as y from tenk1 where thousand = 42 and tenthous < 2000 offset 0
   )
   as q (a, b);
 
@@ -659,7 +607,7 @@ select row_to_json(cast(cast(tt3 as tt2) as tt1)) from tt3;
 
 select
   r,
-  r is null as isnull,
+  r is null as "isnull",
   r is not null as isnotnull
 from
   (
@@ -675,7 +623,7 @@ from
 
 select
   r,
-  r is null as isnull,
+  r is null as "isnull",
   r is not null as isnotnull
 from
   (
@@ -690,8 +638,7 @@ from
   as r (a, b);
 
 with
-r (a,
-b)
+r (a, b)
 as materialized (
   values
     (1, row(1, 2)),
@@ -703,14 +650,13 @@ as materialized (
 )
 select
   r,
-  r is null as isnull,
+  r is null as "isnull",
   r is not null as isnotnull
 from
   r;
 
 with
-r (a,
-b)
+r (a, b)
 as materialized (
   values
     (1, row(1, 2)),
@@ -722,58 +668,33 @@ as materialized (
 )
 select
   r,
-  r is null as isnull,
+  r is null as "isnull",
   r is not null as isnotnull
 from
   r;
 
-with
-cte (c) as materialized (select row(1, 2)),
-cte2 (c) as (select * from cte)
+with cte (c) as materialized (select row(1, 2)), cte2 (c) as (select * from cte)
 select
   *
 from
   cte2 as t
 where
-  (
-    select
-      *
-    from
-      (select c as c1) as s
-    where
-      (select (c1).f1 > 0)
-  ) is not null;
+  (select * from (select c as c1) as s where (select (c1).f1 > 0)) is not null;
 
-with
-cte (c) as materialized (select row(1, 2)),
-cte2 (c) as (select * from cte)
+with cte (c) as materialized (select row(1, 2)), cte2 (c) as (select * from cte)
 select
   *
 from
   cte2 as t
 where
-  (
-    select
-      *
-    from
-      (select c as c1) as s
-    where
-      (select (c1).f1 > 0)
-  ) is not null;
+  (select * from (select c as c1) as s where (select (c1).f1 > 0)) is not null;
 
 select
   1 as one
 from
   cte2 as t
 where
-  (
-    select
-      *
-    from
-      (select c as c1) as s
-    where
-      (select (c1).f1 > 0)
-  ) is not null;
+  (select * from (select c as c1) as s where (select (c1).f1 > 0)) is not null;
 
 select pg_get_viewdef('composite_v', true);
 
@@ -785,26 +706,17 @@ select
   (ss.a).x,
   (ss.a).n
 from
-  (
-    select
-      information_schema._pg_expandarray(array[1, 2])
-      as a
-  )
-  as ss
+  (select information_schema._pg_expandarray(array[1, 2]) as a) as ss
 where
   false;
 
-with
-cte (c) as materialized (select row(1, 2)),
-cte2 (c) as (select * from cte)
+with cte (c) as materialized (select row(1, 2)), cte2 (c) as (select * from cte)
 select
   (c).f1
 from
   cte2 as t;
 
-with
-cte (c) as materialized (select row(1, 2)),
-cte2 (c) as (select * from cte)
+with cte (c) as materialized (select row(1, 2)), cte2 (c) as (select * from cte)
 select
   (c).f1
 from

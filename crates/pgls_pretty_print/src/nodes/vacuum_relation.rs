@@ -1,9 +1,6 @@
 use pgls_query::protobuf::VacuumRelation;
 
-use crate::{
-    TokenKind,
-    emitter::{EventEmitter, GroupKind},
-};
+use crate::emitter::{EventEmitter, GroupKind};
 
 use super::emit_node;
 
@@ -17,9 +14,7 @@ pub(super) fn emit_vacuum_relation(e: &mut EventEmitter, n: &VacuumRelation) {
     // va_cols: specific columns to vacuum/analyze
     if !n.va_cols.is_empty() {
         e.space();
-        e.token(TokenKind::L_PAREN);
-        super::node_list::emit_comma_separated_list(e, &n.va_cols, emit_node);
-        e.token(TokenKind::R_PAREN);
+        super::node_list::emit_parenthesized_list(e, &n.va_cols, emit_node);
     }
 
     e.group_end();

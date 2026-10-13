@@ -492,8 +492,8 @@ use sort_group_clause::emit_sort_group_clause;
 use sql_value_function::emit_sql_value_function;
 use stats_elem::emit_stats_elem;
 use string::{
-    DollarQuoteHint, emit_dollar_quoted_str_with_hint, emit_identifier,
-    emit_identifier_maybe_quoted, emit_string, emit_string_identifier, emit_string_literal,
+    emit_body_literal, emit_identifier, emit_identifier_maybe_quoted, emit_keyword, emit_keywords,
+    emit_string, emit_string_identifier, emit_string_literal,
 };
 use sub_link::emit_sub_link;
 use sub_plan::{emit_alternative_sub_plan, emit_sub_plan};
@@ -937,6 +937,7 @@ mod tests {
             text: "-- note".to_string(),
             line_comment: true,
             own_line: true,
+            after_separator: false,
         };
         let leading = HashMap::from([(7, vec![comment])]);
         let mut e = EventEmitter::with_comments(Default::default(), leading, HashMap::new());

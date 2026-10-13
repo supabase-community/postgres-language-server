@@ -1,4 +1,4 @@
-use super::node_list::emit_comma_separated_list;
+use super::node_list::{emit_comma_separated_list, emit_parenthesized_list};
 use crate::{
     TokenKind,
     emitter::{EventEmitter, GroupKind},
@@ -68,12 +68,10 @@ pub(super) fn emit_create_foreign_table_stmt(e: &mut EventEmitter, n: &CreateFor
         e.space();
         e.token(TokenKind::OPTIONS_KW);
         e.space();
-        e.token(TokenKind::L_PAREN);
-        emit_comma_separated_list(e, &n.options, |n, e| {
+        emit_parenthesized_list(e, &n.options, |n, e| {
             let def_elem = assert_node_variant!(DefElem, n);
             super::emit_options_def_elem(e, def_elem);
         });
-        e.token(TokenKind::R_PAREN);
     }
 
     e.token(TokenKind::SEMICOLON);

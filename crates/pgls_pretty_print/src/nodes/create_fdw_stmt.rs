@@ -1,9 +1,10 @@
-use super::node_list::emit_comma_separated_list;
 use crate::{
     TokenKind,
     emitter::{EventEmitter, GroupKind, LineType},
 };
 use pgls_query::protobuf::CreateFdwStmt;
+
+use super::node_list::emit_parenthesized_list;
 
 pub(super) fn emit_create_fdw_stmt(e: &mut EventEmitter, n: &CreateFdwStmt) {
     e.group_start(GroupKind::CreateFdwStmt);
@@ -64,12 +65,10 @@ pub(super) fn emit_create_fdw_stmt(e: &mut EventEmitter, n: &CreateFdwStmt) {
         e.indent_start();
         e.token(TokenKind::OPTIONS_KW);
         e.space();
-        e.token(TokenKind::L_PAREN);
-        emit_comma_separated_list(e, &n.options, |n, e| {
+        emit_parenthesized_list(e, &n.options, |n, e| {
             let def_elem = assert_node_variant!(DefElem, n);
             super::emit_options_def_elem(e, def_elem);
         });
-        e.token(TokenKind::R_PAREN);
         e.indent_end();
     }
 

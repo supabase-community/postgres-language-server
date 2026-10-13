@@ -17,11 +17,11 @@ insert into timestamp_tbl values ('tomorrow EST');
 
 insert into timestamp_tbl values ('tomorrow zulu');
 
-select COUNT(*) as one from timestamp_tbl where d1 = cast('today' as timestamp);
+select count(*) as one from timestamp_tbl where d1 = cast('today' as timestamp);
 
-select COUNT(*) as three from timestamp_tbl where d1 = cast('tomorrow' as timestamp);
+select count(*) as three from timestamp_tbl where d1 = cast('tomorrow' as timestamp);
 
-select COUNT(*) as one from timestamp_tbl where d1 = cast('yesterday' as timestamp);
+select count(*) as one from timestamp_tbl where d1 = cast('yesterday' as timestamp);
 
 commit;
 
@@ -41,9 +41,9 @@ insert into timestamp_tbl values ('now');
 
 select pg_sleep(0.1);
 
-select COUNT(*) as two from timestamp_tbl where d1 = cast('now' as timestamp(2));
+select count(*) as two from timestamp_tbl where d1 = cast('now' as timestamp(2));
 
-select COUNT(d1) as three, COUNT(distinct d1) as two from timestamp_tbl;
+select count(d1) as three, count(distinct d1) as two from timestamp_tbl;
 
 commit;
 
@@ -245,12 +245,7 @@ select date_trunc('ago', cast('infinity' as timestamp)) as invalid_trunc;
 select
   str,
   interval,
-  date_trunc(str, ts) =
-  date_bin(
-    cast(interval as interval),
-    ts,
-    cast('2001-01-01' as timestamp)
-  )
+  date_trunc(str, ts) = date_bin(cast(interval as interval), ts, cast('2001-01-01' as timestamp))
   as equal
 from
   (
@@ -264,21 +259,12 @@ from
       ('microsecond', '1 us')
   )
   as intervals (str, interval),
-  (
-    values
-      (cast('2020-02-29 15:44:17.71393' as timestamp))
-  )
-  as ts (ts);
+  (values (cast('2020-02-29 15:44:17.71393' as timestamp))) as ts (ts);
 
 select
   str,
   interval,
-  date_trunc(str, ts) =
-  date_bin(
-    cast(interval as interval),
-    ts,
-    cast('2000-01-01 BC' as timestamp)
-  )
+  date_trunc(str, ts) = date_bin(cast(interval as interval), ts, cast('2000-01-01 BC' as timestamp))
   as equal
 from
   (
@@ -292,21 +278,12 @@ from
       ('microsecond', '1 us')
   )
   as intervals (str, interval),
-  (
-    values
-      (cast('0055-6-10 15:44:17.71393 BC' as timestamp))
-  )
-  as ts (ts);
+  (values (cast('0055-6-10 15:44:17.71393 BC' as timestamp))) as ts (ts);
 
 select
   str,
   interval,
-  date_trunc(str, ts) =
-  date_bin(
-    cast(interval as interval),
-    ts,
-    cast('2020-03-02' as timestamp)
-  )
+  date_trunc(str, ts) = date_bin(cast(interval as interval), ts, cast('2020-03-02' as timestamp))
   as equal
 from
   (
@@ -320,21 +297,12 @@ from
       ('microsecond', '1 us')
   )
   as intervals (str, interval),
-  (
-    values
-      (cast('2020-02-29 15:44:17.71393' as timestamp))
-  )
-  as ts (ts);
+  (values (cast('2020-02-29 15:44:17.71393' as timestamp))) as ts (ts);
 
 select
   str,
   interval,
-  date_trunc(str, ts) =
-  date_bin(
-    cast(interval as interval),
-    ts,
-    cast('0055-06-17 BC' as timestamp)
-  )
+  date_trunc(str, ts) = date_bin(cast(interval as interval), ts, cast('0055-06-17 BC' as timestamp))
   as equal
 from
   (
@@ -348,11 +316,7 @@ from
       ('microsecond', '1 us')
   )
   as intervals (str, interval),
-  (
-    values
-      (cast('0055-6-10 15:44:17.71393 BC' as timestamp))
-  )
-  as ts (ts);
+  (values (cast('0055-6-10 15:44:17.71393 BC' as timestamp))) as ts (ts);
 
 select
   interval,
@@ -371,15 +335,8 @@ from
       ('250 microseconds')
   )
   as intervals (interval),
-  (
-    values
-      (cast('2020-02-11 15:44:17.71393' as timestamp))
-  )
-  as ts (ts),
-  (
-    values (cast('2001-01-01' as timestamp))
-  )
-  as origin (origin);
+  (values (cast('2020-02-11 15:44:17.71393' as timestamp))) as ts (ts),
+  (values (cast('2001-01-01' as timestamp))) as origin (origin);
 
 select
   date_bin(
@@ -449,9 +406,7 @@ select
 from
   timestamp_tbl
 where
-  d1
-  between cast('1902-01-01' as timestamp)
-  and cast('2038-01-01' as timestamp);
+  d1 between cast('1902-01-01' as timestamp) and cast('2038-01-01' as timestamp);
 
 select
   d1 as timestamp,
@@ -494,28 +449,26 @@ from
 
 select
   d1 as timestamp,
-  EXTRACT('microseconds' from d1) as microseconds,
-  EXTRACT('milliseconds' from d1) as milliseconds,
-  EXTRACT('seconds' from d1) as seconds,
-  round(EXTRACT('julian' from d1)) as julian,
-  EXTRACT('epoch' from d1) as epoch
+  extract(microseconds from d1) as microseconds,
+  extract(milliseconds from d1) as milliseconds,
+  extract(seconds from d1) as seconds,
+  round(extract(julian from d1)) as julian,
+  extract(epoch from d1) as epoch
 from
   timestamp_tbl;
 
 select date_part('epoch', cast('294270-01-01 00:00:00' as timestamp));
 
-select EXTRACT('epoch' from cast('294270-01-01 00:00:00' as timestamp));
+select extract(epoch from cast('294270-01-01 00:00:00' as timestamp));
 
-select EXTRACT('epoch' from cast('5000-01-01 00:00:00' as timestamp));
+select extract(epoch from cast('5000-01-01 00:00:00' as timestamp));
 
 select
-  cast('294276-12-31 23:59:59' as timestamp) -
-  cast('1999-12-23 19:59:04.224193' as timestamp)
+  cast('294276-12-31 23:59:59' as timestamp) - cast('1999-12-23 19:59:04.224193' as timestamp)
   as ok;
 
 select
-  cast('294276-12-31 23:59:59' as timestamp) -
-  cast('1999-12-23 19:59:04.224192' as timestamp)
+  cast('294276-12-31 23:59:59' as timestamp) - cast('1999-12-23 19:59:04.224192' as timestamp)
   as overflows;
 
 select to_char(d1, 'DAY Day day DY Dy dy MONTH Month month RM MON Mon mon') from timestamp_tbl;
@@ -525,10 +478,7 @@ select to_char(d1, 'FMDAY FMDay FMday FMMONTH FMMonth FMmonth FMRM') from timest
 select to_char(d1, 'Y,YYY YYYY YYY YY Y CC Q MM WW DDD DD D J') from timestamp_tbl;
 
 select
-  to_char(
-    d1,
-    'FMY,YYY FMYYYY FMYYY FMYY FMY FMCC FMQ FMMM FMWW FMDDD FMDD FMD FMJ'
-  )
+  to_char(d1, 'FMY,YYY FMYYYY FMYYY FMYY FMY FMCC FMQ FMMM FMWW FMDDD FMDD FMD FMJ')
 from
   timestamp_tbl;
 
@@ -541,10 +491,7 @@ select to_char(d1, 'HH24--text--MI--text--SS') from timestamp_tbl;
 select to_char(d1, 'YYYYTH YYYYth Jth') from timestamp_tbl;
 
 select
-  to_char(
-    d1,
-    'YYYY A.D. YYYY a.d. YYYY bc HH:MI:SS P.M. HH:MI:SS p.m. HH:MI:SS pm'
-  )
+  to_char(d1, 'YYYY A.D. YYYY a.d. YYYY bc HH:MI:SS P.M. HH:MI:SS p.m. HH:MI:SS pm')
 from
   timestamp_tbl;
 
@@ -553,10 +500,7 @@ select to_char(d1, 'IYYY IYY IY I IW IDDD ID') from timestamp_tbl;
 select to_char(d1, 'FMIYYY FMIYY FMIY FMI FMIW FMIDDD FMID') from timestamp_tbl;
 
 select
-  to_char(
-    d,
-    'FF1 FF2 FF3 FF4 FF5 FF6  ff1 ff2 ff3 ff4 ff5 ff6  MS US'
-  )
+  to_char(d, 'FF1 FF2 FF3 FF4 FF5 FF6  ff1 ff2 ff3 ff4 ff5 ff6  MS US')
 from
   (
     values

@@ -1115,6 +1115,9 @@ impl Workspace for WorkspaceServer {
         let source = doc.get_document_content();
         let mut last_end = 0usize;
 
+        // Formatting a range leaves everything outside its statements as written.
+        let collapses_blank_lines = params.range.is_none();
+
         for (id, stmt_range, text, ast_result) in format_candidates {
             if id.is_child() {
                 continue;
@@ -1123,9 +1126,19 @@ impl Workspace for WorkspaceServer {
             let stmt_start = usize::from(stmt_range.start());
             let stmt_end = usize::from(stmt_range.end());
 
-            // Preserve leading text, blank lines, and standalone comments that precede
-            // this statement.
-            formatted_output.push_str(&source[last_end..stmt_start]);
+            // Preserve the standalone comments that precede this statement, with at most one
+            // blank line between statements and none before the first.
+            let gap = &source[last_end..stmt_start];
+            if collapses_blank_lines {
+                let gap = collapse_blank_lines(gap);
+                formatted_output.push_str(if last_end == 0 {
+                    gap.trim_start()
+                } else {
+                    &gap
+                });
+            } else {
+                formatted_output.push_str(gap);
+            }
             last_end = stmt_end;
 
             // Leave statements outside the requested range untouched.
@@ -1140,7 +1153,7 @@ impl Workspace for WorkspaceServer {
                 Ok(ast) => {
                     let mut ast = ast;
                     if let Some(formatted_sql_fn_body) = formatted_sql_fn_bodies.get(&id) {
-                        sql_function::set_sql_fn_body(&mut ast, formatted_sql_fn_body);
+                        sql_function::set_formatted_sql_fn_body(&mut ast, formatted_sql_fn_body);
                     }
 
                     match pgls_pretty_print::format_statement(&ast, &text, &config) {
@@ -1196,8 +1209,23 @@ impl Workspace for WorkspaceServer {
             }
         }
 
-        // Preserve any trailing text or comments after the last statement.
-        formatted_output.push_str(&source[last_end..]);
+        // Preserve any trailing text or comments after the last statement, without blank lines
+        // at the end of the file but with its final line break.
+        let rest = &source[last_end..];
+        if collapses_blank_lines {
+            let rest = collapse_blank_lines(rest);
+            let rest = if last_end == 0 {
+                rest.trim()
+            } else {
+                rest.trim_end()
+            };
+            formatted_output.push_str(rest);
+            if source.ends_with('\n') && !formatted_output.is_empty() {
+                formatted_output.push('\n');
+            }
+        } else {
+            formatted_output.push_str(rest);
+        }
 
         Ok(PullFormattingResult {
             original: doc.get_document_content().to_string(),
@@ -1365,6 +1393,30 @@ impl Workspace for WorkspaceServer {
 /// if it is a symlink that resolves to a directory.
 fn is_dir(path: &Path) -> bool {
     path.is_dir() || (path.is_symlink() && fs::read_link(path).is_ok_and(|path| path.is_dir()))
+}
+
+/// Keeps at most one blank line in `text`, which only holds whitespace and comments.
+fn collapse_blank_lines(text: &str) -> String {
+    let mut result = String::with_capacity(text.len());
+    // Line breaks since the last text that is not whitespace. Two make a blank line.
+    let mut line_breaks = 0;
+    for line in text.split_inclusive('\n') {
+        let is_blank = line.trim().is_empty();
+        let ends_line = line.ends_with('\n');
+        if is_blank && ends_line {
+            line_breaks += 1;
+            if line_breaks <= 2 {
+                result.push('\n');
+            }
+            continue;
+        }
+
+        result.push_str(line);
+        if !is_blank {
+            line_breaks = usize::from(ends_line);
+        }
+    }
+    result
 }
 
 /// Put psql named parameters back where the formatter printed their placeholders.

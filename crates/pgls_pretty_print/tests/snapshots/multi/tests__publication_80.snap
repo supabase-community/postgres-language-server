@@ -10,7 +10,7 @@ create role regress_publication_user_dummy login nosuperuser;
 
 set session authorization regress_publication_user;
 
-set client_min_messages = ERROR;
+set client_min_messages = 'ERROR';
 
 create publication testpub_default;
 
@@ -20,7 +20,7 @@ comment on publication testpub_default is 'test publication';
 
 select obj_description(p.oid, 'pg_publication') from pg_publication as p;
 
-set client_min_messages = ERROR;
+set client_min_messages = 'ERROR';
 
 create publication testpub_ins_trunct with (publish = insert);
 
@@ -33,12 +33,10 @@ create publication testpub_xxx with (foo);
 create publication testpub_xxx with (publish = 'cluster, vacuum');
 
 create publication testpub_xxx
-with (publish_via_partition_root = 'true',
-publish_via_partition_root = '0');
+with (publish_via_partition_root = 'true', publish_via_partition_root = '0');
 
 create publication testpub_xxx
-with (publish_generated_columns = stored,
-publish_generated_columns = 'none');
+with (publish_generated_columns = stored, publish_generated_columns = 'none');
 
 create publication testpub_xxx with (publish_generated_columns = foo);
 
@@ -46,7 +44,7 @@ create publication testpub_xxx with (publish_generated_columns);
 
 alter publication testpub_default set (publish = 'insert, update, delete');
 
-create schema "pub_test";
+create schema pub_test;
 
 create table testpub_tbl1 (
   id serial primary key,
@@ -62,9 +60,9 @@ create view testpub_view
 as select 1;
 
 create table testpub_parted (a int)
-partition by LIST(a);
+partition by list(a);
 
-set client_min_messages = ERROR;
+set client_min_messages = 'ERROR';
 
 create publication testpub_foralltables for all tables
 with (publish = 'insert');
@@ -90,7 +88,7 @@ alter publication testpub_foralltables drop tables in schema pub_test;
 
 alter publication testpub_foralltables set tables in schema pub_test;
 
-set client_min_messages = ERROR;
+set client_min_messages = 'ERROR';
 
 create publication testpub_fortable for table testpub_tbl1;
 
@@ -102,7 +100,7 @@ alter publication testpub_fortable drop tables in schema pub_test;
 
 alter publication testpub_fortable set tables in schema pub_test;
 
-set client_min_messages = ERROR;
+set client_min_messages = 'ERROR';
 
 create publication testpub_forschema for tables in schema pub_test;
 
@@ -141,7 +139,7 @@ create table testpub_tbl3 (a int);
 create table testpub_tbl3a (b text)
 inherits (testpub_tbl3);
 
-set client_min_messages = ERROR;
+set client_min_messages = 'ERROR';
 
 create publication testpub3 for table testpub_tbl3;
 
@@ -153,7 +151,7 @@ drop table testpub_tbl3, testpub_tbl3a;
 
 drop publication testpub3, testpub4;
 
-set client_min_messages = ERROR;
+set client_min_messages = 'ERROR';
 
 create publication testpub_forparted;
 
@@ -217,15 +215,15 @@ create table testpub_rf_tbl4 (g text);
 
 create table testpub_rf_tbl5 (a xml);
 
-create schema "testpub_rf_schema1";
+create schema testpub_rf_schema1;
 
 create table testpub_rf_schema1.testpub_rf_tbl5 (h int);
 
-create schema "testpub_rf_schema2";
+create schema testpub_rf_schema2;
 
 create table testpub_rf_schema2.testpub_rf_tbl6 (i int);
 
-set client_min_messages = ERROR;
+set client_min_messages = 'ERROR';
 
 create publication testpub5
 for table testpub_rf_tbl1,
@@ -235,18 +233,14 @@ with (publish = 'insert');
 reset client_min_messages;
 
 alter publication testpub5 add
-table testpub_rf_tbl3
-where (
-  e > 1000 and e < 2000);
+table testpub_rf_tbl3 where ( e > 1000 and e < 2000);
 
 alter publication testpub5 drop table testpub_rf_tbl2;
 
 alter publication testpub5 set
-table testpub_rf_tbl3
-where (
-  e > 300 and e < 500);
+table testpub_rf_tbl3 where ( e > 300 and e < 500);
 
-set client_min_messages = ERROR;
+set client_min_messages = 'ERROR';
 
 create publication testpub_rf_yes
 for table testpub_rf_tbl1 where (a > 1)
@@ -258,7 +252,7 @@ reset client_min_messages;
 
 drop publication testpub_rf_yes, testpub_rf_no;
 
-set client_min_messages = ERROR;
+set client_min_messages = 'ERROR';
 
 create publication testpub_syntax1
 for table testpub_rf_tbl1,
@@ -269,7 +263,7 @@ reset client_min_messages;
 
 drop publication testpub_syntax1;
 
-set client_min_messages = ERROR;
+set client_min_messages = 'ERROR';
 
 create publication testpub_syntax2
 for table testpub_rf_tbl1,
@@ -280,11 +274,11 @@ reset client_min_messages;
 
 drop publication testpub_syntax2;
 
-set client_min_messages = ERROR;
+set client_min_messages = 'ERROR';
 
 reset client_min_messages;
 
-set client_min_messages = ERROR;
+set client_min_messages = 'ERROR';
 
 create publication testpub_dups
 for table testpub_rf_tbl1 where (a = 1),
@@ -300,18 +294,18 @@ reset client_min_messages;
 
 alter publication testpub5 set table testpub_rf_tbl3 where ( 1234);
 
-alter publication testpub5 set table testpub_rf_tbl3 where ( e < AVG(e));
+alter publication testpub5 set table testpub_rf_tbl3 where ( e < avg(e));
 
 create function testpub_rf_func1(int, int)
 returns boolean
 language sql
-as $function$
-SELECT hashint4($1) > $2
-$function$;
+as $$ SELECT hashint4($1) > $2 $$;
 
-create operator =#> (PROCEDURE = testpub_rf_func1,
-LEFTARG = int,
-RIGHTARG = int);
+create operator =#> (
+  procedure = testpub_rf_func1,
+  leftarg = int,
+  rightarg = int
+);
 
 create publication testpub6 for table testpub_rf_tbl3 where (e =#> 27);
 
@@ -319,23 +313,17 @@ create function testpub_rf_func2()
 returns int
 language plpgsql
 immutable
-as $function$
-BEGIN RETURN 123; END;
-$function$;
+as $$ BEGIN RETURN 123; END; $$;
 
 alter publication testpub5 add
-table testpub_rf_tbl1
-where (
-  a >= testpub_rf_func2());
+table testpub_rf_tbl1 where ( a >= testpub_rf_func2());
 
 alter publication testpub5 add table testpub_rf_tbl1 where ( a < random());
 
 create collation user_collation from "C";
 
 alter publication testpub5 add
-table testpub_rf_tbl1
-where (
-  b < '2' collate "user_collation");
+table testpub_rf_tbl1 where ( b < '2' collate "user_collation");
 
 alter publication testpub5 set table testpub_rf_tbl1 where ( nullif(1, 2) = a);
 
@@ -344,19 +332,13 @@ alter publication testpub5 set table testpub_rf_tbl1 where ( a is null);
 alter publication testpub5 set table testpub_rf_tbl1 where ( a > 5 is false);
 
 alter publication testpub5 set
-table testpub_rf_tbl1
-where (
-  a is distinct from 5);
+table testpub_rf_tbl1 where ( a is distinct from 5);
 
 alter publication testpub5 set
-table testpub_rf_tbl1
-where (
-  (a, a + 1) < (2, 3));
+table testpub_rf_tbl1 where ( (a, a + 1) < (2, 3));
 
 alter publication testpub5 set
-table testpub_rf_tbl1
-where (
-  cast(b as varchar) < '2');
+table testpub_rf_tbl1 where ( cast(b as varchar) < '2');
 
 alter publication testpub5 set table testpub_rf_tbl4 where ( length(g) < 6);
 
@@ -385,53 +367,41 @@ for table testpub_rf_tbl1 where (cast('(0,1)' as tid) = ctid);
 alter publication testpub5 set table testpub_rf_tbl5 where ( a is document);
 
 alter publication testpub5 set
-table testpub_rf_tbl5
-where (
-  xmlexists('//foo[text() = ''bar'']' passing a));
+table testpub_rf_tbl5 where ( xmlexists('//foo[text() = ''bar'']' passing a));
 
 alter publication testpub5 set table testpub_rf_tbl1 where ( nullif(1, 2) = a);
 
 alter publication testpub5 set
-table testpub_rf_tbl1
-where (
-  case a when 5 then true else false end);
+table testpub_rf_tbl1 where ( case a when 5 then true else false end);
 
 alter publication testpub5 set
-table testpub_rf_tbl1
-where (
-  coalesce(b, 'foo') = 'foo');
+table testpub_rf_tbl1 where ( coalesce(b, 'foo') = 'foo');
 
 alter publication testpub5 set
-table testpub_rf_tbl1
-where (
-  greatest(a, 10) > 10);
+table testpub_rf_tbl1 where ( greatest(a, 10) > 10);
 
 alter publication testpub5 set table testpub_rf_tbl1 where ( a in (2, 4, 6));
 
 alter publication testpub5 set
-table testpub_rf_tbl1
-where (
-  array[a] <@ array[2, 4, 6]);
+table testpub_rf_tbl1 where ( array[a] <@ array[2, 4, 6]);
 
 alter publication testpub5 set table testpub_rf_tbl1 where ( row(a, 2) is null);
 
 alter publication testpub5 drop table testpub_rf_tbl1 where ( e < 27);
 
-set client_min_messages = ERROR;
+set client_min_messages = 'ERROR';
 
 create publication testpub6 for tables in schema testpub_rf_schema2;
 
 alter publication testpub6 set
 tables in schema testpub_rf_schema2,
-table testpub_rf_schema2.testpub_rf_tbl6
-where (
-  i < 99);
+table testpub_rf_schema2.testpub_rf_tbl6 where ( i < 99);
 
 reset client_min_messages;
 
 create publication testpub7 for table testpub_rf_tbl6 where (y > 100);
 
-set client_min_messages = ERROR;
+set client_min_messages = 'ERROR';
 
 create publication testpub8 for table testpub_rf_tbl7 where (y > 100);
 
@@ -503,10 +473,9 @@ create table rf_tbl_abcd_part_pk_1 (
 
 alter table rf_tbl_abcd_part_pk
   attach partition
-  rf_tbl_abcd_part_pk_1
-  for values from (1) to (10);
+  rf_tbl_abcd_part_pk_1 for values from (1) to (10);
 
-set client_min_messages = ERROR;
+set client_min_messages = 'ERROR';
 
 create publication testpub6 for table rf_tbl_abcd_pk where (a > 99);
 
@@ -565,22 +534,18 @@ update rf_tbl_abcd_nopk set a = 1;
 alter table rf_tbl_abcd_pk
   alter column c set not null;
 
-create unique index "idx_abcd_pk_c" on rf_tbl_abcd_pk using btree (c);
+create unique index idx_abcd_pk_c on rf_tbl_abcd_pk using btree (c);
 
 alter table rf_tbl_abcd_pk
-  replica identity
-  using index
-  idx_abcd_pk_c;
+  replica identity using index idx_abcd_pk_c;
 
 alter table rf_tbl_abcd_nopk
   alter column c set not null;
 
-create unique index "idx_abcd_nopk_c" on rf_tbl_abcd_nopk using btree (c);
+create unique index idx_abcd_nopk_c on rf_tbl_abcd_nopk using btree (c);
 
 alter table rf_tbl_abcd_nopk
-  replica identity
-  using index
-  idx_abcd_nopk_c;
+  replica identity using index idx_abcd_nopk_c;
 
 alter publication testpub6 set table rf_tbl_abcd_pk where ( a > 99);
 
@@ -638,21 +603,17 @@ drop table rf_tbl_abcd_nopk;
 
 drop table rf_tbl_abcd_part_pk;
 
-set client_min_messages = ERROR;
+set client_min_messages = 'ERROR';
 
 create table testpub_gencol (
   a int,
-  b int
-  generated always as (a + 1) stored
-  not null
+  b int generated always as (a + 1) stored not null
 );
 
-create unique index "testpub_gencol_idx" on testpub_gencol using btree (b);
+create unique index testpub_gencol_idx on testpub_gencol using btree (b);
 
 alter table testpub_gencol
-  replica identity
-  using index
-  testpub_gencol_idx;
+  replica identity using index testpub_gencol_idx;
 
 create publication pub_gencol for table testpub_gencol;
 
@@ -696,7 +657,7 @@ drop table testpub_gencol;
 
 reset client_min_messages;
 
-set client_min_messages = ERROR;
+set client_min_messages = 'ERROR';
 
 create publication testpub_dups
 for table testpub_tbl1 (a),
@@ -710,7 +671,7 @@ with (publish = 'insert');
 
 reset client_min_messages;
 
-set client_min_messages = ERROR;
+set client_min_messages = 'ERROR';
 
 create publication testpub_fortable for table testpub_tbl1;
 
@@ -741,16 +702,14 @@ alter table testpub_tbl5
 
 alter publication testpub_fortable_insert add table testpub_tbl5 (b, c);
 
-create unique index "testpub_tbl5_b_key" on testpub_tbl5 using btree (b, c);
+create unique index testpub_tbl5_b_key on testpub_tbl5 using btree (b, c);
 
 alter table testpub_tbl5
   alter column b set not null,
   alter column c set not null;
 
 alter table testpub_tbl5
-  replica identity
-  using index
-  testpub_tbl5_b_key;
+  replica identity using index testpub_tbl5_b_key;
 
 update testpub_tbl5 set a = 1;
 
@@ -763,15 +722,13 @@ alter publication testpub_fortable drop table testpub_tbl5;
 alter publication testpub_fortable add table testpub_tbl5 (a, e);
 
 alter table testpub_tbl5
-  replica identity
-  using index
-  testpub_tbl5_b_key;
+  replica identity using index testpub_tbl5_b_key;
 
 alter publication testpub_fortable add table testpub_tbl5 (a, c);
 
 update testpub_tbl5 set a = 1;
 
-set client_min_messages = ERROR;
+set client_min_messages = 'ERROR';
 
 create publication testpub_table_ins with (publish = 'insert, truncate');
 
@@ -828,37 +785,32 @@ create table testpub_tbl8 (
   b text,
   c text
 )
-partition by HASH(a);
+partition by hash(a);
 
 create table testpub_tbl8_0
 partition of testpub_tbl8
-for values with (MODULUS 2, REMAINDER 0);
+for values with (modulus 2, remainder 0);
 
 alter table testpub_tbl8_0
   add primary key (a);
 
 alter table testpub_tbl8_0
-  replica identity
-  using index
-  testpub_tbl8_0_pkey;
+  replica identity using index testpub_tbl8_0_pkey;
 
 create table testpub_tbl8_1
 partition of testpub_tbl8
-for values with (MODULUS 2, REMAINDER 1);
+for values with (modulus 2, remainder 1);
 
 alter table testpub_tbl8_1
   add primary key (b);
 
 alter table testpub_tbl8_1
-  replica identity
-  using index
-  testpub_tbl8_1_pkey;
+  replica identity using index testpub_tbl8_1_pkey;
 
-set client_min_messages = ERROR;
+set client_min_messages = 'ERROR';
 
 create publication testpub_col_list
-for table testpub_tbl8 (a,
-b)
+for table testpub_tbl8 (a, b)
 with (publish_via_partition_root = 'true');
 
 reset client_min_messages;
@@ -887,9 +839,7 @@ update testpub_tbl8 set a = 1;
 alter publication testpub_col_list drop table testpub_tbl8;
 
 alter table testpub_tbl8_1
-  replica identity
-  using index
-  testpub_tbl8_1_pkey;
+  replica identity using index testpub_tbl8_1_pkey;
 
 alter publication testpub_col_list add table testpub_tbl8 (a, b);
 
@@ -905,9 +855,7 @@ alter table testpub_tbl8_1
   add primary key (c);
 
 alter table testpub_tbl8_1
-  replica identity
-  using index
-  testpub_tbl8_1_pkey;
+  replica identity using index testpub_tbl8_1_pkey;
 
 update testpub_tbl8 set a = 1;
 
@@ -918,7 +866,7 @@ create table testpub_tbl8 (
   b text,
   c text
 )
-partition by HASH(a);
+partition by hash(a);
 
 alter publication testpub_col_list add table testpub_tbl8 (a, b);
 
@@ -932,9 +880,7 @@ alter table testpub_tbl8_0
   add primary key (a);
 
 alter table testpub_tbl8_0
-  replica identity
-  using index
-  testpub_tbl8_0_pkey;
+  replica identity using index testpub_tbl8_0_pkey;
 
 create table testpub_tbl8_1 (
   a int,
@@ -946,9 +892,7 @@ alter table testpub_tbl8_1
   add primary key (c);
 
 alter table testpub_tbl8_1
-  replica identity
-  using index
-  testpub_tbl8_1_pkey;
+  replica identity using index testpub_tbl8_1_pkey;
 
 update testpub_tbl8 set a = 1;
 
@@ -957,7 +901,7 @@ alter table testpub_tbl8_0
 
 update testpub_tbl8 set a = 1;
 
-set client_min_messages = ERROR;
+set client_min_messages = 'ERROR';
 
 create publication testpub_tbl9
 for tables in schema public,
@@ -997,7 +941,7 @@ drop publication
   testpub_col_list,
   testpub_tbl9;
 
-set client_min_messages = ERROR;
+set client_min_messages = 'ERROR';
 
 create publication testpub_both_filters;
 
@@ -1011,15 +955,10 @@ create table testpub_tbl_both_filters (
 );
 
 alter table testpub_tbl_both_filters
-  replica identity
-  using index
-  testpub_tbl_both_filters_pkey;
+  replica identity using index testpub_tbl_both_filters_pkey;
 
 alter publication testpub_both_filters add
-table testpub_tbl_both_filters (a,
-c)
-where (
-  c <> 1);
+table testpub_tbl_both_filters (a, c) where ( c <> 1);
 
 drop table testpub_tbl_both_filters;
 
@@ -1053,10 +992,9 @@ create table rf_tbl_abcd_part_pk_1 (
 
 alter table rf_tbl_abcd_part_pk
   attach partition
-  rf_tbl_abcd_part_pk_1
-  for values from (1) to (10);
+  rf_tbl_abcd_part_pk_1 for values from (1) to (10);
 
-set client_min_messages = ERROR;
+set client_min_messages = 'ERROR';
 
 create publication testpub6 for table rf_tbl_abcd_pk (a, b);
 
@@ -1115,22 +1053,18 @@ update rf_tbl_abcd_nopk set a = 1;
 alter table rf_tbl_abcd_pk
   alter column c set not null;
 
-create unique index "idx_abcd_pk_c" on rf_tbl_abcd_pk using btree (c);
+create unique index idx_abcd_pk_c on rf_tbl_abcd_pk using btree (c);
 
 alter table rf_tbl_abcd_pk
-  replica identity
-  using index
-  idx_abcd_pk_c;
+  replica identity using index idx_abcd_pk_c;
 
 alter table rf_tbl_abcd_nopk
   alter column c set not null;
 
-create unique index "idx_abcd_nopk_c" on rf_tbl_abcd_nopk using btree (c);
+create unique index idx_abcd_nopk_c on rf_tbl_abcd_nopk using btree (c);
 
 alter table rf_tbl_abcd_nopk
-  replica identity
-  using index
-  idx_abcd_nopk_c;
+  replica identity using index idx_abcd_nopk_c;
 
 alter publication testpub6 set table rf_tbl_abcd_pk (a);
 
@@ -1188,7 +1122,7 @@ drop table rf_tbl_abcd_nopk;
 
 drop table rf_tbl_abcd_part_pk;
 
-set client_min_messages = ERROR;
+set client_min_messages = 'ERROR';
 
 create table testpub_tbl4 (a int);
 
@@ -1224,7 +1158,7 @@ drop table testpub_unloggedtbl;
 
 create publication testpub_forsystemtbl for table pg_publication;
 
-set client_min_messages = ERROR;
+set client_min_messages = 'ERROR';
 
 create publication testpub_fortbl
 for table testpub_tbl1,
@@ -1263,18 +1197,14 @@ alter publication testpub_default add table pub_test.testpub_addpk;
 
 insert into pub_test.testpub_addpk values (1, 11);
 
-create unique
-index "testpub_addpk_id_idx"
-on pub_test.testpub_addpk
-using btree
-(
+create unique index testpub_addpk_id_idx on pub_test.testpub_addpk using btree (
   id
 );
 
 update pub_test.testpub_addpk set id = 2;
 
 alter table pub_test.testpub_addpk
-  add primary key using index "testpub_addpk_id_idx";
+  add primary key using index testpub_addpk_id_idx;
 
 update pub_test.testpub_addpk set id = 2;
 
@@ -1286,11 +1216,11 @@ create publication testpub2;
 
 set role to regress_publication_user;
 
-grant CREATE on database regression to regress_publication_user2;
+grant create on database regression to regress_publication_user2;
 
 set role to regress_publication_user2;
 
-set client_min_messages = ERROR;
+set client_min_messages = 'ERROR';
 
 create publication testpub2;
 
@@ -1306,7 +1236,7 @@ alter publication testpub3 add tables in schema pub_test;
 
 set role to regress_publication_user;
 
-grant REGRESS_PUBLICATION_USER to regress_publication_user2;
+grant regress_publication_user to regress_publication_user2;
 
 set role to regress_publication_user2;
 
@@ -1320,9 +1250,9 @@ set role to regress_publication_user;
 
 create role regress_publication_user3;
 
-grant REGRESS_PUBLICATION_USER2 to regress_publication_user3;
+grant regress_publication_user2 to regress_publication_user3;
 
-set client_min_messages = ERROR;
+set client_min_messages = 'ERROR';
 
 create publication testpub4 for tables in schema pub_test;
 
@@ -1342,7 +1272,7 @@ drop publication testpub4;
 
 drop role regress_publication_user3;
 
-revoke CREATE on database regression from regress_publication_user2;
+revoke create on database regression from regress_publication_user2;
 
 drop table testpub_parted;
 
@@ -1360,11 +1290,11 @@ alter publication testpub_foo rename to testpub_default;
 
 alter publication testpub_default owner to regress_publication_user2;
 
-create schema "pub_test1";
+create schema pub_test1;
 
-create schema "pub_test2";
+create schema pub_test2;
 
-create schema "pub_test3";
+create schema pub_test3;
 
 create schema "CURRENT_SCHEMA";
 
@@ -1385,7 +1315,7 @@ create table pub_test2.tbl1 (
 
 create table "CURRENT_SCHEMA"."CURRENT_SCHEMA" (id int);
 
-set client_min_messages = ERROR;
+set client_min_messages = 'ERROR';
 
 create publication testpub1_forschema for tables in schema pub_test1;
 
@@ -1475,12 +1405,12 @@ alter publication testpub1_forschema set tables in schema pub_test1;
 
 update pub_test1.tbl set id = 2;
 
-create schema "pub_testpart1";
+create schema pub_testpart1;
 
-create schema "pub_testpart2";
+create schema pub_testpart2;
 
 create table pub_testpart1.parent1 (a int)
-partition by LIST(a);
+partition by list(a);
 
 create table pub_testpart2.child_parent1
 partition of pub_testpart1.parent1
@@ -1490,7 +1420,7 @@ insert into pub_testpart2.child_parent1 values (1);
 
 update pub_testpart2.child_parent1 set a = 1;
 
-set client_min_messages = ERROR;
+set client_min_messages = 'ERROR';
 
 create publication testpubpart_forschema for tables in schema pub_testpart1;
 
@@ -1503,7 +1433,7 @@ update pub_testpart2.child_parent1 set a = 1;
 drop publication testpubpart_forschema;
 
 create table pub_testpart2.parent2 (a int)
-partition by LIST(a);
+partition by list(a);
 
 create table pub_testpart1.child_parent2
 partition of pub_testpart2.parent2
@@ -1513,7 +1443,7 @@ insert into pub_testpart1.child_parent2 values (1);
 
 update pub_testpart1.child_parent2 set a = 1;
 
-set client_min_messages = ERROR;
+set client_min_messages = 'ERROR';
 
 create publication testpubpart_forschema for tables in schema pub_testpart2;
 
@@ -1525,7 +1455,7 @@ update pub_testpart2.parent2 set a = 1;
 
 update pub_testpart1.child_parent2 set a = 1;
 
-set client_min_messages = ERROR;
+set client_min_messages = 'ERROR';
 
 create publication testpub3_forschema;
 
@@ -1533,7 +1463,7 @@ reset client_min_messages;
 
 alter publication testpub3_forschema set tables in schema pub_test1;
 
-set client_min_messages = ERROR;
+set client_min_messages = 'ERROR';
 
 create publication testpub_forschema_fortable
 for tables in schema pub_test1,
@@ -1575,11 +1505,11 @@ drop schema pub_testpart1 cascade;
 
 drop schema pub_testpart2 cascade;
 
-set client_min_messages = ERROR;
+set client_min_messages = 'ERROR';
 
-create schema "sch1";
+create schema sch1;
 
-create schema "sch2";
+create schema sch2;
 
 create table sch1.tbl1 (a int)
 partition by range(a);
@@ -1644,8 +1574,7 @@ partition by range(a);
 
 alter table sch1.tbl1
   attach partition
-  sch1.tbl1_part3
-  for values from (20) to (30);
+  sch1.tbl1_part3 for values from (20) to (30);
 
 create publication pub
 for tables in schema sch1
@@ -1663,7 +1592,7 @@ drop schema sch1 cascade;
 
 drop schema sch2 cascade;
 
-set client_min_messages = ERROR;
+set client_min_messages = 'ERROR';
 
 create publication pub1 for all tables
 with (publish_generated_columns = stored);
@@ -1677,18 +1606,15 @@ drop publication pub2;
 
 create table gencols (
   a int,
-  gen1 int
-  generated always as (a * 2) stored
+  gen1 int generated always as (a * 2) stored
 );
 
 create publication pub1
-for table gencols (a,
-gen1)
+for table gencols (a, gen1)
 with (publish_generated_columns = 'none');
 
 create publication pub2
-for table gencols (a,
-gen1)
+for table gencols (a, gen1)
 with (publish_generated_columns = stored);
 
 alter publication pub2 set (publish_generated_columns = 'none');
@@ -1720,7 +1646,7 @@ create table testpub_insert_onconfl_part_no_ri
 partition of testpub_insert_onconfl_parted
 for values from (1) to (10);
 
-set client_min_messages = ERROR;
+set client_min_messages = 'ERROR';
 
 create publication pub1 for all tables;
 
@@ -1754,7 +1680,7 @@ create table testpub_merge_pk (
   b int
 );
 
-set client_min_messages = ERROR;
+set client_min_messages = 'ERROR';
 
 create publication pub1 for all tables;
 
@@ -1772,7 +1698,7 @@ drop role regress_publication_user, regress_publication_user2;
 
 drop role regress_publication_user_dummy;
 
-create schema "pubme";
+create schema pubme;
 
 create table t0 (
   c int,
@@ -1781,18 +1707,17 @@ create table t0 (
 
 create table t1 (c int);
 
-create schema "pubme2";
+create schema pubme2;
 
 create table t0 (
   c int,
   d int
 );
 
-set client_min_messages = ERROR;
+set client_min_messages = 'ERROR';
 
 create publication dump_pub_qual_1ct
-for table only pubme.t0 (c,
-d) where (c > 0);
+for table only pubme.t0 (c, d) where (c > 0);
 
 create publication dump_pub_qual_2ct
 for table only pubme.t0 (c) where (c > 0),

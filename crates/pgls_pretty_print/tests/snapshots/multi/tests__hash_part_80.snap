@@ -8,12 +8,11 @@ create table mchash (
   b text,
   c jsonb
 )
-partition by HASH(a part_test_int4_ops,
-b part_test_text_ops);
+partition by hash(a part_test_int4_ops, b part_test_text_ops);
 
 create table mchash1
 partition of mchash
-for values with (MODULUS 4, REMAINDER 0);
+for values with (modulus 4, remainder 0);
 
 select satisfies_hash_partition(0, 4, 0, null);
 
@@ -42,12 +41,7 @@ select
   );
 
 select
-  satisfies_hash_partition(
-    cast('mchash' as regclass),
-    3,
-    1,
-    cast(null as int)
-  );
+  satisfies_hash_partition(cast('mchash' as regclass), 3, 1, cast(null as int));
 
 select
   satisfies_hash_partition(
@@ -89,8 +83,7 @@ create table mcinthash (
   b int,
   c jsonb
 )
-partition by HASH(a part_test_int4_ops,
-b part_test_int4_ops);
+partition by hash(a part_test_int4_ops, b part_test_int4_ops);
 
 select
   satisfies_hash_partition(
@@ -121,19 +114,19 @@ select
     cast('mcinthash' as regclass),
     4,
     0,
-    variadic array[NOW(), NOW()]
+    variadic array[now(), now()]
   );
 
 create table text_hashp (a text)
-partition by HASH(a);
+partition by hash(a);
 
 create table text_hashp0
 partition of text_hashp
-for values with (MODULUS 2, REMAINDER 0);
+for values with (modulus 2, remainder 0);
 
 create table text_hashp1
 partition of text_hashp
-for values with (MODULUS 2, REMAINDER 1);
+for values with (modulus 2, remainder 1);
 
 select
   satisfies_hash_partition(

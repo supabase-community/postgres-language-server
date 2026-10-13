@@ -68,7 +68,7 @@ select json_value(cast('null' as jsonb), '$'  returning int);
 
 select json_value(cast('true' as jsonb), '$');
 
-select json_value(cast('true' as jsonb), '$'  returning boolean);
+select json_value(cast('true' as jsonb), '$'  returning bool);
 
 select json_value(cast('123' as jsonb), '$');
 
@@ -93,16 +93,12 @@ select json_value(cast('"aaa"' as jsonb), '$'  returning text);
 select json_value(cast('"aaa"' as jsonb), '$'  returning char(5));
 
 select
-  json_value(cast('"aaa"' as jsonb), '$'
-  returning char(2)
-  error on error);
+  json_value(cast('"aaa"' as jsonb), '$'  returning char(2) error on error);
 
 select json_value(cast('"aaa"' as jsonb), '$'  returning char(2));
 
 select
-  json_value(cast('"aaa"' as jsonb), '$'
-  returning char(3)
-  error on error);
+  json_value(cast('"aaa"' as jsonb), '$'  returning char(3) error on error);
 
 select json_value(cast('"aaa"' as jsonb), '$'  returning json);
 
@@ -121,9 +117,7 @@ select json_value(cast('"aaa"' as jsonb), '$'  returning int);
 select json_value(cast('"aaa"' as jsonb), '$'  returning int error on error);
 
 select
-  json_value(cast('"aaa"' as jsonb), '$'
-  returning int
-  default 111 on error);
+  json_value(cast('"aaa"' as jsonb), '$'  returning int default 111 on error);
 
 select json_value(cast('"123"' as jsonb), '$'  returning int) + 234;
 
@@ -156,12 +150,14 @@ select
   default null on empty
   error on error);
 
-create type rainbow as enum ('red',
-'orange',
-'yellow',
-'green',
-'blue',
-'purple');
+create type rainbow as enum (
+  'red',
+  'orange',
+  'yellow',
+  'green',
+  'blue',
+  'purple'
+);
 
 create domain rgb as rainbow check (value in ('red', 'green', 'blue'));
 
@@ -197,9 +193,7 @@ select json_value(cast('1' as jsonb), 'lax $.a' default 2 on error);
 select json_value(cast('1' as jsonb), 'lax $.a' default '2' on empty);
 
 select
-  json_value(cast('1' as jsonb), 'lax $.a'
-  null on empty
-  default '2' on error);
+  json_value(cast('1' as jsonb), 'lax $.a' null on empty default '2' on error);
 
 select
   json_value(cast('1' as jsonb), 'lax $.a'
@@ -207,9 +201,7 @@ select
   default '3' on error);
 
 select
-  json_value(cast('1' as jsonb), 'lax $.a'
-  error on empty
-  default '3' on error);
+  json_value(cast('1' as jsonb), 'lax $.a' error on empty default '3' on error);
 
 select json_value(cast('[1,2]' as jsonb), '$[*]' error on error);
 
@@ -259,19 +251,16 @@ select
 
 select
   json_value(cast('null' as jsonb), '$ts'
-  passing cast('2018-02-21 12:34:56 +10'
-  as timestamp with time zone) as ts);
+  passing cast('2018-02-21 12:34:56 +10' as timestamptz) as ts);
 
 select
   json_value(cast('null' as jsonb), '$ts'
-  passing cast('2018-02-21 12:34:56 +10'
-  as timestamp with time zone) as ts
-  returning timestamp with time zone);
+  passing cast('2018-02-21 12:34:56 +10' as timestamptz) as ts
+  returning timestamptz);
 
 select
   json_value(cast('null' as jsonb), '$ts'
-  passing cast('2018-02-21 12:34:56 +10'
-  as timestamp with time zone) as ts
+  passing cast('2018-02-21 12:34:56 +10' as timestamptz) as ts
   returning timestamp);
 
 select
@@ -286,26 +275,22 @@ select
 
 select
   json_value(cast('null' as jsonb), '$ts'
-  passing cast('2018-02-21 12:34:56 +10'
-  as time with time zone) as ts
-  returning time with time zone);
+  passing cast('2018-02-21 12:34:56 +10' as timetz) as ts
+  returning timetz);
 
 select
   json_value(cast('null' as jsonb), '$ts'
-  passing cast('2018-02-21 12:34:56 +10'
-  as timestamp) as ts
+  passing cast('2018-02-21 12:34:56 +10' as timestamp) as ts
   returning timestamp);
 
 select
   json_value(cast('null' as jsonb), '$ts'
-  passing cast('2018-02-21 12:34:56 +10'
-  as timestamp with time zone) as ts
+  passing cast('2018-02-21 12:34:56 +10' as timestamptz) as ts
   returning json);
 
 select
   json_value(cast('null' as jsonb), '$ts'
-  passing cast('2018-02-21 12:34:56 +10'
-  as timestamp with time zone) as ts
+  passing cast('2018-02-21 12:34:56 +10' as timestamptz) as ts
   returning jsonb);
 
 select json_value('{"a": 1.234}', '$.a'  returning int error on error);
@@ -316,17 +301,10 @@ select json_value(cast(null as jsonb), '$');
 
 select
   json_query(js, '$') as unspec,
-  json_query(js, '$' without wrapper)
-  as without,
-  json_query(js, '$'
-  with conditional wrapper)
-  as "with cond",
-  json_query(js, '$'
-  with unconditional wrapper)
-  as "with uncond",
-  json_query(js, '$'
-  with unconditional wrapper)
-  as "with"
+  json_query(js, '$' without wrapper) as without,
+  json_query(js, '$' with conditional wrapper) as "with cond",
+  json_query(js, '$' with unconditional wrapper) as "with uncond",
+  json_query(js, '$' with unconditional wrapper) as "with"
 from
   (
     values
@@ -341,18 +319,10 @@ from
 
 select
   json_query(js, 'strict $[*]') as unspec,
-  json_query(js, 'strict $[*]'
-  without wrapper)
-  as without,
-  json_query(js, 'strict $[*]'
-  with conditional wrapper)
-  as "with cond",
-  json_query(js, 'strict $[*]'
-  with unconditional wrapper)
-  as "with uncond",
-  json_query(js, 'strict $[*]'
-  with unconditional wrapper)
-  as "with"
+  json_query(js, 'strict $[*]' without wrapper) as without,
+  json_query(js, 'strict $[*]' with conditional wrapper) as "with cond",
+  json_query(js, 'strict $[*]' with unconditional wrapper) as "with uncond",
+  json_query(js, 'strict $[*]' with unconditional wrapper) as "with"
 from
   (
     values
@@ -393,9 +363,7 @@ select
   error on error);
 
 select
-  json_query(cast('"aaa"' as jsonb), '$'
-  returning char(3)
-  error on error);
+  json_query(cast('"aaa"' as jsonb), '$'  returning char(3) error on error);
 
 select json_query(cast('"aaa"' as jsonb), '$'  returning char(3));
 
@@ -418,14 +386,10 @@ select
   default cast('"bb"' as jsonb) on empty);
 
 select
-  json_query(cast('[1]' as jsonb), '$'
-  with unconditional wrapper
-  omit quotes);
+  json_query(cast('[1]' as jsonb), '$' with unconditional wrapper omit quotes);
 
 select
-  json_query(cast('[1]' as jsonb), '$'
-  with conditional wrapper
-  omit quotes);
+  json_query(cast('[1]' as jsonb), '$' with conditional wrapper omit quotes);
 
 select
   json_query(cast('["1"]' as jsonb), '$[*]'
@@ -513,14 +477,10 @@ select json_query(cast('[]' as jsonb), '$[*]' default '"empty"' on empty);
 select json_query(cast('[]' as jsonb), '$[*]' error on empty null on error);
 
 select
-  json_query(cast('[]' as jsonb), '$[*]'
-  error on empty
-  empty array on error);
+  json_query(cast('[]' as jsonb), '$[*]' error on empty empty array on error);
 
 select
-  json_query(cast('[]' as jsonb), '$[*]'
-  error on empty
-  empty object on error);
+  json_query(cast('[]' as jsonb), '$[*]' error on empty empty object on error);
 
 select json_query(cast('[]' as jsonb), '$[*]' error on empty error on error);
 
@@ -578,44 +538,31 @@ select
   returning bigint[]
   empty object on error);
 
-select
-  json_query(cast('"123.1"' as jsonb), '$'
-  returning smallint
-  error on error);
+select json_query(cast('"123.1"' as jsonb), '$'  returning int2 error on error);
 
-select json_query(cast('"123.1"' as jsonb), '$'  returning int error on error);
+select json_query(cast('"123.1"' as jsonb), '$'  returning int4 error on error);
 
-select
-  json_query(cast('"123.1"' as jsonb), '$'
-  returning bigint
-  error on error);
+select json_query(cast('"123.1"' as jsonb), '$'  returning int8 error on error);
+
+select json_query(cast('"123.1"' as jsonb), '$'  returning bool error on error);
 
 select
-  json_query(cast('"123.1"' as jsonb), '$'
-  returning boolean
-  error on error);
-
-select
-  json_query(cast('"123.1"' as jsonb), '$'
-  returning numeric
-  error on error);
+  json_query(cast('"123.1"' as jsonb), '$'  returning numeric error on error);
 
 select json_query(cast('"123.1"' as jsonb), '$'  returning real error on error);
 
 select
-  json_query(cast('"123.1"' as jsonb), '$'
-  returning double precision
-  error on error);
+  json_query(cast('"123.1"' as jsonb), '$'  returning float8 error on error);
 
 select
   json_query(cast('"123.1"' as jsonb), '$'
-  returning smallint
+  returning int2
   omit quotes
   error on error);
 
 select
   json_query(cast('"123.1"' as jsonb), '$'
-  returning double precision
+  returning float8
   omit quotes
   error on error);
 
@@ -640,20 +587,17 @@ from
 create type comp_abc as (a text, b int, c timestamp);
 
 select
-  json_query(cast('{"rec": "(abc,42,01.02.2003)"}'
-  as jsonb), '$.rec'
+  json_query(cast('{"rec": "(abc,42,01.02.2003)"}' as jsonb), '$.rec'
   returning comp_abc
   omit quotes);
 
 select
-  json_query(cast('{"rec": "(abc,42,01.02.2003)"}'
-  as jsonb), '$.rec'
+  json_query(cast('{"rec": "(abc,42,01.02.2003)"}' as jsonb), '$.rec'
   returning comp_abc
   keep quotes);
 
 select
-  json_query(cast('{"rec": "(abc,42,01.02.2003)"}'
-  as jsonb), '$.rec'
+  json_query(cast('{"rec": "(abc,42,01.02.2003)"}' as jsonb), '$.rec'
   returning comp_abc
   keep quotes
   error on error);
@@ -735,12 +679,10 @@ from
   );
 
 select
-  json_query(cast('{"a": 1}' as jsonb), '$.a'
-  returning sqljsonb_int_not_null);
+  json_query(cast('{"a": 1}' as jsonb), '$.a'  returning sqljsonb_int_not_null);
 
 select
-  json_query(cast('{"a": 1}' as jsonb), '$.b'
-  returning sqljsonb_int_not_null);
+  json_query(cast('{"a": 1}' as jsonb), '$.b'  returning sqljsonb_int_not_null);
 
 select
   json_query(cast('{"a": 1}' as jsonb), '$.b'
@@ -750,46 +692,44 @@ select
 
 select
   json_query(cast('null' as jsonb), '$ts'
-  passing cast('2018-02-21 12:34:56 +10'
-  as timestamp with time zone) as ts);
+  passing cast('2018-02-21 12:34:56 +10' as timestamptz) as ts);
 
 select
   json_query(cast('null' as jsonb), '$ts'
-  passing cast('2018-02-21 12:34:56 +10'
-  as timestamp with time zone) as ts
+  passing cast('2018-02-21 12:34:56 +10' as timestamptz) as ts
   returning json);
 
 select
   json_query(cast('null' as jsonb), '$ts'
-  passing cast('2018-02-21 12:34:56 +10'
-  as timestamp with time zone) as ts
+  passing cast('2018-02-21 12:34:56 +10' as timestamptz) as ts
   returning jsonb);
 
 create table test_jsonb_constraints (
   js text,
   i int,
   x jsonb
-  default json_query(cast('[1,2]' as jsonb), '$[*]'
-  with unconditional wrapper)
-  constraint "test_jsonb_constraint1" check (js is json)
-  constraint "test_jsonb_constraint2" check (json_exists(cast(js as jsonb), '$.a'
-  passing i + 5 as int,
-  cast(i as text) as "TXT",
-  array[1, 2, 3] as arr))
-  constraint "test_jsonb_constraint3" check (json_value(cast(js as jsonb), '$.a'
-  returning int
-  default '12' on empty
-  error on error) >
-  i)
-  constraint "test_jsonb_constraint4" check (json_query(cast(js as jsonb), '$.a'
-  with conditional wrapper
-  empty object on error) =
-  cast('[10]' as jsonb))
-  constraint "test_jsonb_constraint5" check (json_query(cast(js as jsonb), '$.a'
-  returning char(5)
-  omit quotes
-  empty array on empty) >
-  'a' collate "C")
+    default json_query(cast('[1,2]' as jsonb), '$[*]'
+    with unconditional wrapper)
+    constraint test_jsonb_constraint1 check (js is json)
+    constraint test_jsonb_constraint2 check (json_exists(cast(js
+    as jsonb), '$.a'
+    passing i + 5 as int,
+    cast(i as text) as "TXT",
+    array[1, 2, 3] as arr))
+    constraint test_jsonb_constraint3 check (json_value(cast(js as jsonb), '$.a'
+    returning int
+    default '12' on empty
+    error on error) >
+    i)
+    constraint test_jsonb_constraint4 check (json_query(cast(js as jsonb), '$.a'
+    with conditional wrapper
+    empty object on error) =
+    cast('[10]' as jsonb))
+    constraint test_jsonb_constraint5 check (json_query(cast(js as jsonb), '$.a'
+    returning char(5)
+    omit quotes
+    empty array on empty) >
+    'a' collate "C")
 );
 
 select
@@ -805,9 +745,7 @@ select
 from
   pg_attrdef
 where
-  adrelid =
-  cast('test_jsonb_constraints'
-  as regclass)
+  adrelid = cast('test_jsonb_constraints' as regclass)
 order by 1;
 
 insert into test_jsonb_constraints values ('', 1);
@@ -833,312 +771,188 @@ create index on test_jsonb_mutability using btree ((json_query(js, '$')));
 
 create index on test_jsonb_mutability using btree ((json_query(js, '$.a[0]')));
 
-create index
-on test_jsonb_mutability
-using btree
-(
+create index on test_jsonb_mutability using btree (
   (json_query(js, '$.time()'))
 );
 
-create index
-on test_jsonb_mutability
-using btree
-(
+create index on test_jsonb_mutability using btree (
   (json_query(js, '$.date()'))
 );
 
-create index
-on test_jsonb_mutability
-using btree
-(
+create index on test_jsonb_mutability using btree (
   (json_query(js, '$.time_tz()'))
 );
 
-create index
-on test_jsonb_mutability
-using btree
-(
+create index on test_jsonb_mutability using btree (
   (json_query(js, '$.timestamp()'))
 );
 
-create index
-on test_jsonb_mutability
-using btree
-(
+create index on test_jsonb_mutability using btree (
   (json_query(js, '$.timestamp_tz()'))
 );
 
-create index
-on test_jsonb_mutability
-using btree
-(
+create index on test_jsonb_mutability using btree (
   (json_query(js, '$.a ? (@.date() < $.time_tz())'))
 );
 
-create index
-on test_jsonb_mutability
-using btree
-(
+create index on test_jsonb_mutability using btree (
   (json_query(js, '$.a ? (@.date() < $.time())'))
 );
 
-create index
-on test_jsonb_mutability
-using btree
-(
+create index on test_jsonb_mutability using btree (
   (json_query(js, '$.a ? (@.time() < $.time())'))
 );
 
-create index
-on test_jsonb_mutability
-using btree
-(
+create index on test_jsonb_mutability using btree (
   (json_query(js, '$.a ? (@.time() < $.time_tz())'))
 );
 
-create index
-on test_jsonb_mutability
-using btree
-(
+create index on test_jsonb_mutability using btree (
   (json_query(js, '$.a ? (@.timestamp() < $.timestamp_tz())'))
 );
 
-create index
-on test_jsonb_mutability
-using btree
-(
+create index on test_jsonb_mutability using btree (
   (json_query(js, '$.a ? (@.timestamp_tz() < $.timestamp_tz())'))
 );
 
-create index
-on test_jsonb_mutability
-using btree
-(
+create index on test_jsonb_mutability using btree (
   (json_query(js, '$.a ? (@.time() < $.datetime("HH:MI TZH"))'))
 );
 
-create index
-on test_jsonb_mutability
-using btree
-(
+create index on test_jsonb_mutability using btree (
   (json_query(js, '$.a ? (@.date() < $.datetime("HH:MI TZH"))'))
 );
 
-create index
-on test_jsonb_mutability
-using btree
-(
+create index on test_jsonb_mutability using btree (
   (json_query(js, '$.a ? (@.timestamp() < $.datetime("HH:MI TZH"))'))
 );
 
-create index
-on test_jsonb_mutability
-using btree
-(
+create index on test_jsonb_mutability using btree (
   (json_query(js, '$.a ? (@.timestamp() < $.datetime("HH:MI"))'))
 );
 
-create index
-on test_jsonb_mutability
-using btree
-(
+create index on test_jsonb_mutability using btree (
   (json_query(js, '$.a ? (@.timestamp_tz() < $.datetime("HH:MI TZH"))'))
 );
 
-create index
-on test_jsonb_mutability
-using btree
-(
+create index on test_jsonb_mutability using btree (
   (json_query(js, '$.a ? (@.timestamp_tz() < $.datetime("HH:MI"))'))
 );
 
-create index
-on test_jsonb_mutability
-using btree
-(
-  (json_query(js, '$.date() < $x'
-  passing cast('12:34' as time with time zone) as x))
+create index on test_jsonb_mutability using btree (
+  (json_query(js, '$.date() < $x' passing cast('12:34' as timetz) as x))
 );
 
-create index
-on test_jsonb_mutability
-using btree
-(
-  (json_query(js, '$.date() < $x'
-  passing cast('1234' as int) as x))
+create index on test_jsonb_mutability using btree (
+  (json_query(js, '$.date() < $x' passing cast('1234' as int) as x))
 );
 
-create index
-on test_jsonb_mutability
-using btree
-(
+create index on test_jsonb_mutability using btree (
   (json_query(js, '$.a ? (@.timestamp(2) < $.timestamp(3))'))
 );
 
-create index
-on test_jsonb_mutability
-using btree
-(
+create index on test_jsonb_mutability using btree (
   (json_query(js, '$.datetime()'))
 );
 
-create index
-on test_jsonb_mutability
-using btree
-(
+create index on test_jsonb_mutability using btree (
   (json_query(js, '$.a ? (@ < $.datetime())'))
 );
 
-create index
-on test_jsonb_mutability
-using btree
-(
+create index on test_jsonb_mutability using btree (
   (json_query(js, '$.a ? (@.datetime() < $.datetime())'))
 );
 
-create index
-on test_jsonb_mutability
-using btree
-(
+create index on test_jsonb_mutability using btree (
   (json_query(js, '$.a ? (@.datetime() < $.datetime("HH:MI TZH"))'))
 );
 
-create index
-on test_jsonb_mutability
-using btree
-(
+create index on test_jsonb_mutability using btree (
   (json_query(js, '$.a ? (@.datetime("HH:MI TZH") < $.datetime("HH:MI TZH"))'))
 );
 
-create index
-on test_jsonb_mutability
-using btree
-(
+create index on test_jsonb_mutability using btree (
   (json_query(js, '$.a ? (@.datetime("HH:MI") < $.datetime("YY-MM-DD HH:MI"))'))
 );
 
-create index
-on test_jsonb_mutability
-using btree
-(
+create index on test_jsonb_mutability using btree (
   (json_query(js, '$.a ? (@.datetime("HH:MI TZH") < $.datetime("YY-MM-DD HH:MI"))'))
 );
 
-create index
-on test_jsonb_mutability
-using btree
-(
+create index on test_jsonb_mutability using btree (
   (json_query(js, '$.datetime("HH:MI TZH") < $x'
-  passing cast('12:34' as time with time zone) as x))
+  passing cast('12:34' as timetz) as x))
 );
 
-create index
-on test_jsonb_mutability
-using btree
-(
+create index on test_jsonb_mutability using btree (
   (json_query(js, '$.datetime("HH:MI TZH") < $y'
-  passing cast('12:34' as time with time zone) as x))
+  passing cast('12:34' as timetz) as x))
 );
 
-create index
-on test_jsonb_mutability
-using btree
-(
-  (json_query(js, '$.datetime() < $x'
-  passing cast('12:34' as time with time zone) as x))
+create index on test_jsonb_mutability using btree (
+  (json_query(js, '$.datetime() < $x' passing cast('12:34' as timetz) as x))
 );
 
-create index
-on test_jsonb_mutability
-using btree
-(
-  (json_query(js, '$.datetime() < $x'
-  passing cast('1234' as int) as x))
+create index on test_jsonb_mutability using btree (
+  (json_query(js, '$.datetime() < $x' passing cast('1234' as int) as x))
 );
 
-create index
-on test_jsonb_mutability
-using btree
-(
+create index on test_jsonb_mutability using btree (
   (json_query(js, '$.datetime() ? (@ == $x)'
   passing cast('12:34' as time) as x))
 );
 
-create index
-on test_jsonb_mutability
-using btree
-(
+create index on test_jsonb_mutability using btree (
   (json_query(js, '$.datetime("YY-MM-DD") ? (@ == $x)'
   passing cast('2020-07-14' as date) as x))
 );
 
-create index
-on test_jsonb_mutability
-using btree
-(
+create index on test_jsonb_mutability using btree (
   (json_query(js, '$[1, $.a ? (@.datetime() == $x)]'
   passing cast('12:34' as time) as x))
 );
 
-create index
-on test_jsonb_mutability
-using btree
-(
+create index on test_jsonb_mutability using btree (
   (json_query(js, '$[1, 0 to $.a ? (@.datetime() == $x)]'
   passing cast('12:34' as time) as x))
 );
 
-create index
-on test_jsonb_mutability
-using btree
-(
+create index on test_jsonb_mutability using btree (
   (json_query(js, '$[1, $.a ? (@.datetime("HH:MI") == $x)]'
   passing cast('12:34' as time) as x))
 );
 
-create index
-on test_jsonb_mutability
-using btree
-(
-  (json_value(js, '$'
-  default cast(random() as int) on error))
+create index on test_jsonb_mutability using btree (
+  (json_value(js, '$' default cast(random() as int) on error))
 );
 
 create or replace function ret_setint()
 returns setof int
 language plpgsql
 immutable
-as $function$
+as $$
 BEGIN
     RETURN QUERY EXECUTE 'select 1 union all select 1';
 END;
-$function$;
+$$;
 
 select
-  json_query(js, '$'
-  returning int
-  default ret_setint() on error)
+  json_query(js, '$'  returning int default ret_setint() on error)
 from
   test_jsonb_mutability;
 
 select
-  json_query(js, '$'
-  returning int
-  default b + 1 on error)
+  json_query(js, '$'  returning int default b + 1 on error)
 from
   test_jsonb_mutability;
 
 select
-  json_query(js, '$'
-  returning int
-  default SUM(1) over () on error)
+  json_query(js, '$'  returning int default sum(1) over () on error)
 from
   test_jsonb_mutability;
 
 select
-  json_query(js, '$'
-  returning int
-  default (select 1) on error)
+  json_query(js, '$'  returning int default (select 1) on error)
 from
   test_jsonb_mutability;
 
@@ -1176,8 +990,7 @@ select
 select
   json_query('"a"', '$.a'
   returning queryfuncs_test_domain
-  default cast((select '"1"')
-  as queryfuncs_test_domain) on error);
+  default cast((select '"1"') as queryfuncs_test_domain) on error);
 
 select
   json_query('"a"', '$.a'
@@ -1187,8 +1000,7 @@ select
 select
   json_query('"a"', '$.a'
   returning int[]
-  default cast(cast((select '{1}') as oid[])
-  as int[]) on error);
+  default cast(cast((select '{1}') as oid[]) as int[]) on error);
 
 select
   json_query('"a"', '$.a'
@@ -1203,8 +1015,7 @@ inherits (someparent);
 select
   json_query('"a"', '$.a'
   returning someparent
-  default cast(cast((select '(1)') as somechild)
-  as someparent) on error);
+  default cast(cast((select '(1)') as somechild) as someparent) on error);
 
 drop domain queryfuncs_test_domain;
 
@@ -1298,7 +1109,7 @@ select
 
 drop domain queryfuncs_char2, queryfuncs_char2_chk;
 
-create domain queryfuncs_d_varbit3 as bit varying(3) check (value <> '01');
+create domain queryfuncs_d_varbit3 as varbit(3) check (value <> '01');
 
 select
   json_value(cast('1234' as jsonb), '$'
@@ -1318,9 +1129,7 @@ select
 select json_value(cast('"111"' as jsonb), '$'  returning bit(2) error on error);
 
 select
-  json_value(cast('1234' as jsonb), '$'
-  returning bit(3)
-  default 1 on error);
+  json_value(cast('1234' as jsonb), '$'  returning bit(3) default 1 on error);
 
 select
   json_value(cast('1234' as jsonb), '$'

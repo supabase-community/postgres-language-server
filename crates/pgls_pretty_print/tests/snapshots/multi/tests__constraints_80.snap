@@ -5,7 +5,7 @@ input_file: crates/pgls_pretty_print/tests/data/multi/constraints.sql
 create table default_tbl (
   i int default 100,
   x text default 'vadim',
-  f double precision default 123.456
+  f float8 default 123.456
 );
 
 insert into default_tbl values (1, 'thomas', 57.0613);
@@ -37,13 +37,13 @@ insert into defaultexpr_tbl (i2) values (null);
 
 select * from defaultexpr_tbl;
 
-create table error_tbl (b1 boolean default (1 in (1, 2)));
+create table error_tbl (b1 bool default (1 in (1, 2)));
 
 drop table error_tbl;
 
 create table check_tbl (
   x int,
-  constraint "check_con" check (x > 3)
+  constraint check_con check (x > 3)
 );
 
 insert into check_tbl values (5);
@@ -80,7 +80,7 @@ create table check2_tbl (
   x int,
   y text,
   z int,
-  constraint "sequence_con" check (x > 3 and y <> 'check failed' and z < 8)
+  constraint sequence_con check (x > 3 and y <> 'check failed' and z < 8)
 );
 
 insert into check2_tbl values (4, 'check ok', -2);
@@ -144,12 +144,11 @@ select * from insert_tbl;
 create table sys_col_check_tbl (
   city text,
   state text,
-  is_capital boolean,
+  is_capital bool,
   altitude int,
   check (not (
     is_capital and
-    cast(cast(tableoid as regclass) as text) =
-    'sys_col_check_tbl'
+    cast(cast(tableoid as regclass) as text) = 'sys_col_check_tbl'
   ))
 );
 
@@ -164,12 +163,9 @@ drop table sys_col_check_tbl;
 create table sys_col_check_tbl (
   city text,
   state text,
-  is_capital boolean,
+  is_capital bool,
   altitude int,
-  check (not (
-    is_capital and
-    cast(ctid as text) = 'sys_col_check_tbl'
-  ))
+  check (not (is_capital and cast(ctid as text) = 'sys_col_check_tbl'))
 );
 
 create table insert_child (

@@ -4,11 +4,11 @@ input_file: crates/pgls_pretty_print/tests/data/multi/temp.sql
 ---
 create table temptest (col int);
 
-create index "i_temptest" on temptest using btree (col);
+create index i_temptest on temptest using btree (col);
 
 create temporary table temptest (tcol int);
 
-create index "i_temptest" on temptest using btree (tcol);
+create index i_temptest on temptest using btree (tcol);
 
 select * from temptest;
 
@@ -94,16 +94,14 @@ select * from temptest;
 
 begin;
 
-do
-$do$
+do $$
 begin
   execute format($cmd$
     CREATE TEMP TABLE temptest (col text CHECK (col < %L)) ON COMMIT DROP
   $cmd$,
     (SELECT string_agg(g.i::text || ':' || random()::text, '|')
      FROM generate_series(1, 100) g(i)));
-end
-$do$;
+end$$;
 
 select * from temptest;
 
@@ -142,16 +140,12 @@ insert into whereami values ('temp');
 create function public.whoami()
 returns text
 language sql
-as $function$
-select 'public'::text
-$function$;
+as $$select 'public'::text$$;
 
 create function pg_temp.whoami()
 returns text
 language sql
-as $function$
-select 'temp'::text
-$function$;
+as $$select 'temp'::text$$;
 
 select * from whereami;
 
@@ -198,7 +192,7 @@ drop table temp_parted_oncommit;
 begin;
 
 create temporary table temp_parted_oncommit_test (a int)
-partition by LIST(a)
+partition by list(a)
 on commit drop;
 
 create temporary table temp_parted_oncommit_test2
@@ -267,18 +261,14 @@ begin;
 create function pg_temp.twophase_func()
 returns void
 language sql
-as $function$
-select '2pc_func'::text
-$function$;
+as $$ select '2pc_func'::text $$;
 
 prepare transaction 'twophase_func';
 
 create function pg_temp.twophase_func()
 returns void
 language sql
-as $function$
-select '2pc_func'::text
-$function$;
+as $$ select '2pc_func'::text $$;
 
 begin;
 
@@ -288,7 +278,7 @@ prepare transaction 'twophase_func';
 
 begin;
 
-create operator pg_temp.@@ (LEFTARG = int, RIGHTARG = int, PROCEDURE = int4mi);
+create operator pg_temp.@@ (leftarg = int4, rightarg = int4, procedure = int4mi);
 
 prepare transaction 'twophase_operator';
 
@@ -327,7 +317,7 @@ prepare transaction 'twophase_tab';
 
 begin;
 
-lock table twophase_tab in ACCESS EXCLUSIVE mode;
+lock table twophase_tab in access exclusive mode;
 
 prepare transaction 'twophase_tab';
 
@@ -341,7 +331,7 @@ set search_path to pg_temp;
 
 begin;
 
-select CURRENT_SCHEMA ~ 'pg_temp' as is_temp_schema;
+select current_schema() ~ 'pg_temp' as is_temp_schema;
 
 prepare transaction 'twophase_search';
 
@@ -355,13 +345,13 @@ create temporary table test_temp (
 
 insert into test_temp select generate_series(1, 10000) as id, repeat('a', 200), 0;
 
-select pg_relation_size('test_temp') / cast(current_setting('block_size') as bigint) > 200;
+select pg_relation_size('test_temp') / cast(current_setting('block_size') as int8) > 200;
 
 create function test_temp_pin(p_start int, p_end int)
 returns void
 language plpgsql
-as $function$
-DECLARE
+as $$
+  DECLARE
       cursorname text;
       query text;
   BEGIN
@@ -374,7 +364,7 @@ DECLARE
        -- RAISE NOTICE '%: %', cursorname, query;
     END LOOP;
   END;
-$function$;
+$$;
 
 begin;
 
@@ -400,7 +390,7 @@ fetch next from c_3;
 
 select test_temp_pin(10, 94);
 
-select COUNT(*), MAX(a) as max_a, MIN(a) as min_a, MAX(cnt) as max_cnt from test_temp;
+select count(*), max(a) as max_a, min(a) as min_a, max(cnt) as max_cnt from test_temp;
 
 rollback;
 
@@ -420,7 +410,7 @@ truncate test_temp;
 
 commit;
 
-select COUNT(*), MAX(a) as max_a, MIN(a) as min_a, MAX(cnt) as max_cnt from test_temp;
+select count(*), max(a) as max_a, min(a) as min_a, max(cnt) as max_cnt from test_temp;
 
 insert into test_temp (a, b, cnt) values (-1, '', 0);
 
@@ -432,7 +422,7 @@ drop table test_temp;
 
 rollback;
 
-select COUNT(*), MAX(a) as max_a, MIN(a) as min_a, MAX(cnt) as max_cnt from test_temp;
+select count(*), max(a) as max_a, min(a) as min_a, max(cnt) as max_cnt from test_temp;
 
 update test_temp set cnt = cnt + 1 where a = -1;
 
@@ -442,7 +432,7 @@ drop table test_temp;
 
 rollback;
 
-select COUNT(*), MAX(a) as max_a, MIN(a) as min_a, MAX(cnt) as max_cnt from test_temp;
+select count(*), max(a) as max_a, min(a) as min_a, max(cnt) as max_cnt from test_temp;
 
 update test_temp set cnt = cnt + 1 where a = -1;
 
@@ -452,6 +442,6 @@ truncate test_temp;
 
 rollback;
 
-select COUNT(*), MAX(a) as max_a, MIN(a) as min_a, MAX(cnt) as max_cnt from test_temp;
+select count(*), max(a) as max_a, min(a) as min_a, max(cnt) as max_cnt from test_temp;
 
 drop function test_temp_pin(int, int);

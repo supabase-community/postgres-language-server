@@ -17,10 +17,7 @@ where
   array_upper(p1.proargtypes, 1) <> p1.pronargs - 1 or
   cast(0 as oid) = any (p1.proargtypes) or
   procost <= 0 or
-  case
-    when proretset then prorows <= 0
-    else prorows <> 0
-  end or
+  case when proretset then prorows <= 0 else prorows <> 0 end or
   prokind not in ('f', 'a', 'w', 'p') or
   provolatile not in ('i', 's', 'v') or
   proparallel not in ('s', 'r', 'u');
@@ -33,10 +30,7 @@ select
 from
   pg_proc as p1
 where
-  (
-    prosrc = '' or prosrc = '-'
-  ) and
-  prosqlbody is null;
+  (prosrc = '' or prosrc = '-') and prosqlbody is null;
 
 select p1.oid, p1.proname from pg_proc as p1 where proretset and prokind <> 'f';
 
@@ -48,8 +42,7 @@ select
 from
   pg_proc as p1
 where
-  (pronargdefaults <> 0) <>
-  (proargdefaults is not null);
+  (pronargdefaults <> 0) <> (proargdefaults is not null);
 
 select
   p1.oid,
@@ -57,10 +50,7 @@ select
 from
   pg_proc as p1
 where
-  prolang = 13 and
-  (
-    probin is null or probin = '' or probin = '-'
-  );
+  prolang = 13 and (probin is null or probin = '' or probin = '-');
 
 select p1.oid, p1.proname from pg_proc as p1 where prolang <> 13 and probin is not null;
 
@@ -306,10 +296,7 @@ select
 from
   pg_proc as p1
 where
-  p1.prorettype
-  in (
-    cast('anyrange' as regtype), cast('anymultirange' as regtype)
-  ) and
+  p1.prorettype in (cast('anyrange' as regtype), cast('anymultirange' as regtype)) and
   not (
     cast('anyrange' as regtype) = any (p1.proargtypes) or
     cast('anymultirange' as regtype) = any (p1.proargtypes)
@@ -341,8 +328,7 @@ select
 from
   pg_proc as p1
 where
-  p1.prorettype =
-  cast('anycompatiblerange' as regtype) and
+  p1.prorettype = cast('anycompatiblerange' as regtype) and
   not cast('anycompatiblerange' as regtype) = any (p1.proargtypes)
 order by 2;
 
@@ -353,16 +339,9 @@ from
   pg_proc as p1
 where
   cast('cstring' as regtype) = any (p1.proargtypes) and
-  not exists
-  (
-    select 1 from pg_type where typinput = p1.oid
-  ) and
-  not exists
-  (
-    select 1 from pg_conversion where conproc = p1.oid
-  ) and
-  p1.oid <>
-  cast('shell_in(cstring)' as regprocedure)
+  not exists (select 1 from pg_type where typinput = p1.oid) and
+  not exists (select 1 from pg_conversion where conproc = p1.oid) and
+  p1.oid <> cast('shell_in(cstring)' as regprocedure)
 order by 1;
 
 select
@@ -372,14 +351,8 @@ from
   pg_proc as p1
 where
   p1.prorettype = cast('cstring' as regtype) and
-  not exists
-  (
-    select 1 from pg_type where typoutput = p1.oid
-  ) and
-  not exists
-  (
-    select 1 from pg_type where typmodout = p1.oid
-  ) and
+  not exists (select 1 from pg_type where typoutput = p1.oid) and
+  not exists (select 1 from pg_type where typmodout = p1.oid) and
   p1.oid <> cast('shell_out(void)' as regprocedure)
 order by 1;
 
@@ -389,9 +362,7 @@ select
 from
   pg_proc as p1
 where
-  proallargtypes is not null and
-  array_length(proallargtypes, 1) <
-  array_length(proargtypes, 1);
+  proallargtypes is not null and array_length(proallargtypes, 1) < array_length(proargtypes, 1);
 
 select
   p1.oid,
@@ -399,9 +370,7 @@ select
 from
   pg_proc as p1
 where
-  proargmodes is not null and
-  array_length(proargmodes, 1) <
-  array_length(proargtypes, 1);
+  proargmodes is not null and array_length(proargmodes, 1) < array_length(proargtypes, 1);
 
 select
   p1.oid,
@@ -409,9 +378,7 @@ select
 from
   pg_proc as p1
 where
-  proargnames is not null and
-  array_length(proargnames, 1) <
-  array_length(proargtypes, 1);
+  proargnames is not null and array_length(proargnames, 1) < array_length(proargtypes, 1);
 
 select
   p1.oid,
@@ -421,8 +388,7 @@ from
 where
   proallargtypes is not null and
   proargmodes is not null and
-  array_length(proallargtypes, 1) <>
-  array_length(proargmodes, 1);
+  array_length(proallargtypes, 1) <> array_length(proargmodes, 1);
 
 select
   p1.oid,
@@ -432,8 +398,7 @@ from
 where
   proallargtypes is not null and
   proargnames is not null and
-  array_length(proallargtypes, 1) <>
-  array_length(proargnames, 1);
+  array_length(proallargtypes, 1) <> array_length(proargnames, 1);
 
 select
   p1.oid,
@@ -443,8 +408,7 @@ from
 where
   proargmodes is not null and
   proargnames is not null and
-  array_length(proargmodes, 1) <>
-  array_length(proargnames, 1);
+  array_length(proargmodes, 1) <> array_length(proargnames, 1);
 
 select
   p1.oid,
@@ -461,14 +425,9 @@ where
     select
       proallargtypes[i]
     from
-      generate_series(
-        1,
-        array_length(proallargtypes, 1)
-      )
-      as g (i)
+      generate_series(1, array_length(proallargtypes, 1)) as g (i)
     where
-      proargmodes is null or
-      proargmodes[i] in ('i', 'b', 'v')
+      proargmodes is null or proargmodes[i] in ('i', 'b', 'v')
   );
 
 select
@@ -480,20 +439,16 @@ from
 where
   provariadic <> 0 and
   case proargtypes[array_length(proargtypes, 1) - 1]
-    when cast('"any"' as regtype)
-    then cast('"any"' as regtype)
-    when cast('anyarray' as regtype)
-    then cast('anyelement' as regtype)
-    when cast('anycompatiblearray' as regtype)
-    then cast('anycompatible' as regtype)
+    when cast('"any"' as regtype) then cast('"any"' as regtype)
+    when cast('anyarray' as regtype) then cast('anyelement' as regtype)
+    when cast('anycompatiblearray' as regtype) then cast('anycompatible' as regtype)
     else (
       select
         t.oid
       from
         pg_type as t
       where
-        t.typarray =
-        proargtypes[array_length(proargtypes, 1) - 1]
+        t.typarray = proargtypes[array_length(proargtypes, 1) - 1]
     )
   end <>
   provariadic;
@@ -505,8 +460,7 @@ select
 from
   pg_proc
 where
-  (proargmodes is not null and
-  'v' = any (proargmodes)) is distinct from provariadic <> 0;
+  (proargmodes is not null and 'v' = any (proargmodes)) is distinct from provariadic <> 0;
 
 select
   p1.oid,
@@ -532,19 +486,14 @@ from
   pg_proc as p1
   left outer join
     pg_description as d
-  on p1.tableoid = d.classoid and
-    p1.oid = d.objoid and
-    d.objsubid = 0
+  on p1.tableoid = d.classoid and p1.oid = d.objoid and d.objsubid = 0
 where
   d.classoid is null and p1.oid <= 9999;
 
 select
   cast(p1.oid as regprocedure)
 from
-  pg_proc as p1
-  inner join
-    pg_namespace as pn
-  on pronamespace = pn.oid
+  pg_proc as p1 inner join pg_namespace as pn on pronamespace = pn.oid
 where
   nspname = 'pg_catalog' and proleakproof
 order by 1;
@@ -552,14 +501,9 @@ order by 1;
 select
   cast(p1.oid as regprocedure)
 from
-  pg_proc as p1
-  inner join
-    pg_namespace as pn
-  on pronamespace = pn.oid
+  pg_proc as p1 inner join pg_namespace as pn on pronamespace = pn.oid
 where
-  nspname = 'pg_catalog' and
-  proleakproof and
-  pronargs = 0
+  nspname = 'pg_catalog' and proleakproof and pronargs = 0
 order by 1;
 
 select
@@ -573,15 +517,7 @@ where
     'lo_open', 'lo_close', 'lo_creat', 'lo_create', 'lo_unlink', 'lo_lseek', 'lo_lseek64',
     'lo_tell', 'lo_tell64', 'lo_truncate', 'lo_truncate64', 'loread', 'lowrite'
   ) and
-  pronamespace =
-  (
-    select
-      oid
-    from
-      pg_catalog.pg_namespace
-    where
-      nspname = 'pg_catalog'
-  )
+  pronamespace = (select oid from pg_catalog.pg_namespace where nspname = 'pg_catalog')
 order by 1;
 
 select p1.oid, p1.proname from pg_proc as p1 where provolatile = 'i' and proparallel = 'u';
@@ -601,8 +537,7 @@ select
 from
   pg_cast as c
 where
-  (castmethod = 'f' and castfunc = 0) or
-  (castmethod in ('b', 'i') and castfunc <> 0);
+  (castmethod = 'f' and castfunc = 0) or (castmethod in ('b', 'i') and castfunc <> 0);
 
 select * from pg_cast as c where castsource = casttarget and castfunc = 0;
 
@@ -612,9 +547,7 @@ from
   pg_cast as c,
   pg_proc as p
 where
-  c.castfunc = p.oid and
-  p.pronargs < 2 and
-  castsource = casttarget;
+  c.castfunc = p.oid and p.pronargs < 2 and castsource = casttarget;
 
 select
   c.*
@@ -628,8 +561,7 @@ where
     p.pronargs > 3 or
     not (
       binary_coercible(c.castsource, p.proargtypes[0]) or
-      (c.castsource = cast('character' as regtype) and
-        p.proargtypes[0] = cast('text' as regtype))
+      (c.castsource = cast('character' as regtype) and p.proargtypes[0] = cast('text' as regtype))
     ) or
     not binary_coercible(p.prorettype, c.casttarget)
   );
@@ -642,10 +574,8 @@ from
 where
   c.castfunc = p.oid and
   (
-    (p.pronargs > 1 and
-      p.proargtypes[1] <> cast('int4' as regtype)) or
-    (p.pronargs > 2 and
-      p.proargtypes[2] <> cast('bool' as regtype))
+    (p.pronargs > 1 and p.proargtypes[1] <> cast('int4' as regtype)) or
+    (p.pronargs > 2 and p.proargtypes[2] <> cast('bool' as regtype))
   );
 
 select
@@ -664,9 +594,7 @@ where
     from
       pg_cast as k
     where
-      k.castmethod = 'b' and
-      k.castsource = c.casttarget and
-      k.casttarget = c.castsource
+      k.castmethod = 'b' and k.castsource = c.casttarget and k.casttarget = c.castsource
   );
 
 select
@@ -721,9 +649,7 @@ select
 from
   pg_operator as o1
 where
-  (o1.oprkind <> 'b' and o1.oprkind <> 'l') or
-  o1.oprresult = 0 or
-  o1.oprcode = 0;
+  (o1.oprkind <> 'b' and o1.oprkind <> 'l') or o1.oprresult = 0 or o1.oprcode = 0;
 
 select
   o1.oid,
@@ -819,11 +745,7 @@ where
   (
     o1.oprcanmerge or o1.oprcanhash
   ) and
-  not (
-    o1.oprkind = 'b' and
-    o1.oprresult = cast('bool' as regtype) and
-    o1.oprcom <> 0
-  );
+  not (o1.oprkind = 'b' and o1.oprresult = cast('bool' as regtype) and o1.oprcom <> 0);
 
 select
   o1.oid,
@@ -834,11 +756,7 @@ from
   pg_operator as o1,
   pg_operator as o2
 where
-  o1.oprcom = o2.oid and
-  (
-    o1.oprcanmerge <> o2.oprcanmerge or
-    o1.oprcanhash <> o2.oprcanhash
-  );
+  o1.oprcom = o2.oid and (o1.oprcanmerge <> o2.oprcanmerge or o1.oprcanhash <> o2.oprcanhash);
 
 select
   o1.oid,
@@ -854,8 +772,7 @@ where
     from
       pg_amop
     where
-      amopmethod =
-      (select oid from pg_am where amname = 'btree') and
+      amopmethod = (select oid from pg_am where amname = 'btree') and
       amopopr = o1.oid and
       amopstrategy = 3
   );
@@ -869,8 +786,7 @@ from
   pg_amop as p
 where
   amopopr = o1.oid and
-  amopmethod =
-  (select oid from pg_am where amname = 'btree') and
+  amopmethod = (select oid from pg_am where amname = 'btree') and
   amopstrategy = 3 and
   not o1.oprcanmerge;
 
@@ -888,8 +804,7 @@ where
     from
       pg_amop
     where
-      amopmethod =
-      (select oid from pg_am where amname = 'hash') and
+      amopmethod = (select oid from pg_am where amname = 'hash') and
       amopopr = o1.oid and
       amopstrategy = 1
   );
@@ -903,8 +818,7 @@ from
   pg_amop as p
 where
   amopopr = o1.oid and
-  amopmethod =
-  (select oid from pg_am where amname = 'hash') and
+  amopmethod = (select oid from pg_am where amname = 'hash') and
   not o1.oprcanhash;
 
 select
@@ -952,11 +866,7 @@ from
   pg_operator as o1,
   pg_proc as p1
 where
-  o1.oprcode = p1.oid and
-  (
-    o1.oprcanmerge or o1.oprcanhash
-  ) and
-  p1.provolatile = 'v';
+  o1.oprcode = p1.oid and (o1.oprcanmerge or o1.oprcanhash) and p1.provolatile = 'v';
 
 select
   o1.oid,
@@ -1009,9 +919,7 @@ from
   pg_operator as o1
   left outer join
     pg_description as d
-  on o1.tableoid = d.classoid and
-    o1.oid = d.objoid and
-    d.objsubid = 0
+  on o1.tableoid = d.classoid and o1.oid = d.objoid and d.objsubid = 0
 where
   d.classoid is null and o1.oid <= 9999;
 
@@ -1023,24 +931,16 @@ as (
     proname,
     o.oid as o_oid,
     pd.description as prodesc,
-    'implementation of ' || oprname || ' operator'
-    as expecteddesc,
+    'implementation of ' || oprname || ' operator' as expecteddesc,
     od.description as oprdesc
   from
-    pg_proc as p
-    inner join
-      pg_operator as o
-    on oprcode = p.oid
+    pg_proc as p inner join pg_operator as o on oprcode = p.oid
     left outer join
       pg_description as pd
-    on pd.objoid = p.oid and
-      pd.classoid = p.tableoid and
-      pd.objsubid = 0
+    on pd.objoid = p.oid and pd.classoid = p.tableoid and pd.objsubid = 0
     left outer join
       pg_description as od
-    on od.objoid = o.oid and
-      od.classoid = o.tableoid and
-      od.objsubid = 0
+    on od.objoid = o.oid and od.classoid = o.tableoid and od.objsubid = 0
   where
     o.oid <= 9999
 )
@@ -1061,24 +961,16 @@ as (
     proname,
     o.oid as o_oid,
     pd.description as prodesc,
-    'implementation of ' || oprname || ' operator'
-    as expecteddesc,
+    'implementation of ' || oprname || ' operator' as expecteddesc,
     od.description as oprdesc
   from
-    pg_proc as p
-    inner join
-      pg_operator as o
-    on oprcode = p.oid
+    pg_proc as p inner join pg_operator as o on oprcode = p.oid
     left outer join
       pg_description as pd
-    on pd.objoid = p.oid and
-      pd.classoid = p.tableoid and
-      pd.objsubid = 0
+    on pd.objoid = p.oid and pd.classoid = p.tableoid and pd.objsubid = 0
     left outer join
       pg_description as od
-    on od.objoid = o.oid and
-      od.classoid = o.tableoid and
-      od.objsubid = 0
+    on od.objoid = o.oid and od.classoid = o.tableoid and od.objsubid = 0
   where
     o.oid <= 9999
 )
@@ -1089,8 +981,7 @@ select
 from
   funcdescs
 where
-  prodesc is distinct from expecteddesc and
-  oprdesc not like 'deprecated%'
+  prodesc is distinct from expecteddesc and oprdesc not like 'deprecated%'
 order by 1;
 
 select
@@ -1108,8 +999,7 @@ where
   p1.oid = o1.oprcode and
   p2.oid = o2.oprcode and
   (
-    p1.provolatile <> p2.provolatile or
-    p1.proleakproof <> p2.proleakproof
+    p1.provolatile <> p2.provolatile or p1.proleakproof <> p2.proleakproof
   );
 
 select
@@ -1127,8 +1017,7 @@ where
   p1.oid = o1.oprcode and
   p2.oid = o2.oprcode and
   (
-    p1.provolatile <> p2.provolatile or
-    p1.proleakproof <> p2.proleakproof
+    p1.provolatile <> p2.provolatile or p1.proleakproof <> p2.proleakproof
   );
 
 select
@@ -1148,15 +1037,13 @@ where
   pp.oid = ap.amproc and
   po.oid = o.oprcode and
   o.oid = ao.amopopr and
-  ao.amopmethod =
-  (select oid from pg_am where amname = 'btree') and
+  ao.amopmethod = (select oid from pg_am where amname = 'btree') and
   ao.amopfamily = ap.amprocfamily and
   ao.amoplefttype = ap.amproclefttype and
   ao.amoprighttype = ap.amprocrighttype and
   ap.amprocnum = 1 and
   (
-    pp.provolatile <> po.provolatile or
-    pp.proleakproof <> po.proleakproof
+    pp.provolatile <> po.provolatile or pp.proleakproof <> po.proleakproof
   )
 order by 1;
 
@@ -1184,12 +1071,7 @@ from
   pg_aggregate as a,
   pg_proc as p
 where
-  a.aggfnoid = p.oid and
-  (
-    p.prokind <> 'a' or
-    p.proretset or
-    p.pronargs < a.aggnumdirectargs
-  );
+  a.aggfnoid = p.oid and (p.prokind <> 'a' or p.proretset or p.pronargs < a.aggnumdirectargs);
 
 select
   oid,
@@ -1197,16 +1079,7 @@ select
 from
   pg_proc as p
 where
-  p.prokind = 'a' and
-  not exists
-  (
-    select
-      1
-    from
-      pg_aggregate as a
-    where
-      a.aggfnoid = p.oid
-  );
+  p.prokind = 'a' and not exists (select 1 from pg_aggregate as a where a.aggfnoid = p.oid);
 
 select
   cast(a.aggfnoid as oid),
@@ -1215,9 +1088,7 @@ from
   pg_aggregate as a,
   pg_proc as p
 where
-  a.aggfnoid = p.oid and
-  a.aggfinalfn = 0 and
-  p.prorettype <> a.aggtranstype;
+  a.aggfnoid = p.oid and a.aggfinalfn = 0 and p.prorettype <> a.aggtranstype;
 
 select
   cast(a.aggfnoid as oid),
@@ -1239,30 +1110,11 @@ where
       else greatest(p.pronargs - a.aggnumdirectargs, 1) + 1
     end or
     not binary_coercible(ptr.prorettype, a.aggtranstype) or
-    not binary_coercible(
-      a.aggtranstype,
-      ptr.proargtypes[0]
-    ) or
-    (p.pronargs > 0 and
-      not binary_coercible(
-        p.proargtypes[0],
-        ptr.proargtypes[1]
-      )) or
-    (p.pronargs > 1 and
-      not binary_coercible(
-        p.proargtypes[1],
-        ptr.proargtypes[2]
-      )) or
-    (p.pronargs > 2 and
-      not binary_coercible(
-        p.proargtypes[2],
-        ptr.proargtypes[3]
-      )) or
-    (p.pronargs > 3 and
-      not binary_coercible(
-        p.proargtypes[3],
-        ptr.proargtypes[4]
-      )) or
+    not binary_coercible(a.aggtranstype, ptr.proargtypes[0]) or
+    (p.pronargs > 0 and not binary_coercible(p.proargtypes[0], ptr.proargtypes[1])) or
+    (p.pronargs > 1 and not binary_coercible(p.proargtypes[1], ptr.proargtypes[2])) or
+    (p.pronargs > 2 and not binary_coercible(p.proargtypes[2], ptr.proargtypes[3])) or
+    (p.pronargs > 3 and not binary_coercible(p.proargtypes[3], ptr.proargtypes[4])) or
     p.pronargs > 4
   );
 
@@ -1281,30 +1133,14 @@ where
   (
     pfn.proretset or
     not binary_coercible(pfn.prorettype, p.prorettype) or
-    not binary_coercible(
-      a.aggtranstype,
-      pfn.proargtypes[0]
-    ) or
+    not binary_coercible(a.aggtranstype, pfn.proargtypes[0]) or
     case
-      when a.aggfinalextra
-      then pfn.pronargs <> p.pronargs + 1
+      when a.aggfinalextra then pfn.pronargs <> p.pronargs + 1
       else pfn.pronargs <> a.aggnumdirectargs + 1
     end or
-    (pfn.pronargs > 1 and
-      not binary_coercible(
-        p.proargtypes[0],
-        pfn.proargtypes[1]
-      )) or
-    (pfn.pronargs > 2 and
-      not binary_coercible(
-        p.proargtypes[1],
-        pfn.proargtypes[2]
-      )) or
-    (pfn.pronargs > 3 and
-      not binary_coercible(
-        p.proargtypes[2],
-        pfn.proargtypes[3]
-      )) or
+    (pfn.pronargs > 1 and not binary_coercible(p.proargtypes[0], pfn.proargtypes[1])) or
+    (pfn.pronargs > 2 and not binary_coercible(p.proargtypes[1], pfn.proargtypes[2])) or
+    (pfn.pronargs > 3 and not binary_coercible(p.proargtypes[2], pfn.proargtypes[3])) or
     pfn.pronargs > 4
   );
 
@@ -1330,10 +1166,7 @@ select
 from
   pg_aggregate as a
 where
-  aggmtranstype <> 0 and
-  (
-    aggmtransfn = 0 or aggminvtransfn = 0
-  );
+  aggmtranstype <> 0 and (aggmtransfn = 0 or aggminvtransfn = 0);
 
 select
   ctid,
@@ -1382,25 +1215,10 @@ where
       else greatest(p.pronargs - a.aggnumdirectargs, 1) + 1
     end or
     not binary_coercible(ptr.prorettype, a.aggmtranstype) or
-    not binary_coercible(
-      a.aggmtranstype,
-      ptr.proargtypes[0]
-    ) or
-    (p.pronargs > 0 and
-      not binary_coercible(
-        p.proargtypes[0],
-        ptr.proargtypes[1]
-      )) or
-    (p.pronargs > 1 and
-      not binary_coercible(
-        p.proargtypes[1],
-        ptr.proargtypes[2]
-      )) or
-    (p.pronargs > 2 and
-      not binary_coercible(
-        p.proargtypes[2],
-        ptr.proargtypes[3]
-      )) or
+    not binary_coercible(a.aggmtranstype, ptr.proargtypes[0]) or
+    (p.pronargs > 0 and not binary_coercible(p.proargtypes[0], ptr.proargtypes[1])) or
+    (p.pronargs > 1 and not binary_coercible(p.proargtypes[1], ptr.proargtypes[2])) or
+    (p.pronargs > 2 and not binary_coercible(p.proargtypes[2], ptr.proargtypes[3])) or
     p.pronargs > 3
   );
 
@@ -1424,25 +1242,10 @@ where
       else greatest(p.pronargs - a.aggnumdirectargs, 1) + 1
     end or
     not binary_coercible(ptr.prorettype, a.aggmtranstype) or
-    not binary_coercible(
-      a.aggmtranstype,
-      ptr.proargtypes[0]
-    ) or
-    (p.pronargs > 0 and
-      not binary_coercible(
-        p.proargtypes[0],
-        ptr.proargtypes[1]
-      )) or
-    (p.pronargs > 1 and
-      not binary_coercible(
-        p.proargtypes[1],
-        ptr.proargtypes[2]
-      )) or
-    (p.pronargs > 2 and
-      not binary_coercible(
-        p.proargtypes[2],
-        ptr.proargtypes[3]
-      )) or
+    not binary_coercible(a.aggmtranstype, ptr.proargtypes[0]) or
+    (p.pronargs > 0 and not binary_coercible(p.proargtypes[0], ptr.proargtypes[1])) or
+    (p.pronargs > 1 and not binary_coercible(p.proargtypes[1], ptr.proargtypes[2])) or
+    (p.pronargs > 2 and not binary_coercible(p.proargtypes[2], ptr.proargtypes[3])) or
     p.pronargs > 3
   );
 
@@ -1461,30 +1264,14 @@ where
   (
     pfn.proretset or
     not binary_coercible(pfn.prorettype, p.prorettype) or
-    not binary_coercible(
-      a.aggmtranstype,
-      pfn.proargtypes[0]
-    ) or
+    not binary_coercible(a.aggmtranstype, pfn.proargtypes[0]) or
     case
-      when a.aggmfinalextra
-      then pfn.pronargs <> p.pronargs + 1
+      when a.aggmfinalextra then pfn.pronargs <> p.pronargs + 1
       else pfn.pronargs <> a.aggnumdirectargs + 1
     end or
-    (pfn.pronargs > 1 and
-      not binary_coercible(
-        p.proargtypes[0],
-        pfn.proargtypes[1]
-      )) or
-    (pfn.pronargs > 2 and
-      not binary_coercible(
-        p.proargtypes[1],
-        pfn.proargtypes[2]
-      )) or
-    (pfn.pronargs > 3 and
-      not binary_coercible(
-        p.proargtypes[2],
-        pfn.proargtypes[3]
-      )) or
+    (pfn.pronargs > 1 and not binary_coercible(p.proargtypes[0], pfn.proargtypes[1])) or
+    (pfn.pronargs > 2 and not binary_coercible(p.proargtypes[1], pfn.proargtypes[2])) or
+    (pfn.pronargs > 3 and not binary_coercible(p.proargtypes[2], pfn.proargtypes[3])) or
     pfn.pronargs > 4
   );
 
@@ -1502,10 +1289,7 @@ where
   a.aggmtransfn = ptr.oid and
   ptr.proisstrict and
   a.aggminitval is null and
-  not binary_coercible(
-    p.proargtypes[0],
-    a.aggmtranstype
-  );
+  not binary_coercible(p.proargtypes[0], a.aggmtranstype);
 
 select
   cast(a.aggfnoid as oid),
@@ -1547,9 +1331,7 @@ from
   pg_aggregate as a,
   pg_proc as p
 where
-  a.aggcombinefn = p.oid and
-  a.aggtranstype = cast('internal' as regtype) and
-  p.proisstrict;
+  a.aggcombinefn = p.oid and a.aggtranstype = cast('internal' as regtype) and p.proisstrict;
 
 select
   aggfnoid,
@@ -1667,8 +1449,7 @@ where
     from
       pg_amop
     where
-      amopmethod =
-      (select oid from pg_am where amname = 'btree') and
+      amopmethod = (select oid from pg_am where amname = 'btree') and
       amopopr = o.oid and
       amoplefttype = o.oprleft and
       amoprighttype = o.oprright
@@ -1687,8 +1468,7 @@ where
   a.aggfnoid = p.oid and
   a.aggsortop = o.oid and
   amopopr = o.oid and
-  amopmethod =
-  (select oid from pg_am where amname = 'btree')
+  amopmethod = (select oid from pg_am where amname = 'btree')
 order by 1,
   2;
 
@@ -1703,8 +1483,7 @@ where
   p1.proname = p2.proname and
   p1.prokind = 'a' and
   p2.prokind = 'a' and
-  array_dims(p1.proargtypes) <>
-  array_dims(p2.proargtypes)
+  array_dims(p1.proargtypes) <> array_dims(p2.proargtypes)
 order by 1;
 
 select oid, proname from pg_proc as p where prokind = 'a' and proargdefaults is not null;
@@ -1713,14 +1492,9 @@ select
   p.oid,
   proname
 from
-  pg_proc as p
-  inner join
-    pg_aggregate as a
-  on a.aggfnoid = p.oid
+  pg_proc as p inner join pg_aggregate as a on a.aggfnoid = p.oid
 where
-  prokind = 'a' and
-  provariadic <> 0 and
-  a.aggkind = 'n';
+  prokind = 'a' and provariadic <> 0 and a.aggkind = 'n';
 
 select f.oid from pg_opfamily as f where f.opfmethod = 0 or f.opfnamespace = 0;
 
@@ -1730,20 +1504,14 @@ select
 from
   pg_opfamily as f
 where
-  not exists
-  (
-    select 1 from pg_opclass where opcfamily = f.oid
-  );
+  not exists (select 1 from pg_opclass where opcfamily = f.oid);
 
 select
   c1.oid
 from
   pg_opclass as c1
 where
-  c1.opcmethod = 0 or
-  c1.opcnamespace = 0 or
-  c1.opcfamily = 0 or
-  c1.opcintype = 0;
+  c1.opcmethod = 0 or c1.opcnamespace = 0 or c1.opcfamily = 0 or c1.opcintype = 0;
 
 select
   c1.oid,
@@ -1752,8 +1520,7 @@ from
   pg_opclass as c1,
   pg_opfamily as f1
 where
-  c1.opcfamily = f1.oid and
-  c1.opcmethod <> f1.opfmethod;
+  c1.opcfamily = f1.oid and c1.opcmethod <> f1.opfmethod;
 
 select
   c1.oid,
@@ -1784,8 +1551,7 @@ where
   p1.oid = a1.amhandler and
   a1.amtype = 'i' and
   (
-    p1.prorettype <>
-    cast('index_am_handler' as regtype) or
+    p1.prorettype <> cast('index_am_handler' as regtype) or
     p1.proretset or
     p1.pronargs <> 1 or
     p1.proargtypes[0] <> cast('internal' as regtype)
@@ -1803,8 +1569,7 @@ where
   p1.oid = a1.amhandler and
   a1.amtype = 't' and
   (
-    p1.prorettype <>
-    cast('table_am_handler' as regtype) or
+    p1.prorettype <> cast('table_am_handler' as regtype) or
     p1.proretset or
     p1.pronargs <> 1 or
     p1.proargtypes[0] <> cast('internal' as regtype)
@@ -1841,18 +1606,14 @@ from
   pg_amop as a1,
   pg_opfamily as f1
 where
-  a1.amopfamily = f1.oid and
-  a1.amopmethod <> f1.opfmethod;
+  a1.amopfamily = f1.oid and a1.amopmethod <> f1.opfmethod;
 
 select distinct
   amopmethod,
   amopstrategy,
   oprname
 from
-  pg_amop as a1
-  left outer join
-    pg_operator as o1
-  on amopopr = o1.oid
+  pg_amop as a1 left outer join pg_operator as o1 on amopopr = o1.oid
 order by 1,
   2,
   3;
@@ -1866,11 +1627,7 @@ from
   pg_amop as a1,
   pg_operator as o1
 where
-  a1.amopopr = o1.oid and
-  a1.amoppurpose = 's' and
-  (
-    o1.oprrest = 0 or o1.oprjoin = 0
-  );
+  a1.amopopr = o1.oid and a1.amoppurpose = 's' and (o1.oprrest = 0 or o1.oprjoin = 0);
 
 select
   c1.opcname,
@@ -1885,8 +1642,7 @@ where
     from
       pg_amop as a1
     where
-      a1.amopfamily = c1.opcfamily and
-      binary_coercible(c1.opcintype, a1.amoplefttype)
+      a1.amopfamily = c1.opcfamily and binary_coercible(c1.opcintype, a1.amoplefttype)
   );
 
 select
@@ -1903,8 +1659,7 @@ where
     from
       pg_opclass as c1
     where
-      c1.opcfamily = a1.amopfamily and
-      binary_coercible(c1.opcintype, a1.amoplefttype)
+      c1.opcfamily = a1.amopfamily and binary_coercible(c1.opcintype, a1.amoplefttype)
   );
 
 select
@@ -1957,9 +1712,7 @@ from
   pg_amproc as a1,
   pg_proc as p1
 where
-  a1.amproc = p1.oid and
-  a1.amproclefttype = a1.amprocrighttype and
-  p1.provolatile <> 'i';
+  a1.amproc = p1.oid and a1.amproclefttype = a1.amprocrighttype and p1.provolatile <> 'i';
 
 select
   a1.amprocfamily,
@@ -1969,9 +1722,7 @@ from
   pg_amproc as a1,
   pg_proc as p1
 where
-  a1.amproc = p1.oid and
-  a1.amproclefttype <> a1.amprocrighttype and
-  p1.provolatile = 'v';
+  a1.amproc = p1.oid and a1.amproclefttype <> a1.amprocrighttype and p1.provolatile = 'v';
 
 select
   cast(amp.amproc as regproc) as proc,
@@ -1979,21 +1730,15 @@ select
   opc.opcname as opclass_name,
   cast(opc.opcintype as regtype) as opcintype
 from
-  pg_am as am
-  inner join
-    pg_opclass as opc
-  on opc.opcmethod = am.oid
+  pg_am as am inner join pg_opclass as opc on opc.opcmethod = am.oid
   inner join
     pg_opfamily as opf
   on opc.opcfamily = opf.oid
   left outer join
     pg_amproc as amp
-  on amp.amprocfamily = opf.oid and
-    amp.amproclefttype = opc.opcintype and
-    amp.amprocnum = 4
+  on amp.amprocfamily = opf.oid and amp.amproclefttype = opc.opcintype and amp.amprocnum = 4
 where
-  am.amname = 'btree' and
-  amp.amproc is distinct from cast('btequalimage' as regproc)
+  am.amname = 'btree' and amp.amproc is distinct from cast('btequalimage' as regproc)
 order by 1,
   2,
   3;
@@ -2004,10 +1749,7 @@ select
 from
   pg_index
 where
-  indexrelid = 0 or
-  indrelid = 0 or
-  indnatts <= 0 or
-  indnatts > 32;
+  indexrelid = 0 or indrelid = 0 or indnatts <= 0 or indnatts > 32;
 
 select
   indexrelid,
@@ -2049,8 +1791,7 @@ where
   a.attnum = ikey and
   opc.oid = iclass and
   (
-    not binary_coercible(atttypid, opcintype) or
-    icoll <> attcollation
+    not binary_coercible(atttypid, opcintype) or icoll <> attcollation
   );
 
 select
@@ -2096,10 +1837,7 @@ where
   c.oid < 16384 and
   c.relkind <> 'v' and
   attcollation <> 0 and
-  attcollation <>
-  (
-    select oid from pg_collation where collname = 'C'
-  );
+  attcollation <> (select oid from pg_collation where collname = 'C');
 
 select
   cast(indexrelid as regclass),
@@ -2120,8 +1858,4 @@ from
   )
   as ss
 where
-  icoll <> 0 and
-  icoll <>
-  (
-    select oid from pg_collation where collname = 'C'
-  );
+  icoll <> 0 and icoll <> (select oid from pg_collation where collname = 'C');

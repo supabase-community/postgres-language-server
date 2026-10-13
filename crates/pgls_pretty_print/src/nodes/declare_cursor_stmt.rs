@@ -22,7 +22,7 @@ pub(super) fn emit_declare_cursor_stmt(e: &mut EventEmitter, n: &DeclareCursorSt
     // Cursor name
     if !n.portalname.is_empty() {
         e.space();
-        super::emit_identifier(e, &n.portalname);
+        super::emit_identifier_maybe_quoted(e, &n.portalname);
     }
 
     // Cursor options

@@ -7,7 +7,6 @@ select
 from
 	staging.buildings
 where
-	staging.buildings.construction_year >
-	1950
+	staging.buildings.construction_year > 1950
 	and staging.buildings.address_fk is not null
 	and staging.buildings.identification_number is not null;

@@ -3,16 +3,20 @@ source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/drop_operator.sql
 snapshot_kind: text
 ---
-create operator === (PROCEDURE = int8eq,
-LEFTARG = bigint,
-RIGHTARG = bigint,
-COMMUTATOR = ===);
+create operator === (
+  procedure = int8eq,
+  leftarg = bigint,
+  rightarg = bigint,
+  commutator = ===
+);
 
-create operator !== (PROCEDURE = int8ne,
-LEFTARG = bigint,
-RIGHTARG = bigint,
-NEGATOR = ===,
-COMMUTATOR = !==);
+create operator !== (
+  procedure = int8ne,
+  leftarg = bigint,
+  rightarg = bigint,
+  negator = ===,
+  commutator = !==
+);
 
 drop operator !== (bigint, bigint);
 
@@ -25,12 +29,7 @@ where
   oprcom <> 0 and
   not exists
   (
-    select
-      1
-    from
-      pg_catalog.pg_operator as pk
-    where
-      pk.oid = fk.oprcom
+    select 1 from pg_catalog.pg_operator as pk where pk.oid = fk.oprcom
   );
 
 select
@@ -42,23 +41,20 @@ where
   oprnegate <> 0 and
   not exists
   (
-    select
-      1
-    from
-      pg_catalog.pg_operator as pk
-    where
-      pk.oid = fk.oprnegate
+    select 1 from pg_catalog.pg_operator as pk where pk.oid = fk.oprnegate
   );
 
 drop operator === (bigint, bigint);
 
-create operator <| (PROCEDURE = int8lt, LEFTARG = bigint, RIGHTARG = bigint);
+create operator <| (procedure = int8lt, leftarg = bigint, rightarg = bigint);
 
-create operator |> (PROCEDURE = int8gt,
-LEFTARG = bigint,
-RIGHTARG = bigint,
-NEGATOR = <|,
-COMMUTATOR = <|);
+create operator |> (
+  procedure = int8gt,
+  leftarg = bigint,
+  rightarg = bigint,
+  negator = <|,
+  commutator = <|
+);
 
 drop operator |> (bigint, bigint);
 
@@ -71,12 +67,7 @@ where
   oprcom <> 0 and
   not exists
   (
-    select
-      1
-    from
-      pg_catalog.pg_operator as pk
-    where
-      pk.oid = fk.oprcom
+    select 1 from pg_catalog.pg_operator as pk where pk.oid = fk.oprcom
   );
 
 select
@@ -88,12 +79,7 @@ where
   oprnegate <> 0 and
   not exists
   (
-    select
-      1
-    from
-      pg_catalog.pg_operator as pk
-    where
-      pk.oid = fk.oprnegate
+    select 1 from pg_catalog.pg_operator as pk where pk.oid = fk.oprnegate
   );
 
 drop operator <| (bigint, bigint);

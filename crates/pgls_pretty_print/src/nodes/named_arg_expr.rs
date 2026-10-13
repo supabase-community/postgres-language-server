@@ -10,7 +10,7 @@ pub(super) fn emit_named_arg_expr(e: &mut EventEmitter, n: &NamedArgExpr) {
 
     // Emit the argument name
     if !n.name.is_empty() {
-        super::emit_identifier(e, &n.name);
+        super::emit_identifier_maybe_quoted(e, &n.name);
         e.space();
         e.token(TokenKind::IDENT(":=".to_string()));
         e.space();

@@ -16,8 +16,7 @@ values
       from
         app.packages
       where
-        package_alias =
-        'langchain@embedding_search'
+        package_alias = 'langchain@embedding_search'
     ),
     (1, 1, 1),
     '

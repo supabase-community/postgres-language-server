@@ -3,7 +3,7 @@ use pgls_query::protobuf::{DropBehavior, GrantStmt, GrantTargetType, ObjectType}
 use crate::{
     TokenKind,
     emitter::{EventEmitter, GroupKind, LineType},
-    nodes::node_list::emit_comma_separated_list,
+    nodes::node_list::{emit_comma_separated_list, emit_parenthesized_list},
 };
 
 pub(super) fn emit_grant_stmt(e: &mut EventEmitter, n: &GrantStmt) {
@@ -237,14 +237,12 @@ fn emit_access_priv(e: &mut EventEmitter, priv_node: &pgls_query::protobuf::Acce
     if priv_node.priv_name.is_empty() && !priv_node.cols.is_empty() {
         e.token(TokenKind::ALL_KW);
     } else if !priv_node.priv_name.is_empty() {
-        e.token(TokenKind::IDENT(priv_node.priv_name.to_uppercase()));
+        super::emit_keywords(e, &priv_node.priv_name);
     }
 
     // Handle column privileges
     if !priv_node.cols.is_empty() {
         e.space();
-        e.token(TokenKind::L_PAREN);
-        emit_comma_separated_list(e, &priv_node.cols, super::emit_node);
-        e.token(TokenKind::R_PAREN);
+        emit_parenthesized_list(e, &priv_node.cols, super::emit_node);
     }
 }

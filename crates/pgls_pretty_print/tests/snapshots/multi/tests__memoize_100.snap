@@ -2,10 +2,10 @@
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/memoize.sql
 ---
-create function explain_memoize(query text, hide_hitmiss boolean)
+create function explain_memoize(query text, hide_hitmiss bool)
 returns setof text
 language plpgsql
-as $function$
+as $$
 declare
     ln text;
 begin
@@ -29,145 +29,88 @@ begin
         return next ln;
     end loop;
 end;
-$function$;
+$$;
 
 set enable_hashjoin = off;
 
 set enable_bitmapscan = off;
 
-select
-  explain_memoize(
-    '
+select explain_memoize('
 SELECT COUNT(*),AVG(t1.unique1) FROM tenk1 t1
 INNER JOIN tenk1 t2 ON t1.unique1 = t2.twenty
-WHERE t2.unique1 < 1000;',
-    false
-  );
+WHERE t2.unique1 < 1000;', false);
 
 select
-  COUNT(*),
-  AVG(t1.unique1)
+  count(*),
+  avg(t1.unique1)
 from
-  tenk1 as t1
-  inner join
-    tenk1 as t2
-  on t1.unique1 = t2.twenty
+  tenk1 as t1 inner join tenk1 as t2 on t1.unique1 = t2.twenty
 where
   t2.unique1 < 1000;
 
-select
-  explain_memoize(
-    '
+select explain_memoize('
 SELECT COUNT(*),AVG(t2.unique1) FROM tenk1 t1,
 LATERAL (SELECT t2.unique1 FROM tenk1 t2
          WHERE t1.twenty = t2.unique1 OFFSET 0) t2
-WHERE t1.unique1 < 1000;',
-    false
-  );
+WHERE t1.unique1 < 1000;', false);
 
 select
-  COUNT(*),
-  AVG(t2.unique1)
+  count(*),
+  avg(t2.unique1)
 from
   tenk1 as t1,
-  lateral (
-    select
-      t2.unique1
-    from
-      tenk1 as t2
-    where
-      t1.twenty = t2.unique1
-    offset 0
-  )
-  as t2
+  lateral (select t2.unique1 from tenk1 as t2 where t1.twenty = t2.unique1 offset 0) as t2
 where
   t1.unique1 < 1000;
 
-select
-  explain_memoize(
-    '
+select explain_memoize('
 SELECT COUNT(*),AVG(t2.t1two) FROM tenk1 t1 LEFT JOIN
 LATERAL (
     SELECT t1.two as t1two, * FROM tenk1 t2 WHERE t2.unique1 < 4 OFFSET 0
 ) t2
 ON t1.two = t2.two
-WHERE t1.unique1 < 10;',
-    false
-  );
+WHERE t1.unique1 < 10;', false);
 
 select
-  COUNT(*),
-  AVG(t2.t1two)
+  count(*),
+  avg(t2.t1two)
 from
   tenk1 as t1
   left outer join
-    lateral (
-      select
-        t1.two as t1two,
-        *
-      from
-        tenk1 as t2
-      where
-        t2.unique1 < 4
-      offset 0
-    )
-    as t2
+    lateral (select t1.two as t1two, * from tenk1 as t2 where t2.unique1 < 4 offset 0) as t2
   on t1.two = t2.two
 where
   t1.unique1 < 10;
 
-select
-  explain_memoize(
-    '
+select explain_memoize('
 SELECT COUNT(*), AVG(t1.twenty) FROM tenk1 t1 LEFT JOIN
 LATERAL (SELECT t1.two+1 AS c1, t2.unique1 AS c2 FROM tenk1 t2) s ON TRUE
-WHERE s.c1 = s.c2 AND t1.unique1 < 1000;',
-    false
-  );
+WHERE s.c1 = s.c2 AND t1.unique1 < 1000;', false);
 
 select
-  COUNT(*),
-  AVG(t1.twenty)
+  count(*),
+  avg(t1.twenty)
 from
   tenk1 as t1
   left outer join
-    lateral (
-      select
-        t1.two + 1 as c1,
-        t2.unique1 as c2
-      from
-        tenk1 as t2
-    )
-    as s
+    lateral (select t1.two + 1 as c1, t2.unique1 as c2 from tenk1 as t2) as s
   on true
 where
   s.c1 = s.c2 and t1.unique1 < 1000;
 
-select
-  explain_memoize(
-    '
+select explain_memoize('
 SELECT COUNT(*), AVG(t1.twenty) FROM tenk1 t1 LEFT JOIN
 LATERAL (SELECT t1.twenty AS c1, t2.unique1 AS c2, t2.two FROM tenk1 t2) s
 ON t1.two = s.two
-WHERE s.c1 = s.c2 AND t1.unique1 < 1000;',
-    false
-  );
+WHERE s.c1 = s.c2 AND t1.unique1 < 1000;', false);
 
 select
-  COUNT(*),
-  AVG(t1.twenty)
+  count(*),
+  avg(t1.twenty)
 from
   tenk1 as t1
   left outer join
-    lateral (
-      select
-        t1.twenty as c1,
-        t2.unique1 as c2,
-        t2.two
-      from
-        tenk1 as t2
-    )
-    as s
+    lateral (select t1.twenty as c1, t2.unique1 as c2, t2.two from tenk1 as t2) as s
   on t1.two = s.two
 where
   s.c1 = s.c2 and t1.unique1 < 1000;
@@ -184,27 +127,17 @@ select
   cast(d1 as numeric),
   cast(d1 as text)
 from
-  (
-    select
-      round(cast(d / pi() as numeric), 7) as d1
-    from
-      generate_series(1, 20) as d
-  )
-  as t;
+  (select round(cast(d / pi() as numeric), 7) as d1 from generate_series(1, 20) as d) as t;
 
 insert into expr_key select * from expr_key;
 
-create index "expr_key_idx_x_t" on expr_key using btree (x, t);
+create index expr_key_idx_x_t on expr_key using btree (x, t);
 
-vacuum (ANALYZE) expr_key;
+vacuum (analyze) expr_key;
 
-select
-  explain_memoize(
-    '
+select explain_memoize('
 SELECT * FROM expr_key t1 INNER JOIN expr_key t2
-ON t1.x = t2.t::numeric AND t1.t::numeric = t2.x;',
-    false
-  );
+ON t1.x = t2.t::numeric AND t1.t::numeric = t2.x;', false);
 
 drop table expr_key;
 
@@ -212,18 +145,14 @@ set work_mem = '64kB';
 
 set hash_mem_multiplier = 1.0;
 
-select
-  explain_memoize(
-    '
+select explain_memoize('
 SELECT COUNT(*),AVG(t1.unique1) FROM tenk1 t1
 INNER JOIN tenk1 t2 ON t1.unique1 = t2.thousand
-WHERE t2.unique1 < 1200;',
-    true
-  );
+WHERE t2.unique1 < 1200;', true);
 
 create table flt (f double precision);
 
-create index "flt_f_idx" on flt using btree (f);
+create index flt_f_idx on flt using btree (f);
 
 insert into flt values (cast('-0.0' as double precision)), (cast('+0.0' as double precision));
 
@@ -244,15 +173,12 @@ create table strtest (
   t text
 );
 
-create index "strtest_n_idx" on strtest using btree (n);
+create index strtest_n_idx on strtest using btree (n);
 
-create index "strtest_t_idx" on strtest using btree (t);
+create index strtest_t_idx on strtest using btree (t);
 
 insert into strtest
-values
-  ('one', 'one'),
-  ('two', 'two'),
-  ('three', repeat(fipshash('three'), 100));
+values ('one', 'one'), ('two', 'two'), ('three', repeat(fipshash('three'), 100));
 
 insert into strtest select * from strtest;
 
@@ -279,9 +205,9 @@ insert into prt values (0), (0), (0), (0);
 
 insert into prt values (10), (10), (10), (10);
 
-create index "iprt_p1_a" on prt_p1 using btree (a);
+create index iprt_p1_a on prt_p1 using btree (a);
 
-create index "iprt_p2_a" on prt_p2 using btree (a);
+create index iprt_p2_a on prt_p2 using btree (a);
 
 analyze prt;
 
@@ -290,14 +216,10 @@ SELECT * FROM prt t1 INNER JOIN prt t2 ON t1.a = t2.a;', false);
 
 set enable_partitionwise_join = off;
 
-select
-  explain_memoize(
-    '
+select explain_memoize('
 SELECT * FROM prt_p1 t1 INNER JOIN
 (SELECT * FROM prt_p1 UNION ALL SELECT * FROM prt_p2) t2
-ON t1.a = t2.a;',
-    false
-  );
+ON t1.a = t2.a;', false);
 
 drop table prt;
 
@@ -314,10 +236,7 @@ where
     select
       1
     from
-      tenk1 as t1
-      inner join
-        tenk1 as t2
-      on t1.unique1 = t2.hundred
+      tenk1 as t1 inner join tenk1 as t2 on t1.unique1 = t2.hundred
     where
       t0.ten = t1.twenty and t0.two <> t2.four
     offset 0
@@ -334,10 +253,7 @@ where
     select
       1
     from
-      tenk1 as t1
-      inner join
-        tenk1 as t2
-      on t1.unique1 = t2.hundred
+      tenk1 as t1 inner join tenk1 as t2 on t1.unique1 = t2.hundred
     where
       t0.ten = t1.twenty and t0.two <> t2.four
     offset 0
@@ -364,36 +280,20 @@ set parallel_tuple_cost = 0;
 set max_parallel_workers_per_gather = 2;
 
 select
-  COUNT(*),
-  AVG(t2.unique1)
+  count(*),
+  avg(t2.unique1)
 from
   tenk1 as t1,
-  lateral (
-    select
-      t2.unique1
-    from
-      tenk1 as t2
-    where
-      t1.twenty = t2.unique1
-  )
-  as t2
+  lateral (select t2.unique1 from tenk1 as t2 where t1.twenty = t2.unique1) as t2
 where
   t1.unique1 < 1000;
 
 select
-  COUNT(*),
-  AVG(t2.unique1)
+  count(*),
+  avg(t2.unique1)
 from
   tenk1 as t1,
-  lateral (
-    select
-      t2.unique1
-    from
-      tenk1 as t2
-    where
-      t1.twenty = t2.unique1
-  )
-  as t2
+  lateral (select t2.unique1 from tenk1 as t2 where t1.twenty = t2.unique1) as t2
 where
   t1.unique1 < 1000;
 
@@ -414,30 +314,18 @@ insert into tab_anti select i % 3, false from generate_series(1, 100) as i;
 
 analyze tab_anti;
 
-select
-  explain_memoize(
-    '
+select explain_memoize('
 SELECT COUNT(*) FROM tab_anti t1 LEFT JOIN
 LATERAL (SELECT DISTINCT ON (a) a, b, t1.a AS x FROM tab_anti t2) t2
 ON t1.a+1 = t2.a
-WHERE t2.a IS NULL;',
-    false
-  );
+WHERE t2.a IS NULL;', false);
 
 select
-  COUNT(*)
+  count(*)
 from
   tab_anti as t1
   left outer join
-    lateral (
-      select distinct on (a)
-        a,
-        b,
-        t1.a as x
-      from
-        tab_anti as t2
-    )
-    as t2
+    lateral (select distinct on (a) a, b, t1.a as x from tab_anti as t2) as t2
   on t1.a + 1 = t2.a
 where
   t2.a is null;
@@ -454,16 +342,7 @@ where
     from
       tab_anti as t2
     where
-      t2.b in
-      (
-        select
-          t1.b
-        from
-          tab_anti as t3
-        where
-          t2.a > 1
-        offset 0
-      )
+      t2.b in (select t1.b from tab_anti as t3 where t2.a > 1 offset 0)
   );
 
 drop table tab_anti;

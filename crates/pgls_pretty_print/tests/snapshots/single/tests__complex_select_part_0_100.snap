@@ -11,12 +11,7 @@ select
   col as resorigcol,
   ord
 from
-  pg_constraint
-  left outer join
-    lateral unnest(conkey)
-    with ordinality
-    as _ (col, ord)
-  on true
+  pg_constraint left outer join lateral unnest(conkey) with ordinality as _ (col, ord) on true
 where
   contype in ('p', 'f')
 union
@@ -28,11 +23,6 @@ select
   col,
   ord
 from
-  pg_constraint
-  left outer join
-    lateral unnest(confkey)
-    with ordinality
-    as _ (col, ord)
-  on true
+  pg_constraint left outer join lateral unnest(confkey) with ordinality as _ (col, ord) on true
 where
   contype = 'f';

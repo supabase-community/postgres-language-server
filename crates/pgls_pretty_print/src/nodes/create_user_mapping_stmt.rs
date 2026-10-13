@@ -1,7 +1,7 @@
 use crate::{
     TokenKind,
     emitter::{EventEmitter, GroupKind, LineType},
-    nodes::node_list::emit_comma_separated_list,
+    nodes::node_list::emit_parenthesized_list,
 };
 use pgls_query::protobuf::CreateUserMappingStmt;
 
@@ -41,12 +41,10 @@ pub(super) fn emit_create_user_mapping_stmt(e: &mut EventEmitter, n: &CreateUser
         e.space();
         e.token(TokenKind::OPTIONS_KW);
         e.space();
-        e.token(TokenKind::L_PAREN);
-        emit_comma_separated_list(e, &n.options, |n, e| {
+        emit_parenthesized_list(e, &n.options, |n, e| {
             let def_elem = assert_node_variant!(DefElem, n);
             super::emit_options_def_elem(e, def_elem);
         });
-        e.token(TokenKind::R_PAREN);
     }
 
     e.token(TokenKind::SEMICOLON);

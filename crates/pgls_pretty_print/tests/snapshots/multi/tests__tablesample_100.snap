@@ -10,11 +10,7 @@ create table test_tablesample (
 with (fillfactor = 10);
 
 insert into test_tablesample
-select
-  i,
-  repeat(cast(i as text), 200)
-from
-  generate_series(0, 9) as s (i);
+select i, repeat(cast(i as text), 200) from generate_series(0, 9) as s (i);
 
 select t.id from test_tablesample as t tablesample system (50) repeatable (0);
 
@@ -26,36 +22,23 @@ select id from test_tablesample tablesample bernoulli (50) repeatable (0);
 
 select id from test_tablesample tablesample bernoulli (5.5) repeatable (0);
 
-select COUNT(*) from test_tablesample tablesample system (100);
+select count(*) from test_tablesample tablesample system (100);
 
-select COUNT(*) from test_tablesample tablesample system (100) repeatable (1 + 2);
+select count(*) from test_tablesample tablesample system (100) repeatable (1 + 2);
 
-select COUNT(*) from test_tablesample tablesample system (100) repeatable (0.4);
+select count(*) from test_tablesample tablesample system (100) repeatable (0.4);
 
 create view test_tablesample_v1
-as select
-  id
-from
-  test_tablesample
-  tablesample system (10 * 2)
-  repeatable (2);
+as select id from test_tablesample tablesample system (10 * 2) repeatable (2);
 
 create view test_tablesample_v2
-as select
-  id
-from
-  test_tablesample tablesample system (99);
+as select id from test_tablesample tablesample system (99);
 
 begin;
 
-declare "tablesample_cur" scroll
+declare tablesample_cur scroll
 cursor
-for select
-  id
-from
-  test_tablesample
-  tablesample system (50)
-  repeatable (0);;
+for select id from test_tablesample tablesample system (50) repeatable (0);;
 
 fetch absolute 1 from tablesample_cur;
 
@@ -91,73 +74,51 @@ select id from test_tablesample tablesample system (50) repeatable (2);
 
 select * from test_tablesample_v1;
 
-select COUNT(*) from person tablesample bernoulli (100);
+select count(*) from person tablesample bernoulli (100);
 
-select COUNT(*) from person tablesample bernoulli (100);
+select count(*) from person tablesample bernoulli (100);
 
-select COUNT(*) from person;
-
-select
-  COUNT(*)
-from
-  test_tablesample
-  tablesample bernoulli (cast(cast('1' as text) < cast('0' as text) as int));
+select count(*) from person;
 
 select
-  *
+  count(*)
 from
-  (values (0), (100)) as v (pct),
-  lateral (
-    select
-      COUNT(*)
-    from
-      tenk1 tablesample bernoulli (pct)
-  )
-  as ss;
+  test_tablesample tablesample bernoulli (cast(cast('1' as text) < cast('0' as text) as int));
 
 select
   *
 from
   (values (0), (100)) as v (pct),
-  lateral (
-    select
-      COUNT(*)
-    from
-      tenk1 tablesample system (pct)
-  )
-  as ss;
+  lateral (select count(*) from tenk1 tablesample bernoulli (pct)) as ss;
+
+select
+  *
+from
+  (values (0), (100)) as v (pct),
+  lateral (select count(*) from tenk1 tablesample system (pct)) as ss;
 
 select
   pct,
-  COUNT(unique1)
+  count(unique1)
 from
   (values (0), (100)) as v (pct),
-  lateral (
-    select * from tenk1 tablesample bernoulli (pct)
-  )
-  as ss
+  lateral (select * from tenk1 tablesample bernoulli (pct)) as ss
 group by pct;
 
 select
   pct,
-  COUNT(unique1)
+  count(unique1)
 from
   (values (0), (100)) as v (pct),
-  lateral (
-    select * from tenk1 tablesample bernoulli (pct)
-  )
-  as ss
+  lateral (select * from tenk1 tablesample bernoulli (pct)) as ss
 group by pct;
 
 select
   pct,
-  COUNT(unique1)
+  count(unique1)
 from
   (values (0), (100)) as v (pct),
-  lateral (
-    select * from tenk1 tablesample system (pct)
-  )
-  as ss
+  lateral (select * from tenk1 tablesample system (pct)) as ss
 group by pct;
 
 select id from test_tablesample tablesample foobar (1);
@@ -178,17 +139,14 @@ select id from test_tablesample_v1 tablesample bernoulli (1);
 
 insert into test_tablesample_v1 values (1);
 
-with
-query_select as (select * from test_tablesample)
+with query_select as (select * from test_tablesample)
 select
   *
 from
-  query_select
-  tablesample bernoulli (5.5)
-  repeatable (1);
+  query_select tablesample bernoulli (5.5) repeatable (1);
 
 create table parted_sample (a int)
-partition by LIST(a);
+partition by list(a);
 
 create table parted_sample_1 partition of parted_sample for values in (1);
 

@@ -10,14 +10,7 @@ insert into app.package_versions (
 )
 values
   (
-    (
-      select
-        id
-      from
-        app.packages
-      where
-        package_name = 'supabase-dbdev'
-    ),
+    (select id from app.packages where package_name = 'supabase-dbdev'),
     (0, 0, 4),
     '
 

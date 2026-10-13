@@ -7,9 +7,7 @@ load 'regresslib';
 create function test1(int)
 returns int
 language c
-as $function$
-nosuchfile
-$function$;
+as $$nosuchfile$$;
 
 create function test1(int)
 returns int
@@ -21,6 +19,4 @@ select regexp_replace('LAST_ERROR_MESSAGE', 'file ".*"', 'file "..."');
 create function test1(int)
 returns int
 language internal
-as $function$
-nosuch
-$function$;
+as $$nosuch$$;

@@ -5,31 +5,31 @@ snapshot_kind: text
 ---
 begin;
 
-declare "foo13" cursor for select * from onek where unique1 = 50;;
+declare foo13 cursor for select * from onek where unique1 = 50;;
 
-declare "foo14" cursor for select * from onek where unique1 = 51;;
+declare foo14 cursor for select * from onek where unique1 = 51;;
 
-declare "foo15" cursor for select * from onek where unique1 = 52;;
+declare foo15 cursor for select * from onek where unique1 = 52;;
 
-declare "foo16" cursor for select * from onek where unique1 = 53;;
+declare foo16 cursor for select * from onek where unique1 = 53;;
 
-declare "foo17" cursor for select * from onek where unique1 = 54;;
+declare foo17 cursor for select * from onek where unique1 = 54;;
 
-declare "foo18" cursor for select * from onek where unique1 = 55;;
+declare foo18 cursor for select * from onek where unique1 = 55;;
 
-declare "foo19" cursor for select * from onek where unique1 = 56;;
+declare foo19 cursor for select * from onek where unique1 = 56;;
 
-declare "foo20" cursor for select * from onek where unique1 = 57;;
+declare foo20 cursor for select * from onek where unique1 = 57;;
 
-declare "foo21" cursor for select * from onek where unique1 = 58;;
+declare foo21 cursor for select * from onek where unique1 = 58;;
 
-declare "foo22" cursor for select * from onek where unique1 = 59;;
+declare foo22 cursor for select * from onek where unique1 = 59;;
 
-declare "foo23" cursor for select * from onek where unique1 = 60;;
+declare foo23 cursor for select * from onek where unique1 = 60;;
 
-declare "foo24" cursor for select * from onek2 where unique1 = 50;;
+declare foo24 cursor for select * from onek2 where unique1 = 50;;
 
-declare "foo25" cursor for select * from onek2 where unique1 = 60;;
+declare foo25 cursor for select * from onek2 where unique1 = 60;;
 
 fetch forward all from foo13;
 

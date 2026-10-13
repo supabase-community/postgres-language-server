@@ -5,7 +5,7 @@ use crate::{
     emitter::{EventEmitter, GroupKind, LineType},
 };
 
-use super::node_list::emit_comma_separated_list;
+use super::node_list::{emit_comma_separated_list, emit_parenthesized_list};
 
 pub(super) fn emit_vacuum_stmt(e: &mut EventEmitter, n: &VacuumStmt) {
     e.group_start(GroupKind::VacuumStmt);
@@ -19,11 +19,10 @@ pub(super) fn emit_vacuum_stmt(e: &mut EventEmitter, n: &VacuumStmt) {
     // Emit options if present
     if !n.options.is_empty() {
         e.space();
-        e.token(TokenKind::L_PAREN);
-        emit_comma_separated_list(e, &n.options, |node, emitter| {
+        emit_parenthesized_list(e, &n.options, |node, emitter| {
             if let Some(NodeEnum::DefElem(def)) = node.node.as_ref() {
                 // Emit option name
-                emitter.token(TokenKind::IDENT(def.defname.to_uppercase()));
+                super::emit_keyword(emitter, &def.defname);
                 // Emit option value if present
                 if let Some(ref arg) = def.arg {
                     emitter.space();
@@ -33,7 +32,6 @@ pub(super) fn emit_vacuum_stmt(e: &mut EventEmitter, n: &VacuumStmt) {
                 super::emit_node(node, emitter);
             }
         });
-        e.token(TokenKind::R_PAREN);
     }
 
     // Relations to vacuum/analyze

@@ -27,12 +27,7 @@ insert into app.package_versions (
 values
   (
     (
-      select
-        id
-      from
-        app.packages
-      where
-        package_name = 'langchain-hybrid_search'
+      select id from app.packages where package_name = 'langchain-hybrid_search'
     ),
     (1, 0, 0),
     '

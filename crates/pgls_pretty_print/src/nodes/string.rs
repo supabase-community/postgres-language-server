@@ -2,89 +2,9 @@ use pgls_query::protobuf::String as PgString;
 
 use crate::{
     TokenKind,
-    emitter::{EventEmitter, GroupKind, LineType},
+    codegen::token_kind::{KeywordCategory, keyword_category},
+    emitter::{EventEmitter, GroupKind},
 };
-
-const RESERVED_KEYWORDS: &[&str] = &[
-    "all",
-    "analyse",
-    "analyze",
-    "and",
-    "any",
-    "array",
-    "as",
-    "asc",
-    "asymmetric",
-    "both",
-    "case",
-    "cast",
-    "check",
-    "collate",
-    "column",
-    "constraint",
-    "create",
-    "current_catalog",
-    "current_date",
-    "current_role",
-    "current_time",
-    "current_timestamp",
-    "current_user",
-    "default",
-    "deferrable",
-    "desc",
-    "distinct",
-    "do",
-    "else",
-    "end",
-    "except",
-    "false",
-    "fetch",
-    "for",
-    "foreign",
-    "from",
-    "grant",
-    "group",
-    "having",
-    "in",
-    "initially",
-    "intersect",
-    "into",
-    "lateral",
-    "leading",
-    "limit",
-    "localtime",
-    "localtimestamp",
-    "not",
-    "null",
-    "offset",
-    "on",
-    "only",
-    "or",
-    "order",
-    "placing",
-    "primary",
-    "references",
-    "returning",
-    "select",
-    "session_user",
-    "some",
-    "symmetric",
-    "system_user",
-    "table",
-    "then",
-    "to",
-    "trailing",
-    "true",
-    "union",
-    "unique",
-    "user",
-    "using",
-    "variadic",
-    "when",
-    "where",
-    "window",
-    "with",
-];
 
 pub(super) fn emit_string(e: &mut EventEmitter, n: &PgString) {
     e.group_start(GroupKind::String);
@@ -122,7 +42,7 @@ pub(super) fn emit_identifier_maybe_quoted(e: &mut EventEmitter, value: &str) {
         return;
     }
 
-    if needs_quoting(value) {
+    if needs_quoting_as_column_name(value) {
         emit_identifier(e, value);
     } else {
         e.token(TokenKind::IDENT(value.to_string()));
@@ -145,11 +65,22 @@ pub(super) fn emit_type_identifier_maybe_quoted(e: &mut EventEmitter, value: &st
     }
 }
 
-pub(super) fn emit_keyword(e: &mut EventEmitter, keyword: &str) {
-    if let Some(token) = TokenKind::from_keyword(keyword) {
-        e.token(token);
-    } else {
-        e.token(TokenKind::IDENT(keyword.to_string()));
+/// Emits a word the grammar reads case-insensitively in the keyword case. It need not be a
+/// keyword: option and privilege names such as `usage` are plain words.
+pub(super) fn emit_keyword(e: &mut EventEmitter, word: &str) {
+    match TokenKind::from_keyword(word) {
+        Some(keyword) => e.token(keyword),
+        None => e.token(TokenKind::WORD(word.to_string())),
+    }
+}
+
+/// Emits words separated by spaces, such as `ACCESS EXCLUSIVE`, in the keyword case.
+pub(super) fn emit_keywords(e: &mut EventEmitter, words: &str) {
+    for (index, word) in words.split(' ').enumerate() {
+        if index > 0 {
+            e.space();
+        }
+        emit_keyword(e, word);
     }
 }
 
@@ -158,36 +89,32 @@ pub(super) fn emit_single_quoted_str(e: &mut EventEmitter, value: &str) {
     e.token(TokenKind::STRING(format!("'{escaped}'")));
 }
 
-/// Hint for what kind of dollar-quoted content we're emitting.
-/// Used to pick a more meaningful delimiter tag.
-#[derive(Debug, Clone, Copy)]
-pub enum DollarQuoteHint {
-    /// Function body - prefer $function$ or $body$
-    Function,
-    /// Procedure body - prefer $procedure$ or $body$
-    Procedure,
-    /// DO block - prefer $do$ or $body$
-    Do,
+/// Emits a function or `DO` body, dollar-quoted with `$$` so that every body in a file reads the
+/// same, or with `$body$` when the body itself contains `$$`. Only the quotes change: the body is
+/// written byte for byte, since Postgres stores it as the source of the function.
+pub(super) fn emit_body_literal(e: &mut EventEmitter, value: &str) {
+    let tag = dollar_quote_tag(value);
+    e.token(TokenKind::DOLLAR_QUOTE_DELIMITER(tag.clone()));
+    e.token(TokenKind::DOLLAR_QUOTE_BODY(value.to_string()));
+    e.token(TokenKind::DOLLAR_QUOTE_DELIMITER(tag));
 }
 
-pub(super) fn emit_dollar_quoted_str_with_hint(
-    e: &mut EventEmitter,
-    value: &str,
-    hint: DollarQuoteHint,
-) {
-    let delimiter = pick_dollar_delimiter(value, hint);
-    // Trim leading/trailing whitespace from the body for cleaner formatting,
-    // then emit: delimiter, newline, body, newline, delimiter
-    // This puts the function body on its own lines for readability
-    let trimmed_body = value.trim();
-    e.token(TokenKind::DOLLAR_QUOTE_DELIMITER(delimiter.clone()));
-    e.line(LineType::Hard);
-    e.token(TokenKind::DOLLAR_QUOTE_BODY(trimmed_body.to_string()));
-    e.line(LineType::Hard);
-    e.token(TokenKind::DOLLAR_QUOTE_DELIMITER(delimiter));
+/// The first of `$$`, `$body$`, `$body1$`, `$body2$`, ... that can quote `body`.
+fn dollar_quote_tag(body: &str) -> String {
+    ["$$".to_string(), "$body$".to_string()]
+        .into_iter()
+        .chain((1..).map(|n| format!("$body{n}$")))
+        .find(|tag| can_dollar_quote(body, tag))
+        .expect("a numbered tag the body does not contain exists")
 }
 
-fn needs_quoting(value: &str) -> bool {
+/// Whether `value` can be quoted with `tag`: the first occurrence of the tag after the opening one
+/// must be the closing one.
+fn can_dollar_quote(value: &str, tag: &str) -> bool {
+    format!("{value}{tag}").find(tag) == Some(value.len())
+}
+
+pub(super) fn needs_quoting(value: &str) -> bool {
     if value.is_empty() {
         return true;
     }
@@ -213,62 +140,28 @@ fn needs_quoting(value: &str) -> bool {
         return true;
     }
 
-    let lower = value.to_ascii_lowercase();
-    RESERVED_KEYWORDS.binary_search(&lower.as_str()).is_ok()
+    keyword_category(value) == Some(KeywordCategory::Reserved)
 }
 
-/// Pick a dollar quote delimiter that doesn't conflict with the body content.
-/// Uses the hint to prefer context-appropriate tags.
-fn pick_dollar_delimiter(body: &str, hint: DollarQuoteHint) -> String {
-    // Order tags based on the hint - put the most appropriate ones first
-    let preferred_tags: &[&str] = match hint {
-        DollarQuoteHint::Function => &[
-            "$function$",
-            "$body$",
-            "$$",
-            "$procedure$",
-            "$do$",
-            "$sql$",
-            "$code$",
-            "$_$",
-        ],
-        DollarQuoteHint::Procedure => &[
-            "$procedure$",
-            "$body$",
-            "$$",
-            "$function$",
-            "$do$",
-            "$sql$",
-            "$code$",
-            "$_$",
-        ],
-        DollarQuoteHint::Do => &[
-            "$do$",
-            "$body$",
-            "$$",
-            "$function$",
-            "$procedure$",
-            "$sql$",
-            "$code$",
-            "$_$",
-        ],
-    };
+/// Whether a schema, table or column name must be quoted. The grammar spells it as `ColId`, which
+/// excludes the keywords that may name a function or type.
+pub(super) fn needs_quoting_as_column_name(value: &str) -> bool {
+    needs_quoting(value) || keyword_category(value) == Some(KeywordCategory::TypeFuncName)
+}
 
-    for tag in preferred_tags {
-        if !body.contains(tag) {
-            return (*tag).to_string();
-        }
-    }
+/// Whether a name that may be any word, keywords included, must be quoted. The grammar spells it
+/// as `ColLabel`, the trailing part of a qualified function name for instance.
+pub(super) fn needs_quoting_as_label(value: &str) -> bool {
+    needs_quoting(value) && keyword_category(value).is_none()
+}
 
-    // Fall back to numbered tags if all preferred ones conflict
-    let mut counter = 0usize;
-    loop {
-        let tag = format!("$f{counter}$");
-        if !body.contains(&tag) {
-            return tag;
-        }
-        counter += 1;
-    }
+/// Whether an unqualified function or type name must be quoted.
+///
+/// The grammar spells such a name as `type_function_name`, which excludes column name keywords as
+/// well as reserved ones: unquoted, `coalesce(a)` or `interval` would parse as the SQL construct of
+/// the same name rather than as a reference to the named object.
+pub(super) fn needs_quoting_as_function_or_type_name(value: &str) -> bool {
+    needs_quoting(value) || keyword_category(value) == Some(KeywordCategory::ColName)
 }
 
 #[cfg(test)]

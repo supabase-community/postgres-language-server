@@ -84,12 +84,8 @@ from
   as x (size);
 
 select
-  pg_size_pretty(
-    cast('-9223372036854775808' as bigint)
-  ),
-  pg_size_pretty(
-    cast('9223372036854775807' as bigint)
-  );
+  pg_size_pretty(cast('-9223372036854775808' as bigint)),
+  pg_size_pretty(cast('9223372036854775807' as bigint));
 
 select
   size,
@@ -154,15 +150,7 @@ select
   pg_size_bytes(size)
 from
   (
-    values
-      ('-1.'),
-      ('-1.kb'),
-      ('-1. kb'),
-      ('-0. gb'),
-      ('-.1'),
-      ('-.1kb'),
-      ('-.1 kb'),
-      ('-.0 gb')
+    values ('-1.'), ('-1.kb'), ('-1. kb'), ('-0. gb'), ('-.1'), ('-.1kb'), ('-.1 kb'), ('-.0 gb')
   )
   as x (size);
 

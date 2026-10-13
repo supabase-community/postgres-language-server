@@ -7,8 +7,8 @@ returns setof public.download_metrics
 language sql
 stable
 rows 1
-as $function$
-select *
+as $$
+  select *
   from public.download_metrics dm
   where dm.package_id = $1.id;
-$function$;
+$$;

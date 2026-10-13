@@ -6,16 +6,12 @@ select
   getdatabaseencoding() <> 'UTF8' or
   (
     select
-      COUNT(*)
+      count(*)
     from
       pg_collation
     where
-      collname
-      in (
-        'de_DE', 'en_US', 'sv_SE', 'tr_TR'
-      ) and
-      collencoding =
-      pg_char_to_encoding('UTF8')
+      collname in ('de_DE', 'en_US', 'sv_SE', 'tr_TR') and
+      collencoding = pg_char_to_encoding('UTF8')
   ) <>
   4 or
   version() !~ 'linux-gnu'
@@ -23,7 +19,7 @@ select
 
 set client_encoding to utf8;
 
-create schema "collate_tests";
+create schema collate_tests;
 
 set search_path to collate_tests;
 
@@ -60,11 +56,7 @@ create table collate_test3 (
 );
 
 insert into collate_test1
-values
-  (1, 'abc'),
-  (2, 'Ã¤bc'),
-  (3, 'bbc'),
-  (4, 'ABC');
+values (1, 'abc'), (2, 'Ã¤bc'), (3, 'bbc'), (4, 'ABC');
 
 insert into collate_test2 select * from collate_test1;
 
@@ -225,7 +217,7 @@ select 'bÄ±t' ~* 'BIT' collate "tr_TR" as "true";
 
 select relname from pg_class where relname ~* '^abc';
 
-set lc_time = tr_TR;
+set lc_time = 'tr_TR';
 
 select to_char(cast('2010-02-01' as date), 'DD TMMON YYYY');
 
@@ -242,27 +234,13 @@ select to_date('01 Åub 2010', 'DD TMMON YYYY');
 select to_date('1234567890ab 2010', 'TMMONTH YYYY');
 
 create view collview1
-as select
-  *
-from
-  collate_test1
-where
-  b collate "C" >= 'bbc';
+as select * from collate_test1 where b collate "C" >= 'bbc';
 
 create view collview2
-as select
-  a,
-  b
-from
-  collate_test1
-order by b collate "C";
+as select a, b from collate_test1 order by b collate "C";
 
 create view collview3
-as select
-  a,
-  lower((x || x) collate "C")
-from
-  collate_test10;
+as select a, lower((x || x) collate "C") from collate_test10;
 
 select
   table_name,
@@ -347,11 +325,11 @@ select
 from
   collate_test10;
 
-select MIN(b), MAX(b) from collate_test1;
+select min(b), max(b) from collate_test1;
 
-select MIN(b), MAX(b) from collate_test2;
+select min(b), max(b) from collate_test2;
 
-select MIN(b), MAX(b) from collate_test3;
+select min(b), max(b) from collate_test3;
 
 select array_agg(b order by b) from collate_test1;
 
@@ -370,13 +348,7 @@ select a, b from collate_test3 where a > 1 order by 2;
 
 select a, b from collate_test3
 except
-select
-  a,
-  b
-from
-  collate_test3
-where
-  a < 2
+select a, b from collate_test3 where a < 2
 order by 2;
 
 select a, b from collate_test1
@@ -388,11 +360,7 @@ select a, b from collate_test1 union all select a, b from collate_test3;
 
 select a, b from collate_test1 union select a, b from collate_test3 order by 2;
 
-select
-  a,
-  b collate "C"
-from
-  collate_test1
+select a, b collate "C" from collate_test1
 union
 select a, b from collate_test3
 order by 2;
@@ -403,9 +371,7 @@ select a, b from collate_test1 except select a, b from collate_test3 order by 2;
 
 create table test_u
 as
-  select a, b from collate_test1
-  union all
-  select a, b from collate_test3;
+  select a, b from collate_test1 union all select a, b from collate_test3;
 
 select x < y from collate_test10;
 
@@ -416,20 +382,9 @@ select x, y from collate_test10 order by x || y;
 with recursive
 foo (x)
 as (
-  select
-    x
-  from
-    (
-      values ('a' collate "en_US"), ('b')
-    )
-    as t (x)
+  select x from (values ('a' collate "en_US"), ('b')) as t (x)
   union all
-  select
-    (x || 'c') collate "de_DE"
-  from
-    foo
-  where
-    length(x) < 10
+  select (x || 'c') collate "de_DE" from foo where length(x) < 10
 )
 select
   *
@@ -445,23 +400,17 @@ select a, cast(b as varchar) from collate_test3 order by 2;
 create function mylt(text, text)
 returns boolean
 language sql
-as $function$
-select $1 < $2
-$function$;
+as $$ select $1 < $2 $$;
 
 create function mylt_noninline(text, text)
 returns boolean
 language sql
-as $function$
-select $1 < $2 limit 1
-$function$;
+as $$ select $1 < $2 limit 1 $$;
 
 create function mylt_plpgsql(text, text)
 returns boolean
 language plpgsql
-as $function$
-begin return $1 < $2; end
-$function$;
+as $$ begin return $1 < $2; end $$;
 
 select
   a.b as a,
@@ -492,28 +441,28 @@ order by a.b,
 create function mylt2(x text, y text)
 returns boolean
 language plpgsql
-as $function$
+as $$
 declare
   xx text := x;
   yy text := y;
 begin
   return xx < yy;
 end
-$function$;
+$$;
 
 select mylt2('a', 'B' collate "en_US") as t, mylt2('a', 'B' collate "C") as f;
 
 create or replace function mylt2(x text, y text)
 returns boolean
 language plpgsql
-as $function$
+as $$
 declare
   xx text COLLATE "POSIX" := x;
   yy text := y;
 begin
   return xx < yy;
 end
-$function$;
+$$;
 
 select mylt2('a', 'B') as f;
 
@@ -524,48 +473,25 @@ select mylt2('a', 'B' collate "POSIX") as f;
 select
   *
 from
-  unnest(
-    (
-      select
-        array_agg(b order by b)
-      from
-        collate_test1
-    )
-  )
+  unnest((select array_agg(b order by b) from collate_test1))
 order by 1;
 
 select
   *
 from
-  unnest(
-    (
-      select
-        array_agg(b order by b)
-      from
-        collate_test2
-    )
-  )
+  unnest((select array_agg(b order by b) from collate_test2))
 order by 1;
 
 select
   *
 from
-  unnest(
-    (
-      select
-        array_agg(b order by b)
-      from
-        collate_test3
-    )
-  )
+  unnest((select array_agg(b order by b) from collate_test3))
 order by 1;
 
 create function dup(anyelement)
 returns anyelement
 language sql
-as $function$
-select $1
-$function$;
+as $$select $1$$;
 
 select a, dup(b) from collate_test1 order by 2;
 
@@ -573,32 +499,19 @@ select a, dup(b) from collate_test2 order by 2;
 
 select a, dup(b) from collate_test3 order by 2;
 
-create index "collate_test1_idx1" on collate_test1 using btree (b);
+create index collate_test1_idx1 on collate_test1 using btree (b);
 
-create index "collate_test1_idx2" on collate_test1 using btree (b collate "C");
+create index collate_test1_idx2 on collate_test1 using btree (b collate "C");
 
-create index "collate_test1_idx3"
-on collate_test1
-using btree
-(
-  (b collate "C")
-);
+create index collate_test1_idx3 on collate_test1 using btree ((b collate "C"));
 
-create index "collate_test1_idx4"
-on collate_test1
-using btree
-(
+create index collate_test1_idx4 on collate_test1 using btree (
   ((b || 'foo') collate "POSIX")
 );
 
-create index "collate_test1_idx5" on collate_test1 using btree (a collate "C");
+create index collate_test1_idx5 on collate_test1 using btree (a collate "C");
 
-create index "collate_test1_idx6"
-on collate_test1
-using btree
-(
-  (a collate "C")
-);
+create index collate_test1_idx6 on collate_test1 using btree ((a collate "C"));
 
 select
   relname,
@@ -611,15 +524,14 @@ order by 1;
 
 create role regress_test_role;
 
-create schema "test_schema";
+create schema test_schema;
 
-do
-$do$
+do $$
 BEGIN
   EXECUTE 'CREATE COLLATION test0 (locale = ' ||
           quote_literal((SELECT datcollate FROM pg_database WHERE datname = current_database())) || ');';
 END
-$do$;
+$$;
 
 create collation test0 from "C";
 
@@ -627,15 +539,14 @@ create collation if not exists test0 from "C";
 
 create collation if not exists test0 (locale = 'foo');
 
-do
-$do$
+do $$
 BEGIN
   EXECUTE 'CREATE COLLATION test1 (lc_collate = ' ||
           quote_literal((SELECT datcollate FROM pg_database WHERE datname = current_database())) ||
           ', lc_ctype = ' ||
           quote_literal((SELECT datctype FROM pg_database WHERE datname = current_database())) || ');';
 END
-$do$;
+$$;
 
 create collation test3 (lc_collate = 'en_US.utf8');
 
@@ -664,15 +575,9 @@ comment on collation test0 is 'US English';
 select
   collname,
   nspname,
-  obj_description(
-    pg_collation.oid,
-    'pg_collation'
-  )
+  obj_description(pg_collation.oid, 'pg_collation')
 from
-  pg_collation
-  inner join
-    pg_namespace
-  on collnamespace = pg_namespace.oid
+  pg_collation inner join pg_namespace on collnamespace = pg_namespace.oid
 where
   collname like 'test%'
 order by 1;
@@ -705,19 +610,14 @@ create domain collate_dep_dom1 as text collate "test0";
 create type collate_dep_test2 as (x int, y text collate "test0");
 
 create view collate_dep_test3
-as select
-  cast('foo' as text) collate "test0"
-  as foo;
+as select cast('foo' as text) collate "test0" as foo;
 
 create table collate_dep_test4t (
   a int,
   b text
 );
 
-create index "collate_dep_test4i"
-on collate_dep_test4t
-using btree
-(
+create index collate_dep_test4i on collate_dep_test4t using btree (
   b collate test0
 );
 
@@ -729,9 +629,9 @@ drop table collate_dep_test1, collate_dep_test4t;
 
 drop type collate_dep_test2;
 
-create type textrange_c as range (subtype = text, collation = "C");
+create type textrange_c as range (subtype = text, "collation" = "C");
 
-create type textrange_en_us as range (subtype = text, collation = "en_US");
+create type textrange_en_us as range (subtype = text, "collation" = "en_US");
 
 select textrange_c('A', 'Z') @> cast('b' as text);
 

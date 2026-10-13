@@ -14,7 +14,7 @@ pub(super) fn emit_notify_stmt(e: &mut EventEmitter, n: &NotifyStmt) {
 
     if !n.conditionname.is_empty() {
         e.space();
-        super::emit_identifier(e, &n.conditionname);
+        super::emit_identifier_maybe_quoted(e, &n.conditionname);
     }
 
     // Optional payload

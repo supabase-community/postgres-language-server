@@ -10,7 +10,7 @@ reset client_min_messages;
 
 create user regress_alter_table_user1;
 
-create table attmp (initial int);
+create table attmp (initial int4);
 
 comment on table attmp_wrong is 'table comment';
 
@@ -22,7 +22,7 @@ alter table attmp
   add column xmin int;
 
 alter table attmp
-  add column a int default 3;
+  add column a int4 default 3;
 
 alter table attmp
   add column b name;
@@ -31,13 +31,13 @@ alter table attmp
   add column c text;
 
 alter table attmp
-  add column d double precision;
+  add column d float8;
 
 alter table attmp
-  add column e real;
+  add column e float4;
 
 alter table attmp
-  add column f smallint;
+  add column f int2;
 
 alter table attmp
   add column g polygon;
@@ -46,7 +46,7 @@ alter table attmp
   add column i char(1);
 
 alter table attmp
-  add column k int;
+  add column k int4;
 
 alter table attmp
   add column l tid;
@@ -79,38 +79,15 @@ alter table attmp
   add column w interval;
 
 alter table attmp
-  add column x double precision[];
+  add column x float8[];
 
 alter table attmp
-  add column y real[];
+  add column y float4[];
 
 alter table attmp
-  add column z smallint[];
+  add column z int2[];
 
-insert into attmp (
-  a,
-  b,
-  c,
-  d,
-  e,
-  f,
-  g,
-  i,
-  k,
-  l,
-  m,
-  n,
-  p,
-  q,
-  r,
-  s,
-  t,
-  v,
-  w,
-  x,
-  y,
-  z
-)
+insert into attmp (a, b, c, d, e, f, g, i, k, l, m, n, p, q, r, s, t, v, w, x, y, z)
 values
   (
     4,
@@ -141,10 +118,10 @@ select * from attmp;
 
 drop table attmp;
 
-create table attmp (initial int);
+create table attmp (initial int4);
 
 alter table attmp
-  add column a int;
+  add column a int4;
 
 alter table attmp
   add column b name;
@@ -153,13 +130,13 @@ alter table attmp
   add column c text;
 
 alter table attmp
-  add column d double precision;
+  add column d float8;
 
 alter table attmp
-  add column e real;
+  add column e float4;
 
 alter table attmp
-  add column f smallint;
+  add column f int2;
 
 alter table attmp
   add column g polygon;
@@ -168,7 +145,7 @@ alter table attmp
   add column i char(1);
 
 alter table attmp
-  add column k int;
+  add column k int4;
 
 alter table attmp
   add column l tid;
@@ -201,38 +178,15 @@ alter table attmp
   add column w interval;
 
 alter table attmp
-  add column x double precision[];
+  add column x float8[];
 
 alter table attmp
-  add column y real[];
+  add column y float4[];
 
 alter table attmp
-  add column z smallint[];
+  add column z int2[];
 
-insert into attmp (
-  a,
-  b,
-  c,
-  d,
-  e,
-  f,
-  g,
-  i,
-  k,
-  l,
-  m,
-  n,
-  p,
-  q,
-  r,
-  s,
-  t,
-  v,
-  w,
-  x,
-  y,
-  z
-)
+insert into attmp (a, b, c, d, e, f, g, i, k, l, m, n, p, q, r, s, t, v, w, x, y, z)
 values
   (
     4,
@@ -261,7 +215,7 @@ values
 
 select * from attmp;
 
-create index "attmp_idx" on attmp using btree (a, (d + e), b);
+create index attmp_idx on attmp using btree (a, (d + e), b);
 
 alter index attmp_idx
   alter column 1 set statistics 1000;
@@ -373,12 +327,12 @@ reset role;
 
 create table alter_idx_rename_test (a int);
 
-create index "alter_idx_rename_test_idx" on alter_idx_rename_test using btree (a);
+create index alter_idx_rename_test_idx on alter_idx_rename_test using btree (a);
 
 create table alter_idx_rename_test_parted (a int)
-partition by LIST(a);
+partition by list(a);
 
-create index "alter_idx_rename_test_parted_idx" on alter_idx_rename_test_parted using btree (a);
+create index alter_idx_rename_test_parted_idx on alter_idx_rename_test_parted using btree (a);
 
 begin;
 
@@ -470,7 +424,7 @@ alter table stud_emp rename to pg_toast_stud_emp;
 alter table pg_toast_stud_emp rename to stud_emp;
 
 alter table onek
-  add constraint "onek_unique1_constraint" unique (unique1);
+  add constraint onek_unique1_constraint unique (unique1);
 
 alter index onek_unique1_constraint rename to onek_unique1_constraint_foo;
 
@@ -478,7 +432,7 @@ alter table onek
   drop constraint onek_unique1_constraint_foo;
 
 alter table onek
-  add constraint "onek_check_constraint" check (unique1 >= 0);
+  add constraint onek_check_constraint check (unique1 >= 0);
 
 alter table onek rename constraint onek_check_constraint to onek_check_constraint_foo;
 
@@ -486,7 +440,7 @@ alter table onek
   drop constraint onek_check_constraint_foo;
 
 alter table onek
-  add constraint "onek_unique1_constraint" unique (unique1);
+  add constraint onek_unique1_constraint unique (unique1);
 
 drop index onek_unique1_constraint;
 
@@ -498,13 +452,13 @@ alter table onek
   drop constraint onek_unique1_constraint_foo;
 
 create table constraint_rename_test (
-  a int constraint "con1" check (a > 0),
+  a int constraint con1 check (a > 0),
   b int,
   c int
 );
 
 create table constraint_rename_test2 (
-  a int constraint "con1" check (a > 0),
+  a int constraint con1 check (a > 0),
   d int
 )
 inherits (constraint_rename_test);
@@ -516,14 +470,14 @@ alter table only constraint_rename_test rename constraint con1 to con1foo;
 alter table constraint_rename_test rename constraint con1 to con1foo;
 
 alter table constraint_rename_test
-  add constraint "con2" check (b > 0) no inherit;
+  add constraint con2 check (b > 0) no inherit;
 
 alter table only constraint_rename_test rename constraint con2 to con2foo;
 
 alter table constraint_rename_test rename constraint con2foo to con2bar;
 
 alter table constraint_rename_test
-  add constraint "con3" primary key (a);
+  add constraint con3 primary key (a);
 
 alter table constraint_rename_test rename constraint con3 to con3foo;
 
@@ -534,11 +488,11 @@ drop table constraint_rename_test;
 alter table if exists constraint_not_exist rename constraint con3 to con3foo;
 
 alter table if exists constraint_rename_test
-  add constraint "con4" unique (a);
+  add constraint con4 unique (a);
 
 create table constraint_rename_cache (
   a int,
-  constraint "chk_a" check (a > 0),
+  constraint chk_a check (a > 0),
   primary key (a)
 );
 
@@ -587,34 +541,18 @@ insert into attmp3 values (1, 20);
 insert into attmp3 values (5, 50);
 
 alter table attmp3
-  add constraint "attmpconstr"
-  foreign key
-  (c)
-  references attmp2
-  match full;
+  add constraint attmpconstr foreign key (c) references attmp2 match full;
 
 alter table attmp3
-  add constraint "attmpconstr"
-  foreign key
-  (a)
-  references attmp2 (b)
-  match full;
+  add constraint attmpconstr foreign key (a) references attmp2 (b) match full;
 
 alter table attmp3
-  add constraint "attmpconstr"
-  foreign key
-  (a)
-  references attmp2
-  match full;
+  add constraint attmpconstr foreign key (a) references attmp2 match full;
 
 delete from attmp3 where a = 5;
 
 alter table attmp3
-  add constraint "attmpconstr"
-  foreign key
-  (a)
-  references attmp2
-  match full;
+  add constraint attmpconstr foreign key (a) references attmp2 match full;
 
 alter table attmp3
   drop constraint attmpconstr;
@@ -622,12 +560,7 @@ alter table attmp3
 insert into attmp3 values (5, 50);
 
 alter table attmp3
-  add constraint "attmpconstr"
-  foreign key
-  (a)
-  references attmp2
-  match full
-  not valid;
+  add constraint attmpconstr foreign key (a) references attmp2 match full not valid;
 
 alter table attmp3
   validate constraint attmpconstr;
@@ -641,10 +574,10 @@ alter table attmp3
   validate constraint attmpconstr;
 
 alter table attmp3
-  add constraint "b_greater_than_ten" check (b > 10);
+  add constraint b_greater_than_ten check (b > 10);
 
 alter table attmp3
-  add constraint "b_greater_than_ten" check (b > 10) not valid;
+  add constraint b_greater_than_ten check (b > 10) not valid;
 
 alter table attmp3
   validate constraint b_greater_than_ten;
@@ -671,7 +604,7 @@ inherits (attmp3);
 insert into attmp6 values (6, 30), (7, 16);
 
 alter table attmp3
-  add constraint "b_le_20" check (b <= 20) not valid;
+  add constraint b_le_20 check (b <= 20) not valid;
 
 alter table attmp3
   validate constraint b_le_20;
@@ -686,17 +619,15 @@ returns int
 language plpgsql
 immutable
 strict
-as $function$
-BEGIN RAISE NOTICE 'boo: %', $1; RETURN $1; END;
-$function$;
+as $$ BEGIN RAISE NOTICE 'boo: %', $1; RETURN $1; END; $$;
 
 insert into attmp7 values (8, 18);
 
 alter table attmp7
-  add constraint "identity" check (b = boo(b));
+  add constraint identity check (b = boo(b));
 
 alter table attmp3
-  add constraint "identity" check (b = boo(b)) not valid;
+  add constraint identity check (b = boo(b)) not valid;
 
 alter table attmp3
   validate constraint identity;
@@ -711,7 +642,7 @@ insert into parent_noinh_convalid values (1);
 insert into child_noinh_convalid values (1);
 
 alter table parent_noinh_convalid
-  add constraint "check_a_is_2" check (a = 2) no inherit not valid;
+  add constraint check_a_is_2 check (a = 2) no inherit not valid;
 
 alter table parent_noinh_convalid
   validate constraint check_a_is_2;
@@ -726,18 +657,12 @@ select
 from
   pg_constraint
 where
-  conrelid =
-  cast('parent_noinh_convalid' as regclass) and
-  conname = 'check_a_is_2';
+  conrelid = cast('parent_noinh_convalid' as regclass) and conname = 'check_a_is_2';
 
 drop table parent_noinh_convalid, child_noinh_convalid;
 
 alter table attmp5
-  add constraint "attmpconstr"
-  foreign key
-  (a)
-  references attmp4 (a)
-  match full;
+  add constraint attmpconstr foreign key (a) references attmp4 (a) match full;
 
 drop table attmp7;
 
@@ -765,21 +690,15 @@ create table nv_child_2011 ()
 inherits (nv_parent);
 
 alter table nv_child_2010
-  add check (d
-  between cast('2010-01-01' as date)
-  and cast('2010-12-31' as date)) not valid;
+  add check (d between cast('2010-01-01' as date) and cast('2010-12-31' as date)) not valid;
 
 alter table nv_child_2011
-  add check (d
-  between cast('2011-01-01' as date)
-  and cast('2011-12-31' as date)) not valid;
+  add check (d between cast('2011-01-01' as date) and cast('2011-12-31' as date)) not valid;
 
 select * from nv_parent where d between '2011-08-01' and '2011-08-31';
 
 create table nv_child_2009 (
-  check (d
-  between cast('2009-01-01' as date)
-  and cast('2009-12-31' as date))
+  check (d between cast('2009-01-01' as date) and cast('2009-12-31' as date))
 )
 inherits (nv_parent);
 
@@ -793,9 +712,7 @@ alter table nv_child_2011
 select * from nv_parent where d between cast('2009-08-01' as date) and cast('2009-08-31' as date);
 
 alter table nv_parent
-  add check (d
-  between cast('2001-01-01' as date)
-  and cast('2099-12-31' as date)) not valid;
+  add check (d between cast('2001-01-01' as date) and cast('2099-12-31' as date)) not valid;
 
 create temporary table pktable (ptest1 int primary key);
 
@@ -811,7 +728,7 @@ alter table fktable
 
 drop table fktable;
 
-create temporary table fktable (ftest1 bigint);
+create temporary table fktable (ftest1 int8);
 
 alter table fktable
   add foreign key (ftest1) references pktable;
@@ -870,11 +787,7 @@ create temporary table fktable (
 );
 
 alter table fktable
-  add foreign key
-  (ftest1,
-  ftest2)
-  references pktable (ptest1,
-  ptest2);
+  add foreign key (ftest1, ftest2) references pktable (ptest1, ptest2);
 
 drop table fktable;
 
@@ -884,18 +797,10 @@ create temporary table fktable (
 );
 
 alter table fktable
-  add foreign key
-  (ftest1,
-  ftest2)
-  references pktable (ptest2,
-  ptest1);
+  add foreign key (ftest1, ftest2) references pktable (ptest2, ptest1);
 
 alter table fktable
-  add foreign key
-  (ftest2,
-  ftest1)
-  references pktable (ptest1,
-  ptest2);
+  add foreign key (ftest2, ftest1) references pktable (ptest1, ptest2);
 
 drop table fktable;
 
@@ -906,58 +811,40 @@ create temporary table pktable (ptest1 int primary key);
 create temporary table fktable (ftest1 int);
 
 alter table fktable
-  add constraint "fknd"
-  foreign key
-  (ftest1)
-  references pktable
-  on DELETE cascade;
+  add constraint fknd foreign key (ftest1) references pktable on delete cascade;
 
 alter table fktable
-  add constraint "fkdd"
-  foreign key
-  (ftest1)
-  references pktable
-  on DELETE cascade
-  deferrable initially deferred;
+  add constraint fkdd foreign key (ftest1)
+    references pktable
+    on delete cascade
+    deferrable initially deferred;
 
 alter table fktable
-  add constraint "fkdi"
-  foreign key
-  (ftest1)
-  references pktable
-  on DELETE cascade
-  deferrable initially immediate;
+  add constraint fkdi foreign key (ftest1)
+    references pktable
+    on delete cascade
+    deferrable initially immediate;
 
 alter table fktable
-  add constraint "fknd2"
-  foreign key
-  (ftest1)
-  references pktable
-  on DELETE cascade
-  deferrable initially deferred;
+  add constraint fknd2 foreign key (ftest1)
+    references pktable
+    on delete cascade
+    deferrable initially deferred;
 
 alter table fktable
-  alter constraint "fknd2" not deferrable initially immediate;
+  alter constraint fknd2 not deferrable initially immediate;
 
 alter table fktable
-  add constraint "fkdd2"
-  foreign key
-  (ftest1)
-  references pktable
-  on DELETE cascade;
+  add constraint fkdd2 foreign key (ftest1) references pktable on delete cascade;
 
 alter table fktable
-  alter constraint "fkdd2" deferrable initially deferred;
+  alter constraint fkdd2 deferrable initially deferred;
 
 alter table fktable
-  add constraint "fkdi2"
-  foreign key
-  (ftest1)
-  references pktable
-  on DELETE cascade;
+  add constraint fkdi2 foreign key (ftest1) references pktable on delete cascade;
 
 alter table fktable
-  alter constraint "fkdi2" deferrable initially immediate;
+  alter constraint fkdi2 deferrable initially immediate;
 
 select
   conname,
@@ -966,10 +853,7 @@ select
   tgdeferrable,
   tginitdeferred
 from
-  pg_trigger
-  inner join
-    pg_constraint as con
-  on con.oid = tgconstraint
+  pg_trigger inner join pg_constraint as con on con.oid = tgconstraint
 where
   tgrelid = cast('pktable' as regclass)
 order by 1,
@@ -983,10 +867,7 @@ select
   tgdeferrable,
   tginitdeferred
 from
-  pg_trigger
-  inner join
-    pg_constraint as con
-  on con.oid = tgconstraint
+  pg_trigger inner join pg_constraint as con on con.oid = tgconstraint
 where
   tgrelid = cast('fktable' as regclass)
 order by 1,
@@ -996,7 +877,7 @@ order by 1,
 create table atacc1 (test int);
 
 alter table atacc1
-  add constraint "atacc_test1" check (test > 3);
+  add constraint atacc_test1 check (test > 3);
 
 insert into atacc1 (test) values (2);
 
@@ -1009,7 +890,7 @@ create table atacc1 (test int);
 insert into atacc1 (test) values (2);
 
 alter table atacc1
-  add constraint "atacc_test1" check (test > 3);
+  add constraint atacc_test1 check (test > 3);
 
 insert into atacc1 (test) values (4);
 
@@ -1018,7 +899,7 @@ drop table atacc1;
 create table atacc1 (test int);
 
 alter table atacc1
-  add constraint "atacc_test1" check (test1 > 3);
+  add constraint atacc_test1 check (test1 > 3);
 
 drop table atacc1;
 
@@ -1029,7 +910,7 @@ create table atacc1 (
 );
 
 alter table atacc1
-  add constraint "atacc_test1" check (test + test2 < test3 * 4);
+  add constraint atacc_test1 check (test + test2 < test3 * 4);
 
 insert into atacc1 (test, test2, test3) values (4, 4, 2);
 
@@ -1054,11 +935,10 @@ create table atacc1 (test int);
 create table atacc2 (test2 int);
 
 create table atacc3 (test3 int)
-inherits (atacc1,
-atacc2);
+inherits (atacc1, atacc2);
 
 alter table atacc2
-  add constraint "foo" check (test2 > 0);
+  add constraint foo check (test2 > 0);
 
 insert into atacc2 (test2) values (-3);
 
@@ -1079,8 +959,7 @@ create table atacc1 (test int);
 create table atacc2 (test2 int);
 
 create table atacc3 (test3 int)
-inherits (atacc1,
-atacc2);
+inherits (atacc1, atacc2);
 
 alter table atacc3
   no inherit atacc2;
@@ -1093,7 +972,7 @@ insert into atacc3 (test2) values (3);
 select test2 from atacc2;
 
 alter table atacc2
-  add constraint "foo" check (test2 > 0);
+  add constraint foo check (test2 > 0);
 
 alter table atacc3
   inherit atacc2;
@@ -1104,7 +983,7 @@ alter table atacc3
   inherit atacc2;
 
 alter table atacc3
-  add column test2 boolean;
+  add column test2 bool;
 
 alter table atacc3
   inherit atacc2;
@@ -1118,7 +997,7 @@ alter table atacc3
 update atacc3 set test2 = 4 where test2 is null;
 
 alter table atacc3
-  add constraint "foo" check (test2 > 0);
+  add constraint foo check (test2 > 0);
 
 alter table atacc3
   inherit atacc2;
@@ -1144,7 +1023,7 @@ create table atacc2 (test2 int)
 inherits (atacc1);
 
 alter table atacc1
-  add constraint "foo" check (test > 0) no inherit;
+  add constraint foo check (test > 0) no inherit;
 
 insert into atacc2 (test) values (-3);
 
@@ -1153,7 +1032,7 @@ insert into atacc1 (test) values (-3);
 insert into atacc1 (test) values (3);
 
 alter table atacc2
-  add constraint "foo" check (test > 0) no inherit;
+  add constraint foo check (test > 0) no inherit;
 
 drop table atacc2;
 
@@ -1162,7 +1041,7 @@ drop table atacc1;
 create table atacc1 (test int);
 
 alter table atacc1
-  add constraint "atacc_test1" unique (test);
+  add constraint atacc_test1 unique (test);
 
 insert into atacc1 (test) values (2);
 
@@ -1182,7 +1061,7 @@ insert into atacc1 (test) values (2);
 insert into atacc1 (test) values (2);
 
 alter table atacc1
-  add constraint "atacc_test1" unique (test);
+  add constraint atacc_test1 unique (test);
 
 insert into atacc1 (test) values (3);
 
@@ -1191,7 +1070,7 @@ drop table atacc1;
 create table atacc1 (test int);
 
 alter table atacc1
-  add constraint "atacc_test1" unique (test1);
+  add constraint atacc_test1 unique (test1);
 
 drop table atacc1;
 
@@ -1201,7 +1080,7 @@ create table atacc1 (
 );
 
 alter table atacc1
-  add constraint "atacc_test1" unique (test, test2);
+  add constraint atacc_test1 unique (test, test2);
 
 insert into atacc1 (test, test2) values (4, 4);
 
@@ -1236,7 +1115,7 @@ create table atacc1 (
 );
 
 alter table atacc1
-  add constraint "atacc_test1" primary key (test);
+  add constraint atacc_test1 primary key (test);
 
 insert into atacc1 (test) values (2);
 
@@ -1247,13 +1126,13 @@ insert into atacc1 (test) values (4);
 insert into atacc1 (test) values (null);
 
 alter table atacc1
-  add constraint "atacc_oid1" primary key (id);
+  add constraint atacc_oid1 primary key (id);
 
 alter table atacc1
   drop constraint atacc_test1;
 
 alter table atacc1
-  add constraint "atacc_oid1" primary key (id);
+  add constraint atacc_oid1 primary key (id);
 
 drop table atacc1;
 
@@ -1264,7 +1143,7 @@ insert into atacc1 (test) values (2);
 insert into atacc1 (test) values (2);
 
 alter table atacc1
-  add constraint "atacc_test1" primary key (test);
+  add constraint atacc_test1 primary key (test);
 
 insert into atacc1 (test) values (3);
 
@@ -1275,7 +1154,7 @@ create table atacc1 (test int);
 insert into atacc1 (test) values (null);
 
 alter table atacc1
-  add constraint "atacc_test1" primary key (test);
+  add constraint atacc_test1 primary key (test);
 
 insert into atacc1 (test) values (3);
 
@@ -1284,7 +1163,7 @@ drop table atacc1;
 create table atacc1 (test int);
 
 alter table atacc1
-  add constraint "atacc_test1" primary key (test1);
+  add constraint atacc_test1 primary key (test1);
 
 drop table atacc1;
 
@@ -1305,7 +1184,7 @@ create table atacc1 (a int);
 insert into atacc1 values (1);
 
 alter table atacc1
-  add column b double precision not null default random(),
+  add column b float8 not null default random(),
   add primary key (a);
 
 drop table atacc1;
@@ -1313,11 +1192,7 @@ drop table atacc1;
 create table atacc1 (a int primary key);
 
 alter table atacc1
-  add constraint "atacc1_fkey"
-  foreign key
-  (a)
-  references atacc1 (a)
-  not valid;
+  add constraint atacc1_fkey foreign key (a) references atacc1 (a) not valid;
 
 alter table atacc1
   validate constraint atacc1_fkey,
@@ -1333,7 +1208,7 @@ create table atacc1 (
 insert into atacc1 values (1, 1);
 
 alter table atacc1
-  add constraint "atacc1_chk" check (b = 1) not valid;
+  add constraint atacc1_chk check (b = 1) not valid;
 
 alter table atacc1
   validate constraint atacc1_chk,
@@ -1349,7 +1224,7 @@ create table atacc1 (
 insert into atacc1 values (1, 2);
 
 alter table atacc1
-  add constraint "atacc1_chk" check (b = 1) not valid;
+  add constraint atacc1_chk check (b = 1) not valid;
 
 alter table atacc1
   validate constraint atacc1_chk,
@@ -1363,10 +1238,10 @@ create table atacc1 (
 );
 
 alter table atacc1
-  add constraint "atacc_test1" primary key (test, test2);
+  add constraint atacc_test1 primary key (test, test2);
 
 alter table atacc1
-  add constraint "atacc_test2" primary key (test);
+  add constraint atacc_test2 primary key (test);
 
 insert into atacc1 (test, test2) values (4, 4);
 
@@ -1415,7 +1290,7 @@ alter table non_existent
 create table atacc1 (test int not null);
 
 alter table atacc1
-  add constraint "atacc1_pkey" primary key (test);
+  add constraint atacc1_pkey primary key (test);
 
 alter table atacc1
   alter column test drop not null;
@@ -1463,7 +1338,7 @@ create table atacc1 (
 insert into atacc1 values (null, 1);
 
 alter table atacc1
-  add constraint "atacc1_constr_or" check (test_a is not null or test_b < 10);
+  add constraint atacc1_constr_or check (test_a is not null or test_b < 10);
 
 alter table atacc1
   alter column test_a set not null;
@@ -1472,7 +1347,7 @@ alter table atacc1
   drop constraint atacc1_constr_or;
 
 alter table atacc1
-  add constraint "atacc1_constr_invalid" check (test_a is not null) not valid;
+  add constraint atacc1_constr_invalid check (test_a is not null) not valid;
 
 alter table atacc1
   alter column test_a set not null;
@@ -1483,7 +1358,7 @@ alter table atacc1
 update atacc1 set test_a = 1;
 
 alter table atacc1
-  add constraint "atacc1_constr_a_valid" check (test_a is not null);
+  add constraint atacc1_constr_a_valid check (test_a is not null);
 
 alter table atacc1
   alter column test_a set not null;
@@ -1514,7 +1389,7 @@ alter table atacc1
   alter column test_b drop not null;
 
 alter table atacc1
-  add constraint "atacc1_constr_b_valid" check (test_b is not null);
+  add constraint atacc1_constr_b_valid check (test_b is not null);
 
 alter table atacc1
   alter column test_b set not null,
@@ -1526,7 +1401,7 @@ create table atnnparted (
   id int,
   col1 int
 )
-partition by LIST(id);
+partition by list(id);
 
 create table atnnpart1 (
   col1 int,
@@ -1577,7 +1452,7 @@ drop table child;
 drop table parent;
 
 create table def_test (
-  c1 int default 5,
+  c1 int4 default 5,
   c2 text default 'initial_default'
 );
 
@@ -1644,10 +1519,10 @@ alter table nosuchtable
   drop column bar;
 
 create table atacc1 (
-  a int not null,
-  b int,
-  c int not null,
-  d int
+  a int4 not null,
+  b int4,
+  c int4 not null,
+  d int4
 );
 
 insert into atacc1 values (1, 2, 3, 4);

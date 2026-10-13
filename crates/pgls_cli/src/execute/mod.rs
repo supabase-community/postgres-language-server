@@ -20,7 +20,6 @@ pub fn run_files(
 }
 
 pub struct StdinPayload {
-    #[allow(dead_code)]
     pub path: PathBuf,
     pub content: String,
 }

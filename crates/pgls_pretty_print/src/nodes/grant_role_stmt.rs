@@ -22,14 +22,8 @@ pub(super) fn emit_grant_role_stmt(e: &mut EventEmitter, n: &GrantRoleStmt) {
         for opt in &n.opt {
             if let Some(NodeEnum::DefElem(def)) = opt.node.as_ref() {
                 e.space();
-                // Emit the option name as uppercase
-                let opt_name = match def.defname.as_str() {
-                    "admin" => "ADMIN",
-                    "inherit" => "INHERIT",
-                    "set" => "SET",
-                    _ => &def.defname.to_uppercase(),
-                };
-                e.token(TokenKind::IDENT(opt_name.to_string()));
+                // Emit the option name
+                super::emit_keyword(e, &def.defname);
                 e.space();
                 e.token(TokenKind::OPTION_KW);
                 e.space();

@@ -36,25 +36,23 @@ create role regress_rls_group1 nologin;
 
 create role regress_rls_group2 nologin;
 
-grant REGRESS_RLS_GROUP1 to regress_rls_bob;
+grant regress_rls_group1 to regress_rls_bob;
 
-grant REGRESS_RLS_GROUP2 to regress_rls_carol;
+grant regress_rls_group2 to regress_rls_carol;
 
-create schema "regress_rls_schema";
+create schema regress_rls_schema;
 
 grant all on schema regress_rls_schema to public;
 
 set search_path to regress_rls_schema;
 
 create or replace function f_leak(text)
-returns boolean
+returns bool
 language plpgsql
 cost 0.0000001
-as $function$
-BEGIN RAISE NOTICE 'f_leak => %', $1; RETURN true; END
-$function$;
+as $$BEGIN RAISE NOTICE 'f_leak => %', $1; RETURN true; END$$;
 
-grant EXECUTE on function f_leak(text) to public;
+grant execute on function f_leak(text) to public;
 
 set session authorization regress_rls_alice;
 
@@ -63,7 +61,7 @@ create table uaccount (
   seclv int
 );
 
-grant SELECT on table uaccount to public;
+grant select on table uaccount to public;
 
 insert into uaccount
 values
@@ -80,11 +78,7 @@ create table category (
 grant all on table category to public;
 
 insert into category
-values
-  (11, 'novel'),
-  (22, 'science fiction'),
-  (33, 'technology'),
-  (44, 'manga');
+values (11, 'novel'), (22, 'science fiction'), (33, 'technology'), (44, 'manga');
 
 create table document (
   did int primary key,
@@ -100,40 +94,14 @@ insert into document
 values
   (1, 11, 1, 'regress_rls_bob', 'my first novel'),
   (2, 11, 2, 'regress_rls_bob', 'my second novel'),
-  (
-    3, 22, 2, 'regress_rls_bob', 'my science fiction'
-  ),
+  (3, 22, 2, 'regress_rls_bob', 'my science fiction'),
   (4, 44, 1, 'regress_rls_bob', 'my first manga'),
   (5, 44, 2, 'regress_rls_bob', 'my second manga'),
-  (
-    6,
-    22,
-    1,
-    'regress_rls_carol',
-    'great science fiction'
-  ),
-  (
-    7,
-    33,
-    2,
-    'regress_rls_carol',
-    'great technology book'
-  ),
+  (6, 22, 1, 'regress_rls_carol', 'great science fiction'),
+  (7, 33, 2, 'regress_rls_carol', 'great technology book'),
   (8, 44, 1, 'regress_rls_carol', 'great manga'),
-  (
-    9,
-    22,
-    1,
-    'regress_rls_dave',
-    'awesome science fiction'
-  ),
-  (
-    10,
-    33,
-    2,
-    'regress_rls_dave',
-    'awesome technology book'
-  );
+  (9, 22, 1, 'regress_rls_dave', 'awesome science fiction'),
+  (10, 33, 2, 'regress_rls_dave', 'awesome technology book');
 
 alter table document
   enable row level security;
@@ -143,15 +111,7 @@ on document
 as permissive
 for all
 to public
-using (dlevel <=
-(
-  select
-    seclv
-  from
-    uaccount
-  where
-    pguser = current_user
-));
+using (dlevel <= (select seclv from uaccount where pguser = current_user));
 
 create policy p2r
 on document
@@ -167,8 +127,7 @@ select
 from
   pg_policies
 where
-  schemaname = 'regress_rls_schema' and
-  tablename = 'document'
+  schemaname = 'regress_rls_schema' and tablename = 'document'
 order by policyname;
 
 set session authorization regress_rls_bob;
@@ -239,10 +198,8 @@ as permissive
 for all
 to public
 using (case
-  when current_user = 'regress_rls_bob'
-  then cid in (11, 33)
-  when current_user = 'regress_rls_carol'
-  then cid in (22, 44)
+  when current_user = 'regress_rls_bob' then cid in (11, 33)
+  when current_user = 'regress_rls_carol' then cid in (22, 44)
   else false
 end);
 
@@ -433,40 +390,14 @@ insert into part_document
 values
   (1, 11, 1, 'regress_rls_bob', 'my first novel'),
   (2, 11, 2, 'regress_rls_bob', 'my second novel'),
-  (
-    3, 99, 2, 'regress_rls_bob', 'my science textbook'
-  ),
+  (3, 99, 2, 'regress_rls_bob', 'my science textbook'),
   (4, 55, 1, 'regress_rls_bob', 'my first satire'),
   (5, 99, 2, 'regress_rls_bob', 'my history book'),
-  (
-    6,
-    11,
-    1,
-    'regress_rls_carol',
-    'great science fiction'
-  ),
-  (
-    7,
-    99,
-    2,
-    'regress_rls_carol',
-    'great technology book'
-  ),
+  (6, 11, 1, 'regress_rls_carol', 'great science fiction'),
+  (7, 99, 2, 'regress_rls_carol', 'great technology book'),
   (8, 55, 2, 'regress_rls_carol', 'great satire'),
-  (
-    9,
-    11,
-    1,
-    'regress_rls_dave',
-    'awesome science fiction'
-  ),
-  (
-    10,
-    99,
-    2,
-    'regress_rls_dave',
-    'awesome technology book'
-  );
+  (9, 11, 1, 'regress_rls_dave', 'awesome science fiction'),
+  (10, 99, 2, 'regress_rls_dave', 'awesome technology book');
 
 alter table part_document
   enable row level security;
@@ -476,15 +407,7 @@ on part_document
 as permissive
 for all
 to public
-using (dlevel <=
-(
-  select
-    seclv
-  from
-    uaccount
-  where
-    pguser = current_user
-));
+using (dlevel <= (select seclv from uaccount where pguser = current_user));
 
 create policy pp1r on part_document as restrictive for all to regress_rls_dave using (cid < 55);
 
@@ -493,8 +416,7 @@ select
 from
   pg_policies
 where
-  schemaname = 'regress_rls_schema' and
-  tablename like '%part_document%'
+  schemaname = 'regress_rls_schema' and tablename like '%part_document%'
 order by policyname;
 
 set session authorization regress_rls_bob;
@@ -524,14 +446,7 @@ insert into part_document values (100, 99, 1, 'regress_rls_dave', 'testing pp1r'
 insert into part_document values (100, 55, 1, 'regress_rls_dave', 'testing RLS with partitions');
 
 insert into part_document_satire
-values
-  (
-    100,
-    55,
-    1,
-    'regress_rls_dave',
-    'testing RLS with partitions'
-  );
+values (100, 55, 1, 'regress_rls_dave', 'testing RLS with partitions');
 
 select * from part_document where f_leak(dtitle) order by did;
 
@@ -547,14 +462,7 @@ create policy pp3 on part_document_satire as restrictive for all to public using
 set session authorization regress_rls_dave;
 
 insert into part_document_satire
-values
-  (
-    101,
-    55,
-    1,
-    'regress_rls_dave',
-    'testing RLS with partitions'
-  );
+values (101, 55, 1, 'regress_rls_dave', 'testing RLS with partitions');
 
 select * from part_document_satire where f_leak(dtitle) order by did;
 
@@ -627,14 +535,7 @@ on part_document
 as restrictive
 for all
 to public
-using ((
-  select
-    dlevel <= seclv
-  from
-    uaccount
-  where
-    pguser = current_user
-));
+using ((select dlevel <= seclv from uaccount where pguser = current_user));
 
 set session authorization regress_rls_carol;
 
@@ -777,7 +678,7 @@ create table s2 (
 
 insert into s2 select x, public.fipshash(cast(x as text)) from generate_series(-6, 6) as x;
 
-grant SELECT on table s1, s2 to regress_rls_bob;
+grant select on table s1, s2 to regress_rls_bob;
 
 create policy p1
 on s1
@@ -848,7 +749,7 @@ prepare p1 (int) as select * from t1 where a <= $1;;
 
 execute p1 (2);
 
-explain (COSTS 'off') execute p1 (2);
+explain (costs 'off') execute p1 (2);
 
 reset session_authorization;
 
@@ -860,13 +761,13 @@ select * from t1 where f_leak(b);
 
 execute p1 (2);
 
-explain (COSTS 'off') execute p1 (2);
+explain (costs 'off') execute p1 (2);
 
 prepare p2 (int) as select * from t1 where a = $1;;
 
 execute p2 (2);
 
-explain (COSTS 'off') execute p2 (2);
+explain (costs 'off') execute p2 (2);
 
 set session authorization regress_rls_bob;
 
@@ -874,7 +775,7 @@ set row_security = 'on';
 
 execute p2 (2);
 
-explain (COSTS 'off') execute p2 (2);
+explain (costs 'off') execute p2 (2);
 
 set session authorization regress_rls_bob;
 
@@ -908,11 +809,7 @@ update t2 as t2_1
 set b = t2_2.b
 from t2 as t2_2
 where
-  t2_1.a = 3 and
-  t2_2.a = t2_1.a and
-  t2_2.b = t2_1.b and
-  f_leak(t2_1.b) and
-  f_leak(t2_2.b)
+  t2_1.a = 3 and t2_2.a = t2_1.a and t2_2.b = t2_1.b and f_leak(t2_1.b) and f_leak(t2_2.b)
 returning *,
 t2_1,
 t2_2;
@@ -921,11 +818,7 @@ update t2 as t2_1
 set b = t2_2.b
 from t2 as t2_2
 where
-  t2_1.a = 3 and
-  t2_2.a = t2_1.a and
-  t2_2.b = t2_1.b and
-  f_leak(t2_1.b) and
-  f_leak(t2_2.b)
+  t2_1.a = 3 and t2_2.a = t2_1.a and t2_2.b = t2_1.b and f_leak(t2_1.b) and f_leak(t2_2.b)
 returning *,
 t2_1,
 t2_2;
@@ -934,11 +827,7 @@ update t1 as t1_1
 set b = t1_2.b
 from t1 as t1_2
 where
-  t1_1.a = 4 and
-  t1_2.a = t1_1.a and
-  t1_2.b = t1_1.b and
-  f_leak(t1_1.b) and
-  f_leak(t1_2.b)
+  t1_1.a = 4 and t1_2.a = t1_1.a and t1_2.b = t1_1.b and f_leak(t1_1.b) and f_leak(t1_2.b)
 returning *,
 t1_1,
 t1_2;
@@ -947,11 +836,7 @@ update t1 as t1_1
 set b = t1_2.b
 from t1 as t1_2
 where
-  t1_1.a = 4 and
-  t1_2.a = t1_1.a and
-  t1_2.b = t1_1.b and
-  f_leak(t1_1.b) and
-  f_leak(t1_2.b)
+  t1_1.a = 4 and t1_2.a = t1_1.a and t1_2.b = t1_1.b and f_leak(t1_1.b) and f_leak(t1_2.b)
 returning *,
 t1_1,
 t1_2;
@@ -1038,8 +923,7 @@ on document
 as permissive
 for update
 to public
-using (cid =
-(select cid from category where cname = 'novel'))
+using (cid = (select cid from category where cname = 'novel'))
 with check (dauthor = current_user);
 
 set session authorization regress_rls_bob;
@@ -1048,19 +932,8 @@ select * from document where did = 2;
 
 insert into document
 values
-  (
-    2,
-    (select cid from category where cname = 'novel'),
-    1,
-    'regress_rls_carol',
-    'my first novel'
-  )
-on conflict
-(did)
-do
-update
-set dtitle = excluded.dtitle,
-dauthor = excluded.dauthor;
+  (2, (select cid from category where cname = 'novel'), 1, 'regress_rls_carol', 'my first novel')
+on conflict (did) do update set dtitle = excluded.dtitle, dauthor = excluded.dauthor;
 
 insert into document values (33, 22, 1, 'regress_rls_bob', 'okay science fiction');
 
@@ -1073,26 +946,11 @@ values
     'regress_rls_bob',
     'Some novel, replaces sci-fi'
   )
-on conflict
-(did)
-do
-update
-set dtitle = excluded.dtitle;
+on conflict (did) do update set dtitle = excluded.dtitle;
 
 insert into document
-values
-  (
-    2,
-    (select cid from category where cname = 'novel'),
-    1,
-    'regress_rls_bob',
-    'my first novel'
-  )
-on conflict
-(did)
-do
-update
-set dtitle = excluded.dtitle
+values (2, (select cid from category where cname = 'novel'), 1, 'regress_rls_bob', 'my first novel')
+on conflict (did) do update set dtitle = excluded.dtitle
 returning *;
 
 insert into document
@@ -1104,12 +962,7 @@ values
     'regress_rls_bob',
     'some technology novel'
   )
-on conflict
-(did)
-do
-update
-set dtitle = excluded.dtitle,
-cid = 33
+on conflict (did) do update set dtitle = excluded.dtitle, cid = 33
 returning *;
 
 insert into document
@@ -1121,12 +974,7 @@ values
     'regress_rls_bob',
     'some technology novel'
   )
-on conflict
-(did)
-do
-update
-set dtitle = excluded.dtitle,
-cid = 33
+on conflict (did) do update set dtitle = excluded.dtitle, cid = 33
 returning *;
 
 insert into document
@@ -1138,58 +986,31 @@ values
     'regress_rls_bob',
     'some technology novel'
   )
-on conflict
-(did)
-do
-update
-set dtitle = excluded.dtitle,
-cid = 33
+on conflict (did) do update set dtitle = excluded.dtitle, cid = 33
 returning *;
 
 insert into document
 values
   (
     79,
-    (
-      select
-        cid
-      from
-        category
-      where
-        cname = 'technology'
-    ),
+    (select cid from category where cname = 'technology'),
     1,
     'regress_rls_bob',
     'technology book, can only insert'
   )
-on conflict
-(did)
-do
-update
-set dtitle = excluded.dtitle
+on conflict (did) do update set dtitle = excluded.dtitle
 returning *;
 
 insert into document
 values
   (
     79,
-    (
-      select
-        cid
-      from
-        category
-      where
-        cname = 'technology'
-    ),
+    (select cid from category where cname = 'technology'),
     1,
     'regress_rls_bob',
     'technology book, can only insert'
   )
-on conflict
-(did)
-do
-update
-set dtitle = excluded.dtitle
+on conflict (did) do update set dtitle = excluded.dtitle
 returning *;
 
 set session authorization regress_rls_alice;
@@ -1205,8 +1026,7 @@ on document
 as permissive
 for update
 to public
-using (cid =
-(select cid from category where cname = 'novel'));
+using (cid = (select cid from category where cname = 'novel'));
 
 set session authorization regress_rls_bob;
 
@@ -1214,47 +1034,18 @@ insert into document
 values
   (
     79,
-    (
-      select
-        cid
-      from
-        category
-      where
-        cname = 'technology'
-    ),
+    (select cid from category where cname = 'technology'),
     1,
     'regress_rls_bob',
     'technology book, can only insert'
   )
-on conflict
-(did)
-do
-update
-set dtitle = excluded.dtitle
+on conflict (did) do update set dtitle = excluded.dtitle
 returning *;
 
 insert into document
 values
-  (
-    2,
-    (
-      select
-        cid
-      from
-        category
-      where
-        cname = 'technology'
-    ),
-    1,
-    'regress_rls_bob',
-    'my first novel'
-  )
-on conflict
-(did)
-do
-update
-set cid = excluded.cid,
-dtitle = excluded.dtitle
+  (2, (select cid from category where cname = 'technology'), 1, 'regress_rls_bob', 'my first novel')
+on conflict (did) do update set cid = excluded.cid, dtitle = excluded.dtitle
 returning *;
 
 set session authorization regress_rls_alice;
@@ -1266,57 +1057,23 @@ on document
 as permissive
 for all
 to public
-using (cid =
-(select cid from category where cname = 'novel'))
+using (cid = (select cid from category where cname = 'novel'))
 with check (dauthor = current_user);
 
 set session authorization regress_rls_bob;
 
 insert into document
 values
-  (
-    80,
-    (select cid from category where cname = 'novel'),
-    1,
-    'regress_rls_carol',
-    'my first novel'
-  )
-on conflict
-(did)
-do
-update
-set dtitle = excluded.dtitle,
-cid = 33;
+  (80, (select cid from category where cname = 'novel'), 1, 'regress_rls_carol', 'my first novel')
+on conflict (did) do update set dtitle = excluded.dtitle, cid = 33;
 
 insert into document
-values
-  (
-    4,
-    (select cid from category where cname = 'novel'),
-    1,
-    'regress_rls_bob',
-    'my first novel'
-  )
-on conflict
-(did)
-do
-update
-set dtitle = excluded.dtitle;
+values (4, (select cid from category where cname = 'novel'), 1, 'regress_rls_bob', 'my first novel')
+on conflict (did) do update set dtitle = excluded.dtitle;
 
 insert into document
-values
-  (
-    1,
-    (select cid from category where cname = 'novel'),
-    1,
-    'regress_rls_bob',
-    'my first novel'
-  )
-on conflict
-(did)
-do
-update
-set dauthor = 'regress_rls_carol';
+values (1, (select cid from category where cname = 'novel'), 1, 'regress_rls_bob', 'my first novel')
+on conflict (did) do update set dauthor = 'regress_rls_carol';
 
 reset session_authorization;
 
@@ -1334,8 +1091,7 @@ on document
 as permissive
 for update
 to public
-using (cid =
-(select cid from category where cname = 'novel'))
+using (cid = (select cid from category where cname = 'novel'))
 with check (dlevel > 0);
 
 create policy p4
@@ -1343,8 +1099,7 @@ on document
 as permissive
 for delete
 to public
-using (cid =
-(select cid from category where cname = 'manga'));
+using (cid = (select cid from category where cname = 'manga'));
 
 select * from document;
 
@@ -1369,8 +1124,7 @@ on document
 as permissive
 for select
 to public
-using (cid =
-(select cid from category where cname = 'novel'));
+using (cid = (select cid from category where cname = 'novel'));
 
 set session authorization regress_rls_bob;
 
@@ -1394,7 +1148,7 @@ create table z2 (
   b text
 );
 
-grant SELECT
+grant select
 on table z1,
 z2
 to regress_rls_group1,
@@ -1419,4 +1173,4 @@ select * from z1 where f_leak(b);
 
 prepare plancache_test as select * from z1 where f_leak(b);;
 
-explain (COSTS 'off') execute plancache_test;
+explain (costs 'off') execute plancache_test;

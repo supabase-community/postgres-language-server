@@ -11,11 +11,7 @@ select
   resorigcol,
   array_agg(attname) as view_columns
 from
-  recursion
-  inner join
-    pg_attribute as vcol
-  on vcol.attrelid = view_id and
-    vcol.attnum = view_column
+  recursion inner join pg_attribute as vcol on vcol.attrelid = view_id and vcol.attnum = view_column
 group by view_id,
   view_schema,
   view_name,

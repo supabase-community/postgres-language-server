@@ -3,18 +3,7 @@ source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/20230623181432_dbdev_supports_multiple_versions.sql
 ---
 insert into app.package_versions (package_id, version_struct, sql, description_md)
-values
-  (
-    (
-      select
-        id
-      from
-        app.packages
-      where
-        package_name = 'supabase-dbdev'
-    ),
-    (0, 0, 3),
-    '
+values ((select id from app.packages where package_name = 'supabase-dbdev'), (0, 0, 3), '
 
 create schema dbdev;
 
@@ -201,8 +190,7 @@ begin
 end;
 $$;
 
-',
-    '
+', '
 # dbdev
 
 dbdev is the SQL client for database.new and is the primary way end users interact with the package (pglet) registry.
@@ -292,5 +280,4 @@ create extension "handle-package_name"
     schema ''public''
     version ''1.2.3'';
 ```
-'
-  );
+');

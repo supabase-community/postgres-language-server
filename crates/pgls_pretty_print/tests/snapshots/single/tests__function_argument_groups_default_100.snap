@@ -9,8 +9,6 @@ select
     'invoiceReference', format_invoice_number(invoices.series, invoices.issued_on),
     'id', users.id
   ),
-  json_build_object(
-    'profile', jsonb_build_object('name', users.name, 'age', users.age)
-  )
+  json_build_object('profile', jsonb_build_object('name', users.name, 'age', users.age))
 from
   users;

@@ -17,6 +17,10 @@ pub(super) fn emit_column_def(e: &mut EventEmitter, n: &ColumnDef) {
         super::emit_type_name(e, typename);
     }
 
+    // A broken column definition continues one level deeper, so that its clauses cannot be mistaken
+    // for the next column.
+    e.indent_start();
+
     // Add compression clause if specified
     if !n.compression.is_empty() {
         e.space();
@@ -81,5 +85,6 @@ pub(super) fn emit_column_def(e: &mut EventEmitter, n: &ColumnDef) {
         super::emit_node(constraint, e);
     }
 
+    e.indent_end();
     e.group_end();
 }

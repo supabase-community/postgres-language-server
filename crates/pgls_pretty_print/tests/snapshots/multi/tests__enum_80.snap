@@ -2,14 +2,16 @@
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/enum.sql
 ---
-create type rainbow as enum ('red',
-'orange',
-'yellow',
-'green',
-'blue',
-'purple');
+create type rainbow as enum (
+  'red',
+  'orange',
+  'yellow',
+  'green',
+  'blue',
+  'purple'
+);
 
-select COUNT(*) from pg_enum where enumtypid = cast('rainbow' as regtype);
+select count(*) from pg_enum where enumtypid = cast('rainbow' as regtype);
 
 select cast('red' as rainbow);
 
@@ -152,11 +154,7 @@ alter type insenum add value 'i30' before 'L2';
 
 select
   enumlabel,
-  case
-    when enumsortorder > 20 then null
-    else enumsortorder
-  end
-  as so
+  case when enumsortorder > 20 then null else enumsortorder end as so
 from
   pg_enum
 where
@@ -185,17 +183,17 @@ select cast(cast('red' as rainbow) as text) || 'hithere';
 
 select cast(cast('red' as text) as rainbow) = cast('red' as rainbow);
 
-select MIN(col) from enumtest;
+select min(col) from enumtest;
 
-select MAX(col) from enumtest;
+select max(col) from enumtest;
 
-select MAX(col) from enumtest where col < 'green';
+select max(col) from enumtest where col < 'green';
 
 set enable_seqscan = off;
 
 set enable_bitmapscan = off;
 
-create unique index "enumtest_btree" on enumtest using btree (col);
+create unique index enumtest_btree on enumtest using btree (col);
 
 select * from enumtest where col = 'orange';
 
@@ -209,15 +207,15 @@ select * from enumtest where col < 'green' order by col;
 
 select * from enumtest where col <= 'green' order by col;
 
-select MIN(col) from enumtest;
+select min(col) from enumtest;
 
-select MAX(col) from enumtest;
+select max(col) from enumtest;
 
-select MAX(col) from enumtest where col < 'green';
+select max(col) from enumtest where col < 'green';
 
 drop index enumtest_btree;
 
-create index "enumtest_hash" on enumtest using hash (col);
+create index enumtest_hash on enumtest using hash (col);
 
 select * from enumtest where col = 'orange';
 
@@ -266,22 +264,22 @@ select enum_range(cast(null as rainbow), null);
 create function echo_me(anyenum)
 returns text
 language plpgsql
-as $function$
+as $$
 BEGIN
 RETURN $1::text || 'omg';
 END
-$function$;
+$$;
 
 select echo_me(cast('red' as rainbow));
 
 create function echo_me(rainbow)
 returns text
 language plpgsql
-as $function$
+as $$
 BEGIN
 RETURN $1::text || 'wtf';
 END
-$function$;
+$$;
 
 select echo_me(cast('red' as rainbow));
 
@@ -411,19 +409,11 @@ drop table enumtest;
 
 drop type rainbow;
 
-select COUNT(*) from pg_type where typname = 'rainbow';
+select count(*) from pg_type where typname = 'rainbow';
 
 select
   *
 from
   pg_enum
 where
-  not exists
-  (
-    select
-      1
-    from
-      pg_type
-    where
-      pg_type.oid = enumtypid
-  );
+  not exists (select 1 from pg_type where pg_type.oid = enumtypid);

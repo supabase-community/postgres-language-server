@@ -7,17 +7,17 @@ use pgls_query::protobuf::{XmlOptionType, XmlSerialize};
 pub(super) fn emit_xml_serialize(e: &mut EventEmitter, n: &XmlSerialize) {
     e.group_start(GroupKind::XmlSerialize);
 
-    e.token(TokenKind::IDENT("XMLSERIALIZE".to_string()));
+    super::emit_keyword(e, "xmlserialize");
     e.token(TokenKind::L_PAREN);
 
     // XmlOptionType: XmloptionDocument=1, XmloptionContent=2
     match n.xmloption() {
         XmlOptionType::XmloptionDocument => {
-            e.token(TokenKind::IDENT("DOCUMENT".to_string()));
+            super::emit_keyword(e, "document");
             e.space();
         }
         _ => {
-            e.token(TokenKind::IDENT("CONTENT".to_string()));
+            super::emit_keyword(e, "content");
             e.space();
         }
     }
@@ -38,7 +38,7 @@ pub(super) fn emit_xml_serialize(e: &mut EventEmitter, n: &XmlSerialize) {
     // INDENT option
     if n.indent {
         e.space();
-        e.token(TokenKind::IDENT("INDENT".to_string()));
+        super::emit_keyword(e, "indent");
     }
 
     e.token(TokenKind::R_PAREN);

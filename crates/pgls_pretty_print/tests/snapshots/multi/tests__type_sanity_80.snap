@@ -9,19 +9,11 @@ from
   pg_type as t1
 where
   t1.typnamespace = 0 or
-  (t1.typlen <= 0 and
-    t1.typlen <> -1 and
-    t1.typlen <> -2) or
-  t1.typtype
-  not in (
-    'b', 'c', 'd', 'e', 'm', 'p', 'r'
-  ) or
+  (t1.typlen <= 0 and t1.typlen <> -1 and t1.typlen <> -2) or
+  t1.typtype not in ('b', 'c', 'd', 'e', 'm', 'p', 'r') or
   not t1.typisdefined or
   t1.typalign not in ('c', 's', 'i', 'd') or
-  t1.typstorage
-  not in (
-    'p', 'x', 'e', 'm'
-  );
+  t1.typstorage not in ('p', 'x', 'e', 'm');
 
 select
   t1.oid,
@@ -49,10 +41,7 @@ select
 from
   pg_type as t1
 where
-  t1.typstorage <> 'p' and
-  (
-    t1.typbyval or t1.typlen <> -1
-  );
+  t1.typstorage <> 'p' and (t1.typbyval or t1.typlen <> -1);
 
 select
   t1.oid,
@@ -78,8 +67,7 @@ where
     from
       pg_type as t2
     where
-      t2.typname =
-      cast('_' || t1.typname as name) and
+      t2.typname = cast('_' || t1.typname as name) and
       t2.typelem = t1.oid and
       t1.typarray = t2.oid
   )
@@ -91,17 +79,12 @@ select
   t2.typname as arraytype,
   t2.typsubscript
 from
-  pg_type as t1
-  left outer join
-    pg_type as t2
-  on t1.typarray = t2.oid
+  pg_type as t1 left outer join pg_type as t2 on t1.typarray = t2.oid
 where
   t1.typarray <> 0 and
   (
     t2.oid is null or
-    t2.typsubscript <>
-    cast('array_subscript_handler'
-    as regproc)
+    t2.typsubscript <> cast('array_subscript_handler' as regproc)
   );
 
 select
@@ -111,15 +94,7 @@ from
   pg_type as t1
 where
   t1.typtype = 'r' and
-  not exists
-  (
-    select
-      1
-    from
-      pg_range as r
-    where
-      rngtypid = t1.oid
-  );
+  not exists (select 1 from pg_range as r where rngtypid = t1.oid);
 
 select
   t1.oid,
@@ -128,10 +103,7 @@ select
   t2.typname,
   t2.typalign
 from
-  pg_type as t1
-  left outer join
-    pg_range as r
-  on rngtypid = t1.oid
+  pg_type as t1 left outer join pg_range as r on rngtypid = t1.oid
   left outer join
     pg_type as t2
   on rngsubtype = t2.oid
@@ -140,8 +112,7 @@ where
   (
     t1.typalign <>
     case
-      when t2.typalign = 'd'
-      then cast('d' as "char")
+      when t2.typalign = 'd' then cast('d' as "char")
       else cast('i' as "char")
     end or
     t2.oid is null
@@ -166,21 +137,14 @@ from
 where
   t1.typinput = p1.oid and
   not (
-    (p1.pronargs = 1 and
-      p1.proargtypes[0] =
-      cast('cstring' as regtype)) or
+    (p1.pronargs = 1 and p1.proargtypes[0] = cast('cstring' as regtype)) or
     (p1.pronargs = 2 and
-      p1.proargtypes[0] =
-      cast('cstring' as regtype) and
-      p1.proargtypes[1] =
-      cast('oid' as regtype)) or
+      p1.proargtypes[0] = cast('cstring' as regtype) and
+      p1.proargtypes[1] = cast('oid' as regtype)) or
     (p1.pronargs = 3 and
-      p1.proargtypes[0] =
-      cast('cstring' as regtype) and
-      p1.proargtypes[1] =
-      cast('oid' as regtype) and
-      p1.proargtypes[2] =
-      cast('int4' as regtype))
+      p1.proargtypes[0] = cast('cstring' as regtype) and
+      p1.proargtypes[1] = cast('oid' as regtype) and
+      p1.proargtypes[2] = cast('int4' as regtype))
   );
 
 select
@@ -195,10 +159,7 @@ where
   t1.typinput = p1.oid and
   t1.typtype in ('b', 'p') and
   not (t1.typelem <> 0 and t1.typlen < 0) and
-  not (
-    p1.prorettype = t1.oid and
-    not p1.proretset
-  )
+  not (p1.prorettype = t1.oid and not p1.proretset)
 order by 1;
 
 select
@@ -211,7 +172,8 @@ from
   pg_proc as p1
 where
   t1.typinput = p1.oid and
-  t1.typelem <> 0 and t1.typlen < 0 and
+  t1.typelem <> 0 and
+  t1.typlen < 0 and
   not p1.oid = cast('array_in' as regproc)
 order by 1;
 
@@ -224,8 +186,7 @@ from
   pg_type as t1,
   pg_proc as p1
 where
-  t1.typinput = p1.oid and
-  p1.provolatile not in ('i', 's');
+  t1.typinput = p1.oid and p1.provolatile not in ('i', 's');
 
 select distinct
   typtype,
@@ -268,11 +229,7 @@ from
   pg_proc as p1
 where
   t1.typoutput = p1.oid and
-  not (
-    p1.prorettype =
-    cast('cstring' as regtype) and
-    not p1.proretset
-  );
+  not (p1.prorettype = cast('cstring' as regtype) and not p1.proretset);
 
 select
   t1.oid,
@@ -283,8 +240,7 @@ from
   pg_type as t1,
   pg_proc as p1
 where
-  t1.typoutput = p1.oid and
-  p1.provolatile not in ('i', 's');
+  t1.typoutput = p1.oid and p1.provolatile not in ('i', 's');
 
 select distinct
   typtype,
@@ -301,13 +257,9 @@ select
   t2.oid,
   t2.typname
 from
-  pg_type as t1
-  left outer join
-    pg_type as t2
-  on t1.typbasetype = t2.oid
+  pg_type as t1 left outer join pg_type as t2 on t1.typbasetype = t2.oid
 where
-  t1.typtype = 'd' and
-  t1.typoutput is distinct from t2.typoutput;
+  t1.typtype = 'd' and t1.typoutput is distinct from t2.typoutput;
 
 select
   t1.oid,
@@ -320,21 +272,14 @@ from
 where
   t1.typreceive = p1.oid and
   not (
-    (p1.pronargs = 1 and
-      p1.proargtypes[0] =
-      cast('internal' as regtype)) or
+    (p1.pronargs = 1 and p1.proargtypes[0] = cast('internal' as regtype)) or
     (p1.pronargs = 2 and
-      p1.proargtypes[0] =
-      cast('internal' as regtype) and
-      p1.proargtypes[1] =
-      cast('oid' as regtype)) or
+      p1.proargtypes[0] = cast('internal' as regtype) and
+      p1.proargtypes[1] = cast('oid' as regtype)) or
     (p1.pronargs = 3 and
-      p1.proargtypes[0] =
-      cast('internal' as regtype) and
-      p1.proargtypes[1] =
-      cast('oid' as regtype) and
-      p1.proargtypes[2] =
-      cast('int4' as regtype))
+      p1.proargtypes[0] = cast('internal' as regtype) and
+      p1.proargtypes[1] = cast('oid' as regtype) and
+      p1.proargtypes[2] = cast('int4' as regtype))
   );
 
 select
@@ -349,10 +294,7 @@ where
   t1.typreceive = p1.oid and
   t1.typtype in ('b', 'p') and
   not (t1.typelem <> 0 and t1.typlen < 0) and
-  not (
-    p1.prorettype = t1.oid and
-    not p1.proretset
-  )
+  not (p1.prorettype = t1.oid and not p1.proretset)
 order by 1;
 
 select
@@ -365,7 +307,8 @@ from
   pg_proc as p1
 where
   t1.typreceive = p1.oid and
-  t1.typelem <> 0 and t1.typlen < 0 and
+  t1.typelem <> 0 and
+  t1.typlen < 0 and
   not p1.oid = cast('array_recv' as regproc)
 order by 1;
 
@@ -394,8 +337,7 @@ from
   pg_type as t1,
   pg_proc as p1
 where
-  t1.typreceive = p1.oid and
-  p1.provolatile not in ('i', 's');
+  t1.typreceive = p1.oid and p1.provolatile not in ('i', 's');
 
 select distinct
   typtype,
@@ -438,10 +380,7 @@ from
   pg_proc as p1
 where
   t1.typsend = p1.oid and
-  not (
-    p1.prorettype = cast('bytea' as regtype) and
-    not p1.proretset
-  );
+  not (p1.prorettype = cast('bytea' as regtype) and not p1.proretset);
 
 select
   t1.oid,
@@ -452,8 +391,7 @@ from
   pg_type as t1,
   pg_proc as p1
 where
-  t1.typsend = p1.oid and
-  p1.provolatile not in ('i', 's');
+  t1.typsend = p1.oid and p1.provolatile not in ('i', 's');
 
 select distinct
   typtype,
@@ -470,13 +408,9 @@ select
   t2.oid,
   t2.typname
 from
-  pg_type as t1
-  left outer join
-    pg_type as t2
-  on t1.typbasetype = t2.oid
+  pg_type as t1 left outer join pg_type as t2 on t1.typbasetype = t2.oid
 where
-  t1.typtype = 'd' and
-  t1.typsend is distinct from t2.typsend;
+  t1.typtype = 'd' and t1.typsend is distinct from t2.typsend;
 
 select
   t1.oid,
@@ -490,8 +424,7 @@ where
   t1.typmodin = p1.oid and
   not (
     p1.pronargs = 1 and
-    p1.proargtypes[0] =
-    cast('cstring[]' as regtype) and
+    p1.proargtypes[0] = cast('cstring[]' as regtype) and
     p1.prorettype = cast('int4' as regtype) and
     not p1.proretset
   );
@@ -505,8 +438,7 @@ from
   pg_type as t1,
   pg_proc as p1
 where
-  t1.typmodin = p1.oid and
-  p1.provolatile not in ('i', 's');
+  t1.typmodin = p1.oid and p1.provolatile not in ('i', 's');
 
 select
   t1.oid,
@@ -520,10 +452,8 @@ where
   t1.typmodout = p1.oid and
   not (
     p1.pronargs = 1 and
-    p1.proargtypes[0] =
-    cast('int4' as regtype) and
-    p1.prorettype =
-    cast('cstring' as regtype) and
+    p1.proargtypes[0] = cast('int4' as regtype) and
+    p1.prorettype = cast('cstring' as regtype) and
     not p1.proretset
   );
 
@@ -536,8 +466,7 @@ from
   pg_type as t1,
   pg_proc as p1
 where
-  t1.typmodout = p1.oid and
-  p1.provolatile not in ('i', 's');
+  t1.typmodout = p1.oid and p1.provolatile not in ('i', 's');
 
 select
   t1.oid,
@@ -549,10 +478,7 @@ from
   pg_type as t2
 where
   t1.typelem = t2.oid and
-  not (
-    t1.typmodin = t2.typmodin and
-    t1.typmodout = t2.typmodout
-  );
+  not (t1.typmodin = t2.typmodin and t1.typmodout = t2.typmodout);
 
 select
   t1.oid,
@@ -563,8 +489,7 @@ from
   pg_type as t1,
   pg_type as t2
 where
-  t1.typarray = t2.oid and
-  not t1.typdelim = t2.typdelim;
+  t1.typarray = t2.oid and not t1.typdelim = t2.typdelim;
 
 select
   t1.oid,
@@ -579,8 +504,7 @@ where
   t1.typarray = t2.oid and
   t2.typalign <>
   case
-    when t1.typalign = 'd'
-    then cast('d' as "char")
+    when t1.typalign = 'd' then cast('d' as "char")
     else cast('i' as "char")
   end;
 
@@ -602,14 +526,8 @@ select
 from
   pg_type as t1
 where
-  t1.typsubscript =
-  cast('array_subscript_handler'
-  as regproc) and
-  not (
-    t1.typelem <> 0 and
-    t1.typlen = -1 and
-    not t1.typbyval
-  );
+  t1.typsubscript = cast('array_subscript_handler' as regproc) and
+  not (t1.typelem <> 0 and t1.typlen = -1 and not t1.typbyval);
 
 select
   t1.oid,
@@ -620,14 +538,8 @@ select
 from
   pg_type as t1
 where
-  t1.typsubscript =
-  cast('raw_array_subscript_handler'
-  as regproc) and
-  not (
-    t1.typelem <> 0 and
-    t1.typlen > 0 and
-    not t1.typbyval
-  );
+  t1.typsubscript = cast('raw_array_subscript_handler' as regproc) and
+  not (t1.typelem <> 0 and t1.typlen > 0 and not t1.typbyval);
 
 select
   t1.oid,
@@ -641,8 +553,7 @@ where
   t1.typanalyze = p1.oid and
   not (
     p1.pronargs = 1 and
-    p1.proargtypes[0] =
-    cast('internal' as regtype) and
+    p1.proargtypes[0] = cast('internal' as regtype) and
     p1.prorettype = cast('bool' as regtype) and
     not p1.proretset
   );
@@ -655,10 +566,7 @@ select
   t.typname,
   t.typanalyze
 from
-  pg_type as d
-  inner join
-    pg_type as t
-  on d.typbasetype = t.oid
+  pg_type as d inner join pg_type as t on d.typbasetype = t.oid
 where
   d.typanalyze <> t.typanalyze;
 
@@ -667,14 +575,10 @@ select
   t.typname,
   t.typanalyze
 from
-  pg_type as t
-  left outer join
-    pg_range as r
-  on t.oid = r.rngtypid
+  pg_type as t left outer join pg_range as r on t.oid = r.rngtypid
 where
   t.typbasetype = 0 and
-  (t.typanalyze =
-  cast('range_typanalyze' as regproc)) <>
+  (t.typanalyze = cast('range_typanalyze' as regproc)) <>
   (r.rngtypid is not null);
 
 select
@@ -685,11 +589,8 @@ from
   pg_type as t
 where
   t.typbasetype = 0 and
-  (t.typanalyze =
-  cast('array_typanalyze' as regproc)) <>
-  (t.typsubscript =
-  cast('array_subscript_handler'
-  as regproc))
+  (t.typanalyze = cast('array_typanalyze' as regproc)) <>
+  (t.typsubscript = cast('array_subscript_handler' as regproc))
 order by 1;
 
 select
@@ -698,10 +599,7 @@ select
 from
   pg_class as c1
 where
-  relkind
-  not in (
-    'r', 'i', 'S', 't', 'v', 'm', 'c', 'f', 'p', 'I'
-  ) or
+  relkind not in ('r', 'i', 'S', 't', 'v', 'm', 'c', 'f', 'p', 'I') or
   relpersistence not in ('p', 'u', 't') or
   relreplident not in ('d', 'n', 'f', 'i');
 
@@ -711,11 +609,7 @@ select
 from
   pg_class as c1
 where
-  c1.relkind
-  not in (
-    'S', 'v', 'f', 'c', 'p'
-  ) and
-  c1.relam = 0;
+  c1.relkind not in ('S', 'v', 'f', 'c', 'p') and c1.relam = 0;
 
 select
   c1.oid,
@@ -723,8 +617,7 @@ select
 from
   pg_class as c1
 where
-  c1.relkind in ('S', 'v', 'f', 'c', 'p') and
-  c1.relam <> 0;
+  c1.relkind in ('S', 'v', 'f', 'c', 'p') and c1.relam <> 0;
 
 select
   pc.oid,
@@ -732,13 +625,9 @@ select
   pa.amname,
   pa.amtype
 from
-  pg_class as pc
-  inner join
-    pg_am as pa
-  on pc.relam = pa.oid
+  pg_class as pc inner join pg_am as pa on pc.relam = pa.oid
 where
-  pc.relkind in ('i', 'I') and
-  pa.amtype <> 'i';
+  pc.relkind in ('i', 'I') and pa.amtype <> 'i';
 
 select
   pc.oid,
@@ -746,13 +635,9 @@ select
   pa.amname,
   pa.amtype
 from
-  pg_class as pc
-  inner join
-    pg_am as pa
-  on pc.relam = pa.oid
+  pg_class as pc inner join pg_am as pa on pc.relam = pa.oid
 where
-  pc.relkind in ('r', 't', 'm') and
-  pa.amtype <> 't';
+  pc.relkind in ('r', 't', 'm') and pa.amtype <> 't';
 
 select
   a1.attrelid,
@@ -775,8 +660,7 @@ from
   pg_attribute as a1,
   pg_class as c1
 where
-  a1.attrelid = c1.oid and
-  a1.attnum > c1.relnatts;
+  a1.attrelid = c1.oid and a1.attnum > c1.relnatts;
 
 select
   c1.oid,
@@ -787,7 +671,7 @@ where
   c1.relnatts <>
   (
     select
-      COUNT(*)
+      count(*)
     from
       pg_attribute as a1
     where
@@ -808,12 +692,11 @@ where
     a1.attlen <> t1.typlen or
     a1.attalign <> t1.typalign or
     a1.attbyval <> t1.typbyval or
-    (a1.attstorage <> t1.typstorage and
-      a1.attstorage <> 'p')
+    (a1.attstorage <> t1.typstorage and a1.attstorage <> 'p')
   );
 
 create function is_catalog_text_unique_index_oid(oid)
-returns boolean
+returns bool
 language c
 strict
 as 'regresslib', 'is_catalog_text_unique_index_oid';
@@ -823,9 +706,7 @@ select
 from
   pg_index
 where
-  is_catalog_text_unique_index_oid(
-    indexrelid
-  ) <>
+  is_catalog_text_unique_index_oid(indexrelid) <>
   (indisunique and
   indexrelid < 16384 and
   exists
@@ -835,8 +716,7 @@ where
     from
       pg_attribute
     where
-      attrelid = indexrelid and
-      atttypid = cast('text' as regtype)
+      attrelid = indexrelid and atttypid = cast('text' as regtype)
   ));
 
 select
@@ -845,9 +725,7 @@ select
 from
   pg_range as r
 where
-  r.rngtypid = 0 or
-  r.rngsubtype = 0 or
-  r.rngsubopc = 0;
+  r.rngtypid = 0 or r.rngsubtype = 0 or r.rngsubopc = 0;
 
 select
   r.rngtypid,
@@ -855,10 +733,7 @@ select
   r.rngcollation,
   t.typcollation
 from
-  pg_range as r
-  inner join
-    pg_type as t
-  on t.oid = r.rngsubtype
+  pg_range as r inner join pg_type as t on t.oid = r.rngsubtype
 where
   (rngcollation = 0) <> (typcollation = 0);
 
@@ -868,16 +743,12 @@ select
   o.opcmethod,
   o.opcname
 from
-  pg_range as r
-  inner join
-    pg_opclass as o
-  on o.oid = r.rngsubopc
+  pg_range as r inner join pg_opclass as o on o.oid = r.rngsubopc
 where
   o.opcmethod <> 403 or
   (o.opcintype <> r.rngsubtype and
     not (
-      o.opcintype =
-      cast('pg_catalog.anyarray' as regtype) and
+      o.opcintype = cast('pg_catalog.anyarray' as regtype) and
       exists
       (
         select
@@ -887,9 +758,7 @@ where
         where
           oid = r.rngsubtype and
           typelem <> 0 and
-          typsubscript =
-          cast('array_subscript_handler'
-          as regproc)
+          typsubscript = cast('array_subscript_handler' as regproc)
       )
     ));
 
@@ -898,30 +767,21 @@ select
   r.rngsubtype,
   p.proname
 from
-  pg_range as r
-  inner join
-    pg_proc as p
-  on p.oid = r.rngcanonical
+  pg_range as r inner join pg_proc as p on p.oid = r.rngcanonical
 where
-  pronargs <> 1 or
-  proargtypes[0] <> rngtypid or
-  prorettype <> rngtypid;
+  pronargs <> 1 or proargtypes[0] <> rngtypid or prorettype <> rngtypid;
 
 select
   r.rngtypid,
   r.rngsubtype,
   p.proname
 from
-  pg_range as r
-  inner join
-    pg_proc as p
-  on p.oid = r.rngsubdiff
+  pg_range as r inner join pg_proc as p on p.oid = r.rngsubdiff
 where
   pronargs <> 2 or
   proargtypes[0] <> rngsubtype or
   proargtypes[1] <> rngsubtype or
-  prorettype <>
-  cast('pg_catalog.float8' as regtype);
+  prorettype <> cast('pg_catalog.float8' as regtype);
 
 select
   r.rngtypid,
@@ -930,8 +790,7 @@ select
 from
   pg_range as r
 where
-  r.rngmultitypid is null or
-  r.rngmultitypid = 0;
+  r.rngmultitypid is null or r.rngmultitypid = 0;
 
 create table tab_core_types
 as
@@ -940,20 +799,15 @@ as
     cast('(1,1),(2,2)' as line),
     cast('((11,11),(12,12))' as lseg),
     cast('((11,11),(13,13))' as box),
-    cast('((11,12),(13,13),(14,14))'
-    as path)
-    as openedpath,
-    cast('[(11,12),(13,13),(14,14)]'
-    as path)
-    as closedpath,
-    cast('((11,12),(13,13),(14,14))'
-    as polygon),
+    cast('((11,12),(13,13),(14,14))' as path) as openedpath,
+    cast('[(11,12),(13,13),(14,14)]' as path) as closedpath,
+    cast('((11,12),(13,13),(14,14))' as polygon),
     cast('1,1,1' as circle),
     cast('today' as date),
     cast('now' as time),
     cast('now' as timestamp),
-    cast('now' as time with time zone),
-    cast('now' as timestamp with time zone),
+    cast('now' as timetz),
+    cast('now' as timestamptz),
     cast('12 seconds' as interval),
     cast('{"reason":"because"}' as json),
     cast('{"when":"now"}' as jsonb),
@@ -962,39 +816,34 @@ as
     cast('127.0.0.0/8' as cidr),
     cast('00:01:03:86:1c:ba' as macaddr8),
     cast('00:01:03:86:1c:ba' as macaddr),
-    cast(2 as smallint),
-    cast(4 as int),
-    cast(8 as bigint),
-    cast(4 as real),
-    cast('8' as double precision),
+    cast(2 as int2),
+    cast(4 as int4),
+    cast(8 as int8),
+    cast(4 as float4),
+    cast('8' as float8),
     cast(pi() as numeric),
     cast('foo' as "char"),
     cast('c' as bpchar),
     cast('abc' as varchar),
     cast('name' as name),
     cast('txt' as text),
-    cast(true as boolean),
+    cast(true as bool),
     cast('\xDEADBEEF' as bytea),
     cast(B'10001' as bit(1)),
-    cast(B'10001' as bit varying) as varbit,
+    cast(B'10001' as varbit) as varbit,
     cast('12.34' as money),
     cast('abc' as refcursor),
     cast('1 2' as int2vector),
     cast('1 2' as oidvector),
-    cast(format('%I=UC/%I', user, user)
-    as aclitem)
-    as aclitem,
-    cast('a fat cat sat on a mat and ate a fat rat'
-    as tsvector),
+    cast(format('%I=UC/%I', user, user) as aclitem) as aclitem,
+    cast('a fat cat sat on a mat and ate a fat rat' as tsvector),
     cast('fat & rat' as tsquery),
-    cast('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11'
-    as uuid),
+    cast('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11' as uuid),
     cast('11' as xid8),
     cast('pg_class' as regclass),
     cast('regtype' as regtype) as type,
     cast('pg_monitor' as regrole),
-    cast(cast('pg_class' as regclass)
-    as oid),
+    cast(cast('pg_class' as regclass) as oid),
     cast('template1' as regdatabase),
     cast('(1,1)' as tid),
     cast('2' as xid),
@@ -1002,34 +851,23 @@ as
     cast('10:20:10,14,15' as txid_snapshot),
     cast('10:20:10,14,15' as pg_snapshot),
     cast('16/B374D848' as pg_lsn),
-    cast(1
-    as information_schema.cardinal_number),
-    cast('l'
-    as information_schema.character_data),
-    cast('n'
-    as information_schema.sql_identifier),
-    cast('now'
-    as information_schema.time_stamp),
-    cast('YES'
-    as information_schema.yes_or_no),
+    cast(1 as information_schema.cardinal_number),
+    cast('l' as information_schema.character_data),
+    cast('n' as information_schema.sql_identifier),
+    cast('now' as information_schema.time_stamp),
+    cast('YES' as information_schema.yes_or_no),
     cast('(1,2)' as int4range),
     cast('{(1,2)}' as int4multirange),
     cast('(3,4)' as int8range),
     cast('{(3,4)}' as int8multirange),
     cast('(3,4)' as numrange),
     cast('{(3,4)}' as nummultirange),
-    cast('(2020-01-02, 2021-02-03)'
-    as daterange),
-    cast('{(2020-01-02, 2021-02-03)}'
-    as datemultirange),
-    cast('(2020-01-02 03:04:05, 2021-02-03 06:07:08)'
-    as tsrange),
-    cast('{(2020-01-02 03:04:05, 2021-02-03 06:07:08)}'
-    as tsmultirange),
-    cast('(2020-01-02 03:04:05, 2021-02-03 06:07:08)'
-    as tstzrange),
-    cast('{(2020-01-02 03:04:05, 2021-02-03 06:07:08)}'
-    as tstzmultirange);
+    cast('(2020-01-02, 2021-02-03)' as daterange),
+    cast('{(2020-01-02, 2021-02-03)}' as datemultirange),
+    cast('(2020-01-02 03:04:05, 2021-02-03 06:07:08)' as tsrange),
+    cast('{(2020-01-02 03:04:05, 2021-02-03 06:07:08)}' as tsmultirange),
+    cast('(2020-01-02 03:04:05, 2021-02-03 06:07:08)' as tstzrange),
+    cast('{(2020-01-02 03:04:05, 2021-02-03 06:07:08)}' as tstzmultirange);
 
 select
   oid,
@@ -1060,15 +898,7 @@ where
   'pg_brin_minmax_multi_summary',
   'xml']
   as regtype[])) and
-  not exists
-  (
-    select
-      1
-    from
-      pg_type as u
-    where
-      u.typarray = t.oid
-  ) and
+  not exists (select 1 from pg_type as u where u.typarray = t.oid) and
   not exists
   (
     select
@@ -1078,6 +908,5 @@ where
     where
       a.atttypid = t.oid and
       a.attnum > 0 and
-      a.attrelid =
-      cast('tab_core_types' as regclass)
+      a.attrelid = cast('tab_core_types' as regclass)
   );

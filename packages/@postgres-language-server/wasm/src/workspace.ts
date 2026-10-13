@@ -1,5 +1,5 @@
 /**
- * Workspace API - Direct access to parse, lint, complete, hover.
+ * Workspace API - Direct access to parse, lint, format, complete, hover.
  *
  * Use this for:
  * - Custom editor integrations
@@ -13,6 +13,7 @@
  * const workspace = await createWorkspace();
  * workspace.insertFile('/query.sql', 'SELECT * FROM users;');
  * const diagnostics = workspace.lint('/query.sql');
+ * const { formatted } = workspace.format('/query.sql', { keywordCase: 'upper' });
  * ```
  */
 
@@ -20,17 +21,28 @@ import { allocateString, loadWasm, parseResult, readAndFreeString } from "./comm
 import type {
   CompletionItem,
   Diagnostic,
+  FormatOptions,
+  FormatResult,
   PGLSModule,
   SchemaCache,
   Statement,
   WorkspaceOptions,
 } from "./types.js";
 
-export type { Diagnostic, CompletionItem, SchemaCache, Statement, WorkspaceOptions, PGLSModule };
+export type {
+  Diagnostic,
+  CompletionItem,
+  FormatOptions,
+  FormatResult,
+  SchemaCache,
+  Statement,
+  WorkspaceOptions,
+  PGLSModule,
+};
 
 /**
  * The Workspace class provides a direct API for SQL parsing, linting,
- * completions, and hover information.
+ * formatting, completions, and hover information.
  */
 export class Workspace {
   private module: PGLSModule;
@@ -104,6 +116,44 @@ export class Workspace {
       return parseResult<Diagnostic[]>(result) ?? [];
     } finally {
       this.module._free(pathPtr);
+    }
+  }
+
+  /**
+   * Format a file in the workspace.
+   *
+   * Statements that cannot be formatted (e.g. syntax errors) are kept verbatim
+   * and reported in `diagnostics`. Throws if the file does not exist or the
+   * options are invalid.
+   */
+  format(path: string, options?: FormatOptions): FormatResult {
+    const pathPtr = allocateString(this.module, path);
+    const optionsPtr = allocateString(this.module, JSON.stringify(options ?? {}));
+    try {
+      const resultPtr = this.module._pgls_format(pathPtr, optionsPtr);
+      const result = readAndFreeString(this.module, resultPtr);
+      return parseResult<FormatResult>(result);
+    } finally {
+      this.module._free(pathPtr);
+      this.module._free(optionsPtr);
+    }
+  }
+
+  /**
+   * Format a SQL string without adding it to the workspace.
+   *
+   * See {@link Workspace.format} for details.
+   */
+  formatSql(sql: string, options?: FormatOptions): FormatResult {
+    const sqlPtr = allocateString(this.module, sql);
+    const optionsPtr = allocateString(this.module, JSON.stringify(options ?? {}));
+    try {
+      const resultPtr = this.module._pgls_format_sql(sqlPtr, optionsPtr);
+      const result = readAndFreeString(this.module, resultPtr);
+      return parseResult<FormatResult>(result);
+    } finally {
+      this.module._free(sqlPtr);
+      this.module._free(optionsPtr);
     }
   }
 
@@ -193,6 +243,25 @@ export async function createWorkspace(options?: WorkspaceOptions): Promise<Works
   }
 
   return workspace;
+}
+
+/**
+ * Format a SQL string.
+ *
+ * Convenience wrapper that loads the WASM module on first use and returns only
+ * the formatted SQL. Statements that cannot be formatted are kept verbatim; use
+ * `Workspace.formatSql` to also get diagnostics for them.
+ *
+ * @example
+ * ```typescript
+ * import { format } from '@postgres-language-server/wasm';
+ *
+ * const sql = await format('select * from users', { keywordCase: 'upper' });
+ * ```
+ */
+export async function format(sql: string, options?: FormatOptions): Promise<string> {
+  const workspace = await createWorkspace();
+  return workspace.formatSql(sql, options).formatted;
 }
 
 export default createWorkspace;

@@ -19,18 +19,7 @@ values
   );
 
 insert into app.package_versions (package_id, version_struct, sql, description_md)
-values
-  (
-    (
-      select
-        id
-      from
-        app.packages
-      where
-        package_name = 'michelp-adminpack'
-    ),
-    (0, 0, 1),
-    '
+values ((select id from app.packages where package_name = 'michelp-adminpack'), (0, 0, 1), '
 -- From: https://github.com/ioguix/pgsql-bloat-estimation
 
 -- Copyright (c) 2015-2019, Jehan-Guillaume (ioguix) de Rorthais
@@ -1076,8 +1065,7 @@ FROM
   JOIN pg_namespace n ON n.oid = c.relnamespace
 WHERE
   c.relkind = ''v'';
-',
-    '
+', '
 # michelp-adminpack
 
 A Trusted Language Extension containing a variety of useful databse admin queries.
@@ -1578,5 +1566,4 @@ This view shows all views in the database.
 | name         | name    |
 | is_updatable | boolean |
 | comment      | text    |
-'
-  );
+');

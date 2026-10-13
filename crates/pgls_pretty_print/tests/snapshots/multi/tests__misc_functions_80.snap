@@ -5,14 +5,14 @@ input_file: crates/pgls_pretty_print/tests/data/multi/misc_functions.sql
 create function
 explain_mask_costs(
   query text,
-  do_analyze boolean,
-  hide_costs boolean,
-  hide_row_est boolean,
-  hide_width boolean
+  do_analyze bool,
+  hide_costs bool,
+  hide_row_est bool,
+  hide_width bool
 )
 returns setof text
 language plpgsql
-as $function$
+as $$
 DECLARE
     ln text;
     analyze_str text;
@@ -46,7 +46,7 @@ BEGIN
         RETURN NEXT ln;
     END LOOP;
 END;
-$function$;
+$$;
 
 select num_nonnulls(null);
 
@@ -63,7 +63,7 @@ select
     cast(null as text),
     cast(null as point),
     '',
-    cast('9' as bigint),
+    cast('9' as int8),
     1.0 / null
   );
 
@@ -74,10 +74,7 @@ select num_nonnulls(variadic cast('{"1","2","3","4"}' as text[]));
 select
   num_nonnulls(
     variadic array(
-      select
-        case when i <> 40 then i end
-      from
-        generate_series(1, 100) as i
+      select case when i <> 40 then i end from generate_series(1, 100) as i
     )
   );
 
@@ -96,7 +93,7 @@ select
     cast(null as text),
     cast(null as point),
     '',
-    cast('9' as bigint),
+    cast('9' as int8),
     1.0 / null
   );
 
@@ -107,10 +104,7 @@ select num_nulls(variadic cast('{"1","2","3","4"}' as text[]));
 select
   num_nulls(
     variadic array(
-      select
-        case when i <> 40 then i end
-      from
-        generate_series(1, 100) as i
+      select case when i <> 40 then i end from generate_series(1, 100) as i
     )
   );
 
@@ -131,9 +125,7 @@ returns text
 language c
 immutable
 strict
-as $function$
-regresslib
-$function$;
+as $$regresslib$$;
 
 select test_canonicalize_path('/');
 
@@ -197,7 +189,7 @@ select
     'EXECUTE'
   );
 
-grant EXECUTE
+grant execute
 on function pg_log_backend_memory_contexts(int)
 to regress_log_memory;
 
@@ -214,7 +206,7 @@ select pg_log_backend_memory_contexts(pg_backend_pid());
 
 reset role;
 
-revoke EXECUTE
+revoke execute
 on function pg_log_backend_memory_contexts(int)
 from regress_log_memory;
 
@@ -222,13 +214,13 @@ drop role regress_log_memory;
 
 select setting as segsize from pg_settings where name = 'wal_segment_size';
 
-select COUNT(*) > 0 as ok from pg_ls_waldir();
+select count(*) > 0 as ok from pg_ls_waldir();
 
-select COUNT(*) > 0 as ok from (select pg_ls_waldir()) as ss;
+select count(*) > 0 as ok from (select pg_ls_waldir()) as ss;
 
 select * from pg_ls_waldir() limit 0;
 
-select COUNT(*) > 0 as ok from (select * from pg_ls_waldir() limit 1) as ss;
+select count(*) > 0 as ok from (select * from pg_ls_waldir() limit 1) as ss;
 
 select
   (w).size = 'segsize' as ok
@@ -238,9 +230,9 @@ where
   length((w).name) = 24
 limit 1;
 
-select COUNT(*) >= 0 as ok from pg_ls_archive_statusdir();
+select count(*) >= 0 as ok from pg_ls_archive_statusdir();
 
-select COUNT(*) >= 0 as ok from pg_ls_summariesdir();
+select count(*) >= 0 as ok from pg_ls_summariesdir();
 
 select length(pg_read_file('postmaster.pid')) > 20;
 
@@ -275,14 +267,14 @@ select pg_ls_dir('does not exist', false, false);
 select pg_ls_dir('does not exist', true, false);
 
 select
-  COUNT(*) = 1 as dot_found
+  count(*) = 1 as dot_found
 from
   pg_ls_dir('.', false, true) as ls
 where
   ls = '.';
 
 select
-  COUNT(*) = 1 as dot_found
+  count(*) = 1 as dot_found
 from
   pg_ls_dir('.', false, false) as ls
 where
@@ -291,16 +283,13 @@ where
 select
   *
 from
-  (
-    select (pg_timezone_names()).name
-  )
-  as ptn
+  (select (pg_timezone_names()).name) as ptn
 where
   name = 'UTC'
 limit 1;
 
 select
-  COUNT(*) > 0
+  count(*) > 0
 from
   (
     select
@@ -338,7 +327,7 @@ select
     'EXECUTE'
   );
 
-grant PG_MONITOR to regress_slot_dir_funcs;
+grant pg_monitor to regress_slot_dir_funcs;
 
 select
   has_function_privilege(
@@ -364,22 +353,17 @@ select
 drop role regress_slot_dir_funcs;
 
 create function my_int_eq(int, int)
-returns boolean
+returns bool
 language internal
 immutable
 strict
-parallel SAFE
-as $function$
-int4eq
-$function$;
+parallel safe
+as $$int4eq$$;
 
 select
   *
 from
-  tenk1 as a
-  inner join
-    tenk1 as b
-  on a.unique1 = b.unique1
+  tenk1 as a inner join tenk1 as b on a.unique1 = b.unique1
 where
   my_int_eq(a.unique2, 42);
 
@@ -394,10 +378,7 @@ alter function my_int_eq(int, int) support test_support_func;
 select
   *
 from
-  tenk1 as a
-  inner join
-    tenk1 as b
-  on a.unique1 = b.unique1
+  tenk1 as a inner join tenk1 as b on a.unique1 = b.unique1
 where
   my_int_eq(a.unique2, 42);
 
@@ -406,181 +387,76 @@ returns setof int
 language internal
 immutable
 strict
-parallel SAFE
+parallel safe
 support test_support_func
-as $function$
-generate_series_int4
-$function$;
+as $$generate_series_int4$$;
 
 select
   *
 from
-  tenk1 as a
-  inner join
-    my_gen_series(1, 1000) as g
-  on a.unique1 = g;
+  tenk1 as a inner join my_gen_series(1, 1000) as g on a.unique1 = g;
 
 select * from tenk1 as a inner join my_gen_series(1, 10) as g on a.unique1 = g;
 
-select
-  explain_mask_costs(
-    '
-SELECT * FROM generate_series(TIMESTAMPTZ ''2024-02-01'', TIMESTAMPTZ ''2024-03-01'', INTERVAL ''1 day'') g(s);',
-    true,
-    true,
-    false,
-    true
-  );
+select explain_mask_costs('
+SELECT * FROM generate_series(TIMESTAMPTZ ''2024-02-01'', TIMESTAMPTZ ''2024-03-01'', INTERVAL ''1 day'') g(s);', true, true, false, true);
 
-select
-  explain_mask_costs(
-    '
-SELECT * FROM generate_series(TIMESTAMP ''2024-02-01'', TIMESTAMP ''2024-03-01'', INTERVAL ''1 day'') g(s);',
-    true,
-    true,
-    false,
-    true
-  );
+select explain_mask_costs('
+SELECT * FROM generate_series(TIMESTAMP ''2024-02-01'', TIMESTAMP ''2024-03-01'', INTERVAL ''1 day'') g(s);', true, true, false, true);
 
-select
-  explain_mask_costs(
-    '
-SELECT * FROM generate_series(TIMESTAMPTZ ''2024-02-01'', TIMESTAMPTZ ''2024-03-01'', INTERVAL ''1 day'', ''UTC'') g(s);',
-    true,
-    true,
-    false,
-    true
-  );
+select explain_mask_costs('
+SELECT * FROM generate_series(TIMESTAMPTZ ''2024-02-01'', TIMESTAMPTZ ''2024-03-01'', INTERVAL ''1 day'', ''UTC'') g(s);', true, true, false, true);
 
-select
-  explain_mask_costs(
-    '
-SELECT * FROM generate_series(TIMESTAMPTZ ''2024-02-01'', TIMESTAMPTZ ''2024-03-01'', INTERVAL ''7 day'') g(s);',
-    true,
-    true,
-    false,
-    true
-  );
+select explain_mask_costs('
+SELECT * FROM generate_series(TIMESTAMPTZ ''2024-02-01'', TIMESTAMPTZ ''2024-03-01'', INTERVAL ''7 day'') g(s);', true, true, false, true);
 
-select
-  explain_mask_costs(
-    '
-SELECT * FROM generate_series(TIMESTAMPTZ ''2024-03-01'', TIMESTAMPTZ ''2024-02-01'', INTERVAL ''-1 day'') g(s);',
-    true,
-    true,
-    false,
-    true
-  );
+select explain_mask_costs('
+SELECT * FROM generate_series(TIMESTAMPTZ ''2024-03-01'', TIMESTAMPTZ ''2024-02-01'', INTERVAL ''-1 day'') g(s);', true, true, false, true);
 
-select
-  explain_mask_costs(
-    '
-SELECT * FROM generate_series(TIMESTAMPTZ ''2024-03-01'', TIMESTAMPTZ ''2024-02-01'', INTERVAL ''1 day'') g(s);',
-    true,
-    true,
-    false,
-    true
-  );
+select explain_mask_costs('
+SELECT * FROM generate_series(TIMESTAMPTZ ''2024-03-01'', TIMESTAMPTZ ''2024-02-01'', INTERVAL ''1 day'') g(s);', true, true, false, true);
 
-select
-  explain_mask_costs(
-    '
-SELECT * FROM generate_series(TIMESTAMPTZ ''-infinity'', TIMESTAMPTZ ''infinity'', INTERVAL ''1 day'') g(s);',
-    false,
-    true,
-    false,
-    true
-  );
+select explain_mask_costs('
+SELECT * FROM generate_series(TIMESTAMPTZ ''-infinity'', TIMESTAMPTZ ''infinity'', INTERVAL ''1 day'') g(s);', false, true, false, true);
 
 select
   *
 from
   generate_series(
-    cast('2024-02-01'
-    as timestamp with time zone),
-    cast('2024-03-01'
-    as timestamp with time zone),
+    cast('2024-02-01' as timestamptz),
+    cast('2024-03-01' as timestamptz),
     cast('0 day' as interval)
   )
   as g (s);
 
-select
-  explain_mask_costs(
-    '
-SELECT * FROM generate_series(1.0, 25.0) g(s);',
-    true,
-    true,
-    false,
-    true
-  );
+select explain_mask_costs('
+SELECT * FROM generate_series(1.0, 25.0) g(s);', true, true, false, true);
 
-select
-  explain_mask_costs(
-    '
-SELECT * FROM generate_series(1.0, 25.0, 2.0) g(s);',
-    true,
-    true,
-    false,
-    true
-  );
+select explain_mask_costs('
+SELECT * FROM generate_series(1.0, 25.0, 2.0) g(s);', true, true, false, true);
 
-select
-  explain_mask_costs(
-    '
-SELECT * FROM generate_series(25.0, 1.0, -1.0) g(s);',
-    true,
-    true,
-    false,
-    true
-  );
+select explain_mask_costs('
+SELECT * FROM generate_series(25.0, 1.0, -1.0) g(s);', true, true, false, true);
 
-select
-  explain_mask_costs(
-    '
-SELECT * FROM generate_series(25.0, 1.0, 1.0) g(s);',
-    true,
-    true,
-    false,
-    true
-  );
+select explain_mask_costs('
+SELECT * FROM generate_series(25.0, 1.0, 1.0) g(s);', true, true, false, true);
 
-select
-  explain_mask_costs(
-    '
-SELECT * FROM generate_series(''-infinity''::NUMERIC, ''infinity''::NUMERIC, 1.0) g(s);',
-    false,
-    true,
-    false,
-    true
-  );
+select explain_mask_costs('
+SELECT * FROM generate_series(''-infinity''::NUMERIC, ''infinity''::NUMERIC, 1.0) g(s);', false, true, false, true);
 
-select
-  explain_mask_costs(
-    '
-SELECT * FROM generate_series(1.0, 25.0, ''NaN''::NUMERIC) g(s);',
-    false,
-    true,
-    false,
-    true
-  );
+select explain_mask_costs('
+SELECT * FROM generate_series(1.0, 25.0, ''NaN''::NUMERIC) g(s);', false, true, false, true);
 
-select
-  explain_mask_costs(
-    '
-SELECT * FROM generate_series(25.0, 2.0, 0.0) g(s);',
-    false,
-    true,
-    false,
-    true
-  );
+select explain_mask_costs('
+SELECT * FROM generate_series(25.0, 2.0, 0.0) g(s);', false, true, false, true);
 
-select COUNT(*) > 0 as ok from pg_control_checkpoint();
+select count(*) > 0 as ok from pg_control_checkpoint();
 
-select COUNT(*) > 0 as ok from pg_control_init();
+select count(*) > 0 as ok from pg_control_init();
 
-select COUNT(*) > 0 as ok from pg_control_recovery();
+select count(*) > 0 as ok from pg_control_recovery();
 
-select COUNT(*) > 0 as ok from pg_control_system();
+select count(*) > 0 as ok from pg_control_system();
 
 select * from pg_split_walfile_name(null);
 
@@ -590,20 +466,16 @@ select
   segment_number > 0 as ok_segment_number,
   timeline_id
 from
-  pg_split_walfile_name(
-    '000000010000000100000000'
-  );
+  pg_split_walfile_name('000000010000000100000000');
 
 select
   segment_number > 0 as ok_segment_number,
   timeline_id
 from
-  pg_split_walfile_name(
-    'ffffffFF00000001000000af'
-  );
+  pg_split_walfile_name('ffffffFF00000001000000af');
 
 select
-  cast(setting as bigint) as segment_size
+  cast(setting as int8) as segment_size
 from
   pg_settings
 where
@@ -613,29 +485,21 @@ select
   segment_number,
   file_offset
 from
-  pg_walfile_name_offset(
-    cast('0/0' as pg_lsn) + 'segment_size'
-  ),
+  pg_walfile_name_offset(cast('0/0' as pg_lsn) + 'segment_size'),
   pg_split_walfile_name(file_name);
 
 select
   segment_number,
   file_offset
 from
-  pg_walfile_name_offset(
-    cast('0/0' as pg_lsn) + 'segment_size' +
-    1
-  ),
+  pg_walfile_name_offset(cast('0/0' as pg_lsn) + 'segment_size' + 1),
   pg_split_walfile_name(file_name);
 
 select
   segment_number,
   file_offset = 'segment_size' - 1
 from
-  pg_walfile_name_offset(
-    cast('0/0' as pg_lsn) + 'segment_size' -
-    1
-  ),
+  pg_walfile_name_offset(cast('0/0' as pg_lsn) + 'segment_size' - 1),
   pg_split_walfile_name(file_name);
 
 create role regress_current_logfile;
@@ -647,7 +511,7 @@ select
     'EXECUTE'
   );
 
-grant PG_MONITOR to regress_current_logfile;
+grant pg_monitor to regress_current_logfile;
 
 select
   has_function_privilege(
@@ -668,16 +532,13 @@ insert into test_chunk_id values ('x', repeat('x', 8192));
 select
   t.relname as toastrel
 from
-  pg_class as c
-  left outer join
-    pg_class as t
-  on c.reltoastrelid = t.oid
+  pg_class as c left outer join pg_class as t on c.reltoastrelid = t.oid
 where
   c.relname = 'test_chunk_id';
 
 drop table test_chunk_id;
 
-drop function explain_mask_costs(text, boolean, boolean, boolean, boolean);
+drop function explain_mask_costs(text, bool, bool, bool, bool);
 
 select gist_translate_cmptype_common(7);
 
@@ -686,9 +547,7 @@ select gist_translate_cmptype_common(3);
 create function test_relpath()
 returns void
 language c
-as $function$
-regresslib
-$function$;
+as $$regresslib$$;
 
 select test_relpath();
 

@@ -19,7 +19,7 @@ select a from xacttest where a > 100;
 
 begin;
 
-create table disappear (a int);
+create table disappear (a int4);
 
 delete from xacttest;
 
@@ -33,7 +33,7 @@ select * from xacttest;
 
 begin isolation level serializable;
 
-select COUNT(*) from xacttest;
+select count(*) from xacttest;
 
 reset transaction_isolation;
 
@@ -41,7 +41,7 @@ commit;
 
 begin read only;
 
-select COUNT(*) from xacttest;
+select count(*) from xacttest;
 
 reset transaction_read_only;
 
@@ -49,7 +49,7 @@ commit;
 
 begin deferrable;
 
-select COUNT(*) from xacttest;
+select count(*) from xacttest;
 
 reset transaction_deferrable;
 
@@ -59,9 +59,7 @@ create function errfunc()
 returns int
 language sql
 set transaction_read_only = 'on'
-as $function$
-SELECT 1
-$function$;
+as $$SELECT 1$$;
 
 create table writetest (a int);
 
@@ -69,81 +67,81 @@ create temporary table temptest (a int);
 
 begin;
 
-set TRANSACTION isolation level serializable read only deferrable;
+set transaction isolation level serializable read only deferrable;
 
 select * from writetest;
 
-set TRANSACTION read write;
+set transaction read write;
 
 commit;
 
 begin;
 
-set TRANSACTION read only;
+set transaction read only;
 
-set TRANSACTION read write;
+set transaction read write;
 
-set TRANSACTION read only;
+set transaction read only;
 
 select * from writetest;
 
 savepoint x;
 
-set TRANSACTION read only;
+set transaction read only;
 
 select * from writetest;
 
-set TRANSACTION read only;
+set transaction read only;
 
-set TRANSACTION read write;
+set transaction read write;
 
 commit;
 
 begin;
 
-set TRANSACTION read write;
+set transaction read write;
 
 savepoint x;
 
-set TRANSACTION read write;
+set transaction read write;
 
-set TRANSACTION read only;
+set transaction read only;
 
 select * from writetest;
 
-set TRANSACTION read only;
+set transaction read only;
 
-set TRANSACTION read write;
+set transaction read write;
 
 commit;
 
 begin;
 
-set TRANSACTION read write;
+set transaction read write;
 
 savepoint x;
 
-set TRANSACTION read only;
+set transaction read only;
 
 select * from writetest;
 
 rollback to savepoint x;
 
-show "transaction_read_only";
+show transaction_read_only;
 
 savepoint y;
 
-set TRANSACTION read only;
+set transaction read only;
 
 select * from writetest;
 
 release savepoint y;
 
-show "transaction_read_only";
+show transaction_read_only;
 
 commit;
 
-set session CHARACTERISTICS as transaction read only;
+set session characteristics as transaction read only;
 
 drop table writetest;
 
@@ -169,7 +167,7 @@ drop table writetest;
 
 commit;
 
-set session CHARACTERISTICS as transaction read write;
+set session characteristics as transaction read write;
 
 create table trans_foobar (a int);
 
@@ -431,7 +429,7 @@ select 1;
 
 begin;
 
-declare "c" cursor for select unique2 from tenk1 order by unique2;;
+declare c cursor for select unique2 from tenk1 order by unique2;;
 
 savepoint one;
 
@@ -447,7 +445,7 @@ fetch forward 10 from c;
 
 close c;
 
-declare "c" cursor for select unique2 / 0 from tenk1 order by unique2;;
+declare c cursor for select unique2 / 0 from tenk1 order by unique2;;
 
 savepoint two;
 
@@ -471,9 +469,7 @@ create or replace function max_xacttest()
 returns smallint
 language sql
 stable
-as $function$
-select max(a) from xacttest
-$function$;
+as $$select max(a) from xacttest$$;
 
 begin;
 
@@ -487,9 +483,7 @@ create or replace function max_xacttest()
 returns smallint
 language sql
 volatile
-as $function$
-select max(a) from xacttest
-$function$;
+as $$select max(a) from xacttest$$;
 
 begin;
 
@@ -503,9 +497,7 @@ create or replace function max_xacttest()
 returns smallint
 language plpgsql
 stable
-as $function$
-begin return max(a) from xacttest; end
-$function$;
+as $$begin return max(a) from xacttest; end$$;
 
 begin;
 
@@ -519,9 +511,7 @@ create or replace function max_xacttest()
 returns smallint
 language plpgsql
 volatile
-as $function$
-begin return max(a) from xacttest; end
-$function$;
+as $$begin return max(a) from xacttest; end$$;
 
 begin;
 
@@ -558,19 +548,18 @@ drop table trans_baz;
 drop table trans_barbaz;
 
 create function inverse(int)
-returns double precision
+returns float8
 language plpgsql
 volatile
-as $function$
+as $$
 begin
   analyze revalidate_bug;
   return 1::float8/$1;
 exception
   when division_by_zero then return 0;
-end
-$function$;
+end$$;
 
-create table revalidate_bug (c double precision unique);
+create table revalidate_bug (c float8 unique);
 
 insert into revalidate_bug values (1);
 
@@ -590,7 +579,7 @@ insert into trans_abc values (5);
 
 insert into trans_abc values (10);
 
-declare "foo" cursor for select * from trans_abc;;
+declare foo cursor for select * from trans_abc;;
 
 fetch next from foo;
 
@@ -610,7 +599,7 @@ insert into trans_abc values (10);
 
 insert into trans_abc values (15);
 
-declare "foo" cursor for select * from trans_abc;;
+declare foo cursor for select * from trans_abc;;
 
 fetch next from foo;
 
@@ -624,31 +613,28 @@ fetch next from foo;
 
 rollback;
 
-create function invert(x double precision)
-returns double precision
+create function invert(x float8)
+returns float8
 language plpgsql
-as $function$
-begin return 1/x; end
-$function$;
+as $$ begin return 1/x; end $$;
 
 create function create_temp_tab()
 returns text
 language plpgsql
-as $function$
+as $$
 BEGIN
   CREATE TEMP TABLE new_table (f1 float8);
   -- case of interest is that we fail while holding an open
   -- relcache reference to new_table
   INSERT INTO new_table SELECT invert(0.0);
   RETURN 'foo';
-END
-$function$;
+END $$;
 
 begin;
 
-declare "ok" cursor for select * from int8_tbl;;
+declare ok cursor for select * from int8_tbl;;
 
-declare "ctt" cursor for select create_temp_tab();;
+declare ctt cursor for select create_temp_tab();;
 
 fetch next from ok;
 
@@ -668,7 +654,7 @@ commit;
 
 drop function create_temp_tab();
 
-drop function invert(double precision);
+drop function invert(x float8);
 
 create table trans_abc (a int);
 
@@ -676,11 +662,11 @@ set default_transaction_read_only = 'on';
 
 start transaction isolation level repeatable read read write deferrable;
 
-show "transaction_isolation";
+show transaction_isolation;
 
-show "transaction_read_only";
+show transaction_read_only;
 
-show "transaction_deferrable";
+show transaction_deferrable;
 
 insert into trans_abc values (1);
 
@@ -688,11 +674,11 @@ insert into trans_abc values (2);
 
 commit and chain;
 
-show "transaction_isolation";
+show transaction_isolation;
 
-show "transaction_read_only";
+show transaction_read_only;
 
-show "transaction_deferrable";
+show transaction_deferrable;
 
 insert into trans_abc values ('error');
 
@@ -700,11 +686,11 @@ insert into trans_abc values (3);
 
 commit and chain;
 
-show "transaction_isolation";
+show transaction_isolation;
 
-show "transaction_read_only";
+show transaction_read_only;
 
-show "transaction_deferrable";
+show transaction_deferrable;
 
 insert into trans_abc values (4);
 
@@ -712,11 +698,11 @@ commit;
 
 start transaction isolation level repeatable read read write deferrable;
 
-show "transaction_isolation";
+show transaction_isolation;
 
-show "transaction_read_only";
+show transaction_read_only;
 
-show "transaction_deferrable";
+show transaction_deferrable;
 
 savepoint x;
 
@@ -724,11 +710,11 @@ insert into trans_abc values ('error');
 
 commit and chain;
 
-show "transaction_isolation";
+show transaction_isolation;
 
-show "transaction_read_only";
+show transaction_read_only;
 
-show "transaction_deferrable";
+show transaction_deferrable;
 
 insert into trans_abc values (5);
 
@@ -736,71 +722,71 @@ commit;
 
 start transaction isolation level repeatable read read write deferrable;
 
-show "transaction_isolation";
+show transaction_isolation;
 
-show "transaction_read_only";
+show transaction_read_only;
 
-show "transaction_deferrable";
+show transaction_deferrable;
 
 savepoint x;
 
 commit and chain;
 
-show "transaction_isolation";
+show transaction_isolation;
 
-show "transaction_read_only";
+show transaction_read_only;
 
-show "transaction_deferrable";
+show transaction_deferrable;
 
 commit;
 
 start transaction isolation level read committed read write deferrable;
 
-show "transaction_isolation";
+show transaction_isolation;
 
-show "transaction_read_only";
+show transaction_read_only;
 
-show "transaction_deferrable";
+show transaction_deferrable;
 
 savepoint x;
 
 commit and chain;
 
-show "transaction_isolation";
+show transaction_isolation;
 
-show "transaction_read_only";
+show transaction_read_only;
 
-show "transaction_deferrable";
+show transaction_deferrable;
 
 commit;
 
 start transaction isolation level serializable read write not deferrable;
 
-show "transaction_isolation";
+show transaction_isolation;
 
-show "transaction_read_only";
+show transaction_read_only;
 
-show "transaction_deferrable";
+show transaction_deferrable;
 
 insert into trans_abc values (6);
 
 rollback and chain;
 
-show "transaction_isolation";
+show transaction_isolation;
 
-show "transaction_read_only";
+show transaction_read_only;
 
-show "transaction_deferrable";
+show transaction_deferrable;
 
 insert into trans_abc values ('error');
 
 rollback and chain;
 
-show "transaction_isolation";
+show transaction_isolation;
 
-show "transaction_read_only";
+show transaction_read_only;
 
-show "transaction_deferrable";
+show transaction_deferrable;
 
 rollback;
 
@@ -866,11 +852,11 @@ commit;
 
 commit and chain;
 
-show "transaction_read_only";
+show transaction_read_only;
 
 rollback and chain;
 
-show "transaction_read_only";
+show transaction_read_only;
 
 create table trans_abc (a int);
 
@@ -884,13 +870,13 @@ rollback;
 
 commit and chain;
 
-show "transaction_isolation";
+show transaction_isolation;
 
 commit;
 
 rollback and chain;
 
-show "transaction_isolation";
+show transaction_isolation;
 
 rollback;
 
@@ -898,11 +884,11 @@ set default_transaction_isolation = 'read committed';
 
 commit and chain;
 
-show "transaction_isolation";
+show transaction_isolation;
 
 rollback and chain;
 
-show "transaction_isolation";
+show transaction_isolation;
 
 reset default_transaction_isolation;
 
@@ -912,13 +898,13 @@ drop table trans_abc;
 
 begin isolation level repeatable read;
 
-set transaction SNAPSHOT 'Incorrect Identifier';
+set transaction snapshot 'Incorrect Identifier';
 
 rollback;
 
 begin isolation level repeatable read;
 
-set transaction SNAPSHOT 'FFF-FFF-F';
+set transaction snapshot 'FFF-FFF-F';
 
 rollback;
 

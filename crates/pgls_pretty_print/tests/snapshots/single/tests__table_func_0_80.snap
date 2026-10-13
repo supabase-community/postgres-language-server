@@ -7,8 +7,7 @@ select
   *
 from
   json_table(
-    cast('{"employees":[{"name":"Al","age":1}]}'
-    as jsonb),
+    cast('{"employees":[{"name":"Al","age":1}]}' as jsonb),
     '$.employees[*]'
     columns (
       name text path '$.name',

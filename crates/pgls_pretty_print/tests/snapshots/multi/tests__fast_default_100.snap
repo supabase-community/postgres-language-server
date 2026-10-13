@@ -4,7 +4,7 @@ input_file: crates/pgls_pretty_print/tests/data/multi/fast_default.sql
 ---
 set search_path to fast_default;
 
-create schema "fast_default";
+create schema fast_default;
 
 create table m (id oid);
 
@@ -13,7 +13,7 @@ insert into m values (cast(null as oid));
 create function set(tabname name)
 returns void
 language plpgsql
-as $function$
+as $$
 BEGIN
   UPDATE m
   SET id = (SELECT c.relfilenode
@@ -22,12 +22,12 @@ BEGIN
                 AND c.relnamespace = s.oid
                 AND s.nspname = 'fast_default');
 END;
-$function$;
+$$;
 
 create function comp()
 returns text
 language plpgsql
-as $function$
+as $$
 BEGIN
   RETURN (SELECT CASE
                WHEN m.id = c.relfilenode THEN 'Unchanged'
@@ -38,12 +38,13 @@ BEGIN
                AND c.relnamespace = s.oid
                AND s.nspname = 'fast_default');
 END;
-$function$;
+$$;
 
 create function log_rewrite()
 returns event_trigger
 language plpgsql
-as $function$
+as $$
+
 declare
    this_schema text;
 begin
@@ -57,11 +58,11 @@ begin
           pg_event_trigger_table_rewrite_reason();
     end if;
 end;
-$function$;
+$$;
 
 create table has_volatile as select * from generate_series(1, 10) as id;
 
-create event trigger "has_volatile_rewrite" on table_rewrite execute function log_rewrite();
+create event trigger has_volatile_rewrite on table_rewrite execute function log_rewrite();
 
 alter table has_volatile
   add column col1 int;
@@ -70,14 +71,13 @@ alter table has_volatile
   add column col2 int default 1;
 
 alter table has_volatile
-  add column col3 timestamp with time zone
-    default current_timestamp;
+  add column col3 timestamptz default current_timestamp;
 
 alter table has_volatile
   add column col4 int default cast(random() * 10000 as int);
 
 alter table has_volatile
-  alter column col5 type double precision;
+  alter column col5 type float8;
 
 alter table has_volatile
   alter column col5 type numeric;
@@ -98,7 +98,7 @@ select set('t');
 insert into t values (1), (2);
 
 alter table t
-  add column c_bpchar char(5) default 'hello',
+  add column c_bpchar bpchar(5) default 'hello',
   alter column c_int set default 2;
 
 insert into t values (3), (4);
@@ -116,16 +116,14 @@ alter table t
 insert into t values (7), (8);
 
 alter table t
-  add column c_timestamp timestamp
-    default '2016-09-01 12:00:00',
+  add column c_timestamp timestamp default '2016-09-01 12:00:00',
   add column c_timestamp_null timestamp,
   alter column c_date set default '2010-01-01';
 
 insert into t values (9), (10);
 
 alter table t
-  add column c_array text[]
-    default '{"This", "is", "the", "real", "world"}',
+  add column c_array text[] default '{"This", "is", "the", "real", "world"}',
   alter column c_timestamp set default '1970-12-31 11:12:13',
   alter column c_timestamp_null set default '2016-09-29 12:00:00';
 
@@ -204,10 +202,8 @@ select
   c_num,
   c_time,
   c_interval,
-  c_hugetext = repeat('abcdefg', 1000)
-  as c_hugetext_origdef,
-  c_hugetext = repeat('poiuyt', 1000)
-  as c_hugetext_newdef
+  c_hugetext = repeat('abcdefg', 1000) as c_hugetext_origdef,
+  c_hugetext = repeat('poiuyt', 1000) as c_hugetext_newdef
 from
   t
 order by pk;
@@ -220,7 +216,7 @@ create or replace function foo(a int)
 returns text
 language plpgsql
 stable
-as $function$
+as $$
 DECLARE res TEXT := '';
         i INT;
 BEGIN
@@ -230,8 +226,7 @@ BEGIN
     i := i + 1;
   END LOOP;
   RETURN res;
-END;
-$function$;
+END; $$;
 
 create table t (
   pk int not null primary key,
@@ -243,7 +238,7 @@ select set('t');
 insert into t values (1), (2);
 
 alter table t
-  add column c_bpchar char(5) default foo(4),
+  add column c_bpchar bpchar(5) default foo(4),
   alter column c_int set default length(foo(8));
 
 insert into t values (3), (4);
@@ -255,32 +250,27 @@ alter table t
 insert into t values (5), (6);
 
 alter table t
-  add column c_date date
-    default (cast('2016-06-02' as date) + length(foo(10))),
+  add column c_date date default (cast('2016-06-02' as date) + length(foo(10))),
   alter column c_text set default foo(12);
 
 insert into t values (7), (8);
 
 alter table t
-  add column c_timestamp timestamp
-    default (cast('2016-09-01' as date) + length(foo(10))),
+  add column c_timestamp timestamp default (cast('2016-09-01' as date) + length(foo(10))),
   alter column c_date set default cast('2010-01-01' as date) - length(foo(4));
 
 insert into t values (9), (10);
 
 alter table t
   add column c_array text[]
-    default cast('{"This", "is", "' || foo(4) ||
-    '","the", "real", "world"}'
-    as text[]),
+      default cast('{"This", "is", "' || foo(4) || '","the", "real", "world"}' as text[]),
   alter column c_timestamp set default cast('1970-12-31' as date) + length(foo(30));
 
 insert into t values (11), (12);
 
 alter table t
   alter column c_int drop default,
-  alter column c_array set default cast('{"This", "is", "' || foo(1) || '", "fantasy"}'
-  as text[]);
+  alter column c_array set default cast('{"This", "is", "' || foo(1) || '", "fantasy"}' as text[]);
 
 insert into t values (13), (14);
 
@@ -301,14 +291,12 @@ drop table t;
 
 create domain domain1 as int default 11;
 
-create domain domain2 as int default random("min" := 10, "max" := 100);
+create domain domain2 as int default random(min := 10, max := 100);
 
 create domain domain3 as text default foo(4);
 
 create domain domain4 as text[]
-  default cast('{"This", "is", "' || foo(4) ||
-  '","the", "real", "world"}'
-  as text[]);
+  default cast('{"This", "is", "' || foo(4) || '","the", "real", "world"}' as text[]);
 
 create table t2 (a domain1);
 
@@ -383,7 +371,7 @@ insert into t values (1);
 select set('t');
 
 alter table t
-  add column c1 timestamp default NOW();
+  add column c1 timestamp default now();
 
 select comp();
 
@@ -392,16 +380,14 @@ alter table t
 
 select comp();
 
-create function foolme(timestamp with time zone default clock_timestamp())
-returns timestamp with time zone
+create function foolme(timestamptz default clock_timestamp())
+returns timestamptz
 language sql
 immutable
-as $function$
-select $1
-$function$;
+as $$select $1$$;
 
 alter table t
-  add column c3 timestamp with time zone default foolme();
+  add column c3 timestamptz default foolme();
 
 select
   attname,
@@ -415,7 +401,7 @@ order by attnum;
 
 drop table t;
 
-drop function foolme(timestamp with time zone);
+drop function foolme(timestamptz);
 
 create table t (pk int not null primary key);
 
@@ -443,7 +429,7 @@ select c_bigint, c_text from t where c_text = 'hello' limit 1;
 
 select coalesce(c_bigint, pk), coalesce(c_text, cast(pk as text)) from t order by pk limit 10;
 
-select SUM(c_bigint), MAX(c_text collate "C"), MIN(c_text collate "C") from t;
+select sum(c_bigint), max(c_text collate "C"), min(c_text collate "C") from t;
 
 select * from t order by c_bigint, c_text, pk limit 10;
 
@@ -489,7 +475,7 @@ insert into t values (7), (8);
 
 select * from t order by pk;
 
-create index "i" on t using btree (c_int, c_text);
+create index i on t using btree (c_int, c_text);
 
 select c_text from t where c_int = -1;
 
@@ -502,10 +488,12 @@ alter table t1
 
 select
   a,
-  stddev(
-    cast((select SUM(1) from generate_series(1, 20) as x)
-    as real)
-  ) over (partition by a, b, c order by b) as z
+  stddev(cast((select sum(1) from generate_series(1, 20) as x) as float4)) over (
+    partition by a,
+    b,
+    c
+    order by b
+  ) as z
 from
   t1;
 
@@ -514,7 +502,8 @@ drop table t;
 create function test_trigger()
 returns trigger
 language plpgsql
-as $function$
+as $$
+
 begin
     raise notice 'old tuple: %', to_json(OLD)::text;
     if TG_OP = 'DELETE'
@@ -524,7 +513,8 @@ begin
        return NEW;
     end if;
 end;
-$function$;
+
+$$;
 
 create table t (
   id serial primary key,
@@ -732,7 +722,7 @@ create table leader (
 );
 
 create table follower (
-  a int references leader on DELETE cascade,
+  a int references leader on delete cascade,
   b int
 );
 
@@ -817,14 +807,11 @@ alter foreign table ft1
   alter column c8 type char(10);
 
 select
-  COUNT(*)
+  count(*)
 from
   pg_attribute
 where
-  attrelid = cast('ft1' as regclass) and
-  (
-    attmissingval is not null or atthasmissing
-  );
+  attrelid = cast('ft1' as regclass) and (attmissingval is not null or atthasmissing);
 
 drop foreign table ft1;
 

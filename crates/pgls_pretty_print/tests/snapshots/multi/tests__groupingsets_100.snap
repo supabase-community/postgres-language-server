@@ -72,23 +72,23 @@ create temporary table gstest_empty (
 create function gstest_data(v int, out a int, out b int)
 returns setof record
 language plpgsql
-as $function$
-begin
+as $$
+    begin
       return query select v, i from generate_series(1,3) i;
     end;
-$function$;
+  $$;
 
 set enable_hashagg = 'false';
 
-select a, b, grouping(a, b), SUM(v), COUNT(*), MAX(v) from gstest1 group by rollup (a, b);
+select a, b, grouping(a, b), sum(v), count(*), max(v) from gstest1 group by rollup (a, b);
 
 select
   a,
   b,
   grouping(a, b),
-  SUM(v),
-  COUNT(*),
-  MAX(v)
+  sum(v),
+  count(*),
+  max(v)
 from
   gstest1
 group by rollup (a, b)
@@ -99,9 +99,9 @@ select
   a,
   b,
   grouping(a, b),
-  SUM(v),
-  COUNT(*),
-  MAX(v)
+  sum(v),
+  count(*),
+  max(v)
 from
   gstest1
 group by rollup (a, b)
@@ -112,9 +112,9 @@ select
   a,
   b,
   grouping(a, b),
-  SUM(v),
-  COUNT(*),
-  MAX(v)
+  sum(v),
+  count(*),
+  max(v)
 from
   gstest1
 group by rollup (a, b)
@@ -127,7 +127,7 @@ select
   array_agg(v order by v),
   string_agg(cast(v as text), ':' order by v desc),
   percentile_disc(0.5) within group (order by v),
-  RANK(1, 2, 12) within group (order by a, b, v)
+  rank(1, 2, 12) within group (order by a, b, v)
 from
   gstest1
 group by rollup (a, b)
@@ -138,21 +138,18 @@ select
   grouping(a),
   a,
   array_agg(b),
-  RANK(a) within group (order by b nulls first),
-  RANK(a) within group (order by b nulls last)
+  rank(a) within group (order by b nulls first),
+  rank(a) within group (order by b nulls last)
 from
-  (
-    values (1, 1), (1, 4), (1, 5), (3, 1), (3, 2)
-  )
-  as v (a, b)
+  (values (1, 1), (1, 4), (1, 5), (3, 1), (3, 2)) as v (a, b)
 group by rollup (a)
 order by a;
 
 select
   a,
   b,
-  SUM(c),
-  SUM(SUM(c)) over (order by a, b) as rsum
+  sum(c),
+  sum(sum(c)) over (order by a, b) as rsum
 from
   gstest2
 group by rollup (a, b)
@@ -161,77 +158,68 @@ order by rsum,
   b;
 
 select
-  SUM(c)
+  sum(c)
 from
   gstest2
-group by grouping sets ((),
-  grouping sets ((), grouping sets (())))
+group by grouping sets ((), grouping sets ((), grouping sets (())))
 order by 1 desc;
 
 select
-  SUM(c)
+  sum(c)
 from
   gstest2
-group by grouping sets ((),
-  grouping sets ((), grouping sets ((a, b))))
+group by grouping sets ((), grouping sets ((), grouping sets ((a, b))))
 order by 1 desc;
 
 select
-  SUM(c)
+  sum(c)
 from
   gstest2
-group by grouping sets (grouping sets (rollup (c),
-  grouping sets (cube (c))))
+group by grouping sets (grouping sets (rollup (c), grouping sets (cube (c))))
 order by 1 desc;
 
-select SUM(c) from gstest2 group by grouping sets (a, grouping sets (a, cube (b))) order by 1 desc;
+select sum(c) from gstest2 group by grouping sets (a, grouping sets (a, cube (b))) order by 1 desc;
 
-select SUM(c) from gstest2 group by grouping sets (grouping sets ((a, b))) order by 1 desc;
+select sum(c) from gstest2 group by grouping sets (grouping sets ((a, b))) order by 1 desc;
 
-select SUM(c) from gstest2 group by grouping sets (grouping sets ((a, b))) order by 1 desc;
+select sum(c) from gstest2 group by grouping sets (grouping sets ((a, b))) order by 1 desc;
 
 select
-  SUM(c)
+  sum(c)
 from
   gstest2
 group by grouping sets (grouping sets (a, grouping sets (a), a))
 order by 1 desc;
 
 select
-  SUM(c)
+  sum(c)
 from
   gstest2
-group by grouping sets (grouping sets (a,
-  grouping sets (a,
-  grouping sets (a),
-  a,
-  a,
-  grouping sets (a),
-  a),
-  a))
+group by grouping sets (
+    grouping sets (a, grouping sets (a, grouping sets (a), a, a, grouping sets (a), a), a)
+  )
 order by 1 desc;
 
 select
-  SUM(c)
+  sum(c)
 from
   gstest2
-group by grouping sets ((a, (a, b)),
-  grouping sets ((a, (a, b)), a))
+group by grouping sets ((a, (a, b)), grouping sets ((a, (a, b)), a))
 order by 1 desc;
 
-select a, b, SUM(v), COUNT(*) from gstest_empty group by grouping sets ((a, b), a);
+select a, b, sum(v), count(*) from gstest_empty group by grouping sets ((a, b), a);
 
-select a, b, SUM(v), COUNT(*) from gstest_empty group by grouping sets ((a, b), ());
+select a, b, sum(v), count(*) from gstest_empty group by grouping sets ((a, b), ());
 
-select a, b, SUM(v), COUNT(*) from gstest_empty group by grouping sets ((a, b), (), (), ());
+select a, b, sum(v), count(*) from gstest_empty group by grouping sets ((a, b), (), (), ());
 
-select SUM(v), COUNT(*) from gstest_empty group by grouping sets ((), (), ());
+select sum(v), count(*) from gstest_empty group by grouping sets ((), (), ());
 
 select
   t1.a,
   t2.b,
-  SUM(t1.v),
-  COUNT(*)
+  sum(t1.v),
+  count(*)
 from
   gstest_empty as t1,
   gstest_empty as t2
@@ -241,8 +229,8 @@ select
   t1.a,
   t2.b,
   grouping(t1.a, t2.b),
-  SUM(t1.v),
-  MAX(t2.a)
+  sum(t1.v),
+  max(t2.a)
 from
   gstest1 as t1,
   gstest2 as t2
@@ -252,28 +240,20 @@ select
   t1.a,
   t2.b,
   grouping(t1.a, t2.b),
-  SUM(t1.v),
-  MAX(t2.a)
+  sum(t1.v),
+  max(t2.a)
 from
-  gstest1 as t1
-  inner join
-    gstest2 as t2
-  on t1.a = t2.a
+  gstest1 as t1 inner join gstest2 as t2 on t1.a = t2.a
 group by grouping sets ((t1.a, t2.b), ());
 
 select
   a,
   b,
   grouping(a, b),
-  SUM(t1.v),
-  MAX(t2.c)
+  sum(t1.v),
+  max(t2.c)
 from
-  gstest1 as t1
-  inner join
-    gstest2 as t2
-  using (
-    "a",
-    "b")
+  gstest1 as t1 inner join gstest2 as t2 using ( a, b)
 group by grouping sets ((a, b), ());
 
 select a, d, grouping(a, b, c) from gstest3 group by grouping sets ((a, b), (a, c));
@@ -286,15 +266,7 @@ select
   four,
   x
 from
-  (
-    select
-      four,
-      ten,
-      cast('foo' as text) as x
-    from
-      tenk1
-  )
-  as t
+  (select four, ten, cast('foo' as text) as x from tenk1) as t
 group by grouping sets (four, x)
 having
   x = 'foo';
@@ -303,21 +275,13 @@ select
   four,
   x || 'x'
 from
-  (
-    select
-      four,
-      ten,
-      cast('foo' as text) as x
-    from
-      tenk1
-  )
-  as t
+  (select four, ten, cast('foo' as text) as x from tenk1) as t
 group by grouping sets (four, x)
 order by four;
 
 select
   (x + y) * 1,
-  SUM(z)
+  sum(z)
 from
   (select 1 as x, 2 as y, 3 as z) as s
 group by grouping sets (x + y, x);
@@ -355,98 +319,59 @@ order by 1,
 select
   *
 from
-  (
-    select
-      1 as x,
-      q1,
-      SUM(q2)
-    from
-      int8_tbl as i1
-    group by grouping sets (1, 2)
-  )
-  as ss
+  (select 1 as x, q1, sum(q2) from int8_tbl as i1 group by grouping sets (1, 2)) as ss
 where
   x = 1 and q1 = 123;
 
 select
   *
 from
-  (
-    select
-      1 as x,
-      q1,
-      SUM(q2)
-    from
-      int8_tbl as i1
-    group by grouping sets (1, 2)
-  )
-  as ss
+  (select 1 as x, q1, sum(q2) from int8_tbl as i1 group by grouping sets (1, 2)) as ss
 where
   x = 1 and q1 = 123;
 
 select
   grouping(ss.x)
 from
-  int8_tbl as i1
-  inner join
-    lateral (select (select i1.q1) as x) as ss
-  on true
+  int8_tbl as i1 inner join lateral (select (select i1.q1) as x) as ss on true
 group by ss.x;
 
 select
   grouping(ss.x)
 from
-  int8_tbl as i1
-  inner join
-    lateral (select (select i1.q1) as x) as ss
-  on true
+  int8_tbl as i1 inner join lateral (select (select i1.q1) as x) as ss on true
 group by ss.x;
 
 select
   (select grouping(ss.x))
 from
-  int8_tbl as i1
-  inner join
-    lateral (select (select i1.q1) as x) as ss
-  on true
+  int8_tbl as i1 inner join lateral (select (select i1.q1) as x) as ss on true
 group by ss.x;
 
 select
   (select grouping(ss.x))
 from
-  int8_tbl as i1
-  inner join
-    lateral (select (select i1.q1) as x) as ss
-  on true
+  int8_tbl as i1 inner join lateral (select (select i1.q1) as x) as ss on true
 group by ss.x;
 
-select a, b, SUM(v.x) from (values (1), (2)) as v (x), gstest_data(v.x) group by rollup (a, b);
+select a, b, sum(v.x) from (values (1), (2)) as v (x), gstest_data(v.x) group by rollup (a, b);
 
 select
   *
 from
   (values (1), (2)) as v (x),
-  lateral (
-    select
-      a,
-      b,
-      SUM(v.x)
-    from
-      gstest_data(v.x)
-    group by rollup (a, b)
-  )
-  as s;
+  lateral (select a, b, sum(v.x) from gstest_data(v.x) group by rollup (a, b)) as s;
 
-select MIN(unique1) from tenk1 group by ();
+select min(unique1) from tenk1 group by ();
 
 create view gstest_view
 as select
   a,
   b,
   grouping(a, b),
-  SUM(c),
-  COUNT(*),
-  MAX(c)
+  sum(c),
+  count(*),
+  max(c)
 from
   gstest2
 group by rollup ((a, b, c), (c, d));
@@ -456,9 +381,7 @@ select pg_get_viewdef(cast('gstest_view' as regclass), true);
 select
   (
     select
-      (
-        select grouping(a, b) from (values (1)) as v2 (c)
-      )
+      (select grouping(a, b) from (values (1)) as v2 (c))
     from
       (values (1, 2)) as v1 (a, b)
     group by (a, b)
@@ -470,9 +393,7 @@ group by rollup (e, f);
 select
   (
     select
-      (
-        select grouping(e, f) from (values (1)) as v2 (c)
-      )
+      (select grouping(e, f) from (values (1)) as v2 (c))
     from
       (values (1, 2)) as v1 (a, b)
     group by (a, b)
@@ -484,13 +405,7 @@ group by rollup (e, f);
 select
   (
     select
-      (
-        select
-          grouping(c)
-        from
-          (values (1)) as v2 (c)
-        group by c
-      )
+      (select grouping(c) from (values (1)) as v2 (c) group by c)
     from
       (values (1, 2)) as v1 (a, b)
     group by (a, b)
@@ -507,23 +422,19 @@ select
   a,
   b,
   grouping(a, b),
-  SUM(v),
-  COUNT(*),
-  MAX(v)
+  sum(v),
+  count(*),
+  max(v)
 from
   gstest1
-group by grouping sets ((a, b),
-  (a + 1, b + 1),
-  (a + 2, b + 2))
+group by grouping sets ((a, b), (a + 1, b + 1), (a + 2, b + 2))
 order by 3,
   6;
 
 select
   (
     select
-      (
-        select grouping(a, b) from (values (1)) as v2 (c)
-      )
+      (select grouping(a, b) from (values (1)) as v2 (c))
     from
       (values (1, 2)) as v1 (a, b)
     group by (a, b)
@@ -535,9 +446,7 @@ group by rollup (e + 1, f + 1);
 select
   (
     select
-      (
-        select grouping(a, b) from (values (1)) as v2 (c)
-      )
+      (select grouping(a, b) from (values (1)) as v2 (c))
     from
       (values (1, 2)) as v1 (a, b)
     group by (a, b)
@@ -551,8 +460,8 @@ order by e + 1,
 select
   a,
   b,
-  SUM(c),
-  SUM(SUM(c)) over (order by a, b) as rsum
+  sum(c),
+  sum(sum(c)) over (order by a, b) as rsum
 from
   gstest2
 group by cube (a, b)
@@ -563,7 +472,7 @@ order by rsum,
 select
   a,
   b,
-  SUM(c)
+  sum(c)
 from
   (
     values
@@ -584,7 +493,7 @@ group by rollup (a, b);
 select
   a,
   b,
-  SUM(v.x)
+  sum(v.x)
 from
   (values (1), (2)) as v (x),
   gstest_data(v.x)
@@ -596,64 +505,40 @@ select * from gstest1 group by grouping sets ((a, b, v), v) order by v, b, a;
 
 select (select grouping(a, b) from gstest2) from gstest2 group by a, b;
 
-select a, b, SUM(c), COUNT(*) from gstest2 group by grouping sets (rollup (a, b), a);
+select a, b, sum(c), count(*) from gstest2 group by grouping sets (rollup (a, b), a);
 
 select
   ten,
-  SUM(distinct four)
+  sum(distinct four)
 from
   onek as a
 group by grouping sets ((ten, four), ten)
 having
-  exists
-  (
-    select
-      1
-    from
-      onek as b
-    where
-      SUM(distinct a.four) = b.four
-  );
+  exists (select 1 from onek as b where sum(distinct a.four) = b.four);
 
-select a, COUNT(*) from gstest2 group by rollup (a) order by a;
+select a, count(*) from gstest2 group by rollup (a) order by a;
 
-select a, COUNT(*) from gstest2 group by rollup (a) having a is distinct from 1 order by a;
+select a, count(*) from gstest2 group by rollup (a) having a is distinct from 1 order by a;
 
-select a, COUNT(*) from gstest2 group by rollup (a) having a is distinct from 1 order by a;
+select a, count(*) from gstest2 group by rollup (a) having a is distinct from 1 order by a;
 
 select
   v.c,
-  (
-    select
-      COUNT(*)
-    from
-      gstest2
-    group by ()
-    having
-      v.c
-  )
+  (select count(*) from gstest2 group by () having v.c)
 from
   (values (false), (true)) as v (c)
 order by v.c;
 
 select
   v.c,
-  (
-    select
-      COUNT(*)
-    from
-      gstest2
-    group by ()
-    having
-      v.c
-  )
+  (select count(*) from gstest2 group by () having v.c)
 from
   (values (false), (true)) as v (c)
 order by v.c;
 
-select a, b, COUNT(*) from gstest2 group by grouping sets ((a, b), a) having a > 1 and b > 1;
+select a, b, count(*) from gstest2 group by grouping sets ((a, b), a) having a > 1 and b > 1;
 
-select a, b, COUNT(*) from gstest2 group by grouping sets ((a, b), a) having a > 1 and b > 1;
+select a, b, count(*) from gstest2 group by grouping sets ((a, b), a) having a > 1 and b > 1;
 
 select
   ten,
@@ -685,11 +570,7 @@ select ten, grouping(ten) from onek group by ten having grouping(ten) >= 0 order
 
 select
   ten,
-  SUM(
-    distinct four
-  )
-  filter (where
-    cast(four as text) ~ '123')
+  sum(distinct four) filter (where cast(four as text) ~ '123')
 from
   onek as a
 group by rollup (ten);
@@ -699,17 +580,7 @@ select
 from
   (values (1), (2)) as v (a)
   left outer join
-    lateral (
-      select
-        v.a,
-        four,
-        ten,
-        COUNT(*)
-      from
-        onek
-      group by cube (four, ten)
-    )
-    as s
+    lateral (select v.a, four, ten, count(*) from onek group by cube (four, ten)) as s
   on true
 order by v.a,
   four,
@@ -720,29 +591,18 @@ select
     select
       row(v.a, s1.*)
     from
-      (
-        select
-          two,
-          four,
-          COUNT(*)
-        from
-          onek
-        group by cube (two, four)
-        order by two,
-          four
-      )
-      as s1
+      (select two, four, count(*) from onek group by cube (two, four) order by two, four) as s1
   )
 from
   (values (1), (2)) as v (a);
 
-select SUM(ten) from onek group by two, rollup (cast(four as text)) order by 1;
+select sum(ten) from onek group by two, rollup (cast(four as text)) order by 1;
 
-select SUM(ten) from onek group by rollup (cast(four as text)), two order by 1;
+select sum(ten) from onek group by rollup (cast(four as text)), two order by 1;
 
 set enable_hashagg = 'true';
 
-select COUNT(*) from gstest4 group by rollup (unhashable_col, unsortable_col);
+select count(*) from gstest4 group by rollup (unhashable_col, unsortable_col);
 
 select array_agg(v order by v) from gstest4 group by grouping sets ((id, unsortable_col), id);
 
@@ -750,9 +610,9 @@ select
   a,
   b,
   grouping(a, b),
-  SUM(v),
-  COUNT(*),
-  MAX(v)
+  sum(v),
+  count(*),
+  max(v)
 from
   gstest1
 group by grouping sets (a, b)
@@ -764,9 +624,9 @@ select
   a,
   b,
   grouping(a, b),
-  SUM(v),
-  COUNT(*),
-  MAX(v)
+  sum(v),
+  count(*),
+  max(v)
 from
   gstest1
 group by grouping sets (a, b)
@@ -778,9 +638,9 @@ select
   a,
   b,
   grouping(a, b),
-  SUM(v),
-  COUNT(*),
-  MAX(v)
+  sum(v),
+  count(*),
+  max(v)
 from
   gstest1
 group by cube (a, b)
@@ -792,9 +652,9 @@ select
   a,
   b,
   grouping(a, b),
-  SUM(v),
-  COUNT(*),
-  MAX(v)
+  sum(v),
+  count(*),
+  max(v)
 from
   gstest1
 group by cube (a, b)
@@ -806,7 +666,7 @@ select a, b, grouping(a, b), array_agg(v order by v) from gstest1 group by cube 
 
 select
   unsortable_col,
-  COUNT(*)
+  count(*)
 from
   gstest4
 group by grouping sets (unsortable_col, unsortable_col)
@@ -816,8 +676,8 @@ select
   unhashable_col,
   unsortable_col,
   grouping(unhashable_col, unsortable_col),
-  COUNT(*),
-  SUM(v)
+  count(*),
+  sum(v)
 from
   gstest4
 group by grouping sets (unhashable_col, unsortable_col)
@@ -828,8 +688,8 @@ select
   unhashable_col,
   unsortable_col,
   grouping(unhashable_col, unsortable_col),
-  COUNT(*),
-  SUM(v)
+  count(*),
+  sum(v)
 from
   gstest4
 group by grouping sets (unhashable_col, unsortable_col)
@@ -840,12 +700,11 @@ select
   unhashable_col,
   unsortable_col,
   grouping(unhashable_col, unsortable_col),
-  COUNT(*),
-  SUM(v)
+  count(*),
+  sum(v)
 from
   gstest4
-group by grouping sets ((v, unhashable_col),
-  (v, unsortable_col))
+group by grouping sets ((v, unhashable_col), (v, unsortable_col))
 order by 3,
   5;
 
@@ -853,28 +712,27 @@ select
   unhashable_col,
   unsortable_col,
   grouping(unhashable_col, unsortable_col),
-  COUNT(*),
-  SUM(v)
+  count(*),
+  sum(v)
 from
   gstest4
-group by grouping sets ((v, unhashable_col),
-  (v, unsortable_col))
+group by grouping sets ((v, unhashable_col), (v, unsortable_col))
 order by 3,
   5;
 
-select a, b, SUM(v), COUNT(*) from gstest_empty group by grouping sets ((a, b), a);
+select a, b, sum(v), count(*) from gstest_empty group by grouping sets ((a, b), a);
 
-select a, b, SUM(v), COUNT(*) from gstest_empty group by grouping sets ((a, b), a);
+select a, b, sum(v), count(*) from gstest_empty group by grouping sets ((a, b), a);
 
-select a, b, SUM(v), COUNT(*) from gstest_empty group by grouping sets ((a, b), ());
+select a, b, sum(v), count(*) from gstest_empty group by grouping sets ((a, b), ());
 
-select a, b, SUM(v), COUNT(*) from gstest_empty group by grouping sets ((a, b), (), (), ());
+select a, b, sum(v), count(*) from gstest_empty group by grouping sets ((a, b), (), (), ());
 
-select a, b, SUM(v), COUNT(*) from gstest_empty group by grouping sets ((a, b), (), (), ());
+select a, b, sum(v), count(*) from gstest_empty group by grouping sets ((a, b), (), (), ());
 
-select SUM(v), COUNT(*) from gstest_empty group by grouping sets ((), (), ());
+select sum(v), count(*) from gstest_empty group by grouping sets ((), (), ());
 
-select SUM(v), COUNT(*) from gstest_empty group by grouping sets ((), (), ());
+select sum(v), count(*) from gstest_empty group by grouping sets ((), (), ());
 
 select a, d, grouping(a, b, c) from gstest3 group by grouping sets ((a, b), (a, c));
 
@@ -883,7 +741,7 @@ select a, d, grouping(a, b, c) from gstest3 group by grouping sets ((a, b), (a, 
 select
   a,
   b,
-  SUM(v.x)
+  sum(v.x)
 from
   (values (1), (2)) as v (x),
   gstest_data(v.x)
@@ -895,7 +753,7 @@ order by 1,
 select
   a,
   b,
-  SUM(v.x)
+  sum(v.x)
 from
   (values (1), (2)) as v (x),
   gstest_data(v.x)
@@ -908,44 +766,24 @@ select
   *
 from
   (values (1), (2)) as v (x),
-  lateral (
-    select
-      a,
-      b,
-      SUM(v.x)
-    from
-      gstest_data(v.x)
-    group by grouping sets (a, b)
-  )
-  as s;
+  lateral (select a, b, sum(v.x) from gstest_data(v.x) group by grouping sets (a, b)) as s;
 
 select
   *
 from
   (values (1), (2)) as v (x),
-  lateral (
-    select
-      a,
-      b,
-      SUM(v.x)
-    from
-      gstest_data(v.x)
-    group by grouping sets (a, b)
-  )
-  as s;
+  lateral (select a, b, sum(v.x) from gstest_data(v.x) group by grouping sets (a, b)) as s;
 
 select
   a,
   b,
   grouping(a, b),
-  SUM(v),
-  COUNT(*),
-  MAX(v)
+  sum(v),
+  count(*),
+  max(v)
 from
   gstest1
-group by grouping sets ((a, b),
-  (a + 1, b + 1),
-  (a + 2, b + 2))
+group by grouping sets ((a, b), (a + 1, b + 1), (a + 2, b + 2))
 order by 3,
   6;
 
@@ -953,22 +791,20 @@ select
   a,
   b,
   grouping(a, b),
-  SUM(v),
-  COUNT(*),
-  MAX(v)
+  sum(v),
+  count(*),
+  max(v)
 from
   gstest1
-group by grouping sets ((a, b),
-  (a + 1, b + 1),
-  (a + 2, b + 2))
+group by grouping sets ((a, b), (a + 1, b + 1), (a + 2, b + 2))
 order by 3,
   6;
 
 select
   a,
   b,
-  SUM(c),
-  SUM(SUM(c)) over (order by a, b) as rsum
+  sum(c),
+  sum(sum(c)) over (order by a, b) as rsum
 from
   gstest2
 group by cube (a, b)
@@ -979,8 +815,8 @@ order by rsum,
 select
   a,
   b,
-  SUM(c),
-  SUM(SUM(c)) over (order by a, b) as rsum
+  sum(c),
+  sum(sum(c)) over (order by a, b) as rsum
 from
   gstest2
 group by cube (a, b)
@@ -991,7 +827,7 @@ order by rsum,
 select
   a,
   b,
-  SUM(v.x)
+  sum(v.x)
 from
   (values (1), (2)) as v (x),
   gstest_data(v.x)
@@ -1002,7 +838,7 @@ order by a,
 select
   a,
   b,
-  SUM(v.x)
+  sum(v.x)
 from
   (values (1), (2)) as v (x),
   gstest_data(v.x)
@@ -1014,15 +850,15 @@ begin;
 
 set local enable_hashagg = 'false';
 
-select a, b, COUNT(*), MAX(a), MAX(b) from gstest3 group by grouping sets (a, b, ()) order by a, b;
+select a, b, count(*), max(a), max(b) from gstest3 group by grouping sets (a, b, ()) order by a, b;
 
-select a, b, COUNT(*), MAX(a), MAX(b) from gstest3 group by grouping sets (a, b, ()) order by a, b;
+select a, b, count(*), max(a), max(b) from gstest3 group by grouping sets (a, b, ()) order by a, b;
 
 set local enable_seqscan = 'false';
 
-select a, b, COUNT(*), MAX(a), MAX(b) from gstest3 group by grouping sets (a, b, ()) order by a, b;
+select a, b, count(*), max(a), max(b) from gstest3 group by grouping sets (a, b, ()) order by a, b;
 
-select a, b, COUNT(*), MAX(a), MAX(b) from gstest3 group by grouping sets (a, b, ()) order by a, b;
+select a, b, count(*), max(a), max(b) from gstest3 group by grouping sets (a, b, ()) order by a, b;
 
 commit;
 
@@ -1031,17 +867,7 @@ select
 from
   (values (1), (2)) as v (a)
   left outer join
-    lateral (
-      select
-        v.a,
-        four,
-        ten,
-        COUNT(*)
-      from
-        onek
-      group by cube (four, ten)
-    )
-    as s
+    lateral (select v.a, four, ten, count(*) from onek group by cube (four, ten)) as s
   on true
 order by v.a,
   four,
@@ -1052,18 +878,7 @@ select
     select
       row(v.a, s1.*)
     from
-      (
-        select
-          two,
-          four,
-          COUNT(*)
-        from
-          onek
-        group by cube (two, four)
-        order by two,
-          four
-      )
-      as s1
+      (select two, four, count(*) from onek group by cube (two, four) order by two, four) as s1
   )
 from
   (values (1), (2)) as v (a);
@@ -1073,17 +888,7 @@ select
 from
   (values (1), (2)) as v (a)
   left outer join
-    lateral (
-      select
-        v.a,
-        four,
-        ten,
-        COUNT(*)
-      from
-        onek
-      group by grouping sets (four, ten)
-    )
-    as s
+    lateral (select v.a, four, ten, count(*) from onek group by grouping sets (four, ten)) as s
   on true
 order by v.a,
   four,
@@ -1095,15 +900,7 @@ select
       row(v.a, s1.*)
     from
       (
-        select
-          two,
-          four,
-          COUNT(*)
-        from
-          onek
-        group by grouping sets (two, four)
-        order by two,
-          four
+        select two, four, count(*) from onek group by grouping sets (two, four) order by two, four
       )
       as s1
   )
@@ -1118,32 +915,26 @@ set work_mem = '64kB';
 
 select
   unique1,
-  COUNT(two),
-  COUNT(four),
-  COUNT(ten),
-  COUNT(hundred),
-  COUNT(thousand),
-  COUNT(twothousand),
-  COUNT(*)
+  count(two),
+  count(four),
+  count(ten),
+  count(hundred),
+  count(thousand),
+  count(twothousand),
+  count(*)
 from
   tenk1
-group by grouping sets (unique1,
-  twothousand,
-  thousand,
-  hundred,
-  ten,
-  four,
-  two);
+group by grouping sets (unique1, twothousand, thousand, hundred, ten, four, two);
 
 select
   unique1,
-  COUNT(two),
-  COUNT(four),
-  COUNT(ten),
-  COUNT(hundred),
-  COUNT(thousand),
-  COUNT(twothousand),
-  COUNT(*)
+  count(two),
+  count(four),
+  count(ten),
+  count(hundred),
+  count(thousand),
+  count(twothousand),
+  count(*)
 from
   tenk1
 group by grouping sets (unique1, hundred, ten, four, two);
@@ -1152,27 +943,21 @@ set work_mem = '384kB';
 
 select
   unique1,
-  COUNT(two),
-  COUNT(four),
-  COUNT(ten),
-  COUNT(hundred),
-  COUNT(thousand),
-  COUNT(twothousand),
-  COUNT(*)
+  count(two),
+  count(four),
+  count(ten),
+  count(hundred),
+  count(thousand),
+  count(twothousand),
+  count(*)
 from
   tenk1
-group by grouping sets (unique1,
-  twothousand,
-  thousand,
-  hundred,
-  ten,
-  four,
-  two);
+group by grouping sets (unique1, twothousand, thousand, hundred, ten, four, two);
 
 select
   v || 'a',
   case grouping(v || 'a') when 1 then 1 else 0 end,
-  COUNT(*)
+  count(*)
 from
   unnest(array[1, 1], array['a', 'b']) as u (i, v)
 group by rollup (i, v || 'a')
@@ -1182,7 +967,7 @@ order by 1,
 select
   v || 'a',
   case when grouping(v || 'a') = 1 then 1 else 0 end,
-  COUNT(*)
+  count(*)
 from
   unnest(array[1, 1], array['a', 'b']) as u (i, v)
 group by rollup (i, v || 'a')
@@ -1211,30 +996,14 @@ select
   *
 from
   (values (1), (2)) as v (a),
-  lateral (
-    select
-      a,
-      i,
-      j,
-      COUNT(*)
-    from
-      bug_16784
-    group by cube (i, j)
-  )
-  as s
+  lateral (select a, i, j, count(*) from bug_16784 group by cube (i, j)) as s
 order by v.a,
   i,
   j;
 
 create table gs_data_1
 as
-  select
-    g % 1000 as g1000,
-    g % 100 as g100,
-    g % 10 as g10,
-    g
-  from
-    generate_series(0, 1999) as g;
+  select g % 1000 as g1000, g % 100 as g100, g % 10 as g10, g from generate_series(0, 1999) as g;
 
 analyze gs_data_1;
 
@@ -1254,9 +1023,9 @@ set jit_above_cost = 0;
 select
   g100,
   g10,
-  SUM(cast(g as numeric)),
-  COUNT(*),
-  MAX(cast(g as text))
+  sum(cast(g as numeric)),
+  count(*),
+  max(cast(g as text))
 from
   gs_data_1
 group by cube (g1000, g100, g10);
@@ -1266,9 +1035,9 @@ as
   select
     g100,
     g10,
-    SUM(cast(g as numeric)),
-    COUNT(*),
-    MAX(cast(g as text))
+    sum(cast(g as numeric)),
+    count(*),
+    max(cast(g as text))
   from
     gs_data_1
   group by cube (g1000, g100, g10);
@@ -1280,9 +1049,9 @@ set enable_sort = 'false';
 select
   g100,
   g10,
-  SUM(cast(g as numeric)),
-  COUNT(*),
-  MAX(cast(g as text))
+  sum(cast(g as numeric)),
+  count(*),
+  max(cast(g as text))
 from
   gs_data_1
 group by cube (g1000, g100, g10);
@@ -1292,9 +1061,9 @@ as
   select
     g100,
     g10,
-    SUM(cast(g as numeric)),
-    COUNT(*),
-    MAX(cast(g as text))
+    sum(cast(g as numeric)),
+    count(*),
+    max(cast(g as text))
   from
     gs_data_1
   group by cube (g1000, g100, g10);
@@ -1305,13 +1074,9 @@ set work_mem = default;
 
 set hash_mem_multiplier = default;
 
-select * from gs_hash_1
-except
-select * from gs_group_1
+select * from gs_hash_1 except select * from gs_group_1
 union all
-(select * from gs_group_1
-except
-select * from gs_hash_1);
+(select * from gs_group_1 except select * from gs_hash_1);
 
 drop table gs_group_1;
 
@@ -1322,10 +1087,7 @@ select
   b,
   c
 from
-  (
-    values (1, 2, 3), (4, null, 6), (7, 8, 9)
-  )
-  as t (a, b, c)
+  (values (1, 2, 3), (4, null, 6), (7, 8, 9)) as t (a, b, c)
 group by rollup (a, b),
   rollup (a, c)
 order by a,
@@ -1337,10 +1099,7 @@ select
   b,
   c
 from
-  (
-    values (1, 2, 3), (4, null, 6), (7, 8, 9)
-  )
-  as t (a, b, c)
+  (values (1, 2, 3), (4, null, 6), (7, 8, 9)) as t (a, b, c)
 group by rollup (a, b),
   rollup (a, c)
 order by a,
@@ -1352,10 +1111,7 @@ select
   b,
   c
 from
-  (
-    values (1, 2, 3), (4, null, 6), (7, 8, 9)
-  )
-  as t (a, b, c)
+  (values (1, 2, 3), (4, null, 6), (7, 8, 9)) as t (a, b, c)
 group by distinct rollup (a, b),
   rollup (a, c)
 order by a,
@@ -1367,10 +1123,7 @@ select distinct
   b,
   c
 from
-  (
-    values (1, 2, 3), (4, null, 6), (7, 8, 9)
-  )
-  as t (a, b, c)
+  (values (1, 2, 3), (4, null, 6), (7, 8, 9)) as t (a, b, c)
 group by rollup (a, b),
   rollup (a, c)
 order by a,
@@ -1394,39 +1147,33 @@ insert into gstest5 select i, i from generate_series(1, 5) as i;
 
 select
   grouping((select t1.v from gstest5 as t2 where id = t1.id)),
-  (select t1.v from gstest5 as t2 where id = t1.id)
-  as s
+  (select t1.v from gstest5 as t2 where id = t1.id) as s
 from
   gstest5 as t1
 group by grouping sets (v, s)
 order by case
-    when grouping((select t1.v from gstest5 as t2 where id = t1.id)) =
-    0
+    when grouping((select t1.v from gstest5 as t2 where id = t1.id)) = 0
     then (select t1.v from gstest5 as t2 where id = t1.id)
     else null
   end nulls first;
 
 select
   grouping((select t1.v from gstest5 as t2 where id = t1.id)),
-  (select t1.v from gstest5 as t2 where id = t1.id)
-  as s
+  (select t1.v from gstest5 as t2 where id = t1.id) as s
 from
   gstest5 as t1
 group by grouping sets (v, s)
 order by case
-    when grouping((select t1.v from gstest5 as t2 where id = t1.id)) =
-    0
+    when grouping((select t1.v from gstest5 as t2 where id = t1.id)) = 0
     then (select t1.v from gstest5 as t2 where id = t1.id)
     else null
   end nulls first;
 
 select
   grouping((select t1.v from gstest5 as t2 where id = t1.id)),
-  (select t1.v from gstest5 as t2 where id = t1.id)
-  as s,
+  (select t1.v from gstest5 as t2 where id = t1.id) as s,
   case
-    when grouping((select t1.v from gstest5 as t2 where id = t1.id)) =
-    0
+    when grouping((select t1.v from gstest5 as t2 where id = t1.id)) = 0
     then (select t1.v from gstest5 as t2 where id = t1.id)
     else null
   end
@@ -1438,11 +1185,9 @@ order by o nulls first;
 
 select
   grouping((select t1.v from gstest5 as t2 where id = t1.id)),
-  (select t1.v from gstest5 as t2 where id = t1.id)
-  as s,
+  (select t1.v from gstest5 as t2 where id = t1.id) as s,
   case
-    when grouping((select t1.v from gstest5 as t2 where id = t1.id)) =
-    0
+    when grouping((select t1.v from gstest5 as t2 where id = t1.id)) = 0
     then (select t1.v from gstest5 as t2 where id = t1.id)
     else null
   end
@@ -1545,7 +1290,7 @@ select 1 as one group by rollup (one) order by one nulls first;
 select
   a,
   b,
-  ROW_NUMBER() over (order by a, b nulls first)
+  row_number() over (order by a, b nulls first)
 from
   (values (1, 1), (2, 2)) as t (a, b)
 where
@@ -1555,7 +1300,7 @@ group by grouping sets ((a, b), a);
 select
   a,
   b,
-  ROW_NUMBER() over (order by a, b nulls first)
+  row_number() over (order by a, b nulls first)
 from
   (values (1, 1), (2, 2)) as t (a, b)
 where

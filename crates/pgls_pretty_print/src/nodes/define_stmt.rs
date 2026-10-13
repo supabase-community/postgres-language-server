@@ -5,7 +5,9 @@ use super::string::emit_identifier_maybe_quoted;
 use crate::{
     TokenKind,
     emitter::{EventEmitter, GroupKind, LineType},
-    nodes::node_list::{emit_comma_separated_list, emit_dot_separated_list},
+    nodes::node_list::{
+        emit_comma_separated_list, emit_dot_separated_list, emit_parenthesized_list,
+    },
 };
 
 /// Emit collation definition (FROM clause or parenthesized options)
@@ -162,15 +164,13 @@ pub(super) fn emit_define_stmt(e: &mut EventEmitter, n: &DefineStmt) {
     if is_operator {
         if !n.definition.is_empty() {
             e.space();
-            e.token(TokenKind::L_PAREN);
-            emit_comma_separated_list(e, &n.definition, |node, emitter| {
+            emit_parenthesized_list(e, &n.definition, |node, emitter| {
                 if let Some(NodeEnum::DefElem(def)) = node.node.as_ref() {
                     emit_operator_def_elem(emitter, def);
                 } else {
                     super::emit_node(node, emitter);
                 }
             });
-            e.token(TokenKind::R_PAREN);
         }
     } else if kind == ObjectType::ObjectCollation && !n.definition.is_empty() {
         emit_collation_definition(e, &n.definition);
@@ -209,8 +209,7 @@ fn emit_operator_name(e: &mut EventEmitter, defnames: &[Node]) {
 }
 
 fn emit_operator_def_elem(e: &mut EventEmitter, def: &DefElem) {
-    let name = def.defname.to_ascii_uppercase();
-    e.token(TokenKind::IDENT(name));
+    super::emit_keyword(e, &def.defname);
 
     if let Some(ref arg) = def.arg {
         e.space();

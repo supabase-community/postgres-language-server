@@ -82,10 +82,7 @@ select
   *
 from
   onek,
-  (
-    values (147, 'RFAAAA'), (931, 'VJAAAA')
-  )
-  as v (i, j)
+  (values (147, 'RFAAAA'), (931, 'VJAAAA')) as v (i, j)
 where
   onek.unique1 = v.i and onek.stringu1 = v.j;
 
@@ -100,16 +97,7 @@ from
           select
             i
           from
-            (
-              values
-                (10000),
-                (2),
-                (389),
-                (1000),
-                (2000),
-                ((select 10029))
-            )
-            as foo (i)
+            (values (10000), (2), (389), (1000), (2000), ((select 10029))) as foo (i)
           order by i asc
           limit 1
         )
@@ -124,10 +112,7 @@ select
 from
   onek
 where
-  (unique1, ten) in
-  (
-    values (1, 1), (20, 0), (99, 9), (17, 99)
-  )
+  (unique1, ten) in (values (1, 1), (20, 0), (99, 9), (17, 99))
 order by unique1;
 
 values (1, 2), (3, 4 + 4), (7, 77.7);
@@ -154,7 +139,7 @@ select * from foo order by f1 desc;
 
 select * from foo order by f1 desc nulls last;
 
-create index "fooi" on foo using btree (f1);
+create index fooi on foo using btree (f1);
 
 set enable_sort = 'false';
 
@@ -168,7 +153,7 @@ select * from foo order by f1 desc nulls last;
 
 drop index fooi;
 
-create index "fooi" on foo using btree (f1 desc);
+create index fooi on foo using btree (f1 desc);
 
 select * from foo order by f1;
 
@@ -180,7 +165,7 @@ select * from foo order by f1 desc nulls last;
 
 drop index fooi;
 
-create index "fooi" on foo using btree (f1 desc nulls last);
+create index fooi on foo using btree (f1 desc nulls last);
 
 select * from foo order by f1;
 
@@ -238,9 +223,7 @@ create function sillysrf(int)
 returns setof int
 language sql
 immutable
-as $function$
-values (1),(10),(2),($1)
-$function$;
+as $$values (1),(10),(2),($1)$$;
 
 select sillysrf(42);
 
@@ -256,9 +239,9 @@ create table list_parted_tbl (
   a int,
   b int
 )
-partition by LIST(a);
+partition by list(a);
 
-create table list_parted_tbl1 partition of list_parted_tbl for values in (1) partition by LIST(b);
+create table list_parted_tbl1 partition of list_parted_tbl for values in (1) partition by list(b);
 
 select * from list_parted_tbl;
 

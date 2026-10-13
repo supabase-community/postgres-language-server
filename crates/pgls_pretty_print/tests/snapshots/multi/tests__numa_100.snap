@@ -5,6 +5,6 @@ snapshot_kind: text
 ---
 select not pg_numa_available() as skip_test;
 
-select COUNT(*) = 0 as ok from pg_shmem_allocations_numa;
+select count(*) = 0 as ok from pg_shmem_allocations_numa;
 
-select COUNT(*) >= 0 as ok from pg_shmem_allocations_numa;
+select count(*) >= 0 as ok from pg_shmem_allocations_numa;

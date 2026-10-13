@@ -1,6 +1,6 @@
 use pgls_query::Node;
 
-use crate::emitter::{EventEmitter, LineType};
+use crate::emitter::{EventEmitter, GroupKind, LineType};
 use crate::{CommaStyle, TokenKind};
 
 /// Controls the spacing behavior after separators in list helpers
@@ -61,6 +61,23 @@ where
     F: Fn(&Node, &mut EventEmitter),
 {
     emit_comma_separated_list_with_spacing(e, nodes, ListSeparatorSpacing::SoftOrSpace, render);
+}
+
+/// Emits `(a, b, c)`: on one line when it fits, otherwise with each item on its own line, one level
+/// deeper, and the closing parenthesis back on its own line.
+pub(super) fn emit_parenthesized_list<F>(e: &mut EventEmitter, nodes: &[Node], render: F)
+where
+    F: Fn(&Node, &mut EventEmitter),
+{
+    e.group_start(GroupKind::List);
+    e.token(TokenKind::L_PAREN);
+    e.indent_start();
+    e.line(LineType::Soft);
+    emit_comma_separated_list(e, nodes, render);
+    e.indent_end();
+    e.line(LineType::Soft);
+    e.token(TokenKind::R_PAREN);
+    e.group_end();
 }
 
 /// Emit a comma-separated list that packs as many items as possible on each line.

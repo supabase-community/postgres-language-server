@@ -2,7 +2,7 @@ use crate::TokenKind;
 use crate::emitter::{EventEmitter, GroupKind, LineType};
 use pgls_query::protobuf::AlterPublicationStmt;
 
-use super::node_list::emit_comma_separated_list;
+use super::node_list::{emit_comma_separated_list, emit_parenthesized_list};
 
 pub(super) fn emit_alter_publication_stmt(e: &mut EventEmitter, n: &AlterPublicationStmt) {
     e.group_start(GroupKind::AlterPublicationStmt);
@@ -60,18 +60,14 @@ pub(super) fn emit_alter_publication_stmt(e: &mut EventEmitter, n: &AlterPublica
             e.line(LineType::SoftOrSpace);
             e.token(TokenKind::WITH_KW);
             e.space();
-            e.token(TokenKind::L_PAREN);
-            emit_comma_separated_list(e, &n.options, super::emit_node);
-            e.token(TokenKind::R_PAREN);
+            emit_parenthesized_list(e, &n.options, super::emit_node);
         }
     } else {
         // Just options - use SET for setting publication options
         e.line(LineType::SoftOrSpace);
         e.token(TokenKind::SET_KW);
         e.space();
-        e.token(TokenKind::L_PAREN);
-        emit_comma_separated_list(e, &n.options, super::emit_node);
-        e.token(TokenKind::R_PAREN);
+        emit_parenthesized_list(e, &n.options, super::emit_node);
     }
 
     e.token(TokenKind::SEMICOLON);

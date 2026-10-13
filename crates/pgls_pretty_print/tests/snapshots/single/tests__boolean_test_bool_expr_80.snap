@@ -7,9 +7,5 @@ select
 from
   s.units
 where
-  (units.has_history or
-  units.has_shares or
-  units.has_calls)
-  is true and
-  (units.is_active and units.is_visible)
-  is not false;
+  (units.has_history or units.has_shares or units.has_calls) is true and
+  (units.is_active and units.is_visible) is not false;

@@ -3,7 +3,7 @@ use pgls_query::{NodeEnum, protobuf::ReindexStmt};
 use crate::{
     TokenKind,
     emitter::{EventEmitter, GroupKind, LineType},
-    nodes::node_list::emit_comma_separated_list,
+    nodes::node_list::emit_parenthesized_list,
 };
 
 pub(super) fn emit_reindex_stmt(e: &mut EventEmitter, n: &ReindexStmt) {
@@ -14,11 +14,10 @@ pub(super) fn emit_reindex_stmt(e: &mut EventEmitter, n: &ReindexStmt) {
     // Handle options (CONCURRENTLY, VERBOSE, TABLESPACE, etc.)
     if !n.params.is_empty() {
         e.space();
-        e.token(TokenKind::L_PAREN);
-        emit_comma_separated_list(e, &n.params, |node, emitter| {
+        emit_parenthesized_list(e, &n.params, |node, emitter| {
             if let Some(NodeEnum::DefElem(def)) = node.node.as_ref() {
                 // Emit option name
-                emitter.token(TokenKind::IDENT(def.defname.to_uppercase()));
+                super::emit_keyword(emitter, &def.defname);
                 // Emit option value if present
                 if let Some(ref arg) = def.arg {
                     emitter.space();
@@ -28,7 +27,6 @@ pub(super) fn emit_reindex_stmt(e: &mut EventEmitter, n: &ReindexStmt) {
                 super::emit_node(node, emitter);
             }
         });
-        e.token(TokenKind::R_PAREN);
     }
 
     e.line(LineType::SoftOrSpace);

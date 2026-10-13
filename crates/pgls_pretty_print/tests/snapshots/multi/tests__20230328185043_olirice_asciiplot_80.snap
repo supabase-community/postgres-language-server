@@ -9,14 +9,7 @@ insert into app.packages (
   control_relocatable,
   control_requires
 )
-values
-  (
-    'olirice',
-    'asciiplot',
-    'A Toy ASCII Plotting Library',
-    false,
-    '{}'
-  );
+values ('olirice', 'asciiplot', 'A Toy ASCII Plotting Library', false, '{}');
 
 insert into app.package_versions (
   package_id,
@@ -26,14 +19,7 @@ insert into app.package_versions (
 )
 values
   (
-    (
-      select
-        id
-      from
-        app.packages
-      where
-        package_name = 'olirice-asciiplot'
-    ),
+    (select id from app.packages where package_name = 'olirice-asciiplot'),
     (0, 0, 1),
     '
 CREATE TYPE scatter_state AS (
@@ -180,14 +166,7 @@ insert into app.package_upgrades (
 )
 values
   (
-    (
-      select
-        id
-      from
-        app.packages
-      where
-        package_name = 'olirice-asciiplot'
-    ),
+    (select id from app.packages where package_name = 'olirice-asciiplot'),
     (0, 0, 1),
     (0, 0, 2),
     '

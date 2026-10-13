@@ -22,14 +22,17 @@
 use std::path::PathBuf;
 
 use pgls_analyse::RuleCategories;
+use pgls_configuration::{PartialConfiguration, PartialFormatConfiguration};
 use pgls_fs::PgLSPath;
 use pgls_text_size::TextSize;
 use pgls_workspace::Workspace as WorkspaceTrait;
 use pgls_workspace::features::completions::GetCompletionsParams;
 use pgls_workspace::features::diagnostics::PullFileDiagnosticsParams;
+use pgls_workspace::features::format::PullFileFormattingParams;
 use pgls_workspace::features::on_hover::OnHoverParams;
 use pgls_workspace::workspace::{
     ChangeFileParams, CloseFileParams, OpenFileParams, RegisterProjectFolderParams,
+    UpdateSettingsParams,
 };
 use serde::{Deserialize, Serialize};
 
@@ -52,6 +55,50 @@ pub struct Diagnostic {
     pub message: String,
     /// Severity: "error", "warning", "info"
     pub severity: String,
+}
+
+impl From<pgls_diagnostics::serde::Diagnostic> for Diagnostic {
+    fn from(d: pgls_diagnostics::serde::Diagnostic) -> Self {
+        let span = d.span().unwrap_or_default();
+        Diagnostic {
+            start: u32::from(span.start()),
+            end: u32::from(span.end()),
+            message: d.description_text().to_string(),
+            severity: match d.get_severity() {
+                pgls_diagnostics::Severity::Error | pgls_diagnostics::Severity::Fatal => {
+                    "error".to_string()
+                }
+                pgls_diagnostics::Severity::Warning => "warning".to_string(),
+                pgls_diagnostics::Severity::Information => "info".to_string(),
+                pgls_diagnostics::Severity::Hint => "hint".to_string(),
+            },
+        }
+    }
+}
+
+/// Result of formatting SQL.
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct FormatResult {
+    /// The formatted SQL. Statements that could not be formatted are kept verbatim.
+    pub formatted: String,
+    /// Diagnostics for statements that could not be formatted.
+    pub diagnostics: Vec<Diagnostic>,
+}
+
+/// Virtual path used by [`Workspace::format_sql`] for the transient document.
+const FORMAT_SQL_PATH: &str = "/__pgls_format_sql__.sql";
+
+/// Parse formatter options from JSON.
+///
+/// The JSON mirrors the `format` section of `postgres-language-server.jsonc`
+/// (camelCase keys, same defaults). An empty string means "use defaults".
+fn parse_format_options(options_json: &str) -> Result<PartialFormatConfiguration, WasmError> {
+    if options_json.trim().is_empty() {
+        return Ok(PartialFormatConfiguration::default());
+    }
+    serde_json::from_str(options_json)
+        .map_err(|e| WasmError::InvalidOptions(format!("Invalid format options: {e}")))
 }
 
 /// Simple completion item for WASM output.
@@ -267,25 +314,90 @@ impl Workspace {
         let diagnostics = result
             .diagnostics
             .into_iter()
-            .map(|d| {
-                let span = d.span().unwrap_or_default();
-                Diagnostic {
-                    start: u32::from(span.start()),
-                    end: u32::from(span.end()),
-                    message: d.description_text().to_string(),
-                    severity: match d.get_severity() {
-                        pgls_diagnostics::Severity::Error | pgls_diagnostics::Severity::Fatal => {
-                            "error".to_string()
-                        }
-                        pgls_diagnostics::Severity::Warning => "warning".to_string(),
-                        pgls_diagnostics::Severity::Information => "info".to_string(),
-                        pgls_diagnostics::Severity::Hint => "hint".to_string(),
-                    },
-                }
-            })
+            .map(Diagnostic::from)
             .collect();
 
         Ok(diagnostics)
+    }
+
+    /// Format a file in the workspace.
+    ///
+    /// Formatting is always enabled for explicit calls, regardless of the
+    /// `enabled` value in the options.
+    ///
+    /// # Arguments
+    /// * `path` - The virtual file path to format
+    /// * `options_json` - Formatter options as JSON, mirroring the `format` section of the
+    ///   configuration file (e.g. `{"keywordCase":"upper"}`). Pass an empty string for defaults.
+    ///
+    /// # Returns
+    /// The formatted SQL and diagnostics for statements that could not be formatted,
+    /// or an error if the file doesn't exist or the options are invalid.
+    pub fn format(&self, path: &str, options_json: &str) -> Result<FormatResult, WasmError> {
+        // Verify file exists
+        let _content = self.fs.read(path)?;
+
+        self.format_open_document(PgLSPath::new(PathBuf::from(path)), options_json)
+    }
+
+    /// Format a SQL string without adding it to the workspace.
+    ///
+    /// See [`Workspace::format`] for the options format.
+    pub fn format_sql(&self, sql: &str, options_json: &str) -> Result<FormatResult, WasmError> {
+        let pgls_path = PgLSPath::new(PathBuf::from(FORMAT_SQL_PATH));
+        self.inner
+            .open_file(OpenFileParams {
+                path: pgls_path.clone(),
+                content: sql.into(),
+                version: 0,
+            })
+            .map_err(|e| WasmError::Internal(format!("Failed to open document: {e}")))?;
+
+        let result = self.format_open_document(pgls_path.clone(), options_json);
+
+        let _ = self.inner.close_file(CloseFileParams { path: pgls_path });
+
+        result
+    }
+
+    fn format_open_document(
+        &self,
+        path: PgLSPath,
+        options_json: &str,
+    ) -> Result<FormatResult, WasmError> {
+        let mut format = parse_format_options(options_json)?;
+        format.enabled = Some(true);
+        // File matching does not apply to in-memory formatting.
+        format.ignore = None;
+        format.include = None;
+
+        self.inner
+            .update_settings(UpdateSettingsParams {
+                configuration: PartialConfiguration {
+                    format: Some(format),
+                    ..Default::default()
+                },
+                vcs_base_path: None,
+                gitignore_matches: vec![],
+                workspace_directory: None,
+            })
+            .map_err(|e| {
+                WasmError::InvalidOptions(format!("Failed to apply format options: {e}"))
+            })?;
+
+        let result = self
+            .inner
+            .pull_file_formatting(PullFileFormattingParams { path, range: None })
+            .map_err(|e| WasmError::Internal(format!("Format failed: {e}")))?;
+
+        Ok(FormatResult {
+            formatted: result.formatted,
+            diagnostics: result
+                .diagnostics
+                .into_iter()
+                .map(Diagnostic::from)
+                .collect(),
+        })
     }
 
     /// Get completions at a position in a file.
@@ -447,6 +559,86 @@ mod tests {
         assert_eq!(statements.len(), 2);
         assert_eq!(statements[0].sql, "SELECT 1;");
         assert_eq!(statements[1].sql, "SELECT 2;");
+    }
+
+    const FORMAT_INPUT: &str = r#"CREATE TABLE "public"."t" ("id" "uuid" NOT NULL)"#;
+
+    #[test]
+    fn test_workspace_format_sql_keyword_case_upper() {
+        let workspace = Workspace::new();
+
+        let result = workspace
+            .format_sql(FORMAT_INPUT, r#"{"keywordCase":"upper"}"#)
+            .unwrap();
+        assert!(result.diagnostics.is_empty(), "{:?}", result.diagnostics);
+        assert_eq!(
+            result.formatted,
+            "CREATE TABLE public.t (id uuid NOT NULL);"
+        );
+    }
+
+    #[test]
+    fn test_workspace_format_sql_defaults() {
+        let workspace = Workspace::new();
+
+        let result = workspace.format_sql(FORMAT_INPUT, "").unwrap();
+        assert!(result.diagnostics.is_empty(), "{:?}", result.diagnostics);
+        assert_eq!(
+            result.formatted,
+            "create table public.t (id uuid not null);"
+        );
+
+        // Options from a previous call must not leak into the next one.
+        workspace
+            .format_sql(FORMAT_INPUT, r#"{"keywordCase":"upper"}"#)
+            .unwrap();
+        let result = workspace.format_sql(FORMAT_INPUT, "{}").unwrap();
+        assert_eq!(
+            result.formatted,
+            "create table public.t (id uuid not null);"
+        );
+    }
+
+    #[test]
+    fn test_workspace_format_ignores_enabled_false() {
+        let workspace = Workspace::new();
+
+        let result = workspace
+            .format_sql(FORMAT_INPUT, r#"{"enabled":false}"#)
+            .unwrap();
+        assert_eq!(
+            result.formatted,
+            "create table public.t (id uuid not null);"
+        );
+    }
+
+    #[test]
+    fn test_workspace_format_file() {
+        let mut workspace = Workspace::new();
+        workspace.insert_file("/format.sql", "select 1;\n\nSELEC 2;\n");
+
+        let result = workspace
+            .format("/format.sql", r#"{"keywordCase":"upper"}"#)
+            .unwrap();
+        assert_eq!(result.formatted, "SELECT 1;\n\nSELEC 2;\n");
+        assert_eq!(result.diagnostics.len(), 1);
+        assert_eq!(result.diagnostics[0].severity, "error");
+
+        assert!(workspace.format("/missing.sql", "").is_err());
+    }
+
+    #[test]
+    fn test_workspace_format_invalid_options() {
+        let workspace = Workspace::new();
+
+        assert!(matches!(
+            workspace.format_sql("select 1", r#"{"keywordCase":"shout"}"#),
+            Err(WasmError::InvalidOptions(_))
+        ));
+        assert!(matches!(
+            workspace.format_sql("select 1", r#"{"unknownOption":true}"#),
+            Err(WasmError::InvalidOptions(_))
+        ));
     }
 
     #[test]

@@ -7,36 +7,28 @@ returns widget
 language c
 immutable
 strict
-as $function$
-regresslib
-$function$;
+as $$regresslib$$;
 
 create function widget_out(widget)
 returns cstring
 language c
 immutable
 strict
-as $function$
-regresslib
-$function$;
+as $$regresslib$$;
 
 create function int44in(cstring)
 returns city_budget
 language c
 immutable
 strict
-as $function$
-regresslib
-$function$;
+as $$regresslib$$;
 
 create function int44out(city_budget)
 returns cstring
 language c
 immutable
 strict
-as $function$
-regresslib
-$function$;
+as $$regresslib$$;
 
 create type widget (
   internallength = 24,
@@ -51,7 +43,7 @@ create type city_budget (
   internallength = 16,
   input = int44in,
   output = int44out,
-  element = int,
+  element = int4,
   category = 'x',
   preferred = 'true'
 );
@@ -75,42 +67,34 @@ returns int42
 language internal
 immutable
 strict
-as $function$
-int4in
-$function$;
+as $$int4in$$;
 
 create function int42_out(int42)
 returns cstring
 language internal
 immutable
 strict
-as $function$
-int4out
-$function$;
+as $$int4out$$;
 
 create function text_w_default_in(cstring)
 returns text_w_default
 language internal
 immutable
 strict
-as $function$
-textin
-$function$;
+as $$textin$$;
 
 create function text_w_default_out(text_w_default)
 returns cstring
 language internal
 immutable
 strict
-as $function$
-textout
-$function$;
+as $$textout$$;
 
 create type int42 (
   internallength = 4,
   input = int42_in,
   output = int42_out,
-  alignment = int,
+  alignment = int4,
   "default" = 42,
   passedbyvalue
 );
@@ -119,7 +103,7 @@ create type text_w_default (
   internallength = variable,
   input = text_w_default_in,
   output = text_w_default_out,
-  alignment = int,
+  alignment = int4,
   "default" = 'zippo'
 );
 
@@ -138,7 +122,7 @@ create type bogus_type (
   "Internallength" = 4,
   "Input" = int42_in,
   "Output" = int42_out,
-  "Alignment" = int,
+  "Alignment" = int4,
   "Default" = 42,
   "Passedbyvalue"
 );
@@ -164,9 +148,9 @@ create type default_test_row as (f1 text_w_default, f2 int42);
 create function get_default_test()
 returns setof default_test_row
 language sql
-as $function$
-SELECT * FROM default_test;
-$function$;
+as $$
+  SELECT * FROM default_test;
+$$;
 
 select * from get_default_test();
 
@@ -195,18 +179,14 @@ returns base_type
 language internal
 immutable
 strict
-as $function$
-boolin
-$function$;
+as $$boolin$$;
 
 create function base_fn_out(base_type)
 returns cstring
 language internal
 immutable
 strict
-as $function$
-boolout
-$function$;
+as $$boolout$$;
 
 create type base_type (input = base_fn_in, output = base_fn_out);
 
@@ -227,8 +207,7 @@ select
 from
   pg_attribute
 where
-  attrelid = cast('mytab' as regclass) and
-  attnum > 0;
+  attrelid = cast('mytab' as regclass) and attnum > 0;
 
 insert into mytab values ('(1,2,3)'), ('(-44,5.5,12)');
 
@@ -253,26 +232,22 @@ select pg_input_is_valid('("(1,2,3)")', 'mytab');
 select pg_input_is_valid('("(1,2)")', 'mytab');
 
 create function pt_in_widget(point, widget)
-returns boolean
+returns bool
 language c
 strict
-as $function$
-regresslib
-$function$;
+as $$regresslib$$;
 
-create operator <% (LEFTARG = point,
-RIGHTARG = widget,
-PROCEDURE = pt_in_widget,
-COMMUTATOR = >%,
-NEGATOR = >=%);
+create operator <% (
+  leftarg = point,
+  rightarg = widget,
+  procedure = pt_in_widget,
+  commutator = >%,
+  negator = >=%
+);
 
 select
-  cast('(1,2)' as point) <%
-  cast('(0,0,3)' as widget)
-  as t,
-  cast('(1,2)' as point) <%
-  cast('(0,0,1)' as widget)
-  as f;
+  cast('(1,2)' as point) <% cast('(0,0,3)' as widget) as t,
+  cast('(1,2)' as point) <% cast('(0,0,1)' as widget) as f;
 
 create table city (
   name name,
@@ -282,14 +257,8 @@ create table city (
 
 insert into city
 values
-  (
-    'Podunk', '(1,2),(3,4)', '100,127,1000'
-  ),
-  (
-    'Gotham',
-    '(1000,34),(1100,334)',
-    '123456,127,-1000,6789'
-  );
+  ('Podunk', '(1,2),(3,4)', '100,127,1000'),
+  ('Gotham', '(1000,34),(1100,334)', '123456,127,-1000,6789');
 
 select * from city;
 
@@ -300,40 +269,32 @@ returns myvarchar
 language internal
 immutable
 strict
-parallel SAFE
-as $function$
-varcharin
-$function$;
+parallel safe
+as $$varcharin$$;
 
 create function myvarcharout(myvarchar)
 returns cstring
 language internal
 immutable
 strict
-parallel SAFE
-as $function$
-varcharout
-$function$;
+parallel safe
+as $$varcharout$$;
 
 create function myvarcharsend(myvarchar)
 returns bytea
 language internal
 stable
 strict
-parallel SAFE
-as $function$
-varcharsend
-$function$;
+parallel safe
+as $$varcharsend$$;
 
 create function myvarcharrecv(internal, oid, int)
 returns myvarchar
 language internal
 stable
 strict
-parallel SAFE
-as $function$
-varcharrecv
-$function$;
+parallel safe
+as $$varcharrecv$$;
 
 alter type myvarchar set (storage = extended);
 
@@ -351,12 +312,14 @@ alter type myvarchar set (storage = plain);
 alter type myvarchar set (storage = extended);
 
 alter type myvarchar
-set (send = myvarcharsend,
-receive = myvarcharrecv,
-typmod_in = varchartypmodin,
-typmod_out = varchartypmodout,
-analyze = ts_typanalyze,
-subscript = raw_array_subscript_handler);
+set (
+  send = myvarcharsend,
+  receive = myvarcharrecv,
+  typmod_in = varchartypmodin,
+  typmod_out = varchartypmodout,
+  analyze = ts_typanalyze,
+  subscript = raw_array_subscript_handler
+);
 
 select
   typinput,

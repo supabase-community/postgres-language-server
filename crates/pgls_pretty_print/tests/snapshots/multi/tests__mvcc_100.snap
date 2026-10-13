@@ -15,14 +15,13 @@ create table clean_aborted_self (
   data text
 );
 
-create index "clean_aborted_self_key" on clean_aborted_self using btree (key);
+create index clean_aborted_self_key on clean_aborted_self using btree (key);
 
 insert into clean_aborted_self (key, data) values (-1, 'just to allocate metapage');
 
 select pg_relation_size('clean_aborted_self_key') as clean_aborted_self_key_before;
 
-do
-$do$
+do $$
 BEGIN
     -- iterate often enough to see index growth even on larger-than-default page sizes
     FOR i IN 1..100 LOOP
@@ -36,15 +35,12 @@ BEGIN
 	    RAISE reading_sql_data_not_permitted USING MESSAGE = 'round and round again';
 	EXCEPTION WHEN reading_sql_data_not_permitted THEN END;
     END LOOP;
-END;
-$do$;
+END;$$;
 
 select
   'clean_aborted_self_key_before' as size_before,
-  pg_relation_size('clean_aborted_self_key')
-  as size_after
+  pg_relation_size('clean_aborted_self_key') as size_after
 where
-  'clean_aborted_self_key_before' <>
-  pg_relation_size('clean_aborted_self_key');
+  'clean_aborted_self_key_before' <> pg_relation_size('clean_aborted_self_key');
 
 rollback;

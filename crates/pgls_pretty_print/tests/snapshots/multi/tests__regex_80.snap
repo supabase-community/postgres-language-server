@@ -27,11 +27,11 @@ select 'abc abd abc' ~ '^(.+)( \1)+$' as f;
 
 select 'abc abc abd' ~ '^(.+)( \1)+$' as f;
 
-select SUBSTRING('asd TO foo' from ' TO (([a-z0-9._]+|"([^"]+|"")+")+)');
+select substring('asd TO foo' from ' TO (([a-z0-9._]+|"([^"]+|"")+")+)');
 
-select SUBSTRING('a' from '((a))+');
+select substring('a' from '((a))+');
 
-select SUBSTRING('a' from '((a)+)');
+select substring('a' from '((a)+)');
 
 select regexp_match('abc', '');
 
@@ -160,11 +160,7 @@ select 'Programmer' ~ '(\w).*?\1' as t;
 select regexp_matches('Programmer', '(\w)(.*?\1)', 'g');
 
 select
-  regexp_matches(
-    'foo/bar/baz',
-    '^([^/]+?)(?:/([^/]+?))(?:/([^/]+?))?$',
-    ''
-  );
+  regexp_matches('foo/bar/baz', '^([^/]+?)(?:/([^/]+?))(?:/([^/]+?))?$', '');
 
 select regexp_matches('llmmmfff', '^(l*)(.*)(f*)$');
 

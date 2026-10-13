@@ -46,23 +46,14 @@ copy (select t from test1 where id = 3 for update) to stdout;
 
 copy (select t into temporary table test3 from test1 where id = 3) to stdout;
 
-copy (select * from test1 inner join test2 using ("id")) to stdout;
+copy (select * from test1 inner join test2 using (id)) to stdout;
 
 copy (select t from test1 where id = 1 union select * from v_test1 order by 1) to stdout;
 
-copy (select
-  *
-from
-  (
-    select t from test1 where id = 1
-    union
-    select * from v_test1
-    order by 1
-  )
-  as t1)
+copy (select * from (select t from test1 where id = 1 union select * from v_test1 order by 1) as t1)
 to stdout;
 
-copy (select t from test1 where id = 1) to stdout with (FORMAT 'csv', HEADER, FORCE_QUOTE (t));
+copy (select t from test1 where id = 1) to stdout with (format 'csv', header, force_quote (t));
 
 drop table test2;
 

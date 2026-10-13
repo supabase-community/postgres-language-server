@@ -130,7 +130,7 @@ begin;
 create function test_future_xid_status(bigint)
 returns void
 language plpgsql
-as $function$
+as $$
 BEGIN
   PERFORM txid_status($1);
   RAISE EXCEPTION 'didn''t ERROR at xid in the future as expected';
@@ -138,7 +138,7 @@ EXCEPTION
   WHEN invalid_parameter_value THEN
     RAISE NOTICE 'Got expected error for xid in the future';
 END;
-$function$;
+$$;
 
 select test_future_xid_status('inprogress' + 10000);
 

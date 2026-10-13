@@ -122,14 +122,8 @@ pub(super) fn emit_grant_role_option(e: &mut EventEmitter, n: &DefElem) {
         }
     });
 
-    // Emit the option name in uppercase
-    let opt_name = match defname {
-        "admin" => "ADMIN",
-        "inherit" => "INHERIT",
-        "set" => "SET",
-        _ => &defname.to_uppercase(),
-    };
-    e.token(TokenKind::IDENT(opt_name.to_string()));
+    // Emit the option name
+    super::emit_keyword(e, defname);
 
     // Emit TRUE or FALSE
     if let Some(val) = is_true {
@@ -299,7 +293,7 @@ pub(super) fn emit_role_option(e: &mut EventEmitter, n: &DefElem) {
         _ => {
             // Fallback for unknown role options
             if !n.defname.is_empty() {
-                e.token(TokenKind::IDENT(n.defname.to_uppercase()));
+                super::emit_keyword(e, &n.defname);
             }
             if let Some(ref arg) = n.arg {
                 e.space();

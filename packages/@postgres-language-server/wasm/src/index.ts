@@ -3,7 +3,7 @@
  *
  * This package provides two independent APIs:
  *
- * 1. **Workspace API** - Direct access to parse, lint, complete, hover
+ * 1. **Workspace API** - Direct access to parse, lint, format, complete, hover
  *    ```ts
  *    import { createWorkspace } from '@postgres-language-server/wasm/workspace';
  *    ```
@@ -25,6 +25,8 @@ export { loadWasm } from "./common.js";
 export type {
   Diagnostic,
   CompletionItem,
+  FormatOptions,
+  FormatResult,
   SchemaCache,
   Statement,
   WorkspaceOptions,

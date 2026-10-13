@@ -18,14 +18,7 @@ select * from json_table( cast(null as jsonb), '$' columns (v1 timestamp ) ) as 
 select
   *
 from
-  json_table(
-    cast('"1.23"' as jsonb),
-    '$.a'
-    columns (
-      js2 int path '$',
-      js2 int path '$'
-    )
-  );
+  json_table( cast('"1.23"' as jsonb), '$.a' columns (js2 int path '$', js2 int path '$' ) );
 
 create type comp as (a int, b int);
 
@@ -57,9 +50,7 @@ as
     ('1'),
     ('[]'),
     ('{}'),
-    (
-      '[1, 1.23, "2", "aaaaaaa", "foo", null, false, true, {"aaa": 123}, "[1,2]", "\"str\""]'
-    );
+    ('[1, 1.23, "2", "aaaaaaa", "foo", null, false, true, {"aaa": 123}, "[1,2]", "\"str\""]');
 
 select
   *
@@ -367,26 +358,14 @@ select
   *
 from
   (values ('1'), ('"err"')) as vals (js),
-  json_table(
-    cast(vals.js as jsonb),
-    '$'
-    columns (
-      a int path '$'
-    )
-  ) as jt;
+  json_table( cast(vals.js as jsonb), '$' columns (a int path '$' ) ) as jt;
 
 select
   *
 from
   (values ('1'), ('"err"')) as vals (js)
   left outer join
-    json_table(
-      cast(vals.js as jsonb),
-      '$'
-      columns (
-        a int path '$' error on error
-      )
-    ) as jt
+    json_table( cast(vals.js as jsonb), '$' columns (a int path '$' error on error ) ) as jt
   on true;
 
 select
@@ -394,25 +373,13 @@ select
 from
   (values ('1'), ('"err"')) as vals (js)
   left outer join
-    json_table(
-      cast(vals.js as jsonb),
-      '$'
-      columns (
-        a int path '$' error on error
-      )
-    ) as jt
+    json_table( cast(vals.js as jsonb), '$' columns (a int path '$' error on error ) ) as jt
   on true;
 
 select
   *
 from
-  json_table(
-    cast('1' as jsonb),
-    '$'
-    columns (
-      a int path '$.a' error on empty
-    )
-  ) as jt;
+  json_table( cast('1' as jsonb), '$' columns (a int path '$.a' error on empty ) ) as jt;
 
 select
   *
@@ -474,24 +441,12 @@ from
 select
   *
 from
-  json_table(
-    cast('"a"' as jsonb),
-    '$'
-    columns (
-      a int4 exists path '$.a' error on error
-    )
-  );
+  json_table( cast('"a"' as jsonb), '$' columns (a int4 exists path '$.a' error on error ) );
 
 select
   *
 from
-  json_table(
-    cast('"a"' as jsonb),
-    '$'
-    columns (
-      a int4 exists path '$' error on error
-    )
-  );
+  json_table( cast('"a"' as jsonb), '$' columns (a int4 exists path '$' error on error ) );
 
 select * from json_table( cast('"a"' as jsonb), '$' columns (a int2 exists path '$.a' ) );
 
@@ -504,24 +459,12 @@ select * from json_table( cast('"a"' as jsonb), '$' columns (a char(3) exists pa
 select
   *
 from
-  json_table(
-    cast('"a"' as jsonb),
-    '$'
-    columns (
-      a char(3) exists path '$.a' error on error
-    )
-  );
+  json_table( cast('"a"' as jsonb), '$' columns (a char(3) exists path '$.a' error on error ) );
 
 select
   *
 from
-  json_table(
-    cast('"a"' as jsonb),
-    '$'
-    columns (
-      a char(5) exists path '$.a' error on error
-    )
-  );
+  json_table( cast('"a"' as jsonb), '$' columns (a char(5) exists path '$.a' error on error ) );
 
 select * from json_table( cast('"a"' as jsonb), '$' columns (a json exists path '$.a' ) );
 
@@ -533,63 +476,33 @@ create domain dint4_0 as int check (value <> 0);
 
 select
   a,
-  cast(a as boolean)
+  cast(a as bool)
 from
-  json_table(
-    cast('"a"' as jsonb),
-    '$'
-    columns (
-      a dint4 exists path '$.a'
-    )
-  );
+  json_table( cast('"a"' as jsonb), '$' columns (a dint4 exists path '$.a' ) );
 
 select
   a,
-  cast(a as boolean)
+  cast(a as bool)
 from
-  json_table(
-    cast('{"a":1}' as jsonb),
-    '$'
-    columns (
-      a dint4_0 exists path '$.b'
-    )
-  );
+  json_table( cast('{"a":1}' as jsonb), '$' columns (a dint4_0 exists path '$.b' ) );
 
 select
   a,
-  cast(a as boolean)
+  cast(a as bool)
 from
-  json_table(
-    cast('{"a":1}' as jsonb),
-    '$'
-    columns (
-      a dint4_0 exists path '$.b' error on error
-    )
-  );
+  json_table( cast('{"a":1}' as jsonb), '$' columns (a dint4_0 exists path '$.b' error on error ) );
 
 select
   a,
-  cast(a as boolean)
+  cast(a as bool)
 from
-  json_table(
-    cast('{"a":1}' as jsonb),
-    '$'
-    columns (
-      a dint4_0 exists path '$.b' false on error
-    )
-  );
+  json_table( cast('{"a":1}' as jsonb), '$' columns (a dint4_0 exists path '$.b' false on error ) );
 
 select
   a,
-  cast(a as boolean)
+  cast(a as bool)
 from
-  json_table(
-    cast('{"a":1}' as jsonb),
-    '$'
-    columns (
-      a dint4_0 exists path '$.b' true on error
-    )
-  );
+  json_table( cast('{"a":1}' as jsonb), '$' columns (a dint4_0 exists path '$.b' true on error ) );
 
 drop domain dint4, dint4_0;
 
@@ -600,24 +513,12 @@ select * from json_table( cast('"world"' as jsonb), '$' columns (item text path 
 select
   *
 from
-  json_table(
-    cast('"world"' as jsonb),
-    '$'
-    columns (
-      item text format json path '$' keep quotes
-    )
-  );
+  json_table( cast('"world"' as jsonb), '$' columns (item text format json path '$' keep quotes ) );
 
 select
   *
 from
-  json_table(
-    cast('"world"' as jsonb),
-    '$'
-    columns (
-      item text format json path '$' omit quotes
-    )
-  );
+  json_table( cast('"world"' as jsonb), '$' columns (item text format json path '$' omit quotes ) );
 
 select
   *
@@ -754,25 +655,18 @@ from
     '$'
     columns (
       nested path '$' as a columns (b int ),
-      nested path '$'
-      columns (
-        nested path '$' as a columns (c int )
-      )
+      nested path '$' columns (nested path '$' as a columns (c int ) )
     )
   ) as jt;
 
 create temporary table jsonb_table_test (js jsonb);
 
-insert into jsonb_table_test
-values
-  (
-    '[
+insert into jsonb_table_test values ('[
 		{"a":  1,  "b": [], "c": []},
 		{"a":  2,  "b": [1, 2, 3], "c": [10, null, 20]},
 		{"a":  3,  "b": [1, 2], "c": []},
 		{"x": "4", "b": [1, 2], "c": 123}
-	 ]'
-  );
+	 ]');
 
 select
   jt.*
@@ -784,16 +678,8 @@ from
     columns (
       n for ordinality,
       a int path 'lax $.a' default -1 on empty,
-      nested path 'strict $.b[*]' as pb
-      columns (
-        b_id for ordinality,
-        b int path '$'
-      ),
-      nested path 'strict $.c[*]' as pc
-      columns (
-        c_id for ordinality,
-        c int path '$'
-      )
+      nested path 'strict $.b[*]' as pb columns (b_id for ordinality, b int path '$' ),
+      nested path 'strict $.c[*]' as pc columns (c_id for ordinality, c int path '$' )
     )
   ) as jt;
 
@@ -809,10 +695,7 @@ from
     y as y
     columns (
       y text format json path '$',
-      nested path 'strict $[*] ? (@ == $y)'
-      columns (
-        z int path '$'
-      )
+      nested path 'strict $[*] ? (@ == $y)' columns (z int path '$' )
     )
   ) as jt;
 
@@ -847,12 +730,8 @@ create table s (js jsonb);
 
 insert into s
 values
-  (
-    '{"a":{"za":[{"z1": [11,2222]},{"z21": [22, 234,2345]},{"z22": [32, 204,145]}]},"c": 3}'
-  ),
-  (
-    '{"a":{"za":[{"z1": [21,4222]},{"z21": [32, 134,1345]}]},"c": 10}'
-  );
+  ('{"a":{"za":[{"z1": [11,2222]},{"z21": [22, 234,2345]},{"z22": [32, 204,145]}]},"c": 3}'),
+  ('{"a":{"za":[{"z1": [21,4222]},{"z21": [32, 134,1345]}]},"c": 10}');
 
 select
   sub.*
@@ -867,10 +746,7 @@ from
       xx int path '$.c',
       nested path '$.a.za[1]'
       columns (
-        nested path '$.z21[*]'
-        columns (
-          z21 int path '$?(@ >= $"x")' error on error
-        )
+        nested path '$.z21[*]' columns (z21 int path '$?(@ >= $"x")' error on error )
       )
     )
   ) as sub;
@@ -887,32 +763,11 @@ from
     passing x as x,
     y as y
     columns (
-      nested path '$.a.za[2]'
-      columns (
-        nested path '$.z22[*]' as z22
-        columns (
-          c int path '$'
-        )
-      ),
-      nested path '$.a.za[1]'
-      columns (
-        d int[] path '$.z21'
-      ),
-      nested path '$.a.za[0]'
-      columns (
-        nested path '$.z1[*]' as z1
-        columns (
-          a int path '$'
-        )
-      ),
+      nested path '$.a.za[2]' columns (nested path '$.z22[*]' as z22 columns (c int path '$' ) ),
+      nested path '$.a.za[1]' columns (d int[] path '$.z21' ),
+      nested path '$.a.za[0]' columns (nested path '$.z1[*]' as z1 columns (a int path '$' ) ),
       xx1 int path '$.c',
-      nested path '$.a.za[1]'
-      columns (
-        nested path '$.z21[*]' as z21
-        columns (
-          b int path '$'
-        )
-      ),
+      nested path '$.a.za[1]' columns (nested path '$.z21[*]' as z21 columns (b int path '$' ) ),
       xx int path '$.c'
     )
   ) as sub;
@@ -932,17 +787,11 @@ from
       xx1 int path '$.c',
       nested path '$.a.za[0].z1[*]'
       columns (
-        nested path '$ ?(@ >= ($"x" -2))'
-        columns (
-          a int path '$'
-        )
+        nested path '$ ?(@ >= ($"x" -2))' columns (a int path '$' )
       ),
       nested path '$.a.za[0]'
       columns (
-        nested path '$.z1[*] ? (@ >= ($"x" -2))'
-        columns (
-          b int path '$'
-        )
+        nested path '$.z1[*] ? (@ >= ($"x" -2))' columns (b int path '$' )
       )
     )
   ) as sub;
@@ -960,10 +809,7 @@ from
     y as y
     columns (
       xx1 int path '$.c',
-      nested path '$.a.za[1]'
-      columns (
-        nested path '$.z21[*]' columns (b int path '$' )
-      ),
+      nested path '$.a.za[1]' columns (nested path '$.z21[*]' columns (b int path '$' ) ),
       nested path '$.a.za[1] ? (@.z21[*] >= ($"x"-1))'
       columns (
         nested path '$.z21[*] ? (@ >= ($"y" + 3))' as z22
@@ -994,23 +840,11 @@ from
     y as y
     columns (
       xx1 int path '$.c',
-      nested path '$.a.za[2]'
-      columns (
-        nested path '$.z22[*]' as z22
-        columns (
-          c int path '$'
-        )
-      ),
-      nested path '$.a.za[1]'
-      columns (
-        d json path '$ ? (@.z21[*] == ($"x" -1))'
-      ),
+      nested path '$.a.za[2]' columns (nested path '$.z22[*]' as z22 columns (c int path '$' ) ),
+      nested path '$.a.za[1]' columns (d json path '$ ? (@.z21[*] == ($"x" -1))' ),
       nested path '$.a.za[0]'
       columns (
-        nested path '$.z1[*] ? (@ >= ($"x" -2))' as z1
-        columns (
-          a int path '$'
-        )
+        nested path '$.z1[*] ? (@ >= ($"x" -2))' as z1 columns (a int path '$' )
       ),
       nested path '$.a.za[1]'
       columns (
@@ -1038,10 +872,7 @@ from
       xx1 int path '$.c',
       nested path '$.a.za[2]'
       columns (
-        nested path '$.z22[*]' as z22
-        columns (
-          c int path '$' without wrapper omit quotes
-        )
+        nested path '$.z22[*]' as z22 columns (c int path '$' without wrapper omit quotes )
       ),
       nested path '$.a.za[1]'
       columns (
@@ -1049,10 +880,7 @@ from
       ),
       nested path '$.a.za[0]'
       columns (
-        nested path '$.z1[*] ? (@ >= ($"x" -2))' as z1
-        columns (
-          a int path '$' keep quotes
-        )
+        nested path '$.z1[*] ? (@ >= ($"x" -2))' as z1 columns (a int path '$' keep quotes )
       ),
       nested path '$.a.za[1]'
       columns (
@@ -1077,56 +905,17 @@ select * from json_table( cast('1' as jsonb), '$' columns (a int omit quotes tru
 select * from json_table( cast('1' as jsonb), '$' columns (a int exists empty object on error ) );
 
 create view json_table_view8
-as select
-  *
-from
-  json_table(
-    '"a"',
-    '$'
-    columns (
-      a text path '$'
-    )
-  );
+as select * from json_table( '"a"', '$' columns (a text path '$' ) );
 
 create view json_table_view9
-as select
-  *
-from
-  json_table(
-    '"a"',
-    '$'
-    columns (
-      a text path '$'
-    )
-    error on error
-  );
+as select * from json_table( '"a"', '$' columns (a text path '$' ) error on error );
 
 drop view json_table_view8, json_table_view9;
 
 create view json_table_view8
-as select
-  *
-from
-  json_table(
-    '"a"',
-    '$'
-    columns (
-      a text path '$'
-    )
-    empty array on error
-  );
+as select * from json_table( '"a"', '$' columns (a text path '$' ) empty array on error );
 
 create view json_table_view9
-as select
-  *
-from
-  json_table(
-    '"a"',
-    '$'
-    columns (
-      a text path '$'
-    )
-    empty array on error
-  );
+as select * from json_table( '"a"', '$' columns (a text path '$' ) empty array on error );
 
 drop view json_table_view8, json_table_view9;

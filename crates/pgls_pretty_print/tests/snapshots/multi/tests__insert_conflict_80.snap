@@ -3,47 +3,31 @@ source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/insert_conflict.sql
 ---
 create table insertconflicttest (
-  key int,
+  key int4,
   fruit text
 );
 
 create view insertconflictview
 as select * from insertconflicttest;
 
-create unique index "op_index_key"
-on insertconflicttest
-using btree
-(
+create unique index op_index_key on insertconflicttest using btree (
   key,
   fruit text_pattern_ops
 );
 
-create unique
-index "collation_index_key"
-on insertconflicttest
-using btree
-(
+create unique index collation_index_key on insertconflicttest using btree (
   key,
   fruit collate "C"
 );
 
-create unique index "both_index_key"
-on insertconflicttest
-using btree
-(
+create unique index both_index_key on insertconflicttest using btree (
   key,
   fruit collate "C" text_pattern_ops
 );
 
-create unique
-index "both_index_expr_key"
-on insertconflicttest
-using btree
-(
+create unique index both_index_expr_key on insertconflicttest using btree (
   key,
-  (lower(fruit))
-  collate "C"
-  text_pattern_ops
+  (lower(fruit)) collate "C" text_pattern_ops
 );
 
 insert into insertconflicttest
@@ -60,27 +44,15 @@ on conflict (key, fruit) do nothing;
 
 insert into insertconflicttest
 values (0, 'Crowberry')
-on conflict
-(fruit, key, fruit, key)
-do nothing;
+on conflict (fruit, key, fruit, key) do nothing;
 
 insert into insertconflicttest
 values (0, 'Crowberry')
-on conflict
-((lower(fruit)),
-key,
-(lower(fruit)),
-key)
-do nothing;
+on conflict ((lower(fruit)), key, (lower(fruit)), key) do nothing;
 
 insert into insertconflictview
 values (0, 'Crowberry')
-on conflict
-((lower(fruit)),
-key,
-(lower(fruit)),
-key)
-do nothing;
+on conflict ((lower(fruit)), key, (lower(fruit)), key) do nothing;
 
 insert into insertconflicttest
 values (0, 'Crowberry')
@@ -90,59 +62,31 @@ do
 update
 set fruit = excluded.fruit
 where
-  exists
-  (
-    select
-      1
-    from
-      insertconflicttest as ii
-    where
-      ii.key = excluded.key
-  );
+  exists (select 1 from insertconflicttest as ii where ii.key = excluded.key);
 
 insert into insertconflicttest
 values (0, 'Crowberry')
-on conflict
-(key, fruit text_pattern_ops)
-do nothing;
+on conflict (key, fruit text_pattern_ops) do nothing;
 
 insert into insertconflicttest
 values (0, 'Crowberry')
-on conflict
-(key, fruit collate "C")
-do nothing;
+on conflict (key, fruit collate "C") do nothing;
 
 insert into insertconflicttest
 values (0, 'Crowberry')
-on conflict
-(fruit collate "C" text_pattern_ops,
-key)
-do nothing;
+on conflict (fruit collate "C" text_pattern_ops, key) do nothing;
 
 insert into insertconflicttest
 values (0, 'Crowberry')
-on conflict
-((lower(fruit)) collate "C", key, key)
-do nothing;
+on conflict ((lower(fruit)) collate "C", key, key) do nothing;
 
 insert into insertconflicttest
 values (0, 'Crowberry')
-on conflict
-(fruit,
-key,
-fruit text_pattern_ops,
-key)
-do nothing;
+on conflict (fruit, key, fruit text_pattern_ops, key) do nothing;
 
 insert into insertconflicttest
 values (0, 'Crowberry')
-on conflict
-((lower(fruit))
-collate "C"
-text_pattern_ops,
-key,
-key)
-do nothing;
+on conflict ((lower(fruit)) collate "C" text_pattern_ops, key, key) do nothing;
 
 drop index op_index_key;
 
@@ -152,10 +96,7 @@ drop index both_index_key;
 
 drop index both_index_expr_key;
 
-create unique index "cross_match"
-on insertconflicttest
-using btree
-(
+create unique index cross_match on insertconflicttest using btree (
   (lower(fruit)) collate "C",
   (upper(fruit)) text_pattern_ops
 );
@@ -163,28 +104,22 @@ using btree
 insert into insertconflicttest
 values (0, 'Crowberry')
 on conflict
-((lower(fruit)) text_pattern_ops,
-(upper(fruit)) collate "C")
+((lower(fruit)) text_pattern_ops, (upper(fruit)) collate "C")
 do nothing;
 
 insert into insertconflicttest
 values (0, 'Crowberry')
 on conflict
-((lower(fruit)) collate "C",
-(upper(fruit)) text_pattern_ops)
+((lower(fruit)) collate "C", (upper(fruit)) text_pattern_ops)
 do nothing;
 
 drop index cross_match;
 
-create unique index "key_index" on insertconflicttest using btree (key);
+create unique index key_index on insertconflicttest using btree (key);
 
 insert into insertconflicttest
 values (0, 'Bilberry')
-on conflict
-(key)
-do
-update
-set fruit = excluded.fruit;
+on conflict (key) do update set fruit = excluded.fruit;
 
 insert into insertconflicttest
 values (0, 'Bilberry')
@@ -219,272 +154,145 @@ returning *;
 
 insert into insertconflicttest
 values (1, 'Apple')
-on conflict
-do
-update
-set fruit = excluded.fruit;
+on conflict do update set fruit = excluded.fruit;
 
 insert into insertconflicttest
 values (1, 'Apple')
-on conflict
-(key)
-do
-update
-set fruit = excluded.fruit;
+on conflict (key) do update set fruit = excluded.fruit;
 
 insert into insertconflicttest
 values (2, 'Orange')
-on conflict
-(key, key, key)
-do
-update
-set fruit = excluded.fruit;
+on conflict (key, key, key) do update set fruit = excluded.fruit;
 
 insert into insertconflicttest
 values (1, 'Apple'), (2, 'Orange')
-on conflict
-(key)
-do
-update
-set (fruit, key) = (excluded.fruit, excluded.key);
+on conflict (key) do update set (fruit, key) = (excluded.fruit, excluded.key);
 
 insert into insertconflicttest
 values (1, 'Apple')
-on conflict
-(key)
-do
-update
-set fruit = excluded.fruit
+on conflict (key) do update set fruit = excluded.fruit
 returning excluded.fruit;
 
 insert into insertconflicttest
 values (1, 'Apple')
-on conflict
-(keyy)
-do
-update
-set fruit = excluded.fruit;
+on conflict (keyy) do update set fruit = excluded.fruit;
 
 insert into insertconflicttest
 values (1, 'Apple')
-on conflict
-(key)
-do
-update
-set fruit = excluded.fruitt;
+on conflict (key) do update set fruit = excluded.fruitt;
 
 insert into insertconflicttest
 values (3, 'Kiwi')
-on conflict
-(key, fruit)
-do
-update
-set fruit = excluded.fruit;
+on conflict (key, fruit) do update set fruit = excluded.fruit;
 
 insert into insertconflicttest
 values (4, 'Mango')
-on conflict
-(fruit, key)
-do
-update
-set fruit = excluded.fruit;
+on conflict (fruit, key) do update set fruit = excluded.fruit;
 
 insert into insertconflicttest
 values (5, 'Lemon')
-on conflict
-(fruit)
-do
-update
-set fruit = excluded.fruit;
+on conflict (fruit) do update set fruit = excluded.fruit;
 
 insert into insertconflicttest
 values (6, 'Passionfruit')
-on conflict
-((lower(fruit)))
-do
-update
-set fruit = excluded.fruit;
+on conflict ((lower(fruit))) do update set fruit = excluded.fruit;
 
 insert into insertconflicttest as ict
 values (6, 'Passionfruit')
-on conflict
-(key)
-do
-update
-set fruit = excluded.fruit;
+on conflict (key) do update set fruit = excluded.fruit;
 
 insert into insertconflicttest as ict
 values (6, 'Passionfruit')
-on conflict
-(key)
-do
-update
-set fruit = ict.fruit;
+on conflict (key) do update set fruit = ict.fruit;
 
 insert into insertconflicttest as ict
 values (6, 'Passionfruit')
-on conflict
-(key)
-do
-update
-set fruit = insertconflicttest.fruit;
+on conflict (key) do update set fruit = insertconflicttest.fruit;
 
 insert into insertconflicttest
 values (3, 'Kiwi')
-on conflict
-(key, fruit)
-do
-update
-set insertconflicttest."fruit" = 'Mango';
+on conflict (key, fruit) do update set insertconflicttest."fruit" = 'Mango';
 
 drop index key_index;
 
-create unique index "comp_key_index"
-on insertconflicttest
-using btree
-(
+create unique index comp_key_index on insertconflicttest using btree (
   key,
   fruit
 );
 
 insert into insertconflicttest
 values (7, 'Raspberry')
-on conflict
-(key, fruit)
-do
-update
-set fruit = excluded.fruit;
+on conflict (key, fruit) do update set fruit = excluded.fruit;
 
 insert into insertconflicttest
 values (8, 'Lime')
-on conflict
-(fruit, key)
-do
-update
-set fruit = excluded.fruit;
+on conflict (fruit, key) do update set fruit = excluded.fruit;
 
 insert into insertconflicttest
 values (9, 'Banana')
-on conflict
-(key)
-do
-update
-set fruit = excluded.fruit;
+on conflict (key) do update set fruit = excluded.fruit;
 
 insert into insertconflicttest
 values (10, 'Blueberry')
-on conflict
-(key, key, key)
-do
-update
-set fruit = excluded.fruit;
+on conflict (key, key, key) do update set fruit = excluded.fruit;
 
 insert into insertconflicttest
 values (11, 'Cherry')
-on conflict
-(key, (lower(fruit)))
-do
-update
-set fruit = excluded.fruit;
+on conflict (key, (lower(fruit))) do update set fruit = excluded.fruit;
 
 insert into insertconflicttest
 values (12, 'Date')
-on conflict
-((lower(fruit)), key)
-do
-update
-set fruit = excluded.fruit;
+on conflict ((lower(fruit)), key) do update set fruit = excluded.fruit;
 
 drop index comp_key_index;
 
-create unique
-index "part_comp_key_index"
-on insertconflicttest
-using btree
-(
+create unique index part_comp_key_index on insertconflicttest using btree (
   key,
   fruit
 )
-where
-  key < 5;
+where key < 5;
 
-create unique
-index "expr_part_comp_key_index"
-on insertconflicttest
-using btree
-(
+create unique index expr_part_comp_key_index on insertconflicttest using btree (
   key,
   (lower(fruit))
 )
-where
-  key < 5;
+where key < 5;
 
 insert into insertconflicttest
 values (13, 'Grape')
-on conflict
-(key, fruit)
-do
-update
-set fruit = excluded.fruit;
+on conflict (key, fruit) do update set fruit = excluded.fruit;
 
 insert into insertconflicttest
 values (14, 'Raisin')
-on conflict
-(fruit, key)
-do
-update
-set fruit = excluded.fruit;
+on conflict (fruit, key) do update set fruit = excluded.fruit;
 
 insert into insertconflicttest
 values (15, 'Cranberry')
-on conflict
-(key)
-do
-update
-set fruit = excluded.fruit;
+on conflict (key) do update set fruit = excluded.fruit;
 
 insert into insertconflicttest
 values (16, 'Melon')
-on conflict
-(key, key, key)
-do
-update
-set fruit = excluded.fruit;
+on conflict (key, key, key) do update set fruit = excluded.fruit;
 
 insert into insertconflicttest
 values (17, 'Mulberry')
-on conflict
-(key, (lower(fruit)))
-do
-update
-set fruit = excluded.fruit;
+on conflict (key, (lower(fruit))) do update set fruit = excluded.fruit;
 
 insert into insertconflicttest
 values (18, 'Pineapple')
-on conflict
-((lower(fruit)), key)
-do
-update
-set fruit = excluded.fruit;
+on conflict ((lower(fruit)), key) do update set fruit = excluded.fruit;
 
 drop index part_comp_key_index;
 
 drop index expr_part_comp_key_index;
 
-create unique index "expr_key_index"
-on insertconflicttest
-using btree
-(
+create unique index expr_key_index on insertconflicttest using btree (
   (lower(fruit))
 );
 
 insert into insertconflicttest
 values (20, 'Quince')
-on conflict
-((lower(fruit)))
-do
-update
-set fruit = excluded.fruit;
+on conflict ((lower(fruit))) do update set fruit = excluded.fruit;
 
 insert into insertconflicttest
 values (21, 'Pomegranate')
@@ -496,136 +304,77 @@ set fruit = excluded.fruit;
 
 insert into insertconflicttest
 values (22, 'Apricot')
-on conflict
-((upper(fruit)))
-do
-update
-set fruit = excluded.fruit;
+on conflict ((upper(fruit))) do update set fruit = excluded.fruit;
 
 insert into insertconflicttest
 values (23, 'Blackberry')
-on conflict
-(fruit)
-do
-update
-set fruit = excluded.fruit;
+on conflict (fruit) do update set fruit = excluded.fruit;
 
 drop index expr_key_index;
 
-create unique
-index "expr_comp_key_index"
-on insertconflicttest
-using btree
-(
+create unique index expr_comp_key_index on insertconflicttest using btree (
   key,
   (lower(fruit))
 );
 
-create unique
-index "tricky_expr_comp_key_index"
-on insertconflicttest
-using btree
-(
-  key,
-  (lower(fruit)),
-  (upper(fruit))
-);
+create unique index tricky_expr_comp_key_index
+  on insertconflicttest
+  using btree (key, (lower(fruit)), (upper(fruit)));
 
 insert into insertconflicttest
 values (24, 'Plum')
-on conflict
-(key, (lower(fruit)))
-do
-update
-set fruit = excluded.fruit;
+on conflict (key, (lower(fruit))) do update set fruit = excluded.fruit;
 
 insert into insertconflicttest
 values (25, 'Peach')
-on conflict
-((lower(fruit)), key)
-do
-update
-set fruit = excluded.fruit;
+on conflict ((lower(fruit)), key) do update set fruit = excluded.fruit;
 
 insert into insertconflicttest
 values (26, 'Fig')
 on conflict
-((lower(fruit)),
-key,
-(lower(fruit)),
-key)
+((lower(fruit)), key, (lower(fruit)), key)
 do
 update
 set fruit = excluded.fruit;
 
 insert into insertconflicttest
 values (27, 'Prune')
-on conflict
-(key, (upper(fruit)))
-do
-update
-set fruit = excluded.fruit;
+on conflict (key, (upper(fruit))) do update set fruit = excluded.fruit;
 
 insert into insertconflicttest
 values (28, 'Redcurrant')
-on conflict
-(fruit, key)
-do
-update
-set fruit = excluded.fruit;
+on conflict (fruit, key) do update set fruit = excluded.fruit;
 
 insert into insertconflicttest
 values (29, 'Nectarine')
-on conflict
-(key)
-do
-update
-set fruit = excluded.fruit;
+on conflict (key) do update set fruit = excluded.fruit;
 
 drop index expr_comp_key_index;
 
 drop index tricky_expr_comp_key_index;
 
-create unique index "key_index" on insertconflicttest using btree (key);
+create unique index key_index on insertconflicttest using btree (key);
 
-create unique index "fruit_index" on insertconflicttest using btree (fruit);
+create unique index fruit_index on insertconflicttest using btree (fruit);
 
 insert into insertconflicttest
 values (26, 'Fig')
-on conflict
-(key)
-do
-update
-set fruit = excluded.fruit;
+on conflict (key) do update set fruit = excluded.fruit;
 
 insert into insertconflicttest
 values (26, 'Peach')
-on conflict
-(key)
-do
-update
-set fruit = excluded.fruit;
+on conflict (key) do update set fruit = excluded.fruit;
 
 insert into insertconflicttest
 values (25, 'Fig')
-on conflict
-(fruit)
-do
-update
-set fruit = excluded.fruit;
+on conflict (fruit) do update set fruit = excluded.fruit;
 
 drop index key_index;
 
 drop index fruit_index;
 
-create unique index "partial_key_index"
-on insertconflicttest
-using btree
-(
-  key
-)
-where
-  fruit like '%berry';
+create unique index partial_key_index on insertconflicttest using btree (key)
+where fruit like '%berry';
 
 insert into insertconflicttest
 values (23, 'Blackberry')
@@ -638,36 +387,23 @@ set fruit = excluded.fruit;
 insert into insertconflicttest as t
 values (23, 'Blackberry')
 on conflict
-(key)
-where
-  fruit like '%berry' and
-  t.fruit = 'inconsequential'
+(key) where fruit like '%berry' and t.fruit = 'inconsequential'
 do nothing;
 
 insert into insertconflictview as t
 values (23, 'Blackberry')
 on conflict
-(key)
-where
-  fruit like '%berry' and
-  t.fruit = 'inconsequential'
+(key) where fruit like '%berry' and t.fruit = 'inconsequential'
 do nothing;
 
 insert into insertconflicttest
 values (23, 'Blackberry')
-on conflict
-(key)
-do
-update
-set fruit = excluded.fruit;
+on conflict (key) do update set fruit = excluded.fruit;
 
 insert into insertconflicttest
 values (23, 'Blackberry')
 on conflict
-(key)
-where
-  fruit like '%berry' or
-  fruit = 'consequential'
+(key) where fruit like '%berry' or fruit = 'consequential'
 do nothing;
 
 insert into insertconflicttest
@@ -680,67 +416,35 @@ set fruit = excluded.fruit;
 
 drop index partial_key_index;
 
-create unique index "plain" on insertconflicttest using btree (key);
+create unique index plain on insertconflicttest using btree (key);
 
 insert into insertconflicttest as i
 values (23, 'Jackfruit')
-on conflict
-(key)
-do
-update
-set fruit = excluded.fruit
-where
-  i.* <> excluded.*
+on conflict (key) do update set fruit = excluded.fruit where i.* <> excluded.*
 returning *;
 
 insert into insertconflicttest as i
 values (23, 'Jackfruit')
-on conflict
-(key)
-do
-update
-set fruit = excluded.fruit
-where
-  i.* <> excluded.*
+on conflict (key) do update set fruit = excluded.fruit where i.* <> excluded.*
 returning *;
 
 insert into insertconflicttest as i
 values (23, 'Jackfruit')
-on conflict
-(key)
-do
-update
-set fruit = excluded.fruit
-where
-  i.* = excluded.*
+on conflict (key) do update set fruit = excluded.fruit where i.* = excluded.*
 returning *;
 
 insert into insertconflicttest as i
 values (23, 'Avocado')
-on conflict
-(key)
-do
-update
-set fruit = cast(excluded.* as text)
+on conflict (key) do update set fruit = cast(excluded.* as text)
 returning *;
 
 insert into insertconflicttest as i
 values (23, 'Avocado')
-on conflict
-(key)
-do
-update
-set fruit = excluded.fruit
-where
-  excluded.* is null;
+on conflict (key) do update set fruit = excluded.fruit where excluded.* is null;
 
 insert into insertconflicttest as i
 values (23, 'Avocado')
-on conflict
-(key)
-do
-update
-set fruit = cast(excluded.* as text);
+on conflict (key) do update set fruit = cast(excluded.* as text);
 
 drop index plain;
 
@@ -749,7 +453,7 @@ drop view insertconflictview;
 drop table insertconflicttest;
 
 create table syscolconflicttest (
-  key int,
+  key int4,
   data text
 );
 
@@ -757,11 +461,7 @@ insert into syscolconflicttest values (1);
 
 insert into syscolconflicttest
 values (1)
-on conflict
-(key)
-do
-update
-set data = cast(excluded.ctid as text);
+on conflict (key) do update set data = cast(excluded.ctid as text);
 
 drop table syscolconflicttest;
 
@@ -770,39 +470,24 @@ create table insertconflict (
   b bigint
 );
 
-create unique index "insertconflicti1"
-on insertconflict
-using btree
-(
+create unique index insertconflicti1 on insertconflict using btree (
   (coalesce(a, 0))
 );
 
-create unique index "insertconflicti2"
-on insertconflict
-using btree
-(
-  b
-)
-where
-  coalesce(a, 1) > 0;
+create unique index insertconflicti2 on insertconflict using btree (b)
+where coalesce(a, 1) > 0;
 
 insert into insertconflict
 values (1, 2)
-on conflict
-((coalesce(a, 0)))
-do nothing;
+on conflict ((coalesce(a, 0))) do nothing;
 
 insert into insertconflict
 values (1, 2)
-on conflict
-(b) where coalesce(a, 1) > 0
-do nothing;
+on conflict (b) where coalesce(a, 1) > 0 do nothing;
 
 insert into insertconflict
 values (1, 2)
-on conflict
-(b) where coalesce(a, 1) > 1
-do nothing;
+on conflict (b) where coalesce(a, 1) > 1 do nothing;
 
 drop table insertconflict;
 
@@ -817,21 +502,13 @@ with cascaded check option;
 
 insert into insertconflictv
 values (1, 'foo')
-on conflict
-(f1)
-do
-update
-set f2 = excluded.f2;
+on conflict (f1) do update set f2 = excluded.f2;
 
 select * from insertconflict;
 
 insert into insertconflictv
 values (1, 'bar')
-on conflict
-(f1)
-do
-update
-set f2 = excluded.f2;
+on conflict (f1) do update set f2 = excluded.f2;
 
 select * from insertconflict;
 
@@ -841,16 +518,16 @@ drop table insertconflict;
 
 create table cities (
   name text,
-  population double precision,
+  population float8,
   altitude int
 );
 
 create table capitals (state char(2))
 inherits (cities);
 
-create unique index "cities_names_unique" on cities using btree (name);
+create unique index cities_names_unique on cities using btree (name);
 
-create unique index "capitals_names_unique" on capitals using btree (name);
+create unique index capitals_names_unique on capitals using btree (name);
 
 insert into cities values ('San Francisco', 7.24E+5, 63);
 
@@ -867,13 +544,8 @@ select * from capitals;
 insert into cities values ('Las Vegas', 2.583E+5, 2174) on conflict do nothing;
 
 insert into capitals
-values
-  ('Sacramento', 4664.E+5, 30, 'CA')
-on conflict
-(name)
-do
-update
-set population = excluded.population;
+values ('Sacramento', 4664.E+5, 30, 'CA')
+on conflict (name) do update set population = excluded.population;
 
 insert into capitals
 values ('Sacramento', 50, 2267, 'NE')
@@ -893,13 +565,8 @@ altitude = excluded.altitude;
 select cast(tableoid as regclass), * from cities;
 
 insert into capitals
-values
-  ('Las Vegas', 5.83E+5, 2222, 'NV')
-on conflict
-(name)
-do
-update
-set population = excluded.population;
+values ('Las Vegas', 5.83E+5, 2222, 'NV')
+on conflict (name) do update set population = excluded.population;
 
 select * from capitals;
 
@@ -929,29 +596,17 @@ insert into excluded values (1, '1');
 
 insert into excluded
 values (1, '2')
-on conflict
-(key)
-do
-update
-set data = excluded.data
+on conflict (key) do update set data = excluded.data
 returning *;
 
 insert into excluded as target
 values (1, '2')
-on conflict
-(key)
-do
-update
-set data = excluded.data
+on conflict (key) do update set data = excluded.data
 returning *;
 
 insert into excluded as target
 values (1, '2')
-on conflict
-(key)
-do
-update
-set data = target.data
+on conflict (key) do update set data = target.data
 returning *;
 
 insert into excluded
@@ -1026,12 +681,7 @@ returning *;
 
 insert into dropcol (key, keep1, keep2)
 values (1, '5', 5)
-on conflict
-(key)
-do
-update
-set keep1 = dropcol.keep1,
-keep2 = dropcol.keep2
+on conflict (key) do update set keep1 = dropcol.keep1, keep2 = dropcol.keep2
 returning *;
 
 drop table dropcol;
@@ -1050,15 +700,11 @@ insert into twoconstraints values (2, '((0,0),(1,2))');
 
 insert into twoconstraints
 values (2, '((0,0),(1,2))')
-on conflict
-on constraint twoconstraints_f1_key
-do nothing;
+on conflict on constraint twoconstraints_f1_key do nothing;
 
 insert into twoconstraints
 values (2, '((0,0),(1,2))')
-on conflict
-on constraint twoconstraints_f2_excl
-do nothing;
+on conflict on constraint twoconstraints_f2_excl do nothing;
 
 select * from twoconstraints;
 
@@ -1119,7 +765,7 @@ create table parted_conflict_test (
   a int unique,
   b char(1)
 )
-partition by LIST(a);
+partition by list(a);
 
 create table parted_conflict_test_1
 partition of parted_conflict_test
@@ -1134,37 +780,21 @@ insert into parted_conflict_test values (1, 'a') on conflict (a) do nothing;
 
 insert into parted_conflict_test
 values (1, 'a')
-on conflict
-(a)
-do
-update
-set b = excluded.b;
+on conflict (a) do update set b = excluded.b;
 
 insert into parted_conflict_test_1 values (1, 'a') on conflict (a) do nothing;
 
 insert into parted_conflict_test_1
 values (1, 'b')
-on conflict
-(a)
-do
-update
-set b = excluded.b;
+on conflict (a) do update set b = excluded.b;
 
 insert into parted_conflict_test
 values (2, 'b')
-on conflict
-(b)
-do
-update
-set a = excluded.a;
+on conflict (b) do update set a = excluded.a;
 
 insert into parted_conflict_test_1
 values (2, 'b')
-on conflict
-(b)
-do
-update
-set a = excluded.a;
+on conflict (b) do update set a = excluded.a;
 
 select * from parted_conflict_test order by a;
 
@@ -1181,19 +811,11 @@ truncate parted_conflict_test;
 
 insert into parted_conflict_test
 values (3, 'a')
-on conflict
-(a)
-do
-update
-set b = excluded.b;
+on conflict (a) do update set b = excluded.b;
 
 insert into parted_conflict_test
 values (3, 'b')
-on conflict
-(a)
-do
-update
-set b = excluded.b;
+on conflict (a) do update set b = excluded.b;
 
 select * from parted_conflict_test order by a;
 
@@ -1209,28 +831,18 @@ truncate parted_conflict_test;
 
 insert into parted_conflict_test (a, b)
 values (4, 'a')
-on conflict
-(a)
-do
-update
-set b = excluded.b;
+on conflict (a) do update set b = excluded.b;
 
 insert into parted_conflict_test (a, b)
 values (4, 'b')
-on conflict
-(a)
-do
-update
-set b = excluded.b
-where
-  parted_conflict_test.b = 'a';
+on conflict (a) do update set b = excluded.b where parted_conflict_test.b = 'a';
 
 select * from parted_conflict_test order by a;
 
 create table parted_conflict_test_4
 partition of parted_conflict_test
 for values in (5)
-partition by LIST(a);
+partition by list(a);
 
 create table parted_conflict_test_4_1
 partition of parted_conflict_test_4
@@ -1240,21 +852,11 @@ truncate parted_conflict_test;
 
 insert into parted_conflict_test (a, b)
 values (5, 'a')
-on conflict
-(a)
-do
-update
-set b = excluded.b;
+on conflict (a) do update set b = excluded.b;
 
 insert into parted_conflict_test (a, b)
 values (5, 'b')
-on conflict
-(a)
-do
-update
-set b = excluded.b
-where
-  parted_conflict_test.b = 'a';
+on conflict (a) do update set b = excluded.b where parted_conflict_test.b = 'a';
 
 select * from parted_conflict_test order by a;
 
@@ -1262,23 +864,11 @@ truncate parted_conflict_test;
 
 insert into parted_conflict_test (a, b)
 values (1, 'a'), (2, 'a'), (4, 'a')
-on conflict
-(a)
-do
-update
-set b = excluded.b
-where
-  excluded.b = 'b';
+on conflict (a) do update set b = excluded.b where excluded.b = 'b';
 
 insert into parted_conflict_test (a, b)
 values (1, 'b'), (2, 'c'), (4, 'b')
-on conflict
-(a)
-do
-update
-set b = excluded.b
-where
-  excluded.b = 'b';
+on conflict (a) do update set b = excluded.b where excluded.b = 'b';
 
 select * from parted_conflict_test order by a;
 
@@ -1303,11 +893,7 @@ insert into parted_conflict values (40, 'forty');
 
 insert into parted_conflict_1
 values (40, 'cuarenta')
-on conflict
-(a)
-do
-update
-set b = excluded.b;
+on conflict (a) do update set b = excluded.b;
 
 drop table parted_conflict;
 
@@ -1338,11 +924,7 @@ insert into parted_conflict values (40, 'forty');
 
 insert into parted_conflict_1
 values (40, 'cuarenta')
-on conflict
-(a)
-do
-update
-set b = excluded.b;
+on conflict (a) do update set b = excluded.b;
 
 drop table parted_conflict;
 
@@ -1367,8 +949,7 @@ create unique index on parted_conflict using btree (a, b);
 
 alter table parted_conflict
   attach partition
-  parted_conflict_1
-  for values from (0) to (1000);
+  parted_conflict_1 for values from (0) to (1000);
 
 truncate parted_conflict;
 
@@ -1382,17 +963,15 @@ do
 update
 set (a, b, c) = row(excluded.*)
 where
-  parted_conflict =
-  (50, cast('cincuenta' as text), 1) and
-  excluded =
-  (50, cast('cincuenta' as text), 2);
+  parted_conflict = (50, cast('cincuenta' as text), 1) and
+  excluded = (50, cast('cincuenta' as text), 2);
 
 select * from parted_conflict order by a;
 
 create or replace function parted_conflict_update_func()
 returns trigger
 language plpgsql
-as $function$
+as $$
 declare
     r record;
 begin
@@ -1401,7 +980,7 @@ begin
  end loop;
  return new;
 end;
-$function$;
+$$;
 
 create trigger parted_conflict_update
 after update
@@ -1416,11 +995,7 @@ insert into parted_conflict values (0, 'cero', 1);
 
 insert into parted_conflict
 values (0, 'cero', 1)
-on conflict
-(a, b)
-do
-update
-set c = parted_conflict.c + 1;
+on conflict (a, b) do update set c = parted_conflict.c + 1;
 
 drop table parted_conflict;
 

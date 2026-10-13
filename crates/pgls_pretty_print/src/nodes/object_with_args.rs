@@ -35,20 +35,26 @@ fn emit_object_with_args_impl(
 
     if with_parens {
         let space_before_paren = needs_space_before_paren(n);
-        // Function arguments (for DROP FUNCTION, etc.)
-        if !n.objargs.is_empty() {
+        // A function signature keeps its parameters as written, with their names and modes.
+        // `objargs` only holds their types, and is all an operator has.
+        let args = if n.objfuncargs.is_empty() {
+            &n.objargs
+        } else {
+            &n.objfuncargs
+        };
+        if !args.is_empty() {
             if space_before_paren {
                 e.space();
             }
             e.token(TokenKind::L_PAREN);
-            if n.objargs.len() > 1 {
+            if args.len() > 1 {
                 e.indent_start();
                 e.line(LineType::Soft);
                 // For operators, NONE is represented by a Node with node: None
-                emit_comma_separated_list(e, &n.objargs, emit_objarg_or_none);
+                emit_comma_separated_list(e, args, emit_objarg_or_none);
                 e.indent_end();
             } else {
-                emit_comma_separated_list(e, &n.objargs, emit_objarg_or_none);
+                emit_comma_separated_list(e, args, emit_objarg_or_none);
             }
             e.token(TokenKind::R_PAREN);
         } else if !n.args_unspecified {

@@ -14,12 +14,9 @@ select pg_notify('', 'sample message1');
 select pg_notify(null, 'sample message1');
 
 select
-  pg_notify(
-    'notify_async_channel_name_too_long______________________________',
-    'sample_message1'
-  );
+  pg_notify('notify_async_channel_name_too_long______________________________', 'sample_message1');
 
-notify "notify_async2";
+notify notify_async2;
 
 listen notify_async2;
 

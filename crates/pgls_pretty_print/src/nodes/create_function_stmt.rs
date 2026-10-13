@@ -83,19 +83,12 @@ pub(super) fn emit_create_function_stmt(e: &mut EventEmitter, n: &CreateFunction
         super::emit_type_name(e, return_type);
     }
 
-    // Determine the dollar quote hint based on whether this is a procedure or function
-    let dollar_hint = if n.is_procedure {
-        super::DollarQuoteHint::Procedure
-    } else {
-        super::DollarQuoteHint::Function
-    };
-
     // Options - sort according to Postgres's canonical order
     let sorted_options = sort_function_options(&n.options);
     for option in sorted_options {
         if let Some(pgls_query::NodeEnum::DefElem(def_elem)) = &option.node {
             e.line(LineType::Hard);
-            format_function_option(e, def_elem, dollar_hint);
+            format_function_option(e, def_elem);
         }
     }
 
@@ -179,9 +172,13 @@ pub(super) fn emit_function_parameter(e: &mut EventEmitter, fp: &FunctionParamet
         FunctionParameterMode::Undefined => {}
     }
 
-    // Parameter name
+    // Parameter name, which the grammar spells as a function or type name
     if !fp.name.is_empty() {
-        super::emit_identifier_maybe_quoted(e, &fp.name);
+        if super::string::needs_quoting_as_function_or_type_name(&fp.name) {
+            super::emit_identifier(e, &fp.name);
+        } else {
+            e.token(TokenKind::IDENT(fp.name.clone()));
+        }
         e.space();
     }
 
@@ -258,11 +255,7 @@ pub(super) fn sort_function_options(
     sorted
 }
 
-pub(super) fn format_function_option(
-    e: &mut EventEmitter,
-    d: &pgls_query::protobuf::DefElem,
-    hint: super::DollarQuoteHint,
-) {
+pub(super) fn format_function_option(e: &mut EventEmitter, d: &pgls_query::protobuf::DefElem) {
     let defname_lower = d.defname.to_lowercase();
 
     match defname_lower.as_str() {
@@ -277,7 +270,7 @@ pub(super) fn format_function_option(
                         // Single item: either library name (C) or SQL body (SQL/plpgsql)
                         if let Some(pgls_query::NodeEnum::String(s)) = &list.items[0].node {
                             // Use dollar quotes for function bodies (they handle embedded quotes better)
-                            super::emit_dollar_quoted_str_with_hint(e, &s.sval, hint);
+                            super::emit_body_literal(e, &s.sval);
                         } else {
                             super::emit_node(&list.items[0], e);
                         }
@@ -325,7 +318,7 @@ pub(super) fn format_function_option(
                         "IMMUTABLE" => e.token(TokenKind::IMMUTABLE_KW),
                         "STABLE" => e.token(TokenKind::STABLE_KW),
                         "VOLATILE" => e.token(TokenKind::VOLATILE_KW),
-                        _ => e.token(TokenKind::IDENT(volatility)),
+                        _ => super::emit_keyword(e, &s.sval),
                     }
                 } else {
                     super::emit_node(arg, e);
@@ -390,8 +383,7 @@ pub(super) fn format_function_option(
             e.space();
             if let Some(ref arg) = d.arg {
                 if let Some(pgls_query::NodeEnum::String(s)) = &arg.node {
-                    let parallel = s.sval.to_uppercase();
-                    e.token(TokenKind::IDENT(parallel));
+                    super::emit_keyword(e, &s.sval);
                 } else {
                     super::emit_node(arg, e);
                 }
@@ -462,8 +454,7 @@ pub(super) fn format_function_option(
         }
         _ => {
             // Default: emit option name and value
-            let defname_upper = d.defname.to_uppercase();
-            e.token(TokenKind::IDENT(defname_upper));
+            super::emit_keyword(e, &d.defname);
             if let Some(ref arg) = d.arg {
                 e.space();
                 super::emit_node(arg, e);

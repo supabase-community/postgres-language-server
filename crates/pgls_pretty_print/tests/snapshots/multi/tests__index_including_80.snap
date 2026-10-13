@@ -11,36 +11,19 @@ create table tbl_include_reg (
 );
 
 insert into tbl_include_reg
-select
-  x,
-  2 * x,
-  3 * x,
-  box('4,4,4,4')
-from
-  generate_series(1, 10) as x;
+select x, 2 * x, 3 * x, box('4,4,4,4') from generate_series(1, 10) as x;
 
-create index "tbl_include_reg_idx"
-on tbl_include_reg
-using btree
-(
-  c1,
-  c2
-)
-include (c3,
-c4);
+create index tbl_include_reg_idx on tbl_include_reg using btree (c1, c2)
+include (c3, c4);
 
 create index on tbl_include_reg using btree (c1, c2) include (c1, c3);
 
 select
   pg_get_indexdef(i.indexrelid)
 from
-  pg_index as i
-  inner join
-    pg_class as c
-  on i.indexrelid = c.oid
+  pg_index as i inner join pg_class as c on i.indexrelid = c.oid
 where
-  i.indrelid =
-  cast('tbl_include_reg' as regclass)
+  i.indrelid = cast('tbl_include_reg' as regclass)
 order by c.relname;
 
 create table tbl_include_unique1 (
@@ -51,41 +34,25 @@ create table tbl_include_unique1 (
 );
 
 insert into tbl_include_unique1
-select
-  x,
-  2 * x,
-  3 * x,
-  box('4,4,4,4')
-from
-  generate_series(1, 10) as x;
+select x, 2 * x, 3 * x, box('4,4,4,4') from generate_series(1, 10) as x;
 
-create unique
-index "tbl_include_unique1_idx_unique"
-on tbl_include_unique1
-using btree
-(
-  c1,
-  c2
-)
-include (c3,
-c4);
+create unique index tbl_include_unique1_idx_unique
+  on tbl_include_unique1
+  using btree (c1, c2)
+include (c3, c4);
 
 alter table tbl_include_unique1
-  add unique using index "tbl_include_unique1_idx_unique";
+  add unique using index tbl_include_unique1_idx_unique;
 
 alter table tbl_include_unique1
-  add unique (c1, c2) include ("c3", "c4");
+  add unique (c1, c2) include (c3, c4);
 
 select
   pg_get_indexdef(i.indexrelid)
 from
-  pg_index as i
-  inner join
-    pg_class as c
-  on i.indexrelid = c.oid
+  pg_index as i inner join pg_class as c on i.indexrelid = c.oid
 where
-  i.indrelid =
-  cast('tbl_include_unique1' as regclass)
+  i.indrelid = cast('tbl_include_unique1' as regclass)
 order by c.relname;
 
 create table tbl_include_unique2 (
@@ -96,27 +63,15 @@ create table tbl_include_unique2 (
 );
 
 insert into tbl_include_unique2
-select
-  1,
-  2,
-  3 * x,
-  box('4,4,4,4')
-from
-  generate_series(1, 10) as x;
+select 1, 2, 3 * x, box('4,4,4,4') from generate_series(1, 10) as x;
 
-create unique
-index "tbl_include_unique2_idx_unique"
-on tbl_include_unique2
-using btree
-(
-  c1,
-  c2
-)
-include (c3,
-c4);
+create unique index tbl_include_unique2_idx_unique
+  on tbl_include_unique2
+  using btree (c1, c2)
+include (c3, c4);
 
 alter table tbl_include_unique2
-  add unique (c1, c2) include ("c3", "c4");
+  add unique (c1, c2) include (c3, c4);
 
 create table tbl_include_pk (
   c1 int,
@@ -126,30 +81,17 @@ create table tbl_include_pk (
 );
 
 insert into tbl_include_pk
-select
-  1,
-  2 * x,
-  3 * x,
-  box('4,4,4,4')
-from
-  generate_series(1, 10) as x;
+select 1, 2 * x, 3 * x, box('4,4,4,4') from generate_series(1, 10) as x;
 
 alter table tbl_include_pk
-  add primary key (c1,
-  c2)
-  include ("c3",
-  "c4");
+  add primary key (c1, c2) include (c3, c4);
 
 select
   pg_get_indexdef(i.indexrelid)
 from
-  pg_index as i
-  inner join
-    pg_class as c
-  on i.indexrelid = c.oid
+  pg_index as i inner join pg_class as c on i.indexrelid = c.oid
 where
-  i.indrelid =
-  cast('tbl_include_pk' as regclass)
+  i.indrelid = cast('tbl_include_pk' as regclass)
 order by c.relname;
 
 create table tbl_include_box (
@@ -160,38 +102,23 @@ create table tbl_include_box (
 );
 
 insert into tbl_include_box
-select
-  1,
-  2 * x,
-  3 * x,
-  box('4,4,4,4')
-from
-  generate_series(1, 10) as x;
+select 1, 2 * x, 3 * x, box('4,4,4,4') from generate_series(1, 10) as x;
 
-create unique
-index "tbl_include_box_idx_unique"
-on tbl_include_box
-using btree
-(
+create unique index tbl_include_box_idx_unique on tbl_include_box using btree (
   c1,
   c2
 )
-include (c3,
-c4);
+include (c3, c4);
 
 alter table tbl_include_box
-  add primary key using index "tbl_include_box_idx_unique";
+  add primary key using index tbl_include_box_idx_unique;
 
 select
   pg_get_indexdef(i.indexrelid)
 from
-  pg_index as i
-  inner join
-    pg_class as c
-  on i.indexrelid = c.oid
+  pg_index as i inner join pg_class as c on i.indexrelid = c.oid
 where
-  i.indrelid =
-  cast('tbl_include_box' as regclass)
+  i.indrelid = cast('tbl_include_box' as regclass)
 order by c.relname;
 
 create table tbl_include_box_pk (
@@ -202,29 +129,17 @@ create table tbl_include_box_pk (
 );
 
 insert into tbl_include_box_pk
-select
-  1,
-  2,
-  3 * x,
-  box('4,4,4,4')
-from
-  generate_series(1, 10) as x;
+select 1, 2, 3 * x, box('4,4,4,4') from generate_series(1, 10) as x;
 
 alter table tbl_include_box_pk
-  add primary key (c1,
-  c2)
-  include ("c3",
-  "c4");
+  add primary key (c1, c2) include (c3, c4);
 
 create table tbl (
   c1 int,
   c2 int,
   c3 int,
   c4 box,
-  constraint "covering" unique (c1,
-  c2)
-  include ("c3",
-  "c4")
+  constraint covering unique (c1, c2) include (c3, c4)
 );
 
 select
@@ -238,8 +153,7 @@ select
 from
   pg_index
 where
-  indrelid =
-  cast(cast('tbl' as regclass) as oid);
+  indrelid = cast(cast('tbl' as regclass) as oid);
 
 select
   pg_get_constraintdef(oid),
@@ -248,17 +162,10 @@ select
 from
   pg_constraint
 where
-  conrelid =
-  cast(cast('tbl' as regclass) as oid);
+  conrelid = cast(cast('tbl' as regclass) as oid);
 
 insert into tbl
-select
-  1,
-  2,
-  3 * x,
-  box('4,4,4,4')
-from
-  generate_series(1, 10) as x;
+select 1, 2, 3 * x, box('4,4,4,4') from generate_series(1, 10) as x;
 
 drop table tbl;
 
@@ -267,10 +174,7 @@ create table tbl (
   c2 int,
   c3 int,
   c4 box,
-  constraint "covering" primary key (c1,
-  c2)
-  include ("c3",
-  "c4")
+  constraint covering primary key (c1, c2) include (c3, c4)
 );
 
 select
@@ -284,8 +188,7 @@ select
 from
   pg_index
 where
-  indrelid =
-  cast(cast('tbl' as regclass) as oid);
+  indrelid = cast(cast('tbl' as regclass) as oid);
 
 select
   pg_get_constraintdef(oid),
@@ -294,27 +197,13 @@ select
 from
   pg_constraint
 where
-  conrelid =
-  cast(cast('tbl' as regclass) as oid) and
-  contype = 'p';
+  conrelid = cast(cast('tbl' as regclass) as oid) and contype = 'p';
 
 insert into tbl
-select
-  1,
-  2,
-  3 * x,
-  box('4,4,4,4')
-from
-  generate_series(1, 10) as x;
+select 1, 2, 3 * x, box('4,4,4,4') from generate_series(1, 10) as x;
 
 insert into tbl
-select
-  1,
-  null,
-  3 * x,
-  box('4,4,4,4')
-from
-  generate_series(1, 10) as x;
+select 1, null, 3 * x, box('4,4,4,4') from generate_series(1, 10) as x;
 
 insert into tbl select x, 2 * x, null, null from generate_series(1, 300) as x;
 
@@ -337,7 +226,7 @@ create table tbl (
   c2 int,
   c3 int,
   c4 box,
-  unique (c1, c2) include ("c3", "c4")
+  unique (c1, c2) include (c3, c4)
 );
 
 select
@@ -351,8 +240,7 @@ select
 from
   pg_index
 where
-  indrelid =
-  cast(cast('tbl' as regclass) as oid);
+  indrelid = cast(cast('tbl' as regclass) as oid);
 
 select
   pg_get_constraintdef(oid),
@@ -361,17 +249,10 @@ select
 from
   pg_constraint
 where
-  conrelid =
-  cast(cast('tbl' as regclass) as oid);
+  conrelid = cast(cast('tbl' as regclass) as oid);
 
 insert into tbl
-select
-  1,
-  2,
-  3 * x,
-  box('4,4,4,4')
-from
-  generate_series(1, 10) as x;
+select 1, 2, 3 * x, box('4,4,4,4') from generate_series(1, 10) as x;
 
 drop table tbl;
 
@@ -380,10 +261,7 @@ create table tbl (
   c2 int,
   c3 int,
   c4 box,
-  primary key (c1,
-  c2)
-  include ("c3",
-  "c4")
+  primary key (c1, c2) include (c3, c4)
 );
 
 select
@@ -397,8 +275,7 @@ select
 from
   pg_index
 where
-  indrelid =
-  cast(cast('tbl' as regclass) as oid);
+  indrelid = cast(cast('tbl' as regclass) as oid);
 
 select
   pg_get_constraintdef(oid),
@@ -407,27 +284,13 @@ select
 from
   pg_constraint
 where
-  conrelid =
-  cast(cast('tbl' as regclass) as oid) and
-  contype = 'p';
+  conrelid = cast(cast('tbl' as regclass) as oid) and contype = 'p';
 
 insert into tbl
-select
-  1,
-  2,
-  3 * x,
-  box('4,4,4,4')
-from
-  generate_series(1, 10) as x;
+select 1, 2, 3 * x, box('4,4,4,4') from generate_series(1, 10) as x;
 
 insert into tbl
-select
-  1,
-  null,
-  3 * x,
-  box('4,4,4,4')
-from
-  generate_series(1, 10) as x;
+select 1, null, 3 * x, box('4,4,4,4') from generate_series(1, 10) as x;
 
 insert into tbl select x, 2 * x, null, null from generate_series(1, 10) as x;
 
@@ -438,9 +301,7 @@ create table tbl (
   c2 int,
   c3 int,
   c4 box,
-  exclude using btree (c1 with =)
-  include ("c3",
-  "c4")
+  exclude using btree (c1 with =) include (c3, c4)
 );
 
 select
@@ -454,8 +315,7 @@ select
 from
   pg_index
 where
-  indrelid =
-  cast(cast('tbl' as regclass) as oid);
+  indrelid = cast(cast('tbl' as regclass) as oid);
 
 select
   pg_get_constraintdef(oid),
@@ -464,17 +324,10 @@ select
 from
   pg_constraint
 where
-  conrelid =
-  cast(cast('tbl' as regclass) as oid);
+  conrelid = cast(cast('tbl' as regclass) as oid);
 
 insert into tbl
-select
-  1,
-  2,
-  3 * x,
-  box('4,4,4,4')
-from
-  generate_series(1, 10) as x;
+select 1, 2, 3 * x, box('4,4,4,4') from generate_series(1, 10) as x;
 
 insert into tbl select x, 2 * x, null, null from generate_series(1, 10) as x;
 
@@ -487,7 +340,7 @@ create table tbl (
   c4 int
 );
 
-create unique index "tbl_idx" on tbl using btree (c1, c2, c3, c4);
+create unique index tbl_idx on tbl using btree (c1, c2, c3, c4);
 
 select indexdef from pg_indexes where tablename = 'tbl' order by indexname;
 
@@ -505,7 +358,7 @@ create table tbl (
   c4 box
 );
 
-create unique index "tbl_idx" on tbl using btree (c1, c2) include (c3, c4);
+create unique index tbl_idx on tbl using btree (c1, c2) include (c3, c4);
 
 select indexdef from pg_indexes where tablename = 'tbl' order by indexname;
 
@@ -521,7 +374,7 @@ create table tbl (
   c2 int,
   c3 int,
   c4 box,
-  unique (c1, c2) include ("c3", "c4")
+  unique (c1, c2) include (c3, c4)
 );
 
 select indexdef from pg_indexes where tablename = 'tbl' order by indexname;
@@ -543,7 +396,7 @@ create table tbl (
   c2 int
 );
 
-create index "tbl_idx" on tbl using btree (c1, (c1 + 0)) include (c2);
+create index tbl_idx on tbl using btree (c1, (c1 + 0)) include (c2);
 
 alter index tbl_idx
   alter column 1 set statistics 1000;
@@ -564,17 +417,11 @@ create table tbl (
   c2 int,
   c3 int,
   c4 box,
-  unique (c1, c2) include ("c3", "c4")
+  unique (c1, c2) include (c3, c4)
 );
 
 insert into tbl
-select
-  x,
-  2 * x,
-  3 * x,
-  box('4,4,4,4')
-from
-  generate_series(1, 1000) as x;
+select x, 2 * x, 3 * x, box('4,4,4,4') from generate_series(1, 1000) as x;
 
 create unique index concurrently on tbl using btree (c1, c2) include (c3, c4);
 
@@ -587,7 +434,7 @@ create table tbl (
   c2 int,
   c3 int,
   c4 box,
-  unique (c1, c2) include ("c3", "c4")
+  unique (c1, c2) include (c3, c4)
 );
 
 select indexdef from pg_indexes where tablename = 'tbl' order by indexname;
@@ -639,23 +486,9 @@ create table tbl (
 );
 
 insert into tbl
-select
-  x,
-  2 * x,
-  3 * x,
-  box('4,4,4,4')
-from
-  generate_series(1, 10) as x;
+select x, 2 * x, 3 * x, box('4,4,4,4') from generate_series(1, 10) as x;
 
-create unique index "tbl_idx_unique"
-on tbl
-using btree
-(
-  c1,
-  c2
-)
-include (c3,
-c4);
+create unique index tbl_idx_unique on tbl using btree (c1, c2) include (c3, c4);
 
 update tbl set c1 = 100 where c1 = 2;
 
@@ -674,17 +507,11 @@ create table tbl (
   c2 int,
   c3 int,
   c4 box,
-  unique (c1, c2) include ("c3", "c4")
+  unique (c1, c2) include (c3, c4)
 );
 
 insert into tbl
-select
-  x,
-  2 * x,
-  3 * x,
-  box('4,4,4,4')
-from
-  generate_series(1, 10) as x;
+select x, 2 * x, 3 * x, box('4,4,4,4') from generate_series(1, 10) as x;
 
 alter table tbl
   alter column c1 type bigint;
@@ -700,7 +527,7 @@ create table nametbl (
   c3 double precision
 );
 
-create index "nametbl_c1_c2_idx" on nametbl using btree (c2, c1) include (c3);
+create index nametbl_c1_c2_idx on nametbl using btree (c2, c1) include (c3);
 
 insert into nametbl values (1, 'two', 3.0);
 

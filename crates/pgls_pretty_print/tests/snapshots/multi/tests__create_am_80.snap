@@ -9,7 +9,7 @@ create access method bogus type index handler int4in;
 
 create access method bogus type index handler heap_tableam_handler;
 
-create index "grect2ind2" on fast_emp4000 using gist2 (home_base);
+create index grect2ind2 on fast_emp4000 using gist2 (home_base);
 
 create operator class box_ops default
   for type box
@@ -26,21 +26,13 @@ create operator class box_ops default
   operator 10 <<|,
   operator 11 |>>,
   operator 12 |&>,
-  function 1 gist_box_consistent(
-    internal,
-    box,
-    smallint,
-    oid,
-    internal),
+  function 1 gist_box_consistent(internal, box, smallint, oid, internal),
   function 2 gist_box_union(internal, internal),
-  function 5 gist_box_penalty(
-    internal,
-    internal,
-    internal),
+  function 5 gist_box_penalty(internal, internal, internal),
   function 6 gist_box_picksplit(internal, internal),
   function 7 gist_box_same(box, box, internal);
 
-create index "grect2ind2" on fast_emp4000 using gist2 (home_base);
+create index grect2ind2 on fast_emp4000 using gist2 (home_base);
 
 begin;
 
@@ -57,8 +49,7 @@ select
 from
   fast_emp4000
 where
-  home_base <@
-  cast('(200,200),(2000,1000)' as box)
+  home_base <@ cast('(200,200),(2000,1000)' as box)
 order by (home_base[0])[0];
 
 select
@@ -66,29 +57,26 @@ select
 from
   fast_emp4000
 where
-  home_base <@
-  cast('(200,200),(2000,1000)' as box)
+  home_base <@ cast('(200,200),(2000,1000)' as box)
 order by (home_base[0])[0];
 
 select
-  COUNT(*)
+  count(*)
 from
   fast_emp4000
 where
-  home_base &&
-  cast('(1000,1000,0,0)' as box);
+  home_base && cast('(1000,1000,0,0)' as box);
 
 select
-  COUNT(*)
+  count(*)
 from
   fast_emp4000
 where
-  home_base &&
-  cast('(1000,1000,0,0)' as box);
+  home_base && cast('(1000,1000,0,0)' as box);
 
-select COUNT(*) from fast_emp4000 where home_base is null;
+select count(*) from fast_emp4000 where home_base is null;
 
-select COUNT(*) from fast_emp4000 where home_base is null;
+select count(*) from fast_emp4000 where home_base is null;
 
 rollback;
 
@@ -96,7 +84,7 @@ drop access method gist2;
 
 begin;
 
-lock table fast_emp4000 in ACCESS EXCLUSIVE mode;
+lock table fast_emp4000 in access exclusive mode;
 
 drop access method gist2 cascade;
 
@@ -136,7 +124,7 @@ create table tableam_parted_heap2 (
   a text,
   b int
 )
-partition by LIST(a) using heap2;
+partition by list(a) using heap2;
 
 select
   a.amname
@@ -144,8 +132,7 @@ from
   pg_class as c,
   pg_am as a
 where
-  c.relname = 'tableam_parted_heap2' and
-  a.oid = c.relam;
+  c.relname = 'tableam_parted_heap2' and a.oid = c.relam;
 
 drop table tableam_parted_heap2;
 
@@ -153,7 +140,7 @@ create table tableam_parted_heap2 (
   a text,
   b int
 )
-partition by LIST(a);
+partition by list(a);
 
 set default_table_access_method = heap;
 
@@ -184,8 +171,7 @@ select
     when relkind = 't'
     then (
       select
-        'toast for ' ||
-        cast(relname as regclass)
+        'toast for ' || cast(relname as regclass)
       from
         pg_class as pcm
       where
@@ -198,25 +184,18 @@ from
   pg_class as pc,
   pg_am as pa
 where
-  pa.oid = pc.relam and
-  pa.amname = 'heap2'
+  pa.oid = pc.relam and pa.amname = 'heap2'
 order by 3,
   1,
   2;
 
 select
-  pg_describe_object(
-    classid,
-    objid,
-    objsubid
-  )
-  as obj
+  pg_describe_object(classid, objid, objsubid) as obj
 from
   pg_depend,
   pg_am
 where
-  pg_depend.refclassid =
-  cast('pg_am' as regclass) and
+  pg_depend.refclassid = cast('pg_am' as regclass) and
   pg_am.oid = pg_depend.refobjid and
   pg_am.amname = 'heap2'
 order by classid,
@@ -225,11 +204,7 @@ order by classid,
 
 create table heaptable using heap
 as
-  select
-    a,
-    repeat(cast(a as text), 100)
-  from
-    generate_series(1, 9) as a;
+  select a, repeat(cast(a as text), 100) from generate_series(1, 9) as a;
 
 select
   amname
@@ -237,25 +212,14 @@ from
   pg_class as c,
   pg_am as am
 where
-  c.relam = am.oid and
-  c.oid = cast('heaptable' as regclass);
+  c.relam = am.oid and c.oid = cast('heaptable' as regclass);
 
 alter table heaptable
   set access method heap2;
 
 select
-  pg_describe_object(
-    classid,
-    objid,
-    objsubid
-  )
-  as obj,
-  pg_describe_object(
-    refclassid,
-    refobjid,
-    refobjsubid
-  )
-  as objref,
+  pg_describe_object(classid, objid, objsubid) as obj,
+  pg_describe_object(refclassid, refobjid, refobjsubid) as objref,
   deptype
 from
   pg_depend
@@ -269,18 +233,8 @@ alter table heaptable
   set access method heap;
 
 select
-  pg_describe_object(
-    classid,
-    objid,
-    objsubid
-  )
-  as obj,
-  pg_describe_object(
-    refclassid,
-    refobjid,
-    refobjsubid
-  )
-  as objref,
+  pg_describe_object(classid, objid, objsubid) as obj,
+  pg_describe_object(refclassid, refobjid, refobjsubid) as objref,
   deptype
 from
   pg_depend
@@ -299,10 +253,9 @@ from
   pg_class as c,
   pg_am as am
 where
-  c.relam = am.oid and
-  c.oid = cast('heaptable' as regclass);
+  c.relam = am.oid and c.oid = cast('heaptable' as regclass);
 
-select COUNT(a), COUNT(1) filter (where a = 1) from heaptable;
+select count(a), count(1) filter (where a = 1) from heaptable;
 
 begin;
 
@@ -317,8 +270,7 @@ from
   pg_class as c,
   pg_am as am
 where
-  c.relam = am.oid and
-  c.oid = cast('heaptable' as regclass);
+  c.relam = am.oid and c.oid = cast('heaptable' as regclass);
 
 set local default_table_access_method = heap;
 
@@ -331,8 +283,7 @@ from
   pg_class as c,
   pg_am as am
 where
-  c.relam = am.oid and
-  c.oid = cast('heaptable' as regclass);
+  c.relam = am.oid and c.oid = cast('heaptable' as regclass);
 
 rollback;
 
@@ -344,8 +295,7 @@ from
   pg_class as c,
   pg_am as am
 where
-  c.relam = am.oid and
-  c.oid = cast('heapmv' as regclass);
+  c.relam = am.oid and c.oid = cast('heapmv' as regclass);
 
 alter materialized view heapmv
   set access method heap2;
@@ -356,10 +306,9 @@ from
   pg_class as c,
   pg_am as am
 where
-  c.relam = am.oid and
-  c.oid = cast('heapmv' as regclass);
+  c.relam = am.oid and c.oid = cast('heapmv' as regclass);
 
-select COUNT(a), COUNT(1) filter (where a = 1) from heapmv;
+select count(a), count(1) filter (where a = 1) from heapmv;
 
 alter table heaptable
   set access method heap,
@@ -381,30 +330,18 @@ create table am_partitioned (
   x int,
   y int
 )
-partition by HASH(x) using heap2;
+partition by hash(x) using heap2;
 
 select
-  pg_describe_object(
-    classid,
-    objid,
-    objsubid
-  )
-  as obj,
-  pg_describe_object(
-    refclassid,
-    refobjid,
-    refobjsubid
-  )
-  as refobj
+  pg_describe_object(classid, objid, objsubid) as obj,
+  pg_describe_object(refclassid, refobjid, refobjsubid) as refobj
 from
   pg_depend,
   pg_am
 where
-  pg_depend.refclassid =
-  cast('pg_am' as regclass) and
+  pg_depend.refclassid = cast('pg_am' as regclass) and
   pg_am.oid = pg_depend.refobjid and
-  pg_depend.objid =
-  cast('am_partitioned' as regclass);
+  pg_depend.objid = cast('am_partitioned' as regclass);
 
 drop table am_partitioned;
 
@@ -416,32 +353,20 @@ create table am_partitioned (
   x int,
   y int
 )
-partition by HASH(x);
+partition by hash(x);
 
 select relam from pg_class where relname = 'am_partitioned';
 
 select
-  pg_describe_object(
-    classid,
-    objid,
-    objsubid
-  )
-  as obj,
-  pg_describe_object(
-    refclassid,
-    refobjid,
-    refobjsubid
-  )
-  as refobj
+  pg_describe_object(classid, objid, objsubid) as obj,
+  pg_describe_object(refclassid, refobjid, refobjsubid) as refobj
 from
   pg_depend,
   pg_am
 where
-  pg_depend.refclassid =
-  cast('pg_am' as regclass) and
+  pg_depend.refclassid = cast('pg_am' as regclass) and
   pg_am.oid = pg_depend.refobjid and
-  pg_depend.objid =
-  cast('am_partitioned' as regclass);
+  pg_depend.objid = cast('am_partitioned' as regclass);
 
 alter table am_partitioned
   set access method heap2;
@@ -452,31 +377,18 @@ from
   pg_class as c,
   pg_am as a
 where
-  c.relname = 'am_partitioned' and
-  a.oid = c.relam;
+  c.relname = 'am_partitioned' and a.oid = c.relam;
 
 select
-  pg_describe_object(
-    classid,
-    objid,
-    objsubid
-  )
-  as obj,
-  pg_describe_object(
-    refclassid,
-    refobjid,
-    refobjsubid
-  )
-  as refobj
+  pg_describe_object(classid, objid, objsubid) as obj,
+  pg_describe_object(refclassid, refobjid, refobjsubid) as refobj
 from
   pg_depend,
   pg_am
 where
-  pg_depend.refclassid =
-  cast('pg_am' as regclass) and
+  pg_depend.refclassid = cast('pg_am' as regclass) and
   pg_am.oid = pg_depend.refobjid and
-  pg_depend.objid =
-  cast('am_partitioned' as regclass);
+  pg_depend.objid = cast('am_partitioned' as regclass);
 
 set local default_table_access_method = heap2;
 
@@ -489,31 +401,18 @@ from
   pg_class as c,
   pg_am as a
 where
-  c.relname = 'am_partitioned' and
-  a.oid = c.relam;
+  c.relname = 'am_partitioned' and a.oid = c.relam;
 
 select
-  pg_describe_object(
-    classid,
-    objid,
-    objsubid
-  )
-  as obj,
-  pg_describe_object(
-    refclassid,
-    refobjid,
-    refobjsubid
-  )
-  as refobj
+  pg_describe_object(classid, objid, objsubid) as obj,
+  pg_describe_object(refclassid, refobjid, refobjsubid) as refobj
 from
   pg_depend,
   pg_am
 where
-  pg_depend.refclassid =
-  cast('pg_am' as regclass) and
+  pg_depend.refclassid = cast('pg_am' as regclass) and
   pg_am.oid = pg_depend.refobjid and
-  pg_depend.objid =
-  cast('am_partitioned' as regclass);
+  pg_depend.objid = cast('am_partitioned' as regclass);
 
 set local default_table_access_method = heap2;
 
@@ -526,8 +425,7 @@ from
   pg_class as c,
   pg_am as a
 where
-  c.relname = 'am_partitioned' and
-  a.oid = c.relam;
+  c.relname = 'am_partitioned' and a.oid = c.relam;
 
 alter table am_partitioned
   set access method default;
@@ -540,13 +438,13 @@ set local default_table_access_method = heap;
 
 create table am_partitioned_0
 partition of am_partitioned
-for values with (MODULUS 10, REMAINDER 0);
+for values with (modulus 10, remainder 0);
 
 set local default_table_access_method = heap2;
 
 create table am_partitioned_1
 partition of am_partitioned
-for values with (MODULUS 10, REMAINDER 1);
+for values with (modulus 10, remainder 1);
 
 set local default_table_access_method = heap;
 
@@ -555,7 +453,7 @@ alter table am_partitioned
 
 create table am_partitioned_2
 partition of am_partitioned
-for values with (MODULUS 10, REMAINDER 2);
+for values with (modulus 10, remainder 2);
 
 alter table am_partitioned
   set access method default;
@@ -564,31 +462,31 @@ select relam from pg_class where relname = 'am_partitioned';
 
 create table am_partitioned_3
 partition of am_partitioned
-for values with (MODULUS 10, REMAINDER 3);
+for values with (modulus 10, remainder 3);
 
 alter table am_partitioned
   set access method default;
 
 create table am_partitioned_5p
 partition of am_partitioned
-for values with (MODULUS 10, REMAINDER 5)
-partition by HASH(y);
+for values with (modulus 10, remainder 5)
+partition by hash(y);
 
 create table am_partitioned_5p1
 partition of am_partitioned_5p
-for values with (MODULUS 10, REMAINDER 1);
+for values with (modulus 10, remainder 1);
 
 alter table am_partitioned
   set access method heap2;
 
 create table am_partitioned_6p
 partition of am_partitioned
-for values with (MODULUS 10, REMAINDER 6)
-partition by HASH(y);
+for values with (modulus 10, remainder 6)
+partition by hash(y);
 
 create table am_partitioned_6p1
 partition of am_partitioned_6p
-for values with (MODULUS 10, REMAINDER 1);
+for values with (modulus 10, remainder 1);
 
 select
   c.relname,
@@ -597,8 +495,7 @@ from
   pg_class as c,
   pg_am as a
 where
-  c.relam = a.oid and
-  c.relname like 'am_partitioned%'
+  c.relam = a.oid and c.relname like 'am_partitioned%'
 union all
 select
   c.relname,
@@ -606,8 +503,7 @@ select
 from
   pg_class as c
 where
-  c.relam = 0 and
-  c.relname like 'am_partitioned%'
+  c.relam = 0 and c.relname like 'am_partitioned%'
 order by 1;
 
 drop table am_partitioned;
@@ -632,7 +528,7 @@ create table tableam_parted_heapx (
   a text,
   b int
 )
-partition by LIST(a);
+partition by list(a);
 
 create table tableam_parted_1_heapx
 partition of tableam_parted_heapx
@@ -660,8 +556,7 @@ select
     when relkind = 't'
     then (
       select
-        'toast for ' ||
-        cast(relname as regclass)
+        'toast for ' || cast(relname as regclass)
       from
         pg_class as pcm
       where
@@ -671,10 +566,7 @@ select
   end) collate "C"
   as relname
 from
-  pg_class as pc
-  left outer join
-    pg_am as pa
-  on pa.oid = pc.relam
+  pg_class as pc left outer join pg_am as pa on pa.oid = pc.relam
 where
   pc.relname like 'tableam_%_heapx'
 order by 3,

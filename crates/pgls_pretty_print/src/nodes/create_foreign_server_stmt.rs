@@ -5,7 +5,7 @@ use crate::{
 use pgls_query::protobuf::CreateForeignServerStmt;
 
 use super::{
-    node_list::emit_comma_separated_list,
+    node_list::emit_parenthesized_list,
     string::{emit_identifier_maybe_quoted, emit_keyword, emit_single_quoted_str},
 };
 
@@ -68,12 +68,10 @@ pub(super) fn emit_create_foreign_server_stmt(e: &mut EventEmitter, n: &CreateFo
         e.indent_start();
         emit_keyword(e, "OPTIONS");
         e.space();
-        e.token(TokenKind::L_PAREN);
-        emit_comma_separated_list(e, &n.options, |n, e| {
+        emit_parenthesized_list(e, &n.options, |n, e| {
             let def_elem = assert_node_variant!(DefElem, n);
             super::emit_options_def_elem(e, def_elem);
         });
-        e.token(TokenKind::R_PAREN);
         e.indent_end();
     }
 

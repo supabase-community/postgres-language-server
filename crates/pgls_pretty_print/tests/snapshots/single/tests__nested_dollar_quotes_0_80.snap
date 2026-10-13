@@ -6,8 +6,8 @@ snapshot_kind: text
 create function test_nested()
 returns void
 language plpgsql
-as $function$
+as $$
 BEGIN
   EXECUTE $inner$SELECT 1$inner$;
 END;
-$function$;
+$$;

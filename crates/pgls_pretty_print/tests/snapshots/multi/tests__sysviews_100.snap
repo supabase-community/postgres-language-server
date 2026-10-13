@@ -3,9 +3,9 @@ source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/sysviews.sql
 snapshot_kind: text
 ---
-select COUNT(*) >= 0 as ok from pg_available_extension_versions;
+select count(*) >= 0 as ok from pg_available_extension_versions;
 
-select COUNT(*) >= 0 as ok from pg_available_extensions;
+select count(*) >= 0 as ok from pg_available_extensions;
 
 select
   type,
@@ -20,18 +20,13 @@ where
 
 begin;
 
-declare "cur"
+declare cur
 cursor
 for select
   left(a, 10),
   b
 from
-  (
-    values
-      (repeat('a', 512 * 1024), 1),
-      (repeat('b', 512), 2)
-  )
-  as v (a, b)
+  (values (repeat('a', 512 * 1024), 1), (repeat('b', 512), 2)) as v (a, b)
 order by v.a desc;;
 
 fetch next from cur;
@@ -50,57 +45,50 @@ where
 
 rollback;
 
-with
-contexts
-as (
-  select * from pg_backend_memory_contexts
-)
+with contexts as (select * from pg_backend_memory_contexts)
 select
-  COUNT(*) > 1
+  count(*) > 1
 from
   contexts as c1,
   contexts as c2
 where
-  c2.name = 'CacheMemoryContext' and
-  c1.path[c2.level] = c2.path[c2.level];
+  c2.name = 'CacheMemoryContext' and c1.path[c2.level] = c2.path[c2.level];
 
-select COUNT(*) > 20 as ok from pg_config;
+select count(*) > 20 as ok from pg_config;
 
-select COUNT(*) = 0 as ok from pg_cursors;
+select count(*) = 0 as ok from pg_cursors;
 
-select COUNT(*) >= 0 as ok from pg_file_settings;
+select count(*) >= 0 as ok from pg_file_settings;
 
 select
-  COUNT(*) > 0 as ok,
-  COUNT(*) filter (where error is not null) = 0
-  as no_err
+  count(*) > 0 as ok,
+  count(*) filter (where error is not null) = 0 as no_err
 from
   pg_hba_file_rules;
 
 select
-  COUNT(*) >= 0 as ok,
-  COUNT(*) filter (where error is not null) = 0
-  as no_err
+  count(*) >= 0 as ok,
+  count(*) filter (where error is not null) = 0 as no_err
 from
   pg_ident_file_mappings;
 
-select COUNT(*) > 0 as ok from pg_locks;
+select count(*) > 0 as ok from pg_locks;
 
-select COUNT(*) = 0 as ok from pg_prepared_statements;
+select count(*) = 0 as ok from pg_prepared_statements;
 
-select COUNT(*) >= 0 as ok from pg_prepared_xacts;
+select count(*) >= 0 as ok from pg_prepared_xacts;
 
-select COUNT(*) > 0 as ok from pg_stat_slru;
+select count(*) > 0 as ok from pg_stat_slru;
 
-select COUNT(*) = 1 as ok from pg_stat_wal;
+select count(*) = 1 as ok from pg_stat_wal;
 
-select COUNT(*) = 0 as ok from pg_stat_wal_receiver;
+select count(*) = 0 as ok from pg_stat_wal_receiver;
 
 select name, setting from pg_settings where name like 'enable%';
 
 select
   type,
-  COUNT(*) > 0 as ok
+  count(*) > 0 as ok
 from
   pg_wait_events
 where
@@ -108,16 +96,16 @@ where
 group by type
 order by type collate "C";
 
-select COUNT(distinct utc_offset) >= 24 as ok from pg_timezone_names;
+select count(distinct utc_offset) >= 24 as ok from pg_timezone_names;
 
-select COUNT(distinct utc_offset) >= 24 as ok from pg_timezone_abbrevs;
+select count(distinct utc_offset) >= 24 as ok from pg_timezone_abbrevs;
 
-set timezone_abbreviations = Australia;
+set timezone_abbreviations = 'Australia';
 
-select COUNT(distinct utc_offset) >= 24 as ok from pg_timezone_abbrevs;
+select count(distinct utc_offset) >= 24 as ok from pg_timezone_abbrevs;
 
-set timezone_abbreviations = India;
+set timezone_abbreviations = 'India';
 
-select COUNT(distinct utc_offset) >= 24 as ok from pg_timezone_abbrevs;
+select count(distinct utc_offset) >= 24 as ok from pg_timezone_abbrevs;
 
 select * from pg_timezone_abbrevs where abbrev = 'LMT';

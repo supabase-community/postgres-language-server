@@ -6,7 +6,7 @@ use crate::emitter::{EventEmitter, GroupKind, LineType};
 use super::delete_stmt::emit_delete_stmt_no_semicolon;
 use super::insert_stmt::emit_insert_stmt_no_semicolon;
 use super::merge_stmt::emit_merge_stmt_no_semicolon;
-use super::node_list::emit_comma_separated_list;
+use super::node_list::emit_parenthesized_list;
 use super::select_stmt::emit_select_stmt_no_semicolon;
 use super::update_stmt::emit_update_stmt_no_semicolon;
 
@@ -19,9 +19,7 @@ pub(super) fn emit_common_table_expr(e: &mut EventEmitter, n: &CommonTableExpr) 
     // Optional column aliases
     if !n.aliascolnames.is_empty() {
         e.space();
-        e.token(TokenKind::L_PAREN);
-        emit_comma_separated_list(e, &n.aliascolnames, super::emit_node);
-        e.token(TokenKind::R_PAREN);
+        emit_parenthesized_list(e, &n.aliascolnames, super::emit_node);
     }
 
     if matches!(e.config().layout, crate::Layout::Expanded) {

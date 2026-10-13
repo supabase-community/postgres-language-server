@@ -1,12 +1,13 @@
 use crate::{
     TokenKind,
     emitter::{EventEmitter, GroupKind},
-    nodes::node_list::emit_comma_separated_list,
+    nodes::node_list::emit_parenthesized_list,
 };
 use pgls_query::protobuf::{self, TypeName};
 
 use super::string::{
     emit_identifier, emit_identifier_maybe_quoted, emit_type_identifier_maybe_quoted,
+    needs_quoting_as_function_or_type_name,
 };
 
 const INTERVAL_MASK_MONTH: i32 = 1 << 1;
@@ -134,6 +135,14 @@ fn emit_dot_separated_name(e: &mut EventEmitter, name_parts: &[String]) {
 }
 
 fn emit_dot_separated_type_name(e: &mut EventEmitter, name_parts: &[String]) {
+    if let [name] = name_parts
+        && needs_quoting_as_function_or_type_name(name)
+    {
+        // Unquoted, `"numeric"` would be the keyword, which means `pg_catalog.numeric`.
+        emit_identifier(e, name);
+        return;
+    }
+
     for (index, part) in name_parts.iter().enumerate() {
         if index > 0 {
             e.token(TokenKind::DOT);
@@ -142,43 +151,31 @@ fn emit_dot_separated_type_name(e: &mut EventEmitter, name_parts: &[String]) {
     }
 }
 
+/// The keywords spelling a type the grammar qualifies with `pg_catalog` itself, `int` for
+/// `pg_catalog.int4` for instance.
+///
+/// Only these collapse to keywords. Any other name is written as it is stored: `int4` stays `int4`
+/// and an explicit `pg_catalog.text` keeps its schema, since dropping it lets the search path pick
+/// another type.
 fn builtin_type_keywords(name_parts: &[String]) -> Option<&'static [&'static str]> {
-    if name_parts.is_empty() {
+    let [schema, name] = name_parts else {
+        return None;
+    };
+    if !is_pg_catalog(schema) {
         return None;
     }
 
-    let base_name = match name_parts {
-        [name] => name,
-        [schema, name] if is_pg_catalog(schema) => name,
-        _ => return None,
-    };
-
-    let lowered = base_name.to_ascii_lowercase();
-
-    match lowered.as_str() {
+    match name.as_str() {
         "bool" => Some(&["boolean"]),
-        "bytea" => Some(&["bytea"]),
-        "char" | "bpchar" => Some(&["char"]),
-        "name" => Some(&["name"]),
+        "bpchar" => Some(&["char"]),
         "int2" => Some(&["smallint"]),
         "int4" => Some(&["int"]),
         "int8" => Some(&["bigint"]),
-        "oid" => Some(&["oid"]),
-        "tid" => Some(&["tid"]),
-        "xid" => Some(&["xid"]),
-        "cid" => Some(&["cid"]),
         "float4" => Some(&["real"]),
         "float8" => Some(&["double", "precision"]),
         "numeric" => Some(&["numeric"]),
-        "decimal" => Some(&["decimal"]),
-        "money" => Some(&["money"]),
         "varchar" => Some(&["varchar"]),
-        "text" => Some(&["text"]),
         "json" => Some(&["json"]),
-        "jsonb" => Some(&["jsonb"]),
-        "uuid" => Some(&["uuid"]),
-        "xml" => Some(&["xml"]),
-        "date" => Some(&["date"]),
         "time" => Some(&["time"]),
         "timetz" => Some(&["time", "with", "time", "zone"]),
         "timestamp" => Some(&["timestamp"]),
@@ -186,36 +183,6 @@ fn builtin_type_keywords(name_parts: &[String]) -> Option<&'static [&'static str
         "interval" => Some(&["interval"]),
         "bit" => Some(&["bit"]),
         "varbit" => Some(&["bit", "varying"]),
-        "inet" => Some(&["inet"]),
-        "cidr" => Some(&["cidr"]),
-        "macaddr" => Some(&["macaddr"]),
-        "macaddr8" => Some(&["macaddr8"]),
-        "regclass" => Some(&["regclass"]),
-        "regproc" => Some(&["regproc"]),
-        "regprocedure" => Some(&["regprocedure"]),
-        "regoper" => Some(&["regoper"]),
-        "regoperator" => Some(&["regoperator"]),
-        "regtype" => Some(&["regtype"]),
-        "regconfig" => Some(&["regconfig"]),
-        "regdictionary" => Some(&["regdictionary"]),
-        "anyarray" => Some(&["anyarray"]),
-        "anyelement" => Some(&["anyelement"]),
-        "anynonarray" => Some(&["anynonarray"]),
-        "anyenum" => Some(&["anyenum"]),
-        "anyrange" => Some(&["anyrange"]),
-        "pg_lsn" => Some(&["pg_lsn"]),
-        "tsvector" => Some(&["tsvector"]),
-        "tsquery" => Some(&["tsquery"]),
-        "gtsvector" => Some(&["gtsvector"]),
-        "txid_snapshot" => Some(&["txid_snapshot"]),
-        "int4range" => Some(&["int4range"]),
-        "int8range" => Some(&["int8range"]),
-        "numrange" => Some(&["numrange"]),
-        "tsrange" => Some(&["tsrange"]),
-        "tstzrange" => Some(&["tstzrange"]),
-        "daterange" => Some(&["daterange"]),
-        "record" => Some(&["record"]),
-        "void" => Some(&["void"]),
         _ => None,
     }
 }
@@ -236,11 +203,9 @@ fn emit_type_modifiers(e: &mut EventEmitter, n: &TypeName, name_parts: &[String]
     }
 
     if !n.typmods.is_empty() {
-        e.token(TokenKind::L_PAREN);
-        emit_comma_separated_list(e, &n.typmods, |node, emitter| {
+        emit_parenthesized_list(e, &n.typmods, |node, emitter| {
             super::emit_node(node, emitter)
         });
-        e.token(TokenKind::R_PAREN);
     }
 }
 
@@ -257,44 +222,30 @@ fn emit_array_bounds(e: &mut EventEmitter, n: &TypeName) {
 }
 
 fn is_interval_type(name_parts: &[String]) -> bool {
-    name_parts
-        .last()
-        .map(|name| name.eq_ignore_ascii_case("interval"))
-        .unwrap_or(false)
+    matches!(name_parts, [schema, name] if is_pg_catalog(schema) && name == "interval")
 }
 
 fn is_time_with_tz_type(name_parts: &[String]) -> bool {
-    let base_name = match name_parts {
-        [name] => name,
-        [schema, name] if is_pg_catalog(schema) => name,
-        _ => return false,
-    };
-
-    let lowered = base_name.to_ascii_lowercase();
-    matches!(lowered.as_str(), "timetz" | "timestamptz")
+    matches!(
+        name_parts,
+        [schema, name] if is_pg_catalog(schema) && matches!(name.as_str(), "timetz" | "timestamptz")
+    )
 }
 
 fn emit_time_with_tz_type(e: &mut EventEmitter, n: &TypeName, name_parts: &[String]) {
-    let base_name = match name_parts {
-        [name] => name,
-        [schema, name] if is_pg_catalog(schema) => name,
-        _ => {
-            emit_normalized_type_name(e, name_parts);
-            return;
-        }
+    let [_, name] = name_parts else {
+        emit_normalized_type_name(e, name_parts);
+        return;
     };
 
-    let lowered = base_name.to_ascii_lowercase();
-    match lowered.as_str() {
+    match name.as_str() {
         "timetz" => {
             e.token(TokenKind::TIME_KW);
             // Emit precision if any
             if !n.typmods.is_empty() {
-                e.token(TokenKind::L_PAREN);
-                emit_comma_separated_list(e, &n.typmods, |node, emitter| {
+                emit_parenthesized_list(e, &n.typmods, |node, emitter| {
                     super::emit_node(node, emitter)
                 });
-                e.token(TokenKind::R_PAREN);
             }
             e.space();
             e.token(TokenKind::WITH_KW);
@@ -307,11 +258,9 @@ fn emit_time_with_tz_type(e: &mut EventEmitter, n: &TypeName, name_parts: &[Stri
             e.token(TokenKind::TIMESTAMP_KW);
             // Emit precision if any
             if !n.typmods.is_empty() {
-                e.token(TokenKind::L_PAREN);
-                emit_comma_separated_list(e, &n.typmods, |node, emitter| {
+                emit_parenthesized_list(e, &n.typmods, |node, emitter| {
                     super::emit_node(node, emitter)
                 });
-                e.token(TokenKind::R_PAREN);
             }
             e.space();
             e.token(TokenKind::WITH_KW);

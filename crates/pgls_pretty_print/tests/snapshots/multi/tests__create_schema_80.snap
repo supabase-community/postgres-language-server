@@ -57,24 +57,24 @@ on schema_not_existing.tab
 for each statement
 execute function schema_trig.no_func();
 
-create schema "regress_schema_1" authorization current_role;
+create schema regress_schema_1 authorization current_role;
 
 create sequence schema_not_existing.seq;
 
-create schema "regress_schema_1" authorization current_role;
+create schema regress_schema_1 authorization current_role;
 
 create table schema_not_existing.tab (id int);
 
-create schema "regress_schema_1" authorization current_role;
+create schema regress_schema_1 authorization current_role;
 
 create view schema_not_existing.view
 as select 1;
 
-create schema "regress_schema_1" authorization current_role;
+create schema regress_schema_1 authorization current_role;
 
 create index on schema_not_existing.tab using btree (id);
 
-create schema "regress_schema_1" authorization current_role;
+create schema regress_schema_1 authorization current_role;
 
 create trigger schema_trig
 before insert
@@ -98,7 +98,7 @@ create table regress_create_schema_role.tab (id int);
 
 drop schema regress_create_schema_role cascade;
 
-create schema "regress_schema_1" authorization current_role;
+create schema regress_schema_1 authorization current_role;
 
 create table regress_schema_1.tab (id int);
 

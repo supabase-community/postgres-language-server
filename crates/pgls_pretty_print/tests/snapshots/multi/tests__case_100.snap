@@ -126,9 +126,7 @@ create function vol(text)
 returns text
 language plpgsql
 volatile
-as $function$
-begin return $1; end
-$function$;
+as $$begin return $1; end$$;
 
 select
   case case vol('bar')
@@ -147,18 +145,14 @@ create function volfoo(text)
 returns foodomain
 language plpgsql
 volatile
-as $function$
-begin return $1::foodomain; end
-$function$;
+as $$begin return $1::foodomain; end$$;
 
 create function inline_eq(foodomain, foodomain)
 returns boolean
 language sql
-as $function$
-SELECT CASE $2::text WHEN $1::text THEN true ELSE false END
-$function$;
+as $$SELECT CASE $2::text WHEN $1::text THEN true ELSE false END$$;
 
-create operator = (PROCEDURE = inline_eq, LEFTARG = foodomain, RIGHTARG = foodomain);
+create operator = (procedure = inline_eq, leftarg = foodomain, rightarg = foodomain);
 
 select case volfoo('bar') when cast('foo' as foodomain) then 'is foo' else 'is not foo' end;
 
@@ -172,28 +166,23 @@ create function make_ad(int, int)
 returns arrdomain
 language plpgsql
 volatile
-as $function$
-declare x arrdomain;
+as $$declare x arrdomain;
    begin
      x := array[$1,$2];
      return x;
-   end
-$function$;
+   end$$;
 
 create function ad_eq(arrdomain, arrdomain)
 returns boolean
 language plpgsql
-as $function$
-begin return array_eq($1, $2); end
-$function$;
+as $$begin return array_eq($1, $2); end$$;
 
-create operator = (PROCEDURE = ad_eq, LEFTARG = arrdomain, RIGHTARG = arrdomain);
+create operator = (procedure = ad_eq, leftarg = arrdomain, rightarg = arrdomain);
 
 select
   case make_ad(1, 2)
     when cast(array[2, 4] as arrdomain) then 'wrong'
-    when cast(array[2, 5] as arrdomain)
-    then 'still wrong'
+    when cast(array[2, 5] as arrdomain) then 'still wrong'
     when cast(array[1, 2] as arrdomain) then 'right'
   end;
 
@@ -208,9 +197,7 @@ create type casetestenum as enum ('e', 'f', 'g');
 select
   case cast('foo' as text)
     when 'foo'
-    then array['a', 'b', 'c', 'd'] ||
-    cast(enum_range(cast(null as casetestenum))
-    as text[])
+    then array['a', 'b', 'c', 'd'] || cast(enum_range(cast(null as casetestenum)) as text[])
     else array['x', 'y']
   end;
 

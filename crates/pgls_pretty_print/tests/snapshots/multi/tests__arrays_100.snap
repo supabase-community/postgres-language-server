@@ -3,18 +3,18 @@ source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/arrays.sql
 ---
 create table arrtest (
-  a smallint[],
-  b int[][][],
+  a int2[],
+  b int4[][][],
   c name[],
   d text[][],
-  e double precision[],
+  e float8[],
   f char(5)[],
   g varchar(5)[]
 );
 
 create table array_op_test (
-  seqno int,
-  i int[],
+  seqno int4,
+  i int4[],
   t text[]
 );
 
@@ -23,15 +23,7 @@ copy array_op_test from 'filename';
 analyze array_op_test;
 
 insert into arrtest (a[1:5], b[1:1][1:2][1:2], c, d, f, g)
-values
-  (
-    '{1,2,3,4,5}',
-    '{{{0,0},{1,2}}}',
-    '{}',
-    '{}',
-    '{}',
-    '{}'
-  );
+values ('{1,2,3,4,5}', '{{{0,0},{1,2}}}', '{}', '{}', '{}', '{}');
 
 update arrtest set e[0] = '1.1';
 
@@ -53,9 +45,9 @@ values
 
 insert into arrtest (a, b[1:2], c, d[1:2]) values ('{}', '{3,4}', '{foo,bar}', '{bar,foo}');
 
-insert into arrtest (b[2]) values (NOW());
+insert into arrtest (b[2]) values (now());
 
-insert into arrtest (b[1:2]) values (NOW());
+insert into arrtest (b[1:2]) values (now());
 
 select * from arrtest;
 
@@ -129,11 +121,11 @@ update arrtest set c[null:1] = '{"can''t assign"}' where array_dims(c) is not nu
 
 update arrtest set c[1:null] = '{"can''t assign"}' where array_dims(c) is not null;
 
-select (NOW())[1];
+select (now())[1];
 
 create temporary table arrtest_s (
-  a smallint[],
-  b smallint[][]
+  a int2[],
+  b int2[][]
 );
 
 insert into arrtest_s values ('{1,2,3,4,5}', '{{1,2,3}, {4,5,6}, {7,8,9}}');
@@ -189,23 +181,20 @@ insert into point_tbl (f1[0]) values (0) returning *;
 update point_tbl
 set f1[0] = null
 where
-  cast(f1 as text) =
-  cast(cast('(10,10)' as point) as text)
+  cast(f1 as text) = cast(cast('(10,10)' as point) as text)
 returning *;
 
 update point_tbl
 set f1[0] = -10,
 f1[1] = -10
 where
-  cast(f1 as text) =
-  cast(cast('(10,10)' as point) as text)
+  cast(f1 as text) = cast(cast('(10,10)' as point) as text)
 returning *;
 
 update point_tbl
 set f1[3] = 10
 where
-  cast(f1 as text) =
-  cast(cast('(-10,-10)' as point) as text)
+  cast(f1 as text) = cast(cast('(-10,-10)' as point) as text)
 returning *;
 
 create temporary table arrtest1 (
@@ -279,7 +268,7 @@ select * from arrtest1;
 
 create temporary table arrtest2 (
   i int[4],
-  f double precision[],
+  f float8[],
   n numeric[],
   t text[],
   d timestamp[]
@@ -289,22 +278,17 @@ insert into arrtest2
 values
   (
     array[array[array[113, 142], array[1, 147]]],
-    cast(array[1.1, 1.2, 1.3] as double precision[]),
+    cast(array[1.1, 1.2, 1.3] as float8[]),
     array[1.1, 1.2, 1.3],
-    array[array[array['aaa', 'aab'],
-    array['aba', 'abb'],
-    array['aca', 'acb']],
-    array[array['baa', 'bab'],
-    array['bba', 'bbb'],
-    array['bca', 'bcb']]],
-    cast(array['19620326', '19931223', '19970117']
-    as timestamp[])
+    array[array[array['aaa', 'aab'], array['aba', 'abb'], array['aca', 'acb']],
+    array[array['baa', 'bab'], array['bba', 'bbb'], array['bca', 'bcb']]],
+    cast(array['19620326', '19931223', '19970117'] as timestamp[])
   );
 
 create temporary table arrtest_f (
   f0 int,
   f1 text,
-  f2 double precision
+  f2 float8
 );
 
 insert into arrtest_f values (1, 'cat1', 1.21);
@@ -355,12 +339,8 @@ select
 from
   (
     select
-      array[array[array[111, 112],
-      array[121, 122],
-      array[131, 132]],
-      array[array[211, 212],
-      array[221, 122],
-      array[231, 232]]]
+      array[array[array[111, 112], array[121, 122], array[131, 132]],
+      array[array[211, 212], array[221, 122], array[231, 232]]]
       as f
   )
   as t;
@@ -418,8 +398,7 @@ select
     array_positions(
       array(
         select
-          cast('AAAAAAAAAAAAAAAAAAAAAAAAA' as text) ||
-          i % 10
+          cast('AAAAAAAAAAAAAAAAAAAAAAAAA' as text) || i % 10
         from
           generate_series(1, 100) as g (i)
       ),
@@ -428,8 +407,7 @@ select
     1
   );
 
-do
-$do$
+do $$
 DECLARE
   o int;
   a int[] := ARRAY[1,2,3,2,3,1,2];
@@ -441,8 +419,7 @@ BEGIN
     o := array_position(a, 2, o + 1);
   END LOOP;
 END
-$do$
-language plpgsql;
+$$ language plpgsql;
 
 select array_position(cast('[2:4]={1,2,3}' as int[]), 1);
 
@@ -452,10 +429,7 @@ select
   array_position(ids, (1, 1)),
   array_positions(ids, (1, 1))
 from
-  (
-    values (array[(0, 0), (1, 1)]), (array[(1, 1)])
-  )
-  as f (ids);
+  (values (array[(0, 0), (1, 1)]), (array[(1, 1)])) as f (ids);
 
 select a from arrtest where b = array[array[array[113, 142], array[1, 147]]];
 
@@ -540,32 +514,22 @@ select * from array_op_test where t && '{}' order by seqno;
 
 select * from array_op_test where t <@ '{}' order by seqno;
 
-select cast(cast(cast(array[1, 2, 3] as text[]) as int[]) as double precision[]) as "{1,2,3}";
+select cast(cast(cast(array[1, 2, 3] as text[]) as int[]) as float8[]) as "{1,2,3}";
 
 select
-  pg_typeof(
-    cast(cast(cast(array[1, 2, 3] as text[]) as int[])
-    as double precision[])
-  )
+  pg_typeof(cast(cast(cast(array[1, 2, 3] as text[]) as int[]) as float8[]))
   as "double precision[]";
 
 select
-  cast(cast(array[array['a', 'bc'], array['def', 'hijk']]
-  as text[])
-  as varchar[])
+  cast(cast(array[array['a', 'bc'], array['def', 'hijk']] as text[]) as varchar[])
   as "{{a,bc},{def,hijk}}";
 
 select
-  pg_typeof(
-    cast(cast(array[array['a', 'bc'], array['def', 'hijk']]
-    as text[])
-    as varchar[])
-  )
+  pg_typeof(cast(cast(array[array['a', 'bc'], array['def', 'hijk']] as text[]) as varchar[]))
   as "character varying[]";
 
 select
-  cast(array[array[array[array[array[array['a', 'bb', 'ccc']]]]]]
-  as text[])
+  cast(array[array[array[array[array[array['a', 'bb', 'ccc']]]]]] as text[])
   as "{{{{{{a,bb,ccc}}}}}}";
 
 select cast(cast(null as text[]) as int[]) as "NULL";
@@ -633,7 +597,7 @@ select * from arr_tbl where f1 > '{1,2,3}' and f1 <= '{1,5,3}';
 select * from arr_tbl where f1 >= '{1,2,3}' and f1 < '{1,5,3}';
 
 create temporary table arr_pk_tbl (
-  pk int primary key,
+  pk int4 primary key,
   f1 int[]
 );
 
@@ -641,12 +605,7 @@ insert into arr_pk_tbl values (1, '{1,2,3}');
 
 insert into arr_pk_tbl
 values (1, '{3,4,5}')
-on conflict
-(pk)
-do
-update
-set f1[1] = excluded.f1[1],
-f1[3] = excluded.f1[3]
+on conflict (pk) do update set f1[1] = excluded.f1[1], f1[3] = excluded.f1[3]
 returning pk,
 f1;
 
@@ -676,14 +635,11 @@ insert into arr_pk_tbl (pk, f1[0:2147483647]) values (2, '{}');
 
 insert into arr_pk_tbl (pk, f1[-2147483648:2147483647]) values (2, '{}');
 
-do
-$do$
-declare a int[];
+do $$ declare a int[];
 begin
   a := '[-2147483648:-2147483647]={1,2}'::int[];
   a[2147483647] := 42;
-end
-$do$;
+end $$;
 
 select 'foo' ~~ any (array['%a', '%o']);
 
@@ -781,18 +737,16 @@ select cast('{ { "," } , { 3 } }' as text[]);
 
 select cast('  {   {  "  0 second  "   ,  0 second  }   }' as text[]);
 
-select
-  cast('{
+select cast('{
            0 second,
            @ 1 hour @ 42 minutes @ 20 seconds
-         }'
-  as interval[]);
+         }' as interval[]);
 
 select cast(array[] as text[]);
 
 select cast('[2]={1,7}' as int[]);
 
-select cast('[0:1]={1.1,2.2}' as double precision[]);
+select cast('[0:1]={1.1,2.2}' as float8[]);
 
 select cast('[2147483646:2147483646]={1}' as int[]);
 
@@ -808,47 +762,27 @@ insert into arraggtest (f1, f2, f3) values ('{1,2,3,4}', '{{grey,red},{blue,blue
 
 insert into arraggtest (f1, f2, f3) values ('{1,2,3}', '{{grey,red},{grey,blue}}', '{1.6}');
 
-select MAX(f1), MIN(f1), MAX(f2), MIN(f2), MAX(f3), MIN(f3) from arraggtest;
+select max(f1), min(f1), max(f2), min(f2), max(f3), min(f3) from arraggtest;
 
 insert into arraggtest (f1, f2, f3)
-values
-  (
-    '{3,3,2,4,5,6}',
-    '{{white,yellow},{pink,orange}}',
-    '{2.1,3.3,1.8,1.7,1.6}'
-  );
+values ('{3,3,2,4,5,6}', '{{white,yellow},{pink,orange}}', '{2.1,3.3,1.8,1.7,1.6}');
 
-select MAX(f1), MIN(f1), MAX(f2), MIN(f2), MAX(f3), MIN(f3) from arraggtest;
+select max(f1), min(f1), max(f2), min(f2), max(f3), min(f3) from arraggtest;
 
 insert into arraggtest (f1, f2, f3)
-values
-  (
-    '{2}',
-    '{{black,red},{green,orange}}',
-    '{1.6,2.2,2.6,0.4}'
-  );
+values ('{2}', '{{black,red},{green,orange}}', '{1.6,2.2,2.6,0.4}');
 
-select MAX(f1), MIN(f1), MAX(f2), MIN(f2), MAX(f3), MIN(f3) from arraggtest;
+select max(f1), min(f1), max(f2), min(f2), max(f3), min(f3) from arraggtest;
 
 insert into arraggtest (f1, f2, f3)
-values
-  (
-    '{4,2,6,7,8,1}',
-    '{{red},{black},{purple},{blue},{blue}}',
-    null
-  );
+values ('{4,2,6,7,8,1}', '{{red},{black},{purple},{blue},{blue}}', null);
 
-select MAX(f1), MIN(f1), MAX(f2), MIN(f2), MAX(f3), MIN(f3) from arraggtest;
+select max(f1), min(f1), max(f2), min(f2), max(f3), min(f3) from arraggtest;
 
 insert into arraggtest (f1, f2, f3)
-values
-  (
-    '{}',
-    '{{pink,white,blue,red,grey,orange}}',
-    '{2.1,1.87,1.4,2.2}'
-  );
+values ('{}', '{{pink,white,blue,red,grey,orange}}', '{2.1,1.87,1.4,2.2}');
 
-select MAX(f1), MIN(f1), MAX(f2), MIN(f2), MAX(f3), MIN(f3) from arraggtest;
+select max(f1), min(f1), max(f2), min(f2), max(f3), min(f3) from arraggtest;
 
 create type comptype as (f1 int, f2 text);
 
@@ -858,12 +792,7 @@ create table comptable (
 );
 
 insert into comptable
-values
-  (
-    row(1, 'foo'),
-    array[cast(row(2, 'bar') as comptype),
-    cast(row(3, 'baz') as comptype)]
-  );
+values (row(1, 'foo'), array[cast(row(2, 'bar') as comptype), cast(row(3, 'baz') as comptype)]);
 
 create type _comptype as enum ('fooey');
 
@@ -881,18 +810,18 @@ create or replace function unnest1(anyarray)
 returns setof anyelement
 language sql
 immutable
-as $function$
+as $$
 select $1[s] from generate_subscripts($1,1) g(s);
-$function$;
+$$;
 
 create or replace function unnest2(anyarray)
 returns setof anyelement
 language sql
 immutable
-as $function$
+as $$
 select $1[s1][s2] from generate_subscripts($1,1) g1(s1),
                    generate_subscripts($1,2) g2(s2);
-$function$;
+$$;
 
 select * from unnest1(array[1, 2, 3]);
 
@@ -992,9 +921,9 @@ select v, v is null as "is null" from string_to_table('1,2,3,4,,6', ',', '') as 
 
 select v, v is null as "is null" from string_to_table('1,2,3,4,*,6', ',', '*') as g (v);
 
-select array_to_string(cast(null as int[]), ',') is null;
+select array_to_string(cast(null as int4[]), ',') is null;
 
-select array_to_string(cast('{}' as int[]), ',');
+select array_to_string(cast('{}' as int4[]), ',');
 
 select array_to_string(array[1, 2, 3, 4, null, 6], ',');
 
@@ -1033,32 +962,14 @@ select cardinality(cast('{{{1,9},{5,6}},{{2,3},{3,4}}}' as int[]));
 select
   array_agg(unique1)
 from
-  (
-    select
-      unique1
-    from
-      tenk1
-    where
-      unique1 < 15
-    order by unique1
-  )
-  as ss;
+  (select unique1 from tenk1 where unique1 < 15 order by unique1) as ss;
 
 select array_agg(ten) from (select ten from tenk1 where unique1 < 15 order by unique1) as ss;
 
 select
   array_agg(nullif(ten, 4))
 from
-  (
-    select
-      ten
-    from
-      tenk1
-    where
-      unique1 < 15
-    order by unique1
-  )
-  as ss;
+  (select ten from tenk1 where unique1 < 15 order by unique1) as ss;
 
 select array_agg(unique1) from tenk1 where unique1 < -15;
 
@@ -1067,24 +978,12 @@ select array_agg(ar) from (values (cast('{1,2}' as int[])), (cast('{3,4}' as int
 select
   array_agg(distinct ar order by ar desc)
 from
-  (
-    select
-      array[i / 2]
-    from
-      generate_series(1, 10) as a (i)
-  )
-  as b (ar);
+  (select array[i / 2] from generate_series(1, 10) as a (i)) as b (ar);
 
 select
   array_agg(ar)
 from
-  (
-    select
-      array_agg(array[i, i + 1, i - 1])
-    from
-      generate_series(1, 2) as a (i)
-  )
-  as b (ar);
+  (select array_agg(array[i, i + 1, i - 1]) from generate_series(1, 2) as a (i)) as b (ar);
 
 select array_agg(array[i + 1.2, i + 1.3, i + 1.4]) from generate_series(1, 3) as g (i);
 
@@ -1102,7 +1001,7 @@ select unnest(array[1, 2, 3]);
 
 select * from unnest(array[1, 2, 3]);
 
-select unnest(cast(array[1, 2, 3, 4.5] as double precision[]));
+select unnest(cast(array[1, 2, 3, 4.5] as float8[]));
 
 select unnest(cast(array[1, 2, 3, 4.5] as numeric[]));
 
@@ -1216,36 +1115,12 @@ drop type textandtext;
 
 select
   op,
-  width_bucket(
-    cast(op as numeric),
-    cast(array[1, 3, 5, 10.0] as numeric[])
-  )
-  as wb_n1,
-  width_bucket(
-    cast(op as numeric),
-    cast(array[0, 5.5, 9.99] as numeric[])
-  )
-  as wb_n2,
-  width_bucket(
-    cast(op as numeric),
-    cast(array[-6, -5, 2.0] as numeric[])
-  )
-  as wb_n3,
-  width_bucket(
-    cast(op as double precision),
-    cast(array[1, 3, 5, 10.0] as double precision[])
-  )
-  as wb_f1,
-  width_bucket(
-    cast(op as double precision),
-    cast(array[0, 5.5, 9.99] as double precision[])
-  )
-  as wb_f2,
-  width_bucket(
-    cast(op as double precision),
-    cast(array[-6, -5, 2.0] as double precision[])
-  )
-  as wb_f3
+  width_bucket(cast(op as numeric), cast(array[1, 3, 5, 10.0] as numeric[])) as wb_n1,
+  width_bucket(cast(op as numeric), cast(array[0, 5.5, 9.99] as numeric[])) as wb_n2,
+  width_bucket(cast(op as numeric), cast(array[-6, -5, 2.0] as numeric[])) as wb_n3,
+  width_bucket(cast(op as float8), cast(array[1, 3, 5, 10.0] as float8[])) as wb_f1,
+  width_bucket(cast(op as float8), cast(array[0, 5.5, 9.99] as float8[])) as wb_f2,
+  width_bucket(cast(op as float8), cast(array[-6, -5, 2.0] as float8[])) as wb_f3
 from
   (
     values
@@ -1273,30 +1148,20 @@ from
 
 select
   op,
-  width_bucket(
-    op,
-    cast(array[1, 3, 9, 'NaN', 'NaN']
-    as double precision[])
-  )
-  as wb
+  width_bucket(op, cast(array[1, 3, 9, 'NaN', 'NaN'] as float8[])) as wb
 from
   (
     values
-      (-cast(5.2 as double precision)),
-      (cast(4 as double precision)),
-      (cast(77 as double precision)),
-      (cast('NaN' as double precision))
+      (-cast(5.2 as float8)),
+      (cast(4 as float8)),
+      (cast(77 as float8)),
+      (cast('NaN' as float8))
   )
   as v (op);
 
 select op, width_bucket(op, array[1, 3, 5, 10]) as wb_1 from generate_series(0, 11) as op;
 
-select
-  width_bucket(
-    NOW(),
-    cast(array['yesterday', 'today', 'tomorrow']
-    as timestamp with time zone[])
-  );
+select width_bucket(now(), cast(array['yesterday', 'today', 'tomorrow'] as timestamptz[]));
 
 select width_bucket(5, array[3]);
 
@@ -1335,12 +1200,7 @@ select array_shuffle(cast('{1,2,3,4,5,6}' as int[])) @> '{1,2,3,4,5,6}';
 select array_dims(array_shuffle(cast('[-1:2][2:3]={{1,2},{3,NULL},{5,6},{7,8}}' as int[])));
 
 select
-  array_dims(
-    array_shuffle(
-      cast('{{{1,2},{3,NULL}},{{5,6},{7,8}},{{9,10},{11,12}}}'
-      as int[])
-    )
-  );
+  array_dims(array_shuffle(cast('{{{1,2},{3,NULL}},{{5,6},{7,8}},{{9,10},{11,12}}}' as int[])));
 
 select array_sample(cast('{1,2,3,4,5,6}' as int[]), 3) <@ '{1,2,3,4,5,6}';
 
@@ -1349,13 +1209,7 @@ select array_length(array_sample(cast('{1,2,3,4,5,6}' as int[]), 3), 1);
 select array_dims(array_sample(cast('[-1:2][2:3]={{1,2},{3,NULL},{5,6},{7,8}}' as int[]), 3));
 
 select
-  array_dims(
-    array_sample(
-      cast('{{{1,2},{3,NULL}},{{5,6},{7,8}},{{9,10},{11,12}}}'
-      as int[]),
-      2
-    )
-  );
+  array_dims(array_sample(cast('{{{1,2},{3,NULL}},{{5,6},{7,8}},{{9,10},{11,12}}}' as int[]), 2));
 
 select array_sample(cast('{1,2,3,4,5,6}' as int[]), -1);
 
@@ -1384,25 +1238,19 @@ select array_sort(cast('{foo,bar,CCC,Abc,bbc}' as text[]) collate "C");
 select array_sort(cast('{foo,bar,null,CCC,Abc,bbc}' as text[]) collate "C");
 
 select
-  array_sort(
-    array(
-      select cast('1 4' as int2vector)
-      union all
-      select cast('1 2' as int2vector)
-    )
-  );
+  array_sort(array(select cast('1 4' as int2vector) union all select cast('1 2' as int2vector)));
 
-select array_sort(cast('{1.1,3.3,5.5,2.2,null,4.4,6.6}' as double precision[]), true);
+select array_sort(cast('{1.1,3.3,5.5,2.2,null,4.4,6.6}' as float8[]), true);
 
-select array_sort(cast('{1.1,3.3,5.5,2.2,null,4.4,6.6}' as double precision[]), false);
+select array_sort(cast('{1.1,3.3,5.5,2.2,null,4.4,6.6}' as float8[]), false);
 
-select array_sort(cast('{1.1,3.3,5.5,2.2,null,4.4,6.6}' as double precision[]), true, true);
+select array_sort(cast('{1.1,3.3,5.5,2.2,null,4.4,6.6}' as float8[]), true, true);
 
-select array_sort(cast('{1.1,3.3,5.5,2.2,null,4.4,6.6}' as double precision[]), true, false);
+select array_sort(cast('{1.1,3.3,5.5,2.2,null,4.4,6.6}' as float8[]), true, false);
 
-select array_sort(cast('{1.1,3.3,5.5,2.2,null,4.4,6.6}' as double precision[]), false, true);
+select array_sort(cast('{1.1,3.3,5.5,2.2,null,4.4,6.6}' as float8[]), false, true);
 
-select array_sort(cast('{1.1,3.3,5.5,2.2,null,4.4,6.6}' as double precision[]), false, false);
+select array_sort(cast('{1.1,3.3,5.5,2.2,null,4.4,6.6}' as float8[]), false, false);
 
 select array_sort(cast('{{1}}' as int[]));
 
@@ -1425,23 +1273,9 @@ select array_sort(a) from (values (cast('[-2:0][20:21]={{1,2},{10,20},{1,-4}}' a
 select
   array_sort(a[-1:0])
 from
-  (
-    values
-      (
-        cast('[-2:0][20:21]={{1,2},{10,20},{1,-4}}'
-        as int[])
-      )
-  )
-  as v (a);
+  (values (cast('[-2:0][20:21]={{1,2},{10,20},{1,-4}}' as int[]))) as v (a);
 
 select
   array_sort(a[-1:0][20:20])
 from
-  (
-    values
-      (
-        cast('[-2:0][20:21]={{1,2},{10,20},{1,-4}}'
-        as int[])
-      )
-  )
-  as v (a);
+  (values (cast('[-2:0][20:21]={{1,2},{10,20},{1,-4}}' as int[]))) as v (a);

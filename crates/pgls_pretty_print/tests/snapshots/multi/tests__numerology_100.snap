@@ -78,22 +78,20 @@ select .000_005;
 
 select 1_000.5e0_1;
 
-do
-$do$
+do $$
 DECLARE
   i int;
 BEGIN
   FOR i IN 1_001..1_003 LOOP
     RAISE NOTICE 'i = %', i;
   END LOOP;
-END
-$do$;
+END $$;
 
 select _100;
 
 prepare p1 as select $0 as _1;;
 
-create table temp_float (f1 double precision);
+create table temp_float (f1 float8);
 
 insert into temp_float (f1) select float8(f1) from int4_tbl;
 
@@ -101,21 +99,16 @@ insert into temp_float (f1) select float8(f1) from int2_tbl;
 
 select f1 from temp_float order by f1;
 
-create table temp_int4 (f1 int);
+create table temp_int4 (f1 int4);
 
 insert into temp_int4 (f1)
-select
-  int4(f1)
-from
-  float8_tbl
-where
-  f1 > -2147483647 and f1 < 2147483647;
+select int4(f1) from float8_tbl where f1 > -2147483647 and f1 < 2147483647;
 
 insert into temp_int4 (f1) select int4(f1) from int2_tbl;
 
 select f1 from temp_int4 order by f1;
 
-create table temp_int2 (f1 smallint);
+create table temp_int2 (f1 int2);
 
 insert into temp_int2 (f1) select int2(f1) from float8_tbl where f1 >= -32767 and f1 <= 32767;
 
@@ -124,9 +117,9 @@ insert into temp_int2 (f1) select int2(f1) from int4_tbl where f1 >= -32767 and 
 select f1 from temp_int2 order by f1;
 
 create table temp_group (
-  f1 int,
-  f2 int,
-  f3 double precision
+  f1 int4,
+  f2 int4,
+  f3 float8
 );
 
 insert into temp_group select 1, -i.f1, -f.f1 from int4_tbl as i, float8_tbl as f;
@@ -137,8 +130,8 @@ select distinct f1 as two from temp_group order by 1;
 
 select
   f1 as two,
-  MAX(f3) as max_float,
-  MIN(f3) as min_float
+  max(f3) as max_float,
+  min(f3) as min_float
 from
   temp_group
 group by f1
@@ -148,8 +141,8 @@ order by two,
 
 select
   f1 as two,
-  MAX(f3) as max_float,
-  MIN(f3) as min_float
+  max(f3) as max_float,
+  min(f3) as min_float
 from
   temp_group
 group by two
@@ -159,8 +152,8 @@ order by two,
 
 select
   f1 as two,
-  MAX(f3) + 1 as max_plus_1,
-  MIN(f3) - 1 as min_minus_1
+  max(f3) + 1 as max_plus_1,
+  min(f3) - 1 as min_minus_1
 from
   temp_group
 group by f1
@@ -169,8 +162,8 @@ order by two,
 
 select
   f1 as two,
-  MAX(f2) + MIN(f2) as max_plus_min,
-  MIN(f3) - 1 as min_minus_1
+  max(f2) + min(f2) as max_plus_min,
+  min(f3) - 1 as min_minus_1
 from
   temp_group
 group by f1

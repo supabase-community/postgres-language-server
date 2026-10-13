@@ -3,7 +3,7 @@ source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/xmlmap.sql
 snapshot_kind: text
 ---
-create schema "testxmlschema";
+create schema testxmlschema;
 
 create table testxmlschema.test1 (
   a int,
@@ -23,13 +23,13 @@ create table testxmlschema.test2 (
   u bigint,
   t real,
   s time,
-  stz time with time zone,
+  stz timetz,
   r timestamp,
-  rtz timestamp with time zone,
+  rtz timestamptz,
   q date,
   p xml,
   o testxmldomain,
-  n boolean,
+  n bool,
   m bytea,
   aaa text
 );

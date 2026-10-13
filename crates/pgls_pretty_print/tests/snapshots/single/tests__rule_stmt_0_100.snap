@@ -6,4 +6,4 @@ snapshot_kind: text
 create rule notify_me
 as on update to mytable
 do
-  notify "mytable_updated";;
+  notify mytable_updated;;

@@ -2,11 +2,11 @@
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/create_operator.sql
 ---
-create operator ## (LEFTARG = path, RIGHTARG = path, FUNCTION = path_inter, COMMUTATOR = ##);
+create operator ## (leftarg = path, rightarg = path, function = path_inter, commutator = ##);
 
-create operator @#@ (RIGHTARG = bigint, PROCEDURE = factorial);
+create operator @#@ (rightarg = int8, procedure = factorial);
 
-create operator #%# (LEFTARG = bigint, PROCEDURE = factorial);
+create operator #%# (leftarg = int8, procedure = factorial);
 
 select @#@24;
 
@@ -20,19 +20,19 @@ reset search_path;
 
 select @#@24.0;
 
-comment on operator ###### (none, int) is 'bad prefix';
+comment on operator ###### (none, int4) is 'bad prefix';
 
-comment on operator ###### (int, none) is 'bad postfix';
+comment on operator ###### (int4, none) is 'bad postfix';
 
-comment on operator ###### (int, bigint) is 'bad infix';
+comment on operator ###### (int4, int8) is 'bad infix';
 
-drop operator ###### (none, int);
+drop operator ###### (none, int4);
 
-drop operator ###### (int, none);
+drop operator ###### (int4, none);
 
-drop operator ###### (int, bigint);
+drop operator ###### (int4, int8);
 
-create operator !=- (RIGHTARG = bigint, PROCEDURE = factorial);
+create operator !=- (rightarg = int8, procedure = factorial);
 
 select !=-10;
 
@@ -40,16 +40,14 @@ select 2 <> 1, 2 <> 2;
 
 select 2 <> 1;
 
-do
-$do$
--- use DO to protect -- from psql
+do $$ -- use DO to protect -- from psql
   declare r boolean;
   begin
     execute $e$ select 2 !=-- comment
       1 $e$ into r;
     raise info 'r = %', r;
   end;
-$do$;
+$$;
 
 select true <> -1 between 1 and 1;
 
@@ -67,27 +65,27 @@ begin;
 
 create role regress_rol_op1;
 
-create schema "schema_op1";
+create schema schema_op1;
 
-grant USAGE on schema schema_op1 to public;
+grant usage on schema schema_op1 to public;
 
-revoke USAGE on schema schema_op1 from regress_rol_op1;
+revoke usage on schema schema_op1 from regress_rol_op1;
 
 set role to regress_rol_op1;
 
-create operator schema_op1.#*# (RIGHTARG = bigint, PROCEDURE = factorial);
+create operator schema_op1.#*# (rightarg = int8, procedure = factorial);
 
 rollback;
 
 begin;
 
-create operator #*# (LEFTARG = setof bigint, PROCEDURE = factorial);
+create operator #*# (leftarg = setof int8, procedure = factorial);
 
 rollback;
 
 begin;
 
-create operator #*# (RIGHTARG = setof bigint, PROCEDURE = factorial);
+create operator #*# (rightarg = setof int8, procedure = factorial);
 
 rollback;
 
@@ -97,31 +95,33 @@ create or replace function fn_op2(boolean, boolean)
 returns boolean
 language sql
 immutable
-as $function$
-SELECT NULL::BOOLEAN;
-$function$;
+as $$
+    SELECT NULL::BOOLEAN;
+$$;
 
-create operator === (LEFTARG = boolean,
-RIGHTARG = boolean,
-PROCEDURE = fn_op2,
-COMMUTATOR = ===,
-NEGATOR = !==,
-RESTRICT = contsel,
-JOIN = contjoinsel,
-SORT1,
-SORT2,
-LTCMP,
-GTCMP,
-HASHES,
-MERGES);
+create operator === (
+  leftarg = boolean,
+  rightarg = boolean,
+  procedure = fn_op2,
+  commutator = ===,
+  negator = !==,
+  restrict = contsel,
+  join = contjoinsel,
+  sort1,
+  sort2,
+  ltcmp,
+  gtcmp,
+  hashes,
+  merges
+);
 
 rollback;
 
-create operator #@%# (RIGHTARG = bigint, PROCEDURE = factorial, INVALID_ATT = bigint);
+create operator #@%# (rightarg = int8, procedure = factorial, invalid_att = int8);
 
-create operator #@%# (PROCEDURE = factorial);
+create operator #@%# (procedure = factorial);
 
-create operator #@%# (RIGHTARG = bigint);
+create operator #@%# (rightarg = int8);
 
 begin;
 
@@ -129,21 +129,21 @@ create role regress_rol_op3;
 
 create type type_op3 as enum ('new', 'open', 'closed');
 
-create function fn_op3(type_op3, bigint)
-returns bigint
+create function fn_op3(type_op3, int8)
+returns int8
 language sql
 immutable
-as $function$
-SELECT NULL::int8;
-$function$;
+as $$
+    SELECT NULL::int8;
+$$;
 
-revoke USAGE on type type_op3 from regress_rol_op3;
+revoke usage on type type_op3 from regress_rol_op3;
 
-revoke USAGE on type type_op3 from public;
+revoke usage on type type_op3 from public;
 
 set role to regress_rol_op3;
 
-create operator #*# (LEFTARG = type_op3, RIGHTARG = bigint, PROCEDURE = fn_op3);
+create operator #*# (leftarg = type_op3, rightarg = int8, procedure = fn_op3);
 
 rollback;
 
@@ -153,21 +153,21 @@ create role regress_rol_op4;
 
 create type type_op4 as enum ('new', 'open', 'closed');
 
-create function fn_op4(bigint, type_op4)
-returns bigint
+create function fn_op4(int8, type_op4)
+returns int8
 language sql
 immutable
-as $function$
-SELECT NULL::int8;
-$function$;
+as $$
+    SELECT NULL::int8;
+$$;
 
-revoke USAGE on type type_op4 from regress_rol_op4;
+revoke usage on type type_op4 from regress_rol_op4;
 
-revoke USAGE on type type_op4 from public;
+revoke usage on type type_op4 from public;
 
 set role to regress_rol_op4;
 
-create operator #*# (LEFTARG = bigint, RIGHTARG = type_op4, PROCEDURE = fn_op4);
+create operator #*# (leftarg = int8, rightarg = type_op4, procedure = fn_op4);
 
 rollback;
 
@@ -177,21 +177,21 @@ create role regress_rol_op5;
 
 create type type_op5 as enum ('new', 'open', 'closed');
 
-create function fn_op5(bigint, bigint)
-returns bigint
+create function fn_op5(int8, int8)
+returns int8
 language sql
 immutable
-as $function$
-SELECT NULL::int8;
-$function$;
+as $$
+    SELECT NULL::int8;
+$$;
 
-revoke EXECUTE on function fn_op5(bigint, bigint) from regress_rol_op5;
+revoke execute on function fn_op5(int8, int8) from regress_rol_op5;
 
-revoke EXECUTE on function fn_op5(bigint, bigint) from public;
+revoke execute on function fn_op5(int8, int8) from public;
 
 set role to regress_rol_op5;
 
-create operator #*# (LEFTARG = bigint, RIGHTARG = bigint, PROCEDURE = fn_op5);
+create operator #*# (leftarg = int8, rightarg = int8, procedure = fn_op5);
 
 rollback;
 
@@ -201,48 +201,50 @@ create role regress_rol_op6;
 
 create type type_op6 as enum ('new', 'open', 'closed');
 
-create function fn_op6(bigint, bigint)
+create function fn_op6(int8, int8)
 returns type_op6
 language sql
 immutable
-as $function$
-SELECT NULL::type_op6;
-$function$;
+as $$
+    SELECT NULL::type_op6;
+$$;
 
-revoke USAGE on type type_op6 from regress_rol_op6;
+revoke usage on type type_op6 from regress_rol_op6;
 
-revoke USAGE on type type_op6 from public;
+revoke usage on type type_op6 from public;
 
 set role to regress_rol_op6;
 
-create operator #*# (LEFTARG = bigint, RIGHTARG = bigint, PROCEDURE = fn_op6);
+create operator #*# (leftarg = int8, rightarg = int8, procedure = fn_op6);
 
 rollback;
 
 begin;
 
-create operator === (LEFTARG = int, RIGHTARG = int, PROCEDURE = int4eq, NEGATOR = ===);
+create operator === (leftarg = int, rightarg = int, procedure = int4eq, negator = ===);
 
 rollback;
 
 begin;
 
-create operator === (LEFTARG = int, RIGHTARG = int, PROCEDURE = int4eq, COMMUTATOR = ===!!!);
+create operator === (leftarg = int, rightarg = int, procedure = int4eq, commutator = ===!!!);
 
-create operator ===!!! (LEFTARG = int, RIGHTARG = int, PROCEDURE = int4ne, NEGATOR = ===!!!);
+create operator ===!!! (leftarg = int, rightarg = int, procedure = int4ne, negator = ===!!!);
 
 rollback;
 
-create operator === (LEFTARG = int, RIGHTARG = int, PROCEDURE = int4eq, COMMUTATOR = =);
+create operator === (leftarg = int, rightarg = int, procedure = int4eq, commutator = =);
 
-create operator === (LEFTARG = int, RIGHTARG = int, PROCEDURE = int4eq, NEGATOR = <>);
+create operator === (leftarg = int, rightarg = int, procedure = int4eq, negator = <>);
 
-create operator === (LEFTARG = box,
-RIGHTARG = box,
-PROCEDURE = area_equal_function,
-COMMUTATOR = ===,
-NEGATOR = !==,
-RESTRICT = area_restriction_function,
-JOIN = area_join_function,
-HASHES,
-MERGES);
+create operator === (
+  leftarg = box,
+  rightarg = box,
+  procedure = area_equal_function,
+  commutator = ===,
+  negator = !==,
+  restrict = area_restriction_function,
+  join = area_join_function,
+  hashes,
+  merges
+);

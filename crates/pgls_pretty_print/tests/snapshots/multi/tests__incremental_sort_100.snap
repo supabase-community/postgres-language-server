@@ -21,7 +21,7 @@ returns table (
   out_line text
 )
 language plpgsql
-as $function$
+as $$
 declare
   line text;
 begin
@@ -32,12 +32,12 @@ begin
     return next;
   end loop;
 end;
-$function$;
+$$;
 
 create or replace function explain_analyze_inc_sort_nodes(query text)
 returns jsonb
 language plpgsql
-as $function$
+as $$
 declare
   elements jsonb;
   element jsonb;
@@ -69,12 +69,12 @@ begin
   end loop;
   return matching_nodes;
 end;
-$function$;
+$$;
 
 create or replace function explain_analyze_inc_sort_nodes_without_memory(query text)
 returns jsonb
 language plpgsql
-as $function$
+as $$
 declare
   nodes jsonb := '[]'::jsonb;
   node jsonb;
@@ -92,12 +92,12 @@ begin
   end loop;
   return nodes;
 end;
-$function$;
+$$;
 
 create or replace function explain_analyze_inc_sort_nodes_verify_invariants(query text)
-returns boolean
+returns bool
 language plpgsql
-as $function$
+as $$
 declare
   node jsonb;
   group_stats jsonb;
@@ -116,7 +116,7 @@ begin
   end loop;
   return true;
 end;
-$function$;
+$$;
 
 insert into t (a, b) select i / 100 + 1, i + 1 from generate_series(0, 999) as n (i);
 
@@ -172,11 +172,7 @@ select
 delete from t;
 
 insert into t (a, b)
-select
-  case when i < 5 then i else 9 end,
-  i
-from
-  generate_series(1, 1000) as n (i);
+select case when i < 5 then i else 9 end, i from generate_series(1, 1000) as n (i);
 
 analyze t;
 
@@ -203,15 +199,7 @@ select
 from
   t
   left outer join
-    (
-      select
-        *
-      from
-        (select * from t order by a) as v
-      order by a,
-        b
-    )
-    as s
+    (select * from (select * from t order by a) as v order by a, b) as s
   on s.a = t.a
 where
   t.a in (1, 2);
@@ -221,15 +209,7 @@ select
 from
   t
   left outer join
-    (
-      select
-        *
-      from
-        (select * from t order by a) as v
-      order by a,
-        b
-    )
-    as s
+    (select * from (select * from t order by a) as v order by a, b) as s
   on s.a = t.a
 where
   t.a in (1, 2);
@@ -333,11 +313,11 @@ analyze t;
 
 set enable_incremental_sort = off;
 
-select a, b, SUM(c) from t group by 1, 2 order by 1, 2, 3 limit 1;
+select a, b, sum(c) from t group by 1, 2 order by 1, 2, 3 limit 1;
 
 set enable_incremental_sort = 'on';
 
-select a, b, SUM(c) from t group by 1, 2 order by 1, 2, 3 limit 1;
+select a, b, sum(c) from t group by 1, 2 order by 1, 2, 3 limit 1;
 
 set enable_hashagg = off;
 
@@ -366,20 +346,14 @@ select distinct
   stringu1
 from
   tenk1,
-  lateral (
-    select tenk1.unique1 from generate_series(1, 1000)
-  )
-  as sub;
+  lateral (select tenk1.unique1 from generate_series(1, 1000)) as sub;
 
 select
   sub.unique1,
   stringu1
 from
   tenk1,
-  lateral (
-    select tenk1.unique1 from generate_series(1, 1000)
-  )
-  as sub
+  lateral (select tenk1.unique1 from generate_series(1, 1000)) as sub
 order by 1,
   2;
 
@@ -388,59 +362,36 @@ select distinct
   md5(stringu1)
 from
   tenk1,
-  lateral (
-    select tenk1.unique1 from generate_series(1, 1000)
-  )
-  as sub;
+  lateral (select tenk1.unique1 from generate_series(1, 1000)) as sub;
 
 select
   sub.unique1,
   md5(stringu1)
 from
   tenk1,
-  lateral (
-    select tenk1.unique1 from generate_series(1, 1000)
-  )
-  as sub
+  lateral (select tenk1.unique1 from generate_series(1, 1000)) as sub
 order by 1,
   2;
 
 select
-  COUNT(*)
+  count(*)
 from
-  tenk1 as t1
-  inner join
-    tenk1 as t2
-  on t1.unique1 = t2.unique2
+  tenk1 as t1 inner join tenk1 as t2 on t1.unique1 = t2.unique2
   inner join
     tenk1 as t3
   on t2.unique1 = t3.unique1
-order by COUNT(*);
+order by count(*);
 
 select distinct
   unique1,
-  (
-    select
-      t.unique1
-    from
-      tenk1
-    where
-      tenk1.unique1 = t.unique1
-  )
+  (select t.unique1 from tenk1 where tenk1.unique1 = t.unique1)
 from
   tenk1 as t,
   generate_series(1, 1000);
 
 select
   unique1,
-  (
-    select
-      t.unique1
-    from
-      tenk1
-    where
-      tenk1.unique1 = t.unique1
-  )
+  (select t.unique1 from tenk1 where tenk1.unique1 = t.unique1)
 from
   tenk1 as t,
   generate_series(1, 1000)
@@ -452,20 +403,14 @@ select distinct
   stringu1 || cast(random() as text)
 from
   tenk1,
-  lateral (
-    select tenk1.unique1 from generate_series(1, 1000)
-  )
-  as sub;
+  lateral (select tenk1.unique1 from generate_series(1, 1000)) as sub;
 
 select
   sub.unique1,
   stringu1 || cast(random() as text)
 from
   tenk1,
-  lateral (
-    select tenk1.unique1 from generate_series(1, 1000)
-  )
-  as sub
+  lateral (select tenk1.unique1 from generate_series(1, 1000)) as sub
 order by 1,
   2;
 
@@ -488,7 +433,7 @@ create table point_table (
   b int
 );
 
-create index "point_table_a_idx" on point_table using gist (a);
+create index point_table_a_idx on point_table using gist (a);
 
 select a, b, a <-> point(5, 5) as dist from point_table order by dist, b limit 1;
 

@@ -43,12 +43,9 @@ select
   initcap(t),
   upper(t),
   length(convert_to(t, 'UTF8')) as t_bytes,
-  length(convert_to(lower(t), 'UTF8'))
-  as lower_t_bytes,
-  length(convert_to(initcap(t), 'UTF8'))
-  as initcap_t_bytes,
-  length(convert_to(upper(t), 'UTF8'))
-  as upper_t_bytes
+  length(convert_to(lower(t), 'UTF8')) as lower_t_bytes,
+  length(convert_to(initcap(t), 'UTF8')) as initcap_t_bytes,
+  length(convert_to(upper(t), 'UTF8')) as upper_t_bytes
 from
   test_pg_c_utf8;
 
@@ -115,12 +112,9 @@ select
   initcap(t),
   upper(t),
   length(convert_to(t, 'UTF8')) as t_bytes,
-  length(convert_to(lower(t), 'UTF8'))
-  as lower_t_bytes,
-  length(convert_to(initcap(t), 'UTF8'))
-  as initcap_t_bytes,
-  length(convert_to(upper(t), 'UTF8'))
-  as upper_t_bytes
+  length(convert_to(lower(t), 'UTF8')) as lower_t_bytes,
+  length(convert_to(initcap(t), 'UTF8')) as initcap_t_bytes,
+  length(convert_to(upper(t), 'UTF8')) as upper_t_bytes
 from
   test_pg_unicode_fast;
 

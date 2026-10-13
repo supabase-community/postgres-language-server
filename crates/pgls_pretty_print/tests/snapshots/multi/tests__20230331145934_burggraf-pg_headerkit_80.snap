@@ -26,14 +26,7 @@ insert into app.package_versions (
 )
 values
   (
-    (
-      select
-        id
-      from
-        app.packages
-      where
-        package_name = 'burggraf-pg_headerkit'
-    ),
+    (select id from app.packages where package_name = 'burggraf-pg_headerkit'),
     (1, 0, 0),
     '
 CREATE SCHEMA IF NOT EXISTS hdr;

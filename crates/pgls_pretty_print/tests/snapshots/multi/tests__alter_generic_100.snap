@@ -23,9 +23,9 @@ create user regress_alter_generic_user2;
 
 create user regress_alter_generic_user1 in role regress_alter_generic_user3;
 
-create schema "alt_nsp1";
+create schema alt_nsp1;
 
-create schema "alt_nsp2";
+create schema alt_nsp2;
 
 grant all on schema alt_nsp1, alt_nsp2 to public;
 
@@ -36,20 +36,16 @@ set session authorization regress_alter_generic_user1;
 create function alt_func1(int)
 returns int
 language sql
-as $function$
-SELECT $1 + 1
-$function$;
+as $$SELECT $1 + 1$$;
 
 create function alt_func2(int)
 returns int
 language sql
-as $function$
-SELECT $1 - 1
-$function$;
+as $$SELECT $1 - 1$$;
 
-create aggregate alt_agg1 (sfunc1 = int4pl, basetype = int, stype1 = int, initcond = 0);
+create aggregate alt_agg1 (sfunc1 = int4pl, basetype = int4, stype1 = int4, initcond = 0);
 
-create aggregate alt_agg2 (sfunc1 = int4mi, basetype = int, stype1 = int, initcond = 0);
+create aggregate alt_agg2 (sfunc1 = int4mi, basetype = int4, stype1 = int4, initcond = 0);
 
 alter aggregate alt_func1(int) rename to alt_func3;
 
@@ -84,20 +80,16 @@ set session authorization regress_alter_generic_user2;
 create function alt_func1(int)
 returns int
 language sql
-as $function$
-SELECT $1 + 2
-$function$;
+as $$SELECT $1 + 2$$;
 
 create function alt_func2(int)
 returns int
 language sql
-as $function$
-SELECT $1 - 2
-$function$;
+as $$SELECT $1 - 2$$;
 
-create aggregate alt_agg1 (sfunc1 = int4pl, basetype = int, stype1 = int, initcond = 100);
+create aggregate alt_agg1 (sfunc1 = int4pl, basetype = int4, stype1 = int4, initcond = 100);
 
-create aggregate alt_agg2 (sfunc1 = int4mi, basetype = int, stype1 = int, initcond = -100);
+create aggregate alt_agg2 (sfunc1 = int4mi, basetype = int4, stype1 = int4, initcond = -100);
 
 alter function alt_func3(int) rename to alt_func4;
 
@@ -136,9 +128,7 @@ from
   pg_namespace as n,
   pg_authid as a
 where
-  p.pronamespace = n.oid and
-  p.proowner = a.oid and
-  n.nspname in ('alt_nsp1', 'alt_nsp2')
+  p.pronamespace = n.oid and p.proowner = a.oid and n.nspname in ('alt_nsp1', 'alt_nsp2')
 order by nspname,
   proname;
 
@@ -187,9 +177,7 @@ from
   pg_namespace as n,
   pg_authid as a
 where
-  c.connamespace = n.oid and
-  c.conowner = a.oid and
-  n.nspname in ('alt_nsp1', 'alt_nsp2')
+  c.connamespace = n.oid and c.conowner = a.oid and n.nspname in ('alt_nsp1', 'alt_nsp2')
 order by nspname,
   conname;
 
@@ -249,25 +237,25 @@ order by lanname;
 
 set session authorization regress_alter_generic_user1;
 
-create operator @-@ (LEFTARG = int, RIGHTARG = int, PROCEDURE = int4mi);
+create operator @-@ (leftarg = int4, rightarg = int4, procedure = int4mi);
 
-create operator @+@ (LEFTARG = int, RIGHTARG = int, PROCEDURE = int4pl);
+create operator @+@ (leftarg = int4, rightarg = int4, procedure = int4pl);
 
-alter operator @+@ (int, int) owner to regress_alter_generic_user2;
+alter operator @+@ (int4, int4) owner to regress_alter_generic_user2;
 
-alter operator @+@ (int, int) owner to regress_alter_generic_user3;
+alter operator @+@ (int4, int4) owner to regress_alter_generic_user3;
 
-alter operator @-@ (int, int) set schema alt_nsp2;
+alter operator @-@ (int4, int4) set schema alt_nsp2;
 
 set session authorization regress_alter_generic_user2;
 
-create operator @-@ (LEFTARG = int, RIGHTARG = int, PROCEDURE = int4mi);
+create operator @-@ (leftarg = int4, rightarg = int4, procedure = int4mi);
 
-alter operator @+@ (int, int) owner to regress_alter_generic_user2;
+alter operator @+@ (int4, int4) owner to regress_alter_generic_user2;
 
-alter operator @-@ (int, int) owner to regress_alter_generic_user3;
+alter operator @-@ (int4, int4) owner to regress_alter_generic_user3;
 
-alter operator @+@ (int, int) set schema alt_nsp2;
+alter operator @+@ (int4, int4) set schema alt_nsp2;
 
 reset session_authorization;
 
@@ -283,9 +271,7 @@ from
   pg_namespace as n,
   pg_authid as a
 where
-  o.oprnamespace = n.oid and
-  o.oprowner = a.oid and
-  n.nspname in ('alt_nsp1', 'alt_nsp2')
+  o.oprnamespace = n.oid and o.oprowner = a.oid and n.nspname in ('alt_nsp1', 'alt_nsp2')
 order by nspname,
   oprname;
 
@@ -415,20 +401,20 @@ begin;
 create operator family alt_opf4 using btree;
 
 alter operator family alt_opf4 using btree
-  add operator 1 < (int, smallint),
-  operator 2 <= (int, smallint),
-  operator 3 = (int, smallint),
-  operator 4 >= (int, smallint),
-  operator 5 > (int, smallint),
-  function 1 btint42cmp(int, smallint);
+  add operator 1 < (int4, int2),
+  operator 2 <= (int4, int2),
+  operator 3 = (int4, int2),
+  operator 4 >= (int4, int2),
+  operator 5 > (int4, int2),
+  function 1 btint42cmp(int4, int2);
 
 alter operator family alt_opf4 using btree
-  drop operator 1 (int, smallint),
-  operator 2 (int, smallint),
-  operator 3 (int, smallint),
-  operator 4 (int, smallint),
-  operator 5 (int, smallint),
-  function 1 (int, smallint);
+  drop operator 1 (int4, int2),
+  operator 2 (int4, int2),
+  operator 3 (int4, int2),
+  operator 4 (int4, int2),
+  operator 5 (int4, int2),
+  function 1 (int4, int2);
 
 drop operator family alt_opf4 using btree;
 
@@ -436,17 +422,17 @@ rollback;
 
 create operator family alt_opf4 using btree;
 
-alter operator family alt_opf4 using invalid_index_method add operator 1 < (int, smallint);
+alter operator family alt_opf4 using invalid_index_method add operator 1 < (int4, int2);
 
-alter operator family alt_opf4 using btree add operator 6 < (int, smallint);
+alter operator family alt_opf4 using btree add operator 6 < (int4, int2);
 
-alter operator family alt_opf4 using btree add operator 0 < (int, smallint);
+alter operator family alt_opf4 using btree add operator 0 < (int4, int2);
 
 alter operator family alt_opf4 using btree add operator 1 <;
 
-alter operator family alt_opf4 using btree add function 0 btint42cmp(int, smallint);
+alter operator family alt_opf4 using btree add function 0 btint42cmp(int4, int2);
 
-alter operator family alt_opf4 using btree add function 7 btint42cmp(int, smallint);
+alter operator family alt_opf4 using btree add function 7 btint42cmp(int4, int2);
 
 alter operator family alt_opf4 using btree add storage invalid_storage;
 
@@ -461,8 +447,7 @@ create operator family alt_opf5 using btree;
 set role to regress_alter_generic_user5;
 
 alter operator family alt_opf5 using btree
-  add operator 1 < (int, smallint),
-  function 1 btint42cmp(int, smallint);
+  add operator 1 < (int4, int2), function 1 btint42cmp(int4, int2);
 
 reset role;
 
@@ -474,7 +459,7 @@ begin;
 
 create role regress_alter_generic_user6;
 
-create schema "alt_nsp6";
+create schema alt_nsp6;
 
 revoke all on schema alt_nsp6 from regress_alter_generic_user6;
 
@@ -482,41 +467,41 @@ create operator family alt_nsp6.alt_opf6 using btree;
 
 set role to regress_alter_generic_user6;
 
-alter operator family alt_nsp6.alt_opf6 using btree add operator 1 < (int, smallint);
+alter operator family alt_nsp6.alt_opf6 using btree add operator 1 < (int4, int2);
 
 rollback;
 
 create operator family alt_opf7 using btree;
 
-alter operator family alt_opf7 using btree add operator 1 < (int, smallint);
+alter operator family alt_opf7 using btree add operator 1 < (int4, int2);
 
-alter operator family alt_opf7 using btree drop operator 1 (int, smallint, bigint);
+alter operator family alt_opf7 using btree drop operator 1 (int4, int2, int8);
 
 drop operator family alt_opf7 using btree;
 
 create operator family alt_opf8 using btree;
 
-alter operator family alt_opf8 using btree add operator 1 < (int, int);
+alter operator family alt_opf8 using btree add operator 1 < (int4, int4);
 
 drop operator family alt_opf8 using btree;
 
 create operator family alt_opf9 using gist;
 
-alter operator family alt_opf9 using gist add operator 1 < (int, int) for order by float_ops;
+alter operator family alt_opf9 using gist add operator 1 < (int4, int4) for order by float_ops;
 
 drop operator family alt_opf9 using gist;
 
 create operator family alt_opf10 using btree;
 
-alter operator family alt_opf10 using btree add operator 1 < (int, int) for order by float_ops;
+alter operator family alt_opf10 using btree add operator 1 < (int4, int4) for order by float_ops;
 
 drop operator family alt_opf10 using btree;
 
 create operator family alt_opf11 using gist;
 
-alter operator family alt_opf11 using gist add operator 1 < (int, int) for order by float_ops;
+alter operator family alt_opf11 using gist add operator 1 < (int4, int4) for order by float_ops;
 
-alter operator family alt_opf11 using gist drop operator 1 (int, int);
+alter operator family alt_opf11 using gist drop operator 1 (int4, int4);
 
 drop operator family alt_opf11 using gist;
 
@@ -524,14 +509,12 @@ begin;
 
 create operator family alt_opf12 using btree;
 
-create function fn_opf12(int, smallint)
+create function fn_opf12(int4, int2)
 returns bigint
 language sql
-as $function$
-SELECT NULL::BIGINT;
-$function$;
+as $$SELECT NULL::BIGINT;$$;
 
-alter operator family alt_opf12 using btree add function 1 fn_opf12(int, smallint);
+alter operator family alt_opf12 using btree add function 1 fn_opf12(int4, int2);
 
 drop operator family alt_opf12 using btree;
 
@@ -541,14 +524,12 @@ begin;
 
 create operator family alt_opf13 using hash;
 
-create function fn_opf13(int)
+create function fn_opf13(int4)
 returns bigint
 language sql
-as $function$
-SELECT NULL::BIGINT;
-$function$;
+as $$SELECT NULL::BIGINT;$$;
 
-alter operator family alt_opf13 using hash add function 1 fn_opf13(int);
+alter operator family alt_opf13 using hash add function 1 fn_opf13(int4);
 
 drop operator family alt_opf13 using hash;
 
@@ -558,14 +539,12 @@ begin;
 
 create operator family alt_opf14 using btree;
 
-create function fn_opf14(int)
+create function fn_opf14(int4)
 returns bigint
 language sql
-as $function$
-SELECT NULL::BIGINT;
-$function$;
+as $$SELECT NULL::BIGINT;$$;
 
-alter operator family alt_opf14 using btree add function 1 fn_opf14(int);
+alter operator family alt_opf14 using btree add function 1 fn_opf14(int4);
 
 drop operator family alt_opf14 using btree;
 
@@ -575,14 +554,12 @@ begin;
 
 create operator family alt_opf15 using hash;
 
-create function fn_opf15(int, smallint)
+create function fn_opf15(int4, int2)
 returns bigint
 language sql
-as $function$
-SELECT NULL::BIGINT;
-$function$;
+as $$SELECT NULL::BIGINT;$$;
 
-alter operator family alt_opf15 using hash add function 1 fn_opf15(int, smallint);
+alter operator family alt_opf15 using hash add function 1 fn_opf15(int4, int2);
 
 drop operator family alt_opf15 using hash;
 
@@ -590,85 +567,79 @@ rollback;
 
 create operator family alt_opf16 using gist;
 
-alter operator family alt_opf16 using gist add function 1 btint42cmp(int, smallint);
+alter operator family alt_opf16 using gist add function 1 btint42cmp(int4, int2);
 
 drop operator family alt_opf16 using gist;
 
 create operator family alt_opf17 using btree;
 
-alter operator family alt_opf17 using btree add operator 1 < (int, int), operator 1 < (int, int);
+alter operator family alt_opf17 using btree
+  add operator 1 < (int4, int4), operator 1 < (int4, int4);
 
-alter operator family alt_opf17 using btree add operator 1 < (int, int);
+alter operator family alt_opf17 using btree add operator 1 < (int4, int4);
 
-alter operator family alt_opf17 using btree add operator 1 < (int, int);
+alter operator family alt_opf17 using btree add operator 1 < (int4, int4);
 
 alter operator family alt_opf17 using btree
-  add operator 1 < (int, smallint),
-  operator 2 <= (int, smallint),
-  operator 3 = (int, smallint),
-  operator 4 >= (int, smallint),
-  operator 5 > (int, smallint),
-  function 1 btint42cmp(int, smallint),
-  function 1 btint42cmp(int, smallint);
+  add operator 1 < (int4, int2),
+  operator 2 <= (int4, int2),
+  operator 3 = (int4, int2),
+  operator 4 >= (int4, int2),
+  operator 5 > (int4, int2),
+  function 1 btint42cmp(int4, int2),
+  function 1 btint42cmp(int4, int2);
 
 alter operator family alt_opf17 using btree
-  add operator 1 < (int, smallint),
-  operator 2 <= (int, smallint),
-  operator 3 = (int, smallint),
-  operator 4 >= (int, smallint),
-  operator 5 > (int, smallint),
-  function 1 btint42cmp(int, smallint);
+  add operator 1 < (int4, int2),
+  operator 2 <= (int4, int2),
+  operator 3 = (int4, int2),
+  operator 4 >= (int4, int2),
+  operator 5 > (int4, int2),
+  function 1 btint42cmp(int4, int2);
 
 alter operator family alt_opf17 using btree
-  add operator 1 < (int, smallint),
-  operator 2 <= (int, smallint),
-  operator 3 = (int, smallint),
-  operator 4 >= (int, smallint),
-  operator 5 > (int, smallint),
-  function 1 btint42cmp(int, smallint);
+  add operator 1 < (int4, int2),
+  operator 2 <= (int4, int2),
+  operator 3 = (int4, int2),
+  operator 4 >= (int4, int2),
+  operator 5 > (int4, int2),
+  function 1 btint42cmp(int4, int2);
 
 drop operator family alt_opf17 using btree;
 
 create operator family alt_opf18 using btree;
 
-alter operator family alt_opf18 using btree drop operator 1 (int, int);
+alter operator family alt_opf18 using btree drop operator 1 (int4, int4);
 
 alter operator family alt_opf18 using btree
-  add operator 1 < (int, smallint),
-  operator 2 <= (int, smallint),
-  operator 3 = (int, smallint),
-  operator 4 >= (int, smallint),
-  operator 5 > (int, smallint),
-  function 1 btint42cmp(int, smallint);
+  add operator 1 < (int4, int2),
+  operator 2 <= (int4, int2),
+  operator 3 = (int4, int2),
+  operator 4 >= (int4, int2),
+  operator 5 > (int4, int2),
+  function 1 btint42cmp(int4, int2);
 
-alter operator family alt_opf18 using btree add function 4 (int, smallint) btequalimage(oid);
+alter operator family alt_opf18 using btree add function 4 (int4, int2) btequalimage(oid);
 
-alter operator family alt_opf18 using btree
-  add function 6 (int,
-  smallint) btint4skipsupport(internal);
+alter operator family alt_opf18 using btree add function 6 (int4, int2) btint4skipsupport(internal);
 
-alter operator family alt_opf18 using btree drop function 2 (int, int);
+alter operator family alt_opf18 using btree drop function 2 (int4, int4);
 
 drop operator family alt_opf18 using btree;
 
 create operator family alt_opf19 using btree;
 
 alter operator family alt_opf19 using btree
-  add function 5 test_opclass_options_func(
-    internal,
-    text[],
-    boolean);
+  add function 5 test_opclass_options_func(internal, text[], bool);
 
-alter operator family alt_opf19 using btree add function 5 (int) btint42cmp(int, smallint);
+alter operator family alt_opf19 using btree add function 5 (int4) btint42cmp(int4, int2);
 
-alter operator family alt_opf19 using btree
-  add function 5 (int,
-  smallint) btint42cmp(int, smallint);
+alter operator family alt_opf19 using btree add function 5 (int4, int2) btint42cmp(int4, int2);
 
 alter operator family alt_opf19 using btree
-  add function 5 (int) test_opclass_options_func(internal);
+  add function 5 (int4) test_opclass_options_func(internal);
 
-alter operator family alt_opf19 using btree drop function 5 (int, int);
+alter operator family alt_opf19 using btree drop function 5 (int4, int4);
 
 drop operator family alt_opf19 using btree;
 
@@ -679,9 +650,9 @@ create table alt_regress_1 (
   b int
 );
 
-create statistics alt_stat1 on "a", "b" from alt_regress_1;
+create statistics alt_stat1 on a, b from alt_regress_1;
 
-create statistics alt_stat2 on "a", "b" from alt_regress_1;
+create statistics alt_stat2 on a, b from alt_regress_1;
 
 alter statistics alt_stat1 rename to alt_stat2;
 
@@ -700,9 +671,9 @@ create table alt_regress_2 (
   b int
 );
 
-create statistics alt_stat1 on "a", "b" from alt_regress_2;
+create statistics alt_stat1 on a, b from alt_regress_2;
 
-create statistics alt_stat2 on "a", "b" from alt_regress_2;
+create statistics alt_stat2 on a, b from alt_regress_2;
 
 alter statistics alt_stat3 rename to alt_stat4;
 
@@ -727,9 +698,7 @@ from
   pg_namespace as n,
   pg_authid as a
 where
-  s.stxnamespace = n.oid and
-  s.stxowner = a.oid and
-  n.nspname in ('alt_nsp1', 'alt_nsp2')
+  s.stxnamespace = n.oid and s.stxowner = a.oid and n.nspname in ('alt_nsp1', 'alt_nsp2')
 order by nspname,
   stxname;
 
@@ -778,9 +747,7 @@ from
   pg_namespace as n,
   pg_authid as a
 where
-  t.dictnamespace = n.oid and
-  t.dictowner = a.oid and
-  n.nspname in ('alt_nsp1', 'alt_nsp2')
+  t.dictnamespace = n.oid and t.dictowner = a.oid and n.nspname in ('alt_nsp1', 'alt_nsp2')
 order by nspname,
   dictname;
 
@@ -829,9 +796,7 @@ from
   pg_namespace as n,
   pg_authid as a
 where
-  t.cfgnamespace = n.oid and
-  t.cfgowner = a.oid and
-  n.nspname in ('alt_nsp1', 'alt_nsp2')
+  t.cfgnamespace = n.oid and t.cfgowner = a.oid and n.nspname in ('alt_nsp1', 'alt_nsp2')
 order by nspname,
   cfgname;
 
@@ -858,8 +823,7 @@ from
   pg_ts_template as t,
   pg_namespace as n
 where
-  t.tmplnamespace = n.oid and
-  nspname like 'alt_nsp%'
+  t.tmplnamespace = n.oid and nspname like 'alt_nsp%'
 order by nspname,
   tmplname;
 

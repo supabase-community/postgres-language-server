@@ -3,18 +3,7 @@ source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/20231207112942_michelp@adminpack-0.0.2.sql
 ---
 insert into app.package_versions (package_id, version_struct, sql, description_md)
-values
-  (
-    (
-      select
-        id
-      from
-        app.packages
-      where
-        package_alias = 'michelp@adminpack'
-    ),
-    (0, 0, 2),
-    '
+values ((select id from app.packages where package_alias = 'michelp@adminpack'), (0, 0, 2), '
 -- From: https://github.com/ioguix/pgsql-bloat-estimation
 
 -- Copyright (c) 2015-2019, Jehan-Guillaume (ioguix) de Rorthais
@@ -1060,8 +1049,7 @@ FROM
   JOIN pg_namespace n ON n.oid = c.relnamespace
 WHERE
   c.relkind = ''v'';
-',
-    '
+', '
 # michelp@adminpack
 
 A Trusted Language Extension containing a variety of useful databse admin queries.
@@ -1562,5 +1550,4 @@ This view shows all views in the database.
 | name         | name    |
 | is_updatable | boolean |
 | comment      | text    |
-'
-  );
+');

@@ -12,7 +12,7 @@ pub(super) fn emit_stats_elem(e: &mut EventEmitter, n: &StatsElem) {
         super::emit_node(expr, e);
         e.token(TokenKind::R_PAREN);
     } else if !n.name.is_empty() {
-        super::emit_identifier(e, &n.name);
+        super::emit_identifier_maybe_quoted(e, &n.name);
     }
 
     e.group_end();

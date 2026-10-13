@@ -1,7 +1,7 @@
 use crate::{
     TokenKind,
     emitter::{EventEmitter, GroupKind},
-    nodes::node_list::emit_comma_separated_list,
+    nodes::node_list::{emit_comma_separated_list, emit_parenthesized_list},
 };
 use pgls_query::{NodeEnum, protobuf::CreateSubscriptionStmt};
 
@@ -35,9 +35,7 @@ pub(super) fn emit_create_subscription_stmt(e: &mut EventEmitter, n: &CreateSubs
         e.space();
         e.token(TokenKind::WITH_KW);
         e.space();
-        e.token(TokenKind::L_PAREN);
-        emit_comma_separated_list(e, &n.options, super::emit_node);
-        e.token(TokenKind::R_PAREN);
+        emit_parenthesized_list(e, &n.options, super::emit_node);
     }
 
     e.token(TokenKind::SEMICOLON);

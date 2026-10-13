@@ -8,7 +8,7 @@ pub(super) fn emit_pl_assign_stmt(e: &mut EventEmitter, n: &PlAssignStmt) {
     e.group_start(GroupKind::PlassignStmt);
 
     if !n.name.is_empty() {
-        super::emit_identifier(e, &n.name);
+        super::emit_identifier_maybe_quoted(e, &n.name);
     }
 
     for indirection in &n.indirection {

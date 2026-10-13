@@ -1,5 +1,5 @@
 use super::{
-    node_list::emit_comma_separated_list,
+    node_list::{emit_comma_separated_list, emit_parenthesized_list},
     string::{emit_keyword, emit_single_quoted_str},
 };
 use crate::{
@@ -114,9 +114,7 @@ pub(super) fn emit_copy_stmt(e: &mut EventEmitter, n: &CopyStmt) {
 fn emit_copy_option(e: &mut EventEmitter, n: &pgls_query::protobuf::DefElem) {
     e.group_start(GroupKind::DefElem);
 
-    // Emit the option name in uppercase
-    let name_upper = n.defname.to_uppercase();
-    e.token(TokenKind::IDENT(name_upper.clone()));
+    super::emit_keyword(e, &n.defname);
 
     // Handle the value based on its type
     if let Some(ref arg) = n.arg
@@ -140,9 +138,7 @@ fn emit_copy_option(e: &mut EventEmitter, n: &pgls_query::protobuf::DefElem) {
             NodeEnum::List(list) => {
                 // For options like FORCE_QUOTE (column_list)
                 e.space();
-                e.token(TokenKind::L_PAREN);
-                emit_comma_separated_list(e, &list.items, super::emit_node);
-                e.token(TokenKind::R_PAREN);
+                emit_parenthesized_list(e, &list.items, super::emit_node);
             }
             _ => {
                 e.space();

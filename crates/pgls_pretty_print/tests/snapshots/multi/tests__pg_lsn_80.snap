@@ -23,7 +23,7 @@ select pg_input_is_valid('16AE7F7', 'pg_lsn');
 
 select * from pg_input_error_info('16AE7F7', 'pg_lsn');
 
-select MIN(f1), MAX(f1) from pg_lsn_tbl;
+select min(f1), max(f1) from pg_lsn_tbl;
 
 drop table pg_lsn_tbl;
 
@@ -55,13 +55,11 @@ select cast('0/1' as pg_lsn) - cast(2 as numeric);
 
 select
   cast('0/0' as pg_lsn) +
-  (cast('FFFFFFFF/FFFFFFFF' as pg_lsn) -
-  cast('0/0' as pg_lsn));
+  (cast('FFFFFFFF/FFFFFFFF' as pg_lsn) - cast('0/0' as pg_lsn));
 
 select
   cast('FFFFFFFF/FFFFFFFF' as pg_lsn) -
-  (cast('FFFFFFFF/FFFFFFFF' as pg_lsn) -
-  cast('0/0' as pg_lsn));
+  (cast('FFFFFFFF/FFFFFFFF' as pg_lsn) - cast('0/0' as pg_lsn));
 
 select cast('0/16AE7F7' as pg_lsn) + cast('NaN' as numeric);
 

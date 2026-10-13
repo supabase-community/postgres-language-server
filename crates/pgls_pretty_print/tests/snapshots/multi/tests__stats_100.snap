@@ -2,7 +2,7 @@
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/stats.sql
 ---
-show "track_counts";
+show track_counts;
 
 select
   backend_type,
@@ -140,11 +140,11 @@ insert into trunc_stats_test4 default values;
 
 rollback;
 
-select COUNT(*) from tenk2;
+select count(*) from tenk2;
 
 set enable_bitmapscan = off;
 
-select COUNT(*) from tenk2 where unique1 = 1;
+select count(*) from tenk2 where unique1 = 1;
 
 reset enable_bitmapscan;
 
@@ -180,10 +180,8 @@ where
   st.relname = 'tenk2' and cl.relname = 'tenk2';
 
 select
-  st.heap_blks_read + st.heap_blks_hit >=
-  pr.heap_blks + cl.relpages,
-  st.idx_blks_read + st.idx_blks_hit >=
-  pr.idx_blks + 1
+  st.heap_blks_read + st.heap_blks_hit >= pr.heap_blks + cl.relpages,
+  st.idx_blks_read + st.idx_blks_hit >= pr.idx_blks + 1
 from
   pg_statio_user_tables as st,
   pg_class as cl,
@@ -198,24 +196,20 @@ commit;
 create function stats_test_func1()
 returns void
 language plpgsql
-as $function$
-BEGIN END;
-$function$;
+as $$BEGIN END;$$;
 
 select cast(cast('stats_test_func1()' as regprocedure) as oid) as stats_test_func1_oid;
 
 create function stats_test_func2()
 returns void
 language plpgsql
-as $function$
-BEGIN END;
-$function$;
+as $$BEGIN END;$$;
 
 select cast(cast('stats_test_func2()' as regprocedure) as oid) as stats_test_func2_oid;
 
 begin;
 
-set local stats_fetch_consistency = 'none';
+set local stats_fetch_consistency = none;
 
 select pg_stat_get_function_calls('stats_test_func1_oid');
 
@@ -479,15 +473,15 @@ set local enable_indexscan = 'on';
 
 set local enable_bitmapscan = off;
 
-select COUNT(*) from test_last_scan where noidx_col = 1;
+select count(*) from test_last_scan where noidx_col = 1;
 
-select COUNT(*) from test_last_scan where noidx_col = 1;
+select count(*) from test_last_scan where noidx_col = 1;
 
 set local enable_seqscan = off;
 
-select COUNT(*) from test_last_scan where idx_col = 1;
+select count(*) from test_last_scan where idx_col = 1;
 
-select COUNT(*) from test_last_scan where idx_col = 1;
+select count(*) from test_last_scan where idx_col = 1;
 
 select pg_stat_force_next_flush();
 
@@ -511,9 +505,9 @@ set local enable_indexscan = off;
 
 set local enable_bitmapscan = off;
 
-select COUNT(*) from test_last_scan where noidx_col = 1;
+select count(*) from test_last_scan where noidx_col = 1;
 
-select COUNT(*) from test_last_scan where noidx_col = 1;
+select count(*) from test_last_scan where noidx_col = 1;
 
 select pg_stat_force_next_flush();
 
@@ -547,9 +541,9 @@ set local enable_indexscan = 'on';
 
 set local enable_bitmapscan = off;
 
-select COUNT(*) from test_last_scan where idx_col = 1;
+select count(*) from test_last_scan where idx_col = 1;
 
-select COUNT(*) from test_last_scan where idx_col = 1;
+select count(*) from test_last_scan where idx_col = 1;
 
 select pg_stat_force_next_flush();
 
@@ -583,9 +577,9 @@ set local enable_indexscan = off;
 
 set local enable_bitmapscan = 'on';
 
-select COUNT(*) from test_last_scan where idx_col = 1;
+select count(*) from test_last_scan where idx_col = 1;
 
-select COUNT(*) from test_last_scan where idx_col = 1;
+select count(*) from test_last_scan where idx_col = 1;
 
 select pg_stat_force_next_flush();
 
@@ -602,8 +596,7 @@ where
   relid = cast('test_last_scan' as regclass);
 
 select
-  shobj_description(d.oid, 'pg_database')
-  as description_before
+  shobj_description(d.oid, 'pg_database') as description_before
 from
   pg_database as d
 where
@@ -668,9 +661,7 @@ select pg_stat_force_next_flush();
 select wal_bytes > 'backend_wal_bytes_before' from pg_stat_get_backend_wal(pg_backend_pid());
 
 select
-  (current_schemas(true))[1] =
-  'pg_temp_' || cast(beid as text)
-  as match
+  (current_schemas(true))[1] = 'pg_temp_' || cast(beid as text) as match
 from
   pg_stat_get_backend_idset() as beid
 where
@@ -683,9 +674,7 @@ select stats_reset as slru_notify_reset_ts from pg_stat_slru where name = 'notif
 select pg_stat_reset_slru('commit_timestamp');
 
 select
-  stats_reset >
-  cast('slru_commit_ts_reset_ts'
-  as timestamp with time zone)
+  stats_reset > cast('slru_commit_ts_reset_ts' as timestamptz)
 from
   pg_stat_slru
 where
@@ -696,18 +685,14 @@ select stats_reset as slru_commit_ts_reset_ts from pg_stat_slru where name = 'co
 select pg_stat_reset_slru();
 
 select
-  stats_reset >
-  cast('slru_commit_ts_reset_ts'
-  as timestamp with time zone)
+  stats_reset > cast('slru_commit_ts_reset_ts' as timestamptz)
 from
   pg_stat_slru
 where
   name = 'commit_timestamp';
 
 select
-  stats_reset >
-  cast('slru_notify_reset_ts'
-  as timestamp with time zone)
+  stats_reset > cast('slru_notify_reset_ts' as timestamptz)
 from
   pg_stat_slru
 where
@@ -717,47 +702,40 @@ select stats_reset as archiver_reset_ts from pg_stat_archiver;
 
 select pg_stat_reset_shared('archiver');
 
-select stats_reset > cast('archiver_reset_ts' as timestamp with time zone) from pg_stat_archiver;
+select stats_reset > cast('archiver_reset_ts' as timestamptz) from pg_stat_archiver;
 
 select stats_reset as bgwriter_reset_ts from pg_stat_bgwriter;
 
 select pg_stat_reset_shared('bgwriter');
 
-select stats_reset > cast('bgwriter_reset_ts' as timestamp with time zone) from pg_stat_bgwriter;
+select stats_reset > cast('bgwriter_reset_ts' as timestamptz) from pg_stat_bgwriter;
 
 select stats_reset as checkpointer_reset_ts from pg_stat_checkpointer;
 
 select pg_stat_reset_shared('checkpointer');
 
-select
-  stats_reset >
-  cast('checkpointer_reset_ts'
-  as timestamp with time zone)
-from
-  pg_stat_checkpointer;
+select stats_reset > cast('checkpointer_reset_ts' as timestamptz) from pg_stat_checkpointer;
 
 select stats_reset as recovery_prefetch_reset_ts from pg_stat_recovery_prefetch;
 
 select pg_stat_reset_shared('recovery_prefetch');
 
 select
-  stats_reset >
-  cast('recovery_prefetch_reset_ts'
-  as timestamp with time zone)
+  stats_reset > cast('recovery_prefetch_reset_ts' as timestamptz)
 from
   pg_stat_recovery_prefetch;
 
-select MAX(stats_reset) as slru_reset_ts from pg_stat_slru;
+select max(stats_reset) as slru_reset_ts from pg_stat_slru;
 
 select pg_stat_reset_shared('slru');
 
-select MAX(stats_reset) > cast('slru_reset_ts' as timestamp with time zone) from pg_stat_slru;
+select max(stats_reset) > cast('slru_reset_ts' as timestamptz) from pg_stat_slru;
 
 select stats_reset as wal_reset_ts from pg_stat_wal;
 
 select pg_stat_reset_shared('wal');
 
-select stats_reset > cast('wal_reset_ts' as timestamp with time zone) from pg_stat_wal;
+select stats_reset > cast('wal_reset_ts' as timestamptz) from pg_stat_wal;
 
 select pg_stat_reset_shared('unknown');
 
@@ -768,8 +746,7 @@ select stats_reset as db_reset_ts from pg_stat_database where datname = (select 
 select pg_stat_reset();
 
 select
-  stats_reset >
-  cast('db_reset_ts' as timestamp with time zone)
+  stats_reset > cast('db_reset_ts' as timestamptz)
 from
   pg_stat_database
 where
@@ -783,7 +760,7 @@ select pg_stat_get_snapshot_timestamp();
 
 select pg_stat_get_function_calls(0);
 
-select pg_stat_get_snapshot_timestamp() >= NOW();
+select pg_stat_get_snapshot_timestamp() >= now();
 
 select pg_stat_clear_snapshot();
 
@@ -807,7 +784,7 @@ select pg_stat_get_function_calls(0);
 
 select pg_stat_get_snapshot_timestamp() is not null as snapshot_ok;
 
-set local stats_fetch_consistency = 'none';
+set local stats_fetch_consistency = none;
 
 select pg_stat_get_snapshot_timestamp() is not null as snapshot_ok;
 
@@ -827,7 +804,7 @@ select pg_stat_have_stats('database', 'dboid', 0);
 
 create table stats_test_tab1 as select generate_series(1, 10) as a;
 
-create index "stats_test_idx1" on stats_test_tab1 using btree (a);
+create index stats_test_idx1 on stats_test_tab1 using btree (a);
 
 select cast(cast('stats_test_idx1' as regclass) as oid) as stats_test_idx1_oid;
 
@@ -845,7 +822,7 @@ select pg_stat_have_stats('relation', 'dboid', 'stats_test_idx1_oid');
 
 begin;
 
-create index "stats_test_idx1" on stats_test_tab1 using btree (a);
+create index stats_test_idx1 on stats_test_tab1 using btree (a);
 
 select cast(cast('stats_test_idx1' as regclass) as oid) as stats_test_idx1_oid;
 
@@ -857,7 +834,7 @@ rollback;
 
 select pg_stat_have_stats('relation', 'dboid', 'stats_test_idx1_oid');
 
-create index "stats_test_idx1" on stats_test_tab1 using btree (a);
+create index stats_test_idx1 on stats_test_tab1 using btree (a);
 
 select cast(cast('stats_test_idx1' as regclass) as oid) as stats_test_idx1_oid;
 
@@ -865,7 +842,7 @@ select a from stats_test_tab1 where a = 3;
 
 select pg_stat_have_stats('relation', 'dboid', 'stats_test_idx1_oid');
 
-reindex (CONCURRENTLY) index stats_test_idx1;
+reindex (concurrently) index stats_test_idx1;
 
 select pg_stat_have_stats('relation', 'dboid', 'stats_test_idx1_oid');
 
@@ -892,32 +869,32 @@ select pg_stat_get_subscription_stats(null);
 select pid as checkpointer_pid from pg_stat_activity where backend_type = 'checkpointer';
 
 select
-  SUM(extends) as io_sum_shared_before_extends
+  sum(extends) as io_sum_shared_before_extends
 from
   pg_stat_io
 where
   context = 'normal' and object = 'relation';
 
 select
-  SUM(extends) as my_io_sum_shared_before_extends
+  sum(extends) as my_io_sum_shared_before_extends
 from
   pg_stat_get_backend_io(pg_backend_pid())
 where
   context = 'normal' and object = 'relation';
 
-select SUM(writes) as writes, SUM(fsyncs) as fsyncs from pg_stat_io where object = 'relation';
+select sum(writes) as writes, sum(fsyncs) as fsyncs from pg_stat_io where object = 'relation';
 
 select
-  SUM(writes) as writes,
-  SUM(fsyncs) as fsyncs
+  sum(writes) as writes,
+  sum(fsyncs) as fsyncs
 from
   pg_stat_get_backend_io(pg_backend_pid())
 where
   object = 'relation';
 
 select
-  SUM(writes) as writes,
-  SUM(fsyncs) as fsyncs
+  sum(writes) as writes,
+  sum(fsyncs) as fsyncs
 from
   pg_stat_io
 where
@@ -930,7 +907,7 @@ insert into test_io_shared select i from generate_series(1, 100) as i;
 select pg_stat_force_next_flush();
 
 select
-  SUM(extends) as io_sum_shared_after_extends
+  sum(extends) as io_sum_shared_after_extends
 from
   pg_stat_io
 where
@@ -939,7 +916,7 @@ where
 select 'io_sum_shared_after_extends' > 'io_sum_shared_before_extends';
 
 select
-  SUM(extends) as my_io_sum_shared_after_extends
+  sum(extends) as my_io_sum_shared_after_extends
 from
   pg_stat_get_backend_io(pg_backend_pid())
 where
@@ -951,18 +928,16 @@ checkpoint;
 
 checkpoint;
 
-select SUM(writes) as writes, SUM(fsyncs) as fsyncs from pg_stat_io where object = 'relation';
+select sum(writes) as writes, sum(fsyncs) as fsyncs from pg_stat_io where object = 'relation';
 
 select 'io_sum_shared_after_writes' > 'io_sum_shared_before_writes';
 
 select
-  current_setting('fsync') = 'off' or
-  'io_sum_shared_after_fsyncs' >
-  'io_sum_shared_before_fsyncs';
+  current_setting('fsync') = 'off' or 'io_sum_shared_after_fsyncs' > 'io_sum_shared_before_fsyncs';
 
 select
-  SUM(writes) as writes,
-  SUM(fsyncs) as fsyncs
+  sum(writes) as writes,
+  sum(fsyncs) as fsyncs
 from
   pg_stat_get_backend_io(pg_backend_pid())
 where
@@ -972,12 +947,11 @@ select 'my_io_sum_shared_after_writes' >= 'my_io_sum_shared_before_writes';
 
 select
   current_setting('fsync') = 'off' or
-  'my_io_sum_shared_after_fsyncs' >=
-  'my_io_sum_shared_before_fsyncs';
+  'my_io_sum_shared_after_fsyncs' >= 'my_io_sum_shared_before_fsyncs';
 
 select
-  SUM(writes) as writes,
-  SUM(fsyncs) as fsyncs
+  sum(writes) as writes,
+  sum(fsyncs) as fsyncs
 from
   pg_stat_io
 where
@@ -989,15 +963,11 @@ select 'io_sum_wal_normal_after_writes' > 'io_sum_wal_normal_before_writes';
 
 select
   current_setting('fsync') = 'off' or
-  current_setting('wal_sync_method')
-  in (
-    'open_sync', 'open_datasync'
-  ) or
-  'io_sum_wal_normal_after_fsyncs' >
-  'io_sum_wal_normal_before_fsyncs';
+  current_setting('wal_sync_method') in ('open_sync', 'open_datasync') or
+  'io_sum_wal_normal_after_fsyncs' > 'io_sum_wal_normal_before_fsyncs';
 
 select
-  SUM(reads) as io_sum_shared_before_reads
+  sum(reads) as io_sum_shared_before_reads
 from
   pg_stat_io
 where
@@ -1008,14 +978,14 @@ begin;
 alter table test_io_shared
   set tablespace regress_tblspace;
 
-select COUNT(*) from test_io_shared;
+select count(*) from test_io_shared;
 
 commit;
 
 select pg_stat_force_next_flush();
 
 select
-  SUM(reads) as io_sum_shared_after_reads
+  sum(reads) as io_sum_shared_after_reads
 from
   pg_stat_io
 where
@@ -1024,7 +994,7 @@ where
 select 'io_sum_shared_after_reads' > 'io_sum_shared_before_reads';
 
 select
-  SUM(hits) as io_sum_shared_before_hits
+  sum(hits) as io_sum_shared_before_hits
 from
   pg_stat_io
 where
@@ -1040,16 +1010,16 @@ set local enable_hashjoin = off;
 
 set local enable_material = off;
 
-select COUNT(*) from test_io_shared as t1 inner join test_io_shared as t2 using ("a");
+select count(*) from test_io_shared as t1 inner join test_io_shared as t2 using (a);
 
-select COUNT(*) from test_io_shared as t1 inner join test_io_shared as t2 using ("a");
+select count(*) from test_io_shared as t1 inner join test_io_shared as t2 using (a);
 
 commit;
 
 select pg_stat_force_next_flush();
 
 select
-  SUM(hits) as io_sum_shared_after_hits
+  sum(hits) as io_sum_shared_after_hits
 from
   pg_stat_io
 where
@@ -1067,9 +1037,9 @@ create temporary table test_io_local (
 );
 
 select
-  SUM(extends) as extends,
-  SUM(evictions) as evictions,
-  SUM(writes) as writes
+  sum(extends) as extends,
+  sum(evictions) as evictions,
+  sum(writes) as writes
 from
   pg_stat_io
 where
@@ -1077,38 +1047,34 @@ where
 
 insert into test_io_local select generate_series(1, 5000) as id, repeat('a', 200);
 
-select pg_relation_size('test_io_local') / cast(current_setting('block_size') as bigint) > 100;
+select pg_relation_size('test_io_local') / cast(current_setting('block_size') as int8) > 100;
 
 select
-  SUM(reads) as io_sum_local_before_reads
+  sum(reads) as io_sum_local_before_reads
 from
   pg_stat_io
 where
   context = 'normal' and object = 'temp relation';
 
-select COUNT(*) from test_io_local;
+select count(*) from test_io_local;
 
 select pg_stat_force_next_flush();
 
 select
-  SUM(evictions) as evictions,
-  SUM(reads) as reads,
-  SUM(writes) as writes,
-  SUM(extends) as extends
+  sum(evictions) as evictions,
+  sum(reads) as reads,
+  sum(writes) as writes,
+  sum(extends) as extends
 from
   pg_stat_io
 where
   context = 'normal' and object = 'temp relation';
 
 select
-  'io_sum_local_after_evictions' >
-  'io_sum_local_before_evictions',
-  'io_sum_local_after_reads' >
-  'io_sum_local_before_reads',
-  'io_sum_local_after_writes' >
-  'io_sum_local_before_writes',
-  'io_sum_local_after_extends' >
-  'io_sum_local_before_extends';
+  'io_sum_local_after_evictions' > 'io_sum_local_before_evictions',
+  'io_sum_local_after_reads' > 'io_sum_local_before_reads',
+  'io_sum_local_after_writes' > 'io_sum_local_before_writes',
+  'io_sum_local_after_extends' > 'io_sum_local_before_extends';
 
 alter table test_io_local
   set tablespace regress_tblspace;
@@ -1116,7 +1082,7 @@ alter table test_io_local
 select pg_stat_force_next_flush();
 
 select
-  SUM(writes) as io_sum_local_new_tblspc_writes
+  sum(writes) as io_sum_local_new_tblspc_writes
 from
   pg_stat_io
 where
@@ -1129,9 +1095,9 @@ reset temp_buffers;
 set wal_skip_threshold = '1 kB';
 
 select
-  SUM(reuses) as reuses,
-  SUM(reads) as reads,
-  SUM(evictions) as evictions
+  sum(reuses) as reuses,
+  sum(reads) as reads,
+  sum(evictions) as evictions
 from
   pg_stat_io
 where
@@ -1145,16 +1111,16 @@ with (autovacuum_enabled = 'false');
 
 insert into test_io_vac_strategy select i, i from generate_series(1, 4500) as i;
 
-vacuum (FULL) test_io_vac_strategy;
+vacuum (full) test_io_vac_strategy;
 
-vacuum (PARALLEL 0, BUFFER_USAGE_LIMIT 128) test_io_vac_strategy;
+vacuum (parallel 0, buffer_usage_limit 128) test_io_vac_strategy;
 
 select pg_stat_force_next_flush();
 
 select
-  SUM(reuses) as reuses,
-  SUM(reads) as reads,
-  SUM(evictions) as evictions
+  sum(reuses) as reuses,
+  sum(reads) as reads,
+  sum(evictions) as evictions
 from
   pg_stat_io
 where
@@ -1163,16 +1129,13 @@ where
 select 'io_sum_vac_strategy_after_reads' > 'io_sum_vac_strategy_before_reads';
 
 select
-  'io_sum_vac_strategy_after_reuses' +
-  'io_sum_vac_strategy_after_evictions' >
-  'io_sum_vac_strategy_before_reuses' +
-  'io_sum_vac_strategy_before_evictions';
+  'io_sum_vac_strategy_after_reuses' + 'io_sum_vac_strategy_after_evictions' >
+  'io_sum_vac_strategy_before_reuses' + 'io_sum_vac_strategy_before_evictions';
 
 reset wal_skip_threshold;
 
 select
-  SUM(extends)
-  as io_sum_bulkwrite_strategy_extends_before
+  sum(extends) as io_sum_bulkwrite_strategy_extends_before
 from
   pg_stat_io
 where
@@ -1183,8 +1146,7 @@ create table test_io_bulkwrite_strategy as select i from generate_series(1, 100)
 select pg_stat_force_next_flush();
 
 select
-  SUM(extends)
-  as io_sum_bulkwrite_strategy_extends_after
+  sum(extends) as io_sum_bulkwrite_strategy_extends_after
 from
   pg_stat_io
 where
@@ -1195,23 +1157,17 @@ select 'io_sum_bulkwrite_strategy_extends_after' > 'io_sum_bulkwrite_strategy_ex
 select pg_stat_have_stats('io', 0, 0);
 
 select
-  SUM(evictions) + SUM(reuses) + SUM(extends) +
-  SUM(fsyncs) +
-  SUM(reads) +
-  SUM(writes) +
-  SUM(writebacks) +
-  SUM(hits)
+  sum(evictions) + sum(reuses) + sum(extends) + sum(fsyncs) + sum(reads) + sum(writes) +
+  sum(writebacks) +
+  sum(hits)
   as io_stats_pre_reset
 from
   pg_stat_io;
 
 select
-  SUM(evictions) + SUM(reuses) + SUM(extends) +
-  SUM(fsyncs) +
-  SUM(reads) +
-  SUM(writes) +
-  SUM(writebacks) +
-  SUM(hits)
+  sum(evictions) + sum(reuses) + sum(extends) + sum(fsyncs) + sum(reads) + sum(writes) +
+  sum(writebacks) +
+  sum(hits)
   as my_io_stats_pre_reset
 from
   pg_stat_get_backend_io(pg_backend_pid());
@@ -1219,12 +1175,9 @@ from
 select pg_stat_reset_shared('io');
 
 select
-  SUM(evictions) + SUM(reuses) + SUM(extends) +
-  SUM(fsyncs) +
-  SUM(reads) +
-  SUM(writes) +
-  SUM(writebacks) +
-  SUM(hits)
+  sum(evictions) + sum(reuses) + sum(extends) + sum(fsyncs) + sum(reads) + sum(writes) +
+  sum(writebacks) +
+  sum(hits)
   as io_stats_post_reset
 from
   pg_stat_io;
@@ -1232,12 +1185,9 @@ from
 select 'io_stats_post_reset' < 'io_stats_pre_reset';
 
 select
-  SUM(evictions) + SUM(reuses) + SUM(extends) +
-  SUM(fsyncs) +
-  SUM(reads) +
-  SUM(writes) +
-  SUM(writebacks) +
-  SUM(hits)
+  sum(evictions) + sum(reuses) + sum(extends) + sum(fsyncs) + sum(reads) + sum(writes) +
+  sum(writebacks) +
+  sum(hits)
   as my_io_stats_post_reset
 from
   pg_stat_get_backend_io(pg_backend_pid());
@@ -1247,12 +1197,9 @@ select 'my_io_stats_pre_reset' <= 'my_io_stats_post_reset';
 select pg_stat_reset_backend_stats(pg_backend_pid());
 
 select
-  SUM(evictions) + SUM(reuses) + SUM(extends) +
-  SUM(fsyncs) +
-  SUM(reads) +
-  SUM(writes) +
-  SUM(writebacks) +
-  SUM(hits)
+  sum(evictions) + sum(reuses) + sum(extends) + sum(fsyncs) + sum(reads) + sum(writes) +
+  sum(writebacks) +
+  sum(hits)
   as my_io_stats_post_backend_reset
 from
   pg_stat_get_backend_io(pg_backend_pid());
@@ -1273,12 +1220,12 @@ with (autovacuum_enabled = off, fillfactor = 70);
 
 insert into brin_hot select *, 0 from generate_series(1, 235);
 
-create index "val_brin" on brin_hot using brin (val);
+create index val_brin on brin_hot using brin (val);
 
 create function wait_for_hot_stats()
 returns void
 language plpgsql
-as $function$
+as $$
 DECLARE
   start_time timestamptz := clock_timestamp();
   updated bool;
@@ -1297,7 +1244,7 @@ BEGIN
   RAISE log 'wait_for_hot_stats delayed % seconds',
     EXTRACT(epoch FROM clock_timestamp() - start_time);
 END
-$function$;
+$$;
 
 update brin_hot set val = -3 where id = 42;
 
@@ -1316,26 +1263,19 @@ create table brin_hot_2 (
 
 insert into brin_hot_2 values (1, 100);
 
-create index
-on brin_hot_2
-using brin
-(
-  b
-)
-where
-  a = 2;
+create index on brin_hot_2 using brin (b) where a = 2;
 
 update brin_hot_2 set a = 2;
 
 select * from brin_hot_2 where a = 2 and b = 100;
 
-select COUNT(*) from brin_hot_2 where a = 2 and b = 100;
+select count(*) from brin_hot_2 where a = 2 and b = 100;
 
 set enable_seqscan = off;
 
 select * from brin_hot_2 where a = 2 and b = 100;
 
-select COUNT(*) from brin_hot_2 where a = 2 and b = 100;
+select count(*) from brin_hot_2 where a = 2 and b = 100;
 
 drop table brin_hot_2;
 
@@ -1347,19 +1287,13 @@ with (fillfactor = 10);
 
 insert into brin_hot_3 select 1, repeat(' ', 500) from generate_series(1, 20);
 
-create index
-on brin_hot_3
-using brin
-(
-  a
-)
-with (pages_per_range = 1);
+create index on brin_hot_3 using brin (a) with (pages_per_range = 1);
 
 update brin_hot_3 set a = 2;
 
 select * from brin_hot_3 where a = 2;
 
-select COUNT(*) from brin_hot_3 where a = 2;
+select count(*) from brin_hot_3 where a = 2;
 
 drop table brin_hot_3;
 
