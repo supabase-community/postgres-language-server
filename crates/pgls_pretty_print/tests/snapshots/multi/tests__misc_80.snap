@@ -6,13 +6,13 @@ create function overpaid(emp)
 returns bool
 language c
 strict
-as 'regresslib';
+as $$regresslib$$;
 
 create function reverse_name(name)
 returns name
 language c
 strict
-as 'regresslib';
+as $$regresslib$$;
 
 update onek set unique1 = onek.unique1 + 1;
 
@@ -93,57 +93,57 @@ insert into equipment_r (name, hobby) values ('guts', 'skywalking');
 create function hobbies(person)
 returns setof hobbies_r
 language sql
-as 'select * from hobbies_r where person = $1.name';
+as $$select * from hobbies_r where person = $1.name$$;
 
 create function hobby_construct(text, text)
 returns hobbies_r
 language sql
-as 'select $1 as name, $2 as hobby';
+as $$select $1 as name, $2 as hobby$$;
 
 create function hobby_construct_named(name text, hobby text)
 returns hobbies_r
 language sql
-as 'select name, hobby';
+as $$select name, hobby$$;
 
 create function hobbies_by_name(hobbies_r.name%type)
 returns hobbies_r.person%type
 language sql
-as 'select person from hobbies_r where name = $1';
+as $$select person from hobbies_r where name = $1$$;
 
 create function equipment(hobbies_r)
 returns setof equipment_r
 language sql
-as 'select * from equipment_r where hobby = $1.name';
+as $$select * from equipment_r where hobby = $1.name$$;
 
 create function equipment_named(hobby hobbies_r)
 returns setof equipment_r
 language sql
-as 'select * from equipment_r where equipment_r.hobby = equipment_named.hobby.name';
+as $$select * from equipment_r where equipment_r.hobby = equipment_named.hobby.name$$;
 
 create function equipment_named_ambiguous_1a(hobby hobbies_r)
 returns setof equipment_r
 language sql
-as 'select * from equipment_r where hobby = equipment_named_ambiguous_1a.hobby.name';
+as $$select * from equipment_r where hobby = equipment_named_ambiguous_1a.hobby.name$$;
 
 create function equipment_named_ambiguous_1b(hobby hobbies_r)
 returns setof equipment_r
 language sql
-as 'select * from equipment_r where equipment_r.hobby = hobby.name';
+as $$select * from equipment_r where equipment_r.hobby = hobby.name$$;
 
 create function equipment_named_ambiguous_1c(hobby hobbies_r)
 returns setof equipment_r
 language sql
-as 'select * from equipment_r where hobby = hobby.name';
+as $$select * from equipment_r where hobby = hobby.name$$;
 
 create function equipment_named_ambiguous_2a(hobby text)
 returns setof equipment_r
 language sql
-as 'select * from equipment_r where hobby = equipment_named_ambiguous_2a.hobby';
+as $$select * from equipment_r where hobby = equipment_named_ambiguous_2a.hobby$$;
 
 create function equipment_named_ambiguous_2b(hobby text)
 returns setof equipment_r
 language sql
-as 'select * from equipment_r where equipment_r.hobby = hobby';
+as $$select * from equipment_r where equipment_r.hobby = hobby$$;
 
 select p.name, name(p.hobbies) from only person as p;
 

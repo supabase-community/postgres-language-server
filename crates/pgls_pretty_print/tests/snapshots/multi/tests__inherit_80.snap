@@ -508,7 +508,7 @@ create table p2 (f1 text);
 create function p2text(p2)
 returns text
 language sql
-as 'select $1.f1';
+as $$select $1.f1$$;
 
 create table c1 (f3 int)
 inherits (p1, p2);

@@ -56,16 +56,6 @@ pub struct EventEmitter {
     leading_line_comments_require_break: bool,
     /// Line comments written after a list comma, waiting for the emitter to reach that comma.
     comments_after_separator: Vec<Comment>,
-    /// The text the AST was parsed from. The AST drops how a literal was quoted, so this is where
-    /// a function body gets its dollar-quote tag back from.
-    source: Option<Source>,
-}
-
-#[derive(Debug)]
-struct Source {
-    text: String,
-    /// Byte ranges of the string literals in `text`, in source order.
-    string_literals: Vec<(usize, usize)>,
 }
 
 impl EventEmitter {
@@ -77,43 +67,7 @@ impl EventEmitter {
             trailing_comments: HashMap::new(),
             leading_line_comments_require_break: false,
             comments_after_separator: Vec::new(),
-            source: None,
         }
-    }
-
-    /// Attaches the text the AST was parsed from, so that literals keep the quoting they were
-    /// written with. Without it, a literal is quoted the default way.
-    pub fn with_source(mut self, sql: &str) -> Self {
-        let string_literals = pgls_query::scan(sql)
-            .map(|scan| {
-                scan.tokens
-                    .iter()
-                    .filter(|token| token.token == pgls_query::protobuf::Token::Sconst as i32)
-                    .filter_map(|token| {
-                        Some((
-                            usize::try_from(token.start).ok()?,
-                            usize::try_from(token.end).ok()?,
-                        ))
-                    })
-                    .collect()
-            })
-            .unwrap_or_default();
-        self.source = Some(Source {
-            text: sql.to_string(),
-            string_literals,
-        });
-        self
-    }
-
-    /// The source text of the first string literal at or after `location`.
-    pub(crate) fn source_string_literal_from(&self, location: i32) -> Option<&str> {
-        let source = self.source.as_ref()?;
-        let location = usize::try_from(location).ok()?;
-        let index = source
-            .string_literals
-            .partition_point(|(start, _)| *start < location);
-        let (start, end) = *source.string_literals.get(index)?;
-        source.text.get(start..end)
     }
 
     // Later option PRs inspect this while deciding which layout events to emit.
@@ -134,7 +88,6 @@ impl EventEmitter {
             trailing_comments,
             leading_line_comments_require_break: false,
             comments_after_separator: Vec::new(),
-            source: None,
         }
     }
 

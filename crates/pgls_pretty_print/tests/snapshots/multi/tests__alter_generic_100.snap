@@ -36,12 +36,12 @@ set session authorization regress_alter_generic_user1;
 create function alt_func1(int)
 returns int
 language sql
-as 'SELECT $1 + 1';
+as $$SELECT $1 + 1$$;
 
 create function alt_func2(int)
 returns int
 language sql
-as 'SELECT $1 - 1';
+as $$SELECT $1 - 1$$;
 
 create aggregate alt_agg1 (sfunc1 = int4pl, basetype = int4, stype1 = int4, initcond = 0);
 
@@ -80,12 +80,12 @@ set session authorization regress_alter_generic_user2;
 create function alt_func1(int)
 returns int
 language sql
-as 'SELECT $1 + 2';
+as $$SELECT $1 + 2$$;
 
 create function alt_func2(int)
 returns int
 language sql
-as 'SELECT $1 - 2';
+as $$SELECT $1 - 2$$;
 
 create aggregate alt_agg1 (sfunc1 = int4pl, basetype = int4, stype1 = int4, initcond = 100);
 
@@ -512,7 +512,7 @@ create operator family alt_opf12 using btree;
 create function fn_opf12(int4, int2)
 returns bigint
 language sql
-as 'SELECT NULL::BIGINT;';
+as $$SELECT NULL::BIGINT;$$;
 
 alter operator family alt_opf12 using btree add function 1 fn_opf12(int4, int2);
 
@@ -527,7 +527,7 @@ create operator family alt_opf13 using hash;
 create function fn_opf13(int4)
 returns bigint
 language sql
-as 'SELECT NULL::BIGINT;';
+as $$SELECT NULL::BIGINT;$$;
 
 alter operator family alt_opf13 using hash add function 1 fn_opf13(int4);
 
@@ -542,7 +542,7 @@ create operator family alt_opf14 using btree;
 create function fn_opf14(int4)
 returns bigint
 language sql
-as 'SELECT NULL::BIGINT;';
+as $$SELECT NULL::BIGINT;$$;
 
 alter operator family alt_opf14 using btree add function 1 fn_opf14(int4);
 
@@ -557,7 +557,7 @@ create operator family alt_opf15 using hash;
 create function fn_opf15(int4, int2)
 returns bigint
 language sql
-as 'SELECT NULL::BIGINT;';
+as $$SELECT NULL::BIGINT;$$;
 
 alter operator family alt_opf15 using hash add function 1 fn_opf15(int4, int2);
 

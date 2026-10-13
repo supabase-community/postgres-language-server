@@ -196,7 +196,7 @@ drop function polyf(a anyelement, b anyarray, c anycompatible, d anycompatible);
 create function polyf(anyrange)
 returns anymultirange
 language sql
-as 'select multirange($1);';
+as $$select multirange($1);$$;
 
 select polyf(int4range(1, 10));
 
@@ -207,7 +207,7 @@ drop function polyf(anyrange);
 create function polyf(anymultirange)
 returns anyelement
 language sql
-as 'select lower($1);';
+as $$select lower($1);$$;
 
 select polyf(int4multirange(int4range(1, 10), int4range(20, 30)));
 
@@ -218,7 +218,7 @@ drop function polyf(anymultirange);
 create function polyf(anycompatiblerange)
 returns anycompatiblemultirange
 language sql
-as 'select multirange($1);';
+as $$select multirange($1);$$;
 
 select polyf(int4range(1, 10));
 
@@ -229,7 +229,7 @@ drop function polyf(anycompatiblerange);
 create function polyf(anymultirange)
 returns anyrange
 language sql
-as 'select range_merge($1);';
+as $$select range_merge($1);$$;
 
 select polyf(int4multirange(int4range(1, 10), int4range(20, 30)));
 
@@ -240,7 +240,7 @@ drop function polyf(anymultirange);
 create function polyf(anycompatiblemultirange)
 returns anycompatiblerange
 language sql
-as 'select range_merge($1);';
+as $$select range_merge($1);$$;
 
 select polyf(int4multirange(int4range(1, 10), int4range(20, 30)));
 
@@ -251,7 +251,7 @@ drop function polyf(anycompatiblemultirange);
 create function polyf(anycompatiblemultirange)
 returns anycompatible
 language sql
-as 'select lower($1);';
+as $$select lower($1);$$;
 
 select polyf(int4multirange(int4range(1, 10), int4range(20, 30)));
 
@@ -262,48 +262,48 @@ drop function polyf(anycompatiblemultirange);
 create function stfp(anyarray)
 returns anyarray
 language sql
-as 'select $1';
+as $$select $1$$;
 
 create function stfnp(int[])
 returns int[]
 language sql
-as 'select $1';
+as $$select $1$$;
 
 create function tfp(anyarray, anyelement)
 returns anyarray
 language sql
-as 'select $1 || $2';
+as $$select $1 || $2$$;
 
 create function tfnp(int[], int)
 returns int[]
 language sql
-as 'select $1 || $2';
+as $$select $1 || $2$$;
 
 create function tf1p(anyarray, int)
 returns anyarray
 language sql
-as 'select $1';
+as $$select $1$$;
 
 create function tf2p(int[], anyelement)
 returns int[]
 language sql
-as 'select $1';
+as $$select $1$$;
 
 create function sum3(anyelement, anyelement, anyelement)
 returns anyelement
 language sql
 strict
-as 'select $1+$2+$3';
+as $$select $1+$2+$3$$;
 
 create function ffp(anyarray)
 returns anyarray
 language sql
-as 'select $1';
+as $$select $1$$;
 
 create function ffnp(int[])
 returns int[]
 language sql
-as 'select $1';
+as $$select $1$$;
 
 create aggregate myaggp01a (
   *
@@ -916,14 +916,14 @@ create function first_el_transfn(anyarray, anyelement)
 returns anyarray
 language sql
 immutable
-as 'select $1 || $2';
+as $$select $1 || $2$$;
 
 create function first_el(anyarray)
 returns anyelement
 language sql
 immutable
 strict
-as 'select $1[1]';
+as $$select $1[1]$$;
 
 create aggregate first_el_agg_f8 (
   float8

@@ -9,14 +9,14 @@ returns int8alias1
 language internal
 immutable
 strict
-as 'int8in';
+as $$int8in$$;
 
 create function int8alias1out(int8alias1)
 returns cstring
 language internal
 immutable
 strict
-as 'int8out';
+as $$int8out$$;
 
 create type int8alias1 (input = int8alias1in, output = int8alias1out, "like" = int8);
 
@@ -27,14 +27,14 @@ returns int8alias2
 language internal
 immutable
 strict
-as 'int8in';
+as $$int8in$$;
 
 create function int8alias2out(int8alias2)
 returns cstring
 language internal
 immutable
 strict
-as 'int8out';
+as $$int8out$$;
 
 create type int8alias2 (input = int8alias2in, output = int8alias2out, "like" = int8);
 
@@ -51,7 +51,7 @@ returns bool
 language internal
 immutable
 strict
-as 'int8eq';
+as $$int8eq$$;
 
 create operator = (
   procedure = int8alias1eq,
@@ -70,7 +70,7 @@ returns bool
 language internal
 immutable
 strict
-as 'int8eq';
+as $$int8eq$$;
 
 create operator = (
   procedure = int8alias2eq,
@@ -89,7 +89,7 @@ returns bool
 language internal
 immutable
 strict
-as 'int8eq';
+as $$int8eq$$;
 
 create operator = (
   procedure = int8alias1eq,
@@ -107,7 +107,7 @@ returns bool
 language internal
 immutable
 strict
-as 'int8eq';
+as $$int8eq$$;
 
 create operator = (
   procedure = int8alias1eq,
@@ -125,7 +125,7 @@ returns bool
 language internal
 immutable
 strict
-as 'int8lt';
+as $$int8lt$$;
 
 create operator < (procedure = int8alias1lt, leftarg = int8alias1, rightarg = int8alias1);
 
@@ -136,7 +136,7 @@ returns int
 language internal
 immutable
 strict
-as 'btint8cmp';
+as $$btint8cmp$$;
 
 alter operator family integer_ops using btree add function 1 int8alias1cmp(int8, int8alias1);
 
@@ -407,7 +407,7 @@ returns int
 language internal
 immutable
 strict
-as 'hashint8';
+as $$hashint8$$;
 
 alter operator family integer_ops using hash add function 1 hashint8alias1(int8alias1);
 

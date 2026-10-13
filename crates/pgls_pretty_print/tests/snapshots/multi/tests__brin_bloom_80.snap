@@ -187,7 +187,7 @@ values
     '{1, 25, 100}'
   );
 
-do $x$
+do $$
 DECLARE
 	r record;
 	r2 record;
@@ -266,7 +266,7 @@ BEGIN
 		IF count != r.matches THEN RAISE WARNING 'unexpected number of results % for %', count, r; END IF;
 	END LOOP;
 END;
-$x$;
+$$;
 
 reset enable_seqscan;
 

@@ -815,7 +815,7 @@ drop type textrange2;
 create function anyarray_anyrange_func(a anyarray, r anyrange)
 returns anyelement
 language sql
-as 'select $1[1] + lower($2);';
+as $$select $1[1] + lower($2);$$;
 
 select anyarray_anyrange_func(array[1, 2], int4range(10, 20));
 
@@ -826,17 +826,17 @@ drop function anyarray_anyrange_func(anyarray, anyrange);
 create function bogus_func(anyelement)
 returns anyrange
 language sql
-as 'select int4range(1,10)';
+as $$select int4range(1,10)$$;
 
 create function bogus_func(int)
 returns anyrange
 language sql
-as 'select int4range(1,10)';
+as $$select int4range(1,10)$$;
 
 create function range_add_bounds(anyrange)
 returns anyelement
 language sql
-as 'select lower($1) + upper($1)';
+as $$select lower($1) + upper($1)$$;
 
 select range_add_bounds(int4range(1, 17));
 
@@ -857,7 +857,7 @@ anycompatiblearray_anycompatiblerange_func(
 )
 returns anycompatible
 language sql
-as 'select $1[1] + lower($2);';
+as $$select $1[1] + lower($2);$$;
 
 select anycompatiblearray_anycompatiblerange_func(array[1, 2], int4range(10, 20));
 
@@ -870,7 +870,7 @@ drop function anycompatiblearray_anycompatiblerange_func(anycompatiblearray, any
 create function bogus_func(anycompatible)
 returns anycompatiblerange
 language sql
-as 'select int4range(1,10)';
+as $$select int4range(1,10)$$;
 
 select array[numrange(1.1, 1.2), numrange(12.3, 155.5)];
 

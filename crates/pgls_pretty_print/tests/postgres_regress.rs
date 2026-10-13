@@ -71,7 +71,7 @@ fn round_trip(sql: &str) -> Result<(), String> {
     let mut expected = ast.clone();
     normalize_ast(&mut expected);
     for max_line_length in LINE_WIDTHS {
-        let output = catch_unwind(AssertUnwindSafe(|| format(&ast, sql, max_line_length)))
+        let output = catch_unwind(AssertUnwindSafe(|| format(&ast, max_line_length)))
             .map_err(|_| format!("formatter panicked at width {max_line_length}"))?;
         let reparsed = pgls_query::parse(&output)
             .map_err(|e| format!("output doesn't parse at width {max_line_length}: {e}\n{output}"))?
@@ -84,10 +84,10 @@ fn round_trip(sql: &str) -> Result<(), String> {
                 "output has a different AST at width {max_line_length}\n{output}"
             ));
         }
-        let reformatted = catch_unwind(AssertUnwindSafe(|| {
-            format(&reparsed, &output, max_line_length)
-        }))
-        .map_err(|_| format!("formatter panicked on its own output at width {max_line_length}"))?;
+        let reformatted = catch_unwind(AssertUnwindSafe(|| format(&reparsed, max_line_length)))
+            .map_err(|_| {
+                format!("formatter panicked on its own output at width {max_line_length}")
+            })?;
         if reformatted != output {
             return Err(format!(
                 "formatting is not idempotent at width {max_line_length}\n{output}\n---\n{reformatted}"
@@ -97,9 +97,9 @@ fn round_trip(sql: &str) -> Result<(), String> {
     Ok(())
 }
 
-fn format(ast: &pgls_query::NodeEnum, sql: &str, max_line_length: usize) -> String {
+fn format(ast: &pgls_query::NodeEnum, max_line_length: usize) -> String {
     let config = FormatConfig::default();
-    let mut emitter = EventEmitter::new(config.clone()).with_source(sql);
+    let mut emitter = EventEmitter::new(config.clone());
     emit_node_enum(ast, &mut emitter);
     let mut output = String::new();
     let config = RenderConfig {

@@ -13,17 +13,17 @@ set search_path to temp_func_test, public;
 create function functest_a_1(text, date)
 returns bool
 language sql
-as 'SELECT $1 = ''abcd'' AND $2 > ''2001-01-01''';
+as $$SELECT $1 = 'abcd' AND $2 > '2001-01-01'$$;
 
 create function functest_a_2(text[])
 returns int
 language sql
-as 'SELECT $1[1]::int';
+as $$SELECT $1[1]::int$$;
 
 create function functest_a_3()
 returns bool
 language sql
-as 'SELECT false';
+as $$SELECT false$$;
 
 select
   proname,
@@ -48,25 +48,25 @@ select functest_a_3();
 create function functest_b_1(int)
 returns bool
 language sql
-as 'SELECT $1 > 0';
+as $$SELECT $1 > 0$$;
 
 create function functest_b_2(int)
 returns bool
 language sql
 immutable
-as 'SELECT $1 > 0';
+as $$SELECT $1 > 0$$;
 
 create function functest_b_3(int)
 returns bool
 language sql
 stable
-as 'SELECT $1 = 0';
+as $$SELECT $1 = 0$$;
 
 create function functest_b_4(int)
 returns bool
 language sql
 volatile
-as 'SELECT $1 < 0';
+as $$SELECT $1 < 0$$;
 
 select
   proname,
@@ -101,19 +101,19 @@ order by proname;
 create function functest_c_1(int)
 returns bool
 language sql
-as 'SELECT $1 > 0';
+as $$SELECT $1 > 0$$;
 
 create function functest_c_2(int)
 returns bool
 language sql
 security definer
-as 'SELECT $1 = 0';
+as $$SELECT $1 = 0$$;
 
 create function functest_c_3(int)
 returns bool
 language sql
 security invoker
-as 'SELECT $1 < 0';
+as $$SELECT $1 < 0$$;
 
 select
   proname,
@@ -150,13 +150,13 @@ order by proname;
 create function functest_e_1(int)
 returns bool
 language sql
-as 'SELECT $1 > 100';
+as $$SELECT $1 > 100$$;
 
 create function functest_e_2(int)
 returns bool
 language sql
 leakproof
-as 'SELECT $1 > 100';
+as $$SELECT $1 > 100$$;
 
 select
   proname,
@@ -207,32 +207,32 @@ create function functest_e_3(int)
 returns bool
 language sql
 leakproof
-as 'SELECT $1 < 200';
+as $$SELECT $1 < 200$$;
 
 reset session_authorization;
 
 create function functest_f_1(int)
 returns bool
 language sql
-as 'SELECT $1 > 50';
+as $$SELECT $1 > 50$$;
 
 create function functest_f_2(int)
 returns bool
 language sql
 called on null input
-as 'SELECT $1 = 50';
+as $$SELECT $1 = 50$$;
 
 create function functest_f_3(int)
 returns bool
 language sql
 strict
-as 'SELECT $1 < 50';
+as $$SELECT $1 < 50$$;
 
 create function functest_f_4(int)
 returns bool
 language sql
 strict
-as 'SELECT $1 = 50';
+as $$SELECT $1 = 50$$;
 
 select
   proname,
@@ -371,17 +371,17 @@ drop table functest3 cascade;
 create function functest_is_1(a int, b int default 1, c text default 'foo')
 returns int
 language sql
-as 'SELECT $1 + $2';
+as $$SELECT $1 + $2$$;
 
 create function functest_is_2(out a int, b int default 1)
 returns int
 language sql
-as 'SELECT $1';
+as $$SELECT $1$$;
 
 create function functest_is_3(a int default 1, out b int)
 returns int
 language sql
-as 'SELECT $1';
+as $$SELECT $1$$;
 
 select
   routine_name,
@@ -405,19 +405,19 @@ drop function functest_is_1(int, int, text), functest_is_2(int), functest_is_3(i
 create function functest_is_4a()
 returns int
 language sql
-as 'SELECT 1';
+as $$SELECT 1$$;
 
 create function functest_is_4b(x int default functest_is_4a())
 returns int
 language sql
-as 'SELECT x';
+as $$SELECT x$$;
 
 create sequence functest1;
 
 create function functest_is_5(x int default nextval('functest1'))
 returns int
 language sql
-as 'SELECT x';
+as $$SELECT x$$;
 
 create function functest_is_6()
 returns int
@@ -491,7 +491,7 @@ create function functest_b_2(bigint)
 returns bool
 language sql
 immutable
-as 'SELECT $1 > 0';
+as $$SELECT $1 > 0$$;
 
 drop function functest_b_1;
 
@@ -502,17 +502,17 @@ drop function functest_b_2;
 create function functest1(a int)
 returns int
 language sql
-as 'SELECT $1';
+as $$SELECT $1$$;
 
 create or replace function functest1(a int)
 returns int
 language sql
 window
-as 'SELECT $1';
+as $$SELECT $1$$;
 
 create or replace procedure functest1(a int)
 language sql
-as 'SELECT $1';
+as $$SELECT $1$$;
 
 drop function functest1(a int);
 
@@ -531,9 +531,9 @@ create function functest_sri1()
 returns setof int
 language sql
 stable
-as '
+as $$
     SELECT * FROM functest3;
-';
+$$;
 
 select * from functest_sri1();
 
@@ -655,22 +655,22 @@ insert into pt values (1);
 create function test1(int)
 returns int
 language sql
-as 'SELECT ''not an integer'';';
+as $$SELECT 'not an integer';$$;
 
 create function test1(int)
 returns int
 language sql
-as 'not even SQL';
+as $$not even SQL$$;
 
 create function test1(int)
 returns int
 language sql
-as 'SELECT 1, 2, 3;';
+as $$SELECT 1, 2, 3;$$;
 
 create function test1(int)
 returns int
 language sql
-as 'SELECT $2;';
+as $$SELECT $2;$$;
 
 create function test1(int)
 returns int
@@ -680,14 +680,14 @@ as 'a', 'b';
 create function test1(int)
 returns int
 language sql
-as '';
+as $$$$;
 
 set check_function_bodies = off;
 
 create function test1(anyelement)
 returns anyarray
 language sql
-as '';
+as $$$$;
 
 select test1(0);
 

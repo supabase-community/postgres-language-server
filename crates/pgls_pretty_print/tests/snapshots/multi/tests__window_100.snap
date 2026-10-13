@@ -3365,7 +3365,7 @@ language internal
 window
 immutable
 strict
-as 'window_nth_value';
+as $$window_nth_value$$;
 
 select
   nth_value_def(n := 2, val := ten) over (partition by four),

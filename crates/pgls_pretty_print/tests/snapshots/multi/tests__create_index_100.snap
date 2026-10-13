@@ -1626,7 +1626,7 @@ rollback;
 create or replace function create_relfilenode_part(relname text, indname text)
 returns void
 language plpgsql
-as $func$
+as $$
   BEGIN
   EXECUTE format('
     CREATE TABLE %I AS
@@ -1636,7 +1636,7 @@ as $func$
          (SELECT relid FROM pg_partition_tree(''%I''));',
 	 relname, indname);
   END
-  $func$;
+  $$;
 
 create or replace function compare_relfilenode_part(tabname text)
 returns table (
@@ -1645,7 +1645,7 @@ returns table (
   state text
 )
 language plpgsql
-as $func$
+as $$
   BEGIN
     RETURN QUERY EXECUTE
       format(
@@ -1657,7 +1657,7 @@ as $func$
            FROM %I b JOIN pg_class a ON b.relname = a.relname
            ORDER BY 1;', tabname);
   END
-  $func$;
+  $$;
 
 select create_relfilenode_part('reindex_index_status', 'concur_reindex_part_index');
 

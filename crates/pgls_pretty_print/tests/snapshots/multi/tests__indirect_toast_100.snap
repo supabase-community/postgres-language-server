@@ -6,7 +6,7 @@ create function make_tuple_indirect(record)
 returns record
 language c
 strict
-as 'regresslib';
+as $$regresslib$$;
 
 set default_toast_compression = pglz;
 

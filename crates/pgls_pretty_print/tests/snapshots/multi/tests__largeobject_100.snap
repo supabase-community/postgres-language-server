@@ -95,7 +95,7 @@ select lo_open(loid, cast(X'40000' as int)) from lotest_stash_values;
 
 rollback;
 
-do 'dobody';
+do $$dobody$$;
 
 begin;
 

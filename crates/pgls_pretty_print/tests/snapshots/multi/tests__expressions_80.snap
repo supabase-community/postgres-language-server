@@ -167,21 +167,21 @@ returns myint
 language internal
 immutable
 strict
-as 'int4in';
+as $$int4in$$;
 
 create function myintout(myint)
 returns cstring
 language internal
 immutable
 strict
-as 'int4out';
+as $$int4out$$;
 
 create function myinthash(myint)
 returns int
 language internal
 immutable
 strict
-as 'hashint4';
+as $$hashint4$$;
 
 create type myint (input = myintin, output = myintout, "like" = int4);
 

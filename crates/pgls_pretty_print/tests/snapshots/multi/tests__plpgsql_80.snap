@@ -89,14 +89,14 @@ create unique index phone_name on phone using btree (slotname bpchar_ops);
 create function tg_room_au()
 returns trigger
 language plpgsql
-as '
+as $$
 begin
     if new.roomno != old.roomno then
         update WSlot set roomno = new.roomno where roomno = old.roomno;
     end if;
     return new;
 end;
-';
+$$;
 
 create trigger tg_room_au
 after update
@@ -107,12 +107,12 @@ execute function tg_room_au();
 create function tg_room_ad()
 returns trigger
 language plpgsql
-as '
+as $$
 begin
     delete from WSlot where roomno = old.roomno;
     return old;
 end;
-';
+$$;
 
 create trigger tg_room_ad
 after delete
@@ -141,14 +141,14 @@ execute function tg_wslot_biu();
 create function tg_pfield_au()
 returns trigger
 language plpgsql
-as '
+as $$
 begin
     if new.name != old.name then
         update PSlot set pfname = new.name where pfname = old.name;
     end if;
     return new;
 end;
-';
+$$;
 
 create trigger tg_pfield_au
 after update
@@ -159,12 +159,12 @@ execute function tg_pfield_au();
 create function tg_pfield_ad()
 returns trigger
 language plpgsql
-as '
+as $$
 begin
     delete from PSlot where pfname = old.name;
     return old;
 end;
-';
+$$;
 
 create trigger tg_pfield_ad
 after delete
@@ -175,7 +175,7 @@ execute function tg_pfield_ad();
 create function tg_pslot_biu()
 returns trigger
 language plpgsql
-as $proc$
+as $body$
 declare
     pfrec	record;
     ps          alias for new;
@@ -186,7 +186,7 @@ begin
     end if;
     return ps;
 end;
-$proc$;
+$body$;
 
 create trigger tg_pslot_biu
 before insert or update
@@ -197,14 +197,14 @@ execute function tg_pslot_biu();
 create function tg_system_au()
 returns trigger
 language plpgsql
-as '
+as $$
 begin
     if new.name != old.name then
         update IFace set sysname = new.name where sysname = old.name;
     end if;
     return new;
 end;
-';
+$$;
 
 create trigger tg_system_au
 after update
@@ -244,28 +244,28 @@ execute function tg_iface_biu();
 create function tg_hub_a()
 returns trigger
 language plpgsql
-as '
+as $$
 declare
     hname	text;
     dummy	integer;
 begin
-    if tg_op = ''INSERT'' then
+    if tg_op = 'INSERT' then
 	dummy := tg_hub_adjustslots(new.name, 0, new.nslots);
 	return new;
     end if;
-    if tg_op = ''UPDATE'' then
+    if tg_op = 'UPDATE' then
 	if new.name != old.name then
 	    update HSlot set hubname = new.name where hubname = old.name;
 	end if;
 	dummy := tg_hub_adjustslots(new.name, old.nslots, new.nslots);
 	return new;
     end if;
-    if tg_op = ''DELETE'' then
+    if tg_op = 'DELETE' then
 	dummy := tg_hub_adjustslots(old.name, old.nslots, 0);
 	return old;
     end if;
 end;
-';
+$$;
 
 create trigger tg_hub_a
 after insert or delete or update
@@ -276,7 +276,7 @@ execute function tg_hub_a();
 create function tg_hub_adjustslots(hname bpchar, oldnslots int, newnslots int)
 returns int
 language plpgsql
-as '
+as $$
 begin
     if newnslots = oldnslots then
         return 0;
@@ -287,11 +287,11 @@ begin
     end if;
     for i in oldnslots + 1 .. newnslots loop
         insert into HSlot (slotname, hubname, slotno, slotlink)
-		values (''HS.dummy'', hname, i, '''');
+		values ('HS.dummy', hname, i, '');
     end loop;
     return 0;
 end
-';
+$$;
 
 comment on function tg_hub_adjustslots_wrong(
   bpchar,
@@ -308,7 +308,7 @@ comment on function tg_hub_adjustslots(bpchar, int, int) is null;
 create function tg_hslot_biu()
 returns trigger
 language plpgsql
-as '
+as $$
 declare
     sname	text;
     xname	HSlot.slotname%TYPE;
@@ -316,26 +316,26 @@ declare
 begin
     select into hubrec * from Hub where name = new.hubname;
     if not found then
-        raise exception ''no manual manipulation of HSlot'';
+        raise exception 'no manual manipulation of HSlot';
     end if;
     if new.slotno < 1 or new.slotno > hubrec.nslots then
-        raise exception ''no manual manipulation of HSlot'';
+        raise exception 'no manual manipulation of HSlot';
     end if;
-    if tg_op = ''UPDATE'' and new.hubname != old.hubname then
+    if tg_op = 'UPDATE' and new.hubname != old.hubname then
 	if count(*) > 0 from Hub where name = old.hubname then
-	    raise exception ''no manual manipulation of HSlot'';
+	    raise exception 'no manual manipulation of HSlot';
 	end if;
     end if;
-    sname := ''HS.'' || trim(new.hubname);
-    sname := sname || ''.'';
+    sname := 'HS.' || trim(new.hubname);
+    sname := sname || '.';
     sname := sname || new.slotno::text;
     if length(sname) > 20 then
-        raise exception ''HSlot slotname "%" too long (20 char max)'', sname;
+        raise exception 'HSlot slotname "%" too long (20 char max)', sname;
     end if;
     new.slotname := sname;
     return new;
 end;
-';
+$$;
 
 create trigger tg_hslot_biu
 before insert or update
@@ -346,7 +346,7 @@ execute function tg_hslot_biu();
 create function tg_hslot_bd()
 returns trigger
 language plpgsql
-as '
+as $$
 declare
     hubrec	record;
 begin
@@ -357,9 +357,9 @@ begin
     if old.slotno > hubrec.nslots then
         return old;
     end if;
-    raise exception ''no manual manipulation of HSlot'';
+    raise exception 'no manual manipulation of HSlot';
 end;
-';
+$$;
 
 create trigger tg_hslot_bd
 before delete
@@ -370,14 +370,14 @@ execute function tg_hslot_bd();
 create function tg_chkslotname()
 returns trigger
 language plpgsql
-as '
+as $$
 begin
     if substr(new.slotname, 1, 2) != tg_argv[0] then
-        raise exception ''slotname must begin with %'', tg_argv[0];
+        raise exception 'slotname must begin with %', tg_argv[0];
     end if;
     return new;
 end;
-';
+$$;
 
 create trigger tg_chkslotname
 before insert
@@ -412,14 +412,14 @@ execute function tg_chkslotname("PH");
 create function tg_chkslotlink()
 returns trigger
 language plpgsql
-as '
+as $$
 begin
     if new.slotlink isnull then
-        new.slotlink := '''';
+        new.slotlink := '';
     end if;
     return new;
 end;
-';
+$$;
 
 create trigger tg_chkslotlink
 before insert or update
@@ -454,14 +454,14 @@ execute function tg_chkslotlink();
 create function tg_chkbacklink()
 returns trigger
 language plpgsql
-as '
+as $$
 begin
     if new.backlink isnull then
-        new.backlink := '''';
+        new.backlink := '';
     end if;
     return new;
 end;
-';
+$$;
 
 create trigger tg_chkbacklink
 before insert or update
@@ -484,7 +484,7 @@ execute function tg_chkbacklink();
 create function tg_pslot_bu()
 returns trigger
 language plpgsql
-as '
+as $$
 begin
     if new.slotname != old.slotname then
         delete from PSlot where slotname = old.slotname;
@@ -503,7 +503,7 @@ begin
     end if;
     return new;
 end;
-';
+$$;
 
 create trigger tg_pslot_bu
 before update
@@ -514,7 +514,7 @@ execute function tg_pslot_bu();
 create function tg_wslot_bu()
 returns trigger
 language plpgsql
-as '
+as $$
 begin
     if new.slotname != old.slotname then
         delete from WSlot where slotname = old.slotname;
@@ -533,7 +533,7 @@ begin
     end if;
     return new;
 end;
-';
+$$;
 
 create trigger tg_wslot_bu
 before update
@@ -544,7 +544,7 @@ execute function tg_wslot_bu();
 create function tg_pline_bu()
 returns trigger
 language plpgsql
-as '
+as $$
 begin
     if new.slotname != old.slotname then
         delete from PLine where slotname = old.slotname;
@@ -563,7 +563,7 @@ begin
     end if;
     return new;
 end;
-';
+$$;
 
 create trigger tg_pline_bu
 before update
@@ -574,7 +574,7 @@ execute function tg_pline_bu();
 create function tg_iface_bu()
 returns trigger
 language plpgsql
-as '
+as $$
 begin
     if new.slotname != old.slotname then
         delete from IFace where slotname = old.slotname;
@@ -593,7 +593,7 @@ begin
     end if;
     return new;
 end;
-';
+$$;
 
 create trigger tg_iface_bu
 before update
@@ -604,7 +604,7 @@ execute function tg_iface_bu();
 create function tg_hslot_bu()
 returns trigger
 language plpgsql
-as '
+as $$
 begin
     if new.slotname != old.slotname or new.hubname != old.hubname then
         delete from HSlot where slotname = old.slotname;
@@ -623,7 +623,7 @@ begin
     end if;
     return new;
 end;
-';
+$$;
 
 create trigger tg_hslot_bu
 before update
@@ -634,7 +634,7 @@ execute function tg_hslot_bu();
 create function tg_phone_bu()
 returns trigger
 language plpgsql
-as '
+as $$
 begin
     if new.slotname != old.slotname then
         delete from PHone where slotname = old.slotname;
@@ -651,7 +651,7 @@ begin
     end if;
     return new;
 end;
-';
+$$;
 
 create trigger tg_phone_bu
 before update
@@ -662,39 +662,39 @@ execute function tg_phone_bu();
 create function tg_backlink_a()
 returns trigger
 language plpgsql
-as '
+as $$
 declare
     dummy	integer;
 begin
-    if tg_op = ''INSERT'' then
-        if new.backlink != '''' then
+    if tg_op = 'INSERT' then
+        if new.backlink != '' then
 	    dummy := tg_backlink_set(new.backlink, new.slotname);
 	end if;
 	return new;
     end if;
-    if tg_op = ''UPDATE'' then
+    if tg_op = 'UPDATE' then
         if new.backlink != old.backlink then
-	    if old.backlink != '''' then
+	    if old.backlink != '' then
 	        dummy := tg_backlink_unset(old.backlink, old.slotname);
 	    end if;
-	    if new.backlink != '''' then
+	    if new.backlink != '' then
 	        dummy := tg_backlink_set(new.backlink, new.slotname);
 	    end if;
 	else
-	    if new.slotname != old.slotname and new.backlink != '''' then
+	    if new.slotname != old.slotname and new.backlink != '' then
 	        dummy := tg_slotlink_set(new.backlink, new.slotname);
 	    end if;
 	end if;
 	return new;
     end if;
-    if tg_op = ''DELETE'' then
-        if old.backlink != '''' then
+    if tg_op = 'DELETE' then
+        if old.backlink != '' then
 	    dummy := tg_backlink_unset(old.backlink, old.slotname);
 	end if;
 	return old;
     end if;
 end;
-';
+$$;
 
 create trigger tg_backlink_a
 after insert or delete or update
@@ -717,7 +717,7 @@ execute function tg_backlink_a("PL");
 create function tg_backlink_set(myname bpchar, blname bpchar)
 returns int
 language plpgsql
-as '
+as $$
 declare
     mytype	char(2);
     link	char(4);
@@ -725,52 +725,52 @@ declare
 begin
     mytype := substr(myname, 1, 2);
     link := mytype || substr(blname, 1, 2);
-    if link = ''PLPL'' then
+    if link = 'PLPL' then
         raise exception
-		''backlink between two phone lines does not make sense'';
+		'backlink between two phone lines does not make sense';
     end if;
-    if link in (''PLWS'', ''WSPL'') then
+    if link in ('PLWS', 'WSPL') then
         raise exception
-		''direct link of phone line to wall slot not permitted'';
+		'direct link of phone line to wall slot not permitted';
     end if;
-    if mytype = ''PS'' then
+    if mytype = 'PS' then
         select into rec * from PSlot where slotname = myname;
 	if not found then
-	    raise exception ''% does not exist'', myname;
+	    raise exception '% does not exist', myname;
 	end if;
 	if rec.backlink != blname then
 	    update PSlot set backlink = blname where slotname = myname;
 	end if;
 	return 0;
     end if;
-    if mytype = ''WS'' then
+    if mytype = 'WS' then
         select into rec * from WSlot where slotname = myname;
 	if not found then
-	    raise exception ''% does not exist'', myname;
+	    raise exception '% does not exist', myname;
 	end if;
 	if rec.backlink != blname then
 	    update WSlot set backlink = blname where slotname = myname;
 	end if;
 	return 0;
     end if;
-    if mytype = ''PL'' then
+    if mytype = 'PL' then
         select into rec * from PLine where slotname = myname;
 	if not found then
-	    raise exception ''% does not exist'', myname;
+	    raise exception '% does not exist', myname;
 	end if;
 	if rec.backlink != blname then
 	    update PLine set backlink = blname where slotname = myname;
 	end if;
 	return 0;
     end if;
-    raise exception ''illegal backlink beginning with %'', mytype;
+    raise exception 'illegal backlink beginning with %', mytype;
 end;
-';
+$$;
 
 create function tg_backlink_unset(bpchar, bpchar)
 returns int
 language plpgsql
-as '
+as $$
 declare
     myname	alias for $1;
     blname	alias for $2;
@@ -778,75 +778,75 @@ declare
     rec		record;
 begin
     mytype := substr(myname, 1, 2);
-    if mytype = ''PS'' then
+    if mytype = 'PS' then
         select into rec * from PSlot where slotname = myname;
 	if not found then
 	    return 0;
 	end if;
 	if rec.backlink = blname then
-	    update PSlot set backlink = '''' where slotname = myname;
+	    update PSlot set backlink = '' where slotname = myname;
 	end if;
 	return 0;
     end if;
-    if mytype = ''WS'' then
+    if mytype = 'WS' then
         select into rec * from WSlot where slotname = myname;
 	if not found then
 	    return 0;
 	end if;
 	if rec.backlink = blname then
-	    update WSlot set backlink = '''' where slotname = myname;
+	    update WSlot set backlink = '' where slotname = myname;
 	end if;
 	return 0;
     end if;
-    if mytype = ''PL'' then
+    if mytype = 'PL' then
         select into rec * from PLine where slotname = myname;
 	if not found then
 	    return 0;
 	end if;
 	if rec.backlink = blname then
-	    update PLine set backlink = '''' where slotname = myname;
+	    update PLine set backlink = '' where slotname = myname;
 	end if;
 	return 0;
     end if;
 end
-';
+$$;
 
 create function tg_slotlink_a()
 returns trigger
 language plpgsql
-as '
+as $$
 declare
     dummy	integer;
 begin
-    if tg_op = ''INSERT'' then
-        if new.slotlink != '''' then
+    if tg_op = 'INSERT' then
+        if new.slotlink != '' then
 	    dummy := tg_slotlink_set(new.slotlink, new.slotname);
 	end if;
 	return new;
     end if;
-    if tg_op = ''UPDATE'' then
+    if tg_op = 'UPDATE' then
         if new.slotlink != old.slotlink then
-	    if old.slotlink != '''' then
+	    if old.slotlink != '' then
 	        dummy := tg_slotlink_unset(old.slotlink, old.slotname);
 	    end if;
-	    if new.slotlink != '''' then
+	    if new.slotlink != '' then
 	        dummy := tg_slotlink_set(new.slotlink, new.slotname);
 	    end if;
 	else
-	    if new.slotname != old.slotname and new.slotlink != '''' then
+	    if new.slotname != old.slotname and new.slotlink != '' then
 	        dummy := tg_slotlink_set(new.slotlink, new.slotname);
 	    end if;
 	end if;
 	return new;
     end if;
-    if tg_op = ''DELETE'' then
-        if old.slotlink != '''' then
+    if tg_op = 'DELETE' then
+        if old.slotlink != '' then
 	    dummy := tg_slotlink_unset(old.slotlink, old.slotname);
 	end if;
 	return old;
     end if;
 end;
-';
+$$;
 
 create trigger tg_slotlink_a
 after insert or delete or update
@@ -881,7 +881,7 @@ execute function tg_slotlink_a("PH");
 create function tg_slotlink_set(bpchar, bpchar)
 returns int
 language plpgsql
-as '
+as $$
 declare
     myname	alias for $1;
     blname	alias for $2;
@@ -891,80 +891,80 @@ declare
 begin
     mytype := substr(myname, 1, 2);
     link := mytype || substr(blname, 1, 2);
-    if link = ''PHPH'' then
+    if link = 'PHPH' then
         raise exception
-		''slotlink between two phones does not make sense'';
+		'slotlink between two phones does not make sense';
     end if;
-    if link in (''PHHS'', ''HSPH'') then
+    if link in ('PHHS', 'HSPH') then
         raise exception
-		''link of phone to hub does not make sense'';
+		'link of phone to hub does not make sense';
     end if;
-    if link in (''PHIF'', ''IFPH'') then
+    if link in ('PHIF', 'IFPH') then
         raise exception
-		''link of phone to hub does not make sense'';
+		'link of phone to hub does not make sense';
     end if;
-    if link in (''PSWS'', ''WSPS'') then
+    if link in ('PSWS', 'WSPS') then
         raise exception
-		''slotlink from patchslot to wallslot not permitted'';
+		'slotlink from patchslot to wallslot not permitted';
     end if;
-    if mytype = ''PS'' then
+    if mytype = 'PS' then
         select into rec * from PSlot where slotname = myname;
 	if not found then
-	    raise exception ''% does not exist'', myname;
+	    raise exception '% does not exist', myname;
 	end if;
 	if rec.slotlink != blname then
 	    update PSlot set slotlink = blname where slotname = myname;
 	end if;
 	return 0;
     end if;
-    if mytype = ''WS'' then
+    if mytype = 'WS' then
         select into rec * from WSlot where slotname = myname;
 	if not found then
-	    raise exception ''% does not exist'', myname;
+	    raise exception '% does not exist', myname;
 	end if;
 	if rec.slotlink != blname then
 	    update WSlot set slotlink = blname where slotname = myname;
 	end if;
 	return 0;
     end if;
-    if mytype = ''IF'' then
+    if mytype = 'IF' then
         select into rec * from IFace where slotname = myname;
 	if not found then
-	    raise exception ''% does not exist'', myname;
+	    raise exception '% does not exist', myname;
 	end if;
 	if rec.slotlink != blname then
 	    update IFace set slotlink = blname where slotname = myname;
 	end if;
 	return 0;
     end if;
-    if mytype = ''HS'' then
+    if mytype = 'HS' then
         select into rec * from HSlot where slotname = myname;
 	if not found then
-	    raise exception ''% does not exist'', myname;
+	    raise exception '% does not exist', myname;
 	end if;
 	if rec.slotlink != blname then
 	    update HSlot set slotlink = blname where slotname = myname;
 	end if;
 	return 0;
     end if;
-    if mytype = ''PH'' then
+    if mytype = 'PH' then
         select into rec * from PHone where slotname = myname;
 	if not found then
-	    raise exception ''% does not exist'', myname;
+	    raise exception '% does not exist', myname;
 	end if;
 	if rec.slotlink != blname then
 	    update PHone set slotlink = blname where slotname = myname;
 	end if;
 	return 0;
     end if;
-    raise exception ''illegal slotlink beginning with %'', mytype;
+    raise exception 'illegal slotlink beginning with %', mytype;
 end;
-';
+$$;
 
 create function tg_slotlink_unset(bpchar, bpchar)
 returns int
 language plpgsql
-as '
+as $$
 declare
     myname	alias for $1;
     blname	alias for $2;
@@ -972,63 +972,63 @@ declare
     rec		record;
 begin
     mytype := substr(myname, 1, 2);
-    if mytype = ''PS'' then
+    if mytype = 'PS' then
         select into rec * from PSlot where slotname = myname;
 	if not found then
 	    return 0;
 	end if;
 	if rec.slotlink = blname then
-	    update PSlot set slotlink = '''' where slotname = myname;
+	    update PSlot set slotlink = '' where slotname = myname;
 	end if;
 	return 0;
     end if;
-    if mytype = ''WS'' then
+    if mytype = 'WS' then
         select into rec * from WSlot where slotname = myname;
 	if not found then
 	    return 0;
 	end if;
 	if rec.slotlink = blname then
-	    update WSlot set slotlink = '''' where slotname = myname;
+	    update WSlot set slotlink = '' where slotname = myname;
 	end if;
 	return 0;
     end if;
-    if mytype = ''IF'' then
+    if mytype = 'IF' then
         select into rec * from IFace where slotname = myname;
 	if not found then
 	    return 0;
 	end if;
 	if rec.slotlink = blname then
-	    update IFace set slotlink = '''' where slotname = myname;
+	    update IFace set slotlink = '' where slotname = myname;
 	end if;
 	return 0;
     end if;
-    if mytype = ''HS'' then
+    if mytype = 'HS' then
         select into rec * from HSlot where slotname = myname;
 	if not found then
 	    return 0;
 	end if;
 	if rec.slotlink = blname then
-	    update HSlot set slotlink = '''' where slotname = myname;
+	    update HSlot set slotlink = '' where slotname = myname;
 	end if;
 	return 0;
     end if;
-    if mytype = ''PH'' then
+    if mytype = 'PH' then
         select into rec * from PHone where slotname = myname;
 	if not found then
 	    return 0;
 	end if;
 	if rec.slotlink = blname then
-	    update PHone set slotlink = '''' where slotname = myname;
+	    update PHone set slotlink = '' where slotname = myname;
 	end if;
 	return 0;
     end if;
 end;
-';
+$$;
 
 create function pslot_backlink_view(bpchar)
 returns text
 language plpgsql
-as '
+as $$
 <<outer>>
 declare
     rec		record;
@@ -1037,41 +1037,41 @@ declare
 begin
     select into rec * from PSlot where slotname = $1;
     if not found then
-        return '''';
+        return '';
     end if;
-    if rec.backlink = '''' then
-        return ''-'';
+    if rec.backlink = '' then
+        return '-';
     end if;
     bltype := substr(rec.backlink, 1, 2);
-    if bltype = ''PL'' then
+    if bltype = 'PL' then
         declare
 	    rec		record;
 	begin
 	    select into rec * from PLine where slotname = "outer".rec.backlink;
-	    retval := ''Phone line '' || trim(rec.phonenumber);
-	    if rec.comment != '''' then
-	        retval := retval || '' ('';
+	    retval := 'Phone line ' || trim(rec.phonenumber);
+	    if rec.comment != '' then
+	        retval := retval || ' (';
 		retval := retval || rec.comment;
-		retval := retval || '')'';
+		retval := retval || ')';
 	    end if;
 	    return retval;
 	end;
     end if;
-    if bltype = ''WS'' then
+    if bltype = 'WS' then
         select into rec * from WSlot where slotname = rec.backlink;
-	retval := trim(rec.slotname) || '' in room '';
+	retval := trim(rec.slotname) || ' in room ';
 	retval := retval || trim(rec.roomno);
-	retval := retval || '' -> '';
+	retval := retval || ' -> ';
 	return retval || wslot_slotlink_view(rec.slotname);
     end if;
     return rec.backlink;
 end;
-';
+$$;
 
 create function pslot_slotlink_view(bpchar)
 returns text
 language plpgsql
-as '
+as $$
 declare
     psrec	record;
     sltype	char(2);
@@ -1079,33 +1079,33 @@ declare
 begin
     select into psrec * from PSlot where slotname = $1;
     if not found then
-        return '''';
+        return '';
     end if;
-    if psrec.slotlink = '''' then
-        return ''-'';
+    if psrec.slotlink = '' then
+        return '-';
     end if;
     sltype := substr(psrec.slotlink, 1, 2);
-    if sltype = ''PS'' then
-	retval := trim(psrec.slotlink) || '' -> '';
+    if sltype = 'PS' then
+	retval := trim(psrec.slotlink) || ' -> ';
 	return retval || pslot_backlink_view(psrec.slotlink);
     end if;
-    if sltype = ''HS'' then
+    if sltype = 'HS' then
         retval := comment from Hub H, HSlot HS
 			where HS.slotname = psrec.slotlink
 			  and H.name = HS.hubname;
-        retval := retval || '' slot '';
+        retval := retval || ' slot ';
 	retval := retval || slotno::text from HSlot
 			where slotname = psrec.slotlink;
 	return retval;
     end if;
     return psrec.slotlink;
 end;
-';
+$$;
 
 create function wslot_slotlink_view(bpchar)
 returns text
 language plpgsql
-as '
+as $$
 declare
     rec		record;
     sltype	char(2);
@@ -1113,42 +1113,42 @@ declare
 begin
     select into rec * from WSlot where slotname = $1;
     if not found then
-        return '''';
+        return '';
     end if;
-    if rec.slotlink = '''' then
-        return ''-'';
+    if rec.slotlink = '' then
+        return '-';
     end if;
     sltype := substr(rec.slotlink, 1, 2);
-    if sltype = ''PH'' then
+    if sltype = 'PH' then
         select into rec * from PHone where slotname = rec.slotlink;
-	retval := ''Phone '' || trim(rec.slotname);
-	if rec.comment != '''' then
-	    retval := retval || '' ('';
+	retval := 'Phone ' || trim(rec.slotname);
+	if rec.comment != '' then
+	    retval := retval || ' (';
 	    retval := retval || rec.comment;
-	    retval := retval || '')'';
+	    retval := retval || ')';
 	end if;
 	return retval;
     end if;
-    if sltype = ''IF'' then
+    if sltype = 'IF' then
 	declare
 	    syrow	System%RowType;
 	    ifrow	IFace%ROWTYPE;
         begin
 	    select into ifrow * from IFace where slotname = rec.slotlink;
 	    select into syrow * from System where name = ifrow.sysname;
-	    retval := syrow.name || '' IF '';
+	    retval := syrow.name || ' IF ';
 	    retval := retval || ifrow.ifname;
-	    if syrow.comment != '''' then
-	        retval := retval || '' ('';
+	    if syrow.comment != '' then
+	        retval := retval || ' (';
 		retval := retval || syrow.comment;
-		retval := retval || '')'';
+		retval := retval || ')';
 	    end if;
 	    return retval;
 	end;
     end if;
     return rec.slotlink;
 end;
-';
+$$;
 
 create view pfield_v1
 as select
@@ -1541,16 +1541,16 @@ values ('IF', 'orion', 'ethernet_interface_name_too_long', '');
 create function recursion_test(int, int)
 returns text
 language plpgsql
-as '
+as $$
 DECLARE rslt text;
 BEGIN
     IF $1 <= 0 THEN
         rslt = CAST($2 AS TEXT);
     ELSE
-        rslt = CAST($1 AS TEXT) || '','' || recursion_test($1 - 1, $2);
+        rslt = CAST($1 AS TEXT) || ',' || recursion_test($1 - 1, $2);
     END IF;
     RETURN rslt;
-END;';
+END;$$;
 
 select recursion_test(4, 3);
 
@@ -1559,7 +1559,7 @@ create table found_test_tbl (a int);
 create function test_found()
 returns boolean
 language plpgsql
-as '
+as $$
   declare
   begin
   insert into found_test_tbl values (1);
@@ -1592,7 +1592,7 @@ as '
     insert into found_test_tbl values (6);
   end if;
   return true;
-  end;';
+  end;$$;
 
 select test_found();
 
@@ -1601,7 +1601,7 @@ select * from found_test_tbl;
 create function test_table_func_rec()
 returns setof found_test_tbl
 language plpgsql
-as '
+as $$
 DECLARE
 	rec RECORD;
 BEGIN
@@ -1609,14 +1609,14 @@ BEGIN
 		RETURN NEXT rec;
 	END LOOP;
 	RETURN;
-END;';
+END;$$;
 
 select * from test_table_func_rec();
 
 create function test_table_func_row()
 returns setof found_test_tbl
 language plpgsql
-as '
+as $$
 DECLARE
 	row found_test_tbl%ROWTYPE;
 BEGIN
@@ -1624,14 +1624,14 @@ BEGIN
 		RETURN NEXT row;
 	END LOOP;
 	RETURN;
-END;';
+END;$$;
 
 select * from test_table_func_row();
 
 create function test_ret_set_scalar(int, int)
 returns setof int
 language plpgsql
-as '
+as $$
 DECLARE
 	i int;
 BEGIN
@@ -1639,14 +1639,14 @@ BEGIN
 		RETURN NEXT i + 1;
 	END LOOP;
 	RETURN;
-END;';
+END;$$;
 
 select * from test_ret_set_scalar(1, 10);
 
 create function test_ret_set_rec_dyn(int)
 returns setof record
 language plpgsql
-as '
+as $$
 DECLARE
 	retval RECORD;
 BEGIN
@@ -1655,12 +1655,12 @@ BEGIN
 		RETURN NEXT retval;
 		RETURN NEXT retval;
 	ELSE
-		SELECT INTO retval 50, 5::numeric, ''xxx''::text;
+		SELECT INTO retval 50, 5::numeric, 'xxx'::text;
 		RETURN NEXT retval;
 		RETURN NEXT retval;
 	END IF;
 	RETURN;
-END;';
+END;$$;
 
 select * from test_ret_set_rec_dyn(1500) as (a int, b int, c int);
 
@@ -1669,7 +1669,7 @@ select * from test_ret_set_rec_dyn(5) as (a int, b numeric, c text);
 create function test_ret_rec_dyn(int)
 returns record
 language plpgsql
-as '
+as $$
 DECLARE
 	retval RECORD;
 BEGIN
@@ -1677,10 +1677,10 @@ BEGIN
 		SELECT INTO retval 5, 10, 15;
 		RETURN retval;
 	ELSE
-		SELECT INTO retval 50, 5::numeric, ''xxx''::text;
+		SELECT INTO retval 50, 5::numeric, 'xxx'::text;
 		RETURN retval;
 	END IF;
-END;';
+END;$$;
 
 select * from test_ret_rec_dyn(1500) as (a int, b int, c int);
 
@@ -1972,7 +1972,7 @@ create table perform_test (
 create function perform_simple_func(int)
 returns boolean
 language plpgsql
-as '
+as $$
 BEGIN
 	IF $1 < 20 THEN
 		INSERT INTO perform_test VALUES ($1, $1 + 10);
@@ -1980,12 +1980,12 @@ BEGIN
 	ELSE
 		RETURN FALSE;
 	END IF;
-END;';
+END;$$;
 
 create function perform_test_func()
 returns void
 language plpgsql
-as '
+as $$
 BEGIN
 	IF FOUND then
 		INSERT INTO perform_test VALUES (100, 100);
@@ -2004,7 +2004,7 @@ BEGIN
 	END IF;
 
 	RETURN;
-END;';
+END;$$;
 
 select perform_test_func();
 
@@ -4378,7 +4378,7 @@ BEGIN
     END LOOP;
 END$$;
 
-do $outer$
+do $body$
 begin
   for i in 1..10 loop
    begin
@@ -4395,7 +4395,7 @@ begin
   end;
   end loop;
 end;
-$outer$;
+$body$;
 
 do $$
 declare x int := x + 1;  -- error

@@ -1244,7 +1244,7 @@ async fn test_format_keeps_statements_on_one_line_apart() {
 }
 
 #[tokio::test]
-async fn test_format_keeps_plpgsql_body_and_dollar_quote_tag() {
+async fn test_format_keeps_plpgsql_body() {
     let content = "CREATE FUNCTION f() RETURNS boolean LANGUAGE plpgsql AS $$\nBEGIN\n  RETURN true;\nEND\n$$;";
     let formatted = format_content(content);
     assert_eq!(
@@ -1259,7 +1259,7 @@ async fn test_format_keeps_formatted_sql_function_body_as_written() {
     let formatted = format_content(content);
     assert_eq!(
         formatted,
-        "create function f()\nreturns int\nlanguage sql\nas $body$\n  select 1;\n$body$;"
+        "create function f()\nreturns int\nlanguage sql\nas $$\n  select 1;\n$$;"
     );
 }
 
@@ -1269,7 +1269,7 @@ async fn test_format_puts_reformatted_sql_function_body_on_its_own_lines() {
     let formatted = format_content(content);
     assert_eq!(
         formatted,
-        "create function f()\nreturns int\nlanguage sql\nas $body$\nselect 1;\n$body$;"
+        "create function f()\nreturns int\nlanguage sql\nas $$\nselect 1;\n$$;"
     );
     assert_eq!(format_content(&formatted), formatted);
 }

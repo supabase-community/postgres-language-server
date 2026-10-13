@@ -348,7 +348,7 @@ returns boolean
 language internal
 immutable
 strict
-as 'int4lt';
+as $$int4lt$$;
 
 alter function leak(int, int) owner to regress_priv_user1;
 
@@ -1355,18 +1355,18 @@ grant usage on language sql to regress_priv_user2;
 create function priv_testfunc1(int)
 returns int
 language sql
-as 'select 2 * $1;';
+as $$select 2 * $1;$$;
 
 create function priv_testfunc2(int)
 returns int
 language sql
-as 'select 3 * $1;';
+as $$select 3 * $1;$$;
 
 create aggregate priv_testagg1 (int) (sfunc = int4pl, stype = int4);
 
 create procedure priv_testproc1(int)
 language sql
-as 'select $1;';
+as $$select $1;$$;
 
 revoke all
 on function priv_testfunc1(int),
@@ -1404,7 +1404,7 @@ create function priv_testfunc4(boolean)
 returns text
 language sql
 security definer
-as 'select col1 from atest2 where col2 = $1;';
+as $$select col1 from atest2 where col2 = $1;$$;
 
 grant execute on function priv_testfunc4(boolean) to regress_priv_user3;
 
@@ -1415,7 +1415,7 @@ select priv_testfunc1(5), priv_testfunc2(5);
 create function priv_testfunc3(int)
 returns int
 language sql
-as 'select 2 * $1;';
+as $$select 2 * $1;$$;
 
 select priv_testagg1(x) from (values (1), (2), (3)) as _ (x);
 
@@ -1980,12 +1980,12 @@ set session authorization regress_sro_user;
 create function unwanted_grant()
 returns void
 language sql
-as 'GRANT regress_priv_group2 TO regress_sro_user';
+as $$GRANT regress_priv_group2 TO regress_sro_user$$;
 
 create function mv_action()
 returns bool
 language sql
-as 'DECLARE c CURSOR WITH HOLD FOR SELECT public.unwanted_grant(); SELECT true';
+as $$DECLARE c CURSOR WITH HOLD FOR SELECT public.unwanted_grant(); SELECT true$$;
 
 create materialized view sro_mv as select mv_action() with no data;
 
@@ -2000,7 +2000,7 @@ create table sro_trojan_table ();
 create function sro_trojan()
 returns trigger
 language plpgsql
-as 'BEGIN PERFORM public.unwanted_grant(); RETURN NULL; END';
+as $$BEGIN PERFORM public.unwanted_grant(); RETURN NULL; END$$;
 
 create constraint trigger t
 after insert
@@ -2013,7 +2013,7 @@ execute function sro_trojan();
 create or replace function mv_action()
 returns bool
 language sql
-as 'INSERT INTO public.sro_trojan_table DEFAULT VALUES; SELECT true';
+as $$INSERT INTO public.sro_trojan_table DEFAULT VALUES; SELECT true$$;
 
 refresh materialized view sro_mv;
 
@@ -2061,7 +2061,7 @@ create function dogrant_ok()
 returns void
 language sql
 security definer
-as 'GRANT regress_priv_group2 TO regress_priv_user5';
+as $$GRANT regress_priv_group2 TO regress_priv_user5$$;
 
 grant regress_priv_group2 to regress_priv_user5;
 
@@ -2600,13 +2600,13 @@ set role to regress_priv_user1;
 create function testns.foo()
 returns int
 language sql
-as 'select 1';
+as $$select 1$$;
 
 create aggregate testns.agg1 (int) (sfunc = int4pl, stype = int4);
 
 create procedure testns.bar()
 language sql
-as 'select 1';
+as $$select 1$$;
 
 select has_function_privilege('regress_priv_user2', 'testns.foo()', 'EXECUTE');
 
@@ -2622,7 +2622,7 @@ drop function testns.foo();
 create function testns.foo()
 returns int
 language sql
-as 'select 1';
+as $$select 1$$;
 
 drop aggregate testns.agg1(int);
 
@@ -2632,7 +2632,7 @@ drop procedure testns.bar();
 
 create procedure testns.bar()
 language sql
-as 'select 1';
+as $$select 1$$;
 
 select has_function_privilege('regress_priv_user2', 'testns.foo()', 'EXECUTE');
 
@@ -2722,13 +2722,13 @@ select has_table_privilege('regress_priv_user1', 'testns.t2', 'SELECT');
 create function testns.priv_testfunc(int)
 returns int
 language sql
-as 'select 3 * $1;';
+as $$select 3 * $1;$$;
 
 create aggregate testns.priv_testagg (int) (sfunc = int4pl, stype = int4);
 
 create procedure testns.priv_testproc(int)
 language sql
-as 'select 3';
+as $$select 3$$;
 
 select
   has_function_privilege(

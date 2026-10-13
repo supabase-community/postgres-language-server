@@ -187,14 +187,14 @@ returns xfloat4
 language internal
 immutable
 strict
-as 'int4in';
+as $$int4in$$;
 
 create function xfloat4out(xfloat4)
 returns cstring
 language internal
 immutable
 strict
-as 'int4out';
+as $$int4out$$;
 
 create type xfloat4 (input = xfloat4in, output = xfloat4out, "like" = float4);
 

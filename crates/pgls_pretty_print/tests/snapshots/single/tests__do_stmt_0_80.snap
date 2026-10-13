@@ -2,4 +2,4 @@
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/single/do_stmt_0.sql
 ---
-do language plpgsql 'BEGIN NULL; END';
+do language plpgsql $$BEGIN NULL; END$$;

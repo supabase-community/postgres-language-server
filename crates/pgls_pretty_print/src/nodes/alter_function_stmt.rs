@@ -22,12 +22,6 @@ pub(super) fn emit_alter_function_stmt(e: &mut EventEmitter, n: &AlterFunctionSt
         emit_object_with_args(e, func);
     }
 
-    let dollar_hint = if n.objtype() == ObjectType::ObjectProcedure {
-        super::DollarQuoteHint::Procedure
-    } else {
-        super::DollarQuoteHint::Function
-    };
-
     // Actions (IMMUTABLE, SECURITY DEFINER, SET ..., etc.) are separated by whitespace, not commas.
     // Sort according to Postgres's canonical order
     if !n.actions.is_empty() {
@@ -35,7 +29,7 @@ pub(super) fn emit_alter_function_stmt(e: &mut EventEmitter, n: &AlterFunctionSt
         for action in super::create_function_stmt::sort_function_options(&n.actions) {
             let def_elem = assert_node_variant!(DefElem, &action);
             e.line(LineType::SoftOrSpace);
-            super::create_function_stmt::format_function_option(e, def_elem, dollar_hint);
+            super::create_function_stmt::format_function_option(e, def_elem);
         }
         e.indent_end();
     }

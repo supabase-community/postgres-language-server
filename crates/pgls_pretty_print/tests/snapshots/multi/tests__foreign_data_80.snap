@@ -83,7 +83,7 @@ create foreign data wrapper foo validator postgresql_fdw_validator ;
 create function invalid_fdw_handler()
 returns int
 language sql
-as 'SELECT 1;';
+as $$SELECT 1;$$;
 
 create foreign data wrapper test_fdw handler invalid_fdw_handler ;
 

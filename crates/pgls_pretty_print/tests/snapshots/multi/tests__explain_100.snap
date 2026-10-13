@@ -156,7 +156,7 @@ create temporary table t1 (f1 float8);
 create function pg_temp.mysin(float8)
 returns float8
 language plpgsql
-as 'begin return sin($1); end';
+as $$begin return sin($1); end$$;
 
 select explain_filter('explain (verbose) select * from t1 where pg_temp.mysin(f1) < 0.5');
 

@@ -7,28 +7,28 @@ returns widget
 language c
 immutable
 strict
-as 'regresslib';
+as $$regresslib$$;
 
 create function widget_out(widget)
 returns cstring
 language c
 immutable
 strict
-as 'regresslib';
+as $$regresslib$$;
 
 create function int44in(cstring)
 returns city_budget
 language c
 immutable
 strict
-as 'regresslib';
+as $$regresslib$$;
 
 create function int44out(city_budget)
 returns cstring
 language c
 immutable
 strict
-as 'regresslib';
+as $$regresslib$$;
 
 create type widget (
   internallength = 24,
@@ -67,28 +67,28 @@ returns int42
 language internal
 immutable
 strict
-as 'int4in';
+as $$int4in$$;
 
 create function int42_out(int42)
 returns cstring
 language internal
 immutable
 strict
-as 'int4out';
+as $$int4out$$;
 
 create function text_w_default_in(cstring)
 returns text_w_default
 language internal
 immutable
 strict
-as 'textin';
+as $$textin$$;
 
 create function text_w_default_out(text_w_default)
 returns cstring
 language internal
 immutable
 strict
-as 'textout';
+as $$textout$$;
 
 create type int42 (
   internallength = 4,
@@ -148,9 +148,9 @@ create type default_test_row as (f1 text_w_default, f2 int42);
 create function get_default_test()
 returns setof default_test_row
 language sql
-as '
+as $$
   SELECT * FROM default_test;
-';
+$$;
 
 select * from get_default_test();
 
@@ -179,14 +179,14 @@ returns base_type
 language internal
 immutable
 strict
-as 'boolin';
+as $$boolin$$;
 
 create function base_fn_out(base_type)
 returns cstring
 language internal
 immutable
 strict
-as 'boolout';
+as $$boolout$$;
 
 create type base_type (input = base_fn_in, output = base_fn_out);
 
@@ -235,7 +235,7 @@ create function pt_in_widget(point, widget)
 returns bool
 language c
 strict
-as 'regresslib';
+as $$regresslib$$;
 
 create operator <% (
   leftarg = point,
@@ -270,7 +270,7 @@ language internal
 immutable
 strict
 parallel safe
-as 'varcharin';
+as $$varcharin$$;
 
 create function myvarcharout(myvarchar)
 returns cstring
@@ -278,7 +278,7 @@ language internal
 immutable
 strict
 parallel safe
-as 'varcharout';
+as $$varcharout$$;
 
 create function myvarcharsend(myvarchar)
 returns bytea
@@ -286,7 +286,7 @@ language internal
 stable
 strict
 parallel safe
-as 'varcharsend';
+as $$varcharsend$$;
 
 create function myvarcharrecv(internal, oid, int)
 returns myvarchar
@@ -294,7 +294,7 @@ language internal
 stable
 strict
 parallel safe
-as 'varcharrecv';
+as $$varcharrecv$$;
 
 alter type myvarchar set (storage = extended);
 

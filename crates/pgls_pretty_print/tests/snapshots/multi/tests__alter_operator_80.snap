@@ -13,7 +13,7 @@ returns float8
 language internal
 stable
 strict
-as 'contsel';
+as $$contsel$$;
 
 create operator === (
   leftarg = boolean,

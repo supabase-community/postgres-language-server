@@ -5,7 +5,7 @@ input_file: crates/pgls_pretty_print/tests/data/multi/triggers.sql
 create function trigger_return_old()
 returns trigger
 language c
-as 'regresslib';
+as $$regresslib$$;
 
 create table trigtest (
   f1 int,
@@ -133,11 +133,11 @@ create table main_table (
 create function trigger_func()
 returns trigger
 language plpgsql
-as '
+as $$
 BEGIN
-	RAISE NOTICE ''trigger_func(%) called: action = %, when = %, level = %'', TG_ARGV[0], TG_OP, TG_WHEN, TG_LEVEL;
+	RAISE NOTICE 'trigger_func(%) called: action = %, when = %, level = %', TG_ARGV[0], TG_OP, TG_WHEN, TG_LEVEL;
 	RETURN NULL;
-END;';
+END;$$;
 
 create trigger before_ins_stmt_trig
 before insert
@@ -1107,7 +1107,7 @@ select count(*) from european_city_view;
 create function no_op_trig_fn()
 returns trigger
 language plpgsql
-as 'begin RETURN NULL; end';
+as $$begin RETURN NULL; end$$;
 
 create trigger no_op_trig
 instead of insert or delete or update

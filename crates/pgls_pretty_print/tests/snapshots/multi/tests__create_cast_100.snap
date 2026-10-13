@@ -9,14 +9,14 @@ returns casttesttype
 language internal
 immutable
 strict
-as 'textin';
+as $$textin$$;
 
 create function casttesttype_out(casttesttype)
 returns cstring
 language internal
 immutable
 strict
-as 'textout';
+as $$textout$$;
 
 create type casttesttype (
   internallength = variable,

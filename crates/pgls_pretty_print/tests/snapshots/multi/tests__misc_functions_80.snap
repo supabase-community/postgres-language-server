@@ -125,7 +125,7 @@ returns text
 language c
 immutable
 strict
-as 'regresslib';
+as $$regresslib$$;
 
 select test_canonicalize_path('/');
 
@@ -547,7 +547,7 @@ select gist_translate_cmptype_common(3);
 create function test_relpath()
 returns void
 language c
-as 'regresslib';
+as $$regresslib$$;
 
 select test_relpath();
 

@@ -35,7 +35,7 @@ returns int8
 language sql
 immutable
 strict
-as 'select $1 + $2 + $3';
+as $$select $1 + $2 + $3$$;
 
 create aggregate sum2 (int8, int8) (sfunc = sum3, stype = int8, initcond = '0');
 
@@ -46,13 +46,13 @@ returns aggtype[]
 language sql
 immutable
 strict
-as 'select array_append($1,ROW($2,$3,$4)::aggtype)';
+as $$select array_append($1,ROW($2,$3,$4)::aggtype)$$;
 
 create function aggfns_trans(aggtype[], int, int, text)
 returns aggtype[]
 language sql
 immutable
-as 'select array_append($1,ROW($2,$3,$4)::aggtype)';
+as $$select array_append($1,ROW($2,$3,$4)::aggtype)$$;
 
 create aggregate aggfstr (int, int, text) (sfunc = aggf_trans, stype = aggtype[], initcond = '{}');
 
@@ -68,7 +68,7 @@ create aggregate aggfns (
 create function least_accum(int8, int8)
 returns int8
 language sql
-as 'select least($1, $2)';
+as $$select least($1, $2)$$;
 
 create aggregate least_agg (int4) (stype = int8, sfunc = least_accum);
 
@@ -77,7 +77,7 @@ drop function least_accum(int8, int8);
 create function least_accum(anycompatible, anycompatible)
 returns anycompatible
 language sql
-as 'select least($1, $2)';
+as $$select least($1, $2)$$;
 
 create aggregate least_agg (int4) (stype = int8, sfunc = least_accum);
 
@@ -88,14 +88,14 @@ drop function least_accum(anycompatible, anycompatible) cascade;
 create function least_accum(anyelement, variadic anyarray)
 returns anyelement
 language sql
-as 'select least($1, min($2[i])) from generate_subscripts($2,1) g(i)';
+as $$select least($1, min($2[i])) from generate_subscripts($2,1) g(i)$$;
 
 create aggregate least_agg (variadic items anyarray) (stype = anyelement, sfunc = least_accum);
 
 create function cleast_accum(anycompatible, variadic anycompatiblearray)
 returns anycompatible
 language sql
-as 'select least($1, min($2[i])) from generate_subscripts($2,1) g(i)';
+as $$select least($1, min($2[i])) from generate_subscripts($2,1) g(i)$$;
 
 create aggregate cleast_agg (
   variadic items anycompatiblearray
@@ -264,7 +264,7 @@ returns int8
 language sql
 immutable
 strict
-as 'select $1 + $2 + $3 + $4';
+as $$select $1 + $2 + $3 + $4$$;
 
 create or replace aggregate sum3 (int8, int8, int8) (stype = int8, sfunc = sum4);
 

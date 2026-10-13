@@ -89,13 +89,13 @@ create function do_analyze()
 returns void
 language sql
 volatile
-as 'ANALYZE pg_am';
+as $$ANALYZE pg_am$$;
 
 create function wrap_do_analyze(c int)
 returns int
 language sql
 immutable
-as 'SELECT $1 FROM public.do_analyze()';
+as $$SELECT $1 FROM public.do_analyze()$$;
 
 create index on vaccluster using btree ((wrap_do_analyze(i)));
 

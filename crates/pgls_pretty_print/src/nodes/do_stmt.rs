@@ -5,9 +5,7 @@ use crate::{
     emitter::{EventEmitter, GroupKind, LineType},
 };
 
-use super::string::{
-    DollarQuoteHint, emit_body_literal, emit_identifier_maybe_quoted, emit_keyword,
-};
+use super::string::{emit_body_literal, emit_identifier_maybe_quoted, emit_keyword};
 
 pub(super) fn emit_do_stmt(e: &mut EventEmitter, n: &DoStmt) {
     e.group_start(GroupKind::DoStmt);
@@ -71,14 +69,14 @@ pub(super) fn emit_do_stmt(e: &mut EventEmitter, n: &DoStmt) {
             e.space();
             emit_identifier_maybe_quoted(e, lang);
         }
-        if let Some((code, location)) = &body {
+        if let Some((code, _)) = &body {
             e.line(LineType::SoftOrSpace);
-            emit_body_literal(e, code, *location, DollarQuoteHint::Do);
+            emit_body_literal(e, code);
         }
     } else {
-        if let Some((code, location)) = &body {
+        if let Some((code, _)) = &body {
             e.line(LineType::SoftOrSpace);
-            emit_body_literal(e, code, *location, DollarQuoteHint::Do);
+            emit_body_literal(e, code);
         }
         if let Some((lang, _)) = &language {
             e.line(LineType::SoftOrSpace);

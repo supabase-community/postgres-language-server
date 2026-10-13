@@ -331,6 +331,6 @@ reset search_path;
 create function test_atomic_ops()
 returns bool
 language c
-as 'regresslib';
+as $$regresslib$$;
 
 select test_atomic_ops();

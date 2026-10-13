@@ -3646,7 +3646,7 @@ where
 create function op_leak(int, int)
 returns bool
 language plpgsql
-as 'BEGIN RAISE NOTICE ''op_leak => %, %'', $1, $2; RETURN $1 < $2; END';
+as $$BEGIN RAISE NOTICE 'op_leak => %, %', $1, $2; RETURN $1 < $2; END$$;
 
 create operator <<< (
   procedure = op_leak,
@@ -3658,7 +3658,7 @@ create operator <<< (
 create function op_leak(record, record)
 returns bool
 language plpgsql
-as 'BEGIN RAISE NOTICE ''op_leak => %, %'', $1, $2; RETURN $1 < $2; END';
+as $$BEGIN RAISE NOTICE 'op_leak => %, %', $1, $2; RETURN $1 < $2; END$$;
 
 create operator <<< (
   procedure = op_leak,

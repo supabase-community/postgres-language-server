@@ -16,7 +16,7 @@ insert into rngfunc2 values (1, 111);
 create function rngfunct(int)
 returns setof rngfunc2
 language sql
-as 'SELECT * FROM rngfunc2 WHERE rngfuncid = $1 ORDER BY f2;';
+as $$SELECT * FROM rngfunc2 WHERE rngfuncid = $1 ORDER BY f2;$$;
 
 select * from rngfunct(1) with ordinality as z (a, b, ord);
 
@@ -251,7 +251,7 @@ insert into rngfunc values (2, 1, 'Mary');
 create function getrngfunc1(int)
 returns int
 language sql
-as 'SELECT $1;';
+as $$SELECT $1;$$;
 
 select * from getrngfunc1(1) as t1;
 
@@ -274,7 +274,7 @@ drop view vw_getrngfunc;
 create function getrngfunc2(int)
 returns setof int
 language sql
-as 'SELECT rngfuncid FROM rngfunc WHERE rngfuncid = $1;';
+as $$SELECT rngfuncid FROM rngfunc WHERE rngfuncid = $1;$$;
 
 select * from getrngfunc2(1) as t1;
 
@@ -297,7 +297,7 @@ drop view vw_getrngfunc;
 create function getrngfunc3(int)
 returns setof text
 language sql
-as 'SELECT rngfuncname FROM rngfunc WHERE rngfuncid = $1;';
+as $$SELECT rngfuncname FROM rngfunc WHERE rngfuncid = $1;$$;
 
 select * from getrngfunc3(1) as t1;
 
@@ -320,7 +320,7 @@ drop view vw_getrngfunc;
 create function getrngfunc4(int)
 returns rngfunc
 language sql
-as 'SELECT * FROM rngfunc WHERE rngfuncid = $1;';
+as $$SELECT * FROM rngfunc WHERE rngfuncid = $1;$$;
 
 select * from getrngfunc4(1) as t1;
 
@@ -343,7 +343,7 @@ drop view vw_getrngfunc;
 create function getrngfunc5(int)
 returns setof rngfunc
 language sql
-as 'SELECT * FROM rngfunc WHERE rngfuncid = $1;';
+as $$SELECT * FROM rngfunc WHERE rngfuncid = $1;$$;
 
 select * from getrngfunc5(1) as t1;
 
@@ -366,7 +366,7 @@ drop view vw_getrngfunc;
 create function getrngfunc6(int)
 returns record
 language sql
-as 'SELECT * FROM rngfunc WHERE rngfuncid = $1;';
+as $$SELECT * FROM rngfunc WHERE rngfuncid = $1;$$;
 
 select
   *
@@ -407,7 +407,7 @@ drop view vw_getrngfunc;
 create function getrngfunc7(int)
 returns setof record
 language sql
-as 'SELECT * FROM rngfunc WHERE rngfuncid = $1;';
+as $$SELECT * FROM rngfunc WHERE rngfuncid = $1;$$;
 
 select
   *
@@ -448,7 +448,7 @@ drop view vw_getrngfunc;
 create function getrngfunc8(int)
 returns int
 language plpgsql
-as 'DECLARE rngfuncint int; BEGIN SELECT rngfuncid into rngfuncint FROM rngfunc WHERE rngfuncid = $1; RETURN rngfuncint; END;';
+as $$DECLARE rngfuncint int; BEGIN SELECT rngfuncid into rngfuncint FROM rngfunc WHERE rngfuncid = $1; RETURN rngfuncint; END;$$;
 
 select * from getrngfunc8(1) as t1;
 
@@ -471,7 +471,7 @@ drop view vw_getrngfunc;
 create function getrngfunc9(int)
 returns rngfunc
 language plpgsql
-as 'DECLARE rngfunctup rngfunc%ROWTYPE; BEGIN SELECT * into rngfunctup FROM rngfunc WHERE rngfuncid = $1; RETURN rngfunctup; END;';
+as $$DECLARE rngfunctup rngfunc%ROWTYPE; BEGIN SELECT * into rngfunctup FROM rngfunc WHERE rngfuncid = $1; RETURN rngfunctup; END;$$;
 
 select * from getrngfunc9(1) as t1;
 
@@ -570,12 +570,12 @@ create type rngfunc_rescan_t as (i int, s bigint);
 create function rngfunc_sql(int, int)
 returns setof rngfunc_rescan_t
 language sql
-as 'SELECT i, nextval(''rngfunc_rescan_seq1'') FROM generate_series($1,$2) i;';
+as $$SELECT i, nextval('rngfunc_rescan_seq1') FROM generate_series($1,$2) i;$$;
 
 create function rngfunc_mat(int, int)
 returns setof rngfunc_rescan_t
 language plpgsql
-as 'begin for i in $1..$2 loop return next (i, nextval(''rngfunc_rescan_seq2'')); end loop; end;';
+as $$begin for i in $1..$2 loop return next (i, nextval('rngfunc_rescan_seq2')); end loop; end;$$;
 
 select
   setval('rngfunc_rescan_seq1', 1, false),
@@ -948,7 +948,7 @@ drop sequence rngfunc_rescan_seq2;
 
 create function rngfunc(in f1 int, out f2 int)
 language sql
-as 'select $1+1';
+as $$select $1+1$$;
 
 select rngfunc(42);
 
@@ -959,22 +959,22 @@ select * from rngfunc(42) as p (x);
 create or replace function rngfunc(in f1 int, out f2 int)
 returns int
 language sql
-as 'select $1+1';
+as $$select $1+1$$;
 
 create or replace function rngfunc(in f1 int, out f2 int)
 returns double precision
 language sql
-as 'select $1+1';
+as $$select $1+1$$;
 
 create or replace function rngfunc(in f1 int, out f2 int, out f3 text)
 returns int
 language sql
-as 'select $1+1';
+as $$select $1+1$$;
 
 create or replace function rngfunc(in f1 int, out f2 int, out f3 text)
 returns record
 language sql
-as 'select $1+1';
+as $$select $1+1$$;
 
 create or replace function rngfuncr(in f1 int, out f2 int, out text)
 language sql
@@ -1004,7 +1004,7 @@ drop function rngfuncb(in f1 int, inout f2 int);
 
 create function dup(f1 anyelement, out f2 anyelement, out f3 anyarray)
 language sql
-as 'select $1, array[$1,$1]';
+as $$select $1, array[$1,$1]$$;
 
 select dup(22);
 
@@ -1016,13 +1016,13 @@ select * from dup(cast('xyz' as text));
 
 create or replace function dup(inout f2 anyelement, out f3 anyarray)
 language sql
-as 'select $1, array[$1,$1]';
+as $$select $1, array[$1,$1]$$;
 
 drop function dup(anyelement);
 
 create or replace function dup(inout f2 anyelement, out f3 anyarray)
 language sql
-as 'select $1, array[$1,$1]';
+as $$select $1, array[$1,$1]$$;
 
 select dup(22);
 
@@ -1030,7 +1030,7 @@ drop function dup(anyelement);
 
 create function bad(f1 int, out f2 anyelement, out f3 anyarray)
 language sql
-as 'select $1, array[$1,$1]';
+as $$select $1, array[$1,$1]$$;
 
 create function
 dup(
@@ -1040,7 +1040,7 @@ dup(
   out f4 anycompatiblearray
 )
 language sql
-as 'select $1, $2';
+as $$select $1, $2$$;
 
 select dup(22, array[44]);
 
@@ -1060,7 +1060,7 @@ dup(
   out f4 anycompatiblerange
 )
 language sql
-as 'select lower($1), array[lower($1), upper($1)], $1';
+as $$select lower($1), array[lower($1), upper($1)], $1$$;
 
 select dup(int4range(4, 7));
 
@@ -1077,7 +1077,7 @@ bad(
   out f3 anycompatiblearray
 )
 language sql
-as 'select $1, array[$1,$1]';
+as $$select $1, array[$1,$1]$$;
 
 create or replace function rngfunc()
 returns table (

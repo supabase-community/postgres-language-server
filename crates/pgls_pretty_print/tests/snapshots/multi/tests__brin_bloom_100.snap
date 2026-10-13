@@ -160,7 +160,7 @@ values
   ('uuidcol', 'uuid', '{=}', '{52225222-5222-5222-5222-522252225222}', '{1}'),
   ('lsncol', 'pg_lsn', '{=, IS, IS NOT}', '{44/455222, NULL, NULL}', '{1, 25, 100}');
 
-do $x$
+do $$
 DECLARE
 	r record;
 	r2 record;
@@ -239,7 +239,7 @@ BEGIN
 		IF count != r.matches THEN RAISE WARNING 'unexpected number of results % for %', count, r; END IF;
 	END LOOP;
 END;
-$x$;
+$$;
 
 reset enable_seqscan;
 

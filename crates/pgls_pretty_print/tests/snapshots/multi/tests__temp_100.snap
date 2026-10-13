@@ -350,7 +350,7 @@ select pg_relation_size('test_temp') / cast(current_setting('block_size') as int
 create function test_temp_pin(p_start int, p_end int)
 returns void
 language plpgsql
-as $f$
+as $$
   DECLARE
       cursorname text;
       query text;
@@ -364,7 +364,7 @@ as $f$
        -- RAISE NOTICE '%: %', cursorname, query;
     END LOOP;
   END;
-$f$;
+$$;
 
 begin;
 

@@ -14,7 +14,7 @@ create function f_leak(text)
 returns bool
 language plpgsql
 cost 0.0000001
-as 'BEGIN RAISE NOTICE ''f_leak => %'', $1; RETURN true; END';
+as $$BEGIN RAISE NOTICE 'f_leak => %', $1; RETURN true; END$$;
 
 create table customer (
   cid int primary key,

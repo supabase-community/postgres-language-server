@@ -5,7 +5,7 @@ input_file: crates/pgls_pretty_print/tests/data/multi/infinite_recurse.sql
 create function infinite_recurse()
 returns int
 language sql
-as 'select infinite_recurse()';
+as $$select infinite_recurse()$$;
 
 select version() ~ 'powerpc64[^,]*-linux-gnu' as skip_test;
 

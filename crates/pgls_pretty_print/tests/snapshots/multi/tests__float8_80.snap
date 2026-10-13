@@ -450,14 +450,14 @@ returns xfloat8
 language internal
 immutable
 strict
-as 'int8in';
+as $$int8in$$;
 
 create function xfloat8out(xfloat8)
 returns cstring
 language internal
 immutable
 strict
-as 'int8out';
+as $$int8out$$;
 
 create type xfloat8 (
   input = xfloat8in,

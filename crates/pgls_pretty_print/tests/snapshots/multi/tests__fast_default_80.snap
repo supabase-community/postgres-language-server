@@ -43,7 +43,7 @@ $$;
 create function log_rewrite()
 returns event_trigger
 language plpgsql
-as $func$
+as $$
 
 declare
    this_schema text;
@@ -58,7 +58,7 @@ begin
           pg_event_trigger_table_rewrite_reason();
     end if;
 end;
-$func$;
+$$;
 
 create table has_volatile as select * from generate_series(1, 10) as id;
 
@@ -392,7 +392,7 @@ create function foolme(timestamptz default clock_timestamp())
 returns timestamptz
 language sql
 immutable
-as 'select $1';
+as $$select $1$$;
 
 alter table t
   add column c3 timestamptz default foolme();

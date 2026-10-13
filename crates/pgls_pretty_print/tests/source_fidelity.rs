@@ -63,7 +63,7 @@ fn function_names_keep_their_case_and_quotes() {
 }
 
 #[test]
-fn dollar_quote_tag_and_body_are_kept() {
+fn function_bodies_are_kept_byte_for_byte() {
     assert_eq!(
         format(
             r#"CREATE OR REPLACE FUNCTION "public"."reset_user_password"("p_user_id" "uuid", "p_password" "text") RETURNS boolean
@@ -89,30 +89,34 @@ $$;"
 }
 
 #[test]
-fn a_custom_dollar_quote_tag_and_a_single_line_body_are_kept() {
+fn every_body_is_dollar_quoted_the_same_way() {
     assert_eq!(
         format(
-            "CREATE FUNCTION f() RETURNS int LANGUAGE plpgsql AS $body$ begin return 1; end $body$"
+            "CREATE FUNCTION f() RETURNS int LANGUAGE plpgsql AS $function$ begin return 1; end $function$"
         ),
         "create function f()
 returns int
 language plpgsql
-as $body$ begin return 1; end $body$;"
+as $$ begin return 1; end $$;"
+    );
+    assert_eq!(
+        format("CREATE FUNCTION f() RETURNS text LANGUAGE sql AS 'SELECT ''a''::text'"),
+        "create function f()
+returns text
+language sql
+as $$SELECT 'a'::text$$;"
     );
     assert_eq!(
         format("DO $do$ BEGIN PERFORM 1; END $do$"),
-        "do $do$ BEGIN PERFORM 1; END $do$;"
+        "do $$ BEGIN PERFORM 1; END $$;"
     );
 }
 
 #[test]
-fn a_quoted_body_keeps_its_quotes() {
+fn a_body_containing_the_default_tag_gets_another_one() {
     assert_eq!(
-        format("CREATE FUNCTION f() RETURNS int LANGUAGE sql AS 'SELECT ''a''::text'"),
-        "create function f()
-returns int
-language sql
-as 'SELECT ''a''::text';"
+        format("DO $outer$ BEGIN EXECUTE $$SELECT 1$$; END $outer$"),
+        "do $body$ BEGIN EXECUTE $$SELECT 1$$; END $body$;"
     );
 }
 

@@ -59,7 +59,7 @@ create function errfunc()
 returns int
 language sql
 set transaction_read_only = 'on'
-as 'SELECT 1';
+as $$SELECT 1$$;
 
 create table writetest (a int);
 
@@ -469,7 +469,7 @@ create or replace function max_xacttest()
 returns smallint
 language sql
 stable
-as 'select max(a) from xacttest';
+as $$select max(a) from xacttest$$;
 
 begin;
 
@@ -483,7 +483,7 @@ create or replace function max_xacttest()
 returns smallint
 language sql
 volatile
-as 'select max(a) from xacttest';
+as $$select max(a) from xacttest$$;
 
 begin;
 
@@ -497,7 +497,7 @@ create or replace function max_xacttest()
 returns smallint
 language plpgsql
 stable
-as 'begin return max(a) from xacttest; end';
+as $$begin return max(a) from xacttest; end$$;
 
 begin;
 
@@ -511,7 +511,7 @@ create or replace function max_xacttest()
 returns smallint
 language plpgsql
 volatile
-as 'begin return max(a) from xacttest; end';
+as $$begin return max(a) from xacttest; end$$;
 
 begin;
 

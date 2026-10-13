@@ -216,7 +216,7 @@ do instead
 create function makedcomp(r float8, i float8)
 returns dcomptype
 language sql
-as 'select row(r, i)';
+as $$select row(r, i)$$;
 
 select makedcomp(1, 2);
 
@@ -1024,7 +1024,7 @@ drop domain di;
 create function sql_is_distinct_from(anyelement, anyelement)
 returns boolean
 language sql
-as 'select $1 is distinct from $2 limit 1';
+as $$select $1 is distinct from $2 limit 1$$;
 
 create domain inotnull as int check (sql_is_distinct_from(value, null));
 

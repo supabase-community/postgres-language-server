@@ -126,7 +126,7 @@ create function vol(text)
 returns text
 language plpgsql
 volatile
-as 'begin return $1; end';
+as $$begin return $1; end$$;
 
 select
   case case vol('bar')
@@ -145,12 +145,12 @@ create function volfoo(text)
 returns foodomain
 language plpgsql
 volatile
-as 'begin return $1::foodomain; end';
+as $$begin return $1::foodomain; end$$;
 
 create function inline_eq(foodomain, foodomain)
 returns boolean
 language sql
-as 'SELECT CASE $2::text WHEN $1::text THEN true ELSE false END';
+as $$SELECT CASE $2::text WHEN $1::text THEN true ELSE false END$$;
 
 create operator = (procedure = inline_eq, leftarg = foodomain, rightarg = foodomain);
 
@@ -166,16 +166,16 @@ create function make_ad(int, int)
 returns arrdomain
 language plpgsql
 volatile
-as 'declare x arrdomain;
+as $$declare x arrdomain;
    begin
      x := array[$1,$2];
      return x;
-   end';
+   end$$;
 
 create function ad_eq(arrdomain, arrdomain)
 returns boolean
 language plpgsql
-as 'begin return array_eq($1, $2); end';
+as $$begin return array_eq($1, $2); end$$;
 
 create operator = (procedure = ad_eq, leftarg = arrdomain, rightarg = arrdomain);
 

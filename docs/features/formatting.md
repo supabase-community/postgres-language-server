@@ -9,7 +9,8 @@ The language server provides SQL formatting that produces consistent, readable c
 The formatter changes whitespace, line breaks, the case of keywords, types and constants, and quotes that an identifier does not need. It does not change what is written:
 
 - Schema qualifiers stay as written, `pg_catalog.` included.
-- Function bodies, their dollar-quote tags (`$$`, `$body$`, ...) and string literals are kept byte for byte. Only `language sql` bodies are reformatted, unless `skipFnBodies` is set.
+- Function and `DO` bodies are kept byte for byte, and always dollar-quoted with `$$` (or `$body$` when the body contains `$$`), whatever quotes they were written with. Only `language sql` bodies are reformatted, unless `skipFnBodies` is set.
+- String literals are kept as written.
 - Function signatures keep their argument names and modes, in `ALTER FUNCTION`, `GRANT` and `DROP` as well.
 - Identifiers that need quotes keep them: mixed case, reserved words such as `"user"`, and special characters.
 - Comments stay where they were written, including comments at the end of a line.

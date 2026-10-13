@@ -2813,14 +2813,14 @@ select * from tststats.priv_test_tbl where a = 1 and tststats.priv_test_tbl.* > 
 create function op_leak(int, int)
 returns bool
 language plpgsql
-as 'BEGIN RAISE NOTICE ''op_leak => %, %'', $1, $2; RETURN $1 < $2; END';
+as $$BEGIN RAISE NOTICE 'op_leak => %, %', $1, $2; RETURN $1 < $2; END$$;
 
 create operator <<< (procedure = op_leak, leftarg = int, rightarg = int, restrict = scalarltsel);
 
 create function op_leak(record, record)
 returns bool
 language plpgsql
-as 'BEGIN RAISE NOTICE ''op_leak => %, %'', $1, $2; RETURN $1 < $2; END';
+as $$BEGIN RAISE NOTICE 'op_leak => %, %', $1, $2; RETURN $1 < $2; END$$;
 
 create operator <<< (
   procedure = op_leak,

@@ -273,7 +273,7 @@ create function sillysrf(int)
 returns setof int
 language sql
 immutable
-as 'values (1),(10),(2),($1)';
+as $$values (1),(10),(2),($1)$$;
 
 select sillysrf(42);
 

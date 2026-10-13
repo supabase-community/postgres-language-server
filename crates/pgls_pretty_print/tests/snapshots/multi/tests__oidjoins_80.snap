@@ -3,7 +3,7 @@ source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/oidjoins.sql
 snapshot_kind: text
 ---
-do $doblock$
+do $$
 declare
   fk record;
   nkeys integer;
@@ -48,4 +48,4 @@ begin
     end loop;
   end loop;
 end
-$doblock$;
+$$;

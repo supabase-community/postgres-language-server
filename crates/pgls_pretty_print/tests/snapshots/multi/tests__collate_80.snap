@@ -279,7 +279,7 @@ select a, cast(b as varchar) from collate_test2 order by 2;
 create function vc(text)
 returns text
 language sql
-as 'select $1::varchar';
+as $$select $1::varchar$$;
 
 select a, b from collate_test1 order by a, vc(b);
 
@@ -298,7 +298,7 @@ order by 1;
 create function dup(anyelement)
 returns anyelement
 language sql
-as 'select $1';
+as $$select $1$$;
 
 select a, dup(b) from collate_test1 order by 2;
 

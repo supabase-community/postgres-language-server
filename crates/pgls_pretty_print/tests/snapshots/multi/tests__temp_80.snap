@@ -363,7 +363,7 @@ select
 create function test_temp_pin(p_start int, p_end int)
 returns void
 language plpgsql
-as $f$
+as $$
   DECLARE
       cursorname text;
       query text;
@@ -377,7 +377,7 @@ as $f$
        -- RAISE NOTICE '%: %', cursorname, query;
     END LOOP;
   END;
-$f$;
+$$;
 
 begin;
 

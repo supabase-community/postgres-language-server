@@ -495,7 +495,7 @@ order by 1;
 create function dup(anyelement)
 returns anyelement
 language sql
-as 'select $1';
+as $$select $1$$;
 
 select a, dup(b) from collate_test1 order by 2;
 

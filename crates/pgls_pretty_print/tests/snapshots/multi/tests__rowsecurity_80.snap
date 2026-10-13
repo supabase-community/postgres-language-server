@@ -50,7 +50,7 @@ create or replace function f_leak(text)
 returns bool
 language plpgsql
 cost 0.0000001
-as 'BEGIN RAISE NOTICE ''f_leak => %'', $1; RETURN true; END';
+as $$BEGIN RAISE NOTICE 'f_leak => %', $1; RETURN true; END$$;
 
 grant execute on function f_leak(text) to public;
 

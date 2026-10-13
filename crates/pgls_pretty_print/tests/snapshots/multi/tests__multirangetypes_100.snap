@@ -1304,7 +1304,7 @@ drop role regress_multirange_owner;
 create function anyarray_anymultirange_func(a anyarray, r anymultirange)
 returns anyelement
 language sql
-as 'select $1[1] + lower($2);';
+as $$select $1[1] + lower($2);$$;
 
 select anyarray_anymultirange_func(array[1, 2], int4multirange(int4range(10, 20)));
 
@@ -1315,17 +1315,17 @@ drop function anyarray_anymultirange_func(anyarray, anymultirange);
 create function bogus_func(anyelement)
 returns anymultirange
 language sql
-as 'select int4multirange(int4range(1,10))';
+as $$select int4multirange(int4range(1,10))$$;
 
 create function bogus_func(int)
 returns anymultirange
 language sql
-as 'select int4multirange(int4range(1,10))';
+as $$select int4multirange(int4range(1,10))$$;
 
 create function range_add_bounds(anymultirange)
 returns anyelement
 language sql
-as 'select lower($1) + upper($1)';
+as $$select lower($1) + upper($1)$$;
 
 select range_add_bounds(int4multirange(int4range(1, 17)));
 
@@ -1346,7 +1346,7 @@ anycompatiblearray_anycompatiblemultirange_func(
 )
 returns anycompatible
 language sql
-as 'select $1[1] + lower($2);';
+as $$select $1[1] + lower($2);$$;
 
 select anycompatiblearray_anycompatiblemultirange_func(array[1, 2], multirange(int4range(10, 20)));
 
@@ -1365,7 +1365,7 @@ anycompatiblerange_anycompatiblemultirange_func(
 )
 returns anycompatible
 language sql
-as 'select lower($1) + lower($2);';
+as $$select lower($1) + lower($2);$$;
 
 select
   anycompatiblerange_anycompatiblemultirange_func(int4range(1, 2), multirange(int4range(10, 20)));
@@ -1379,7 +1379,7 @@ drop function
 create function bogus_func(anycompatible)
 returns anycompatiblerange
 language sql
-as 'select int4range(1,10)';
+as $$select int4range(1,10)$$;
 
 select array[nummultirange(numrange(1.1, 1.2)), nummultirange(numrange(12.3, 155.5))];
 

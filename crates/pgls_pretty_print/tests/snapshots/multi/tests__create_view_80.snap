@@ -6,7 +6,7 @@ create function interpt_pp(path, path)
 returns point
 language c
 strict
-as 'regresslib';
+as $$regresslib$$;
 
 create table real_city (
   pop int4,

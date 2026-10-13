@@ -6,8 +6,8 @@ snapshot_kind: text
 create function test_conflict()
 returns void
 language plpgsql
-as $outer$
+as $body$
 BEGIN
   EXECUTE $$SELECT 1$$;
 END;
-$outer$;
+$body$;
