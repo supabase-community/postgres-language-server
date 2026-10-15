@@ -8,6 +8,28 @@ const UNFORMATTED_PATH: &str = "tests/fixtures/format/unformatted.sql";
 const BLANK_LINES_PATH: &str = "tests/fixtures/format/blank_lines.sql";
 
 #[test]
+fn format_values_rows_from_cli_options() {
+    let mut cmd = cargo_bin_cmd!("postgres-language-server");
+    cmd.args([
+        "format",
+        "--config-path",
+        CONFIG_PATH,
+        "--log-level",
+        "none",
+        "--stdin-file-path",
+        "virtual.sql",
+        "--values-row-layout",
+        "expanded",
+        "--comma-style",
+        "leading",
+    ])
+    .write_stdin("VALUES (1, 'one'), (2, 'two');")
+    .assert()
+    .success()
+    .stdout("values\n  (1, 'one')\n  , (2, 'two');");
+}
+
+#[test]
 #[cfg_attr(
     target_os = "windows",
     ignore = "snapshot expectations only validated on unix-like platforms"

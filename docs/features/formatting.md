@@ -54,10 +54,24 @@ Configure formatting behavior in your `postgres-language-server.jsonc`:
 | `commaStyle` | `"trailing"` | Where a comma sits when a list breaks: `"trailing"` or `"leading"` |
 | `logicalOperatorPlacement` | `"trailing"` | Where `AND` and `OR` sit when a condition breaks: `"trailing"` or `"leading"` |
 | `layout` | `"fit"` | How a statement is laid out: `"fit"` breaks only past the line width, `"expanded"` always breaks between clauses |
+| `valuesRowLayout` | `"fit"` | How `VALUES` rows are laid out: `"fit"` breaks only past the line width, `"expanded"` puts each tuple on its own indented line. `commaStyle` controls commas between rows as well as inside tuples |
 | `castStyle` | `"cast"` | How an explicit cast is spelled: `"cast"` for `CAST(x AS t)`, `"operator"` for `x::t` |
 | `clauseBodyStyle` | `"break"` | Where a clause body starts: `"break"` for a new line, `"compact"` to keep the first element on the keyword line |
 | `isolateSemicolon` | `false` | Put the terminating semicolon on its own line when the statement spans several lines |
 | `functionArgumentGroups` | `{}` (plus built-in defaults, see below) | Function names mapped to the number of adjacent arguments that should stay together when wrapping |
+
+With `valuesRowLayout: "expanded"` and `commaStyle: "leading"`, each `VALUES`
+tuple starts on its own indented line, even when the rows fit within `lineWidth`:
+
+```sql
+values
+  ('MONTHLY', 1)
+  , ('QUARTERLY', 3);
+```
+
+The expressions inside each tuple stay on one line when they fit. This option
+applies to `INSERT`, standalone `VALUES`, and `VALUES` in subqueries and CTEs,
+independently of `layout` and `clauseBodyStyle`.
 
 `functionArgumentGroups` matches the final, unqualified function name
 case-insensitively. A group size of `2` is useful for functions whose arguments

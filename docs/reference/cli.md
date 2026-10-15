@@ -151,6 +151,8 @@ Lints your database schema.
   Where a boolean operator sits when a condition breaks: "trailing" or "leading". Default: "trailing".
 - **`    --layout`**=_`ARG`_ &mdash; 
   How a statement is laid out: "fit" breaks only when a line would exceed the line width, "expanded" always breaks between clauses. Default: "fit".
+- **`    --values-row-layout`**=_`ARG`_ &mdash; 
+  How VALUES rows are laid out: "fit" breaks only past the line width, "expanded" puts each row on its own indented line. Default: "fit".
 - **`    --cast-style`**=_`ARG`_ &mdash; 
   How an explicit cast is spelled: "cast" for `CAST(x AS t)`, "operator" for `x::t`. Default: "cast".
 - **`    --clause-body-style`**=_`ARG`_ &mdash; 
@@ -271,6 +273,8 @@ Runs everything to the requested files.
   Where a boolean operator sits when a condition breaks: "trailing" or "leading". Default: "trailing".
 - **`    --layout`**=_`ARG`_ &mdash; 
   How a statement is laid out: "fit" breaks only when a line would exceed the line width, "expanded" always breaks between clauses. Default: "fit".
+- **`    --values-row-layout`**=_`ARG`_ &mdash; 
+  How VALUES rows are laid out: "fit" breaks only past the line width, "expanded" puts each row on its own indented line. Default: "fit".
 - **`    --cast-style`**=_`ARG`_ &mdash; 
   How an explicit cast is spelled: "cast" for `CAST(x AS t)`, "operator" for `x::t`. Default: "cast".
 - **`    --clause-body-style`**=_`ARG`_ &mdash; 
@@ -409,6 +413,8 @@ Formats the requested files.
   Where a boolean operator sits when a condition breaks: "trailing" or "leading". Default: "trailing".
 - **`    --layout`**=_`ARG`_ &mdash; 
   How a statement is laid out: "fit" breaks only when a line would exceed the line width, "expanded" always breaks between clauses. Default: "fit".
+- **`    --values-row-layout`**=_`ARG`_ &mdash; 
+  How VALUES rows are laid out: "fit" breaks only past the line width, "expanded" puts each row on its own indented line. Default: "fit".
 - **`    --cast-style`**=_`ARG`_ &mdash; 
   How an explicit cast is spelled: "cast" for `CAST(x AS t)`, "operator" for `x::t`. Default: "cast".
 - **`    --clause-body-style`**=_`ARG`_ &mdash; 

@@ -384,6 +384,7 @@ fn to_formatter_settings(
         comma_style: conf.comma_style,
         logical_operator_placement: conf.logical_operator_placement,
         layout: conf.layout,
+        values_row_layout: conf.values_row_layout,
         cast_style: conf.cast_style,
         clause_body_style: conf.clause_body_style,
         isolate_semicolon: conf.isolate_semicolon,
@@ -603,6 +604,9 @@ pub struct FormatterSettings {
     /// How a statement is laid out across lines: fit or expanded. Default: fit.
     pub layout: Layout,
 
+    /// How VALUES rows are laid out: fit or expanded. Default: fit.
+    pub values_row_layout: Layout,
+
     /// How an explicit cast is spelled: cast or operator. Default: cast.
     pub cast_style: CastStyle,
 
@@ -639,6 +643,7 @@ impl Default for FormatterSettings {
             comma_style: CommaStyle::default(),
             logical_operator_placement: LogicalOperatorPlacement::default(),
             layout: Layout::default(),
+            values_row_layout: Layout::default(),
             cast_style: CastStyle::default(),
             clause_body_style: ClauseBodyStyle::default(),
             isolate_semicolon: false,
