@@ -11,6 +11,8 @@ pub(super) enum ListSeparatorSpacing {
     SoftOrSpace,
     /// Use `e.space()` - always a space, never wraps
     Space,
+    /// Always break between items.
+    Hard,
 }
 
 /// Emit a comma-separated list with configurable spacing behavior
@@ -40,6 +42,7 @@ pub(super) fn emit_comma_separated_list_with_spacing<F>(
                 match spacing {
                     ListSeparatorSpacing::SoftOrSpace => e.line(LineType::Soft),
                     ListSeparatorSpacing::Space => {}
+                    ListSeparatorSpacing::Hard => e.line(LineType::Hard),
                 }
                 e.token(TokenKind::COMMA);
                 e.space();
@@ -48,6 +51,7 @@ pub(super) fn emit_comma_separated_list_with_spacing<F>(
                 match spacing {
                     ListSeparatorSpacing::SoftOrSpace => e.line(LineType::SoftOrSpace),
                     ListSeparatorSpacing::Space => e.space(),
+                    ListSeparatorSpacing::Hard => e.line(LineType::Hard),
                 }
             }
         }

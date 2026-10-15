@@ -4,10 +4,13 @@ use pgls_query::{
 };
 
 use crate::emitter::{EventEmitter, GroupKind, LineType};
-use crate::{ClauseBodyStyle, TokenKind};
+use crate::{ClauseBodyStyle, Layout, TokenKind};
 
 use super::{
-    node_list::{emit_comma_separated_list, emit_comma_separated_list_with_layout_break},
+    node_list::{
+        ListSeparatorSpacing, emit_comma_separated_list,
+        emit_comma_separated_list_with_layout_break, emit_comma_separated_list_with_spacing,
+    },
     string::emit_keyword,
     window_def::emit_window_definition,
 };
@@ -154,16 +157,19 @@ fn emit_select_stmt_impl(e: &mut EventEmitter, n: &SelectStmt, with_semicolon: b
     if !n.values_lists.is_empty() {
         e.token(TokenKind::VALUES_KW);
 
-        // VALUES should be compact when short: VALUES (1), (2), (3)
-        // Only break to multiple lines when needed
-        e.line(LineType::SoftOrSpace);
         e.indent_start();
-
-        for (i, row) in n.values_lists.iter().enumerate() {
-            if i > 0 {
-                e.token(TokenKind::COMMA);
+        let spacing = match e.config().values_row_layout {
+            Layout::Fit => {
                 e.line(LineType::SoftOrSpace);
+                ListSeparatorSpacing::SoftOrSpace
             }
+            Layout::Expanded => {
+                e.line(LineType::Hard);
+                ListSeparatorSpacing::Hard
+            }
+        };
+
+        emit_comma_separated_list_with_spacing(e, &n.values_lists, spacing, |row, e| {
             // Wrap each row tuple in a group so it can break independently
             e.group_start(GroupKind::List);
             e.token(TokenKind::L_PAREN);
@@ -174,7 +180,7 @@ fn emit_select_stmt_impl(e: &mut EventEmitter, n: &SelectStmt, with_semicolon: b
             e.line(LineType::Soft);
             e.token(TokenKind::R_PAREN);
             e.group_end();
-        }
+        });
 
         e.indent_end();
 

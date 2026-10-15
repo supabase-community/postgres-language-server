@@ -650,6 +650,17 @@
               "type": "null"
             }
           ]
+        },
+        "valuesRowLayout": {
+          "description": "How VALUES rows are laid out: \"fit\" breaks only past the line width, \"expanded\" puts each row on its own indented line. Default: \"fit\".",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/Layout"
+            },
+            {
+              "type": "null"
+            }
+          ]
         }
       },
       "additionalProperties": false

@@ -512,6 +512,10 @@ export interface PartialFormatConfiguration {
    * Data type casing (text, varchar, int): "upper" or "lower". Default: "lower".
    */
   typeCase?: KeywordCase;
+  /**
+   * How VALUES rows are laid out: "fit" breaks only past the line width, "expanded" puts each row on its own indented line. Default: "fit".
+   */
+  valuesRowLayout?: Layout;
 }
 export interface PartialLinterConfiguration {
   /**

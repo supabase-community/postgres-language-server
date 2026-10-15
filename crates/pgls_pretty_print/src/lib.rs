@@ -117,6 +117,9 @@ pub struct FormatConfig {
     pub logical_operator_placement: LogicalOperatorPlacement,
     /// How a statement is laid out across lines. Default: Fit.
     pub layout: Layout,
+    /// How VALUES rows are laid out: fit within the line width or one row per line.
+    /// Default: Fit.
+    pub values_row_layout: Layout,
     /// How an explicit cast is spelled. Default: Cast.
     pub cast_style: CastStyle,
     /// Where the body of a clause starts. Default: Break.
@@ -140,6 +143,7 @@ impl Default for FormatConfig {
             comma_style: CommaStyle::default(),
             logical_operator_placement: LogicalOperatorPlacement::default(),
             layout: Layout::default(),
+            values_row_layout: Layout::default(),
             cast_style: CastStyle::default(),
             clause_body_style: ClauseBodyStyle::default(),
             isolate_semicolon: false,
@@ -160,6 +164,7 @@ impl From<FormatConfig> for RenderConfig {
             comma_style: _,
             logical_operator_placement: _,
             layout: _,
+            values_row_layout: _,
             cast_style: _,
             clause_body_style: _,
             isolate_semicolon,

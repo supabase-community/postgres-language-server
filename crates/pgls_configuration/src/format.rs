@@ -321,6 +321,10 @@ pub struct FormatConfiguration {
     /// "expanded" always breaks between clauses. Default: "fit".
     #[partial(bpaf(long("layout")))]
     pub layout: Layout,
+    /// How VALUES rows are laid out: "fit" breaks only past the line width,
+    /// "expanded" puts each row on its own indented line. Default: "fit".
+    #[partial(bpaf(long("values-row-layout")))]
+    pub values_row_layout: Layout,
     /// How an explicit cast is spelled: "cast" for `CAST(x AS t)`, "operator" for `x::t`.
     /// Default: "cast".
     #[partial(bpaf(long("cast-style")))]
@@ -362,6 +366,7 @@ impl Default for FormatConfiguration {
             comma_style: CommaStyle::default(),
             logical_operator_placement: LogicalOperatorPlacement::default(),
             layout: Layout::default(),
+            values_row_layout: Layout::default(),
             cast_style: CastStyle::default(),
             clause_body_style: ClauseBodyStyle::default(),
             isolate_semicolon: false,
@@ -388,6 +393,17 @@ impl PartialFormatConfiguration {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn deserializes_values_row_layout_and_rejects_unknown_values() {
+        let config: PartialFormatConfiguration =
+            serde_json::from_str(r#"{"valuesRowLayout": "expanded"}"#).unwrap();
+        assert_eq!(config.values_row_layout, Some(Layout::Expanded));
+        assert!(
+            serde_json::from_str::<PartialFormatConfiguration>(r#"{"valuesRowLayout": "unknown"}"#)
+                .is_err()
+        );
+    }
 
     #[test]
     fn deserializes_function_argument_groups() {
