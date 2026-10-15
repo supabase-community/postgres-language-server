@@ -1504,6 +1504,11 @@
 <td>How a statement is laid out: <code>"fit"</code> breaks only past the line width, <code>"expanded"</code> always breaks between clauses</td>
 </tr>
 <tr>
+<td><code>valuesRowLayout</code></td>
+<td><code>"fit"</code></td>
+<td>How <code>VALUES</code> rows are laid out: <code>"fit"</code> breaks only past the line width, <code>"expanded"</code> puts each tuple on its own indented line. <code>commaStyle</code> controls commas between rows as well as inside tuples</td>
+</tr>
+<tr>
 <td><code>castStyle</code></td>
 <td><code>"cast"</code></td>
 <td>How an explicit cast is spelled: <code>"cast"</code> for <code>CAST(x AS t)</code>, <code>"operator"</code> for <code>x::t</code></td>
@@ -1525,6 +1530,15 @@
 </tr>
 </tbody>
 </table>
+<p>With <code>valuesRowLayout: "expanded"</code> and <code>commaStyle: "leading"</code>, each <code>VALUES</code>
+tuple starts on its own indented line, even when the rows fit within <code>lineWidth</code>:</p>
+<div class="highlight"><pre><span></span><code><span class="k">values</span>
+<span class="w">  </span><span class="p">(</span><span class="s1">'MONTHLY'</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span>
+<span class="w">  </span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="s1">'QUARTERLY'</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="p">);</span>
+</code></pre></div>
+<p>The expressions inside each tuple stay on one line when they fit. This option
+applies to <code>INSERT</code>, standalone <code>VALUES</code>, and <code>VALUES</code> in subqueries and CTEs,
+independently of <code>layout</code> and <code>clauseBodyStyle</code>.</p>
 <p><code>functionArgumentGroups</code> matches the final, unqualified function name
 case-insensitively. A group size of <code>2</code> is useful for functions whose arguments
 form key/value pairs:</p>
