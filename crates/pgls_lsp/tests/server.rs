@@ -804,6 +804,87 @@ async fn test_completions(test_db: PgPool) -> Result<()> {
 }
 
 #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn test_inlay_hints(test_db: PgPool) -> Result<()> {
+    let factory = ServerFactory::default();
+    let mut fs = MemoryFileSystem::default();
+
+    test_db
+        .execute(
+            "create function make_point(x int, y int) returns int language sql as 'select x + y';",
+        )
+        .await
+        .expect("Failed to setup test database");
+
+    let mut conf = PartialConfiguration::init();
+    conf.merge_with(PartialConfiguration {
+        db: Some(PartialDatabaseConfiguration {
+            database: Some(
+                test_db
+                    .connect_options()
+                    .get_database()
+                    .unwrap()
+                    .to_string(),
+            ),
+            ..Default::default()
+        }),
+        ..Default::default()
+    });
+    fs.insert(
+        url!("postgres-language-server.jsonc")
+            .to_file_path()
+            .unwrap(),
+        serde_json::to_string_pretty(&conf).unwrap(),
+    );
+
+    let (service, client) = factory
+        .create_with_fs(None, DynRef::Owned(Box::new(fs)))
+        .into_inner();
+
+    let (stream, sink) = client.split();
+    let mut server = Server::new(service);
+
+    let (sender, _) = channel(CHANNEL_BUFFER_SIZE);
+    let reader = tokio::spawn(client_handler(stream, sink, sender));
+
+    server.initialize().await?;
+    server.initialized().await?;
+
+    server.load_configuration().await?;
+
+    server
+        .open_document("select 1;\nselect make_point(1, y => 2);\n")
+        .await?;
+
+    let hints: Option<Vec<lsp::InlayHint>> = server
+        .request(
+            "textDocument/inlayHint",
+            "inlay_hints",
+            lsp::InlayHintParams {
+                work_done_progress_params: WorkDoneProgressParams::default(),
+                text_document: TextDocumentIdentifier {
+                    uri: url!("document.sql"),
+                },
+                range: Range {
+                    start: Position::new(0, 0),
+                    end: Position::new(2, 0),
+                },
+            },
+        )
+        .await?;
+
+    let hints = hints.context("expected inlay hints")?;
+    assert_eq!(hints.len(), 1, "expected one hint, got {hints:?}");
+    assert_eq!(hints[0].position, Position::new(1, 18));
+    assert!(matches!(&hints[0].label, lsp::InlayHintLabel::String(label) if label == "x:"));
+    assert_eq!(hints[0].kind, Some(lsp::InlayHintKind::PARAMETER));
+
+    server.shutdown().await?;
+    reader.abort();
+
+    Ok(())
+}
+
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
 async fn test_completions_is_incomplete_when_truncated(test_db: PgPool) -> Result<()> {
     let factory = ServerFactory::default();
     let mut fs = MemoryFileSystem::default();

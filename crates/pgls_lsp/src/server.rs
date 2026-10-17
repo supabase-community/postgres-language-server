@@ -276,6 +276,14 @@ impl LanguageServer for LSPServer {
     }
 
     #[tracing::instrument(level = "trace", skip_all)]
+    async fn inlay_hint(&self, params: InlayHintParams) -> LspResult<Option<Vec<InlayHint>>> {
+        match handlers::inlay_hints::inlay_hints(&self.session, params) {
+            Ok(result) => LspResult::Ok(result),
+            Err(e) => LspResult::Err(into_lsp_error(e)),
+        }
+    }
+
+    #[tracing::instrument(level = "trace", skip_all)]
     async fn completion(&self, params: CompletionParams) -> LspResult<Option<CompletionResponse>> {
         match handlers::completions::get_completions(&self.session, params) {
             Ok(result) => LspResult::Ok(Some(result)),
@@ -509,6 +517,7 @@ impl ServerFactory {
         workspace_method!(builder, pull_file_diagnostics);
         workspace_method!(builder, check_database_connection);
         workspace_method!(builder, get_completions);
+        workspace_method!(builder, pull_inlay_hints);
         workspace_method!(builder, register_project_folder);
         workspace_method!(builder, unregister_project_folder);
         workspace_method!(builder, invalidate_schema_cache);

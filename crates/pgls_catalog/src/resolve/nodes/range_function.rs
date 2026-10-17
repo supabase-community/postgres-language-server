@@ -13,7 +13,7 @@ use super::{
 use crate::resolve::scope::{Columns, Item, Level};
 use crate::{
     lookup::Lookup,
-    typing::{CallArg, Selection, Type, TypedColumn, select_function},
+    typing::{Selection, Type, TypedColumn, select_function},
 };
 
 /// A function in FROM, including `ROWS FROM (...)` and `WITH ORDINALITY`. Functions see the FROM
@@ -245,22 +245,21 @@ fn typed_return_columns(r: &mut Resolver, n: &RangeFunction) -> Option<Vec<Typed
             [schema, name] => (name.as_str(), Some(schema.as_str())),
             _ => return None,
         };
-        let args = call
-            .args
-            .iter()
-            .map(|arg| CallArg {
-                ty: arg
-                    .node
-                    .as_ref()
-                    .and_then(|expr| super::super::expr::infer_expr(r, expr)),
-                name: None,
-            })
-            .collect::<Vec<_>>();
-        let Selection::Match(selected) =
-            select_function(r.catalog, schema, name, &args, r.search_path)
-        else {
+        if call.agg_within_group {
+            return None;
+        }
+        let args = super::super::expr::call_args(r, call);
+        let Selection::Match(selected) = select_function(
+            r.catalog,
+            schema,
+            name,
+            &args,
+            call.func_variadic,
+            r.search_path,
+        ) else {
             return None;
         };
+        r.record_call(call, &selected.function);
         match selected.function.return_columns {
             // A single output parameter of a composite type expands to its attributes.
             Some(columns) if columns.len() == 1 => {
