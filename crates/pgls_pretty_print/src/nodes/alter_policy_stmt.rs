@@ -36,9 +36,7 @@ pub(super) fn emit_alter_policy_stmt(e: &mut EventEmitter, n: &AlterPolicyStmt) 
         e.line(LineType::SoftOrSpace);
         e.token(TokenKind::USING_KW);
         e.space();
-        e.token(TokenKind::L_PAREN);
-        super::emit_node(qual, e);
-        e.token(TokenKind::R_PAREN);
+        super::emit_parenthesized_condition(e, GroupKind::AlterPolicyStmt, qual);
     }
 
     // Optional: WITH CHECK clause
@@ -48,9 +46,7 @@ pub(super) fn emit_alter_policy_stmt(e: &mut EventEmitter, n: &AlterPolicyStmt) 
         e.space();
         e.token(TokenKind::CHECK_KW);
         e.space();
-        e.token(TokenKind::L_PAREN);
-        super::emit_node(with_check, e);
-        e.token(TokenKind::R_PAREN);
+        super::emit_parenthesized_condition(e, GroupKind::AlterPolicyStmt, with_check);
     }
 
     e.token(TokenKind::SEMICOLON);

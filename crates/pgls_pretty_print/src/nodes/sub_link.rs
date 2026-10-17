@@ -1,7 +1,7 @@
-use pgls_query::protobuf::{SubLink, SubLinkType};
+use pgls_query::protobuf::{SelectStmt, SubLink, SubLinkType};
 
-use crate::TokenKind;
 use crate::emitter::{EventEmitter, GroupKind, LineType};
+use crate::{Layout, TokenKind};
 
 pub(super) fn emit_sub_link(e: &mut EventEmitter, n: &SubLink) {
     e.group_start(GroupKind::SubLink);
@@ -136,13 +136,38 @@ fn emit_subquery(e: &mut EventEmitter, node: &pgls_query::protobuf::Node) {
     e.indent_start();
     // Check if this is a SelectStmt and emit without semicolon
     if let Some(pgls_query::NodeEnum::SelectStmt(select_stmt)) = node.node.as_ref() {
-        super::emit_select_stmt_no_semicolon(e, select_stmt);
+        // Expanded layout breaks between clauses. A subquery made of its select list alone, such
+        // as `(select auth.uid())`, has none to break between, so it only breaks past the width.
+        if has_select_list_only(select_stmt) {
+            e.with_layout(Layout::Fit, |e| {
+                super::emit_select_stmt_no_semicolon(e, select_stmt);
+            });
+        } else {
+            super::emit_select_stmt_no_semicolon(e, select_stmt);
+        }
     } else {
         // For other node types (e.g., VALUES), emit normally
         super::emit_node(node, e);
     }
     e.indent_end();
     e.line(LineType::Soft);
+}
+
+fn has_select_list_only(n: &SelectStmt) -> bool {
+    n.into_clause.is_none()
+        && n.from_clause.is_empty()
+        && n.where_clause.is_none()
+        && n.group_clause.is_empty()
+        && n.having_clause.is_none()
+        && n.window_clause.is_empty()
+        && n.values_lists.is_empty()
+        && n.sort_clause.is_empty()
+        && n.limit_offset.is_none()
+        && n.limit_count.is_none()
+        && n.locking_clause.is_empty()
+        && n.with_clause.is_none()
+        && n.larg.is_none()
+        && n.rarg.is_none()
 }
 
 fn emit_operator_from_list(e: &mut EventEmitter, oper_name: &[pgls_query::protobuf::Node]) {

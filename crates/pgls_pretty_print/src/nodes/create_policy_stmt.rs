@@ -62,9 +62,7 @@ pub(super) fn emit_create_policy_stmt(e: &mut EventEmitter, n: &CreatePolicyStmt
         e.line(LineType::SoftOrSpace);
         e.token(TokenKind::USING_KW);
         e.space();
-        e.token(TokenKind::L_PAREN);
-        super::emit_node(qual, e);
-        e.token(TokenKind::R_PAREN);
+        super::emit_parenthesized_condition(e, GroupKind::CreatePolicyStmt, qual);
     }
 
     if let Some(ref with_check) = n.with_check {
@@ -73,9 +71,7 @@ pub(super) fn emit_create_policy_stmt(e: &mut EventEmitter, n: &CreatePolicyStmt
         e.space();
         e.token(TokenKind::CHECK_KW);
         e.space();
-        e.token(TokenKind::L_PAREN);
-        super::emit_node(with_check, e);
-        e.token(TokenKind::R_PAREN);
+        super::emit_parenthesized_condition(e, GroupKind::CreatePolicyStmt, with_check);
     }
 
     e.token(TokenKind::SEMICOLON);
