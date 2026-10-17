@@ -7,10 +7,10 @@ use std::{
     sync::{Arc, OnceLock},
 };
 
-use pgls_analyse::{AnalysisFilter, RuleFilter};
+use pgls_analyse::{AnalysisFilter, Applicability, RuleFilter};
 use pgls_analyser::{
     AnalysableStatement, Analyser, AnalyserConfig, AnalyserParams, LinterDiagnostic, LinterOptions,
-    UnparsableStatement,
+    RuleFix, UnparsableStatement,
 };
 use pgls_console::StdDisplay;
 use pgls_diagnostics::PrintDiagnostic;
@@ -187,8 +187,34 @@ fn write_snapshot(snapshot: &mut String, query: &str, diagnostics: &[LinterDiagn
 
             writeln!(snapshot, "{}", StdDisplay(printer)).unwrap();
             writeln!(snapshot).unwrap();
+
+            if let Some(fix) = diagnostic.get_fix() {
+                write_fix(snapshot, query, fix);
+            }
         }
     }
+}
+
+/// Writes the input with the fix applied. A fix must keep the input valid SQL.
+fn write_fix(snapshot: &mut String, query: &str, fix: &RuleFix) {
+    let applicability = match fix.applicability {
+        Applicability::Always => "safe",
+        Applicability::MaybeIncorrect => "unsafe",
+    };
+    let fixed = fix.apply(query);
+    if pgls_query::parse(query).is_ok() {
+        assert!(
+            pgls_query::parse(&fixed).is_ok(),
+            "the fix `{}` produces invalid SQL:\n{fixed}",
+            fix.message
+        );
+    }
+
+    writeln!(snapshot, "## Fix ({applicability}): {}", fix.message).unwrap();
+    writeln!(snapshot, "```").unwrap();
+    writeln!(snapshot, "{fixed}").unwrap();
+    writeln!(snapshot, "```").unwrap();
+    writeln!(snapshot).unwrap();
 }
 
 enum Expectation {

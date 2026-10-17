@@ -1,4 +1,4 @@
-use pgls_analyse::RuleMeta;
+use pgls_analyse::{Applicability, RuleMeta};
 use pgls_console::fmt::Display;
 use pgls_console::{MarkupBuf, markup};
 use pgls_diagnostics::advice::CodeSuggestionAdvice;
@@ -6,7 +6,7 @@ use pgls_diagnostics::{
     Advices, Category, Diagnostic, DiagnosticTags, Location, LogCategory, MessageAndDescription,
     Visit,
 };
-use pgls_text_size::TextRange;
+use pgls_text_size::{TextRange, TextSize};
 use std::fmt::Debug;
 
 use crate::linter_context::LinterRuleContext;
@@ -34,6 +34,84 @@ pub struct LinterDiagnostic {
     pub(crate) tags: DiagnosticTags,
     #[advice]
     pub(crate) rule_advice: RuleAdvice,
+    pub(crate) fix: Option<RuleFix>,
+}
+
+/// A change to the source that fixes the issue reported by a diagnostic.
+///
+/// The ranges of the edits are relative to the statement while the rule runs, and relative to
+/// the file in the diagnostics returned by the analyser.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct RuleFix {
+    /// What the fix does, e.g. "Add CONCURRENTLY".
+    pub message: String,
+    /// Set by the analyser from the fix kind of the rule.
+    pub applicability: Applicability,
+    /// Non-overlapping edits, ordered by their position.
+    pub edits: Vec<FixEdit>,
+}
+
+/// Replaces the text in `range` with `replacement`.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct FixEdit {
+    pub range: TextRange,
+    pub replacement: String,
+}
+
+impl RuleFix {
+    pub fn new(message: impl Into<String>) -> Self {
+        Self {
+            message: message.into(),
+            applicability: Applicability::MaybeIncorrect,
+            edits: Vec::new(),
+        }
+    }
+
+    /// Inserts `text` at `offset`.
+    pub fn insert(self, offset: TextSize, text: impl Into<String>) -> Self {
+        self.replace(TextRange::empty(offset), text)
+    }
+
+    /// Replaces the text in `range` with `text`.
+    pub fn replace(mut self, range: TextRange, text: impl Into<String>) -> Self {
+        self.edits.push(FixEdit {
+            range,
+            replacement: text.into(),
+        });
+        self
+    }
+
+    /// Removes the text in `range`.
+    pub fn delete(self, range: TextRange) -> Self {
+        self.replace(range, "")
+    }
+
+    /// Applies the fix to `text`. The edits must be relative to `text`.
+    pub fn apply(&self, text: &str) -> String {
+        let mut result = String::with_capacity(text.len());
+        let mut last = 0;
+        for edit in &self.edits {
+            let start = usize::from(edit.range.start());
+            result.push_str(&text[last..start]);
+            result.push_str(&edit.replacement);
+            last = usize::from(edit.range.end());
+        }
+        result.push_str(&text[last..]);
+        result
+    }
+
+    /// The range covered by all edits.
+    pub fn range(&self) -> Option<TextRange> {
+        let first = self.edits.first()?;
+        let last = self.edits.last()?;
+        Some(first.range.cover(last.range))
+    }
+
+    pub(crate) fn shift(&mut self, offset: TextSize) {
+        for edit in &mut self.edits {
+            edit.range += offset;
+        }
+    }
 }
 
 #[derive(Debug, Default, PartialEq)]
@@ -105,7 +183,25 @@ impl LinterDiagnostic {
             message: MessageAndDescription::from(message),
             tags: DiagnosticTags::empty(),
             rule_advice: RuleAdvice::default(),
+            fix: None,
         }
+    }
+
+    /// Attaches a fix to this [`LinterDiagnostic`]. The rule must declare a `fix_kind`.
+    pub fn fix(mut self, fix: RuleFix) -> Self {
+        self.fix = Some(fix);
+        self
+    }
+
+    /// Attaches a fix if there is one.
+    pub fn maybe_fix(mut self, fix: Option<RuleFix>) -> Self {
+        self.fix = fix;
+        self
+    }
+
+    /// The fix for the reported issue, if the rule can fix it.
+    pub fn get_fix(&self) -> Option<&RuleFix> {
+        self.fix.as_ref()
     }
 
     /// Set an explicit plain-text summary for this diagnostic.
