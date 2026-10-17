@@ -82,7 +82,6 @@ pub fn generate_env_variables(docs_dir: &Path) -> Result<()> {
         env.pgdatabase.description()
     )?;
 
-
     let data = fs::read_to_string(&file_path)?;
 
     let conent_str = String::from_utf8(content)?;

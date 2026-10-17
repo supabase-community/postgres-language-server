@@ -9,8 +9,8 @@ use commands::check::{self, CheckArgs};
 use commands::format::{self, FormatArgs};
 use pgls_configuration::Merge;
 use pgls_configuration::PartialConfiguration;
-use pgls_console::{ColorMode, Console, ConsoleExt, markup};
-use pgls_fs::{ConfigName, FileSystem, OsFileSystem};
+use pgls_console::{ColorMode, Console};
+use pgls_fs::{FileSystem, OsFileSystem};
 use std::path::PathBuf;
 
 use pgls_workspace::{App, DynRef, Workspace, WorkspaceRef};
@@ -201,12 +201,6 @@ impl<'app> CliSession<'app> {
         let fs = self.fs();
         let loaded_configuration =
             workspace::load_config(fs, cli_options.as_configuration_path_hint())?;
-
-        for deprecation in loaded_configuration.configuration.deprecations() {
-            self.console().log(markup! {
-                <Warn>"Warning: "</Warn>{deprecation}"\n"
-            });
-        }
 
         let mut configuration = loaded_configuration.configuration;
 

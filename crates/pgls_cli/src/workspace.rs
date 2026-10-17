@@ -6,7 +6,7 @@ use pgls_workspace::configuration::{LoadedConfiguration, load_configuration};
 use pgls_workspace::workspace::{RegisterProjectFolderParams, UpdateSettingsParams};
 use pgls_workspace::{DynRef, Workspace};
 
-/// Load configuration from disk and emit warnings for deprecated filenames.
+/// Load configuration from disk.
 pub fn load_config(
     fs: &DynRef<'_, dyn FileSystem>,
     config_hint: ConfigurationPathHint,

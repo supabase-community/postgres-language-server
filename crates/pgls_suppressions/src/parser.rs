@@ -75,10 +75,7 @@ impl<'a> SuppressionsParser<'a> {
             let offset = self.line_index.offset_for_line(idx).unwrap();
 
             match Suppression::from_line(line, offset) {
-                Ok(suppr) => {
-                    self.diagnostics.extend(suppr.to_legacy_diagnostic());
-                    self.file_suppressions.push(suppr);
-                }
+                Ok(suppr) => self.file_suppressions.push(suppr),
                 Err(diag) => self.diagnostics.push(diag),
             }
         }
@@ -100,7 +97,6 @@ impl<'a> SuppressionsParser<'a> {
                     continue;
                 }
             };
-            self.diagnostics.extend(suppr.to_legacy_diagnostic());
 
             match suppr.kind {
                 SuppressionKind::File => {
@@ -304,14 +300,13 @@ drop table posts;
                     ),
                     suppression_range: TextRange::new(1.into(), 34.into()),
                     explanation: None,
-                    legacy_replacement: None,
                 },
             }
         );
     }
 
     #[test]
-    fn range_pairs_match_normalized_flat_and_legacy_ids() {
+    fn range_pairs_match_normalized_flat_ids() {
         let suppressions = SuppressionsParser::parse(
             "-- pgls-ignore-start banDropColumn\nALTER TABLE t DROP COLUMN x;\n-- pgls-ignore-end lint/banDropColumn\n",
         );
@@ -350,7 +345,6 @@ drop table posts;
                     ),
                     suppression_range: TextRange::new(53.into(), 86.into()),
                     explanation: None,
-                    legacy_replacement: None,
                 },
             }
         );
