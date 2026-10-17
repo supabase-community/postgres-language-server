@@ -1,6 +1,6 @@
 # requireConcurrentReindex
 
-**Group** [`safety`](../rules.md#safety) · **Recommended** · **Migrations only** · **Since** `0.25.0`  
+**Group** [`safety`](../rules.md#safety) · **Recommended** · **Migrations only** · **Safe fix** · **Since** `0.25.0`  
 **Diagnostic** `lint/requireConcurrentReindex`
 
 **Sources**: inspired by [`pgfence/reindex-non-concurrent`](https://github.com/flvmnt/pgfence)
