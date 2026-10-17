@@ -1,6 +1,6 @@
 # preferJsonb
 
-**Group** [`style`](../rules.md#style) · **Since** `0.15.0`  
+**Group** [`style`](../rules.md#style) · **Unsafe fix** · **Since** `0.15.0`  
 **Diagnostic** `lint/preferJsonb`
 
 **Sources**: inspired by [`eugene/E3`](https://kaveland.no/eugene/hints/E3/index.html)
