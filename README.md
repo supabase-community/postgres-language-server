@@ -35,6 +35,8 @@ nix develop     # or skip if not using Nix
 docker-compose up -d
 ```
 
+See [CONTRIBUTING.md](./CONTRIBUTING.md) for the development workflow and [ARCHITECTURE.md](./ARCHITECTURE.md) for an overview of the code base.
+
 ## Acknowledgements
 
 A big thanks to the following projects, without which this project wouldn't have been possible:
