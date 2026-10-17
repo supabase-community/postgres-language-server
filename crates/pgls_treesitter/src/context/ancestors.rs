@@ -20,7 +20,13 @@ pub struct ScopeTracker {
 
 impl ScopeTracker {
     pub fn new() -> Self {
-        Self { scopes: vec![] }
+        // The `program` root node is never registered, so its scope exists from the start.
+        // Children of `program` that aren't scope boundaries, such as a stray `;`, belong to it.
+        Self {
+            scopes: vec![Scope {
+                ancestors: AncestorTracker::new(),
+            }],
+        }
     }
 
     pub fn register<'a>(&mut self, node: tree_sitter::Node<'a>, position: usize) {
@@ -30,7 +36,7 @@ impl ScopeTracker {
 
         self.scopes
             .last_mut()
-            .unwrap_or_else(|| panic!("No top-level grammar-rule found. Please create an issue with the entire Postgres file, noting cursor/hover position."))
+            .expect("the root scope always exists")
             .ancestors
             .register(node, position);
     }
@@ -42,7 +48,7 @@ impl ScopeTracker {
     }
 
     pub fn current(&self) -> &Scope {
-        self.scopes.last().unwrap()
+        self.scopes.last().expect("the root scope always exists")
     }
 }
 
@@ -163,6 +169,14 @@ mod tests {
     #[test]
     fn scope_boundary_comment() {
         assert_no_panic_for_all_positions("-- a comment\nSELECT 1;");
+    }
+
+    #[test]
+    fn issue_769_regression() {
+        assert_no_panic_for_all_positions("BEGIN END; ");
+        assert_no_panic_for_all_positions(
+            "create procedure p() language plpgsql as $$ begin null; end; $$; ",
+        );
     }
 
     #[test]
