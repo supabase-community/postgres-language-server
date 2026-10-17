@@ -1,7 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/predicate.sql
-snapshot_kind: text
 ---
 create table pred_tab (
   a int not null,
@@ -71,8 +70,7 @@ from
   pred_tab as t1
   left outer join
     pred_tab as t2
-  on exists
-    (
+  on exists (
       select
         1
       from
@@ -90,8 +88,7 @@ from
   pred_tab as t1
   left outer join
     pred_tab as t2
-  on exists
-    (
+  on exists (
       select
         1
       from

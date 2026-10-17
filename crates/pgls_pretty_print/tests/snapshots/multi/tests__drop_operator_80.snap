@@ -1,7 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/drop_operator.sql
-snapshot_kind: text
 ---
 create operator === (
   procedure = int8eq,
@@ -27,8 +26,7 @@ from
   pg_catalog.pg_operator as fk
 where
   oprcom <> 0 and
-  not exists
-  (
+  not exists (
     select 1 from pg_catalog.pg_operator as pk where pk.oid = fk.oprcom
   );
 
@@ -39,8 +37,7 @@ from
   pg_catalog.pg_operator as fk
 where
   oprnegate <> 0 and
-  not exists
-  (
+  not exists (
     select 1 from pg_catalog.pg_operator as pk where pk.oid = fk.oprnegate
   );
 
@@ -65,8 +62,7 @@ from
   pg_catalog.pg_operator as fk
 where
   oprcom <> 0 and
-  not exists
-  (
+  not exists (
     select 1 from pg_catalog.pg_operator as pk where pk.oid = fk.oprcom
   );
 
@@ -77,8 +73,7 @@ from
   pg_catalog.pg_operator as fk
 where
   oprnegate <> 0 and
-  not exists
-  (
+  not exists (
     select 1 from pg_catalog.pg_operator as pk where pk.oid = fk.oprnegate
   );
 

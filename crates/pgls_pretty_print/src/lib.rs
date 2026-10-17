@@ -985,11 +985,11 @@ WHERE
             .formatted;
 
         assert!(
-            formatted.contains("\n    (\n      (accounts.person_id"),
+            formatted.contains("\n    (\n      (\n        accounts.person_id"),
             "{formatted}"
         );
         assert!(
-            formatted.contains("\n      (accounts.building_id"),
+            formatted.contains("\n      (\n        accounts.building_id"),
             "{formatted}"
         );
     }

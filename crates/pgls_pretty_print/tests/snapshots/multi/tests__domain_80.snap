@@ -1142,8 +1142,7 @@ select
 from
   information_schema.check_constraints
 where
-  (constraint_schema, constraint_name) in
-  (
+  (constraint_schema, constraint_name) in (
     select
       constraint_schema,
       constraint_name

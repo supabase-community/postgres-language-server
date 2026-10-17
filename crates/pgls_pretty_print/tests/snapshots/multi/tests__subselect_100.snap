@@ -564,8 +564,7 @@ begin;
 
 delete from road
 where
-  exists
-  (
+  exists (
     select
       1
     from
@@ -765,8 +764,7 @@ from
   tenk1 as b
 where
   a.thousand = b.thousand and
-  exists
-  (
+  exists (
     select
       1
     from
@@ -958,8 +956,7 @@ select
 from
   int4_tbl
 where
-  case when f1 in (select unique1 from tenk1 as a) then f1 else null end in
-  (
+  case when f1 in (select unique1 from tenk1 as a) then f1 else null end in (
     select ten from tenk1 as b
   );
 
@@ -968,8 +965,7 @@ select
 from
   int4_tbl
 where
-  case when f1 in (select unique1 from tenk1 as a) then f1 else null end in
-  (
+  case when f1 in (select unique1 from tenk1 as a) then f1 else null end in (
     select ten from tenk1 as b
   );
 

@@ -1,7 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/sanity_check.sql
-snapshot_kind: text
 ---
 vacuum;
 
@@ -17,8 +16,7 @@ where
   relkind = 'r' and
   c.oid < 16384 and
   nspname ~ '^pg_' is not false and
-  not exists
-  (
+  not exists (
     select
       1
     from

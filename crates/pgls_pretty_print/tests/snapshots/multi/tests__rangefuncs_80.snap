@@ -197,8 +197,7 @@ select
 from
   rngfunc2
 where
-  f2 in
-  (
+  f2 in (
     select
       f2
     from
