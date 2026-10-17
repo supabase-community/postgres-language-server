@@ -94,7 +94,6 @@ pgls_text_size              = { path = "./crates/pgls_text_size", version = "0.0
 pgls_tokenizer              = { path = "./crates/pgls_tokenizer", version = "0.0.0" }
 pgls_treesitter             = { path = "./crates/pgls_treesitter", version = "0.0.0" }
 pgls_treesitter_grammar     = { path = "./crates/pgls_treesitter_grammar", version = "0.0.0" }
-pgls_typecheck              = { path = "./crates/pgls_typecheck", version = "0.0.0" }
 pgls_wasm                   = { path = "./crates/pgls_wasm", version = "0.0.0" }
 pgls_workspace              = { path = "./crates/pgls_workspace", version = "0.0.0" }
 pgls_workspace_macros       = { path = "./crates/pgls_workspace_macros", version = "0.0.0" }

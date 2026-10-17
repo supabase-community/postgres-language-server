@@ -93,10 +93,6 @@ Runs Splinter rules against a live database connection to surface schema/securit
 
 Integration with `plpgsql_check` to validate PL/pgSQL function bodies.
 
-##### `crates/pgls_typecheck`
-
-The fallback type check against the database (via `EXPLAIN`), for statements that only reference objects that exist unchanged in the database. The static checks are the `typecheck` rules, built on `pgls_catalog`.
-
 ##### `crates/pgls_suppressions`
 
 Handles `-- pgls-ignore` style rule suppression comments.

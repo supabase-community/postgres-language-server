@@ -16,7 +16,7 @@ The accepted specifiers are:
 - `lint` — all lint rules.
 - `banDropTable` or `lint/banDropTable` — one rule.
 - `destructive` — all rules in a group.
-- `typecheck` — typecheck diagnostics and lint rules in the `typecheck` group.
+- `typecheck` — all rules in the `typecheck` group.
 - Other non-lint diagnostic categories, such as `syntax`, continue to work as category suppressions.
 
 A colon adds an optional explanation:

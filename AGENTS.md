@@ -91,7 +91,6 @@ The project uses a modular Rust workspace with crates prefixed with `pgls_`:
 - `pgls_completions` - Autocompletion engine
 - `pgls_hover` - Hover information provider
 - `pgls_analyser` & `pgls_analyse` - Linting and analysis framework
-- `pgls_typecheck` - EXPLAIN fallback for typecheck
 - `pgls_catalog` - Database snapshot, the file's DDL on top of it, name resolution, and type inference
 
 **Utilities:**
