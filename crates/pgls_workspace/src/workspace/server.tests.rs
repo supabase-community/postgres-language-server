@@ -118,7 +118,7 @@ fn test_suppresses_multiline_alter_table_drop_column() {
 
     let path = PgLSPath::new("test.sql");
     let content = r#"ALTER TABLE users
-    -- pgt-ignore banDropColumn
+    -- pgls-ignore banDropColumn
     DROP COLUMN deprecated_field;"#;
 
     workspace

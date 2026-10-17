@@ -15,7 +15,7 @@ The client can submit a delta of input data (typically, a change to a single fil
 There are two main entry points, both thin frontends over the shared `pgls_workspace` API:
 
 - `crates/pgls_lsp` — the language server. It spawns the server and listens for incoming LSP messages.
-- `crates/pgls_cli` — the command-line interface, exposing commands like `check`. The published binary is `postgres-language-server` (legacy name `postgrestools`).
+- `crates/pgls_cli` — the command-line interface, exposing commands like `check`. The published binary is `postgres-language-server`.
 
 ### Code Map
 

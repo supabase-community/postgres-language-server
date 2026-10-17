@@ -5,8 +5,6 @@ use convert_case::{Case, Casing};
 use pgls_workspace::workspace_types::{generate_type, methods, ModuleQueue};
 
 pub fn generate_bindings(mode: &Mode) -> Result<()> {
-    let bindings_path_postgrestools =
-        project_root().join("packages/@postgrestools/backend-jsonrpc/src/workspace.ts");
     let bindings_path_postgres_language_server =
         project_root().join("packages/@postgres-language-server/backend-jsonrpc/src/workspace.ts");
     let methods = methods();
@@ -61,7 +59,6 @@ pub fn generate_bindings(mode: &Mode) -> Result<()> {
     output.push_str("\t};\n");
     output.push_str("}\n");
 
-    update(&bindings_path_postgrestools, &output, mode)?;
     update(&bindings_path_postgres_language_server, &output, mode)?;
 
     Ok(())

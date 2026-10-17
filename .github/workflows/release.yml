@@ -151,38 +151,20 @@ jobs:
           # Strip all debug symbols from the resulting binaries
           RUSTFLAGS: "-C strip=symbols -C codegen-units=1"
           # Inline the version in the CLI binary
-          PGT_VERSION: ${{ needs.extract_version.outputs.version }}
+          PGLS_VERSION: ${{ needs.extract_version.outputs.version }}
 
       # windows is a special snowflake too, it saves binaries as .exe
       - name: 👦 Name the Binary
         if: matrix.config.os == 'windows-2022'
         run: |
           mkdir dist
-          # deprecated
-          cp target/${{ matrix.config.target }}/release/postgrestools.exe ./dist/postgrestools_${{ matrix.config.target }}.exe
           cp target/${{ matrix.config.target }}/release/postgres-language-server.exe ./dist/postgres-language-server_${{ matrix.config.target }}.exe
 
       - name: 👦 Name the Binary
         if: matrix.config.os != 'windows-2022'
         run: |
           mkdir dist
-          # deprecated
-          cp target/${{ matrix.config.target }}/release/postgrestools ./dist/postgrestools_${{ matrix.config.target }}
           cp target/${{ matrix.config.target }}/release/postgres-language-server ./dist/postgres-language-server_${{ matrix.config.target }}
-
-      # It is not possible to return the artifacts from the matrix jobs individually: Matrix outputs overwrite each other.
-      # A common workaround is to upload and download the resulting artifacts.
-      - name: 👆 Upload Artifacts (deprecated)
-        id: upload-artifacts-deprecated
-        uses: actions/upload-artifact@v4
-        with:
-          name: postgrestools_${{ matrix.config.target }}
-          path: ./dist/postgrestools_*
-          # The default compression level is 6; this took the binary down from 350 to 330MB.
-          # It is recommended to use a lower level for binaries, since the compressed result is not much smaller,
-          # and the higher levels of compression take much longer.
-          compression-level: 2
-          if-no-files-found: error
 
       # It is not possible to return the artifacts from the matrix jobs individually: Matrix outputs overwrite each other.
       # A common workaround is to upload and download the resulting artifacts.
@@ -223,13 +205,6 @@ jobs:
           echo "Tag does not match: ${{ steps.create_changelog.outputs.version }} vs ${{ needs.extract_version.outputs.version }}"
           exit 1
 
-      - name: 👇 Download Artifacts (deprecated)
-        uses: actions/download-artifact@v4
-        id: download-deprecated
-        with:
-          merge-multiple: true
-          pattern: postgrestools_*
-
       - name: 👇 Download Artifacts
         uses: actions/download-artifact@v4
         id: download
@@ -258,7 +233,6 @@ jobs:
           body: ${{ steps.create_changelog.outputs.content }}
           tag_name: ${{ steps.create_changelog.outputs.version }}
           files: |
-            postgrestools_*
             postgres-language-server_*
             pgls.js
             pgls.wasm

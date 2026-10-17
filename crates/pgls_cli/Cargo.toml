@@ -66,9 +66,5 @@ tempfile        = "3.15.0"
 doctest = false
 
 [[bin]]
-name = "postgrestools"
-path = "src/main.rs"
-
-[[bin]]
 name = "postgres-language-server"
 path = "src/main.rs"

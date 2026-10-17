@@ -175,7 +175,7 @@ pub(crate) struct Suppression {
 
 impl Suppression {
     /// Creates a suppression from a suppression comment line.
-    /// The line start must match `-- pgt-ignore` or `-- pgls-ignore`, otherwise, this will panic.
+    /// The line start must match `-- pgls-ignore`, otherwise, this will panic.
     /// Leading whitespace is ignored.
     pub(crate) fn from_line(line: &str, offset: &TextSize) -> Result<Self, SuppressionDiagnostic> {
         let start_trimmed = line.trim_ascii_start();
@@ -183,9 +183,8 @@ impl Suppression {
         let trimmed = start_trimmed.trim_ascii_end();
 
         assert!(
-            start_trimmed.starts_with("-- pgt-ignore")
-                || start_trimmed.starts_with("-- pgls-ignore"),
-            "Only try parsing suppressions from lines starting with `-- pgt-ignore` or `-- pgls-ignore`."
+            start_trimmed.starts_with("-- pgls-ignore"),
+            "Only try parsing suppressions from lines starting with `-- pgls-ignore`."
         );
 
         let full_offset = *offset + TextSize::new(leading_whitespace_offset.try_into().unwrap());
@@ -203,10 +202,10 @@ impl Suppression {
 
         let _ = parts.next();
         let kind = match parts.next().unwrap() {
-            "pgt-ignore-all" | "pgls-ignore-all" => SuppressionKind::File,
-            "pgt-ignore-start" | "pgls-ignore-start" => SuppressionKind::Start,
-            "pgt-ignore-end" | "pgls-ignore-end" => SuppressionKind::End,
-            "pgt-ignore" | "pgls-ignore" => SuppressionKind::Line,
+            "pgls-ignore-all" => SuppressionKind::File,
+            "pgls-ignore-start" => SuppressionKind::Start,
+            "pgls-ignore-end" => SuppressionKind::End,
+            "pgls-ignore" => SuppressionKind::Line,
             k => {
                 return Err(SuppressionDiagnostic {
                     span,
@@ -319,7 +318,7 @@ mod tests {
 
     #[test]
     fn test_suppression_from_line_rule() {
-        let line = "-- pgt-ignore banDropColumn: explanation";
+        let line = "-- pgls-ignore banDropColumn: explanation";
         let offset = &TextSize::new(0);
         let suppression = Suppression::from_line(line, offset).unwrap();
 
@@ -337,7 +336,7 @@ mod tests {
 
     #[test]
     fn test_suppression_from_line_group() {
-        let line = "-- pgt-ignore safety: explanation";
+        let line = "-- pgls-ignore safety: explanation";
         let offset = &TextSize::new(0);
         let suppression = Suppression::from_line(line, offset).unwrap();
 
@@ -351,7 +350,7 @@ mod tests {
 
     #[test]
     fn test_suppression_from_line_category() {
-        let line = "-- pgt-ignore lint";
+        let line = "-- pgls-ignore lint";
         let offset = &TextSize::new(0);
         let suppression = Suppression::from_line(line, offset).unwrap();
 
@@ -364,7 +363,7 @@ mod tests {
 
     #[test]
     fn test_suppression_from_line_category_with_explanation() {
-        let line = "-- pgt-ignore lint: explanation";
+        let line = "-- pgls-ignore lint: explanation";
         let offset = &TextSize::new(0);
         let suppression = Suppression::from_line(line, offset).unwrap();
 
@@ -378,7 +377,7 @@ mod tests {
 
     #[test]
     fn test_suppression_from_line_file_kind() {
-        let line = "-- pgt-ignore-all banDropColumn: explanation";
+        let line = "-- pgls-ignore-all banDropColumn: explanation";
         let offset = &TextSize::new(0);
         let suppression = Suppression::from_line(line, offset).unwrap();
 
@@ -396,7 +395,7 @@ mod tests {
 
     #[test]
     fn test_suppression_from_line_start_kind() {
-        let line = "-- pgt-ignore-start banDropColumn: explanation";
+        let line = "-- pgls-ignore-start banDropColumn: explanation";
         let offset = &TextSize::new(0);
         let suppression = Suppression::from_line(line, offset).unwrap();
 
@@ -414,7 +413,7 @@ mod tests {
 
     #[test]
     fn test_suppression_from_line_end_kind() {
-        let line = "-- pgt-ignore-end banDropColumn: explanation";
+        let line = "-- pgls-ignore-end banDropColumn: explanation";
         let offset = &TextSize::new(0);
         let suppression = Suppression::from_line(line, offset).unwrap();
 
@@ -432,7 +431,7 @@ mod tests {
 
     #[test]
     fn test_suppression_span_with_offset() {
-        let line = "    \n-- pgt-ignore banDropColumn: explanation";
+        let line = "    \n-- pgls-ignore banDropColumn: explanation";
         let offset = TextSize::new(5);
         let suppression = Suppression::from_line(line, &offset).unwrap();
 
@@ -448,10 +447,10 @@ mod tests {
     #[test]
     fn test_suppression_from_line_invalid_tag_and_missing_specifier() {
         let lines = vec![
-            "-- pgt-ignore-foo banDropColumn: explanation",
-            "-- pgt-ignore foo banDropColumn: explanation",
-            "-- pgt-ignore xyz banDropColumn: explanation",
-            "-- pgt-ignore",
+            "-- pgls-ignore-foo banDropColumn: explanation",
+            "-- pgls-ignore foo banDropColumn: explanation",
+            "-- pgls-ignore xyz banDropColumn: explanation",
+            "-- pgls-ignore",
         ];
         let offset = &TextSize::new(0);
         for line in lines {
@@ -464,15 +463,15 @@ mod tests {
     fn test_suppression_matches() {
         let cases = vec![
             // the category works for all groups & rules
-            ("-- pgt-ignore lint", "lint/banDropNotNull", true),
-            ("-- pgt-ignore lint", "lint/banDropColumn", true),
+            ("-- pgls-ignore lint", "lint/banDropNotNull", true),
+            ("-- pgls-ignore lint", "lint/banDropColumn", true),
             // the group works for all rules in that group
-            ("-- pgt-ignore lint/destructive", "lint/banDropColumn", true),
-            ("-- pgt-ignore lint", "typecheck", false),
-            ("-- pgt-ignore lint/safety", "typecheck", false),
+            ("-- pgls-ignore lint/destructive", "lint/banDropColumn", true),
+            ("-- pgls-ignore lint", "typecheck", false),
+            ("-- pgls-ignore lint/safety", "typecheck", false),
             // a specific supppression only works for that same rule
-            ("-- pgt-ignore banDropColumn", "lint/banDropColumn", true),
-            ("-- pgt-ignore banDropColumn", "lint/banDropTable", false),
+            ("-- pgls-ignore banDropColumn", "lint/banDropColumn", true),
+            ("-- pgls-ignore banDropColumn", "lint/banDropTable", false),
         ];
 
         let offset = &TextSize::new(0);
@@ -628,23 +627,6 @@ mod tests {
         assert!(spec.is_disabled(&disabled5));
     }
 
-    #[test]
-    fn test_pgls_prefix_line_suppressions() {
-        let line = "-- pgls-ignore banDropColumn: explanation";
-        let offset = &TextSize::new(0);
-        let suppression = Suppression::from_line(line, offset).unwrap();
-
-        assert_eq!(suppression.kind, SuppressionKind::Line);
-        assert_eq!(
-            suppression.rule_specifier,
-            RuleSpecifier::Rule(
-                "lint".to_string(),
-                "".to_string(),
-                "banDropColumn".to_string()
-            )
-        );
-        assert_eq!(suppression.explanation.as_deref(), Some("explanation"));
-    }
 
     #[test]
     fn test_pgls_prefix_file_kind() {

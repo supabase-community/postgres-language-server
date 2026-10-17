@@ -685,7 +685,7 @@ async fn server_shutdown() -> Result<()> {
     let cancellation = factory.cancellation();
     let cancellation = cancellation.notified();
 
-    // this is called when `postgrestools stop` is run by the user
+    // this is called when `postgres-language-server stop` is run by the user
     server.pgls_shutdown().await?;
 
     cancellation.await;
