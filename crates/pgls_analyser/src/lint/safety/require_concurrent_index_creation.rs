@@ -1,7 +1,8 @@
-use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
-use pgls_analyse::{RuleSource, declare_lint_rule};
+use crate::{LinterDiagnostic, LinterRule, LinterRuleContext, RuleFix};
+use pgls_analyse::{FixKind, RuleSource, declare_lint_rule};
 use pgls_console::markup;
 use pgls_diagnostics::Severity;
+use pgls_query::protobuf::Token;
 
 declare_lint_rule! {
     /// Creating indexes non-concurrently can lock the table for writes.
@@ -28,6 +29,7 @@ declare_lint_rule! {
         version: "0.15.0",
         name: "requireConcurrentIndexCreation",
         severity: Severity::Warning,
+        fix_kind: FixKind::Safe,
         recommended: false,
         applies_to: pgls_analyse::AppliesTo::Migration,
         sources: &[RuleSource::Squawk("require-concurrent-index-creation")],
@@ -70,10 +72,21 @@ impl LinterRule for RequireConcurrentIndexCreation {
                 },
             )
             .detail(None, "Use CREATE INDEX CONCURRENTLY to avoid blocking concurrent operations on the table.")
+            .maybe_fix(add_concurrently(ctx)),
         );
 
         diagnostics
     }
+}
+
+/// `CREATE INDEX CONCURRENTLY` can't run in a transaction block, so there is no fix there.
+fn add_concurrently(ctx: &LinterRuleContext<RequireConcurrentIndexCreation>) -> Option<RuleFix> {
+    if ctx.file_context().in_transaction() {
+        return None;
+    }
+    let tokens = ctx.tokens()?;
+    let index = tokens.find(Token::Index)?;
+    Some(tokens.insert_after(index, "Add CONCURRENTLY", "CONCURRENTLY"))
 }
 
 fn is_table_created_in_file(file_context: &crate::AnalysedFileContext, table_name: &str) -> bool {

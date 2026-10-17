@@ -36,15 +36,9 @@ impl LinterRule for BanConcurrentIndexCreationInTransaction {
     fn run(ctx: &LinterRuleContext<Self>) -> Vec<LinterDiagnostic> {
         let mut diagnostics = Vec::new();
 
-        // Without migration sections, we don't know whether the migration tool runs the file in
-        // a transaction. Migration tools usually do, so we flag concurrent indexes unless the
-        // file has only this statement.
         if let pgls_query::NodeEnum::IndexStmt(stmt) = ctx.stmt()
             && stmt.concurrent
-            && ctx
-                .session()
-                .in_transaction()
-                .unwrap_or_else(|| ctx.file_context().stmt_count() > 1)
+            && ctx.file_context().in_transaction()
         {
             diagnostics.push(LinterDiagnostic::new(
                     rule_category!(),

@@ -1,0 +1,59 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+-- expect_lint/preferTextField
+-- expect_lint/preferTextField
+create table users (
+    id bigint primary key,
+    name varchar(255) not null,
+    email character varying (100)[],
+    bio varchar
+);
+
+```
+
+# Diagnostics
+lint/preferTextField ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Changing the size of a varchar field requires an ACCESS EXCLUSIVE lock.
+  
+  i Use a text field with a check constraint.
+  
+
+
+## Fix (unsafe): Use TEXT
+```
+-- expect_lint/preferTextField
+-- expect_lint/preferTextField
+create table users (
+    id bigint primary key,
+    name text not null,
+    email character varying (100)[],
+    bio varchar
+);
+
+```
+
+lint/preferTextField ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Changing the size of a varchar field requires an ACCESS EXCLUSIVE lock.
+  
+  i Use a text field with a check constraint.
+  
+
+
+## Fix (unsafe): Use TEXT
+```
+-- expect_lint/preferTextField
+-- expect_lint/preferTextField
+create table users (
+    id bigint primary key,
+    name varchar(255) not null,
+    email text[],
+    bio varchar
+);
+
+```

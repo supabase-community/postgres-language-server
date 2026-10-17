@@ -17,3 +17,12 @@ lint/banCharField ━━━━━━━━━━━━━━━━━━━━�
   i CHAR types are fixed-length and padded with spaces, which can lead to unexpected behavior.
   
   i Use VARCHAR or TEXT instead for variable-length character data.
+  
+
+
+## Fix (unsafe): Use VARCHAR
+```
+-- expect_lint/banCharField
+ALTER TABLE users ADD COLUMN code varchar(10);
+
+```

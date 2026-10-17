@@ -8,6 +8,7 @@ use pgls_catalog::{Catalog, CatalogBase, Session, TransactionMode, resolve::Func
 use pgls_text_size::{TextRange, TextSize};
 pub use registry::visit_registry;
 
+mod fix;
 mod lint;
 mod linter_context;
 mod linter_options;
@@ -23,7 +24,7 @@ pub use linter_options::{LinterOptions, LinterRules, RuleOptions};
 pub use linter_registry::{
     LinterRegistryRuleParams, LinterRuleRegistry, LinterRuleRegistryBuilder,
 };
-pub use linter_rule::{LinterDiagnostic, LinterRule};
+pub use linter_rule::{FixEdit, LinterDiagnostic, LinterRule, RuleFix};
 pub use migration::{Direction, MigrationSection};
 
 // For convenience in macros and rule files - keep these shorter names
@@ -270,6 +271,18 @@ impl<'a> Analyser<'a> {
                                 Some(span) => span + stmt.range.start(),
                                 None => stmt.range,
                             });
+                            // Fixes are computed on the statement text, which only matches the
+                            // source if it has the length of the statement range.
+                            let fix_matches_source = stmt
+                                .sql
+                                .as_ref()
+                                .is_some_and(|sql| TextSize::of(sql.as_str()) == stmt.range.len());
+                            if !fix_matches_source {
+                                diagnostic.fix = None;
+                            }
+                            if let Some(fix) = &mut diagnostic.fix {
+                                fix.shift(stmt.range.start());
+                            }
                             diagnostic
                         }));
                 }
