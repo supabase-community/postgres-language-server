@@ -61,10 +61,3 @@ Even if not specified, the LSP will always search`"public"` in last position. A 
 ## Requirements
 
 Type checking needs a database connection to load the schema. Without one, the `typecheck` rules are skipped. The rules never send your statements to the database.
-
-## Legacy: `EXPLAIN`-based checking
-
-Before the `typecheck` rules, the language server checked statements by running `EXPLAIN` on them. This check still runs for `SELECT`, `INSERT`, `UPDATE`, and `DELETE` statements that only reference objects that exist unchanged in the database, and reports the errors Postgres returns. It needs permission to prepare statements in your database.
-
-!!! warning
-    The `EXPLAIN`-based check is deprecated and will be removed in the next major release. The `typecheck` rules replace it.
