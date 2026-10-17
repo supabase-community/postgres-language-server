@@ -2,9 +2,9 @@ use std::io;
 
 use pgls_console::markup;
 use pgls_diagnostics::{Advices, Diagnostic, LogCategory, MessageAndDescription, Severity, Visit};
-use pgls_text_size::TextRange;
+use pgls_text_size::{TextRange, TextSize};
 
-use crate::{PlpgSqlCheckIssue, PlpgSqlCheckResult};
+use crate::{PlpgSqlCheckIssue, PlpgSqlCheckResult, Query};
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 struct ByteOffset(usize);
@@ -203,6 +203,17 @@ fn resolve_span(issue: &PlpgSqlCheckIssue, fn_body: &str, offset: usize) -> Opti
     let stmt = match issue.statement.as_ref() {
         Some(s) => s,
         None => {
+            // Errors that prevent compiling the function, e.g. syntax errors, have no statement.
+            // Their query is the function body, and the position points at the offending token.
+            if let Some(range) = issue
+                .query
+                .as_ref()
+                .and_then(|q| query_token_range(q, fn_body, 0))
+                .filter(|range| !range.is_empty())
+            {
+                return Some(range + TextSize::from(offset as u32));
+            }
+
             let leading_whitespace = fn_body.len() - fn_body.trim_ascii_start().len();
             let trailing_whitespace = fn_body.len() - fn_body.trim_ascii_end().len();
 
@@ -243,41 +254,8 @@ fn resolve_span(issue: &PlpgSqlCheckIssue, fn_body: &str, offset: usize) -> Opti
     let stmt_offset = line_offset + start;
 
     if let Some(q) = &issue.query {
-        // first find the query within the fn body *after* stmt_offset, ignoring string literals
-        let query_start = find_text_outside_strings(&fn_body[stmt_offset..], &q.text)
-            .map(|pos| ByteOffset(pos.get() + stmt_offset));
-
-        // The position is *within* the query text. plpgsql_check/Postgres
-        // reports it as a 1-based character position, while TextRange uses
-        // UTF-8 byte offsets.
-        let pos = byte_offset_from_one_based_char_offset(
-            &q.text,
-            OneBasedCharOffset(
-                q.position
-                    .parse::<usize>()
-                    .expect("Expected query position to be a valid usize"),
-            ),
-        )?;
-
-        let start = query_start?.get() + pos.get();
-
-        // the range of the diagnostics is the token that `pos` is on
-        // Find the end of the current token by looking for whitespace or SQL delimiters
-        let remaining = &fn_body[start..];
-        let end = remaining
-            .char_indices()
-            .find(|(_, c)| {
-                c.is_whitespace() || matches!(c, ',' | ';' | ')' | '(' | '=' | '<' | '>')
-            })
-            .map(|(i, _c)| {
-                i // just the token end, don't include delimiters
-            })
-            .unwrap_or(remaining.len());
-
-        return Some(TextRange::new(
-            ((offset + start) as u32).into(),
-            ((offset + start + end) as u32).into(),
-        ));
+        return query_token_range(q, fn_body, stmt_offset)
+            .map(|range| range + TextSize::from(offset as u32));
     }
 
     // if no query is present, the end range covers
@@ -314,6 +292,49 @@ fn resolve_span(issue: &PlpgSqlCheckIssue, fn_body: &str, offset: usize) -> Opti
     Some(TextRange::new(
         ((offset + stmt_offset) as u32).into(),
         ((offset + stmt_offset + end) as u32).into(),
+    ))
+}
+
+/// The range in `fn_body` of the token at the position of the query, which is searched for
+/// after `search_from`.
+fn query_token_range(q: &Query, fn_body: &str, search_from: usize) -> Option<TextRange> {
+    // first find the query within the fn body *after* search_from, ignoring string literals
+    let query_start = find_text_outside_strings(&fn_body[search_from..], &q.text)
+        .map(|pos| ByteOffset(pos.get() + search_from));
+
+    // The position is *within* the query text. plpgsql_check/Postgres
+    // reports it as a 1-based character position, while TextRange uses
+    // UTF-8 byte offsets.
+    let pos = byte_offset_from_one_based_char_offset(
+        &q.text,
+        OneBasedCharOffset(
+            q.position
+                .parse::<usize>()
+                .expect("Expected query position to be a valid usize"),
+        ),
+    )?;
+
+    let start = query_start?.get() + pos.get();
+
+    // the range of the diagnostics is the token that `pos` is on
+    // Find the end of the current token by looking for whitespace or SQL delimiters
+    let is_delimiter = |c: char| matches!(c, ',' | ';' | ')' | '(' | '=' | '<' | '>');
+    let remaining = &fn_body[start..];
+    let end = match remaining.chars().next() {
+        // the token is the delimiter itself, e.g. in `syntax error at or near ";"`
+        Some(c) if is_delimiter(c) => c.len_utf8(),
+        _ => remaining
+            .char_indices()
+            .find(|(_, c)| c.is_whitespace() || is_delimiter(*c))
+            .map(|(i, _c)| {
+                i // just the token end, don't include delimiters
+            })
+            .unwrap_or(remaining.len()),
+    };
+
+    Some(TextRange::new(
+        (start as u32).into(),
+        ((start + end) as u32).into(),
     ))
 }
 
@@ -368,6 +389,59 @@ mod tests {
         assert_eq!(
             diagnostic_span_for(&fn_body, query, position),
             "missing_column"
+        );
+    }
+
+    fn compile_error_span_for(fn_body: &str, position: usize) -> String {
+        let result = PlpgSqlCheckResult {
+            function: "public.f1".to_string(),
+            issues: vec![PlpgSqlCheckIssue {
+                level: "error".to_string(),
+                message: "syntax error".to_string(),
+                detail: None,
+                hint: None,
+                statement: None,
+                query: Some(Query {
+                    position: position.to_string(),
+                    text: fn_body.to_string(),
+                }),
+                sql_state: Some("42601".to_string()),
+            }],
+        };
+
+        let offset = 10;
+        let diagnostics = create_diagnostics_from_check_result(&result, fn_body, offset, None);
+        let span = diagnostics[0].span.expect("expected diagnostic span");
+        fn_body[usize::from(span.start()) - offset..usize::from(span.end()) - offset].to_string()
+    }
+
+    #[test]
+    fn maps_compile_error_to_the_token_at_its_position() {
+        let fn_body = "\nbegin\n  perform 'prüfen';\n  retrun;\nend;\n";
+        let position = fn_body
+            .find("retrun")
+            .map(|byte| fn_body[..byte].chars().count() + 1)
+            .unwrap();
+
+        assert_eq!(compile_error_span_for(fn_body, position), "retrun");
+    }
+
+    #[test]
+    fn maps_compile_error_at_a_delimiter_to_the_delimiter() {
+        let fn_body = "\nbegin\n  if true then\n    perform 1;\nend;\n";
+
+        // plpgsql_check reports `syntax error at or near ";"` at the semicolon after `end`
+        assert_eq!(compile_error_span_for(fn_body, 41), ";");
+    }
+
+    #[test]
+    fn maps_compile_error_at_end_of_input_to_the_body() {
+        let fn_body = "\nbegin\n  perform 1;\n";
+        let position = fn_body.chars().count() + 1;
+
+        assert_eq!(
+            compile_error_span_for(fn_body, position),
+            "begin\n  perform 1;"
         );
     }
 

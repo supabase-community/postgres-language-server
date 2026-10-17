@@ -311,7 +311,8 @@ impl WorkspaceServer {
     }
 
     /// Diagnostics from the database: EXPLAIN for statements whose references are all
-    /// unchanged database objects, and plpgsql_check.
+    /// unchanged database objects, and plpgsql_check. Also returns the ranges of the
+    /// statements that plpgsql_check checked.
     #[cfg(feature = "db")]
     fn database_diagnostics(
         &self,
@@ -319,11 +320,11 @@ impl WorkspaceServer {
         path: &PgLSPath,
         doc: &Document,
         statements: &[StatementAnalysis],
-    ) -> Result<Vec<SDiagnostic>, WorkspaceError> {
+    ) -> Result<(Vec<SDiagnostic>, Vec<TextRange>), WorkspaceError> {
         let typecheck_enabled = settings.typecheck.enabled;
         let plpgsql_check = settings.plpgsql_check.clone();
         if !typecheck_enabled && !plpgsql_check.enabled {
-            return Ok(Vec::new());
+            return Ok((Vec::new(), Vec::new()));
         }
 
         let db_diagnostics = self.connection.with_pool(&settings.db, |pool| {
@@ -351,8 +352,9 @@ impl WorkspaceServer {
 
                         async move {
                             let mut diagnostics = Vec::new();
+                            let mut plpgsql_checked = None;
                             let Some(ast) = ast else {
-                                return Ok(diagnostics);
+                                return Ok((diagnostics, plpgsql_checked));
                             };
 
                             // The static typecheck rules cover everything else.
@@ -431,9 +433,14 @@ impl WorkspaceServer {
                                     },
                                 )
                                 .await
-                                .unwrap_or_default();
+                                .ok()
+                                .flatten();
 
-                                for diagnostic in results {
+                                if results.is_some() {
+                                    plpgsql_checked = Some(range);
+                                }
+
+                                for diagnostic in results.unwrap_or_default() {
                                     let span = diagnostic.span.map(|span| span + range.start());
                                     diagnostics.push(
                                         diagnostic
@@ -443,7 +450,7 @@ impl WorkspaceServer {
                                 }
                             }
 
-                            Ok::<Vec<pgls_diagnostics::Error>, sqlx::Error>(diagnostics)
+                            Ok::<_, sqlx::Error>((diagnostics, plpgsql_checked))
                         }
                     })
                     .buffer_unordered(10)
@@ -454,18 +461,22 @@ impl WorkspaceServer {
         });
 
         match db_diagnostics {
-            None => Ok(Vec::new()),
-            Some(Ok(batches)) => Ok(batches
-                .into_iter()
-                .flatten()
-                .map(SDiagnostic::new)
-                .collect()),
+            None => Ok((Vec::new(), Vec::new())),
+            Some(Ok(batches)) => {
+                let mut diagnostics = Vec::new();
+                let mut plpgsql_checked = Vec::new();
+                for (batch, checked) in batches {
+                    diagnostics.extend(batch.into_iter().map(SDiagnostic::new));
+                    plpgsql_checked.extend(checked);
+                }
+                Ok((diagnostics, plpgsql_checked))
+            }
             Some(Err(err @ WorkspaceError::DatabaseConnectionError(_))) => {
                 // Database-backed diagnostics are best-effort. If the connection is
                 // unreachable, keep publishing parser/static diagnostics instead of
                 // failing the whole edit-triggered diagnostics request.
                 debug!("Skipping database-backed diagnostics: {err}");
-                Ok(Vec::new())
+                Ok((Vec::new(), Vec::new()))
             }
             Some(Err(err)) => Err(err),
         }
@@ -892,12 +903,14 @@ impl Workspace for WorkspaceServer {
          * plpgsql_check.
          */
         #[cfg(feature = "db")]
-        diagnostics.extend(self.database_diagnostics(
-            settings,
-            &params.path,
-            doc,
-            &analysis.statements,
-        )?);
+        let plpgsql_checked = {
+            let (db_diagnostics, plpgsql_checked) =
+                self.database_diagnostics(settings, &params.path, doc, &analysis.statements)?;
+            diagnostics.extend(db_diagnostics);
+            plpgsql_checked
+        };
+        #[cfg(not(feature = "db"))]
+        let plpgsql_checked: Vec<TextRange> = Vec::new();
 
         for diagnostic in syntax_diagnostics {
             // Ignore the syntax error if we already have more specialized diagnostics for the
@@ -910,7 +923,14 @@ impl Workspace for WorkspaceServer {
                         .is_some_and(|syntax_span| syntax_span.contains_range(span))
                 })
             });
-            if !covered {
+            // plpgsql_check compiles the function with the PL/pgSQL compiler and locates its
+            // syntax errors, while the error of libpg_query spans the whole function body.
+            let checked = diagnostic.location().span.is_some_and(|syntax_span| {
+                plpgsql_checked
+                    .iter()
+                    .any(|range| range.contains_range(syntax_span))
+            });
+            if !covered && !checked {
                 diagnostics.push(SDiagnostic::new(
                     diagnostic
                         .with_file_path(path.clone())
