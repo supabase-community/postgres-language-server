@@ -38,6 +38,10 @@ Configure database connection details in your `postgres-language-server.jsonc` f
 }
 ```
 
+## Supabase projects
+
+When you run `postgres-language-server init` in a directory that contains a `supabase/config.toml`, the generated configuration connects to the local Supabase database started by `supabase start`: host `127.0.0.1`, the port from `[db] port` in `supabase/config.toml` (default: `54322`), and `postgres` as username, password, and database. If the port cannot be read from `supabase/config.toml`, `init` uses `54322` and prints a warning.
+
 ## Password file
 
 When neither the configuration, the connection string, nor `PGPASSWORD` provides a password, the password is looked up in the [password file](https://www.postgresql.org/docs/current/libpq-pgpass.html), the same way `psql` and other libpq clients do:

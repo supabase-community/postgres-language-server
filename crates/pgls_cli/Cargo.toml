@@ -38,6 +38,7 @@ serde                    = { workspace = true, features = ["derive"] }
 serde_json               = { workspace = true }
 sqlx                     = { workspace = true }
 tokio                    = { workspace = true, features = ["io-std", "io-util", "net", "time", "rt", "sync", "rt-multi-thread", "macros"] }
+toml                     = { workspace = true }
 tracing                  = { workspace = true }
 tracing-appender         = "0.2.3"
 tracing-bunyan-formatter = { workspace = true }
@@ -59,6 +60,7 @@ assert_cmd      = "2.1.2"
 insta           = { workspace = true, features = ["yaml"] }
 pgls_test_utils = { workspace = true }
 sqlx            = { workspace = true }
+tempfile        = "3.15.0"
 
 [lib]
 doctest = false
