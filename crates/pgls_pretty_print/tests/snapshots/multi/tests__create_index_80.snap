@@ -1071,9 +1071,7 @@ from
   tenk1
 where
   thousand = 42 and
-  (
-    tenthous = 1 or tenthous = 3 or tenthous = 42 or tenthous = 0
-  );
+  (tenthous = 1 or tenthous = 3 or tenthous = 42 or tenthous = 0);
 
 select
   *
@@ -1081,9 +1079,7 @@ from
   tenk1
 where
   thousand = 42 and
-  (
-    tenthous = 1 or tenthous = 3 or tenthous = 42 or tenthous = 0
-  );
+  (tenthous = 1 or tenthous = 3 or tenthous = 42 or tenthous = 0);
 
 select
   *
@@ -1091,9 +1087,7 @@ from
   tenk1
 where
   thousand = 42 and
-  (
-    tenthous = 1 or tenthous = (select 1 + 2) or tenthous = 42
-  );
+  (tenthous = 1 or tenthous = (select 1 + 2) or tenthous = 42);
 
 select
   *
@@ -1101,9 +1095,7 @@ from
   tenk1
 where
   thousand = 42 and
-  (
-    tenthous = 1 or tenthous = (select 1 + 2) or tenthous = 42
-  );
+  (tenthous = 1 or tenthous = (select 1 + 2) or tenthous = 42);
 
 select
   *
@@ -1111,9 +1103,7 @@ from
   tenk1
 where
   thousand = 42 and
-  (
-    tenthous = 1 or tenthous = 3 or tenthous = 42 or tenthous is null
-  );
+  (tenthous = 1 or tenthous = 3 or tenthous = 42 or tenthous is null);
 
 select
   *
@@ -1254,9 +1244,7 @@ from
   tenk1
 where
   hundred = 42 and
-  (
-    thousand < 42 or thousand < 99 or 43 > thousand or 42 > thousand
-  );
+  (thousand < 42 or thousand < 99 or 43 > thousand or 42 > thousand);
 
 select
   count(*)
@@ -1264,9 +1252,7 @@ from
   tenk1
 where
   hundred = 42 and
-  (
-    thousand < 42 or thousand < 99 or 43 > thousand or 42 > thousand
-  );
+  (thousand < 42 or thousand < 99 or 43 > thousand or 42 > thousand);
 
 select
   count(*)
@@ -1304,9 +1290,7 @@ from
   tenk1
 where
   hundred = 42 and
-  (
-    thousand = 42 or thousand = 41 or (thousand = 99 and tenthous = 2)
-  );
+  (thousand = 42 or thousand = 41 or (thousand = 99 and tenthous = 2));
 
 select
   count(*)
@@ -1314,9 +1298,7 @@ from
   tenk1
 where
   hundred = 42 and
-  (
-    thousand = 42 or thousand = 41 or (thousand = 99 and tenthous = 2)
-  );
+  (thousand = 42 or thousand = 41 or (thousand = 99 and tenthous = 2));
 
 select
   count(*)
@@ -1325,9 +1307,7 @@ from
   tenk2
 where
   tenk1.hundred = 42 and
-  (
-    tenk2.thousand = 42 or tenk1.thousand = 41 or tenk2.tenthous = 2
-  ) and
+  (tenk2.thousand = 42 or tenk1.thousand = 41 or tenk2.tenthous = 2) and
   tenk2.hundred = tenk1.hundred;
 
 select
@@ -1337,9 +1317,7 @@ from
   tenk2
 where
   tenk1.hundred = 42 and
-  (
-    tenk2.thousand = 42 or tenk2.thousand = 41 or tenk2.tenthous = 2
-  ) and
+  (tenk2.thousand = 42 or tenk2.thousand = 41 or tenk2.tenthous = 2) and
   tenk2.hundred = tenk1.hundred;
 
 select
@@ -1349,9 +1327,7 @@ from
   inner join
     tenk2
   on tenk1.hundred = 42 and
-    (
-      tenk2.thousand = 42 or tenk2.thousand = 41 or tenk2.tenthous = 2
-    ) and
+    (tenk2.thousand = 42 or tenk2.thousand = 41 or tenk2.tenthous = 2) and
     tenk2.hundred = tenk1.hundred;
 
 select
@@ -1361,9 +1337,7 @@ from
   left outer join
     tenk2
   on tenk1.hundred = 42 and
-    (
-      tenk2.thousand = 42 or tenk2.thousand = 41 or tenk2.tenthous = 2
-    ) and
+    (tenk2.thousand = 42 or tenk2.thousand = 41 or tenk2.tenthous = 2) and
     tenk2.hundred = tenk1.hundred;
 
 create table dupindexcols
@@ -2377,15 +2351,13 @@ select
 from
   pg_class
 where
-  oid in
-  (
+  oid in (
     select
       indexrelid
     from
       pg_index
     where
-      indrelid in
-      (
+      indrelid in (
         select reltoastrelid from reindex_before where reltoastrelid > 0
       )
   );

@@ -81,9 +81,7 @@ where
   p1.prosrc = p2.prosrc and
   p1.prolang = 12 and
   p2.prolang = 12 and
-  (
-    p1.prokind <> 'a' or p2.prokind <> 'a'
-  ) and
+  (p1.prokind <> 'a' or p2.prokind <> 'a') and
   (
     p1.prolang <> p2.prolang or
     p1.prokind <> p2.prokind or
@@ -587,8 +585,7 @@ from
   pg_cast as c
 where
   c.castmethod = 'b' and
-  not exists
-  (
+  not exists (
     select
       1
     from
@@ -742,9 +739,7 @@ select
 from
   pg_operator as o1
 where
-  (
-    o1.oprcanmerge or o1.oprcanhash
-  ) and
+  (o1.oprcanmerge or o1.oprcanhash) and
   not (o1.oprkind = 'b' and o1.oprresult = cast('bool' as regtype) and o1.oprcom <> 0);
 
 select
@@ -765,8 +760,7 @@ from
   pg_operator as o1
 where
   o1.oprcanmerge and
-  not exists
-  (
+  not exists (
     select
       1
     from
@@ -797,8 +791,7 @@ from
   pg_operator as o1
 where
   o1.oprcanhash and
-  not exists
-  (
+  not exists (
     select
       1
     from
@@ -998,9 +991,7 @@ where
   o1.oprcom = o2.oid and
   p1.oid = o1.oprcode and
   p2.oid = o2.oprcode and
-  (
-    p1.provolatile <> p2.provolatile or p1.proleakproof <> p2.proleakproof
-  );
+  (p1.provolatile <> p2.provolatile or p1.proleakproof <> p2.proleakproof);
 
 select
   o1.oid,
@@ -1016,9 +1007,7 @@ where
   o1.oprnegate = o2.oid and
   p1.oid = o1.oprcode and
   p2.oid = o2.oprcode and
-  (
-    p1.provolatile <> p2.provolatile or p1.proleakproof <> p2.proleakproof
-  );
+  (p1.provolatile <> p2.provolatile or p1.proleakproof <> p2.proleakproof);
 
 select
   cast(pp.oid as regprocedure) as proc,
@@ -1042,9 +1031,7 @@ where
   ao.amoplefttype = ap.amproclefttype and
   ao.amoprighttype = ap.amprocrighttype and
   ap.amprocnum = 1 and
-  (
-    pp.provolatile <> po.provolatile or pp.proleakproof <> po.proleakproof
-  )
+  (pp.provolatile <> po.provolatile or pp.proleakproof <> po.proleakproof)
 order by 1;
 
 select
@@ -1341,9 +1328,7 @@ select
 from
   pg_aggregate
 where
-  (
-    aggserialfn <> 0 or aggdeserialfn <> 0
-  ) and
+  (aggserialfn <> 0 or aggdeserialfn <> 0) and
   (
     aggtranstype <> cast('internal' as regtype) or
     aggcombinefn = 0 or
@@ -1442,8 +1427,7 @@ from
 where
   a.aggfnoid = p.oid and
   a.aggsortop = o.oid and
-  not exists
-  (
+  not exists (
     select
       1
     from
@@ -1635,8 +1619,7 @@ select
 from
   pg_opclass as c1
 where
-  not exists
-  (
+  not exists (
     select
       1
     from
@@ -1652,8 +1635,7 @@ select
 from
   pg_amop as a1
 where
-  not exists
-  (
+  not exists (
     select
       1
     from
@@ -1790,9 +1772,7 @@ where
   a.attrelid = indrelid and
   a.attnum = ikey and
   opc.oid = iclass and
-  (
-    not binary_coercible(atttypid, opcintype) or icoll <> attcollation
-  );
+  (not binary_coercible(atttypid, opcintype) or icoll <> attcollation);
 
 select
   cast(indexrelid as regclass),
@@ -1820,9 +1800,7 @@ where
   a.attrelid = indrelid and
   a.attnum = ikey and
   opc.oid = iclass and
-  (
-    opcintype <> atttypid or icoll <> attcollation
-  )
+  (opcintype <> atttypid or icoll <> attcollation)
 order by 1;
 
 select

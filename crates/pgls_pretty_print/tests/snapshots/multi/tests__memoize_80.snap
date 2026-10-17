@@ -250,8 +250,7 @@ from
   tenk1 as t0
 where
   unique1 < 3 and
-  exists
-  (
+  exists (
     select
       1
     from
@@ -267,8 +266,7 @@ from
   tenk1 as t0
 where
   unique1 < 3 and
-  exists
-  (
+  exists (
     select
       1
     from
@@ -360,8 +358,7 @@ select
 from
   tab_anti as t1
 where
-  t1.a in
-  (
+  t1.a in (
     select
       a
     from

@@ -779,8 +779,7 @@ select
 from
   prt1 as t1
 where
-  t1.a in
-  (
+  t1.a in (
     select
       t1.b
     from
@@ -797,8 +796,7 @@ select
 from
   prt1 as t1
 where
-  t1.a in
-  (
+  t1.a in (
     select
       t1.b
     from
@@ -815,8 +813,7 @@ select
 from
   prt1 as t1
 where
-  t1.a in
-  (
+  t1.a in (
     select
       t1.b
     from
@@ -832,8 +829,7 @@ select
 from
   prt1 as t1
 where
-  t1.a in
-  (
+  t1.a in (
     select
       t1.b
     from
@@ -853,8 +849,7 @@ select
 from
   prt1 as t1
 where
-  t1.a in
-  (
+  t1.a in (
     select
       t1.b
     from
@@ -870,8 +865,7 @@ select
 from
   prt1 as t1
 where
-  t1.a in
-  (
+  t1.a in (
     select
       t1.b
     from
@@ -1652,8 +1646,7 @@ from
 
 delete from prt1_l
 where
-  exists
-  (
+  exists (
     select
       1
     from
@@ -1867,8 +1860,7 @@ select
 from
   prtx1
 where
-  not exists
-  (
+  not exists (
     select
       1
     from
@@ -1884,8 +1876,7 @@ select
 from
   prtx1
 where
-  not exists
-  (
+  not exists (
     select
       1
     from
@@ -1901,8 +1892,7 @@ select
 from
   prtx1
 where
-  not exists
-  (
+  not exists (
     select
       1
     from
@@ -1918,8 +1908,7 @@ select
 from
   prtx1
 where
-  not exists
-  (
+  not exists (
     select
       1
     from
@@ -2691,8 +2680,7 @@ select
 from
   plt1_adv as t1
 where
-  not exists
-  (
+  not exists (
     select 1 from plt2_adv as t2 where t1.a = t2.a and t1.c = t2.c
   ) and
   t1.b < 10
@@ -2703,8 +2691,7 @@ select
 from
   plt1_adv as t1
 where
-  not exists
-  (
+  not exists (
     select 1 from plt2_adv as t2 where t1.a = t2.a and t1.c = t2.c
   ) and
   t1.b < 10
@@ -2818,8 +2805,7 @@ select
 from
   plt1_adv as t1
 where
-  not exists
-  (
+  not exists (
     select 1 from plt2_adv as t2 where t1.a = t2.a and t1.c = t2.c
   ) and
   t1.b < 10
@@ -2830,8 +2816,7 @@ select
 from
   plt1_adv as t1
 where
-  not exists
-  (
+  not exists (
     select 1 from plt2_adv as t2 where t1.a = t2.a and t1.c = t2.c
   ) and
   t1.b < 10
@@ -2842,8 +2827,7 @@ select
 from
   plt2_adv as t1
 where
-  not exists
-  (
+  not exists (
     select 1 from plt1_adv as t2 where t1.a = t2.a and t1.c = t2.c
   ) and
   t1.b < 10
@@ -2919,8 +2903,7 @@ select
 from
   plt1_adv as t1
 where
-  not exists
-  (
+  not exists (
     select 1 from plt2_adv as t2 where t1.a = t2.a and t1.c = t2.c
   ) and
   t1.b < 10
@@ -3057,8 +3040,7 @@ select
 from
   plt1_adv as t1
 where
-  not exists
-  (
+  not exists (
     select 1 from plt2_adv as t2 where t1.a = t2.a and t1.c = t2.c
   ) and
   t1.b < 10
@@ -3069,8 +3051,7 @@ select
 from
   plt1_adv as t1
 where
-  not exists
-  (
+  not exists (
     select 1 from plt2_adv as t2 where t1.a = t2.a and t1.c = t2.c
   ) and
   t1.b < 10
@@ -3942,12 +3923,8 @@ select
 from
   alpha as t1 inner join beta as t2 on t1.a = t2.a and t1.c = t2.c
 where
-  (
-    (t1.b >= 100 and t1.b < 110) or (t1.b >= 200 and t1.b < 210)
-  ) and
-  (
-    (t2.b >= 100 and t2.b < 110) or (t2.b >= 200 and t2.b < 210)
-  ) and
+  ((t1.b >= 100 and t1.b < 110) or (t1.b >= 200 and t1.b < 210)) and
+  ((t2.b >= 100 and t2.b < 110) or (t2.b >= 200 and t2.b < 210)) and
   t1.c in ('0004', '0009')
 order by t1.a,
   t1.b,
@@ -3959,12 +3936,8 @@ select
 from
   alpha as t1 inner join beta as t2 on t1.a = t2.a and t1.c = t2.c
 where
-  (
-    (t1.b >= 100 and t1.b < 110) or (t1.b >= 200 and t1.b < 210)
-  ) and
-  (
-    (t2.b >= 100 and t2.b < 110) or (t2.b >= 200 and t2.b < 210)
-  ) and
+  ((t1.b >= 100 and t1.b < 110) or (t1.b >= 200 and t1.b < 210)) and
+  ((t2.b >= 100 and t2.b < 110) or (t2.b >= 200 and t2.b < 210)) and
   t1.c in ('0004', '0009')
 order by t1.a,
   t1.b,
@@ -3979,12 +3952,8 @@ from
     beta as t2
   on t1.a = t2.a and t1.b = t2.b and t1.c = t2.c
 where
-  (
-    (t1.b >= 100 and t1.b < 110) or (t1.b >= 200 and t1.b < 210)
-  ) and
-  (
-    (t2.b >= 100 and t2.b < 110) or (t2.b >= 200 and t2.b < 210)
-  ) and
+  ((t1.b >= 100 and t1.b < 110) or (t1.b >= 200 and t1.b < 210)) and
+  ((t2.b >= 100 and t2.b < 110) or (t2.b >= 200 and t2.b < 210)) and
   t1.c in ('0004', '0009')
 order by t1.a,
   t1.b;
@@ -3998,12 +3967,8 @@ from
     beta as t2
   on t1.a = t2.a and t1.b = t2.b and t1.c = t2.c
 where
-  (
-    (t1.b >= 100 and t1.b < 110) or (t1.b >= 200 and t1.b < 210)
-  ) and
-  (
-    (t2.b >= 100 and t2.b < 110) or (t2.b >= 200 and t2.b < 210)
-  ) and
+  ((t1.b >= 100 and t1.b < 110) or (t1.b >= 200 and t1.b < 210)) and
+  ((t2.b >= 100 and t2.b < 110) or (t2.b >= 200 and t2.b < 210)) and
   t1.c in ('0004', '0009')
 order by t1.a,
   t1.b;

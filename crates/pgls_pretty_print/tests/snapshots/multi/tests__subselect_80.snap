@@ -66,8 +66,7 @@ select
 from
   subselect_tbl
 where
-  f1 in
-  (
+  f1 in (
     select f2 from subselect_tbl where f2 in (select f1 from subselect_tbl)
   );
 
@@ -77,8 +76,7 @@ select
 from
   subselect_tbl
 where
-  not (f1, f2) in
-  (
+  not (f1, f2) in (
     select f2, cast(f3 as int4) from subselect_tbl where f3 is not null
   );
 
@@ -96,8 +94,7 @@ select
 from
   subselect_tbl as upper
 where
-  f1 in
-  (
+  f1 in (
     select f2 from subselect_tbl where cast(upper.f2 as double precision) = f3
   );
 
@@ -114,8 +111,7 @@ select
 from
   subselect_tbl
 where
-  (f1, f2) in
-  (
+  (f1, f2) in (
     select f2, cast(f3 as int4) from subselect_tbl where f3 is not null
   );
 
@@ -290,8 +286,7 @@ select
 from
   foo
 where
-  id in
-  (
+  id in (
     select
       id2
     from
@@ -696,8 +691,7 @@ begin;
 
 delete from road
 where
-  exists
-  (
+  exists (
     select
       1
     from
@@ -799,14 +793,12 @@ insert into inner_text values ('123', '456');
 select * from outer_text where not (f1, f2) in (select * from inner_text);
 
 select
-  cast('foo' as text) in
-  (
+  cast('foo' as text) in (
     select cast('bar' as name) union all select cast('bar' as name)
   );
 
 select
-  cast('foo' as text) in
-  (
+  cast('foo' as text) in (
     select cast('bar' as name) union all select cast('bar' as name)
   );
 
@@ -815,8 +807,7 @@ select row(row(row(1))) = any (select row(row(1)));
 select row(row(row(1))) = any (select row(row(1)));
 
 select
-  cast('1' as text) in
-  (
+  cast('1' as text) in (
     select cast('1' as name) union all select cast('1' as name)
   );
 
@@ -878,9 +869,7 @@ select
 from
   tenk1 as t
 where
-  (
-    exists (select 1 from tenk1 as k where k.unique1 = t.unique2) or ten < 0
-  ) and
+  (exists (select 1 from tenk1 as k where k.unique1 = t.unique2) or ten < 0) and
   thousand = 1;
 
 select
@@ -888,9 +877,7 @@ select
 from
   tenk1 as t
 where
-  (
-    exists (select 1 from tenk1 as k where k.unique1 = t.unique2) or ten < 0
-  ) and
+  (exists (select 1 from tenk1 as k where k.unique1 = t.unique2) or ten < 0) and
   thousand = 1;
 
 create temporary table exists_tbl (
@@ -931,8 +918,7 @@ from
   tenk1 as b
 where
   a.thousand = b.thousand and
-  exists
-  (
+  exists (
     select
       1
     from
@@ -1155,8 +1141,7 @@ select
 from
   int4_tbl
 where
-  case when f1 in (select unique1 from tenk1 as a) then f1 else null end in
-  (
+  case when f1 in (select unique1 from tenk1 as a) then f1 else null end in (
     select ten from tenk1 as b
   );
 
@@ -1165,8 +1150,7 @@ select
 from
   int4_tbl
 where
-  case when f1 in (select unique1 from tenk1 as a) then f1 else null end in
-  (
+  case when f1 in (select unique1 from tenk1 as a) then f1 else null end in (
     select ten from tenk1 as b
   );
 
@@ -1175,8 +1159,7 @@ select
 from
   int4_tbl as o
 where
-  (f1, f1) in
-  (
+  (f1, f1) in (
     select f1, generate_series(1, 50) / 10 as g from int4_tbl as i group by f1
   );
 
@@ -1185,8 +1168,7 @@ select
 from
   int4_tbl as o
 where
-  (f1, f1) in
-  (
+  (f1, f1) in (
     select f1, generate_series(1, 50) / 10 as g from int4_tbl as i group by f1
   );
 

@@ -1660,8 +1660,7 @@ select
 from
   pg_trigger as t inner join pg_constraint as c on t.tgconstraint = c.oid
 where
-  tgrelid in
-  (
+  tgrelid in (
     select relid from pg_partition_tree(cast('fk_partitioned_fk' as regclass))
     union all
     select cast('fk_notpartitioned_pk' as regclass)
@@ -1677,8 +1676,7 @@ select
 from
   pg_trigger as t inner join pg_constraint as c on t.tgconstraint = c.oid
 where
-  tgrelid in
-  (
+  tgrelid in (
     select relid from pg_partition_tree(cast('fk_partitioned_fk' as regclass))
     union all
     select cast('fk_notpartitioned_pk' as regclass)
@@ -1694,8 +1692,7 @@ select
 from
   pg_trigger as t inner join pg_constraint as c on t.tgconstraint = c.oid
 where
-  tgrelid in
-  (
+  tgrelid in (
     select relid from pg_partition_tree(cast('fk_partitioned_fk' as regclass))
     union all
     select cast('fk_notpartitioned_pk' as regclass)

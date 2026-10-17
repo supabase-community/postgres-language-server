@@ -2946,8 +2946,7 @@ select
 from
   pg_trigger
 where
-  cast(tgrelid as regclass) in
-  (
+  cast(tgrelid as regclass) in (
     select oid from pg_class where relname like 'trgfire%'
   )
 order by cast(cast(tgrelid as regclass) as text);
