@@ -54,3 +54,160 @@ pub fn complete(params: CompletionParams) -> Vec<CompletionItem> {
 
     builder.finish()
 }
+
+#[cfg(test)]
+mod tests {
+
+    use sqlx::PgPool;
+
+    use crate::test_helper::{TestCompletionsCase, TestCompletionsSuite};
+
+    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    async fn completions_in_update_statements(pool: PgPool) {
+        let setup = r#"
+            create table instruments (
+                id bigint primary key generated always as identity,
+                name text not null,
+                z text
+            );
+
+            create table others (
+                id serial primary key,
+                a text,
+                b text
+            );
+        "#;
+
+        TestCompletionsSuite::new(&pool, Some(setup))
+            .with_case(
+                TestCompletionsCase::new()
+                    .type_sql("update instruments set name = 'new' where id = 1;"),
+            )
+            .with_case(
+                TestCompletionsCase::new()
+                    .inside_static_statement("update instruments as i <sql> where i.id = 1;")
+                    .type_sql("set name = 'x', z = 'y'"),
+            )
+            .with_case(
+                TestCompletionsCase::new()
+                    .inside_static_statement("update instruments set name = 'x' <sql>")
+                    .type_sql("returning id, name;"),
+            )
+            .with_case(
+                TestCompletionsCase::new()
+                    .inside_static_statement("update instruments <sql> where id = 1;")
+                    .type_sql("set name = default, z = 'y'"),
+            )
+            .with_case(
+                TestCompletionsCase::new()
+                    .inside_static_statement("update instruments set name = o.a <sql>")
+                    .type_sql("from others o where instruments.id = o.id returning name, z;"),
+            )
+            .with_case(
+                TestCompletionsCase::new()
+                    .inside_static_statement("update instruments set name = (<sql>) where id = 1;")
+                    .type_sql("select a from others where id = 1"),
+            )
+            .snapshot("completions_in_update_statements")
+            .await;
+    }
+
+    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    async fn completions_in_insert_statements(pool: PgPool) {
+        let setup = r#"
+            create table instruments (
+                id bigint primary key generated always as identity,
+                name text not null,
+                z text
+            );
+
+            create table others (
+                id serial primary key,
+                a text,
+                b text
+            );
+        "#;
+
+        TestCompletionsSuite::new(&pool, Some(setup))
+            // basic VALUES (full statement typed once)
+            .with_case(
+                TestCompletionsCase::new()
+                    .type_sql("insert into instruments (id, name) values (1, 'bass');"),
+            )
+            // RETURNING clause
+            .with_case(
+                TestCompletionsCase::new()
+                    .inside_static_statement(
+                        "insert into instruments (id, name) values (1, 'x') <sql>",
+                    )
+                    .type_sql("returning id, name;"),
+            )
+            // multi-row VALUES with DEFAULT
+            .with_case(
+                TestCompletionsCase::new()
+                    .inside_static_statement("insert into instruments (id, name, z) <sql>")
+                    .type_sql("values (1, 'a', 'b'), (2, 'c', default);"),
+            )
+            // INSERT SELECT
+            .with_case(
+                TestCompletionsCase::new()
+                    .inside_static_statement("insert into instruments (id, name) <sql>")
+                    .type_sql("select id, a from others;"),
+            )
+            // schema-qualified table
+            .with_case(
+                TestCompletionsCase::new()
+                    .inside_static_statement("insert into <sql> (id, name) values (1, 'x');")
+                    .type_sql("public.instruments"),
+            )
+            .snapshot("completions_in_insert_statements")
+            .await;
+    }
+
+    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    async fn completions_in_copy_statements(pool: PgPool) {
+        let setup = r#"
+            create table instruments (
+                id bigint primary key generated always as identity,
+                name text not null,
+                z text
+            );
+
+            create table others (
+                id serial primary key,
+                a text,
+                b text
+            );
+        "#;
+
+        TestCompletionsSuite::new(&pool, Some(setup))
+            .with_case(TestCompletionsCase::new().type_sql("copy instruments to stdout;"))
+            .with_case(
+                TestCompletionsCase::new()
+                    .inside_static_statement("copy instruments <sql>")
+                    .type_sql("from stdin;"),
+            )
+            .with_case(
+                TestCompletionsCase::new()
+                    .inside_static_statement("copy instruments (<sql>) to stdout;")
+                    .type_sql("id, name"),
+            )
+            .with_case(
+                TestCompletionsCase::new()
+                    .inside_static_statement("copy instruments to stdout <sql>")
+                    .type_sql("with (format csv, header);"),
+            )
+            .with_case(
+                TestCompletionsCase::new()
+                    .inside_static_statement("copy instruments from stdin <sql>")
+                    .type_sql("with (format csv, header);"),
+            )
+            .with_case(
+                TestCompletionsCase::new()
+                    .inside_static_statement("copy (<sql>) to stdout;")
+                    .type_sql("select * from instruments where id > 0"),
+            )
+            .snapshot("completions_in_copy_statements")
+            .await;
+    }
+}
