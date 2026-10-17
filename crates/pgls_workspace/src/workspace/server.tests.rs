@@ -503,10 +503,70 @@ async fn test_dedupe_diagnostics(test_db: PgPool) {
         Some("plpgsql_check")
     );
 
-    assert_eq!(
-        diagnostic.location().span,
-        Some(TextRange::new(124.into(), 201.into()))
-    );
+    // plpgsql_check locates the syntax error instead of flagging the whole function body
+    let span = diagnostic.location().span.expect("Expected a span");
+    assert_eq!(&content[span], "decare");
+}
+
+/// Without a trigger, plpgsql_check cannot check a trigger function, so the syntax error of
+/// libpg_query remains.
+#[cfg(all(test, not(target_os = "windows")))]
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn test_plpgsql_syntax_error_without_plpgsql_check(test_db: PgPool) {
+    let mut conf = PartialConfiguration::init();
+    conf.merge_with(PartialConfiguration {
+        db: Some(PartialDatabaseConfiguration {
+            database: Some(
+                test_db
+                    .connect_options()
+                    .get_database()
+                    .unwrap()
+                    .to_string(),
+            ),
+            ..Default::default()
+        }),
+        ..Default::default()
+    });
+
+    let workspace = get_test_workspace(Some(conf)).expect("Unable to create test workspace");
+
+    let path = PgLSPath::new("test.sql");
+
+    let setup_sql = "CREATE EXTENSION IF NOT EXISTS plpgsql_check;";
+    test_db.execute(setup_sql).await.expect("setup sql failed");
+
+    let content = r#"
+        CREATE OR REPLACE FUNCTION public.f1()
+        RETURNS trigger
+        LANGUAGE plpgsql
+        AS $function$
+        BEGIN
+            retrun new;
+        END;
+        $function$;
+    "#;
+
+    workspace
+        .open_file(OpenFileParams {
+            path: path.clone(),
+            content: content.into(),
+            version: 1,
+        })
+        .expect("Unable to open test file");
+
+    let diagnostics = workspace
+        .pull_file_diagnostics(crate::workspace::PullFileDiagnosticsParams {
+            path: path.clone(),
+            categories: RuleCategories::all(),
+            max_diagnostics: 100,
+            only: vec![],
+            skip: vec![],
+        })
+        .expect("Unable to pull diagnostics")
+        .diagnostics;
+
+    assert_eq!(diagnostics.len(), 1, "Expected one diagnostic");
+    assert_eq!(diagnostics[0].category().map(|c| c.name()), Some("syntax"));
 }
 
 #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
