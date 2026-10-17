@@ -2,7 +2,7 @@ use crate::TokenKind;
 use crate::emitter::{EventEmitter, GroupKind, LineType};
 use pgls_query::{NodeEnum, protobuf::AlterDefaultPrivilegesStmt};
 
-use super::node_list::emit_comma_separated_list;
+use super::grant_stmt::emit_grant_list;
 
 pub(super) fn emit_alter_default_privileges_stmt(
     e: &mut EventEmitter,
@@ -16,6 +16,9 @@ pub(super) fn emit_alter_default_privileges_stmt(
     e.space();
     e.token(TokenKind::PRIVILEGES_KW);
 
+    // The clauses and the action continue the statement, so a broken one indents them.
+    e.indent_start();
+
     // Options can contain FOR ROLE/USER and IN SCHEMA clauses
     for opt in &n.options {
         if let Some(NodeEnum::DefElem(def)) = opt.node.as_ref() {
@@ -28,7 +31,7 @@ pub(super) fn emit_alter_default_privileges_stmt(
                     e.space();
                     if let Some(ref arg) = def.arg {
                         if let Some(NodeEnum::List(list)) = arg.node.as_ref() {
-                            emit_comma_separated_list(e, &list.items, super::emit_node);
+                            emit_grant_list(e, &list.items, super::emit_node);
                         } else {
                             super::emit_node(arg, e);
                         }
@@ -42,7 +45,7 @@ pub(super) fn emit_alter_default_privileges_stmt(
                     e.space();
                     if let Some(ref arg) = def.arg {
                         if let Some(NodeEnum::List(list)) = arg.node.as_ref() {
-                            emit_comma_separated_list(e, &list.items, super::emit_node);
+                            emit_grant_list(e, &list.items, super::emit_node);
                         } else {
                             super::emit_node(arg, e);
                         }
@@ -62,6 +65,8 @@ pub(super) fn emit_alter_default_privileges_stmt(
         e.line(LineType::SoftOrSpace);
         super::emit_node_enum(&NodeEnum::GrantStmt(action.clone()), e);
     }
+
+    e.indent_end();
 
     e.group_end();
 }

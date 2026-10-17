@@ -123,12 +123,12 @@ grant insert (
   control_relocatable,
   control_requires
 )
-on table app.packages
-to authenticated;
+  on table app.packages
+  to authenticated;
 
 grant update (control_description, control_relocatable, control_requires)
-on table app.packages
-to authenticated;
+  on table app.packages
+  to authenticated;
 
 create or replace function
 public.publish_package(

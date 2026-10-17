@@ -317,9 +317,9 @@ grant regress_priv_role to regress_priv_user1 with admin true granted by current
 revoke admin option for regress_priv_role from regress_priv_user1 granted by foo restrict;
 
 revoke admin option for regress_priv_role
-from regress_priv_user1
-granted by regress_priv_user2
-restrict;
+  from regress_priv_user1
+  granted by regress_priv_user2
+  restrict;
 
 revoke admin option for regress_priv_role from regress_priv_user1 granted by current_user restrict;
 
@@ -1202,10 +1202,8 @@ as $$select $1;$$;
 revoke all on function priv_testfunc1(int), priv_testfunc2(int), priv_testagg1(int) from public;
 
 grant execute
-on function priv_testfunc1(int),
-priv_testfunc2(int),
-priv_testagg1(int)
-to regress_priv_user2;
+  on function priv_testfunc1(int), priv_testfunc2(int), priv_testagg1(int)
+  to regress_priv_user2;
 
 revoke all on function priv_testproc1(int) from public;
 
@@ -2656,8 +2654,8 @@ drop role regress_priv_user8;
 alter default privileges for role pg_signal_backend revoke usage on types from pg_signal_backend;
 
 alter default privileges
-for role pg_read_all_settings
-revoke usage on types from pg_read_all_settings;
+  for role pg_read_all_settings
+  revoke usage on types from pg_read_all_settings;
 
 create user regress_locktable_user;
 

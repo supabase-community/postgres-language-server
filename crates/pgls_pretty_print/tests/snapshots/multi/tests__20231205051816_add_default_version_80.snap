@@ -52,8 +52,8 @@ grant insert (
   control_requires,
   default_version_struct
 )
-on table app.packages
-to authenticated;
+  on table app.packages
+  to authenticated;
 
 grant update (
   control_description,
@@ -61,8 +61,8 @@ grant update (
   control_requires,
   default_version_struct
 )
-on table app.packages
-to authenticated;
+  on table app.packages
+  to authenticated;
 
 drop function public.publish_package(app.valid_name, varchar, bool, text[]);
 

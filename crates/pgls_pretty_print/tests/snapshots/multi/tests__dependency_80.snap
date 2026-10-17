@@ -27,15 +27,9 @@ revoke select on table deptest from regress_dep_group;
 
 drop role regress_dep_group;
 
-revoke select,
-insert,
-update,
-delete,
-truncate,
-references,
-maintain
-on table deptest
-from regress_dep_user;
+revoke select, insert, update, delete, truncate, references, maintain
+  on table deptest
+  from regress_dep_user;
 
 drop role regress_dep_user;
 
@@ -105,9 +99,9 @@ create table deptest (
 );
 
 alter default privileges
-for role regress_dep_user1
-in schema deptest
-grant all on tables to regress_dep_user2;
+  for role regress_dep_user1
+  in schema deptest
+  grant all on tables to regress_dep_user2;
 
 create function deptest_func()
 returns void
