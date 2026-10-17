@@ -99,6 +99,13 @@ where
         self.request("pgls/code_actions", params)
     }
 
+    fn fix_file(
+        &self,
+        params: crate::features::code_actions::FixFileParams,
+    ) -> Result<crate::features::code_actions::FixFileResult, WorkspaceError> {
+        self.request("pgls/fix_file", params)
+    }
+
     fn execute_statement(
         &self,
         params: crate::features::code_actions::ExecuteStatementParams,

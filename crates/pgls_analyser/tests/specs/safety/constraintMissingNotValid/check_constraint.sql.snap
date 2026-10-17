@@ -15,3 +15,12 @@ lint/constraintMissingNotValid ━━━━━━━━━━━━━━━━�
   × Adding a constraint without NOT VALID will block reads and writes while validating existing rows.
   
   i Add the constraint as NOT VALID in one transaction, then run VALIDATE CONSTRAINT in a separate transaction.
+  
+
+
+## Fix (unsafe): Add NOT VALID
+```
+-- expect_lint/constraintMissingNotValid
+ALTER TABLE users ADD CONSTRAINT check_age CHECK (age >= 0) NOT VALID;
+
+```

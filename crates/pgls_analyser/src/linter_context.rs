@@ -9,6 +9,7 @@ use pgls_catalog::{
 
 pub(crate) use pgls_catalog::{is_reindex_concurrent, is_vacuum_full};
 
+use crate::fix::StatementTokens;
 use crate::linter_rule::LinterRule;
 
 /// The kind of file being analysed.
@@ -94,6 +95,17 @@ where
         self.statement.resolution(self.file_context)
     }
 
+    /// The text of the current statement, if known.
+    pub fn sql(&self) -> Option<&str> {
+        self.statement.sql
+    }
+
+    /// The tokens of the current statement, to compute the edits of fixes. `None` if the
+    /// statement text isn't known.
+    pub fn tokens(&self) -> Option<StatementTokens<'_>> {
+        self.statement.tokens()
+    }
+
     /// Returns the metadata of the rule
     ///
     /// The metadata contains information about the rule, such as the name, version, language, and whether it is recommended.
@@ -117,6 +129,7 @@ pub struct StatementContext<'a> {
     sql: Option<&'a str>,
     function: Option<&'a FunctionContext>,
     resolution: OnceCell<Option<Resolution>>,
+    tokens: OnceCell<Option<Vec<pgls_query::protobuf::ScanToken>>>,
 }
 
 impl<'a> StatementContext<'a> {
@@ -130,7 +143,17 @@ impl<'a> StatementContext<'a> {
             sql,
             function,
             resolution: OnceCell::new(),
+            tokens: OnceCell::new(),
         }
+    }
+
+    pub(crate) fn tokens(&self) -> Option<StatementTokens<'_>> {
+        let sql = self.sql?;
+        let tokens = self
+            .tokens
+            .get_or_init(|| pgls_query::scan(sql).ok().map(|scan| scan.tokens))
+            .as_deref()?;
+        Some(StatementTokens::new(sql, tokens))
     }
 
     pub fn resolution(&self, file_context: &AnalysedFileContext) -> Option<&Resolution> {

@@ -1,5 +1,6 @@
-use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
-use pgls_analyse::{RuleSource, declare_lint_rule};
+use crate::fix::StatementTokens;
+use crate::{LinterDiagnostic, LinterRule, LinterRuleContext, RuleFix};
+use pgls_analyse::{FixKind, RuleSource, declare_lint_rule};
 use pgls_console::markup;
 use pgls_diagnostics::Severity;
 
@@ -36,6 +37,7 @@ declare_lint_rule! {
         version: "0.15.0",
         name: "banCharField",
         severity: Severity::Warning,
+        fix_kind: FixKind::Unsafe,
         recommended: false,
         sources: &[RuleSource::Squawk("ban-char-field")],
     }
@@ -50,7 +52,7 @@ impl LinterRule for BanCharField {
         if let pgls_query::NodeEnum::CreateStmt(stmt) = &ctx.stmt() {
             for table_elt in &stmt.table_elts {
                 if let Some(pgls_query::NodeEnum::ColumnDef(col_def)) = &table_elt.node
-                    && let Some(diagnostic) = check_column_for_char_type(col_def)
+                    && let Some(diagnostic) = check_column_for_char_type(col_def, ctx.tokens())
                 {
                     diagnostics.push(diagnostic);
                 }
@@ -64,7 +66,7 @@ impl LinterRule for BanCharField {
                     && cmd.subtype() == pgls_query::protobuf::AlterTableType::AtAddColumn
                     && let Some(pgls_query::NodeEnum::ColumnDef(col_def)) =
                         &cmd.def.as_ref().and_then(|d| d.node.as_ref())
-                    && let Some(diagnostic) = check_column_for_char_type(col_def)
+                    && let Some(diagnostic) = check_column_for_char_type(col_def, ctx.tokens())
                 {
                     diagnostics.push(diagnostic);
                 }
@@ -77,6 +79,7 @@ impl LinterRule for BanCharField {
 
 fn check_column_for_char_type(
     col_def: &pgls_query::protobuf::ColumnDef,
+    tokens: Option<StatementTokens>,
 ) -> Option<LinterDiagnostic> {
     if let Some(type_name) = &col_def.type_name {
         for name_node in &type_name.names {
@@ -94,11 +97,25 @@ fn check_column_for_char_type(
                             },
                         )
                         .detail(None, "CHAR types are fixed-length and padded with spaces, which can lead to unexpected behavior.")
-                        .note("Use VARCHAR or TEXT instead for variable-length character data."),
+                        .note("Use VARCHAR or TEXT instead for variable-length character data.")
+                        .maybe_fix(tokens.and_then(|tokens| use_varchar(tokens, type_name.location))),
                     );
                 }
             }
         }
     }
     None
+}
+
+/// Replaces `char(n)` with `varchar(n)`. A `char` without a length is left alone, because it
+/// means `char(1)`. It is unsafe because values are no longer padded with spaces, which changes
+/// how they compare.
+fn use_varchar(tokens: StatementTokens, location: i32) -> Option<RuleFix> {
+    let start = tokens.at(location)?;
+    let name = tokens.type_name_end(start);
+    tokens.type_modifiers(name)?;
+    Some(
+        RuleFix::new("Use VARCHAR")
+            .replace(tokens.range(start).cover(tokens.range(name)), "varchar"),
+    )
 }

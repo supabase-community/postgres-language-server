@@ -3,7 +3,7 @@ use std::{
     time::{Duration, Instant},
 };
 
-use pgls_analyse::RuleCategories;
+use pgls_analyse::{Applicability, RuleCategories};
 use pgls_configuration::{Merge, StringSet};
 use pgls_configuration::{
     PartialConfiguration, PartialFormatConfiguration, PartialTypecheckConfiguration,
@@ -19,7 +19,9 @@ use sqlx::{Executor, PgPool};
 
 use crate::{
     Workspace, WorkspaceError,
-    features::code_actions::ExecuteStatementResult,
+    features::code_actions::{
+        CodeActionKind, ExecuteStatementResult, FixFileMode, FixFileParams, TextEdit,
+    },
     features::format::PullFileFormattingParams,
     workspace::{
         OpenFileParams, RegisterProjectFolderParams, StatementId, UpdateSettingsParams,
@@ -1592,4 +1594,108 @@ fn is_typecheck(diagnostic: &pgls_diagnostics::serde::Diagnostic) -> bool {
                 pgls_analyser::METADATA.group_of(rule) == Some(pgls_analyser::TYPECHECK_GROUP)
             })
     })
+}
+
+#[test]
+fn test_code_actions_fix_and_suppress_lint_diagnostics() {
+    let workspace = get_test_workspace(None).expect("Unable to create test workspace");
+
+    let path = PgLSPath::new("test.sql");
+    let content = "select 1;\n  drop index users_email_idx;";
+    workspace
+        .open_file(OpenFileParams {
+            path: path.clone(),
+            content: content.into(),
+            version: 1,
+        })
+        .expect("Unable to open test file");
+
+    let actions = workspace
+        .pull_code_actions(crate::features::code_actions::CodeActionsParams {
+            path: path.clone(),
+            cursor_position: 15.into(),
+            only: vec!["safety/requireConcurrentIndexDeletion".parse().unwrap()],
+            skip: vec![],
+        })
+        .expect("Unable to pull code actions")
+        .actions;
+
+    let edits: Vec<_> = actions
+        .iter()
+        .filter_map(|action| match &action.kind {
+            CodeActionKind::Edit(edit) => Some((action.title.as_str(), edit)),
+            _ => None,
+        })
+        .collect();
+    assert_eq!(edits.len(), 2, "{actions:#?}");
+
+    let (title, fix) = edits[0];
+    assert_eq!(title, "Add CONCURRENTLY");
+    assert_eq!(fix.applicability, Applicability::Always);
+    assert_eq!(
+        fix.edits,
+        vec![TextEdit {
+            range: TextRange::empty(22.into()),
+            new_text: " CONCURRENTLY".into(),
+        }]
+    );
+
+    let (title, suppression) = edits[1];
+    assert_eq!(
+        title,
+        "Suppress rule requireConcurrentIndexDeletion for this statement"
+    );
+    assert_eq!(
+        suppression.edits,
+        vec![TextEdit {
+            range: TextRange::empty(10.into()),
+            new_text: "  -- pgls-ignore requireConcurrentIndexDeletion\n".into(),
+        }]
+    );
+}
+
+#[test]
+fn test_fix_file() {
+    let workspace = get_test_workspace(None).expect("Unable to create test workspace");
+
+    let path = PgLSPath::new("test.sql");
+    let content = "drop index users_email_idx;\n-- pgls-ignore requireConcurrentIndexDeletion\ndrop index users_name_idx;";
+    workspace
+        .open_file(OpenFileParams {
+            path: path.clone(),
+            content: content.into(),
+            version: 1,
+        })
+        .expect("Unable to open test file");
+
+    let fix = |fix_file_mode| {
+        workspace
+            .fix_file(FixFileParams {
+                path: path.clone(),
+                fix_file_mode,
+                only: vec![
+                    "safety/requireConcurrentIndexDeletion".parse().unwrap(),
+                    "safety/preferRobustStmts".parse().unwrap(),
+                ],
+                skip: vec![],
+            })
+            .expect("Unable to fix file")
+    };
+
+    // The unsafe `IF EXISTS` fix only applies once `CONCURRENTLY` was added, in a second pass.
+    let safe = fix(FixFileMode::SafeFixes);
+    assert_eq!(
+        safe.code,
+        "drop index CONCURRENTLY users_email_idx;\n-- pgls-ignore requireConcurrentIndexDeletion\ndrop index users_name_idx;"
+    );
+    assert_eq!(safe.fixes_applied, 1);
+    assert_eq!(safe.skipped_suggested_fixes, 1);
+
+    let all = fix(FixFileMode::SafeAndUnsafeFixes);
+    assert_eq!(
+        all.code,
+        "drop index CONCURRENTLY IF EXISTS users_email_idx;\n-- pgls-ignore requireConcurrentIndexDeletion\ndrop index users_name_idx;"
+    );
+    assert_eq!(all.fixes_applied, 2);
+    assert_eq!(all.skipped_suggested_fixes, 0);
 }

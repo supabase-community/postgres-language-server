@@ -1,8 +1,14 @@
-use crate::{adapters::get_cursor_position, session::Session};
+use std::collections::HashMap;
+
+use crate::{
+    adapters::{get_cursor_position, to_lsp},
+    session::Session,
+};
 use anyhow::{Result, anyhow};
+use pgls_analyse::{Applicability, SUPPRESSION_ACTION_CATEGORY};
 use tower_lsp::lsp_types::{
     self, CodeAction, CodeActionDisabled, CodeActionOrCommand, Command, ExecuteCommandParams,
-    MessageType,
+    MessageType, WorkspaceEdit,
 };
 
 use pgls_workspace::features::code_actions::{
@@ -71,7 +77,55 @@ pub fn get_actions(
                 }
             }
 
-            _ => todo!(),
+            CodeActionKind::Edit(edit) => {
+                let line_index = &session.document(&url).ok()?.line_index;
+                let edits = edit
+                    .edits
+                    .iter()
+                    .map(|text_edit| {
+                        Some(lsp_types::TextEdit {
+                            range: to_lsp::range(
+                                line_index,
+                                text_edit.range,
+                                session.position_encoding(),
+                            )
+                            .ok()?,
+                            new_text: text_edit.new_text.clone(),
+                        })
+                    })
+                    .collect::<Option<Vec<_>>>()?;
+                let diagnostics: Vec<_> = params
+                    .context
+                    .diagnostics
+                    .iter()
+                    .filter(|diagnostic| {
+                        diagnostic.code
+                            == Some(lsp_types::NumberOrString::String(edit.rule.clone()))
+                    })
+                    .cloned()
+                    .collect();
+                let is_suppression = edit.category.matches(SUPPRESSION_ACTION_CATEGORY);
+
+                Some(CodeAction {
+                    title: action.title,
+                    kind: Some(lsp_types::CodeActionKind::from(
+                        edit.category.to_str().into_owned(),
+                    )),
+                    diagnostics: (!diagnostics.is_empty()).then_some(diagnostics),
+                    edit: Some(WorkspaceEdit {
+                        changes: Some(HashMap::from([(url.clone(), edits)])),
+                        ..Default::default()
+                    }),
+                    is_preferred: (!is_suppression && edit.applicability == Applicability::Always)
+                        .then_some(true),
+                    disabled: action
+                        .disabled_reason
+                        .map(|reason| CodeActionDisabled { reason }),
+                    ..Default::default()
+                })
+            }
+
+            CodeActionKind::EditAndCommand(..) => None,
         })
         .collect();
 
