@@ -37,3 +37,9 @@ Without a database connection, these features are not available.
 These features work automatically when you have a database connection configured. See the [database configuration guide](../guides/configure_database.md) for setup instructions.
 
 The language server caches schema information on startup.
+
+## Inlay Hints
+
+Function calls show the names of the parameters their positional arguments are passed to, as in `make_point(x: 1, y: 2)`. Hints are only shown when the call resolves to exactly one function, including functions created earlier in the same file. Named arguments (`f(a => 1)`), unnamed parameters, and arguments that already carry the parameter's name (`f(t.x)` for the parameter `x`) get no hint. Of the elements passed to a `VARIADIC` parameter, only the first is labelled.
+
+Inlay hints require a database connection. Enable them in your editor, e.g. with `editor.inlayHints.enabled` in VS Code.

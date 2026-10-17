@@ -25,6 +25,7 @@ use crate::{
         CodeActionKind, ExecuteStatementResult, FixFileMode, FixFileParams, TextEdit,
     },
     features::format::PullFileFormattingParams,
+    features::inlay_hints::{InlayHint, InlayHintKind, PullInlayHintsParams},
     workspace::{
         OpenFileParams, RegisterProjectFolderParams, StatementId, UpdateSettingsParams,
         server::WorkspaceServer,
@@ -1968,4 +1969,75 @@ fn test_fix_file() {
     );
     assert_eq!(all.fixes_applied, 2);
     assert_eq!(all.skipped_suggested_fixes, 0);
+}
+
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn test_inlay_hints(test_db: PgPool) {
+    test_db
+        .execute(
+            "create function db_point(x int, y int) returns int language sql as 'select x + y';",
+        )
+        .await
+        .expect("Failed to setup test database");
+
+    let mut conf = PartialConfiguration::init();
+    conf.merge_with(PartialConfiguration {
+        db: Some(PartialDatabaseConfiguration {
+            database: Some(
+                test_db
+                    .connect_options()
+                    .get_database()
+                    .unwrap()
+                    .to_string(),
+            ),
+            ..Default::default()
+        }),
+        ..Default::default()
+    });
+    let workspace = get_test_workspace(Some(conf)).expect("Unable to create test workspace");
+
+    let path = PgLSPath::new("test.sql");
+    let content = "create function file_point(a int, b int) returns int language sql as 'select a + b';\nselect db_point(1, y => 2), file_point(3, 4);\nselect db_point(5, 6);\n";
+    workspace
+        .open_file(OpenFileParams {
+            path: path.clone(),
+            content: content.into(),
+            version: 1,
+        })
+        .expect("Unable to open test file");
+
+    let second_line = content.find("select").unwrap();
+    let third_line = content.rfind("select").unwrap();
+    let hints = workspace
+        .pull_inlay_hints(PullInlayHintsParams {
+            path: path.clone(),
+            range: TextRange::new(
+                u32::try_from(second_line).unwrap().into(),
+                u32::try_from(third_line).unwrap().into(),
+            ),
+        })
+        .expect("Unable to pull inlay hints")
+        .hints;
+
+    let offset_of = |needle: &str| u32::try_from(content.find(needle).unwrap()).unwrap().into();
+    assert_eq!(
+        hints,
+        vec![
+            InlayHint {
+                offset: offset_of("1, y"),
+                label: "x:".into(),
+                kind: InlayHintKind::Parameter,
+            },
+            InlayHint {
+                offset: offset_of("3, 4"),
+                label: "a:".into(),
+                kind: InlayHintKind::Parameter,
+            },
+            InlayHint {
+                offset: offset_of("4)"),
+                label: "b:".into(),
+                kind: InlayHintKind::Parameter,
+            },
+        ]
+    );
 }

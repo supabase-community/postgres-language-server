@@ -65,6 +65,7 @@ use crate::{
             PullFileDiagnosticsParams,
         },
         format::{PullFileFormattingParams, PullFormattingResult, StatementFormatResult},
+        inlay_hints::{InlayHint, PullInlayHintsParams, PullInlayHintsResult},
         on_hover::{OnHoverParams, OnHoverResult},
     },
     settings::{Settings, WorkspaceSettings, WorkspaceSettingsHandle, WorkspaceSettingsHandleMut},
@@ -1653,6 +1654,106 @@ impl Workspace for WorkspaceServer {
             }
             None => Ok(OnHoverResult::default()),
         }
+    }
+
+    #[ignored_path(path=&params.path)]
+    #[tracing::instrument(level = "debug", skip_all, fields(
+        path = params.path.as_os_str().to_str(),
+        range = ?params.range
+    ), err)]
+    fn pull_inlay_hints(
+        &self,
+        params: PullInlayHintsParams,
+    ) -> Result<PullInlayHintsResult, WorkspaceError> {
+        let documents = self.documents.read().unwrap();
+        let doc = documents
+            .get(&params.path)
+            .ok_or(WorkspaceError::not_found())?;
+
+        #[cfg(feature = "db")]
+        let Some(snapshot) = self
+            .workspaces()
+            .settings()
+            .and_then(|settings| {
+                self.connection
+                    .with_pool(&settings.db, |pool| self.snapshot.load(pool))
+            })
+            .transpose()?
+        else {
+            tracing::debug!("No database connection available. Skipping inlay hints.");
+            return Ok(PullInlayHintsResult::default());
+        };
+
+        #[cfg(not(feature = "db"))]
+        let Some(snapshot) = self.snapshot.get() else {
+            tracing::debug!("No schema loaded. Skipping inlay hints.");
+            return Ok(PullInlayHintsResult::default());
+        };
+
+        let search_path = self
+            .workspaces()
+            .settings()
+            .map(|settings| settings.typecheck.search_path.clone())
+            .unwrap_or_default();
+
+        /*
+         * Like the analyser, walk the file with the catalog and the session following the
+         * statements, so that calls see the functions created earlier in the file.
+         */
+        let mut catalog = Catalog::new(Some(self.catalog_base(&snapshot)));
+        let mut session = Session::new(snapshot.expand_search_path(&search_path));
+        let mut hints = Vec::new();
+        for (stmt, _, unparsable) in doc.iter(AnalyserDiagnosticsMapper) {
+            if let Some(unparsable) = unparsable {
+                if unparsable.range.start() >= params.range.end() {
+                    break;
+                }
+                if pgls_analyser::may_change_catalog(&unparsable.sql) {
+                    catalog.taint();
+                }
+                continue;
+            }
+            let Some(stmt) = stmt else {
+                continue;
+            };
+            if stmt.range.start() >= params.range.end() {
+                break;
+            }
+            // The names of statements with identifier parameters like `:name` are placeholders.
+            if stmt.has_identifier_parameters {
+                if !pgls_analyser::is_plain_query(&stmt.root) {
+                    catalog.taint();
+                }
+                continue;
+            }
+            if let Some(sql) = stmt.sql.as_deref()
+                && stmt.range.intersect(params.range).is_some()
+            {
+                hints.extend(
+                    pgls_inlay_hints::inlay_hints(pgls_inlay_hints::InlayHintsParams {
+                        stmt: &stmt.root,
+                        sql,
+                        catalog: &catalog,
+                        search_path: session.search_path(),
+                        function: stmt.function.as_ref(),
+                    })
+                    .into_iter()
+                    .map(|hint| InlayHint {
+                        offset: hint.offset + stmt.range.start(),
+                        label: hint.label,
+                        kind: hint.kind.into(),
+                    }),
+                );
+            }
+            // Statements in the bodies of SQL functions are not executed.
+            if stmt.function.is_none() {
+                catalog.apply(&stmt.root, session.search_path());
+                session.apply(&stmt.root);
+            }
+        }
+
+        hints.sort_by_key(|hint| hint.offset);
+        Ok(PullInlayHintsResult { hints })
     }
 }
 
