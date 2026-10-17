@@ -63,3 +63,21 @@ postgres-language-server check migrations/
 Which rules run is set in the configuration file, see above.
 
 See the [CLI Reference](../reference/cli.md) for more options, and check the guide on [linting migrations](../guides/checking_migrations.md).
+
+## Autofix
+
+Some rules can fix the issues they report. The fixes come in two kinds:
+
+- **Safe** fixes only do what the rule asks for, e.g. add `CONCURRENTLY` to `CREATE INDEX`. They are left out where Postgres would reject them, e.g. inside a transaction block.
+- **Unsafe** fixes may change what a statement does, e.g. swap the type of a column or add `NOT VALID` to a constraint. Review them before applying them.
+
+In the editor, the fixes are offered as quick fixes on the diagnostic, next to a quick fix that suppresses the rule for the statement with a `-- pgls-ignore <rule>` comment.
+
+On the command line, `check --fix` applies the safe fixes and writes the files. Add `--unsafe` to also apply the unsafe fixes:
+
+```sh
+postgres-language-server check --fix migrations/
+postgres-language-server check --fix --unsafe migrations/
+```
+
+The documentation of each rule says whether it has a fix and whether the fix is safe.

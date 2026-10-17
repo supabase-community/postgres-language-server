@@ -234,7 +234,7 @@ Lints your database schema.
 
 Runs everything to the requested files.
 
-**Usage**: **`postgres-language-server`** **`check`** \[**`--staged`**\] \[**`--changed`**\] \[**`--since`**=_`REF`_\] \[_`PATH`_\]...
+**Usage**: **`postgres-language-server`** **`check`** \[**`--staged`**\] \[**`--changed`**\] \[**`--since`**=_`REF`_\] \[**`--fix`**\] \[**`--unsafe`**\] \[_`PATH`_\]...
 
 **The configuration that is contained inside the configuration file.**
 - **`    --vcs-enabled`**=_`<true|false>`_ &mdash; 
@@ -366,6 +366,10 @@ Runs everything to the requested files.
   When set to true, only the files that have been changed compared to your `defaultBranch` configuration will be linted. This option should be used in CI environments.
 - **`    --since`**=_`REF`_ &mdash; 
   Use this to specify the base branch to compare against when you're using the --changed flag and the `defaultBranch` is not set in your `postgres-language-server.jsonc`
+- **`    --fix`** &mdash; 
+  Apply the safe fixes of the lint rules and write the files.
+- **`    --unsafe`** &mdash; 
+  Also apply the unsafe fixes, which may change what a statement does. Implies `--fix`.
 - **`-h`**, **`--help`** &mdash; 
   Prints help information
 
