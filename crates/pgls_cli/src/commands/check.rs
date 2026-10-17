@@ -9,6 +9,7 @@ use pgls_configuration::PartialConfiguration;
 use pgls_diagnostics::{Error, category};
 use pgls_fs::FileSystem;
 use pgls_workspace::DynRef;
+use pgls_workspace::features::code_actions::FixFileMode;
 use pgls_workspace::features::diagnostics::CheckDatabaseConnectionParams;
 use std::ffi::OsString;
 
@@ -19,6 +20,8 @@ pub struct CheckArgs {
     pub staged: bool,
     pub changed: bool,
     pub since: Option<String>,
+    pub fix: bool,
+    pub unsafe_: bool,
 }
 
 pub fn check(
@@ -44,7 +47,12 @@ pub fn check(
         u32::MAX
     };
 
-    let mode = ExecutionMode::Check { vcs };
+    let fix = match (args.fix, args.unsafe_) {
+        (_, true) => Some(FixFileMode::SafeAndUnsafeFixes),
+        (true, false) => Some(FixFileMode::SafeFixes),
+        (false, false) => None,
+    };
+    let mode = ExecutionMode::Check { vcs, fix };
     let execution = ExecutionConfig::new(mode, max_diagnostics);
 
     if let Some(stdin_path) = args.stdin_file_path.as_deref() {

@@ -596,3 +596,33 @@ fn trim_trailing_newlines(mut value: String) -> String {
     }
     value
 }
+
+#[test]
+fn check_fix_writes_safe_fixes() {
+    let dir = Path::new("tests/fixtures").join(format!("fix-{}", std::process::id()));
+    std::fs::create_dir_all(&dir).unwrap();
+    let file = dir.join("migration.sql");
+    std::fs::write(&file, "reindex index my_index;\n").unwrap();
+
+    let mut cmd = cargo_bin_cmd!("postgres-language-server");
+    let output = cmd
+        .args([
+            "check",
+            "--config-path",
+            CONFIG_PATH,
+            "--fix",
+            file.to_str().unwrap(),
+        ])
+        .output()
+        .expect("failed to run CLI");
+
+    let fixed = std::fs::read_to_string(&file).unwrap();
+    std::fs::remove_dir_all(&dir).unwrap();
+    assert_eq!(
+        fixed,
+        "reindex index CONCURRENTLY my_index;\n",
+        "stdout: {}\nstderr: {}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+}
