@@ -603,6 +603,29 @@ pub(super) fn emit_clause_condition(e: &mut EventEmitter, clause: &Node) {
     e.indent_end();
 }
 
+/// Emits a condition wrapped in parentheses, such as the `USING (...)` of a policy.
+///
+/// It stays on the keyword line when it fits. Otherwise the condition breaks onto its own lines,
+/// indented like a WHERE condition, and the closing parenthesis returns to the keyword's indent.
+pub(super) fn emit_parenthesized_condition(
+    e: &mut EventEmitter,
+    kind: GroupKind,
+    condition: &Node,
+) {
+    use crate::TokenKind;
+    use crate::emitter::LineType;
+
+    e.group_start(kind);
+    e.token(TokenKind::L_PAREN);
+    e.indent_start();
+    e.line(LineType::Soft);
+    emit_node(condition, e);
+    e.indent_end();
+    e.line(LineType::Soft);
+    e.token(TokenKind::R_PAREN);
+    e.group_end();
+}
+
 /// Emits the break that separates a statement clause from the previous one.
 ///
 /// In expanded layout it is a `Hard` line, which `try_single_line` refuses to collapse, so the

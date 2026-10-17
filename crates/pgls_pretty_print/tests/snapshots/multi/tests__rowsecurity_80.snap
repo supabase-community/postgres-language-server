@@ -220,11 +220,13 @@ on category
 as permissive
 for all
 to public
-using (case
-  when current_user = 'regress_rls_bob' then cid in (11, 33)
-  when current_user = 'regress_rls_carol' then cid in (22, 44)
-  else false
-end);
+using (
+  case
+    when current_user = 'regress_rls_bob' then cid in (11, 33)
+    when current_user = 'regress_rls_carol' then cid in (22, 44)
+    else false
+  end
+);
 
 alter table category
   enable row level security;

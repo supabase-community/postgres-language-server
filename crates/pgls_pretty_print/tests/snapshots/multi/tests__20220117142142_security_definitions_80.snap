@@ -169,10 +169,12 @@ on storage.objects
 as permissive
 for insert
 to authenticated
-with check (app.is_handle_maintainer(
-  auth.uid(),
-  cast((string_to_array(name, cast('-' as text)))[1] as app.valid_name)
-));
+with check (
+  app.is_handle_maintainer(
+    auth.uid(),
+    cast((string_to_array(name, cast('-' as text)))[1] as app.valid_name)
+  )
+);
 
 create policy storage_objects_select_policy
 on storage.objects
