@@ -2629,6 +2629,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "pgls_inlay_hints"
+version = "0.0.0"
+dependencies = [
+ "pgls_catalog",
+ "pgls_query",
+ "pgls_test_utils",
+ "pgls_text_size",
+ "sqlx",
+]
+
+[[package]]
 name = "pgls_lexer"
 version = "0.0.0"
 dependencies = [
@@ -2995,6 +3006,7 @@ dependencies = [
  "pgls_env",
  "pgls_fs",
  "pgls_hover",
+ "pgls_inlay_hints",
  "pgls_lexer",
  "pgls_matcher",
  "pgls_pglinter",

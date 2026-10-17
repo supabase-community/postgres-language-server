@@ -270,7 +270,7 @@ impl<'a> Analyser<'a> {
 /// maintenance, cursors, prepared statements, comments and privileges can't create, drop or
 /// rename objects, unless they are `SELECT ... INTO` or `EXPLAIN ANALYZE CREATE TABLE AS`. For
 /// anything else we can't tell.
-fn may_change_catalog(sql: &str) -> bool {
+pub fn may_change_catalog(sql: &str) -> bool {
     use pgls_query::protobuf::Token;
     let Ok(scan) = pgls_query::scan(sql) else {
         return true;
@@ -318,7 +318,7 @@ fn may_change_catalog(sql: &str) -> bool {
 
 /// Whether the statement only reads or writes rows, without changing the catalog or the
 /// session.
-fn is_plain_query(root: &pgls_query::NodeEnum) -> bool {
+pub fn is_plain_query(root: &pgls_query::NodeEnum) -> bool {
     use pgls_query::NodeEnum;
     match root {
         NodeEnum::SelectStmt(select) => select.into_clause.is_none(),
