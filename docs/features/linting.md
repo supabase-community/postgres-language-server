@@ -31,8 +31,6 @@ Configure linting behavior in your `postgres-language-server.jsonc`:
 }
 ```
 
-The former nested form `"rules": { "safety": { ... } }` still works, but prints a deprecation warning. See [Configuration](../configuration.md) for the details.
-
 ## Suppressing Diagnostics
 
 You can suppress specific diagnostics using comments:

@@ -40,7 +40,6 @@ pub struct PgLSEnv {
     pub pgpassword: PgLSEnvVariable,
     pub pgpassfile: PgLSEnvVariable,
     pub pgdatabase: PgLSEnvVariable,
-
 }
 
 pub static PGLS_ENV: OnceLock<PgLSEnv> = OnceLock::new();

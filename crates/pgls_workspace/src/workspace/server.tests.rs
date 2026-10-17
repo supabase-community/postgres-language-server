@@ -134,7 +134,7 @@ fn test_suppresses_multiline_alter_table_drop_column() {
             path: path.clone(),
             categories: RuleCategories::all(),
             max_diagnostics: 100,
-            only: vec!["safety/banDropColumn".parse().unwrap()],
+            only: vec!["banDropColumn".parse().unwrap()],
             skip: vec![],
         })
         .expect("Unable to pull diagnostics")
@@ -147,7 +147,7 @@ fn test_suppresses_multiline_alter_table_drop_column() {
 }
 
 #[test]
-fn test_legacy_suppression_still_suppresses_and_warns() {
+fn test_former_suppression_specifier_is_invalid() {
     let workspace = get_test_workspace(None).expect("Unable to create test workspace");
 
     let path = PgLSPath::new("test.sql");
@@ -174,7 +174,7 @@ ALTER TABLE users DROP COLUMN deprecated_field;"#;
         .diagnostics;
 
     assert!(
-        !diagnostics
+        diagnostics
             .iter()
             .any(|d| d.category().map(|c| c.name()) == Some("lint/banDropColumn")),
         "{diagnostics:#?}"
@@ -182,7 +182,7 @@ ALTER TABLE users DROP COLUMN deprecated_field;"#;
     assert!(
         diagnostics
             .iter()
-            .any(|d| d.description_text().contains("Use `banDropColumn` instead")),
+            .any(|d| d.description_text().contains("Invalid rule.")),
         "{diagnostics:#?}"
     );
 }
