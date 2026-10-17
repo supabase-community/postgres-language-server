@@ -48,7 +48,7 @@ pub struct CommandAction {
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub enum CommandActionCategory {
     ExecuteStatement(StatementId),
-    InvalidateSchemaCache,
+    InvalidateSnapshot,
 }
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]

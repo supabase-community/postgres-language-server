@@ -2,7 +2,7 @@
 /**
  * The objects of the connected database, loaded from the database or from JSON.
  */
-export interface SchemaCache {
+export interface Snapshot {
   casts?: PostgresCast[];
   columns?: Column[];
   extensions?: Extension[];

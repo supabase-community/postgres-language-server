@@ -18,12 +18,9 @@ pub fn is_unstable() -> bool {
 /// The version of Postgres Language Server. This is usually supplied during the CI build.
 pub const VERSION: &str = match option_env!("PGLS_VERSION") {
     Some(version) => version,
-    None => match option_env!("PGT_VERSION") {
-        Some(version) => version,
-        None => match option_env!("CARGO_PKG_VERSION") {
-            Some(pkg_version) => pkg_version,
-            None => "0.0.0",
-        },
+    None => match option_env!("CARGO_PKG_VERSION") {
+        Some(pkg_version) => pkg_version,
+        None => "0.0.0",
     },
 };
 
@@ -43,15 +40,9 @@ pub struct PgLSEnv {
     pub pgpassword: PgLSEnvVariable,
     pub pgpassfile: PgLSEnvVariable,
     pub pgdatabase: PgLSEnvVariable,
-
-    // DEPRECATED - kept for backward compatibility
-    pub pgt_log_path: PgLSEnvVariable,
-    pub pgt_log_level: PgLSEnvVariable,
-    pub pgt_log_prefix: PgLSEnvVariable,
-    pub pgt_config_path: PgLSEnvVariable,
 }
 
-pub static PGT_ENV: OnceLock<PgLSEnv> = OnceLock::new();
+pub static PGLS_ENV: OnceLock<PgLSEnv> = OnceLock::new();
 
 impl PgLSEnv {
     fn new() -> Self {
@@ -92,23 +83,6 @@ impl PgLSEnv {
                 "PGDATABASE",
                 "The name of the database to connect to.",
             ),
-
-            pgt_log_path: PgLSEnvVariable::new(
-                "PGT_LOG_PATH",
-                "The directory where the Daemon logs will be saved. Deprecated, use PGLS_LOG_PATH instead.",
-            ),
-            pgt_log_level: PgLSEnvVariable::new(
-                "PGT_LOG_LEVEL",
-                "Allows to change the log level. Default is debug. This will only affect \"pgls*\" crates. All others are logged with info level. Deprecated, use PGLS_LOG_LEVEL instead.",
-            ),
-            pgt_log_prefix: PgLSEnvVariable::new(
-                "PGT_LOG_PREFIX_NAME",
-                "A prefix that's added to the name of the log. Default: `server.log`. Deprecated, use PGLS_LOG_PREFIX_NAME instead.",
-            ),
-            pgt_config_path: PgLSEnvVariable::new(
-                "PGT_CONFIG_PATH",
-                "A path to the configuration file. Deprecated, use PGLS_CONFIG_PATH instead.",
-            ),
         }
     }
 }
@@ -143,7 +117,7 @@ impl PgLSEnvVariable {
 }
 
 pub fn pgls_env() -> &'static PgLSEnv {
-    PGT_ENV.get_or_init(PgLSEnv::new)
+    PGLS_ENV.get_or_init(PgLSEnv::new)
 }
 
 impl Display for PgLSEnv {
@@ -215,41 +189,6 @@ impl Display for PgLSEnv {
                 }
             };
         }
-
-        match self.pgt_log_path.value() {
-            None => {
-                KeyValuePair(self.pgt_log_path.name, markup! { <Dim>"unset"</Dim> }).fmt(fmt)?;
-            }
-            Some(value) => {
-                KeyValuePair(self.pgt_log_path.name, markup! {{DebugDisplay(value)}}).fmt(fmt)?;
-            }
-        };
-        match self.pgt_log_level.value() {
-            None => {
-                KeyValuePair(self.pgt_log_level.name, markup! { <Dim>"unset"</Dim> }).fmt(fmt)?;
-            }
-            Some(value) => {
-                KeyValuePair(self.pgt_log_level.name, markup! {{DebugDisplay(value)}}).fmt(fmt)?;
-            }
-        };
-        match self.pgt_log_prefix.value() {
-            None => {
-                KeyValuePair(self.pgt_log_prefix.name, markup! { <Dim>"unset"</Dim> }).fmt(fmt)?;
-            }
-            Some(value) => {
-                KeyValuePair(self.pgt_log_prefix.name, markup! {{DebugDisplay(value)}}).fmt(fmt)?;
-            }
-        };
-
-        match self.pgt_config_path.value() {
-            None => {
-                KeyValuePair(self.pgt_config_path.name, markup! { <Dim>"unset"</Dim> }).fmt(fmt)?;
-            }
-            Some(value) => {
-                KeyValuePair(self.pgt_config_path.name, markup! {{DebugDisplay(value)}})
-                    .fmt(fmt)?;
-            }
-        };
 
         Ok(())
     }

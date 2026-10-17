@@ -103,14 +103,6 @@ jobs:
       - name: Install dependencies
         run: bun install
 
-      - name: Generate Packages (deprecated)
-        id: generate-packages-deprecated
-        run: node packages/@postgrestools/postgrestools/scripts/generate-packages.mjs
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.release_tag || github.event.release.tag_name }}
-          PRERELEASE: ${{ github.event_name == 'workflow_dispatch' && needs.validate_tag.outputs.is-prerelease || github.event.release.prerelease }}
-
       - name: Generate Packages
         id: generate-packages
         run: node packages/@postgres-language-server/cli/scripts/generate-packages.mjs
@@ -123,33 +115,11 @@ jobs:
         working-directory: packages/@postgres-language-server/wasm
         run: bun run build:ts:release-assets
 
-      - name: Publish npm packages as nightly (deprecated)
-        if: (github.event_name == 'workflow_dispatch' && needs.validate_tag.outputs.is-prerelease == 'true') || (github.event_name == 'release' && github.event.release.prerelease)
-        run: |
-          for package in packages/@postgrestools/*; do
-            npm publish "$package" --tag nightly --access public --provenance
-          done
-
       - name: Publish npm packages as nightly
         if: (github.event_name == 'workflow_dispatch' && needs.validate_tag.outputs.is-prerelease == 'true') || (github.event_name == 'release' && github.event.release.prerelease)
         run: |
           for package in packages/@postgres-language-server/*; do
             npm publish "$package" --tag nightly --access public --provenance
-          done
-
-      - name: Publish npm packages as latest (deprecated)
-        if: (github.event_name == 'workflow_dispatch' && needs.validate_tag.outputs.is-prerelease != 'true') || (github.event_name == 'release' && !github.event.release.prerelease)
-        run: |
-          for package in packages/@postgrestools/*; do
-            version="${{ github.event_name == 'workflow_dispatch' && inputs.release_tag || github.event.release.tag_name }}"
-            npm_package_name=$(jq -r ".name" "$package/package.json")
-
-            if npm view "$npm_package_name@$version" version 2>/dev/null; then
-              echo "Package $npm_package_name@$version already exists, skipping..."
-            else
-              echo "Publishing $npm_package_name@$version..."
-              npm publish "$package" --tag latest --access public --provenance
-            fi
           done
 
       - name: Publish npm packages as latest

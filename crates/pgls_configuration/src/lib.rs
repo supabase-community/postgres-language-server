@@ -199,16 +199,6 @@ impl PartialConfiguration {
             }),
         }
     }
-
-    /// A message for each deprecated setting in use.
-    pub fn deprecations(&self) -> Vec<String> {
-        let Some(linter) = &self.linter else {
-            return Vec::new();
-        };
-        let rules = linter.get_rules();
-        let groups = linter.groups.clone().unwrap_or_default();
-        LinterRuleSettings::new(&rules, &groups).deprecations()
-    }
 }
 
 pub struct ConfigurationPayload {

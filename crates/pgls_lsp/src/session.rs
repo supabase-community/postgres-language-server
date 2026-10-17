@@ -9,7 +9,7 @@ use futures::stream::FuturesUnordered;
 use pgls_analyse::RuleCategoriesBuilder;
 use pgls_configuration::{ConfigurationPathHint, PartialConfiguration};
 use pgls_diagnostics::{DiagnosticExt, Error};
-use pgls_fs::{ConfigName, FileSystem, PgLSPath};
+use pgls_fs::{FileSystem, PgLSPath};
 use pgls_workspace::PartialConfigurationExt;
 use pgls_workspace::Workspace;
 use pgls_workspace::configuration::{LoadedConfiguration, load_configuration};
@@ -73,12 +73,6 @@ pub(crate) struct Session {
     /// A flag to notify a message to the user when the configuration is broken, and the LSP attempts
     /// to update the diagnostics
     notified_broken_configuration: AtomicBool,
-
-    /// A flag to notify a message to the user when they are using the deprecated config filename
-    notified_deprecated_config: AtomicBool,
-
-    /// Whether the user was told about deprecated settings in the configuration.
-    notified_deprecated_settings: AtomicBool,
 
     /// File system to read files inside the workspace
     pub(crate) fs: DynRef<'static, dyn FileSystem>,
@@ -219,8 +213,6 @@ impl Session {
             cancellation,
             config_path: None,
             notified_broken_configuration: AtomicBool::new(false),
-            notified_deprecated_config: AtomicBool::new(false),
-            notified_deprecated_settings: AtomicBool::new(false),
             env_config,
             client_overrides: RwLock::new(ClientOverrides::default()),
             configuration_transition: tokio::sync::Mutex::new(()),
@@ -582,41 +574,6 @@ impl Session {
                         .as_ref()
                         .map_or("<unknown>".to_string(), |p| p.display().to_string())
                 );
-
-                // Check if using deprecated config filename and notify user (once)
-                if !self.notified_deprecated_config.load(Ordering::Relaxed)
-                    && let Some(config_path) = &configuration_file_path
-                    && let Some(file_name) = config_path.file_name().and_then(|n| n.to_str())
-                    && ConfigName::is_deprecated(file_name)
-                {
-                    self.client
-                                    .show_message(
-                                        MessageType::WARNING,
-                                        "You are using the deprecated config filename 'postgrestools.jsonc'. \
-                                        Please rename it to 'postgres-language-server.jsonc'. \
-                                        Support for the old filename will be removed in a future version."
-                                    )
-                                    .await;
-                    self.notified_deprecated_config
-                        .store(true, Ordering::Relaxed);
-                }
-
-                let deprecations = fs_configuration.deprecations();
-                if !deprecations.is_empty()
-                    && !self
-                        .notified_deprecated_settings
-                        .swap(true, Ordering::Relaxed)
-                {
-                    self.client
-                        .show_message(
-                            MessageType::WARNING,
-                            format!(
-                                "Your configuration uses deprecated settings:\n{}",
-                                deprecations.join("\n")
-                            ),
-                        )
-                        .await;
-                }
 
                 info!("Update workspace settings.");
 

@@ -6,7 +6,7 @@ use schemars::r#gen::{SchemaGenerator, SchemaSettings};
 
 pub fn generate_schema_types(mode: Mode) -> Result<()> {
     let output_path =
-        project_root().join("packages/@postgres-language-server/wasm/src/schema-cache.d.ts");
+        project_root().join("packages/@postgres-language-server/wasm/src/snapshot.d.ts");
 
     let mut declarations: Vec<(String, Option<&String>)> = Vec::new();
     let mut queue = ModuleQueue::default();

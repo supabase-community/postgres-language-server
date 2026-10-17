@@ -15,8 +15,8 @@ The accepted specifiers are:
 
 - `lint` — all lint rules.
 - `banDropTable` or `lint/banDropTable` — one rule.
-- `destructive` or `lint/destructive` — all rules in a group.
-- `typecheck` — typecheck diagnostics and lint rules in the `typecheck` group.
+- `destructive` — all rules in a group.
+- `typecheck` — all rules in the `typecheck` group.
 - Other non-lint diagnostic categories, such as `syntax`, continue to work as category suppressions.
 
 A colon adds an optional explanation:
@@ -54,9 +54,9 @@ Multiple comments can suppress multiple rules for a statement:
 alter table tasks drop column created_at;
 ```
 
-## Backward Compatibility
+## Former Rule IDs
 
-Legacy `lint/<group>/<rule>` and `lint/<group>` forms still work, but report a deprecation warning that names the flat form. `lint/safety` keeps its former meaning: it suppresses every lint rule, like `lint`, because all rules used to be in that group. Use `safety` for today's safety group. Removed rule names `preferBigintOverInt` and `preferBigintOverSmallint` map to `preferBigInt`, also with a warning. The legacy `pgt-ignore` comment prefix still works.
+The former `lint/<group>/<rule>` and `lint/<group>` forms, `lint/safety`, and the removed rule names `preferBigintOverInt`, `preferBigintOverSmallint` and `concurrentRefreshMatviewLock` are no longer accepted and report an invalid rule. See [Upgrading to 0.29](upgrading_to_0_29.md).
 
 ## Notes
 

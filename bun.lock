@@ -47,32 +47,6 @@
         "typescript": "^5.0.0",
       },
     },
-    "packages/@postgrestools/backend-jsonrpc": {
-      "name": "@postgrestools/backend-jsonrpc",
-      "optionalDependencies": {
-        "@postgrestools/cli-darwin-arm64": "<placeholder>",
-        "@postgrestools/cli-darwin-x64": "<placeholder>",
-        "@postgrestools/cli-linux-arm64": "<placeholder>",
-        "@postgrestools/cli-linux-x64": "<placeholder>",
-        "@postgrestools/cli-win32-arm64": "<placeholder>",
-        "@postgrestools/cli-win32-x64": "<placeholder>",
-      },
-    },
-    "packages/@postgrestools/postgrestools": {
-      "name": "@postgrestools/postgrestools",
-      "bin": {
-        "postgrestools": "bin/postgrestools",
-      },
-      "optionalDependencies": {
-        "@postgrestools/cli-aarch64-apple-darwin": "<placeholder>",
-        "@postgrestools/cli-aarch64-linux-gnu": "<placeholder>",
-        "@postgrestools/cli-aarch64-windows-msvc": "<placeholder>",
-        "@postgrestools/cli-x86_64-apple-darwin": "<placeholder>",
-        "@postgrestools/cli-x86_64-linux-gnu": "<placeholder>",
-        "@postgrestools/cli-x86_64-linux-musl": "<placeholder>",
-        "@postgrestools/cli-x86_64-windows-msvc": "<placeholder>",
-      },
-    },
   },
   "packages": {
     "@oxfmt/binding-android-arm-eabi": ["@oxfmt/binding-android-arm-eabi@0.34.0", "", { "os": "android", "cpu": "arm" }, "sha512-sqkqjh/Z38l+duOb1HtVqJTAj1grt2ttkobCopC/72+a4Xxz4xUgZPFyQ4HxrYMvyqO/YA0tvM1QbfOu70Gk1Q=="],
@@ -172,22 +146,6 @@
     "@postgres-language-server/cli-x86_64-windows-msvc": ["@postgres-language-server/cli-x86_64-windows-msvc@0.17.1", "", { "os": "win32", "cpu": "x64" }, "sha512-o2uIx0Vi3iEBFKKnz024JicgovJZWpM9G4WbQxf3r9IQlZPWvDXknlX7rNPQDnQTFRIUg8bpjZpjEvDFHMmuGg=="],
 
     "@postgres-language-server/wasm": ["@postgres-language-server/wasm@workspace:packages/@postgres-language-server/wasm"],
-
-    "@postgrestools/backend-jsonrpc": ["@postgrestools/backend-jsonrpc@workspace:packages/@postgrestools/backend-jsonrpc"],
-
-    "@postgrestools/cli-aarch64-apple-darwin": ["@postgrestools/cli-aarch64-apple-darwin@0.13.0", "", { "os": "darwin", "cpu": "arm64" }, "sha512-LqgpsiupuNR1m8rSqcMdwep1UsSG5z7RZ9MYHODBB0+AsN/e1YzcyutqGeKs+AfDBdKdv7QmSbpf7KruBYL+tg=="],
-
-    "@postgrestools/cli-aarch64-linux-gnu": ["@postgrestools/cli-aarch64-linux-gnu@0.13.0", "", { "os": "linux", "cpu": "arm64" }, "sha512-QxZZBvg9qAo9raTA5cSuSXlrqo+eCUtYMWSR2dgDCEqogNlo/62ubWYgPi+SMEtfm9euqG1GOItxyRv6xUriEA=="],
-
-    "@postgrestools/cli-aarch64-windows-msvc": ["@postgrestools/cli-aarch64-windows-msvc@0.13.0", "", { "os": "win32", "cpu": "arm64" }, "sha512-C8BRZOPQA16eGL8Kk7D4M+9h2Y7x0GOJEBzjR3ZV54besoH8gcZqSxzaA8WbFczQ3dgEZ5CStny6asl3B5JMHA=="],
-
-    "@postgrestools/cli-x86_64-apple-darwin": ["@postgrestools/cli-x86_64-apple-darwin@0.13.0", "", { "os": "darwin", "cpu": "x64" }, "sha512-stbU4+en82DofjzpAQlfgKemJe1lbkGhuOAxfWce4jyT25+cil6cEWBia0hZyrve9sVEJctE1MHy9os8s3EGww=="],
-
-    "@postgrestools/cli-x86_64-linux-gnu": ["@postgrestools/cli-x86_64-linux-gnu@0.13.0", "", { "os": "linux", "cpu": "x64" }, "sha512-RPFdgcAiD+BWhSFw7suI0jTkJysHlHzrD4in27OGlKt9AvZ6TgKrCfDatUkn2VQfn6Ib8o/+1roFOKwFbfQIOw=="],
-
-    "@postgrestools/cli-x86_64-windows-msvc": ["@postgrestools/cli-x86_64-windows-msvc@0.13.0", "", { "os": "win32", "cpu": "x64" }, "sha512-4S6mbvc9u6ipeMcZHwX3RqGMJaNR9B5utMQN/N3LBnvLx62N9MHU1bk3bnGxfHoALXQTMq+us7M9GvEe1izGHQ=="],
-
-    "@postgrestools/postgrestools": ["@postgrestools/postgrestools@workspace:packages/@postgrestools/postgrestools"],
 
     "@types/bun": ["@types/bun@1.2.5", "", { "dependencies": { "bun-types": "1.2.5" } }, "sha512-w2OZTzrZTVtbnJew1pdFmgV99H0/L+Pvw+z1P67HaR18MHOzYnTYOi6qzErhK8HyT+DB782ADVPPE92Xu2/Opg=="],
 

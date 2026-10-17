@@ -78,10 +78,10 @@ const { formatted } = workspace.format("/query.sql", { indentStyle: "tabs" });
 ### With Schema
 
 For schema-aware completions and hover, provide your database schema.
-TypeScript types exported as `SchemaCache`:
+TypeScript types exported as `Snapshot`:
 
 ```typescript
-import type { SchemaCache } from '@postgres-language-server/wasm';
+import type { Snapshot } from '@postgres-language-server/wasm';
 
 const workspace = await createWorkspace();
 
@@ -93,7 +93,7 @@ workspace.setSchema(JSON.stringify({
   functions: [],
   types: [],
   // ...
-} satisfies SchemaCache));
+} satisfies Snapshot));
 
 workspace.insertFile('/query.sql', 'SELECT * FROM ');
 const completions = workspace.complete('/query.sql', 14);
@@ -154,7 +154,7 @@ Use the `pgls/setSchema` notification:
 lsp.handleMessage({
   jsonrpc: "2.0",
   method: "pgls/setSchema",
-  params: { schema: JSON.stringify(schemaCache) },
+  params: { schema: JSON.stringify(snapshot) },
 });
 ```
 

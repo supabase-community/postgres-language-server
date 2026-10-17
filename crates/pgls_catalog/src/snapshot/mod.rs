@@ -38,11 +38,9 @@ use serde::{Deserialize, Serialize};
 #[cfg(feature = "db")]
 use sqlx::postgres::PgPool;
 
-// The JSON schema keeps the name `SchemaCache`, which the WASM package exports.
 /// The objects of the connected database, loaded from the database or from JSON.
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
-#[cfg_attr(feature = "schema", schemars(rename = "SchemaCache"))]
 #[serde(default)]
 pub struct Snapshot {
     pub schemas: Vec<Schema>,
