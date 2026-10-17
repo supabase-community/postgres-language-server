@@ -166,8 +166,8 @@ create server useless_server foreign data wrapper useless;
 create user mapping for regress_evt_user server useless_server;
 
 alter default privileges
-for role regress_evt_user
-revoke delete on tables from regress_evt_user;
+  for role regress_evt_user
+  revoke delete on tables from regress_evt_user;
 
 alter event trigger regress_event_trigger owner to regress_evt_user;
 

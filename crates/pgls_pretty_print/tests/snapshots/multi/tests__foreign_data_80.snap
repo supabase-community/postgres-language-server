@@ -971,9 +971,9 @@ reset role;
 grant usage on foreign data wrapper postgresql to regress_unprivileged_role;
 
 grant usage
-on foreign data wrapper foo
-to regress_unprivileged_role
-with grant option;
+  on foreign data wrapper foo
+  to regress_unprivileged_role
+  with grant option;
 
 set role to regress_unprivileged_role;
 

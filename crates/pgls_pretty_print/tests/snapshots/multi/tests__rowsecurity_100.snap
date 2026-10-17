@@ -1149,12 +1149,8 @@ create table z2 (
 );
 
 grant select
-on table z1,
-z2
-to regress_rls_group1,
-regress_rls_group2,
-regress_rls_bob,
-regress_rls_carol;
+  on table z1, z2
+  to regress_rls_group1, regress_rls_group2, regress_rls_bob, regress_rls_carol;
 
 insert into z1 values (1, 'aba'), (2, 'bbb'), (3, 'ccc'), (4, 'dad');
 
