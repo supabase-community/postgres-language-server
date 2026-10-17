@@ -188,17 +188,21 @@ fn build_extra_params(options: &PlPgSqlCheckParams<'_>) -> String {
     }
 }
 
+/// Checks a PL/pgSQL function with plpgsql_check.
+///
+/// Returns `None` if the function was not checked, e.g. because the extension is not installed
+/// or because no trigger uses the trigger function.
 pub async fn check_plpgsql(
     params: PlPgSqlCheckParams<'_>,
-) -> Result<Vec<PlPgSqlCheckDiagnostic>, sqlx::Error> {
+) -> Result<Option<Vec<PlPgSqlCheckDiagnostic>>, sqlx::Error> {
     let create_fn = match should_check_function(params.ast, params.snapshot) {
         Some(stmt) => stmt,
-        None => return Ok(vec![]),
+        None => return Ok(None),
     };
 
     let (fn_schema, fn_name) = match pgls_query_ext::utils::parse_name(&create_fn.funcname) {
         Some(n) => n,
-        None => return Ok(vec![]),
+        None => return Ok(None),
     };
 
     let fn_identifier = build_function_identifier(create_fn, &fn_schema, &fn_name);
@@ -235,6 +239,7 @@ pub async fn check_plpgsql(
 
     // run plpgsql_check and collect results with their relations
     let extra = build_extra_params(&params);
+    let mut checked = !is_trigger;
     let results_with_relations: Vec<(String, Option<String>)> = if is_trigger {
         let mut results = Vec::new();
 
@@ -243,6 +248,7 @@ pub async fn check_plpgsql(
                 && (fn_schema.is_none() || fn_schema.as_deref() == Some(&trigger.proc_schema))
             {
                 let relation = format!("{}.{}", trigger.table_schema, trigger.table_name);
+                checked = true;
 
                 let result: Option<String> = sqlx::query_scalar(&format!(
                     "select plpgsql_check_function('{fn_identifier}', '{relation}', format := 'json'{extra})"
@@ -275,6 +281,10 @@ pub async fn check_plpgsql(
 
     tx.rollback().await?;
 
+    if !checked {
+        return Ok(None);
+    }
+
     // Parse results and create diagnostics
     let mut diagnostics = Vec::new();
     for (result_json, relation) in results_with_relations {
@@ -287,7 +297,7 @@ pub async fn check_plpgsql(
         diagnostics.append(&mut result_diagnostics);
     }
 
-    Ok(diagnostics)
+    Ok(Some(diagnostics))
 }
 
 #[cfg(all(test, not(target_os = "windows")))]
@@ -325,7 +335,8 @@ mod tests {
             incomment_options_usage_warning: false,
             constant_tracing: true,
         })
-        .await?;
+        .await?
+        .unwrap_or_default();
 
         let span_texts = diagnostics
             .iter()
@@ -503,16 +514,8 @@ mod tests {
             diagnostics[0].severity,
             pgls_diagnostics::Severity::Error
         ));
-        assert_eq!(
-            span_texts[0].as_deref(),
-            // the span starts at the keyword and omits the whitespace before/after $function$
-            Some(
-                r#"DECLRE r record; -- spelled declare wrong!
-            BEGIN
-                select * from t1;
-            END;"#
-            )
-        );
+        // the span is the token at the syntax error instead of the entire body
+        assert_eq!(span_texts[0].as_deref(), Some("DECLRE"));
     }
 
     #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]

@@ -17,6 +17,8 @@ For any `CREATE FUNCTION` statement with the language `PL/pgSQL`, the following 
 3. For trigger functions, the analysis runs against each table that has triggers using this function, providing context-specific validation
 4. Errors are mapped back to source locations with token-level precision
 
+When `plpgsql_check` checks a function, it also reports its syntax errors at the offending token, so the language server no longer reports the `libpg_query` syntax error on the entire function body. The `libpg_query` error is still reported when `plpgsql_check` cannot check the function, e.g. when the function cannot be created in the database, or when no trigger uses a trigger function.
+
 The integration provides more detailed and actionable feedback compared to basic syntax checking, including:
 
 > - checks fields of referenced database objects and types inside embedded SQL
