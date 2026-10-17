@@ -1319,7 +1319,7 @@ async fn test_execute_statement(test_db: PgPool) -> Result<()> {
 }
 
 #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
-async fn test_invalidate_schema_cache(test_db: PgPool) -> Result<()> {
+async fn test_invalidate_snapshot(test_db: PgPool) -> Result<()> {
     let factory = ServerFactory::default();
     let mut fs = MemoryFileSystem::default();
 
@@ -1427,9 +1427,9 @@ async fn test_invalidate_schema_cache(test_db: PgPool) -> Result<()> {
         .await
         .expect("Failed to add column to table");
 
-    // Invalidate the schema cache (all = false for current connection only)
+    // Invalidate the database snapshot (all = false for current connection only)
     server
-        .request::<bool, ()>("pgls/invalidate_schema_cache", "_invalidate_cache", false)
+        .request::<bool, ()>("pgls/invalidate_snapshot", "_invalidate_cache", false)
         .await?;
 
     // Get completions after invalidating cache - 'name' should NOW be present
@@ -1467,7 +1467,7 @@ async fn test_invalidate_schema_cache(test_db: PgPool) -> Result<()> {
 
     assert!(
         has_name_after,
-        "Column 'name' should be in completions after schema cache invalidation"
+        "Column 'name' should be in completions after snapshot invalidation"
     );
 
     server.shutdown().await?;

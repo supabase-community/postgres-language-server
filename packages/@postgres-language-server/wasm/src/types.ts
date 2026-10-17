@@ -2,7 +2,7 @@
  * TypeScript type definitions for the Postgres Language Server WASM API.
  */
 
-import type { SchemaCache } from "./schema-cache";
+import type { Snapshot } from "./snapshot";
 
 /**
  * A diagnostic message from the linter.
@@ -37,16 +37,16 @@ export interface CompletionItem {
 }
 
 /**
- * Schema cache type generated from Rust `SchemaCache` via schemars.
+ * Database snapshot type generated from Rust `Snapshot` via schemars.
  */
-export type { SchemaCache } from "./schema-cache";
+export type { Snapshot } from "./snapshot";
 
 /**
  * Options for initializing the workspace.
  */
 export interface WorkspaceOptions {
-  /** Optional schema cache to preload */
-  schema?: SchemaCache | string;
+  /** Optional database snapshot to preload */
+  schema?: Snapshot | string;
 }
 
 /**

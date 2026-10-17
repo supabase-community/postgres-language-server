@@ -697,9 +697,9 @@ impl Workspace for WorkspaceServer {
             Some("Database support not enabled.".into());
 
         actions.push(CodeAction {
-            title: "Invalidate Schema Cache".into(),
+            title: "Invalidate Database Snapshot".into(),
             kind: CodeActionKind::Command(CommandAction {
-                category: CommandActionCategory::InvalidateSchemaCache,
+                category: CommandActionCategory::InvalidateSnapshot,
             }),
             disabled_reason: invalidate_disabled_reason,
         });
@@ -769,7 +769,7 @@ impl Workspace for WorkspaceServer {
     }
 
     #[cfg(feature = "db")]
-    fn invalidate_schema_cache(&self, all: bool) -> Result<(), WorkspaceError> {
+    fn invalidate_snapshot(&self, all: bool) -> Result<(), WorkspaceError> {
         if all {
             // Clear all schemas - both db-loaded and json-loaded
             // DB completions always take precedence when a connection is available,
@@ -790,7 +790,7 @@ impl Workspace for WorkspaceServer {
     }
 
     #[cfg(not(feature = "db"))]
-    fn invalidate_schema_cache(&self, _all: bool) -> Result<(), WorkspaceError> {
+    fn invalidate_snapshot(&self, _all: bool) -> Result<(), WorkspaceError> {
         self.snapshot.clear_all();
         Ok(())
     }
