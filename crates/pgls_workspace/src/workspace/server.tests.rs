@@ -1047,6 +1047,47 @@ $$;
     assert!(message.contains("Column x does not exist"), "{message}");
 }
 
+/// GitHub issue #856: parameters of a SQL function are resolved by the static typecheck rules,
+/// not by EXPLAIN, which got array parameters and parameters in `extract(... from ...)` wrong.
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn sql_function_bodies_are_not_explained(test_db: PgPool) {
+    let content = r#"
+create or replace function interval_to_ms_config(p_interval interval)
+returns text
+language sql
+immutable
+as $$
+    select ceil(extract(epoch from p_interval) * 1000)::bigint::text || 'ms'
+$$;
+
+create or replace function int_array_nonnegative_not_null(p_arr int[])
+returns boolean
+language sql
+immutable
+as $$
+    select bool_and(x is not null and x >= 0)
+    from unnest(p_arr) as x
+$$;
+"#;
+    let diagnostics = typecheck_diagnostics(&test_db, content);
+    assert!(diagnostics.is_empty(), "{diagnostics:#?}");
+
+    // An unknown column of a database table is still reported, by the static rules.
+    test_db
+        .execute("CREATE TABLE fn_body_users (id integer PRIMARY KEY, email text);")
+        .await
+        .expect("test table setup must succeed");
+    let diagnostics = typecheck_diagnostics(
+        &test_db,
+        "CREATE FUNCTION f(p_id int) RETURNS text LANGUAGE sql AS $$ SELECT emial FROM fn_body_users WHERE id = p_id $$;",
+    );
+    assert_eq!(diagnostics.len(), 1, "{diagnostics:#?}");
+    assert_eq!(
+        diagnostics[0].category().map(|category| category.name()),
+        Some("lint/unknownColumn")
+    );
+}
+
 #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
 async fn test_named_params(_test_db: PgPool) {
     let conf = PartialConfiguration::init();

@@ -34,7 +34,7 @@ use pgls_diagnostics::{
 use pgls_fs::{ConfigName, PgLSPath};
 use pgls_text_size::{TextRange, TextSize};
 #[cfg(feature = "db")]
-use pgls_typecheck::{IdentifierType, TypecheckParams, TypedIdentifier};
+use pgls_typecheck::TypecheckParams;
 use pgls_workspace_macros::ignored_path;
 use snapshot_manager::SnapshotManager;
 #[cfg(feature = "db")]
@@ -310,7 +310,7 @@ impl WorkspaceServer {
         result
     }
 
-    /// Diagnostics from the database: EXPLAIN for statements whose references are all
+    /// Diagnostics from the database: EXPLAIN for top-level statements whose references are all
     /// unchanged database objects, and plpgsql_check.
     #[cfg(feature = "db")]
     fn database_diagnostics(
@@ -330,12 +330,12 @@ impl WorkspaceServer {
             let snapshot = self.snapshot.load(pool)?;
             let input = doc
                 .iter(TypecheckDiagnosticsMapper)
-                .map(|(id, range, ast, cst, fn_sig)| {
+                .map(|(id, range, ast, cst, _)| {
                     let statement = statements
                         .iter()
                         .find(|statement| statement.range == range)
                         .cloned();
-                    (id, range, ast, cst, fn_sig, statement)
+                    (id, range, ast, cst, statement)
                 })
                 .collect::<Vec<_>>();
             let pool = pool.clone();
@@ -343,7 +343,7 @@ impl WorkspaceServer {
 
             run_async(async move {
                 stream::iter(input)
-                    .map(|(id, range, ast, cst, fn_sig, statement)| {
+                    .map(|(id, range, ast, cst, statement)| {
                         let pool = pool.clone();
                         let path = path.clone();
                         let snapshot = Arc::clone(&snapshot);
@@ -355,32 +355,16 @@ impl WorkspaceServer {
                                 return Ok(diagnostics);
                             };
 
-                            // The static typecheck rules cover everything else.
-                            let statement = statement
-                                .filter(|statement| typecheck_enabled && statement.database_only);
+                            // The static typecheck rules cover everything else, including the
+                            // statements of SQL function bodies, whose parameters they resolve.
+                            let statement = statement.filter(|statement| {
+                                typecheck_enabled && statement.database_only && !id.is_child()
+                            });
                             if let Some(statement) = statement {
                                 let conversion =
                                     convert_to_positional_params_with_metadata(id.content());
 
                                 if !conversion.has_identifier_parameters {
-                                    let identifiers = fn_sig
-                                        .map(|signature| {
-                                            signature
-                                                .args
-                                                .iter()
-                                                .map(|arg| TypedIdentifier {
-                                                    path: signature.name.clone(),
-                                                    name: arg.name.clone(),
-                                                    type_: IdentifierType {
-                                                        schema: arg.type_.schema.clone(),
-                                                        name: arg.type_.name.clone(),
-                                                        is_array: arg.type_.is_array,
-                                                    },
-                                                })
-                                                .collect::<Vec<_>>()
-                                        })
-                                        .unwrap_or_default();
-
                                     let result = pgls_typecheck::check_sql(TypecheckParams {
                                         conn: &pool,
                                         sql: conversion.sql.as_str(),
@@ -388,7 +372,7 @@ impl WorkspaceServer {
                                         tree: &cst,
                                         snapshot: snapshot.as_ref(),
                                         search_path: &statement.search_path,
-                                        identifiers,
+                                        identifiers: Vec::new(),
                                     })
                                     .await?;
 
