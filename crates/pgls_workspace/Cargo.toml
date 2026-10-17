@@ -27,6 +27,7 @@ pgls_diagnostics                  = { workspace = true }
 pgls_env                          = { workspace = true }
 pgls_fs                           = { workspace = true, features = ["serde"] }
 pgls_hover                        = { workspace = true }
+pgls_inlay_hints                  = { workspace = true }
 pgls_lexer                        = { workspace = true }
 pgls_matcher                      = { workspace = true }
 pgls_pretty_print                 = { workspace = true }

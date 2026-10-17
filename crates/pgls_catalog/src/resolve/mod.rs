@@ -161,6 +161,25 @@ pub struct Resolution {
     pub database_only: bool,
 }
 
+/// A function call that resolves to exactly one function.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ResolvedCall {
+    /// The location of the function name in the statement.
+    pub location: i32,
+    pub function: crate::FunctionInfo,
+    /// The parameter that each argument of the call is passed to, in the order of the call's
+    /// arguments. Expanded variadic arguments all go to the variadic parameter.
+    pub arguments: Vec<ResolvedCallArgument>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ResolvedCallArgument {
+    /// The index of the parameter in the arguments of the function's signature.
+    pub parameter: usize,
+    /// Whether the argument is passed by name, as in `f(a => 1)`.
+    pub named: bool,
+}
+
 /// Resolves the names of a statement.
 pub fn resolve(params: ResolveParams<'_>) -> Resolution {
     let mut resolver = Resolver::new(
@@ -183,6 +202,21 @@ pub fn resolve(params: ResolveParams<'_>) -> Resolution {
         findings,
         database_only: supports_database_check(params.stmt) && resolver.database_only,
     }
+}
+
+/// The function calls of a statement that resolve to exactly one function, in the order the
+/// resolver visits them. Calls whose arguments have unknown types, or that match no function or
+/// more than one, are left out.
+pub fn function_calls(params: ResolveParams<'_>) -> Vec<ResolvedCall> {
+    let mut resolver = Resolver::new(
+        params.catalog,
+        params.search_path,
+        params.function,
+        params.sql,
+    );
+    resolver.calls = Some(Vec::new());
+    nodes::resolve_node_enum(&mut resolver, params.stmt);
+    resolver.calls.unwrap_or_default()
 }
 
 /// The output column names of a query, or `None` if they are not known with certainty.

@@ -190,6 +190,13 @@ where
         self.request("pgls/on_hover", params)
     }
 
+    fn pull_inlay_hints(
+        &self,
+        params: crate::features::inlay_hints::PullInlayHintsParams,
+    ) -> Result<crate::features::inlay_hints::PullInlayHintsResult, WorkspaceError> {
+        self.request("pgls/pull_inlay_hints", params)
+    }
+
     fn invalidate_schema_cache(&self, all: bool) -> Result<(), WorkspaceError> {
         self.request("pgls/invalidate_schema_cache", all)
     }
