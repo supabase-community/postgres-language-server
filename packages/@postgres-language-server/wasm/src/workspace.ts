@@ -24,7 +24,7 @@ import type {
   FormatOptions,
   FormatResult,
   PGLSModule,
-  SchemaCache,
+  Snapshot,
   Statement,
   WorkspaceOptions,
 } from "./types.js";
@@ -34,7 +34,7 @@ export type {
   CompletionItem,
   FormatOptions,
   FormatResult,
-  SchemaCache,
+  Snapshot,
   Statement,
   WorkspaceOptions,
   PGLSModule,
@@ -52,9 +52,9 @@ export class Workspace {
   }
 
   /**
-   * Set the database schema from a SchemaCache object or JSON string.
+   * Set the database schema from a Snapshot object or JSON string.
    */
-  setSchema(schema: SchemaCache | string): void {
+  setSchema(schema: Snapshot | string): void {
     const json = typeof schema === "string" ? schema : JSON.stringify(schema);
     const jsonPtr = allocateString(this.module, json);
     try {

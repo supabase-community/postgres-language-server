@@ -461,7 +461,7 @@ describe("LanguageServer API", () => {
 
 /**
  * Sample schema for testing completions and hover.
- * This matches the Rust SchemaCache struct format.
+ * This matches the Rust Snapshot struct format.
  */
 const TEST_SCHEMA = {
   schemas: [

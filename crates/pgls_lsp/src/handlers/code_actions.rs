@@ -53,7 +53,7 @@ pub fn get_actions(
                             .map(|reason| CodeActionDisabled { reason }),
                         ..Default::default()
                     }),
-                    CommandActionCategory::InvalidateSchemaCache => Some(CodeAction {
+                    CommandActionCategory::InvalidateSnapshot => Some(CodeAction {
                         title: title.clone(),
                         kind: Some(lsp_types::CodeActionKind::EMPTY),
                         command: Some({
@@ -84,7 +84,7 @@ pub fn get_actions(
 pub fn command_id(command: &CommandActionCategory) -> String {
     match command {
         CommandActionCategory::ExecuteStatement(_) => "pgls.executeStatement".into(),
-        CommandActionCategory::InvalidateSchemaCache => "pgls.invalidateSchemaCache".into(),
+        CommandActionCategory::InvalidateSnapshot => "pgls.invalidateSnapshot".into(),
     }
 }
 
@@ -121,12 +121,12 @@ pub async fn execute_command(
 
             Ok(None)
         }
-        "pgls.invalidateSchemaCache" => {
-            session.workspace.invalidate_schema_cache(true)?;
+        "pgls.invalidateSnapshot" => {
+            session.workspace.invalidate_snapshot(true)?;
 
             session
                 .client
-                .show_message(MessageType::INFO, "Schema cache invalidated")
+                .show_message(MessageType::INFO, "Database snapshot invalidated")
                 .await;
 
             Ok(None)
