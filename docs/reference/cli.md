@@ -156,7 +156,7 @@ Lints your database schema.
 - **`    --cast-style`**=_`ARG`_ &mdash; 
   How an explicit cast is spelled: "cast" for `CAST(x AS t)`, "operator" for `x::t`. Default: "cast".
 - **`    --clause-body-style`**=_`ARG`_ &mdash; 
-  Where the body of a clause starts: "break" for a new line, "compact" to keep the first element on the keyword line. Default: "break".
+  Where the body of a clause starts: "break" for a new line, "compact" to keep the first element on the keyword line. Compact also keeps a select list of a single item on the select line. Default: "break".
 - **`    --isolate-semicolon`**=_`ARG`_ &mdash; 
   If `true`, the terminating semicolon goes on its own line when the statement spans several lines. Default: `false`.
 - **`    --skip-fn-bodies`**=_`ARG`_ &mdash; 
@@ -278,7 +278,7 @@ Runs everything to the requested files.
 - **`    --cast-style`**=_`ARG`_ &mdash; 
   How an explicit cast is spelled: "cast" for `CAST(x AS t)`, "operator" for `x::t`. Default: "cast".
 - **`    --clause-body-style`**=_`ARG`_ &mdash; 
-  Where the body of a clause starts: "break" for a new line, "compact" to keep the first element on the keyword line. Default: "break".
+  Where the body of a clause starts: "break" for a new line, "compact" to keep the first element on the keyword line. Compact also keeps a select list of a single item on the select line. Default: "break".
 - **`    --isolate-semicolon`**=_`ARG`_ &mdash; 
   If `true`, the terminating semicolon goes on its own line when the statement spans several lines. Default: `false`.
 - **`    --skip-fn-bodies`**=_`ARG`_ &mdash; 
@@ -418,7 +418,7 @@ Formats the requested files.
 - **`    --cast-style`**=_`ARG`_ &mdash; 
   How an explicit cast is spelled: "cast" for `CAST(x AS t)`, "operator" for `x::t`. Default: "cast".
 - **`    --clause-body-style`**=_`ARG`_ &mdash; 
-  Where the body of a clause starts: "break" for a new line, "compact" to keep the first element on the keyword line. Default: "break".
+  Where the body of a clause starts: "break" for a new line, "compact" to keep the first element on the keyword line. Compact also keeps a select list of a single item on the select line. Default: "break".
 - **`    --isolate-semicolon`**=_`ARG`_ &mdash; 
   If `true`, the terminating semicolon goes on its own line when the statement spans several lines. Default: `false`.
 - **`    --skip-fn-bodies`**=_`ARG`_ &mdash; 

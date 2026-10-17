@@ -56,7 +56,7 @@ Configure formatting behavior in your `postgres-language-server.jsonc`:
 | `layout` | `"fit"` | How a statement is laid out: `"fit"` breaks only past the line width, `"expanded"` always breaks between clauses |
 | `valuesRowLayout` | `"fit"` | How `VALUES` rows are laid out: `"fit"` breaks only past the line width, `"expanded"` puts each tuple on its own indented line. `commaStyle` controls commas between rows as well as inside tuples |
 | `castStyle` | `"cast"` | How an explicit cast is spelled: `"cast"` for `CAST(x AS t)`, `"operator"` for `x::t` |
-| `clauseBodyStyle` | `"break"` | Where a clause body starts: `"break"` for a new line, `"compact"` to keep the first element on the keyword line |
+| `clauseBodyStyle` | `"break"` | Where a clause body starts: `"break"` for a new line, `"compact"` to keep the first element on the keyword line. Compact also keeps a select list of a single item on the `SELECT` line |
 | `isolateSemicolon` | `false` | Put the terminating semicolon on its own line when the statement spans several lines |
 | `functionArgumentGroups` | `{}` (plus built-in defaults, see below) | Function names mapped to the number of adjacent arguments that should stay together when wrapping |
 
@@ -72,6 +72,23 @@ values
 The expressions inside each tuple stay on one line when they fit. This option
 applies to `INSERT`, standalone `VALUES`, and `VALUES` in subqueries and CTEs,
 independently of `layout` and `clauseBodyStyle`.
+
+With `clauseBodyStyle: "compact"`, the first relation stays on the `FROM` line
+and the condition on the `WHERE`, `HAVING`, or `ON` line. A select list of a
+single item stays on the `SELECT` line, while a list of several items still
+puts one item per line:
+
+```sql
+select count(*)
+from memberships
+where memberships.user_id = $1 and memberships.role = 'admin' and memberships.active;
+
+select
+  memberships.user_id,
+  memberships.role
+from memberships
+where memberships.organization_id = $1 and memberships.active;
+```
 
 `functionArgumentGroups` matches the final, unqualified function name
 case-insensitively. A group size of `2` is useful for functions whose arguments
