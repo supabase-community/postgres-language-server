@@ -69,7 +69,7 @@ You’ll now have a `postgres-language-server.jsonc` file in your directory:
 
 [//]: # "END DEFAULT_CONFIGURATION"
 
-Make sure to edit the database connection settings to connect to your local development database. To see all options, run `postgres-language-server --help`.
+Make sure to edit the database connection settings to connect to your local development database. In a Supabase project, `init` detects `supabase/config.toml` and sets the connection to the local Supabase database (see [Supabase projects](guides/configure_database.md#supabase-projects)). To see all options, run `postgres-language-server --help`.
 
 You can use your current `postgres-language-server` version instead of "latest" in the `$schema` URL, e.g. `https://pg-language-server.com/0.0.0/schema.json`.
 

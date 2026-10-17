@@ -1,0 +1,13 @@
+---
+source: crates/pgls_cli/tests/assert_init.rs
+expression: stdout
+---
+
+Welcome to the Postgres Language Server! Let's get you started...
+
+Files created 
+
+  - postgres-language-server.jsonc
+    Your project configuration.
+
+Supabase project detected: the database connection is set to the local Supabase database at 127.0.0.1:6543.
