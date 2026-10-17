@@ -41,7 +41,8 @@ pub enum ClauseBodyStyle {
     /// The body starts on the line after the keyword.
     #[default]
     Break,
-    /// The first element of the body stays on the keyword line: `FROM plan`.
+    /// The first element of the body stays on the keyword line: `FROM plan`. A select list of a
+    /// single item stays on the SELECT line: `SELECT 1`.
     Compact,
 }
 

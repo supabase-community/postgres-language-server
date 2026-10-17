@@ -1,0 +1,24 @@
+-- pgls-format: clauseBodyStyle=compact
+select * from users;
+
+select 1;
+
+select count(*) from users where users.active;
+
+select distinct status from orders;
+
+select distinct on (customer_id) id from orders order by customer_id, created_at desc;
+
+select distinct on (customer_id) customer_id, created_at from orders order by customer_id, created_at desc;
+
+select id, name from users;
+
+select id into temporary active_user_ids from users where active;
+
+select * from users where exists (select 1 from memberships where memberships.user_id = users.id and memberships.organization_id = 42);
+
+select case when users.status = 'active' then 'currently an active member' when users.status = 'pending' then 'waiting for approval' else 'inactive' end from users;
+
+select json_build_object('identifier', users.id, 'display_name', users.name, 'email_address', users.email) from users;
+
+select first_really_long_column_name_here + second_really_long_column_name_here + third_long_column from t;

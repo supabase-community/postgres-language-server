@@ -196,7 +196,13 @@ fn emit_select_stmt_impl(e: &mut EventEmitter, n: &SelectStmt, with_semicolon: b
 
         if !n.target_list.is_empty() {
             e.indent_start();
-            super::emit_layout_break(e);
+
+            // Compact keeps a lone item on the SELECT line, `select 1`; a list of several still
+            // puts one item per line.
+            match e.config().clause_body_style {
+                ClauseBodyStyle::Compact if n.target_list.len() == 1 => e.space(),
+                _ => super::emit_layout_break(e),
+            }
 
             emit_comma_separated_list_with_layout_break(e, &n.target_list, super::emit_node);
 
