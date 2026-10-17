@@ -76,6 +76,13 @@ impl EventEmitter {
         &self.config
     }
 
+    /// Emits `body` with `layout` in place of the configured one.
+    pub fn with_layout(&mut self, layout: crate::Layout, body: impl FnOnce(&mut Self)) {
+        let previous = std::mem::replace(&mut self.config.layout, layout);
+        body(self);
+        self.config.layout = previous;
+    }
+
     pub fn with_comments(
         config: FormatConfig,
         leading_comments: HashMap<i32, Vec<Comment>>,
