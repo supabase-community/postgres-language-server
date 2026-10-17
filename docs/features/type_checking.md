@@ -64,7 +64,7 @@ Type checking needs a database connection to load the schema. Without one, the `
 
 ## Legacy: `EXPLAIN`-based checking
 
-Before the `typecheck` rules, the language server checked statements by running `EXPLAIN` on them. This check still runs for `SELECT`, `INSERT`, `UPDATE`, and `DELETE` statements that only reference objects that exist unchanged in the database, and reports the errors Postgres returns. It needs permission to prepare statements in your database.
+Before the `typecheck` rules, the language server checked statements by running `EXPLAIN` on them. This check still runs for top-level `SELECT`, `INSERT`, `UPDATE`, and `DELETE` statements that only reference objects that exist unchanged in the database, and reports the errors Postgres returns. Statements in the body of a `LANGUAGE sql` function are only checked by the `typecheck` rules. It needs permission to prepare statements in your database.
 
 !!! warning
     The `EXPLAIN`-based check is deprecated and will be removed in the next major release. The `typecheck` rules replace it.
