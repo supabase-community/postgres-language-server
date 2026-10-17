@@ -80,6 +80,8 @@ impl<'app> CliSession<'app> {
                 staged,
                 changed,
                 since,
+                fix,
+                unsafe_,
             } => check::check(
                 self,
                 &cli_options,
@@ -90,6 +92,8 @@ impl<'app> CliSession<'app> {
                     staged,
                     changed,
                     since,
+                    fix,
+                    unsafe_,
                 },
             ),
             PgLSCommand::Format {

@@ -71,6 +71,14 @@ pub enum PgLSCommand {
         #[bpaf(long("since"), argument("REF"))]
         since: Option<String>,
 
+        /// Apply the safe fixes of the lint rules and write the files.
+        #[bpaf(long("fix"), switch)]
+        fix: bool,
+
+        /// Also apply the unsafe fixes, which may change what a statement does. Implies `--fix`.
+        #[bpaf(long("unsafe"), switch)]
+        unsafe_: bool,
+
         /// Single file, single path or list of paths
         #[bpaf(positional("PATH"), many)]
         paths: Vec<OsString>,
