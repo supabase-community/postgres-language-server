@@ -38,8 +38,7 @@ where active;
 
 select *
 from users
-where exists
-  (
+where exists (
     select 1
     from memberships
     where memberships.user_id = users.id and
