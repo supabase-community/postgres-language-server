@@ -449,7 +449,7 @@ export interface PartialFormatConfiguration {
    */
   castStyle?: CastStyle;
   /**
-   * Where the body of a clause starts: "break" for a new line, "compact" to keep the first element on the keyword line. Default: "break".
+   * Where the body of a clause starts: "break" for a new line, "compact" to keep the first element on the keyword line. Compact also keeps a select list of a single item on the select line. Default: "break".
    */
   clauseBodyStyle?: ClauseBodyStyle;
   /**

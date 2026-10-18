@@ -330,7 +330,8 @@ pub struct FormatConfiguration {
     #[partial(bpaf(long("cast-style")))]
     pub cast_style: CastStyle,
     /// Where the body of a clause starts: "break" for a new line, "compact" to keep the first
-    /// element on the keyword line. Default: "break".
+    /// element on the keyword line. Compact also keeps a select list of a single item on the
+    /// select line. Default: "break".
     #[partial(bpaf(long("clause-body-style")))]
     pub clause_body_style: ClauseBodyStyle,
     /// If `true`, the terminating semicolon goes on its own line when the statement spans several
