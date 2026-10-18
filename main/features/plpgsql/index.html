@@ -1128,6 +1128,7 @@
 <li>For trigger functions, the analysis runs against each table that has triggers using this function, providing context-specific validation</li>
 <li>Errors are mapped back to source locations with token-level precision</li>
 </ol>
+<p>When <code>plpgsql_check</code> checks a function, it also reports its syntax errors at the offending token, so the language server no longer reports the <code>libpg_query</code> syntax error on the entire function body. The <code>libpg_query</code> error is still reported when <code>plpgsql_check</code> cannot check the function, e.g. when the function cannot be created in the database, or when no trigger uses a trigger function.</p>
 <p>The integration provides more detailed and actionable feedback compared to basic syntax checking, including:</p>
 <blockquote>
 <ul>
