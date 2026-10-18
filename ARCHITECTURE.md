@@ -105,7 +105,7 @@ Handles `-- pgls-ignore` style rule suppression comments.
 
 ##### `crates/pgls_completions`, `crates/pgls_hover`
 
-Autocompletion and hover providers. They operate on the catalog as of the statement at the cursor plus that statement and its parse results, and are intentionally free of any language-server flavour so they can be reused from the CLI.
+Autocompletion and hover providers. They operate on the catalog as of the statement at the cursor plus that statement and its parse results, and are intentionally free of any language-server flavour so they can be reused from the CLI. Hover shows the function overload, column, or relation that the name resolver resolves the hovered name to, and falls back to looking objects up by name when there is no unique reference.
 
 #### Diagnostics and utilities
 

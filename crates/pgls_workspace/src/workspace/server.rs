@@ -31,6 +31,7 @@ use pgls_analyser::{
     Analyser, AnalyserConfig, AnalyserParams, AnalysisResult, Direction, FileKind,
     LinterDiagnostic, LinterOptions, RuleFix,
 };
+use pgls_catalog::resolve::{Reference, ResolveParams, resolve};
 use pgls_catalog::{Catalog, CatalogBase, Session};
 use std::borrow::Cow;
 
@@ -465,6 +466,107 @@ impl WorkspaceServer {
             .diagnostics
             .into_iter()
             .filter(|diagnostic| !suppressions.is_suppressed(diagnostic))
+            .collect()
+    }
+
+    /// Walks the statements of `doc` that start before `end` like the analyser does: the catalog
+    /// and the session follow the statements, so that each statement sees the objects created
+    /// earlier in the file. `visit` gets every parsed statement with the catalog and the session
+    /// as they are before it.
+    fn walk_statements(
+        &self,
+        doc: &Document,
+        snapshot: &Arc<Snapshot>,
+        end: TextSize,
+        mut visit: impl FnMut(&pgls_analyser::AnalysableStatement, &Catalog, &Session),
+    ) {
+        let search_path = self
+            .workspaces()
+            .settings()
+            .map(|settings| settings.typecheck.search_path.clone())
+            .unwrap_or_default();
+
+        let mut catalog = Catalog::new(Some(self.catalog_base(snapshot)));
+        let mut session = Session::new(snapshot.expand_search_path(&search_path));
+        for (stmt, _, unparsable) in doc.iter(AnalyserDiagnosticsMapper) {
+            if let Some(unparsable) = unparsable {
+                if unparsable.range.start() >= end {
+                    break;
+                }
+                if pgls_analyser::may_change_catalog(&unparsable.sql) {
+                    catalog.taint();
+                }
+                continue;
+            }
+            let Some(stmt) = stmt else {
+                continue;
+            };
+            if stmt.range.start() >= end {
+                break;
+            }
+            // The names of statements with identifier parameters like `:name` are placeholders.
+            if stmt.has_identifier_parameters {
+                if !pgls_analyser::is_plain_query(&stmt.root) {
+                    catalog.taint();
+                }
+                continue;
+            }
+            visit(&stmt, &catalog, &session);
+            // Statements in the bodies of SQL functions are not executed.
+            if stmt.function.is_none() {
+                catalog.apply(&stmt.root, session.search_path());
+                session.apply(&stmt.root);
+            }
+        }
+    }
+
+    /// The references whose span contains `position`, in the innermost statement at `position`
+    /// (the body of a SQL function rather than its `CREATE FUNCTION`).
+    fn references_at(
+        &self,
+        doc: &Document,
+        snapshot: &Arc<Snapshot>,
+        position: TextSize,
+    ) -> Vec<Reference> {
+        let mut innermost: Option<(TextRange, Vec<Reference>)> = None;
+        self.walk_statements(
+            doc,
+            snapshot,
+            position + TextSize::from(1),
+            |stmt, catalog, session| {
+                let Some(sql) = stmt.sql.as_deref() else {
+                    return;
+                };
+                if !stmt.range.contains(position)
+                    || innermost
+                        .as_ref()
+                        .is_some_and(|(range, _)| !range.contains_range(stmt.range))
+                {
+                    return;
+                }
+                let references = resolve(ResolveParams {
+                    stmt: &stmt.root,
+                    catalog,
+                    search_path: session.search_path(),
+                    function: stmt.function.as_ref(),
+                    sql: Some(sql),
+                    collect_references: true,
+                })
+                .references;
+                innermost = Some((stmt.range, references));
+            },
+        );
+        let Some((range, references)) = innermost else {
+            return Vec::new();
+        };
+        let position = position - range.start();
+        references
+            .into_iter()
+            .filter(|reference| {
+                reference
+                    .span()
+                    .is_some_and(|span| span.contains_inclusive(position))
+            })
             .collect()
     }
 
@@ -1630,15 +1732,17 @@ impl Workspace for WorkspaceServer {
             return Ok(OnHoverResult::default());
         };
 
+        // The innermost statement: the body of a SQL function rather than its `CREATE FUNCTION`.
         match doc
             .iter_with_filter(
                 WithCSTandASTMapper,
                 CursorPositionFilter::new(params.position),
             )
-            .next()
+            .last()
         {
             Some((stmt_id, range, ts_tree, maybe_ast)) => {
                 let position_in_stmt = params.position - range.start();
+                let references = self.references_at(doc, &snapshot, params.position);
                 let snapshot = self.snapshot_before(doc, range.start(), snapshot);
 
                 let markdown_blocks = pgls_hover::on_hover(pgls_hover::OnHoverParams {
@@ -1647,6 +1751,7 @@ impl Workspace for WorkspaceServer {
                     ast: maybe_ast.as_ref(),
                     position: position_in_stmt,
                     stmt_sql: stmt_id.content(),
+                    references: &references,
                 })
                 .unwrap_or_default();
 
@@ -1690,50 +1795,23 @@ impl Workspace for WorkspaceServer {
             return Ok(PullInlayHintsResult::default());
         };
 
-        let search_path = self
-            .workspaces()
-            .settings()
-            .map(|settings| settings.typecheck.search_path.clone())
-            .unwrap_or_default();
-
-        /*
-         * Like the analyser, walk the file with the catalog and the session following the
-         * statements, so that calls see the functions created earlier in the file.
-         */
-        let mut catalog = Catalog::new(Some(self.catalog_base(&snapshot)));
-        let mut session = Session::new(snapshot.expand_search_path(&search_path));
         let mut hints = Vec::new();
-        for (stmt, _, unparsable) in doc.iter(AnalyserDiagnosticsMapper) {
-            if let Some(unparsable) = unparsable {
-                if unparsable.range.start() >= params.range.end() {
-                    break;
+        self.walk_statements(
+            doc,
+            &snapshot,
+            params.range.end(),
+            |stmt, catalog, session| {
+                let Some(sql) = stmt.sql.as_deref() else {
+                    return;
+                };
+                if stmt.range.intersect(params.range).is_none() {
+                    return;
                 }
-                if pgls_analyser::may_change_catalog(&unparsable.sql) {
-                    catalog.taint();
-                }
-                continue;
-            }
-            let Some(stmt) = stmt else {
-                continue;
-            };
-            if stmt.range.start() >= params.range.end() {
-                break;
-            }
-            // The names of statements with identifier parameters like `:name` are placeholders.
-            if stmt.has_identifier_parameters {
-                if !pgls_analyser::is_plain_query(&stmt.root) {
-                    catalog.taint();
-                }
-                continue;
-            }
-            if let Some(sql) = stmt.sql.as_deref()
-                && stmt.range.intersect(params.range).is_some()
-            {
                 hints.extend(
                     pgls_inlay_hints::inlay_hints(pgls_inlay_hints::InlayHintsParams {
                         stmt: &stmt.root,
                         sql,
-                        catalog: &catalog,
+                        catalog,
                         search_path: session.search_path(),
                         function: stmt.function.as_ref(),
                     })
@@ -1744,13 +1822,8 @@ impl Workspace for WorkspaceServer {
                         kind: hint.kind.into(),
                     }),
                 );
-            }
-            // Statements in the bodies of SQL functions are not executed.
-            if stmt.function.is_none() {
-                catalog.apply(&stmt.root, session.search_path());
-                session.apply(&stmt.root);
-            }
-        }
+            },
+        );
 
         hints.sort_by_key(|hint| hint.offset);
         Ok(PullInlayHintsResult { hints })
