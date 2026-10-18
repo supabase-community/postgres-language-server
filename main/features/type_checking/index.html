@@ -1361,7 +1361,7 @@
 <h2 id="requirements">Requirements<a class="headerlink" href="#requirements" title="Permanent link">&para;</a></h2>
 <p>Type checking needs a database connection to load the schema. Without one, the <code>typecheck</code> rules are skipped. The rules never send your statements to the database.</p>
 <h2 id="legacy-explain-based-checking">Legacy: <code>EXPLAIN</code>-based checking<a class="headerlink" href="#legacy-explain-based-checking" title="Permanent link">&para;</a></h2>
-<p>Before the <code>typecheck</code> rules, the language server checked statements by running <code>EXPLAIN</code> on them. This check still runs for <code>SELECT</code>, <code>INSERT</code>, <code>UPDATE</code>, and <code>DELETE</code> statements that only reference objects that exist unchanged in the database, and reports the errors Postgres returns. It needs permission to prepare statements in your database.</p>
+<p>Before the <code>typecheck</code> rules, the language server checked statements by running <code>EXPLAIN</code> on them. This check still runs for top-level <code>SELECT</code>, <code>INSERT</code>, <code>UPDATE</code>, and <code>DELETE</code> statements that only reference objects that exist unchanged in the database, and reports the errors Postgres returns. Statements in the body of a <code>LANGUAGE sql</code> function are only checked by the <code>typecheck</code> rules. It needs permission to prepare statements in your database.</p>
 <div class="admonition warning">
 <p class="admonition-title">Warning</p>
 <p>The <code>EXPLAIN</code>-based check is deprecated and will be removed in the next major release. The <code>typecheck</code> rules replace it.</p>
