@@ -1516,7 +1516,7 @@
 <tr>
 <td><code>clauseBodyStyle</code></td>
 <td><code>"break"</code></td>
-<td>Where a clause body starts: <code>"break"</code> for a new line, <code>"compact"</code> to keep the first element on the keyword line</td>
+<td>Where a clause body starts: <code>"break"</code> for a new line, <code>"compact"</code> to keep the first element on the keyword line. Compact also keeps a select list of a single item on the <code>SELECT</code> line</td>
 </tr>
 <tr>
 <td><code>isolateSemicolon</code></td>
@@ -1539,6 +1539,20 @@ tuple starts on its own indented line, even when the rows fit within <code>lineW
 <p>The expressions inside each tuple stay on one line when they fit. This option
 applies to <code>INSERT</code>, standalone <code>VALUES</code>, and <code>VALUES</code> in subqueries and CTEs,
 independently of <code>layout</code> and <code>clauseBodyStyle</code>.</p>
+<p>With <code>clauseBodyStyle: "compact"</code>, the first relation stays on the <code>FROM</code> line
+and the condition on the <code>WHERE</code>, <code>HAVING</code>, or <code>ON</code> line. A select list of a
+single item stays on the <code>SELECT</code> line, while a list of several items still
+puts one item per line:</p>
+<div class="highlight"><pre><span></span><code><span class="k">select</span><span class="w"> </span><span class="k">count</span><span class="p">(</span><span class="o">*</span><span class="p">)</span>
+<span class="k">from</span><span class="w"> </span><span class="n">memberships</span>
+<span class="k">where</span><span class="w"> </span><span class="n">memberships</span><span class="p">.</span><span class="n">user_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="err">$</span><span class="mi">1</span><span class="w"> </span><span class="k">and</span><span class="w"> </span><span class="n">memberships</span><span class="p">.</span><span class="k">role</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'admin'</span><span class="w"> </span><span class="k">and</span><span class="w"> </span><span class="n">memberships</span><span class="p">.</span><span class="n">active</span><span class="p">;</span>
+
+<span class="k">select</span>
+<span class="w">  </span><span class="n">memberships</span><span class="p">.</span><span class="n">user_id</span><span class="p">,</span>
+<span class="w">  </span><span class="n">memberships</span><span class="p">.</span><span class="k">role</span>
+<span class="k">from</span><span class="w"> </span><span class="n">memberships</span>
+<span class="k">where</span><span class="w"> </span><span class="n">memberships</span><span class="p">.</span><span class="n">organization_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="err">$</span><span class="mi">1</span><span class="w"> </span><span class="k">and</span><span class="w"> </span><span class="n">memberships</span><span class="p">.</span><span class="n">active</span><span class="p">;</span>
+</code></pre></div>
 <p><code>functionArgumentGroups</code> matches the final, unqualified function name
 case-insensitively. A group size of <code>2</code> is useful for functions whose arguments
 form key/value pairs:</p>
