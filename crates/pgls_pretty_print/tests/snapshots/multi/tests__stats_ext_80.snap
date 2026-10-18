@@ -3769,10 +3769,9 @@ for all
 to public
 using (2 * a < 0);
 
-grant select,
-delete
-on table tststats.priv_test_parent_tbl
-to regress_stats_user1;
+grant select, delete
+  on table tststats.priv_test_parent_tbl
+  to regress_stats_user1;
 
 set session authorization regress_stats_user1;
 

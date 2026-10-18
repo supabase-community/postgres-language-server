@@ -1,0 +1,53 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/grant_revoke_line_width.sql
+---
+revoke execute
+  on function public.get_permission_sets_with_permissions_by_event(uuid)
+  from public, anon, authenticated, service_role;
+
+grant insert (
+  registration_uuid,
+  module_identifier,
+  type,
+  actor_type,
+  details,
+  created_by_user
+)
+  on table public.registration_actions
+  to authenticated;
+
+grant select, insert, update, delete
+  on table public.registration_actions, public.registration_audit_log
+  to authenticated;
+
+revoke all
+  on all tables in schema public
+  from anon, authenticated, service_role, supabase_auth_admin,
+    supabase_storage_admin, dashboard_user;
+
+grant usage
+  on schema extensions
+  to postgres, anon, authenticated, service_role
+  with grant option
+  granted by supabase_admin;
+
+revoke grant option for select
+  on table public.registration_actions
+  from authenticated_with_long_name
+  cascade;
+
+grant authenticated_role_with_a_long_name
+  to registration_admin_with_a_long_name, registration_reader;
+
+alter default privileges
+  for role postgres
+  in schema public
+  grant select, insert, update, delete
+    on tables
+    to anon, authenticated, service_role;
+
+revoke all
+  on table some_table
+  from role_aaaaa, role_bbbbb, role_ccccc, role_ddddd, role_eeeee,
+    role_ffffffff;

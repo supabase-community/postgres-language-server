@@ -59,14 +59,14 @@ create role regress_priv_role;
 grant regress_priv_user1 to regress_priv_user2 with admin true;
 
 grant regress_priv_user1
-to regress_priv_user3
-with admin true
-granted by regress_priv_user2;
+  to regress_priv_user3
+  with admin true
+  granted by regress_priv_user2;
 
 grant regress_priv_user1
-to regress_priv_user2
-with admin true
-granted by regress_priv_user3;
+  to regress_priv_user2
+  with admin true
+  granted by regress_priv_user3;
 
 revoke admin option for regress_priv_user1 from regress_priv_user2 restrict;
 
@@ -187,9 +187,9 @@ grant pg_read_all_settings to regress_priv_user10;
 set session authorization regress_priv_user8;
 
 revoke pg_read_all_settings
-from regress_priv_user10
-granted by regress_priv_user9
-restrict;
+  from regress_priv_user10
+  granted by regress_priv_user9
+  restrict;
 
 revoke admin option for pg_read_all_settings from regress_priv_user9 restrict;
 
@@ -353,34 +353,34 @@ as $$int4lt$$;
 alter function leak(int, int) owner to regress_priv_user1;
 
 grant regress_priv_role
-to regress_priv_user1
-with admin true
-granted by regress_priv_role;
+  to regress_priv_user1
+  with admin true
+  granted by regress_priv_role;
 
 grant regress_priv_role
-to regress_priv_user1
-with admin true
-granted by current_role;
+  to regress_priv_user1
+  with admin true
+  granted by current_role;
 
 revoke admin option for regress_priv_role
-from regress_priv_user1
-granted by foo
-restrict;
+  from regress_priv_user1
+  granted by foo
+  restrict;
 
 revoke admin option for regress_priv_role
-from regress_priv_user1
-granted by regress_priv_user2
-restrict;
+  from regress_priv_user1
+  granted by regress_priv_user2
+  restrict;
 
 revoke admin option for regress_priv_role
-from regress_priv_user1
-granted by current_user
-restrict;
+  from regress_priv_user1
+  granted by current_user
+  restrict;
 
 revoke regress_priv_role
-from regress_priv_user1
-granted by current_role
-restrict;
+  from regress_priv_user1
+  granted by current_role
+  restrict;
 
 drop role regress_priv_role;
 
@@ -453,9 +453,9 @@ select pg_get_acl(cast('pg_class' as regclass), 0, 0);
 select pg_get_acl(0, 0, 0);
 
 grant truncate
-on table atest2
-to regress_priv_user4
-granted by regress_priv_user5;
+  on table atest2
+  to regress_priv_user4
+  granted by regress_priv_user5;
 
 set session authorization regress_priv_user2;
 
@@ -799,11 +799,9 @@ create table atest6 (
   blue int
 );
 
-grant select (one),
-insert (two),
-update (three)
-on table atest5
-to regress_priv_user4;
+grant select (one), insert (two), update (three)
+  on table atest5
+  to regress_priv_user4;
 
 grant all (one) on table atest5 to regress_priv_user3;
 
@@ -1369,16 +1367,12 @@ language sql
 as $$select $1;$$;
 
 revoke all
-on function priv_testfunc1(int),
-priv_testfunc2(int),
-priv_testagg1(int)
-from public;
+  on function priv_testfunc1(int), priv_testfunc2(int), priv_testagg1(int)
+  from public;
 
 grant execute
-on function priv_testfunc1(int),
-priv_testfunc2(int),
-priv_testagg1(int)
-to regress_priv_user2;
+  on function priv_testfunc1(int), priv_testfunc2(int), priv_testagg1(int)
+  to regress_priv_user2;
 
 revoke all on function priv_testproc1(int) from public;
 
@@ -2387,9 +2381,8 @@ select has_table_privilege('regress_priv_user1', 'testns.acltest1', 'SELECT');
 select has_table_privilege('regress_priv_user1', 'testns.acltest1', 'INSERT');
 
 alter default privileges
-in schema testns,
-testns
-grant select on tables to public, public;
+  in schema testns, testns
+  grant select on tables to public, public;
 
 select has_table_privilege('regress_priv_user1', 'testns.acltest1', 'SELECT');
 
@@ -2404,8 +2397,8 @@ select has_table_privilege('regress_priv_user1', 'testns.acltest1', 'SELECT');
 select has_table_privilege('regress_priv_user1', 'testns.acltest1', 'INSERT');
 
 alter default privileges
-in schema testns
-grant insert on tables to regress_priv_user1;
+  in schema testns
+  grant insert on tables to regress_priv_user1;
 
 drop table testns.acltest1;
 
@@ -2416,8 +2409,8 @@ select has_table_privilege('regress_priv_user1', 'testns.acltest1', 'SELECT');
 select has_table_privilege('regress_priv_user1', 'testns.acltest1', 'INSERT');
 
 alter default privileges
-in schema testns
-revoke insert on tables from regress_priv_user1;
+  in schema testns
+  revoke insert on tables from regress_priv_user1;
 
 drop table testns.acltest1;
 
@@ -2428,12 +2421,12 @@ select has_table_privilege('regress_priv_user1', 'testns.acltest1', 'SELECT');
 select has_table_privilege('regress_priv_user1', 'testns.acltest1', 'INSERT');
 
 alter default privileges
-for role regress_priv_user1
-revoke execute on functions from public;
+  for role regress_priv_user1
+  revoke execute on functions from public;
 
 alter default privileges
-in schema testns
-grant usage on schemas to regress_priv_user2;
+  in schema testns
+  grant usage on schemas to regress_priv_user2;
 
 select
   makeaclitem(
@@ -2648,8 +2641,8 @@ drop aggregate testns.agg1(int);
 drop procedure testns.bar();
 
 alter default privileges
-for role regress_priv_user1
-revoke usage on types from public;
+  for role regress_priv_user1
+  revoke usage on types from public;
 
 create domain testns.priv_testdomain1 as int;
 
@@ -2949,12 +2942,12 @@ drop role regress_priv_user7;
 drop role regress_priv_user8;
 
 alter default privileges
-for role pg_signal_backend
-revoke usage on types from pg_signal_backend;
+  for role pg_signal_backend
+  revoke usage on types from pg_signal_backend;
 
 alter default privileges
-for role pg_read_all_settings
-revoke usage on types from pg_read_all_settings;
+  for role pg_read_all_settings
+  revoke usage on types from pg_read_all_settings;
 
 create user regress_locktable_user;
 
@@ -3185,9 +3178,8 @@ create role regress_group_indirect_manager;
 create role regress_group_member;
 
 grant regress_group
-to regress_group_direct_manager
-with inherit false,
-admin true;
+  to regress_group_direct_manager
+  with inherit false, admin true;
 
 grant regress_group_direct_manager to regress_group_indirect_manager;
 
@@ -3250,14 +3242,12 @@ create schema regress_roleoption;
 grant create, usage on schema regress_roleoption to public;
 
 grant regress_roleoption_donor
-to regress_roleoption_protagonist
-with inherit true,
-set false;
+  to regress_roleoption_protagonist
+  with inherit true, set false;
 
 grant regress_roleoption_recipient
-to regress_roleoption_protagonist
-with inherit false,
-set true;
+  to regress_roleoption_protagonist
+  with inherit false, set true;
 
 set session authorization regress_roleoption_protagonist;
 
@@ -3409,11 +3399,10 @@ create table grantor_test3 ();
 
 grant select on table grantor_test2 to regress_grantor1 with grant option;
 
-grant select,
-update
-on table grantor_test3
-to regress_grantor2
-with grant option;
+grant select, update
+  on table grantor_test3
+  to regress_grantor2
+  with grant option;
 
 set role to regress_grantor1;
 

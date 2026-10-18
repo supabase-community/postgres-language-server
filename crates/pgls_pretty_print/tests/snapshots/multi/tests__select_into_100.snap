@@ -15,8 +15,8 @@ create schema selinto_schema;
 create user regress_selinto_user;
 
 alter default privileges
-for role regress_selinto_user
-revoke insert on tables from regress_selinto_user;
+  for role regress_selinto_user
+  revoke insert on tables from regress_selinto_user;
 
 grant all on schema selinto_schema to public;
 
@@ -45,8 +45,8 @@ create table selinto_schema.tbl_nodata4 (a) as execute data_sel with no data;
 reset session_authorization;
 
 alter default privileges
-for role regress_selinto_user
-grant insert on tables to regress_selinto_user;
+  for role regress_selinto_user
+  grant insert on tables to regress_selinto_user;
 
 set session authorization regress_selinto_user;
 

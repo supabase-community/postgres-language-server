@@ -190,8 +190,8 @@ select
   );
 
 grant execute
-on function pg_log_backend_memory_contexts(int)
-to regress_log_memory;
+  on function pg_log_backend_memory_contexts(int)
+  to regress_log_memory;
 
 select
   has_function_privilege(
@@ -207,8 +207,8 @@ select pg_log_backend_memory_contexts(pg_backend_pid());
 reset role;
 
 revoke execute
-on function pg_log_backend_memory_contexts(int)
-from regress_log_memory;
+  on function pg_log_backend_memory_contexts(int)
+  from regress_log_memory;
 
 drop role regress_log_memory;
 

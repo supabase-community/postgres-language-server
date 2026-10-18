@@ -192,10 +192,13 @@ impl<W: Write> Renderer<W> {
                 }
                 LayoutEvent::Line(line_type) => {
                     match line_type {
-                        LineType::Fill if self.next_fill_item_fits(events, i + 1, 1) => {
+                        LineType::Fill
+                            if self.next_fill_item_fits(events, i + 1, 1, trailing_width) =>
+                        {
                             self.write_space()?;
                         }
-                        LineType::FillNoSpace if self.next_fill_item_fits(events, i + 1, 0) => {}
+                        LineType::FillNoSpace
+                            if self.next_fill_item_fits(events, i + 1, 0, trailing_width) => {}
                         _ => self.write_line_break()?,
                     }
                     i += 1;
@@ -298,20 +301,28 @@ impl<W: Write> Renderer<W> {
         Ok(())
     }
 
+    /// Whether the next item of a fill list fits on the current line. The last item is followed by
+    /// `trailing_width`, the text after the list that cannot move to the next line, such as the
+    /// semicolon closing the statement.
     fn next_fill_item_fits(
         &self,
         events: &[LayoutEvent],
         start: usize,
         separator_width: usize,
+        trailing_width: usize,
     ) -> bool {
-        let Some(item_length) = self.next_fill_item_length(events, start) else {
+        let Some((item_length, is_last)) = self.next_fill_item_length(events, start) else {
             return false;
         };
+        let trailing_width = if is_last { trailing_width } else { 0 };
 
-        self.current_line_length + separator_width + item_length <= self.config.max_line_length
+        self.current_line_length + separator_width + item_length + trailing_width
+            <= self.config.max_line_length
     }
 
-    fn next_fill_item_length(&self, events: &[LayoutEvent], start: usize) -> Option<usize> {
+    /// The length of the fill item starting at `start`, and whether it runs to the end of
+    /// `events`, which makes it the last item.
+    fn next_fill_item_length(&self, events: &[LayoutEvent], start: usize) -> Option<(usize, bool)> {
         let mut length = 0;
         let mut depth = 0;
 
@@ -324,7 +335,9 @@ impl<W: Write> Renderer<W> {
                 LayoutEvent::Line(LineType::Hard) => return None,
                 LayoutEvent::Line(LineType::Soft) => {}
                 LayoutEvent::Line(LineType::SoftOrSpace) => length += 1,
-                LayoutEvent::Line(LineType::Fill | LineType::FillNoSpace) if depth == 0 => break,
+                LayoutEvent::Line(LineType::Fill | LineType::FillNoSpace) if depth == 0 => {
+                    return Some((length, false));
+                }
                 LayoutEvent::Line(LineType::Fill) => length += 1,
                 LayoutEvent::Line(LineType::FillNoSpace) => {}
                 LayoutEvent::Comment { text, line_comment } => {
@@ -334,13 +347,13 @@ impl<W: Write> Renderer<W> {
                     length += text.len();
                 }
                 LayoutEvent::GroupStart { .. } => depth += 1,
-                LayoutEvent::GroupEnd if depth == 0 => break,
+                LayoutEvent::GroupEnd if depth == 0 => return Some((length, false)),
                 LayoutEvent::GroupEnd => depth -= 1,
                 LayoutEvent::IndentStart | LayoutEvent::IndentEnd => {}
             }
         }
 
-        Some(length)
+        Some((length, true))
     }
 
     fn find_group_end(&self, events: &[LayoutEvent], start: usize) -> usize {

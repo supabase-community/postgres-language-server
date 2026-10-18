@@ -27,12 +27,12 @@ alter table app.organizations
   enable row level security;
 
 grant insert (handle, avatar_id, display_name, bio, contact_email)
-on table app.organizations
-to authenticated;
+  on table app.organizations
+  to authenticated;
 
 grant update (avatar_id, display_name, bio, contact_email)
-on table app.organizations
-to authenticated;
+  on table app.organizations
+  to authenticated;
 
 create policy organizations_insert_policy
 on app.organizations
@@ -106,8 +106,8 @@ alter table app.package_versions
   enable row level security;
 
 grant insert (package_id, version_struct, sql, description_md)
-on table app.package_versions
-to authenticated;
+  on table app.package_versions
+  to authenticated;
 
 create policy package_versions_insert_policy
 on app.package_versions
@@ -134,8 +134,8 @@ alter table app.package_upgrades
   enable row level security;
 
 grant insert (package_id, from_version_struct, to_version_struct, sql)
-on table app.package_upgrades
-to authenticated;
+  on table app.package_upgrades
+  to authenticated;
 
 create policy package_upgrades_insert_policy
 on app.package_upgrades

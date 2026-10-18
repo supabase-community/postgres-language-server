@@ -89,20 +89,23 @@ pub(super) fn emit_fill_comma_separated_list<F>(e: &mut EventEmitter, nodes: &[N
 where
     F: Fn(&Node, &mut EventEmitter),
 {
-    let leading = matches!(e.config().comma_style, CommaStyle::Leading);
-
     for (i, n) in nodes.iter().enumerate() {
         if i > 0 {
-            if leading {
-                e.line(LineType::FillNoSpace);
-                e.token(TokenKind::COMMA);
-                e.space();
-            } else {
-                e.token(TokenKind::COMMA);
-                e.line(LineType::Fill);
-            }
+            emit_fill_comma_separator(e);
         }
         render(n, e);
+    }
+}
+
+/// Emits the comma between two items of a list that packs as many items as possible on each line.
+pub(super) fn emit_fill_comma_separator(e: &mut EventEmitter) {
+    if matches!(e.config().comma_style, CommaStyle::Leading) {
+        e.line(LineType::FillNoSpace);
+        e.token(TokenKind::COMMA);
+        e.space();
+    } else {
+        e.token(TokenKind::COMMA);
+        e.line(LineType::Fill);
     }
 }
 

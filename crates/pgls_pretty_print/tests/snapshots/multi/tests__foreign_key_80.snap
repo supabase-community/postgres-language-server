@@ -2378,8 +2378,8 @@ drop table fk_partitioned_pk_6, fk_partitioned_fk_6;
 create role regress_other_partitioned_fk_owner;
 
 grant references
-on table fk_notpartitioned_pk
-to regress_other_partitioned_fk_owner;
+  on table fk_notpartitioned_pk
+  to regress_other_partitioned_fk_owner;
 
 set role to regress_other_partitioned_fk_owner;
 
@@ -2414,8 +2414,8 @@ drop table other_partitioned_fk;
 reset role;
 
 revoke all
-on table fk_notpartitioned_pk
-from regress_other_partitioned_fk_owner;
+  on table fk_notpartitioned_pk
+  from regress_other_partitioned_fk_owner;
 
 drop role regress_other_partitioned_fk_owner;
 

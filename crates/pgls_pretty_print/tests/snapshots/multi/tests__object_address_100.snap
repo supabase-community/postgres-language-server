@@ -72,9 +72,9 @@ create server integer foreign data wrapper addr_fdw;
 create user mapping for regress_addr_user server integer;
 
 alter default privileges
-for role regress_addr_user
-in schema public
-grant all on tables to regress_addr_user;
+  for role regress_addr_user
+  in schema public
+  grant all on tables to regress_addr_user;
 
 alter default privileges for role regress_addr_user revoke delete on tables from regress_addr_user;
 

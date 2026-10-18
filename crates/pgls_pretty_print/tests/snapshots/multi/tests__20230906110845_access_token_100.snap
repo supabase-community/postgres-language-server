@@ -12,8 +12,8 @@ create table app.access_tokens (
 );
 
 grant insert (id, user_id, token_hash, token_name, plaintext_suffix)
-on table app.access_tokens
-to authenticated;
+  on table app.access_tokens
+  to authenticated;
 
 grant delete on table app.access_tokens to authenticated;
 

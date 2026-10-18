@@ -3,7 +3,7 @@ use pgls_query::protobuf::{DropBehavior, GrantStmt, GrantTargetType, ObjectType}
 use crate::{
     TokenKind,
     emitter::{EventEmitter, GroupKind, LineType},
-    nodes::node_list::{emit_comma_separated_list, emit_parenthesized_list},
+    nodes::node_list::{emit_fill_comma_separator, emit_parenthesized_list},
 };
 
 pub(super) fn emit_grant_stmt(e: &mut EventEmitter, n: &GrantStmt) {
@@ -40,12 +40,15 @@ fn emit_grant_stmt_impl(e: &mut EventEmitter, n: &GrantStmt, with_semicolon: boo
     if n.privileges.is_empty() {
         e.token(TokenKind::ALL_KW);
     } else {
-        emit_comma_separated_list(e, &n.privileges, |node, e| {
+        emit_grant_list(e, &n.privileges, |node, e| {
             if let Some(pgls_query::NodeEnum::AccessPriv(priv_node)) = &node.node {
                 emit_access_priv(e, priv_node);
             }
         });
     }
+
+    // The clauses after the privileges continue the statement, so a broken one indents them.
+    e.indent_start();
 
     e.line(LineType::SoftOrSpace);
     e.token(TokenKind::ON_KW);
@@ -181,7 +184,7 @@ fn emit_grant_stmt_impl(e: &mut EventEmitter, n: &GrantStmt, with_semicolon: boo
 
     // Object names
     if !n.objects.is_empty() {
-        emit_comma_separated_list(e, &n.objects, super::emit_node);
+        emit_grant_list(e, &n.objects, super::emit_node);
     }
 
     // TO/FROM - allow line break before this clause
@@ -197,7 +200,7 @@ fn emit_grant_stmt_impl(e: &mut EventEmitter, n: &GrantStmt, with_semicolon: boo
 
     // Grantees
     if !n.grantees.is_empty() {
-        emit_comma_separated_list(e, &n.grantees, super::emit_node);
+        emit_grant_list(e, &n.grantees, super::emit_node);
     }
 
     // WITH GRANT OPTION (for grant)
@@ -226,10 +229,39 @@ fn emit_grant_stmt_impl(e: &mut EventEmitter, n: &GrantStmt, with_semicolon: boo
         e.token(TokenKind::CASCADE_KW);
     }
 
+    e.indent_end();
+
     if with_semicolon {
         e.token(TokenKind::SEMICOLON);
     }
 
+    e.group_end();
+}
+
+/// Emits the privileges, objects, or roles of a `GRANT` or `REVOKE`. The list is its own group, so
+/// it stays on one line when it fits even though the statement broke, and otherwise fills each line
+/// with as many items as fit, wrapping one level deeper than its clause.
+///
+/// The deeper level starts after the first item, which shares the clause's line: a column list
+/// such as `insert (a, b)` that breaks closes its parenthesis under the line that opened it.
+pub(super) fn emit_grant_list<F>(e: &mut EventEmitter, nodes: &[pgls_query::Node], render: F)
+where
+    F: Fn(&pgls_query::Node, &mut EventEmitter),
+{
+    let Some((first, rest)) = nodes.split_first() else {
+        return;
+    };
+
+    e.group_start(GroupKind::List);
+    render(first, e);
+    if !rest.is_empty() {
+        e.indent_start();
+        for node in rest {
+            emit_fill_comma_separator(e);
+            render(node, e);
+        }
+        e.indent_end();
+    }
     e.group_end();
 }
 
