@@ -1,0 +1,27 @@
+---
+source: crates/pgls_hover/tests/hover_integration_tests.rs
+assertion_line: 101
+expression: snapshot
+---
+# Input
+```sql
+select pick(1)
+         ↑ hovered here
+```
+
+# Hover Results
+### `public.pick(i integer) → integer`  
+```plain  
+Function - Immutable - Security INVOKER  
+```  
+---    
+```sql  
+
+CREATE OR REPLACE FUNCTION public.pick(i integer)
+ RETURNS integer
+ LANGUAGE sql
+ IMMUTABLE
+AS $function$select i$function$
+
+  
+```

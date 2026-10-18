@@ -22,6 +22,7 @@ use crate::{
     features::code_actions::ExecuteStatementResult,
     features::format::PullFileFormattingParams,
     features::inlay_hints::{InlayHint, InlayHintKind, PullInlayHintsParams},
+    features::on_hover::OnHoverParams,
     workspace::{
         OpenFileParams, RegisterProjectFolderParams, StatementId, UpdateSettingsParams,
         server::WorkspaceServer,
@@ -1705,4 +1706,83 @@ async fn test_inlay_hints(test_db: PgPool) {
             },
         ]
     );
+}
+
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn test_hover_shows_resolved_references(test_db: PgPool) {
+    test_db
+        .execute(
+            "create function db_pick(i int) returns int language sql as 'select i';
+             create function db_pick(t text) returns text language sql as 'select t';
+             create table hover_items (id int, label text);
+             create table hover_tags (id int, label text);",
+        )
+        .await
+        .expect("Failed to setup test database");
+
+    let mut conf = PartialConfiguration::init();
+    conf.merge_with(PartialConfiguration {
+        db: Some(PartialDatabaseConfiguration {
+            database: Some(
+                test_db
+                    .connect_options()
+                    .get_database()
+                    .unwrap()
+                    .to_string(),
+            ),
+            ..Default::default()
+        }),
+        ..Default::default()
+    });
+    let workspace = get_test_workspace(Some(conf)).expect("Unable to create test workspace");
+
+    let path = PgLSPath::new("test.sql");
+    let content = "create function file_pick(i int) returns int language sql as 'select i';\n\
+        create function file_pick(t text) returns text language sql as 'select t';\n\
+        select db_pick(1), file_pick('a'::text);\n\
+        create function item_label(item_id int) returns text language sql\n\
+        as 'select label from hover_items where id = item_id';\n\
+        select t.label from hover_items i join hover_tags t on t.id = i.id;\n\
+        select label as ambiguous from hover_items, hover_tags;\n";
+    workspace
+        .open_file(OpenFileParams {
+            path: path.clone(),
+            content: content.into(),
+            version: 1,
+        })
+        .expect("Unable to open test file");
+
+    let hover = |needle: &str| {
+        let offset = content.find(needle).expect("needle in content") + 2;
+        workspace
+            .on_hover(OnHoverParams {
+                path: path.clone(),
+                position: u32::try_from(offset).unwrap().into(),
+            })
+            .expect("Unable to hover")
+            .markdown_blocks
+    };
+
+    // Only the overload the call resolves to.
+    let blocks = hover("db_pick(1)");
+    assert_eq!(blocks.len(), 1, "{blocks:?}");
+    assert!(blocks[0].contains("public.db_pick(i integer) → integer"));
+
+    // Functions created earlier in the file.
+    let blocks = hover("file_pick('a'");
+    assert_eq!(blocks.len(), 1, "{blocks:?}");
+
+    // A column in the body of a SQL function.
+    let blocks = hover("label from hover_items");
+    assert_eq!(blocks.len(), 1, "{blocks:?}");
+    assert!(blocks[0].contains("public.hover_items.label"));
+
+    // The column of the joined table, by its alias.
+    let blocks = hover("label from hover_items i");
+    assert_eq!(blocks.len(), 1, "{blocks:?}");
+    assert!(blocks[0].contains("public.hover_tags.label"));
+
+    // Without a unique reference, hover falls back to the columns with the hovered name.
+    let blocks = hover("label as ambiguous");
+    assert_eq!(blocks.len(), 2, "{blocks:?}");
 }
