@@ -150,8 +150,7 @@ select sum(cast(3 = any (select generate_series(1, 4)) as int));
 
 select
   sum(
-    cast(3 = any
-    (
+    cast(3 = any (
       select lag(x) over (order by x) from generate_series(1, 4) as x
     )
     as int)

@@ -943,9 +943,7 @@ from
   tenk1
 where
   thousand = 42 and
-  (
-    tenthous = cast(1 as int2) or tenthous = cast(3 as int8) or tenthous = cast(42 as int8)
-  );
+  (tenthous = cast(1 as int2) or tenthous = cast(3 as int8) or tenthous = cast(42 as int8));
 
 select count(*) from tenk1 where hundred = 42 and (thousand = 42 or thousand = 99);
 
@@ -961,9 +959,7 @@ from
   tenk1
 where
   thousand = 42 and
-  (
-    tenthous = cast(1 as numeric) or tenthous = cast(3 as int4) or tenthous = cast(42 as numeric)
-  );
+  (tenthous = cast(1 as numeric) or tenthous = cast(3 as int4) or tenthous = cast(42 as numeric));
 
 select
   *
@@ -1055,9 +1051,7 @@ from
   tenk2
 where
   tenk1.hundred = 42 and
-  (
-    tenk2.thousand = 42 or tenk1.thousand = 41 or tenk2.tenthous = 2
-  ) and
+  (tenk2.thousand = 42 or tenk1.thousand = 41 or tenk2.tenthous = 2) and
   tenk2.hundred = tenk1.hundred;
 
 select
@@ -1067,9 +1061,7 @@ from
   tenk2
 where
   tenk1.hundred = 42 and
-  (
-    tenk2.thousand = 42 or tenk2.thousand = 41 or tenk2.tenthous = 2
-  ) and
+  (tenk2.thousand = 42 or tenk2.thousand = 41 or tenk2.tenthous = 2) and
   tenk2.hundred = tenk1.hundred;
 
 select
@@ -1079,9 +1071,7 @@ from
   inner join
     tenk2
   on tenk1.hundred = 42 and
-    (
-      tenk2.thousand = 42 or tenk2.thousand = 41 or tenk2.tenthous = 2
-    ) and
+    (tenk2.thousand = 42 or tenk2.thousand = 41 or tenk2.tenthous = 2) and
     tenk2.hundred = tenk1.hundred;
 
 select
@@ -1091,9 +1081,7 @@ from
   left outer join
     tenk2
   on tenk1.hundred = 42 and
-    (
-      tenk2.thousand = 42 or tenk2.thousand = 41 or tenk2.tenthous = 2
-    ) and
+    (tenk2.thousand = 42 or tenk2.thousand = 41 or tenk2.tenthous = 2) and
     tenk2.hundred = tenk1.hundred;
 
 create table dupindexcols as select unique1 as id, cast(stringu2 as text) as f1 from tenk1;
@@ -2021,8 +2009,7 @@ select
 from
   pg_class
 where
-  oid in
-  (
+  oid in (
     select
       indexrelid
     from

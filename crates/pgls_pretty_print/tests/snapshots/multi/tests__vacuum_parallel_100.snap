@@ -17,8 +17,7 @@ create index typically_sized_index on parallel_vacuum_table using btree (a);
 create index vacuum_in_leader_small_index on parallel_vacuum_table using btree ((1));
 
 select
-  exists
-  (
+  exists (
     select
       1
     from

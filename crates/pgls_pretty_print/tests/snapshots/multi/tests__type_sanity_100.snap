@@ -22,18 +22,10 @@ from
   pg_type as t1
 where
   t1.typbyval and
-  (
-    t1.typlen <> 1 or t1.typalign <> 'c'
-  ) and
-  (
-    t1.typlen <> 2 or t1.typalign <> 's'
-  ) and
-  (
-    t1.typlen <> 4 or t1.typalign <> 'i'
-  ) and
-  (
-    t1.typlen <> 8 or t1.typalign <> 'd'
-  );
+  (t1.typlen <> 1 or t1.typalign <> 'c') and
+  (t1.typlen <> 2 or t1.typalign <> 's') and
+  (t1.typlen <> 4 or t1.typalign <> 'i') and
+  (t1.typlen <> 8 or t1.typalign <> 'd');
 
 select
   t1.oid,
@@ -59,8 +51,7 @@ from
 where
   t1.typtype not in ('p') and
   t1.typname not like '\_%' and
-  not exists
-  (
+  not exists (
     select
       1
     from
@@ -79,9 +70,7 @@ from
   pg_type as t1 left outer join pg_type as t2 on t1.typarray = t2.oid
 where
   t1.typarray <> 0 and
-  (
-    t2.oid is null or t2.typsubscript <> cast('array_subscript_handler' as regproc)
-  );
+  (t2.oid is null or t2.typsubscript <> cast('array_subscript_handler' as regproc));
 
 select
   t1.oid,
@@ -124,13 +113,17 @@ where
   t1.typinput = p1.oid and
   not (
     (p1.pronargs = 1 and p1.proargtypes[0] = cast('cstring' as regtype)) or
-    (p1.pronargs = 2 and
+    (
+      p1.pronargs = 2 and
       p1.proargtypes[0] = cast('cstring' as regtype) and
-      p1.proargtypes[1] = cast('oid' as regtype)) or
-    (p1.pronargs = 3 and
+      p1.proargtypes[1] = cast('oid' as regtype)
+    ) or
+    (
+      p1.pronargs = 3 and
       p1.proargtypes[0] = cast('cstring' as regtype) and
       p1.proargtypes[1] = cast('oid' as regtype) and
-      p1.proargtypes[2] = cast('int4' as regtype))
+      p1.proargtypes[2] = cast('int4' as regtype)
+    )
   );
 
 select
@@ -249,13 +242,17 @@ where
   t1.typreceive = p1.oid and
   not (
     (p1.pronargs = 1 and p1.proargtypes[0] = cast('internal' as regtype)) or
-    (p1.pronargs = 2 and
+    (
+      p1.pronargs = 2 and
       p1.proargtypes[0] = cast('internal' as regtype) and
-      p1.proargtypes[1] = cast('oid' as regtype)) or
-    (p1.pronargs = 3 and
+      p1.proargtypes[1] = cast('oid' as regtype)
+    ) or
+    (
+      p1.pronargs = 3 and
       p1.proargtypes[0] = cast('internal' as regtype) and
       p1.proargtypes[1] = cast('oid' as regtype) and
-      p1.proargtypes[2] = cast('int4' as regtype))
+      p1.proargtypes[2] = cast('int4' as regtype)
+    )
   );
 
 select
@@ -667,8 +664,7 @@ where
   is_catalog_text_unique_index_oid(indexrelid) <>
   (indisunique and
   indexrelid < 16384 and
-  exists
-  (
+  exists (
     select 1 from pg_attribute where attrelid = indexrelid and atttypid = cast('text' as regtype)
   ));
 
@@ -699,11 +695,11 @@ from
   pg_range as r inner join pg_opclass as o on o.oid = r.rngsubopc
 where
   o.opcmethod <> 403 or
-  (o.opcintype <> r.rngsubtype and
+  (
+    o.opcintype <> r.rngsubtype and
     not (
       o.opcintype = cast('pg_catalog.anyarray' as regtype) and
-      exists
-      (
+      exists (
         select
           1
         from
@@ -713,7 +709,8 @@ where
           typelem <> 0 and
           typsubscript = cast('array_subscript_handler' as regproc)
       )
-    ));
+    )
+  );
 
 select
   r.rngtypid,
@@ -852,8 +849,7 @@ where
   'xml']
   as regtype[])) and
   not exists (select 1 from pg_type as u where u.typarray = t.oid) and
-  not exists
-  (
+  not exists (
     select
       1
     from

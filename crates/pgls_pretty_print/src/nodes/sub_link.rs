@@ -10,7 +10,7 @@ pub(super) fn emit_sub_link(e: &mut EventEmitter, n: &SubLink) {
         x if x == SubLinkType::ExistsSublink as i32 => {
             // EXISTS(subquery)
             e.token(TokenKind::EXISTS_KW);
-            e.line(LineType::SoftOrSpace);
+            e.space();
             e.token(TokenKind::L_PAREN);
             if let Some(ref subselect) = n.subselect {
                 emit_subquery(e, subselect);
@@ -31,7 +31,7 @@ pub(super) fn emit_sub_link(e: &mut EventEmitter, n: &SubLink) {
             }
 
             e.token(TokenKind::ALL_KW);
-            e.line(LineType::SoftOrSpace);
+            e.space();
             e.token(TokenKind::L_PAREN);
             if let Some(ref subselect) = n.subselect {
                 emit_subquery(e, subselect);
@@ -53,12 +53,10 @@ pub(super) fn emit_sub_link(e: &mut EventEmitter, n: &SubLink) {
                     e.space();
                     e.token(TokenKind::ANY_KW);
                 }
-
-                e.line(LineType::SoftOrSpace);
             } else {
                 e.token(TokenKind::ANY_KW);
-                e.line(LineType::SoftOrSpace);
             }
+            e.space();
 
             e.token(TokenKind::L_PAREN);
             if let Some(ref subselect) = n.subselect {

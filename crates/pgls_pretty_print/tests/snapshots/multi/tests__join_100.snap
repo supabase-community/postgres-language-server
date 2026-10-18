@@ -152,8 +152,7 @@ from
   tenk1 as a,
   tenk1 as b
 where
-  exists
-  (
+  exists (
     select * from tenk1 as c where b.twothousand = c.twothousand and b.fivethous <> c.fivethous
   ) and
   a.tenthous = b.tenthous and
@@ -352,8 +351,7 @@ select
 from
   tenk1 as a
 where
-  unique1 in
-  (
+  unique1 in (
     select unique1 from tenk1 as b inner join tenk1 as c using (unique1) where b.unique2 = 42
   );
 
@@ -1029,8 +1027,7 @@ select
 from
   tt4x as t1
 where
-  not exists
-  (
+  not exists (
     select
       1
     from

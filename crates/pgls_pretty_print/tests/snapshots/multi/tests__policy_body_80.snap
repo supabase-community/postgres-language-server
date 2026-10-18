@@ -22,8 +22,7 @@ for insert
 to authenticated
 with check (
   bucket_id = 'organization-files' and
-  (storage.foldername(name))[1] in
-  (
+  (storage.foldername(name))[1] in (
     select
       cast(org_id as text)
     from

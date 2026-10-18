@@ -241,9 +241,7 @@ from
     quad_box_tbl_ord_idx1 as idx
   on seq.n = idx.n and
     seq.id = idx.id and
-    (
-      seq.dist = idx.dist or (seq.dist is null and idx.dist is null)
-    )
+    (seq.dist = idx.dist or (seq.dist is null and idx.dist is null))
 where
   seq.id is null or idx.id is null;
 
@@ -275,9 +273,7 @@ from
     quad_box_tbl_ord_idx2 as idx
   on seq.n = idx.n and
     seq.id = idx.id and
-    (
-      seq.dist = idx.dist or (seq.dist is null and idx.dist is null)
-    )
+    (seq.dist = idx.dist or (seq.dist is null and idx.dist is null))
 where
   seq.id is null or idx.id is null;
 

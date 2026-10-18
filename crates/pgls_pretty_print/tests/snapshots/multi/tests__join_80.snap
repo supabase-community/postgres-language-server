@@ -190,8 +190,7 @@ from
   tenk1 as a,
   tenk1 as b
 where
-  exists
-  (
+  exists (
     select
       *
     from
@@ -425,8 +424,7 @@ select
 from
   tenk1 as a
 where
-  unique1 in
-  (
+  unique1 in (
     select
       unique1
     from
@@ -440,13 +438,11 @@ select
 from
   tenk1 as x
 where
-  x.unique1 in
-  (
+  x.unique1 in (
     select a.f1 from int4_tbl as a, float8_tbl as b where a.f1 = b.f1
   ) and
   x.unique1 = 0 and
-  x.unique1 in
-  (
+  x.unique1 in (
     select aa.f1 from int4_tbl as aa, float8_tbl as bb where aa.f1 = bb.f1
   );
 
@@ -461,13 +457,11 @@ select
 from
   tenk1 as x
 where
-  x.unique1 in
-  (
+  x.unique1 in (
     select a.f1 from int4_tbl as a, float8_tbl as b where a.f1 = b.f1
   ) and
   x.unique1 = 0 and
-  x.unique1 in
-  (
+  x.unique1 in (
     select aa.f1 from int4_tbl as aa, float8_tbl as bb where aa.f1 = bb.f1
   );
 
@@ -1183,8 +1177,7 @@ select
 from
   tenk1 as a
 where
-  exists
-  (
+  exists (
     select 1 from tenk1 as b where a.unique1 = b.unique2 group by b.unique1
   );
 
@@ -1199,8 +1192,7 @@ select
 from
   tt4x as t1
 where
-  not exists
-  (
+  not exists (
     select
       1
     from

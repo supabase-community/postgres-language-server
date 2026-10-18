@@ -345,8 +345,7 @@ from
   pg_class
 where
   relname = 'pubview' and
-  relnamespace in
-  (
+  relnamespace in (
     select oid from pg_namespace where nspname = 'testviewschm2'
   );
 
