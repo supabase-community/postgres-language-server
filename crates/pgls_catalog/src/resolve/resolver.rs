@@ -8,7 +8,7 @@ use pgls_query::{
 };
 
 use super::{
-    Finding, FindingKind, FunctionContext, FunctionParam, ResolvedCall, ResolvedCallArgument,
+    Finding, FindingKind, FunctionContext, FunctionParam, Reference, ResolvedCallArgument,
     scope::{Cte, Level},
     span,
 };
@@ -29,8 +29,8 @@ pub(super) struct Resolver<'a> {
     /// The common table expressions in scope, innermost last.
     pub ctes: Vec<Cte>,
     pub output: crate::typing::QueryColumns,
-    /// The function calls resolved so far, when they are being collected.
-    pub calls: Option<Vec<ResolvedCall>>,
+    /// The references resolved so far, when they are being collected.
+    pub references: Option<Vec<Reference>>,
 }
 
 impl<'a> Resolver<'a> {
@@ -50,7 +50,7 @@ impl<'a> Resolver<'a> {
             levels: Vec::new(),
             ctes: Vec::new(),
             output: None,
-            calls: None,
+            references: None,
         }
     }
 
@@ -99,17 +99,33 @@ impl<'a> Resolver<'a> {
         }
     }
 
-    /// Records that `call` resolves to `function`, when calls are being collected.
-    pub fn record_call(&mut self, call: &FuncCall, function: &FunctionInfo) {
-        let Some(calls) = self.calls.as_mut() else {
+    /// Whether references are being collected.
+    pub fn collects_references(&self) -> bool {
+        self.references.is_some()
+    }
+
+    /// Records a reference, when references are being collected.
+    pub fn record(&mut self, reference: Reference) {
+        let Some(references) = self.references.as_mut() else {
             return;
         };
-        // SQL syntax like EXTRACT or TRIM doesn't pass the arguments in order.
-        if call.funcformat() == CoercionForm::CoerceSqlSyntax {
+        // Some expressions are resolved more than once, e.g. VALUES rows in INSERT.
+        let known = references.iter().any(|known| {
+            known.location() == reference.location()
+                && std::mem::discriminant(known) == std::mem::discriminant(&reference)
+        });
+        if !known {
+            references.push(reference);
+        }
+    }
+
+    /// Records that `call` resolves to `function`, when references are being collected.
+    pub fn record_call(&mut self, call: &FuncCall, function: &FunctionInfo) {
+        if !self.collects_references() {
             return;
         }
-        // Some expressions are typed more than once, e.g. VALUES rows in INSERT.
-        if calls.iter().any(|known| known.location == call.location) {
+        // SQL syntax like EXTRACT or TRIM doesn't pass the arguments in order.
+        if call.funcformat() == CoercionForm::CoerceSqlSyntax {
             return;
         }
         let Some(signature) = function.signature.as_ref() else {
@@ -141,8 +157,9 @@ impl<'a> Resolver<'a> {
             };
             arguments.push(ResolvedCallArgument { parameter, named });
         }
-        calls.push(ResolvedCall {
+        self.record(Reference::Function {
             location: call.location,
+            span: self.name_span(call.location),
             function: function.clone(),
             arguments,
         });

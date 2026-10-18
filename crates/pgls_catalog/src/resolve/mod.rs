@@ -17,6 +17,8 @@ mod column_name;
 mod differential_tests;
 pub(crate) mod expr;
 mod nodes;
+#[cfg(all(test, feature = "db"))]
+mod reference_tests;
 mod resolver;
 mod scope;
 mod span;
@@ -55,8 +57,10 @@ pub struct ResolveParams<'a> {
     pub search_path: &'a [String],
     /// Set when the statement is the body of a SQL function.
     pub function: Option<&'a FunctionContext>,
-    /// The statement text, used to compute the spans of findings.
+    /// The statement text, used to compute the spans of findings and references.
     pub sql: Option<&'a str>,
+    /// Whether to collect the [`Resolution::references`].
+    pub collect_references: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -159,17 +163,76 @@ pub struct Resolution {
     /// `true` if every relation, function, and type the statement references exists unchanged
     /// in the database, and the statement contains nothing the resolver doesn't understand.
     pub database_only: bool,
+    /// The names that resolve to exactly one object, in the order the resolver visits them.
+    /// Empty unless [`ResolveParams::collect_references`] is set.
+    pub references: Vec<Reference>,
 }
 
-/// A function call that resolves to exactly one function.
+/// A name in the statement that resolves to exactly one object. Names that match no object or
+/// several, or whose object can't be determined with certainty, have no reference.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct ResolvedCall {
-    /// The location of the function name in the statement.
-    pub location: i32,
-    pub function: crate::FunctionInfo,
-    /// The parameter that each argument of the call is passed to, in the order of the call's
-    /// arguments. Expanded variadic arguments all go to the variadic parameter.
-    pub arguments: Vec<ResolvedCallArgument>,
+pub enum Reference {
+    /// A function call.
+    Function {
+        /// The location of the function name in the statement.
+        location: i32,
+        /// The span of the (possibly qualified) function name.
+        span: Option<TextRange>,
+        function: crate::FunctionInfo,
+        /// The parameter that each argument of the call is passed to, in the order of the call's
+        /// arguments. Expanded variadic arguments all go to the variadic parameter.
+        arguments: Vec<ResolvedCallArgument>,
+    },
+    /// A column reference, like `name`, `u.name`, or `public.users.name`.
+    Column {
+        /// The location of the column reference in the statement.
+        location: i32,
+        /// The span of the whole column reference, including its qualifiers.
+        span: Option<TextRange>,
+        source: ColumnSource,
+        /// The column as its source defines it: under its own name, even if an alias renames it
+        /// (`users u(user_id)`). Columns of CTEs and subqueries have their inferred type.
+        column: crate::ColumnInfo,
+    },
+    /// A relation of the catalog, in FROM, or the target of INSERT, UPDATE, DELETE, or COPY.
+    /// CTEs referenced by name are not relations of the catalog, and have no reference.
+    Relation {
+        /// The location of the relation name in the statement.
+        location: i32,
+        /// The span of the (possibly qualified) relation name, without its alias.
+        span: Option<TextRange>,
+        relation: crate::RelationInfo,
+    },
+}
+
+impl Reference {
+    pub fn location(&self) -> i32 {
+        match self {
+            Self::Function { location, .. }
+            | Self::Column { location, .. }
+            | Self::Relation { location, .. } => *location,
+        }
+    }
+
+    pub fn span(&self) -> Option<TextRange> {
+        match self {
+            Self::Function { span, .. }
+            | Self::Column { span, .. }
+            | Self::Relation { span, .. } => *span,
+        }
+    }
+}
+
+/// Where a referenced column comes from. Only the FROM item that a column reference resolves to
+/// is followed, not where the columns of a CTE or subquery come from in turn.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ColumnSource {
+    /// A table, view, or other relation of the catalog.
+    Relation { schema: String, name: String },
+    /// A common table expression, by its name rather than the alias that references it.
+    Cte { name: String },
+    /// A subquery in FROM, by its alias. `None` if it has none.
+    Subquery { alias: Option<String> },
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -188,6 +251,9 @@ pub fn resolve(params: ResolveParams<'_>) -> Resolution {
         params.function,
         params.sql,
     );
+    if params.collect_references {
+        resolver.references = Some(Vec::new());
+    }
     nodes::resolve_node_enum(&mut resolver, params.stmt);
     resolver.check_function_params();
 
@@ -201,22 +267,8 @@ pub fn resolve(params: ResolveParams<'_>) -> Resolution {
     Resolution {
         findings,
         database_only: supports_database_check(params.stmt) && resolver.database_only,
+        references: resolver.references.unwrap_or_default(),
     }
-}
-
-/// The function calls of a statement that resolve to exactly one function, in the order the
-/// resolver visits them. Calls whose arguments have unknown types, or that match no function or
-/// more than one, are left out.
-pub fn function_calls(params: ResolveParams<'_>) -> Vec<ResolvedCall> {
-    let mut resolver = Resolver::new(
-        params.catalog,
-        params.search_path,
-        params.function,
-        params.sql,
-    );
-    resolver.calls = Some(Vec::new());
-    nodes::resolve_node_enum(&mut resolver, params.stmt);
-    resolver.calls.unwrap_or_default()
 }
 
 /// The output column names of a query, or `None` if they are not known with certainty.
