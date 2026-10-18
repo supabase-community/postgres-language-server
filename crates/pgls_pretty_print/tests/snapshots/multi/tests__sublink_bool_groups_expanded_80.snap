@@ -9,8 +9,7 @@ for select
 to authenticated
 using (
   exists (
-    select
-      1
+    select 1
     from public.permission_set_permissions as rp
       inner join public.positions as p on p.uuid = rp.position_uuid
     where rp.permission_name = permissions.name
@@ -34,38 +33,31 @@ using (
   )
 );
 
-select
-  *
+select *
 from public.permissions
 where exists (
-    select
-      1
+    select 1
     from public.permission_set_permissions as rp
     where rp.permission_name = permissions.name
   );
 
-select
-  *
+select *
 from public.permissions
 where name = any (
-    select
-      permission_name
+    select permission_name
     from public.permission_set_permissions
     where position_uuid is not null
   );
 
-select
-  *
+select *
 from public.permissions
 where id > all (
-    select
-      permission_id
+    select permission_id
     from public.permission_set_permissions
     where position_uuid is not null
   );
 
-select
-  *
+select *
 from public.permissions
 where id = 1
   or (
@@ -73,8 +65,7 @@ where id = 1
     and deleted_at is null
   );
 
-select
-  *
+select *
 from public.permissions
 where public.permissions.permission_name = 'positions.view'
   and (
@@ -83,8 +74,7 @@ where public.permissions.permission_name = 'positions.view'
   )
   and verified;
 
-select
-  *
+select *
 from public.permissions
 where public.permissions.permission_name = 'positions.view'
   or (
