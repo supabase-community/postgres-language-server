@@ -6,7 +6,7 @@
 //! get none.
 
 use pgls_catalog::CatalogView;
-use pgls_catalog::resolve::{FunctionContext, ResolveParams, function_calls};
+use pgls_catalog::resolve::{FunctionContext, Reference, ResolveParams, resolve};
 use pgls_query::NodeEnum;
 use pgls_query::protobuf::{ScanToken, Token};
 use pgls_text_size::TextSize;
@@ -38,13 +38,27 @@ pub struct InlayHint {
 
 /// The inlay hints of a statement, ordered by offset.
 pub fn inlay_hints(params: InlayHintsParams<'_>) -> Vec<InlayHint> {
-    let calls = function_calls(ResolveParams {
+    let references = resolve(ResolveParams {
         stmt: params.stmt,
         catalog: params.catalog,
         search_path: params.search_path,
         function: params.function,
         sql: Some(params.sql),
-    });
+        collect_references: true,
+    })
+    .references;
+    let calls: Vec<_> = references
+        .into_iter()
+        .filter_map(|reference| match reference {
+            Reference::Function {
+                location,
+                function,
+                arguments,
+                ..
+            } => Some((location, function, arguments)),
+            _ => None,
+        })
+        .collect();
     if calls.is_empty() {
         return Vec::new();
     }
@@ -58,19 +72,19 @@ pub fn inlay_hints(params: InlayHintsParams<'_>) -> Vec<InlayHint> {
         .collect();
 
     let mut hints = Vec::new();
-    for call in calls {
-        let Some(signature) = call.function.signature.as_ref() else {
+    for (location, function, call_arguments) in calls {
+        let Some(signature) = function.signature.as_ref() else {
             continue;
         };
-        let Some(arguments) = argument_tokens(&tokens, call.location) else {
+        let Some(arguments) = argument_tokens(&tokens, location) else {
             continue;
         };
         // An aggregate's `ORDER BY` follows its arguments, and may contain more commas.
-        if arguments.len() < call.arguments.len() {
+        if arguments.len() < call_arguments.len() {
             continue;
         }
         let mut previous = None;
-        for (argument, tokens) in call.arguments.iter().zip(arguments) {
+        for (argument, tokens) in call_arguments.iter().zip(arguments) {
             // Expanded variadic arguments are only hinted once, at the first.
             let repeated = previous == Some(argument.parameter);
             previous = Some(argument.parameter);

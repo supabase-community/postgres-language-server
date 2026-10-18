@@ -63,7 +63,7 @@ Tree-sitter integration used by features (e.g. completions and hover) that need 
 
 ##### `crates/pgls_catalog`
 
-The database catalog. `Snapshot` is the schema of the connected database (tables, columns, functions, types, ...), loaded by introspection queries or from JSON. `Catalog` applies the DDL of the current file on top of it without touching the database, and the name resolver checks statements against the result. Lookups answer found, missing, or unknown, so the typecheck rules only report what is certainly wrong.
+The database catalog. `Snapshot` is the schema of the connected database (tables, columns, functions, types, ...), loaded by introspection queries or from JSON. `Catalog` applies the DDL of the current file on top of it without touching the database, and the name resolver checks statements against the result. On request, the resolver also returns the functions, columns, and relations that names resolve to with certainty, for features like inlay hints. Lookups answer found, missing, or unknown, so the typecheck rules only report what is certainly wrong.
 
 `typing/` ports Postgres' type rules (coercion, common types, polymorphic types, and function and operator overload resolution) from the latest supported Postgres, and links the Postgres function each port follows. The resolver infers the type of every expression with them.
 

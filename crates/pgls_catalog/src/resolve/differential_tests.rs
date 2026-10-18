@@ -552,6 +552,7 @@ fn analyse(catalog: &Catalog, sql: &str) -> (Vec<FindingKind>, Option<Vec<Option
         search_path: &search_path,
         function: None,
         sql: Some(sql),
+        collect_references: false,
     });
     let node = protobuf::Node { node: Some(root) };
     let types = query_output_types(&node, catalog, &search_path)
