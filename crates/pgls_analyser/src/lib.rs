@@ -50,25 +50,6 @@ pub struct Analyser<'a> {
 /// snapshot is available.
 pub const TYPECHECK_GROUP: &str = "typecheck";
 
-/// Released rules that were merged into another rule, with the rule that replaces them. Configs,
-/// suppression comments, and rule selectors that name them keep working.
-pub const REMOVED_RULES: &[(&str, &str)] = &[
-    ("preferBigintOverInt", "preferBigInt"),
-    ("preferBigintOverSmallint", "preferBigInt"),
-    (
-        "concurrentRefreshMatviewLock",
-        "requireConcurrentRefreshMatview",
-    ),
-];
-
-/// The rule that replaces a removed rule, if `name` is one.
-pub fn replacement_of_removed_rule(name: &str) -> Option<&'static str> {
-    REMOVED_RULES
-        .iter()
-        .find(|(removed, _)| *removed == name)
-        .map(|(_, replacement)| *replacement)
-}
-
 #[derive(Debug)]
 pub struct AnalysableStatement {
     pub root: pgls_query::NodeEnum,
@@ -132,25 +113,6 @@ pub struct UnparsableStatement {
     pub sql: String,
 }
 
-/// What the analyser learned about a single statement.
-#[derive(Debug, Clone)]
-pub struct StatementAnalysis {
-    pub range: TextRange,
-    /// `true` when typechecking is enabled and everything the statement references comes
-    /// unchanged from the database, so checking it against the database is still correct.
-    pub database_only: bool,
-    /// `true` when a typecheck rule reported a diagnostic for this statement.
-    pub has_typecheck_findings: bool,
-    /// The explicit search path of the session at this statement.
-    pub search_path: Vec<String>,
-}
-
-#[derive(Debug, Default)]
-pub struct AnalysisResult {
-    pub diagnostics: Vec<LinterDiagnostic>,
-    pub statements: Vec<StatementAnalysis>,
-}
-
 pub struct AnalyserConfig<'a> {
     pub options: &'a LinterOptions,
     pub filter: AnalysisFilter<'a>,
@@ -168,14 +130,10 @@ impl<'a> Analyser<'a> {
         }
     }
 
-    pub fn run(&self, params: AnalyserParams) -> Vec<LinterDiagnostic> {
-        self.analyse(params).diagnostics
-    }
-
     /// Runs the rules statement by statement, while the catalog and the session follow the
     /// effects of the statements.
-    pub fn analyse(&self, params: AnalyserParams) -> AnalysisResult {
-        let mut result = AnalysisResult::default();
+    pub fn run(&self, params: AnalyserParams) -> Vec<LinterDiagnostic> {
+        let mut result = Vec::new();
 
         let mut typecheck = params.typecheck && params.catalog_base.is_some();
         let snapshot = params
@@ -220,7 +178,6 @@ impl<'a> Analyser<'a> {
 
             let statement =
                 StatementContext::new(&roots[i], stmt.sql.as_deref(), stmt.function.as_ref());
-            let mut has_typecheck_findings = false;
 
             let rule_params = LinterRegistryRuleParams {
                 root: &roots[i],
@@ -234,30 +191,15 @@ impl<'a> Analyser<'a> {
                     continue;
                 }
                 let diagnostics = (rule.run)(&rule_params);
-                has_typecheck_findings |= rule.group == TYPECHECK_GROUP && !diagnostics.is_empty();
 
-                result
-                    .diagnostics
-                    .extend(diagnostics.into_iter().map(|mut diagnostic| {
-                        diagnostic.span = Some(match diagnostic.span {
-                            Some(span) => span + stmt.range.start(),
-                            None => stmt.range,
-                        });
-                        diagnostic
-                    }));
+                result.extend(diagnostics.into_iter().map(|mut diagnostic| {
+                    diagnostic.span = Some(match diagnostic.span {
+                        Some(span) => span + stmt.range.start(),
+                        None => stmt.range,
+                    });
+                    diagnostic
+                }));
             }
-
-            let database_only = typecheck_statement
-                && statement
-                    .resolution(&file_context)
-                    .is_some_and(|resolution| resolution.database_only);
-
-            result.statements.push(StatementAnalysis {
-                range: stmt.range,
-                database_only,
-                has_typecheck_findings,
-                search_path: file_context.session().search_path().to_vec(),
-            });
 
             file_context.next(stmt.function.is_none());
         }

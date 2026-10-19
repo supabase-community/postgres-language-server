@@ -190,7 +190,7 @@ where
         self.request("pgls/on_hover", params)
     }
 
-    fn invalidate_schema_cache(&self, all: bool) -> Result<(), WorkspaceError> {
-        self.request("pgls/invalidate_schema_cache", all)
+    fn invalidate_snapshot(&self, all: bool) -> Result<(), WorkspaceError> {
+        self.request("pgls/invalidate_snapshot", all)
     }
 }

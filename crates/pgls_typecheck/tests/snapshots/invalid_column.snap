@@ -1,7 +1,0 @@
----
-source: crates/pgt_typecheck/tests/diagnostics.rs
-expression: content
----
-select id, ~~~unknown~~~ from contacts;
-
-column &quot;unknown&quot; does not exist

@@ -83,29 +83,16 @@ Available groups: `correctness`, `safety`, `destructive`, `style`, `typecheck`, 
 
 The rules in the `typecheck` group need a database connection. Two settings affect them:
 
-- `typecheck.enabled: false` turns typechecking off entirely: the `typecheck` rules and the [legacy `EXPLAIN`-based check](features/type_checking.md#legacy-explain-based-checking).
-- `linter.groups.typecheck` sets the level of the `typecheck` rules, like any other group. Setting it to `"off"` turns the rules off, but leaves the legacy `EXPLAIN`-based check on.
+- `typecheck.enabled: false` turns typechecking off entirely.
+- `linter.groups.typecheck` sets the level of the `typecheck` rules, like any other group.
 
 ### Precedence
 
 From highest to lowest:
 
 1. `linter.rules.<rule>` — explicit rule setting
-2. `linter.rules.safety.<rule>` — deprecated per-rule setting (see below)
-3. `linter.groups.<group>` — group level
-4. `linter.rules.recommended` / `linter.rules.all` preset (nursery never enabled)
-
-### Deprecated `linter.rules.safety` form
-
-The former nested form `linter.rules.safety.<rule>` is still accepted but prints a deprecation warning. Use `linter.rules.<rule>` instead.
-
-Removed rules:
-
-| Old rule | Replacement |
-| --- | --- |
-| `preferBigintOverInt` | `preferBigInt` with `{ "checkInt": true }` |
-| `preferBigintOverSmallint` | `preferBigInt` with `{ "checkSmallint": true }` |
-| `concurrentRefreshMatviewLock` | Dropped; `requireConcurrentRefreshMatview` covers it |
+2. `linter.groups.<group>` — group level
+3. `linter.rules.recommended` / `linter.rules.all` preset (nursery never enabled)
 
 ## Where the configuration is loaded from
 

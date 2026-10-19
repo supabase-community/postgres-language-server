@@ -56,7 +56,7 @@ impl<'a> SuppressionsParser<'a> {
     }
 
     /// Will parse the suppressions at the start of the file.
-    /// As soon as anything is encountered that's not a `pgt-ignore-all` or `pgls-ignore-all`
+    /// As soon as anything is encountered that's not a `pgls-ignore-all`
     /// suppression or an empty line, this will stop.
     fn parse_file_suppressions(&mut self) {
         while let Some((_, preview)) = self.lines.peek() {
@@ -66,9 +66,7 @@ impl<'a> SuppressionsParser<'a> {
             }
 
             let trimmed = preview.trim();
-            if !trimmed.starts_with("-- pgt-ignore-all")
-                && !trimmed.starts_with("-- pgls-ignore-all")
-            {
+            if !trimmed.starts_with("-- pgls-ignore-all") {
                 return;
             }
 
@@ -77,10 +75,7 @@ impl<'a> SuppressionsParser<'a> {
             let offset = self.line_index.offset_for_line(idx).unwrap();
 
             match Suppression::from_line(line, offset) {
-                Ok(suppr) => {
-                    self.diagnostics.extend(suppr.to_legacy_diagnostic());
-                    self.file_suppressions.push(suppr);
-                }
+                Ok(suppr) => self.file_suppressions.push(suppr),
                 Err(diag) => self.diagnostics.push(diag),
             }
         }
@@ -89,7 +84,7 @@ impl<'a> SuppressionsParser<'a> {
     fn parse_suppressions(&mut self) {
         for (idx, line) in self.lines.by_ref() {
             let trimmed = line.trim();
-            if !trimmed.starts_with("-- pgt-ignore") && !trimmed.starts_with("-- pgls-ignore") {
+            if !trimmed.starts_with("-- pgls-ignore") {
                 continue;
             }
 
@@ -102,7 +97,6 @@ impl<'a> SuppressionsParser<'a> {
                     continue;
                 }
             };
-            self.diagnostics.extend(suppr.to_legacy_diagnostic());
 
             match suppr.kind {
                 SuppressionKind::File => {
@@ -158,7 +152,7 @@ impl<'a> SuppressionsParser<'a> {
         }
     }
 
-    /// If we have `pgt-ignore-start` suppressions without matching end tags after parsing the entire file,
+    /// If we have `pgls-ignore-start` suppressions without matching end tags after parsing the entire file,
     /// we'll report diagnostics for those.
     fn handle_unmatched_start_suppressions(&mut self) {
         let start_suppressions = std::mem::take(&mut self.start_suppressions_stack);
@@ -183,7 +177,7 @@ mod tests {
     fn test_parse_line_suppressions() {
         let doc = r#"
 SELECT 1;
--- pgt-ignore banDropColumn
+-- pgls-ignore banDropColumn
 SELECT 2;
 "#;
         let suppressions = SuppressionsParser::parse(doc);
@@ -209,9 +203,9 @@ SELECT 2;
     fn test_parse_multiple_line_suppressions() {
         let doc = r#"
 SELECT 1;
--- pgt-ignore banDropColumn
--- pgt-ignore banDropTable
--- pgt-ignore banDropNotNull
+-- pgls-ignore banDropColumn
+-- pgls-ignore banDropTable
+-- pgls-ignore banDropNotNull
 "#;
 
         let suppressions = SuppressionsParser::parse(doc);
@@ -252,11 +246,11 @@ SELECT 1;
     #[test]
     fn parses_file_level_suppressions() {
         let doc = r#"
--- pgt-ignore-all lint
--- pgt-ignore-all typecheck
+-- pgls-ignore-all lint
+-- pgls-ignore-all typecheck
 
 SELECT 1;
--- pgt-ignore-all safety
+-- pgls-ignore-all safety
 "#;
 
         let suppressions = SuppressionsParser::parse(doc);
@@ -282,11 +276,11 @@ SELECT 1;
     #[test]
     fn parses_range_suppressions() {
         let doc = r#"
--- pgt-ignore-start banDropTable
+-- pgls-ignore-start banDropTable
 drop table users;
 drop table auth;
 drop table posts;
--- pgt-ignore-end banDropTable
+-- pgls-ignore-end banDropTable
 "#;
 
         let suppressions = SuppressionsParser::parse(doc);
@@ -296,7 +290,7 @@ drop table posts;
         assert_eq!(
             suppressions.range_suppressions[0],
             RangeSuppression {
-                suppressed_range: TextRange::new(1.into(), 117.into()),
+                suppressed_range: TextRange::new(1.into(), 119.into()),
                 start_suppression: Suppression {
                     kind: SuppressionKind::Start,
                     rule_specifier: RuleSpecifier::Rule(
@@ -304,16 +298,15 @@ drop table posts;
                         "".to_string(),
                         "banDropTable".to_string()
                     ),
-                    suppression_range: TextRange::new(1.into(), 33.into()),
+                    suppression_range: TextRange::new(1.into(), 34.into()),
                     explanation: None,
-                    legacy_replacement: None,
                 },
             }
         );
     }
 
     #[test]
-    fn range_pairs_match_normalized_flat_and_legacy_ids() {
+    fn range_pairs_match_normalized_flat_ids() {
         let suppressions = SuppressionsParser::parse(
             "-- pgls-ignore-start banDropColumn\nALTER TABLE t DROP COLUMN x;\n-- pgls-ignore-end lint/banDropColumn\n",
         );
@@ -324,13 +317,13 @@ drop table posts;
     #[test]
     fn parses_range_suppressions_with_errors() {
         let doc = r#"
--- pgt-ignore-start banDropTable
+-- pgls-ignore-start banDropTable
 drop table users;
--- pgt-ignore-start banDropTable
+-- pgls-ignore-start banDropTable
 drop table auth;
 drop table posts;
--- pgt-ignore-end banDropTable
--- pgt-ignore-end banDropColumn
+-- pgls-ignore-end banDropTable
+-- pgls-ignore-end banDropColumn
 "#;
 
         let suppressions = SuppressionsParser::parse(doc);
@@ -342,7 +335,7 @@ drop table posts;
         assert_eq!(
             suppressions.range_suppressions[0],
             RangeSuppression {
-                suppressed_range: TextRange::new(52.into(), 150.into()),
+                suppressed_range: TextRange::new(53.into(), 153.into()),
                 start_suppression: Suppression {
                     kind: SuppressionKind::Start,
                     rule_specifier: RuleSpecifier::Rule(
@@ -350,9 +343,8 @@ drop table posts;
                         "".to_string(),
                         "banDropTable".to_string()
                     ),
-                    suppression_range: TextRange::new(52.into(), 84.into()),
+                    suppression_range: TextRange::new(53.into(), 86.into()),
                     explanation: None,
-                    legacy_replacement: None,
                 },
             }
         );
@@ -449,12 +441,12 @@ drop table posts;
     #[test]
     fn test_parse_mixed_prefix_suppressions() {
         let doc = r#"
--- pgt-ignore-all lint
+-- pgls-ignore-all lint
 
 SELECT 1;
 -- pgls-ignore banDropColumn
 SELECT 2;
--- pgt-ignore typecheck
+-- pgls-ignore typecheck
 "#;
 
         let suppressions = SuppressionsParser::parse(doc);

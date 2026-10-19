@@ -54,7 +54,6 @@ futures            = { version = "0.3.31", optional = true }
 pgls_pglinter      = { workspace = true, optional = true }
 pgls_plpgsql_check = { workspace = true, optional = true }
 pgls_splinter      = { workspace = true, optional = true }
-pgls_typecheck     = { workspace = true, optional = true }
 sqlx               = { workspace = true, optional = true }
 tokio              = { workspace = true, features = ["rt", "rt-multi-thread"], optional = true }
 url                = { version = "2.5.8", optional = true }
@@ -67,7 +66,6 @@ db = [
   "dep:pgls_pglinter",
   "dep:pgls_plpgsql_check",
   "dep:pgls_splinter",
-  "dep:pgls_typecheck",
   "dep:url",
   "pgls_catalog/db",
 ]

@@ -225,9 +225,7 @@ pub fn create_config(
         }
     })?;
 
-    // we now check if postgres-language-server or postgrestools is installed inside `node_modules` and if so, we use the schema from there
-    let postgrestools_node_schema_path =
-        Path::new("./node_modules/@postgrestools/postgrestools/schema.json");
+    // we now check if postgres-language-server is installed inside `node_modules` and if so, we use the schema from there
     let pgls_node_schema_path =
         Path::new("./node_modules/@postgres-language-server/cli/schema.json");
     if fs
@@ -235,14 +233,6 @@ pub fn create_config(
         .is_ok()
     {
         configuration.schema = pgls_node_schema_path.to_str().map(String::from);
-    } else if fs
-        .open_with_options(
-            postgrestools_node_schema_path,
-            OpenOptions::default().read(true),
-        )
-        .is_ok()
-    {
-        configuration.schema = postgrestools_node_schema_path.to_str().map(String::from);
     } else if VERSION == "0.0.0" {
         // VERSION is 0.0.0 if it has not been explicitly set (e.g local dev, as fallback)
         configuration.schema = Some(format!("{PGLS_WEBSITE}/latest/schema.json"));

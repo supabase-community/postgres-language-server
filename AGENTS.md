@@ -62,7 +62,7 @@ just new-crate <name>
 ```
 
 ### CLI Usage
-The main CLI binary is `postgres-language-server` (legacy name: `postgrestools`):
+The main CLI binary is `postgres-language-server`:
 ```bash
 cargo run -p pgls_cli -- check file.sql
 # or after building:
@@ -91,7 +91,6 @@ The project uses a modular Rust workspace with crates prefixed with `pgls_`:
 - `pgls_completions` - Autocompletion engine
 - `pgls_hover` - Hover information provider
 - `pgls_analyser` & `pgls_analyse` - Linting and analysis framework
-- `pgls_typecheck` - EXPLAIN fallback for typecheck
 - `pgls_catalog` - Database snapshot, the file's DDL on top of it, name resolution, and type inference
 
 **Utilities:**
@@ -102,10 +101,9 @@ The project uses a modular Rust workspace with crates prefixed with `pgls_`:
 
 ### TypeScript Packages
 Located in `packages/`:
-- Backend JSON-RPC bridge in `packages/@postgres-language-server/backend-jsonrpc/` (legacy: `packages/@postgrestools/backend-jsonrpc/`)
+- Backend JSON-RPC bridge in `packages/@postgres-language-server/backend-jsonrpc/`
 - CLI package in `packages/@postgres-language-server/cli/`
 - WASM package in `packages/@postgres-language-server/wasm/`
-- Legacy main TypeScript package in `packages/@postgrestools/postgrestools/`
 
 ### Database Integration
 The server connects to a Postgres database and loads a snapshot of its schema (`pgls_catalog::Snapshot`). The catalog applies the DDL of the current file on top of it, so linting, completions, and hover see objects created earlier in the file.

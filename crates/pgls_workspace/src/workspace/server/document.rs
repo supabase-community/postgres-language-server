@@ -224,35 +224,14 @@ impl<'a> StatementMapper<'a> for FormatStatementMapper {
     }
 }
 
-pub struct TypecheckDiagnosticsMapper;
-impl<'a> StatementMapper<'a> for TypecheckDiagnosticsMapper {
-    type Output = (
-        StatementId,
-        TextRange,
-        Option<pgls_query::NodeEnum>,
-        Arc<tree_sitter::Tree>,
-        Option<SQLFunctionSignature>,
-    );
+pub struct PlPgSqlCheckMapper;
+impl<'a> StatementMapper<'a> for PlPgSqlCheckMapper {
+    type Output = (StatementId, TextRange, Option<pgls_query::NodeEnum>);
 
     fn map(&self, parser: &'a Document, id: StatementId, range: TextRange) -> Self::Output {
-        let ast_result = parser.ast_db.get_or_cache_ast(&id);
+        let ast = parser.ast_db.get_or_cache_ast(&id).as_ref().clone().ok();
 
-        let ast_option = match &*ast_result {
-            Ok(node) => Some(node.clone()),
-            Err(_) => None,
-        };
-
-        let cst_result = parser.cst_db.get_or_cache_tree(&id);
-
-        let sql_fn_sig = id.parent().and_then(|root| {
-            let ast_option = parser.ast_db.get_or_cache_ast(&root).as_ref().clone().ok();
-
-            let ast_option = ast_option.as_ref()?;
-
-            get_sql_fn_signature(ast_option)
-        });
-
-        (id.clone(), range, ast_option, cst_result, sql_fn_sig)
+        (id, range, ast)
     }
 }
 
@@ -598,7 +577,7 @@ $$;";
     }
 
     #[test]
-    fn test_async_diagnostics_mapper() {
+    fn test_plpgsql_check_mapper() {
         let input = "
 CREATE FUNCTION test_fn() RETURNS integer AS $$
 BEGIN
@@ -607,39 +586,26 @@ END;
 $$ LANGUAGE plpgsql;";
 
         let d = Document::new(input.to_string(), 1);
-        let results = d.iter(TypecheckDiagnosticsMapper).collect::<Vec<_>>();
+        let results = d.iter(PlPgSqlCheckMapper).collect::<Vec<_>>();
 
         assert_eq!(results.len(), 1);
-        let (_id, _range, ast, cst, sql_fn_sig) = &results[0];
-
-        // Should have both AST and CST
+        let (_id, _range, ast) = &results[0];
         assert!(ast.is_some());
-        assert_eq!(cst.root_node().kind(), "program");
-
-        // Should not have SQL function signature for top-level statement
-        assert!(sql_fn_sig.is_none());
     }
 
     #[test]
-    fn test_async_diagnostics_mapper_with_sql_function_body() {
+    fn test_plpgsql_check_mapper_with_sql_function_body() {
         let input =
             "CREATE FUNCTION add(a int, b int) RETURNS int AS 'SELECT $1 + $2;' LANGUAGE sql;";
         let d = Document::new(input.to_string(), 1);
 
-        let results = d.iter(TypecheckDiagnosticsMapper).collect::<Vec<_>>();
+        let results = d.iter(PlPgSqlCheckMapper).collect::<Vec<_>>();
         assert_eq!(results.len(), 2);
 
         // Check the function body
-        let (_id, _range, ast, _cst, sql_fn_sig) = &results[1];
-        assert_eq!(_id.content(), "SELECT $1 + $2;");
+        let (id, _range, ast) = &results[1];
+        assert_eq!(id.content(), "SELECT $1 + $2;");
         assert!(ast.is_some());
-        assert!(sql_fn_sig.is_some());
-
-        let sig = sql_fn_sig.as_ref().unwrap();
-        assert_eq!(sig.name, "add");
-        assert_eq!(sig.args.len(), 2);
-        assert_eq!(sig.args[0].name, Some("a".to_string()));
-        assert_eq!(sig.args[1].name, Some("b".to_string()));
     }
 
     #[test]

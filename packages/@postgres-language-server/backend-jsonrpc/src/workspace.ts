@@ -964,10 +964,6 @@ export interface LinterRules {
    */
   runningStatementWhileHoldingAccessExclusive?: RuleConfiguration_for_Null;
   /**
-   * Deprecated: configure rules directly in `linter.rules`, and groups in `linter.groups`.
-   */
-  safety?: Safety;
-  /**
    * Detects problematic transaction nesting that could lead to unexpected behavior.
    */
   transactionNesting?: RuleConfiguration_for_Null;
@@ -1023,65 +1019,6 @@ export type RuleConfiguration_for_Null = RulePlainConfiguration | RuleWithOption
 export type RuleConfiguration_for_PreferBigIntOptions =
   | RulePlainConfiguration
   | RuleWithOptions_for_PreferBigIntOptions;
-/**
- * The former `linter.rules.safety` group, which contained all rules at the time.
- */
-export interface Safety {
-  addSerialColumn?: RuleConfiguration_for_Null;
-  addingFieldWithDefault?: RuleConfiguration_for_Null;
-  addingForeignKeyConstraint?: RuleConfiguration_for_Null;
-  addingNotNullField?: RuleConfiguration_for_Null;
-  addingPrimaryKeyConstraint?: RuleConfiguration_for_Null;
-  addingRequiredField?: RuleConfiguration_for_Null;
-  all?: boolean;
-  avoidAddingExclusionConstraint?: RuleConfiguration_for_Null;
-  avoidAlterEnumAddValue?: RuleConfiguration_for_Null;
-  avoidAttachingPartition?: RuleConfiguration_for_Null;
-  avoidCreateTrigger?: RuleConfiguration_for_Null;
-  avoidEnableDisableTrigger?: RuleConfiguration_for_Null;
-  avoidWideLockWindow?: RuleConfiguration_for_Null;
-  banCharField?: RuleConfiguration_for_Null;
-  banConcurrentIndexCreationInTransaction?: RuleConfiguration_for_Null;
-  banDeleteWithoutWhere?: RuleConfiguration_for_Null;
-  banDropColumn?: RuleConfiguration_for_Null;
-  banDropDatabase?: RuleConfiguration_for_Null;
-  banDropNotNull?: RuleConfiguration_for_Null;
-  banDropSchema?: RuleConfiguration_for_Null;
-  banDropTable?: RuleConfiguration_for_Null;
-  banDropTrigger?: RuleConfiguration_for_Null;
-  banTruncate?: RuleConfiguration_for_Null;
-  banTruncateCascade?: RuleConfiguration_for_Null;
-  banUpdateWithoutWhere?: RuleConfiguration_for_Null;
-  banVacuumFull?: RuleConfiguration_for_Null;
-  changingColumnType?: RuleConfiguration_for_Null;
-  concurrentRefreshMatviewLock?: RuleConfiguration_for_Null;
-  constraintMissingNotValid?: RuleConfiguration_for_Null;
-  creatingEnum?: RuleConfiguration_for_Null;
-  disallowUniqueConstraint?: RuleConfiguration_for_Null;
-  lockTimeoutWarning?: RuleConfiguration_for_Null;
-  multipleAlterTable?: RuleConfiguration_for_Null;
-  preferBigInt?: RuleConfiguration_for_PreferBigIntOptions;
-  preferBigintOverInt?: RuleConfiguration_for_Null;
-  preferBigintOverSmallint?: RuleConfiguration_for_Null;
-  preferIdentity?: RuleConfiguration_for_Null;
-  preferJsonb?: RuleConfiguration_for_Null;
-  preferRobustStmts?: RuleConfiguration_for_Null;
-  preferTextField?: RuleConfiguration_for_Null;
-  preferTimestamptz?: RuleConfiguration_for_Null;
-  recommended?: boolean;
-  renamingColumn?: RuleConfiguration_for_Null;
-  renamingTable?: RuleConfiguration_for_Null;
-  requireConcurrentDetachPartition?: RuleConfiguration_for_Null;
-  requireConcurrentIndexCreation?: RuleConfiguration_for_Null;
-  requireConcurrentIndexDeletion?: RuleConfiguration_for_Null;
-  requireConcurrentRefreshMatview?: RuleConfiguration_for_Null;
-  requireConcurrentReindex?: RuleConfiguration_for_Null;
-  requireIdleInTransactionTimeout?: RuleConfiguration_for_Null;
-  requireSeparateConstraintValidation?: RuleConfiguration_for_Null;
-  requireStatementTimeout?: RuleConfiguration_for_Null;
-  runningStatementWhileHoldingAccessExclusive?: RuleConfiguration_for_Null;
-  transactionNesting?: RuleConfiguration_for_Null;
-}
 /**
  * A list of rules that belong to this group
  */

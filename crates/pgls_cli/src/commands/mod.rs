@@ -124,7 +124,6 @@ pub enum PgLSCommand {
         /// Allows to change the prefix applied to the file name of the logs.
         #[bpaf(
             env("PGLS_LOG_PREFIX_NAME"),
-            env("PGT_LOG_PREFIX_NAME"),
             long("log-prefix-name"),
             argument("STRING"),
             hide_usage,
@@ -136,7 +135,6 @@ pub enum PgLSCommand {
         /// Allows to change the folder where logs are stored.
         #[bpaf(
             env("PGLS_LOG_PATH"),
-            env("PGT_LOG_PATH"),
             long("log-path"),
             argument("PATH"),
             hide_usage,
@@ -145,12 +143,7 @@ pub enum PgLSCommand {
         log_path: PathBuf,
         /// Allows to set a custom file path to the configuration file,
         /// or a custom directory path to find `postgres-language-server.jsonc`
-        #[bpaf(
-            env("PGLS_CONFIG_PATH"),
-            env("PGT_CONFIG_PATH"),
-            long("config-path"),
-            argument("PATH")
-        )]
+        #[bpaf(env("PGLS_CONFIG_PATH"), long("config-path"), argument("PATH"))]
         config_path: Option<PathBuf>,
     },
 
@@ -168,7 +161,6 @@ pub enum PgLSCommand {
         /// Allows to change the prefix applied to the file name of the logs.
         #[bpaf(
             env("PGLS_LOG_PREFIX_NAME"),
-            env("PGT_LOG_PREFIX_NAME"),
             long("log-prefix-name"),
             argument("STRING"),
             hide_usage,
@@ -179,7 +171,6 @@ pub enum PgLSCommand {
         /// Allows to change the folder where logs are stored.
         #[bpaf(
             env("PGLS_LOG_PATH"),
-            env("PGT_LOG_PATH"),
             long("log-path"),
             argument("PATH"),
             hide_usage,
@@ -188,12 +179,7 @@ pub enum PgLSCommand {
         log_path: PathBuf,
         /// Allows to set a custom file path to the configuration file,
         /// or a custom directory path to find `postgres-language-server.jsonc`
-        #[bpaf(
-            env("PGLS_CONFIG_PATH"),
-            env("PGT_CONFIG_PATH"),
-            long("config-path"),
-            argument("PATH")
-        )]
+        #[bpaf(env("PGLS_CONFIG_PATH"), long("config-path"), argument("PATH"))]
         config_path: Option<PathBuf>,
         /// Bogus argument to make the command work with vscode-languageclient
         #[bpaf(long("stdio"), hide, hide_usage, switch)]
@@ -235,7 +221,6 @@ pub enum PgLSCommand {
         /// Allows to change the prefix applied to the file name of the logs.
         #[bpaf(
             env("PGLS_LOG_PREFIX_NAME"),
-            env("PGT_LOG_PREFIX_NAME"),
             long("log-prefix-name"),
             argument("STRING"),
             hide_usage,
@@ -247,7 +232,6 @@ pub enum PgLSCommand {
         /// Allows to change the folder where logs are stored.
         #[bpaf(
             env("PGLS_LOG_PATH"),
-            env("PGT_LOG_PATH"),
             long("log-path"),
             argument("PATH"),
             hide_usage,
@@ -258,7 +242,6 @@ pub enum PgLSCommand {
         /// Allows to change the log level. Default is debug. This will only affect "pgls*" crates. All others are logged with info level.
         #[bpaf(
             env("PGLS_LOG_LEVEL"),
-            env("PGT_LOG_LEVEL"),
             long("log-level"),
             argument("trace|debug|info|warn|error|none"),
             fallback(String::from("debug"))
@@ -268,7 +251,6 @@ pub enum PgLSCommand {
         /// Allows to change the logging format kind. Default is hierarchical.
         #[bpaf(
             env("PGLS_LOG_KIND"),
-            env("PGT_LOG_KIND"),
             long("log-kind"),
             argument("hierarchical|bunyan"),
             fallback(String::from("hierarchical"))
@@ -279,12 +261,7 @@ pub enum PgLSCommand {
         stop_on_disconnect: bool,
         /// Allows to set a custom file path to the configuration file,
         /// or a custom directory path to find `postgres-language-server.jsonc`
-        #[bpaf(
-            env("PGLS_CONFIG_PATH"),
-            env("PGT_CONFIG_PATH"),
-            long("config-path"),
-            argument("PATH")
-        )]
+        #[bpaf(env("PGLS_CONFIG_PATH"), long("config-path"), argument("PATH"))]
         config_path: Option<PathBuf>,
     },
     #[bpaf(command("__print_socket"), hide)]

@@ -19,17 +19,13 @@ mod os;
 pub struct ConfigName;
 
 impl ConfigName {
-    const PGLS_JSONC: [&'static str; 2] = ["postgres-language-server.jsonc", "postgrestools.jsonc"];
-
-    pub fn is_deprecated(file_name: &str) -> bool {
-        file_name == Self::PGLS_JSONC[1]
-    }
+    const PGLS_JSONC: [&'static str; 1] = ["postgres-language-server.jsonc"];
 
     pub const fn pgls_jsonc() -> &'static str {
         Self::PGLS_JSONC[0]
     }
 
-    pub const fn file_names() -> [&'static str; 2] {
+    pub const fn file_names() -> [&'static str; 1] {
         Self::PGLS_JSONC
     }
 }

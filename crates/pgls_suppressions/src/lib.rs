@@ -90,8 +90,8 @@ impl Suppressions {
 
         // Users may use many suppressions for a single diagnostic, like so:
         // ```
-        // -- pgt-ignore banDropTable
-        // -- pgt-ignore banDropColumn
+        // -- pgls-ignore banDropTable
+        // -- pgls-ignore banDropColumn
         // <statement causing two diagnostics>
         // ```
         // So to find a matching diagnostic for any suppression, we're moving
@@ -229,7 +229,7 @@ mod tests {
     #[test]
     fn correctly_suppresses_diagnostics_at_top_level() {
         let doc = r#"
-        -- pgt-ignore-all lint
+        -- pgls-ignore-all lint
 
         select 1;
         "#;
@@ -248,7 +248,7 @@ mod tests {
         let doc = r#"
             select 2;
 
-            -- pgt-ignore lint
+            -- pgls-ignore lint
             select 1;
             "#;
 
@@ -261,7 +261,7 @@ mod tests {
 
     #[test]
     fn correctly_suppresses_diagnostics_when_target_line_is_inside_multiline_span() {
-        let doc = "alter table users\n-- pgt-ignore lint\ndrop column deprecated_field;";
+        let doc = "alter table users\n-- pgls-ignore lint\ndrop column deprecated_field;";
 
         let suppressions = super::Suppressions::from(doc);
 
@@ -282,8 +282,8 @@ mod tests {
         let doc = r#"
             select 2;
 
-            -- pgt-ignore lint
-            -- pgt-ignore syntax
+            -- pgls-ignore lint
+            -- pgls-ignore syntax
             select 1;
             "#;
 
@@ -299,9 +299,9 @@ mod tests {
         let doc = r#"
             select 2;
 
-            -- pgt-ignore-start lint
+            -- pgls-ignore-start lint
             select 1;
-            -- pgt-ignore-end lint
+            -- pgls-ignore-end lint
             "#;
 
         let suppressions = super::Suppressions::from(doc);
@@ -316,7 +316,7 @@ mod tests {
         let doc = r#"
             select 2;
 
-            -- pgt-ignore banDropTable
+            -- pgls-ignore banDropTable
             select 1;
             "#;
 
@@ -331,7 +331,7 @@ mod tests {
         assert_eq!(
             disabled_diagnostics[0],
             SuppressionDiagnostic {
-                span: TextRange::new(36.into(), 62.into()),
+                span: TextRange::new(36.into(), 63.into()),
                 message: MessageAndDescription::from("This rule has been disabled via the configuration. The suppression has no effect.".to_string())
             }
         );
@@ -342,7 +342,7 @@ mod tests {
         let doc = r#"
             select 2;
 
-            -- pgt-ignore lint
+            -- pgls-ignore lint
             select 1;
             "#;
 
@@ -358,7 +358,7 @@ mod tests {
         assert_eq!(
             unused_diagnostics[0],
             SuppressionDiagnostic {
-                span: TextRange::new(36.into(), 54.into()),
+                span: TextRange::new(36.into(), 55.into()),
                 message: MessageAndDescription::from("This suppression has no effect.".to_string())
             }
         );

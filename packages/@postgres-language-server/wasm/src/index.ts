@@ -27,7 +27,7 @@ export type {
   CompletionItem,
   FormatOptions,
   FormatResult,
-  SchemaCache,
+  Snapshot,
   Statement,
   WorkspaceOptions,
   PGLSModule,

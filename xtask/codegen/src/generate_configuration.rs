@@ -374,70 +374,7 @@ const LINTER_GROUPS: &[(&str, &str)] = &[
     ),
 ];
 
-/// The rules of the former `linter.rules.safety` group that still exist. Rules added since are
-/// only configurable in `linter.rules`.
-const LEGACY_SAFETY_RULES: &[&str] = &[
-    "addSerialColumn",
-    "addingFieldWithDefault",
-    "addingForeignKeyConstraint",
-    "addingNotNullField",
-    "addingPrimaryKeyConstraint",
-    "addingRequiredField",
-    "avoidAddingExclusionConstraint",
-    "avoidAlterEnumAddValue",
-    "avoidAttachingPartition",
-    "avoidCreateTrigger",
-    "avoidEnableDisableTrigger",
-    "avoidWideLockWindow",
-    "banCharField",
-    "banConcurrentIndexCreationInTransaction",
-    "banDeleteWithoutWhere",
-    "banDropColumn",
-    "banDropDatabase",
-    "banDropNotNull",
-    "banDropSchema",
-    "banDropTable",
-    "banDropTrigger",
-    "banTruncate",
-    "banTruncateCascade",
-    "banUpdateWithoutWhere",
-    "banVacuumFull",
-    "changingColumnType",
-    "constraintMissingNotValid",
-    "creatingEnum",
-    "disallowUniqueConstraint",
-    "lockTimeoutWarning",
-    "multipleAlterTable",
-    "preferBigInt",
-    "preferIdentity",
-    "preferJsonb",
-    "preferRobustStmts",
-    "preferTextField",
-    "preferTimestamptz",
-    "renamingColumn",
-    "renamingTable",
-    "requireConcurrentDetachPartition",
-    "requireConcurrentIndexCreation",
-    "requireConcurrentIndexDeletion",
-    "requireConcurrentRefreshMatview",
-    "requireConcurrentReindex",
-    "requireIdleInTransactionTimeout",
-    "requireSeparateConstraintValidation",
-    "requireStatementTimeout",
-    "runningStatementWhileHoldingAccessExclusive",
-    "transactionNesting",
-];
-
-/// Rules that were removed when the rules got flat names. `linter.rules.safety.<rule>` still
-/// accepts them.
-const REMOVED_LINTER_RULES: &[&str] = &[
-    "concurrentRefreshMatviewLock",
-    "preferBigintOverInt",
-    "preferBigintOverSmallint",
-];
-
-/// Generates the flat linter configuration: `linter.rules.<rule>` and `linter.groups.<group>`,
-/// plus the deprecated `linter.rules.safety.<rule>`.
+/// Generates the flat linter configuration: `linter.rules.<rule>` and `linter.groups.<group>`.
 ///
 /// The precedence of these settings is implemented by hand in
 /// `pgls_configuration/src/linter/resolved.rs`.
@@ -461,20 +398,9 @@ fn generate_flat_linter_rules_file(
         .collect();
 
     let mut rule_fields = Vec::new();
-    let mut legacy_fields = Vec::new();
     let mut rule_metadata = Vec::new();
     let mut level_arms = Vec::new();
     let mut options_arms = Vec::new();
-    let mut legacy_names = Vec::new();
-    let mut legacy_level_arms = Vec::new();
-    let mut legacy_options_arms = Vec::new();
-
-    for name in LEGACY_SAFETY_RULES {
-        assert!(
-            rules.contains_key(name),
-            "the legacy safety rule `{name}` doesn't exist anymore; move it to REMOVED_LINTER_RULES"
-        );
-    }
 
     for (name, (group, metadata)) in &rules {
         let ident = Ident::new(&to_snake_case(name), Span::call_site());
@@ -504,38 +430,7 @@ fn generate_flat_linter_rules_file(
         options_arms.push(quote! {
             #name_literal => self.#ident.as_ref().and_then(RuleConfiguration::get_options)
         });
-        if LEGACY_SAFETY_RULES.contains(name) {
-            legacy_fields.push(quote! {
-                #[serde(skip_serializing_if = "Option::is_none")]
-                pub #ident: Option<RuleConfiguration<pgls_analyser::options::#options>>
-            });
-            legacy_level_arms.push(level_arms.last().unwrap().clone());
-            legacy_options_arms.push(options_arms.last().unwrap().clone());
-            legacy_names.push((name.to_string(), ident));
-        }
     }
-
-    for name in REMOVED_LINTER_RULES {
-        let ident = Ident::new(&to_snake_case(name), Span::call_site());
-        let name_literal = Literal::string(name);
-        legacy_fields.push(quote! {
-            #[serde(skip_serializing_if = "Option::is_none")]
-            pub #ident: Option<RuleConfiguration<()>>
-        });
-        legacy_level_arms.push(quote! {
-            #name_literal => self.#ident.as_ref().map(RuleConfiguration::level)
-        });
-        legacy_names.push((name.to_string(), ident));
-    }
-    legacy_names.sort();
-    let configured_legacy_rules = legacy_names.iter().map(|(name, ident)| {
-        let name_literal = Literal::string(name);
-        quote! {
-            if self.#ident.is_some() {
-                rules.push(#name_literal);
-            }
-        }
-    });
 
     let group_fields = LINTER_GROUPS.iter().map(|(name, description)| {
         let ident = Ident::new(name, Span::call_site());
@@ -593,12 +488,6 @@ fn generate_flat_linter_rules_file(
             pub all: Option<bool>,
 
             #( #rule_fields, )*
-
-            /// Deprecated: configure rules directly in `linter.rules`, and groups in
-            /// `linter.groups`.
-            #[serde(skip_serializing_if = "Option::is_none")]
-            #[deprecated = "Configure rules directly in `linter.rules`, and groups in `linter.groups`."]
-            pub safety: Option<LegacySafetyRules>,
         }
 
         impl Rules {
@@ -616,47 +505,6 @@ fn generate_flat_linter_rules_file(
                     #( #options_arms, )*
                     _ => None,
                 }
-            }
-        }
-
-        /// The former `linter.rules.safety` group, which contained all rules at the time.
-        #[derive(Clone, Debug, Default, Deserialize, Eq, Merge, PartialEq, Serialize)]
-        #[cfg_attr(feature = "schema", derive(JsonSchema))]
-        // Keeps the name of the former group in the JSON schema and the TypeScript bindings.
-        #[cfg_attr(feature = "schema", schemars(rename = "Safety"))]
-        #[serde(rename_all = "camelCase", deny_unknown_fields)]
-        pub struct LegacySafetyRules {
-            #[serde(skip_serializing_if = "Option::is_none")]
-            pub recommended: Option<bool>,
-
-            #[serde(skip_serializing_if = "Option::is_none")]
-            pub all: Option<bool>,
-
-            #( #legacy_fields, )*
-        }
-
-        impl LegacySafetyRules {
-            /// The level configured for a rule, if any.
-            pub fn rule_level(&self, rule: &str) -> Option<RulePlainConfiguration> {
-                match rule {
-                    #( #legacy_level_arms, )*
-                    _ => None,
-                }
-            }
-
-            /// The options configured for a rule, if any.
-            pub fn rule_options(&self, rule: &str) -> Option<RuleOptions> {
-                match rule {
-                    #( #legacy_options_arms, )*
-                    _ => None,
-                }
-            }
-
-            /// The names of all rules configured here.
-            pub fn configured_rules(&self) -> Vec<&'static str> {
-                let mut rules = Vec::new();
-                #( #configured_legacy_rules )*
-                rules
             }
         }
 
