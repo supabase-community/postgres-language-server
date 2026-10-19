@@ -17,6 +17,10 @@ on:
       - "packages/**"
       - ".github/workflows/**"
       - ".github/actions/**"
+      - "docs/**"
+      - "mkdocs.yml"
+      - "pyproject.toml"
+      - "uv.lock"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
@@ -28,8 +32,44 @@ env:
   RUSTUP_WINDOWS_PATH_ADD_BIN: 1
 
 jobs:
+  # Docs-only changes skip the build and test jobs, but still run the checks that cover docs:
+  # formatting, codegen (which generates parts of the docs) and the docs build.
+  changes:
+    name: Detect Changes
+    runs-on: ubuntu-latest
+    outputs:
+      code: ${{ github.event_name != 'pull_request' || steps.filter.outputs.code == 'true' }}
+      docs: ${{ github.event_name != 'pull_request' || steps.filter.outputs.docs == 'true' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        if: github.event_name == 'pull_request'
+        with:
+          filters: |
+            code:
+              - "crates/**"
+              - "lib/**"
+              - "fuzz/**"
+              - "xtask/**"
+              - "Cargo.toml"
+              - "Cargo.lock"
+              - "Dockerfile"
+              - "rust-toolchain.toml"
+              - "rustfmt.toml"
+              - ".env"
+              - "packages/**"
+              - ".github/workflows/**"
+              - ".github/actions/**"
+            docs:
+              - "docs/**"
+              - "mkdocs.yml"
+              - "pyproject.toml"
+              - "uv.lock"
+
   format:
     name: Format
+    needs: changes
     runs-on: ubuntu-latest
     steps:
       - name: Checkout PR branch
@@ -75,6 +115,8 @@ jobs:
 
   actionlint:
     name: Lint GitHub Actions
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -88,6 +130,8 @@ jobs:
 
   lint:
     name: Lint Project
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout PR Branch
@@ -179,6 +223,8 @@ jobs:
 
   test:
     name: Test
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -225,6 +271,8 @@ jobs:
         run: cargo test --workspace
 
   test-js-bindings:
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     name:
       Test JS Packages
       # use the same image we use for compiling
@@ -282,6 +330,8 @@ jobs:
 
   test-wasm:
     name: Test WASM Package
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout PR branch
@@ -315,6 +365,7 @@ jobs:
 
   codegen:
     name: Check Codegen
+    needs: changes
     runs-on: ubuntu-22.04
     services:
       postgres:
@@ -376,3 +427,22 @@ jobs:
             git diff
             exit 1
           fi
+
+  docs:
+    name: Build Docs
+    needs: changes
+    if: needs.changes.outputs.docs == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+      - name: Set up Python
+        run: uv python install
+      - name: Install the project
+        run: uv sync --all-extras --dev
+      # Strict mode fails on broken links and other warnings.
+      - name: Build the docs
+        run: uv run zensical build --strict
