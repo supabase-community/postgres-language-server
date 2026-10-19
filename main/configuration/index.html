@@ -447,6 +447,28 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#where-the-configuration-is-loaded-from" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Where the configuration is loaded from
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#sharing-configuration-with-extends" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Sharing configuration with <code>extends</code>
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#configuring-a-database-connection" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -1460,6 +1482,28 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#where-the-configuration-is-loaded-from" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Where the configuration is loaded from
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#sharing-configuration-with-extends" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Sharing configuration with <code>extends</code>
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#configuring-a-database-connection" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -1676,6 +1720,58 @@
 </tr>
 </tbody>
 </table>
+<h2 id="where-the-configuration-is-loaded-from">Where the configuration is loaded from<a class="headerlink" href="#where-the-configuration-is-loaded-from" title="Permanent link">&para;</a></h2>
+<p>The configuration is resolved in this order, and the first match wins:</p>
+<ol>
+<li>The path passed with <code>--config-path</code> or <code>PGLS_CONFIG_PATH</code>, or the configuration path set in your editor. Not finding a configuration file there is an error.</li>
+<li>A <code>postgres-language-server.jsonc</code> (or the deprecated <code>postgrestools.jsonc</code>) in the project directory or any of its parent directories. The project directory is the working directory of the CLI, or the workspace folder in an editor.</li>
+<li>The user configuration, a <code>postgres-language-server.jsonc</code> in your configuration directory:</li>
+</ol>
+<table>
+<thead>
+<tr>
+<th>Platform</th>
+<th>Location</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Linux</td>
+<td><code>$XDG_CONFIG_HOME/postgres-language-server/</code>, or <code>~/.config/postgres-language-server/</code> if <code>XDG_CONFIG_HOME</code> is not set</td>
+</tr>
+<tr>
+<td>macOS</td>
+<td><code>$XDG_CONFIG_HOME/postgres-language-server/</code> or <code>~/.config/postgres-language-server/</code>, then <code>~/Library/Application Support/postgres-language-server/</code></td>
+</tr>
+<tr>
+<td>Windows</td>
+<td><code>%APPDATA%\postgres-language-server\</code></td>
+</tr>
+</tbody>
+</table>
+<ol>
+<li>The built-in defaults.</li>
+</ol>
+<p>The user configuration is only a fallback for projects without a configuration file. It is never merged into a project configuration. To share settings between projects and the user configuration, extend it explicitly from the project configuration (see below).</p>
+<p>The user configuration applies to the project as if it were placed in the project directory: globs in <code>files</code> and the VCS settings are resolved against the project. Relative paths in its <code>extends</code> are resolved against its own directory.</p>
+<h2 id="sharing-configuration-with-extends">Sharing configuration with <code>extends</code><a class="headerlink" href="#sharing-configuration-with-extends" title="Permanent link">&para;</a></h2>
+<p><code>extends</code> lists configuration files to inherit from. They are applied from left to right, and the settings of the file that declares <code>extends</code> take precedence over all of them.</p>
+<div class="highlight"><pre><span></span><code>{
+  "extends": [
+    // relative to this file
+    "./shared/base.jsonc",
+    // relative to your home directory
+    "~/.config/postgres-language-server/postgres-language-server.jsonc",
+    // a package in node_modules
+    "@acme/pgls-config"
+  ]
+}
+</code></pre></div>
+<ul>
+<li>Entries starting with <code>~/</code> (or <code>~\</code> on Windows) are resolved against your home directory. This works on every platform, so a project can extend your user configuration with the same path on macOS and Linux.</li>
+<li>Entries starting with <code>.</code> or ending in <code>.jsonc</code> are resolved relative to the directory of the configuration file that declares them. Absolute paths are used as they are.</li>
+<li>Any other entry is resolved as a package, like <code>require</code> would in Node.js.</li>
+</ul>
 <h2 id="configuring-a-database-connection">Configuring a database connection<a class="headerlink" href="#configuring-a-database-connection" title="Permanent link">&para;</a></h2>
 <p>Some tools that the Postgres Language Server provides are implemented as mere interfaces on top of functionality that is provided by the database itself. This ensures correctness, but requires an active connection to a Postgres database. We strongly recommend to only connect to a local development database.</p>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
@@ -1720,7 +1816,7 @@ individual fields. The URI takes precedence over any other connection fields.</p
 </code></pre></div>
 <h3 id="control-files-via-configuration">Control files via configuration<a class="headerlink" href="#control-files-via-configuration" title="Permanent link">&para;</a></h3>
 <p>The configuration file can be used to refine which files are processed. You can explicitly list the files to be processed using the <code>files.include</code> field. <code>files.include</code> accepts glob patterns such as sql/*<em>/</em>.sql. Negated patterns starting with <code>!</code> can be used to exclude files.</p>
-<p>Paths and globs inside the configuration file are resolved relative to the folder the configuration file is in. An exception to this is when a configuration file is extended by another.</p>
+<p>Paths and globs inside the configuration file are resolved relative to the folder the configuration file is in. An exception to this is when a configuration file is extended by another. The <a href="#where-the-configuration-is-loaded-from">user configuration</a> is resolved relative to the project directory.</p>
 <h4 id="include-files-via-configuration">Include files via configuration<a class="headerlink" href="#include-files-via-configuration" title="Permanent link">&para;</a></h4>
 <p>Let’s take the following configuration, where we want to include only SQL files (<code>.sql</code>) that are inside the <code>sql/</code> folder:</p>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
