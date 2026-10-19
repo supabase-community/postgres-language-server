@@ -12,6 +12,19 @@ use locks::Locks;
 pub use locks::{is_reindex_concurrent, is_vacuum_full};
 use settings::Settings;
 
+/// Whether the migration tool runs the statements outside `BEGIN` and `COMMIT` in a
+/// transaction.
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
+pub enum TransactionMode {
+    /// Not known. Migration tools usually run each migration in a transaction.
+    #[default]
+    Unknown,
+    /// The migration tool runs the statements in a transaction.
+    Transaction,
+    /// Each statement outside `BEGIN` and `COMMIT` runs in a transaction of its own.
+    Autocommit,
+}
+
 /// The state of the session as we analyse the statements of a file.
 #[derive(Debug, Default, Clone)]
 pub struct Session {
@@ -21,6 +34,7 @@ pub struct Session {
     locks: Locks,
     /// Transaction nesting depth (0 = not in explicit transaction)
     transaction_depth: usize,
+    transaction_mode: TransactionMode,
 }
 
 impl Session {
@@ -30,6 +44,12 @@ impl Session {
             settings: Settings::new(search_path),
             ..Self::default()
         }
+    }
+
+    /// Sets whether the migration tool runs the statements in a transaction.
+    pub fn with_transaction_mode(mut self, transaction_mode: TransactionMode) -> Self {
+        self.transaction_mode = transaction_mode;
+        self
     }
 
     /// Returns the current search path.
@@ -47,6 +67,21 @@ impl Session {
     /// Returns the transaction nesting depth (0 = not in an explicit transaction).
     pub fn transaction_depth(&self) -> usize {
         self.transaction_depth
+    }
+
+    pub fn transaction_mode(&self) -> TransactionMode {
+        self.transaction_mode
+    }
+
+    /// Whether the next statement runs in a transaction block, or `None` if that depends on the
+    /// unknown migration tool.
+    pub fn in_transaction(&self) -> Option<bool> {
+        match self.transaction_mode {
+            _ if self.transaction_depth > 0 => Some(true),
+            TransactionMode::Unknown => None,
+            TransactionMode::Transaction => Some(true),
+            TransactionMode::Autocommit => Some(false),
+        }
     }
 
     /// Returns true if a lock timeout has been set in this transaction
@@ -107,6 +142,11 @@ impl Session {
                 self.settings.apply_variable_set(stmt);
             }
             _ => self.locks.apply(stmt, self.settings.search_path()),
+        }
+        // Outside a transaction block, the statement commits on its own.
+        if self.in_transaction() == Some(false) && !matches!(stmt, NodeEnum::TransactionStmt(_)) {
+            self.settings.commit();
+            self.locks.release();
         }
     }
 

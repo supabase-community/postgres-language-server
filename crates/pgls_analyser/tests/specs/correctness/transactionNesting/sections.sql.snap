@@ -1,0 +1,37 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+-- The migration tool runs each section in a transaction, which an explicit transaction would end.
+-- section: up
+-- expect_lint/transactionNesting
+BEGIN;
+ALTER TABLE users ADD COLUMN name text;
+-- expect_lint/transactionNesting
+COMMIT;
+
+-- section: down
+ALTER TABLE users DROP COLUMN name;
+
+```
+
+# Diagnostics
+lint/transactionNesting ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Transaction already managed by migration tool.
+  
+  i Migration tools manage transactions automatically. Remove explicit transaction control.
+  
+  i Put migration statements in separate files to have them be in separate transactions.
+  
+
+
+lint/transactionNesting ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Attempting to end transaction managed by migration tool.
+  
+  i Migration tools manage transactions automatically. Remove explicit transaction control.
+  
+  i Put migration statements in separate files to have them be in separate transactions.

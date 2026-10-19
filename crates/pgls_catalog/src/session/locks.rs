@@ -105,6 +105,14 @@ impl Locks {
         *self = Self::default();
     }
 
+    /// Forgets the locks and the unvalidated constraints of a statement that committed on its
+    /// own. Session-level timeouts stay set, and tables created before are still new.
+    pub(super) fn release(&mut self) {
+        self.holding_access_exclusive = false;
+        self.access_exclusive_tables.clear();
+        self.not_valid_constraints.clear();
+    }
+
     pub(super) fn apply_variable_set(&mut self, stmt: &protobuf::VariableSetStmt) {
         let kind = VariableSetKind::try_from(stmt.kind).unwrap_or(VariableSetKind::Undefined);
         if kind == VariableSetKind::VarResetAll {

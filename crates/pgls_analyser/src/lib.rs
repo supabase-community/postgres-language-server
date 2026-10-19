@@ -1,8 +1,11 @@
-use std::sync::{Arc, LazyLock};
+use std::{
+    ops::Range,
+    sync::{Arc, LazyLock},
+};
 
 use pgls_analyse::{AnalysisFilter, AppliesTo, MetadataRegistry};
-use pgls_catalog::{Catalog, CatalogBase, Session, resolve::FunctionContext};
-use pgls_text_size::TextRange;
+use pgls_catalog::{Catalog, CatalogBase, Session, TransactionMode, resolve::FunctionContext};
+use pgls_text_size::{TextRange, TextSize};
 pub use registry::visit_registry;
 
 mod lint;
@@ -10,6 +13,7 @@ mod linter_context;
 mod linter_options;
 mod linter_registry;
 mod linter_rule;
+mod migration;
 pub mod options;
 mod registry;
 
@@ -20,6 +24,7 @@ pub use linter_registry::{
     LinterRegistryRuleParams, LinterRuleRegistry, LinterRuleRegistryBuilder,
 };
 pub use linter_rule::{LinterDiagnostic, LinterRule};
+pub use migration::{Direction, MigrationSection};
 
 // For convenience in macros and rule files - keep these shorter names
 pub use LinterDiagnostic as RuleDiagnostic;
@@ -121,6 +126,9 @@ pub struct AnalyserParams {
     /// Explicit search path at the start of the file.
     pub search_path: Vec<String>,
     pub file_kind: FileKind,
+    /// The sections of a migration file, like dbmate's up and down migrations. Each section is
+    /// analysed as a migration of its own. Without sections, the whole file is one migration.
+    pub sections: Vec<MigrationSection>,
     /// Whether the rules of the typecheck group run.
     pub typecheck: bool,
 }
@@ -184,11 +192,6 @@ impl<'a> Analyser<'a> {
             .map(|base| base.snapshot().as_ref());
         let roots: Vec<pgls_query::NodeEnum> =
             params.stmts.iter().map(|s| s.root.clone()).collect();
-        let mut file_context = AnalysedFileContext::new(
-            &roots,
-            Catalog::new(params.catalog_base.clone()),
-            Session::new(params.search_path),
-        );
 
         let rules: Vec<_> = self
             .registry
@@ -202,68 +205,138 @@ impl<'a> Analyser<'a> {
             })
             .collect();
 
+        // The catalog after the up sections so far. A down section runs after its up section,
+        // and its changes don't carry into the next section.
+        let mut catalog = Catalog::new(params.catalog_base.clone());
         let mut unparsable = params.unparsable.iter().peekable();
-        for (i, stmt) in params.stmts.iter().enumerate() {
-            while let Some(skipped) =
-                unparsable.next_if(|skipped| skipped.range.start() < stmt.range.start())
+        for unit in migration_units(&params.stmts, &params.sections) {
+            let is_down = unit
+                .section
+                .is_some_and(|section| section.direction == Direction::Down);
+            let unit_catalog = if is_down {
+                catalog.clone()
+            } else {
+                std::mem::replace(&mut catalog, Catalog::new(None))
+            };
+            // Each section runs in a session and transaction of its own.
+            let session = Session::new(params.search_path.clone()).with_transaction_mode(
+                unit.section
+                    .map_or(TransactionMode::Unknown, MigrationSection::transaction_mode),
+            );
+            let mut file_context =
+                AnalysedFileContext::new(&roots[unit.stmts.clone()], unit_catalog, session);
+
+            for (stmt, root) in params.stmts[unit.stmts.clone()]
+                .iter()
+                .zip(&roots[unit.stmts.clone()])
+            {
+                while let Some(skipped) =
+                    unparsable.next_if(|skipped| skipped.range.start() < stmt.range.start())
+                {
+                    if may_change_catalog(&skipped.sql) {
+                        file_context.taint_catalog();
+                    }
+                }
+                // The catalog and session can't follow statements on placeholder names, like
+                // `drop table :name`, so the rest of the file isn't typechecked.
+                if stmt.has_identifier_parameters && !is_plain_query(root) {
+                    typecheck = false;
+                }
+                let typecheck_statement = typecheck && !stmt.has_identifier_parameters;
+
+                let statement =
+                    StatementContext::new(root, stmt.sql.as_deref(), stmt.function.as_ref());
+                let mut has_typecheck_findings = false;
+
+                let rule_params = LinterRegistryRuleParams {
+                    root,
+                    options: self.options,
+                    analysed_file_context: &file_context,
+                    statement: &statement,
+                    snapshot,
+                };
+                for rule in &rules {
+                    if rule.group == TYPECHECK_GROUP && !typecheck_statement {
+                        continue;
+                    }
+                    let diagnostics = (rule.run)(&rule_params);
+                    has_typecheck_findings |=
+                        rule.group == TYPECHECK_GROUP && !diagnostics.is_empty();
+
+                    result
+                        .diagnostics
+                        .extend(diagnostics.into_iter().map(|mut diagnostic| {
+                            diagnostic.span = Some(match diagnostic.span {
+                                Some(span) => span + stmt.range.start(),
+                                None => stmt.range,
+                            });
+                            diagnostic
+                        }));
+                }
+
+                let database_only = typecheck_statement
+                    && statement
+                        .resolution(&file_context)
+                        .is_some_and(|resolution| resolution.database_only);
+
+                result.statements.push(StatementAnalysis {
+                    range: stmt.range,
+                    database_only,
+                    has_typecheck_findings,
+                    search_path: file_context.session().search_path().to_vec(),
+                });
+
+                file_context.next(stmt.function.is_none());
+            }
+
+            while let Some(skipped) = unparsable.next_if(|skipped| skipped.range.start() < unit.end)
             {
                 if may_change_catalog(&skipped.sql) {
                     file_context.taint_catalog();
                 }
             }
-            // The catalog and session can't follow statements on placeholder names, like
-            // `drop table :name`, so the rest of the file isn't typechecked.
-            if stmt.has_identifier_parameters && !is_plain_query(&roots[i]) {
-                typecheck = false;
+            if !is_down {
+                catalog = file_context.into_catalog();
             }
-            let typecheck_statement = typecheck && !stmt.has_identifier_parameters;
-
-            let statement =
-                StatementContext::new(&roots[i], stmt.sql.as_deref(), stmt.function.as_ref());
-            let mut has_typecheck_findings = false;
-
-            let rule_params = LinterRegistryRuleParams {
-                root: &roots[i],
-                options: self.options,
-                analysed_file_context: &file_context,
-                statement: &statement,
-                snapshot,
-            };
-            for rule in &rules {
-                if rule.group == TYPECHECK_GROUP && !typecheck_statement {
-                    continue;
-                }
-                let diagnostics = (rule.run)(&rule_params);
-                has_typecheck_findings |= rule.group == TYPECHECK_GROUP && !diagnostics.is_empty();
-
-                result
-                    .diagnostics
-                    .extend(diagnostics.into_iter().map(|mut diagnostic| {
-                        diagnostic.span = Some(match diagnostic.span {
-                            Some(span) => span + stmt.range.start(),
-                            None => stmt.range,
-                        });
-                        diagnostic
-                    }));
-            }
-
-            let database_only = typecheck_statement
-                && statement
-                    .resolution(&file_context)
-                    .is_some_and(|resolution| resolution.database_only);
-
-            result.statements.push(StatementAnalysis {
-                range: stmt.range,
-                database_only,
-                has_typecheck_findings,
-                search_path: file_context.session().search_path().to_vec(),
-            });
-
-            file_context.next(stmt.function.is_none());
         }
 
         result
     }
+}
+
+/// Statements that run together: those before the first section marker, then each section.
+struct MigrationUnit<'a> {
+    section: Option<&'a MigrationSection>,
+    /// The indices of the statements.
+    stmts: Range<usize>,
+    end: TextSize,
+}
+
+fn migration_units<'a>(
+    stmts: &[AnalysableStatement],
+    sections: &'a [MigrationSection],
+) -> Vec<MigrationUnit<'a>> {
+    let before_sections = sections
+        .first()
+        .map_or(TextSize::from(u32::MAX), |section| section.range.start());
+    let ends = std::iter::once((None, before_sections)).chain(
+        sections
+            .iter()
+            .map(|section| (Some(section), section.range.end())),
+    );
+
+    let mut first = 0;
+    ends.map(|(section, end)| {
+        let last = first + stmts[first..].partition_point(|stmt| stmt.range.start() < end);
+        let unit = MigrationUnit {
+            section,
+            stmts: first..last,
+            end,
+        };
+        first = last;
+        unit
+    })
+    .collect()
 }
 
 /// Whether a statement that doesn't parse may have changed the catalog. Queries, `COPY`,

@@ -22,7 +22,7 @@ use pgls_configuration::{
         CastStyle, ClauseBodyStyle, CommaStyle, FormatConfiguration, IndentStyle, KeywordCase,
         Layout, LogicalOperatorPlacement,
     },
-    migrations::{MigrationsConfiguration, PartialMigrationsConfiguration},
+    migrations::{MigrationsConfiguration, PartialMigrationsConfiguration, SectionMarkers},
     pglinter::PglinterConfiguration,
     plpgsql_check::PlPgSqlCheckConfiguration,
     splinter::SplinterConfiguration,
@@ -302,10 +302,10 @@ impl Settings {
 
         // Migrations settings
         if let Some(migrations) = configuration.migrations {
-            self.migrations = to_migration_settings(
+            self.migrations = Some(to_migration_settings(
                 working_directory.clone(),
                 MigrationsConfiguration::from(migrations),
-            );
+            ));
         }
 
         Ok(())
@@ -878,10 +878,23 @@ pub struct FilesSettings {
 }
 
 /// Migration settings
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct MigrationSettings {
     pub path: Option<PathBuf>,
     pub after: Option<u64>,
+    pub section_markers: SectionMarkers,
+    pub lint_down: bool,
+}
+
+impl Default for MigrationSettings {
+    fn default() -> Self {
+        Self {
+            path: None,
+            after: None,
+            section_markers: SectionMarkers::None,
+            lint_down: true,
+        }
+    }
 }
 
 impl From<PartialMigrationsConfiguration> for MigrationSettings {
@@ -889,6 +902,8 @@ impl From<PartialMigrationsConfiguration> for MigrationSettings {
         Self {
             path: value.migrations_dir.map(PathBuf::from),
             after: value.after,
+            section_markers: value.section_markers.unwrap_or_default(),
+            lint_down: value.lint_down.unwrap_or(true),
         }
     }
 }
@@ -896,11 +911,15 @@ impl From<PartialMigrationsConfiguration> for MigrationSettings {
 fn to_migration_settings(
     working_directory: Option<PathBuf>,
     conf: MigrationsConfiguration,
-) -> Option<MigrationSettings> {
-    working_directory.map(|working_directory| MigrationSettings {
-        path: Some(working_directory.join(conf.migrations_dir)),
+) -> MigrationSettings {
+    MigrationSettings {
+        // The migrations directory is relative to the working directory.
+        path: working_directory
+            .map(|working_directory| working_directory.join(conf.migrations_dir)),
         after: Some(conf.after),
-    })
+        section_markers: conf.section_markers,
+        lint_down: conf.lint_down,
+    }
 }
 
 /// Limit the size of files to 1.0 MiB by default

@@ -1,0 +1,23 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+-- The up section runs without a transaction, the down section in one.
+-- section: up transaction:false
+CREATE INDEX CONCURRENTLY users_email_idx ON users (email);
+CREATE INDEX CONCURRENTLY users_name_idx ON users (name);
+
+-- section: down
+-- expect_lint/banConcurrentIndexCreationInTransaction
+CREATE INDEX CONCURRENTLY users_email_idx ON users (email);
+
+```
+
+# Diagnostics
+lint/banConcurrentIndexCreationInTransaction ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × CREATE INDEX CONCURRENTLY cannot be used inside a transaction block.
+  
+  i Run CREATE INDEX CONCURRENTLY outside of a transaction. Migration tools usually run in transactions, so you may need to run this statement in its own migration or manually.

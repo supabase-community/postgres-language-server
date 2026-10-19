@@ -41,3 +41,40 @@ Setting `migrationsDir` also limits where migration-only rules run, such as most
 
 For pre-commit hooks and when working locally, use `--staged` to only lint files that have been staged. In CI environments, you most likely want to use `--changed` to only lint files that have been changed compared to your `vcs.default_branch` configuration. If `default_branch` is not set in your `postgres-language-server.jsonc`, use `--since=REF` to specify the base branch to compare against.
 
+## Up and down migrations in one file
+
+Some migration tools put the up and the down migration in the same file, separated by marker comments, and run each section on its own. Set `sectionMarkers` to the tool you use, so that each section is checked as a migration of its own:
+
+```json
+{
+    "migrations": {
+        "migrationsDir": "db/migrations",
+        "sectionMarkers": "dbmate"
+    }
+}
+```
+
+| `sectionMarkers` | Markers | Without a transaction |
+| --- | --- | --- |
+| `"dbmate"` | `-- migrate:up`, `-- migrate:down` | `-- migrate:up transaction:false` (per section) |
+| `"goose"` | `-- +goose Up`, `-- +goose Down` | `-- +goose NO TRANSACTION` (whole file) |
+| `"none"` (default) | | |
+
+With section markers:
+
+- The transaction, lock, and session state starts fresh in each section. A lock taken or a `lock_timeout` set in the up section doesn't carry over to the down section.
+- Sections run in a transaction, like the tools run them, unless the markers disable it. `banConcurrentIndexCreationInTransaction` flags `CREATE INDEX CONCURRENTLY` in every section that runs in a transaction, even when it's the only statement. In a section without a transaction, explicit `BEGIN` and `COMMIT` are fine for `transactionNesting`, and each statement outside of them commits on its own, so its locks are released.
+- A down section sees the objects of the up sections before it, because it only runs after them. Its own changes don't carry over to the sections after it. For example, `drop table posts` in the down section knows `posts` from the up section.
+- Statements before the first marker are checked like a file without markers.
+- goose's `-- +goose StatementBegin` and `-- +goose StatementEnd` need no setup: statements, including function bodies, are split by their SQL syntax.
+
+Down sections are checked by default, since they run when you roll back. To only check the up sections, set `lintDown` to `false`. Syntax errors in down sections are still reported.
+
+```json
+{
+    "migrations": {
+        "sectionMarkers": "goose",
+        "lintDown": false
+    }
+}
+```

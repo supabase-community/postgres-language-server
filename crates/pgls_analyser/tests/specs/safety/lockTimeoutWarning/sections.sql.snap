@@ -1,0 +1,25 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+-- section: up
+SET LOCAL lock_timeout = '1s';
+ALTER TABLE authors ADD COLUMN email text;
+
+-- The down section runs in a session of its own.
+-- section: down
+-- expect_lint/lockTimeoutWarning
+ALTER TABLE authors DROP COLUMN email;
+
+```
+
+# Diagnostics
+lint/lockTimeoutWarning ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Statement takes ACCESS EXCLUSIVE lock on public.authors without lock timeout set.
+  
+  i This can block all operations on the table indefinitely if another transaction holds a conflicting lock.
+  
+  i Run 'SET LOCAL lock_timeout = '2s';' before this statement and retry the migration if it times out.

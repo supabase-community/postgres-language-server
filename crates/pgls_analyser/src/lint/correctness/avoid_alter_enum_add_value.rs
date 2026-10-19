@@ -10,6 +10,9 @@ declare_lint_rule! {
     /// transaction block at all. On Postgres 12+, the operation is fast (metadata-only), but the
     /// new enum value cannot be used in the same transaction until it is committed.
     ///
+    /// The rule is silent in migration sections that run without a transaction, like dbmate's
+    /// `-- migrate:up transaction:false`.
+    ///
     /// ## Examples
     ///
     /// ### Invalid
@@ -41,6 +44,7 @@ impl LinterRule for AvoidAlterEnumAddValue {
 
         if let pgls_query::NodeEnum::AlterEnumStmt(stmt) = &ctx.stmt()
             && stmt.old_val.is_empty()
+            && ctx.session().in_transaction() != Some(false)
         {
             diagnostics.push(
                 LinterDiagnostic::new(

@@ -24,7 +24,7 @@ use pg_query::convert_to_positional_params_with_metadata;
 use pgls_analyse::AnalysisFilter;
 #[cfg(feature = "db")]
 use pgls_analyser::StatementAnalysis;
-use pgls_analyser::{Analyser, AnalyserConfig, AnalyserParams, FileKind, LinterOptions};
+use pgls_analyser::{Analyser, AnalyserConfig, AnalyserParams, Direction, FileKind, LinterOptions};
 use pgls_catalog::{Catalog, CatalogBase, Session};
 
 use pgls_catalog::Snapshot;
@@ -320,6 +320,7 @@ impl WorkspaceServer {
         path: &PgLSPath,
         doc: &Document,
         statements: &[StatementAnalysis],
+        skipped_sections: &[TextRange],
     ) -> Result<(Vec<SDiagnostic>, Vec<TextRange>), WorkspaceError> {
         let typecheck_enabled = settings.typecheck.enabled;
         let plpgsql_check = settings.plpgsql_check.clone();
@@ -331,6 +332,11 @@ impl WorkspaceServer {
             let snapshot = self.snapshot.load(pool)?;
             let input = doc
                 .iter(TypecheckDiagnosticsMapper)
+                .filter(|(_, range, ..)| {
+                    !skipped_sections
+                        .iter()
+                        .any(|section| section.contains(range.start()))
+                })
                 .map(|(id, range, ast, cst, _)| {
                     let statement = statements
                         .iter()
@@ -863,13 +869,44 @@ impl Workspace for WorkspaceServer {
             filter,
         });
 
+        /*
+         * Migration tools like dbmate and goose put the up and the down migration in one file.
+         * Each section is analysed as a migration of its own, and the down sections are only
+         * checked with `lintDown`. Syntax errors are reported everywhere.
+         */
+        let sections = settings
+            .migrations
+            .as_ref()
+            .map_or_else(Vec::new, |migrations| {
+                migration::migration_sections(
+                    doc.get_document_content(),
+                    migrations.section_markers,
+                )
+            });
+        let skipped_sections: Vec<TextRange> = sections
+            .iter()
+            .filter(|section| {
+                section.direction == Direction::Down
+                    && settings
+                        .migrations
+                        .as_ref()
+                        .is_some_and(|migrations| !migrations.lint_down)
+            })
+            .map(|section| section.range)
+            .collect();
+        let is_skipped = |range: TextRange| {
+            skipped_sections
+                .iter()
+                .any(|section| section.contains(range.start()))
+        };
+
         let mut analysable_stmts = vec![];
         let mut syntax_diagnostics = vec![];
         let mut unparsable = vec![];
-        for (stmt, diagnostic, unparsable_range) in doc.iter(AnalyserDiagnosticsMapper) {
-            analysable_stmts.extend(stmt);
+        for (stmt, diagnostic, unparsable_stmt) in doc.iter(AnalyserDiagnosticsMapper) {
+            analysable_stmts.extend(stmt.filter(|stmt| !is_skipped(stmt.range)));
             syntax_diagnostics.extend(diagnostic);
-            unparsable.extend(unparsable_range);
+            unparsable.extend(unparsable_stmt.filter(|stmt| !is_skipped(stmt.range)));
         }
 
         let analysis = analyser.analyse(AnalyserParams {
@@ -878,6 +915,7 @@ impl Workspace for WorkspaceServer {
             catalog_base,
             search_path,
             file_kind: self.file_kind(settings, params.path.as_path()),
+            sections,
             typecheck,
         });
 
@@ -888,8 +926,13 @@ impl Workspace for WorkspaceServer {
          */
         #[cfg(feature = "db")]
         let plpgsql_checked = {
-            let (db_diagnostics, plpgsql_checked) =
-                self.database_diagnostics(settings, &params.path, doc, &analysis.statements)?;
+            let (db_diagnostics, plpgsql_checked) = self.database_diagnostics(
+                settings,
+                &params.path,
+                doc,
+                &analysis.statements,
+                &skipped_sections,
+            )?;
             diagnostics.extend(db_diagnostics);
             plpgsql_checked
         };
@@ -942,8 +985,9 @@ impl Workspace for WorkspaceServer {
         let disabled_suppression_errors =
             suppressions.get_disabled_diagnostic_suppressions_as_errors(&disabled_rules);
 
-        let unused_suppression_errors =
+        let mut unused_suppression_errors =
             suppressions.get_unused_suppressions_as_errors(&diagnostics);
+        unused_suppression_errors.retain(|error| !is_skipped(error.span));
 
         let suppression_errors: Vec<Error> = suppressions
             .diagnostics

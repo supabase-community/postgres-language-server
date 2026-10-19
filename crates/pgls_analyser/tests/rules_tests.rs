@@ -9,11 +9,12 @@ use std::{
 
 use pgls_analyse::{AnalysisFilter, RuleFilter};
 use pgls_analyser::{
-    AnalysableStatement, Analyser, AnalyserConfig, AnalyserParams, LinterDiagnostic, LinterOptions,
-    UnparsableStatement,
+    AnalysableStatement, Analyser, AnalyserConfig, AnalyserParams, Direction, LinterDiagnostic,
+    LinterOptions, MigrationSection, UnparsableStatement,
 };
 use pgls_console::StdDisplay;
 use pgls_diagnostics::PrintDiagnostic;
+use pgls_text_size::{TextRange, TextSize};
 
 static TYPECHECK_CATALOG: OnceLock<Arc<pgls_catalog::CatalogBase>> = OnceLock::new();
 
@@ -143,6 +144,7 @@ fn rule_test(full_path: &'static str, _: &str, _: &str) {
         catalog_base: is_typecheck.then(typecheck_catalog),
         search_path: vec!["public".into()],
         typecheck: is_typecheck,
+        sections: migration_sections(&query),
         ..Default::default()
     });
 
@@ -158,6 +160,40 @@ fn rule_test(full_path: &'static str, _: &str, _: &str) {
 
     let expectation = Expectation::from_file(&query);
     expectation.assert(results.as_slice());
+}
+
+/// The migration sections of the file, each starting at a `-- section: up` or
+/// `-- section: down transaction:false` line.
+fn migration_sections(query: &str) -> Vec<MigrationSection> {
+    let mut sections: Vec<MigrationSection> = Vec::new();
+    let mut offset = 0;
+    for line in query.split_inclusive('\n') {
+        let start = TextSize::from(offset as u32);
+        offset += line.len();
+        let Some(section) = line.trim_end().strip_prefix("-- section:") else {
+            continue;
+        };
+        let mut words = section.split_whitespace();
+        let direction = match words.next() {
+            Some("up") => Direction::Up,
+            Some("down") => Direction::Down,
+            other => panic!("Unknown section direction `{other:?}`"),
+        };
+        let transaction = match words.next() {
+            None => true,
+            Some("transaction:false") => false,
+            Some(other) => panic!("Unknown section option `{other}`"),
+        };
+        if let Some(previous) = sections.last_mut() {
+            previous.range = TextRange::new(previous.range.start(), start);
+        }
+        sections.push(MigrationSection {
+            range: TextRange::new(start, TextSize::from(query.len() as u32)),
+            direction,
+            transaction,
+        });
+    }
+    sections
 }
 
 fn parse_test_path(path: &Path) -> (String, String, String) {

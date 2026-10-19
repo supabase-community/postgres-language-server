@@ -12,6 +12,9 @@ Concurrent index creation is not allowed within a transaction.
 
 Migration tools usually run each migration in a transaction, so using `CREATE INDEX CONCURRENTLY` will fail in such tools.
 
+With `migrations.sectionMarkers`, the rule knows whether the migration runs in a transaction:
+dbmate's `-- migrate:up transaction:false` and goose's `-- +goose NO TRANSACTION` disable it.
+
 ## Examples
 
 ### Invalid
