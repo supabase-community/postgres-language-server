@@ -3,25 +3,25 @@ use crate::adapters::line_index::LineIndex;
 use anyhow::{Context, Result};
 use pgls_text_edit::{CompressedOp, DiffOp, TextEdit};
 use pgls_text_size::{TextRange, TextSize};
-use tower_lsp::lsp_types;
+use tower_lsp_server::ls_types;
 
 /// The function is used to convert TextSize to a LSP position.
 pub fn position(
     line_index: &LineIndex,
     offset: TextSize,
     position_encoding: PositionEncoding,
-) -> Result<lsp_types::Position> {
+) -> Result<ls_types::Position> {
     let line_col = line_index
         .line_col(offset)
         .with_context(|| format!("could not convert offset {offset:?} into a line-column index"))?;
 
     let position = match position_encoding {
-        PositionEncoding::Utf8 => lsp_types::Position::new(line_col.line, line_col.col),
+        PositionEncoding::Utf8 => ls_types::Position::new(line_col.line, line_col.col),
         PositionEncoding::Wide(enc) => {
             let line_col = line_index
                 .to_wide(enc, line_col)
                 .with_context(|| format!("could not convert {line_col:?} into wide line column"))?;
-            lsp_types::Position::new(line_col.line, line_col.col)
+            ls_types::Position::new(line_col.line, line_col.col)
         }
     };
 
@@ -33,10 +33,10 @@ pub fn range(
     line_index: &LineIndex,
     range: TextRange,
     position_encoding: PositionEncoding,
-) -> Result<lsp_types::Range> {
+) -> Result<ls_types::Range> {
     let start = position(line_index, range.start(), position_encoding)?;
     let end = position(line_index, range.end(), position_encoding)?;
-    Ok(lsp_types::Range::new(start, end))
+    Ok(ls_types::Range::new(start, end))
 }
 
 /// Convert a TextEdit diff to a list of LSP TextEdits.
@@ -44,7 +44,7 @@ pub fn text_edits(
     diff: &TextEdit,
     line_index: &LineIndex,
     encoding: PositionEncoding,
-) -> Result<Vec<lsp_types::TextEdit>> {
+) -> Result<Vec<ls_types::TextEdit>> {
     let mut result = Vec::new();
     let mut offset = TextSize::from(0u32);
 
@@ -55,15 +55,15 @@ pub fn text_edits(
             }
             CompressedOp::DiffOp(DiffOp::Insert { range }) => {
                 let start = position(line_index, offset, encoding)?;
-                let last = result.last_mut().filter(|e: &&mut lsp_types::TextEdit| {
+                let last = result.last_mut().filter(|e: &&mut ls_types::TextEdit| {
                     e.range.end == start && e.new_text.is_empty()
                 });
 
                 if let Some(last_edit) = last {
                     last_edit.new_text = diff.get_text(*range).to_string();
                 } else {
-                    result.push(lsp_types::TextEdit {
-                        range: lsp_types::Range::new(start, start),
+                    result.push(ls_types::TextEdit {
+                        range: ls_types::Range::new(start, start),
                         new_text: diff.get_text(*range).to_string(),
                     });
                 }
@@ -73,8 +73,8 @@ pub fn text_edits(
                 offset += range.len();
                 let end = position(line_index, offset, encoding)?;
 
-                result.push(lsp_types::TextEdit {
-                    range: lsp_types::Range::new(start, end),
+                result.push(ls_types::TextEdit {
+                    range: ls_types::Range::new(start, end),
                     new_text: String::new(),
                 });
             }

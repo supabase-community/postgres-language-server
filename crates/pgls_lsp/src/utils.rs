@@ -12,10 +12,11 @@ use std::any::Any;
 use std::borrow::Cow;
 use std::fmt::{Debug, Display};
 use std::ops::{Add, Range};
+use std::str::FromStr;
 use std::{io, mem};
-use tower_lsp::jsonrpc::Error as LspError;
-use tower_lsp::lsp_types;
-use tower_lsp::lsp_types::{self as lsp, CodeDescription, Url};
+use tower_lsp_server::jsonrpc::Error as LspError;
+use tower_lsp_server::ls_types;
+use tower_lsp_server::ls_types::{self as lsp, CodeDescription, Uri};
 use tracing::error;
 
 /// Convert an [pgls_diagnostics::Diagnostic] to a [lsp::Diagnostic], using the span
@@ -24,7 +25,7 @@ use tracing::error;
 /// expected by LSP.
 pub(crate) fn diagnostic_to_lsp<D: Diagnostic>(
     diagnostic: D,
-    url: &lsp::Url,
+    url: &lsp::Uri,
     line_index: &LineIndex,
     position_encoding: PositionEncoding,
     offset: Option<u32>,
@@ -58,7 +59,7 @@ pub(crate) fn diagnostic_to_lsp<D: Diagnostic>(
         .category()
         .and_then(|category| category.link())
         .and_then(|link| {
-            let href = Url::parse(link).ok()?;
+            let href = Uri::from_str(link).ok()?;
             Some(CodeDescription { href })
         });
 
@@ -108,7 +109,7 @@ pub(crate) fn diagnostic_to_lsp<D: Diagnostic>(
 }
 
 struct RelatedInformationVisitor<'a> {
-    url: &'a lsp::Url,
+    url: &'a lsp::Uri,
     line_index: &'a LineIndex,
     position_encoding: PositionEncoding,
     related_information: &'a mut Option<Vec<lsp::DiagnosticRelatedInformation>>,
@@ -152,7 +153,7 @@ fn print_markup(markup: &MarkupBuf) -> String {
     String::from_utf8(message.0.into_inner()).unwrap()
 }
 
-/// Helper to create a [tower_lsp::jsonrpc::Error] from a message
+/// Helper to create a [tower_lsp_server::jsonrpc::Error] from a message
 pub(crate) fn into_lsp_error(msg: impl Display + Debug) -> LspError {
     let mut error = LspError::internal_error();
     error!("Error: {}", msg);
@@ -184,7 +185,7 @@ pub(crate) fn panic_to_lsp_error(err: Box<dyn Any + Send>) -> LspError {
 pub(crate) fn apply_document_changes(
     position_encoding: PositionEncoding,
     current_content: String,
-    mut content_changes: Vec<lsp_types::TextDocumentContentChangeEvent>,
+    mut content_changes: Vec<ls_types::TextDocumentContentChangeEvent>,
 ) -> String {
     // Skip to the last full document change, as it invalidates all previous changes anyways.
     let mut start = content_changes
@@ -195,7 +196,7 @@ pub(crate) fn apply_document_changes(
 
     let mut text: String = match content_changes.get_mut(start) {
         // peek at the first content change as an optimization
-        Some(lsp_types::TextDocumentContentChangeEvent {
+        Some(ls_types::TextDocumentContentChangeEvent {
             range: None, text, ..
         }) => {
             let text = mem::take(text);
@@ -241,7 +242,7 @@ mod tests {
     use anyhow::Result;
     use pgls_text_edit::{CompressedOp, DiffOp, TextEdit};
     use pgls_text_size::TextSize;
-    use tower_lsp::lsp_types as lsp;
+    use tower_lsp_server::ls_types as lsp;
 
     fn text_edit(
         line_index: &LineIndex,

@@ -5,15 +5,15 @@ use crate::{
 };
 use anyhow::Result;
 use pgls_workspace::{WorkspaceError, features::completions::GetCompletionsParams};
-use tower_lsp::lsp_types::{
+use tower_lsp_server::ls_types::{
     self, CompletionItem, CompletionItemLabelDetails, InsertTextFormat, TextEdit,
 };
 
 #[tracing::instrument(level = "debug", skip(session), err)]
 pub fn get_completions(
     session: &Session,
-    params: lsp_types::CompletionParams,
-) -> Result<lsp_types::CompletionResponse, LspError> {
+    params: ls_types::CompletionParams,
+) -> Result<ls_types::CompletionResponse, LspError> {
     let url = params.text_document_position.text_document.uri;
     let path = session.file_path(&url)?;
 
@@ -32,8 +32,8 @@ pub fn get_completions(
                 // The list is empty only because the DB is unreachable.
                 // Mark it incomplete so the client re-requests on the next
                 // keystroke and picks up real completions once the connection recovers.
-                return Ok(lsp_types::CompletionResponse::List(
-                    lsp_types::CompletionList {
+                return Ok(ls_types::CompletionResponse::List(
+                    ls_types::CompletionList {
                         is_incomplete: true,
                         items: vec![],
                     },
@@ -64,7 +64,7 @@ pub fn get_completions(
                 Some(InsertTextFormat::PLAIN_TEXT)
             },
             text_edit: i.completion_text.map(|c| {
-                lsp_types::CompletionTextEdit::Edit(TextEdit {
+                ls_types::CompletionTextEdit::Edit(TextEdit {
                     new_text: c.text,
                     range: adapters::to_lsp::range(&doc.line_index, c.range, encoding).unwrap(),
                 })
@@ -74,8 +74,8 @@ pub fn get_completions(
         })
         .collect();
 
-    Ok(lsp_types::CompletionResponse::List(
-        lsp_types::CompletionList {
+    Ok(ls_types::CompletionResponse::List(
+        ls_types::CompletionList {
             is_incomplete: items.len() == pgls_completions::LIMIT,
             items,
         },
@@ -84,14 +84,14 @@ pub fn get_completions(
 
 fn to_lsp_types_completion_item_kind(
     pg_comp_kind: pgls_completions::CompletionItemKind,
-) -> lsp_types::CompletionItemKind {
+) -> ls_types::CompletionItemKind {
     match pg_comp_kind {
-        pgls_completions::CompletionItemKind::Function => lsp_types::CompletionItemKind::FUNCTION,
-        pgls_completions::CompletionItemKind::Table => lsp_types::CompletionItemKind::CLASS,
-        pgls_completions::CompletionItemKind::Column => lsp_types::CompletionItemKind::FIELD,
-        pgls_completions::CompletionItemKind::Schema => lsp_types::CompletionItemKind::CLASS,
-        pgls_completions::CompletionItemKind::Policy => lsp_types::CompletionItemKind::CONSTANT,
-        pgls_completions::CompletionItemKind::Role => lsp_types::CompletionItemKind::CONSTANT,
-        pgls_completions::CompletionItemKind::Keyword => lsp_types::CompletionItemKind::KEYWORD,
+        pgls_completions::CompletionItemKind::Function => ls_types::CompletionItemKind::FUNCTION,
+        pgls_completions::CompletionItemKind::Table => ls_types::CompletionItemKind::CLASS,
+        pgls_completions::CompletionItemKind::Column => ls_types::CompletionItemKind::FIELD,
+        pgls_completions::CompletionItemKind::Schema => ls_types::CompletionItemKind::CLASS,
+        pgls_completions::CompletionItemKind::Policy => ls_types::CompletionItemKind::CONSTANT,
+        pgls_completions::CompletionItemKind::Role => ls_types::CompletionItemKind::CONSTANT,
+        pgls_completions::CompletionItemKind::Keyword => ls_types::CompletionItemKind::KEYWORD,
     }
 }

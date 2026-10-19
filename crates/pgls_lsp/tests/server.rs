@@ -23,44 +23,46 @@ use sqlx::Executor;
 use sqlx::PgPool;
 use std::any::type_name;
 use std::fmt::Display;
+use std::str::FromStr;
 use std::time::Duration;
+use tokio::io::AsyncWriteExt;
 use tower::timeout::Timeout;
 use tower::{Service, ServiceExt};
-use tower_lsp::LspService;
-use tower_lsp::jsonrpc;
-use tower_lsp::jsonrpc::Response;
-use tower_lsp::lsp_types as lsp;
-use tower_lsp::lsp_types::CodeActionContext;
-use tower_lsp::lsp_types::CodeActionParams;
-use tower_lsp::lsp_types::CodeActionResponse;
-use tower_lsp::lsp_types::CompletionParams;
-use tower_lsp::lsp_types::CompletionResponse;
-use tower_lsp::lsp_types::ExecuteCommandParams;
-use tower_lsp::lsp_types::PartialResultParams;
-use tower_lsp::lsp_types::Position;
-use tower_lsp::lsp_types::Range;
-use tower_lsp::lsp_types::TextDocumentPositionParams;
-use tower_lsp::lsp_types::WorkDoneProgressParams;
-use tower_lsp::lsp_types::WorkspaceFolder;
-use tower_lsp::lsp_types::{
+use tower_lsp_server::LspService;
+use tower_lsp_server::jsonrpc;
+use tower_lsp_server::jsonrpc::Response;
+use tower_lsp_server::ls_types as lsp;
+use tower_lsp_server::ls_types::CodeActionContext;
+use tower_lsp_server::ls_types::CodeActionParams;
+use tower_lsp_server::ls_types::CodeActionResponse;
+use tower_lsp_server::ls_types::CompletionParams;
+use tower_lsp_server::ls_types::CompletionResponse;
+use tower_lsp_server::ls_types::ExecuteCommandParams;
+use tower_lsp_server::ls_types::PartialResultParams;
+use tower_lsp_server::ls_types::Position;
+use tower_lsp_server::ls_types::Range;
+use tower_lsp_server::ls_types::TextDocumentPositionParams;
+use tower_lsp_server::ls_types::WorkDoneProgressParams;
+use tower_lsp_server::ls_types::WorkspaceFolder;
+use tower_lsp_server::ls_types::{
     ClientCapabilities, DidChangeConfigurationParams, DidChangeTextDocumentParams,
     DidChangeWatchedFilesParams, DidCloseTextDocumentParams, DidOpenTextDocumentParams,
     FileChangeType, FileEvent, InitializeResult, InitializedParams, PublishDiagnosticsParams,
-    TextDocumentContentChangeEvent, TextDocumentIdentifier, TextDocumentItem, Url,
+    TextDocumentContentChangeEvent, TextDocumentIdentifier, TextDocumentItem, Uri,
     VersionedTextDocumentIdentifier,
 };
-use tower_lsp::{jsonrpc::Request, lsp_types::InitializeParams};
+use tower_lsp_server::{jsonrpc::Request, ls_types::InitializeParams};
 
-/// Statically build an [Url] instance that points to the file at `$path`
+/// Statically build an [Uri] instance that points to the file at `$path`
 /// within the workspace. The filesystem path contained in the return URI is
 /// guaranteed to be a valid path for the underlying operating system, but
 /// doesn't have to refer to an existing file on the host machine.
 macro_rules! url {
     ($path:literal) => {
         if cfg!(windows) {
-            lsp::Url::parse(concat!("file:///z%3A/workspace/", $path)).unwrap()
+            lsp::Uri::from_str(concat!("file:///z%3A/workspace/", $path)).unwrap()
         } else {
-            lsp::Url::parse(concat!("file:///workspace/", $path)).unwrap()
+            lsp::Uri::from_str(concat!("file:///workspace/", $path)).unwrap()
         }
     };
 }
@@ -159,6 +161,7 @@ impl Server {
                     workspace_folders: None,
                     client_info: None,
                     locale: None,
+                    work_done_progress_params: Default::default(),
                 },
             )
             .await?
@@ -195,6 +198,7 @@ impl Server {
                     ]),
                     client_info: None,
                     locale: None,
+                    work_done_progress_params: Default::default(),
                 },
             )
             .await?
@@ -246,7 +250,7 @@ impl Server {
     async fn open_named_document(
         &mut self,
         text: impl Display,
-        document_name: Url,
+        document_name: Uri,
         language: impl Display,
     ) -> Result<()> {
         self.notify(
@@ -276,7 +280,7 @@ impl Server {
 
     async fn change_named_document(
         &mut self,
-        uri: Url,
+        uri: Uri,
         version: i32,
         content_changes: Vec<TextDocumentContentChangeEvent>,
     ) -> Result<()> {
@@ -314,9 +318,9 @@ impl Server {
 
     async fn get_completion(
         &mut self,
-        params: tower_lsp::lsp_types::CompletionParams,
+        params: tower_lsp_server::ls_types::CompletionParams,
     ) -> Result<Option<CompletionResponse>> {
-        self.request::<tower_lsp::lsp_types::CompletionParams, CompletionResponse>(
+        self.request::<tower_lsp_server::ls_types::CompletionParams, CompletionResponse>(
             "textDocument/completion",
             "_get_completion",
             params,
@@ -389,7 +393,7 @@ async fn client_handler<I, O>(
 ) -> Result<()>
 where
     // This function has to be generic as `RequestStream` and `ResponseSink`
-    // are not exported from `tower_lsp` and cannot be named in the signature
+    // are not exported from `tower_lsp_server` and cannot be named in the signature
     I: Stream<Item = Request> + Unpin,
     O: Sink<Response> + Unpin,
 {
@@ -436,6 +440,40 @@ async fn basic_lifecycle() -> Result<()> {
     Ok(())
 }
 
+/// A client that goes away while requests are still in flight must not take the server down.
+/// tower-lsp 0.20 hit an `unreachable!()` once a response was produced after writing to the
+/// client had failed (ebkalderon/tower-lsp#413).
+#[tokio::test]
+async fn client_disconnecting_mid_request_does_not_panic() -> Result<()> {
+    let factory = ServerFactory::default();
+    let connection = factory.create(None);
+
+    let (mut client_write, server_read) = tokio::io::duplex(64 * 1024);
+    let (server_write, client_read) = tokio::io::duplex(64);
+    // Nobody reads the responses anymore, so the first one the server writes fails.
+    drop(client_read);
+
+    let server = tokio::spawn(connection.accept(server_read, server_write));
+
+    // The server answers these with an error since it is not initialized, which is all it takes
+    // to have responses ready after the write to the client failed.
+    for id in 0..32 {
+        let body =
+            json!({ "jsonrpc": "2.0", "id": id, "method": "textDocument/hover", "params": {} })
+                .to_string();
+        let message = format!("Content-Length: {}\r\n\r\n{body}", body.len());
+        client_write.write_all(message.as_bytes()).await?;
+    }
+    drop(client_write);
+
+    tokio::time::timeout(Duration::from_secs(5), server)
+        .await
+        .context("the server did not stop after the client disconnected")?
+        .context("the server panicked after the client disconnected")?;
+
+    Ok(())
+}
+
 #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
 async fn test_database_connection(test_db: PgPool) -> Result<()> {
     let factory = ServerFactory::default();
@@ -470,7 +508,8 @@ async fn test_database_connection(test_db: PgPool) -> Result<()> {
     fs.insert(
         url!("postgres-language-server.jsonc")
             .to_file_path()
-            .unwrap(),
+            .unwrap()
+            .into_owned(),
         serde_json::to_string_pretty(&conf).unwrap(),
     );
 
@@ -565,7 +604,8 @@ async fn client_configuration_overrides_are_sticky_and_clearable(test_db: PgPool
     fs.insert(
         url!("postgres-language-server.jsonc")
             .to_file_path()
-            .unwrap(),
+            .unwrap()
+            .into_owned(),
         "{}".to_string(),
     );
 
@@ -729,7 +769,8 @@ async fn test_completions(test_db: PgPool) -> Result<()> {
     fs.insert(
         url!("postgres-language-server.jsonc")
             .to_file_path()
-            .unwrap(),
+            .unwrap()
+            .into_owned(),
         serde_json::to_string_pretty(&conf).unwrap(),
     );
 
@@ -843,7 +884,8 @@ async fn test_completions_is_incomplete_when_truncated(test_db: PgPool) -> Resul
     fs.insert(
         url!("postgres-language-server.jsonc")
             .to_file_path()
-            .unwrap(),
+            .unwrap()
+            .into_owned(),
         serde_json::to_string_pretty(&conf).unwrap(),
     );
 
@@ -918,7 +960,8 @@ async fn test_completions_is_complete_when_no_db_configured() -> Result<()> {
     fs.insert(
         url!("postgres-language-server.jsonc")
             .to_file_path()
-            .unwrap(),
+            .unwrap()
+            .into_owned(),
         serde_json::to_string_pretty(&conf).unwrap(),
     );
 
@@ -1010,7 +1053,8 @@ async fn test_issue_271(test_db: PgPool) -> Result<()> {
     fs.insert(
         url!("postgres-language-server.jsonc")
             .to_file_path()
-            .unwrap(),
+            .unwrap()
+            .into_owned(),
         serde_json::to_string_pretty(&conf).unwrap(),
     );
 
@@ -1204,7 +1248,8 @@ async fn test_execute_statement(test_db: PgPool) -> Result<()> {
     fs.insert(
         url!("postgres-language-server.jsonc")
             .to_file_path()
-            .unwrap(),
+            .unwrap()
+            .into_owned(),
         serde_json::to_string_pretty(&conf).unwrap(),
     );
 
@@ -1355,7 +1400,8 @@ async fn test_invalidate_schema_cache(test_db: PgPool) -> Result<()> {
     fs.insert(
         url!("postgres-language-server.jsonc")
             .to_file_path()
-            .unwrap(),
+            .unwrap()
+            .into_owned(),
         serde_json::to_string_pretty(&conf).unwrap(),
     );
 
@@ -1510,7 +1556,8 @@ async fn test_issue_281(test_db: PgPool) -> Result<()> {
     fs.insert(
         url!("postgres-language-server.jsonc")
             .to_file_path()
-            .unwrap(),
+            .unwrap()
+            .into_owned(),
         serde_json::to_string_pretty(&conf).unwrap(),
     );
 
@@ -1595,7 +1642,8 @@ async fn test_issue_303(test_db: PgPool) -> Result<()> {
     fs.insert(
         url!("postgres-language-server.jsonc")
             .to_file_path()
-            .unwrap(),
+            .unwrap()
+            .into_owned(),
         serde_json::to_string_pretty(&conf).unwrap(),
     );
 
@@ -1729,7 +1777,8 @@ async fn multiple_projects(test_db: PgPool) -> Result<()> {
     fs.insert(
         url!("test_one/postgres-language-server.jsonc")
             .to_file_path()
-            .unwrap(),
+            .unwrap()
+            .into_owned(),
         serde_json::to_string_pretty(&conf_with_db).unwrap(),
     );
 
@@ -1745,7 +1794,8 @@ async fn multiple_projects(test_db: PgPool) -> Result<()> {
     fs.insert(
         url!("test_two/postgres-language-server.jsonc")
             .to_file_path()
-            .unwrap(),
+            .unwrap()
+            .into_owned(),
         serde_json::to_string_pretty(&conf_without_db).unwrap(),
     );
 
@@ -1898,7 +1948,8 @@ async fn extends_config(test_db: PgPool) -> Result<()> {
     fs.insert(
         url!("postgres-language-server.jsonc")
             .to_file_path()
-            .unwrap(),
+            .unwrap()
+            .into_owned(),
         serde_json::to_string_pretty(&conf_with_db).unwrap(),
     );
 
@@ -1928,7 +1979,8 @@ async fn extends_config(test_db: PgPool) -> Result<()> {
     fs.insert(
         url!("test_one/postgres-language-server.jsonc")
             .to_file_path()
-            .unwrap(),
+            .unwrap()
+            .into_owned(),
         serde_json::to_string_pretty(&conf_with_db).unwrap(),
     );
 
@@ -1941,7 +1993,8 @@ async fn extends_config(test_db: PgPool) -> Result<()> {
     fs.insert(
         url!("test_two/postgres-language-server.jsonc")
             .to_file_path()
-            .unwrap(),
+            .unwrap()
+            .into_owned(),
         serde_json::to_string_pretty(&conf_without_db).unwrap(),
     );
 
@@ -2132,7 +2185,8 @@ async fn test_multiple_content_changes_single_request(test_db: PgPool) -> Result
     fs.insert(
         url!("postgres-language-server.jsonc")
             .to_file_path()
-            .unwrap(),
+            .unwrap()
+            .into_owned(),
         serde_json::to_string_pretty(&conf).unwrap(),
     );
 
@@ -2259,7 +2313,8 @@ async fn test_plpgsql(test_db: PgPool) -> Result<()> {
     fs.insert(
         url!("postgres-language-server.jsonc")
             .to_file_path()
-            .unwrap(),
+            .unwrap()
+            .into_owned(),
         serde_json::to_string_pretty(&conf).unwrap(),
     );
 

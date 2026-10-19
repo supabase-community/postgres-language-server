@@ -3,14 +3,14 @@ use anyhow::Result;
 use pgls_workspace::workspace::{
     ChangeFileParams, CloseFileParams, GetFileContentParams, OpenFileParams,
 };
-use tower_lsp::lsp_types;
+use tower_lsp_server::ls_types;
 use tracing::{error, field};
 
 /// Handler for `textDocument/didOpen` LSP notification
 #[tracing::instrument(level = "debug", skip(session), err)]
 pub(crate) async fn did_open(
     session: &SessionHandle,
-    params: lsp_types::DidOpenTextDocumentParams,
+    params: ls_types::DidOpenTextDocumentParams,
 ) -> Result<()> {
     let url = params.text_document.uri;
     let version = params.text_document.version;
@@ -41,10 +41,10 @@ pub(crate) async fn did_open(
 /// analysis is scheduled via [`SessionHandle::schedule_diagnostics`], which
 /// debounces rapid-fire changes so that only one analysis run fires at the
 /// end of a burst rather than one per keystroke.
-#[tracing::instrument(level = "debug", skip_all, fields(url = field::display(&params.text_document.uri), version = params.text_document.version), err)]
+#[tracing::instrument(level = "debug", skip_all, fields(url = field::display(params.text_document.uri.as_str()), version = params.text_document.version), err)]
 pub(crate) async fn did_change(
     session: &SessionHandle,
-    params: lsp_types::DidChangeTextDocumentParams,
+    params: ls_types::DidChangeTextDocumentParams,
 ) -> Result<()> {
     let url = params.text_document.uri;
     let version = params.text_document.version;
@@ -84,7 +84,7 @@ pub(crate) async fn did_change(
 #[tracing::instrument(level = "debug", skip(session), err)]
 pub(crate) async fn did_close(
     session: &SessionHandle,
-    params: lsp_types::DidCloseTextDocumentParams,
+    params: ls_types::DidCloseTextDocumentParams,
 ) -> Result<()> {
     let url = params.text_document.uri;
     let pgls_path = session.file_path(&url)?;
