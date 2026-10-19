@@ -16,7 +16,7 @@
         <link rel="prev" href="../vcs_integration/">
       
       
-        <link rel="next" href="../upgrading_to_0_27/">
+        <link rel="next" href="../browser/">
       
       
         
@@ -825,10 +825,59 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#checking-formatting" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Checking formatting
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#checking-migrations" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Checking migrations
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
       
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../browser/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Use in the browser
+
+    
+  </span>
+  
+  
+
+      </a>
     </li>
   
 
@@ -1168,6 +1217,28 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#checking-formatting" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Checking formatting
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#checking-migrations" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Checking migrations
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1196,11 +1267,12 @@
 <span class="w">    </span><span class="nt">runs-on</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ubuntu-latest</span>
 <span class="w">    </span><span class="nt">steps</span><span class="p">:</span>
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">actions/checkout@v4</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">supabase-community/pglt-cli-action@main</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">supabase-community/postgres-language-server-cli-action@main</span>
 <span class="w">        </span><span class="nt">with</span><span class="p">:</span>
 <span class="w">          </span><span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">latest</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">run</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">postgres-language-server check --skip-db sql/</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">run</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">postgres-language-server check --disable-db sql/</span>
 </code></pre></div>
+<p><code>--disable-db</code> runs the checks that do not need a database. Without it, <code>check</code> fails when a database is configured but cannot be reached (see <a href=".././configure_database/#connection-failures">Connection failures</a>).</p>
 <p>You likely want to setup Postgres to enable more advanced checks:</p>
 <div class="highlight"><pre><span></span><code><span class="nt">jobs</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">lint</span><span class="p">:</span>
@@ -1216,11 +1288,25 @@
 <span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5432:5432</span>
 <span class="w">    </span><span class="nt">steps</span><span class="p">:</span>
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">actions/checkout@v4</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">supabase-community/pglt-cli-action@main</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">supabase-community/postgres-language-server-cli-action@main</span>
 <span class="w">        </span><span class="nt">with</span><span class="p">:</span>
 <span class="w">          </span><span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">latest</span>
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">run</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">postgres-language-server check sql/</span>
 </code></pre></div>
+<h3 id="checking-formatting">Checking formatting<a class="headerlink" href="#checking-formatting" title="Permanent link">&para;</a></h3>
+<p>Without <code>--write</code>, <code>postgres-language-server format</code> does not modify any file. It prints a diff for every statement that would change and exits with a non-zero code if any file is not formatted, so it fails the job:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">jobs</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">format</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">runs-on</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ubuntu-latest</span>
+<span class="w">    </span><span class="nt">steps</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">actions/checkout@v4</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">supabase-community/postgres-language-server-cli-action@main</span>
+<span class="w">        </span><span class="nt">with</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">latest</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">run</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">postgres-language-server format sql/</span>
+</code></pre></div>
+<p>Run <code>postgres-language-server format sql/ --write</code> locally to fix the reported files. See <a href="../../features/formatting/#check-mode">Formatting</a> for details.</p>
+<h3 id="checking-migrations">Checking migrations<a class="headerlink" href="#checking-migrations" title="Permanent link">&para;</a></h3>
 <p>A common use-case is to check your migration files. Check out <a href=".././checking_migrations/">the dedicated guide</a> for details.</p>
 
 
@@ -1278,13 +1364,13 @@
         
         
           
-          <a href="../upgrading_to_0_27/" class="md-footer__link md-footer__link--next" aria-label="Next: Upgrading to 0.27">
+          <a href="../browser/" class="md-footer__link md-footer__link--next" aria-label="Next: Use in the browser">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 Next
               </span>
               <div class="md-ellipsis">
-                Upgrading to 0.27
+                Use in the browser
               </div>
             </div>
             <div class="md-footer__button md-icon">

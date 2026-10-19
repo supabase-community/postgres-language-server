@@ -793,6 +793,33 @@
   
   
     <li class="md-nav__item">
+      <a href="../../guides/browser/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Use in the browser
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../guides/upgrading_to_0_27/" class="md-nav__link">
         
   
@@ -1116,8 +1143,8 @@
 
 
 <h1 id="plpgsql-support">PL/pgSQL Support<a class="headerlink" href="#plpgsql-support" title="Permanent link">&para;</a></h1>
-<p>The Postgres Language Server partially supports <code>PL/pgSQL</code>. By default, use <code>libpg_query</code> to parse the function body and show any syntax error. This is a great way to quickly reduce the feedback loop when developing. Unfortunately, the reported errors do not contain any location information and we always report an error on the entire function body.</p>
-<p>To get more sophisticated and fine-grained errors, we strongly recommend to enable the <a href="https://github.com/okbob/plpgsql_check"><code>plpgsql_check</code></a> extension in your development database.</p>
+<p>The Postgres Language Server partially supports <code>PL/pgSQL</code>. Out of the box, the language server parses the function body with <code>libpg_query</code> and reports any syntax error, without needing a database. This shortens the feedback loop while you write the function, but <code>libpg_query</code> does not report where in the body the error is, so the error covers the entire function body.</p>
+<p>To get syntax errors at the offending token, and many more checks, we strongly recommend to enable the <a href="https://github.com/okbob/plpgsql_check"><code>plpgsql_check</code></a> extension in your development database.</p>
 <div class="highlight"><pre><span></span><code><span class="k">CREATE</span><span class="w"> </span><span class="n">EXTENSION</span><span class="w"> </span><span class="k">IF</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">EXISTS</span><span class="w"> </span><span class="n">plpgsql_check</span><span class="p">;</span>
 </code></pre></div>
 <p>The language server will automatically detect the extension and start forwarding its reports as diagnostics.</p>
@@ -1128,7 +1155,7 @@
 <li>For trigger functions, the analysis runs against each table that has triggers using this function, providing context-specific validation</li>
 <li>Errors are mapped back to source locations with token-level precision</li>
 </ol>
-<p>When <code>plpgsql_check</code> checks a function, it also reports its syntax errors at the offending token, so the language server no longer reports the <code>libpg_query</code> syntax error on the entire function body. The <code>libpg_query</code> error is still reported when <code>plpgsql_check</code> cannot check the function, e.g. when the function cannot be created in the database, or when no trigger uses a trigger function.</p>
+<p>When <code>plpgsql_check</code> checks a function, it also reports its syntax errors at the offending token (only an error at the very end of the body still covers the whole body), so the language server no longer reports the <code>libpg_query</code> syntax error on the entire function body. The <code>libpg_query</code> error is still reported when <code>plpgsql_check</code> cannot check the function: when there is no database connection, the extension is not installed or the integration is disabled, the function cannot be created in the database, or no trigger uses a trigger function.</p>
 <p>The integration provides more detailed and actionable feedback compared to basic syntax checking, including:</p>
 <blockquote>
 <ul>

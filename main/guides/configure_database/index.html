@@ -946,6 +946,33 @@
   
   
     <li class="md-nav__item">
+      <a href="../browser/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Use in the browser
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../upgrading_to_0_27/" class="md-nav__link">
         
   
@@ -1424,8 +1451,9 @@
 <span class="w">    </span><span class="nt">"database"</span><span class="p">:</span><span class="w"> </span><span class="s2">"your_database_name"</span><span class="p">,</span>
 <span class="w">    </span><span class="c1">// Connection timeout in seconds (default: 10)</span>
 <span class="w">    </span><span class="nt">"connTimeoutSecs"</span><span class="p">:</span><span class="w"> </span><span class="mi">10</span><span class="p">,</span>
-<span class="w">    </span><span class="c1">// Schemas where code action statement execution is allowed (default: [])</span>
-<span class="w">    </span><span class="nt">"allowStatementExecutionsAgainst"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"public"</span><span class="p">,</span><span class="w"> </span><span class="s2">"testing"</span><span class="p">],</span>
+<span class="w">    </span><span class="c1">// Glob patterns matched against `host/database`; code actions may execute</span>
+<span class="w">    </span><span class="c1">// statements only when one of them matches (default: [], never)</span>
+<span class="w">    </span><span class="nt">"allowStatementExecutionsAgainst"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"localhost/*"</span><span class="p">,</span><span class="w"> </span><span class="s2">"127.0.0.1/*"</span><span class="p">],</span>
 <span class="w">    </span><span class="c1">// Completely disable database features (default: false)</span>
 <span class="w">    </span><span class="nt">"disableConnection"</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span>
 <span class="w">  </span><span class="p">}</span>
@@ -1475,13 +1503,15 @@
 <span class="k">GRANT</span><span class="w"> </span><span class="k">EXECUTE</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="k">ALL</span><span class="w"> </span><span class="n">FUNCTIONS</span><span class="w"> </span><span class="k">IN</span><span class="w"> </span><span class="k">SCHEMA</span><span class="w"> </span><span class="k">public</span><span class="w"> </span><span class="k">TO</span><span class="w"> </span><span class="n">postgres_language_server</span><span class="p">;</span>
 </code></pre></div>
 <h3 id="statement-execution-control">Statement Execution Control<a class="headerlink" href="#statement-execution-control" title="Permanent link">&para;</a></h3>
-<p>You can control which schemas allow code action statement execution (executing statements under the cursor):</p>
+<p>Code actions that execute the statement under the cursor are disabled by default. To enable them, list glob patterns in <code>allowStatementExecutionsAgainst</code>. Each pattern is matched against <code>host/database</code> of the connection (taken from the connection string when one is set), and statements can only be executed when one of them matches:</p>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">"db"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="nt">"allowStatementExecutionsAgainst"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"public"</span><span class="p">,</span><span class="w"> </span><span class="s2">"testing"</span><span class="p">]</span>
+<span class="w">    </span><span class="c1">// any database on the local machine</span>
+<span class="w">    </span><span class="nt">"allowStatementExecutionsAgainst"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"localhost/*"</span><span class="p">,</span><span class="w"> </span><span class="s2">"127.0.0.1/*"</span><span class="p">]</span>
 <span class="w">  </span><span class="p">}</span>
 <span class="p">}</span>
 </code></pre></div>
+<p>The patterns do not refer to schemas. To allow a single database only, name it, e.g. <code>"localhost/my_dev_db"</code>.</p>
 <h2 id="disabling-database-features">Disabling Database Features<a class="headerlink" href="#disabling-database-features" title="Permanent link">&para;</a></h2>
 <p>If you prefer to work without a database connection, you can disable all database-related features:</p>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>

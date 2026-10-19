@@ -880,6 +880,33 @@
   
   
     <li class="md-nav__item">
+      <a href="../../guides/browser/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Use in the browser
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../guides/upgrading_to_0_27/" class="md-nav__link">
         
   
@@ -1288,7 +1315,7 @@
 <h2 id="features">Features<a class="headerlink" href="#features" title="Permanent link">&para;</a></h2>
 <ul>
 <li>Postgres-compatible parsing: Uses the same parser as Postgres itself for accurate syntax validation</li>
-<li>Named Parameter Support: We convert <code>:param</code> and <code>@param</code> to positional parameters (<code>$1</code>, <code>$2</code>) so the Postgres parser understands them and the LSP works with ORMs and other tooling  </li>
+<li>Named Parameter Support: We convert named parameters to positional parameters (<code>$1</code>, <code>$2</code>) so the Postgres parser understands them and the LSP works with ORMs, psql variables and other tooling. Supported styles are <code>$name</code>, <code>:name</code>, <code>:'name'</code>, <code>:"name"</code> and <code>@name</code>  </li>
 <li><code>PL/pgSQL</code>: In addition to SQL, also validates <code>PL/pgSQL</code> function bodies for basic syntax errors  </li>
 </ul>
 <h2 id="error-information">Error Information<a class="headerlink" href="#error-information" title="Permanent link">&para;</a></h2>

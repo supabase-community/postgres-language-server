@@ -725,6 +725,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Configuration
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#troubleshooting" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -748,6 +759,34 @@
       </span>
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="Emacs">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#lsp-mode" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        lsp-mode
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#eglot" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Eglot
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -789,6 +828,17 @@
     <span class="md-ellipsis">
       <span class="md-typeset">
         Sublime Text
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#multi-root-workspaces-and-monorepos" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Multi-root workspaces and monorepos
       </span>
     </span>
   </a>
@@ -977,6 +1027,33 @@
     
   
   Continuous Integration
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../browser/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Use in the browser
 
     
   </span>
@@ -1358,6 +1435,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Configuration
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#troubleshooting" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -1381,6 +1469,34 @@
       </span>
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="Emacs">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#lsp-mode" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        lsp-mode
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#eglot" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Eglot
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -1422,6 +1538,17 @@
     <span class="md-ellipsis">
       <span class="md-typeset">
         Sublime Text
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#multi-root-workspaces-and-monorepos" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Multi-root workspaces and monorepos
       </span>
     </span>
   </a>
@@ -1498,7 +1625,7 @@
 
 
 <h1 id="use-in-your-ide">Use in your IDE<a class="headerlink" href="#use-in-your-ide" title="Permanent link">&para;</a></h1>
-<p>Th Postgres Language Server has first-class <a href="https://microsoft.github.io/language-server-protocol/">LSP</a> support to seamlessly integrate into your favorite editor.</p>
+<p>The Postgres Language Server has first-class <a href="https://microsoft.github.io/language-server-protocol/">LSP</a> support to seamlessly integrate into your favorite editor.</p>
 <h2 id="vscode">VSCode<a class="headerlink" href="#vscode" title="Permanent link">&para;</a></h2>
 <p>The language server is available on the <a href="https://marketplace.visualstudio.com/items?itemName=Supabase.postgrestools">VSCode Marketplace</a>. It's published from <a href="https://github.com/supabase-community/postgres-language-server-vscode">this repo</a>.</p>
 <h2 id="neovim">Neovim<a class="headerlink" href="#neovim" title="Permanent link">&para;</a></h2>
@@ -1506,18 +1633,20 @@
 <p>The easiest way to install the language server is via <a href="https://github.com/williamboman/mason.nvim">Mason</a>:</p>
 <div class="highlight"><pre><span></span><code><span class="p">:</span>MasonInstall postgres<span class="p">-</span>language<span class="p">-</span>server
 </code></pre></div>
-<p>Then configure <code>nvim-lspconfig</code> to use it:</p>
-<div class="highlight"><pre><span></span><code><span class="nb">require</span><span class="p">(</span><span class="s1">'lspconfig'</span><span class="p">).</span><span class="nv">postgres_lsp</span><span class="p">.</span><span class="py">setup</span><span class="p">{}</span>
-</code></pre></div>
 <h3 id="manual-installation">Manual Installation<a class="headerlink" href="#manual-installation" title="Permanent link">&para;</a></h3>
 <ol>
 <li>Download the binary for your platform from the <a href="https://github.com/supabase-community/postgres-language-server/releases">releases page</a></li>
 <li>Place it in your <code>$PATH</code></li>
-<li>Configure <code>nvim-lspconfig</code>:</li>
 </ol>
-<div class="highlight"><pre><span></span><code><span class="nb">require</span><span class="p">(</span><span class="s1">'lspconfig'</span><span class="p">).</span><span class="nv">postgres_lsp</span><span class="p">.</span><span class="py">setup</span><span class="p">{</span>
-<span class="w">  </span><span class="nv">cmd</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="s2">"postgres-language-server"</span><span class="p">,</span><span class="w"> </span><span class="s2">"lsp-proxy"</span><span class="w"> </span><span class="p">},</span>
-<span class="p">}</span>
+<h3 id="configuration">Configuration<a class="headerlink" href="#configuration" title="Permanent link">&para;</a></h3>
+<p><a href="https://github.com/neovim/nvim-lspconfig">nvim-lspconfig</a> ships a <code>postgres_lsp</code> config that runs <code>postgres-language-server lsp-proxy</code> for <code>sql</code> files. On Neovim 0.11 and later, enable it with:</p>
+<div class="highlight"><pre><span></span><code><span class="nv">vim</span><span class="p">.</span><span class="py">lsp</span><span class="p">.</span><span class="nf">enable</span><span class="p">(</span><span class="s1">'postgres_lsp'</span><span class="p">)</span>
+</code></pre></div>
+<p>On older Neovim versions, use the legacy setup function:</p>
+<div class="highlight"><pre><span></span><code><span class="nb">require</span><span class="p">(</span><span class="s1">'lspconfig'</span><span class="p">).</span><span class="nv">postgres_lsp</span><span class="p">.</span><span class="py">setup</span><span class="p">{}</span>
+</code></pre></div>
+<p>The config sets <code>workspace_required = true</code> with <code>postgres-language-server.jsonc</code> as its root marker, so the server only starts for files inside a directory, or one of its parents, that contains a <code>postgres-language-server.jsonc</code>. Create one in your project root with:</p>
+<div class="highlight"><pre><span></span><code>postgres-language-server<span class="w"> </span>init
 </code></pre></div>
 <p>For more details, see the <a href="https://github.com/neovim/nvim-lspconfig/blob/master/doc/configs.md#postgres_lsp">nvim-lspconfig documentation</a>.</p>
 <h3 id="troubleshooting">Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permanent link">&para;</a></h3>
@@ -1533,7 +1662,7 @@ postgres-language-server<span class="w"> </span>--version
 <p><strong>Check LSP status in Neovim:</strong>
    <div class="highlight"><pre><span></span><code><span class="p">:</span>LspInfo
 </code></pre></div>
-   This shows if the server is attached to your buffer.</p>
+   This shows if the server is attached to your buffer. On Neovim 0.11 and later, <code>:checkhealth vim.lsp</code> shows the same information. If the server is not attached, check that a <code>postgres-language-server.jsonc</code> exists in the project.</p>
 </li>
 <li>
 <p><strong>Check the logs:</strong>
@@ -1549,7 +1678,18 @@ postgres-language-server<span class="w"> </span>--version
 </li>
 </ol>
 <h2 id="emacs">Emacs<a class="headerlink" href="#emacs" title="Permanent link">&para;</a></h2>
-<p>The language client is available through <a href="https://github.com/emacs-lsp/lsp-mode">lsp-mode</a>. For more details, refer to their <a href="https://emacs-lsp.github.io/lsp-mode/page/lsp-postgres/">manual page</a>.</p>
+<h3 id="lsp-mode">lsp-mode<a class="headerlink" href="#lsp-mode" title="Permanent link">&para;</a></h3>
+<p><a href="https://github.com/emacs-lsp/lsp-mode">lsp-mode</a> ships the <code>lsp-postgres</code> client (server id <code>postgres-ls</code>). It starts <code>postgres-language-server lsp-proxy</code> in <code>sql-mode</code> buffers, using the binary on your <code>PATH</code> or downloading it with <code>M-x lsp-install-server</code>. Run <code>M-x lsp</code> in a SQL buffer, or start it automatically:</p>
+<div class="highlight"><pre><span></span><code><span class="p">(</span><span class="nv">add-hook</span><span class="w"> </span><span class="ss">'sql-mode-hook</span><span class="w"> </span><span class="nf">#'</span><span class="nv">lsp-deferred</span><span class="p">)</span>
+</code></pre></div>
+<p>For more details, refer to their <a href="https://emacs-lsp.github.io/lsp-mode/page/lsp-postgres/">manual page</a>.</p>
+<h3 id="eglot">Eglot<a class="headerlink" href="#eglot" title="Permanent link">&para;</a></h3>
+<p>With the built-in <a href="https://www.gnu.org/software/emacs/manual/html_mono/eglot.html">Eglot</a> client, register the server for <code>sql-mode</code>:</p>
+<div class="highlight"><pre><span></span><code><span class="p">(</span><span class="nb">with-eval-after-load</span><span class="w"> </span><span class="ss">'eglot</span>
+<span class="w">  </span><span class="p">(</span><span class="nv">add-to-list</span><span class="w"> </span><span class="ss">'eglot-server-programs</span>
+<span class="w">               </span><span class="o">'</span><span class="p">(</span><span class="nv">sql-mode</span><span class="w"> </span><span class="o">.</span><span class="w"> </span><span class="p">(</span><span class="s">"postgres-language-server"</span><span class="w"> </span><span class="s">"lsp-proxy"</span><span class="p">))))</span>
+</code></pre></div>
+<p>Then run <code>M-x eglot</code> in a SQL buffer, or add <code>(add-hook 'sql-mode-hook #'eglot-ensure)</code>.</p>
 <h2 id="helix">Helix<a class="headerlink" href="#helix" title="Permanent link">&para;</a></h2>
 <p>Add the language server and SQL grammar to your Helix <code>languages.toml</code>:</p>
 <div class="highlight"><pre><span></span><code><span class="k">[language-server.postgres-language-server]</span>
@@ -1580,6 +1720,8 @@ Is there a extension for an editor that is not listed here? Please file a PR and
 </blockquote>
 <h2 id="sublime-text">Sublime Text<a class="headerlink" href="#sublime-text" title="Permanent link">&para;</a></h2>
 <p>See <a href="https://lsp.sublimetext.io/language_servers/#postgresql">install instructions</a>.</p>
+<h2 id="multi-root-workspaces-and-monorepos">Multi-root workspaces and monorepos<a class="headerlink" href="#multi-root-workspaces-and-monorepos" title="Permanent link">&para;</a></h2>
+<p>When your editor opens several workspace folders, the language server loads the <code>postgres-language-server.jsonc</code> of each folder and applies it to the files in that folder. Put a configuration file in every folder that contains SQL. To share settings between them, move the common settings into a separate file and reference it with <a href="../../configuration/#sharing-settings-with-extends"><code>extends</code></a>.</p>
 <h2 id="integrate-in-an-editor-extension">Integrate in an editor extension<a class="headerlink" href="#integrate-in-an-editor-extension" title="Permanent link">&para;</a></h2>
 <p>Is your favorite editor missing? Thanks to the language server protocol, integrating the Postgres Language Server protocol should be straightforward.</p>
 <h3 id="use-the-lsp-proxy">Use the LSP proxy<a class="headerlink" href="#use-the-lsp-proxy" title="Permanent link">&para;</a></h3>

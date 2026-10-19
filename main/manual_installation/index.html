@@ -357,6 +357,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#nix" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Nix
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#using-a-published-binary" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -874,6 +885,33 @@
   
   
     <li class="md-nav__item">
+      <a href="../guides/browser/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Use in the browser
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../guides/upgrading_to_0_27/" class="md-nav__link">
         
   
@@ -1221,6 +1259,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#nix" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Nix
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#using-a-published-binary" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -1309,6 +1358,15 @@
 <p>Postgres Language Server is available as a <a href="https://formulae.brew.sh/formula/postgres-language-server">Homebrew formula</a> for macOS and Linux users.</p>
 <div class="highlight"><pre><span></span><code>brew<span class="w"> </span>install<span class="w"> </span>postgres-language-server
 </code></pre></div>
+<h3 id="nix">Nix<a class="headerlink" href="#nix" title="Permanent link">&para;</a></h3>
+<p>The CLI is packaged in <a href="https://search.nixos.org/packages?query=postgres-language-server">nixpkgs</a> as <code>postgres-language-server</code>:</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># Install into your profile</span>
+nix<span class="w"> </span>profile<span class="w"> </span>install<span class="w"> </span>nixpkgs#postgres-language-server
+
+<span class="c1"># Or try it without installing</span>
+nix<span class="w"> </span>run<span class="w"> </span>nixpkgs#postgres-language-server<span class="w"> </span>--<span class="w"> </span>--version
+</code></pre></div>
+<p>In a NixOS, home-manager or <code>devShell</code> configuration, add <code>pkgs.postgres-language-server</code> to the list of packages. The nixpkgs version can lag behind the latest GitHub release.</p>
 <h3 id="using-a-published-binary">Using a published binary<a class="headerlink" href="#using-a-published-binary" title="Permanent link">&para;</a></h3>
 <p>To install postgres-language-server, grab the executable for your platform from the latest CLI release on GitHub and give it execution permission.</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># macOS arm (M1 or newer)</span>
