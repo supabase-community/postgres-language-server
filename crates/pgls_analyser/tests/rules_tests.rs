@@ -10,7 +10,7 @@ use std::{
 use pgls_analyse::{AnalysisFilter, RuleFilter};
 use pgls_analyser::{
     AnalysableStatement, Analyser, AnalyserConfig, AnalyserParams, LinterDiagnostic, LinterOptions,
-    UnparsableStatement,
+    SectionMarkers, UnparsableStatement, migration_sections,
 };
 use pgls_console::StdDisplay;
 use pgls_diagnostics::PrintDiagnostic;
@@ -143,6 +143,7 @@ fn rule_test(full_path: &'static str, _: &str, _: &str) {
         catalog_base: is_typecheck.then(typecheck_catalog),
         search_path: vec!["public".into()],
         typecheck: is_typecheck,
+        sections: migration_sections(&query, section_markers(&query)),
         ..Default::default()
     });
 
@@ -158,6 +159,20 @@ fn rule_test(full_path: &'static str, _: &str, _: &str) {
 
     let expectation = Expectation::from_file(&query);
     expectation.assert(results.as_slice());
+}
+
+/// The section markers of a `-- sectionMarkers: dbmate` line.
+fn section_markers(query: &str) -> SectionMarkers {
+    let markers = query
+        .lines()
+        .find_map(|line| line.strip_prefix("-- sectionMarkers:"))
+        .map(str::trim);
+    match markers {
+        None => SectionMarkers::None,
+        Some("dbmate") => SectionMarkers::Dbmate,
+        Some("goose") => SectionMarkers::Goose,
+        Some(markers) => panic!("Unknown section markers `{markers}`"),
+    }
 }
 
 fn parse_test_path(path: &Path) -> (String, String, String) {

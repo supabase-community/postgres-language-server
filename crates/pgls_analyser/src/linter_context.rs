@@ -153,15 +153,17 @@ impl<'a> StatementContext<'a> {
 }
 
 /// State of the file being analysed, as seen by the current statement.
+///
+/// In a file with migration sections, the file context is that of the current section.
 pub struct AnalysedFileContext<'a> {
-    pub stmts: &'a Vec<pgls_query::NodeEnum>,
+    pub stmts: &'a [pgls_query::NodeEnum],
     pos: usize,
     catalog: Catalog,
     session: Session,
 }
 
 impl<'a> AnalysedFileContext<'a> {
-    pub fn new(stmts: &'a Vec<pgls_query::NodeEnum>, catalog: Catalog, session: Session) -> Self {
+    pub fn new(stmts: &'a [pgls_query::NodeEnum], catalog: Catalog, session: Session) -> Self {
         Self {
             stmts,
             pos: 0,
@@ -184,6 +186,11 @@ impl<'a> AnalysedFileContext<'a> {
 
     pub fn session(&self) -> &Session {
         &self.session
+    }
+
+    /// The catalog after the statements.
+    pub fn into_catalog(self) -> Catalog {
+        self.catalog
     }
 
     /// Records a statement that may have changed the catalog in ways it can't model, e.g. one

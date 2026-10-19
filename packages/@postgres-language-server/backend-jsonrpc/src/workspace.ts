@@ -548,9 +548,17 @@ export interface PartialMigrationsConfiguration {
    */
   after?: number;
   /**
+   * If `false`, the down sections of migration files are not linted. Default: `true`.
+   */
+  lintDown?: boolean;
+  /**
    * The directory where the migration files are stored
    */
   migrationsDir?: string;
+  /**
+   * The comments that split a migration file into up and down sections, which are analysed as migrations of their own: "dbmate" (`-- migrate:up`, `-- migrate:down`), "goose" (`-- +goose Up`, `-- +goose Down`) or "none". Default: "none".
+   */
+  sectionMarkers?: SectionMarkers;
 }
 export interface PartialPglinterConfiguration {
   /**
@@ -992,6 +1000,10 @@ export interface LinterRules {
    */
   unknownType?: RuleConfiguration_for_Null;
 }
+/**
+ * The marker comments of a migration tool.
+ */
+export type SectionMarkers = "none" | "dbmate" | "goose";
 export interface PglinterRules {
   /**
    * It enables ALL rules. The rules that belong to `nursery` won't be enabled.

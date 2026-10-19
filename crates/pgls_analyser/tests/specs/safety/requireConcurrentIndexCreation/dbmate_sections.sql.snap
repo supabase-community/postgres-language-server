@@ -1,0 +1,25 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+-- sectionMarkers: dbmate
+-- migrate:up
+CREATE TABLE posts (id bigint, title text);
+CREATE INDEX posts_title_idx ON posts (title);
+
+-- In the down section, the table isn't new anymore.
+-- migrate:down
+-- expect_lint/requireConcurrentIndexCreation
+CREATE INDEX posts_id_idx ON posts (id);
+DROP TABLE posts;
+
+```
+
+# Diagnostics
+lint/requireConcurrentIndexCreation ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Creating an index non-concurrently blocks writes to the table.
+  
+  i Use CREATE INDEX CONCURRENTLY to avoid blocking concurrent operations on the table.

@@ -10,6 +10,9 @@ declare_lint_rule! {
     ///
     /// Migration tools usually run each migration in a transaction, so using `CREATE INDEX CONCURRENTLY` will fail in such tools.
     ///
+    /// With `migrations.sectionMarkers`, the rule knows whether the migration runs in a transaction:
+    /// dbmate's `-- migrate:up transaction:false` and goose's `-- +goose NO TRANSACTION` disable it.
+    ///
     /// ## Examples
     ///
     /// ### Invalid
@@ -33,13 +36,15 @@ impl LinterRule for BanConcurrentIndexCreationInTransaction {
     fn run(ctx: &LinterRuleContext<Self>) -> Vec<LinterDiagnostic> {
         let mut diagnostics = Vec::new();
 
-        // check if the current statement is CREATE INDEX CONCURRENTLY and there is at least one
-        // other statement in the same context (indicating a transaction block)
-        //
-        // since our analyser assumes we're always in a transaction context, we always flag concurrent indexes
+        // Without migration sections, we don't know whether the migration tool runs the file in
+        // a transaction. Migration tools usually do, so we flag concurrent indexes unless the
+        // file has only this statement.
         if let pgls_query::NodeEnum::IndexStmt(stmt) = ctx.stmt()
             && stmt.concurrent
-            && ctx.file_context().stmt_count() > 1
+            && ctx
+                .session()
+                .in_transaction()
+                .unwrap_or_else(|| ctx.file_context().stmt_count() > 1)
         {
             diagnostics.push(LinterDiagnostic::new(
                     rule_category!(),

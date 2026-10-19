@@ -1,6 +1,6 @@
 use pgls_query::NodeEnum;
 
-use super::Session;
+use super::{Session, TransactionMode};
 
 fn apply(s: &mut Session, q: &str) {
     let n = pgls_query::parse(q).unwrap().into_root().unwrap();
@@ -193,4 +193,44 @@ fn check_function_bodies() {
     apply(&mut s, "SET check_function_bodies = off");
     apply(&mut s, "RESET ALL");
     assert!(s.check_function_bodies());
+}
+
+#[test]
+fn autocommit_releases_locks_after_each_statement() {
+    let mut s =
+        Session::new(vec!["public".into()]).with_transaction_mode(TransactionMode::Autocommit);
+    assert_eq!(s.in_transaction(), Some(false));
+    apply(&mut s, "SET lock_timeout='1s'");
+    apply(&mut s, "SET LOCAL search_path = other");
+    apply(&mut s, "CREATE TABLE made (id int)");
+    apply(
+        &mut s,
+        "ALTER TABLE users ADD CONSTRAINT c CHECK (id > 0) NOT VALID",
+    );
+    // Session-level settings persist, the locks and SET LOCAL end with the statement.
+    assert!(s.has_lock_timeout() && s.has_created_object("", "made"));
+    assert_eq!(s.search_path(), ["public"]);
+    assert!(!s.is_holding_access_exclusive() && s.access_exclusive_tables().is_empty());
+    assert!(!s.has_not_valid_constraint("", "users", "c"));
+
+    apply(&mut s, "BEGIN");
+    assert_eq!(s.in_transaction(), Some(true));
+    apply(&mut s, "ALTER TABLE users ADD COLUMN name text");
+    assert!(s.is_holding_access_exclusive());
+    apply(&mut s, "COMMIT");
+    assert_eq!(s.in_transaction(), Some(false));
+    assert!(!s.is_holding_access_exclusive());
+}
+
+#[test]
+fn transaction_mode_decides_whether_statements_run_in_a_transaction() {
+    let mut s = Session::new(vec![]);
+    assert_eq!(s.in_transaction(), None);
+    apply(&mut s, "BEGIN");
+    assert_eq!(s.in_transaction(), Some(true));
+
+    let mut s = Session::new(vec![]).with_transaction_mode(TransactionMode::Transaction);
+    assert_eq!(s.in_transaction(), Some(true));
+    apply(&mut s, "ALTER TABLE users ADD COLUMN name text");
+    assert!(s.is_holding_access_exclusive());
 }

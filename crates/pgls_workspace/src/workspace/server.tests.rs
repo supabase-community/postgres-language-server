@@ -7,7 +7,9 @@ use pgls_analyse::RuleCategories;
 use pgls_configuration::{Merge, StringSet};
 use pgls_configuration::{
     PartialConfiguration, PartialFormatConfiguration, PartialTypecheckConfiguration,
-    database::PartialDatabaseConfiguration, files::PartialFilesConfiguration,
+    database::PartialDatabaseConfiguration,
+    files::PartialFilesConfiguration,
+    migrations::{PartialMigrationsConfiguration, SectionMarkers},
 };
 
 #[cfg(not(target_os = "windows"))]
@@ -143,6 +145,77 @@ fn test_suppresses_multiline_alter_table_drop_column() {
     assert!(
         diagnostics.is_empty(),
         "Expected no diagnostics, got {diagnostics:#?}"
+    );
+}
+
+fn migration_section_diagnostics(lint_down: Option<bool>) -> Vec<String> {
+    let mut conf = PartialConfiguration::init();
+    conf.merge_with(PartialConfiguration {
+        migrations: Some(PartialMigrationsConfiguration {
+            section_markers: Some(SectionMarkers::Dbmate),
+            lint_down,
+            ..Default::default()
+        }),
+        ..Default::default()
+    });
+    let workspace = get_test_workspace(Some(conf)).expect("Unable to create test workspace");
+
+    let path = PgLSPath::new("20250301120000_drop_name.sql");
+    let content = r#"-- migrate:up
+ALTER TABLE users DROP COLUMN name;
+
+-- migrate:down
+-- pgls-ignore banDropColumn
+ALTER TABLE users DROP COLUMN email;
+DROP TABLE users;
+seect 1;
+"#;
+
+    workspace
+        .open_file(OpenFileParams {
+            path: path.clone(),
+            content: content.into(),
+            version: 1,
+        })
+        .expect("Unable to open test file");
+
+    let diagnostics = workspace
+        .pull_file_diagnostics(crate::workspace::PullFileDiagnosticsParams {
+            path: path.clone(),
+            categories: RuleCategories::all(),
+            max_diagnostics: 100,
+            only: vec![],
+            skip: vec![],
+        })
+        .expect("Unable to pull diagnostics")
+        .diagnostics;
+
+    let mut categories: Vec<String> = diagnostics
+        .iter()
+        .map(|d| d.category().map_or("", |c| c.name()).to_string())
+        // Suppression errors have no category.
+        .filter(|category| {
+            category.starts_with("lint/banDrop") || category == "syntax" || category.is_empty()
+        })
+        .collect();
+    categories.sort();
+    categories
+}
+
+#[test]
+fn lints_down_sections_by_default() {
+    assert_eq!(
+        migration_section_diagnostics(None),
+        ["lint/banDropColumn", "lint/banDropTable", "syntax"]
+    );
+}
+
+#[test]
+fn skips_down_sections_without_lint_down() {
+    // The syntax error is still reported, and the suppression isn't reported as unused.
+    assert_eq!(
+        migration_section_diagnostics(Some(false)),
+        ["lint/banDropColumn", "syntax"]
     );
 }
 

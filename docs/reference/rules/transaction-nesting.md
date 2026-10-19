@@ -61,6 +61,10 @@ code-block.sql:2:1 lint/transactionNesting ━━━━━━━━━━━━�
 
 ```
 
+In migration sections that run without a transaction, like dbmate's
+`-- migrate:up transaction:false`, explicit transactions are fine. The rule only reports
+a `BEGIN` inside a transaction, and a `COMMIT` or `ROLLBACK` outside of one.
+
 ## How to configure
 ```json
 

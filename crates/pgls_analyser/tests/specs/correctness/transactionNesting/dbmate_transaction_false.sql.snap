@@ -1,0 +1,39 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+-- sectionMarkers: dbmate
+-- Without a transaction from dbmate, explicit transactions are fine.
+-- migrate:up transaction:false
+BEGIN;
+ALTER TABLE users ADD COLUMN name text;
+COMMIT;
+CREATE INDEX CONCURRENTLY users_name_idx ON users (name);
+BEGIN;
+-- expect_lint/transactionNesting
+BEGIN;
+COMMIT;
+
+-- migrate:down transaction:false
+DROP INDEX CONCURRENTLY users_name_idx;
+-- expect_lint/transactionNesting
+COMMIT;
+
+```
+
+# Diagnostics
+lint/transactionNesting ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Nested transaction detected.
+  
+  i Starting a transaction when already in a transaction can cause issues.
+  
+
+
+lint/transactionNesting ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × No transaction to end.
+  
+  i The migration runs without a transaction, and no transaction was started.

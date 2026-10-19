@@ -1,0 +1,10 @@
+-- sectionMarkers: goose
+-- expect_no_diagnostics
+-- +goose NO TRANSACTION
+-- +goose Up
+CREATE INDEX CONCURRENTLY users_email_idx ON users (email);
+CREATE INDEX CONCURRENTLY users_name_idx ON users (name);
+
+-- +goose Down
+DROP INDEX CONCURRENTLY users_email_idx;
+DROP INDEX CONCURRENTLY users_name_idx;

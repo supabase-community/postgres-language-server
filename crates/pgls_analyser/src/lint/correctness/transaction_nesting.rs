@@ -1,5 +1,6 @@
 use crate::{AnalysedFileContext, LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::{RuleSource, declare_lint_rule};
+use pgls_catalog::TransactionMode;
 use pgls_console::markup;
 use pgls_diagnostics::Severity;
 
@@ -25,6 +26,10 @@ declare_lint_rule! {
     /// COMMIT; -- No transaction to commit
     /// ```
     ///
+    /// In migration sections that run without a transaction, like dbmate's
+    /// `-- migrate:up transaction:false`, explicit transactions are fine. The rule only reports
+    /// a `BEGIN` inside a transaction, and a `COMMIT` or `ROLLBACK` outside of one.
+    ///
     pub TransactionNesting {
         version: "0.15.0",
         name: "transactionNesting",
@@ -41,6 +46,9 @@ impl LinterRule for TransactionNesting {
         let mut diagnostics = Vec::new();
 
         if let pgls_query::NodeEnum::TransactionStmt(stmt) = &ctx.stmt() {
+            if ctx.session().transaction_mode() == TransactionMode::Autocommit {
+                return explicit_transaction_nesting(ctx, stmt);
+            }
             match stmt.kind() {
                 pgls_query::protobuf::TransactionStmtKind::TransStmtBegin
                 | pgls_query::protobuf::TransactionStmtKind::TransStmtStart => {
@@ -81,6 +89,53 @@ impl LinterRule for TransactionNesting {
         }
 
         diagnostics
+    }
+}
+
+/// The migration tool doesn't manage a transaction, so only explicit transactions can nest.
+fn explicit_transaction_nesting(
+    ctx: &LinterRuleContext<TransactionNesting>,
+    stmt: &pgls_query::protobuf::TransactionStmt,
+) -> Vec<LinterDiagnostic> {
+    let in_transaction = ctx.session().transaction_depth() > 0;
+    match stmt.kind() {
+        pgls_query::protobuf::TransactionStmtKind::TransStmtBegin
+        | pgls_query::protobuf::TransactionStmtKind::TransStmtStart
+            if in_transaction =>
+        {
+            vec![
+                LinterDiagnostic::new(
+                    rule_category!(),
+                    None,
+                    markup! {
+                        "Nested transaction detected."
+                    },
+                )
+                .detail(
+                    None,
+                    "Starting a transaction when already in a transaction can cause issues.",
+                ),
+            ]
+        }
+        pgls_query::protobuf::TransactionStmtKind::TransStmtCommit
+        | pgls_query::protobuf::TransactionStmtKind::TransStmtRollback
+            if !in_transaction =>
+        {
+            vec![
+                LinterDiagnostic::new(
+                    rule_category!(),
+                    None,
+                    markup! {
+                        "No transaction to end."
+                    },
+                )
+                .detail(
+                    None,
+                    "The migration runs without a transaction, and no transaction was started.",
+                ),
+            ]
+        }
+        _ => vec![],
     }
 }
 

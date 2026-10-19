@@ -1,0 +1,25 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+-- sectionMarkers: goose
+-- +goose Up
+ALTER TABLE authors ADD COLUMN email text;
+-- expect_lint/runningStatementWhileHoldingAccessExclusive
+UPDATE authors SET email = '';
+
+-- +goose Down
+ALTER TABLE authors DROP COLUMN email;
+
+```
+
+# Diagnostics
+lint/runningStatementWhileHoldingAccessExclusive ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Running statement while holding ACCESS EXCLUSIVE lock.
+  
+  i This blocks all access to the table for the duration of this statement.
+  
+  i Run this statement in a separate transaction to minimize lock duration.
