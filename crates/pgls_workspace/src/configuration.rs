@@ -23,7 +23,8 @@ use crate::{DynRef, WorkspaceError, settings::Settings};
 /// configuration was present.
 #[derive(Default, Debug)]
 pub struct LoadedConfiguration {
-    /// If present, the path of the directory where it was found
+    /// If present, the path of the directory the configuration applies to: where it was found,
+    /// or the project directory for the user configuration
     pub directory_path: Option<PathBuf>,
     /// If present, the path of the file where it was found
     pub file_path: Option<PathBuf>,
@@ -33,13 +34,9 @@ pub struct LoadedConfiguration {
 
 impl LoadedConfiguration {
     fn try_from_payload(
-        value: Option<ConfigurationPayload>,
+        value: ConfigurationPayload,
         fs: &DynRef<'_, dyn FileSystem>,
     ) -> Result<Self, WorkspaceError> {
-        let Some(value) = value else {
-            return Ok(LoadedConfiguration::default());
-        };
-
         let ConfigurationPayload {
             external_resolution_base_path,
             configuration_file_path,
@@ -71,12 +68,36 @@ impl LoadedConfiguration {
 }
 
 /// Load the partial configuration for this session of the CLI.
+///
+/// If no project configuration is found and the user didn't provide a configuration path, the
+/// user configuration is loaded instead. It applies to the project as if it were placed in the
+/// project directory, and is never merged with a project configuration.
 pub fn load_configuration(
     fs: &DynRef<'_, dyn FileSystem>,
     config_path: ConfigurationPathHint,
 ) -> Result<LoadedConfiguration, WorkspaceError> {
-    let config = load_config(fs, config_path)?;
-    LoadedConfiguration::try_from_payload(config, fs)
+    let project_directory = match &config_path {
+        ConfigurationPathHint::FromUser(_) => None,
+        ConfigurationPathHint::FromLsp(path) | ConfigurationPathHint::FromWorkspace(path) => {
+            Some(path.clone())
+        }
+        ConfigurationPathHint::None => Some(fs.working_directory().unwrap_or_default()),
+    };
+
+    if let Some(config) = load_config(fs, config_path)? {
+        return LoadedConfiguration::try_from_payload(config, fs);
+    }
+
+    let Some(project_directory) = project_directory else {
+        return Ok(LoadedConfiguration::default());
+    };
+    let Some(config) = load_user_config(fs, &project_directory)? else {
+        return Ok(LoadedConfiguration::default());
+    };
+
+    let mut loaded = LoadedConfiguration::try_from_payload(config, fs)?;
+    loaded.directory_path = Some(project_directory);
+    Ok(loaded)
 }
 
 /// - [Result]: if an error occurred while loading the configuration file.
@@ -150,6 +171,31 @@ fn load_config(
     } else {
         Ok(None)
     }
+}
+
+/// Load the user configuration from the first user configuration directory that has one.
+fn load_user_config(
+    file_system: &DynRef<'_, dyn FileSystem>,
+    project_directory: &Path,
+) -> LoadConfig {
+    for directory in file_system.user_config_directories() {
+        let file_path = directory.join(ConfigName::pgls_jsonc());
+        if !file_system.path_is_file(&file_path) {
+            continue;
+        }
+
+        let content = strip_jsonc(&file_system.read_file_from_path(&file_path)?)?;
+        let deserialized = serde_json::from_str::<PartialConfiguration>(&content)
+            .map_err(ConfigurationDiagnostic::new_deserialization_error)?;
+
+        return Ok(Some(ConfigurationPayload {
+            deserialized,
+            configuration_file_path: file_path,
+            external_resolution_base_path: project_directory.to_path_buf(),
+        }));
+    }
+
+    Ok(None)
 }
 
 /// Creates a new configuration on file system
@@ -303,29 +349,34 @@ impl PartialConfigurationExt for PartialConfiguration {
             return Ok(Vec::new());
         };
 
+        let home_directory = fs.home_directory();
         let mut deserialized_configurations = vec![];
         for extend_entry in extends.iter() {
             let extend_entry_as_path = Path::new(extend_entry);
 
-            let extend_configuration_file_path = if extend_entry_as_path.starts_with(".")
-                || matches!(
-                    extend_entry_as_path
-                        .extension()
-                        .map(OsStr::as_encoded_bytes),
-                    Some(b"jsonc")
-                ) {
-                // Normalize the path to handle relative segments like "../"
-                normalize_path(&relative_resolution_base_path.join(extend_entry))
-            } else {
-                fs.resolve_configuration(extend_entry.as_str(), external_resolution_base_path)
-                    .map_err(|error| {
-                        ConfigurationDiagnostic::cant_resolve(
-                            external_resolution_base_path.display().to_string(),
-                            error,
-                        )
-                    })?
-                    .into_path_buf()
-            };
+            let extend_configuration_file_path =
+                if let Some(path) = expand_home(extend_entry, home_directory.as_deref()) {
+                    normalize_path(&path)
+                } else if extend_entry_as_path.starts_with(".")
+                    || matches!(
+                        extend_entry_as_path
+                            .extension()
+                            .map(OsStr::as_encoded_bytes),
+                        Some(b"jsonc")
+                    )
+                {
+                    // Normalize the path to handle relative segments like "../"
+                    normalize_path(&relative_resolution_base_path.join(extend_entry))
+                } else {
+                    fs.resolve_configuration(extend_entry.as_str(), external_resolution_base_path)
+                        .map_err(|error| {
+                            ConfigurationDiagnostic::cant_resolve(
+                                external_resolution_base_path.display().to_string(),
+                                error,
+                            )
+                        })?
+                        .into_path_buf()
+                };
 
             let mut file = fs
                 .open_with_options(
@@ -408,6 +459,19 @@ impl PartialConfigurationExt for PartialConfiguration {
     }
 }
 
+/// Expands a leading `~` in a path to the home directory.
+///
+/// Returns `None` if the path doesn't start with `~` or the home directory is unknown.
+fn expand_home(path: &str, home_directory: Option<&Path>) -> Option<PathBuf> {
+    let rest = if path == "~" {
+        ""
+    } else {
+        path.strip_prefix("~/")
+            .or_else(|| path.strip_prefix("~\\").filter(|_| cfg!(windows)))?
+    };
+    Some(home_directory?.join(rest))
+}
+
 /// Normalizes a path, resolving '..' and '.' segments without requiring the path to exist
 fn normalize_path(path: &Path) -> PathBuf {
     let mut components = Vec::new();
@@ -478,6 +542,187 @@ fn normalize_path(path: &Path) -> PathBuf {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use pgls_fs::MemoryFileSystem;
+
+    fn project_directory() -> PathBuf {
+        PathBuf::from("/project")
+    }
+
+    fn home_directory() -> PathBuf {
+        PathBuf::from("/home/alice")
+    }
+
+    fn user_config_directory() -> PathBuf {
+        home_directory()
+            .join(".config")
+            .join("postgres-language-server")
+    }
+
+    fn file_system() -> MemoryFileSystem {
+        let mut fs = MemoryFileSystem::default();
+        fs.set_home_directory(home_directory());
+        fs.set_user_config_directories(vec![user_config_directory()]);
+        fs
+    }
+
+    fn load(fs: MemoryFileSystem, hint: ConfigurationPathHint) -> LoadedConfiguration {
+        load_configuration(&DynRef::Owned(Box::new(fs)), hint).expect("configuration should load")
+    }
+
+    fn max_file_size(loaded: &LoadedConfiguration) -> Option<u64> {
+        loaded
+            .configuration
+            .files
+            .as_ref()?
+            .max_size
+            .map(|size| size.get())
+    }
+
+    fn files_config(max_size: u32) -> String {
+        format!(r#"{{ "files": {{ "maxSize": {max_size} }} }}"#)
+    }
+
+    #[test]
+    fn extends_expands_the_home_directory() {
+        let mut fs = file_system();
+        fs.insert(
+            project_directory().join(ConfigName::pgls_jsonc()),
+            r#"{ "extends": ["~/.config/shared.jsonc"] }"#,
+        );
+        fs.insert(
+            home_directory().join(".config").join("shared.jsonc"),
+            files_config(1),
+        );
+
+        let loaded = load(
+            fs,
+            ConfigurationPathHint::FromWorkspace(project_directory()),
+        );
+
+        assert_eq!(max_file_size(&loaded), Some(1));
+    }
+
+    #[test]
+    fn extends_expands_the_home_directory_for_any_extension() {
+        let mut fs = file_system();
+        fs.insert(
+            project_directory().join(ConfigName::pgls_jsonc()),
+            r#"{ "extends": ["~/shared.json"] }"#,
+        );
+        fs.insert(home_directory().join("shared.json"), files_config(1));
+
+        let loaded = load(
+            fs,
+            ConfigurationPathHint::FromWorkspace(project_directory()),
+        );
+
+        assert_eq!(max_file_size(&loaded), Some(1));
+    }
+
+    #[test]
+    fn expand_home_only_expands_a_leading_tilde() {
+        let home = home_directory();
+        assert_eq!(expand_home("~", Some(&home)), Some(home.join("")));
+        assert_eq!(
+            expand_home("~/a/b.jsonc", Some(&home)),
+            Some(home.join("a/b.jsonc"))
+        );
+        assert_eq!(expand_home("~a/b.jsonc", Some(&home)), None);
+        assert_eq!(expand_home("./~/b.jsonc", Some(&home)), None);
+        assert_eq!(expand_home("~/b.jsonc", None), None);
+        assert_eq!(
+            expand_home("~\\b.jsonc", Some(&home)),
+            cfg!(windows).then(|| home.join("b.jsonc"))
+        );
+    }
+
+    #[test]
+    fn user_config_is_loaded_without_a_project_config() {
+        let mut fs = file_system();
+        let user_config = user_config_directory().join(ConfigName::pgls_jsonc());
+        fs.insert(user_config.clone(), files_config(1));
+
+        let loaded = load(
+            fs,
+            ConfigurationPathHint::FromWorkspace(project_directory()),
+        );
+
+        assert_eq!(max_file_size(&loaded), Some(1));
+        assert_eq!(loaded.file_path(), Some(user_config.as_path()));
+        assert_eq!(loaded.directory_path(), Some(project_directory().as_path()));
+    }
+
+    #[test]
+    fn user_config_resolves_extends_relative_to_itself() {
+        let mut fs = file_system();
+        fs.insert(
+            user_config_directory().join(ConfigName::pgls_jsonc()),
+            r#"{ "extends": ["./base.jsonc"] }"#,
+        );
+        fs.insert(user_config_directory().join("base.jsonc"), files_config(1));
+
+        let loaded = load(fs, ConfigurationPathHint::FromLsp(project_directory()));
+
+        assert_eq!(max_file_size(&loaded), Some(1));
+    }
+
+    #[test]
+    fn user_config_is_looked_up_in_order() {
+        let mut fs = file_system();
+        let second_directory = home_directory().join("second");
+        fs.set_user_config_directories(vec![
+            home_directory().join("missing"),
+            user_config_directory(),
+            second_directory.clone(),
+        ]);
+        fs.insert(
+            user_config_directory().join(ConfigName::pgls_jsonc()),
+            files_config(1),
+        );
+        fs.insert(
+            second_directory.join(ConfigName::pgls_jsonc()),
+            files_config(2),
+        );
+
+        let loaded = load(fs, ConfigurationPathHint::None);
+
+        assert_eq!(max_file_size(&loaded), Some(1));
+    }
+
+    #[test]
+    fn project_config_is_not_merged_with_the_user_config() {
+        let mut fs = file_system();
+        fs.insert(
+            user_config_directory().join(ConfigName::pgls_jsonc()),
+            files_config(1),
+        );
+        let project_config = project_directory().join(ConfigName::pgls_jsonc());
+        fs.insert(project_config.clone(), "{}");
+
+        let loaded = load(
+            fs,
+            ConfigurationPathHint::FromWorkspace(project_directory()),
+        );
+
+        assert_eq!(max_file_size(&loaded), None);
+        assert_eq!(loaded.file_path(), Some(project_config.as_path()));
+    }
+
+    #[test]
+    fn user_config_is_not_used_for_an_explicit_config_path() {
+        let mut fs = file_system();
+        fs.insert(
+            user_config_directory().join(ConfigName::pgls_jsonc()),
+            files_config(1),
+        );
+
+        let result = load_configuration(
+            &DynRef::Owned(Box::new(fs)),
+            ConfigurationPathHint::FromUser(project_directory()),
+        );
+
+        assert!(result.is_err());
+    }
 
     #[test]
     fn test_normalize_path_windows_drive() {

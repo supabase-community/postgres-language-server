@@ -28,6 +28,8 @@ pub struct MemoryFileSystem {
     files: AssertUnwindSafe<RwLock<FxHashMap<PathBuf, FileEntry>>>,
     errors: FxHashMap<PathBuf, ErrorEntry>,
     allow_write: bool,
+    home_directory: Option<PathBuf>,
+    user_config_directories: Vec<PathBuf>,
     on_get_staged_files: OnGetChangedFiles,
     on_get_changed_files: OnGetChangedFiles,
 }
@@ -38,6 +40,8 @@ impl Default for MemoryFileSystem {
             files: Default::default(),
             errors: Default::default(),
             allow_write: true,
+            home_directory: None,
+            user_config_directories: Vec::new(),
             on_get_staged_files: Some(Arc::new(AssertUnwindSafe(Mutex::new(Some(Box::new(
                 Vec::new,
             )))))),
@@ -106,6 +110,16 @@ impl MemoryFileSystem {
     pub fn files(self) -> IntoIter<PathBuf, FileEntry> {
         let files = self.files.0.into_inner();
         files.into_iter()
+    }
+
+    /// Set the home directory of the current user, `None` by default
+    pub fn set_home_directory(&mut self, path: impl Into<PathBuf>) {
+        self.home_directory = Some(path.into());
+    }
+
+    /// Set the directories the user configuration is looked up in, none by default
+    pub fn set_user_config_directories(&mut self, paths: Vec<PathBuf>) {
+        self.user_config_directories = paths;
     }
 
     pub fn set_on_get_changed_files(
@@ -190,6 +204,14 @@ impl FileSystem for MemoryFileSystem {
 
     fn working_directory(&self) -> Option<PathBuf> {
         None
+    }
+
+    fn home_directory(&self) -> Option<PathBuf> {
+        self.home_directory.clone()
+    }
+
+    fn user_config_directories(&self) -> Vec<PathBuf> {
+        self.user_config_directories.clone()
     }
 
     fn path_exists(&self, path: &Path) -> bool {
