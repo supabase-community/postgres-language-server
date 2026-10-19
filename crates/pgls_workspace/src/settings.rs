@@ -10,7 +10,7 @@ use std::{
     sync::{RwLock, RwLockReadGuard, RwLockWriteGuard},
     time::Duration,
 };
-use tracing::trace;
+use tracing::{trace, warn};
 
 use ignore::gitignore::{Gitignore, GitignoreBuilder};
 use pgls_configuration::{
@@ -744,6 +744,33 @@ pub struct DatabaseSettings {
     pub database: String,
     pub conn_timeout_secs: Duration,
     pub allow_statement_executions: bool,
+    /// The patterns of `db.allowStatementExecutionsAgainst` that are not valid globs.
+    pub invalid_statement_execution_patterns: Vec<String>,
+}
+
+impl DatabaseSettings {
+    /// Why statements cannot be executed against this database, or `None` if they can.
+    pub fn statement_execution_disabled_reason(&self) -> Option<String> {
+        if self.allow_statement_executions {
+            return None;
+        }
+
+        let host = &self.host;
+        let database = &self.database;
+        let mut reason = format!(
+            "Statement execution is disabled for `{host}/{database}`. Add a matching pattern to `db.allowStatementExecutionsAgainst`, e.g. [\"{host}/*\"]."
+        );
+        if !self.invalid_statement_execution_patterns.is_empty() {
+            let patterns = self
+                .invalid_statement_execution_patterns
+                .iter()
+                .map(|pattern| format!("`{pattern}`"))
+                .collect::<Vec<_>>()
+                .join(", ");
+            reason.push_str(&format!(" Ignored invalid patterns: {patterns}."));
+        }
+        Some(reason)
+    }
 }
 
 impl std::fmt::Debug for DatabaseSettings {
@@ -764,6 +791,10 @@ impl std::fmt::Debug for DatabaseSettings {
                 "allow_statement_executions",
                 &self.allow_statement_executions,
             )
+            .field(
+                "invalid_statement_execution_patterns",
+                &self.invalid_statement_execution_patterns,
+            )
             .finish()
     }
 }
@@ -780,6 +811,7 @@ impl Default for DatabaseSettings {
             database: "postgres".to_string(),
             conn_timeout_secs: Duration::from_secs(10),
             allow_statement_executions: true,
+            invalid_statement_execution_patterns: Vec::new(),
         }
     }
 }
@@ -827,18 +859,26 @@ impl From<PartialDatabaseConfiguration> for DatabaseSettings {
             }
         }
 
-        let allow_statement_executions = value
+        // An invalid pattern is ignored rather than failing the whole configuration; the reason a
+        // statement cannot be executed names it.
+        let target = format!("{host}/{database}");
+        let mut allow_statement_executions = false;
+        let mut invalid_statement_execution_patterns = Vec::new();
+        for pattern in value
             .allow_statement_executions_against
-            .map(|stringset| {
-                stringset.iter().any(|pattern| {
-                    let glob = Glob::new(pattern)
-                        .unwrap_or_else(|_| panic!("Invalid pattern: {pattern}"))
-                        .compile_matcher();
-
-                    glob.is_match(format!("{host}/{database}"))
-                })
-            })
-            .unwrap_or(false);
+            .iter()
+            .flat_map(|set| set.iter())
+        {
+            match Glob::new(pattern) {
+                Ok(glob) => allow_statement_executions |= glob.compile_matcher().is_match(&target),
+                Err(err) => {
+                    warn!(
+                        "Ignoring invalid pattern `{pattern}` in `db.allowStatementExecutionsAgainst`: {err}"
+                    );
+                    invalid_statement_execution_patterns.push(pattern.clone());
+                }
+            }
+        }
 
         Self {
             enable_connection,
@@ -857,6 +897,7 @@ impl From<PartialDatabaseConfiguration> for DatabaseSettings {
                 .unwrap_or(d.conn_timeout_secs),
 
             allow_statement_executions,
+            invalid_statement_execution_patterns,
         }
     }
 }
@@ -974,7 +1015,56 @@ mod tests {
 
         let config = DatabaseSettings::from(partial_config);
 
-        assert!(!config.allow_statement_executions)
+        assert!(!config.allow_statement_executions);
+        assert_eq!(
+            config.statement_execution_disabled_reason().as_deref(),
+            Some(
+                "Statement execution is disabled for `production/test-db`. Add a matching pattern to `db.allowStatementExecutionsAgainst`, e.g. [\"production/*\"]."
+            )
+        );
+    }
+
+    #[test]
+    fn ignores_invalid_statement_execution_patterns() {
+        let partial_config = PartialDatabaseConfiguration {
+            allow_statement_executions_against: Some(StringSet::from_iter(vec![
+                String::from("local[host/*"),
+                String::from("localhost/*"),
+            ])),
+            host: Some("localhost".into()),
+            database: Some("test-db".into()),
+            ..Default::default()
+        };
+
+        let config = DatabaseSettings::from(partial_config);
+
+        assert!(config.allow_statement_executions);
+        assert_eq!(
+            config.invalid_statement_execution_patterns,
+            ["local[host/*"]
+        );
+    }
+
+    #[test]
+    fn names_invalid_statement_execution_patterns_in_disabled_reason() {
+        let partial_config = PartialDatabaseConfiguration {
+            allow_statement_executions_against: Some(StringSet::from_iter(vec![String::from(
+                "local[host/*",
+            )])),
+            host: Some("localhost".into()),
+            database: Some("test-db".into()),
+            ..Default::default()
+        };
+
+        let config = DatabaseSettings::from(partial_config);
+
+        assert!(!config.allow_statement_executions);
+        assert!(
+            config
+                .statement_execution_disabled_reason()
+                .unwrap()
+                .ends_with("Ignored invalid patterns: `local[host/*`.")
+        );
     }
 
     #[cfg(feature = "db")]

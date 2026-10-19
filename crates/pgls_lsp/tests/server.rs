@@ -1239,6 +1239,7 @@ async fn test_execute_statement(test_db: PgPool) -> Result<()> {
     conf.merge_with(PartialConfiguration {
         db: Some(PartialDatabaseConfiguration {
             database: Some(database),
+            allow_statement_executions_against: Some(StringSet::from_iter([format!("{host}/*")])),
             host: Some(host),
             ..Default::default()
         }),
@@ -1340,7 +1341,7 @@ async fn test_execute_statement(test_db: PgPool) -> Result<()> {
         })
         .expect("Did not find executeStatement command!");
 
-    server
+    let result = server
         .request::<ExecuteCommandParams, Option<Value>>(
             "workspace/executeCommand",
             "_execStmt",
@@ -1351,6 +1352,17 @@ async fn test_execute_statement(test_db: PgPool) -> Result<()> {
             },
         )
         .await?;
+
+    assert_eq!(
+        result,
+        Some(Some(json!({
+            "message": "Successfully executed statement. Rows affected: 0",
+            "columns": [],
+            "rows": [],
+            "truncated": false,
+            "rowsAffected": 0,
+        })))
+    );
 
     assert!(
         users_tbl_exists().await,

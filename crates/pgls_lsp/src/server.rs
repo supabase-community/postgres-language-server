@@ -300,8 +300,7 @@ impl LanguageServer for LSPServer {
         params: ExecuteCommandParams,
     ) -> LspResult<Option<serde_json::Value>> {
         match handlers::code_actions::execute_command(&self.session, params).await {
-            // we'll inform the client within `code_actions::execute_command`
-            Ok(_) => LspResult::Ok(None),
+            Ok(result) => LspResult::Ok(result),
             Err(err) => LspResult::Err(into_lsp_error(err)),
         }
     }

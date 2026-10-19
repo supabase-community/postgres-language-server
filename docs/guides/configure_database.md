@@ -113,6 +113,30 @@ Code actions that execute the statement under the cursor are disabled by default
 
 The patterns do not refer to schemas. To allow a single database only, name it, e.g. `"localhost/my_dev_db"`.
 
+When no pattern matches, the code action is disabled and its reason names the setting. An invalid pattern is ignored with a warning in the log, and the reason lists it.
+
+### Statement Execution Results
+The language server runs the statement with the LSP command `pgls.executeStatement`, shows a short summary with `window/showMessage`, and returns the result of `workspace/executeCommand`, so an editor extension can render the rows as a table:
+
+```json
+{
+  "message": "2 rows",
+  "columns": ["id", "name"],
+  "rows": [
+    ["1", "Alice"],
+    ["2", null]
+  ],
+  "truncated": false
+}
+```
+
+- `columns` and `rows` are filled for statements that return rows, such as `select`, `values`, `show`, `explain`, and statements with `returning`.
+- Each value is a string in its Postgres text representation, as `psql` shows it, or `null` for SQL `NULL`.
+- At most 100 rows are returned. `truncated` is `true` if the statement returned more.
+- `rowsAffected` is set instead of `columns` and `rows` for statements that return no rows, such as `insert` without `returning` or `create table`. For example: `{ "message": "Successfully executed statement. Rows affected: 2", "columns": [], "rows": [], "truncated": false, "rowsAffected": 2 }`.
+- If the statement is not executed, for example because statement execution is disabled, only `message` is meaningful: `columns` and `rows` are empty and `rowsAffected` is not set.
+- If Postgres rejects the statement, the command fails with a JSON-RPC error carrying the Postgres error message.
+
 ## Disabling Database Features
 
 If you prefer to work without a database connection, you can disable all database-related features:
