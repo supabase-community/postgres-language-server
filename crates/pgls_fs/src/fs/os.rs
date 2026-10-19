@@ -2,7 +2,7 @@
 use super::{BoxedTraversal, ErrorKind, File, FileSystemDiagnostic};
 use crate::fs::OpenOptions;
 use crate::{
-    FileSystem, PgLSPath,
+    FileSystem, PgLSPath, dir,
     fs::{TraversalContext, TraversalScope},
 };
 use oxc_resolver::{Resolution, ResolveError, ResolveOptions, Resolver};
@@ -72,6 +72,14 @@ impl FileSystem for OsFileSystem {
 
     fn working_directory(&self) -> Option<PathBuf> {
         self.working_directory.clone()
+    }
+
+    fn home_directory(&self) -> Option<PathBuf> {
+        dir::home_dir()
+    }
+
+    fn user_config_directories(&self) -> Vec<PathBuf> {
+        dir::user_config_dirs()
     }
 
     fn path_exists(&self, path: &Path) -> bool {

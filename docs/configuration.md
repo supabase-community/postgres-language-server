@@ -107,6 +107,47 @@ Removed rules:
 | `preferBigintOverSmallint` | `preferBigInt` with `{ "checkSmallint": true }` |
 | `concurrentRefreshMatviewLock` | Dropped; `requireConcurrentRefreshMatview` covers it |
 
+## Where the configuration is loaded from
+
+The configuration is resolved in this order, and the first match wins:
+
+1. The path passed with `--config-path` or `PGLS_CONFIG_PATH`, or the configuration path set in your editor. Not finding a configuration file there is an error.
+2. A `postgres-language-server.jsonc` (or the deprecated `postgrestools.jsonc`) in the project directory or any of its parent directories. The project directory is the working directory of the CLI, or the workspace folder in an editor.
+3. The user configuration, a `postgres-language-server.jsonc` in your configuration directory:
+
+   | Platform | Location |
+   | --- | --- |
+   | Linux | `$XDG_CONFIG_HOME/postgres-language-server/`, or `~/.config/postgres-language-server/` if `XDG_CONFIG_HOME` is not set |
+   | macOS | `$XDG_CONFIG_HOME/postgres-language-server/` or `~/.config/postgres-language-server/`, then `~/Library/Application Support/postgres-language-server/` |
+   | Windows | `%APPDATA%\postgres-language-server\` |
+
+4. The built-in defaults.
+
+The user configuration is only a fallback for projects without a configuration file. It is never merged into a project configuration. To share settings between projects and the user configuration, extend it explicitly from the project configuration (see below).
+
+The user configuration applies to the project as if it were placed in the project directory: globs in `files` and the VCS settings are resolved against the project. Relative paths in its `extends` are resolved against its own directory.
+
+## Sharing configuration with `extends`
+
+`extends` lists configuration files to inherit from. They are applied from left to right, and the settings of the file that declares `extends` take precedence over all of them.
+
+```jsonc
+{
+  "extends": [
+    // relative to this file
+    "./shared/base.jsonc",
+    // relative to your home directory
+    "~/.config/postgres-language-server/postgres-language-server.jsonc",
+    // a package in node_modules
+    "@acme/pgls-config"
+  ]
+}
+```
+
+- Entries starting with `~/` (or `~\` on Windows) are resolved against your home directory. This works on every platform, so a project can extend your user configuration with the same path on macOS and Linux.
+- Entries starting with `.` or ending in `.jsonc` are resolved relative to the directory of the configuration file that declares them. Absolute paths are used as they are.
+- Any other entry is resolved as a package, like `require` would in Node.js.
+
 ## Configuring a database connection
 
 Some tools that the Postgres Language Server provides are implemented as mere interfaces on top of functionality that is provided by the database itself. This ensures correctness, but requires an active connection to a Postgres database. We strongly recommend to only connect to a local development database.
@@ -171,7 +212,7 @@ postgres-language-server check file1.js src/
 
 The configuration file can be used to refine which files are processed. You can explicitly list the files to be processed using the `files.include` field. `files.include` accepts glob patterns such as sql/**/*.sql. Negated patterns starting with `!` can be used to exclude files.
 
-Paths and globs inside the configuration file are resolved relative to the folder the configuration file is in. An exception to this is when a configuration file is extended by another.
+Paths and globs inside the configuration file are resolved relative to the folder the configuration file is in. An exception to this is when a configuration file is extended by another. The [user configuration](#where-the-configuration-is-loaded-from) is resolved relative to the project directory.
 
 #### Include files via configuration
 Let’s take the following configuration, where we want to include only SQL files (`.sql`) that are inside the `sql/` folder:

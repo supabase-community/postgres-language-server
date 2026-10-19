@@ -49,6 +49,12 @@ pub trait FileSystem: Send + Sync + RefUnwindSafe {
     /// Return the path to the working directory
     fn working_directory(&self) -> Option<PathBuf>;
 
+    /// Return the home directory of the current user
+    fn home_directory(&self) -> Option<PathBuf>;
+
+    /// Return the directories the user configuration is looked up in, in order of precedence
+    fn user_config_directories(&self) -> Vec<PathBuf>;
+
     /// Checks if the given path exists in the file system
     fn path_exists(&self, path: &Path) -> bool;
 
@@ -342,6 +348,14 @@ where
 
     fn working_directory(&self) -> Option<PathBuf> {
         T::working_directory(self)
+    }
+
+    fn home_directory(&self) -> Option<PathBuf> {
+        T::home_directory(self)
+    }
+
+    fn user_config_directories(&self) -> Vec<PathBuf> {
+        T::user_config_directories(self)
     }
 
     fn path_exists(&self, path: &Path) -> bool {
